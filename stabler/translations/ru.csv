@@ -199,3 +199,79 @@ Generated salary slips,Создано листков
 No salary slips yet,Нет расчётных листков
 Run a payroll cycle to generate salary slips for assigned employees.,"Запустите расчёт, чтобы сгенерировать листки для сотрудников."
 Request,Заявка
+Compliance,Соответствие
+EHF Status,Статус ЭСФ
+1C Sync Log,Журнал синхронизации 1C
+Asl Belgisi,Asl Belgisi
+ARCA,ARCA
+Exchange Rates,Курсы валют
+You need administrator access to view this page.,Требуется доступ администратора для просмотра этой страницы.
+The Compliance module is disabled for this company.,Модуль соответствия отключён для этой компании.
+EHF (Elektron Hisob-Faktura) submissions appear here.,Здесь отображаются отправки ЭСФ (Elektron Hisob-Faktura).
+1C:Enterprise sync log appears here.,Здесь отображается журнал синхронизации 1C:Предприятие.
+Asl Belgisi (product marking) scans appear here.,Здесь отображаются сканирования маркировки Asl Belgisi.
+ARCA payment webhook events appear here.,Здесь отображаются события вебхуков платежей ARCA.
+CBU.uz exchange rates appear here.,Здесь отображаются курсы валют ЦБУ.uz.
+CBU.uz exchange rates (last 30 days),Курсы валют ЦБУ.uz (последние 30 дней)
+Refresh now,Обновить сейчас
+Refreshing…,Обновление…
+Loading…,Загрузка…
+No exchange rates yet. Click Refresh now to fetch today's rates from cbu.uz.,Курсы валют пока отсутствуют. Нажмите «Обновить сейчас», чтобы загрузить актуальные курсы с cbu.uz.
+Date,Дата
+USD → UZS,USD → UZS
+EUR → UZS,EUR → UZS
+RUB → UZS,RUB → UZS
+EHF Submissions,Отправки ЭСФ
+All statuses,Все статусы
+Pending,Ожидает
+Submitted,Отправлен
+Accepted,Принят
+Rejected,Отклонён
+Error,Ошибка
+Reload,Перезагрузить
+No EHF submissions yet. Submit a Sales Invoice to enqueue one.,Пока нет отправок ЭСФ. Проведите счёт продаж, чтобы поставить в очередь.
+Created,Создан
+Invoice,Счёт
+Status,Статус
+Retries,Повторы
+SoliqOnline UUID,UUID SoliqOnline
+Submitted At,Время отправки
+Payload,Тело запроса
+Retry submission,Повторить отправку
+Retrying…,Повтор…
+All directions,Все направления
+All object types,Все типы объектов
+In,Вход
+Out,Выход
+Direction,Направление
+Object Type,Тип объекта
+Object Name,Имя объекта
+When,Когда
+Duration (ms),Длительность (мс)
+Message,Сообщение
+No 1C sync events yet.,Событий синхронизации 1С пока нет.
+Asl Belgisi — Stock Entries pending scan,Asl Belgisi — складские движения к сканированию
+Stock Entry,Складское движение
+Posting Date,Дата проводки
+Scanned / Required,Просканировано / требуется
+Complete,Готово
+Pending,Ожидание
+Type,Тип
+No Stock Entries with Asl Belgisi items found.,Складских движений с товарами Asl Belgisi не найдено.
+Scanned,Просканировано
+Asl Belgisi Code,Код Asl Belgisi
+Scan code for,Сканировать код для
+Scan or type code,Сканируйте или введите код
+Scanning…,Сканирование…
+Submit,Отправить
+Item,Товар
+Qty,Кол-во
+ARCA Payment Events,Платежи ARCA
+All events,Все события
+Processed,Обработано
+No ARCA payment events yet.,Платежей ARCA пока нет.
+Received,Получено
+Transaction Id,Идентификатор транзакции
+Amount,Сумма
+Payment Entry,Платёжный документ
+Received At,Время получения

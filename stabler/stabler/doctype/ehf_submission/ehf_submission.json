@@ -1,0 +1,107 @@
+{
+ "actions": [],
+ "autoname": "format:EHF-{YYYY}-{#####}",
+ "creation": "2026-05-20 12:00:00.000000",
+ "doctype": "DocType",
+ "editable_grid": 1,
+ "engine": "InnoDB",
+ "field_order": [
+  "reference_invoice",
+  "soliq_status",
+  "soliq_uuid",
+  "submitted_at",
+  "retry_count",
+  "section_payload",
+  "payload_json",
+  "signature",
+  "section_error",
+  "error_message"
+ ],
+ "fields": [
+  {
+   "fieldname": "reference_invoice",
+   "fieldtype": "Link",
+   "in_list_view": 1,
+   "label": "Reference Invoice",
+   "options": "Sales Invoice",
+   "reqd": 1
+  },
+  {
+   "default": "Pending",
+   "fieldname": "soliq_status",
+   "fieldtype": "Select",
+   "in_list_view": 1,
+   "label": "SoliqOnline Status",
+   "options": "Pending\nSubmitted\nAccepted\nRejected\nError"
+  },
+  {
+   "fieldname": "soliq_uuid",
+   "fieldtype": "Data",
+   "in_list_view": 1,
+   "label": "SoliqOnline UUID"
+  },
+  {
+   "fieldname": "submitted_at",
+   "fieldtype": "Datetime",
+   "label": "Submitted At"
+  },
+  {
+   "default": "0",
+   "fieldname": "retry_count",
+   "fieldtype": "Int",
+   "label": "Retry Count"
+  },
+  {
+   "collapsible": 1,
+   "fieldname": "section_payload",
+   "fieldtype": "Section Break",
+   "label": "Payload & Signature"
+  },
+  {
+   "fieldname": "payload_json",
+   "fieldtype": "Long Text",
+   "label": "Payload JSON"
+  },
+  {
+   "fieldname": "signature",
+   "fieldtype": "Long Text",
+   "label": "EIMZO Signature"
+  },
+  {
+   "collapsible": 1,
+   "fieldname": "section_error",
+   "fieldtype": "Section Break",
+   "label": "Error"
+  },
+  {
+   "fieldname": "error_message",
+   "fieldtype": "Text",
+   "label": "Error Message"
+  }
+ ],
+ "index_web_pages_for_search": 1,
+ "links": [],
+ "modified": "2026-05-20 12:00:00.000000",
+ "modified_by": "Administrator",
+ "module": "Stabler",
+ "name": "EHF Submission",
+ "owner": "Administrator",
+ "permissions": [
+  {
+   "create": 1,
+   "delete": 1,
+   "email": 1,
+   "export": 1,
+   "print": 1,
+   "read": 1,
+   "report": 1,
+   "role": "System Manager",
+   "share": 1,
+   "write": 1
+  }
+ ],
+ "sort_field": "creation",
+ "sort_order": "DESC",
+ "states": [],
+ "track_changes": 1
+}

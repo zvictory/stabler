@@ -6,7 +6,12 @@
  "engine": "InnoDB",
  "field_order": [
   "company_modules_section",
-  "company_modules"
+  "company_modules",
+  "compliance_section",
+  "onec_mode",
+  "onec_last_pulled_at",
+  "asl_code_regex",
+  "factura_export_enabled"
  ],
  "fields": [
   {
@@ -19,6 +24,36 @@
    "fieldtype": "Table",
    "label": "Company Modules",
    "options": "Stabler Company Modules"
+  },
+  {
+   "fieldname": "compliance_section",
+   "fieldtype": "Section Break",
+   "label": "Compliance"
+  },
+  {
+   "default": "file",
+   "fieldname": "onec_mode",
+   "fieldtype": "Select",
+   "label": "1C Sync Mode",
+   "options": "file\nrest"
+  },
+  {
+   "fieldname": "onec_last_pulled_at",
+   "fieldtype": "Data",
+   "label": "1C REST Watermark",
+   "read_only": 1
+  },
+  {
+   "default": "^[0-9A-Z]{8,32}$",
+   "fieldname": "asl_code_regex",
+   "fieldtype": "Data",
+   "label": "Asl Belgisi Code Regex"
+  },
+  {
+   "default": "0",
+   "fieldname": "factura_export_enabled",
+   "fieldtype": "Check",
+   "label": "Factura.uz Export Enabled"
   }
  ],
  "index_web_pages_for_search": 1,

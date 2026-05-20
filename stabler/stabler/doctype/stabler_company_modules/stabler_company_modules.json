@@ -12,7 +12,8 @@
   "enable_inventory",
   "enable_manufacturing",
   "enable_hr",
-  "enable_stock_reservation"
+  "enable_stock_reservation",
+  "enable_compliance"
  ],
  "fields": [
   {
@@ -72,6 +73,13 @@
    "fieldtype": "Check",
    "in_list_view": 1,
    "label": "Stock Reservation"
+  },
+  {
+   "default": "1",
+   "fieldname": "enable_compliance",
+   "fieldtype": "Check",
+   "in_list_view": 1,
+   "label": "Compliance"
   }
  ],
  "index_web_pages_for_search": 1,

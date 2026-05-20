@@ -28,6 +28,7 @@ def get_company_module_row(company: str):
 			"enable_manufacturing": 1,
 			"enable_hr": 1,
 			"enable_stock_reservation": 1,
+			"enable_compliance": 1,
 		},
 	)
 	settings.save(ignore_permissions=True)
@@ -46,6 +47,7 @@ def module_map_for(company: str) -> dict:
 			"manufacturing": True,
 			"hr": True,
 			"stock_reservation": True,
+			"compliance": True,
 		}
 	return {
 		"money": bool(row.enable_money),
@@ -55,4 +57,5 @@ def module_map_for(company: str) -> dict:
 		"manufacturing": bool(row.enable_manufacturing),
 		"hr": bool(row.enable_hr),
 		"stock_reservation": bool(getattr(row, "enable_stock_reservation", 1)),
+		"compliance": bool(getattr(row, "enable_compliance", 1)),
 	}

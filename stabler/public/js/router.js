@@ -36,6 +36,7 @@ import AdminHome from "./pages/admin/AdminHome.vue";
 import AdminUsers from "./pages/admin/Users.vue";
 import AdminRoles from "./pages/admin/Roles.vue";
 import AdminCompanies from "./pages/admin/Companies.vue";
+import AdminCompliance from "./pages/admin/Compliance.vue";
 import NotFound from "./pages/NotFound.vue";
 import ServerError from "./pages/ServerError.vue";
 
@@ -124,6 +125,7 @@ const routes = [
 			{ path: "users", name: "admin-users", component: AdminUsers, meta: { title: "Users" } },
 			{ path: "roles", name: "admin-roles", component: AdminRoles, meta: { title: "Roles" } },
 			{ path: "companies", name: "admin-companies", component: AdminCompanies, meta: { title: "Companies" } },
+			{ path: "compliance", name: "admin-compliance", component: AdminCompliance, meta: { title: "Compliance", requiresCompliance: true } },
 		],
 	},
 	{ path: "/error", name: "server-error", component: ServerError, meta: { title: "Error" } },

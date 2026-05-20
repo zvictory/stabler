@@ -19,6 +19,7 @@ _MODULE_FIELDS = {
 	"manufacturing": "enable_manufacturing",
 	"hr": "enable_hr",
 	"stock_reservation": "enable_stock_reservation",
+	"compliance": "enable_compliance",
 }
 
 
@@ -139,6 +140,7 @@ def update_company_modules(
 	manufacturing=None,
 	hr=None,
 	stock_reservation=None,
+	compliance=None,
 ):
 	"""Admin-only: toggle per-module flags for a company. Pass 0/1 to update; omit to leave."""
 	_require_admin()
@@ -165,6 +167,7 @@ def update_company_modules(
 				"enable_manufacturing": 1,
 				"enable_hr": 1,
 				"enable_stock_reservation": 1,
+				"enable_compliance": 1,
 			},
 		)
 
@@ -176,6 +179,7 @@ def update_company_modules(
 		"enable_manufacturing": manufacturing,
 		"enable_hr": hr,
 		"enable_stock_reservation": stock_reservation,
+		"enable_compliance": compliance,
 	}
 	for field, val in updates.items():
 		if val is None or val == "":

@@ -1,2 +1,6 @@
 stabler.patches.v01_add_user_allowed_companies
 stabler.patches.v02_enable_stock_reservation
+stabler.patches.v03_add_enable_compliance
+stabler.patches.v04_uzs_default_currency
+stabler.patches.v05_uzbek_tax_templates
+stabler.patches.v06_asl_belgisi_fields

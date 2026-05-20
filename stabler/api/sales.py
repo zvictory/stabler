@@ -49,6 +49,72 @@ def _lookup_item_price(item_code: str, price_list: str) -> dict | None:
 	return {"price_list_rate": flt(r["price_list_rate"]), "currency": r["currency"]}
 
 
+def _resolve_tax_template(company: str, customer: str | None) -> str | None:
+	"""Resolve the Uzbek NDS Sales Taxes and Charges Template for a transaction.
+
+	Priority:
+	  1. Customer.tax_template (custom field — honored if present).
+	  2. Customer.is_tax_exempt → company's "Uzbekistan NDS Exempt - <ABBR>".
+	  3. Default → company's "Uzbekistan NDS 12% - <ABBR>".
+
+	Returns None if none of the candidate templates exist for this company
+	(e.g. v05 patch hasn't been able to discover a tax account); callers
+	then leave taxes_and_charges untouched so ERPNext falls back to its
+	own resolution path.
+	"""
+	abbr = frappe.db.get_value("Company", company, "abbr") if company else None
+	if not abbr:
+		return None
+
+	exempt_template = f"Uzbekistan NDS Exempt - {abbr}"
+	nds_template = f"Uzbekistan NDS 12% - {abbr}"
+
+	if customer:
+		custom = frappe.db.get_value("Customer", customer, "tax_template")
+		if custom and frappe.db.exists("Sales Taxes and Charges Template", custom):
+			return custom
+		is_exempt = frappe.db.get_value("Customer", customer, "is_tax_exempt")
+		if is_exempt and frappe.db.exists("Sales Taxes and Charges Template", exempt_template):
+			return exempt_template
+
+	if frappe.db.exists("Sales Taxes and Charges Template", nds_template):
+		return nds_template
+	if frappe.db.exists("Sales Taxes and Charges Template", exempt_template):
+		return exempt_template
+	return None
+
+
+def _apply_tax_template(doc, template_name: str | None) -> None:
+	"""Stamp `taxes_and_charges` on a sales doc and repopulate the taxes table.
+
+	Clears any pre-existing rows so a Customer flag toggle on re-resolve
+	produces a clean recompute. Safe to call on docs that already inherited
+	taxes from a parent (e.g. SI from SO) — we treat the resolved template
+	as authoritative.
+	"""
+	if not template_name:
+		return
+	doc.taxes_and_charges = template_name
+	if doc.get("taxes"):
+		doc.set("taxes", [])
+	src_rows = frappe.get_all(
+		"Sales Taxes and Charges",
+		filters={"parent": template_name, "parenttype": "Sales Taxes and Charges Template"},
+		fields=[
+			"charge_type",
+			"account_head",
+			"description",
+			"rate",
+			"row_id",
+			"included_in_print_rate",
+			"cost_center",
+		],
+		order_by="idx asc",
+	)
+	for row in src_rows:
+		doc.append("taxes", row)
+
+
 @frappe.whitelist()
 def list_customers(company: str, search: str = "", limit: int = 100):
 	_require_company(company)
@@ -384,6 +450,7 @@ def create_sales_invoice(
 			if patch.get("rate") not in (None, ""):
 				line.rate = flt(patch["rate"])
 
+	_apply_tax_template(doc, _resolve_tax_template(doc.company, doc.customer))
 	doc.insert(ignore_permissions=False)
 	return {
 		"name": doc.name,
@@ -972,6 +1039,7 @@ def create_sales_order(
 			line.rate = rate
 		if row["uom"]:
 			line.uom = row["uom"]
+	_apply_tax_template(doc, _resolve_tax_template(company, customer))
 	doc.insert(ignore_permissions=False)
 
 	reservation_errors: list[dict] = []
