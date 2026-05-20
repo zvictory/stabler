@@ -1,0 +1,201 @@
+source,target
+Dashboard,Панель
+Money,Деньги
+Sales,Продажи
+Purchasing,Закупки
+Inventory,Склад
+Chart of Accounts,План счетов
+Journal Entries,Журнальные записи
+Payments,Платежи
+Reports,Отчёты
+Customers,Клиенты
+Sales Invoices,Счета продаж
+Suppliers,Поставщики
+Purchase Invoices,Счета закупок
+Items,Товары
+Warehouses,Склады
+Stock Ledger,Складская книга
+Low Stock Alerts,Уведомления о низком остатке
+New journal,Новая запись
+New payment,Новый платёж
+Save as draft,Сохранить черновик
+Cancel,Отмена
+Refresh,Обновить
+Apply,Применить
+Export,Экспорт
+Run,Запустить
+Posting date,Дата проводки
+Cash on hand,Денежные средства
+Receivable (AR),Дебиторская задолженность
+Payable (AP),Кредиторская задолженность
+Revenue MTD,Выручка с начала месяца
+Recent activity,Последние операции
+No data,Нет данных
+Loading…,Загрузка…
+Something went wrong,Что-то пошло не так
+Page not found,Страница не найдена
+Back to dashboard,Вернуться на панель
+Try again,Повторить
+Company,Компания
+Profile,Профиль
+Open Desk,Открыть Desk
+Log out,Выйти
+View all,Показать все
+Low stock,Низкий остаток
+All items above reorder level.,Все товары выше порога пополнения.
+Module,Модуль
+Manufacturing,Производство
+BOMs,Спецификации
+Work Orders,Производственные заказы
+BOM,Спецификация
+Work Order,Производственный заказ
+Finished good,Готовая продукция
+Quantity,Количество
+Total cost,Общая стоимость
+Raw material cost,Стоимость сырья
+Components,Компоненты
+Raw materials,Сырьё
+Qty,Кол-во
+UOM,Ед. изм.
+Rate,Цена
+Amount,Сумма
+Item,Товар
+Status,Статус
+Default,По умолчанию
+Submit,Провести
+Submitted,Проведено
+Cancelled,Отменено
+Draft,Черновик
+Submit this BOM? You won't be able to edit it after.,Провести эту спецификацию? После этого её нельзя будет редактировать.
+Cancel this submitted BOM?,Отменить эту проведённую спецификацию?
+New BOM,Новая спецификация
+Search BOMs or finished goods…,Поиск спецификаций или готовой продукции…
+No BOMs yet,Спецификаций пока нет
+Create a Bill of Materials to define what raw materials go into a finished good.,Создайте спецификацию чтобы определить какие материалы входят в готовый продукт.
+Pick a finished-good item.,Выберите готовый продукт.
+Add at least one raw material line.,Добавьте хотя бы одну строку сырья.
+Add line,Добавить строку
+Save and submit,Сохранить и провести
+Make default BOM for this item,Сделать спецификацией по умолчанию
+New Work Order,Новый производственный заказ
+Search work orders…,Поиск производственных заказов…
+All statuses,Все статусы
+No work orders,Нет производственных заказов
+Create a Work Order to plan and track production runs against a BOM.,Создайте производственный заказ для планирования и контроля выпуска.
+Planned,Запланировано
+Planned start,Плановая дата начала
+Transferred,Передано
+Produced,Произведено
+Required,Требуется
+Required materials,Требуемые материалы
+Source warehouse,Склад источника
+WIP warehouse,Склад НЗП
+Finished-goods warehouse,Склад готовой продукции
+Submit and release this Work Order?,Провести и запустить этот производственный заказ?
+Transfer how many units of materials? Leave blank for full.,Сколько единиц материалов передать? Оставьте пустым для всего объёма.
+Produce how many units? Leave blank for full balance.,Сколько единиц произвести? Оставьте пустым для всего остатка.
+Stop this Work Order? You can resume it later.,Остановить этот производственный заказ? Можно будет возобновить позже.
+Close this Work Order? This finalizes it.,Закрыть этот производственный заказ? Это финальное действие.
+Transfer materials,Передать материалы
+Record production,Записать выпуск
+Stop,Остановить
+Close,Закрыть
+No items with submitted active BOMs yet — create one first.,Нет товаров с проведёнными активными спецификациями — сначала создайте.
+Quantity must be positive.,Количество должно быть положительным.
+People,Сотрудники
+Active,Активные
+On leave today,В отпуске сегодня
+Pending requests,Ожидают рассмотрения
+Employees,Сотрудники
+Attendance,Посещаемость
+Leave,Отпуск
+Payroll,Зарплата
+Search employees…,Поиск сотрудников…
+Inactive,Неактивные
+Suspended,Приостановлен
+Left,Уволен
+Designation,Должность
+Department,Подразделение
+Contact,Контакт
+New employee,Новый сотрудник
+No employees yet,Сотрудников пока нет
+Add your first employee to start tracking attendance, leave and payroll.,"Добавьте первого сотрудника, чтобы вести учёт посещаемости, отпусков и зарплат."
+Employee,Сотрудник
+First name,Имя
+Last name,Фамилия
+Gender,Пол
+Male,Мужской
+Female,Женский
+Other,Другое
+Date of birth,Дата рождения
+Date of joining,Дата приёма
+Phone,Телефон
+User,Пользователь
+Personal email,Личная почта
+Company email,Рабочая почта
+User account,Учётная запись
+Save,Сохранить
+First name is required.,Введите имя.
+Gender is required.,Укажите пол.
+Date of birth is required.,Укажите дату рождения.
+Pick an employee.,Выберите сотрудника.
+Pick a leave type.,Выберите тип отпуска.
+From,С
+To,По
+Date,Дата
+In,Вход
+Out,Выход
+Hours,Часы
+Mark attendance,Отметить
+Mark and submit,Отметить и провести
+No attendance records,Нет записей о посещаемости
+Mark daily attendance to start building reports.,"Отмечайте посещаемость ежедневно, чтобы строить отчёты."
+Present,Присутствует
+Absent,Отсутствует
+On Leave,В отпуске
+Half Day,Полдня
+Work From Home,Удалённо
+In time,Время входа
+Out time,Время выхода
+Approve this leave request?,Одобрить заявку на отпуск?
+Reject this leave request?,Отклонить заявку на отпуск?
+New leave request,Новая заявка
+No leave requests,Нет заявок на отпуск
+Submit a leave request on behalf of an employee.,Подайте заявку от имени сотрудника.
+Leave type,Тип отпуска
+Dates,Даты
+Days,Дней
+Reason,Причина
+Open,Открыта
+Approved,Одобрена
+Rejected,Отклонена
+Approve and submit,Одобрить и провести
+Run payroll,Запустить расчёт
+Slip,Расчётный листок
+Period,Период
+Working,Рабочих дней
+Paid days,Оплачено дней
+Gross,Начислено
+Net,К выплате
+Withheld,Удержано
+Salary slip,Расчётный листок
+Gross pay,Начислено
+Net pay,К выплате
+Earnings,Начисления
+Deductions,Удержания
+No earnings,Нет начислений
+No deductions,Нет удержаний
+Period start,Начало периода
+Period end,Конец периода
+Frequency,Периодичность
+Monthly,Ежемесячно
+Bimonthly,Раз в две недели
+Weekly,Еженедельно
+Daily,Ежедневно
+Generate drafts,Создать черновики
+Generate and submit,Создать и провести
+Payroll entry,Расчёт зарплаты
+Generated salary slips,Создано листков
+No salary slips yet,Нет расчётных листков
+Run a payroll cycle to generate salary slips for assigned employees.,"Запустите расчёт, чтобы сгенерировать листки для сотрудников."
+Request,Заявка

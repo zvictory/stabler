@@ -1,0 +1,76 @@
+{% set tabler_version = "1.0.0-beta20" %}
+<!DOCTYPE html>
+<html lang="{{ user_language or 'en' }}" data-bs-theme="light">
+<head>
+	<meta charset="utf-8" />
+	<meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover" />
+	<title>Stabler — Financial operations, simplified</title>
+
+	<link rel="icon" type="image/svg+xml" href="/assets/stabler/icons/scale.svg" />
+
+	<link
+		rel="stylesheet"
+		href="https://cdn.jsdelivr.net/npm/@tabler/core@{{ tabler_version }}/dist/css/tabler.min.css"
+	/>
+	<link
+		rel="stylesheet"
+		href="https://cdn.jsdelivr.net/npm/@tabler/icons-webfont@3.19.0/dist/tabler-icons.min.css"
+	/>
+	<link rel="stylesheet" href="/assets/stabler/css/stabler.css" />
+
+	<script>
+		window.__STABLER__ = {
+			csrfToken: {{ (csrf_token or "") | tojson }},
+			user: {
+				id: {{ (user_id or "") | tojson }},
+				name: {{ (user_fullname or "") | tojson }},
+				image: {{ (user_image or "") | tojson }},
+				language: {{ (user_language or "en") | tojson }}
+			},
+			defaultCompany: {{ (default_company or "") | tojson }},
+			companies: {{ (companies or []) | tojson }},
+			appPath: {{ (app_path or "/stabler") | tojson }},
+			translations: {{ (translations or {}) | tojson }}
+		};
+	</script>
+</head>
+<body>
+	<!-- Vue mount point. App.vue renders the full Tabler shell (sidebar + topbar + page). -->
+	<div id="app">
+		<!-- Lightweight loader shown before Vue boots. -->
+		<div class="d-flex align-items-center justify-content-center" style="min-height: 100vh">
+			<div class="text-center">
+				<img src="/assets/stabler/icons/scale.svg" height="56" alt="" class="mb-3" />
+				<div class="spinner-border text-primary" role="status">
+					<span class="visually-hidden">Loading…</span>
+				</div>
+			</div>
+		</div>
+	</div>
+
+	<script src="https://cdn.jsdelivr.net/npm/@tabler/core@{{ tabler_version }}/dist/js/tabler.min.js"></script>
+
+	<script>
+		// Stub `frappe.dom.set_style` because the Frappe esbuild Vue3 plugin emits
+		// `frappe.dom.set_style(...)` calls at the top of the bundle to inject SFC
+		// <style> blocks. This shell does not load Frappe core, so we provide just
+		// the one method the bundle expects.
+		window.frappe = window.frappe || {};
+		window.frappe.dom = window.frappe.dom || {
+			set_style(css, id) {
+				if (!css) return;
+				let el = id && document.getElementById(id);
+				if (!el) {
+					el = document.createElement("style");
+					if (id) el.id = id;
+					document.head.appendChild(el);
+				}
+				el.textContent = css;
+				return el;
+			},
+		};
+	</script>
+
+	{{ include_script("stabler.bundle.js") }}
+</body>
+</html>

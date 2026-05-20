@@ -1,0 +1,692 @@
+<script setup>
+/**
+ * StockEntries — unified Material Receipt / Issue / Transfer screen.
+ *
+ * One list, three filter tabs by purpose. The create modal switches the visible
+ * source/target warehouse fields based on the chosen purpose so users see only
+ * what's relevant — Receipts ask for a destination, Issues ask for a source,
+ * Transfers ask for both.
+ */
+import { computed, onMounted, ref, watch } from "vue";
+import { storeToRefs } from "pinia";
+import { useSession } from "../../stores/session.js";
+import { call } from "../../api/client.js";
+import { formatMoney } from "../../composables/money.js";
+import MoneyInput from "../../components/MoneyInput.vue";
+import EmptyState from "../../components/EmptyState.vue";
+
+const session = useSession();
+const { activeCompany, user } = storeToRefs(session);
+
+const today = new Date().toISOString().slice(0, 10);
+
+const PURPOSES = [
+	{ key: "", label: "All" },
+	{ key: "Material Receipt", label: "Receipts", icon: "ti-arrow-down-circle", color: "text-green" },
+	{ key: "Material Issue", label: "Issues", icon: "ti-arrow-up-circle", color: "text-red" },
+	{ key: "Material Transfer", label: "Transfers", icon: "ti-transfer", color: "text-blue" },
+];
+
+const filterPurpose = ref("");
+const loading = ref(false);
+const error = ref("");
+const rows = ref([]);
+
+const currency = computed(
+	() =>
+		(session.companies.find((c) => c.name === activeCompany.value) || {}).default_currency ||
+		"USD"
+);
+
+const docstatusBadge = (n) => {
+	if (n === 1) return { cls: "bg-green-lt", label: "Submitted" };
+	if (n === 2) return { cls: "bg-red-lt", label: "Cancelled" };
+	return { cls: "bg-yellow-lt", label: "Draft" };
+};
+
+const purposeMeta = (p) => PURPOSES.find((x) => x.key === p) || PURPOSES[0];
+
+async function load() {
+	if (!activeCompany.value) return;
+	loading.value = true;
+	error.value = "";
+	try {
+		rows.value = await call("stabler.api.inventory.list_stock_entries", {
+			company: activeCompany.value,
+			purpose: filterPurpose.value || undefined,
+			limit: 200,
+		});
+	} catch (err) {
+		error.value = err?.message || "Failed to load stock entries.";
+	} finally {
+		loading.value = false;
+	}
+}
+
+// ──────────────── Detail offcanvas ────────────────
+const detailOpen = ref(false);
+const detailLoading = ref(false);
+const detail = ref(null);
+const actionRunning = ref(false);
+const actionError = ref("");
+
+async function openDetail(name) {
+	detailOpen.value = true;
+	detailLoading.value = true;
+	detail.value = null;
+	actionError.value = "";
+	try {
+		detail.value = await call("stabler.api.inventory.stock_entry_detail", { name });
+	} catch (err) {
+		detail.value = { error: err?.message || "Failed to load." };
+	} finally {
+		detailLoading.value = false;
+	}
+}
+function closeDetail() {
+	if (actionRunning.value) return;
+	detailOpen.value = false;
+	detail.value = null;
+}
+
+async function submitDoc() {
+	if (!detail.value?.name || detail.value.docstatus !== 0) return;
+	actionError.value = "";
+	actionRunning.value = true;
+	try {
+		await call("stabler.api.inventory.submit_stock_entry", { name: detail.value.name });
+		await openDetail(detail.value.name);
+		await load();
+	} catch (err) {
+		actionError.value = err?.message || "Failed to submit.";
+	} finally {
+		actionRunning.value = false;
+	}
+}
+async function cancelDoc() {
+	if (!detail.value?.name || detail.value.docstatus !== 1) return;
+	if (!window.confirm(`Cancel ${detail.value.name}? This will reverse the stock movements.`)) return;
+	actionError.value = "";
+	actionRunning.value = true;
+	try {
+		await call("stabler.api.inventory.cancel_stock_entry", { name: detail.value.name });
+		await openDetail(detail.value.name);
+		await load();
+	} catch (err) {
+		actionError.value = err?.message || "Failed to cancel.";
+	} finally {
+		actionRunning.value = false;
+	}
+}
+
+// ──────────────── Create modal ────────────────
+const createOpen = ref(false);
+const submitting = ref(false);
+const submitError = ref("");
+const warehouseOptions = ref([]);
+const warehousesLoaded = ref(false);
+
+function blankLine() {
+	return {
+		item_code: "",
+		item_name: "",
+		uom: "",
+		qty: 1,
+		basic_rate: 0,
+		search: "",
+		options: [],
+		showOptions: false,
+	};
+}
+function blankForm(purpose = "Material Receipt") {
+	return {
+		purpose,
+		posting_date: today,
+		from_warehouse: "",
+		to_warehouse: "",
+		remarks: "",
+		items: [blankLine()],
+	};
+}
+const form = ref(blankForm());
+
+const showFromWarehouse = computed(() =>
+	["Material Issue", "Material Transfer"].includes(form.value.purpose)
+);
+const showToWarehouse = computed(() =>
+	["Material Receipt", "Material Transfer"].includes(form.value.purpose)
+);
+
+const stockWarehouses = computed(() => warehouseOptions.value.filter((w) => !w.is_group));
+
+const createTotal = computed(() =>
+	form.value.items.reduce((s, r) => s + Number(r.qty || 0) * Number(r.basic_rate || 0), 0)
+);
+
+async function loadWarehouses() {
+	if (warehousesLoaded.value) return;
+	try {
+		warehouseOptions.value = await call("stabler.api.inventory.list_warehouses", {
+			company: activeCompany.value,
+		});
+		warehousesLoaded.value = true;
+	} catch (err) {
+		submitError.value = err?.message || "Failed to load warehouses.";
+	}
+}
+
+function openCreate(presetPurpose = "") {
+	const initial = presetPurpose || filterPurpose.value || "Material Receipt";
+	form.value = blankForm(initial);
+	submitError.value = "";
+	createOpen.value = true;
+	loadWarehouses();
+}
+function closeCreate() {
+	if (submitting.value) return;
+	createOpen.value = false;
+}
+
+const itemTimers = new WeakMap();
+function onItemSearch(line) {
+	const existing = itemTimers.get(line);
+	if (existing) clearTimeout(existing);
+	const q = (line.search || "").trim();
+	if (!q) {
+		line.options = [];
+		line.showOptions = false;
+		return;
+	}
+	line.showOptions = true;
+	const t = setTimeout(async () => {
+		try {
+			line.options = await call("stabler.api.inventory.list_items", { search: q, limit: 10 });
+		} catch {
+			line.options = [];
+		}
+	}, 200);
+	itemTimers.set(line, t);
+}
+function pickItem(line, item) {
+	line.item_code = item.item_code || item.name;
+	line.item_name = item.item_name;
+	line.uom = item.stock_uom || "";
+	line.basic_rate = Number(item.valuation_rate || item.standard_rate || 0);
+	line.search = item.item_name || line.item_code;
+	line.showOptions = false;
+}
+function clearItem(line) {
+	line.item_code = "";
+	line.item_name = "";
+	line.uom = "";
+	line.basic_rate = 0;
+	line.search = "";
+	line.options = [];
+}
+function addLine() {
+	form.value.items.push(blankLine());
+}
+function removeLine(idx) {
+	if (form.value.items.length === 1) {
+		form.value.items[0] = blankLine();
+		return;
+	}
+	form.value.items.splice(idx, 1);
+}
+
+async function submitCreate(andSubmitDoc = false) {
+	submitError.value = "";
+	if (showFromWarehouse.value && !form.value.from_warehouse) {
+		submitError.value = "Pick a source warehouse.";
+		return;
+	}
+	if (showToWarehouse.value && !form.value.to_warehouse) {
+		submitError.value = "Pick a destination warehouse.";
+		return;
+	}
+	const items = form.value.items
+		.filter((l) => l.item_code && Number(l.qty) > 0)
+		.map((l) => ({
+			item_code: l.item_code,
+			qty: Number(l.qty),
+			uom: l.uom || undefined,
+			basic_rate: l.basic_rate ? Number(l.basic_rate) : undefined,
+		}));
+	if (!items.length) {
+		submitError.value = "Add at least one item line.";
+		return;
+	}
+	submitting.value = true;
+	try {
+		const created = await call("stabler.api.inventory.create_stock_entry", {
+			company: activeCompany.value,
+			purpose: form.value.purpose,
+			posting_date: form.value.posting_date || undefined,
+			from_warehouse: form.value.from_warehouse || undefined,
+			to_warehouse: form.value.to_warehouse || undefined,
+			remarks: form.value.remarks || undefined,
+			items: JSON.stringify(items),
+			submit: andSubmitDoc ? 1 : 0,
+		});
+		createOpen.value = false;
+		await load();
+		if (created?.name) await openDetail(created.name);
+	} catch (err) {
+		submitError.value = err?.message || "Failed to save stock entry.";
+	} finally {
+		submitting.value = false;
+	}
+}
+
+onMounted(load);
+watch(activeCompany, () => {
+	warehousesLoaded.value = false;
+	load();
+});
+watch(filterPurpose, load);
+</script>
+
+<template>
+	<div class="card">
+		<div class="card-header d-flex align-items-center flex-wrap gap-2">
+			<div class="card-title m-0">Stock entries</div>
+			<ul class="nav nav-pills ms-3 mb-0 d-none d-md-flex">
+				<li v-for="p in PURPOSES" :key="p.key || 'all'" class="nav-item">
+					<a
+						href="#"
+						class="nav-link py-1 px-2"
+						:class="{ active: filterPurpose === p.key }"
+						@click.prevent="filterPurpose = p.key"
+					>
+						<i v-if="p.icon" class="ti me-1" :class="[p.icon, p.color]"></i>{{ p.label }}
+					</a>
+				</li>
+			</ul>
+			<div class="ms-auto btn-list">
+				<select
+					v-model="filterPurpose"
+					class="form-select form-select-sm d-md-none"
+					style="width: 140px"
+				>
+					<option v-for="p in PURPOSES" :key="p.key || 'all'" :value="p.key">{{ p.label }}</option>
+				</select>
+				<button type="button" class="btn btn-success btn-sm" @click="openCreate()">
+					<i class="ti ti-plus me-1"></i>New entry
+				</button>
+			</div>
+		</div>
+		<div v-if="loading" class="card-body text-center py-5">
+			<div class="spinner-border text-primary"></div>
+		</div>
+		<div v-else-if="error" class="card-body">
+			<div class="alert alert-danger m-0">{{ error }}</div>
+		</div>
+		<EmptyState
+			v-else-if="!rows.length"
+			icon="ti-clipboard-list"
+			accentIcon="ti-plus"
+			tone="primary"
+			title="No stock entries yet"
+			subtitle="Record a receipt, issue, or transfer to move stock between warehouses."
+		>
+			<template #actions>
+				<button class="btn btn-success" @click="openCreate('Material Receipt')">
+					<i class="ti ti-arrow-down-circle me-1"></i>Receive stock
+				</button>
+				<button class="btn btn-outline-primary" @click="openCreate('Material Transfer')">
+					<i class="ti ti-transfer me-1"></i>Transfer stock
+				</button>
+			</template>
+		</EmptyState>
+		<div v-else class="table-responsive">
+			<table class="table table-vcenter card-table table-hover">
+				<thead>
+					<tr>
+						<th>Reference</th>
+						<th>Date</th>
+						<th>Purpose</th>
+						<th>From → To</th>
+						<th class="text-end">Items</th>
+						<th class="text-end">Value</th>
+						<th>Status</th>
+					</tr>
+				</thead>
+				<tbody>
+					<tr v-for="r in rows" :key="r.name" style="cursor: pointer" @click="openDetail(r.name)">
+						<td class="font-monospace text-primary">{{ r.name }}</td>
+						<td>{{ r.posting_date }}</td>
+						<td>
+							<i class="ti me-1" :class="[purposeMeta(r.purpose).icon, purposeMeta(r.purpose).color]"></i>
+							{{ purposeMeta(r.purpose).label.replace(/s$/, "") }}
+						</td>
+						<td class="small">
+							<span class="text-secondary">{{ r.from_warehouse || "—" }}</span>
+							<i class="ti ti-arrow-right mx-1 text-secondary"></i>
+							<span>{{ r.to_warehouse || "—" }}</span>
+						</td>
+						<td class="text-end">{{ r.item_count }}</td>
+						<td class="text-end font-monospace">
+							{{ formatMoney(r.total_amount || r.total_incoming_value, currency, user.language) }}
+						</td>
+						<td>
+							<span class="badge" :class="docstatusBadge(r.docstatus).cls">
+								{{ docstatusBadge(r.docstatus).label }}
+							</span>
+						</td>
+					</tr>
+				</tbody>
+			</table>
+		</div>
+	</div>
+
+	<!-- Detail offcanvas -->
+	<div v-if="detailOpen" class="offcanvas-backdrop fade show" @click="closeDetail"></div>
+	<div
+		class="offcanvas offcanvas-end"
+		:class="{ show: detailOpen }"
+		tabindex="-1"
+		style="visibility: visible; width: 720px"
+		:style="{ transform: detailOpen ? 'translateX(0)' : 'translateX(100%)' }"
+	>
+		<div class="offcanvas-header">
+			<h5 class="offcanvas-title">Stock entry</h5>
+			<button type="button" class="btn-close" @click="closeDetail" aria-label="Close"></button>
+		</div>
+		<div class="offcanvas-body">
+			<div v-if="detailLoading" class="text-center py-5">
+				<div class="spinner-border text-primary"></div>
+			</div>
+			<div v-else-if="detail?.error" class="alert alert-danger">{{ detail.error }}</div>
+			<div v-else-if="detail">
+				<div class="d-flex align-items-center mb-3 gap-3">
+					<span class="avatar avatar-lg bg-blue-lt">
+						<i class="ti" :class="purposeMeta(detail.purpose).icon" style="font-size: 1.5rem"></i>
+					</span>
+					<div class="flex-grow-1">
+						<h3 class="m-0 font-monospace">{{ detail.name }}</h3>
+						<div class="small text-secondary">
+							{{ detail.purpose }} · {{ detail.posting_date }}
+						</div>
+					</div>
+					<span class="badge" :class="docstatusBadge(detail.docstatus).cls">
+						{{ docstatusBadge(detail.docstatus).label }}
+					</span>
+				</div>
+
+				<div v-if="actionError" class="alert alert-danger">{{ actionError }}</div>
+				<div v-if="detail.docstatus !== 2" class="btn-list mb-3">
+					<button
+						v-if="detail.docstatus === 0"
+						class="btn btn-primary"
+						:disabled="actionRunning"
+						@click="submitDoc"
+					>
+						<span v-if="actionRunning" class="spinner-border spinner-border-sm me-1"></span>
+						<i v-else class="ti ti-check me-1"></i>Submit
+					</button>
+					<button
+						v-if="detail.docstatus === 1"
+						class="btn btn-outline-danger"
+						:disabled="actionRunning"
+						@click="cancelDoc"
+					>
+						<i class="ti ti-x me-1"></i>Cancel entry
+					</button>
+				</div>
+
+				<div class="datagrid mb-3">
+					<div class="datagrid-item">
+						<div class="datagrid-title">From</div>
+						<div class="datagrid-content">{{ detail.from_warehouse || "—" }}</div>
+					</div>
+					<div class="datagrid-item">
+						<div class="datagrid-title">To</div>
+						<div class="datagrid-content">{{ detail.to_warehouse || "—" }}</div>
+					</div>
+					<div class="datagrid-item">
+						<div class="datagrid-title">Total value</div>
+						<div class="datagrid-content font-monospace">
+							{{ formatMoney(detail.total_amount || detail.total_incoming_value, currency, user.language) }}
+						</div>
+					</div>
+				</div>
+
+				<h6 class="text-uppercase text-secondary small mb-2">Items</h6>
+				<div class="table-responsive">
+					<table class="table table-sm table-vcenter">
+						<thead>
+							<tr>
+								<th>Item</th>
+								<th>From</th>
+								<th>To</th>
+								<th class="text-end">Qty</th>
+								<th class="text-end">Rate</th>
+								<th class="text-end">Amount</th>
+							</tr>
+						</thead>
+						<tbody>
+							<tr v-for="it in detail.items" :key="it.idx">
+								<td>
+									<div class="font-monospace small text-primary">{{ it.item_code }}</div>
+									<div>{{ it.item_name }}</div>
+								</td>
+								<td class="small text-secondary">{{ it.s_warehouse || "—" }}</td>
+								<td class="small">{{ it.t_warehouse || "—" }}</td>
+								<td class="text-end font-monospace">{{ it.qty }} {{ it.uom }}</td>
+								<td class="text-end font-monospace">
+									{{ formatMoney(it.basic_rate, currency, user.language) }}
+								</td>
+								<td class="text-end font-monospace">
+									{{ formatMoney(it.amount, currency, user.language) }}
+								</td>
+							</tr>
+						</tbody>
+					</table>
+				</div>
+
+				<div v-if="detail.remarks" class="mt-3">
+					<h6 class="text-uppercase text-secondary small mb-1">Notes</h6>
+					<p class="small text-secondary mb-0">{{ detail.remarks }}</p>
+				</div>
+			</div>
+		</div>
+	</div>
+
+	<!-- Create modal -->
+	<div v-if="createOpen" class="modal-backdrop fade show" @click="closeCreate"></div>
+	<div v-if="createOpen" class="modal fade show d-block" tabindex="-1" role="dialog" @click.self="closeCreate">
+		<div class="modal-dialog modal-xl modal-dialog-centered" role="document">
+			<div class="modal-content">
+				<div class="modal-header">
+					<h5 class="modal-title">New stock entry</h5>
+					<button type="button" class="btn-close" aria-label="Close" @click="closeCreate" :disabled="submitting"></button>
+				</div>
+				<div class="modal-body">
+					<div v-if="submitError" class="alert alert-danger">{{ submitError }}</div>
+
+					<div class="row g-3 mb-3">
+						<div class="col-md-6">
+							<label class="form-label required">Purpose</label>
+							<div class="btn-group w-100" role="group">
+								<template v-for="p in PURPOSES.slice(1)" :key="p.key">
+									<input
+										type="radio"
+										class="btn-check"
+										:id="`purpose-${p.key}`"
+										:value="p.key"
+										v-model="form.purpose"
+									/>
+									<label class="btn btn-outline-primary" :for="`purpose-${p.key}`">
+										<i class="ti me-1" :class="p.icon"></i>{{ p.label }}
+									</label>
+								</template>
+							</div>
+						</div>
+						<div class="col-md-3">
+							<label class="form-label">Date</label>
+							<input v-model="form.posting_date" type="date" class="form-control" />
+						</div>
+						<div class="col-md-3 d-flex align-items-end">
+							<div class="text-end w-100">
+								<div class="small text-secondary">Estimated value</div>
+								<div class="h4 mb-0 font-monospace">
+									{{ formatMoney(createTotal, currency, user.language) }}
+								</div>
+							</div>
+						</div>
+
+						<div v-if="showFromWarehouse" class="col-md-6">
+							<label class="form-label required">From warehouse</label>
+							<select v-model="form.from_warehouse" class="form-select">
+								<option value="">— pick source —</option>
+								<option v-for="w in stockWarehouses" :key="w.name" :value="w.name">
+									{{ w.warehouse_name || w.name }}
+								</option>
+							</select>
+						</div>
+						<div v-if="showToWarehouse" class="col-md-6">
+							<label class="form-label required">To warehouse</label>
+							<select v-model="form.to_warehouse" class="form-select">
+								<option value="">— pick destination —</option>
+								<option v-for="w in stockWarehouses" :key="w.name" :value="w.name">
+									{{ w.warehouse_name || w.name }}
+								</option>
+							</select>
+						</div>
+					</div>
+
+					<div class="table-responsive">
+						<table class="table table-sm table-bordered align-middle">
+							<thead class="table-light">
+								<tr>
+									<th style="width: 40%">Item</th>
+									<th style="width: 15%">Qty</th>
+									<th style="width: 10%">UOM</th>
+									<th style="width: 20%">Rate</th>
+									<th style="width: 15%" class="text-end">Amount</th>
+									<th style="width: 36px"></th>
+								</tr>
+							</thead>
+							<tbody>
+								<tr v-for="(line, idx) in form.items" :key="idx">
+									<td>
+										<div class="position-relative">
+											<div class="input-group input-group-sm">
+												<input
+													v-model="line.search"
+													type="text"
+													class="form-control"
+													placeholder="Search item…"
+													@input="onItemSearch(line)"
+													@focus="line.showOptions = !!line.options.length"
+													@blur="setTimeout(() => (line.showOptions = false), 150)"
+												/>
+												<button
+													v-if="line.item_code"
+													type="button"
+													class="btn btn-outline-secondary"
+													title="Clear"
+													@click="clearItem(line)"
+												>
+													<i class="ti ti-x"></i>
+												</button>
+											</div>
+											<div
+												v-if="line.showOptions && line.options.length"
+												class="list-group position-absolute w-100 shadow-sm"
+												style="z-index: 1060; max-height: 240px; overflow-y: auto"
+											>
+												<button
+													v-for="o in line.options"
+													:key="o.name"
+													type="button"
+													class="list-group-item list-group-item-action py-1"
+													@mousedown.prevent="pickItem(line, o)"
+												>
+													<div class="d-flex justify-content-between align-items-center">
+														<div>
+															<div class="fw-semibold small">{{ o.item_name }}</div>
+															<div class="font-monospace text-secondary" style="font-size: 11px">
+																{{ o.item_code }}
+															</div>
+														</div>
+														<span class="badge bg-secondary-lt">{{ o.stock_uom }}</span>
+													</div>
+												</button>
+											</div>
+										</div>
+									</td>
+									<td>
+										<input
+											v-model.number="line.qty"
+											type="number"
+											inputmode="decimal"
+											min="0"
+											step="0.001"
+											class="form-control form-control-sm text-end font-monospace"
+										/>
+									</td>
+									<td class="small text-secondary">{{ line.uom || "—" }}</td>
+									<td>
+										<MoneyInput
+											v-model="line.basic_rate"
+											:currency="currency"
+											:language="user.language"
+										/>
+									</td>
+									<td class="text-end font-monospace">
+										{{ formatMoney(Number(line.qty || 0) * Number(line.basic_rate || 0), currency, user.language) }}
+									</td>
+									<td>
+										<button
+											type="button"
+											class="btn btn-icon btn-sm btn-ghost-danger"
+											@click="removeLine(idx)"
+											title="Remove"
+										>
+											<i class="ti ti-trash"></i>
+										</button>
+									</td>
+								</tr>
+							</tbody>
+							<tfoot>
+								<tr>
+									<td colspan="6">
+										<button type="button" class="btn btn-sm btn-link" @click="addLine">
+											<i class="ti ti-plus me-1"></i>Add another item
+										</button>
+									</td>
+								</tr>
+							</tfoot>
+						</table>
+					</div>
+
+					<div class="mt-2">
+						<label class="form-label">Notes</label>
+						<textarea v-model="form.remarks" class="form-control" rows="2"></textarea>
+					</div>
+				</div>
+				<div class="modal-footer">
+					<button type="button" class="btn btn-link link-secondary" :disabled="submitting" @click="closeCreate">Cancel</button>
+					<button
+						type="button"
+						class="btn btn-outline-primary ms-auto"
+						:disabled="submitting"
+						@click="submitCreate(false)"
+					>
+						Save as draft
+					</button>
+					<button
+						type="button"
+						class="btn btn-primary"
+						:disabled="submitting"
+						@click="submitCreate(true)"
+					>
+						<span v-if="submitting" class="spinner-border spinner-border-sm me-1"></span>
+						<i v-else class="ti ti-check me-1"></i>Save &amp; submit
+					</button>
+				</div>
+			</div>
+		</div>
+	</div>
+</template>

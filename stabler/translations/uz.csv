@@ -1,0 +1,201 @@
+source,target
+Dashboard,Boshqaruv paneli
+Money,Pul
+Sales,Sotuv
+Purchasing,Xarid
+Inventory,Ombor
+Chart of Accounts,Hisoblar rejasi
+Journal Entries,Jurnal yozuvlari
+Payments,To'lovlar
+Reports,Hisobotlar
+Customers,Mijozlar
+Sales Invoices,Sotuv hisob-fakturalari
+Suppliers,Yetkazib beruvchilar
+Purchase Invoices,Xarid hisob-fakturalari
+Items,Tovarlar
+Warehouses,Omborlar
+Stock Ledger,Ombor kitobi
+Low Stock Alerts,Past qoldiq haqida ogohlantirishlar
+New journal,Yangi yozuv
+New payment,Yangi to'lov
+Save as draft,Qoralama sifatida saqlash
+Cancel,Bekor qilish
+Refresh,Yangilash
+Apply,Qo'llash
+Export,Eksport
+Run,Ishga tushirish
+Posting date,Hisob sanasi
+Cash on hand,Kassadagi pul
+Receivable (AR),Debitorlik qarzi
+Payable (AP),Kreditorlik qarzi
+Revenue MTD,Oy boshidan daromad
+Recent activity,So'nggi operatsiyalar
+No data,Ma'lumot yo'q
+Loading…,Yuklanmoqda…
+Something went wrong,Xatolik yuz berdi
+Page not found,Sahifa topilmadi
+Back to dashboard,Boshqaruvga qaytish
+Try again,Qayta urinib ko'ring
+Company,Kompaniya
+Profile,Profil
+Open Desk,Deskni ochish
+Log out,Chiqish
+View all,Hammasini ko'rish
+Low stock,Past qoldiq
+All items above reorder level.,Barcha tovarlar to'ldirish darajasidan yuqori.
+Module,Modul
+Manufacturing,Ishlab chiqarish
+BOMs,Spetsifikatsiyalar
+Work Orders,Ishlab chiqarish buyurtmalari
+BOM,Spetsifikatsiya
+Work Order,Ishlab chiqarish buyurtmasi
+Finished good,Tayyor mahsulot
+Quantity,Miqdor
+Total cost,Umumiy xarajat
+Raw material cost,Xom ashyo xarajati
+Components,Tarkibiy qismlar
+Raw materials,Xom ashyo
+Qty,Miqdori
+UOM,O'lchov birligi
+Rate,Narx
+Amount,Summa
+Item,Tovar
+Status,Holat
+Default,Asosiy
+Submit,Tasdiqlash
+Submitted,Tasdiqlangan
+Cancelled,Bekor qilingan
+Draft,Qoralama
+Submit this BOM? You won't be able to edit it after.,Bu spetsifikatsiyani tasdiqlaysizmi? Keyin tahrirlay olmaysiz.
+Cancel this submitted BOM?,Bu tasdiqlangan spetsifikatsiyani bekor qilasizmi?
+New BOM,Yangi spetsifikatsiya
+Search BOMs or finished goods…,Spetsifikatsiya yoki tayyor mahsulotni qidirish…
+No BOMs yet,Hozircha spetsifikatsiyalar yo'q
+Create a Bill of Materials to define what raw materials go into a finished good.,Tayyor mahsulotga qanday xom ashyo kirishini belgilash uchun spetsifikatsiya yarating.
+Pick a finished-good item.,Tayyor mahsulotni tanlang.
+Add at least one raw material line.,Kamida bitta xom ashyo qatorini qo'shing.
+Add line,Qator qo'shish
+Save and submit,Saqlash va tasdiqlash
+Make default BOM for this item,Ushbu tovar uchun asosiy spetsifikatsiya qilish
+New Work Order,Yangi ishlab chiqarish buyurtmasi
+Search work orders…,Ishlab chiqarish buyurtmalarini qidirish…
+All statuses,Barcha holatlar
+No work orders,Ishlab chiqarish buyurtmalari yo'q
+Create a Work Order to plan and track production runs against a BOM.,Ishlab chiqarishni rejalashtirish va kuzatish uchun buyurtma yarating.
+Planned,Rejalashtirilgan
+Planned start,Boshlanish sanasi
+Transferred,Berilgan
+Produced,Ishlab chiqarilgan
+Required,Talab qilinadi
+Required materials,Kerakli materiallar
+Source warehouse,Manba ombor
+WIP warehouse,Tugallanmagan ishlab chiqarish ombori
+Finished-goods warehouse,Tayyor mahsulot ombori
+Submit and release this Work Order?,Bu buyurtmani tasdiqlash va ishga tushirishmi?
+Transfer how many units of materials? Leave blank for full.,Necha dona material o'tkaziladi? To'liq uchun bo'sh qoldiring.
+Produce how many units? Leave blank for full balance.,Necha dona ishlab chiqarish kerak? To'liq qoldiq uchun bo'sh qoldiring.
+Stop this Work Order? You can resume it later.,Bu buyurtmani to'xtatasizmi? Keyin davom ettirsa bo'ladi.
+Close this Work Order? This finalizes it.,Bu buyurtmani yopasizmi? Bu yakuniy harakat.
+Transfer materials,Materiallarni o'tkazish
+Record production,Ishlab chiqarishni qayd etish
+Stop,To'xtatish
+Close,Yopish
+No items with submitted active BOMs yet — create one first.,Tasdiqlangan faol spetsifikatsiyali tovarlar yo'q — avval yarating.
+Quantity must be positive.,Miqdor musbat bo'lishi kerak.
+People,Xodimlar
+Active,Faol
+On leave today,Bugun ta'tilda
+Pending requests,Kutilayotgan arizalar
+Employees,Xodimlar
+Attendance,Davomat
+Leave,Ta'til
+Payroll,Maosh
+Search employees…,Xodimlarni qidirish…
+Inactive,Faol emas
+Suspended,To'xtatilgan
+Left,Ishdan ketgan
+Designation,Lavozim
+Department,Bo'lim
+Contact,Aloqa
+New employee,Yangi xodim
+No employees yet,Hozircha xodimlar yo'q
+Add your first employee to start tracking attendance, leave and payroll.,"Davomat, ta'til va maoshni hisobga olish uchun birinchi xodimni qo'shing."
+Employee,Xodim
+First name,Ism
+Last name,Familiya
+Gender,Jins
+Male,Erkak
+Female,Ayol
+Other,Boshqa
+Date of birth,Tug'ilgan sana
+Date of joining,Ishga qabul sanasi
+Phone,Telefon
+User,Foydalanuvchi
+Personal email,Shaxsiy email
+Company email,Ish emaili
+User account,Foydalanuvchi hisobi
+Save,Saqlash
+First name is required.,Ismni kiriting.
+Gender is required.,Jinsni tanlang.
+Date of birth is required.,Tug'ilgan sanani kiriting.
+Pick an employee.,Xodimni tanlang.
+Pick a leave type.,Ta'til turini tanlang.
+From,Dan
+To,Gacha
+Date,Sana
+In,Kirish
+Out,Chiqish
+Hours,Soat
+Mark attendance,Davomatni belgilash
+Mark and submit,Belgilash va tasdiqlash
+No attendance records,Davomat yozuvlari yo'q
+Mark daily attendance to start building reports.,Hisobotlar uchun har kuni davomatni belgilang.
+Present,Hozir
+Absent,Yo'q
+On Leave,Ta'tilda
+Half Day,Yarim kun
+Work From Home,Uydan ish
+In time,Kirish vaqti
+Out time,Chiqish vaqti
+Approve this leave request?,Ta'til arizasini tasdiqlaysizmi?
+Reject this leave request?,Ta'til arizasini rad etasizmi?
+New leave request,Yangi ariza
+No leave requests,Ta'til arizalari yo'q
+Submit a leave request on behalf of an employee.,Xodim nomidan ariza yuboring.
+Leave type,Ta'til turi
+Dates,Sanalar
+Days,Kun
+Reason,Sabab
+Open,Ochiq
+Approved,Tasdiqlangan
+Rejected,Rad etilgan
+Approve and submit,Tasdiqlash va o'tkazish
+Run payroll,Maoshni hisoblash
+Slip,Hisob varaqasi
+Period,Davr
+Working,Ish kuni
+Paid days,To'langan kun
+Gross,Hisoblangan
+Net,To'lanadi
+Withheld,Ushlab qolingan
+Salary slip,Maosh varaqasi
+Gross pay,Hisoblangan maosh
+Net pay,Toza maosh
+Earnings,Hisoblanganlar
+Deductions,Ushlanmalar
+No earnings,Hisoblanganlar yo'q
+No deductions,Ushlanmalar yo'q
+Period start,Davr boshi
+Period end,Davr oxiri
+Frequency,Davriylik
+Monthly,Oylik
+Bimonthly,Ikki haftada bir
+Weekly,Haftalik
+Daily,Kunlik
+Generate drafts,Qoralama yaratish
+Generate and submit,Yaratish va tasdiqlash
+Payroll entry,Maosh yozuvi
+Generated salary slips,Yaratilgan varaqalar
+No salary slips yet,Hali maosh varaqalari yo'q
+Run a payroll cycle to generate salary slips for assigned employees.,Tayinlangan xodimlar uchun maosh varaqalarini yaratish uchun hisoblashni ishga tushiring.
+Request,Ariza

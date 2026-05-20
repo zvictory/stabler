@@ -1,0 +1,567 @@
+"""Inventory module — Items, Warehouses, Stock balances, Stock ledger, low-stock alerts."""
+
+from __future__ import annotations
+
+import json
+
+import frappe
+from frappe import _
+from frappe.utils import flt, getdate, today
+
+
+def _require_company(company: str) -> str:
+	if not company:
+		frappe.throw("Company is required.")
+	if not frappe.db.exists("Company", company):
+		frappe.throw(f"Unknown company: {company}")
+	return company
+
+
+@frappe.whitelist()
+def list_items(search: str = "", item_group: str | None = None, limit: int = 100):
+	conds = ["disabled = 0"]
+	params: dict = {"limit": int(limit)}
+	if search:
+		conds.append("(item_name LIKE %(s)s OR item_code LIKE %(s)s)")
+		params["s"] = f"%{search}%"
+	if item_group:
+		conds.append("item_group = %(item_group)s")
+		params["item_group"] = item_group
+	where = " AND ".join(conds)
+	return frappe.db.sql(
+		f"""
+		SELECT name, item_code, item_name, item_group, stock_uom,
+		       is_stock_item, is_purchase_item, is_sales_item,
+		       has_variants, image, standard_rate, valuation_rate
+		FROM `tabItem`
+		WHERE {where}
+		ORDER BY item_name ASC
+		LIMIT %(limit)s
+		""",
+		params,
+		as_dict=True,
+	)
+
+
+@frappe.whitelist()
+def item_detail(name: str, company: str | None = None):
+	if not name or not frappe.db.exists("Item", name):
+		frappe.throw(f"Unknown item: {name}")
+	doc = frappe.get_doc("Item", name)
+
+	bin_conds = ["b.item_code = %(item)s"]
+	bin_params: dict = {"item": name}
+	if company:
+		_require_company(company)
+		bin_conds.append("w.company = %(company)s")
+		bin_params["company"] = company
+	bin_where = " AND ".join(bin_conds)
+
+	balances = frappe.db.sql(
+		f"""
+		SELECT b.warehouse, b.actual_qty, b.reserved_qty, b.ordered_qty,
+		       b.projected_qty, b.valuation_rate, b.stock_uom, w.company
+		FROM `tabBin` b
+		JOIN `tabWarehouse` w ON w.name = b.warehouse
+		WHERE {bin_where} AND b.actual_qty != 0
+		ORDER BY b.actual_qty DESC
+		""",
+		bin_params,
+		as_dict=True,
+	)
+
+	total_qty = sum(flt(r["actual_qty"]) for r in balances)
+	total_value = sum(flt(r["actual_qty"]) * flt(r["valuation_rate"]) for r in balances)
+
+	return {
+		"name": doc.name,
+		"item_code": doc.item_code,
+		"item_name": doc.item_name,
+		"item_group": doc.item_group,
+		"stock_uom": doc.stock_uom,
+		"description": doc.description,
+		"image": doc.image,
+		"is_stock_item": doc.is_stock_item,
+		"is_purchase_item": doc.is_purchase_item,
+		"is_sales_item": doc.is_sales_item,
+		"standard_rate": flt(doc.standard_rate),
+		"valuation_rate": flt(doc.valuation_rate),
+		"weight_per_unit": flt(doc.weight_per_unit),
+		"weight_uom": doc.weight_uom,
+		"balances": balances,
+		"total_qty": total_qty,
+		"total_value": total_value,
+	}
+
+
+@frappe.whitelist()
+def list_warehouses(company: str):
+	"""Tree of warehouses for a company, ordered by left-traversal."""
+	_require_company(company)
+	rows = frappe.db.sql(
+		"""
+		SELECT name, warehouse_name, parent_warehouse, is_group,
+		       warehouse_type, disabled, lft, rgt
+		FROM `tabWarehouse`
+		WHERE company = %(company)s
+		ORDER BY lft
+		""",
+		{"company": company},
+		as_dict=True,
+	)
+	# Attach actual_qty summed across all items in each warehouse
+	totals = dict(
+		frappe.db.sql(
+			"""
+			SELECT warehouse, COALESCE(SUM(actual_qty * valuation_rate), 0) AS value
+			FROM `tabBin`
+			WHERE actual_qty > 0
+			GROUP BY warehouse
+			"""
+		)
+	)
+	for r in rows:
+		r["stock_value"] = flt(totals.get(r["name"], 0))
+	return rows
+
+
+@frappe.whitelist()
+def list_stock_warehouses(company: str):
+	"""Flat list of active leaf warehouses for transaction pickers."""
+	_require_company(company)
+	return frappe.db.sql(
+		"""
+		SELECT name, warehouse_name, warehouse_type, company
+		FROM `tabWarehouse`
+		WHERE company = %(company)s
+		  AND is_group = 0
+		  AND COALESCE(disabled, 0) = 0
+		ORDER BY warehouse_name
+		""",
+		{"company": company},
+		as_dict=True,
+	)
+
+
+@frappe.whitelist()
+def item_availability(item_code: str, warehouse: str):
+	"""Single-bin availability snapshot for the SO line-item warehouse picker."""
+	if not item_code or not warehouse:
+		frappe.throw(_("item_code and warehouse are required"))
+	row = frappe.db.sql(
+		"""
+		SELECT actual_qty, reserved_qty, ordered_qty, projected_qty, stock_uom
+		FROM `tabBin`
+		WHERE item_code = %(item_code)s AND warehouse = %(warehouse)s
+		LIMIT 1
+		""",
+		{"item_code": item_code, "warehouse": warehouse},
+		as_dict=True,
+	)
+	if not row:
+		return {
+			"item_code": item_code,
+			"warehouse": warehouse,
+			"actual": 0.0,
+			"reserved": 0.0,
+			"ordered": 0.0,
+			"projected": 0.0,
+			"free": 0.0,
+			"stock_uom": None,
+		}
+	r = row[0]
+	actual = flt(r.get("actual_qty"))
+	reserved = flt(r.get("reserved_qty"))
+	return {
+		"item_code": item_code,
+		"warehouse": warehouse,
+		"actual": actual,
+		"reserved": reserved,
+		"ordered": flt(r.get("ordered_qty")),
+		"projected": flt(r.get("projected_qty")),
+		"free": actual - reserved,
+		"stock_uom": r.get("stock_uom"),
+	}
+
+
+@frappe.whitelist()
+def stock_ledger(
+	company: str,
+	from_date: str | None = None,
+	to_date: str | None = None,
+	item_code: str | None = None,
+	warehouse: str | None = None,
+	limit: int = 200,
+):
+	_require_company(company)
+	conds = ["sle.company = %(company)s", "sle.is_cancelled = 0"]
+	params: dict = {"company": company, "limit": int(limit)}
+	if from_date:
+		conds.append("sle.posting_date >= %(from_date)s")
+		params["from_date"] = getdate(from_date)
+	if to_date:
+		conds.append("sle.posting_date <= %(to_date)s")
+		params["to_date"] = getdate(to_date)
+	if item_code:
+		conds.append("sle.item_code = %(item_code)s")
+		params["item_code"] = item_code
+	if warehouse:
+		conds.append("sle.warehouse = %(warehouse)s")
+		params["warehouse"] = warehouse
+	where = " AND ".join(conds)
+	return frappe.db.sql(
+		f"""
+		SELECT sle.name, sle.posting_date, sle.posting_time,
+		       sle.item_code, i.item_name, sle.warehouse,
+		       sle.voucher_type, sle.voucher_no,
+		       sle.actual_qty, sle.qty_after_transaction,
+		       sle.valuation_rate, sle.stock_value_difference,
+		       sle.stock_uom
+		FROM `tabStock Ledger Entry` sle
+		LEFT JOIN `tabItem` i ON i.name = sle.item_code
+		WHERE {where}
+		ORDER BY sle.posting_date DESC, sle.posting_time DESC, sle.creation DESC
+		LIMIT %(limit)s
+		""",
+		params,
+		as_dict=True,
+	)
+
+
+@frappe.whitelist()
+def list_item_groups(limit: int = 200):
+	return frappe.db.sql(
+		"""
+		SELECT name FROM `tabItem Group`
+		WHERE is_group = 0
+		ORDER BY name ASC
+		LIMIT %(limit)s
+		""",
+		{"limit": int(limit)},
+		as_dict=True,
+	)
+
+
+@frappe.whitelist()
+def list_uoms(limit: int = 200):
+	return frappe.db.sql(
+		"""
+		SELECT name FROM `tabUOM`
+		WHERE enabled = 1
+		ORDER BY name ASC
+		LIMIT %(limit)s
+		""",
+		{"limit": int(limit)},
+		as_dict=True,
+	)
+
+
+@frappe.whitelist()
+def create_item(
+	item_name: str,
+	item_code: str | None = None,
+	item_group: str | None = None,
+	stock_uom: str = "Nos",
+	is_stock_item: int = 1,
+	is_sales_item: int = 1,
+	is_purchase_item: int = 1,
+	standard_rate: float | None = None,
+	description: str | None = None,
+):
+	item_name = (item_name or "").strip()
+	if not item_name:
+		frappe.throw("Item name is required.")
+
+	item_code = (item_code or item_name).strip()
+	if frappe.db.exists("Item", item_code):
+		frappe.throw(f"Item '{item_code}' already exists.")
+
+	if not item_group:
+		item_group = (
+			frappe.db.get_single_value("Stock Settings", "item_group") or "All Item Groups"
+		)
+	if not frappe.db.exists("Item Group", item_group):
+		frappe.throw(f"Unknown item group: {item_group}")
+
+	stock_uom = (stock_uom or "Nos").strip()
+	if not frappe.db.exists("UOM", stock_uom):
+		frappe.throw(f"Unknown UOM: {stock_uom}")
+
+	doc = frappe.new_doc("Item")
+	doc.item_code = item_code
+	doc.item_name = item_name
+	doc.item_group = item_group
+	doc.stock_uom = stock_uom
+	doc.is_stock_item = 1 if int(is_stock_item) else 0
+	doc.is_sales_item = 1 if int(is_sales_item) else 0
+	doc.is_purchase_item = 1 if int(is_purchase_item) else 0
+	if standard_rate is not None:
+		doc.standard_rate = flt(standard_rate)
+	if description:
+		doc.description = description.strip()
+	doc.insert(ignore_permissions=False)
+	return {"name": doc.name, "item_code": doc.item_code, "item_name": doc.item_name}
+
+
+@frappe.whitelist()
+def list_warehouse_types(limit: int = 50):
+	return frappe.db.sql(
+		"""
+		SELECT name FROM `tabWarehouse Type`
+		ORDER BY name ASC
+		LIMIT %(limit)s
+		""",
+		{"limit": int(limit)},
+		as_dict=True,
+	)
+
+
+@frappe.whitelist()
+def list_parent_warehouses(company: str):
+	"""Group warehouses that can act as parents under the given company."""
+	_require_company(company)
+	return frappe.db.sql(
+		"""
+		SELECT name, warehouse_name
+		FROM `tabWarehouse`
+		WHERE company = %(company)s AND is_group = 1 AND disabled = 0
+		ORDER BY lft
+		""",
+		{"company": company},
+		as_dict=True,
+	)
+
+
+@frappe.whitelist()
+def create_warehouse(
+	warehouse_name: str,
+	company: str,
+	parent_warehouse: str | None = None,
+	warehouse_type: str | None = None,
+	is_group: int = 0,
+):
+	_require_company(company)
+	name = (warehouse_name or "").strip()
+	if not name:
+		frappe.throw("Warehouse name is required.")
+
+	if parent_warehouse and not frappe.db.exists("Warehouse", parent_warehouse):
+		frappe.throw(f"Unknown parent warehouse: {parent_warehouse}")
+
+	if warehouse_type and not frappe.db.exists("Warehouse Type", warehouse_type):
+		frappe.throw(f"Unknown warehouse type: {warehouse_type}")
+
+	doc = frappe.new_doc("Warehouse")
+	doc.warehouse_name = name
+	doc.company = company
+	doc.is_group = 1 if int(is_group) else 0
+	if parent_warehouse:
+		doc.parent_warehouse = parent_warehouse
+	if warehouse_type:
+		doc.warehouse_type = warehouse_type
+	doc.insert(ignore_permissions=False)
+	return {"name": doc.name, "warehouse_name": doc.warehouse_name}
+
+
+_ALLOWED_STOCK_PURPOSES = {"Material Receipt", "Material Issue", "Material Transfer"}
+
+
+@frappe.whitelist()
+def list_stock_entries(
+	company: str,
+	purpose: str | None = None,
+	from_date: str | None = None,
+	to_date: str | None = None,
+	limit: int = 100,
+):
+	_require_company(company)
+	conds = ["se.company = %(company)s"]
+	params: dict = {"company": company, "limit": int(limit)}
+	if purpose:
+		conds.append("se.purpose = %(purpose)s")
+		params["purpose"] = purpose
+	if from_date:
+		conds.append("se.posting_date >= %(from_date)s")
+		params["from_date"] = getdate(from_date)
+	if to_date:
+		conds.append("se.posting_date <= %(to_date)s")
+		params["to_date"] = getdate(to_date)
+	where = " AND ".join(conds)
+	return frappe.db.sql(
+		f"""
+		SELECT se.name, se.posting_date, se.purpose, se.stock_entry_type,
+		       se.from_warehouse, se.to_warehouse, se.docstatus,
+		       se.total_outgoing_value, se.total_incoming_value,
+		       se.total_amount,
+		       (SELECT COUNT(*) FROM `tabStock Entry Detail` d WHERE d.parent = se.name) AS item_count
+		FROM `tabStock Entry` se
+		WHERE {where}
+		ORDER BY se.posting_date DESC, se.creation DESC
+		LIMIT %(limit)s
+		""",
+		params,
+		as_dict=True,
+	)
+
+
+@frappe.whitelist()
+def stock_entry_detail(name: str):
+	if not name or not frappe.db.exists("Stock Entry", name):
+		frappe.throw(f"Unknown stock entry: {name}")
+	doc = frappe.get_doc("Stock Entry", name)
+	items = []
+	for it in doc.items or []:
+		items.append({
+			"idx": it.idx,
+			"item_code": it.item_code,
+			"item_name": it.item_name,
+			"qty": flt(it.qty),
+			"transfer_qty": flt(it.transfer_qty),
+			"uom": it.uom,
+			"stock_uom": it.stock_uom,
+			"basic_rate": flt(it.basic_rate),
+			"amount": flt(it.amount),
+			"s_warehouse": it.s_warehouse,
+			"t_warehouse": it.t_warehouse,
+		})
+	return {
+		"name": doc.name,
+		"posting_date": str(doc.posting_date) if doc.posting_date else None,
+		"posting_time": str(doc.posting_time) if doc.posting_time else None,
+		"company": doc.company,
+		"purpose": doc.purpose,
+		"stock_entry_type": doc.stock_entry_type,
+		"from_warehouse": doc.from_warehouse,
+		"to_warehouse": doc.to_warehouse,
+		"docstatus": doc.docstatus,
+		"total_outgoing_value": flt(doc.total_outgoing_value),
+		"total_incoming_value": flt(doc.total_incoming_value),
+		"total_amount": flt(doc.total_amount),
+		"remarks": doc.remarks,
+		"items": items,
+	}
+
+
+@frappe.whitelist()
+def create_stock_entry(
+	company: str,
+	purpose: str,
+	items: list | str,
+	posting_date: str | None = None,
+	from_warehouse: str | None = None,
+	to_warehouse: str | None = None,
+	remarks: str | None = None,
+	submit: int = 0,
+):
+	"""Create a Stock Entry of one of three user-facing purposes.
+
+	`items` is a list of {item_code, qty, basic_rate?, s_warehouse?, t_warehouse?}.
+	When `from_warehouse`/`to_warehouse` are provided at the header, they are
+	applied to lines that don't already specify their own — this matches what
+	the ERPNext desk form does."""
+	_require_company(company)
+	purpose = (purpose or "").strip()
+	if purpose not in _ALLOWED_STOCK_PURPOSES:
+		frappe.throw(f"Unsupported purpose: {purpose}")
+
+	if isinstance(items, str):
+		items = json.loads(items or "[]")
+	if not isinstance(items, list) or not items:
+		frappe.throw("At least one item line is required.")
+
+	for it in items:
+		if not (it or {}).get("item_code"):
+			frappe.throw("Each item line needs an item_code.")
+		if flt((it or {}).get("qty")) <= 0:
+			frappe.throw("Each item line needs a positive qty.")
+
+	if purpose in ("Material Receipt", "Material Transfer") and not to_warehouse:
+		# allow per-line override
+		if not all(it.get("t_warehouse") for it in items):
+			frappe.throw("Pick a destination warehouse.")
+	if purpose in ("Material Issue", "Material Transfer") and not from_warehouse:
+		if not all(it.get("s_warehouse") for it in items):
+			frappe.throw("Pick a source warehouse.")
+
+	doc = frappe.new_doc("Stock Entry")
+	doc.company = company
+	doc.purpose = purpose
+	doc.stock_entry_type = purpose  # default Stock Entry Type names match purposes
+	if posting_date:
+		doc.posting_date = getdate(posting_date)
+	if from_warehouse:
+		doc.from_warehouse = from_warehouse
+	if to_warehouse:
+		doc.to_warehouse = to_warehouse
+	if remarks:
+		doc.remarks = remarks.strip()
+
+	for it in items:
+		row = doc.append("items", {})
+		row.item_code = it["item_code"]
+		row.qty = flt(it.get("qty"))
+		if it.get("uom"):
+			row.uom = it["uom"]
+		if it.get("basic_rate") not in (None, ""):
+			row.basic_rate = flt(it["basic_rate"])
+		s_wh = it.get("s_warehouse") or (from_warehouse if purpose in ("Material Issue", "Material Transfer") else None)
+		t_wh = it.get("t_warehouse") or (to_warehouse if purpose in ("Material Receipt", "Material Transfer") else None)
+		if s_wh:
+			row.s_warehouse = s_wh
+		if t_wh:
+			row.t_warehouse = t_wh
+
+	doc.set_missing_values()
+	doc.insert(ignore_permissions=False)
+	if int(submit or 0):
+		doc.submit()
+	return {"name": doc.name, "docstatus": doc.docstatus}
+
+
+@frappe.whitelist()
+def submit_stock_entry(name: str):
+	doc = frappe.get_doc("Stock Entry", name)
+	if doc.docstatus != 0:
+		frappe.throw(f"Stock Entry is already {['Draft','Submitted','Cancelled'][doc.docstatus]}.")
+	doc.submit()
+	return {"name": doc.name, "docstatus": doc.docstatus}
+
+
+@frappe.whitelist()
+def cancel_stock_entry(name: str):
+	doc = frappe.get_doc("Stock Entry", name)
+	if doc.docstatus != 1:
+		frappe.throw("Only submitted Stock Entries can be cancelled.")
+	doc.cancel()
+	return {"name": doc.name, "docstatus": doc.docstatus}
+
+
+@frappe.whitelist()
+def low_stock_alerts(company: str, limit: int = 50):
+	"""Items whose total projected_qty (across the company's warehouses) is at or below
+	their warehouse reorder level. Uses tabItem Reorder for per-warehouse thresholds."""
+	_require_company(company)
+	rows = frappe.db.sql(
+		"""
+		SELECT
+		  ir.parent AS item_code,
+		  i.item_name,
+		  ir.warehouse,
+		  ir.warehouse_reorder_level AS reorder_level,
+		  ir.warehouse_reorder_qty AS reorder_qty,
+		  COALESCE(b.actual_qty, 0) AS actual_qty,
+		  COALESCE(b.projected_qty, 0) AS projected_qty,
+		  b.stock_uom
+		FROM `tabItem Reorder` ir
+		JOIN `tabItem` i ON i.name = ir.parent
+		JOIN `tabWarehouse` w ON w.name = ir.warehouse AND w.company = %(company)s
+		LEFT JOIN `tabBin` b ON b.item_code = ir.parent AND b.warehouse = ir.warehouse
+		WHERE i.disabled = 0
+		  AND COALESCE(b.projected_qty, 0) <= ir.warehouse_reorder_level
+		ORDER BY (ir.warehouse_reorder_level - COALESCE(b.projected_qty, 0)) DESC
+		LIMIT %(limit)s
+		""",
+		{"company": company, "limit": int(limit)},
+		as_dict=True,
+	)
+	return rows

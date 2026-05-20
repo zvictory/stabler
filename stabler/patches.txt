@@ -1,0 +1,2 @@
+stabler.patches.v01_add_user_allowed_companies
+stabler.patches.v02_enable_stock_reservation
