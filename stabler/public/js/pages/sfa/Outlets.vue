@@ -15,9 +15,7 @@ const error = ref("");
 const rows = ref([]);
 const search = ref("");
 
-const currency = computed(
-	() => session.companyMeta(activeCompany.value)?.default_currency || "UZS"
-);
+const currency = computed(() => session.currency || "UZS");
 const lang = computed(() => user.value?.language || "en");
 
 const CHANNELS = ["Modern Trade", "Traditional Trade", "HoReCa", "Pharmacy", "Other"];
