@@ -1,1 +1,341 @@
 source,target
+1C Sync Log,1C Sync Log
+A password reset email will be sent. The account is disabled until the user sets a password.,A password reset email will be sent. The account is disabled until the user sets a password.
+A valid email is required,A valid email is required
+ARCA,ARCA
+ARCA Payment Events,ARCA Payment Events
+Abbr,Abbr
+Absent,Absent
+Account,Account
+Account currency must match the payment account.,Account currency must match the payment account.
+Active,Active
+Add at least one raw material line.,Add at least one raw material line.
+Add line,Add line
+"Add your first employee to start tracking attendance, leave and payroll.","Add your first employee to start tracking attendance, leave and payroll."
+Admin,Admin
+Against,Against
+All directions,All directions
+All items above reorder level.,All items above reorder level.
+All object types,All object types
+All statuses,All statuses
+Allowed users,Allowed users
+Amount,Amount
+Amount received,Amount received
+Amount sent,Amount sent
+Any,Any
+Apply,Apply
+Apply role template,Apply role template
+Approve and submit,Approve and submit
+Approve this leave request?,Approve this leave request?
+Approved,Approved
+Asl Belgisi,Asl Belgisi
+Asl Belgisi Code,Asl Belgisi Code
+Asl Belgisi — Stock Entries pending scan,Asl Belgisi — Stock Entries pending scan
+Attendance,Attendance
+BOM,BOM
+BOMs,BOMs
+Balance,Balance
+Base equivalent,Base equivalent
+Bimonthly,Bimonthly
+CBU.uz exchange rates (last 30 days),CBU.uz exchange rates (last 30 days)
+Cancel,Cancel
+Cancel this submitted BOM?,Cancel this submitted BOM?
+Cancelled,Cancelled
+Close,Close
+Close this Work Order? This finalizes it.,Close this Work Order? This finalizes it.
+Closing,Closing
+Closing in,Closing in
+Code does not match expected format,Code does not match expected format
+Code is required,Code is required
+Companies,Companies
+Company,Company
+Company email,Company email
+Company is required.,Company is required.
+Complete,Complete
+Components,Components
+Consumed,Consumed
+Contact,Contact
+Create,Create
+Create a Bill of Materials to define what raw materials go into a finished good.,Create a Bill of Materials to define what raw materials go into a finished good.
+Create a Work Order to plan and track production runs against a BOM.,Create a Work Order to plan and track production runs against a BOM.
+Created,Created
+Credit,Credit
+Currency,Currency
+Daily,Daily
+Dashboard,Dashboard
+Date,Date
+Date of birth,Date of birth
+Date of birth is required.,Date of birth is required.
+Date of joining,Date of joining
+Dates,Dates
+Days,Days
+Debit,Debit
+Deductions,Deductions
+Default,Default
+Delete,Delete
+Department,Department
+Designation,Designation
+Desk access,Desk access
+Direction,Direction
+Disabled,Disabled
+DocType,DocType
+Draft,Draft
+Duration (ms),Duration (ms)
+EHF Status,EHF Status
+EHF Submissions,EHF Submissions
+EUR → UZS,EUR → UZS
+Earnings,Earnings
+Editing the rate updates the received amount.,Editing the rate updates the received amount.
+Email,Email
+Email and name are required.,Email and name are required.
+Employee,Employee
+Employees,Employees
+Empty allowed list = user can access every company.,Empty allowed list = user can access every company.
+Enabled,Enabled
+Error,Error
+Exchange Rates,Exchange Rates
+Exchange rate,Exchange rate
+Expense,Expense
+Expense lines,Expense lines
+Expenses,Expenses
+Failed to load ledger.,Failed to load ledger.
+Female,Female
+Fill in the required fields before submitting.,Fill in the required fields before submitting.
+Finished good,Finished good
+Finished-goods warehouse,Finished-goods warehouse
+First name,First name
+First name is required.,First name is required.
+Frequency,Frequency
+From,From
+From account,From account
+Full name,Full name
+Gender,Gender
+Gender is required.,Gender is required.
+Generate and submit,Generate and submit
+Generate drafts,Generate drafts
+Generated salary slips,Generated salary slips
+Gross,Gross
+Gross pay,Gross pay
+Half Day,Half Day
+Hello {name},Hello {name}
+Hours,Hours
+In,In
+In time,In time
+Inactive,Inactive
+Invalid item_overrides payload,Invalid item_overrides payload
+Inventory,Inventory
+Invite user,Invite user
+Invoice,Invoice
+Item,Item
+Item does not require Asl Belgisi,Item does not require Asl Belgisi
+Language,Language
+Last login,Last login
+Last name,Last name
+Leave,Leave
+Leave type,Leave type
+Left,Left
+Loading…,Loading…
+Log out,Log out
+Login required,Login required
+Low stock,Low stock
+Make default BOM for this item,Make default BOM for this item
+Male,Male
+Manufacturing,Manufacturing
+Mark and submit,Mark and submit
+Mark attendance,Mark attendance
+Mark daily attendance to start building reports.,Mark daily attendance to start building reports.
+Memo,Memo
+Message,Message
+Module,Module
+Modules,Modules
+Money,Money
+Monthly,Monthly
+Name,Name
+Name or email,Name or email
+Net,Net
+Net pay,Net pay
+New BOM,New BOM
+New Work Order,New Work Order
+New employee,New employee
+New expense,New expense
+New leave request,New leave request
+New transfer,New transfer
+No,No
+No 1C sync events yet.,No 1C sync events yet.
+No ARCA payment events yet.,No ARCA payment events yet.
+No BOMs yet,No BOMs yet
+No EHF submissions yet. Submit a Sales Invoice to enqueue one.,No EHF submissions yet. Submit a Sales Invoice to enqueue one.
+No Stock Entries with Asl Belgisi items found.,No Stock Entries with Asl Belgisi items found.
+No attendance records,No attendance records
+No deductions,No deductions
+No earnings,No earnings
+No employees yet,No employees yet
+No exchange rates yet. Click Refresh now to fetch today's rates from cbu.uz.,No exchange rates yet. Click Refresh now to fetch today's rates from cbu.uz.
+No items with submitted active BOMs yet — create one first.,No items with submitted active BOMs yet — create one first.
+No leave requests,No leave requests
+No salary slips yet,No salary slips yet
+No template,No template
+No transactions yet.,No transactions yet.
+No work orders,No work orders
+Nos,Nos
+Not permitted,Not permitted
+Not permitted for company {0},Not permitted for company {0}
+Object Name,Object Name
+Object Type,Object Type
+On Leave,On Leave
+On leave today,On leave today
+Open,Open
+Open Desk,Open Desk
+Opening,Opening
+Optional,Optional
+Other,Other
+Out,Out
+Out time,Out time
+Override qty must be greater than zero,Override qty must be greater than zero
+Paid days,Paid days
+Pay from,Pay from
+Payee,Payee
+Payload,Payload
+Payment Entry,Payment Entry
+Payroll,Payroll
+Payroll entry,Payroll entry
+Pending,Pending
+Pending requests,Pending requests
+People,People
+Period,Period
+Period Credit,Period Credit
+Period Debit,Period Debit
+Period end,Period end
+Period start,Period start
+Permissions,Permissions
+Personal email,Personal email
+Phone,Phone
+Pick a finished-good item.,Pick a finished-good item.
+Pick a leave type.,Pick a leave type.
+Pick an employee.,Pick an employee.
+Planned,Planned
+Planned start,Planned start
+Posting Date,Posting Date
+Posting date,Posting date
+Postings,Postings
+Present,Present
+Processed,Processed
+Produce how many units? Leave blank for full balance.,Produce how many units? Leave blank for full balance.
+Produced,Produced
+Profile,Profile
+Purchasing,Purchasing
+Qty,Qty
+Quantity,Quantity
+Quantity must be positive.,Quantity must be positive.
+RUB → UZS,RUB → UZS
+Rate,Rate
+Raw material cost,Raw material cost
+Raw materials,Raw materials
+Read,Read
+Read-only view. Edit permissions in Frappe's Role Permission Manager.,Read-only view. Edit permissions in Frappe's Role Permission Manager.
+Reason,Reason
+Received,Received
+Received At,Received At
+Record production,Record production
+Refresh,Refresh
+Refresh now,Refresh now
+Refreshing…,Refreshing…
+Reject this leave request?,Reject this leave request?
+Rejected,Rejected
+Reload,Reload
+Replaces all current roles.,Replaces all current roles.
+Request,Request
+Required,Required
+Required materials,Required materials
+Reset email sent.,Reset email sent.
+Reset password,Reset password
+Retries,Retries
+Retry submission,Retry submission
+Retrying…,Retrying…
+Role,Role
+Role not found,Role not found
+Role template (optional),Role template (optional)
+Roles,Roles
+Row not found on this Stock Entry,Row not found on this Stock Entry
+Run a payroll cycle to generate salary slips for assigned employees.,Run a payroll cycle to generate salary slips for assigned employees.
+Run payroll,Run payroll
+Salary slip,Salary slip
+Sales,Sales
+Sales Invoice must be created from a Sales Order,Sales Invoice must be created from a Sales Order
+Sales Order {0} must be submitted before invoicing,Sales Order {0} must be submitted before invoicing
+Save,Save
+Save allowed users,Save allowed users
+Save and submit,Save and submit
+Save as draft,Save as draft
+Save modules,Save modules
+Scan code for,Scan code for
+Scan or type code,Scan or type code
+Scanned,Scanned
+Scanned / Required,Scanned / Required
+Scanning…,Scanning…
+Search,Search
+Search BOMs or finished goods…,Search BOMs or finished goods…
+Search employees…,Search employees…
+Search work orders…,Search work orders…
+Select an account…,Select an account…
+Select template…,Select template…
+Select…,Select…
+Send invite,Send invite
+Send password reset email to ,Send password reset email to 
+Slip,Slip
+SoliqOnline UUID,SoliqOnline UUID
+Source warehouse,Source warehouse
+Status,Status
+Stock Entry,Stock Entry
+Stop,Stop
+Stop this Work Order? You can resume it later.,Stop this Work Order? You can resume it later.
+Submit,Submit
+Submit a leave request on behalf of an employee.,Submit a leave request on behalf of an employee.
+Submit and release this Work Order?,Submit and release this Work Order?
+Submit expense,Submit expense
+Submit this BOM? You won't be able to edit it after.,Submit this BOM? You won't be able to edit it after.
+Submit transfer,Submit transfer
+Submitted,Submitted
+Submitted At,Submitted At
+Suspended,Suspended
+Swap accounts,Swap accounts
+The Compliance module is disabled for this company.,The Compliance module is disabled for this company.
+To,To
+To account,To account
+Total,Total
+Total cost,Total cost
+Transaction Id,Transaction Id
+Transfer,Transfer
+Transfer how many units of materials? Leave blank for full.,Transfer how many units of materials? Leave blank for full.
+Transfer materials,Transfer materials
+Transferred,Transferred
+Transfers,Transfers
+Type,Type
+UOM,UOM
+USD → UZS,USD → UZS
+Unknown Sales Order: {0},Unknown Sales Order: {0}
+Unknown company: {0},Unknown company: {0}
+Unknown role template: {0},Unknown role template: {0}
+Unknown warehouse: {0},Unknown warehouse: {0}
+Unsupported language: {0},Unsupported language: {0}
+User,User
+User account,User account
+User already exists,User already exists
+User not found,User not found
+Users,Users
+View all,View all
+View ledger,View ledger
+Voucher,Voucher
+WIP warehouse,WIP warehouse
+Warehouse is required for Sales Orders,Warehouse is required for Sales Orders
+Weekly,Weekly
+When,When
+Withheld,Withheld
+Work From Home,Work From Home
+Work Order,Work Order
+Work Orders,Work Orders
+Working,Working
+Write,Write
+Yes,Yes
+You need administrator access to view this page.,You need administrator access to view this page.
+item_code and warehouse are required,item_code and warehouse are required

@@ -1,277 +1,376 @@
 source,target
-Dashboard,Панель
-Money,Деньги
-Sales,Продажи
-Purchasing,Закупки
-Inventory,Склад
-Chart of Accounts,План счетов
-Journal Entries,Журнальные записи
-Payments,Платежи
-Reports,Отчёты
-Customers,Клиенты
-Sales Invoices,Счета продаж
-Suppliers,Поставщики
-Purchase Invoices,Счета закупок
-Items,Товары
-Warehouses,Склады
-Stock Ledger,Складская книга
-Low Stock Alerts,Уведомления о низком остатке
-New journal,Новая запись
-New payment,Новый платёж
-Save as draft,Сохранить черновик
-Cancel,Отмена
-Refresh,Обновить
-Apply,Применить
-Export,Экспорт
-Run,Запустить
-Posting date,Дата проводки
-Cash on hand,Денежные средства
-Receivable (AR),Дебиторская задолженность
-Payable (AP),Кредиторская задолженность
-Revenue MTD,Выручка с начала месяца
-Recent activity,Последние операции
-No data,Нет данных
-Loading…,Загрузка…
-Something went wrong,Что-то пошло не так
-Page not found,Страница не найдена
-Back to dashboard,Вернуться на панель
-Try again,Повторить
-Company,Компания
-Profile,Профиль
-Open Desk,Открыть Desk
-Log out,Выйти
-View all,Показать все
-Low stock,Низкий остаток
-All items above reorder level.,Все товары выше порога пополнения.
-Module,Модуль
-Manufacturing,Производство
-BOMs,Спецификации
-Work Orders,Производственные заказы
-BOM,Спецификация
-Work Order,Производственный заказ
-Finished good,Готовая продукция
-Quantity,Количество
-Total cost,Общая стоимость
-Raw material cost,Стоимость сырья
-Components,Компоненты
-Raw materials,Сырьё
-Qty,Кол-во
-UOM,Ед. изм.
-Rate,Цена
-Amount,Сумма
-Item,Товар
-Status,Статус
-Default,По умолчанию
-Submit,Провести
-Submitted,Проведено
-Cancelled,Отменено
-Draft,Черновик
-Submit this BOM? You won't be able to edit it after.,Провести эту спецификацию? После этого её нельзя будет редактировать.
-Cancel this submitted BOM?,Отменить эту проведённую спецификацию?
-New BOM,Новая спецификация
-Search BOMs or finished goods…,Поиск спецификаций или готовой продукции…
-No BOMs yet,Спецификаций пока нет
-Create a Bill of Materials to define what raw materials go into a finished good.,Создайте спецификацию чтобы определить какие материалы входят в готовый продукт.
-Pick a finished-good item.,Выберите готовый продукт.
+1C Sync Log,Журнал синхронизации 1C
+1C:Enterprise sync log appears here.,Здесь отображается журнал синхронизации 1C:Предприятие.
+A password reset email will be sent. The account is disabled until the user sets a password.,
+A valid email is required,
+ARCA,ARCA
+ARCA Payment Events,Платежи ARCA
+ARCA payment webhook events appear here.,Здесь отображаются события вебхуков платежей ARCA.
+Abbr,
+Absent,Отсутствует
+Accepted,Принят
+Account,
+Account currency must match the payment account.,
+Active,Активные
 Add at least one raw material line.,Добавьте хотя бы одну строку сырья.
 Add line,Добавить строку
-Save and submit,Сохранить и провести
-Make default BOM for this item,Сделать спецификацией по умолчанию
-New Work Order,Новый производственный заказ
-Search work orders…,Поиск производственных заказов…
+Add your first employee to start tracking attendance, leave and payroll.
+"Add your first employee to start tracking attendance, leave and payroll.",
+Admin,
+Against,
+All directions,Все направления
+All events,Все события
+All items above reorder level.,Все товары выше порога пополнения.
+All object types,Все типы объектов
 All statuses,Все статусы
-No work orders,Нет производственных заказов
-Create a Work Order to plan and track production runs against a BOM.,Создайте производственный заказ для планирования и контроля выпуска.
-Planned,Запланировано
-Planned start,Плановая дата начала
-Transferred,Передано
-Produced,Произведено
-Required,Требуется
-Required materials,Требуемые материалы
-Source warehouse,Склад источника
-WIP warehouse,Склад НЗП
-Finished-goods warehouse,Склад готовой продукции
-Submit and release this Work Order?,Провести и запустить этот производственный заказ?
-Transfer how many units of materials? Leave blank for full.,Сколько единиц материалов передать? Оставьте пустым для всего объёма.
-Produce how many units? Leave blank for full balance.,Сколько единиц произвести? Оставьте пустым для всего остатка.
-Stop this Work Order? You can resume it later.,Остановить этот производственный заказ? Можно будет возобновить позже.
-Close this Work Order? This finalizes it.,Закрыть этот производственный заказ? Это финальное действие.
-Transfer materials,Передать материалы
-Record production,Записать выпуск
-Stop,Остановить
-Close,Закрыть
-No items with submitted active BOMs yet — create one first.,Нет товаров с проведёнными активными спецификациями — сначала создайте.
-Quantity must be positive.,Количество должно быть положительным.
-People,Сотрудники
-Active,Активные
-On leave today,В отпуске сегодня
-Pending requests,Ожидают рассмотрения
-Employees,Сотрудники
-Attendance,Посещаемость
-Leave,Отпуск
-Payroll,Зарплата
-Search employees…,Поиск сотрудников…
-Inactive,Неактивные
-Suspended,Приостановлен
-Left,Уволен
-Designation,Должность
-Department,Подразделение
-Contact,Контакт
-New employee,Новый сотрудник
-No employees yet,Сотрудников пока нет
-Add your first employee to start tracking attendance, leave and payroll.,"Добавьте первого сотрудника, чтобы вести учёт посещаемости, отпусков и зарплат."
-Employee,Сотрудник
-First name,Имя
-Last name,Фамилия
-Gender,Пол
-Male,Мужской
-Female,Женский
-Other,Другое
-Date of birth,Дата рождения
-Date of joining,Дата приёма
-Phone,Телефон
-User,Пользователь
-Personal email,Личная почта
-Company email,Рабочая почта
-User account,Учётная запись
-Save,Сохранить
-First name is required.,Введите имя.
-Gender is required.,Укажите пол.
-Date of birth is required.,Укажите дату рождения.
-Pick an employee.,Выберите сотрудника.
-Pick a leave type.,Выберите тип отпуска.
-From,С
-To,По
-Date,Дата
-In,Вход
-Out,Выход
-Hours,Часы
-Mark attendance,Отметить
-Mark and submit,Отметить и провести
-No attendance records,Нет записей о посещаемости
-Mark daily attendance to start building reports.,"Отмечайте посещаемость ежедневно, чтобы строить отчёты."
-Present,Присутствует
-Absent,Отсутствует
-On Leave,В отпуске
-Half Day,Полдня
-Work From Home,Удалённо
-In time,Время входа
-Out time,Время выхода
+Allowed users,
+Amount,Сумма
+Amount received,
+Amount sent,
+Any,
+Apply,Применить
+Apply role template,
+Approve and submit,Одобрить и провести
 Approve this leave request?,Одобрить заявку на отпуск?
-Reject this leave request?,Отклонить заявку на отпуск?
-New leave request,Новая заявка
-No leave requests,Нет заявок на отпуск
-Submit a leave request on behalf of an employee.,Подайте заявку от имени сотрудника.
-Leave type,Тип отпуска
+Approved,Одобрена
+Asl Belgisi,Asl Belgisi
+Asl Belgisi (product marking) scans appear here.,Здесь отображаются сканирования маркировки Asl Belgisi.
+Asl Belgisi Code,Код Asl Belgisi
+Asl Belgisi — Stock Entries pending scan,Asl Belgisi — складские движения к сканированию
+Attendance,Посещаемость
+BOM,Спецификация
+BOMs,Спецификации
+Back to dashboard,Вернуться на панель
+Balance,
+Base equivalent,
+Bimonthly,Раз в две недели
+CBU.uz exchange rates (last 30 days),Курсы валют ЦБУ.uz (последние 30 дней)
+CBU.uz exchange rates appear here.,Здесь отображаются курсы валют ЦБУ.uz.
+Cancel,Отмена
+Cancel this submitted BOM?,Отменить эту проведённую спецификацию?
+Cancelled,Отменено
+Cash on hand,Денежные средства
+Chart of Accounts,План счетов
+Close,Закрыть
+Close this Work Order? This finalizes it.,Закрыть этот производственный заказ? Это финальное действие.
+Closing,
+Closing in,
+Code does not match expected format,
+Code is required,
+Companies,
+Company,Компания
+Company email,Рабочая почта
+Company is required.,
+Complete,Готово
+Compliance,Соответствие
+Components,Компоненты
+Consumed,
+Contact,Контакт
+Create,
+Create a Bill of Materials to define what raw materials go into a finished good.,Создайте спецификацию чтобы определить какие материалы входят в готовый продукт.
+Create a Work Order to plan and track production runs against a BOM.,Создайте производственный заказ для планирования и контроля выпуска.
+Created,Создан
+Credit,
+Currency,
+Customers,Клиенты
+Daily,Ежедневно
+Dashboard,Панель
+Date,Дата
+Date of birth,Дата рождения
+Date of birth is required.,Укажите дату рождения.
+Date of joining,Дата приёма
 Dates,Даты
 Days,Дней
-Reason,Причина
-Open,Открыта
-Approved,Одобрена
-Rejected,Отклонена
-Approve and submit,Одобрить и провести
-Run payroll,Запустить расчёт
-Slip,Расчётный листок
-Period,Период
-Working,Рабочих дней
-Paid days,Оплачено дней
-Gross,Начислено
-Net,К выплате
-Withheld,Удержано
-Salary slip,Расчётный листок
-Gross pay,Начислено
-Net pay,К выплате
-Earnings,Начисления
+Debit,
 Deductions,Удержания
-No earnings,Нет начислений
-No deductions,Нет удержаний
-Period start,Начало периода
-Period end,Конец периода
-Frequency,Периодичность
-Monthly,Ежемесячно
-Bimonthly,Раз в две недели
-Weekly,Еженедельно
-Daily,Ежедневно
-Generate drafts,Создать черновики
-Generate and submit,Создать и провести
-Payroll entry,Расчёт зарплаты
-Generated salary slips,Создано листков
-No salary slips yet,Нет расчётных листков
-Run a payroll cycle to generate salary slips for assigned employees.,"Запустите расчёт, чтобы сгенерировать листки для сотрудников."
-Request,Заявка
-Compliance,Соответствие
-EHF Status,Статус ЭСФ
-1C Sync Log,Журнал синхронизации 1C
-Asl Belgisi,Asl Belgisi
-ARCA,ARCA
-Exchange Rates,Курсы валют
-You need administrator access to view this page.,Требуется доступ администратора для просмотра этой страницы.
-The Compliance module is disabled for this company.,Модуль соответствия отключён для этой компании.
+Default,По умолчанию
+Delete,
+Department,Подразделение
+Designation,Должность
+Desk access,
+Direction,Направление
+Disabled,
+DocType,
+Draft,Черновик
+Duration (ms),Длительность (мс)
 EHF (Elektron Hisob-Faktura) submissions appear here.,Здесь отображаются отправки ЭСФ (Elektron Hisob-Faktura).
-1C:Enterprise sync log appears here.,Здесь отображается журнал синхронизации 1C:Предприятие.
-Asl Belgisi (product marking) scans appear here.,Здесь отображаются сканирования маркировки Asl Belgisi.
-ARCA payment webhook events appear here.,Здесь отображаются события вебхуков платежей ARCA.
-CBU.uz exchange rates appear here.,Здесь отображаются курсы валют ЦБУ.uz.
-CBU.uz exchange rates (last 30 days),Курсы валют ЦБУ.uz (последние 30 дней)
+EHF Status,Статус ЭСФ
+EHF Submissions,Отправки ЭСФ
+EUR → UZS,EUR → UZS
+Earnings,Начисления
+Editing the rate updates the received amount.,
+Email,
+Email and name are required.,
+Employee,Сотрудник
+Employees,Сотрудники
+Empty allowed list = user can access every company.,
+Enabled,
+Error,Ошибка
+Exchange Rates,Курсы валют
+Exchange rate,
+Expense,
+Expense lines,
+Expenses,
+Export,Экспорт
+Failed to load ledger.,
+Female,Женский
+Fill in the required fields before submitting.,
+Finished good,Готовая продукция
+Finished-goods warehouse,Склад готовой продукции
+First name,Имя
+First name is required.,Введите имя.
+Frequency,Периодичность
+From,С
+From account,
+Full name,
+Gender,Пол
+Gender is required.,Укажите пол.
+Generate and submit,Создать и провести
+Generate drafts,Создать черновики
+Generated salary slips,Создано листков
+Gross,Начислено
+Gross pay,Начислено
+Half Day,Полдня
+Hello {name},
+Hours,Часы
+In,Вход
+In time,Время входа
+Inactive,Неактивные
+Invalid item_overrides payload,
+Inventory,Склад
+Invite user,
+Invoice,Счёт
+Item,Товар
+Item does not require Asl Belgisi,
+Items,Товары
+Journal Entries,Журнальные записи
+Language,
+Last login,
+Last name,Фамилия
+Leave,Отпуск
+Leave type,Тип отпуска
+Left,Уволен
+Loading…,Загрузка…
+Log out,Выйти
+Login required,
+Low Stock Alerts,Уведомления о низком остатке
+Low stock,Низкий остаток
+Make default BOM for this item,Сделать спецификацией по умолчанию
+Male,Мужской
+Manufacturing,Производство
+Mark and submit,Отметить и провести
+Mark attendance,Отметить
+Mark daily attendance to start building reports.,"Отмечайте посещаемость ежедневно, чтобы строить отчёты."
+Memo,
+Message,Сообщение
+Module,Модуль
+Modules,
+Money,Деньги
+Monthly,Ежемесячно
+Name,
+Name or email,
+Net,К выплате
+Net pay,К выплате
+New BOM,Новая спецификация
+New Work Order,Новый производственный заказ
+New employee,Новый сотрудник
+New expense,
+New journal,Новая запись
+New leave request,Новая заявка
+New payment,Новый платёж
+New transfer,
+No,
+No 1C sync events yet.,Событий синхронизации 1С пока нет.
+No ARCA payment events yet.,Платежей ARCA пока нет.
+No BOMs yet,Спецификаций пока нет
+No EHF submissions yet. Submit a Sales Invoice to enqueue one.,Пока нет отправок ЭСФ. Проведите счёт продаж
+No Stock Entries with Asl Belgisi items found.,Складских движений с товарами Asl Belgisi не найдено.
+No attendance records,Нет записей о посещаемости
+No data,Нет данных
+No deductions,Нет удержаний
+No earnings,Нет начислений
+No employees yet,Сотрудников пока нет
+No exchange rates yet. Click Refresh now to fetch today's rates from cbu.uz.,Курсы валют пока отсутствуют. Нажмите «Обновить сейчас»
+No items with submitted active BOMs yet — create one first.,Нет товаров с проведёнными активными спецификациями — сначала создайте.
+No leave requests,Нет заявок на отпуск
+No salary slips yet,Нет расчётных листков
+No template,
+No transactions yet.,
+No work orders,Нет производственных заказов
+Nos,
+Not permitted,
+Not permitted for company {0},
+Object Name,Имя объекта
+Object Type,Тип объекта
+On Leave,В отпуске
+On leave today,В отпуске сегодня
+Open,Открыта
+Open Desk,Открыть Desk
+Opening,
+Optional,
+Other,Другое
+Out,Выход
+Out time,Время выхода
+Override qty must be greater than zero,
+Page not found,Страница не найдена
+Paid days,Оплачено дней
+Pay from,
+Payable (AP),Кредиторская задолженность
+Payee,
+Payload,Тело запроса
+Payment Entry,Платёжный документ
+Payments,Платежи
+Payroll,Зарплата
+Payroll entry,Расчёт зарплаты
+Pending,Ожидание
+Pending requests,Ожидают рассмотрения
+People,Сотрудники
+Period,Период
+Period Credit,
+Period Debit,
+Period end,Конец периода
+Period start,Начало периода
+Permissions,
+Personal email,Личная почта
+Phone,Телефон
+Pick a finished-good item.,Выберите готовый продукт.
+Pick a leave type.,Выберите тип отпуска.
+Pick an employee.,Выберите сотрудника.
+Planned,Запланировано
+Planned start,Плановая дата начала
+Posting Date,Дата проводки
+Posting date,Дата проводки
+Postings,
+Present,Присутствует
+Processed,Обработано
+Produce how many units? Leave blank for full balance.,Сколько единиц произвести? Оставьте пустым для всего остатка.
+Produced,Произведено
+Profile,Профиль
+Purchase Invoices,Счета закупок
+Purchasing,Закупки
+Qty,Кол-во
+Quantity,Количество
+Quantity must be positive.,Количество должно быть положительным.
+RUB → UZS,RUB → UZS
+Rate,Цена
+Raw material cost,Стоимость сырья
+Raw materials,Сырьё
+Read,
+Read-only view. Edit permissions in Frappe's Role Permission Manager.,
+Reason,Причина
+Receivable (AR),Дебиторская задолженность
+Received,Получено
+Received At,Время получения
+Recent activity,Последние операции
+Record production,Записать выпуск
+Refresh,Обновить
 Refresh now,Обновить сейчас
 Refreshing…,Обновление…
-Loading…,Загрузка…
-No exchange rates yet. Click Refresh now to fetch today's rates from cbu.uz.,Курсы валют пока отсутствуют. Нажмите «Обновить сейчас», чтобы загрузить актуальные курсы с cbu.uz.
-Date,Дата
-USD → UZS,USD → UZS
-EUR → UZS,EUR → UZS
-RUB → UZS,RUB → UZS
-EHF Submissions,Отправки ЭСФ
-All statuses,Все статусы
-Pending,Ожидает
-Submitted,Отправлен
-Accepted,Принят
+Reject this leave request?,Отклонить заявку на отпуск?
 Rejected,Отклонён
-Error,Ошибка
 Reload,Перезагрузить
-No EHF submissions yet. Submit a Sales Invoice to enqueue one.,Пока нет отправок ЭСФ. Проведите счёт продаж, чтобы поставить в очередь.
-Created,Создан
-Invoice,Счёт
-Status,Статус
+Replaces all current roles.,
+Reports,Отчёты
+Request,Заявка
+Required,Требуется
+Required materials,Требуемые материалы
+Reset email sent.,
+Reset password,
 Retries,Повторы
-SoliqOnline UUID,UUID SoliqOnline
-Submitted At,Время отправки
-Payload,Тело запроса
 Retry submission,Повторить отправку
 Retrying…,Повтор…
-All directions,Все направления
-All object types,Все типы объектов
-In,Вход
-Out,Выход
-Direction,Направление
-Object Type,Тип объекта
-Object Name,Имя объекта
-When,Когда
-Duration (ms),Длительность (мс)
-Message,Сообщение
-No 1C sync events yet.,Событий синхронизации 1С пока нет.
-Asl Belgisi — Stock Entries pending scan,Asl Belgisi — складские движения к сканированию
-Stock Entry,Складское движение
-Posting Date,Дата проводки
-Scanned / Required,Просканировано / требуется
-Complete,Готово
-Pending,Ожидание
-Type,Тип
-No Stock Entries with Asl Belgisi items found.,Складских движений с товарами Asl Belgisi не найдено.
-Scanned,Просканировано
-Asl Belgisi Code,Код Asl Belgisi
+Revenue MTD,Выручка с начала месяца
+Role,
+Role not found,
+Role template (optional),
+Roles,
+Row not found on this Stock Entry,
+Run,Запустить
+Run a payroll cycle to generate salary slips for assigned employees.,"Запустите расчёт, чтобы сгенерировать листки для сотрудников."
+Run payroll,Запустить расчёт
+Salary slip,Расчётный листок
+Sales,Продажи
+Sales Invoice must be created from a Sales Order,
+Sales Invoices,Счета продаж
+Sales Order {0} must be submitted before invoicing,
+Save,Сохранить
+Save allowed users,
+Save and submit,Сохранить и провести
+Save as draft,Сохранить черновик
+Save modules,
 Scan code for,Сканировать код для
 Scan or type code,Сканируйте или введите код
+Scanned,Просканировано
+Scanned / Required,Просканировано / требуется
 Scanning…,Сканирование…
+Search,
+Search BOMs or finished goods…,Поиск спецификаций или готовой продукции…
+Search employees…,Поиск сотрудников…
+Search work orders…,Поиск производственных заказов…
+Select an account…,
+Select template…,
+Select…,
+Send invite,
+Send password reset email to ,
+Slip,Расчётный листок
+SoliqOnline UUID,UUID SoliqOnline
+Something went wrong,Что-то пошло не так
+Source warehouse,Склад источника
+Status,Статус
+Stock Entry,Складское движение
+Stock Ledger,Складская книга
+Stop,Остановить
+Stop this Work Order? You can resume it later.,Остановить этот производственный заказ? Можно будет возобновить позже.
 Submit,Отправить
-Item,Товар
-Qty,Кол-во
-ARCA Payment Events,Платежи ARCA
-All events,Все события
-Processed,Обработано
-No ARCA payment events yet.,Платежей ARCA пока нет.
-Received,Получено
+Submit a leave request on behalf of an employee.,Подайте заявку от имени сотрудника.
+Submit and release this Work Order?,Провести и запустить этот производственный заказ?
+Submit expense,
+Submit this BOM? You won't be able to edit it after.,Провести эту спецификацию? После этого её нельзя будет редактировать.
+Submit transfer,
+Submitted,Отправлен
+Submitted At,Время отправки
+Suppliers,Поставщики
+Suspended,Приостановлен
+Swap accounts,
+The Compliance module is disabled for this company.,Модуль соответствия отключён для этой компании.
+To,По
+To account,
+Total,
+Total cost,Общая стоимость
 Transaction Id,Идентификатор транзакции
-Amount,Сумма
-Payment Entry,Платёжный документ
-Received At,Время получения
+Transfer,
+Transfer how many units of materials? Leave blank for full.,Сколько единиц материалов передать? Оставьте пустым для всего объёма.
+Transfer materials,Передать материалы
+Transferred,Передано
+Transfers,
+Try again,Повторить
+Type,Тип
+UOM,Ед. изм.
+USD → UZS,USD → UZS
+Unknown Sales Order: {0},
+Unknown company: {0},
+Unknown role template: {0},
+Unknown warehouse: {0},
+Unsupported language: {0},
+User,Пользователь
+User account,Учётная запись
+User already exists,
+User not found,
+Users,
+View all,Показать все
+View ledger,
+Voucher,
+WIP warehouse,Склад НЗП
+Warehouse is required for Sales Orders,
+Warehouses,Склады
+Weekly,Еженедельно
+When,Когда
+Withheld,Удержано
+Work From Home,Удалённо
+Work Order,Производственный заказ
+Work Orders,Производственные заказы
+Working,Рабочих дней
+Write,
+Yes,
+You need administrator access to view this page.,Требуется доступ администратора для просмотра этой страницы.
+item_code and warehouse are required,

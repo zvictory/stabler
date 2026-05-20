@@ -1,201 +1,368 @@
 source,target
-Dashboard,Бошқарув панели
-Money,Пул
-Sales,Сотув
-Purchasing,Харид
-Inventory,Омбор
-Chart of Accounts,Ҳисоблар режаси
-Journal Entries,Журнал ёзувлари
-Payments,Тўловлар
-Reports,Ҳисоботлар
-Customers,Мижозлар
-Sales Invoices,Сотув ҳисоб-фактуралари
-Suppliers,Етказиб берувчилар
-Purchase Invoices,Харид ҳисоб-фактуралари
-Items,Товарлар
-Warehouses,Омборлар
-Stock Ledger,Омбор китоби
-Low Stock Alerts,Паст қолдиқ ҳақида огоҳлантиришлар
-New journal,Янги ёзув
-New payment,Янги тўлов
-Save as draft,Қоралама сифатида сақлаш
-Cancel,Бекор қилиш
-Refresh,Янгилаш
-Apply,Қўллаш
-Export,Экспорт
-Run,Ишга тушириш
-Posting date,Ҳисоб санаси
-Cash on hand,Кассадаги пул
-Receivable (AR),Дебиторлик қарзи
-Payable (AP),Кредиторлик қарзи
-Revenue MTD,Ой бошидан даромад
-Recent activity,Сўнгги операциялар
-No data,Маълумот йўқ
-Loading…,Юкланмоқда…
-Something went wrong,Хатолик юз берди
-Page not found,Саҳифа топилмади
-Back to dashboard,Бошқарувга қайтиш
-Try again,Қайта уриниб кўринг
-Company,Компания
-Profile,Профил
-Open Desk,Дескни очиш
-Log out,Чиқиш
-View all,Ҳаммасини кўриш
-Low stock,Паст қолдиқ
-All items above reorder level.,Барча товарлар тўлдириш даражасидан юқори.
-Module,Модул
-Manufacturing,Ишлаб чиқариш
-BOMs,Спецификациялар
-Work Orders,Ишлаб чиқариш буюртмалари
-BOM,Спецификация
-Work Order,Ишлаб чиқариш буюртмаси
-Finished good,Тайёр маҳсулот
-Quantity,Миқдор
-Total cost,Умумий харажат
-Raw material cost,Хом ашё харажати
-Components,Таркибий қисмлар
-Raw materials,Хом ашё
-Qty,Миқдори
-UOM,Ўлчов бирлиги
-Rate,Нарх
-Amount,Сумма
-Item,Товар
-Status,Ҳолат
-Default,Асосий
-Submit,Тасдиқлаш
-Submitted,Тасдиқланган
-Cancelled,Бекор қилинган
-Draft,Қоралама
-Submit this BOM? You won't be able to edit it after.,Бу спецификацияни тасдиқлайсизми? Кейин таҳрирлаб бўлмайди.
-Cancel this submitted BOM?,Бу тасдиқланган спецификацияни бекор қиласизми?
-New BOM,Янги спецификация
-Search BOMs or finished goods…,Спецификация ёки тайёр маҳсулотни қидириш…
-No BOMs yet,Ҳозирча спецификациялар йўқ
-Create a Bill of Materials to define what raw materials go into a finished good.,Тайёр маҳсулотга қандай хом ашё кириши учун спецификация яратинг.
-Pick a finished-good item.,Тайёр маҳсулотни танланг.
+1C Sync Log,
+A password reset email will be sent. The account is disabled until the user sets a password.,
+A valid email is required,
+ARCA,
+ARCA Payment Events,
+Abbr,
+Absent,Йўқ
+Account,
+Account currency must match the payment account.,
+Active,Фаол
 Add at least one raw material line.,Камида битта хом ашё қаторини қўшинг.
 Add line,Қатор қўшиш
-Save and submit,Сақлаш ва тасдиқлаш
-Make default BOM for this item,Ушбу товар учун асосий спецификация қилиш
-New Work Order,Янги ишлаб чиқариш буюртмаси
-Search work orders…,Ишлаб чиқариш буюртмаларини қидириш…
+Add your first employee to start tracking attendance, leave and payroll.
+"Add your first employee to start tracking attendance, leave and payroll.",
+Admin,
+Against,
+All directions,
+All items above reorder level.,Барча товарлар тўлдириш даражасидан юқори.
+All object types,
 All statuses,Барча ҳолатлар
-No work orders,Ишлаб чиқариш буюртмалари йўқ
-Create a Work Order to plan and track production runs against a BOM.,Ишлаб чиқаришни режалаштириш ва кузатиш учун буюртма яратинг.
-Planned,Режалаштирилган
-Planned start,Бошланиш санаси
-Transferred,Берилган
-Produced,Ишлаб чиқарилган
-Required,Талаб қилинади
-Required materials,Керакли материаллар
-Source warehouse,Манба омбор
-WIP warehouse,Тугалланмаган ишлаб чиқариш омбори
-Finished-goods warehouse,Тайёр маҳсулот омбори
-Submit and release this Work Order?,Бу буюртмани тасдиқлаш ва ишга туширишми?
-Transfer how many units of materials? Leave blank for full.,Неча дона материал ўтказилади? Тўлиқ учун бўш қолдиринг.
-Produce how many units? Leave blank for full balance.,Неча дона ишлаб чиқариш керак? Тўлиқ қолдиқ учун бўш қолдиринг.
-Stop this Work Order? You can resume it later.,Бу буюртмани тўхтатасизми? Кейин давом эттирса бўлади.
-Close this Work Order? This finalizes it.,Бу буюртмани ёпасизми? Бу якуний ҳаракат.
-Transfer materials,Материалларни ўтказиш
-Record production,Ишлаб чиқаришни қайд этиш
-Stop,Тўхтатиш
-Close,Ёпиш
-No items with submitted active BOMs yet — create one first.,Тасдиқланган фаол спецификацияли товарлар йўқ — аввал яратинг.
-Quantity must be positive.,Миқдор мусбат бўлиши керак.
-People,Ходимлар
-Active,Фаол
-On leave today,Бугун таътилда
-Pending requests,Кутилаётган аризалар
-Employees,Ходимлар
-Attendance,Давомат
-Leave,Таътил
-Payroll,Маош
-Search employees…,Ходимларни қидириш…
-Inactive,Фаол эмас
-Suspended,Тўхтатилган
-Left,Ишдан кетган
-Designation,Лавозим
-Department,Бўлим
-Contact,Алоқа
-New employee,Янги ходим
-No employees yet,Ҳозирча ходимлар йўқ
-Add your first employee to start tracking attendance, leave and payroll.,"Давомат, таътил ва маошни ҳисобга олиш учун биринчи ходимни қўшинг."
-Employee,Ходим
-First name,Исм
-Last name,Фамилия
-Gender,Жинс
-Male,Эркак
-Female,Аёл
-Other,Бошқа
-Date of birth,Туғилган сана
-Date of joining,Ишга қабул санаси
-Phone,Телефон
-User,Фойдаланувчи
-Personal email,Шахсий email
-Company email,Иш email
-User account,Фойдаланувчи ҳисоби
-Save,Сақлаш
-First name is required.,Исмни киритинг.
-Gender is required.,Жинсни танланг.
-Date of birth is required.,Туғилган санани киритинг.
-Pick an employee.,Ходимни танланг.
-Pick a leave type.,Таътил турини танланг.
-From,Дан
-To,Гача
-Date,Сана
-In,Кириш
-Out,Чиқиш
-Hours,Соат
-Mark attendance,Давоматни белгилаш
-Mark and submit,Белгилаш ва тасдиқлаш
-No attendance records,Давомат ёзувлари йўқ
-Mark daily attendance to start building reports.,Ҳисоботлар учун ҳар куни давоматни белгиланг.
-Present,Ҳозир
-Absent,Йўқ
-On Leave,Таътилда
-Half Day,Ярим кун
-Work From Home,Уйдан иш
-In time,Кириш вақти
-Out time,Чиқиш вақти
+Allowed users,
+Amount,Сумма
+Amount received,
+Amount sent,
+Any,
+Apply,Қўллаш
+Apply role template,
+Approve and submit,Тасдиқлаш ва ўтказиш
 Approve this leave request?,Таътил аризасини тасдиқлайсизми?
-Reject this leave request?,Таътил аризасини рад этасизми?
-New leave request,Янги ариза
-No leave requests,Таътил аризалари йўқ
-Submit a leave request on behalf of an employee.,Ходим номидан ариза юборинг.
-Leave type,Таътил тури
+Approved,Тасдиқланган
+Asl Belgisi,Асл Белгиси
+Asl Belgisi Code,
+Asl Belgisi — Stock Entries pending scan,
+Attendance,Давомат
+BOM,Спецификация
+BOMs,Спецификациялар
+Back to dashboard,Бошқарувга қайтиш
+Balance,
+Base equivalent,
+Bimonthly,Икки ҳафтада бир
+CBU.uz exchange rates (last 30 days),
+Cancel,Бекор қилиш
+Cancel this submitted BOM?,Бу тасдиқланган спецификацияни бекор қиласизми?
+Cancelled,Бекор қилинган
+Cash on hand,Кассадаги пул
+Chart of Accounts,Ҳисоблар режаси
+Close,Ёпиш
+Close this Work Order? This finalizes it.,Бу буюртмани ёпасизми? Бу якуний ҳаракат.
+Closing,
+Closing in,
+Code does not match expected format,
+Code is required,
+Companies,
+Company,Компания
+Company email,Иш email
+Company is required.,
+Complete,
+Components,Таркибий қисмлар
+Consumed,
+Contact,Алоқа
+Create,
+Create a Bill of Materials to define what raw materials go into a finished good.,Тайёр маҳсулотга қандай хом ашё кириши учун спецификация яратинг.
+Create a Work Order to plan and track production runs against a BOM.,Ишлаб чиқаришни режалаштириш ва кузатиш учун буюртма яратинг.
+Created,
+Credit,
+Currency,
+Customers,Мижозлар
+Daily,Кунлик
+Dashboard,Бошқарув панели
+Date,Сана
+Date of birth,Туғилган сана
+Date of birth is required.,Туғилган санани киритинг.
+Date of joining,Ишга қабул санаси
 Dates,Саналар
 Days,Кун
-Reason,Сабаб
-Open,Очиқ
-Approved,Тасдиқланган
-Rejected,Рад этилган
-Approve and submit,Тасдиқлаш ва ўтказиш
-Run payroll,Маошни ҳисоблаш
-Slip,Ҳисоб варақаси
-Period,Давр
-Working,Иш куни
-Paid days,Тўланган кун
-Gross,Ҳисобланган
-Net,Тўланади
-Withheld,Ушлаб қолинган
-Salary slip,Маош варақаси
-Gross pay,Ҳисобланган маош
-Net pay,Тоза маош
-Earnings,Ҳисобланганлар
+Debit,
 Deductions,Ушланмалар
-No earnings,Ҳисобланганлар йўқ
-No deductions,Ушланмалар йўқ
-Period start,Давр боши
-Period end,Давр охири
+Default,Асосий
+Delete,
+Department,Бўлим
+Designation,Лавозим
+Desk access,
+Direction,
+Disabled,
+DocType,
+Draft,Қоралама
+Duration (ms),
+EHF Status,EHF ҳолати
+EHF Submissions,
+EUR → UZS,
+Earnings,Ҳисобланганлар
+Editing the rate updates the received amount.,
+Email,
+Email and name are required.,
+Employee,Ходим
+Employees,Ходимлар
+Empty allowed list = user can access every company.,
+Enabled,
+Error,
+Exchange Rates,Валюта курслари
+Exchange rate,
+Expense,
+Expense lines,
+Expenses,
+Export,Экспорт
+Failed to load ledger.,
+Female,Аёл
+Fill in the required fields before submitting.,
+Finished good,Тайёр маҳсулот
+Finished-goods warehouse,Тайёр маҳсулот омбори
+First name,Исм
+First name is required.,Исмни киритинг.
 Frequency,Даврийлик
-Monthly,Ойлик
-Bimonthly,Икки ҳафтада бир
-Weekly,Ҳафталик
-Daily,Кунлик
-Generate drafts,Қоралама яратиш
+From,Дан
+From account,
+Full name,
+Gender,Жинс
+Gender is required.,Жинсни танланг.
 Generate and submit,Яратиш ва тасдиқлаш
-Payroll entry,Маош ёзуви
+Generate drafts,Қоралама яратиш
 Generated salary slips,Яратилган варақалар
+Gross,Ҳисобланган
+Gross pay,Ҳисобланган маош
+Half Day,Ярим кун
+Hello {name},
+Hours,Соат
+In,Кириш
+In time,Кириш вақти
+Inactive,Фаол эмас
+Invalid item_overrides payload,
+Inventory,Омбор
+Invite user,
+Invoice,
+Item,Товар
+Item does not require Asl Belgisi,
+Items,Товарлар
+Journal Entries,Журнал ёзувлари
+Language,
+Last login,
+Last name,Фамилия
+Leave,Таътил
+Leave type,Таътил тури
+Left,Ишдан кетган
+Loading…,Юкланмоқда…
+Log out,Чиқиш
+Login required,
+Low Stock Alerts,Паст қолдиқ ҳақида огоҳлантиришлар
+Low stock,Паст қолдиқ
+Make default BOM for this item,Ушбу товар учун асосий спецификация қилиш
+Male,Эркак
+Manufacturing,Ишлаб чиқариш
+Mark and submit,Белгилаш ва тасдиқлаш
+Mark attendance,Давоматни белгилаш
+Mark daily attendance to start building reports.,Ҳисоботлар учун ҳар куни давоматни белгиланг.
+Memo,
+Message,
+Module,Модул
+Modules,
+Money,Пул
+Monthly,Ойлик
+Name,
+Name or email,
+Net,Тўланади
+Net pay,Тоза маош
+New BOM,Янги спецификация
+New Work Order,Янги ишлаб чиқариш буюртмаси
+New employee,Янги ходим
+New expense,
+New journal,Янги ёзув
+New leave request,Янги ариза
+New payment,Янги тўлов
+New transfer,
+No,
+No 1C sync events yet.,
+No ARCA payment events yet.,
+No BOMs yet,Ҳозирча спецификациялар йўқ
+No EHF submissions yet. Submit a Sales Invoice to enqueue one.,
+No Stock Entries with Asl Belgisi items found.,
+No attendance records,Давомат ёзувлари йўқ
+No data,Маълумот йўқ
+No deductions,Ушланмалар йўқ
+No earnings,Ҳисобланганлар йўқ
+No employees yet,Ҳозирча ходимлар йўқ
+No exchange rates yet. Click Refresh now to fetch today's rates from cbu.uz.,
+No items with submitted active BOMs yet — create one first.,Тасдиқланган фаол спецификацияли товарлар йўқ — аввал яратинг.
+No leave requests,Таътил аризалари йўқ
 No salary slips yet,Ҳали маош варақалари йўқ
-Run a payroll cycle to generate salary slips for assigned employees.,Тайинланган ходимлар учун маош варақаларини яратиш учун ҳисоблашни ишга туширинг.
+No template,
+No transactions yet.,
+No work orders,Ишлаб чиқариш буюртмалари йўқ
+Nos,
+Not permitted,
+Not permitted for company {0},
+Object Name,
+Object Type,
+On Leave,Таътилда
+On leave today,Бугун таътилда
+Open,Очиқ
+Open Desk,Дескни очиш
+Opening,
+Optional,
+Other,Бошқа
+Out,Чиқиш
+Out time,Чиқиш вақти
+Override qty must be greater than zero,
+Page not found,Саҳифа топилмади
+Paid days,Тўланган кун
+Pay from,
+Payable (AP),Кредиторлик қарзи
+Payee,
+Payload,
+Payment Entry,
+Payments,Тўловлар
+Payroll,Маош
+Payroll entry,Маош ёзуви
+Pending,
+Pending requests,Кутилаётган аризалар
+People,Ходимлар
+Period,Давр
+Period Credit,
+Period Debit,
+Period end,Давр охири
+Period start,Давр боши
+Permissions,
+Personal email,Шахсий email
+Phone,Телефон
+Pick a finished-good item.,Тайёр маҳсулотни танланг.
+Pick a leave type.,Таътил турини танланг.
+Pick an employee.,Ходимни танланг.
+Planned,Режалаштирилган
+Planned start,Бошланиш санаси
+Posting Date,
+Posting date,Ҳисоб санаси
+Postings,
+Present,Ҳозир
+Processed,
+Produce how many units? Leave blank for full balance.,Неча дона ишлаб чиқариш керак? Тўлиқ қолдиқ учун бўш қолдиринг.
+Produced,Ишлаб чиқарилган
+Profile,Профил
+Purchase Invoices,Харид ҳисоб-фактуралари
+Purchasing,Харид
+Qty,Миқдори
+Quantity,Миқдор
+Quantity must be positive.,Миқдор мусбат бўлиши керак.
+RUB → UZS,
+Rate,Нарх
+Raw material cost,Хом ашё харажати
+Raw materials,Хом ашё
+Read,
+Read-only view. Edit permissions in Frappe's Role Permission Manager.,
+Reason,Сабаб
+Receivable (AR),Дебиторлик қарзи
+Received,
+Received At,
+Recent activity,Сўнгги операциялар
+Record production,Ишлаб чиқаришни қайд этиш
+Refresh,Янгилаш
+Refresh now,
+Refreshing…,
+Reject this leave request?,Таътил аризасини рад этасизми?
+Rejected,Рад этилган
+Reload,
+Replaces all current roles.,
+Reports,Ҳисоботлар
 Request,Ариза
+Required,Талаб қилинади
+Required materials,Керакли материаллар
+Reset email sent.,
+Reset password,
+Retries,
+Retry submission,
+Retrying…,
+Revenue MTD,Ой бошидан даромад
+Role,
+Role not found,
+Role template (optional),
+Roles,
+Row not found on this Stock Entry,
+Run,Ишга тушириш
+Run a payroll cycle to generate salary slips for assigned employees.,Тайинланган ходимлар учун маош варақаларини яратиш учун ҳисоблашни ишга туширинг.
+Run payroll,Маошни ҳисоблаш
+Salary slip,Маош варақаси
+Sales,Сотув
+Sales Invoice must be created from a Sales Order,
+Sales Invoices,Сотув ҳисоб-фактуралари
+Sales Order {0} must be submitted before invoicing,
+Save,Сақлаш
+Save allowed users,
+Save and submit,Сақлаш ва тасдиқлаш
+Save as draft,Қоралама сифатида сақлаш
+Save modules,
+Scan code for,
+Scan or type code,
+Scanned,
+Scanned / Required,
+Scanning…,
+Search,
+Search BOMs or finished goods…,Спецификация ёки тайёр маҳсулотни қидириш…
+Search employees…,Ходимларни қидириш…
+Search work orders…,Ишлаб чиқариш буюртмаларини қидириш…
+Select an account…,
+Select template…,
+Select…,
+Send invite,
+Send password reset email to ,
+Slip,Ҳисоб варақаси
+SoliqOnline UUID,
+Something went wrong,Хатолик юз берди
+Source warehouse,Манба омбор
+Status,Ҳолат
+Stock Entry,
+Stock Ledger,Омбор китоби
+Stop,Тўхтатиш
+Stop this Work Order? You can resume it later.,Бу буюртмани тўхтатасизми? Кейин давом эттирса бўлади.
+Submit,Тасдиқлаш
+Submit a leave request on behalf of an employee.,Ходим номидан ариза юборинг.
+Submit and release this Work Order?,Бу буюртмани тасдиқлаш ва ишга туширишми?
+Submit expense,
+Submit this BOM? You won't be able to edit it after.,Бу спецификацияни тасдиқлайсизми? Кейин таҳрирлаб бўлмайди.
+Submit transfer,
+Submitted,Тасдиқланган
+Submitted At,
+Suppliers,Етказиб берувчилар
+Suspended,Тўхтатилган
+Swap accounts,
+The Compliance module is disabled for this company.,
+To,Гача
+To account,
+Total,
+Total cost,Умумий харажат
+Transaction Id,
+Transfer,
+Transfer how many units of materials? Leave blank for full.,Неча дона материал ўтказилади? Тўлиқ учун бўш қолдиринг.
+Transfer materials,Материалларни ўтказиш
+Transferred,Берилган
+Transfers,
+Try again,Қайта уриниб кўринг
+Type,
+UOM,Ўлчов бирлиги
+USD → UZS,
+Unknown Sales Order: {0},
+Unknown company: {0},
+Unknown role template: {0},
+Unknown warehouse: {0},
+Unsupported language: {0},
+User,Фойдаланувчи
+User account,Фойдаланувчи ҳисоби
+User already exists,
+User not found,
+Users,
+View all,Ҳаммасини кўриш
+View ledger,
+Voucher,
+WIP warehouse,Тугалланмаган ишлаб чиқариш омбори
+Warehouse is required for Sales Orders,
+Warehouses,Омборлар
+Weekly,Ҳафталик
+When,
+Withheld,Ушлаб қолинган
+Work From Home,Уйдан иш
+Work Order,Ишлаб чиқариш буюртмаси
+Work Orders,Ишлаб чиқариш буюртмалари
+Working,Иш куни
+Write,
+Yes,
+You need administrator access to view this page.,
+item_code and warehouse are required,

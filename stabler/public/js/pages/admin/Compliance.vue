@@ -10,16 +10,16 @@ import ExchangeRates from "./compliance/ExchangeRates.vue";
 
 const session = useSession();
 
-const tabs = [
-	{ key: "ehf", label: "EHF Status", icon: "ti-file-invoice", component: EHFStatus },
-	{ key: "onec", label: "1C Sync Log", icon: "ti-refresh", component: OneCSyncLog },
-	{ key: "asl", label: "Asl Belgisi", icon: "ti-barcode", component: AslBelgisi },
-	{ key: "arca", label: "ARCA", icon: "ti-credit-card", component: ARCA },
-	{ key: "rates", label: "Exchange Rates", icon: "ti-currency-dollar", component: ExchangeRates },
-];
+const tabs = computed(() => [
+	{ key: "ehf", label: t("EHF Status"), icon: "ti-file-invoice", component: EHFStatus },
+	{ key: "onec", label: t("1C Sync Log"), icon: "ti-refresh", component: OneCSyncLog },
+	{ key: "asl", label: t("Asl Belgisi"), icon: "ti-barcode", component: AslBelgisi },
+	{ key: "arca", label: t("ARCA"), icon: "ti-credit-card", component: ARCA },
+	{ key: "rates", label: t("Exchange Rates"), icon: "ti-currency-dollar", component: ExchangeRates },
+]);
 
 const active = ref("ehf");
-const activeComponent = computed(() => tabs.find((tab) => tab.key === active.value)?.component);
+const activeComponent = computed(() => tabs.value.find((tab) => tab.key === active.value)?.component);
 
 const gated = computed(() => {
 	const mods = session.modules || {};
@@ -43,7 +43,7 @@ const gated = computed(() => {
 					:class="{ active: active === tab.key }"
 					@click="active = tab.key"
 				>
-					<i class="ti me-1" :class="tab.icon"></i>{{ t(tab.label) }}
+					<i class="ti me-1" :class="tab.icon"></i>{{ tab.label }}
 				</button>
 			</li>
 		</ul>
