@@ -1,4 +1,5 @@
 source,target
+#,
 1C Sync Log,Журнал синхронизации 1C
 1C:Enterprise sync log appears here.,Здесь отображается журнал синхронизации 1C:Предприятие.
 A password reset email will be sent. The account is disabled until the user sets a password.,
@@ -13,10 +14,15 @@ Account,
 Account currency must match the payment account.,
 Action failed.,
 Active,Активные
+Actual,
 Add at least one raw material line.,Добавьте хотя бы одну строку сырья.
+Add item,
 Add line,Добавить строку
+Add outlet,
+Add row,
 Add your first employee to start tracking attendance, leave and payroll.
 "Add your first employee to start tracking attendance, leave and payroll.",
+Address,
 Admin,
 Against,
 All categories,
@@ -71,6 +77,7 @@ Cannot check out before checking in.,
 Captured At,
 Cash on hand,Денежные средства
 Category,
+Category is required.,
 Channel,Канал
 Chart of Accounts,План счетов
 Checked in,Отметка о приходе
@@ -101,6 +108,7 @@ Contact,Контакт
 Cooler,
 Create,
 Create Plan,
+Create Scheme,
 Create a Bill of Materials to define what raw materials go into a finished good.,Создайте спецификацию чтобы определить какие материалы входят в готовый продукт.
 Create a Work Order to plan and track production runs against a BOM.,Создайте производственный заказ для планирования и контроля выпуска.
 Create a plan to start tracking campaign budget and ROI.,
@@ -134,6 +142,7 @@ Designation,Должность
 Desk access,
 Direction,Направление
 Disabled,
+Discount %,
 Dispatched,
 Distributor,
 Distributor claims will appear here once submitted.,
@@ -148,6 +157,17 @@ EHF Status,Статус ЭСФ
 EHF Submissions,Отправки ЭСФ
 EUR → UZS,EUR → UZS
 Earnings,Начисления
+Edit,
+Edit OSA audit,
+Edit Promo Plan,
+Edit Promo Scheme,
+Edit Van Stock,
+Edit Visit,
+Edit field user,
+Edit outlet,
+Edit photo report,
+Edit planogram,
+Edit route,
 Editing the rate updates the received amount.,
 Email,
 Email and name are required.,
@@ -163,8 +183,12 @@ Equipment and Issue are required.,
 Equipment is required.,
 Equipment name is required.,
 Error,Ошибка
+Every route row needs an outlet.,
 Exchange Rates,Курсы валют
 Exchange rate,
+Expected,
+Expected Facings,
+Expected facings is required on row {0}.,
 Expense,
 Expense lines,
 Expenses,
@@ -172,16 +196,32 @@ Export,Экспорт
 Failed to create equipment.,
 Failed to create promo plan.,
 Failed to create.,
+Failed to load OSA audit.,
 Failed to load claim.,
 Failed to load ledger.,
+Failed to load photo report.,
+Failed to load planogram.,
+Failed to load promo plan.,
+Failed to load promo scheme.,
+Failed to load van stock.,
+Failed to load visit.,
 Failed to load.,
 Failed to refresh claim.,
+Failed to save OSA audit.,
+Failed to save photo report.,
+Failed to save planogram.,
+Failed to save promo scheme.,
+Failed to save van stock.,
+Failed to save visit.,
+Failed to update promo plan.,
 Failed to update status.,
 Female,Женский
 Field Sales,Полевые продажи
 Field User,Полевой сотрудник
+Field User is required.,
 Field User name is required.,
 Field Users,
+Field user is required.,
 Field users represent sales reps who execute visits and own van stock.,
 Fill in the required fields before submitting.,
 Finished good,Готовая продукция
@@ -189,11 +229,14 @@ Finished-goods warehouse,Склад готовой продукции
 First name,Имя
 First name is required.,Введите имя.
 Fixtures directory missing: {0},
+Free Qty,
 Freezer,
 Frequency,Периодичность
 From,С
 From account,
 Full name,
+GPS Latitude,
+GPS Longitude,
 Gender,Пол
 Gender is required.,Укажите пол.
 Generate and submit,Создать и провести
@@ -223,7 +266,10 @@ Invoice,Счёт
 Issue,
 Issue is required.,
 Item,Товар
+Item #{0}: item is required.,
+Item #{0}: qty must be greater than 0.,
 Item does not require Asl Belgisi,
+Item is required on row {0}.,
 Items,Товары
 Journal Entries,Журнальные записи
 Language,
@@ -233,6 +279,8 @@ Latitude,
 Leave,Отпуск
 Leave type,Тип отпуска
 Left,Уволен
+Lines,
+Link to an existing Customer for receivables.,
 Loaded,
 Loading…,Загрузка…
 Log out,Выйти
@@ -263,16 +311,27 @@ Name or email,
 Net,К выплате
 Net ROI %,
 Net pay,К выплате
+New,
 New BOM,Новая спецификация
 New Equipment,
+New OSA audit,
 New Plan,
 New Promo Plan,
+New Promo Scheme,
+New Scheme,
+New Van Stock,
+New Visit,
 New Work Order,Новый производственный заказ
 New employee,Новый сотрудник
 New expense,
+New field user,
 New journal,Новая запись
 New leave request,Новая заявка
+New outlet,
 New payment,Новый платёж
+New photo report,
+New planogram,
+New route,
 New transfer,
 No,
 No 1C sync events yet.,Событий синхронизации 1С пока нет.
@@ -294,8 +353,11 @@ No equipment yet,
 No exchange rates yet. Click Refresh now to fetch today's rates from cbu.uz.,Курсы валют пока отсутствуют. Нажмите «Обновить сейчас»
 No field users yet,
 No items with submitted active BOMs yet — create one first.,Нет товаров с проведёнными активными спецификациями — сначала создайте.
+No items yet.,
 No leave requests,Нет заявок на отпуск
+No lines yet.,
 No matches found,
+No outlets in this route yet.,
 No outlets yet,Пока нет торговых точек
 No photo reports yet,
 No planograms yet,
@@ -307,6 +369,7 @@ No receivables,
 No repair requests,
 No routes yet,Пока нет маршрутов
 No salary slips yet,Нет расчётных листков
+No steps yet.,
 No template,
 No transactions yet.,
 No van stock yet,
@@ -315,6 +378,7 @@ No work orders,Нет производственных заказов
 Nos,
 Not permitted,
 Not permitted for company {0},
+Notes,
 OSA,
 OSA %,
 OSA Audit name is required.,
@@ -336,6 +400,8 @@ Outlet,Торговая точка
 Outlet Class,Класс точки
 Outlet Code,Код точки
 Outlet Name,Название точки
+Outlet code,
+Outlet code is required.,
 Outlet is required.,
 Outlet name (e.g. OUT-001),
 Outlet name is required.,
@@ -350,6 +416,7 @@ Pay from,
 Payable (AP),Кредиторская задолженность
 Payee,
 Payload,Тело запроса
+Payload must be an object.,
 Payment Entry,Платёжный документ
 Payments,Платежи
 Payroll,Зарплата
@@ -370,6 +437,7 @@ Photo,
 Photo Report name is required.,
 Photo Reports,
 Photo URL,
+Photo is required.,
 Photos,
 "Photos capture shelves, storefronts and promotions during visits.",
 Pick a finished-good item.,Выберите готовый продукт.
@@ -378,6 +446,7 @@ Pick an employee.,Выберите сотрудника.
 Plan Type,
 Planned,Запланировано
 Planned Date,Плановая дата
+Planned Time,
 Planned date,Плановая дата
 Planned start,Плановая дата начала
 Planogram name is required.,
@@ -385,6 +454,7 @@ Planograms,
 Planograms describe expected shelf facings per outlet and category.,
 Please fill all required fields.,
 Posting Date,Дата проводки
+Posting Date is required.,
 Posting date,Дата проводки
 Postings,
 Present,Присутствует
@@ -431,6 +501,8 @@ Reject,
 Reject this leave request?,Отклонить заявку на отпуск?
 Rejected,Отклонён
 Reload,Перезагрузить
+Remove,
+Remove row,
 Repair,
 Repair Request,
 Repair Request name is required.,
@@ -457,8 +529,10 @@ Role,
 Role not found,
 Role template (optional),
 Roles,
+Route,
 Route Code,Код маршрута
 Route Name,Название маршрута
+Route code is required.,
 Route name is required.,
 Routes,Маршруты
 Row not found on this Stock Entry,
@@ -471,6 +545,7 @@ Sales Invoice must be created from a Sales Order,
 Sales Invoices,Счета продаж
 Sales Order {0} must be submitted before invoicing,
 Save,Сохранить
+Save Changes,
 Save allowed users,
 Save and submit,Сохранить и провести
 Save as draft,Сохранить черновик
@@ -502,6 +577,8 @@ Serial No,
 Settle,
 Settlement failed.,
 Shelf,
+Shelf Position,
+Skip Reason,
 Skip reason is required when status is Skipped.,
 Skipped,Пропущено
 Slip,Расчётный листок
@@ -513,7 +590,11 @@ Start,
 Start Date,
 Start Work,
 Status,Статус
+Status is required.,
+Step,
 Step #{0} not found on this visit.,
+Step #{0}: type is required.,
+Steps,
 Stock Entry,Складское движение
 Stock Ledger,Складская книга
 Stock Reservation,Резервирование склада
@@ -535,9 +616,11 @@ Suspended,Приостановлен
 Swap accounts,
 The Compliance module is disabled for this company.,Модуль соответствия отключён для этой компании.
 Threshold,
+Threshold Qty,
 To,По
 To account,
 Total,
+Total / Present / OSA % are computed server-side.,
 Total SKUs,
 Total cost,Общая стоимость
 Total outstanding,
@@ -561,9 +644,12 @@ Unknown vertical pack: {0},
 Unknown warehouse: {0},
 Unsupported language: {0},
 Uplift Value,
+Upload failed,
+Uploading…,
 User,Пользователь
 User account,Учётная запись
 User already exists,
+User is required.,
 User not found,
 Users,
 Utilization %,
@@ -571,6 +657,7 @@ Valid Distributor (Customer) is required.,
 Valid From,
 Valid Promo Plan is required.,
 Valid To,
+Valid To must be on or after Valid From.,
 Van Stock,
 Van Stock name is required.,
 Van stock tracks what each field user has loaded for the day.,
@@ -603,6 +690,9 @@ You need administrator access to view this page.,Требуется доступ
 item_code and warehouse are required,
 pack_key is required,
 step_idx must be an integer.,
+user@example.com,
 {0} is required.,
 {0} must be a number,
+{0} name is required.,
 —,
+— none —,

@@ -1,4 +1,5 @@
 source,target
+#,#
 1C Sync Log,1C Sync Log
 A password reset email will be sent. The account is disabled until the user sets a password.,A password reset email will be sent. The account is disabled until the user sets a password.
 A valid email is required,A valid email is required
@@ -10,9 +11,14 @@ Account,Account
 Account currency must match the payment account.,Account currency must match the payment account.
 Action failed.,Action failed.
 Active,Active
+Actual,Actual
 Add at least one raw material line.,Add at least one raw material line.
+Add item,Add item
 Add line,Add line
+Add outlet,Add outlet
+Add row,Add row
 "Add your first employee to start tracking attendance, leave and payroll.","Add your first employee to start tracking attendance, leave and payroll."
+Address,Address
 Admin,Admin
 Against,Against
 All categories,All categories
@@ -62,6 +68,7 @@ Cancelled,Cancelled
 Cannot check out before checking in.,Cannot check out before checking in.
 Captured At,Captured At
 Category,Category
+Category is required.,Category is required.
 Channel,Channel
 Checked in,Checked in
 Claim,Claim
@@ -91,6 +98,7 @@ Contact,Contact
 Cooler,Cooler
 Create,Create
 Create Plan,Create Plan
+Create Scheme,Create Scheme
 Create a Bill of Materials to define what raw materials go into a finished good.,Create a Bill of Materials to define what raw materials go into a finished good.
 Create a Work Order to plan and track production runs against a BOM.,Create a Work Order to plan and track production runs against a BOM.
 Create a plan to start tracking campaign budget and ROI.,Create a plan to start tracking campaign budget and ROI.
@@ -123,6 +131,7 @@ Designation,Designation
 Desk access,Desk access
 Direction,Direction
 Disabled,Disabled
+Discount %,Discount %
 Dispatched,Dispatched
 Distributor,Distributor
 Distributor claims will appear here once submitted.,Distributor claims will appear here once submitted.
@@ -136,6 +145,17 @@ EHF Status,EHF Status
 EHF Submissions,EHF Submissions
 EUR → UZS,EUR → UZS
 Earnings,Earnings
+Edit,Edit
+Edit OSA audit,Edit OSA audit
+Edit Promo Plan,Edit Promo Plan
+Edit Promo Scheme,Edit Promo Scheme
+Edit Van Stock,Edit Van Stock
+Edit Visit,Edit Visit
+Edit field user,Edit field user
+Edit outlet,Edit outlet
+Edit photo report,Edit photo report
+Edit planogram,Edit planogram
+Edit route,Edit route
 Editing the rate updates the received amount.,Editing the rate updates the received amount.
 Email,Email
 Email and name are required.,Email and name are required.
@@ -151,24 +171,44 @@ Equipment and Issue are required.,Equipment and Issue are required.
 Equipment is required.,Equipment is required.
 Equipment name is required.,Equipment name is required.
 Error,Error
+Every route row needs an outlet.,Every route row needs an outlet.
 Exchange Rates,Exchange Rates
 Exchange rate,Exchange rate
+Expected,Expected
+Expected Facings,Expected Facings
+Expected facings is required on row {0}.,Expected facings is required on row {0}.
 Expense,Expense
 Expense lines,Expense lines
 Expenses,Expenses
 Failed to create equipment.,Failed to create equipment.
 Failed to create promo plan.,Failed to create promo plan.
 Failed to create.,Failed to create.
+Failed to load OSA audit.,Failed to load OSA audit.
 Failed to load claim.,Failed to load claim.
 Failed to load ledger.,Failed to load ledger.
+Failed to load photo report.,Failed to load photo report.
+Failed to load planogram.,Failed to load planogram.
+Failed to load promo plan.,Failed to load promo plan.
+Failed to load promo scheme.,Failed to load promo scheme.
+Failed to load van stock.,Failed to load van stock.
+Failed to load visit.,Failed to load visit.
 Failed to load.,Failed to load.
 Failed to refresh claim.,Failed to refresh claim.
+Failed to save OSA audit.,Failed to save OSA audit.
+Failed to save photo report.,Failed to save photo report.
+Failed to save planogram.,Failed to save planogram.
+Failed to save promo scheme.,Failed to save promo scheme.
+Failed to save van stock.,Failed to save van stock.
+Failed to save visit.,Failed to save visit.
+Failed to update promo plan.,Failed to update promo plan.
 Failed to update status.,Failed to update status.
 Female,Female
 Field Sales,Field Sales
 Field User,Field User
+Field User is required.,Field User is required.
 Field User name is required.,Field User name is required.
 Field Users,Field Users
+Field user is required.,Field user is required.
 Field users represent sales reps who execute visits and own van stock.,Field users represent sales reps who execute visits and own van stock.
 Fill in the required fields before submitting.,Fill in the required fields before submitting.
 Finished good,Finished good
@@ -176,11 +216,14 @@ Finished-goods warehouse,Finished-goods warehouse
 First name,First name
 First name is required.,First name is required.
 Fixtures directory missing: {0},Fixtures directory missing: {0}
+Free Qty,Free Qty
 Freezer,Freezer
 Frequency,Frequency
 From,From
 From account,From account
 Full name,Full name
+GPS Latitude,GPS Latitude
+GPS Longitude,GPS Longitude
 Gender,Gender
 Gender is required.,Gender is required.
 Generate and submit,Generate and submit
@@ -210,7 +253,11 @@ Invoice,Invoice
 Issue,Issue
 Issue is required.,Issue is required.
 Item,Item
+Item #{0}: item is required.,Item #{0}: item is required.
+Item #{0}: qty must be greater than 0.,Item #{0}: qty must be greater than 0.
 Item does not require Asl Belgisi,Item does not require Asl Belgisi
+Item is required on row {0}.,Item is required on row {0}.
+Items,Items
 Language,Language
 Last login,Last login
 Last name,Last name
@@ -218,6 +265,8 @@ Latitude,Latitude
 Leave,Leave
 Leave type,Leave type
 Left,Left
+Lines,Lines
+Link to an existing Customer for receivables.,Link to an existing Customer for receivables.
 Loaded,Loaded
 Loading…,Loading…
 Log out,Log out
@@ -247,14 +296,25 @@ Name or email,Name or email
 Net,Net
 Net ROI %,Net ROI %
 Net pay,Net pay
+New,New
 New BOM,New BOM
 New Equipment,New Equipment
+New OSA audit,New OSA audit
 New Plan,New Plan
 New Promo Plan,New Promo Plan
+New Promo Scheme,New Promo Scheme
+New Scheme,New Scheme
+New Van Stock,New Van Stock
+New Visit,New Visit
 New Work Order,New Work Order
 New employee,New employee
 New expense,New expense
+New field user,New field user
 New leave request,New leave request
+New outlet,New outlet
+New photo report,New photo report
+New planogram,New planogram
+New route,New route
 New transfer,New transfer
 No,No
 No 1C sync events yet.,No 1C sync events yet.
@@ -275,8 +335,11 @@ No equipment yet,No equipment yet
 No exchange rates yet. Click Refresh now to fetch today's rates from cbu.uz.,No exchange rates yet. Click Refresh now to fetch today's rates from cbu.uz.
 No field users yet,No field users yet
 No items with submitted active BOMs yet — create one first.,No items with submitted active BOMs yet — create one first.
+No items yet.,No items yet.
 No leave requests,No leave requests
+No lines yet.,No lines yet.
 No matches found,No matches found
+No outlets in this route yet.,No outlets in this route yet.
 No outlets yet,No outlets yet
 No photo reports yet,No photo reports yet
 No planograms yet,No planograms yet
@@ -288,6 +351,7 @@ No receivables,No receivables
 No repair requests,No repair requests
 No routes yet,No routes yet
 No salary slips yet,No salary slips yet
+No steps yet.,No steps yet.
 No template,No template
 No transactions yet.,No transactions yet.
 No van stock yet,No van stock yet
@@ -296,6 +360,7 @@ No work orders,No work orders
 Nos,Nos
 Not permitted,Not permitted
 Not permitted for company {0},Not permitted for company {0}
+Notes,Notes
 OSA,OSA
 OSA %,OSA %
 OSA Audit name is required.,OSA Audit name is required.
@@ -317,6 +382,8 @@ Outlet,Outlet
 Outlet Class,Outlet Class
 Outlet Code,Outlet Code
 Outlet Name,Outlet Name
+Outlet code,Outlet code
+Outlet code is required.,Outlet code is required.
 Outlet is required.,Outlet is required.
 Outlet name (e.g. OUT-001),Outlet name (e.g. OUT-001)
 Outlet name is required.,Outlet name is required.
@@ -329,6 +396,7 @@ Paid days,Paid days
 Pay from,Pay from
 Payee,Payee
 Payload,Payload
+Payload must be an object.,Payload must be an object.
 Payment Entry,Payment Entry
 Payroll,Payroll
 Payroll entry,Payroll entry
@@ -348,6 +416,7 @@ Photo,Photo
 Photo Report name is required.,Photo Report name is required.
 Photo Reports,Photo Reports
 Photo URL,Photo URL
+Photo is required.,Photo is required.
 Photos,Photos
 "Photos capture shelves, storefronts and promotions during visits.","Photos capture shelves, storefronts and promotions during visits."
 Pick a finished-good item.,Pick a finished-good item.
@@ -356,6 +425,7 @@ Pick an employee.,Pick an employee.
 Plan Type,Plan Type
 Planned,Planned
 Planned Date,Planned Date
+Planned Time,Planned Time
 Planned date,Planned date
 Planned start,Planned start
 Planogram name is required.,Planogram name is required.
@@ -363,6 +433,7 @@ Planograms,Planograms
 Planograms describe expected shelf facings per outlet and category.,Planograms describe expected shelf facings per outlet and category.
 Please fill all required fields.,Please fill all required fields.
 Posting Date,Posting Date
+Posting Date is required.,Posting Date is required.
 Posting date,Posting date
 Postings,Postings
 Present,Present
@@ -406,6 +477,8 @@ Reject,Reject
 Reject this leave request?,Reject this leave request?
 Rejected,Rejected
 Reload,Reload
+Remove,Remove
+Remove row,Remove row
 Repair,Repair
 Repair Request,Repair Request
 Repair Request name is required.,Repair Request name is required.
@@ -430,8 +503,10 @@ Role,Role
 Role not found,Role not found
 Role template (optional),Role template (optional)
 Roles,Roles
+Route,Route
 Route Code,Route Code
 Route Name,Route Name
+Route code is required.,Route code is required.
 Route name is required.,Route name is required.
 Routes,Routes
 Row not found on this Stock Entry,Row not found on this Stock Entry
@@ -442,6 +517,7 @@ Sales,Sales
 Sales Invoice must be created from a Sales Order,Sales Invoice must be created from a Sales Order
 Sales Order {0} must be submitted before invoicing,Sales Order {0} must be submitted before invoicing
 Save,Save
+Save Changes,Save Changes
 Save allowed users,Save allowed users
 Save and submit,Save and submit
 Save as draft,Save as draft
@@ -473,6 +549,8 @@ Serial No,Serial No
 Settle,Settle
 Settlement failed.,Settlement failed.
 Shelf,Shelf
+Shelf Position,Shelf Position
+Skip Reason,Skip Reason
 Skip reason is required when status is Skipped.,Skip reason is required when status is Skipped.
 Skipped,Skipped
 Slip,Slip
@@ -484,7 +562,11 @@ Start,Start
 Start Date,Start Date
 Start Work,Start Work
 Status,Status
+Status is required.,Status is required.
+Step,Step
 Step #{0} not found on this visit.,Step #{0} not found on this visit.
+Step #{0}: type is required.,Step #{0}: type is required.
+Steps,Steps
 Stock Entry,Stock Entry
 Stock Reservation,Stock Reservation
 Stop,Stop
@@ -504,9 +586,11 @@ Suspended,Suspended
 Swap accounts,Swap accounts
 The Compliance module is disabled for this company.,The Compliance module is disabled for this company.
 Threshold,Threshold
+Threshold Qty,Threshold Qty
 To,To
 To account,To account
 Total,Total
+Total / Present / OSA % are computed server-side.,Total / Present / OSA % are computed server-side.
 Total SKUs,Total SKUs
 Total cost,Total cost
 Total outstanding,Total outstanding
@@ -529,9 +613,12 @@ Unknown vertical pack: {0},Unknown vertical pack: {0}
 Unknown warehouse: {0},Unknown warehouse: {0}
 Unsupported language: {0},Unsupported language: {0}
 Uplift Value,Uplift Value
+Upload failed,Upload failed
+Uploading…,Uploading…
 User,User
 User account,User account
 User already exists,User already exists
+User is required.,User is required.
 User not found,User not found
 Users,Users
 Utilization %,Utilization %
@@ -539,6 +626,7 @@ Valid Distributor (Customer) is required.,Valid Distributor (Customer) is requir
 Valid From,Valid From
 Valid Promo Plan is required.,Valid Promo Plan is required.
 Valid To,Valid To
+Valid To must be on or after Valid From.,Valid To must be on or after Valid From.
 Van Stock,Van Stock
 Van Stock name is required.,Van Stock name is required.
 Van stock tracks what each field user has loaded for the day.,Van stock tracks what each field user has loaded for the day.
@@ -570,6 +658,9 @@ You need administrator access to view this page.,You need administrator access t
 item_code and warehouse are required,item_code and warehouse are required
 pack_key is required,pack_key is required
 step_idx must be an integer.,step_idx must be an integer.
+user@example.com,user@example.com
 {0} is required.,{0} is required.
 {0} must be a number,{0} must be a number
+{0} name is required.,{0} name is required.
 —,—
+— none —,— none —
