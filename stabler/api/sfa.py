@@ -636,6 +636,11 @@ def create_photo_report(payload: dict | str) -> dict:
 	return doc.as_dict()
 
 
+@frappe.whitelist()
+def update_photo_report(name: str, payload: dict | str) -> dict:
+	return _update_doc("Photo Report", name, payload)
+
+
 # ---------------------------------------------------------------------------
 # Planograms
 # ---------------------------------------------------------------------------
@@ -696,6 +701,11 @@ def create_planogram(payload: dict | str) -> dict:
 	return doc.as_dict()
 
 
+@frappe.whitelist()
+def update_planogram(name: str, payload: dict | str) -> dict:
+	return _update_doc("Planogram", name, payload)
+
+
 # ---------------------------------------------------------------------------
 # OSA audits
 # ---------------------------------------------------------------------------
@@ -754,6 +764,11 @@ def create_osa_audit(payload: dict | str) -> dict:
 	doc = frappe.get_doc({"doctype": "OSA Audit", **payload})
 	doc.insert()
 	return doc.as_dict()
+
+
+@frappe.whitelist()
+def update_osa_audit(name: str, payload: dict | str) -> dict:
+	return _update_doc("OSA Audit", name, payload)
 
 
 # ---------------------------------------------------------------------------
