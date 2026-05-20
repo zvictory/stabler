@@ -1,0 +1,20 @@
+{
+  "pack_key": "telecom",
+  "label": "Telecom",
+  "required_fields": [
+    {
+      "dt": "Item",
+      "fieldname": "imei_tracked",
+      "label": "IMEI Tracked",
+      "fieldtype": "Check",
+      "insert_after": "is_stock_item"
+    },
+    {
+      "dt": "Item",
+      "fieldname": "network_band",
+      "label": "Network Band",
+      "fieldtype": "Data",
+      "insert_after": "imei_tracked"
+    }
+  ]
+}

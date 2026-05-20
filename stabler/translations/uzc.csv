@@ -8,6 +8,7 @@ Abbr,
 Absent,Йўқ
 Account,
 Account currency must match the payment account.,
+Action failed.,
 Active,Фаол
 Add at least one raw material line.,Камида битта хом ашё қаторини қўшинг.
 Add line,Қатор қўшиш
@@ -15,10 +16,14 @@ Add your first employee to start tracking attendance, leave and payroll.
 "Add your first employee to start tracking attendance, leave and payroll.",
 Admin,
 Against,
+All categories,
 All directions,
 All items above reorder level.,Барча товарлар тўлдириш даражасидан юқори.
 All object types,
+All promo plans,
+All sales invoices for this company are fully paid.,
 All statuses,Барча ҳолатлар
+All types,
 Allowed users,
 Amount,Сумма
 Amount received,
@@ -26,25 +31,51 @@ Amount sent,
 Any,
 Apply,Қўллаш
 Apply role template,
+Approve,
 Approve and submit,Тасдиқлаш ва ўтказиш
 Approve this leave request?,Таътил аризасини тасдиқлайсизми?
 Approved,Тасдиқланган
 Asl Belgisi,Асл Белгиси
 Asl Belgisi Code,
 Asl Belgisi — Stock Entries pending scan,
+Asset Tag,
+Asset Tag and Category are required.,
+Assigned Field User,
+Assigned Technician,
 Attendance,Давомат
+Audited At,
 BOM,Спецификация
 BOMs,Спецификациялар
 Back to dashboard,Бошқарувга қайтиш
 Balance,
 Base equivalent,
 Bimonthly,Икки ҳафтада бир
+Brand,
+Budget,
+Buy X get Y,
 CBU.uz exchange rates (last 30 days),
+Campaign,
+Campaign Name,
+Campaign ROI,
 Cancel,Бекор қилиш
+Cancel Request,
 Cancel this submitted BOM?,Бу тасдиқланган спецификацияни бекор қиласизми?
 Cancelled,Бекор қилинган
+Cannot check out before checking in.,
+Captured At,
 Cash on hand,Кассадаги пул
+Category,
+Channel,
 Chart of Accounts,Ҳисоблар режаси
+Checked in,
+Claim,
+Claim No.,
+Claim amount must be greater than zero.,
+Claim is already settled by {0}.,
+Claim is already {0} and cannot be re-reviewed.,
+Claim name is required.,
+Claim {0} not found.,
+Claims,
 Close,Ёпиш
 Close this Work Order? This finalizes it.,Бу буюртмани ёпасизми? Бу якуний ҳаракат.
 Closing,
@@ -56,15 +87,23 @@ Company,Компания
 Company email,Иш email
 Company is required.,
 Complete,
+Completed,
+Compliance,
 Components,Таркибий қисмлар
 Consumed,
 Contact,Алоқа
+Cooler,
 Create,
+Create Plan,
 Create a Bill of Materials to define what raw materials go into a finished good.,Тайёр маҳсулотга қандай хом ашё кириши учун спецификация яратинг.
 Create a Work Order to plan and track production runs against a BOM.,Ишлаб чиқаришни режалаштириш ва кузатиш учун буюртма яратинг.
+Create a plan to start tracking campaign budget and ROI.,
+Create outlets to start planning routes and visits.,
 Created,
 Credit,
+Credit Limit,
 Currency,
+Customer,
 Customers,Мижозлар
 Daily,Кунлик
 Dashboard,Бошқарув панели
@@ -73,18 +112,30 @@ Date of birth,Туғилган сана
 Date of birth is required.,Туғилган санани киритинг.
 Date of joining,Ишга қабул санаси
 Dates,Саналар
+Day of Week,
 Days,Кун
 Debit,
 Deductions,Ушланмалар
 Default,Асосий
+Default Route,
+Default Warehouse,
+Define promotions that field users can apply during visits.,
+Define routes so field users know which outlets to visit each day.,
 Delete,
 Department,Бўлим
+Describe the problem…,
 Designation,Лавозим
 Desk access,
 Direction,
 Disabled,
+Dispatched,
+Distributor,
+Distributor claims will appear here once submitted.,
 DocType,
+Documents,
 Draft,Қоралама
+Due Date,
+Duplicate sequence {0} on this route.,
 Duration (ms),
 EHF Status,EHF ҳолати
 EHF Submissions,
@@ -97,6 +148,13 @@ Employee,Ходим
 Employees,Ходимлар
 Empty allowed list = user can access every company.,
 Enabled,
+End,
+End Date,
+End Date must be on or after Start Date.,
+Equipment,
+Equipment and Issue are required.,
+Equipment is required.,
+Equipment name is required.,
 Error,
 Exchange Rates,Валюта курслари
 Exchange rate,
@@ -104,13 +162,27 @@ Expense,
 Expense lines,
 Expenses,
 Export,Экспорт
+Failed to create equipment.,
+Failed to create promo plan.,
+Failed to create.,
+Failed to load claim.,
 Failed to load ledger.,
+Failed to load.,
+Failed to refresh claim.,
+Failed to update status.,
 Female,Аёл
+Field Sales,
+Field User,
+Field User name is required.,
+Field Users,
+Field users represent sales reps who execute visits and own van stock.,
 Fill in the required fields before submitting.,
 Finished good,Тайёр маҳсулот
 Finished-goods warehouse,Тайёр маҳсулот омбори
 First name,Исм
 First name is required.,Исмни киритинг.
+Fixtures directory missing: {0},
+Freezer,
 Frequency,Даврийлик
 From,Дан
 From account,
@@ -120,18 +192,29 @@ Gender is required.,Жинсни танланг.
 Generate and submit,Яратиш ва тасдиқлаш
 Generate drafts,Қоралама яратиш
 Generated salary slips,Яратилган варақалар
+Grand Total,
 Gross,Ҳисобланган
+Gross ROI %,
 Gross pay,Ҳисобланган маош
 Half Day,Ярим кун
 Hello {name},
 Hours,Соат
 In,Кириш
+In progress,
 In time,Кириш вақти
+InService,
 Inactive,Фаол эмас
+Incremental Units,
+Install Date,
+Invalid decision: {0},
 Invalid item_overrides payload,
+Invalid status: {0},
+Invalid step status: {0},
 Inventory,Омбор
 Invite user,
 Invoice,
+Issue,
+Issue is required.,
 Item,Товар
 Item does not require Asl Belgisi,
 Items,Товарлар
@@ -139,31 +222,44 @@ Journal Entries,Журнал ёзувлари
 Language,
 Last login,
 Last name,Фамилия
+Latitude,
 Leave,Таътил
 Leave type,Таътил тури
 Left,Ишдан кетган
+Loaded,
 Loading…,Юкланмоқда…
 Log out,Чиқиш
 Login required,
+Longitude,
 Low Stock Alerts,Паст қолдиқ ҳақида огоҳлантиришлар
 Low stock,Паст қолдиқ
 Make default BOM for this item,Ушбу товар учун асосий спецификация қилиш
 Male,Эркак
 Manufacturing,Ишлаб чиқариш
+Mark Resolved,
 Mark and submit,Белгилаш ва тасдиқлаш
 Mark attendance,Давоматни белгилаш
 Mark daily attendance to start building reports.,Ҳисоботлар учун ҳар куни давоматни белгиланг.
+Marketing Claims,
+Marketing claim settlement for {0},
 Memo,
 Message,
+Mobile Phone,
+Model,
 Module,Модул
 Modules,
 Money,Пул
 Monthly,Ойлик
+Move to Under Review,
 Name,
 Name or email,
 Net,Тўланади
+Net ROI %,
 Net pay,Тоза маош
 New BOM,Янги спецификация
+New Equipment,
+New Plan,
+New Promo Plan,
 New Work Order,Янги ишлаб чиқариш буюртмаси
 New employee,Янги ходим
 New expense,
@@ -176,26 +272,52 @@ No 1C sync events yet.,
 No ARCA payment events yet.,
 No BOMs yet,Ҳозирча спецификациялар йўқ
 No EHF submissions yet. Submit a Sales Invoice to enqueue one.,
+No OSA audits yet,
+No ROI snapshots yet,
 No Stock Entries with Asl Belgisi items found.,
 No attendance records,Давомат ёзувлари йўқ
+No claim selected.,
+No claims yet,
 No data,Маълумот йўқ
 No deductions,Ушланмалар йўқ
+No default Bank or Cash account configured for company {0}.,
 No earnings,Ҳисобланганлар йўқ
 No employees yet,Ҳозирча ходимлар йўқ
+No equipment yet,
 No exchange rates yet. Click Refresh now to fetch today's rates from cbu.uz.,
+No field users yet,
 No items with submitted active BOMs yet — create one first.,Тасдиқланган фаол спецификацияли товарлар йўқ — аввал яратинг.
 No leave requests,Таътил аризалари йўқ
+No matches found,
+No outlets yet,
+No photo reports yet,
+No planograms yet,
+No promo plans yet,
+No promo schemes yet,
+No receivable account configured for distributor {0} in company {1}.,
+No receivable account configured for distributor {0} in company {1}: {2},
+No receivables,
+No repair requests,
+No routes yet,
 No salary slips yet,Ҳали маош варақалари йўқ
 No template,
 No transactions yet.,
+No van stock yet,
+No visits yet,
 No work orders,Ишлаб чиқариш буюртмалари йўқ
 Nos,
 Not permitted,
 Not permitted for company {0},
+OSA,
+OSA %,
+OSA Audit name is required.,
+OSA Audits,
 Object Name,
 Object Type,
 On Leave,Таътилда
 On leave today,Бугун таътилда
+On-Shelf-Availability audits compare expected vs actual facings during visits.,
+Only Approved claims can be settled. Current status: {0},
 Open,Очиқ
 Open Desk,Дескни очиш
 Opening,
@@ -203,7 +325,18 @@ Optional,
 Other,Бошқа
 Out,Чиқиш
 Out time,Чиқиш вақти
+Outlet,
+Outlet Class,
+Outlet Code,
+Outlet Name,
+Outlet is required.,
+Outlet name (e.g. OUT-001),
+Outlet name is required.,
+Outlet {0} appears twice on this route.,
+Outlets,
+Outstanding,
 Override qty must be greater than zero,
+POSM,
 Page not found,Саҳифа топилмади
 Paid days,Тўланган кун
 Pay from,
@@ -217,6 +350,7 @@ Payroll entry,Маош ёзуви
 Pending,
 Pending requests,Кутилаётган аризалар
 People,Ходимлар
+Percent off,
 Period,Давр
 Period Credit,
 Period Debit,
@@ -225,25 +359,49 @@ Period start,Давр боши
 Permissions,
 Personal email,Шахсий email
 Phone,Телефон
+Photo,
+Photo Report name is required.,
+Photo Reports,
+Photo URL,
+Photos,
+"Photos capture shelves, storefronts and promotions during visits.",
 Pick a finished-good item.,Тайёр маҳсулотни танланг.
 Pick a leave type.,Таътил турини танланг.
 Pick an employee.,Ходимни танланг.
+Plan Type,
 Planned,Режалаштирилган
+Planned Date,
+Planned date,
 Planned start,Бошланиш санаси
+Planogram name is required.,
+Planograms,
+Planograms describe expected shelf facings per outlet and category.,
+Please fill all required fields.,
 Posting Date,
 Posting date,Ҳисоб санаси
 Postings,
 Present,Ҳозир
+Present SKUs,
 Processed,
 Produce how many units? Leave blank for full balance.,Неча дона ишлаб чиқариш керак? Тўлиқ қолдиқ учун бўш қолдиринг.
 Produced,Ишлаб чиқарилган
 Profile,Профил
+Promo,
+Promo Plan,
+Promo Plan name is required.,
+Promo Plan {0} has no company.,
+Promo Plan {0} not found.,
+Promo Plans,
+Promo Scheme name is required.,
+Promo Schemes,
+Promos,
 Purchase Invoices,Харид ҳисоб-фактуралари
 Purchasing,Харид
 Qty,Миқдори
 Quantity,Миқдор
 Quantity must be positive.,Миқдор мусбат бўлиши керак.
 RUB → UZS,
+Rack,
 Rate,Нарх
 Raw material cost,Хом ашё харажати
 Raw materials,Хом ашё
@@ -251,31 +409,51 @@ Read,
 Read-only view. Edit permissions in Frappe's Role Permission Manager.,
 Reason,Сабаб
 Receivable (AR),Дебиторлик қарзи
+Receivables,
 Received,
 Received At,
 Recent activity,Сўнгги операциялар
+Reconciled,
 Record production,Ишлаб чиқаришни қайд этиш
+Reference,
 Refresh,Янгилаш
 Refresh now,
 Refreshing…,
+"Register coolers, freezers, racks, and POSM assets here.",
+Reject,
 Reject this leave request?,Таътил аризасини рад этасизми?
 Rejected,Рад этилган
 Reload,
+Repair,
+Repair Request,
+Repair Request name is required.,
+Repair Requests,
 Replaces all current roles.,
+Report Issue,
+Reported At,
+Reported By,
 Reports,Ҳисоботлар
 Request,Ариза
 Required,Талаб қилинади
 Required materials,Керакли материаллар
 Reset email sent.,
 Reset password,
+Resolved At,
+Retired,
 Retries,
 Retry submission,
 Retrying…,
+Returned,
 Revenue MTD,Ой бошидан даромад
+Reviewer Notes,
 Role,
 Role not found,
 Role template (optional),
 Roles,
+Route Code,
+Route Name,
+Route name is required.,
+Routes,
 Row not found on this Stock Entry,
 Run,Ишга тушириш
 Run a payroll cycle to generate salary slips for assigned employees.,Тайинланган ходимлар учун маош варақаларини яратиш учун ҳисоблашни ишга туширинг.
@@ -290,31 +468,55 @@ Save allowed users,
 Save and submit,Сақлаш ва тасдиқлаш
 Save as draft,Қоралама сифатида сақлаш
 Save modules,
+Saving…,
 Scan code for,
 Scan or type code,
 Scanned,
 Scanned / Required,
 Scanning…,
+Scheme Code,
+Scheme Name,
+Scheme Type,
 Search,
 Search BOMs or finished goods…,Спецификация ёки тайёр маҳсулотни қидириш…
+Search asset tag…,
+Search campaigns…,
 Search employees…,Ходимларни қидириш…
+Search items…,
+Search outlets…,
 Search work orders…,Ишлаб чиқариш буюртмаларини қидириш…
 Select an account…,
+Select company,
 Select template…,
 Select…,
 Send invite,
 Send password reset email to ,
+Serial No,
+Settle,
+Settlement failed.,
+Shelf,
+Skip reason is required when status is Skipped.,
+Skipped,
 Slip,Ҳисоб варақаси
+Snapshots are generated by the daily ROI task for Active promo plans.,
 SoliqOnline UUID,
 Something went wrong,Хатолик юз берди
 Source warehouse,Манба омбор
+Start,
+Start Date,
+Start Work,
 Status,Ҳолат
+Step #{0} not found on this visit.,
 Stock Entry,
 Stock Ledger,Омбор китоби
+Stock Reservation,Омбор резерви
 Stop,Тўхтатиш
 Stop this Work Order? You can resume it later.,Бу буюртмани тўхтатасизми? Кейин давом эттирса бўлади.
+Storefront,
 Submit,Тасдиқлаш
+Submit & reserve stock,Тасдиқлаш ва омборни резерв қилиш
 Submit a leave request on behalf of an employee.,Ходим номидан ариза юборинг.
+Submit a request to track equipment service tickets.,
 Submit and release this Work Order?,Бу буюртмани тасдиқлаш ва ишга туширишми?
 Submit expense,
 Submit this BOM? You won't be able to edit it after.,Бу спецификацияни тасдиқлайсизми? Кейин таҳрирлаб бўлмайди.
@@ -325,36 +527,62 @@ Suppliers,Етказиб берувчилар
 Suspended,Тўхтатилган
 Swap accounts,
 The Compliance module is disabled for this company.,
+Threshold,
 To,Гача
 To account,
 Total,
+Total SKUs,
 Total cost,Умумий харажат
+Total outstanding,
+Trade Marketing,
 Transaction Id,
 Transfer,
 Transfer how many units of materials? Leave blank for full.,Неча дона материал ўтказилади? Тўлиқ учун бўш қолдиринг.
 Transfer materials,Материалларни ўтказиш
 Transferred,Берилган
 Transfers,
+Trigger Item,
 Try again,Қайта уриниб кўринг
 Type,
 UOM,Ўлчов бирлиги
 USD → UZS,
+Units Sold,
 Unknown Sales Order: {0},
 Unknown company: {0},
 Unknown role template: {0},
+Unknown vertical pack: {0},
 Unknown warehouse: {0},
 Unsupported language: {0},
+Uplift Value,
 User,Фойдаланувчи
 User account,Фойдаланувчи ҳисоби
 User already exists,
 User not found,
 Users,
+Utilization %,
+Valid Distributor (Customer) is required.,
+Valid From,
+Valid Promo Plan is required.,
+Valid To,
+Van Stock,
+Van Stock name is required.,
+Van stock tracks what each field user has loaded for the day.,
 View all,Ҳаммасини кўриш
+View attachment,
 View ledger,
+Visit,
+Visit already checked in at {0}.,
+Visit already checked out at {0}.,
+Visit is required.,
+Visit name is required.,
+Visits,
+Visits appear once they are planned from a route or created manually.,
 Voucher,
 WIP warehouse,Тугалланмаган ишлаб чиқариш омбори
+Warehouse,
 Warehouse is required for Sales Orders,
 Warehouses,Омборлар
+Warranty Until,
 Weekly,Ҳафталик
 When,
 Withheld,Ушлаб қолинган
@@ -366,3 +594,8 @@ Write,
 Yes,
 You need administrator access to view this page.,
 item_code and warehouse are required,
+pack_key is required,
+step_idx must be an integer.,
+{0} is required.,
+{0} must be a number,
+—,

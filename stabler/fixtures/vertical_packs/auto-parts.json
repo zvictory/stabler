@@ -1,0 +1,20 @@
+{
+  "pack_key": "auto-parts",
+  "label": "Auto Parts",
+  "required_fields": [
+    {
+      "dt": "Item",
+      "fieldname": "oem_part_number",
+      "label": "OEM Part Number",
+      "fieldtype": "Data",
+      "insert_after": "is_stock_item"
+    },
+    {
+      "dt": "Item",
+      "fieldname": "compatible_models",
+      "label": "Compatible Models",
+      "fieldtype": "Small Text",
+      "insert_after": "oem_part_number"
+    }
+  ]
+}

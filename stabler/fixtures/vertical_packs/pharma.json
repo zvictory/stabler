@@ -1,0 +1,27 @@
+{
+  "pack_key": "pharma",
+  "label": "Pharma Compliance",
+  "required_fields": [
+    {
+      "dt": "Item",
+      "fieldname": "controlled_substance",
+      "label": "Controlled Substance",
+      "fieldtype": "Check",
+      "insert_after": "is_stock_item"
+    },
+    {
+      "dt": "Item",
+      "fieldname": "batch_expiry_required",
+      "label": "Batch Expiry Required",
+      "fieldtype": "Check",
+      "insert_after": "controlled_substance"
+    },
+    {
+      "dt": "Item",
+      "fieldname": "prescription_required",
+      "label": "Prescription Required",
+      "fieldtype": "Check",
+      "insert_after": "batch_expiry_required"
+    }
+  ]
+}

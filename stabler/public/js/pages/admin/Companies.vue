@@ -1,5 +1,5 @@
 <script setup>
-import { onMounted, ref } from "vue";
+import { computed, onMounted, ref } from "vue";
 import { call } from "../../api/client.js";
 import { t } from "../../composables/i18n.js";
 import EmptyState from "../../components/EmptyState.vue";
@@ -17,7 +17,17 @@ const modules = ref({});
 const allUsers = ref([]);
 const allowedUsers = ref([]);
 
-const MODULE_KEYS = ["money", "sales", "purchasing", "inventory", "manufacturing", "hr"];
+const moduleOptions = computed(() => [
+	{ key: "money", label: t("Money") },
+	{ key: "sales", label: t("Sales") },
+	{ key: "purchasing", label: t("Purchasing") },
+	{ key: "inventory", label: t("Inventory") },
+	{ key: "manufacturing", label: t("Manufacturing") },
+	{ key: "hr", label: t("People") },
+	{ key: "stock_reservation", label: t("Stock Reservation") },
+	{ key: "compliance", label: t("Compliance") },
+	{ key: "field_sales", label: t("Field Sales") },
+]);
 
 async function load() {
 	loading.value = true;
@@ -175,15 +185,15 @@ onMounted(load);
 
 				<h6 class="text-uppercase text-secondary small mb-2">{{ t("Modules") }}</h6>
 				<div class="border rounded p-2 mb-3">
-					<label v-for="k in MODULE_KEYS" :key="k" class="form-check form-switch">
+					<label v-for="m in moduleOptions" :key="m.key" class="form-check form-switch">
 						<input
 							class="form-check-input"
 							type="checkbox"
 							:true-value="1"
 							:false-value="0"
-							v-model="modules[k]"
+							v-model="modules[m.key]"
 						/>
-						<span class="form-check-label text-capitalize">{{ k }}</span>
+						<span class="form-check-label">{{ m.label }}</span>
 					</label>
 				</div>
 				<div class="d-flex justify-content-end mb-4">

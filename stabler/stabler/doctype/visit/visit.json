@@ -1,0 +1,196 @@
+{
+ "actions": [],
+ "autoname": "format:VIS-{YYYY}-{#####}",
+ "creation": "2026-05-20 12:00:00.000000",
+ "doctype": "DocType",
+ "editable_grid": 1,
+ "engine": "InnoDB",
+ "field_order": [
+  "outlet",
+  "route",
+  "field_user",
+  "company",
+  "planned_date",
+  "status",
+  "section_checkin",
+  "check_in_at",
+  "check_in_lat",
+  "check_in_lng",
+  "distance_from_outlet_m",
+  "section_checkout",
+  "check_out_at",
+  "check_out_lat",
+  "check_out_lng",
+  "section_meta",
+  "skip_reason",
+  "notes",
+  "section_steps",
+  "steps"
+ ],
+ "fields": [
+  {
+   "fieldname": "outlet",
+   "fieldtype": "Link",
+   "in_list_view": 1,
+   "in_standard_filter": 1,
+   "label": "Outlet",
+   "options": "Outlet",
+   "reqd": 1
+  },
+  {
+   "fieldname": "route",
+   "fieldtype": "Link",
+   "in_standard_filter": 1,
+   "label": "Route",
+   "options": "Route"
+  },
+  {
+   "fieldname": "field_user",
+   "fieldtype": "Link",
+   "in_list_view": 1,
+   "in_standard_filter": 1,
+   "label": "Field User",
+   "options": "User",
+   "reqd": 1
+  },
+  {
+   "fieldname": "company",
+   "fieldtype": "Link",
+   "in_standard_filter": 1,
+   "label": "Company",
+   "options": "Company",
+   "reqd": 1
+  },
+  {
+   "fieldname": "planned_date",
+   "fieldtype": "Date",
+   "in_list_view": 1,
+   "in_standard_filter": 1,
+   "label": "Planned Date"
+  },
+  {
+   "default": "Planned",
+   "fieldname": "status",
+   "fieldtype": "Select",
+   "in_list_view": 1,
+   "in_standard_filter": 1,
+   "label": "Status",
+   "options": "Planned\nInProgress\nCompleted\nSkipped"
+  },
+  {
+   "collapsible": 1,
+   "fieldname": "section_checkin",
+   "fieldtype": "Section Break",
+   "label": "Check In"
+  },
+  {
+   "fieldname": "check_in_at",
+   "fieldtype": "Datetime",
+   "label": "Check In At"
+  },
+  {
+   "fieldname": "check_in_lat",
+   "fieldtype": "Float",
+   "label": "Check In Lat",
+   "precision": "6"
+  },
+  {
+   "fieldname": "check_in_lng",
+   "fieldtype": "Float",
+   "label": "Check In Lng",
+   "precision": "6"
+  },
+  {
+   "fieldname": "distance_from_outlet_m",
+   "fieldtype": "Float",
+   "label": "Distance From Outlet (m)",
+   "precision": "2"
+  },
+  {
+   "collapsible": 1,
+   "fieldname": "section_checkout",
+   "fieldtype": "Section Break",
+   "label": "Check Out"
+  },
+  {
+   "fieldname": "check_out_at",
+   "fieldtype": "Datetime",
+   "label": "Check Out At"
+  },
+  {
+   "fieldname": "check_out_lat",
+   "fieldtype": "Float",
+   "label": "Check Out Lat",
+   "precision": "6"
+  },
+  {
+   "fieldname": "check_out_lng",
+   "fieldtype": "Float",
+   "label": "Check Out Lng",
+   "precision": "6"
+  },
+  {
+   "collapsible": 1,
+   "fieldname": "section_meta",
+   "fieldtype": "Section Break",
+   "label": "Notes"
+  },
+  {
+   "fieldname": "skip_reason",
+   "fieldtype": "Small Text",
+   "label": "Skip Reason"
+  },
+  {
+   "fieldname": "notes",
+   "fieldtype": "Small Text",
+   "label": "Notes"
+  },
+  {
+   "fieldname": "section_steps",
+   "fieldtype": "Section Break",
+   "label": "Steps"
+  },
+  {
+   "fieldname": "steps",
+   "fieldtype": "Table",
+   "label": "Steps",
+   "options": "Visit Step"
+  }
+ ],
+ "index_web_pages_for_search": 1,
+ "links": [],
+ "modified": "2026-05-20 12:00:00.000000",
+ "modified_by": "Administrator",
+ "module": "Stabler",
+ "name": "Visit",
+ "owner": "Administrator",
+ "permissions": [
+  {
+   "create": 1,
+   "delete": 1,
+   "email": 1,
+   "export": 1,
+   "print": 1,
+   "read": 1,
+   "report": 1,
+   "role": "System Manager",
+   "share": 1,
+   "write": 1
+  },
+  {
+   "create": 1,
+   "email": 1,
+   "export": 1,
+   "print": 1,
+   "read": 1,
+   "report": 1,
+   "role": "Sales User",
+   "share": 1,
+   "write": 1
+  }
+ ],
+ "sort_field": "creation",
+ "sort_order": "DESC",
+ "states": [],
+ "track_changes": 1
+}

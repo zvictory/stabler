@@ -32,6 +32,23 @@ import Employees from "./pages/hr/Employees.vue";
 import HRAttendance from "./pages/hr/Attendance.vue";
 import LeaveApplications from "./pages/hr/LeaveApplications.vue";
 import Payroll from "./pages/hr/Payroll.vue";
+import SFAHome from "./pages/sfa/SFAHome.vue";
+import Outlets from "./pages/sfa/Outlets.vue";
+import Routes from "./pages/sfa/Routes.vue";
+import Visits from "./pages/sfa/Visits.vue";
+import FieldUsers from "./pages/sfa/FieldUsers.vue";
+import VanStock from "./pages/sfa/VanStock.vue";
+import Promos from "./pages/sfa/Promos.vue";
+import Photos from "./pages/sfa/Photos.vue";
+import Planograms from "./pages/sfa/Planograms.vue";
+import OSA from "./pages/sfa/OSA.vue";
+import Receivables from "./pages/sfa/Receivables.vue";
+import MarketingHome from "./pages/marketing/MarketingHome.vue";
+import PromoPlans from "./pages/marketing/PromoPlans.vue";
+import ROI from "./pages/marketing/ROI.vue";
+import Claims from "./pages/marketing/Claims.vue";
+import Equipment from "./pages/marketing/Equipment.vue";
+import RepairRequests from "./pages/marketing/RepairRequests.vue";
 import AdminHome from "./pages/admin/AdminHome.vue";
 import AdminUsers from "./pages/admin/Users.vue";
 import AdminRoles from "./pages/admin/Roles.vue";
@@ -114,6 +131,37 @@ const routes = [
 			{ path: "attendance", name: "hr-attendance", component: HRAttendance, meta: { title: "Attendance" } },
 			{ path: "leave", name: "hr-leave", component: LeaveApplications, meta: { title: "Leave" } },
 			{ path: "payroll", name: "hr-payroll", component: Payroll, meta: { title: "Payroll" } },
+		],
+	},
+	{
+		path: "/sfa",
+		component: SFAHome,
+		meta: { title: "Field Sales" },
+		children: [
+			{ path: "", redirect: "/sfa/outlets" },
+			{ path: "outlets", name: "sfa-outlets", component: Outlets, meta: { title: "Outlets" } },
+			{ path: "routes", name: "sfa-routes", component: Routes, meta: { title: "Routes" } },
+			{ path: "visits", name: "sfa-visits", component: Visits, meta: { title: "Visits" } },
+			{ path: "field-users", name: "sfa-field-users", component: FieldUsers, meta: { title: "Field Users" } },
+			{ path: "van-stock", name: "sfa-van-stock", component: VanStock, meta: { title: "Van Stock" } },
+			{ path: "promos", name: "sfa-promos", component: Promos, meta: { title: "Promos" } },
+			{ path: "photos", name: "sfa-photos", component: Photos, meta: { title: "Photos" } },
+			{ path: "planograms", name: "sfa-planograms", component: Planograms, meta: { title: "Planograms" } },
+			{ path: "osa", name: "sfa-osa", component: OSA, meta: { title: "OSA Audits" } },
+			{ path: "receivables", name: "sfa-receivables", component: Receivables, meta: { title: "Receivables" } },
+		],
+	},
+	{
+		path: "/marketing",
+		component: MarketingHome,
+		meta: { title: "Trade Marketing" },
+		children: [
+			{ path: "", redirect: "/marketing/plans" },
+			{ path: "plans", name: "marketing-plans", component: PromoPlans, meta: { title: "Promo Plans" } },
+			{ path: "roi", name: "marketing-roi", component: ROI, meta: { title: "Campaign ROI" } },
+			{ path: "claims", name: "marketing-claims", component: Claims, meta: { title: "Claims" } },
+			{ path: "equipment", name: "marketing-equipment", component: Equipment, meta: { title: "Equipment" } },
+			{ path: "repairs", name: "marketing-repairs", component: RepairRequests, meta: { title: "Repair Requests" } },
 		],
 	},
 	{

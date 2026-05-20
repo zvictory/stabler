@@ -13,7 +13,9 @@
   "enable_manufacturing",
   "enable_hr",
   "enable_stock_reservation",
-  "enable_compliance"
+  "enable_compliance",
+  "enable_field_sales",
+  "enable_marketing"
  ],
  "fields": [
   {
@@ -80,6 +82,20 @@
    "fieldtype": "Check",
    "in_list_view": 1,
    "label": "Compliance"
+  },
+  {
+   "default": "1",
+   "fieldname": "enable_field_sales",
+   "fieldtype": "Check",
+   "in_list_view": 1,
+   "label": "Field Sales"
+  },
+  {
+   "default": "1",
+   "fieldname": "enable_marketing",
+   "fieldtype": "Check",
+   "in_list_view": 1,
+   "label": "Trade Marketing"
   }
  ],
  "index_web_pages_for_search": 1,

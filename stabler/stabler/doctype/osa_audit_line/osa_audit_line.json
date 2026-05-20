@@ -1,0 +1,54 @@
+{
+ "actions": [],
+ "creation": "2026-05-20 17:30:00.000000",
+ "doctype": "DocType",
+ "editable_grid": 1,
+ "engine": "InnoDB",
+ "field_order": [
+  "item",
+  "expected_facings",
+  "actual_facings",
+  "present"
+ ],
+ "fields": [
+  {
+   "fieldname": "item",
+   "fieldtype": "Link",
+   "in_list_view": 1,
+   "label": "Item",
+   "options": "Item",
+   "reqd": 1
+  },
+  {
+   "fieldname": "expected_facings",
+   "fieldtype": "Int",
+   "in_list_view": 1,
+   "label": "Expected"
+  },
+  {
+   "fieldname": "actual_facings",
+   "fieldtype": "Int",
+   "in_list_view": 1,
+   "label": "Actual"
+  },
+  {
+   "default": "0",
+   "fieldname": "present",
+   "fieldtype": "Check",
+   "in_list_view": 1,
+   "label": "Present"
+  }
+ ],
+ "index_web_pages_for_search": 1,
+ "istable": 1,
+ "links": [],
+ "modified": "2026-05-20 17:30:00.000000",
+ "modified_by": "Administrator",
+ "module": "Stabler",
+ "name": "OSA Audit Line",
+ "owner": "Administrator",
+ "permissions": [],
+ "sort_field": "creation",
+ "sort_order": "DESC",
+ "states": []
+}

@@ -238,7 +238,12 @@ def list_journal_entries(
 	clauses, params = _date_filters(from_date, to_date)
 	params["company"] = company
 	params["limit"] = int(limit)
-	where = " AND ".join(["company = %(company)s", "docstatus < 2", *clauses])
+	qualified_clauses = [c.replace("posting_date", "je.posting_date") for c in clauses]
+	where = " AND ".join([
+		"je.company = %(company)s",
+		"je.docstatus < 2",
+		*qualified_clauses,
+	])
 	rows = frappe.db.sql(
 		f"""
 		SELECT je.name, je.posting_date, je.voucher_type, je.cheque_no, je.user_remark,
@@ -247,7 +252,7 @@ def list_journal_entries(
 		FROM `tabJournal Entry` je
 		JOIN `tabCompany` c ON c.name = je.company
 		WHERE {where}
-		ORDER BY posting_date DESC, name DESC
+		ORDER BY je.posting_date DESC, je.name DESC
 		LIMIT %(limit)s
 		""",
 		params,

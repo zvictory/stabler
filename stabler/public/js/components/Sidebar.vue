@@ -30,6 +30,8 @@ const items = computed(() => {
 		{ name: "inventory", path: "/inventory", label: t("Inventory"), icon: "ti-package", show: on("inventory") },
 		{ name: "manufacturing", path: "/manufacturing", label: t("Manufacturing"), icon: "ti-tools", show: on("manufacturing") },
 		{ name: "hr", path: "/hr", label: t("People"), icon: "ti-users-group", show: on("hr") },
+		{ name: "sfa", path: "/sfa", label: t("Field Sales"), icon: "ti-route", show: on("field_sales") },
+		{ name: "marketing", path: "/marketing", label: t("Trade Marketing"), icon: "ti-target-arrow", show: on("marketing") },
 	];
 	if (session.isAdmin) {
 		list.push({ name: "admin", path: "/admin", label: t("Admin"), icon: "ti-settings", show: true });

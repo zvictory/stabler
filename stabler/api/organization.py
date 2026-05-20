@@ -20,6 +20,8 @@ _MODULE_FIELDS = {
 	"hr": "enable_hr",
 	"stock_reservation": "enable_stock_reservation",
 	"compliance": "enable_compliance",
+	"field_sales": "enable_field_sales",
+	"marketing": "enable_marketing",
 }
 
 
@@ -141,6 +143,8 @@ def update_company_modules(
 	hr=None,
 	stock_reservation=None,
 	compliance=None,
+	field_sales=None,
+	marketing=None,
 ):
 	"""Admin-only: toggle per-module flags for a company. Pass 0/1 to update; omit to leave."""
 	_require_admin()
@@ -168,6 +172,8 @@ def update_company_modules(
 				"enable_hr": 1,
 				"enable_stock_reservation": 1,
 				"enable_compliance": 1,
+				"enable_field_sales": 1,
+				"enable_marketing": 1,
 			},
 		)
 
@@ -180,6 +186,8 @@ def update_company_modules(
 		"enable_hr": hr,
 		"enable_stock_reservation": stock_reservation,
 		"enable_compliance": compliance,
+		"enable_field_sales": field_sales,
+		"enable_marketing": marketing,
 	}
 	for field, val in updates.items():
 		if val is None or val == "":

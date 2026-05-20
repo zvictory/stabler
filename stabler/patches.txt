@@ -4,3 +4,6 @@ stabler.patches.v03_add_enable_compliance
 stabler.patches.v04_uzs_default_currency
 stabler.patches.v05_uzbek_tax_templates
 stabler.patches.v06_asl_belgisi_fields
+stabler.patches.v07_add_enable_field_sales
+stabler.patches.v08_add_enable_marketing
+stabler.patches.v09_customer_tier

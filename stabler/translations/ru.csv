@@ -11,6 +11,7 @@ Absent,Отсутствует
 Accepted,Принят
 Account,
 Account currency must match the payment account.,
+Action failed.,
 Active,Активные
 Add at least one raw material line.,Добавьте хотя бы одну строку сырья.
 Add line,Добавить строку
@@ -18,18 +19,23 @@ Add your first employee to start tracking attendance, leave and payroll.
 "Add your first employee to start tracking attendance, leave and payroll.",
 Admin,
 Against,
+All categories,
 All directions,Все направления
 All events,Все события
 All items above reorder level.,Все товары выше порога пополнения.
 All object types,Все типы объектов
+All promo plans,
+All sales invoices for this company are fully paid.,
 All statuses,Все статусы
+All types,
 Allowed users,
 Amount,Сумма
 Amount received,
 Amount sent,
-Any,
+Any,Любой
 Apply,Применить
 Apply role template,
+Approve,
 Approve and submit,Одобрить и провести
 Approve this leave request?,Одобрить заявку на отпуск?
 Approved,Одобрена
@@ -37,20 +43,45 @@ Asl Belgisi,Asl Belgisi
 Asl Belgisi (product marking) scans appear here.,Здесь отображаются сканирования маркировки Asl Belgisi.
 Asl Belgisi Code,Код Asl Belgisi
 Asl Belgisi — Stock Entries pending scan,Asl Belgisi — складские движения к сканированию
+Asset Tag,
+Asset Tag and Category are required.,
+Assigned Field User,Закреплённый сотрудник
+Assigned Technician,
 Attendance,Посещаемость
+Audited At,
 BOM,Спецификация
 BOMs,Спецификации
 Back to dashboard,Вернуться на панель
 Balance,
 Base equivalent,
 Bimonthly,Раз в две недели
+Brand,
+Budget,
+Buy X get Y,
 CBU.uz exchange rates (last 30 days),Курсы валют ЦБУ.uz (последние 30 дней)
 CBU.uz exchange rates appear here.,Здесь отображаются курсы валют ЦБУ.uz.
+Campaign,
+Campaign Name,
+Campaign ROI,
 Cancel,Отмена
+Cancel Request,
 Cancel this submitted BOM?,Отменить эту проведённую спецификацию?
 Cancelled,Отменено
+Cannot check out before checking in.,
+Captured At,
 Cash on hand,Денежные средства
+Category,
+Channel,Канал
 Chart of Accounts,План счетов
+Checked in,Отметка о приходе
+Claim,
+Claim No.,
+Claim amount must be greater than zero.,
+Claim is already settled by {0}.,
+Claim is already {0} and cannot be re-reviewed.,
+Claim name is required.,
+Claim {0} not found.,
+Claims,
 Close,Закрыть
 Close this Work Order? This finalizes it.,Закрыть этот производственный заказ? Это финальное действие.
 Closing,
@@ -62,16 +93,23 @@ Company,Компания
 Company email,Рабочая почта
 Company is required.,
 Complete,Готово
+Completed,Завершено
 Compliance,Соответствие
 Components,Компоненты
 Consumed,
 Contact,Контакт
+Cooler,
 Create,
+Create Plan,
 Create a Bill of Materials to define what raw materials go into a finished good.,Создайте спецификацию чтобы определить какие материалы входят в готовый продукт.
 Create a Work Order to plan and track production runs against a BOM.,Создайте производственный заказ для планирования и контроля выпуска.
+Create a plan to start tracking campaign budget and ROI.,
+Create outlets to start planning routes and visits.,"Создайте торговые точки, чтобы планировать маршруты и визиты."
 Created,Создан
 Credit,
+Credit Limit,Кредитный лимит
 Currency,
+Customer,
 Customers,Клиенты
 Daily,Ежедневно
 Dashboard,Панель
@@ -80,18 +118,30 @@ Date of birth,Дата рождения
 Date of birth is required.,Укажите дату рождения.
 Date of joining,Дата приёма
 Dates,Даты
+Day of Week,День недели
 Days,Дней
 Debit,
 Deductions,Удержания
 Default,По умолчанию
+Default Route,
+Default Warehouse,
+Define promotions that field users can apply during visits.,
+Define routes so field users know which outlets to visit each day.,"Определите маршруты, чтобы полевые сотрудники знали, какие точки посещать каждый день."
 Delete,
 Department,Подразделение
+Describe the problem…,
 Designation,Должность
 Desk access,
 Direction,Направление
 Disabled,
+Dispatched,
+Distributor,
+Distributor claims will appear here once submitted.,
 DocType,
+Documents,
 Draft,Черновик
+Due Date,
+Duplicate sequence {0} on this route.,
 Duration (ms),Длительность (мс)
 EHF (Elektron Hisob-Faktura) submissions appear here.,Здесь отображаются отправки ЭСФ (Elektron Hisob-Faktura).
 EHF Status,Статус ЭСФ
@@ -105,6 +155,13 @@ Employee,Сотрудник
 Employees,Сотрудники
 Empty allowed list = user can access every company.,
 Enabled,
+End,
+End Date,
+End Date must be on or after Start Date.,
+Equipment,
+Equipment and Issue are required.,
+Equipment is required.,
+Equipment name is required.,
 Error,Ошибка
 Exchange Rates,Курсы валют
 Exchange rate,
@@ -112,13 +169,27 @@ Expense,
 Expense lines,
 Expenses,
 Export,Экспорт
+Failed to create equipment.,
+Failed to create promo plan.,
+Failed to create.,
+Failed to load claim.,
 Failed to load ledger.,
+Failed to load.,
+Failed to refresh claim.,
+Failed to update status.,
 Female,Женский
+Field Sales,Полевые продажи
+Field User,Полевой сотрудник
+Field User name is required.,
+Field Users,
+Field users represent sales reps who execute visits and own van stock.,
 Fill in the required fields before submitting.,
 Finished good,Готовая продукция
 Finished-goods warehouse,Склад готовой продукции
 First name,Имя
 First name is required.,Введите имя.
+Fixtures directory missing: {0},
+Freezer,
 Frequency,Периодичность
 From,С
 From account,
@@ -128,18 +199,29 @@ Gender is required.,Укажите пол.
 Generate and submit,Создать и провести
 Generate drafts,Создать черновики
 Generated salary slips,Создано листков
+Grand Total,
 Gross,Начислено
+Gross ROI %,
 Gross pay,Начислено
 Half Day,Полдня
 Hello {name},
 Hours,Часы
 In,Вход
+In progress,В процессе
 In time,Время входа
+InService,
 Inactive,Неактивные
+Incremental Units,
+Install Date,
+Invalid decision: {0},
 Invalid item_overrides payload,
+Invalid status: {0},
+Invalid step status: {0},
 Inventory,Склад
 Invite user,
 Invoice,Счёт
+Issue,
+Issue is required.,
 Item,Товар
 Item does not require Asl Belgisi,
 Items,Товары
@@ -147,31 +229,44 @@ Journal Entries,Журнальные записи
 Language,
 Last login,
 Last name,Фамилия
+Latitude,
 Leave,Отпуск
 Leave type,Тип отпуска
 Left,Уволен
+Loaded,
 Loading…,Загрузка…
 Log out,Выйти
 Login required,
+Longitude,
 Low Stock Alerts,Уведомления о низком остатке
 Low stock,Низкий остаток
 Make default BOM for this item,Сделать спецификацией по умолчанию
 Male,Мужской
 Manufacturing,Производство
+Mark Resolved,
 Mark and submit,Отметить и провести
 Mark attendance,Отметить
 Mark daily attendance to start building reports.,"Отмечайте посещаемость ежедневно, чтобы строить отчёты."
+Marketing Claims,
+Marketing claim settlement for {0},
 Memo,
 Message,Сообщение
+Mobile Phone,
+Model,
 Module,Модуль
 Modules,
 Money,Деньги
 Monthly,Ежемесячно
+Move to Under Review,
 Name,
 Name or email,
 Net,К выплате
+Net ROI %,
 Net pay,К выплате
 New BOM,Новая спецификация
+New Equipment,
+New Plan,
+New Promo Plan,
 New Work Order,Новый производственный заказ
 New employee,Новый сотрудник
 New expense,
@@ -184,26 +279,52 @@ No 1C sync events yet.,Событий синхронизации 1С пока н
 No ARCA payment events yet.,Платежей ARCA пока нет.
 No BOMs yet,Спецификаций пока нет
 No EHF submissions yet. Submit a Sales Invoice to enqueue one.,Пока нет отправок ЭСФ. Проведите счёт продаж
+No OSA audits yet,
+No ROI snapshots yet,
 No Stock Entries with Asl Belgisi items found.,Складских движений с товарами Asl Belgisi не найдено.
 No attendance records,Нет записей о посещаемости
+No claim selected.,
+No claims yet,
 No data,Нет данных
 No deductions,Нет удержаний
+No default Bank or Cash account configured for company {0}.,
 No earnings,Нет начислений
 No employees yet,Сотрудников пока нет
+No equipment yet,
 No exchange rates yet. Click Refresh now to fetch today's rates from cbu.uz.,Курсы валют пока отсутствуют. Нажмите «Обновить сейчас»
+No field users yet,
 No items with submitted active BOMs yet — create one first.,Нет товаров с проведёнными активными спецификациями — сначала создайте.
 No leave requests,Нет заявок на отпуск
+No matches found,
+No outlets yet,Пока нет торговых точек
+No photo reports yet,
+No planograms yet,
+No promo plans yet,
+No promo schemes yet,
+No receivable account configured for distributor {0} in company {1}.,
+No receivable account configured for distributor {0} in company {1}: {2},
+No receivables,
+No repair requests,
+No routes yet,Пока нет маршрутов
 No salary slips yet,Нет расчётных листков
 No template,
 No transactions yet.,
+No van stock yet,
+No visits yet,Пока нет визитов
 No work orders,Нет производственных заказов
 Nos,
 Not permitted,
 Not permitted for company {0},
+OSA,
+OSA %,
+OSA Audit name is required.,
+OSA Audits,
 Object Name,Имя объекта
 Object Type,Тип объекта
 On Leave,В отпуске
 On leave today,В отпуске сегодня
+On-Shelf-Availability audits compare expected vs actual facings during visits.,
+Only Approved claims can be settled. Current status: {0},
 Open,Открыта
 Open Desk,Открыть Desk
 Opening,
@@ -211,7 +332,18 @@ Optional,
 Other,Другое
 Out,Выход
 Out time,Время выхода
+Outlet,Торговая точка
+Outlet Class,Класс точки
+Outlet Code,Код точки
+Outlet Name,Название точки
+Outlet is required.,
+Outlet name (e.g. OUT-001),
+Outlet name is required.,
+Outlet {0} appears twice on this route.,
+Outlets,Торговые точки
+Outstanding,
 Override qty must be greater than zero,
+POSM,
 Page not found,Страница не найдена
 Paid days,Оплачено дней
 Pay from,
@@ -225,6 +357,7 @@ Payroll entry,Расчёт зарплаты
 Pending,Ожидание
 Pending requests,Ожидают рассмотрения
 People,Сотрудники
+Percent off,
 Period,Период
 Period Credit,
 Period Debit,
@@ -233,25 +366,49 @@ Period start,Начало периода
 Permissions,
 Personal email,Личная почта
 Phone,Телефон
+Photo,
+Photo Report name is required.,
+Photo Reports,
+Photo URL,
+Photos,
+"Photos capture shelves, storefronts and promotions during visits.",
 Pick a finished-good item.,Выберите готовый продукт.
 Pick a leave type.,Выберите тип отпуска.
 Pick an employee.,Выберите сотрудника.
+Plan Type,
 Planned,Запланировано
+Planned Date,Плановая дата
+Planned date,Плановая дата
 Planned start,Плановая дата начала
+Planogram name is required.,
+Planograms,
+Planograms describe expected shelf facings per outlet and category.,
+Please fill all required fields.,
 Posting Date,Дата проводки
 Posting date,Дата проводки
 Postings,
 Present,Присутствует
+Present SKUs,
 Processed,Обработано
 Produce how many units? Leave blank for full balance.,Сколько единиц произвести? Оставьте пустым для всего остатка.
 Produced,Произведено
 Profile,Профиль
+Promo,
+Promo Plan,
+Promo Plan name is required.,
+Promo Plan {0} has no company.,
+Promo Plan {0} not found.,
+Promo Plans,
+Promo Scheme name is required.,
+Promo Schemes,
+Promos,
 Purchase Invoices,Счета закупок
 Purchasing,Закупки
 Qty,Кол-во
 Quantity,Количество
 Quantity must be positive.,Количество должно быть положительным.
 RUB → UZS,RUB → UZS
+Rack,
 Rate,Цена
 Raw material cost,Стоимость сырья
 Raw materials,Сырьё
@@ -259,31 +416,51 @@ Read,
 Read-only view. Edit permissions in Frappe's Role Permission Manager.,
 Reason,Причина
 Receivable (AR),Дебиторская задолженность
+Receivables,
 Received,Получено
 Received At,Время получения
 Recent activity,Последние операции
+Reconciled,
 Record production,Записать выпуск
+Reference,
 Refresh,Обновить
 Refresh now,Обновить сейчас
 Refreshing…,Обновление…
+"Register coolers, freezers, racks, and POSM assets here.",
+Reject,
 Reject this leave request?,Отклонить заявку на отпуск?
 Rejected,Отклонён
 Reload,Перезагрузить
+Repair,
+Repair Request,
+Repair Request name is required.,
+Repair Requests,
 Replaces all current roles.,
+Report Issue,
+Reported At,
+Reported By,
 Reports,Отчёты
 Request,Заявка
 Required,Требуется
 Required materials,Требуемые материалы
 Reset email sent.,
 Reset password,
+Resolved At,
+Retired,
 Retries,Повторы
 Retry submission,Повторить отправку
 Retrying…,Повтор…
+Returned,
 Revenue MTD,Выручка с начала месяца
+Reviewer Notes,
 Role,
 Role not found,
 Role template (optional),
 Roles,
+Route Code,Код маршрута
+Route Name,Название маршрута
+Route name is required.,
+Routes,Маршруты
 Row not found on this Stock Entry,
 Run,Запустить
 Run a payroll cycle to generate salary slips for assigned employees.,"Запустите расчёт, чтобы сгенерировать листки для сотрудников."
@@ -298,31 +475,55 @@ Save allowed users,
 Save and submit,Сохранить и провести
 Save as draft,Сохранить черновик
 Save modules,
+Saving…,
 Scan code for,Сканировать код для
 Scan or type code,Сканируйте или введите код
 Scanned,Просканировано
 Scanned / Required,Просканировано / требуется
 Scanning…,Сканирование…
+Scheme Code,
+Scheme Name,
+Scheme Type,
 Search,
 Search BOMs or finished goods…,Поиск спецификаций или готовой продукции…
+Search asset tag…,
+Search campaigns…,
 Search employees…,Поиск сотрудников…
+Search items…,
+Search outlets…,Поиск точек…
 Search work orders…,Поиск производственных заказов…
 Select an account…,
+Select company,
 Select template…,
 Select…,
 Send invite,
 Send password reset email to ,
+Serial No,
+Settle,
+Settlement failed.,
+Shelf,
+Skip reason is required when status is Skipped.,
+Skipped,Пропущено
 Slip,Расчётный листок
+Snapshots are generated by the daily ROI task for Active promo plans.,
 SoliqOnline UUID,UUID SoliqOnline
 Something went wrong,Что-то пошло не так
 Source warehouse,Склад источника
+Start,
+Start Date,
+Start Work,
 Status,Статус
+Step #{0} not found on this visit.,
 Stock Entry,Складское движение
 Stock Ledger,Складская книга
+Stock Reservation,Резервирование склада
 Stop,Остановить
 Stop this Work Order? You can resume it later.,Остановить этот производственный заказ? Можно будет возобновить позже.
+Storefront,
 Submit,Отправить
+Submit & reserve stock,Провести и зарезервировать склад
 Submit a leave request on behalf of an employee.,Подайте заявку от имени сотрудника.
+Submit a request to track equipment service tickets.,
 Submit and release this Work Order?,Провести и запустить этот производственный заказ?
 Submit expense,
 Submit this BOM? You won't be able to edit it after.,Провести эту спецификацию? После этого её нельзя будет редактировать.
@@ -333,36 +534,62 @@ Suppliers,Поставщики
 Suspended,Приостановлен
 Swap accounts,
 The Compliance module is disabled for this company.,Модуль соответствия отключён для этой компании.
+Threshold,
 To,По
 To account,
 Total,
+Total SKUs,
 Total cost,Общая стоимость
+Total outstanding,
+Trade Marketing,
 Transaction Id,Идентификатор транзакции
 Transfer,
 Transfer how many units of materials? Leave blank for full.,Сколько единиц материалов передать? Оставьте пустым для всего объёма.
 Transfer materials,Передать материалы
 Transferred,Передано
 Transfers,
+Trigger Item,
 Try again,Повторить
 Type,Тип
 UOM,Ед. изм.
 USD → UZS,USD → UZS
+Units Sold,
 Unknown Sales Order: {0},
 Unknown company: {0},
 Unknown role template: {0},
+Unknown vertical pack: {0},
 Unknown warehouse: {0},
 Unsupported language: {0},
+Uplift Value,
 User,Пользователь
 User account,Учётная запись
 User already exists,
 User not found,
 Users,
+Utilization %,
+Valid Distributor (Customer) is required.,
+Valid From,
+Valid Promo Plan is required.,
+Valid To,
+Van Stock,
+Van Stock name is required.,
+Van stock tracks what each field user has loaded for the day.,
 View all,Показать все
+View attachment,
 View ledger,
+Visit,Визит
+Visit already checked in at {0}.,
+Visit already checked out at {0}.,
+Visit is required.,
+Visit name is required.,
+Visits,Визиты
+Visits appear once they are planned from a route or created manually.,"Визиты появляются здесь, когда они запланированы из маршрута или созданы вручную."
 Voucher,
 WIP warehouse,Склад НЗП
+Warehouse,
 Warehouse is required for Sales Orders,
 Warehouses,Склады
+Warranty Until,
 Weekly,Еженедельно
 When,Когда
 Withheld,Удержано
@@ -374,3 +601,8 @@ Write,
 Yes,
 You need administrator access to view this page.,Требуется доступ администратора для просмотра этой страницы.
 item_code and warehouse are required,
+pack_key is required,
+step_idx must be an integer.,
+{0} is required.,
+{0} must be a number,
+—,

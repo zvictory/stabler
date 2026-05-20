@@ -1,0 +1,128 @@
+{
+ "actions": [],
+ "autoname": "format:ROI-{promo_plan}-{snapshot_date}",
+ "creation": "2026-05-20 17:00:00.000000",
+ "doctype": "DocType",
+ "editable_grid": 0,
+ "engine": "InnoDB",
+ "field_order": [
+  "promo_plan",
+  "snapshot_date",
+  "section_volume",
+  "units_sold",
+  "incremental_units",
+  "section_value",
+  "uplift_value",
+  "cost_to_serve",
+  "section_ratios",
+  "gross_roi_pct",
+  "net_roi_pct"
+ ],
+ "fields": [
+  {
+   "fieldname": "promo_plan",
+   "fieldtype": "Link",
+   "in_list_view": 1,
+   "in_standard_filter": 1,
+   "label": "Promo Plan",
+   "options": "Promo Plan",
+   "reqd": 1
+  },
+  {
+   "fieldname": "snapshot_date",
+   "fieldtype": "Date",
+   "in_list_view": 1,
+   "in_standard_filter": 1,
+   "label": "Snapshot Date",
+   "reqd": 1
+  },
+  {
+   "fieldname": "section_volume",
+   "fieldtype": "Section Break",
+   "label": "Volume"
+  },
+  {
+   "fieldname": "units_sold",
+   "fieldtype": "Int",
+   "in_list_view": 1,
+   "label": "Units Sold",
+   "read_only": 1
+  },
+  {
+   "fieldname": "incremental_units",
+   "fieldtype": "Int",
+   "in_list_view": 1,
+   "label": "Incremental Units",
+   "read_only": 1
+  },
+  {
+   "fieldname": "section_value",
+   "fieldtype": "Section Break",
+   "label": "Value"
+  },
+  {
+   "fieldname": "uplift_value",
+   "fieldtype": "Currency",
+   "in_list_view": 1,
+   "label": "Uplift Value",
+   "read_only": 1
+  },
+  {
+   "fieldname": "cost_to_serve",
+   "fieldtype": "Currency",
+   "label": "Cost To Serve",
+   "read_only": 1
+  },
+  {
+   "fieldname": "section_ratios",
+   "fieldtype": "Section Break",
+   "label": "ROI"
+  },
+  {
+   "fieldname": "gross_roi_pct",
+   "fieldtype": "Float",
+   "in_list_view": 1,
+   "label": "Gross ROI %",
+   "precision": "2",
+   "read_only": 1
+  },
+  {
+   "fieldname": "net_roi_pct",
+   "fieldtype": "Float",
+   "in_list_view": 1,
+   "label": "Net ROI %",
+   "precision": "2",
+   "read_only": 1
+  }
+ ],
+ "index_web_pages_for_search": 0,
+ "links": [],
+ "modified": "2026-05-20 17:00:00.000000",
+ "modified_by": "Administrator",
+ "module": "Stabler",
+ "name": "Campaign ROI Snapshot",
+ "owner": "Administrator",
+ "permissions": [
+  {
+   "create": 1,
+   "delete": 1,
+   "email": 1,
+   "export": 1,
+   "print": 1,
+   "read": 1,
+   "report": 1,
+   "role": "System Manager",
+   "share": 1,
+   "write": 1
+  },
+  {
+   "read": 1,
+   "report": 1,
+   "role": "Marketing User"
+  }
+ ],
+ "sort_field": "snapshot_date",
+ "sort_order": "DESC",
+ "states": [],
+ "track_changes": 0
+}

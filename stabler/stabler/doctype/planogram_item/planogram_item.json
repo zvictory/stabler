@@ -1,0 +1,47 @@
+{
+ "actions": [],
+ "creation": "2026-05-20 17:20:00.000000",
+ "doctype": "DocType",
+ "editable_grid": 1,
+ "engine": "InnoDB",
+ "field_order": [
+  "item",
+  "expected_facings",
+  "shelf_position"
+ ],
+ "fields": [
+  {
+   "fieldname": "item",
+   "fieldtype": "Link",
+   "in_list_view": 1,
+   "label": "Item",
+   "options": "Item",
+   "reqd": 1
+  },
+  {
+   "fieldname": "expected_facings",
+   "fieldtype": "Int",
+   "in_list_view": 1,
+   "label": "Expected Facings",
+   "reqd": 1
+  },
+  {
+   "fieldname": "shelf_position",
+   "fieldtype": "Data",
+   "in_list_view": 1,
+   "label": "Shelf Position"
+  }
+ ],
+ "index_web_pages_for_search": 1,
+ "istable": 1,
+ "links": [],
+ "modified": "2026-05-20 17:20:00.000000",
+ "modified_by": "Administrator",
+ "module": "Stabler",
+ "name": "Planogram Item",
+ "owner": "Administrator",
+ "permissions": [],
+ "sort_field": "creation",
+ "sort_order": "DESC",
+ "states": []
+}

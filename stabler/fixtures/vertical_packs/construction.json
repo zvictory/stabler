@@ -1,0 +1,21 @@
+{
+  "pack_key": "construction",
+  "label": "Construction & Hazmat",
+  "required_fields": [
+    {
+      "dt": "Item",
+      "fieldname": "hazmat_class",
+      "label": "Hazmat Class",
+      "fieldtype": "Select",
+      "options": "\nClass 1\nClass 2\nClass 3\nClass 4\nClass 5\nClass 6\nClass 7\nClass 8\nClass 9",
+      "insert_after": "is_stock_item"
+    },
+    {
+      "dt": "Item",
+      "fieldname": "requires_certificate",
+      "label": "Requires Certificate",
+      "fieldtype": "Check",
+      "insert_after": "hazmat_class"
+    }
+  ]
+}

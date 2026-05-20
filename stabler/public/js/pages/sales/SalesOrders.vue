@@ -5,6 +5,7 @@ import { useRoute, useRouter } from "vue-router";
 import { useSession } from "../../stores/session.js";
 import { call } from "../../api/client.js";
 import { formatMoney } from "../../composables/money.js";
+import { t } from "../../composables/i18n.js";
 import MoneyInput from "../../components/MoneyInput.vue";
 import EmptyState from "../../components/EmptyState.vue";
 import Typeahead from "../../components/Typeahead.vue";
@@ -366,7 +367,7 @@ async function createInvoice() {
 	}
 }
 
-async function submitCreate() {
+async function submitCreate({ autoSubmit = 1 } = {}) {
 	submitError.value = "";
 	if (!form.value.customer) {
 		submitError.value = "Pick a customer.";
@@ -405,7 +406,7 @@ async function submitCreate() {
 			delivery_date: form.value.delivery_date || form.value.transaction_date,
 			remarks: form.value.remarks || undefined,
 			items: lines,
-			auto_submit: 1,
+			auto_submit: autoSubmit,
 		});
 		createOpen.value = false;
 		await load();
@@ -886,10 +887,14 @@ watch(activeCompany, async () => {
 					</div>
 				</div>
 				<div class="modal-footer">
-					<button type="button" class="btn btn-link link-secondary" :disabled="submitting" @click="closeCreate">Cancel</button>
-					<button type="button" class="btn btn-primary ms-auto" :disabled="submitting" @click="submitCreate">
+					<button type="button" class="btn btn-link link-secondary" :disabled="submitting" @click="closeCreate">{{ t("Cancel") }}</button>
+					<button type="button" class="btn btn-outline-primary ms-auto me-2" :disabled="submitting" @click="submitCreate({ autoSubmit: 0 })">
 						<span v-if="submitting" class="spinner-border spinner-border-sm me-1"></span>
-						Submit & reserve stock
+						{{ t("Save as draft") }}
+					</button>
+					<button type="button" class="btn btn-primary" :disabled="submitting" @click="submitCreate({ autoSubmit: 1 })">
+						<span v-if="submitting" class="spinner-border spinner-border-sm me-1"></span>
+						{{ t("Submit & reserve stock") }}
 					</button>
 				</div>
 			</div>

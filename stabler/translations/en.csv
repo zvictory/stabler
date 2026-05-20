@@ -8,16 +8,21 @@ Abbr,Abbr
 Absent,Absent
 Account,Account
 Account currency must match the payment account.,Account currency must match the payment account.
+Action failed.,Action failed.
 Active,Active
 Add at least one raw material line.,Add at least one raw material line.
 Add line,Add line
 "Add your first employee to start tracking attendance, leave and payroll.","Add your first employee to start tracking attendance, leave and payroll."
 Admin,Admin
 Against,Against
+All categories,All categories
 All directions,All directions
 All items above reorder level.,All items above reorder level.
 All object types,All object types
+All promo plans,All promo plans
+All sales invoices for this company are fully paid.,All sales invoices for this company are fully paid.
 All statuses,All statuses
+All types,All types
 Allowed users,Allowed users
 Amount,Amount
 Amount received,Amount received
@@ -25,22 +30,48 @@ Amount sent,Amount sent
 Any,Any
 Apply,Apply
 Apply role template,Apply role template
+Approve,Approve
 Approve and submit,Approve and submit
 Approve this leave request?,Approve this leave request?
 Approved,Approved
 Asl Belgisi,Asl Belgisi
 Asl Belgisi Code,Asl Belgisi Code
 Asl Belgisi — Stock Entries pending scan,Asl Belgisi — Stock Entries pending scan
+Asset Tag,Asset Tag
+Asset Tag and Category are required.,Asset Tag and Category are required.
+Assigned Field User,Assigned Field User
+Assigned Technician,Assigned Technician
 Attendance,Attendance
+Audited At,Audited At
 BOM,BOM
 BOMs,BOMs
 Balance,Balance
 Base equivalent,Base equivalent
 Bimonthly,Bimonthly
+Brand,Brand
+Budget,Budget
+Buy X get Y,Buy X get Y
 CBU.uz exchange rates (last 30 days),CBU.uz exchange rates (last 30 days)
+Campaign,Campaign
+Campaign Name,Campaign Name
+Campaign ROI,Campaign ROI
 Cancel,Cancel
+Cancel Request,Cancel Request
 Cancel this submitted BOM?,Cancel this submitted BOM?
 Cancelled,Cancelled
+Cannot check out before checking in.,Cannot check out before checking in.
+Captured At,Captured At
+Category,Category
+Channel,Channel
+Checked in,Checked in
+Claim,Claim
+Claim No.,Claim No.
+Claim amount must be greater than zero.,Claim amount must be greater than zero.
+Claim is already settled by {0}.,Claim is already settled by {0}.
+Claim is already {0} and cannot be re-reviewed.,Claim is already {0} and cannot be re-reviewed.
+Claim name is required.,Claim name is required.
+Claim {0} not found.,Claim {0} not found.
+Claims,Claims
 Close,Close
 Close this Work Order? This finalizes it.,Close this Work Order? This finalizes it.
 Closing,Closing
@@ -52,15 +83,23 @@ Company,Company
 Company email,Company email
 Company is required.,Company is required.
 Complete,Complete
+Completed,Completed
+Compliance,Compliance
 Components,Components
 Consumed,Consumed
 Contact,Contact
+Cooler,Cooler
 Create,Create
+Create Plan,Create Plan
 Create a Bill of Materials to define what raw materials go into a finished good.,Create a Bill of Materials to define what raw materials go into a finished good.
 Create a Work Order to plan and track production runs against a BOM.,Create a Work Order to plan and track production runs against a BOM.
+Create a plan to start tracking campaign budget and ROI.,Create a plan to start tracking campaign budget and ROI.
+Create outlets to start planning routes and visits.,Create outlets to start planning routes and visits.
 Created,Created
 Credit,Credit
+Credit Limit,Credit Limit
 Currency,Currency
+Customer,Customer
 Daily,Daily
 Dashboard,Dashboard
 Date,Date
@@ -68,18 +107,30 @@ Date of birth,Date of birth
 Date of birth is required.,Date of birth is required.
 Date of joining,Date of joining
 Dates,Dates
+Day of Week,Day of Week
 Days,Days
 Debit,Debit
 Deductions,Deductions
 Default,Default
+Default Route,Default Route
+Default Warehouse,Default Warehouse
+Define promotions that field users can apply during visits.,Define promotions that field users can apply during visits.
+Define routes so field users know which outlets to visit each day.,Define routes so field users know which outlets to visit each day.
 Delete,Delete
 Department,Department
+Describe the problem…,Describe the problem…
 Designation,Designation
 Desk access,Desk access
 Direction,Direction
 Disabled,Disabled
+Dispatched,Dispatched
+Distributor,Distributor
+Distributor claims will appear here once submitted.,Distributor claims will appear here once submitted.
 DocType,DocType
+Documents,Documents
 Draft,Draft
+Due Date,Due Date
+Duplicate sequence {0} on this route.,Duplicate sequence {0} on this route.
 Duration (ms),Duration (ms)
 EHF Status,EHF Status
 EHF Submissions,EHF Submissions
@@ -92,19 +143,40 @@ Employee,Employee
 Employees,Employees
 Empty allowed list = user can access every company.,Empty allowed list = user can access every company.
 Enabled,Enabled
+End,End
+End Date,End Date
+End Date must be on or after Start Date.,End Date must be on or after Start Date.
+Equipment,Equipment
+Equipment and Issue are required.,Equipment and Issue are required.
+Equipment is required.,Equipment is required.
+Equipment name is required.,Equipment name is required.
 Error,Error
 Exchange Rates,Exchange Rates
 Exchange rate,Exchange rate
 Expense,Expense
 Expense lines,Expense lines
 Expenses,Expenses
+Failed to create equipment.,Failed to create equipment.
+Failed to create promo plan.,Failed to create promo plan.
+Failed to create.,Failed to create.
+Failed to load claim.,Failed to load claim.
 Failed to load ledger.,Failed to load ledger.
+Failed to load.,Failed to load.
+Failed to refresh claim.,Failed to refresh claim.
+Failed to update status.,Failed to update status.
 Female,Female
+Field Sales,Field Sales
+Field User,Field User
+Field User name is required.,Field User name is required.
+Field Users,Field Users
+Field users represent sales reps who execute visits and own van stock.,Field users represent sales reps who execute visits and own van stock.
 Fill in the required fields before submitting.,Fill in the required fields before submitting.
 Finished good,Finished good
 Finished-goods warehouse,Finished-goods warehouse
 First name,First name
 First name is required.,First name is required.
+Fixtures directory missing: {0},Fixtures directory missing: {0}
+Freezer,Freezer
 Frequency,Frequency
 From,From
 From account,From account
@@ -114,47 +186,71 @@ Gender is required.,Gender is required.
 Generate and submit,Generate and submit
 Generate drafts,Generate drafts
 Generated salary slips,Generated salary slips
+Grand Total,Grand Total
 Gross,Gross
+Gross ROI %,Gross ROI %
 Gross pay,Gross pay
 Half Day,Half Day
 Hello {name},Hello {name}
 Hours,Hours
 In,In
+In progress,In progress
 In time,In time
+InService,InService
 Inactive,Inactive
+Incremental Units,Incremental Units
+Install Date,Install Date
+Invalid decision: {0},Invalid decision: {0}
 Invalid item_overrides payload,Invalid item_overrides payload
+Invalid status: {0},Invalid status: {0}
+Invalid step status: {0},Invalid step status: {0}
 Inventory,Inventory
 Invite user,Invite user
 Invoice,Invoice
+Issue,Issue
+Issue is required.,Issue is required.
 Item,Item
 Item does not require Asl Belgisi,Item does not require Asl Belgisi
 Language,Language
 Last login,Last login
 Last name,Last name
+Latitude,Latitude
 Leave,Leave
 Leave type,Leave type
 Left,Left
+Loaded,Loaded
 Loading…,Loading…
 Log out,Log out
 Login required,Login required
+Longitude,Longitude
 Low stock,Low stock
 Make default BOM for this item,Make default BOM for this item
 Male,Male
 Manufacturing,Manufacturing
+Mark Resolved,Mark Resolved
 Mark and submit,Mark and submit
 Mark attendance,Mark attendance
 Mark daily attendance to start building reports.,Mark daily attendance to start building reports.
+Marketing Claims,Marketing Claims
+Marketing claim settlement for {0},Marketing claim settlement for {0}
 Memo,Memo
 Message,Message
+Mobile Phone,Mobile Phone
+Model,Model
 Module,Module
 Modules,Modules
 Money,Money
 Monthly,Monthly
+Move to Under Review,Move to Under Review
 Name,Name
 Name or email,Name or email
 Net,Net
+Net ROI %,Net ROI %
 Net pay,Net pay
 New BOM,New BOM
+New Equipment,New Equipment
+New Plan,New Plan
+New Promo Plan,New Promo Plan
 New Work Order,New Work Order
 New employee,New employee
 New expense,New expense
@@ -165,25 +261,51 @@ No 1C sync events yet.,No 1C sync events yet.
 No ARCA payment events yet.,No ARCA payment events yet.
 No BOMs yet,No BOMs yet
 No EHF submissions yet. Submit a Sales Invoice to enqueue one.,No EHF submissions yet. Submit a Sales Invoice to enqueue one.
+No OSA audits yet,No OSA audits yet
+No ROI snapshots yet,No ROI snapshots yet
 No Stock Entries with Asl Belgisi items found.,No Stock Entries with Asl Belgisi items found.
 No attendance records,No attendance records
+No claim selected.,No claim selected.
+No claims yet,No claims yet
 No deductions,No deductions
+No default Bank or Cash account configured for company {0}.,No default Bank or Cash account configured for company {0}.
 No earnings,No earnings
 No employees yet,No employees yet
+No equipment yet,No equipment yet
 No exchange rates yet. Click Refresh now to fetch today's rates from cbu.uz.,No exchange rates yet. Click Refresh now to fetch today's rates from cbu.uz.
+No field users yet,No field users yet
 No items with submitted active BOMs yet — create one first.,No items with submitted active BOMs yet — create one first.
 No leave requests,No leave requests
+No matches found,No matches found
+No outlets yet,No outlets yet
+No photo reports yet,No photo reports yet
+No planograms yet,No planograms yet
+No promo plans yet,No promo plans yet
+No promo schemes yet,No promo schemes yet
+No receivable account configured for distributor {0} in company {1}.,No receivable account configured for distributor {0} in company {1}.
+No receivable account configured for distributor {0} in company {1}: {2},No receivable account configured for distributor {0} in company {1}: {2}
+No receivables,No receivables
+No repair requests,No repair requests
+No routes yet,No routes yet
 No salary slips yet,No salary slips yet
 No template,No template
 No transactions yet.,No transactions yet.
+No van stock yet,No van stock yet
+No visits yet,No visits yet
 No work orders,No work orders
 Nos,Nos
 Not permitted,Not permitted
 Not permitted for company {0},Not permitted for company {0}
+OSA,OSA
+OSA %,OSA %
+OSA Audit name is required.,OSA Audit name is required.
+OSA Audits,OSA Audits
 Object Name,Object Name
 Object Type,Object Type
 On Leave,On Leave
 On leave today,On leave today
+On-Shelf-Availability audits compare expected vs actual facings during visits.,On-Shelf-Availability audits compare expected vs actual facings during visits.
+Only Approved claims can be settled. Current status: {0},Only Approved claims can be settled. Current status: {0}
 Open,Open
 Open Desk,Open Desk
 Opening,Opening
@@ -191,7 +313,18 @@ Optional,Optional
 Other,Other
 Out,Out
 Out time,Out time
+Outlet,Outlet
+Outlet Class,Outlet Class
+Outlet Code,Outlet Code
+Outlet Name,Outlet Name
+Outlet is required.,Outlet is required.
+Outlet name (e.g. OUT-001),Outlet name (e.g. OUT-001)
+Outlet name is required.,Outlet name is required.
+Outlet {0} appears twice on this route.,Outlet {0} appears twice on this route.
+Outlets,Outlets
+Outstanding,Outstanding
 Override qty must be greater than zero,Override qty must be greater than zero
+POSM,POSM
 Paid days,Paid days
 Pay from,Pay from
 Payee,Payee
@@ -202,6 +335,7 @@ Payroll entry,Payroll entry
 Pending,Pending
 Pending requests,Pending requests
 People,People
+Percent off,Percent off
 Period,Period
 Period Credit,Period Credit
 Period Debit,Period Debit
@@ -210,52 +344,96 @@ Period start,Period start
 Permissions,Permissions
 Personal email,Personal email
 Phone,Phone
+Photo,Photo
+Photo Report name is required.,Photo Report name is required.
+Photo Reports,Photo Reports
+Photo URL,Photo URL
+Photos,Photos
+"Photos capture shelves, storefronts and promotions during visits.","Photos capture shelves, storefronts and promotions during visits."
 Pick a finished-good item.,Pick a finished-good item.
 Pick a leave type.,Pick a leave type.
 Pick an employee.,Pick an employee.
+Plan Type,Plan Type
 Planned,Planned
+Planned Date,Planned Date
+Planned date,Planned date
 Planned start,Planned start
+Planogram name is required.,Planogram name is required.
+Planograms,Planograms
+Planograms describe expected shelf facings per outlet and category.,Planograms describe expected shelf facings per outlet and category.
+Please fill all required fields.,Please fill all required fields.
 Posting Date,Posting Date
 Posting date,Posting date
 Postings,Postings
 Present,Present
+Present SKUs,Present SKUs
 Processed,Processed
 Produce how many units? Leave blank for full balance.,Produce how many units? Leave blank for full balance.
 Produced,Produced
 Profile,Profile
+Promo,Promo
+Promo Plan,Promo Plan
+Promo Plan name is required.,Promo Plan name is required.
+Promo Plan {0} has no company.,Promo Plan {0} has no company.
+Promo Plan {0} not found.,Promo Plan {0} not found.
+Promo Plans,Promo Plans
+Promo Scheme name is required.,Promo Scheme name is required.
+Promo Schemes,Promo Schemes
+Promos,Promos
 Purchasing,Purchasing
 Qty,Qty
 Quantity,Quantity
 Quantity must be positive.,Quantity must be positive.
 RUB → UZS,RUB → UZS
+Rack,Rack
 Rate,Rate
 Raw material cost,Raw material cost
 Raw materials,Raw materials
 Read,Read
 Read-only view. Edit permissions in Frappe's Role Permission Manager.,Read-only view. Edit permissions in Frappe's Role Permission Manager.
 Reason,Reason
+Receivables,Receivables
 Received,Received
 Received At,Received At
+Reconciled,Reconciled
 Record production,Record production
+Reference,Reference
 Refresh,Refresh
 Refresh now,Refresh now
 Refreshing…,Refreshing…
+"Register coolers, freezers, racks, and POSM assets here.","Register coolers, freezers, racks, and POSM assets here."
+Reject,Reject
 Reject this leave request?,Reject this leave request?
 Rejected,Rejected
 Reload,Reload
+Repair,Repair
+Repair Request,Repair Request
+Repair Request name is required.,Repair Request name is required.
+Repair Requests,Repair Requests
 Replaces all current roles.,Replaces all current roles.
+Report Issue,Report Issue
+Reported At,Reported At
+Reported By,Reported By
 Request,Request
 Required,Required
 Required materials,Required materials
 Reset email sent.,Reset email sent.
 Reset password,Reset password
+Resolved At,Resolved At
+Retired,Retired
 Retries,Retries
 Retry submission,Retry submission
 Retrying…,Retrying…
+Returned,Returned
+Reviewer Notes,Reviewer Notes
 Role,Role
 Role not found,Role not found
 Role template (optional),Role template (optional)
 Roles,Roles
+Route Code,Route Code
+Route Name,Route Name
+Route name is required.,Route name is required.
+Routes,Routes
 Row not found on this Stock Entry,Row not found on this Stock Entry
 Run a payroll cycle to generate salary slips for assigned employees.,Run a payroll cycle to generate salary slips for assigned employees.
 Run payroll,Run payroll
@@ -268,29 +446,54 @@ Save allowed users,Save allowed users
 Save and submit,Save and submit
 Save as draft,Save as draft
 Save modules,Save modules
+Saving…,Saving…
 Scan code for,Scan code for
 Scan or type code,Scan or type code
 Scanned,Scanned
 Scanned / Required,Scanned / Required
 Scanning…,Scanning…
+Scheme Code,Scheme Code
+Scheme Name,Scheme Name
+Scheme Type,Scheme Type
 Search,Search
 Search BOMs or finished goods…,Search BOMs or finished goods…
+Search asset tag…,Search asset tag…
+Search campaigns…,Search campaigns…
 Search employees…,Search employees…
+Search items…,Search items…
+Search outlets…,Search outlets…
 Search work orders…,Search work orders…
 Select an account…,Select an account…
+Select company,Select company
 Select template…,Select template…
 Select…,Select…
 Send invite,Send invite
 Send password reset email to ,Send password reset email to 
+Serial No,Serial No
+Settle,Settle
+Settlement failed.,Settlement failed.
+Shelf,Shelf
+Skip reason is required when status is Skipped.,Skip reason is required when status is Skipped.
+Skipped,Skipped
 Slip,Slip
+Snapshots are generated by the daily ROI task for Active promo plans.,Snapshots are generated by the daily ROI task for Active promo plans.
 SoliqOnline UUID,SoliqOnline UUID
+Something went wrong,Something went wrong
 Source warehouse,Source warehouse
+Start,Start
+Start Date,Start Date
+Start Work,Start Work
 Status,Status
+Step #{0} not found on this visit.,Step #{0} not found on this visit.
 Stock Entry,Stock Entry
+Stock Reservation,Stock Reservation
 Stop,Stop
 Stop this Work Order? You can resume it later.,Stop this Work Order? You can resume it later.
+Storefront,Storefront
 Submit,Submit
+Submit & reserve stock,Submit & reserve stock
 Submit a leave request on behalf of an employee.,Submit a leave request on behalf of an employee.
+Submit a request to track equipment service tickets.,Submit a request to track equipment service tickets.
 Submit and release this Work Order?,Submit and release this Work Order?
 Submit expense,Submit expense
 Submit this BOM? You won't be able to edit it after.,Submit this BOM? You won't be able to edit it after.
@@ -300,34 +503,60 @@ Submitted At,Submitted At
 Suspended,Suspended
 Swap accounts,Swap accounts
 The Compliance module is disabled for this company.,The Compliance module is disabled for this company.
+Threshold,Threshold
 To,To
 To account,To account
 Total,Total
+Total SKUs,Total SKUs
 Total cost,Total cost
+Total outstanding,Total outstanding
+Trade Marketing,Trade Marketing
 Transaction Id,Transaction Id
 Transfer,Transfer
 Transfer how many units of materials? Leave blank for full.,Transfer how many units of materials? Leave blank for full.
 Transfer materials,Transfer materials
 Transferred,Transferred
 Transfers,Transfers
+Trigger Item,Trigger Item
 Type,Type
 UOM,UOM
 USD → UZS,USD → UZS
+Units Sold,Units Sold
 Unknown Sales Order: {0},Unknown Sales Order: {0}
 Unknown company: {0},Unknown company: {0}
 Unknown role template: {0},Unknown role template: {0}
+Unknown vertical pack: {0},Unknown vertical pack: {0}
 Unknown warehouse: {0},Unknown warehouse: {0}
 Unsupported language: {0},Unsupported language: {0}
+Uplift Value,Uplift Value
 User,User
 User account,User account
 User already exists,User already exists
 User not found,User not found
 Users,Users
+Utilization %,Utilization %
+Valid Distributor (Customer) is required.,Valid Distributor (Customer) is required.
+Valid From,Valid From
+Valid Promo Plan is required.,Valid Promo Plan is required.
+Valid To,Valid To
+Van Stock,Van Stock
+Van Stock name is required.,Van Stock name is required.
+Van stock tracks what each field user has loaded for the day.,Van stock tracks what each field user has loaded for the day.
 View all,View all
+View attachment,View attachment
 View ledger,View ledger
+Visit,Visit
+Visit already checked in at {0}.,Visit already checked in at {0}.
+Visit already checked out at {0}.,Visit already checked out at {0}.
+Visit is required.,Visit is required.
+Visit name is required.,Visit name is required.
+Visits,Visits
+Visits appear once they are planned from a route or created manually.,Visits appear once they are planned from a route or created manually.
 Voucher,Voucher
 WIP warehouse,WIP warehouse
+Warehouse,Warehouse
 Warehouse is required for Sales Orders,Warehouse is required for Sales Orders
+Warranty Until,Warranty Until
 Weekly,Weekly
 When,When
 Withheld,Withheld
@@ -339,3 +568,8 @@ Write,Write
 Yes,Yes
 You need administrator access to view this page.,You need administrator access to view this page.
 item_code and warehouse are required,item_code and warehouse are required
+pack_key is required,pack_key is required
+step_idx must be an integer.,step_idx must be an integer.
+{0} is required.,{0} is required.
+{0} must be a number,{0} must be a number
+—,—

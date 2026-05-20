@@ -1,0 +1,20 @@
+{
+  "pack_key": "appliances",
+  "label": "Appliances",
+  "required_fields": [
+    {
+      "dt": "Item",
+      "fieldname": "warranty_months",
+      "label": "Warranty (Months)",
+      "fieldtype": "Int",
+      "insert_after": "is_stock_item"
+    },
+    {
+      "dt": "Item",
+      "fieldname": "requires_installation",
+      "label": "Requires Installation",
+      "fieldtype": "Check",
+      "insert_after": "warranty_months"
+    }
+  ]
+}
