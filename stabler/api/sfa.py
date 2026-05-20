@@ -48,6 +48,27 @@ def _company_filter(company: str | None) -> dict:
 	return {}
 
 
+def _update_doc(doctype: str, name: str, payload: dict | str) -> dict:
+	"""Generic update wrapper used by per-entity update_* endpoints.
+
+	Replaces the full doc payload (Frappe cascades child tables — callers must
+	send the complete child array, not partial diffs). Tenant isolation is
+	enforced both before and after `.update()` to prevent payload-driven
+	company hopping.
+	"""
+	_require_write()
+	if isinstance(payload, str):
+		payload = frappe.parse_json(payload) or {}
+	doc = frappe.get_doc(doctype, name)
+	_company_filter(doc.company)
+	target_company = payload.get("company", doc.company)
+	if target_company != doc.company:
+		_company_filter(target_company)
+	doc.update(payload)
+	doc.save()
+	return doc.as_dict()
+
+
 def _haversine_m(lat1: float, lng1: float, lat2: float, lng2: float) -> float:
 	"""Great-circle distance in metres."""
 	phi1 = math.radians(lat1)
@@ -585,6 +606,11 @@ def create_photo_report(payload: dict | str) -> dict:
 	return doc.as_dict()
 
 
+@frappe.whitelist()
+def update_photo_report(name: str, payload: dict | str) -> dict:
+	return _update_doc("Photo Report", name, payload)
+
+
 # ---------------------------------------------------------------------------
 # Planograms
 # ---------------------------------------------------------------------------
@@ -645,6 +671,11 @@ def create_planogram(payload: dict | str) -> dict:
 	return doc.as_dict()
 
 
+@frappe.whitelist()
+def update_planogram(name: str, payload: dict | str) -> dict:
+	return _update_doc("Planogram", name, payload)
+
+
 # ---------------------------------------------------------------------------
 # OSA audits
 # ---------------------------------------------------------------------------
@@ -703,6 +734,11 @@ def create_osa_audit(payload: dict | str) -> dict:
 	doc = frappe.get_doc({"doctype": "OSA Audit", **payload})
 	doc.insert()
 	return doc.as_dict()
+
+
+@frappe.whitelist()
+def update_osa_audit(name: str, payload: dict | str) -> dict:
+	return _update_doc("OSA Audit", name, payload)
 
 
 # ---------------------------------------------------------------------------
