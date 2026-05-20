@@ -28,6 +28,20 @@ def _require_write_marketing() -> None:
 		frappe.throw(_("Not permitted"), frappe.PermissionError)
 
 
+def _update_doc(doctype: str, name: str, payload: dict | str) -> dict:
+	_require_write_marketing()
+	if isinstance(payload, str):
+		payload = frappe.parse_json(payload) or {}
+	doc = frappe.get_doc(doctype, name)
+	_company_filter(doc.company)
+	target_company = payload.get("company", doc.company)
+	if target_company != doc.company:
+		_company_filter(target_company)
+	doc.update(payload)
+	doc.save()
+	return doc.as_dict()
+
+
 # ---------------------------------------------------------------------------
 # Promo Plans
 # ---------------------------------------------------------------------------
@@ -123,6 +137,11 @@ def update_promo_plan_status(name: str, status: str) -> dict:
 	doc.status = status
 	doc.save()
 	return doc.as_dict()
+
+
+@frappe.whitelist()
+def update_promo_plan(name: str, payload: dict | str) -> dict:
+	return _update_doc("Promo Plan", name, payload)
 
 
 # ---------------------------------------------------------------------------

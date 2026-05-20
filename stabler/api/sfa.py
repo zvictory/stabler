@@ -48,6 +48,20 @@ def _company_filter(company: str | None) -> dict:
 	return {}
 
 
+def _update_doc(doctype: str, name: str, payload: dict | str) -> dict:
+	_require_write()
+	if isinstance(payload, str):
+		payload = frappe.parse_json(payload) or {}
+	doc = frappe.get_doc(doctype, name)
+	_company_filter(doc.company)
+	target_company = payload.get("company", doc.company)
+	if target_company != doc.company:
+		_company_filter(target_company)
+	doc.update(payload)
+	doc.save()
+	return doc.as_dict()
+
+
 def _haversine_m(lat1: float, lng1: float, lat2: float, lng2: float) -> float:
 	"""Great-circle distance in metres."""
 	phi1 = math.radians(lat1)
@@ -512,6 +526,11 @@ def create_promo_scheme(payload: dict | str) -> dict:
 	doc = frappe.get_doc({"doctype": "Promo Scheme", **payload})
 	doc.insert()
 	return doc.as_dict()
+
+
+@frappe.whitelist()
+def update_promo_scheme(name: str, payload: dict | str) -> dict:
+	return _update_doc("Promo Scheme", name, payload)
 
 
 # ---------------------------------------------------------------------------

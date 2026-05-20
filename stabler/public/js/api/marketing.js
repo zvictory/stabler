@@ -9,6 +9,9 @@ export const getPromoPlan = (name) =>
 export const createPromoPlan = (payload) =>
 	call("stabler.api.marketing.create_promo_plan", { payload });
 
+export const updatePromoPlan = (name, payload) =>
+	call("stabler.api.marketing.update_promo_plan", { name, payload });
+
 export const updatePromoPlanStatus = (name, status) =>
 	call("stabler.api.marketing.update_promo_plan_status", { name, status });
 
