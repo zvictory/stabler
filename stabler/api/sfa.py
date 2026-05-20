@@ -48,6 +48,32 @@ def _company_filter(company: str | None) -> dict:
 	return {}
 
 
+def _update_doc(doctype: str, name: str, payload: dict | str) -> dict:
+	"""Shared edit helper for SFA / Marketing list pages.
+
+	Loads the doc, enforces tenant isolation against both the existing and
+	(if changed) target company, applies `payload` via `doc.update()` (which
+	cascades to child tables — replace-all semantics; the frontend MUST send
+	the full child array), then saves. Returns the serialized doc.
+	"""
+	_require_write()
+	if not name:
+		frappe.throw(_("{0} name is required.").format(doctype))
+	if isinstance(payload, str):
+		payload = frappe.parse_json(payload) or {}
+	if not isinstance(payload, dict):
+		frappe.throw(_("Payload must be an object."))
+	doc = frappe.get_doc(doctype, name)
+	_company_filter(doc.company)
+	# defense in depth: payload could try to move the row across companies
+	target_company = payload.get("company", doc.company)
+	if target_company != doc.company:
+		_company_filter(target_company)
+	doc.update(payload)
+	doc.save()
+	return doc.as_dict()
+
+
 def _haversine_m(lat1: float, lng1: float, lat2: float, lng2: float) -> float:
 	"""Great-circle distance in metres."""
 	phi1 = math.radians(lat1)
@@ -145,6 +171,11 @@ def create_outlet(payload: dict | str) -> dict:
 	return doc.as_dict()
 
 
+@frappe.whitelist()
+def update_outlet(name: str, payload: dict | str) -> dict:
+	return _update_doc("Outlet", name, payload)
+
+
 # ---------------------------------------------------------------------------
 # Routes
 # ---------------------------------------------------------------------------
@@ -208,6 +239,11 @@ def create_route(payload: dict | str) -> dict:
 	doc = frappe.get_doc({"doctype": "Route", **payload})
 	doc.insert()
 	return doc.as_dict()
+
+
+@frappe.whitelist()
+def update_route(name: str, payload: dict | str) -> dict:
+	return _update_doc("Route", name, payload)
 
 
 # ---------------------------------------------------------------------------
@@ -390,6 +426,11 @@ def create_field_user(payload: dict | str) -> dict:
 	doc = frappe.get_doc({"doctype": "Field User", **payload})
 	doc.insert()
 	return doc.as_dict()
+
+
+@frappe.whitelist()
+def update_field_user(name: str, payload: dict | str) -> dict:
+	return _update_doc("Field User", name, payload)
 
 
 # ---------------------------------------------------------------------------
