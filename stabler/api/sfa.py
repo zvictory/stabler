@@ -321,6 +321,11 @@ def create_visit(payload: dict | str) -> dict:
 
 
 @frappe.whitelist()
+def update_visit(name: str, payload: dict | str) -> dict:
+	return _update_doc("Visit", name, payload)
+
+
+@frappe.whitelist()
 def check_in(visit: str, lat: float, lng: float) -> dict:
 	_require_write()
 	if not visit:
@@ -491,6 +496,11 @@ def create_van_stock(payload: dict | str) -> dict:
 	doc = frappe.get_doc({"doctype": "Van Stock", **payload})
 	doc.insert()
 	return doc.as_dict()
+
+
+@frappe.whitelist()
+def update_van_stock(name: str, payload: dict | str) -> dict:
+	return _update_doc("Van Stock", name, payload)
 
 
 # ---------------------------------------------------------------------------
