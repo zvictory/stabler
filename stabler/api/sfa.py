@@ -565,6 +565,11 @@ def create_promo_scheme(payload: dict | str) -> dict:
 	return doc.as_dict()
 
 
+@frappe.whitelist()
+def update_promo_scheme(name: str, payload: dict | str) -> dict:
+	return _update_doc("Promo Scheme", name, payload)
+
+
 # ---------------------------------------------------------------------------
 # Photo reports
 # ---------------------------------------------------------------------------
