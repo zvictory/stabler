@@ -5,6 +5,7 @@ import { useSession } from "../../stores/session.js";
 import { call } from "../../api/client.js";
 import { t } from "../../composables/i18n.js";
 import EmptyState from "../../components/EmptyState.vue";
+import DateInput from "../../components/DateInput.vue";
 
 const session = useSession();
 const { activeCompany, companies } = storeToRefs(session);
@@ -335,11 +336,11 @@ async function submitForm() {
 				<div class="row g-2">
 					<div class="col-md-6 mb-3">
 						<label class="form-label">{{ t("Valid From") }}</label>
-						<input v-model="form.valid_from" type="date" class="form-control" />
+						<DateInput v-model="form.valid_from" />
 					</div>
 					<div class="col-md-6 mb-3">
 						<label class="form-label">{{ t("Valid To") }}</label>
-						<input v-model="form.valid_to" type="date" class="form-control" />
+						<DateInput v-model="form.valid_to" />
 					</div>
 				</div>
 

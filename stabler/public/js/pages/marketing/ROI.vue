@@ -4,6 +4,7 @@ import { storeToRefs } from "pinia";
 import { useSession } from "../../stores/session.js";
 import { listRoiSnapshots, listPromoPlans } from "../../api/marketing.js";
 import { formatMoney } from "../../composables/money.js";
+import { formatDateTime } from "../../composables/date.js";
 import { t } from "../../composables/i18n.js";
 import EmptyState from "../../components/EmptyState.vue";
 
@@ -127,7 +128,7 @@ function planLabel(name) {
 							<div>{{ planLabel(r.promo_plan) }}</div>
 							<div class="small text-secondary font-monospace">{{ r.promo_plan }}</div>
 						</td>
-						<td>{{ r.snapshot_date }}</td>
+						<td>{{ formatDateTime(r.snapshot_date) }}</td>
 						<td class="text-end font-monospace">{{ r.units_sold ?? 0 }}</td>
 						<td class="text-end font-monospace">{{ r.incremental_units ?? 0 }}</td>
 						<td class="text-end font-monospace">{{ formatMoney(r.uplift_value, currency, lang) }}</td>

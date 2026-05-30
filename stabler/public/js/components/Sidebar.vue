@@ -3,7 +3,13 @@ import { computed } from "vue";
 import { useRoute } from "vue-router";
 import { useSession } from "../stores/session.js";
 import { orgApi } from "../api/organization.js";
+import { call } from "../api/client.js";
 import { t } from "../composables/i18n.js";
+
+async function logout() {
+	await call("logout");
+	window.location.href = "/login";
+}
 
 const LANGUAGES = [
 	{ code: "en", label: "English" },
@@ -18,20 +24,16 @@ const session = useSession();
 const isActive = (path) => computed(() => route.path === path || route.path.startsWith(path + "/"));
 
 const items = computed(() => {
-	const mods = session.modules || {};
-	// Default ON when boot/modules payload isn't loaded yet — preserves
-	// pre-multi-tenant behavior until the backend lands.
-	const on = (key) => mods[key] !== false && mods[key] !== 0;
 	const list = [
 		{ name: "dashboard", path: "/dashboard", label: t("Dashboard"), icon: "ti-home", show: true },
-		{ name: "money", path: "/money", label: t("Money"), icon: "ti-coin", show: on("money") },
-		{ name: "sales", path: "/sales", label: t("Sales"), icon: "ti-trending-up", show: on("sales") },
-		{ name: "purchasing", path: "/purchasing", label: t("Purchasing"), icon: "ti-shopping-cart", show: on("purchasing") },
-		{ name: "inventory", path: "/inventory", label: t("Inventory"), icon: "ti-package", show: on("inventory") },
-		{ name: "manufacturing", path: "/manufacturing", label: t("Manufacturing"), icon: "ti-tools", show: on("manufacturing") },
-		{ name: "hr", path: "/hr", label: t("People"), icon: "ti-users-group", show: on("hr") },
-		{ name: "sfa", path: "/sfa", label: t("Field Sales"), icon: "ti-route", show: on("field_sales") },
-		{ name: "marketing", path: "/marketing", label: t("Trade Marketing"), icon: "ti-target-arrow", show: on("marketing") },
+		{ name: "money", path: "/money", label: t("Money"), icon: "ti-coin", show: session.canAccessModule("money") },
+		{ name: "sales", path: "/sales", label: t("Sales"), icon: "ti-trending-up", show: session.canAccessModule("sales") },
+		{ name: "purchasing", path: "/purchasing", label: t("Purchasing"), icon: "ti-shopping-cart", show: session.canAccessModule("purchasing") },
+		{ name: "inventory", path: "/inventory", label: t("Inventory"), icon: "ti-package", show: session.canAccessModule("inventory") },
+		{ name: "manufacturing", path: "/manufacturing", label: t("Manufacturing"), icon: "ti-tools", show: session.canAccessModule("manufacturing") },
+		{ name: "hr", path: "/hr", label: t("People"), icon: "ti-users-group", show: session.canAccessModule("hr") },
+		{ name: "sfa", path: "/sfa", label: t("Field Sales"), icon: "ti-route", show: session.canAccessModule("field_sales") },
+		{ name: "marketing", path: "/marketing", label: t("Trade Marketing"), icon: "ti-target-arrow", show: session.canAccessModule("marketing") },
 	];
 	if (session.isAdmin) {
 		list.push({ name: "admin", path: "/admin", label: t("Admin"), icon: "ti-settings", show: true });
@@ -148,13 +150,10 @@ async function setLanguage(code) {
 							<a href="/me" class="dropdown-item">
 								<i class="ti ti-user me-2"></i>{{ t("Profile") }}
 							</a>
-							<a href="/app" class="dropdown-item">
-								<i class="ti ti-external-link me-2"></i>{{ t("Open Desk") }}
-							</a>
 							<div class="dropdown-divider"></div>
-							<a href="/api/method/logout" class="dropdown-item text-danger">
+							<button type="button" class="dropdown-item text-danger" @click="logout">
 								<i class="ti ti-logout me-2"></i>{{ t("Log out") }}
-							</a>
+							</button>
 						</div>
 					</div>
 				</div>

@@ -24,6 +24,24 @@ _MODULE_FIELDS = {
 	"marketing": "enable_marketing",
 }
 
+# Maps each SPA module key to the Frappe roles that grant access to it.
+# Admins (System Manager / Stabler Admin) always see all modules and bypass this map.
+# Any module key absent from this map is admin-only (least-privilege default).
+_MODULE_ROLES: dict[str, list[str]] = {
+	"money": ["Accounts User", "Accounts Manager"],
+	"sales": ["Sales User", "Sales Manager"],
+	"purchasing": ["Purchase User", "Purchase Manager"],
+	"inventory": ["Stock User", "Stock Manager"],
+	"stock_reservation": ["Stock User", "Stock Manager"],
+	"manufacturing": ["Manufacturing User", "Manufacturing Manager"],
+	"hr": ["HR User", "HR Manager"],
+	"field_sales": ["Sales User", "Sales Manager"],
+	"marketing": ["Sales Manager"],
+	"compliance": ["Accounts Manager"],
+}
+
+_ADMIN_ROLES = ("System Manager", "Stabler Admin")
+
 
 def _require_admin() -> None:
 	if "System Manager" not in frappe.get_roles():
@@ -81,6 +99,15 @@ def boot():
 	except Exception:
 		pass
 
+	# Derive per-user allowed modules from assigned roles.
+	# Admins see all modules; everyone else sees only modules their roles grant.
+	is_admin = any(r in roles for r in _ADMIN_ROLES)
+	allowed_modules = (
+		list(_MODULE_ROLES.keys())
+		if is_admin
+		else [mod for mod, allow in _MODULE_ROLES.items() if any(r in roles for r in allow)]
+	)
+
 	return {
 		"user": {
 			"id": user,
@@ -93,6 +120,7 @@ def boot():
 		"default_company": default_company,
 		"allowed_companies": _user_allowed_companies(user),
 		"modules": module_map_for(default_company) if default_company else {},
+		"allowed_modules": allowed_modules,
 	}
 
 

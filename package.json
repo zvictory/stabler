@@ -4,6 +4,7 @@
   "private": true,
   "description": "Stabler SPA (Vue 3 + Tabler)",
   "dependencies": {
-    "apexcharts": "^4.7.0"
+    "apexcharts": "^4.7.0",
+    "apextree": "^1.11.1"
   }
 }

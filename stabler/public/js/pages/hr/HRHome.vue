@@ -12,6 +12,7 @@ const { activeCompany } = storeToRefs(session);
 
 const tabs = computed(() => [
 	{ name: "hr-employees", path: "/hr/employees", label: t("Employees"), icon: "ti-users" },
+	{ name: "hr-org", path: "/hr/org", label: t("Positions"), icon: "ti-sitemap" },
 	{ name: "hr-attendance", path: "/hr/attendance", label: t("Attendance"), icon: "ti-calendar-event" },
 	{ name: "hr-leave", path: "/hr/leave", label: t("Leave"), icon: "ti-beach" },
 	{ name: "hr-payroll", path: "/hr/payroll", label: t("Payroll"), icon: "ti-cash" },

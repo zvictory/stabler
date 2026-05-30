@@ -4,7 +4,9 @@ import { storeToRefs } from "pinia";
 import { useSession } from "../../stores/session.js";
 import { call } from "../../api/client.js";
 import { formatMoney } from "../../composables/money.js";
+import { formatDateTime } from "../../composables/date.js";
 import MoneyInput from "../../components/MoneyInput.vue";
+import DateInput from "../../components/DateInput.vue";
 import EmptyState from "../../components/EmptyState.vue";
 import Typeahead from "../../components/Typeahead.vue";
 
@@ -251,11 +253,11 @@ watch(activeCompany, load);
 			<div class="ms-auto d-flex gap-2 align-items-end flex-wrap">
 				<div>
 					<label class="form-label small mb-1">From</label>
-					<input v-model="fromDate" type="date" class="form-control form-control-sm" />
+					<DateInput v-model="fromDate" size="sm" />
 				</div>
 				<div>
 					<label class="form-label small mb-1">To</label>
-					<input v-model="toDate" type="date" class="form-control form-control-sm" />
+					<DateInput v-model="toDate" size="sm" />
 				</div>
 				<div style="min-width: 150px">
 					<label class="form-label small mb-1">Status</label>
@@ -314,8 +316,8 @@ watch(activeCompany, load);
 				<tbody>
 					<tr v-for="r in rows" :key="r.name" style="cursor: pointer" @click="openDetail(r.name)">
 						<td class="font-monospace text-primary">{{ r.name }}</td>
-						<td>{{ r.transaction_date }}</td>
-						<td>{{ r.valid_till || "—" }}</td>
+						<td>{{ formatDateTime(r.transaction_date) }}</td>
+						<td>{{ formatDateTime(r.valid_till) }}</td>
 						<td>
 							<div class="fw-semibold">{{ r.customer_name || r.customer }}</div>
 						</td>
@@ -387,11 +389,11 @@ watch(activeCompany, load);
 				<div class="datagrid mb-3">
 					<div class="datagrid-item">
 						<div class="datagrid-title">Date</div>
-						<div class="datagrid-content">{{ detail.transaction_date }}</div>
+						<div class="datagrid-content">{{ formatDateTime(detail.transaction_date) }}</div>
 					</div>
 					<div class="datagrid-item">
 						<div class="datagrid-title">Valid till</div>
-						<div class="datagrid-content">{{ detail.valid_till || "—" }}</div>
+						<div class="datagrid-content">{{ formatDateTime(detail.valid_till) || "—" }}</div>
 					</div>
 					<div class="datagrid-item">
 						<div class="datagrid-title">Currency</div>
@@ -400,10 +402,6 @@ watch(activeCompany, load);
 					<div class="datagrid-item">
 						<div class="datagrid-title">Net total</div>
 						<div class="datagrid-content font-monospace">{{ formatMoney(detail.net_total, detail.currency, user.language) }}</div>
-					</div>
-					<div class="datagrid-item">
-						<div class="datagrid-title">Taxes</div>
-						<div class="datagrid-content font-monospace">{{ formatMoney(detail.total_taxes_and_charges, detail.currency, user.language) }}</div>
 					</div>
 					<div class="datagrid-item">
 						<div class="datagrid-title">Grand total</div>
@@ -480,11 +478,11 @@ watch(activeCompany, load);
 						</div>
 						<div class="col-md-3">
 							<label class="form-label">Date</label>
-							<input v-model="form.transaction_date" type="date" class="form-control" />
+							<DateInput v-model="form.transaction_date" />
 						</div>
 						<div class="col-md-3">
 							<label class="form-label">Valid till</label>
-							<input v-model="form.valid_till" type="date" class="form-control" />
+							<DateInput v-model="form.valid_till" />
 						</div>
 					</div>
 

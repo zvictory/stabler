@@ -12,7 +12,9 @@ import { storeToRefs } from "pinia";
 import { useSession } from "../../stores/session.js";
 import { call } from "../../api/client.js";
 import { formatMoney } from "../../composables/money.js";
+import { formatDateTime } from "../../composables/date.js";
 import MoneyInput from "../../components/MoneyInput.vue";
+import DateInput from "../../components/DateInput.vue";
 import EmptyState from "../../components/EmptyState.vue";
 
 const session = useSession();
@@ -354,7 +356,7 @@ watch(filterPurpose, load);
 				<tbody>
 					<tr v-for="r in rows" :key="r.name" style="cursor: pointer" @click="openDetail(r.name)">
 						<td class="font-monospace text-primary">{{ r.name }}</td>
-						<td>{{ r.posting_date }}</td>
+						<td>{{ formatDateTime(r.posting_date) }}</td>
 						<td>
 							<i class="ti me-1" :class="[purposeMeta(r.purpose).icon, purposeMeta(r.purpose).color]"></i>
 							{{ purposeMeta(r.purpose).label.replace(/s$/, "") }}
@@ -405,7 +407,7 @@ watch(filterPurpose, load);
 					<div class="flex-grow-1">
 						<h3 class="m-0 font-monospace">{{ detail.name }}</h3>
 						<div class="small text-secondary">
-							{{ detail.purpose }} · {{ detail.posting_date }}
+							{{ detail.purpose }} · {{ formatDateTime(detail.posting_date) }}
 						</div>
 					</div>
 					<span class="badge" :class="docstatusBadge(detail.docstatus).cls">
@@ -524,7 +526,7 @@ watch(filterPurpose, load);
 						</div>
 						<div class="col-md-3">
 							<label class="form-label">Date</label>
-							<input v-model="form.posting_date" type="date" class="form-control" />
+							<DateInput v-model="form.posting_date" />
 						</div>
 						<div class="col-md-3 d-flex align-items-end">
 							<div class="text-end w-100">

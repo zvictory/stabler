@@ -5,6 +5,7 @@ import { useSession } from "../../stores/session.js";
 import { call } from "../../api/client.js";
 import { t } from "../../composables/i18n.js";
 import EmptyState from "../../components/EmptyState.vue";
+import DateInput from "../../components/DateInput.vue";
 
 const session = useSession();
 const { activeCompany } = storeToRefs(session);
@@ -236,7 +237,7 @@ watch(activeCompany, load);
 							</div>
 							<div class="col-md-4">
 								<label class="form-label">{{ t("Valid From") }}</label>
-								<input v-model="form.valid_from" type="date" class="form-control" />
+								<DateInput v-model="form.valid_from" />
 							</div>
 							<div class="col-md-2">
 								<label class="form-label">{{ t("Active") }}</label>

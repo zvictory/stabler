@@ -4,7 +4,9 @@ import { storeToRefs } from "pinia";
 import { useSession } from "../../stores/session.js";
 import { call } from "../../api/client.js";
 import { t } from "../../composables/i18n.js";
+import { formatDateTime } from "../../composables/date.js";
 import EmptyState from "../../components/EmptyState.vue";
+import DateInput from "../../components/DateInput.vue";
 
 const session = useSession();
 const { activeCompany } = storeToRefs(session);
@@ -190,7 +192,7 @@ function statusBadge(s) {
 							<div class="small text-secondary font-monospace">{{ r.employee }}</div>
 						</td>
 						<td>{{ r.leave_type }}</td>
-						<td class="font-monospace small">{{ r.from_date }} → {{ r.to_date }}</td>
+						<td class="font-monospace small">{{ formatDateTime(r.from_date) }} → {{ formatDateTime(r.to_date) }}</td>
 						<td class="text-end font-monospace">{{ Number(r.total_leave_days || 0).toFixed(1) }}</td>
 						<td><span class="badge" :class="statusBadge(r.status)">{{ r.status }}</span></td>
 						<td class="text-end">
@@ -239,11 +241,11 @@ function statusBadge(s) {
 						</div>
 						<div class="col-md-6">
 							<label class="form-label">{{ t("From") }}</label>
-							<input v-model="form.from_date" type="date" class="form-control" />
+							<DateInput v-model="form.from_date" />
 						</div>
 						<div class="col-md-6">
 							<label class="form-label">{{ t("To") }}</label>
-							<input v-model="form.to_date" type="date" class="form-control" />
+							<DateInput v-model="form.to_date" />
 						</div>
 						<div class="col-12">
 							<label class="form-label">{{ t("Reason") }}</label>

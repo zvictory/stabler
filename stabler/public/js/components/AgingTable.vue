@@ -16,6 +16,7 @@ import { useSession } from "../stores/session.js";
 import { call } from "../api/client.js";
 import { formatMoney } from "../composables/money.js";
 import EmptyState from "./EmptyState.vue";
+import DateInput from "./DateInput.vue";
 
 const props = defineProps({
 	endpoint: { type: String, required: true },
@@ -76,7 +77,7 @@ function bucketCls(value, bucket) {
 			<div class="ms-auto d-flex gap-2 align-items-end">
 				<div>
 					<label class="form-label small mb-1">As of</label>
-					<input v-model="asOf" type="date" class="form-control form-control-sm" />
+					<DateInput v-model="asOf" size="sm" />
 				</div>
 				<button type="button" class="btn btn-sm btn-primary" @click="load">
 					<i class="ti ti-refresh me-1"></i>Refresh

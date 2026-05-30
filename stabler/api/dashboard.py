@@ -11,17 +11,18 @@ from datetime import date, timedelta
 import frappe
 from frappe.utils import flt, getdate
 
+from stabler.api._common import _require_company
+
+# ---------------------------------------------------------------------------
+# Whitelists — guard f-string table/column interpolation against future misuse
+
+_ALLOWED_INVOICE_DOCTYPES: frozenset[str] = frozenset({"Sales Invoice", "Purchase Invoice"})
+_ALLOWED_DATE_FIELDS: frozenset[str] = frozenset({"posting_date"})
+_ALLOWED_AMOUNT_FIELDS: frozenset[str] = frozenset({"base_grand_total", "grand_total"})
+
 
 # ---------------------------------------------------------------------------
 # Helpers
-
-
-def _require_company(company: str | None) -> str:
-	if not company:
-		frappe.throw("company is required")
-	if not frappe.db.exists("Company", company):
-		frappe.throw(f"Unknown company: {company}")
-	return company
 
 
 def _month_start(d: date) -> date:
@@ -76,6 +77,10 @@ def summary(company: str):
 
 def _cash_balance(company: str) -> float:
 	"""Sum of balances on Cash + Bank ledger accounts for the company."""
+	cache_key = f"stabler:dashboard:cash:{company}"
+	cached = frappe.cache().get_value(cache_key)
+	if cached is not None:
+		return cached
 	rows = frappe.db.sql(
 		"""
 		SELECT COALESCE(SUM(gle.debit - gle.credit), 0) AS bal
@@ -87,25 +92,40 @@ def _cash_balance(company: str) -> float:
 		""",
 		{"company": company},
 	)
-	return flt(rows[0][0]) if rows else 0.0
+	result = flt(rows[0][0]) if rows else 0.0
+	frappe.cache().set_value(cache_key, result, expires_in_sec=300)
+	return result
 
 
 def _outstanding_total(doctype: str, company: str) -> float:
 	"""Sum of outstanding_amount on submitted, non-cancelled invoices."""
+	if doctype not in _ALLOWED_INVOICE_DOCTYPES:
+		frappe.throw(f"Invalid doctype for outstanding total: {doctype}")
+	cache_key = f"stabler:dashboard:outstanding:{doctype}:{company}"
+	cached = frappe.cache().get_value(cache_key)
+	if cached is not None:
+		return cached
+	table = f"tab{doctype}"
 	rows = frappe.db.sql(
 		f"""
 		SELECT COALESCE(SUM(outstanding_amount), 0)
-		FROM `tab{doctype}`
+		FROM `{table}`
 		WHERE company = %(company)s
 		  AND docstatus = 1
 		  AND status NOT IN ('Cancelled', 'Closed')
 		""",
 		{"company": company},
 	)
-	return flt(rows[0][0]) if rows else 0.0
+	result = flt(rows[0][0]) if rows else 0.0
+	frappe.cache().set_value(cache_key, result, expires_in_sec=300)
+	return result
 
 
 def _revenue_between(company: str, start: date, end: date) -> float:
+	cache_key = f"stabler:dashboard:revenue:{company}:{start}:{end}"
+	cached = frappe.cache().get_value(cache_key)
+	if cached is not None:
+		return cached
 	rows = frappe.db.sql(
 		"""
 		SELECT COALESCE(SUM(base_grand_total), 0)
@@ -116,7 +136,9 @@ def _revenue_between(company: str, start: date, end: date) -> float:
 		""",
 		{"company": company, "start": start, "end": end},
 	)
-	return flt(rows[0][0]) if rows else 0.0
+	result = flt(rows[0][0]) if rows else 0.0
+	frappe.cache().set_value(cache_key, result, expires_in_sec=300)
+	return result
 
 
 # ---------------------------------------------------------------------------
@@ -157,11 +179,22 @@ def revenue_trend(company: str, months: int = 12):
 def _monthly_totals(
 	doctype: str, date_field: str, amount_field: str, company: str, start: date, end: date
 ):
-	return frappe.db.sql(
+	if doctype not in _ALLOWED_INVOICE_DOCTYPES:
+		frappe.throw(f"Invalid doctype for monthly totals: {doctype}")
+	if date_field not in _ALLOWED_DATE_FIELDS:
+		frappe.throw(f"Invalid date field: {date_field}")
+	if amount_field not in _ALLOWED_AMOUNT_FIELDS:
+		frappe.throw(f"Invalid amount field: {amount_field}")
+	cache_key = f"stabler:dashboard:monthly:{doctype}:{company}:{start}:{end}"
+	cached = frappe.cache().get_value(cache_key)
+	if cached is not None:
+		return cached
+	table = f"tab{doctype}"
+	result = frappe.db.sql(
 		f"""
 		SELECT DATE_FORMAT({date_field}, '%%Y-%%m') AS m,
 		       COALESCE(SUM({amount_field}), 0) AS total
-		FROM `tab{doctype}`
+		FROM `{table}`
 		WHERE company = %(company)s
 		  AND docstatus = 1
 		  AND {date_field} BETWEEN %(start)s AND %(end)s
@@ -171,6 +204,8 @@ def _monthly_totals(
 		{"company": company, "start": start, "end": end},
 		as_dict=True,
 	)
+	frappe.cache().set_value(cache_key, result, expires_in_sec=300)
+	return result
 
 
 # ---------------------------------------------------------------------------
@@ -185,107 +220,73 @@ def recent_activity(company: str, limit: int = 10):
 
 	base_currency = frappe.db.get_value("Company", company, "default_currency") or ""
 
-	queries = [
-		(
-			"Sales Invoice",
-			"customer",
-			"customer_name",
-			"grand_total",
-			"status",
-			"posting_date",
-		),
-		(
-			"Purchase Invoice",
-			"supplier",
-			"supplier_name",
-			"grand_total",
-			"status",
-			"posting_date",
-		),
-	]
-
-	items: list[dict] = []
-	for doctype, party_field, party_name, amount_field, status_field, date_field in queries:
-		rows = frappe.db.sql(
-			f"""
-			SELECT name, {party_field} AS party_id, {party_name} AS party,
-			       {amount_field} AS amount, {status_field} AS status,
-			       {date_field} AS posting_date, currency
-			FROM `tab{doctype}`
+	rows = frappe.db.sql(
+		"""
+		SELECT * FROM (
+			SELECT 'Sales Invoice' AS doctype, name, customer_name AS party,
+			       grand_total AS amount, currency, status,
+			       posting_date, modified
+			FROM `tabSales Invoice`
 			WHERE company = %(company)s AND docstatus = 1
 			ORDER BY modified DESC
 			LIMIT %(limit)s
-			""",
-			{"company": company, "limit": limit},
-			as_dict=True,
-		)
-		for r in rows:
-			items.append(
-				{
-					"doctype": doctype,
-					"name": r["name"],
-					"title": r["name"],
-					"party": r["party"] or r["party_id"],
-					"amount": flt(r["amount"], 2),
-					"currency": r.get("currency") or base_currency,
-					"status": r["status"],
-					"date": str(r["posting_date"]) if r["posting_date"] else "",
-					"modified": str(r.get("modified", "")),
-				}
-			)
+		) si
 
-	# Payment Entry
-	pe_rows = frappe.db.sql(
-		"""
-		SELECT name, party, party_name, paid_amount, status, posting_date,
-		       paid_from_account_currency
-		FROM `tabPayment Entry`
-		WHERE company = %(company)s AND docstatus = 1
+		UNION ALL
+
+		SELECT * FROM (
+			SELECT 'Purchase Invoice' AS doctype, name, supplier_name AS party,
+			       grand_total AS amount, currency, status,
+			       posting_date, modified
+			FROM `tabPurchase Invoice`
+			WHERE company = %(company)s AND docstatus = 1
+			ORDER BY modified DESC
+			LIMIT %(limit)s
+		) pi
+
+		UNION ALL
+
+		SELECT * FROM (
+			SELECT 'Payment Entry' AS doctype, name,
+			       COALESCE(party_name, party) AS party,
+			       paid_amount AS amount,
+			       paid_from_account_currency AS currency,
+			       status, posting_date, modified
+			FROM `tabPayment Entry`
+			WHERE company = %(company)s AND docstatus = 1
+			ORDER BY modified DESC
+			LIMIT %(limit)s
+		) pe
+
+		UNION ALL
+
+		SELECT * FROM (
+			SELECT 'Journal Entry' AS doctype, name, voucher_type AS party,
+			       total_debit AS amount, %(base_currency)s AS currency,
+			       'Submitted' AS status, posting_date, modified
+			FROM `tabJournal Entry`
+			WHERE company = %(company)s AND docstatus = 1
+			ORDER BY modified DESC
+			LIMIT %(limit)s
+		) je
+
 		ORDER BY modified DESC
 		LIMIT %(limit)s
 		""",
-		{"company": company, "limit": limit},
+		{"company": company, "limit": limit, "base_currency": base_currency},
 		as_dict=True,
 	)
-	for r in pe_rows:
-		items.append(
-			{
-				"doctype": "Payment Entry",
-				"name": r["name"],
-				"title": r["name"],
-				"party": r["party_name"] or r["party"],
-				"amount": flt(r["paid_amount"], 2),
-				"currency": r.get("paid_from_account_currency") or base_currency,
-				"status": r["status"],
-				"date": str(r["posting_date"]) if r["posting_date"] else "",
-			}
-		)
 
-	# Journal Entry — totals always in base (company) currency.
-	je_rows = frappe.db.sql(
-		"""
-		SELECT name, total_debit, posting_date, voucher_type
-		FROM `tabJournal Entry`
-		WHERE company = %(company)s AND docstatus = 1
-		ORDER BY modified DESC
-		LIMIT %(limit)s
-		""",
-		{"company": company, "limit": limit},
-		as_dict=True,
-	)
-	for r in je_rows:
-		items.append(
-			{
-				"doctype": "Journal Entry",
-				"name": r["name"],
-				"title": r["name"],
-				"party": r["voucher_type"],
-				"amount": flt(r["total_debit"], 2),
-				"currency": base_currency,
-				"status": "Submitted",
-				"date": str(r["posting_date"]) if r["posting_date"] else "",
-			}
-		)
-
-	items.sort(key=lambda x: x.get("date", ""), reverse=True)
-	return items[:limit]
+	return [
+		{
+			"doctype": r["doctype"],
+			"name": r["name"],
+			"title": r["name"],
+			"party": r["party"] or "",
+			"amount": flt(r["amount"], 2),
+			"currency": r.get("currency") or base_currency,
+			"status": r["status"],
+			"date": str(r["posting_date"]) if r["posting_date"] else "",
+		}
+		for r in rows
+	]

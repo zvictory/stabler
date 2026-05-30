@@ -2,6 +2,7 @@
 import { computed, onMounted, ref } from "vue";
 import { call } from "../../../api/client.js";
 import { t } from "../../../composables/i18n.js";
+import { formatDateTime } from "../../../composables/date.js";
 
 const stockEntries = ref([]);
 const loading = ref(false);
@@ -130,7 +131,7 @@ onMounted(loadEntries);
 						>
 							<td>{{ entry.stock_entry }}</td>
 							<td>{{ entry.stock_entry_type }}</td>
-							<td>{{ entry.posting_date }}</td>
+							<td>{{ formatDateTime(entry.posting_date) }}</td>
 							<td class="text-end">{{ entry.scanned }} / {{ entry.required }}</td>
 							<td>
 								<span :class="['badge', progressBadge(entry.scanned, entry.required)]">

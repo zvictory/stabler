@@ -23,12 +23,7 @@ ALLOWED_REPORTS = {
 }
 
 
-def _require_company(company: str) -> str:
-	if not company:
-		frappe.throw("Company is required.")
-	if not frappe.db.exists("Company", company):
-		frappe.throw(f"Unknown company: {company}")
-	return company
+from stabler.api._common import _assert_can_read, _require_company
 
 
 @frappe.whitelist()
@@ -83,13 +78,13 @@ def gl_entries(
 	where = " AND ".join(conds)
 	rows = frappe.db.sql(
 		f"""
-		SELECT name, posting_date, voucher_type, voucher_no, against, remarks,
+		SELECT name, posting_date, posting_time, voucher_type, voucher_no, against, remarks,
 		       party_type, party,
 		       debit, credit, debit_in_account_currency, credit_in_account_currency,
 		       account_currency
 		FROM `tabGL Entry`
 		WHERE {where}
-		ORDER BY posting_date DESC, creation DESC
+		ORDER BY posting_date DESC, posting_time DESC, creation DESC
 		LIMIT %(limit)s
 		""",
 		params,
@@ -110,6 +105,7 @@ def gl_entries(
 	bal = bal_row[0] if bal_row else {"base": 0.0, "acc": 0.0}
 	for r in rows:
 		r["posting_date"] = str(r["posting_date"]) if r["posting_date"] else ""
+		r["posting_time"] = str(r["posting_time"]) if r["posting_time"] else "00:00:00"
 	return {
 		"entries": rows,
 		"closing_base": flt(bal["base"]),
@@ -120,14 +116,28 @@ def gl_entries(
 
 @frappe.whitelist()
 def account_balance(company: str, account: str, as_of: str | None = None):
-	"""Closing balance of a single account up to `as_of` (default: today)."""
+	"""Closing balance of a single account up to `as_of` (default: today).
+
+	Returns both company-currency (`balance_base`) and account-currency
+	(`balance_acc`) aggregates. `balance` is kept as an alias for
+	`balance_base` for backward compatibility with existing callers."""
 	_require_company(company)
 	if not account:
 		frappe.throw("Account is required.")
 	as_of = as_of or today()
+	acc_meta = frappe.db.get_value(
+		"Account",
+		account,
+		["account_currency", "is_group"],
+		as_dict=True,
+	)
+	if not acc_meta:
+		frappe.throw(f"Unknown account: {account}")
+	company_currency = frappe.db.get_value("Company", company, "default_currency") or ""
 	row = frappe.db.sql(
 		"""
-		SELECT COALESCE(SUM(debit - credit), 0) AS balance
+		SELECT COALESCE(SUM(debit - credit), 0) AS base,
+		       COALESCE(SUM(debit_in_account_currency - credit_in_account_currency), 0) AS acc
 		FROM `tabGL Entry`
 		WHERE company = %(company)s
 		  AND account = %(account)s
@@ -137,7 +147,19 @@ def account_balance(company: str, account: str, as_of: str | None = None):
 		{"company": company, "account": account, "as_of": as_of},
 		as_dict=True,
 	)
-	return {"account": account, "balance": flt(row[0]["balance"]) if row else 0.0}
+	base = flt(row[0]["base"]) if row else 0.0
+	# Group accounts: account-currency sum is meaningless across mixed-currency
+	# children, so surface it as None and let the UI render em-dash.
+	acc = None if acc_meta.is_group else (flt(row[0]["acc"]) if row else 0.0)
+	return {
+		"account": account,
+		"account_currency": acc_meta.account_currency or company_currency,
+		"company_currency": company_currency,
+		"balance_base": base,
+		"balance_acc": acc,
+		"balance": base,
+		"as_of": str(as_of),
+	}
 
 
 @frappe.whitelist()
@@ -244,11 +266,17 @@ def list_journal_entries(
 		"je.docstatus < 2",
 		*qualified_clauses,
 	])
+	# JE.total_debit/total_credit are base-currency totals. Surface them as
+	# *_base + base_currency so the UI can never confuse them with a row's
+	# native account-currency amount.
 	rows = frappe.db.sql(
 		f"""
 		SELECT je.name, je.posting_date, je.voucher_type, je.cheque_no, je.user_remark,
-		       je.total_debit, je.total_credit, je.docstatus,
-		       c.default_currency AS currency
+		       je.total_debit AS total_debit_base,
+		       je.total_credit AS total_credit_base,
+		       je.multi_currency,
+		       je.docstatus,
+		       c.default_currency AS base_currency
 		FROM `tabJournal Entry` je
 		JOIN `tabCompany` c ON c.name = je.company
 		WHERE {where}
@@ -265,8 +293,13 @@ def list_journal_entries(
 def journal_entry_detail(name: str):
 	if not name:
 		frappe.throw("Journal Entry name is required.")
+	_assert_can_read("Journal Entry", name)
 	doc = frappe.get_doc("Journal Entry", name)
 	base_currency = frappe.db.get_value("Company", doc.company, "default_currency") or ""
+	# JE.total_debit/total_credit on the parent doc are base-currency totals.
+	# Per-row values come in both account-currency (what the user entered) and
+	# base-currency (what hits GL). Expose BOTH explicitly so the UI never has
+	# to guess which dimension a number lives in.
 	return {
 		"name": doc.name,
 		"posting_date": str(doc.posting_date) if doc.posting_date else None,
@@ -274,9 +307,10 @@ def journal_entry_detail(name: str):
 		"user_remark": doc.user_remark,
 		"cheque_no": doc.cheque_no,
 		"cheque_date": str(doc.cheque_date) if doc.cheque_date else None,
-		"total_debit": flt(doc.total_debit),
-		"total_credit": flt(doc.total_credit),
-		"currency": base_currency,
+		"total_debit_base": flt(doc.total_debit),
+		"total_credit_base": flt(doc.total_credit),
+		"base_currency": base_currency,
+		"multi_currency": int(doc.multi_currency or 0),
 		"company": doc.company,
 		"docstatus": doc.docstatus,
 		"accounts": [
@@ -284,9 +318,12 @@ def journal_entry_detail(name: str):
 				"account": a.account,
 				"party_type": a.party_type,
 				"party": a.party,
-				"debit": flt(a.debit_in_account_currency or a.debit),
-				"credit": flt(a.credit_in_account_currency or a.credit),
+				"debit_in_account_currency": flt(a.debit_in_account_currency),
+				"credit_in_account_currency": flt(a.credit_in_account_currency),
+				"debit_base": flt(a.debit),
+				"credit_base": flt(a.credit),
 				"account_currency": a.account_currency,
+				"exchange_rate": flt(a.exchange_rate or 1.0),
 				"reference_type": a.reference_type,
 				"reference_name": a.reference_name,
 			}
@@ -417,6 +454,7 @@ def list_payment_entries(
 def payment_entry_detail(name: str):
 	if not name:
 		frappe.throw("Payment Entry name is required.")
+	_assert_can_read("Payment Entry", name)
 	doc = frappe.get_doc("Payment Entry", name)
 	return {
 		"name": doc.name,
@@ -581,6 +619,7 @@ def payment_defaults_for_invoice(company: str, invoice_type: str, invoice_name: 
 		frappe.throw("invoice_type must be 'Sales Invoice' or 'Purchase Invoice'.")
 	if not invoice_name or not frappe.db.exists(invoice_type, invoice_name):
 		frappe.throw(f"Unknown {invoice_type}: {invoice_name}")
+	_assert_can_read(invoice_type, invoice_name)
 	doc = frappe.get_doc(invoice_type, invoice_name)
 	if doc.docstatus != 1:
 		frappe.throw("Only submitted invoices can be paid.")
@@ -886,8 +925,11 @@ def list_bank_entries(
 	return frappe.db.sql(
 		f"""
 		SELECT je.name, je.posting_date, je.voucher_type, je.user_remark,
-		       je.total_debit, je.total_credit, je.docstatus,
-		       c.default_currency AS currency
+		       je.total_debit AS total_debit_base,
+		       je.total_credit AS total_credit_base,
+		       je.multi_currency,
+		       je.docstatus,
+		       c.default_currency AS base_currency
 		FROM `tabJournal Entry` je
 		JOIN `tabCompany` c ON c.name = je.company
 		WHERE {where}
@@ -1084,9 +1126,24 @@ def submit_transfer_entry(
 	elif to_acc.account_currency == base_currency:
 		base_total = to_amt
 	else:
-		# Neither leg is base currency — derive base from the from-leg.
-		base_total = _round2(from_amt)  # treat from-leg amount as base proxy
-		# Caller could pass an explicit base rate in a future revision; v1 keeps it simple.
+		# Neither leg is base currency (triple-foreign transfer). Derive the
+		# base-currency total via the live exchange rate from the from-leg
+		# currency to the base currency on the posting date. Without this,
+		# the JE would silently mis-post the foreign amount as if it were
+		# base currency.
+		from erpnext.setup.utils import get_exchange_rate
+		from_to_base_rate = flt(get_exchange_rate(
+			from_acc.account_currency, base_currency, getdate(posting_date)
+		))
+		if from_to_base_rate <= 0:
+			frappe.throw(
+				f"Triple-foreign transfer ({from_acc.account_currency} → "
+				f"{to_acc.account_currency}, base={base_currency}): no "
+				f"{from_acc.account_currency}→{base_currency} exchange rate "
+				f"available on {posting_date}. Add one in Currency Exchange "
+				"before posting."
+			)
+		base_total = _round2(from_amt * from_to_base_rate)
 
 	# Full-precision rates so ERPNext's `round(amount * rate, 2)` recovers
 	# base_total exactly for both legs.

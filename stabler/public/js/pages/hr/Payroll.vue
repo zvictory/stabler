@@ -4,8 +4,10 @@ import { storeToRefs } from "pinia";
 import { useSession } from "../../stores/session.js";
 import { call } from "../../api/client.js";
 import { formatMoney } from "../../composables/money.js";
+import { formatDateTime } from "../../composables/date.js";
 import { t } from "../../composables/i18n.js";
 import EmptyState from "../../components/EmptyState.vue";
+import DateInput from "../../components/DateInput.vue";
 
 const session = useSession();
 const { activeCompany, user } = storeToRefs(session);
@@ -135,11 +137,11 @@ function statusBadge(s, docstatus) {
 			<div class="row g-2 align-items-end">
 				<div class="col-md-2">
 					<label class="form-label small">{{ t("From") }}</label>
-					<input v-model="fromDate" type="date" class="form-control" />
+					<DateInput v-model="fromDate" />
 				</div>
 				<div class="col-md-2">
 					<label class="form-label small">{{ t("To") }}</label>
-					<input v-model="toDate" type="date" class="form-control" />
+					<DateInput v-model="toDate" />
 				</div>
 				<div class="col-md-3">
 					<label class="form-label small">{{ t("Status") }}</label>
@@ -200,7 +202,7 @@ function statusBadge(s, docstatus) {
 							<div class="fw-semibold">{{ r.employee_name }}</div>
 							<div class="small text-secondary font-monospace">{{ r.employee }}</div>
 						</td>
-						<td class="font-monospace small">{{ r.start_date }} → {{ r.end_date }}</td>
+						<td class="font-monospace small">{{ formatDateTime(r.start_date) }} → {{ formatDateTime(r.end_date) }}</td>
 						<td class="text-end font-monospace">{{ Number(r.total_working_days || 0).toFixed(1) }}</td>
 						<td class="text-end font-monospace">{{ Number(r.payment_days || 0).toFixed(1) }}</td>
 						<td class="text-end font-monospace">{{ money(r.gross_pay, r.currency) }}</td>
@@ -232,7 +234,7 @@ function statusBadge(s, docstatus) {
 			<div v-else-if="detail">
 				<div class="mb-3">
 					<div class="h3 m-0">{{ detail.employee_name }}</div>
-					<div class="text-secondary font-monospace small">{{ detail.start_date }} → {{ detail.end_date }}</div>
+					<div class="text-secondary font-monospace small">{{ formatDateTime(detail.start_date) }} → {{ formatDateTime(detail.end_date) }}</div>
 				</div>
 				<div class="row g-2 mb-3">
 					<div class="col-6">
@@ -297,15 +299,15 @@ function statusBadge(s, docstatus) {
 					<div class="row g-3">
 						<div class="col-md-6">
 							<label class="form-label">{{ t("Period start") }}</label>
-							<input v-model="runForm.start_date" type="date" class="form-control" />
+							<DateInput v-model="runForm.start_date" />
 						</div>
 						<div class="col-md-6">
 							<label class="form-label">{{ t("Period end") }}</label>
-							<input v-model="runForm.end_date" type="date" class="form-control" />
+							<DateInput v-model="runForm.end_date" />
 						</div>
 						<div class="col-md-6">
 							<label class="form-label">{{ t("Posting date") }}</label>
-							<input v-model="runForm.posting_date" type="date" class="form-control" />
+							<DateInput v-model="runForm.posting_date" />
 						</div>
 						<div class="col-md-6">
 							<label class="form-label">{{ t("Frequency") }}</label>

@@ -10,9 +10,11 @@ import {
 	updatePromoPlan,
 } from "../../api/marketing.js";
 import { formatMoney } from "../../composables/money.js";
+import { formatDateTime } from "../../composables/date.js";
 import { t } from "../../composables/i18n.js";
 import EmptyState from "../../components/EmptyState.vue";
 import MoneyInput from "../../components/MoneyInput.vue";
+import DateInput from "../../components/DateInput.vue";
 import Typeahead from "../../components/Typeahead.vue";
 
 const session = useSession();
@@ -266,8 +268,8 @@ async function submitForm() {
 						<td class="text-end font-monospace">
 							{{ formatMoney(r.budget, currency, lang) }}
 						</td>
-						<td>{{ r.start_date || "—" }}</td>
-						<td>{{ r.end_date || "—" }}</td>
+						<td>{{ formatDateTime(r.start_date) || "—" }}</td>
+						<td>{{ formatDateTime(r.end_date) || "—" }}</td>
 					</tr>
 				</tbody>
 			</table>
@@ -341,11 +343,11 @@ async function submitForm() {
 				<div class="row g-2">
 					<div class="col-md-6 mb-3">
 						<label class="form-label required">{{ t("Start Date") }}</label>
-						<input v-model="form.start_date" type="date" class="form-control" />
+						<DateInput v-model="form.start_date" />
 					</div>
 					<div class="col-md-6 mb-3">
 						<label class="form-label required">{{ t("End Date") }}</label>
-						<input v-model="form.end_date" type="date" class="form-control" />
+						<DateInput v-model="form.end_date" />
 					</div>
 				</div>
 

@@ -23,3 +23,10 @@ body {
 .user-menu-trigger:hover {
 	background-color: rgba(255, 255, 255, 0.06);
 }
+
+/* App-wide: every data table is striped by default. Add `.table-no-stripe`
+ * to a specific table to opt out. Use `--tblr-table-striped-bg` from Tabler. */
+.table:not(.table-no-stripe) > tbody > tr:nth-of-type(odd) > * {
+	--tblr-table-accent-bg: var(--tblr-table-striped-bg, rgba(0, 0, 0, 0.025));
+	color: var(--tblr-table-striped-color, inherit);
+}

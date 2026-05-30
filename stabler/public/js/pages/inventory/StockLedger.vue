@@ -4,7 +4,9 @@ import { storeToRefs } from "pinia";
 import { useSession } from "../../stores/session.js";
 import { call } from "../../api/client.js";
 import { formatMoney } from "../../composables/money.js";
+import { formatDateTime } from "../../composables/date.js";
 import EmptyState from "../../components/EmptyState.vue";
+import DateInput from "../../components/DateInput.vue";
 
 const session = useSession();
 const { activeCompany, user } = storeToRefs(session);
@@ -76,11 +78,11 @@ watch(activeCompany, load);
 			<div class="ms-auto d-flex gap-2 align-items-end flex-wrap">
 				<div>
 					<label class="form-label small mb-1">From</label>
-					<input v-model="fromDate" type="date" class="form-control form-control-sm" />
+					<DateInput v-model="fromDate" size="sm" />
 				</div>
 				<div>
 					<label class="form-label small mb-1">To</label>
-					<input v-model="toDate" type="date" class="form-control form-control-sm" />
+					<DateInput v-model="toDate" size="sm" />
 				</div>
 				<div style="min-width: 160px">
 					<label class="form-label small mb-1">Item</label>
@@ -126,10 +128,7 @@ watch(activeCompany, load);
 				</thead>
 				<tbody>
 					<tr v-for="r in rows" :key="r.name">
-						<td>
-							<div>{{ r.posting_date }}</div>
-							<div class="small text-secondary font-monospace">{{ r.posting_time }}</div>
-						</td>
+						<td>{{ formatDateTime(`${r.posting_date} ${r.posting_time}`) }}</td>
 						<td>
 							<span class="badge me-1" :class="voucherBadge(r.voucher_type)">{{ r.voucher_type }}</span>
 							<div class="small font-monospace text-primary">{{ r.voucher_no }}</div>

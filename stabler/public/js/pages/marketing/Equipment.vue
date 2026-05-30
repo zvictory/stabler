@@ -4,6 +4,7 @@ import { storeToRefs } from "pinia";
 import { useSession } from "../../stores/session.js";
 import { t } from "../../composables/i18n.js";
 import EmptyState from "../../components/EmptyState.vue";
+import DateInput from "../../components/DateInput.vue";
 import {
 	listEquipment,
 	createEquipment,
@@ -258,11 +259,11 @@ async function submitCreate() {
 				<div class="row g-2">
 					<div class="col-6 mb-3">
 						<label class="form-label">{{ t("Install Date") }}</label>
-						<input v-model="form.install_date" type="date" class="form-control" />
+						<DateInput v-model="form.install_date" />
 					</div>
 					<div class="col-6 mb-3">
 						<label class="form-label">{{ t("Warranty Until") }}</label>
-						<input v-model="form.warranty_until" type="date" class="form-control" />
+						<DateInput v-model="form.warranty_until" />
 					</div>
 				</div>
 				<div class="mb-3">

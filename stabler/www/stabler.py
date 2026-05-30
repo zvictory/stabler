@@ -59,6 +59,10 @@ def _load_translations(lang: str) -> dict:
 	English (or any unknown language) returns an empty dict — falls back to source strings."""
 	if not lang or lang == "en":
 		return {}
+	cache_key = f"stabler:translations:{lang}"
+	cached = frappe.cache().get_value(cache_key)
+	if cached is not None:
+		return cached
 	app_path = frappe.get_app_path("stabler")
 	csv_path = os.path.join(app_path, "translations", f"{lang}.csv")
 	if not os.path.exists(csv_path):
@@ -74,13 +78,24 @@ def _load_translations(lang: str) -> dict:
 					out[row[0]] = row[1]
 	except Exception:
 		frappe.log_error(f"Failed to load stabler translations for {lang}")
+	frappe.cache().set_value(cache_key, out, expires_in_sec=3600)
 	return out
 
 
 def _list_companies():
+	user = frappe.session.user
 	try:
+		allowed = frappe.get_all(
+			"User Permission",
+			filters={"user": user, "allow": "Company"},
+			pluck="for_value",
+		)
+		filters: dict = {}
+		if allowed:
+			filters["name"] = ("in", allowed)
 		return frappe.get_all(
 			"Company",
+			filters=filters,
 			fields=["name", "abbr", "default_currency"],
 			order_by="name asc",
 		)

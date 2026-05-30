@@ -32,6 +32,10 @@ const display = ref("");
 
 const groupSep = computed(() => (props.language === "en" ? "," : " "));
 const decimalSep = computed(() => (props.language === "en" ? "." : ","));
+// UZS uses integer-only formatting and the native "сўм" suffix
+// (tiyin/coins out of circulation since 1994).
+const isUZS = computed(() => (props.currency || "").toUpperCase() === "UZS");
+const fractionDigits = computed(() => (isUZS.value ? 0 : 2));
 
 function parse(text) {
 	if (text === null || text === undefined) return null;
@@ -55,8 +59,8 @@ function format(n) {
 	if (!Number.isFinite(num)) return "";
 	const localeCode = props.language === "en" ? "en-US" : "ru-RU";
 	return new Intl.NumberFormat(localeCode, {
-		minimumFractionDigits: 2,
-		maximumFractionDigits: 2,
+		minimumFractionDigits: fractionDigits.value,
+		maximumFractionDigits: fractionDigits.value,
 		useGrouping: true,
 	}).format(num);
 }
@@ -121,7 +125,7 @@ const inputClass = computed(() => {
 
 <template>
 	<div class="input-group" :class="{ 'input-group-sm': size === 'sm', 'input-group-lg': size === 'lg' }">
-		<span v-if="currency" class="input-group-text text-uppercase small">{{ currency }}</span>
+		<span v-if="currency && !isUZS" class="input-group-text text-uppercase small">{{ currency }}</span>
 		<input
 			:id="id || undefined"
 			type="text"
@@ -135,5 +139,6 @@ const inputClass = computed(() => {
 			@focus="onFocus"
 			@blur="onBlur"
 		/>
+		<span v-if="isUZS" class="input-group-text small">сўм</span>
 	</div>
 </template>

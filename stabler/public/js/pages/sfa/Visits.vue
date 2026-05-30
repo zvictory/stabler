@@ -4,7 +4,9 @@ import { storeToRefs } from "pinia";
 import { useSession } from "../../stores/session.js";
 import { call } from "../../api/client.js";
 import { t } from "../../composables/i18n.js";
+import { formatDateTime } from "../../composables/date.js";
 import EmptyState from "../../components/EmptyState.vue";
+import DateInput from "../../components/DateInput.vue";
 
 const session = useSession();
 const { activeCompany } = storeToRefs(session);
@@ -194,12 +196,7 @@ watch([plannedDate, status], load);
 		<div class="card-header d-flex flex-wrap gap-2 align-items-center">
 			<h3 class="card-title mb-0">{{ t("Visits") }}</h3>
 			<div class="ms-auto d-flex gap-2">
-				<input
-					v-model="plannedDate"
-					type="date"
-					class="form-control form-control-sm"
-					:aria-label="t('Planned date')"
-				/>
+				<DateInput v-model="plannedDate" size="sm" :aria-label="t('Planned date')" />
 				<select v-model="status" class="form-select form-select-sm" :aria-label="t('Status')">
 					<option v-for="opt in statusOptions" :key="opt.value" :value="opt.value">
 						{{ opt.label }}
@@ -241,9 +238,9 @@ watch([plannedDate, status], load);
 						<td>{{ r.name }}</td>
 						<td>{{ r.outlet }}</td>
 						<td>{{ r.field_user || "—" }}</td>
-						<td>{{ r.planned_date || "—" }}</td>
+						<td>{{ formatDateTime(r.planned_date) || "—" }}</td>
 						<td><span class="badge" :class="statusBadge(r.status)">{{ t(r.status) }}</span></td>
-						<td>{{ r.check_in_at || "—" }}</td>
+						<td>{{ formatDateTime(r.check_in_at) || "—" }}</td>
 					</tr>
 				</tbody>
 			</table>
@@ -293,7 +290,7 @@ watch([plannedDate, status], load);
 							</div>
 							<div class="col-md-6">
 								<label class="form-label">{{ t("Planned Date") }}</label>
-								<input v-model="form.planned_date" type="date" class="form-control" />
+								<DateInput v-model="form.planned_date" />
 							</div>
 							<div class="col-md-6">
 								<label class="form-label">{{ t("Status") }}</label>

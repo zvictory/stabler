@@ -4,7 +4,9 @@ import { storeToRefs } from "pinia";
 import { useSession } from "../../stores/session.js";
 import { call } from "../../api/client.js";
 import { formatMoney } from "../../composables/money.js";
+import { formatDateTime } from "../../composables/date.js";
 import MoneyInput from "../../components/MoneyInput.vue";
+import DateInput from "../../components/DateInput.vue";
 import EmptyState from "../../components/EmptyState.vue";
 
 const session = useSession();
@@ -222,11 +224,11 @@ watch(activeCompany, () => {
 			<div class="ms-auto d-flex gap-2 align-items-end">
 				<div>
 					<label class="form-label small mb-1">From</label>
-					<input v-model="fromDate" type="date" class="form-control form-control-sm" />
+					<DateInput v-model="fromDate" size="sm" />
 				</div>
 				<div>
 					<label class="form-label small mb-1">To</label>
-					<input v-model="toDate" type="date" class="form-control form-control-sm" />
+					<DateInput v-model="toDate" size="sm" />
 				</div>
 				<button type="button" class="btn btn-sm btn-outline-primary" @click="load">
 					<i class="ti ti-refresh me-1"></i>Apply
@@ -278,11 +280,11 @@ watch(activeCompany, () => {
 						@click="openDetail(r.name)"
 					>
 						<td class="font-monospace text-primary">{{ r.name }}</td>
-						<td>{{ r.posting_date }}</td>
+						<td>{{ formatDateTime(r.posting_date) }}</td>
 						<td>{{ r.voucher_type || "—" }}</td>
 						<td class="text-truncate" style="max-width: 320px">{{ r.user_remark || "—" }}</td>
-						<td class="text-end font-monospace">{{ formatMoney(r.total_debit, r.currency || currency, user.language) }}</td>
-						<td class="text-end font-monospace">{{ formatMoney(r.total_credit, r.currency || currency, user.language) }}</td>
+						<td class="text-end font-monospace">{{ formatMoney(r.total_debit_base, r.base_currency || currency, user.language) }}</td>
+						<td class="text-end font-monospace">{{ formatMoney(r.total_credit_base, r.base_currency || currency, user.language) }}</td>
 						<td>
 							<span class="badge" :class="statusBadge(r.docstatus).cls">{{ statusBadge(r.docstatus).label }}</span>
 						</td>
@@ -318,7 +320,7 @@ watch(activeCompany, () => {
 					</div>
 					<div class="datagrid-item">
 						<div class="datagrid-title">Posting date</div>
-						<div class="datagrid-content">{{ detail.posting_date }}</div>
+						<div class="datagrid-content">{{ formatDateTime(detail.posting_date) }}</div>
 					</div>
 					<div class="datagrid-item">
 						<div class="datagrid-title">Type</div>
@@ -332,7 +334,7 @@ watch(activeCompany, () => {
 					</div>
 					<div v-if="detail.cheque_no" class="datagrid-item">
 						<div class="datagrid-title">Cheque</div>
-						<div class="datagrid-content">{{ detail.cheque_no }} · {{ detail.cheque_date }}</div>
+						<div class="datagrid-content">{{ detail.cheque_no }} · {{ formatDateTime(detail.cheque_date) }}</div>
 					</div>
 					<div v-if="detail.user_remark" class="datagrid-item">
 						<div class="datagrid-title">Remark</div>
@@ -356,18 +358,18 @@ watch(activeCompany, () => {
 								<td>{{ a.account }}</td>
 								<td>{{ a.party || "—" }}</td>
 								<td class="text-end font-monospace">
-									{{ a.debit ? formatMoney(a.debit, a.account_currency || currency, user.language) : "—" }}
+									{{ a.debit_in_account_currency ? formatMoney(a.debit_in_account_currency, a.account_currency || detail.base_currency || currency, user.language) : "—" }}
 								</td>
 								<td class="text-end font-monospace">
-									{{ a.credit ? formatMoney(a.credit, a.account_currency || currency, user.language) : "—" }}
+									{{ a.credit_in_account_currency ? formatMoney(a.credit_in_account_currency, a.account_currency || detail.base_currency || currency, user.language) : "—" }}
 								</td>
 							</tr>
 						</tbody>
 						<tfoot>
 							<tr class="fw-bold">
-								<td colspan="2">Total</td>
-								<td class="text-end font-monospace">{{ formatMoney(detail.total_debit, detail.currency || currency, user.language) }}</td>
-								<td class="text-end font-monospace">{{ formatMoney(detail.total_credit, detail.currency || currency, user.language) }}</td>
+								<td colspan="2">Total ({{ detail.base_currency || currency }})</td>
+								<td class="text-end font-monospace">{{ formatMoney(detail.total_debit_base, detail.base_currency || currency, user.language) }}</td>
+								<td class="text-end font-monospace">{{ formatMoney(detail.total_credit_base, detail.base_currency || currency, user.language) }}</td>
 							</tr>
 						</tfoot>
 					</table>
@@ -396,7 +398,7 @@ watch(activeCompany, () => {
 					<div class="row g-2 mb-3">
 						<div class="col-md-4">
 							<label class="form-label small">Posting date</label>
-							<input v-model="form.posting_date" type="date" class="form-control" required />
+							<DateInput v-model="form.posting_date" required />
 						</div>
 						<div class="col-md-4">
 							<label class="form-label small">Type</label>

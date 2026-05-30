@@ -2,6 +2,7 @@
 import { computed, onMounted, ref } from "vue";
 import { call } from "../../../api/client.js";
 import { formatMoney } from "../../../composables/money.js";
+import { formatDateTime } from "../../../composables/date.js";
 import { t } from "../../../composables/i18n.js";
 import { useSession } from "../../../stores/session.js";
 
@@ -80,7 +81,7 @@ onMounted(load);
 					</thead>
 					<tbody>
 						<tr v-for="row in rows" :key="row.date">
-							<td>{{ row.date }}</td>
+							<td>{{ formatDateTime(row.date) }}</td>
 							<td class="text-end">{{ fmt(row.USD) }}</td>
 							<td class="text-end">{{ fmt(row.EUR) }}</td>
 							<td class="text-end">{{ fmt(row.RUB) }}</td>

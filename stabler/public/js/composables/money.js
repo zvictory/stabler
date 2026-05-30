@@ -1,9 +1,15 @@
 /**
  * Locale-aware money formatting.
  * Mirrors the grouping rules from ~/.claude/rules/money-input.md:
- *   en -> "20,820.00"
- *   ru -> "20 820,00"
+ *   en  -> "20,820.00"
+ *   ru  -> "20 820,00"
  *   uz / uzc -> "20 820,00"
+ *
+ * Per-currency overrides:
+ *   UZS -> integer (no decimals) + native suffix `сўм`,
+ *          e.g. "38 000 000 сўм" — matches how Uzbek users actually
+ *          write the currency. The tiyin (1/100 сўм) hasn't been in
+ *          circulation since 1994, so fractional UZS is meaningless.
  *
  * MoneyInput component (per rule) lives separately for editable fields.
  * This helper is for read-only display in tables and cards.
@@ -15,11 +21,27 @@ const LOCALE_MAP = {
 	uzc: "ru-RU",
 };
 
+// Per-currency display overrides. Anything not listed falls through to the
+// default `Intl.NumberFormat` `style: "currency"` path.
+const CURRENCY_OVERRIDES = {
+	UZS: { fractionDigits: 0, suffix: "сўм" },
+};
+
 export function formatMoney(value, currency = "USD", language = "en") {
 	if (value === null || value === undefined || value === "") return "—";
 	const n = Number(value);
 	if (!Number.isFinite(n)) return "—";
 	const locale = LOCALE_MAP[language] || "en-US";
+	const override = CURRENCY_OVERRIDES[currency];
+	if (override) {
+		// Decimal formatting + explicit suffix so we control the symbol exactly.
+		const number = new Intl.NumberFormat(locale, {
+			style: "decimal",
+			minimumFractionDigits: override.fractionDigits,
+			maximumFractionDigits: override.fractionDigits,
+		}).format(n);
+		return `${number} ${override.suffix}`;
+	}
 	try {
 		return new Intl.NumberFormat(locale, {
 			style: "currency",
@@ -37,6 +59,15 @@ export function formatCompactMoney(value, currency = "USD", language = "en") {
 	const n = Number(value);
 	if (!Number.isFinite(n)) return "—";
 	const locale = LOCALE_MAP[language] || "en-US";
+	const override = CURRENCY_OVERRIDES[currency];
+	if (override) {
+		const number = new Intl.NumberFormat(locale, {
+			style: "decimal",
+			notation: "compact",
+			maximumFractionDigits: 1,
+		}).format(n);
+		return `${number} ${override.suffix}`;
+	}
 	try {
 		return new Intl.NumberFormat(locale, {
 			style: "currency",

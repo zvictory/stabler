@@ -5,6 +5,7 @@ import { useSession } from "../stores/session.js";
 import { dashboardApi } from "../api/dashboard.js";
 import { call } from "../api/client.js";
 import { formatMoney, formatCompactMoney } from "../composables/money.js";
+import { formatDateTime } from "../composables/date.js";
 import { t } from "../composables/i18n.js";
 import KpiCard from "../components/KpiCard.vue";
 import ApexChart from "../components/ApexChart.vue";
@@ -297,7 +298,7 @@ const activityIcon = (type) => {
 											<div class="text-body d-block">{{ item.title }}</div>
 											<div class="d-block text-secondary text-truncate mt-n1">
 												{{ item.doctype }} · {{ item.party || "—" }} ·
-												{{ item.date }}
+												{{ formatDateTime(item.date) }}
 											</div>
 										</div>
 										<div class="col-auto text-end">

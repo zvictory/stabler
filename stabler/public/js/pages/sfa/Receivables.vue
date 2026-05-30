@@ -4,6 +4,7 @@ import { storeToRefs } from "pinia";
 import { useSession } from "../../stores/session.js";
 import { call } from "../../api/client.js";
 import { formatMoney } from "../../composables/money.js";
+import { formatDateTime } from "../../composables/date.js";
 import { t } from "../../composables/i18n.js";
 import EmptyState from "../../components/EmptyState.vue";
 
@@ -80,8 +81,8 @@ watch(activeCompany, load);
 					<tr v-for="r in rows" :key="r.name">
 						<td>{{ r.name }}</td>
 						<td>{{ r.customer }}</td>
-						<td>{{ r.posting_date || "—" }}</td>
-						<td>{{ r.due_date || "—" }}</td>
+						<td>{{ formatDateTime(r.posting_date) || "—" }}</td>
+						<td>{{ formatDateTime(r.due_date) || "—" }}</td>
 						<td class="text-end">
 							{{ formatMoney(r.grand_total, r.currency || fallbackCurrency, lang) }}
 						</td>

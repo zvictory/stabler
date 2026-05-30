@@ -4,6 +4,8 @@ import { storeToRefs } from "pinia";
 import { useSession } from "../../stores/session.js";
 import { call } from "../../api/client.js";
 import { formatMoney } from "../../composables/money.js";
+import { formatDateTime } from "../../composables/date.js";
+import DateInput from "../../components/DateInput.vue";
 import { t } from "../../composables/i18n.js";
 import { computeRunning } from "../../composables/ledger.js";
 import EmptyState from "../../components/EmptyState.vue";
@@ -16,6 +18,7 @@ const error = ref("");
 const flat = ref([]);
 const expanded = ref(new Set());
 const balances = ref(new Map());
+const balancesLoading = ref(false);
 const search = ref("");
 
 const ROOT_ICONS = {
@@ -79,15 +82,31 @@ async function load() {
 			company: activeCompany.value,
 		});
 		flat.value = rows || [];
-		// Auto-expand root nodes (the 5 root_types) so the tree isn't a blank wall.
+		// Expand every group by default — users want the full tree visible
+		// without clicking. Search/collapse still works per-node.
 		expanded.value = new Set(
-			(rows || []).filter((r) => r.is_group && !r.parent_account).map((r) => r.name)
+			(rows || []).filter((r) => r.is_group).map((r) => r.name)
 		);
 		balances.value = new Map();
 	} catch (err) {
 		error.value = err?.message || "Failed to load chart of accounts.";
 	} finally {
 		loading.value = false;
+	}
+}
+
+async function loadAllVisibleBalances() {
+	const targets = flattened.value.filter((n) => !n.is_group);
+	await Promise.all(targets.map((n) => loadBalance(n.name, { force: false })));
+}
+
+async function refreshAllBalances() {
+	balancesLoading.value = true;
+	try {
+		const targets = flattened.value.filter((n) => !n.is_group);
+		await Promise.all(targets.map((n) => loadBalance(n.name, { force: true })));
+	} finally {
+		balancesLoading.value = false;
 	}
 }
 
@@ -98,15 +117,20 @@ function toggle(name) {
 	expanded.value = next;
 }
 
-async function loadBalance(account) {
-	if (balances.value.has(account)) return;
+async function loadBalance(account, { force = false } = {}) {
+	if (!force && balances.value.has(account)) return;
 	try {
 		const res = await call("stabler.api.money.account_balance", {
 			company: activeCompany.value,
 			account,
 		});
 		const next = new Map(balances.value);
-		next.set(account, res.balance);
+		next.set(account, {
+			base: res.balance_base,
+			acc: res.balance_acc,
+			account_currency: res.account_currency,
+			company_currency: res.company_currency,
+		});
 		balances.value = next;
 	} catch {
 		/* leave undefined */
@@ -192,7 +216,12 @@ async function fetchLedger() {
 			entriesRes.closing_base || 0
 		);
 		const next = new Map(balances.value);
-		next.set(detailAccount.value.name, detailClosingAcc.value);
+		next.set(detailAccount.value.name, {
+			base: detailClosingBase.value,
+			acc: detailClosingAcc.value,
+			account_currency: detailAccountCurrency.value,
+			company_currency: currency.value,
+		});
 		balances.value = next;
 	} catch (err) {
 		detailError.value = err?.message || t("Failed to load ledger.");
@@ -212,20 +241,43 @@ function rootIcon(t) {
 	return ROOT_ICONS[t] || "ti-circle";
 }
 
-onMounted(load);
-watch(activeCompany, load);
+onMounted(async () => {
+	await load();
+	await loadAllVisibleBalances();
+});
+watch(activeCompany, async () => {
+	await load();
+	await loadAllVisibleBalances();
+});
+// Lazy-load balances for any newly-revealed rows when user expands a group.
+watch(flattened, (rows) => {
+	const todo = rows.filter((n) => !n.is_group && !balances.value.has(n.name));
+	if (todo.length) {
+		for (const n of todo) loadBalance(n.name);
+	}
+});
 </script>
 
 <template>
 	<div class="card">
 		<div class="card-header d-flex align-items-center gap-2">
-			<div class="card-title m-0">Chart of Accounts</div>
+			<div class="card-title m-0">{{ t("Chart of Accounts") }}</div>
+			<button
+				type="button"
+				class="btn btn-sm btn-outline-secondary ms-2"
+				:disabled="balancesLoading"
+				@click="refreshAllBalances"
+				:title="t('Re-fetch balances for all visible accounts')"
+			>
+				<span v-if="balancesLoading" class="spinner-border spinner-border-sm me-1"></span>
+				<i v-else class="ti ti-refresh me-1"></i>{{ t("Refresh") }}
+			</button>
 			<div class="ms-auto" style="max-width: 320px; width: 100%">
 				<input
 					v-model="search"
 					type="search"
 					class="form-control form-control-sm"
-					placeholder="Search account…"
+					:placeholder="t('Search account…')"
 				/>
 			</div>
 		</div>
@@ -247,9 +299,10 @@ watch(activeCompany, load);
 			<table class="table table-vcenter card-table">
 				<thead>
 					<tr>
-						<th>Account</th>
-						<th class="w-1">Type</th>
-						<th class="w-1 text-end">Balance</th>
+						<th>{{ t("Account") }}</th>
+						<th class="w-1">{{ t("Type") }}</th>
+						<th class="w-1 text-end text-nowrap">{{ t("Balance (Account Currency)") }}</th>
+						<th class="w-1 text-end text-nowrap">{{ t("Balance") }} ({{ currency }})</th>
 					</tr>
 				</thead>
 				<tbody>
@@ -297,18 +350,23 @@ watch(activeCompany, load);
 							<span v-if="n.account_type" class="badge bg-blue-lt ms-1">{{ n.account_type }}</span>
 						</td>
 						<td class="text-end font-monospace">
-							<button
-								v-if="!n.is_group && !balances.has(n.name)"
-								type="button"
-								class="btn btn-sm btn-ghost-primary"
-								@click.stop="loadBalance(n.name)"
-							>
-								Load
-							</button>
-							<span v-else-if="balances.has(n.name)">
-								{{ formatMoney(balances.get(n.name), n.account_currency || currency, user.language) }}
+							<span v-if="n.is_group" class="text-secondary">—</span>
+							<span v-else-if="balances.has(n.name) && balances.get(n.name).acc !== null">
+								{{ formatMoney(balances.get(n.name).acc, balances.get(n.name).account_currency || n.account_currency || currency, user.language) }}
 							</span>
-							<span v-else class="text-secondary">—</span>
+							<span v-else-if="balances.has(n.name)" class="text-secondary">—</span>
+							<span v-else class="text-secondary placeholder-glow">
+								<span class="placeholder col-6"></span>
+							</span>
+						</td>
+						<td class="text-end font-monospace">
+							<span v-if="balances.has(n.name)">
+								{{ formatMoney(balances.get(n.name).base, balances.get(n.name).company_currency || currency, user.language) }}
+							</span>
+							<span v-else-if="n.is_group" class="text-secondary">—</span>
+							<span v-else class="text-secondary placeholder-glow">
+								<span class="placeholder col-6"></span>
+							</span>
 						</td>
 					</tr>
 				</tbody>
@@ -337,20 +395,18 @@ watch(activeCompany, load);
 			<div class="row g-2 mb-3 align-items-end">
 				<div class="col-auto">
 					<label class="form-label small mb-1">{{ t("From") }}</label>
-					<input
+					<DateInput
 						v-model="detailFromDate"
-						type="date"
-						class="form-control form-control-sm"
-						@change="fetchLedger"
+						size="sm"
+						@blur="fetchLedger"
 					/>
 				</div>
 				<div class="col-auto">
 					<label class="form-label small mb-1">{{ t("To") }}</label>
-					<input
+					<DateInput
 						v-model="detailToDate"
-						type="date"
-						class="form-control form-control-sm"
-						@change="fetchLedger"
+						size="sm"
+						@blur="fetchLedger"
 					/>
 				</div>
 				<div class="col-auto">
@@ -420,7 +476,7 @@ watch(activeCompany, load);
 						</thead>
 						<tbody>
 							<tr v-for="e in detailEntries" :key="e.name">
-								<td class="text-nowrap">{{ e.posting_date }}</td>
+								<td class="text-nowrap">{{ formatDateTime(`${e.posting_date} ${e.posting_time}`) }}</td>
 								<td>
 									<div class="small">{{ e.voucher_type }}</div>
 									<router-link

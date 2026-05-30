@@ -5,10 +5,13 @@ import { useRoute, useRouter } from "vue-router";
 import { useSession } from "../../stores/session.js";
 import { call } from "../../api/client.js";
 import { formatMoney } from "../../composables/money.js";
+import { formatDateTime } from "../../composables/date.js";
 import { t } from "../../composables/i18n.js";
 import MoneyInput from "../../components/MoneyInput.vue";
+import DateInput from "../../components/DateInput.vue";
 import EmptyState from "../../components/EmptyState.vue";
 import Typeahead from "../../components/Typeahead.vue";
+import RelatedDocuments from "../../components/RelatedDocuments.vue";
 
 const session = useSession();
 const { activeCompany, user } = storeToRefs(session);
@@ -88,6 +91,16 @@ async function loadWarehouses() {
 	}
 }
 
+// The New SO modal pre-selects the finished-goods warehouse. Match on the
+// display name (record name carries a company suffix, e.g. "Tayyor mahsulot - A").
+const DEFAULT_WAREHOUSE_NAME = "tayyor mahsulot";
+function defaultWarehouseName() {
+	const match = warehouses.value.find(
+		(w) => (w.warehouse_name || "").trim().toLowerCase() === DEFAULT_WAREHOUSE_NAME
+	);
+	return match ? match.name : "";
+}
+
 async function load() {
 	if (!activeCompany.value) return;
 	loading.value = true;
@@ -141,8 +154,13 @@ function blankLine() {
 		item_code: "",
 		item_name: "",
 		uom: "",
+		stock_uom: "",
+		uoms: [],
+		conversion_factor: 1,
 		qty: 1,
 		rate: 0,
+		discount_percentage: 0,
+		discount_amount: 0,
 		warehouse: "",
 		availability: null,
 		availabilityLoading: false,
@@ -152,6 +170,8 @@ function blankForm() {
 	return {
 		customer: "",
 		customer_name: "",
+		currency: "",
+		price_list: "",
 		set_warehouse: "",
 		transaction_date: today,
 		delivery_date: today,
@@ -160,19 +180,66 @@ function blankForm() {
 	};
 }
 const form = ref(blankForm());
-const priceListName = ref("");
+const priceLists = ref([]);
+const currencies = ref([]);
+
+function lineAmount(line) {
+	const qty = Number(line.qty || 0);
+	const rate = Number(line.rate || 0);
+	const discPct = Number(line.discount_percentage || 0);
+	const discAmt = Number(line.discount_amount || 0);
+	if (discPct > 0) return qty * Math.max(rate * (1 - discPct / 100), 0);
+	if (discAmt > 0) return qty * Math.max(rate - discAmt, 0);
+	return qty * rate;
+}
+
+function factorFor(line, uom) {
+	const entry = (line.uoms || []).find((u) => u.uom === uom);
+	return entry ? Number(entry.conversion_factor) || 1 : 1;
+}
+
+async function onUomChange(line) {
+	line.conversion_factor = factorFor(line, line.uom);
+	if (line.item_code) {
+		const { rate } = await resolveRate(line.item_code, line.rate, line.uom);
+		line.rate = rate;
+	}
+}
 
 const createTotal = computed(() =>
-	form.value.items.reduce((s, r) => s + Number(r.qty || 0) * Number(r.rate || 0), 0)
+	form.value.items.reduce((s, r) => s + lineAmount(r), 0)
 );
 
-const itemPickerDisabled = computed(() => !form.value.set_warehouse);
+const overAvailableRows = computed(() =>
+	form.value.items
+		.map((line, i) => ({ line, i }))
+		.filter(({ line }) => line.item_code && isOverAvailable(line))
+);
+const hasOverAvailable = computed(() => overAvailableRows.value.length > 0);
+
+async function loadPriceLists() {
+	try {
+		priceLists.value = await call("stabler.api.sales.list_selling_price_lists");
+	} catch {
+		priceLists.value = [];
+	}
+}
+
+async function loadCurrencies() {
+	try {
+		currencies.value = await call("stabler.api.sales.list_currencies");
+	} catch {
+		currencies.value = [];
+	}
+}
 
 function openCreate() {
 	form.value = blankForm();
+	form.value.set_warehouse = defaultWarehouseName();
 	submitError.value = "";
-	priceListName.value = "";
 	createOpen.value = true;
+	loadPriceLists();
+	loadCurrencies();
 }
 function closeCreate() {
 	if (submitting.value) return;
@@ -186,49 +253,84 @@ function searchCustomers(q) {
 		limit: 10,
 	});
 }
-function pickCustomer(c) {
+async function pickCustomer(c) {
 	form.value.customer = c.name;
 	form.value.customer_name = c.customer_name;
+	try {
+		const defaults = await call("stabler.api.sales.get_customer_defaults", {
+			company: activeCompany.value,
+			customer: c.name,
+		});
+		form.value.currency = defaults.default_currency || "";
+		form.value.price_list = defaults.resolved_price_list || "";
+	} catch {
+		// non-fatal: form stays with empty currency/price_list
+	}
 }
 function clearCustomer() {
 	form.value.customer = "";
 	form.value.customer_name = "";
+	form.value.currency = "";
+	form.value.price_list = "";
 }
 
 function searchItems(q) {
 	return call("stabler.api.inventory.list_items", { search: q, limit: 10 });
 }
-async function resolveRate(itemCode, fallback = 0) {
-	if (!itemCode || !activeCompany.value) return { rate: Number(fallback || 0), priceList: "" };
+async function resolveRate(itemCode, fallback = 0, uom = undefined) {
+	if (!itemCode || !activeCompany.value) return { rate: Number(fallback || 0) };
 	try {
 		const res = await call("stabler.api.sales.get_item_price", {
 			item_code: itemCode,
 			company: activeCompany.value,
 			customer: form.value.customer || undefined,
+			price_list: form.value.price_list || undefined,
+			uom: uom || undefined,
 		});
-		if (res?.price_list) priceListName.value = res.price_list;
 		if (res && !res.unresolved && Number(res.price_list_rate) > 0) {
-			return { rate: Number(res.price_list_rate), priceList: res.price_list || "" };
+			return { rate: Number(res.price_list_rate) };
 		}
-		return { rate: Number(fallback || 0), priceList: res?.price_list || "" };
+		return { rate: Number(fallback || 0) };
 	} catch {
-		return { rate: Number(fallback || 0), priceList: "" };
+		return { rate: Number(fallback || 0) };
 	}
 }
 async function pickItem(line, item) {
 	line.item_code = item.item_code || item.name;
 	line.item_name = item.item_name;
-	line.uom = item.stock_uom || "";
 	if (!line.warehouse) line.warehouse = form.value.set_warehouse;
-	const { rate } = await resolveRate(line.item_code, item.standard_rate);
-	line.rate = rate;
+	try {
+		const meta = await call("stabler.api.sales.item_sales_meta", {
+			item_code: line.item_code,
+			company: activeCompany.value,
+			customer: form.value.customer || undefined,
+			price_list: form.value.price_list || undefined,
+		});
+		line.stock_uom = meta.stock_uom || "";
+		line.uoms = meta.uoms || [];
+		line.uom = meta.default_uom || meta.stock_uom || "";
+		line.conversion_factor = factorFor(line, line.uom);
+		line.rate = Number(meta.price_list_rate || meta.standard_rate || 0);
+	} catch {
+		line.uom = item.stock_uom || "";
+		line.stock_uom = item.stock_uom || "";
+		line.uoms = [];
+		line.conversion_factor = 1;
+		const { rate } = await resolveRate(line.item_code, item.standard_rate);
+		line.rate = rate;
+	}
 	scheduleAvailability(line);
 }
 function clearItem(line) {
 	line.item_code = "";
 	line.item_name = "";
 	line.uom = "";
+	line.stock_uom = "";
+	line.uoms = [];
+	line.conversion_factor = 1;
 	line.rate = 0;
+	line.discount_percentage = 0;
+	line.discount_amount = 0;
 	line.availability = null;
 }
 
@@ -258,17 +360,34 @@ async function loadAvailability(line) {
 		line.availabilityLoading = false;
 	}
 }
+// Line qty is in transaction UOM; availability.free is in stock UOM.
+// Multiply by conversion_factor so the comparison is apples-to-apples.
+function lineStockQty(line) {
+	return Number(line.qty || 0) * Number(line.conversion_factor || 1);
+}
+function isOverAvailable(line) {
+	if (!line.item_code || !line.availability) return false;
+	return lineStockQty(line) > Number(line.availability.free || 0);
+}
 function availabilityTone(line) {
 	if (!line.availability) return "bg-secondary-lt";
-	const need = Number(line.qty || 0);
-	return Number(line.availability.free || 0) < need ? "bg-red-lt" : "bg-green-lt";
+	return isOverAvailable(line) ? "bg-red-lt" : "bg-green-lt";
 }
 
 watch(
 	() => form.value.customer,
-	async () => {
-		if (!createOpen.value) return;
-		priceListName.value = "";
+	async (customer) => {
+		if (!createOpen.value || !customer) return;
+		try {
+			const defaults = await call("stabler.api.sales.get_customer_defaults", {
+				company: activeCompany.value,
+				customer,
+			});
+			form.value.currency = defaults.default_currency || "";
+			form.value.price_list = defaults.resolved_price_list || "";
+		} catch {
+			// non-fatal
+		}
 		const lines = form.value.items.filter((l) => l.item_code);
 		for (const line of lines) {
 			const { rate } = await resolveRate(line.item_code, line.rate);
@@ -317,6 +436,7 @@ const canCreateInvoice = computed(
 		detail.value.docstatus === 1 &&
 		!(detail.value.sales_invoices && detail.value.sales_invoices.length)
 );
+const canAmend = computed(() => !!detail.value && detail.value.docstatus === 2);
 
 async function submitDoc() {
 	if (!detail.value?.name) return;
@@ -367,6 +487,20 @@ async function createInvoice() {
 	}
 }
 
+async function amendDoc() {
+	if (!detail.value?.name) return;
+	actionError.value = "";
+	actionRunning.value = true;
+	try {
+		const res = await call("stabler.api.sales.amend_sales_order", { name: detail.value.name });
+		await Promise.all([openDetail(res.name), load()]);
+	} catch (err) {
+		actionError.value = err?.message || "Amend failed.";
+	} finally {
+		actionRunning.value = false;
+	}
+}
+
 async function submitCreate({ autoSubmit = 1 } = {}) {
 	submitError.value = "";
 	if (!form.value.customer) {
@@ -384,6 +518,9 @@ async function submitCreate({ autoSubmit = 1 } = {}) {
 			qty: r.qty,
 			rate: r.rate,
 			uom: r.uom,
+			conversion_factor: r.conversion_factor || 1,
+			discount_percentage: r.discount_percentage || 0,
+			discount_amount: r.discount_amount || 0,
 			warehouse: r.warehouse || form.value.set_warehouse,
 		}));
 	if (!lines.length) {
@@ -396,6 +533,23 @@ async function submitCreate({ autoSubmit = 1 } = {}) {
 			return;
 		}
 	}
+	// Ensure availability is loaded for all active lines (covers the race where
+	// the user submits before the 200 ms debounce fires).
+	await Promise.all(
+		form.value.items
+			.filter((l) => l.item_code && l.warehouse && !l.availability)
+			.map((l) => loadAvailability(l))
+	);
+	const overRows = form.value.items
+		.map((line, i) => ({ line, i }))
+		.filter(({ line }) => line.item_code && isOverAvailable(line));
+	if (overRows.length) {
+		const { line, i } = overRows[0];
+		submitError.value =
+			`Row ${i + 1} (${line.item_name || line.item_code}): qty exceeds available stock ` +
+			`(available ${Number(line.availability.free).toFixed(2)}).`;
+		return;
+	}
 	submitting.value = true;
 	try {
 		const created = await call("stabler.api.sales.create_sales_order", {
@@ -407,6 +561,8 @@ async function submitCreate({ autoSubmit = 1 } = {}) {
 			remarks: form.value.remarks || undefined,
 			items: lines,
 			auto_submit: autoSubmit,
+			currency: form.value.currency || undefined,
+			price_list: form.value.price_list || undefined,
 		});
 		createOpen.value = false;
 		await load();
@@ -424,7 +580,29 @@ async function submitCreate({ autoSubmit = 1 } = {}) {
 onMounted(async () => {
 	await Promise.all([load(), loadWarehouses()]);
 	const openName = route.query?.open;
-	if (openName) openDetail(String(openName));
+	if (openName) {
+		openDetail(String(openName));
+		return;
+	}
+	const newFor = route.query?.new_for;
+	if (newFor) {
+		openCreate();
+		try {
+			const [cdata, defaults] = await Promise.all([
+				call("stabler.api.sales.get_customer", { name: String(newFor) }),
+				call("stabler.api.sales.get_customer_defaults", {
+					company: activeCompany.value,
+					customer: String(newFor),
+				}),
+			]);
+			form.value.customer = cdata.name;
+			form.value.customer_name = cdata.customer_name;
+			form.value.currency = defaults.default_currency || "";
+			form.value.price_list = defaults.resolved_price_list || "";
+		} catch {
+			// non-fatal — form stays open with blank customer
+		}
+	}
 });
 watch(activeCompany, async () => {
 	await Promise.all([load(), loadWarehouses()]);
@@ -438,11 +616,11 @@ watch(activeCompany, async () => {
 			<div class="ms-auto d-flex gap-2 align-items-end flex-wrap">
 				<div>
 					<label class="form-label small mb-1">From</label>
-					<input v-model="fromDate" type="date" class="form-control form-control-sm" />
+					<DateInput v-model="fromDate" size="sm" />
 				</div>
 				<div>
 					<label class="form-label small mb-1">To</label>
-					<input v-model="toDate" type="date" class="form-control form-control-sm" />
+					<DateInput v-model="toDate" size="sm" />
 				</div>
 				<div style="min-width: 180px">
 					<label class="form-label small mb-1">Status</label>
@@ -490,9 +668,8 @@ watch(activeCompany, async () => {
 			<table class="table table-vcenter card-table table-hover">
 				<thead>
 					<tr>
-						<th>#</th>
-						<th>Date</th>
-						<th>Delivery</th>
+						<th class="text-nowrap">#</th>
+						<th class="text-nowrap">Date</th>
 						<th>Customer</th>
 						<th class="text-end">Total</th>
 						<th class="text-end">Delivered</th>
@@ -503,9 +680,8 @@ watch(activeCompany, async () => {
 				</thead>
 				<tbody>
 					<tr v-for="r in rows" :key="r.name" style="cursor: pointer" @click="openDetail(r.name)">
-						<td class="font-monospace text-primary">{{ r.name }}</td>
-						<td>{{ r.transaction_date }}</td>
-						<td>{{ r.delivery_date }}</td>
+						<td class="font-monospace text-primary text-nowrap">{{ r.name }}</td>
+						<td class="text-nowrap">{{ formatDateTime(r.transaction_date) }}</td>
 						<td>
 							<div class="fw-semibold">{{ r.customer_name || r.customer }}</div>
 						</td>
@@ -606,6 +782,16 @@ watch(activeCompany, async () => {
 					>
 						<i class="ti ti-ban me-1"></i>Cancel
 					</button>
+					<button
+						v-if="canAmend"
+						type="button"
+						class="btn btn-outline-secondary"
+						:disabled="actionRunning"
+						@click="amendDoc"
+					>
+						<span v-if="actionRunning" class="spinner-border spinner-border-sm me-1"></span>
+						<i v-else class="ti ti-copy me-1"></i>Amend
+					</button>
 				</div>
 
 				<div
@@ -625,11 +811,11 @@ watch(activeCompany, async () => {
 				<div class="datagrid mb-3">
 					<div class="datagrid-item">
 						<div class="datagrid-title">Order date</div>
-						<div class="datagrid-content">{{ detail.transaction_date }}</div>
+						<div class="datagrid-content">{{ formatDateTime(detail.transaction_date) }}</div>
 					</div>
 					<div class="datagrid-item">
 						<div class="datagrid-title">Delivery date</div>
-						<div class="datagrid-content">{{ detail.delivery_date || "—" }}</div>
+						<div class="datagrid-content">{{ formatDateTime(detail.delivery_date) || "—" }}</div>
 					</div>
 					<div class="datagrid-item">
 						<div class="datagrid-title">Warehouse</div>
@@ -642,10 +828,6 @@ watch(activeCompany, async () => {
 					<div class="datagrid-item">
 						<div class="datagrid-title">Net total</div>
 						<div class="datagrid-content font-monospace">{{ formatMoney(detail.net_total, detail.currency, user.language) }}</div>
-					</div>
-					<div class="datagrid-item">
-						<div class="datagrid-title">Taxes</div>
-						<div class="datagrid-content font-monospace">{{ formatMoney(detail.total_taxes_and_charges, detail.currency, user.language) }}</div>
 					</div>
 					<div class="datagrid-item">
 						<div class="datagrid-title">Grand total</div>
@@ -676,6 +858,8 @@ watch(activeCompany, async () => {
 								<th class="text-end">Reserved</th>
 								<th class="text-end">Delivered</th>
 								<th>UOM</th>
+								<th class="text-end">List rate</th>
+								<th class="text-end">Disc %</th>
 								<th class="text-end">Rate</th>
 								<th class="text-end">Amount</th>
 							</tr>
@@ -697,6 +881,12 @@ watch(activeCompany, async () => {
 								</td>
 								<td class="text-end font-monospace">{{ it.delivered_qty || 0 }}</td>
 								<td>{{ it.uom || "—" }}</td>
+								<td class="text-end font-monospace text-secondary small">
+									{{ it.price_list_rate > 0 ? formatMoney(it.price_list_rate, detail.currency, user.language) : "—" }}
+								</td>
+								<td class="text-end font-monospace small">
+									{{ it.discount_percentage > 0 ? it.discount_percentage + "%" : "—" }}
+								</td>
 								<td class="text-end font-monospace">{{ formatMoney(it.rate, detail.currency, user.language) }}</td>
 								<td class="text-end font-monospace">{{ formatMoney(it.amount, detail.currency, user.language) }}</td>
 							</tr>
@@ -705,6 +895,8 @@ watch(activeCompany, async () => {
 				</div>
 
 				<div v-if="detail.remarks" class="mt-3 small text-secondary">{{ detail.remarks }}</div>
+
+				<RelatedDocuments doctype="Sales Order" :name="detail.name" />
 			</div>
 		</div>
 	</div>
@@ -729,6 +921,7 @@ watch(activeCompany, async () => {
 								:display="form.customer_name"
 								placeholder="Search customer name…"
 								no-results-text="No customers match that name"
+								open-on-focus
 								:disabled="submitting"
 								@pick="pickCustomer"
 								@clear="clearCustomer"
@@ -743,9 +936,24 @@ watch(activeCompany, async () => {
 									</div>
 								</template>
 							</Typeahead>
-							<div v-if="priceListName" class="small text-secondary mt-1">
-								Price list: <span class="font-monospace">{{ priceListName }}</span>
-							</div>
+						</div>
+						<div class="col-md-3">
+							<label class="form-label">Price list</label>
+							<select v-model="form.price_list" class="form-select" :disabled="submitting">
+								<option value="">— auto from customer —</option>
+								<option v-for="pl in priceLists" :key="pl.name" :value="pl.name">
+									{{ pl.name }} ({{ pl.currency }})
+								</option>
+							</select>
+						</div>
+						<div class="col-md-3">
+							<label class="form-label">Currency</label>
+							<select v-model="form.currency" class="form-select font-monospace" :disabled="submitting">
+								<option value="">— from customer / company —</option>
+								<option v-for="c in currencies" :key="c.name" :value="c.name">
+									{{ c.name }}{{ c.symbol ? ` (${c.symbol})` : "" }}
+								</option>
+							</select>
 						</div>
 						<div class="col-md-6">
 							<label class="form-label required">Warehouse</label>
@@ -762,16 +970,12 @@ watch(activeCompany, async () => {
 						</div>
 						<div class="col-md-3">
 							<label class="form-label">Order date</label>
-							<input v-model="form.transaction_date" type="date" class="form-control" />
+							<DateInput v-model="form.transaction_date" />
 						</div>
 						<div class="col-md-3">
 							<label class="form-label required">Delivery date</label>
-							<input v-model="form.delivery_date" type="date" class="form-control" />
+							<DateInput v-model="form.delivery_date" />
 						</div>
-					</div>
-
-					<div v-if="itemPickerDisabled" class="alert alert-info">
-						<i class="ti ti-info-circle me-1"></i>Pick a warehouse to start adding items.
 					</div>
 
 					<h6 class="text-uppercase text-secondary small mb-2">Items</h6>
@@ -780,10 +984,11 @@ watch(activeCompany, async () => {
 							<thead>
 								<tr>
 									<th style="min-width: 220px">Item</th>
-									<th style="width: 180px">Warehouse</th>
-									<th style="width: 100px">Qty</th>
-									<th style="width: 80px">UOM</th>
-									<th style="width: 150px">Rate</th>
+									<th style="width: 80px">Qty</th>
+									<th style="width: 120px">UOM</th>
+									<th style="width: 140px">Rate</th>
+									<th style="width: 70px">%</th>
+									<th style="width: 130px">Disc</th>
 									<th class="text-end" style="width: 130px">Amount</th>
 									<th style="width: 40px"></th>
 								</tr>
@@ -800,7 +1005,8 @@ watch(activeCompany, async () => {
 												no-results-text="No items match"
 												size="sm"
 												menu-min-width="280px"
-												:disabled="submitting || itemPickerDisabled"
+												open-on-focus
+												:disabled="submitting"
 												@pick="(it) => pickItem(line, it)"
 												@clear="clearItem(line)"
 											>
@@ -811,18 +1017,6 @@ watch(activeCompany, async () => {
 											</Typeahead>
 										</td>
 										<td>
-											<select
-												v-model="line.warehouse"
-												class="form-select form-select-sm"
-												:disabled="submitting"
-												@change="scheduleAvailability(line)"
-											>
-												<option v-for="w in warehouses" :key="w.name" :value="w.name">
-													{{ w.warehouse_name }}
-												</option>
-											</select>
-										</td>
-										<td>
 											<input
 												v-model.number="line.qty"
 												type="number"
@@ -831,10 +1025,44 @@ watch(activeCompany, async () => {
 												class="form-control form-control-sm font-monospace text-end"
 											/>
 										</td>
-										<td><input v-model="line.uom" type="text" class="form-control form-control-sm" /></td>
+										<td>
+											<select
+												v-if="line.uoms && line.uoms.length"
+												v-model="line.uom"
+												class="form-select form-select-sm"
+												:disabled="submitting"
+												@change="onUomChange(line)"
+											>
+												<option v-for="u in line.uoms" :key="u.uom" :value="u.uom">{{ u.uom }}</option>
+											</select>
+											<input
+												v-else
+												v-model="line.uom"
+												type="text"
+												class="form-control form-control-sm"
+												:disabled="submitting"
+											/>
+											<div v-if="line.uom && line.stock_uom && line.uom !== line.stock_uom && line.conversion_factor !== 1" class="small text-secondary mt-1">
+												1 {{ line.uom }} = {{ line.conversion_factor }} {{ line.stock_uom }}
+											</div>
+										</td>
 										<td><MoneyInput v-model="line.rate" /></td>
+										<td>
+											<input
+												v-model.number="line.discount_percentage"
+												type="number"
+												step="any"
+												min="0"
+												max="100"
+												inputmode="decimal"
+												class="form-control form-control-sm font-monospace text-end"
+												placeholder="0"
+												:disabled="submitting"
+											/>
+										</td>
+										<td><MoneyInput v-model="line.discount_amount" :disabled="submitting" /></td>
 										<td class="text-end font-monospace">
-											{{ formatMoney(Number(line.qty || 0) * Number(line.rate || 0), currency, user.language) }}
+											{{ formatMoney(lineAmount(line), form.currency || currency, user.language) }}
 										</td>
 										<td>
 											<button type="button" class="btn btn-sm btn-icon btn-ghost-danger" @click="removeLine(idx)" :disabled="submitting">
@@ -843,15 +1071,15 @@ watch(activeCompany, async () => {
 										</td>
 									</tr>
 									<tr v-if="line.item_code && line.warehouse">
-										<td colspan="7" class="py-1 ps-3 small">
+										<td colspan="8" class="py-1 ps-3 small">
 											<span v-if="line.availabilityLoading" class="text-secondary">
 												<span class="spinner-border spinner-border-sm me-1"></span>Checking availability…
 											</span>
 											<span v-else-if="line.availability">
 												<span class="badge" :class="availabilityTone(line)">
-													Available: {{ Number(line.availability.actual).toFixed(2) }}
-													(Reserved: {{ Number(line.availability.reserved).toFixed(2) }},
-													Free: {{ Number(line.availability.free).toFixed(2) }})
+													Available: {{ Number(line.availability.free).toFixed(2) }}
+													(On hand: {{ Number(line.availability.actual).toFixed(2) }},
+													Reserved: {{ Number(line.availability.reserved).toFixed(2) }})
 													in {{ line.warehouse }}
 												</span>
 											</span>
@@ -861,11 +1089,11 @@ watch(activeCompany, async () => {
 							</tbody>
 							<tfoot>
 								<tr>
-									<td colspan="7">
+									<td colspan="8">
 										<button
 											type="button"
 											class="btn btn-sm btn-ghost-primary"
-											:disabled="itemPickerDisabled"
+											:disabled="submitting"
 											@click="addLine"
 										>
 											<i class="ti ti-plus me-1"></i>Add row
@@ -873,8 +1101,8 @@ watch(activeCompany, async () => {
 									</td>
 								</tr>
 								<tr>
-									<td colspan="5" class="text-end text-uppercase small text-secondary">Net total</td>
-									<td class="text-end font-monospace fw-bold">{{ formatMoney(createTotal, currency, user.language) }}</td>
+									<td colspan="6" class="text-end text-uppercase small text-secondary">Net total</td>
+									<td class="text-end font-monospace fw-bold">{{ formatMoney(createTotal, form.currency || currency, user.language) }}</td>
 									<td></td>
 								</tr>
 							</tfoot>
@@ -886,13 +1114,16 @@ watch(activeCompany, async () => {
 						<textarea v-model="form.remarks" class="form-control" rows="2"></textarea>
 					</div>
 				</div>
-				<div class="modal-footer">
+				<div class="modal-footer flex-wrap gap-2">
+					<div v-if="hasOverAvailable" class="w-100 small text-danger">
+						<i class="ti ti-alert-triangle me-1"></i>One or more lines exceed available stock. Reduce qty or choose a different warehouse.
+					</div>
 					<button type="button" class="btn btn-link link-secondary" :disabled="submitting" @click="closeCreate">{{ t("Cancel") }}</button>
-					<button type="button" class="btn btn-outline-primary ms-auto me-2" :disabled="submitting" @click="submitCreate({ autoSubmit: 0 })">
+					<button type="button" class="btn btn-outline-primary ms-auto me-2" :disabled="submitting || hasOverAvailable" @click="submitCreate({ autoSubmit: 0 })">
 						<span v-if="submitting" class="spinner-border spinner-border-sm me-1"></span>
 						{{ t("Save as draft") }}
 					</button>
-					<button type="button" class="btn btn-primary" :disabled="submitting" @click="submitCreate({ autoSubmit: 1 })">
+					<button type="button" class="btn btn-primary" :disabled="submitting || hasOverAvailable" @click="submitCreate({ autoSubmit: 1 })">
 						<span v-if="submitting" class="spinner-border spinner-border-sm me-1"></span>
 						{{ t("Submit & reserve stock") }}
 					</button>

@@ -2,6 +2,7 @@
 import { onMounted, ref } from "vue";
 import { call } from "../../../api/client.js";
 import { t } from "../../../composables/i18n.js";
+import { formatDateTime } from "../../../composables/date.js";
 
 const rows = ref([]);
 const loading = ref(false);
@@ -127,7 +128,7 @@ onMounted(load);
 							style="cursor: pointer"
 							@click="openDetail(row.name)"
 						>
-							<td>{{ row.creation }}</td>
+							<td>{{ formatDateTime(row.creation) }}</td>
 							<td><span :class="directionBadge(row.direction)">{{ row.direction }}</span></td>
 							<td>{{ row.object_type }}</td>
 							<td><small>{{ row.object_name || "—" }}</small></td>
@@ -160,7 +161,7 @@ onMounted(load);
 						<dt class="col-4">{{ t("Duration (ms)") }}</dt>
 						<dd class="col-8">{{ detail.duration_ms }}</dd>
 						<dt class="col-4">{{ t("When") }}</dt>
-						<dd class="col-8">{{ detail.creation || "—" }}</dd>
+						<dd class="col-8">{{ formatDateTime(detail.creation) }}</dd>
 					</dl>
 					<div v-if="detail.message" class="alert alert-secondary">{{ detail.message }}</div>
 					<h6>{{ t("Payload") }}</h6>

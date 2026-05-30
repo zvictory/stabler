@@ -4,6 +4,7 @@ import { storeToRefs } from "pinia";
 import { useSession } from "../../stores/session.js";
 import { call, download } from "../../api/client.js";
 import { formatMoney } from "../../composables/money.js";
+import DateInput from "../../components/DateInput.vue";
 import EmptyState from "../../components/EmptyState.vue";
 
 const session = useSession();
@@ -169,11 +170,11 @@ watch([activeCompany, selectedName], run);
 				</div>
 				<div>
 					<label class="form-label small mb-1">From</label>
-					<input v-model="fromDate" type="date" class="form-control form-control-sm" />
+					<DateInput v-model="fromDate" size="sm" />
 				</div>
 				<div>
 					<label class="form-label small mb-1">To</label>
-					<input v-model="toDate" type="date" class="form-control form-control-sm" />
+					<DateInput v-model="toDate" size="sm" />
 				</div>
 				<div class="ms-auto d-flex gap-2">
 					<button type="button" class="btn btn-sm btn-primary" @click="run" :disabled="loading">

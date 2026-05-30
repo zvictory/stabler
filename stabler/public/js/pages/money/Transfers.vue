@@ -4,8 +4,10 @@ import { storeToRefs } from "pinia";
 import { useSession } from "../../stores/session.js";
 import { call } from "../../api/client.js";
 import { formatMoney } from "../../composables/money.js";
+import { formatDateTime } from "../../composables/date.js";
 import { t } from "../../composables/i18n.js";
 import MoneyInput from "../../components/MoneyInput.vue";
+import DateInput from "../../components/DateInput.vue";
 import EmptyState from "../../components/EmptyState.vue";
 
 const session = useSession();
@@ -225,11 +227,11 @@ watch(activeCompany, () => {
 			<div class="ms-auto d-flex gap-2 align-items-end">
 				<div>
 					<label class="form-label small mb-1">{{ t("From") }}</label>
-					<input v-model="fromDate" type="date" class="form-control form-control-sm" />
+					<DateInput v-model="fromDate" size="sm" />
 				</div>
 				<div>
 					<label class="form-label small mb-1">{{ t("To") }}</label>
-					<input v-model="toDate" type="date" class="form-control form-control-sm" />
+					<DateInput v-model="toDate" size="sm" />
 				</div>
 				<button type="button" class="btn btn-sm btn-outline-primary" @click="load">
 					<i class="ti ti-refresh me-1"></i>{{ t("Apply") }}
@@ -284,10 +286,10 @@ watch(activeCompany, () => {
 						@click="openDetail(r.name)"
 					>
 						<td class="font-monospace text-primary">{{ r.name }}</td>
-						<td>{{ r.posting_date }}</td>
+						<td>{{ formatDateTime(r.posting_date) }}</td>
 						<td class="text-truncate" style="max-width: 380px">{{ r.user_remark || "—" }}</td>
 						<td class="text-end font-monospace">
-							{{ formatMoney(r.total_debit, r.currency || baseCurrency, user.language) }}
+							{{ formatMoney(r.total_debit_base, r.base_currency || baseCurrency, user.language) }}
 						</td>
 						<td>
 							<span class="badge" :class="statusBadge(r.docstatus).cls">
@@ -327,7 +329,7 @@ watch(activeCompany, () => {
 					</div>
 					<div class="datagrid-item">
 						<div class="datagrid-title">{{ t("Posting date") }}</div>
-						<div class="datagrid-content">{{ detail.posting_date }}</div>
+						<div class="datagrid-content">{{ formatDateTime(detail.posting_date) }}</div>
 					</div>
 					<div class="datagrid-item">
 						<div class="datagrid-title">{{ t("Status") }}</div>
@@ -357,10 +359,10 @@ watch(activeCompany, () => {
 							<tr v-for="(a, i) in detail.accounts" :key="i">
 								<td>{{ a.account }}</td>
 								<td class="text-end font-monospace">
-									{{ a.debit ? formatMoney(a.debit, a.account_currency || baseCurrency, user.language) : "—" }}
+									{{ a.debit_in_account_currency ? formatMoney(a.debit_in_account_currency, a.account_currency || baseCurrency, user.language) : "—" }}
 								</td>
 								<td class="text-end font-monospace">
-									{{ a.credit ? formatMoney(a.credit, a.account_currency || baseCurrency, user.language) : "—" }}
+									{{ a.credit_in_account_currency ? formatMoney(a.credit_in_account_currency, a.account_currency || baseCurrency, user.language) : "—" }}
 								</td>
 							</tr>
 						</tbody>
@@ -387,7 +389,7 @@ watch(activeCompany, () => {
 					<div class="row g-2 mb-3">
 						<div class="col-md-4">
 							<label class="form-label small">{{ t("Posting date") }}</label>
-							<input v-model="form.posting_date" type="date" class="form-control" required />
+							<DateInput v-model="form.posting_date" required />
 						</div>
 						<div class="col-md-8">
 							<label class="form-label small">{{ t("Memo") }}</label>

@@ -22,6 +22,7 @@ export const useSession = defineStore("session", {
 		csrfToken: boot.csrfToken || "",
 		roles: boot.roles || [],
 		modules: boot.modules || null,
+		allowedModules: boot.allowed_modules || null,
 		rolesLoaded: Array.isArray(boot.roles) && boot.roles.length > 0,
 	}),
 	getters: {
@@ -33,6 +34,19 @@ export const useSession = defineStore("session", {
 		},
 		isAdmin(state) {
 			return state.roles?.includes("System Manager") || state.roles?.includes("Stabler Admin");
+		},
+		// Returns a function so callers can pass a module key: session.canAccessModule("sales")
+		// Null allowedModules (boot not yet loaded) defaults open — matches pre-boot behavior.
+		canAccessModule(state) {
+			return (key) => {
+				if (this.isAdmin) return true;
+				const companyOn =
+					!state.modules ||
+					(state.modules[key] !== false && state.modules[key] !== 0);
+				const userOn =
+					!state.allowedModules || state.allowedModules.includes(key);
+				return companyOn && userOn;
+			};
 		},
 	},
 	actions: {
@@ -55,6 +69,7 @@ export const useSession = defineStore("session", {
 					if (Array.isArray(data.roles)) this.roles = data.roles;
 					if (Array.isArray(data.companies)) this.companies = data.companies;
 					if (data.modules) this.modules = data.modules;
+					if (Array.isArray(data.allowed_modules)) this.allowedModules = data.allowed_modules;
 					if (data.user) this.user = { ...this.user, ...data.user };
 				}
 			} catch (e) {
@@ -62,6 +77,14 @@ export const useSession = defineStore("session", {
 			} finally {
 				this.rolesLoaded = true;
 			}
+		},
+		setupRehydration() {
+			document.addEventListener("visibilitychange", () => {
+				if (document.visibilityState === "visible") {
+					this.rolesLoaded = false;
+					this.ensureBoot();
+				}
+			});
 		},
 	},
 });

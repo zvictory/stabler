@@ -17,6 +17,7 @@ import { useSession } from "../stores/session.js";
 import { call } from "../api/client.js";
 import { formatMoney } from "../composables/money.js";
 import MoneyInput from "./MoneyInput.vue";
+import DateInput from "./DateInput.vue";
 
 const props = defineProps({
 	open: { type: Boolean, required: true },
@@ -198,12 +199,7 @@ async function submit() {
 							</div>
 							<div class="col-md-3">
 								<label class="form-label">Date</label>
-								<input
-									v-model="form.posting_date"
-									type="date"
-									class="form-control"
-									:disabled="submitting"
-								/>
+								<DateInput v-model="form.posting_date" :disabled="submitting" />
 							</div>
 							<div class="col-md-4">
 								<label class="form-label">Reference #</label>
@@ -217,12 +213,7 @@ async function submit() {
 							</div>
 							<div class="col-md-4 offset-md-8">
 								<label class="form-label">Reference date</label>
-								<input
-									v-model="form.reference_date"
-									type="date"
-									class="form-control"
-									:disabled="submitting"
-								/>
+								<DateInput v-model="form.reference_date" :disabled="submitting" />
 							</div>
 						</div>
 					</div>

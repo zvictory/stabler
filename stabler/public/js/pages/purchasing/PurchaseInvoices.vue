@@ -4,7 +4,9 @@ import { storeToRefs } from "pinia";
 import { useSession } from "../../stores/session.js";
 import { call } from "../../api/client.js";
 import { formatMoney } from "../../composables/money.js";
+import { formatDateTime } from "../../composables/date.js";
 import MoneyInput from "../../components/MoneyInput.vue";
+import DateInput from "../../components/DateInput.vue";
 import PaymentModal from "../../components/PaymentModal.vue";
 import EmptyState from "../../components/EmptyState.vue";
 import Typeahead from "../../components/Typeahead.vue";
@@ -85,11 +87,20 @@ function closeDetail() {
 	detail.value = null;
 }
 
-const totals = computed(() => ({
-	count: rows.value.length,
-	grand: rows.value.reduce((s, r) => s + Number(r.grand_total || 0), 0),
-	outstanding: rows.value.reduce((s, r) => s + Number(r.outstanding_amount || 0), 0),
-}));
+// Group totals by transaction currency — UZS and USD must never share a sum.
+const totalsByCurrency = computed(() => {
+	const m = new Map();
+	for (const r of rows.value) {
+		const ccy = r.currency || currency.value;
+		const bucket = m.get(ccy) || { currency: ccy, count: 0, grand: 0, outstanding: 0 };
+		bucket.count += 1;
+		bucket.grand += Number(r.grand_total || 0);
+		bucket.outstanding += Number(r.outstanding_amount || 0);
+		m.set(ccy, bucket);
+	}
+	return Array.from(m.values());
+});
+const totalCount = computed(() => rows.value.length);
 
 // ──────────────── Create modal ────────────────
 const createOpen = ref(false);
@@ -270,11 +281,11 @@ watch(activeCompany, load);
 			<div class="ms-auto d-flex gap-2 align-items-end flex-wrap">
 				<div>
 					<label class="form-label small mb-1">From</label>
-					<input v-model="fromDate" type="date" class="form-control form-control-sm" />
+					<DateInput v-model="fromDate" size="sm" />
 				</div>
 				<div>
 					<label class="form-label small mb-1">To</label>
-					<input v-model="toDate" type="date" class="form-control form-control-sm" />
+					<DateInput v-model="toDate" size="sm" />
 				</div>
 				<div style="min-width: 150px">
 					<label class="form-label small mb-1">Status</label>
@@ -293,9 +304,12 @@ watch(activeCompany, load);
 
 		<div v-if="rows.length" class="card-body py-2 border-bottom bg-light">
 			<div class="d-flex gap-4 small">
-				<div>Count: <strong>{{ totals.count }}</strong></div>
-				<div>Total: <strong class="font-monospace">{{ formatMoney(totals.grand, currency, user.language) }}</strong></div>
-				<div>Payable: <strong class="text-red font-monospace">{{ formatMoney(totals.outstanding, currency, user.language) }}</strong></div>
+				<div>Count: <strong>{{ totalCount }}</strong></div>
+				<div v-for="b in totalsByCurrency" :key="b.currency" class="d-flex gap-3 align-items-center">
+					<span class="badge bg-secondary-lt text-secondary">{{ b.currency }}</span>
+					<span>Total: <strong class="font-monospace">{{ formatMoney(b.grand, b.currency, user.language) }}</strong></span>
+					<span>Payable: <strong class="text-red font-monospace">{{ formatMoney(b.outstanding, b.currency, user.language) }}</strong></span>
+				</div>
 			</div>
 		</div>
 
@@ -336,8 +350,8 @@ watch(activeCompany, load);
 				<tbody>
 					<tr v-for="r in rows" :key="r.name" style="cursor: pointer" @click="openDetail(r.name)">
 						<td class="font-monospace text-primary">{{ r.name }}</td>
-						<td>{{ r.posting_date }}</td>
-						<td>{{ r.due_date }}</td>
+						<td>{{ formatDateTime(r.posting_date) }}</td>
+						<td>{{ formatDateTime(r.due_date) }}</td>
 						<td>
 							<div class="fw-semibold">{{ r.supplier_name || r.supplier }}</div>
 						</td>
@@ -413,11 +427,11 @@ watch(activeCompany, load);
 				<div class="datagrid mb-3">
 					<div class="datagrid-item">
 						<div class="datagrid-title">Posting date</div>
-						<div class="datagrid-content">{{ detail.posting_date }}</div>
+						<div class="datagrid-content">{{ formatDateTime(detail.posting_date) }}</div>
 					</div>
 					<div class="datagrid-item">
 						<div class="datagrid-title">Due date</div>
-						<div class="datagrid-content">{{ detail.due_date || "—" }}</div>
+						<div class="datagrid-content">{{ formatDateTime(detail.due_date) || "—" }}</div>
 					</div>
 					<div class="datagrid-item">
 						<div class="datagrid-title">Bill #</div>
@@ -425,7 +439,7 @@ watch(activeCompany, load);
 					</div>
 					<div class="datagrid-item">
 						<div class="datagrid-title">Bill date</div>
-						<div class="datagrid-content">{{ detail.bill_date || "—" }}</div>
+						<div class="datagrid-content">{{ formatDateTime(detail.bill_date) || "—" }}</div>
 					</div>
 					<div class="datagrid-item">
 						<div class="datagrid-title">Currency</div>
@@ -538,11 +552,11 @@ watch(activeCompany, load);
 						</div>
 						<div class="col-md-3">
 							<label class="form-label">Posting date</label>
-							<input v-model="form.posting_date" type="date" class="form-control" />
+							<DateInput v-model="form.posting_date" />
 						</div>
 						<div class="col-md-3">
 							<label class="form-label">Due date</label>
-							<input v-model="form.due_date" type="date" class="form-control" />
+							<DateInput v-model="form.due_date" />
 						</div>
 						<div class="col-md-6">
 							<label class="form-label">Supplier bill #</label>
@@ -550,7 +564,7 @@ watch(activeCompany, load);
 						</div>
 						<div class="col-md-3">
 							<label class="form-label">Bill date</label>
-							<input v-model="form.bill_date" type="date" class="form-control" />
+							<DateInput v-model="form.bill_date" />
 						</div>
 					</div>
 

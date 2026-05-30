@@ -4,7 +4,9 @@ import { storeToRefs } from "pinia";
 import { useSession } from "../../stores/session.js";
 import { call } from "../../api/client.js";
 import { formatMoney } from "../../composables/money.js";
+import { formatDateTime } from "../../composables/date.js";
 import MoneyInput from "../../components/MoneyInput.vue";
+import DateInput from "../../components/DateInput.vue";
 import EmptyState from "../../components/EmptyState.vue";
 
 const session = useSession();
@@ -260,11 +262,11 @@ watch(activeCompany, () => {
 			<div class="ms-auto d-flex gap-2 align-items-end">
 				<div>
 					<label class="form-label small mb-1">From</label>
-					<input v-model="fromDate" type="date" class="form-control form-control-sm" />
+					<DateInput v-model="fromDate" size="sm" />
 				</div>
 				<div>
 					<label class="form-label small mb-1">To</label>
-					<input v-model="toDate" type="date" class="form-control form-control-sm" />
+					<DateInput v-model="toDate" size="sm" />
 				</div>
 				<button type="button" class="btn btn-sm btn-primary" @click="load">
 					<i class="ti ti-refresh me-1"></i>Apply
@@ -317,7 +319,7 @@ watch(activeCompany, () => {
 						@click="openDetail(r.name)"
 					>
 						<td class="font-monospace text-primary">{{ r.name }}</td>
-						<td>{{ r.posting_date }}</td>
+						<td>{{ formatDateTime(r.posting_date) }}</td>
 						<td>
 							<span class="badge" :class="typeBadge(r.payment_type).cls">
 								<i class="ti me-1" :class="typeBadge(r.payment_type).icon"></i>{{ r.payment_type }}
@@ -370,7 +372,7 @@ watch(activeCompany, () => {
 					</div>
 					<div class="datagrid-item">
 						<div class="datagrid-title">Posting date</div>
-						<div class="datagrid-content">{{ detail.posting_date }}</div>
+						<div class="datagrid-content">{{ formatDateTime(detail.posting_date) }}</div>
 					</div>
 					<div class="datagrid-item">
 						<div class="datagrid-title">Type</div>
@@ -415,7 +417,7 @@ watch(activeCompany, () => {
 					</div>
 					<div v-if="detail.reference_no" class="datagrid-item">
 						<div class="datagrid-title">Reference</div>
-						<div class="datagrid-content">{{ detail.reference_no }} · {{ detail.reference_date }}</div>
+						<div class="datagrid-content">{{ detail.reference_no }} · {{ formatDateTime(detail.reference_date) }}</div>
 					</div>
 				</div>
 
@@ -464,7 +466,7 @@ watch(activeCompany, () => {
 						<div class="row g-3">
 							<div class="col-md-4">
 								<label class="form-label">Posting date</label>
-								<input v-model="form.posting_date" type="date" class="form-control" />
+								<DateInput v-model="form.posting_date" />
 							</div>
 							<div class="col-md-4">
 								<label class="form-label">Payment type</label>
@@ -549,7 +551,7 @@ watch(activeCompany, () => {
 							</div>
 							<div class="col-md-6">
 								<label class="form-label">Reference date</label>
-								<input v-model="form.reference_date" type="date" class="form-control" />
+								<DateInput v-model="form.reference_date" />
 							</div>
 						</div>
 					</div>

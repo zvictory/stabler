@@ -6,15 +6,9 @@ import json
 
 import frappe
 from frappe import _
-from frappe.utils import flt, getdate, today
+from frappe.utils import cint, flt, getdate, today
 
-
-def _require_company(company: str) -> str:
-	if not company:
-		frappe.throw("Company is required.")
-	if not frappe.db.exists("Company", company):
-		frappe.throw(f"Unknown company: {company}")
-	return company
+from stabler.api._common import _assert_can_read, _require_company, _validate_money_overrides
 
 
 def _resolve_price_list(customer: str | None) -> str | None:
@@ -26,21 +20,23 @@ def _resolve_price_list(customer: str | None) -> str | None:
 	return frappe.db.get_single_value("Selling Settings", "selling_price_list") or None
 
 
-def _lookup_item_price(item_code: str, price_list: str) -> dict | None:
+def _lookup_item_price(item_code: str, price_list: str, uom: str | None = None) -> dict | None:
 	"""Find an active Item Price row for (item_code, price_list).
-	Honors validity window; prefers a row valid today, then the most recent."""
+	Honors validity window; prefers exact-UOM rows over generic rows, then most recent."""
+	params = {"item_code": item_code, "price_list": price_list, "today": today(), "uom": uom or ""}
 	rows = frappe.db.sql(
 		"""
-		SELECT price_list_rate, currency, valid_from, valid_upto
+		SELECT price_list_rate, currency
 		FROM `tabItem Price`
 		WHERE item_code = %(item_code)s AND price_list = %(price_list)s
 		  AND selling = 1
+		  AND (uom = %(uom)s OR uom IS NULL OR uom = '')
 		  AND (valid_from IS NULL OR valid_from <= %(today)s)
 		  AND (valid_upto IS NULL OR valid_upto >= %(today)s)
-		ORDER BY valid_from DESC
+		ORDER BY CASE WHEN uom = %(uom)s THEN 0 ELSE 1 END, valid_from DESC
 		LIMIT 1
 		""",
-		{"item_code": item_code, "price_list": price_list, "today": today()},
+		params,
 		as_dict=True,
 	)
 	if not rows:
@@ -48,71 +44,6 @@ def _lookup_item_price(item_code: str, price_list: str) -> dict | None:
 	r = rows[0]
 	return {"price_list_rate": flt(r["price_list_rate"]), "currency": r["currency"]}
 
-
-def _resolve_tax_template(company: str, customer: str | None) -> str | None:
-	"""Resolve the Uzbek NDS Sales Taxes and Charges Template for a transaction.
-
-	Priority:
-	  1. Customer.tax_template (custom field — honored if present).
-	  2. Customer.is_tax_exempt → company's "Uzbekistan NDS Exempt - <ABBR>".
-	  3. Default → company's "Uzbekistan NDS 12% - <ABBR>".
-
-	Returns None if none of the candidate templates exist for this company
-	(e.g. v05 patch hasn't been able to discover a tax account); callers
-	then leave taxes_and_charges untouched so ERPNext falls back to its
-	own resolution path.
-	"""
-	abbr = frappe.db.get_value("Company", company, "abbr") if company else None
-	if not abbr:
-		return None
-
-	exempt_template = f"Uzbekistan NDS Exempt - {abbr}"
-	nds_template = f"Uzbekistan NDS 12% - {abbr}"
-
-	if customer:
-		custom = frappe.db.get_value("Customer", customer, "tax_template")
-		if custom and frappe.db.exists("Sales Taxes and Charges Template", custom):
-			return custom
-		is_exempt = frappe.db.get_value("Customer", customer, "is_tax_exempt")
-		if is_exempt and frappe.db.exists("Sales Taxes and Charges Template", exempt_template):
-			return exempt_template
-
-	if frappe.db.exists("Sales Taxes and Charges Template", nds_template):
-		return nds_template
-	if frappe.db.exists("Sales Taxes and Charges Template", exempt_template):
-		return exempt_template
-	return None
-
-
-def _apply_tax_template(doc, template_name: str | None) -> None:
-	"""Stamp `taxes_and_charges` on a sales doc and repopulate the taxes table.
-
-	Clears any pre-existing rows so a Customer flag toggle on re-resolve
-	produces a clean recompute. Safe to call on docs that already inherited
-	taxes from a parent (e.g. SI from SO) — we treat the resolved template
-	as authoritative.
-	"""
-	if not template_name:
-		return
-	doc.taxes_and_charges = template_name
-	if doc.get("taxes"):
-		doc.set("taxes", [])
-	src_rows = frappe.get_all(
-		"Sales Taxes and Charges",
-		filters={"parent": template_name, "parenttype": "Sales Taxes and Charges Template"},
-		fields=[
-			"charge_type",
-			"account_head",
-			"description",
-			"rate",
-			"row_id",
-			"included_in_print_rate",
-			"cost_center",
-		],
-		order_by="idx asc",
-	)
-	for row in src_rows:
-		doc.append("taxes", row)
 
 
 @frappe.whitelist()
@@ -129,7 +60,7 @@ def list_customers(company: str, search: str = "", limit: int = 100):
 	return frappe.db.sql(
 		f"""
 		SELECT name, customer_name, customer_group, customer_type, territory,
-		       default_currency, mobile_no, email_id
+		       default_currency, default_price_list, mobile_no, email_id
 		FROM `tabCustomer`
 		WHERE {where}
 		ORDER BY customer_name ASC
@@ -141,18 +72,317 @@ def list_customers(company: str, search: str = "", limit: int = 100):
 
 
 @frappe.whitelist()
+def get_customer_defaults(company: str, customer: str):
+	"""Return the effective price list and currency for a customer.
+
+	The resolved_price_list is the price list that will actually be used:
+	customer.default_price_list if set, otherwise Selling Settings.selling_price_list.
+	"""
+	_require_company(company)
+	if not frappe.db.exists("Customer", customer):
+		frappe.throw(f"Unknown customer: {customer}")
+	doc = frappe.get_doc("Customer", customer)
+	company_currency = frappe.db.get_value("Company", company, "default_currency") or ""
+	resolved_pl = _resolve_price_list(customer)
+	pl_currency = frappe.db.get_value("Price List", resolved_pl, "currency") if resolved_pl else None
+	return {
+		"default_currency": doc.default_currency or company_currency,
+		"default_price_list": doc.default_price_list or "",
+		"resolved_price_list": resolved_pl or "",
+		"price_list_currency": pl_currency or "",
+	}
+
+
+@frappe.whitelist()
+def list_selling_price_lists():
+	"""Return enabled selling price lists (name + currency)."""
+	return frappe.db.get_all(
+		"Price List",
+		filters={"selling": 1, "enabled": 1},
+		fields=["name", "currency"],
+		order_by="name asc",
+	)
+
+
+@frappe.whitelist()
+def list_currencies():
+	"""Return enabled currencies for dropdowns."""
+	return frappe.db.get_all(
+		"Currency",
+		filters={"enabled": 1},
+		fields=["name", "symbol", "fraction_units"],
+		order_by="name asc",
+		limit_page_length=300,
+	)
+
+
+@frappe.whitelist()
+def list_customers_with_balances(
+	company: str,
+	search: str = "",
+	limit: int = 200,
+	only_with_balance: int = 0,
+):
+	"""Customers + live receivables balance (base + account currency)
+	aggregated from GL Entry party rows against this company.
+
+	`balance_base` is in company currency, signed: positive = customer owes us.
+	`balance_acc` is the same in the customer's transaction currency; mixed-
+	currency transactions are tracked by `account_currency` (the receivable
+	account's currency). When a customer transacted in multiple currencies we
+	expose the dominant one with `acc_currency_count` so the UI can flag it."""
+	_require_company(company)
+	company_currency = frappe.db.get_value("Company", company, "default_currency") or ""
+	conds = ["c.disabled = 0"]
+	params: dict = {"company": company, "limit": int(limit)}
+	if search:
+		conds.append("(c.customer_name LIKE %(s)s OR c.name LIKE %(s)s)")
+		params["s"] = f"%{search}%"
+	where = " AND ".join(conds)
+	rows = frappe.db.sql(
+		f"""
+		SELECT
+		  c.name,
+		  c.customer_name,
+		  c.customer_group,
+		  c.customer_type,
+		  c.territory,
+		  c.default_currency,
+		  c.mobile_no,
+		  c.email_id,
+		  COALESCE(g.balance_base, 0) AS balance_base,
+		  COALESCE(g.balance_acc, 0) AS balance_acc,
+		  g.account_currency,
+		  COALESCE(g.currency_count, 0) AS acc_currency_count
+		FROM `tabCustomer` c
+		LEFT JOIN (
+		  SELECT
+		    party,
+		    SUM(debit - credit) AS balance_base,
+		    SUM(debit_in_account_currency - credit_in_account_currency) AS balance_acc,
+		    MAX(account_currency) AS account_currency,
+		    COUNT(DISTINCT account_currency) AS currency_count
+		  FROM `tabGL Entry`
+		  WHERE company = %(company)s
+		    AND party_type = 'Customer'
+		    AND is_cancelled = 0
+		  GROUP BY party
+		) g ON g.party = c.name
+		WHERE {where}
+		ORDER BY c.customer_name ASC
+		LIMIT %(limit)s
+		""",
+		params,
+		as_dict=True,
+	)
+	# Correct PE party-leg drift: GL stores credit_in_account_currency = base÷rate
+	# which can differ from the user-entered PE.paid_amount by a few centavos.
+	# Adjust balance_acc by the per-customer drift so the list ties to the ledger.
+	drift_rows = frappe.db.sql(
+		"""
+		SELECT g.party AS party,
+		       SUM(
+		         (CASE WHEN g.debit_in_account_currency > 0
+		               THEN (CASE WHEN g.account = pe.paid_from THEN pe.paid_amount
+		                          WHEN g.account = pe.paid_to   THEN pe.received_amount
+		                          ELSE 0 END)
+		               ELSE -(CASE WHEN g.account = pe.paid_from THEN pe.paid_amount
+		                           WHEN g.account = pe.paid_to   THEN pe.received_amount
+		                           ELSE 0 END)
+		          END)
+		         - (g.debit_in_account_currency - g.credit_in_account_currency)
+		       ) AS drift
+		FROM `tabGL Entry` g
+		JOIN `tabPayment Entry` pe ON pe.name = g.voucher_no
+		WHERE g.voucher_type = 'Payment Entry'
+		  AND g.company = %(company)s
+		  AND g.party_type = 'Customer'
+		  AND g.is_cancelled = 0
+		GROUP BY g.party
+		""",
+		{"company": company},
+		as_dict=True,
+	)
+	drift_map = {r["party"]: flt(r["drift"]) for r in drift_rows}
+
+	for r in rows:
+		r["balance_base"] = flt(r["balance_base"])
+		r["balance_acc"] = flt(r["balance_acc"]) + drift_map.get(r["name"], 0.0)
+		r["company_currency"] = company_currency
+	if cint(only_with_balance):
+		rows = [r for r in rows if flt(r["balance_base"]) != 0]
+	return {"rows": rows, "company_currency": company_currency}
+
+
+@frappe.whitelist()
+def customer_ledger(
+	company: str,
+	customer: str,
+	from_date: str | None = None,
+	to_date: str | None = None,
+	limit: int = 1000,
+):
+	"""Trial-balance-style ledger for a single customer in `company`.
+
+	Returns party-leg ledger entries ordered oldest-first. Account-currency
+	amounts mirror the **source voucher's** originally-entered amount (PE
+	paid/received_amount, JE Account row, SI grand_total) rather than the
+	back-converted value ERPNext stores in `GL Entry.*_in_account_currency`.
+	This guarantees that when the user enters 6,200,000 UZS on a PE the
+	ledger shows 6,200,000 UZS — not 6,199,988.02 UZS produced by
+	base÷rate rounding."""
+	_require_company(company)
+	if not customer or not frappe.db.exists("Customer", customer):
+		frappe.throw(f"Unknown customer: {customer}")
+	limit = max(1, min(5000, int(limit)))
+
+	from_d = getdate(from_date) if from_date else None
+	to_d = getdate(to_date) if to_date else None
+
+	rows = _fetch_party_ledger_rows(
+		company=company, party_type="Customer", party=customer, to_date=to_d,
+	)
+
+	# Split into opening (< from_date) and window ([from_date, to_date]).
+	def _before_from(r):
+		return from_d is not None and getdate(r["posting_date"]) < from_d
+
+	opening_base = sum(r["debit"] - r["credit"] for r in rows if _before_from(r))
+	opening_acc = sum(
+		r["debit_in_account_currency"] - r["credit_in_account_currency"]
+		for r in rows if _before_from(r)
+	)
+	closing_base = sum(r["debit"] - r["credit"] for r in rows)
+	closing_acc = sum(
+		r["debit_in_account_currency"] - r["credit_in_account_currency"]
+		for r in rows
+	)
+
+	window = [r for r in rows if not _before_from(r)][:limit]
+	for r in window:
+		r["posting_date"] = str(r["posting_date"]) if r["posting_date"] else ""
+
+	account_currency = next(
+		(r["account_currency"] for r in reversed(window) if r["account_currency"]),
+		None,
+	)
+	company_currency = frappe.db.get_value("Company", company, "default_currency") or ""
+
+	return {
+		"customer": customer,
+		"company_currency": company_currency,
+		"account_currency": account_currency or company_currency,
+		"opening_base": flt(opening_base),
+		"opening_acc": flt(opening_acc),
+		"closing_base": flt(closing_base),
+		"closing_acc": flt(closing_acc),
+		"entries": window,
+		"from_date": str(from_d) if from_d else None,
+		"to_date": str(to_d) if to_d else None,
+	}
+
+
+def _fetch_party_ledger_rows(
+	company: str,
+	party_type: str,
+	party: str,
+	to_date,
+):
+	"""Fetch GL Entry rows for a party leg, overriding account-currency amounts
+	with the source voucher's originally-entered amount (PE.paid_amount /
+	received_amount, JE Account row, SI grand_total). Base columns are
+	preserved as-is — they reflect what was actually posted to GL."""
+	upper = "AND posting_date <= %(to_date)s" if to_date else ""
+	params = {"company": company, "party_type": party_type, "party": party}
+	if to_date:
+		params["to_date"] = to_date
+	rows = frappe.db.sql(
+		f"""
+		SELECT name, posting_date, voucher_type, voucher_no, against, remarks,
+		       account, account_currency,
+		       debit, credit,
+		       debit_in_account_currency, credit_in_account_currency
+		FROM `tabGL Entry`
+		WHERE company = %(company)s
+		  AND party_type = %(party_type)s AND party = %(party)s
+		  AND is_cancelled = 0
+		  {upper}
+		ORDER BY posting_date ASC, creation ASC
+		""",
+		params,
+		as_dict=True,
+	)
+	if not rows:
+		return []
+
+	# Batched lookup of PE source amounts.
+	pe_voucher_nos = {r["voucher_no"] for r in rows if r["voucher_type"] == "Payment Entry"}
+	pe_map: dict = {}
+	if pe_voucher_nos:
+		pe_rows = frappe.db.sql(
+			"""
+			SELECT name, paid_from, paid_to, paid_amount, received_amount
+			FROM `tabPayment Entry`
+			WHERE name IN %(names)s
+			""",
+			{"names": tuple(pe_voucher_nos)},
+			as_dict=True,
+		)
+		pe_map = {r["name"]: r for r in pe_rows}
+
+	for r in rows:
+		r["debit"] = flt(r["debit"])
+		r["credit"] = flt(r["credit"])
+		dac = flt(r["debit_in_account_currency"])
+		cac = flt(r["credit_in_account_currency"])
+		# Override PE party-leg account-currency amount with source voucher value.
+		if r["voucher_type"] == "Payment Entry":
+			pe = pe_map.get(r["voucher_no"])
+			if pe:
+				if r["account"] == pe["paid_from"]:
+					source_amt = flt(pe["paid_amount"])
+				elif r["account"] == pe["paid_to"]:
+					source_amt = flt(pe["received_amount"])
+				else:
+					source_amt = None
+				if source_amt is not None:
+					if dac > 0:
+						dac = source_amt
+					elif cac > 0:
+						cac = source_amt
+		r["debit_in_account_currency"] = dac
+		r["credit_in_account_currency"] = cac
+	return rows
+
+
+@frappe.whitelist()
 def customer_detail(name: str, company: str):
 	_require_company(company)
 	if not name or not frappe.db.exists("Customer", name):
 		frappe.throw(f"Unknown customer: {name}")
+	_assert_can_read("Customer", name)
 	doc = frappe.get_doc("Customer", name)
 
-	# AR + recent invoices scoped to company
-	ar_row = frappe.db.sql(
+	# AR per transaction currency (do NOT sum across currencies — that mixes
+	# UZS into USD totals). Lifetime stays in base currency since it's an
+	# audit metric, not a payable amount.
+	ar_by_currency = frappe.db.sql(
 		"""
 		SELECT
-		  COALESCE(SUM(outstanding_amount), 0) AS outstanding,
-		  COALESCE(SUM(base_grand_total), 0) AS lifetime
+		  currency,
+		  COALESCE(SUM(outstanding_amount), 0) AS outstanding
+		FROM `tabSales Invoice`
+		WHERE customer = %(name)s AND company = %(company)s
+		  AND docstatus = 1
+		GROUP BY currency
+		HAVING SUM(outstanding_amount) <> 0
+		""",
+		{"name": name, "company": company},
+		as_dict=True,
+	) or []
+	lifetime_row = frappe.db.sql(
+		"""
+		SELECT COALESCE(SUM(base_grand_total), 0) AS lifetime
 		FROM `tabSales Invoice`
 		WHERE customer = %(name)s AND company = %(company)s
 		  AND docstatus = 1
@@ -160,7 +390,7 @@ def customer_detail(name: str, company: str):
 		{"name": name, "company": company},
 		as_dict=True,
 	)
-	ar = ar_row[0] if ar_row else {"outstanding": 0, "lifetime": 0}
+	lifetime_base = flt(lifetime_row[0]["lifetime"]) if lifetime_row else 0.0
 
 	recent = frappe.db.sql(
 		"""
@@ -187,8 +417,11 @@ def customer_detail(name: str, company: str):
 		"website": doc.website,
 		"customer_details": doc.customer_details,
 		"default_price_list": doc.default_price_list,
-		"outstanding": flt(ar["outstanding"]),
-		"lifetime": flt(ar["lifetime"]),
+		"outstanding_by_currency": [
+			{"currency": r["currency"], "amount": flt(r["outstanding"])}
+			for r in ar_by_currency
+		],
+		"lifetime_base": lifetime_base,
 		"recent_invoices": recent,
 	}
 
@@ -221,7 +454,10 @@ def list_sales_invoices(
 	return frappe.db.sql(
 		f"""
 		SELECT name, posting_date, due_date, customer, customer_name,
-		       grand_total, outstanding_amount, status, currency, docstatus
+		       grand_total, base_grand_total,
+		       outstanding_amount,
+		       conversion_rate,
+		       status, currency, docstatus
 		FROM `tabSales Invoice`
 		WHERE {where}
 		ORDER BY posting_date DESC, name DESC
@@ -236,6 +472,7 @@ def list_sales_invoices(
 def sales_invoice_detail(name: str):
 	if not name:
 		frappe.throw("Invoice name is required.")
+	_assert_can_read("Sales Invoice", name)
 	doc = frappe.get_doc("Sales Invoice", name)
 	return {
 		"name": doc.name,
@@ -246,37 +483,51 @@ def sales_invoice_detail(name: str):
 		"currency": doc.currency,
 		"conversion_rate": flt(doc.conversion_rate),
 		"net_total": flt(doc.net_total),
-		"total_taxes_and_charges": flt(doc.total_taxes_and_charges),
 		"grand_total": flt(doc.grand_total),
 		"outstanding_amount": flt(doc.outstanding_amount),
+		"base_net_total": flt(doc.base_net_total),
+		"base_grand_total": flt(doc.base_grand_total),
+		"base_currency": frappe.db.get_value("Company", doc.company, "default_currency") or "",
 		"status": doc.status,
 		"docstatus": doc.docstatus,
 		"remarks": doc.remarks,
+		"is_return": cint(doc.is_return),
+		"return_against": doc.return_against or "",
+		"credit_notes": frappe.db.sql(
+			"""
+			SELECT name, docstatus FROM `tabSales Invoice`
+			WHERE return_against = %(name)s AND docstatus < 2
+			""",
+			{"name": name},
+			as_dict=True,
+		),
 		"items": [
 			{
 				"item_code": it.item_code,
 				"item_name": it.item_name,
 				"qty": flt(it.qty),
 				"uom": it.uom,
+				"stock_uom": it.stock_uom,
+				"conversion_factor": flt(it.conversion_factor) or 1.0,
+				"stock_qty": flt(it.stock_qty),
 				"rate": flt(it.rate),
+				"price_list_rate": flt(it.price_list_rate),
+				"discount_percentage": flt(it.discount_percentage),
+				"discount_amount": flt(it.discount_amount),
 				"amount": flt(it.amount),
 			}
 			for it in (doc.items or [])
-		],
-		"taxes": [
-			{
-				"description": t.description,
-				"rate": flt(t.rate),
-				"tax_amount": flt(t.tax_amount),
-			}
-			for t in (doc.taxes or [])
 		],
 	}
 
 
 @frappe.whitelist()
 def ar_aging(company: str, as_of: str | None = None):
-	"""Bucket outstanding Sales Invoices by age into 0-30/31-60/61-90/90+."""
+	"""Bucket outstanding Sales Invoices by age into 0-30/31-60/61-90/90+.
+
+	Grouped by (customer, currency) since `outstanding_amount` is in invoice
+	transaction currency — summing UZS into USD totals would be meaningless.
+	One customer with both UZS and USD invoices produces two rows."""
 	_require_company(company)
 	as_of = getdate(as_of or today())
 	rows = frappe.db.sql(
@@ -284,6 +535,7 @@ def ar_aging(company: str, as_of: str | None = None):
 		SELECT
 		  customer,
 		  customer_name,
+		  currency,
 		  COUNT(*) AS invoice_count,
 		  COALESCE(SUM(outstanding_amount), 0) AS total,
 		  COALESCE(SUM(CASE WHEN DATEDIFF(%(as_of)s, posting_date) BETWEEN 0 AND 30
@@ -298,20 +550,112 @@ def ar_aging(company: str, as_of: str | None = None):
 		WHERE company = %(company)s
 		  AND docstatus = 1
 		  AND outstanding_amount > 0
-		GROUP BY customer, customer_name
-		ORDER BY total DESC
+		GROUP BY customer, customer_name, currency
+		ORDER BY currency, total DESC
 		""",
 		{"company": company, "as_of": as_of},
 		as_dict=True,
 	)
-	totals = {
-		"total": sum(flt(r["total"]) for r in rows),
-		"b_0_30": sum(flt(r["b_0_30"]) for r in rows),
-		"b_31_60": sum(flt(r["b_31_60"]) for r in rows),
-		"b_61_90": sum(flt(r["b_61_90"]) for r in rows),
-		"b_90_plus": sum(flt(r["b_90_plus"]) for r in rows),
+	# Per-currency totals (UZS and USD are kept separate — never summed).
+	totals_by_ccy: dict[str, dict] = {}
+	for r in rows:
+		ccy = r["currency"]
+		bucket = totals_by_ccy.setdefault(ccy, {
+			"currency": ccy, "total": 0.0,
+			"b_0_30": 0.0, "b_31_60": 0.0, "b_61_90": 0.0, "b_90_plus": 0.0,
+		})
+		bucket["total"] += flt(r["total"])
+		bucket["b_0_30"] += flt(r["b_0_30"])
+		bucket["b_31_60"] += flt(r["b_31_60"])
+		bucket["b_61_90"] += flt(r["b_61_90"])
+		bucket["b_90_plus"] += flt(r["b_90_plus"])
+	return {
+		"rows": rows,
+		"totals_by_currency": list(totals_by_ccy.values()),
+		"as_of": str(as_of),
 	}
-	return {"rows": rows, "totals": totals, "as_of": str(as_of)}
+
+
+@frappe.whitelist()
+def sales_invoice_print(name: str):
+	"""Full payload for the in-SPA printable receipt page.
+
+	Extends sales_invoice_detail with company header fields and in_words.
+	"""
+	if not name:
+		frappe.throw("Invoice name is required.")
+	_assert_can_read("Sales Invoice", name)
+	base = sales_invoice_detail(name)
+	doc = frappe.get_doc("Sales Invoice", name)
+	company_doc = frappe.get_doc("Company", doc.company)
+	return {
+		**base,
+		"company_name": company_doc.company_name,
+		"company_abbr": company_doc.abbr,
+		"company_tax_id": getattr(company_doc, "tax_id", "") or "",
+		"in_words": doc.in_words or "",
+		"payment_terms_template": doc.payment_terms_template or "",
+	}
+
+
+@frappe.whitelist()
+def create_sales_return(
+	sales_invoice: str,
+	posting_date: str | None = None,
+	item_returns=None,
+	submit: int = 0,
+):
+	"""Issue a credit note (is_return=1) against a submitted Sales Invoice.
+
+	`item_returns` is an optional list of `{item_code, qty}` where qty is
+	entered positive (negated here). Pass nothing to return the full invoice.
+	"""
+	if not sales_invoice or not frappe.db.exists("Sales Invoice", sales_invoice):
+		frappe.throw(_("Unknown Sales Invoice: {0}").format(sales_invoice))
+	src = frappe.get_doc("Sales Invoice", sales_invoice)
+	if src.docstatus != 1:
+		frappe.throw(_("Only submitted invoices can be returned."))
+
+	from erpnext.controllers.sales_and_purchase_return import make_return_doc
+
+	doc = make_return_doc("Sales Invoice", sales_invoice)
+	doc.posting_date = getdate(posting_date or today())
+
+	if isinstance(item_returns, str):
+		try:
+			item_returns = json.loads(item_returns)
+		except Exception:
+			frappe.throw(_("Invalid item_returns payload"))
+
+	if item_returns:
+		src_qty: dict[str, float] = {it.item_code: flt(it.qty) for it in src.items}
+		override: dict[str, float] = {
+			row["item_code"]: flt(row.get("qty", 0))
+			for row in (item_returns or [])
+			if isinstance(row, dict) and row.get("item_code")
+		}
+		for line in doc.items:
+			requested = override.get(line.item_code)
+			if requested is None:
+				continue
+			clamped = min(abs(requested), abs(src_qty.get(line.item_code, 0)))
+			line.qty = -clamped if clamped else line.qty
+
+		# Drop zero-qty lines; keep at least one if all end up zero.
+		non_zero = [ln for ln in doc.items if flt(ln.qty) != 0]
+		if non_zero:
+			doc.items = non_zero
+
+	doc.insert(ignore_permissions=False)
+	if int(submit or 0):
+		doc.submit()
+	return {
+		"name": doc.name,
+		"is_return": 1,
+		"grand_total": flt(doc.grand_total),
+		"docstatus": doc.docstatus,
+		"return_against": sales_invoice,
+	}
 
 
 VALID_CUSTOMER_TYPES = {"Individual", "Company", "Partnership"}
@@ -327,6 +671,7 @@ def create_customer(
 	mobile_no: str | None = None,
 	tax_id: str | None = None,
 	default_price_list: str | None = None,
+	default_currency: str | None = None,
 ):
 	customer_name = (customer_name or "").strip()
 	if not customer_name:
@@ -363,8 +708,75 @@ def create_customer(
 		if not frappe.db.exists("Price List", default_price_list):
 			frappe.throw(f"Unknown price list: {default_price_list}")
 		doc.default_price_list = default_price_list
+	doc.default_currency = default_currency or ""
 	doc.insert(ignore_permissions=False)
 	return {"name": doc.name, "customer_name": doc.customer_name}
+
+
+@frappe.whitelist()
+def get_customer(name: str):
+	if not frappe.db.exists("Customer", name):
+		frappe.throw(f"Unknown customer: {name}")
+	_assert_can_read("Customer", name)
+	doc = frappe.get_doc("Customer", name)
+	return {
+		"name": doc.name,
+		"customer_name": doc.customer_name,
+		"customer_type": doc.customer_type or "Company",
+		"customer_group": doc.customer_group or "",
+		"territory": doc.territory or "",
+		"email_id": doc.email_id or "",
+		"mobile_no": doc.mobile_no or "",
+		"tax_id": doc.tax_id or "",
+		"default_price_list": doc.default_price_list or "",
+		"default_currency": doc.default_currency or "",
+	}
+
+
+@frappe.whitelist()
+def update_customer(
+	name: str,
+	customer_name: str,
+	customer_type: str = "Company",
+	customer_group: str | None = None,
+	territory: str | None = None,
+	email_id: str | None = None,
+	mobile_no: str | None = None,
+	tax_id: str | None = None,
+	default_price_list: str | None = None,
+	default_currency: str | None = None,
+):
+	if not frappe.db.exists("Customer", name):
+		frappe.throw(f"Unknown customer: {name}")
+	customer_name = (customer_name or "").strip()
+	if not customer_name:
+		frappe.throw("Customer name is required.")
+	if customer_type not in VALID_CUSTOMER_TYPES:
+		frappe.throw(f"Customer type must be one of: {', '.join(sorted(VALID_CUSTOMER_TYPES))}.")
+	if default_price_list and not frappe.db.exists("Price List", default_price_list):
+		frappe.throw(f"Unknown price list: {default_price_list}")
+	doc = frappe.get_doc("Customer", name)
+	doc.customer_name = customer_name
+	doc.customer_type = customer_type
+	if customer_group:
+		doc.customer_group = customer_group
+	if territory:
+		doc.territory = territory
+	doc.email_id = (email_id or "").strip()
+	doc.mobile_no = (mobile_no or "").strip()
+	doc.tax_id = (tax_id or "").strip()
+	doc.default_price_list = default_price_list or ""
+	doc.default_currency = default_currency or ""
+	doc.save(ignore_permissions=False)
+	return {"name": doc.name, "customer_name": doc.customer_name}
+
+
+@frappe.whitelist()
+def delete_customer(name: str):
+	if not frappe.db.exists("Customer", name):
+		frappe.throw(f"Unknown customer: {name}")
+	frappe.delete_doc("Customer", name, ignore_permissions=False)
+	return {"deleted": name}
 
 
 @frappe.whitelist()
@@ -422,6 +834,32 @@ def create_sales_invoice(
 	if remarks:
 		doc.remarks = remarks.strip()
 
+	# ERPNext's make_sales_invoice picks the customer's default receivable account
+	# without considering the SO currency. If the account currency doesn't match
+	# the document currency, swap to the matching receivable account for this company.
+	if doc.debit_to and doc.currency:
+		debit_to_currency = frappe.get_cached_value("Account", doc.debit_to, "account_currency")
+		if debit_to_currency and debit_to_currency != doc.currency:
+			matching = frappe.get_all(
+				"Account",
+				filters={
+					"account_type": "Receivable",
+					"company": doc.company,
+					"account_currency": doc.currency,
+					"is_group": 0,
+					"disabled": 0,
+				},
+				pluck="name",
+				order_by="lft asc",  # deterministic — lowest in CoA tree wins
+				limit=1,
+			)
+			if not matching:
+				frappe.throw(
+					_("No {0} receivable account exists for company {1}. "
+					  "Create one before invoicing in {0}.").format(doc.currency, doc.company)
+				)
+			doc.debit_to = matching[0]
+
 	if isinstance(item_overrides, str):
 		try:
 			item_overrides = json.loads(item_overrides)
@@ -442,6 +880,7 @@ def create_sales_invoice(
 			patch = override_by_detail.get(line.so_detail) or override_by_item.get(line.item_code)
 			if not patch:
 				continue
+			_validate_money_overrides(patch, row_label=line.item_code or line.so_detail or "?")
 			if patch.get("qty") not in (None, ""):
 				qty = flt(patch["qty"])
 				if qty <= 0:
@@ -449,8 +888,11 @@ def create_sales_invoice(
 				line.qty = qty
 			if patch.get("rate") not in (None, ""):
 				line.rate = flt(patch["rate"])
+			if patch.get("discount_percentage") not in (None, ""):
+				line.discount_percentage = flt(patch["discount_percentage"])
+			if patch.get("discount_amount") not in (None, ""):
+				line.discount_amount = flt(patch["discount_amount"])
 
-	_apply_tax_template(doc, _resolve_tax_template(doc.company, doc.customer))
 	doc.insert(ignore_permissions=False)
 	return {
 		"name": doc.name,
@@ -521,17 +963,16 @@ def list_price_lists(selling_only: int = 1, limit: int = 200):
 
 
 @frappe.whitelist()
-def get_item_price(item_code: str, company: str, customer: str | None = None):
-	"""Resolve the price for `item_code` for an optional `customer`.
+def get_item_price(item_code: str, company: str, customer: str | None = None, price_list: str | None = None, uom: str | None = None):
+	"""Resolve the price for `item_code`, optionally for a specific `uom`.
 
 	Resolution order for the price list:
-	  1. Customer.default_price_list (if customer is supplied)
-	  2. Selling Settings.selling_price_list (global default)
+	  1. Explicit `price_list` arg (overrides all)
+	  2. Customer.default_price_list (if customer is supplied)
+	  3. Selling Settings.selling_price_list (global default)
 
-	Returns the matching Item Price row's price_list_rate + currency, plus the
-	resolved price_list name. If no price list is configured or no matching
-	row exists, returns price_list_rate=0 with an `unresolved=True` flag so the
-	caller can fall back to Item.standard_rate.
+	When `uom` is provided, UOM-specific Item Price rows are preferred over
+	generic rows (no uom set). Falls back to generic if no UOM-specific row exists.
 	"""
 	_require_company(company)
 	if not item_code:
@@ -541,7 +982,7 @@ def get_item_price(item_code: str, company: str, customer: str | None = None):
 	if customer and not frappe.db.exists("Customer", customer):
 		frappe.throw(f"Unknown customer: {customer}")
 
-	price_list = _resolve_price_list(customer)
+	price_list = price_list or _resolve_price_list(customer)
 	if not price_list:
 		return {
 			"price_list": None,
@@ -551,7 +992,7 @@ def get_item_price(item_code: str, company: str, customer: str | None = None):
 			"reason": "no_price_list",
 		}
 
-	hit = _lookup_item_price(item_code, price_list)
+	hit = _lookup_item_price(item_code, price_list, uom=uom)
 	if not hit:
 		pl_currency = frappe.db.get_value("Price List", price_list, "currency")
 		return {
@@ -567,6 +1008,43 @@ def get_item_price(item_code: str, company: str, customer: str | None = None):
 		"price_list_rate": hit["price_list_rate"],
 		"currency": hit["currency"],
 		"unresolved": False,
+	}
+
+
+@frappe.whitelist()
+def item_sales_meta(item_code: str, company: str, customer: str | None = None, price_list: str | None = None):
+	"""Return UOM options + conversion factors, default sales UOM, and price-list
+	rate for an item — everything a line editor needs on item pick.
+
+	Pass an explicit `price_list` to look up the rate directly without going
+	through per-customer resolution (useful when the UI has already set a PL).
+	"""
+	_require_company(company)
+	if not item_code:
+		frappe.throw("item_code is required.")
+	if not frappe.db.exists("Item", item_code):
+		frappe.throw(f"Unknown item: {item_code}")
+	doc = frappe.get_doc("Item", item_code)
+	uoms = [
+		{"uom": u.uom, "conversion_factor": flt(u.conversion_factor) or 1.0}
+		for u in (doc.uoms or [])
+	]
+	if not any(u["uom"] == doc.stock_uom for u in uoms):
+		uoms.insert(0, {"uom": doc.stock_uom, "conversion_factor": 1.0})
+	default_uom = getattr(doc, "sales_uom", None) or doc.stock_uom
+	price = get_item_price(item_code=item_code, company=company, customer=customer, price_list=price_list, uom=default_uom)
+	return {
+		"item_code": doc.item_code,
+		"item_name": doc.item_name,
+		"stock_uom": doc.stock_uom,
+		"sales_uom": getattr(doc, "sales_uom", None),
+		"default_uom": default_uom,
+		"uoms": uoms,
+		"standard_rate": flt(doc.standard_rate),
+		"price_list": price.get("price_list"),
+		"price_list_rate": flt(price.get("price_list_rate")),
+		"currency": price.get("currency"),
+		"unresolved": price.get("unresolved", False),
 	}
 
 
@@ -617,6 +1095,7 @@ def list_quotations(
 def quotation_detail(name: str):
 	if not name:
 		frappe.throw("Quotation name is required.")
+	_assert_can_read("Quotation", name)
 	doc = frappe.get_doc("Quotation", name)
 	return {
 		"name": doc.name,
@@ -627,7 +1106,6 @@ def quotation_detail(name: str):
 		"currency": doc.currency,
 		"conversion_rate": flt(doc.conversion_rate),
 		"net_total": flt(doc.net_total),
-		"total_taxes_and_charges": flt(doc.total_taxes_and_charges),
 		"grand_total": flt(doc.grand_total),
 		"status": doc.status,
 		"docstatus": doc.docstatus,
@@ -642,14 +1120,6 @@ def quotation_detail(name: str):
 				"amount": flt(it.amount),
 			}
 			for it in (doc.items or [])
-		],
-		"taxes": [
-			{
-				"description": t.description,
-				"rate": flt(t.rate),
-				"tax_amount": flt(t.tax_amount),
-			}
-			for t in (doc.taxes or [])
 		],
 	}
 
@@ -810,23 +1280,26 @@ def list_sales_orders(
 def sales_order_detail(name: str):
 	if not name:
 		frappe.throw("Sales order name is required.")
+	_assert_can_read("Sales Order", name)
 	doc = frappe.get_doc("Sales Order", name)
 	# Per-line reserved totals: there can be multiple SREs per SO Item.
+	# For direct SO reservations, ERPNext sets voucher_detail_no = SO Item name.
+	# from_voucher_detail_no is only set for Pick-List/PR-sourced reservations.
 	reserved_by_detail: dict[str, float] = {}
 	for row in frappe.db.sql(
 		"""
-		SELECT from_voucher_detail_no, SUM(reserved_qty) AS reserved
+		SELECT voucher_detail_no, SUM(reserved_qty) AS reserved
 		FROM `tabStock Reservation Entry`
 		WHERE voucher_type = 'Sales Order'
 		  AND voucher_no = %(name)s
 		  AND docstatus = 1
-		GROUP BY from_voucher_detail_no
+		GROUP BY voucher_detail_no
 		""",
 		{"name": name},
 		as_dict=True,
 	):
-		if row.get("from_voucher_detail_no"):
-			reserved_by_detail[row["from_voucher_detail_no"]] = flt(row["reserved"])
+		if row.get("voucher_detail_no"):
+			reserved_by_detail[row["voucher_detail_no"]] = flt(row["reserved"])
 	si_links = frappe.db.sql(
 		"""
 		SELECT DISTINCT si.name, si.docstatus
@@ -848,7 +1321,6 @@ def sales_order_detail(name: str):
 		"currency": doc.currency,
 		"conversion_rate": flt(doc.conversion_rate),
 		"net_total": flt(doc.net_total),
-		"total_taxes_and_charges": flt(doc.total_taxes_and_charges),
 		"grand_total": flt(doc.grand_total),
 		"advance_paid": flt(doc.advance_paid),
 		"per_delivered": flt(doc.per_delivered),
@@ -869,18 +1341,16 @@ def sales_order_detail(name: str):
 				"billed_amt": flt(getattr(it, "billed_amt", 0)),
 				"reserved_qty": flt(reserved_by_detail.get(it.name, 0)),
 				"uom": it.uom,
+				"stock_uom": it.stock_uom,
+				"conversion_factor": flt(it.conversion_factor) or 1.0,
+				"stock_qty": flt(it.stock_qty),
 				"rate": flt(it.rate),
+				"price_list_rate": flt(it.price_list_rate),
+				"discount_percentage": flt(it.discount_percentage),
+				"discount_amount": flt(it.discount_amount),
 				"amount": flt(it.amount),
 			}
 			for it in (doc.items or [])
-		],
-		"taxes": [
-			{
-				"description": t.description,
-				"rate": flt(t.rate),
-				"tax_amount": flt(t.tax_amount),
-			}
-			for t in (doc.taxes or [])
 		],
 	}
 
@@ -907,6 +1377,10 @@ def _reserve_for_sales_order(so_name: str) -> list[dict]:
 		return [{"line": None, "item": None, "error": f"SRE module unavailable: {exc}"}]
 
 	errors: list[dict] = []
+	# Serialise concurrent reservers on this SO to prevent TOCTOU oversell.
+	# (Per-item oversell across different SOs requires a Bin-row lock inside
+	# ERPNext's path — that is a follow-up; this guarantees per-SO serialisation.)
+	frappe.db.get_value("Sales Order", so_name, "name", for_update=True)
 	# Reload to get the post-submit child row names.
 	so = frappe.get_doc("Sales Order", so_name)
 	items_details = []
@@ -922,12 +1396,10 @@ def _reserve_for_sales_order(so_name: str) -> list[dict]:
 			continue
 		items_details.append(
 			{
-				"name": it.name,
+				"sales_order_item": it.name,   # ERPNext reads this key; "name" caused the None lookup
 				"item_code": it.item_code,
 				"warehouse": it.warehouse,
-				"qty_to_reserve": flt(it.stock_qty) or flt(it.qty),
-				"from_voucher_no": so.name,
-				"from_voucher_detail_no": it.name,
+				"qty_to_reserve": flt(it.qty),  # transaction UOM — ERPNext multiplies by conversion_factor
 			}
 		)
 	if not items_details:
@@ -946,6 +1418,18 @@ def _reserve_for_sales_order(so_name: str) -> list[dict]:
 	return errors
 
 
+def _submit_and_reserve(doc) -> list[dict]:
+	"""Submit an SO doc and, if the company has SRE enabled, reserve every line.
+
+	Reservation failures are returned, never raised — the SO is already live
+	and must not be rolled back because reservation failed. Collapses the
+	duplicated submit+reserve pattern in create_sales_order / submit_sales_order."""
+	doc.submit()
+	if _company_stock_reservation_enabled(doc.company):
+		return _reserve_for_sales_order(doc.name)
+	return []
+
+
 @frappe.whitelist()
 def create_sales_order(
 	company: str,
@@ -956,6 +1440,8 @@ def create_sales_order(
 	delivery_date: str | None = None,
 	remarks: str | None = None,
 	auto_submit: int = 1,
+	currency: str | None = None,
+	price_list: str | None = None,
 ):
 	"""Create a Sales Order; default behaviour is create + submit + reserve.
 
@@ -999,6 +1485,14 @@ def create_sales_order(
 		wh = (row.get("warehouse") or "").strip() or set_warehouse
 		if wh != set_warehouse and not frappe.db.exists("Warehouse", wh):
 			frappe.throw(f"Row {idx}: unknown warehouse '{wh}'.")
+		disc_pct = flt(row.get("discount_percentage"))
+		if not (0 <= disc_pct <= 100):
+			frappe.throw(f"Row {idx}: discount_percentage must be between 0 and 100.")
+		rate_val = row.get("rate")
+		if rate_val not in (None, "") and flt(rate_val) < 0:
+			frappe.throw(f"Row {idx}: rate cannot be negative.")
+		if flt(row.get("discount_amount")) < 0:
+			frappe.throw(f"Row {idx}: discount_amount cannot be negative.")
 		cleaned.append(
 			{
 				"item_code": code,
@@ -1006,6 +1500,9 @@ def create_sales_order(
 				"rate": flt(row.get("rate")),
 				"uom": row.get("uom") or None,
 				"warehouse": wh,
+				"conversion_factor": flt(row.get("conversion_factor")) or None,
+				"discount_percentage": disc_pct,
+				"discount_amount": flt(row.get("discount_amount")),
 			}
 		)
 
@@ -1017,7 +1514,9 @@ def create_sales_order(
 	doc.set_warehouse = set_warehouse
 	if remarks:
 		doc.terms = remarks.strip()
-	price_list = _resolve_price_list(customer)
+	if currency:
+		doc.currency = currency
+	price_list = price_list or _resolve_price_list(customer)
 	if price_list:
 		doc.selling_price_list = price_list
 
@@ -1039,14 +1538,15 @@ def create_sales_order(
 			line.rate = rate
 		if row["uom"]:
 			line.uom = row["uom"]
-	_apply_tax_template(doc, _resolve_tax_template(company, customer))
+		if row.get("conversion_factor"):
+			line.conversion_factor = row["conversion_factor"]
+		if row.get("discount_percentage"):
+			line.discount_percentage = row["discount_percentage"]
+		if row.get("discount_amount"):
+			line.discount_amount = row["discount_amount"]
 	doc.insert(ignore_permissions=False)
 
-	reservation_errors: list[dict] = []
-	if int(auto_submit or 0):
-		doc.submit()
-		if sre_enabled:
-			reservation_errors = _reserve_for_sales_order(doc.name)
+	reservation_errors = _submit_and_reserve(doc) if cint(auto_submit) else []
 
 	return {
 		"name": doc.name,
@@ -1067,10 +1567,7 @@ def submit_sales_order(name: str):
 		frappe.throw("Sales order is already submitted.")
 	if doc.docstatus == 2:
 		frappe.throw("Sales order is cancelled and cannot be submitted.")
-	doc.submit()
-	reservation_errors: list[dict] = []
-	if _company_stock_reservation_enabled(doc.company):
-		reservation_errors = _reserve_for_sales_order(doc.name)
+	reservation_errors = _submit_and_reserve(doc)
 	return {
 		"name": doc.name,
 		"docstatus": doc.docstatus,
@@ -1100,3 +1597,57 @@ def cancel_sales_order(name: str):
 		pass
 	doc.cancel()
 	return {"name": doc.name, "docstatus": doc.docstatus, "status": doc.status}
+
+
+@frappe.whitelist()
+def amend_sales_order(name: str):
+	"""Create a new draft Sales Order as an amendment of a cancelled one."""
+	if not name or not frappe.db.exists("Sales Order", name):
+		frappe.throw(f"Unknown Sales Order: {name}")
+	doc = frappe.get_doc("Sales Order", name)
+	if doc.docstatus != 2:
+		frappe.throw("Only cancelled sales orders can be amended.")
+	new = frappe.copy_doc(doc)
+	new.amended_from = name
+	new.insert(ignore_permissions=False)
+	return {"name": new.name, "docstatus": new.docstatus, "amended_from": name}
+
+
+@frappe.whitelist()
+def amend_sales_invoice(name: str):
+	"""Create a new draft Sales Invoice as an amendment of a cancelled one."""
+	if not name or not frappe.db.exists("Sales Invoice", name):
+		frappe.throw(f"Unknown Sales Invoice: {name}")
+	doc = frappe.get_doc("Sales Invoice", name)
+	if doc.docstatus != 2:
+		frappe.throw("Only cancelled sales invoices can be amended.")
+	new = frappe.copy_doc(doc)
+	new.amended_from = name
+	new.insert(ignore_permissions=False)
+	return {"name": new.name, "docstatus": new.docstatus, "amended_from": name}
+
+
+@frappe.whitelist()
+def get_linked_documents(doctype: str, name: str):
+	"""Server-side wrapper over Frappe's linked-docs query, filtered to
+	sales-relevant doctypes. Returns {doctype: [{name, docstatus}]} — keeps the
+	SPA self-contained with no Desk calls from the browser."""
+	allowed_doctypes = {"Sales Order", "Sales Invoice", "Delivery Note", "Payment Entry"}
+	if doctype not in {"Sales Order", "Sales Invoice"}:
+		frappe.throw("doctype must be Sales Order or Sales Invoice")
+	if not name or not frappe.db.exists(doctype, name):
+		frappe.throw(f"Unknown {doctype}: {name}")
+
+	from frappe.desk.form.linked_with import get_linked_docs, get_linked_doctypes
+
+	linkinfo = get_linked_doctypes(doctype)
+	raw = get_linked_docs(doctype, name, linkinfo) or {}
+	out: dict = {}
+	for dt, docs in raw.items():
+		if dt in allowed_doctypes and docs:
+			out[dt] = [
+				{"name": d.get("name"), "docstatus": d.get("docstatus")}
+				for d in docs
+				if d.get("name")
+			]
+	return out

@@ -2,6 +2,7 @@
 import { computed, onMounted, ref } from "vue";
 import { call } from "../../../api/client.js";
 import { t } from "../../../composables/i18n.js";
+import { formatDateTime } from "../../../composables/date.js";
 
 const rows = ref([]);
 const loading = ref(false);
@@ -115,7 +116,7 @@ onMounted(load);
 							style="cursor: pointer"
 							@click="openDetail(row.name)"
 						>
-							<td>{{ row.creation }}</td>
+							<td>{{ formatDateTime(row.creation) }}</td>
 							<td>{{ row.reference_invoice }}</td>
 							<td><span :class="badgeClass(row.soliq_status)">{{ row.soliq_status }}</span></td>
 							<td class="text-end">{{ row.retry_count }}</td>

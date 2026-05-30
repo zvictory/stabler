@@ -4,7 +4,9 @@ import { storeToRefs } from "pinia";
 import { useSession } from "../../stores/session.js";
 import { call } from "../../api/client.js";
 import { t } from "../../composables/i18n.js";
+import { formatDateTime } from "../../composables/date.js";
 import EmptyState from "../../components/EmptyState.vue";
+import DateInput from "../../components/DateInput.vue";
 
 const session = useSession();
 const { activeCompany, user } = storeToRefs(session);
@@ -354,7 +356,7 @@ async function saveWO(submitAfter) {
 					<tr v-for="r in rows" :key="r.name" class="cursor-pointer" @click="openDetail(r.name)">
 						<td>
 							<div class="font-monospace small">{{ r.name }}</div>
-							<div class="small text-secondary">{{ r.planned_start_date || "" }}</div>
+							<div class="small text-secondary">{{ formatDateTime(r.planned_start_date) }}</div>
 						</td>
 						<td>
 							<div class="fw-semibold">{{ r.item_name || r.production_item }}</div>
@@ -539,7 +541,7 @@ async function saveWO(submitAfter) {
 						</div>
 						<div class="col-md-4">
 							<label class="form-label">{{ t("Planned start") }}</label>
-							<input v-model="form.planned_start_date" type="date" class="form-control" />
+							<DateInput v-model="form.planned_start_date" />
 						</div>
 					</div>
 

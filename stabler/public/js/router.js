@@ -1,4 +1,5 @@
 import { createRouter, createWebHashHistory } from "vue-router";
+import { useSession } from "./stores/session.js";
 import Dashboard from "./pages/Dashboard.vue";
 import Module from "./pages/Module.vue";
 import MoneyHome from "./pages/money/MoneyHome.vue";
@@ -14,6 +15,7 @@ import Quotations from "./pages/sales/Quotations.vue";
 import SalesOrders from "./pages/sales/SalesOrders.vue";
 import SalesInvoices from "./pages/sales/SalesInvoices.vue";
 import SalesAging from "./pages/sales/Aging.vue";
+import InvoicePrint from "./pages/sales/InvoicePrint.vue";
 import PurchasingHome from "./pages/purchasing/PurchasingHome.vue";
 import Suppliers from "./pages/purchasing/Suppliers.vue";
 import PurchaseInvoices from "./pages/purchasing/PurchaseInvoices.vue";
@@ -29,6 +31,7 @@ import BOMs from "./pages/manufacturing/BOMs.vue";
 import WorkOrders from "./pages/manufacturing/WorkOrders.vue";
 import HRHome from "./pages/hr/HRHome.vue";
 import Employees from "./pages/hr/Employees.vue";
+import HROrgChart from "./pages/hr/OrgChart.vue";
 import HRAttendance from "./pages/hr/Attendance.vue";
 import LeaveApplications from "./pages/hr/LeaveApplications.vue";
 import Payroll from "./pages/hr/Payroll.vue";
@@ -63,7 +66,7 @@ const routes = [
 	{
 		path: "/money",
 		component: MoneyHome,
-		meta: { title: "Money" },
+		meta: { title: "Money", module: "money" },
 		children: [
 			{ path: "", redirect: "/money/accounts" },
 			{ path: "accounts", name: "money-accounts", component: Accounts, meta: { title: "Chart of Accounts" } },
@@ -77,20 +80,21 @@ const routes = [
 	{
 		path: "/sales",
 		component: SalesHome,
-		meta: { title: "Sales" },
+		meta: { title: "Sales", module: "sales" },
 		children: [
 			{ path: "", redirect: "/sales/customers" },
 			{ path: "customers", name: "sales-customers", component: Customers, meta: { title: "Customers" } },
 			{ path: "quotations", name: "sales-quotations", component: Quotations, meta: { title: "Quotations" } },
 			{ path: "orders", name: "sales-orders", component: SalesOrders, meta: { title: "Sales Orders" } },
 			{ path: "invoices", name: "sales-invoices", component: SalesInvoices, meta: { title: "Sales Invoices" } },
+			{ path: "invoices/:name/print", name: "sales-invoice-print", component: InvoicePrint, meta: { title: "Invoice" } },
 			{ path: "aging", name: "sales-aging", component: SalesAging, meta: { title: "AR Aging" } },
 		],
 	},
 	{
 		path: "/purchasing",
 		component: PurchasingHome,
-		meta: { title: "Purchasing" },
+		meta: { title: "Purchasing", module: "purchasing" },
 		children: [
 			{ path: "", redirect: "/purchasing/suppliers" },
 			{ path: "suppliers", name: "purchasing-suppliers", component: Suppliers, meta: { title: "Suppliers" } },
@@ -101,7 +105,7 @@ const routes = [
 	{
 		path: "/inventory",
 		component: InventoryHome,
-		meta: { title: "Inventory" },
+		meta: { title: "Inventory", module: "inventory" },
 		children: [
 			{ path: "", redirect: "/inventory/items" },
 			{ path: "items", name: "inventory-items", component: Items, meta: { title: "Items" } },
@@ -114,7 +118,7 @@ const routes = [
 	{
 		path: "/manufacturing",
 		component: ManufacturingHome,
-		meta: { title: "Manufacturing" },
+		meta: { title: "Manufacturing", module: "manufacturing" },
 		children: [
 			{ path: "", redirect: "/manufacturing/boms" },
 			{ path: "boms", name: "manufacturing-boms", component: BOMs, meta: { title: "BOMs" } },
@@ -124,10 +128,11 @@ const routes = [
 	{
 		path: "/hr",
 		component: HRHome,
-		meta: { title: "People" },
+		meta: { title: "People", module: "hr" },
 		children: [
 			{ path: "", redirect: "/hr/employees" },
 			{ path: "employees", name: "hr-employees", component: Employees, meta: { title: "Employees" } },
+			{ path: "org", name: "hr-org", component: HROrgChart, meta: { title: "Positions" } },
 			{ path: "attendance", name: "hr-attendance", component: HRAttendance, meta: { title: "Attendance" } },
 			{ path: "leave", name: "hr-leave", component: LeaveApplications, meta: { title: "Leave" } },
 			{ path: "payroll", name: "hr-payroll", component: Payroll, meta: { title: "Payroll" } },
@@ -136,7 +141,7 @@ const routes = [
 	{
 		path: "/sfa",
 		component: SFAHome,
-		meta: { title: "Field Sales" },
+		meta: { title: "Field Sales", module: "field_sales" },
 		children: [
 			{ path: "", redirect: "/sfa/outlets" },
 			{ path: "outlets", name: "sfa-outlets", component: Outlets, meta: { title: "Outlets" } },
@@ -154,7 +159,7 @@ const routes = [
 	{
 		path: "/marketing",
 		component: MarketingHome,
-		meta: { title: "Trade Marketing" },
+		meta: { title: "Trade Marketing", module: "marketing" },
 		children: [
 			{ path: "", redirect: "/marketing/plans" },
 			{ path: "plans", name: "marketing-plans", component: PromoPlans, meta: { title: "Promo Plans" } },
@@ -173,7 +178,7 @@ const routes = [
 			{ path: "users", name: "admin-users", component: AdminUsers, meta: { title: "Users" } },
 			{ path: "roles", name: "admin-roles", component: AdminRoles, meta: { title: "Roles" } },
 			{ path: "companies", name: "admin-companies", component: AdminCompanies, meta: { title: "Companies" } },
-			{ path: "compliance", name: "admin-compliance", component: AdminCompliance, meta: { title: "Compliance", requiresCompliance: true } },
+			{ path: "compliance", name: "admin-compliance", component: AdminCompliance, meta: { title: "Compliance" } },
 		],
 	},
 	{ path: "/error", name: "server-error", component: ServerError, meta: { title: "Error" } },
@@ -183,6 +188,17 @@ const routes = [
 export const router = createRouter({
 	history: createWebHashHistory(),
 	routes,
+});
+
+router.beforeEach((to) => {
+	const session = useSession();
+	if (to.matched.some((r) => r.meta.requiresAdmin) && !session.isAdmin) {
+		return { name: "dashboard" };
+	}
+	const moduleRoute = to.matched.find((r) => r.meta.module);
+	if (moduleRoute && !session.canAccessModule(moduleRoute.meta.module)) {
+		return { name: "dashboard" };
+	}
 });
 
 router.afterEach((to) => {

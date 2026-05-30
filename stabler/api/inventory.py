@@ -9,12 +9,7 @@ from frappe import _
 from frappe.utils import flt, getdate, today
 
 
-def _require_company(company: str) -> str:
-	if not company:
-		frappe.throw("Company is required.")
-	if not frappe.db.exists("Company", company):
-		frappe.throw(f"Unknown company: {company}")
-	return company
+from stabler.api._common import _require_company
 
 
 @frappe.whitelist()

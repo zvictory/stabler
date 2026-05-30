@@ -351,6 +351,40 @@ def settle_claim(name: str) -> dict:
 	paid_from = _default_payment_account(plan_company)
 	company_currency = frappe.db.get_value("Company", plan_company, "default_currency")
 
+	# Look up real account currencies — never assume both legs match
+	# company_currency (ANJAN runs USD base but most party accounts are UZS).
+	paid_from_ccy = (
+		frappe.db.get_value("Account", paid_from, "account_currency") or company_currency
+	)
+	paid_to_ccy = (
+		frappe.db.get_value("Account", party_account, "account_currency") or company_currency
+	)
+	posting_date = nowdate()
+
+	from erpnext.setup.utils import get_exchange_rate  # local import: optional dep
+
+	def _rate_to_base(ccy: str) -> float:
+		if ccy == company_currency:
+			return 1.0
+		r = flt(get_exchange_rate(ccy, company_currency, posting_date))
+		if r <= 0:
+			frappe.throw(
+				_("No exchange rate available from {0} to {1} on {2}.").format(
+					ccy, company_currency, posting_date
+				)
+			)
+		return r
+
+	source_rate = _rate_to_base(paid_from_ccy)
+	target_rate = _rate_to_base(paid_to_ccy)
+
+	# claim_amount is interpreted in the party-account currency (that's where
+	# the customer-facing balance lives). We then compute the paid_amount in
+	# paid_from currency so the PE balances at base.
+	received_amount = flt(doc.claim_amount)
+	base_amount = received_amount * target_rate
+	paid_amount = base_amount / source_rate if source_rate else received_amount
+
 	pe = frappe.get_doc(
 		{
 			"doctype": "Payment Entry",
@@ -358,17 +392,17 @@ def settle_claim(name: str) -> dict:
 			"party_type": "Customer",
 			"party": doc.distributor,
 			"company": plan_company,
-			"posting_date": nowdate(),
-			"paid_amount": flt(doc.claim_amount),
-			"received_amount": flt(doc.claim_amount),
-			"source_exchange_rate": 1,
-			"target_exchange_rate": 1,
+			"posting_date": posting_date,
+			"paid_amount": paid_amount,
+			"received_amount": received_amount,
+			"source_exchange_rate": source_rate,
+			"target_exchange_rate": target_rate,
 			"paid_from": paid_from,
-			"paid_from_account_currency": company_currency,
+			"paid_from_account_currency": paid_from_ccy,
 			"paid_to": party_account,
-			"paid_to_account_currency": company_currency,
+			"paid_to_account_currency": paid_to_ccy,
 			"reference_no": doc.name,
-			"reference_date": nowdate(),
+			"reference_date": posting_date,
 			"remarks": _("Marketing claim settlement for {0}").format(doc.name),
 		}
 	)

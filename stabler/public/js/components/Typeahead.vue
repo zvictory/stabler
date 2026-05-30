@@ -12,6 +12,10 @@ const props = defineProps({
 	debounce: { type: Number, default: 200 },
 	noResultsText: { type: String, default: "No matches found" },
 	menuMinWidth: { type: String, default: "100%" },
+	// When true, clicking/focusing the field immediately loads a browse list
+	// without requiring any typing first. Safe to leave false (default) on
+	// fields where the dataset is small enough — e.g. Customers.
+	openOnFocus: { type: Boolean, default: false },
 });
 
 const emit = defineEmits(["update:modelValue", "pick", "clear"]);
@@ -75,32 +79,55 @@ const groupClass = computed(() =>
 const hasSelection = computed(() => !!props.modelValue);
 
 let timer = null;
+
+// Shared fetch — called from both onSearch and onFocus.
+async function fetchOptions(q) {
+	loading.value = true;
+	activeIdx.value = -1;
+	try {
+		const res = await props.search(q);
+		options.value = Array.isArray(res) ? res : [];
+	} catch {
+		options.value = [];
+	} finally {
+		loading.value = false;
+	}
+}
+
 function onSearch() {
 	clearTimeout(timer);
 	const q = query.value.trim();
+
 	if (q.length < props.minChars) {
-		options.value = [];
-		showOptions.value = false;
-		loading.value = false;
-		return;
-	}
-	showOptions.value = true;
-	loading.value = true;
-	activeIdx.value = -1;
-	timer = setTimeout(async () => {
-		try {
-			const res = await props.search(q);
-			options.value = Array.isArray(res) ? res : [];
-		} catch {
+		if (props.openOnFocus) {
+			// Keep the menu open and (re)load the unfiltered browse list.
+			showOptions.value = true;
+			loading.value = true;
+			timer = setTimeout(() => fetchOptions(""), props.debounce);
+		} else {
 			options.value = [];
-		} finally {
+			showOptions.value = false;
 			loading.value = false;
 		}
-	}, props.debounce);
+		return;
+	}
+
+	showOptions.value = true;
+	loading.value = true;
+	timer = setTimeout(() => fetchOptions(q), props.debounce);
 }
 
 function onFocus() {
-	if (options.value.length || loading.value) showOptions.value = true;
+	if (options.value.length || loading.value) {
+		showOptions.value = true;
+		return;
+	}
+	// Open-on-focus: show the menu immediately and load a browse list if we
+	// don't already have options cached.
+	if (props.openOnFocus && !hasSelection.value) {
+		showOptions.value = true;
+		fetchOptions("");
+	}
 }
 
 let blurTimer = null;

@@ -2,6 +2,7 @@
 import { onMounted, ref } from "vue";
 import { call } from "../../../api/client.js";
 import { formatMoney } from "../../../composables/money.js";
+import { formatDateTime } from "../../../composables/date.js";
 import { t } from "../../../composables/i18n.js";
 
 const events = ref([]);
@@ -94,7 +95,7 @@ onMounted(load);
 							style="cursor: pointer"
 							@click="openDetail(evt.name)"
 						>
-							<td>{{ evt.received_at || evt.creation }}</td>
+							<td>{{ formatDateTime(evt.received_at || evt.creation) }}</td>
 							<td><small>{{ evt.arca_transaction_id }}</small></td>
 							<td>{{ evt.sales_invoice }}</td>
 							<td class="text-end">{{ fmt(evt.amount) }}</td>
@@ -128,7 +129,7 @@ onMounted(load);
 						<dt class="col-4">{{ t("Payment Entry") }}</dt>
 						<dd class="col-8">{{ detail.payment_entry || "—" }}</dd>
 						<dt class="col-4">{{ t("Received At") }}</dt>
-						<dd class="col-8">{{ detail.received_at || "—" }}</dd>
+						<dd class="col-8">{{ formatDateTime(detail.received_at) || "—" }}</dd>
 						<dt class="col-4">{{ t("Status") }}</dt>
 						<dd class="col-8">
 							<span :class="['badge', detail.processed ? 'bg-success' : 'bg-warning']">

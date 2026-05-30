@@ -2,6 +2,7 @@
 import { computed, onMounted, ref } from "vue";
 import { adminApi } from "../../api/admin.js";
 import { t } from "../../composables/i18n.js";
+import { formatDateTime } from "../../composables/date.js";
 import EmptyState from "../../components/EmptyState.vue";
 
 const loading = ref(false);
@@ -175,14 +176,7 @@ async function submitInvite() {
 	}
 }
 
-const formatLastLogin = (ts) => {
-	if (!ts) return "—";
-	try {
-		return new Date(ts).toLocaleString();
-	} catch {
-		return ts;
-	}
-};
+const formatLastLogin = (ts) => formatDateTime(ts);
 
 onMounted(() => {
 	load();

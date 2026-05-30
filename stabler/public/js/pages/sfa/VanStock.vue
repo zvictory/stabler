@@ -4,7 +4,9 @@ import { storeToRefs } from "pinia";
 import { useSession } from "../../stores/session.js";
 import { call } from "../../api/client.js";
 import { t } from "../../composables/i18n.js";
+import { formatDateTime } from "../../composables/date.js";
 import EmptyState from "../../components/EmptyState.vue";
+import DateInput from "../../components/DateInput.vue";
 
 const session = useSession();
 const { activeCompany } = storeToRefs(session);
@@ -169,12 +171,7 @@ watch([postingDate, status], load);
 		<div class="card-header d-flex flex-wrap gap-2 align-items-center">
 			<h3 class="card-title mb-0">{{ t("Van Stock") }}</h3>
 			<div class="ms-auto d-flex gap-2">
-				<input
-					v-model="postingDate"
-					type="date"
-					class="form-control form-control-sm"
-					:aria-label="t('Posting date')"
-				/>
+				<DateInput v-model="postingDate" size="sm" :aria-label="t('Posting date')" />
 				<select v-model="status" class="form-select form-select-sm" :aria-label="t('Status')">
 					<option value="">{{ t("All statuses") }}</option>
 					<option value="Loaded">{{ t("Loaded") }}</option>
@@ -216,7 +213,7 @@ watch([postingDate, status], load);
 					>
 						<td>{{ r.name }}</td>
 						<td>{{ r.field_user }}</td>
-						<td>{{ r.posting_date || "—" }}</td>
+						<td>{{ formatDateTime(r.posting_date) || "—" }}</td>
 						<td>{{ r.warehouse || "—" }}</td>
 						<td><span class="badge" :class="statusBadge(r.status)">{{ t(r.status) }}</span></td>
 					</tr>
@@ -260,7 +257,7 @@ watch([postingDate, status], load);
 								<label class="form-label">
 									{{ t("Posting Date") }} <span class="text-danger">*</span>
 								</label>
-								<input v-model="form.posting_date" type="date" class="form-control" />
+								<DateInput v-model="form.posting_date" />
 							</div>
 							<div class="col-md-6">
 								<label class="form-label">

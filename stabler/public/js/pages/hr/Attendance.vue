@@ -4,7 +4,9 @@ import { storeToRefs } from "pinia";
 import { useSession } from "../../stores/session.js";
 import { call } from "../../api/client.js";
 import { t } from "../../composables/i18n.js";
+import { formatDateTime } from "../../composables/date.js";
 import EmptyState from "../../components/EmptyState.vue";
+import DateInput from "../../components/DateInput.vue";
 
 const session = useSession();
 const { activeCompany } = storeToRefs(session);
@@ -138,11 +140,11 @@ function fmtTime(t) {
 			<div class="row g-2 align-items-end">
 				<div class="col-md-2">
 					<label class="form-label small">{{ t("From") }}</label>
-					<input v-model="fromDate" type="date" class="form-control" />
+					<DateInput v-model="fromDate" />
 				</div>
 				<div class="col-md-2">
 					<label class="form-label small">{{ t("To") }}</label>
-					<input v-model="toDate" type="date" class="form-control" />
+					<DateInput v-model="toDate" />
 				</div>
 				<div class="col-md-3">
 					<label class="form-label small">{{ t("Status") }}</label>
@@ -197,7 +199,7 @@ function fmtTime(t) {
 				</thead>
 				<tbody>
 					<tr v-for="r in rows" :key="r.name">
-						<td class="font-monospace">{{ r.attendance_date }}</td>
+						<td class="font-monospace">{{ formatDateTime(r.attendance_date) }}</td>
 						<td>
 							<div class="fw-semibold">{{ r.employee_name }}</div>
 							<div class="small text-secondary font-monospace">{{ r.employee }}</div>
@@ -235,7 +237,7 @@ function fmtTime(t) {
 					<div class="row g-2">
 						<div class="col-md-6">
 							<label class="form-label">{{ t("Date") }}</label>
-							<input v-model="form.attendance_date" type="date" class="form-control" />
+							<DateInput v-model="form.attendance_date" />
 						</div>
 						<div class="col-md-6">
 							<label class="form-label">{{ t("Status") }}</label>
