@@ -109,6 +109,16 @@ def list_suppliers_with_balances(
 		       ) AS drift
 		FROM `tabGL Entry` g
 		JOIN `tabPayment Entry` pe ON pe.name = g.voucher_no
+		JOIN (
+		  SELECT voucher_no
+		  FROM `tabGL Entry`
+		  WHERE voucher_type = 'Payment Entry'
+		    AND company = %(company)s
+		    AND party_type = 'Supplier'
+		    AND is_cancelled = 0
+		  GROUP BY voucher_no
+		  HAVING COUNT(*) = 1
+		) single ON single.voucher_no = g.voucher_no
 		WHERE g.voucher_type = 'Payment Entry'
 		  AND g.company = %(company)s
 		  AND g.party_type = 'Supplier'

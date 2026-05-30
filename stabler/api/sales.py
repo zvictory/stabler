@@ -194,6 +194,16 @@ def list_customers_with_balances(
 		       ) AS drift
 		FROM `tabGL Entry` g
 		JOIN `tabPayment Entry` pe ON pe.name = g.voucher_no
+		JOIN (
+		  SELECT voucher_no
+		  FROM `tabGL Entry`
+		  WHERE voucher_type = 'Payment Entry'
+		    AND company = %(company)s
+		    AND party_type = 'Customer'
+		    AND is_cancelled = 0
+		  GROUP BY voucher_no
+		  HAVING COUNT(*) = 1
+		) single ON single.voucher_no = g.voucher_no
 		WHERE g.voucher_type = 'Payment Entry'
 		  AND g.company = %(company)s
 		  AND g.party_type = 'Customer'
@@ -330,13 +340,25 @@ def _fetch_party_ledger_rows(
 		)
 		pe_map = {r["name"]: r for r in pe_rows}
 
+	# Count party-leg GL rows per Payment Entry in this result set.
+	# A multi-reference PE posts one row per paid invoice; substituting the
+	# full paid_amount on every row would count the payment N times.
+	# The source-amount override is safe only for single-leg PEs.
+	pe_leg_counts: dict = {}
+	for r in rows:
+		if r["voucher_type"] == "Payment Entry":
+			pe_leg_counts[r["voucher_no"]] = pe_leg_counts.get(r["voucher_no"], 0) + 1
+
 	for r in rows:
 		r["debit"] = flt(r["debit"])
 		r["credit"] = flt(r["credit"])
 		dac = flt(r["debit_in_account_currency"])
 		cac = flt(r["credit_in_account_currency"])
-		# Override PE party-leg account-currency amount with source voucher value.
-		if r["voucher_type"] == "Payment Entry":
+		# Override PE party-leg account-currency amount with source voucher value,
+		# but ONLY when the PE has a single party-leg GL row. Multi-reference PEs
+		# (one row per paid invoice) already carry correct partial allocations in
+		# *_in_account_currency — overriding would inflate the total N-fold.
+		if r["voucher_type"] == "Payment Entry" and pe_leg_counts.get(r["voucher_no"]) == 1:
 			pe = pe_map.get(r["voucher_no"])
 			if pe:
 				if r["account"] == pe["paid_from"]:
