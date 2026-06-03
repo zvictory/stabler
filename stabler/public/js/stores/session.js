@@ -63,20 +63,26 @@ export const useSession = defineStore("session", {
 		},
 		async ensureBoot() {
 			if (this.rolesLoaded) return;
-			try {
-				const data = await call("stabler.api.organization.boot");
-				if (data) {
-					if (Array.isArray(data.roles)) this.roles = data.roles;
-					if (Array.isArray(data.companies)) this.companies = data.companies;
-					if (data.modules) this.modules = data.modules;
-					if (Array.isArray(data.allowed_modules)) this.allowedModules = data.allowed_modules;
-					if (data.user) this.user = { ...this.user, ...data.user };
+			// Deduplicate concurrent calls (e.g. bundle fire-and-forget + router await).
+			if (this._bootPromise) return this._bootPromise;
+			this._bootPromise = (async () => {
+				try {
+					const data = await call("stabler.api.organization.boot");
+					if (data) {
+						if (Array.isArray(data.roles)) this.roles = data.roles;
+						if (Array.isArray(data.companies)) this.companies = data.companies;
+						if (data.modules) this.modules = data.modules;
+						if (Array.isArray(data.allowed_modules)) this.allowedModules = data.allowed_modules;
+						if (data.user) this.user = { ...this.user, ...data.user };
+					}
+				} catch (e) {
+					/* Non-fatal: org.boot may not exist yet (added in Task #6). */
+				} finally {
+					this.rolesLoaded = true;
+					this._bootPromise = null;
 				}
-			} catch (e) {
-				/* Non-fatal: org.boot may not exist yet (added in Task #6). */
-			} finally {
-				this.rolesLoaded = true;
-			}
+			})();
+			return this._bootPromise;
 		},
 		setupRehydration() {
 			document.addEventListener("visibilitychange", () => {

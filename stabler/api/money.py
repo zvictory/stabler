@@ -51,6 +51,67 @@ def chart_of_accounts(company: str):
 
 
 @frappe.whitelist()
+def chart_balances(company: str, as_of: str | None = None):
+	"""Closing balances for EVERY account (leaf + group) up to `as_of`.
+
+	One GROUP BY for per-account direct sums, then a nested-set roll-up in
+	Python so each group carries the total of all its descendants. Replaces the
+	COA page's N per-leaf `account_balance` calls. Account-currency totals are
+	leaf-only (rolling them up across mixed-currency children is meaningless —
+	same rule as `account_balance`)."""
+	_require_company(company)
+	as_of = as_of or today()
+	company_currency = frappe.db.get_value("Company", company, "default_currency") or ""
+
+	# Full tree (incl. disabled) so ancestor totals stay complete and parent
+	# chains never break; the client only looks up the names it renders.
+	accounts = frappe.get_all(
+		"Account",
+		filters={"company": company},
+		fields=["name", "parent_account", "is_group", "account_currency"],
+		order_by="lft asc",
+		limit_page_length=5000,
+	)
+	parent_of = {a.name: a.parent_account for a in accounts}
+
+	rows = frappe.db.sql(
+		"""
+		SELECT account,
+		       COALESCE(SUM(debit - credit), 0) AS base,
+		       COALESCE(SUM(debit_in_account_currency - credit_in_account_currency), 0) AS acc
+		FROM `tabGL Entry`
+		WHERE company = %(company)s
+		  AND is_cancelled = 0
+		  AND posting_date <= %(as_of)s
+		GROUP BY account
+		""",
+		{"company": company, "as_of": as_of},
+		as_dict=True,
+	)
+	direct_base = {r.account: flt(r.base) for r in rows}
+	direct_acc = {r.account: flt(r.acc) for r in rows}
+
+	# Add each account's own balance to itself and every ancestor.
+	rollup = {a.name: 0.0 for a in accounts}
+	for acct, val in direct_base.items():
+		node, seen = acct, set()
+		while node and node in rollup and node not in seen:
+			seen.add(node)
+			rollup[node] += val
+			node = parent_of.get(node)
+
+	balances = {
+		a.name: {
+			"base": rollup.get(a.name, 0.0),
+			"acc": None if a.is_group else direct_acc.get(a.name, 0.0),
+			"account_currency": a.account_currency or company_currency,
+		}
+		for a in accounts
+	}
+	return {"company_currency": company_currency, "as_of": str(as_of), "balances": balances}
+
+
+@frappe.whitelist()
 def gl_entries(
 	company: str,
 	account: str,
@@ -78,13 +139,13 @@ def gl_entries(
 	where = " AND ".join(conds)
 	rows = frappe.db.sql(
 		f"""
-		SELECT name, posting_date, posting_time, voucher_type, voucher_no, against, remarks,
+		SELECT name, posting_date, voucher_type, voucher_no, against, remarks,
 		       party_type, party,
 		       debit, credit, debit_in_account_currency, credit_in_account_currency,
 		       account_currency
 		FROM `tabGL Entry`
 		WHERE {where}
-		ORDER BY posting_date DESC, posting_time DESC, creation DESC
+		ORDER BY posting_date DESC, creation DESC
 		LIMIT %(limit)s
 		""",
 		params,
@@ -105,7 +166,6 @@ def gl_entries(
 	bal = bal_row[0] if bal_row else {"base": 0.0, "acc": 0.0}
 	for r in rows:
 		r["posting_date"] = str(r["posting_date"]) if r["posting_date"] else ""
-		r["posting_time"] = str(r["posting_time"]) if r["posting_time"] else "00:00:00"
 	return {
 		"entries": rows,
 		"closing_base": flt(bal["base"]),
@@ -489,6 +549,51 @@ def payment_entry_detail(name: str):
 
 
 @frappe.whitelist()
+def party_payment_defaults(company: str, party_type: str, party: str) -> dict:
+	"""Return party account, outstanding invoices, and cash/bank accounts for the New Payment form."""
+	_require_company(company)
+	if party_type not in {"Customer", "Supplier"}:
+		frappe.throw("party_type must be Customer or Supplier.")
+	if not party or not frappe.db.exists(party_type, party):
+		frappe.throw(f"{party_type} '{party}' does not exist.")
+
+	from erpnext.accounts.party import get_party_account
+	from erpnext.accounts.utils import get_outstanding_invoices
+
+	party_account = get_party_account(party_type, party=party, company=company)
+	party_account_currency = (
+		frappe.db.get_value("Account", party_account, "account_currency") or ""
+	)
+
+	raw = get_outstanding_invoices(party_type, party, [party_account]) or []
+	invoices = sorted(
+		[
+			{
+				"voucher_type": r.get("voucher_type", ""),
+				"voucher_no": r.get("voucher_no", ""),
+				"posting_date": str(r.get("posting_date") or ""),
+				"due_date": str(r.get("due_date") or ""),
+				"invoice_amount": flt(r.get("invoice_amount", 0)),
+				"outstanding_amount": flt(r.get("outstanding_amount", 0)),
+			}
+			for r in raw
+			if flt(r.get("outstanding_amount", 0)) > 0
+		],
+		key=lambda x: x["posting_date"],
+	)
+
+	cash_bank = list_cash_bank_accounts(company)
+	return {
+		"party_account": party_account,
+		"party_account_currency": party_account_currency,
+		"outstanding_invoices": invoices,
+		"total_outstanding": sum(r["outstanding_amount"] for r in invoices),
+		"cash_bank_accounts": cash_bank,
+		"suggested_cash_bank_account": cash_bank[0]["name"] if cash_bank else None,
+	}
+
+
+@frappe.whitelist()
 def create_payment_entry(
 	company: str,
 	posting_date: str,
@@ -502,6 +607,7 @@ def create_payment_entry(
 	mode_of_payment: str | None = None,
 	reference_no: str | None = None,
 	reference_date: str | None = None,
+	references: list | str | None = None,
 ) -> dict:
 	"""Create a Payment Entry as Draft (docstatus=0).
 
@@ -551,6 +657,25 @@ def create_payment_entry(
 		doc.reference_no = reference_no
 	if reference_date:
 		doc.reference_date = getdate(reference_date)
+	if references:
+		refs = json.loads(references) if isinstance(references, str) else references
+		party_amt = paid if payment_type == "Receive" else recv
+		total_alloc = sum(flt(r.get("allocated_amount", 0)) for r in refs)
+		if total_alloc > party_amt + 0.005:
+			frappe.throw(
+				f"Total allocated ({total_alloc:.2f}) exceeds payment amount ({party_amt:.2f})."
+			)
+		for r in refs:
+			doc.append(
+				"references",
+				{
+					"reference_doctype": r.get("reference_doctype"),
+					"reference_name": r.get("reference_name"),
+					"total_amount": flt(r.get("total_amount", 0)),
+					"outstanding_amount": flt(r.get("outstanding_amount", 0)),
+					"allocated_amount": flt(r.get("allocated_amount", 0)),
+				},
+			)
 	doc.setup_party_account_field()
 	doc.set_missing_values()
 	doc.insert(ignore_permissions=False)
@@ -908,6 +1033,7 @@ def list_bank_entries(
 	to_date: str | None = None,
 	limit: int = 50,
 	voucher_type: str = "Bank Entry",
+	entry_type: str = "All",
 ):
 	"""Recent Bank Entries for the Expense / Transfer history panel."""
 	_require_company(company)
@@ -915,6 +1041,21 @@ def list_bank_entries(
 	params["company"] = company
 	params["voucher_type"] = voucher_type
 	params["limit"] = max(1, min(500, int(limit)))
+	
+	type_clause = ""
+	if entry_type == "Expense":
+		type_clause = """AND EXISTS (
+			SELECT 1 FROM `tabJournal Entry Account` jec
+			JOIN `tabAccount` a ON a.name = jec.account
+			WHERE jec.parent = je.name AND a.root_type = 'Expense'
+		)"""
+	elif entry_type == "Transfer":
+		type_clause = """AND NOT EXISTS (
+			SELECT 1 FROM `tabJournal Entry Account` jec
+			JOIN `tabAccount` a ON a.name = jec.account
+			WHERE jec.parent = je.name AND a.root_type = 'Expense'
+		)"""
+
 	qualified_clauses = [c.replace("posting_date", "je.posting_date") for c in clauses]
 	where = " AND ".join([
 		"je.company = %(company)s",
@@ -929,10 +1070,18 @@ def list_bank_entries(
 		       je.total_credit AS total_credit_base,
 		       je.multi_currency,
 		       je.docstatus,
-		       c.default_currency AS base_currency
+		       c.default_currency AS base_currency,
+		       COALESCE(
+		           (SELECT SUM(credit_in_account_currency) FROM `tabJournal Entry Account` WHERE parent = je.name AND credit_in_account_currency > 0),
+		           je.total_credit
+		       ) AS total_amount,
+		       COALESCE(
+		           (SELECT account_currency FROM `tabJournal Entry Account` WHERE parent = je.name AND credit_in_account_currency > 0 LIMIT 1),
+		           c.default_currency
+		       ) AS currency
 		FROM `tabJournal Entry` je
 		JOIN `tabCompany` c ON c.name = je.company
-		WHERE {where}
+		WHERE {where} {type_clause}
 		ORDER BY je.posting_date DESC, je.name DESC
 		LIMIT %(limit)s
 		""",
@@ -1023,6 +1172,8 @@ def submit_expense_entry(
 	doc.company = company
 	doc.posting_date = getdate(posting_date)
 	doc.voucher_type = "Bank Entry"
+	doc.cheque_no = f"Exp-{posting_date}"
+	doc.cheque_date = getdate(posting_date)
 	doc.multi_currency = 1 if pay_acc.account_currency != base_currency else 0
 	if remark:
 		doc.user_remark = remark
@@ -1154,6 +1305,8 @@ def submit_transfer_entry(
 	doc.company = company
 	doc.posting_date = getdate(posting_date)
 	doc.voucher_type = "Bank Entry"
+	doc.cheque_no = f"Trf-{posting_date}"
+	doc.cheque_date = getdate(posting_date)
 	doc.multi_currency = 1 if from_acc.account_currency != to_acc.account_currency else 0
 	if memo:
 		doc.user_remark = memo
@@ -1175,3 +1328,15 @@ def submit_transfer_entry(
 	if int(submit or 0):
 		doc.submit()
 	return {"name": doc.name, "docstatus": doc.docstatus}
+
+
+@frappe.whitelist()
+def get_exchange_rate_for_currencies(from_currency: str, to_currency: str, posting_date: str | None = None):
+	"""Return the exchange rate between `from_currency` and `to_currency` on `posting_date`."""
+	from erpnext.setup.utils import get_exchange_rate
+
+	try:
+		rate = get_exchange_rate(from_currency, to_currency, getdate(posting_date or today()))
+		return flt(rate)
+	except Exception:
+		return 0.0

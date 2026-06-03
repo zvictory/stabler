@@ -59,7 +59,11 @@ export function formatDateTime(value) {
 	if (dateParts.length !== 3) return "—";
 	const [yyyy, mm, dd] = dateParts;
 	if (!yyyy || !mm || !dd) return "—";
-	const [HH = "00", min = "00"] = timePart.split(":");
+	const [HH = "0", min = "0", sec = "0"] = timePart.split(":");
+	// Suppress time when absent or all-zero — date-only fields in Frappe store no time.
+	if (!timePart || (parseInt(HH) === 0 && parseInt(min) === 0 && parseInt(sec) === 0)) {
+		return `${dd}.${mm}.${yyyy}`;
+	}
 	return `${dd}.${mm}.${yyyy} ${HH.padStart(2, "0")}:${min.padStart(2, "0")}`;
 }
 

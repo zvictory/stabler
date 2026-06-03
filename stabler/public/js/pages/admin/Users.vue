@@ -2,8 +2,10 @@
 import { computed, onMounted, ref } from "vue";
 import { adminApi } from "../../api/admin.js";
 import { t } from "../../composables/i18n.js";
+import { MODULE_CATALOG } from "../../composables/modules.js";
 import { formatDateTime } from "../../composables/date.js";
 import EmptyState from "../../components/EmptyState.vue";
+import Select from "../../components/Select.vue";
 
 const loading = ref(false);
 const error = ref("");
@@ -21,7 +23,7 @@ const detail = ref(null);
 const drawerError = ref("");
 const drawerSaving = ref(false);
 
-const editForm = ref({ full_name: "", enabled: 1, roles: [] });
+const editForm = ref({ full_name: "", enabled: 1, roles: [], allowed_modules: [] });
 
 const inviteOpen = ref(false);
 const inviteSubmitting = ref(false);
@@ -66,6 +68,7 @@ async function openDetail(name) {
 			full_name: u.full_name || "",
 			enabled: u.enabled,
 			roles: [...(u.roles || [])],
+			allowed_modules: [...(u.allowed_modules || [])],
 		};
 	} catch (err) {
 		drawerError.value = err?.message || "Failed to load user.";
@@ -86,6 +89,12 @@ function toggleRole(roleName) {
 	else editForm.value.roles.push(roleName);
 }
 
+function toggleModule(key) {
+	const i = editForm.value.allowed_modules.indexOf(key);
+	if (i >= 0) editForm.value.allowed_modules.splice(i, 1);
+	else editForm.value.allowed_modules.push(key);
+}
+
 async function saveDetail() {
 	if (!detail.value) return;
 	drawerSaving.value = true;
@@ -96,6 +105,7 @@ async function saveDetail() {
 			full_name: editForm.value.full_name,
 			enabled: editForm.value.enabled ? 1 : 0,
 			roles: editForm.value.roles,
+			allowed_modules: editForm.value.allowed_modules,
 		});
 		await load();
 		detailOpen.value = false;
@@ -176,6 +186,22 @@ async function submitInvite() {
 	}
 }
 
+const inviteTemplateOptions = computed(() => [
+	{ key: "", label: t("No template") },
+	...templates.value.map((tpl) => ({ key: tpl.key, label: tpl.label })),
+]);
+
+const roleFilterOptions = computed(() => [
+	{ value: "", label: t("Any") },
+	...roles.value.map((r) => ({ value: r.name, label: r.name })),
+]);
+
+const enabledFilterOptions = computed(() => [
+	{ value: "", label: t("Any") },
+	{ value: "1", label: t("Enabled") },
+	{ value: "0", label: t("Disabled") },
+]);
+
 const formatLastLogin = (ts) => formatDateTime(ts);
 
 onMounted(() => {
@@ -201,18 +227,11 @@ onMounted(() => {
 				</div>
 				<div>
 					<label class="form-label small mb-1">{{ t("Role") }}</label>
-					<select v-model="roleFilter" class="form-select form-select-sm" @change="load">
-						<option value="">{{ t("Any") }}</option>
-						<option v-for="r in roles" :key="r.name" :value="r.name">{{ r.name }}</option>
-					</select>
+					<Select v-model="roleFilter" :options="roleFilterOptions" size="sm" @change="load" />
 				</div>
 				<div>
 					<label class="form-label small mb-1">{{ t("Status") }}</label>
-					<select v-model="enabledFilter" class="form-select form-select-sm" @change="load">
-						<option value="">{{ t("Any") }}</option>
-						<option value="1">{{ t("Enabled") }}</option>
-						<option value="0">{{ t("Disabled") }}</option>
-					</select>
+					<Select v-model="enabledFilter" :options="enabledFilterOptions" size="sm" @change="load" />
 				</div>
 				<button type="button" class="btn btn-sm btn-outline-primary" @click="load">
 					<i class="ti ti-refresh me-1"></i>{{ t("Apply") }}
@@ -353,17 +372,37 @@ onMounted(() => {
 				<div class="mb-3">
 					<label class="form-label small">{{ t("Apply role template") }}</label>
 					<div class="d-flex gap-2">
-						<select
-							class="form-select"
-							@change="(e) => applyTemplateToDetail(e.target.value)"
-						>
-							<option value="">{{ t("Select template…") }}</option>
-							<option v-for="tpl in templates" :key="tpl.key" :value="tpl.key">
-								{{ tpl.label }}
-							</option>
-						</select>
+						<Select
+							:options="templates"
+							value-key="key"
+							label-key="label"
+							:placeholder="t('Select template…')"
+							@change="applyTemplateToDetail"
+						/>
 					</div>
 					<small class="text-secondary">{{ t("Replaces all current roles.") }}</small>
+				</div>
+
+				<div class="mb-3">
+					<label class="form-label small">{{ t("Module access override") }}</label>
+					<div class="border rounded p-2" style="max-height: 220px; overflow: auto">
+						<label
+							v-for="m in MODULE_CATALOG"
+							:key="m.key"
+							class="form-check"
+						>
+							<input
+								class="form-check-input"
+								type="checkbox"
+								:checked="editForm.allowed_modules.includes(m.key)"
+								@change="toggleModule(m.key)"
+							/>
+							<span class="form-check-label">{{ m.label }}</span>
+						</label>
+					</div>
+					<small class="text-secondary">
+						{{ t("Leave all unchecked to use role-based access. Checking any replaces it with exactly these modules. Visibility only — backend permissions still apply.") }}
+					</small>
 				</div>
 
 				<div class="d-flex gap-2 mt-4">
@@ -413,12 +452,12 @@ onMounted(() => {
 					</div>
 					<div class="mb-3">
 						<label class="form-label small">{{ t("Role template (optional)") }}</label>
-						<select v-model="inviteForm.template" class="form-select">
-							<option value="">{{ t("No template") }}</option>
-							<option v-for="tpl in templates" :key="tpl.key" :value="tpl.key">
-								{{ tpl.label }}
-							</option>
-						</select>
+						<Select
+							v-model="inviteForm.template"
+							:options="inviteTemplateOptions"
+							value-key="key"
+							label-key="label"
+						/>
 					</div>
 					<p class="text-secondary small mb-0">
 						{{ t("A password reset email will be sent. The account is disabled until the user sets a password.") }}

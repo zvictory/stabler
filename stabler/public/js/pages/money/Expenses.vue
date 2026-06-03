@@ -9,6 +9,7 @@ import { t } from "../../composables/i18n.js";
 import MoneyInput from "../../components/MoneyInput.vue";
 import DateInput from "../../components/DateInput.vue";
 import EmptyState from "../../components/EmptyState.vue";
+import Select from "../../components/Select.vue";
 
 const session = useSession();
 const { activeCompany, user } = storeToRefs(session);
@@ -79,7 +80,8 @@ const totalAmount = computed(() =>
 const baseEquivalent = computed(() => {
 	if (!isCrossCurrency.value) return totalAmount.value;
 	const rate = Number(form.value.exchange_rate) || 0;
-	return totalAmount.value * rate;
+	if (rate === 0) return 0;
+	return totalAmount.value / rate;
 });
 
 const canSubmit = computed(() => {
@@ -92,6 +94,34 @@ const canSubmit = computed(() => {
 	if (!validLines.length) return false;
 	return true;
 });
+
+async function fetchExchangeRate() {
+	if (!isCrossCurrency.value) {
+		form.value.exchange_rate = null;
+		return;
+	}
+	try {
+		const rate = await call("stabler.api.money.get_exchange_rate_for_currencies", {
+			from_currency: baseCurrency.value,
+			to_currency: payCurrency.value,
+			posting_date: form.value.posting_date,
+		});
+		if (rate > 0) {
+			form.value.exchange_rate = rate;
+		} else {
+			form.value.exchange_rate = null;
+		}
+	} catch (err) {
+		console.error("Failed to load exchange rate", err);
+	}
+}
+
+watch(
+	() => [form.value.payment_from, form.value.posting_date],
+	async () => {
+		await fetchExchangeRate();
+	}
+);
 
 async function loadOptions() {
 	if (!activeCompany.value) return;
@@ -115,6 +145,7 @@ async function openCreate() {
 	submitError.value = "";
 	createOpen.value = true;
 	if (!payAccounts.value.length || !expAccounts.value.length) await loadOptions();
+	await fetchExchangeRate();
 }
 
 function closeCreate() {
@@ -161,7 +192,10 @@ async function submitCreate() {
 		submit: 1,
 	};
 	if (form.value.payee?.trim()) payload.payee = form.value.payee.trim();
-	if (isCrossCurrency.value) payload.exchange_rate = Number(form.value.exchange_rate);
+	if (isCrossCurrency.value) {
+		const rate = Number(form.value.exchange_rate);
+		payload.exchange_rate = rate > 0 ? (1 / rate) : 0;
+	}
 
 	submitting.value = true;
 	try {
@@ -195,6 +229,7 @@ async function load() {
 			to_date: toDate.value,
 			limit: limit.value,
 			voucher_type: "Bank Entry",
+			entry_type: "Expense",
 		});
 	} catch (err) {
 		error.value = err?.message || "Failed to load expenses.";
@@ -302,7 +337,7 @@ watch(activeCompany, () => {
 						<td>{{ formatDateTime(r.posting_date) }}</td>
 						<td class="text-truncate" style="max-width: 380px">{{ r.user_remark || "—" }}</td>
 						<td class="text-end font-monospace">
-							{{ formatMoney(r.total_debit_base, r.base_currency || baseCurrency, user.language) }}
+							{{ formatMoney(r.total_amount ?? r.total_debit_base, r.currency || r.base_currency || baseCurrency, user.language) }}
 						</td>
 						<td>
 							<span class="badge" :class="statusBadge(r.docstatus).cls">
@@ -406,12 +441,20 @@ watch(activeCompany, () => {
 						</div>
 						<div class="col-md-4">
 							<label class="form-label small">{{ t("Pay from") }}</label>
-							<select v-model="form.payment_from" class="form-select" :disabled="optionsLoading">
-								<option value="" disabled>{{ t("Select an account…") }}</option>
-								<option v-for="a in payAccounts" :key="a.name" :value="a.name">
-									{{ a.account_name || a.name }} ({{ a.account_currency }})
-								</option>
-							</select>
+							<Select
+								v-model="form.payment_from"
+								:disabled="optionsLoading"
+								:options="payAccounts"
+								value-key="name"
+								:placeholder="t('Select an account…')"
+							>
+								<template #option="{ option }">
+									{{ option.account_name || option.name }} ({{ option.account_currency }})
+								</template>
+								<template #selected="{ option }">
+									{{ option.account_name || option.name }} ({{ option.account_currency }})
+								</template>
+							</Select>
 						</div>
 						<div class="col-md-4">
 							<label class="form-label small">{{ t("Payee") }}</label>
@@ -428,15 +471,15 @@ watch(activeCompany, () => {
 						<div class="d-flex align-items-end gap-3 flex-wrap">
 							<div>
 								<i class="ti ti-info-circle me-1"></i>
-								<strong>1 {{ payCurrency }} =</strong>
+								<strong>1 {{ baseCurrency }} =</strong>
 							</div>
 							<div style="width: 160px">
 								<MoneyInput
 									v-model="form.exchange_rate"
-									:currency="baseCurrency"
+									:currency="payCurrency"
 									:language="user.language"
 									size="sm"
-									:placeholder="`Rate to ${baseCurrency}`"
+									:placeholder="`Rate to ${payCurrency}`"
 								/>
 							</div>
 							<div class="ms-auto text-secondary">
@@ -467,12 +510,20 @@ watch(activeCompany, () => {
 							<tbody>
 								<tr v-for="(line, idx) in form.lines" :key="line.id">
 									<td>
-										<select v-model="line.account" class="form-select form-select-sm">
-											<option value="" disabled>{{ t("Select…") }}</option>
-											<option v-for="a in expAccounts" :key="a.name" :value="a.name">
-												{{ a.account_name || a.name }} ({{ a.account_currency }})
-											</option>
-										</select>
+										<Select
+											v-model="line.account"
+											size="sm"
+											:options="expAccounts"
+											value-key="name"
+											:placeholder="t('Select…')"
+										>
+											<template #option="{ option }">
+												{{ option.account_name || option.name }} ({{ option.account_currency }})
+											</template>
+											<template #selected="{ option }">
+												{{ option.account_name || option.name }} ({{ option.account_currency }})
+											</template>
+										</Select>
 										<div v-if="lineCurrencyMismatch(line)" class="text-danger small mt-1">
 											<i class="ti ti-alert-triangle me-1"></i>
 											{{ t("Account currency must match the payment account.") }}

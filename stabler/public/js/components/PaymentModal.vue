@@ -16,8 +16,10 @@ import { storeToRefs } from "pinia";
 import { useSession } from "../stores/session.js";
 import { call } from "../api/client.js";
 import { formatMoney } from "../composables/money.js";
+import { t } from "../composables/i18n.js";
 import MoneyInput from "./MoneyInput.vue";
 import DateInput from "./DateInput.vue";
+import Select from "./Select.vue";
 
 const props = defineProps({
 	open: { type: Boolean, required: true },
@@ -47,9 +49,14 @@ const form = ref({
 	reference_date: "",
 });
 
+const modeOptions = computed(() => [
+	{ value: "", label: "—" },
+	...modes.value.map((m) => ({ value: m.name, label: m.name })),
+]);
+
 const isReceive = computed(() => props.invoiceType === "Sales Invoice");
-const titleVerb = computed(() => (isReceive.value ? "Receive payment" : "Pay supplier"));
-const ctaVerb = computed(() => (isReceive.value ? "Receive" : "Pay"));
+const titleVerb = computed(() => (isReceive.value ? t("Receive payment") : t("Pay supplier")));
+const ctaVerb = computed(() => (isReceive.value ? t("Receive") : t("Pay")));
 
 watch(
 	() => props.open,
@@ -78,7 +85,7 @@ watch(
 				reference_date: "",
 			};
 		} catch (err) {
-			error.value = err?.message || "Failed to load payment defaults.";
+			error.value = err?.message || t("Failed to load payment defaults.");
 		} finally {
 			loading.value = false;
 		}
@@ -94,18 +101,18 @@ async function submit() {
 	error.value = "";
 	if (!form.value.bank_account) {
 		error.value = isReceive.value
-			? "Pick the account that will receive the funds."
-			: "Pick the account funds will be paid from.";
+			? t("Pick the account that will receive the funds.")
+			: t("Pick the account funds will be paid from.");
 		return;
 	}
 	const amount = Number(form.value.paid_amount || 0);
 	if (!amount || amount <= 0) {
-		error.value = "Amount must be greater than zero.";
+		error.value = t("Amount must be greater than zero.");
 		return;
 	}
 	const outstanding = Number(defaults.value?.outstanding_amount || 0);
 	if (amount > outstanding + 0.005) {
-		error.value = `Amount exceeds outstanding (${formatMoney(outstanding, defaults.value?.currency, user.value.language)}).`;
+		error.value = t("Amount exceeds outstanding ({amount}).", { amount: formatMoney(outstanding, defaults.value?.currency, user.value.language) });
 		return;
 	}
 	submitting.value = true;
@@ -124,7 +131,7 @@ async function submit() {
 		});
 		emit("paid", created?.name || "");
 	} catch (err) {
-		error.value = err?.message || "Failed to record payment.";
+		error.value = err?.message || t("Failed to record payment.");
 	} finally {
 		submitting.value = false;
 	}
@@ -150,11 +157,11 @@ async function submit() {
 					<div v-else-if="defaults">
 						<div class="datagrid mb-3">
 							<div class="datagrid-item">
-								<div class="datagrid-title">{{ isReceive ? "Customer" : "Supplier" }}</div>
+								<div class="datagrid-title">{{ isReceive ? t("Customer") : t("Supplier") }}</div>
 								<div class="datagrid-content">{{ defaults.party_name || defaults.party }}</div>
 							</div>
 							<div class="datagrid-item">
-								<div class="datagrid-title">Outstanding</div>
+								<div class="datagrid-title">{{ t("Outstanding") }}</div>
 								<div class="datagrid-content font-monospace text-red">
 									{{ formatMoney(defaults.outstanding_amount, defaults.currency, user.language) }}
 								</div>
@@ -166,30 +173,33 @@ async function submit() {
 						<div class="row g-3">
 							<div class="col-md-7">
 								<label class="form-label required">
-									{{ isReceive ? "Deposit to" : "Pay from" }}
+									{{ isReceive ? t("Deposit to") : t("Pay from") }}
 								</label>
-								<select v-model="form.bank_account" class="form-select" :disabled="submitting">
-									<option value="">— pick account —</option>
-									<option
-										v-for="a in defaults.cash_bank_accounts"
-										:key="a.name"
-										:value="a.name"
-									>
-										{{ a.account_name }} ({{ a.account_type }})
-									</option>
-								</select>
+								<Select
+									v-model="form.bank_account"
+									:options="defaults.cash_bank_accounts"
+									value-key="name"
+									:placeholder="t('— pick account —')"
+									:disabled="submitting"
+								>
+									<template #option="{ option }">
+										{{ option.account_name }} ({{ option.account_type }})
+									</template>
+									<template #selected="{ option }">
+										{{ option.account_name }} ({{ option.account_type }})
+									</template>
+								</Select>
 							</div>
 							<div class="col-md-5">
-								<label class="form-label">Mode</label>
-								<select v-model="form.mode_of_payment" class="form-select" :disabled="submitting">
-									<option value="">—</option>
-									<option v-for="m in modes" :key="m.name" :value="m.name">
-										{{ m.name }}
-									</option>
-								</select>
+								<label class="form-label">{{ t("Mode") }}</label>
+								<Select
+									v-model="form.mode_of_payment"
+									:options="modeOptions"
+									:disabled="submitting"
+								/>
 							</div>
 							<div class="col-md-5">
-								<label class="form-label required">Amount</label>
+								<label class="form-label required">{{ t("Amount") }}</label>
 								<MoneyInput
 									v-model="form.paid_amount"
 									:currency="defaults.currency"
@@ -198,21 +208,21 @@ async function submit() {
 								/>
 							</div>
 							<div class="col-md-3">
-								<label class="form-label">Date</label>
+								<label class="form-label">{{ t("Date") }}</label>
 								<DateInput v-model="form.posting_date" :disabled="submitting" />
 							</div>
 							<div class="col-md-4">
-								<label class="form-label">Reference #</label>
+								<label class="form-label">{{ t("Reference #") }}</label>
 								<input
 									v-model="form.reference_no"
 									type="text"
 									class="form-control"
-									placeholder="cheque / txn id"
+									:placeholder="t('cheque / txn id')"
 									:disabled="submitting"
 								/>
 							</div>
 							<div class="col-md-4 offset-md-8">
-								<label class="form-label">Reference date</label>
+								<label class="form-label">{{ t("Reference date") }}</label>
 								<DateInput v-model="form.reference_date" :disabled="submitting" />
 							</div>
 						</div>
@@ -220,7 +230,7 @@ async function submit() {
 				</div>
 				<div class="modal-footer">
 					<button type="button" class="btn btn-link link-secondary" :disabled="submitting" @click="close">
-						Cancel
+						{{ t("Cancel") }}
 					</button>
 					<button
 						type="button"

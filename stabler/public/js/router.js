@@ -1,9 +1,11 @@
 import { createRouter, createWebHashHistory } from "vue-router";
 import { useSession } from "./stores/session.js";
+import { t } from "./composables/i18n.js";
 import Dashboard from "./pages/Dashboard.vue";
 import Module from "./pages/Module.vue";
 import MoneyHome from "./pages/money/MoneyHome.vue";
 import Accounts from "./pages/money/Accounts.vue";
+import AccountLedger from "./pages/money/AccountLedger.vue";
 import JournalEntries from "./pages/money/JournalEntries.vue";
 import PaymentEntries from "./pages/money/PaymentEntries.vue";
 import Expenses from "./pages/money/Expenses.vue";
@@ -13,12 +15,16 @@ import SalesHome from "./pages/sales/SalesHome.vue";
 import Customers from "./pages/sales/Customers.vue";
 import Quotations from "./pages/sales/Quotations.vue";
 import SalesOrders from "./pages/sales/SalesOrders.vue";
+import SalesOrderForm from "./pages/sales/SalesOrderForm.vue";
 import SalesInvoices from "./pages/sales/SalesInvoices.vue";
+import SalesInvoiceForm from "./pages/sales/SalesInvoiceForm.vue";
 import SalesAging from "./pages/sales/Aging.vue";
 import InvoicePrint from "./pages/sales/InvoicePrint.vue";
+import Waybill from "./pages/sales/Waybill.vue";
 import PurchasingHome from "./pages/purchasing/PurchasingHome.vue";
 import Suppliers from "./pages/purchasing/Suppliers.vue";
 import PurchaseInvoices from "./pages/purchasing/PurchaseInvoices.vue";
+import PurchaseOrders from "./pages/purchasing/PurchaseOrders.vue";
 import PurchasingAging from "./pages/purchasing/Aging.vue";
 import InventoryHome from "./pages/inventory/InventoryHome.vue";
 import Items from "./pages/inventory/Items.vue";
@@ -52,6 +58,13 @@ import ROI from "./pages/marketing/ROI.vue";
 import Claims from "./pages/marketing/Claims.vue";
 import Equipment from "./pages/marketing/Equipment.vue";
 import RepairRequests from "./pages/marketing/RepairRequests.vue";
+import RemittanceHome from "./pages/remittance/RemittanceHome.vue";
+import NewRemittance from "./pages/remittance/NewRemittance.vue";
+import RemittanceTransfers from "./pages/remittance/RemittanceTransfers.vue";
+import InstallmentHome from "./pages/installment/InstallmentHome.vue";
+import NewContract from "./pages/installment/NewContract.vue";
+import Contracts from "./pages/installment/Contracts.vue";
+import InstallmentCalendar from "./pages/installment/InstallmentCalendar.vue";
 import AdminHome from "./pages/admin/AdminHome.vue";
 import AdminUsers from "./pages/admin/Users.vue";
 import AdminRoles from "./pages/admin/Roles.vue";
@@ -62,127 +75,154 @@ import ServerError from "./pages/ServerError.vue";
 
 const routes = [
 	{ path: "/", redirect: "/dashboard" },
-	{ path: "/dashboard", name: "dashboard", component: Dashboard, meta: { title: "Dashboard" } },
+	{ path: "/dashboard", name: "dashboard", component: Dashboard, meta: { title: t("Dashboard"), module: "dashboard" } },
 	{
 		path: "/money",
 		component: MoneyHome,
-		meta: { title: "Money", module: "money" },
+		meta: { title: t("Money"), module: "money" },
 		children: [
 			{ path: "", redirect: "/money/accounts" },
-			{ path: "accounts", name: "money-accounts", component: Accounts, meta: { title: "Chart of Accounts" } },
-			{ path: "journals", name: "money-journals", component: JournalEntries, meta: { title: "Journal Entries" } },
-			{ path: "payments", name: "money-payments", component: PaymentEntries, meta: { title: "Payments" } },
-			{ path: "expenses", name: "money-expenses", component: Expenses, meta: { title: "Expenses" } },
-			{ path: "transfers", name: "money-transfers", component: Transfers, meta: { title: "Transfers" } },
-			{ path: "reports", name: "money-reports", component: Reports, meta: { title: "Reports" } },
+			{ path: "accounts", name: "money-accounts", component: Accounts, meta: { title: t("Chart of Accounts") } },
+			{ path: "accounts/:account/ledger", name: "money-account-ledger", component: AccountLedger, meta: { title: t("Account Ledger") } },
+			{ path: "journals", name: "money-journals", component: JournalEntries, meta: { title: t("Journal Entries") } },
+			{ path: "payments", name: "money-payments", component: PaymentEntries, meta: { title: t("Payments") } },
+			{ path: "expenses", name: "money-expenses", component: Expenses, meta: { title: t("Expenses") } },
+			{ path: "transfers", name: "money-transfers", component: Transfers, meta: { title: t("Transfers") } },
+			{ path: "reports", name: "money-reports", component: Reports, meta: { title: t("Reports") } },
 		],
 	},
 	{
 		path: "/sales",
 		component: SalesHome,
-		meta: { title: "Sales", module: "sales" },
+		meta: { title: t("Sales"), module: "sales" },
 		children: [
 			{ path: "", redirect: "/sales/customers" },
-			{ path: "customers", name: "sales-customers", component: Customers, meta: { title: "Customers" } },
-			{ path: "quotations", name: "sales-quotations", component: Quotations, meta: { title: "Quotations" } },
-			{ path: "orders", name: "sales-orders", component: SalesOrders, meta: { title: "Sales Orders" } },
-			{ path: "invoices", name: "sales-invoices", component: SalesInvoices, meta: { title: "Sales Invoices" } },
-			{ path: "invoices/:name/print", name: "sales-invoice-print", component: InvoicePrint, meta: { title: "Invoice" } },
-			{ path: "aging", name: "sales-aging", component: SalesAging, meta: { title: "AR Aging" } },
+			{ path: "customers", name: "sales-customers", component: Customers, meta: { title: t("Customers") } },
+			{ path: "quotations", name: "sales-quotations", component: Quotations, meta: { title: t("Quotations") } },
+			{ path: "orders", name: "sales-orders", component: SalesOrders, meta: { title: t("Sales Orders") } },
+			{ path: "orders/new", name: "sales-order-new", component: SalesOrderForm, meta: { title: t("New Sales Order") } },
+			{ path: "orders/:name", name: "sales-order", component: SalesOrderForm, meta: { title: t("Sales Order") } },
+			{ path: "invoices", name: "sales-invoices", component: SalesInvoices, meta: { title: t("Sales Invoices") } },
+			{ path: "invoices/:name/print", name: "sales-invoice-print", component: InvoicePrint, meta: { title: t("Invoice") } },
+			{ path: "invoices/:name/waybill", name: "sales-invoice-waybill", component: Waybill, meta: { title: t("Yuk xati") } },
+			{ path: "invoices/:name", name: "sales-invoice", component: SalesInvoiceForm, meta: { title: t("Sales Invoice") } },
+			{ path: "aging", name: "sales-aging", component: SalesAging, meta: { title: t("AR Aging") } },
 		],
 	},
 	{
 		path: "/purchasing",
 		component: PurchasingHome,
-		meta: { title: "Purchasing", module: "purchasing" },
+		meta: { title: t("Purchasing"), module: "purchasing" },
 		children: [
 			{ path: "", redirect: "/purchasing/suppliers" },
-			{ path: "suppliers", name: "purchasing-suppliers", component: Suppliers, meta: { title: "Suppliers" } },
-			{ path: "invoices", name: "purchasing-invoices", component: PurchaseInvoices, meta: { title: "Purchase Invoices" } },
-			{ path: "aging", name: "purchasing-aging", component: PurchasingAging, meta: { title: "AP Aging" } },
+			{ path: "suppliers", name: "purchasing-suppliers", component: Suppliers, meta: { title: t("Suppliers") } },
+			{ path: "orders", name: "purchasing-orders", component: PurchaseOrders, meta: { title: t("Purchase Orders") } },
+			{ path: "invoices", name: "purchasing-invoices", component: PurchaseInvoices, meta: { title: t("Purchase Invoices") } },
+			{ path: "aging", name: "purchasing-aging", component: PurchasingAging, meta: { title: t("AP Aging") } },
 		],
 	},
 	{
 		path: "/inventory",
 		component: InventoryHome,
-		meta: { title: "Inventory", module: "inventory" },
+		meta: { title: t("Inventory"), module: "inventory" },
 		children: [
 			{ path: "", redirect: "/inventory/items" },
-			{ path: "items", name: "inventory-items", component: Items, meta: { title: "Items" } },
-			{ path: "warehouses", name: "inventory-warehouses", component: Warehouses, meta: { title: "Warehouses" } },
-			{ path: "entries", name: "inventory-entries", component: StockEntries, meta: { title: "Stock Entries" } },
-			{ path: "ledger", name: "inventory-ledger", component: StockLedger, meta: { title: "Stock Ledger" } },
-			{ path: "alerts", name: "inventory-alerts", component: LowStockAlerts, meta: { title: "Low Stock Alerts" } },
+			{ path: "items", name: "inventory-items", component: Items, meta: { title: t("Items") } },
+			{ path: "warehouses", name: "inventory-warehouses", component: Warehouses, meta: { title: t("Warehouses") } },
+			{ path: "entries", name: "inventory-entries", component: StockEntries, meta: { title: t("Stock Entries") } },
+			{ path: "ledger", name: "inventory-ledger", component: StockLedger, meta: { title: t("Stock Ledger") } },
+			{ path: "alerts", name: "inventory-alerts", component: LowStockAlerts, meta: { title: t("Low Stock Alerts") } },
 		],
 	},
 	{
 		path: "/manufacturing",
 		component: ManufacturingHome,
-		meta: { title: "Manufacturing", module: "manufacturing" },
+		meta: { title: t("Manufacturing"), module: "manufacturing" },
 		children: [
 			{ path: "", redirect: "/manufacturing/boms" },
-			{ path: "boms", name: "manufacturing-boms", component: BOMs, meta: { title: "BOMs" } },
-			{ path: "work-orders", name: "manufacturing-work-orders", component: WorkOrders, meta: { title: "Work Orders" } },
+			{ path: "boms", name: "manufacturing-boms", component: BOMs, meta: { title: t("BOMs") } },
+			{ path: "work-orders", name: "manufacturing-work-orders", component: WorkOrders, meta: { title: t("Work Orders") } },
 		],
 	},
 	{
 		path: "/hr",
 		component: HRHome,
-		meta: { title: "People", module: "hr" },
+		meta: { title: t("People"), module: "hr" },
 		children: [
 			{ path: "", redirect: "/hr/employees" },
-			{ path: "employees", name: "hr-employees", component: Employees, meta: { title: "Employees" } },
-			{ path: "org", name: "hr-org", component: HROrgChart, meta: { title: "Positions" } },
-			{ path: "attendance", name: "hr-attendance", component: HRAttendance, meta: { title: "Attendance" } },
-			{ path: "leave", name: "hr-leave", component: LeaveApplications, meta: { title: "Leave" } },
-			{ path: "payroll", name: "hr-payroll", component: Payroll, meta: { title: "Payroll" } },
+			{ path: "employees", name: "hr-employees", component: Employees, meta: { title: t("Employees") } },
+			{ path: "org", name: "hr-org", component: HROrgChart, meta: { title: t("Positions") } },
+			{ path: "attendance", name: "hr-attendance", component: HRAttendance, meta: { title: t("Attendance") } },
+			{ path: "leave", name: "hr-leave", component: LeaveApplications, meta: { title: t("Leave") } },
+			{ path: "payroll", name: "hr-payroll", component: Payroll, meta: { title: t("Payroll") } },
 		],
 	},
 	{
 		path: "/sfa",
 		component: SFAHome,
-		meta: { title: "Field Sales", module: "field_sales" },
+		meta: { title: t("Field Sales"), module: "field_sales" },
 		children: [
 			{ path: "", redirect: "/sfa/outlets" },
-			{ path: "outlets", name: "sfa-outlets", component: Outlets, meta: { title: "Outlets" } },
-			{ path: "routes", name: "sfa-routes", component: Routes, meta: { title: "Routes" } },
-			{ path: "visits", name: "sfa-visits", component: Visits, meta: { title: "Visits" } },
-			{ path: "field-users", name: "sfa-field-users", component: FieldUsers, meta: { title: "Field Users" } },
-			{ path: "van-stock", name: "sfa-van-stock", component: VanStock, meta: { title: "Van Stock" } },
-			{ path: "promos", name: "sfa-promos", component: Promos, meta: { title: "Promos" } },
-			{ path: "photos", name: "sfa-photos", component: Photos, meta: { title: "Photos" } },
-			{ path: "planograms", name: "sfa-planograms", component: Planograms, meta: { title: "Planograms" } },
-			{ path: "osa", name: "sfa-osa", component: OSA, meta: { title: "OSA Audits" } },
-			{ path: "receivables", name: "sfa-receivables", component: Receivables, meta: { title: "Receivables" } },
+			{ path: "outlets", name: "sfa-outlets", component: Outlets, meta: { title: t("Outlets") } },
+			{ path: "routes", name: "sfa-routes", component: Routes, meta: { title: t("Routes") } },
+			{ path: "visits", name: "sfa-visits", component: Visits, meta: { title: t("Visits") } },
+			{ path: "field-users", name: "sfa-field-users", component: FieldUsers, meta: { title: t("Field Users") } },
+			{ path: "van-stock", name: "sfa-van-stock", component: VanStock, meta: { title: t("Van Stock") } },
+			{ path: "promos", name: "sfa-promos", component: Promos, meta: { title: t("Promos") } },
+			{ path: "photos", name: "sfa-photos", component: Photos, meta: { title: t("Photos") } },
+			{ path: "planograms", name: "sfa-planograms", component: Planograms, meta: { title: t("Planograms") } },
+			{ path: "osa", name: "sfa-osa", component: OSA, meta: { title: t("OSA Audits") } },
+			{ path: "receivables", name: "sfa-receivables", component: Receivables, meta: { title: t("Receivables") } },
 		],
 	},
 	{
 		path: "/marketing",
 		component: MarketingHome,
-		meta: { title: "Trade Marketing", module: "marketing" },
+		meta: { title: t("Trade Marketing"), module: "marketing" },
 		children: [
 			{ path: "", redirect: "/marketing/plans" },
-			{ path: "plans", name: "marketing-plans", component: PromoPlans, meta: { title: "Promo Plans" } },
-			{ path: "roi", name: "marketing-roi", component: ROI, meta: { title: "Campaign ROI" } },
-			{ path: "claims", name: "marketing-claims", component: Claims, meta: { title: "Claims" } },
-			{ path: "equipment", name: "marketing-equipment", component: Equipment, meta: { title: "Equipment" } },
-			{ path: "repairs", name: "marketing-repairs", component: RepairRequests, meta: { title: "Repair Requests" } },
+			{ path: "plans", name: "marketing-plans", component: PromoPlans, meta: { title: t("Promo Plans") } },
+			{ path: "roi", name: "marketing-roi", component: ROI, meta: { title: t("Campaign ROI") } },
+			{ path: "claims", name: "marketing-claims", component: Claims, meta: { title: t("Claims") } },
+			{ path: "equipment", name: "marketing-equipment", component: Equipment, meta: { title: t("Equipment") } },
+			{ path: "repairs", name: "marketing-repairs", component: RepairRequests, meta: { title: t("Repair Requests") } },
+		],
+	},
+	{
+		path: "/remittance",
+		component: RemittanceHome,
+		meta: { title: t("Remittance"), module: "remittance" },
+		children: [
+			{ path: "", redirect: "/remittance/new" },
+			{ path: "new", name: "remittance-new", component: NewRemittance, meta: { title: t("New Transfer") } },
+			{ path: "transfers", name: "remittance-transfers", component: RemittanceTransfers, meta: { title: t("Transfers") } },
+		],
+	},
+	{
+		path: "/installment",
+		component: InstallmentHome,
+		meta: { title: t("Installment"), module: "installment" },
+		children: [
+			{ path: "", redirect: "/installment/new" },
+			{ path: "new", name: "installment-new", component: NewContract, meta: { title: t("New Contract") } },
+			{ path: "contracts", name: "installment-contracts", component: Contracts, meta: { title: t("Contracts") } },
+			{ path: "calendar", name: "installment-calendar", component: InstallmentCalendar, meta: { title: t("Calendar") } },
 		],
 	},
 	{
 		path: "/admin",
 		component: AdminHome,
-		meta: { title: "Admin", requiresAdmin: true },
+		meta: { title: t("Admin"), module: "admin", requiresAdmin: true },
 		children: [
 			{ path: "", redirect: "/admin/users" },
-			{ path: "users", name: "admin-users", component: AdminUsers, meta: { title: "Users" } },
-			{ path: "roles", name: "admin-roles", component: AdminRoles, meta: { title: "Roles" } },
-			{ path: "companies", name: "admin-companies", component: AdminCompanies, meta: { title: "Companies" } },
-			{ path: "compliance", name: "admin-compliance", component: AdminCompliance, meta: { title: "Compliance" } },
+			{ path: "users", name: "admin-users", component: AdminUsers, meta: { title: t("Users") } },
+			{ path: "roles", name: "admin-roles", component: AdminRoles, meta: { title: t("Roles") } },
+			{ path: "companies", name: "admin-companies", component: AdminCompanies, meta: { title: t("Companies") } },
+			{ path: "compliance", name: "admin-compliance", component: AdminCompliance, meta: { title: t("Compliance") } },
 		],
 	},
-	{ path: "/error", name: "server-error", component: ServerError, meta: { title: "Error" } },
-	{ path: "/:pathMatch(.*)*", name: "not-found", component: NotFound, meta: { title: "Not found" } },
+	{ path: "/error", name: "server-error", component: ServerError, meta: { title: t("Error") } },
+	{ path: "/:pathMatch(.*)*", name: "not-found", component: NotFound, meta: { title: t("Not found") } },
 ];
 
 export const router = createRouter({
@@ -190,14 +230,45 @@ export const router = createRouter({
 	routes,
 });
 
-router.beforeEach((to) => {
+// Ordered list of modules → paths used to pick the first accessible landing page.
+// A Sales-only user lands at /sales; an admin (or user with dashboard access) lands at /dashboard.
+const LANDING_ORDER = [
+	{ key: "dashboard", path: "/dashboard" },
+	{ key: "money", path: "/money" },
+	{ key: "sales", path: "/sales" },
+	{ key: "purchasing", path: "/purchasing" },
+	{ key: "inventory", path: "/inventory" },
+	{ key: "manufacturing", path: "/manufacturing" },
+	{ key: "hr", path: "/hr" },
+	{ key: "field_sales", path: "/sfa" },
+	{ key: "marketing", path: "/marketing" },
+	{ key: "remittance", path: "/remittance" },
+	{ key: "installment", path: "/installment" },
+	{ key: "compliance", path: "/admin/compliance" },
+];
+
+function landingPath(session) {
+	for (const { key, path } of LANDING_ORDER) {
+		if (session.canAccessModule(key)) return path;
+	}
+	return "/error";
+}
+
+router.beforeEach(async (to) => {
 	const session = useSession();
+	// Await boot so the access decision uses real allowedModules on the very first navigation.
+	// ensureBoot() is idempotent and deduplicates concurrent calls.
+	await session.ensureBoot();
 	if (to.matched.some((r) => r.meta.requiresAdmin) && !session.isAdmin) {
-		return { name: "dashboard" };
+		const dest = landingPath(session);
+		if (to.path === dest) return;
+		return dest;
 	}
 	const moduleRoute = to.matched.find((r) => r.meta.module);
 	if (moduleRoute && !session.canAccessModule(moduleRoute.meta.module)) {
-		return { name: "dashboard" };
+		const dest = landingPath(session);
+		if (to.path === dest) return;
+		return dest;
 	}
 });
 

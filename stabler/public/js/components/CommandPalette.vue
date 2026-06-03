@@ -3,6 +3,7 @@ import { computed, nextTick, onBeforeUnmount, onMounted, ref, watch } from "vue"
 import { useRouter } from "vue-router";
 import { call } from "../api/client.js";
 import { useSession } from "../stores/session.js";
+import { t } from "../composables/i18n.js";
 
 const router = useRouter();
 const session = useSession();
@@ -18,21 +19,21 @@ let debounceTimer = null;
 let searchToken = 0;
 
 const QUICK_ACTIONS = [
-	{ label: "Dashboard", icon: "ti-layout-dashboard", route: { name: "dashboard" } },
-	{ label: "Chart of Accounts", icon: "ti-list-tree", route: { name: "money-accounts" } },
-	{ label: "Journal Entries", icon: "ti-book", route: { name: "money-journals" } },
-	{ label: "Payments", icon: "ti-cash", route: { name: "money-payments" } },
-	{ label: "Reports", icon: "ti-report", route: { name: "money-reports" } },
-	{ label: "Customers", icon: "ti-users", route: { name: "sales-customers" } },
-	{ label: "Sales Invoices", icon: "ti-file-invoice", route: { name: "sales-invoices" } },
-	{ label: "AR Aging", icon: "ti-clock-dollar", route: { name: "sales-aging" } },
-	{ label: "Suppliers", icon: "ti-truck", route: { name: "purchasing-suppliers" } },
-	{ label: "Purchase Invoices", icon: "ti-receipt", route: { name: "purchasing-invoices" } },
-	{ label: "AP Aging", icon: "ti-clock-dollar", route: { name: "purchasing-aging" } },
-	{ label: "Items", icon: "ti-package", route: { name: "inventory-items" } },
-	{ label: "Warehouses", icon: "ti-building-warehouse", route: { name: "inventory-warehouses" } },
-	{ label: "Stock Ledger", icon: "ti-list", route: { name: "inventory-ledger" } },
-	{ label: "Low Stock Alerts", icon: "ti-alert-triangle", route: { name: "inventory-alerts" } },
+	{ label: t("Dashboard"), icon: "ti-layout-dashboard", route: { name: "dashboard" } },
+	{ label: t("Chart of Accounts"), icon: "ti-list-tree", route: { name: "money-accounts" } },
+	{ label: t("Journal Entries"), icon: "ti-book", route: { name: "money-journals" } },
+	{ label: t("Payments"), icon: "ti-cash", route: { name: "money-payments" } },
+	{ label: t("Reports"), icon: "ti-report", route: { name: "money-reports" } },
+	{ label: t("Customers"), icon: "ti-users", route: { name: "sales-customers" } },
+	{ label: t("Sales Invoices"), icon: "ti-file-invoice", route: { name: "sales-invoices" } },
+	{ label: t("AR Aging"), icon: "ti-clock-dollar", route: { name: "sales-aging" } },
+	{ label: t("Suppliers"), icon: "ti-truck", route: { name: "purchasing-suppliers" } },
+	{ label: t("Purchase Invoices"), icon: "ti-receipt", route: { name: "purchasing-invoices" } },
+	{ label: t("AP Aging"), icon: "ti-clock-dollar", route: { name: "purchasing-aging" } },
+	{ label: t("Items"), icon: "ti-package", route: { name: "inventory-items" } },
+	{ label: t("Warehouses"), icon: "ti-building-warehouse", route: { name: "inventory-warehouses" } },
+	{ label: t("Stock Ledger"), icon: "ti-list", route: { name: "inventory-ledger" } },
+	{ label: t("Low Stock Alerts"), icon: "ti-alert-triangle", route: { name: "inventory-alerts" } },
 ];
 
 const quickActionMatches = computed(() => {
@@ -90,20 +91,25 @@ const flatItems = computed(() => {
 });
 
 const groupedView = computed(() => {
+	const gActions = t("Actions");
+	const gCustomers = t("Customers");
+	const gSuppliers = t("Suppliers");
+	const gItems = t("Items");
+	const gInvoices = t("Invoices");
 	const groups = {
-		Actions: [],
-		Customers: [],
-		Suppliers: [],
-		Items: [],
-		Invoices: [],
+		[gActions]: [],
+		[gCustomers]: [],
+		[gSuppliers]: [],
+		[gItems]: [],
+		[gInvoices]: [],
 	};
 	flatItems.value.forEach((item, idx) => {
 		const entry = { ...item, index: idx };
-		if (item.kind === "action") groups.Actions.push(entry);
-		else if (item.kind === "customer") groups.Customers.push(entry);
-		else if (item.kind === "supplier") groups.Suppliers.push(entry);
-		else if (item.kind === "item") groups.Items.push(entry);
-		else groups.Invoices.push(entry);
+		if (item.kind === "action") groups[gActions].push(entry);
+		else if (item.kind === "customer") groups[gCustomers].push(entry);
+		else if (item.kind === "supplier") groups[gSuppliers].push(entry);
+		else if (item.kind === "item") groups[gItems].push(entry);
+		else groups[gInvoices].push(entry);
 	});
 	return Object.entries(groups).filter(([, list]) => list.length > 0);
 });
@@ -217,18 +223,18 @@ defineExpose({ show, hide });
 							v-model="query"
 							type="text"
 							class="form-control form-control-flush border-0"
-							placeholder="Search customers, suppliers, items, invoices…"
+							:placeholder="t('Search customers, suppliers, items, invoices…')"
 							autocomplete="off"
 							spellcheck="false"
 						/>
 						<span class="text-muted small ms-2 d-none d-sm-inline">esc</span>
 					</div>
 					<div class="modal-body p-0" style="max-height: 60vh; overflow-y: auto;">
-						<div v-if="loading" class="px-3 py-2 text-muted small">Searching…</div>
+						<div v-if="loading" class="px-3 py-2 text-muted small">{{ t("Searching…") }}</div>
 						<div v-if="!flatItems.length && !loading" class="px-3 py-4 text-center text-muted">
 							<i class="ti ti-mood-empty fs-2 d-block mb-2"></i>
-							<div v-if="query.trim()">No results for "{{ query }}"</div>
-							<div v-else>Type to search, or pick a quick action</div>
+							<div v-if="query.trim()">{{ t('No results for "{query}".', { query }) }}</div>
+							<div v-else>{{ t("Type to search, or pick a quick action") }}</div>
 						</div>
 						<div v-for="[groupLabel, entries] in groupedView" :key="groupLabel">
 							<div class="px-3 py-1 text-uppercase text-muted small bg-light border-bottom">

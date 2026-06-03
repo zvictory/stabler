@@ -16,6 +16,8 @@ const selected = ref(null);
 const modules = ref({});
 const allUsers = ref([]);
 const allowedUsers = ref([]);
+const clearingReservations = ref(false);
+const clearResult = ref(null);
 
 const moduleOptions = computed(() => [
 	{ key: "money", label: t("Money") },
@@ -27,6 +29,9 @@ const moduleOptions = computed(() => [
 	{ key: "stock_reservation", label: t("Stock Reservation") },
 	{ key: "compliance", label: t("Compliance") },
 	{ key: "field_sales", label: t("Field Sales") },
+	{ key: "marketing", label: t("Trade Marketing") },
+	{ key: "remittance", label: t("Remittance") },
+	{ key: "installment", label: t("Installment") },
 ]);
 
 async function load() {
@@ -69,6 +74,37 @@ function closeDetail() {
 	if (drawerSaving.value) return;
 	drawerOpen.value = false;
 	selected.value = null;
+	clearResult.value = null;
+}
+
+async function clearReservations() {
+	if (!selected.value) return;
+	const confirmed = window.confirm(
+		t("Cancel ALL open stock reservations for {0}? Reserved stock will be released.").replace(
+			"{0}",
+			selected.value.name,
+		),
+	);
+	if (!confirmed) return;
+	clearingReservations.value = true;
+	drawerError.value = "";
+	clearResult.value = null;
+	try {
+		const result = await call("stabler.api.sales.clear_open_reservations", {
+			company: selected.value.name,
+		});
+		clearResult.value = result;
+		if (result.errors?.length) {
+			drawerError.value = t("{0} reservation(s) failed to cancel. See results below.").replace(
+				"{0}",
+				result.errors.length,
+			);
+		}
+	} catch (err) {
+		drawerError.value = err?.message || t("Failed to clear reservations.");
+	} finally {
+		clearingReservations.value = false;
+	}
 }
 
 async function saveModules() {
@@ -201,6 +237,34 @@ onMounted(load);
 						<i class="ti ti-check me-1"></i>{{ t("Save modules") }}
 					</button>
 				</div>
+
+				<template v-if="modules.stock_reservation">
+					<h6 class="text-uppercase text-secondary small mb-2">
+						{{ t("Stock reservations") }}
+					</h6>
+					<div class="border rounded p-3 mb-4">
+						<p class="text-secondary small mb-2">
+							{{ t("Cancel all open (submitted, non-delivered) Stock Reservation Entries for this company. Reserved stock will be returned to available quantity.") }}
+						</p>
+						<div v-if="clearResult" class="mb-2 small">
+							<span class="text-success fw-semibold">
+								{{ t("Cleared {0} of {1}").replace("{0}", clearResult.cleared).replace("{1}", clearResult.total) }}
+							</span>
+							<span v-if="clearResult.errors?.length" class="text-danger ms-2">
+								· {{ clearResult.errors.length }} {{ t("error(s)") }}
+							</span>
+						</div>
+						<button
+							class="btn btn-outline-danger btn-sm"
+							:disabled="clearingReservations"
+							@click="clearReservations"
+						>
+							<span v-if="clearingReservations" class="spinner-border spinner-border-sm me-1"></span>
+							<i v-else class="ti ti-lock-open me-1"></i>
+							{{ t("Clear open reservations") }}
+						</button>
+					</div>
+				</template>
 
 				<h6 class="text-uppercase text-secondary small mb-2">{{ t("Allowed users") }}</h6>
 				<div class="border rounded p-2 mb-3" style="max-height: 260px; overflow: auto">

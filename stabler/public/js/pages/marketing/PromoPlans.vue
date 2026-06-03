@@ -16,6 +16,7 @@ import EmptyState from "../../components/EmptyState.vue";
 import MoneyInput from "../../components/MoneyInput.vue";
 import DateInput from "../../components/DateInput.vue";
 import Typeahead from "../../components/Typeahead.vue";
+import Select from "../../components/Select.vue";
 
 const session = useSession();
 const { activeCompany, user, companies } = storeToRefs(session);
@@ -60,6 +61,14 @@ const lang = computed(() => user.value?.language || "en");
 
 const PLAN_TYPES = ["TPR", "BOGO", "Display", "Sampling"];
 const CHANNELS = ["GT", "MT", "Horeca", "B2B"];
+
+const statusOptions = computed(() =>
+	PLAN_STATUSES.map((s) => ({ value: s, label: t(s) }))
+);
+const channelOptions = computed(() => [
+	{ value: "", label: t("—") },
+	...CHANNELS.map((ch) => ({ value: ch, label: ch })),
+]);
 
 async function load() {
 	if (!activeCompany.value) {
@@ -302,33 +311,32 @@ async function submitForm() {
 
 				<div class="mb-3">
 					<label class="form-label required">{{ t("Company") }}</label>
-					<select v-model="form.company" class="form-select" :disabled="drawerMode === 'edit'">
-						<option value="" disabled>{{ t("Select company") }}</option>
-						<option v-for="c in companies" :key="c.name" :value="c.name">{{ c.company_name || c.name }}</option>
-					</select>
+					<Select
+						v-model="form.company"
+						:options="companies"
+						value-key="name"
+						:placeholder="t('Select company')"
+						:disabled="drawerMode === 'edit'"
+					>
+						<template #option="{ option }">{{ option.company_name || option.name }}</template>
+						<template #selected="{ option }">{{ option.company_name || option.name }}</template>
+					</Select>
 				</div>
 
 				<div class="row g-2">
 					<div class="col-md-6 mb-3">
 						<label class="form-label required">{{ t("Plan Type") }}</label>
-						<select v-model="form.plan_type" class="form-select">
-							<option v-for="pt in PLAN_TYPES" :key="pt" :value="pt">{{ pt }}</option>
-						</select>
+						<Select v-model="form.plan_type" :options="PLAN_TYPES" />
 					</div>
 					<div class="col-md-6 mb-3">
 						<label class="form-label">{{ t("Channel") }}</label>
-						<select v-model="form.channel" class="form-select">
-							<option value="">{{ t("—") }}</option>
-							<option v-for="ch in CHANNELS" :key="ch" :value="ch">{{ ch }}</option>
-						</select>
+						<Select v-model="form.channel" :options="channelOptions" />
 					</div>
 				</div>
 
 				<div v-if="drawerMode === 'edit'" class="mb-3">
 					<label class="form-label required">{{ t("Status") }}</label>
-					<select v-model="form.status" class="form-select">
-						<option v-for="s in PLAN_STATUSES" :key="s" :value="s">{{ t(s) }}</option>
-					</select>
+					<Select v-model="form.status" :options="statusOptions" />
 				</div>
 
 				<div class="mb-3">

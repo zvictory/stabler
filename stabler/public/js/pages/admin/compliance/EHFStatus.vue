@@ -3,6 +3,7 @@ import { computed, onMounted, ref } from "vue";
 import { call } from "../../../api/client.js";
 import { t } from "../../../composables/i18n.js";
 import { formatDateTime } from "../../../composables/date.js";
+import Select from "../../../components/Select.vue";
 
 const rows = ref([]);
 const loading = ref(false);
@@ -14,6 +15,10 @@ const detailLoading = ref(false);
 const retrying = ref(false);
 
 const STATUSES = ["", "Pending", "Submitted", "Accepted", "Rejected", "Error"];
+
+const statusOptions = computed(() =>
+	STATUSES.map((s) => ({ value: s, label: s ? t(s) : t("All statuses") })),
+);
 
 const BADGE_BY_STATUS = {
 	Pending: "bg-secondary",
@@ -82,11 +87,7 @@ onMounted(load);
 	<div class="card">
 		<div class="card-header d-flex align-items-center gap-3">
 			<h3 class="card-title mb-0">{{ t("EHF Submissions") }}</h3>
-			<select v-model="statusFilter" class="form-select form-select-sm w-auto" @change="load">
-				<option v-for="s in STATUSES" :key="s" :value="s">
-					{{ s ? t(s) : t("All statuses") }}
-				</option>
-			</select>
+			<Select v-model="statusFilter" :options="statusOptions" size="sm" class="w-auto" @change="load" />
 			<button type="button" class="btn btn-sm btn-outline-secondary ms-auto" @click="load">
 				<i class="ti ti-refresh me-1"></i>{{ t("Reload") }}
 			</button>

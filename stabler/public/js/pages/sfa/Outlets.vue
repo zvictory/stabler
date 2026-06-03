@@ -6,6 +6,7 @@ import { call } from "../../api/client.js";
 import { formatMoney } from "../../composables/money.js";
 import { t } from "../../composables/i18n.js";
 import EmptyState from "../../components/EmptyState.vue";
+import Select from "../../components/Select.vue";
 
 const session = useSession();
 const { activeCompany, user } = storeToRefs(session);
@@ -20,6 +21,15 @@ const lang = computed(() => user.value?.language || "en");
 
 const CHANNELS = ["Modern Trade", "Traditional Trade", "HoReCa", "Pharmacy", "Other"];
 const OUTLET_CLASSES = ["A", "B", "C", "D"];
+
+const channelOptions = computed(() => [
+	{ value: "", label: t("— none —") },
+	...CHANNELS.map((c) => ({ value: c, label: t(c) })),
+]);
+const outletClassOptions = computed(() => [
+	{ value: "", label: t("— none —") },
+	...OUTLET_CLASSES.map((oc) => ({ value: oc, label: oc })),
+]);
 
 function blankOutlet() {
 	return {
@@ -276,19 +286,11 @@ watch(search, () => {
 							</div>
 							<div class="col-md-6">
 								<label class="form-label">{{ t("Channel") }}</label>
-								<select v-model="form.channel" class="form-select">
-									<option value="">{{ t("— none —") }}</option>
-									<option v-for="c in CHANNELS" :key="c" :value="c">{{ t(c) }}</option>
-								</select>
+								<Select v-model="form.channel" :options="channelOptions" />
 							</div>
 							<div class="col-md-6">
 								<label class="form-label">{{ t("Outlet Class") }}</label>
-								<select v-model="form.outlet_class" class="form-select">
-									<option value="">{{ t("— none —") }}</option>
-									<option v-for="oc in OUTLET_CLASSES" :key="oc" :value="oc">
-										{{ oc }}
-									</option>
-								</select>
+								<Select v-model="form.outlet_class" :options="outletClassOptions" />
 							</div>
 							<div class="col-md-6">
 								<label class="form-label">{{ t("Assigned Field User") }}</label>

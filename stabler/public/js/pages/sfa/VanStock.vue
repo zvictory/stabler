@@ -1,5 +1,5 @@
 <script setup>
-import { onMounted, ref, watch } from "vue";
+import { computed, onMounted, ref, watch } from "vue";
 import { storeToRefs } from "pinia";
 import { useSession } from "../../stores/session.js";
 import { call } from "../../api/client.js";
@@ -7,6 +7,7 @@ import { t } from "../../composables/i18n.js";
 import { formatDateTime } from "../../composables/date.js";
 import EmptyState from "../../components/EmptyState.vue";
 import DateInput from "../../components/DateInput.vue";
+import Select from "../../components/Select.vue";
 
 const session = useSession();
 const { activeCompany } = storeToRefs(session);
@@ -18,6 +19,13 @@ const postingDate = ref("");
 const status = ref("");
 
 const VAN_STATUSES = ["Loaded", "Dispatched", "Returned", "Reconciled"];
+
+const statusFilterOptions = computed(() => [
+	{ value: "", label: t("All statuses") },
+	...VAN_STATUSES.map((s) => ({ value: s, label: t(s) })),
+]);
+
+const statusOptions = computed(() => VAN_STATUSES.map((s) => ({ value: s, label: t(s) })));
 
 const statusBadge = (s) => {
 	if (s === "Reconciled") return "bg-success-lt";
@@ -172,13 +180,12 @@ watch([postingDate, status], load);
 			<h3 class="card-title mb-0">{{ t("Van Stock") }}</h3>
 			<div class="ms-auto d-flex gap-2">
 				<DateInput v-model="postingDate" size="sm" :aria-label="t('Posting date')" />
-				<select v-model="status" class="form-select form-select-sm" :aria-label="t('Status')">
-					<option value="">{{ t("All statuses") }}</option>
-					<option value="Loaded">{{ t("Loaded") }}</option>
-					<option value="Dispatched">{{ t("Dispatched") }}</option>
-					<option value="Returned">{{ t("Returned") }}</option>
-					<option value="Reconciled">{{ t("Reconciled") }}</option>
-				</select>
+				<Select
+					v-model="status"
+					size="sm"
+					:options="statusFilterOptions"
+					:aria-label="t('Status')"
+				/>
 				<button type="button" class="btn btn-sm btn-success" @click="openCreate">
 					<i class="ti ti-plus me-1"></i>{{ t("New Van Stock") }}
 				</button>
@@ -263,9 +270,7 @@ watch([postingDate, status], load);
 								<label class="form-label">
 									{{ t("Status") }} <span class="text-danger">*</span>
 								</label>
-								<select v-model="form.status" class="form-select">
-									<option v-for="s in VAN_STATUSES" :key="s" :value="s">{{ t(s) }}</option>
-								</select>
+								<Select v-model="form.status" :options="statusOptions" />
 							</div>
 							<div class="col-md-6">
 								<label class="form-label">{{ t("Warehouse") }}</label>

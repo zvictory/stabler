@@ -1,10 +1,11 @@
 <script setup>
-import { onMounted, ref, watch } from "vue";
+import { computed, onMounted, ref, watch } from "vue";
 import { storeToRefs } from "pinia";
 import { useSession } from "../../stores/session.js";
 import { call } from "../../api/client.js";
 import { t } from "../../composables/i18n.js";
 import EmptyState from "../../components/EmptyState.vue";
+import Select from "../../components/Select.vue";
 
 const session = useSession();
 const { activeCompany } = storeToRefs(session);
@@ -14,6 +15,8 @@ const error = ref("");
 const rows = ref([]);
 
 const DAYS = ["Any", "Monday", "Tuesday", "Wednesday", "Thursday", "Friday", "Saturday", "Sunday"];
+
+const dayOptions = computed(() => DAYS.map((d) => ({ value: d, label: t(d) })));
 
 function blankRoute() {
 	return {
@@ -295,9 +298,7 @@ watch(activeCompany, () => {
 							</div>
 							<div class="col-md-6">
 								<label class="form-label">{{ t("Day of Week") }}</label>
-								<select v-model="form.day_of_week" class="form-select">
-									<option v-for="d in DAYS" :key="d" :value="d">{{ t(d) }}</option>
-								</select>
+								<Select v-model="form.day_of_week" :options="dayOptions" />
 							</div>
 							<div class="col-md-6 d-flex align-items-end">
 								<label class="form-check">

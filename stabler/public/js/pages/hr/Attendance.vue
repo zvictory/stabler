@@ -7,6 +7,7 @@ import { t } from "../../composables/i18n.js";
 import { formatDateTime } from "../../composables/date.js";
 import EmptyState from "../../components/EmptyState.vue";
 import DateInput from "../../components/DateInput.vue";
+import Select from "../../components/Select.vue";
 
 const session = useSession();
 const { activeCompany } = storeToRefs(session);
@@ -24,6 +25,23 @@ const fromDate = ref(firstOfMonth());
 const toDate = ref(today());
 const statusFilter = ref("");
 const employeeFilter = ref("");
+
+const statusFilterOptions = computed(() => [
+	{ value: "", label: t("All statuses") },
+	{ value: "Present", label: t("Present") },
+	{ value: "Absent", label: t("Absent") },
+	{ value: "On Leave", label: t("On Leave") },
+	{ value: "Half Day", label: t("Half Day") },
+	{ value: "Work From Home", label: t("Work From Home") },
+]);
+
+const markStatusOptions = computed(() => [
+	{ value: "Present", label: t("Present") },
+	{ value: "Absent", label: t("Absent") },
+	{ value: "On Leave", label: t("On Leave") },
+	{ value: "Half Day", label: t("Half Day") },
+	{ value: "Work From Home", label: t("Work From Home") },
+]);
 
 async function load() {
 	if (!activeCompany.value) return;
@@ -148,14 +166,7 @@ function fmtTime(t) {
 				</div>
 				<div class="col-md-3">
 					<label class="form-label small">{{ t("Status") }}</label>
-					<select v-model="statusFilter" class="form-select">
-						<option value="">{{ t("All statuses") }}</option>
-						<option value="Present">{{ t("Present") }}</option>
-						<option value="Absent">{{ t("Absent") }}</option>
-						<option value="On Leave">{{ t("On Leave") }}</option>
-						<option value="Half Day">{{ t("Half Day") }}</option>
-						<option value="Work From Home">{{ t("Work From Home") }}</option>
-					</select>
+					<Select v-model="statusFilter" :options="statusFilterOptions" />
 				</div>
 				<div class="col-md-5 d-flex justify-content-md-end gap-2">
 					<button type="button" class="btn btn-ghost-secondary" @click="load">
@@ -227,12 +238,15 @@ function fmtTime(t) {
 					<div v-if="markError" class="alert alert-danger">{{ markError }}</div>
 					<div class="mb-3">
 						<label class="form-label">{{ t("Employee") }} *</label>
-						<select v-model="form.employee" class="form-select">
-							<option value="">—</option>
-							<option v-for="e in employeeOptions" :key="e.name" :value="e.name">
-								{{ e.employee_name }} ({{ e.name }})
-							</option>
-						</select>
+						<Select
+							v-model="form.employee"
+							:options="employeeOptions"
+							value-key="name"
+							:placeholder="t('Pick an employee')"
+						>
+							<template #option="{ option }">{{ option.employee_name }} ({{ option.name }})</template>
+							<template #selected="{ option }">{{ option.employee_name }} ({{ option.name }})</template>
+						</Select>
 					</div>
 					<div class="row g-2">
 						<div class="col-md-6">
@@ -241,13 +255,7 @@ function fmtTime(t) {
 						</div>
 						<div class="col-md-6">
 							<label class="form-label">{{ t("Status") }}</label>
-							<select v-model="form.status" class="form-select">
-								<option value="Present">{{ t("Present") }}</option>
-								<option value="Absent">{{ t("Absent") }}</option>
-								<option value="On Leave">{{ t("On Leave") }}</option>
-								<option value="Half Day">{{ t("Half Day") }}</option>
-								<option value="Work From Home">{{ t("Work From Home") }}</option>
-							</select>
+							<Select v-model="form.status" :options="markStatusOptions" />
 						</div>
 						<div class="col-md-6">
 							<label class="form-label">{{ t("In time") }}</label>

@@ -7,6 +7,7 @@ import { t } from "../../composables/i18n.js";
 import { formatDateTime } from "../../composables/date.js";
 import EmptyState from "../../components/EmptyState.vue";
 import DateInput from "../../components/DateInput.vue";
+import Select from "../../components/Select.vue";
 
 const session = useSession();
 const { activeCompany } = storeToRefs(session);
@@ -15,6 +16,14 @@ const loading = ref(false);
 const error = ref("");
 const rows = ref([]);
 const statusFilter = ref("");
+
+const statusFilterOptions = computed(() => [
+	{ value: "", label: t("All statuses") },
+	{ value: "Open", label: t("Open") },
+	{ value: "Approved", label: t("Approved") },
+	{ value: "Rejected", label: t("Rejected") },
+	{ value: "Cancelled", label: t("Cancelled") },
+]);
 
 async function load() {
 	if (!activeCompany.value) return;
@@ -135,13 +144,7 @@ function statusBadge(s) {
 			<div class="row g-2 align-items-end">
 				<div class="col-md-4">
 					<label class="form-label small">{{ t("Status") }}</label>
-					<select v-model="statusFilter" class="form-select">
-						<option value="">{{ t("All statuses") }}</option>
-						<option value="Open">{{ t("Open") }}</option>
-						<option value="Approved">{{ t("Approved") }}</option>
-						<option value="Rejected">{{ t("Rejected") }}</option>
-						<option value="Cancelled">{{ t("Cancelled") }}</option>
-					</select>
+					<Select v-model="statusFilter" :options="statusFilterOptions" />
 				</div>
 				<div class="col-md-8 d-flex justify-content-md-end gap-2">
 					<button type="button" class="btn btn-ghost-secondary" @click="load">
@@ -225,19 +228,23 @@ function statusBadge(s) {
 					<div class="row g-3">
 						<div class="col-md-6">
 							<label class="form-label">{{ t("Employee") }} *</label>
-							<select v-model="form.employee" class="form-select">
-								<option value="">—</option>
-								<option v-for="e in employeeOptions" :key="e.name" :value="e.name">
-									{{ e.employee_name }}
-								</option>
-							</select>
+							<Select
+								v-model="form.employee"
+								:options="employeeOptions"
+								value-key="name"
+								label-key="employee_name"
+								:placeholder="t('Pick an employee')"
+							/>
 						</div>
 						<div class="col-md-6">
 							<label class="form-label">{{ t("Leave type") }} *</label>
-							<select v-model="form.leave_type" class="form-select">
-								<option value="">—</option>
-								<option v-for="l in leaveTypeOptions" :key="l.name" :value="l.name">{{ l.name }}</option>
-							</select>
+							<Select
+								v-model="form.leave_type"
+								:options="leaveTypeOptions"
+								value-key="name"
+								label-key="name"
+								:placeholder="t('Pick a leave type')"
+							/>
 						</div>
 						<div class="col-md-6">
 							<label class="form-label">{{ t("From") }}</label>

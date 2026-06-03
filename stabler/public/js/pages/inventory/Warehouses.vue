@@ -5,6 +5,8 @@ import { useSession } from "../../stores/session.js";
 import { call } from "../../api/client.js";
 import { formatMoney } from "../../composables/money.js";
 import EmptyState from "../../components/EmptyState.vue";
+import { t } from "../../composables/i18n.js";
+import Select from "../../components/Select.vue";
 
 const session = useSession();
 const { activeCompany, user } = storeToRefs(session);
@@ -71,7 +73,7 @@ async function load() {
 			(rows || []).filter((r) => r.is_group && !r.parent_warehouse).map((r) => r.name)
 		);
 	} catch (err) {
-		error.value = err?.message || "Failed to load warehouses.";
+		error.value = err?.message || t("Failed to load warehouses.");
 	} finally {
 		loading.value = false;
 	}
@@ -107,7 +109,7 @@ async function loadCreateOptions() {
 		typeOptions.value = types || [];
 		optionsLoaded.value = true;
 	} catch (err) {
-		submitError.value = err?.message || "Failed to load form options.";
+		submitError.value = err?.message || t("Failed to load form options.");
 	}
 }
 
@@ -127,7 +129,7 @@ async function submitCreate() {
 	submitError.value = "";
 	const name = form.value.warehouse_name.trim();
 	if (!name) {
-		submitError.value = "Warehouse name is required.";
+		submitError.value = t("Warehouse name is required.");
 		return;
 	}
 	submitting.value = true;
@@ -143,7 +145,7 @@ async function submitCreate() {
 		optionsLoaded.value = false;  // refresh parent list
 		await load();
 	} catch (err) {
-		submitError.value = err?.message || "Failed to create warehouse.";
+		submitError.value = err?.message || t("Failed to create warehouse.");
 	} finally {
 		submitting.value = false;
 	}
@@ -156,16 +158,16 @@ watch(activeCompany, load);
 <template>
 	<div class="card">
 		<div class="card-header d-flex align-items-center gap-2">
-			<div class="card-title m-0">Warehouses</div>
+			<div class="card-title m-0">{{ t("Warehouses") }}</div>
 			<div class="ms-auto d-flex align-items-center gap-2" style="max-width: 480px; width: 100%">
 				<input
 					v-model="search"
 					type="search"
 					class="form-control form-control-sm"
-					placeholder="Search warehouse…"
+					:placeholder="t('Search warehouse…')"
 				/>
 				<button type="button" class="btn btn-success btn-sm flex-shrink-0" @click="openCreate()">
-					<i class="ti ti-plus me-1"></i>New warehouse
+					<i class="ti ti-plus me-1"></i>{{ t("New warehouse") }}
 				</button>
 			</div>
 		</div>
@@ -180,12 +182,12 @@ watch(activeCompany, load);
 			icon="ti-building-warehouse"
 			accentIcon="ti-plus"
 			tone="info"
-			title="No warehouses for this company"
-			subtitle="Add a warehouse to start tracking stock locations."
+			:title="t('No warehouses for this company')"
+			:subtitle="t('Add a warehouse to start tracking stock locations.')"
 		>
 			<template #actions>
 				<button type="button" class="btn btn-primary" @click="openCreate()">
-					<i class="ti ti-plus me-1"></i>Add warehouse
+					<i class="ti ti-plus me-1"></i>{{ t("Add warehouse") }}
 				</button>
 			</template>
 		</EmptyState>
@@ -193,9 +195,9 @@ watch(activeCompany, load);
 			<table class="table table-vcenter card-table">
 				<thead>
 					<tr>
-						<th>Warehouse</th>
-						<th class="w-1">Type</th>
-						<th class="w-1 text-end">Stock value</th>
+						<th>{{ t("Warehouse") }}</th>
+						<th class="w-1">{{ t("Type") }}</th>
+						<th class="w-1 text-end">{{ t("Stock value") }}</th>
 					</tr>
 				</thead>
 				<tbody>
@@ -210,7 +212,7 @@ watch(activeCompany, load);
 									type="button"
 									class="btn btn-icon btn-sm btn-ghost-secondary"
 									@click="toggle(n.name)"
-									:aria-label="expanded.has(n.name) ? 'Collapse' : 'Expand'"
+									:aria-label="expanded.has(n.name) ? t('Collapse') : t('Expand')"
 								>
 									<i class="ti" :class="expanded.has(n.name) ? 'ti-chevron-down' : 'ti-chevron-right'"></i>
 								</button>
@@ -219,12 +221,12 @@ watch(activeCompany, load);
 								<span :class="{ 'fw-semibold': n.is_group }">
 									{{ n.warehouse_name || n.name }}
 								</span>
-								<span v-if="n.disabled" class="badge bg-secondary-lt ms-2">Disabled</span>
+								<span v-if="n.disabled" class="badge bg-secondary-lt ms-2">{{ t("Disabled") }}</span>
 								<button
 									v-if="n.is_group"
 									type="button"
 									class="btn btn-icon btn-sm btn-ghost-primary wh-add ms-1"
-									title="Add child warehouse"
+									:title="t('Add child warehouse')"
 									@click="openCreate(n.name)"
 								>
 									<i class="ti ti-plus"></i>
@@ -233,7 +235,7 @@ watch(activeCompany, load);
 						</td>
 						<td>
 							<span v-if="n.warehouse_type" class="badge bg-blue-lt">{{ n.warehouse_type }}</span>
-							<span v-else-if="n.is_group" class="badge bg-secondary-lt">Group</span>
+							<span v-else-if="n.is_group" class="badge bg-secondary-lt">{{ t("Group") }}</span>
 						</td>
 						<td class="text-end font-monospace">
 							<span v-if="n.is_group" class="text-secondary">—</span>
@@ -250,47 +252,57 @@ watch(activeCompany, load);
 		<div class="modal-dialog modal-dialog-centered" role="document">
 			<div class="modal-content">
 				<div class="modal-header">
-					<h5 class="modal-title">New warehouse</h5>
+					<h5 class="modal-title">{{ t("New warehouse") }}</h5>
 					<button type="button" class="btn-close" aria-label="Close" @click="closeCreate" :disabled="submitting"></button>
 				</div>
 				<div class="modal-body">
 					<div v-if="submitError" class="alert alert-danger">{{ submitError }}</div>
 					<div class="row g-3">
 						<div class="col-12">
-							<label class="form-label required">Warehouse name</label>
+							<label class="form-label required">{{ t("Warehouse name") }}</label>
 							<input v-model="form.warehouse_name" type="text" class="form-control" autofocus />
 						</div>
 						<div class="col-md-7">
-							<label class="form-label">Parent warehouse</label>
-							<select v-model="form.parent_warehouse" class="form-select">
-								<option value="">— top-level —</option>
-								<option v-for="p in parentOptions" :key="p.name" :value="p.name">
-									{{ p.warehouse_name || p.name }}
-								</option>
-							</select>
+							<label class="form-label">{{ t("Parent warehouse") }}</label>
+							<Select
+								v-model="form.parent_warehouse"
+								:options="parentOptions"
+								value-key="name"
+								:placeholder="t('— top-level —')"
+							>
+								<template #option="{ option }">
+									{{ option.warehouse_name || option.name }}
+								</template>
+								<template #selected="{ option }">
+									{{ option.warehouse_name || option.name }}
+								</template>
+							</Select>
 						</div>
 						<div class="col-md-5">
-							<label class="form-label">Type</label>
-							<select v-model="form.warehouse_type" class="form-select">
-								<option value="">—</option>
-								<option v-for="t in typeOptions" :key="t.name" :value="t.name">{{ t.name }}</option>
-							</select>
+							<label class="form-label">{{ t("Type") }}</label>
+							<Select
+								v-model="form.warehouse_type"
+								:options="typeOptions"
+								value-key="name"
+								label-key="name"
+								placeholder="—"
+							/>
 						</div>
 						<div class="col-12">
 							<div class="form-check">
 								<input v-model="form.is_group" class="form-check-input" type="checkbox" id="wh_is_group" />
 								<label class="form-check-label" for="wh_is_group">
-									Group warehouse (can contain children, holds no stock itself)
+									{{ t("Group warehouse (can contain children, holds no stock itself)") }}
 								</label>
 							</div>
 						</div>
 					</div>
 				</div>
 				<div class="modal-footer">
-					<button type="button" class="btn btn-link link-secondary" :disabled="submitting" @click="closeCreate">Cancel</button>
+					<button type="button" class="btn btn-link link-secondary" :disabled="submitting" @click="closeCreate">{{ t("Cancel") }}</button>
 					<button type="button" class="btn btn-primary ms-auto" :disabled="submitting" @click="submitCreate">
 						<span v-if="submitting" class="spinner-border spinner-border-sm me-1"></span>
-						Save
+						{{ t("Save") }}
 					</button>
 				</div>
 			</div>

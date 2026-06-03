@@ -7,6 +7,7 @@ import { t } from "../../composables/i18n.js";
 import { formatDateTime } from "../../composables/date.js";
 import EmptyState from "../../components/EmptyState.vue";
 import DateInput from "../../components/DateInput.vue";
+import Select from "../../components/Select.vue";
 
 const session = useSession();
 const { activeCompany, user } = storeToRefs(session);
@@ -18,6 +19,10 @@ const search = ref("");
 const statusFilter = ref("");
 
 const STATUSES = ["", "Draft", "Not Started", "In Process", "Completed", "Stopped", "Closed", "Cancelled"];
+
+const statusOptions = computed(() =>
+	STATUSES.map((s) => ({ value: s, label: s || t("All statuses") }))
+);
 
 const formatQty = (n, uom) => {
 	const v = Number(n || 0);
@@ -209,6 +214,16 @@ function blankWO() {
 }
 const form = ref(blankWO());
 
+const bomSelectOptions = computed(() => [
+	{ value: "" },
+	...bomOptions.value.map((b) => ({
+		value: b.name,
+		name: b.name,
+		is_default: b.is_default,
+		docstatus: b.docstatus,
+	})),
+]);
+
 async function loadOptions() {
 	if (optionsLoaded.value) return;
 	try {
@@ -308,9 +323,7 @@ async function saveWO(submitAfter) {
 					</div>
 				</div>
 				<div class="col-md-3">
-					<select v-model="statusFilter" class="form-select">
-						<option v-for="s in STATUSES" :key="s" :value="s">{{ s || t("All statuses") }}</option>
-					</select>
+					<Select v-model="statusFilter" :options="statusOptions" />
 				</div>
 				<div class="col-md-4 d-flex justify-content-md-end gap-2">
 					<button type="button" class="btn btn-ghost-secondary" @click="load">
@@ -513,24 +526,40 @@ async function saveWO(submitAfter) {
 					<div class="row g-2 mb-3">
 						<div class="col-md-7">
 							<label class="form-label">{{ t("Finished good") }}</label>
-							<select v-model="form.production_item" class="form-select" @change="onProductionItemChange">
-								<option value="">—</option>
-								<option v-for="it in itemOptions" :key="it.item_code" :value="it.item_code">
-									{{ it.item_name }} ({{ it.item_code }})
-								</option>
-							</select>
+							<Select
+								v-model="form.production_item"
+								:options="itemOptions"
+								value-key="item_code"
+								placeholder="—"
+								@change="onProductionItemChange"
+							>
+								<template #option="{ option }">
+									{{ option.item_name }} ({{ option.item_code }})
+								</template>
+								<template #selected="{ option }">
+									{{ option.item_name }} ({{ option.item_code }})
+								</template>
+							</Select>
 							<div v-if="!itemOptions.length && optionsLoaded" class="form-hint text-warning">
 								{{ t("No items with submitted active BOMs yet — create one first.") }}
 							</div>
 						</div>
 						<div class="col-md-5">
 							<label class="form-label">{{ t("BOM") }}</label>
-							<select v-model="form.bom_no" class="form-select" :disabled="!bomOptions.length">
-								<option value="">{{ t("Default") }}</option>
-								<option v-for="b in bomOptions" :key="b.name" :value="b.name" :disabled="b.docstatus !== 1">
-									{{ b.name }}{{ b.is_default ? " · default" : "" }}{{ b.docstatus !== 1 ? " (draft)" : "" }}
-								</option>
-							</select>
+							<Select
+								v-model="form.bom_no"
+								:options="bomSelectOptions"
+								:disabled="!bomOptions.length"
+							>
+								<template #option="{ option }">
+									<template v-if="option.value === ''">{{ t("Default") }}</template>
+									<template v-else>{{ option.name }}{{ option.is_default ? " · default" : "" }}{{ option.docstatus !== 1 ? " (draft)" : "" }}</template>
+								</template>
+								<template #selected="{ option }">
+									<template v-if="option.value === ''">{{ t("Default") }}</template>
+									<template v-else>{{ option.name }}{{ option.is_default ? " · default" : "" }}{{ option.docstatus !== 1 ? " (draft)" : "" }}</template>
+								</template>
+							</Select>
 						</div>
 					</div>
 
@@ -548,24 +577,33 @@ async function saveWO(submitAfter) {
 					<div class="row g-2 mb-3">
 						<div class="col-md-4">
 							<label class="form-label">{{ t("Source warehouse") }}</label>
-							<select v-model="form.source_warehouse" class="form-select">
-								<option value="">—</option>
-								<option v-for="w in warehouseOptions" :key="w.name" :value="w.name">{{ w.name }}</option>
-							</select>
+							<Select
+								v-model="form.source_warehouse"
+								:options="warehouseOptions"
+								value-key="name"
+								label-key="name"
+								placeholder="—"
+							/>
 						</div>
 						<div class="col-md-4">
 							<label class="form-label">{{ t("WIP warehouse") }}</label>
-							<select v-model="form.wip_warehouse" class="form-select">
-								<option value="">—</option>
-								<option v-for="w in warehouseOptions" :key="w.name" :value="w.name">{{ w.name }}</option>
-							</select>
+							<Select
+								v-model="form.wip_warehouse"
+								:options="warehouseOptions"
+								value-key="name"
+								label-key="name"
+								placeholder="—"
+							/>
 						</div>
 						<div class="col-md-4">
 							<label class="form-label">{{ t("Finished-goods warehouse") }}</label>
-							<select v-model="form.fg_warehouse" class="form-select">
-								<option value="">—</option>
-								<option v-for="w in warehouseOptions" :key="w.name" :value="w.name">{{ w.name }}</option>
-							</select>
+							<Select
+								v-model="form.fg_warehouse"
+								:options="warehouseOptions"
+								value-key="name"
+								label-key="name"
+								placeholder="—"
+							/>
 						</div>
 					</div>
 				</div>

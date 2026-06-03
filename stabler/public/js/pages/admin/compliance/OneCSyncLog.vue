@@ -3,6 +3,7 @@ import { onMounted, ref } from "vue";
 import { call } from "../../../api/client.js";
 import { t } from "../../../composables/i18n.js";
 import { formatDateTime } from "../../../composables/date.js";
+import Select from "../../../components/Select.vue";
 
 const rows = ref([]);
 const loading = ref(false);
@@ -32,6 +33,16 @@ const BADGE_BY_STATUS = {
 	OK: "bg-success",
 	Error: "bg-danger",
 };
+
+const directionOptions = computed(() =>
+	DIRECTIONS.map((d) => ({ value: d, label: d ? t(d) : t("All directions") })),
+);
+const statusOptions = computed(() =>
+	STATUSES.map((s) => ({ value: s, label: s ? t(s) : t("All statuses") })),
+);
+const objectTypeOptions = computed(() =>
+	OBJECT_TYPES.map((o) => ({ value: o, label: o ? t(o) : t("All object types") })),
+);
 
 function badgeClass(status) {
 	return ["badge", BADGE_BY_STATUS[status] || "bg-secondary"];
@@ -83,21 +94,9 @@ onMounted(load);
 	<div class="card">
 		<div class="card-header d-flex flex-wrap align-items-center gap-2">
 			<h3 class="card-title mb-0 me-2">{{ t("1C Sync Log") }}</h3>
-			<select v-model="directionFilter" class="form-select form-select-sm w-auto" @change="load">
-				<option v-for="d in DIRECTIONS" :key="d" :value="d">
-					{{ d ? t(d) : t("All directions") }}
-				</option>
-			</select>
-			<select v-model="statusFilter" class="form-select form-select-sm w-auto" @change="load">
-				<option v-for="s in STATUSES" :key="s" :value="s">
-					{{ s ? t(s) : t("All statuses") }}
-				</option>
-			</select>
-			<select v-model="objectTypeFilter" class="form-select form-select-sm w-auto" @change="load">
-				<option v-for="o in OBJECT_TYPES" :key="o" :value="o">
-					{{ o ? t(o) : t("All object types") }}
-				</option>
-			</select>
+			<Select v-model="directionFilter" :options="directionOptions" size="sm" class="w-auto" @change="load" />
+			<Select v-model="statusFilter" :options="statusOptions" size="sm" class="w-auto" @change="load" />
+			<Select v-model="objectTypeFilter" :options="objectTypeOptions" size="sm" class="w-auto" @change="load" />
 			<button type="button" class="btn btn-sm btn-outline-secondary ms-auto" @click="load">
 				<i class="ti ti-refresh me-1"></i>{{ t("Reload") }}
 			</button>

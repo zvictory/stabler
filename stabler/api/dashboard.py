@@ -9,9 +9,11 @@ from __future__ import annotations
 from datetime import date, timedelta
 
 import frappe
+from frappe import _
 from frappe.utils import flt, getdate
 
 from stabler.api._common import _require_company
+from stabler.api.organization import _can_access_module
 
 # ---------------------------------------------------------------------------
 # Whitelists — guard f-string table/column interpolation against future misuse
@@ -22,7 +24,7 @@ _ALLOWED_AMOUNT_FIELDS: frozenset[str] = frozenset({"base_grand_total", "grand_t
 
 
 # ---------------------------------------------------------------------------
-# Helpers
+# Date helpers
 
 
 def _month_start(d: date) -> date:
@@ -42,99 +44,181 @@ def _last_day_of_month(d: date) -> date:
 
 
 # ---------------------------------------------------------------------------
-# Summary KPIs
+# Currency helpers
 
 
-@frappe.whitelist()
-def summary(company: str):
-	"""Return cash / AR / AP / revenue-MTD for the dashboard tiles."""
-	company = _require_company(company)
-	today = getdate()
-	month_start = _month_start(today)
-	prev_month_start = _shift_month(month_start, -1)
-	prev_month_end = _last_day_of_month(prev_month_start)
-
-	cash = _cash_balance(company)
-	ar = _outstanding_total("Sales Invoice", company)
-	ap = _outstanding_total("Purchase Invoice", company)
-	revenue_mtd = _revenue_between(company, month_start, today)
-	revenue_prev = _revenue_between(company, prev_month_start, prev_month_end)
-
-	trend_pct = None
-	if revenue_prev:
-		trend_pct = ((revenue_mtd - revenue_prev) / revenue_prev) * 100.0
-
-	return {
-		"company": company,
-		"cash": flt(cash, 2),
-		"ar": flt(ar, 2),
-		"ap": flt(ap, 2),
-		"revenue_mtd": flt(revenue_mtd, 2),
-		"revenue_prev": flt(revenue_prev, 2),
-		"revenue_trend_pct": flt(trend_pct, 2) if trend_pct is not None else None,
-	}
-
-
-def _cash_balance(company: str) -> float:
-	"""Sum of balances on Cash + Bank ledger accounts for the company."""
-	cache_key = f"stabler:dashboard:cash:{company}"
+def _dominant_currency(company: str) -> str:
+	"""Currency with the largest all-time SI base revenue for this company. Cached 300 s."""
+	cache_key = f"stabler:dashboard:dominant:{company}"
 	cached = frappe.cache().get_value(cache_key)
 	if cached is not None:
 		return cached
 	rows = frappe.db.sql(
 		"""
-		SELECT COALESCE(SUM(gle.debit - gle.credit), 0) AS bal
+		SELECT currency
+		FROM `tabSales Invoice`
+		WHERE company = %(company)s AND docstatus = 1
+		GROUP BY currency
+		ORDER BY SUM(base_grand_total) DESC
+		LIMIT 1
+		""",
+		{"company": company},
+	)
+	result = (
+		rows[0][0]
+		if rows
+		else (frappe.db.get_value("Company", company, "default_currency") or "USD")
+	)
+	frappe.cache().set_value(cache_key, result, expires_in_sec=300)
+	return result
+
+
+def _by_currency(rows) -> list[dict]:
+	"""Filter near-zero rows, sort by base magnitude desc, return [{currency, amount}].
+
+	The `base` column (base-currency equivalent, used only for ordering) is dropped
+	from the output — callers receive document/account-currency amounts only.
+	"""
+	filtered = [r for r in rows if abs(flt(r.get("base", 0))) >= 0.005]
+	filtered.sort(key=lambda r: abs(flt(r.get("base", 0))), reverse=True)
+	return [{"currency": r["currency"], "amount": flt(r["amount"], 2)} for r in filtered]
+
+
+# ---------------------------------------------------------------------------
+# Summary KPIs
+
+
+@frappe.whitelist()
+def summary(company: str):
+	"""Return per-currency cash / AR / AP / revenue-MTD for the dashboard tiles."""
+	company = _require_company(company)
+	if not _can_access_module(frappe.session.user, "dashboard"):
+		frappe.throw(_("Not permitted"), frappe.PermissionError)
+	today = getdate()
+	month_start = _month_start(today)
+	prev_month_start = _shift_month(month_start, -1)
+	prev_month_end = _last_day_of_month(prev_month_start)
+
+	dominant = _dominant_currency(company)
+	cash = _cash_balance_by_currency(company)
+	ar = _outstanding_by_currency("Sales Invoice", company)
+	ap = _outstanding_by_currency("Purchase Invoice", company)
+	revenue_mtd = _revenue_between_by_currency(company, month_start, today)
+
+	# Trend uses dominant-currency document totals (grand_total, not base).
+	revenue_mtd_dom = next((r["amount"] for r in revenue_mtd if r["currency"] == dominant), 0.0)
+	revenue_prev = _revenue_dominant_between(company, dominant, prev_month_start, prev_month_end)
+
+	trend_pct = None
+	if revenue_prev:
+		trend_pct = ((revenue_mtd_dom - revenue_prev) / revenue_prev) * 100.0
+
+	return {
+		"company": company,
+		"dominant_currency": dominant,
+		"cash": cash,
+		"ar": ar,
+		"ap": ap,
+		"revenue_mtd": revenue_mtd,
+		"revenue_trend_pct": flt(trend_pct, 2) if trend_pct is not None else None,
+	}
+
+
+def _cash_balance_by_currency(company: str) -> list[dict]:
+	"""GL Cash/Bank balance per account currency (account-currency amounts)."""
+	cache_key = f"stabler:dashboard:cash_ccy:{company}"
+	cached = frappe.cache().get_value(cache_key)
+	if cached is not None:
+		return cached
+	rows = frappe.db.sql(
+		"""
+		SELECT a.account_currency AS currency,
+		       COALESCE(SUM(gle.debit_in_account_currency - gle.credit_in_account_currency), 0) AS amount,
+		       COALESCE(SUM(gle.debit - gle.credit), 0) AS base
 		FROM `tabGL Entry` gle
 		JOIN `tabAccount` a ON a.name = gle.account
 		WHERE gle.company = %(company)s
 		  AND gle.is_cancelled = 0
 		  AND a.account_type IN ('Cash', 'Bank')
+		GROUP BY a.account_currency
 		""",
 		{"company": company},
+		as_dict=True,
 	)
-	result = flt(rows[0][0]) if rows else 0.0
+	result = _by_currency(rows)
 	frappe.cache().set_value(cache_key, result, expires_in_sec=300)
 	return result
 
 
-def _outstanding_total(doctype: str, company: str) -> float:
-	"""Sum of outstanding_amount on submitted, non-cancelled invoices."""
+def _outstanding_by_currency(doctype: str, company: str) -> list[dict]:
+	"""Sum of outstanding_amount per document currency for submitted non-cancelled invoices."""
 	if doctype not in _ALLOWED_INVOICE_DOCTYPES:
 		frappe.throw(f"Invalid doctype for outstanding total: {doctype}")
-	cache_key = f"stabler:dashboard:outstanding:{doctype}:{company}"
+	cache_key = f"stabler:dashboard:outstanding_ccy:{doctype}:{company}"
 	cached = frappe.cache().get_value(cache_key)
 	if cached is not None:
 		return cached
 	table = f"tab{doctype}"
 	rows = frappe.db.sql(
 		f"""
-		SELECT COALESCE(SUM(outstanding_amount), 0)
+		SELECT currency,
+		       COALESCE(SUM(outstanding_amount), 0) AS amount,
+		       COALESCE(SUM(outstanding_amount * conversion_rate), 0) AS base
 		FROM `{table}`
 		WHERE company = %(company)s
 		  AND docstatus = 1
 		  AND status NOT IN ('Cancelled', 'Closed')
+		GROUP BY currency
 		""",
 		{"company": company},
+		as_dict=True,
 	)
-	result = flt(rows[0][0]) if rows else 0.0
+	result = _by_currency(rows)
 	frappe.cache().set_value(cache_key, result, expires_in_sec=300)
 	return result
 
 
-def _revenue_between(company: str, start: date, end: date) -> float:
-	cache_key = f"stabler:dashboard:revenue:{company}:{start}:{end}"
+def _revenue_between_by_currency(company: str, start: date, end: date) -> list[dict]:
+	"""SI grand_total (document currency) per currency for the given date range."""
+	cache_key = f"stabler:dashboard:revenue_ccy:{company}:{start}:{end}"
 	cached = frappe.cache().get_value(cache_key)
 	if cached is not None:
 		return cached
 	rows = frappe.db.sql(
 		"""
-		SELECT COALESCE(SUM(base_grand_total), 0)
+		SELECT currency,
+		       COALESCE(SUM(grand_total), 0) AS amount,
+		       COALESCE(SUM(base_grand_total), 0) AS base
 		FROM `tabSales Invoice`
 		WHERE company = %(company)s
 		  AND docstatus = 1
 		  AND posting_date BETWEEN %(start)s AND %(end)s
+		GROUP BY currency
 		""",
 		{"company": company, "start": start, "end": end},
+		as_dict=True,
+	)
+	result = _by_currency(rows)
+	frappe.cache().set_value(cache_key, result, expires_in_sec=300)
+	return result
+
+
+def _revenue_dominant_between(company: str, currency: str, start: date, end: date) -> float:
+	"""SI grand_total for the dominant currency in the date range (used for trend computation)."""
+	cache_key = f"stabler:dashboard:revenue_dom:{company}:{currency}:{start}:{end}"
+	cached = frappe.cache().get_value(cache_key)
+	if cached is not None:
+		return cached
+	rows = frappe.db.sql(
+		"""
+		SELECT COALESCE(SUM(grand_total), 0)
+		FROM `tabSales Invoice`
+		WHERE company = %(company)s
+		  AND docstatus = 1
+		  AND currency = %(currency)s
+		  AND posting_date BETWEEN %(start)s AND %(end)s
+		""",
+		{"company": company, "currency": currency, "start": start, "end": end},
 	)
 	result = flt(rows[0][0]) if rows else 0.0
 	frappe.cache().set_value(cache_key, result, expires_in_sec=300)
@@ -147,19 +231,22 @@ def _revenue_between(company: str, start: date, end: date) -> float:
 
 @frappe.whitelist()
 def revenue_trend(company: str, months: int = 12):
-	"""Monthly revenue & expense series for the past `months` months (inclusive)."""
+	"""Monthly revenue & expense for the past `months` months in the dominant currency."""
 	company = _require_company(company)
+	if not _can_access_module(frappe.session.user, "dashboard"):
+		frappe.throw(_("Not permitted"), frappe.PermissionError)
 	months = max(1, min(36, int(months)))
 
+	dominant = _dominant_currency(company)
 	today = getdate()
 	start = _shift_month(_month_start(today), -(months - 1))
 	end = _last_day_of_month(today)
 
-	revenue_rows = _monthly_totals(
-		"Sales Invoice", "posting_date", "base_grand_total", company, start, end
+	revenue_rows = _monthly_totals_by_currency(
+		"Sales Invoice", "posting_date", "grand_total", company, start, end, dominant
 	)
-	expense_rows = _monthly_totals(
-		"Purchase Invoice", "posting_date", "base_grand_total", company, start, end
+	expense_rows = _monthly_totals_by_currency(
+		"Purchase Invoice", "posting_date", "grand_total", company, start, end, dominant
 	)
 
 	labels, revenue, expense = [], [], []
@@ -173,19 +260,26 @@ def revenue_trend(company: str, months: int = 12):
 		expense.append(flt(exp_map.get(key, 0.0), 2))
 		cursor = _shift_month(cursor, 1)
 
-	return {"months": labels, "revenue": revenue, "expense": expense}
+	return {"months": labels, "revenue": revenue, "expense": expense, "currency": dominant}
 
 
-def _monthly_totals(
-	doctype: str, date_field: str, amount_field: str, company: str, start: date, end: date
+def _monthly_totals_by_currency(
+	doctype: str,
+	date_field: str,
+	amount_field: str,
+	company: str,
+	start: date,
+	end: date,
+	currency: str,
 ):
+	"""Monthly document-currency totals filtered to a specific transaction currency."""
 	if doctype not in _ALLOWED_INVOICE_DOCTYPES:
 		frappe.throw(f"Invalid doctype for monthly totals: {doctype}")
 	if date_field not in _ALLOWED_DATE_FIELDS:
 		frappe.throw(f"Invalid date field: {date_field}")
 	if amount_field not in _ALLOWED_AMOUNT_FIELDS:
 		frappe.throw(f"Invalid amount field: {amount_field}")
-	cache_key = f"stabler:dashboard:monthly:{doctype}:{company}:{start}:{end}"
+	cache_key = f"stabler:dashboard:monthly_ccy:{doctype}:{company}:{currency}:{start}:{end}"
 	cached = frappe.cache().get_value(cache_key)
 	if cached is not None:
 		return cached
@@ -197,11 +291,12 @@ def _monthly_totals(
 		FROM `{table}`
 		WHERE company = %(company)s
 		  AND docstatus = 1
+		  AND currency = %(currency)s
 		  AND {date_field} BETWEEN %(start)s AND %(end)s
 		GROUP BY m
 		ORDER BY m
 		""",
-		{"company": company, "start": start, "end": end},
+		{"company": company, "currency": currency, "start": start, "end": end},
 		as_dict=True,
 	)
 	frappe.cache().set_value(cache_key, result, expires_in_sec=300)
@@ -216,6 +311,8 @@ def _monthly_totals(
 def recent_activity(company: str, limit: int = 10):
 	"""Latest submitted documents across SI, PI, Payment Entry, Journal Entry."""
 	company = _require_company(company)
+	if not _can_access_module(frappe.session.user, "dashboard"):
+		frappe.throw(_("Not permitted"), frappe.PermissionError)
 	limit = max(1, min(50, int(limit)))
 
 	base_currency = frappe.db.get_value("Company", company, "default_currency") or ""

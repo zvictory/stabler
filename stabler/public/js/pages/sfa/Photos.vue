@@ -1,10 +1,11 @@
 <script setup>
-import { onMounted, ref, watch } from "vue";
+import { computed, onMounted, ref, watch } from "vue";
 import { storeToRefs } from "pinia";
 import { useSession } from "../../stores/session.js";
 import { call } from "../../api/client.js";
 import { t } from "../../composables/i18n.js";
 import EmptyState from "../../components/EmptyState.vue";
+import Select from "../../components/Select.vue";
 
 const session = useSession();
 const { activeCompany } = storeToRefs(session);
@@ -36,6 +37,17 @@ function blankForm() {
 		notes: "",
 	};
 }
+
+const categoryOptions = computed(() => [
+	{ value: "Shelf", label: t("Shelf") },
+	{ value: "Storefront", label: t("Storefront") },
+	{ value: "Promo", label: t("Promo") },
+	{ value: "Other", label: t("Other") },
+]);
+const categoryFilterOptions = computed(() => [
+	{ value: "", label: t("All categories") },
+	...categoryOptions.value,
+]);
 
 const categoryLabel = (c) => {
 	if (c === "Shelf") return t("Shelf");
@@ -190,13 +202,12 @@ watch(category, load);
 		<div class="card-header d-flex flex-wrap gap-2 align-items-center">
 			<h3 class="card-title mb-0">{{ t("Photo Reports") }}</h3>
 			<div class="ms-auto d-flex gap-2 align-items-center">
-				<select v-model="category" class="form-select form-select-sm" :aria-label="t('Category')">
-					<option value="">{{ t("All categories") }}</option>
-					<option value="Shelf">{{ t("Shelf") }}</option>
-					<option value="Storefront">{{ t("Storefront") }}</option>
-					<option value="Promo">{{ t("Promo") }}</option>
-					<option value="Other">{{ t("Other") }}</option>
-				</select>
+				<Select
+					v-model="category"
+					:options="categoryFilterOptions"
+					size="sm"
+					:aria-label="t('Category')"
+				/>
 				<button type="button" class="btn btn-sm btn-success" @click="openCreate">
 					<i class="ti ti-plus me-1"></i>{{ t("New") }}
 				</button>
@@ -285,12 +296,7 @@ watch(category, load);
 							</div>
 							<div class="col-md-6">
 								<label class="form-label">{{ t("Category") }} <span class="text-danger">*</span></label>
-								<select v-model="form.category" class="form-select">
-									<option value="Shelf">{{ t("Shelf") }}</option>
-									<option value="Storefront">{{ t("Storefront") }}</option>
-									<option value="Promo">{{ t("Promo") }}</option>
-									<option value="Other">{{ t("Other") }}</option>
-								</select>
+								<Select v-model="form.category" :options="categoryOptions" />
 							</div>
 							<div class="col-md-6">
 								<label class="form-label">{{ t("Captured At") }}</label>

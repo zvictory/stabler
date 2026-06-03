@@ -1,15 +1,20 @@
 <script setup>
 import { computed, onMounted, ref, watch } from "vue";
 import { storeToRefs } from "pinia";
+import { useRoute } from "vue-router";
 import { useSession } from "../../stores/session.js";
 import { call } from "../../api/client.js";
 import { formatMoney } from "../../composables/money.js";
-import { formatDateTime } from "../../composables/date.js";
+import { formatDate, formatDateTime } from "../../composables/date.js";
+import { t } from "../../composables/i18n.js";
 import MoneyInput from "../../components/MoneyInput.vue";
 import DateInput from "../../components/DateInput.vue";
 import EmptyState from "../../components/EmptyState.vue";
+import Typeahead from "../../components/Typeahead.vue";
+import Select from "../../components/Select.vue";
 
 const session = useSession();
+const route = useRoute();
 const { activeCompany, user } = storeToRefs(session);
 
 const today = new Date().toISOString().slice(0, 10);
@@ -26,26 +31,25 @@ const detailOpen = ref(false);
 const detailLoading = ref(false);
 const detail = ref(null);
 
-const PARTY_TYPES = ["Customer", "Supplier", "Employee"];
-
 const createOpen = ref(false);
 const submitting = ref(false);
 const submitError = ref("");
-const accountsLoading = ref(false);
-const accountOptions = ref([]);
-const partyLoading = ref(false);
-const partyOptions = ref([]);
+
+const partyName = ref("");
+const partyAccount = ref("");
+const partyAccountCurrency = ref("");
+const partyDefaultsLoading = ref(false);
+const outstanding = ref([]);
+const bankAccounts = ref([]);
 
 function blankForm() {
 	return {
 		posting_date: today,
 		payment_type: "Receive",
-		party_type: "Customer",
 		party: "",
-		paid_from: "",
-		paid_to: "",
-		paid_amount: null,
-		received_amount: null,
+		bank_account: "",
+		amount: null,
+		bank_amount: null,
 		mode_of_payment: "",
 		reference_no: "",
 		reference_date: "",
@@ -60,8 +64,25 @@ const currency = computed(
 		"USD"
 );
 
-// Currency for allocated-against rows: invoice amounts are stored in the
-// party-side account currency (paid_to for Receive, paid_from for Pay).
+const partyType = computed(() => (form.value.payment_type === "Pay" ? "Supplier" : "Customer"));
+
+const paymentTypeOptions = computed(() => [
+	{ value: "Receive", label: t("Receive") },
+	{ value: "Pay", label: t("Pay") },
+]);
+
+const bankCurrency = computed(() => {
+	const acct = bankAccounts.value.find((a) => a.name === form.value.bank_account);
+	return acct?.account_currency || "";
+});
+
+const showBankAmount = computed(
+	() =>
+		bankCurrency.value &&
+		partyAccountCurrency.value &&
+		bankCurrency.value !== partyAccountCurrency.value
+);
+
 const refCurrency = computed(() => {
 	const d = detail.value;
 	if (!d) return currency.value;
@@ -70,9 +91,9 @@ const refCurrency = computed(() => {
 });
 
 const statusBadge = (d) => {
-	if (d === 0) return { cls: "bg-yellow-lt", label: "Draft" };
-	if (d === 1) return { cls: "bg-green-lt", label: "Submitted" };
-	if (d === 2) return { cls: "bg-red-lt", label: "Cancelled" };
+	if (d === 0) return { cls: "bg-yellow-lt", label: t("Draft") };
+	if (d === 1) return { cls: "bg-green-lt", label: t("Submitted") };
+	if (d === 2) return { cls: "bg-red-lt", label: t("Cancelled") };
 	return { cls: "bg-secondary-lt", label: String(d) };
 };
 
@@ -94,7 +115,7 @@ async function load() {
 			limit: limit.value,
 		});
 	} catch (err) {
-		error.value = err?.message || "Failed to load payment entries.";
+		error.value = err?.message || t("Failed to load payment entries.");
 	} finally {
 		loading.value = false;
 	}
@@ -107,7 +128,7 @@ async function openDetail(name) {
 	try {
 		detail.value = await call("stabler.api.money.payment_entry_detail", { name });
 	} catch (err) {
-		detail.value = { error: err?.message || "Failed to load." };
+		detail.value = { error: err?.message || t("Failed to load.") };
 	} finally {
 		detailLoading.value = false;
 	}
@@ -118,65 +139,88 @@ function closeDetail() {
 	detail.value = null;
 }
 
-async function loadAccountOptions() {
-	if (!activeCompany.value) return;
-	if (accountOptions.value.length) return;
-	accountsLoading.value = true;
-	try {
-		const tree = await call("stabler.api.money.chart_of_accounts", {
+function searchParty(q) {
+	if (partyType.value === "Customer") {
+		return call("stabler.api.sales.list_customers", {
 			company: activeCompany.value,
+			search: q,
+			limit: 10,
 		});
-		const flat = [];
-		const walk = (nodes) => {
-			for (const n of nodes || []) {
-				if (!n.is_group) flat.push(n);
-				if (n.children?.length) walk(n.children);
-			}
-		};
-		walk(tree || []);
-		accountOptions.value = flat;
-	} catch (err) {
-		submitError.value = err?.message || "Failed to load accounts.";
-	} finally {
-		accountsLoading.value = false;
 	}
+	return call("stabler.api.purchasing.list_suppliers", {
+		company: activeCompany.value,
+		search: q,
+		limit: 10,
+	});
 }
 
-async function loadPartyOptions() {
-	if (!activeCompany.value || !form.value.party_type) {
-		partyOptions.value = [];
-		return;
-	}
-	partyLoading.value = true;
+async function pickParty(p) {
+	form.value.party = p.name;
+	partyName.value =
+		partyType.value === "Customer" ? p.customer_name || p.name : p.supplier_name || p.name;
+	partyDefaultsLoading.value = true;
+	outstanding.value = [];
+	partyAccount.value = "";
+	partyAccountCurrency.value = "";
+	submitError.value = "";
 	try {
-		if (form.value.party_type === "Customer") {
-			const list = await call("stabler.api.sales.list_customers", {
-				company: activeCompany.value,
-				limit: 200,
-			});
-			partyOptions.value = (list || []).map((c) => ({ name: c.name, label: c.customer_name || c.name }));
-		} else if (form.value.party_type === "Supplier") {
-			const list = await call("stabler.api.purchasing.list_suppliers", {
-				company: activeCompany.value,
-				limit: 200,
-			});
-			partyOptions.value = (list || []).map((s) => ({ name: s.name, label: s.supplier_name || s.name }));
-		} else {
-			partyOptions.value = [];
+		const d = await call("stabler.api.money.party_payment_defaults", {
+			company: activeCompany.value,
+			party_type: partyType.value,
+			party: p.name,
+		});
+		partyAccount.value = d.party_account || "";
+		partyAccountCurrency.value = d.party_account_currency || "";
+		bankAccounts.value = d.cash_bank_accounts || [];
+		if (!form.value.bank_account && d.suggested_cash_bank_account) {
+			form.value.bank_account = d.suggested_cash_bank_account;
 		}
+		outstanding.value = (d.outstanding_invoices || []).map((r) => ({ ...r, allocated: 0 }));
+		distributeAmount();
 	} catch (err) {
-		submitError.value = err?.message || "Failed to load parties.";
+		submitError.value = err?.message || t("Failed to load party defaults.");
 	} finally {
-		partyLoading.value = false;
+		partyDefaultsLoading.value = false;
 	}
 }
 
-function openCreate() {
+function clearParty() {
+	form.value.party = "";
+	partyName.value = "";
+	partyAccount.value = "";
+	partyAccountCurrency.value = "";
+	outstanding.value = [];
+}
+
+function distributeAmount() {
+	let remaining = Number(form.value.amount) || 0;
+	for (const row of outstanding.value) {
+		if (remaining <= 0) {
+			row.allocated = 0;
+		} else {
+			const alloc = Math.min(remaining, row.outstanding_amount);
+			row.allocated = Math.round(alloc * 100) / 100;
+			remaining = Math.round((remaining - alloc) * 100) / 100;
+		}
+	}
+}
+
+async function openCreate() {
 	form.value = blankForm();
+	partyName.value = "";
+	partyAccount.value = "";
+	partyAccountCurrency.value = "";
+	outstanding.value = [];
 	submitError.value = "";
 	createOpen.value = true;
-	loadAccountOptions();
-	loadPartyOptions();
+	try {
+		bankAccounts.value = await call("stabler.api.money.list_cash_bank_accounts", {
+			company: activeCompany.value,
+		});
+		if (bankAccounts.value.length && !form.value.bank_account) {
+			form.value.bank_account = bankAccounts.value[0].name;
+		}
+	} catch {}
 }
 
 function closeCreate() {
@@ -186,41 +230,45 @@ function closeCreate() {
 
 watch(
 	() => form.value.payment_type,
-	(t) => {
-		form.value.party_type = t === "Pay" ? "Supplier" : "Customer";
-		form.value.party = "";
-		loadPartyOptions();
-	},
-);
-
-watch(
-	() => form.value.party_type,
 	() => {
-		form.value.party = "";
-		loadPartyOptions();
+		clearParty();
+		form.value.amount = null;
+		form.value.bank_amount = null;
 	},
 );
 
-watch(
-	() => form.value.paid_amount,
-	(v) => {
-		if (form.value.received_amount == null || form.value.received_amount === "") {
-			form.value.received_amount = v;
-		}
-	},
-);
+watch(() => form.value.amount, distributeAmount);
 
 async function submitCreate() {
 	submitError.value = "";
 	const f = form.value;
-	if (!f.posting_date) return (submitError.value = "Posting date is required.");
-	if (!f.payment_type) return (submitError.value = "Payment type is required.");
-	if (!f.party_type || !f.party) return (submitError.value = "Party is required.");
-	if (!f.paid_from) return (submitError.value = "Paid from account is required.");
-	if (!f.paid_to) return (submitError.value = "Paid to account is required.");
-	const amt = Number(f.paid_amount);
-	if (!Number.isFinite(amt) || amt <= 0) return (submitError.value = "Paid amount must be greater than zero.");
-	const recv = f.received_amount == null || f.received_amount === "" ? amt : Number(f.received_amount);
+	if (!f.posting_date) return (submitError.value = t("Posting date is required."));
+	if (!f.party) return (submitError.value = t("Party is required."));
+	if (!f.bank_account) return (submitError.value = t("Bank/cash account is required."));
+	if (!partyAccount.value)
+		return (submitError.value = t("Party account not resolved — re-select the party."));
+
+	const amt = Number(f.amount);
+	if (!Number.isFinite(amt) || amt <= 0)
+		return (submitError.value = t("Amount must be greater than zero."));
+
+	const bankAmt = showBankAmount.value ? Number(f.bank_amount) || amt : amt;
+	const isReceive = f.payment_type === "Receive";
+
+	const refs = outstanding.value
+		.filter((r) => r.allocated > 0)
+		.map((r) => ({
+			reference_doctype: r.voucher_type,
+			reference_name: r.voucher_no,
+			total_amount: r.invoice_amount,
+			outstanding_amount: r.outstanding_amount,
+			allocated_amount: r.allocated,
+		}));
+
+	const totalAllocated = refs.reduce((s, r) => s + r.allocated_amount, 0);
+	if (totalAllocated > amt + 0.005) {
+		return (submitError.value = t("Total allocated cannot exceed the payment amount."));
+	}
 
 	submitting.value = true;
 	try {
@@ -228,29 +276,33 @@ async function submitCreate() {
 			company: activeCompany.value,
 			posting_date: f.posting_date,
 			payment_type: f.payment_type,
-			party_type: f.party_type,
+			party_type: partyType.value,
 			party: f.party,
-			paid_from: f.paid_from,
-			paid_to: f.paid_to,
-			paid_amount: amt,
-			received_amount: recv,
+			paid_from: isReceive ? partyAccount.value : f.bank_account,
+			paid_to: isReceive ? f.bank_account : partyAccount.value,
+			paid_amount: isReceive ? amt : bankAmt,
+			received_amount: isReceive ? bankAmt : amt,
 			mode_of_payment: f.mode_of_payment || null,
 			reference_no: f.reference_no || null,
 			reference_date: f.reference_date || null,
+			references: refs.length ? refs : null,
 		});
 		createOpen.value = false;
 		await load();
 	} catch (err) {
-		submitError.value = err?.message || "Failed to create payment.";
+		submitError.value = err?.message || t("Failed to create payment.");
 	} finally {
 		submitting.value = false;
 	}
 }
 
-onMounted(load);
+onMounted(async () => {
+	await load();
+	const openName = route.query?.open;
+	if (openName) openDetail(String(openName));
+});
 watch(activeCompany, () => {
-	accountOptions.value = [];
-	partyOptions.value = [];
+	bankAccounts.value = [];
 	load();
 });
 </script>
@@ -258,21 +310,21 @@ watch(activeCompany, () => {
 <template>
 	<div class="card">
 		<div class="card-header">
-			<div class="card-title">Payments</div>
+			<div class="card-title">{{ t("Payments") }}</div>
 			<div class="ms-auto d-flex gap-2 align-items-end">
 				<div>
-					<label class="form-label small mb-1">From</label>
+					<label class="form-label small mb-1">{{ t("From") }}</label>
 					<DateInput v-model="fromDate" size="sm" />
 				</div>
 				<div>
-					<label class="form-label small mb-1">To</label>
+					<label class="form-label small mb-1">{{ t("To") }}</label>
 					<DateInput v-model="toDate" size="sm" />
 				</div>
 				<button type="button" class="btn btn-sm btn-primary" @click="load">
-					<i class="ti ti-refresh me-1"></i>Apply
+					<i class="ti ti-refresh me-1"></i>{{ t("Apply") }}
 				</button>
 				<button type="button" class="btn btn-sm btn-success" @click="openCreate">
-					<i class="ti ti-plus me-1"></i>New payment
+					<i class="ti ti-plus me-1"></i>{{ t("New payment") }}
 				</button>
 			</div>
 		</div>
@@ -288,12 +340,12 @@ watch(activeCompany, () => {
 			icon="ti-cash"
 			accentIcon="ti-plus"
 			tone="success"
-			title="No payments in this range"
-			subtitle="Widen the date range or record a payment receipt or disbursement."
+			:title='t("No payments in this range")'
+			:subtitle='t("Widen the date range or record a payment receipt or disbursement.")'
 		>
 			<template #actions>
 				<button type="button" class="btn btn-primary" @click="openCreate">
-					<i class="ti ti-plus me-1"></i>New payment
+					<i class="ti ti-plus me-1"></i>{{ t("New payment") }}
 				</button>
 			</template>
 		</EmptyState>
@@ -302,13 +354,13 @@ watch(activeCompany, () => {
 				<thead>
 					<tr>
 						<th>#</th>
-						<th>Date</th>
-						<th class="w-1">Type</th>
-						<th>Party</th>
-						<th>Mode</th>
-						<th>Reference</th>
-						<th class="text-end">Amount</th>
-						<th class="w-1">Status</th>
+						<th>{{ t("Date") }}</th>
+						<th class="w-1">{{ t("Type") }}</th>
+						<th>{{ t("Party") }}</th>
+						<th>{{ t("Mode") }}</th>
+						<th>{{ t("Reference") }}</th>
+						<th class="text-end">{{ t("Amount") }}</th>
+						<th class="w-1">{{ t("Status") }}</th>
 					</tr>
 				</thead>
 				<tbody>
@@ -356,8 +408,8 @@ watch(activeCompany, () => {
 		:style="{ transform: detailOpen ? 'translateX(0)' : 'translateX(100%)' }"
 	>
 		<div class="offcanvas-header">
-			<h5 class="offcanvas-title">Payment Entry</h5>
-			<button type="button" class="btn-close" @click="closeDetail" aria-label="Close"></button>
+			<h5 class="offcanvas-title">{{ t("Payment Entry") }}</h5>
+			<button type="button" class="btn-close" @click="closeDetail" :aria-label='t("Close")'></button>
 		</div>
 		<div class="offcanvas-body">
 			<div v-if="detailLoading" class="text-center py-5">
@@ -367,15 +419,15 @@ watch(activeCompany, () => {
 			<div v-else-if="detail">
 				<div class="datagrid mb-3">
 					<div class="datagrid-item">
-						<div class="datagrid-title">Name</div>
+						<div class="datagrid-title">{{ t("Name") }}</div>
 						<div class="datagrid-content font-monospace">{{ detail.name }}</div>
 					</div>
 					<div class="datagrid-item">
-						<div class="datagrid-title">Posting date</div>
+						<div class="datagrid-title">{{ t("Posting date") }}</div>
 						<div class="datagrid-content">{{ formatDateTime(detail.posting_date) }}</div>
 					</div>
 					<div class="datagrid-item">
-						<div class="datagrid-title">Type</div>
+						<div class="datagrid-title">{{ t("Type") }}</div>
 						<div class="datagrid-content">
 							<span class="badge" :class="typeBadge(detail.payment_type).cls">
 								<i class="ti me-1" :class="typeBadge(detail.payment_type).icon"></i>{{ detail.payment_type }}
@@ -383,54 +435,54 @@ watch(activeCompany, () => {
 						</div>
 					</div>
 					<div class="datagrid-item">
-						<div class="datagrid-title">Status</div>
+						<div class="datagrid-title">{{ t("Status") }}</div>
 						<div class="datagrid-content">
 							<span class="badge" :class="statusBadge(detail.docstatus).cls">{{ statusBadge(detail.docstatus).label }}</span>
 						</div>
 					</div>
 					<div class="datagrid-item">
-						<div class="datagrid-title">Party</div>
+						<div class="datagrid-title">{{ t("Party") }}</div>
 						<div class="datagrid-content">
 							{{ detail.party_name || detail.party || "—" }}
 							<div class="small text-secondary">{{ detail.party_type }}</div>
 						</div>
 					</div>
 					<div class="datagrid-item">
-						<div class="datagrid-title">Mode</div>
+						<div class="datagrid-title">{{ t("Mode") }}</div>
 						<div class="datagrid-content">{{ detail.mode_of_payment || "—" }}</div>
 					</div>
 					<div class="datagrid-item">
-						<div class="datagrid-title">Paid from</div>
+						<div class="datagrid-title">{{ t("Paid from") }}</div>
 						<div class="datagrid-content">{{ detail.paid_from || "—" }}</div>
 					</div>
 					<div class="datagrid-item">
-						<div class="datagrid-title">Paid to</div>
+						<div class="datagrid-title">{{ t("Paid to") }}</div>
 						<div class="datagrid-content">{{ detail.paid_to || "—" }}</div>
 					</div>
 					<div class="datagrid-item">
-						<div class="datagrid-title">Paid amount</div>
+						<div class="datagrid-title">{{ t("Paid amount") }}</div>
 						<div class="datagrid-content font-monospace">{{ formatMoney(detail.paid_amount, detail.paid_from_account_currency || currency, user.language) }}</div>
 					</div>
 					<div class="datagrid-item">
-						<div class="datagrid-title">Received amount</div>
+						<div class="datagrid-title">{{ t("Received amount") }}</div>
 						<div class="datagrid-content font-monospace">{{ formatMoney(detail.received_amount, detail.paid_to_account_currency || currency, user.language) }}</div>
 					</div>
 					<div v-if="detail.reference_no" class="datagrid-item">
-						<div class="datagrid-title">Reference</div>
+						<div class="datagrid-title">{{ t("Reference") }}</div>
 						<div class="datagrid-content">{{ detail.reference_no }} · {{ formatDateTime(detail.reference_date) }}</div>
 					</div>
 				</div>
 
 				<div v-if="detail.references?.length">
-					<h6 class="text-uppercase text-secondary small mb-2">Allocated against</h6>
+					<h6 class="text-uppercase text-secondary small mb-2">{{ t("Allocated against") }}</h6>
 					<div class="table-responsive">
 						<table class="table table-sm table-vcenter">
 							<thead>
 								<tr>
-									<th>Document</th>
-									<th class="text-end">Total</th>
-									<th class="text-end">Outstanding</th>
-									<th class="text-end">Allocated</th>
+									<th>{{ t("Document") }}</th>
+									<th class="text-end">{{ t("Total") }}</th>
+									<th class="text-end">{{ t("Outstanding") }}</th>
+									<th class="text-end">{{ t("Allocated") }}</th>
 								</tr>
 							</thead>
 							<tbody>
@@ -457,112 +509,226 @@ watch(activeCompany, () => {
 			<div class="modal-dialog modal-lg modal-dialog-centered modal-dialog-scrollable" role="document">
 				<div class="modal-content">
 					<div class="modal-header">
-						<h5 class="modal-title">New payment</h5>
-						<button type="button" class="btn-close" aria-label="Close" @click="closeCreate"></button>
+						<h5 class="modal-title">{{ t("New payment") }}</h5>
+						<button type="button" class="btn-close" :aria-label='t("Close")' @click="closeCreate"></button>
 					</div>
 					<div class="modal-body">
 						<div v-if="submitError" class="alert alert-danger">{{ submitError }}</div>
 
 						<div class="row g-3">
 							<div class="col-md-4">
-								<label class="form-label">Posting date</label>
+								<label class="form-label">{{ t("Posting date") }}</label>
 								<DateInput v-model="form.posting_date" />
 							</div>
 							<div class="col-md-4">
-								<label class="form-label">Payment type</label>
-								<select v-model="form.payment_type" class="form-select">
-									<option value="Receive">Receive</option>
-									<option value="Pay">Pay</option>
-								</select>
+								<label class="form-label">{{ t("Payment type") }}</label>
+								<Select v-model="form.payment_type" :options="paymentTypeOptions" />
 							</div>
 							<div class="col-md-4">
-								<label class="form-label">Mode of payment</label>
-								<input v-model="form.mode_of_payment" type="text" class="form-control" placeholder="Cash, Bank, …" />
-							</div>
-
-							<div class="col-md-4">
-								<label class="form-label">Party type</label>
-								<select v-model="form.party_type" class="form-select">
-									<option v-for="t in PARTY_TYPES" :key="t" :value="t">{{ t }}</option>
-								</select>
-							</div>
-							<div class="col-md-8">
-								<label class="form-label">
-									Party
-									<span v-if="partyLoading" class="spinner-border spinner-border-sm ms-2"></span>
-								</label>
-								<select v-model="form.party" class="form-select" :disabled="partyLoading || !partyOptions.length">
-									<option value="">— select —</option>
-									<option v-for="p in partyOptions" :key="p.name" :value="p.name">{{ p.label }}</option>
-								</select>
-								<div v-if="!partyLoading && !partyOptions.length && form.party_type !== 'Employee'" class="form-hint text-warning">
-									No {{ form.party_type.toLowerCase() }}s found for this company.
-								</div>
-								<div v-if="form.party_type === 'Employee'" class="form-hint text-secondary">
-									Type the employee ID directly:
-									<input v-model="form.party" type="text" class="form-control form-control-sm mt-1" placeholder="HR-EMP-…" />
-								</div>
-							</div>
-
-							<div class="col-md-6">
-								<label class="form-label">
-									Paid from
-									<span v-if="accountsLoading" class="spinner-border spinner-border-sm ms-2"></span>
-								</label>
-								<select v-model="form.paid_from" class="form-select" :disabled="accountsLoading">
-									<option value="">— select —</option>
-									<option v-for="a in accountOptions" :key="a.name" :value="a.name">
-										{{ a.account_number ? a.account_number + " · " : "" }}{{ a.account_name }}
-									</option>
-								</select>
-							</div>
-							<div class="col-md-6">
-								<label class="form-label">Paid to</label>
-								<select v-model="form.paid_to" class="form-select" :disabled="accountsLoading">
-									<option value="">— select —</option>
-									<option v-for="a in accountOptions" :key="a.name" :value="a.name">
-										{{ a.account_number ? a.account_number + " · " : "" }}{{ a.account_name }}
-									</option>
-								</select>
-							</div>
-
-							<div class="col-md-6">
-								<label class="form-label">Paid amount</label>
-								<MoneyInput
-									v-model="form.paid_amount"
-									:currency="currency"
-									:language="user.language"
-									placeholder="0.00"
-								/>
-							</div>
-							<div class="col-md-6">
-								<label class="form-label">Received amount</label>
-								<MoneyInput
-									v-model="form.received_amount"
-									:currency="currency"
-									:language="user.language"
-									placeholder="defaults to paid"
+								<label class="form-label">{{ t("Mode of payment") }}</label>
+								<input
+									v-model="form.mode_of_payment"
+									type="text"
+									class="form-control"
+									:placeholder='t("Cash, Bank, …")'
 								/>
 							</div>
 
+							<div class="col-12">
+								<label class="form-label">
+									{{ partyType }}
+									<span
+										v-if="partyDefaultsLoading"
+										class="spinner-border spinner-border-sm ms-2"
+									></span>
+								</label>
+								<Typeahead
+									v-model="form.party"
+									:search="searchParty"
+									:display="partyName"
+									:placeholder='t("Search {type} name…", { type: partyType.toLowerCase() })'
+									open-on-focus
+									:disabled="submitting"
+									@pick="pickParty"
+									@clear="clearParty"
+								>
+									<template #option="{ item }">
+										<div class="fw-semibold">
+											{{
+												partyType === "Customer"
+													? item.customer_name || item.name
+													: item.supplier_name || item.name
+											}}
+										</div>
+										<div class="small text-secondary">{{ item.name }}</div>
+									</template>
+								</Typeahead>
+							</div>
+
+							<div class="col-12">
+								<label class="form-label">
+									{{ form.payment_type === "Receive" ? t("Deposit to") : t("Pay from") }}
+								</label>
+								<Select
+									v-model="form.bank_account"
+									:disabled="submitting"
+									:options="bankAccounts"
+									value-key="name"
+									:placeholder="t('— select account —')"
+								>
+									<template #option="{ option }">
+										{{ option.account_name
+										}}<template v-if="option.account_currency">
+											({{ option.account_currency }})</template
+										>
+									</template>
+									<template #selected="{ option }">
+										{{ option.account_name
+										}}<template v-if="option.account_currency">
+											({{ option.account_currency }})</template
+										>
+									</template>
+								</Select>
+							</div>
+
 							<div class="col-md-6">
-								<label class="form-label">Reference no.</label>
-								<input v-model="form.reference_no" type="text" class="form-control" placeholder="Cheque / transfer ref" />
+								<label class="form-label">
+									{{ form.payment_type === "Receive" ? t("Received amount") : t("Paid amount") }}
+									<span v-if="partyAccountCurrency" class="text-secondary ms-1 small">{{
+										partyAccountCurrency
+									}}</span>
+								</label>
+								<MoneyInput
+									v-model="form.amount"
+									:currency="partyAccountCurrency || currency"
+									:language="user.language"
+									:placeholder='t("0.00")'
+									:disabled="submitting"
+								/>
+							</div>
+
+							<template v-if="showBankAmount">
+								<div class="col-md-6">
+									<label class="form-label">
+										{{ t("Bank amount") }}
+										<span class="text-secondary ms-1 small">{{ bankCurrency }}</span>
+									</label>
+									<MoneyInput
+										v-model="form.bank_amount"
+										:currency="bankCurrency"
+										:language="user.language"
+										:placeholder='t("0.00")'
+										:disabled="submitting"
+									/>
+									<div
+										v-if="form.amount && form.bank_amount"
+										class="form-hint text-secondary"
+									>
+										{{ t("Rate:") }}
+										{{ (Number(form.bank_amount) / Number(form.amount)).toFixed(4) }}
+										{{ bankCurrency }}/{{ partyAccountCurrency }}
+									</div>
+								</div>
+							</template>
+
+							<div class="col-md-6">
+								<label class="form-label">{{ t("Reference no.") }}</label>
+								<input
+									v-model="form.reference_no"
+									type="text"
+									class="form-control"
+									:placeholder='t("Cheque / transfer ref")'
+								/>
 							</div>
 							<div class="col-md-6">
-								<label class="form-label">Reference date</label>
+								<label class="form-label">{{ t("Reference date") }}</label>
 								<DateInput v-model="form.reference_date" />
 							</div>
 						</div>
+
+						<template v-if="outstanding.length">
+							<hr class="my-3" />
+							<h6 class="text-uppercase text-secondary small mb-2">{{ t("Allocate against") }}</h6>
+							<div class="table-responsive">
+								<table class="table table-sm table-vcenter">
+									<thead>
+										<tr>
+											<th>{{ t("Document") }}</th>
+											<th>{{ t("Date") }}</th>
+											<th class="text-end">{{ t("Outstanding") }}</th>
+											<th class="text-end" style="width: 160px">{{ t("Allocated") }}</th>
+										</tr>
+									</thead>
+									<tbody>
+										<tr v-for="(row, i) in outstanding" :key="i">
+											<td>
+												<div class="fw-semibold">{{ row.voucher_no }}</div>
+												<div class="small text-secondary">{{ row.voucher_type }}</div>
+											</td>
+											<td class="text-secondary small">
+												{{ formatDate(row.posting_date) }}
+											</td>
+											<td class="text-end font-monospace">
+												{{
+													formatMoney(
+														row.outstanding_amount,
+														partyAccountCurrency || currency,
+														user.language
+													)
+												}}
+											</td>
+											<td class="text-end">
+												<MoneyInput
+													v-model="row.allocated"
+													:currency="partyAccountCurrency || currency"
+													:language="user.language"
+													size="sm"
+													:placeholder='t("0.00")'
+													:disabled="submitting"
+												/>
+											</td>
+										</tr>
+									</tbody>
+									<tfoot>
+										<tr>
+											<td colspan="2" class="text-secondary small">{{ t("Total allocated") }}</td>
+											<td></td>
+											<td class="text-end font-monospace fw-semibold">
+												{{
+													formatMoney(
+														outstanding.reduce(
+															(s, r) => s + (Number(r.allocated) || 0),
+															0
+														),
+														partyAccountCurrency || currency,
+														user.language
+													)
+												}}
+											</td>
+										</tr>
+									</tfoot>
+								</table>
+							</div>
+						</template>
 					</div>
 					<div class="modal-footer">
-						<button type="button" class="btn btn-link link-secondary" @click="closeCreate" :disabled="submitting">
-							Cancel
+						<button
+							type="button"
+							class="btn btn-link link-secondary"
+							@click="closeCreate"
+							:disabled="submitting"
+						>
+							{{ t("Cancel") }}
 						</button>
-						<button type="button" class="btn btn-primary ms-auto" @click="submitCreate" :disabled="submitting">
+						<button
+							type="button"
+							class="btn btn-primary ms-auto"
+							@click="submitCreate"
+							:disabled="submitting"
+						>
 							<span v-if="submitting" class="spinner-border spinner-border-sm me-2"></span>
 							<i v-else class="ti ti-device-floppy me-1"></i>
-							Save as draft
+							{{ t("Save as draft") }}
 						</button>
 					</div>
 				</div>

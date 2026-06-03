@@ -1,11 +1,12 @@
 <script setup>
-import { nextTick, onMounted, onBeforeUnmount, ref, watch } from "vue";
+import { computed, nextTick, onMounted, onBeforeUnmount, ref, watch } from "vue";
 import { storeToRefs } from "pinia";
 import { ApexTree } from "apextree";
 import { useSession } from "../../stores/session.js";
 import { call } from "../../api/client.js";
 import { t } from "../../composables/i18n.js";
 import EmptyState from "../../components/EmptyState.vue";
+import Select from "../../components/Select.vue";
 
 const session = useSession();
 const { activeCompany } = storeToRefs(session);
@@ -19,6 +20,7 @@ const chartHost = ref(null);
 let tree = null;
 
 const STATUSES = ["Active", "Left", "Suspended", "Inactive"];
+const statusOptions = computed(() => STATUSES.map((s) => ({ value: s, label: t(s) })));
 const DIRECTIONS = [
 	{ value: "top", label: "Top → Bottom", icon: "ti-arrow-down" },
 	{ value: "left", label: "Left → Right", icon: "ti-arrow-right" },
@@ -180,9 +182,7 @@ onBeforeUnmount(destroyTree);
 						<i class="ti" :class="d.icon"></i>
 					</button>
 				</div>
-				<select v-model="statusFilter" class="form-select form-select-sm" style="width: auto">
-					<option v-for="s in STATUSES" :key="s" :value="s">{{ t(s) }}</option>
-				</select>
+				<Select v-model="statusFilter" :options="statusOptions" size="sm" style="width: auto" />
 				<button
 					type="button"
 					class="btn btn-sm btn-outline-secondary"

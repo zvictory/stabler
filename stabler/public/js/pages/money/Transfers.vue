@@ -9,6 +9,7 @@ import { t } from "../../composables/i18n.js";
 import MoneyInput from "../../components/MoneyInput.vue";
 import DateInput from "../../components/DateInput.vue";
 import EmptyState from "../../components/EmptyState.vue";
+import Select from "../../components/Select.vue";
 
 const session = useSession();
 const { activeCompany, user } = storeToRefs(session);
@@ -59,6 +60,15 @@ function blankForm() {
 const fromAcc = computed(() => accounts.value.find((a) => a.name === form.value.from_account) || null);
 const toAcc = computed(() => accounts.value.find((a) => a.name === form.value.to_account) || null);
 
+// Disable the account already chosen on the opposite leg (same rule the native
+// per-<option> :disabled enforced) — Select reads `disabled` off each option.
+const fromAccountOptions = computed(() =>
+	accounts.value.map((a) => ({ ...a, disabled: a.name === form.value.to_account })),
+);
+const toAccountOptions = computed(() =>
+	accounts.value.map((a) => ({ ...a, disabled: a.name === form.value.from_account })),
+);
+
 const fromCurrency = computed(() => fromAcc.value?.account_currency || baseCurrency.value);
 const toCurrency = computed(() => toAcc.value?.account_currency || baseCurrency.value);
 
@@ -66,9 +76,18 @@ const isCrossCurrency = computed(
 	() => fromAcc.value && toAcc.value && fromCurrency.value !== toCurrency.value,
 );
 
+const rateFromCurrency = computed(() => {
+	if (fromCurrency.value === "UZS" && toCurrency.value === "USD") return "USD";
+	return fromCurrency.value;
+});
+const rateToCurrency = computed(() => {
+	if (fromCurrency.value === "UZS" && toCurrency.value === "USD") return "UZS";
+	return toCurrency.value;
+});
+
 // Auto-derive to_amount when cross-currency and the user has typed a rate.
 watch(
-	() => [form.value.from_amount, form.value.exchange_rate, isCrossCurrency.value],
+	() => [form.value.from_amount, form.value.exchange_rate, isCrossCurrency.value, fromCurrency.value, toCurrency.value],
 	() => {
 		if (!isCrossCurrency.value) {
 			form.value.to_amount = form.value.from_amount;
@@ -77,7 +96,11 @@ watch(
 		const amt = Number(form.value.from_amount) || 0;
 		const rate = Number(form.value.exchange_rate) || 0;
 		if (amt > 0 && rate > 0) {
-			form.value.to_amount = Number((amt * rate).toFixed(2));
+			if (fromCurrency.value === "UZS" && toCurrency.value === "USD") {
+				form.value.to_amount = Number((amt / rate).toFixed(2));
+			} else {
+				form.value.to_amount = Number((amt * rate).toFixed(2));
+			}
 		}
 	},
 );
@@ -92,6 +115,48 @@ const canSubmit = computed(() => {
 	}
 	return true;
 });
+
+async function fetchExchangeRate() {
+	if (!isCrossCurrency.value) {
+		form.value.exchange_rate = null;
+		return;
+	}
+	try {
+		let fromCur = fromCurrency.value;
+		let toCur = toCurrency.value;
+		let fromApi = "USD";
+		let toApi = "UZS";
+		if (fromCur === "USD" && toCur === "UZS") {
+			fromApi = "USD";
+			toApi = "UZS";
+		} else if (fromCur === "UZS" && toCur === "USD") {
+			fromApi = "USD";
+			toApi = "UZS";
+		} else {
+			fromApi = fromCur;
+			toApi = toCur;
+		}
+		const rate = await call("stabler.api.money.get_exchange_rate_for_currencies", {
+			from_currency: fromApi,
+			to_currency: toApi,
+			posting_date: form.value.posting_date,
+		});
+		if (rate > 0) {
+			form.value.exchange_rate = rate;
+		} else {
+			form.value.exchange_rate = null;
+		}
+	} catch (err) {
+		console.error("Failed to load exchange rate", err);
+	}
+}
+
+watch(
+	() => [form.value.from_account, form.value.to_account, form.value.posting_date],
+	async () => {
+		await fetchExchangeRate();
+	}
+);
 
 async function loadOptions() {
 	if (!activeCompany.value) return;
@@ -113,6 +178,7 @@ async function openCreate() {
 	submitError.value = "";
 	createOpen.value = true;
 	if (!accounts.value.length) await loadOptions();
+	await fetchExchangeRate();
 }
 
 function closeCreate() {
@@ -148,7 +214,15 @@ async function submitCreate() {
 	if (form.value.memo?.trim()) payload.memo = form.value.memo.trim();
 	if (isCrossCurrency.value) {
 		if (Number(form.value.to_amount) > 0) payload.to_amount = Number(form.value.to_amount);
-		else payload.exchange_rate = Number(form.value.exchange_rate);
+		
+		const rate = Number(form.value.exchange_rate);
+		if (rate > 0) {
+			if (fromCurrency.value === "UZS" && toCurrency.value === "USD") {
+				payload.exchange_rate = 1 / rate;
+			} else {
+				payload.exchange_rate = rate;
+			}
+		}
 	}
 
 	submitting.value = true;
@@ -183,6 +257,7 @@ async function load() {
 			to_date: toDate.value,
 			limit: limit.value,
 			voucher_type: "Bank Entry",
+			entry_type: "Transfer",
 		});
 	} catch (err) {
 		error.value = err?.message || "Failed to load transfers.";
@@ -289,7 +364,7 @@ watch(activeCompany, () => {
 						<td>{{ formatDateTime(r.posting_date) }}</td>
 						<td class="text-truncate" style="max-width: 380px">{{ r.user_remark || "—" }}</td>
 						<td class="text-end font-monospace">
-							{{ formatMoney(r.total_debit_base, r.base_currency || baseCurrency, user.language) }}
+							{{ formatMoney(r.total_amount ?? r.total_debit_base, r.currency || r.base_currency || baseCurrency, user.language) }}
 						</td>
 						<td>
 							<span class="badge" :class="statusBadge(r.docstatus).cls">
@@ -405,17 +480,20 @@ watch(activeCompany, () => {
 					<div class="row g-2 align-items-end">
 						<div class="col-md-5">
 							<label class="form-label small">{{ t("From account") }}</label>
-							<select v-model="form.from_account" class="form-select" :disabled="optionsLoading">
-								<option value="" disabled>{{ t("Select…") }}</option>
-								<option
-									v-for="a in accounts"
-									:key="a.name"
-									:value="a.name"
-									:disabled="a.name === form.to_account"
-								>
-									{{ a.account_name || a.name }} ({{ a.account_currency }})
-								</option>
-							</select>
+							<Select
+								v-model="form.from_account"
+								:disabled="optionsLoading"
+								:options="fromAccountOptions"
+								value-key="name"
+								:placeholder="t('Select…')"
+							>
+								<template #option="{ option }">
+									{{ option.account_name || option.name }} ({{ option.account_currency }})
+								</template>
+								<template #selected="{ option }">
+									{{ option.account_name || option.name }} ({{ option.account_currency }})
+								</template>
+							</Select>
 						</div>
 						<div class="col-md-2 text-center">
 							<button
@@ -430,17 +508,20 @@ watch(activeCompany, () => {
 						</div>
 						<div class="col-md-5">
 							<label class="form-label small">{{ t("To account") }}</label>
-							<select v-model="form.to_account" class="form-select" :disabled="optionsLoading">
-								<option value="" disabled>{{ t("Select…") }}</option>
-								<option
-									v-for="a in accounts"
-									:key="a.name"
-									:value="a.name"
-									:disabled="a.name === form.from_account"
-								>
-									{{ a.account_name || a.name }} ({{ a.account_currency }})
-								</option>
-							</select>
+							<Select
+								v-model="form.to_account"
+								:disabled="optionsLoading"
+								:options="toAccountOptions"
+								value-key="name"
+								:placeholder="t('Select…')"
+							>
+								<template #option="{ option }">
+									{{ option.account_name || option.name }} ({{ option.account_currency }})
+								</template>
+								<template #selected="{ option }">
+									{{ option.account_name || option.name }} ({{ option.account_currency }})
+								</template>
+							</Select>
 						</div>
 					</div>
 
@@ -472,11 +553,11 @@ watch(activeCompany, () => {
 					<div v-if="isCrossCurrency" class="row g-2 mt-3">
 						<div class="col-md-6">
 							<label class="form-label small">
-								{{ t("Exchange rate") }} — 1 {{ fromCurrency }} = ? {{ toCurrency }}
+								{{ t("Exchange rate") }} — 1 {{ rateFromCurrency }} = ? {{ rateToCurrency }}
 							</label>
 							<MoneyInput
 								v-model="form.exchange_rate"
-								:currency="toCurrency"
+								:currency="rateToCurrency"
 								:language="user.language"
 							/>
 							<div class="form-hint small">

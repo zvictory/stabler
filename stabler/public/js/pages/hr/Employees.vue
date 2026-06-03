@@ -7,6 +7,7 @@ import { t } from "../../composables/i18n.js";
 import { formatDateTime } from "../../composables/date.js";
 import EmptyState from "../../components/EmptyState.vue";
 import DateInput from "../../components/DateInput.vue";
+import Select from "../../components/Select.vue";
 
 const session = useSession();
 const { activeCompany } = storeToRefs(session);
@@ -16,6 +17,20 @@ const error = ref("");
 const rows = ref([]);
 const search = ref("");
 const statusFilter = ref("");
+
+const statusFilterOptions = computed(() => [
+	{ value: "", label: t("All statuses") },
+	{ value: "Active", label: t("Active") },
+	{ value: "Inactive", label: t("Inactive") },
+	{ value: "Suspended", label: t("Suspended") },
+	{ value: "Left", label: t("Left") },
+]);
+
+const genderOptions = computed(() => [
+	{ value: "Male", label: t("Male") },
+	{ value: "Female", label: t("Female") },
+	{ value: "Other", label: t("Other") },
+]);
 
 async function load() {
 	if (!activeCompany.value) return;
@@ -175,13 +190,7 @@ function initials(name) {
 					</div>
 				</div>
 				<div class="col-md-3">
-					<select v-model="statusFilter" class="form-select">
-						<option value="">{{ t("All statuses") }}</option>
-						<option value="Active">{{ t("Active") }}</option>
-						<option value="Inactive">{{ t("Inactive") }}</option>
-						<option value="Suspended">{{ t("Suspended") }}</option>
-						<option value="Left">{{ t("Left") }}</option>
-					</select>
+					<Select v-model="statusFilter" :options="statusFilterOptions" />
 				</div>
 				<div class="col-md-4 d-flex justify-content-md-end gap-2">
 					<button type="button" class="btn btn-ghost-secondary" @click="load">
@@ -334,12 +343,7 @@ function initials(name) {
 						</div>
 						<div class="col-md-4">
 							<label class="form-label">{{ t("Gender") }} *</label>
-							<select v-model="form.gender" class="form-select">
-								<option value="">—</option>
-								<option value="Male">{{ t("Male") }}</option>
-								<option value="Female">{{ t("Female") }}</option>
-								<option value="Other">{{ t("Other") }}</option>
-							</select>
+							<Select v-model="form.gender" :options="genderOptions" :placeholder="t('Select gender')" />
 						</div>
 						<div class="col-md-4">
 							<label class="form-label">{{ t("Date of birth") }} *</label>

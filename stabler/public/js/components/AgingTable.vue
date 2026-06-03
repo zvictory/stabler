@@ -15,6 +15,7 @@ import { storeToRefs } from "pinia";
 import { useSession } from "../stores/session.js";
 import { call } from "../api/client.js";
 import { formatMoney } from "../composables/money.js";
+import { t } from "../composables/i18n.js";
 import EmptyState from "./EmptyState.vue";
 import DateInput from "./DateInput.vue";
 
@@ -52,7 +53,7 @@ async function load() {
 			as_of: asOf.value,
 		});
 	} catch (err) {
-		error.value = err?.message || "Failed to load aging.";
+		error.value = err?.message || t("Failed to load aging.");
 	} finally {
 		loading.value = false;
 	}
@@ -76,11 +77,11 @@ function bucketCls(value, bucket) {
 			<div class="card-title">{{ heading }}</div>
 			<div class="ms-auto d-flex gap-2 align-items-end">
 				<div>
-					<label class="form-label small mb-1">As of</label>
+					<label class="form-label small mb-1">{{ t("As of") }}</label>
 					<DateInput v-model="asOf" size="sm" />
 				</div>
 				<button type="button" class="btn btn-sm btn-primary" @click="load">
-					<i class="ti ti-refresh me-1"></i>Refresh
+					<i class="ti ti-refresh me-1"></i>{{ t("Refresh") }}
 				</button>
 			</div>
 		</div>
@@ -97,20 +98,20 @@ function bucketCls(value, bucket) {
 			accentIcon="ti-sparkles"
 			tone="success"
 			compact
-			title="No outstanding balances"
-			:subtitle="`All invoices are settled as of ${data.as_of || asOf}.`"
+			:title="t('No outstanding balances')"
+			:subtitle="t('All invoices are settled as of {date}.', { date: data.as_of || asOf })"
 		/>
 		<div v-else class="table-responsive">
 			<table class="table table-vcenter card-table">
 				<thead>
 					<tr>
 						<th>{{ partyLabel }}</th>
-						<th class="text-end">Invoices</th>
-						<th class="text-end">0–30</th>
-						<th class="text-end">31–60</th>
-						<th class="text-end">61–90</th>
-						<th class="text-end">90+</th>
-						<th class="text-end">Total</th>
+						<th class="text-end">{{ t("Invoices") }}</th>
+						<th class="text-end">{{ t("0–30") }}</th>
+						<th class="text-end">{{ t("31–60") }}</th>
+						<th class="text-end">{{ t("61–90") }}</th>
+						<th class="text-end">{{ t("90+") }}</th>
+						<th class="text-end">{{ t("Total") }}</th>
 					</tr>
 				</thead>
 				<tbody>
@@ -139,7 +140,7 @@ function bucketCls(value, bucket) {
 				</tbody>
 				<tfoot class="table-light">
 					<tr class="fw-bold">
-						<td>Total</td>
+						<td>{{ t("Total") }}</td>
 						<td></td>
 						<td class="text-end font-monospace">{{ formatMoney(data.totals.b_0_30, currency, user.language) }}</td>
 						<td class="text-end font-monospace">{{ formatMoney(data.totals.b_31_60, currency, user.language) }}</td>

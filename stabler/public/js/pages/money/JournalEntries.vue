@@ -1,15 +1,19 @@
 <script setup>
 import { computed, onMounted, ref, watch } from "vue";
 import { storeToRefs } from "pinia";
+import { useRoute } from "vue-router";
 import { useSession } from "../../stores/session.js";
 import { call } from "../../api/client.js";
 import { formatMoney } from "../../composables/money.js";
 import { formatDateTime } from "../../composables/date.js";
+import { t } from "../../composables/i18n.js";
 import MoneyInput from "../../components/MoneyInput.vue";
 import DateInput from "../../components/DateInput.vue";
 import EmptyState from "../../components/EmptyState.vue";
+import Select from "../../components/Select.vue";
 
 const session = useSession();
+const route = useRoute();
 const { activeCompany, user } = storeToRefs(session);
 
 const today = new Date().toISOString().slice(0, 10);
@@ -85,7 +89,7 @@ async function loadAccountOptions() {
 		accountOptions.value = (rows || []).filter((a) => !a.is_group);
 	} catch (err) {
 		accountOptions.value = [];
-		submitError.value = err?.message || "Failed to load accounts.";
+		submitError.value = err?.message || t("Failed to load accounts.");
 	} finally {
 		accountsLoading.value = false;
 	}
@@ -123,11 +127,11 @@ function onCreditInput(row) {
 async function submitCreate() {
 	submitError.value = "";
 	if (!activeCompany.value) {
-		submitError.value = "Select a company first.";
+		submitError.value = t("Select a company first.");
 		return;
 	}
 	if (!balanced.value) {
-		submitError.value = `Debit ${totalDebit.value.toFixed(2)} ≠ Credit ${totalCredit.value.toFixed(2)}`;
+		submitError.value = `${t("Debit")} ${totalDebit.value.toFixed(2)} ≠ ${t("Credit")} ${totalCredit.value.toFixed(2)}`;
 		return;
 	}
 	const accounts = form.value.accounts
@@ -138,7 +142,7 @@ async function submitCreate() {
 			credit: Number(r.credit) || 0,
 		}));
 	if (accounts.length < 2) {
-		submitError.value = "At least two account lines are required.";
+		submitError.value = t("At least two account lines are required.");
 		return;
 	}
 	submitting.value = true;
@@ -155,7 +159,7 @@ async function submitCreate() {
 		createOpen.value = false;
 		await load();
 	} catch (err) {
-		submitError.value = err?.message || "Failed to create journal entry.";
+		submitError.value = err?.message || t("Failed to create journal entry.");
 	} finally {
 		submitting.value = false;
 	}
@@ -168,9 +172,9 @@ const currency = computed(
 );
 
 const statusBadge = (d) => {
-	if (d === 0) return { cls: "bg-yellow-lt", label: "Draft" };
-	if (d === 1) return { cls: "bg-green-lt", label: "Submitted" };
-	if (d === 2) return { cls: "bg-red-lt", label: "Cancelled" };
+	if (d === 0) return { cls: "bg-yellow-lt", label: t("Draft") };
+	if (d === 1) return { cls: "bg-green-lt", label: t("Submitted") };
+	if (d === 2) return { cls: "bg-red-lt", label: t("Cancelled") };
 	return { cls: "bg-secondary-lt", label: String(d) };
 };
 
@@ -186,7 +190,7 @@ async function load() {
 			limit: limit.value,
 		});
 	} catch (err) {
-		error.value = err?.message || "Failed to load journal entries.";
+		error.value = err?.message || t("Failed to load journal entries.");
 	} finally {
 		loading.value = false;
 	}
@@ -199,7 +203,7 @@ async function openDetail(name) {
 	try {
 		detail.value = await call("stabler.api.money.journal_entry_detail", { name });
 	} catch (err) {
-		detail.value = { error: err?.message || "Failed to load." };
+		detail.value = { error: err?.message || t("Failed to load.") };
 	} finally {
 		detailLoading.value = false;
 	}
@@ -210,7 +214,11 @@ function closeDetail() {
 	detail.value = null;
 }
 
-onMounted(load);
+onMounted(async () => {
+	await load();
+	const openName = route.query?.open;
+	if (openName) openDetail(String(openName));
+});
 watch(activeCompany, () => {
 	accountOptions.value = []; // accounts are company-scoped — refetch on switch
 	load();
@@ -220,21 +228,21 @@ watch(activeCompany, () => {
 <template>
 	<div class="card">
 		<div class="card-header">
-			<div class="card-title">Journal Entries</div>
+			<div class="card-title">{{ t("Journal Entries") }}</div>
 			<div class="ms-auto d-flex gap-2 align-items-end">
 				<div>
-					<label class="form-label small mb-1">From</label>
+					<label class="form-label small mb-1">{{ t("From") }}</label>
 					<DateInput v-model="fromDate" size="sm" />
 				</div>
 				<div>
-					<label class="form-label small mb-1">To</label>
+					<label class="form-label small mb-1">{{ t("To") }}</label>
 					<DateInput v-model="toDate" size="sm" />
 				</div>
 				<button type="button" class="btn btn-sm btn-outline-primary" @click="load">
-					<i class="ti ti-refresh me-1"></i>Apply
+					<i class="ti ti-refresh me-1"></i>{{ t("Apply") }}
 				</button>
 				<button type="button" class="btn btn-sm btn-primary" @click="openCreate" :disabled="!activeCompany">
-					<i class="ti ti-plus me-1"></i>New journal
+					<i class="ti ti-plus me-1"></i>{{ t("New journal") }}
 				</button>
 			</div>
 		</div>
@@ -250,12 +258,12 @@ watch(activeCompany, () => {
 			icon="ti-book"
 			accentIcon="ti-plus"
 			tone="info"
-			title="No journal entries in this range"
-			subtitle="Widen the date range or post a manual journal."
+			:title='t("No journal entries in this range")'
+			:subtitle='t("Widen the date range or post a manual journal.")'
 		>
 			<template #actions>
 				<button type="button" class="btn btn-primary" :disabled="!activeCompany" @click="openCreate">
-					<i class="ti ti-plus me-1"></i>New journal
+					<i class="ti ti-plus me-1"></i>{{ t("New journal") }}
 				</button>
 			</template>
 		</EmptyState>
@@ -264,12 +272,12 @@ watch(activeCompany, () => {
 				<thead>
 					<tr>
 						<th>#</th>
-						<th>Date</th>
-						<th>Type</th>
-						<th>Remark</th>
-						<th class="text-end">Debit</th>
-						<th class="text-end">Credit</th>
-						<th class="w-1">Status</th>
+						<th>{{ t("Date") }}</th>
+						<th>{{ t("Type") }}</th>
+						<th>{{ t("Remark") }}</th>
+						<th class="text-end">{{ t("Debit") }}</th>
+						<th class="text-end">{{ t("Credit") }}</th>
+						<th class="w-1">{{ t("Status") }}</th>
 					</tr>
 				</thead>
 				<tbody>
@@ -304,7 +312,7 @@ watch(activeCompany, () => {
 		:style="{ transform: detailOpen ? 'translateX(0)' : 'translateX(100%)' }"
 	>
 		<div class="offcanvas-header">
-			<h5 class="offcanvas-title">Journal Entry</h5>
+			<h5 class="offcanvas-title">{{ t("Journal Entry") }}</h5>
 			<button type="button" class="btn-close" @click="closeDetail" aria-label="Close"></button>
 		</div>
 		<div class="offcanvas-body">
@@ -315,42 +323,42 @@ watch(activeCompany, () => {
 			<div v-else-if="detail">
 				<div class="datagrid mb-3">
 					<div class="datagrid-item">
-						<div class="datagrid-title">Name</div>
+						<div class="datagrid-title">{{ t("Name") }}</div>
 						<div class="datagrid-content font-monospace">{{ detail.name }}</div>
 					</div>
 					<div class="datagrid-item">
-						<div class="datagrid-title">Posting date</div>
+						<div class="datagrid-title">{{ t("Posting date") }}</div>
 						<div class="datagrid-content">{{ formatDateTime(detail.posting_date) }}</div>
 					</div>
 					<div class="datagrid-item">
-						<div class="datagrid-title">Type</div>
+						<div class="datagrid-title">{{ t("Type") }}</div>
 						<div class="datagrid-content">{{ detail.voucher_type || "—" }}</div>
 					</div>
 					<div class="datagrid-item">
-						<div class="datagrid-title">Status</div>
+						<div class="datagrid-title">{{ t("Status") }}</div>
 						<div class="datagrid-content">
 							<span class="badge" :class="statusBadge(detail.docstatus).cls">{{ statusBadge(detail.docstatus).label }}</span>
 						</div>
 					</div>
 					<div v-if="detail.cheque_no" class="datagrid-item">
-						<div class="datagrid-title">Cheque</div>
+						<div class="datagrid-title">{{ t("Cheque") }}</div>
 						<div class="datagrid-content">{{ detail.cheque_no }} · {{ formatDateTime(detail.cheque_date) }}</div>
 					</div>
 					<div v-if="detail.user_remark" class="datagrid-item">
-						<div class="datagrid-title">Remark</div>
+						<div class="datagrid-title">{{ t("Remark") }}</div>
 						<div class="datagrid-content">{{ detail.user_remark }}</div>
 					</div>
 				</div>
 
-				<h6 class="text-uppercase text-secondary small mb-2">Postings</h6>
+				<h6 class="text-uppercase text-secondary small mb-2">{{ t("Postings") }}</h6>
 				<div class="table-responsive">
 					<table class="table table-sm table-vcenter">
 						<thead>
 							<tr>
-								<th>Account</th>
-								<th>Party</th>
-								<th class="text-end">Debit</th>
-								<th class="text-end">Credit</th>
+								<th>{{ t("Account") }}</th>
+								<th>{{ t("Party") }}</th>
+								<th class="text-end">{{ t("Debit") }}</th>
+								<th class="text-end">{{ t("Credit") }}</th>
 							</tr>
 						</thead>
 						<tbody>
@@ -367,7 +375,7 @@ watch(activeCompany, () => {
 						</tbody>
 						<tfoot>
 							<tr class="fw-bold">
-								<td colspan="2">Total ({{ detail.base_currency || currency }})</td>
+								<td colspan="2">{{ t("Total") }} ({{ detail.base_currency || currency }})</td>
 								<td class="text-end font-monospace">{{ formatMoney(detail.total_debit_base, detail.base_currency || currency, user.language) }}</td>
 								<td class="text-end font-monospace">{{ formatMoney(detail.total_credit_base, detail.base_currency || currency, user.language) }}</td>
 							</tr>
@@ -390,39 +398,37 @@ watch(activeCompany, () => {
 		<div class="modal-dialog modal-lg modal-dialog-centered modal-dialog-scrollable" role="document">
 			<div class="modal-content">
 				<div class="modal-header">
-					<h5 class="modal-title">New journal entry</h5>
+					<h5 class="modal-title">{{ t("New journal entry") }}</h5>
 					<button type="button" class="btn-close" aria-label="Close" @click="closeCreate"></button>
 				</div>
 				<div class="modal-body">
 					<div v-if="submitError" class="alert alert-danger">{{ submitError }}</div>
 					<div class="row g-2 mb-3">
 						<div class="col-md-4">
-							<label class="form-label small">Posting date</label>
+							<label class="form-label small">{{ t("Posting date") }}</label>
 							<DateInput v-model="form.posting_date" required />
 						</div>
 						<div class="col-md-4">
-							<label class="form-label small">Type</label>
-							<select v-model="form.voucher_type" class="form-select">
-								<option v-for="t in VOUCHER_TYPES" :key="t" :value="t">{{ t }}</option>
-							</select>
+							<label class="form-label small">{{ t("Type") }}</label>
+							<Select v-model="form.voucher_type" :options="VOUCHER_TYPES" />
 						</div>
 						<div class="col-md-4">
-							<label class="form-label small">Cheque no.</label>
-							<input v-model="form.cheque_no" type="text" class="form-control" placeholder="optional" />
+							<label class="form-label small">{{ t("Cheque no.") }}</label>
+							<input v-model="form.cheque_no" type="text" class="form-control" :placeholder='t("optional")' />
 						</div>
 						<div class="col-12">
-							<label class="form-label small">Remark</label>
+							<label class="form-label small">{{ t("Remark") }}</label>
 							<textarea
 								v-model="form.user_remark"
 								class="form-control"
 								rows="2"
-								placeholder="What is this entry for?"
+								:placeholder='t("What is this entry for?")'
 							></textarea>
 						</div>
 					</div>
 
 					<h6 class="text-uppercase text-secondary small mb-2">
-						Postings
+						{{ t("Postings") }}
 						<span v-if="accountsLoading" class="spinner-border spinner-border-sm ms-2"></span>
 					</h6>
 
@@ -430,23 +436,25 @@ watch(activeCompany, () => {
 						<table class="table table-sm table-vcenter mb-0">
 							<thead>
 								<tr>
-									<th>Account</th>
-									<th class="text-end" style="width: 160px">Debit</th>
-									<th class="text-end" style="width: 160px">Credit</th>
+									<th>{{ t("Account") }}</th>
+									<th class="text-end" style="width: 160px">{{ t("Debit") }}</th>
+									<th class="text-end" style="width: 160px">{{ t("Credit") }}</th>
 									<th class="w-1"></th>
 								</tr>
 							</thead>
 							<tbody>
 								<tr v-for="(row, idx) in form.accounts" :key="idx">
 									<td>
-										<select v-model="row.account" class="form-select form-select-sm">
-											<option value="">— Choose account —</option>
-											<option
-												v-for="a in accountOptions"
-												:key="a.name"
-												:value="a.name"
-											>{{ a.account_number ? `${a.account_number} · ` : "" }}{{ a.account_name }}</option>
-										</select>
+										<Select
+											v-model="row.account"
+											size="sm"
+											:options="accountOptions"
+											value-key="name"
+											:placeholder="t('— Choose account —')"
+										>
+											<template #option="{ option }">{{ option.account_number ? `${option.account_number} · ` : "" }}{{ option.account_name }}</template>
+											<template #selected="{ option }">{{ option.account_number ? `${option.account_number} · ` : "" }}{{ option.account_name }}</template>
+										</Select>
 									</td>
 									<td>
 										<MoneyInput
@@ -483,7 +491,7 @@ watch(activeCompany, () => {
 								<tr class="fw-bold">
 									<td>
 										<button type="button" class="btn btn-sm btn-ghost-primary" @click="addRow">
-											<i class="ti ti-plus me-1"></i>Add row
+											<i class="ti ti-plus me-1"></i>{{ t("Add row") }}
 										</button>
 									</td>
 									<td class="text-end font-monospace">
@@ -497,7 +505,7 @@ watch(activeCompany, () => {
 											class="badge"
 											:class="balanced ? 'bg-green-lt' : 'bg-red-lt'"
 										>
-											{{ balanced ? "Balanced" : "Δ " + formatMoney(diff, currencyCode, user.language) }}
+											{{ balanced ? t("Balanced") : "Δ " + formatMoney(diff, currencyCode, user.language) }}
 										</span>
 									</td>
 								</tr>
@@ -507,7 +515,7 @@ watch(activeCompany, () => {
 				</div>
 				<div class="modal-footer">
 					<button type="button" class="btn btn-link link-secondary" @click="closeCreate" :disabled="submitting">
-						Cancel
+						{{ t("Cancel") }}
 					</button>
 					<button
 						type="button"
@@ -516,7 +524,7 @@ watch(activeCompany, () => {
 						:disabled="submitting || !balanced || accountsLoading"
 					>
 						<span v-if="submitting" class="spinner-border spinner-border-sm me-1"></span>
-						Save as Draft
+						{{ t("Save as Draft") }}
 					</button>
 				</div>
 			</div>

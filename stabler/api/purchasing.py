@@ -5,7 +5,7 @@ from __future__ import annotations
 import json
 
 import frappe
-from frappe.utils import flt, getdate, today
+from frappe.utils import cint, flt, getdate, today
 
 
 from stabler.api._common import _assert_can_read, _require_company
@@ -351,6 +351,7 @@ def purchase_invoice_detail(name: str):
 				"uom": it.uom,
 				"rate": flt(it.rate),
 				"amount": flt(it.amount),
+				"purchase_order": it.purchase_order or "",
 			}
 			for it in (doc.items or [])
 		],
@@ -429,6 +430,8 @@ def create_supplier(
 	email_id: str | None = None,
 	mobile_no: str | None = None,
 	tax_id: str | None = None,
+	default_price_list: str | None = None,
+	default_currency: str | None = None,
 ):
 	supplier_name = (supplier_name or "").strip()
 	if not supplier_name:
@@ -459,8 +462,79 @@ def create_supplier(
 		doc.mobile_no = mobile_no.strip()
 	if tax_id:
 		doc.tax_id = tax_id.strip()
+	if default_price_list:
+		if not frappe.db.exists("Price List", default_price_list):
+			frappe.throw(f"Unknown price list: {default_price_list}")
+		doc.default_price_list = default_price_list
+	doc.default_currency = default_currency or ""
 	doc.insert(ignore_permissions=False)
 	return {"name": doc.name, "supplier_name": doc.supplier_name}
+
+
+@frappe.whitelist()
+def get_supplier(name: str):
+	if not frappe.db.exists("Supplier", name):
+		frappe.throw(f"Unknown supplier: {name}")
+	_assert_can_read("Supplier", name)
+	doc = frappe.get_doc("Supplier", name)
+	return {
+		"name": doc.name,
+		"supplier_name": doc.supplier_name,
+		"supplier_type": doc.supplier_type or "Company",
+		"supplier_group": doc.supplier_group or "",
+		"country": doc.country or "",
+		"email_id": doc.email_id or "",
+		"mobile_no": doc.mobile_no or "",
+		"tax_id": doc.tax_id or "",
+		"default_price_list": doc.default_price_list or "",
+		"default_currency": doc.default_currency or "",
+	}
+
+
+@frappe.whitelist()
+def update_supplier(
+	name: str,
+	supplier_name: str,
+	supplier_type: str = "Company",
+	supplier_group: str | None = None,
+	country: str | None = None,
+	email_id: str | None = None,
+	mobile_no: str | None = None,
+	tax_id: str | None = None,
+	default_price_list: str | None = None,
+	default_currency: str | None = None,
+):
+	if not frappe.db.exists("Supplier", name):
+		frappe.throw(f"Unknown supplier: {name}")
+	supplier_name = (supplier_name or "").strip()
+	if not supplier_name:
+		frappe.throw("Supplier name is required.")
+	if supplier_type not in VALID_SUPPLIER_TYPES:
+		frappe.throw(f"Supplier type must be one of: {', '.join(sorted(VALID_SUPPLIER_TYPES))}.")
+	if default_price_list and not frappe.db.exists("Price List", default_price_list):
+		frappe.throw(f"Unknown price list: {default_price_list}")
+	doc = frappe.get_doc("Supplier", name)
+	doc.supplier_name = supplier_name
+	doc.supplier_type = supplier_type
+	if supplier_group:
+		doc.supplier_group = supplier_group
+	if country:
+		doc.country = country
+	doc.email_id = (email_id or "").strip()
+	doc.mobile_no = (mobile_no or "").strip()
+	doc.tax_id = (tax_id or "").strip()
+	doc.default_price_list = default_price_list or ""
+	doc.default_currency = default_currency or ""
+	doc.save(ignore_permissions=False)
+	return {"name": doc.name, "supplier_name": doc.supplier_name}
+
+
+@frappe.whitelist()
+def delete_supplier(name: str):
+	if not frappe.db.exists("Supplier", name):
+		frappe.throw(f"Unknown supplier: {name}")
+	frappe.delete_doc("Supplier", name, ignore_permissions=False)
+	return {"deleted": name}
 
 
 @frappe.whitelist()
@@ -579,3 +653,318 @@ def list_supplier_groups(limit: int = 200):
 		{"limit": int(limit)},
 		as_dict=True,
 	)
+
+
+# ── Purchase Order helpers ────────────────────────────────────────────────────
+
+
+def _resolve_buy_price_list(supplier: str) -> str:
+	"""Return the supplier's default buying price list, or empty string."""
+	return frappe.db.get_value("Supplier", supplier, "default_price_list") or ""
+
+
+def _lookup_item_buy_price(item_code: str, price_list: str, uom: str | None = None) -> dict | None:
+	"""Look up the buying Item Price for the given item + price list."""
+	conds = [
+		"item_code = %(item_code)s",
+		"price_list = %(price_list)s",
+		"buying = 1",
+	]
+	params: dict = {"item_code": item_code, "price_list": price_list}
+	if uom:
+		conds.append("uom = %(uom)s")
+		params["uom"] = uom
+	rows = frappe.db.sql(
+		f"SELECT price_list_rate FROM `tabItem Price` WHERE {' AND '.join(conds)} LIMIT 1",
+		params,
+		as_dict=True,
+	)
+	return rows[0] if rows else None
+
+
+# ── Purchase Order endpoints ──────────────────────────────────────────────────
+
+
+@frappe.whitelist()
+def list_purchase_orders(
+	company: str,
+	from_date: str | None = None,
+	to_date: str | None = None,
+	supplier: str | None = None,
+	status: str | None = None,
+	limit: int = 100,
+):
+	_require_company(company)
+	conds = ["company = %(company)s", "docstatus < 2"]
+	params: dict = {"company": company, "limit": int(limit)}
+	if from_date:
+		conds.append("transaction_date >= %(from_date)s")
+		params["from_date"] = getdate(from_date)
+	if to_date:
+		conds.append("transaction_date <= %(to_date)s")
+		params["to_date"] = getdate(to_date)
+	if supplier:
+		conds.append("supplier = %(supplier)s")
+		params["supplier"] = supplier
+	if status:
+		conds.append("status = %(status)s")
+		params["status"] = status
+	where = " AND ".join(conds)
+	return frappe.db.sql(
+		f"""
+		SELECT name, transaction_date, schedule_date, supplier, supplier_name,
+		       grand_total, per_received, per_billed,
+		       status, currency, docstatus, set_warehouse
+		FROM `tabPurchase Order`
+		WHERE {where}
+		ORDER BY transaction_date DESC, name DESC
+		LIMIT %(limit)s
+		""",
+		params,
+		as_dict=True,
+	)
+
+
+@frappe.whitelist()
+def purchase_order_detail(name: str):
+	if not name:
+		frappe.throw("Purchase order name is required.")
+	_assert_can_read("Purchase Order", name)
+	doc = frappe.get_doc("Purchase Order", name)
+	# linked Purchase Invoices created via PO→PI bridge (or manually)
+	pi_links = frappe.db.sql(
+		"""
+		SELECT DISTINCT pi.name, pi.docstatus
+		FROM `tabPurchase Invoice Item` pii
+		JOIN `tabPurchase Invoice` pi ON pi.name = pii.parent
+		WHERE pii.purchase_order = %(name)s AND pi.docstatus < 2
+		""",
+		{"name": name},
+		as_dict=True,
+	)
+	return {
+		"name": doc.name,
+		"transaction_date": str(doc.transaction_date) if doc.transaction_date else None,
+		"schedule_date": str(doc.schedule_date) if doc.schedule_date else None,
+		"supplier": doc.supplier,
+		"supplier_name": doc.supplier_name,
+		"company": doc.company,
+		"set_warehouse": getattr(doc, "set_warehouse", None) or None,
+		"currency": doc.currency,
+		"conversion_rate": flt(doc.conversion_rate),
+		"net_total": flt(doc.net_total),
+		"grand_total": flt(doc.grand_total),
+		"per_received": flt(doc.per_received),
+		"per_billed": flt(doc.per_billed),
+		"status": doc.status,
+		"docstatus": doc.docstatus,
+		"amended_from": doc.amended_from or None,
+		"remarks": getattr(doc, "terms", None) or None,
+		"purchase_invoices": pi_links,
+		"items": [
+			{
+				"name": it.name,
+				"item_code": it.item_code,
+				"item_name": it.item_name,
+				"warehouse": getattr(it, "warehouse", None) or None,
+				"qty": flt(it.qty),
+				"received_qty": flt(getattr(it, "received_qty", 0)),
+				"billed_amt": flt(getattr(it, "billed_amt", 0)),
+				"uom": it.uom,
+				"stock_uom": it.stock_uom,
+				"conversion_factor": flt(it.conversion_factor) or 1.0,
+				"stock_qty": flt(it.stock_qty),
+				"rate": flt(it.rate),
+				"price_list_rate": flt(it.price_list_rate),
+				"discount_percentage": flt(it.discount_percentage),
+				"discount_amount": flt(it.discount_amount),
+				"amount": flt(it.amount),
+				"schedule_date": str(it.schedule_date) if it.schedule_date else None,
+			}
+			for it in (doc.items or [])
+		],
+	}
+
+
+@frappe.whitelist()
+def create_purchase_order(
+	company: str,
+	supplier: str,
+	items,
+	set_warehouse: str | None = None,
+	transaction_date: str | None = None,
+	schedule_date: str | None = None,
+	remarks: str | None = None,
+	auto_submit: int = 1,
+	currency: str | None = None,
+	price_list: str | None = None,
+):
+	"""Create (and optionally submit) a Purchase Order.
+
+	`set_warehouse` is optional — POs are inbound, no stock-guard needed.
+	When `auto_submit` is truthy (default) the PO is submitted immediately.
+	"""
+	_require_company(company)
+	if not supplier:
+		frappe.throw("Supplier is required.")
+	if not frappe.db.exists("Supplier", supplier):
+		frappe.throw(f"Unknown supplier: {supplier}")
+	if set_warehouse and not frappe.db.exists("Warehouse", set_warehouse):
+		frappe.throw(f"Unknown warehouse: {set_warehouse}")
+
+	if isinstance(items, str):
+		try:
+			items = json.loads(items)
+		except Exception:
+			frappe.throw("Invalid items payload.")
+	if not isinstance(items, list) or not items:
+		frappe.throw("At least one item is required.")
+
+	txn_date = getdate(transaction_date or today())
+	sched_date = getdate(schedule_date) if schedule_date else txn_date
+
+	cleaned: list[dict] = []
+	for idx, row in enumerate(items, start=1):
+		code = (row or {}).get("item_code")
+		if not code:
+			frappe.throw(f"Row {idx}: item is required.")
+		if not frappe.db.exists("Item", code):
+			frappe.throw(f"Row {idx}: unknown item '{code}'.")
+		qty = flt(row.get("qty"))
+		if qty <= 0:
+			frappe.throw(f"Row {idx}: qty must be greater than zero.")
+		disc_pct = flt(row.get("discount_percentage"))
+		if not (0 <= disc_pct <= 100):
+			frappe.throw(f"Row {idx}: discount_percentage must be between 0 and 100.")
+		rate_val = row.get("rate")
+		if rate_val not in (None, "") and flt(rate_val) < 0:
+			frappe.throw(f"Row {idx}: rate cannot be negative.")
+		if flt(row.get("discount_amount")) < 0:
+			frappe.throw(f"Row {idx}: discount_amount cannot be negative.")
+		cleaned.append(
+			{
+				"item_code": code,
+				"qty": qty,
+				"rate": flt(row.get("rate")),
+				"uom": row.get("uom") or None,
+				"conversion_factor": flt(row.get("conversion_factor")) or None,
+				"discount_percentage": disc_pct,
+				"discount_amount": flt(row.get("discount_amount")),
+			}
+		)
+
+	doc = frappe.new_doc("Purchase Order")
+	doc.company = company
+	doc.supplier = supplier
+	doc.transaction_date = txn_date
+	doc.schedule_date = sched_date
+	if set_warehouse:
+		doc.set_warehouse = set_warehouse
+	if remarks:
+		doc.terms = remarks.strip()
+	if currency:
+		doc.currency = currency
+	resolved_pl = price_list or _resolve_buy_price_list(supplier)
+	if resolved_pl:
+		doc.buying_price_list = resolved_pl
+
+	for row in cleaned:
+		line = doc.append("items", {})
+		line.item_code = row["item_code"]
+		line.qty = row["qty"]
+		line.schedule_date = sched_date
+		if set_warehouse:
+			line.warehouse = set_warehouse
+		rate = row["rate"]
+		if not rate and resolved_pl:
+			hit = _lookup_item_buy_price(row["item_code"], resolved_pl)
+			if hit:
+				rate = hit["price_list_rate"]
+		if rate:
+			line.rate = rate
+		if row["uom"]:
+			line.uom = row["uom"]
+		if row.get("conversion_factor"):
+			line.conversion_factor = row["conversion_factor"]
+		if row.get("discount_percentage"):
+			line.discount_percentage = row["discount_percentage"]
+		if row.get("discount_amount"):
+			line.discount_amount = row["discount_amount"]
+
+	doc.insert(ignore_permissions=False)
+	if cint(auto_submit):
+		doc.submit()
+
+	return {
+		"name": doc.name,
+		"grand_total": flt(doc.grand_total),
+		"supplier": doc.supplier,
+		"docstatus": doc.docstatus,
+		"status": doc.status,
+	}
+
+
+@frappe.whitelist()
+def submit_purchase_order(name: str):
+	"""Submit a draft Purchase Order (docstatus 0 → 1)."""
+	if not name:
+		frappe.throw("Purchase order name is required.")
+	doc = frappe.get_doc("Purchase Order", name)
+	if doc.docstatus == 1:
+		frappe.throw("Purchase order is already submitted.")
+	if doc.docstatus == 2:
+		frappe.throw("Purchase order is cancelled and cannot be submitted.")
+	doc.submit()
+	return {"name": doc.name, "docstatus": doc.docstatus, "status": doc.status}
+
+
+@frappe.whitelist()
+def cancel_purchase_order(name: str):
+	"""Cancel a submitted Purchase Order (docstatus 1 → 2)."""
+	if not name:
+		frappe.throw("Purchase order name is required.")
+	doc = frappe.get_doc("Purchase Order", name)
+	if doc.docstatus != 1:
+		frappe.throw("Only submitted purchase orders can be cancelled.")
+	doc.cancel()
+	return {"name": doc.name, "docstatus": doc.docstatus, "status": doc.status}
+
+
+@frappe.whitelist()
+def amend_purchase_order(name: str):
+	"""Create a new draft Purchase Order as an amendment of a cancelled one."""
+	if not name or not frappe.db.exists("Purchase Order", name):
+		frappe.throw(f"Unknown Purchase Order: {name}")
+	doc = frappe.get_doc("Purchase Order", name)
+	if doc.docstatus != 2:
+		frappe.throw("Only cancelled purchase orders can be amended.")
+	new = frappe.copy_doc(doc)
+	new.amended_from = name
+	new.insert(ignore_permissions=False)
+	return {"name": new.name, "docstatus": new.docstatus, "amended_from": name}
+
+
+@frappe.whitelist()
+def create_purchase_invoice_from_po(name: str):
+	"""Create a draft Purchase Invoice from a submitted Purchase Order.
+
+	Uses ERPNext's make_purchase_invoice mapper which automatically sets
+	po_detail + purchase_order on each PI item row and handles partial billing.
+	"""
+	if not name or not frappe.db.exists("Purchase Order", name):
+		frappe.throw(f"Unknown Purchase Order: {name}")
+	_assert_can_read("Purchase Order", name)
+	po = frappe.get_doc("Purchase Order", name)
+	if po.docstatus != 1:
+		frappe.throw("Only submitted purchase orders can be invoiced.")
+	from erpnext.buying.doctype.purchase_order.purchase_order import (
+		make_purchase_invoice as _make_pi,
+	)
+	doc = _make_pi(name)
+	doc.insert(ignore_permissions=False)
+	return {
+		"name": doc.name,
+		"grand_total": flt(doc.grand_total),
+		"supplier": doc.supplier,
+		"purchase_order": name,
+	}

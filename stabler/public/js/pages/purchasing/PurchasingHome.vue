@@ -1,12 +1,14 @@
 <script setup>
 import { computed } from "vue";
 import { useRoute, RouterLink, RouterView } from "vue-router";
+import { t } from "../../composables/i18n.js";
 
 const route = useRoute();
 const tabs = [
-	{ name: "purchasing-suppliers", path: "/purchasing/suppliers", label: "Suppliers", icon: "ti-truck-delivery" },
-	{ name: "purchasing-invoices", path: "/purchasing/invoices", label: "Invoices", icon: "ti-receipt" },
-	{ name: "purchasing-aging", path: "/purchasing/aging", label: "AP Aging", icon: "ti-clock-hour-4" },
+	{ name: "purchasing-suppliers", path: "/purchasing/suppliers", label: t("Suppliers"), icon: "ti-truck-delivery" },
+	{ name: "purchasing-orders", path: "/purchasing/orders", label: t("Orders"), icon: "ti-clipboard-list" },
+	{ name: "purchasing-invoices", path: "/purchasing/invoices", label: t("Invoices"), icon: "ti-receipt" },
+	{ name: "purchasing-aging", path: "/purchasing/aging", label: t("AP Aging"), icon: "ti-clock-hour-4" },
 ];
 const activeTab = computed(() => route.name);
 </script>
@@ -18,7 +20,7 @@ const activeTab = computed(() => route.name);
 				<div class="col">
 					<div class="page-pretitle">Module</div>
 					<h2 class="page-title d-flex align-items-center gap-2">
-						<i class="ti ti-shopping-cart"></i> Purchasing
+						<i class="ti ti-shopping-cart"></i> {{ t("Purchasing") }}
 					</h2>
 				</div>
 			</div>
@@ -28,9 +30,9 @@ const activeTab = computed(() => route.name);
 	<div class="page-body">
 		<div class="container-xl">
 			<ul class="nav nav-bordered mb-3">
-				<li v-for="t in tabs" :key="t.name" class="nav-item">
-					<router-link :to="t.path" class="nav-link" :class="{ active: activeTab === t.name }">
-						<i class="ti me-1" :class="t.icon"></i>{{ t.label }}
+				<li v-for="tab in tabs" :key="tab.name" class="nav-item">
+					<router-link :to="tab.path" class="nav-link" :class="{ active: activeTab === tab.name }">
+						<i class="ti me-1" :class="tab.icon"></i>{{ tab.label }}
 					</router-link>
 				</li>
 			</ul>

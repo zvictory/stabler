@@ -22,12 +22,21 @@ _MODULE_FIELDS = {
 	"compliance": "enable_compliance",
 	"field_sales": "enable_field_sales",
 	"marketing": "enable_marketing",
+	# Admin-only modules — toggled via company enable_* field but absent from
+	# _MODULE_ROLES so only System Manager / Stabler Admin can reach them via
+	# the SPA's canAccessModule() check.
+	"remittance": "enable_remittance",
+	"installment": "enable_installment",
 }
 
 # Maps each SPA module key to the Frappe roles that grant access to it.
 # Admins (System Manager / Stabler Admin) always see all modules and bypass this map.
 # Any module key absent from this map is admin-only (least-privilege default).
+# Use "All" as a sentinel to grant a module to every authenticated user.
 _MODULE_ROLES: dict[str, list[str]] = {
+	# dashboard has no company toggle; "All" grants it to every authenticated user.
+	# Only an explicit per-user override that omits it can hide it.
+	"dashboard": ["All"],
 	"money": ["Accounts User", "Accounts Manager"],
 	"sales": ["Sales User", "Sales Manager"],
 	"purchasing": ["Purchase User", "Purchase Manager"],
@@ -42,10 +51,52 @@ _MODULE_ROLES: dict[str, list[str]] = {
 
 _ADMIN_ROLES = ("System Manager", "Stabler Admin")
 
+# Virtual module keys: gateable per-user but with no company enable_* field.
+# They are controlled purely by the per-user override / _MODULE_ROLES map.
+_VIRTUAL_MODULE_KEYS = ("dashboard",)
+
+# Importable tuple of the canonical module key set (used by admin.py for validation).
+# Includes both company-toggle keys and virtual keys so overrides can reference either.
+MODULE_KEYS = tuple(_MODULE_FIELDS) + _VIRTUAL_MODULE_KEYS
+
+
+def _user_allowed_modules(user: str) -> list[str]:
+	"""Per-user module override (Table on User). Empty list = derive from roles."""
+	if not user or user == "Guest":
+		return []
+	try:
+		rows = frappe.get_all(
+			"Stabler User Module",
+			filters={"parent": user, "parenttype": "User", "parentfield": "allowed_modules"},
+			fields=["module"],
+		)
+		return sorted({r.module for r in rows if r.module in MODULE_KEYS})
+	except Exception:
+		return []
+
 
 def _require_admin() -> None:
-	if "System Manager" not in frappe.get_roles():
+	if not any(r in frappe.get_roles() for r in _ADMIN_ROLES):
 		frappe.throw(_("Not permitted"), frappe.PermissionError)
+
+
+def _can_access_module(user: str, key: str) -> bool:
+	"""Return True if `user` is allowed to access the given SPA module.
+
+	Mirrors the frontend canAccessModule logic for use as a server-side gate.
+	Admins always pass. Non-admins: check explicit override, then role derivation.
+	The "All" sentinel in _MODULE_ROLES grants access to every authenticated user.
+	"""
+	if not user or user == "Guest":
+		return False
+	roles = frappe.get_roles(user)
+	if any(r in roles for r in _ADMIN_ROLES):
+		return True
+	override = _user_allowed_modules(user)
+	if override:
+		return key in override
+	allow = _MODULE_ROLES.get(key, [])
+	return "All" in allow or any(r in roles for r in allow)
 
 
 def _user_allowed_companies(user: str) -> list[str]:
@@ -86,7 +137,7 @@ def boot():
 
 	roles = frappe.get_roles(user)
 	companies = list_companies()
-	default_company = frappe.defaults.get_user_default("Company", user) or (
+	default_company = frappe.defaults.get_user_default("company", user) or (
 		companies[0]["name"] if companies else None
 	)
 	# Validate default sits within allowed list.
@@ -99,14 +150,19 @@ def boot():
 	except Exception:
 		pass
 
-	# Derive per-user allowed modules from assigned roles.
-	# Admins see all modules; everyone else sees only modules their roles grant.
+	# Derive per-user allowed modules.
+	# Admins always see all. For everyone else, a non-empty per-user override
+	# replaces the role-derived set entirely (replace-when-set semantics,
+	# mirroring allowed_companies). Empty override = fall back to role derivation.
 	is_admin = any(r in roles for r in _ADMIN_ROLES)
-	allowed_modules = (
-		list(_MODULE_ROLES.keys())
-		if is_admin
-		else [mod for mod, allow in _MODULE_ROLES.items() if any(r in roles for r in allow)]
-	)
+	if is_admin:
+		allowed_modules = list(_MODULE_ROLES.keys())
+	else:
+		override = _user_allowed_modules(user)
+		allowed_modules = override or [
+			mod for mod, allow in _MODULE_ROLES.items()
+			if "All" in allow or any(r in roles for r in allow)
+		]
 
 	return {
 		"user": {
@@ -173,6 +229,8 @@ def update_company_modules(
 	compliance=None,
 	field_sales=None,
 	marketing=None,
+	remittance=None,
+	installment=None,
 ):
 	"""Admin-only: toggle per-module flags for a company. Pass 0/1 to update; omit to leave."""
 	_require_admin()
@@ -202,6 +260,8 @@ def update_company_modules(
 				"enable_compliance": 1,
 				"enable_field_sales": 1,
 				"enable_marketing": 1,
+				"enable_remittance": 1,
+				"enable_installment": 1,
 			},
 		)
 
@@ -216,6 +276,8 @@ def update_company_modules(
 		"enable_compliance": compliance,
 		"enable_field_sales": field_sales,
 		"enable_marketing": marketing,
+		"enable_remittance": remittance,
+		"enable_installment": installment,
 	}
 	for field, val in updates.items():
 		if val is None or val == "":
@@ -246,6 +308,32 @@ def set_user_allowed_companies(user: str, companies):
 	user_doc.save(ignore_permissions=True)
 	frappe.db.commit()
 	return {"ok": True, "allowed_companies": companies}
+
+
+@frappe.whitelist()
+def set_user_allowed_modules(user: str, modules):
+	"""Admin-only: replace the user's per-user module override.
+
+	Pass an empty list to clear the override (user reverts to role-derived modules).
+	Non-empty list replaces the role-derived set entirely for this user.
+	Admins (System Manager / Stabler Admin) ignore overrides and always see all.
+	"""
+	_require_admin()
+	if not user or not frappe.db.exists("User", user):
+		frappe.throw(_("User not found"))
+
+	if isinstance(modules, str):
+		modules = frappe.parse_json(modules) or []
+	# Validate: only accept canonical module keys (including virtual keys); silently drop unknown.
+	modules = [m for m in (modules or []) if m in MODULE_KEYS]
+
+	user_doc = frappe.get_doc("User", user)
+	user_doc.set("allowed_modules", [])
+	for m in modules:
+		user_doc.append("allowed_modules", {"module": m})
+	user_doc.save(ignore_permissions=True)
+	frappe.db.commit()
+	return {"ok": True, "allowed_modules": modules}
 
 
 _SUPPORTED_LANGUAGES = {"en", "ru", "uz", "uzc"}

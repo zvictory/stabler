@@ -51,9 +51,18 @@ async function load() {
 	}
 }
 
+// Doctypes converted to full-page routed forms navigate to `${base}/${name}`.
+// The rest still open via the list's `?open=` drawer until their own pass.
+const PATH_DETAIL = new Set(["Sales Order", "Sales Invoice"]);
+
 function navigate(doctype, name) {
 	const base = ROUTE_MAP[doctype];
-	if (base) router.push({ path: base, query: { open: name } });
+	if (!base) return;
+	if (PATH_DETAIL.has(doctype)) {
+		router.push(`${base}/${name}`);
+	} else {
+		router.push({ path: base, query: { open: name } });
+	}
 }
 
 watch(() => props.name, load, { immediate: true });

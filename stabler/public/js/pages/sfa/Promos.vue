@@ -6,6 +6,7 @@ import { call } from "../../api/client.js";
 import { t } from "../../composables/i18n.js";
 import EmptyState from "../../components/EmptyState.vue";
 import DateInput from "../../components/DateInput.vue";
+import Select from "../../components/Select.vue";
 
 const session = useSession();
 const { activeCompany, companies } = storeToRefs(session);
@@ -30,6 +31,21 @@ const typeLabel = (s) => {
 	if (s === "Threshold") return t("Threshold");
 	return s || "—";
 };
+
+const schemeTypeFilterOptions = computed(() => [
+	{ value: "", label: t("All types") },
+	{ value: "PercentOff", label: t("Percent off") },
+	{ value: "BuyXGetY", label: t("Buy X get Y") },
+	{ value: "Threshold", label: t("Threshold") },
+]);
+
+const schemeTypeOptions = computed(() =>
+	SCHEME_TYPES.map((st) => ({ value: st, label: typeLabel(st) }))
+);
+
+const companyOptions = computed(() =>
+	companies.value.map((c) => ({ value: c.name, label: c.company_name || c.name }))
+);
 
 function emptyForm() {
 	return {
@@ -177,16 +193,12 @@ async function submitForm() {
 		<div class="card-header d-flex flex-wrap gap-2 align-items-center">
 			<h3 class="card-title mb-0">{{ t("Promo Schemes") }}</h3>
 			<div class="ms-auto d-flex gap-2 align-items-center">
-				<select
+				<Select
 					v-model="schemeType"
-					class="form-select form-select-sm"
+					size="sm"
+					:options="schemeTypeFilterOptions"
 					:aria-label="t('Scheme Type')"
-				>
-					<option value="">{{ t("All types") }}</option>
-					<option value="PercentOff">{{ t("Percent off") }}</option>
-					<option value="BuyXGetY">{{ t("Buy X get Y") }}</option>
-					<option value="Threshold">{{ t("Threshold") }}</option>
-				</select>
+				/>
 				<button type="button" class="btn btn-primary btn-sm" @click="openCreate">
 					<i class="ti ti-plus me-1"></i>{{ t("New Scheme") }}
 				</button>
@@ -275,21 +287,16 @@ async function submitForm() {
 
 				<div class="mb-3">
 					<label class="form-label required">{{ t("Company") }}</label>
-					<select v-model="form.company" class="form-select">
-						<option value="" disabled>{{ t("Select company") }}</option>
-						<option v-for="c in companies" :key="c.name" :value="c.name">
-							{{ c.company_name || c.name }}
-						</option>
-					</select>
+					<Select
+						v-model="form.company"
+						:options="companyOptions"
+						:placeholder="t('Select company')"
+					/>
 				</div>
 
 				<div class="mb-3">
 					<label class="form-label required">{{ t("Scheme Type") }}</label>
-					<select v-model="form.scheme_type" class="form-select">
-						<option v-for="st in SCHEME_TYPES" :key="st" :value="st">
-							{{ typeLabel(st) }}
-						</option>
-					</select>
+					<Select v-model="form.scheme_type" :options="schemeTypeOptions" />
 				</div>
 
 				<div v-if="form.scheme_type === 'PercentOff'" class="mb-3">

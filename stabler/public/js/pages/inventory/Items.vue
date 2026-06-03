@@ -4,8 +4,10 @@ import { storeToRefs } from "pinia";
 import { useSession } from "../../stores/session.js";
 import { call } from "../../api/client.js";
 import { formatMoney } from "../../composables/money.js";
+import { t } from "../../composables/i18n.js";
 import MoneyInput from "../../components/MoneyInput.vue";
 import EmptyState from "../../components/EmptyState.vue";
+import Select from "../../components/Select.vue";
 
 const session = useSession();
 const { activeCompany, user } = storeToRefs(session);
@@ -39,7 +41,7 @@ async function load() {
 			limit: 100,
 		});
 	} catch (err) {
-		error.value = err?.message || "Failed to load items.";
+		error.value = err?.message || t("Failed to load items.");
 	} finally {
 		loading.value = false;
 	}
@@ -55,7 +57,7 @@ async function openDetail(name) {
 			company: activeCompany.value,
 		});
 	} catch (err) {
-		detail.value = { error: err?.message || "Failed to load." };
+		detail.value = { error: err?.message || t("Failed to load.") };
 	} finally {
 		detailLoading.value = false;
 	}
@@ -105,7 +107,7 @@ async function loadCreateOptions() {
 		uomOptions.value = uoms || [];
 		optionsLoaded.value = true;
 	} catch (err) {
-		submitError.value = err?.message || "Failed to load form options.";
+		submitError.value = err?.message || t("Failed to load form options.");
 	}
 }
 
@@ -125,7 +127,7 @@ async function submitCreate() {
 	submitError.value = "";
 	const name = form.value.item_name.trim();
 	if (!name) {
-		submitError.value = "Item name is required.";
+		submitError.value = t("Item name is required.");
 		return;
 	}
 	submitting.value = true;
@@ -145,7 +147,7 @@ async function submitCreate() {
 		await load();
 		if (created?.name) await openDetail(created.name);
 	} catch (err) {
-		submitError.value = err?.message || "Failed to create item.";
+		submitError.value = err?.message || t("Failed to create item.");
 	} finally {
 		submitting.value = false;
 	}
@@ -158,17 +160,17 @@ watch(activeCompany, load);
 <template>
 	<div class="card">
 		<div class="card-header d-flex align-items-center gap-2">
-			<div class="card-title m-0">Items</div>
+			<div class="card-title m-0">{{ t("Items") }}</div>
 			<div class="ms-auto d-flex align-items-center gap-2" style="max-width: 480px; width: 100%">
 				<input
 					v-model="search"
 					type="search"
 					class="form-control form-control-sm"
-					placeholder="Search item code or name…"
+					:placeholder="t('Search item code or name…')"
 					@input="onSearchInput"
 				/>
 				<button type="button" class="btn btn-success btn-sm flex-shrink-0" @click="openCreate">
-					<i class="ti ti-plus me-1"></i>New item
+					<i class="ti ti-plus me-1"></i>{{ t("New item") }}
 				</button>
 			</div>
 		</div>
@@ -183,15 +185,15 @@ watch(activeCompany, load);
 			icon="ti-box"
 			accentIcon="ti-plus"
 			tone="primary"
-			title="No items found"
-			:subtitle="search ? 'Try a different search term or clear the filter.' : 'Create your first item to start tracking stock and price lists.'"
+			:title="t('No items found')"
+			:subtitle="search ? t('Try a different search term or clear the filter.') : t('Create your first item to start tracking stock and price lists.')"
 		>
 			<template #actions>
 				<button v-if="search" type="button" class="btn btn-outline-secondary" @click="search = ''">
-					<i class="ti ti-x me-1"></i>Clear search
+					<i class="ti ti-x me-1"></i>{{ t("Clear search") }}
 				</button>
 				<button type="button" class="btn btn-primary" @click="openCreate">
-					<i class="ti ti-plus me-1"></i>New item
+					<i class="ti ti-plus me-1"></i>{{ t("New item") }}
 				</button>
 			</template>
 		</EmptyState>
@@ -199,12 +201,12 @@ watch(activeCompany, load);
 			<table class="table table-vcenter card-table table-hover">
 				<thead>
 					<tr>
-						<th>Code</th>
-						<th>Name</th>
-						<th>Group</th>
-						<th>UOM</th>
-						<th>Type</th>
-						<th class="text-end">Standard rate</th>
+						<th>{{ t("Code") }}</th>
+						<th>{{ t("Name") }}</th>
+						<th>{{ t("Group") }}</th>
+						<th>{{ t("UOM") }}</th>
+						<th>{{ t("Type") }}</th>
+						<th class="text-end">{{ t("Standard rate") }}</th>
 					</tr>
 				</thead>
 				<tbody>
@@ -216,9 +218,9 @@ watch(activeCompany, load);
 						<td>{{ r.item_group }}</td>
 						<td>{{ r.stock_uom }}</td>
 						<td>
-							<span v-if="r.is_stock_item" class="badge bg-blue-lt me-1">Stock</span>
-							<span v-if="r.is_purchase_item" class="badge bg-orange-lt me-1">Buy</span>
-							<span v-if="r.is_sales_item" class="badge bg-green-lt me-1">Sell</span>
+							<span v-if="r.is_stock_item" class="badge bg-blue-lt me-1">{{ t("Stock") }}</span>
+							<span v-if="r.is_purchase_item" class="badge bg-orange-lt me-1">{{ t("Buy") }}</span>
+							<span v-if="r.is_sales_item" class="badge bg-green-lt me-1">{{ t("Sell") }}</span>
 						</td>
 						<td class="text-end font-monospace">{{ formatMoney(r.standard_rate, currency, user.language) }}</td>
 					</tr>
@@ -236,7 +238,7 @@ watch(activeCompany, load);
 		:style="{ transform: detailOpen ? 'translateX(0)' : 'translateX(100%)' }"
 	>
 		<div class="offcanvas-header">
-			<h5 class="offcanvas-title">Item</h5>
+			<h5 class="offcanvas-title">{{ t("Item") }}</h5>
 			<button type="button" class="btn-close" @click="closeDetail" aria-label="Close"></button>
 		</div>
 		<div class="offcanvas-body">
@@ -268,7 +270,7 @@ watch(activeCompany, load);
 					<div class="col-6">
 						<div class="card">
 							<div class="card-body py-2">
-								<div class="small text-secondary">On hand</div>
+								<div class="small text-secondary">{{ t("On hand") }}</div>
 								<div class="h3 m-0 text-blue">{{ formatQty(detail.total_qty, detail.stock_uom) }}</div>
 							</div>
 						</div>
@@ -276,7 +278,7 @@ watch(activeCompany, load);
 					<div class="col-6">
 						<div class="card">
 							<div class="card-body py-2">
-								<div class="small text-secondary">Stock value</div>
+								<div class="small text-secondary">{{ t("Stock value") }}</div>
 								<div class="h3 m-0 text-green">{{ formatMoney(detail.total_value, currency, user.language) }}</div>
 							</div>
 						</div>
@@ -285,40 +287,40 @@ watch(activeCompany, load);
 
 				<div class="datagrid mb-3">
 					<div class="datagrid-item">
-						<div class="datagrid-title">Group</div>
+						<div class="datagrid-title">{{ t("Group") }}</div>
 						<div class="datagrid-content">{{ detail.item_group }}</div>
 					</div>
 					<div class="datagrid-item">
-						<div class="datagrid-title">Stock UOM</div>
+						<div class="datagrid-title">{{ t("Stock UOM") }}</div>
 						<div class="datagrid-content">{{ detail.stock_uom }}</div>
 					</div>
 					<div class="datagrid-item">
-						<div class="datagrid-title">Standard rate</div>
+						<div class="datagrid-title">{{ t("Standard rate") }}</div>
 						<div class="datagrid-content font-monospace">{{ formatMoney(detail.standard_rate, currency, user.language) }}</div>
 					</div>
 					<div class="datagrid-item">
-						<div class="datagrid-title">Valuation</div>
+						<div class="datagrid-title">{{ t("Valuation") }}</div>
 						<div class="datagrid-content font-monospace">{{ formatMoney(detail.valuation_rate, currency, user.language) }}</div>
 					</div>
 					<div v-if="detail.weight_per_unit" class="datagrid-item">
-						<div class="datagrid-title">Weight</div>
+						<div class="datagrid-title">{{ t("Weight") }}</div>
 						<div class="datagrid-content">{{ detail.weight_per_unit }} {{ detail.weight_uom }}</div>
 					</div>
 				</div>
 
-				<h6 class="text-uppercase text-secondary small mb-2">Warehouse balances</h6>
+				<h6 class="text-uppercase text-secondary small mb-2">{{ t("Warehouse balances") }}</h6>
 				<div v-if="!detail.balances?.length" class="text-secondary small">
-					No stock in any warehouse for this company.
+					{{ t("No stock in any warehouse for this company.") }}
 				</div>
 				<div v-else class="table-responsive">
 					<table class="table table-sm table-vcenter">
 						<thead>
 							<tr>
-								<th>Warehouse</th>
-								<th class="text-end">On hand</th>
-								<th class="text-end">Reserved</th>
-								<th class="text-end">Projected</th>
-								<th class="text-end">Value</th>
+								<th>{{ t("Warehouse") }}</th>
+								<th class="text-end">{{ t("On hand") }}</th>
+								<th class="text-end">{{ t("Reserved") }}</th>
+								<th class="text-end">{{ t("Projected") }}</th>
+								<th class="text-end">{{ t("Value") }}</th>
 							</tr>
 						</thead>
 						<tbody>
@@ -341,18 +343,18 @@ watch(activeCompany, load);
 		<div class="modal-dialog modal-lg modal-dialog-centered" role="document">
 			<div class="modal-content">
 				<div class="modal-header">
-					<h5 class="modal-title">New item</h5>
+					<h5 class="modal-title">{{ t("New item") }}</h5>
 					<button type="button" class="btn-close" aria-label="Close" @click="closeCreate" :disabled="submitting"></button>
 				</div>
 				<div class="modal-body">
 					<div v-if="submitError" class="alert alert-danger">{{ submitError }}</div>
 					<div class="row g-3">
 						<div class="col-md-8">
-							<label class="form-label required">Item name</label>
+							<label class="form-label required">{{ t("Item name") }}</label>
 							<input v-model="form.item_name" type="text" class="form-control" autofocus />
 						</div>
 						<div class="col-md-4">
-							<label class="form-label">Item code</label>
+							<label class="form-label">{{ t("Item code") }}</label>
 							<input
 								v-model="form.item_code"
 								type="text"
@@ -361,47 +363,53 @@ watch(activeCompany, load);
 							/>
 						</div>
 						<div class="col-md-6">
-							<label class="form-label">Group</label>
-							<select v-model="form.item_group" class="form-select">
-								<option value="">— default —</option>
-								<option v-for="g in groupOptions" :key="g.name" :value="g.name">{{ g.name }}</option>
-							</select>
+							<label class="form-label">{{ t("Group") }}</label>
+							<Select
+								v-model="form.item_group"
+								:options="groupOptions"
+								value-key="name"
+								label-key="name"
+								:placeholder="t('— default —')"
+							/>
 						</div>
 						<div class="col-md-3">
-							<label class="form-label">Stock UOM</label>
-							<select v-model="form.stock_uom" class="form-select">
-								<option v-for="u in uomOptions" :key="u.name" :value="u.name">{{ u.name }}</option>
-							</select>
+							<label class="form-label">{{ t("Stock UOM") }}</label>
+							<Select
+								v-model="form.stock_uom"
+								:options="uomOptions"
+								value-key="name"
+								label-key="name"
+							/>
 						</div>
 						<div class="col-md-3">
-							<label class="form-label">Standard rate</label>
+							<label class="form-label">{{ t("Standard rate") }}</label>
 							<MoneyInput v-model="form.standard_rate" />
 						</div>
 						<div class="col-12">
 							<div class="form-check form-check-inline">
 								<input v-model="form.is_stock_item" class="form-check-input" type="checkbox" id="is_stock" />
-								<label class="form-check-label" for="is_stock">Stock item</label>
+								<label class="form-check-label" for="is_stock">{{ t("Stock item") }}</label>
 							</div>
 							<div class="form-check form-check-inline">
 								<input v-model="form.is_sales_item" class="form-check-input" type="checkbox" id="is_sales" />
-								<label class="form-check-label" for="is_sales">Sales item</label>
+								<label class="form-check-label" for="is_sales">{{ t("Sales item") }}</label>
 							</div>
 							<div class="form-check form-check-inline">
 								<input v-model="form.is_purchase_item" class="form-check-input" type="checkbox" id="is_purchase" />
-								<label class="form-check-label" for="is_purchase">Purchase item</label>
+								<label class="form-check-label" for="is_purchase">{{ t("Purchase item") }}</label>
 							</div>
 						</div>
 						<div class="col-12">
-							<label class="form-label">Description</label>
+							<label class="form-label">{{ t("Description") }}</label>
 							<textarea v-model="form.description" class="form-control" rows="2"></textarea>
 						</div>
 					</div>
 				</div>
 				<div class="modal-footer">
-					<button type="button" class="btn btn-link link-secondary" :disabled="submitting" @click="closeCreate">Cancel</button>
+					<button type="button" class="btn btn-link link-secondary" :disabled="submitting" @click="closeCreate">{{ t("Cancel") }}</button>
 					<button type="button" class="btn btn-primary ms-auto" :disabled="submitting" @click="submitCreate">
 						<span v-if="submitting" class="spinner-border spinner-border-sm me-1"></span>
-						Save
+						{{ t("Save") }}
 					</button>
 				</div>
 			</div>

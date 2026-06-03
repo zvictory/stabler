@@ -7,6 +7,7 @@ import { formatMoney } from "../../composables/money.js";
 import { formatDateTime } from "../../composables/date.js";
 import { t } from "../../composables/i18n.js";
 import EmptyState from "../../components/EmptyState.vue";
+import Select from "../../components/Select.vue";
 
 const session = useSession();
 const { activeCompany, user } = storeToRefs(session);
@@ -21,6 +22,11 @@ const currency = computed(
 	() => session.currentCompany?.default_currency || "UZS"
 );
 const lang = computed(() => user.value?.language || "en");
+
+const planOptions = computed(() => [
+	{ name: "", campaign_name: t("All promo plans") },
+	...plans.value,
+]);
 
 async function loadPlans() {
 	if (!activeCompany.value) {
@@ -92,12 +98,19 @@ function planLabel(name) {
 		<div class="card-header d-flex flex-wrap gap-2 align-items-center">
 			<h3 class="card-title mb-0">{{ t("Campaign ROI") }}</h3>
 			<div class="ms-auto" style="min-width: 280px">
-				<select v-model="planFilter" class="form-select form-select-sm">
-					<option value="">{{ t("All promo plans") }}</option>
-					<option v-for="p in plans" :key="p.name" :value="p.name">
-						{{ p.campaign_name }} ({{ p.name }})
-					</option>
-				</select>
+				<Select
+					v-model="planFilter"
+					:options="planOptions"
+					value-key="name"
+					size="sm"
+				>
+					<template #option="{ option }">
+						{{ option.campaign_name }}<template v-if="option.name"> ({{ option.name }})</template>
+					</template>
+					<template #selected="{ option }">
+						{{ option.campaign_name }}<template v-if="option.name"> ({{ option.name }})</template>
+					</template>
+				</Select>
 			</div>
 		</div>
 

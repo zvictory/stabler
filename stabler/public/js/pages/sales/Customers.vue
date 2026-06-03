@@ -4,10 +4,11 @@ import { storeToRefs } from "pinia";
 import { useSession } from "../../stores/session.js";
 import { call } from "../../api/client.js";
 import { formatMoney } from "../../composables/money.js";
-import { formatDateTime } from "../../composables/date.js";
+import { formatDate, formatDateTime } from "../../composables/date.js";
 import { t } from "../../composables/i18n.js";
 import EmptyState from "../../components/EmptyState.vue";
 import DateInput from "../../components/DateInput.vue";
+import Select from "../../components/Select.vue";
 
 const session = useSession();
 const { activeCompany, user } = storeToRefs(session);
@@ -62,10 +63,59 @@ const currency = computed(
 		"USD"
 );
 
-// Server already applies the search term; returning customers.value directly
-// avoids a client-side re-filter that can flash "No customers" while a new
-// debounced request is in-flight (old batch still loaded, new term not yet served).
-const filteredCustomers = computed(() => customers.value);
+// ── P2.1: client-side sort & filter ──────────────────────────────────────────
+const sortField = ref("");
+const sortAsc = ref(true);
+const filterGroup = ref("");
+const filterTerritory = ref("");
+
+const availableGroups = computed(() =>
+	[...new Set(customers.value.map((c) => c.customer_group).filter(Boolean))].sort()
+);
+const availableTerritories = computed(() =>
+	[...new Set(customers.value.map((c) => c.territory).filter(Boolean))].sort()
+);
+
+const groupFilterOptions = computed(() => [
+	{ value: "", label: t("All groups") },
+	...availableGroups.value.map((g) => ({ value: g, label: g })),
+]);
+const territoryFilterOptions = computed(() => [
+	{ value: "", label: t("All territories") },
+	...availableTerritories.value.map((tr) => ({ value: tr, label: tr })),
+]);
+
+const customerTypeOptions = computed(() =>
+	CUSTOMER_TYPES.map((ct) => ({ value: ct, label: t(ct) }))
+);
+
+const filteredCustomers = computed(() => {
+	let list = customers.value;
+	if (filterGroup.value) list = list.filter((c) => c.customer_group === filterGroup.value);
+	if (filterTerritory.value) list = list.filter((c) => c.territory === filterTerritory.value);
+	if (sortField.value === "name") {
+		list = [...list].sort((a, b) => {
+			const cmp = (a.customer_name || "").localeCompare(b.customer_name || "");
+			return sortAsc.value ? cmp : -cmp;
+		});
+	} else if (sortField.value === "balance") {
+		list = [...list].sort((a, b) => {
+			const av = Number(a.balance_acc ?? a.balance_base ?? 0);
+			const bv = Number(b.balance_acc ?? b.balance_base ?? 0);
+			return sortAsc.value ? av - bv : bv - av;
+		});
+	}
+	return list;
+});
+
+function toggleSort(field) {
+	if (sortField.value === field) {
+		sortAsc.value = !sortAsc.value;
+	} else {
+		sortField.value = field;
+		sortAsc.value = true;
+	}
+}
 
 const totalReceivable = computed(() =>
 	customers.value.reduce((sum, c) => sum + Number(c.balance_base || 0), 0)
@@ -164,23 +214,87 @@ async function loadLedger(customer) {
 
 function selectCustomer(c) {
 	selected.value = c;
+	custOrders.value = [];
 	if (!ledgerFromDate.value && !ledgerToDate.value) {
 		const r = defaultDateRange();
 		ledgerFromDate.value = r.from;
 		ledgerToDate.value = r.to;
 	}
 	loadLedger(c);
+	loadCustOrders(c);
 }
 
-const VOUCHER_ROUTES = {
-	"Sales Invoice": "/sales/invoices",
-	"Payment Entry": "/money/payments",
-	"Journal Entry": "/money/journals",
-};
-function voucherLinkTo(entry) {
-	const path = VOUCHER_ROUTES[entry?.voucher_type];
-	if (!path || !entry?.voucher_no) return null;
-	return { path, query: { open: entry.voucher_no } };
+// ── P1.3: Customer orders ────────────────────────────────────────────────────
+const custOrders = ref([]);
+const custOrdersLoading = ref(false);
+
+async function loadCustOrders(customer) {
+	if (!customer || !activeCompany.value) return;
+	custOrdersLoading.value = true;
+	try {
+		custOrders.value = await call("stabler.api.sales.list_sales_orders", {
+			company: activeCompany.value,
+			customer: customer.name,
+			limit: 20,
+		});
+	} catch {
+		custOrders.value = [];
+	} finally {
+		custOrdersLoading.value = false;
+	}
+}
+
+function orderStatusBadge(s) {
+	const m = {
+		Draft: "bg-secondary-lt",
+		"To Deliver and Bill": "bg-yellow-lt",
+		"To Bill": "bg-orange-lt",
+		"To Deliver": "bg-blue-lt",
+		Completed: "bg-green-lt",
+		Cancelled: "bg-red-lt",
+	};
+	return m[s] || "bg-secondary-lt";
+}
+
+// ── P1.4: In-context voucher drawer ─────────────────────────────────────────
+const voucherOpen = ref(false);
+const voucherLoading = ref(false);
+const voucherDetail = ref(null);
+const voucherError = ref("");
+
+async function openVoucher(entry) {
+	if (!entry?.voucher_no) return;
+	voucherOpen.value = true;
+	voucherLoading.value = true;
+	voucherDetail.value = null;
+	voucherError.value = "";
+	const type = entry.voucher_type;
+	const name = entry.voucher_no;
+	try {
+		let data;
+		if (type === "Sales Invoice") {
+			data = await call("stabler.api.sales.sales_invoice_detail", { name });
+		} else if (type === "Payment Entry") {
+			data = await call("stabler.api.money.payment_entry_detail", { name });
+		} else if (type === "Journal Entry") {
+			data = await call("stabler.api.money.journal_entry_detail", { name });
+		} else if (type === "Sales Order") {
+			data = await call("stabler.api.sales.sales_order_detail", { name });
+		} else {
+			data = { name };
+		}
+		voucherDetail.value = { _type: type, ...data };
+	} catch (err) {
+		voucherError.value = err?.message || t("Failed to load.");
+	} finally {
+		voucherLoading.value = false;
+	}
+}
+
+function closeVoucher() {
+	voucherOpen.value = false;
+	voucherDetail.value = null;
+	voucherError.value = "";
 }
 
 let searchTimer = null;
@@ -361,6 +475,31 @@ watch(activeCompany, () => {
 								/>
 								<span class="form-check-label small">{{ t("Only with balance") }}</span>
 							</label>
+							<!-- P2.1 sort/filter controls -->
+							<div class="d-flex gap-2 flex-wrap mt-2 align-items-center">
+								<Select v-if="availableGroups.length" v-model="filterGroup" size="sm" :options="groupFilterOptions" style="max-width: 150px" />
+								<Select v-if="availableTerritories.length" v-model="filterTerritory" size="sm" :options="territoryFilterOptions" style="max-width: 150px" />
+								<div class="btn-group btn-group-sm ms-auto">
+									<button
+										type="button"
+										class="btn btn-ghost-secondary"
+										:class="{ 'text-primary': sortField === 'name' }"
+										@click="toggleSort('name')"
+									>
+										{{ t("Name") }}
+										<i v-if="sortField === 'name'" :class="sortAsc ? 'ti ti-arrow-up' : 'ti ti-arrow-down'"></i>
+									</button>
+									<button
+										type="button"
+										class="btn btn-ghost-secondary"
+										:class="{ 'text-primary': sortField === 'balance' }"
+										@click="toggleSort('balance')"
+									>
+										{{ t("Balance") }}
+										<i v-if="sortField === 'balance'" :class="sortAsc ? 'ti ti-arrow-up' : 'ti ti-arrow-down'"></i>
+									</button>
+								</div>
+							</div>
 						</div>
 						<div class="cust-list-scroll">
 							<div v-if="loading" class="text-center py-5">
@@ -418,7 +557,7 @@ watch(activeCompany, () => {
 									</div>
 									<div class="cust-row-actions" @click.stop>
 										<router-link
-											:to="{ path: '/sales/orders', query: { new_for: c.name } }"
+											:to="{ path: '/sales/orders/new', query: { new_for: c.name } }"
 											class="btn btn-sm btn-ghost-primary"
 											:title="t('New sales order')"
 										>
@@ -481,6 +620,29 @@ watch(activeCompany, () => {
 									</div>
 								</div>
 							</div>
+							<!-- P1.3: Orders section -->
+							<div class="cust-orders-section px-3 py-2 border-bottom">
+								<div class="d-flex align-items-center gap-2 mb-2">
+									<h6 class="text-uppercase text-secondary small mb-0">{{ t("Orders") }}</h6>
+									<span v-if="custOrdersLoading" class="spinner-border spinner-border-sm text-secondary"></span>
+									<span v-else class="badge bg-secondary-lt text-secondary">{{ custOrders.length }}</span>
+								</div>
+								<div v-if="!custOrders.length && !custOrdersLoading" class="text-secondary small">{{ t("No orders.") }}</div>
+								<div v-else class="d-flex flex-column gap-1">
+									<button
+										v-for="o in custOrders"
+										:key="o.name"
+										type="button"
+										class="btn btn-ghost-secondary d-flex align-items-center gap-2 px-1 py-1 text-start"
+										@click="openVoucher({ voucher_type: 'Sales Order', voucher_no: o.name })"
+									>
+										<span class="badge" :class="orderStatusBadge(o.status)">{{ t(o.status) }}</span>
+										<span class="font-monospace small text-primary">{{ o.name }}</span>
+										<span class="text-secondary small">{{ formatDate(o.transaction_date) }}</span>
+										<span class="font-monospace small ms-auto">{{ formatMoney(o.grand_total, o.currency || currency, user.language) }}</span>
+									</button>
+								</div>
+							</div>
 							<div class="cust-ledger-filter px-3 py-2">
 								<div class="row g-2 align-items-end">
 									<div class="col-auto">
@@ -518,7 +680,7 @@ watch(activeCompany, () => {
 											<i class="ti ti-pencil me-1"></i>{{ t("Edit") }}
 										</button>
 										<router-link
-											:to="{ path: '/sales/orders', query: { new_for: selected.name } }"
+											:to="{ path: '/sales/orders/new', query: { new_for: selected.name } }"
 											class="btn btn-sm btn-primary"
 										>
 											<i class="ti ti-file-plus me-1"></i>{{ t("New SO") }}
@@ -568,14 +730,15 @@ watch(activeCompany, () => {
 												<td class="text-nowrap small">{{ formatDateTime(e.posting_date) }}</td>
 												<td>
 													<div class="small text-secondary">{{ e.voucher_type }}</div>
-													<router-link
-														v-if="voucherLinkTo(e)"
-														:to="voucherLinkTo(e)"
-														class="font-monospace small text-decoration-none"
+													<button
+														v-if="e.voucher_no"
+														type="button"
+														class="btn btn-link p-0 font-monospace small text-primary fw-semibold"
+														@click="openVoucher(e)"
 													>
 														{{ e.voucher_no }}
-													</router-link>
-													<div v-else class="font-monospace small">{{ e.voucher_no }}</div>
+													</button>
+													<div v-else class="font-monospace small">—</div>
 												</td>
 												<td class="text-end font-monospace small">
 													<span v-if="Number(ledgerCurrencyMixed ? e.debit : e.debit_in_account_currency) > 0">
@@ -628,6 +791,206 @@ watch(activeCompany, () => {
 		</div>
 	</div>
 
+	<!-- P1.4: In-context voucher detail drawer -->
+	<template v-if="voucherOpen">
+		<div class="offcanvas-backdrop fade show" @click="closeVoucher"></div>
+		<div class="offcanvas offcanvas-end show" tabindex="-1" style="width: min(520px, 100vw)">
+			<div class="offcanvas-header">
+				<h5 class="offcanvas-title">
+					<span v-if="voucherDetail">{{ t(voucherDetail._type) }}</span>
+					<span v-else>…</span>
+				</h5>
+				<button type="button" class="btn-close" @click="closeVoucher"></button>
+			</div>
+			<div class="offcanvas-body">
+				<div v-if="voucherLoading" class="text-center py-5">
+					<div class="spinner-border text-primary"></div>
+				</div>
+				<div v-else-if="voucherError" class="alert alert-danger">{{ voucherError }}</div>
+				<template v-else-if="voucherDetail">
+					<!-- Sales Invoice detail -->
+					<template v-if="voucherDetail._type === 'Sales Invoice'">
+						<div class="datagrid mb-3">
+							<div class="datagrid-item">
+								<div class="datagrid-title">{{ t("Invoice") }}</div>
+								<div class="datagrid-content font-monospace">{{ voucherDetail.name }}</div>
+							</div>
+							<div class="datagrid-item">
+								<div class="datagrid-title">{{ t("Date") }}</div>
+								<div class="datagrid-content">{{ formatDate(voucherDetail.posting_date) }}</div>
+							</div>
+							<div class="datagrid-item">
+								<div class="datagrid-title">{{ t("Status") }}</div>
+								<div class="datagrid-content">
+									<span class="badge bg-secondary-lt">{{ t(voucherDetail.status) }}</span>
+								</div>
+							</div>
+							<div class="datagrid-item">
+								<div class="datagrid-title">{{ t("Grand total") }}</div>
+								<div class="datagrid-content font-monospace">{{ formatMoney(voucherDetail.grand_total, voucherDetail.currency, user.language) }}</div>
+							</div>
+							<div class="datagrid-item">
+								<div class="datagrid-title">{{ t("Outstanding") }}</div>
+								<div class="datagrid-content font-monospace">{{ formatMoney(voucherDetail.outstanding_amount, voucherDetail.currency, user.language) }}</div>
+							</div>
+						</div>
+						<table v-if="voucherDetail.items?.length" class="table table-sm table-vcenter">
+							<thead>
+								<tr>
+									<th>{{ t("Item") }}</th>
+									<th class="text-end">{{ t("Qty") }}</th>
+									<th class="text-end">{{ t("Amount") }}</th>
+								</tr>
+							</thead>
+							<tbody>
+								<tr v-for="it in voucherDetail.items" :key="it.item_code">
+									<td>{{ it.item_name || it.item_code }}</td>
+									<td class="text-end font-monospace">{{ it.qty }}</td>
+									<td class="text-end font-monospace">{{ formatMoney(it.amount, voucherDetail.currency, user.language) }}</td>
+								</tr>
+							</tbody>
+						</table>
+					</template>
+
+					<!-- Sales Order detail -->
+					<template v-else-if="voucherDetail._type === 'Sales Order'">
+						<div class="datagrid mb-3">
+							<div class="datagrid-item">
+								<div class="datagrid-title">{{ t("Order") }}</div>
+								<div class="datagrid-content font-monospace">{{ voucherDetail.name }}</div>
+							</div>
+							<div class="datagrid-item">
+								<div class="datagrid-title">{{ t("Date") }}</div>
+								<div class="datagrid-content">{{ formatDate(voucherDetail.transaction_date) }}</div>
+							</div>
+							<div class="datagrid-item">
+								<div class="datagrid-title">{{ t("Status") }}</div>
+								<div class="datagrid-content">
+									<span class="badge" :class="orderStatusBadge(voucherDetail.status)">{{ t(voucherDetail.status) }}</span>
+								</div>
+							</div>
+							<div class="datagrid-item">
+								<div class="datagrid-title">{{ t("Grand total") }}</div>
+								<div class="datagrid-content font-monospace">{{ formatMoney(voucherDetail.grand_total, voucherDetail.currency, user.language) }}</div>
+							</div>
+						</div>
+						<table v-if="voucherDetail.items?.length" class="table table-sm table-vcenter">
+							<thead>
+								<tr>
+									<th>{{ t("Item") }}</th>
+									<th class="text-end">{{ t("Qty") }}</th>
+									<th class="text-end">{{ t("Amount") }}</th>
+								</tr>
+							</thead>
+							<tbody>
+								<tr v-for="it in voucherDetail.items" :key="it.item_code">
+									<td>{{ it.item_name || it.item_code }}</td>
+									<td class="text-end font-monospace">{{ it.qty }}</td>
+									<td class="text-end font-monospace">{{ formatMoney(it.amount, voucherDetail.currency, user.language) }}</td>
+								</tr>
+							</tbody>
+						</table>
+					</template>
+
+					<!-- Payment Entry detail -->
+					<template v-else-if="voucherDetail._type === 'Payment Entry'">
+						<div class="datagrid mb-3">
+							<div class="datagrid-item">
+								<div class="datagrid-title">{{ t("Payment") }}</div>
+								<div class="datagrid-content font-monospace">{{ voucherDetail.name }}</div>
+							</div>
+							<div class="datagrid-item">
+								<div class="datagrid-title">{{ t("Date") }}</div>
+								<div class="datagrid-content">{{ formatDate(voucherDetail.posting_date) }}</div>
+							</div>
+							<div class="datagrid-item">
+								<div class="datagrid-title">{{ t("Type") }}</div>
+								<div class="datagrid-content">{{ t(voucherDetail.payment_type) }}</div>
+							</div>
+							<div class="datagrid-item">
+								<div class="datagrid-title">{{ t("Amount paid") }}</div>
+								<div class="datagrid-content font-monospace">{{ formatMoney(voucherDetail.paid_amount, voucherDetail.paid_from_account_currency, user.language) }}</div>
+							</div>
+							<div class="datagrid-item">
+								<div class="datagrid-title">{{ t("Mode") }}</div>
+								<div class="datagrid-content">{{ voucherDetail.mode_of_payment || "—" }}</div>
+							</div>
+							<div v-if="voucherDetail.reference_no" class="datagrid-item">
+								<div class="datagrid-title">{{ t("Reference") }}</div>
+								<div class="datagrid-content font-monospace">{{ voucherDetail.reference_no }}</div>
+							</div>
+						</div>
+						<div v-if="voucherDetail.references?.length">
+							<div class="small text-secondary text-uppercase mb-1">{{ t("Applied to") }}</div>
+							<table class="table table-sm table-vcenter">
+								<thead>
+									<tr>
+										<th>{{ t("Document") }}</th>
+										<th class="text-end">{{ t("Allocated") }}</th>
+									</tr>
+								</thead>
+								<tbody>
+									<tr v-for="ref in voucherDetail.references" :key="ref.reference_name">
+										<td class="font-monospace small">{{ ref.reference_name }}</td>
+										<td class="text-end font-monospace">{{ formatMoney(ref.allocated_amount, voucherDetail.paid_from_account_currency, user.language) }}</td>
+									</tr>
+								</tbody>
+							</table>
+						</div>
+					</template>
+
+					<!-- Journal Entry detail -->
+					<template v-else-if="voucherDetail._type === 'Journal Entry'">
+						<div class="datagrid mb-3">
+							<div class="datagrid-item">
+								<div class="datagrid-title">{{ t("Entry") }}</div>
+								<div class="datagrid-content font-monospace">{{ voucherDetail.name }}</div>
+							</div>
+							<div class="datagrid-item">
+								<div class="datagrid-title">{{ t("Date") }}</div>
+								<div class="datagrid-content">{{ formatDate(voucherDetail.posting_date) }}</div>
+							</div>
+							<div v-if="voucherDetail.user_remark" class="datagrid-item">
+								<div class="datagrid-title">{{ t("Remark") }}</div>
+								<div class="datagrid-content">{{ voucherDetail.user_remark }}</div>
+							</div>
+						</div>
+						<div v-if="voucherDetail.accounts?.length">
+							<div class="small text-secondary text-uppercase mb-1">{{ t("Accounts") }}</div>
+							<table class="table table-sm table-vcenter">
+								<thead>
+									<tr>
+										<th>{{ t("Account") }}</th>
+										<th class="text-end">{{ t("Debit") }}</th>
+										<th class="text-end">{{ t("Credit") }}</th>
+									</tr>
+								</thead>
+								<tbody>
+									<tr v-for="(ac, i) in voucherDetail.accounts" :key="i">
+										<td class="small">{{ ac.account }}</td>
+										<td class="text-end font-monospace small">
+											<span v-if="Number(ac.debit) > 0">{{ formatMoney(ac.debit, ac.account_currency, user.language) }}</span>
+											<span v-else class="text-secondary">—</span>
+										</td>
+										<td class="text-end font-monospace small">
+											<span v-if="Number(ac.credit) > 0">{{ formatMoney(ac.credit, ac.account_currency, user.language) }}</span>
+											<span v-else class="text-secondary">—</span>
+										</td>
+									</tr>
+								</tbody>
+							</table>
+						</div>
+					</template>
+
+					<!-- Fallback -->
+					<template v-else>
+						<div class="font-monospace small">{{ voucherDetail.name }}</div>
+					</template>
+				</template>
+			</div>
+		</div>
+	</template>
+
 	<template v-if="createOpen">
 		<div class="modal-backdrop fade show" @click="closeCreate"></div>
 		<div class="modal fade show d-block" tabindex="-1" role="dialog">
@@ -646,9 +1009,7 @@ watch(activeCompany, () => {
 							</div>
 							<div class="col-md-6">
 								<label class="form-label">{{ t("Type") }}</label>
-								<select v-model="form.customer_type" class="form-select">
-									<option v-for="ct in CUSTOMER_TYPES" :key="ct" :value="ct">{{ t(ct) }}</option>
-								</select>
+								<Select v-model="form.customer_type" :options="customerTypeOptions" />
 							</div>
 							<div class="col-md-6">
 								<label class="form-label">{{ t("Tax ID") }}</label>
@@ -656,17 +1017,11 @@ watch(activeCompany, () => {
 							</div>
 							<div class="col-md-6">
 								<label class="form-label">{{ t("Customer group") }}</label>
-								<select v-model="form.customer_group" class="form-select">
-									<option value="">{{ t("— default —") }}</option>
-									<option v-for="g in groupOptions" :key="g.name" :value="g.name">{{ g.name }}</option>
-								</select>
+								<Select v-model="form.customer_group" :options="groupOptions" value-key="name" label-key="name" :placeholder="t('— default —')" />
 							</div>
 							<div class="col-md-6">
 								<label class="form-label">{{ t("Territory") }}</label>
-								<select v-model="form.territory" class="form-select">
-									<option value="">{{ t("— default —") }}</option>
-									<option v-for="tr in territoryOptions" :key="tr.name" :value="tr.name">{{ tr.name }}</option>
-								</select>
+								<Select v-model="form.territory" :options="territoryOptions" value-key="name" label-key="name" :placeholder="t('— default —')" />
 							</div>
 							<div class="col-md-6">
 								<label class="form-label">{{ t("Email") }}</label>
@@ -678,21 +1033,25 @@ watch(activeCompany, () => {
 							</div>
 							<div class="col-md-6">
 								<label class="form-label">{{ t("Default price list") }}</label>
-								<select v-model="form.default_price_list" class="form-select">
-									<option value="">{{ t("— global default —") }}</option>
-									<option v-for="p in priceListOptions" :key="p.name" :value="p.name">
+								<Select v-model="form.default_price_list" :options="priceListOptions" value-key="name" :placeholder="t('— global default —')">
+									<template #option="{ option: p }">
 										{{ p.name }}<span v-if="p.currency"> ({{ p.currency }})</span>
-									</option>
-								</select>
+									</template>
+									<template #selected="{ option: p }">
+										{{ p.name }}<span v-if="p.currency"> ({{ p.currency }})</span>
+									</template>
+								</Select>
 							</div>
 							<div class="col-md-6">
 								<label class="form-label">{{ t("Default currency") }}</label>
-								<select v-model="form.default_currency" class="form-select font-monospace">
-									<option value="">{{ t("— company default —") }}</option>
-									<option v-for="c in currencyOptions" :key="c.name" :value="c.name">
+								<Select v-model="form.default_currency" class="font-monospace" :options="currencyOptions" value-key="name" :placeholder="t('— company default —')">
+									<template #option="{ option: c }">
 										{{ c.name }}<template v-if="c.symbol"> ({{ c.symbol }})</template>
-									</option>
-								</select>
+									</template>
+									<template #selected="{ option: c }">
+										{{ c.name }}<template v-if="c.symbol"> ({{ c.symbol }})</template>
+									</template>
+								</Select>
 							</div>
 						</div>
 					</div>

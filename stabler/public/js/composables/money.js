@@ -25,6 +25,9 @@ const LOCALE_MAP = {
 // default `Intl.NumberFormat` `style: "currency"` path.
 const CURRENCY_OVERRIDES = {
 	UZS: { fractionDigits: 0, suffix: "сўм" },
+	// USDT is not an ISO 4217 currency so Intl.NumberFormat throws on it.
+	// Format manually: 2 decimal places + "USDT" suffix.
+	USDT: { fractionDigits: 2, suffix: "USDT" },
 };
 
 export function formatMoney(value, currency = "USD", language = "en") {

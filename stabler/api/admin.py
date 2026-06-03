@@ -8,6 +8,8 @@ from __future__ import annotations
 import frappe
 from frappe import _
 
+from stabler.api.organization import MODULE_KEYS
+
 # Role bundles applied by `apply_role_template`. Replaces a user's full role set.
 ROLE_TEMPLATES: dict[str, list[str]] = {
 	"sales-rep": ["Sales User", "Sales Manager"],
@@ -49,6 +51,19 @@ def _user_allowed_companies(name: str) -> list[str]:
 			fields=["company"],
 		)
 		return sorted({r.company for r in rows if r.company})
+	except Exception:
+		return []
+
+
+def _user_allowed_modules(name: str) -> list[str]:
+	"""Read the Stabler User Module table on User. Empty = derive from roles."""
+	try:
+		rows = frappe.get_all(
+			"Stabler User Module",
+			filters={"parent": name, "parenttype": "User", "parentfield": "allowed_modules"},
+			fields=["module"],
+		)
+		return sorted({r.module for r in rows if r.module in MODULE_KEYS})
 	except Exception:
 		return []
 
@@ -100,11 +115,12 @@ def get_user(name: str):
 		"user_image": doc.user_image,
 		"roles": _user_roles(doc.name),
 		"allowed_companies": _user_allowed_companies(doc.name),
+		"allowed_modules": _user_allowed_modules(doc.name),
 	}
 
 
 @frappe.whitelist()
-def update_user(name: str, full_name: str | None = None, enabled=None, roles=None):
+def update_user(name: str, full_name: str | None = None, enabled=None, roles=None, allowed_modules=None):
 	_require_admin()
 	if not frappe.db.exists("User", name):
 		frappe.throw(_("User not found"))
@@ -123,6 +139,18 @@ def update_user(name: str, full_name: str | None = None, enabled=None, roles=Non
 		if isinstance(roles, str):
 			roles = frappe.parse_json(roles) or []
 		_replace_user_roles(name, [r for r in roles if r])
+
+	if allowed_modules is not None:
+		# `allowed_modules` may arrive as JSON string from form-encoded request.
+		if isinstance(allowed_modules, str):
+			allowed_modules = frappe.parse_json(allowed_modules) or []
+		# Validate: only accept canonical module keys.
+		allowed_modules = [m for m in (allowed_modules or []) if m in MODULE_KEYS]
+		user_doc = frappe.get_doc("User", name)
+		user_doc.set("allowed_modules", [])
+		for m in allowed_modules:
+			user_doc.append("allowed_modules", {"module": m})
+		user_doc.save(ignore_permissions=True)
 
 	frappe.db.commit()
 	return get_user(name)

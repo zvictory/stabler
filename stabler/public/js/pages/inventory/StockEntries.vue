@@ -13,8 +13,10 @@ import { useSession } from "../../stores/session.js";
 import { call } from "../../api/client.js";
 import { formatMoney } from "../../composables/money.js";
 import { formatDateTime } from "../../composables/date.js";
+import { t } from "../../composables/i18n.js";
 import MoneyInput from "../../components/MoneyInput.vue";
 import DateInput from "../../components/DateInput.vue";
+import Select from "../../components/Select.vue";
 import EmptyState from "../../components/EmptyState.vue";
 
 const session = useSession();
@@ -22,12 +24,12 @@ const { activeCompany, user } = storeToRefs(session);
 
 const today = new Date().toISOString().slice(0, 10);
 
-const PURPOSES = [
-	{ key: "", label: "All" },
-	{ key: "Material Receipt", label: "Receipts", icon: "ti-arrow-down-circle", color: "text-green" },
-	{ key: "Material Issue", label: "Issues", icon: "ti-arrow-up-circle", color: "text-red" },
-	{ key: "Material Transfer", label: "Transfers", icon: "ti-transfer", color: "text-blue" },
-];
+const PURPOSES = computed(() => [
+	{ key: "", label: t("All") },
+	{ key: "Material Receipt", label: t("Receipts"), icon: "ti-arrow-down-circle", color: "text-green" },
+	{ key: "Material Issue", label: t("Issues"), icon: "ti-arrow-up-circle", color: "text-red" },
+	{ key: "Material Transfer", label: t("Transfers"), icon: "ti-transfer", color: "text-blue" },
+]);
 
 const filterPurpose = ref("");
 const loading = ref(false);
@@ -41,12 +43,12 @@ const currency = computed(
 );
 
 const docstatusBadge = (n) => {
-	if (n === 1) return { cls: "bg-green-lt", label: "Submitted" };
-	if (n === 2) return { cls: "bg-red-lt", label: "Cancelled" };
-	return { cls: "bg-yellow-lt", label: "Draft" };
+	if (n === 1) return { cls: "bg-green-lt", label: t("Submitted") };
+	if (n === 2) return { cls: "bg-red-lt", label: t("Cancelled") };
+	return { cls: "bg-yellow-lt", label: t("Draft") };
 };
 
-const purposeMeta = (p) => PURPOSES.find((x) => x.key === p) || PURPOSES[0];
+const purposeMeta = (p) => PURPOSES.value.find((x) => x.key === p) || PURPOSES.value[0];
 
 async function load() {
 	if (!activeCompany.value) return;
@@ -59,7 +61,7 @@ async function load() {
 			limit: 200,
 		});
 	} catch (err) {
-		error.value = err?.message || "Failed to load stock entries.";
+		error.value = err?.message || t("Failed to load stock entries.");
 	} finally {
 		loading.value = false;
 	}
@@ -80,7 +82,7 @@ async function openDetail(name) {
 	try {
 		detail.value = await call("stabler.api.inventory.stock_entry_detail", { name });
 	} catch (err) {
-		detail.value = { error: err?.message || "Failed to load." };
+		detail.value = { error: err?.message || t("Failed to load.") };
 	} finally {
 		detailLoading.value = false;
 	}
@@ -100,14 +102,14 @@ async function submitDoc() {
 		await openDetail(detail.value.name);
 		await load();
 	} catch (err) {
-		actionError.value = err?.message || "Failed to submit.";
+		actionError.value = err?.message || t("Failed to submit.");
 	} finally {
 		actionRunning.value = false;
 	}
 }
 async function cancelDoc() {
 	if (!detail.value?.name || detail.value.docstatus !== 1) return;
-	if (!window.confirm(`Cancel ${detail.value.name}? This will reverse the stock movements.`)) return;
+	if (!window.confirm(t("Cancel {name}? This will reverse the stock movements.").replace("{name}", detail.value.name))) return;
 	actionError.value = "";
 	actionRunning.value = true;
 	try {
@@ -115,7 +117,7 @@ async function cancelDoc() {
 		await openDetail(detail.value.name);
 		await load();
 	} catch (err) {
-		actionError.value = err?.message || "Failed to cancel.";
+		actionError.value = err?.message || t("Failed to cancel.");
 	} finally {
 		actionRunning.value = false;
 	}
@@ -173,7 +175,7 @@ async function loadWarehouses() {
 		});
 		warehousesLoaded.value = true;
 	} catch (err) {
-		submitError.value = err?.message || "Failed to load warehouses.";
+		submitError.value = err?.message || t("Failed to load warehouses.");
 	}
 }
 
@@ -200,14 +202,14 @@ function onItemSearch(line) {
 		return;
 	}
 	line.showOptions = true;
-	const t = setTimeout(async () => {
+	const timer = setTimeout(async () => {
 		try {
 			line.options = await call("stabler.api.inventory.list_items", { search: q, limit: 10 });
 		} catch {
 			line.options = [];
 		}
 	}, 200);
-	itemTimers.set(line, t);
+	itemTimers.set(line, timer);
 }
 function pickItem(line, item) {
 	line.item_code = item.item_code || item.name;
@@ -239,11 +241,11 @@ function removeLine(idx) {
 async function submitCreate(andSubmitDoc = false) {
 	submitError.value = "";
 	if (showFromWarehouse.value && !form.value.from_warehouse) {
-		submitError.value = "Pick a source warehouse.";
+		submitError.value = t("Pick a source warehouse.");
 		return;
 	}
 	if (showToWarehouse.value && !form.value.to_warehouse) {
-		submitError.value = "Pick a destination warehouse.";
+		submitError.value = t("Pick a destination warehouse.");
 		return;
 	}
 	const items = form.value.items
@@ -255,7 +257,7 @@ async function submitCreate(andSubmitDoc = false) {
 			basic_rate: l.basic_rate ? Number(l.basic_rate) : undefined,
 		}));
 	if (!items.length) {
-		submitError.value = "Add at least one item line.";
+		submitError.value = t("Add at least one item line.");
 		return;
 	}
 	submitting.value = true;
@@ -274,7 +276,7 @@ async function submitCreate(andSubmitDoc = false) {
 		await load();
 		if (created?.name) await openDetail(created.name);
 	} catch (err) {
-		submitError.value = err?.message || "Failed to save stock entry.";
+		submitError.value = err?.message || t("Failed to save stock entry.");
 	} finally {
 		submitting.value = false;
 	}
@@ -291,7 +293,7 @@ watch(filterPurpose, load);
 <template>
 	<div class="card">
 		<div class="card-header d-flex align-items-center flex-wrap gap-2">
-			<div class="card-title m-0">Stock entries</div>
+			<div class="card-title m-0">{{ t("Stock entries") }}</div>
 			<ul class="nav nav-pills ms-3 mb-0 d-none d-md-flex">
 				<li v-for="p in PURPOSES" :key="p.key || 'all'" class="nav-item">
 					<a
@@ -305,15 +307,17 @@ watch(filterPurpose, load);
 				</li>
 			</ul>
 			<div class="ms-auto btn-list">
-				<select
+				<Select
 					v-model="filterPurpose"
-					class="form-select form-select-sm d-md-none"
+					size="sm"
+					class="d-md-none"
 					style="width: 140px"
-				>
-					<option v-for="p in PURPOSES" :key="p.key || 'all'" :value="p.key">{{ p.label }}</option>
-				</select>
+					:options="PURPOSES"
+					value-key="key"
+					label-key="label"
+				/>
 				<button type="button" class="btn btn-success btn-sm" @click="openCreate()">
-					<i class="ti ti-plus me-1"></i>New entry
+					<i class="ti ti-plus me-1"></i>{{ t("New entry") }}
 				</button>
 			</div>
 		</div>
@@ -328,15 +332,15 @@ watch(filterPurpose, load);
 			icon="ti-clipboard-list"
 			accentIcon="ti-plus"
 			tone="primary"
-			title="No stock entries yet"
-			subtitle="Record a receipt, issue, or transfer to move stock between warehouses."
+			:title="t('No stock entries yet')"
+			:subtitle="t('Record a receipt, issue, or transfer to move stock between warehouses.')"
 		>
 			<template #actions>
 				<button class="btn btn-success" @click="openCreate('Material Receipt')">
-					<i class="ti ti-arrow-down-circle me-1"></i>Receive stock
+					<i class="ti ti-arrow-down-circle me-1"></i>{{ t("Receive stock") }}
 				</button>
 				<button class="btn btn-outline-primary" @click="openCreate('Material Transfer')">
-					<i class="ti ti-transfer me-1"></i>Transfer stock
+					<i class="ti ti-transfer me-1"></i>{{ t("Transfer stock") }}
 				</button>
 			</template>
 		</EmptyState>
@@ -344,13 +348,13 @@ watch(filterPurpose, load);
 			<table class="table table-vcenter card-table table-hover">
 				<thead>
 					<tr>
-						<th>Reference</th>
-						<th>Date</th>
-						<th>Purpose</th>
-						<th>From → To</th>
-						<th class="text-end">Items</th>
-						<th class="text-end">Value</th>
-						<th>Status</th>
+						<th>{{ t("Reference") }}</th>
+						<th>{{ t("Date") }}</th>
+						<th>{{ t("Purpose") }}</th>
+						<th>{{ t("From → To") }}</th>
+						<th class="text-end">{{ t("Items") }}</th>
+						<th class="text-end">{{ t("Value") }}</th>
+						<th>{{ t("Status") }}</th>
 					</tr>
 				</thead>
 				<tbody>
@@ -391,7 +395,7 @@ watch(filterPurpose, load);
 		:style="{ transform: detailOpen ? 'translateX(0)' : 'translateX(100%)' }"
 	>
 		<div class="offcanvas-header">
-			<h5 class="offcanvas-title">Stock entry</h5>
+			<h5 class="offcanvas-title">{{ t("Stock entry") }}</h5>
 			<button type="button" class="btn-close" @click="closeDetail" aria-label="Close"></button>
 		</div>
 		<div class="offcanvas-body">
@@ -424,7 +428,7 @@ watch(filterPurpose, load);
 						@click="submitDoc"
 					>
 						<span v-if="actionRunning" class="spinner-border spinner-border-sm me-1"></span>
-						<i v-else class="ti ti-check me-1"></i>Submit
+						<i v-else class="ti ti-check me-1"></i>{{ t("Submit") }}
 					</button>
 					<button
 						v-if="detail.docstatus === 1"
@@ -432,38 +436,38 @@ watch(filterPurpose, load);
 						:disabled="actionRunning"
 						@click="cancelDoc"
 					>
-						<i class="ti ti-x me-1"></i>Cancel entry
+						<i class="ti ti-x me-1"></i>{{ t("Cancel entry") }}
 					</button>
 				</div>
 
 				<div class="datagrid mb-3">
 					<div class="datagrid-item">
-						<div class="datagrid-title">From</div>
+						<div class="datagrid-title">{{ t("From") }}</div>
 						<div class="datagrid-content">{{ detail.from_warehouse || "—" }}</div>
 					</div>
 					<div class="datagrid-item">
-						<div class="datagrid-title">To</div>
+						<div class="datagrid-title">{{ t("To") }}</div>
 						<div class="datagrid-content">{{ detail.to_warehouse || "—" }}</div>
 					</div>
 					<div class="datagrid-item">
-						<div class="datagrid-title">Total value</div>
+						<div class="datagrid-title">{{ t("Total value") }}</div>
 						<div class="datagrid-content font-monospace">
 							{{ formatMoney(detail.total_amount || detail.total_incoming_value, currency, user.language) }}
 						</div>
 					</div>
 				</div>
 
-				<h6 class="text-uppercase text-secondary small mb-2">Items</h6>
+				<h6 class="text-uppercase text-secondary small mb-2">{{ t("Items") }}</h6>
 				<div class="table-responsive">
 					<table class="table table-sm table-vcenter">
 						<thead>
 							<tr>
-								<th>Item</th>
-								<th>From</th>
-								<th>To</th>
-								<th class="text-end">Qty</th>
-								<th class="text-end">Rate</th>
-								<th class="text-end">Amount</th>
+								<th>{{ t("Item") }}</th>
+								<th>{{ t("From") }}</th>
+								<th>{{ t("To") }}</th>
+								<th class="text-end">{{ t("Qty") }}</th>
+								<th class="text-end">{{ t("Rate") }}</th>
+								<th class="text-end">{{ t("Amount") }}</th>
 							</tr>
 						</thead>
 						<tbody>
@@ -487,7 +491,7 @@ watch(filterPurpose, load);
 				</div>
 
 				<div v-if="detail.remarks" class="mt-3">
-					<h6 class="text-uppercase text-secondary small mb-1">Notes</h6>
+					<h6 class="text-uppercase text-secondary small mb-1">{{ t("Notes") }}</h6>
 					<p class="small text-secondary mb-0">{{ detail.remarks }}</p>
 				</div>
 			</div>
@@ -500,7 +504,7 @@ watch(filterPurpose, load);
 		<div class="modal-dialog modal-xl modal-dialog-centered" role="document">
 			<div class="modal-content">
 				<div class="modal-header">
-					<h5 class="modal-title">New stock entry</h5>
+					<h5 class="modal-title">{{ t("New stock entry") }}</h5>
 					<button type="button" class="btn-close" aria-label="Close" @click="closeCreate" :disabled="submitting"></button>
 				</div>
 				<div class="modal-body">
@@ -508,7 +512,7 @@ watch(filterPurpose, load);
 
 					<div class="row g-3 mb-3">
 						<div class="col-md-6">
-							<label class="form-label required">Purpose</label>
+							<label class="form-label required">{{ t("Purpose") }}</label>
 							<div class="btn-group w-100" role="group">
 								<template v-for="p in PURPOSES.slice(1)" :key="p.key">
 									<input
@@ -525,12 +529,12 @@ watch(filterPurpose, load);
 							</div>
 						</div>
 						<div class="col-md-3">
-							<label class="form-label">Date</label>
+							<label class="form-label">{{ t("Date") }}</label>
 							<DateInput v-model="form.posting_date" />
 						</div>
 						<div class="col-md-3 d-flex align-items-end">
 							<div class="text-end w-100">
-								<div class="small text-secondary">Estimated value</div>
+								<div class="small text-secondary">{{ t("Estimated value") }}</div>
 								<div class="h4 mb-0 font-monospace">
 									{{ formatMoney(createTotal, currency, user.language) }}
 								</div>
@@ -538,22 +542,28 @@ watch(filterPurpose, load);
 						</div>
 
 						<div v-if="showFromWarehouse" class="col-md-6">
-							<label class="form-label required">From warehouse</label>
-							<select v-model="form.from_warehouse" class="form-select">
-								<option value="">— pick source —</option>
-								<option v-for="w in stockWarehouses" :key="w.name" :value="w.name">
-									{{ w.warehouse_name || w.name }}
-								</option>
-							</select>
+							<label class="form-label required">{{ t("From warehouse") }}</label>
+							<Select
+								v-model="form.from_warehouse"
+								:options="stockWarehouses"
+								value-key="name"
+								:placeholder="t('— pick source —')"
+							>
+								<template #option="{ option }">{{ option.warehouse_name || option.name }}</template>
+								<template #selected="{ option }">{{ option.warehouse_name || option.name }}</template>
+							</Select>
 						</div>
 						<div v-if="showToWarehouse" class="col-md-6">
-							<label class="form-label required">To warehouse</label>
-							<select v-model="form.to_warehouse" class="form-select">
-								<option value="">— pick destination —</option>
-								<option v-for="w in stockWarehouses" :key="w.name" :value="w.name">
-									{{ w.warehouse_name || w.name }}
-								</option>
-							</select>
+							<label class="form-label required">{{ t("To warehouse") }}</label>
+							<Select
+								v-model="form.to_warehouse"
+								:options="stockWarehouses"
+								value-key="name"
+								:placeholder="t('— pick destination —')"
+							>
+								<template #option="{ option }">{{ option.warehouse_name || option.name }}</template>
+								<template #selected="{ option }">{{ option.warehouse_name || option.name }}</template>
+							</Select>
 						</div>
 					</div>
 
@@ -561,11 +571,11 @@ watch(filterPurpose, load);
 						<table class="table table-sm table-bordered align-middle">
 							<thead class="table-light">
 								<tr>
-									<th style="width: 40%">Item</th>
-									<th style="width: 15%">Qty</th>
-									<th style="width: 10%">UOM</th>
-									<th style="width: 20%">Rate</th>
-									<th style="width: 15%" class="text-end">Amount</th>
+									<th style="width: 40%">{{ t("Item") }}</th>
+									<th style="width: 15%">{{ t("Qty") }}</th>
+									<th style="width: 10%">{{ t("UOM") }}</th>
+									<th style="width: 20%">{{ t("Rate") }}</th>
+									<th style="width: 15%" class="text-end">{{ t("Amount") }}</th>
 									<th style="width: 36px"></th>
 								</tr>
 							</thead>
@@ -578,7 +588,7 @@ watch(filterPurpose, load);
 													v-model="line.search"
 													type="text"
 													class="form-control"
-													placeholder="Search item…"
+													:placeholder="t('Search item…')"
 													@input="onItemSearch(line)"
 													@focus="line.showOptions = !!line.options.length"
 													@blur="setTimeout(() => (line.showOptions = false), 150)"
@@ -587,7 +597,7 @@ watch(filterPurpose, load);
 													v-if="line.item_code"
 													type="button"
 													class="btn btn-outline-secondary"
-													title="Clear"
+													:title="t('Clear')"
 													@click="clearItem(line)"
 												>
 													<i class="ti ti-x"></i>
@@ -644,7 +654,7 @@ watch(filterPurpose, load);
 											type="button"
 											class="btn btn-icon btn-sm btn-ghost-danger"
 											@click="removeLine(idx)"
-											title="Remove"
+											:title="t('Remove')"
 										>
 											<i class="ti ti-trash"></i>
 										</button>
@@ -655,7 +665,7 @@ watch(filterPurpose, load);
 								<tr>
 									<td colspan="6">
 										<button type="button" class="btn btn-sm btn-link" @click="addLine">
-											<i class="ti ti-plus me-1"></i>Add another item
+											<i class="ti ti-plus me-1"></i>{{ t("Add another item") }}
 										</button>
 									</td>
 								</tr>
@@ -664,19 +674,19 @@ watch(filterPurpose, load);
 					</div>
 
 					<div class="mt-2">
-						<label class="form-label">Notes</label>
+						<label class="form-label">{{ t("Notes") }}</label>
 						<textarea v-model="form.remarks" class="form-control" rows="2"></textarea>
 					</div>
 				</div>
 				<div class="modal-footer">
-					<button type="button" class="btn btn-link link-secondary" :disabled="submitting" @click="closeCreate">Cancel</button>
+					<button type="button" class="btn btn-link link-secondary" :disabled="submitting" @click="closeCreate">{{ t("Cancel") }}</button>
 					<button
 						type="button"
 						class="btn btn-outline-primary ms-auto"
 						:disabled="submitting"
 						@click="submitCreate(false)"
 					>
-						Save as draft
+						{{ t("Save as draft") }}
 					</button>
 					<button
 						type="button"
@@ -685,7 +695,7 @@ watch(filterPurpose, load);
 						@click="submitCreate(true)"
 					>
 						<span v-if="submitting" class="spinner-border spinner-border-sm me-1"></span>
-						<i v-else class="ti ti-check me-1"></i>Save &amp; submit
+						<i v-else class="ti ti-check me-1"></i>{{ t("Save & submit") }}
 					</button>
 				</div>
 			</div>

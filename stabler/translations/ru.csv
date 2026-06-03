@@ -1,123 +1,236 @@
 source,target
-#,
+#,#
+0.00,"0,00"
+0–30,0–30
 1C Sync Log,Журнал синхронизации 1C
 1C:Enterprise sync log appears here.,Здесь отображается журнал синхронизации 1C:Предприятие.
-A password reset email will be sent. The account is disabled until the user sets a password.,
-A valid email is required,
+31–60,31–60
+61–90,61–90
+90+,90+
+A password reset email will be sent. The account is disabled until the user sets a password.,"На адрес будет отправлено письмо с инструкциями по восстановлению пароля. Учётная запись отключена до тех пор, пока пользователь не установит пароль."
+A valid email is required,Требуется действительный адрес электронной почты
+AP Aging,Анализ кредиторской задолженности
+AR Aging,Анализ дебиторской задолженности
 ARCA,ARCA
 ARCA Payment Events,Платежи ARCA
 ARCA payment webhook events appear here.,Здесь отображаются события вебхуков платежей ARCA.
-Abbr,
+Abbr,Сокр.
 Absent,Отсутствует
 Accepted,Принят
-Account,
-Account currency must match the payment account.,
-Action failed.,
+Account,Счёт
+Account Ledger,Журнал счета
+Account currency must match the payment account.,Валюта счета должна соответствовать валюте платёжного счета.
+Accounts,Счета
+Action failed.,Ошибка выполнения.
+Actions,Действия
 Active,Активные
-Actual,
+Actual,Фактический
+Add a customer,Добавить клиента
+Add a warehouse to start tracking stock locations.,"Добавьте склад, чтобы начать отслеживание мест хранения товаров."
+Add another item,Добавить ещё товар
+Add at least one item line.,Добавьте хотя бы одну строку товара.
 Add at least one raw material line.,Добавьте хотя бы одну строку сырья.
-Add item,
+Add child warehouse,Добавить подсклад
+Add customer,Добавить клиента
+Add item,Добавить товар
 Add line,Добавить строку
-Add outlet,
-Add row,
+Add outlet,Добавить торговую точку
+Add row,Добавить строку
+Add supplier,Добавить поставщика
+Add warehouse,Добавить склад
+Add your first customer to start sending quotes and invoices.,"Добавьте первого клиента, чтобы начать отправку предложений и счётов-фактур."
 Add your first employee to start tracking attendance, leave and payroll.
-"Add your first employee to start tracking attendance, leave and payroll.",
-Address,
-Admin,
-Against,
-All categories,
+"Add your first employee to start tracking attendance, leave and payroll.","Добавьте первого сотрудника, чтобы начать отслеживание посещаемости, отпуска и расчётных листков."
+Add your first supplier to start recording bills and purchases.,"Добавьте первого поставщика, чтобы начать регистрацию счетов и закупок."
+Address,Адрес
+Adjust dates or check that {company} has posted transactions in this period.,"Измените даты или проверьте, что {company} имеет проведённые операции в этом периоде."
+Admin,Администратор
+Advance paid,Авансовый платёж
+Against,По
+All,Все
+All categories,Все категории
 All directions,Все направления
 All events,Все события
+All groups,Все группы
+All invoices are settled as of {date}.,Все счёта-фактуры оплачены по состоянию на {date}.
 All items above reorder level.,Все товары выше порога пополнения.
+All items are above their warehouse reorder thresholds — nice work.,Все товары превышают пороги переупорядочения склада — отлично!
 All object types,Все типы объектов
-All promo plans,
-All sales invoices for this company are fully paid.,
+All promo plans,Все промо-планы
+All sales invoices for this company are fully paid.,Все счёта-фактуры по продажам для этой компании полностью оплачены.
 All statuses,Все статусы
-All types,
-Allowed users,
+All territories,Все территории
+All three accounts are required.,Все три счёта обязательны.
+All types,Все типы
+Allocate against,Распределить по
+Allocated,Распределено
+Allocated against,Распределено по
+Allowed users,Разрешённые пользователи
+Amend,Изменить
+Amend failed.,Ошибка изменения.
+Amend of,Изменение
 Amount,Сумма
-Amount received,
-Amount sent,
+Amount exceeds outstanding ({amount}).,Сумма превышает задолженность ({amount}).
+Amount must be greater than zero.,Сумма должна быть больше нуля.
+Amount must be positive.,Сумма должна быть положительной.
+Amount paid,Сумма оплаты
+Amount received,Сумма получена
+Amount sent,Сумма отправлена
 Any,Любой
+Applied to,Применено к
 Apply,Применить
-Apply role template,
-Approve,
+Apply role template,Применить шаблон роли
+Approve,Утвердить
 Approve and submit,Одобрить и провести
 Approve this leave request?,Одобрить заявку на отпуск?
 Approved,Одобрена
+As of,На
 Asl Belgisi,Asl Belgisi
 Asl Belgisi (product marking) scans appear here.,Здесь отображаются сканирования маркировки Asl Belgisi.
 Asl Belgisi Code,Код Asl Belgisi
 Asl Belgisi — Stock Entries pending scan,Asl Belgisi — складские движения к сканированию
-Asset Tag,
-Asset Tag and Category are required.,
+Asset Tag,Тег актива
+Asset Tag and Category are required.,Требуются тег актива и категория.
 Assigned Field User,Закреплённый сотрудник
-Assigned Technician,
+Assigned Technician,Назначенный техник
+At least two account lines are required.,Требуется минимум две строки счета.
 Attendance,Посещаемость
-Audited At,
+Audited At,Проверено
+Available,Доступно
 BOM,Спецификация
 BOMs,Спецификации
+Back,Назад
 Back to dashboard,Вернуться на панель
-Balance,
-Base equivalent,
+Balance,Остаток
+Balance (Account Currency),Остаток (валюта счета)
+Balanced,Сбалансировано
+Bank amount,Сумма в банке
+Bank/cash account is required.,Требуется счет в банке или кассе.
+Base equivalent,Эквивалент в базовой валюте
+Bill #,Счет №
+Bill / invoice number printed on supplier document,"Номер счета / накладной, указанный в документе поставщика"
+Bill date,Дата счета
+Billed,Выставлен счет
 Bimonthly,Раз в две недели
-Brand,
-Budget,
-Buy X get Y,
+Brand,Бренд
+Budget,Бюджет
+Buy,Купить
+Buy X get Y,Купи X получи Y
+Buy markup,Наценка (покупка)
+Buying price list,Прайс-лист покупки
 CBU.uz exchange rates (last 30 days),Курсы валют ЦБУ.uz (последние 30 дней)
 CBU.uz exchange rates appear here.,Здесь отображаются курсы валют ЦБУ.uz.
-Campaign,
-Campaign Name,
-Campaign ROI,
+CSV,CSV
+Calendar,Календарь
+Campaign,Кампания
+Campaign Name,Название кампании
+Campaign ROI,ROI кампании
 Cancel,Отмена
-Cancel Request,
+Cancel ALL open stock reservations for {0}? Reserved stock will be released.,Отменить ВСЕ открытые зарезервированные товары для {0}? Зарезервированный товар будет освобожден.
+Cancel Request,Запрос на отмену
+"Cancel all open (submitted, non-delivered) Stock Reservation Entries for this company. Reserved stock will be returned to available quantity.","Отменить все открытые (отправленные, не доставленные) записи зарезервированного товара для этой компании. Зарезервированный товар будет возвращен в доступное количество."
+Cancel bill {name}? This is reversible only by amendment.,Отменить счет {name}? Это можно отменить только путем внесения поправки.
+Cancel entry,Отмена записи
+Cancel failed.,Отмена не удалась.
+Cancel invoice {name}? This is reversible only by amendment.,Отменить накладную {name}? Это можно отменить только путем внесения поправки.
+Cancel or delete Sales Invoice {0} before cancelling this Sales Order.,Отмените или удалите накладную продаж {0} перед отменой этого заказа продаж.
+Cancel quotation {name}?,Отменить предложение {name}?
+Cancel sales order {name}? Stock reservations will be released.,Отменить заказ продаж {name}? Зарезервированный товар будет освобожден.
 Cancel this submitted BOM?,Отменить эту проведённую спецификацию?
+Cancel {name}? This will reverse the stock movements.,Отменить {name}? Это отменит движения товара.
 Cancelled,Отменено
-Cannot check out before checking in.,
-Captured At,
+Cannot check out before checking in.,Невозможно выйти до входа.
+Captured At,Захвачено
+Car / Item,Авто / Товар
+Car item is required.,Товар (автомобиль) обязателен.
+Cash flow,Движение денежных средств
 Cash on hand,Денежные средства
-Category,
-Category is required.,
+"Cash, Bank, …","Касса, банк, …"
+Cash-in account,Счёт приёма наличных
+Category,Категория
+Category is required.,Категория обязательна.
 Channel,Канал
 Chart of Accounts,План счетов
 Checked in,Отметка о приходе
-Claim,
-Claim No.,
-Claim amount must be greater than zero.,
-Claim is already settled by {0}.,
-Claim is already {0} and cannot be re-reviewed.,
-Claim name is required.,
-Claim {0} not found.,
-Claims,
+Checking availability…,Проверка доступности…
+Chegirma,Скидка
+Cheque,Чек
+Cheque / transfer ref,Чек / реквизиты перевода
+Cheque no.,Номер чека.
+Claim,Претензия
+Claim No.,Номер претензии.
+Claim amount must be greater than zero.,Сумма претензии должна быть больше нуля.
+Claim is already settled by {0}.,Претензия уже урегулирована {0}.
+Claim is already {0} and cannot be re-reviewed.,Претензия уже {0} и не может быть пересмотрена.
+Claim name is required.,Требуется название претензии.
+Claim {0} not found.,Претензия {0} не найдена.
+Claims,Претензии
+Clear,Очистить
+Clear open reservations,Очистить открытые резервирования
+Clear search,Очистить поиск
+Cleared {0} of {1},Очищено {0} из {1}
+Click an installment chip to view the contract.,Нажмите на чип рассрочки для просмотра договора.
 Close,Закрыть
 Close this Work Order? This finalizes it.,Закрыть этот производственный заказ? Это финальное действие.
-Closing,
-Closing in,
-Code does not match expected format,
-Code is required,
-Companies,
+Closing,Закрытие
+Closing balance,Сальдо на конец периода
+Closing in,Закрытие в
+Code,Код
+Code does not match expected format,Код не соответствует ожидаемому формату
+Code is required,Требуется код
+Collapse,Свернуть
+Collapse all,Свернуть всё
+Collapse all groups,Свернуть все группы
+Commission,Комиссия
+Commission %,Комиссия %
+Commission fee,Комиссионный сбор
+Commission income account,Счёт дохода от комиссии
+Commission kept,Комиссия удержана
+Commission mode,Тип комиссии
+Companies,Компании
 Company,Компания
 Company email,Рабочая почта
-Company is required.,
+Company is required.,Требуется компания.
 Complete,Готово
 Completed,Завершено
 Compliance,Соответствие
 Components,Компоненты
-Consumed,
+Consumed,Израсходовано
 Contact,Контакт
-Cooler,
-Create,
-Create Plan,
-Create Scheme,
+Contract,Договор
+Contract detail,Детали договора
+Contracts,Договоры
+Cooler,Охладитель
+Corridor,Коридор
+Corridor / Memo,Коридор / Примечание
+Cost,Себестоимость
+Cost must be positive.,Себестоимость должна быть положительной.
+Count,Количество
+Count:,Количество:
+Country,Страна
+Create,Создать
+Create Invoice,Создать счёт-фактуру
+Create Plan,Создать план
+Create Scheme,Создать схему
 Create a Bill of Materials to define what raw materials go into a finished good.,Создайте спецификацию чтобы определить какие материалы входят в готовый продукт.
 Create a Work Order to plan and track production runs against a BOM.,Создайте производственный заказ для планирования и контроля выпуска.
-Create a plan to start tracking campaign budget and ROI.,
+Create a plan to start tracking campaign budget and ROI.,"Создайте план, чтобы начать отслеживать бюджет кампании и ROI."
+Create contract,Создать договор
+Create credit note,Создать кредит-ноту
 Create outlets to start planning routes and visits.,"Создайте торговые точки, чтобы планировать маршруты и визиты."
+Create your first item to start tracking stock and price lists.,"Создайте первый товар, чтобы начать отслеживать склад и прайс-листы."
 Created,Создан
-Credit,
+Credit,Кредит
 Credit Limit,Кредитный лимит
-Currency,
-Customer,
+Credit note for,Кредит-нота по
+Credit notes:,Кредит-ноты:
+Critical,Критически
+Currency,Валюта
+Customer,Клиент
+Customer group,Группа клиентов
+Customer is required.,Покупатель обязателен.
+Customer name,Имя клиента
+Customer name is required.,Требуется имя клиента.
 Customers,Клиенты
 Daily,Ежедневно
 Dashboard,Панель
@@ -128,571 +241,973 @@ Date of joining,Дата приёма
 Dates,Даты
 Day of Week,День недели
 Days,Дней
-Debit,
+Debit,Дебет
 Deductions,Удержания
 Default,По умолчанию
-Default Route,
-Default Warehouse,
-Define promotions that field users can apply during visits.,
+Default Route,Маршрут по умолчанию
+Default Warehouse,Склад по умолчанию
+Default currency,Валюта по умолчанию
+Default price list,Прайс-лист по умолчанию
+Define promotions that field users can apply during visits.,"Определите акции, которые полевые сотрудники могут применять во время визитов."
 Define routes so field users know which outlets to visit each day.,"Определите маршруты, чтобы полевые сотрудники знали, какие точки посещать каждый день."
-Delete,
+Delete,Удалить
+Delete customer,Удалить покупателя
+Delete failed.,Ошибка удаления.
+Delete invoice {name}?,
+Delete order {name}? This cannot be undone.,
+Delete supplier,Удалить поставщика
+Deliver,Доставить
+Delivered,Доставлено
+Delivery date,Дата доставки
 Department,Подразделение
-Describe the problem…,
+Deposit to,Внести на
+Describe the problem…,Опишите проблему…
+Description,Описание
 Designation,Должность
-Desk access,
+Desk access,Доступ к Desk
 Direction,Направление
-Disabled,
-Discount %,
-Dispatched,
-Distributor,
-Distributor claims will appear here once submitted.,
-DocType,
-Documents,
+Disabled,Отключено
+Disc,Скидка
+Disc %,Скидка %
+Discount %,Скидка %
+Dispatched,Отправлено
+Distributor,Дистрибьютор
+Distributor claims will appear here once submitted.,Претензии дистрибьютора появятся здесь после отправки.
+DocType,Тип документа
+Document,Документ
+Documents,Документы
+Downpayment,Первоначальный взнос
+Downpayment %,Первоначальный взнос %
 Draft,Черновик
-Due Date,
-Duplicate sequence {0} on this route.,
+Due,К оплате
+Due Date,Срок оплаты
+Due date,Срок оплаты
+Duplicate sequence {0} on this route.,Повторяющаяся последовательность {0} на этом маршруте.
 Duration (ms),Длительность (мс)
 EHF (Elektron Hisob-Faktura) submissions appear here.,Здесь отображаются отправки ЭСФ (Elektron Hisob-Faktura).
 EHF Status,Статус ЭСФ
 EHF Submissions,Отправки ЭСФ
 EUR → UZS,EUR → UZS
 Earnings,Начисления
-Edit,
-Edit OSA audit,
-Edit Promo Plan,
-Edit Promo Scheme,
-Edit Van Stock,
-Edit Visit,
-Edit field user,
-Edit outlet,
-Edit photo report,
-Edit planogram,
-Edit route,
-Editing the rate updates the received amount.,
-Email,
-Email and name are required.,
+Edit,Редактировать
+Edit OSA audit,Редактировать аудит OSA
+Edit Promo Plan,Редактировать план акции
+Edit Promo Scheme,Редактировать схему акции
+Edit Van Stock,Редактировать запас фургона
+Edit Visit,Редактировать визит
+Edit customer,Редактировать покупателя
+Edit field user,Редактировать полевого сотрудника
+Edit outlet,Редактировать торговую точку
+Edit photo report,Редактировать фотоотчет
+Edit planogram,Редактировать планограмму
+Edit route,Редактировать маршрут
+Edit supplier,Редактировать поставщика
+Editing the rate updates the received amount.,Редактирование цены обновляет полученную сумму.
+Email,Электронная почта
+Email and name are required.,Требуются электронная почта и имя.
 Employee,Сотрудник
 Employees,Сотрудники
-Empty allowed list = user can access every company.,
-Enabled,
-End,
-End Date,
-End Date must be on or after Start Date.,
-Equipment,
-Equipment and Issue are required.,
-Equipment is required.,
-Equipment name is required.,
+Empty allowed list = user can access every company.,Пустой список разрешений = пользователь может получить доступ к любой компании.
+Enabled,Включено
+End,Конец
+End Date,Дата окончания
+End Date must be on or after Start Date.,Дата окончания должна быть на или после даты начала.
+Enter amount and commission to see preview.,Введите сумму и комиссию для предпросмотра.
+Enter at least one return qty.,Введите хотя бы одно количество возврата.
+Enter cost and term to see the payment schedule.,Введите себестоимость и срок для просмотра графика платежей.
+Enter the quantity to return for each line. Leave 0 to exclude a line.,"Введите количество возврата для каждой строки. Укажите 0, чтобы исключить строку."
+Entry,
+Equipment,Оборудование
+Equipment and Issue are required.,Оборудование и проблема обязательны.
+Equipment is required.,Оборудование обязательно.
+Equipment name is required.,Название оборудования обязательно.
 Error,Ошибка
-Every route row needs an outlet.,
+Estimated value,Расчётная стоимость
+Every route row needs an outlet.,Каждая строка маршрута должна содержать торговую точку.
+Excel (.xlsx),Excel (.xlsx)
 Exchange Rates,Курсы валют
-Exchange rate,
-Expected,
-Expected Facings,
-Expected facings is required on row {0}.,
-Expense,
-Expense lines,
-Expenses,
+Exchange rate,Обменный курс
+Exclusive,Сверху
+Exclusive: commission added on top — sender pays more.,Сверху: комиссия добавляется — отправитель платит больше.
+Expand,Развернуть
+Expand all,Развернуть всё
+Expand all groups,Развернуть все группы
+Expected,Ожидаемое
+Expected Facings,Ожидаемое количество фасадов
+Expected facings is required on row {0}.,Ожидаемое количество фасадов требуется в строке {0}.
+Expense,Расход
+Expense lines,Строки расходов
+Expenses,Расходы
 Export,Экспорт
-Failed to create equipment.,
-Failed to create promo plan.,
-Failed to create.,
-Failed to load OSA audit.,
-Failed to load claim.,
-Failed to load ledger.,
-Failed to load photo report.,
-Failed to load planogram.,
-Failed to load promo plan.,
-Failed to load promo scheme.,
-Failed to load van stock.,
-Failed to load visit.,
-Failed to load.,
-Failed to refresh claim.,
-Failed to save OSA audit.,
-Failed to save photo report.,
-Failed to save planogram.,
-Failed to save promo scheme.,
-Failed to save van stock.,
-Failed to save visit.,
-Failed to update promo plan.,
-Failed to update status.,
+Export failed.,Экспорт не удался.
+F.I.O.,Ф.И.О.
+Failed to cancel.,Не удалось отменить.
+Failed to clear reservations.,Не удалось очистить резервирования.
+Failed to create bill.,Не удалось создать счёт.
+Failed to create contract.,Не удалось создать договор.
+Failed to create equipment.,Не удалось создать оборудование.
+Failed to create invoice.,Не удалось создать счёт-фактуру.
+Failed to create item.,Не удалось создать товар.
+Failed to create journal entry.,Не удалось создать запись в журнал.
+Failed to create payment.,Не удалось создать платёж.
+Failed to create promo plan.,Не удалось создать план акции.
+Failed to create quotation.,Не удалось создать предложение.
+Failed to create return.,Не удалось создать возврат.
+Failed to create sales order.,Не удалось создать заказ на продажу.
+Failed to create transfer.,Не удалось создать перевод.
+Failed to create warehouse.,Не удалось создать склад.
+Failed to create.,Не удалось создать.
+Failed to delete customer.,Не удалось удалить клиента.
+Failed to delete supplier.,Не удалось удалить поставщика.
+Failed to load OSA audit.,Не удалось загрузить аудит OSA.
+Failed to load accounts.,Не удалось загрузить счета.
+Failed to load aging.,Не удалось загрузить статистику задолженности.
+Failed to load alerts.,Не удалось загрузить предупреждения.
+Failed to load bills.,Не удалось загрузить счета.
+Failed to load calendar.,Не удалось загрузить календарь.
+Failed to load claim.,Не удалось загрузить претензию.
+Failed to load contract.,Не удалось загрузить договор.
+Failed to load contracts.,Не удалось загрузить договоры.
+Failed to load customer.,Не удалось загрузить клиента.
+Failed to load customers.,Не удалось загрузить клиентов.
+Failed to load dashboard.,Не удалось загрузить панель управления.
+Failed to load form options.,Не удалось загрузить параметры формы.
+Failed to load invoice.,Не удалось загрузить счёт-фактуру.
+Failed to load invoices.,Не удалось загрузить счета-фактуры.
+Failed to load items.,Не удалось загрузить товары.
+Failed to load journal entries.,Не удалось загрузить записи журнала.
+Failed to load ledger.,Не удалось загрузить главную книгу.
+Failed to load options.,Не удалось загрузить параметры.
+Failed to load party defaults.,Ошибка загрузки реквизитов контрагента.
+Failed to load payment defaults.,Ошибка загрузки реквизитов платежа.
+Failed to load payment entries.,Ошибка загрузки записей платежа.
+Failed to load photo report.,Ошибка загрузки отчёта фотографий.
+Failed to load planogram.,Ошибка загрузки плановой схемы.
+Failed to load promo plan.,Ошибка загрузки плана акции.
+Failed to load promo scheme.,Ошибка загрузки схемы акции.
+Failed to load quotations.,Ошибка загрузки коммерческих предложений.
+Failed to load sales order.,
+Failed to load sales orders.,Ошибка загрузки заказов на продажу.
+Failed to load stock entries.,Ошибка загрузки записей на складе.
+Failed to load stock ledger.,Ошибка загрузки реестра материалов.
+Failed to load supplier.,Ошибка загрузки поставщика.
+Failed to load suppliers.,Ошибка загрузки поставщиков.
+Failed to load transfer detail.,Не удалось загрузить детали перевода.
+Failed to load transfers.,Не удалось загрузить переводы.
+Failed to load van stock.,Ошибка загрузки запасов фургона.
+Failed to load visit.,Ошибка загрузки визита.
+Failed to load warehouses.,Ошибка загрузки складов.
+Failed to load.,Ошибка загрузки.
+Failed to record payment.,Ошибка записи платежа.
+Failed to refresh claim.,Ошибка обновления претензии.
+Failed to run report.,Ошибка запуска отчёта.
+Failed to save OSA audit.,Ошибка сохранения аудита наличия на полке.
+Failed to save customer.,Ошибка сохранения клиента.
+Failed to save photo report.,Ошибка сохранения отчёта фотографий.
+Failed to save planogram.,Ошибка сохранения плановой схемы.
+Failed to save promo scheme.,Ошибка сохранения схемы акции.
+Failed to save stock entry.,Ошибка сохранения записи на складе.
+Failed to save van stock.,Ошибка сохранения запасов фургона.
+Failed to save visit.,Ошибка сохранения визита.
+Failed to submit.,Ошибка отправки.
+Failed to update promo plan.,Ошибка обновления плана акции.
+Failed to update status.,Ошибка обновления статуса.
 Female,Женский
 Field Sales,Полевые продажи
 Field User,Полевой сотрудник
-Field User is required.,
-Field User name is required.,
-Field Users,
-Field user is required.,
-Field users represent sales reps who execute visits and own van stock.,
-Fill in the required fields before submitting.,
+Field User is required.,Поле Пользователь обязательно.
+Field User name is required.,Поле Имя пользователя обязательно.
+Field Users,Поле Пользователи
+Field user is required.,Поле пользователь обязательно.
+Field users represent sales reps who execute visits and own van stock.,"Поле пользователи представляют торговых представителей, которые выполняют визиты и управляют запасами фургона."
+Fill in the required fields before submitting.,Заполните обязательные поля перед отправкой.
+Financed,Финансируется
 Finished good,Готовая продукция
 Finished-goods warehouse,Склад готовой продукции
 First name,Имя
 First name is required.,Введите имя.
-Fixtures directory missing: {0},
-Free Qty,
-Freezer,
+First payment date,Дата первого платежа
+Fixtures directory missing: {0},Директория приспособлений отсутствует: {0}
+Free Qty,Свободное кол-во
+Freezer,Морозильник
 Frequency,Периодичность
+Fri,Пт
 From,С
-From account,
-Full name,
-GPS Latitude,
-GPS Longitude,
+From account,С счёта
+From warehouse,Со склада
+From → To,С → По
+Full name,Полное имя
+GPS Latitude,Широта GPS
+GPS Longitude,Долгота GPS
 Gender,Пол
 Gender is required.,Укажите пол.
 Generate and submit,Создать и провести
 Generate drafts,Создать черновики
 Generated salary slips,Создано листков
-Grand Total,
+Go to Sales Orders,Перейти к заказам на продажу
+Grand Total,Итого
+Grand total,Итого
 Gross,Начислено
-Gross ROI %,
+Gross ROI %,Валовая рентабельность инвестиций %
 Gross pay,Начислено
+Group,Группа
+"Group warehouse (can contain children, holds no stock itself)","Складская группа (может содержать подгруппы, сама не содержит запасы)"
+HR,HR
 Half Day,Полдня
-Hello {name},
+Hello {name},"Привет, {name}"
 Hours,Часы
 In,Вход
 In progress,В процессе
 In time,Время входа
-InService,
+InService,В эксплуатации
 Inactive,Неактивные
-Incremental Units,
-Install Date,
-Invalid decision: {0},
-Invalid item_overrides payload,
-Invalid status: {0},
-Invalid step status: {0},
+Inclusive,Включительно
+Inclusive: commission deducted from amount — receiver gets less.,Включительно: комиссия вычитается — получатель получает меньше.
+Incremental Units,Дополнительные единицы
+Inflow,Поступление
+Install Date,Дата установки
+Installment,Рассрочка
+Invalid decision: {0},Неверное решение: {0}
+Invalid item_overrides payload,Неверный payload переопределений товара
+Invalid item_returns payload,Неверный payload возвратов товара
+Invalid status: {0},Неверный статус: {0}
+Invalid step status: {0},Неверный статус шага: {0}
 Inventory,Склад
-Invite user,
+Invite user,Пригласить пользователя
 Invoice,Счёт
-Issue,
-Issue is required.,
+Invoice #,Счёт №
+Invoices,Счета
+Issue,Проблема
+Issue credit note,Выпустить кредит-ноту
+Issue is required.,Проблема обязательна.
+Issues,Проблемы
 Item,Товар
-Item #{0}: item is required.,
-Item #{0}: qty must be greater than 0.,
-Item does not require Asl Belgisi,
-Item is required on row {0}.,
+Item #{0}: item is required.,Товар #{0}: товар обязателен.
+Item #{0}: qty must be greater than 0.,Товар #{0}: кол-во должно быть больше 0.
+Item code,Код товара
+Item does not require Asl Belgisi,Товар не требует Asl Belgisi
+Item is required on row {0}.,Товар обязателен в строке {0}.
+Item name,Наименование товара
+Item name is required.,Наименование товара обязательно.
 Items,Товары
+Jami,Итого
+Jami muzqaymoq soni (dona),Всего мороженого (шт)
+Jami summa,Итого сумма
 Journal Entries,Журнальные записи
-Language,
-Last login,
+Journal Entry,Запись в журнале
+Journal Entry legs,Проводки журнала
+Language,Язык
+Last login,Последний вход
 Last name,Фамилия
-Latitude,
+Latitude,Широта
 Leave,Отпуск
+Leave all unchecked to use role-based access. Checking any replaces it with exactly these modules. Visibility only — backend permissions still apply.,Оставьте всё без отметок для доступа на основе ролей. Установка флажков заменяет его ровно этими модулями. Только видимость — разрешения бэкэнда всё ещё действуют.
 Leave type,Тип отпуска
+Ledger spans multiple account currencies; amounts shown in base currency.,Бухгалтерская книга охватывает несколько валют счёта; суммы показаны в базовой валюте.
 Left,Уволен
-Lines,
-Link to an existing Customer for receivables.,
-Loaded,
+Lines,Строки
+Link to an existing Customer for receivables.,Связь с существующим клиентом для дебиторской задолженности.
+Linked invoices,Связанные счета
+List rate,Прейскурантная цена
+Loaded,Загружено
+Loading warehouses…,Загрузка складов…
 Loading…,Загрузка…
 Log out,Выйти
-Login required,
-Longitude,
+Login required,Требуется вход
+Longitude,Долгота
+Low,Низкий
+Low Stock,Низкий уровень запасов
 Low Stock Alerts,Уведомления о низком остатке
 Low stock,Низкий остаток
+Mahsulot nomi,Наименование товара
 Make default BOM for this item,Сделать спецификацией по умолчанию
 Male,Мужской
 Manufacturing,Производство
-Mark Resolved,
+Mark Resolved,Отметить как решено
 Mark and submit,Отметить и провести
 Mark attendance,Отметить
 Mark daily attendance to start building reports.,"Отмечайте посещаемость ежедневно, чтобы строить отчёты."
-Marketing Claims,
-Marketing claim settlement for {0},
-Memo,
+Marketing,Маркетинг
+Marketing Claims,Маркетинговые претензии
+Marketing claim settlement for {0},Расчёт маркетинговой претензии для {0}
+Memo,Заметка
 Message,Сообщение
-Mobile Phone,
-Model,
+Mijoz balansi,Баланс клиента
+Mobile,Мобильный
+Mobile Phone,Мобильный телефон
+Mode,Режим
+Mode of payment,Способ платежа
+Model,Модель
 Module,Модуль
-Modules,
+Module access override,Переопределение доступа к модулям
+Modules,Модули
+Mon,Пн
 Money,Деньги
 Monthly,Ежемесячно
-Move to Under Review,
-Name,
-Name or email,
+Monthly installment,Ежемесячный платёж
+Move to Under Review,Перейти в режим проверки
+Movement,Движение
+Name,Название
+Name or email,Название или адрес электронной почты
+Narxi,Цена
 Net,К выплате
-Net ROI %,
+Net ROI %,Чистая рентабельность инвестиций %
 Net pay,К выплате
-New,
+Net total,К выплате всего
+New,Новое
 New BOM,Новая спецификация
-New Equipment,
-New OSA audit,
-New Plan,
-New Promo Plan,
-New Promo Scheme,
-New Scheme,
-New Van Stock,
-New Visit,
+New Contract,Новый договор
+New Equipment,Новое оборудование
+New Murabaha Contract,Новый договор Мурабаха
+New OSA audit,Новый аудит OSA
+New Plan,Новый план
+New Promo Plan,Новый план промо
+New Promo Scheme,Новая схема промо
+New SO,Новый заказ на продажу
+New Sales Order,
+New Scheme,Новая схема
+New Transfer,Новый перевод
+New Van Stock,Новый запас в фургоне
+New Visit,Новый визит
 New Work Order,Новый производственный заказ
+New bill,Новый счёт
+New customer,Новый клиент
 New employee,Новый сотрудник
-New expense,
-New field user,
+New entry,Новая запись
+New expense,Новые расходы
+New field user,Новый пользователь поля
+New item,Новый товар
 New journal,Новая запись
+New journal entry,Новая запись в журнал
 New leave request,Новая заявка
-New outlet,
+New outlet,Новая торговая точка
 New payment,Новый платёж
-New photo report,
-New planogram,
-New route,
-New transfer,
-No,
+New photo report,Новый фотоотчёт
+New planogram,Новая спецификация расположения
+New purchase bill,Новая счёт-фактура покупки
+New purchase order,Новый заказ на покупку
+New quotation,Новая коммерческое предложение
+New route,Новый маршрут
+New sales order,Новый заказ на продажу
+New stock entry,Новое движение товаров
+New supplier,Новый поставщик
+New transfer,Новый перевод
+New warehouse,Новый склад
+Next,Далее
+No,Нет
 No 1C sync events yet.,Событий синхронизации 1С пока нет.
 No ARCA payment events yet.,Платежей ARCA пока нет.
 No BOMs yet,Спецификаций пока нет
 No EHF submissions yet. Submit a Sales Invoice to enqueue one.,Пока нет отправок ЭСФ. Проведите счёт продаж
-No OSA audits yet,
-No ROI snapshots yet,
+No OSA audits yet,Аудитов OSA пока нет
+No ROI snapshots yet,Снимков ROI пока нет
 No Stock Entries with Asl Belgisi items found.,Складских движений с товарами Asl Belgisi не найдено.
 No attendance records,Нет записей о посещаемости
-No claim selected.,
-No claims yet,
+No bills in this range,Счётов в этом диапазоне нет
+No claim selected.,Претензия не выбрана.
+No claims yet,Претензий пока нет
+No company selected,Компания не выбрана
+No customers,Клиентов нет
+No customers match that name,Нет клиентов с таким названием
 No data,Нет данных
+No data for the selected range,Нет данных для выбранного диапазона
 No deductions,Нет удержаний
-No default Bank or Cash account configured for company {0}.,
+No default Bank or Cash account configured for company {0}.,Для компании {0} не настроены банковский или кассовый счёт по умолчанию.
 No earnings,Нет начислений
 No employees yet,Сотрудников пока нет
-No equipment yet,
+No equipment yet,Оборудования пока нет
+No exchange rate available from {0} to {1} on {2}.,Курс обмена не доступен с {0} на {1} от {2}.
 No exchange rates yet. Click Refresh now to fetch today's rates from cbu.uz.,Курсы валют пока отсутствуют. Нажмите «Обновить сейчас»
-No field users yet,
+No field users yet,Пользователей полей нет
+No installments due this month.,Нет платежей в этом месяце.
+No interest — fixed Murabaha markup. Sum equals total exactly.,Без процентов — фиксированная наценка Мурабаха. Сумма точно равна итогу.
+No invoices in this range,Счетов в этом диапазоне нет
+No items found,Товары не найдены
+No items match,Товары не совпадают
 No items with submitted active BOMs yet — create one first.,Нет товаров с проведёнными активными спецификациями — сначала создайте.
-No items yet.,
+No items yet.,Товаров нет.
+No journal entries in this range,Записей в журнале в этом диапазоне нет
 No leave requests,Нет заявок на отпуск
-No lines yet.,
-No matches found,
-No outlets in this route yet.,
+No ledger entries found for the selected period.,Записей в главной книге за выбранный период не найдено.
+No lines yet.,Строк нет.
+No low-stock items,Товаров с низким уровнем запасов нет
+No matches found,Совпадений не найдено
+No orders.,Нет заказов.
+No org chart yet,Организационная диаграмма отсутствует
+No outlets in this route yet.,Торговых точек на этом маршруте нет.
 No outlets yet,Пока нет торговых точек
-No photo reports yet,
-No planograms yet,
-No promo plans yet,
-No promo schemes yet,
-No receivable account configured for distributor {0} in company {1}.,
-No receivable account configured for distributor {0} in company {1}: {2},
-No receivables,
-No repair requests,
+No outstanding balances,Нет задолженности
+No payments in this range,Платежей в этом диапазоне нет
+No photo reports yet,Фотоотчётов нет
+No planograms yet,Плано грамм нет
+No promo plans yet,Промо-планов нет
+No promo schemes yet,Промо-схем нет
+No purchase orders in this range,Заказов на закупку в этом диапазоне нет
+No quotations in this range,Предложений в этом диапазоне нет
+No receivable account configured for distributor {0} in company {1}.,Счёт дебиторской задолженности не настроен для дистрибьютора {0} в компании {1}.
+No receivable account configured for distributor {0} in company {1}: {2},Счёт дебиторской задолженности не настроен для дистрибьютора {0} в компании {1}: {2}
+No receivables,Нет дебиторской задолженности
+No recent transactions.,Нет недавних операций.
+No repair requests,Запросов на ремонт нет
+"No results for ""{query}"".","Нет результатов для ""{query}""."
 No routes yet,Пока нет маршрутов
 No salary slips yet,Нет расчётных листков
-No steps yet.,
-No template,
-No transactions yet.,
-No van stock yet,
+No sales orders in this range,Заказов на продажу в этом диапазоне нет
+No steps yet.,Этапов нет.
+No stock entries yet,Записей о товаре нет
+No stock in any warehouse for this company.,Нет товаров в каком-либо складе для этой компании.
+No stock moves in this range,Перемещений товаров в этом диапазоне нет
+No suppliers,Поставщиков нет
+No suppliers match that name,Поставщики с таким названием не найдены
+No template,Шаблона нет
+No transactions,Операций нет
+No transactions in this period.,Операций в этом периоде нет.
+No transactions yet.,Операций нет.
+No van stock yet,Запасов в автофургоне нет
 No visits yet,Пока нет визитов
+No warehouses for this company,Складов для этой компании нет
 No work orders,Нет производственных заказов
-Nos,
-Not permitted,
-Not permitted for company {0},
-Notes,
-OSA,
-OSA %,
-OSA Audit name is required.,
-OSA Audits,
+No {0} receivable account exists for company {1}. ,Дебиторский счёт {0} для компании {1} не найден. 
+Nos,Номера
+Not found,Не найдено
+Not permitted,Не разрешено
+Not permitted for company {0},Не разрешено для компании {0}
+Not permitted to read {0} {1},Не разрешено читать {0} {1}
+Notes,Примечания
+O'lchov birlik,Ед. изм.
+OSA,ОСА
+OSA %,ОСА %
+OSA Audit name is required.,Требуется имя аудита ОСА.
+OSA Audits,Аудиты ОСА
 Object Name,Имя объекта
 Object Type,Тип объекта
 On Leave,В отпуске
+On hand,В наличии
 On leave today,В отпуске сегодня
-On-Shelf-Availability audits compare expected vs actual facings during visits.,
-Only Approved claims can be settled. Current status: {0},
+On-Shelf-Availability audits compare expected vs actual facings during visits.,Аудиты доступности товаров на полке сравнивают ожидаемое и фактическое размещение товаров во время визитов.
+One or more lines exceed available stock. Reduce qty or choose a different warehouse.,Одна или несколько строк превышают доступный запас. Уменьшите количество или выберите другой склад.
+Only Approved claims can be settled. Current status: {0},Только одобренные требования могут быть урегулированы. Текущий статус: {0}
+Only submitted invoices can be returned.,Только отправленные счета могут быть возвращены.
+Only with balance,Только с остатком
 Open,Открыта
 Open Desk,Открыть Desk
-Opening,
-Optional,
+Opening,Начисление
+Opening balance,Начальный остаток
+Opening balances,Начальные остатки
+Optional,Необязательно
+Order,
+Order Date,Дата заказа
+Order date,Дата заказа
+Orders,Заказы
+Original qty,Исходное кол-во
 Other,Другое
 Out,Выход
+Out of stock,Нет в наличии
 Out time,Время выхода
+Outflow,Выход
 Outlet,Торговая точка
 Outlet Class,Класс точки
 Outlet Code,Код точки
 Outlet Name,Название точки
-Outlet code,
-Outlet code is required.,
-Outlet is required.,
-Outlet name (e.g. OUT-001),
-Outlet name is required.,
-Outlet {0} appears twice on this route.,
+Outlet code,Код торговой точки
+Outlet code is required.,Код торговой точки обязателен.
+Outlet is required.,Торговая точка обязательна.
+Outlet name (e.g. OUT-001),Название торговой точки (например OUT-001)
+Outlet name is required.,Название торговой точки обязательно.
+Outlet {0} appears twice on this route.,Торговая точка {0} встречается дважды на этом маршруте.
 Outlets,Торговые точки
-Outstanding,
-Override qty must be greater than zero,
-POSM,
+Outstanding,Невыплаченная
+Override qty must be greater than zero,Переопределённое количество должно быть больше нуля
+Overview,Обзор
+POSM,ПОСМ
 Page not found,Страница не найдена
+Paid,Оплачено
+Paid amount,Выплаченная сумма
 Paid days,Оплачено дней
-Pay from,
+Paid from,Выплачено с
+Paid to,Выплачено
+Parent warehouse,Основной склад
+Party,Контрагент
+Party account not resolved — re-select the party.,Счёт контрагента не найден — повторно выберите контрагента.
+Party is required.,Контрагент обязателен.
+Pay,Выплатить
+Pay from,Выплатить с
+Pay supplier,Выплатить поставщику
+Payable,К выплате
 Payable (AP),Кредиторская задолженность
-Payee,
+Payable:,К выплате:
+Payee,Получатель платежа
 Payload,Тело запроса
-Payload must be an object.,
+Payload must be an object.,Полезная нагрузка должна быть объектом.
+Payment,
 Payment Entry,Платёжный документ
+Payment schedule,График платежей
+Payment type,Тип платежа
 Payments,Платежи
+Payout account,Счёт выплаты
 Payroll,Зарплата
 Payroll entry,Расчёт зарплаты
 Pending,Ожидание
 Pending requests,Ожидают рассмотрения
 People,Сотрудники
-Percent off,
+Per box,Цена за коробку
+Percent off,Процент скидки
 Period,Период
-Period Credit,
-Period Debit,
+Period Credit,Кредит за период
+Period Debit,Дебет за период
 Period end,Конец периода
 Period start,Начало периода
-Permissions,
+Permissions,Разрешения
 Personal email,Личная почта
 Phone,Телефон
-Photo,
-Photo Report name is required.,
-Photo Reports,
-Photo URL,
-Photo is required.,
-Photos,
-"Photos capture shelves, storefronts and promotions during visits.",
+Photo,Фото
+Photo Report name is required.,Название отчёта по фото обязательно.
+Photo Reports,Отчёты по фото
+Photo URL,URL фото
+Photo is required.,Фото обязательно.
+Photos,Фото
+"Photos capture shelves, storefronts and promotions during visits.","Фото фиксируют полки, витрины и промоции во время визитов."
+Pick a company from the switcher in the header to see your financial overview.,"Выберите компанию в переключателе заголовка, чтобы увидеть финансовый обзор."
+Pick a customer.,Выберите клиента.
+Pick a destination warehouse.,Выберите целевой склад.
 Pick a finished-good item.,Выберите готовый продукт.
+Pick a leave type,
 Pick a leave type.,Выберите тип отпуска.
+Pick a source warehouse.,Выберите исходный склад.
+Pick a supplier.,Выберите поставщика.
+Pick a warehouse,Выберите склад
+Pick a warehouse.,Выберите склад.
+Pick an employee,
 Pick an employee.,Выберите сотрудника.
-Plan Type,
+Pick the account funds will be paid from.,"Выберите счёт, с которого будут переведены средства."
+Pick the account that will receive the funds.,"Выберите счёт, который получит средства."
+Plan Type,Тип плана
 Planned,Запланировано
 Planned Date,Плановая дата
-Planned Time,
+Planned Time,Планируемое время
 Planned date,Плановая дата
 Planned start,Плановая дата начала
-Planogram name is required.,
-Planograms,
-Planograms describe expected shelf facings per outlet and category.,
-Please fill all required fields.,
+Planogram name is required.,Название планограммы обязательно.
+Planograms,Планограммы
+Planograms describe expected shelf facings per outlet and category.,Планограммы описывают ожидаемые фасинги полок по торговым точкам и категориям.
+Please fill all required fields.,"Пожалуйста, заполните все обязательные поля."
+Positions,Позиции
+Positions hierarchy,Иерархия позиций
+Post transfer,Провести перевод
 Posting Date,Дата проводки
-Posting Date is required.,
+Posting Date is required.,Дата учёта обязательна.
 Posting date,Дата проводки
-Postings,
+Posting date is required.,Дата учёта обязательна.
+Postings,Учёты
 Present,Присутствует
-Present SKUs,
+Present SKUs,Присутствующие артикулы
+Preview,Предпросмотр
+Price list,Прайс-лист
+Print,Печать
 Processed,Обработано
 Produce how many units? Leave blank for full balance.,Сколько единиц произвести? Оставьте пустым для всего остатка.
 Produced,Произведено
 Profile,Профиль
-Promo,
-Promo Plan,
-Promo Plan name is required.,
-Promo Plan {0} has no company.,
-Promo Plan {0} not found.,
-Promo Plans,
-Promo Scheme name is required.,
-Promo Schemes,
-Promos,
+Projected,Прогнозируемо
+Promo,Промоция
+Promo Plan,План промоции
+Promo Plan name is required.,Название плана промоции обязательно.
+Promo Plan {0} has no company.,План промоции {0} не имеет компании.
+Promo Plan {0} not found.,План промоции {0} не найден.
+Promo Plans,Планы промоций
+Promo Scheme name is required.,Название схемы промоции обязательно.
+Promo Schemes,Схемы промоций
+Promos,Промоции
+Purchase Invoice,Счёт-фактура покупки
 Purchase Invoices,Счета закупок
+Purchase Order,Заказ на покупку
+Purchase Orders,Заказы на покупку
+Purchase item,Товар покупки
 Purchasing,Закупки
+Purpose,Назначение
 Qty,Кол-во
 Quantity,Количество
 Quantity must be positive.,Количество должно быть положительным.
+Quotation,Предложение
+Quotations,Предложения
 RUB → UZS,RUB → UZS
-Rack,
+Rack,Полка
+Raqam,Номер
 Rate,Цена
+Rate:,Цена:
 Raw material cost,Стоимость сырья
 Raw materials,Сырьё
-Read,
-Read-only view. Edit permissions in Frappe's Role Permission Manager.,
+Re-fetch balances for all accounts,Повторно загрузить остатки для всех счётов
+Read,Читать
+Read-only view. Edit permissions in Frappe's Role Permission Manager.,Представление только для чтения. Отредактируйте разрешения в менеджере разрешений ролей Frappe.
 Reason,Причина
+Receipts,Поступления
 Receivable (AR),Дебиторская задолженность
-Receivables,
+Receivables,Дебиторская задолженность
+Receive,Получить
+Receive currency,Валюта получения
+Receive payment,Получить платёж
+Receive stock,Получить товар
 Received,Получено
 Received At,Время получения
+Received amount,Полученная сумма
+Receiver gets,Получатель получает
+Receiver name,Имя получателя
 Recent activity,Последние операции
-Reconciled,
+Reconciled,Согласовано
+"Record a receipt, issue, or transfer to move stock between warehouses.","Зарегистрируйте поступление, выпуск или передачу для перемещения товаров между складами."
+Record a sale,Записать продажу
 Record production,Записать выпуск
-Reference,
+Reference,Ссылка
+Reference #,Номер ссылки
+Reference date,Дата ссылки
+Reference no.,Номер ссылки.
 Refresh,Обновить
+Refresh balances,Обновить балансы
 Refresh now,Обновить сейчас
 Refreshing…,Обновление…
-"Register coolers, freezers, racks, and POSM assets here.",
-Reject,
+"Register coolers, freezers, racks, and POSM assets here.","Зарегистрируйте охладители, морозильники, стеллажи и активы POSM здесь."
+Reject,Отклонить
 Reject this leave request?,Отклонить заявку на отпуск?
 Rejected,Отклонён
+Related documents,Связанные документы
 Reload,Перезагрузить
-Remove,
-Remove row,
-Repair,
-Repair Request,
-Repair Request name is required.,
-Repair Requests,
-Replaces all current roles.,
-Report Issue,
-Reported At,
-Reported By,
+Remark,Замечание
+Remarks,Замечания
+Remittance,Денежный перевод
+Remove,Удалить
+Remove row,Удалить строку
+Reorder at,Переупорядочить по
+Reorder qty,Переупорядочить кол-во
+Repair,Ремонт
+Repair Request,Заявка на ремонт
+Repair Request name is required.,Требуется имя заявки на ремонт.
+Repair Requests,Заявки на ремонт
+Replaces all current roles.,Заменяет все текущие роли.
+Report,Отчёт
+Report Issue,Сообщить о проблеме
+Reported At,Сообщено в
+Reported By,Сообщено
 Reports,Отчёты
 Request,Заявка
 Required,Требуется
 Required materials,Требуемые материалы
-Reset email sent.,
-Reset password,
-Resolved At,
-Retired,
+Reserved,Зарезервировано
+Reset email sent.,Сообщение сброса отправлено.
+Reset password,Сбросить пароль
+Resolved At,Разрешено в
+Retired,Снято с производства
 Retries,Повторы
 Retry submission,Повторить отправку
 Retrying…,Повтор…
-Returned,
+Return,Возврат
+Return qty,Кол-во возврата
+Returned,Возвращено
+Revenue,Доход
 Revenue MTD,Выручка с начала месяца
-Reviewer Notes,
-Role,
-Role not found,
-Role template (optional),
-Roles,
-Route,
+Revenue vs. Expense (12 months),Доход против расходов (12 месяцев)
+Reviewer Notes,Примечания рецензента
+Role,Роль
+Role not found,Роль не найдена
+Role template (optional),Шаблон роли (опционально)
+Roles,Роли
+Route,Маршрут
 Route Code,Код маршрута
 Route Name,Название маршрута
-Route code is required.,
-Route name is required.,
+Route code is required.,Требуется код маршрута.
+Route name is required.,Требуется имя маршрута.
 Routes,Маршруты
-Row not found on this Stock Entry,
+Row not found on this Stock Entry,Строка не найдена в этой записи товара
+Row {n} ({item}): qty exceeds available stock (available {free}).,Строка {n} ({item}): кол-во превышает доступный товар (доступно {free}).
+Row {n}: qty must be greater than zero.,Строка {n}: кол-во должно быть больше нуля.
 Run,Запустить
 Run a payroll cycle to generate salary slips for assigned employees.,"Запустите расчёт, чтобы сгенерировать листки для сотрудников."
 Run payroll,Запустить расчёт
+SRE module unavailable: {0},Модуль SRE недоступен: {0}
 Salary slip,Расчётный листок
 Sales,Продажи
-Sales Invoice must be created from a Sales Order,
+Sales Invoice,Счёт продажи
+Sales Invoice must be created from a Sales Order,Счёт продажи должен быть создан на основе заказа
 Sales Invoices,Счета продаж
-Sales Order {0} must be submitted before invoicing,
+Sales Invoices are created from submitted Sales Orders. Open a Sales Order and use Create Invoice.,Счета продажи создаются на основе отправленных заказов. Откройте заказ и используйте «Создать счёт».
+Sales Order,Заказ продажи
+Sales Order {0} must be submitted before invoicing,Заказ продажи {0} должен быть отправлен перед выставлением счёта
+Sales Orders,Заказы продажи
+Sales item,Товар продажи
+Sat,Сб
 Save,Сохранить
-Save Changes,
-Save allowed users,
+Save & submit,Сохранить и отправить
+Save Changes,Сохранить изменения
+Save allowed users,Сохранить разрешённых пользователей
 Save and submit,Сохранить и провести
+Save as Draft,Сохранить как черновик
 Save as draft,Сохранить черновик
-Save modules,
-Saving…,
+Save modules,Сохранить модули
+Saving…,Сохранение…
 Scan code for,Сканировать код для
 Scan or type code,Сканируйте или введите код
 Scanned,Просканировано
 Scanned / Required,Просканировано / требуется
 Scanning…,Сканирование…
-Scheme Code,
-Scheme Name,
-Scheme Type,
-Search,
+Schedule,График
+Schedule date,Дата графика
+Schedule preview,Предпросмотр графика
+Scheme Code,Код схемы
+Scheme Name,Название схемы
+Scheme Type,Тип схемы
+Search,Поиск
 Search BOMs or finished goods…,Поиск спецификаций или готовой продукции…
-Search asset tag…,
-Search campaigns…,
+Search account…,Поиск счёта…
+Search asset tag…,Поиск метки имущества…
+Search campaigns…,Поиск кампаний…
+Search customer name…,Поиск имени клиента…
+"Search customers, suppliers, items, invoices…","Поиск клиентов, поставщиков, товаров, счетов…"
+Search customers…,Поиск покупателей…
+Search customer…,Поиск клиента…
 Search employees…,Поиск сотрудников…
-Search items…,
+Search item code or name…,Поиск кода или названия товара…
+Search items…,Поиск товаров…
+Search item…,Поиск товара…
 Search outlets…,Поиск точек…
+Search supplier name…,Поиск названия поставщика…
+Search suppliers…,Поиск поставщиков…
+Search supplier…,Поиск поставщика…
+Search warehouse…,Поиск склада…
 Search work orders…,Поиск производственных заказов…
-Select an account…,
-Select company,
-Select template…,
-Select…,
-Send invite,
-Send password reset email to ,
-Serial No,
-Settle,
-Settlement failed.,
-Shelf,
-Shelf Position,
-Skip Reason,
-Skip reason is required when status is Skipped.,
+Search {type} name…,Поиск названия {type}…
+Searching…,Поиск…
+Select a company first.,Сначала выберите компанию.
+Select a customer to view transactions,Выберите клиента для просмотра операций
+Select a supplier to view transactions,Выберите поставщика для просмотра операций
+Select account…,Выберите счёт…
+Select an account…,Выберите счёт…
+Select city…,Выберите город…
+Select company,Выберите компанию
+Select corridor…,Выберите коридор…
+Select gender,
+Select template…,Выберите шаблон…
+Select…,Выберите…
+Sell,Продать
+Sell markup,Наценка (продажа)
+Send currency,Валюта отправки
+Send invite,Отправить приглашение
+Send password reset email to ,Отправить письмо для сброса пароля на 
+Sender name,Имя отправителя
+Sender pays,Отправитель платит
+Serial No,Серийный номер
+Set Reports-To on employees to build the positions hierarchy.,"Установите «Руководитель» для сотрудников, чтобы построить иерархию должностей."
+Settle,Рассчитать
+Settlement failed.,Расчёт не удался.
+Shelf,Полка
+Shelf Position,Позиция на полке
+Show discounts,Показать скидки
+Showing the newest,Показаны самые новые
+Skip Reason,Причина пропуска
+Skip reason is required when status is Skipped.,"Причина пропуска требуется, когда статус — Пропущено."
 Skipped,Пропущено
 Slip,Расчётный листок
-Snapshots are generated by the daily ROI task for Active promo plans.,
+Snapshots are generated by the daily ROI task for Active promo plans.,Снимки создаются ежедневной задачей ROI для активных планов акций.
+So'z bilan:,Сўз билан:
 SoliqOnline UUID,UUID SoliqOnline
+Some lines could not be reserved,Некоторые строки не удалось зарезервировать
 Something went wrong,Что-то пошло не так
+Soni (korobka),Кол-во (короб)
 Source warehouse,Склад источника
-Start,
-Start Date,
-Start Work,
+Standard rate,Стандартная цена
+Start,Начало
+Start Date,Дата начала
+Start Work,Начать работу
 Status,Статус
-Status is required.,
-Step,
-Step #{0} not found on this visit.,
-Step #{0}: type is required.,
-Steps,
+Status is required.,Статус обязателен.
+Step,Шаг
+Step #{0} not found on this visit.,Шаг #{0} не найден в этом визите.
+Step #{0}: type is required.,Шаг #{0}: тип обязателен.
+Steps,Шаги
+Stock,Склад
+Stock Entries,Записи о движении товаров
 Stock Entry,Складское движение
 Stock Ledger,Складская книга
 Stock Reservation,Резервирование склада
+Stock UOM,Ед. изм. складского учёта
+Stock entries,Приходно-расходные накладные
+Stock entry,Приходно-расходная накладная
+Stock item,Товар со склада
+Stock reservations,Зарезервированные товары
+Stock value,Стоимость складских остатков
 Stop,Остановить
 Stop this Work Order? You can resume it later.,Остановить этот производственный заказ? Можно будет возобновить позже.
-Storefront,
+Storefront,Витрина
 Submit,Отправить
 Submit & reserve stock,Провести и зарезервировать склад
 Submit a leave request on behalf of an employee.,Подайте заявку от имени сотрудника.
-Submit a request to track equipment service tickets.,
+Submit a request to track equipment service tickets.,Отправьте запрос для отслеживания заявок на обслуживание оборудования.
 Submit and release this Work Order?,Провести и запустить этот производственный заказ?
-Submit expense,
+Submit expense,Отправить расход
+Submit failed.,Ошибка отправки.
 Submit this BOM? You won't be able to edit it after.,Провести эту спецификацию? После этого её нельзя будет редактировать.
-Submit transfer,
+Submit transfer,Отправить перевод
 Submitted,Отправлен
 Submitted At,Время отправки
+Subtotal,Подытог
+Sun,Вс
+Supplier,Поставщик
+Supplier bill #,№ счёта поставщика
+Supplier group,Группа поставщика
+Supplier is required.,Поставщик обязателен.
+Supplier name,Имя поставщика
+Supplier name is required.,Имя поставщика обязательно.
 Suppliers,Поставщики
 Suspended,Приостановлен
-Swap accounts,
+Swap accounts,Поменять счета местами
+TIN,ИНН
+Tax ID,ИНН
+Taxes,Налоги
+Term (months),Срок (месяцев)
+Terms / remarks,Условия / примечания
+Terms:,Условия:
+Territory,Территория
 The Compliance module is disabled for this company.,Модуль соответствия отключён для этой компании.
-Threshold,
-Threshold Qty,
+This cannot be undone.,Это невозможно отменить.
+Threshold,Пороговое значение
+Threshold Qty,Пороговое кол-во
+Thu,Чт
 To,По
-To account,
-Total,
-Total / Present / OSA % are computed server-side.,
-Total SKUs,
+To Bill,К оплате
+To Deliver,К доставке
+To Deliver and Bill,К доставке и оплате
+To account,На счёт
+To warehouse,На склад
+Total,Итого
+Total (cost + markup),Итого (себестоимость + наценка)
+Total / Present / OSA % are computed server-side.,Значения Итого / Присутствует / OSA % вычисляются на сервере.
+Total SKUs,Всего SKU
+Total allocated,Всего распределено
+Total allocated cannot exceed the payment amount.,Сумма распределения не может превышать размер платежа.
 Total cost,Общая стоимость
-Total outstanding,
-Trade Marketing,
+Total outstanding,Всего задолженности
+Total payable,Всего к выплате
+Total receivable,Итого к получению
+Total value,Общая стоимость
+Total:,Итого:
+Trade Marketing,Торговый маркетинг
 Transaction Id,Идентификатор транзакции
-Transfer,
+Transfer,Передача
+Transfer detail,Детали перевода
 Transfer how many units of materials? Leave blank for full.,Сколько единиц материалов передать? Оставьте пустым для всего объёма.
 Transfer materials,Передать материалы
+Transfer stock,Передача товара
 Transferred,Передано
-Transfers,
-Trigger Item,
+Transfers,Передачи
+Trigger Item,Товар-триггер
+Try a different search term or clear the filter.,Попробуйте другой поисковый запрос или очистите фильтр.
 Try again,Повторить
+Tue,Вт
 Type,Тип
+"Type to search, or pick a quick action",Введите для поиска или выберите быстрое действие
 UOM,Ед. изм.
 USD → UZS,USD → UZS
-Units Sold,
-Unknown Sales Order: {0},
-Unknown company: {0},
-Unknown role template: {0},
-Unknown vertical pack: {0},
-Unknown warehouse: {0},
-Unsupported language: {0},
-Uplift Value,
-Upload failed,
-Uploading…,
+Units Sold,Проданных единиц
+Unknown Sales Invoice: {0},Неизвестный счёт-фактура: {0}
+Unknown Sales Order: {0},Неизвестный заказ на продажу: {0}
+Unknown company: {0},Неизвестная компания: {0}
+Unknown role template: {0},Неизвестный шаблон роли: {0}
+Unknown vertical pack: {0},Неизвестный вертикальный набор: {0}
+Unknown warehouse: {0},Неизвестный склад: {0}
+Unsupported language: {0},Неподдерживаемый язык: {0}
+Uplift Value,Прирост стоимости
+Upload failed,Ошибка загрузки
+Uploading…,Загрузка…
 User,Пользователь
 User account,Учётная запись
-User already exists,
-User is required.,
-User not found,
-Users,
-Utilization %,
-Valid Distributor (Customer) is required.,
-Valid From,
-Valid Promo Plan is required.,
-Valid To,
-Valid To must be on or after Valid From.,
-Van Stock,
-Van Stock name is required.,
-Van stock tracks what each field user has loaded for the day.,
+User already exists,Пользователь уже существует
+User is required.,Пользователь обязателен.
+User not found,Пользователь не найден
+Users,Пользователи
+Utilization %,Использование %
+Valid Distributor (Customer) is required.,Требуется корректный дистрибьютор (Клиент).
+Valid From,Действителен с
+Valid Promo Plan is required.,Требуется корректный план акции.
+Valid To,Действителен по
+Valid To must be on or after Valid From.,Действителен по должна быть не ранее Действителен с.
+Valid till,Действителен до
+Valuation,Оценка
+Value,Стоимость
+Value Δ,Изменение стоимости
+Van Stock,Товар в фургоне
+Van Stock name is required.,Требуется название товара в фургоне.
+Van stock tracks what each field user has loaded for the day.,"Товар в фургоне отслеживает, какой товар загружен каждым полевым пользователем на день."
 View all,Показать все
-View attachment,
-View ledger,
+View attachment,Просмотреть вложение
+View ledger,Просмотреть реестр
 Visit,Визит
-Visit already checked in at {0}.,
-Visit already checked out at {0}.,
-Visit is required.,
-Visit name is required.,
+Visit already checked in at {0}.,Визит уже зарегистрирован при входе в {0}.
+Visit already checked out at {0}.,Визит уже зарегистрирован при выходе в {0}.
+Visit is required.,Визит обязателен.
+Visit name is required.,Требуется название визита.
 Visits,Визиты
 Visits appear once they are planned from a route or created manually.,"Визиты появляются здесь, когда они запланированы из маршрута или созданы вручную."
-Voucher,
+Voucher,Ваучер
 WIP warehouse,Склад НЗП
-Warehouse,
-Warehouse is required for Sales Orders,
+Warehouse,Склад
+Warehouse balances,Остатки на складе
+Warehouse is required for Sales Orders,Склад требуется для заказов на продажу
+Warehouse name,Название склада
+Warehouse name is required.,Требуется название склада.
 Warehouses,Склады
-Warranty Until,
+Warranty Until,Гарантия до
+Wed,Ср
 Weekly,Еженедельно
+Weight,Вес
+Welcome to Stabler,Добро пожаловать в Stabler
+What is this entry for?,Для чего эта запись?
 When,Когда
+Widen the date range or clear filters to see stock activity.,"Расширьте диапазон дат или очистите фильтры, чтобы увидеть активность склада."
+Widen the date range or post a manual journal.,Расширьте диапазон дат или проведите ручное ведомство.
+Widen the date range or record a payment receipt or disbursement.,Расширьте диапазон дат или запишите приход или выплату платежа.
+"Widen the date range, relax the status filter, or create a new order.","Расширьте диапазон дат, ослабьте фильтр статуса или создайте новый заказ."
+"Widen the date range, relax the status filter, or log a new bill.","Расширьте диапазон дат, ослабьте фильтр статуса или зарегистрируйте новый счёт."
+"Widen the date range, relax the status filter, or send a new proposal.","Расширьте диапазон дат, ослабьте фильтр статуса или отправьте новое предложение."
+"Widen the date range, relax the status filter, or start a new order.","Расширьте диапазон дат, ослабьте фильтр статуса или начните новый заказ."
 Withheld,Удержано
 Work From Home,Удалённо
 Work Order,Производственный заказ
 Work Orders,Производственные заказы
 Working,Рабочих дней
-Write,
-Yes,
+Write,Написать
+Yes,Да
 You need administrator access to view this page.,Требуется доступ администратора для просмотра этой страницы.
-item_code and warehouse are required,
-pack_key is required,
-step_idx must be an integer.,
-user@example.com,
-{0} is required.,
-{0} must be a number,
-{0} name is required.,
-—,
-— none —,
+"Your books are empty. Get started by adding a customer, recording your first sale, or logging an opening balance.","Ваши книги пусты. Начните с добавления клиента, записи первой продажи или ввода начального остатка."
+Yuk xati,Юк хати
+cheque / txn id,чек / ID транзакции
+entries. Narrow the date range to see older ones.,"записи. Сузьте диапазон дат, чтобы увидеть старые."
+error(s),ошибка(и)
+item,товар
+item_code and warehouse are required,item_code и warehouse обязательны
+items,товары
+line,строка
+more,ещё
+optional,необязательно
+pack_key is required,pack_key обязателен
+step_idx must be an integer.,step_idx должен быть целым числом.
+user@example.com,user@example.com
+vs. last month,в сравнении с прошлым месяцем
+{0} is required.,{0} обязателен.
+{0} must be a number,{0} должно быть числом
+{0} name is required.,Имя {0} обязательно.
+{0} reservation(s) failed to cancel. See results below.,{0} бронирование(й) не удалось отменить. См. результаты ниже.
+{0}: discount_amount cannot be negative,{0}: discount_amount не может быть отрицательным
+{0}: discount_percentage must be between 0 and 100,{0}: discount_percentage должен быть между 0 и 100
+{0}: rate cannot be negative,{0}: rate не может быть отрицательным
+—,—
+— Choose account —,— Выберите счёт —
+— auto from customer —,— автоматически от клиента —
+— auto from supplier —,— автоматически от поставщика —
+— company default —,— стандартный в компании —
+— default —,— по умолчанию —
+— global default —,— глобальный по умолчанию —
+— none —,— нет —
+— pick account —,— выберите счёт —
+— pick destination —,— выберите пункт назначения —
+— pick source —,— выберите источник —
+— select account —,— выберите счёт —
+— top-level —,— верхний уровень —

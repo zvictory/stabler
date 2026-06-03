@@ -1,9 +1,10 @@
 <script setup>
-import { onMounted, ref } from "vue";
+import { computed, onMounted, ref } from "vue";
 import { call } from "../../../api/client.js";
 import { formatMoney } from "../../../composables/money.js";
 import { formatDateTime } from "../../../composables/date.js";
 import { t } from "../../../composables/i18n.js";
+import Select from "../../../components/Select.vue";
 
 const events = ref([]);
 const loading = ref(false);
@@ -18,6 +19,8 @@ const FILTERS = [
 	{ value: "1", label: "Processed" },
 	{ value: "0", label: "Pending" },
 ];
+
+const filterOptions = computed(() => FILTERS.map((f) => ({ value: f.value, label: t(f.label) })));
 
 function fmt(amount) {
 	return formatMoney(amount, "UZS");
@@ -63,9 +66,7 @@ onMounted(load);
 	<div class="card">
 		<div class="card-header d-flex align-items-center gap-3">
 			<h3 class="card-title mb-0">{{ t("ARCA Payment Events") }}</h3>
-			<select v-model="processedFilter" class="form-select form-select-sm w-auto" @change="load">
-				<option v-for="f in FILTERS" :key="f.value" :value="f.value">{{ t(f.label) }}</option>
-			</select>
+			<Select v-model="processedFilter" :options="filterOptions" size="sm" class="w-auto" @change="load" />
 			<button type="button" class="btn btn-sm btn-outline-secondary ms-auto" @click="load">
 				<i class="ti ti-refresh me-1"></i>{{ t("Reload") }}
 			</button>

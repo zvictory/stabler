@@ -7,6 +7,7 @@ import { formatMoney } from "../../composables/money.js";
 import { t } from "../../composables/i18n.js";
 import MoneyInput from "../../components/MoneyInput.vue";
 import EmptyState from "../../components/EmptyState.vue";
+import Select from "../../components/Select.vue";
 
 const session = useSession();
 const { activeCompany, user } = storeToRefs(session);
@@ -358,12 +359,20 @@ async function saveBom(submitAfter) {
 					<div class="row g-2 mb-3">
 						<div class="col-md-7">
 							<label class="form-label">{{ t("Finished good") }}</label>
-							<select v-model="form.item" class="form-select" @change="onFgItemChange">
-								<option value="">—</option>
-								<option v-for="it in itemOptions" :key="it.name" :value="it.name">
-									{{ it.item_name }} ({{ it.item_code }})
-								</option>
-							</select>
+							<Select
+								v-model="form.item"
+								:options="itemOptions"
+								value-key="name"
+								placeholder="—"
+								@change="onFgItemChange"
+							>
+								<template #option="{ option }">
+									{{ option.item_name }} ({{ option.item_code }})
+								</template>
+								<template #selected="{ option }">
+									{{ option.item_name }} ({{ option.item_code }})
+								</template>
+							</Select>
 						</div>
 						<div class="col-md-3">
 							<label class="form-label">{{ t("Quantity") }}</label>
@@ -395,12 +404,21 @@ async function saveBom(submitAfter) {
 							<tbody>
 								<tr v-for="(line, i) in form.items" :key="i">
 									<td>
-										<select v-model="line.item_code" class="form-select form-select-sm" @change="onLineItemChange(line)">
-											<option value="">—</option>
-											<option v-for="it in itemOptions" :key="it.name" :value="it.name">
-												{{ it.item_name }} ({{ it.item_code }})
-											</option>
-										</select>
+										<Select
+											v-model="line.item_code"
+											:options="itemOptions"
+											value-key="name"
+											size="sm"
+											placeholder="—"
+											@change="onLineItemChange(line)"
+										>
+											<template #option="{ option }">
+												{{ option.item_name }} ({{ option.item_code }})
+											</template>
+											<template #selected="{ option }">
+												{{ option.item_name }} ({{ option.item_code }})
+											</template>
+										</Select>
 									</td>
 									<td>
 										<input v-model.number="line.qty" type="number" min="0" step="0.001" inputmode="decimal" class="form-control form-control-sm" />

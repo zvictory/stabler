@@ -1,10 +1,11 @@
 <script setup>
-import { onMounted, ref, watch } from "vue";
+import { computed, onMounted, ref, watch } from "vue";
 import { storeToRefs } from "pinia";
 import { useSession } from "../../stores/session.js";
 import { t } from "../../composables/i18n.js";
 import EmptyState from "../../components/EmptyState.vue";
 import DateInput from "../../components/DateInput.vue";
+import Select from "../../components/Select.vue";
 import {
 	listEquipment,
 	createEquipment,
@@ -36,6 +37,19 @@ function defaultForm() {
 		status: "InService",
 	};
 }
+
+const categoryOptions = computed(() => [
+	{ value: "Cooler", label: t("Cooler") },
+	{ value: "Freezer", label: t("Freezer") },
+	{ value: "Rack", label: t("Rack") },
+	{ value: "POSM", label: t("POSM") },
+]);
+
+const statusOptions = computed(() => [
+	{ value: "InService", label: t("InService") },
+	{ value: "Repair", label: t("Repair") },
+	{ value: "Retired", label: t("Retired") },
+]);
 
 const categoryBadge = (c) => {
 	switch (c) {
@@ -226,12 +240,7 @@ async function submitCreate() {
 				</div>
 				<div class="mb-3">
 					<label class="form-label required">{{ t("Category") }}</label>
-					<select v-model="form.category" class="form-select">
-						<option value="Cooler">{{ t("Cooler") }}</option>
-						<option value="Freezer">{{ t("Freezer") }}</option>
-						<option value="Rack">{{ t("Rack") }}</option>
-						<option value="POSM">{{ t("POSM") }}</option>
-					</select>
+					<Select v-model="form.category" :options="categoryOptions" />
 				</div>
 				<div class="mb-3">
 					<label class="form-label">{{ t("Outlet") }}</label>
@@ -268,11 +277,7 @@ async function submitCreate() {
 				</div>
 				<div class="mb-3">
 					<label class="form-label">{{ t("Status") }}</label>
-					<select v-model="form.status" class="form-select">
-						<option value="InService">{{ t("InService") }}</option>
-						<option value="Repair">{{ t("Repair") }}</option>
-						<option value="Retired">{{ t("Retired") }}</option>
-					</select>
+					<Select v-model="form.status" :options="statusOptions" />
 				</div>
 			</div>
 			<div class="offcanvas-footer p-3 border-top d-flex justify-content-end gap-2">

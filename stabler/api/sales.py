@@ -3,6 +3,7 @@
 from __future__ import annotations
 
 import json
+import re
 
 import frappe
 from frappe import _
@@ -610,13 +611,26 @@ def sales_invoice_print(name: str):
 	base = sales_invoice_detail(name)
 	doc = frappe.get_doc("Sales Invoice", name)
 	company_doc = frappe.get_doc("Company", doc.company)
+
+	balance_acc = frappe.db.sql(
+		"""
+		SELECT SUM(debit_in_account_currency - credit_in_account_currency)
+		FROM `tabGL Entry`
+		WHERE company = %s AND party_type = 'Customer' AND party = %s AND is_cancelled = 0
+		""",
+		(doc.company, doc.customer),
+	)
+	customer_balance = flt(balance_acc[0][0]) if balance_acc and balance_acc[0][0] is not None else 0.0
+
 	return {
 		**base,
 		"company_name": company_doc.company_name,
 		"company_abbr": company_doc.abbr,
 		"company_tax_id": getattr(company_doc, "tax_id", "") or "",
+		"discount_amount": flt(doc.discount_amount),
 		"in_words": doc.in_words or "",
 		"payment_terms_template": doc.payment_terms_template or "",
+		"customer_balance": customer_balance,
 	}
 
 
@@ -802,6 +816,30 @@ def delete_customer(name: str):
 
 
 @frappe.whitelist()
+def delete_sales_order(name: str):
+	"""Delete a Draft Sales Order. Raises if docstatus != 0."""
+	_assert_can_read("Sales Order", name)
+	doc = frappe.get_doc("Sales Order", name)
+	if doc.docstatus != 0:
+		frappe.throw(f"Only Draft Sales Orders can be deleted (docstatus={doc.docstatus}).")
+	frappe.delete_doc("Sales Order", name, ignore_permissions=False)
+	frappe.db.commit()
+	return {"deleted": name}
+
+
+@frappe.whitelist()
+def delete_sales_invoice(name: str):
+	"""Delete a Draft Sales Invoice. Raises if docstatus != 0."""
+	_assert_can_read("Sales Invoice", name)
+	doc = frappe.get_doc("Sales Invoice", name)
+	if doc.docstatus != 0:
+		frappe.throw(f"Only Draft Sales Invoices can be deleted (docstatus={doc.docstatus}).")
+	frappe.delete_doc("Sales Invoice", name, ignore_permissions=False)
+	frappe.db.commit()
+	return {"deleted": name}
+
+
+@frappe.whitelist()
 def list_customer_groups(limit: int = 200):
 	return frappe.db.sql(
 		"""
@@ -965,10 +1003,13 @@ def list_territories(limit: int = 200):
 
 
 @frappe.whitelist()
-def list_price_lists(selling_only: int = 1, limit: int = 200):
-	"""Return enabled Price Lists. By default only selling lists (selling=1)."""
+def list_price_lists(selling_only: int = 1, buying_only: int = 0, limit: int = 200):
+	"""Return enabled Price Lists. By default only selling lists (selling=1).
+	Pass buying_only=1 to get buying price lists instead."""
 	conds = ["enabled = 1"]
-	if int(selling_only):
+	if int(buying_only):
+		conds.append("buying = 1")
+	elif int(selling_only):
 		conds.append("selling = 1")
 	where = " AND ".join(conds)
 	return frappe.db.sql(
@@ -1341,6 +1382,7 @@ def sales_order_detail(name: str):
 		"company": doc.company,
 		"set_warehouse": getattr(doc, "set_warehouse", None),
 		"currency": doc.currency,
+		"selling_price_list": getattr(doc, "selling_price_list", None),
 		"conversion_rate": flt(doc.conversion_rate),
 		"net_total": flt(doc.net_total),
 		"grand_total": flt(doc.grand_total),
@@ -1438,6 +1480,18 @@ def _reserve_for_sales_order(so_name: str) -> list[dict]:
 		# the SRE call's own validation messages which Frappe logs.
 		errors.append({"line": None, "item": None, "error": str(exc)})
 	return errors
+
+
+def _humanize_sales_order_cancel_error(message: str) -> str:
+	match = re.search(
+		r"Sales Invoice\s+(?:<a\b[^>]*>)?([^<\s]+)(?:</a>)?\s+must be deleted before cancelling this Sales Order",
+		message,
+	)
+	if not match:
+		return message
+	return _("Cancel or delete Sales Invoice {0} before cancelling this Sales Order.").format(
+		match.group(1)
+	)
 
 
 def _submit_and_reserve(doc) -> list[dict]:
@@ -1617,8 +1671,68 @@ def cancel_sales_order(name: str):
 		# Swallow — ERPNext will re-attempt during doc.cancel(); any real failure
 		# will surface there with full context.
 		pass
-	doc.cancel()
+	try:
+		doc.cancel()
+	except frappe.ValidationError as exc:
+		message = _humanize_sales_order_cancel_error(str(exc))
+		if message == str(exc):
+			raise
+		frappe.throw(message, frappe.ValidationError)
 	return {"name": doc.name, "docstatus": doc.docstatus, "status": doc.status}
+
+
+@frappe.whitelist()
+def clear_open_reservations(company: str):
+	"""Admin: cancel all OPEN Stock Reservation Entries for a company.
+
+	"Open" = submitted (docstatus=1), not Delivered/Cancelled. Cancels (never
+	deletes) so reserved_qty is released back on tabBin. Groups by voucher and
+	reuses ERPNext's cancel_stock_reservation_entries — the same path
+	cancel_sales_order uses. Never aborts: per-voucher failures are collected and
+	returned, matching _reserve_for_sales_order's "surface errors, don't raise"
+	philosophy.
+	"""
+	from stabler.api.organization import _require_admin
+
+	_require_admin()
+	if not company:
+		frappe.throw(_("Company is required."))
+	if not frappe.db.exists("Company", company):
+		frappe.throw(_("Unknown company: {0}").format(company))
+
+	rows = frappe.get_all(
+		"Stock Reservation Entry",
+		filters={
+			"company": company,
+			"docstatus": 1,
+			"status": ["not in", ["Delivered", "Cancelled"]],
+		},
+		fields=["name", "voucher_type", "voucher_no"],
+	)
+
+	# Group by voucher — ERPNext's helper cancels per-voucher, not per-row.
+	vouchers: dict[tuple, int] = {}
+	for r in rows:
+		key = (r.voucher_type, r.voucher_no)
+		vouchers[key] = vouchers.get(key, 0) + 1
+
+	try:
+		from erpnext.stock.doctype.stock_reservation_entry.stock_reservation_entry import (
+			cancel_stock_reservation_entries,
+		)
+	except Exception as exc:
+		frappe.throw(_("SRE module unavailable: {0}").format(exc))
+
+	cleared, errors = 0, []
+	for (vtype, vno), count in vouchers.items():
+		try:
+			cancel_stock_reservation_entries(voucher_type=vtype, voucher_no=vno, notify=False)
+			cleared += count
+		except Exception as exc:
+			errors.append({"voucher": vno, "error": str(exc)})
+
+	frappe.db.commit()
+	return {"company": company, "total": len(rows), "cleared": cleared, "errors": errors}
 
 
 @frappe.whitelist()

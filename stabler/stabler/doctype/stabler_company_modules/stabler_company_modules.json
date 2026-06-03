@@ -15,7 +15,9 @@
   "enable_stock_reservation",
   "enable_compliance",
   "enable_field_sales",
-  "enable_marketing"
+  "enable_marketing",
+  "enable_remittance",
+  "enable_installment"
  ],
  "fields": [
   {
@@ -96,6 +98,20 @@
    "fieldtype": "Check",
    "in_list_view": 1,
    "label": "Trade Marketing"
+  },
+  {
+   "default": "1",
+   "fieldname": "enable_remittance",
+   "fieldtype": "Check",
+   "in_list_view": 1,
+   "label": "Remittance"
+  },
+  {
+   "default": "1",
+   "fieldname": "enable_installment",
+   "fieldtype": "Check",
+   "in_list_view": 1,
+   "label": "Installment (Murabaha)"
   }
  ],
  "index_web_pages_for_search": 1,

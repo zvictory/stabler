@@ -5,6 +5,7 @@ import { useSession } from "../../stores/session.js";
 import { call } from "../../api/client.js";
 import { formatMoney } from "../../composables/money.js";
 import { formatDateTime } from "../../composables/date.js";
+import { t } from "../../composables/i18n.js";
 import EmptyState from "../../components/EmptyState.vue";
 import DateInput from "../../components/DateInput.vue";
 
@@ -61,7 +62,7 @@ async function load() {
 			limit: limit.value,
 		});
 	} catch (err) {
-		error.value = err?.message || "Failed to load stock ledger.";
+		error.value = err?.message || t("Failed to load stock ledger.");
 	} finally {
 		loading.value = false;
 	}
@@ -74,26 +75,26 @@ watch(activeCompany, load);
 <template>
 	<div class="card">
 		<div class="card-header">
-			<div class="card-title">Stock Ledger</div>
+			<div class="card-title">{{ t("Stock Ledger") }}</div>
 			<div class="ms-auto d-flex gap-2 align-items-end flex-wrap">
 				<div>
-					<label class="form-label small mb-1">From</label>
+					<label class="form-label small mb-1">{{ t("From") }}</label>
 					<DateInput v-model="fromDate" size="sm" />
 				</div>
 				<div>
-					<label class="form-label small mb-1">To</label>
+					<label class="form-label small mb-1">{{ t("To") }}</label>
 					<DateInput v-model="toDate" size="sm" />
 				</div>
 				<div style="min-width: 160px">
-					<label class="form-label small mb-1">Item</label>
-					<input v-model="itemCode" type="search" class="form-control form-control-sm" placeholder="Item code" />
+					<label class="form-label small mb-1">{{ t("Item") }}</label>
+					<input v-model="itemCode" type="search" class="form-control form-control-sm" :placeholder="t('Item code')" />
 				</div>
 				<div style="min-width: 160px">
-					<label class="form-label small mb-1">Warehouse</label>
-					<input v-model="warehouse" type="search" class="form-control form-control-sm" placeholder="Warehouse" />
+					<label class="form-label small mb-1">{{ t("Warehouse") }}</label>
+					<input v-model="warehouse" type="search" class="form-control form-control-sm" :placeholder="t('Warehouse')" />
 				</div>
 				<button type="button" class="btn btn-sm btn-primary" @click="load">
-					<i class="ti ti-refresh me-1"></i>Apply
+					<i class="ti ti-refresh me-1"></i>{{ t("Apply") }}
 				</button>
 			</div>
 		</div>
@@ -110,20 +111,20 @@ watch(activeCompany, load);
 			accentIcon="ti-filter"
 			tone="info"
 			compact
-			title="No stock moves in this range"
-			subtitle="Widen the date range or clear filters to see stock activity."
+			:title="t('No stock moves in this range')"
+			:subtitle="t('Widen the date range or clear filters to see stock activity.')"
 		/>
 		<div v-else class="table-responsive">
 			<table class="table table-vcenter card-table">
 				<thead>
 					<tr>
-						<th>Date</th>
-						<th>Voucher</th>
-						<th>Item</th>
-						<th>Warehouse</th>
-						<th class="text-end">Movement</th>
-						<th class="text-end">Balance</th>
-						<th class="text-end">Value Δ</th>
+						<th>{{ t("Date") }}</th>
+						<th>{{ t("Voucher") }}</th>
+						<th>{{ t("Item") }}</th>
+						<th>{{ t("Warehouse") }}</th>
+						<th class="text-end">{{ t("Movement") }}</th>
+						<th class="text-end">{{ t("Balance") }}</th>
+						<th class="text-end">{{ t("Value Δ") }}</th>
 					</tr>
 				</thead>
 				<tbody>

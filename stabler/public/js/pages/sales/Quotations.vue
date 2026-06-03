@@ -1,5 +1,6 @@
 <script setup>
 import { computed, onMounted, ref, watch } from "vue";
+import { t } from "../../composables/i18n.js";
 import { storeToRefs } from "pinia";
 import { useSession } from "../../stores/session.js";
 import { call } from "../../api/client.js";
@@ -9,6 +10,7 @@ import MoneyInput from "../../components/MoneyInput.vue";
 import DateInput from "../../components/DateInput.vue";
 import EmptyState from "../../components/EmptyState.vue";
 import Typeahead from "../../components/Typeahead.vue";
+import Select from "../../components/Select.vue";
 
 const session = useSession();
 const { activeCompany, user } = storeToRefs(session);
@@ -36,6 +38,10 @@ const currency = computed(
 
 const STATUSES = ["", "Draft", "Open", "Ordered", "Lost", "Expired", "Cancelled"];
 
+const statusOptions = computed(() =>
+	STATUSES.map((s) => ({ value: s, label: s ? t(s) : t("All") }))
+);
+
 const statusBadge = (s) => {
 	const m = {
 		Draft: "bg-secondary-lt",
@@ -61,7 +67,7 @@ async function load() {
 			limit: limit.value,
 		});
 	} catch (err) {
-		error.value = err?.message || "Failed to load quotations.";
+		error.value = err?.message || t("Failed to load quotations.");
 	} finally {
 		loading.value = false;
 	}
@@ -74,7 +80,7 @@ async function openDetail(name) {
 	try {
 		detail.value = await call("stabler.api.sales.quotation_detail", { name });
 	} catch (err) {
-		detail.value = { error: err?.message || "Failed to load." };
+		detail.value = { error: err?.message || t("Failed to load.") };
 	} finally {
 		detailLoading.value = false;
 	}
@@ -182,7 +188,7 @@ async function submitDoc() {
 		await call("stabler.api.sales.submit_quotation", { name: detail.value.name });
 		await Promise.all([openDetail(detail.value.name), load()]);
 	} catch (err) {
-		actionError.value = err?.message || "Submit failed.";
+		actionError.value = err?.message || t("Submit failed.");
 	} finally {
 		actionRunning.value = false;
 	}
@@ -190,14 +196,14 @@ async function submitDoc() {
 
 async function cancelDoc() {
 	if (!detail.value?.name) return;
-	if (!window.confirm(`Cancel quotation ${detail.value.name}?`)) return;
+	if (!window.confirm(t("Cancel quotation {name}?", { name: detail.value.name }))) return;
 	actionError.value = "";
 	actionRunning.value = true;
 	try {
 		await call("stabler.api.sales.cancel_quotation", { name: detail.value.name });
 		await Promise.all([openDetail(detail.value.name), load()]);
 	} catch (err) {
-		actionError.value = err?.message || "Cancel failed.";
+		actionError.value = err?.message || t("Cancel failed.");
 	} finally {
 		actionRunning.value = false;
 	}
@@ -206,19 +212,19 @@ async function cancelDoc() {
 async function submitCreate() {
 	submitError.value = "";
 	if (!form.value.customer) {
-		submitError.value = "Pick a customer.";
+		submitError.value = t("Pick a customer.");
 		return;
 	}
 	const lines = form.value.items
 		.filter((r) => r.item_code)
 		.map((r) => ({ item_code: r.item_code, qty: r.qty, rate: r.rate, uom: r.uom }));
 	if (!lines.length) {
-		submitError.value = "Add at least one item line.";
+		submitError.value = t("Add at least one item line.");
 		return;
 	}
 	for (const [i, r] of lines.entries()) {
 		if (!Number(r.qty) || Number(r.qty) <= 0) {
-			submitError.value = `Row ${i + 1}: qty must be greater than zero.`;
+			submitError.value = t("Row {n}: qty must be greater than zero.", { n: i + 1 });
 			return;
 		}
 	}
@@ -236,7 +242,7 @@ async function submitCreate() {
 		await load();
 		if (created?.name) await openDetail(created.name);
 	} catch (err) {
-		submitError.value = err?.message || "Failed to create quotation.";
+		submitError.value = err?.message || t("Failed to create quotation.");
 	} finally {
 		submitting.value = false;
 	}
@@ -249,35 +255,33 @@ watch(activeCompany, load);
 <template>
 	<div class="card">
 		<div class="card-header">
-			<div class="card-title">Quotations</div>
+			<div class="card-title">{{ t("Quotations") }}</div>
 			<div class="ms-auto d-flex gap-2 align-items-end flex-wrap">
 				<div>
-					<label class="form-label small mb-1">From</label>
+					<label class="form-label small mb-1">{{ t("From") }}</label>
 					<DateInput v-model="fromDate" size="sm" />
 				</div>
 				<div>
-					<label class="form-label small mb-1">To</label>
+					<label class="form-label small mb-1">{{ t("To") }}</label>
 					<DateInput v-model="toDate" size="sm" />
 				</div>
 				<div style="min-width: 150px">
-					<label class="form-label small mb-1">Status</label>
-					<select v-model="status" class="form-select form-select-sm">
-						<option v-for="s in STATUSES" :key="s" :value="s">{{ s || "All" }}</option>
-					</select>
+					<label class="form-label small mb-1">{{ t("Status") }}</label>
+					<Select v-model="status" size="sm" :options="statusOptions" />
 				</div>
 				<button type="button" class="btn btn-sm btn-primary" @click="load">
-					<i class="ti ti-refresh me-1"></i>Apply
+					<i class="ti ti-refresh me-1"></i>{{ t("Apply") }}
 				</button>
 				<button type="button" class="btn btn-sm btn-success" @click="openCreate">
-					<i class="ti ti-plus me-1"></i>New quotation
+					<i class="ti ti-plus me-1"></i>{{ t("New quotation") }}
 				</button>
 			</div>
 		</div>
 
 		<div v-if="rows.length" class="card-body py-2 border-bottom bg-light">
 			<div class="d-flex gap-4 small">
-				<div>Count: <strong>{{ totals.count }}</strong></div>
-				<div>Total: <strong class="font-monospace">{{ formatMoney(totals.grand, currency, user.language) }}</strong></div>
+				<div>{{ t("Count:") }} <strong>{{ totals.count }}</strong></div>
+				<div>{{ t("Total:") }} <strong class="font-monospace">{{ formatMoney(totals.grand, currency, user.language) }}</strong></div>
 			</div>
 		</div>
 
@@ -292,12 +296,12 @@ watch(activeCompany, load);
 			icon="ti-file-text"
 			accentIcon="ti-plus"
 			tone="info"
-			title="No quotations in this range"
-			subtitle="Widen the date range, relax the status filter, or send a new proposal."
+			:title="t('No quotations in this range')"
+			:subtitle="t('Widen the date range, relax the status filter, or send a new proposal.')"
 		>
 			<template #actions>
 				<button type="button" class="btn btn-primary" @click="openCreate">
-					<i class="ti ti-plus me-1"></i>New quotation
+					<i class="ti ti-plus me-1"></i>{{ t("New quotation") }}
 				</button>
 			</template>
 		</EmptyState>
@@ -306,11 +310,11 @@ watch(activeCompany, load);
 				<thead>
 					<tr>
 						<th>#</th>
-						<th>Date</th>
-						<th>Valid till</th>
-						<th>Customer</th>
-						<th class="text-end">Total</th>
-						<th>Status</th>
+						<th>{{ t("Date") }}</th>
+						<th>{{ t("Valid till") }}</th>
+						<th>{{ t("Customer") }}</th>
+						<th class="text-end">{{ t("Total") }}</th>
+						<th>{{ t("Status") }}</th>
 					</tr>
 				</thead>
 				<tbody>
@@ -338,7 +342,7 @@ watch(activeCompany, load);
 		:style="{ transform: detailOpen ? 'translateX(0)' : 'translateX(100%)' }"
 	>
 		<div class="offcanvas-header">
-			<h5 class="offcanvas-title">Quotation</h5>
+			<h5 class="offcanvas-title">{{ t("Quotation") }}</h5>
 			<button type="button" class="btn-close" @click="closeDetail" aria-label="Close"></button>
 		</div>
 		<div class="offcanvas-body">
@@ -357,9 +361,9 @@ watch(activeCompany, load);
 
 				<!-- Pipeline steps: Quotation → Sales Order → Sales Invoice -->
 				<ul class="steps steps-counter mb-4">
-					<li class="step-item active">Quotation</li>
-					<li class="step-item" :class="{ active: detail.status === 'Ordered' }">Sales Order</li>
-					<li class="step-item">Invoice</li>
+					<li class="step-item active">{{ t("Quotation") }}</li>
+					<li class="step-item" :class="{ active: detail.status === 'Ordered' }">{{ t("Sales Order") }}</li>
+					<li class="step-item">{{ t("Invoice") }}</li>
 				</ul>
 
 				<div v-if="actionError" class="alert alert-danger">{{ actionError }}</div>
@@ -373,7 +377,7 @@ watch(activeCompany, load);
 						@click="submitDoc"
 					>
 						<span v-if="actionRunning" class="spinner-border spinner-border-sm me-1"></span>
-						<i v-else class="ti ti-check me-1"></i>Submit
+						<i v-else class="ti ti-check me-1"></i>{{ t("Submit") }}
 					</button>
 					<button
 						v-if="canCancel"
@@ -382,43 +386,43 @@ watch(activeCompany, load);
 						:disabled="actionRunning"
 						@click="cancelDoc"
 					>
-						<i class="ti ti-ban me-1"></i>Cancel
+						<i class="ti ti-ban me-1"></i>{{ t("Cancel") }}
 					</button>
 				</div>
 
 				<div class="datagrid mb-3">
 					<div class="datagrid-item">
-						<div class="datagrid-title">Date</div>
+						<div class="datagrid-title">{{ t("Date") }}</div>
 						<div class="datagrid-content">{{ formatDateTime(detail.transaction_date) }}</div>
 					</div>
 					<div class="datagrid-item">
-						<div class="datagrid-title">Valid till</div>
+						<div class="datagrid-title">{{ t("Valid till") }}</div>
 						<div class="datagrid-content">{{ formatDateTime(detail.valid_till) || "—" }}</div>
 					</div>
 					<div class="datagrid-item">
-						<div class="datagrid-title">Currency</div>
+						<div class="datagrid-title">{{ t("Currency") }}</div>
 						<div class="datagrid-content">{{ detail.currency }}</div>
 					</div>
 					<div class="datagrid-item">
-						<div class="datagrid-title">Net total</div>
+						<div class="datagrid-title">{{ t("Net total") }}</div>
 						<div class="datagrid-content font-monospace">{{ formatMoney(detail.net_total, detail.currency, user.language) }}</div>
 					</div>
 					<div class="datagrid-item">
-						<div class="datagrid-title">Grand total</div>
+						<div class="datagrid-title">{{ t("Grand total") }}</div>
 						<div class="datagrid-content font-monospace fw-bold">{{ formatMoney(detail.grand_total, detail.currency, user.language) }}</div>
 					</div>
 				</div>
 
-				<h6 class="text-uppercase text-secondary small mb-2">Items</h6>
+				<h6 class="text-uppercase text-secondary small mb-2">{{ t("Items") }}</h6>
 				<div class="table-responsive">
 					<table class="table table-sm table-vcenter">
 						<thead>
 							<tr>
-								<th>Item</th>
-								<th class="text-end">Qty</th>
-								<th>UOM</th>
-								<th class="text-end">Rate</th>
-								<th class="text-end">Amount</th>
+								<th>{{ t("Item") }}</th>
+								<th class="text-end">{{ t("Qty") }}</th>
+								<th>{{ t("UOM") }}</th>
+								<th class="text-end">{{ t("Rate") }}</th>
+								<th class="text-end">{{ t("Amount") }}</th>
 							</tr>
 						</thead>
 						<tbody>
@@ -446,7 +450,7 @@ watch(activeCompany, load);
 		<div class="modal-dialog modal-xl modal-dialog-centered" role="document">
 			<div class="modal-content">
 				<div class="modal-header">
-					<h5 class="modal-title">New quotation</h5>
+					<h5 class="modal-title">{{ t("New quotation") }}</h5>
 					<button type="button" class="btn-close" aria-label="Close" @click="closeCreate" :disabled="submitting"></button>
 				</div>
 				<div class="modal-body">
@@ -454,13 +458,13 @@ watch(activeCompany, load);
 
 					<div class="row g-3 mb-3">
 						<div class="col-md-6">
-							<label class="form-label required">Customer</label>
+							<label class="form-label required">{{ t("Customer") }}</label>
 							<Typeahead
 								v-model="form.customer"
 								:search="searchCustomers"
 								:display="form.customer_name"
-								placeholder="Search customer name…"
-								no-results-text="No customers match that name"
+								:placeholder="t('Search customer name…')"
+								:no-results-text="t('No customers match that name')"
 								:disabled="submitting"
 								@pick="pickCustomer"
 								@clear="clearCustomer"
@@ -477,25 +481,25 @@ watch(activeCompany, load);
 							</Typeahead>
 						</div>
 						<div class="col-md-3">
-							<label class="form-label">Date</label>
+							<label class="form-label">{{ t("Date") }}</label>
 							<DateInput v-model="form.transaction_date" />
 						</div>
 						<div class="col-md-3">
-							<label class="form-label">Valid till</label>
+							<label class="form-label">{{ t("Valid till") }}</label>
 							<DateInput v-model="form.valid_till" />
 						</div>
 					</div>
 
-					<h6 class="text-uppercase text-secondary small mb-2">Items</h6>
+					<h6 class="text-uppercase text-secondary small mb-2">{{ t("Items") }}</h6>
 					<div class="table-responsive">
 						<table class="table table-sm table-vcenter">
 							<thead>
 								<tr>
-									<th style="min-width: 240px">Item</th>
-									<th style="width: 110px">Qty</th>
-									<th style="width: 90px">UOM</th>
-									<th style="width: 160px">Rate</th>
-									<th class="text-end" style="width: 140px">Amount</th>
+									<th style="min-width: 240px">{{ t("Item") }}</th>
+									<th style="width: 110px">{{ t("Qty") }}</th>
+									<th style="width: 90px">{{ t("UOM") }}</th>
+									<th style="width: 160px">{{ t("Rate") }}</th>
+									<th class="text-end" style="width: 140px">{{ t("Amount") }}</th>
 									<th style="width: 40px"></th>
 								</tr>
 							</thead>
@@ -506,8 +510,8 @@ watch(activeCompany, load);
 											:model-value="line.item_code"
 											:search="searchItems"
 											:display="line.item_name || line.item_code"
-											placeholder="Search item…"
-											no-results-text="No items match"
+											:placeholder="t('Search item…')"
+											:no-results-text="t('No items match')"
 											size="sm"
 											menu-min-width="280px"
 											:disabled="submitting"
@@ -545,12 +549,12 @@ watch(activeCompany, load);
 								<tr>
 									<td colspan="6">
 										<button type="button" class="btn btn-sm btn-ghost-primary" @click="addLine">
-											<i class="ti ti-plus me-1"></i>Add row
+											<i class="ti ti-plus me-1"></i>{{ t("Add row") }}
 										</button>
 									</td>
 								</tr>
 								<tr>
-									<td colspan="4" class="text-end text-uppercase small text-secondary">Net total</td>
+									<td colspan="4" class="text-end text-uppercase small text-secondary">{{ t("Net total") }}</td>
 									<td class="text-end font-monospace fw-bold">{{ formatMoney(createTotal, currency, user.language) }}</td>
 									<td></td>
 								</tr>
@@ -559,15 +563,15 @@ watch(activeCompany, load);
 					</div>
 
 					<div class="mt-3">
-						<label class="form-label">Terms / remarks</label>
+						<label class="form-label">{{ t("Terms / remarks") }}</label>
 						<textarea v-model="form.remarks" class="form-control" rows="2"></textarea>
 					</div>
 				</div>
 				<div class="modal-footer">
-					<button type="button" class="btn btn-link link-secondary" :disabled="submitting" @click="closeCreate">Cancel</button>
+					<button type="button" class="btn btn-link link-secondary" :disabled="submitting" @click="closeCreate">{{ t("Cancel") }}</button>
 					<button type="button" class="btn btn-primary ms-auto" :disabled="submitting" @click="submitCreate">
 						<span v-if="submitting" class="spinner-border spinner-border-sm me-1"></span>
-						Save as draft
+						{{ t("Save as draft") }}
 					</button>
 				</div>
 			</div>

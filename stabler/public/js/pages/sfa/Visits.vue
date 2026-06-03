@@ -7,6 +7,7 @@ import { t } from "../../composables/i18n.js";
 import { formatDateTime } from "../../composables/date.js";
 import EmptyState from "../../components/EmptyState.vue";
 import DateInput from "../../components/DateInput.vue";
+import Select from "../../components/Select.vue";
 
 const session = useSession();
 const { activeCompany } = storeToRefs(session);
@@ -28,6 +29,10 @@ const statusOptions = computed(() => [
 	{ value: "Completed", label: t("Completed") },
 	{ value: "Skipped", label: t("Skipped") },
 ]);
+
+const visitStatusOptions = computed(() => VISIT_STATUSES.map((s) => ({ value: s, label: t(s) })));
+const stepTypeOptions = computed(() => STEP_TYPES.map((st) => ({ value: st, label: t(st) })));
+const stepStatusOptions = computed(() => STEP_STATUSES.map((ss) => ({ value: ss, label: t(ss) })));
 
 const statusBadge = (s) => {
 	if (s === "Completed") return "bg-success-lt";
@@ -197,11 +202,12 @@ watch([plannedDate, status], load);
 			<h3 class="card-title mb-0">{{ t("Visits") }}</h3>
 			<div class="ms-auto d-flex gap-2">
 				<DateInput v-model="plannedDate" size="sm" :aria-label="t('Planned date')" />
-				<select v-model="status" class="form-select form-select-sm" :aria-label="t('Status')">
-					<option v-for="opt in statusOptions" :key="opt.value" :value="opt.value">
-						{{ opt.label }}
-					</option>
-				</select>
+				<Select
+					v-model="status"
+					size="sm"
+					:options="statusOptions"
+					:aria-label="t('Status')"
+				/>
 				<button type="button" class="btn btn-sm btn-success" @click="openCreate">
 					<i class="ti ti-plus me-1"></i>{{ t("New Visit") }}
 				</button>
@@ -294,9 +300,7 @@ watch([plannedDate, status], load);
 							</div>
 							<div class="col-md-6">
 								<label class="form-label">{{ t("Status") }}</label>
-								<select v-model="form.status" class="form-select">
-									<option v-for="s in VISIT_STATUSES" :key="s" :value="s">{{ t(s) }}</option>
-								</select>
+								<Select v-model="form.status" :options="visitStatusOptions" />
 							</div>
 							<div class="col-12">
 								<label class="form-label">{{ t("Notes") }}</label>
@@ -337,19 +341,19 @@ watch([plannedDate, status], load);
 									<tr v-for="(s, idx) in form.steps" :key="idx">
 										<td class="text-secondary">{{ idx + 1 }}</td>
 										<td>
-											<select v-model="s.step_type" class="form-select form-select-sm">
-												<option value="">—</option>
-												<option v-for="st in STEP_TYPES" :key="st" :value="st">
-													{{ t(st) }}
-												</option>
-											</select>
+											<Select
+												v-model="s.step_type"
+												size="sm"
+												:options="stepTypeOptions"
+												placeholder="—"
+											/>
 										</td>
 										<td>
-											<select v-model="s.status" class="form-select form-select-sm">
-												<option v-for="ss in STEP_STATUSES" :key="ss" :value="ss">
-													{{ t(ss) }}
-												</option>
-											</select>
+											<Select
+												v-model="s.status"
+												size="sm"
+												:options="stepStatusOptions"
+											/>
 										</td>
 										<td>
 											<input

@@ -15,14 +15,27 @@ const session = useSession();
 const { activeCompany, user, currency } = storeToRefs(session);
 
 const loading = ref(true);
-const summary = ref({ cash: 0, ar: 0, ap: 0, revenue_mtd: 0, revenue_trend_pct: null });
+const summary = ref({ cash: [], ar: [], ap: [], revenue_mtd: [], revenue_trend_pct: null, dominant_currency: "" });
 const trend = ref({ months: [], revenue: [], expense: [] });
 const activity = ref([]);
 const lowStock = ref([]);
 const error = ref(null);
 
 const money = (v, ccy) => formatMoney(v, ccy || currency.value, user.value.language);
-const compact = (v) => formatCompactMoney(v, currency.value, user.value.language);
+// Chart currency: dominant transaction currency once trend data loads, base currency until then.
+const chartCurrency = computed(() => trend.value.currency || currency.value);
+const compact = (v) => formatCompactMoney(v, chartCurrency.value, user.value.language);
+
+// Render a per-currency breakdown as pre-formatted strings (dominant first).
+// Falls back to a zero row in the dominant currency when the rows array is empty.
+const sumRows = (rows) => (rows || []).reduce((s, r) => s + Math.abs(r.amount), 0);
+const lines = (rows) => {
+	const effective =
+		rows?.length
+			? rows
+			: [{ amount: 0, currency: summary.value.dominant_currency || currency.value }];
+	return effective.map((r) => formatMoney(r.amount, r.currency, user.value.language));
+};
 
 async function load() {
 	if (!activeCompany.value) {
@@ -32,7 +45,7 @@ async function load() {
 	loading.value = true;
 	error.value = null;
 	try {
-		const [s, t, a, ls] = await Promise.all([
+		const [summary_data, trend_data, activity_data, ls] = await Promise.all([
 			dashboardApi.summary(activeCompany.value),
 			dashboardApi.revenueTrend(activeCompany.value, 12),
 			dashboardApi.recentActivity(activeCompany.value, 8),
@@ -41,12 +54,12 @@ async function load() {
 				limit: 6,
 			}).catch(() => []),
 		]);
-		summary.value = s || summary.value;
-		trend.value = t || trend.value;
-		activity.value = a || [];
+		summary.value = summary_data || summary.value;
+		trend.value = trend_data || trend.value;
+		activity.value = activity_data || [];
 		lowStock.value = Array.isArray(ls) ? ls : [];
 	} catch (e) {
-		error.value = e?.response?.data?.exception || e.message || "Failed to load dashboard.";
+		error.value = e?.response?.data?.exception || e.message || t("Failed to load dashboard.");
 	} finally {
 		loading.value = false;
 	}
@@ -66,14 +79,14 @@ const revenueChartOptions = computed(() => ({
 	dataLabels: { enabled: false },
 	xaxis: { categories: trend.value.months, labels: { style: { fontSize: "11px" } } },
 	yaxis: { labels: { formatter: (v) => compact(v) } },
-	tooltip: { y: { formatter: (v) => money(v) } },
+	tooltip: { y: { formatter: (v) => formatMoney(v, chartCurrency.value, user.value.language) } },
 	legend: { position: "top", horizontalAlign: "right" },
 	grid: { strokeDashArray: 4 },
 }));
 
 const revenueSeries = computed(() => [
-	{ name: "Revenue", data: trend.value.revenue || [] },
-	{ name: "Expense", data: trend.value.expense || [] },
+	{ name: t("Revenue"), data: trend.value.revenue || [] },
+	{ name: t("Expense"), data: trend.value.expense || [] },
 ]);
 
 const cashFlowOptions = computed(() => ({
@@ -83,24 +96,24 @@ const cashFlowOptions = computed(() => ({
 	dataLabels: { enabled: false },
 	xaxis: { categories: trend.value.months },
 	yaxis: { labels: { formatter: (v) => compact(v) } },
-	tooltip: { y: { formatter: (v) => money(v) } },
+	tooltip: { y: { formatter: (v) => formatMoney(v, chartCurrency.value, user.value.language) } },
 	legend: { position: "top", horizontalAlign: "right" },
 	grid: { strokeDashArray: 4 },
 }));
 
 const cashFlowSeries = computed(() => [
-	{ name: "Inflow", data: trend.value.revenue || [] },
-	{ name: "Outflow", data: (trend.value.expense || []).map((v) => -Math.abs(v)) },
+	{ name: t("Inflow"), data: trend.value.revenue || [] },
+	{ name: t("Outflow"), data: (trend.value.expense || []).map((v) => -Math.abs(v)) },
 ]);
 
 const isFirstRun = computed(
 	() =>
 		!loading.value &&
 		!error.value &&
-		Number(summary.value.cash || 0) === 0 &&
-		Number(summary.value.ar || 0) === 0 &&
-		Number(summary.value.ap || 0) === 0 &&
-		Number(summary.value.revenue_mtd || 0) === 0 &&
+		sumRows(summary.value.cash) === 0 &&
+		sumRows(summary.value.ar) === 0 &&
+		sumRows(summary.value.ap) === 0 &&
+		sumRows(summary.value.revenue_mtd) === 0 &&
 		!activity.value.length,
 );
 
@@ -125,13 +138,13 @@ const activityIcon = (type) => {
 		<div class="container-xl">
 			<div class="row g-2 align-items-center">
 				<div class="col">
-					<div class="page-pretitle">Overview</div>
-					<h2 class="page-title">Dashboard</h2>
+					<div class="page-pretitle">{{ t("Overview") }}</div>
+					<h2 class="page-title">{{ t("Dashboard") }}</h2>
 				</div>
 				<div class="col-auto">
 					<button class="btn btn-outline-primary btn-sm" @click="load" :disabled="loading">
 						<i class="ti ti-refresh"></i>
-						Refresh
+						{{ t("Refresh") }}
 					</button>
 				</div>
 			</div>
@@ -152,8 +165,8 @@ const activityIcon = (type) => {
 				icon="ti-building"
 				accentIcon="ti-arrow-up"
 				tone="primary"
-				title="No company selected"
-				subtitle="Pick a company from the switcher in the header to see your financial overview."
+				:title='t("No company selected")'
+				:subtitle='t("Pick a company from the switcher in the header to see your financial overview.")'
 			/>
 
 			<template v-else>
@@ -166,20 +179,19 @@ const activityIcon = (type) => {
 								</span>
 							</div>
 							<div class="col">
-								<h3 class="mb-1">Welcome to Stabler</h3>
+								<h3 class="mb-1">{{ t("Welcome to Stabler") }}</h3>
 								<p class="text-secondary mb-2">
-									Your books are empty. Get started by adding a customer, recording your
-									first sale, or logging an opening balance.
+									{{ t("Your books are empty. Get started by adding a customer, recording your first sale, or logging an opening balance.") }}
 								</p>
 								<div class="d-flex flex-wrap gap-2">
 									<RouterLink :to="{ name: 'sales-customers' }" class="btn btn-sm btn-primary">
-										<i class="ti ti-user-plus me-1"></i>Add a customer
+										<i class="ti ti-user-plus me-1"></i>{{ t("Add a customer") }}
 									</RouterLink>
 									<RouterLink :to="{ name: 'sales-invoices' }" class="btn btn-sm btn-outline-primary">
-										<i class="ti ti-file-invoice me-1"></i>Record a sale
+										<i class="ti ti-file-invoice me-1"></i>{{ t("Record a sale") }}
 									</RouterLink>
 									<RouterLink :to="{ name: 'money-journals' }" class="btn btn-sm btn-outline-secondary">
-										<i class="ti ti-book me-1"></i>Opening balances
+										<i class="ti ti-book me-1"></i>{{ t("Opening balances") }}
 									</RouterLink>
 								</div>
 							</div>
@@ -190,8 +202,8 @@ const activityIcon = (type) => {
 				<div class="row row-deck row-cards">
 					<div class="col-sm-6 col-lg-3">
 						<KpiCard
-							label="Cash on hand"
-							:value="money(summary.cash)"
+							:label='t("Cash on hand")'
+							:lines="lines(summary.cash)"
 							icon="ti-coin"
 							tone="primary"
 							:loading="loading"
@@ -199,8 +211,8 @@ const activityIcon = (type) => {
 					</div>
 					<div class="col-sm-6 col-lg-3">
 						<KpiCard
-							label="Receivable (AR)"
-							:value="money(summary.ar)"
+							:label='t("Receivable (AR)")'
+							:lines="lines(summary.ar)"
 							icon="ti-arrow-down-right"
 							tone="success"
 							:loading="loading"
@@ -208,8 +220,8 @@ const activityIcon = (type) => {
 					</div>
 					<div class="col-sm-6 col-lg-3">
 						<KpiCard
-							label="Payable (AP)"
-							:value="money(summary.ap)"
+							:label='t("Payable (AP)")'
+							:lines="lines(summary.ap)"
 							icon="ti-arrow-up-right"
 							tone="warning"
 							:loading="loading"
@@ -217,12 +229,12 @@ const activityIcon = (type) => {
 					</div>
 					<div class="col-sm-6 col-lg-3">
 						<KpiCard
-							label="Revenue MTD"
-							:value="money(summary.revenue_mtd)"
+							:label='t("Revenue MTD")'
+							:lines="lines(summary.revenue_mtd)"
 							icon="ti-trending-up"
 							tone="info"
 							:trend="summary.revenue_trend_pct"
-							hint="vs. last month"
+							:hint='t("vs. last month")'
 							:loading="loading"
 						/>
 					</div>
@@ -230,7 +242,7 @@ const activityIcon = (type) => {
 					<div class="col-lg-8">
 						<div class="card">
 							<div class="card-header">
-								<h3 class="card-title">Revenue vs. Expense (12 months)</h3>
+								<h3 class="card-title">{{ t("Revenue vs. Expense (12 months)") }}</h3>
 							</div>
 							<div class="card-body">
 								<div v-if="loading" class="placeholder-glow">
@@ -250,7 +262,7 @@ const activityIcon = (type) => {
 					<div class="col-lg-4">
 						<div class="card h-100">
 							<div class="card-header">
-								<h3 class="card-title">Cash flow</h3>
+								<h3 class="card-title">{{ t("Cash flow") }}</h3>
 							</div>
 							<div class="card-body">
 								<div v-if="loading" class="placeholder-glow">
@@ -270,7 +282,7 @@ const activityIcon = (type) => {
 					<div class="col-lg-8">
 						<div class="card h-100">
 							<div class="card-header">
-								<h3 class="card-title">Recent activity</h3>
+								<h3 class="card-title">{{ t("Recent activity") }}</h3>
 							</div>
 							<div class="list-group list-group-flush">
 								<div v-if="loading" class="list-group-item placeholder-glow">
@@ -280,7 +292,7 @@ const activityIcon = (type) => {
 									v-else-if="!activity.length"
 									class="list-group-item text-secondary text-center py-4"
 								>
-									No recent transactions.
+									{{ t("No recent transactions.") }}
 								</div>
 								<div
 									v-else

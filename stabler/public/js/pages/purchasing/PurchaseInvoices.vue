@@ -1,8 +1,10 @@
 <script setup>
 import { computed, onMounted, ref, watch } from "vue";
 import { storeToRefs } from "pinia";
+import { useRoute } from "vue-router";
 import { useSession } from "../../stores/session.js";
 import { call } from "../../api/client.js";
+import { t } from "../../composables/i18n.js";
 import { formatMoney } from "../../composables/money.js";
 import { formatDateTime } from "../../composables/date.js";
 import MoneyInput from "../../components/MoneyInput.vue";
@@ -10,9 +12,11 @@ import DateInput from "../../components/DateInput.vue";
 import PaymentModal from "../../components/PaymentModal.vue";
 import EmptyState from "../../components/EmptyState.vue";
 import Typeahead from "../../components/Typeahead.vue";
+import Select from "../../components/Select.vue";
 
 const session = useSession();
 const { activeCompany, user } = storeToRefs(session);
+const route = useRoute();
 
 const today = new Date().toISOString().slice(0, 10);
 const monthAgo = new Date(Date.now() - 90 * 86400000).toISOString().slice(0, 10);
@@ -36,6 +40,8 @@ const currency = computed(
 );
 
 const STATUSES = ["", "Paid", "Unpaid", "Overdue", "Partly Paid", "Return", "Debit Note Issued", "Draft"];
+
+const statusOptions = computed(() => STATUSES.map((s) => ({ value: s, label: s || t("All") })));
 
 const statusBadge = (s) => {
 	const m = {
@@ -63,7 +69,7 @@ async function load() {
 			limit: limit.value,
 		});
 	} catch (err) {
-		error.value = err?.message || "Failed to load bills.";
+		error.value = err?.message || t("Failed to load bills.");
 	} finally {
 		loading.value = false;
 	}
@@ -76,7 +82,7 @@ async function openDetail(name) {
 	try {
 		detail.value = await call("stabler.api.purchasing.purchase_invoice_detail", { name });
 	} catch (err) {
-		detail.value = { error: err?.message || "Failed to load." };
+		detail.value = { error: err?.message || t("Failed to load.") };
 	} finally {
 		detailLoading.value = false;
 	}
@@ -199,7 +205,7 @@ async function submitDoc() {
 		await call("stabler.api.purchasing.submit_purchase_invoice", { name: detail.value.name });
 		await Promise.all([openDetail(detail.value.name), load()]);
 	} catch (err) {
-		actionError.value = err?.message || "Submit failed.";
+		actionError.value = err?.message || t("Submit failed.");
 	} finally {
 		actionRunning.value = false;
 	}
@@ -207,14 +213,14 @@ async function submitDoc() {
 
 async function cancelDoc() {
 	if (!detail.value?.name) return;
-	if (!window.confirm(`Cancel bill ${detail.value.name}? This is reversible only by amendment.`)) return;
+	if (!window.confirm(t("Cancel bill {name}? This is reversible only by amendment.").replace("{name}", detail.value.name))) return;
 	actionError.value = "";
 	actionRunning.value = true;
 	try {
 		await call("stabler.api.purchasing.cancel_purchase_invoice", { name: detail.value.name });
 		await Promise.all([openDetail(detail.value.name), load()]);
 	} catch (err) {
-		actionError.value = err?.message || "Cancel failed.";
+		actionError.value = err?.message || t("Cancel failed.");
 	} finally {
 		actionRunning.value = false;
 	}
@@ -232,19 +238,19 @@ async function onPaid() {
 async function submitCreate() {
 	submitError.value = "";
 	if (!form.value.supplier) {
-		submitError.value = "Pick a supplier.";
+		submitError.value = t("Pick a supplier.");
 		return;
 	}
 	const lines = form.value.items
 		.filter((r) => r.item_code)
 		.map((r) => ({ item_code: r.item_code, qty: r.qty, rate: r.rate, uom: r.uom }));
 	if (!lines.length) {
-		submitError.value = "Add at least one item line.";
+		submitError.value = t("Add at least one item line.");
 		return;
 	}
 	for (const [i, r] of lines.entries()) {
 		if (!Number(r.qty) || Number(r.qty) <= 0) {
-			submitError.value = `Row ${i + 1}: qty must be greater than zero.`;
+			submitError.value = t("Row {n}: qty must be greater than zero.").replace("{n}", String(i + 1));
 			return;
 		}
 	}
@@ -264,51 +270,53 @@ async function submitCreate() {
 		await load();
 		if (created?.name) await openDetail(created.name);
 	} catch (err) {
-		submitError.value = err?.message || "Failed to create bill.";
+		submitError.value = err?.message || t("Failed to create bill.");
 	} finally {
 		submitting.value = false;
 	}
 }
 
-onMounted(load);
+onMounted(async () => {
+	await load();
+	const openName = route.query?.open;
+	if (openName) openDetail(String(openName));
+});
 watch(activeCompany, load);
 </script>
 
 <template>
 	<div class="card">
 		<div class="card-header">
-			<div class="card-title">Purchase Invoices</div>
+			<div class="card-title">{{ t("Purchase Invoices") }}</div>
 			<div class="ms-auto d-flex gap-2 align-items-end flex-wrap">
 				<div>
-					<label class="form-label small mb-1">From</label>
+					<label class="form-label small mb-1">{{ t("From") }}</label>
 					<DateInput v-model="fromDate" size="sm" />
 				</div>
 				<div>
-					<label class="form-label small mb-1">To</label>
+					<label class="form-label small mb-1">{{ t("To") }}</label>
 					<DateInput v-model="toDate" size="sm" />
 				</div>
 				<div style="min-width: 150px">
-					<label class="form-label small mb-1">Status</label>
-					<select v-model="status" class="form-select form-select-sm">
-						<option v-for="s in STATUSES" :key="s" :value="s">{{ s || "All" }}</option>
-					</select>
+					<label class="form-label small mb-1">{{ t("Status") }}</label>
+					<Select v-model="status" size="sm" :options="statusOptions" />
 				</div>
 				<button type="button" class="btn btn-sm btn-primary" @click="load">
-					<i class="ti ti-refresh me-1"></i>Apply
+					<i class="ti ti-refresh me-1"></i>{{ t("Apply") }}
 				</button>
 				<button type="button" class="btn btn-sm btn-success" @click="openCreate">
-					<i class="ti ti-plus me-1"></i>New bill
+					<i class="ti ti-plus me-1"></i>{{ t("New bill") }}
 				</button>
 			</div>
 		</div>
 
 		<div v-if="rows.length" class="card-body py-2 border-bottom bg-light">
 			<div class="d-flex gap-4 small">
-				<div>Count: <strong>{{ totalCount }}</strong></div>
+				<div>{{ t("Count:") }} <strong>{{ totalCount }}</strong></div>
 				<div v-for="b in totalsByCurrency" :key="b.currency" class="d-flex gap-3 align-items-center">
 					<span class="badge bg-secondary-lt text-secondary">{{ b.currency }}</span>
-					<span>Total: <strong class="font-monospace">{{ formatMoney(b.grand, b.currency, user.language) }}</strong></span>
-					<span>Payable: <strong class="text-red font-monospace">{{ formatMoney(b.outstanding, b.currency, user.language) }}</strong></span>
+					<span>{{ t("Total:") }} <strong class="font-monospace">{{ formatMoney(b.grand, b.currency, user.language) }}</strong></span>
+					<span>{{ t("Payable:") }} <strong class="text-red font-monospace">{{ formatMoney(b.outstanding, b.currency, user.language) }}</strong></span>
 				</div>
 			</div>
 		</div>
@@ -324,12 +332,12 @@ watch(activeCompany, load);
 			icon="ti-receipt"
 			accentIcon="ti-plus"
 			tone="warning"
-			title="No bills in this range"
-			subtitle="Widen the date range, relax the status filter, or log a new bill."
+			:title='t("No bills in this range")'
+			:subtitle='t("Widen the date range, relax the status filter, or log a new bill.")'
 		>
 			<template #actions>
 				<button type="button" class="btn btn-primary" @click="openCreate">
-					<i class="ti ti-plus me-1"></i>New bill
+					<i class="ti ti-plus me-1"></i>{{ t("New bill") }}
 				</button>
 			</template>
 		</EmptyState>
@@ -337,14 +345,14 @@ watch(activeCompany, load);
 			<table class="table table-vcenter card-table table-hover">
 				<thead>
 					<tr>
-						<th>#</th>
-						<th>Date</th>
-						<th>Due</th>
-						<th>Supplier</th>
-						<th>Bill #</th>
-						<th class="text-end">Total</th>
-						<th class="text-end">Payable</th>
-						<th>Status</th>
+						<th>{{ t("#") }}</th>
+						<th>{{ t("Date") }}</th>
+						<th>{{ t("Due") }}</th>
+						<th>{{ t("Supplier") }}</th>
+						<th>{{ t("Bill #") }}</th>
+						<th class="text-end">{{ t("Total") }}</th>
+						<th class="text-end">{{ t("Payable") }}</th>
+						<th>{{ t("Status") }}</th>
 					</tr>
 				</thead>
 				<tbody>
@@ -374,7 +382,7 @@ watch(activeCompany, load);
 		:style="{ transform: detailOpen ? 'translateX(0)' : 'translateX(100%)' }"
 	>
 		<div class="offcanvas-header">
-			<h5 class="offcanvas-title">Purchase Invoice</h5>
+			<h5 class="offcanvas-title">{{ t("Purchase Invoice") }}</h5>
 			<button type="button" class="btn-close" @click="closeDetail" aria-label="Close"></button>
 		</div>
 		<div class="offcanvas-body">
@@ -402,7 +410,7 @@ watch(activeCompany, load);
 						@click="submitDoc"
 					>
 						<span v-if="actionRunning" class="spinner-border spinner-border-sm me-1"></span>
-						<i v-else class="ti ti-check me-1"></i>Submit
+						<i v-else class="ti ti-check me-1"></i>{{ t("Submit") }}
 					</button>
 					<button
 						v-if="canPay"
@@ -411,7 +419,7 @@ watch(activeCompany, load);
 						:disabled="actionRunning"
 						@click="openPayment"
 					>
-						<i class="ti ti-cash me-1"></i>Pay supplier
+						<i class="ti ti-cash me-1"></i>{{ t("Pay supplier") }}
 					</button>
 					<button
 						v-if="canCancel"
@@ -420,59 +428,59 @@ watch(activeCompany, load);
 						:disabled="actionRunning"
 						@click="cancelDoc"
 					>
-						<i class="ti ti-ban me-1"></i>Cancel
+						<i class="ti ti-ban me-1"></i>{{ t("Cancel") }}
 					</button>
 				</div>
 
 				<div class="datagrid mb-3">
 					<div class="datagrid-item">
-						<div class="datagrid-title">Posting date</div>
+						<div class="datagrid-title">{{ t("Posting date") }}</div>
 						<div class="datagrid-content">{{ formatDateTime(detail.posting_date) }}</div>
 					</div>
 					<div class="datagrid-item">
-						<div class="datagrid-title">Due date</div>
+						<div class="datagrid-title">{{ t("Due date") }}</div>
 						<div class="datagrid-content">{{ formatDateTime(detail.due_date) || "—" }}</div>
 					</div>
 					<div class="datagrid-item">
-						<div class="datagrid-title">Bill #</div>
+						<div class="datagrid-title">{{ t("Bill #") }}</div>
 						<div class="datagrid-content font-monospace">{{ detail.bill_no || "—" }}</div>
 					</div>
 					<div class="datagrid-item">
-						<div class="datagrid-title">Bill date</div>
+						<div class="datagrid-title">{{ t("Bill date") }}</div>
 						<div class="datagrid-content">{{ formatDateTime(detail.bill_date) || "—" }}</div>
 					</div>
 					<div class="datagrid-item">
-						<div class="datagrid-title">Currency</div>
+						<div class="datagrid-title">{{ t("Currency") }}</div>
 						<div class="datagrid-content">{{ detail.currency }}</div>
 					</div>
 					<div class="datagrid-item">
-						<div class="datagrid-title">Net total</div>
+						<div class="datagrid-title">{{ t("Net total") }}</div>
 						<div class="datagrid-content font-monospace">{{ formatMoney(detail.net_total, detail.currency, user.language) }}</div>
 					</div>
 					<div class="datagrid-item">
-						<div class="datagrid-title">Taxes</div>
+						<div class="datagrid-title">{{ t("Taxes") }}</div>
 						<div class="datagrid-content font-monospace">{{ formatMoney(detail.total_taxes_and_charges, detail.currency, user.language) }}</div>
 					</div>
 					<div class="datagrid-item">
-						<div class="datagrid-title">Grand total</div>
+						<div class="datagrid-title">{{ t("Grand total") }}</div>
 						<div class="datagrid-content font-monospace fw-bold">{{ formatMoney(detail.grand_total, detail.currency, user.language) }}</div>
 					</div>
 					<div class="datagrid-item">
-						<div class="datagrid-title">Payable</div>
+						<div class="datagrid-title">{{ t("Payable") }}</div>
 						<div class="datagrid-content font-monospace text-red">{{ formatMoney(detail.outstanding_amount, detail.currency, user.language) }}</div>
 					</div>
 				</div>
 
-				<h6 class="text-uppercase text-secondary small mb-2">Items</h6>
+				<h6 class="text-uppercase text-secondary small mb-2">{{ t("Items") }}</h6>
 				<div class="table-responsive">
 					<table class="table table-sm table-vcenter">
 						<thead>
 							<tr>
-								<th>Item</th>
-								<th class="text-end">Qty</th>
-								<th>UOM</th>
-								<th class="text-end">Rate</th>
-								<th class="text-end">Amount</th>
+								<th>{{ t("Item") }}</th>
+								<th class="text-end">{{ t("Qty") }}</th>
+								<th>{{ t("UOM") }}</th>
+								<th class="text-end">{{ t("Rate") }}</th>
+								<th class="text-end">{{ t("Amount") }}</th>
 							</tr>
 						</thead>
 						<tbody>
@@ -480,6 +488,9 @@ watch(activeCompany, load);
 								<td>
 									<div class="fw-semibold">{{ it.item_name || it.item_code }}</div>
 									<div class="small text-secondary font-monospace">{{ it.item_code }}</div>
+									<div v-if="it.purchase_order" class="small mt-1">
+										<span class="badge bg-blue-lt font-monospace">{{ it.purchase_order }}</span>
+									</div>
 								</td>
 								<td class="text-end font-monospace">{{ it.qty }}</td>
 								<td>{{ it.uom || "—" }}</td>
@@ -491,14 +502,14 @@ watch(activeCompany, load);
 				</div>
 
 				<div v-if="detail.taxes?.length" class="mt-3">
-					<h6 class="text-uppercase text-secondary small mb-2">Taxes</h6>
+					<h6 class="text-uppercase text-secondary small mb-2">{{ t("Taxes") }}</h6>
 					<div class="table-responsive">
 						<table class="table table-sm table-vcenter">
 							<thead>
 								<tr>
-									<th>Description</th>
-									<th class="text-end">Rate</th>
-									<th class="text-end">Amount</th>
+									<th>{{ t("Description") }}</th>
+									<th class="text-end">{{ t("Rate") }}</th>
+									<th class="text-end">{{ t("Amount") }}</th>
 								</tr>
 							</thead>
 							<tbody>
@@ -520,7 +531,7 @@ watch(activeCompany, load);
 		<div class="modal-dialog modal-xl modal-dialog-centered" role="document">
 			<div class="modal-content">
 				<div class="modal-header">
-					<h5 class="modal-title">New purchase bill</h5>
+					<h5 class="modal-title">{{ t("New purchase bill") }}</h5>
 					<button type="button" class="btn-close" aria-label="Close" @click="closeCreate" :disabled="submitting"></button>
 				</div>
 				<div class="modal-body">
@@ -528,13 +539,13 @@ watch(activeCompany, load);
 
 					<div class="row g-3 mb-3">
 						<div class="col-md-6">
-							<label class="form-label required">Supplier</label>
+							<label class="form-label required">{{ t("Supplier") }}</label>
 							<Typeahead
 								v-model="form.supplier"
 								:search="searchSuppliers"
 								:display="form.supplier_name"
-								placeholder="Search supplier name…"
-								no-results-text="No suppliers match that name"
+								:placeholder='t("Search supplier name…")'
+								:no-results-text='t("No suppliers match that name")'
 								:disabled="submitting"
 								@pick="pickSupplier"
 								@clear="clearSupplier"
@@ -551,33 +562,33 @@ watch(activeCompany, load);
 							</Typeahead>
 						</div>
 						<div class="col-md-3">
-							<label class="form-label">Posting date</label>
+							<label class="form-label">{{ t("Posting date") }}</label>
 							<DateInput v-model="form.posting_date" />
 						</div>
 						<div class="col-md-3">
-							<label class="form-label">Due date</label>
+							<label class="form-label">{{ t("Due date") }}</label>
 							<DateInput v-model="form.due_date" />
 						</div>
 						<div class="col-md-6">
-							<label class="form-label">Supplier bill #</label>
-							<input v-model="form.bill_no" type="text" class="form-control font-monospace" placeholder="Bill / invoice number printed on supplier document" />
+							<label class="form-label">{{ t("Supplier bill #") }}</label>
+							<input v-model="form.bill_no" type="text" class="form-control font-monospace" :placeholder='t("Bill / invoice number printed on supplier document")' />
 						</div>
 						<div class="col-md-3">
-							<label class="form-label">Bill date</label>
+							<label class="form-label">{{ t("Bill date") }}</label>
 							<DateInput v-model="form.bill_date" />
 						</div>
 					</div>
 
-					<h6 class="text-uppercase text-secondary small mb-2">Items</h6>
+					<h6 class="text-uppercase text-secondary small mb-2">{{ t("Items") }}</h6>
 					<div class="table-responsive">
 						<table class="table table-sm table-vcenter">
 							<thead>
 								<tr>
-									<th style="min-width: 240px">Item</th>
-									<th style="width: 110px">Qty</th>
-									<th style="width: 90px">UOM</th>
-									<th style="width: 160px">Rate</th>
-									<th class="text-end" style="width: 140px">Amount</th>
+									<th style="min-width: 240px">{{ t("Item") }}</th>
+									<th style="width: 110px">{{ t("Qty") }}</th>
+									<th style="width: 90px">{{ t("UOM") }}</th>
+									<th style="width: 160px">{{ t("Rate") }}</th>
+									<th class="text-end" style="width: 140px">{{ t("Amount") }}</th>
 									<th style="width: 40px"></th>
 								</tr>
 							</thead>
@@ -588,8 +599,8 @@ watch(activeCompany, load);
 											:model-value="line.item_code"
 											:search="searchItems"
 											:display="line.item_name || line.item_code"
-											placeholder="Search item…"
-											no-results-text="No items match"
+											:placeholder='t("Search item…")'
+											:no-results-text='t("No items match")'
 											size="sm"
 											menu-min-width="280px"
 											:disabled="submitting"
@@ -627,12 +638,12 @@ watch(activeCompany, load);
 								<tr>
 									<td colspan="6">
 										<button type="button" class="btn btn-sm btn-ghost-primary" @click="addLine">
-											<i class="ti ti-plus me-1"></i>Add row
+											<i class="ti ti-plus me-1"></i>{{ t("Add row") }}
 										</button>
 									</td>
 								</tr>
 								<tr>
-									<td colspan="4" class="text-end text-uppercase small text-secondary">Net total</td>
+									<td colspan="4" class="text-end text-uppercase small text-secondary">{{ t("Net total") }}</td>
 									<td class="text-end font-monospace fw-bold">{{ formatMoney(createTotal, currency, user.language) }}</td>
 									<td></td>
 								</tr>
@@ -641,15 +652,15 @@ watch(activeCompany, load);
 					</div>
 
 					<div class="mt-3">
-						<label class="form-label">Remarks</label>
+						<label class="form-label">{{ t("Remarks") }}</label>
 						<textarea v-model="form.remarks" class="form-control" rows="2"></textarea>
 					</div>
 				</div>
 				<div class="modal-footer">
-					<button type="button" class="btn btn-link link-secondary" :disabled="submitting" @click="closeCreate">Cancel</button>
+					<button type="button" class="btn btn-link link-secondary" :disabled="submitting" @click="closeCreate">{{ t("Cancel") }}</button>
 					<button type="button" class="btn btn-primary ms-auto" :disabled="submitting" @click="submitCreate">
 						<span v-if="submitting" class="spinner-border spinner-border-sm me-1"></span>
-						Save as draft
+						{{ t("Save as draft") }}
 					</button>
 				</div>
 			</div>

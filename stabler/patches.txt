@@ -9,3 +9,5 @@ stabler.patches.v08_add_enable_marketing
 stabler.patches.v09_customer_tier
 stabler.patches.v10_backfill_pe_exchange_rate
 stabler.patches.v11_backfill_party_default_currency
+stabler.patches.v12_add_user_allowed_modules
+stabler.patches.v13_add_remittance_installment

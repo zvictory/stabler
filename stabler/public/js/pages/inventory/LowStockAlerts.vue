@@ -4,6 +4,7 @@ import { storeToRefs } from "pinia";
 import { useSession } from "../../stores/session.js";
 import { call } from "../../api/client.js";
 import EmptyState from "../../components/EmptyState.vue";
+import { t } from "../../composables/i18n.js";
 
 const session = useSession();
 const { activeCompany, user } = storeToRefs(session);
@@ -20,9 +21,9 @@ const formatQty = (n, uom) => {
 const severity = (row) => {
 	const projected = Number(row.projected_qty || 0);
 	const reorder = Number(row.reorder_level || 0);
-	if (projected <= 0) return { cls: "bg-red-lt text-red", label: "Out of stock" };
-	if (reorder > 0 && projected / reorder < 0.5) return { cls: "bg-orange-lt text-orange", label: "Critical" };
-	return { cls: "bg-yellow-lt text-yellow", label: "Low" };
+	if (projected <= 0) return { cls: "bg-red-lt text-red", label: t("Out of stock") };
+	if (reorder > 0 && projected / reorder < 0.5) return { cls: "bg-orange-lt text-orange", label: t("Critical") };
+	return { cls: "bg-yellow-lt text-yellow", label: t("Low") };
 };
 
 async function load() {
@@ -35,7 +36,7 @@ async function load() {
 			limit: 50,
 		});
 	} catch (err) {
-		error.value = err?.message || "Failed to load alerts.";
+		error.value = err?.message || t("Failed to load alerts.");
 	} finally {
 		loading.value = false;
 	}
@@ -50,10 +51,10 @@ watch(activeCompany, load);
 		<div class="card-header">
 			<div class="card-title d-flex align-items-center gap-2">
 				<i class="ti ti-alert-triangle text-orange"></i>
-				Low Stock Alerts
+				{{ t("Low Stock Alerts") }}
 			</div>
 			<button type="button" class="btn btn-sm btn-ghost-secondary ms-auto" @click="load">
-				<i class="ti ti-refresh me-1"></i>Refresh
+				<i class="ti ti-refresh me-1"></i>{{ t("Refresh") }}
 			</button>
 		</div>
 		<div v-if="loading" class="card-body text-center py-5">
@@ -67,20 +68,20 @@ watch(activeCompany, load);
 			icon="ti-check"
 			accentIcon="ti-thumb-up"
 			tone="success"
-			title="No low-stock items"
-			subtitle="All items are above their warehouse reorder thresholds — nice work."
+			:title="t('No low-stock items')"
+			:subtitle="t('All items are above their warehouse reorder thresholds — nice work.')"
 		/>
 		<div v-else class="table-responsive">
 			<table class="table table-vcenter card-table">
 				<thead>
 					<tr>
-						<th class="w-1">Status</th>
-						<th>Item</th>
-						<th>Warehouse</th>
-						<th class="text-end">On hand</th>
-						<th class="text-end">Projected</th>
-						<th class="text-end">Reorder at</th>
-						<th class="text-end">Reorder qty</th>
+						<th class="w-1">{{ t("Status") }}</th>
+						<th>{{ t("Item") }}</th>
+						<th>{{ t("Warehouse") }}</th>
+						<th class="text-end">{{ t("On hand") }}</th>
+						<th class="text-end">{{ t("Projected") }}</th>
+						<th class="text-end">{{ t("Reorder at") }}</th>
+						<th class="text-end">{{ t("Reorder qty") }}</th>
 					</tr>
 				</thead>
 				<tbody>

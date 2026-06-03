@@ -8,6 +8,7 @@ import { formatDateTime } from "../../composables/date.js";
 import { t } from "../../composables/i18n.js";
 import EmptyState from "../../components/EmptyState.vue";
 import DateInput from "../../components/DateInput.vue";
+import Select from "../../components/Select.vue";
 
 const session = useSession();
 const { activeCompany, user } = storeToRefs(session);
@@ -28,6 +29,21 @@ const rows = ref([]);
 const fromDate = ref(firstOfMonth());
 const toDate = ref(lastOfMonth());
 const statusFilter = ref("");
+
+const statusFilterOptions = computed(() => [
+	{ value: "", label: t("All statuses") },
+	{ value: "Draft", label: t("Draft") },
+	{ value: "Submitted", label: t("Submitted") },
+	{ value: "Cancelled", label: t("Cancelled") },
+	{ value: "Withheld", label: t("Withheld") },
+]);
+
+const frequencyOptions = computed(() => [
+	{ value: "Monthly", label: t("Monthly") },
+	{ value: "Bimonthly", label: t("Bimonthly") },
+	{ value: "Weekly", label: t("Weekly") },
+	{ value: "Daily", label: t("Daily") },
+]);
 
 const currency = computed(
 	() => (session.companies.find((c) => c.name === activeCompany.value) || {}).default_currency || "USD"
@@ -145,13 +161,7 @@ function statusBadge(s, docstatus) {
 				</div>
 				<div class="col-md-3">
 					<label class="form-label small">{{ t("Status") }}</label>
-					<select v-model="statusFilter" class="form-select">
-						<option value="">{{ t("All statuses") }}</option>
-						<option value="Draft">{{ t("Draft") }}</option>
-						<option value="Submitted">{{ t("Submitted") }}</option>
-						<option value="Cancelled">{{ t("Cancelled") }}</option>
-						<option value="Withheld">{{ t("Withheld") }}</option>
-					</select>
+					<Select v-model="statusFilter" :options="statusFilterOptions" />
 				</div>
 				<div class="col-md-5 d-flex justify-content-md-end gap-2">
 					<button type="button" class="btn btn-ghost-secondary" @click="load">
@@ -311,12 +321,7 @@ function statusBadge(s, docstatus) {
 						</div>
 						<div class="col-md-6">
 							<label class="form-label">{{ t("Frequency") }}</label>
-							<select v-model="runForm.payroll_frequency" class="form-select">
-								<option value="Monthly">{{ t("Monthly") }}</option>
-								<option value="Bimonthly">{{ t("Bimonthly") }}</option>
-								<option value="Weekly">{{ t("Weekly") }}</option>
-								<option value="Daily">{{ t("Daily") }}</option>
-							</select>
+							<Select v-model="runForm.payroll_frequency" :options="frequencyOptions" />
 						</div>
 					</div>
 				</div>
