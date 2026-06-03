@@ -6,6 +6,22 @@
 :root {
 	--tblr-primary: #206bc4;
 	--tblr-primary-rgb: 32, 107, 196;
+
+	/* Dropdown / popover tokens (shadcn "new-york" look), theme-driven off
+	 * Tabler vars with fallbacks. Shared by Typeahead.vue and Select.vue —
+	 * the single source of truth so both menus stay identical. */
+	--stbl-dropdown-bg: var(--tblr-bg-surface, #fff);
+	--stbl-dropdown-fg: var(--tblr-body-color, #1a2433);
+	--stbl-dropdown-muted: var(--tblr-secondary, #6c7a91);
+	--stbl-dropdown-border: var(--tblr-border-color, #e6e7e9);
+	--stbl-dropdown-radius: 0.5rem;
+	--stbl-dropdown-item-radius: 0.25rem;
+	--stbl-dropdown-shadow: 0 4px 14px rgba(0, 0, 0, 0.1), 0 1px 3px rgba(0, 0, 0, 0.06);
+	/* Neutral accent (hover / keyboard cursor) — NOT a full primary bar. */
+	--stbl-dropdown-accent-bg: var(--tblr-gray-100, #f6f8fb);
+	--stbl-dropdown-accent-fg: var(--tblr-body-color, #1a2433);
+	--stbl-dropdown-check: var(--tblr-primary, #206bc4);
+	--stbl-dropdown-font-size: 0.8125rem;
 }
 
 body {
@@ -25,8 +41,108 @@ body {
 }
 
 /* App-wide: every data table is striped by default. Add `.table-no-stripe`
- * to a specific table to opt out. Use `--tblr-table-striped-bg` from Tabler. */
-.table:not(.table-no-stripe) > tbody > tr:nth-of-type(odd) > * {
-	--tblr-table-accent-bg: var(--tblr-table-striped-bg, rgba(0, 0, 0, 0.025));
-	color: var(--tblr-table-striped-color, inherit);
+ * to a specific table to opt out. Targets the tr directly — Tabler's
+ * --tblr-table-accent-bg chain resolves to near-white (#fcfdfe) so we
+ * bypass it; cells are transparent and show the row background through. */
+.table:not(.table-no-stripe) > tbody > tr:nth-of-type(odd) {
+	background-color: var(--tblr-gray-100, #f6f8fb);
+}
+
+/* Keyboard-scrollable modal body: gives Arrow/PageDown a focusable region
+ * to scroll. tabindex="0" must be added in the template alongside this class. */
+.stbl-scroll-body {
+	overflow-y: auto;
+	max-height: calc(100vh - 14rem);
+}
+
+/* ── Shared dropdown popover (shadcn "new-york") ────────────────────────────
+ * Used by Typeahead.vue's teleported search menu and Select.vue's option menu.
+ * Both teleport to <body> with inline position:fixed coords, so these rules
+ * style only the look, never the placement. */
+.stbl-menu {
+	background-color: var(--stbl-dropdown-bg);
+	color: var(--stbl-dropdown-fg);
+	border: 1px solid var(--stbl-dropdown-border);
+	border-radius: var(--stbl-dropdown-radius);
+	box-shadow: var(--stbl-dropdown-shadow);
+	padding: 0.375rem;
+	font-size: var(--stbl-dropdown-font-size);
+	/* Teleported menus set z-index/position/max-height inline. */
+}
+
+.stbl-menu-item {
+	display: flex;
+	align-items: center;
+	gap: 0.25rem;
+	width: 100%;
+	/* Left gutter reserves room for the selected check, like shadcn's pl-8. */
+	padding: 0.3rem 0.5rem 0.3rem 1.75rem;
+	border: 0;
+	border-radius: var(--stbl-dropdown-item-radius);
+	background-color: transparent;
+	color: inherit;
+	font-size: inherit;
+	line-height: 1.3;
+	text-align: left;
+	cursor: pointer;
+	position: relative;
+}
+
+/* Combobox menus (Typeahead) open only before a pick, so no row is ever the
+ * "selected" one — drop the check gutter so avatars/text aren't over-indented. */
+.stbl-menu--nocheck .stbl-menu-item {
+	padding-left: 0.5rem;
+}
+
+/* Long labels ellipsize instead of wrapping the row taller. Flex children must
+ * be allowed to shrink (min-width:0) before text-overflow can take effect. */
+.stbl-menu-item > * {
+	min-width: 0;
+}
+.stbl-menu-item .fw-semibold,
+.stbl-menu-item .text-secondary,
+.stbl-menu-item .small {
+	overflow: hidden;
+	text-overflow: ellipsis;
+	white-space: nowrap;
+}
+
+/* Hover and keyboard cursor share the neutral accent — text stays dark. */
+.stbl-menu-item:hover,
+.stbl-menu-item.is-active {
+	background-color: var(--stbl-dropdown-accent-bg);
+	color: var(--stbl-dropdown-accent-fg);
+}
+
+.stbl-menu-item:disabled,
+.stbl-menu-item.is-disabled {
+	opacity: 0.45;
+	cursor: default;
+	pointer-events: none;
+}
+
+/* Selected check in the reserved left gutter. */
+.stbl-menu-item .stbl-menu-check {
+	position: absolute;
+	left: 0.5rem;
+	top: 50%;
+	transform: translateY(-50%);
+	color: var(--stbl-dropdown-check);
+	font-size: 0.875rem;
+	line-height: 1;
+}
+
+.stbl-menu-empty {
+	padding: 0.5rem 0.75rem;
+	text-align: center;
+	color: var(--stbl-dropdown-muted);
+}
+
+/* Scroll affordance chevrons (shown only when the viewport overflows). */
+.stbl-menu-scroll {
+	display: flex;
+	justify-content: center;
+	padding: 0.1rem 0;
+	color: var(--stbl-dropdown-muted);
+	cursor: default;
 }
