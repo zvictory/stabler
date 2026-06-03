@@ -50,8 +50,22 @@ def get_context(context):
 
 	context.app_path = frappe.local.request.path or "/stabler"
 	context.translations = _load_translations(context.user_language)
+	context.asset_version = _asset_version()
 
 	return context
+
+
+def _asset_version() -> str:
+	"""Cache-busting token for raw /assets links (e.g. stabler.css). Unlike the
+	hashed JS bundle from include_script(), the CSS is linked by a static path, so
+	without this it serves stale after every edit/deploy (forcing a hard refresh).
+	Keyed on the file's mtime: changes only when the file changes — fresh on edit/
+	deploy, fully cacheable in between."""
+	try:
+		css = frappe.get_app_path("stabler", "public", "css", "stabler.css")
+		return str(int(os.path.getmtime(css)))
+	except Exception:
+		return "0"
 
 
 def _load_translations(lang: str) -> dict:

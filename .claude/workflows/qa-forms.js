@@ -94,7 +94,12 @@ const SMOKE_SCHEMA = {
         properties: {
           route: { type: 'string' },
           ok: { type: 'boolean', description: 'true if #app .page-body present after reload' },
-          consoleErrors: { type: 'array', items: { type: 'string' } },
+          consoleErrors: {
+            type: 'array',
+            items: { type: 'string' },
+            description:
+              'GENUINE app errors only: JS exceptions (TypeError/ReferenceError/Uncaught) or failed /api/method/… XHRs. EXCLUDE broken static media (/files/, /private/files/, gravatar, cdn, image/font assets) — those are dev-bench data gaps, not code defects.',
+          },
         },
       },
     },
@@ -159,7 +164,9 @@ Do:
   2. Reload it (navigate again to the same URL, or use the reload — force a fresh render).
   3. wait briefly for the SPA to render (wait_for a visible element, or a short timeout).
   4. evaluate_script: \`document.querySelector('#app .page-body') !== null\` — this is the route's \`ok\`. (If a route legitimately renders no \`.page-body\`, also accept \`#app .card\`; note that in the result.)
-  5. list_console_messages and collect every message of level \`error\` (text only). The Vue render-crash class prints a \`TypeError\` here and blanks the page-body, so an empty page-body + a TypeError is the signal we care about most.
+  5. list_console_messages (level \`error\`) AND list_network_requests. Build \`consoleErrors[]\` from GENUINE APP errors only:
+       INCLUDE: JS exceptions (\`TypeError\`/\`ReferenceError\`/\`SyntaxError\`/\`Uncaught …\`) — the Vue render-crash class prints a \`TypeError\` here and blanks the page-body, so empty page-body + TypeError is the signal we care about most — AND any failed XHR to an \`/api/method/…\` endpoint (status ≥ 400 in the network log).
+       EXCLUDE (do NOT report): broken static media. A bare "Failed to load resource: …" line carries no URL, so attribute it via the network log — if the only failed (status ≥ 400) requests are static assets (URL contains \`/files/\`, \`/private/files/\`, \`secure.gravatar.com\`, \`cdn.jsdelivr.net\`, or ends in an image/font extension like .jpg/.png/.svg/.woff2), they are missing-data/asset gaps on the dev bench, NOT code defects — drop them. A route with a rendered \`.page-body\` and only broken-avatar 404/500s is \`ok:true\` with an empty \`consoleErrors\`.
 
 Return one entry per route via StructuredOutput: { route, ok, consoleErrors[] }. Do not invent routes; test exactly the list above.`,
     { label: 'smoke:routes', phase: 'Smoke', schema: SMOKE_SCHEMA }

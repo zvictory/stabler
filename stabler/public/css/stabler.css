@@ -48,6 +48,15 @@ body {
 	background-color: var(--tblr-gray-100, #f6f8fb);
 }
 
+/* Full-width content: Stabler is a dense data app, so module pages use the whole
+ * viewport width instead of Tabler's centered 1320px .container-xl. Scoped to
+ * .page-wrapper so only the in-app content area widens; Tabler's default
+ * horizontal gutters stay, so content keeps a small margin and never touches the
+ * screen edge. To re-cap a specific page, wrap it in a narrower .container-*. */
+.page-wrapper .container-xl {
+	max-width: none;
+}
+
 /* Keyboard-scrollable modal body: gives Arrow/PageDown a focusable region
  * to scroll. tabindex="0" must be added in the template alongside this class. */
 .stbl-scroll-body {
