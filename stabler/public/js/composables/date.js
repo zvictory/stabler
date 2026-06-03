@@ -3,7 +3,7 @@
  *
  * Global rule: every date displays as dd.mm.yyyy and every datetime
  * displays as dd.mm.yyyy HH:mm — the same across all four app languages
- * (en, ru, uz, uzc).
+ * (en, ru, uz, uzc, tr).
  *
  * Implementation deliberately avoids `new Date()` — parsing ISO strings via
  * the Date constructor uses UTC midnight, which rolls dates back a day in

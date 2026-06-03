@@ -17,6 +17,7 @@ const LANGUAGES = [
 	{ code: "ru", label: "Русский" },
 	{ code: "uz", label: "O‘zbekcha" },
 	{ code: "uzc", label: "Ўзбекча" },
+	{ code: "tr", label: "Türkçe" },
 ];
 
 const route = useRoute();

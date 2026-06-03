@@ -32,7 +32,7 @@ import frappe
 _APP_ROOT = Path(frappe.get_app_path("stabler"))
 _TRANSLATIONS_DIR = _APP_ROOT / "translations"
 
-_LANGS = ("en", "ru", "uz", "uzc")
+_LANGS = ("en", "ru", "uz", "uzc", "tr")
 
 # Single + double quoted strings. Backreference enforces matching quotes.
 _VUE_PATTERN = re.compile(r"""\bt\(\s*(['"])(?P<src>(?:\\.|(?!\1).)*?)\1""")

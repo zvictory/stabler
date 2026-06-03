@@ -4,6 +4,7 @@
  *   en  -> "20,820.00"
  *   ru  -> "20 820,00"
  *   uz / uzc -> "20 820,00"
+ *   tr  -> "20.820,00"   (dot thousands, comma decimal — distinct from all above)
  *
  * Per-currency overrides:
  *   UZS -> integer (no decimals) + native suffix `сўм`,
@@ -19,6 +20,7 @@ const LOCALE_MAP = {
 	ru: "ru-RU",
 	uz: "ru-RU",
 	uzc: "ru-RU",
+	tr: "tr-TR",
 };
 
 // Per-currency display overrides. Anything not listed falls through to the

@@ -49,3 +49,54 @@
 ### Tables / lists
 - Lists of records use `.table` (or list-group) — striped by default.
 - Currency cells use `font-monospace` for alignment.
+
+## Production / Deployment
+
+### Prod site
+- **Prod = `anjan.erpstable.com`** — the ONLY stabler-bearing site on the shared
+  bench (`/home/frappe/frappe-bench`, ~22 tenants). `aliasiya.erpstable.com` and
+  the other sites do NOT have stabler installed.
+- Before ANY `migrate` / `restart` / data command aimed at "prod", confirm the
+  target: `bench --site <site> list-apps | grep stabler`. Never assume the site.
+- SSH alias: `ice-production`. Prod is **NOT a git repo** — deploy is rsync.
+
+### Deploy procedure (rsync + on-server build)
+1. Commit locally (specific paths) and `bench build --app stabler` to prove it compiles.
+2. Backup first: `ssh ice-production 'tar czf /root/stabler-app-$(date +%F-%H%M).tgz -C /home/frappe/frappe-bench/apps stabler'`.
+3. rsync source → `ice-production:/home/frappe/frappe-bench/apps/stabler/` with
+   `-rltz --no-owner --no-group` (NO `--delete`), excluding `.git node_modules
+   dist __pycache__ *.pyc .claude .tx_*.json graphify-out .smoke tests *.tgz .DS_Store`.
+   Then `chown -R frappe:frappe …/apps/stabler`.
+4. `bench build --app stabler` on prod.
+5. `bench --site anjan.erpstable.com migrate` (only if patches.txt / doctypes changed).
+6. `bench restart` if any `.py` changed.
+- **`bench restart` restarts the whole bench → brief blip for ALL tenants**, not
+  just anjan. Schedule for low traffic, or accept the blip explicitly.
+- Rollback = restore the step-2 tar, `chown`, `bench build`, `bench restart`.
+
+## Migrations / patches
+- `patches.txt` has **NO `[post_model_sync]` marker** → every patch runs BEFORE
+  the doctype DDL sync. A patch that reads or writes a **new** column/field must
+  guard with `frappe.db.has_column(...)` (or be placed under a `[post_model_sync]`
+  line), otherwise migrate aborts on "unknown column".
+- A new module's enable-default at go-live comes from the **doctype field
+  `default`** (e.g. `enable_*` Check = `"1"`), NOT from a backfill patch — the
+  backfill skips when it runs pre-sync. Set the field default to the intended state.
+- Every patch must be **idempotent**: guard with `frappe.db.exists` /
+  `has_column` / `db.exists("Custom Field", …)` so re-running is safe.
+
+## Commit hygiene
+- **Never `git add -A`.** Stage explicit paths only.
+- Never stage dev/build junk: `graphify-out/`, `stabler/translations/.tx_*.json`,
+  `.smoke/`, `tests/` (untracked scratch), stray heredoc files. `dist/` is gitignored.
+- Stage translations as the five CSVs explicitly (`en/ru/uz/uzc/tr.csv`), never the
+  whole `translations/` dir (it pulls the `.tx_*.json` caches).
+- Commit message trailer: `Co-Authored-By: Claude Opus 4.8 (1M context) <noreply@anthropic.com>`.
+
+## i18n workflow
+- Five languages: **en, ru, uz, uzc, tr**. Source strings live in `t()` (Vue) / `__()` (py).
+- Harvest new keys: `bench --site <site> execute stabler.translations.harvest.run`
+  (scans .vue/.js/.py, appends missing keys to `{lang}.csv`, sorted). `en` target =
+  source; `ru/uz/uzc` are filled in manually.
+- Reviewers reject PRs that leave new user-facing strings untranslated in any of
+  the five languages.
