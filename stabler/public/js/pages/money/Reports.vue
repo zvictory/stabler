@@ -4,8 +4,10 @@ import { storeToRefs } from "pinia";
 import { useSession } from "../../stores/session.js";
 import { call, download } from "../../api/client.js";
 import { formatMoney } from "../../composables/money.js";
+import { t } from "../../composables/i18n.js";
 import DateInput from "../../components/DateInput.vue";
 import EmptyState from "../../components/EmptyState.vue";
+import Select from "../../components/Select.vue";
 
 const session = useSession();
 const { activeCompany, user } = storeToRefs(session);
@@ -80,7 +82,7 @@ async function exportAs(format) {
 			`${selected.value.label}.${format === "Excel" ? "xlsx" : "csv"}`,
 		);
 	} catch (err) {
-		error.value = err?.message || "Export failed.";
+		error.value = err?.message || t("Export failed.");
 	} finally {
 		exporting.value = "";
 	}
@@ -108,7 +110,7 @@ async function run() {
 		columns.value = res?.columns || [];
 		result.value = res?.result || [];
 	} catch (err) {
-		error.value = err?.message || "Failed to run report.";
+		error.value = err?.message || t("Failed to run report.");
 	} finally {
 		loading.value = false;
 	}
@@ -163,22 +165,26 @@ watch([activeCompany, selectedName], run);
 		<div class="card-header">
 			<div class="d-flex gap-2 flex-wrap align-items-end w-100">
 				<div style="min-width: 200px">
-					<label class="form-label small mb-1">Report</label>
-					<select v-model="selectedName" class="form-select form-select-sm">
-						<option v-for="r in REPORTS" :key="r.name" :value="r.name">{{ r.label }}</option>
-					</select>
+					<label class="form-label small mb-1">{{ t("Report") }}</label>
+					<Select
+						v-model="selectedName"
+						size="sm"
+						:options="REPORTS"
+						value-key="name"
+						label-key="label"
+					/>
 				</div>
 				<div>
-					<label class="form-label small mb-1">From</label>
+					<label class="form-label small mb-1">{{ t("From") }}</label>
 					<DateInput v-model="fromDate" size="sm" />
 				</div>
 				<div>
-					<label class="form-label small mb-1">To</label>
+					<label class="form-label small mb-1">{{ t("To") }}</label>
 					<DateInput v-model="toDate" size="sm" />
 				</div>
 				<div class="ms-auto d-flex gap-2">
 					<button type="button" class="btn btn-sm btn-primary" @click="run" :disabled="loading">
-						<i class="ti ti-player-play me-1"></i>Run
+						<i class="ti ti-player-play me-1"></i>{{ t("Run") }}
 					</button>
 					<div class="dropdown">
 						<button
@@ -189,14 +195,14 @@ watch([activeCompany, selectedName], run);
 						>
 							<span v-if="exporting" class="spinner-border spinner-border-sm me-1"></span>
 							<i v-else class="ti ti-download me-1"></i>
-							Export
+							{{ t("Export") }}
 						</button>
-						<div class="dropdown-menu dropdown-menu-end">
-							<a href="#" class="dropdown-item" @click.prevent="exportAs('Excel')">
-								<i class="ti ti-file-spreadsheet me-2"></i>Excel (.xlsx)
+						<div class="dropdown-menu dropdown-menu-end stbl-menu stbl-menu--nocheck">
+							<a href="#" class="dropdown-item stbl-menu-item" @click.prevent="exportAs('Excel')">
+								<i class="ti ti-file-spreadsheet me-2"></i>{{ t("Excel (.xlsx)") }}
 							</a>
-							<a href="#" class="dropdown-item" @click.prevent="exportAs('CSV')">
-								<i class="ti ti-file-text me-2"></i>CSV
+							<a href="#" class="dropdown-item stbl-menu-item" @click.prevent="exportAs('CSV')">
+								<i class="ti ti-file-text me-2"></i>{{ t("CSV") }}
 							</a>
 						</div>
 					</div>
@@ -216,8 +222,8 @@ watch([activeCompany, selectedName], run);
 			accentIcon="ti-filter"
 			tone="secondary"
 			compact
-			title="No data for the selected range"
-			:subtitle="`Adjust dates or check that ${activeCompany} has posted transactions in this period.`"
+			:title='t("No data for the selected range")'
+			:subtitle='t("Adjust dates or check that {company} has posted transactions in this period.", { company: activeCompany })'
 		/>
 		<div v-else class="table-responsive">
 			<table class="table table-sm table-vcenter card-table">

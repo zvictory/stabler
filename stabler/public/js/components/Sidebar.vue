@@ -5,6 +5,7 @@ import { useSession } from "../stores/session.js";
 import { orgApi } from "../api/organization.js";
 import { call } from "../api/client.js";
 import { t } from "../composables/i18n.js";
+import Select from "./Select.vue";
 
 async function logout() {
 	await call("logout");
@@ -25,7 +26,7 @@ const isActive = (path) => computed(() => route.path === path || route.path.star
 
 const items = computed(() => {
 	const list = [
-		{ name: "dashboard", path: "/dashboard", label: t("Dashboard"), icon: "ti-home", show: true },
+		{ name: "dashboard", path: "/dashboard", label: t("Dashboard"), icon: "ti-home", show: session.canAccessModule("dashboard") },
 		{ name: "money", path: "/money", label: t("Money"), icon: "ti-coin", show: session.canAccessModule("money") },
 		{ name: "sales", path: "/sales", label: t("Sales"), icon: "ti-trending-up", show: session.canAccessModule("sales") },
 		{ name: "purchasing", path: "/purchasing", label: t("Purchasing"), icon: "ti-shopping-cart", show: session.canAccessModule("purchasing") },
@@ -34,6 +35,8 @@ const items = computed(() => {
 		{ name: "hr", path: "/hr", label: t("People"), icon: "ti-users-group", show: session.canAccessModule("hr") },
 		{ name: "sfa", path: "/sfa", label: t("Field Sales"), icon: "ti-route", show: session.canAccessModule("field_sales") },
 		{ name: "marketing", path: "/marketing", label: t("Trade Marketing"), icon: "ti-target-arrow", show: session.canAccessModule("marketing") },
+		{ name: "remittance", path: "/remittance", label: t("Remittance"), icon: "ti-send", show: session.canAccessModule("remittance") },
+		{ name: "installment", path: "/installment", label: t("Installment"), icon: "ti-calendar-dollar", show: session.canAccessModule("installment") },
 	];
 	if (session.isAdmin) {
 		list.push({ name: "admin", path: "/admin", label: t("Admin"), icon: "ti-settings", show: true });
@@ -45,8 +48,8 @@ const initial = computed(() =>
 	(session.user?.name || session.user?.id || "U").trim().slice(0, 1).toUpperCase()
 );
 
-function onCompanyChange(event) {
-	session.setCompany(event.target.value);
+function onCompanyChange(value) {
+	session.setCompany(value);
 }
 
 const currentLanguage = computed(() => session.user?.language || "en");
@@ -101,16 +104,15 @@ async function setLanguage(code) {
 				<div class="mt-auto pt-3 border-top border-secondary-subtle">
 					<div v-if="session.companies.length" class="px-2 mb-2">
 						<label class="form-label small text-secondary mb-1">{{ t("Company") }}</label>
-						<select
-							class="form-select form-select-sm"
-							:value="session.activeCompany"
+						<Select
+							:options="session.companies"
+							value-key="name"
+							label-key="name"
+							:model-value="session.activeCompany"
+							size="sm"
 							@change="onCompanyChange"
 							aria-label="Active company"
-						>
-							<option v-for="c in session.companies" :key="c.name" :value="c.name">
-								{{ c.name }}
-							</option>
-						</select>
+						/>
 					</div>
 
 					<div class="dropup px-2 pb-2">
@@ -134,24 +136,24 @@ async function setLanguage(code) {
 							</div>
 							<i class="ti ti-dots-vertical text-secondary"></i>
 						</a>
-						<div class="dropdown-menu dropdown-menu-arrow">
+						<div class="dropdown-menu dropdown-menu-arrow stbl-menu stbl-menu--nocheck">
 							<h6 class="dropdown-header">{{ t("Language") }}</h6>
 							<a
 								v-for="lng in LANGUAGES"
 								:key="lng.code"
 								href="#"
-								class="dropdown-item d-flex justify-content-between align-items-center"
+								class="dropdown-item stbl-menu-item d-flex justify-content-between align-items-center"
 								@click.prevent="setLanguage(lng.code)"
 							>
 								<span>{{ lng.label }}</span>
 								<i v-if="lng.code === currentLanguage" class="ti ti-check text-primary"></i>
 							</a>
 							<div class="dropdown-divider"></div>
-							<a href="/me" class="dropdown-item">
+							<a href="/me" class="dropdown-item stbl-menu-item">
 								<i class="ti ti-user me-2"></i>{{ t("Profile") }}
 							</a>
 							<div class="dropdown-divider"></div>
-							<button type="button" class="dropdown-item text-danger" @click="logout">
+							<button type="button" class="dropdown-item stbl-menu-item text-danger" @click="logout">
 								<i class="ti ti-logout me-2"></i>{{ t("Log out") }}
 							</button>
 						</div>
