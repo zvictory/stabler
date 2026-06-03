@@ -631,6 +631,10 @@ async function prefillNewForCustomer(name) {
 	}
 }
 
+// Reload whenever the :name param changes — navigating /orders/new → /orders/:name
+// after create reuses this component instance, so onMounted alone won't refetch.
+watch(docName, loadDoc);
+
 onMounted(async () => {
 	await Promise.all([loadWarehouses(), loadPriceLists(), loadCurrencies()]);
 	if (isCreate.value) {
