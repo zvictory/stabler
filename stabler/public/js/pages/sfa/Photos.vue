@@ -4,6 +4,7 @@ import { storeToRefs } from "pinia";
 import { useSession } from "../../stores/session.js";
 import { call } from "../../api/client.js";
 import { t } from "../../composables/i18n.js";
+import { formatDateTime } from "../../composables/date.js";
 import EmptyState from "../../components/EmptyState.vue";
 import Select from "../../components/Select.vue";
 
@@ -241,7 +242,7 @@ watch(category, load);
 						<td>{{ r.outlet }}</td>
 						<td>{{ r.field_user || "—" }}</td>
 						<td>{{ categoryLabel(r.category) }}</td>
-						<td>{{ r.captured_at || "—" }}</td>
+						<td>{{ formatDateTime(r.captured_at) }}</td>
 						<td>
 							<a v-if="r.photo_url" :href="r.photo_url" target="_blank" rel="noopener">
 								{{ t("Open") }}

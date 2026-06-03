@@ -47,7 +47,10 @@ const isCreate = computed(() => !docName.value);
 // yet). Wired as a computed so draft-edit becomes a one-line change later.
 const editable = computed(() => isCreate.value);
 
-const loading = ref(false);
+// View mode (:name present) must paint FormPage's spinner until loadDoc() resolves —
+// otherwise the shared items table renders a blank row whose !editable cells deref
+// null `doc.currency`, throwing in the render fn and blanking the whole page.
+const loading = ref(Boolean(route.params.name));
 const loadError = ref("");
 const doc = ref(null); // loaded sales_order_detail (view mode); null when creating
 
@@ -892,7 +895,7 @@ onMounted(async () => {
 								<div v-else>{{ line.uom || "—" }}</div>
 							</td>
 							<td v-if="!editable" class="align-top text-end font-monospace text-secondary small">
-								{{ line.price_list_rate > 0 ? formatMoney(line.price_list_rate, doc.currency, user.language) : "—" }}
+								{{ line.price_list_rate > 0 ? formatMoney(line.price_list_rate, doc?.currency, user.language) : "—" }}
 							</td>
 							<td class="align-top">
 								<MoneyInput
@@ -901,7 +904,7 @@ onMounted(async () => {
 									size="sm"
 									@keydown.tab.exact="onRowTab(idx, 'rate', $event)"
 								/>
-								<div v-else class="text-end font-monospace">{{ formatMoney(line.rate, doc.currency, user.language) }}</div>
+								<div v-else class="text-end font-monospace">{{ formatMoney(line.rate, doc?.currency, user.language) }}</div>
 							</td>
 							<td v-if="showDiscounts" class="align-top">
 								<input
@@ -925,7 +928,7 @@ onMounted(async () => {
 									@keydown.tab.exact="onRowTab(idx, 'disc', $event)"
 								/>
 								<div v-else class="text-end font-monospace small">
-									{{ line.discount_amount > 0 ? formatMoney(line.discount_amount, doc.currency, user.language) : "—" }}
+									{{ line.discount_amount > 0 ? formatMoney(line.discount_amount, doc?.currency, user.language) : "—" }}
 								</div>
 							</td>
 							<td class="align-top text-end font-monospace">

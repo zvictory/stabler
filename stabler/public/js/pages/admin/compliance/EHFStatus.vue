@@ -149,7 +149,7 @@ onMounted(load);
 						<dt class="col-4">{{ t("Retries") }}</dt>
 						<dd class="col-8">{{ detail.retry_count }}</dd>
 						<dt class="col-4">{{ t("Submitted At") }}</dt>
-						<dd class="col-8">{{ detail.submitted_at || "—" }}</dd>
+						<dd class="col-8">{{ formatDateTime(detail.submitted_at) }}</dd>
 					</dl>
 					<div v-if="detail.error_message" class="alert alert-danger">{{ detail.error_message }}</div>
 					<h6>{{ t("Payload") }}</h6>

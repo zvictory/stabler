@@ -4,6 +4,7 @@ import { storeToRefs } from "pinia";
 import { useSession } from "../../stores/session.js";
 import { call } from "../../api/client.js";
 import { t } from "../../composables/i18n.js";
+import { formatDateTime } from "../../composables/date.js";
 import EmptyState from "../../components/EmptyState.vue";
 
 const session = useSession();
@@ -184,7 +185,7 @@ watch(activeCompany, load);
 					<tr v-for="r in rows" :key="r.name">
 						<td>{{ r.name }}</td>
 						<td>{{ r.outlet }}</td>
-						<td>{{ r.audited_at || "—" }}</td>
+						<td>{{ formatDateTime(r.audited_at) }}</td>
 						<td class="text-end">{{ r.total_skus ?? 0 }}</td>
 						<td class="text-end">{{ r.present_skus ?? 0 }}</td>
 						<td>

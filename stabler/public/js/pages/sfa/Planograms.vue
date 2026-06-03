@@ -4,6 +4,7 @@ import { storeToRefs } from "pinia";
 import { useSession } from "../../stores/session.js";
 import { call } from "../../api/client.js";
 import { t } from "../../composables/i18n.js";
+import { formatDate } from "../../composables/date.js";
 import EmptyState from "../../components/EmptyState.vue";
 import DateInput from "../../components/DateInput.vue";
 
@@ -184,7 +185,7 @@ watch(activeCompany, load);
 						<td>{{ r.name }}</td>
 						<td>{{ r.outlet }}</td>
 						<td>{{ r.category || "—" }}</td>
-						<td>{{ r.valid_from || "—" }}</td>
+						<td>{{ formatDate(r.valid_from) }}</td>
 						<td>
 							<span
 								class="badge"

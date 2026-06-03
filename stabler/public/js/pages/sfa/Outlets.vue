@@ -7,6 +7,7 @@ import { formatMoney } from "../../composables/money.js";
 import { t } from "../../composables/i18n.js";
 import EmptyState from "../../components/EmptyState.vue";
 import Select from "../../components/Select.vue";
+import MoneyInput from "../../components/MoneyInput.vue";
 
 const session = useSession();
 const { activeCompany, user } = storeToRefs(session);
@@ -303,12 +304,10 @@ watch(search, () => {
 							</div>
 							<div class="col-md-6">
 								<label class="form-label">{{ t("Credit Limit") }}</label>
-								<input
-									v-model.number="form.credit_limit"
-									type="number"
-									step="0.01"
-									inputMode="decimal"
-									class="form-control"
+								<MoneyInput
+									v-model="form.credit_limit"
+									:currency="currency"
+									:language="lang"
 								/>
 							</div>
 							<div class="col-12">

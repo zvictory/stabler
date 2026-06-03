@@ -1779,11 +1779,18 @@ def get_linked_documents(doctype: str, name: str):
 	linkinfo = get_linked_doctypes(doctype)
 	raw = get_linked_docs(doctype, name, linkinfo) or {}
 	out: dict = {}
-	for dt, docs in raw.items():
-		if dt in allowed_doctypes and docs:
-			out[dt] = [
-				{"name": d.get("name"), "docstatus": d.get("docstatus")}
-				for d in docs
-				if d.get("name")
-			]
+	for dt, payload in raw.items():
+		if dt not in allowed_doctypes:
+			continue
+		# get_linked_docs returns {doctype: {"docs": [...], "hidden_count": N}} —
+		# the row list lives under "docs", NOT the payload itself (iterating the
+		# payload would walk its keys, not the documents).
+		docs = (payload or {}).get("docs") or []
+		rows = [
+			{"name": d.get("name"), "docstatus": d.get("docstatus")}
+			for d in docs
+			if isinstance(d, dict) and d.get("name")
+		]
+		if rows:
+			out[dt] = rows
 	return out

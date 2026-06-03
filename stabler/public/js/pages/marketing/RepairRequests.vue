@@ -3,6 +3,7 @@ import { computed, onMounted, ref, watch } from "vue";
 import { storeToRefs } from "pinia";
 import { useSession } from "../../stores/session.js";
 import { t } from "../../composables/i18n.js";
+import { formatDateTime } from "../../composables/date.js";
 import EmptyState from "../../components/EmptyState.vue";
 import {
 	listRepairRequests,
@@ -190,7 +191,7 @@ async function submitCreate() {
 						<td>{{ r.name }}</td>
 						<td>{{ r.equipment }}</td>
 						<td>{{ r.reported_by }}</td>
-						<td>{{ r.reported_at || "—" }}</td>
+						<td>{{ formatDateTime(r.reported_at) }}</td>
 						<td>
 							<span class="badge" :class="statusBadge(r.status)">
 								{{ t(r.status) }}
@@ -230,7 +231,7 @@ async function submitCreate() {
 						<dt class="col-5">{{ t("Reported By") }}</dt>
 						<dd class="col-7">{{ detail.reported_by }}</dd>
 						<dt class="col-5">{{ t("Reported At") }}</dt>
-						<dd class="col-7">{{ detail.reported_at || "—" }}</dd>
+						<dd class="col-7">{{ formatDateTime(detail.reported_at) }}</dd>
 						<dt class="col-5">{{ t("Status") }}</dt>
 						<dd class="col-7">
 							<span class="badge" :class="statusBadge(detail.status)">
@@ -240,7 +241,7 @@ async function submitCreate() {
 						<dt class="col-5">{{ t("Assigned Technician") }}</dt>
 						<dd class="col-7">{{ detail.assigned_technician || "—" }}</dd>
 						<dt v-if="detail.resolved_at" class="col-5">{{ t("Resolved At") }}</dt>
-						<dd v-if="detail.resolved_at" class="col-7">{{ detail.resolved_at }}</dd>
+						<dd v-if="detail.resolved_at" class="col-7">{{ formatDateTime(detail.resolved_at) }}</dd>
 					</dl>
 
 					<div class="mb-3">

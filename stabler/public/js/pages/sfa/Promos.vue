@@ -4,6 +4,7 @@ import { storeToRefs } from "pinia";
 import { useSession } from "../../stores/session.js";
 import { call } from "../../api/client.js";
 import { t } from "../../composables/i18n.js";
+import { formatDate } from "../../composables/date.js";
 import EmptyState from "../../components/EmptyState.vue";
 import DateInput from "../../components/DateInput.vue";
 import Select from "../../components/Select.vue";
@@ -235,8 +236,8 @@ async function submitForm() {
 						<td>{{ r.scheme_code }}</td>
 						<td>{{ r.scheme_name }}</td>
 						<td>{{ typeLabel(r.scheme_type) }}</td>
-						<td>{{ r.valid_from || "—" }}</td>
-						<td>{{ r.valid_to || "—" }}</td>
+						<td>{{ formatDate(r.valid_from) }}</td>
+						<td>{{ formatDate(r.valid_to) }}</td>
 						<td>
 							<span
 								class="badge"
