@@ -859,7 +859,6 @@ def create_sales_invoice(
 	posting_date: str | None = None,
 	due_date: str | None = None,
 	remarks: str | None = None,
-	update_stock: int = 0,
 	item_overrides=None,
 ):
 	"""Create a Draft Sales Invoice copied from a submitted Sales Order.
@@ -869,6 +868,11 @@ def create_sales_invoice(
 	auto-mapped lines before insert. SO/so_detail linkage is preserved by
 	ERPNext's `make_sales_invoice`, which is what releases stock reservations
 	on SI submit.
+
+	Stabler sells directly from the warehouse (no separate Delivery Note), so the
+	SI ALWAYS carries `update_stock=1`: on submit ERPNext deducts the stock ledger
+	AND releases the Sales Order reservation (marking delivery done). See
+	`erpnext/.../sales_invoice.py:on_submit`.
 	"""
 	if not sales_order or not isinstance(sales_order, str):
 		frappe.throw(
@@ -890,7 +894,9 @@ def create_sales_invoice(
 	doc.posting_date = getdate(posting_date or today())
 	if due_date:
 		doc.due_date = getdate(due_date)
-	doc.update_stock = 1 if int(update_stock or 0) else 0
+	# Stabler ships from the warehouse on invoice — always update stock so the SO
+	# reservation is released and the stock ledger is written on submit.
+	doc.update_stock = 1
 	if remarks:
 		doc.remarks = remarks.strip()
 
@@ -953,6 +959,10 @@ def create_sales_invoice(
 			if patch.get("discount_amount") not in (None, ""):
 				line.discount_amount = flt(patch["discount_amount"])
 
+	# update_stock=1 needs a warehouse on every stock line, else submit throws an
+	# opaque core error. Surface a clear, item-named message up front instead.
+	_require_warehouses_for_stock_update(doc)
+
 	doc.insert(ignore_permissions=False)
 	return {
 		"name": doc.name,
@@ -960,6 +970,26 @@ def create_sales_invoice(
 		"customer": doc.customer,
 		"sales_order": sales_order,
 	}
+
+
+def _require_warehouses_for_stock_update(doc) -> None:
+	"""Raise a clear i18n error if any stock line lacks a warehouse.
+
+	A Stabler SI always submits with `update_stock=1`, which requires a warehouse
+	on every stock item. Service / non-stock items are exempt.
+	"""
+	missing = [
+		line.item_code
+		for line in doc.items
+		if not line.warehouse
+		and frappe.get_cached_value("Item", line.item_code, "is_stock_item")
+	]
+	if missing:
+		frappe.throw(
+			_("Cannot create invoice: no warehouse set for stock item(s) {0}.").format(
+				", ".join(dict.fromkeys(missing))
+			)
+		)
 
 
 @frappe.whitelist()
@@ -972,6 +1002,14 @@ def submit_sales_invoice(name: str):
 		frappe.throw("Invoice is already submitted.")
 	if doc.docstatus == 2:
 		frappe.throw("Invoice is cancelled and cannot be submitted.")
+	# Drafts created before the "always update stock" change may still carry
+	# update_stock=0 — force it on so submit deducts stock + releases the SO
+	# reservation. Persist the flip before submit so the validation sees it.
+	if not doc.update_stock:
+		doc.update_stock = 1
+		_require_warehouses_for_stock_update(doc)
+		doc.save()
+		doc.reload()
 	doc.submit()
 	return {"name": doc.name, "docstatus": doc.docstatus, "status": doc.status}
 

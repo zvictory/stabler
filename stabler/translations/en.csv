@@ -132,6 +132,7 @@ Cancel this submitted BOM?,Cancel this submitted BOM?
 Cancel {name}? This will reverse the stock movements.,Cancel {name}? This will reverse the stock movements.
 Cancelled,Cancelled
 Cannot check out before checking in.,Cannot check out before checking in.
+Cannot create invoice: no warehouse set for stock item(s) {0}.,Cannot create invoice: no warehouse set for stock item(s) {0}.
 Captured At,Captured At
 Car / Item,Car / Item
 Car item is required.,Car item is required.

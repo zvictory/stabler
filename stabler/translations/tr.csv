@@ -132,6 +132,7 @@ Cancel this submitted BOM?,Gönderilen bu BOM iptal edilsin mi?
 Cancel {name}? This will reverse the stock movements.,{name} iptal edilsin mi? Bu işlem stok hareketlerini tersine çevirecek.
 Cancelled,İptal edildi
 Cannot check out before checking in.,Giriş yapmadan çıkış yapılamaz.
+Cannot create invoice: no warehouse set for stock item(s) {0}.,Fatura oluşturulamıyor: {0} stok kalemi için depo ayarlanmamış.
 Captured At,Kaydedilme Tarihi
 Car / Item,Araç / Kalem
 Car item is required.,Araç kalemi gereklidir.

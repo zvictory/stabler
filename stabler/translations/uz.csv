@@ -134,6 +134,7 @@ Cancel this submitted BOM?,Bu tasdiqlangan spetsifikatsiyani bekor qilasizmi?
 Cancel {name}? This will reverse the stock movements.,{name} bekor qilinsinmi? Bu zaxira harakatlarini teskari yo'naltiradi.
 Cancelled,Bekor qilingan
 Cannot check out before checking in.,Kirish qilmasdan chiqish qila olmaysiz.
+Cannot create invoice: no warehouse set for stock item(s) {0}.,Hisob-faktura yaratib bo'lmaydi: {0} tovar(lar) uchun ombor ko'rsatilmagan.
 Captured At,Qabul qilingan vaqti
 Car / Item,Avtomobil / Mahsulot
 Car item is required.,Mahsulot (avtomobil) majburiy.

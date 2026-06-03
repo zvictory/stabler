@@ -140,6 +140,7 @@ Cancel this submitted BOM?,Отменить эту проведённую спе
 Cancel {name}? This will reverse the stock movements.,Отменить {name}? Это отменит движения товара.
 Cancelled,Отменено
 Cannot check out before checking in.,Невозможно выйти до входа.
+Cannot create invoice: no warehouse set for stock item(s) {0}.,Невозможно создать счёт: не указан склад для товара(ов) {0}.
 Captured At,Захвачено
 Car / Item,Авто / Товар
 Car item is required.,Товар (автомобиль) обязателен.
