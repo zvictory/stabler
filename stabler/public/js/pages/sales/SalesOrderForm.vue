@@ -370,14 +370,32 @@ function removeLine(idx) {
 }
 
 // ── Pipeline stepper ──────────────────────────────────────────────────
+// Returns the single furthest-reached stage (2..4). The Quotation stage (1) is always
+// behind us — this form only ever renders a Sales Order. The template marks ONE step
+// `.active` (=== this value); Tabler fills 1..active and grays the rest.
 function pipelineStage(d) {
-	if (!d || d.docstatus !== 1) return 1;
+	if (!d) return 2;
 	const delivered = Number(d.per_delivered) || 0;
 	const billed = Number(d.per_billed) || 0;
-	if (billed > 0 || delivered >= 100) return 4;
-	if (delivered > 0) return 3;
+	const invoiced = (d.sales_invoices || []).some((si) => Number(si.docstatus) === 1);
+	// We sell from warehouse (no separate Delivery Note): a submitted Sales Invoice means
+	// goods are gone AND billed, so the pipeline reaches Invoice and Deliver is implicitly done.
+	if (invoiced || billed >= 100) return 4;
+	if (delivered > 0 || billed > 0) return 3;
 	return 2;
 }
+
+// Payment is orthogonal to fulfillment (ERPNext bills ≠ collects). Aggregate the
+// outstanding across all SUBMITTED linked invoices; null = nothing invoiced yet (no badge).
+const paymentBadge = computed(() => {
+	const sis = (doc.value?.sales_invoices || []).filter((si) => Number(si.docstatus) === 1);
+	if (!sis.length) return null;
+	const grand = sis.reduce((s, si) => s + (Number(si.grand_total) || 0), 0);
+	const due = sis.reduce((s, si) => s + (Number(si.outstanding_amount) || 0), 0);
+	if (due <= 0.005) return { label: t("Paid"), cls: "bg-green-lt", icon: "ti-check" };
+	if (due >= grand - 0.005) return { label: t("Unpaid"), cls: "bg-red-lt", icon: "ti-clock" };
+	return { label: t("Partly paid"), cls: "bg-yellow-lt", icon: "ti-progress" };
+});
 
 // ── Load existing doc (view mode) ─────────────────────────────────────
 function mapDetailToForm(d) {
@@ -646,12 +664,15 @@ onMounted(async () => {
 				<span v-if="doc.has_reservations" class="badge bg-green-lt">
 					<i class="ti ti-lock me-1"></i>{{ t("Reserved") }}
 				</span>
+				<span v-if="paymentBadge" class="badge" :class="paymentBadge.cls">
+					<i class="ti me-1" :class="paymentBadge.icon"></i>{{ paymentBadge.label }}
+				</span>
 			</div>
 			<ul class="steps steps-counter mb-0">
-				<li class="step-item" :class="{ active: pipelineStage(doc) >= 1 }">{{ t("Quotation") }}</li>
-				<li class="step-item" :class="{ active: pipelineStage(doc) >= 2 }">{{ t("Sales Order") }}</li>
-				<li class="step-item" :class="{ active: pipelineStage(doc) >= 3 }">{{ t("Deliver") }}</li>
-				<li class="step-item" :class="{ active: pipelineStage(doc) >= 4 }">{{ t("Invoice") }}</li>
+				<li class="step-item" :class="{ active: pipelineStage(doc) === 1 }">{{ t("Quotation") }}</li>
+				<li class="step-item" :class="{ active: pipelineStage(doc) === 2 }">{{ t("Sales Order") }}</li>
+				<li class="step-item" :class="{ active: pipelineStage(doc) === 3 }">{{ t("Deliver") }}</li>
+				<li class="step-item" :class="{ active: pipelineStage(doc) === 4 }">{{ t("Invoice") }}</li>
 			</ul>
 		</div>
 

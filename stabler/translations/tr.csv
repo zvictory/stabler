@@ -708,6 +708,7 @@ Paid days,Ücretli günler
 Paid from,Ödeyen
 Paid to,Alıcı
 Parent warehouse,Üst depo
+Partly paid,Kısmen ödendi
 Party,Taraf
 Party account not resolved — re-select the party.,Taraf hesabı çözümlenemedi — tarafı yeniden seçin.
 Party is required.,Taraf zorunludur.
@@ -1086,6 +1087,7 @@ Unknown company: {0},Bilinmeyen şirket: {0}
 Unknown role template: {0},Bilinmeyen rol şablonu: {0}
 Unknown vertical pack: {0},Bilinmeyen dikey paket: {0}
 Unknown warehouse: {0},Bilinmeyen depo: {0}
+Unpaid,Ödenmedi
 Unsupported language: {0},Desteklenmeyen dil: {0}
 Uplift Value,Artış Değeri
 Upload failed,Yükleme başarısız

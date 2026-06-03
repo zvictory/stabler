@@ -1403,7 +1403,8 @@ def sales_order_detail(name: str):
 			reserved_by_detail[row["voucher_detail_no"]] = flt(row["reserved"])
 	si_links = frappe.db.sql(
 		"""
-		SELECT DISTINCT si.name, si.docstatus
+		SELECT DISTINCT si.name, si.docstatus, si.status,
+			si.outstanding_amount, si.grand_total
 		FROM `tabSales Invoice Item` sii
 		JOIN `tabSales Invoice` si ON si.name = sii.parent
 		WHERE sii.sales_order = %(name)s AND si.docstatus < 2

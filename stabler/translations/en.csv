@@ -717,6 +717,7 @@ Paid days,Paid days
 Paid from,Paid from
 Paid to,Paid to
 Parent warehouse,Parent warehouse
+Partly paid,Partly paid
 Party,Party
 Party account not resolved — re-select the party.,Party account not resolved — re-select the party.
 Party is required.,Party is required.
@@ -1099,6 +1100,7 @@ Unknown company: {0},Unknown company: {0}
 Unknown role template: {0},Unknown role template: {0}
 Unknown vertical pack: {0},Unknown vertical pack: {0}
 Unknown warehouse: {0},Unknown warehouse: {0}
+Unpaid,Unpaid
 Unsupported language: {0},Unsupported language: {0}
 Uplift Value,Uplift Value
 Upload failed,Upload failed

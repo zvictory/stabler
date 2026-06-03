@@ -721,6 +721,7 @@ Paid days,Тўланган кун
 Paid from,Дан тўланди
 Paid to,Гача тўланди
 Parent warehouse,Асосий омбор
+Partly paid,Қисман тўланган
 Party,Томон
 Party account not resolved — re-select the party.,Томон ҳисоби ечилмади — томонни қайта танланг.
 Party is required.,Томон керак.
@@ -1107,6 +1108,7 @@ Unknown company: {0},Номаълум компания: {0}
 Unknown role template: {0},Номаълум рол шаблони: {0}
 Unknown vertical pack: {0},Номаълум верикал пакет: {0}
 Unknown warehouse: {0},Номаълум омбор: {0}
+Unpaid,Тўланмаган
 Unsupported language: {0},Қўллаб-қувватланмайдиган тил: {0}
 Uplift Value,Ортиқча қиймат
 Upload failed,Юклаш ишламади

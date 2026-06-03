@@ -728,6 +728,7 @@ Paid days,Оплачено дней
 Paid from,Выплачено с
 Paid to,Выплачено
 Parent warehouse,Основной склад
+Partly paid,Частично оплачено
 Party,Контрагент
 Party account not resolved — re-select the party.,Счёт контрагента не найден — повторно выберите контрагента.
 Party is required.,Контрагент обязателен.
@@ -1114,6 +1115,7 @@ Unknown company: {0},Неизвестная компания: {0}
 Unknown role template: {0},Неизвестный шаблон роли: {0}
 Unknown vertical pack: {0},Неизвестный вертикальный набор: {0}
 Unknown warehouse: {0},Неизвестный склад: {0}
+Unpaid,Не оплачено
 Unsupported language: {0},Неподдерживаемый язык: {0}
 Uplift Value,Прирост стоимости
 Upload failed,Ошибка загрузки

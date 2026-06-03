@@ -721,6 +721,7 @@ Paid days,To'langan kun
 Paid from,Qayerdan to'landi
 Paid to,Qayga to'landi
 Parent warehouse,Asosiy ombor
+Partly paid,Qisman to'langan
 Party,Tomon
 Party account not resolved — re-select the party.,Tomon hisobi aniqlanmadi — tomonni qayta tanlang.
 Party is required.,Tomon talab qilinadi.
@@ -1107,6 +1108,7 @@ Unknown company: {0},Noma'lum kompaniya: {0}
 Unknown role template: {0},Noma'lum rol shabloni: {0}
 Unknown vertical pack: {0},Noma'lum vertikal paket: {0}
 Unknown warehouse: {0},Noma'lum omborga: {0}
+Unpaid,To'lanmagan
 Unsupported language: {0},Qo'llanilmagan til: {0}
 Uplift Value,Ko'tarilish qiymati
 Upload failed,Yuklash muvaffaqiyatsiz bo'ldi
