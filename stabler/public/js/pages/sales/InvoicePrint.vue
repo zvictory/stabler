@@ -162,7 +162,6 @@ onMounted(load);
 			<div class="inv-head">
 				<div>
 					<div class="inv-brand">{{ doc.company_name }}</div>
-					<div v-if="doc.company_abbr" class="inv-addr">{{ doc.company_abbr }}</div>
 				</div>
 				<div class="inv-contact">
 					<div v-if="doc.company_tax_id">{{ t("TIN") }}: {{ doc.company_tax_id }}</div>
@@ -302,8 +301,10 @@ onMounted(load);
 
 /* On-screen WYSIWYG A5 page. */
 .a5-print {
+	display: flex;
+	flex-direction: column;
 	width: 148mm;
-	min-height: 200mm;
+	min-height: 190mm;
 	margin: 0 auto;
 	padding: 5mm;
 	box-sizing: border-box;
@@ -319,17 +320,12 @@ onMounted(load);
 	display: flex;
 	justify-content: space-between;
 	align-items: flex-start;
-	margin-bottom: 4mm;
+	margin-bottom: 3mm;
 }
 .inv-brand {
 	font-size: 16pt;
 	font-weight: 700;
 	letter-spacing: -0.02em;
-}
-.inv-addr {
-	font-size: 7pt;
-	color: #666;
-	max-width: 60mm;
 }
 .inv-contact {
 	text-align: right;
@@ -339,14 +335,14 @@ onMounted(load);
 .inv-rule {
 	border: none;
 	border-top: 1.5px solid #000;
-	margin: 0 0 4mm;
+	margin: 0 0 3mm;
 }
 
 /* Meta */
 .inv-meta {
 	display: flex;
 	justify-content: space-between;
-	margin-bottom: 4mm;
+	margin-bottom: 3mm;
 }
 .inv-id {
 	font-size: 11pt;
@@ -367,7 +363,7 @@ onMounted(load);
 	width: 100%;
 	border-collapse: collapse;
 	font-size: 8pt;
-	margin-bottom: 3mm;
+	margin-bottom: 2mm;
 }
 .inv-th {
 	text-align: left;
@@ -419,7 +415,7 @@ onMounted(load);
 .inv-totals-wrap {
 	display: flex;
 	justify-content: flex-end;
-	margin-bottom: 3mm;
+	margin-bottom: 2mm;
 }
 .inv-totals {
 	width: 55mm;
@@ -449,7 +445,7 @@ onMounted(load);
 	justify-content: flex-end;
 	font-size: 8pt;
 	color: #666;
-	margin-bottom: 3mm;
+	margin-bottom: 2mm;
 }
 
 /* Footer */
