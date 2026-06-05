@@ -30,6 +30,7 @@ doc_events = {
 			"stabler.integrations.ehf.hooks.enqueue_ehf_submit",
 			"stabler.integrations.one_c.hooks.enqueue_push",
 			"stabler.integrations.factura.export.enqueue_export",
+			"stabler.maintenance.close_billed_so.on_si_submit",
 		],
 	},
 	"Payment Entry": {
