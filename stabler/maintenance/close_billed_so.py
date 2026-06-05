@@ -31,7 +31,6 @@ Registered in hooks.py doc_events["Sales Invoice"]["on_submit"].
 from __future__ import annotations
 
 import frappe
-from frappe.utils import flt
 
 _logger = frappe.logger("stabler.close_billed_so")
 
@@ -50,12 +49,8 @@ def on_si_submit(doc, method=None):
     if not doc.update_stock:
         return
 
-    # Collect distinct sales orders referenced by this invoice (stock items only).
-    so_names = {
-        item.sales_order
-        for item in doc.items
-        if item.sales_order
-    }
+    # Collect distinct sales orders referenced by this invoice.
+    so_names = {item.sales_order for item in doc.items if item.sales_order}
     if not so_names:
         return
 
@@ -70,22 +65,23 @@ def on_si_submit(doc, method=None):
 
 
 def _maybe_close(so_name: str) -> None:
-    """Close *so_name* if it is submitted, open, and fully billed at qty level."""
+    """Close *so_name* if it is submitted, open, and fully billed."""
     so = frappe.get_doc("Sales Order", so_name)
 
     # Already closed/on-hold — nothing to do.
     if so.docstatus != 1 or so.status in ("Closed", "On Hold"):
         return
 
-    # Check at qty level (immune to per_billed noise from discounts / freight lines).
-    # billed_qty is maintained by ERPNext on each SO Item via update_billing_status.
-    for item in so.items:
-        if flt(item.billed_qty) < flt(item.qty):
-            return  # At least one line not yet fully billed — leave reservation intact.
+    # billing_status is maintained by ERPNext's update_billing_status() on each SI
+    # submit/cancel.  "Fully Billed" means every SO line's amount is covered.
+    # Note: billed_qty is NOT a physical DB column in this ERPNext version, so we
+    # rely on the SO-level billing_status rather than per-item billed_qty checks.
+    if so.billing_status != "Fully Billed":
+        return
 
     # Every line fully billed: close the SO.
     # update_status("Closed") → set_status() → update_reserved_qty() →
     # update_bin_qty(..., get_reserved_qty(...))  [excludes Closed SOs]
     # → classic reserved_qty drops to 0 with no new SLE.
     so.update_status("Closed")
-    _logger.info("auto-closed %s (all lines fully billed via SI %s)", so_name, so.name)
+    _logger.info("auto-closed %s (billing_status=Fully Billed)", so_name)
