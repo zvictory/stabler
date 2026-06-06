@@ -20,6 +20,7 @@ const monthAgo = new Date(Date.now() - 90 * 86400000).toISOString().slice(0, 10)
 const fromDate = ref(monthAgo);
 const toDate = ref(today);
 const status = ref("");
+const search = ref("");
 const limit = ref(100);
 
 const loading = ref(false);
@@ -72,6 +73,7 @@ async function load() {
 			from_date: fromDate.value,
 			to_date: toDate.value,
 			status: status.value || undefined,
+			search: search.value || undefined,
 			limit: limit.value,
 		});
 	} catch (err) {
@@ -102,6 +104,17 @@ watch(activeCompany, load);
 		<div class="card-header">
 			<div class="card-title">{{ t("Sales Orders") }}</div>
 			<div class="ms-auto d-flex gap-2 align-items-end flex-wrap">
+				<div>
+					<label class="form-label small mb-1">{{ t("Search") }}</label>
+					<input
+						v-model="search"
+						type="search"
+						class="form-control form-control-sm"
+						:placeholder="t('SO number or customer…')"
+						style="min-width: 180px"
+						@keydown.enter="load"
+					/>
+				</div>
 				<div>
 					<label class="form-label small mb-1">{{ t("From") }}</label>
 					<DateInput v-model="fromDate" size="sm" />

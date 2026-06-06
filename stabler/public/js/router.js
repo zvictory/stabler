@@ -19,6 +19,7 @@ import SalesOrderForm from "./pages/sales/SalesOrderForm.vue";
 import SalesInvoices from "./pages/sales/SalesInvoices.vue";
 import SalesInvoiceForm from "./pages/sales/SalesInvoiceForm.vue";
 import SalesAging from "./pages/sales/Aging.vue";
+import ReservedStock from "./pages/sales/ReservedStock.vue";
 import InvoicePrint from "./pages/sales/InvoicePrint.vue";
 import Waybill from "./pages/sales/Waybill.vue";
 import PurchasingHome from "./pages/purchasing/PurchasingHome.vue";
@@ -107,6 +108,7 @@ const routes = [
 			{ path: "invoices/:name/waybill", name: "sales-invoice-waybill", component: Waybill, meta: { title: t("Yuk xati") } },
 			{ path: "invoices/:name", name: "sales-invoice", component: SalesInvoiceForm, meta: { title: t("Sales Invoice") } },
 			{ path: "aging", name: "sales-aging", component: SalesAging, meta: { title: t("AR Aging") } },
+			{ path: "reserved-stock", name: "sales-reserved-stock", component: ReservedStock, meta: { title: t("Reserved Stock") } },
 		],
 	},
 	{

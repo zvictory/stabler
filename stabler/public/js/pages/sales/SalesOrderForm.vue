@@ -13,9 +13,9 @@
  * price list, order date, delivery date, per-line discount — is present in the
  * view. Post-submit fields (reserved/delivered/billed/advance) render read-only.
  *
- * First cut: editable === create only. Draft re-save needs an update_sales_order
- * endpoint (not yet built); until then an existing Draft is shown read-only with
- * Submit/Delete actions. This is intentional and surfaced, not faked.
+ * Edit mode: create (no name) OR loaded Draft (docstatus=0). Submitted/cancelled
+ * orders are always read-only. Edits to a Draft call update_sales_order and save
+ * without submitting; the existing Submit action then does the final submit+reserve.
  */
 import { computed, nextTick, onMounted, ref, watch } from "vue";
 import { storeToRefs } from "pinia";
@@ -43,9 +43,9 @@ const today = new Date().toISOString().slice(0, 10);
 // :name present → view existing; otherwise → create new.
 const docName = computed(() => (route.params.name ? String(route.params.name) : null));
 const isCreate = computed(() => !docName.value);
-// First cut: only the create flow is editable (no update_sales_order endpoint
-// yet). Wired as a computed so draft-edit becomes a one-line change later.
-const editable = computed(() => isCreate.value);
+// Editable when creating a new order OR viewing a Draft (docstatus=0).
+// Submitted / cancelled orders are always read-only.
+const editable = computed(() => isCreate.value || (doc.value !== null && doc.value.docstatus === 0));
 
 // View mode (:name present) must paint FormPage's spinner until loadDoc() resolves —
 // otherwise the shared items table renders a blank row whose !editable cells deref
@@ -113,6 +113,7 @@ function blankLine() {
 		conversion_factor: 1,
 		qty: 1,
 		rate: 0,
+		rateTouched: false, // true when user has manually edited the rate; prevents onUomChange overwrite
 		discount_percentage: 0,
 		discount_amount: 0,
 		warehouse: "",
@@ -174,7 +175,9 @@ function factorFor(line, uom) {
 }
 async function onUomChange(line) {
 	line.conversion_factor = factorFor(line, line.uom);
-	if (line.item_code) {
+	// Only auto-resolve the rate on UOM change when the user hasn't manually
+	// overridden it. rateTouched is set by the MoneyInput @input handler.
+	if (line.item_code && !line.rateTouched) {
 		const { rate } = await resolveRate(line.item_code, line.rate, line.uom);
 		line.rate = rate;
 	}
@@ -215,7 +218,11 @@ function clearCustomer() {
 }
 
 function searchItems(q) {
-	return call("stabler.api.inventory.list_items", { search: q, limit: 10 });
+	return call("stabler.api.inventory.list_items", {
+		search: q,
+		warehouse: form.value.set_warehouse || undefined,
+		limit: 30,
+	});
 }
 async function resolveRate(itemCode, fallback = 0, uom = undefined) {
 	if (!itemCode || !activeCompany.value) return { rate: Number(fallback || 0) };
@@ -248,9 +255,21 @@ async function pickItem(line, item) {
 		});
 		line.stock_uom = meta.stock_uom || "";
 		line.uoms = meta.uoms || [];
-		line.uom = meta.default_uom || meta.stock_uom || "";
+		// Default to the box UOM (largest conversion factor > 1) so the "Korobka"
+		// unit leads. Falls back to default_uom / stock_uom for piece-only items.
+		const boxUom = (meta.uoms || [])
+			.filter((u) => u.uom !== meta.stock_uom && Number(u.conversion_factor) > 1)
+			.sort((a, b) => Number(b.conversion_factor) - Number(a.conversion_factor))[0];
+		line.uom = boxUom ? boxUom.uom : (meta.default_uom || meta.stock_uom || "");
 		line.conversion_factor = factorFor(line, line.uom);
-		line.rate = Number(meta.price_list_rate || meta.standard_rate || 0);
+		line.rateTouched = false; // fresh pick — allow auto-rate on UOM change
+		// If we defaulted to a box UOM, resolve the box-UOM price from the price list.
+		if (boxUom && form.value.price_list) {
+			const { rate: boxRate } = await resolveRate(line.item_code, meta.price_list_rate || meta.standard_rate || 0, line.uom);
+			line.rate = boxRate;
+		} else {
+			line.rate = Number(meta.price_list_rate || meta.standard_rate || 0);
+		}
 	} catch {
 		line.uom = item.stock_uom || "";
 		line.stock_uom = item.stock_uom || "";
@@ -413,10 +432,11 @@ function mapDetailToForm(d) {
 			item_name: it.item_name,
 			uom: it.uom || "",
 			stock_uom: it.stock_uom || "",
-			uoms: [],
+			uoms: [], // populated by loadDraftUoms() when editing a Draft
 			conversion_factor: Number(it.conversion_factor) || 1,
 			qty: it.qty,
 			rate: it.rate,
+			rateTouched: false, // user has not manually edited this rate
 			discount_percentage: it.discount_percentage || 0,
 			discount_amount: it.discount_amount || 0,
 			warehouse: it.warehouse || "",
@@ -434,6 +454,29 @@ function mapDetailToForm(d) {
 	);
 }
 
+async function loadDraftUoms() {
+	// Populate UOM lists per line so the UOM toggle works when editing a Draft.
+	// item_sales_meta is the same call pickItem() uses — reuse it here in parallel.
+	await Promise.all(
+		form.value.items
+			.filter((l) => l.item_code)
+			.map(async (l) => {
+				try {
+					const meta = await call("stabler.api.sales.item_sales_meta", {
+						item_code: l.item_code,
+						company: activeCompany.value,
+						customer: form.value.customer || undefined,
+						price_list: form.value.price_list || undefined,
+					});
+					l.stock_uom = meta.stock_uom || l.stock_uom;
+					l.uoms = meta.uoms || [];
+				} catch {
+					// non-fatal — the UOM toggle simply stays hidden for this line
+				}
+			})
+	);
+}
+
 async function loadDoc() {
 	if (!docName.value) return;
 	loading.value = true;
@@ -442,6 +485,8 @@ async function loadDoc() {
 		const d = await call("stabler.api.sales.sales_order_detail", { name: docName.value });
 		doc.value = d;
 		mapDetailToForm(d);
+		// Load UOM lists for draft items so the UOM toggle works in edit mode.
+		if (d.docstatus === 0) await loadDraftUoms();
 	} catch (err) {
 		loadError.value = err?.message || t("Failed to load sales order.");
 	} finally {
@@ -607,6 +652,45 @@ async function deleteDoc() {
 		router.push("/sales/orders");
 	} catch (err) {
 		actionError.value = err?.message || t("Delete failed.");
+	} finally {
+		actionRunning.value = false;
+	}
+}
+
+async function saveDraft() {
+	// Persist edits to an existing Draft without submitting/reserving stock.
+	if (!doc.value?.name) return;
+	actionError.value = "";
+	if (!form.value.customer) { actionError.value = t("Pick a customer."); return; }
+	if (!form.value.set_warehouse) { actionError.value = t("Pick a warehouse."); return; }
+	const lines = form.value.items
+		.filter((r) => r.item_code)
+		.map((r) => ({
+			item_code: r.item_code,
+			qty: r.qty,
+			rate: r.rate,
+			uom: r.uom,
+			conversion_factor: r.conversion_factor || 1,
+			discount_percentage: r.discount_percentage || 0,
+			discount_amount: r.discount_amount || 0,
+			warehouse: r.warehouse || form.value.set_warehouse,
+		}));
+	if (!lines.length) { actionError.value = t("Add at least one item line."); return; }
+	actionRunning.value = true;
+	try {
+		await call("stabler.api.sales.update_sales_order", {
+			name: doc.value.name,
+			items: lines,
+			set_warehouse: form.value.set_warehouse,
+			transaction_date: form.value.transaction_date,
+			delivery_date: form.value.delivery_date || form.value.transaction_date,
+			remarks: form.value.remarks || undefined,
+			currency: form.value.currency || undefined,
+			price_list: form.value.price_list || undefined,
+		});
+		await loadDoc(); // refresh with server-computed totals
+	} catch (err) {
+		actionError.value = err?.message || t("Save failed.");
 	} finally {
 		actionRunning.value = false;
 	}
@@ -927,6 +1011,7 @@ onMounted(async () => {
 									v-if="editable"
 									v-model="line.rate"
 									size="sm"
+									@input="line.rateTouched = true"
 									@keydown.tab.exact="onRowTab(idx, 'rate', $event)"
 								/>
 								<div v-else class="text-end font-monospace">{{ formatMoney(line.rate, doc?.currency, user.language) }}</div>
@@ -1013,6 +1098,16 @@ onMounted(async () => {
 				</button>
 			</template>
 			<template v-else>
+				<button
+					v-if="canDelete"
+					type="button"
+					class="btn btn-outline-primary"
+					:disabled="actionRunning"
+					@click="saveDraft"
+				>
+					<span v-if="actionRunning" class="spinner-border spinner-border-sm me-1"></span>
+					<i v-else class="ti ti-device-floppy me-1"></i>{{ t("Save changes") }}
+				</button>
 				<button
 					v-if="canSubmit"
 					type="button"

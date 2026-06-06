@@ -9,6 +9,7 @@ import { t } from "../../composables/i18n.js";
 import EmptyState from "../../components/EmptyState.vue";
 import DateInput from "../../components/DateInput.vue";
 import Select from "../../components/Select.vue";
+import PartyPaymentModal from "../../components/PartyPaymentModal.vue";
 
 const session = useSession();
 const { activeCompany, user } = storeToRefs(session);
@@ -27,6 +28,8 @@ const ledgerLoading = ref(false);
 const ledgerError = ref("");
 const ledgerFromDate = ref("");
 const ledgerToDate = ref("");
+
+const partyPayOpen = ref(false);
 
 const CUSTOMER_TYPES = ["Company", "Individual", "Partnership"];
 const createOpen = ref(false);
@@ -227,6 +230,14 @@ function selectCustomer(c) {
 // ── P1.3: Customer orders ────────────────────────────────────────────────────
 const custOrders = ref([]);
 const custOrdersLoading = ref(false);
+const custOrdersFromDate = ref("");
+const custOrdersToDate = ref("");
+const custOrdersStatus = ref("");
+
+const ORDER_STATUSES = ["", "Draft", "To Deliver and Bill", "To Bill", "To Deliver", "Completed", "Cancelled", "Closed"];
+const orderStatusOptions = computed(() =>
+	ORDER_STATUSES.map((s) => ({ value: s, label: s ? t(s) : t("All") }))
+);
 
 async function loadCustOrders(customer) {
 	if (!customer || !activeCompany.value) return;
@@ -235,7 +246,10 @@ async function loadCustOrders(customer) {
 		custOrders.value = await call("stabler.api.sales.list_sales_orders", {
 			company: activeCompany.value,
 			customer: customer.name,
-			limit: 20,
+			from_date: custOrdersFromDate.value || undefined,
+			to_date: custOrdersToDate.value || undefined,
+			status: custOrdersStatus.value || undefined,
+			limit: 50,
 		});
 	} catch {
 		custOrders.value = [];
@@ -627,6 +641,20 @@ watch(activeCompany, () => {
 									<span v-if="custOrdersLoading" class="spinner-border spinner-border-sm text-secondary"></span>
 									<span v-else class="badge bg-secondary-lt text-secondary">{{ custOrders.length }}</span>
 								</div>
+								<div class="d-flex gap-2 align-items-end flex-wrap mb-2">
+									<div>
+										<label class="form-label small mb-1">{{ t("From") }}</label>
+										<DateInput v-model="custOrdersFromDate" size="sm" @blur="loadCustOrders(selected)" />
+									</div>
+									<div>
+										<label class="form-label small mb-1">{{ t("To") }}</label>
+										<DateInput v-model="custOrdersToDate" size="sm" @blur="loadCustOrders(selected)" />
+									</div>
+									<div style="min-width: 160px">
+										<label class="form-label small mb-1">{{ t("Status") }}</label>
+										<Select v-model="custOrdersStatus" size="sm" :options="orderStatusOptions" @update:modelValue="loadCustOrders(selected)" />
+									</div>
+								</div>
 								<div v-if="!custOrders.length && !custOrdersLoading" class="text-secondary small">{{ t("No orders.") }}</div>
 								<div v-else class="d-flex flex-column gap-1">
 									<button
@@ -678,6 +706,13 @@ watch(activeCompany, () => {
 											@click="openEdit(selected)"
 										>
 											<i class="ti ti-pencil me-1"></i>{{ t("Edit") }}
+										</button>
+										<button
+											type="button"
+											class="btn btn-sm btn-outline-success"
+											@click="partyPayOpen = true"
+										>
+											<i class="ti ti-cash me-1"></i>{{ t("Payment") }}
 										</button>
 										<router-link
 											:to="{ path: '/sales/orders/new', query: { new_for: selected.name } }"
@@ -1085,6 +1120,17 @@ watch(activeCompany, () => {
 			</div>
 		</div>
 	</template>
+
+	<!-- Party-level payment modal (Customer) -->
+	<PartyPaymentModal
+		v-if="selected"
+		:open="partyPayOpen"
+		party-type="Customer"
+		:party="selected.name"
+		:company="activeCompany"
+		@close="partyPayOpen = false"
+		@paid="partyPayOpen = false; loadLedger(selected); loadCustOrders(selected)"
+	/>
 </template>
 
 <style scoped>

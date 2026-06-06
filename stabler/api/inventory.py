@@ -13,8 +13,19 @@ from stabler.api._common import _require_company
 
 
 @frappe.whitelist()
-def list_items(search: str = "", item_group: str | None = None, limit: int = 100):
-	conds = ["disabled = 0"]
+def list_items(
+	search: str = "",
+	item_group: str | None = None,
+	warehouse: str | None = None,
+	limit: int = 100,
+):
+	"""Return items matching *search* (code or name), optionally scoped to a warehouse.
+
+	warehouse — when provided, only items that have a Bin row in that warehouse are
+	returned (i.e. items ever stocked there, regardless of current qty). This prevents
+	raw-material items from appearing in a finished-goods warehouse picker.
+	"""
+	conds = ["disabled = 0", "is_sales_item = 1"]
 	params: dict = {"limit": int(limit)}
 	if search:
 		conds.append("(item_name LIKE %(s)s OR item_code LIKE %(s)s)")
@@ -22,6 +33,14 @@ def list_items(search: str = "", item_group: str | None = None, limit: int = 100
 	if item_group:
 		conds.append("item_group = %(item_group)s")
 		params["item_group"] = item_group
+	if warehouse:
+		# Only items that actually have stock in the target warehouse.
+		# actual_qty > 0 prevents 0-qty Bin rows (e.g. raw materials ever staged there) from leaking in.
+		conds.append(
+			"EXISTS (SELECT 1 FROM `tabBin` b"
+			" WHERE b.item_code = `tabItem`.name AND b.warehouse = %(warehouse)s AND b.actual_qty > 0)"
+		)
+		params["warehouse"] = warehouse
 	where = " AND ".join(conds)
 	return frappe.db.sql(
 		f"""

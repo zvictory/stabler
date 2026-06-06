@@ -456,6 +456,7 @@ def list_sales_invoices(
 	to_date: str | None = None,
 	customer: str | None = None,
 	status: str | None = None,
+	search: str | None = None,
 	limit: int = 100,
 ):
 	_require_company(company)
@@ -470,6 +471,9 @@ def list_sales_invoices(
 	if customer:
 		conds.append("customer = %(customer)s")
 		params["customer"] = customer
+	if search:
+		conds.append("(name LIKE %(s)s OR customer LIKE %(s)s OR customer_name LIKE %(s)s)")
+		params["s"] = f"%{search}%"
 	if status:
 		conds.append("status = %(status)s")
 		params["status"] = status
@@ -1327,6 +1331,7 @@ def list_sales_orders(
 	to_date: str | None = None,
 	customer: str | None = None,
 	status: str | None = None,
+	search: str | None = None,
 	limit: int = 100,
 ):
 	_require_company(company)
@@ -1341,6 +1346,9 @@ def list_sales_orders(
 	if customer:
 		conds.append("customer = %(customer)s")
 		params["customer"] = customer
+	if search:
+		conds.append("(name LIKE %(s)s OR customer LIKE %(s)s OR customer_name LIKE %(s)s)")
+		params["s"] = f"%{search}%"
 	if status:
 		conds.append("status = %(status)s")
 		params["status"] = status
@@ -1692,6 +1700,127 @@ def submit_sales_order(name: str):
 
 
 @frappe.whitelist()
+def update_sales_order(
+	name: str,
+	items,
+	set_warehouse: str | None = None,
+	transaction_date: str | None = None,
+	delivery_date: str | None = None,
+	remarks: str | None = None,
+	currency: str | None = None,
+	price_list: str | None = None,
+):
+	"""Update an existing Draft Sales Order in-place.
+
+	Only docstatus=0 (Draft) orders may be edited — submitted orders are immutable.
+	Replaces item lines entirely (matching create_sales_order validation). Does NOT
+	submit or create Stock Reservation Entries; those happen in submit_sales_order.
+	"""
+	if not name:
+		frappe.throw("Sales order name is required.")
+	doc = frappe.get_doc("Sales Order", name)
+	if doc.docstatus != 0:
+		frappe.throw(_("Only draft sales orders can be edited."))
+
+	if isinstance(items, str):
+		try:
+			items = json.loads(items)
+		except Exception:
+			frappe.throw("Invalid items payload.")
+	if not isinstance(items, list) or not items:
+		frappe.throw("At least one item is required.")
+
+	wh = set_warehouse or doc.set_warehouse
+	if not wh:
+		frappe.throw(_("Warehouse is required for Sales Orders"))
+	if set_warehouse and set_warehouse != doc.set_warehouse and not frappe.db.exists("Warehouse", set_warehouse):
+		frappe.throw(_("Unknown warehouse: {0}").format(set_warehouse))
+
+	txn_date = getdate(transaction_date or doc.transaction_date)
+	deliver_on = getdate(delivery_date) if delivery_date else (getdate(doc.delivery_date) if doc.delivery_date else txn_date)
+
+	# Validate and clean item lines exactly as in create_sales_order.
+	cleaned: list[dict] = []
+	for idx, row in enumerate(items, start=1):
+		code = (row or {}).get("item_code")
+		if not code:
+			frappe.throw(f"Row {idx}: item is required.")
+		if not frappe.db.exists("Item", code):
+			frappe.throw(f"Row {idx}: unknown item '{code}'.")
+		qty = flt(row.get("qty"))
+		if qty <= 0:
+			frappe.throw(f"Row {idx}: qty must be greater than zero.")
+		row_wh = (row.get("warehouse") or "").strip() or wh
+		if row_wh != wh and not frappe.db.exists("Warehouse", row_wh):
+			frappe.throw(f"Row {idx}: unknown warehouse '{row_wh}'.")
+		disc_pct = flt(row.get("discount_percentage"))
+		if not (0 <= disc_pct <= 100):
+			frappe.throw(f"Row {idx}: discount_percentage must be between 0 and 100.")
+		rate_val = row.get("rate")
+		if rate_val not in (None, "") and flt(rate_val) < 0:
+			frappe.throw(f"Row {idx}: rate cannot be negative.")
+		if flt(row.get("discount_amount")) < 0:
+			frappe.throw(f"Row {idx}: discount_amount cannot be negative.")
+		cleaned.append(
+			{
+				"item_code": code,
+				"qty": qty,
+				"rate": flt(row.get("rate")),
+				"uom": row.get("uom") or None,
+				"warehouse": row_wh,
+				"conversion_factor": flt(row.get("conversion_factor")) or None,
+				"discount_percentage": disc_pct,
+				"discount_amount": flt(row.get("discount_amount")),
+			}
+		)
+
+	# Update header fields.
+	doc.set_warehouse = wh
+	doc.transaction_date = txn_date
+	doc.delivery_date = deliver_on
+	if remarks is not None:
+		doc.terms = remarks.strip()
+	if currency:
+		doc.currency = currency
+	resolved_pl = price_list or _resolve_price_list(doc.customer)
+	if resolved_pl:
+		doc.selling_price_list = resolved_pl
+
+	# Replace item lines entirely.
+	doc.set("items", [])
+	for row in cleaned:
+		line = doc.append("items", {})
+		line.item_code = row["item_code"]
+		line.qty = row["qty"]
+		line.delivery_date = deliver_on
+		line.warehouse = row["warehouse"]
+		rate = row["rate"]
+		if not rate and resolved_pl:
+			hit = _lookup_item_price(row["item_code"], resolved_pl)
+			if hit:
+				rate = hit["price_list_rate"]
+		if rate:
+			line.rate = rate
+		if row["uom"]:
+			line.uom = row["uom"]
+		if row.get("conversion_factor"):
+			line.conversion_factor = row["conversion_factor"]
+		if row.get("discount_percentage"):
+			line.discount_percentage = row["discount_percentage"]
+		if row.get("discount_amount"):
+			line.discount_amount = row["discount_amount"]
+
+	doc.save(ignore_permissions=False)
+	return {
+		"name": doc.name,
+		"grand_total": flt(doc.grand_total),
+		"customer": doc.customer,
+		"docstatus": doc.docstatus,
+		"status": doc.status,
+	}
+
+
+@frappe.whitelist()
 def cancel_sales_order(name: str):
 	if not name:
 		frappe.throw("Sales order name is required.")
@@ -1833,3 +1962,104 @@ def get_linked_documents(doctype: str, name: str):
 		if rows:
 			out[dt] = rows
 	return out
+
+
+@frappe.whitelist()
+def reserved_stock_analysis(company: str):
+	"""Live Stock Reservation Entries for a company, grouped for the analyzer.
+
+	Returns KPI headline figures plus a per-(item_code, warehouse) rollup with every
+	contributing SRE nested as 'entries'.
+
+	'Open' reservation = submitted SRE not yet Delivered/Cancelled — identical to the
+	filter used by clear_open_reservations(), so the analyzer and the bulk-clear admin
+	action always agree on what is currently reserved.
+
+	Value approximation: outstanding_value = outstanding_qty × Item.valuation_rate.
+	Valuation rate drifts over time and is not the SRE's original reservation value,
+	so treat this as an operational estimate, not an accounting figure.
+	"""
+	_require_company(company)
+
+	rows = frappe.db.sql(
+		"""
+		SELECT
+		  sre.name                                                            AS sre,
+		  sre.item_code,
+		  itm.item_name,
+		  sre.warehouse,
+		  sre.voucher_no                                                      AS sales_order,
+		  so.customer,
+		  so.customer_name,
+		  so.transaction_date                                                 AS so_date,
+		  sre.creation                                                        AS reserved_on,
+		  sre.status,
+		  sre.reserved_qty,
+		  sre.delivered_qty,
+		  (sre.reserved_qty - sre.delivered_qty)                             AS outstanding_qty,
+		  (sre.reserved_qty - sre.delivered_qty)
+		    * COALESCE(itm.valuation_rate, 0)                                AS outstanding_value,
+		  sre.stock_uom
+		FROM `tabStock Reservation Entry` sre
+		LEFT JOIN `tabItem`        itm ON itm.name  = sre.item_code
+		LEFT JOIN `tabSales Order` so  ON so.name   = sre.voucher_no
+		                              AND sre.voucher_type = 'Sales Order'
+		WHERE sre.company  = %(company)s
+		  AND sre.docstatus = 1
+		  AND sre.status NOT IN ('Delivered', 'Cancelled')
+		ORDER BY sre.warehouse, sre.item_code, sre.creation
+		""",
+		{"company": company},
+		as_dict=True,
+	)
+
+	# ── Roll up per (item_code, warehouse) ──────────────────────────────────
+	group_map: dict[tuple, dict] = {}
+	for r in rows:
+		key = (r.item_code, r.warehouse)
+		if key not in group_map:
+			group_map[key] = {
+				"item_code": r.item_code,
+				"item_name": r.item_name or r.item_code,
+				"warehouse": r.warehouse,
+				"stock_uom": r.stock_uom,
+				"total_outstanding": 0.0,
+				"total_value": 0.0,
+				"entries": [],
+			}
+		g = group_map[key]
+		g["total_outstanding"] = flt(g["total_outstanding"]) + flt(r.outstanding_qty)
+		g["total_value"] = flt(g["total_value"]) + flt(r.outstanding_value)
+		g["entries"].append(
+			{
+				"sre": r.sre,
+				"sales_order": r.sales_order,
+				"customer": r.customer,
+				"customer_name": r.customer_name,
+				"so_date": str(r.so_date) if r.so_date else None,
+				"reserved_on": str(r.reserved_on) if r.reserved_on else None,
+				"status": r.status,
+				"reserved_qty": flt(r.reserved_qty),
+				"delivered_qty": flt(r.delivered_qty),
+				"outstanding_qty": flt(r.outstanding_qty),
+			}
+		)
+
+	groups = list(group_map.values())
+
+	# ── KPIs ────────────────────────────────────────────────────────────────
+	total_value = sum(flt(g["total_value"]) for g in groups)
+	oldest = None
+	for r in rows:
+		ts = str(r.reserved_on) if r.reserved_on else None
+		if ts and (oldest is None or ts < oldest):
+			oldest = ts
+
+	kpis = {
+		"open_sre_count": len(rows),
+		"item_count": len(groups),
+		"total_outstanding_value": total_value,
+		"oldest_reserved_on": oldest,
+	}
+
+	return {"kpis": kpis, "groups": groups}

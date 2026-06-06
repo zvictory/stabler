@@ -9,6 +9,7 @@ import { t } from "../../composables/i18n.js";
 import EmptyState from "../../components/EmptyState.vue";
 import DateInput from "../../components/DateInput.vue";
 import Select from "../../components/Select.vue";
+import PartyPaymentModal from "../../components/PartyPaymentModal.vue";
 
 const session = useSession();
 const { activeCompany, user } = storeToRefs(session);
@@ -27,6 +28,8 @@ const ledgerLoading = ref(false);
 const ledgerError = ref("");
 const ledgerFromDate = ref("");
 const ledgerToDate = ref("");
+
+const partyPayOpen = ref(false);
 
 const SUPPLIER_TYPES = ["Company", "Individual", "Partnership"];
 const supplierTypeOptions = computed(() =>
@@ -527,6 +530,13 @@ watch(activeCompany, () => {
 						>
 							<i class="ti ti-pencil me-1"></i>{{ t("Edit") }}
 						</button>
+						<button
+							type="button"
+							class="btn btn-sm btn-outline-success"
+							@click="partyPayOpen = true"
+						>
+							<i class="ti ti-cash me-1"></i>{{ t("Payment") }}
+						</button>
 						<div class="ms-auto text-end">
 							<div class="small text-secondary">{{ t("Balance") }}</div>
 							<div
@@ -979,4 +989,15 @@ watch(activeCompany, () => {
 			</div>
 		</div>
 	</template>
+
+	<!-- Party-level payment modal (Supplier) -->
+	<PartyPaymentModal
+		v-if="selected"
+		:open="partyPayOpen"
+		party-type="Supplier"
+		:party="selected.name"
+		:company="activeCompany"
+		@close="partyPayOpen = false"
+		@paid="partyPayOpen = false; loadLedger(selected)"
+	/>
 </template>

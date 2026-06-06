@@ -844,7 +844,13 @@ def create_payment_for_invoice(
 	doc.set_missing_values()
 	doc.insert(ignore_permissions=False)
 	if int(submit):
-		doc.submit()
+		try:
+			doc.submit()
+		except Exception:
+			# Roll back the just-inserted Draft so no orphan remains in the DB.
+			# The validation error is re-raised and surfaced as a toast in the UI.
+			frappe.db.rollback()
+			raise
 	return {"name": doc.name, "docstatus": doc.docstatus}
 
 
