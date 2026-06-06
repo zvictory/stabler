@@ -2008,6 +2008,7 @@ def reserved_stock_analysis(company: str):
 		  AND sre.docstatus = 1
 		  AND sre.status NOT IN ('Delivered', 'Cancelled')
 		  AND itm.is_sales_item = 1
+		  AND sre.warehouse = 'Tayyor mahsulot - A'
 		ORDER BY sre.warehouse, sre.item_code, sre.creation
 		""",
 		{"company": company},
