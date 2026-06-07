@@ -67,6 +67,118 @@ export function formatDateTime(value) {
 	return `${dd}.${mm}.${yyyy} ${HH.padStart(2, "0")}:${min.padStart(2, "0")}`;
 }
 
+// ---------------------------------------------------------------------------
+// Date-range helpers for period presets (Month-to-date, Last month, etc.)
+//
+// All helpers use local-calendar methods (getFullYear/getMonth/getDate) to
+// avoid the UTC-midnight shift that toISOString() can produce in UTC+N zones
+// (e.g. Uzbekistan UTC+5). String splitting, not Date parsing, per the rule above.
+// ---------------------------------------------------------------------------
+
+/** Today as ISO yyyy-mm-dd in the local timezone. */
+export function todayIso() {
+	const d = new Date();
+	const yyyy = d.getFullYear();
+	const mm = String(d.getMonth() + 1).padStart(2, "0");
+	const dd = String(d.getDate()).padStart(2, "0");
+	return `${yyyy}-${mm}-${dd}`;
+}
+
+/** First day of the current calendar year, ISO yyyy-mm-dd. */
+export function startOfYearIso() {
+	return `${new Date().getFullYear()}-01-01`;
+}
+
+/** First day of the current calendar month, ISO yyyy-mm-dd. */
+export function startOfMonthIso() {
+	const d = new Date();
+	const yyyy = d.getFullYear();
+	const mm = String(d.getMonth() + 1).padStart(2, "0");
+	return `${yyyy}-${mm}-01`;
+}
+
+/**
+ * Returns the last calendar day of the month that contains `isoDate` (yyyy-mm-dd).
+ * String-based: uses Date only for getDate() after moving to the next month's day 0.
+ * @param {string} isoDate  "yyyy-mm-dd"
+ * @returns {string} "yyyy-mm-dd"
+ */
+function endOfMonthIso(isoDate) {
+	const [yyyy, mm] = isoDate.split("-").map(Number);
+	// Day 0 of the next month = last day of current month
+	const last = new Date(yyyy, mm, 0); // month is 0-indexed in constructor, so mm = next month
+	const y = last.getFullYear();
+	const mo = String(last.getMonth() + 1).padStart(2, "0");
+	const d = String(last.getDate()).padStart(2, "0");
+	return `${y}-${mo}-${d}`;
+}
+
+/**
+ * Preset period keys and their { from, to } ISO date pairs.
+ * `from: ""` / `to: ""` means "no bound" (open-ended range).
+ *
+ * Keys:
+ *   "today"      – today only
+ *   "mtd"        – month-to-date (1st of month → today)
+ *   "this_month" – full current month (1st → last day)
+ *   "last_month" – previous calendar month (1st → last day)
+ *   "ytd"        – year-to-date (Jan 1 → today)
+ *   "this_year"  – full current year (Jan 1 → Dec 31)
+ *   "last_year"  – previous calendar year
+ *   "all"        – no date bounds
+ *   "custom"     – user-typed; returns { from: "", to: "" } as a no-op placeholder
+ *
+ * @param {string} key
+ * @returns {{ from: string, to: string }}
+ */
+export function presetRange(key) {
+	const today = todayIso();
+	const d = new Date();
+	const year = d.getFullYear();
+	const month = d.getMonth() + 1; // 1-12
+
+	switch (key) {
+		case "today":
+			return { from: today, to: today };
+
+		case "mtd": {
+			const mm = String(month).padStart(2, "0");
+			return { from: `${year}-${mm}-01`, to: today };
+		}
+
+		case "this_month": {
+			const mm = String(month).padStart(2, "0");
+			const from = `${year}-${mm}-01`;
+			return { from, to: endOfMonthIso(from) };
+		}
+
+		case "last_month": {
+			// Go back one month, handling January → previous December
+			const prevYear = month === 1 ? year - 1 : year;
+			const prevMonth = month === 1 ? 12 : month - 1;
+			const mm = String(prevMonth).padStart(2, "0");
+			const from = `${prevYear}-${mm}-01`;
+			return { from, to: endOfMonthIso(from) };
+		}
+
+		case "ytd":
+			return { from: `${year}-01-01`, to: today };
+
+		case "this_year":
+			return { from: `${year}-01-01`, to: `${year}-12-31` };
+
+		case "last_year":
+			return { from: `${year - 1}-01-01`, to: `${year - 1}-12-31` };
+
+		case "all":
+			return { from: "", to: "" };
+
+		case "custom":
+		default:
+			return { from: "", to: "" };
+	}
+}
+
 /**
  * Parse a user-typed dd.mm.yyyy string into an ISO yyyy-mm-dd string.
  * Returns "" if the input is incomplete or invalid.

@@ -5,17 +5,16 @@ import { useSession } from "../../stores/session.js";
 import { call, download } from "../../api/client.js";
 import { formatMoney } from "../../composables/money.js";
 import { t } from "../../composables/i18n.js";
+import { todayIso, startOfYearIso, presetRange } from "../../composables/date.js";
 import DateInput from "../../components/DateInput.vue";
+import PeriodSelect from "../../components/PeriodSelect.vue";
 import EmptyState from "../../components/EmptyState.vue";
 import Select from "../../components/Select.vue";
 
 const session = useSession();
 const { activeCompany, user } = storeToRefs(session);
 
-const today = new Date().toISOString().slice(0, 10);
-// "Show all time" default — start 10 years ago so cumulative reports cover full history.
-// Users can narrow with the date pickers; Yearly periodicity keeps column count sane.
-const allTimeStart = `${new Date().getFullYear() - 10}-01-01`;
+const today = todayIso();
 
 // Filter shapes vary per report; we send superset, Frappe ignores unknown keys.
 const REPORTS = [
@@ -46,8 +45,11 @@ const REPORTS = [
 ];
 
 const selectedName = ref(REPORTS[0].name);
-const fromDate = ref(allTimeStart);
+// Default to current year — "all time" going back to 2016 triggers FiscalYearError
+// for any Yearly report because ERPNext requires a Fiscal Year record for the range.
+const fromDate = ref(startOfYearIso());
 const toDate = ref(today);
+const periodKey = ref("ytd");
 
 const loading = ref(false);
 const exporting = ref("");
@@ -156,6 +158,14 @@ function indent(row) {
 	return depth ? { paddingLeft: `${depth * 1}rem` } : null;
 }
 
+function onPeriodChange({ from, to }) {
+	// "custom" sentinel → keep the existing DateInput values, don't overwrite.
+	if (periodKey.value === "custom") return;
+	fromDate.value = from;
+	toDate.value = to;
+	run();
+}
+
 onMounted(run);
 watch([activeCompany, selectedName], run);
 </script>
@@ -175,13 +185,24 @@ watch([activeCompany, selectedName], run);
 					/>
 				</div>
 				<div>
-					<label class="form-label small mb-1">{{ t("From") }}</label>
-					<DateInput v-model="fromDate" size="sm" />
+					<label class="form-label small mb-1">{{ t("Period") }}</label>
+					<PeriodSelect
+						v-model="periodKey"
+						size="sm"
+						:show-all="false"
+						@change="onPeriodChange"
+					/>
 				</div>
-				<div>
-					<label class="form-label small mb-1">{{ t("To") }}</label>
-					<DateInput v-model="toDate" size="sm" />
-				</div>
+				<template v-if="periodKey === 'custom'">
+					<div>
+						<label class="form-label small mb-1">{{ t("From") }}</label>
+						<DateInput v-model="fromDate" size="sm" />
+					</div>
+					<div>
+						<label class="form-label small mb-1">{{ t("To") }}</label>
+						<DateInput v-model="toDate" size="sm" />
+					</div>
+				</template>
 				<div class="ms-auto d-flex gap-2">
 					<button type="button" class="btn btn-sm btn-primary" @click="run" :disabled="loading">
 						<i class="ti ti-player-play me-1"></i>{{ t("Run") }}

@@ -117,59 +117,127 @@ def gl_entries(
 	account: str,
 	from_date: str | None = None,
 	to_date: str | None = None,
-	limit: int = 500,
+	limit: int = 100,
+	start: int = 0,
+	order: str = "desc",
 ):
-	"""GL Entries for a single account (most recent first) + closing balances.
+	"""GL Entries for a single account, paginated, with server-side running balance.
 
-	Returns both account-currency and base-currency entry amounts so the client
-	can compute a running balance in either dimension. Closing balance is
-	through `to_date` (default today)."""
+	Pagination: `start` is the 0-based row offset; `limit` is the page size
+	(clamped to 500). Callers accumulate pages client-side for scroll-to-load.
+
+	Running balance is computed via a window function over the full filtered set
+	(before LIMIT/OFFSET) so paged results are self-consistent regardless of offset.
+
+	Zero-movement rows (both debit and credit == 0) are excluded — they represent
+	internal accounting adjustments with no cash effect.
+
+	Returns:
+		entries      – list of dicts (includes running_balance, running_balance_base)
+		total_count  – COUNT of the full filtered set (for has_more detection)
+		has_more     – bool, whether rows exist beyond this page
+		opening_base / opening_account – balance before from_date (0 when no from_date)
+		as_of        – effective to_date used for closing balance
+	"""
 	_require_company(company)
 	if not account:
 		frappe.throw("Account is required.")
-	limit = max(1, min(2000, int(limit)))
-	conds = ["company = %(company)s", "account = %(account)s", "is_cancelled = 0"]
-	params: dict = {"company": company, "account": account, "limit": limit}
-	if from_date:
-		conds.append("posting_date >= %(from_date)s")
-		params["from_date"] = getdate(from_date)
-	if to_date:
-		conds.append("posting_date <= %(to_date)s")
-		params["to_date"] = getdate(to_date)
-	where = " AND ".join(conds)
-	rows = frappe.db.sql(
-		f"""
-		SELECT name, posting_date, voucher_type, voucher_no, against, remarks,
-		       party_type, party,
-		       debit, credit, debit_in_account_currency, credit_in_account_currency,
-		       account_currency
-		FROM `tabGL Entry`
-		WHERE {where}
-		ORDER BY posting_date DESC, creation DESC
-		LIMIT %(limit)s
-		""",
+	limit = max(1, min(500, int(limit)))
+	start = max(0, int(start))
+	order = "asc" if str(order).lower() == "asc" else "desc"
+
+	from_d = getdate(from_date) if from_date else None
+	to_d = getdate(to_date) if to_date else None
+
+	# Build WHERE for the filtered set (excludes zero-movement rows).
+	# The same conditions go into every query in this function.
+	base_conds = [
+		"company = %(company)s",
+		"account = %(account)s",
+		"is_cancelled = 0",
+		"(debit_in_account_currency != 0 OR credit_in_account_currency != 0)",
+	]
+	params: dict = {"company": company, "account": account}
+	if from_d:
+		base_conds.append("posting_date >= %(from_date)s")
+		params["from_date"] = from_d
+	if to_d:
+		base_conds.append("posting_date <= %(to_date)s")
+		params["to_date"] = to_d
+	where = " AND ".join(base_conds)
+
+	# Opening balance: sum of ALL movements strictly before from_date, in both
+	# currencies. Zero when no from_date (opening = "beginning of time").
+	opening_acc = 0.0
+	opening_base = 0.0
+	if from_d:
+		op = frappe.db.sql(
+			"""
+			SELECT
+				COALESCE(SUM(debit - credit), 0) AS base,
+				COALESCE(SUM(debit_in_account_currency - credit_in_account_currency), 0) AS acc
+			FROM `tabGL Entry`
+			WHERE company = %(company)s AND account = %(account)s
+			  AND is_cancelled = 0 AND posting_date < %(from_date)s
+			""",
+			{"company": company, "account": account, "from_date": from_d},
+			as_dict=True,
+		)
+		if op:
+			opening_base = flt(op[0]["base"])
+			opening_acc = flt(op[0]["acc"])
+
+	# Total count of filtered rows (for has_more).
+	count_row = frappe.db.sql(
+		f"SELECT COUNT(*) AS n FROM `tabGL Entry` WHERE {where}",
 		params,
 		as_dict=True,
 	)
-	as_of = to_date or today()
-	bal_row = frappe.db.sql(
-		"""
-		SELECT COALESCE(SUM(debit - credit), 0) AS base,
-		       COALESCE(SUM(debit_in_account_currency - credit_in_account_currency), 0) AS acc
-		FROM `tabGL Entry`
-		WHERE company = %(company)s AND account = %(account)s
-		  AND is_cancelled = 0 AND posting_date <= %(as_of)s
+	total_count = count_row[0]["n"] if count_row else 0
+
+	# Main query: compute running balance as a window function (SUM OVER ORDER BY)
+	# anchored to opening_base/opening_acc. The inner subquery covers the full
+	# filtered set so each row's running_balance is correct at any offset.
+	# The outer ORDER BY + LIMIT/OFFSET then selects the requested page.
+	# MariaDB 10.6+ supports SUM() OVER (ORDER BY ...).
+	dir_sql = "ASC" if order == "asc" else "DESC"
+	paged_params = {**params, "opening_acc": opening_acc, "opening_base": opening_base}
+	rows = frappe.db.sql(
+		f"""
+		SELECT *
+		FROM (
+			SELECT
+				name, posting_date, voucher_type, voucher_no, against, remarks,
+				party_type, party,
+				debit, credit,
+				debit_in_account_currency, credit_in_account_currency,
+				account_currency,
+				%(opening_acc)s + SUM(debit_in_account_currency - credit_in_account_currency)
+					OVER (ORDER BY posting_date ASC, creation ASC, name ASC)
+					AS running_balance,
+				%(opening_base)s + SUM(debit - credit)
+					OVER (ORDER BY posting_date ASC, creation ASC, name ASC)
+					AS running_balance_base
+			FROM `tabGL Entry`
+			WHERE {where}
+		) _windowed
+		ORDER BY posting_date {dir_sql}, creation {dir_sql}, name {dir_sql}
+		LIMIT %(limit)s OFFSET %(start)s
 		""",
-		{"company": company, "account": account, "as_of": as_of},
+		{**paged_params, "limit": limit, "start": start},
 		as_dict=True,
 	)
-	bal = bal_row[0] if bal_row else {"base": 0.0, "acc": 0.0}
+
+	as_of = to_d or today()
 	for r in rows:
 		r["posting_date"] = str(r["posting_date"]) if r["posting_date"] else ""
+
 	return {
 		"entries": rows,
-		"closing_base": flt(bal["base"]),
-		"closing_account": flt(bal["acc"]),
+		"total_count": total_count,
+		"has_more": (start + len(rows)) < total_count,
+		"opening_base": opening_base,
+		"opening_account": opening_acc,
 		"as_of": str(as_of),
 	}
 
