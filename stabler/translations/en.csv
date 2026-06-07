@@ -1,5 +1,5 @@
-source,target
 #,#
+(none),(none)
 0.00,0.00
 0–30,0–30
 1C Sync Log,1C Sync Log
@@ -17,7 +17,9 @@ Accounts,Accounts
 Action failed.,Action failed.
 Actions,Actions
 Active,Active
+Activities,Activities
 Actual,Actual
+Add,Add
 Add a customer,Add a customer
 Add a warehouse to start tracking stock locations.,Add a warehouse to start tracking stock locations.
 Add another item,Add another item
@@ -25,11 +27,14 @@ Add at least one item line.,Add at least one item line.
 Add at least one raw material line.,Add at least one raw material line.
 Add child warehouse,Add child warehouse
 Add customer,Add customer
+Add Decision,Add Decision
 Add item,Add item
+Add Lane,Add Lane
 Add line,Add line
 Add outlet,Add outlet
 Add row,Add row
 Add supplier,Add supplier
+Add Task,Add Task
 Add warehouse,Add warehouse
 Add your first customer to start sending quotes and invoices.,Add your first customer to start sending quotes and invoices.
 "Add your first employee to start tracking attendance, leave and payroll.","Add your first employee to start tracking attendance, leave and payroll."
@@ -52,6 +57,7 @@ All sales invoices for this company are fully paid.,All sales invoices for this 
 All statuses,All statuses
 All territories,All territories
 All three accounts are required.,All three accounts are required.
+All time,All time
 All types,All types
 Allocate against,Allocate against
 Allocated,Allocated
@@ -67,6 +73,7 @@ Amount must be positive.,Amount must be positive.
 Amount paid,Amount paid
 Amount received,Amount received
 Amount sent,Amount sent
+Animated,Animated
 Any,Any
 AP Aging,AP Aging
 Applied to,Applied to
@@ -80,6 +87,7 @@ Approx. at current valuation rate,Approx. at current valuation rate
 AR Aging,AR Aging
 ARCA,ARCA
 ARCA Payment Events,ARCA Payment Events
+Artifacts,Artifacts
 As of,As of
 Asl Belgisi,Asl Belgisi
 Asl Belgisi Code,Asl Belgisi Code
@@ -93,6 +101,7 @@ Attendance,Attendance
 Audited At,Audited At
 Available,Available
 Back,Back
+Badge,Badge
 Balance,Balance
 Balance (Account Currency),Balance (Account Currency)
 Balanced,Balanced
@@ -104,6 +113,7 @@ Bill / invoice number printed on supplier document,Bill / invoice number printed
 Bill date,Bill date
 Billed,Billed
 Bimonthly,Bimonthly
+Board,Board
 BOM,BOM
 BOMs,BOMs
 Brand,Brand
@@ -169,12 +179,14 @@ Close this Work Order? This finalizes it.,Close this Work Order? This finalizes 
 Closing,Closing
 Closing balance,Closing balance
 Closing in,Closing in
+Closure,Closure
 Code,Code
 Code does not match expected format,Code does not match expected format
 Code is required,Code is required
 Collapse,Collapse
 Collapse all,Collapse all
 Collapse all groups,Collapse all groups
+Color,Color
 Commission,Commission
 Commission %,Commission %
 Commission fee,Commission fee
@@ -189,6 +201,7 @@ Complete,Complete
 Completed,Completed
 Compliance,Compliance
 Components,Components
+Connector,Connector
 Consumed,Consumed
 Contact,Contact
 Contract,Contract
@@ -212,15 +225,20 @@ Create Invoice,Create Invoice
 Create outlets to start planning routes and visits.,Create outlets to start planning routes and visits.
 Create Plan,Create Plan
 Create Scheme,Create Scheme
+Create your first deal or adjust the search filters.,Create your first deal or adjust the search filters.
 Create your first item to start tracking stock and price lists.,Create your first item to start tracking stock and price lists.
+Create your first lead or adjust the search filters.,Create your first lead or adjust the search filters.
+Create your first process to model business workflows.,Create your first process to model business workflows.
 Created,Created
 Credit,Credit
 Credit Limit,Credit Limit
 Credit note for,Credit note for
 Credit notes:,Credit notes:
 Critical,Critical
+CRM,CRM
 CSV,CSV
 Currency,Currency
+Custom,Custom
 Customer,Customer
 Customer group,Customer group
 Customer is required.,Customer is required.
@@ -229,6 +247,8 @@ Customer name is required.,Customer name is required.
 Customers,Customers
 Daily,Daily
 Dashboard,Dashboard
+Dashed,Dashed
+Data,Data
 Date,Date
 Date of birth,Date of birth
 Date of birth is required.,Date of birth is required.
@@ -236,6 +256,9 @@ Date of joining,Date of joining
 Dates,Dates
 Day of Week,Day of Week
 Days,Days
+Deal Owner,Deal Owner
+Deal Value,Deal Value
+Deals,Deals
 Debit,Debit
 Deductions,Deductions
 Default,Default
@@ -251,6 +274,9 @@ Delete failed.,Delete failed.
 Delete invoice {name}?,Delete invoice {name}?
 Delete order {name}? This cannot be undone.,Delete order {name}? This cannot be undone.
 Delete supplier,Delete supplier
+Delete this deal?,Delete this deal?
+Delete this lead?,Delete this lead?
+Delete this process?,Delete this process?
 Deliv,Deliv
 Deliver,Deliver
 Delivered,Delivered
@@ -280,10 +306,13 @@ Due Date,Due Date
 Due date,Due date
 Duplicate sequence {0} on this route.,Duplicate sequence {0} on this route.
 Duration (ms),Duration (ms)
+"e.g. OK, Approved","e.g. OK, Approved"
 Earnings,Earnings
 Edit,Edit
 Edit customer,Edit customer
+Edit Deal,Edit Deal
 Edit field user,Edit field user
+Edit Lead,Edit Lead
 Edit OSA audit,Edit OSA audit
 Edit outlet,Edit outlet
 Edit photo report,Edit photo report
@@ -299,6 +328,7 @@ EHF Status,EHF Status
 EHF Submissions,EHF Submissions
 Email,Email
 Email and name are required.,Email and name are required.
+Email or user ID,Email or user ID
 Employee,Employee
 Employees,Employees
 Empty allowed list = user can access every company.,Empty allowed list = user can access every company.
@@ -306,10 +336,12 @@ Enabled,Enabled
 End,End
 End Date,End Date
 End Date must be on or after Start Date.,End Date must be on or after Start Date.
+End of ledger,End of ledger
 Enter amount and commission to see preview.,Enter amount and commission to see preview.
 Enter at least one return qty.,Enter at least one return qty.
 Enter cost and term to see the payment schedule.,Enter cost and term to see the payment schedule.
 Enter the quantity to return for each line. Leave 0 to exclude a line.,Enter the quantity to return for each line. Leave 0 to exclude a line.
+entries,entries
 entries. Narrow the date range to see older ones.,entries. Narrow the date range to see older ones.
 Entry,Entry
 Equipment,Equipment
@@ -320,6 +352,7 @@ Error,Error
 error(s),error(s)
 Estimated value,Estimated value
 EUR → UZS,EUR → UZS
+Events,Events
 Every route row needs an outlet.,Every route row needs an outlet.
 Excel (.xlsx),Excel (.xlsx)
 Exchange rate,Exchange rate
@@ -330,6 +363,7 @@ Expand,Expand
 Expand all,Expand all
 Expand all groups,Expand all groups
 Expected,Expected
+Expected Closure,Expected Closure
 Expected Facings,Expected Facings
 Expected facings is required on row {0}.,Expected facings is required on row {0}.
 Expense,Expense
@@ -355,6 +389,8 @@ Failed to create transfer.,Failed to create transfer.
 Failed to create warehouse.,Failed to create warehouse.
 Failed to create.,Failed to create.
 Failed to delete customer.,Failed to delete customer.
+Failed to delete deal.,Failed to delete deal.
+Failed to delete lead.,Failed to delete lead.
 Failed to delete supplier.,Failed to delete supplier.
 Failed to load accounts.,Failed to load accounts.
 Failed to load aging.,Failed to load aging.
@@ -367,11 +403,15 @@ Failed to load contracts.,Failed to load contracts.
 Failed to load customer.,Failed to load customer.
 Failed to load customers.,Failed to load customers.
 Failed to load dashboard.,Failed to load dashboard.
+Failed to load deal.,Failed to load deal.
+Failed to load deals.,Failed to load deals.
 Failed to load form options.,Failed to load form options.
 Failed to load invoice.,Failed to load invoice.
 Failed to load invoices.,Failed to load invoices.
 Failed to load items.,Failed to load items.
 Failed to load journal entries.,Failed to load journal entries.
+Failed to load lead.,Failed to load lead.
+Failed to load leads.,Failed to load leads.
 Failed to load ledger.,Failed to load ledger.
 Failed to load options.,Failed to load options.
 Failed to load OSA audit.,Failed to load OSA audit.
@@ -380,9 +420,12 @@ Failed to load payment defaults.,Failed to load payment defaults.
 Failed to load payment entries.,Failed to load payment entries.
 Failed to load photo report.,Failed to load photo report.
 Failed to load planogram.,Failed to load planogram.
+Failed to load process.,Failed to load process.
+Failed to load processes.,Failed to load processes.
 Failed to load promo plan.,Failed to load promo plan.
 Failed to load promo scheme.,Failed to load promo scheme.
 Failed to load quotations.,Failed to load quotations.
+Failed to load reserved stock data.,Failed to load reserved stock data.
 Failed to load sales order.,Failed to load sales order.
 Failed to load sales orders.,Failed to load sales orders.
 Failed to load stock entries.,Failed to load stock entries.
@@ -395,13 +438,17 @@ Failed to load van stock.,Failed to load van stock.
 Failed to load visit.,Failed to load visit.
 Failed to load warehouses.,Failed to load warehouses.
 Failed to load.,Failed to load.
+Failed to move deal.,Failed to move deal.
 Failed to record payment.,Failed to record payment.
 Failed to refresh claim.,Failed to refresh claim.
 Failed to run report.,Failed to run report.
 Failed to save customer.,Failed to save customer.
+Failed to save deal.,Failed to save deal.
+Failed to save lead.,Failed to save lead.
 Failed to save OSA audit.,Failed to save OSA audit.
 Failed to save photo report.,Failed to save photo report.
 Failed to save planogram.,Failed to save planogram.
+Failed to save process.,Failed to save process.
 Failed to save promo scheme.,Failed to save promo scheme.
 Failed to save stock entry.,Failed to save stock entry.
 Failed to save van stock.,Failed to save van stock.
@@ -421,6 +468,7 @@ Fill in the required fields before submitting.,Fill in the required fields befor
 Financed,Financed
 Finished good,Finished good
 Finished-goods warehouse,Finished-goods warehouse
+First Name,First Name
 First name,First name
 First name is required.,First name is required.
 First payment date,First payment date
@@ -434,6 +482,7 @@ From account,From account
 From warehouse,From warehouse
 From → To,From → To
 Full name,Full name
+Gateways,Gateways
 Gender,Gender
 Gender is required.,Gender is required.
 Generate and submit,Generate and submit
@@ -451,6 +500,7 @@ Group,Group
 "Group warehouse (can contain children, holds no stock itself)","Group warehouse (can contain children, holds no stock itself)"
 Half Day,Half Day
 Hello {name},Hello {name}
+Horizontal lanes (flow left→right),Horizontal lanes (flow left→right)
 Hours,Hours
 HR,HR
 In,In
@@ -473,6 +523,7 @@ Inventory,Inventory
 Invite user,Invite user
 Invoice,Invoice
 Invoice #,Invoice #
+Invoice number or customer…,Invoice number or customer…
 Invoices,Invoices
 Issue,Issue
 Issue credit note,Issue credit note
@@ -494,13 +545,22 @@ Item·WH lines,Item·WH lines
 Jami,Jami
 Jami muzqaymoq soni (dona),Jami muzqaymoq soni (dona)
 Jami summa,Jami summa
+Job Title,Job Title
 Journal Entries,Journal Entries
 Journal Entry,Journal Entry
 Journal Entry legs,Journal Entry legs
+Label,Label
+Lane,Lane
+Lanes,Lanes
 Language,Language
 Last login,Last login
+Last month,Last month
+Last Name,Last Name
 Last name,Last name
+Last year,Last year
 Latitude,Latitude
+Lead Owner,Lead Owner
+Leads,Leads
 Leave,Leave
 Leave all unchecked to use role-based access. Checking any replaces it with exactly these modules. Visibility only — backend permissions still apply.,Leave all unchecked to use role-based access. Checking any replaces it with exactly these modules. Visibility only — backend permissions still apply.
 Leave type,Leave type
@@ -512,6 +572,7 @@ Link to an existing Customer for receivables.,Link to an existing Customer for r
 Linked invoices,Linked invoices
 List rate,List rate
 Loaded,Loaded
+Loading more…,Loading more…
 Loading warehouses…,Loading warehouses…
 Loading…,Loading…
 Log out,Log out
@@ -540,11 +601,13 @@ Mobile Phone,Mobile Phone
 Mode,Mode
 Mode of payment,Mode of payment
 Model,Model
+Modified,Modified
 Module,Module
 Module access override,Module access override
 Modules,Modules
 Mon,Mon
 Money,Money
+Month to date,Month to date
 Monthly,Monthly
 Monthly installment,Monthly installment
 more,more
@@ -562,6 +625,7 @@ New bill,New bill
 New BOM,New BOM
 New Contract,New Contract
 New customer,New customer
+New Deal,New Deal
 New employee,New employee
 New entry,New entry
 New Equipment,New Equipment
@@ -570,6 +634,7 @@ New field user,New field user
 New item,New item
 New journal,New journal
 New journal entry,New journal entry
+New Lead,New Lead
 New leave request,New leave request
 New Murabaha Contract,New Murabaha Contract
 New OSA audit,New OSA audit
@@ -578,6 +643,7 @@ New payment,New payment
 New photo report,New photo report
 New Plan,New Plan
 New planogram,New planogram
+New Process,New Process
 New Promo Plan,New Promo Plan
 New Promo Scheme,New Promo Scheme
 New purchase bill,New purchase bill
@@ -609,6 +675,7 @@ No company selected,No company selected
 No customers,No customers
 No customers match that name,No customers match that name
 No data for the selected range,No data for the selected range
+No deals,No deals
 No deductions,No deductions
 No default Bank or Cash account configured for company {0}.,No default Bank or Cash account configured for company {0}.
 No earnings,No earnings
@@ -626,6 +693,8 @@ No items match,No items match
 No items with submitted active BOMs yet — create one first.,No items with submitted active BOMs yet — create one first.
 No items yet.,No items yet.
 No journal entries in this range,No journal entries in this range
+No lanes. Click + to add.,No lanes. Click + to add.
+No leads,No leads
 No leave requests,No leave requests
 No ledger entries found for the selected period.,No ledger entries found for the selected period.
 No lines yet.,No lines yet.
@@ -641,6 +710,7 @@ No outstanding balances,No outstanding balances
 No payments in this range,No payments in this range
 No photo reports yet,No photo reports yet
 No planograms yet,No planograms yet
+No processes,No processes
 No promo plans yet,No promo plans yet
 No promo schemes yet,No promo schemes yet
 No purchase orders in this range,No purchase orders in this range
@@ -687,6 +757,7 @@ On leave today,On leave today
 On-Shelf-Availability audits compare expected vs actual facings during visits.,On-Shelf-Availability audits compare expected vs actual facings during visits.
 One or more lines exceed available stock. Reduce qty or choose a different warehouse.,One or more lines exceed available stock. Reduce qty or choose a different warehouse.
 Only Approved claims can be settled. Current status: {0},Only Approved claims can be settled. Current status: {0}
+Only draft sales orders can be edited.,Only draft sales orders can be edited.
 Only submitted invoices can be returned.,Only submitted invoices can be returned.
 Only with balance,Only with balance
 Open,Open
@@ -701,6 +772,8 @@ Order,Order
 Order Date,Order Date
 Order date,Order date
 Orders,Orders
+Organization,Organization
+Orientation,Orientation
 Original qty,Original qty
 OSA,OSA
 OSA %,OSA %
@@ -725,6 +798,7 @@ Outlets,Outlets
 Outstanding,Outstanding
 Override qty must be greater than zero,Override qty must be greater than zero
 Overview,Overview
+Owner,Owner
 pack_key is required,pack_key is required
 Paid,Paid
 Paid amount,Paid amount
@@ -811,7 +885,12 @@ Present SKUs,Present SKUs
 Preview,Preview
 Price list,Price list
 Print,Print
+Probability,Probability
+Process,Process
+Process Name,Process Name
+Process not found: {0},Process not found: {0}
 Processed,Processed
+Processes,Processes
 Produce how many units? Leave blank for full balance.,Produce how many units? Leave blank for full balance.
 Produced,Produced
 Profile,Profile
@@ -825,6 +904,7 @@ Promo Plans,Promo Plans
 Promo Scheme name is required.,Promo Scheme name is required.
 Promo Schemes,Promo Schemes
 Promos,Promos
+Properties,Properties
 Purchase Invoice,Purchase Invoice
 Purchase Invoices,Purchase Invoices
 Purchase item,Purchase item
@@ -845,6 +925,7 @@ Raw material cost,Raw material cost
 Raw materials,Raw materials
 Re-fetch balances for all accounts,Re-fetch balances for all accounts
 Read,Read
+Read-only,Read-only
 Read-only view. Edit permissions in Frappe's Role Permission Manager.,Read-only view. Edit permissions in Frappe's Role Permission Manager.
 Reason,Reason
 Receipts,Receipts
@@ -882,6 +963,7 @@ Remark,Remark
 Remarks,Remarks
 Remittance,Remittance
 Remove,Remove
+Remove Lane,Remove Lane
 Remove row,Remove row
 Reorder at,Reorder at
 Reorder qty,Reorder qty
@@ -975,11 +1057,14 @@ Search customer name…,Search customer name…
 "Search customers, suppliers, items, invoices…","Search customers, suppliers, items, invoices…"
 Search customers…,Search customers…
 Search customer…,Search customer…
+Search deals…,Search deals…
 Search employees…,Search employees…
 Search item code or name…,Search item code or name…
 Search items…,Search items…
 Search item…,Search item…
+Search leads…,Search leads…
 Search outlets…,Search outlets…
+Search processes…,Search processes…
 Search supplier name…,Search supplier name…
 Search suppliers…,Search suppliers…
 Search supplier…,Search supplier…
@@ -989,6 +1074,7 @@ Search {type} name…,Search {type} name…
 Searching…,Searching…
 Select a company first.,Select a company first.
 Select a customer to view transactions,Select a customer to view transactions
+Select a shape or connector to edit its properties.,Select a shape or connector to edit its properties.
 Select a supplier to view transactions,Select a supplier to view transactions
 Select account…,Select account…
 Select an account…,Select an account…
@@ -1009,20 +1095,26 @@ Serial No,Serial No
 Set Reports-To on employees to build the positions hierarchy.,Set Reports-To on employees to build the positions hierarchy.
 Settle,Settle
 Settlement failed.,Settlement failed.
+Shape,Shape
+Shapes,Shapes
 Shelf,Shelf
 Shelf Position,Shelf Position
 Show discounts,Show discounts
+Showing,Showing
 Showing the newest,Showing the newest
 Skip Reason,Skip Reason
 Skip reason is required when status is Skipped.,Skip reason is required when status is Skipped.
 Skipped,Skipped
 Slip,Slip
 Snapshots are generated by the daily ROI task for Active promo plans.,Snapshots are generated by the daily ROI task for Active promo plans.
+SO number or customer…,SO number or customer…
 So'z bilan:,So'z bilan:
 SoliqOnline UUID,SoliqOnline UUID
 Some lines could not be reserved,Some lines could not be reserved
 Something went wrong,Something went wrong
 Soni (korobka),Soni (korobka)
+source,target
+Source,Source
 Source warehouse,Source warehouse
 SRE module unavailable: {0},SRE module unavailable: {0}
 SREs,SREs
@@ -1073,6 +1165,8 @@ Supplier name is required.,Supplier name is required.
 Suppliers,Suppliers
 Suspended,Suspended
 Swap accounts,Swap accounts
+Table,Table
+Task,Task
 Tax ID,Tax ID
 Taxes,Taxes
 Term (months),Term (months)
@@ -1081,6 +1175,8 @@ Terms:,Terms:
 Territory,Territory
 The Compliance module is disabled for this company.,The Compliance module is disabled for this company.
 This cannot be undone.,This cannot be undone.
+This month,This month
+This year,This year
 Threshold,Threshold
 Threshold Qty,Threshold Qty
 Thu,Thu
@@ -1088,6 +1184,7 @@ TIN,TIN
 To,To
 To account,To account
 To warehouse,To warehouse
+Today,Today
 Total,Total
 Total (cost + markup),Total (cost + markup)
 Total / Present / OSA % are computed server-side.,Total / Present / OSA % are computed server-side.
@@ -1101,6 +1198,7 @@ Total SKUs,Total SKUs
 Total value,Total value
 Total:,Total:
 Trade Marketing,Trade Marketing
+Transaction,Transaction
 Transaction Id,Transaction Id
 Transfer,Transfer
 Transfer detail,Transfer detail
@@ -1123,6 +1221,7 @@ Unknown vertical pack: {0},Unknown vertical pack: {0}
 Unknown warehouse: {0},Unknown warehouse: {0}
 Unpaid,Unpaid
 Unsupported language: {0},Unsupported language: {0}
+Untitled Process,Untitled Process
 UOM,UOM
 Uplift Value,Uplift Value
 Upload failed,Upload failed
@@ -1149,6 +1248,7 @@ Value Δ,Value Δ
 Van Stock,Van Stock
 Van Stock name is required.,Van Stock name is required.
 Van stock tracks what each field user has loaded for the day.,Van stock tracks what each field user has loaded for the day.
+Vertical lanes (flow top→bottom),Vertical lanes (flow top→bottom)
 View all,View all
 View attachment,View attachment
 View ledger,View ledger
@@ -1188,6 +1288,7 @@ Work Order,Work Order
 Work Orders,Work Orders
 Working,Working
 Write,Write
+Year to date,Year to date
 Yes,Yes
 You need administrator access to view this page.,You need administrator access to view this page.
 "Your books are empty. Get started by adding a customer, recording your first sale, or logging an opening balance.","Your books are empty. Get started by adding a customer, recording your first sale, or logging an opening balance."

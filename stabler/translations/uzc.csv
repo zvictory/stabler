@@ -1,5 +1,5 @@
-source,target
 #,#
+(none),(йўқ)
 0.00,0.00
 0–30,0–30
 1C Sync Log,1C Синхрон журнали
@@ -17,7 +17,9 @@ Accounts,Ҳисоблар
 Action failed.,Амал бажарилмади.
 Actions,Амаллар
 Active,Фаол
+Activities,Фаолиятлар
 Actual,Ҳақиқий
+Add,Қўшиш
 Add a customer,Мижоз қўшиш
 Add a warehouse to start tracking stock locations.,Аларни кузатишни бошлаш учун омбор қўшиш.
 Add another item,Бошқа товар қўшиш
@@ -25,11 +27,14 @@ Add at least one item line.,Камида бир товар қатори қўши
 Add at least one raw material line.,Камида битта хом ашё қаторини қўшинг.
 Add child warehouse,Қўш омбор қўшиш
 Add customer,Мижоз қўшиш
+Add Decision,Қарор қўшиш
 Add item,Товар қўшиш
+Add Lane,Йўлак қўшиш
 Add line,Қатор қўшиш
 Add outlet,Сотув жойи қўшиш
 Add row,Қатор қўшиш
 Add supplier,Таъминотчи қўшиш
+Add Task,Вазифа қўшиш
 Add warehouse,Омбор қўшиш
 Add your first customer to start sending quotes and invoices.,"Биринчи мижозни қўшиб, чалон ва ҳисоб-фактураларни юбора бошлаш."
 Add your first employee to start tracking attendance, leave and payroll.
@@ -53,6 +58,7 @@ All sales invoices for this company are fully paid.,Бу компания учу
 All statuses,Барча ҳолатлар
 All territories,Барча ҳудудлар
 All three accounts are required.,Учта ҳисоб мажбурий.
+All time,
 All types,Барча турлари
 Allocate against,Қарши ажратиш
 Allocated,Ажратилган
@@ -68,6 +74,7 @@ Amount must be positive.,Сумма мусбат бўлиши керак.
 Amount paid,Тўланган сумма
 Amount received,Қабул қилинган сумма
 Amount sent,Юборилган сумма
+Animated,Анимацияли
 Any,Ҳар қандай
 AP Aging,Қарзларни уйта қўйиш (Supplier)
 Applied to,Қўлланилди
@@ -81,6 +88,7 @@ Approx. at current valuation rate,"Тах., жорий таннархида"
 AR Aging,Қарзларни уйта қўйиш (Customer)
 ARCA,ARCA
 ARCA Payment Events,ARCA Тўлов воқеалари
+Artifacts,Артефактлар
 As of,Мавжуди
 Asl Belgisi,Асл Белгиси
 Asl Belgisi Code,Аслий белги коди
@@ -95,6 +103,7 @@ Audited At,Текширилган
 Available,Мавжуд
 Back,Орқага
 Back to dashboard,Бошқарувга қайтиш
+Badge,Белги
 Balance,Баланс
 Balance (Account Currency),Баланс (Ҳисоб валютаси)
 Balanced,Баланс муштаси
@@ -106,6 +115,7 @@ Bill / invoice number printed on supplier document,Сатувчи хужжати
 Bill date,Ҳисоб саны
 Billed,Ҳисоб оқилди
 Bimonthly,Икки ҳафтада бир
+Board,Доска
 BOM,Спецификация
 BOMs,Спецификациялар
 Brand,Брэнд
@@ -171,12 +181,14 @@ Close this Work Order? This finalizes it.,Бу буюртмани ёпасизм
 Closing,Ёпилмокда
 Closing balance,Ёпилиш баланси
 Closing in,Қўйида ёпилади
+Closure,
 Code,Код
 Code does not match expected format,Код кутилган форматга мос келмайди
 Code is required,Код талаб қилинади
 Collapse,Ёпиш
 Collapse all,Бардавамга ёпиш
 Collapse all groups,Барча гурўхларни ёпиш
+Color,Ранг
 Commission,Комиссия
 Commission %,Комиссия %
 Commission fee,Комиссия миқдори
@@ -191,6 +203,7 @@ Complete,Тугалланди
 Completed,Тугалланди
 Compliance,Қўйидаги талабни ҳам қўллаш
 Components,Таркибий қисмлар
+Connector,Боғловчи
 Consumed,Ишлатилди
 Contact,Алоқа
 Contract,Шартнома
@@ -214,15 +227,20 @@ Create Invoice,Ҳисобот яратиш
 Create outlets to start planning routes and visits.,Маршрутлар ва сўзишмаларни режалаштириш учун сотув ўринларини яратинг.
 Create Plan,Режа яратиш
 Create Scheme,Схема яратиш
+Create your first deal or adjust the search filters.,Биринчи битимни яратинг ва филтрларни Ӯзгартиринг.
 Create your first item to start tracking stock and price lists.,Складни ва нарх рўйхатларини кузатиш учун биринчи товарни яратинг.
+Create your first lead or adjust the search filters.,Биринчи лидни яратинг ва филтрларни Ӯзгартиринг.
+Create your first process to model business workflows.,Бизнес жараёнларни моделлаштириш учун биринчи жараёнингизни яратинг.
 Created,Яратилган
 Credit,Кредит
 Credit Limit,Кредит лимити
 Credit note for,Қўйма нотаси
 Credit notes:,Кредит нотасалари:
 Critical,Муҳим
+CRM,CRM
 CSV,CSV
 Currency,Валюта
+Custom,
 Customer,Хариди
 Customer group,Харидиларнинг гуруҳи
 Customer is required.,Харидор мажбурий.
@@ -231,6 +249,8 @@ Customer name is required.,Харидининг номи мажбур.
 Customers,Мижозлар
 Daily,Кунлик
 Dashboard,Бошқарув панели
+Dashed,Нуқта-чизиқли
+Data,Маълумотлар
 Date,Сана
 Date of birth,Туғилган сана
 Date of birth is required.,Туғилган санани киритинг.
@@ -238,6 +258,9 @@ Date of joining,Ишга қабул санаси
 Dates,Саналар
 Day of Week,Ҳафтаннинг кун номи
 Days,Кун
+Deal Owner,Шартнома эгаси
+Deal Value,Шартнома суммаси
+Deals,Битимлар
 Debit,Дебет
 Deductions,Ушланмалар
 Default,Асосий
@@ -253,6 +276,9 @@ Delete failed.,Ўчириш хатоси.
 Delete invoice {name}?,
 Delete order {name}? This cannot be undone.,
 Delete supplier,Етказувчини ўчириш
+Delete this deal?,Ушбу битимни Ӯчирилсинми?
+Delete this lead?,Ушбу лидни Ӯчирилсинми?
+Delete this process?,Бу жараённи ўчиришни хоҳлайсизми?
 Deliv,Йетк.
 Deliver,Етказиш
 Delivered,Етказилган
@@ -282,10 +308,13 @@ Due Date,Мўлжалланган сана
 Due date,Мўлжалланган сана
 Duplicate sequence {0} on this route.,Бу маршрутда {0} пайтов
 Duration (ms),Давомийлик (миллисекунд)
+"e.g. OK, Approved","мас. Ҳа, Тасдиқланди"
 Earnings,Ҳисобланганлар
 Edit,Таҳриф
 Edit customer,Мижозни таҳриф
+Edit Deal,Битимни таҳрирлаш
 Edit field user,Майдон фойдаланувчисини таҳриф
+Edit Lead,Лидни таҳрирлаш
 Edit OSA audit,OSA аудитини таҳриф
 Edit outlet,Киймасни таҳриф
 Edit photo report,Сурат ҳисобатини таҳриф
@@ -301,6 +330,7 @@ EHF Status,EHF ҳолати
 EHF Submissions,EHF топширилишлари
 Email,Электрон почта
 Email and name are required.,Электрон почта ва ном кераклиларидан.
+Email or user ID,Email ва фойдаланувчи ID
 Employee,Ходим
 Employees,Ходимлар
 Empty allowed list = user can access every company.,Бўш рухсатлар рўйхати = фойдаланувчи ҳар бир компанияни кира оласи.
@@ -308,10 +338,12 @@ Enabled,Ёқилган
 End,Охири
 End Date,Охирги сана
 End Date must be on or after Start Date.,Охирги сана дастлабки сана орасида ё кейин бўлиши керак.
+End of ledger,
 Enter amount and commission to see preview.,Кўриб чиқиш учун сумма ва комиссияни киритинг.
 Enter at least one return qty.,Камида бир қайтариш миқдорини киритинг.
 Enter cost and term to see the payment schedule.,Тўлов жадвалини кўриш учун таннарх ва муддатни киритинг.
 Enter the quantity to return for each line. Leave 0 to exclude a line.,Ҳар бир сатр учун қайтарилиши керак бўлган миқдорни киритинг. Сатрни чиқариб юбориш учун 0 қўйинг.
+entries,
 entries. Narrow the date range to see older ones.,ёзувлар. Қўски саналарни кўриш учун саналар оралиғини торайтиринг.
 Entry,
 Equipment,Ускуна
@@ -322,6 +354,7 @@ Error,Хато
 error(s),хато(лар)
 Estimated value,Баҳоланган қиймат
 EUR → UZS,EUR → сўм
+Events,Ходисалар
 Every route row needs an outlet.,Ҳар бир маршрут сатри киймасни сўрайди.
 Excel (.xlsx),Excel (.xlsx)
 Exchange rate,Алмашта нарх
@@ -332,6 +365,7 @@ Expand,Кенгайтиринг
 Expand all,Ҳамма нарсани кенгайтиринг
 Expand all groups,Ҳар бир гуруҳни кенгайтиринг
 Expected,Кутилаётган
+Expected Closure,Режалаштирилган япилиш
 Expected Facings,Кутилаётган берувчилик
 Expected facings is required on row {0}.,Кутилаётган берувчилик {0} сатрда қўлланилиши керак.
 Expense,Харжи
@@ -357,6 +391,8 @@ Failed to create transfer.,Ўтказма яратиб бўлмади.
 Failed to create warehouse.,Омборни яратиб бўла олмади.
 Failed to create.,Яратиб бўла олмади.
 Failed to delete customer.,Мижози ўчириб бўла олмади.
+Failed to delete deal.,Битимни Ӯчириб бўлмади.
+Failed to delete lead.,Лидни Ӯчириб бўлмади.
 Failed to delete supplier.,Таъминотчини ўчириб бўла олмади.
 Failed to load accounts.,Ҳисобларни юклаб бўла олмади.
 Failed to load aging.,Сақланган маълумотларни юклаб бўла олмади.
@@ -369,11 +405,15 @@ Failed to load contracts.,Шартномаларни юклашда хатоли
 Failed to load customer.,Мижози юклаб бўла олмади.
 Failed to load customers.,Мижозларни юклаб бўла олмади.
 Failed to load dashboard.,Панелни юклаб бўла олмади.
+Failed to load deal.,Битимни юклаб бўлмади.
+Failed to load deals.,Битимларни юклаб бўлмади.
 Failed to load form options.,Шакл параметрларини юклаб бўла олмади.
 Failed to load invoice.,Счет-фактураси юклаб бўла олмади.
 Failed to load invoices.,Счет-фактураларни юклаб бўла олмади.
 Failed to load items.,Товарларни юклаб бўла олмади.
 Failed to load journal entries.,Журнал ёзувларини юклаб бўла олмади.
+Failed to load lead.,Лидни юклаб бўлмади.
+Failed to load leads.,Лидларни юклаб бўлмади.
 Failed to load ledger.,Реестрни юклаб бўла олмади.
 Failed to load options.,Параметрларни юклаб бўла олмади.
 Failed to load OSA audit.,OSA аудитини юклаб бўла олмади.
@@ -382,9 +422,12 @@ Failed to load payment defaults.,Тўлов стандартларини юкл�
 Failed to load payment entries.,Тўлов ёзувларини юклаб бўла олмади.
 Failed to load photo report.,Сурат ҳисоботини юклаб бўла олмади.
 Failed to load planogram.,Планограммани юклаб бўла олмади.
+Failed to load process.,Жараённи юклаб бўлмади.
+Failed to load processes.,Жараёнларни юклаб бўлмади.
 Failed to load promo plan.,Рекламалаш режасини юклаб бўла олмади.
 Failed to load promo scheme.,Рекламалаш схемасини юклаб бўла олмади.
 Failed to load quotations.,Таклифномаларни юклаб бўла олмади.
+Failed to load reserved stock data.,
 Failed to load sales order.,
 Failed to load sales orders.,Сотув буйртмаларини юклаб бўла олмади.
 Failed to load stock entries.,Қоймонаси ёзувларини юклаб бўла олмади.
@@ -397,13 +440,17 @@ Failed to load van stock.,Ўтувчи қоймонасини юклаб бўл�
 Failed to load visit.,Сўроғини юклаб бўла олмади.
 Failed to load warehouses.,Омборларни юклаб бўла олмади.
 Failed to load.,Юклаб бўла олмади.
+Failed to move deal.,Битимни кўчириш муваффақиятсиз бўлди.
 Failed to record payment.,Тўловни ёзиб бўла олмади.
 Failed to refresh claim.,Талабни янгилаб бўла олмади.
 Failed to run report.,Ҳисоботни ишга тушириб бўла олмади.
 Failed to save customer.,Мижози сақлаб бўла олмади.
+Failed to save deal.,Битимни сақлаб бўлмади.
+Failed to save lead.,Лидни сақлаб бўлмади.
 Failed to save OSA audit.,OSA аудитини сақлаб бўла олмади.
 Failed to save photo report.,Сурат ҳисоботини сақлаб бўла олмади.
 Failed to save planogram.,Планограммани сақлаб бўла олмади.
+Failed to save process.,Жараённи сақлаб бўлмади.
 Failed to save promo scheme.,Рекламалаш схемасини сақлаб бўла олмади.
 Failed to save stock entry.,Қўй ҳарақатини сақлаш қутулмади.
 Failed to save van stock.,Машина қўйси сақлаш қутулмади.
@@ -423,6 +470,7 @@ Fill in the required fields before submitting.,Тасдиқлаш олдин з�
 Financed,Молиялаштирилган
 Finished good,Тайёр маҳсулот
 Finished-goods warehouse,Тайёр маҳсулот омбори
+First Name,Исм
 First name,Исм
 First name is required.,Исмни киритинг.
 First payment date,Биринчи тўлов санаси
@@ -436,6 +484,7 @@ From account,Ҳисобдан
 From warehouse,Омборидан
 From → To,Дан → Гача
 Full name,Тўлиқ исм
+Gateways,Шлюзлар
 Gender,Жинс
 Gender is required.,Жинсни танланг.
 Generate and submit,Яратиш ва тасдиқлаш
@@ -453,6 +502,7 @@ Group,Гуруҳ
 "Group warehouse (can contain children, holds no stock itself)","Гуруҳ омбори (болаларни сақлаши мумкин, ўзи қўй сақламайди)"
 Half Day,Ярим кун
 Hello {name},Салом {name}
+Horizontal lanes (flow left→right),Горизонтал йўлаклар (оқим чап→ўнг)
 Hours,Соат
 HR,Инсон Ресурслари
 In,Кириш
@@ -475,6 +525,7 @@ Inventory,Омбор
 Invite user,Фойдаланувчини чакириқ қилиш
 Invoice,Ҳисоб варақаси
 Invoice #,Ҳисоб варақаси #
+Invoice number or customer…,
 Invoices,Ҳисоб варақалари
 Issue,Мушаммас
 Issue credit note,Кредит қайд қилиш
@@ -496,13 +547,22 @@ Item·WH lines,Товар·Омбор
 Jami,Жами
 Jami muzqaymoq soni (dona),Жами музқаймоқ (дона)
 Jami summa,Жами сумма
+Job Title,Лавозим
 Journal Entries,Журнал ёзувлари
 Journal Entry,Журнал ёзуви
 Journal Entry legs,Журнал ёзув қаторлари
+Label,Ном
+Lane,Йўлак
+Lanes,Йўлаклар
 Language,Тил
 Last login,Сўнги кириш
+Last month,
+Last Name,Фамилия
 Last name,Фамилия
+Last year,
 Latitude,Географик кеңлик
+Lead Owner,Лид эгаси
+Leads,Лидлар
 Leave,Таътил
 Leave all unchecked to use role-based access. Checking any replaces it with exactly these modules. Visibility only — backend permissions still apply.,Ролга асосланган қўллаш учун бархасини белгилабнатинг. Ҳарбир белгилаш уни аниқ ушбу модуллар билан алмаштиради. Фақат кўриниш — орқа сўнда рухсатлар амалга асос.
 Leave type,Таътил тури
@@ -514,6 +574,7 @@ Link to an existing Customer for receivables.,Дебиторлик учун ма
 Linked invoices,Боғланган счетлар
 List rate,Рўйхат нарх
 Loaded,Юклангани
+Loading more…,
 Loading warehouses…,Омборлар юклаяпти…
 Loading…,Юкланмоқда…
 Log out,Чиқиш
@@ -542,11 +603,13 @@ Mobile Phone,Мобил телефон
 Mode,Режим
 Mode of payment,Тўлов усули
 Model,Модель
+Modified,
 Module,Модул
 Module access override,Модул қўллаш ўтказиш
 Modules,Модуллар
 Mon,Ду
 Money,Пул
+Month to date,
 Monthly,Ойлик
 Monthly installment,Ойлик тўлов
 more,яна
@@ -564,6 +627,7 @@ New bill,Янги қарз
 New BOM,Янги спецификация
 New Contract,Янги шартнома
 New customer,Янги мижоз
+New Deal,Янги битим
 New employee,Янги ходим
 New entry,Янги ёзув
 New Equipment,Янги ускуна
@@ -572,6 +636,7 @@ New field user,Янги сахра фойдаланувчи
 New item,Янги товар
 New journal,Янги ёзув
 New journal entry,Янги журнал ёзув
+New Lead,Янги лид
 New leave request,Янги ариза
 New Murabaha Contract,Янги Муробаҳа шартномаси
 New OSA audit,Янги OSA ревизияси
@@ -580,6 +645,7 @@ New payment,Янги тўлов
 New photo report,Янги фото ҳисобот
 New Plan,Янги режа
 New planogram,Янги планограмма
+New Process,Янги жараён
 New Promo Plan,Янги ҳамёнч режаси
 New Promo Scheme,Янги ҳамёнч схемаси
 New purchase bill,Янги қарз счёти
@@ -612,6 +678,7 @@ No customers,Мижозлар йўқ
 No customers match that name,Шу номга мос мижозлар йўқ
 No data,Маълумот йўқ
 No data for the selected range,Танланган диапазон учун маълумот йўқ
+No deals,Битимлар йўқ
 No deductions,Ушланмалар йўқ
 No default Bank or Cash account configured for company {0}.,Компания {0} учун асосий Банк ёки Касса ҳисобчики мўлжаланмаган.
 No earnings,Ҳисобланганлар йўқ
@@ -629,6 +696,8 @@ No items match,Товарлар мос келмади
 No items with submitted active BOMs yet — create one first.,Тасдиқланган фаол спецификацияли товарлар йўқ — аввал яратинг.
 No items yet.,Ҳалиғача товарлар йўқ.
 No journal entries in this range,Бу диапазонда журнал ёзувлари йўқ
+No lanes. Click + to add.,Йўлаклар йўқ. Қўшиш учун + босинг.
+No leads,Лидлар йўқ
 No leave requests,Таътил аризалари йўқ
 No ledger entries found for the selected period.,Танланган давр учун книга ёзувлари топилмади.
 No lines yet.,Ҳалиғача сатрлар йўқ.
@@ -644,6 +713,7 @@ No outstanding balances,Туривчи қарзлар йўқ
 No payments in this range,Бу диапазонда тўловлар йўқ
 No photo reports yet,Ҳали суратлар ҳақида ҳисоб йўқ
 No planograms yet,Ҳали планограмма йўқ
+No processes,Жараёнлар йўқ
 No promo plans yet,Ҳали рекламалаш режалари йўқ
 No promo schemes yet,Ҳали рекламалаш схемалари йўқ
 No purchase orders in this range,Бу диапазонда сотиб олиш буюртмалари йўқ
@@ -690,6 +760,7 @@ On leave today,Бугун таътилда
 On-Shelf-Availability audits compare expected vs actual facings during visits.,Ўринда сотувга ҳозирлик аудитлари қариндашликлар давомида кутилган ва ҳақиқий ҷойлашув ўрнини солиштиради.
 One or more lines exceed available stock. Reduce qty or choose a different warehouse.,Бир ёки бирдан ортиқ қаторлар мавжуд бўлган қорни ошиб кетди. Миқдорини азайтинг ёки бошқа омбани танланг.
 Only Approved claims can be settled. Current status: {0},Фақат тасдиқланган даъвалар ҳал этилиши мумкин. Ҳозирги ҳолат: {0}
+Only draft sales orders can be edited.,
 Only submitted invoices can be returned.,Фақат тасдиқланган қўллашмалар қайтарилиши мумкин.
 Only with balance,Фақат баланс билан
 Open,Очиқ
@@ -704,6 +775,8 @@ Order,
 Order Date,Буюртма санаси
 Order date,Буюртма санаси
 Orders,Буюртмалар
+Organization,Ташкилот
+Orientation,Йўналиш
 Original qty,Асосий миқдори
 OSA,Ўринда сотувга ҳозирлик
 OSA %,Ўринда сотувга ҳозирлик %
@@ -728,6 +801,7 @@ Outlets,Чўнтаклар
 Outstanding,Ишдан кетган
 Override qty must be greater than zero,Қўллаш миқдори нолдан катта бўлиши керак
 Overview,Умумий кўриниш
+Owner,
 pack_key is required,pack_key керак
 Page not found,Саҳифа топилмади
 Paid,Тўланган
@@ -815,7 +889,12 @@ Present SKUs,Мавжуд АСК-лар
 Preview,Кўриб чиқиш
 Price list,Нарх рўйхати
 Print,Босиб чиқариш
+Probability,Еҳтимоллик
+Process,Жараён
+Process Name,Жараён номи
+Process not found: {0},
 Processed,Ишланган
+Processes,Жараёнлар
 Produce how many units? Leave blank for full balance.,Неча дона ишлаб чиқариш керак? Тўлиқ қолдиқ учун бўш қолдиринг.
 Produced,Ишлаб чиқарилган
 Profile,Профил
@@ -829,6 +908,7 @@ Promo Plans,Акция режалари
 Promo Scheme name is required.,Акция схемаси номи керак.
 Promo Schemes,Акция схемалари
 Promos,Акциялар
+Properties,Хусусиятлар
 Purchase Invoice,Сотиб олиш ҳисоб-фактурасы
 Purchase Invoices,Харид ҳисоб-фактуралари
 Purchase item,Товарни сотиб олиш
@@ -849,6 +929,7 @@ Raw material cost,Хом ашё харажати
 Raw materials,Хом ашё
 Re-fetch balances for all accounts,Барча ҳисобларнинг қолдиқларини қайта олиш
 Read,Ўқиш
+Read-only,Фақат ўқиш
 Read-only view. Edit permissions in Frappe's Role Permission Manager.,Ўқишга ихтисос қилинган кўринди. Frappe-нинг ролик рухсатнома бошқармасида рухсатномаларни таҳрир қилинг.
 Reason,Сабаб
 Receipts,Квитанциялар
@@ -886,6 +967,7 @@ Remark,Изоҳ
 Remarks,Изоҳлар
 Remittance,Пул ўтказма
 Remove,Ўчириш
+Remove Lane,Йўлакни ўчириш
 Remove row,Қаторни ўчириш
 Reorder at,Қайта сўраш
 Reorder qty,Қайта сўраш миқдори
@@ -979,11 +1061,14 @@ Search customer name…,Муштери номини қидириш…
 "Search customers, suppliers, items, invoices…","Муштериларни, етказиб берувчиларни, товарларни, ҳисобномаларни қидириш…"
 Search customers…,Харидорларни қидириш…
 Search customer…,Муштериро қидириш…
+Search deals…,Битимларни қидириш…
 Search employees…,Ходимларни қидириш…
 Search item code or name…,Товар кодини ёки номини қидириш…
 Search items…,Товарларни қидириш…
 Search item…,Товарро қидириш…
+Search leads…,Лидларни қидириш…
 Search outlets…,Сотув ўйларини қидириш…
+Search processes…,Жараёнларни қидириш…
 Search supplier name…,Етказиб берувчи номини қидириш…
 Search suppliers…,Таъминотчиларни қидириш…
 Search supplier…,Етказиб берувчиро қидириш…
@@ -993,6 +1078,7 @@ Search {type} name…,{type} номини қидириш…
 Searching…,Қидирилмоқда…
 Select a company first.,Аввал компанияни танланг.
 Select a customer to view transactions,Транзакцияларни кўриш учун мижозни танланг
+Select a shape or connector to edit its properties.,Хусусиятларни таҳрирлаш учун шакл ёки боғловчини танланг.
 Select a supplier to view transactions,Транзакцияларни кўриш учун таъминотчини танланг
 Select account…,Ҳисоб танланг…
 Select an account…,Ҳисобни танланг…
@@ -1013,20 +1099,26 @@ Serial No,Сериялы рақам
 Set Reports-To on employees to build the positions hierarchy.,"Лавозимлар иерархиясини тузиш учун ходимларга ""Ҳисоб берувчи""ни ўрнатинг."
 Settle,Қарзаро қилиш
 Settlement failed.,Қарзаро қилиш бажарилмади.
+Shape,Шакл
+Shapes,Шакллар
 Shelf,Жами
 Shelf Position,Жамидаги ўрни
 Show discounts,Чегирмаларни кўрсатиш
+Showing,Көрсатилмоқда
 Showing the newest,Энг янги кўрсатилмоқда
 Skip Reason,Сабабини қолдириш
 Skip reason is required when status is Skipped.,"Ҳолат ""Қолдирилган"" бўлганда сабабини қолдириш талаб қилинади."
 Skipped,Қолдирилган
 Slip,Ҳисоб варақаси
 Snapshots are generated by the daily ROI task for Active promo plans.,Суратлар фаол рекламалаш режалари учун кунлик ROI вазифаси орқали яратилади.
+SO number or customer…,
 So'z bilan:,Сўз билан:
 SoliqOnline UUID,SoliqOnline UUID
 Some lines could not be reserved,Айрим сатрларни зарарасини олиб кўйиб бўлмади
 Something went wrong,Хатолик юз берди
 Soni (korobka),Сони (коробка)
+source,target
+Source,Манба
 Source warehouse,Манба омбор
 SRE module unavailable: {0},SRE модули ишламайди: {0}
 SREs,SRE
@@ -1077,6 +1169,8 @@ Supplier name is required.,Таъминотчи номи керак.
 Suppliers,Етказиб берувчилар
 Suspended,Тўхтатилган
 Swap accounts,Ҳисобларни алмаштириш
+Table,Жадвал
+Task,Вазифа
 Tax ID,Солиқ ID
 Taxes,Солиқлар
 Term (months),Муддат (ой)
@@ -1085,6 +1179,8 @@ Terms:,Шартлар:
 Territory,Ҳудуд
 The Compliance module is disabled for this company.,Мувофиқлик модули бу компанияда ўчирилган.
 This cannot be undone.,Бу ортига қайтариб бўлмайди.
+This month,
+This year,
 Threshold,Чегара
 Threshold Qty,Чегара миқдори
 Thu,Па
@@ -1095,6 +1191,7 @@ To Bill,Ҳисоб-фактура учун
 To Deliver,Етказиб бериш учун
 To Deliver and Bill,Етказиб бериш ва ҳисоб-фактура учун
 To warehouse,Гача омборга
+Today,
 Total,Жами
 Total (cost + markup),Жами (таннарх + устама)
 Total / Present / OSA % are computed server-side.,Жами / Ҳозир / OSA % сервердан ҳисоблайди.
@@ -1108,6 +1205,7 @@ Total SKUs,Жами SKU
 Total value,Жами қиймат
 Total:,Жами:
 Trade Marketing,Савдо маркетинги
+Transaction,
 Transaction Id,Операция ID
 Transfer,Ўтказма
 Transfer detail,Ўтказма тафсилотлари
@@ -1131,6 +1229,7 @@ Unknown vertical pack: {0},Номаълум верикал пакет: {0}
 Unknown warehouse: {0},Номаълум омбор: {0}
 Unpaid,Тўланмаган
 Unsupported language: {0},Қўллаб-қувватланмайдиган тил: {0}
+Untitled Process,Номсиз жараён
 UOM,Ўлчов бирлиги
 Uplift Value,Ортиқча қиймат
 Upload failed,Юклаш ишламади
@@ -1157,6 +1256,7 @@ Value Δ,Қиймати Δ
 Van Stock,Автомобил қўйи
 Van Stock name is required.,Автомобил қўйи номи талаб қилинади.
 Van stock tracks what each field user has loaded for the day.,Автомобил қўйи ҳар бир фаол фойдаланувчи кун давомида юклаган нарсаларни кузатади.
+Vertical lanes (flow top→bottom),Вертикал йўлаклар (оқим юқори→пастки)
 View all,Ҳаммасини кўриш
 View attachment,Қўшимчасини кўриш
 View ledger,Реестрни кўриш
@@ -1196,6 +1296,7 @@ Work Order,Ишлаб чиқариш буюртмаси
 Work Orders,Ишлаб чиқариш буюртмалари
 Working,Иш куни
 Write,Ёзиш
+Year to date,
 Yes,Ҳа
 You need administrator access to view this page.,Бу саҳифани кўриш учун сизга администратор қўвватига эҳтиёж.
 "Your books are empty. Get started by adding a customer, recording your first sale, or logging an opening balance.","Сизнинг китобларингиз бўш. Харидор қўшиб, биринчи сотувингизни ёзиб ёки ўзаро баланси қўйиб бошлаинг."

@@ -1,5 +1,5 @@
-source,target
 #,#
+(none),(нет)
 0.00,"0,00"
 0–30,0–30
 1C Sync Log,Журнал синхронизации 1C
@@ -19,7 +19,9 @@ Accounts,Счета
 Action failed.,Ошибка выполнения.
 Actions,Действия
 Active,Активные
+Activities,Действия
 Actual,Фактический
+Add,Добавить
 Add a customer,Добавить клиента
 Add a warehouse to start tracking stock locations.,"Добавьте склад, чтобы начать отслеживание мест хранения товаров."
 Add another item,Добавить ещё товар
@@ -27,11 +29,14 @@ Add at least one item line.,Добавьте хотя бы одну строку
 Add at least one raw material line.,Добавьте хотя бы одну строку сырья.
 Add child warehouse,Добавить подсклад
 Add customer,Добавить клиента
+Add Decision,Добавить решение
 Add item,Добавить товар
+Add Lane,Добавить полосу
 Add line,Добавить строку
 Add outlet,Добавить торговую точку
 Add row,Добавить строку
 Add supplier,Добавить поставщика
+Add Task,Добавить задачу
 Add warehouse,Добавить склад
 Add your first customer to start sending quotes and invoices.,"Добавьте первого клиента, чтобы начать отправку предложений и счётов-фактур."
 Add your first employee to start tracking attendance, leave and payroll.
@@ -56,6 +61,7 @@ All sales invoices for this company are fully paid.,Все счёта-факту
 All statuses,Все статусы
 All territories,Все территории
 All three accounts are required.,Все три счёта обязательны.
+All time,
 All types,Все типы
 Allocate against,Распределить по
 Allocated,Распределено
@@ -71,6 +77,7 @@ Amount must be positive.,Сумма должна быть положительн
 Amount paid,Сумма оплаты
 Amount received,Сумма получена
 Amount sent,Сумма отправлена
+Animated,Анимированный
 Any,Любой
 AP Aging,Анализ кредиторской задолженности
 Applied to,Применено к
@@ -85,6 +92,7 @@ AR Aging,Анализ дебиторской задолженности
 ARCA,ARCA
 ARCA Payment Events,Платежи ARCA
 ARCA payment webhook events appear here.,Здесь отображаются события вебхуков платежей ARCA.
+Artifacts,Артефакты
 As of,На
 Asl Belgisi,Asl Belgisi
 Asl Belgisi (product marking) scans appear here.,Здесь отображаются сканирования маркировки Asl Belgisi.
@@ -100,6 +108,7 @@ Audited At,Проверено
 Available,Доступно
 Back,Назад
 Back to dashboard,Вернуться на панель
+Badge,Значок
 Balance,Остаток
 Balance (Account Currency),Остаток (валюта счета)
 Balanced,Сбалансировано
@@ -111,6 +120,7 @@ Bill / invoice number printed on supplier document,"Номер счета / на
 Bill date,Дата счета
 Billed,Выставлен счет
 Bimonthly,Раз в две недели
+Board,Доска
 BOM,Спецификация
 BOMs,Спецификации
 Brand,Бренд
@@ -177,12 +187,14 @@ Close this Work Order? This finalizes it.,Закрыть этот произво
 Closing,Закрытие
 Closing balance,Сальдо на конец периода
 Closing in,Закрытие в
+Closure,
 Code,Код
 Code does not match expected format,Код не соответствует ожидаемому формату
 Code is required,Требуется код
 Collapse,Свернуть
 Collapse all,Свернуть всё
 Collapse all groups,Свернуть все группы
+Color,Цвет
 Commission,Комиссия
 Commission %,Комиссия %
 Commission fee,Комиссионный сбор
@@ -197,6 +209,7 @@ Complete,Готово
 Completed,Завершено
 Compliance,Соответствие
 Components,Компоненты
+Connector,Соединитель
 Consumed,Израсходовано
 Contact,Контакт
 Contract,Договор
@@ -220,15 +233,20 @@ Create Invoice,Создать счёт-фактуру
 Create outlets to start planning routes and visits.,"Создайте торговые точки, чтобы планировать маршруты и визиты."
 Create Plan,Создать план
 Create Scheme,Создать схему
+Create your first deal or adjust the search filters.,Создайте первую сделку или измените фильтры.
 Create your first item to start tracking stock and price lists.,"Создайте первый товар, чтобы начать отслеживать склад и прайс-листы."
+Create your first lead or adjust the search filters.,Создайте первый лид или измените фильтры.
+Create your first process to model business workflows.,Создайте первый процесс для моделирования бизнес-процессов.
 Created,Создан
 Credit,Кредит
 Credit Limit,Кредитный лимит
 Credit note for,Кредит-нота по
 Credit notes:,Кредит-ноты:
 Critical,Критически
+CRM,CRM
 CSV,CSV
 Currency,Валюта
+Custom,
 Customer,Клиент
 Customer group,Группа клиентов
 Customer is required.,Покупатель обязателен.
@@ -237,6 +255,8 @@ Customer name is required.,Требуется имя клиента.
 Customers,Клиенты
 Daily,Ежедневно
 Dashboard,Панель
+Dashed,Пунктир
+Data,Данные
 Date,Дата
 Date of birth,Дата рождения
 Date of birth is required.,Укажите дату рождения.
@@ -244,6 +264,9 @@ Date of joining,Дата приёма
 Dates,Даты
 Day of Week,День недели
 Days,Дней
+Deal Owner,Владелец сделки
+Deal Value,Сумма сделки
+Deals,Сделки
 Debit,Дебет
 Deductions,Удержания
 Default,По умолчанию
@@ -259,6 +282,9 @@ Delete failed.,Ошибка удаления.
 Delete invoice {name}?,
 Delete order {name}? This cannot be undone.,
 Delete supplier,Удалить поставщика
+Delete this deal?,Удалить эту сделку?
+Delete this lead?,Удалить этот лид?
+Delete this process?,Удалить этот процесс?
 Deliv,Доставл.
 Deliver,Доставить
 Delivered,Доставлено
@@ -288,10 +314,13 @@ Due Date,Срок оплаты
 Due date,Срок оплаты
 Duplicate sequence {0} on this route.,Повторяющаяся последовательность {0} на этом маршруте.
 Duration (ms),Длительность (мс)
+"e.g. OK, Approved","напр. Да, Одобрено"
 Earnings,Начисления
 Edit,Редактировать
 Edit customer,Редактировать покупателя
+Edit Deal,Редактировать сделку
 Edit field user,Редактировать полевого сотрудника
+Edit Lead,Редактировать лид
 Edit OSA audit,Редактировать аудит OSA
 Edit outlet,Редактировать торговую точку
 Edit photo report,Редактировать фотоотчет
@@ -308,6 +337,7 @@ EHF Status,Статус ЭСФ
 EHF Submissions,Отправки ЭСФ
 Email,Электронная почта
 Email and name are required.,Требуются электронная почта и имя.
+Email or user ID,Email или ID пользователя
 Employee,Сотрудник
 Employees,Сотрудники
 Empty allowed list = user can access every company.,Пустой список разрешений = пользователь может получить доступ к любой компании.
@@ -315,10 +345,12 @@ Enabled,Включено
 End,Конец
 End Date,Дата окончания
 End Date must be on or after Start Date.,Дата окончания должна быть на или после даты начала.
+End of ledger,
 Enter amount and commission to see preview.,Введите сумму и комиссию для предпросмотра.
 Enter at least one return qty.,Введите хотя бы одно количество возврата.
 Enter cost and term to see the payment schedule.,Введите себестоимость и срок для просмотра графика платежей.
 Enter the quantity to return for each line. Leave 0 to exclude a line.,"Введите количество возврата для каждой строки. Укажите 0, чтобы исключить строку."
+entries,
 entries. Narrow the date range to see older ones.,"записи. Сузьте диапазон дат, чтобы увидеть старые."
 Entry,
 Equipment,Оборудование
@@ -329,6 +361,7 @@ Error,Ошибка
 error(s),ошибка(и)
 Estimated value,Расчётная стоимость
 EUR → UZS,EUR → UZS
+Events,События
 Every route row needs an outlet.,Каждая строка маршрута должна содержать торговую точку.
 Excel (.xlsx),Excel (.xlsx)
 Exchange rate,Обменный курс
@@ -339,6 +372,7 @@ Expand,Развернуть
 Expand all,Развернуть всё
 Expand all groups,Развернуть все группы
 Expected,Ожидаемое
+Expected Closure,Планируемое закрытие
 Expected Facings,Ожидаемое количество фасадов
 Expected facings is required on row {0}.,Ожидаемое количество фасадов требуется в строке {0}.
 Expense,Расход
@@ -364,6 +398,8 @@ Failed to create transfer.,Не удалось создать перевод.
 Failed to create warehouse.,Не удалось создать склад.
 Failed to create.,Не удалось создать.
 Failed to delete customer.,Не удалось удалить клиента.
+Failed to delete deal.,Ошибка при удалении сделки.
+Failed to delete lead.,Ошибка при удалении лида.
 Failed to delete supplier.,Не удалось удалить поставщика.
 Failed to load accounts.,Не удалось загрузить счета.
 Failed to load aging.,Не удалось загрузить статистику задолженности.
@@ -376,11 +412,15 @@ Failed to load contracts.,Не удалось загрузить договор�
 Failed to load customer.,Не удалось загрузить клиента.
 Failed to load customers.,Не удалось загрузить клиентов.
 Failed to load dashboard.,Не удалось загрузить панель управления.
+Failed to load deal.,Ошибка при загрузке сделки.
+Failed to load deals.,Ошибка при загрузке сделок.
 Failed to load form options.,Не удалось загрузить параметры формы.
 Failed to load invoice.,Не удалось загрузить счёт-фактуру.
 Failed to load invoices.,Не удалось загрузить счета-фактуры.
 Failed to load items.,Не удалось загрузить товары.
 Failed to load journal entries.,Не удалось загрузить записи журнала.
+Failed to load lead.,Ошибка при загрузке лида.
+Failed to load leads.,Ошибка при загрузке лидов.
 Failed to load ledger.,Не удалось загрузить главную книгу.
 Failed to load options.,Не удалось загрузить параметры.
 Failed to load OSA audit.,Не удалось загрузить аудит OSA.
@@ -389,9 +429,12 @@ Failed to load payment defaults.,Ошибка загрузки реквизит�
 Failed to load payment entries.,Ошибка загрузки записей платежа.
 Failed to load photo report.,Ошибка загрузки отчёта фотографий.
 Failed to load planogram.,Ошибка загрузки плановой схемы.
+Failed to load process.,Не удалось загрузить процесс.
+Failed to load processes.,Не удалось загрузить процессы.
 Failed to load promo plan.,Ошибка загрузки плана акции.
 Failed to load promo scheme.,Ошибка загрузки схемы акции.
 Failed to load quotations.,Ошибка загрузки коммерческих предложений.
+Failed to load reserved stock data.,
 Failed to load sales order.,
 Failed to load sales orders.,Ошибка загрузки заказов на продажу.
 Failed to load stock entries.,Ошибка загрузки записей на складе.
@@ -404,13 +447,17 @@ Failed to load van stock.,Ошибка загрузки запасов фург�
 Failed to load visit.,Ошибка загрузки визита.
 Failed to load warehouses.,Ошибка загрузки складов.
 Failed to load.,Ошибка загрузки.
+Failed to move deal.,Не удалось переместить сделку.
 Failed to record payment.,Ошибка записи платежа.
 Failed to refresh claim.,Ошибка обновления претензии.
 Failed to run report.,Ошибка запуска отчёта.
 Failed to save customer.,Ошибка сохранения клиента.
+Failed to save deal.,Ошибка при сохранении сделки.
+Failed to save lead.,Ошибка при сохранении лида.
 Failed to save OSA audit.,Ошибка сохранения аудита наличия на полке.
 Failed to save photo report.,Ошибка сохранения отчёта фотографий.
 Failed to save planogram.,Ошибка сохранения плановой схемы.
+Failed to save process.,Не удалось сохранить процесс.
 Failed to save promo scheme.,Ошибка сохранения схемы акции.
 Failed to save stock entry.,Ошибка сохранения записи на складе.
 Failed to save van stock.,Ошибка сохранения запасов фургона.
@@ -430,6 +477,7 @@ Fill in the required fields before submitting.,Заполните обязате
 Financed,Финансируется
 Finished good,Готовая продукция
 Finished-goods warehouse,Склад готовой продукции
+First Name,Имя
 First name,Имя
 First name is required.,Введите имя.
 First payment date,Дата первого платежа
@@ -443,6 +491,7 @@ From account,С счёта
 From warehouse,Со склада
 From → To,С → По
 Full name,Полное имя
+Gateways,Шлюзы
 Gender,Пол
 Gender is required.,Укажите пол.
 Generate and submit,Создать и провести
@@ -460,6 +509,7 @@ Group,Группа
 "Group warehouse (can contain children, holds no stock itself)","Складская группа (может содержать подгруппы, сама не содержит запасы)"
 Half Day,Полдня
 Hello {name},"Привет, {name}"
+Horizontal lanes (flow left→right),Горизонтальные дорожки (поток слева→вправо)
 Hours,Часы
 HR,HR
 In,Вход
@@ -482,6 +532,7 @@ Inventory,Склад
 Invite user,Пригласить пользователя
 Invoice,Счёт
 Invoice #,Счёт №
+Invoice number or customer…,
 Invoices,Счета
 Issue,Проблема
 Issue credit note,Выпустить кредит-ноту
@@ -503,13 +554,22 @@ Item·WH lines,Товар·Склад
 Jami,Итого
 Jami muzqaymoq soni (dona),Всего мороженого (шт)
 Jami summa,Итого сумма
+Job Title,Должность
 Journal Entries,Журнальные записи
 Journal Entry,Запись в журнале
 Journal Entry legs,Проводки журнала
+Label,Надпись
+Lane,Полоса
+Lanes,Полосы
 Language,Язык
 Last login,Последний вход
+Last month,
+Last Name,Фамилия
 Last name,Фамилия
+Last year,
 Latitude,Широта
+Lead Owner,Владелец лида
+Leads,Лиды
 Leave,Отпуск
 Leave all unchecked to use role-based access. Checking any replaces it with exactly these modules. Visibility only — backend permissions still apply.,Оставьте всё без отметок для доступа на основе ролей. Установка флажков заменяет его ровно этими модулями. Только видимость — разрешения бэкэнда всё ещё действуют.
 Leave type,Тип отпуска
@@ -521,6 +581,7 @@ Link to an existing Customer for receivables.,Связь с существующ
 Linked invoices,Связанные счета
 List rate,Прейскурантная цена
 Loaded,Загружено
+Loading more…,
 Loading warehouses…,Загрузка складов…
 Loading…,Загрузка…
 Log out,Выйти
@@ -549,11 +610,13 @@ Mobile Phone,Мобильный телефон
 Mode,Режим
 Mode of payment,Способ платежа
 Model,Модель
+Modified,
 Module,Модуль
 Module access override,Переопределение доступа к модулям
 Modules,Модули
 Mon,Пн
 Money,Деньги
+Month to date,
 Monthly,Ежемесячно
 Monthly installment,Ежемесячный платёж
 more,ещё
@@ -571,6 +634,7 @@ New bill,Новый счёт
 New BOM,Новая спецификация
 New Contract,Новый договор
 New customer,Новый клиент
+New Deal,Новая сделка
 New employee,Новый сотрудник
 New entry,Новая запись
 New Equipment,Новое оборудование
@@ -579,6 +643,7 @@ New field user,Новый пользователь поля
 New item,Новый товар
 New journal,Новая запись
 New journal entry,Новая запись в журнал
+New Lead,Новый лид
 New leave request,Новая заявка
 New Murabaha Contract,Новый договор Мурабаха
 New OSA audit,Новый аудит OSA
@@ -587,6 +652,7 @@ New payment,Новый платёж
 New photo report,Новый фотоотчёт
 New Plan,Новый план
 New planogram,Новая спецификация расположения
+New Process,Новый процесс
 New Promo Plan,Новый план промо
 New Promo Scheme,Новая схема промо
 New purchase bill,Новая счёт-фактура покупки
@@ -619,6 +685,7 @@ No customers,Клиентов нет
 No customers match that name,Нет клиентов с таким названием
 No data,Нет данных
 No data for the selected range,Нет данных для выбранного диапазона
+No deals,Нет сделок
 No deductions,Нет удержаний
 No default Bank or Cash account configured for company {0}.,Для компании {0} не настроены банковский или кассовый счёт по умолчанию.
 No earnings,Нет начислений
@@ -636,6 +703,8 @@ No items match,Товары не совпадают
 No items with submitted active BOMs yet — create one first.,Нет товаров с проведёнными активными спецификациями — сначала создайте.
 No items yet.,Товаров нет.
 No journal entries in this range,Записей в журнале в этом диапазоне нет
+No lanes. Click + to add.,Нет полос. Нажмите + для добавления.
+No leads,Нет лидов
 No leave requests,Нет заявок на отпуск
 No ledger entries found for the selected period.,Записей в главной книге за выбранный период не найдено.
 No lines yet.,Строк нет.
@@ -651,6 +720,7 @@ No outstanding balances,Нет задолженности
 No payments in this range,Платежей в этом диапазоне нет
 No photo reports yet,Фотоотчётов нет
 No planograms yet,Плано грамм нет
+No processes,Нет процессов
 No promo plans yet,Промо-планов нет
 No promo schemes yet,Промо-схем нет
 No purchase orders in this range,Заказов на закупку в этом диапазоне нет
@@ -697,6 +767,7 @@ On leave today,В отпуске сегодня
 On-Shelf-Availability audits compare expected vs actual facings during visits.,Аудиты доступности товаров на полке сравнивают ожидаемое и фактическое размещение товаров во время визитов.
 One or more lines exceed available stock. Reduce qty or choose a different warehouse.,Одна или несколько строк превышают доступный запас. Уменьшите количество или выберите другой склад.
 Only Approved claims can be settled. Current status: {0},Только одобренные требования могут быть урегулированы. Текущий статус: {0}
+Only draft sales orders can be edited.,
 Only submitted invoices can be returned.,Только отправленные счета могут быть возвращены.
 Only with balance,Только с остатком
 Open,Открыта
@@ -711,6 +782,8 @@ Order,
 Order Date,Дата заказа
 Order date,Дата заказа
 Orders,Заказы
+Organization,Организация
+Orientation,Ориентация
 Original qty,Исходное кол-во
 OSA,ОСА
 OSA %,ОСА %
@@ -735,6 +808,7 @@ Outlets,Торговые точки
 Outstanding,Невыплаченная
 Override qty must be greater than zero,Переопределённое количество должно быть больше нуля
 Overview,Обзор
+Owner,
 pack_key is required,pack_key обязателен
 Page not found,Страница не найдена
 Paid,Оплачено
@@ -822,7 +896,12 @@ Present SKUs,Присутствующие артикулы
 Preview,Предпросмотр
 Price list,Прайс-лист
 Print,Печать
+Probability,Вероятность
+Process,Процесс
+Process Name,Название процесса
+Process not found: {0},
 Processed,Обработано
+Processes,Процессы
 Produce how many units? Leave blank for full balance.,Сколько единиц произвести? Оставьте пустым для всего остатка.
 Produced,Произведено
 Profile,Профиль
@@ -836,6 +915,7 @@ Promo Plans,Планы промоций
 Promo Scheme name is required.,Название схемы промоции обязательно.
 Promo Schemes,Схемы промоций
 Promos,Промоции
+Properties,Свойства
 Purchase Invoice,Счёт-фактура покупки
 Purchase Invoices,Счета закупок
 Purchase item,Товар покупки
@@ -856,6 +936,7 @@ Raw material cost,Стоимость сырья
 Raw materials,Сырьё
 Re-fetch balances for all accounts,Повторно загрузить остатки для всех счётов
 Read,Читать
+Read-only,Только чтение
 Read-only view. Edit permissions in Frappe's Role Permission Manager.,Представление только для чтения. Отредактируйте разрешения в менеджере разрешений ролей Frappe.
 Reason,Причина
 Receipts,Поступления
@@ -893,6 +974,7 @@ Remark,Замечание
 Remarks,Замечания
 Remittance,Денежный перевод
 Remove,Удалить
+Remove Lane,Удалить полосу
 Remove row,Удалить строку
 Reorder at,Переупорядочить по
 Reorder qty,Переупорядочить кол-во
@@ -986,11 +1068,14 @@ Search customer name…,Поиск имени клиента…
 "Search customers, suppliers, items, invoices…","Поиск клиентов, поставщиков, товаров, счетов…"
 Search customers…,Поиск покупателей…
 Search customer…,Поиск клиента…
+Search deals…,Поиск сделок…
 Search employees…,Поиск сотрудников…
 Search item code or name…,Поиск кода или названия товара…
 Search items…,Поиск товаров…
 Search item…,Поиск товара…
+Search leads…,Поиск лидов…
 Search outlets…,Поиск точек…
+Search processes…,Поиск процессов…
 Search supplier name…,Поиск названия поставщика…
 Search suppliers…,Поиск поставщиков…
 Search supplier…,Поиск поставщика…
@@ -1000,6 +1085,7 @@ Search {type} name…,Поиск названия {type}…
 Searching…,Поиск…
 Select a company first.,Сначала выберите компанию.
 Select a customer to view transactions,Выберите клиента для просмотра операций
+Select a shape or connector to edit its properties.,Выберите фигуру или соединитель для редактирования свойств.
 Select a supplier to view transactions,Выберите поставщика для просмотра операций
 Select account…,Выберите счёт…
 Select an account…,Выберите счёт…
@@ -1020,20 +1106,26 @@ Serial No,Серийный номер
 Set Reports-To on employees to build the positions hierarchy.,"Установите «Руководитель» для сотрудников, чтобы построить иерархию должностей."
 Settle,Рассчитать
 Settlement failed.,Расчёт не удался.
+Shape,Фигура
+Shapes,Фигуры
 Shelf,Полка
 Shelf Position,Позиция на полке
 Show discounts,Показать скидки
+Showing,Показано
 Showing the newest,Показаны самые новые
 Skip Reason,Причина пропуска
 Skip reason is required when status is Skipped.,"Причина пропуска требуется, когда статус — Пропущено."
 Skipped,Пропущено
 Slip,Расчётный листок
 Snapshots are generated by the daily ROI task for Active promo plans.,Снимки создаются ежедневной задачей ROI для активных планов акций.
+SO number or customer…,
 So'z bilan:,Сўз билан:
 SoliqOnline UUID,UUID SoliqOnline
 Some lines could not be reserved,Некоторые строки не удалось зарезервировать
 Something went wrong,Что-то пошло не так
 Soni (korobka),Кол-во (короб)
+source,target
+Source,Источник
 Source warehouse,Склад источника
 SRE module unavailable: {0},Модуль SRE недоступен: {0}
 SREs,SRE
@@ -1084,6 +1176,8 @@ Supplier name is required.,Имя поставщика обязательно.
 Suppliers,Поставщики
 Suspended,Приостановлен
 Swap accounts,Поменять счета местами
+Table,Таблица
+Task,Задача
 Tax ID,ИНН
 Taxes,Налоги
 Term (months),Срок (месяцев)
@@ -1092,6 +1186,8 @@ Terms:,Условия:
 Territory,Территория
 The Compliance module is disabled for this company.,Модуль соответствия отключён для этой компании.
 This cannot be undone.,Это невозможно отменить.
+This month,
+This year,
 Threshold,Пороговое значение
 Threshold Qty,Пороговое кол-во
 Thu,Чт
@@ -1102,6 +1198,7 @@ To Bill,К оплате
 To Deliver,К доставке
 To Deliver and Bill,К доставке и оплате
 To warehouse,На склад
+Today,
 Total,Итого
 Total (cost + markup),Итого (себестоимость + наценка)
 Total / Present / OSA % are computed server-side.,Значения Итого / Присутствует / OSA % вычисляются на сервере.
@@ -1115,6 +1212,7 @@ Total SKUs,Всего SKU
 Total value,Общая стоимость
 Total:,Итого:
 Trade Marketing,Торговый маркетинг
+Transaction,
 Transaction Id,Идентификатор транзакции
 Transfer,Передача
 Transfer detail,Детали перевода
@@ -1138,6 +1236,7 @@ Unknown vertical pack: {0},Неизвестный вертикальный на�
 Unknown warehouse: {0},Неизвестный склад: {0}
 Unpaid,Не оплачено
 Unsupported language: {0},Неподдерживаемый язык: {0}
+Untitled Process,Без названия
 UOM,Ед. изм.
 Uplift Value,Прирост стоимости
 Upload failed,Ошибка загрузки
@@ -1164,6 +1263,7 @@ Value Δ,Изменение стоимости
 Van Stock,Товар в фургоне
 Van Stock name is required.,Требуется название товара в фургоне.
 Van stock tracks what each field user has loaded for the day.,"Товар в фургоне отслеживает, какой товар загружен каждым полевым пользователем на день."
+Vertical lanes (flow top→bottom),Вертикальные дорожки (поток сверху→вниз)
 View all,Показать все
 View attachment,Просмотреть вложение
 View ledger,Просмотреть реестр
@@ -1203,6 +1303,7 @@ Work Order,Производственный заказ
 Work Orders,Производственные заказы
 Working,Рабочих дней
 Write,Написать
+Year to date,
 Yes,Да
 You need administrator access to view this page.,Требуется доступ администратора для просмотра этой страницы.
 "Your books are empty. Get started by adding a customer, recording your first sale, or logging an opening balance.","Ваши книги пусты. Начните с добавления клиента, записи первой продажи или ввода начального остатка."
