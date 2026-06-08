@@ -28,6 +28,7 @@ const isActive = (path) => computed(() => route.path === path || route.path.star
 const items = computed(() => {
 	const list = [
 		{ name: "dashboard", path: "/dashboard", label: t("Dashboard"), icon: "ti-home", show: session.canAccessModule("dashboard") },
+		{ name: "pos", path: "/pos", label: t("POS"), icon: "ti-building-store", show: session.canAccessModule("sales") },
 		{ name: "money", path: "/money", label: t("Money"), icon: "ti-coin", show: session.canAccessModule("money") },
 		{ name: "sales", path: "/sales", label: t("Sales"), icon: "ti-trending-up", show: session.canAccessModule("sales") },
 		{ name: "purchasing", path: "/purchasing", label: t("Purchasing"), icon: "ti-shopping-cart", show: session.canAccessModule("purchasing") },
@@ -36,6 +37,8 @@ const items = computed(() => {
 		{ name: "hr", path: "/hr", label: t("People"), icon: "ti-users-group", show: session.canAccessModule("hr") },
 		{ name: "sfa", path: "/sfa", label: t("Field Sales"), icon: "ti-route", show: session.canAccessModule("field_sales") },
 		{ name: "marketing", path: "/marketing", label: t("Trade Marketing"), icon: "ti-target-arrow", show: session.canAccessModule("marketing") },
+		{ name: "crm", path: "/crm", label: t("CRM"), icon: "ti-address-book", show: session.canAccessModule("crm") },
+		{ name: "bpm", path: "/bpm", label: t("Processes"), icon: "ti-sitemap", show: session.canAccessModule("bpm") },
 		{ name: "remittance", path: "/remittance", label: t("Remittance"), icon: "ti-send", show: session.canAccessModule("remittance") },
 		{ name: "installment", path: "/installment", label: t("Installment"), icon: "ti-calendar-dollar", show: session.canAccessModule("installment") },
 	];

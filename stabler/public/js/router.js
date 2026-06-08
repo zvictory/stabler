@@ -18,6 +18,7 @@ import SalesOrders from "./pages/sales/SalesOrders.vue";
 import SalesOrderForm from "./pages/sales/SalesOrderForm.vue";
 import SalesInvoices from "./pages/sales/SalesInvoices.vue";
 import SalesInvoiceForm from "./pages/sales/SalesInvoiceForm.vue";
+import POS from "./pages/pos.vue";
 import SalesAging from "./pages/sales/Aging.vue";
 import ReservedStock from "./pages/sales/ReservedStock.vue";
 import InvoicePrint from "./pages/sales/InvoicePrint.vue";
@@ -66,6 +67,12 @@ import InstallmentHome from "./pages/installment/InstallmentHome.vue";
 import NewContract from "./pages/installment/NewContract.vue";
 import Contracts from "./pages/installment/Contracts.vue";
 import InstallmentCalendar from "./pages/installment/InstallmentCalendar.vue";
+import CrmHome from "./pages/crm/CrmHome.vue";
+import CrmLeads from "./pages/crm/Leads.vue";
+import CrmDeals from "./pages/crm/Deals.vue";
+import BpmHome from "./pages/bpm/BpmHome.vue";
+import BpmList from "./pages/bpm/BpmList.vue";
+import ProcessEditor from "./pages/bpm/ProcessEditor.vue";
 import AdminHome from "./pages/admin/AdminHome.vue";
 import AdminUsers from "./pages/admin/Users.vue";
 import AdminRoles from "./pages/admin/Roles.vue";
@@ -77,6 +84,7 @@ import ServerError from "./pages/ServerError.vue";
 const routes = [
 	{ path: "/", redirect: "/dashboard" },
 	{ path: "/dashboard", name: "dashboard", component: Dashboard, meta: { title: t("Dashboard"), module: "dashboard" } },
+	{ path: "/pos", name: "pos", component: POS, meta: { title: t("POS"), module: "sales" } },
 	{
 		path: "/money",
 		component: MoneyHome,
@@ -104,6 +112,7 @@ const routes = [
 			{ path: "orders/new", name: "sales-order-new", component: SalesOrderForm, meta: { title: t("New Sales Order") } },
 			{ path: "orders/:name", name: "sales-order", component: SalesOrderForm, meta: { title: t("Sales Order") } },
 			{ path: "invoices", name: "sales-invoices", component: SalesInvoices, meta: { title: t("Sales Invoices") } },
+			{ path: "pos", redirect: "/pos" },
 			{ path: "invoices/:name/print", name: "sales-invoice-print", component: InvoicePrint, meta: { title: t("Invoice") } },
 			{ path: "invoices/:name/waybill", name: "sales-invoice-waybill", component: Waybill, meta: { title: t("Yuk xati") } },
 			{ path: "invoices/:name", name: "sales-invoice", component: SalesInvoiceForm, meta: { title: t("Sales Invoice") } },
@@ -212,6 +221,25 @@ const routes = [
 		],
 	},
 	{
+		path: "/crm",
+		component: CrmHome,
+		meta: { title: t("CRM"), module: "crm" },
+		children: [
+			{ path: "", redirect: "/crm/leads" },
+			{ path: "leads", name: "crm-leads", component: CrmLeads, meta: { title: t("Leads") } },
+			{ path: "deals", name: "crm-deals", component: CrmDeals, meta: { title: t("Deals") } },
+		],
+	},
+	{
+		path: "/bpm",
+		component: BpmHome,
+		meta: { title: t("Processes"), module: "bpm" },
+		children: [
+			{ path: "", name: "bpm-list", component: BpmList, meta: { title: t("Processes") } },
+			{ path: ":name", name: "bpm-editor", component: ProcessEditor, meta: { title: t("Process") } },
+		],
+	},
+	{
 		path: "/admin",
 		component: AdminHome,
 		meta: { title: t("Admin"), module: "admin", requiresAdmin: true },
@@ -244,6 +272,8 @@ const LANDING_ORDER = [
 	{ key: "hr", path: "/hr" },
 	{ key: "field_sales", path: "/sfa" },
 	{ key: "marketing", path: "/marketing" },
+	{ key: "crm", path: "/crm" },
+	{ key: "bpm", path: "/bpm" },
 	{ key: "remittance", path: "/remittance" },
 	{ key: "installment", path: "/installment" },
 	{ key: "compliance", path: "/admin/compliance" },
