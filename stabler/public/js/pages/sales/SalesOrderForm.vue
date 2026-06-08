@@ -134,7 +134,6 @@ function blankForm() {
 		price_list: "",
 		set_warehouse: "",
 		transaction_date: today,
-		delivery_date: today,
 		remarks: "",
 		items: [blankLine()],
 	};
@@ -566,7 +565,6 @@ async function submitCreate({ autoSubmit = 1 } = {}) {
 			customer: form.value.customer,
 			set_warehouse: form.value.set_warehouse,
 			transaction_date: form.value.transaction_date,
-			delivery_date: form.value.delivery_date || form.value.transaction_date,
 			remarks: form.value.remarks || undefined,
 			items: lines,
 			auto_submit: autoSubmit,
@@ -838,11 +836,6 @@ onMounted(async () => {
 				<label class="form-label">{{ t("Order date") }}</label>
 				<DateInput v-if="editable" v-model="form.transaction_date" />
 				<div v-else class="form-control-plaintext py-1">{{ formatDateTime(form.transaction_date) || "—" }}</div>
-			</div>
-			<div class="col-md-3">
-				<label class="form-label">{{ t("Delivery date") }}</label>
-				<DateInput v-if="editable" v-model="form.delivery_date" />
-				<div v-else class="form-control-plaintext py-1">{{ formatDateTime(form.delivery_date) || "—" }}</div>
 			</div>
 			<div class="col-md-3">
 				<label class="form-label">{{ t("Price list") }}</label>
