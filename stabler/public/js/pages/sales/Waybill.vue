@@ -57,6 +57,7 @@ async function load() {
 }
 
 function triggerPrint() {
+	if (loading.value || !doc.value) return;
 	window.print();
 }
 
@@ -70,7 +71,7 @@ onMounted(load);
 			<button type="button" class="btn btn-sm btn-outline-secondary" @click="router.back()">
 				<i class="ti ti-arrow-left me-1"></i>{{ t("Back") }}
 			</button>
-			<button type="button" class="btn btn-sm btn-primary ms-auto" @click="triggerPrint">
+			<button type="button" class="btn btn-sm btn-primary ms-auto" :disabled="loading || !doc" @click="triggerPrint">
 				<i class="ti ti-printer me-1"></i>{{ t("Print") }}
 			</button>
 		</div>
@@ -80,7 +81,7 @@ onMounted(load);
 		</div>
 		<div v-else-if="error" class="alert alert-danger">{{ error }}</div>
 
-		<div v-else-if="doc" class="waybill">
+		<div v-else-if="doc" class="waybill waybill-print">
 			<div class="waybill-header text-center mb-3">
 				<div class="small text-secondary">{{ doc.company_name }}</div>
 				<h4 class="mb-0 mt-1">YUK XATI</h4>
@@ -187,23 +188,23 @@ onMounted(load);
 		size: A4 portrait;
 		margin: 10mm 10mm 10mm 10mm;
 	}
-	.navbar,
-	.sidebar,
-	.footer,
-	.no-print,
-	.nav {
+	body * {
+		visibility: hidden;
+	}
+	.waybill-print,
+	.waybill-print * {
+		visibility: visible;
+	}
+	.waybill-print {
+		position: absolute;
+		left: 0;
+		top: 0;
+		width: 100%;
+		-webkit-print-color-adjust: exact;
+		print-color-adjust: exact;
+	}
+	.no-print {
 		display: none !important;
-	}
-	.page-body,
-	.page-wrapper {
-		padding: 0 !important;
-		margin: 0 !important;
-	}
-	.container-xl,
-	.container-fluid {
-		padding: 0 !important;
-		margin: 0 !important;
-		max-width: 100% !important;
 	}
 	.waybill-wrapper {
 		padding: 0;
