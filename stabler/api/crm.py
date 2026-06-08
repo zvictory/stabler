@@ -15,6 +15,16 @@ def _require_crm():
         frappe.throw(_("Not permitted"), frappe.PermissionError)
 
 
+_CRM_MANAGER_ROLES = {"Sales Manager", "System Manager", "Stabler Admin"}
+
+
+def _require_crm_manager():
+    """Pipeline config (create/edit/delete/reorder deal statuses) is manager-only."""
+    roles = set(frappe.get_roles(frappe.session.user))
+    if not (roles & _CRM_MANAGER_ROLES):
+        frappe.throw(_("Not permitted"), frappe.PermissionError)
+
+
 # ---------------------------------------------------------------------------
 # Leads
 # ---------------------------------------------------------------------------
@@ -190,7 +200,7 @@ def crm_meta():
 @frappe.whitelist()
 def save_deal_status(data):
     """Upsert a CRM Deal Status. data = JSON {name, color, position, type}."""
-    _require_crm()
+    _require_crm_manager()
     d = json.loads(data) if isinstance(data, str) else data
     name = (d.get("name") or "").strip()
     if not name:
@@ -214,7 +224,7 @@ def save_deal_status(data):
 @frappe.whitelist()
 def delete_deal_status(name):
     """Delete a CRM Deal Status. Blocked if any deal is in that status."""
-    _require_crm()
+    _require_crm_manager()
     count = frappe.db.count("CRM Deal", {"status": name})
     if count:
         frappe.throw(_("Cannot delete: {0} deal(s) are still in this status.").format(count))
@@ -226,7 +236,7 @@ def delete_deal_status(name):
 @frappe.whitelist()
 def reorder_deal_statuses(names):
     """Bulk-update column positions. names = JSON array in desired display order."""
-    _require_crm()
+    _require_crm_manager()
     order = json.loads(names) if isinstance(names, str) else names
     for i, name in enumerate(order):
         frappe.db.set_value("CRM Deal Status", name, "position", i + 1, update_modified=False)
