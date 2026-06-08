@@ -99,12 +99,14 @@ Asl Belgisi Code,Asl Belgisi Kodu
 Asl Belgisi — Stock Entries pending scan,Asl Belgisi — Tarama Bekleyen Stok Girişleri
 Asset Tag,Varlık Etiketi
 Asset Tag and Category are required.,Varlık etiketi ve kategori gereklidir.
+Assign operator,Operatör ata
 Assigned Field User,Atanan Saha Kullanıcısı
 Assigned Technician,Atanan Teknisyen
 At least two account lines are required.,En az iki hesap satırı gereklidir.
 Attendance,Devam
 Audited At,Denetleme Tarihi
 Available,Mevcut
+Awaiting release by manager,Yönetici onayı bekleniyor
 BOM,BOM
 BOMs,BOM'lar
 Back,Geri
@@ -207,6 +209,7 @@ Complete,Tamamla
 Completed,Tamamlandı
 Compliance,Uyumluluk
 Components,Bileşenler
+Confirm finish,Bitişi onayla
 Connector,Bağlayıcı
 Consumed,Tüketildi
 Contact,İletişim
@@ -437,6 +440,7 @@ Failed to load transfers.,Transferler yüklenemedi.
 Failed to load van stock.,Araç stoğu yüklenemedi.
 Failed to load visit.,Ziyaret yüklenemedi.
 Failed to load warehouses.,Depolar yüklenemedi.
+Failed to load work orders.,
 Failed to load.,Yüklenemedi.
 Failed to move deal.,Fırsat taşınamadı.
 Failed to record payment.,Ödeme kaydedilemedi.
@@ -469,6 +473,8 @@ Field user is required.,Saha kullanıcısı zorunludur.
 Field users represent sales reps who execute visits and own van stock.,"Saha kullanıcıları, ziyaretleri gerçekleştiren ve araç stoğunu yöneten satış temsilcilerini temsil eder."
 Fill in the required fields before submitting.,Göndermeden önce zorunlu alanları doldurun.
 Financed,Finansmanlı
+Finish,Bitir
+Finish failed.,Bitirme başarısız.
 Finished good,Mamul ürün
 Finished-goods warehouse,Mamul ürün deposu
 First Name,Ad
@@ -609,6 +615,7 @@ Monthly,Aylık
 Monthly installment,Aylık taksit
 Move to Under Review,İncelemeye Al
 Movement,Hareket
+My work orders,İş emirlerim
 Name,Ad
 Name or email,Ad veya e-posta
 Narxi,Narxi
@@ -736,6 +743,7 @@ No van stock yet,Henüz araç stoğu yok
 No visits yet,Henüz ziyaret yok
 No warehouses for this company,Bu şirket için depo yok
 No work orders,İş emri yok
+No work orders assigned to you yet.,Henüz size atanmış iş emri yok.
 No {0} receivable account exists for company {1}. ,{1} şirketi için {0} alacak hesabı mevcut değil. 
 Nos,Nos
 Not found,Bulunamadı
@@ -765,6 +773,7 @@ Open SREs,Açık SRE'ler
 Opening,Açılış
 Opening balance,Açılış bakiyesi
 Opening balances,Açılış bakiyeleri
+Operator,Operatör
 Optional,İsteğe bağlı
 Order,Sipariş
 Order Date,Sipariş Tarihi
@@ -804,6 +813,8 @@ Partly paid,Kısmen ödendi
 Party,Taraf
 Party account not resolved — re-select the party.,Taraf hesabı çözümlenemedi — tarafı yeniden seçin.
 Party is required.,Taraf zorunludur.
+Pause failed.,Duraklama başarısız.
+Pause this Work Order? You can resume it later.,Bu iş emri duraklatılsın mı? Daha sonra devam ettirebilirsiniz.
 Pay,Öde
 Pay from,Ödeme kaynağı
 Pay supplier,Tedarikçiye öde
@@ -885,6 +896,8 @@ Processed,İşlendi
 Processes,Süreçler
 Produce how many units? Leave blank for full balance.,Kaç birim üretilecek? Tüm bakiye için boş bırakın.
 Produced,Üretildi
+Produced quantity,Üretilen miktar
+Produced quantity must be positive.,Üretilen miktar pozitif olmalıdır.
 Profile,Profil
 Projected,Tahmini
 Promo,Promosyon
@@ -951,12 +964,14 @@ Reject this leave request?,Bu izin talebi reddedilsin mi?
 Rejected,Reddedildi
 Related documents,İlgili belgeler
 Reload,Yeniden yükle
+Remaining,Kalan
 Remark,Açıklama
 Remarks,Açıklamalar
 Remittance,Havale
 Remove,Kaldır
 Remove Lane,Şeridi Kaldır
 Remove column,Sütunu sil
+Remove operator,
 Remove row,Satırı kaldır
 Rename,Yeniden adlandır
 Reorder at,Yeniden sipariş noktası
@@ -980,6 +995,9 @@ Reserved value,Rezerve değeri
 Reset email sent.,Sıfırlama e-postası gönderildi.
 Reset password,Şifreyi sıfırla
 Resolved At,Çözüldüğü Yer
+Resume,Devam et
+Resume failed.,Devam etme başarısız.
+Resume this Work Order?,
 Retired,Kullanım dışı
 Retries,Yeniden denemeler
 Retry submission,Gönderimi yeniden dene
@@ -1043,6 +1061,7 @@ Schedule preview,Program önizlemesi
 Scheme Code,Plan Kodu
 Scheme Name,Plan Adı
 Scheme Type,Plan Türü
+Scrap / rejects,Hurda / ret
 Search,Ara
 Search BOMs or finished goods…,Ürün reçetesi veya mamul ara…
 Search account…,Hesap ara…
@@ -1112,6 +1131,7 @@ Standard rate,Standart fiyat
 Start,Başlat
 Start Date,Başlangıç Tarihi
 Start Work,İşe Başla
+Start failed.,Başlatma başarısız.
 Status,Durum
 Status is required.,Durum zorunludur.
 Status name is required,
@@ -1194,6 +1214,7 @@ Transfer,Transfer
 Transfer detail,Transfer detayı
 Transfer how many units of materials? Leave blank for full.,Kaç birim malzeme transfer edilsin? Tamamı için boş bırakın.
 Transfer materials,Malzemeleri transfer et
+Transfer materials and start this Work Order?,Malzemeleri transfer edip iş emrini başlatmak ister misiniz?
 Transfer stock,Stok transferi
 Transferred,Transfer edildi
 Transfers,Transferler
@@ -1209,6 +1230,7 @@ Unknown Sales Invoice: {0},Bilinmeyen Satış Faturası: {0}
 Unknown Sales Order: {0},Bilinmeyen Satış Siparişi: {0}
 Unknown company: {0},Bilinmeyen şirket: {0}
 Unknown role template: {0},Bilinmeyen rol şablonu: {0}
+Unknown user: {0},
 Unknown vertical pack: {0},Bilinmeyen dikey paket: {0}
 Unknown warehouse: {0},Bilinmeyen depo: {0}
 Unpaid,Ödenmedi
@@ -1293,6 +1315,7 @@ line,satır
 more,daha fazla
 optional,isteğe bağlı
 pack_key is required,pack_key zorunludur
+planned,planlanan
 source,target
 step_idx must be an integer.,step_idx bir tam sayı olmalıdır.
 user@example.com,user@example.com

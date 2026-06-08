@@ -32,7 +32,7 @@ Add Deal,
 Add Decision,Добавить решение
 Add Lane,Добавить полосу
 Add Task,Добавить задачу
-Add a column to start organising your deals.,Добавьте колонку, чтобы начать организовывать сделки.
+Add a column to start organising your deals.,Добавьте колонку
 Add a customer,Добавить клиента
 Add a warehouse to start tracking stock locations.,"Добавьте склад, чтобы начать отслеживание мест хранения товаров."
 Add another item,Добавить ещё товар
@@ -105,12 +105,14 @@ Asl Belgisi Code,Код Asl Belgisi
 Asl Belgisi — Stock Entries pending scan,Asl Belgisi — складские движения к сканированию
 Asset Tag,Тег актива
 Asset Tag and Category are required.,Требуются тег актива и категория.
+Assign operator,Назначить оператора
 Assigned Field User,Закреплённый сотрудник
 Assigned Technician,Назначенный техник
 At least two account lines are required.,Требуется минимум две строки счета.
 Attendance,Посещаемость
 Audited At,Проверено
 Available,Доступно
+Awaiting release by manager,Ожидает разрешения руководителя
 BOM,Спецификация
 BOMs,Спецификации
 Back,Назад
@@ -217,6 +219,7 @@ Complete,Готово
 Completed,Завершено
 Compliance,Соответствие
 Components,Компоненты
+Confirm finish,Подтвердить завершение
 Connector,Соединитель
 Consumed,Израсходовано
 Contact,Контакт
@@ -451,6 +454,7 @@ Failed to load transfers.,Не удалось загрузить перевод�
 Failed to load van stock.,Ошибка загрузки запасов фургона.
 Failed to load visit.,Ошибка загрузки визита.
 Failed to load warehouses.,Ошибка загрузки складов.
+Failed to load work orders.,
 Failed to load.,Ошибка загрузки.
 Failed to move deal.,Не удалось переместить сделку.
 Failed to record payment.,Ошибка записи платежа.
@@ -483,6 +487,8 @@ Field user is required.,Поле пользователь обязательно
 Field users represent sales reps who execute visits and own van stock.,"Поле пользователи представляют торговых представителей, которые выполняют визиты и управляют запасами фургона."
 Fill in the required fields before submitting.,Заполните обязательные поля перед отправкой.
 Financed,Финансируется
+Finish,Завершить
+Finish failed.,Ошибка завершения.
 Finished good,Готовая продукция
 Finished-goods warehouse,Склад готовой продукции
 First Name,Имя
@@ -625,6 +631,7 @@ Monthly,Ежемесячно
 Monthly installment,Ежемесячный платёж
 Move to Under Review,Перейти в режим проверки
 Movement,Движение
+My work orders,Мои заказы на производство
 Name,Название
 Name or email,Название или адрес электронной почты
 Narxi,Цена
@@ -754,6 +761,7 @@ No van stock yet,Запасов в автофургоне нет
 No visits yet,Пока нет визитов
 No warehouses for this company,Складов для этой компании нет
 No work orders,Нет производственных заказов
+No work orders assigned to you yet.,Вам ещё не назначены заказы на производство.
 No {0} receivable account exists for company {1}. ,Дебиторский счёт {0} для компании {1} не найден. 
 Nos,Номера
 Not found,Не найдено
@@ -784,6 +792,7 @@ Open SREs,Открытые SRE
 Opening,Начисление
 Opening balance,Начальный остаток
 Opening balances,Начальные остатки
+Operator,Оператор
 Optional,Необязательно
 Order,
 Order Date,Дата заказа
@@ -824,6 +833,8 @@ Partly paid,Частично оплачено
 Party,Контрагент
 Party account not resolved — re-select the party.,Счёт контрагента не найден — повторно выберите контрагента.
 Party is required.,Контрагент обязателен.
+Pause failed.,Ошибка паузы.
+Pause this Work Order? You can resume it later.,Приостановить заказ? Можно возобновить позже.
 Pay,Выплатить
 Pay from,Выплатить с
 Pay supplier,Выплатить поставщику
@@ -906,6 +917,8 @@ Processed,Обработано
 Processes,Процессы
 Produce how many units? Leave blank for full balance.,Сколько единиц произвести? Оставьте пустым для всего остатка.
 Produced,Произведено
+Produced quantity,Выпущенное количество
+Produced quantity must be positive.,Выпущенное количество должно быть положительным.
 Profile,Профиль
 Projected,Прогнозируемо
 Promo,Промоция
@@ -973,12 +986,14 @@ Reject this leave request?,Отклонить заявку на отпуск?
 Rejected,Отклонён
 Related documents,Связанные документы
 Reload,Перезагрузить
+Remaining,Остаток
 Remark,Замечание
 Remarks,Замечания
 Remittance,Денежный перевод
 Remove,Удалить
 Remove Lane,Удалить полосу
 Remove column,Удалить колонку
+Remove operator,
 Remove row,Удалить строку
 Rename,Переименовать
 Reorder at,Переупорядочить по
@@ -1002,6 +1017,9 @@ Reserved value,Стоимость резерва
 Reset email sent.,Сообщение сброса отправлено.
 Reset password,Сбросить пароль
 Resolved At,Разрешено в
+Resume,Возобновить
+Resume failed.,Ошибка возобновления.
+Resume this Work Order?,
 Retired,Снято с производства
 Retries,Повторы
 Retry submission,Повторить отправку
@@ -1066,6 +1084,7 @@ Schedule preview,Предпросмотр графика
 Scheme Code,Код схемы
 Scheme Name,Название схемы
 Scheme Type,Тип схемы
+Scrap / rejects,Брак / отходы
 Search,Поиск
 Search BOMs or finished goods…,Поиск спецификаций или готовой продукции…
 Search account…,Поиск счёта…
@@ -1136,6 +1155,7 @@ Standard rate,Стандартная цена
 Start,Начало
 Start Date,Дата начала
 Start Work,Начать работу
+Start failed.,Ошибка запуска.
 Status,Статус
 Status is required.,Статус обязателен.
 Status name is required,
@@ -1221,6 +1241,7 @@ Transfer,Передача
 Transfer detail,Детали перевода
 Transfer how many units of materials? Leave blank for full.,Сколько единиц материалов передать? Оставьте пустым для всего объёма.
 Transfer materials,Передать материалы
+Transfer materials and start this Work Order?,Передать материалы и запустить заказ?
 Transfer stock,Передача товара
 Transferred,Передано
 Transfers,Передачи
@@ -1237,6 +1258,7 @@ Unknown Sales Invoice: {0},Неизвестный счёт-фактура: {0}
 Unknown Sales Order: {0},Неизвестный заказ на продажу: {0}
 Unknown company: {0},Неизвестная компания: {0}
 Unknown role template: {0},Неизвестный шаблон роли: {0}
+Unknown user: {0},
 Unknown vertical pack: {0},Неизвестный вертикальный набор: {0}
 Unknown warehouse: {0},Неизвестный склад: {0}
 Unpaid,Не оплачено
@@ -1321,6 +1343,7 @@ line,строка
 more,ещё
 optional,необязательно
 pack_key is required,pack_key обязателен
+planned,план
 source,target
 step_idx must be an integer.,step_idx должен быть целым числом.
 user@example.com,user@example.com

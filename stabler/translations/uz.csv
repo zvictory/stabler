@@ -100,12 +100,14 @@ Asl Belgisi Code,Asl Belgisi kodi
 Asl Belgisi — Stock Entries pending scan,Asl Belgisi — skanerdan kutayotgan qoldiq yozuvlari
 Asset Tag,Aktivni belgisi
 Asset Tag and Category are required.,Aktivni belgisi va toifasi talab qilinadi.
+Assign operator,Operatorni belgilash
 Assigned Field User,Tayinlangan foydalanuvchi
 Assigned Technician,Tayinlangan texnik mutaxassis
 At least two account lines are required.,Kamida ikkita hisob qatori talab qilinadi.
 Attendance,Davomat
 Audited At,Tekshirilgan sana
 Available,Mavjud
+Awaiting release by manager,Menejer ruxsatini kutmoqda
 BOM,Spetsifikatsiya
 BOMs,Spetsifikatsiyalar
 Back,Ortga
@@ -211,6 +213,7 @@ Complete,To'ldirish
 Completed,To'ldirildi
 Compliance,Mos kelish
 Components,Tarkibiy qismlar
+Confirm finish,Yakunlashni tasdiqlash
 Connector,Bogʿlovchi
 Consumed,Iste'mol qilindi
 Contact,Aloqa
@@ -444,6 +447,7 @@ Failed to load transfers.,O'tkazmalarni yuklashda xatolik.
 Failed to load van stock.,Avtomobil ombor ma'lumotlarini yuklashda xato.
 Failed to load visit.,Tashrif yuklashda xato.
 Failed to load warehouses.,Omborlarni yuklashda xato.
+Failed to load work orders.,
 Failed to load.,Yuklashda xato.
 Failed to move deal.,Bitimni ko'chirish muvaffaqiyatsiz bo'ldi.
 Failed to record payment.,To'lovni qaydda xato.
@@ -476,6 +480,8 @@ Field user is required.,Foydalanuvchi maydoni talab qilinadi.
 Field users represent sales reps who execute visits and own van stock.,Foydalanuvchilar maydoni vizitlarni amalga oshiradigan va van tovarini egallagan sotuv vakilllarini ifodalaydi.
 Fill in the required fields before submitting.,Tasdiqlashdan oldin talab qilingan maydonlarni to'ldiring.
 Financed,Moliyalashtirilgan
+Finish,Yakunlash
+Finish failed.,Yakunlash muvaffaqiyatsiz.
 Finished good,Tayyor mahsulot
 Finished-goods warehouse,Tayyor mahsulot ombori
 First Name,Ism
@@ -618,6 +624,7 @@ Monthly,Oylik
 Monthly installment,Oylik to'lov
 Move to Under Review,Tekshirish ostiga ko'chirish
 Movement,Harakat
+My work orders,Mening ishlab chiqarish buyurtmalarim
 Name,Nomi
 Name or email,Nomi yoki elektron pochta
 Narxi,Narxi
@@ -747,6 +754,7 @@ No van stock yet,Mashin ombori hali yo'q
 No visits yet,Tashrif yo'q
 No warehouses for this company,Bu kompaniya uchun omborlar yo'q
 No work orders,Ishlab chiqarish buyurtmalari yo'q
+No work orders assigned to you yet.,Sizga hali hech qanday buyurtma tayinlanmagan.
 No {0} receivable account exists for company {1}. ,{0} uchun {1} kompaniyasida debitorlik hisobi mavjud emas. 
 Nos,Raqamlar
 Not found,Topilmadi
@@ -777,6 +785,7 @@ Open SREs,Ochiq SRElar
 Opening,Ochish
 Opening balance,Ochilish balansi
 Opening balances,Ochilish balans
+Operator,Operator
 Optional,Ixtiyoriy
 Order,
 Order Date,Buyurtma sanasi
@@ -817,6 +826,8 @@ Partly paid,Qisman to'langan
 Party,Tomon
 Party account not resolved — re-select the party.,Tomon hisobi aniqlanmadi — tomonni qayta tanlang.
 Party is required.,Tomon talab qilinadi.
+Pause failed.,To'xtatish muvaffaqiyatsiz.
+Pause this Work Order? You can resume it later.,Bu buyurtmani to'xtatilsinmi? Keyinroq davom ettirishingiz mumkin.
 Pay,To'lash
 Pay from,Qayerdan to'lash
 Pay supplier,Yetkazib beruvchiga to'lash
@@ -899,6 +910,8 @@ Processed,Qayta ishlangan
 Processes,Jarayonlar
 Produce how many units? Leave blank for full balance.,Necha dona ishlab chiqarish kerak? To'liq qoldiq uchun bo'sh qoldiring.
 Produced,Ishlab chiqarilgan
+Produced quantity,Ishlab chiqarilgan miqdor
+Produced quantity must be positive.,Ishlab chiqarilgan miqdor musbat bo'lishi kerak.
 Profile,Profil
 Projected,Prognozlangan
 Promo,Aksiya
@@ -966,12 +979,14 @@ Reject this leave request?,Ta'til arizasini rad etasizmi?
 Rejected,Rad etilgan
 Related documents,Tegishli hujjatlar
 Reload,Qayta yuklash
+Remaining,Qoldiq
 Remark,Izoh
 Remarks,Izohlar
 Remittance,Pul o'tkazma
 Remove,O'chirish
 Remove Lane,Yo'lakni o'chirish
 Remove column,Ustunni o'chirish
+Remove operator,
 Remove row,Qatorni o'chirish
 Rename,Nomini o'zgartirish
 Reorder at,Qayta buyurtma
@@ -995,6 +1010,9 @@ Reserved value,Zahira qiymati
 Reset email sent.,Parolni tiklash elektron xati yuborildi.
 Reset password,Parolni tiklash
 Resolved At,Hal qilish vaqti
+Resume,Davom ettirish
+Resume failed.,Davom ettirish muvaffaqiyatsiz.
+Resume this Work Order?,
 Retired,Foydalanishdan chiqarilgan
 Retries,Takrorlanishlar
 Retry submission,Takroriy yuborish
@@ -1059,6 +1077,7 @@ Schedule preview,Jadval ko'rib chiqish
 Scheme Code,Sxema kodi
 Scheme Name,Sxema nomi
 Scheme Type,Sxema turi
+Scrap / rejects,Chiqindi / nosoz
 Search,Qidirish
 Search BOMs or finished goods…,Spetsifikatsiya yoki tayyor mahsulotni qidirish…
 Search account…,Hisob qidirish…
@@ -1129,6 +1148,7 @@ Standard rate,Standart narx
 Start,Boshlash
 Start Date,Boshlanish sanasi
 Start Work,Ishni boshlash
+Start failed.,Boshlash muvaffaqiyatsiz.
 Status,Holat
 Status is required.,Holat talab qilinadi.
 Status name is required,
@@ -1214,6 +1234,7 @@ Transfer,O'tkazma
 Transfer detail,O'tkazma tafsilotlari
 Transfer how many units of materials? Leave blank for full.,Necha dona material o'tkaziladi? To'liq uchun bo'sh qoldiring.
 Transfer materials,Materiallarni o'tkazish
+Transfer materials and start this Work Order?,"Materiallarni topshirib, buyurtmani boshlash kerakmi?"
 Transfer stock,Zaxiralarni o'tkazish
 Transferred,Berilgan
 Transfers,O'tkazmalar
@@ -1230,6 +1251,7 @@ Unknown Sales Invoice: {0},Noma'lum sotuv hisob-fakturasi: {0}
 Unknown Sales Order: {0},Noma'lum sotuv buyurtmasi: {0}
 Unknown company: {0},Noma'lum kompaniya: {0}
 Unknown role template: {0},Noma'lum rol shabloni: {0}
+Unknown user: {0},
 Unknown vertical pack: {0},Noma'lum vertikal paket: {0}
 Unknown warehouse: {0},Noma'lum omborga: {0}
 Unpaid,To'lanmagan
@@ -1314,6 +1336,7 @@ line,Qator
 more,yana
 optional,Ixtiyoriy
 pack_key is required,pack_key majburiy
+planned,rejalashtirilgan
 source,target
 step_idx must be an integer.,step_idx butun son bo'lishi kerak.
 user@example.com,user@example.com

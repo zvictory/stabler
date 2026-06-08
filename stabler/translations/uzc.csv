@@ -100,12 +100,14 @@ Asl Belgisi Code,Аслий белги коди
 Asl Belgisi — Stock Entries pending scan,Аслий белги — сканлаш кутиб турган сток ёзувлари
 Asset Tag,Активлар теги
 Asset Tag and Category are required.,Активлар теги ва категорияси талаб қилинади.
+Assign operator,Оператор тайинлаш
 Assigned Field User,Назначен фойдаланувчи
 Assigned Technician,Назначен техник
 At least two account lines are required.,Камида икки ҳисоб қатори талаб қилинади.
 Attendance,Давомат
 Audited At,Текширилган
 Available,Мавжуд
+Awaiting release by manager,Менежер рухсатини кутмоқда
 BOM,Спецификация
 BOMs,Спецификациялар
 Back,Орқага
@@ -211,6 +213,7 @@ Complete,Тугалланди
 Completed,Тугалланди
 Compliance,Қўйидаги талабни ҳам қўллаш
 Components,Таркибий қисмлар
+Confirm finish,Якунлашни тасдиқлаш
 Connector,Боғловчи
 Consumed,Ишлатилди
 Contact,Алоқа
@@ -444,6 +447,7 @@ Failed to load transfers.,Ўтказмаларни юклашда хатолик
 Failed to load van stock.,Ўтувчи қоймонасини юклаб бўла олмади.
 Failed to load visit.,Сўроғини юклаб бўла олмади.
 Failed to load warehouses.,Омборларни юклаб бўла олмади.
+Failed to load work orders.,
 Failed to load.,Юклаб бўла олмади.
 Failed to move deal.,Битимни кўчириш муваффақиятсиз бўлди.
 Failed to record payment.,Тўловни ёзиб бўла олмади.
@@ -476,6 +480,8 @@ Field user is required.,Фойдаланувчи майдони зарур.
 Field users represent sales reps who execute visits and own van stock.,Фойдаланувчилар майдони ташрифларни бажарувчи ва машина қўйсига эга сотув вакиллари намояндалик қилади.
 Fill in the required fields before submitting.,Тасдиқлаш олдин зарур майдонларни тўлдириш.
 Financed,Молиялаштирилган
+Finish,Якунлаш
+Finish failed.,Якунлаш муваффақиятсиз.
 Finished good,Тайёр маҳсулот
 Finished-goods warehouse,Тайёр маҳсулот омбори
 First Name,Исм
@@ -618,6 +624,7 @@ Monthly,Ойлик
 Monthly installment,Ойлик тўлов
 Move to Under Review,Кўзда тутилаётган ҳолатга ўтказиш
 Movement,Ҳаракат
+My work orders,Менинг ишлаб чиқариш буюртмаларим
 Name,Ном
 Name or email,Ном ёки электрон почта
 Narxi,Нархи
@@ -747,6 +754,7 @@ No van stock yet,Ҳали машина қори йўқ
 No visits yet,Ҳали қариндашликлар йўқ
 No warehouses for this company,Бу компания учун омбалар йўқ
 No work orders,Ишлаб чиқариш буюртмалари йўқ
+No work orders assigned to you yet.,Сизга ҳали ҳеч қандай буюртма тайинланмаган.
 No {0} receivable account exists for company {1}. ,{0} учун {1} компаниясида дебиторлик ҳисоби мавжуд эмас. 
 Nos,Йўқ
 Not found,Топилмади
@@ -777,6 +785,7 @@ Open SREs,Очиқ SREлар
 Opening,Очилиш
 Opening balance,Очилиш балансы
 Opening balances,Очилиш балансларн
+Operator,Оператор
 Optional,Ихтиёрий
 Order,
 Order Date,Буюртма санаси
@@ -817,6 +826,8 @@ Partly paid,Қисман тўланган
 Party,Томон
 Party account not resolved — re-select the party.,Томон ҳисоби ечилмади — томонни қайта танланг.
 Party is required.,Томон керак.
+Pause failed.,Тўхтатиш муваффақиятсиз.
+Pause this Work Order? You can resume it later.,Бу буюртмани тўхтатилсинми? Кейинроқ давом эттиришингиз мумкин.
 Pay,Тўлаш
 Pay from,Дан тўлаш
 Pay supplier,Йўбағочига тўлаш
@@ -899,6 +910,8 @@ Processed,Ишланган
 Processes,Жараёнлар
 Produce how many units? Leave blank for full balance.,Неча дона ишлаб чиқариш керак? Тўлиқ қолдиқ учун бўш қолдиринг.
 Produced,Ишлаб чиқарилган
+Produced quantity,Ишлаб чиқарилган миқдор
+Produced quantity must be positive.,Ишлаб чиқарилган миқдор мусбат бўлиши керак.
 Profile,Профил
 Projected,Прогнозланган
 Promo,Акция
@@ -966,12 +979,14 @@ Reject this leave request?,Таътил аризасини рад этасизм
 Rejected,Рад этилган
 Related documents,Боғланган ҳужжатлар
 Reload,Қайта юклаш
+Remaining,Қолдиқ
 Remark,Изоҳ
 Remarks,Изоҳлар
 Remittance,Пул ўтказма
 Remove,Ўчириш
 Remove Lane,Йўлакни ўчириш
 Remove column,Устунни ўчириш
+Remove operator,
 Remove row,Қаторни ўчириш
 Rename,Номини ўзгартириш
 Reorder at,Қайта сўраш
@@ -995,6 +1010,9 @@ Reserved value,Захира қиймати
 Reset email sent.,Электрон почта янгилаш йўлланди.
 Reset password,Паролни янгилаш
 Resolved At,ҳалқилинган вақти
+Resume,Давом эттириш
+Resume failed.,Давом эттириш муваффақиятсиз.
+Resume this Work Order?,
 Retired,Пенсияга чиққан
 Retries,Қайта уринишлар
 Retry submission,Қайта юбориш
@@ -1059,6 +1077,7 @@ Schedule preview,Жадвал кўриб чиқиш
 Scheme Code,Схема коди
 Scheme Name,Схема номи
 Scheme Type,Схема тури
+Scrap / rejects,Чиқинди / носоз
 Search,Қидириш
 Search BOMs or finished goods…,Спецификация ёки тайёр маҳсулотни қидириш…
 Search account…,Ҳисобро қидириш…
@@ -1129,6 +1148,7 @@ Standard rate,Стандарт нарх
 Start,Бошлаш
 Start Date,Бошлаш саналари
 Start Work,Ишни бошлаш
+Start failed.,Бошлаш муваффақиятсиз.
 Status,Ҳолат
 Status is required.,Ҳолат талаб қилинади.
 Status name is required,
@@ -1214,6 +1234,7 @@ Transfer,Ўтказма
 Transfer detail,Ўтказма тафсилотлари
 Transfer how many units of materials? Leave blank for full.,Неча дона материал ўтказилади? Тўлиқ учун бўш қолдиринг.
 Transfer materials,Материалларни ўтказиш
+Transfer materials and start this Work Order?,"Материалларни топшириб, буюртмани бошлаш керакми?"
 Transfer stock,Аксесуарларни ўтказма
 Transferred,Берилган
 Transfers,Ўтказмалар
@@ -1230,6 +1251,7 @@ Unknown Sales Invoice: {0},Номаълум сотув ҳисоб-фактура
 Unknown Sales Order: {0},Номаълум сотув буюртмаси: {0}
 Unknown company: {0},Номаълум компания: {0}
 Unknown role template: {0},Номаълум рол шаблони: {0}
+Unknown user: {0},
 Unknown vertical pack: {0},Номаълум верикал пакет: {0}
 Unknown warehouse: {0},Номаълум омбор: {0}
 Unpaid,Тўланмаган
@@ -1314,6 +1336,7 @@ line,Қатор
 more,яна
 optional,Ихтиёрий
 pack_key is required,pack_key керак
+planned,режалаштирилган
 source,target
 step_idx must be an integer.,step_idx бутун сон бўлиши керак.
 user@example.com,user@example.com

@@ -99,12 +99,14 @@ Asl Belgisi Code,Asl Belgisi Code
 Asl Belgisi — Stock Entries pending scan,Asl Belgisi — Stock Entries pending scan
 Asset Tag,Asset Tag
 Asset Tag and Category are required.,Asset Tag and Category are required.
+Assign operator,Assign operator
 Assigned Field User,Assigned Field User
 Assigned Technician,Assigned Technician
 At least two account lines are required.,At least two account lines are required.
 Attendance,Attendance
 Audited At,Audited At
 Available,Available
+Awaiting release by manager,Awaiting release by manager
 BOM,BOM
 BOMs,BOMs
 Back,Back
@@ -209,6 +211,7 @@ Complete,Complete
 Completed,Completed
 Compliance,Compliance
 Components,Components
+Confirm finish,Confirm finish
 Connector,Connector
 Consumed,Consumed
 Contact,Contact
@@ -442,6 +445,7 @@ Failed to load transfers.,Failed to load transfers.
 Failed to load van stock.,Failed to load van stock.
 Failed to load visit.,Failed to load visit.
 Failed to load warehouses.,Failed to load warehouses.
+Failed to load work orders.,Failed to load work orders.
 Failed to load.,Failed to load.
 Failed to move deal.,Failed to move deal.
 Failed to record payment.,Failed to record payment.
@@ -474,6 +478,8 @@ Field user is required.,Field user is required.
 Field users represent sales reps who execute visits and own van stock.,Field users represent sales reps who execute visits and own van stock.
 Fill in the required fields before submitting.,Fill in the required fields before submitting.
 Financed,Financed
+Finish,Finish
+Finish failed.,Finish failed.
 Finished good,Finished good
 Finished-goods warehouse,Finished-goods warehouse
 First Name,First Name
@@ -616,6 +622,7 @@ Monthly,Monthly
 Monthly installment,Monthly installment
 Move to Under Review,Move to Under Review
 Movement,Movement
+My work orders,My work orders
 Name,Name
 Name or email,Name or email
 Narxi,Narxi
@@ -744,6 +751,7 @@ No van stock yet,No van stock yet
 No visits yet,No visits yet
 No warehouses for this company,No warehouses for this company
 No work orders,No work orders
+No work orders assigned to you yet.,No work orders assigned to you yet.
 No {0} receivable account exists for company {1}. ,No {0} receivable account exists for company {1}. 
 Nos,Nos
 Not found,Not found
@@ -774,6 +782,7 @@ Open SREs,Open SREs
 Opening,Opening
 Opening balance,Opening balance
 Opening balances,Opening balances
+Operator,Operator
 Optional,Optional
 Order,Order
 Order Date,Order Date
@@ -813,6 +822,8 @@ Partly paid,Partly paid
 Party,Party
 Party account not resolved — re-select the party.,Party account not resolved — re-select the party.
 Party is required.,Party is required.
+Pause failed.,Pause failed.
+Pause this Work Order? You can resume it later.,Pause this Work Order? You can resume it later.
 Pay,Pay
 Pay from,Pay from
 Pay supplier,Pay supplier
@@ -895,6 +906,8 @@ Processed,Processed
 Processes,Processes
 Produce how many units? Leave blank for full balance.,Produce how many units? Leave blank for full balance.
 Produced,Produced
+Produced quantity,Produced quantity
+Produced quantity must be positive.,Produced quantity must be positive.
 Profile,Profile
 Projected,Projected
 Promo,Promo
@@ -962,12 +975,14 @@ Reject this leave request?,Reject this leave request?
 Rejected,Rejected
 Related documents,Related documents
 Reload,Reload
+Remaining,Remaining
 Remark,Remark
 Remarks,Remarks
 Remittance,Remittance
 Remove,Remove
 Remove Lane,Remove Lane
 Remove column,Remove column
+Remove operator,Remove operator
 Remove row,Remove row
 Rename,Rename
 Reorder at,Reorder at
@@ -991,6 +1006,9 @@ Reserved value,Reserved value
 Reset email sent.,Reset email sent.
 Reset password,Reset password
 Resolved At,Resolved At
+Resume,Resume
+Resume failed.,Resume failed.
+Resume this Work Order?,Resume this Work Order?
 Retired,Retired
 Retries,Retries
 Retry submission,Retry submission
@@ -1055,6 +1073,7 @@ Schedule preview,Schedule preview
 Scheme Code,Scheme Code
 Scheme Name,Scheme Name
 Scheme Type,Scheme Type
+Scrap / rejects,Scrap / rejects
 Search,Search
 Search BOMs or finished goods…,Search BOMs or finished goods…
 Search account…,Search account…
@@ -1125,6 +1144,7 @@ Standard rate,Standard rate
 Start,Start
 Start Date,Start Date
 Start Work,Start Work
+Start failed.,Start failed.
 Status,Status
 Status is required.,Status is required.
 Status name is required,Status name is required
@@ -1207,6 +1227,7 @@ Transfer,Transfer
 Transfer detail,Transfer detail
 Transfer how many units of materials? Leave blank for full.,Transfer how many units of materials? Leave blank for full.
 Transfer materials,Transfer materials
+Transfer materials and start this Work Order?,Transfer materials and start this Work Order?
 Transfer stock,Transfer stock
 Transferred,Transferred
 Transfers,Transfers
@@ -1222,6 +1243,7 @@ Unknown Sales Invoice: {0},Unknown Sales Invoice: {0}
 Unknown Sales Order: {0},Unknown Sales Order: {0}
 Unknown company: {0},Unknown company: {0}
 Unknown role template: {0},Unknown role template: {0}
+Unknown user: {0},Unknown user: {0}
 Unknown vertical pack: {0},Unknown vertical pack: {0}
 Unknown warehouse: {0},Unknown warehouse: {0}
 Unpaid,Unpaid
@@ -1306,6 +1328,7 @@ line,line
 more,more
 optional,optional
 pack_key is required,pack_key is required
+planned,planned
 source,target
 step_idx must be an integer.,step_idx must be an integer.
 user@example.com,user@example.com

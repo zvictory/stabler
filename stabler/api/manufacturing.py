@@ -5,10 +5,40 @@ from __future__ import annotations
 import json
 
 import frappe
+from frappe import _
 from frappe.utils import flt, getdate, today
 
 
 from stabler.api._common import _require_company
+from stabler.api.organization import _can_access_module
+
+
+# ----- Role helpers ---------------------------------------------------------
+
+_ADMIN_ROLES = {"System Manager", "Stabler Admin"}
+
+
+def _is_mfg_manager(user: str | None = None) -> bool:
+	roles = set(frappe.get_roles(user or frappe.session.user))
+	return bool(roles & ({"Manufacturing Manager"} | _ADMIN_ROLES))
+
+
+def _require_mfg_manager() -> None:
+	if not _is_mfg_manager():
+		frappe.throw(_("Not permitted"), frappe.PermissionError)
+
+
+def _require_mfg() -> None:
+	"""Any user with the manufacturing module (operator OR manager)."""
+	if not _can_access_module(frappe.session.user, "manufacturing"):
+		frappe.throw(_("Not permitted"), frappe.PermissionError)
+
+
+def _require_own_work_order(name: str) -> None:
+	"""Assert current user is the assigned operator on this WO (non-managers only)."""
+	operator = frappe.db.get_value("Work Order", name, "operator")
+	if operator != frappe.session.user:
+		frappe.throw(_("Not permitted"), frappe.PermissionError)
 
 
 # ----- BOMs ----------------------------------------------------------------
@@ -17,6 +47,7 @@ from stabler.api._common import _require_company
 @frappe.whitelist()
 def list_boms(company: str, search: str = "", item: str | None = None, limit: int = 100):
 	_require_company(company)
+	_require_mfg_manager()
 	conds = ["company = %(company)s"]
 	params: dict = {"company": company, "limit": int(limit)}
 	if search:
@@ -42,6 +73,7 @@ def list_boms(company: str, search: str = "", item: str | None = None, limit: in
 
 @frappe.whitelist()
 def bom_detail(name: str):
+	_require_mfg_manager()
 	if not name or not frappe.db.exists("BOM", name):
 		frappe.throw(f"Unknown BOM: {name}")
 	doc = frappe.get_doc("BOM", name)
@@ -90,6 +122,7 @@ def create_bom(
 	"""Create a Bill of Materials. `items` is a list of
 	{item_code, qty, uom?, rate?, bom_no?}."""
 	_require_company(company)
+	_require_mfg_manager()
 	if not item or not frappe.db.exists("Item", item):
 		frappe.throw(f"Unknown FG item: {item}")
 	if flt(quantity) <= 0:
@@ -135,6 +168,7 @@ def create_bom(
 
 @frappe.whitelist()
 def submit_bom(name: str):
+	_require_mfg_manager()
 	doc = frappe.get_doc("BOM", name)
 	if doc.docstatus != 0:
 		frappe.throw("BOM is not in draft.")
@@ -144,6 +178,7 @@ def submit_bom(name: str):
 
 @frappe.whitelist()
 def cancel_bom(name: str):
+	_require_mfg_manager()
 	doc = frappe.get_doc("BOM", name)
 	if doc.docstatus != 1:
 		frappe.throw("Only submitted BOMs can be cancelled.")
@@ -165,6 +200,7 @@ def list_work_orders(
 	limit: int = 100,
 ):
 	_require_company(company)
+	_require_mfg()
 	conds = ["company = %(company)s"]
 	params: dict = {"company": company, "limit": int(limit)}
 	if status and status in _WO_STATUSES:
@@ -173,13 +209,17 @@ def list_work_orders(
 	if search:
 		conds.append("(name LIKE %(s)s OR production_item LIKE %(s)s OR item_name LIKE %(s)s)")
 		params["s"] = f"%{search}%"
+	# Operators see only WOs assigned to themselves; managers see all.
+	if not _is_mfg_manager():
+		conds.append("operator = %(user)s")
+		params["user"] = frappe.session.user
 	where = " AND ".join(conds)
 	return frappe.db.sql(
 		f"""
 		SELECT name, production_item, item_name, bom_no, qty, produced_qty,
 		       material_transferred_for_manufacturing AS transferred_qty,
 		       status, planned_start_date, planned_end_date, fg_warehouse,
-		       wip_warehouse, docstatus, modified
+		       wip_warehouse, operator, docstatus, modified
 		FROM `tabWork Order`
 		WHERE {where}
 		ORDER BY modified DESC
@@ -192,9 +232,16 @@ def list_work_orders(
 
 @frappe.whitelist()
 def work_order_detail(name: str):
+	_require_mfg()
 	if not name or not frappe.db.exists("Work Order", name):
 		frappe.throw(f"Unknown Work Order: {name}")
 	doc = frappe.get_doc("Work Order", name)
+	is_manager = _is_mfg_manager()
+
+	# IDOR guard: operators may only view their own WOs.
+	if not is_manager and doc.get("operator") != frappe.session.user:
+		frappe.throw(_("Not permitted"), frappe.PermissionError)
+
 	required = [
 		{
 			"item_code": r.item_code,
@@ -203,16 +250,15 @@ def work_order_detail(name: str):
 			"transferred_qty": flt(r.transferred_qty),
 			"consumed_qty": flt(r.consumed_qty),
 			"source_warehouse": r.source_warehouse,
-			"rate": flt(r.rate),
-			"amount": flt(r.amount),
+			# Rates reveal BOM cost data — only managers see them.
+			**({"rate": flt(r.rate), "amount": flt(r.amount)} if is_manager else {}),
 		}
 		for r in (doc.required_items or [])
 	]
-	return {
+	payload: dict = {
 		"name": doc.name,
 		"production_item": doc.production_item,
 		"item_name": doc.item_name,
-		"bom_no": doc.bom_no,
 		"qty": flt(doc.qty),
 		"produced_qty": flt(doc.produced_qty),
 		"transferred_qty": flt(doc.material_transferred_for_manufacturing),
@@ -224,8 +270,13 @@ def work_order_detail(name: str):
 		"wip_warehouse": doc.wip_warehouse,
 		"source_warehouse": doc.source_warehouse,
 		"company": doc.company,
+		"operator": doc.get("operator") or None,
 		"required_items": required,
 	}
+	# bom_no reveals the BOM structure — managers only.
+	if is_manager:
+		payload["bom_no"] = doc.bom_no
+	return payload
 
 
 @frappe.whitelist()
@@ -241,6 +292,7 @@ def create_work_order(
 	submit: int = 0,
 ):
 	_require_company(company)
+	_require_mfg_manager()
 	if not production_item or not frappe.db.exists("Item", production_item):
 		frappe.throw(f"Unknown item: {production_item}")
 	if flt(qty) <= 0:
@@ -279,6 +331,8 @@ def create_work_order(
 
 @frappe.whitelist()
 def submit_work_order(name: str):
+	"""Release a Work Order from Draft → Not Started. Manager-only action."""
+	_require_mfg_manager()
 	doc = frappe.get_doc("Work Order", name)
 	if doc.docstatus != 0:
 		frappe.throw("Work Order is not in draft.")
@@ -290,12 +344,29 @@ def submit_work_order(name: str):
 def stop_work_order(name: str, reason: str = "Production Stopped"):
 	from erpnext.manufacturing.doctype.work_order.work_order import stop_unstop
 
+	_require_mfg()
+	if not _is_mfg_manager():
+		_require_own_work_order(name)
 	stop_unstop(name, "Stopped")
 	return {"name": name, "status": frappe.db.get_value("Work Order", name, "status")}
 
 
 @frappe.whitelist()
+def resume_work_order(name: str):
+	"""Resume a previously stopped Work Order."""
+	from erpnext.manufacturing.doctype.work_order.work_order import stop_unstop
+
+	_require_mfg()
+	if not _is_mfg_manager():
+		_require_own_work_order(name)
+	stop_unstop(name, "Resumed")
+	return {"name": name, "status": frappe.db.get_value("Work Order", name, "status")}
+
+
+@frappe.whitelist()
 def close_work_order(name: str):
+	"""Finalize a completed Work Order. Manager-only."""
+	_require_mfg_manager()
 	doc = frappe.get_doc("Work Order", name)
 	if doc.docstatus != 1:
 		frappe.throw("Only submitted Work Orders can be closed.")
@@ -305,32 +376,70 @@ def close_work_order(name: str):
 
 
 @frappe.whitelist()
-def make_work_order_stock_entry(work_order: str, purpose: str, qty: float | None = None):
-	"""Generate a Stock Entry document for material transfer or manufacture.
+def make_work_order_stock_entry(
+	work_order: str,
+	purpose: str,
+	qty: float | None = None,
+	scrap_qty: float | None = None,
+):
+	"""Generate and submit a Stock Entry for material transfer or manufacture.
 
-	Returns the unsaved Stock Entry as a dict the UI can pre-fill, mirroring
-	what the ERPNext Work Order desk action does."""
+	`scrap_qty` is accepted for the Manufacture purpose and recorded as
+	process loss (operator-reported rejects)."""
 	from erpnext.manufacturing.doctype.work_order.work_order import make_stock_entry
 
+	_require_mfg()
 	if purpose not in ("Material Transfer for Manufacture", "Manufacture"):
 		frappe.throw(f"Unsupported purpose: {purpose}")
+	if not _is_mfg_manager():
+		_require_own_work_order(work_order)
+
 	doc = make_stock_entry(work_order, purpose, qty=flt(qty) if qty else None)
-	if isinstance(doc, dict):
-		stub = doc
-	else:
-		stub = doc.as_dict()
-	# Insert + submit immediately — match the "produce now" flow used by the
-	# Tabler UI button. If we ever want to allow drafts, expose a separate API.
+	stub = doc if isinstance(doc, dict) else doc.as_dict()
 	se = frappe.get_doc(stub)
+	if purpose == "Manufacture" and scrap_qty and flt(scrap_qty) > 0:
+		se.process_loss_qty = flt(scrap_qty)
 	se.insert(ignore_permissions=False)
 	se.submit()
 	return {"name": se.name, "purpose": purpose, "docstatus": se.docstatus}
 
 
 @frappe.whitelist()
+def assign_work_order_operator(name: str, operator: str):
+	"""Assign a shop-floor operator to this Work Order. Manager-only."""
+	_require_mfg_manager()
+	if not frappe.db.exists("Work Order", name):
+		frappe.throw(f"Unknown Work Order: {name}")
+	if operator and not frappe.db.exists("User", operator):
+		frappe.throw(_("Unknown user: {0}").format(operator))
+	frappe.db.set_value("Work Order", name, "operator", operator or None)
+	return {"name": name, "operator": operator or None}
+
+
+@frappe.whitelist()
+def list_operators(company: str):
+	"""Users with Manufacturing User or Manager role. Manager-only."""
+	_require_mfg_manager()
+	_require_company(company)
+	return frappe.db.sql(
+		"""
+		SELECT DISTINCT u.name, u.full_name, u.user_image
+		FROM `tabUser` u
+		JOIN `tabHas Role` hr ON hr.parent = u.name AND hr.parenttype = 'User'
+		WHERE hr.role IN ('Manufacturing User', 'Manufacturing Manager')
+		  AND u.enabled = 1
+		  AND u.name != 'Administrator'
+		ORDER BY u.full_name ASC
+		""",
+		as_dict=True,
+	)
+
+
+@frappe.whitelist()
 def manufacturable_items(company: str, search: str = "", limit: int = 50):
 	"""Items that have at least one submitted, active BOM in this company."""
 	_require_company(company)
+	_require_mfg_manager()
 	conds = ["b.company = %(company)s", "b.is_active = 1", "b.docstatus = 1"]
 	params: dict = {"company": company, "limit": int(limit)}
 	if search:

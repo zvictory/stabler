@@ -35,6 +35,9 @@ export const useSession = defineStore("session", {
 		isAdmin(state) {
 			return state.roles?.includes("System Manager") || state.roles?.includes("Stabler Admin");
 		},
+		isMfgManager(state) {
+			return this.isAdmin || (state.roles?.includes("Manufacturing Manager") ?? false);
+		},
 		// Returns a function so callers can pass a module key: session.canAccessModule("sales")
 		// Null allowedModules (boot not yet loaded) defaults open — matches pre-boot behavior.
 		canAccessModule(state) {
