@@ -172,6 +172,19 @@ function factorFor(line, uom) {
 	const entry = (line.uoms || []).find((u) => u.uom === uom);
 	return entry ? Number(entry.conversion_factor) || 1 : 1;
 }
+function isKorobkaUom(uom) {
+	const name = String(uom || "").trim().toLowerCase();
+	return name.includes("korobka") || name.includes("короб");
+}
+function preferredSalesUom(meta) {
+	const uoms = meta.uoms || [];
+	const korobka = uoms.find((u) => isKorobkaUom(u.uom));
+	if (korobka) return korobka;
+	const boxUom = uoms
+		.filter((u) => u.uom !== meta.stock_uom && Number(u.conversion_factor) > 1)
+		.sort((a, b) => Number(b.conversion_factor) - Number(a.conversion_factor))[0];
+	return boxUom || uoms.find((u) => u.uom === (meta.default_uom || meta.stock_uom)) || null;
+}
 async function onUomChange(line) {
 	line.conversion_factor = factorFor(line, line.uom);
 	// Only auto-resolve the rate on UOM change when the user hasn't manually
@@ -241,6 +254,13 @@ async function resolveRate(itemCode, fallback = 0, uom = undefined) {
 		return { rate: Number(fallback || 0) };
 	}
 }
+async function refreshLineRatesForPriceList() {
+	const lines = form.value.items.filter((line) => line.item_code && !line.rateTouched);
+	for (const line of lines) {
+		const { rate } = await resolveRate(line.item_code, line.rate, line.uom);
+		if (rate) line.rate = rate;
+	}
+}
 async function pickItem(line, item) {
 	line.item_code = item.item_code || item.name;
 	line.item_name = item.item_name;
@@ -254,18 +274,14 @@ async function pickItem(line, item) {
 		});
 		line.stock_uom = meta.stock_uom || "";
 		line.uoms = meta.uoms || [];
-		// Default to the box UOM (largest conversion factor > 1) so the "Korobka"
-		// unit leads. Falls back to default_uom / stock_uom for piece-only items.
-		const boxUom = (meta.uoms || [])
-			.filter((u) => u.uom !== meta.stock_uom && Number(u.conversion_factor) > 1)
-			.sort((a, b) => Number(b.conversion_factor) - Number(a.conversion_factor))[0];
-		line.uom = boxUom ? boxUom.uom : (meta.default_uom || meta.stock_uom || "");
+		const preferredUom = preferredSalesUom(meta);
+		line.uom = preferredUom ? preferredUom.uom : (meta.default_uom || meta.stock_uom || "");
 		line.conversion_factor = factorFor(line, line.uom);
 		line.rateTouched = false; // fresh pick — allow auto-rate on UOM change
-		// If we defaulted to a box UOM, resolve the box-UOM price from the price list.
-		if (boxUom && form.value.price_list) {
-			const { rate: boxRate } = await resolveRate(line.item_code, meta.price_list_rate || meta.standard_rate || 0, line.uom);
-			line.rate = boxRate;
+		// If we defaulted to a non-default UOM, resolve that UOM's price from the price list.
+		if (preferredUom && preferredUom.uom !== meta.default_uom && form.value.price_list) {
+			const { rate } = await resolveRate(line.item_code, meta.price_list_rate || meta.standard_rate || 0, line.uom);
+			line.rate = rate;
 		} else {
 			line.rate = Number(meta.price_list_rate || meta.standard_rate || 0);
 		}
@@ -341,11 +357,14 @@ watch(
 	() => form.value.customer,
 	async (customer) => {
 		if (!isCreate.value || !customer) return;
-		const lines = form.value.items.filter((l) => l.item_code);
-		for (const line of lines) {
-			const { rate } = await resolveRate(line.item_code, line.rate);
-			if (rate) line.rate = rate;
-		}
+		await refreshLineRatesForPriceList();
+	}
+);
+watch(
+	() => form.value.price_list,
+	async () => {
+		if (!editable.value) return;
+		await refreshLineRatesForPriceList();
 	}
 );
 // Propagate the header warehouse to lines (create only).

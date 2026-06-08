@@ -28,6 +28,8 @@ const ledgerLoading = ref(false);
 const ledgerError = ref("");
 const ledgerFromDate = ref("");
 const ledgerToDate = ref("");
+const ledgerSortField = ref("date");
+const ledgerSortAsc = ref(true);
 
 const partyPayOpen = ref(false);
 
@@ -120,6 +122,15 @@ function toggleSort(field) {
 	}
 }
 
+function toggleLedgerSort(field) {
+	if (ledgerSortField.value === field) {
+		ledgerSortAsc.value = !ledgerSortAsc.value;
+	} else {
+		ledgerSortField.value = field;
+		ledgerSortAsc.value = true;
+	}
+}
+
 const totalReceivable = computed(() =>
 	customers.value.reduce((sum, c) => sum + Number(c.balance_base || 0), 0)
 );
@@ -134,6 +145,20 @@ const ledgerRows = computed(() => {
 			Number(row.debit_in_account_currency || 0) -
 			Number(row.credit_in_account_currency || 0);
 		return { ...row, running_base: runBase, running_acc: runAcc };
+	});
+});
+const sortedLedgerRows = computed(() => {
+	const rows = [...ledgerRows.value];
+	if (ledgerSortField.value === "running_balance") {
+		return rows.sort((a, b) => {
+			const av = Number(ledgerCurrencyMixed.value ? a.running_base : a.running_acc);
+			const bv = Number(ledgerCurrencyMixed.value ? b.running_base : b.running_acc);
+			return ledgerSortAsc.value ? av - bv : bv - av;
+		});
+	}
+	return rows.sort((a, b) => {
+		const cmp = String(a.posting_date || "").localeCompare(String(b.posting_date || ""));
+		return ledgerSortAsc.value ? cmp : -cmp;
 	});
 });
 
@@ -233,6 +258,13 @@ const custOrdersLoading = ref(false);
 const custOrdersFromDate = ref("");
 const custOrdersToDate = ref("");
 const custOrdersStatus = ref("");
+const custOrdersFiltersVisible = computed(() =>
+	custOrdersLoading.value ||
+	custOrders.value.length > 0 ||
+	!!custOrdersFromDate.value ||
+	!!custOrdersToDate.value ||
+	!!custOrdersStatus.value
+);
 
 const ORDER_STATUSES = ["", "Draft", "To Deliver and Bill", "To Bill", "To Deliver", "Completed", "Cancelled", "Closed"];
 const orderStatusOptions = computed(() =>
@@ -641,7 +673,7 @@ watch(activeCompany, () => {
 									<span v-if="custOrdersLoading" class="spinner-border spinner-border-sm text-secondary"></span>
 									<span v-else class="badge bg-secondary-lt text-secondary">{{ custOrders.length }}</span>
 								</div>
-								<div class="d-flex gap-2 align-items-end flex-wrap mb-2">
+								<div v-if="custOrdersFiltersVisible" class="d-flex gap-2 align-items-end flex-wrap mb-2">
 									<div>
 										<label class="form-label small mb-1">{{ t("From") }}</label>
 										<DateInput v-model="custOrdersFromDate" size="sm" @blur="loadCustOrders(selected)" />
@@ -743,11 +775,29 @@ watch(activeCompany, () => {
 									<table class="table table-vcenter table-sm m-0 cust-ledger-table">
 										<thead class="cust-ledger-thead">
 											<tr>
-												<th>{{ t("Date") }}</th>
+												<th>
+													<button
+														type="button"
+														class="btn btn-link p-0 text-reset fw-semibold"
+														@click="toggleLedgerSort('date')"
+													>
+														{{ t("Date") }}
+														<i v-if="ledgerSortField === 'date'" :class="ledgerSortAsc ? 'ti ti-arrow-up' : 'ti ti-arrow-down'"></i>
+													</button>
+												</th>
 												<th>{{ t("Voucher") }}</th>
 												<th class="text-end">{{ t("Debit") }}</th>
 												<th class="text-end">{{ t("Credit") }}</th>
-												<th class="text-end">{{ t("Balance") }} ({{ ledgerCurrency }})</th>
+												<th class="text-end">
+													<button
+														type="button"
+														class="btn btn-link p-0 text-reset fw-semibold"
+														@click="toggleLedgerSort('running_balance')"
+													>
+														{{ t("Balance") }} ({{ ledgerCurrency }})
+														<i v-if="ledgerSortField === 'running_balance'" :class="ledgerSortAsc ? 'ti ti-arrow-up' : 'ti ti-arrow-down'"></i>
+													</button>
+												</th>
 											</tr>
 										</thead>
 										<tbody>
@@ -761,7 +811,7 @@ watch(activeCompany, () => {
 													) }}
 												</td>
 											</tr>
-											<tr v-for="e in ledgerRows" :key="e.name">
+											<tr v-for="e in sortedLedgerRows" :key="e.name">
 												<td class="text-nowrap small">{{ formatDateTime(e.posting_date) }}</td>
 												<td>
 													<div class="small text-secondary">{{ e.voucher_type }}</div>
