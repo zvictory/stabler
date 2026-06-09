@@ -698,6 +698,122 @@ def create_sales_return(
 	}
 
 
+def _validation_error(message: str) -> None:
+	raise frappe.ValidationError(message)
+
+
+def _normalize_direct_return_items(items) -> list[dict]:
+	if isinstance(items, str):
+		items = frappe.parse_json(items) or []
+	if not isinstance(items, list) or not items:
+		_validation_error("Return items are required.")
+
+	out = []
+	for raw in items:
+		if not isinstance(raw, dict):
+			_validation_error("Invalid return line.")
+		item_code = (raw.get("item_code") or "").strip()
+		uom = (raw.get("uom") or "").strip()
+		qty = flt(raw.get("qty"))
+		rate = flt(raw.get("rate"))
+		if not item_code:
+			_validation_error("Item code is required.")
+		if qty <= 0:
+			_validation_error(f"Return quantity must be greater than zero for {item_code}.")
+		if rate <= 0:
+			_validation_error(f"Return rate must be greater than zero for {item_code}.")
+		out.append({"item_code": item_code, "qty": qty, "rate": rate, "uom": uom or None})
+	if not out:
+		_validation_error("Return items are required.")
+	return out
+
+
+@frappe.whitelist()
+def create_direct_sales_return(
+	company: str,
+	customer: str,
+	warehouse: str,
+	items=None,
+	posting_date: str | None = None,
+):
+	"""Create a submitted direct Sales Invoice credit note without return_against.
+
+	UI quantities are entered positive; ERPNext receives negative quantities on
+	the return invoice. No payment rows are created, so the submitted credit note
+	leaves credit on the customer's receivable balance.
+	"""
+	_require_company(company)
+	if not customer or not frappe.db.exists("Customer", customer):
+		frappe.throw(_("Unknown customer: {0}").format(customer or ""), frappe.DoesNotExistError)
+	if not warehouse or not frappe.db.exists("Warehouse", warehouse):
+		frappe.throw(_("Unknown warehouse: {0}").format(warehouse or ""), frappe.DoesNotExistError)
+	warehouse_row = frappe.db.get_value(
+		"Warehouse",
+		warehouse,
+		["company", "is_group", "disabled"],
+		as_dict=True,
+	)
+	if warehouse_row.company != company:
+		frappe.throw(_("Warehouse belongs to a different company."), frappe.PermissionError)
+	if cint(warehouse_row.is_group) or cint(warehouse_row.disabled):
+		frappe.throw(_("Select an active leaf warehouse for returns."), frappe.ValidationError)
+
+	lines = _normalize_direct_return_items(items)
+	for line in lines:
+		item = frappe.db.get_value(
+			"Item",
+			line["item_code"],
+			["disabled", "is_stock_item", "is_sales_item", "stock_uom"],
+			as_dict=True,
+		)
+		if not item:
+			frappe.throw(_("Unknown item: {0}").format(line["item_code"]), frappe.DoesNotExistError)
+		if cint(item.disabled) or not cint(item.is_sales_item) or not cint(item.is_stock_item):
+			frappe.throw(
+				_("{0} must be an enabled stock sales item.").format(line["item_code"]),
+				frappe.ValidationError,
+			)
+
+	doc = frappe.new_doc("Sales Invoice")
+	doc.company = company
+	doc.customer = customer
+	doc.is_return = 1
+	doc.update_stock = 1
+	doc.set_warehouse = warehouse
+	doc.posting_date = getdate(posting_date or today())
+	doc.due_date = doc.posting_date
+	doc.remarks = _("Direct sales return")
+
+	for line in lines:
+		row = {
+			"item_code": line["item_code"],
+			"qty": -abs(line["qty"]),
+			"rate": line["rate"],
+			"price_list_rate": line["rate"],
+			"warehouse": warehouse,
+		}
+		if line["uom"]:
+			row["uom"] = line["uom"]
+		doc.append("items", row)
+
+	doc.set_missing_values()
+	doc.calculate_taxes_and_totals()
+	doc.insert(ignore_permissions=False)
+	doc.submit()
+	frappe.db.commit()
+	return {
+		"name": doc.name,
+		"status": doc.status,
+		"docstatus": doc.docstatus,
+		"is_return": cint(doc.is_return),
+		"return_against": doc.return_against or "",
+		"grand_total": flt(doc.grand_total),
+		"currency": doc.currency,
+		"customer": doc.customer,
+		"warehouse": warehouse,
+	}
+
+
 VALID_CUSTOMER_TYPES = {"Individual", "Company", "Partnership"}
 
 

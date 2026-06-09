@@ -18,6 +18,7 @@ import SalesOrders from "./pages/sales/SalesOrders.vue";
 import SalesOrderForm from "./pages/sales/SalesOrderForm.vue";
 import SalesInvoices from "./pages/sales/SalesInvoices.vue";
 import SalesInvoiceForm from "./pages/sales/SalesInvoiceForm.vue";
+import SalesReturnForm from "./pages/sales/SalesReturnForm.vue";
 import POS from "./pages/pos.vue";
 import SalesAging from "./pages/sales/Aging.vue";
 import ReservedStock from "./pages/sales/ReservedStock.vue";
@@ -112,6 +113,7 @@ const routes = [
 			{ path: "orders/new", name: "sales-order-new", component: SalesOrderForm, meta: { title: t("New Sales Order") } },
 			{ path: "orders/:name", name: "sales-order", component: SalesOrderForm, meta: { title: t("Sales Order") } },
 			{ path: "invoices", name: "sales-invoices", component: SalesInvoices, meta: { title: t("Sales Invoices") } },
+			{ path: "returns/new", name: "sales-return-new", component: SalesReturnForm, meta: { title: t("New Sales Return") } },
 			{ path: "pos", redirect: "/pos" },
 			{ path: "invoices/:name/print", name: "sales-invoice-print", component: InvoicePrint, meta: { title: t("Invoice") } },
 			{ path: "invoices/:name/waybill", name: "sales-invoice-waybill", component: Waybill, meta: { title: t("Yuk xati") } },

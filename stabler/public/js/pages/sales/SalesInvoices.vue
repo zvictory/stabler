@@ -109,6 +109,9 @@ watch(activeCompany, load);
 		<div class="card-header">
 			<div class="card-title">{{ t("Sales Invoices") }}</div>
 			<div class="ms-auto d-flex gap-2 align-items-end flex-wrap">
+				<router-link to="/sales/returns/new" class="btn btn-sm btn-outline-warning align-self-end">
+					<i class="ti ti-receipt-refund me-1"></i>{{ t("New Return") }}
+				</router-link>
 				<div>
 					<label class="form-label small mb-1">{{ t("Search") }}</label>
 					<input

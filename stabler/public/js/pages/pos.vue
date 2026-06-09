@@ -19,6 +19,7 @@ const profile = ref(null);
 const paymentMode = ref("");
 const profileLoading = ref(false);
 const profileError = ref("");
+const mode = ref("sale");
 
 const search = ref("");
 const selectedCategory = ref("all");
@@ -48,13 +49,19 @@ const paymentOptions = computed(() =>
 const cartTotal = computed(() =>
 	cart.value.reduce((sum, item) => sum + Number(item.qty || 0) * Number(item.rate || 0), 0)
 );
+const signedTotal = computed(() => (mode.value === "return" ? -Math.abs(cartTotal.value || 0) : cartTotal.value));
 const cartUnits = computed(() => cart.value.reduce((sum, item) => sum + Number(item.qty || 0), 0));
 const canCheckout = computed(
 	() =>
 		!!profile.value &&
-		!!paymentMode.value &&
+		(mode.value === "return" || !!paymentMode.value) &&
 		cart.value.length > 0 &&
-		cart.value.every((item) => Number(item.qty || 0) > 0 && Number(item.qty || 0) <= Number(item.available_qty || 0)) &&
+		cart.value.every((item) => {
+			const qty = Number(item.qty || 0);
+			if (qty <= 0) return false;
+			if (mode.value === "return" && Number(item.rate || 0) <= 0) return false;
+			return mode.value === "return" || qty <= Number(item.available_qty || 0);
+		}) &&
 		!checkoutRunning.value
 );
 const categoryChips = computed(() => {
@@ -91,7 +98,15 @@ function categoryForItem(item) {
 
 function itemCardClass(item) {
 	const category = categoryForItem(item);
-	return [`pos-item-card`, `pos-item-card--${category.tone}`, { "is-empty": Number(item.available_qty || 0) <= 0 }];
+	return [
+		`pos-item-card`,
+		`pos-item-card--${category.tone}`,
+		{
+			"is-empty":
+				(mode.value === "sale" && Number(item.available_qty || 0) <= 0) ||
+				(mode.value === "return" && Number(item.rate || 0) <= 0),
+		},
+	];
 }
 
 function focusSearch() {
@@ -164,12 +179,24 @@ async function searchItems() {
 	searchLoading.value = true;
 	searchError.value = "";
 	try {
-		itemResults.value = await call("stabler.api.pos.search_pos_items", {
-			company: activeCompany.value,
-			pos_profile: profile.value.name,
-			search: search.value,
-			limit: 48,
-		});
+		if (mode.value === "return") {
+			const rows = await call("stabler.api.inventory.list_items", {
+				search: search.value,
+				limit: 48,
+			});
+			itemResults.value = rows.map((item) => ({
+				...item,
+				available_qty: null,
+				rate: Number(item.standard_rate || item.valuation_rate || 0),
+			}));
+		} else {
+			itemResults.value = await call("stabler.api.pos.search_pos_items", {
+				company: activeCompany.value,
+				pos_profile: profile.value.name,
+				search: search.value,
+				limit: 48,
+			});
+		}
 	} catch (err) {
 		searchError.value = err?.message || t("Failed to search items.");
 		itemResults.value = [];
@@ -178,19 +205,35 @@ async function searchItems() {
 	}
 }
 
-function addItem(item) {
-	if (Number(item.available_qty || 0) <= 0) return;
+async function addItem(item) {
+	if (mode.value === "sale" && Number(item.available_qty || 0) <= 0) return;
+	if (mode.value === "return" && Number(item.rate || 0) <= 0) return;
 	const existing = cart.value.find((row) => row.item_code === item.item_code);
 	if (existing) {
-		existing.qty = Math.min(Number(existing.available_qty || 0), Number(existing.qty || 0) + 1);
+		const nextQty = Number(existing.qty || 0) + 1;
+		existing.qty = mode.value === "return" ? nextQty : Math.min(Number(existing.available_qty || 0), nextQty);
 		return;
+	}
+	let rate = Number(item.rate || 0);
+	if (mode.value === "return") {
+		try {
+			const meta = await call("stabler.api.sales.item_sales_meta", {
+				item_code: item.item_code,
+				company: activeCompany.value,
+				customer: profile.value.customer,
+				price_list: profile.value.selling_price_list || undefined,
+			});
+			if (Number(meta.price_list_rate || 0) > 0) rate = Number(meta.price_list_rate || 0);
+		} catch {
+			// Fall back to the list row's standard rate.
+		}
 	}
 	cart.value.push({
 		item_code: item.item_code,
 		item_name: item.item_name,
 		stock_uom: item.stock_uom,
-		available_qty: Number(item.available_qty || 0),
-		rate: Number(item.rate || 0),
+		available_qty: mode.value === "return" ? Infinity : Number(item.available_qty || 0),
+		rate,
 		qty: 1,
 	});
 }
@@ -201,7 +244,7 @@ function removeItem(itemCode) {
 
 function setQty(item, value) {
 	const qty = Number(value || 0);
-	item.qty = Math.max(0, Math.min(qty, Number(item.available_qty || 0)));
+	item.qty = mode.value === "return" ? Math.max(0, qty) : Math.max(0, Math.min(qty, Number(item.available_qty || 0)));
 	if (item.qty === 0) removeItem(item.item_code);
 }
 
@@ -219,12 +262,25 @@ async function checkout() {
 	checkoutError.value = "";
 	lastInvoice.value = null;
 	try {
-		const invoice = await call("stabler.api.pos.create_pos_invoice", {
-			company: activeCompany.value,
-			pos_profile: profile.value.name,
-			items: cart.value.map((item) => ({ item_code: item.item_code, qty: item.qty })),
-			payment_mode: paymentMode.value,
-		});
+		const invoice =
+			mode.value === "return"
+				? await call("stabler.api.sales.create_direct_sales_return", {
+					company: activeCompany.value,
+					customer: profile.value.customer,
+					warehouse: profile.value.warehouse,
+					items: cart.value.map((item) => ({
+						item_code: item.item_code,
+						qty: item.qty,
+						uom: item.stock_uom,
+						rate: item.rate,
+					})),
+				})
+				: await call("stabler.api.pos.create_pos_invoice", {
+					company: activeCompany.value,
+					pos_profile: profile.value.name,
+					items: cart.value.map((item) => ({ item_code: item.item_code, qty: item.qty })),
+					payment_mode: paymentMode.value,
+				});
 		lastInvoice.value = invoice;
 		cart.value = [];
 		await searchItems();
@@ -242,6 +298,13 @@ function openInvoice() {
 
 watch(activeCompany, loadProfiles);
 watch(selectedProfile, loadProfile);
+watch(mode, () => {
+	cart.value = [];
+	lastInvoice.value = null;
+	checkoutError.value = "";
+	searchItems();
+	focusSearch();
+});
 
 onMounted(loadProfiles);
 </script>
@@ -291,6 +354,28 @@ onMounted(loadProfiles);
 			</section>
 
 			<section class="ice-pos-control-group">
+				<div class="ice-pos-kicker">{{ t("Mode") }}</div>
+				<div class="btn-group w-100" role="group" aria-label="POS mode">
+					<button
+						type="button"
+						class="btn"
+						:class="mode === 'sale' ? 'btn-primary' : 'btn-outline-secondary'"
+						@click="mode = 'sale'"
+					>
+						{{ t("Sale") }}
+					</button>
+					<button
+						type="button"
+						class="btn"
+						:class="mode === 'return' ? 'btn-warning' : 'btn-outline-secondary'"
+						@click="mode = 'return'"
+					>
+						{{ t("Return") }}
+					</button>
+				</div>
+			</section>
+
+			<section class="ice-pos-control-group">
 				<div class="ice-pos-kicker">{{ t("Actions") }}</div>
 				<button type="button" class="ice-pos-key btn btn-outline-secondary" @click="focusSearch">
 					<i class="ti ti-barcode"></i>
@@ -323,7 +408,7 @@ onMounted(loadProfiles);
 						ref="searchInput"
 						v-model="search"
 						type="search"
-						:placeholder="t('Scan barcode or search packaged ice cream')"
+						:placeholder="mode === 'return' ? t('Scan returned item or search') : t('Scan barcode or search packaged ice cream')"
 						:disabled="!profile"
 						autofocus
 						@input="scheduleSearch"
@@ -358,11 +443,16 @@ onMounted(loadProfiles);
 					:key="item.item_code"
 					type="button"
 					:class="itemCardClass(item)"
-					:disabled="Number(item.available_qty || 0) <= 0"
+					:disabled="
+						(mode === 'sale' && Number(item.available_qty || 0) <= 0) ||
+						(mode === 'return' && Number(item.rate || 0) <= 0)
+					"
 					@click="addItem(item)"
 				>
 					<span class="ice-pos-card-marker"></span>
-					<span class="ice-pos-card-stock">{{ item.available_qty }} {{ item.stock_uom }}</span>
+					<span class="ice-pos-card-stock">
+						{{ mode === "return" ? t("Return") : `${item.available_qty} ${item.stock_uom}` }}
+					</span>
 					<span class="ice-pos-card-name">{{ item.item_name || item.item_code }}</span>
 					<span class="ice-pos-card-code">{{ item.item_code }}</span>
 					<span class="ice-pos-card-price">{{ formatMoney(item.rate, currency, language) }}</span>
@@ -370,8 +460,14 @@ onMounted(loadProfiles);
 
 				<div v-if="profile && !filteredItems.length && !searchLoading" class="ice-pos-empty">
 					<i class="ti ti-package-off"></i>
-					<strong>{{ t("No stocked items found") }}</strong>
-					<span>{{ t("Only items with available stock in this POS warehouse appear here.") }}</span>
+					<strong>{{ mode === "return" ? t("No items found") : t("No stocked items found") }}</strong>
+					<span>
+						{{
+							mode === "return"
+								? t("Returned items can be accepted even if current shop stock is zero.")
+								: t("Only items with available stock in this POS warehouse appear here.")
+						}}
+					</span>
 				</div>
 
 				<div v-if="!profile && !profileLoading" class="ice-pos-empty">
@@ -385,7 +481,7 @@ onMounted(loadProfiles);
 		<aside class="ice-pos-ledger card" aria-label="Sale ledger">
 			<header class="ice-pos-ledger-head">
 				<div>
-					<div class="ice-pos-kicker">{{ t("Current Sale") }}</div>
+					<div class="ice-pos-kicker">{{ mode === "return" ? t("Current Return") : t("Current Sale") }}</div>
 					<h2>{{ cartUnits }} {{ t("units") }}</h2>
 				</div>
 				<span class="ice-pos-ledger-count">{{ cart.length }}</span>
@@ -393,13 +489,17 @@ onMounted(loadProfiles);
 
 			<section class="ice-pos-lines">
 				<div v-if="!cart.length" class="ice-pos-ledger-empty">
-					{{ t("Scan or tap products to build the sale.") }}
+					{{ mode === "return" ? t("Scan or tap returned products.") : t("Scan or tap products to build the sale.") }}
 				</div>
 
 				<article v-for="item in cart" :key="item.item_code" class="ice-pos-line">
 					<div class="ice-pos-line-main">
 						<strong>{{ item.item_name || item.item_code }}</strong>
-						<span>{{ formatMoney(item.rate, currency, language) }} · {{ item.available_qty }} {{ item.stock_uom }}</span>
+						<span>
+							{{ formatMoney(item.rate, currency, language) }}
+							<template v-if="mode === 'sale'"> · {{ item.available_qty }} {{ item.stock_uom }}</template>
+							<template v-else> · {{ t("customer credit") }}</template>
+						</span>
 					</div>
 					<div class="ice-pos-qty">
 						<button type="button" @click="decrementQty(item)" aria-label="Decrease quantity">
@@ -408,7 +508,7 @@ onMounted(loadProfiles);
 						<input
 							type="number"
 							min="1"
-							:max="item.available_qty"
+							:max="mode === 'sale' ? item.available_qty : undefined"
 							step="1"
 							:value="item.qty"
 							@input="setQty(item, $event.target.value)"
@@ -424,7 +524,7 @@ onMounted(loadProfiles);
 			</section>
 
 			<footer class="ice-pos-summary">
-				<label class="ice-pos-payment-mode">
+				<label v-if="mode === 'sale'" class="ice-pos-payment-mode">
 					<span>{{ t("Payment Mode") }}</span>
 					<Select
 						v-model="paymentMode"
@@ -435,18 +535,18 @@ onMounted(loadProfiles);
 				</label>
 
 				<div class="ice-pos-total-row">
-					<span>{{ t("Total") }}</span>
-					<strong>{{ formatMoney(cartTotal, currency, language) }}</strong>
+					<span>{{ mode === "return" ? t("Customer credit") : t("Total") }}</span>
+					<strong>{{ formatMoney(signedTotal, currency, language) }}</strong>
 				</div>
 
 				<div v-if="checkoutError" class="alert alert-danger mb-2">{{ checkoutError }}</div>
 				<div v-if="lastInvoice" class="alert alert-success mb-2">
 					<button type="button" class="btn btn-link p-0 text-success" @click="openInvoice">
-						{{ t("Sale completed") }} · {{ lastInvoice.name }}
+						{{ mode === "return" ? t("Return completed") : t("Sale completed") }} · {{ lastInvoice.name }}
 					</button>
 				</div>
 
-				<div class="ice-pos-tenders">
+				<div v-if="mode === 'sale'" class="ice-pos-tenders">
 					<button
 						v-for="tender in cashTenderOptions"
 						:key="tender.key"
@@ -466,6 +566,17 @@ onMounted(loadProfiles);
 						{{ t("Take Payment") }}
 					</button>
 				</div>
+				<button
+					v-else
+					type="button"
+					class="ice-pos-tender ice-pos-tender--primary"
+					:disabled="!canCheckout"
+					@click="checkout"
+				>
+					<i v-if="!checkoutRunning" class="ti ti-receipt-refund"></i>
+					<span v-else class="spinner-border spinner-border-sm"></span>
+					{{ t("Accept Return") }}
+				</button>
 			</footer>
 		</aside>
 			</div>
