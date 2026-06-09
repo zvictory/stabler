@@ -207,7 +207,7 @@ def gl_entries(
 		SELECT *
 		FROM (
 			SELECT
-				name, posting_date, voucher_type, voucher_no, against, remarks,
+				name, creation, posting_date, voucher_type, voucher_no, against, remarks,
 				party_type, party,
 				debit, credit,
 				debit_in_account_currency, credit_in_account_currency,
