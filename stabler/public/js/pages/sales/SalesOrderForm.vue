@@ -172,6 +172,14 @@ function factorFor(line, uom) {
 	const entry = (line.uoms || []).find((u) => u.uom === uom);
 	return entry ? Number(entry.conversion_factor) || 1 : 1;
 }
+function orderedLineUoms(line) {
+	const stockUom = line.stock_uom || "";
+	return [...(line.uoms || [])].sort((a, b) => {
+		if (a.uom === stockUom && b.uom !== stockUom) return -1;
+		if (b.uom === stockUom && a.uom !== stockUom) return 1;
+		return (Number(a.conversion_factor) || 1) - (Number(b.conversion_factor) || 1);
+	});
+}
 function isKorobkaUom(uom) {
 	const name = String(uom || "").trim().toLowerCase();
 	return name.includes("korobka") || name.includes("короб");
@@ -991,7 +999,7 @@ onMounted(async () => {
 										role="group"
 									>
 										<button
-											v-for="u in line.uoms"
+											v-for="u in orderedLineUoms(line)"
 											:key="u.uom"
 											type="button"
 											class="btn"
@@ -1003,7 +1011,7 @@ onMounted(async () => {
 										v-else-if="line.uoms && line.uoms.length > 3"
 										v-model="line.uom"
 										size="sm"
-										:options="line.uoms"
+										:options="orderedLineUoms(line)"
 										value-key="uom"
 										label-key="uom"
 										@change="onUomChange(line)"
@@ -1173,3 +1181,17 @@ onMounted(async () => {
 		</template>
 	</FormPage>
 </template>
+
+<style scoped>
+.so-line-row > td {
+	padding-top: 0.75rem;
+	padding-bottom: 0.75rem;
+	min-height: 4.5rem;
+}
+
+.so-line-row :deep(.form-control-sm),
+.so-line-row :deep(.btn-group-sm > .btn),
+.so-line-row :deep(.btn-sm) {
+	min-height: 2.25rem;
+}
+</style>
