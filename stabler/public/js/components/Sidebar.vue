@@ -41,6 +41,13 @@ const items = computed(() => {
 		{ name: "bpm", path: "/bpm", label: t("Processes"), icon: "ti-sitemap", show: session.canAccessModule("bpm") },
 		{ name: "remittance", path: "/remittance", label: t("Remittance"), icon: "ti-send", show: session.canAccessModule("remittance") },
 		{ name: "installment", path: "/installment", label: t("Installment"), icon: "ti-calendar-dollar", show: session.canAccessModule("installment") },
+		{
+			name: "reports",
+			path: "/reports",
+			label: t("Reports"),
+			icon: "ti-report-analytics",
+			show: true,
+		},
 	];
 	if (session.isAdmin) {
 		list.push({ name: "admin", path: "/admin", label: t("Admin"), icon: "ti-settings", show: true });

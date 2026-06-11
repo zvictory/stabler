@@ -54,6 +54,7 @@ Admin,Yönetici
 Advance paid,Ödenen avans
 Against,Karşılığı
 All,Tümü
+All Reports,Tüm raporlar
 All categories,Tüm kategoriler
 All directions,Tüm yönler
 All groups,Tüm gruplar
@@ -160,6 +161,7 @@ Cash flow,Nakit akışı
 Cash on hand,Kasadaki nakit
 "Cash, Bank, …","Kasa, Banka, …"
 Cash-in account,Tahsilat hesabı
+Categories,Kategoriler
 Category,Kategori
 Category is required.,Kategori gereklidir.
 Channel,Kanal

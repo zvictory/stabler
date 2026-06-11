@@ -58,6 +58,7 @@ Admin,Администратор
 Advance paid,Авансовый платёж
 Against,По
 All,Все
+All Reports,Все отчёты
 All categories,Все категории
 All directions,Все направления
 All events,Все события
@@ -168,6 +169,7 @@ Cash flow,Движение денежных средств
 Cash on hand,Денежные средства
 "Cash, Bank, …","Касса, банк, …"
 Cash-in account,Счёт приёма наличных
+Categories,Категории
 Category,Категория
 Category is required.,Категория обязательна.
 Channel,Канал
