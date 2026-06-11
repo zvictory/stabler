@@ -39,11 +39,14 @@ const baseCurrency = computed(
 const createOpen = ref(false);
 const submitting = ref(false);
 const submitError = ref("");
+const editingName = ref("");
 
 const accounts = ref([]); // Bank + Cash leaves
 const optionsLoading = ref(false);
 
 const form = ref(blankForm());
+
+const formTitle = computed(() => (editingName.value ? t("Amend transfer") : t("New transfer")));
 
 function blankForm() {
 	return {
@@ -83,6 +86,14 @@ const rateFromCurrency = computed(() => {
 const rateToCurrency = computed(() => {
 	if (fromCurrency.value === "UZS" && toCurrency.value === "USD") return "UZS";
 	return toCurrency.value;
+});
+
+const baseEquivalent = computed(() => {
+	const amount = Number(form.value.from_amount) || 0;
+	if (!amount) return 0;
+	if (fromCurrency.value === baseCurrency.value) return amount;
+	if (toCurrency.value === baseCurrency.value) return Number(form.value.to_amount) || 0;
+	return null;
 });
 
 // Auto-derive to_amount when cross-currency and the user has typed a rate.
@@ -175,15 +186,37 @@ async function loadOptions() {
 
 async function openCreate() {
 	form.value = blankForm();
+	editingName.value = "";
 	submitError.value = "";
 	createOpen.value = true;
 	if (!accounts.value.length) await loadOptions();
 	await fetchExchangeRate();
 }
 
+async function openEditFromDetail() {
+	if (!detail.value?.name) return;
+	if (!accounts.value.length) await loadOptions();
+	const credit = (detail.value.accounts || []).find((row) => Number(row.credit_in_account_currency) > 0);
+	const debit = (detail.value.accounts || []).find((row) => Number(row.debit_in_account_currency) > 0);
+	form.value = {
+		posting_date: detail.value.posting_date || today,
+		from_account: credit?.account || "",
+		to_account: debit?.account || "",
+		from_amount: Number(credit?.credit_in_account_currency) || null,
+		to_amount: Number(debit?.debit_in_account_currency) || null,
+		exchange_rate: null,
+		memo: detail.value.user_remark || "",
+	};
+	editingName.value = detail.value.name;
+	submitError.value = "";
+	createOpen.value = true;
+	await fetchExchangeRate();
+}
+
 function closeCreate() {
 	if (submitting.value) return;
 	createOpen.value = false;
+	editingName.value = "";
 }
 
 function swap() {
@@ -227,9 +260,14 @@ async function submitCreate() {
 
 	submitting.value = true;
 	try {
-		await call("stabler.api.money.submit_transfer_entry", payload);
+		const method = editingName.value
+			? "stabler.api.money.amend_transfer_entry"
+			: "stabler.api.money.submit_transfer_entry";
+		const res = await call(method, editingName.value ? { source_name: editingName.value, ...payload } : payload);
 		createOpen.value = false;
+		editingName.value = "";
 		await load();
+		if (res?.name) await openDetail(res.name);
 	} catch (err) {
 		submitError.value = err?.message || "Failed to submit transfer.";
 	} finally {
@@ -276,6 +314,30 @@ async function openDetail(name) {
 		detail.value = { error: err?.message || "Failed to load." };
 	} finally {
 		detailLoading.value = false;
+	}
+}
+
+async function cancelEntry() {
+	if (!detail.value?.name) return;
+	if (!window.confirm(t("Cancel this transfer?"))) return;
+	try {
+		await call("stabler.api.money.cancel_bank_entry", { name: detail.value.name });
+		await openDetail(detail.value.name);
+		await load();
+	} catch (err) {
+		detail.value.error = err?.message || t("Failed to cancel transfer.");
+	}
+}
+
+async function deleteEntry() {
+	if (!detail.value?.name) return;
+	if (!window.confirm(t("Delete this draft transfer?"))) return;
+	try {
+		await call("stabler.api.money.delete_bank_entry", { name: detail.value.name });
+		closeDetail();
+		await load();
+	} catch (err) {
+		detail.value.error = err?.message || t("Failed to delete transfer.");
 	}
 }
 
@@ -443,6 +505,17 @@ watch(activeCompany, () => {
 						</tbody>
 					</table>
 				</div>
+				<div class="d-flex gap-2 justify-content-end mt-3">
+					<button v-if="detail.docstatus < 2" type="button" class="btn btn-outline-primary" @click="openEditFromDetail">
+						<i class="ti ti-pencil me-1"></i>{{ detail.docstatus === 1 ? t("Amend") : t("Edit draft") }}
+					</button>
+					<button v-if="detail.docstatus === 0" type="button" class="btn btn-outline-danger" @click="deleteEntry">
+						<i class="ti ti-trash me-1"></i>{{ t("Delete draft") }}
+					</button>
+					<button v-if="detail.docstatus === 1" type="button" class="btn btn-outline-danger" @click="cancelEntry">
+						<i class="ti ti-ban me-1"></i>{{ t("Cancel") }}
+					</button>
+				</div>
 			</div>
 		</div>
 	</div>
@@ -454,7 +527,7 @@ watch(activeCompany, () => {
 			<div class="modal-content">
 				<div class="modal-header">
 					<h5 class="modal-title">
-						<i class="ti ti-transfer me-1"></i>{{ t("New transfer") }}
+						<i class="ti ti-transfer me-1"></i>{{ formTitle }}
 					</h5>
 					<button type="button" class="btn-close" @click="closeCreate" aria-label="Close"></button>
 				</div>
@@ -562,6 +635,29 @@ watch(activeCompany, () => {
 							/>
 							<div class="form-hint small">
 								{{ t("Editing the rate updates the received amount.") }}
+							</div>
+						</div>
+					</div>
+					<div v-if="form.from_account && form.to_account && Number(form.from_amount) > 0" class="alert alert-info mt-3 mb-0">
+						<div class="row g-2 align-items-center">
+							<div class="col-md">
+								<div class="text-secondary small">{{ t("From amount") }}</div>
+								<div class="font-monospace fw-semibold">{{ formatMoney(form.from_amount, fromCurrency, user.language) }}</div>
+							</div>
+							<div class="col-md">
+								<div class="text-secondary small">{{ t("To amount") }}</div>
+								<div class="font-monospace fw-semibold">
+									{{ formatMoney(form.to_amount || form.from_amount, toCurrency, user.language) }}
+								</div>
+							</div>
+							<div class="col-md">
+								<div class="text-secondary small">{{ t("Base equivalent") }}</div>
+								<div v-if="baseEquivalent !== null" class="font-monospace fw-semibold">
+									{{ formatMoney(baseEquivalent, baseCurrency, user.language) }}
+								</div>
+								<div v-else class="text-warning">
+									{{ t("Resolved on submit from ERPNext FX rates") }}
+								</div>
 							</div>
 						</div>
 					</div>

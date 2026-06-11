@@ -34,9 +34,11 @@ const detail = ref(null);
 const createOpen = ref(false);
 const submitting = ref(false);
 const submitError = ref("");
+const editingName = ref("");
 
 const payAccounts = ref([]); // bank/cash leaf accounts
 const expAccounts = ref([]); // expense leaf accounts
+const assetAccounts = ref([]); // fixed asset leaves for asset purchases
 const optionsLoading = ref(false);
 
 const baseCurrency = computed(
@@ -54,12 +56,18 @@ function blankForm() {
 	lineSeq = 0;
 	return {
 		posting_date: today,
+		entry_kind: "Expense",
 		payee: "",
 		payment_from: "",
 		exchange_rate: null,
 		lines: [newLine()],
 	};
 }
+
+const entryKindOptions = [
+	{ value: "Expense", label: t("Expense") },
+	{ value: "Asset Purchase", label: t("Asset purchase") },
+];
 
 const paymentFromAccount = computed(() =>
 	payAccounts.value.find((a) => a.name === form.value.payment_from) || null,
@@ -75,6 +83,18 @@ const isCrossCurrency = computed(
 
 const totalAmount = computed(() =>
 	form.value.lines.reduce((sum, l) => sum + (Number(l.amount) || 0), 0),
+);
+
+const lineAccounts = computed(() =>
+	form.value.entry_kind === "Asset Purchase" ? assetAccounts.value : expAccounts.value,
+);
+
+const formTitle = computed(() =>
+	editingName.value
+		? t("Amend expense")
+		: form.value.entry_kind === "Asset Purchase"
+			? t("New asset purchase")
+			: t("New expense"),
 );
 
 const baseEquivalent = computed(() => {
@@ -127,12 +147,14 @@ async function loadOptions() {
 	if (!activeCompany.value) return;
 	optionsLoading.value = true;
 	try {
-		const [pay, exp] = await Promise.all([
+		const [pay, exp, fixed] = await Promise.all([
 			call("stabler.api.money.bank_cash_accounts", { company: activeCompany.value }),
 			call("stabler.api.money.expense_accounts", { company: activeCompany.value }),
+			call("stabler.api.money.fixed_asset_accounts", { company: activeCompany.value }),
 		]);
 		payAccounts.value = pay || [];
 		expAccounts.value = exp || [];
+		assetAccounts.value = fixed || [];
 	} catch (err) {
 		submitError.value = err?.message || "Failed to load accounts.";
 	} finally {
@@ -142,15 +164,42 @@ async function loadOptions() {
 
 async function openCreate() {
 	form.value = blankForm();
+	editingName.value = "";
 	submitError.value = "";
 	createOpen.value = true;
-	if (!payAccounts.value.length || !expAccounts.value.length) await loadOptions();
+	if (!payAccounts.value.length || !expAccounts.value.length || !assetAccounts.value.length) await loadOptions();
+	await fetchExchangeRate();
+}
+
+async function openEditFromDetail() {
+	if (!detail.value?.name) return;
+	if (!payAccounts.value.length || !expAccounts.value.length || !assetAccounts.value.length) await loadOptions();
+	const credit = (detail.value.accounts || []).find((row) => Number(row.credit_in_account_currency) > 0);
+	const debits = (detail.value.accounts || []).filter((row) => Number(row.debit_in_account_currency) > 0);
+	form.value = {
+		posting_date: detail.value.posting_date || today,
+		entry_kind: detail.value.entry_kind || "Expense",
+		payee: detail.value.pay_to_recd_from || "",
+		payment_from: credit?.account || "",
+		exchange_rate: null,
+		lines: debits.map((row) => ({
+			id: ++lineSeq,
+			account: row.account,
+			amount: Number(row.debit_in_account_currency) || null,
+			memo: row.user_remark || "",
+		})),
+	};
+	if (!form.value.lines.length) form.value.lines = [newLine()];
+	editingName.value = detail.value.name;
+	submitError.value = "";
+	createOpen.value = true;
 	await fetchExchangeRate();
 }
 
 function closeCreate() {
 	if (submitting.value) return;
 	createOpen.value = false;
+	editingName.value = "";
 }
 
 function addLine() {
@@ -166,9 +215,9 @@ function removeLine(idx) {
 // If the user picks an expense account in a different currency, surface a hint.
 function lineCurrencyMismatch(line) {
 	if (!line.account) return false;
-	const acc = expAccounts.value.find((a) => a.name === line.account);
-	if (!acc) return false;
-	return acc.account_currency && acc.account_currency !== payCurrency.value;
+	const picked = lineAccounts.value.find((a) => a.name === line.account);
+	if (!picked) return false;
+	return picked.account_currency && picked.account_currency !== payCurrency.value;
 }
 
 async function submitCreate() {
@@ -190,6 +239,7 @@ async function submitCreate() {
 		payment_from: form.value.payment_from,
 		lines,
 		submit: 1,
+		entry_kind: form.value.entry_kind,
 	};
 	if (form.value.payee?.trim()) payload.payee = form.value.payee.trim();
 	if (isCrossCurrency.value) {
@@ -199,9 +249,14 @@ async function submitCreate() {
 
 	submitting.value = true;
 	try {
-		await call("stabler.api.money.submit_expense_entry", payload);
+		const method = editingName.value
+			? "stabler.api.money.amend_expense_entry"
+			: "stabler.api.money.submit_expense_entry";
+		const res = await call(method, editingName.value ? { source_name: editingName.value, ...payload } : payload);
 		createOpen.value = false;
+		editingName.value = "";
 		await load();
+		if (res?.name) await openDetail(res.name);
 	} catch (err) {
 		submitError.value = err?.message || "Failed to submit expense.";
 	} finally {
@@ -251,6 +306,31 @@ async function openDetail(name) {
 	}
 }
 
+async function cancelEntry() {
+	if (!detail.value?.name) return;
+	if (!window.confirm(t("Cancel this entry?"))) return;
+	submitError.value = "";
+	try {
+		await call("stabler.api.money.cancel_bank_entry", { name: detail.value.name });
+		await openDetail(detail.value.name);
+		await load();
+	} catch (err) {
+		detail.value.error = err?.message || t("Failed to cancel entry.");
+	}
+}
+
+async function deleteEntry() {
+	if (!detail.value?.name) return;
+	if (!window.confirm(t("Delete this draft entry?"))) return;
+	try {
+		await call("stabler.api.money.delete_bank_entry", { name: detail.value.name });
+		closeDetail();
+		await load();
+	} catch (err) {
+		detail.value.error = err?.message || t("Failed to delete entry.");
+	}
+}
+
 function closeDetail() {
 	detailOpen.value = false;
 	detail.value = null;
@@ -263,6 +343,7 @@ onMounted(() => {
 watch(activeCompany, () => {
 	payAccounts.value = [];
 	expAccounts.value = [];
+	assetAccounts.value = [];
 	load();
 	loadOptions();
 });
@@ -321,6 +402,7 @@ watch(activeCompany, () => {
 					<tr>
 						<th>#</th>
 						<th>{{ t("Date") }}</th>
+						<th>{{ t("Kind") }}</th>
 						<th>{{ t("Memo") }}</th>
 						<th class="text-end">{{ t("Amount") }}</th>
 						<th class="w-1">{{ t("Status") }}</th>
@@ -335,6 +417,9 @@ watch(activeCompany, () => {
 					>
 						<td class="font-monospace text-primary">{{ r.name }}</td>
 						<td>{{ formatDateTime(r.posting_date) }}</td>
+						<td>
+							<span class="badge bg-blue-lt">{{ r.entry_kind || t("Expense") }}</span>
+						</td>
 						<td class="text-truncate" style="max-width: 380px">{{ r.user_remark || "—" }}</td>
 						<td class="text-end font-monospace">
 							{{ formatMoney(r.total_amount ?? r.total_debit_base, r.currency || r.base_currency || baseCurrency, user.language) }}
@@ -387,6 +472,14 @@ watch(activeCompany, () => {
 							</span>
 						</div>
 					</div>
+					<div class="datagrid-item">
+						<div class="datagrid-title">{{ t("Kind") }}</div>
+						<div class="datagrid-content">{{ detail.entry_kind || t("Expense") }}</div>
+					</div>
+					<div v-if="detail.pay_to_recd_from" class="datagrid-item">
+						<div class="datagrid-title">{{ t("Payee") }}</div>
+						<div class="datagrid-content">{{ detail.pay_to_recd_from }}</div>
+					</div>
 					<div v-if="detail.user_remark" class="datagrid-item">
 						<div class="datagrid-title">{{ t("Memo") }}</div>
 						<div class="datagrid-content">{{ detail.user_remark }}</div>
@@ -416,6 +509,17 @@ watch(activeCompany, () => {
 						</tbody>
 					</table>
 				</div>
+				<div class="d-flex gap-2 justify-content-end mt-3">
+					<button v-if="detail.docstatus < 2" type="button" class="btn btn-outline-primary" @click="openEditFromDetail">
+						<i class="ti ti-pencil me-1"></i>{{ detail.docstatus === 1 ? t("Amend") : t("Edit draft") }}
+					</button>
+					<button v-if="detail.docstatus === 0" type="button" class="btn btn-outline-danger" @click="deleteEntry">
+						<i class="ti ti-trash me-1"></i>{{ t("Delete draft") }}
+					</button>
+					<button v-if="detail.docstatus === 1" type="button" class="btn btn-outline-danger" @click="cancelEntry">
+						<i class="ti ti-ban me-1"></i>{{ t("Cancel") }}
+					</button>
+				</div>
 			</div>
 		</div>
 	</div>
@@ -427,7 +531,7 @@ watch(activeCompany, () => {
 			<div class="modal-content">
 				<div class="modal-header">
 					<h5 class="modal-title">
-						<i class="ti ti-receipt-2 me-1"></i>{{ t("New expense") }}
+						<i class="ti ti-receipt-2 me-1"></i>{{ formTitle }}
 					</h5>
 					<button type="button" class="btn-close" @click="closeCreate" aria-label="Close"></button>
 				</div>
@@ -435,6 +539,15 @@ watch(activeCompany, () => {
 					<div v-if="submitError" class="alert alert-danger">{{ submitError }}</div>
 
 					<div class="row g-2 mb-3">
+						<div class="col-md-4">
+							<label class="form-label small">{{ t("Mode") }}</label>
+							<Select
+								v-model="form.entry_kind"
+								:options="entryKindOptions"
+								value-key="value"
+								label-key="label"
+							/>
+						</div>
 						<div class="col-md-4">
 							<label class="form-label small">{{ t("Posting date") }}</label>
 							<DateInput v-model="form.posting_date" required />
@@ -456,7 +569,7 @@ watch(activeCompany, () => {
 								</template>
 							</Select>
 						</div>
-						<div class="col-md-4">
+						<div class="col-md-12">
 							<label class="form-label small">{{ t("Payee") }}</label>
 							<input
 								v-model="form.payee"
@@ -492,7 +605,9 @@ watch(activeCompany, () => {
 					</div>
 
 					<div class="d-flex align-items-center mb-2">
-						<h6 class="text-uppercase text-secondary small m-0">{{ t("Expense lines") }}</h6>
+						<h6 class="text-uppercase text-secondary small m-0">
+							{{ form.entry_kind === "Asset Purchase" ? t("Asset lines") : t("Expense lines") }}
+						</h6>
 						<button type="button" class="btn btn-sm btn-outline-secondary ms-auto" @click="addLine">
 							<i class="ti ti-plus me-1"></i>{{ t("Add line") }}
 						</button>
@@ -513,7 +628,7 @@ watch(activeCompany, () => {
 										<Select
 											v-model="line.account"
 											size="sm"
-											:options="expAccounts"
+											:options="lineAccounts"
 											value-key="name"
 											:placeholder="t('Select…')"
 										>

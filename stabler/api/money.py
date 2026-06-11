@@ -433,6 +433,8 @@ def journal_entry_detail(name: str):
 		"posting_date": str(doc.posting_date) if doc.posting_date else None,
 		"voucher_type": doc.voucher_type,
 		"user_remark": doc.user_remark,
+		"entry_kind": "Asset Purchase" if (doc.user_remark or "").startswith("[Asset Purchase]") else None,
+		"pay_to_recd_from": doc.pay_to_recd_from,
 		"cheque_no": doc.cheque_no,
 		"cheque_date": str(doc.cheque_date) if doc.cheque_date else None,
 		"total_debit_base": flt(doc.total_debit),
@@ -454,6 +456,7 @@ def journal_entry_detail(name: str):
 				"exchange_rate": flt(a.exchange_rate or 1.0),
 				"reference_type": a.reference_type,
 				"reference_name": a.reference_name,
+				"user_remark": a.user_remark,
 			}
 			for a in doc.accounts
 		],
@@ -1101,6 +1104,46 @@ def expense_accounts(company: str):
 
 
 @frappe.whitelist()
+def fixed_asset_accounts(company: str):
+	"""Leaf Fixed Asset accounts for asset-purchase expense mode."""
+	_require_company(company)
+	return frappe.get_all(
+		"Account",
+		filters={
+			"company": company,
+			"disabled": 0,
+			"is_group": 0,
+			"root_type": "Asset",
+			"account_type": "Fixed Asset",
+		},
+		fields=["name", "account_name", "account_number", "account_currency", "account_type"],
+		order_by="account_name asc",
+		limit_page_length=1000,
+	)
+
+
+def _bank_entry_kind_sql(alias: str = "je") -> str:
+	return f"""
+		CASE
+			WHEN {alias}.user_remark LIKE '[Asset Purchase]%%' THEN 'Asset Purchase'
+			WHEN EXISTS (
+				SELECT 1 FROM `tabJournal Entry Account` jec
+				JOIN `tabAccount` a ON a.name = jec.account
+				WHERE jec.parent = {alias}.name AND a.root_type = 'Expense'
+			) THEN 'Expense'
+			ELSE 'Transfer'
+		END
+	"""
+
+
+def _normalize_bank_entry_kind(entry_kind: str | None) -> str:
+	kind = (entry_kind or "Expense").strip()
+	if kind not in {"Expense", "Asset Purchase"}:
+		raise frappe.ValidationError("Entry kind must be Expense or Asset Purchase.")
+	return kind
+
+
+@frappe.whitelist()
 def list_bank_entries(
 	company: str,
 	from_date: str | None = None,
@@ -1118,17 +1161,23 @@ def list_bank_entries(
 	
 	type_clause = ""
 	if entry_type == "Expense":
-		type_clause = """AND EXISTS (
+		type_clause = """AND (
+			je.user_remark LIKE '[Asset Purchase]%%'
+			OR EXISTS (
 			SELECT 1 FROM `tabJournal Entry Account` jec
 			JOIN `tabAccount` a ON a.name = jec.account
 			WHERE jec.parent = je.name AND a.root_type = 'Expense'
+			)
 		)"""
 	elif entry_type == "Transfer":
-		type_clause = """AND NOT EXISTS (
+		type_clause = """AND COALESCE(je.user_remark, '') NOT LIKE '[Asset Purchase]%%'
+		AND NOT EXISTS (
 			SELECT 1 FROM `tabJournal Entry Account` jec
 			JOIN `tabAccount` a ON a.name = jec.account
 			WHERE jec.parent = je.name AND a.root_type = 'Expense'
 		)"""
+	elif entry_type == "Asset Purchase":
+		type_clause = "AND je.user_remark LIKE '[Asset Purchase]%%'"
 
 	qualified_clauses = [c.replace("posting_date", "je.posting_date") for c in clauses]
 	where = " AND ".join([
@@ -1144,6 +1193,7 @@ def list_bank_entries(
 		       je.total_credit AS total_credit_base,
 		       je.multi_currency,
 		       je.docstatus,
+		       {_bank_entry_kind_sql("je")} AS entry_kind,
 		       c.default_currency AS base_currency,
 		       COALESCE(
 		           (SELECT SUM(credit_in_account_currency) FROM `tabJournal Entry Account` WHERE parent = je.name AND credit_in_account_currency > 0),
@@ -1173,6 +1223,7 @@ def submit_expense_entry(
 	payee: str | None = None,
 	exchange_rate: float | None = None,
 	submit: int = 1,
+	entry_kind: str = "Expense",
 ) -> dict:
 	"""Create (and optionally submit) an expense Journal Entry.
 
@@ -1189,6 +1240,7 @@ def submit_expense_entry(
 	if not isinstance(lines, list) or not lines:
 		frappe.throw("At least one expense line is required.")
 
+	entry_kind = _normalize_bank_entry_kind(entry_kind)
 	pay_acc = _validate_account(payment_from, company, 0)
 	base_currency = frappe.db.get_value("Company", company, "default_currency") or ""
 
@@ -1203,6 +1255,10 @@ def submit_expense_entry(
 		if amount <= 0:
 			frappe.throw(f"Row {idx}: amount must be greater than zero.")
 		exp_acc = _validate_account(acc_name, company, idx)
+		if entry_kind == "Expense" and exp_acc.root_type != "Expense":
+			frappe.throw(f"Row {idx}: account must be an Expense account.")
+		if entry_kind == "Asset Purchase" and exp_acc.account_type != "Fixed Asset":
+			frappe.throw(f"Row {idx}: account must be a Fixed Asset account.")
 		# v1: expense account must share currency with payment-from. Cross-currency
 		# per-line FX is non-trivial; defer to a future iteration.
 		if exp_acc.account_currency != pay_acc.account_currency:
@@ -1241,6 +1297,8 @@ def submit_expense_entry(
 	if memos:
 		parts.append("; ".join(memos))
 	remark = " | ".join(parts) if parts else None
+	if entry_kind == "Asset Purchase":
+		remark = f"[Asset Purchase] {remark or 'Asset purchase'}"
 
 	doc = frappe.new_doc("Journal Entry")
 	doc.company = company
@@ -1294,6 +1352,66 @@ def submit_expense_entry(
 	if int(submit or 0):
 		doc.submit()
 	return {"name": doc.name, "docstatus": doc.docstatus}
+
+
+def _load_bank_entry(name: str):
+	if not name or not frappe.db.exists("Journal Entry", name):
+		frappe.throw(f"Unknown Journal Entry: {name}")
+	doc = frappe.get_doc("Journal Entry", name)
+	_require_company(doc.company)
+	if doc.voucher_type != "Bank Entry":
+		frappe.throw("Only Bank Entry journal entries are supported here.")
+	return doc
+
+
+@frappe.whitelist()
+def cancel_bank_entry(name: str) -> dict:
+	doc = _load_bank_entry(name)
+	if doc.docstatus != 1:
+		frappe.throw("Only submitted Bank Entries can be cancelled.")
+	doc.cancel()
+	frappe.db.commit()
+	return {"name": doc.name, "docstatus": doc.docstatus}
+
+
+@frappe.whitelist()
+def delete_bank_entry(name: str) -> dict:
+	doc = _load_bank_entry(name)
+	if doc.docstatus != 0:
+		frappe.throw("Only draft Bank Entries can be deleted.")
+	doc.delete()
+	frappe.db.commit()
+	return {"name": name, "deleted": 1}
+
+
+@frappe.whitelist()
+def amend_expense_entry(source_name: str, **kwargs) -> dict:
+	source = _load_bank_entry(source_name)
+	if source.docstatus == 1:
+		source.cancel()
+	elif source.docstatus == 0:
+		source.delete()
+	else:
+		frappe.throw("Cancelled Bank Entries cannot be amended.")
+	result = submit_expense_entry(**kwargs)
+	frappe.db.commit()
+	result["amended_from"] = source_name
+	return result
+
+
+@frappe.whitelist()
+def amend_transfer_entry(source_name: str, **kwargs) -> dict:
+	source = _load_bank_entry(source_name)
+	if source.docstatus == 1:
+		source.cancel()
+	elif source.docstatus == 0:
+		source.delete()
+	else:
+		frappe.throw("Cancelled Bank Entries cannot be amended.")
+	result = submit_transfer_entry(**kwargs)
+	frappe.db.commit()
+	result["amended_from"] = source_name
+	return result
 
 
 @frappe.whitelist()
