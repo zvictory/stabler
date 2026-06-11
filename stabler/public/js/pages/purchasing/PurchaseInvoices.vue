@@ -13,6 +13,9 @@ import PaymentModal from "../../components/PaymentModal.vue";
 import EmptyState from "../../components/EmptyState.vue";
 import Typeahead from "../../components/Typeahead.vue";
 import Select from "../../components/Select.vue";
+import ListToolbar from "../../components/ListToolbar.vue";
+import SkeletonRows from "../../components/SkeletonRows.vue";
+import { getStatusBadgeClass } from "../../composables/status.js";
 
 const session = useSession();
 const { activeCompany, user } = storeToRefs(session);
@@ -43,18 +46,17 @@ const STATUSES = ["", "Paid", "Unpaid", "Overdue", "Partly Paid", "Return", "Deb
 
 const statusOptions = computed(() => STATUSES.map((s) => ({ value: s, label: s || t("All") })));
 
-const statusBadge = (s) => {
-	const m = {
-		Paid: "bg-green-lt",
-		Unpaid: "bg-yellow-lt",
-		Overdue: "bg-red-lt",
-		Return: "bg-secondary-lt",
-		"Debit Note Issued": "bg-purple-lt",
-		"Partly Paid": "bg-blue-lt",
-		Draft: "bg-secondary-lt",
-	};
-	return m[s] || "bg-secondary-lt";
-};
+const search = ref("");
+const filteredRows = computed(() => {
+	const q = search.value.toLowerCase().trim();
+	if (!q) return rows.value;
+	return rows.value.filter(r => 
+		(r.name || "").toLowerCase().includes(q) ||
+		(r.supplier || "").toLowerCase().includes(q) ||
+		(r.supplier_name || "").toLowerCase().includes(q) ||
+		(r.bill_no || "").toLowerCase().includes(q)
+	);
+});
 
 async function load() {
 	if (!activeCompany.value) return;
@@ -96,7 +98,7 @@ function closeDetail() {
 // Group totals by transaction currency — UZS and USD must never share a sum.
 const totalsByCurrency = computed(() => {
 	const m = new Map();
-	for (const r of rows.value) {
+	for (const r of filteredRows.value) {
 		const ccy = r.currency || currency.value;
 		const bucket = m.get(ccy) || { currency: ccy, count: 0, grand: 0, outstanding: 0 };
 		bucket.count += 1;
@@ -106,7 +108,7 @@ const totalsByCurrency = computed(() => {
 	}
 	return Array.from(m.values());
 });
-const totalCount = computed(() => rows.value.length);
+const totalCount = computed(() => filteredRows.value.length);
 
 // ──────────────── Create / edit modal ────────────────
 const createOpen = ref(false);
@@ -532,54 +534,47 @@ onMounted(async () => {
 	const openName = route.query?.open;
 	if (openName) openDetail(String(openName));
 });
+watch([fromDate, toDate, status], load);
 watch(activeCompany, load);
 </script>
 
 <template>
 	<div class="card">
-		<div class="card-header">
-			<div class="card-title">{{ t("Purchase Invoices") }}</div>
-			<div class="ms-auto d-flex gap-2 align-items-end flex-wrap">
-				<div>
-					<label class="form-label small mb-1">{{ t("From") }}</label>
-					<DateInput v-model="fromDate" size="sm" />
+		<ListToolbar
+			v-model="search"
+			:placeholder="t('Bill number or supplier…')"
+			:count="totalCount"
+			:primary-label="t('New bill')"
+			primary-icon="ti-plus"
+			@search="load"
+			@primary-click="openCreate"
+		>
+			<template #filters>
+				<div class="d-flex align-items-center gap-2">
+					<DateInput v-model="fromDate" size="sm" style="width: 110px" />
+					<span class="text-secondary small">—</span>
+					<DateInput v-model="toDate" size="sm" style="width: 110px" />
+					<Select v-model="status" size="sm" :options="statusOptions" style="width: 160px" />
 				</div>
-				<div>
-					<label class="form-label small mb-1">{{ t("To") }}</label>
-					<DateInput v-model="toDate" size="sm" />
-				</div>
-				<div style="min-width: 150px">
-					<label class="form-label small mb-1">{{ t("Status") }}</label>
-					<Select v-model="status" size="sm" :options="statusOptions" />
-				</div>
-				<button type="button" class="btn btn-sm btn-primary" @click="load">
-					<i class="ti ti-refresh me-1"></i>{{ t("Apply") }}
-				</button>
-				<button type="button" class="btn btn-sm btn-success" @click="openCreate">
-					<i class="ti ti-plus me-1"></i>{{ t("New bill") }}
-				</button>
-			</div>
-		</div>
+			</template>
 
-		<div v-if="rows.length" class="card-body py-2 border-bottom bg-light">
-			<div class="d-flex gap-4 small">
-				<div>{{ t("Count:") }} <strong>{{ totalCount }}</strong></div>
-				<div v-for="b in totalsByCurrency" :key="b.currency" class="d-flex gap-3 align-items-center">
-					<span class="badge bg-secondary-lt text-secondary">{{ b.currency }}</span>
-					<span>{{ t("Total:") }} <strong class="font-monospace">{{ formatMoney(b.grand, b.currency, user.language) }}</strong></span>
-					<span>{{ t("Payable:") }} <strong class="text-red font-monospace">{{ formatMoney(b.outstanding, b.currency, user.language) }}</strong></span>
+			<template #summary>
+				<div class="d-flex gap-3 small text-secondary align-items-center flex-wrap">
+					<div>{{ t("Count") }}: <strong class="font-monospace text-body">{{ totalCount }}</strong></div>
+					<div v-for="b in totalsByCurrency" :key="b.currency" class="d-flex gap-2 align-items-center">
+						<span class="badge bg-secondary-lt text-secondary">{{ b.currency }}</span>
+						<span>{{ t("Total") }}: <strong class="font-monospace text-body">{{ formatMoney(b.grand, b.currency, user.language) }}</strong></span>
+						<span>{{ t("Payable") }}: <strong class="text-red font-monospace">{{ formatMoney(b.outstanding, b.currency, user.language) }}</strong></span>
+					</div>
 				</div>
-			</div>
-		</div>
+			</template>
+		</ListToolbar>
 
-		<div v-if="loading" class="card-body text-center py-5">
-			<div class="spinner-border text-primary"></div>
-		</div>
-		<div v-else-if="error" class="card-body">
+		<div v-if="error" class="card-body">
 			<div class="alert alert-danger m-0">{{ error }}</div>
 		</div>
 		<EmptyState
-			v-else-if="!rows.length"
+			v-else-if="!loading && !filteredRows.length"
 			icon="ti-receipt"
 			accentIcon="ti-plus"
 			tone="warning"
@@ -587,7 +582,7 @@ watch(activeCompany, load);
 			:subtitle='t("Widen the date range, relax the status filter, or log a new bill.")'
 		>
 			<template #actions>
-				<button type="button" class="btn btn-primary" @click="openCreate">
+				<button type="button" class="btn btn-outline-secondary btn-sm" @click="openCreate">
 					<i class="ti ti-plus me-1"></i>{{ t("New bill") }}
 				</button>
 			</template>
@@ -606,8 +601,9 @@ watch(activeCompany, load);
 						<th>{{ t("Status") }}</th>
 					</tr>
 				</thead>
-				<tbody>
-					<tr v-for="r in rows" :key="r.name" style="cursor: pointer" @click="openDetail(r.name)">
+				<SkeletonRows v-if="loading" :rows="5" :cols="8" />
+				<tbody v-else>
+					<tr v-for="r in filteredRows" :key="r.name" style="cursor: pointer" @click="openDetail(r.name)">
 						<td class="font-monospace text-primary">{{ r.name }}</td>
 						<td>{{ formatDateTime(r.posting_date) }}</td>
 						<td>{{ formatDateTime(r.due_date) }}</td>
@@ -617,7 +613,7 @@ watch(activeCompany, load);
 						<td class="font-monospace small">{{ r.bill_no || "—" }}</td>
 						<td class="text-end font-monospace">{{ formatMoney(r.grand_total, r.currency || currency, user.language) }}</td>
 						<td class="text-end font-monospace">{{ formatMoney(r.outstanding_amount, r.currency || currency, user.language) }}</td>
-						<td><span class="badge" :class="statusBadge(r.status)">{{ r.status }}</span></td>
+						<td><span class="badge" :class="getStatusBadgeClass('Purchase Invoice', r.status)">{{ t(r.status) }}</span></td>
 					</tr>
 				</tbody>
 			</table>
@@ -647,7 +643,7 @@ watch(activeCompany, load);
 						<h3 class="m-0 font-monospace">{{ detail.name }}</h3>
 						<div class="small text-secondary">{{ detail.supplier_name }}</div>
 					</div>
-					<span class="badge ms-auto" :class="statusBadge(detail.status)">{{ detail.status }}</span>
+					<span class="badge ms-auto" :class="getStatusBadgeClass('Purchase Invoice', detail.status)">{{ t(detail.status) }}</span>
 				</div>
 
 				<div v-if="actionError" class="alert alert-danger">{{ actionError }}</div>
@@ -666,7 +662,7 @@ watch(activeCompany, load);
 					<button
 						v-if="canPay"
 						type="button"
-						class="btn btn-success"
+						class="btn btn-outline-secondary"
 						:disabled="actionRunning"
 						@click="openPayment"
 					>
@@ -675,7 +671,7 @@ watch(activeCompany, load);
 					<button
 						v-if="canEdit"
 						type="button"
-						class="btn btn-outline-primary"
+						class="btn btn-outline-secondary"
 						:disabled="actionRunning"
 						@click="openEdit"
 					>
@@ -684,7 +680,7 @@ watch(activeCompany, load);
 					<button
 						v-if="canDelete"
 						type="button"
-						class="btn btn-outline-danger ms-auto"
+						class="btn btn-outline-secondary ms-auto"
 						:disabled="actionRunning"
 						@click="deleteDoc"
 					>
@@ -693,7 +689,7 @@ watch(activeCompany, load);
 					<button
 						v-if="canCancel"
 						type="button"
-						class="btn btn-outline-danger ms-auto"
+						class="btn btn-outline-secondary ms-auto"
 						:disabled="actionRunning"
 						@click="cancelDoc"
 					>

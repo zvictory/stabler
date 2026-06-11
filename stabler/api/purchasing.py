@@ -241,6 +241,33 @@ def supplier_detail(name: str, company: str):
 	)
 	lifetime_base = flt(lifetime_row[0]["lifetime"]) if lifetime_row else 0.0
 
+	overdue_row = frappe.db.sql(
+		"""
+		SELECT COALESCE(SUM(outstanding_amount), 0) AS overdue
+		FROM `tabPurchase Invoice`
+		WHERE supplier = %(name)s AND company = %(company)s
+		  AND docstatus = 1
+		  AND due_date < %(today)s
+		  AND outstanding_amount > 0
+		""",
+		{"name": name, "company": company, "today": today()},
+		as_dict=True,
+	)
+	overdue_amount = flt(overdue_row[0]["overdue"]) if overdue_row else 0.0
+
+	last_payment_row = frappe.db.sql(
+		"""
+		SELECT posting_date
+		FROM `tabPayment Entry`
+		WHERE party_type = 'Supplier' AND party = %(name)s AND company = %(company)s
+		  AND docstatus = 1
+		ORDER BY posting_date DESC
+		LIMIT 1
+		""",
+		{"name": name, "company": company},
+	)
+	last_payment_date = str(last_payment_row[0][0]) if last_payment_row and last_payment_row[0][0] else None
+
 	recent = frappe.db.sql(
 		"""
 		SELECT name, posting_date, due_date, grand_total, outstanding_amount, status, currency
@@ -270,6 +297,8 @@ def supplier_detail(name: str, company: str):
 			for r in ap_by_currency
 		],
 		"lifetime_base": lifetime_base,
+		"overdue_amount": overdue_amount,
+		"last_payment_date": last_payment_date,
 		"recent_invoices": recent,
 	}
 
@@ -1548,4 +1577,78 @@ def create_purchase_invoice_from_pr(name: str):
 		"grand_total": flt(doc.grand_total),
 		"supplier": doc.supplier,
 		"purchase_receipt": name,
+	}
+
+
+@frappe.whitelist()
+def payables_cockpit(company: str):
+	_require_company(company)
+	
+	# Current total payables balance (credit - debit)
+	current_total = flt(frappe.db.sql(
+		"""
+		SELECT COALESCE(SUM(credit - debit), 0)
+		FROM `tabGL Entry`
+		WHERE company = %(company)s AND party_type = 'Supplier' AND is_cancelled = 0
+		""",
+		{"company": company},
+	)[0][0])
+
+	# 8-week trend (running balance at the end of each of the last 8 weeks)
+	from datetime import datetime, timedelta
+	from frappe.utils import getdate
+
+	current_date = getdate(today())
+	weeks = []
+	for i in range(8):
+		date_at_end = current_date - timedelta(days=i*7)
+		weeks.append(date_at_end)
+	weeks.reverse()
+
+	trend = []
+	for w_end in weeks:
+		change_since = flt(frappe.db.sql(
+			"""
+			SELECT COALESCE(SUM(credit - debit), 0)
+			FROM `tabGL Entry`
+			WHERE company = %(company)s AND party_type = 'Supplier' AND posting_date > %(w_end)s AND is_cancelled = 0
+			""",
+			{"company": company, "w_end": w_end},
+		)[0][0])
+		trend.append(round(current_total - change_since, 2))
+
+	# Payments paid today (debit side for Supplier)
+	paid_today = flt(frappe.db.sql(
+		"""
+		SELECT COALESCE(SUM(debit), 0)
+		FROM `tabGL Entry`
+		WHERE company = %(company)s AND party_type = 'Supplier' AND posting_date = %(today)s AND is_cancelled = 0
+		""",
+		{"company": company, "today": today()},
+	)[0][0])
+
+	# Top 10 creditors
+	top_creditors_raw = frappe.db.sql(
+		"""
+		SELECT party AS name, COALESCE(SUM(credit - debit), 0) AS balance
+		FROM `tabGL Entry`
+		WHERE company = %(company)s AND party_type = 'Supplier' AND is_cancelled = 0
+		GROUP BY party
+		HAVING SUM(credit - debit) > 0.005
+		ORDER BY balance DESC
+		LIMIT 10
+		""",
+		{"company": company},
+		as_dict=True,
+	) or []
+	
+	for creditor in top_creditors_raw:
+		creditor["supplier_name"] = frappe.db.get_value("Supplier", creditor["name"], "supplier_name") or creditor["name"]
+		creditor["balance"] = flt(creditor["balance"])
+
+	return {
+		"total_payable": current_total,
+		"payments_paid_today": paid_today,
+		"trend_8_weeks": trend,
+		"top_creditors": top_creditors_raw,
 	}

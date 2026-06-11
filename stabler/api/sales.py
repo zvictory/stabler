@@ -310,6 +310,7 @@ def _fetch_party_ledger_rows(
 	rows = frappe.db.sql(
 		f"""
 		SELECT name, posting_date, voucher_type, voucher_no, against, remarks,
+		       against_voucher, against_voucher_type,
 		       account, account_currency,
 		       debit, credit,
 		       debit_in_account_currency, credit_in_account_currency
@@ -415,6 +416,33 @@ def customer_detail(name: str, company: str):
 	)
 	lifetime_base = flt(lifetime_row[0]["lifetime"]) if lifetime_row else 0.0
 
+	overdue_row = frappe.db.sql(
+		"""
+		SELECT COALESCE(SUM(outstanding_amount), 0) AS overdue
+		FROM `tabSales Invoice`
+		WHERE customer = %(name)s AND company = %(company)s
+		  AND docstatus = 1
+		  AND due_date < %(today)s
+		  AND outstanding_amount > 0
+		""",
+		{"name": name, "company": company, "today": today()},
+		as_dict=True,
+	)
+	overdue_amount = flt(overdue_row[0]["overdue"]) if overdue_row else 0.0
+
+	last_payment_row = frappe.db.sql(
+		"""
+		SELECT posting_date
+		FROM `tabPayment Entry`
+		WHERE party_type = 'Customer' AND party = %(name)s AND company = %(company)s
+		  AND docstatus = 1
+		ORDER BY posting_date DESC
+		LIMIT 1
+		""",
+		{"name": name, "company": company},
+	)
+	last_payment_date = str(last_payment_row[0][0]) if last_payment_row and last_payment_row[0][0] else None
+
 	recent = frappe.db.sql(
 		"""
 		SELECT name, posting_date, due_date, grand_total, outstanding_amount, status, currency
@@ -445,6 +473,8 @@ def customer_detail(name: str, company: str):
 			for r in ar_by_currency
 		],
 		"lifetime_base": lifetime_base,
+		"overdue_amount": overdue_amount,
+		"last_payment_date": last_payment_date,
 		"recent_invoices": recent,
 	}
 
@@ -2360,3 +2390,77 @@ def reserved_stock_analysis(company: str):
 	}
 
 	return {"kpis": kpis, "groups": groups}
+
+
+@frappe.whitelist()
+def receivables_cockpit(company: str):
+	_require_company(company)
+	
+	# Current total receivables balance
+	current_total = flt(frappe.db.sql(
+		"""
+		SELECT COALESCE(SUM(debit - credit), 0)
+		FROM `tabGL Entry`
+		WHERE company = %(company)s AND party_type = 'Customer' AND is_cancelled = 0
+		""",
+		{"company": company},
+	)[0][0])
+
+	# 8-week trend (running balance at the end of each of the last 8 weeks)
+	from datetime import datetime, timedelta
+	from frappe.utils import getdate
+
+	current_date = getdate(today())
+	weeks = []
+	for i in range(8):
+		date_at_end = current_date - timedelta(days=i*7)
+		weeks.append(date_at_end)
+	weeks.reverse()
+
+	trend = []
+	for w_end in weeks:
+		change_since = flt(frappe.db.sql(
+			"""
+			SELECT COALESCE(SUM(debit - credit), 0)
+			FROM `tabGL Entry`
+			WHERE company = %(company)s AND party_type = 'Customer' AND posting_date > %(w_end)s AND is_cancelled = 0
+			""",
+			{"company": company, "w_end": w_end},
+		)[0][0])
+		trend.append(round(current_total - change_since, 2))
+
+	# Payments received today
+	received_today = flt(frappe.db.sql(
+		"""
+		SELECT COALESCE(SUM(credit), 0)
+		FROM `tabGL Entry`
+		WHERE company = %(company)s AND party_type = 'Customer' AND posting_date = %(today)s AND is_cancelled = 0
+		""",
+		{"company": company, "today": today()},
+	)[0][0])
+
+	# Top 10 debtors
+	top_debtors_raw = frappe.db.sql(
+		"""
+		SELECT party AS name, COALESCE(SUM(debit - credit), 0) AS balance
+		FROM `tabGL Entry`
+		WHERE company = %(company)s AND party_type = 'Customer' AND is_cancelled = 0
+		GROUP BY party
+		HAVING SUM(debit - credit) > 0.005
+		ORDER BY balance DESC
+		LIMIT 10
+		""",
+		{"company": company},
+		as_dict=True,
+	) or []
+	
+	for debtor in top_debtors_raw:
+		debtor["customer_name"] = frappe.db.get_value("Customer", debtor["name"], "customer_name") or debtor["name"]
+		debtor["balance"] = flt(debtor["balance"])
+
+	return {
+		"total_receivable": current_total,
+		"payments_received_today": received_today,
+		"trend_8_weeks": trend,
+		"top_debtors": top_debtors_raw,
+	}

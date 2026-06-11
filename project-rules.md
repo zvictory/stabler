@@ -28,7 +28,10 @@
 
 ## 4. UI Frame & Visual Hierarchy
 - **Global shell:** Sidebar grouping and module header patterns are shared frame concerns. Keep module home pages aligned to `ModuleHeader.vue` instead of hand-rolling separate header/tab structures.
-- **Button hierarchy:** Use at most one `.btn-primary` action per visual region. Secondary actions must use outline, ghost, link, or icon-only treatments so enterprise screens stay scannable under fatigue.
-- **Money semantics:** Monetary balances must preserve semantic direction. Use `balanceState()` / `BalanceChip.vue` for customer and supplier balances instead of showing unsigned numbers without context.
+- **Button hierarchy:** Use at most one `.btn-primary` action per visual region (card header, drawer/offcanvas footer, detail header). Secondary actions must use outline, ghost, link, or icon-only treatments (e.g., `.btn-outline-secondary` or `.btn-ghost-secondary`).
+- **Money semantics & Currency:** Monetary balances must preserve semantic direction. Use `balanceState()` / `BalanceChip.vue` for customer and supplier balances. Amounts must render in their original transaction/account currency only (remove secondary/USD equivalents).
 - **Dense text:** Use `.stbl-subtext` for quiet supporting metadata and `.stbl-amount` for aligned currency values. Do not let money cells wrap or truncate in ways that hide the amount.
 - **Party identity:** Use `PartyAvatar.vue` where customer/supplier/person names need a compact identity anchor in list rows or drawers.
+- **Filter and Toolbar Grammar:** Every list page must use `ListToolbar.vue`. Watch filter variables (`fromDate`, `toDate`, `status`, etc.) to auto-apply filter changes instantly (no "Apply" or "Refresh" buttons). Suffix search placeholder text with `⌘K`.
+- **Central Status Badges:** Map status labels and styles centrally using `getStatusBadgeClass` from `composables/status.js`. Do not define custom status badges or copy maps per page.
+- **Loading states:** Always display animated skeleton loading placeholders (`SkeletonRows.vue`) inside the table structure while loading data. Never show a spinner in a void.

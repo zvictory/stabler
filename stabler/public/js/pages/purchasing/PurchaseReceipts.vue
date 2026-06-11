@@ -13,6 +13,9 @@ import EmptyState from "../../components/EmptyState.vue";
 import Typeahead from "../../components/Typeahead.vue";
 import RelatedDocuments from "../../components/RelatedDocuments.vue";
 import Select from "../../components/Select.vue";
+import ListToolbar from "../../components/ListToolbar.vue";
+import SkeletonRows from "../../components/SkeletonRows.vue";
+import { getStatusBadgeClass } from "../../composables/status.js";
 
 const session = useSession();
 const { activeCompany, user } = storeToRefs(session);
@@ -49,17 +52,17 @@ const STATUSES = ["", "Draft", "To Bill", "Completed", "Return Issued", "Closed"
 
 const statusOptions = computed(() => STATUSES.map((s) => ({ value: s, label: s || t("All") })));
 
-const statusBadge = (s) => {
-	const m = {
-		Draft: "bg-secondary-lt",
-		"To Bill": "bg-orange-lt",
-		Completed: "bg-green-lt",
-		Cancelled: "bg-red-lt",
-		"Return Issued": "bg-purple-lt",
-		Closed: "bg-secondary-lt",
-	};
-	return m[s] || "bg-secondary-lt";
-};
+const search = ref("");
+const filteredRows = computed(() => {
+	const q = search.value.toLowerCase().trim();
+	if (!q) return rows.value;
+	return rows.value.filter(r => 
+		(r.name || "").toLowerCase().includes(q) ||
+		(r.supplier || "").toLowerCase().includes(q) ||
+		(r.supplier_name || "").toLowerCase().includes(q) ||
+		(r.set_warehouse || "").toLowerCase().includes(q)
+	);
+});
 
 async function loadWarehouses() {
 	if (!activeCompany.value) return;
@@ -123,18 +126,16 @@ function searchSuppliers(q) {
 function pickFilterSupplier(s) {
 	supplier.value = s.name;
 	supplierName.value = s.supplier_name;
-	load();
 }
 function clearFilterSupplier() {
 	supplier.value = "";
 	supplierName.value = "";
-	load();
 }
 
 // Multi-currency bucket totals (purchasing convention — receipts can be foreign-currency)
 const totalsByCurrency = computed(() => {
 	const m = new Map();
-	for (const r of rows.value) {
+	for (const r of filteredRows.value) {
 		const ccy = r.currency || currency.value;
 		const bucket = m.get(ccy) || { currency: ccy, count: 0, grand: 0 };
 		bucket.count += 1;
@@ -346,6 +347,7 @@ onMounted(async () => {
 	const openName = route.query?.open;
 	if (openName) openDetail(String(openName));
 });
+watch([fromDate, toDate, supplier, status], load);
 watch(activeCompany, async () => {
 	await Promise.all([load(), loadWarehouses()]);
 });
@@ -353,73 +355,65 @@ watch(activeCompany, async () => {
 
 <template>
 	<div class="card">
-		<div class="card-header">
-			<div class="card-title">{{ t("Purchase Receipts") }}</div>
-			<div class="ms-auto d-flex gap-2 align-items-end flex-wrap">
-				<div>
-					<label class="form-label small mb-1">{{ t("From") }}</label>
-					<DateInput v-model="fromDate" size="sm" />
+		<ListToolbar
+			v-model="search"
+			:placeholder="t('Receipt number or supplier…')"
+			:count="filteredRows.length"
+			:primary-label="t('New receipt')"
+			primary-icon="ti-plus"
+			@search="load"
+			@primary-click="openCreate"
+		>
+			<template #filters>
+				<div class="d-flex align-items-center gap-2">
+					<DateInput v-model="fromDate" size="sm" style="width: 110px" />
+					<span class="text-secondary small">—</span>
+					<DateInput v-model="toDate" size="sm" style="width: 110px" />
+					<div style="width: 180px">
+						<Typeahead
+							v-model="supplier"
+							:search="searchSuppliers"
+							:display="supplierName"
+							:placeholder="t('All suppliers')"
+							size="sm"
+							open-on-focus
+							@pick="pickFilterSupplier"
+							@clear="clearFilterSupplier"
+						>
+							<template #option="{ item }">
+								<div class="fw-semibold small">{{ item.supplier_name }}</div>
+								<div class="small text-secondary font-monospace">{{ item.name }}</div>
+							</template>
+						</Typeahead>
+					</div>
+					<Select v-model="status" size="sm" :options="statusOptions" style="width: 160px" />
 				</div>
-				<div>
-					<label class="form-label small mb-1">{{ t("To") }}</label>
-					<DateInput v-model="toDate" size="sm" />
-				</div>
-				<div style="min-width: 180px">
-					<label class="form-label small mb-1">{{ t("Supplier") }}</label>
-					<Typeahead
-						v-model="supplier"
-						:search="searchSuppliers"
-						:display="supplierName"
-						:placeholder="t('All suppliers')"
-						size="sm"
-						open-on-focus
-						@pick="pickFilterSupplier"
-						@clear="clearFilterSupplier"
-					>
-						<template #option="{ item }">
-							<div class="fw-semibold small">{{ item.supplier_name }}</div>
-							<div class="small text-secondary font-monospace">{{ item.name }}</div>
-						</template>
-					</Typeahead>
-				</div>
-				<div style="min-width: 160px">
-					<label class="form-label small mb-1">{{ t("Status") }}</label>
-					<Select v-model="status" size="sm" :options="statusOptions" />
-				</div>
-				<button type="button" class="btn btn-sm btn-primary" @click="load">
-					<i class="ti ti-refresh me-1"></i>{{ t("Apply") }}
-				</button>
-				<button type="button" class="btn btn-sm btn-success" @click="openCreate">
-					<i class="ti ti-plus me-1"></i>{{ t("New receipt") }}
-				</button>
-			</div>
-		</div>
+			</template>
 
-		<div v-if="rows.length" class="card-body py-2 border-bottom bg-light">
-			<div class="d-flex gap-4 small flex-wrap">
-				<div>{{ t("Count") }}: <strong>{{ rows.length }}</strong></div>
-				<div v-for="b in totalsByCurrency" :key="b.currency">
-					{{ b.currency }}: <strong class="font-monospace">{{ formatMoney(b.grand, b.currency, user.language) }}</strong>
+			<template #summary>
+				<div class="d-flex gap-3 small text-secondary align-items-center flex-wrap">
+					<div>{{ t("Count") }}: <strong class="font-monospace text-body">{{ filteredRows.length }}</strong></div>
+					<div v-for="b in totalsByCurrency" :key="b.currency" class="d-flex gap-2 align-items-center">
+						<span class="badge bg-secondary-lt text-secondary">{{ b.currency }}</span>
+						<span>{{ t("Total") }}: <strong class="font-monospace text-body">{{ formatMoney(b.grand, b.currency, user.language) }}</strong></span>
+					</div>
 				</div>
-			</div>
-		</div>
+			</template>
+		</ListToolbar>
 
-		<div v-if="loading" class="card-body text-center py-5">
-			<div class="spinner-border text-primary"></div>
-		</div>
-		<div v-else-if="error" class="card-body">
+		<div v-if="error" class="card-body">
 			<div class="alert alert-danger m-0">{{ error }}</div>
 		</div>
 		<EmptyState
-			v-else-if="!rows.length"
+			v-else-if="!loading && !filteredRows.length"
 			icon="ti-package-import"
 			accentIcon="ti-plus"
 			tone="primary"
-			:title="t('No receipts in this range')"
-			:subtitle="t('Widen the date range, relax the filters, or receive a purchase order.')"
+			:title="t('No purchase receipts in this range')"
+			:subtitle="t('Widen the date range, relax the filters, or log a direct receipt.')"
 		>
 			<template #actions>
-				<button type="button" class="btn btn-primary" @click="openCreate">
+				<button type="button" class="btn btn-outline-secondary btn-sm" @click="openCreate">
 					<i class="ti ti-plus me-1"></i>{{ t("New receipt") }}
 				</button>
 			</template>
@@ -437,8 +431,9 @@ watch(activeCompany, async () => {
 						<th>{{ t("Status") }}</th>
 					</tr>
 				</thead>
-				<tbody>
-					<tr v-for="r in rows" :key="r.name" style="cursor: pointer" @click="openDetail(r.name)">
+				<SkeletonRows v-if="loading" :rows="5" :cols="7" />
+				<tbody v-else>
+					<tr v-for="r in filteredRows" :key="r.name" style="cursor: pointer" @click="openDetail(r.name)">
 						<td class="font-monospace text-primary text-nowrap">{{ r.name }}</td>
 						<td class="text-nowrap">{{ formatDate(r.posting_date) }}</td>
 						<td>
@@ -447,7 +442,7 @@ watch(activeCompany, async () => {
 						<td class="font-monospace small">{{ r.set_warehouse || "—" }}</td>
 						<td class="text-end font-monospace">{{ formatMoney(r.grand_total, r.currency || currency, user.language) }}</td>
 						<td class="text-end font-monospace">{{ Number(r.per_billed || 0).toFixed(0) }}%</td>
-						<td><span class="badge" :class="statusBadge(r.status)">{{ r.status }}</span></td>
+						<td><span class="badge" :class="getStatusBadgeClass('Purchase Receipt', r.status)">{{ t(r.status) }}</span></td>
 					</tr>
 				</tbody>
 			</table>
@@ -480,7 +475,7 @@ watch(activeCompany, async () => {
 					<div v-if="detail.amended_from" class="small text-secondary">
 						{{ t("Amend of") }} <span class="font-monospace">{{ detail.amended_from }}</span>
 					</div>
-					<span class="badge" :class="statusBadge(detail.status)">{{ detail.status }}</span>
+					<span class="badge" :class="getStatusBadgeClass('Purchase Receipt', detail.status)">{{ t(detail.status) }}</span>
 				</div>
 
 				<div v-if="actionError" class="alert alert-danger">{{ actionError }}</div>
@@ -499,7 +494,7 @@ watch(activeCompany, async () => {
 					<button
 						v-if="canCreateBill"
 						type="button"
-						class="btn btn-success"
+						class="btn btn-outline-secondary"
 						:disabled="actionRunning"
 						@click="createBill"
 					>
@@ -509,7 +504,7 @@ watch(activeCompany, async () => {
 					<button
 						v-if="canCancel"
 						type="button"
-						class="btn btn-outline-danger ms-auto"
+						class="btn btn-outline-secondary ms-auto"
 						:disabled="actionRunning"
 						@click="cancelDoc"
 					>

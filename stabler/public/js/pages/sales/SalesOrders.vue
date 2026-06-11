@@ -10,6 +10,9 @@ import { t } from "../../composables/i18n.js";
 import DateInput from "../../components/DateInput.vue";
 import EmptyState from "../../components/EmptyState.vue";
 import Select from "../../components/Select.vue";
+import ListToolbar from "../../components/ListToolbar.vue";
+import SkeletonRows from "../../components/SkeletonRows.vue";
+import { getStatusBadgeClass } from "../../composables/status.js";
 
 const session = useSession();
 const { activeCompany, user } = storeToRefs(session);
@@ -49,20 +52,6 @@ const statusOptions = computed(() =>
 	STATUSES.map((s) => ({ value: s, label: s ? t(s) : t("All") }))
 );
 
-const statusBadge = (s) => {
-	const m = {
-		Draft: "bg-secondary-lt",
-		"To Deliver and Bill": "bg-yellow-lt",
-		"To Bill": "bg-orange-lt",
-		"To Deliver": "bg-blue-lt",
-		Completed: "bg-green-lt",
-		Cancelled: "bg-red-lt",
-		Closed: "bg-secondary-lt",
-		"On Hold": "bg-purple-lt",
-	};
-	return m[s] || "bg-secondary-lt";
-};
-
 async function load() {
 	if (!activeCompany.value) return;
 	loading.value = true;
@@ -88,6 +77,10 @@ const totals = computed(() => ({
 	grand: rows.value.reduce((s, r) => s + Number(r.grand_total || 0), 0),
 }));
 
+const showReservedColumn = computed(() => {
+	return rows.value.some((r) => r.reservation_status === "Partially Reserved");
+});
+
 function openOrder(name) {
 	router.push("/sales/orders/" + name);
 }
@@ -95,62 +88,40 @@ function newOrder() {
 	router.push("/sales/orders/new");
 }
 
-onMounted(load);
+watch([fromDate, toDate, status], load);
 watch(activeCompany, load);
+
+onMounted(load);
 </script>
 
 <template>
 	<div class="card">
-		<div class="card-header">
-			<div class="card-title">{{ t("Sales Orders") }}</div>
-			<div class="ms-auto d-flex gap-2 align-items-end flex-wrap">
-				<div>
-					<label class="form-label small mb-1">{{ t("Search") }}</label>
-					<input
-						v-model="search"
-						type="search"
-						class="form-control form-control-sm"
-						:placeholder="t('SO number or customer…')"
-						style="min-width: 180px"
-						@keydown.enter="load"
-					/>
+		<ListToolbar
+			v-model="search"
+			:placeholder="t('SO number or customer…')"
+			:count="totals.count"
+			:total-label="t('Total')"
+			:total-value="formatMoney(totals.grand, currency, user.language)"
+			:primary-label="t('New sales order')"
+			primary-icon="ti-plus"
+			@search="load"
+			@primary-click="newOrder"
+		>
+			<template #filters>
+				<div class="d-flex align-items-center gap-2">
+					<DateInput v-model="fromDate" size="sm" style="width: 110px" />
+					<span class="text-secondary small">—</span>
+					<DateInput v-model="toDate" size="sm" style="width: 110px" />
+					<Select v-model="status" size="sm" :options="statusOptions" style="width: 160px" />
 				</div>
-				<div>
-					<label class="form-label small mb-1">{{ t("From") }}</label>
-					<DateInput v-model="fromDate" size="sm" />
-				</div>
-				<div>
-					<label class="form-label small mb-1">{{ t("To") }}</label>
-					<DateInput v-model="toDate" size="sm" />
-				</div>
-				<div style="min-width: 180px">
-					<label class="form-label small mb-1">{{ t("Status") }}</label>
-					<Select v-model="status" size="sm" :options="statusOptions" />
-				</div>
-				<button type="button" class="btn btn-sm btn-primary" @click="load">
-					<i class="ti ti-refresh me-1"></i>{{ t("Apply") }}
-				</button>
-				<button type="button" class="btn btn-sm btn-success" @click="newOrder">
-					<i class="ti ti-plus me-1"></i>{{ t("New sales order") }}
-				</button>
-			</div>
-		</div>
+			</template>
+		</ListToolbar>
 
-		<div v-if="rows.length" class="card-body py-2 border-bottom bg-light">
-			<div class="d-flex gap-4 small">
-				<div>{{ t("Count") }}: <strong>{{ totals.count }}</strong></div>
-				<div>{{ t("Total") }}: <strong class="font-monospace">{{ formatMoney(totals.grand, currency, user.language) }}</strong></div>
-			</div>
-		</div>
-
-		<div v-if="loading" class="card-body text-center py-5">
-			<div class="spinner-border text-primary"></div>
-		</div>
-		<div v-else-if="error" class="card-body">
+		<div v-if="error" class="card-body">
 			<div class="alert alert-danger m-0">{{ error }}</div>
 		</div>
 		<EmptyState
-			v-else-if="!rows.length"
+			v-else-if="!loading && !rows.length"
 			icon="ti-clipboard-check"
 			accentIcon="ti-plus"
 			tone="primary"
@@ -158,7 +129,7 @@ watch(activeCompany, load);
 			:subtitle="t('Widen the date range, relax the status filter, or start a new order.')"
 		>
 			<template #actions>
-				<button type="button" class="btn btn-primary" @click="newOrder">
+				<button type="button" class="btn btn-primary btn-sm" @click="newOrder">
 					<i class="ti ti-plus me-1"></i>{{ t("New sales order") }}
 				</button>
 			</template>
@@ -174,10 +145,11 @@ watch(activeCompany, load);
 						<th class="text-end">{{ t("Delivered") }}</th>
 						<th class="text-end">{{ t("Billed") }}</th>
 						<th>{{ t("Status") }}</th>
-						<th>{{ t("Reserved") }}</th>
+						<th v-if="showReservedColumn">{{ t("Reserved") }}</th>
 					</tr>
 				</thead>
-				<tbody>
+				<SkeletonRows v-if="loading" :rows="5" :cols="showReservedColumn ? 8 : 7" />
+				<tbody v-else>
 					<tr v-for="r in rows" :key="r.name" style="cursor: pointer" @click="openOrder(r.name)">
 						<td class="font-monospace text-primary text-nowrap">{{ r.name }}</td>
 						<td class="text-nowrap">{{ formatDateTime(r.transaction_date) }}</td>
@@ -187,10 +159,10 @@ watch(activeCompany, load);
 						<td class="text-end font-monospace">{{ formatMoney(r.grand_total, r.currency || currency, user.language) }}</td>
 						<td class="text-end font-monospace">{{ Number(r.per_delivered || 0).toFixed(0) }}%</td>
 						<td class="text-end font-monospace">{{ Number(r.per_billed || 0).toFixed(0) }}%</td>
-						<td><span class="badge" :class="statusBadge(r.status)">{{ t(r.status) }}</span></td>
-						<td>
-							<span v-if="r.has_reservations" class="badge bg-green-lt">
-								<i class="ti ti-lock me-1"></i>{{ t("Reserved") }}
+						<td><span class="badge" :class="getStatusBadgeClass('Sales Order', r.status)">{{ t(r.status) }}</span></td>
+						<td v-if="showReservedColumn">
+							<span v-if="r.reservation_status === 'Partially Reserved'" class="badge bg-yellow-lt">
+								<i class="ti ti-lock-open me-1"></i>{{ t("Partially Reserved") }}
 							</span>
 							<span v-else class="text-secondary small">—</span>
 						</td>

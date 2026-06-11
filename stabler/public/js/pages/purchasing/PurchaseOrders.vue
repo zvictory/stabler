@@ -13,6 +13,9 @@ import EmptyState from "../../components/EmptyState.vue";
 import Typeahead from "../../components/Typeahead.vue";
 import RelatedDocuments from "../../components/RelatedDocuments.vue";
 import Select from "../../components/Select.vue";
+import ListToolbar from "../../components/ListToolbar.vue";
+import SkeletonRows from "../../components/SkeletonRows.vue";
+import { getStatusBadgeClass } from "../../composables/status.js";
 
 const session = useSession();
 const { activeCompany, user } = storeToRefs(session);
@@ -57,19 +60,16 @@ const STATUSES = [
 
 const statusOptions = computed(() => STATUSES.map((s) => ({ value: s, label: s || t("All") })));
 
-const statusBadge = (s) => {
-	const m = {
-		Draft: "bg-secondary-lt",
-		"To Receive and Bill": "bg-yellow-lt",
-		"To Bill": "bg-orange-lt",
-		"To Receive": "bg-blue-lt",
-		Completed: "bg-green-lt",
-		Cancelled: "bg-red-lt",
-		Closed: "bg-secondary-lt",
-		"On Hold": "bg-purple-lt",
-	};
-	return m[s] || "bg-secondary-lt";
-};
+const search = ref("");
+const filteredRows = computed(() => {
+	const q = search.value.toLowerCase().trim();
+	if (!q) return rows.value;
+	return rows.value.filter(r => 
+		(r.name || "").toLowerCase().includes(q) ||
+		(r.supplier || "").toLowerCase().includes(q) ||
+		(r.supplier_name || "").toLowerCase().includes(q)
+	);
+});
 
 async function loadWarehouses() {
 	if (!activeCompany.value) return;
@@ -125,7 +125,7 @@ function closeDetail() {
 // Multi-currency bucket totals (purchasing convention — POs can be foreign-currency)
 const totalsByCurrency = computed(() => {
 	const m = new Map();
-	for (const r of rows.value) {
+	for (const r of filteredRows.value) {
 		const ccy = r.currency || currency.value;
 		const bucket = m.get(ccy) || { currency: ccy, count: 0, grand: 0 };
 		bucket.count += 1;
@@ -479,59 +479,47 @@ async function submitCreate({ autoSubmit = 1 } = {}) {
 	}
 }
 
-onMounted(async () => {
-	await Promise.all([load(), loadWarehouses()]);
-	const openName = route.query?.open;
-	if (openName) openDetail(String(openName));
-});
-watch(activeCompany, async () => {
-	await Promise.all([load(), loadWarehouses()]);
-});
+onMounted(load);
+watch([fromDate, toDate, status], load);
+watch(activeCompany, load);
 </script>
 
 <template>
 	<div class="card">
-		<div class="card-header">
-			<div class="card-title">{{ t("Purchase Orders") }}</div>
-			<div class="ms-auto d-flex gap-2 align-items-end flex-wrap">
-				<div>
-					<label class="form-label small mb-1">{{ t("From") }}</label>
-					<DateInput v-model="fromDate" size="sm" />
+		<ListToolbar
+			v-model="search"
+			:placeholder="t('Order number or supplier…')"
+			:count="filteredRows.length"
+			:primary-label="t('New purchase order')"
+			primary-icon="ti-plus"
+			@search="load"
+			@primary-click="openCreate"
+		>
+			<template #filters>
+				<div class="d-flex align-items-center gap-2">
+					<DateInput v-model="fromDate" size="sm" style="width: 110px" />
+					<span class="text-secondary small">—</span>
+					<DateInput v-model="toDate" size="sm" style="width: 110px" />
+					<Select v-model="status" size="sm" :options="statusOptions" style="width: 160px" />
 				</div>
-				<div>
-					<label class="form-label small mb-1">{{ t("To") }}</label>
-					<DateInput v-model="toDate" size="sm" />
-				</div>
-				<div style="min-width: 180px">
-					<label class="form-label small mb-1">{{ t("Status") }}</label>
-					<Select v-model="status" size="sm" :options="statusOptions" />
-				</div>
-				<button type="button" class="btn btn-sm btn-primary" @click="load">
-					<i class="ti ti-refresh me-1"></i>{{ t("Apply") }}
-				</button>
-				<button type="button" class="btn btn-sm btn-success" @click="openCreate">
-					<i class="ti ti-plus me-1"></i>{{ t("New purchase order") }}
-				</button>
-			</div>
-		</div>
+			</template>
 
-		<div v-if="rows.length" class="card-body py-2 border-bottom bg-light">
-			<div class="d-flex gap-4 small flex-wrap">
-				<div>{{ t("Count") }}: <strong>{{ rows.length }}</strong></div>
-				<div v-for="b in totalsByCurrency" :key="b.currency">
-					{{ b.currency }}: <strong class="font-monospace">{{ formatMoney(b.grand, b.currency, user.language) }}</strong>
+			<template #summary>
+				<div class="d-flex gap-3 small text-secondary align-items-center flex-wrap">
+					<div>{{ t("Count") }}: <strong class="font-monospace text-body">{{ filteredRows.length }}</strong></div>
+					<div v-for="b in totalsByCurrency" :key="b.currency" class="d-flex gap-2 align-items-center">
+						<span class="badge bg-secondary-lt text-secondary">{{ b.currency }}</span>
+						<span>{{ t("Total") }}: <strong class="font-monospace text-body">{{ formatMoney(b.grand, b.currency, user.language) }}</strong></span>
+					</div>
 				</div>
-			</div>
-		</div>
+			</template>
+		</ListToolbar>
 
-		<div v-if="loading" class="card-body text-center py-5">
-			<div class="spinner-border text-primary"></div>
-		</div>
-		<div v-else-if="error" class="card-body">
+		<div v-if="error" class="card-body">
 			<div class="alert alert-danger m-0">{{ error }}</div>
 		</div>
 		<EmptyState
-			v-else-if="!rows.length"
+			v-else-if="!loading && !filteredRows.length"
 			icon="ti-clipboard-list"
 			accentIcon="ti-plus"
 			tone="primary"
@@ -539,7 +527,7 @@ watch(activeCompany, async () => {
 			:subtitle="t('Widen the date range, relax the status filter, or create a new order.')"
 		>
 			<template #actions>
-				<button type="button" class="btn btn-primary" @click="openCreate">
+				<button type="button" class="btn btn-outline-secondary btn-sm" @click="openCreate">
 					<i class="ti ti-plus me-1"></i>{{ t("New purchase order") }}
 				</button>
 			</template>
@@ -558,8 +546,9 @@ watch(activeCompany, async () => {
 						<th>{{ t("Status") }}</th>
 					</tr>
 				</thead>
-				<tbody>
-					<tr v-for="r in rows" :key="r.name" style="cursor: pointer" @click="openDetail(r.name)">
+				<SkeletonRows v-if="loading" :rows="5" :cols="8" />
+				<tbody v-else>
+					<tr v-for="r in filteredRows" :key="r.name" style="cursor: pointer" @click="openDetail(r.name)">
 						<td class="font-monospace text-primary text-nowrap">{{ r.name }}</td>
 						<td class="text-nowrap">{{ formatDate(r.transaction_date) }}</td>
 						<td class="text-nowrap">{{ formatDate(r.schedule_date) || "—" }}</td>
@@ -569,7 +558,7 @@ watch(activeCompany, async () => {
 						<td class="text-end font-monospace">{{ formatMoney(r.grand_total, r.currency || currency, user.language) }}</td>
 						<td class="text-end font-monospace">{{ Number(r.per_received || 0).toFixed(0) }}%</td>
 						<td class="text-end font-monospace">{{ Number(r.per_billed || 0).toFixed(0) }}%</td>
-						<td><span class="badge" :class="statusBadge(r.status)">{{ r.status }}</span></td>
+						<td><span class="badge" :class="getStatusBadgeClass('Purchase Order', r.status)">{{ t(r.status) }}</span></td>
 					</tr>
 				</tbody>
 			</table>
@@ -602,7 +591,7 @@ watch(activeCompany, async () => {
 					<div v-if="detail.amended_from" class="small text-secondary">
 						{{ t("Amend of") }} <span class="font-monospace">{{ detail.amended_from }}</span>
 					</div>
-					<span class="badge" :class="statusBadge(detail.status)">{{ detail.status }}</span>
+					<span class="badge" :class="getStatusBadgeClass('Purchase Order', detail.status)">{{ t(detail.status) }}</span>
 				</div>
 
 				<div v-if="actionError" class="alert alert-danger">{{ actionError }}</div>
@@ -621,7 +610,7 @@ watch(activeCompany, async () => {
 					<button
 						v-if="canReceive"
 						type="button"
-						class="btn btn-success"
+						class="btn btn-outline-secondary"
 						:disabled="actionRunning"
 						@click="openReceive"
 					>
@@ -630,7 +619,7 @@ watch(activeCompany, async () => {
 					<button
 						v-if="canCreateInvoice"
 						type="button"
-						class="btn btn-outline-success"
+						class="btn btn-outline-secondary"
 						:disabled="actionRunning"
 						@click="createInvoice"
 					>
@@ -640,7 +629,7 @@ watch(activeCompany, async () => {
 					<button
 						v-if="canCancel"
 						type="button"
-						class="btn btn-outline-danger ms-auto"
+						class="btn btn-outline-secondary ms-auto"
 						:disabled="actionRunning"
 						@click="cancelDoc"
 					>

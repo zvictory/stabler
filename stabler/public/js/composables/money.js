@@ -85,12 +85,9 @@ export function formatCompactMoney(value, currency = "USD", language = "en") {
 	}
 }
 
-export function balanceState(value, partyType = "Customer") {
+export function balanceState(value) {
 	const n = Number(value || 0);
 	const abs = Math.abs(Number.isFinite(n) ? n : 0);
 	if (abs < 0.005) return { state: "settled", abs: 0 };
-	if (partyType === "Supplier") {
-		return n > 0 ? { state: "we_owe", abs } : { state: "prepaid", abs };
-	}
 	return n > 0 ? { state: "owes", abs } : { state: "prepaid", abs };
 }

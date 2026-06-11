@@ -10,6 +10,9 @@ import { t } from "../../composables/i18n.js";
 import DateInput from "../../components/DateInput.vue";
 import Select from "../../components/Select.vue";
 import EmptyState from "../../components/EmptyState.vue";
+import ListToolbar from "../../components/ListToolbar.vue";
+import SkeletonRows from "../../components/SkeletonRows.vue";
+import { getStatusBadgeClass } from "../../composables/status.js";
 
 const session = useSession();
 const { activeCompany, user } = storeToRefs(session);
@@ -39,19 +42,6 @@ const STATUSES = ["", "Paid", "Unpaid", "Overdue", "Partly Paid", "Return", "Cre
 const statusOptions = computed(() =>
 	STATUSES.map((s) => ({ value: s, label: s ? t(s) : t("All") }))
 );
-
-const statusBadge = (s) => {
-	const m = {
-		Paid: "bg-green-lt",
-		Unpaid: "bg-yellow-lt",
-		Overdue: "bg-red-lt",
-		Return: "bg-secondary-lt",
-		"Credit Note Issued": "bg-purple-lt",
-		"Partly Paid": "bg-blue-lt",
-		Draft: "bg-secondary-lt",
-	};
-	return m[s] || "bg-secondary-lt";
-};
 
 async function load() {
 	if (!activeCompany.value) return;
@@ -101,65 +91,47 @@ onMounted(() => {
 	}
 	load();
 });
+watch([fromDate, toDate, status], load);
 watch(activeCompany, load);
 </script>
 
 <template>
 	<div class="card">
-		<div class="card-header">
-			<div class="card-title">{{ t("Sales Invoices") }}</div>
-			<div class="ms-auto d-flex gap-2 align-items-end flex-wrap">
-				<router-link to="/sales/returns/new" class="btn btn-sm btn-outline-warning align-self-end">
-					<i class="ti ti-receipt-refund me-1"></i>{{ t("New Return") }}
-				</router-link>
-				<div>
-					<label class="form-label small mb-1">{{ t("Search") }}</label>
-					<input
-						v-model="search"
-						type="search"
-						class="form-control form-control-sm"
-						:placeholder="t('Invoice number or customer…')"
-						style="min-width: 180px"
-						@keydown.enter="load"
-					/>
+		<ListToolbar
+			v-model="search"
+			:placeholder="t('Invoice number or customer…')"
+			:count="totalCount"
+			@search="load"
+		>
+			<template #filters>
+				<div class="d-flex align-items-center gap-2">
+					<DateInput v-model="fromDate" size="sm" style="width: 110px" />
+					<span class="text-secondary small">—</span>
+					<DateInput v-model="toDate" size="sm" style="width: 110px" />
+					<Select v-model="status" size="sm" :options="statusOptions" style="width: 160px" />
+					<router-link to="/sales/returns/new" class="btn btn-sm btn-outline-secondary">
+						<i class="ti ti-receipt-refund me-1"></i>{{ t("New Return") }}
+					</router-link>
 				</div>
-				<div>
-					<label class="form-label small mb-1">{{ t("From") }}</label>
-					<DateInput v-model="fromDate" size="sm" />
-				</div>
-				<div>
-					<label class="form-label small mb-1">{{ t("To") }}</label>
-					<DateInput v-model="toDate" size="sm" />
-				</div>
-				<div style="min-width: 150px">
-					<label class="form-label small mb-1">{{ t("Status") }}</label>
-					<Select v-model="status" size="sm" :options="statusOptions" />
-				</div>
-				<button type="button" class="btn btn-sm btn-primary" @click="load">
-					<i class="ti ti-refresh me-1"></i>{{ t("Apply") }}
-				</button>
-			</div>
-		</div>
+			</template>
 
-		<div v-if="rows.length" class="card-body py-2 border-bottom bg-light">
-			<div class="d-flex gap-4 small flex-wrap align-items-center">
-				<div>{{ t("Count") }}: <strong>{{ totalCount }}</strong></div>
-				<div v-for="b in totalsByCurrency" :key="b.currency" class="d-flex gap-3 align-items-center">
-					<span class="badge bg-secondary-lt text-secondary">{{ b.currency }}</span>
-					<span>{{ t("Total") }}: <strong class="font-monospace">{{ formatMoney(b.grand, b.currency, user.language) }}</strong></span>
-					<span>{{ t("Outstanding") }}: <strong class="text-red font-monospace">{{ formatMoney(b.outstanding, b.currency, user.language) }}</strong></span>
+			<template #summary>
+				<div class="d-flex gap-3 small text-secondary align-items-center flex-wrap">
+					<div>{{ t("Count") }}: <strong class="font-monospace text-body">{{ totalCount }}</strong></div>
+					<div v-for="b in totalsByCurrency" :key="b.currency" class="d-flex gap-2 align-items-center">
+						<span class="badge bg-secondary-lt text-secondary">{{ b.currency }}</span>
+						<span>{{ t("Total") }}: <strong class="font-monospace text-body">{{ formatMoney(b.grand, b.currency, user.language) }}</strong></span>
+						<span>{{ t("Outstanding") }}: <strong class="text-red font-monospace">{{ formatMoney(b.outstanding, b.currency, user.language) }}</strong></span>
+					</div>
 				</div>
-			</div>
-		</div>
+			</template>
+		</ListToolbar>
 
-		<div v-if="loading" class="card-body text-center py-5">
-			<div class="spinner-border text-primary"></div>
-		</div>
-		<div v-else-if="error" class="card-body">
+		<div v-if="error" class="card-body">
 			<div class="alert alert-danger m-0">{{ error }}</div>
 		</div>
 		<EmptyState
-			v-else-if="!rows.length"
+			v-else-if="!loading && !rows.length"
 			icon="ti-file-invoice"
 			accentIcon="ti-arrow-right"
 			tone="primary"
@@ -167,7 +139,7 @@ watch(activeCompany, load);
 			:subtitle="t('Sales Invoices are created from submitted Sales Orders. Open a Sales Order and use Create Invoice.')"
 		>
 			<template #actions>
-				<router-link to="/sales/orders" class="btn btn-primary">
+				<router-link to="/sales/orders" class="btn btn-outline-secondary btn-sm">
 					<i class="ti ti-clipboard-check me-1"></i>{{ t("Go to Sales Orders") }}
 				</router-link>
 			</template>
@@ -185,7 +157,8 @@ watch(activeCompany, load);
 						<th>{{ t("Status") }}</th>
 					</tr>
 				</thead>
-				<tbody>
+				<SkeletonRows v-if="loading" :rows="5" :cols="7" />
+				<tbody v-else>
 					<tr v-for="r in rows" :key="r.name" style="cursor: pointer" @click="openInvoice(r.name)">
 						<td class="font-monospace text-primary">{{ r.name }}</td>
 						<td>{{ formatDateTime(r.posting_date) }}</td>
@@ -195,7 +168,7 @@ watch(activeCompany, load);
 						</td>
 						<td class="text-end font-monospace">{{ formatMoney(r.grand_total, r.currency || currency, user.language) }}</td>
 						<td class="text-end font-monospace">{{ formatMoney(r.outstanding_amount, r.currency || currency, user.language) }}</td>
-						<td><span class="badge" :class="statusBadge(r.status)">{{ r.status }}</span></td>
+						<td><span class="badge" :class="getStatusBadgeClass('Sales Invoice', r.status)">{{ t(r.status) }}</span></td>
 					</tr>
 				</tbody>
 			</table>

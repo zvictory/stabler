@@ -50,6 +50,20 @@
 - Lists of records use `.table` (or list-group) — striped by default.
 - Currency cells use `font-monospace` for alignment.
 
+### Button hierarchy
+- Maximum of one `.btn-primary` per visual region (card header, drawer/offcanvas footer, detail header).
+- Secondary/neutral actions must use `.btn-outline-secondary` or `.btn-ghost-secondary`. Color must never be used as a "second primary".
+
+### Currency display
+- Amounts must render in their original transaction/account currency only. Do not convert totals or display base-currency/USD equivalent sub-lines.
+
+### Centralized status codes
+- All status badges and labels must be resolved centrally using `getStatusBadgeClass` from `composables/status.js`. No per-page status mappings.
+
+### Filter and loading guidelines
+- Every list page must use `ListToolbar.vue` with auto-apply filtering on filter changes (no Apply/Refresh buttons). Suffix search placeholders with `⌘K`.
+- Place animated skeleton rows (`SkeletonRows.vue`) inside the table body while loading data. Never show a spinner in a void.
+
 ## Production / Deployment
 
 ### Prod site

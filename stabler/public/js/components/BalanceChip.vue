@@ -11,17 +11,16 @@ const props = defineProps({
 	size: { type: String, default: "md" },
 });
 
-const state = computed(() => balanceState(props.value, props.partyType));
+const state = computed(() => balanceState(props.value));
 const label = computed(() => {
 	if (state.value.state === "settled") return t("Settled");
 	if (state.value.state === "prepaid") return t("Prepaid");
-	if (state.value.state === "we_owe") return t("We owe");
+	if (props.partyType === "Supplier") return t("We owe");
 	return t("Owes us");
 });
 const toneClass = computed(() => {
 	if (state.value.state === "settled") return "bg-secondary-lt text-secondary";
 	if (state.value.state === "prepaid") return "bg-green-lt text-green";
-	if (state.value.state === "we_owe") return "bg-orange-lt text-orange";
 	return "bg-red-lt text-red";
 });
 const chipClass = computed(() => ["badge", "stbl-balance-chip", toneClass.value, props.size === "lg" ? "stbl-balance-chip-lg" : ""]);
