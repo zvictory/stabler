@@ -3,7 +3,7 @@
 import "@vue-flow/core/dist/style.css";
 import "@vue-flow/core/dist/theme-default.css";
 
-import { ref, computed, onMounted, onUnmounted, watch, markRaw } from "vue";
+import { ref, computed, onMounted, onUnmounted, watch, markRaw, nextTick } from "vue";
 import { useRoute, useRouter } from "vue-router";
 import { storeToRefs } from "pinia";
 import {
@@ -163,6 +163,8 @@ function toggleOrientation(newVal) {
 		position: { x: n.position.y, y: n.position.x },
 	}));
 	orientation.value = newVal;
+	// Re-fit the viewport so transposed nodes don't jump off-screen.
+	nextTick(() => fitView({ padding: 0.15, duration: 300 }));
 }
 
 // ---------------------------------------------------------------------------
