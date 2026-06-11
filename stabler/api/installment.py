@@ -428,11 +428,12 @@ def calendar_events(
     to_date = f"{year}-{mon}-{last_day:02d}"
 
     if side == "buy":
+        doctype = "Purchase Invoice"
         doctype_table = "tabPurchase Invoice"
-        sched_table = "tabPurchase Invoice Payment"
     else:
+        doctype = "Sales Invoice"
         doctype_table = "tabSales Invoice"
-        sched_table = "tabSales Invoice Payment"
+    sched_table = "tabPayment Schedule"
 
     return frappe.db.sql(
         f"""
@@ -449,9 +450,10 @@ def calendar_events(
         WHERE inv.company = %(company)s
           AND inv.stabler_installment_plan = 1
           AND inv.docstatus < 2
+          AND ps.parenttype = %(doctype)s
           AND ps.due_date BETWEEN %(from_date)s AND %(to_date)s
         ORDER BY ps.due_date ASC
         """,
-        {"company": company, "from_date": from_date, "to_date": to_date},
+        {"company": company, "doctype": doctype, "from_date": from_date, "to_date": to_date},
         as_dict=True,
     )
