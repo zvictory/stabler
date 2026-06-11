@@ -17,6 +17,7 @@
   "enable_field_sales",
   "enable_marketing",
   "enable_crm",
+  "enable_service",
   "enable_bpm",
   "enable_remittance",
   "enable_installment"
@@ -107,6 +108,13 @@
    "fieldtype": "Check",
    "in_list_view": 1,
    "label": "CRM"
+  },
+  {
+   "default": "0",
+   "fieldname": "enable_service",
+   "fieldtype": "Check",
+   "in_list_view": 1,
+   "label": "Service"
   },
   {
    "default": "1",

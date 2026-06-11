@@ -23,6 +23,7 @@ _MODULE_FIELDS = {
 	"field_sales": "enable_field_sales",
 	"marketing": "enable_marketing",
 	"crm": "enable_crm",
+	"service": "enable_service",
 	"bpm": "enable_bpm",
 	# Admin-only modules — toggled via company enable_* field but absent from
 	# _MODULE_ROLES so only System Manager / Stabler Admin can reach them via
@@ -50,6 +51,7 @@ _MODULE_ROLES: dict[str, list[str]] = {
 	"marketing": ["Sales Manager"],
 	"compliance": ["Accounts Manager"],
 	"crm": ["Sales User", "Sales Manager"],
+	"service": ["Sales Manager", "Support Team", "Maintenance User", "Maintenance Manager"],
 	"bpm": ["Sales Manager"],
 }
 
@@ -234,6 +236,7 @@ def update_company_modules(
 	field_sales=None,
 	marketing=None,
 	crm=None,
+	service=None,
 	bpm=None,
 	remittance=None,
 	installment=None,
@@ -267,6 +270,7 @@ def update_company_modules(
 				"enable_field_sales": 1,
 				"enable_marketing": 1,
 				"enable_crm": 1,
+				"enable_service": 0,
 				"enable_bpm": 1,
 				"enable_remittance": 1,
 				"enable_installment": 1,
@@ -285,6 +289,7 @@ def update_company_modules(
 		"enable_field_sales": field_sales,
 		"enable_marketing": marketing,
 		"enable_crm": crm,
+		"enable_service": service,
 		"enable_bpm": bpm,
 		"enable_remittance": remittance,
 		"enable_installment": installment,

@@ -74,6 +74,9 @@ import InstallmentCalendar from "./pages/installment/InstallmentCalendar.vue";
 import CrmHome from "./pages/crm/CrmHome.vue";
 import CrmLeads from "./pages/crm/Leads.vue";
 import CrmDeals from "./pages/crm/Deals.vue";
+import ServiceHome from "./pages/service/ServiceHome.vue";
+import ServiceTickets from "./pages/service/Tickets.vue";
+import ServiceComingSoon from "./pages/service/ComingSoon.vue";
 import BpmHome from "./pages/bpm/BpmHome.vue";
 import BpmList from "./pages/bpm/BpmList.vue";
 import ProcessEditor from "./pages/bpm/ProcessEditor.vue";
@@ -239,6 +242,19 @@ const routes = [
 		],
 	},
 	{
+		path: "/service",
+		component: ServiceHome,
+		meta: { title: t("Service"), module: "service" },
+		children: [
+			{ path: "", redirect: "/service/tickets" },
+			{ path: "dashboard", name: "service-dashboard", component: ServiceComingSoon, meta: { title: t("Service Dashboard") } },
+			{ path: "tickets", name: "service-tickets", component: ServiceTickets, meta: { title: t("Service Tickets") } },
+			{ path: "calendar", name: "service-calendar", component: ServiceComingSoon, meta: { title: t("Service Calendar") } },
+			{ path: "equipment", name: "service-equipment", component: ServiceComingSoon, meta: { title: t("Service Equipment") } },
+			{ path: "map", name: "service-map", component: ServiceComingSoon, meta: { title: t("Service Map") } },
+		],
+	},
+	{
 		path: "/bpm",
 		component: BpmHome,
 		meta: { title: t("Processes"), module: "bpm" },
@@ -281,6 +297,7 @@ const LANDING_ORDER = [
 	{ key: "field_sales", path: "/sfa" },
 	{ key: "marketing", path: "/marketing" },
 	{ key: "crm", path: "/crm" },
+	{ key: "service", path: "/service" },
 	{ key: "bpm", path: "/bpm" },
 	{ key: "remittance", path: "/remittance" },
 	{ key: "installment", path: "/installment" },

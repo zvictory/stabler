@@ -30,6 +30,8 @@ const moduleOptions = computed(() => [
 	{ key: "compliance", label: t("Compliance") },
 	{ key: "field_sales", label: t("Field Sales") },
 	{ key: "marketing", label: t("Trade Marketing") },
+	{ key: "crm", label: t("CRM") },
+	{ key: "service", label: t("Service") },
 	{ key: "remittance", label: t("Remittance") },
 	{ key: "installment", label: t("Installment") },
 ]);
