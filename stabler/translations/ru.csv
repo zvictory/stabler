@@ -71,6 +71,7 @@ All object types,Все типы объектов
 All promo plans,Все промо-планы
 All sales invoices for this company are fully paid.,Все счёта-фактуры по продажам для этой компании полностью оплачены.
 All statuses,Все статусы
+All technicians,Все техники
 All territories,Все территории
 All three accounts are required.,Все три счёта обязательны.
 All time,
@@ -108,6 +109,7 @@ Asl Belgisi — Stock Entries pending scan,Asl Belgisi — складские д
 Asset Tag,Тег актива
 Asset Tag and Category are required.,Требуются тег актива и категория.
 Assign operator,Назначить оператора
+Assign technician,Назначить техника
 Assigned Field User,Закреплённый сотрудник
 Assigned Technician,Назначенный техник
 At least two account lines are required.,Требуется минимум две строки счета.
@@ -208,6 +210,7 @@ Collapse all,Свернуть всё
 Collapse all groups,Свернуть все группы
 Color,Цвет
 Column name,Название колонки
+Comments,Комментарии
 Commission,Комиссия
 Commission %,Комиссия %
 Commission fee,Комиссионный сбор
@@ -242,6 +245,7 @@ Create Bill,Создать счёт
 Create Invoice,Создать счёт-фактуру
 Create Plan,Создать план
 Create Scheme,Создать схему
+Create Ticket,Создать заявку
 Create a Bill of Materials to define what raw materials go into a finished good.,Создайте спецификацию чтобы определить какие материалы входят в готовый продукт.
 Create a Work Order to plan and track production runs against a BOM.,Создайте производственный заказ для планирования и контроля выпуска.
 Create a plan to start tracking campaign budget and ROI.,"Создайте план, чтобы начать отслеживать бюджет кампании и ROI."
@@ -396,6 +400,7 @@ Expenses,Расходы
 Export,Экспорт
 Export failed.,Экспорт не удался.
 F.I.O.,Ф.И.О.
+Failed to assign ticket.,Не удалось назначить заявку.
 Failed to cancel.,Не удалось отменить.
 Failed to clear reservations.,Не удалось очистить резервирования.
 Failed to create bill.,Не удалось создать счёт.
@@ -411,6 +416,7 @@ Failed to create quotation.,Не удалось создать предложе�
 Failed to create receipt.,Не удалось создать приёмку.
 Failed to create return.,Не удалось создать возврат.
 Failed to create sales order.,Не удалось создать заказ на продажу.
+Failed to create ticket.,Не удалось создать заявку.
 Failed to create transfer.,Не удалось создать перевод.
 Failed to create warehouse.,Не удалось создать склад.
 Failed to create.,Не удалось создать.
@@ -456,10 +462,12 @@ Failed to load quotations.,Ошибка загрузки коммерчески�
 Failed to load reserved stock data.,
 Failed to load sales order.,
 Failed to load sales orders.,Ошибка загрузки заказов на продажу.
+Failed to load service tickets.,Не удалось загрузить заявки на обслуживание.
 Failed to load stock entries.,Ошибка загрузки записей на складе.
 Failed to load stock ledger.,Ошибка загрузки реестра материалов.
 Failed to load supplier.,Ошибка загрузки поставщика.
 Failed to load suppliers.,Ошибка загрузки поставщиков.
+Failed to load ticket.,Не удалось загрузить заявку.
 Failed to load transfer detail.,Не удалось загрузить детали перевода.
 Failed to load transfers.,Не удалось загрузить переводы.
 Failed to load van stock.,Ошибка загрузки запасов фургона.
@@ -468,6 +476,7 @@ Failed to load warehouses.,Ошибка загрузки складов.
 Failed to load work orders.,
 Failed to load.,Ошибка загрузки.
 Failed to move deal.,Не удалось переместить сделку.
+Failed to move ticket.,Не удалось переместить заявку.
 Failed to record payment.,Ошибка записи платежа.
 Failed to refresh claim.,Ошибка обновления претензии.
 Failed to rename column.,
@@ -497,6 +506,7 @@ Field User name is required.,Поле Имя пользователя обяза
 Field Users,Поле Пользователи
 Field user is required.,Поле пользователь обязательно.
 Field users represent sales reps who execute visits and own van stock.,"Поле пользователи представляют торговых представителей, которые выполняют визиты и управляют запасами фургона."
+Files,Файлы
 Fill in the required fields before submitting.,Заполните обязательные поля перед отправкой.
 Financed,Финансируется
 Finish,Завершить
@@ -563,6 +573,7 @@ Invoices,Счета
 Issue,Проблема
 Issue credit note,Выпустить кредит-ноту
 Issue is required.,Проблема обязательна.
+Issue type,Тип заявки
 Issues,Проблемы
 Item,Товар
 Item #{0}: item is required.,Товар #{0}: товар обязателен.
@@ -619,6 +630,7 @@ Mahsulot nomi,Наименование товара
 Make default BOM for this item,Сделать спецификацией по умолчанию
 Male,Мужской
 Manufacturing,Производство
+Map,Карта
 Mark Resolved,Отметить как решено
 Mark and submit,Отметить и провести
 Mark attendance,Отметить
@@ -668,6 +680,8 @@ New Promo Scheme,Новая схема промо
 New SO,Новый заказ на продажу
 New Sales Order,
 New Scheme,Новая схема
+New Service Ticket,Новая заявка
+New Ticket,Новая заявка
 New Transfer,Новый перевод
 New Van Stock,Новый запас в фургоне
 New Visit,Новый визит
@@ -710,6 +724,7 @@ No bills in this range,Счётов в этом диапазоне нет
 No claim selected.,Претензия не выбрана.
 No claims yet,Претензий пока нет
 No columns,Нет колонок
+No comments yet.,Комментариев пока нет.
 No company selected,Компания не выбрана
 No customers,Клиентов нет
 No customers match that name,Нет клиентов с таким названием
@@ -724,6 +739,7 @@ No equipment yet,Оборудования пока нет
 No exchange rate available from {0} to {1} on {2}.,Курс обмена не доступен с {0} на {1} от {2}.
 No exchange rates yet. Click Refresh now to fetch today's rates from cbu.uz.,Курсы валют пока отсутствуют. Нажмите «Обновить сейчас»
 No field users yet,Пользователей полей нет
+No files attached.,Файлы не прикреплены.
 No installments due this month.,Нет платежей в этом месяце.
 No interest — fixed Murabaha markup. Sum equals total exactly.,Без процентов — фиксированная наценка Мурабаха. Сумма точно равна итогу.
 No invoices in this range,Счетов в этом диапазоне нет
@@ -762,6 +778,8 @@ No repair requests,Запросов на ремонт нет
 No routes yet,Пока нет маршрутов
 No salary slips yet,Нет расчётных листков
 No sales orders in this range,Заказов на продажу в этом диапазоне нет
+No serial,Нет серийного номера
+No service tickets,Заявок нет
 No steps yet.,Этапов нет.
 No stock entries yet,Записей о товаре нет
 No stock in any warehouse for this company.,Нет товаров в каком-либо складе для этой компании.
@@ -778,6 +796,8 @@ No warehouses for this company,Складов для этой компании �
 No work orders,Нет производственных заказов
 No work orders assigned to you yet.,Вам ещё не назначены заказы на производство.
 No {0} receivable account exists for company {1}. ,Дебиторский счёт {0} для компании {1} не найден. 
+None,Нет
+Normal,Обычный
 Nos,Номера
 Not found,Не найдено
 Not permitted,Не разрешено
@@ -804,6 +824,7 @@ Only with balance,Только с остатком
 Open,Открыта
 Open Desk,Открыть Desk
 Open SREs,Открытые SRE
+Opened,Открыта
 Opening,Начисление
 Opening balance,Начальный остаток
 Opening balances,Начальные остатки
@@ -925,6 +946,7 @@ Present SKUs,Присутствующие артикулы
 Preview,Предпросмотр
 Price list,Прайс-лист
 Print,Печать
+Priority,Приоритет
 Probability,Вероятность
 Process,Процесс
 Process Name,Название процесса
@@ -1111,6 +1133,7 @@ Search BOMs or finished goods…,Поиск спецификаций или го
 Search account…,Поиск счёта…
 Search asset tag…,Поиск метки имущества…
 Search campaigns…,Поиск кампаний…
+Search customer,Поиск клиента
 Search customer name…,Поиск имени клиента…
 "Search customers, suppliers, items, invoices…","Поиск клиентов, поставщиков, товаров, счетов…"
 Search customers…,Поиск покупателей…
@@ -1140,6 +1163,7 @@ Select city…,Выберите город…
 Select company,Выберите компанию
 Select corridor…,Выберите коридор…
 Select gender,
+Select technician,Выберите техника
 Select template…,Выберите шаблон…
 Select…,Выберите…
 Sell,Продать
@@ -1150,6 +1174,7 @@ Send password reset email to ,Отправить письмо для сброс�
 Sender name,Имя отправителя
 Sender pays,Отправитель платит
 Serial No,Серийный номер
+Service,Сервис
 Set Reports-To on employees to build the positions hierarchy.,"Установите «Руководитель» для сотрудников, чтобы построить иерархию должностей."
 Settle,Рассчитать
 Settlement failed.,Расчёт не удался.
@@ -1198,6 +1223,7 @@ Stock value,Стоимость складских остатков
 Stop,Остановить
 Stop this Work Order? You can resume it later.,Остановить этот производственный заказ? Можно будет возобновить позже.
 Storefront,Витрина
+Subject,Тема
 Submit,Отправить
 Submit & reserve stock,Провести и зарезервировать склад
 Submit a leave request on behalf of an employee.,Подайте заявку от имени сотрудника.
@@ -1227,17 +1253,21 @@ Task,Задача
 Tax ID,ИНН
 Tax template,Шаблон налогов
 Taxes,Налоги
+Technician,Техник
+Technician state,Статус техника
 Term (months),Срок (месяцев)
 Terms / remarks,Условия / примечания
 Terms:,Условия:
 Territory,Территория
 The Compliance module is disabled for this company.,Модуль соответствия отключён для этой компании.
+This Service workspace will be added after Tickets P1.,Это рабочее пространство появится после P1.
 This cannot be undone.,Это невозможно отменить.
 This month,
 This year,
 Threshold,Пороговое значение
 Threshold Qty,Пороговое кол-во
 Thu,Чт
+Tickets,Заявки
 To,По
 To Bill,К оплате
 To Deliver,К доставке
@@ -1276,6 +1306,7 @@ Type,Тип
 "Type to search, or pick a quick action",Введите для поиска или выберите быстрое действие
 UOM,Ед. изм.
 USD → UZS,USD → UZS
+Unassigned,Не назначен
 Units Sold,Проданных единиц
 Unknown Sales Invoice: {0},Неизвестный счёт-фактура: {0}
 Unknown Sales Order: {0},Неизвестный заказ на продажу: {0}
@@ -1365,9 +1396,11 @@ from last bill,из последнего счёта
 item,товар
 item_code and warehouse are required,item_code и warehouse обязательны
 items,товары
+left,осталось
 line,строка
 more,ещё
 optional,необязательно
+overdue,просрочено
 pack_key is required,pack_key обязателен
 planned,план
 source,target

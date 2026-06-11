@@ -66,6 +66,7 @@ All object types,All object types
 All promo plans,All promo plans
 All sales invoices for this company are fully paid.,All sales invoices for this company are fully paid.
 All statuses,All statuses
+All technicians,All technicians
 All territories,All territories
 All three accounts are required.,All three accounts are required.
 All time,All time
@@ -102,6 +103,7 @@ Asl Belgisi — Stock Entries pending scan,Asl Belgisi — Stock Entries pending
 Asset Tag,Asset Tag
 Asset Tag and Category are required.,Asset Tag and Category are required.
 Assign operator,Assign operator
+Assign technician,Assign technician
 Assigned Field User,Assigned Field User
 Assigned Technician,Assigned Technician
 At least two account lines are required.,At least two account lines are required.
@@ -200,6 +202,7 @@ Collapse all,Collapse all
 Collapse all groups,Collapse all groups
 Color,Color
 Column name,Column name
+Comments,Comments
 Commission,Commission
 Commission %,Commission %
 Commission fee,Commission fee
@@ -234,6 +237,7 @@ Create Bill,Create Bill
 Create Invoice,Create Invoice
 Create Plan,Create Plan
 Create Scheme,Create Scheme
+Create Ticket,Create Ticket
 Create a Bill of Materials to define what raw materials go into a finished good.,Create a Bill of Materials to define what raw materials go into a finished good.
 Create a Work Order to plan and track production runs against a BOM.,Create a Work Order to plan and track production runs against a BOM.
 Create a plan to start tracking campaign budget and ROI.,Create a plan to start tracking campaign budget and ROI.
@@ -387,6 +391,7 @@ Expenses,Expenses
 Export,Export
 Export failed.,Export failed.
 F.I.O.,F.I.O.
+Failed to assign ticket.,Failed to assign ticket.
 Failed to cancel.,Failed to cancel.
 Failed to clear reservations.,Failed to clear reservations.
 Failed to create bill.,Failed to create bill.
@@ -402,6 +407,7 @@ Failed to create quotation.,Failed to create quotation.
 Failed to create receipt.,Failed to create receipt.
 Failed to create return.,Failed to create return.
 Failed to create sales order.,Failed to create sales order.
+Failed to create ticket.,Failed to create ticket.
 Failed to create transfer.,Failed to create transfer.
 Failed to create warehouse.,Failed to create warehouse.
 Failed to create.,Failed to create.
@@ -447,10 +453,12 @@ Failed to load quotations.,Failed to load quotations.
 Failed to load reserved stock data.,Failed to load reserved stock data.
 Failed to load sales order.,Failed to load sales order.
 Failed to load sales orders.,Failed to load sales orders.
+Failed to load service tickets.,Failed to load service tickets.
 Failed to load stock entries.,Failed to load stock entries.
 Failed to load stock ledger.,Failed to load stock ledger.
 Failed to load supplier.,Failed to load supplier.
 Failed to load suppliers.,Failed to load suppliers.
+Failed to load ticket.,Failed to load ticket.
 Failed to load transfer detail.,Failed to load transfer detail.
 Failed to load transfers.,Failed to load transfers.
 Failed to load van stock.,Failed to load van stock.
@@ -459,6 +467,7 @@ Failed to load warehouses.,Failed to load warehouses.
 Failed to load work orders.,Failed to load work orders.
 Failed to load.,Failed to load.
 Failed to move deal.,Failed to move deal.
+Failed to move ticket.,Failed to move ticket.
 Failed to record payment.,Failed to record payment.
 Failed to refresh claim.,Failed to refresh claim.
 Failed to rename column.,Failed to rename column.
@@ -488,6 +497,7 @@ Field User name is required.,Field User name is required.
 Field Users,Field Users
 Field user is required.,Field user is required.
 Field users represent sales reps who execute visits and own van stock.,Field users represent sales reps who execute visits and own van stock.
+Files,Files
 Fill in the required fields before submitting.,Fill in the required fields before submitting.
 Financed,Financed
 Finish,Finish
@@ -554,6 +564,7 @@ Invoices,Invoices
 Issue,Issue
 Issue credit note,Issue credit note
 Issue is required.,Issue is required.
+Issue type,Issue type
 Issues,Issues
 Item,Item
 Item #{0}: item is required.,Item #{0}: item is required.
@@ -610,6 +621,7 @@ Mahsulot nomi,Mahsulot nomi
 Make default BOM for this item,Make default BOM for this item
 Male,Male
 Manufacturing,Manufacturing
+Map,Map
 Mark Resolved,Mark Resolved
 Mark and submit,Mark and submit
 Mark attendance,Mark attendance
@@ -659,6 +671,8 @@ New Promo Scheme,New Promo Scheme
 New SO,New SO
 New Sales Order,New Sales Order
 New Scheme,New Scheme
+New Service Ticket,New Service Ticket
+New Ticket,New Ticket
 New Transfer,New Transfer
 New Van Stock,New Van Stock
 New Visit,New Visit
@@ -701,6 +715,7 @@ No bills in this range,No bills in this range
 No claim selected.,No claim selected.
 No claims yet,No claims yet
 No columns,No columns
+No comments yet.,No comments yet.
 No company selected,No company selected
 No customers,No customers
 No customers match that name,No customers match that name
@@ -714,6 +729,7 @@ No equipment yet,No equipment yet
 No exchange rate available from {0} to {1} on {2}.,No exchange rate available from {0} to {1} on {2}.
 No exchange rates yet. Click Refresh now to fetch today's rates from cbu.uz.,No exchange rates yet. Click Refresh now to fetch today's rates from cbu.uz.
 No field users yet,No field users yet
+No files attached.,No files attached.
 No installments due this month.,No installments due this month.
 No interest — fixed Murabaha markup. Sum equals total exactly.,No interest — fixed Murabaha markup. Sum equals total exactly.
 No invoices in this range,No invoices in this range
@@ -752,6 +768,8 @@ No repair requests,No repair requests
 No routes yet,No routes yet
 No salary slips yet,No salary slips yet
 No sales orders in this range,No sales orders in this range
+No serial,No serial
+No service tickets,No service tickets
 No steps yet.,No steps yet.
 No stock entries yet,No stock entries yet
 No stock in any warehouse for this company.,No stock in any warehouse for this company.
@@ -768,6 +786,8 @@ No warehouses for this company,No warehouses for this company
 No work orders,No work orders
 No work orders assigned to you yet.,No work orders assigned to you yet.
 No {0} receivable account exists for company {1}. ,No {0} receivable account exists for company {1}. 
+None,None
+Normal,Normal
 Nos,Nos
 Not found,Not found
 Not permitted,Not permitted
@@ -794,6 +814,7 @@ Only with balance,Only with balance
 Open,Open
 Open Desk,Open Desk
 Open SREs,Open SREs
+Opened,Opened
 Opening,Opening
 Opening balance,Opening balance
 Opening balances,Opening balances
@@ -914,6 +935,7 @@ Present SKUs,Present SKUs
 Preview,Preview
 Price list,Price list
 Print,Print
+Priority,Priority
 Probability,Probability
 Process,Process
 Process Name,Process Name
@@ -1100,6 +1122,7 @@ Search BOMs or finished goods…,Search BOMs or finished goods…
 Search account…,Search account…
 Search asset tag…,Search asset tag…
 Search campaigns…,Search campaigns…
+Search customer,Search customer
 Search customer name…,Search customer name…
 "Search customers, suppliers, items, invoices…","Search customers, suppliers, items, invoices…"
 Search customers…,Search customers…
@@ -1129,6 +1152,7 @@ Select city…,Select city…
 Select company,Select company
 Select corridor…,Select corridor…
 Select gender,Select gender
+Select technician,Select technician
 Select template…,Select template…
 Select…,Select…
 Sell,Sell
@@ -1139,6 +1163,7 @@ Send password reset email to ,Send password reset email to
 Sender name,Sender name
 Sender pays,Sender pays
 Serial No,Serial No
+Service,Service
 Set Reports-To on employees to build the positions hierarchy.,Set Reports-To on employees to build the positions hierarchy.
 Settle,Settle
 Settlement failed.,Settlement failed.
@@ -1187,6 +1212,7 @@ Stock value,Stock value
 Stop,Stop
 Stop this Work Order? You can resume it later.,Stop this Work Order? You can resume it later.
 Storefront,Storefront
+Subject,Subject
 Submit,Submit
 Submit & reserve stock,Submit & reserve stock
 Submit a leave request on behalf of an employee.,Submit a leave request on behalf of an employee.
@@ -1216,17 +1242,21 @@ Task,Task
 Tax ID,Tax ID
 Tax template,Tax template
 Taxes,Taxes
+Technician,Technician
+Technician state,Technician state
 Term (months),Term (months)
 Terms / remarks,Terms / remarks
 Terms:,Terms:
 Territory,Territory
 The Compliance module is disabled for this company.,The Compliance module is disabled for this company.
+This Service workspace will be added after Tickets P1.,This Service workspace will be added after Tickets P1.
 This cannot be undone.,This cannot be undone.
 This month,This month
 This year,This year
 Threshold,Threshold
 Threshold Qty,Threshold Qty
 Thu,Thu
+Tickets,Tickets
 To,To
 To account,To account
 To warehouse,To warehouse
@@ -1261,6 +1291,7 @@ Type,Type
 "Type to search, or pick a quick action","Type to search, or pick a quick action"
 UOM,UOM
 USD → UZS,USD → UZS
+Unassigned,Unassigned
 Units Sold,Units Sold
 Unknown Sales Invoice: {0},Unknown Sales Invoice: {0}
 Unknown Sales Order: {0},Unknown Sales Order: {0}
@@ -1350,9 +1381,11 @@ from last bill,from last bill
 item,item
 item_code and warehouse are required,item_code and warehouse are required
 items,items
+left,left
 line,line
 more,more
 optional,optional
+overdue,overdue
 pack_key is required,pack_key is required
 planned,planned
 source,target

@@ -1,7 +1,8 @@
 <script setup>
-import { computed, onMounted, ref } from "vue";
+import { computed, onMounted, ref, watch } from "vue";
 import { call } from "../../api/client.js";
 import { t } from "../../composables/i18n.js";
+import { formatDate, formatDateTime } from "../../composables/date.js";
 import { useSession } from "../../stores/session.js";
 import EmptyState from "../../components/EmptyState.vue";
 import Typeahead from "../../components/Typeahead.vue";
@@ -50,6 +51,15 @@ function priorityClass(priority) {
 	if (priority === "Urgent" || priority === "High") return "text-danger";
 	if (priority === "Medium") return "text-warning";
 	return "text-secondary";
+}
+
+function slaCountdown(resolutionBy) {
+	if (!resolutionBy) return null;
+	const ms = new Date(resolutionBy) - new Date();
+	const h = Math.round(ms / 3_600_000);
+	const d = Math.round(ms / 86_400_000);
+	if (h < 0) return `${Math.abs(h) < 24 ? Math.abs(h) + "h" : Math.abs(d) + "d"} ${t("overdue")}`;
+	return h < 24 ? `${h}h ${t("left")}` : `${d}d ${t("left")}`;
 }
 
 async function searchCustomers(search) {
@@ -217,6 +227,7 @@ async function onDrop(status) {
 	}
 }
 
+watch(company, refreshAll);
 onMounted(refreshAll);
 </script>
 
@@ -314,8 +325,8 @@ onMounted(refreshAll);
 					<span class="text-truncate">
 						<i class="ti ti-barcode me-1"></i>{{ ticket.serial_no || t("No serial") }}
 					</span>
-					<span v-if="ticket.sla_failed" class="badge bg-danger-lt">{{ t("SLA") }}</span>
-					<span v-else-if="ticket.resolution_by" class="badge bg-green-lt">{{ ticket.resolution_by }}</span>
+					<span v-if="ticket.sla_failed" class="badge bg-danger-lt">{{ slaCountdown(ticket.resolution_by) }}</span>
+					<span v-else-if="ticket.resolution_by" class="badge bg-green-lt">{{ slaCountdown(ticket.resolution_by) }}</span>
 				</div>
 			</button>
 		</section>
@@ -375,7 +386,7 @@ onMounted(refreshAll);
 					</div>
 					<div class="list-group-item d-flex justify-content-between">
 						<span class="text-secondary">{{ t("Opened") }}</span>
-						<span>{{ selected.opening_date || "—" }}</span>
+						<span>{{ selected.opening_date ? formatDate(selected.opening_date) : "—" }}</span>
 					</div>
 				</div>
 				<div v-if="selected.description">
@@ -386,7 +397,7 @@ onMounted(refreshAll);
 					<label class="form-label">{{ t("Comments") }}</label>
 					<div v-if="!selected.comments?.length" class="text-secondary small">{{ t("No comments yet.") }}</div>
 					<div v-for="comment in selected.comments" :key="comment.name" class="border rounded p-2 mb-2">
-						<div class="small text-secondary">{{ comment.owner }} · {{ comment.creation }}</div>
+						<div class="small text-secondary">{{ comment.owner }} · {{ formatDateTime(comment.creation) }}</div>
 						<div v-html="comment.content"></div>
 					</div>
 				</div>

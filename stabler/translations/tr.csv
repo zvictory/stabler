@@ -66,6 +66,7 @@ All object types,Tüm nesne türleri
 All promo plans,Tüm promosyon planları
 All sales invoices for this company are fully paid.,Bu şirkete ait tüm satış faturaları tam olarak ödenmiştir.
 All statuses,Tüm durumlar
+All technicians,Tüm teknisyenler
 All territories,Tüm bölgeler
 All three accounts are required.,Üç hesabın tamamı gereklidir.
 All time,
@@ -102,6 +103,7 @@ Asl Belgisi — Stock Entries pending scan,Asl Belgisi — Tarama Bekleyen Stok 
 Asset Tag,Varlık Etiketi
 Asset Tag and Category are required.,Varlık etiketi ve kategori gereklidir.
 Assign operator,Operatör ata
+Assign technician,Teknisyen ata
 Assigned Field User,Atanan Saha Kullanıcısı
 Assigned Technician,Atanan Teknisyen
 At least two account lines are required.,En az iki hesap satırı gereklidir.
@@ -200,6 +202,7 @@ Collapse all,Tümünü daralt
 Collapse all groups,Tüm grupları daralt
 Color,Renk
 Column name,Sütun adı
+Comments,Yorumlar
 Commission %,Komisyon %
 Commission fee,Komisyon ücreti
 Commission income account,Komisyon gelir hesabı
@@ -231,6 +234,7 @@ Create Bill,Fatura oluştur
 Create Invoice,Fatura Oluştur
 Create Plan,Plan Oluştur
 Create Scheme,Şema Oluştur
+Create Ticket,Talep oluştur
 Create a Bill of Materials to define what raw materials go into a finished good.,Mamul ürüne giren hammaddeleri tanımlamak için bir Malzeme Listesi oluşturun.
 Create a Work Order to plan and track production runs against a BOM.,BOM'a karşı üretim çalışmalarını planlamak ve izlemek için bir İş Emri oluşturun.
 Create a plan to start tracking campaign budget and ROI.,Kampanya bütçesini ve yatırım getirisini takip etmeye başlamak için bir plan oluşturun.
@@ -382,6 +386,7 @@ Expenses,Giderler
 Export,Dışa Aktar
 Export failed.,Dışa aktarma başarısız oldu.
 F.I.O.,"Soyad, Ad, Baba Adı"
+Failed to assign ticket.,Talep atanamadı.
 Failed to cancel.,İptal edilemedi.
 Failed to clear reservations.,Rezervasyonlar temizlenemedi.
 Failed to create bill.,Fatura oluşturulamadı.
@@ -397,6 +402,7 @@ Failed to create quotation.,Teklif oluşturulamadı.
 Failed to create receipt.,Mal kabulü oluşturulamadı.
 Failed to create return.,İade oluşturulamadı.
 Failed to create sales order.,Satış siparişi oluşturulamadı.
+Failed to create ticket.,Talep oluşturulamadı.
 Failed to create transfer.,Transfer oluşturulamadı.
 Failed to create warehouse.,Depo oluşturulamadı.
 Failed to create.,Oluşturulamadı.
@@ -442,10 +448,12 @@ Failed to load quotations.,Teklifler yüklenemedi.
 Failed to load reserved stock data.,
 Failed to load sales order.,Satış siparişi yüklenemedi.
 Failed to load sales orders.,Satış siparişleri yüklenemedi.
+Failed to load service tickets.,Servis talepleri yüklenemedi.
 Failed to load stock entries.,Stok hareketleri yüklenemedi.
 Failed to load stock ledger.,Stok defteri yüklenemedi.
 Failed to load supplier.,Tedarikçi yüklenemedi.
 Failed to load suppliers.,Tedarikçiler yüklenemedi.
+Failed to load ticket.,Talep yüklenemedi.
 Failed to load transfer detail.,Transfer detayı yüklenemedi.
 Failed to load transfers.,Transferler yüklenemedi.
 Failed to load van stock.,Araç stoğu yüklenemedi.
@@ -454,6 +462,7 @@ Failed to load warehouses.,Depolar yüklenemedi.
 Failed to load work orders.,
 Failed to load.,Yüklenemedi.
 Failed to move deal.,Fırsat taşınamadı.
+Failed to move ticket.,Talep taşınamadı.
 Failed to record payment.,Ödeme kaydedilemedi.
 Failed to refresh claim.,Talep yenilenemedi.
 Failed to rename column.,
@@ -483,6 +492,7 @@ Field User name is required.,Saha Kullanıcısı adı zorunludur.
 Field Users,Saha Kullanıcıları
 Field user is required.,Saha kullanıcısı zorunludur.
 Field users represent sales reps who execute visits and own van stock.,"Saha kullanıcıları, ziyaretleri gerçekleştiren ve araç stoğunu yöneten satış temsilcilerini temsil eder."
+Files,Dosyalar
 Fill in the required fields before submitting.,Göndermeden önce zorunlu alanları doldurun.
 Financed,Finansmanlı
 Finish,Bitir
@@ -548,6 +558,7 @@ Invoices,Faturalar
 Issue,Sorun
 Issue credit note,Alacak dekontu düzenle
 Issue is required.,Sorun zorunludur.
+Issue type,Talep türü
 Issues,Sorunlar
 Item,Ürün
 Item #{0}: item is required.,Ürün #{0}: ürün zorunludur.
@@ -603,6 +614,7 @@ Mahsulot nomi,Mahsulot nomi
 Make default BOM for this item,Bu ürün için varsayılan BOM yap
 Male,Erkek
 Manufacturing,Üretim
+Map,Harita
 Mark Resolved,Çözüldü Olarak İşaretle
 Mark and submit,İşaretle ve gönder
 Mark attendance,Devam işaretle
@@ -652,6 +664,8 @@ New Promo Scheme,Yeni Promosyon Şeması
 New SO,Yeni SÖ
 New Sales Order,Yeni Satış Siparişi
 New Scheme,Yeni Şema
+New Service Ticket,Yeni servis talebi
+New Ticket,Yeni talep
 New Transfer,Yeni Transfer
 New Van Stock,Yeni Araç Stoku
 New Visit,Yeni Ziyaret
@@ -694,6 +708,7 @@ No bills in this range,Bu aralıkta fatura yok
 No claim selected.,Talep seçilmedi.
 No claims yet,Henüz talep yok
 No columns,Sütun yok
+No comments yet.,Henüz yorum yok.
 No company selected,Şirket seçilmedi
 No customers,Müşteri yok
 No customers match that name,Bu ada uyan müşteri bulunamadı
@@ -707,6 +722,7 @@ No equipment yet,Henüz ekipman yok
 No exchange rate available from {0} to {1} on {2}.,{2} tarihi için {0} ile {1} arasında döviz kuru bulunamadı.
 No exchange rates yet. Click Refresh now to fetch today's rates from cbu.uz.,Henüz döviz kuru yok. Bugünün kurlarını cbu.uz'dan çekmek için Yenile'ye tıklayın.
 No field users yet,Henüz saha kullanıcısı yok
+No files attached.,Dosya eklenmedi.
 No installments due this month.,Bu ay vadesi gelen taksit yok.
 No interest — fixed Murabaha markup. Sum equals total exactly.,Faiz yok — sabit Murabaha kâr payı. Toplam tam olarak genel toplamla eşittir.
 No invoices in this range,Bu aralıkta fatura yok
@@ -745,6 +761,8 @@ No repair requests,Onarım talebi yok
 No routes yet,Henüz rota yok
 No salary slips yet,Henüz bordro fişi yok
 No sales orders in this range,Bu aralıkta satış siparişi yok
+No serial,Seri yok
+No service tickets,Servis talebi yok
 No steps yet.,Henüz adım yok.
 No stock entries yet,Henüz stok hareketi yok
 No stock in any warehouse for this company.,Bu şirkete ait hiçbir depoda stok yok.
@@ -760,6 +778,8 @@ No warehouses for this company,Bu şirket için depo yok
 No work orders,İş emri yok
 No work orders assigned to you yet.,Henüz size atanmış iş emri yok.
 No {0} receivable account exists for company {1}. ,{1} şirketi için {0} alacak hesabı mevcut değil. 
+None,Yok
+Normal,Normal
 Nos,Nos
 Not found,Bulunamadı
 Not permitted,İzin verilmiyor
@@ -785,6 +805,7 @@ Only submitted invoices can be returned.,Yalnızca onaylanmış faturalar iade a
 Only with balance,Yalnızca bakiyesi olanlar
 Open,Açık
 Open SREs,Açık SRE'ler
+Opened,Açıldı
 Opening,Açılış
 Opening balance,Açılış bakiyesi
 Opening balances,Açılış bakiyeleri
@@ -904,6 +925,7 @@ Present,Mevcut
 Present SKUs,Mevcut SKU'lar
 Price list,Fiyat listesi
 Print,Yazdır
+Priority,Öncelik
 Probability,Olasılık
 Process,Süreç
 Process Name,Süreç Adı
@@ -1088,6 +1110,7 @@ Search BOMs or finished goods…,Ürün reçetesi veya mamul ara…
 Search account…,Hesap ara…
 Search asset tag…,Varlık etiketi ara…
 Search campaigns…,Kampanya ara…
+Search customer,Müşteri ara
 Search customer name…,Müşteri adı ara…
 "Search customers, suppliers, items, invoices…","Müşteri, tedarikçi, ürün, fatura ara…"
 Search customers…,Müşteri ara…
@@ -1116,6 +1139,7 @@ Select an account…,Bir hesap seçin…
 Select city…,Şehir seçin…
 Select company,Firma seçin
 Select gender,Cinsiyet seçin
+Select technician,Teknisyen seçin
 Select template…,Şablon seçin…
 Select…,Seçin…
 Sell,Sat
@@ -1126,6 +1150,7 @@ Send password reset email to ,Şifre sıfırlama e-postası gönder:
 Sender name,Gönderen adı
 Sender pays,Gönderen öder
 Serial No,Seri No
+Service,Servis
 Set Reports-To on employees to build the positions hierarchy.,Pozisyon hiyerarşisi oluşturmak için çalışanlarda Bağlı Olduğu Kişi alanını doldurun.
 Settle,Mahsuplaştır
 Settlement failed.,Mahsuplaştırma başarısız oldu.
@@ -1174,6 +1199,7 @@ Stock value,Stok değeri
 Stop,Durdur
 Stop this Work Order? You can resume it later.,Bu İş Emri durdurulsun mu? Daha sonra devam edebilirsiniz.
 Storefront,Mağaza Vitrini
+Subject,Konu
 Submit,Onayla
 Submit & reserve stock,Onayla ve stok rezerve et
 Submit a leave request on behalf of an employee.,Bir çalışan adına izin talebi gönderin.
@@ -1203,17 +1229,21 @@ Task,Görev
 Tax ID,Vergi Kimlik No
 Tax template,Vergi şablonu
 Taxes,Vergiler
+Technician,Teknisyen
+Technician state,Teknisyen durumu
 Term (months),Vade (ay)
 Terms / remarks,Koşullar / notlar
 Terms:,Koşullar:
 Territory,Bölge
 The Compliance module is disabled for this company.,Bu şirket için Uyumluluk modülü devre dışı.
+This Service workspace will be added after Tickets P1.,Bu çalışma alanı P1'den sonra eklenecek.
 This cannot be undone.,Bu işlem geri alınamaz.
 This month,
 This year,
 Threshold,Eşik
 Threshold Qty,Eşik Miktarı
 Thu,Per
+Tickets,Talepler
 To,Kime
 To account,Alıcı hesap
 To warehouse,Hedef depo
@@ -1248,6 +1278,7 @@ Type,Tür
 "Type to search, or pick a quick action",Aramak için yazın veya hızlı bir işlem seçin
 UOM,Ölçü Birimi
 USD → UZS,USD → UZS
+Unassigned,Atanmamış
 Units Sold,Satılan Adet
 Unknown Sales Invoice: {0},Bilinmeyen Satış Faturası: {0}
 Unknown Sales Order: {0},Bilinmeyen Satış Siparişi: {0}
@@ -1337,9 +1368,11 @@ from last bill,son faturadan
 item,kalem
 item_code and warehouse are required,item_code ve depo zorunludur
 items,kalemler
+left,kaldı
 line,satır
 more,daha fazla
 optional,isteğe bağlı
+overdue,gecikmiş
 pack_key is required,pack_key zorunludur
 planned,planlanan
 source,target

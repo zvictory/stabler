@@ -67,6 +67,7 @@ All object types,Barcha ob'ekt turlari
 All promo plans,Barcha promo rejalar
 All sales invoices for this company are fully paid.,Ushbu kompaniyaning barcha sotuv hisob-fakturalari to'liq to'langan.
 All statuses,Barcha holatlar
+All technicians,Barcha texniklar
 All territories,Barcha hududlar
 All three accounts are required.,Uchta hisob majburiy.
 All time,
@@ -103,6 +104,7 @@ Asl Belgisi — Stock Entries pending scan,Asl Belgisi — skanerdan kutayotgan 
 Asset Tag,Aktivni belgisi
 Asset Tag and Category are required.,Aktivni belgisi va toifasi talab qilinadi.
 Assign operator,Operatorni belgilash
+Assign technician,Texnikni belgilash
 Assigned Field User,Tayinlangan foydalanuvchi
 Assigned Technician,Tayinlangan texnik mutaxassis
 At least two account lines are required.,Kamida ikkita hisob qatori talab qilinadi.
@@ -202,6 +204,7 @@ Collapse all,Hammasini yig'ish
 Collapse all groups,Barcha guruhlarni yig'ish
 Color,Rang
 Column name,Ustun nomi
+Comments,Izohlar
 Commission,Komissiya
 Commission %,Komissiya %
 Commission fee,Komissiya miqdori
@@ -236,6 +239,7 @@ Create Bill,Hisob yaratish
 Create Invoice,Hisob-faktura yaratish
 Create Plan,Reja yaratish
 Create Scheme,Sxema yaratish
+Create Ticket,Murojaat yaratish
 Create a Bill of Materials to define what raw materials go into a finished good.,Tayyor mahsulotga qanday xom ashyo kirishini belgilash uchun spetsifikatsiya yarating.
 Create a Work Order to plan and track production runs against a BOM.,Ishlab chiqarishni rejalashtirish va kuzatish uchun buyurtma yarating.
 Create a plan to start tracking campaign budget and ROI.,Kampaniya byujetini va ROI ni kuzatishni boshlash uchun rejani yarating.
@@ -389,6 +393,7 @@ Expenses,Xarajatlar
 Export,Eksport
 Export failed.,Eksport muvaffaq bo'lmadi.
 F.I.O.,F.I.Sh.
+Failed to assign ticket.,Murojaatni belgilab bo'lmadi.
 Failed to cancel.,Bekor qilish muvaffaq bo'lmadi.
 Failed to clear reservations.,Reservatsiyalarni o'chirish muvaffaq bo'lmadi.
 Failed to create bill.,Hisob-faktura yaratish muvaffaq bo'lmadi.
@@ -404,6 +409,7 @@ Failed to create quotation.,Taklifnomani yaratishda xato.
 Failed to create receipt.,Qabul hujjatini yaratib bo'lmadi.
 Failed to create return.,Qaytarni yaratishda xato.
 Failed to create sales order.,Sotuv buyurtmasini yaratishda xato.
+Failed to create ticket.,Murojaat yaratib bo'lmadi.
 Failed to create transfer.,O'tkazma yaratib bo'lmadi.
 Failed to create warehouse.,Omborni yaratishda xato.
 Failed to create.,Yaratishda xato.
@@ -449,10 +455,12 @@ Failed to load quotations.,Taklifnomalarni yuklashda xato.
 Failed to load reserved stock data.,
 Failed to load sales order.,
 Failed to load sales orders.,Sotuv buyurtmalarini yuklashda xato.
+Failed to load service tickets.,Servis murojaatlarini yuklab bo'lmadi.
 Failed to load stock entries.,Ombor yozuvlarini yuklashda xato.
 Failed to load stock ledger.,Ombor kunlikni yuklashda xato.
 Failed to load supplier.,Ta'minchini yuklashda xato.
 Failed to load suppliers.,Ta'minchilarni yuklashda xato.
+Failed to load ticket.,Murojaatni yuklab bo'lmadi.
 Failed to load transfer detail.,O'tkazma tafsilotlarini yuklashda xatolik.
 Failed to load transfers.,O'tkazmalarni yuklashda xatolik.
 Failed to load van stock.,Avtomobil ombor ma'lumotlarini yuklashda xato.
@@ -461,6 +469,7 @@ Failed to load warehouses.,Omborlarni yuklashda xato.
 Failed to load work orders.,
 Failed to load.,Yuklashda xato.
 Failed to move deal.,Bitimni ko'chirish muvaffaqiyatsiz bo'ldi.
+Failed to move ticket.,Murojaatni ko'chirib bo'lmadi.
 Failed to record payment.,To'lovni qaydda xato.
 Failed to refresh claim.,Shikoyatni yangilanishda xato.
 Failed to rename column.,
@@ -490,6 +499,7 @@ Field User name is required.,Foydalanuvchi nomi maydoni talab qilinadi.
 Field Users,Foydalanuvchilar maydoni
 Field user is required.,Foydalanuvchi maydoni talab qilinadi.
 Field users represent sales reps who execute visits and own van stock.,Foydalanuvchilar maydoni vizitlarni amalga oshiradigan va van tovarini egallagan sotuv vakilllarini ifodalaydi.
+Files,Fayllar
 Fill in the required fields before submitting.,Tasdiqlashdan oldin talab qilingan maydonlarni to'ldiring.
 Financed,Moliyalashtirilgan
 Finish,Yakunlash
@@ -556,6 +566,7 @@ Invoices,Hisob-fakturalar
 Issue,Masala
 Issue credit note,Kredit notasini chiqaring
 Issue is required.,Masala talab qilinadi.
+Issue type,Murojaat turi
 Issues,Masalalar
 Item,Tovar
 Item #{0}: item is required.,Tovar #{0}: tovar talab qilinadi.
@@ -612,6 +623,7 @@ Mahsulot nomi,Mahsulot nomi
 Make default BOM for this item,Ushbu tovar uchun asosiy spetsifikatsiya qilish
 Male,Erkak
 Manufacturing,Ishlab chiqarish
+Map,Xarita
 Mark Resolved,Hal qilindi deb belgilash
 Mark and submit,Belgilash va tasdiqlash
 Mark attendance,Davomatni belgilash
@@ -661,6 +673,8 @@ New Promo Scheme,Yangi reklama sxemasi
 New SO,Yangi SO
 New Sales Order,
 New Scheme,Yangi sxema
+New Service Ticket,Yangi murojaat
+New Ticket,Yangi murojaat
 New Transfer,Yangi o'tkazma
 New Van Stock,Yangi furgon inventari
 New Visit,Yangi tashrif
@@ -703,6 +717,7 @@ No bills in this range,Bu diapazonida qo'lyozuvchilar yo'q
 No claim selected.,Talaba tanlanmagan.
 No claims yet,Hali talabalyar yo'q
 No columns,Ustunlar yo'q
+No comments yet.,Hali izoh yo'q.
 No company selected,Kompaniya tanlanmagan
 No customers,Mijozlar yo'q
 No customers match that name,Shu nomdagi mijozlar topilmadi
@@ -717,6 +732,7 @@ No equipment yet,Hali asboblar yo'q
 No exchange rate available from {0} to {1} on {2}.,{2} sanada {0} dan {1} gacha almashtirish narxi mavjud emas.
 No exchange rates yet. Click Refresh now to fetch today's rates from cbu.uz.,Hali almashtirish narxlari yo'q. Bugungi narxlarni cbu.uz dan olish uchun Yangilash tugmasini bosing.
 No field users yet,Hali foydalanuvchilar yo'q
+No files attached.,Fayllar biriktirilmagan.
 No installments due this month.,Bu oyda to'lovlar yo'q.
 No interest — fixed Murabaha markup. Sum equals total exactly.,Foizsiz — qat'iy Murobaha ustamasi. Yig'indi aniq jami bilan teng.
 No invoices in this range,Bu diapazonida qo'lyozuvchilar yo'q
@@ -755,6 +771,8 @@ No repair requests,Ta'mirlash so'rovlari yo'q
 No routes yet,Marshrutlar hali yo'q
 No salary slips yet,Hali maosh varaqalari yo'q
 No sales orders in this range,Bu oraliqda sotuv buyurtmalari yo'q
+No serial,Seriya raqami yo'q
+No service tickets,Murojaatlar yo'q
 No steps yet.,Qadamlar hali yo'q.
 No stock entries yet,Ombor kiritmalari hali yo'q
 No stock in any warehouse for this company.,Bu kompaniya uchun hech bir omborida tovar yo'q.
@@ -771,6 +789,8 @@ No warehouses for this company,Bu kompaniya uchun omborlar yo'q
 No work orders,Ishlab chiqarish buyurtmalari yo'q
 No work orders assigned to you yet.,Sizga hali hech qanday buyurtma tayinlanmagan.
 No {0} receivable account exists for company {1}. ,{0} uchun {1} kompaniyasida debitorlik hisobi mavjud emas. 
+None,Yo'q
+Normal,Oddiy
 Nos,Raqamlar
 Not found,Topilmadi
 Not permitted,Ruxsat yo'q
@@ -797,6 +817,7 @@ Only with balance,Faqat balansi bilan
 Open,Ochiq
 Open Desk,Deskni ochish
 Open SREs,Ochiq SRElar
+Opened,Ochildi
 Opening,Ochish
 Opening balance,Ochilish balansi
 Opening balances,Ochilish balans
@@ -918,6 +939,7 @@ Present SKUs,Mavjud SKU'lar
 Preview,Ko'rib chiqish
 Price list,Narx ro'yxati
 Print,Chop etish
+Priority,Muhimlik
 Probability,Ehtimollik
 Process,Jarayon
 Process Name,Jarayon nomi
@@ -1104,6 +1126,7 @@ Search BOMs or finished goods…,Spetsifikatsiya yoki tayyor mahsulotni qidirish
 Search account…,Hisob qidirish…
 Search asset tag…,Aktivlar tegini qidirish…
 Search campaigns…,Kampaniyalarni qidirish…
+Search customer,Mijozni qidirish
 Search customer name…,Mijoz nomini qidirish…
 "Search customers, suppliers, items, invoices…","Mijozlar, ta'minotchilar, tovarlar, hisob-fakturalarni qidirish…"
 Search customers…,Xaridorlarni qidirish…
@@ -1133,6 +1156,7 @@ Select city…,Shahar tanlang…
 Select company,Kompaniya tanlang
 Select corridor…,Yo'nalish tanlang…
 Select gender,
+Select technician,Texnikni tanlang
 Select template…,Shablonni tanlang…
 Select…,Tanlang…
 Sell,Sotish
@@ -1143,6 +1167,7 @@ Send password reset email to ,Parolni tiklash uchun elektron pochta jo'natish
 Sender name,Jo'natuvchi ismi
 Sender pays,Jo'natuvchi to'laydi
 Serial No,Seriya raqami
+Service,Servis
 Set Reports-To on employees to build the positions hierarchy.,Lavozimlar ierarxiyasini yaratish uchun xodimlarda Reports-To ni o'rnating.
 Settle,Yechish
 Settlement failed.,Yechish muvaffaqiyatsiz bo'ldi.
@@ -1191,6 +1216,7 @@ Stock value,Zaxira qiymati
 Stop,To'xtatish
 Stop this Work Order? You can resume it later.,Bu buyurtmani to'xtatasizmi? Keyin davom ettirsa bo'ladi.
 Storefront,Do'kon ko'rinishi
+Subject,Mavzu
 Submit,Tasdiqlash
 Submit & reserve stock,Tasdiqlash va omborni rezerv qilish
 Submit a leave request on behalf of an employee.,Xodim nomidan ariza yuboring.
@@ -1220,17 +1246,21 @@ Task,Vazifa
 Tax ID,Soliq ID
 Tax template,Soliq shabloni
 Taxes,Soliqlar
+Technician,Texnik
+Technician state,Texnik holati
 Term (months),Muddat (oy)
 Terms / remarks,Shartlar / izohlar
 Terms:,Shartlar:
 Territory,Hudud
 The Compliance module is disabled for this company.,Bu kompaniya uchun Muvofiqlik moduli o'chirilgan.
+This Service workspace will be added after Tickets P1.,Bu ish maydoni P1 dan so'ng qo'shiladi.
 This cannot be undone.,Buni qaytarish mumkin emas.
 This month,
 This year,
 Threshold,Chegara
 Threshold Qty,Chegara miqdori
 Thu,Pa
+Tickets,Murojaatlar
 To,Gacha
 To Bill,Hisob-faktura uchun
 To Deliver,Yetkazib berish uchun
@@ -1269,6 +1299,7 @@ Type,Turi
 "Type to search, or pick a quick action",Qidirish uchun yozing yoki tez harakatni tanlang
 UOM,O'lchov birligi
 USD → UZS,USD → UZS
+Unassigned,Belgilanmagan
 Units Sold,Sotilgan birliklar
 Unknown Sales Invoice: {0},Noma'lum sotuv hisob-fakturasi: {0}
 Unknown Sales Order: {0},Noma'lum sotuv buyurtmasi: {0}
@@ -1358,9 +1389,11 @@ from last bill,oxirgi hisobdan
 item,Tovar
 item_code and warehouse are required,Tovar kodi va omborxona majburiy
 items,Tovarlar
+left,qoldi
 line,Qator
 more,yana
 optional,Ixtiyoriy
+overdue,kechikdi
 pack_key is required,pack_key majburiy
 planned,rejalashtirilgan
 source,target

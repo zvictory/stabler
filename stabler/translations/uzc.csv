@@ -67,6 +67,7 @@ All object types,Барча объект туралари
 All promo plans,Барча рекламалаш режалари
 All sales invoices for this company are fully paid.,Бу компания учун барча сотув ҳисоб-фактуралари то'лиқ тўланди.
 All statuses,Барча ҳолатлар
+All technicians,Барча техниклар
 All territories,Барча ҳудудлар
 All three accounts are required.,Учта ҳисоб мажбурий.
 All time,
@@ -103,6 +104,7 @@ Asl Belgisi — Stock Entries pending scan,Аслий белги — сканл�
 Asset Tag,Активлар теги
 Asset Tag and Category are required.,Активлар теги ва категорияси талаб қилинади.
 Assign operator,Оператор тайинлаш
+Assign technician,Техникни белгилаш
 Assigned Field User,Назначен фойдаланувчи
 Assigned Technician,Назначен техник
 At least two account lines are required.,Камида икки ҳисоб қатори талаб қилинади.
@@ -202,6 +204,7 @@ Collapse all,Бардавамга ёпиш
 Collapse all groups,Барча гурўхларни ёпиш
 Color,Ранг
 Column name,Устун номи
+Comments,Изоҳлар
 Commission,Комиссия
 Commission %,Комиссия %
 Commission fee,Комиссия миқдори
@@ -236,6 +239,7 @@ Create Bill,Ҳисоб яратиш
 Create Invoice,Ҳисобот яратиш
 Create Plan,Режа яратиш
 Create Scheme,Схема яратиш
+Create Ticket,Мурожаат яратиш
 Create a Bill of Materials to define what raw materials go into a finished good.,Тайёр маҳсулотга қандай хом ашё кириши учун спецификация яратинг.
 Create a Work Order to plan and track production runs against a BOM.,Ишлаб чиқаришни режалаштириш ва кузатиш учун буюртма яратинг.
 Create a plan to start tracking campaign budget and ROI.,Компания бюджети ва ROI ни кузатиш учун режа яратинг.
@@ -389,6 +393,7 @@ Expenses,Харжилар
 Export,Экспорт
 Export failed.,Экспорт нокамоб
 F.I.O.,Ф.И.Ш.
+Failed to assign ticket.,Мурожаатни белгилаб бўлмади.
 Failed to cancel.,Бекор қилиш нокамоб.
 Failed to clear reservations.,Зарбри танзимлашни тозалаш нокамоб.
 Failed to create bill.,Ҳисобни ишлаб чиқарилиши нокамоб.
@@ -404,6 +409,7 @@ Failed to create quotation.,Таклифномани яратиб бўла ол�
 Failed to create receipt.,Қабул ҳужжатини яратиб бўлмади.
 Failed to create return.,Қайтарув яратиб бўла олмади.
 Failed to create sales order.,Сотув буйртмасини яратиб бўла олмади.
+Failed to create ticket.,Мурожаат яратиб бўлмади.
 Failed to create transfer.,Ўтказма яратиб бўлмади.
 Failed to create warehouse.,Омборни яратиб бўла олмади.
 Failed to create.,Яратиб бўла олмади.
@@ -449,10 +455,12 @@ Failed to load quotations.,Таклифномаларни юклаб бўла о
 Failed to load reserved stock data.,
 Failed to load sales order.,
 Failed to load sales orders.,Сотув буйртмаларини юклаб бўла олмади.
+Failed to load service tickets.,Сервис мурожаатларини юклаб бўлмади.
 Failed to load stock entries.,Қоймонаси ёзувларини юклаб бўла олмади.
 Failed to load stock ledger.,Қоймонаси реестрини юклаб бўла олмади.
 Failed to load supplier.,Таъминотчини юклаб бўла олмади.
 Failed to load suppliers.,Таъминотчиларни юклаб бўла олмади.
+Failed to load ticket.,Мурожаатни юклаб бўлмади.
 Failed to load transfer detail.,Ўтказма тафсилотларини юклашда хатолик.
 Failed to load transfers.,Ўтказмаларни юклашда хатолик.
 Failed to load van stock.,Ўтувчи қоймонасини юклаб бўла олмади.
@@ -461,6 +469,7 @@ Failed to load warehouses.,Омборларни юклаб бўла олмади
 Failed to load work orders.,
 Failed to load.,Юклаб бўла олмади.
 Failed to move deal.,Битимни кўчириш муваффақиятсиз бўлди.
+Failed to move ticket.,Мурожаатни кўчириб бўлмади.
 Failed to record payment.,Тўловни ёзиб бўла олмади.
 Failed to refresh claim.,Талабни янгилаб бўла олмади.
 Failed to rename column.,
@@ -490,6 +499,7 @@ Field User name is required.,Фойдаланувчи номи майдони з
 Field Users,Фойдаланувчилар майдони
 Field user is required.,Фойдаланувчи майдони зарур.
 Field users represent sales reps who execute visits and own van stock.,Фойдаланувчилар майдони ташрифларни бажарувчи ва машина қўйсига эга сотув вакиллари намояндалик қилади.
+Files,Файллар
 Fill in the required fields before submitting.,Тасдиқлаш олдин зарур майдонларни тўлдириш.
 Financed,Молиялаштирилган
 Finish,Якунлаш
@@ -556,6 +566,7 @@ Invoices,Ҳисоб варақалари
 Issue,Мушаммас
 Issue credit note,Кредит қайд қилиш
 Issue is required.,Мушаммас зарур.
+Issue type,Мурожаат тури
 Issues,Муаммолар
 Item,Товар
 Item #{0}: item is required.,Товар #{0}: товар зарур.
@@ -612,6 +623,7 @@ Mahsulot nomi,Маҳсулот номи
 Make default BOM for this item,Ушбу товар учун асосий спецификация қилиш
 Male,Эркак
 Manufacturing,Ишлаб чиқариш
+Map,Харита
 Mark Resolved,Ҳал қилинган деб белгилаш
 Mark and submit,Белгилаш ва тасдиқлаш
 Mark attendance,Давоматни белгилаш
@@ -661,6 +673,8 @@ New Promo Scheme,Янги ҳамёнч схемаси
 New SO,Янги сотув буйруғи
 New Sales Order,
 New Scheme,Янги схема
+New Service Ticket,Янги мурожаат
+New Ticket,Янги мурожаат
 New Transfer,Янги ўтказма
 New Van Stock,Янги фургон қорасо
 New Visit,Янги буюртма
@@ -703,6 +717,7 @@ No bills in this range,Бу диапазонда счётлар йўқ
 No claim selected.,Даво танланмаган.
 No claims yet,Ҳалиғача даволар йўқ
 No columns,Устунлар йўқ
+No comments yet.,Ҳали изоҳ йўқ.
 No company selected,Компания танланмаган
 No customers,Мижозлар йўқ
 No customers match that name,Шу номга мос мижозлар йўқ
@@ -717,6 +732,7 @@ No equipment yet,Ҳалиғача ускуналар йўқ
 No exchange rate available from {0} to {1} on {2}.,{2}-да {0} дан {1} гача алмаштириш курси йўқ.
 No exchange rates yet. Click Refresh now to fetch today's rates from cbu.uz.,Ҳалиғача алмаштириш курслари йўқ. cbu.uz дан бугунги курслари олиш учун Янгилаш босинг.
 No field users yet,Ҳалиғача сахра фойдаланувчилари йўқ
+No files attached.,Файллар бириктирилмаган.
 No installments due this month.,Бу ойда тўловлар йўқ.
 No interest — fixed Murabaha markup. Sum equals total exactly.,Фоизсиз — қатъий Муробаҳа устамаси. Йиғинди аниқ жами билан тенг.
 No invoices in this range,Бу диапазонда счётлар йўқ
@@ -755,6 +771,8 @@ No repair requests,Та'миз таклифлари йўқ
 No routes yet,Ҳали маршрутлар йўқ
 No salary slips yet,Ҳали маош варақалари йўқ
 No sales orders in this range,Бу диапазонда сотув буюртмалари йўқ
+No serial,Серия рақами йўқ
+No service tickets,Мурожаатлар йўқ
 No steps yet.,Ҳали қадамлар йўқ.
 No stock entries yet,Ҳали қор ёзувлари йўқ
 No stock in any warehouse for this company.,Бу компания учун ҳеч қайси оммабойда қор йўқ.
@@ -771,6 +789,8 @@ No warehouses for this company,Бу компания учун омбалар й�
 No work orders,Ишлаб чиқариш буюртмалари йўқ
 No work orders assigned to you yet.,Сизга ҳали ҳеч қандай буюртма тайинланмаган.
 No {0} receivable account exists for company {1}. ,{0} учун {1} компаниясида дебиторлик ҳисоби мавжуд эмас. 
+None,Йўқ
+Normal,Оддий
 Nos,Йўқ
 Not found,Топилмади
 Not permitted,Рухсат йўқ
@@ -797,6 +817,7 @@ Only with balance,Фақат баланс билан
 Open,Очиқ
 Open Desk,Дескни очиш
 Open SREs,Очиқ SREлар
+Opened,Очилди
 Opening,Очилиш
 Opening balance,Очилиш балансы
 Opening balances,Очилиш балансларн
@@ -918,6 +939,7 @@ Present SKUs,Мавжуд АСК-лар
 Preview,Кўриб чиқиш
 Price list,Нарх рўйхати
 Print,Босиб чиқариш
+Priority,Муҳимлик
 Probability,Еҳтимоллик
 Process,Жараён
 Process Name,Жараён номи
@@ -1104,6 +1126,7 @@ Search BOMs or finished goods…,Спецификация ёки тайёр ма
 Search account…,Ҳисобро қидириш…
 Search asset tag…,Активнинг белгисини қидириш…
 Search campaigns…,Кампанияларни қидириш…
+Search customer,Мижозни қидириш
 Search customer name…,Муштери номини қидириш…
 "Search customers, suppliers, items, invoices…","Муштериларни, етказиб берувчиларни, товарларни, ҳисобномаларни қидириш…"
 Search customers…,Харидорларни қидириш…
@@ -1133,6 +1156,7 @@ Select city…,Шаҳар танланг…
 Select company,Компанияни танланг
 Select corridor…,Йўналиш танланг…
 Select gender,
+Select technician,Техникни танланг
 Select template…,Шаблонни танланг…
 Select…,Танланг…
 Sell,Сотиш
@@ -1143,6 +1167,7 @@ Send password reset email to ,Паролни тиклаш учун электр�
 Sender name,Жўнатувчи исми
 Sender pays,Жўнатувчи тўлайди
 Serial No,Сериялы рақам
+Service,Сервис
 Set Reports-To on employees to build the positions hierarchy.,"Лавозимлар иерархиясини тузиш учун ходимларга ""Ҳисоб берувчи""ни ўрнатинг."
 Settle,Қарзаро қилиш
 Settlement failed.,Қарзаро қилиш бажарилмади.
@@ -1191,6 +1216,7 @@ Stock value,Сўзи қиймати
 Stop,Тўхтатиш
 Stop this Work Order? You can resume it later.,Бу буюртмани тўхтатасизми? Кейин давом эттирса бўлади.
 Storefront,Дўкон саҳнаси
+Subject,Мавзу
 Submit,Тасдиқлаш
 Submit & reserve stock,Тасдиқлаш ва омборни резерв қилиш
 Submit a leave request on behalf of an employee.,Ходим номидан ариза юборинг.
@@ -1220,17 +1246,21 @@ Task,Вазифа
 Tax ID,Солиқ ID
 Tax template,Солиқ шаблони
 Taxes,Солиқлар
+Technician,Техник
+Technician state,Техник ҳолати
 Term (months),Муддат (ой)
 Terms / remarks,Шартлар / изоҳлар
 Terms:,Шартлар:
 Territory,Ҳудуд
 The Compliance module is disabled for this company.,Мувофиқлик модули бу компанияда ўчирилган.
+This Service workspace will be added after Tickets P1.,Бу иш майдони P1 дан сўнг қўшилади.
 This cannot be undone.,Бу ортига қайтариб бўлмайди.
 This month,
 This year,
 Threshold,Чегара
 Threshold Qty,Чегара миқдори
 Thu,Па
+Tickets,Мурожаатлар
 To,Гача
 To Bill,Ҳисоб-фактура учун
 To Deliver,Етказиб бериш учун
@@ -1269,6 +1299,7 @@ Type,Турл
 "Type to search, or pick a quick action","Қидириш учун енг, ёки тез амални танланг"
 UOM,Ўлчов бирлиги
 USD → UZS,USD → UZS
+Unassigned,Белгиланмаган
 Units Sold,Сотилган бирлик
 Unknown Sales Invoice: {0},Номаълум сотув ҳисоб-фактураси: {0}
 Unknown Sales Order: {0},Номаълум сотув буюртмаси: {0}
@@ -1358,9 +1389,11 @@ from last bill,охирги ҳисобдан
 item,Товар
 item_code and warehouse are required,Товар коди ва омбор керак
 items,Товарлар
+left,қолди
 line,Қатор
 more,яна
 optional,Ихтиёрий
+overdue,кечикди
 pack_key is required,pack_key керак
 planned,режалаштирилган
 source,target
