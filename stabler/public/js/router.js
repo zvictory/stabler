@@ -3,6 +3,7 @@ import { useSession } from "./stores/session.js";
 import { t } from "./composables/i18n.js";
 import Dashboard from "./pages/Dashboard.vue";
 import Module from "./pages/Module.vue";
+import ReportsHub from "./pages/ReportsHub.vue";
 import MoneyHome from "./pages/money/MoneyHome.vue";
 import Accounts from "./pages/money/Accounts.vue";
 import AccountLedger from "./pages/money/AccountLedger.vue";
@@ -19,6 +20,7 @@ import SalesOrderForm from "./pages/sales/SalesOrderForm.vue";
 import SalesInvoices from "./pages/sales/SalesInvoices.vue";
 import SalesInvoiceForm from "./pages/sales/SalesInvoiceForm.vue";
 import SalesReturnForm from "./pages/sales/SalesReturnForm.vue";
+import SalesReports from "./pages/sales/SalesReports.vue";
 import POS from "./pages/pos.vue";
 import SalesAging from "./pages/sales/Aging.vue";
 import ReservedStock from "./pages/sales/ReservedStock.vue";
@@ -85,6 +87,7 @@ import ServerError from "./pages/ServerError.vue";
 const routes = [
 	{ path: "/", redirect: "/dashboard" },
 	{ path: "/dashboard", name: "dashboard", component: Dashboard, meta: { title: t("Dashboard"), module: "dashboard" } },
+	{ path: "/reports", name: "reports", component: ReportsHub, meta: { title: t("Reports") } },
 	{ path: "/pos", name: "pos", component: POS, meta: { title: t("POS"), module: "sales" } },
 	{
 		path: "/money",
@@ -115,6 +118,7 @@ const routes = [
 			{ path: "invoices", name: "sales-invoices", component: SalesInvoices, meta: { title: t("Sales Invoices") } },
 			{ path: "returns/new", name: "sales-return-new", component: SalesReturnForm, meta: { title: t("New Sales Return") } },
 			{ path: "pos", redirect: "/pos" },
+			{ path: "reports", name: "sales-reports", component: SalesReports, meta: { title: t("Sales Reports") } },
 			{ path: "invoices/:name/print", name: "sales-invoice-print", component: InvoicePrint, meta: { title: t("Invoice") } },
 			{ path: "invoices/:name/waybill", name: "sales-invoice-waybill", component: Waybill, meta: { title: t("Yuk xati") } },
 			{ path: "invoices/:name", name: "sales-invoice", component: SalesInvoiceForm, meta: { title: t("Sales Invoice") } },

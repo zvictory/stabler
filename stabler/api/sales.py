@@ -814,6 +814,185 @@ def create_direct_sales_return(
 	}
 
 
+def _sales_report_period_expr(granularity: str) -> str:
+	if granularity == "month":
+		return "DATE_FORMAT(si.posting_date, '%%Y-%%m')"
+	if granularity == "day":
+		return "DATE_FORMAT(si.posting_date, '%%Y-%%m-%%d')"
+	raise frappe.ValidationError("Granularity must be day or month.")
+
+
+def _sales_report_dates(from_date: str, to_date: str) -> tuple:
+	start = getdate(from_date)
+	end = getdate(to_date)
+	if start > end:
+		frappe.throw(_("From date cannot be after To date."), frappe.ValidationError)
+	return start, end
+
+
+@frappe.whitelist()
+def sales_report_by_customer(
+	company: str,
+	from_date: str,
+	to_date: str,
+	customer: str | None = None,
+):
+	_require_company(company)
+	start, end = _sales_report_dates(from_date, to_date)
+	params = {"company": company, "from_date": start, "to_date": end}
+	conds = ["company = %(company)s", "docstatus = 1", "posting_date BETWEEN %(from_date)s AND %(to_date)s"]
+	if customer:
+		conds.append("customer = %(customer)s")
+		params["customer"] = customer
+	return frappe.db.sql(
+		f"""
+		SELECT customer, customer_name, currency,
+		       SUM(grand_total) AS total,
+		       SUM(outstanding_amount) AS outstanding,
+		       COUNT(*) AS invoice_count
+		FROM `tabSales Invoice`
+		WHERE {" AND ".join(conds)}
+		GROUP BY customer, customer_name, currency
+		ORDER BY total DESC, customer_name ASC
+		LIMIT 500
+		""",
+		params,
+		as_dict=True,
+	)
+
+
+@frappe.whitelist()
+def sales_report_by_item(
+	company: str,
+	from_date: str,
+	to_date: str,
+	item_group: str | None = None,
+	item_code: str | None = None,
+):
+	_require_company(company)
+	start, end = _sales_report_dates(from_date, to_date)
+	params = {"company": company, "from_date": start, "to_date": end}
+	item_group_clause = ""
+	if item_group:
+		item_group_clause = "AND COALESCE(i.item_group, sii.item_group) = %(item_group)s"
+		params["item_group"] = item_group
+	item_clause = ""
+	if item_code:
+		item_clause = "AND sii.item_code = %(item_code)s"
+		params["item_code"] = item_code
+	return frappe.db.sql(
+		f"""
+		SELECT sii.item_code,
+		       sii.item_name,
+		       COALESCE(i.item_group, sii.item_group) AS item_group,
+		       si.currency,
+		       SUM(sii.qty) AS qty,
+		       SUM(sii.amount) AS revenue,
+		       COUNT(DISTINCT si.name) AS invoice_count
+		FROM `tabSales Invoice Item` sii
+		JOIN `tabSales Invoice` si ON si.name = sii.parent
+		LEFT JOIN `tabItem` i ON i.name = sii.item_code
+		WHERE si.company = %(company)s
+		  AND si.docstatus = 1
+		  AND si.posting_date BETWEEN %(from_date)s AND %(to_date)s
+		  {item_group_clause}
+		  {item_clause}
+		GROUP BY sii.item_code, sii.item_name, COALESCE(i.item_group, sii.item_group), si.currency
+		ORDER BY revenue DESC, sii.item_name ASC
+		LIMIT 500
+		""",
+		params,
+		as_dict=True,
+	)
+
+
+@frappe.whitelist()
+def sales_report_customer_invoices(company: str, from_date: str, to_date: str, customer: str):
+	_require_company(company)
+	if not customer or not frappe.db.exists("Customer", customer):
+		frappe.throw(_("Customer is required."), frappe.ValidationError)
+	start, end = _sales_report_dates(from_date, to_date)
+	return frappe.db.sql(
+		"""
+		SELECT name,
+		       posting_date,
+		       due_date,
+		       customer,
+		       customer_name,
+		       currency,
+		       grand_total,
+		       outstanding_amount,
+		       status,
+		       is_return
+		FROM `tabSales Invoice`
+		WHERE company = %(company)s
+		  AND customer = %(customer)s
+		  AND docstatus = 1
+		  AND posting_date BETWEEN %(from_date)s AND %(to_date)s
+		ORDER BY posting_date DESC, name DESC
+		LIMIT 500
+		""",
+		{"company": company, "customer": customer, "from_date": start, "to_date": end},
+		as_dict=True,
+	)
+
+
+@frappe.whitelist()
+def sales_report_by_date(
+	company: str,
+	from_date: str,
+	to_date: str,
+	granularity: str = "day",
+):
+	_require_company(company)
+	start, end = _sales_report_dates(from_date, to_date)
+	period_expr = _sales_report_period_expr(granularity)
+	return frappe.db.sql(
+		f"""
+		SELECT {period_expr} AS period,
+		       si.currency,
+		       SUM(si.grand_total) AS total,
+		       SUM(si.outstanding_amount) AS outstanding,
+		       COUNT(*) AS invoice_count
+		FROM `tabSales Invoice` si
+		WHERE si.company = %(company)s
+		  AND si.docstatus = 1
+		  AND si.posting_date BETWEEN %(from_date)s AND %(to_date)s
+		GROUP BY {period_expr}, si.currency
+		ORDER BY period ASC
+		""",
+		{"company": company, "from_date": start, "to_date": end},
+		as_dict=True,
+	)
+
+
+@frappe.whitelist()
+def sales_report_by_salesperson(company: str, from_date: str, to_date: str):
+	_require_company(company)
+	start, end = _sales_report_dates(from_date, to_date)
+	return frappe.db.sql(
+		"""
+		SELECT COALESCE(st.sales_person, 'Unassigned') AS sales_person,
+		       si.currency,
+		       SUM(CASE
+		           WHEN st.sales_person IS NULL THEN si.grand_total
+		           ELSE si.grand_total * COALESCE(st.allocated_percentage, 100) / 100
+		       END) AS total,
+		       COUNT(DISTINCT si.name) AS invoice_count
+		FROM `tabSales Invoice` si
+		LEFT JOIN `tabSales Team` st ON st.parent = si.name AND st.parenttype = 'Sales Invoice'
+		WHERE si.company = %(company)s
+		  AND si.docstatus = 1
+		  AND si.posting_date BETWEEN %(from_date)s AND %(to_date)s
+		GROUP BY COALESCE(st.sales_person, 'Unassigned'), si.currency
+		ORDER BY total DESC, sales_person ASC
+		LIMIT 500
+		""",
+		{"company": company, "from_date": start, "to_date": end},
+		as_dict=True,
+	)
+
+
 VALID_CUSTOMER_TYPES = {"Individual", "Company", "Partnership"}
 
 
