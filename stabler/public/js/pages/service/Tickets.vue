@@ -12,7 +12,7 @@ const loading = ref(false);
 const saving = ref(false);
 const error = ref("");
 const tickets = ref([]);
-const meta = ref({ statuses: [], tech_states: [], issue_types: [], priorities: [], technicians: [] });
+const meta = ref({ statuses: [], tech_states: [], issue_types: [], priorities: [], technicians: [], service_people: [] });
 const filters = ref({ issue_type: "", technician: "", customer: "" });
 const customerDisplay = ref("");
 const drawerOpen = ref(false);
@@ -29,10 +29,17 @@ const form = ref({
 	serial_no: "",
 	description: "",
 });
+const closeVisitForm = ref({
+	work_done: "",
+	completion_status: "Fully Completed",
+	service_person: "",
+});
 
 const company = computed(() => session.activeCompany);
 const statuses = computed(() => meta.value.statuses?.length ? meta.value.statuses : ["Open", "Assigned", "In Progress", "On Hold", "Resolved", "Closed", "Cancelled"]);
 const technicians = computed(() => meta.value.technicians || []);
+const servicePeople = computed(() => meta.value.service_people || []);
+const canCloseVisit = computed(() => Boolean(selected.value && !selected.value.maintenance_visit));
 
 const grouped = computed(() => {
 	const buckets = Object.fromEntries(statuses.value.map((status) => [status, []]));
@@ -96,6 +103,9 @@ async function loadMeta() {
 	meta.value = await call("stabler.api.service.ticket_board_meta", { company: company.value });
 	if (!form.value.issue_type) form.value.issue_type = meta.value.issue_types?.[0] || "";
 	if (!form.value.priority) form.value.priority = meta.value.priorities?.[0] || "";
+	if (!closeVisitForm.value.service_person) {
+		closeVisitForm.value.service_person = meta.value.service_people?.[0]?.name || "";
+	}
 }
 
 async function loadTickets() {
@@ -127,6 +137,7 @@ async function openDetail(ticket) {
 	detailLoading.value = true;
 	try {
 		selected.value = await call("stabler.api.service.ticket_detail", { name: ticket.name });
+		resetCloseVisitForm();
 	} catch (err) {
 		error.value = err?.message || t("Failed to load ticket.");
 	} finally {
@@ -168,6 +179,42 @@ async function assignTicket(user) {
 		await loadTickets();
 	} catch (err) {
 		error.value = err?.message || t("Failed to assign ticket.");
+	} finally {
+		saving.value = false;
+	}
+}
+
+function resetCloseVisitForm() {
+	closeVisitForm.value = {
+		work_done: "",
+		completion_status: "Fully Completed",
+		service_person: closeVisitForm.value.service_person || servicePeople.value[0]?.name || "",
+	};
+}
+
+async function closeVisit() {
+	if (!selected.value || selected.value.maintenance_visit) return;
+	saving.value = true;
+	error.value = "";
+	try {
+		const purpose = {
+			service_person: closeVisitForm.value.service_person,
+			work_done: closeVisitForm.value.work_done,
+			serial_no: selected.value.serial_no || undefined,
+			description: selected.value.subject,
+		};
+		await call("stabler.api.service.create_visit_from_ticket", {
+			ticket: selected.value.name,
+			work_done: closeVisitForm.value.work_done,
+			completion_status: closeVisitForm.value.completion_status,
+			serial_purposes: [purpose],
+			feedback: closeVisitForm.value.work_done,
+		});
+		await loadTickets();
+		selected.value = await call("stabler.api.service.ticket_detail", { name: selected.value.name });
+		resetCloseVisitForm();
+	} catch (err) {
+		error.value = err?.message || t("Failed to close visit.");
 	} finally {
 		saving.value = false;
 	}
@@ -388,10 +435,53 @@ onMounted(refreshAll);
 						<span class="text-secondary">{{ t("Opened") }}</span>
 						<span>{{ selected.opening_date ? formatDate(selected.opening_date) : "—" }}</span>
 					</div>
+					<div class="list-group-item d-flex justify-content-between">
+						<span class="text-secondary">{{ t("Maintenance Visit") }}</span>
+						<span>{{ selected.maintenance_visit || "—" }}</span>
+					</div>
 				</div>
 				<div v-if="selected.description">
 					<label class="form-label">{{ t("Description") }}</label>
 					<div class="border rounded p-3 bg-body-tertiary" v-html="selected.description"></div>
+				</div>
+				<form v-if="canCloseVisit" class="border rounded p-3 vstack gap-3" @submit.prevent="closeVisit">
+					<div class="d-flex align-items-center justify-content-between">
+						<div class="fw-semibold">{{ t("Close visit") }}</div>
+						<span class="badge bg-green-lt">{{ t("Creates Maintenance Visit") }}</span>
+					</div>
+					<div>
+						<label class="form-label">{{ t("Service person") }}</label>
+						<select v-model="closeVisitForm.service_person" class="form-select" :disabled="saving" required>
+							<option value="">{{ t("Select service person") }}</option>
+							<option v-for="person in servicePeople" :key="person.name" :value="person.name">
+								{{ person.sales_person_name || person.name }}
+							</option>
+						</select>
+					</div>
+					<div>
+						<label class="form-label">{{ t("Completion") }}</label>
+						<select v-model="closeVisitForm.completion_status" class="form-select" :disabled="saving">
+							<option value="Fully Completed">{{ t("Fully Completed") }}</option>
+							<option value="Partially Completed">{{ t("Partially Completed") }}</option>
+						</select>
+					</div>
+					<div>
+						<label class="form-label">{{ t("Work done") }}</label>
+						<textarea v-model.trim="closeVisitForm.work_done" class="form-control" rows="3" :disabled="saving" required></textarea>
+					</div>
+					<div class="d-flex justify-content-end">
+						<button
+							type="submit"
+							class="btn btn-success"
+							:disabled="saving || !closeVisitForm.service_person || !closeVisitForm.work_done"
+						>
+							<span v-if="saving" class="spinner-border spinner-border-sm me-2"></span>
+							{{ t("Close Visit") }}
+						</button>
+					</div>
+				</form>
+				<div v-else-if="selected.maintenance_visit" class="alert alert-success mb-0">
+					<i class="ti ti-circle-check me-1"></i>{{ t("Visit closed") }} · {{ selected.maintenance_visit }}
 				</div>
 				<div>
 					<label class="form-label">{{ t("Comments") }}</label>
