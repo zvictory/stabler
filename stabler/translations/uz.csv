@@ -283,6 +283,7 @@ Define promotions that field users can apply during visits.,Dala foydalanuvchila
 Define routes so field users know which outlets to visit each day.,Dala foydalanuvchilari har kun qaysi shubelalarni tashrif etishni biladilar uchun marshrutlarni aniqlang.
 Delete,O'chirish
 Delete customer,Xaridorni o'chirish
+Delete draft bill {name}? This cannot be undone.,{name} qoralama hisobini o'chirasizmi? Buni bekor qilib bo'lmaydi.
 Delete failed.,O'chirish xatosi.
 Delete invoice {name}?,
 Delete order {name}? This cannot be undone.,
@@ -337,6 +338,7 @@ Edit field user,Maydon foydalanuvchisini tahrirlash
 Edit outlet,Savdo nuqtasini tahrirlash
 Edit photo report,Fotosuratli hisobotni tahrirlash
 Edit planogram,Planogramni tahrirlash
+Edit purchase bill,Xarid hisobini tahrirlash
 Edit route,Marshurutni tahrirlash
 Edit supplier,Ta'minotchini tahrirlash
 Editing the rate updates the received amount.,Narxni tahrirlash qabul qilingan summani yangilaydi.
@@ -367,6 +369,7 @@ Every route row needs an outlet.,Har bir marshrut qatori savdo nuqtasiga ehtiyoj
 Excel (.xlsx),Excel (.xlsx)
 Exchange Rates,Valyuta kurslari
 Exchange rate,Valyuta kursi
+Exchange rate must be greater than zero.,Valyuta kursi noldan katta bo'lishi kerak.
 Exclusive,Ustiga
 Exclusive: commission added on top — sender pays more.,Ustiga: komissiya qo'shiladi — jo'natuvchi ko'proq to'laydi.
 Expand,Kengaytirish
@@ -399,6 +402,7 @@ Failed to create sales order.,Sotuv buyurtmasini yaratishda xato.
 Failed to create transfer.,O'tkazma yaratib bo'lmadi.
 Failed to create warehouse.,Omborni yaratishda xato.
 Failed to create.,Yaratishda xato.
+Failed to delete bill.,Hisobni o'chirib bo'lmadi.
 Failed to delete column.,
 Failed to delete customer.,Mijozni o'chirishda xato.
 Failed to delete deal.,Bitimni oʼchirib boʼlmadi.
@@ -469,6 +473,7 @@ Failed to save stock entry.,Tovar kiritmasini saqlashda xato.
 Failed to save van stock.,Van tovarini saqlashda xato.
 Failed to save visit.,Vizitni saqlashda xato.
 Failed to submit.,Tasdiqlashda xato.
+Failed to update bill.,Hisobni yangilab bo'lmadi.
 Failed to update color.,
 Failed to update promo plan.,Promo rejasini yangilashda xato.
 Failed to update status.,Holatni yangilashda xato.
@@ -876,6 +881,7 @@ Pick a leave type.,Ta'til turini tanlang.
 Pick a source warehouse.,Manba omborini tanlang.
 Pick a supplier.,Yetkazib beradigan kompaniyani tanlang.
 Pick a warehouse,Omborni tanlang
+Pick a warehouse to receive stock into.,Tovarni qabul qilish uchun omborni tanlang.
 Pick a warehouse.,Omborni tanlang.
 Pick an employee,
 Pick an employee.,Xodimni tanlang.
@@ -955,6 +961,7 @@ Receivable (AR),Debitorlik qarzi
 Receivables,Qabul qilinadigan summalar
 Receive,Qabul qilish
 Receive currency,Qabul qilish valyutasi
+Receive goods into stock,Tovarni omborga qabul qilish
 Receive payment,To'lovni qabul qilish
 Receive stock,Tovarni qabul qilish
 Received,Qabul qilindi
@@ -1184,6 +1191,7 @@ Submit transfer,Transferni tasdiqlash
 Submitted,Tasdiqlangan
 Submitted At,Tasdiqlangan vaqti
 Subtotal,Oraliq jami
+Suggested,Tavsiya etilgan
 Sun,Ya
 Supplier,Ta'minotchi
 Supplier bill #,Ta'minotchi hisob raqami
@@ -1198,6 +1206,7 @@ TIN,STIR
 Table,Jadval
 Task,Vazifa
 Tax ID,Soliq ID
+Tax template,Soliq shabloni
 Taxes,Soliqlar
 Term (months),Muddat (oy)
 Terms / remarks,Shartlar / izohlar
@@ -1327,10 +1336,13 @@ You need administrator access to view this page.,Ushbu sahifani ko'rish uchun ad
 "Your books are empty. Get started by adding a customer, recording your first sale, or logging an opening balance.","Sizning kitoplaringiz bo'sh. Xaridor qo'shish, birinchi sotuvi qayd etish yoki ochilish qoldiqlarini kiritish bilan boshlang."
 Yuk xati,Yuk xati
 cheque / txn id,Chek / tranzaksiya ID
+company currency,kompaniya valyutasi
 "e.g. OK, Approved","mas. Ha, Tasdiqlandi"
 entries,
 entries. Narrow the date range to see older ones.,yozuvlar. Eskiroq yozuvlarni ko'rish uchun sana oralig'ini toraytiring.
 error(s),xato(lar)
+from exchange rate records,valyuta kurslari yozuvlaridan
+from last bill,oxirgi hisobdan
 item,Tovar
 item_code and warehouse are required,Tovar kodi va omborxona majburiy
 items,Tovarlar
@@ -1358,7 +1370,9 @@ vs. last month,o'tgan oyga nisbatan
 — company default —,— kompaniya asosiysi —
 — default —,— asosiy —
 — global default —,— global asosiy —
+— no tax —,— soliqsiz —
 — none —,— yo'q —
+— pick a warehouse —,— omborni tanlang —
 — pick account —,— hisob tanlang —
 — pick destination —,— manziliga tanlang —
 — pick source —,— manbaadan tanlang —

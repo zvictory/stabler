@@ -343,6 +343,10 @@ def purchase_invoice_detail(name: str):
 		"status": doc.status,
 		"docstatus": doc.docstatus,
 		"remarks": doc.remarks,
+		"update_stock": cint(doc.update_stock),
+		"set_warehouse": doc.set_warehouse or "",
+		"taxes_and_charges": doc.taxes_and_charges or "",
+		"buying_price_list": doc.buying_price_list or "",
 		"items": [
 			{
 				"item_code": it.item_code,
@@ -351,6 +355,9 @@ def purchase_invoice_detail(name: str):
 				"uom": it.uom,
 				"rate": flt(it.rate),
 				"amount": flt(it.amount),
+				"discount_percentage": flt(it.discount_percentage),
+				"discount_amount": flt(it.discount_amount),
+				"price_list_rate": flt(it.price_list_rate),
 				"purchase_order": it.purchase_order or "",
 			}
 			for it in (doc.items or [])
@@ -537,28 +544,8 @@ def delete_supplier(name: str):
 	return {"deleted": name}
 
 
-@frappe.whitelist()
-def create_purchase_invoice(
-	company: str,
-	supplier: str,
-	items,
-	posting_date: str | None = None,
-	due_date: str | None = None,
-	bill_no: str | None = None,
-	bill_date: str | None = None,
-	remarks: str | None = None,
-	update_stock: int = 0,
-):
-	"""Create a Purchase Invoice as Draft (docstatus=0).
-
-	`items` is a list of dicts with keys: item_code (required), qty, rate, uom.
-	"""
-	_require_company(company)
-	if not supplier:
-		frappe.throw("Supplier is required.")
-	if not frappe.db.exists("Supplier", supplier):
-		frappe.throw(f"Unknown supplier: {supplier}")
-
+def _clean_invoice_items(items) -> list[dict]:
+	"""Validate and normalize the PI items payload (shared by create/update)."""
 	if isinstance(items, str):
 		try:
 			items = json.loads(items)
@@ -577,42 +564,299 @@ def create_purchase_invoice(
 		qty = flt(row.get("qty"))
 		if qty <= 0:
 			frappe.throw(f"Row {idx}: qty must be greater than zero.")
+		disc_pct = flt(row.get("discount_percentage"))
+		if not (0 <= disc_pct <= 100):
+			frappe.throw(f"Row {idx}: discount_percentage must be between 0 and 100.")
+		rate_val = row.get("rate")
+		if rate_val not in (None, "") and flt(rate_val) < 0:
+			frappe.throw(f"Row {idx}: rate cannot be negative.")
+		if flt(row.get("discount_amount")) < 0:
+			frappe.throw(f"Row {idx}: discount_amount cannot be negative.")
 		cleaned.append(
 			{
 				"item_code": code,
 				"qty": qty,
 				"rate": flt(row.get("rate")),
 				"uom": row.get("uom") or None,
+				"discount_percentage": disc_pct,
+				"discount_amount": flt(row.get("discount_amount")),
 			}
 		)
+	return cleaned
 
-	doc = frappe.new_doc("Purchase Invoice")
-	doc.company = company
-	doc.supplier = supplier
+
+def _validate_invoice_inputs(
+	company: str,
+	update_stock: int,
+	set_warehouse: str | None,
+	currency: str | None,
+	conversion_rate,
+	price_list: str | None,
+	taxes_template: str | None,
+) -> float:
+	"""Shared create/update validation. Returns the resolved conversion rate."""
+	if update_stock and not set_warehouse:
+		frappe.throw("Warehouse is required when receiving goods into stock.")
+	if set_warehouse and not frappe.db.exists("Warehouse", set_warehouse):
+		frappe.throw(f"Unknown warehouse: {set_warehouse}")
+	if currency and not frappe.db.exists("Currency", currency):
+		frappe.throw(f"Unknown currency: {currency}")
+	if price_list and not frappe.db.exists("Price List", price_list):
+		frappe.throw(f"Unknown price list: {price_list}")
+	if taxes_template and not frappe.db.exists(
+		"Purchase Taxes and Charges Template", {"name": taxes_template, "company": company}
+	):
+		frappe.throw(f"Unknown purchase tax template: {taxes_template}")
+
+	company_currency = frappe.db.get_value("Company", company, "default_currency") or ""
+	if currency and currency != company_currency:
+		rate = flt(conversion_rate)
+		if rate <= 0:
+			frappe.throw("Exchange rate must be greater than zero for foreign-currency bills.")
+		return rate
+	# Same currency as the company → rate is 1 by definition.
+	return 1.0
+
+
+def _apply_invoice_payload(
+	doc,
+	cleaned: list[dict],
+	posting_date,
+	due_date,
+	bill_no,
+	bill_date,
+	remarks,
+	update_stock: int,
+	set_warehouse,
+	currency,
+	rate: float,
+	price_list,
+	taxes_template,
+):
+	"""Write validated PI fields + item/tax rows onto `doc` (new or draft)."""
 	doc.posting_date = getdate(posting_date or today())
-	if due_date:
-		doc.due_date = getdate(due_date)
-	if bill_no:
-		doc.bill_no = bill_no.strip()
-	if bill_date:
-		doc.bill_date = getdate(bill_date)
-	doc.update_stock = 1 if int(update_stock) else 0
-	if remarks:
-		doc.remarks = remarks.strip()
+	doc.due_date = getdate(due_date) if due_date else None
+	doc.bill_no = (bill_no or "").strip() or None
+	doc.bill_date = getdate(bill_date) if bill_date else None
+	doc.remarks = (remarks or "").strip() or None
+	doc.update_stock = 1 if update_stock else 0
+	doc.set_warehouse = set_warehouse or None
+	if currency:
+		doc.currency = currency
+		doc.conversion_rate = rate
+	doc.buying_price_list = price_list or ""
+
+	doc.set("items", [])
 	for row in cleaned:
 		line = doc.append("items", {})
 		line.item_code = row["item_code"]
 		line.qty = row["qty"]
+		if update_stock and set_warehouse:
+			line.warehouse = set_warehouse
 		if row["rate"]:
 			line.rate = row["rate"]
 		if row["uom"]:
 			line.uom = row["uom"]
+		if row["discount_percentage"]:
+			line.discount_percentage = row["discount_percentage"]
+		if row["discount_amount"]:
+			line.discount_amount = row["discount_amount"]
+
+	doc.set("taxes", [])
+	doc.taxes_and_charges = taxes_template or None
+	if taxes_template:
+		from erpnext.controllers.accounts_controller import get_taxes_and_charges
+
+		for tax_row in get_taxes_and_charges("Purchase Taxes and Charges Template", taxes_template):
+			doc.append("taxes", tax_row)
+
+
+@frappe.whitelist()
+def create_purchase_invoice(
+	company: str,
+	supplier: str,
+	items,
+	posting_date: str | None = None,
+	due_date: str | None = None,
+	bill_no: str | None = None,
+	bill_date: str | None = None,
+	remarks: str | None = None,
+	update_stock: int = 0,
+	set_warehouse: str | None = None,
+	currency: str | None = None,
+	conversion_rate=None,
+	price_list: str | None = None,
+	taxes_template: str | None = None,
+):
+	"""Create a Purchase Invoice as Draft (docstatus=0).
+
+	`items` is a list of dicts with keys: item_code (required), qty, rate, uom,
+	discount_percentage, discount_amount.
+	When `update_stock` is truthy, `set_warehouse` is required and goods are
+	received into stock on submit. Foreign-currency bills require a positive
+	`conversion_rate` (1 foreign = X company currency)."""
+	_require_company(company)
+	if not supplier:
+		frappe.throw("Supplier is required.")
+	if not frappe.db.exists("Supplier", supplier):
+		frappe.throw(f"Unknown supplier: {supplier}")
+
+	update_stock = cint(update_stock)
+	cleaned = _clean_invoice_items(items)
+	rate = _validate_invoice_inputs(
+		company, update_stock, set_warehouse, currency, conversion_rate, price_list, taxes_template
+	)
+
+	doc = frappe.new_doc("Purchase Invoice")
+	doc.company = company
+	doc.supplier = supplier
+	_apply_invoice_payload(
+		doc, cleaned, posting_date, due_date, bill_no, bill_date, remarks,
+		update_stock, set_warehouse, currency, rate, price_list, taxes_template,
+	)
 	doc.insert(ignore_permissions=False)
 	return {
 		"name": doc.name,
 		"grand_total": flt(doc.grand_total),
 		"supplier": doc.supplier,
 	}
+
+
+@frappe.whitelist()
+def update_purchase_invoice(
+	name: str,
+	supplier: str,
+	items,
+	posting_date: str | None = None,
+	due_date: str | None = None,
+	bill_no: str | None = None,
+	bill_date: str | None = None,
+	remarks: str | None = None,
+	update_stock: int = 0,
+	set_warehouse: str | None = None,
+	currency: str | None = None,
+	conversion_rate=None,
+	price_list: str | None = None,
+	taxes_template: str | None = None,
+):
+	"""Replace a draft Purchase Invoice's fields and rows (full-row replace).
+
+	Submitted/cancelled invoices are immutable — use cancel + amend instead."""
+	if not name or not frappe.db.exists("Purchase Invoice", name):
+		frappe.throw(f"Unknown Purchase Invoice: {name}")
+	doc = frappe.get_doc("Purchase Invoice", name)
+	if doc.docstatus != 0:
+		frappe.throw("Only draft bills can be edited.")
+	if not supplier:
+		frappe.throw("Supplier is required.")
+	if not frappe.db.exists("Supplier", supplier):
+		frappe.throw(f"Unknown supplier: {supplier}")
+
+	update_stock = cint(update_stock)
+	cleaned = _clean_invoice_items(items)
+	rate = _validate_invoice_inputs(
+		doc.company, update_stock, set_warehouse, currency, conversion_rate, price_list, taxes_template
+	)
+
+	if supplier != doc.supplier:
+		doc.supplier = supplier
+		# Force set_missing_values to re-resolve the payable account for the
+		# new supplier (a stale credit_to can carry the wrong account currency).
+		doc.credit_to = None
+	_apply_invoice_payload(
+		doc, cleaned, posting_date, due_date, bill_no, bill_date, remarks,
+		update_stock, set_warehouse, currency, rate, price_list, taxes_template,
+	)
+	doc.save(ignore_permissions=False)
+	return {
+		"name": doc.name,
+		"grand_total": flt(doc.grand_total),
+		"supplier": doc.supplier,
+	}
+
+
+@frappe.whitelist()
+def delete_purchase_invoice(name: str):
+	"""Delete a draft Purchase Invoice. Submitted documents cannot be deleted."""
+	if not name or not frappe.db.exists("Purchase Invoice", name):
+		frappe.throw(f"Unknown Purchase Invoice: {name}")
+	docstatus = cint(frappe.db.get_value("Purchase Invoice", name, "docstatus"))
+	if docstatus != 0:
+		frappe.throw("Only draft bills can be deleted.")
+	frappe.delete_doc("Purchase Invoice", name, ignore_permissions=False)
+	return {"deleted": name}
+
+
+@frappe.whitelist()
+def list_purchase_tax_templates(company: str):
+	"""Purchase tax templates for `company`, each with its tax rows so the UI
+	can preview tax/grand totals before the server computes them."""
+	_require_company(company)
+	templates = frappe.db.get_all(
+		"Purchase Taxes and Charges Template",
+		filters={"company": company, "disabled": 0},
+		fields=["name", "title", "is_default"],
+		order_by="is_default desc, title asc",
+	)
+	for tpl in templates:
+		tpl["taxes"] = frappe.db.get_all(
+			"Purchase Taxes and Charges",
+			filters={"parent": tpl["name"], "parenttype": "Purchase Taxes and Charges Template"},
+			fields=["charge_type", "description", "rate", "tax_amount"],
+			order_by="idx asc",
+		)
+	return templates
+
+
+@frappe.whitelist()
+def get_purchase_exchange_rate(
+	company: str,
+	currency: str,
+	posting_date: str | None = None,
+	supplier: str | None = None,
+):
+	"""Suggested conversion rate for a foreign-currency bill.
+
+	Sources in priority order: ERPNext Currency Exchange records for the
+	posting date, then the supplier's most recent submitted PI in that
+	currency. Returns rate=0 when no trustworthy source exists — the UI must
+	then require manual entry (never default a foreign rate to 1.0)."""
+	_require_company(company)
+	company_currency = frappe.db.get_value("Company", company, "default_currency") or ""
+	if not currency or currency == company_currency:
+		return {"rate": 1.0, "source": "company"}
+
+	date = getdate(posting_date or today())
+	rate = 0.0
+	try:
+		from erpnext.setup.utils import get_exchange_rate as _erp_rate
+
+		rate = flt(_erp_rate(currency, company_currency, str(date), "for_buying"))
+	except Exception:
+		rate = 0.0
+	# ERPNext falls back to 1.0/0.0 when it has no record — for a foreign
+	# currency that is "not found", not a real rate.
+	if rate > 0 and rate != 1.0:
+		return {"rate": rate, "source": "erpnext", "date": str(date)}
+
+	if supplier:
+		row = frappe.db.sql(
+			"""
+			SELECT conversion_rate
+			FROM `tabPurchase Invoice`
+			WHERE supplier = %(supplier)s AND company = %(company)s
+			  AND currency = %(currency)s AND docstatus = 1
+			  AND conversion_rate > 0 AND conversion_rate <> 1
+			ORDER BY posting_date DESC, creation DESC
+			LIMIT 1
+			""",
+			{"supplier": supplier, "company": company, "currency": currency},
+			as_dict=True,
+		)
+		if row:
+			return {"rate": flt(row[0]["conversion_rate"]), "source": "last_invoice"}
+
+	return {"rate": 0.0, "source": None}
 
 
 @frappe.whitelist()

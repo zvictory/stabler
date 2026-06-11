@@ -283,6 +283,7 @@ Define promotions that field users can apply during visits.,Далалар сў�
 Define routes so field users know which outlets to visit each day.,Далалар ҳар кун қайси сотув ўринларига бориши керак эканлигини билишлари учун маршрутларни таъриф бер.
 Delete,Ўчириш
 Delete customer,Харидини ўчириш
+Delete draft bill {name}? This cannot be undone.,{name} қоралама ҳисобини ўчирасизми? Буни бекор қилиб бўлмайди.
 Delete failed.,Ўчириш хатоси.
 Delete invoice {name}?,
 Delete order {name}? This cannot be undone.,
@@ -337,6 +338,7 @@ Edit field user,Майдон фойдаланувчисини таҳриф
 Edit outlet,Киймасни таҳриф
 Edit photo report,Сурат ҳисобатини таҳриф
 Edit planogram,Планограммани таҳриф
+Edit purchase bill,Харид ҳисобини таҳрирлаш
 Edit route,Маршрутни таҳриф
 Edit supplier,Сотувчини таҳриф
 Editing the rate updates the received amount.,Нархни таҳриф қилиш қабул қилинган суммани янгилайди.
@@ -367,6 +369,7 @@ Every route row needs an outlet.,Ҳар бир маршрут сатри кий�
 Excel (.xlsx),Excel (.xlsx)
 Exchange Rates,Валюта курслари
 Exchange rate,Алмашта нарх
+Exchange rate must be greater than zero.,Валюта курси нолдан катта бўлиши керак.
 Exclusive,Устига
 Exclusive: commission added on top — sender pays more.,Устига: комиссия қўшилади — жўнатувчи кўпроқ тўлайди.
 Expand,Кенгайтиринг
@@ -399,6 +402,7 @@ Failed to create sales order.,Сотув буйртмасини яратиб б�
 Failed to create transfer.,Ўтказма яратиб бўлмади.
 Failed to create warehouse.,Омборни яратиб бўла олмади.
 Failed to create.,Яратиб бўла олмади.
+Failed to delete bill.,Ҳисобни ўчириб бўлмади.
 Failed to delete column.,
 Failed to delete customer.,Мижози ўчириб бўла олмади.
 Failed to delete deal.,Битимни Ӯчириб бўлмади.
@@ -469,6 +473,7 @@ Failed to save stock entry.,Қўй ҳарақатини сақлаш қутул�
 Failed to save van stock.,Машина қўйси сақлаш қутулмади.
 Failed to save visit.,Ташрифни сақлаш қутулмади.
 Failed to submit.,Тасдиқлаш қутулмади.
+Failed to update bill.,Ҳисобни янгилаб бўлмади.
 Failed to update color.,
 Failed to update promo plan.,Реклама режасини янгилаш қутулмади.
 Failed to update status.,Ҳолатни янгилаш қутулмади.
@@ -876,6 +881,7 @@ Pick a leave type.,Таътил турини танланг.
 Pick a source warehouse.,Манба омборини танланг.
 Pick a supplier.,Таъминотчини танланг.
 Pick a warehouse,Омборини танланг
+Pick a warehouse to receive stock into.,Товарни қабул қилиш учун омборни танланг.
 Pick a warehouse.,Омборини танланг.
 Pick an employee,
 Pick an employee.,Ходимни танланг.
@@ -955,6 +961,7 @@ Receivable (AR),Дебиторлик қарзи
 Receivables,Қарзлар
 Receive,Қабул қилиш
 Receive currency,Қабул қилиш валютаси
+Receive goods into stock,Товарни омборга қабул қилиш
 Receive payment,Тўловни қабул қилиш
 Receive stock,Товарни қабул қилиш
 Received,Қабул қилинган
@@ -1184,6 +1191,7 @@ Submit transfer,Ўтказмани тасдиқлаш
 Submitted,Тасдиқланган
 Submitted At,Тасдиқланган вақти
 Subtotal,Оралиқ жами
+Suggested,Тавсия этилган
 Sun,Я
 Supplier,Таъминотчи
 Supplier bill #,Таъминотчи ҳисоб-фактураси №
@@ -1198,6 +1206,7 @@ TIN,СТИР
 Table,Жадвал
 Task,Вазифа
 Tax ID,Солиқ ID
+Tax template,Солиқ шаблони
 Taxes,Солиқлар
 Term (months),Муддат (ой)
 Terms / remarks,Шартлар / изоҳлар
@@ -1327,10 +1336,13 @@ You need administrator access to view this page.,Бу саҳифани кўри�
 "Your books are empty. Get started by adding a customer, recording your first sale, or logging an opening balance.","Сизнинг китобларингиз бўш. Харидор қўшиб, биринчи сотувингизни ёзиб ёки ўзаро баланси қўйиб бошлаинг."
 Yuk xati,Юк хати
 cheque / txn id,чек / операция ID
+company currency,компания валютаси
 "e.g. OK, Approved","мас. Ҳа, Тасдиқланди"
 entries,
 entries. Narrow the date range to see older ones.,ёзувлар. Қўски саналарни кўриш учун саналар оралиғини торайтиринг.
 error(s),хато(лар)
+from exchange rate records,валюта курслари ёзувларидан
+from last bill,охирги ҳисобдан
 item,Товар
 item_code and warehouse are required,Товар коди ва омбор керак
 items,Товарлар
@@ -1358,7 +1370,9 @@ vs. last month,ўткан ойга қарши
 — company default —,— компания асосий —
 — default —,— асосий —
 — global default —,— жаҳонпараст асосий —
+— no tax —,— солиқсиз —
 — none —,— йўқ —
+— pick a warehouse —,— омборни танланг —
 — pick account —,— ҳисобни танланг —
 — pick destination —,— мақсадни танланг —
 — pick source —,— манбани танланг —

@@ -278,6 +278,7 @@ Define promotions that field users can apply during visits.,Saha kullanıcılar�
 Define routes so field users know which outlets to visit each day.,Saha kullanıcılarının her gün hangi satış noktalarını ziyaret edeceğini bilmesi için rotaları tanımlayın.
 Delete,Sil
 Delete customer,Müşteriyi sil
+Delete draft bill {name}? This cannot be undone.,{name} taslak faturası silinsin mi? Bu geri alınamaz.
 Delete failed.,Silme başarısız oldu.
 Delete invoice {name}?,{name} faturası silinsin mi?
 Delete order {name}? This cannot be undone.,{name} siparişi silinsin mi? Bu işlem geri alınamaz.
@@ -331,6 +332,7 @@ Edit field user,Saha kullanıcısını düzenle
 Edit outlet,Satış noktasını düzenle
 Edit photo report,Fotoğraf raporunu düzenle
 Edit planogram,Planogramı düzenle
+Edit purchase bill,Alış faturasını düzenle
 Edit route,Rotayı düzenle
 Edit supplier,Tedarikçiyi düzenle
 Editing the rate updates the received amount.,Oranı düzenlemek alınan tutarı günceller.
@@ -360,6 +362,7 @@ Every route row needs an outlet.,Her rota satırı için bir satış noktası ge
 Excel (.xlsx),Excel (.xlsx)
 Exchange Rates,Döviz Kurları
 Exchange rate,Döviz kuru
+Exchange rate must be greater than zero.,Döviz kuru sıfırdan büyük olmalıdır.
 Exclusive,Hariç
 Exclusive: commission added on top — sender pays more.,Hariç: komisyon üstüne eklenir — gönderen daha fazla öder.
 Expand,Genişlet
@@ -392,6 +395,7 @@ Failed to create sales order.,Satış siparişi oluşturulamadı.
 Failed to create transfer.,Transfer oluşturulamadı.
 Failed to create warehouse.,Depo oluşturulamadı.
 Failed to create.,Oluşturulamadı.
+Failed to delete bill.,Fatura silinemedi.
 Failed to delete column.,
 Failed to delete customer.,Müşteri silinemedi.
 Failed to delete deal.,Anlaşma silinemedi.
@@ -462,6 +466,7 @@ Failed to save stock entry.,Stok hareketi kaydedilemedi.
 Failed to save van stock.,Araç stoğu kaydedilemedi.
 Failed to save visit.,Ziyaret kaydedilemedi.
 Failed to submit.,Onaylanamadı.
+Failed to update bill.,Fatura güncellenemedi.
 Failed to update color.,
 Failed to update promo plan.,Promosyon planı güncellenemedi.
 Failed to update status.,Durum güncellenemedi.
@@ -863,6 +868,7 @@ Pick a leave type.,İzin türü seçin.
 Pick a source warehouse.,Bir kaynak depo seçin.
 Pick a supplier.,Bir tedarikçi seçin.
 Pick a warehouse,Depo seçin
+Pick a warehouse to receive stock into.,Stoğun alınacağı depoyu seçin.
 Pick a warehouse.,Bir depo seçin.
 Pick an employee,Çalışan seçin
 Pick an employee.,Bir çalışan seçin.
@@ -941,6 +947,7 @@ Receivable (AR),Alacaklar (AR)
 Receivables,Alacaklar
 Receive,Al
 Receive currency,Alınan para birimi
+Receive goods into stock,Malları stoğa al
 Receive payment,Ödeme al
 Receive stock,Stok al
 Received,Alındı
@@ -1167,6 +1174,7 @@ Submit transfer,Transferi onayla
 Submitted,Onaylandı
 Submitted At,Onaylanma Zamanı
 Subtotal,Ara Toplam
+Suggested,Önerilen
 Sun,Paz
 Supplier,Tedarikçi
 Supplier bill #,Tedarikçi fatura no
@@ -1181,6 +1189,7 @@ TIN,TIN
 Table,Tablo
 Task,Görev
 Tax ID,Vergi Kimlik No
+Tax template,Vergi şablonu
 Taxes,Vergiler
 Term (months),Vade (ay)
 Terms / remarks,Koşullar / notlar
@@ -1306,10 +1315,13 @@ You need administrator access to view this page.,Bu sayfayı görüntülemek iç
 "Your books are empty. Get started by adding a customer, recording your first sale, or logging an opening balance.","Defteriniz boş. Müşteri ekleyerek, ilk satışınızı kaydederek veya açılış bakiyesi girerek başlayın."
 Yuk xati,Yuk xati
 cheque / txn id,çek / işlem no
+company currency,şirket para birimi
 "e.g. OK, Approved","örn. Tamam, Onaylandı"
 entries,
 entries. Narrow the date range to see older ones.,kayıt. Daha eskileri görmek için tarih aralığını daraltın.
 error(s),hata(lar)
+from exchange rate records,döviz kuru kayıtlarından
+from last bill,son faturadan
 item,kalem
 item_code and warehouse are required,item_code ve depo zorunludur
 items,kalemler
@@ -1337,7 +1349,9 @@ vs. last month,geçen aya kıyasla
 — company default —,— şirket varsayılanı —
 — default —,— varsayılan —
 — global default —,— genel varsayılan —
+— no tax —,— vergisiz —
 — none —,— yok —
+— pick a warehouse —,— depo seçin —
 — pick account —,— hesap seçin —
 — pick destination —,— hedef seçin —
 — pick source —,— kaynak seçin —

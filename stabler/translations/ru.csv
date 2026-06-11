@@ -289,6 +289,7 @@ Define promotions that field users can apply during visits.,"Определит�
 Define routes so field users know which outlets to visit each day.,"Определите маршруты, чтобы полевые сотрудники знали, какие точки посещать каждый день."
 Delete,Удалить
 Delete customer,Удалить покупателя
+Delete draft bill {name}? This cannot be undone.,Удалить черновик счёта {name}? Это действие необратимо.
 Delete failed.,Ошибка удаления.
 Delete invoice {name}?,
 Delete order {name}? This cannot be undone.,
@@ -344,6 +345,7 @@ Edit field user,Редактировать полевого сотрудника
 Edit outlet,Редактировать торговую точку
 Edit photo report,Редактировать фотоотчет
 Edit planogram,Редактировать планограмму
+Edit purchase bill,Редактировать счёт поставщика
 Edit route,Редактировать маршрут
 Edit supplier,Редактировать поставщика
 Editing the rate updates the received amount.,Редактирование цены обновляет полученную сумму.
@@ -374,6 +376,7 @@ Every route row needs an outlet.,Каждая строка маршрута до
 Excel (.xlsx),Excel (.xlsx)
 Exchange Rates,Курсы валют
 Exchange rate,Обменный курс
+Exchange rate must be greater than zero.,Курс валюты должен быть больше нуля.
 Exclusive,Сверху
 Exclusive: commission added on top — sender pays more.,Сверху: комиссия добавляется — отправитель платит больше.
 Expand,Развернуть
@@ -406,6 +409,7 @@ Failed to create sales order.,Не удалось создать заказ на
 Failed to create transfer.,Не удалось создать перевод.
 Failed to create warehouse.,Не удалось создать склад.
 Failed to create.,Не удалось создать.
+Failed to delete bill.,Не удалось удалить счёт.
 Failed to delete column.,
 Failed to delete customer.,Не удалось удалить клиента.
 Failed to delete deal.,Ошибка при удалении сделки.
@@ -476,6 +480,7 @@ Failed to save stock entry.,Ошибка сохранения записи на 
 Failed to save van stock.,Ошибка сохранения запасов фургона.
 Failed to save visit.,Ошибка сохранения визита.
 Failed to submit.,Ошибка отправки.
+Failed to update bill.,Не удалось обновить счёт.
 Failed to update color.,
 Failed to update promo plan.,Ошибка обновления плана акции.
 Failed to update status.,Ошибка обновления статуса.
@@ -883,6 +888,7 @@ Pick a leave type.,Выберите тип отпуска.
 Pick a source warehouse.,Выберите исходный склад.
 Pick a supplier.,Выберите поставщика.
 Pick a warehouse,Выберите склад
+Pick a warehouse to receive stock into.,Выберите склад для оприходования товара.
 Pick a warehouse.,Выберите склад.
 Pick an employee,
 Pick an employee.,Выберите сотрудника.
@@ -962,6 +968,7 @@ Receivable (AR),Дебиторская задолженность
 Receivables,Дебиторская задолженность
 Receive,Получить
 Receive currency,Валюта получения
+Receive goods into stock,Оприходовать товар на склад
 Receive payment,Получить платёж
 Receive stock,Получить товар
 Received,Получено
@@ -1191,6 +1198,7 @@ Submit transfer,Отправить перевод
 Submitted,Отправлен
 Submitted At,Время отправки
 Subtotal,Подытог
+Suggested,Рекомендуемый
 Sun,Вс
 Supplier,Поставщик
 Supplier bill #,№ счёта поставщика
@@ -1205,6 +1213,7 @@ TIN,ИНН
 Table,Таблица
 Task,Задача
 Tax ID,ИНН
+Tax template,Шаблон налогов
 Taxes,Налоги
 Term (months),Срок (месяцев)
 Terms / remarks,Условия / примечания
@@ -1334,10 +1343,13 @@ You need administrator access to view this page.,Требуется доступ
 "Your books are empty. Get started by adding a customer, recording your first sale, or logging an opening balance.","Ваши книги пусты. Начните с добавления клиента, записи первой продажи или ввода начального остатка."
 Yuk xati,Юк хати
 cheque / txn id,чек / ID транзакции
+company currency,валюта компании
 "e.g. OK, Approved","напр. Да, Одобрено"
 entries,
 entries. Narrow the date range to see older ones.,"записи. Сузьте диапазон дат, чтобы увидеть старые."
 error(s),ошибка(и)
+from exchange rate records,из записей курсов валют
+from last bill,из последнего счёта
 item,товар
 item_code and warehouse are required,item_code и warehouse обязательны
 items,товары
@@ -1365,7 +1377,9 @@ vs. last month,в сравнении с прошлым месяцем
 — company default —,— стандартный в компании —
 — default —,— по умолчанию —
 — global default —,— глобальный по умолчанию —
+— no tax —,— без налога —
 — none —,— нет —
+— pick a warehouse —,— выберите склад —
 — pick account —,— выберите счёт —
 — pick destination —,— выберите пункт назначения —
 — pick source —,— выберите источник —

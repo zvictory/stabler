@@ -108,13 +108,22 @@ const totalsByCurrency = computed(() => {
 });
 const totalCount = computed(() => rows.value.length);
 
-// ──────────────── Create modal ────────────────
+// ──────────────── Create / edit modal ────────────────
 const createOpen = ref(false);
 const submitting = ref(false);
 const submitError = ref("");
+const editingName = ref("");
 
 function blankLine() {
-	return { item_code: "", item_name: "", uom: "", qty: 1, rate: 0 };
+	return {
+		item_code: "",
+		item_name: "",
+		uom: "",
+		qty: 1,
+		rate: 0,
+		discount_percentage: 0,
+		discount_amount: 0,
+	};
 }
 function blankForm() {
 	return {
@@ -125,23 +134,207 @@ function blankForm() {
 		bill_no: "",
 		bill_date: "",
 		remarks: "",
+		update_stock: true,
+		set_warehouse: "",
+		currency: "",
+		conversion_rate: 0,
+		price_list: "",
+		taxes_template: "",
 		items: [blankLine()],
 	};
 }
 const form = ref(blankForm());
 
-const createTotal = computed(() =>
-	form.value.items.reduce((s, r) => s + Number(r.qty || 0) * Number(r.rate || 0), 0)
+const warehouses = ref([]);
+const warehousesLoading = ref(false);
+const currencies = ref([]);
+const priceLists = ref([]);
+const taxTemplates = ref([]);
+
+const isForeign = computed(() => !!form.value.currency && form.value.currency !== currency.value);
+
+const warehouseOptions = computed(() => [
+	{ name: "", warehouse_name: warehousesLoading.value ? t("Loading warehouses…") : t("— pick a warehouse —") },
+	...warehouses.value,
+]);
+const currencyOptions = computed(() => [
+	{ name: "", _label: `${currency.value} (${t("company currency")})` },
+	...currencies.value
+		.filter((c) => c.name !== currency.value)
+		.map((c) => ({ ...c, _label: c.symbol ? `${c.name} (${c.symbol})` : c.name })),
+]);
+const priceListOptions = computed(() => [
+	{ name: "", _label: t("— auto from supplier —") },
+	...priceLists.value.map((pl) => ({ ...pl, _label: `${pl.name} (${pl.currency})` })),
+]);
+const taxTemplateOptions = computed(() => [
+	{ name: "", _label: t("— no tax —") },
+	...taxTemplates.value.map((tt) => ({ ...tt, _label: tt.title || tt.name })),
+]);
+
+async function loadWarehouses() {
+	if (!activeCompany.value) return;
+	warehousesLoading.value = true;
+	try {
+		warehouses.value = await call("stabler.api.inventory.list_stock_warehouses", {
+			company: activeCompany.value,
+		});
+	} catch {
+		warehouses.value = [];
+	} finally {
+		warehousesLoading.value = false;
+	}
+}
+async function loadCurrencies() {
+	try {
+		currencies.value = await call("stabler.api.sales.list_currencies");
+	} catch {
+		currencies.value = [];
+	}
+}
+async function loadPriceLists() {
+	try {
+		priceLists.value = await call("stabler.api.sales.list_price_lists", { buying_only: 1 });
+	} catch {
+		priceLists.value = [];
+	}
+}
+async function loadTaxTemplates() {
+	if (!activeCompany.value) return;
+	try {
+		taxTemplates.value = await call("stabler.api.purchasing.list_purchase_tax_templates", {
+			company: activeCompany.value,
+		});
+	} catch {
+		taxTemplates.value = [];
+	}
+}
+
+// Exchange-rate suggestion: ERPNext records first, then the supplier's last bill.
+// rate === 0 from the API means "nothing found" — the user must type one.
+const rateHint = ref(null);
+async function fetchRateHint() {
+	rateHint.value = null;
+	if (!isForeign.value) return;
+	try {
+		const res = await call("stabler.api.purchasing.get_purchase_exchange_rate", {
+			company: activeCompany.value,
+			currency: form.value.currency,
+			posting_date: form.value.posting_date || undefined,
+			supplier: form.value.supplier || undefined,
+		});
+		if (res && Number(res.rate) > 0 && res.source) {
+			rateHint.value = res;
+			if (!Number(form.value.conversion_rate)) form.value.conversion_rate = Number(res.rate);
+		}
+	} catch {
+		rateHint.value = null;
+	}
+}
+watch(
+	() => [form.value.currency, form.value.posting_date],
+	() => {
+		if (createOpen.value) fetchRateHint();
+	}
 );
+
+const rateHintLabel = computed(() => {
+	if (!rateHint.value) return "";
+	const src =
+		rateHint.value.source === "last_invoice" ? t("from last bill") : t("from exchange rate records");
+	return `${t("Suggested")}: ${formatMoney(rateHint.value.rate, currency.value, user.value.language)} ${src}`;
+});
+
+const showDiscounts = ref(false);
+
+function lineAmount(line) {
+	const qty = Number(line.qty || 0);
+	const rate = Number(line.rate || 0);
+	const discPct = Number(line.discount_percentage || 0);
+	const discAmt = Number(line.discount_amount || 0);
+	if (discPct > 0) return qty * Math.max(rate * (1 - discPct / 100), 0);
+	if (discAmt > 0) return qty * Math.max(rate - discAmt, 0);
+	return qty * rate;
+}
+
+const createTotal = computed(() => form.value.items.reduce((s, r) => s + lineAmount(r), 0));
+
+// Preview of the selected tax template: handles "On Net Total" and "Actual"
+// rows; other charge types are computed server-side on save.
+const taxPreview = computed(() => {
+	if (!form.value.taxes_template) return 0;
+	const tpl = taxTemplates.value.find((tt) => tt.name === form.value.taxes_template);
+	if (!tpl) return 0;
+	let total = 0;
+	for (const row of tpl.taxes || []) {
+		if (row.charge_type === "On Net Total") total += (createTotal.value * Number(row.rate || 0)) / 100;
+		else if (row.charge_type === "Actual") total += Number(row.tax_amount || 0);
+	}
+	return total;
+});
+const grandPreview = computed(() => createTotal.value + taxPreview.value);
+const baseGrandPreview = computed(() =>
+	isForeign.value ? grandPreview.value * Number(form.value.conversion_rate || 0) : 0
+);
+
+const modalCurrency = computed(() => form.value.currency || currency.value);
 
 function openCreate() {
 	form.value = blankForm();
+	editingName.value = "";
+	rateHint.value = null;
 	submitError.value = "";
 	createOpen.value = true;
+	loadWarehouses();
+	loadCurrencies();
+	loadPriceLists();
+	loadTaxTemplates();
+}
+function openEdit() {
+	const d = detail.value;
+	if (!d || d.docstatus !== 0) return;
+	form.value = {
+		supplier: d.supplier,
+		supplier_name: d.supplier_name || d.supplier,
+		posting_date: d.posting_date || today,
+		due_date: d.due_date || "",
+		bill_no: d.bill_no || "",
+		bill_date: d.bill_date || "",
+		remarks: d.remarks || "",
+		update_stock: !!d.update_stock,
+		set_warehouse: d.set_warehouse || "",
+		currency: d.currency === d.base_currency ? "" : d.currency || "",
+		conversion_rate: d.currency === d.base_currency ? 0 : Number(d.conversion_rate || 0),
+		price_list: d.buying_price_list || "",
+		taxes_template: d.taxes_and_charges || "",
+		items: (d.items || []).map((it) => ({
+			item_code: it.item_code,
+			item_name: it.item_name,
+			uom: it.uom || "",
+			qty: Number(it.qty || 0),
+			rate: Number(it.rate || 0),
+			discount_percentage: Number(it.discount_percentage || 0),
+			discount_amount: Number(it.discount_amount || 0),
+		})),
+	};
+	if (!form.value.items.length) form.value.items = [blankLine()];
+	showDiscounts.value = form.value.items.some(
+		(r) => Number(r.discount_percentage) > 0 || Number(r.discount_amount) > 0
+	);
+	editingName.value = d.name;
+	rateHint.value = null;
+	submitError.value = "";
+	closeDetail();
+	createOpen.value = true;
+	loadWarehouses();
+	loadCurrencies();
+	loadPriceLists();
+	loadTaxTemplates();
 }
 function closeCreate() {
 	if (submitting.value) return;
 	createOpen.value = false;
+	editingName.value = "";
 }
 
 function searchSuppliers(q) {
@@ -154,6 +347,10 @@ function searchSuppliers(q) {
 function pickSupplier(s) {
 	form.value.supplier = s.name;
 	form.value.supplier_name = s.supplier_name;
+	if (s.default_currency && s.default_currency !== currency.value) {
+		form.value.currency = s.default_currency;
+	}
+	fetchRateHint();
 }
 function clearSupplier() {
 	form.value.supplier = "";
@@ -174,6 +371,8 @@ function clearItem(line) {
 	line.item_name = "";
 	line.uom = "";
 	line.rate = 0;
+	line.discount_percentage = 0;
+	line.discount_amount = 0;
 }
 function addLine() {
 	form.value.items.push(blankLine());
@@ -196,6 +395,24 @@ const canPay = computed(
 );
 const canSubmit = computed(() => !!detail.value && detail.value.docstatus === 0);
 const canCancel = computed(() => !!detail.value && detail.value.docstatus === 1);
+const canEdit = computed(() => !!detail.value && detail.value.docstatus === 0);
+const canDelete = computed(() => !!detail.value && detail.value.docstatus === 0);
+
+async function deleteDoc() {
+	if (!detail.value?.name) return;
+	if (!window.confirm(t("Delete draft bill {name}? This cannot be undone.").replace("{name}", detail.value.name))) return;
+	actionError.value = "";
+	actionRunning.value = true;
+	try {
+		await call("stabler.api.purchasing.delete_purchase_invoice", { name: detail.value.name });
+		closeDetail();
+		await load();
+	} catch (err) {
+		actionError.value = err?.message || t("Failed to delete bill.");
+	} finally {
+		actionRunning.value = false;
+	}
+}
 
 async function submitDoc() {
 	if (!detail.value?.name) return;
@@ -243,7 +460,14 @@ async function submitCreate() {
 	}
 	const lines = form.value.items
 		.filter((r) => r.item_code)
-		.map((r) => ({ item_code: r.item_code, qty: r.qty, rate: r.rate, uom: r.uom }));
+		.map((r) => ({
+			item_code: r.item_code,
+			qty: r.qty,
+			rate: r.rate,
+			uom: r.uom,
+			discount_percentage: r.discount_percentage || 0,
+			discount_amount: r.discount_amount || 0,
+		}));
 	if (!lines.length) {
 		submitError.value = t("Add at least one item line.");
 		return;
@@ -254,23 +478,50 @@ async function submitCreate() {
 			return;
 		}
 	}
+	if (form.value.update_stock && !form.value.set_warehouse) {
+		submitError.value = t("Pick a warehouse to receive stock into.");
+		return;
+	}
+	if (isForeign.value && !(Number(form.value.conversion_rate) > 0)) {
+		submitError.value = t("Exchange rate must be greater than zero.");
+		return;
+	}
+	const payload = {
+		supplier: form.value.supplier,
+		posting_date: form.value.posting_date,
+		due_date: form.value.due_date || undefined,
+		bill_no: form.value.bill_no || undefined,
+		bill_date: form.value.bill_date || undefined,
+		remarks: form.value.remarks || undefined,
+		update_stock: form.value.update_stock ? 1 : 0,
+		set_warehouse: form.value.update_stock ? form.value.set_warehouse : undefined,
+		currency: form.value.currency || undefined,
+		conversion_rate: isForeign.value ? form.value.conversion_rate : undefined,
+		price_list: form.value.price_list || undefined,
+		taxes_template: form.value.taxes_template || undefined,
+		items: lines,
+	};
 	submitting.value = true;
 	try {
-		const created = await call("stabler.api.purchasing.create_purchase_invoice", {
-			company: activeCompany.value,
-			supplier: form.value.supplier,
-			posting_date: form.value.posting_date,
-			due_date: form.value.due_date || undefined,
-			bill_no: form.value.bill_no || undefined,
-			bill_date: form.value.bill_date || undefined,
-			remarks: form.value.remarks || undefined,
-			items: lines,
-		});
+		let saved;
+		if (editingName.value) {
+			saved = await call("stabler.api.purchasing.update_purchase_invoice", {
+				name: editingName.value,
+				...payload,
+			});
+		} else {
+			saved = await call("stabler.api.purchasing.create_purchase_invoice", {
+				company: activeCompany.value,
+				...payload,
+			});
+		}
 		createOpen.value = false;
+		editingName.value = "";
 		await load();
-		if (created?.name) await openDetail(created.name);
+		if (saved?.name) await openDetail(saved.name);
 	} catch (err) {
-		submitError.value = err?.message || t("Failed to create bill.");
+		submitError.value =
+			err?.message || (editingName.value ? t("Failed to update bill.") : t("Failed to create bill."));
 	} finally {
 		submitting.value = false;
 	}
@@ -422,6 +673,24 @@ watch(activeCompany, load);
 						<i class="ti ti-cash me-1"></i>{{ t("Pay supplier") }}
 					</button>
 					<button
+						v-if="canEdit"
+						type="button"
+						class="btn btn-outline-primary"
+						:disabled="actionRunning"
+						@click="openEdit"
+					>
+						<i class="ti ti-pencil me-1"></i>{{ t("Edit") }}
+					</button>
+					<button
+						v-if="canDelete"
+						type="button"
+						class="btn btn-outline-danger ms-auto"
+						:disabled="actionRunning"
+						@click="deleteDoc"
+					>
+						<i class="ti ti-trash me-1"></i>{{ t("Delete") }}
+					</button>
+					<button
 						v-if="canCancel"
 						type="button"
 						class="btn btn-outline-danger ms-auto"
@@ -531,7 +800,7 @@ watch(activeCompany, load);
 		<div class="modal-dialog modal-xl modal-dialog-centered" role="document">
 			<div class="modal-content">
 				<div class="modal-header">
-					<h5 class="modal-title">{{ t("New purchase bill") }}</h5>
+					<h5 class="modal-title">{{ editingName ? t("Edit purchase bill") : t("New purchase bill") }}</h5>
 					<button type="button" class="btn-close" aria-label="Close" @click="closeCreate" :disabled="submitting"></button>
 				</div>
 				<div class="modal-body">
@@ -569,17 +838,87 @@ watch(activeCompany, load);
 							<label class="form-label">{{ t("Due date") }}</label>
 							<DateInput v-model="form.due_date" />
 						</div>
-						<div class="col-md-6">
+						<div class="col-md-4">
 							<label class="form-label">{{ t("Supplier bill #") }}</label>
 							<input v-model="form.bill_no" type="text" class="form-control font-monospace" :placeholder='t("Bill / invoice number printed on supplier document")' />
 						</div>
-						<div class="col-md-3">
+						<div class="col-md-2">
 							<label class="form-label">{{ t("Bill date") }}</label>
 							<DateInput v-model="form.bill_date" />
 						</div>
+						<div class="col-md-3">
+							<label class="form-label">{{ t("Currency") }}</label>
+							<Select
+								v-model="form.currency"
+								:options="currencyOptions"
+								value-key="name"
+								label-key="_label"
+								:disabled="submitting"
+							/>
+						</div>
+						<div v-if="isForeign" class="col-md-3">
+							<label class="form-label required">{{ t("Exchange rate") }}</label>
+							<MoneyInput v-model="form.conversion_rate" :disabled="submitting" />
+							<div v-if="rateHintLabel" class="form-hint small">{{ rateHintLabel }}</div>
+						</div>
+						<div class="col-md-4">
+							<label class="form-label">{{ t("Price list") }}</label>
+							<Select
+								v-model="form.price_list"
+								:options="priceListOptions"
+								value-key="name"
+								label-key="_label"
+								:disabled="submitting"
+							/>
+						</div>
+						<div class="col-md-4">
+							<label class="form-label">{{ t("Tax template") }}</label>
+							<Select
+								v-model="form.taxes_template"
+								:options="taxTemplateOptions"
+								value-key="name"
+								label-key="_label"
+								:disabled="submitting"
+							/>
+						</div>
+						<div v-if="form.update_stock" class="col-md-4">
+							<label class="form-label required">{{ t("Warehouse") }}</label>
+							<Select
+								v-model="form.set_warehouse"
+								:options="warehouseOptions"
+								value-key="name"
+								:disabled="submitting || warehousesLoading"
+							>
+								<template #option="{ option: w }">
+									<span v-if="w.name">{{ w.warehouse_name }} ({{ w.name }})</span>
+									<span v-else>{{ w.warehouse_name }}</span>
+								</template>
+								<template #selected="{ option: w }">
+									<span v-if="w.name">{{ w.warehouse_name }} ({{ w.name }})</span>
+									<span v-else>{{ w.warehouse_name }}</span>
+								</template>
+							</Select>
+						</div>
+						<div class="col-12">
+							<label class="form-check form-switch mb-0">
+								<input
+									v-model="form.update_stock"
+									class="form-check-input"
+									type="checkbox"
+									:disabled="submitting"
+								/>
+								<span class="form-check-label">{{ t("Receive goods into stock") }}</span>
+							</label>
+						</div>
 					</div>
 
-					<h6 class="text-uppercase text-secondary small mb-2">{{ t("Items") }}</h6>
+					<div class="d-flex align-items-center mb-2">
+						<h6 class="text-uppercase text-secondary small mb-0">{{ t("Items") }}</h6>
+						<div class="form-check form-switch ms-auto mb-0">
+							<input class="form-check-input" type="checkbox" id="piShowDisc" v-model="showDiscounts" />
+							<label class="form-check-label small text-secondary" for="piShowDisc">{{ t("Show discounts") }}</label>
+						</div>
+					</div>
 					<div class="table-responsive">
 						<table class="table table-sm table-vcenter">
 							<thead>
@@ -588,6 +927,8 @@ watch(activeCompany, load);
 									<th style="width: 110px">{{ t("Qty") }}</th>
 									<th style="width: 90px">{{ t("UOM") }}</th>
 									<th style="width: 160px">{{ t("Rate") }}</th>
+									<th v-if="showDiscounts" style="width: 70px">%</th>
+									<th v-if="showDiscounts" style="width: 130px">{{ t("Disc") }}</th>
 									<th class="text-end" style="width: 140px">{{ t("Amount") }}</th>
 									<th style="width: 40px"></th>
 								</tr>
@@ -624,8 +965,22 @@ watch(activeCompany, load);
 									</td>
 									<td><input v-model="line.uom" type="text" class="form-control form-control-sm" /></td>
 									<td><MoneyInput v-model="line.rate" /></td>
+									<td v-if="showDiscounts">
+										<input
+											v-model.number="line.discount_percentage"
+											type="number"
+											step="any"
+											min="0"
+											max="100"
+											inputmode="decimal"
+											class="form-control form-control-sm font-monospace text-end"
+											placeholder="0"
+											:disabled="submitting"
+										/>
+									</td>
+									<td v-if="showDiscounts"><MoneyInput v-model="line.discount_amount" size="sm" :disabled="submitting" /></td>
 									<td class="text-end font-monospace">
-										{{ formatMoney(Number(line.qty || 0) * Number(line.rate || 0), currency, user.language) }}
+										{{ formatMoney(lineAmount(line), modalCurrency, user.language) }}
 									</td>
 									<td>
 										<button type="button" class="btn btn-sm btn-icon btn-ghost-danger" @click="removeLine(idx)" :disabled="submitting">
@@ -636,15 +991,30 @@ watch(activeCompany, load);
 							</tbody>
 							<tfoot>
 								<tr>
-									<td colspan="6">
+									<td :colspan="showDiscounts ? 8 : 6">
 										<button type="button" class="btn btn-sm btn-ghost-primary" @click="addLine">
 											<i class="ti ti-plus me-1"></i>{{ t("Add row") }}
 										</button>
 									</td>
 								</tr>
 								<tr>
-									<td colspan="4" class="text-end text-uppercase small text-secondary">{{ t("Net total") }}</td>
-									<td class="text-end font-monospace fw-bold">{{ formatMoney(createTotal, currency, user.language) }}</td>
+									<td :colspan="showDiscounts ? 6 : 4" class="text-end text-uppercase small text-secondary">{{ t("Net total") }}</td>
+									<td class="text-end font-monospace fw-bold">{{ formatMoney(createTotal, modalCurrency, user.language) }}</td>
+									<td></td>
+								</tr>
+								<tr v-if="form.taxes_template">
+									<td :colspan="showDiscounts ? 6 : 4" class="text-end text-uppercase small text-secondary">{{ t("Taxes") }}</td>
+									<td class="text-end font-monospace">{{ formatMoney(taxPreview, modalCurrency, user.language) }}</td>
+									<td></td>
+								</tr>
+								<tr v-if="form.taxes_template || isForeign">
+									<td :colspan="showDiscounts ? 6 : 4" class="text-end text-uppercase small text-secondary">{{ t("Grand total") }}</td>
+									<td class="text-end font-monospace fw-bold">{{ formatMoney(grandPreview, modalCurrency, user.language) }}</td>
+									<td></td>
+								</tr>
+								<tr v-if="isForeign && Number(form.conversion_rate) > 0">
+									<td :colspan="showDiscounts ? 6 : 4" class="text-end small text-secondary">≈ {{ currency }}</td>
+									<td class="text-end font-monospace text-secondary">{{ formatMoney(baseGrandPreview, currency, user.language) }}</td>
 									<td></td>
 								</tr>
 							</tfoot>
@@ -660,7 +1030,7 @@ watch(activeCompany, load);
 					<button type="button" class="btn btn-link link-secondary" :disabled="submitting" @click="closeCreate">{{ t("Cancel") }}</button>
 					<button type="button" class="btn btn-primary ms-auto" :disabled="submitting" @click="submitCreate">
 						<span v-if="submitting" class="spinner-border spinner-border-sm me-1"></span>
-						{{ t("Save as draft") }}
+						{{ editingName ? t("Save changes") : t("Save as draft") }}
 					</button>
 				</div>
 			</div>

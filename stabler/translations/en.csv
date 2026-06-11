@@ -281,6 +281,7 @@ Define promotions that field users can apply during visits.,Define promotions th
 Define routes so field users know which outlets to visit each day.,Define routes so field users know which outlets to visit each day.
 Delete,Delete
 Delete customer,Delete customer
+Delete draft bill {name}? This cannot be undone.,Delete draft bill {name}? This cannot be undone.
 Delete failed.,Delete failed.
 Delete invoice {name}?,Delete invoice {name}?
 Delete order {name}? This cannot be undone.,Delete order {name}? This cannot be undone.
@@ -335,6 +336,7 @@ Edit field user,Edit field user
 Edit outlet,Edit outlet
 Edit photo report,Edit photo report
 Edit planogram,Edit planogram
+Edit purchase bill,Edit purchase bill
 Edit route,Edit route
 Edit supplier,Edit supplier
 Editing the rate updates the received amount.,Editing the rate updates the received amount.
@@ -365,6 +367,7 @@ Every route row needs an outlet.,Every route row needs an outlet.
 Excel (.xlsx),Excel (.xlsx)
 Exchange Rates,Exchange Rates
 Exchange rate,Exchange rate
+Exchange rate must be greater than zero.,Exchange rate must be greater than zero.
 Exclusive,Exclusive
 Exclusive: commission added on top — sender pays more.,Exclusive: commission added on top — sender pays more.
 Expand,Expand
@@ -397,6 +400,7 @@ Failed to create sales order.,Failed to create sales order.
 Failed to create transfer.,Failed to create transfer.
 Failed to create warehouse.,Failed to create warehouse.
 Failed to create.,Failed to create.
+Failed to delete bill.,Failed to delete bill.
 Failed to delete column.,Failed to delete column.
 Failed to delete customer.,Failed to delete customer.
 Failed to delete deal.,Failed to delete deal.
@@ -467,6 +471,7 @@ Failed to save stock entry.,Failed to save stock entry.
 Failed to save van stock.,Failed to save van stock.
 Failed to save visit.,Failed to save visit.
 Failed to submit.,Failed to submit.
+Failed to update bill.,Failed to update bill.
 Failed to update color.,Failed to update color.
 Failed to update promo plan.,Failed to update promo plan.
 Failed to update status.,Failed to update status.
@@ -872,6 +877,7 @@ Pick a leave type.,Pick a leave type.
 Pick a source warehouse.,Pick a source warehouse.
 Pick a supplier.,Pick a supplier.
 Pick a warehouse,Pick a warehouse
+Pick a warehouse to receive stock into.,Pick a warehouse to receive stock into.
 Pick a warehouse.,Pick a warehouse.
 Pick an employee,Pick an employee
 Pick an employee.,Pick an employee.
@@ -951,6 +957,7 @@ Receivable (AR),Receivable (AR)
 Receivables,Receivables
 Receive,Receive
 Receive currency,Receive currency
+Receive goods into stock,Receive goods into stock
 Receive payment,Receive payment
 Receive stock,Receive stock
 Received,Received
@@ -1180,6 +1187,7 @@ Submit transfer,Submit transfer
 Submitted,Submitted
 Submitted At,Submitted At
 Subtotal,Subtotal
+Suggested,Suggested
 Sun,Sun
 Supplier,Supplier
 Supplier bill #,Supplier bill #
@@ -1194,6 +1202,7 @@ TIN,TIN
 Table,Table
 Task,Task
 Tax ID,Tax ID
+Tax template,Tax template
 Taxes,Taxes
 Term (months),Term (months)
 Terms / remarks,Terms / remarks
@@ -1319,10 +1328,13 @@ You need administrator access to view this page.,You need administrator access t
 "Your books are empty. Get started by adding a customer, recording your first sale, or logging an opening balance.","Your books are empty. Get started by adding a customer, recording your first sale, or logging an opening balance."
 Yuk xati,Yuk xati
 cheque / txn id,cheque / txn id
+company currency,company currency
 "e.g. OK, Approved","e.g. OK, Approved"
 entries,entries
 entries. Narrow the date range to see older ones.,entries. Narrow the date range to see older ones.
 error(s),error(s)
+from exchange rate records,from exchange rate records
+from last bill,from last bill
 item,item
 item_code and warehouse are required,item_code and warehouse are required
 items,items
@@ -1350,7 +1362,9 @@ vs. last month,vs. last month
 — company default —,— company default —
 — default —,— default —
 — global default —,— global default —
+— no tax —,— no tax —
 — none —,— none —
+— pick a warehouse —,— pick a warehouse —
 — pick account —,— pick account —
 — pick destination —,— pick destination —
 — pick source —,— pick source —
