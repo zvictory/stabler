@@ -16,10 +16,9 @@ no_sitemap = 1
 
 
 def get_context(context):
-	if frappe.session.user == "Guest":
-		redirect_to = frappe.local.request.path or "/stabler"
-		frappe.local.flags.redirect_location = "/login?redirect-to=" + quote_plus(redirect_to)
-		raise frappe.Redirect
+	# Allow Guest users to load the SPA shell so client-side routing can handle the operator kiosk
+	# guest view, while redirecting other paths on the client side.
+	pass
 
 	try:
 		csrf_token = frappe.sessions.get_csrf_token()

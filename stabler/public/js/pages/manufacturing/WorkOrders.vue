@@ -83,12 +83,14 @@ const detailLoading = ref(false);
 const detail = ref(null);
 const actionBusy = ref(false);
 const actionError = ref("");
+const activeTab = ref("details");
 
 async function openDetail(name) {
 	detailOpen.value = true;
 	detailLoading.value = true;
 	detail.value = null;
 	actionError.value = "";
+	activeTab.value = "details";
 	try {
 		detail.value = await call("stabler.api.manufacturing.work_order_detail", { name });
 	} catch (err) {
@@ -468,152 +470,201 @@ async function saveWO(submitAfter) {
 				<template v-else-if="detail">
 					<div v-if="actionError" class="alert alert-danger">{{ actionError }}</div>
 
-					<div class="mb-3">
-						<div class="text-secondary small">{{ t("Finished good") }}</div>
-						<div class="fw-semibold">{{ detail.item_name || detail.production_item }}</div>
-						<div class="small text-secondary font-monospace">{{ detail.bom_no }}</div>
-					</div>
-
-					<!-- Operator assignment (manager only) -->
-					<div class="mb-3">
-						<div class="text-secondary small">{{ t("Operator") }}</div>
-						<div class="d-flex align-items-center gap-2 mt-1">
-							<span class="small">{{ detail.operator || "—" }}</span>
+					<!-- Tab Navigation -->
+					<ul class="nav nav-tabs mb-3">
+						<li class="nav-item">
 							<button
 								type="button"
-								class="btn btn-sm btn-outline-secondary"
+								class="nav-link"
+								:class="{ active: activeTab === 'details' }"
+								@click="activeTab = 'details'"
+							>
+								{{ t("Details") }}
+							</button>
+						</li>
+						<li class="nav-item">
+							<button
+								type="button"
+								class="nav-link"
+								:class="{ active: activeTab === 'timeline' }"
+								@click="activeTab = 'timeline'"
+							>
+								{{ t("Badge Timeline") }}
+							</button>
+						</li>
+					</ul>
+
+					<div v-if="activeTab === 'details'">
+						<div class="mb-3">
+							<div class="text-secondary small">{{ t("Finished good") }}</div>
+							<div class="fw-semibold">{{ detail.item_name || detail.production_item }}</div>
+							<div class="small text-secondary font-monospace">{{ detail.bom_no }}</div>
+						</div>
+
+						<!-- Operator assignment (manager only) -->
+						<div class="mb-3">
+							<div class="text-secondary small">{{ t("Operator") }}</div>
+							<div class="d-flex align-items-center gap-2 mt-1">
+								<span class="small">{{ detail.operator || "—" }}</span>
+								<button
+									type="button"
+									class="btn btn-sm btn-outline-secondary"
+									:disabled="actionBusy"
+									@click="openAssign(detail.name)"
+								>
+									{{ t("Assign operator") }}
+								</button>
+							</div>
+							<div v-if="assignOpen" class="mt-2 d-flex gap-2 align-items-center">
+								<Select v-model="selectedOperator" :options="operatorSelectOptions" class="flex-grow-1" />
+								<button
+									type="button"
+									class="btn btn-sm btn-primary"
+									:disabled="assignBusy"
+									@click="confirmAssign(detail.name)"
+								>
+									{{ t("Save") }}
+								</button>
+								<button
+									type="button"
+									class="btn btn-sm btn-ghost-secondary"
+									@click="assignOpen = false"
+								>
+									{{ t("Cancel") }}
+								</button>
+							</div>
+						</div>
+
+						<div class="row g-2 mb-3">
+							<div class="col-4">
+								<div class="text-secondary small">{{ t("Planned") }}</div>
+								<div class="font-monospace">{{ formatQty(detail.qty) }}</div>
+							</div>
+							<div class="col-4">
+								<div class="text-secondary small">{{ t("Transferred") }}</div>
+								<div class="font-monospace">{{ formatQty(detail.transferred_qty) }}</div>
+							</div>
+							<div class="col-4">
+								<div class="text-secondary small">{{ t("Produced") }}</div>
+								<div class="font-monospace fw-semibold text-blue">{{ formatQty(detail.produced_qty) }}</div>
+							</div>
+						</div>
+
+						<div class="row g-2 mb-3">
+							<div class="col-6">
+								<div class="text-secondary small">{{ t("Source warehouse") }}</div>
+								<div class="small">{{ detail.source_warehouse || "—" }}</div>
+							</div>
+							<div class="col-6">
+								<div class="text-secondary small">{{ t("Finished-goods warehouse") }}</div>
+								<div class="small">{{ detail.fg_warehouse || "—" }}</div>
+							</div>
+						</div>
+
+						<h6 class="text-uppercase small text-secondary mt-3 mb-2">{{ t("Required materials") }}</h6>
+						<div class="table-responsive">
+							<table class="table table-sm table-vcenter">
+								<thead>
+									<tr>
+										<th>{{ t("Item") }}</th>
+										<th class="text-end">{{ t("Required") }}</th>
+										<th class="text-end">{{ t("Transferred") }}</th>
+										<th class="text-end">{{ t("Consumed") }}</th>
+									</tr>
+								</thead>
+								<tbody>
+									<tr v-for="(it, i) in detail.required_items" :key="i">
+										<td>
+											<div class="fw-semibold">{{ it.item_name || it.item_code }}</div>
+											<div class="small text-secondary font-monospace">{{ it.item_code }}</div>
+										</td>
+										<td class="text-end font-monospace">{{ formatQty(it.required_qty) }}</td>
+										<td class="text-end font-monospace text-secondary">{{ formatQty(it.transferred_qty) }}</td>
+										<td class="text-end font-monospace text-blue">{{ formatQty(it.consumed_qty) }}</td>
+									</tr>
+								</tbody>
+							</table>
+						</div>
+
+						<div class="mt-3 d-flex flex-wrap gap-2">
+							<button
+								v-if="detail.docstatus === 0"
+								type="button"
+								class="btn btn-success"
 								:disabled="actionBusy"
-								@click="openAssign(detail.name)"
+								@click="doSubmit(detail.name)"
 							>
-								{{ t("Assign operator") }}
-							</button>
-						</div>
-						<div v-if="assignOpen" class="mt-2 d-flex gap-2 align-items-center">
-							<Select v-model="selectedOperator" :options="operatorSelectOptions" class="flex-grow-1" />
-							<button
-								type="button"
-								class="btn btn-sm btn-primary"
-								:disabled="assignBusy"
-								@click="confirmAssign(detail.name)"
-							>
-								{{ t("Save") }}
+								<i class="ti ti-check me-1"></i>{{ t("Submit") }}
 							</button>
 							<button
+								v-if="detail.docstatus === 1 && detail.status === 'Not Started'"
 								type="button"
-								class="btn btn-sm btn-ghost-secondary"
-								@click="assignOpen = false"
+								class="btn btn-outline-primary"
+								:disabled="actionBusy"
+								@click="transferMaterials(detail.name)"
 							>
-								{{ t("Cancel") }}
+								<i class="ti ti-transfer me-1"></i>{{ t("Transfer materials") }}
+							</button>
+							<button
+								v-if="detail.docstatus === 1 && ['In Process', 'Not Started'].includes(detail.status)"
+								type="button"
+								class="btn btn-primary"
+								:disabled="actionBusy"
+								@click="recordProduction(detail.name)"
+							>
+								<i class="ti ti-package me-1"></i>{{ t("Record production") }}
+							</button>
+							<button
+								v-if="detail.docstatus === 1 && ['In Process', 'Not Started'].includes(detail.status)"
+								type="button"
+								class="btn btn-outline-warning"
+								:disabled="actionBusy"
+								@click="stop(detail.name)"
+							>
+								<i class="ti ti-player-stop me-1"></i>{{ t("Stop") }}
+							</button>
+							<button
+								v-if="detail.docstatus === 1 && detail.status === 'Stopped'"
+								type="button"
+								class="btn btn-outline-primary"
+								:disabled="actionBusy"
+								@click="resume(detail.name)"
+							>
+								<i class="ti ti-player-play me-1"></i>{{ t("Resume") }}
+							</button>
+							<button
+								v-if="detail.docstatus === 1 && detail.status === 'Completed'"
+								type="button"
+								class="btn btn-outline-secondary"
+								:disabled="actionBusy"
+								@click="close(detail.name)"
+							>
+								<i class="ti ti-lock me-1"></i>{{ t("Close") }}
 							</button>
 						</div>
 					</div>
 
-					<div class="row g-2 mb-3">
-						<div class="col-4">
-							<div class="text-secondary small">{{ t("Planned") }}</div>
-							<div class="font-monospace">{{ formatQty(detail.qty) }}</div>
+					<!-- Badge Timeline Tab -->
+					<div v-if="activeTab === 'timeline'">
+						<div v-if="!detail.timeline || !detail.timeline.length" class="text-secondary text-center py-4">
+							{{ t("No activity recorded yet.") }}
 						</div>
-						<div class="col-4">
-							<div class="text-secondary small">{{ t("Transferred") }}</div>
-							<div class="font-monospace">{{ formatQty(detail.transferred_qty) }}</div>
+						<div v-else class="list-group list-group-transparent">
+							<div v-for="item in detail.timeline" :key="item.name" class="list-group-item d-flex align-items-start gap-3 py-3 border-0 border-bottom">
+								<span class="avatar avatar-sm bg-blue-lt flex-shrink-0">
+									<i class="ti ti-user fs-3"></i>
+								</span>
+								<div class="flex-grow-1 min-w-0">
+									<div class="d-flex justify-content-between align-items-center mb-1">
+										<span class="font-monospace text-secondary small">{{ formatDateTime(item.creation) }}</span>
+										<span class="badge bg-secondary-lt small font-monospace">{{ item.comment_by || item.owner }}</span>
+									</div>
+									<div class="text-body text-wrap font-sans-serif" style="word-break: break-word;">
+										{{ item.content }}
+									</div>
+								</div>
+							</div>
 						</div>
-						<div class="col-4">
-							<div class="text-secondary small">{{ t("Produced") }}</div>
-							<div class="font-monospace fw-semibold text-blue">{{ formatQty(detail.produced_qty) }}</div>
-						</div>
-					</div>
-
-					<div class="row g-2 mb-3">
-						<div class="col-6">
-							<div class="text-secondary small">{{ t("Source warehouse") }}</div>
-							<div class="small">{{ detail.source_warehouse || "—" }}</div>
-						</div>
-						<div class="col-6">
-							<div class="text-secondary small">{{ t("Finished-goods warehouse") }}</div>
-							<div class="small">{{ detail.fg_warehouse || "—" }}</div>
-						</div>
-					</div>
-
-					<h6 class="text-uppercase small text-secondary mt-3 mb-2">{{ t("Required materials") }}</h6>
-					<div class="table-responsive">
-						<table class="table table-sm table-vcenter">
-							<thead>
-								<tr>
-									<th>{{ t("Item") }}</th>
-									<th class="text-end">{{ t("Required") }}</th>
-									<th class="text-end">{{ t("Transferred") }}</th>
-									<th class="text-end">{{ t("Consumed") }}</th>
-								</tr>
-							</thead>
-							<tbody>
-								<tr v-for="(it, i) in detail.required_items" :key="i">
-									<td>
-										<div class="fw-semibold">{{ it.item_name || it.item_code }}</div>
-										<div class="small text-secondary font-monospace">{{ it.item_code }}</div>
-									</td>
-									<td class="text-end font-monospace">{{ formatQty(it.required_qty) }}</td>
-									<td class="text-end font-monospace text-secondary">{{ formatQty(it.transferred_qty) }}</td>
-									<td class="text-end font-monospace text-blue">{{ formatQty(it.consumed_qty) }}</td>
-								</tr>
-							</tbody>
-						</table>
-					</div>
-
-					<div class="mt-3 d-flex flex-wrap gap-2">
-						<button
-							v-if="detail.docstatus === 0"
-							type="button"
-							class="btn btn-success"
-							:disabled="actionBusy"
-							@click="doSubmit(detail.name)"
-						>
-							<i class="ti ti-check me-1"></i>{{ t("Submit") }}
-						</button>
-						<button
-							v-if="detail.docstatus === 1 && detail.status === 'Not Started'"
-							type="button"
-							class="btn btn-outline-primary"
-							:disabled="actionBusy"
-							@click="transferMaterials(detail.name)"
-						>
-							<i class="ti ti-transfer me-1"></i>{{ t("Transfer materials") }}
-						</button>
-						<button
-							v-if="detail.docstatus === 1 && ['In Process', 'Not Started'].includes(detail.status)"
-							type="button"
-							class="btn btn-primary"
-							:disabled="actionBusy"
-							@click="recordProduction(detail.name)"
-						>
-							<i class="ti ti-package me-1"></i>{{ t("Record production") }}
-						</button>
-						<button
-							v-if="detail.docstatus === 1 && ['In Process', 'Not Started'].includes(detail.status)"
-							type="button"
-							class="btn btn-outline-warning"
-							:disabled="actionBusy"
-							@click="stop(detail.name)"
-						>
-							<i class="ti ti-player-stop me-1"></i>{{ t("Stop") }}
-						</button>
-						<button
-							v-if="detail.docstatus === 1 && detail.status === 'Stopped'"
-							type="button"
-							class="btn btn-outline-primary"
-							:disabled="actionBusy"
-							@click="resume(detail.name)"
-						>
-							<i class="ti ti-player-play me-1"></i>{{ t("Resume") }}
-						</button>
-						<button
-							v-if="detail.docstatus === 1 && detail.status === 'Completed'"
-							type="button"
-							class="btn btn-outline-secondary"
-							:disabled="actionBusy"
-							@click="close(detail.name)"
-						>
-							<i class="ti ti-lock me-1"></i>{{ t("Close") }}
-						</button>
 					</div>
 				</template>
 			</div>

@@ -39,9 +39,11 @@ import Warehouses from "./pages/inventory/Warehouses.vue";
 import StockLedger from "./pages/inventory/StockLedger.vue";
 import StockEntries from "./pages/inventory/StockEntries.vue";
 import LowStockAlerts from "./pages/inventory/LowStockAlerts.vue";
+import MaterialStaging from "./pages/inventory/MaterialStaging.vue";
 import ManufacturingHome from "./pages/manufacturing/ManufacturingHome.vue";
 import BOMs from "./pages/manufacturing/BOMs.vue";
 import WorkOrders from "./pages/manufacturing/WorkOrders.vue";
+import ManufacturingOperatorBoard from "./pages/manufacturing/ManufacturingOperatorBoard.vue";
 import HRHome from "./pages/hr/HRHome.vue";
 import Employees from "./pages/hr/Employees.vue";
 import HROrgChart from "./pages/hr/OrgChart.vue";
@@ -95,6 +97,7 @@ const routes = [
 	{ path: "/reports", name: "reports", component: ReportsHub, meta: { title: t("Reports") } },
 	{ path: "/profile", name: "profile", component: Profile, meta: { title: t("Profile") } },
 	{ path: "/pos", name: "pos", component: POS, meta: { title: t("POS"), module: "sales" } },
+	{ path: "/manufacturing/line", name: "manufacturing-line", component: ManufacturingOperatorBoard, meta: { title: t("Operator Kiosk") } },
 	{
 		path: "/money",
 		component: MoneyHome,
@@ -153,6 +156,7 @@ const routes = [
 			{ path: "", redirect: "/inventory/items" },
 			{ path: "items", name: "inventory-items", component: Items, meta: { title: t("Items") } },
 			{ path: "warehouses", name: "inventory-warehouses", component: Warehouses, meta: { title: t("Warehouses") } },
+			{ path: "staging", name: "inventory-staging", component: MaterialStaging, meta: { title: t("Material Staging") } },
 			{ path: "entries", name: "inventory-entries", component: StockEntries, meta: { title: t("Stock Entries") } },
 			{ path: "ledger", name: "inventory-ledger", component: StockLedger, meta: { title: t("Stock Ledger") } },
 			{ path: "alerts", name: "inventory-alerts", component: LowStockAlerts, meta: { title: t("Low Stock Alerts") } },
@@ -318,6 +322,14 @@ router.beforeEach(async (to) => {
 	// Await boot so the access decision uses real allowedModules on the very first navigation.
 	// ensureBoot() is idempotent and deduplicates concurrent calls.
 	await session.ensureBoot();
+
+	if (session.user?.id === "Guest" || !session.user?.id) {
+		if (to.path !== "/manufacturing/line") {
+			window.location.href = `/login?redirect-to=${encodeURIComponent(window.location.pathname + window.location.hash)}`;
+			return false;
+		}
+	}
+
 	if (to.matched.some((r) => r.meta.requiresAdmin) && !session.isAdmin) {
 		const dest = landingPath(session);
 		if (to.path === dest) return;

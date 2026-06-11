@@ -23,6 +23,13 @@ def _is_mfg_manager(user: str | None = None) -> bool:
 	return bool(roles & ({"Manufacturing Manager"} | _ADMIN_ROLES))
 
 
+def _is_warehouse_role(user: str | None = None) -> bool:
+	user = user or frappe.session.user
+	roles = set(frappe.get_roles(user))
+	has_role = bool(roles & ({"Stock User", "Stock Manager"} | _ADMIN_ROLES))
+	return has_role or _can_access_module(user, "inventory")
+
+
 def _require_mfg_manager() -> None:
 	if not _is_mfg_manager():
 		frappe.throw(_("Not permitted"), frappe.PermissionError)
@@ -237,9 +244,10 @@ def work_order_detail(name: str):
 		frappe.throw(f"Unknown Work Order: {name}")
 	doc = frappe.get_doc("Work Order", name)
 	is_manager = _is_mfg_manager()
+	is_warehouse = _is_warehouse_role()
 
-	# IDOR guard: operators may only view their own WOs.
-	if not is_manager and doc.get("operator") != frappe.session.user:
+	# IDOR guard: operators may only view their own WOs, but managers and warehouse staff can view any WO.
+	if not (is_manager or is_warehouse) and doc.get("operator") != frappe.session.user:
 		frappe.throw(_("Not permitted"), frappe.PermissionError)
 
 	required = [
@@ -271,11 +279,19 @@ def work_order_detail(name: str):
 		"source_warehouse": doc.source_warehouse,
 		"company": doc.company,
 		"operator": doc.get("operator") or None,
-		"required_items": required,
 	}
-	# bom_no reveals the BOM structure — managers only.
+	# bom_no reveals BOM structure — managers only.
 	if is_manager:
 		payload["bom_no"] = doc.bom_no
+		payload["timeline"] = frappe.get_all(
+			"Comment",
+			filters={"reference_doctype": "Work Order", "reference_name": name},
+			fields=["name", "content", "owner", "creation", "comment_by"],
+			order_by="creation desc"
+		)
+	# required_items visible to managers and warehouse users (for staging transfers).
+	if is_manager or is_warehouse:
+		payload["required_items"] = required
 	return payload
 
 
@@ -348,6 +364,7 @@ def stop_work_order(name: str, reason: str = "Production Stopped"):
 	if not _is_mfg_manager():
 		_require_own_work_order(name)
 	stop_unstop(name, "Stopped")
+	_log_wo_event(name, f"Work Order paused: {reason}")
 	return {"name": name, "status": frappe.db.get_value("Work Order", name, "status")}
 
 
@@ -360,6 +377,7 @@ def resume_work_order(name: str):
 	if not _is_mfg_manager():
 		_require_own_work_order(name)
 	stop_unstop(name, "Resumed")
+	_log_wo_event(name, "Work Order resumed")
 	return {"name": name, "status": frappe.db.get_value("Work Order", name, "status")}
 
 
@@ -401,6 +419,12 @@ def make_work_order_stock_entry(
 		se.process_loss_qty = flt(scrap_qty)
 	se.insert(ignore_permissions=False)
 	se.submit()
+
+	if purpose == "Material Transfer for Manufacture":
+		_log_wo_event(work_order, "Work Order started (materials transferred)")
+	elif purpose == "Manufacture":
+		_log_wo_event(work_order, f"Work Order finished. Produced: {flt(qty)}, Rejects: {flt(scrap_qty)}")
+
 	return {"name": se.name, "purpose": purpose, "docstatus": se.docstatus}
 
 
@@ -458,3 +482,190 @@ def manufacturable_items(company: str, search: str = "", limit: int = 50):
 		params,
 		as_dict=True,
 	)
+
+
+def _log_wo_event(work_order: str, text: str):
+	"""Log a timestamped event comment on the Work Order."""
+	frappe.get_doc({
+		"doctype": "Comment",
+		"comment_type": "Comment",
+		"reference_doctype": "Work Order",
+		"reference_name": work_order,
+		"content": text,
+		"comment_email": frappe.session.user,
+		"comment_by": frappe.session.user
+	}).insert(ignore_permissions=True)
+
+
+# ------------------ RFID & PIN Authentication ------------------
+
+def get_hashes(val: str) -> list[str]:
+	"""Return plain value and its salted/unsalted SHA256 hashes."""
+	import hashlib
+	if not val:
+		return []
+	res = [val]
+	# Unsalted SHA256
+	res.append(hashlib.sha256(val.encode("utf-8")).hexdigest())
+	# Salted SHA256
+	salt = "stabler_rfid_salt"
+	res.append(hashlib.sha256((val + salt).encode("utf-8")).hexdigest())
+	return res
+
+
+def match_employee_badge(uid: str):
+	"""Find active employee by RFID badge UID."""
+	if not uid:
+		return None
+	employees = frappe.get_all(
+		"Employee",
+		fields=["name", "user_id", "attendance_device_id"],
+		filters={"status": "Active"}
+	)
+	uid_options = get_hashes(uid)
+	for emp in employees:
+		device_id = (emp.attendance_device_id or "").strip()
+		if not device_id:
+			continue
+		# Check colon-separated e.g. "card_uid:pin"
+		if ":" in device_id:
+			card_part = device_id.split(":", 1)[0].strip()
+		else:
+			card_part = device_id
+		
+		if card_part in uid_options:
+			return emp
+		for h in get_hashes(card_part):
+			if h in uid_options:
+				return emp
+	return None
+
+
+def match_employee_pin(employee_id: str, pin: str):
+	"""Find active employee by ID and match their PIN."""
+	if not employee_id or not pin:
+		return None
+	if not frappe.db.exists("Employee", employee_id):
+		return None
+	emp = frappe.get_doc("Employee", employee_id)
+	if emp.status != "Active":
+		return None
+	
+	device_id = (emp.attendance_device_id or "").strip()
+	if not device_id or ":" not in device_id:
+		return None
+		
+	pin_part = device_id.split(":", 1)[1].strip()
+	pin_options = get_hashes(pin)
+	
+	if pin_part in pin_options:
+		return emp
+	for h in get_hashes(pin_part):
+		if h in pin_options:
+			return emp
+	return None
+
+
+@frappe.whitelist(allow_guest=True)
+def badge_login(uid: str):
+	import hashlib
+	if not uid:
+		frappe.throw(_("Badge UID is required."), frappe.ValidationError)
+	
+	ip = frappe.local.ip
+	fail_key = f"badge_login_fail:{ip}"
+	fails = frappe.cache().get_value(fail_key) or 0
+	if fails >= 5:
+		frappe.throw(_("Too many failed attempts. Please try again in 5 minutes."), frappe.PermissionError)
+		
+	emp = match_employee_badge(uid)
+	if not emp:
+		frappe.cache().set_value(fail_key, fails + 1, expires_in_sec=300)
+		frappe.get_doc({
+			"doctype": "Activity Log",
+			"subject": "Failed Badge Login",
+			"status": "Failure",
+			"operation": "Badge Login",
+			"remark": f"IP: {ip}, Scan UID: {uid[:4]}***"
+		}).insert(ignore_permissions=True)
+		frappe.throw(_("Card not recognized"), frappe.PermissionError)
+		
+	if not emp.user_id:
+		frappe.throw(_("Employee has no linked user account."), frappe.PermissionError)
+		
+	frappe.cache().delete_key(fail_key)
+	
+	from frappe.auth import LoginManager
+	login_manager = LoginManager()
+	login_manager.login_as(emp.user_id)
+	
+	frappe.get_doc({
+		"doctype": "Activity Log",
+		"subject": f"Successful Badge Login: {emp.user_id}",
+		"status": "Success",
+		"operation": "Badge Login",
+		"user": emp.user_id
+	}).insert(ignore_permissions=True)
+	
+	return {
+		"message": "Logged in",
+		"user": emp.user_id,
+		"employee": emp.name,
+		"full_name": frappe.db.get_value("User", emp.user_id, "full_name")
+	}
+
+
+@frappe.whitelist(allow_guest=True)
+def pin_login(employee: str, pin: str):
+	import hashlib
+	if not employee or not pin:
+		frappe.throw(_("Employee ID and PIN are required."), frappe.ValidationError)
+		
+	ip = frappe.local.ip
+	fail_key = f"pin_login_fail:{ip}"
+	fails = frappe.cache().get_value(fail_key) or 0
+	if fails >= 5:
+		frappe.throw(_("Too many failed attempts. Please try again in 5 minutes."), frappe.PermissionError)
+		
+	emp = match_employee_pin(employee, pin)
+	if not emp:
+		frappe.cache().set_value(fail_key, fails + 1, expires_in_sec=300)
+		frappe.get_doc({
+			"doctype": "Activity Log",
+			"subject": "Failed PIN Login",
+			"status": "Failure",
+			"operation": "PIN Login",
+			"remark": f"IP: {ip}, Employee: {employee}"
+		}).insert(ignore_permissions=True)
+		frappe.throw(_("Card not recognized"), frappe.PermissionError)
+		
+	if not emp.user_id:
+		frappe.throw(_("Employee has no linked user account."), frappe.PermissionError)
+		
+	frappe.cache().delete_key(fail_key)
+	
+	from frappe.auth import LoginManager
+	login_manager = LoginManager()
+	login_manager.login_as(emp.user_id)
+	
+	frappe.get_doc({
+		"doctype": "Activity Log",
+		"subject": f"Successful PIN Login: {emp.user_id}",
+		"status": "Success",
+		"operation": "PIN Login",
+		"user": emp.user_id
+	}).insert(ignore_permissions=True)
+	
+	return {
+		"message": "Logged in",
+		"user": emp.user_id,
+		"employee": emp.name,
+		"full_name": frappe.db.get_value("User", emp.user_id, "full_name")
+	}
+
+
+@frappe.whitelist(allow_guest=True)
+def badge_logout():
+	from frappe.auth import LoginManager
+	LoginManager().logout()
+	return {"message": "Success"}
