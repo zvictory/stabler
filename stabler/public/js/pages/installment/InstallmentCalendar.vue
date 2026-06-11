@@ -32,8 +32,8 @@ const detail = ref(null);
 const detailError = ref("");
 
 const currency = computed(() => {
-	if (!events.value.length) return "USD";
-	return events.value[0]?.currency || "USD";
+	if (!events.value.length) return session.currency;
+	return events.value[0]?.currency || session.currency;
 });
 
 async function load() {

@@ -45,9 +45,7 @@ const frequencyOptions = computed(() => [
 	{ value: "Daily", label: t("Daily") },
 ]);
 
-const currency = computed(
-	() => (session.companies.find((c) => c.name === activeCompany.value) || {}).default_currency || "USD"
-);
+const currency = computed(() => session.currency);
 const money = (v, ccy) => formatMoney(v, ccy || currency.value, user.value.language);
 
 async function load() {

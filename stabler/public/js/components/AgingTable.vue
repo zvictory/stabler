@@ -37,11 +37,7 @@ const loading = ref(false);
 const error = ref("");
 const data = ref({ rows: [], totals: {}, as_of: "" });
 
-const currency = computed(
-	() =>
-		(session.companies.find((c) => c.name === activeCompany.value) || {}).default_currency ||
-		"USD"
-);
+const currency = computed(() => session.currency);
 
 async function load() {
 	if (!activeCompany.value) return;

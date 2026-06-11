@@ -71,12 +71,7 @@ function blankCustomer() {
 }
 const form = ref(blankCustomer());
 
-const currency = computed(
-	() =>
-		companyCurrency.value ||
-		(session.companies.find((c) => c.name === activeCompany.value) || {}).default_currency ||
-		"USD"
-);
+const currency = computed(() => companyCurrency.value || session.currency);
 
 // Sorting & Filtering for Master List
 const sortField = ref("name");

@@ -1527,8 +1527,19 @@ def get_exchange_rate_for_currencies(from_currency: str, to_currency: str, posti
 	"""Return the exchange rate between `from_currency` and `to_currency` on `posting_date`."""
 	from erpnext.setup.utils import get_exchange_rate
 
+	date = getdate(posting_date or today())
 	try:
-		rate = get_exchange_rate(from_currency, to_currency, getdate(posting_date or today()))
+		rate = get_exchange_rate(from_currency, to_currency, date)
+		if not rate or flt(rate) <= 0.0:
+			frappe.throw(
+				_("No exchange rate found for {0} to {1} on {2}").format(from_currency, to_currency, date),
+				frappe.ValidationError
+			)
 		return flt(rate)
-	except Exception:
-		return 0.0
+	except Exception as e:
+		if frappe.message_log and "No exchange rate found" in str(frappe.message_log[-1]):
+			raise
+		frappe.throw(
+			_("No exchange rate found for {0} to {1} on {2}: {3}").format(from_currency, to_currency, date, str(e)),
+			frappe.ValidationError
+		)

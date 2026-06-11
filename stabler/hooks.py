@@ -26,6 +26,9 @@ scheduler_events = {
 
 doc_events = {
 	"Sales Invoice": {
+		"validate": [
+			"stabler.api._accounts.validate_sales_invoice",
+		],
 		"on_submit": [
 			"stabler.integrations.ehf.hooks.enqueue_ehf_submit",
 			"stabler.integrations.one_c.hooks.enqueue_push",
@@ -33,9 +36,22 @@ doc_events = {
 			"stabler.maintenance.close_billed_so.on_si_submit",
 		],
 	},
+	"Purchase Invoice": {
+		"validate": [
+			"stabler.api._accounts.validate_purchase_invoice",
+		],
+	},
 	"Payment Entry": {
+		"validate": [
+			"stabler.api._accounts.validate_payment_entry",
+		],
 		"on_submit": [
 			"stabler.integrations.one_c.hooks.enqueue_push",
+		],
+	},
+	"Journal Entry": {
+		"validate": [
+			"stabler.api._accounts.validate_journal_entry",
 		],
 	},
 	"Stock Entry": {

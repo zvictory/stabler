@@ -249,24 +249,23 @@ def _create_invoice(
     schedule = _build_schedule(float(flt(cost)), float(flt(markup)), float(flt(dp_percent)), int(term_months), start_date)
     total = schedule["total"]
 
+    from stabler.api._accounts import resolve_party_account
+
+    party_type = "Customer" if side == "sell" else "Supplier"
+    currency = frappe.db.get_value(party_type, party, "default_currency")
+    if not currency:
+        currency = frappe.get_cached_value("Company", company, "default_currency") or "UZS"
+
     if side == "sell":
         doctype = "Sales Invoice"
         party_field = "customer"
         party_account_field = "debit_to"
-        party_account = frappe.db.get_value(
-            "Account",
-            {"company": company, "account_type": "Receivable", "is_group": 0},
-            "name",
-        )
     else:
         doctype = "Purchase Invoice"
         party_field = "supplier"
         party_account_field = "credit_to"
-        party_account = frappe.db.get_value(
-            "Account",
-            {"company": company, "account_type": "Payable", "is_group": 0},
-            "name",
-        )
+
+    party_account = resolve_party_account(party_type, party, company, currency)
 
     income_expense_account = frappe.db.get_value(
         "Account",
@@ -281,6 +280,7 @@ def _create_invoice(
     doc_data: dict = {
         "doctype": doctype,
         "company": company,
+        "currency": currency,
         party_field: party,
         "posting_date": getdate(posting_date) if posting_date else getdate(start_date),
         "due_date": schedule["rows"][-1]["due_date"],

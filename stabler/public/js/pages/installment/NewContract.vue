@@ -129,7 +129,7 @@ function addMonths(isoDate, n) {
 	return `${newY}-${pad(newM)}-${pad(d)}`;
 }
 
-const currency = computed(() => session.currency || "USD");
+const currency = computed(() => session.currency);
 
 // ── Submit ────────────────────────────────────────────────────────────────────
 async function submit() {
