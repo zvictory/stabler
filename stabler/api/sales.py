@@ -386,6 +386,7 @@ def customer_detail(name: str, company: str):
 		frappe.throw(f"Unknown customer: {name}")
 	_assert_can_read("Customer", name)
 	doc = frappe.get_doc("Customer", name)
+	company_currency = frappe.db.get_value("Company", company, "default_currency") or ""
 
 	# AR per transaction currency (do NOT sum across currencies — that mixes
 	# UZS into USD totals). Lifetime stays in base currency since it's an
@@ -415,20 +416,48 @@ def customer_detail(name: str, company: str):
 		as_dict=True,
 	)
 	lifetime_base = flt(lifetime_row[0]["lifetime"]) if lifetime_row else 0.0
-
-	overdue_row = frappe.db.sql(
+	lifetime_by_currency = frappe.db.sql(
 		"""
-		SELECT COALESCE(SUM(outstanding_amount), 0) AS overdue
+		SELECT currency,
+		       COALESCE(SUM(grand_total), 0) AS lifetime,
+		       COALESCE(SUM(base_grand_total), 0) AS lifetime_base
+		FROM `tabSales Invoice`
+		WHERE customer = %(name)s AND company = %(company)s
+		  AND docstatus = 1
+		GROUP BY currency
+		HAVING SUM(grand_total) <> 0
+		""",
+		{"name": name, "company": company},
+		as_dict=True,
+	) or []
+	if len(lifetime_by_currency) == 1:
+		lifetime_amount = flt(lifetime_by_currency[0]["lifetime"])
+		lifetime_currency = lifetime_by_currency[0]["currency"]
+	else:
+		lifetime_amount = lifetime_base
+		lifetime_currency = company_currency
+
+	overdue_by_currency = frappe.db.sql(
+		"""
+		SELECT currency,
+		       COALESCE(SUM(outstanding_amount), 0) AS overdue,
+		       COALESCE(SUM(outstanding_amount * conversion_rate), 0) AS overdue_base
 		FROM `tabSales Invoice`
 		WHERE customer = %(name)s AND company = %(company)s
 		  AND docstatus = 1
 		  AND due_date < %(today)s
 		  AND outstanding_amount > 0
+		GROUP BY currency
 		""",
 		{"name": name, "company": company, "today": today()},
 		as_dict=True,
-	)
-	overdue_amount = flt(overdue_row[0]["overdue"]) if overdue_row else 0.0
+	) or []
+	if len(overdue_by_currency) == 1:
+		overdue_amount = flt(overdue_by_currency[0]["overdue"])
+		overdue_currency = overdue_by_currency[0]["currency"]
+	else:
+		overdue_amount = sum(flt(r["overdue_base"]) for r in overdue_by_currency)
+		overdue_currency = company_currency
 
 	last_payment_row = frappe.db.sql(
 		"""
@@ -473,7 +502,10 @@ def customer_detail(name: str, company: str):
 			for r in ar_by_currency
 		],
 		"lifetime_base": lifetime_base,
+		"lifetime_amount": lifetime_amount,
+		"lifetime_currency": lifetime_currency,
 		"overdue_amount": overdue_amount,
+		"overdue_currency": overdue_currency,
 		"last_payment_date": last_payment_date,
 		"recent_invoices": recent,
 	}
@@ -2439,24 +2471,33 @@ def receivables_cockpit(company: str):
 		{"company": company, "today": today()},
 	)[0][0])
 
-	# Top 10 debtors
+	# Top 10 debtors. Include account-currency fields so selecting a debtor
+	# from the cockpit has the same balance shape as the main customer list.
 	top_debtors_raw = frappe.db.sql(
 		"""
-		SELECT party AS name, COALESCE(SUM(debit - credit), 0) AS balance
+		SELECT
+		  party AS name,
+		  COALESCE(SUM(debit - credit), 0) AS balance_base,
+		  COALESCE(SUM(debit_in_account_currency - credit_in_account_currency), 0) AS balance_acc,
+		  CASE WHEN COUNT(DISTINCT account_currency) = 1 THEN MAX(account_currency) ELSE NULL END AS account_currency,
+		  COUNT(DISTINCT account_currency) AS acc_currency_count
 		FROM `tabGL Entry`
 		WHERE company = %(company)s AND party_type = 'Customer' AND is_cancelled = 0
 		GROUP BY party
 		HAVING SUM(debit - credit) > 0.005
-		ORDER BY balance DESC
+		ORDER BY balance_base DESC
 		LIMIT 10
 		""",
 		{"company": company},
 		as_dict=True,
 	) or []
-	
+
 	for debtor in top_debtors_raw:
 		debtor["customer_name"] = frappe.db.get_value("Customer", debtor["name"], "customer_name") or debtor["name"]
-		debtor["balance"] = flt(debtor["balance"])
+		debtor["balance_base"] = flt(debtor["balance_base"])
+		debtor["balance_acc"] = flt(debtor["balance_acc"])
+		debtor["balance"] = debtor["balance_acc"] if debtor.get("account_currency") else debtor["balance_base"]
+		debtor["acc_currency_count"] = cint(debtor.get("acc_currency_count") or 0)
 
 	return {
 		"total_receivable": current_total,

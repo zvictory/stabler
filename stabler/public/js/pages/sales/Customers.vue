@@ -737,7 +737,7 @@ watch(activeCompany, () => {
 												<div class="stbl-subtext small font-monospace text-truncate">{{ d.name }}</div>
 											</div>
 											<div class="col-auto font-monospace stbl-amount text-red fw-bold">
-												{{ formatMoney(d.balance, currency, user.language) }}
+												{{ formatMoney(d.balance_acc ?? d.balance, d.account_currency || currency, user.language) }}
 											</div>
 										</div>
 									</div>
@@ -793,7 +793,7 @@ watch(activeCompany, () => {
 										<div class="card border bg-white py-2 px-3 text-center shadow-none rounded-2">
 											<div class="text-secondary small text-uppercase fw-semibold mb-1">{{ t("Overdue") }}</div>
 											<div class="h3 mb-0 font-monospace stbl-amount" :class="Number(selectedDetail?.overdue_amount || 0) > 0 ? 'text-red fw-bold' : 'text-body'">
-												{{ formatMoney(selectedDetail?.overdue_amount || 0, selected.account_currency || currency, user.language) }}
+												{{ formatMoney(selectedDetail?.overdue_amount || 0, selectedDetail?.overdue_currency || selected.account_currency || currency, user.language) }}
 											</div>
 										</div>
 									</div>
@@ -801,7 +801,7 @@ watch(activeCompany, () => {
 										<div class="card border bg-white py-2 px-3 text-center shadow-none rounded-2">
 											<div class="text-secondary small text-uppercase fw-semibold mb-1">{{ t("Lifetime Sales") }}</div>
 											<div class="h3 mb-0 font-monospace stbl-amount text-body">
-												{{ formatMoney(selectedDetail?.lifetime_base || 0, currency, user.language) }}
+												{{ formatMoney(selectedDetail?.lifetime_amount ?? selectedDetail?.lifetime_base ?? 0, selectedDetail?.lifetime_currency || currency, user.language) }}
 											</div>
 										</div>
 									</div>
