@@ -30,6 +30,7 @@ import PurchasingHome from "./pages/purchasing/PurchasingHome.vue";
 import Suppliers from "./pages/purchasing/Suppliers.vue";
 import PurchaseInvoices from "./pages/purchasing/PurchaseInvoices.vue";
 import PurchaseOrders from "./pages/purchasing/PurchaseOrders.vue";
+import PurchaseReceipts from "./pages/purchasing/PurchaseReceipts.vue";
 import PurchasingAging from "./pages/purchasing/Aging.vue";
 import InventoryHome from "./pages/inventory/InventoryHome.vue";
 import Items from "./pages/inventory/Items.vue";
@@ -134,6 +135,7 @@ const routes = [
 			{ path: "", redirect: "/purchasing/suppliers" },
 			{ path: "suppliers", name: "purchasing-suppliers", component: Suppliers, meta: { title: t("Suppliers") } },
 			{ path: "orders", name: "purchasing-orders", component: PurchaseOrders, meta: { title: t("Purchase Orders") } },
+			{ path: "receipts", name: "purchasing-receipts", component: PurchaseReceipts, meta: { title: t("Purchase Receipts") } },
 			{ path: "invoices", name: "purchasing-invoices", component: PurchaseInvoices, meta: { title: t("Purchase Invoices") } },
 			{ path: "aging", name: "purchasing-aging", component: PurchasingAging, meta: { title: t("AP Aging") } },
 		],

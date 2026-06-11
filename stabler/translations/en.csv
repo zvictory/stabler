@@ -50,6 +50,7 @@ Add your first customer to start sending quotes and invoices.,Add your first cus
 Add your first supplier to start recording bills and purchases.,Add your first supplier to start recording bills and purchases.
 Address,Address
 Adjust dates or check that {company} has posted transactions in this period.,Adjust dates or check that {company} has posted transactions in this period.
+Adjust quantities for a partial receipt. Rows left at zero are skipped.,Adjust quantities for a partial receipt. Rows left at zero are skipped.
 Admin,Admin
 Advance paid,Advance paid
 Against,Against
@@ -229,6 +230,7 @@ Count,Count
 Count:,Count:
 Country,Country
 Create,Create
+Create Bill,Create Bill
 Create Invoice,Create Invoice
 Create Plan,Create Plan
 Create Scheme,Create Scheme
@@ -238,6 +240,7 @@ Create a plan to start tracking campaign budget and ROI.,Create a plan to start 
 Create contract,Create contract
 Create credit note,Create credit note
 Create outlets to start planning routes and visits.,Create outlets to start planning routes and visits.
+Create receipt,Create receipt
 Create your first deal or adjust the search filters.,Create your first deal or adjust the search filters.
 Create your first item to start tracking stock and price lists.,Create your first item to start tracking stock and price lists.
 Create your first lead or adjust the search filters.,Create your first lead or adjust the search filters.
@@ -351,6 +354,7 @@ End,End
 End Date,End Date
 End Date must be on or after Start Date.,End Date must be on or after Start Date.
 End of ledger,End of ledger
+Enter a quantity for at least one row.,Enter a quantity for at least one row.
 Enter amount and commission to see preview.,Enter amount and commission to see preview.
 Enter at least one return qty.,Enter at least one return qty.
 Enter cost and term to see the payment schedule.,Enter cost and term to see the payment schedule.
@@ -395,6 +399,7 @@ Failed to create journal entry.,Failed to create journal entry.
 Failed to create payment.,Failed to create payment.
 Failed to create promo plan.,Failed to create promo plan.
 Failed to create quotation.,Failed to create quotation.
+Failed to create receipt.,Failed to create receipt.
 Failed to create return.,Failed to create return.
 Failed to create sales order.,Failed to create sales order.
 Failed to create transfer.,Failed to create transfer.
@@ -568,6 +573,7 @@ Journal Entries,Journal Entries
 Journal Entry,Journal Entry
 Journal Entry legs,Journal Entry legs
 Label,Label
+Landed cost vouchers,Landed cost vouchers
 Lane,Lane
 Lanes,Lanes
 Language,Language
@@ -587,6 +593,7 @@ Left,Left
 Lines,Lines
 Link to an existing Customer for receivables.,Link to an existing Customer for receivables.
 Linked invoices,Linked invoices
+Linked receipts,Linked receipts
 List rate,List rate
 Loaded,Loaded
 Loading more…,Loading more…
@@ -673,6 +680,7 @@ New planogram,New planogram
 New purchase bill,New purchase bill
 New purchase order,New purchase order
 New quotation,New quotation
+New receipt,New receipt
 New route,New route
 New sales order,New sales order
 New stock entry,New stock entry
@@ -932,6 +940,8 @@ Purchase Invoice,Purchase Invoice
 Purchase Invoices,Purchase Invoices
 Purchase Order,Purchase Order
 Purchase Orders,Purchase Orders
+Purchase Receipt,Purchase Receipt
+Purchase Receipts,Purchase Receipts
 Purchase item,Purchase item
 Purchasing,Purchasing
 Purpose,Purpose
@@ -957,7 +967,9 @@ Receivable (AR),Receivable (AR)
 Receivables,Receivables
 Receive,Receive
 Receive currency,Receive currency
+Receive goods,Receive goods
 Receive goods into stock,Receive goods into stock
+Receive now,Receive now
 Receive payment,Receive payment
 Receive stock,Receive stock
 Received,Received

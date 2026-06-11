@@ -50,6 +50,7 @@ Add your first customer to start sending quotes and invoices.,Teklif ve fatura g
 Add your first supplier to start recording bills and purchases.,Fatura ve satın alma kaydetmeye başlamak için ilk tedarikçinizi ekleyin.
 Address,Adres
 Adjust dates or check that {company} has posted transactions in this period.,Tarihleri ayarlayın veya {company} şirketinin bu dönemde işlem kaydettiğini doğrulayın.
+Adjust quantities for a partial receipt. Rows left at zero are skipped.,Kısmi mal kabulü için miktarları ayarlayın. Sıfır bırakılan satırlar atlanır.
 Admin,Yönetici
 Advance paid,Ödenen avans
 Against,Karşılığı
@@ -226,6 +227,7 @@ Count,Adet
 Count:,Adet:
 Country,Ülke
 Create,Oluştur
+Create Bill,Fatura oluştur
 Create Invoice,Fatura Oluştur
 Create Plan,Plan Oluştur
 Create Scheme,Şema Oluştur
@@ -235,6 +237,7 @@ Create a plan to start tracking campaign budget and ROI.,Kampanya bütçesini ve
 Create contract,Sözleşme oluştur
 Create credit note,Alacak notu oluştur
 Create outlets to start planning routes and visits.,Rotaları ve ziyaretleri planlamaya başlamak için satış noktaları oluşturun.
+Create receipt,Mal kabulü oluştur
 Create your first deal or adjust the search filters.,İlk anlaşmanızı oluşturun veya filtreleri düzenleyin.
 Create your first item to start tracking stock and price lists.,Stok ve fiyat listelerini takip etmeye başlamak için ilk kaleминizi oluşturun.
 Create your first lead or adjust the search filters.,İlk potansiyelinizi oluşturun veya filtreleri düzenleyin.
@@ -347,6 +350,7 @@ End,Bitiş
 End Date,Bitiş Tarihi
 End Date must be on or after Start Date.,"Bitiş Tarihi, Başlangıç Tarihinden önce olamaz."
 End of ledger,
+Enter a quantity for at least one row.,En az bir satır için miktar girin.
 Enter at least one return qty.,En az bir iade miktarı girin.
 Enter cost and term to see the payment schedule.,Ödeme planını görmek için maliyet ve vadeyi girin.
 Enter the quantity to return for each line. Leave 0 to exclude a line.,Her satır için iade miktarını girin. Satırı dışarıda bırakmak için 0 bırakın.
@@ -390,6 +394,7 @@ Failed to create journal entry.,Yevmiye fişi oluşturulamadı.
 Failed to create payment.,Ödeme oluşturulamadı.
 Failed to create promo plan.,Promosyon planı oluşturulamadı.
 Failed to create quotation.,Teklif oluşturulamadı.
+Failed to create receipt.,Mal kabulü oluşturulamadı.
 Failed to create return.,İade oluşturulamadı.
 Failed to create sales order.,Satış siparişi oluşturulamadı.
 Failed to create transfer.,Transfer oluşturulamadı.
@@ -562,6 +567,7 @@ Journal Entries,Yevmiye Kayıtları
 Journal Entry,Yevmiye Kaydı
 Journal Entry legs,Yevmiye kaydı kalemleri
 Label,Etiket
+Landed cost vouchers,İthal maliyet fişleri
 Lane,Şerit
 Lanes,Şeritler
 Language,Dil
@@ -581,6 +587,7 @@ Left,Sol
 Lines,Satırlar
 Link to an existing Customer for receivables.,Alacaklar için mevcut bir Müşteriye bağlayın.
 Linked invoices,Bağlı faturalar
+Linked receipts,Bağlı mal kabulleri
 List rate,Liste fiyatı
 Loading more…,
 Loading warehouses…,Depolar yükleniyor…
@@ -666,6 +673,7 @@ New planogram,Yeni planogram
 New purchase bill,Yeni alış faturası
 New purchase order,Yeni satın alma siparişi
 New quotation,Yeni teklif
+New receipt,Yeni mal kabulü
 New route,Yeni rota
 New sales order,Yeni satış siparişi
 New stock entry,Yeni stok kaydı
@@ -922,6 +930,8 @@ Purchase Invoice,Satın Alma Faturası
 Purchase Invoices,Satın Alma Faturaları
 Purchase Order,Satın Alma Siparişi
 Purchase Orders,Satın Alma Siparişleri
+Purchase Receipt,Mal Kabul Fişi
+Purchase Receipts,Mal Kabulleri
 Purchase item,Satın alma kalemi
 Purchasing,Satın Alma
 Purpose,Amaç
@@ -947,7 +957,9 @@ Receivable (AR),Alacaklar (AR)
 Receivables,Alacaklar
 Receive,Al
 Receive currency,Alınan para birimi
+Receive goods,Mal kabul et
 Receive goods into stock,Malları stoğa al
+Receive now,Şimdi alınan
 Receive payment,Ödeme al
 Receive stock,Stok al
 Received,Alındı

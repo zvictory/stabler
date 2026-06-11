@@ -54,6 +54,7 @@ Add your first employee to start tracking attendance, leave and payroll.
 Add your first supplier to start recording bills and purchases.,"Добавьте первого поставщика, чтобы начать регистрацию счетов и закупок."
 Address,Адрес
 Adjust dates or check that {company} has posted transactions in this period.,"Измените даты или проверьте, что {company} имеет проведённые операции в этом периоде."
+Adjust quantities for a partial receipt. Rows left at zero are skipped.,Измените количества для частичной приёмки. Строки с нулём будут пропущены.
 Admin,Администратор
 Advance paid,Авансовый платёж
 Against,По
@@ -237,6 +238,7 @@ Count,Количество
 Count:,Количество:
 Country,Страна
 Create,Создать
+Create Bill,Создать счёт
 Create Invoice,Создать счёт-фактуру
 Create Plan,Создать план
 Create Scheme,Создать схему
@@ -246,6 +248,7 @@ Create a plan to start tracking campaign budget and ROI.,"Создайте пл�
 Create contract,Создать договор
 Create credit note,Создать кредит-ноту
 Create outlets to start planning routes and visits.,"Создайте торговые точки, чтобы планировать маршруты и визиты."
+Create receipt,Создать приёмку
 Create your first deal or adjust the search filters.,Создайте первую сделку или измените фильтры.
 Create your first item to start tracking stock and price lists.,"Создайте первый товар, чтобы начать отслеживать склад и прайс-листы."
 Create your first lead or adjust the search filters.,Создайте первый лид или измените фильтры.
@@ -360,6 +363,7 @@ End,Конец
 End Date,Дата окончания
 End Date must be on or after Start Date.,Дата окончания должна быть на или после даты начала.
 End of ledger,
+Enter a quantity for at least one row.,Укажите количество хотя бы для одной строки.
 Enter amount and commission to see preview.,Введите сумму и комиссию для предпросмотра.
 Enter at least one return qty.,Введите хотя бы одно количество возврата.
 Enter cost and term to see the payment schedule.,Введите себестоимость и срок для просмотра графика платежей.
@@ -404,6 +408,7 @@ Failed to create journal entry.,Не удалось создать запись 
 Failed to create payment.,Не удалось создать платёж.
 Failed to create promo plan.,Не удалось создать план акции.
 Failed to create quotation.,Не удалось создать предложение.
+Failed to create receipt.,Не удалось создать приёмку.
 Failed to create return.,Не удалось создать возврат.
 Failed to create sales order.,Не удалось создать заказ на продажу.
 Failed to create transfer.,Не удалось создать перевод.
@@ -577,6 +582,7 @@ Journal Entries,Журнальные записи
 Journal Entry,Запись в журнале
 Journal Entry legs,Проводки журнала
 Label,Надпись
+Landed cost vouchers,Ваучеры дополнительных затрат
 Lane,Полоса
 Lanes,Полосы
 Language,Язык
@@ -596,6 +602,7 @@ Left,Уволен
 Lines,Строки
 Link to an existing Customer for receivables.,Связь с существующим клиентом для дебиторской задолженности.
 Linked invoices,Связанные счета
+Linked receipts,Связанные приёмки
 List rate,Прейскурантная цена
 Loaded,Загружено
 Loading more…,
@@ -682,6 +689,7 @@ New planogram,Новая спецификация расположения
 New purchase bill,Новая счёт-фактура покупки
 New purchase order,Новый заказ на покупку
 New quotation,Новая коммерческое предложение
+New receipt,Новая приёмка
 New route,Новый маршрут
 New sales order,Новый заказ на продажу
 New stock entry,Новое движение товаров
@@ -943,6 +951,8 @@ Purchase Invoice,Счёт-фактура покупки
 Purchase Invoices,Счета закупок
 Purchase Order,Заказ на покупку
 Purchase Orders,Заказы на покупку
+Purchase Receipt,Приёмка товара
+Purchase Receipts,Приёмки товара
 Purchase item,Товар покупки
 Purchasing,Закупки
 Purpose,Назначение
@@ -968,7 +978,9 @@ Receivable (AR),Дебиторская задолженность
 Receivables,Дебиторская задолженность
 Receive,Получить
 Receive currency,Валюта получения
+Receive goods,Принять товар
 Receive goods into stock,Оприходовать товар на склад
+Receive now,Принять сейчас
 Receive payment,Получить платёж
 Receive stock,Получить товар
 Received,Получено

@@ -51,6 +51,7 @@ Add your first employee to start tracking attendance, leave and payroll.
 Add your first supplier to start recording bills and purchases.,Hisob-fakturalar va xaridlarni qaydga olishni boshlash uchun birinchi ta'minotchingizni qo'shing.
 Address,Manzil
 Adjust dates or check that {company} has posted transactions in this period.,Sanalarni o'zgartiring yoki {company} ushbu davr ichida tranzaksiyalar joylashtirganini tekshiring.
+Adjust quantities for a partial receipt. Rows left at zero are skipped.,Qisman qabul qilish uchun miqdorlarni o'zgartiring. Nol qoldirilgan qatorlar o'tkazib yuboriladi.
 Admin,Admin
 Advance paid,Avans to'landi
 Against,Qarshi
@@ -231,6 +232,7 @@ Count,Miqdori
 Count:,Miqdori:
 Country,Davlat
 Create,Yaratish
+Create Bill,Hisob yaratish
 Create Invoice,Hisob-faktura yaratish
 Create Plan,Reja yaratish
 Create Scheme,Sxema yaratish
@@ -240,6 +242,7 @@ Create a plan to start tracking campaign budget and ROI.,Kampaniya byujetini va 
 Create contract,Shartnoma yaratish
 Create credit note,Kredit xatni yaratish
 Create outlets to start planning routes and visits.,Marshrutlarni va tashrif etishlarni rejalashtirishni boshlash uchun shubelalarni yarating.
+Create receipt,Qabul hujjatini yaratish
 Create your first deal or adjust the search filters.,Birinchi bitimni yarating yoki filtrlarni oʼgarliring.
 Create your first item to start tracking stock and price lists.,Zaxirani va narx ro'yxatlarini kuzatishni boshlash uchun birinchi tovaringizni yarating.
 Create your first lead or adjust the search filters.,Birinchi lidni yarating yoki filtrlarni oʼgarliring.
@@ -353,6 +356,7 @@ End,Oxiri
 End Date,Yakuniy sana
 End Date must be on or after Start Date.,Yakuniy sana Bosh sananingdan keyin yoki shu kunida bo'lishi kerak.
 End of ledger,
+Enter a quantity for at least one row.,Kamida bitta qator uchun miqdor kiriting.
 Enter amount and commission to see preview.,Ko'rib chiqish uchun summa va komissiyani kiriting.
 Enter at least one return qty.,Kamida bitta qaytarish miqdorini kiriting.
 Enter cost and term to see the payment schedule.,To'lov jadvalini ko'rish uchun tannarx va muddatni kiriting.
@@ -397,6 +401,7 @@ Failed to create journal entry.,Jurnali yozuvi yaratish muvaffaq bo'lmadi.
 Failed to create payment.,To'lov yaratishda xato.
 Failed to create promo plan.,Reklama rejasini yaratishda xato.
 Failed to create quotation.,Taklifnomani yaratishda xato.
+Failed to create receipt.,Qabul hujjatini yaratib bo'lmadi.
 Failed to create return.,Qaytarni yaratishda xato.
 Failed to create sales order.,Sotuv buyurtmasini yaratishda xato.
 Failed to create transfer.,O'tkazma yaratib bo'lmadi.
@@ -570,6 +575,7 @@ Journal Entries,Jurnal yozuvlari
 Journal Entry,Jurnal yozuvi
 Journal Entry legs,Jurnal yozuv qatorlari
 Label,Nom
+Landed cost vouchers,Qo'shimcha xarajat vaucherlari
 Lane,Yo'lak
 Lanes,Yo'laklar
 Language,Til
@@ -589,6 +595,7 @@ Left,Ishdan ketgan
 Lines,Qatorlar
 Link to an existing Customer for receivables.,Qabul uchun mavjud Mijozga havola.
 Linked invoices,Bog'langan invoyslar
+Linked receipts,Bog'langan qabul hujjatlari
 List rate,Ro'yxat narxi
 Loaded,Yuklandi
 Loading more…,
@@ -675,6 +682,7 @@ New planogram,Yangi planogram
 New purchase bill,Yangi xarid qo'lyozuvchisi
 New purchase order,Yangi xarid buyurtmasi
 New quotation,Yangi qo'llashni taklif etish
+New receipt,Yangi qabul
 New route,Yangi marshrut
 New sales order,Yangi sotuv buyurtmasi
 New stock entry,Yangi ombor kiritmasi
@@ -936,6 +944,8 @@ Purchase Invoice,Xarid qilish hisob-fakturasi
 Purchase Invoices,Xarid hisob-fakturalari
 Purchase Order,Xarid qilish buyurtmasi
 Purchase Orders,Xarid qilish buyurtmalari
+Purchase Receipt,Tovar qabul qilish
+Purchase Receipts,Tovar qabul qilish hujjatlari
 Purchase item,Tovarni xarid qilish
 Purchasing,Xarid
 Purpose,Maqsad
@@ -961,7 +971,9 @@ Receivable (AR),Debitorlik qarzi
 Receivables,Qabul qilinadigan summalar
 Receive,Qabul qilish
 Receive currency,Qabul qilish valyutasi
+Receive goods,Tovarni qabul qilish
 Receive goods into stock,Tovarni omborga qabul qilish
+Receive now,Hozir qabul qilinadi
 Receive payment,To'lovni qabul qilish
 Receive stock,Tovarni qabul qilish
 Received,Qabul qilindi

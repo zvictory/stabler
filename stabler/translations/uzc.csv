@@ -51,6 +51,7 @@ Add your first employee to start tracking attendance, leave and payroll.
 Add your first supplier to start recording bills and purchases.,"Биринчи таъминотчини қўшиб, счёталар ва сотиб олишларни рўйхатга олишни бошлаш."
 Address,Манзил
 Adjust dates or check that {company} has posted transactions in this period.,Саналарни ўзгартириш ёки {company} бу давр ичида амаллар рўйхатга олганини текширинг.
+Adjust quantities for a partial receipt. Rows left at zero are skipped.,Қисман қабул қилиш учун миқдорларни ўзгартиринг. Нол қолдирилган қаторлар ўтказиб юборилади.
 Admin,Администратор
 Advance paid,Авансий тўланган
 Against,Қарши
@@ -231,6 +232,7 @@ Count,Миқдори
 Count:,Миқдори:
 Country,Мамлакат
 Create,Яратиш
+Create Bill,Ҳисоб яратиш
 Create Invoice,Ҳисобот яратиш
 Create Plan,Режа яратиш
 Create Scheme,Схема яратиш
@@ -240,6 +242,7 @@ Create a plan to start tracking campaign budget and ROI.,Компания бюд
 Create contract,Шартнома яратиш
 Create credit note,Кредит нотасини яратиш
 Create outlets to start planning routes and visits.,Маршрутлар ва сўзишмаларни режалаштириш учун сотув ўринларини яратинг.
+Create receipt,Қабул ҳужжатини яратиш
 Create your first deal or adjust the search filters.,Биринчи битимни яратинг ва филтрларни Ӯзгартиринг.
 Create your first item to start tracking stock and price lists.,Складни ва нарх рўйхатларини кузатиш учун биринчи товарни яратинг.
 Create your first lead or adjust the search filters.,Биринчи лидни яратинг ва филтрларни Ӯзгартиринг.
@@ -353,6 +356,7 @@ End,Охири
 End Date,Охирги сана
 End Date must be on or after Start Date.,Охирги сана дастлабки сана орасида ё кейин бўлиши керак.
 End of ledger,
+Enter a quantity for at least one row.,Камида битта қатор учун миқдор киритинг.
 Enter amount and commission to see preview.,Кўриб чиқиш учун сумма ва комиссияни киритинг.
 Enter at least one return qty.,Камида бир қайтариш миқдорини киритинг.
 Enter cost and term to see the payment schedule.,Тўлов жадвалини кўриш учун таннарх ва муддатни киритинг.
@@ -397,6 +401,7 @@ Failed to create journal entry.,Журнал ёзувини ишлаб чиқа�
 Failed to create payment.,Тўлов яратиб бўла олмади.
 Failed to create promo plan.,Рекламалаш режасини яратиб бўла олмади.
 Failed to create quotation.,Таклифномани яратиб бўла олмади.
+Failed to create receipt.,Қабул ҳужжатини яратиб бўлмади.
 Failed to create return.,Қайтарув яратиб бўла олмади.
 Failed to create sales order.,Сотув буйртмасини яратиб бўла олмади.
 Failed to create transfer.,Ўтказма яратиб бўлмади.
@@ -570,6 +575,7 @@ Journal Entries,Журнал ёзувлари
 Journal Entry,Журнал ёзуви
 Journal Entry legs,Журнал ёзув қаторлари
 Label,Ном
+Landed cost vouchers,Қўшимча харажат ваучерлари
 Lane,Йўлак
 Lanes,Йўлаклар
 Language,Тил
@@ -589,6 +595,7 @@ Left,Ишдан кетган
 Lines,Қаторлар
 Link to an existing Customer for receivables.,Дебиторлик учун мавжуд бўлган Хариданинг билан боғланг.
 Linked invoices,Боғланган счетлар
+Linked receipts,Боғланган қабул ҳужжатлари
 List rate,Рўйхат нарх
 Loaded,Юклангани
 Loading more…,
@@ -675,6 +682,7 @@ New planogram,Янги планограмма
 New purchase bill,Янги қарз счёти
 New purchase order,Янги сотиб олиш буйртмаси
 New quotation,Янги ихтибор
+New receipt,Янги қабул
 New route,Янги маршрут
 New sales order,Янги сотув буйртмаси
 New stock entry,Янги омбор ёзув
@@ -936,6 +944,8 @@ Purchase Invoice,Сотиб олиш ҳисоб-фактурасы
 Purchase Invoices,Харид ҳисоб-фактуралари
 Purchase Order,Сотиб олиш буйртмаси
 Purchase Orders,Сотиб олиш буйртмалари
+Purchase Receipt,Товар қабул қилиш
+Purchase Receipts,Товар қабул қилиш ҳужжатлари
 Purchase item,Товарни сотиб олиш
 Purchasing,Харид
 Purpose,Мақсад
@@ -961,7 +971,9 @@ Receivable (AR),Дебиторлик қарзи
 Receivables,Қарзлар
 Receive,Қабул қилиш
 Receive currency,Қабул қилиш валютаси
+Receive goods,Товарни қабул қилиш
 Receive goods into stock,Товарни омборга қабул қилиш
+Receive now,Ҳозир қабул қилинади
 Receive payment,Тўловни қабул қилиш
 Receive stock,Товарни қабул қилиш
 Received,Қабул қилинган

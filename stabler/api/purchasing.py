@@ -986,6 +986,17 @@ def purchase_order_detail(name: str):
 		{"name": name},
 		as_dict=True,
 	)
+	# linked Purchase Receipts created via PO→PR bridge (or manually)
+	pr_links = frappe.db.sql(
+		"""
+		SELECT DISTINCT pr.name, pr.docstatus
+		FROM `tabPurchase Receipt Item` pri
+		JOIN `tabPurchase Receipt` pr ON pr.name = pri.parent
+		WHERE pri.purchase_order = %(name)s AND pr.docstatus < 2
+		""",
+		{"name": name},
+		as_dict=True,
+	)
 	return {
 		"name": doc.name,
 		"transaction_date": str(doc.transaction_date) if doc.transaction_date else None,
@@ -1005,6 +1016,7 @@ def purchase_order_detail(name: str):
 		"amended_from": doc.amended_from or None,
 		"remarks": getattr(doc, "terms", None) or None,
 		"purchase_invoices": pi_links,
+		"purchase_receipts": pr_links,
 		"items": [
 			{
 				"name": it.name,
@@ -1211,4 +1223,329 @@ def create_purchase_invoice_from_po(name: str):
 		"grand_total": flt(doc.grand_total),
 		"supplier": doc.supplier,
 		"purchase_order": name,
+	}
+
+
+# ── Purchase Receipt endpoints ────────────────────────────────────────────────
+
+
+@frappe.whitelist()
+def list_purchase_receipts(
+	company: str,
+	from_date: str | None = None,
+	to_date: str | None = None,
+	supplier: str | None = None,
+	status: str | None = None,
+	limit: int = 100,
+):
+	_require_company(company)
+	conds = ["company = %(company)s", "docstatus < 2"]
+	params: dict = {"company": company, "limit": int(limit)}
+	if from_date:
+		conds.append("posting_date >= %(from_date)s")
+		params["from_date"] = getdate(from_date)
+	if to_date:
+		conds.append("posting_date <= %(to_date)s")
+		params["to_date"] = getdate(to_date)
+	if supplier:
+		conds.append("supplier = %(supplier)s")
+		params["supplier"] = supplier
+	if status:
+		conds.append("status = %(status)s")
+		params["status"] = status
+	where = " AND ".join(conds)
+	return frappe.db.sql(
+		f"""
+		SELECT name, posting_date, supplier, supplier_name,
+		       grand_total, per_billed,
+		       status, currency, docstatus, set_warehouse
+		FROM `tabPurchase Receipt`
+		WHERE {where}
+		ORDER BY posting_date DESC, name DESC
+		LIMIT %(limit)s
+		""",
+		params,
+		as_dict=True,
+	)
+
+
+@frappe.whitelist()
+def purchase_receipt_detail(name: str):
+	if not name:
+		frappe.throw("Purchase receipt name is required.")
+	_assert_can_read("Purchase Receipt", name)
+	doc = frappe.get_doc("Purchase Receipt", name)
+	# linked Purchase Invoices created via PR→PI bridge (or manually)
+	pi_links = frappe.db.sql(
+		"""
+		SELECT DISTINCT pi.name, pi.docstatus
+		FROM `tabPurchase Invoice Item` pii
+		JOIN `tabPurchase Invoice` pi ON pi.name = pii.parent
+		WHERE pii.purchase_receipt = %(name)s AND pi.docstatus < 2
+		""",
+		{"name": name},
+		as_dict=True,
+	)
+	# linked Landed Cost Vouchers referencing this receipt
+	lcv_links = frappe.db.sql(
+		"""
+		SELECT DISTINCT lcv.name, lcv.docstatus
+		FROM `tabLanded Cost Purchase Receipt` lpr
+		JOIN `tabLanded Cost Voucher` lcv ON lcv.name = lpr.parent
+		WHERE lpr.receipt_document_type = 'Purchase Receipt'
+		  AND lpr.receipt_document = %(name)s AND lcv.docstatus < 2
+		""",
+		{"name": name},
+		as_dict=True,
+	)
+	return {
+		"name": doc.name,
+		"posting_date": str(doc.posting_date) if doc.posting_date else None,
+		"supplier": doc.supplier,
+		"supplier_name": doc.supplier_name,
+		"company": doc.company,
+		"set_warehouse": getattr(doc, "set_warehouse", None) or None,
+		"currency": doc.currency,
+		"conversion_rate": flt(doc.conversion_rate),
+		"net_total": flt(doc.net_total),
+		"grand_total": flt(doc.grand_total),
+		"base_grand_total": flt(doc.base_grand_total),
+		"per_billed": flt(doc.per_billed),
+		"status": doc.status,
+		"docstatus": doc.docstatus,
+		"amended_from": doc.amended_from or None,
+		"remarks": getattr(doc, "remarks", None) or None,
+		"purchase_invoices": pi_links,
+		"landed_cost_vouchers": lcv_links,
+		"items": [
+			{
+				"name": it.name,
+				"item_code": it.item_code,
+				"item_name": it.item_name,
+				"warehouse": getattr(it, "warehouse", None) or None,
+				"qty": flt(it.qty),
+				"rejected_qty": flt(getattr(it, "rejected_qty", 0)),
+				"uom": it.uom,
+				"stock_uom": it.stock_uom,
+				"conversion_factor": flt(it.conversion_factor) or 1.0,
+				"stock_qty": flt(it.stock_qty),
+				"rate": flt(it.rate),
+				"amount": flt(it.amount),
+				"billed_amt": flt(getattr(it, "billed_amt", 0)),
+				"purchase_order": getattr(it, "purchase_order", None) or None,
+				"landed_cost_voucher_amount": flt(getattr(it, "landed_cost_voucher_amount", 0)),
+			}
+			for it in (doc.items or [])
+		],
+	}
+
+
+@frappe.whitelist()
+def create_purchase_receipt_from_po(name: str, items=None):
+	"""Create a draft Purchase Receipt from a submitted Purchase Order.
+
+	Uses ERPNext's make_purchase_receipt mapper, which maps only rows with
+	pending qty (qty - received_qty) and sets purchase_order_item on each row.
+
+	`items` (optional) enables partial receiving: a list of
+	{"po_detail": <PO item row name>, "qty": <qty to receive>}.
+	Rows not listed are dropped; requested qty is capped at the pending qty.
+	"""
+	if not name or not frappe.db.exists("Purchase Order", name):
+		frappe.throw(f"Unknown Purchase Order: {name}")
+	_assert_can_read("Purchase Order", name)
+	po = frappe.get_doc("Purchase Order", name)
+	if po.docstatus != 1:
+		frappe.throw("Only submitted purchase orders can be received.")
+
+	if isinstance(items, str):
+		try:
+			items = json.loads(items)
+		except Exception:
+			frappe.throw("Invalid items payload.")
+	if items is not None and (not isinstance(items, list) or not items):
+		frappe.throw("Invalid items payload.")
+
+	from erpnext.buying.doctype.purchase_order.purchase_order import (
+		make_purchase_receipt as _make_pr,
+	)
+
+	doc = _make_pr(name)
+	if not doc.get("items"):
+		frappe.throw("Nothing left to receive on this purchase order.")
+
+	if items:
+		requested: dict[str, float] = {}
+		for idx, row in enumerate(items, start=1):
+			po_detail = (row or {}).get("po_detail")
+			if not po_detail:
+				frappe.throw(f"Row {idx}: po_detail is required.")
+			qty = flt(row.get("qty"))
+			if qty <= 0:
+				frappe.throw(f"Row {idx}: qty must be greater than zero.")
+			requested[po_detail] = qty
+
+		mapped = {r.purchase_order_item: r for r in doc.items}
+		unknown = [d for d in requested if d not in mapped]
+		if unknown:
+			frappe.throw(
+				"These order rows have nothing pending to receive: "
+				+ ", ".join(unknown)
+			)
+
+		kept = []
+		for po_detail, qty in requested.items():
+			row = mapped[po_detail]
+			row.qty = min(qty, flt(row.qty))  # cap at pending
+			kept.append(row)
+		doc.items = kept
+		for i, row in enumerate(doc.items, start=1):
+			row.idx = i
+
+	doc.insert(ignore_permissions=False)
+	return {
+		"name": doc.name,
+		"grand_total": flt(doc.grand_total),
+		"supplier": doc.supplier,
+		"purchase_order": name,
+		"docstatus": doc.docstatus,
+	}
+
+
+@frappe.whitelist()
+def create_purchase_receipt(
+	company: str,
+	supplier: str,
+	items,
+	set_warehouse: str,
+	posting_date: str | None = None,
+	currency: str | None = None,
+	remarks: str | None = None,
+):
+	"""Create a draft Purchase Receipt directly (no Purchase Order).
+
+	A receipt moves stock, so `set_warehouse` is required.
+	"""
+	_require_company(company)
+	if not supplier:
+		frappe.throw("Supplier is required.")
+	if not frappe.db.exists("Supplier", supplier):
+		frappe.throw(f"Unknown supplier: {supplier}")
+	if not set_warehouse:
+		frappe.throw("Warehouse is required — a receipt moves stock into it.")
+	if not frappe.db.exists("Warehouse", set_warehouse):
+		frappe.throw(f"Unknown warehouse: {set_warehouse}")
+
+	if isinstance(items, str):
+		try:
+			items = json.loads(items)
+		except Exception:
+			frappe.throw("Invalid items payload.")
+	if not isinstance(items, list) or not items:
+		frappe.throw("At least one item is required.")
+
+	cleaned: list[dict] = []
+	for idx, row in enumerate(items, start=1):
+		code = (row or {}).get("item_code")
+		if not code:
+			frappe.throw(f"Row {idx}: item is required.")
+		if not frappe.db.exists("Item", code):
+			frappe.throw(f"Row {idx}: unknown item '{code}'.")
+		qty = flt(row.get("qty"))
+		if qty <= 0:
+			frappe.throw(f"Row {idx}: qty must be greater than zero.")
+		if row.get("rate") not in (None, "") and flt(row.get("rate")) < 0:
+			frappe.throw(f"Row {idx}: rate cannot be negative.")
+		cleaned.append(
+			{
+				"item_code": code,
+				"qty": qty,
+				"rate": flt(row.get("rate")),
+				"uom": row.get("uom") or None,
+				"conversion_factor": flt(row.get("conversion_factor")) or None,
+			}
+		)
+
+	doc = frappe.new_doc("Purchase Receipt")
+	doc.company = company
+	doc.supplier = supplier
+	doc.posting_date = getdate(posting_date or today())
+	doc.set_warehouse = set_warehouse
+	if currency:
+		doc.currency = currency
+	if remarks:
+		doc.remarks = remarks.strip()
+
+	for row in cleaned:
+		line = doc.append("items", {})
+		line.item_code = row["item_code"]
+		line.qty = row["qty"]
+		line.warehouse = set_warehouse
+		if row["rate"]:
+			line.rate = row["rate"]
+		if row["uom"]:
+			line.uom = row["uom"]
+		if row["conversion_factor"]:
+			line.conversion_factor = row["conversion_factor"]
+
+	doc.insert(ignore_permissions=False)
+	return {
+		"name": doc.name,
+		"grand_total": flt(doc.grand_total),
+		"supplier": doc.supplier,
+		"docstatus": doc.docstatus,
+	}
+
+
+@frappe.whitelist()
+def submit_purchase_receipt(name: str):
+	"""Submit a draft Purchase Receipt (docstatus 0 → 1) — this moves stock."""
+	if not name:
+		frappe.throw("Purchase receipt name is required.")
+	doc = frappe.get_doc("Purchase Receipt", name)
+	if doc.docstatus == 1:
+		frappe.throw("Purchase receipt is already submitted.")
+	if doc.docstatus == 2:
+		frappe.throw("Purchase receipt is cancelled and cannot be submitted.")
+	doc.submit()
+	return {"name": doc.name, "docstatus": doc.docstatus, "status": doc.status}
+
+
+@frappe.whitelist()
+def cancel_purchase_receipt(name: str):
+	"""Cancel a submitted Purchase Receipt (docstatus 1 → 2) — reverses stock."""
+	if not name:
+		frappe.throw("Purchase receipt name is required.")
+	doc = frappe.get_doc("Purchase Receipt", name)
+	if doc.docstatus != 1:
+		frappe.throw("Only submitted purchase receipts can be cancelled.")
+	doc.cancel()
+	return {"name": doc.name, "docstatus": doc.docstatus, "status": doc.status}
+
+
+@frappe.whitelist()
+def create_purchase_invoice_from_pr(name: str):
+	"""Create a draft Purchase Invoice from a submitted Purchase Receipt.
+
+	The receipt already moved stock, so the bill must NOT move it again:
+	update_stock is forced to 0 (ERPNext also guards this server-side).
+	"""
+	if not name or not frappe.db.exists("Purchase Receipt", name):
+		frappe.throw(f"Unknown Purchase Receipt: {name}")
+	_assert_can_read("Purchase Receipt", name)
+	pr = frappe.get_doc("Purchase Receipt", name)
+	if pr.docstatus != 1:
+		frappe.throw("Only submitted purchase receipts can be billed.")
+	from erpnext.stock.doctype.purchase_receipt.purchase_receipt import (
+		make_purchase_invoice as _make_pi,
+	)
+
+	doc = _make_pi(name)
+	doc.update_stock = 0
+	doc.insert(ignore_permissions=False)
+	return {
+		"name": doc.name,
+		"grand_total": flt(doc.grand_total),
+		"supplier": doc.supplier,
+		"purchase_receipt": name,
 	}
