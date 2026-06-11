@@ -16,6 +16,8 @@
   "enable_compliance",
   "enable_field_sales",
   "enable_marketing",
+  "enable_crm",
+  "enable_bpm",
   "enable_remittance",
   "enable_installment"
  ],
@@ -98,6 +100,20 @@
    "fieldtype": "Check",
    "in_list_view": 1,
    "label": "Trade Marketing"
+  },
+  {
+   "default": "1",
+   "fieldname": "enable_crm",
+   "fieldtype": "Check",
+   "in_list_view": 1,
+   "label": "CRM"
+  },
+  {
+   "default": "1",
+   "fieldname": "enable_bpm",
+   "fieldtype": "Check",
+   "in_list_view": 1,
+   "label": "Processes (BPM)"
   },
   {
    "default": "1",

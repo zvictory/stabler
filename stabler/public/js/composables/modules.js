@@ -25,6 +25,8 @@ export const MODULE_CATALOG = [
 	{ key: "compliance", label: t("Compliance") },
 	{ key: "field_sales", label: t("Field Sales") },
 	{ key: "marketing", label: t("Marketing") },
+	{ key: "crm", label: t("CRM") },
+	{ key: "bpm", label: t("Processes") },
 	{ key: "remittance", label: t("Remittance") },
 	{ key: "installment", label: t("Installment") },
 ];

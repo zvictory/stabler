@@ -22,6 +22,8 @@ _MODULE_FIELDS = {
 	"compliance": "enable_compliance",
 	"field_sales": "enable_field_sales",
 	"marketing": "enable_marketing",
+	"crm": "enable_crm",
+	"bpm": "enable_bpm",
 	# Admin-only modules — toggled via company enable_* field but absent from
 	# _MODULE_ROLES so only System Manager / Stabler Admin can reach them via
 	# the SPA's canAccessModule() check.
@@ -47,6 +49,8 @@ _MODULE_ROLES: dict[str, list[str]] = {
 	"field_sales": ["Sales User", "Sales Manager"],
 	"marketing": ["Sales Manager"],
 	"compliance": ["Accounts Manager"],
+	"crm": ["Sales User", "Sales Manager"],
+	"bpm": ["Sales Manager"],
 }
 
 _ADMIN_ROLES = ("System Manager", "Stabler Admin")
@@ -229,6 +233,8 @@ def update_company_modules(
 	compliance=None,
 	field_sales=None,
 	marketing=None,
+	crm=None,
+	bpm=None,
 	remittance=None,
 	installment=None,
 ):
@@ -260,6 +266,8 @@ def update_company_modules(
 				"enable_compliance": 1,
 				"enable_field_sales": 1,
 				"enable_marketing": 1,
+				"enable_crm": 1,
+				"enable_bpm": 1,
 				"enable_remittance": 1,
 				"enable_installment": 1,
 			},
@@ -276,6 +284,8 @@ def update_company_modules(
 		"enable_compliance": compliance,
 		"enable_field_sales": field_sales,
 		"enable_marketing": marketing,
+		"enable_crm": crm,
+		"enable_bpm": bpm,
 		"enable_remittance": remittance,
 		"enable_installment": installment,
 	}
