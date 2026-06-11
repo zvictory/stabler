@@ -3,6 +3,7 @@ import { computed } from "vue";
 import { useRoute, RouterLink, RouterView } from "vue-router";
 import { useSession } from "../../stores/session.js";
 import { t } from "../../composables/i18n.js";
+import ModuleHeader from "../../components/ModuleHeader.vue";
 
 const route = useRoute();
 const session = useSession();
@@ -23,33 +24,10 @@ const activeTab = computed(() => route.name);
 </script>
 
 <template>
-	<div class="page-header d-print-none">
-		<div class="container-xl">
-			<div class="row g-2 align-items-center">
-				<div class="col">
-					<div class="page-pretitle">{{ t("Module") }}</div>
-					<h2 class="page-title d-flex align-items-center gap-2">
-						<i class="ti ti-settings"></i> {{ t("Admin") }}
-					</h2>
-				</div>
-			</div>
-		</div>
-	</div>
+	<ModuleHeader :title='t("Admin")' icon="ti-settings" :tabs="tabs" :active-tab="activeTab" />
 
 	<div class="page-body">
 		<div class="container-xl">
-			<ul class="nav nav-bordered mb-3">
-				<li v-for="tab in tabs" :key="tab.name" class="nav-item">
-					<router-link
-						:to="tab.path"
-						class="nav-link"
-						:class="{ active: activeTab === tab.name }"
-					>
-						<i class="ti me-1" :class="tab.icon"></i>{{ t(tab.label) }}
-					</router-link>
-				</li>
-			</ul>
-
 			<router-view />
 		</div>
 	</div>

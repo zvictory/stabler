@@ -10,6 +10,8 @@ import EmptyState from "../../components/EmptyState.vue";
 import DateInput from "../../components/DateInput.vue";
 import Select from "../../components/Select.vue";
 import PartyPaymentModal from "../../components/PartyPaymentModal.vue";
+import BalanceChip from "../../components/BalanceChip.vue";
+import PartyAvatar from "../../components/PartyAvatar.vue";
 
 const session = useSession();
 const { activeCompany, user } = storeToRefs(session);
@@ -511,6 +513,7 @@ watch(activeCompany, () => {
 									:placeholder="t('Search customer…')"
 									@input="onSearchInput"
 								/>
+								<kbd class="cust-search-kbd">⌘K</kbd>
 							</div>
 							<label class="form-check form-check-inline mt-2 mb-0">
 								<input
@@ -574,15 +577,14 @@ watch(activeCompany, () => {
 									:class="{ 'cust-row-active': selected?.name === c.name }"
 									@click="selectCustomer(c)"
 								>
-									<div class="cust-row-avatar">
-										{{ (c.customer_name || c.name).slice(0, 2).toUpperCase() }}
-									</div>
+									<PartyAvatar :name="c.customer_name || c.name" size="sm" class="cust-row-avatar" />
 									<div class="cust-row-main">
 										<div class="cust-row-name">{{ c.customer_name }}</div>
-										<div class="cust-row-id">{{ c.name }}</div>
+										<div class="cust-row-id stbl-subtext">{{ c.name }}</div>
 									</div>
 									<div class="cust-row-balance">
 										<div
+											class="stbl-amount"
 											:class="{
 												'text-red': Number(c.balance_acc ?? c.balance_base) > 0,
 												'text-secondary': !Number(c.balance_acc ?? c.balance_base),
@@ -596,7 +598,7 @@ watch(activeCompany, () => {
 										</div>
 										<div
 											v-if="c.account_currency && c.account_currency !== currency"
-											class="small text-secondary"
+											class="small stbl-subtext stbl-amount"
 										>
 											{{ formatMoney(c.balance_base, currency, user.language) }}
 										</div>
@@ -639,28 +641,23 @@ watch(activeCompany, () => {
 						</div>
 						<template v-else>
 							<div class="cust-ledger-header px-3 py-3 d-flex align-items-center gap-3 flex-wrap">
-								<span class="avatar avatar-lg bg-blue-lt cust-ledger-avatar">
-									{{ (selected.customer_name || selected.name).slice(0, 2).toUpperCase() }}
-								</span>
+								<PartyAvatar :name="selected.customer_name || selected.name" size="lg" class="cust-ledger-avatar" />
 								<div class="min-w-0">
 									<h3 class="m-0 text-truncate">{{ selected.customer_name }}</h3>
-									<div class="small text-secondary font-monospace">{{ selected.name }}</div>
+									<div class="small stbl-subtext font-monospace">{{ selected.name }}</div>
 								</div>
 								<div class="ms-auto text-end">
 									<div class="small text-secondary text-uppercase cust-balance-label">{{ t("Balance") }}</div>
-									<div
-										class="m-0 font-monospace cust-balance-amount"
-										:class="Number(selected.balance_acc ?? selected.balance_base) > 0 ? 'text-red' : ''"
-									>
-										{{ formatMoney(
-											selected.balance_acc ?? selected.balance_base,
-											selected.account_currency || currency,
-											user.language,
-										) }}
-									</div>
+									<BalanceChip
+										:value="selected.balance_acc ?? selected.balance_base"
+										:currency="selected.account_currency || currency"
+										:language="user.language"
+										party-type="Customer"
+										size="lg"
+									/>
 									<div
 										v-if="selected.account_currency && selected.account_currency !== currency"
-										class="small text-secondary font-monospace"
+										class="small stbl-subtext font-monospace stbl-amount mt-1"
 									>
 										{{ formatMoney(selected.balance_base, currency, user.language) }}
 									</div>
@@ -741,7 +738,7 @@ watch(activeCompany, () => {
 										</button>
 										<button
 											type="button"
-											class="btn btn-sm btn-outline-success"
+											class="btn btn-sm btn-outline-secondary"
 											@click="partyPayOpen = true"
 										>
 											<i class="ti ti-cash me-1"></i>{{ t("Payment") }}
@@ -1264,7 +1261,16 @@ watch(activeCompany, () => {
 }
 .cust-search-input {
 	padding-left: 2rem;
+	padding-right: 3.5rem;
 	border-radius: var(--cust-radius-sm);
+}
+.cust-search-kbd {
+	color: var(--tblr-secondary);
+	font-size: 0.68rem;
+	position: absolute;
+	right: 0.5rem;
+	top: 50%;
+	transform: translateY(-50%);
 }
 
 /* ---- list scroll ---- */
@@ -1330,7 +1336,6 @@ watch(activeCompany, () => {
 
 .cust-row-id {
 	font-size: 0.72rem;
-	color: #9ca3af;
 	font-family: var(--tblr-font-monospace, ui-monospace, SFMono-Regular, monospace);
 	white-space: nowrap;
 	overflow: hidden;

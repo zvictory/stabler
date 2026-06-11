@@ -26,3 +26,16 @@
 - [x] Add submitted amend UI flow that preloads an old entry and creates a replacement after cancellation.
 - [ ] Add database-backed integration tests for expense/transfer Journal Entry payloads and sales report SQL.
 - [ ] Add CSV/XLSX export for custom Sales Reports.
+
+## Phase 4: Installment Collection & Remittance
+- [x] Add Installment P0 backend collection API with dry-run allocation preview and submitted Payment Entry creation.
+- [x] Add Installment contract drawer collection UI using `MoneyInput`, `DateInput`, payment mode, cash/bank account, and allocation preview.
+- [x] Add installment schedule states for paid, partial, overdue, and upcoming rows in contract detail and calendar chips.
+- [x] Add backend overdue schedule row API for collections follow-up lists.
+- [ ] Add printable installment collection receipt route linked to the created Payment Entry.
+- [ ] Add same-day cashier cancel flow for mistaken installment collections, restoring schedule rows newest-covered first.
+- [ ] Add overdue installment list page with customer/supplier phone and days overdue.
+- [ ] Decide remittance refund policy: return commission or keep commission on refund.
+- [ ] Decide remittance pickup verification: pickup code only, or pickup code plus receiver name/ID.
+- [ ] Confirm whether remittance corridors stay within one company ledger; if not, inter-company settlement becomes P0.
+- [ ] After remittance decisions, split remittance posting into register, payout, and refund stages with in-transit liability accounting.

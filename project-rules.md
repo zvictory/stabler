@@ -25,3 +25,10 @@
 - There is currently no active `/shop` or catalog domain inside Stabler.
 - **Rule of singularity:** If a future spec mandates entity filtering, such as filtering items, partners, or assets by brands, perfumers, notes, or categories, do not create multiple independent listing layouts or duplicate database views.
 - Define a single, unified SPA route within `stabler/public/js/router.js` and use URL query parameters, such as `?entity=id`, to drive state.
+
+## 4. UI Frame & Visual Hierarchy
+- **Global shell:** Sidebar grouping and module header patterns are shared frame concerns. Keep module home pages aligned to `ModuleHeader.vue` instead of hand-rolling separate header/tab structures.
+- **Button hierarchy:** Use at most one `.btn-primary` action per visual region. Secondary actions must use outline, ghost, link, or icon-only treatments so enterprise screens stay scannable under fatigue.
+- **Money semantics:** Monetary balances must preserve semantic direction. Use `balanceState()` / `BalanceChip.vue` for customer and supplier balances instead of showing unsigned numbers without context.
+- **Dense text:** Use `.stbl-subtext` for quiet supporting metadata and `.stbl-amount` for aligned currency values. Do not let money cells wrap or truncate in ways that hide the amount.
+- **Party identity:** Use `PartyAvatar.vue` where customer/supplier/person names need a compact identity anchor in list rows or drawers.

@@ -40,6 +40,96 @@ body {
 	background-color: rgba(255, 255, 255, 0.06);
 }
 
+.stbl-nav {
+	gap: 0.125rem;
+}
+
+.stbl-nav-section {
+	color: rgba(255, 255, 255, 0.46);
+	font-size: 0.625rem;
+	font-weight: 600;
+	letter-spacing: 0.08em;
+	margin: 0.75rem 0 0.25rem;
+	padding: 0 0.75rem;
+	text-transform: uppercase;
+}
+
+.stbl-nav .nav-link {
+	border-radius: 0.375rem;
+	margin-inline: 0.375rem;
+	position: relative;
+	transition: background-color 160ms ease, color 160ms ease;
+}
+
+.stbl-nav .nav-item.active > .nav-link {
+	background-color: rgba(255, 255, 255, 0.06);
+	color: #fff;
+}
+
+.stbl-nav .nav-item.active > .nav-link::before {
+	background: var(--tblr-primary);
+	border-radius: 0 2px 2px 0;
+	bottom: 0.375rem;
+	content: "";
+	left: -0.375rem;
+	position: absolute;
+	top: 0.375rem;
+	width: 3px;
+}
+
+.stbl-subtext {
+	color: var(--tblr-gray-600, #536171);
+}
+
+.stbl-amount {
+	font-variant-numeric: tabular-nums;
+	white-space: nowrap;
+}
+
+.stbl-flex-name {
+	min-width: 0;
+}
+
+.stbl-module-header {
+	background: var(--tblr-body-bg);
+	border-bottom: 1px solid var(--tblr-border-color);
+	padding: 0.5rem 0 0;
+}
+
+.stbl-module-header-row {
+	align-items: center;
+	display: flex;
+	flex-wrap: wrap;
+	gap: 0.75rem 1.25rem;
+	min-height: 3.5rem;
+}
+
+.stbl-module-title {
+	align-items: center;
+	display: inline-flex;
+	flex: 0 0 auto;
+	gap: 0.5rem;
+	margin: 0 0 0.5rem;
+}
+
+.stbl-module-tabs {
+	flex: 1 1 auto;
+	margin-bottom: 0;
+	min-width: 0;
+}
+
+.stbl-balance-chip {
+	align-items: center;
+	display: inline-flex;
+	gap: 0.35rem;
+	max-width: 100%;
+}
+
+.stbl-balance-chip-lg {
+	font-size: 0.875rem;
+	padding: 0.35rem 0.5rem;
+}
+
 /* App-wide: every data table is striped by default. Add `.table-no-stripe`
  * to a specific table to opt out. Targets the tr directly — Tabler's
  * --tblr-table-accent-bg chain resolves to near-white (#fcfdfe) so we

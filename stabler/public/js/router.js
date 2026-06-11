@@ -4,6 +4,7 @@ import { t } from "./composables/i18n.js";
 import Dashboard from "./pages/Dashboard.vue";
 import Module from "./pages/Module.vue";
 import ReportsHub from "./pages/ReportsHub.vue";
+import Profile from "./pages/Profile.vue";
 import MoneyHome from "./pages/money/MoneyHome.vue";
 import Accounts from "./pages/money/Accounts.vue";
 import AccountLedger from "./pages/money/AccountLedger.vue";
@@ -92,6 +93,7 @@ const routes = [
 	{ path: "/", redirect: "/dashboard" },
 	{ path: "/dashboard", name: "dashboard", component: Dashboard, meta: { title: t("Dashboard"), module: "dashboard" } },
 	{ path: "/reports", name: "reports", component: ReportsHub, meta: { title: t("Reports") } },
+	{ path: "/profile", name: "profile", component: Profile, meta: { title: t("Profile") } },
 	{ path: "/pos", name: "pos", component: POS, meta: { title: t("POS"), module: "sales" } },
 	{
 		path: "/money",

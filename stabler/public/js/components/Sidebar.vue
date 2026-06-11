@@ -56,6 +56,23 @@ const items = computed(() => {
 	return list.filter((i) => i.show);
 });
 
+const sections = computed(() => {
+	const byName = new Map(items.value.map((item) => [item.name, item]));
+	const groups = [
+		{ label: "", names: ["dashboard"] },
+		{ label: t("Commerce"), names: ["pos", "sales", "crm", "sfa", "marketing"] },
+		{ label: t("Operations"), names: ["purchasing", "inventory", "manufacturing", "service", "bpm"] },
+		{ label: t("Finance"), names: ["money", "remittance", "installment"] },
+		{ label: t("Company"), names: ["hr", "reports", "admin"] },
+	];
+	return groups
+		.map((group) => ({
+			label: group.label,
+			items: group.names.map((name) => byName.get(name)).filter(Boolean),
+		}))
+		.filter((group) => group.items.length);
+});
+
 const initial = computed(() =>
 	(session.user?.name || session.user?.id || "U").trim().slice(0, 1).toUpperCase()
 );
@@ -98,18 +115,21 @@ async function setLanguage(code) {
 				</router-link>
 			</h1>
 			<div class="collapse navbar-collapse" id="sidebar-menu">
-				<ul class="navbar-nav pt-lg-3">
-					<li
-						v-for="item in items"
-						:key="item.name"
-						class="nav-item"
-						:class="{ active: isActive(item.path).value }"
-					>
-						<router-link :to="item.path" class="nav-link">
-							<span class="nav-link-icon"><i class="ti" :class="item.icon"></i></span>
-							<span class="nav-link-title">{{ item.label }}</span>
-						</router-link>
-					</li>
+				<ul class="navbar-nav stbl-nav pt-lg-3">
+					<template v-for="section in sections" :key="section.label || 'root'">
+						<li v-if="section.label" class="stbl-nav-section">{{ section.label }}</li>
+						<li
+							v-for="item in section.items"
+							:key="item.name"
+							class="nav-item"
+							:class="{ active: isActive(item.path).value }"
+						>
+							<router-link :to="item.path" class="nav-link">
+								<span class="nav-link-icon"><i class="ti" :class="item.icon"></i></span>
+								<span class="nav-link-title">{{ item.label }}</span>
+							</router-link>
+						</li>
+					</template>
 				</ul>
 
 				<!-- Sidebar footer: company switcher + user menu pinned to bottom -->
@@ -161,9 +181,9 @@ async function setLanguage(code) {
 								<i v-if="lng.code === currentLanguage" class="ti ti-check text-primary"></i>
 							</a>
 							<div class="dropdown-divider"></div>
-							<a href="/me" class="dropdown-item stbl-menu-item">
+							<router-link to="/profile" class="dropdown-item stbl-menu-item">
 								<i class="ti ti-user me-2"></i>{{ t("Profile") }}
-							</a>
+							</router-link>
 							<div class="dropdown-divider"></div>
 							<button type="button" class="dropdown-item stbl-menu-item text-danger" @click="logout">
 								<i class="ti ti-logout me-2"></i>{{ t("Log out") }}

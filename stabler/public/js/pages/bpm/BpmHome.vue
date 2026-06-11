@@ -1,20 +1,9 @@
 <script setup>
 import { t } from "../../composables/i18n.js";
+import ModuleHeader from "../../components/ModuleHeader.vue";
 </script>
-
 <template>
-	<div class="page-header d-print-none">
-		<div class="container-xl">
-			<div class="row g-2 align-items-center">
-				<div class="col">
-					<div class="page-pretitle">Module</div>
-					<h2 class="page-title d-flex align-items-center gap-2">
-						<i class="ti ti-sitemap"></i> {{ t("Processes") }}
-					</h2>
-				</div>
-			</div>
-		</div>
-	</div>
+	<ModuleHeader :title='t("Processes")' icon="ti-sitemap" />
 
 	<div class="page-body">
 		<div class="container-xl">

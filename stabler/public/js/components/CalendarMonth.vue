@@ -113,6 +113,15 @@ function navigate(delta) {
 }
 
 const hasEvents = computed(() => props.events.length > 0);
+
+function chipClass(ev) {
+	return {
+		"calendar-chip--paid": ev.state === "paid",
+		"calendar-chip--partial": ev.state === "partial",
+		"calendar-chip--overdue": ev.state === "overdue",
+		"calendar-chip--upcoming": !ev.state || ev.state === "upcoming",
+	};
+}
 </script>
 
 <template>
@@ -151,6 +160,7 @@ const hasEvents = computed(() => props.events.length > 0);
 						v-for="ev in cell.events"
 						:key="ev.contractId + ev.label"
 						class="calendar-chip"
+						:class="chipClass(ev)"
 						@click.stop="emit('select', ev)"
 					>
 						<span class="text-truncate">{{ ev.label }}</span>
@@ -223,6 +233,22 @@ const hasEvents = computed(() => props.events.length > 0);
 	font-size: 0.72rem;
 	cursor: pointer;
 	overflow: hidden;
+}
+
+.calendar-chip--paid {
+	background: var(--tblr-success, #2fb344);
+}
+
+.calendar-chip--partial {
+	background: var(--tblr-warning, #f59f00);
+}
+
+.calendar-chip--overdue {
+	background: var(--tblr-danger, #d63939);
+}
+
+.calendar-chip--upcoming {
+	background: var(--tblr-primary, #206bc4);
 }
 
 .calendar-chip:hover {

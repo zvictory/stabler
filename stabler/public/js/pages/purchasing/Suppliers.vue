@@ -10,6 +10,8 @@ import EmptyState from "../../components/EmptyState.vue";
 import DateInput from "../../components/DateInput.vue";
 import Select from "../../components/Select.vue";
 import PartyPaymentModal from "../../components/PartyPaymentModal.vue";
+import BalanceChip from "../../components/BalanceChip.vue";
+import PartyAvatar from "../../components/PartyAvatar.vue";
 
 const session = useSession();
 const { activeCompany, user } = storeToRefs(session);
@@ -397,18 +399,22 @@ watch(activeCompany, () => {
 						<span v-if="balancesRefreshing" class="spinner-border spinner-border-sm me-1"></span>
 						<i v-else class="ti ti-refresh me-1"></i>{{ t("Refresh") }}
 					</button>
-					<button type="button" class="btn btn-sm btn-success ms-auto" @click="openCreate">
+					<button type="button" class="btn btn-sm btn-primary ms-auto" @click="openCreate">
 						<i class="ti ti-plus me-1"></i>{{ t("New") }}
 					</button>
 				</div>
 				<div class="card-body py-2 border-bottom">
-					<input
-						v-model="search"
-						type="search"
-						class="form-control form-control-sm"
-						:placeholder="t('Search supplier…')"
-						@input="onSearchInput"
-					/>
+					<div class="position-relative">
+						<i class="ti ti-search position-absolute top-50 translate-middle-y text-secondary" style="left: 0.65rem"></i>
+						<input
+							v-model="search"
+							type="search"
+							class="form-control form-control-sm ps-5 pe-5"
+							:placeholder="t('Search supplier…')"
+							@input="onSearchInput"
+						/>
+						<kbd class="position-absolute top-50 translate-middle-y text-secondary" style="right: 0.5rem; font-size: 0.68rem">⌘K</kbd>
+					</div>
 					<label class="form-check form-check-inline mt-2 mb-0">
 						<input
 							v-model="onlyWithBalance"
@@ -449,11 +455,12 @@ watch(activeCompany, () => {
 							>
 								<td>
 									<div class="d-flex align-items-start gap-1">
+										<PartyAvatar :name="s.supplier_name || s.name" size="sm" class="flex-shrink-0 me-2" />
 										<div class="flex-grow-1 min-w-0">
 											<div class="fw-semibold text-truncate" style="max-width: 200px">
 												{{ s.supplier_name }}
 											</div>
-											<div class="small text-secondary font-monospace text-truncate">
+											<div class="small stbl-subtext font-monospace text-truncate">
 												{{ s.name }}
 											</div>
 										</div>
@@ -467,7 +474,7 @@ watch(activeCompany, () => {
 										</button>
 									</div>
 								</td>
-								<td class="text-end text-nowrap font-monospace">
+								<td class="text-end text-nowrap font-monospace stbl-amount">
 									<div
 										:class="{
 											'text-red': Number(s.balance_acc ?? s.balance_base) > 0,
@@ -482,7 +489,7 @@ watch(activeCompany, () => {
 									</div>
 									<div
 										v-if="s.account_currency && s.account_currency !== currency"
-										class="small text-secondary"
+										class="small stbl-subtext stbl-amount"
 									>
 										{{ formatMoney(s.balance_base, currency, user.language) }}
 									</div>
@@ -515,12 +522,10 @@ watch(activeCompany, () => {
 			<div v-else class="card">
 				<div class="card-header">
 					<div class="d-flex align-items-center gap-3 flex-wrap">
-						<span class="avatar avatar-lg bg-orange-lt">
-							{{ (selected.supplier_name || selected.name).slice(0, 2).toUpperCase() }}
-						</span>
-						<div>
+						<PartyAvatar :name="selected.supplier_name || selected.name" size="lg" />
+						<div class="min-w-0">
 							<h3 class="m-0">{{ selected.supplier_name }}</h3>
-							<div class="small text-secondary font-monospace">{{ selected.name }}</div>
+							<div class="small stbl-subtext font-monospace">{{ selected.name }}</div>
 						</div>
 						<button
 							type="button"
@@ -532,26 +537,23 @@ watch(activeCompany, () => {
 						</button>
 						<button
 							type="button"
-							class="btn btn-sm btn-outline-success"
+							class="btn btn-sm btn-outline-secondary"
 							@click="partyPayOpen = true"
 						>
 							<i class="ti ti-cash me-1"></i>{{ t("Payment") }}
 						</button>
 						<div class="ms-auto text-end">
 							<div class="small text-secondary">{{ t("Balance") }}</div>
-							<div
-								class="h2 m-0 font-monospace"
-								:class="Number(selected.balance_acc ?? selected.balance_base) > 0 ? 'text-red' : ''"
-							>
-								{{ formatMoney(
-									selected.balance_acc ?? selected.balance_base,
-									selected.account_currency || currency,
-									user.language,
-								) }}
-							</div>
+							<BalanceChip
+								:value="selected.balance_acc ?? selected.balance_base"
+								:currency="selected.account_currency || currency"
+								:language="user.language"
+								party-type="Supplier"
+								size="lg"
+							/>
 							<div
 								v-if="selected.account_currency && selected.account_currency !== currency"
-								class="small text-secondary font-monospace"
+								class="small stbl-subtext font-monospace stbl-amount mt-1"
 							>
 								{{ formatMoney(selected.balance_base, currency, user.language) }}
 							</div>

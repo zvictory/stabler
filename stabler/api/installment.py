@@ -16,13 +16,92 @@ Each side can carry different markup rates.
 from __future__ import annotations
 
 import frappe
-from frappe.utils import flt, getdate, add_months
+from frappe.utils import flt, getdate, add_months, today
 
 from stabler.api._common import _require_company, _assert_can_read
+from stabler.api.money import payment_defaults_for_invoice
 
 
 def _round2(n) -> float:
     return round(float(flt(n)), 2)
+
+
+def _invoice_doctype(side: str) -> str:
+    if side == "buy":
+        return "Purchase Invoice"
+    if side == "sell":
+        return "Sales Invoice"
+    frappe.throw("side must be 'sell' or 'buy'.")
+
+
+def _schedule_state(row) -> dict:
+    return {
+        "name": row.name,
+        "due_date": str(row.due_date),
+        "payment_amount": _round2(row.payment_amount),
+        "paid_amount": _round2(row.paid_amount),
+        "outstanding": _round2(row.outstanding),
+        "description": row.get("description") or "",
+    }
+
+
+def _allocate_collection(doc, amount: float) -> list[dict]:
+    remaining = _round2(amount)
+    allocations: list[dict] = []
+    rows = sorted(
+        enumerate(doc.payment_schedule or []),
+        key=lambda item: (getdate(item[1].due_date), item[0]),
+    )
+    for idx, row in rows:
+        if remaining <= 0:
+            break
+        row_outstanding = _round2(row.outstanding)
+        if row_outstanding <= 0:
+            continue
+        applied = _round2(min(remaining, row_outstanding))
+        before = _schedule_state(row)
+        after_paid = _round2(before["paid_amount"] + applied)
+        after_outstanding = _round2(before["outstanding"] - applied)
+        allocations.append(
+            {
+                "row_index": idx,
+                "row_name": before["name"],
+                "due_date": before["due_date"],
+                "description": before["description"],
+                "payment_amount": before["payment_amount"],
+                "previous_paid": before["paid_amount"],
+                "previous_outstanding": before["outstanding"],
+                "allocated_amount": applied,
+                "paid_amount": after_paid,
+                "outstanding": after_outstanding,
+            }
+        )
+        remaining = _round2(remaining - applied)
+    return allocations
+
+
+def _apply_collection_to_schedule(doc, allocations: list[dict]) -> None:
+    for allocation in allocations:
+        frappe.db.set_value(
+            "Payment Schedule",
+            allocation["row_name"],
+            {
+                "paid_amount": allocation["paid_amount"],
+                "outstanding": allocation["outstanding"],
+            },
+            update_modified=False,
+        )
+
+
+def _collection_preview_payload(doc, allocations: list[dict], amount: float) -> dict:
+    remaining_balance = _round2(flt(doc.outstanding_amount) - amount)
+    return {
+        "contract": doc.name,
+        "amount": _round2(amount),
+        "currency": doc.currency,
+        "remaining_balance": remaining_balance,
+        "allocations": allocations,
+    }
 
 
 def _build_schedule(
@@ -387,6 +466,15 @@ def contract_detail(name: str, side: str = "sell") -> dict:
             "invoice_portion": row.invoice_portion,
             "outstanding": row.outstanding,
             "paid_amount": row.paid_amount,
+            "state": (
+                "paid"
+                if flt(row.outstanding) <= 0
+                else "partial"
+                if flt(row.paid_amount) > 0
+                else "overdue"
+                if getdate(row.due_date) < getdate(today())
+                else "upcoming"
+            ),
             "description": row.get("description") or "",
         }
         for row in (doc.payment_schedule or [])
@@ -404,6 +492,134 @@ def contract_detail(name: str, side: str = "sell") -> dict:
         "docstatus": doc.docstatus,
         "payment_schedule": schedule,
     }
+
+
+@frappe.whitelist()
+def collect_payment(
+    contract: str,
+    side: str = "sell",
+    amount: float | str = 0,
+    mode_of_payment: str | None = None,
+    bank_account: str | None = None,
+    posting_date: str | None = None,
+    dry_run: int | str = 0,
+) -> dict:
+    """Collect a partial Murabaha installment payment.
+
+    The same allocator powers preview (`dry_run=1`) and submit, so the UI can
+    never display a different row allocation than the one saved to ERPNext.
+    """
+    doctype = _invoice_doctype(side)
+    _assert_can_read(doctype, contract)
+    doc = frappe.get_doc(doctype, contract)
+    _require_company(doc.company)
+    if not doc.get("stabler_installment_plan"):
+        frappe.throw("Contract is not a Stabler installment plan.")
+    if doc.docstatus != 1:
+        frappe.throw("Only submitted contracts can be collected.")
+
+    paid = _round2(amount)
+    if paid <= 0:
+        frappe.throw("Collection amount must be greater than zero.")
+    total_outstanding = _round2(doc.outstanding_amount)
+    if paid > total_outstanding:
+        frappe.throw(
+            f"Collection amount exceeds remaining contract balance ({total_outstanding:.2f} {doc.currency})."
+        )
+
+    allocations = _allocate_collection(doc, paid)
+    allocated_total = _round2(sum(r["allocated_amount"] for r in allocations))
+    if allocated_total != paid:
+        frappe.throw("Payment schedule is out of sync with contract outstanding amount.")
+
+    if int(dry_run):
+        return _collection_preview_payload(doc, allocations, paid)
+
+    if not mode_of_payment:
+        frappe.throw("Mode of payment is required.")
+    if not bank_account:
+        frappe.throw("Cash/bank account is required.")
+
+    defaults = payment_defaults_for_invoice(doc.company, doctype, contract)
+    pe = frappe.new_doc("Payment Entry")
+    pe.company = doc.company
+    pe.posting_date = getdate(posting_date or today())
+    pe.payment_type = defaults["payment_type"]
+    pe.party_type = defaults["party_type"]
+    pe.party = defaults["party"]
+    if defaults["payment_type"] == "Receive":
+        pe.paid_from = defaults["party_account"]
+        pe.paid_to = bank_account
+    else:
+        pe.paid_from = bank_account
+        pe.paid_to = defaults["party_account"]
+    pe.paid_amount = paid
+    pe.received_amount = paid
+    pe.mode_of_payment = mode_of_payment
+    pe.reference_no = f"INST-{contract}"
+    pe.reference_date = pe.posting_date
+    pe.append(
+        "references",
+        {
+            "reference_doctype": doctype,
+            "reference_name": contract,
+            "total_amount": flt(doc.grand_total),
+            "outstanding_amount": total_outstanding,
+            "allocated_amount": paid,
+        },
+    )
+    pe.setup_party_account_field()
+    pe.set_missing_values()
+
+    try:
+        pe.insert(ignore_permissions=False)
+        pe.submit()
+        _apply_collection_to_schedule(doc, allocations)
+        frappe.db.commit()
+    except Exception:
+        frappe.db.rollback()
+        raise
+
+    updated = frappe.get_doc(doctype, contract)
+    return {
+        **_collection_preview_payload(updated, allocations, paid),
+        "payment_entry": pe.name,
+        "docstatus": pe.docstatus,
+        "outstanding_amount": _round2(updated.outstanding_amount),
+    }
+
+
+@frappe.whitelist()
+def overdue_rows(company: str, side: str = "sell") -> list:
+    """Rows past due with remaining outstanding balance."""
+    _require_company(company)
+    doctype = _invoice_doctype(side)
+    doctype_table = "tabPurchase Invoice" if side == "buy" else "tabSales Invoice"
+    party_field = "supplier" if side == "buy" else "customer"
+    return frappe.db.sql(
+        f"""
+        SELECT
+            inv.name AS contract,
+            inv.{party_field} AS party,
+            inv.currency,
+            ps.due_date,
+            ps.payment_amount,
+            ps.paid_amount,
+            ps.outstanding,
+            DATEDIFF(CURDATE(), ps.due_date) AS days_overdue
+        FROM `tabPayment Schedule` ps
+        JOIN `{doctype_table}` inv ON inv.name = ps.parent
+        WHERE inv.company = %(company)s
+          AND inv.stabler_installment_plan = 1
+          AND inv.docstatus = 1
+          AND ps.parenttype = %(doctype)s
+          AND ps.due_date < CURDATE()
+          AND ps.outstanding > 0
+        ORDER BY ps.due_date ASC, inv.name ASC
+        """,
+        {"company": company, "doctype": doctype},
+        as_dict=True,
+    )
 
 
 @frappe.whitelist()
@@ -444,7 +660,13 @@ def calendar_events(
             ps.payment_amount AS amount,
             inv.currency,
             ps.outstanding,
-            ps.paid_amount
+            ps.paid_amount,
+            CASE
+                WHEN ps.outstanding <= 0 THEN 'paid'
+                WHEN ps.paid_amount > 0 THEN 'partial'
+                WHEN ps.due_date < CURDATE() THEN 'overdue'
+                ELSE 'upcoming'
+            END AS state
         FROM `{sched_table}` ps
         JOIN `{doctype_table}` inv ON inv.name = ps.parent
         WHERE inv.company = %(company)s
