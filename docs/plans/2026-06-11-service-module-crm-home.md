@@ -276,6 +276,27 @@ component, no fork.
 
 Each phase = one PR, independently deployable. P2 runs only on horeca site.
 
+## 8b. Convergence contract & decommission (added 2026-06-12, Zafar's directive)
+
+**One codebase.** The stabler app is the single product; horeca features arrive as Service-module
+pages. The horeca Next.js web app, Node API, and Postgres are terminal. Only the RN technician
+app survives — as a thin client of stabler's whitelisted API, no backend of its own.
+
+| Gate | Event | Action |
+|---|---|---|
+| now | — | Feature-freeze horeca web + Node API (bugfix only); put horeca dir under git |
+| P2 run | historical migration done | ERPNext = system of record; Postgres = feeder only |
+| P3 ships | visit-close billing live in SPA | **Kill switch 1:** disable Node approval-sync; Postgres read-only; web users fully on Stabler |
+| P5 ships | RN app repointed to stabler API | **Kill switch 2:** decommission Node API + Postgres after 30-day read-only period |
+
+Rules during the bridge window (P2→P3): no new Postgres tables/endpoints; Node sync writes are
+tagged (`custom_horeca_id`) so migration re-runs stay idempotent; any document created by both
+paths is a bug, caught by the nightly integrity check (duplicate horeca_id → alert).
+Salvage list before decommission: MapView/route-optimization logic (P5 reference), i18n strings,
+korzinka/bellissimo seed data (already migrated).
+`ignore_mandatory=True` is migration-only — the P3 visit-close endpoint must satisfy mandatory
+fields properly.
+
 ## 9. Out of scope (explicit)
 
 - Offline mobile sync (SyncLog equivalent) — revisit after P5 usage data.
