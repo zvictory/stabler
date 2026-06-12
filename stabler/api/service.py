@@ -107,6 +107,19 @@ def _visit_needs_billing(issue_type: str | None, under_coverage: bool) -> bool:
 	return bool(issue_type in BILLABLE_ISSUE_TYPES and not under_coverage)
 
 
+def _visit_billing_filter_condition(billing_status: str | None) -> str:
+	conditions = {
+		"open": "mv.docstatus = 0",
+		"unbilled": (
+			"mv.docstatus = 1 AND (mv.custom_sales_invoice IS NULL OR mv.custom_sales_invoice = '') "
+			"AND (mv.custom_stock_entry IS NULL OR mv.custom_stock_entry = '')"
+		),
+		"invoiced": "mv.custom_sales_invoice IS NOT NULL AND mv.custom_sales_invoice != ''",
+		"stock_issued": "mv.custom_stock_entry IS NOT NULL AND mv.custom_stock_entry != ''",
+	}
+	return conditions.get(billing_status or "", "")
+
+
 def _serial_under_coverage(serial_no: str | None) -> bool:
 	if not serial_no or not frappe.db.exists("Serial No", serial_no):
 		return False
@@ -452,6 +465,64 @@ def visit_detail(name: str):
 	doc = frappe.get_doc("Maintenance Visit", name)
 	_require_service(_company_for_visit(doc))
 	return doc.as_dict()
+
+
+@frappe.whitelist()
+def list_visits(
+	company: str,
+	from_date: str | None = None,
+	to_date: str | None = None,
+	service_person: str | None = None,
+	customer: str | None = None,
+	issue_type: str | None = None,
+	billing_status: str | None = None,
+	limit: int = 200,
+):
+	company = _require_service(company)
+	limit = max(1, min(cint(limit) or 200, 500))
+	params = {"company": company, "limit": limit}
+	conds = ["mv.company = %(company)s"]
+	if from_date:
+		conds.append("mv.mntc_date >= %(from_date)s")
+		params["from_date"] = getdate(from_date)
+	if to_date:
+		conds.append("mv.mntc_date <= %(to_date)s")
+		params["to_date"] = getdate(to_date)
+	if customer:
+		conds.append("mv.customer = %(customer)s")
+		params["customer"] = customer
+	if issue_type:
+		conds.append("i.issue_type = %(issue_type)s")
+		params["issue_type"] = issue_type
+	if service_person:
+		conds.append(
+			"EXISTS (SELECT 1 FROM `tabMaintenance Visit Purpose` p "
+			"WHERE p.parent = mv.name AND p.service_person = %(service_person)s)"
+		)
+		params["service_person"] = service_person
+	billing_condition = _visit_billing_filter_condition(billing_status)
+	if billing_condition:
+		conds.append(billing_condition)
+
+	return frappe.db.sql(
+		f"""
+		SELECT
+			mv.name, mv.mntc_date, mv.customer, mv.customer_name,
+			mv.completion_status, mv.maintenance_type, mv.docstatus,
+			mv.custom_issue, i.subject, i.issue_type,
+			mv.custom_sales_invoice, mv.custom_stock_entry,
+			GROUP_CONCAT(DISTINCT p.service_person ORDER BY p.service_person SEPARATOR ', ') AS service_people
+		FROM `tabMaintenance Visit` mv
+		LEFT JOIN `tabIssue` i ON i.name = mv.custom_issue
+		LEFT JOIN `tabMaintenance Visit Purpose` p ON p.parent = mv.name
+		WHERE {" AND ".join(conds)}
+		GROUP BY mv.name
+		ORDER BY mv.mntc_date DESC, mv.modified DESC
+		LIMIT %(limit)s
+		""",
+		params,
+		as_dict=True,
+	)
 
 
 @frappe.whitelist()

@@ -18,7 +18,7 @@ Status: in progress
   - Create draft Sales Invoice for billable service revenue.
   - Create submitted Material Issue for covered repair/parts consumption.
 
-- [ ] Visit list/report
+- [x] Visit list/report
   - Add `list_visits` backend endpoint.
   - Add visit list page with date, customer, technician, issue type, and linked billing document filters.
 

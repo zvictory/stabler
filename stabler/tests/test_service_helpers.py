@@ -4,7 +4,7 @@ import unittest
 
 from frappe import ValidationError
 
-from stabler.api.service import _normalize_visit_items, _visit_needs_billing
+from stabler.api.service import _normalize_visit_items, _visit_billing_filter_condition, _visit_needs_billing
 
 
 class ServiceHelperTest(unittest.TestCase):
@@ -54,6 +54,17 @@ class ServiceHelperTest(unittest.TestCase):
 		self.assertTrue(_visit_needs_billing("Repair", False))
 		self.assertFalse(_visit_needs_billing("Repair", True))
 		self.assertFalse(_visit_needs_billing("Inspection", False))
+
+	def test_visit_billing_filter_condition_maps_report_filters(self):
+		self.assertEqual(_visit_billing_filter_condition("open"), "mv.docstatus = 0")
+		self.assertEqual(
+			_visit_billing_filter_condition("unbilled"),
+			"mv.docstatus = 1 AND (mv.custom_sales_invoice IS NULL OR mv.custom_sales_invoice = '') AND (mv.custom_stock_entry IS NULL OR mv.custom_stock_entry = '')",
+		)
+		self.assertEqual(_visit_billing_filter_condition("invoiced"), "mv.custom_sales_invoice IS NOT NULL AND mv.custom_sales_invoice != ''")
+		self.assertEqual(_visit_billing_filter_condition("stock_issued"), "mv.custom_stock_entry IS NOT NULL AND mv.custom_stock_entry != ''")
+		self.assertEqual(_visit_billing_filter_condition("all"), "")
+		self.assertEqual(_visit_billing_filter_condition("unexpected"), "")
 
 
 if __name__ == "__main__":
