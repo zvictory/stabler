@@ -4,6 +4,7 @@ import { call } from "../../api/client.js";
 import { formatDate } from "../../composables/date.js";
 import { t } from "../../composables/i18n.js";
 import { useSession } from "../../stores/session.js";
+import DateInput from "../../components/DateInput.vue";
 import EmptyState from "../../components/EmptyState.vue";
 import Typeahead from "../../components/Typeahead.vue";
 
@@ -110,11 +111,11 @@ onMounted(refreshAll);
 			<div class="row g-2 align-items-end">
 				<div class="col-md-2">
 					<label class="form-label">{{ t("From") }}</label>
-					<input v-model="filters.from_date" type="date" class="form-control" @change="loadVisits" />
+					<DateInput v-model="filters.from_date" @change="loadVisits" />
 				</div>
 				<div class="col-md-2">
 					<label class="form-label">{{ t("To") }}</label>
-					<input v-model="filters.to_date" type="date" class="form-control" @change="loadVisits" />
+					<DateInput v-model="filters.to_date" @change="loadVisits" />
 				</div>
 				<div class="col-md-3">
 					<label class="form-label">{{ t("Customer") }}</label>

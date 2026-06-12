@@ -18,6 +18,7 @@ scheduler_events = {
 	"daily": [
 		"stabler.tasks.cbu_rate_refresh.fetch_and_store",
 		"stabler.tasks.roi_refresh.daily",
+		"stabler.service.schedule_engine.generate_rolling_schedule_rows",
 	],
 	"hourly": [
 		"stabler.integrations.one_c.hooks.hourly_sync",

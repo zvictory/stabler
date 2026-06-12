@@ -5,6 +5,7 @@ import { formatDate } from "../../composables/date.js";
 import { t } from "../../composables/i18n.js";
 import { useSession } from "../../stores/session.js";
 import CalendarMonth from "../../components/CalendarMonth.vue";
+import DateInput from "../../components/DateInput.vue";
 import Typeahead from "../../components/Typeahead.vue";
 
 const session = useSession();
@@ -213,7 +214,7 @@ onMounted(refreshAll);
 			<form v-if="detail.kind === 'planned'" class="border rounded p-3 mb-3" @submit.prevent="reschedule">
 				<label class="form-label">{{ t("Reschedule") }}</label>
 				<div class="input-group">
-					<input v-model="rescheduleDate" type="date" class="form-control" :disabled="saving" required />
+					<DateInput v-model="rescheduleDate" :disabled="saving" required />
 					<button type="submit" class="btn btn-primary" :disabled="saving || !rescheduleDate">
 						<span v-if="saving" class="spinner-border spinner-border-sm me-2"></span>
 						{{ t("Save") }}

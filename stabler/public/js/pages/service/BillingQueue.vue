@@ -5,6 +5,7 @@ import { formatDate } from "../../composables/date.js";
 import { formatMoney } from "../../composables/money.js";
 import { t } from "../../composables/i18n.js";
 import { useSession } from "../../stores/session.js";
+import DateInput from "../../components/DateInput.vue";
 import EmptyState from "../../components/EmptyState.vue";
 import MoneyInput from "../../components/MoneyInput.vue";
 import Typeahead from "../../components/Typeahead.vue";
@@ -267,7 +268,7 @@ onMounted(refreshAll);
 					<div class="row g-3 mb-3">
 						<div class="col-md-3">
 							<label class="form-label">{{ t("Posting date") }}</label>
-							<input v-model="form.posting_date" type="date" class="form-control" :disabled="saving" />
+							<DateInput v-model="form.posting_date" :disabled="saving" />
 						</div>
 						<div v-if="action === 'stock_issue'" class="col-md-5">
 							<label class="form-label required">{{ t("Source warehouse") }}</label>

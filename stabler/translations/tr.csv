@@ -9,41 +9,39 @@ source,target
 90+,90+
 A password reset email will be sent. The account is disabled until the user sets a password.,Şifre sıfırlama e-postası gönderilecek. Kullanıcı şifresini belirleyene kadar hesap devre dışı kalacak.
 A valid email is required,Geçerli bir e-posta adresi gereklidir
-AP Aging,Borç Vade Analizi
-AR Aging,Alacak Vade Analizi
-ARCA,ARCA
-ARCA Payment Events,ARCA Ödeme Olayları
 Abbr,Kısaltma
 Absent,Devamsız
 Account,Hesap
-Account Ledger,Hesap Defteri
 Account currency must match the payment account.,Hesap para birimi ödeme hesabıyla eşleşmelidir.
+Account Ledger,Hesap Defteri
 Accounts,Hesaplar
+Action,İşlem
 Action failed.,İşlem başarısız oldu.
 Actions,İşlemler
 Active,Aktif
 Activities,Aktiviteler
 Actual,Gerçekleşen
 Add,Ekle
-Add Deal,
-Add Decision,Karar Ekle
-Add Lane,Şerit Ekle
-Add Task,Görev Ekle
 Add a column to start organising your deals.,Anlaşmaları düzenlemeye başlamak için bir sütun ekleyin.
 Add a customer,Müşteri ekle
 Add a warehouse to start tracking stock locations.,Stok konumlarını takip etmeye başlamak için bir depo ekleyin.
 Add another item,Başka bir kalem ekle
 Add at least one item line.,En az bir kalem satırı ekleyin.
+Add at least one item with a positive quantity.,En az bir kalem pozitif miktarla ekleyin.
 Add at least one raw material line.,En az bir hammadde satırı ekleyin.
 Add child warehouse,Alt depo ekle
 Add column,Sütun ekle
 Add customer,Müşteri ekle
+Add Deal,
 Add deal,Anlaşma ekle
+Add Decision,Karar Ekle
 Add item,Kalem ekle
+Add Lane,Şerit Ekle
 Add line,Satır ekle
 Add outlet,Şube ekle
 Add row,Satır ekle
 Add supplier,Tedarikçi ekle
+Add Task,Görev Ekle
 Add warehouse,Depo ekle
 Add your first customer to start sending quotes and invoices.,Teklif ve fatura göndermeye başlamak için ilk müşterinizi ekleyin.
 "Add your first employee to start tracking attendance, leave and payroll.","Devam, izin ve bordroyu takip etmeye başlamak için ilk çalışanınızı ekleyin."
@@ -55,7 +53,6 @@ Admin,Yönetici
 Advance paid,Ödenen avans
 Against,Karşılığı
 All,Tümü
-All Reports,Tüm raporlar
 All categories,Tüm kategoriler
 All directions,Tüm yönler
 All groups,Tüm gruplar
@@ -64,7 +61,9 @@ All items above reorder level.,Tüm kalemler yeniden sipariş seviyesinin üzeri
 All items are above their warehouse reorder thresholds — nice work.,Tüm kalemler depo yeniden sipariş eşiklerinin üzerinde — tebrikler.
 All object types,Tüm nesne türleri
 All promo plans,Tüm promosyon planları
+All Reports,Tüm raporlar
 All sales invoices for this company are fully paid.,Bu şirkete ait tüm satış faturaları tam olarak ödenmiştir.
+All service people,Tüm teknisyenler
 All statuses,Tüm durumlar
 All technicians,Tüm teknisyenler
 All territories,Tüm bölgeler
@@ -87,6 +86,7 @@ Amount received,Alınan tutar
 Amount sent,Gönderilen tutar
 Animated,Animasyonlu
 Any,Herhangi biri
+AP Aging,Borç Vade Analizi
 Applied to,Uygulandığı
 Apply,Uygula
 Apply role template,Rol şablonu uygula
@@ -95,6 +95,9 @@ Approve and submit,Onayla ve gönder
 Approve this leave request?,Bu izin talebi onaylansın mı?
 Approved,Onaylandı
 Approx. at current valuation rate,"Yaklaşık, mevcut maliyetle"
+AR Aging,Alacak Vade Analizi
+ARCA,ARCA
+ARCA Payment Events,ARCA Ödeme Olayları
 Artifacts,Artefaktlar
 As of,İtibarıyla
 Asl Belgisi,Asl Belgisi
@@ -111,8 +114,6 @@ Attendance,Devam
 Audited At,Denetleme Tarihi
 Available,Mevcut
 Awaiting release by manager,Yönetici onayı bekleniyor
-BOM,BOM
-BOMs,BOM'lar
 Back,Geri
 Badge,Rozet
 Balance,Bakiye
@@ -121,35 +122,36 @@ Balanced,Dengeli
 Bank amount,Banka tutarı
 Bank/cash account is required.,Banka/kasa hesabı gereklidir.
 Base equivalent,Baz karşılığı
+Basic rate,Temel fiyat
 Bill #,Fatura No
 Bill / invoice number printed on supplier document,Tedarikçi belgesinde yazan fatura numarası
 Bill date,Fatura tarihi
 Billed,Faturalandı
+Billing,Faturalama
 Bimonthly,İki ayda bir
 Board,Pano
+BOM,BOM
+BOMs,BOM'lar
 Brand,Marka
 Budget,Bütçe
 Buy,Satın Al
-Buy X get Y,X al Y kazan
 Buy markup,Alış kâr marjı
+Buy X get Y,X al Y kazan
 Buying price list,Alış fiyat listesi
-CBU.uz exchange rates (last 30 days),CBU.uz döviz kurları (son 30 gün)
-CRM,CRM
-CSV,CSV
 Calendar,Takvim
 Campaign,Kampanya
 Campaign Name,Kampanya Adı
 Campaign ROI,Kampanya YGE
 Cancel,İptal
-Cancel ALL open stock reservations for {0}? Reserved stock will be released.,{0} için TÜM açık stok rezervasyonları iptal edilsin mi? Rezerve edilmiş stok serbest bırakılacak.
-Cancel Request,İptal Talebi
 "Cancel all open (submitted, non-delivered) Stock Reservation Entries for this company. Reserved stock will be returned to available quantity.","Bu şirkete ait tüm açık (gönderilmiş, teslim edilmemiş) Stok Rezervasyon Girişlerini iptal edin. Rezerve edilen stok mevcut miktara iade edilecek."
+Cancel ALL open stock reservations for {0}? Reserved stock will be released.,{0} için TÜM açık stok rezervasyonları iptal edilsin mi? Rezerve edilmiş stok serbest bırakılacak.
 Cancel bill {name}? This is reversible only by amendment.,{name} faturası iptal edilsin mi? Bu işlem yalnızca düzeltmeyle geri alınabilir.
 Cancel entry,Girişi iptal et
 Cancel failed.,İptal başarısız oldu.
 Cancel invoice {name}? This is reversible only by amendment.,{name} faturası iptal edilsin mi? Bu işlem yalnızca düzeltmeyle geri alınabilir.
 Cancel or delete Sales Invoice {0} before cancelling this Sales Order.,Bu Satış Siparişini iptal etmeden önce {0} Satış Faturasını iptal edin veya silin.
 Cancel quotation {name}?,{name} teklifi iptal edilsin mi?
+Cancel Request,İptal Talebi
 Cancel sales order {name}? Stock reservations will be released.,{name} satış siparişi iptal edilsin mi? Stok rezervasyonları serbest bırakılacak.
 Cancel this submitted BOM?,Gönderilen bu BOM iptal edilsin mi?
 Cancel {name}? This will reverse the stock movements.,{name} iptal edilsin mi? Bu işlem stok hareketlerini tersine çevirecek.
@@ -167,6 +169,7 @@ Cash-in account,Tahsilat hesabı
 Categories,Kategoriler
 Category,Kategori
 Category is required.,Kategori gereklidir.
+CBU.uz exchange rates (last 30 days),CBU.uz döviz kurları (son 30 gün)
 Channel,Kanal
 Chart of Accounts,Hesap Planı
 Checked in,Giriş yapıldı
@@ -174,13 +177,14 @@ Checking availability…,Uygunluk kontrol ediliyor…
 Chegirma,Chegirma
 Cheque,Çek
 Cheque / transfer ref,Çek / havale referansı
+cheque / txn id,çek / işlem no
 Cheque no.,Çek no.
 Claim,Talep
-Claim No.,Talep No.
 Claim amount must be greater than zero.,Talep tutarı sıfırdan büyük olmalıdır.
 Claim is already settled by {0}.,Talep zaten {0} tarafından kapatılmıştır.
 Claim is already {0} and cannot be re-reviewed.,Talep zaten {0} durumunda olduğundan yeniden incelenemez.
 Claim name is required.,Talep adı zorunludur.
+Claim No.,Talep No.
 Claim {0} not found.,{0} talebi bulunamadı.
 Claims,Talepler
 Clear,Temizle
@@ -190,6 +194,8 @@ Cleared {0} of {1},{1} içinden {0} temizlendi
 Click an installment chip to view the contract.,Sözleşmeyi görüntülemek için bir taksit etiketine tıklayın.
 Close,Kapat
 Close this Work Order? This finalizes it.,Bu İş Emri kapatılsın mı? Bu işlem sonlandırır.
+Close Visit,Ziyareti kapat
+Close visit,Ziyareti kapat
 Closing,Kapanış
 Closing balance,Kapanış bakiyesi
 Closing in,Kapanıyor
@@ -203,16 +209,20 @@ Collapse all groups,Tüm grupları daralt
 Color,Renk
 Column name,Sütun adı
 Comments,Yorumlar
+Commerce,Ticaret
 Commission %,Komisyon %
 Commission fee,Komisyon ücreti
 Commission income account,Komisyon gelir hesabı
 Commission mode,Komisyon modu
 Companies,Şirketler
 Company,Şirket
+company currency,şirket para birimi
 Company email,Şirket e-postası
 Company is required.,Şirket zorunludur.
 Complete,Tamamla
 Completed,Tamamlandı
+Completed visit,Tamamlanan ziyaret
+Completion,Tamamlama
 Compliance,Uyumluluk
 Components,Bileşenler
 Confirm finish,Bitişi onayla
@@ -230,29 +240,35 @@ Count,Adet
 Count:,Adet:
 Country,Ülke
 Create,Oluştur
-Create Bill,Fatura oluştur
-Create Invoice,Fatura Oluştur
-Create Plan,Plan Oluştur
-Create Scheme,Şema Oluştur
-Create Ticket,Talep oluştur
 Create a Bill of Materials to define what raw materials go into a finished good.,Mamul ürüne giren hammaddeleri tanımlamak için bir Malzeme Listesi oluşturun.
-Create a Work Order to plan and track production runs against a BOM.,BOM'a karşı üretim çalışmalarını planlamak ve izlemek için bir İş Emri oluşturun.
 Create a plan to start tracking campaign budget and ROI.,Kampanya bütçesini ve yatırım getirisini takip etmeye başlamak için bir plan oluşturun.
+Create a Work Order to plan and track production runs against a BOM.,BOM'a karşı üretim çalışmalarını planlamak ve izlemek için bir İş Emri oluşturun.
+Create Bill,Fatura oluştur
 Create contract,Sözleşme oluştur
 Create credit note,Alacak notu oluştur
+Create Invoice,Fatura Oluştur
+Create Material Issue,Malzeme çıkışı oluştur
 Create outlets to start planning routes and visits.,Rotaları ve ziyaretleri planlamaya başlamak için satış noktaları oluşturun.
+Create Plan,Plan Oluştur
 Create receipt,Mal kabulü oluştur
+Create Sales Invoice,Satış faturası oluştur
+Create Scheme,Şema Oluştur
+Create Ticket,Talep oluştur
 Create your first deal or adjust the search filters.,İlk anlaşmanızı oluşturun veya filtreleri düzenleyin.
 Create your first item to start tracking stock and price lists.,Stok ve fiyat listelerini takip etmeye başlamak için ilk kaleминizi oluşturun.
 Create your first lead or adjust the search filters.,İlk potansiyelinizi oluşturun veya filtreleri düzenleyin.
 Create your first process to model business workflows.,İş akışlarını modellemek için ilk sürecinizi oluşturun.
 Created,Oluşturuldu
+Creates Maintenance Visit,Bakım ziyareti oluşturur
 Credit,Alacak
 Credit Limit,Kredi Limiti
 Credit note for,İçin alacak notu
 Credit notes:,Alacak notları:
 Critical,Kritik
+CRM,CRM
+CSV,CSV
 Currency,Para Birimi
+Current total,Güncel toplam
 Custom,
 Customer,Müşteri
 Customer group,Müşteri grubu
@@ -277,10 +293,10 @@ Deals,Anlaşmalar
 Debit,Borç
 Deductions,Kesintiler
 Default,Varsayılan
-Default Route,Varsayılan Rota
-Default Warehouse,Varsayılan Depo
 Default currency,Varsayılan para birimi
 Default price list,Varsayılan fiyat listesi
+Default Route,Varsayılan Rota
+Default Warehouse,Varsayılan Depo
 Define promotions that field users can apply during visits.,Saha kullanıcılarının ziyaretler sırasında uygulayabileceği promosyonları tanımlayın.
 Define routes so field users know which outlets to visit each day.,Saha kullanıcılarının her gün hangi satış noktalarını ziyaret edeceğini bilmesi için rotaları tanımlayın.
 Delete,Sil
@@ -313,36 +329,38 @@ Distributor claims will appear here once submitted.,Distribütör talepleri gön
 DocType,DocType
 Document,Belge
 Documents,Belgeler
+Done,Tamamlandı
 Downpayment,Ön ödeme
 Downpayment %,Ön ödeme %
 Draft,Taslak
+Draft Sales Invoice created: {0},Satış faturası taslağı oluşturuldu: {0}
 Drop deal here,Anlaşmayı buraya bırakın
 Due,Vadesi gelen
 Due Date,Vade Tarihi
 Due date,Vade tarihi
 Duplicate sequence {0} on this route.,Bu rotada {0} sırası yinelenmiş.
 Duration (ms),Süre (ms)
-EHF Status,EHF Durumu
-EHF Submissions,EHF Gönderimleri
-EUR → UZS,EUR → UZS
+"e.g. OK, Approved","örn. Tamam, Onaylandı"
 Earnings,Kazançlar
 Edit,Düzenle
+Edit customer,Müşteriyi düzenle
 Edit Deal,Anlaşmayı Düzenle
+Edit field user,Saha kullanıcısını düzenle
 Edit Lead,Potansiyeli Düzenle
 Edit OSA audit,OSA denetimini düzenle
-Edit Promo Plan,Promosyon Planını Düzenle
-Edit Promo Scheme,Promosyon Şemasını Düzenle
-Edit Van Stock,Van Stokunu Düzenle
-Edit Visit,Ziyareti Düzenle
-Edit customer,Müşteriyi düzenle
-Edit field user,Saha kullanıcısını düzenle
 Edit outlet,Satış noktasını düzenle
 Edit photo report,Fotoğraf raporunu düzenle
 Edit planogram,Planogramı düzenle
+Edit Promo Plan,Promosyon Planını Düzenle
+Edit Promo Scheme,Promosyon Şemasını Düzenle
 Edit purchase bill,Alış faturasını düzenle
 Edit route,Rotayı düzenle
 Edit supplier,Tedarikçiyi düzenle
+Edit Van Stock,Van Stokunu Düzenle
+Edit Visit,Ziyareti Düzenle
 Editing the rate updates the received amount.,Oranı düzenlemek alınan tutarı günceller.
+EHF Status,EHF Durumu
+EHF Submissions,EHF Gönderimleri
 Email,E-posta
 Email and name are required.,E-posta ve ad zorunludur.
 Email or user ID,E-posta veya kullanıcı ID
@@ -358,19 +376,23 @@ Enter a quantity for at least one row.,En az bir satır için miktar girin.
 Enter at least one return qty.,En az bir iade miktarı girin.
 Enter cost and term to see the payment schedule.,Ödeme planını görmek için maliyet ve vadeyi girin.
 Enter the quantity to return for each line. Leave 0 to exclude a line.,Her satır için iade miktarını girin. Satırı dışarıda bırakmak için 0 bırakın.
+entries,
+entries. Narrow the date range to see older ones.,kayıt. Daha eskileri görmek için tarih aralığını daraltın.
 Entry,Kayıt
 Equipment,Ekipman
 Equipment and Issue are required.,Ekipman ve Sorun zorunludur.
 Equipment is required.,Ekipman zorunludur.
 Equipment name is required.,Ekipman adı zorunludur.
 Error,Hata
+error(s),hata(lar)
 Estimated value,Tahmini değer
+EUR → UZS,EUR → UZS
 Events,Olaylar
 Every route row needs an outlet.,Her rota satırı için bir satış noktası gereklidir.
 Excel (.xlsx),Excel (.xlsx)
-Exchange Rates,Döviz Kurları
 Exchange rate,Döviz kuru
 Exchange rate must be greater than zero.,Döviz kuru sıfırdan büyük olmalıdır.
+Exchange Rates,Döviz Kurları
 Exclusive,Hariç
 Exclusive: commission added on top — sender pays more.,Hariç: komisyon üstüne eklenir — gönderen daha fazla öder.
 Expand,Genişlet
@@ -389,7 +411,9 @@ F.I.O.,"Soyad, Ad, Baba Adı"
 Failed to assign ticket.,Talep atanamadı.
 Failed to cancel.,İptal edilemedi.
 Failed to clear reservations.,Rezervasyonlar temizlenemedi.
+Failed to close visit.,Ziyaret kapatılamadı.
 Failed to create bill.,Fatura oluşturulamadı.
+Failed to create billing document.,Belge oluşturulamadı.
 Failed to create column.,
 Failed to create contract.,Sözleşme oluşturulamadı.
 Failed to create equipment.,Ekipman oluşturulamadı.
@@ -412,7 +436,6 @@ Failed to delete customer.,Müşteri silinemedi.
 Failed to delete deal.,Anlaşma silinemedi.
 Failed to delete lead.,Potansiyel silinemedi.
 Failed to delete supplier.,Tedarikçi silinemedi.
-Failed to load OSA audit.,OSA denetimi yüklenemedi.
 Failed to load accounts.,Hesaplar yüklenemedi.
 Failed to load aging.,Yaşlandırma raporu yüklenemedi.
 Failed to load alerts.,Uyarılar yüklenemedi.
@@ -435,6 +458,7 @@ Failed to load lead.,Potansiyel yüklenemedi.
 Failed to load leads.,Potansiyeller yüklenemedi.
 Failed to load ledger.,Defter yüklenemedi.
 Failed to load options.,Seçenekler yüklenemedi.
+Failed to load OSA audit.,OSA denetimi yüklenemedi.
 Failed to load party defaults.,Cari varsayılanları yüklenemedi.
 Failed to load payment defaults.,Ödeme varsayılanları yüklenemedi.
 Failed to load payment entries.,Ödeme kayıtları yüklenemedi.
@@ -448,7 +472,9 @@ Failed to load quotations.,Teklifler yüklenemedi.
 Failed to load reserved stock data.,
 Failed to load sales order.,Satış siparişi yüklenemedi.
 Failed to load sales orders.,Satış siparişleri yüklenemedi.
+Failed to load service calendar.,Servis takvimi yüklenemedi.
 Failed to load service tickets.,Servis talepleri yüklenemedi.
+Failed to load service visits.,Ziyaretler yüklenemedi.
 Failed to load stock entries.,Stok hareketleri yüklenemedi.
 Failed to load stock ledger.,Stok defteri yüklenemedi.
 Failed to load supplier.,Tedarikçi yüklenemedi.
@@ -456,6 +482,7 @@ Failed to load suppliers.,Tedarikçiler yüklenemedi.
 Failed to load ticket.,Talep yüklenemedi.
 Failed to load transfer detail.,Transfer detayı yüklenemedi.
 Failed to load transfers.,Transferler yüklenemedi.
+Failed to load unbilled visits.,Faturalanmamış ziyaretler yüklenemedi.
 Failed to load van stock.,Araç stoğu yüklenemedi.
 Failed to load visit.,Ziyaret yüklenemedi.
 Failed to load warehouses.,Depolar yüklenemedi.
@@ -467,11 +494,12 @@ Failed to record payment.,Ödeme kaydedilemedi.
 Failed to refresh claim.,Talep yenilenemedi.
 Failed to rename column.,
 Failed to reorder columns.,
+Failed to reschedule visit.,Ziyaret yeniden planlanamadı.
 Failed to run report.,Rapor çalıştırılamadı.
-Failed to save OSA audit.,OSA denetimi kaydedilemedi.
 Failed to save customer.,Müşteri kaydedilemedi.
 Failed to save deal.,Anlaşma kaydedilemedi.
 Failed to save lead.,Potansiyel kaydedilemedi.
+Failed to save OSA audit.,OSA denetimi kaydedilemedi.
 Failed to save photo report.,Fotoğraf raporu kaydedilemedi.
 Failed to save planogram.,Planogram kaydedilemedi.
 Failed to save process.,Süreç kaydedilemedi.
@@ -480,6 +508,7 @@ Failed to save stock entry.,Stok hareketi kaydedilemedi.
 Failed to save van stock.,Araç stoğu kaydedilemedi.
 Failed to save visit.,Ziyaret kaydedilemedi.
 Failed to submit.,Onaylanamadı.
+Failed to switch language.,Dil değiştirilemedi.
 Failed to update bill.,Fatura güncellenemedi.
 Failed to update color.,
 Failed to update promo plan.,Promosyon planı güncellenemedi.
@@ -488,12 +517,13 @@ Female,Kadın
 Field Sales,Saha Satışı
 Field User,Saha Kullanıcısı
 Field User is required.,Saha Kullanıcısı zorunludur.
+Field user is required.,Saha kullanıcısı zorunludur.
 Field User name is required.,Saha Kullanıcısı adı zorunludur.
 Field Users,Saha Kullanıcıları
-Field user is required.,Saha kullanıcısı zorunludur.
 Field users represent sales reps who execute visits and own van stock.,"Saha kullanıcıları, ziyaretleri gerçekleştiren ve araç stoğunu yöneten satış temsilcilerini temsil eder."
 Files,Dosyalar
 Fill in the required fields before submitting.,Göndermeden önce zorunlu alanları doldurun.
+Finance,Finans
 Financed,Finansmanlı
 Finish,Bitir
 Finish failed.,Bitirme başarısız.
@@ -510,11 +540,12 @@ Frequency,Sıklık
 Fri,Cum
 From,Kaynak
 From account,Kaynak hesap
+from exchange rate records,döviz kuru kayıtlarından
+from last bill,son faturadan
 From warehouse,Kaynak depo
 From → To,Kaynak → Hedef
 Full name,Tam ad
-GPS Latitude,GPS Enlemi
-GPS Longitude,GPS Boylamı
+Fully Completed,Tam tamamlandı
 Gateways,Ağ geçitleri
 Gender,Cinsiyet
 Gender is required.,Cinsiyet zorunludur.
@@ -522,27 +553,29 @@ Generate and submit,Oluştur ve onayla
 Generate drafts,Taslak oluştur
 Generated salary slips,Oluşturulan bordro fişleri
 Go to Sales Orders,Satış Siparişlerine Git
+GPS Latitude,GPS Enlemi
+GPS Longitude,GPS Boylamı
 Grand Total,Genel Toplam
 Grand total,Genel toplam
 Gross,Brüt
-Gross ROI %,Brüt YGO %
 Gross pay,Brüt ücret
+Gross ROI %,Brüt YGO %
 Group,Grup
 "Group warehouse (can contain children, holds no stock itself)","Grup depo (alt depo içerebilir, kendi stoğu yoktur)"
-HR,İK
 Half Day,Yarım Gün
 Hello {name},Merhaba {name}
 Horizontal lanes (flow left→right),Yatay şeritler (akış sol→sağ)
 Hours,Saat
+HR,İK
 In,Giriş
 In progress,Devam ediyor
 In time,Zamanında
-InService,Hizmette
 Inactive,Pasif
 Inclusive,Dahil
 Inclusive: commission deducted from amount — receiver gets less.,Dahil: komisyon tutardan düşülür — alıcı daha az alır.
 Incremental Units,Artımlı Birimler
 Inflow,Giriş
+InService,Hizmette
 Install Date,Kurulum Tarihi
 Installment,Taksit
 Invalid decision: {0},Geçersiz karar: {0}
@@ -554,6 +587,7 @@ Inventory,Stok
 Invite user,Kullanıcı davet et
 Invoice,Fatura
 Invoice number or customer…,
+Invoiced,Faturalandı
 Invoices,Faturalar
 Issue,Sorun
 Issue credit note,Alacak dekontu düzenle
@@ -561,6 +595,7 @@ Issue is required.,Sorun zorunludur.
 Issue type,Talep türü
 Issues,Sorunlar
 Item,Ürün
+item,kalem
 Item #{0}: item is required.,Ürün #{0}: ürün zorunludur.
 Item #{0}: qty must be greater than 0.,Ürün #{0}: miktar 0'dan büyük olmalıdır.
 Item code,Ürün kodu
@@ -568,7 +603,9 @@ Item does not require Asl Belgisi,Ürün için Asl Belgisi gerekli değil
 Item is required on row {0}.,{0}. satırda ürün zorunludur.
 Item name,Ürün adı
 Item name is required.,Ürün adı zorunludur.
+item_code and warehouse are required,item_code ve depo zorunludur
 Items,Ürünler
+items,kalemler
 Item·WH lines,Ürün·Depo
 Jami,Jami
 Jami muzqaymoq soni (dona),Jami muzqaymoq soni (dona)
@@ -582,9 +619,9 @@ Landed cost vouchers,İthal maliyet fişleri
 Lane,Şerit
 Lanes,Şeritler
 Language,Dil
-Last Name,Soyad
 Last login,Son giriş
 Last month,
+Last Name,Soyad
 Last name,Soyadı
 Last year,
 Latitude,Enlem
@@ -595,6 +632,8 @@ Leave all unchecked to use role-based access. Checking any replaces it with exac
 Leave type,İzin türü
 Ledger spans multiple account currencies; amounts shown in base currency.,Defter birden fazla hesap para birimini kapsamaktadır; tutarlar temel para biriminde gösterilmektedir.
 Left,Sol
+left,kaldı
+line,satır
 Lines,Satırlar
 Link to an existing Customer for receivables.,Alacaklar için mevcut bir Müşteriye bağlayın.
 Linked invoices,Bağlı faturalar
@@ -608,20 +647,22 @@ Login required,Giriş gerekli
 Longitude,Boylam
 Low,Düşük
 Low Stock,Düşük Stok
-Low Stock Alerts,Düşük Stok Uyarıları
 Low stock,Düşük stok
+Low Stock Alerts,Düşük Stok Uyarıları
 Mahsulot nomi,Mahsulot nomi
+Maintenance Visit,Bakım ziyareti
 Make default BOM for this item,Bu ürün için varsayılan BOM yap
 Male,Erkek
 Manufacturing,Üretim
 Map,Harita
-Mark Resolved,Çözüldü Olarak İşaretle
 Mark and submit,İşaretle ve gönder
 Mark attendance,Devam işaretle
 Mark daily attendance to start building reports.,Raporlar oluşturmaya başlamak için günlük devam kaydı yapın.
+Mark Resolved,Çözüldü Olarak İşaretle
 Marketing,Pazarlama
-Marketing Claims,Pazarlama Talepleri
 Marketing claim settlement for {0},{0} için pazarlama talebi ödemesi
+Marketing Claims,Pazarlama Talepleri
+Material Issue submitted: {0},Malzeme çıkışı onaylandı: {0}
 Memo,Not
 Message,Mesaj
 Mijoz balansi,Mijoz balansi
@@ -639,6 +680,7 @@ Money,Para
 Month to date,
 Monthly,Aylık
 Monthly installment,Aylık taksit
+more,daha fazla
 Move to Under Review,İncelemeye Al
 Movement,Hareket
 My work orders,İş emirlerim
@@ -646,65 +688,61 @@ Name,Ad
 Name or email,Ad veya e-posta
 Narxi,Narxi
 Net,Net
-Net ROI %,Net YGO %
 Net pay,Net maaş
+Net ROI %,Net YGO %
 Net total,Net toplam
 New,Yeni
+New bill,Yeni fatura
 New BOM,Yeni BOM
 New Contract,Yeni Sözleşme
-New Deal,Yeni Anlaşma
-New Equipment,Yeni Ekipman
-New Lead,Yeni Potansiyel
-New Murabaha Contract,Yeni Murabaha Sözleşmesi
-New OSA audit,Yeni OSA denetimi
-New Plan,Yeni Plan
-New Process,Yeni Süreç
-New Promo Plan,Yeni Promosyon Planı
-New Promo Scheme,Yeni Promosyon Şeması
-New SO,Yeni SÖ
-New Sales Order,Yeni Satış Siparişi
-New Scheme,Yeni Şema
-New Service Ticket,Yeni servis talebi
-New Ticket,Yeni talep
-New Transfer,Yeni Transfer
-New Van Stock,Yeni Araç Stoku
-New Visit,Yeni Ziyaret
-New Work Order,Yeni İş Emri
-New bill,Yeni fatura
 New customer,Yeni müşteri
+New Deal,Yeni Anlaşma
 New employee,Yeni çalışan
 New entry,Yeni kayıt
+New Equipment,Yeni Ekipman
 New expense,Yeni gider
 New field user,Yeni saha kullanıcısı
 New item,Yeni ürün
 New journal,Yeni yevmiye
 New journal entry,Yeni yevmiye kaydı
+New Lead,Yeni Potansiyel
 New leave request,Yeni izin talebi
+New Murabaha Contract,Yeni Murabaha Sözleşmesi
+New OSA audit,Yeni OSA denetimi
 New outlet,Yeni satış noktası
 New payment,Yeni ödeme
 New photo report,Yeni fotoğraf raporu
+New Plan,Yeni Plan
 New planogram,Yeni planogram
+New Process,Yeni Süreç
+New Promo Plan,Yeni Promosyon Planı
+New Promo Scheme,Yeni Promosyon Şeması
 New purchase bill,Yeni alış faturası
 New purchase order,Yeni satın alma siparişi
 New quotation,Yeni teklif
 New receipt,Yeni mal kabulü
 New route,Yeni rota
+New Sales Order,Yeni Satış Siparişi
 New sales order,Yeni satış siparişi
+New Scheme,Yeni Şema
+New Service Ticket,Yeni servis talebi
+New SO,Yeni SÖ
 New stock entry,Yeni stok kaydı
 New supplier,Yeni tedarikçi
+New Ticket,Yeni talep
+New Transfer,Yeni Transfer
 New transfer,Yeni transfer
+New Van Stock,Yeni Araç Stoku
+New Visit,Yeni Ziyaret
 New warehouse,Yeni depo
+New Work Order,Yeni İş Emri
 Next,İleri
 No,Hayır
 No 1C sync events yet.,Henüz 1C senkronizasyon olayı yok.
 No ARCA payment events yet.,Henüz ARCA ödeme olayı yok.
-No BOMs yet,Henüz BOM yok
-No EHF submissions yet. Submit a Sales Invoice to enqueue one.,Henüz EHF gönderimi yok. Kuyruğa eklemek için bir Satış Faturası gönderin.
-No OSA audits yet,Henüz OSA denetimi yok
-No ROI snapshots yet,Henüz YGO anlık görüntüsü yok
-No Stock Entries with Asl Belgisi items found.,Asl Belgisi kalemleri içeren Stok Kaydı bulunamadı.
 No attendance records,Devam kaydı yok
 No bills in this range,Bu aralıkta fatura yok
+No BOMs yet,Henüz BOM yok
 No claim selected.,Talep seçilmedi.
 No claims yet,Henüz talep yok
 No columns,Sütun yok
@@ -717,6 +755,7 @@ No deals,Anlaşma yok
 No deductions,Kesinti yok
 No default Bank or Cash account configured for company {0}.,{0} şirketi için varsayılan Banka veya Nakit hesabı yapılandırılmamış.
 No earnings,Kazanç yok
+No EHF submissions yet. Submit a Sales Invoice to enqueue one.,Henüz EHF gönderimi yok. Kuyruğa eklemek için bir Satış Faturası gönderin.
 No employees yet,Henüz çalışan yok
 No equipment yet,Henüz ekipman yok
 No exchange rate available from {0} to {1} on {2}.,{2} tarihi için {0} ile {1} arasında döviz kuru bulunamadı.
@@ -741,6 +780,7 @@ No matches found,Eşleşme bulunamadı
 No open reservations,Açık rezervasyon yok
 No orders.,Sipariş yok.
 No org chart yet,Henüz organizasyon şeması yok
+No OSA audits yet,Henüz OSA denetimi yok
 No outlets in this route yet.,Bu rotada henüz satış noktası yok.
 No outlets yet,Henüz satış noktası yok
 No outstanding balances,Açık bakiye yok
@@ -758,15 +798,18 @@ No receivables,Alacak yok
 No recent transactions.,Son işlem yok.
 No repair requests,Onarım talebi yok
 "No results for ""{query}"".","""{query}"" için sonuç bulunamadı."
+No ROI snapshots yet,Henüz YGO anlık görüntüsü yok
 No routes yet,Henüz rota yok
 No salary slips yet,Henüz bordro fişi yok
 No sales orders in this range,Bu aralıkta satış siparişi yok
 No serial,Seri yok
 No service tickets,Servis talebi yok
 No steps yet.,Henüz adım yok.
+No Stock Entries with Asl Belgisi items found.,Asl Belgisi kalemleri içeren Stok Kaydı bulunamadı.
 No stock entries yet,Henüz stok hareketi yok
 No stock in any warehouse for this company.,Bu şirkete ait hiçbir depoda stok yok.
 No stock moves in this range,Bu aralıkta stok hareketi yok
+No stock update,Stok hareketi yok
 No suppliers,Tedarikçi yok
 No suppliers match that name,Bu ada uyan tedarikçi bulunamadı
 No template,Şablon yok
@@ -787,15 +830,11 @@ Not permitted for company {0},{0} şirketi için izin verilmiyor
 Not permitted to read {0} {1},{0} {1} kaydını okuma izniniz yok
 Notes,Notlar
 O'lchov birlik,O'lchov birlik
-OSA,OSA
-OSA %,OSA %
-OSA Audit name is required.,OSA Denetim adı zorunludur.
-OSA Audits,OSA Denetimleri
 Object Name,Nesne Adı
 Object Type,Nesne Türü
 Oldest reservation,En eski rezervasyon
-On Leave,İzinde
 On hand,Eldeki
+On Leave,İzinde
 On leave today,Bugün izinde
 On-Shelf-Availability audits compare expected vs actual facings during visits.,"Raf Varlığı denetimleri, ziyaretler sırasında beklenen ile gerçek raflama sayısını karşılaştırır."
 One or more lines exceed available stock. Reduce qty or choose a different warehouse.,Bir veya daha fazla satır mevcut stoğu aşıyor. Miktarı azaltın veya farklı bir depo seçin.
@@ -809,8 +848,10 @@ Opened,Açıldı
 Opening,Açılış
 Opening balance,Açılış bakiyesi
 Opening balances,Açılış bakiyeleri
+Operations,Operasyonlar
 Operator,Operatör
 Optional,İsteğe bağlı
+optional,isteğe bağlı
 Order,Sipariş
 Order Date,Sipariş Tarihi
 Order date,Sipariş tarihi
@@ -818,6 +859,10 @@ Orders,Siparişler
 Organization,Organizasyon
 Orientation,Yönlendirme
 Original qty,Orijinal miktar
+OSA,OSA
+OSA %,OSA %
+OSA Audit name is required.,OSA Denetim adı zorunludur.
+OSA Audits,OSA Denetimleri
 Other,Diğer
 Out,Çıkış
 Out of stock,Stok tükendi
@@ -826,26 +871,30 @@ Outflow,Para çıkışı
 Outlet,Satış Noktası
 Outlet Class,Satış Noktası Sınıfı
 Outlet Code,Satış Noktası Kodu
-Outlet Name,Satış Noktası Adı
 Outlet code,Satış noktası kodu
 Outlet code is required.,Satış noktası kodu zorunludur.
 Outlet is required.,Satış noktası zorunludur.
+Outlet Name,Satış Noktası Adı
 Outlet name (e.g. OUT-001),Satış noktası adı (ör. OUT-001)
 Outlet name is required.,Satış noktası adı zorunludur.
 Outlet {0} appears twice on this route.,{0} satış noktası bu rotada iki kez görünüyor.
 Outlets,Satış Noktaları
 Outstanding,Açık
+overdue,gecikmiş
 Override qty must be greater than zero,Geçersiz kılma miktarı sıfırdan büyük olmalıdır
 Overview,Genel Bakış
+Owes us,Bize borçlu
 Owner,
-POSM,POSM
+pack_key is required,pack_key zorunludur
 Paid,Ödendi
 Paid amount,Ödenen tutar
 Paid days,Ücretli günler
 Paid from,Ödeyen
 Paid to,Alıcı
 Parent warehouse,Üst depo
+Partially Completed,Kısmen tamamlandı
 Partly paid,Kısmen ödendi
+Parts Issue,Parça çıkışı
 Party,Taraf
 Party account not resolved — re-select the party.,Taraf hesabı çözümlenemedi — tarafı yeniden seçin.
 Party is required.,Taraf zorunludur.
@@ -882,10 +931,10 @@ Permissions,İzinler
 Personal email,Kişisel e-posta
 Phone,Telefon
 Photo,Fotoğraf
+Photo is required.,Fotoğraf zorunludur.
 Photo Report name is required.,Fotoğraf Raporu adı zorunludur.
 Photo Reports,Fotoğraf Raporları
 Photo URL,Fotoğraf URL
-Photo is required.,Fotoğraf zorunludur.
 Photos,Fotoğraflar
 "Photos capture shelves, storefronts and promotions during visits.","Fotoğraflar; ziyaretler sırasında rafları, vitrinleri ve promosyonları belgeler."
 Pick a company from the switcher in the header to see your financial overview.,Finansal genel görünümünüzü görmek için başlıktaki değiştiricide bir şirket seçin.
@@ -905,22 +954,26 @@ Pick the account funds will be paid from.,Ödemenin yapılacağı hesabı seçin
 Pick the account that will receive the funds.,Fonları alacak hesabı seçin.
 Plan Type,Plan Türü
 Planned,Planlandı
+planned,planlanan
 Planned Date,Planlanan Tarih
-Planned Time,Planlanan Saat
 Planned date,Planlanan tarih
+Planned service,Planlı servis
 Planned start,Planlanan başlangıç
+Planned Time,Planlanan Saat
 Planogram name is required.,Planogram adı zorunludur.
 Planograms,Planogramlar
 Planograms describe expected shelf facings per outlet and category.,"Planogramlar, her satış noktası ve kategori için beklenen raf düzenini tanımlar."
 Please fill all required fields.,Lütfen tüm zorunlu alanları doldurun.
 Positions,Pozisyonlar
 Positions hierarchy,Pozisyon hiyerarşisi
+POSM,POSM
 Post transfer,Transferi kaydet
 Posting Date,Kayıt Tarihi
-Posting Date is required.,Kayıt tarihi zorunludur.
 Posting date,Kayıt tarihi
+Posting Date is required.,Kayıt tarihi zorunludur.
 Posting date is required.,Kayıt tarihi zorunludur.
 Postings,Kayıtlar
+Prepaid,Avans
 Present,Mevcut
 Present SKUs,Mevcut SKU'lar
 Price list,Fiyat listesi
@@ -950,11 +1003,11 @@ Promos,Promosyonlar
 Properties,Özellikler
 Purchase Invoice,Satın Alma Faturası
 Purchase Invoices,Satın Alma Faturaları
+Purchase item,Satın alma kalemi
 Purchase Order,Satın Alma Siparişi
 Purchase Orders,Satın Alma Siparişleri
 Purchase Receipt,Mal Kabul Fişi
 Purchase Receipts,Mal Kabulleri
-Purchase item,Satın alma kalemi
 Purchasing,Satın Alma
 Purpose,Amaç
 Qty,Miktar
@@ -962,7 +1015,6 @@ Quantity,Miktar
 Quantity must be positive.,Miktar pozitif olmalıdır.
 Quotation,Teklif
 Quotations,Teklifler
-RUB → UZS,RUB → UZS
 Rack,Raf
 Raqam,Raqam
 Rate,Oran
@@ -985,8 +1037,8 @@ Receive now,Şimdi alınan
 Receive payment,Ödeme al
 Receive stock,Stok al
 Received,Alındı
-Received At,Alındığı Yer
 Received amount,Alınan tutar
+Received At,Alındığı Yer
 Receiver gets,Alıcının aldığı
 Receiver name,Alıcı adı
 Recent activity,Son etkinlik
@@ -1012,8 +1064,8 @@ Remark,Açıklama
 Remarks,Açıklamalar
 Remittance,Havale
 Remove,Kaldır
-Remove Lane,Şeridi Kaldır
 Remove column,Sütunu sil
+Remove Lane,Şeridi Kaldır
 Remove operator,
 Remove row,Satırı kaldır
 Rename,Yeniden adlandır
@@ -1032,6 +1084,7 @@ Reports,Raporlar
 Request,Talep
 Required,Zorunlu
 Required materials,Gerekli malzemeler
+Reschedule,Yeniden zamanla
 Reserved,Rezerve
 Reserved Stock,Rezerve Stok
 Reserved value,Rezerve değeri
@@ -1057,38 +1110,37 @@ Role template (optional),Rol şablonu (isteğe bağlı)
 Roles,Roller
 Route,Rota
 Route Code,Rota Kodu
-Route Name,Rota Adı
 Route code is required.,Rota kodu zorunludur.
+Route Name,Rota Adı
 Route name is required.,Rota adı zorunludur.
 Routes,Rotalar
 Row not found on this Stock Entry,Bu Stok Girişinde satır bulunamadı
 Row {n} ({item}): qty exceeds available stock (available {free}).,Satır {n} ({item}): miktar mevcut stoğu aşıyor (mevcut {free}).
 Row {n}: qty must be greater than zero.,Satır {n}: miktar sıfırdan büyük olmalıdır.
 Rsvd,Rezerve
+RUB → UZS,RUB → UZS
 Run,Çalıştır
 Run a payroll cycle to generate salary slips for assigned employees.,Atanmış çalışanlar için bordro fişleri oluşturmak üzere bir bordro döngüsü çalıştırın.
 Run payroll,Bordroyu Çalıştır
-SO number or customer…,
-SRE module unavailable: {0},SRE modülü kullanılamıyor: {0}
-SREs,SRE
 Salary slip,Bordro Fişi
 Sales,Satış
 Sales Invoice,Satış Faturası
 Sales Invoice must be created from a Sales Order,Satış Faturası bir Satış Siparişinden oluşturulmalıdır
 Sales Invoices,Satış Faturaları
 Sales Invoices are created from submitted Sales Orders. Open a Sales Order and use Create Invoice.,Satış Faturaları onaylanmış Satış Siparişlerinden oluşturulur. Bir Satış Siparişi açın ve Fatura Oluştur'u kullanın.
+Sales item,Satış kalemi
 Sales Order,Satış Siparişi
 Sales Order {0} must be submitted before invoicing,Fatura düzenlenmeden önce {0} Satış Siparişi onaylanmalıdır
 Sales Orders,Satış Siparişleri
-Sales item,Satış kalemi
+Same day,Aynı gün
 Sat,Cmt
 Save,Kaydet
 Save & submit,Kaydet ve onayla
-Save Changes,Değişiklikleri Kaydet
 Save allowed users,İzin verilen kullanıcıları kaydet
 Save and submit,Kaydet ve onayla
 Save as Draft,Taslak Olarak Kaydet
 Save as draft,Taslak olarak kaydet
+Save Changes,Değişiklikleri Kaydet
 Save changes,Değişiklikleri kaydet
 Save failed.,Kaydetme başarısız.
 Save modules,Modülleri kaydet
@@ -1106,9 +1158,9 @@ Scheme Name,Plan Adı
 Scheme Type,Plan Türü
 Scrap / rejects,Hurda / ret
 Search,Ara
-Search BOMs or finished goods…,Ürün reçetesi veya mamul ara…
 Search account…,Hesap ara…
 Search asset tag…,Varlık etiketi ara…
+Search BOMs or finished goods…,Ürün reçetesi veya mamul ara…
 Search campaigns…,Kampanya ara…
 Search customer,Müşteri ara
 Search customer name…,Müşteri adı ara…
@@ -1133,14 +1185,17 @@ Searching…,Aranıyor…
 Select a company first.,Önce bir firma seçin.
 Select a customer to view transactions,İşlemleri görüntülemek için bir müşteri seçin
 Select a shape or connector to edit its properties.,Özelliklerini düzenlemek için bir şekil veya bağlayıcı seçin.
+Select a source warehouse.,Kaynak depo seçin.
 Select a supplier to view transactions,İşlemleri görüntülemek için bir tedarikçi seçin
 Select account…,Hesap seçin…
 Select an account…,Bir hesap seçin…
 Select city…,Şehir seçin…
 Select company,Firma seçin
 Select gender,Cinsiyet seçin
+Select service person,Teknisyen seçin
 Select technician,Teknisyen seçin
 Select template…,Şablon seçin…
+Select warehouse,Depo seçin
 Select…,Seçin…
 Sell,Sat
 Sell markup,Satış fark oranı
@@ -1151,8 +1206,11 @@ Sender name,Gönderen adı
 Sender pays,Gönderen öder
 Serial No,Seri No
 Service,Servis
+Service Billing,Servis Faturalama
+Service person,Teknisyen
 Set Reports-To on employees to build the positions hierarchy.,Pozisyon hiyerarşisi oluşturmak için çalışanlarda Bağlı Olduğu Kişi alanını doldurun.
 Settle,Mahsuplaştır
+Settled,Kapatıldı
 Settlement failed.,Mahsuplaştırma başarısız oldu.
 Shape,Şekil
 Shapes,Şekiller
@@ -1166,35 +1224,41 @@ Skip reason is required when status is Skipped.,Durum Atlandı olduğunda atlama
 Skipped,Atlandı
 Slip,Fiş
 Snapshots are generated by the daily ROI task for Active promo plans.,"Anlık görüntüler, aktif promosyon planları için günlük YG görevi tarafından oluşturulur."
+SO number or customer…,
 So'z bilan:,So'z bilan:
 SoliqOnline UUID,SoliqOnline UUID
 Some lines could not be reserved,Bazı satırlar rezerve edilemedi
 Something went wrong,Bir şeyler ters gitti
 Soni (korobka),Soni (korobka)
 Source,Kaynak
+source,target
 Source warehouse,Kaynak depo
+SRE module unavailable: {0},SRE modülü kullanılamıyor: {0}
+SREs,SRE
 Standard rate,Standart fiyat
 Start,Başlat
 Start Date,Başlangıç Tarihi
-Start Work,İşe Başla
 Start failed.,Başlatma başarısız.
+Start Work,İşe Başla
 Status,Durum
 Status is required.,Durum zorunludur.
 Status name is required,
 Step,Adım
 Step #{0} not found on this visit.,Bu ziyarette #{0} numaralı adım bulunamadı.
 Step #{0}: type is required.,#{0}. adım: tür zorunludur.
+step_idx must be an integer.,step_idx bir tam sayı olmalıdır.
 Steps,Adımlar
 Stock,Stok
 Stock Entries,Stok Girişleri
+Stock entries,Stok girişleri
 Stock Entry,Stok Girişi
+Stock entry,Stok girişi
+Stock issued,Stok çıkışı yapıldı
+Stock item,Stok kalemi
 Stock Ledger,Stok Defteri
 Stock Reservation,Stok Rezervasyonu
-Stock UOM,Stok Birimi
-Stock entries,Stok girişleri
-Stock entry,Stok girişi
-Stock item,Stok kalemi
 Stock reservations,Stok rezervasyonları
+Stock UOM,Stok Birimi
 Stock value,Stok değeri
 Stop,Durdur
 Stop this Work Order? You can resume it later.,Bu İş Emri durdurulsun mu? Daha sonra devam edebilirsiniz.
@@ -1211,6 +1275,7 @@ Submit this BOM? You won't be able to edit it after.,Bu ürün reçetesi onaylan
 Submit transfer,Transferi onayla
 Submitted,Onaylandı
 Submitted At,Onaylanma Zamanı
+Submitted visits waiting for invoice or parts issue.,Fatura veya parça çıkışı bekleyen ziyaretler.
 Subtotal,Ara Toplam
 Suggested,Önerilen
 Sun,Paz
@@ -1223,7 +1288,6 @@ Supplier name is required.,Tedarikçi adı zorunludur.
 Suppliers,Tedarikçiler
 Suspended,Askıya Alındı
 Swap accounts,Hesapları değiştir
-TIN,TIN
 Table,Tablo
 Task,Görev
 Tax ID,Vergi Kimlik No
@@ -1236,14 +1300,15 @@ Terms / remarks,Koşullar / notlar
 Terms:,Koşullar:
 Territory,Bölge
 The Compliance module is disabled for this company.,Bu şirket için Uyumluluk modülü devre dışı.
-This Service workspace will be added after Tickets P1.,Bu çalışma alanı P1'den sonra eklenecek.
 This cannot be undone.,Bu işlem geri alınamaz.
 This month,
+This Service workspace will be added after Tickets P1.,Bu çalışma alanı P1'den sonra eklenecek.
 This year,
 Threshold,Eşik
 Threshold Qty,Eşik Miktarı
 Thu,Per
 Tickets,Talepler
+TIN,TIN
 To,Kime
 To account,Alıcı hesap
 To warehouse,Hedef depo
@@ -1251,13 +1316,13 @@ Today,
 Total,Toplam
 Total (cost + markup),Toplam (maliyet + kâr payı)
 Total / Present / OSA % are computed server-side.,Toplam / Mevcut / OSA % sunucu tarafında hesaplanır.
-Total SKUs,Toplam SKU
 Total allocated,Toplam tahsis edilen
 Total allocated cannot exceed the payment amount.,"Toplam tahsis edilen tutar, ödeme tutarını aşamaz."
 Total cost,Toplam maliyet
 Total outstanding,Toplam bakiye
 Total payable,Toplam ödenecek
 Total receivable,Toplam alacak
+Total SKUs,Toplam SKU
 Total value,Toplam değer
 Total:,Toplam:
 Trade Marketing,Ticari Pazarlama
@@ -1276,36 +1341,39 @@ Try a different search term or clear the filter.,Farklı bir arama terimi deneyi
 Tue,Sal
 Type,Tür
 "Type to search, or pick a quick action",Aramak için yazın veya hızlı bir işlem seçin
-UOM,Ölçü Birimi
-USD → UZS,USD → UZS
 Unassigned,Atanmamış
+Unbilled,Faturalanmamış
 Units Sold,Satılan Adet
-Unknown Sales Invoice: {0},Bilinmeyen Satış Faturası: {0}
-Unknown Sales Order: {0},Bilinmeyen Satış Siparişi: {0}
 Unknown company: {0},Bilinmeyen şirket: {0}
 Unknown role template: {0},Bilinmeyen rol şablonu: {0}
+Unknown Sales Invoice: {0},Bilinmeyen Satış Faturası: {0}
+Unknown Sales Order: {0},Bilinmeyen Satış Siparişi: {0}
 Unknown user: {0},
 Unknown vertical pack: {0},Bilinmeyen dikey paket: {0}
 Unknown warehouse: {0},Bilinmeyen depo: {0}
 Unpaid,Ödenmedi
 Unsupported language: {0},Desteklenmeyen dil: {0}
 Untitled Process,Adsız Süreç
+UOM,Ölçü Birimi
 Uplift Value,Artış Değeri
 Upload failed,Yükleme başarısız
 Uploading…,Yükleniyor…
+USD → UZS,USD → UZS
+Use source warehouse,Kaynak depoyu kullan
 User,Kullanıcı
 User account,Kullanıcı hesabı
 User already exists,Kullanıcı zaten mevcut
 User is required.,Kullanıcı zorunludur.
 User not found,Kullanıcı bulunamadı
+user@example.com,user@example.com
 Users,Kullanıcılar
 Utilization %,Kullanım %
 Valid Distributor (Customer) is required.,Geçerli bir Distribütör (Müşteri) zorunludur.
 Valid From,Geçerlilik Başlangıcı
 Valid Promo Plan is required.,Geçerli bir Promosyon Planı zorunludur.
+Valid till,Son geçerlilik
 Valid To,Geçerlilik Bitişi
 Valid To must be on or after Valid From.,"Geçerlilik Bitişi, Geçerlilik Başlangıcı ile aynı veya sonraki bir tarih olmalıdır."
-Valid till,Son geçerlilik
 Valuation,Değerleme
 Value,Değer
 Value (approx.),Değer (yakl.)
@@ -1320,12 +1388,13 @@ View ledger,Defteri görüntüle
 Visit,Ziyaret
 Visit already checked in at {0}.,Ziyaret {0} tarihinde zaten giriş yapıldı.
 Visit already checked out at {0}.,Ziyaret {0} tarihinde zaten çıkış yapıldı.
+Visit closed,Ziyaret kapatıldı
 Visit is required.,Ziyaret zorunludur.
 Visit name is required.,Ziyaret adı zorunludur.
 Visits,Ziyaretler
 Visits appear once they are planned from a route or created manually.,Ziyaretler bir rotadan planlandıktan veya manuel oluşturulduktan sonra görünür.
 Voucher,Fiş
-WIP warehouse,Yarı mamul deposu
+vs. last month,geçen aya kıyasla
 Warehouse,Depo
 Warehouse balances,Depo bakiyeleri
 Warehouse is required for Sales Orders,Satış Siparişleri için depo zorunludur
@@ -1333,6 +1402,7 @@ Warehouse name,Depo adı
 Warehouse name is required.,Depo adı zorunludur.
 Warehouses,Depolar
 Warranty Until,Garanti Bitişi
+We owe,Biz borçluyuz
 Wed,Çar
 Weekly,Haftalık
 Weight,Ağırlık
@@ -1346,7 +1416,9 @@ Widen the date range or record a payment receipt or disbursement.,Tarih aralığ
 "Widen the date range, relax the status filter, or log a new bill.","Tarih aralığını genişletin, durum filtresini gevşetin veya yeni bir fatura kaydedin."
 "Widen the date range, relax the status filter, or send a new proposal.","Tarih aralığını genişletin, durum filtresini gevşetin veya yeni bir teklif gönderin."
 "Widen the date range, relax the status filter, or start a new order.","Tarih aralığını genişletin, durum filtresini gevşetin veya yeni bir sipariş başlatın."
+WIP warehouse,Yarı mamul deposu
 Withheld,Tevkif edildi
+Work done,Yapılan işler
 Work From Home,Uzaktan Çalışma
 Work Order,İş Emri
 Work Orders,İş Emirleri
@@ -1357,28 +1429,6 @@ Yes,Evet
 You need administrator access to view this page.,Bu sayfayı görüntülemek için yönetici erişimine ihtiyacınız var.
 "Your books are empty. Get started by adding a customer, recording your first sale, or logging an opening balance.","Defteriniz boş. Müşteri ekleyerek, ilk satışınızı kaydederek veya açılış bakiyesi girerek başlayın."
 Yuk xati,Yuk xati
-cheque / txn id,çek / işlem no
-company currency,şirket para birimi
-"e.g. OK, Approved","örn. Tamam, Onaylandı"
-entries,
-entries. Narrow the date range to see older ones.,kayıt. Daha eskileri görmek için tarih aralığını daraltın.
-error(s),hata(lar)
-from exchange rate records,döviz kuru kayıtlarından
-from last bill,son faturadan
-item,kalem
-item_code and warehouse are required,item_code ve depo zorunludur
-items,kalemler
-left,kaldı
-line,satır
-more,daha fazla
-optional,isteğe bağlı
-overdue,gecikmiş
-pack_key is required,pack_key zorunludur
-planned,planlanan
-source,target
-step_idx must be an integer.,step_idx bir tam sayı olmalıdır.
-user@example.com,user@example.com
-vs. last month,geçen aya kıyasla
 {0} is required.,{0} zorunludur.
 {0} must be a number,{0} bir sayı olmalıdır
 {0} name is required.,{0} adı zorunludur.
@@ -1388,9 +1438,9 @@ vs. last month,geçen aya kıyasla
 {0}: rate cannot be negative,{0}: rate negatif olamaz
 {n} outstanding invoice(s),{n} ödenmemiş fatura
 —,—
-— Choose account —,— Hesap seçin —
 — auto from customer —,— müşteriden otomatik —
 — auto from supplier —,— tedarikçiden otomatik —
+— Choose account —,— Hesap seçin —
 — company default —,— şirket varsayılanı —
 — default —,— varsayılan —
 — global default —,— genel varsayılan —
@@ -1402,11 +1452,3 @@ vs. last month,geçen aya kıyasla
 — pick source —,— kaynak seçin —
 — select account —,— hesap seçin —
 — top-level —,— üst düzey —
-Commerce,Ticaret
-Failed to switch language.,Dil değiştirilemedi.
-Finance,Finans
-Operations,Operasyonlar
-Owes us,Bize borçlu
-Prepaid,Avans
-Settled,Kapatıldı
-We owe,Biz borçluyuz
