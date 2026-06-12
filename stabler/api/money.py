@@ -9,9 +9,27 @@ from __future__ import annotations
 import json
 
 import frappe
-from frappe.utils import flt, getdate, today
+from frappe.utils import cint, flt, getdate, today
 
 EXPORT_FORMATS = {"Excel", "CSV"}
+
+
+def _invoice_payment_can_allocate(docstatus) -> bool:
+	"""Payment Entries can only allocate against submitted invoices."""
+	return cint(docstatus) == 1
+
+
+def _invoice_payment_amount(doc) -> float:
+	"""Return the payment cap for an invoice payment action.
+
+	Submitted invoices use outstanding amount. Draft invoices have no AR/AP
+	reference yet, so the payment is recorded as an advance capped at grand total.
+	"""
+	if _invoice_payment_can_allocate(getattr(doc, "docstatus", None)):
+		return flt(getattr(doc, "outstanding_amount", 0))
+	if cint(getattr(doc, "docstatus", None)) == 0:
+		return flt(getattr(doc, "grand_total", 0))
+	return 0.0
 
 
 ALLOWED_REPORTS = {
@@ -620,6 +638,50 @@ def payment_entry_detail(name: str):
 
 
 @frappe.whitelist()
+def update_payment_entry(
+	name: str,
+	posting_date: str | None = None,
+	mode_of_payment: str | None = None,
+	reference_no: str | None = None,
+	reference_date: str | None = None,
+	paid_amount: float | str | None = None,
+	received_amount: float | str | None = None,
+):
+	if not name:
+		frappe.throw("Payment Entry name is required.")
+	doc = frappe.get_doc("Payment Entry", name)
+	if doc.docstatus != 0:
+		frappe.throw("Only Draft Payment Entries can be edited.")
+
+	if posting_date:
+		doc.posting_date = getdate(posting_date)
+	doc.mode_of_payment = mode_of_payment or None
+	doc.reference_no = reference_no or None
+	doc.reference_date = getdate(reference_date) if reference_date else None
+
+	if paid_amount not in (None, ""):
+		paid = flt(paid_amount)
+		if paid <= 0:
+			frappe.throw("Paid amount must be greater than zero.")
+		doc.paid_amount = paid
+	if received_amount not in (None, ""):
+		received = flt(received_amount)
+		if received <= 0:
+			frappe.throw("Received amount must be greater than zero.")
+		doc.received_amount = received
+
+	party_amount = flt(doc.paid_amount) if doc.payment_type == "Receive" else flt(doc.received_amount)
+	total_allocated = sum(flt(r.allocated_amount) for r in (doc.references or []))
+	if total_allocated > party_amount + 0.005:
+		frappe.throw(
+			f"Total allocated ({total_allocated:.2f}) exceeds payment amount ({party_amount:.2f})."
+		)
+
+	doc.save(ignore_permissions=False)
+	return payment_entry_detail(doc.name)
+
+
+@frappe.whitelist()
 def party_payment_defaults(company: str, party_type: str, party: str) -> dict:
 	"""Return party account, outstanding invoices, and cash/bank accounts for the New Payment form."""
 	_require_company(company)
@@ -803,6 +865,32 @@ def submit_payment_entry(name: str):
 
 
 @frappe.whitelist()
+def cancel_payment_entry(name: str):
+	"""Cancel a submitted Payment Entry."""
+	if not name:
+		frappe.throw("Payment Entry name is required.")
+	doc = frappe.get_doc("Payment Entry", name)
+	if doc.docstatus == 0:
+		frappe.throw("Draft Payment Entry cannot be cancelled. Delete it instead.")
+	if doc.docstatus == 2:
+		frappe.throw("Payment Entry is already cancelled.")
+	doc.cancel()
+	return {"name": doc.name, "docstatus": doc.docstatus}
+
+
+@frappe.whitelist()
+def delete_payment_entry(name: str):
+	"""Delete a Draft Payment Entry."""
+	if not name:
+		frappe.throw("Payment Entry name is required.")
+	doc = frappe.get_doc("Payment Entry", name)
+	if doc.docstatus != 0:
+		frappe.throw("Only Draft Payment Entries can be deleted.")
+	doc.delete()
+	return {"name": name, "deleted": True}
+
+
+@frappe.whitelist()
 def payment_defaults_for_invoice(company: str, invoice_type: str, invoice_name: str):
 	"""Pre-fill data for paying a Sales/Purchase invoice.
 
@@ -817,8 +905,8 @@ def payment_defaults_for_invoice(company: str, invoice_type: str, invoice_name: 
 		frappe.throw(f"Unknown {invoice_type}: {invoice_name}")
 	_assert_can_read(invoice_type, invoice_name)
 	doc = frappe.get_doc(invoice_type, invoice_name)
-	if doc.docstatus != 1:
-		frappe.throw("Only submitted invoices can be paid.")
+	if doc.docstatus == 2:
+		frappe.throw("Cancelled invoices cannot be paid.")
 	if doc.company != company:
 		frappe.throw("Invoice belongs to a different company.")
 
@@ -848,7 +936,9 @@ def payment_defaults_for_invoice(company: str, invoice_type: str, invoice_name: 
 		"party_name": party_name,
 		"party_account": party_account,
 		"currency": doc.currency,
-		"outstanding_amount": flt(doc.outstanding_amount),
+		"docstatus": doc.docstatus,
+		"can_allocate_to_invoice": _invoice_payment_can_allocate(doc.docstatus),
+		"outstanding_amount": _invoice_payment_amount(doc),
 		"grand_total": flt(doc.grand_total),
 		"cash_bank_accounts": cash_bank,
 		"suggested_cash_bank_account": suggested,
@@ -875,6 +965,7 @@ def create_payment_for_invoice(
 	paid = flt(paid_amount)
 	if paid <= 0:
 		frappe.throw("Paid amount must be greater than zero.")
+	can_allocate = bool(defaults.get("can_allocate_to_invoice"))
 	allocated = flt(allocated_amount) if allocated_amount not in (None, "") else paid
 	if allocated <= 0 or allocated > flt(defaults["outstanding_amount"]):
 		frappe.throw(
@@ -901,16 +992,17 @@ def create_payment_for_invoice(
 		doc.reference_no = reference_no
 	if reference_date:
 		doc.reference_date = getdate(reference_date)
-	doc.append(
-		"references",
-		{
-			"reference_doctype": invoice_type,
-			"reference_name": invoice_name,
-			"total_amount": flt(defaults["grand_total"]),
-			"outstanding_amount": flt(defaults["outstanding_amount"]),
-			"allocated_amount": allocated,
-		},
-	)
+	if can_allocate:
+		doc.append(
+			"references",
+			{
+				"reference_doctype": invoice_type,
+				"reference_name": invoice_name,
+				"total_amount": flt(defaults["grand_total"]),
+				"outstanding_amount": flt(defaults["outstanding_amount"]),
+				"allocated_amount": allocated,
+			},
+		)
 	doc.setup_party_account_field()
 	doc.set_missing_values()
 	doc.insert(ignore_permissions=False)
@@ -922,7 +1014,7 @@ def create_payment_for_invoice(
 			# The validation error is re-raised and surfaced as a toast in the UI.
 			frappe.db.rollback()
 			raise
-	return {"name": doc.name, "docstatus": doc.docstatus}
+	return {"name": doc.name, "docstatus": doc.docstatus, "allocated_to_invoice": can_allocate}
 
 
 def _resolve_fiscal_year(date_str: str | None) -> str | None:

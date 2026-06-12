@@ -57,6 +57,12 @@ const modeOptions = computed(() => [
 const isReceive = computed(() => props.invoiceType === "Sales Invoice");
 const titleVerb = computed(() => (isReceive.value ? t("Receive payment") : t("Pay supplier")));
 const ctaVerb = computed(() => (isReceive.value ? t("Receive") : t("Pay")));
+const isAdvance = computed(() => defaults.value && !defaults.value.can_allocate_to_invoice);
+const advanceNotice = computed(() =>
+	isReceive.value
+		? t("This draft invoice has no ledger balance yet. The payment will be submitted as a customer advance.")
+		: t("This draft invoice has no ledger balance yet. The payment will be submitted as a supplier advance.")
+);
 
 watch(
 	() => props.open,
@@ -161,11 +167,15 @@ async function submit() {
 								<div class="datagrid-content">{{ defaults.party_name || defaults.party }}</div>
 							</div>
 							<div class="datagrid-item">
-								<div class="datagrid-title">{{ t("Outstanding") }}</div>
+								<div class="datagrid-title">{{ isAdvance ? t("Advance amount") : t("Outstanding") }}</div>
 								<div class="datagrid-content font-monospace text-red">
 									{{ formatMoney(defaults.outstanding_amount, defaults.currency, user.language) }}
 								</div>
 							</div>
+						</div>
+
+						<div v-if="isAdvance" class="alert alert-info py-2">
+							{{ advanceNotice }}
 						</div>
 
 						<div v-if="error" class="alert alert-danger">{{ error }}</div>

@@ -60,9 +60,11 @@ function goToInvoice(name) {
 const actionRunning = ref(false);
 const actionError = ref("");
 const PAYABLE_STATUSES = new Set(["Unpaid", "Overdue", "Partly Paid"]);
-const canPay = computed(
-	() => !!detail.value && detail.value.docstatus === 1 && PAYABLE_STATUSES.has(detail.value.status)
-);
+const canPay = computed(() => {
+	if (!detail.value || detail.value.is_return) return false;
+	if (detail.value.docstatus === 0) return Number(detail.value.grand_total || 0) > 0;
+	return detail.value.docstatus === 1 && PAYABLE_STATUSES.has(detail.value.status);
+});
 const canSubmit = computed(() => !!detail.value && detail.value.docstatus === 0);
 const canCancel = computed(() => !!detail.value && detail.value.docstatus === 1);
 const canReturn = computed(

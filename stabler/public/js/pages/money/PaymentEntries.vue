@@ -29,7 +29,18 @@ const rows = ref([]);
 
 const detailOpen = ref(false);
 const detailLoading = ref(false);
+const detailActionRunning = ref(false);
+const detailActionError = ref("");
+const detailEditing = ref(false);
 const detail = ref(null);
+const detailForm = ref({
+	posting_date: "",
+	mode_of_payment: "",
+	reference_no: "",
+	reference_date: "",
+	paid_amount: null,
+	received_amount: null,
+});
 
 const createOpen = ref(false);
 const submitting = ref(false);
@@ -124,6 +135,8 @@ async function load() {
 async function openDetail(name) {
 	detailOpen.value = true;
 	detailLoading.value = true;
+	detailActionError.value = "";
+	detailEditing.value = false;
 	detail.value = null;
 	try {
 		detail.value = await call("stabler.api.money.payment_entry_detail", { name });
@@ -135,8 +148,116 @@ async function openDetail(name) {
 }
 
 function closeDetail() {
+	if (detailActionRunning.value) return;
 	detailOpen.value = false;
+	detailActionError.value = "";
+	detailEditing.value = false;
 	detail.value = null;
+}
+
+async function reloadDetail() {
+	if (!detail.value?.name) return;
+	detail.value = await call("stabler.api.money.payment_entry_detail", { name: detail.value.name });
+}
+
+async function submitDetail() {
+	if (!detail.value?.name) return;
+	detailActionError.value = "";
+	detailActionRunning.value = true;
+	try {
+		await call("stabler.api.money.submit_payment_entry", { name: detail.value.name });
+		await reloadDetail();
+		await load();
+	} catch (err) {
+		detailActionError.value = err?.message || t("Submit failed.");
+	} finally {
+		detailActionRunning.value = false;
+	}
+}
+
+function startEditDetail() {
+	if (!detail.value || detail.value.docstatus !== 0) return;
+	detailActionError.value = "";
+	detailForm.value = {
+		posting_date: detail.value.posting_date || today,
+		mode_of_payment: detail.value.mode_of_payment || "",
+		reference_no: detail.value.reference_no || "",
+		reference_date: detail.value.reference_date || "",
+		paid_amount: Number(detail.value.paid_amount || 0),
+		received_amount: Number(detail.value.received_amount || 0),
+	};
+	detailEditing.value = true;
+}
+
+function cancelEditDetail() {
+	if (detailActionRunning.value) return;
+	detailEditing.value = false;
+	detailActionError.value = "";
+}
+
+async function saveDetail() {
+	if (!detail.value?.name) return;
+	detailActionError.value = "";
+	const paid = Number(detailForm.value.paid_amount);
+	const received = Number(detailForm.value.received_amount);
+	if (!Number.isFinite(paid) || paid <= 0) {
+		detailActionError.value = t("Paid amount must be greater than zero.");
+		return;
+	}
+	if (!Number.isFinite(received) || received <= 0) {
+		detailActionError.value = t("Received amount must be greater than zero.");
+		return;
+	}
+	detailActionRunning.value = true;
+	try {
+		detail.value = await call("stabler.api.money.update_payment_entry", {
+			name: detail.value.name,
+			posting_date: detailForm.value.posting_date || null,
+			mode_of_payment: detailForm.value.mode_of_payment || null,
+			reference_no: detailForm.value.reference_no || null,
+			reference_date: detailForm.value.reference_date || null,
+			paid_amount: paid,
+			received_amount: received,
+		});
+		detailEditing.value = false;
+		await load();
+	} catch (err) {
+		detailActionError.value = err?.message || t("Save failed.");
+	} finally {
+		detailActionRunning.value = false;
+	}
+}
+
+async function cancelDetail() {
+	if (!detail.value?.name) return;
+	if (!window.confirm(t("Cancel payment {name}?", { name: detail.value.name }))) return;
+	detailActionError.value = "";
+	detailActionRunning.value = true;
+	try {
+		await call("stabler.api.money.cancel_payment_entry", { name: detail.value.name });
+		await reloadDetail();
+		await load();
+	} catch (err) {
+		detailActionError.value = err?.message || t("Cancel failed.");
+	} finally {
+		detailActionRunning.value = false;
+	}
+}
+
+async function deleteDetail() {
+	if (!detail.value?.name) return;
+	if (!window.confirm(t("Delete payment {name}?", { name: detail.value.name }))) return;
+	detailActionError.value = "";
+	detailActionRunning.value = true;
+	try {
+		await call("stabler.api.money.delete_payment_entry", { name: detail.value.name });
+		closeDetail();
+		await load();
+	} catch (err) {
+		detailActionError.value = err?.message || t("Delete failed.");
+	} finally {
+		detailActionRunning.value = false;
+	}
 }
 
 function searchParty(q) {
@@ -239,7 +360,7 @@ watch(
 
 watch(() => form.value.amount, distributeAmount);
 
-async function submitCreate() {
+async function submitCreate(submitNow = false) {
 	submitError.value = "";
 	const f = form.value;
 	if (!f.posting_date) return (submitError.value = t("Posting date is required."));
@@ -272,7 +393,7 @@ async function submitCreate() {
 
 	submitting.value = true;
 	try {
-		await call("stabler.api.money.create_payment_entry", {
+		const created = await call("stabler.api.money.create_payment_entry", {
 			company: activeCompany.value,
 			posting_date: f.posting_date,
 			payment_type: f.payment_type,
@@ -287,6 +408,9 @@ async function submitCreate() {
 			reference_date: f.reference_date || null,
 			references: refs.length ? refs : null,
 		});
+		if (submitNow) {
+			await call("stabler.api.money.submit_payment_entry", { name: created.name });
+		}
 		createOpen.value = false;
 		await load();
 	} catch (err) {
@@ -409,7 +533,13 @@ watch(activeCompany, () => {
 	>
 		<div class="offcanvas-header">
 			<h5 class="offcanvas-title">{{ t("Payment Entry") }}</h5>
-			<button type="button" class="btn-close" @click="closeDetail" :aria-label='t("Close")'></button>
+			<button
+				type="button"
+				class="btn-close"
+				:disabled="detailActionRunning"
+				@click="closeDetail"
+				:aria-label='t("Close")'
+			></button>
 		</div>
 		<div class="offcanvas-body">
 			<div v-if="detailLoading" class="text-center py-5">
@@ -417,6 +547,55 @@ watch(activeCompany, () => {
 			</div>
 			<div v-else-if="detail?.error" class="alert alert-danger">{{ detail.error }}</div>
 			<div v-else-if="detail">
+				<div v-if="detailActionError" class="alert alert-danger">{{ detailActionError }}</div>
+				<div v-if="detailEditing" class="row g-3 mb-3">
+					<div class="col-md-6">
+						<label class="form-label">{{ t("Posting date") }}</label>
+						<DateInput v-model="detailForm.posting_date" :disabled="detailActionRunning" />
+					</div>
+					<div class="col-md-6">
+						<label class="form-label">{{ t("Mode of payment") }}</label>
+						<input
+							v-model="detailForm.mode_of_payment"
+							type="text"
+							class="form-control"
+							:placeholder='t("Cash, Bank, …")'
+							:disabled="detailActionRunning"
+						/>
+					</div>
+					<div class="col-md-6">
+						<label class="form-label">{{ t("Paid amount") }}</label>
+						<MoneyInput
+							v-model="detailForm.paid_amount"
+							:currency="detail.paid_from_account_currency || currency"
+							:language="user.language"
+							:disabled="detailActionRunning"
+						/>
+					</div>
+					<div class="col-md-6">
+						<label class="form-label">{{ t("Received amount") }}</label>
+						<MoneyInput
+							v-model="detailForm.received_amount"
+							:currency="detail.paid_to_account_currency || currency"
+							:language="user.language"
+							:disabled="detailActionRunning"
+						/>
+					</div>
+					<div class="col-md-6">
+						<label class="form-label">{{ t("Reference no.") }}</label>
+						<input
+							v-model="detailForm.reference_no"
+							type="text"
+							class="form-control"
+							:placeholder='t("Cheque / transfer ref")'
+							:disabled="detailActionRunning"
+						/>
+					</div>
+					<div class="col-md-6">
+						<label class="form-label">{{ t("Reference date") }}</label>
+						<DateInput v-model="detailForm.reference_date" :disabled="detailActionRunning" />
+					</div>
+				</div>
 				<div class="datagrid mb-3">
 					<div class="datagrid-item">
 						<div class="datagrid-title">{{ t("Name") }}</div>
@@ -500,6 +679,66 @@ watch(activeCompany, () => {
 					</div>
 				</div>
 			</div>
+		</div>
+		<div v-if="detail && !detail.error" class="offcanvas-footer border-top p-3 d-flex gap-2">
+			<button
+				v-if="detail.docstatus === 0 && !detailEditing"
+				type="button"
+				class="btn btn-danger"
+				:disabled="detailActionRunning"
+				@click="deleteDetail"
+			>
+				<i class="ti ti-trash me-1"></i>{{ t("Delete") }}
+			</button>
+			<button
+				v-if="detail.docstatus === 0 && !detailEditing"
+				type="button"
+				class="btn btn-outline-primary"
+				:disabled="detailActionRunning"
+				@click="startEditDetail"
+			>
+				<i class="ti ti-edit me-1"></i>{{ t("Edit") }}
+			</button>
+			<button
+				v-if="detailEditing"
+				type="button"
+				class="btn btn-link link-secondary ms-auto"
+				:disabled="detailActionRunning"
+				@click="cancelEditDetail"
+			>
+				{{ t("Cancel") }}
+			</button>
+			<button
+				v-if="detailEditing"
+				type="button"
+				class="btn btn-primary"
+				:disabled="detailActionRunning"
+				@click="saveDetail"
+			>
+				<span v-if="detailActionRunning" class="spinner-border spinner-border-sm me-2"></span>
+				<i v-else class="ti ti-device-floppy me-1"></i>
+				{{ t("Save") }}
+			</button>
+			<button
+				v-if="detail.docstatus === 1"
+				type="button"
+				class="btn btn-outline-danger"
+				:disabled="detailActionRunning"
+				@click="cancelDetail"
+			>
+				<i class="ti ti-ban me-1"></i>{{ t("Cancel") }}
+			</button>
+			<button
+				v-if="detail.docstatus === 0 && !detailEditing"
+				type="button"
+				class="btn btn-primary ms-auto"
+				:disabled="detailActionRunning"
+				@click="submitDetail"
+			>
+				<span v-if="detailActionRunning" class="spinner-border spinner-border-sm me-2"></span>
+				<i v-else class="ti ti-check me-1"></i>
+				{{ t("Submit") }}
+			</button>
 		</div>
 	</div>
 
@@ -722,13 +961,23 @@ watch(activeCompany, () => {
 						</button>
 						<button
 							type="button"
-							class="btn btn-primary ms-auto"
-							@click="submitCreate"
+							class="btn btn-outline-primary ms-auto"
+							@click="submitCreate(false)"
 							:disabled="submitting"
 						>
 							<span v-if="submitting" class="spinner-border spinner-border-sm me-2"></span>
 							<i v-else class="ti ti-device-floppy me-1"></i>
 							{{ t("Save as draft") }}
+						</button>
+						<button
+							type="button"
+							class="btn btn-primary"
+							@click="submitCreate(true)"
+							:disabled="submitting"
+						>
+							<span v-if="submitting" class="spinner-border spinner-border-sm me-2"></span>
+							<i v-else class="ti ti-check me-1"></i>
+							{{ t("Save & Submit") }}
 						</button>
 					</div>
 				</div>
