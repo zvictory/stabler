@@ -110,20 +110,28 @@ def validate_purchase_invoice(doc, method=None):
 
 
 def validate_payment_entry(doc, method=None):
+	# EmployeePaymentEntry (ERPNext HR controller) reuses the "Payment Entry"
+	# doctype for salary advances but lacks paid_from/to_currency fields.
+	# Skip our validation for employee payments entirely.
+	if getattr(doc, "party_type", None) == "Employee":
+		return
 	if doc.party_type and doc.party and doc.party_account and doc.party_account_currency:
 		doc.party_account = resolve_party_account(doc.party_type, doc.party, doc.company, doc.party_account_currency)
-		
+
 		company_currency = frappe.get_cached_value("Company", doc.company, "default_currency") or "UZS"
-		
+
+		paid_from_ccy = getattr(doc, "paid_from_currency", None)
+		paid_to_ccy = getattr(doc, "paid_to_currency", None)
+
 		# Check conversion rate for foreign payment
-		if doc.paid_from_currency != company_currency and doc.paid_from_currency == doc.party_account_currency:
+		if paid_from_ccy and paid_from_ccy != company_currency and paid_from_ccy == doc.party_account_currency:
 			rate = flt(doc.source_exchange_rate)
 			if rate > 0:
-				validate_exchange_rate(doc.company, doc.paid_from_currency, rate, doc.clearance_date or doc.posting_date)
-		elif doc.paid_to_currency != company_currency and doc.paid_to_currency == doc.party_account_currency:
+				validate_exchange_rate(doc.company, paid_from_ccy, rate, doc.clearance_date or doc.posting_date)
+		elif paid_to_ccy and paid_to_ccy != company_currency and paid_to_ccy == doc.party_account_currency:
 			rate = flt(doc.target_exchange_rate)
 			if rate > 0:
-				validate_exchange_rate(doc.company, doc.paid_to_currency, rate, doc.clearance_date or doc.posting_date)
+				validate_exchange_rate(doc.company, paid_to_ccy, rate, doc.clearance_date or doc.posting_date)
 
 
 def validate_journal_entry(doc, method=None):
