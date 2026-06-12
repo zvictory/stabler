@@ -934,7 +934,7 @@ watch(activeCompany, () => {
 																{{ e.voucher_no }}
 															</button>
 															<div v-else class="font-monospace small">—</div>
-															<div class="small text-muted font-monospace mt-0.5">{{ getRowRemark(e) }}</div>
+															<div class="small text-muted font-monospace mt-0.5 text-truncate" style="max-width:280px" :title="e.display_remark">{{ e.display_remark || "—" }}</div>
 														</td>
 														<td class="text-end font-monospace small py-2 align-middle">
 															<span v-if="Number(ledgerCurrencyMixed ? e.debit : e.debit_in_account_currency) > 0">

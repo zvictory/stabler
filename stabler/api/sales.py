@@ -12,6 +12,27 @@ from frappe.utils import cint, flt, getdate, today
 from stabler.api._common import _assert_can_read, _require_company, _validate_money_overrides
 
 
+_BOILERPLATE_RE = re.compile(
+    r"^Amount [A-Z]{3} \d|received from|paid to|New Payment Entry",
+    re.IGNORECASE,
+)
+
+
+def _build_display_remark(remarks: str, against_vouchers: list) -> str:
+    if against_vouchers and (not remarks or _BOILERPLATE_RE.search(remarks)):
+        shown = against_vouchers[:3]
+        rest = len(against_vouchers) - 3
+        text = "against " + ", ".join(shown)
+        if rest > 0:
+            text += f" +{rest}"
+        return text
+    if remarks:
+        return remarks.split("\n")[0].strip()
+    if against_vouchers:
+        return "against " + against_vouchers[0]
+    return ""
+
+
 def _resolve_price_list(customer: str | None) -> str | None:
 	"""Return per-customer default_price_list, else Selling Settings selling_price_list."""
 	if customer:
@@ -376,7 +397,44 @@ def _fetch_party_ledger_rows(
 						cac = source_amt
 		r["debit_in_account_currency"] = dac
 		r["credit_in_account_currency"] = cac
-	return rows
+
+	# Aggregate by voucher: collapse multi-allocation rows (e.g. one PE paying
+	# N invoices → N GL rows) into a single ledger line per voucher.
+	groups: dict = {}
+	group_order: list = []
+	for r in rows:
+		key = r["voucher_no"]
+		if key not in groups:
+			groups[key] = {
+				"name": r["name"],
+				"posting_date": r["posting_date"],
+				"voucher_type": r["voucher_type"],
+				"voucher_no": r["voucher_no"],
+				"account": r["account"],
+				"account_currency": r["account_currency"],
+				"debit": 0.0,
+				"credit": 0.0,
+				"debit_in_account_currency": 0.0,
+				"credit_in_account_currency": 0.0,
+				"_against_vouchers": [],
+				"_remarks": r.get("remarks") or "",
+			}
+			group_order.append(key)
+		g = groups[key]
+		g["debit"] = flt(g["debit"] + r["debit"], 2)
+		g["credit"] = flt(g["credit"] + r["credit"], 2)
+		g["debit_in_account_currency"] = flt(g["debit_in_account_currency"] + r["debit_in_account_currency"], 2)
+		g["credit_in_account_currency"] = flt(g["credit_in_account_currency"] + r["credit_in_account_currency"], 2)
+		av = r.get("against_voucher")
+		if av and av not in g["_against_vouchers"]:
+			g["_against_vouchers"].append(av)
+
+	aggregated = []
+	for key in group_order:
+		g = groups[key]
+		g["display_remark"] = _build_display_remark(g.pop("_remarks"), g.pop("_against_vouchers"))
+		aggregated.append(g)
+	return aggregated
 
 
 @frappe.whitelist()

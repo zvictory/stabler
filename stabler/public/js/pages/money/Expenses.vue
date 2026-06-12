@@ -10,6 +10,7 @@ import MoneyInput from "../../components/MoneyInput.vue";
 import DateInput from "../../components/DateInput.vue";
 import EmptyState from "../../components/EmptyState.vue";
 import Select from "../../components/Select.vue";
+import Typeahead from "../../components/Typeahead.vue";
 
 const session = useSession();
 const { activeCompany, user } = storeToRefs(session);
@@ -209,6 +210,21 @@ function addLine() {
 function removeLine(idx) {
 	if (form.value.lines.length <= 1) return;
 	form.value.lines.splice(idx, 1);
+}
+
+function searchLineAccount(q) {
+	const lower = (q || "").toLowerCase();
+	if (!lower) return lineAccounts.value.slice(0, 60);
+	return lineAccounts.value.filter(
+		(a) =>
+			(a.account_name || a.name).toLowerCase().includes(lower) ||
+			a.name.toLowerCase().includes(lower),
+	);
+}
+
+function lineAccountDisplay(name) {
+	const a = lineAccounts.value.find((x) => x.name === name);
+	return a ? `${a.account_name || a.name} (${a.account_currency})` : name;
 }
 
 // Expense lines must share currency with the payment-from leg (backend rule).
@@ -625,20 +641,20 @@ watch(activeCompany, () => {
 							<tbody>
 								<tr v-for="(line, idx) in form.lines" :key="line.id">
 									<td>
-										<Select
+										<Typeahead
 											v-model="line.account"
+											:search="searchLineAccount"
+											:display="lineAccountDisplay(line.account)"
+											:placeholder="t('Search account…')"
 											size="sm"
-											:options="lineAccounts"
-											value-key="name"
-											:placeholder="t('Select…')"
+											open-on-focus
+											@pick="(item) => (line.account = item.name)"
+											@clear="() => (line.account = '')"
 										>
-											<template #option="{ option }">
-												{{ option.account_name || option.name }} ({{ option.account_currency }})
+											<template #option="{ item }">
+												{{ item.account_name || item.name }} ({{ item.account_currency }})
 											</template>
-											<template #selected="{ option }">
-												{{ option.account_name || option.name }} ({{ option.account_currency }})
-											</template>
-										</Select>
+										</Typeahead>
 										<div v-if="lineCurrencyMismatch(line)" class="text-danger small mt-1">
 											<i class="ti ti-alert-triangle me-1"></i>
 											{{ t("Account currency must match the payment account.") }}

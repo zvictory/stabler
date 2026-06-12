@@ -524,7 +524,7 @@ def create_journal_entry(
 		acc_doc = frappe.db.get_value(
 			"Account",
 			acc,
-			["company", "is_group"],
+			["company", "is_group", "account_currency"],
 			as_dict=True,
 		)
 		if not acc_doc:
@@ -544,6 +544,7 @@ def create_journal_entry(
 				"credit_in_account_currency": credit,
 				"reference_type": row.get("reference_type") or None,
 				"reference_name": row.get("reference_name") or None,
+				"_ccy": acc_doc.account_currency or "",
 			}
 		)
 
@@ -553,10 +554,14 @@ def create_journal_entry(
 			f"Debit ({total_debit:.2f}) and credit ({total_credit:.2f}) must balance."
 		)
 
+	base_currency = frappe.db.get_value("Company", company, "default_currency") or ""
+	any_non_base = any(r.pop("_ccy", "") != base_currency for r in cleaned)
+
 	doc = frappe.new_doc("Journal Entry")
 	doc.company = company
 	doc.posting_date = getdate(posting_date)
 	doc.voucher_type = voucher_type
+	doc.multi_currency = 1 if any_non_base else 0
 	if user_remark:
 		doc.user_remark = user_remark
 	if cheque_no:
@@ -1591,7 +1596,7 @@ def submit_transfer_entry(
 	doc.voucher_type = "Bank Entry"
 	doc.cheque_no = f"Trf-{posting_date}"
 	doc.cheque_date = getdate(posting_date)
-	doc.multi_currency = 1 if from_acc.account_currency != to_acc.account_currency else 0
+	doc.multi_currency = 1 if (from_acc.account_currency != base_currency or to_acc.account_currency != base_currency) else 0
 	if memo:
 		doc.user_remark = memo
 
