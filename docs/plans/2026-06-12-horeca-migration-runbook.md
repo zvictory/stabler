@@ -55,7 +55,7 @@ scp $EXPORT ice-production:/tmp/horeca-export.json
 ```bash
 ssh ice-production
 bench --site horeca.erpstable.com execute stabler.service.migrate_horeca.run \
-  --kwargs '{"json_path": "/tmp/horeca-export.json", "dry_run": true, "company": "HorecaGroup"}'
+  --kwargs '{"json_path": "/tmp/horeca-export.json", "dry_run": True, "company": "HorecaGroup"}'
 ```
 
 Review output line-by-line:
@@ -80,7 +80,7 @@ Expected dry-run summary format:
 bench --site horeca.erpstable.com execute stabler.service.migrate_horeca.run \
   --kwargs '{
     "json_path": "/tmp/horeca-export.json",
-    "dry_run": false,
+    "dry_run": False,
     "company": "HorecaGroup",
     "results_path": "/tmp/horeca-results.json"
   }'

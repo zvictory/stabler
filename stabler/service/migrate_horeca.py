@@ -24,7 +24,7 @@ Usage (from bench root):
 
   # Override company (auto-detected from site if omitted):
   bench --site horeca.erpstable.com execute stabler.service.migrate_horeca.run \\
-    --kwargs '{"json_path": "/tmp/horeca-export.json", "dry_run": true, "company": "HoReCa"}'
+    --kwargs '{"json_path": "/tmp/horeca-export.json", "dry_run": True, "company": "HorecaGroup"}'
 
 After execution, run the write-back to mark reports as synced in Prisma:
   tsx scripts/export-for-erp.ts --mark-synced /tmp/horeca-results.json
