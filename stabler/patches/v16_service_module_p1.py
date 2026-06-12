@@ -3,6 +3,13 @@
 Adds the ERPNext-native fields used by Stabler's HoReCa Service ticket board.
 The patch is intentionally idempotent so it can run on existing tenants and
 newly installed Service tenants without changing non-Service behavior.
+
+Design note: frappe.db.commit() is called immediately after create_custom_fields()
+because MariaDB DDL (ALTER TABLE ADD COLUMN) auto-commits and cannot be rolled back,
+but the matching tabCustom Field DML inserts ARE transactional. Without an early
+commit, an exception in the code below could roll back the metadata records while
+leaving the physical columns orphaned — causing silent "columns exist but Frappe
+doesn't know about them" corruption.
 """
 
 import frappe
@@ -16,6 +23,13 @@ ISSUE_STATUS_OPTIONS = "\n".join(
 
 ISSUE_TYPES = ("Install", "Inspection", "Maintenance", "Refill", "Repair", "Complaint")
 SERVICE_ROLES = ("Support Team", "Maintenance User", "Maintenance Manager")
+
+_REQUIRED_COLUMNS = [
+	("Issue", "custom_horeca_id"),
+	("Maintenance Visit", "custom_horeca_id"),
+	("Maintenance Schedule Item", "custom_interval_days"),
+	("Serial No", "custom_horeca_id"),
+]
 
 
 def execute() -> None:
@@ -128,6 +142,10 @@ def execute() -> None:
 		update=True,
 	)
 
+	# Commit now so the tabCustom Field DML inserts survive even if anything below raises.
+	# (ALTER TABLE ADD COLUMN is DDL and auto-commits regardless — this guards the metadata.)
+	frappe.db.commit()
+
 	make_property_setter(
 		"Issue",
 		"status",
@@ -163,3 +181,12 @@ def execute() -> None:
 		)
 
 	frappe.db.commit()
+
+	# Fail loud if any expected column is still missing after the patch.
+	missing = [
+		f"{doctype}.{col}"
+		for doctype, col in _REQUIRED_COLUMNS
+		if not frappe.db.has_column(doctype, col)
+	]
+	if missing:
+		frappe.throw(f"v16 patch: expected columns not found after execute: {missing}")
