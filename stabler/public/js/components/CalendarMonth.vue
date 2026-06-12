@@ -164,7 +164,7 @@ function chipClass(ev) {
 						@click.stop="emit('select', ev)"
 					>
 						<span class="text-truncate">{{ ev.label }}</span>
-						<span class="ms-auto text-nowrap font-monospace">
+						<span v-if="ev.showAmount !== false" class="ms-auto text-nowrap font-monospace">
 							{{ formatMoney(ev.amount, currency) }}
 						</span>
 					</div>

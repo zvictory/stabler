@@ -81,6 +81,7 @@ import ServiceHome from "./pages/service/ServiceHome.vue";
 import ServiceTickets from "./pages/service/Tickets.vue";
 import ServiceBilling from "./pages/service/BillingQueue.vue";
 import ServiceVisits from "./pages/service/Visits.vue";
+import ServiceCalendar from "./pages/service/Calendar.vue";
 import ServiceComingSoon from "./pages/service/ComingSoon.vue";
 import BpmHome from "./pages/bpm/BpmHome.vue";
 import BpmList from "./pages/bpm/BpmList.vue";
@@ -259,7 +260,7 @@ const routes = [
 			{ path: "tickets", name: "service-tickets", component: ServiceTickets, meta: { title: t("Service Tickets") } },
 			{ path: "visits", name: "service-visits", component: ServiceVisits, meta: { title: t("Service Visits") } },
 			{ path: "billing", name: "service-billing", component: ServiceBilling, meta: { title: t("Service Billing") } },
-			{ path: "calendar", name: "service-calendar", component: ServiceComingSoon, meta: { title: t("Service Calendar") } },
+			{ path: "calendar", name: "service-calendar", component: ServiceCalendar, meta: { title: t("Service Calendar") } },
 			{ path: "equipment", name: "service-equipment", component: ServiceComingSoon, meta: { title: t("Service Equipment") } },
 			{ path: "map", name: "service-map", component: ServiceComingSoon, meta: { title: t("Service Map") } },
 		],

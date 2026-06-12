@@ -4,7 +4,12 @@ import unittest
 
 from frappe import ValidationError
 
-from stabler.api.service import _normalize_visit_items, _visit_billing_filter_condition, _visit_needs_billing
+from stabler.api.service import (
+	_normalize_visit_items,
+	_service_calendar_state,
+	_visit_billing_filter_condition,
+	_visit_needs_billing,
+)
 
 
 class ServiceHelperTest(unittest.TestCase):
@@ -65,6 +70,12 @@ class ServiceHelperTest(unittest.TestCase):
 		self.assertEqual(_visit_billing_filter_condition("stock_issued"), "mv.custom_stock_entry IS NOT NULL AND mv.custom_stock_entry != ''")
 		self.assertEqual(_visit_billing_filter_condition("all"), "")
 		self.assertEqual(_visit_billing_filter_condition("unexpected"), "")
+
+	def test_service_calendar_state_maps_completion_and_due_date(self):
+		self.assertEqual(_service_calendar_state("Fully Completed", "2026-06-01", "2026-06-12"), "paid")
+		self.assertEqual(_service_calendar_state("Partially Completed", "2026-06-01", "2026-06-12"), "partial")
+		self.assertEqual(_service_calendar_state("Pending", "2026-06-01", "2026-06-12"), "overdue")
+		self.assertEqual(_service_calendar_state("Pending", "2026-06-20", "2026-06-12"), "upcoming")
 
 
 if __name__ == "__main__":

@@ -2,6 +2,7 @@
 
 from __future__ import annotations
 
+import calendar
 import json
 
 import frappe
@@ -118,6 +119,15 @@ def _visit_billing_filter_condition(billing_status: str | None) -> str:
 		"stock_issued": "mv.custom_stock_entry IS NOT NULL AND mv.custom_stock_entry != ''",
 	}
 	return conditions.get(billing_status or "", "")
+
+
+def _service_calendar_state(completion_status: str | None, scheduled_date, current_date=None) -> str:
+	if completion_status == "Fully Completed":
+		return "paid"
+	if completion_status == "Partially Completed":
+		return "partial"
+	current = getdate(current_date or today())
+	return "overdue" if getdate(scheduled_date) < current else "upcoming"
 
 
 def _serial_under_coverage(serial_no: str | None) -> bool:
@@ -523,6 +533,137 @@ def list_visits(
 		params,
 		as_dict=True,
 	)
+
+
+@frappe.whitelist()
+def calendar_feed(company: str, month: str, service_person: str | None = None, customer: str | None = None):
+	company = _require_service(company)
+	if not month or len(month) != 7:
+		frappe.throw(_("Month is required in YYYY-MM format."))
+	year, month_no = [cint(part) for part in month.split("-", 1)]
+	if year < 1900 or month_no < 1 or month_no > 12:
+		frappe.throw(_("Invalid month."))
+	start_date = getdate(f"{year:04d}-{month_no:02d}-01")
+	end_date = getdate(f"{year:04d}-{month_no:02d}-{calendar.monthrange(year, month_no)[1]:02d}")
+	params = {"company": company, "start_date": start_date, "end_date": end_date}
+	conds = [
+		"ms.company = %(company)s",
+		"ms.docstatus = 1",
+		"sd.scheduled_date BETWEEN %(start_date)s AND %(end_date)s",
+	]
+	if service_person:
+		conds.append("sd.sales_person = %(service_person)s")
+		params["service_person"] = service_person
+	if customer:
+		conds.append("ms.customer = %(customer)s")
+		params["customer"] = customer
+
+	planned = frappe.db.sql(
+		f"""
+		SELECT
+			sd.name, sd.scheduled_date, sd.completion_status, sd.sales_person,
+			sd.item_code, sd.item_name, sd.serial_no,
+			ms.name AS schedule, ms.customer, ms.customer_name
+		FROM `tabMaintenance Schedule Detail` sd
+		INNER JOIN `tabMaintenance Schedule` ms ON ms.name = sd.parent
+		WHERE {" AND ".join(conds)}
+		ORDER BY sd.scheduled_date ASC, ms.customer_name ASC
+		""",
+		params,
+		as_dict=True,
+	)
+
+	visit_conds = [
+		"mv.company = %(company)s",
+		"mv.docstatus = 1",
+		"mv.mntc_date BETWEEN %(start_date)s AND %(end_date)s",
+	]
+	if service_person:
+		visit_conds.append(
+			"EXISTS (SELECT 1 FROM `tabMaintenance Visit Purpose` p "
+			"WHERE p.parent = mv.name AND p.service_person = %(service_person)s)"
+		)
+	if customer:
+		visit_conds.append("mv.customer = %(customer)s")
+
+	visits = frappe.db.sql(
+		f"""
+		SELECT
+			mv.name, mv.mntc_date, mv.completion_status, mv.customer, mv.customer_name,
+			mv.custom_issue, i.subject, i.issue_type,
+			GROUP_CONCAT(DISTINCT p.service_person ORDER BY p.service_person SEPARATOR ', ') AS service_people
+		FROM `tabMaintenance Visit` mv
+		LEFT JOIN `tabIssue` i ON i.name = mv.custom_issue
+		LEFT JOIN `tabMaintenance Visit Purpose` p ON p.parent = mv.name
+		WHERE {" AND ".join(visit_conds)}
+		GROUP BY mv.name
+		ORDER BY mv.mntc_date ASC, mv.customer_name ASC
+		""",
+		params,
+		as_dict=True,
+	)
+
+	events = []
+	for row in planned:
+		label = row.customer_name or row.customer or row.schedule
+		if row.item_name or row.item_code:
+			label = f"{label} · {row.item_name or row.item_code}"
+		events.append(
+			{
+				"kind": "planned",
+				"date": row.scheduled_date,
+				"label": label,
+				"amount": 0,
+				"contractId": row.name,
+				"schedule": row.schedule,
+				"customer": row.customer,
+				"customer_name": row.customer_name,
+				"service_person": row.sales_person,
+				"item_code": row.item_code,
+				"item_name": row.item_name,
+				"serial_no": row.serial_no,
+				"completion_status": row.completion_status,
+				"state": _service_calendar_state(row.completion_status, row.scheduled_date),
+			}
+		)
+	for row in visits:
+		label = row.customer_name or row.customer or row.name
+		if row.issue_type:
+			label = f"{label} · {row.issue_type}"
+		events.append(
+			{
+				"kind": "done",
+				"date": row.mntc_date,
+				"label": label,
+				"amount": 0,
+				"contractId": row.name,
+				"visit": row.name,
+				"customer": row.customer,
+				"customer_name": row.customer_name,
+				"service_person": row.service_people,
+				"issue": row.custom_issue,
+				"subject": row.subject,
+				"issue_type": row.issue_type,
+				"completion_status": row.completion_status,
+				"state": "paid" if row.completion_status == "Fully Completed" else "partial",
+			}
+		)
+	return events
+
+
+@frappe.whitelist()
+def reschedule_detail(name: str, date: str):
+	if not name or not frappe.db.exists("Maintenance Schedule Detail", name):
+		frappe.throw(_("Schedule detail is required."))
+	detail = frappe.get_doc("Maintenance Schedule Detail", name)
+	schedule = frappe.get_doc("Maintenance Schedule", detail.parent)
+	_require_service(_company_for_visit(schedule))
+	if detail.completion_status and detail.completion_status != "Pending":
+		frappe.throw(_("Only pending schedule rows can be rescheduled."))
+	detail.scheduled_date = getdate(date)
+	detail.db_update()
+	frappe.db.commit()
+	return {"name": detail.name, "scheduled_date": detail.scheduled_date}
 
 
 @frappe.whitelist()

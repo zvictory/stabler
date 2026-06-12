@@ -22,7 +22,7 @@ Status: in progress
   - Add `list_visits` backend endpoint.
   - Add visit list page with date, customer, technician, issue type, and linked billing document filters.
 
-- [ ] Service Calendar
+- [x] Service Calendar
   - Add calendar feed endpoint.
   - Build calendar page using `CalendarMonth.vue`.
   - Add reschedule API for planned service rows.
