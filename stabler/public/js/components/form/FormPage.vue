@@ -20,6 +20,7 @@
 import { computed } from "vue";
 import { useRouter } from "vue-router";
 import { t } from "../../composables/i18n.js";
+import { getStatusBadgeClass } from "../../composables/status.js";
 
 const props = defineProps({
 	title: { type: String, required: true },
@@ -41,38 +42,31 @@ function goBack() {
 	}
 }
 
-const STATUS_BADGE = {
-	Draft: "bg-secondary-lt",
-	"To Deliver and Bill": "bg-yellow-lt",
-	"To Bill": "bg-orange-lt",
-	"To Deliver": "bg-blue-lt",
-	Completed: "bg-green-lt",
-	Cancelled: "bg-red-lt",
-	Closed: "bg-secondary-lt",
-	"On Hold": "bg-purple-lt",
-	"Partly Billed": "bg-orange-lt",
-	"Return Issued": "bg-red-lt",
-	"To Receive and Bill": "bg-yellow-lt",
-	"To Receive": "bg-blue-lt",
-	Submitted: "bg-green-lt",
-	// Sales / Purchase Invoice statuses
-	Paid: "bg-green-lt",
-	Unpaid: "bg-yellow-lt",
-	Overdue: "bg-red-lt",
-	"Partly Paid": "bg-blue-lt",
-	"Unpaid and Discounted": "bg-yellow-lt",
-	Return: "bg-secondary-lt",
-	"Credit Note Issued": "bg-purple-lt",
-	"Debit Note Issued": "bg-purple-lt",
-};
-
-const badgeClass = computed(() => STATUS_BADGE[props.status] || "bg-secondary-lt");
+// NOTE: Status colors are centralized in composables/status.js. Do not define STATUS_BADGE maps locally in pages/components.
+const badgeClass = computed(() => {
+	if (props.docstatus !== null) {
+		return getStatusBadgeClass(props.title, props.docstatus);
+	}
+	return getStatusBadgeClass(props.title, props.status);
+});
 </script>
 
 <template>
-	<div v-if="loading" class="card">
-		<div class="card-body text-center py-5">
-			<div class="spinner-border text-primary" role="status"></div>
+	<div v-if="loading" class="card placeholder-glow">
+		<div class="card-header">
+			<div class="d-flex align-items-center gap-3">
+				<span class="placeholder col-2 py-3 rounded-1"></span>
+			</div>
+		</div>
+		<div class="card-body">
+			<div class="row row-cards">
+				<div class="col-md-6" v-for="i in 6" :key="i">
+					<div class="mb-3">
+						<span class="placeholder col-3 mb-2 rounded-1 py-1 d-block"></span>
+						<span class="placeholder col-12 py-3 rounded-2 d-block"></span>
+					</div>
+				</div>
+			</div>
 		</div>
 	</div>
 	<div v-else-if="error" class="alert alert-danger">{{ error }}</div>
@@ -115,3 +109,4 @@ const badgeClass = computed(() => STATUS_BADGE[props.status] || "bg-secondary-lt
 		</div>
 	</template>
 </template>
+

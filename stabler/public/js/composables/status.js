@@ -64,6 +64,10 @@ export function getStatusBadgeClass(doctype, status) {
 		Completed: "bg-green-lt",
 		Open: "bg-blue-lt",
 		Closed: "bg-secondary-lt",
+		"Partly Billed": "bg-orange-lt",
+		"Return Issued": "bg-red-lt",
+		"Unpaid and Discounted": "bg-yellow-lt",
+		"Debit Note Issued": "bg-purple-lt",
 	};
 	return genericMap[status] || "bg-secondary-lt";
 }
