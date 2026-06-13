@@ -44,51 +44,6 @@ const currencySymbol = computed(() => {
 	return (currencies.value.find((c) => c.name === code) || {}).symbol || "";
 });
 
-// Show exchange rate row only when transaction currency differs from company base currency
-const isForeignCurrency = computed(() => {
-	const txn = form.value?.currency || "";
-	const base = currency.value;
-	return !!txn && !!base && txn !== base;
-});
-
-function lineAmount(line) {
-	const qty = Number(line.qty || 0);
-	const rate = Number(line.rate || 0);
-	const discPct = Number(line.discount_percentage || 0);
-	const discAmt = Number(line.discount_amount || 0);
-	let amt = qty * rate;
-	if (discPct > 0) amt = qty * Math.max(rate * (1 - discPct / 100), 0);
-	else if (discAmt > 0) amt = qty * Math.max(rate - discAmt, 0);
-	return amt;
-}
-
-const subtotal = computed(() =>
-	(form.value?.items || []).reduce((s, l) => s + Number(l.qty || 0) * Number(l.rate || 0), 0)
-);
-const grandTotal = computed(() =>
-	(form.value?.items || []).reduce((s, l) => s + lineAmount(l), 0)
-);
-const totalDiscount = computed(() => subtotal.value - grandTotal.value);
-
-// Base-currency grand total preview shown next to exchange rate input
-const grandTotalBase = computed(() => grandTotal.value * exchangeRate.value);
-
-async function fetchExchangeRate() {
-	const from = form.value?.currency;
-	const to = currency.value;
-	if (!from || !to || from === to) { exchangeRate.value = 1; return; }
-	try {
-		const res = await call("stabler.api.sales.get_currency_exchange_rate", {
-			from_currency: from,
-			to_currency: to,
-			date: form.value?.transaction_date || undefined,
-		});
-		exchangeRate.value = Number(res.exchange_rate) || 1;
-	} catch {
-		exchangeRate.value = 1;
-	}
-}
-
 function defaultWarehouseName() {
 	const match = warehouses.value.find(
 		(w) => (w.warehouse_name || "").trim().toLowerCase() === "tayyor mahsulot"
@@ -220,7 +175,7 @@ function toPayload(m) {
 		items: lines,
 		auto_submit: autoSubmit.value,
 		currency: m.currency || undefined,
-		conversion_rate: isForeignCurrency.value ? (exchangeRate.value || 1) : 1,
+		conversion_rate: (m.currency && currency.value && m.currency !== currency.value) ? (exchangeRate.value || 1) : 1,
 		price_list: m.price_list || undefined,
 	};
 }
@@ -258,6 +213,50 @@ const {
 	fromDetail,
 	backPath: "/sales/orders",
 });
+
+// These computeds reference form.value and must be declared AFTER useDocumentForm
+// so that 'form' is initialized before these getters could ever be evaluated.
+const isForeignCurrency = computed(() => {
+	const txn = form.value?.currency || "";
+	const base = currency.value;
+	return !!txn && !!base && txn !== base;
+});
+
+function lineAmount(line) {
+	const qty = Number(line.qty || 0);
+	const rate = Number(line.rate || 0);
+	const discPct = Number(line.discount_percentage || 0);
+	const discAmt = Number(line.discount_amount || 0);
+	let amt = qty * rate;
+	if (discPct > 0) amt = qty * Math.max(rate * (1 - discPct / 100), 0);
+	else if (discAmt > 0) amt = qty * Math.max(rate - discAmt, 0);
+	return amt;
+}
+
+const subtotal = computed(() =>
+	(form.value?.items || []).reduce((s, l) => s + Number(l.qty || 0) * Number(l.rate || 0), 0)
+);
+const grandTotal = computed(() =>
+	(form.value?.items || []).reduce((s, l) => s + lineAmount(l), 0)
+);
+const totalDiscount = computed(() => subtotal.value - grandTotal.value);
+const grandTotalBase = computed(() => grandTotal.value * exchangeRate.value);
+
+async function fetchExchangeRate() {
+	const from = form.value?.currency;
+	const to = currency.value;
+	if (!from || !to || from === to) { exchangeRate.value = 1; return; }
+	try {
+		const res = await call("stabler.api.sales.get_currency_exchange_rate", {
+			from_currency: from,
+			to_currency: to,
+			date: form.value?.transaction_date || undefined,
+		});
+		exchangeRate.value = Number(res.exchange_rate) || 1;
+	} catch {
+		exchangeRate.value = 1;
+	}
+}
 
 // Load existing doc
 const doc = ref(null);
@@ -843,7 +842,7 @@ const paymentBadge = computed(() => {
 						v-else-if="line.availability"
 						class="small"
 						:class="isOverAvailable(line) ? 'text-danger' : 'text-secondary'"
-					>{{ Number(line.availability.free).toFixed(0) }} {{ t("avail.") }}</span>
+					>{{ Number(line.availability.free).toFixed(0) }} {{ t("avail") }}</span>
 				</div>
 			</template>
 
