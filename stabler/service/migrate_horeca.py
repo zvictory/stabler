@@ -60,6 +60,39 @@ def _auto_detect_company() -> str:
 	return companies[0]
 
 
+def _leaf_or_throw(doctype: str, group_field: str = "is_group") -> str:
+	"""Return the name of the first non-group record in a tree doctype."""
+	name = frappe.db.get_value(doctype, {group_field: 0}, "name")
+	if not name:
+		frappe.throw(f"No non-group {doctype} found — please create one in ERPNext before running the migration.")
+	return name
+
+
+def _ensure_customer(customer_name: str, dry_run: bool) -> None:
+	"""Auto-create a minimal Customer record if it does not already exist.
+
+	ERPNext validates Link fields even with ignore_mandatory=True — the linked
+	Customer document must physically exist. Historical tickets reference customer
+	names that were never in ERPNext, so we stub them out here for migration.
+	The operator can enrich the records afterward.
+
+	Selling Settings defaults ("All Customer Groups", "All Territories") are group
+	nodes and cannot be assigned to a Customer. We query for the first non-group
+	leaf in each tree instead.
+	"""
+	if dry_run or frappe.db.exists("Customer", customer_name):
+		return
+	cg = _leaf_or_throw("Customer Group")
+	ter = _leaf_or_throw("Territory")
+	cust = frappe.new_doc("Customer")
+	cust.customer_name = customer_name
+	cust.customer_group = cg
+	cust.territory = ter
+	cust.insert(ignore_permissions=True)
+	frappe.db.commit()
+	_log(dry_run, f"  [auto-created] Customer: {customer_name}")
+
+
 # ---------------------------------------------------------------------------
 # Phase 1: Equipment → Serial No
 # ---------------------------------------------------------------------------
@@ -99,7 +132,7 @@ _PRIORITY_MAP = {
 	"LOW": "Low",
 	"MEDIUM": "Medium",
 	"HIGH": "High",
-	"URGENT": "Urgent",
+	"URGENT": "High",  # ERPNext ships Low/Medium/High — no "Urgent" by default
 }
 
 _STATUS_MAP = {
@@ -126,6 +159,8 @@ def _migrate_ticket(ticket: dict[str, Any], dry_run: bool) -> str | None:
 	_log(dry_run, f"  [create] Issue: {ticket['code']} — {ticket['customerName']} ({ticket['type']}) → {status}")
 	if dry_run:
 		return None
+
+	_ensure_customer(ticket["customerName"], dry_run)
 
 	doc = frappe.new_doc("Issue")
 	doc.subject = f"[{ticket['code']}] {ticket['type']} — {ticket['customerName']}"
@@ -225,6 +260,8 @@ def _migrate_maintenance_visit(
 	)
 	if dry_run:
 		return None
+
+	_ensure_customer(report["customerName"], dry_run)
 
 	doc = frappe.new_doc("Maintenance Visit")
 	doc.company = company
