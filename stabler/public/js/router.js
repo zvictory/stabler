@@ -30,7 +30,11 @@ import Waybill from "./pages/sales/Waybill.vue";
 import PurchasingHome from "./pages/purchasing/PurchasingHome.vue";
 import Suppliers from "./pages/purchasing/Suppliers.vue";
 import PurchaseInvoices from "./pages/purchasing/PurchaseInvoices.vue";
+import PurchaseInvoiceForm from "./pages/purchasing/PurchaseInvoiceForm.vue";
 import PurchaseOrders from "./pages/purchasing/PurchaseOrders.vue";
+import PurchaseOrderForm from "./pages/purchasing/PurchaseOrderForm.vue";
+import PaymentEntryForm from "./pages/money/PaymentEntryForm.vue";
+import QuotationForm from "./pages/sales/QuotationForm.vue";
 import PurchaseReceipts from "./pages/purchasing/PurchaseReceipts.vue";
 import PurchasingAging from "./pages/purchasing/Aging.vue";
 import InventoryHome from "./pages/inventory/InventoryHome.vue";
@@ -111,6 +115,8 @@ const routes = [
 			{ path: "accounts/:account/ledger", name: "money-account-ledger", component: AccountLedger, meta: { title: t("Account Ledger") } },
 			{ path: "journals", name: "money-journals", component: JournalEntries, meta: { title: t("Journal Entries") } },
 			{ path: "payments", name: "money-payments", component: PaymentEntries, meta: { title: t("Payments") } },
+			{ path: "payments/new", name: "money-payment-new", component: PaymentEntryForm, meta: { title: t("New payment") } },
+			{ path: "payments/:name", name: "money-payment", component: PaymentEntryForm, meta: { title: t("Payment Entry") } },
 			{ path: "expenses", name: "money-expenses", component: Expenses, meta: { title: t("Expenses") } },
 			{ path: "transfers", name: "money-transfers", component: Transfers, meta: { title: t("Transfers") } },
 			{ path: "reports", name: "money-reports", component: Reports, meta: { title: t("Reports") } },
@@ -124,11 +130,14 @@ const routes = [
 			{ path: "", redirect: "/sales/customers" },
 			{ path: "customers", name: "sales-customers", component: Customers, meta: { title: t("Customers") } },
 			{ path: "quotations", name: "sales-quotations", component: Quotations, meta: { title: t("Quotations") } },
+			{ path: "quotations/new", name: "sales-quotation-new", component: QuotationForm, meta: { title: t("New Quotation") } },
+			{ path: "quotations/:name", name: "sales-quotation", component: QuotationForm, meta: { title: t("Quotation") } },
 			{ path: "orders", name: "sales-orders", component: SalesOrders, meta: { title: t("Sales Orders") } },
 			{ path: "orders/new", name: "sales-order-new", component: SalesOrderForm, meta: { title: t("New Sales Order") } },
 			{ path: "orders/:name", name: "sales-order", component: SalesOrderForm, meta: { title: t("Sales Order") } },
 			{ path: "invoices", name: "sales-invoices", component: SalesInvoices, meta: { title: t("Sales Invoices") } },
 			{ path: "returns/new", name: "sales-return-new", component: SalesReturnForm, meta: { title: t("New Sales Return") } },
+			{ path: "returns/:name", redirect: to => `/sales/invoices/${to.params.name}` },
 			{ path: "pos", redirect: "/pos" },
 			{ path: "reports", name: "sales-reports", component: SalesReports, meta: { title: t("Sales Reports") } },
 			{ path: "invoices/:name/print", name: "sales-invoice-print", component: InvoicePrint, meta: { title: t("Invoice") } },
@@ -146,8 +155,12 @@ const routes = [
 			{ path: "", redirect: "/purchasing/suppliers" },
 			{ path: "suppliers", name: "purchasing-suppliers", component: Suppliers, meta: { title: t("Suppliers") } },
 			{ path: "orders", name: "purchasing-orders", component: PurchaseOrders, meta: { title: t("Purchase Orders") } },
+			{ path: "orders/new", name: "purchasing-order-new", component: PurchaseOrderForm, meta: { title: t("New Purchase Order") } },
+			{ path: "orders/:name", name: "purchasing-order", component: PurchaseOrderForm, meta: { title: t("Purchase Order") } },
 			{ path: "receipts", name: "purchasing-receipts", component: PurchaseReceipts, meta: { title: t("Purchase Receipts") } },
 			{ path: "invoices", name: "purchasing-invoices", component: PurchaseInvoices, meta: { title: t("Purchase Invoices") } },
+			{ path: "invoices/new", name: "purchasing-invoice-new", component: PurchaseInvoiceForm, meta: { title: t("New Purchase Invoice") } },
+			{ path: "invoices/:name", name: "purchasing-invoice", component: PurchaseInvoiceForm, meta: { title: t("Purchase Invoice") } },
 			{ path: "aging", name: "purchasing-aging", component: PurchasingAging, meta: { title: t("AP Aging") } },
 		],
 	},

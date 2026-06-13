@@ -5,13 +5,14 @@ import { useRouter } from "vue-router";
 import { useSession } from "../../stores/session.js";
 import { call } from "../../api/client.js";
 import { formatMoney } from "../../composables/money.js";
-import { formatDateTime } from "../../composables/date.js";
+import { formatDate } from "../../composables/date.js";
 import { t } from "../../composables/i18n.js";
 import DateInput from "../../components/DateInput.vue";
-import MoneyInput from "../../components/MoneyInput.vue";
 import Select from "../../components/Select.vue";
 import Typeahead from "../../components/Typeahead.vue";
 import FormPage from "../../components/form/FormPage.vue";
+import LineItemsEditor from "../../components/LineItemsEditor.vue";
+import { useDocumentForm } from "../../composables/useDocumentForm.js";
 
 const session = useSession();
 const { activeCompany, user } = storeToRefs(session);
@@ -20,31 +21,8 @@ const router = useRouter();
 const today = new Date().toISOString().slice(0, 10);
 const warehouses = ref([]);
 const warehousesLoading = ref(false);
-const submitting = ref(false);
-const submitError = ref("");
-const form = ref({
-	customer: "",
-	customer_name: "",
-	warehouse: "",
-	posting_date: today,
-	currency: "",
-	price_list: "",
-	items: [],
-});
 
 const currency = computed(() => form.value.currency || session.currency || "UZS");
-const total = computed(() =>
-	form.value.items.reduce((sum, line) => sum + Number(line.qty || 0) * Number(line.rate || 0), 0)
-);
-const creditTotal = computed(() => -Math.abs(total.value || 0));
-const canSubmit = computed(
-	() =>
-		!!activeCompany.value &&
-		!!form.value.customer &&
-		!!form.value.warehouse &&
-		form.value.items.some((line) => line.item_code && Number(line.qty || 0) > 0 && Number(line.rate || 0) >= 0) &&
-		!submitting.value
-);
 
 function blankLine() {
 	return {
@@ -58,14 +36,56 @@ function blankLine() {
 	};
 }
 
-function addLine() {
-	form.value.items.push(blankLine());
+function blankForm() {
+	return {
+		customer: "",
+		customer_name: "",
+		warehouse: "",
+		posting_date: today,
+		currency: "",
+		price_list: "",
+		items: [blankLine()],
+	};
 }
 
-function removeLine(index) {
-	form.value.items.splice(index, 1);
-	if (!form.value.items.length) addLine();
+function toPayload(m) {
+	return {
+		company: activeCompany.value,
+		customer: m.customer,
+		warehouse: m.warehouse,
+		posting_date: m.posting_date,
+		items: m.items
+			.filter((line) => line.item_code && Number(line.qty || 0) > 0)
+			.map((line) => ({
+				item_code: line.item_code,
+				qty: Number(line.qty || 0),
+				uom: line.uom || line.stock_uom || undefined,
+				rate: Number(line.rate || 0),
+			})),
+	};
 }
+
+// Document engine hook
+const {
+	model: form,
+	loading,
+	saving: actionRunning,
+	error: actionError,
+	isFormValid,
+	save,
+} = useDocumentForm({
+	doctype: "Sales Invoice",
+	createApi: "stabler.api.sales.create_direct_sales_return",
+	blankModel: blankForm,
+	toPayload,
+	backPath: "/sales/invoices",
+});
+
+const total = computed(() =>
+	form.value.items.reduce((sum, line) => sum + Number(line.qty || 0) * Number(line.rate || 0), 0)
+);
+
+const creditTotal = computed(() => -Math.abs(total.value || 0));
 
 async function loadWarehouses() {
 	if (!activeCompany.value) return;
@@ -145,35 +165,28 @@ async function pickItem(line, item) {
 	}
 }
 
-function clearItem(line) {
-	Object.assign(line, blankLine());
+async function handlePickItem({ line, item, index, field }) {
+	if (field === "item") {
+		await pickItem(line, item);
+	}
+}
+
+const isFormValidState = ref(true);
+function handleValidityChange(valid) {
+	isFormValidState.value = valid;
 }
 
 async function submitReturn() {
-	if (!canSubmit.value) return;
-	submitting.value = true;
-	submitError.value = "";
-	try {
-		const res = await call("stabler.api.sales.create_direct_sales_return", {
-			company: activeCompany.value,
-			customer: form.value.customer,
-			warehouse: form.value.warehouse,
-			posting_date: form.value.posting_date,
-			items: form.value.items
-				.filter((line) => line.item_code && Number(line.qty || 0) > 0)
-				.map((line) => ({
-					item_code: line.item_code,
-					qty: Number(line.qty || 0),
-					uom: line.uom || line.stock_uom || undefined,
-					rate: Number(line.rate || 0),
-				})),
-		});
-		if (res?.name) router.push(`/sales/invoices/${res.name}`);
-	} catch (err) {
-		submitError.value = err?.message || t("Failed to create return.");
-	} finally {
-		submitting.value = false;
+	actionError.value = "";
+	if (!form.value.customer) {
+		actionError.value = t("Pick a customer.");
+		return;
 	}
+	if (!form.value.warehouse) {
+		actionError.value = t("Pick a warehouse.");
+		return;
+	}
+	await save();
 }
 
 watch(activeCompany, async () => {
@@ -183,7 +196,6 @@ watch(activeCompany, async () => {
 });
 
 onMounted(async () => {
-	addLine();
 	await loadWarehouses();
 });
 </script>
@@ -192,16 +204,16 @@ onMounted(async () => {
 	<FormPage
 		:title="t('New Sales Return')"
 		:doc-name="t('Direct credit note')"
-		:loading="false"
-		:error="''"
+		:loading="loading"
+		:error="actionError"
 		back-path="/sales/invoices"
 	>
 		<div class="alert alert-info">
 			<i class="ti ti-info-circle me-1"></i>
-			{{ t("Direct returns create customer credit only. No cash or bank refund is recorded here.") }}
+			{{ t("This creates a submitted credit note (return invoice) and updates inventory automatically.") }}
 		</div>
-		<div v-if="submitError" class="alert alert-danger">{{ submitError }}</div>
 
+		<!-- Header fields -->
 		<div class="row g-3 mb-3">
 			<div class="col-md-6">
 				<label class="form-label required">{{ t("Customer") }}</label>
@@ -226,14 +238,14 @@ onMounted(async () => {
 					</template>
 				</Typeahead>
 			</div>
-			<div class="col-md-6">
-				<label class="form-label required">{{ t("Return warehouse") }}</label>
+			<div class="col-md-3">
+				<label class="form-label required">{{ t("Warehouse (returns)") }}</label>
 				<Select
 					v-model="form.warehouse"
 					:options="warehouses"
 					value-key="name"
 					:disabled="warehousesLoading"
-					:placeholder="warehousesLoading ? t('Loading warehouses…') : t('Pick a warehouse')"
+					:placeholder="warehousesLoading ? t('Loading warehouses…') : t('Pick return warehouse')"
 				>
 					<template #option="{ option }">{{ option.warehouse_name }} ({{ option.name }})</template>
 					<template #selected="{ option }">{{ option.warehouse_name }} ({{ option.name }})</template>
@@ -243,115 +255,58 @@ onMounted(async () => {
 				<label class="form-label">{{ t("Posting date") }}</label>
 				<DateInput v-model="form.posting_date" />
 			</div>
-			<div class="col-md-3">
-				<label class="form-label">{{ t("Currency") }}</label>
-				<div class="form-control-plaintext font-monospace fw-semibold py-1">{{ currency }}</div>
+		</div>
+
+		<div class="datagrid mb-3">
+			<div class="datagrid-item">
+				<div class="datagrid-title">{{ t("Total credit value") }}</div>
+				<div class="datagrid-content font-monospace fw-bold text-red">
+					{{ formatMoney(creditTotal, currency, user.language) }}
+				</div>
 			</div>
 		</div>
 
-		<div class="d-flex align-items-center mb-2">
-			<h6 class="text-uppercase text-secondary small mb-0">{{ t("Returned items") }}</h6>
-			<button type="button" class="btn btn-sm btn-outline-primary ms-auto" @click="addLine">
-				<i class="ti ti-plus me-1"></i>{{ t("Add item") }}
-			</button>
-		</div>
-		<div class="table-responsive">
-			<table class="table table-sm table-vcenter">
-				<thead>
-					<tr>
-						<th class="text-end text-secondary" style="width: 36px">#</th>
-						<th style="min-width: 260px">{{ t("Item") }}</th>
-						<th style="width: 110px">{{ t("Return qty") }}</th>
-						<th style="width: 130px">{{ t("UOM") }}</th>
-						<th style="width: 160px">{{ t("Rate") }}</th>
-						<th class="text-end" style="width: 150px">{{ t("Credit amount") }}</th>
-						<th style="width: 44px"></th>
-					</tr>
-				</thead>
-				<tbody>
-					<tr v-for="(line, idx) in form.items" :key="idx">
-						<td class="text-end text-secondary font-monospace small">{{ idx + 1 }}</td>
-						<td>
-							<Typeahead
-								:model-value="line.item_code"
-								:search="searchItems"
-								:display="line.item_name || line.item_code"
-								:placeholder="t('Search returned item…')"
-								:no-results-text="t('No items match')"
-								size="sm"
-								menu-min-width="280px"
-								open-on-focus
-								@pick="(item) => pickItem(line, item)"
-								@clear="clearItem(line)"
-							>
-								<template #option="{ item }">
-									<div class="fw-semibold small">{{ item.item_name }}</div>
-									<div class="small text-secondary font-monospace">{{ item.item_code }} · {{ item.stock_uom || "—" }}</div>
-								</template>
-							</Typeahead>
-						</td>
-						<td>
-							<input
-								v-model.number="line.qty"
-								type="number"
-								step="any"
-								min="0"
-								inputmode="decimal"
-								class="form-control form-control-sm font-monospace text-end"
-								:disabled="submitting"
-							/>
-						</td>
-						<td>
-							<Select
-								v-model="line.uom"
-								:options="line.uoms"
-								value-key="uom"
-								label-key="uom"
-								size="sm"
-								:placeholder="line.stock_uom || t('UOM')"
-								:disabled="submitting || !line.uoms.length"
-							/>
-						</td>
-						<td>
-							<MoneyInput
-								v-model="line.rate"
-								:currency="currency"
-								:language="user.language || 'en'"
-								size="sm"
-								:min="0"
-								:disabled="submitting"
-							/>
-						</td>
-						<td class="text-end font-monospace">
-							{{ formatMoney(-(Number(line.qty || 0) * Number(line.rate || 0)), currency, user.language) }}
-						</td>
-						<td>
-							<button type="button" class="btn btn-sm btn-ghost-danger" :disabled="submitting" @click="removeLine(idx)">
-								<i class="ti ti-trash"></i>
-							</button>
-						</td>
-					</tr>
-				</tbody>
-				<tfoot>
-					<tr>
-						<th colspan="5" class="text-end">{{ t("Customer credit") }}</th>
-						<th class="text-end font-monospace text-purple">{{ formatMoney(creditTotal, currency, user.language) }}</th>
-						<th></th>
-					</tr>
-				</tfoot>
-			</table>
-		</div>
+		<!-- Items -->
+		<h6 class="text-uppercase text-secondary small mb-2">{{ t("Items") }}</h6>
+		<LineItemsEditor
+			v-if="form"
+			:items="form.items"
+			:editable="true"
+			:currency="currency"
+			:search-items="searchItems"
+			:blank-line="blankLine"
+			@pick-item="handlePickItem"
+			@validity-change="handleValidityChange"
+		>
+			<template #footer-extra>
+				<tr>
+					<td colspan="2" class="align-middle">
+						<span class="badge bg-secondary-lt">{{ form.items.length }} {{ form.items.length === 1 ? t('item') : t('items') }}</span>
+					</td>
+					<td colspan="3"></td>
+					<td class="text-end font-monospace fw-bold py-2 text-red">{{ formatMoney(creditTotal, currency, user.language) }}</td>
+				</tr>
+			</template>
+		</LineItemsEditor>
 
-		<div class="small text-secondary">
-			<i class="ti ti-package-import me-1"></i>
-			{{ t("Submitted returns add stock back into the selected warehouse.") }}
-			<span class="ms-2">{{ t("Posting date") }}: {{ formatDateTime(form.posting_date) }}</span>
-		</div>
-
+		<!-- Actions -->
 		<template #actions>
-			<button type="button" class="btn btn-primary" :disabled="!canSubmit" @click="submitReturn">
-				<span v-if="submitting" class="spinner-border spinner-border-sm me-1"></span>
-				<i v-else class="ti ti-receipt-refund me-1"></i>{{ t("Create return") }}
+			<button
+				type="button"
+				class="btn btn-link link-secondary"
+				:disabled="actionRunning"
+				@click="router.push('/sales/invoices')"
+			>
+				{{ t("Cancel") }}
+			</button>
+			<button
+				type="button"
+				class="btn btn-warning ms-auto"
+				:disabled="actionRunning || !isFormValidState"
+				@click="submitReturn"
+			>
+				<span v-if="actionRunning" class="spinner-border spinner-border-sm me-1"></span>
+				<i v-else class="ti ti-receipt-refund me-1"></i>{{ t("Create credit note") }}
 			</button>
 		</template>
 	</FormPage>

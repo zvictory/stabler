@@ -1,0 +1,719 @@
+<script setup>
+import { computed, onMounted, ref, watch } from "vue";
+import { storeToRefs } from "pinia";
+import { useRoute, useRouter } from "vue-router";
+import { useSession } from "../../stores/session.js";
+import { call } from "../../api/client.js";
+import { t } from "../../composables/i18n.js";
+import { formatMoney } from "../../composables/money.js";
+import { formatDateTime } from "../../composables/date.js";
+import MoneyInput from "../../components/MoneyInput.vue";
+import DateInput from "../../components/DateInput.vue";
+import PaymentModal from "../../components/PaymentModal.vue";
+import Typeahead from "../../components/Typeahead.vue";
+import Select from "../../components/Select.vue";
+import RelatedDocuments from "../../components/RelatedDocuments.vue";
+import FormPage from "../../components/form/FormPage.vue";
+import LineItemsEditor from "../../components/LineItemsEditor.vue";
+import { useDocumentForm } from "../../composables/useDocumentForm.js";
+
+const session = useSession();
+const { activeCompany, user } = storeToRefs(session);
+const router = useRouter();
+const route = useRoute();
+
+const today = new Date().toISOString().slice(0, 10);
+
+// Lookups/Refs
+const warehouses = ref([]);
+const warehousesLoading = ref(false);
+const currencies = ref([]);
+const priceLists = ref([]);
+const taxTemplates = ref([]);
+const showDiscounts = ref(false);
+const rateHint = ref(null);
+
+const currency = computed(
+	() =>
+		(session.companies.find((c) => c.name === activeCompany.value) || {}).default_currency ||
+		"USD"
+);
+
+const isForeign = computed(() => !!form.value.currency && form.value.currency !== currency.value);
+const modalCurrency = computed(() => form.value.currency || currency.value);
+
+const currencySymbol = computed(() => {
+	const code = modalCurrency.value;
+	return (currencies.value.find((c) => c.name === code) || {}).symbol || "";
+});
+
+const warehouseOptions = computed(() => [
+	{ name: "", warehouse_name: warehousesLoading.value ? t("Loading warehouses…") : t("— pick a warehouse —") },
+	...warehouses.value,
+]);
+
+const currencyOptions = computed(() => [
+	{ name: "", _label: `${currency.value} (${t("company currency")})` },
+	...currencies.value
+		.filter((c) => c.name !== currency.value)
+		.map((c) => ({ ...c, _label: c.symbol ? `${c.name} (${c.symbol})` : c.name })),
+]);
+
+const priceListOptions = computed(() => [
+	{ name: "", _label: t("— auto from supplier —") },
+	...priceLists.value.map((pl) => ({ ...pl, _label: `${pl.name} (${pl.currency})` })),
+]);
+
+const taxTemplateOptions = computed(() => [
+	{ name: "", _label: t("— no tax —") },
+	...taxTemplates.value.map((tt) => ({ ...tt, _label: tt.title || tt.name })),
+]);
+
+async function loadWarehouses() {
+	if (!activeCompany.value) return;
+	warehousesLoading.value = true;
+	try {
+		warehouses.value = await call("stabler.api.inventory.list_stock_warehouses", {
+			company: activeCompany.value,
+		});
+	} catch {
+		warehouses.value = [];
+	} finally {
+		warehousesLoading.value = false;
+	}
+}
+
+async function loadCurrencies() {
+	try {
+		currencies.value = await call("stabler.api.sales.list_currencies");
+	} catch {
+		currencies.value = [];
+	}
+}
+
+async function loadPriceLists() {
+	try {
+		priceLists.value = await call("stabler.api.sales.list_price_lists", { buying_only: 1 });
+	} catch {
+		priceLists.value = [];
+	}
+}
+
+async function loadTaxTemplates() {
+	if (!activeCompany.value) return;
+	try {
+		taxTemplates.value = await call("stabler.api.purchasing.list_purchase_tax_templates", {
+			company: activeCompany.value,
+		});
+	} catch {
+		taxTemplates.value = [];
+	}
+}
+
+async function fetchRateHint() {
+	rateHint.value = null;
+	if (!isForeign.value) return;
+	try {
+		const res = await call("stabler.api.purchasing.get_purchase_exchange_rate", {
+			company: activeCompany.value,
+			currency: form.value.currency,
+			posting_date: form.value.posting_date || undefined,
+			supplier: form.value.supplier || undefined,
+		});
+		if (res && Number(res.rate) > 0 && res.source) {
+			rateHint.value = res;
+			if (!Number(form.value.conversion_rate)) form.value.conversion_rate = Number(res.rate);
+		}
+	} catch {
+		rateHint.value = null;
+	}
+}
+
+watch(
+	() => [form.value.currency, form.value.posting_date],
+	() => {
+		if (editable.value) fetchRateHint();
+	}
+);
+
+const rateHintLabel = computed(() => {
+	if (!rateHint.value) return "";
+	const src =
+		rateHint.value.source === "last_invoice" ? t("from last bill") : t("from exchange rate records");
+	return `${t("Suggested")}: ${formatMoney(rateHint.value.rate, currency.value, user.value.language)} ${src}`;
+});
+
+function blankLine() {
+	return {
+		item_code: "",
+		item_name: "",
+		uom: "",
+		qty: 1,
+		rate: 0,
+		discount_percentage: 0,
+		discount_amount: 0,
+		amount: 0,
+	};
+}
+
+function blankForm() {
+	return {
+		supplier: "",
+		supplier_name: "",
+		posting_date: today,
+		due_date: "",
+		bill_no: "",
+		bill_date: "",
+		remarks: "",
+		update_stock: true,
+		set_warehouse: "",
+		currency: "",
+		conversion_rate: 0,
+		price_list: "",
+		taxes_template: "",
+		items: [blankLine()],
+	};
+}
+
+function fromDetail(d) {
+	return {
+		supplier: d.supplier,
+		supplier_name: d.supplier_name || d.supplier,
+		posting_date: d.posting_date || today,
+		due_date: d.due_date || "",
+		bill_no: d.bill_no || "",
+		bill_date: d.bill_date || "",
+		remarks: d.remarks || "",
+		update_stock: !!d.update_stock,
+		set_warehouse: d.set_warehouse || "",
+		currency: d.currency === d.base_currency ? "" : d.currency || "",
+		conversion_rate: d.currency === d.base_currency ? 0 : Number(d.conversion_rate || 0),
+		price_list: d.buying_price_list || "",
+		taxes_template: d.taxes_and_charges || "",
+		items: (d.items || []).map((it) => ({
+			item_code: it.item_code,
+			item_name: it.item_name,
+			uom: it.uom || "",
+			qty: Number(it.qty || 0),
+			rate: Number(it.rate || 0),
+			discount_percentage: Number(it.discount_percentage || 0),
+			discount_amount: Number(it.discount_amount || 0),
+			amount: Number(it.amount || 0),
+		})),
+	};
+}
+
+function toPayload(m) {
+	const lines = m.items
+		.filter((r) => r.item_code)
+		.map((r) => ({
+			item_code: r.item_code,
+			qty: r.qty,
+			rate: r.rate,
+			uom: r.uom,
+			discount_percentage: r.discount_percentage || 0,
+			discount_amount: r.discount_amount || 0,
+		}));
+	return {
+		supplier: m.supplier,
+		posting_date: m.posting_date,
+		due_date: m.due_date || undefined,
+		bill_no: m.bill_no || undefined,
+		bill_date: m.bill_date || undefined,
+		remarks: m.remarks || undefined,
+		update_stock: m.update_stock ? 1 : 0,
+		set_warehouse: m.update_stock ? m.set_warehouse : undefined,
+		currency: m.currency || undefined,
+		conversion_rate: isForeign.value ? Number(m.conversion_rate || 0) : undefined,
+		price_list: m.price_list || undefined,
+		taxes_template: m.taxes_template || undefined,
+		items: lines,
+	};
+}
+
+// Document engine hook
+const {
+	model: form,
+	loading,
+	saving: actionRunning,
+	error: actionError,
+	isDirty,
+	isCreate,
+	editable,
+	docstatus,
+	status,
+	load,
+	save,
+	submit,
+	cancel,
+	remove,
+	can,
+} = useDocumentForm({
+	doctype: "Purchase Invoice",
+	detailApi: "stabler.api.purchasing.purchase_invoice_detail",
+	createApi: "stabler.api.purchasing.create_purchase_invoice",
+	updateApi: "stabler.api.purchasing.update_purchase_invoice",
+	submitApi: "stabler.api.purchasing.submit_purchase_invoice",
+	cancelApi: "stabler.api.purchasing.cancel_purchase_invoice",
+	deleteApi: "stabler.api.purchasing.delete_purchase_invoice",
+	blankModel: blankForm,
+	toPayload,
+	fromDetail,
+	backPath: "/purchasing/invoices",
+});
+
+const docName = computed(() => (route.params.name ? String(route.params.name) : null));
+
+async function loadDoc() {
+	if (!docName.value) return;
+	await load(docName.value);
+	if (form.value) {
+		showDiscounts.value = form.value.items.some(
+			(l) => Number(l.discount_percentage) > 0 || Number(l.discount_amount) > 0
+		);
+	}
+}
+
+// Lookups and callbacks
+function searchSuppliers(q) {
+	return call("stabler.api.purchasing.list_suppliers", {
+		company: activeCompany.value,
+		search: q,
+		limit: 10,
+	});
+}
+
+async function pickSupplier(s) {
+	form.value.supplier = s.name;
+	form.value.supplier_name = s.supplier_name;
+	if (s.default_currency && s.default_currency !== currency.value) {
+		form.value.currency = s.default_currency;
+	}
+	fetchRateHint();
+}
+
+function clearSupplier() {
+	form.value.supplier = "";
+	form.value.supplier_name = "";
+}
+
+function searchItems(q) {
+	return call("stabler.api.inventory.list_items", { search: q, limit: 30 });
+}
+
+// Line Item Editor pick handler
+async function handlePickItem({ line, item, index, field }) {
+	if (field === "item") {
+		line.item_code = item.item_code || item.name;
+		line.item_name = item.item_name;
+		line.uom = item.stock_uom || "";
+		line.rate = Number(item.standard_rate || 0);
+	}
+}
+
+watch(docName, loadDoc);
+
+onMounted(async () => {
+	await Promise.all([loadWarehouses(), loadCurrencies(), loadPriceLists(), loadTaxTemplates()]);
+	if (isCreate.value) {
+		form.value = blankForm();
+	} else {
+		await loadDoc();
+	}
+});
+
+// Payments
+const paymentOpen = ref(false);
+const PAYABLE_STATUSES = new Set(["Unpaid", "Overdue", "Partly Paid"]);
+const canPay = computed(() => {
+	return (
+		!isCreate.value &&
+		form.value &&
+		form.value.docstatus === 1 &&
+		PAYABLE_STATUSES.has(form.value.status)
+	);
+});
+
+function openPayment() {
+	actionError.value = "";
+	paymentOpen.value = true;
+}
+
+async function onPaid() {
+	paymentOpen.value = false;
+	await loadDoc();
+}
+
+// Calculations
+const createTotal = computed(() => {
+	if (!form.value) return 0;
+	return form.value.items.reduce((s, r) => {
+		const qty = Number(r.qty || 0);
+		const rate = Number(r.rate || 0);
+		const discPct = Number(r.discount_percentage || 0);
+		const discAmt = Number(r.discount_amount || 0);
+		let amt = qty * rate;
+		if (discPct > 0) {
+			amt = qty * Math.max(rate * (1 - discPct / 100), 0);
+		} else if (discAmt > 0) {
+			amt = qty * Math.max(rate - discAmt, 0);
+		}
+		return s + amt;
+	}, 0);
+});
+
+const taxPreview = computed(() => {
+	if (!form.value || !form.value.taxes_template) return 0;
+	const tpl = taxTemplates.value.find((tt) => tt.name === form.value.taxes_template);
+	if (!tpl) return 0;
+	let total = 0;
+	for (const row of tpl.taxes || []) {
+		if (row.charge_type === "On Net Total") total += (createTotal.value * Number(row.rate || 0)) / 100;
+		else if (row.charge_type === "Actual") total += Number(row.tax_amount || 0);
+	}
+	return total;
+});
+
+const grandPreview = computed(() => createTotal.value + taxPreview.value);
+const baseGrandPreview = computed(() =>
+	isForeign.value ? grandPreview.value * Number(form.value.conversion_rate || 0) : 0
+);
+
+const totalsByUom = computed(() => {
+	const map = new Map();
+	if (!form.value) return [];
+	for (const line of form.value.items) {
+		if (!line.qty || !line.uom) continue;
+		map.set(line.uom, (map.get(line.uom) || 0) + Number(line.qty));
+	}
+	return [...map.entries()];
+});
+
+// Inline validations for editor state check
+const isFormValid = ref(true);
+
+function handleValidityChange(valid) {
+	isFormValid.value = valid;
+}
+
+async function submitCreate() {
+	actionError.value = "";
+	if (!form.value.supplier) {
+		actionError.value = t("Pick a supplier.");
+		return;
+	}
+	if (form.value.update_stock && !form.value.set_warehouse) {
+		actionError.value = t("Pick a warehouse to receive stock into.");
+		return;
+	}
+	if (isForeign.value && !(Number(form.value.conversion_rate) > 0)) {
+		actionError.value = t("Exchange rate must be greater than zero.");
+		return;
+	}
+
+	await save();
+}
+
+async function submitDoc() {
+	await submit();
+}
+</script>
+
+<template>
+	<FormPage
+		:title="isCreate ? t('New Purchase Invoice') : t('Purchase Invoice')"
+		:doc-name="docName"
+		:status="status"
+		:docstatus="docstatus"
+		:loading="loading"
+		:error="actionError"
+		back-path="/purchasing/invoices"
+	>
+		<!-- Header fields -->
+		<div class="row g-3 mb-3">
+			<div class="col-md-6">
+				<label class="form-label" :class="{ required: editable }">{{ t("Supplier") }}</label>
+				<Typeahead
+					v-slot="{ item }"
+					v-if="editable"
+					v-model="form.supplier"
+					:search="searchSuppliers"
+					:display="form.supplier_name"
+					:placeholder="t('Search supplier name…')"
+					:no-results-text="t('No suppliers match that name')"
+					open-on-focus
+					@pick="pickSupplier"
+					@clear="clearSupplier"
+				>
+					<div class="d-flex align-items-center gap-2">
+						<span class="avatar avatar-xs bg-orange-lt">{{ (item.supplier_name || item.name).charAt(0).toUpperCase() }}</span>
+						<div>
+							<div class="fw-semibold">{{ item.supplier_name }}</div>
+							<div class="small text-secondary">{{ item.name }} · {{ item.supplier_group || "—" }}</div>
+						</div>
+					</div>
+				</Typeahead>
+				<div v-else class="form-control-plaintext fw-semibold py-1">
+					{{ form.supplier_name }}
+					<span class="text-secondary fw-normal font-monospace small">· {{ form.supplier }}</span>
+				</div>
+			</div>
+			<div class="col-md-6">
+				<label class="form-label">{{ t("Warehouse") }}</label>
+				<Select
+					v-if="editable && form.update_stock"
+					v-model="form.set_warehouse"
+					:options="warehouseOptions"
+					value-key="name"
+					:disabled="warehousesLoading"
+				>
+					<template #option="{ option: w }">
+						<span v-if="w.name">{{ w.warehouse_name }} ({{ w.name }})</span>
+						<span v-else>{{ w.warehouse_name }}</span>
+					</template>
+					<template #selected="{ option: w }">
+						<span v-if="w.name">{{ w.warehouse_name }} ({{ w.name }})</span>
+						<span v-else>{{ w.warehouse_name }}</span>
+					</template>
+				</Select>
+				<div v-else class="form-control-plaintext font-monospace py-1">{{ form.set_warehouse || "—" }}</div>
+			</div>
+			<div class="col-md-3">
+				<label class="form-label">{{ t("Posting date") }}</label>
+				<DateInput v-if="editable" v-model="form.posting_date" />
+				<div v-else class="form-control-plaintext py-1">{{ formatDateTime(form.posting_date) || "—" }}</div>
+			</div>
+			<div class="col-md-3">
+				<label class="form-label">{{ t("Due date") }}</label>
+				<DateInput v-if="editable" v-model="form.due_date" />
+				<div v-else class="form-control-plaintext py-1">{{ formatDateTime(form.due_date) || "—" }}</div>
+			</div>
+			<div class="col-md-3">
+				<label class="form-label">{{ t("Bill No.") }}</label>
+				<input v-if="editable" v-model="form.bill_no" type="text" class="form-control" />
+				<div v-else class="form-control-plaintext py-1">{{ form.bill_no || "—" }}</div>
+			</div>
+			<div class="col-md-3">
+				<label class="form-label">{{ t("Bill Date") }}</label>
+				<DateInput v-if="editable" v-model="form.bill_date" />
+				<div v-else class="form-control-plaintext py-1">{{ formatDate(form.bill_date) || "—" }}</div>
+			</div>
+			<div class="col-md-3">
+				<label class="form-label">{{ t("Currency") }}</label>
+				<Select
+					v-if="editable"
+					v-model="form.currency"
+					:options="currencyOptions"
+					value-key="name"
+					label-key="_label"
+				/>
+				<div v-else class="form-control-plaintext font-monospace py-1">{{ form.currency || currency }}</div>
+			</div>
+			<div class="col-md-3" v-if="isForeign">
+				<label class="form-label">{{ t("Exchange rate") }}</label>
+				<MoneyInput v-if="editable" v-model="form.conversion_rate" />
+				<div v-else class="form-control-plaintext py-1">{{ form.conversion_rate }}</div>
+				<div v-if="editable && rateHintLabel" class="form-hint text-secondary">{{ rateHintLabel }}</div>
+			</div>
+			<div class="col-md-3">
+				<label class="form-label">{{ t("Price list") }}</label>
+				<Select
+					v-if="editable"
+					v-model="form.price_list"
+					:options="priceListOptions"
+					value-key="name"
+					label-key="_label"
+				/>
+				<div v-else class="form-control-plaintext py-1">{{ form.price_list || "—" }}</div>
+			</div>
+			<div class="col-md-3">
+				<label class="form-label">{{ t("Tax template") }}</label>
+				<Select
+					v-if="editable"
+					v-model="form.taxes_template"
+					:options="taxTemplateOptions"
+					value-key="name"
+					label-key="_label"
+				/>
+				<div v-else class="form-control-plaintext py-1">{{ form.taxes_template || "—" }}</div>
+			</div>
+			<div class="col-md-3 align-self-end" v-if="editable">
+				<div class="form-check form-switch mb-2">
+					<input class="form-check-input" type="checkbox" id="piUpdateStock" v-model="form.update_stock" />
+					<label class="form-check-label" for="piUpdateStock">{{ t("Update stock") }}</label>
+				</div>
+			</div>
+		</div>
+
+		<!-- Preview Grid -->
+		<div class="datagrid mb-3">
+			<div class="datagrid-item">
+				<div class="datagrid-title">{{ t("Net total") }}</div>
+				<div class="datagrid-content font-monospace">{{ formatMoney(isCreate ? createTotal : form.net_total, modalCurrency, user.language) }}</div>
+			</div>
+			<div class="datagrid-item" v-if="isCreate || form.taxes_and_charges">
+				<div class="datagrid-title">{{ t("Tax amount") }}</div>
+				<div class="datagrid-content font-monospace">{{ formatMoney(isCreate ? taxPreview : form.total_taxes_and_charges, modalCurrency, user.language) }}</div>
+			</div>
+			<div class="datagrid-item">
+				<div class="datagrid-title">{{ t("Grand total") }}</div>
+				<div class="datagrid-content font-monospace fw-bold">{{ formatMoney(isCreate ? grandPreview : form.grand_total, modalCurrency, user.language) }}</div>
+			</div>
+			<div class="datagrid-item" v-if="isForeign">
+				<div class="datagrid-title">{{ t("Grand total") }} ({{ currency }})</div>
+				<div class="datagrid-content font-monospace text-secondary">{{ formatMoney(isCreate ? baseGrandPreview : form.base_grand_total, currency, user.language) }}</div>
+			</div>
+			<div class="datagrid-item" v-if="!isCreate">
+				<div class="datagrid-title">{{ t("Outstanding") }}</div>
+				<div class="datagrid-content font-monospace text-red fw-bold">{{ formatMoney(form.outstanding_amount, modalCurrency, user.language) }}</div>
+			</div>
+		</div>
+
+		<!-- Items -->
+		<div class="d-flex align-items-center mb-2">
+			<h6 class="text-uppercase text-secondary small mb-0">{{ t("Items") }}</h6>
+			<div class="form-check form-switch ms-auto mb-0">
+				<input class="form-check-input" type="checkbox" id="piShowDisc" v-model="showDiscounts" />
+				<label class="form-check-label small text-secondary" for="piShowDisc">{{ t("Show discounts") }}</label>
+			</div>
+		</div>
+
+		<LineItemsEditor
+			v-if="form"
+			:items="form.items"
+			:editable="editable"
+			:currency="modalCurrency"
+			:currency-symbol="currencySymbol"
+			:search-items="searchItems"
+			:blank-line="blankLine"
+			@pick-item="handlePickItem"
+			@validity-change="handleValidityChange"
+		>
+			<template #header-extra>
+				<th v-if="!editable" class="text-end" style="width: 120px;">{{ t("List rate") }}</th>
+				<th v-if="showDiscounts" style="width: 80px;">%</th>
+				<th v-if="showDiscounts" style="width: 130px;">{{ t("Disc") }}</th>
+			</template>
+
+			<template #row-extra="{ line, index }">
+				<td v-if="!editable" class="align-top text-end font-monospace text-secondary small py-2">
+					{{ line.price_list_rate > 0 ? formatMoney(line.price_list_rate, modalCurrency, user.language) : "—" }}
+				</td>
+				<td v-if="showDiscounts" class="align-top">
+					<input
+						v-if="editable"
+						v-model.number="line.discount_percentage"
+						type="number"
+						step="any"
+						min="0"
+						max="100"
+						inputmode="decimal"
+						class="form-control form-control-sm font-monospace text-end"
+						placeholder="0"
+					/>
+					<div v-else class="text-end font-monospace small py-2">{{ line.discount_percentage > 0 ? line.discount_percentage + "%" : "—" }}</div>
+				</td>
+				<td v-if="showDiscounts" class="align-top">
+					<MoneyInput
+						v-if="editable"
+						v-model="line.discount_amount"
+						size="sm"
+					/>
+					<div v-else class="text-end font-monospace small py-2">
+						{{ line.discount_amount > 0 ? formatMoney(line.discount_amount, modalCurrency, user.language) : "—" }}
+					</div>
+				</td>
+			</template>
+
+			<template #footer-extra>
+				<tr>
+					<td colspan="2" class="align-middle">
+						<span class="badge bg-secondary-lt">{{ form.items.length }} {{ form.items.length === 1 ? t('item') : t('items') }}</span>
+						<span v-for="[uom, qty] in totalsByUom" :key="uom" class="badge bg-blue-lt ms-1 font-monospace">{{ qty }} {{ uom }}</span>
+					</td>
+					<td colspan="3"></td>
+					<td v-if="!editable" colspan="1"></td>
+					<td v-if="showDiscounts" colspan="2"></td>
+					<td class="text-end font-monospace fw-bold py-2">{{ formatMoney(createTotal, modalCurrency, user.language) }}</td>
+				</tr>
+			</template>
+		</LineItemsEditor>
+
+		<div class="mt-3">
+			<label class="form-label">{{ t("Terms / remarks") }}</label>
+			<textarea v-if="editable" v-model="form.remarks" class="form-control" rows="2"></textarea>
+			<div v-else class="form-control-plaintext py-1">{{ form.remarks || "—" }}</div>
+		</div>
+
+		<RelatedDocuments v-if="!isCreate && form" doctype="Purchase Invoice" :name="docName" />
+
+		<!-- Actions -->
+		<template #actions>
+			<template v-if="isCreate">
+				<button type="button" class="btn btn-link link-secondary" :disabled="actionRunning" @click="router.push('/purchasing/invoices')">{{ t("Cancel") }}</button>
+				<button type="button" class="btn btn-outline-primary ms-auto" :disabled="actionRunning || !isFormValid" @click="submitCreate">
+					<span v-if="actionRunning" class="spinner-border spinner-border-sm me-1"></span>
+					{{ t("Save as draft") }}
+				</button>
+			</template>
+			<template v-else>
+				<button
+					v-if="can.save"
+					type="button"
+					class="btn btn-outline-primary"
+					:disabled="actionRunning || !isFormValid"
+					@click="save"
+				>
+					<span v-if="actionRunning" class="spinner-border spinner-border-sm me-1"></span>
+					<i v-else class="ti ti-device-floppy me-1"></i>{{ t("Save changes") }}
+				</button>
+				<button
+					v-if="can.submit"
+					type="button"
+					class="btn btn-primary"
+					:disabled="actionRunning"
+					@click="submitDoc"
+				>
+					<span v-if="actionRunning" class="spinner-border spinner-border-sm me-1"></span>
+					<i v-else class="ti ti-check me-1"></i>{{ t("Submit") }}
+				</button>
+				<button
+					v-if="canPay"
+					type="button"
+					class="btn btn-success"
+					:disabled="actionRunning"
+					@click="openPayment"
+				>
+					<i class="ti ti-cash me-1"></i>{{ t("Make payment") }}
+				</button>
+				<button
+					v-if="can.cancel"
+					type="button"
+					class="btn btn-outline-danger ms-auto"
+					:disabled="actionRunning"
+					@click="cancel"
+				>
+					<i class="ti ti-ban me-1"></i>{{ t("Cancel") }}
+				</button>
+				<button
+					v-if="can.delete"
+					type="button"
+					class="btn btn-outline-danger"
+					:class="{ 'ms-auto': !can.cancel }"
+					:disabled="actionRunning"
+					@click="remove"
+				>
+					<i class="ti ti-trash me-1"></i>{{ t("Delete") }}
+				</button>
+			</template>
+		</template>
+	</FormPage>
+
+	<PaymentModal
+		:open="paymentOpen"
+		invoice-type="Purchase Invoice"
+		:invoice-name="form?.name || ''"
+		@close="paymentOpen = false"
+		@paid="onPaid"
+	/>
+</template>
