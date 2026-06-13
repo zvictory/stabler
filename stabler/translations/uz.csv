@@ -114,6 +114,7 @@ At least two account lines are required.,Kamida ikkita hisob qatori talab qilina
 Attendance,Davomat
 Audited At,Tekshirilgan sana
 Available,Mavjud
+avail.,mavj.
 Awaiting release by manager,Menejer ruxsatini kutmoqda
 Back,Ortga
 Back to dashboard,Boshqaruvga qaytish
@@ -329,6 +330,7 @@ Disabled,O'chirilgan
 Disc,Chegirma
 Disc %,Chegirma %
 Discount %,Chegirma %
+Discount,Chegirma
 Dispatched,Yuborilgan
 Distributor,Distribyutor
 Distributor claims will appear here once submitted.,Distribyutor arizalari tasdiqlangandan keyin bu yerda ko'rinadi.
@@ -1343,6 +1345,7 @@ Total outstanding,Jami qoldiq
 Total payable,Jami to'lanadi
 Total receivable,Jami qabul qilinadigan
 Total SKUs,Jami SKU
+Total in {0},Jami {0} da
 Total value,Jami qiymat
 Total:,Jami:
 Trade Marketing,Savdo marketingi

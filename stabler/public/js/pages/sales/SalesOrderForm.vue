@@ -31,17 +31,63 @@ const currencies = ref([]);
 const showDiscounts = ref(false);
 const lastReservationErrors = ref([]);
 const autoSubmit = ref(1);
+const exchangeRate = ref(1);
 
 const currency = computed(
 	() =>
 		(session.companies.find((c) => c.name === activeCompany.value) || {}).default_currency ||
-		"USD"
+		""
 );
 
 const currencySymbol = computed(() => {
 	const code = form.value.currency || currency.value;
 	return (currencies.value.find((c) => c.name === code) || {}).symbol || "";
 });
+
+// Show exchange rate row only when transaction currency differs from company base currency
+const isForeignCurrency = computed(() => {
+	const txn = form.value?.currency || "";
+	const base = currency.value;
+	return !!txn && !!base && txn !== base;
+});
+
+function lineAmount(line) {
+	const qty = Number(line.qty || 0);
+	const rate = Number(line.rate || 0);
+	const discPct = Number(line.discount_percentage || 0);
+	const discAmt = Number(line.discount_amount || 0);
+	let amt = qty * rate;
+	if (discPct > 0) amt = qty * Math.max(rate * (1 - discPct / 100), 0);
+	else if (discAmt > 0) amt = qty * Math.max(rate - discAmt, 0);
+	return amt;
+}
+
+const subtotal = computed(() =>
+	(form.value?.items || []).reduce((s, l) => s + Number(l.qty || 0) * Number(l.rate || 0), 0)
+);
+const grandTotal = computed(() =>
+	(form.value?.items || []).reduce((s, l) => s + lineAmount(l), 0)
+);
+const totalDiscount = computed(() => subtotal.value - grandTotal.value);
+
+// Base-currency grand total preview shown next to exchange rate input
+const grandTotalBase = computed(() => grandTotal.value * exchangeRate.value);
+
+async function fetchExchangeRate() {
+	const from = form.value?.currency;
+	const to = currency.value;
+	if (!from || !to || from === to) { exchangeRate.value = 1; return; }
+	try {
+		const res = await call("stabler.api.sales.get_currency_exchange_rate", {
+			from_currency: from,
+			to_currency: to,
+			date: form.value?.transaction_date || undefined,
+		});
+		exchangeRate.value = Number(res.exchange_rate) || 1;
+	} catch {
+		exchangeRate.value = 1;
+	}
+}
 
 function defaultWarehouseName() {
 	const match = warehouses.value.find(
@@ -108,6 +154,7 @@ function blankForm() {
 		customer: "",
 		customer_name: "",
 		currency: "",
+		exchange_rate: 1,
 		price_list: "",
 		set_warehouse: "",
 		transaction_date: today,
@@ -122,6 +169,7 @@ function fromDetail(d) {
 		customer: d.customer,
 		customer_name: d.customer_name,
 		currency: d.currency || "",
+		exchange_rate: Number(d.conversion_rate) || 1,
 		price_list: d.selling_price_list || "",
 		set_warehouse: d.set_warehouse || "",
 		transaction_date: d.transaction_date || "",
@@ -172,6 +220,7 @@ function toPayload(m) {
 		items: lines,
 		auto_submit: autoSubmit.value,
 		currency: m.currency || undefined,
+		conversion_rate: isForeignCurrency.value ? (exchangeRate.value || 1) : 1,
 		price_list: m.price_list || undefined,
 	};
 }
@@ -219,6 +268,7 @@ async function loadDoc() {
 	await load(docName.value);
 	if (!actionError.value && form.value) {
 		doc.value = form.value;
+		exchangeRate.value = Number(form.value.exchange_rate) || 1;
 		// Make sure it preserves discount column visibility if discounts exist
 		showDiscounts.value = form.value.items.some(
 			(l) => Number(l.discount_percentage) > 0 || Number(l.discount_amount) > 0
@@ -431,6 +481,14 @@ watch(
 	async () => {
 		if (!editable.value) return;
 		await refreshLineRatesForPriceList();
+	}
+);
+
+watch(
+	() => form.value?.currency,
+	async (cur) => {
+		if (!cur || cur === currency.value) { exchangeRate.value = 1; return; }
+		await fetchExchangeRate();
 	}
 );
 
@@ -685,10 +743,42 @@ const paymentBadge = computed(() => {
 			</div>
 			<div class="col-md-3">
 				<label class="form-label">{{ t("Currency") }}</label>
-				<div class="form-control-plaintext font-monospace fw-semibold py-1">
+				<Select
+					v-if="editable"
+					v-model="form.currency"
+					:options="currencies"
+					value-key="name"
+					:placeholder="currency || '—'"
+				>
+					<template #option="{ option }">{{ option.name }}<span v-if="option.symbol" class="text-secondary ms-1">({{ option.symbol }})</span></template>
+					<template #selected="{ option }">{{ option.name }}<span v-if="option.symbol" class="text-secondary ms-1">({{ option.symbol }})</span></template>
+				</Select>
+				<div v-else class="form-control-plaintext font-monospace fw-semibold py-1">
 					{{ form.currency || currency }}
 					<span v-if="currencySymbol" class="text-secondary fw-normal">({{ currencySymbol }})</span>
 				</div>
+			</div>
+		</div>
+
+		<!-- Exchange rate row — only when transaction currency ≠ company base currency -->
+		<div v-if="isForeignCurrency" class="row g-2 mb-3">
+			<div class="col-md-3">
+				<label class="form-label">
+					{{ t("Exchange rate") }}
+					<span class="text-secondary fw-normal small">(1 {{ form.currency }} = ? {{ currency }})</span>
+				</label>
+				<MoneyInput
+					v-if="editable"
+					v-model="exchangeRate"
+					:currency="currency"
+				/>
+				<div v-else class="form-control-plaintext font-monospace py-1">{{ exchangeRate }}</div>
+			</div>
+			<div class="col-md-auto d-flex align-items-end pb-1">
+				<span class="text-secondary small">
+					{{ t("Total in {0}", [currency]) }}:
+					<span class="font-monospace fw-semibold">{{ formatMoney(grandTotalBase, currency, user.language) }}</span>
+				</span>
 			</div>
 		</div>
 
@@ -746,14 +836,14 @@ const paymentBadge = computed(() => {
 
 			<template #item-extra="{ line }">
 				<div v-if="editable && line.item_code && line.warehouse" class="mt-1">
-					<span v-if="line.availabilityLoading" class="text-secondary small animate-pulse">
-						<span class="spinner-border spinner-border-sm me-1"></span>{{ t("Checking availability…") }}
+					<span v-if="line.availabilityLoading" class="text-secondary small">
+						<span class="spinner-border spinner-border-sm me-1"></span>
 					</span>
-					<span v-else-if="line.availability" class="badge" :class="availabilityTone(line)">
-						{{ t("Available") }}: {{ Number(line.availability.free).toFixed(2) }}
-						({{ t("On hand") }}: {{ Number(line.availability.actual).toFixed(2) }},
-						{{ t("Reserved") }}: {{ Number(line.availability.reserved).toFixed(2) }})
-					</span>
+					<span
+						v-else-if="line.availability"
+						class="small"
+						:class="isOverAvailable(line) ? 'text-danger' : 'text-secondary'"
+					>{{ Number(line.availability.free).toFixed(0) }} {{ t("avail.") }}</span>
 				</div>
 			</template>
 
@@ -792,19 +882,36 @@ const paymentBadge = computed(() => {
 				</td>
 			</template>
 
-			<template #footer-extra="{ totalsByUom: tUoms, grandTotal }">
+			<template #footer-extra="{ totalsByUom: tUoms }">
 				<tr>
-					<td colspan="2" class="align-middle">
+					<td colspan="20" class="pt-2 pb-0">
 						<span class="badge bg-secondary-lt">{{ form.items.length }} {{ form.items.length === 1 ? t('item') : t('items') }}</span>
 						<span v-for="[uom, qty] in tUoms" :key="uom" class="badge bg-blue-lt ms-1 font-monospace">{{ qty }} {{ uom }}</span>
 					</td>
-					<td colspan="3"></td>
-					<td v-if="!editable" colspan="3"></td>
-					<td v-if="showDiscounts" colspan="2"></td>
-					<td class="text-end font-monospace fw-bold py-2">{{ formatMoney(grandTotal, form.currency || currency, user.language) }}</td>
 				</tr>
 			</template>
 		</LineItemsEditor>
+
+		<!-- Running total summary block (QuickBooks-style) -->
+		<div v-if="editable" class="d-flex justify-content-end mt-2 mb-1">
+			<div class="total-summary-block border rounded p-3" style="min-width: 260px;">
+				<div class="d-flex justify-content-between mb-1">
+					<span class="text-secondary">{{ t("Subtotal") }}</span>
+					<span class="font-monospace">{{ formatMoney(subtotal, form.currency || currency, user.language) }}</span>
+				</div>
+				<div v-if="totalDiscount > 0" class="d-flex justify-content-between mb-1 text-success small">
+					<span>{{ t("Discount") }}</span>
+					<span class="font-monospace">− {{ formatMoney(totalDiscount, form.currency || currency, user.language) }}</span>
+				</div>
+				<div class="d-flex justify-content-between border-top pt-2 mt-1">
+					<span class="fw-bold">{{ t("Grand total") }}</span>
+					<span class="font-monospace fw-bold fs-4">{{ formatMoney(grandTotal, form.currency || currency, user.language) }}</span>
+				</div>
+				<div v-if="isForeignCurrency" class="text-secondary small mt-1 text-end">
+					≈ {{ formatMoney(grandTotalBase, currency, user.language) }}
+				</div>
+			</div>
+		</div>
 
 		<div class="mt-3">
 			<label class="form-label">{{ t("Terms / remarks") }}</label>

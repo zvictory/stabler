@@ -114,6 +114,7 @@ At least two account lines are required.,Камида икки ҳисоб қат
 Attendance,Давомат
 Audited At,Текширилган
 Available,Мавжуд
+avail.,мавж.
 Awaiting release by manager,Менежер рухсатини кутмоқда
 Back,Орқага
 Back to dashboard,Бошқарувга қайтиш
@@ -329,6 +330,7 @@ Disabled,Ўчирилган
 Disc,Чегирма
 Disc %,Чегирма %
 Discount %,Чегирма %
+Discount,Чегирма
 Dispatched,Юборилган
 Distributor,Тарқатувчи
 Distributor claims will appear here once submitted.,Тарқатувчи талаблари тасдиқланганидан сўнг бу ерда пайдо бўлади.
@@ -1343,6 +1345,7 @@ Total outstanding,Жами қарз
 Total payable,Жами тўланади
 Total receivable,Жами қабул қилиниши керак
 Total SKUs,Жами SKU
+Total in {0},Жами {0} да
 Total value,Жами қиймат
 Total:,Жами:
 Trade Marketing,Савдо маркетинги

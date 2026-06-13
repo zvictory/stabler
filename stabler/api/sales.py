@@ -139,6 +139,25 @@ def list_currencies():
 
 
 @frappe.whitelist()
+def get_currency_exchange_rate(from_currency: str, to_currency: str, date: str | None = None) -> dict:
+	"""Return exchange rate between two currencies using ERPNext's Currency Exchange records.
+
+	Rate convention: 1 from_currency = N to_currency.
+	Returns {"exchange_rate": float, "source": "same" | "erpnext" | "fallback"}.
+	"""
+	if from_currency == to_currency:
+		return {"exchange_rate": 1.0, "source": "same"}
+	try:
+		from frappe.utils import nowdate
+		from erpnext.setup.utils import get_exchange_rate  # type: ignore[import]
+
+		rate = get_exchange_rate(from_currency, to_currency, date or nowdate()) or 1.0
+		return {"exchange_rate": float(rate), "source": "erpnext"}
+	except Exception:
+		return {"exchange_rate": 1.0, "source": "fallback"}
+
+
+@frappe.whitelist()
 def list_customers_with_balances(
 	company: str,
 	search: str = "",

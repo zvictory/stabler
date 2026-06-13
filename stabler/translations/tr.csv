@@ -113,6 +113,7 @@ At least two account lines are required.,En az iki hesap satırı gereklidir.
 Attendance,Devam
 Audited At,Denetleme Tarihi
 Available,Mevcut
+avail.,mev.
 Awaiting release by manager,Yönetici onayı bekleniyor
 Back,Geri
 Badge,Rozet
@@ -324,6 +325,7 @@ Disabled,Devre Dışı
 Disc,İndirim
 Disc %,İndirim %
 Discount %,İskonto %
+Discount,İndirim
 Distributor,Distribütör
 Distributor claims will appear here once submitted.,Distribütör talepleri gönderildikten sonra burada görünecektir.
 DocType,DocType
@@ -1323,6 +1325,7 @@ Total outstanding,Toplam bakiye
 Total payable,Toplam ödenecek
 Total receivable,Toplam alacak
 Total SKUs,Toplam SKU
+Total in {0},{0} cinsinden toplam
 Total value,Toplam değer
 Total:,Toplam:
 Trade Marketing,Ticari Pazarlama

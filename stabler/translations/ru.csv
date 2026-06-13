@@ -119,6 +119,7 @@ At least two account lines are required.,Требуется минимум дв�
 Attendance,Посещаемость
 Audited At,Проверено
 Available,Доступно
+avail.,дост.
 Awaiting release by manager,Ожидает разрешения руководителя
 Back,Назад
 Back to dashboard,Вернуться на панель
@@ -335,6 +336,7 @@ Disabled,Отключено
 Disc,Скидка
 Disc %,Скидка %
 Discount %,Скидка %
+Discount,Скидка
 Dispatched,Отправлено
 Distributor,Дистрибьютор
 Distributor claims will appear here once submitted.,Претензии дистрибьютора появятся здесь после отправки.
@@ -1350,6 +1352,7 @@ Total outstanding,Всего задолженности
 Total payable,Всего к выплате
 Total receivable,Итого к получению
 Total SKUs,Всего SKU
+Total in {0},Итого в {0}
 Total value,Общая стоимость
 Total:,Итого:
 Trade Marketing,Торговый маркетинг

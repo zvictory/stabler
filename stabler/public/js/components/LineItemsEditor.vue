@@ -226,10 +226,10 @@ const grandTotal = computed(() => {
 			<thead>
 				<tr>
 					<th style="width: 80px;"></th>
-					<th>{{ t("Item") }}</th>
-					<th style="width: 120px;">{{ t("Qty") }}</th>
+					<th style="min-width: 160px; max-width: 320px;">{{ t("Item") }}</th>
+					<th style="width: 120px;" class="text-end">{{ t("Qty") }}</th>
 					<th style="width: 150px;">{{ t("UOM") }}</th>
-					<th style="width: 160px;">{{ t("Rate") }}</th>
+					<th style="width: 160px;" class="text-end">{{ t("Rate") }}</th>
 					<!-- Slot for extra columns -->
 					<slot name="header-extra" />
 					<th style="width: 150px;" class="text-end">{{ t("Amount") }}</th>

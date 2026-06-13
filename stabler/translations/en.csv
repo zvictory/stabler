@@ -113,6 +113,7 @@ At least two account lines are required.,At least two account lines are required
 Attendance,Attendance
 Audited At,Audited At
 Available,Available
+avail.,avail.
 Awaiting release by manager,Awaiting release by manager
 Back,Back
 Badge,Badge
@@ -327,6 +328,7 @@ Disabled,Disabled
 Disc,Disc
 Disc %,Disc %
 Discount %,Discount %
+Discount,Discount
 Dispatched,Dispatched
 Distributor,Distributor
 Distributor claims will appear here once submitted.,Distributor claims will appear here once submitted.
@@ -1336,6 +1338,7 @@ Total outstanding,Total outstanding
 Total payable,Total payable
 Total receivable,Total receivable
 Total SKUs,Total SKUs
+Total in {0},Total in {0}
 Total value,Total value
 Total:,Total:
 Trade Marketing,Trade Marketing
