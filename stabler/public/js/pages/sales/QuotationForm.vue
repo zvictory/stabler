@@ -161,21 +161,7 @@ onMounted(async () => {
 	}
 });
 
-// Calculations
-const createTotal = computed(() => {
-	if (!form.value) return 0;
-	return form.value.items.reduce((s, r) => s + Number(r.qty || 0) * Number(r.rate || 0), 0);
-});
-
-const totalsByUom = computed(() => {
-	const map = new Map();
-	if (!form.value) return [];
-	for (const line of form.value.items) {
-		if (!line.qty || !line.uom) continue;
-		map.set(line.uom, (map.get(line.uom) || 0) + Number(line.qty));
-	}
-	return [...map.entries()];
-});
+// Calculations are handled by LineItemsEditor.vue
 
 // Inline validations
 const isFormValid = ref(true);
@@ -269,14 +255,14 @@ async function submitDoc() {
 			@pick-item="handlePickItem"
 			@validity-change="handleValidityChange"
 		>
-			<template #footer-extra>
+			<template #footer-extra="{ totalsByUom: tUoms, grandTotal }">
 				<tr>
 					<td colspan="2" class="align-middle">
 						<span class="badge bg-secondary-lt">{{ form.items.length }} {{ form.items.length === 1 ? t('item') : t('items') }}</span>
-						<span v-for="[uom, qty] in totalsByUom" :key="uom" class="badge bg-blue-lt ms-1 font-monospace">{{ qty }} {{ uom }}</span>
+						<span v-for="[uom, qty] in tUoms" :key="uom" class="badge bg-blue-lt ms-1 font-monospace">{{ qty }} {{ uom }}</span>
 					</td>
 					<td colspan="3"></td>
-					<td class="text-end font-monospace fw-bold py-2">{{ formatMoney(createTotal, currency, user.language) }}</td>
+					<td class="text-end font-monospace fw-bold py-2">{{ formatMoney(grandTotal, currency, user.language) }}</td>
 				</tr>
 			</template>
 		</LineItemsEditor>

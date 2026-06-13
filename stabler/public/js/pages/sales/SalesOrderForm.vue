@@ -447,6 +447,19 @@ watch(
 	}
 );
 
+async function prefillNewForCustomer(customerName) {
+	if (!customerName) return;
+	try {
+		const customers = await searchCustomers(customerName);
+		const match = customers.find(c => c.name === customerName || c.customer_name === customerName) || customers[0];
+		if (match) {
+			await pickCustomer(match);
+		}
+	} catch {
+		// non-fatal
+	}
+}
+
 watch(docName, loadDoc);
 
 onMounted(async () => {
@@ -527,33 +540,7 @@ function handleValidityChange(valid) {
 	isFormValid.value = valid;
 }
 
-// Calculations
-const createTotal = computed(() => {
-	if (!form.value) return 0;
-	return form.value.items.reduce((s, r) => {
-		const qty = Number(r.qty || 0);
-		const rate = Number(r.rate || 0);
-		const discPct = Number(r.discount_percentage || 0);
-		const discAmt = Number(r.discount_amount || 0);
-		let amt = qty * rate;
-		if (discPct > 0) {
-			amt = qty * Math.max(rate * (1 - discPct / 100), 0);
-		} else if (discAmt > 0) {
-			amt = qty * Math.max(rate - discAmt, 0);
-		}
-		return s + amt;
-	}, 0);
-});
-
-const totalsByUom = computed(() => {
-	const map = new Map();
-	if (!form.value) return [];
-	for (const line of form.value.items) {
-		if (!line.qty || !line.uom) continue;
-		map.set(line.uom, (map.get(line.uom) || 0) + Number(line.qty));
-	}
-	return [...map.entries()];
-});
+// Calculations are handled by LineItemsEditor.vue
 
 // Stage calculation
 function pipelineStage(d) {
@@ -805,16 +792,16 @@ const paymentBadge = computed(() => {
 				</td>
 			</template>
 
-			<template #footer-extra>
+			<template #footer-extra="{ totalsByUom: tUoms, grandTotal }">
 				<tr>
 					<td colspan="2" class="align-middle">
 						<span class="badge bg-secondary-lt">{{ form.items.length }} {{ form.items.length === 1 ? t('item') : t('items') }}</span>
-						<span v-for="[uom, qty] in totalsByUom" :key="uom" class="badge bg-blue-lt ms-1 font-monospace">{{ qty }} {{ uom }}</span>
+						<span v-for="[uom, qty] in tUoms" :key="uom" class="badge bg-blue-lt ms-1 font-monospace">{{ qty }} {{ uom }}</span>
 					</td>
 					<td colspan="3"></td>
 					<td v-if="!editable" colspan="3"></td>
 					<td v-if="showDiscounts" colspan="2"></td>
-					<td class="text-end font-monospace fw-bold py-2">{{ formatMoney(createTotal, form.currency || currency, user.language) }}</td>
+					<td class="text-end font-monospace fw-bold py-2">{{ formatMoney(grandTotal, form.currency || currency, user.language) }}</td>
 				</tr>
 			</template>
 		</LineItemsEditor>

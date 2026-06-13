@@ -1,3 +1,15 @@
+/**
+ * useDirtyGuard — guard page leaves when a form is dirty.
+ *
+ * Manual QA Checklist:
+ * 1. Navigate to a create/edit form (e.g. Sales Order draft).
+ * 2. Type in a field or modify lines (form state becomes dirty).
+ * 3. Click sidebar link or "Back". Verify that the custom styled confirm modal opens.
+ * 4. Choose "Keep Editing". Verify you stay on the page with state intact.
+ * 5. Choose "Discard". Verify navigation completes.
+ * 6. Try reloading the tab or closing the window while dirty. Verify the browser's native tab-close confirm prompt appears.
+ * 7. Save/submit the form. Navigate away. Verify no prompts appear.
+ */
 import { ref, watch, onBeforeUnmount } from "vue";
 import { onBeforeRouteLeave } from "vue-router";
 import { useConfirm } from "./useConfirm.js";

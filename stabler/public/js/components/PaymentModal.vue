@@ -25,6 +25,7 @@ const props = defineProps({
 	open: { type: Boolean, required: true },
 	invoiceType: { type: String, required: true }, // "Sales Invoice" | "Purchase Invoice"
 	invoiceName: { type: String, default: "" },
+	modified: { type: String, default: "" },
 });
 
 const emit = defineEmits(["close", "paid"]);
@@ -134,6 +135,7 @@ async function submit() {
 			reference_no: form.value.reference_no || undefined,
 			reference_date: form.value.reference_date || undefined,
 			submit: 1,
+			modified: props.modified || undefined,
 		});
 		emit("paid", created?.name || "");
 	} catch (err) {

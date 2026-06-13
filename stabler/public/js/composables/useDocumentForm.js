@@ -77,20 +77,19 @@ export function useDocumentForm({
 			err.status === 409 ||
 			err.status === 417 ||
 			(err.message && err.message.includes("changed by someone else")) ||
+			(err.message && err.message.includes("Stale request: reload the document")) ||
 			(err.response && err.response.exception && err.response.exception.includes("TimestampMismatchError")) ||
 			(err.response && err.response.exc_type === "TimestampMismatchError");
 
 		if (isConflict && docName.value) {
-			const reload = await confirm({
+			await confirm({
 				title: t("Document changed"),
 				body: t("This document was changed by someone else. Reload to see the latest?"),
 				confirmLabel: t("Reload"),
-				cancelLabel: t("Cancel"),
 				danger: true,
+				dismissable: false,
 			});
-			if (reload) {
-				await load(docName.value);
-			}
+			await load(docName.value);
 			return true;
 		}
 		return false;
@@ -235,7 +234,7 @@ export function useDocumentForm({
 		saving.value = true;
 		error.value = "";
 		try {
-			await call(deleteApi, { name: docName.value });
+			await call(deleteApi, { name: docName.value, modified: modified.value });
 			toast.success(t("Document deleted successfully."));
 			reset(model.value); // Prevent dirty warning
 			if (backPath) {

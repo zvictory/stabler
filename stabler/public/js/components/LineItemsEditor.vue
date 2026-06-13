@@ -205,6 +205,19 @@ function formatLineAmount(line) {
 	}
 	return amt;
 }
+
+const totalsByUom = computed(() => {
+	const map = new Map();
+	for (const line of props.items) {
+		if (!line.qty || !line.uom) continue;
+		map.set(line.uom, (map.get(line.uom) || 0) + Number(line.qty));
+	}
+	return [...map.entries()];
+});
+
+const grandTotal = computed(() => {
+	return props.items.reduce((s, line) => s + formatLineAmount(line), 0);
+});
 </script>
 
 <template>
@@ -357,7 +370,7 @@ function formatLineAmount(line) {
 			</tbody>
 			<tfoot>
 				<!-- Slot for extra footer elements -->
-				<slot name="footer-extra" />
+				<slot name="footer-extra" :totals-by-uom="totalsByUom" :grand-total="grandTotal" />
 			</tfoot>
 		</table>
 	</div>

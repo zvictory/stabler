@@ -204,7 +204,7 @@ onMounted(loadDoc);
 				</div>
 			</div>
 
-			<!-- Items -->
+			<!-- Items: Genuinely read-only in Stabler as invoices are derived directly from Sales Orders -->
 			<h6 class="text-uppercase text-secondary small mb-2">{{ t("Items") }}</h6>
 			<div class="table-responsive">
 				<table class="table table-sm table-vcenter">
@@ -334,6 +334,7 @@ onMounted(loadDoc);
 		:open="paymentOpen"
 		invoice-type="Sales Invoice"
 		:invoice-name="form?.name || ''"
+		:modified="modified"
 		@close="paymentOpen = false"
 		@paid="onPaid"
 	/>

@@ -27,7 +27,9 @@ function handleKeyDown(e) {
 
 	if (e.key === "Escape") {
 		e.preventDefault();
-		currentConfirm.value.resolve(false);
+		if (currentConfirm.value.dismissable !== false) {
+			currentConfirm.value.resolve(false);
+		}
 	} else if (e.key === "Enter") {
 		if (document.activeElement !== confirmButton.value && document.activeElement !== cancelButton.value) {
 			e.preventDefault();
@@ -73,11 +75,12 @@ onUnmounted(() => {
 			role="dialog"
 			aria-modal="true"
 			style="z-index: 1060; background: rgba(0, 0, 0, 0.25);"
-			@click.self="currentConfirm.resolve(false)"
+			@click.self="currentConfirm.dismissable !== false && currentConfirm.resolve(false)"
 		>
 			<div class="modal-dialog modal-sm modal-dialog-centered" role="document">
 				<div class="modal-content">
 					<button
+						v-if="currentConfirm.dismissable !== false"
 						type="button"
 						class="btn-close"
 						aria-label="Close"
@@ -96,7 +99,7 @@ onUnmounted(() => {
 					<div class="modal-footer border-top-0 pt-0">
 						<div class="w-100">
 							<div class="row">
-								<div class="col">
+								<div v-if="currentConfirm.dismissable !== false" class="col">
 									<button
 										ref="cancelButton"
 										type="button"
@@ -106,7 +109,7 @@ onUnmounted(() => {
 										{{ t(currentConfirm.cancelLabel) }}
 									</button>
 								</div>
-								<div class="col">
+								<div :class="currentConfirm.dismissable !== false ? 'col' : 'col-12'">
 									<button
 										ref="confirmButton"
 										type="button"

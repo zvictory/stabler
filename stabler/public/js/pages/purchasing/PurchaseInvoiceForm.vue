@@ -379,15 +379,7 @@ const baseGrandPreview = computed(() =>
 	isForeign.value ? grandPreview.value * Number(form.value.conversion_rate || 0) : 0
 );
 
-const totalsByUom = computed(() => {
-	const map = new Map();
-	if (!form.value) return [];
-	for (const line of form.value.items) {
-		if (!line.qty || !line.uom) continue;
-		map.set(line.uom, (map.get(line.uom) || 0) + Number(line.qty));
-	}
-	return [...map.entries()];
-});
+// totalsByUom handled by LineItemsEditor.vue
 
 // Inline validations for editor state check
 const isFormValid = ref(true);
@@ -625,11 +617,11 @@ async function submitDoc() {
 				</td>
 			</template>
 
-			<template #footer-extra>
+			<template #footer-extra="{ totalsByUom: tUoms }">
 				<tr>
 					<td colspan="2" class="align-middle">
 						<span class="badge bg-secondary-lt">{{ form.items.length }} {{ form.items.length === 1 ? t('item') : t('items') }}</span>
-						<span v-for="[uom, qty] in totalsByUom" :key="uom" class="badge bg-blue-lt ms-1 font-monospace">{{ qty }} {{ uom }}</span>
+						<span v-for="[uom, qty] in tUoms" :key="uom" class="badge bg-blue-lt ms-1 font-monospace">{{ qty }} {{ uom }}</span>
 					</td>
 					<td colspan="3"></td>
 					<td v-if="!editable" colspan="1"></td>
@@ -713,6 +705,7 @@ async function submitDoc() {
 		:open="paymentOpen"
 		invoice-type="Purchase Invoice"
 		:invoice-name="form?.name || ''"
+		:modified="modified"
 		@close="paymentOpen = false"
 		@paid="onPaid"
 	/>
