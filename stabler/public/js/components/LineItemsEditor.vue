@@ -125,7 +125,7 @@ function handleKeyDown(e) {
 		}
 	}
 
-	// Tab on last input of last row adds new row (QuickBooks-style)
+	// Tab on qty field (index 1) → jump to next row's item search, adding a row if needed
 	if (e.key === "Tab" && !e.shiftKey) {
 		const activeEl = document.activeElement;
 		if (!activeEl || activeEl.tagName !== "INPUT") return;
@@ -134,17 +134,38 @@ function handleKeyDown(e) {
 		const tbody = row.closest("tbody");
 		if (!tbody) return;
 		const rows = Array.from(tbody.querySelectorAll("tr"));
-		if (rows.indexOf(row) !== rows.length - 1) return;
+		const rowIndex = rows.indexOf(row);
 		const inputsInRow = Array.from(row.querySelectorAll("input:not([readonly])"));
-		if (inputsInRow.indexOf(activeEl) !== inputsInRow.length - 1) return;
-		e.preventDefault();
-		addRow();
-		nextTick(() => {
-			const newRows = Array.from(tbody.querySelectorAll("tr"));
-			const first = newRows[newRows.length - 1]?.querySelector("input");
-			first?.focus();
-			first?.select?.();
-		});
+		const inputIndex = inputsInRow.indexOf(activeEl);
+
+		if (inputIndex === 1) {
+			// Tabbing from qty: go to next row's item search (or add row if last)
+			e.preventDefault();
+			if (rowIndex === rows.length - 1) {
+				addRow();
+				nextTick(() => {
+					const newRows = Array.from(tbody.querySelectorAll("tr"));
+					const first = newRows[newRows.length - 1]?.querySelector("input");
+					first?.focus();
+					first?.select?.();
+				});
+			} else {
+				const nextRow = rows[rowIndex + 1];
+				const first = nextRow?.querySelector("input");
+				first?.focus();
+				first?.select?.();
+			}
+		} else if (rowIndex === rows.length - 1 && inputIndex === inputsInRow.length - 1) {
+			// Tab on last input of last row also adds a new row
+			e.preventDefault();
+			addRow();
+			nextTick(() => {
+				const newRows = Array.from(tbody.querySelectorAll("tr"));
+				const first = newRows[newRows.length - 1]?.querySelector("input");
+				first?.focus();
+				first?.select?.();
+			});
+		}
 	}
 
 	// Enter on last cell adds row
@@ -206,19 +227,7 @@ function onUomSelectChange(line) {
 
 function handlePickItem(line, item, index) {
 	emit("pick-item", { line, item, index, field: "item" });
-	// Focus qty input after item data loads in parent (async)
-	nextTick(() => {
-		const tbody = document.querySelector(".stbl-items-table tbody");
-		if (!tbody) return;
-		const rows = Array.from(tbody.querySelectorAll("tr"));
-		const row = rows[index];
-		if (!row) return;
-		// inputs order: [0] Typeahead, [1] Qty, [2] Rate, ...
-		const inputs = Array.from(row.querySelectorAll("input:not([readonly])"));
-		const qty = inputs[1];
-		qty?.focus();
-		qty?.select?.();
-	});
+	// Focus is handled by parent after async item load completes
 }
 
 function formatLineAmount(line) {

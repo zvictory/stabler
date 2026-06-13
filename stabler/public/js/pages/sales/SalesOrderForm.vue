@@ -434,6 +434,20 @@ async function handlePickItem({ line, item, index, field }) {
 			line.rate = rate;
 		}
 		scheduleAvailability(line);
+		// Focus qty after all async item data is loaded (nextTick here fires after
+		// Vue flushes the reactive updates from the awaits above, not before them)
+		await nextTick();
+		const tbody = document.querySelector(".stbl-items-table tbody");
+		if (tbody) {
+			const rows = Array.from(tbody.querySelectorAll("tr"));
+			const row = rows[index];
+			if (row) {
+				const inputs = Array.from(row.querySelectorAll("input:not([readonly])"));
+				const qty = inputs[1];
+				qty?.focus();
+				qty?.select?.();
+			}
+		}
 	} else if (field === "uom") {
 		if (line.item_code && !line.rateTouched) {
 			const { rate } = await resolveRate(line.item_code, line.rate, line.uom);
@@ -721,24 +735,26 @@ const paymentBadge = computed(() => {
 			<div class="col-md-6">
 				<label class="form-label" :class="{ required: editable }">{{ t("Customer") }}</label>
 				<Typeahead
-					v-slot="{ item }"
 					v-if="editable"
 					v-model="form.customer"
 					:search="searchCustomers"
-					:display="form.customer_name"
+					:display="form.customer_name || form.customer"
 					:placeholder="t('Search customer name…')"
 					:no-results-text="t('No customers match that name')"
 					open-on-focus
 					@pick="pickCustomer"
 					@clear="clearCustomer"
 				>
-					<div class="d-flex align-items-center gap-2">
-						<span class="avatar avatar-xs bg-purple-lt">{{ (item.customer_name || item.name).charAt(0).toUpperCase() }}</span>
-						<div>
-							<div class="fw-semibold">{{ item.customer_name }}</div>
-							<div class="small text-secondary">{{ item.name }} · {{ item.customer_group || "—" }}</div>
+					<template #option="{ item }">
+						<div class="d-flex align-items-center gap-2">
+							<span class="avatar avatar-xs bg-purple-lt">{{ (item.customer_name || item.name).charAt(0).toUpperCase() }}</span>
+							<div>
+								<div class="fw-semibold">{{ item.customer_name || item.name }}</div>
+								<div v-if="item.customer_name && item.customer_name !== item.name" class="small text-secondary">{{ item.name }} · {{ item.customer_group || "—" }}</div>
+								<div v-else class="small text-secondary">{{ item.customer_group || "—" }}</div>
+							</div>
 						</div>
-					</div>
+					</template>
 				</Typeahead>
 				<div v-else class="form-control-plaintext fw-semibold py-1">
 					{{ form.customer_name }}
