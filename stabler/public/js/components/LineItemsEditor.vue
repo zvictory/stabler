@@ -1,6 +1,7 @@
 <script setup>
 import { computed, nextTick, watch } from "vue";
 import { t } from "../composables/i18n.js";
+import { formatMoney } from "../composables/money.js";
 import MoneyInput from "./MoneyInput.vue";
 import Typeahead from "./Typeahead.vue";
 import Select from "./Select.vue";
@@ -9,6 +10,7 @@ const props = defineProps({
 	items: { type: Array, required: true },
 	editable: { type: Boolean, default: true },
 	currency: { type: String, default: "" },
+	language: { type: String, default: "en" },
 	currencySymbol: { type: String, default: "" },
 	searchItems: { type: Function, required: true },
 	blankLine: { type: Function, required: true },
@@ -131,6 +133,28 @@ function handleKeyDown(e) {
 		}
 	}
 
+	// Tab on last input of last row adds new row (QuickBooks-style)
+	if (e.key === "Tab" && !e.shiftKey) {
+		const activeEl = document.activeElement;
+		if (!activeEl || activeEl.tagName !== "INPUT") return;
+		const row = activeEl.closest("tr");
+		if (!row) return;
+		const tbody = row.closest("tbody");
+		if (!tbody) return;
+		const rows = Array.from(tbody.querySelectorAll("tr"));
+		if (rows.indexOf(row) !== rows.length - 1) return;
+		const inputsInRow = Array.from(row.querySelectorAll("input:not([readonly])"));
+		if (inputsInRow.indexOf(activeEl) !== inputsInRow.length - 1) return;
+		e.preventDefault();
+		addRow();
+		nextTick(() => {
+			const newRows = Array.from(tbody.querySelectorAll("tr"));
+			const first = newRows[newRows.length - 1]?.querySelector("input");
+			first?.focus();
+			first?.select?.();
+		});
+	}
+
 	// Enter on last cell adds row
 	if (e.key === "Enter") {
 		const activeEl = document.activeElement;
@@ -190,6 +214,19 @@ function onUomSelectChange(line) {
 
 function handlePickItem(line, item, index) {
 	emit("pick-item", { line, item, index, field: "item" });
+	// Focus qty input after item data loads in parent (async)
+	nextTick(() => {
+		const tbody = document.querySelector(".stbl-items-table tbody");
+		if (!tbody) return;
+		const rows = Array.from(tbody.querySelectorAll("tr"));
+		const row = rows[index];
+		if (!row) return;
+		// inputs order: [0] Typeahead, [1] Qty, [2] Rate, ...
+		const inputs = Array.from(row.querySelectorAll("input:not([readonly])"));
+		const qty = inputs[1];
+		qty?.focus();
+		qty?.select?.();
+	});
 }
 
 function formatLineAmount(line) {
@@ -277,12 +314,17 @@ const grandTotal = computed(() => {
 						<div v-if="editable">
 							<Typeahead
 								v-model="line.item_code"
-								:display="line.item_code ? `${line.item_code} - ${line.item_name || ''}` : ''"
+								:display="line.item_code ? `${line.item_code} — ${line.item_name || ''}` : ''"
 								:search="searchItems"
 								size="sm"
 								@pick="(item) => handlePickItem(line, item, idx)"
 								@clear="() => { line.item_code = ''; line.item_name = ''; line.uom = ''; }"
-							/>
+							>
+								<template #option="{ item }">
+									<div class="fw-semibold small">{{ item.item_code || item.name }}</div>
+									<div v-if="item.item_name" class="text-secondary" style="font-size:0.75rem">{{ item.item_name }}</div>
+								</template>
+							</Typeahead>
 							<slot name="item-extra" :line="line" :index="idx" />
 						</div>
 						<div v-else>
@@ -355,7 +397,7 @@ const grandTotal = computed(() => {
 							</div>
 						</div>
 						<div v-else class="font-monospace text-end">
-							{{ currencySymbol }}{{ Number(line.rate || 0).toLocaleString(undefined, { minimumFractionDigits: 2 }) }}
+							{{ formatMoney(line.rate || 0, currency, language) }}
 						</div>
 					</td>
 
@@ -364,7 +406,7 @@ const grandTotal = computed(() => {
 
 					<!-- Line Amount -->
 					<td class="align-top text-end font-monospace py-2">
-						{{ currencySymbol }}{{ Number(formatLineAmount(line)).toLocaleString(undefined, { minimumFractionDigits: 2 }) }}
+						{{ formatMoney(formatLineAmount(line), currency, language) }}
 					</td>
 				</tr>
 			</tbody>

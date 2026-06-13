@@ -140,21 +140,61 @@ def list_currencies():
 
 @frappe.whitelist()
 def get_currency_exchange_rate(from_currency: str, to_currency: str, date: str | None = None) -> dict:
-	"""Return exchange rate between two currencies using ERPNext's Currency Exchange records.
+	"""Return exchange rate: 1 from_currency = N to_currency.
 
-	Rate convention: 1 from_currency = N to_currency.
-	Returns {"exchange_rate": float, "source": "same" | "erpnext" | "fallback"}.
+	Fetches from CBU (Central Bank of Uzbekistan) cbu.uz for pairs involving UZS.
+	Falls back to ERPNext Currency Exchange for cross rates.
 	"""
 	if from_currency == to_currency:
-		return {"exchange_rate": 1.0, "source": "same"}
+		return {"exchange_rate": 1.0}
+
+	def _cbu_uzs_rate(ccy: str, date_iso: str | None) -> float | None:
+		"""Return UZS per 1 unit of ccy from cbu.uz, or None on failure."""
+		import requests
+		try:
+			if date_iso:
+				from datetime import datetime
+				d = datetime.strptime(date_iso, "%Y-%m-%d")
+				url = f"https://cbu.uz/uz/arkhiv-kursov-valyut/json/{ccy}/{d.strftime('%d.%m.%Y')}/"
+			else:
+				url = f"https://cbu.uz/uz/arkhiv-kursov-valyut/json/{ccy}/"
+			resp = requests.get(url, timeout=5)
+			resp.raise_for_status()
+			data = resp.json()
+			if data and isinstance(data, list):
+				row = data[0]
+				return float(row["Rate"]) / max(float(row.get("Nominal") or 1), 1)
+		except Exception as exc:
+			frappe.log_error(f"CBU rate fetch failed for {ccy}: {exc}", "CBU Exchange Rate")
+		return None
+
+	if from_currency == "UZS":
+		# 1 UZS = ? to_currency → invert CBU rate for to_currency
+		uzs_per_to = _cbu_uzs_rate(to_currency, date)
+		if uzs_per_to and uzs_per_to > 0:
+			return {"exchange_rate": 1.0 / uzs_per_to}
+	elif to_currency == "UZS":
+		# 1 from_currency = ? UZS → direct CBU rate
+		rate = _cbu_uzs_rate(from_currency, date)
+		if rate:
+			return {"exchange_rate": rate}
+	else:
+		# Cross rate: from → UZS → to
+		uzs_per_from = _cbu_uzs_rate(from_currency, date)
+		uzs_per_to = _cbu_uzs_rate(to_currency, date)
+		if uzs_per_from and uzs_per_to and uzs_per_to > 0:
+			return {"exchange_rate": uzs_per_from / uzs_per_to}
+
+	# Fallback: ERPNext Currency Exchange doctype
 	try:
 		from frappe.utils import nowdate
 		from erpnext.setup.utils import get_exchange_rate  # type: ignore[import]
-
 		rate = get_exchange_rate(from_currency, to_currency, date or nowdate()) or 1.0
-		return {"exchange_rate": float(rate), "source": "erpnext"}
+		return {"exchange_rate": float(rate)}
 	except Exception:
-		return {"exchange_rate": 1.0, "source": "fallback"}
+		pass
+
+	return {"exchange_rate": 1.0}
 
 
 @frappe.whitelist()

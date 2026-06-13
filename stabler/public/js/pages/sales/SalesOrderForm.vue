@@ -221,6 +221,33 @@ const isForeignCurrency = computed(() => {
 	return !!txn && !!base && txn !== base;
 });
 
+// When the transaction currency is UZS but the company base is not, the ERPNext
+// conversion_rate is a tiny fraction (e.g. 1/12750). Flip it for display so the
+// user sees the human-readable CBU format ("1 USD = 12 750 сўм") instead.
+const rateIsInverted = computed(() =>
+	isForeignCurrency.value && form.value?.currency === "UZS"
+);
+
+const displayExchangeRate = computed({
+	get: () => {
+		const r = exchangeRate.value;
+		if (!r || r <= 0) return 0;
+		return rateIsInverted.value && r < 1 ? 1 / r : r;
+	},
+	set: (v) => {
+		const n = Number(v) || 0;
+		exchangeRate.value = n > 0 ? (rateIsInverted.value ? 1 / n : n) : 1;
+	},
+});
+
+// Currency shown in the MoneyInput denominator (the "per 1 strong-side" unit)
+const rateDisplayCurrency = computed(() =>
+	rateIsInverted.value ? form.value?.currency : currency.value
+);
+const rateStrongCurrency = computed(() =>
+	rateIsInverted.value ? currency.value : form.value?.currency
+);
+
 function lineAmount(line) {
 	const qty = Number(line.qty || 0);
 	const rate = Number(line.rate || 0);
@@ -487,6 +514,13 @@ watch(
 	async (cur) => {
 		if (!cur || cur === currency.value) { exchangeRate.value = 1; return; }
 		await fetchExchangeRate();
+	}
+);
+
+watch(
+	() => form.value?.transaction_date,
+	async (date) => {
+		if (isForeignCurrency.value && date) await fetchExchangeRate();
 	}
 );
 
@@ -769,14 +803,14 @@ const paymentBadge = computed(() => {
 			<div class="col-md-3">
 				<label class="form-label">
 					{{ t("Exchange rate") }}
-					<span class="text-secondary fw-normal small">(1 {{ form.currency }} = ? {{ currency }})</span>
+					<span class="text-secondary fw-normal small">(1 {{ rateStrongCurrency }} = ? {{ rateDisplayCurrency }})</span>
 				</label>
 				<MoneyInput
 					v-if="editable"
-					v-model="exchangeRate"
-					:currency="currency"
+					v-model="displayExchangeRate"
+					:currency="rateDisplayCurrency"
 				/>
-				<div v-else class="form-control-plaintext font-monospace py-1">{{ exchangeRate }}</div>
+				<div v-else class="form-control-plaintext font-monospace py-1">{{ displayExchangeRate }}</div>
 			</div>
 			<div class="col-md-auto d-flex align-items-end pb-1">
 				<span class="text-secondary small">
@@ -824,6 +858,7 @@ const paymentBadge = computed(() => {
 			:items="form.items"
 			:editable="editable"
 			:currency="form.currency || currency"
+			:language="user.language"
 			:currency-symbol="currencySymbol"
 			:search-items="searchItems"
 			:blank-line="blankLine"
