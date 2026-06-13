@@ -6,6 +6,7 @@ import { useSession } from "../../stores/session.js";
 import { call } from "../../api/client.js";
 import { formatDate } from "../../composables/date.js";
 import { t } from "../../composables/i18n.js";
+import { useConfirm } from "../../composables/useConfirm.js";
 import EmptyState from "../../components/EmptyState.vue";
 
 const router = useRouter();
@@ -18,6 +19,8 @@ const processes = ref([]);
 const total = ref(0);
 const search = ref("");
 const creating = ref(false);
+
+const { confirm } = useConfirm();
 
 async function fetchProcesses() {
 	loading.value = true;
@@ -58,7 +61,12 @@ async function newProcess() {
 }
 
 async function deleteProcess(proc) {
-	if (!confirm(t("Delete this process?"))) return;
+	const ok = await confirm({
+		title: t("Delete process?"),
+		body: t("Delete this process?"),
+		danger: true,
+	});
+	if (!ok) return;
 	try {
 		await call("stabler.api.bpm.delete_process", { name: proc.name });
 		fetchProcesses();

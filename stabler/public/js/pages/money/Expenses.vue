@@ -6,6 +6,8 @@ import { call } from "../../api/client.js";
 import { formatMoney } from "../../composables/money.js";
 import { formatDateTime } from "../../composables/date.js";
 import { t } from "../../composables/i18n.js";
+import { useConfirm } from "../../composables/useConfirm.js";
+import { useToast } from "../../composables/useToast.js";
 import MoneyInput from "../../components/MoneyInput.vue";
 import DateInput from "../../components/DateInput.vue";
 import EmptyState from "../../components/EmptyState.vue";
@@ -14,6 +16,9 @@ import Typeahead from "../../components/Typeahead.vue";
 
 const session = useSession();
 const { activeCompany, user } = storeToRefs(session);
+
+const { confirm } = useConfirm();
+const toast = useToast();
 
 const today = new Date().toISOString().slice(0, 10);
 const monthAgo = new Date(Date.now() - 30 * 86400000).toISOString().slice(0, 10);
@@ -324,10 +329,18 @@ async function openDetail(name) {
 
 async function cancelEntry() {
 	if (!detail.value?.name) return;
-	if (!window.confirm(t("Cancel this entry?"))) return;
+	const ok = await confirm({
+		title: t("Cancel Expense Entry"),
+		body: t("Cancel this entry?"),
+		confirmLabel: t("Cancel Entry"),
+		cancelLabel: t("Close"),
+		danger: true,
+	});
+	if (!ok) return;
 	submitError.value = "";
 	try {
 		await call("stabler.api.money.cancel_bank_entry", { name: detail.value.name });
+		toast.success(t("Expense entry cancelled."));
 		await openDetail(detail.value.name);
 		await load();
 	} catch (err) {
@@ -337,9 +350,17 @@ async function cancelEntry() {
 
 async function deleteEntry() {
 	if (!detail.value?.name) return;
-	if (!window.confirm(t("Delete this draft entry?"))) return;
+	const ok = await confirm({
+		title: t("Delete Draft Entry"),
+		body: t("Delete this draft entry?"),
+		confirmLabel: t("Delete"),
+		cancelLabel: t("Cancel"),
+		danger: true,
+	});
+	if (!ok) return;
 	try {
 		await call("stabler.api.money.delete_bank_entry", { name: detail.value.name });
+		toast.success(t("Draft entry deleted."));
 		closeDetail();
 		await load();
 	} catch (err) {

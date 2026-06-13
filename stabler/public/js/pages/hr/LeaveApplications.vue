@@ -4,6 +4,8 @@ import { storeToRefs } from "pinia";
 import { useSession } from "../../stores/session.js";
 import { call } from "../../api/client.js";
 import { t } from "../../composables/i18n.js";
+import { useConfirm } from "../../composables/useConfirm.js";
+import { useToast } from "../../composables/useToast.js";
 import { formatDateTime } from "../../composables/date.js";
 import EmptyState from "../../components/EmptyState.vue";
 import DateInput from "../../components/DateInput.vue";
@@ -11,6 +13,9 @@ import Select from "../../components/Select.vue";
 
 const session = useSession();
 const { activeCompany } = storeToRefs(session);
+
+const { confirm } = useConfirm();
+const toast = useToast();
 
 const loading = ref(false);
 const error = ref("");
@@ -47,12 +52,18 @@ watch([activeCompany, statusFilter], load);
 
 async function approve(name, status) {
 	const verb = status === "Approved" ? t("Approve this leave request?") : t("Reject this leave request?");
-	if (!confirm(verb)) return;
+	const ok = await confirm({
+		title: status === "Approved" ? t("Approve Leave?") : t("Reject Leave?"),
+		body: verb,
+		danger: status === "Rejected",
+	});
+	if (!ok) return;
 	try {
 		await call("stabler.api.hr.approve_leave", { name, status });
+		toast.success(status === "Approved" ? t("Leave request approved.") : t("Leave request rejected."));
 		await load();
 	} catch (err) {
-		alert(err?.message || "Action failed.");
+		toast.error(err?.message || t("Action failed."));
 	}
 }
 

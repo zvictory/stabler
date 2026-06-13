@@ -4,10 +4,13 @@ import { storeToRefs } from "pinia";
 import { useSession } from "../../stores/session.js";
 import { call } from "../../api/client.js";
 import { t } from "../../composables/i18n.js";
+import { useConfirm } from "../../composables/useConfirm.js";
 import EmptyState from "../../components/EmptyState.vue";
 
 const session = useSession();
 const { activeCompany } = storeToRefs(session);
+
+const { confirm } = useConfirm();
 
 const formatQty = (n, uom) => {
 	const v = Number(n || 0);
@@ -90,9 +93,11 @@ async function executeTransfer() {
 	const row = detail.value;
 	if (!row) return;
 	
-	if (!confirm(t("Execute material transfer for this Work Order? This will move required raw materials to the WIP warehouse."))) {
-		return;
-	}
+	const ok = await confirm({
+		title: t("Execute transfer?"),
+		body: t("Execute material transfer for this Work Order? This will move required raw materials to the WIP warehouse."),
+	});
+	if (!ok) return;
 
 	actionBusy.value = true;
 	actionError.value = "";

@@ -5,6 +5,8 @@ import { useSession } from "../../stores/session.js";
 import { call } from "../../api/client.js";
 import { t } from "../../composables/i18n.js";
 import { formatDateTime } from "../../composables/date.js";
+import { useConfirm } from "../../composables/useConfirm.js";
+import { useToast } from "../../composables/useToast.js";
 import EmptyState from "../../components/EmptyState.vue";
 import DateInput from "../../components/DateInput.vue";
 import Select from "../../components/Select.vue";
@@ -12,6 +14,9 @@ import ManufacturingOperatorBoard from "./ManufacturingOperatorBoard.vue";
 
 const session = useSession();
 const { activeCompany, user } = storeToRefs(session);
+
+const { confirm } = useConfirm();
+const toast = useToast();
 
 const loading = ref(false);
 const error = ref("");
@@ -111,11 +116,18 @@ async function refreshDetail() {
 }
 
 async function doSubmit(name) {
-	if (!confirm(t("Submit and release this Work Order?"))) return;
+	const ok = await confirm({
+		title: t("Submit Work Order"),
+		body: t("Submit and release this Work Order?"),
+		confirmLabel: t("Submit"),
+		cancelLabel: t("Cancel"),
+	});
+	if (!ok) return;
 	actionBusy.value = true;
 	actionError.value = "";
 	try {
 		await call("stabler.api.manufacturing.submit_work_order", { name });
+		toast.success(t("Work Order submitted and released."));
 		await refreshDetail();
 		await load();
 	} catch (err) {
@@ -166,11 +178,19 @@ async function recordProduction(name) {
 }
 
 async function stop(name) {
-	if (!confirm(t("Stop this Work Order? You can resume it later."))) return;
+	const ok = await confirm({
+		title: t("Stop Work Order"),
+		body: t("Stop this Work Order? You can resume it later."),
+		confirmLabel: t("Stop"),
+		cancelLabel: t("Cancel"),
+		danger: true,
+	});
+	if (!ok) return;
 	actionBusy.value = true;
 	actionError.value = "";
 	try {
 		await call("stabler.api.manufacturing.stop_work_order", { name });
+		toast.success(t("Work Order stopped."));
 		await refreshDetail();
 		await load();
 	} catch (err) {
@@ -181,11 +201,18 @@ async function stop(name) {
 }
 
 async function resume(name) {
-	if (!confirm(t("Resume this Work Order?"))) return;
+	const ok = await confirm({
+		title: t("Resume Work Order"),
+		body: t("Resume this Work Order?"),
+		confirmLabel: t("Resume"),
+		cancelLabel: t("Cancel"),
+	});
+	if (!ok) return;
 	actionBusy.value = true;
 	actionError.value = "";
 	try {
 		await call("stabler.api.manufacturing.resume_work_order", { name });
+		toast.success(t("Work Order resumed."));
 		await refreshDetail();
 		await load();
 	} catch (err) {
@@ -196,11 +223,18 @@ async function resume(name) {
 }
 
 async function close(name) {
-	if (!confirm(t("Close this Work Order? This finalizes it."))) return;
+	const ok = await confirm({
+		title: t("Close Work Order"),
+		body: t("Close this Work Order? This finalizes it."),
+		confirmLabel: t("Close"),
+		cancelLabel: t("Cancel"),
+	});
+	if (!ok) return;
 	actionBusy.value = true;
 	actionError.value = "";
 	try {
 		await call("stabler.api.manufacturing.close_work_order", { name });
+		toast.success(t("Work Order closed."));
 		await refreshDetail();
 		await load();
 	} catch (err) {

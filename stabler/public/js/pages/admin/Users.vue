@@ -2,6 +2,8 @@
 import { computed, onMounted, ref } from "vue";
 import { adminApi } from "../../api/admin.js";
 import { t } from "../../composables/i18n.js";
+import { useConfirm } from "../../composables/useConfirm.js";
+import { useToast } from "../../composables/useToast.js";
 import { MODULE_CATALOG } from "../../composables/modules.js";
 import { formatDateTime } from "../../composables/date.js";
 import EmptyState from "../../components/EmptyState.vue";
@@ -22,6 +24,9 @@ const detailLoading = ref(false);
 const detail = ref(null);
 const drawerError = ref("");
 const drawerSaving = ref(false);
+
+const { confirm } = useConfirm();
+const toast = useToast();
 
 const editForm = ref({ full_name: "", enabled: 1, roles: [], allowed_modules: [] });
 
@@ -121,8 +126,9 @@ async function quickToggleEnabled(user) {
 	try {
 		await adminApi.updateUser({ name: user.name, enabled: next });
 		user.enabled = next;
+		toast.success(t("User status updated."));
 	} catch (err) {
-		alert(err?.message || "Failed to toggle.");
+		toast.error(err?.message || t("Failed to toggle status."));
 	}
 }
 
@@ -135,8 +141,10 @@ async function applyTemplateToDetail(templateKey) {
 		detail.value = updated;
 		editForm.value.roles = [...(updated.roles || [])];
 		await load();
+		toast.success(t("Role template applied successfully."));
 	} catch (err) {
 		drawerError.value = err?.message || "Failed to apply template.";
+		toast.error(drawerError.value);
 	} finally {
 		drawerSaving.value = false;
 	}
@@ -144,12 +152,16 @@ async function applyTemplateToDetail(templateKey) {
 
 async function resetPasswordForDetail() {
 	if (!detail.value) return;
-	if (!confirm(t("Send password reset email to ") + detail.value.email + "?")) return;
+	const ok = await confirm({
+		title: t("Reset password?"),
+		body: t("Send password reset email to ") + detail.value.email + "?",
+	});
+	if (!ok) return;
 	try {
 		await adminApi.resetPassword(detail.value.name);
-		alert(t("Reset email sent."));
+		toast.success(t("Reset email sent."));
 	} catch (err) {
-		alert(err?.message || "Failed to reset.");
+		toast.error(err?.message || t("Failed to reset password."));
 	}
 }
 

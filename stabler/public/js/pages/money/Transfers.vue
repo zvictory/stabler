@@ -6,6 +6,8 @@ import { call } from "../../api/client.js";
 import { formatMoney } from "../../composables/money.js";
 import { formatDateTime } from "../../composables/date.js";
 import { t } from "../../composables/i18n.js";
+import { useConfirm } from "../../composables/useConfirm.js";
+import { useToast } from "../../composables/useToast.js";
 import MoneyInput from "../../components/MoneyInput.vue";
 import DateInput from "../../components/DateInput.vue";
 import EmptyState from "../../components/EmptyState.vue";
@@ -13,6 +15,9 @@ import Select from "../../components/Select.vue";
 
 const session = useSession();
 const { activeCompany, user } = storeToRefs(session);
+
+const { confirm } = useConfirm();
+const toast = useToast();
 
 const today = new Date().toISOString().slice(0, 10);
 const monthAgo = new Date(Date.now() - 30 * 86400000).toISOString().slice(0, 10);
@@ -319,9 +324,17 @@ async function openDetail(name) {
 
 async function cancelEntry() {
 	if (!detail.value?.name) return;
-	if (!window.confirm(t("Cancel this transfer?"))) return;
+	const ok = await confirm({
+		title: t("Cancel Transfer"),
+		body: t("Cancel this transfer?"),
+		confirmLabel: t("Cancel Transfer"),
+		cancelLabel: t("Close"),
+		danger: true,
+	});
+	if (!ok) return;
 	try {
 		await call("stabler.api.money.cancel_bank_entry", { name: detail.value.name });
+		toast.success(t("Transfer cancelled."));
 		await openDetail(detail.value.name);
 		await load();
 	} catch (err) {
@@ -331,9 +344,17 @@ async function cancelEntry() {
 
 async function deleteEntry() {
 	if (!detail.value?.name) return;
-	if (!window.confirm(t("Delete this draft transfer?"))) return;
+	const ok = await confirm({
+		title: t("Delete Draft Transfer"),
+		body: t("Delete this draft transfer?"),
+		confirmLabel: t("Delete"),
+		cancelLabel: t("Cancel"),
+		danger: true,
+	});
+	if (!ok) return;
 	try {
 		await call("stabler.api.money.delete_bank_entry", { name: detail.value.name });
+		toast.success(t("Draft transfer deleted."));
 		closeDetail();
 		await load();
 	} catch (err) {

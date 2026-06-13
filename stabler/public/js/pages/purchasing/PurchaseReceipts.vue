@@ -7,6 +7,8 @@ import { call } from "../../api/client.js";
 import { formatMoney } from "../../composables/money.js";
 import { formatDate } from "../../composables/date.js";
 import { t } from "../../composables/i18n.js";
+import { useConfirm } from "../../composables/useConfirm.js";
+import { useToast } from "../../composables/useToast.js";
 import MoneyInput from "../../components/MoneyInput.vue";
 import DateInput from "../../components/DateInput.vue";
 import EmptyState from "../../components/EmptyState.vue";
@@ -21,6 +23,9 @@ const session = useSession();
 const { activeCompany, user } = storeToRefs(session);
 const router = useRouter();
 const route = useRoute();
+
+const { confirm } = useConfirm();
+const toast = useToast();
 
 const today = new Date().toISOString().slice(0, 10);
 const monthAgo = new Date(Date.now() - 90 * 86400000).toISOString().slice(0, 10);
@@ -163,6 +168,7 @@ async function submitDoc() {
 	actionRunning.value = true;
 	try {
 		await call("stabler.api.purchasing.submit_purchase_receipt", { name: detail.value.name });
+		toast.success(t("Purchase Receipt submitted."));
 		await Promise.all([openDetail(detail.value.name), load()]);
 	} catch (err) {
 		actionError.value = err?.message || "Submit failed.";
@@ -173,11 +179,19 @@ async function submitDoc() {
 
 async function cancelDoc() {
 	if (!detail.value?.name) return;
-	if (!window.confirm(`Cancel purchase receipt ${detail.value.name}?`)) return;
+	const ok = await confirm({
+		title: t("Cancel Purchase Receipt"),
+		body: t("Cancel purchase receipt {0}?", [detail.value.name]),
+		confirmLabel: t("Cancel Document"),
+		cancelLabel: t("Close"),
+		danger: true,
+	});
+	if (!ok) return;
 	actionError.value = "";
 	actionRunning.value = true;
 	try {
 		await call("stabler.api.purchasing.cancel_purchase_receipt", { name: detail.value.name });
+		toast.success(t("Purchase Receipt cancelled."));
 		await Promise.all([openDetail(detail.value.name), load()]);
 	} catch (err) {
 		actionError.value = err?.message || "Cancel failed.";

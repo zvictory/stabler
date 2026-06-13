@@ -2,6 +2,7 @@
 import { computed, onMounted, ref } from "vue";
 import { call } from "../../api/client.js";
 import { t } from "../../composables/i18n.js";
+import { useConfirm } from "../../composables/useConfirm.js";
 import EmptyState from "../../components/EmptyState.vue";
 
 const loading = ref(false);
@@ -18,6 +19,8 @@ const allUsers = ref([]);
 const allowedUsers = ref([]);
 const clearingReservations = ref(false);
 const clearResult = ref(null);
+
+const { confirm } = useConfirm();
 
 const moduleOptions = computed(() => [
 	{ key: "money", label: t("Money") },
@@ -81,12 +84,14 @@ function closeDetail() {
 
 async function clearReservations() {
 	if (!selected.value) return;
-	const confirmed = window.confirm(
-		t("Cancel ALL open stock reservations for {0}? Reserved stock will be released.").replace(
+	const confirmed = await confirm({
+		title: t("Cancel reservations?"),
+		body: t("Cancel ALL open stock reservations for {0}? Reserved stock will be released.").replace(
 			"{0}",
 			selected.value.name,
 		),
-	);
+		danger: true,
+	});
 	if (!confirmed) return;
 	clearingReservations.value = true;
 	drawerError.value = "";

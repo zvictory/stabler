@@ -1,5 +1,6 @@
 <script setup>
 import { t } from "../../composables/i18n.js";
+import { useConfirm } from "../../composables/useConfirm.js";
 
 const props = defineProps({
 	lanes: { type: Array, default: () => [] },
@@ -28,8 +29,15 @@ function addLane() {
 	updateLanes([...props.lanes, newLane]);
 }
 
-function removeLane(lane) {
-	if (!confirm(`${t("Remove Lane")} "${lane.label}"?`)) return;
+const { confirm } = useConfirm();
+
+async function removeLane(lane) {
+	const ok = await confirm({
+		title: t("Remove Lane?"),
+		body: `${t("Remove Lane")} "${lane.label}"?`,
+		danger: true,
+	});
+	if (!ok) return;
 	emit("remove-lane-nodes", lane.id);
 	updateLanes(props.lanes.filter((l) => l.id !== lane.id).map((l, i) => ({ ...l, order: i })));
 }

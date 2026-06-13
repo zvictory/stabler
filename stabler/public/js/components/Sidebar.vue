@@ -5,7 +5,10 @@ import { useSession } from "../stores/session.js";
 import { orgApi } from "../api/organization.js";
 import { call } from "../api/client.js";
 import { t } from "../composables/i18n.js";
+import { useToast } from "../composables/useToast.js";
 import Select from "./Select.vue";
+
+const toast = useToast();
 
 async function logout() {
 	await call("logout");
@@ -88,7 +91,7 @@ async function setLanguage(code) {
 	try {
 		await orgApi.updateLanguage(code);
 	} catch (e) {
-		alert(e?.message || "Failed to switch language.");
+		toast.error(e?.message || t("Failed to switch language."));
 		return;
 	}
 	// Bundle for the new language is fetched on a full reload (controller

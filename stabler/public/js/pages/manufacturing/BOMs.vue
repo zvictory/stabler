@@ -5,12 +5,17 @@ import { useSession } from "../../stores/session.js";
 import { call } from "../../api/client.js";
 import { formatMoney } from "../../composables/money.js";
 import { t } from "../../composables/i18n.js";
+import { useConfirm } from "../../composables/useConfirm.js";
+import { useToast } from "../../composables/useToast.js";
 import MoneyInput from "../../components/MoneyInput.vue";
 import EmptyState from "../../components/EmptyState.vue";
 import Select from "../../components/Select.vue";
 
 const session = useSession();
 const { activeCompany, user } = storeToRefs(session);
+
+const { confirm } = useConfirm();
+const toast = useToast();
 
 const loading = ref(false);
 const error = ref("");
@@ -77,24 +82,35 @@ function closeDetail() {
 }
 
 async function submitBom(name) {
-	if (!confirm(t("Submit this BOM? You won't be able to edit it after."))) return;
+	const ok = await confirm({
+		title: t("Submit BOM?"),
+		body: t("Submit this BOM? You won't be able to edit it after."),
+	});
+	if (!ok) return;
 	try {
 		await call("stabler.api.manufacturing.submit_bom", { name });
+		toast.success(t("BOM submitted successfully."));
 		await openDetail(name);
 		await load();
 	} catch (err) {
-		alert(err?.message || "Submit failed.");
+		toast.error(err?.message || t("Submit failed."));
 	}
 }
 
 async function cancelBom(name) {
-	if (!confirm(t("Cancel this submitted BOM?"))) return;
+	const ok = await confirm({
+		title: t("Cancel BOM?"),
+		body: t("Cancel this submitted BOM?"),
+		danger: true,
+	});
+	if (!ok) return;
 	try {
 		await call("stabler.api.manufacturing.cancel_bom", { name });
+		toast.success(t("BOM cancelled successfully."));
 		await openDetail(name);
 		await load();
 	} catch (err) {
-		alert(err?.message || "Cancel failed.");
+		toast.error(err?.message || t("Cancel failed."));
 	}
 }
 

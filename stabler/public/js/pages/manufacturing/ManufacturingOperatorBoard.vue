@@ -4,11 +4,14 @@ import { storeToRefs } from "pinia";
 import { useSession } from "../../stores/session.js";
 import { call } from "../../api/client.js";
 import { t } from "../../composables/i18n.js";
+import { useConfirm } from "../../composables/useConfirm.js";
 import { formatDate } from "../../composables/date.js";
 import EmptyState from "../../components/EmptyState.vue";
 
 const session = useSession();
 const { activeCompany } = storeToRefs(session);
+
+const { confirm } = useConfirm();
 
 // ----- Auth State -----
 const isLoggedIn = computed(() => session.user && session.user.id && session.user.id !== "Guest");
@@ -234,7 +237,13 @@ function remainingQty(r) {
 
 // ----- Action triggers -----
 async function start(row) {
-	if (!confirm(t("Start Work Order and transfer raw materials?"))) return;
+	const ok = await confirm({
+		title: t("Start Work Order"),
+		body: t("Start Work Order and transfer raw materials?"),
+		confirmLabel: t("Start"),
+		cancelLabel: t("Cancel"),
+	});
+	if (!ok) return;
 	busyName.value = row.name;
 	actionError.value = "";
 	resetIdleTimer();
@@ -294,7 +303,13 @@ async function confirmFinish() {
 }
 
 async function pause(row) {
-	if (!confirm(t("Pause this Work Order?"))) return;
+	const ok = await confirm({
+		title: t("Pause Work Order"),
+		body: t("Pause this Work Order?"),
+		confirmLabel: t("Pause"),
+		cancelLabel: t("Cancel"),
+	});
+	if (!ok) return;
 	busyName.value = row.name;
 	actionError.value = "";
 	resetIdleTimer();

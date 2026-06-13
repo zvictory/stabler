@@ -6,12 +6,15 @@ import { call } from "../../api/client.js";
 import { formatDate, formatDateTime } from "../../composables/date.js";
 import { formatMoney } from "../../composables/money.js";
 import { t } from "../../composables/i18n.js";
+import { useConfirm } from "../../composables/useConfirm.js";
 import EmptyState from "../../components/EmptyState.vue";
 import MoneyInput from "../../components/MoneyInput.vue";
 import DateInput from "../../components/DateInput.vue";
 
 const session = useSession();
 const { activeCompany, user } = storeToRefs(session);
+
+const { confirm } = useConfirm();
 
 const currency = computed(
 	() =>
@@ -246,7 +249,12 @@ async function updateColColor(status, colorName) {
 }
 
 async function deleteCol(status) {
-	if (!confirm(`${t("Remove column")} "${status.name}"?`)) return;
+	const ok = await confirm({
+		title: t("Remove column?"),
+		body: `${t("Remove column")} "${status.name}"?`,
+		danger: true,
+	});
+	if (!ok) return;
 	colMenuOpen.value = "";
 	try {
 		await call("stabler.api.crm.delete_deal_status", { name: status.name });
@@ -393,7 +401,12 @@ async function submitForm() {
 
 async function deleteDeal() {
 	if (!editingDeal.value) return;
-	if (!confirm(t("Delete this deal?"))) return;
+	const ok = await confirm({
+		title: t("Delete deal?"),
+		body: t("Delete this deal?"),
+		danger: true,
+	});
+	if (!ok) return;
 	deleting.value = true;
 	try {
 		await call("stabler.api.crm.delete_deal", { name: editingDeal.value.name });

@@ -5,10 +5,13 @@ import { useSession } from "../../stores/session.js";
 import { call } from "../../api/client.js";
 import { formatDate, formatDateTime } from "../../composables/date.js";
 import { t } from "../../composables/i18n.js";
+import { useConfirm } from "../../composables/useConfirm.js";
 import EmptyState from "../../components/EmptyState.vue";
 
 const session = useSession();
 const { activeCompany } = storeToRefs(session);
+
+const { confirm } = useConfirm();
 
 // ---------------------------------------------------------------------------
 // Status color mapping: CRM color strings → Tabler badge classes
@@ -158,7 +161,12 @@ async function submitForm() {
 
 async function deleteLead() {
 	if (!editingLead.value) return;
-	if (!confirm(t("Delete this lead?"))) return;
+	const ok = await confirm({
+		title: t("Delete lead?"),
+		body: t("Delete this lead?"),
+		danger: true,
+	});
+	if (!ok) return;
 	deleting.value = true;
 	try {
 		await call("stabler.api.crm.delete_lead", { name: editingLead.value.name });

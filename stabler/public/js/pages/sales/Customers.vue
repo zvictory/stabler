@@ -6,6 +6,8 @@ import { call } from "../../api/client.js";
 import { formatMoney, balanceState } from "../../composables/money.js";
 import { formatDate, formatDateTime } from "../../composables/date.js";
 import { t } from "../../composables/i18n.js";
+import { useConfirm } from "../../composables/useConfirm.js";
+import { useToast } from "../../composables/useToast.js";
 import EmptyState from "../../components/EmptyState.vue";
 import DateInput from "../../components/DateInput.vue";
 import Select from "../../components/Select.vue";
@@ -17,6 +19,9 @@ import { getStatusBadgeClass } from "../../composables/status.js";
 
 const session = useSession();
 const { activeCompany, user } = storeToRefs(session);
+
+const { confirm } = useConfirm();
+const toast = useToast();
 
 const loading = ref(false);
 const error = ref("");
@@ -454,11 +459,19 @@ async function submitCreate() {
 
 async function deleteCustomer() {
 	if (!editMode.value || !editingName.value) return;
-	if (!window.confirm(t("Delete customer") + " " + editingName.value + "? " + t("This cannot be undone."))) return;
+	const ok = await confirm({
+		title: t("Delete Customer"),
+		body: t("Delete customer") + " " + editingName.value + "? " + t("This cannot be undone."),
+		confirmLabel: t("Delete"),
+		cancelLabel: t("Cancel"),
+		danger: true,
+	});
+	if (!ok) return;
 	deleting.value = true;
 	submitError.value = "";
 	try {
 		await call("stabler.api.sales.delete_customer", { name: editingName.value });
+		toast.success(t("Customer deleted."));
 		createOpen.value = false;
 		if (selected.value?.name === editingName.value) {
 			selected.value = null;

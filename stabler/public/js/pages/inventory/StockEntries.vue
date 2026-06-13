@@ -14,6 +14,7 @@ import { call } from "../../api/client.js";
 import { formatMoney } from "../../composables/money.js";
 import { formatDateTime } from "../../composables/date.js";
 import { t } from "../../composables/i18n.js";
+import { useConfirm } from "../../composables/useConfirm.js";
 import MoneyInput from "../../components/MoneyInput.vue";
 import DateInput from "../../components/DateInput.vue";
 import Select from "../../components/Select.vue";
@@ -21,6 +22,8 @@ import EmptyState from "../../components/EmptyState.vue";
 
 const session = useSession();
 const { activeCompany, user } = storeToRefs(session);
+
+const { confirm } = useConfirm();
 
 const today = new Date().toISOString().slice(0, 10);
 
@@ -109,7 +112,12 @@ async function submitDoc() {
 }
 async function cancelDoc() {
 	if (!detail.value?.name || detail.value.docstatus !== 1) return;
-	if (!window.confirm(t("Cancel {name}? This will reverse the stock movements.").replace("{name}", detail.value.name))) return;
+	const ok = await confirm({
+		title: t("Cancel stock entry?"),
+		body: t("Cancel {name}? This will reverse the stock movements.").replace("{name}", detail.value.name),
+		danger: true,
+	});
+	if (!ok) return;
 	actionError.value = "";
 	actionRunning.value = true;
 	try {
