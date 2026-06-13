@@ -39,11 +39,6 @@ const currency = computed(
 		""
 );
 
-const currencySymbol = computed(() => {
-	const code = form.value.currency || currency.value;
-	return (currencies.value.find((c) => c.name === code) || {}).symbol || "";
-});
-
 function defaultWarehouseName() {
 	const match = warehouses.value.find(
 		(w) => (w.warehouse_name || "").trim().toLowerCase() === "tayyor mahsulot"
@@ -94,7 +89,7 @@ function blankLine() {
 		rateTouched: false,
 		discount_percentage: 0,
 		discount_amount: 0,
-		warehouse: form.value?.set_warehouse || defaultWarehouseName() || "",
+		warehouse: defaultWarehouseName() || "",
 		availability: null,
 		availabilityLoading: false,
 		reserved_qty: 0,
@@ -214,8 +209,12 @@ const {
 	backPath: "/sales/orders",
 });
 
-// These computeds reference form.value and must be declared AFTER useDocumentForm
-// so that 'form' is initialized before these getters could ever be evaluated.
+// All computeds that close over 'form' must live here, AFTER useDocumentForm
+const currencySymbol = computed(() => {
+	const code = form.value?.currency || currency.value;
+	return (currencies.value.find((c) => c.name === code) || {}).symbol || "";
+});
+
 const isForeignCurrency = computed(() => {
 	const txn = form.value?.currency || "";
 	const base = currency.value;
@@ -609,6 +608,12 @@ function pipelineStage(d) {
 	if (delivered > 0 || billed > 0) return 3;
 	return 2;
 }
+
+const canCreateInvoice = computed(() => {
+	if (isCreate.value || docstatus.value !== 1) return false;
+	const billed = Number(form.value?.per_billed || 0);
+	return billed < 100;
+});
 
 const paymentBadge = computed(() => {
 	const sis = (form.value?.sales_invoices || []).filter((si) => Number(si.docstatus) === 1);
