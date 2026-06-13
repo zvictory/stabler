@@ -55,6 +55,57 @@ const showBankAmount = computed(
 		bankCurrency.value !== partyAccountCurrency.value
 );
 
+const cbuRate = ref(1.0);
+const rateDate = ref("");
+
+const enteredRate = computed(() => {
+	const amt = Number(form.value.amount || 0);
+	const bankAmt = Number(form.value.bank_amount || 0);
+	if (!amt || !bankAmt) return 0;
+	return bankAmt / amt;
+});
+
+const rateDeviation = computed(() => {
+	if (!cbuRate.value || !enteredRate.value) return 0;
+	return Math.abs(enteredRate.value - cbuRate.value) / cbuRate.value;
+});
+const hasWarning = computed(() => showBankAmount.value && rateDeviation.value > 0.05);
+
+watch(
+	[() => form.value.bank_account, () => form.value.posting_date, partyAccountCurrency],
+	async ([newBank, newDate, partyCcy]) => {
+		if (!newBank || !partyCcy) return;
+		const bankAcc = bankAccounts.value.find((a) => a.name === newBank);
+		if (!bankAcc) return;
+		const bankCcy = bankAcc.account_currency;
+
+		if (bankCcy === partyCcy) {
+			cbuRate.value = 1.0;
+			rateDate.value = "";
+			return;
+		}
+
+		try {
+			let foreign = partyCcy;
+			let local = bankCcy;
+			if (partyCcy === "UZS" || bankCcy === "UZS") {
+				foreign = partyCcy !== "UZS" ? partyCcy : bankCcy;
+				local = "UZS";
+			}
+			const rate = await call("stabler.api.money.get_exchange_rate_for_currencies", {
+				from_currency: foreign,
+				to_currency: local,
+				posting_date: newDate || today,
+			});
+			cbuRate.value = Number(rate || 1.0);
+			rateDate.value = newDate || today;
+		} catch (err) {
+			cbuRate.value = 1.0;
+			rateDate.value = "";
+		}
+	}
+);
+
 function blankForm() {
 	return {
 		posting_date: today,
@@ -119,6 +170,7 @@ function toPayload(m) {
 			paid_to: isReceive ? m.bank_account : partyAccount.value,
 			paid_amount: isReceive ? amt : bankAmt,
 			received_amount: isReceive ? bankAmt : amt,
+			exchange_rate: showBankAmount.value ? Number(enteredRate.value || 1.0) : undefined,
 			mode_of_payment: m.mode_of_payment || undefined,
 			reference_no: m.reference_no || undefined,
 			reference_date: m.reference_date || undefined,
@@ -432,8 +484,15 @@ const typeBadge = (t) => {
 					<div v-else class="form-control-plaintext font-monospace py-1">{{ formatMoney(form.bank_amount, bankCurrency, user.language) }}</div>
 					<div v-if="editable && isCreate && form.amount && form.bank_amount" class="form-hint text-secondary">
 						{{ t("Rate:") }}
-						{{ (Number(form.bank_amount) / Number(form.amount)).toFixed(4) }}
+						{{ enteredRate.toFixed(4) }}
 						{{ bankCurrency }}/{{ partyAccountCurrency }}
+						<span v-if="rateDate" class="ms-1">
+							({{ t("CBU:") }} {{ cbuRate.toFixed(4) }})
+						</span>
+					</div>
+					<div v-if="hasWarning" class="alert alert-warning py-1 px-2 mt-1 small">
+						<i class="ti ti-alert-triangle me-1"></i>
+						{{ t("Entered rate deviates by {pct}% from CBU rate.", { pct: (rateDeviation * 100).toFixed(1) }) }}
 					</div>
 				</div>
 			</template>

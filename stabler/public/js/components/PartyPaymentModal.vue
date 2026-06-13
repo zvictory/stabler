@@ -83,6 +83,116 @@ function buildRefs(invoices, amount) {
 	return refs;
 }
 
+const selectedBankAccount = computed(() => {
+	if (!defaults.value || !form.value.bank_account) return null;
+	return defaults.value.cash_bank_accounts.find((a) => a.name === form.value.bank_account);
+});
+
+const needsExchange = computed(() => {
+	if (!defaults.value || !selectedBankAccount.value) return false;
+	return defaults.value.party_account_currency !== selectedBankAccount.value.account_currency;
+});
+
+const exchangeLabel = computed(() => {
+	if (!defaults.value || !selectedBankAccount.value) return "";
+	const ccy1 = defaults.value.party_account_currency;
+	const ccy2 = selectedBankAccount.value.account_currency;
+	if (ccy1 === "USD" || ccy2 === "USD") return "1 USD";
+	return `1 ${ccy1}`;
+});
+
+const exchangeRate = ref(1.0);
+const cbuRate = ref(1.0);
+const rateDate = ref("");
+const bankAmount = ref(0);
+
+const rateDeviation = computed(() => {
+	if (!cbuRate.value || !exchangeRate.value) return 0;
+	return Math.abs(exchangeRate.value - cbuRate.value) / cbuRate.value;
+});
+const hasWarning = computed(() => rateDeviation.value > 0.05);
+
+watch(
+	[() => form.value.bank_account, () => form.value.posting_date],
+	async ([newBank, newDate]) => {
+		if (!defaults.value || !newBank) return;
+		const bankAcc = defaults.value.cash_bank_accounts.find((a) => a.name === newBank);
+		if (!bankAcc) return;
+		const bankCcy = bankAcc.account_currency;
+		const partyCcy = defaults.value.party_account_currency;
+
+		if (bankCcy === partyCcy) {
+			exchangeRate.value = 1.0;
+			cbuRate.value = 1.0;
+			rateDate.value = "";
+			return;
+		}
+
+		if (newBank === defaults.value.suggested_cash_bank_account && newDate === today) {
+			exchangeRate.value = Number(defaults.value.effective_rate || 1.0);
+			cbuRate.value = Number(defaults.value.effective_rate || 1.0);
+			rateDate.value = defaults.value.rate_date || "";
+			bankAmount.value = Math.round(Number(form.value.paid_amount || 0) * exchangeRate.value * 100) / 100;
+			return;
+		}
+
+		try {
+			let foreign = partyCcy;
+			let local = bankCcy;
+			if (partyCcy === "UZS" || bankCcy === "UZS") {
+				foreign = partyCcy !== "UZS" ? partyCcy : bankCcy;
+				local = "UZS";
+			}
+			const rate = await call("stabler.api.money.get_exchange_rate_for_currencies", {
+				from_currency: foreign,
+				to_currency: local,
+				posting_date: newDate || today,
+			});
+			exchangeRate.value = Number(rate || 1.0);
+			cbuRate.value = Number(rate || 1.0);
+			rateDate.value = newDate || today;
+			bankAmount.value = Math.round(Number(form.value.paid_amount || 0) * exchangeRate.value * 100) / 100;
+		} catch (err) {
+			exchangeRate.value = 1.0;
+			cbuRate.value = 1.0;
+			rateDate.value = "";
+		}
+	}
+);
+
+let isUpdatingPaidAmount = false;
+let isUpdatingBankAmount = false;
+
+watch(
+	() => form.value.paid_amount,
+	(val) => {
+		if (!needsExchange.value || isUpdatingBankAmount) return;
+		isUpdatingPaidAmount = true;
+		bankAmount.value = Math.round(Number(val || 0) * exchangeRate.value * 100) / 100;
+		isUpdatingPaidAmount = false;
+	}
+);
+
+watch(
+	() => bankAmount.value,
+	(val) => {
+		if (!needsExchange.value || isUpdatingPaidAmount) return;
+		isUpdatingBankAmount = true;
+		form.value.paid_amount = Math.round((Number(val || 0) / exchangeRate.value) * 100) / 100;
+		isUpdatingBankAmount = false;
+	}
+);
+
+watch(
+	() => exchangeRate.value,
+	(rate) => {
+		if (!needsExchange.value) return;
+		isUpdatingPaidAmount = true;
+		bankAmount.value = Math.round(Number(form.value.paid_amount || 0) * rate * 100) / 100;
+		isUpdatingPaidAmount = false;
+	}
+);
+
 watch(
 	() => props.open,
 	async (now) => {
@@ -109,6 +219,17 @@ watch(
 				reference_no: "",
 				reference_date: "",
 			};
+			if (d.needs_exchange) {
+				exchangeRate.value = Number(d.effective_rate || 1.0);
+				cbuRate.value = Number(d.effective_rate || 1.0);
+				rateDate.value = d.rate_date || "";
+				bankAmount.value = Math.round(Number(d.total_outstanding || 0) * exchangeRate.value * 100) / 100;
+			} else {
+				exchangeRate.value = 1.0;
+				cbuRate.value = 1.0;
+				rateDate.value = "";
+				bankAmount.value = 0;
+			}
 		} catch (err) {
 			error.value = err?.message || t("Failed to load payment defaults.");
 		} finally {
@@ -137,14 +258,16 @@ async function submit() {
 	}
 
 	const partyAccount = defaults.value?.party_account || "";
-	// For Receive: party owes us → paid_from = AR account, paid_to = bank/cash.
-	// For Pay:     we owe party → paid_from = bank/cash,   paid_to = AP account.
 	const paidFrom = isReceive.value ? partyAccount : form.value.bank_account;
 	const paidTo = isReceive.value ? form.value.bank_account : partyAccount;
 
 	const references = buildRefs(defaults.value?.outstanding_invoices || [], amount);
 
 	submitting.value = true;
+
+	const payloadPaidAmount = isReceive.value ? amount : Number(bankAmount.value || 0);
+	const payloadReceivedAmount = isReceive.value ? Number(bankAmount.value || 0) : amount;
+
 	try {
 		const created = await call("stabler.api.money.create_payment_entry", {
 			company: props.company,
@@ -154,13 +277,14 @@ async function submit() {
 			party: props.party,
 			paid_from: paidFrom,
 			paid_to: paidTo,
-			paid_amount: amount,
+			paid_amount: payloadPaidAmount,
+			received_amount: needsExchange.value ? payloadReceivedAmount : undefined,
+			exchange_rate: needsExchange.value ? Number(exchangeRate.value || 1.0) : undefined,
 			mode_of_payment: form.value.mode_of_payment || undefined,
 			reference_no: form.value.reference_no || undefined,
 			reference_date: form.value.reference_date || undefined,
 			references: references.length ? references : undefined,
 		});
-		// Submit the Draft immediately (server rolls back on failure — no orphan Drafts).
 		await call("stabler.api.money.submit_payment_entry", { name: created.name });
 		emit("paid", created.name);
 	} catch (err) {
@@ -183,6 +307,7 @@ async function submit() {
 					<button type="button" class="btn-close" :disabled="submitting" @click="close"></button>
 				</div>
 				<div class="modal-body">
+					<div class="modal-status bg-primary"></div>
 					<div v-if="loading" class="text-center py-4">
 						<div class="spinner-border text-primary"></div>
 					</div>
@@ -201,7 +326,6 @@ async function submit() {
 							</div>
 						</div>
 
-						<!-- Outstanding invoices summary (collapsed list) -->
 						<details v-if="defaults.outstanding_invoices?.length" class="mb-3">
 							<summary class="small text-secondary" style="cursor: pointer">
 								{{ t("{n} outstanding invoice(s)", { n: defaults.outstanding_invoices.length }) }}
@@ -277,6 +401,43 @@ async function submit() {
 									:disabled="submitting"
 								/>
 							</div>
+							
+							<div v-if="needsExchange" class="col-12 mt-2 pt-2 border-top">
+								<div class="row g-2 align-items-center">
+									<div class="col-sm-6">
+										<label class="form-label required">
+											{{ t("Exchange rate ({0})", [exchangeLabel]) }}
+										</label>
+										<MoneyInput
+											v-model="exchangeRate"
+											:disabled="submitting"
+											size="sm"
+										/>
+										<div v-if="rateDate" class="text-secondary small mt-1">
+											{{ t("CBU rate: {rate} ({date})", { rate: cbuRate, date: rateDate }) }}
+										</div>
+									</div>
+									<div class="col-sm-6">
+										<label class="form-label required">
+											{{ t("Amount in {0}", [selectedBankAccount.account_currency]) }}
+										</label>
+										<MoneyInput
+											v-model="bankAmount"
+											:currency="selectedBankAccount.account_currency"
+											:language="user.language"
+											:disabled="submitting"
+											size="sm"
+										/>
+									</div>
+									<div v-if="hasWarning" class="col-12 mt-1">
+										<div class="alert alert-warning py-1 px-2 m-0 small">
+											<i class="ti ti-alert-triangle me-1"></i>
+											{{ t("Entered rate deviates by {pct}% from CBU rate.", { pct: (rateDeviation * 100).toFixed(1) }) }}
+										</div>
+									</div>
+								</div>
+							</div>
+
 							<div class="col-md-4 offset-md-8">
 								<label class="form-label">{{ t("Reference date") }}</label>
 								<DateInput v-model="form.reference_date" :disabled="submitting" />

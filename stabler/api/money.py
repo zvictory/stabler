@@ -725,14 +725,92 @@ def party_payment_defaults(company: str, party_type: str, party: str) -> dict:
 	)
 
 	cash_bank = list_cash_bank_accounts(company)
+	suggested = cash_bank[0]["name"] if cash_bank else None
+
+	company_currency = frappe.get_cached_value("Company", company, "default_currency") or "UZS"
+	paying_account_currency = company_currency
+	if suggested:
+		paying_account_currency = frappe.db.get_value("Account", suggested, "account_currency") or company_currency
+
+	needs_exchange = party_account_currency != paying_account_currency
+
+	effective_rate = 1.0
+	rate_date = today()
+	if needs_exchange:
+		if "UZS" in (party_account_currency, paying_account_currency):
+			foreign = party_account_currency if party_account_currency != "UZS" else paying_account_currency
+			local = "UZS"
+		else:
+			foreign = party_account_currency
+			local = paying_account_currency
+
+		cbu = frappe.get_all(
+			"Currency Exchange",
+			filters={"from_currency": foreign, "to_currency": local, "date": ("<= ", today())},
+			fields=["exchange_rate", "date"],
+			order_by="date desc",
+			limit=1
+		)
+		if cbu:
+			effective_rate = flt(cbu[0].exchange_rate)
+			rate_date = str(cbu[0].date)
+
 	return {
 		"party_account": party_account,
 		"party_account_currency": party_account_currency,
 		"outstanding_invoices": invoices,
 		"total_outstanding": sum(r["outstanding_amount"] for r in invoices),
 		"cash_bank_accounts": cash_bank,
-		"suggested_cash_bank_account": cash_bank[0]["name"] if cash_bank else None,
+		"suggested_cash_bank_account": suggested,
+		"paying_account_currency": paying_account_currency,
+		"needs_exchange": needs_exchange,
+		"effective_rate": effective_rate,
+		"rate_date": rate_date,
 	}
+
+
+def setup_payment_entry_exchange_rates(doc, exchange_rate: float | str | None = None) -> None:
+	company_currency = frappe.get_cached_value("Company", doc.company, "default_currency") or "UZS"
+	paid_from_currency = frappe.db.get_value("Account", doc.paid_from, "account_currency") or company_currency
+	paid_to_currency = frappe.db.get_value("Account", doc.paid_to, "account_currency") or company_currency
+
+	if paid_from_currency != paid_to_currency:
+		# Cross-currency payment! Verify exchange gain/loss account is set
+		gain_loss_account = frappe.db.get_value("Company", doc.company, "exchange_gain_loss_account")
+		if not gain_loss_account:
+			frappe.throw(
+				_("Default Exchange Gain/Loss Account is missing for company {0}. "
+				  "Please configure it in Company settings before posting cross-currency transactions.").format(doc.company),
+				frappe.ValidationError
+			)
+
+		# Apply exchange rate to source/target exchange rate fields
+		if paid_from_currency == company_currency:
+			doc.source_exchange_rate = 1.0
+		if paid_to_currency == company_currency:
+			doc.target_exchange_rate = 1.0
+
+		if paid_from_currency != company_currency:
+			if exchange_rate and flt(exchange_rate) > 0:
+				if paid_from_currency == "UZS" and company_currency == "USD":
+					doc.source_exchange_rate = 1.0 / flt(exchange_rate)
+				elif paid_from_currency == "USD" and company_currency == "UZS":
+					doc.source_exchange_rate = flt(exchange_rate)
+				else:
+					doc.source_exchange_rate = flt(exchange_rate)
+			else:
+				doc.source_exchange_rate = flt(get_exchange_rate_for_currencies(paid_from_currency, company_currency, doc.posting_date))
+
+		if paid_to_currency != company_currency:
+			if exchange_rate and flt(exchange_rate) > 0:
+				if paid_to_currency == "UZS" and company_currency == "USD":
+					doc.target_exchange_rate = 1.0 / flt(exchange_rate)
+				elif paid_to_currency == "USD" and company_currency == "UZS":
+					doc.target_exchange_rate = flt(exchange_rate)
+				else:
+					doc.target_exchange_rate = flt(exchange_rate)
+			else:
+				doc.target_exchange_rate = flt(get_exchange_rate_for_currencies(paid_to_currency, company_currency, doc.posting_date))
 
 
 @frappe.whitelist()
@@ -750,6 +828,7 @@ def create_payment_entry(
 	reference_no: str | None = None,
 	reference_date: str | None = None,
 	references: list | str | None = None,
+	exchange_rate: float | str | None = None,
 ) -> dict:
 	"""Create a Payment Entry as Draft (docstatus=0).
 
@@ -778,10 +857,53 @@ def create_payment_entry(
 		if row.is_group:
 			frappe.throw(f"{acct_field}: '{acct}' is a group account.")
 
+	company_currency = frappe.get_cached_value("Company", company, "default_currency") or "UZS"
+	paid_from_currency = frappe.db.get_value("Account", paid_from, "account_currency") or company_currency
+	paid_to_currency = frappe.db.get_value("Account", paid_to, "account_currency") or company_currency
+
 	paid = flt(paid_amount)
 	if paid <= 0:
 		frappe.throw("Paid amount must be greater than zero.")
-	recv = flt(received_amount) if received_amount not in (None, "") else paid
+	recv = flt(received_amount) if received_amount not in (None, "") else 0.0
+
+	if paid_from_currency != paid_to_currency:
+		if exchange_rate and flt(exchange_rate) > 0:
+			rate = flt(exchange_rate)
+			if paid > 0 and recv == 0:
+				if payment_type == "Receive":
+					if paid_from_currency == "USD" and paid_to_currency == "UZS":
+						recv = paid * rate
+					elif paid_from_currency == "UZS" and paid_to_currency == "USD":
+						recv = paid / rate
+					else:
+						recv = paid * rate
+				else:
+					if paid_from_currency == "UZS" and paid_to_currency == "USD":
+						recv = paid / rate
+					elif paid_from_currency == "USD" and paid_to_currency == "UZS":
+						recv = paid * rate
+					else:
+						recv = paid / rate
+			elif recv > 0 and paid == 0:
+				if payment_type == "Receive":
+					if paid_from_currency == "USD" and paid_to_currency == "UZS":
+						paid = recv / rate
+					elif paid_from_currency == "UZS" and paid_to_currency == "USD":
+						paid = recv * rate
+					else:
+						paid = recv / rate
+				else:
+					if paid_from_currency == "UZS" and paid_to_currency == "USD":
+						paid = recv * rate
+					elif paid_from_currency == "USD" and paid_to_currency == "UZS":
+						paid = recv / rate
+					else:
+						paid = recv * rate
+
+		if recv == 0:
+			recv = paid
+	else:
+		recv = paid if recv == 0 else recv
 
 	doc = frappe.new_doc("Payment Entry")
 	doc.company = company
@@ -818,6 +940,7 @@ def create_payment_entry(
 					"allocated_amount": flt(r.get("allocated_amount", 0)),
 				},
 			)
+	setup_payment_entry_exchange_rates(doc, exchange_rate)
 	doc.setup_party_account_field()
 	doc.set_missing_values()
 	doc.insert(ignore_permissions=False)
@@ -938,6 +1061,35 @@ def payment_defaults_for_invoice(company: str, invoice_type: str, invoice_name: 
 	cash_bank = list_cash_bank_accounts(company, limit=100)
 	suggested = cash_bank[0]["name"] if cash_bank else None
 
+	party_account_currency = doc.currency
+	company_currency = frappe.get_cached_value("Company", company, "default_currency") or "UZS"
+	paying_account_currency = company_currency
+	if suggested:
+		paying_account_currency = frappe.db.get_value("Account", suggested, "account_currency") or company_currency
+
+	needs_exchange = party_account_currency != paying_account_currency
+
+	effective_rate = 1.0
+	rate_date = today()
+	if needs_exchange:
+		if "UZS" in (party_account_currency, paying_account_currency):
+			foreign = party_account_currency if party_account_currency != "UZS" else paying_account_currency
+			local = "UZS"
+		else:
+			foreign = party_account_currency
+			local = paying_account_currency
+
+		cbu = frappe.get_all(
+			"Currency Exchange",
+			filters={"from_currency": foreign, "to_currency": local, "date": ("<= ", today())},
+			fields=["exchange_rate", "date"],
+			order_by="date desc",
+			limit=1
+		)
+		if cbu:
+			effective_rate = flt(cbu[0].exchange_rate)
+			rate_date = str(cbu[0].date)
+
 	return {
 		"invoice_type": invoice_type,
 		"invoice_name": invoice_name,
@@ -954,6 +1106,11 @@ def payment_defaults_for_invoice(company: str, invoice_type: str, invoice_name: 
 		"grand_total": flt(doc.grand_total),
 		"cash_bank_accounts": cash_bank,
 		"suggested_cash_bank_account": suggested,
+		"party_account_currency": party_account_currency,
+		"paying_account_currency": paying_account_currency,
+		"needs_exchange": needs_exchange,
+		"effective_rate": effective_rate,
+		"rate_date": rate_date,
 	}
 
 
@@ -971,16 +1128,73 @@ def create_payment_for_invoice(
 	allocated_amount: float | str | None = None,
 	submit: int = 1,
 	modified: str | None = None,
+	received_amount: float | str | None = None,
+	exchange_rate: float | str | None = None,
 ):
 	"""Create a Payment Entry allocated to a single invoice, optionally submit it in the same call."""
 	check_concurrency(invoice_type, invoice_name, modified)
 	defaults = payment_defaults_for_invoice(company, invoice_type, invoice_name)
 	posting_date = posting_date or today()
+
+	if defaults["payment_type"] == "Receive":
+		paid_from = defaults["party_account"]
+		paid_to = bank_account
+	else:
+		paid_from = bank_account
+		paid_to = defaults["party_account"]
+
+	company_currency = frappe.get_cached_value("Company", company, "default_currency") or "UZS"
+	paid_from_currency = frappe.db.get_value("Account", paid_from, "account_currency") or company_currency
+	paid_to_currency = frappe.db.get_value("Account", paid_to, "account_currency") or company_currency
+
 	paid = flt(paid_amount)
 	if paid <= 0:
 		frappe.throw("Paid amount must be greater than zero.")
+	recv = flt(received_amount) if received_amount not in (None, "") else 0.0
+
+	if paid_from_currency != paid_to_currency:
+		if exchange_rate and flt(exchange_rate) > 0:
+			rate = flt(exchange_rate)
+			if paid > 0 and recv == 0:
+				if defaults["payment_type"] == "Receive":
+					if paid_from_currency == "USD" and paid_to_currency == "UZS":
+						recv = paid * rate
+					elif paid_from_currency == "UZS" and paid_to_currency == "USD":
+						recv = paid / rate
+					else:
+						recv = paid * rate
+				else:
+					if paid_from_currency == "UZS" and paid_to_currency == "USD":
+						recv = paid / rate
+					elif paid_from_currency == "USD" and paid_to_currency == "UZS":
+						recv = paid * rate
+					else:
+						recv = paid / rate
+			elif recv > 0 and paid == 0:
+				if defaults["payment_type"] == "Receive":
+					if paid_from_currency == "USD" and paid_to_currency == "UZS":
+						paid = recv / rate
+					elif paid_from_currency == "UZS" and paid_to_currency == "USD":
+						paid = recv * rate
+					else:
+						paid = recv / rate
+				else:
+					if paid_from_currency == "UZS" and paid_to_currency == "USD":
+						paid = recv * rate
+					elif paid_from_currency == "USD" and paid_to_currency == "UZS":
+						paid = recv / rate
+					else:
+						paid = recv * rate
+
+		if recv == 0:
+			recv = paid
+	else:
+		recv = paid if recv == 0 else recv
+
+	party_amount = paid if defaults["payment_type"] == "Receive" else recv
+
 	can_allocate = bool(defaults.get("can_allocate_to_invoice"))
-	allocated = flt(allocated_amount) if allocated_amount not in (None, "") else paid
+	allocated = flt(allocated_amount) if allocated_amount not in (None, "") else party_amount
 	if allocated <= 0 or allocated > flt(defaults["outstanding_amount"]):
 		frappe.throw(
 			f"Allocated amount must be between 0 and outstanding ({defaults['outstanding_amount']:.2f})."
@@ -992,14 +1206,10 @@ def create_payment_for_invoice(
 	doc.payment_type = defaults["payment_type"]
 	doc.party_type = defaults["party_type"]
 	doc.party = defaults["party"]
-	if defaults["payment_type"] == "Receive":
-		doc.paid_from = defaults["party_account"]
-		doc.paid_to = bank_account
-	else:
-		doc.paid_from = bank_account
-		doc.paid_to = defaults["party_account"]
+	doc.paid_from = paid_from
+	doc.paid_to = paid_to
 	doc.paid_amount = paid
-	doc.received_amount = paid
+	doc.received_amount = recv
 	if mode_of_payment:
 		doc.mode_of_payment = mode_of_payment
 	if reference_no:
@@ -1017,6 +1227,7 @@ def create_payment_for_invoice(
 				"allocated_amount": allocated,
 			},
 		)
+	setup_payment_entry_exchange_rates(doc, exchange_rate)
 	doc.setup_party_account_field()
 	doc.set_missing_values()
 	doc.insert(ignore_permissions=False)
