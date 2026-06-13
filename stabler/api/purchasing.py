@@ -809,10 +809,11 @@ def update_purchase_invoice(
 
 
 @frappe.whitelist()
-def delete_purchase_invoice(name: str):
+def delete_purchase_invoice(name: str, modified: str | None = None):
 	"""Delete a draft Purchase Invoice. Submitted documents cannot be deleted."""
 	if not name or not frappe.db.exists("Purchase Invoice", name):
 		frappe.throw(f"Unknown Purchase Invoice: {name}")
+	check_concurrency("Purchase Invoice", name, modified)
 	docstatus = cint(frappe.db.get_value("Purchase Invoice", name, "docstatus"))
 	if docstatus != 0:
 		frappe.throw("Only draft bills can be deleted.")

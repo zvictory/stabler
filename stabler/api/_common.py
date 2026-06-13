@@ -43,11 +43,15 @@ def _validate_money_overrides(patch: dict, *, row_label: str) -> None:
 
 
 def check_concurrency(doctype: str, name: str, modified: str | None = None) -> None:
-	if not name or not modified:
+	if not name:
 		return
 	db_modified = frappe.db.get_value(doctype, name, "modified")
 	if not db_modified:
 		return
+	if not modified:
+		frappe.throw(
+			_("Stale request: reload the document.")
+		)
 	from frappe.utils import get_datetime_str
 	if get_datetime_str(db_modified) != get_datetime_str(modified):
 		frappe.local.response["doctype"] = doctype

@@ -890,10 +890,11 @@ def cancel_payment_entry(name: str, modified: str | None = None):
 
 
 @frappe.whitelist()
-def delete_payment_entry(name: str):
+def delete_payment_entry(name: str, modified: str | None = None):
 	"""Delete a Draft Payment Entry."""
 	if not name:
 		frappe.throw("Payment Entry name is required.")
+	check_concurrency("Payment Entry", name, modified)
 	doc = frappe.get_doc("Payment Entry", name)
 	if doc.docstatus != 0:
 		frappe.throw("Only Draft Payment Entries can be deleted.")
@@ -969,8 +970,10 @@ def create_payment_for_invoice(
 	reference_date: str | None = None,
 	allocated_amount: float | str | None = None,
 	submit: int = 1,
+	modified: str | None = None,
 ):
 	"""Create a Payment Entry allocated to a single invoice, optionally submit it in the same call."""
+	check_concurrency(invoice_type, invoice_name, modified)
 	defaults = payment_defaults_for_invoice(company, invoice_type, invoice_name)
 	posting_date = posting_date or today()
 	paid = flt(paid_amount)

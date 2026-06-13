@@ -1237,9 +1237,10 @@ def delete_customer(name: str):
 
 
 @frappe.whitelist()
-def delete_sales_order(name: str):
+def delete_sales_order(name: str, modified: str | None = None):
 	"""Delete a Draft Sales Order. Raises if docstatus != 0."""
 	_assert_can_read("Sales Order", name)
+	check_concurrency("Sales Order", name, modified)
 	doc = frappe.get_doc("Sales Order", name)
 	if doc.docstatus != 0:
 		frappe.throw(f"Only Draft Sales Orders can be deleted (docstatus={doc.docstatus}).")
@@ -1249,9 +1250,10 @@ def delete_sales_order(name: str):
 
 
 @frappe.whitelist()
-def delete_sales_invoice(name: str):
+def delete_sales_invoice(name: str, modified: str | None = None):
 	"""Delete a Draft Sales Invoice. Raises if docstatus != 0."""
 	_assert_can_read("Sales Invoice", name)
+	check_concurrency("Sales Invoice", name, modified)
 	doc = frappe.get_doc("Sales Invoice", name)
 	if doc.docstatus != 0:
 		frappe.throw(f"Only Draft Sales Invoices can be deleted (docstatus={doc.docstatus}).")
@@ -1801,10 +1803,11 @@ def update_quotation(
 
 
 @frappe.whitelist()
-def delete_quotation(name: str):
+def delete_quotation(name: str, modified: str | None = None):
 	"""Delete a Draft Quotation."""
 	if not name:
 		frappe.throw("Quotation name is required.")
+	check_concurrency("Quotation", name, modified)
 	doc = frappe.get_doc("Quotation", name)
 	if doc.docstatus != 0:
 		frappe.throw("Only draft quotations can be deleted.")
