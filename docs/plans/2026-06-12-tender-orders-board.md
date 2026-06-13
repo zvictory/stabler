@@ -122,6 +122,45 @@ dragging it updates the Event date and the SO timeline comment; "Растамо�
 card margin reflects landed cost within one reload; SI due_date events turn red the day after
 due when outstanding > 0; week with >3 events per day collapses to "+N" correctly.
 
+## 6d. Process & role reference (added 2026-06-12 — from BPM/org design, deck slides 17–18)
+
+Canonical step ownership — onboarding checklist and role-permission setup guide. Card moves stay
+open to the whole team (decision stands); this table documents who *performs* each step:
+
+| # | Step | Role | Stabler module | Board/doc artifact |
+|---|---|---|---|---|
+| 1 | Заявка и тендер intake | Tender manager | CRM | Lead (source = channel) |
+| 2 | Подача · дедлайн | Tender manager | CRM | Deal (deadline on card) |
+| 3 | Контракт (SO) | Tender manager | Sales | `create_so_from_deal` |
+| 4 | Закупка | Procurement | Purchasing | PO against SO (margin feed) |
+| 5 | Таможня · landed cost | Procurement | Purchasing | PR + LCV; calendar milestone |
+| 6 | Приёмка товара | Warehouse | Inventory | PR / stock in |
+| 7 | Отгрузка + акт | Warehouse | Sales/Inventory | DN + acceptance act print |
+| 8 | Счёт (SI) | Accounting | Money/Sales | SI against SO |
+| 9 | Оплата · казначейство | Accounting | Money | PE allocation → paid % |
+| 10 | Отчёты P&L | Accounting + Director | Reports | year / period / per-contract P&L |
+
+Access notes: margin fields manager-only (§3); department ⇄ module mapping mirrors the org
+structure (Коммерция → CRM+Sales, Снабжение → Purchasing, Склад → Inventory, Финансы → Money+Reports);
+director sees everything. Reports the board feeds (samples in the deck): Full-Year P&L with
+landed cost as a visible line, monthly/quarterly comparison P&L, **per-contract P&L** (the
+board's `procured_cost`/`margin` is its data source), Balance Sheet.
+
+## 6e. Implementation status (as of 2026-06-12)
+
+- Spec committed; **no code yet** — no `SalesOrderBoard.vue`, no board endpoints in sales.py.
+- Dependency: §6c customs→landed-cost action needs the LCV flow from the purchasing spec
+  (Phase C — **not built**; purchasing P2/receipts is done). Calendar can ship before it;
+  the "Add landed costs" button arrives with Phase C.
+- Dependency: per-contract margin needs `sales_order` stamped on PO items — audit the direct-PO
+  creation path before P1 of this board (MR→PO chain stamps it automatically).
+- Pitch/training collateral: `docs/tender-orders-deck-ru-uz.pptx` (19 slides, ru/uz) — process,
+  boards, calendar, sample P&L ×3 + balance, BPM swimlane, org chart. Regenerable via script;
+  swap sample figures for tenant data before external use.
+- Suggested build order: B1 stages doctype + board + drawer → B2 deal→SO bridge + intake endpoint
+  → B3 calendar (document-derived events) → B4 milestones + landed-cost hook (after purchasing
+  Phase C) → B5 acceptance-act print format.
+
 ## 7. Out of scope (v1)
 
 - Telegram bot implementation itself (separate small task; only the intake endpoint is here).
