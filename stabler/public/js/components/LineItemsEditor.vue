@@ -31,14 +31,6 @@ function getLineErrors(line) {
 		errors.rate = t("Rate cannot be negative.");
 	}
 
-	if (line.availability && line.availability.free !== undefined) {
-		const free = Number(line.availability.free || 0);
-		const qty = Number(line.qty || 0);
-		if (qty > free) {
-			errors.qty = t("Quantity exceeds available stock ({0}).", [free.toFixed(2)]);
-		}
-	}
-
 	return errors;
 }
 

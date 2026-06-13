@@ -874,14 +874,14 @@ const paymentBadge = computed(() => {
 			</template>
 
 			<template #item-extra="{ line }">
-				<div v-if="editable && line.item_code && line.warehouse" class="mt-1">
+				<div v-if="line.item_code && line.warehouse" class="mt-1">
 					<span v-if="line.availabilityLoading" class="text-secondary small">
 						<span class="spinner-border spinner-border-sm me-1"></span>
 					</span>
 					<span
 						v-else-if="line.availability"
 						class="small"
-						:class="isOverAvailable(line) ? 'text-danger' : 'text-secondary'"
+						:class="isOverAvailable(line) ? 'text-danger fw-semibold' : 'text-secondary'"
 					>{{ Number(line.availability.free).toFixed(0) }} {{ t("avail") }}</span>
 				</div>
 			</template>
