@@ -41,7 +41,7 @@ ALLOWED_REPORTS = {
 }
 
 
-from stabler.api._common import _assert_can_read, _require_company
+from stabler.api._common import _assert_can_read, _require_company, check_concurrency
 
 
 @frappe.whitelist()
@@ -612,7 +612,9 @@ def payment_entry_detail(name: str):
 	doc = frappe.get_doc("Payment Entry", name)
 	return {
 		"name": doc.name,
+		"modified": str(doc.modified),
 		"posting_date": str(doc.posting_date) if doc.posting_date else None,
+
 		"payment_type": doc.payment_type,
 		"party_type": doc.party_type,
 		"party": doc.party,
@@ -651,9 +653,11 @@ def update_payment_entry(
 	reference_date: str | None = None,
 	paid_amount: float | str | None = None,
 	received_amount: float | str | None = None,
+	modified: str | None = None,
 ):
 	if not name:
 		frappe.throw("Payment Entry name is required.")
+	check_concurrency("Payment Entry", name, modified)
 	doc = frappe.get_doc("Payment Entry", name)
 	if doc.docstatus != 0:
 		frappe.throw("Only Draft Payment Entries can be edited.")
@@ -856,10 +860,11 @@ def list_cash_bank_accounts(company: str, limit: int = 100):
 
 
 @frappe.whitelist()
-def submit_payment_entry(name: str):
+def submit_payment_entry(name: str, modified: str | None = None):
 	"""Submit a Draft Payment Entry (docstatus 0 → 1)."""
 	if not name:
 		frappe.throw("Payment Entry name is required.")
+	check_concurrency("Payment Entry", name, modified)
 	doc = frappe.get_doc("Payment Entry", name)
 	if doc.docstatus == 1:
 		frappe.throw("Payment Entry is already submitted.")
@@ -870,10 +875,11 @@ def submit_payment_entry(name: str):
 
 
 @frappe.whitelist()
-def cancel_payment_entry(name: str):
+def cancel_payment_entry(name: str, modified: str | None = None):
 	"""Cancel a submitted Payment Entry."""
 	if not name:
 		frappe.throw("Payment Entry name is required.")
+	check_concurrency("Payment Entry", name, modified)
 	doc = frappe.get_doc("Payment Entry", name)
 	if doc.docstatus == 0:
 		frappe.throw("Draft Payment Entry cannot be cancelled. Delete it instead.")

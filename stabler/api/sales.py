@@ -9,7 +9,7 @@ import frappe
 from frappe import _
 from frappe.utils import cint, flt, getdate, today
 
-from stabler.api._common import _assert_can_read, _require_company, _validate_money_overrides
+from stabler.api._common import _assert_can_read, _require_company, _validate_money_overrides, check_concurrency
 
 
 _BOILERPLATE_RE = re.compile(
@@ -623,6 +623,8 @@ def sales_invoice_detail(name: str):
 	doc = frappe.get_doc("Sales Invoice", name)
 	return {
 		"name": doc.name,
+		"modified": str(doc.modified),
+
 		"posting_date": str(doc.posting_date) if doc.posting_date else None,
 		"due_date": str(doc.due_date) if doc.due_date else None,
 		"customer": doc.customer,
@@ -1412,10 +1414,11 @@ def _require_warehouses_for_stock_update(doc) -> None:
 
 
 @frappe.whitelist()
-def submit_sales_invoice(name: str):
+def submit_sales_invoice(name: str, modified: str | None = None):
 	"""Submit a Draft Sales Invoice (docstatus 0 → 1)."""
 	if not name:
 		frappe.throw("Invoice name is required.")
+	check_concurrency("Sales Invoice", name, modified)
 	doc = frappe.get_doc("Sales Invoice", name)
 	if doc.docstatus == 1:
 		frappe.throw("Invoice is already submitted.")
@@ -1434,10 +1437,11 @@ def submit_sales_invoice(name: str):
 
 
 @frappe.whitelist()
-def cancel_sales_invoice(name: str):
+def cancel_sales_invoice(name: str, modified: str | None = None):
 	"""Cancel a Submitted Sales Invoice (docstatus 1 → 2)."""
 	if not name:
 		frappe.throw("Invoice name is required.")
+	check_concurrency("Sales Invoice", name, modified)
 	doc = frappe.get_doc("Sales Invoice", name)
 	if doc.docstatus != 1:
 		frappe.throw("Only submitted invoices can be cancelled.")
@@ -1619,7 +1623,9 @@ def quotation_detail(name: str):
 	doc = frappe.get_doc("Quotation", name)
 	return {
 		"name": doc.name,
+		"modified": str(doc.modified),
 		"transaction_date": str(doc.transaction_date) if doc.transaction_date else None,
+
 		"valid_till": str(doc.valid_till) if doc.valid_till else None,
 		"customer": doc.party_name,
 		"customer_name": doc.customer_name,
@@ -1713,10 +1719,105 @@ def create_quotation(
 	}
 
 
+
 @frappe.whitelist()
-def submit_quotation(name: str):
+def update_quotation(
+	name: str,
+	items,
+	customer: str | None = None,
+	transaction_date: str | None = None,
+	valid_till: str | None = None,
+	remarks: str | None = None,
+	modified: str | None = None,
+):
+	"""Update an existing Draft Quotation in-place.
+
+	Only docstatus=0 (Draft) quotations may be edited.
+	"""
 	if not name:
 		frappe.throw("Quotation name is required.")
+	check_concurrency("Quotation", name, modified)
+	doc = frappe.get_doc("Quotation", name)
+	if doc.docstatus != 0:
+		frappe.throw("Only draft quotations can be edited.")
+
+	if customer and customer != doc.party_name:
+		if not frappe.db.exists("Customer", customer):
+			frappe.throw(f"Unknown customer: {customer}")
+		doc.party_name = customer
+
+	if isinstance(items, str):
+		try:
+			items = json.loads(items)
+		except Exception:
+			frappe.throw("Invalid items payload.")
+	if not isinstance(items, list) or not items:
+		frappe.throw("At least one item is required.")
+
+	cleaned: list[dict] = []
+	for idx, row in enumerate(items, start=1):
+		code = (row or {}).get("item_code")
+		if not code:
+			frappe.throw(f"Row {idx}: item is required.")
+		if not frappe.db.exists("Item", code):
+			frappe.throw(f"Row {idx}: unknown item '{code}'.")
+		qty = flt(row.get("qty"))
+		if qty <= 0:
+			frappe.throw(f"Row {idx}: qty must be greater than zero.")
+		cleaned.append(
+			{
+				"item_code": code,
+				"qty": qty,
+				"rate": flt(row.get("rate")),
+				"uom": row.get("uom") or None,
+			}
+		)
+
+	doc.transaction_date = getdate(transaction_date or doc.transaction_date)
+	if valid_till:
+		doc.valid_till = getdate(valid_till)
+	else:
+		doc.valid_till = None
+
+	if remarks is not None:
+		doc.terms = remarks.strip()
+
+	doc.set("items", [])
+	for row in cleaned:
+		line = doc.append("items", {})
+		line.item_code = row["item_code"]
+		line.qty = row["qty"]
+		if row["rate"]:
+			line.rate = row["rate"]
+		if row["uom"]:
+			line.uom = row["uom"]
+
+	doc.save(ignore_permissions=False)
+	return {
+		"name": doc.name,
+		"grand_total": flt(doc.grand_total),
+		"customer": doc.party_name,
+	}
+
+
+@frappe.whitelist()
+def delete_quotation(name: str):
+	"""Delete a Draft Quotation."""
+	if not name:
+		frappe.throw("Quotation name is required.")
+	doc = frappe.get_doc("Quotation", name)
+	if doc.docstatus != 0:
+		frappe.throw("Only draft quotations can be deleted.")
+	doc.delete()
+	return {"name": name}
+
+
+@frappe.whitelist()
+def submit_quotation(name: str, modified: str | None = None):
+
+	if not name:
+		frappe.throw("Quotation name is required.")
+	check_concurrency("Quotation", name, modified)
 	doc = frappe.get_doc("Quotation", name)
 	if doc.docstatus == 1:
 		frappe.throw("Quotation is already submitted.")
@@ -1727,9 +1828,10 @@ def submit_quotation(name: str):
 
 
 @frappe.whitelist()
-def cancel_quotation(name: str):
+def cancel_quotation(name: str, modified: str | None = None):
 	if not name:
 		frappe.throw("Quotation name is required.")
+	check_concurrency("Quotation", name, modified)
 	doc = frappe.get_doc("Quotation", name)
 	if doc.docstatus != 1:
 		frappe.throw("Only submitted quotations can be cancelled.")
@@ -1837,7 +1939,9 @@ def sales_order_detail(name: str):
 	)
 	return {
 		"name": doc.name,
+		"modified": str(doc.modified),
 		"transaction_date": str(doc.transaction_date) if doc.transaction_date else None,
+
 		"delivery_date": str(doc.delivery_date) if doc.delivery_date else None,
 		"customer": doc.customer,
 		"customer_name": doc.customer_name,
@@ -2097,9 +2201,10 @@ def create_sales_order(
 
 
 @frappe.whitelist()
-def submit_sales_order(name: str):
+def submit_sales_order(name: str, modified: str | None = None):
 	if not name:
 		frappe.throw("Sales order name is required.")
+	check_concurrency("Sales Order", name, modified)
 	doc = frappe.get_doc("Sales Order", name)
 	if doc.docstatus == 1:
 		frappe.throw("Sales order is already submitted.")
@@ -2124,6 +2229,7 @@ def update_sales_order(
 	remarks: str | None = None,
 	currency: str | None = None,
 	price_list: str | None = None,
+	modified: str | None = None,
 ):
 	"""Update an existing Draft Sales Order in-place.
 
@@ -2133,6 +2239,7 @@ def update_sales_order(
 	"""
 	if not name:
 		frappe.throw("Sales order name is required.")
+	check_concurrency("Sales Order", name, modified)
 	doc = frappe.get_doc("Sales Order", name)
 	if doc.docstatus != 0:
 		frappe.throw(_("Only draft sales orders can be edited."))
@@ -2236,9 +2343,10 @@ def update_sales_order(
 
 
 @frappe.whitelist()
-def cancel_sales_order(name: str):
+def cancel_sales_order(name: str, modified: str | None = None):
 	if not name:
 		frappe.throw("Sales order name is required.")
+	check_concurrency("Sales Order", name, modified)
 	doc = frappe.get_doc("Sales Order", name)
 	if doc.docstatus != 1:
 		frappe.throw("Only submitted sales orders can be cancelled.")

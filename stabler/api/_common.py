@@ -40,3 +40,21 @@ def _validate_money_overrides(patch: dict, *, row_label: str) -> None:
 		frappe.throw(_("{0}: discount_percentage must be between 0 and 100").format(row_label))
 	if patch.get("discount_amount") not in (None, "") and flt(patch["discount_amount"]) < 0:
 		frappe.throw(_("{0}: discount_amount cannot be negative").format(row_label))
+
+
+def check_concurrency(doctype: str, name: str, modified: str | None = None) -> None:
+	if not name or not modified:
+		return
+	db_modified = frappe.db.get_value(doctype, name, "modified")
+	if not db_modified:
+		return
+	from frappe.utils import get_datetime_str
+	if get_datetime_str(db_modified) != get_datetime_str(modified):
+		frappe.local.response["doctype"] = doctype
+		frappe.local.response["name"] = name
+		exc = getattr(frappe, "TimestampMismatchError", frappe.ValidationError)
+		frappe.throw(
+			_("This document was changed by someone else. Reload to see the latest."),
+			exc=exc
+		)
+

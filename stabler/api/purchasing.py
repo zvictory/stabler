@@ -8,7 +8,7 @@ import frappe
 from frappe.utils import cint, flt, getdate, today
 
 
-from stabler.api._common import _assert_can_read, _require_company
+from stabler.api._common import _assert_can_read, _require_company, check_concurrency
 
 
 @frappe.whitelist()
@@ -353,7 +353,9 @@ def purchase_invoice_detail(name: str):
 	doc = frappe.get_doc("Purchase Invoice", name)
 	return {
 		"name": doc.name,
+		"modified": str(doc.modified),
 		"posting_date": str(doc.posting_date) if doc.posting_date else None,
+
 		"due_date": str(doc.due_date) if doc.due_date else None,
 		"supplier": doc.supplier,
 		"supplier_name": doc.supplier_name,
@@ -767,12 +769,14 @@ def update_purchase_invoice(
 	conversion_rate=None,
 	price_list: str | None = None,
 	taxes_template: str | None = None,
+	modified: str | None = None,
 ):
 	"""Replace a draft Purchase Invoice's fields and rows (full-row replace).
 
 	Submitted/cancelled invoices are immutable — use cancel + amend instead."""
 	if not name or not frappe.db.exists("Purchase Invoice", name):
 		frappe.throw(f"Unknown Purchase Invoice: {name}")
+	check_concurrency("Purchase Invoice", name, modified)
 	doc = frappe.get_doc("Purchase Invoice", name)
 	if doc.docstatus != 0:
 		frappe.throw("Only draft bills can be edited.")
@@ -889,10 +893,11 @@ def get_purchase_exchange_rate(
 
 
 @frappe.whitelist()
-def submit_purchase_invoice(name: str):
+def submit_purchase_invoice(name: str, modified: str | None = None):
 	"""Submit a Draft Purchase Invoice (docstatus 0 → 1)."""
 	if not name:
 		frappe.throw("Invoice name is required.")
+	check_concurrency("Purchase Invoice", name, modified)
 	doc = frappe.get_doc("Purchase Invoice", name)
 	if doc.docstatus == 1:
 		frappe.throw("Invoice is already submitted.")
@@ -903,10 +908,11 @@ def submit_purchase_invoice(name: str):
 
 
 @frappe.whitelist()
-def cancel_purchase_invoice(name: str):
+def cancel_purchase_invoice(name: str, modified: str | None = None):
 	"""Cancel a Submitted Purchase Invoice (docstatus 1 → 2)."""
 	if not name:
 		frappe.throw("Invoice name is required.")
+	check_concurrency("Purchase Invoice", name, modified)
 	doc = frappe.get_doc("Purchase Invoice", name)
 	if doc.docstatus != 1:
 		frappe.throw("Only submitted invoices can be cancelled.")
@@ -1028,7 +1034,9 @@ def purchase_order_detail(name: str):
 	)
 	return {
 		"name": doc.name,
+		"modified": str(doc.modified),
 		"transaction_date": str(doc.transaction_date) if doc.transaction_date else None,
+
 		"schedule_date": str(doc.schedule_date) if doc.schedule_date else None,
 		"supplier": doc.supplier,
 		"supplier_name": doc.supplier_name,
@@ -1190,10 +1198,126 @@ def create_purchase_order(
 
 
 @frappe.whitelist()
-def submit_purchase_order(name: str):
+def update_purchase_order(
+	name: str,
+	items,
+	set_warehouse: str | None = None,
+	transaction_date: str | None = None,
+	schedule_date: str | None = None,
+	remarks: str | None = None,
+	currency: str | None = None,
+	price_list: str | None = None,
+	modified: str | None = None,
+):
+	"""Update an existing Draft Purchase Order in-place.
+
+	Only docstatus=0 (Draft) orders may be edited — submitted orders are immutable.
+	Replaces item lines entirely.
+	"""
+	if not name:
+		frappe.throw("Purchase order name is required.")
+	check_concurrency("Purchase Order", name, modified)
+	doc = frappe.get_doc("Purchase Order", name)
+	if doc.docstatus != 0:
+		frappe.throw("Only draft purchase orders can be edited.")
+
+	if isinstance(items, str):
+		try:
+			items = json.loads(items)
+		except Exception:
+			frappe.throw("Invalid items payload.")
+	if not isinstance(items, list) or not items:
+		frappe.throw("At least one item is required.")
+
+	txn_date = getdate(transaction_date or doc.transaction_date)
+	sched_date = getdate(schedule_date) if schedule_date else txn_date
+
+	cleaned: list[dict] = []
+	for idx, row in enumerate(items, start=1):
+		code = (row or {}).get("item_code")
+		if not code:
+			frappe.throw(f"Row {idx}: item is required.")
+		if not frappe.db.exists("Item", code):
+			frappe.throw(f"Row {idx}: unknown item '{code}'.")
+		qty = flt(row.get("qty"))
+		if qty <= 0:
+			frappe.throw(f"Row {idx}: qty must be greater than zero.")
+		disc_pct = flt(row.get("discount_percentage"))
+		if not (0 <= disc_pct <= 100):
+			frappe.throw(f"Row {idx}: discount_percentage must be between 0 and 100.")
+		rate_val = row.get("rate")
+		if rate_val not in (None, "") and flt(rate_val) < 0:
+			frappe.throw(f"Row {idx}: rate cannot be negative.")
+		if flt(row.get("discount_amount")) < 0:
+			frappe.throw(f"Row {idx}: discount_amount cannot be negative.")
+		cleaned.append(
+			{
+				"item_code": code,
+				"qty": qty,
+				"rate": flt(row.get("rate")),
+				"uom": row.get("uom") or None,
+				"conversion_factor": flt(row.get("conversion_factor")) or None,
+				"discount_percentage": disc_pct,
+				"discount_amount": flt(row.get("discount_amount")),
+			}
+		)
+
+	doc.transaction_date = txn_date
+	doc.schedule_date = sched_date
+	if set_warehouse:
+		doc.set_warehouse = set_warehouse
+	else:
+		doc.set_warehouse = None
+
+	if remarks is not None:
+		doc.terms = remarks.strip()
+	if currency:
+		doc.currency = currency
+	resolved_pl = price_list or _resolve_buy_price_list(doc.supplier)
+	if resolved_pl:
+		doc.buying_price_list = resolved_pl
+
+	doc.set("items", [])
+	for row in cleaned:
+		line = doc.append("items", {})
+		line.item_code = row["item_code"]
+		line.qty = row["qty"]
+		line.schedule_date = sched_date
+		if set_warehouse:
+			line.warehouse = set_warehouse
+		rate = row["rate"]
+		if not rate and resolved_pl:
+			hit = _lookup_item_buy_price(row["item_code"], resolved_pl)
+			if hit:
+				rate = hit["price_list_rate"]
+		if rate:
+			line.rate = rate
+		if row["uom"]:
+			line.uom = row["uom"]
+		if row.get("conversion_factor"):
+			line.conversion_factor = row["conversion_factor"]
+		if row.get("discount_percentage"):
+			line.discount_percentage = row["discount_percentage"]
+		if row.get("discount_amount"):
+			line.discount_amount = row["discount_amount"]
+
+	doc.save(ignore_permissions=False)
+	return {
+		"name": doc.name,
+		"grand_total": flt(doc.grand_total),
+		"supplier": doc.supplier,
+		"docstatus": doc.docstatus,
+		"status": doc.status,
+	}
+
+
+
+@frappe.whitelist()
+def submit_purchase_order(name: str, modified: str | None = None):
 	"""Submit a draft Purchase Order (docstatus 0 → 1)."""
 	if not name:
 		frappe.throw("Purchase order name is required.")
+	check_concurrency("Purchase Order", name, modified)
 	doc = frappe.get_doc("Purchase Order", name)
 	if doc.docstatus == 1:
 		frappe.throw("Purchase order is already submitted.")
@@ -1204,10 +1328,11 @@ def submit_purchase_order(name: str):
 
 
 @frappe.whitelist()
-def cancel_purchase_order(name: str):
+def cancel_purchase_order(name: str, modified: str | None = None):
 	"""Cancel a submitted Purchase Order (docstatus 1 → 2)."""
 	if not name:
 		frappe.throw("Purchase order name is required.")
+	check_concurrency("Purchase Order", name, modified)
 	doc = frappe.get_doc("Purchase Order", name)
 	if doc.docstatus != 1:
 		frappe.throw("Only submitted purchase orders can be cancelled.")
