@@ -6,6 +6,7 @@ status & logs. Mirrors the gate in stabler/api/admin.py.
 
 from __future__ import annotations
 
+from bisect import bisect_right
 import datetime
 import json
 import re
@@ -14,6 +15,7 @@ from urllib.request import Request, urlopen
 
 import frappe
 from frappe import _
+from frappe.utils import flt, getdate
 
 from stabler.integrations.ehf import submit as ehf_submit
 from stabler.tasks.cbu_rate_refresh import fetch_and_store
@@ -427,3 +429,177 @@ def get_asl_stock_entry_rows(stock_entry: str) -> list[dict]:
 		(stock_entry,),
 		as_dict=True,
 	) or []
+
+
+class CBUExchangeCache:
+	def __init__(self) -> None:
+		records = frappe.get_all(
+			"Currency Exchange",
+			fields=["from_currency", "to_currency", "date", "exchange_rate"],
+			order_by="date asc"
+		)
+		self.rates: dict[tuple[str, str], list[tuple[datetime.date, float]]] = {}
+		for r in records:
+			key = (r.from_currency, r.to_currency)
+			self.rates.setdefault(key, []).append((getdate(r.date), flt(r.exchange_rate)))
+
+	def get_rate(self, from_ccy: str, to_ccy: str, date: datetime.date | str) -> float | None:
+		d = getdate(date)
+		
+		# 1. Direct rate search
+		key = (from_ccy, to_ccy)
+		if key in self.rates:
+			list_rates = self.rates[key]
+			idx = bisect_right(list_rates, (d, float("inf"))) - 1
+			if idx >= 0:
+				return list_rates[idx][1]
+		
+		# 2. Inverse rate search
+		key_inv = (to_ccy, from_ccy)
+		if key_inv in self.rates:
+			list_rates = self.rates[key_inv]
+			idx = bisect_right(list_rates, (d, float("inf"))) - 1
+			if idx >= 0 and list_rates[idx][1] > 0:
+				return 1.0 / list_rates[idx][1]
+		
+		return None
+
+
+@frappe.whitelist()
+def gl_integrity_scan(company: str) -> dict[str, int]:
+	"""Run GL integrity scan and return anomaly counts."""
+	_require_admin()
+
+	company_currency = frappe.get_cached_value("Company", company, "default_currency") or "UZS"
+
+	# Anomaly A: D2-style 1:1 postings into non-base accounts
+	d2_postings = frappe.db.sql(
+		"""
+		SELECT COUNT(*)
+		FROM `tabGL Entry` gle
+		JOIN `tabAccount` acc ON gle.account = acc.name
+		JOIN `tabCompany` c ON gle.company = c.name
+		WHERE gle.company = %s
+		  AND gle.is_cancelled = 0
+		  AND acc.account_currency <> c.default_currency
+		  AND (
+		    (gle.debit > 0 AND ABS(gle.debit - gle.debit_in_account_currency) < 0.001) OR
+		    (gle.credit > 0 AND ABS(gle.credit - gle.credit_in_account_currency) < 0.001)
+		  )
+		""",
+		(company,),
+	)[0][0]
+
+	# Anomaly B: Parties whose ledger spans > 1 account currency
+	multi_currency_parties = frappe.db.sql(
+		"""
+		SELECT COUNT(*) FROM (
+			SELECT party_type, party
+			FROM `tabGL Entry`
+			WHERE company = %s
+			  AND is_cancelled = 0
+			  AND party_type IS NOT NULL AND party_type <> ''
+			  AND party IS NOT NULL AND party <> ''
+			GROUP BY party_type, party
+			HAVING COUNT(DISTINCT account_currency) > 1
+		) AS temp
+		""",
+		(company,),
+	)[0][0]
+
+	# Anomaly D: Wrong-account-type party postings
+	wrong_account_type_postings = frappe.db.sql(
+		"""
+		SELECT COUNT(*)
+		FROM `tabGL Entry` gle
+		JOIN `tabAccount` acc ON gle.account = acc.name
+		WHERE gle.company = %s
+		  AND gle.is_cancelled = 0
+		  AND (
+		    (gle.party_type = 'Customer' AND acc.account_type <> 'Receivable') OR
+		    (gle.party_type = 'Supplier' AND acc.account_type <> 'Payable')
+		  )
+		""",
+		(company,),
+	)[0][0]
+
+	# Anomaly C: Cross-currency docs posted > 5% off CBU that day
+	off_cbu_docs = 0
+	cache = CBUExchangeCache()
+
+	# 1. Sales Invoices
+	invoices = frappe.get_all(
+		"Sales Invoice",
+		filters={"company": company, "docstatus": 1},
+		fields=["name", "currency", "conversion_rate", "posting_date"]
+	)
+	for inv in invoices:
+		if inv.currency != company_currency:
+			cbu = cache.get_rate(inv.currency, company_currency, inv.posting_date)
+			if cbu and cbu > 0:
+				deviation = abs(flt(inv.conversion_rate) - cbu) / cbu
+				if deviation > 0.05:
+					off_cbu_docs += 1
+
+	# 2. Purchase Invoices
+	pinvoices = frappe.get_all(
+		"Purchase Invoice",
+		filters={"company": company, "docstatus": 1},
+		fields=["name", "currency", "conversion_rate", "posting_date"]
+	)
+	for pinv in pinvoices:
+		if pinv.currency != company_currency:
+			cbu = cache.get_rate(pinv.currency, company_currency, pinv.posting_date)
+			if cbu and cbu > 0:
+				deviation = abs(flt(pinv.conversion_rate) - cbu) / cbu
+				if deviation > 0.05:
+					off_cbu_docs += 1
+
+	# 3. Payment Entries
+	payments = frappe.get_all(
+		"Payment Entry",
+		filters={"company": company, "docstatus": 1},
+		fields=["name", "paid_from_account_currency", "paid_to_account_currency", "source_exchange_rate", "target_exchange_rate", "posting_date", "clearance_date"]
+	)
+	for pe in payments:
+		date = pe.clearance_date or pe.posting_date
+		if pe.paid_from_account_currency != company_currency:
+			cbu = cache.get_rate(pe.paid_from_account_currency, company_currency, date)
+			if cbu and cbu > 0 and flt(pe.source_exchange_rate) > 0:
+				deviation = abs(flt(pe.source_exchange_rate) - cbu) / cbu
+				if deviation > 0.05:
+					off_cbu_docs += 1
+		if pe.paid_to_account_currency != company_currency:
+			cbu = cache.get_rate(pe.paid_to_account_currency, company_currency, date)
+			if cbu and cbu > 0 and flt(pe.target_exchange_rate) > 0:
+				deviation = abs(flt(pe.target_exchange_rate) - cbu) / cbu
+				if deviation > 0.05:
+					off_cbu_docs += 1
+
+	# 4. Journal Entries
+	je_rows = frappe.db.sql(
+		"""
+		SELECT je.name, je.posting_date, jer.account, jer.exchange_rate, acc.account_currency
+		FROM `tabJournal Entry Account` jer
+		JOIN `tabJournal Entry` je ON jer.parent = je.name
+		JOIN `tabAccount` acc ON jer.account = acc.name
+		WHERE je.docstatus = 1
+		  AND je.company = %s
+		  AND acc.account_currency <> %s
+		""",
+		(company, company_currency),
+		as_dict=True,
+	)
+	for row in je_rows:
+		cbu = cache.get_rate(row.account_currency, company_currency, row.posting_date)
+		if cbu and cbu > 0 and flt(row.exchange_rate) > 0:
+			deviation = abs(flt(row.exchange_rate) - cbu) / cbu
+			if deviation > 0.05:
+				off_cbu_docs += 1
+
+	return {
+		"d2_postings": d2_postings,
+		"multi_currency_parties": multi_currency_parties,
+		"off_cbu_docs": off_cbu_docs,
+		"wrong_account_type_postings": wrong_account_type_postings,
+	}
