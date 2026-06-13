@@ -382,6 +382,7 @@ const grandTotal = computed(() => {
 							<input v-else v-model="line.uom" type="text" class="form-control form-control-sm" readonly />
 						</template>
 						<div v-else class="text-secondary small">{{ line.uom }}</div>
+						<slot name="uom-extra" :line="line" :index="idx" />
 					</td>
 
 					<!-- Rate -->

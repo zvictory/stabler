@@ -890,26 +890,24 @@ const paymentBadge = computed(() => {
 			</template>
 
 			<template #item-extra="{ line }">
-				<div v-if="line.item_code && line.warehouse" class="mt-1 d-flex flex-column gap-0">
+				<div v-if="line.item_code && line.warehouse" class="mt-1">
 					<span v-if="line.availabilityLoading" class="text-secondary small">
 						<span class="spinner-border spinner-border-sm me-1"></span>
 					</span>
-					<template v-else-if="line.availability">
-						<span
-							class="small"
-							:class="isOverAvailable(line) ? 'text-danger fw-semibold' : 'text-secondary'"
-						>{{ Number(line.availability.free).toFixed(0) }} {{ t("avail") }}</span>
-						<span class="small text-secondary" style="font-size:0.72rem">
-							{{ Number(line.availability.actual).toFixed(0) }} {{ t("stock") }}
-							/ {{ Number(line.availability.reserved).toFixed(0) }} {{ t("reserved") }}
-						</span>
-					</template>
 					<span
-						v-if="line.conversion_factor > 1 && line.uom && line.stock_uom && line.uom !== line.stock_uom"
-						class="small text-secondary"
-						style="font-size:0.72rem"
-					>1 {{ line.uom }} = {{ line.conversion_factor }} {{ line.stock_uom }}</span>
+						v-else-if="line.availability"
+						class="small"
+						:class="isOverAvailable(line) ? 'text-danger fw-semibold' : 'text-secondary'"
+					>{{ Number(line.availability.free).toFixed(0) }} {{ t("avail") }} · {{ Number(line.availability.actual).toFixed(0) }} {{ t("stock") }} / {{ Number(line.availability.reserved).toFixed(0) }} {{ t("reserved") }}</span>
 				</div>
+			</template>
+
+			<template #uom-extra="{ line }">
+				<div
+					v-if="line.conversion_factor > 1 && line.uom && line.stock_uom && line.uom !== line.stock_uom"
+					class="mt-1 text-secondary"
+					style="font-size:0.72rem"
+				>1 {{ line.uom }} = {{ line.conversion_factor }} {{ line.stock_uom }}</div>
 			</template>
 
 			<template #row-extra="{ line, index }">
