@@ -10,7 +10,7 @@
  *     partyNameKey="customer_name"
  *   />
  */
-import { computed, onMounted, ref, watch } from "vue";
+import { onMounted, ref, watch } from "vue";
 import { storeToRefs } from "pinia";
 import { useSession } from "../stores/session.js";
 import { call } from "../api/client.js";
@@ -36,9 +36,7 @@ const asOf = ref(today);
 
 const loading = ref(false);
 const error = ref("");
-const data = ref({ rows: [], totals: {}, as_of: "" });
-
-const currency = computed(() => session.currency);
+const data = ref({ rows: [], totals_by_currency: [], as_of: "" });
 
 async function load() {
 	if (!activeCompany.value) return;
@@ -119,31 +117,31 @@ function bucketCls(value, bucket) {
 						</td>
 						<td class="text-end font-monospace">{{ r.invoice_count }}</td>
 						<td class="text-end font-monospace" :class="bucketCls(r.b_0_30, 'b_0_30')">
-							{{ formatMoney(r.b_0_30, currency, user.language) }}
+							{{ formatMoney(r.b_0_30, r.currency, user.language) }}
 						</td>
 						<td class="text-end font-monospace" :class="bucketCls(r.b_31_60, 'b_31_60')">
-							{{ formatMoney(r.b_31_60, currency, user.language) }}
+							{{ formatMoney(r.b_31_60, r.currency, user.language) }}
 						</td>
 						<td class="text-end font-monospace" :class="bucketCls(r.b_61_90, 'b_61_90')">
-							{{ formatMoney(r.b_61_90, currency, user.language) }}
+							{{ formatMoney(r.b_61_90, r.currency, user.language) }}
 						</td>
 						<td class="text-end font-monospace" :class="bucketCls(r.b_90_plus, 'b_90_plus')">
-							{{ formatMoney(r.b_90_plus, currency, user.language) }}
+							{{ formatMoney(r.b_90_plus, r.currency, user.language) }}
 						</td>
 						<td class="text-end font-monospace fw-bold">
-							{{ formatMoney(r.total, currency, user.language) }}
+							{{ formatMoney(r.total, r.currency, user.language) }}
 						</td>
 					</tr>
 				</tbody>
 				<tfoot class="table-light">
-					<tr class="fw-bold">
-						<td>{{ t("Total") }}</td>
+					<tr v-for="tot in data.totals_by_currency" :key="tot.currency" class="fw-bold">
+						<td>{{ t("Total") }} <span class="text-secondary fw-normal">{{ tot.currency }}</span></td>
 						<td></td>
-						<td class="text-end font-monospace">{{ formatMoney(data.totals.b_0_30, currency, user.language) }}</td>
-						<td class="text-end font-monospace">{{ formatMoney(data.totals.b_31_60, currency, user.language) }}</td>
-						<td class="text-end font-monospace">{{ formatMoney(data.totals.b_61_90, currency, user.language) }}</td>
-						<td class="text-end font-monospace">{{ formatMoney(data.totals.b_90_plus, currency, user.language) }}</td>
-						<td class="text-end font-monospace">{{ formatMoney(data.totals.total, currency, user.language) }}</td>
+						<td class="text-end font-monospace">{{ formatMoney(tot.b_0_30, tot.currency, user.language) }}</td>
+						<td class="text-end font-monospace">{{ formatMoney(tot.b_31_60, tot.currency, user.language) }}</td>
+						<td class="text-end font-monospace">{{ formatMoney(tot.b_61_90, tot.currency, user.language) }}</td>
+						<td class="text-end font-monospace">{{ formatMoney(tot.b_90_plus, tot.currency, user.language) }}</td>
+						<td class="text-end font-monospace">{{ formatMoney(tot.total, tot.currency, user.language) }}</td>
 					</tr>
 				</tfoot>
 			</table>
