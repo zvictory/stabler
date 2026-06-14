@@ -79,11 +79,20 @@ function blankForm() {
 const fromAcc = computed(() => accounts.value.find((a) => a.name === form.value.from_account) || null);
 const toAcc = computed(() => accounts.value.find((a) => a.name === form.value.to_account) || null);
 
+// label field required by Select's keyboard type-ahead (optionLabel reads o["label"])
 const fromAccountOptions = computed(() =>
-	accounts.value.map((a) => ({ ...a, disabled: a.name === form.value.to_account })),
+	accounts.value.map((a) => ({
+		...a,
+		label: `${a.account_name || a.name} (${a.account_currency})`,
+		disabled: a.name === form.value.to_account,
+	})),
 );
 const toAccountOptions = computed(() =>
-	accounts.value.map((a) => ({ ...a, disabled: a.name === form.value.from_account })),
+	accounts.value.map((a) => ({
+		...a,
+		label: `${a.account_name || a.name} (${a.account_currency})`,
+		disabled: a.name === form.value.from_account,
+	})),
 );
 
 const fromCurrency = computed(() => fromAcc.value?.account_currency || baseCurrency.value);
@@ -121,6 +130,20 @@ function roundMoney(n, currency) {
 function roundRate(rate) {
 	// Large rates (e.g. UZS amounts): 2 dp. Small rates (e.g. cross-minor): 6 dp.
 	return rate > 100 ? Math.round(rate * 100) / 100 : Math.round(rate * 1000000) / 1000000;
+}
+
+// Plain number format for CBU hint — no currency symbol, locale-aware grouping.
+// Uses up to 6 dp for sub-1 rates (e.g. 0.000077 USD) and 2 dp otherwise.
+function formatRate(n, language) {
+	if (!n || !Number.isFinite(Number(n))) return "";
+	const num = Number(n);
+	const localeCode = language === "en" ? "en-US" : "ru-RU";
+	const maxFrac = num < 1 ? 6 : 2;
+	return new Intl.NumberFormat(localeCode, {
+		minimumFractionDigits: 0,
+		maximumFractionDigits: maxFrac,
+		useGrouping: true,
+	}).format(num);
 }
 
 let _deriving = false;
@@ -669,36 +692,38 @@ watch(activeCompany, () => {
 							<span class="fw-semibold text-blue small">{{ t("From") }}</span>
 						</div>
 						<div class="card-body p-3">
-							<div class="mb-2">
-								<label class="form-label small mb-1">
-									{{ t("Account") }}
-									<span v-if="fromAcc" class="text-secondary fw-normal">({{ fromCurrency }})</span>
-								</label>
-								<Select
-									v-model="form.from_account"
-									:disabled="optionsLoading"
-									:options="fromAccountOptions"
-									value-key="name"
-									:placeholder="t('Select…')"
-								>
-									<template #option="{ option }">
-										{{ option.account_name || option.name }} ({{ option.account_currency }})
-									</template>
-									<template #selected="{ option }">
-										{{ option.account_name || option.name }} ({{ option.account_currency }})
-									</template>
-								</Select>
-							</div>
-							<div>
-								<label class="form-label small mb-1">{{ t("Amount to transfer") }}</label>
-								<MoneyInput
-									:model-value="form.from_amount"
-									:currency="fromCurrency"
-									:language="user.language"
-									:group-while-typing="true"
-									:disabled="submitting"
-									@update:model-value="onAmtInput"
-								/>
+							<div class="row g-2 align-items-end">
+								<div class="col">
+									<label class="form-label small mb-1">
+										{{ t("Account") }}
+										<span v-if="fromAcc" class="text-secondary fw-normal">({{ fromCurrency }})</span>
+									</label>
+									<Select
+										v-model="form.from_account"
+										:disabled="optionsLoading"
+										:options="fromAccountOptions"
+										value-key="name"
+										:placeholder="t('Select…')"
+									>
+										<template #option="{ option }">
+											{{ option.account_name || option.name }} ({{ option.account_currency }})
+										</template>
+										<template #selected="{ option }">
+											{{ option.account_name || option.name }} ({{ option.account_currency }})
+										</template>
+									</Select>
+								</div>
+								<div class="col-5">
+									<label class="form-label small mb-1">{{ t("Amount to transfer") }}</label>
+									<MoneyInput
+										:model-value="form.from_amount"
+										:currency="fromCurrency"
+										:language="user.language"
+										:group-while-typing="true"
+										:disabled="submitting"
+										@update:model-value="onAmtInput"
+									/>
+								</div>
 							</div>
 						</div>
 					</div>
@@ -708,9 +733,12 @@ watch(activeCompany, () => {
 						<div class="text-secondary" style="font-size: 1.2rem">↓</div>
 
 						<div v-if="isCrossCurrency" class="flex-grow-1" style="max-width: 340px">
-							<label class="form-label small mb-1 text-center d-block">
-								{{ t("Exchange rate") }} — 1 {{ fromCurrency }} = ? {{ toCurrency }}
-							</label>
+							<div class="text-center mb-1">
+								<span class="text-secondary small text-uppercase fw-semibold" style="letter-spacing:.04em">
+									{{ t("Exchange rate") }} · {{ fromCurrency }} → {{ toCurrency }}
+								</span>
+								<span v-if="!rateManuallyEdited" class="badge bg-blue-lt text-blue ms-1 small">AUTO</span>
+							</div>
 							<MoneyInput
 								:model-value="form.exchange_rate"
 								:currency="toCurrency"
@@ -720,7 +748,7 @@ watch(activeCompany, () => {
 								@update:model-value="onRateInput"
 							/>
 							<div v-if="cbuRate" class="text-center text-secondary small mt-1">
-								CBU: 1 {{ fromCurrency }} = {{ formatMoney(cbuRate, toCurrency, user.language) }} {{ toCurrency }}
+								CBU: 1 {{ fromCurrency }} = {{ formatRate(cbuRate, user.language) }} {{ toCurrency }}
 							</div>
 						</div>
 						<div v-else-if="fromAcc && toAcc" class="text-secondary small px-2">
@@ -746,38 +774,40 @@ watch(activeCompany, () => {
 							<span class="fw-semibold text-teal small">{{ t("To") }}</span>
 						</div>
 						<div class="card-body p-3">
-							<div class="mb-2">
-								<label class="form-label small mb-1">
-									{{ t("Account") }}
-									<span v-if="toAcc" class="text-secondary fw-normal">({{ toCurrency }})</span>
-								</label>
-								<Select
-									v-model="form.to_account"
-									:disabled="optionsLoading"
-									:options="toAccountOptions"
-									value-key="name"
-									:placeholder="t('Select…')"
-								>
-									<template #option="{ option }">
-										{{ option.account_name || option.name }} ({{ option.account_currency }})
-									</template>
-									<template #selected="{ option }">
-										{{ option.account_name || option.name }} ({{ option.account_currency }})
-									</template>
-								</Select>
-							</div>
-							<div>
-								<label class="form-label small mb-1">{{ t("Amount received") }}</label>
-								<MoneyInput
-									:model-value="form.to_amount"
-									:currency="toCurrency"
-									:language="user.language"
-									:group-while-typing="true"
-									:disabled="submitting || !isCrossCurrency"
-									@update:model-value="onRecvInput"
-								/>
-								<div v-if="isCrossCurrency" class="form-hint small mt-1">
-									{{ t("Editing the received amount updates the exchange rate.") }}
+							<div class="row g-2 align-items-end">
+								<div class="col">
+									<label class="form-label small mb-1">
+										{{ t("Account") }}
+										<span v-if="toAcc" class="text-secondary fw-normal">({{ toCurrency }})</span>
+									</label>
+									<Select
+										v-model="form.to_account"
+										:disabled="optionsLoading"
+										:options="toAccountOptions"
+										value-key="name"
+										:placeholder="t('Select…')"
+									>
+										<template #option="{ option }">
+											{{ option.account_name || option.name }} ({{ option.account_currency }})
+										</template>
+										<template #selected="{ option }">
+											{{ option.account_name || option.name }} ({{ option.account_currency }})
+										</template>
+									</Select>
+								</div>
+								<div class="col-5">
+									<label class="form-label small mb-1">{{ t("Amount received") }}</label>
+									<MoneyInput
+										:model-value="form.to_amount"
+										:currency="toCurrency"
+										:language="user.language"
+										:group-while-typing="true"
+										:disabled="submitting || !isCrossCurrency"
+										@update:model-value="onRecvInput"
+									/>
+									<div v-if="isCrossCurrency" class="form-hint small mt-1">
+										{{ t("Editing the received amount updates the exchange rate.") }}
+									</div>
 								</div>
 							</div>
 						</div>
