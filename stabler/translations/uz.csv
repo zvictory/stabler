@@ -80,11 +80,13 @@ Amend failed.,O'zgartirilish muvaffaq bo'lmadi.
 Amend of,O'zgartirilgan
 Amount,Summa
 Amount exceeds outstanding ({amount}).,Summa qarz miqdorini ({amount}) osib ketdi.
+Amount exceeds the available balance.,Summa mavjud qoldiqdan oshib ketdi.
 Amount must be greater than zero.,Summa noldan katta bo'lishi kerak.
 Amount must be positive.,Summa musbat bo'lishi kerak.
 Amount paid,To'langan summa
 Amount received,Qabul qilingan summa
 Amount sent,Yuborilgan summa
+Amount to transfer,O'tkazma summasi
 Animated,Animatsiyali
 Any,Ixtiyoriy
 AP Aging,AP Muddati o'tgan
@@ -113,8 +115,8 @@ Assigned Technician,Tayinlangan texnik mutaxassis
 At least two account lines are required.,Kamida ikkita hisob qatori talab qilinadi.
 Attendance,Davomat
 Audited At,Tekshirilgan sana
-Available,Mavjud
 avail,mavj.
+Available,Mavjud
 Awaiting release by manager,Menejer ruxsatini kutmoqda
 Back,Ortga
 Back to dashboard,Boshqaruvga qaytish
@@ -153,6 +155,7 @@ Cancel entry,Yozuvni bekor qiling
 Cancel failed.,Bekor qilish muvaffaq bo'lmadi.
 Cancel invoice {name}? This is reversible only by amendment.,{name} hisob-fakturasini bekor qilasizmi? Bu faqat o'zgartirilish orqali qayta tiklanadi.
 Cancel or delete Sales Invoice {0} before cancelling this Sales Order.,Ushbu sotuv buyurtmasini bekor qilishdan oldin {0} sotuv hisob-fakturasini bekor qiling yoki o'chirib tashlang.
+Cancel payment,To‘lovni bekor qilish
 Cancel quotation {name}?,Kotirovka {name} bekor qilinsinmi?
 Cancel Request,Bekor qilish so'rovi
 Cancel sales order {name}? Stock reservations will be released.,Sotuv buyurtmasi {name} bekor qilinsinmi? Zaxira bronirovalari chiqariladi.
@@ -174,6 +177,7 @@ Category,Toifasi
 Category is required.,Toifasi talab qilinadi.
 CBU.uz exchange rates (last 30 days),CBU.uz almashtirish kurslari (oxirgi 30 kun)
 Channel,Kanal
+Charge via {provider},{provider} orqali to‘lash
 Chart of Accounts,Hisoblar rejasi
 Checked in,Kirish qilindi
 Checking availability…,Mavjudligini tekshirilmoqda…
@@ -242,6 +246,8 @@ Corridor,Yo'nalish
 Corridor / Memo,Yo'nalish / Izoh
 Cost,Tannarx
 Cost must be positive.,Tannarx musbat bo'lishi kerak.
+Could not check payment status.,To‘lov holatini tekshirib bo‘lmadi.
+Could not start the online payment.,Onlayn to‘lovni boshlab bo‘lmadi.
 Count,Miqdori
 Count:,Miqdori:
 Country,Davlat
@@ -329,8 +335,8 @@ Direction,Yo'nalish
 Disabled,O'chirilgan
 Disc,Chegirma
 Disc %,Chegirma %
-Discount %,Chegirma %
 Discount,Chegirma
+Discount %,Chegirma %
 Dispatched,Yuborilgan
 Distributor,Distribyutor
 Distributor claims will appear here once submitted.,Distribyutor arizalari tasdiqlangandan keyin bu yerda ko'rinadi.
@@ -367,6 +373,7 @@ Edit supplier,Ta'minotchini tahrirlash
 Edit Van Stock,Van ehtiyotini tahrirlash
 Edit Visit,Tashrif buyrumasini tahrirlash
 Editing the rate updates the received amount.,Narxni tahrirlash qabul qilingan summani yangilaydi.
+Editing the received amount updates the exchange rate.,Qabul qilingan summani tahrirlash kursni yangilaydi.
 EHF Status,EHF holati
 EHF Submissions,EHF taqdimotlari
 Email,Elektron pochta
@@ -414,6 +421,7 @@ Expected facings is required on row {0}.,Kutilgan yuzlar {0} qatorida talab qili
 Expense,Xarajat
 Expense lines,Xarajat qatorlari
 Expenses,Xarajatlar
+Expires in,Tugashiga
 Export,Eksport
 Export failed.,Eksport muvaffaq bo'lmadi.
 F.I.O.,F.I.Sh.
@@ -851,12 +859,14 @@ On Leave,Ta'tilda
 On leave today,Bugun ta'tilda
 On-Shelf-Availability audits compare expected vs actual facings during visits.,On-Shelf-Availability auditlari tashrif paytida kutilgan va haqiqiy yuzlarni solishtiradi.
 One or more lines exceed available stock. Reduce qty or choose a different warehouse.,Bir yoki bir nechta satrlar mavjud stockni oshib ketdi. Miqdorini kamaytiring yoki boshqa omborni tanlang.
+Online payment,Onlayn to‘lov
 Only Approved claims can be settled. Current status: {0},Faqat Tasdiqlangan da'volar ko'rib chiqilishi mumkin. Hozirgi holat: {0}
 Only draft sales orders can be edited.,
 Only submitted invoices can be returned.,Faqat topshirilgan hisob-fakturalar qaytarilishi mumkin.
 Only with balance,Faqat balansi bilan
 Open,Ochiq
 Open Desk,Deskni ochish
+Open payment link,To‘lov havolasini ochish
 Open SREs,Ochiq SRElar
 Opened,Ochildi
 Opening,Ochish
@@ -925,7 +935,10 @@ Payee,To'lov oluvchi
 Payload,Ma'lumot to'plami
 Payload must be an object.,Ma'lumot to'plami ob'ekt bo'lishi kerak.
 Payment,
+Payment cancelled,To‘lov bekor qilindi
 Payment Entry,To'lov yozuvi
+Payment failed,To‘lov amalga oshmadi
+Payment received,To‘lov qabul qilindi
 Payment schedule,To'lov jadvali
 Payment type,To'lov turi
 Payments,To'lovlar
@@ -1026,6 +1039,8 @@ Purchase Receipt,Tovar qabul qilish
 Purchase Receipts,Tovar qabul qilish hujjatlari
 Purchasing,Xarid
 Purpose,Maqsad
+QR code expired,QR kod muddati tugadi
+QR unavailable — open the link below,QR mavjud emas — quyidagi havolani oching
 Qty,Miqdori
 Quantity,Miqdor
 Quantity must be positive.,Miqdor musbat bo'lishi kerak.
@@ -1059,6 +1074,9 @@ Receiver gets,Qabul qiluvchi oladi
 Receiver name,Qabul qiluvchi ismi
 Recent activity,So'nggi operatsiyalar
 Reconciled,Tekshirilgan
+Record & clear,Yozib tozalash
+Record & close,Yozib yopish
+Record & new,Yozib yangi
 "Record a receipt, issue, or transfer to move stock between warehouses.","Ombor orasida tovarni ko'chirish uchun qabul, chiqarilish yoki ko'chirishni qayd qiling."
 Record a sale,Sotuvni qayd qiling
 Record production,Ishlab chiqarishni qayd etish
@@ -1103,6 +1121,7 @@ Required,Talab qilinadi
 Required materials,Kerakli materiallar
 Reschedule,Vaqtini oʻzgartirish
 Reserved,Zaxirada
+reserved,band
 Reserved Stock,Zahiralangan tovar
 Reserved value,Zahira qiymati
 Reset email sent.,Parolni tiklash elektron xati yuborildi.
@@ -1150,6 +1169,7 @@ Sales item,Sotuv turi
 Sales Order,Sotuv buyurtmasi
 Sales Order {0} must be submitted before invoicing,Sotuv buyurtmasi {0} hisob-faktura qilinishidan oldin taqdim etilishi kerak
 Sales Orders,Sotuv buyurtmalari
+Same currency,Bir xil valyuta
 Same day,Shu kuni
 Sat,Sh
 Save,Saqlash
@@ -1165,6 +1185,7 @@ Save modules,Modullarni saqlash
 Saving…,Saqlanmoqda…
 Scan code for,Kod skaneri
 Scan or type code,Kodni skanerlang yoki yozing
+Scan to pay,To‘lash uchun skanerlang
 Scanned,Skaneerlandi
 Scanned / Required,Skaneerlandi / Talab qilinadi
 Scanning…,Skanelanmoqda…
@@ -1268,6 +1289,7 @@ Step #{0}: type is required.,Qadam #{0}: turi talab qilinadi.
 step_idx must be an integer.,step_idx butun son bo'lishi kerak.
 Steps,Qadamlar
 Stock,Zaxira
+stock,zaxira
 Stock Entries,Zaxira Yozuvlari
 Stock entries,Zaxira kiritishlari
 Stock Entry,Zaxira kiritish
@@ -1341,11 +1363,11 @@ Total / Present / OSA % are computed server-side.,Jami / Hozir / OSA% server tom
 Total allocated,Jami taqsimlangan
 Total allocated cannot exceed the payment amount.,Taqsimlangan jami to'lov summasi osha olmaydi.
 Total cost,Umumiy xarajat
+Total in {0},Jami {0} da
 Total outstanding,Jami qoldiq
 Total payable,Jami to'lanadi
 Total receivable,Jami qabul qilinadigan
 Total SKUs,Jami SKU
-Total in {0},Jami {0} da
 Total value,Jami qiymat
 Total:,Jami:
 Trade Marketing,Savdo marketingi
@@ -1356,6 +1378,7 @@ Transfer detail,O'tkazma tafsilotlari
 Transfer how many units of materials? Leave blank for full.,Necha dona material o'tkaziladi? To'liq uchun bo'sh qoldiring.
 Transfer materials,Materiallarni o'tkazish
 Transfer materials and start this Work Order?,"Materiallarni topshirib, buyurtmani boshlash kerakmi?"
+Transfer recorded · {name},O'tkazma yozildi · {name}
 Transfer stock,Zaxiralarni o'tkazish
 Transferred,Berilgan
 Transfers,O'tkazmalar
@@ -1419,6 +1442,7 @@ Visits,Tashrif
 Visits appear once they are planned from a route or created manually.,Tashrif marshrut asosida rejalashtirilib yoki qo'l bilan yaratilgandan keyin paydo bo'ladi.
 Voucher,Vaucheri
 vs. last month,o'tgan oyga nisbatan
+Waiting for payment…,To‘lov kutilmoqda…
 Warehouse,Ombarxona
 Warehouse balances,Ombarxonaning qoldiqlar
 Warehouse is required for Sales Orders,Sotuv buyurtmalari uchun ombarxona majburiy
@@ -1476,5 +1500,3 @@ Yuk xati,Yuk xati
 — pick source —,— manbaadan tanlang —
 — select account —,— hisob tanlang —
 — top-level —,— eng yuqori darajali —
-reserved,band
-stock,zaxira

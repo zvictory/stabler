@@ -83,11 +83,13 @@ Amend failed.,Ошибка изменения.
 Amend of,Изменение
 Amount,Сумма
 Amount exceeds outstanding ({amount}).,Сумма превышает задолженность ({amount}).
+Amount exceeds the available balance.,Сумма превышает доступный баланс.
 Amount must be greater than zero.,Сумма должна быть больше нуля.
 Amount must be positive.,Сумма должна быть положительной.
 Amount paid,Сумма оплаты
 Amount received,Сумма получена
 Amount sent,Сумма отправлена
+Amount to transfer,Сумма перевода
 Animated,Анимированный
 Any,Любой
 AP Aging,Анализ кредиторской задолженности
@@ -118,8 +120,8 @@ Assigned Technician,Назначенный техник
 At least two account lines are required.,Требуется минимум две строки счета.
 Attendance,Посещаемость
 Audited At,Проверено
-Available,Доступно
 avail,дост.
+Available,Доступно
 Awaiting release by manager,Ожидает разрешения руководителя
 Back,Назад
 Back to dashboard,Вернуться на панель
@@ -158,6 +160,7 @@ Cancel entry,Отмена записи
 Cancel failed.,Отмена не удалась.
 Cancel invoice {name}? This is reversible only by amendment.,Отменить накладную {name}? Это можно отменить только путем внесения поправки.
 Cancel or delete Sales Invoice {0} before cancelling this Sales Order.,Отмените или удалите накладную продаж {0} перед отменой этого заказа продаж.
+Cancel payment,Отменить оплату
 Cancel quotation {name}?,Отменить предложение {name}?
 Cancel Request,Запрос на отмену
 Cancel sales order {name}? Stock reservations will be released.,Отменить заказ продаж {name}? Зарезервированный товар будет освобожден.
@@ -180,6 +183,7 @@ Category is required.,Категория обязательна.
 CBU.uz exchange rates (last 30 days),Курсы валют ЦБУ.uz (последние 30 дней)
 CBU.uz exchange rates appear here.,Здесь отображаются курсы валют ЦБУ.uz.
 Channel,Канал
+Charge via {provider},Оплата через {provider}
 Chart of Accounts,План счетов
 Checked in,Отметка о приходе
 Checking availability…,Проверка доступности…
@@ -248,6 +252,8 @@ Corridor,Коридор
 Corridor / Memo,Коридор / Примечание
 Cost,Себестоимость
 Cost must be positive.,Себестоимость должна быть положительной.
+Could not check payment status.,Не удалось проверить статус платежа.
+Could not start the online payment.,Не удалось начать онлайн-оплату.
 Count,Количество
 Count:,Количество:
 Country,Страна
@@ -335,8 +341,8 @@ Direction,Направление
 Disabled,Отключено
 Disc,Скидка
 Disc %,Скидка %
-Discount %,Скидка %
 Discount,Скидка
+Discount %,Скидка %
 Dispatched,Отправлено
 Distributor,Дистрибьютор
 Distributor claims will appear here once submitted.,Претензии дистрибьютора появятся здесь после отправки.
@@ -373,6 +379,7 @@ Edit supplier,Редактировать поставщика
 Edit Van Stock,Редактировать запас фургона
 Edit Visit,Редактировать визит
 Editing the rate updates the received amount.,Редактирование цены обновляет полученную сумму.
+Editing the received amount updates the exchange rate.,Редактирование полученной суммы обновляет курс.
 EHF (Elektron Hisob-Faktura) submissions appear here.,Здесь отображаются отправки ЭСФ (Elektron Hisob-Faktura).
 EHF Status,Статус ЭСФ
 EHF Submissions,Отправки ЭСФ
@@ -421,6 +428,7 @@ Expected facings is required on row {0}.,Ожидаемое количество
 Expense,Расход
 Expense lines,Строки расходов
 Expenses,Расходы
+Expires in,Истекает через
 Export,Экспорт
 Export failed.,Экспорт не удался.
 F.I.O.,Ф.И.О.
@@ -858,12 +866,14 @@ On Leave,В отпуске
 On leave today,В отпуске сегодня
 On-Shelf-Availability audits compare expected vs actual facings during visits.,Аудиты доступности товаров на полке сравнивают ожидаемое и фактическое размещение товаров во время визитов.
 One or more lines exceed available stock. Reduce qty or choose a different warehouse.,Одна или несколько строк превышают доступный запас. Уменьшите количество или выберите другой склад.
+Online payment,Онлайн-оплата
 Only Approved claims can be settled. Current status: {0},Только одобренные требования могут быть урегулированы. Текущий статус: {0}
 Only draft sales orders can be edited.,
 Only submitted invoices can be returned.,Только отправленные счета могут быть возвращены.
 Only with balance,Только с остатком
 Open,Открыта
 Open Desk,Открыть Desk
+Open payment link,Открыть ссылку для оплаты
 Open SREs,Открытые SRE
 Opened,Открыта
 Opening,Начисление
@@ -932,7 +942,10 @@ Payee,Получатель платежа
 Payload,Тело запроса
 Payload must be an object.,Полезная нагрузка должна быть объектом.
 Payment,
+Payment cancelled,Оплата отменена
 Payment Entry,Платёжный документ
+Payment failed,Платёж не выполнен
+Payment received,Оплата получена
 Payment schedule,График платежей
 Payment type,Тип платежа
 Payments,Платежи
@@ -1033,6 +1046,8 @@ Purchase Receipt,Приёмка товара
 Purchase Receipts,Приёмки товара
 Purchasing,Закупки
 Purpose,Назначение
+QR code expired,Срок действия QR-кода истёк
+QR unavailable — open the link below,QR недоступен — откройте ссылку ниже
 Qty,Кол-во
 Quantity,Количество
 Quantity must be positive.,Количество должно быть положительным.
@@ -1066,6 +1081,9 @@ Receiver gets,Получатель получает
 Receiver name,Имя получателя
 Recent activity,Последние операции
 Reconciled,Согласовано
+Record & clear,Записать и очистить
+Record & close,Записать и закрыть
+Record & new,Записать и новый
 "Record a receipt, issue, or transfer to move stock between warehouses.","Зарегистрируйте поступление, выпуск или передачу для перемещения товаров между складами."
 Record a sale,Записать продажу
 Record production,Записать выпуск
@@ -1110,6 +1128,7 @@ Required,Требуется
 Required materials,Требуемые материалы
 Reschedule,Перенести
 Reserved,Зарезервировано
+reserved,резерв
 Reserved Stock,Зарезервированный запас
 Reserved value,Стоимость резерва
 Reset email sent.,Сообщение сброса отправлено.
@@ -1157,6 +1176,7 @@ Sales item,Товар продажи
 Sales Order,Заказ продажи
 Sales Order {0} must be submitted before invoicing,Заказ продажи {0} должен быть отправлен перед выставлением счёта
 Sales Orders,Заказы продажи
+Same currency,Одна валюта
 Same day,В этот день
 Sat,Сб
 Save,Сохранить
@@ -1172,6 +1192,7 @@ Save modules,Сохранить модули
 Saving…,Сохранение…
 Scan code for,Сканировать код для
 Scan or type code,Сканируйте или введите код
+Scan to pay,Отсканируйте для оплаты
 Scanned,Просканировано
 Scanned / Required,Просканировано / требуется
 Scanning…,Сканирование…
@@ -1275,6 +1296,7 @@ Step #{0}: type is required.,Шаг #{0}: тип обязателен.
 step_idx must be an integer.,step_idx должен быть целым числом.
 Steps,Шаги
 Stock,Склад
+stock,запас
 Stock Entries,Записи о движении товаров
 Stock entries,Приходно-расходные накладные
 Stock Entry,Складское движение
@@ -1348,11 +1370,11 @@ Total / Present / OSA % are computed server-side.,Значения Итого / 
 Total allocated,Всего распределено
 Total allocated cannot exceed the payment amount.,Сумма распределения не может превышать размер платежа.
 Total cost,Общая стоимость
+Total in {0},Итого в {0}
 Total outstanding,Всего задолженности
 Total payable,Всего к выплате
 Total receivable,Итого к получению
 Total SKUs,Всего SKU
-Total in {0},Итого в {0}
 Total value,Общая стоимость
 Total:,Итого:
 Trade Marketing,Торговый маркетинг
@@ -1363,6 +1385,7 @@ Transfer detail,Детали перевода
 Transfer how many units of materials? Leave blank for full.,Сколько единиц материалов передать? Оставьте пустым для всего объёма.
 Transfer materials,Передать материалы
 Transfer materials and start this Work Order?,Передать материалы и запустить заказ?
+Transfer recorded · {name},Перевод записан · {name}
 Transfer stock,Передача товара
 Transferred,Передано
 Transfers,Передачи
@@ -1426,6 +1449,7 @@ Visits,Визиты
 Visits appear once they are planned from a route or created manually.,"Визиты появляются здесь, когда они запланированы из маршрута или созданы вручную."
 Voucher,Ваучер
 vs. last month,в сравнении с прошлым месяцем
+Waiting for payment…,Ожидание оплаты…
 Warehouse,Склад
 Warehouse balances,Остатки на складе
 Warehouse is required for Sales Orders,Склад требуется для заказов на продажу
@@ -1483,5 +1507,3 @@ Yuk xati,Юк хати
 — pick source —,— выберите источник —
 — select account —,— выберите счёт —
 — top-level —,— верхний уровень —
-reserved,резерв
-stock,запас

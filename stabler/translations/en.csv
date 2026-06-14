@@ -79,11 +79,13 @@ Amend failed.,Amend failed.
 Amend of,Amend of
 Amount,Amount
 Amount exceeds outstanding ({amount}).,Amount exceeds outstanding ({amount}).
+Amount exceeds the available balance.,Amount exceeds the available balance.
 Amount must be greater than zero.,Amount must be greater than zero.
 Amount must be positive.,Amount must be positive.
 Amount paid,Amount paid
 Amount received,Amount received
 Amount sent,Amount sent
+Amount to transfer,Amount to transfer
 Animated,Animated
 Any,Any
 AP Aging,AP Aging
@@ -112,8 +114,8 @@ Assigned Technician,Assigned Technician
 At least two account lines are required.,At least two account lines are required.
 Attendance,Attendance
 Audited At,Audited At
-Available,Available
 avail,avail
+Available,Available
 Awaiting release by manager,Awaiting release by manager
 Back,Back
 Badge,Badge
@@ -151,6 +153,7 @@ Cancel entry,Cancel entry
 Cancel failed.,Cancel failed.
 Cancel invoice {name}? This is reversible only by amendment.,Cancel invoice {name}? This is reversible only by amendment.
 Cancel or delete Sales Invoice {0} before cancelling this Sales Order.,Cancel or delete Sales Invoice {0} before cancelling this Sales Order.
+Cancel payment,Cancel payment
 Cancel quotation {name}?,Cancel quotation {name}?
 Cancel Request,Cancel Request
 Cancel sales order {name}? Stock reservations will be released.,Cancel sales order {name}? Stock reservations will be released.
@@ -172,6 +175,7 @@ Category,Category
 Category is required.,Category is required.
 CBU.uz exchange rates (last 30 days),CBU.uz exchange rates (last 30 days)
 Channel,Channel
+Charge via {provider},Charge via {provider}
 Chart of Accounts,Chart of Accounts
 Checked in,Checked in
 Checking availability…,Checking availability…
@@ -240,6 +244,8 @@ Corridor,Corridor
 Corridor / Memo,Corridor / Memo
 Cost,Cost
 Cost must be positive.,Cost must be positive.
+Could not check payment status.,Could not check payment status.
+Could not start the online payment.,Could not start the online payment.
 Count,Count
 Count:,Count:
 Country,Country
@@ -327,8 +333,8 @@ Direction,Direction
 Disabled,Disabled
 Disc,Disc
 Disc %,Disc %
-Discount %,Discount %
 Discount,Discount
+Discount %,Discount %
 Dispatched,Dispatched
 Distributor,Distributor
 Distributor claims will appear here once submitted.,Distributor claims will appear here once submitted.
@@ -365,6 +371,7 @@ Edit supplier,Edit supplier
 Edit Van Stock,Edit Van Stock
 Edit Visit,Edit Visit
 Editing the rate updates the received amount.,Editing the rate updates the received amount.
+Editing the received amount updates the exchange rate.,Editing the received amount updates the exchange rate.
 EHF Status,EHF Status
 EHF Submissions,EHF Submissions
 Email,Email
@@ -412,6 +419,7 @@ Expected facings is required on row {0}.,Expected facings is required on row {0}
 Expense,Expense
 Expense lines,Expense lines
 Expenses,Expenses
+Expires in,Expires in
 Export,Export
 Export failed.,Export failed.
 F.I.O.,F.I.O.
@@ -848,12 +856,14 @@ On Leave,On Leave
 On leave today,On leave today
 On-Shelf-Availability audits compare expected vs actual facings during visits.,On-Shelf-Availability audits compare expected vs actual facings during visits.
 One or more lines exceed available stock. Reduce qty or choose a different warehouse.,One or more lines exceed available stock. Reduce qty or choose a different warehouse.
+Online payment,Online payment
 Only Approved claims can be settled. Current status: {0},Only Approved claims can be settled. Current status: {0}
 Only draft sales orders can be edited.,Only draft sales orders can be edited.
 Only submitted invoices can be returned.,Only submitted invoices can be returned.
 Only with balance,Only with balance
 Open,Open
 Open Desk,Open Desk
+Open payment link,Open payment link
 Open SREs,Open SREs
 Opened,Opened
 Opening,Opening
@@ -921,7 +931,10 @@ Payee,Payee
 Payload,Payload
 Payload must be an object.,Payload must be an object.
 Payment,Payment
+Payment cancelled,Payment cancelled
 Payment Entry,Payment Entry
+Payment failed,Payment failed
+Payment received,Payment received
 Payment schedule,Payment schedule
 Payment type,Payment type
 Payments,Payments
@@ -1022,6 +1035,8 @@ Purchase Receipt,Purchase Receipt
 Purchase Receipts,Purchase Receipts
 Purchasing,Purchasing
 Purpose,Purpose
+QR code expired,QR code expired
+QR unavailable — open the link below,QR unavailable — open the link below
 Qty,Qty
 Quantity,Quantity
 Quantity must be positive.,Quantity must be positive.
@@ -1055,6 +1070,9 @@ Receiver gets,Receiver gets
 Receiver name,Receiver name
 Recent activity,Recent activity
 Reconciled,Reconciled
+Record & clear,Record & clear
+Record & close,Record & close
+Record & new,Record & new
 "Record a receipt, issue, or transfer to move stock between warehouses.","Record a receipt, issue, or transfer to move stock between warehouses."
 Record a sale,Record a sale
 Record production,Record production
@@ -1099,6 +1117,7 @@ Required,Required
 Required materials,Required materials
 Reschedule,Reschedule
 Reserved,Reserved
+reserved,reserved
 Reserved Stock,Reserved Stock
 Reserved value,Reserved value
 Reset email sent.,Reset email sent.
@@ -1146,6 +1165,7 @@ Sales item,Sales item
 Sales Order,Sales Order
 Sales Order {0} must be submitted before invoicing,Sales Order {0} must be submitted before invoicing
 Sales Orders,Sales Orders
+Same currency,Same currency
 Same day,Same day
 Sat,Sat
 Save,Save
@@ -1161,6 +1181,7 @@ Save modules,Save modules
 Saving…,Saving…
 Scan code for,Scan code for
 Scan or type code,Scan or type code
+Scan to pay,Scan to pay
 Scanned,Scanned
 Scanned / Required,Scanned / Required
 Scanning…,Scanning…
@@ -1264,6 +1285,7 @@ Step #{0}: type is required.,Step #{0}: type is required.
 step_idx must be an integer.,step_idx must be an integer.
 Steps,Steps
 Stock,Stock
+stock,stock
 Stock Entries,Stock Entries
 Stock entries,Stock entries
 Stock Entry,Stock Entry
@@ -1334,11 +1356,11 @@ Total / Present / OSA % are computed server-side.,Total / Present / OSA % are co
 Total allocated,Total allocated
 Total allocated cannot exceed the payment amount.,Total allocated cannot exceed the payment amount.
 Total cost,Total cost
+Total in {0},Total in {0}
 Total outstanding,Total outstanding
 Total payable,Total payable
 Total receivable,Total receivable
 Total SKUs,Total SKUs
-Total in {0},Total in {0}
 Total value,Total value
 Total:,Total:
 Trade Marketing,Trade Marketing
@@ -1349,6 +1371,7 @@ Transfer detail,Transfer detail
 Transfer how many units of materials? Leave blank for full.,Transfer how many units of materials? Leave blank for full.
 Transfer materials,Transfer materials
 Transfer materials and start this Work Order?,Transfer materials and start this Work Order?
+Transfer recorded · {name},Transfer recorded · {name}
 Transfer stock,Transfer stock
 Transferred,Transferred
 Transfers,Transfers
@@ -1411,6 +1434,7 @@ Visits,Visits
 Visits appear once they are planned from a route or created manually.,Visits appear once they are planned from a route or created manually.
 Voucher,Voucher
 vs. last month,vs. last month
+Waiting for payment…,Waiting for payment…
 Warehouse,Warehouse
 Warehouse balances,Warehouse balances
 Warehouse is required for Sales Orders,Warehouse is required for Sales Orders
@@ -1468,5 +1492,3 @@ Yuk xati,Yuk xati
 — pick source —,— pick source —
 — select account —,— select account —
 — top-level —,— top-level —
-reserved,reserved
-stock,stock

@@ -79,11 +79,13 @@ Amend failed.,Düzeltme başarısız oldu.
 Amend of,Düzeltmesi:
 Amount,Tutar
 Amount exceeds outstanding ({amount}).,Tutar bekleyen bakiyeyi aşıyor ({amount}).
+Amount exceeds the available balance.,Tutar mevcut bakiyeyi aşıyor.
 Amount must be greater than zero.,Tutar sıfırdan büyük olmalıdır.
 Amount must be positive.,Tutar pozitif olmalıdır.
 Amount paid,Ödenen tutar
 Amount received,Alınan tutar
 Amount sent,Gönderilen tutar
+Amount to transfer,Transfer tutarı
 Animated,Animasyonlu
 Any,Herhangi biri
 AP Aging,Borç Vade Analizi
@@ -112,8 +114,8 @@ Assigned Technician,Atanan Teknisyen
 At least two account lines are required.,En az iki hesap satırı gereklidir.
 Attendance,Devam
 Audited At,Denetleme Tarihi
-Available,Mevcut
 avail,mev.
+Available,Mevcut
 Awaiting release by manager,Yönetici onayı bekleniyor
 Back,Geri
 Badge,Rozet
@@ -151,6 +153,7 @@ Cancel entry,Girişi iptal et
 Cancel failed.,İptal başarısız oldu.
 Cancel invoice {name}? This is reversible only by amendment.,{name} faturası iptal edilsin mi? Bu işlem yalnızca düzeltmeyle geri alınabilir.
 Cancel or delete Sales Invoice {0} before cancelling this Sales Order.,Bu Satış Siparişini iptal etmeden önce {0} Satış Faturasını iptal edin veya silin.
+Cancel payment,Ödemeyi iptal et
 Cancel quotation {name}?,{name} teklifi iptal edilsin mi?
 Cancel Request,İptal Talebi
 Cancel sales order {name}? Stock reservations will be released.,{name} satış siparişi iptal edilsin mi? Stok rezervasyonları serbest bırakılacak.
@@ -172,6 +175,7 @@ Category,Kategori
 Category is required.,Kategori gereklidir.
 CBU.uz exchange rates (last 30 days),CBU.uz döviz kurları (son 30 gün)
 Channel,Kanal
+Charge via {provider},{provider} ile öde
 Chart of Accounts,Hesap Planı
 Checked in,Giriş yapıldı
 Checking availability…,Uygunluk kontrol ediliyor…
@@ -237,6 +241,8 @@ Cooler,Soğutucu
 Corridor / Memo,Koridor / Not
 Cost,Maliyet
 Cost must be positive.,Maliyet pozitif olmalıdır.
+Could not check payment status.,Ödeme durumu kontrol edilemedi.
+Could not start the online payment.,Çevrimiçi ödeme başlatılamadı.
 Count,Adet
 Count:,Adet:
 Country,Ülke
@@ -324,8 +330,8 @@ Direction,Yön
 Disabled,Devre Dışı
 Disc,İndirim
 Disc %,İndirim %
-Discount %,İskonto %
 Discount,İndirim
+Discount %,İskonto %
 Distributor,Distribütör
 Distributor claims will appear here once submitted.,Distribütör talepleri gönderildikten sonra burada görünecektir.
 DocType,DocType
@@ -361,6 +367,7 @@ Edit supplier,Tedarikçiyi düzenle
 Edit Van Stock,Van Stokunu Düzenle
 Edit Visit,Ziyareti Düzenle
 Editing the rate updates the received amount.,Oranı düzenlemek alınan tutarı günceller.
+Editing the received amount updates the exchange rate.,Alınan tutarı düzenlemek döviz kurunu günceller.
 EHF Status,EHF Durumu
 EHF Submissions,EHF Gönderimleri
 Email,E-posta
@@ -407,6 +414,7 @@ Expected facings is required on row {0}.,{0}. satırda beklenen yüz sayısı zo
 Expense,Gider
 Expense lines,Gider kalemleri
 Expenses,Giderler
+Expires in,Bitişine
 Export,Dışa Aktar
 Export failed.,Dışa aktarma başarısız oldu.
 F.I.O.,"Soyad, Ad, Baba Adı"
@@ -840,11 +848,13 @@ On Leave,İzinde
 On leave today,Bugün izinde
 On-Shelf-Availability audits compare expected vs actual facings during visits.,"Raf Varlığı denetimleri, ziyaretler sırasında beklenen ile gerçek raflama sayısını karşılaştırır."
 One or more lines exceed available stock. Reduce qty or choose a different warehouse.,Bir veya daha fazla satır mevcut stoğu aşıyor. Miktarı azaltın veya farklı bir depo seçin.
+Online payment,Çevrimiçi ödeme
 Only Approved claims can be settled. Current status: {0},Yalnızca Onaylanmış talepler kapatılabilir. Mevcut durum: {0}
 Only draft sales orders can be edited.,
 Only submitted invoices can be returned.,Yalnızca onaylanmış faturalar iade alabilir.
 Only with balance,Yalnızca bakiyesi olanlar
 Open,Açık
+Open payment link,Ödeme bağlantısını aç
 Open SREs,Açık SRE'ler
 Opened,Açıldı
 Opening,Açılış
@@ -912,7 +922,10 @@ Payee,Alacaklı
 Payload,Veri yükü
 Payload must be an object.,Veri yükü bir nesne olmalıdır.
 Payment,Ödeme
+Payment cancelled,Ödeme iptal edildi
 Payment Entry,Ödeme Fişi
+Payment failed,Ödeme başarısız
+Payment received,Ödeme alındı
 Payment schedule,Ödeme planı
 Payment type,Ödeme türü
 Payments,Ödemeler
@@ -1012,6 +1025,8 @@ Purchase Receipt,Mal Kabul Fişi
 Purchase Receipts,Mal Kabulleri
 Purchasing,Satın Alma
 Purpose,Amaç
+QR code expired,QR kodun süresi doldu
+QR unavailable — open the link below,QR kullanılamıyor — aşağıdaki bağlantıyı açın
 Qty,Miktar
 Quantity,Miktar
 Quantity must be positive.,Miktar pozitif olmalıdır.
@@ -1044,6 +1059,9 @@ Received At,Alındığı Yer
 Receiver gets,Alıcının aldığı
 Receiver name,Alıcı adı
 Recent activity,Son etkinlik
+Record & clear,Kaydet ve temizle
+Record & close,Kaydet ve kapat
+Record & new,Kaydet ve yeni
 "Record a receipt, issue, or transfer to move stock between warehouses.","Depolar arasında stok taşımak için bir giriş, çıkış veya transfer kaydı oluşturun."
 Record a sale,Satış kaydet
 Record production,Üretim kaydet
@@ -1088,6 +1106,7 @@ Required,Zorunlu
 Required materials,Gerekli malzemeler
 Reschedule,Yeniden zamanla
 Reserved,Rezerve
+reserved,rezerve
 Reserved Stock,Rezerve Stok
 Reserved value,Rezerve değeri
 Reset email sent.,Sıfırlama e-postası gönderildi.
@@ -1134,6 +1153,7 @@ Sales item,Satış kalemi
 Sales Order,Satış Siparişi
 Sales Order {0} must be submitted before invoicing,Fatura düzenlenmeden önce {0} Satış Siparişi onaylanmalıdır
 Sales Orders,Satış Siparişleri
+Same currency,Aynı para birimi
 Same day,Aynı gün
 Sat,Cmt
 Save,Kaydet
@@ -1149,6 +1169,7 @@ Save modules,Modülleri kaydet
 Saving…,Kaydediliyor…
 Scan code for,Kod tara:
 Scan or type code,Kod tara veya yaz
+Scan to pay,Ödemek için tarayın
 Scanned,Tarandı
 Scanned / Required,Taranan / Gereken
 Scanning…,Taranıyor…
@@ -1251,6 +1272,7 @@ Step #{0}: type is required.,#{0}. adım: tür zorunludur.
 step_idx must be an integer.,step_idx bir tam sayı olmalıdır.
 Steps,Adımlar
 Stock,Stok
+stock,stok
 Stock Entries,Stok Girişleri
 Stock entries,Stok girişleri
 Stock Entry,Stok Girişi
@@ -1321,11 +1343,11 @@ Total / Present / OSA % are computed server-side.,Toplam / Mevcut / OSA % sunucu
 Total allocated,Toplam tahsis edilen
 Total allocated cannot exceed the payment amount.,"Toplam tahsis edilen tutar, ödeme tutarını aşamaz."
 Total cost,Toplam maliyet
+Total in {0},{0} cinsinden toplam
 Total outstanding,Toplam bakiye
 Total payable,Toplam ödenecek
 Total receivable,Toplam alacak
 Total SKUs,Toplam SKU
-Total in {0},{0} cinsinden toplam
 Total value,Toplam değer
 Total:,Toplam:
 Trade Marketing,Ticari Pazarlama
@@ -1336,6 +1358,7 @@ Transfer detail,Transfer detayı
 Transfer how many units of materials? Leave blank for full.,Kaç birim malzeme transfer edilsin? Tamamı için boş bırakın.
 Transfer materials,Malzemeleri transfer et
 Transfer materials and start this Work Order?,Malzemeleri transfer edip iş emrini başlatmak ister misiniz?
+Transfer recorded · {name},Transfer kaydedildi · {name}
 Transfer stock,Stok transferi
 Transferred,Transfer edildi
 Transfers,Transferler
@@ -1398,6 +1421,7 @@ Visits,Ziyaretler
 Visits appear once they are planned from a route or created manually.,Ziyaretler bir rotadan planlandıktan veya manuel oluşturulduktan sonra görünür.
 Voucher,Fiş
 vs. last month,geçen aya kıyasla
+Waiting for payment…,Ödeme bekleniyor…
 Warehouse,Depo
 Warehouse balances,Depo bakiyeleri
 Warehouse is required for Sales Orders,Satış Siparişleri için depo zorunludur
@@ -1455,5 +1479,3 @@ Yuk xati,Yuk xati
 — pick source —,— kaynak seçin —
 — select account —,— hesap seçin —
 — top-level —,— üst düzey —
-reserved,rezerve
-stock,stok
