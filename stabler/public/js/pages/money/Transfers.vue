@@ -102,8 +102,13 @@ const isCrossCurrency = computed(
 	() => fromAcc.value && toAcc.value && fromCurrency.value !== toCurrency.value,
 );
 
-// CBU rate for display hint
+// CBU rate for display hint (canonical: 1 fxBaseCur = cbuRate fxCounterCur, >= 1)
 const cbuRate = ref(null);
+// Canonical quote direction. We ALWAYS quote the rate as "1 strong = N weak"
+// (rate >= 1) so UZS↔USD always reads "1 USD = 12 950 UZS", never "0.000077".
+const fxBaseCur = ref("");
+const fxCounterCur = ref("");
+const fromIsBase = computed(() => fromCurrency.value === fxBaseCur.value);
 
 // --- Three-way reciprocal binding -----------------------------------------
 // Relationship: from_amount × exchange_rate = to_amount
@@ -132,18 +137,26 @@ function roundRate(rate) {
 	return rate > 100 ? Math.round(rate * 100) / 100 : Math.round(rate * 1000000) / 1000000;
 }
 
-// Plain number format for CBU hint — no currency symbol, locale-aware grouping.
-// Uses up to 6 dp for sub-1 rates (e.g. 0.000077 USD) and 2 dp otherwise.
-function formatRate(n, language) {
-	if (!n || !Number.isFinite(Number(n))) return "";
-	const num = Number(n);
-	const localeCode = language === "en" ? "en-US" : "ru-RU";
-	const maxFrac = num < 1 ? 6 : 2;
-	return new Intl.NumberFormat(localeCode, {
-		minimumFractionDigits: 0,
-		maximumFractionDigits: maxFrac,
-		useGrouping: true,
-	}).format(num);
+function isUZS(cur) {
+	return (cur || "").toUpperCase() === "UZS";
+}
+
+// Space-grouped amount with dot decimals — "1 200.00", "15 300 000".
+function fmtAmt(v, cur) {
+	const dp = isUZS(cur) ? 0 : 2;
+	const s = (Number(v) || 0).toFixed(dp);
+	const [i, d] = s.split(".");
+	const gi = i.replace(/\B(?=(\d{3})+(?!\d))/g, " ");
+	return dp > 0 ? `${gi}.${d}` : gi;
+}
+
+// Space-grouped rate — "12 750" for big quotes, up to 6 dp for sub-1.
+function fmtRate(r) {
+	const n = Number(r) || 0;
+	const dp = n >= 100 ? 2 : 6;
+	const s = n.toFixed(dp).replace(/(\.\d*?)0+$/, "$1").replace(/\.$/, "");
+	const [i, d] = s.split(".");
+	return i.replace(/\B(?=(\d{3})+(?!\d))/g, " ") + (d ? `.${d}` : "");
 }
 
 let _deriving = false;
@@ -155,17 +168,21 @@ function derive() {
 	}
 	const field = computedField();
 	const amt = Number(form.value.from_amount) || 0;
-	const rate = Number(form.value.exchange_rate) || 0;
+	const R = Number(form.value.exchange_rate) || 0; // canonical: 1 base = R counter
 	const recv = Number(form.value.to_amount) || 0;
+	const fIsBase = fromIsBase.value; // from-leg is the strong/base currency?
 
 	_deriving = true;
 	try {
 		if (field === "recv") {
-			if (amt > 0 && rate > 0) form.value.to_amount = roundMoney(amt * rate, toCurrency.value);
+			if (amt > 0 && R > 0)
+				form.value.to_amount = roundMoney(fIsBase ? amt * R : amt / R, toCurrency.value);
 		} else if (field === "amt") {
-			if (recv > 0 && rate > 0) form.value.from_amount = roundMoney(recv / rate, fromCurrency.value);
+			if (recv > 0 && R > 0)
+				form.value.from_amount = roundMoney(fIsBase ? recv / R : recv * R, fromCurrency.value);
 		} else if (field === "rate") {
-			if (amt > 0 && recv > 0) form.value.exchange_rate = roundRate(recv / amt);
+			if (amt > 0 && recv > 0)
+				form.value.exchange_rate = roundRate(fIsBase ? recv / amt : amt / recv);
 		}
 	} finally {
 		_deriving = false;
@@ -201,21 +218,33 @@ async function fetchExchangeRate() {
 	if (!isCrossCurrency.value) {
 		form.value.exchange_rate = null;
 		cbuRate.value = null;
+		fxBaseCur.value = "";
+		fxCounterCur.value = "";
 		return;
 	}
 	try {
-		const rate = await call("stabler.api.money.get_exchange_rate_for_currencies", {
+		const raw = await call("stabler.api.money.get_exchange_rate_for_currencies", {
 			from_currency: fromCurrency.value,
 			to_currency: toCurrency.value,
 			posting_date: form.value.posting_date,
 		});
-		if (rate > 0) {
-			cbuRate.value = rate;
-			if (!rateManuallyEdited.value) {
-				_deriving = true;
-				form.value.exchange_rate = rate;
-				_deriving = false;
-			}
+		// raw = "to per from". Flip to the canonical >= 1 quote so we never show
+		// a sub-1 rate like 1 UZS = 0.000077 USD — always 1 USD = 12 950 UZS.
+		let base, counter, R;
+		if (raw >= 1) {
+			base = fromCurrency.value; counter = toCurrency.value; R = raw;
+		} else if (raw > 0) {
+			base = toCurrency.value; counter = fromCurrency.value; R = 1 / raw;
+		} else {
+			return;
+		}
+		fxBaseCur.value = base;
+		fxCounterCur.value = counter;
+		cbuRate.value = roundRate(R);
+		if (!rateManuallyEdited.value) {
+			_deriving = true;
+			form.value.exchange_rate = roundRate(R);
+			_deriving = false;
 		}
 	} catch (err) {
 		console.error("Failed to load exchange rate", err);
@@ -233,14 +262,14 @@ watch(
 	},
 );
 
-// Date changes: re-fetch CBU only if rate wasn't manually edited
+// Date changes: always re-fetch and show THAT date's CBU rate (the rate is a
+// function of the posting date, so a date change re-anchors it).
 watch(
 	() => form.value.posting_date,
 	async () => {
-		if (!rateManuallyEdited.value) {
-			await fetchExchangeRate();
-			derive();
-		}
+		rateManuallyEdited.value = false;
+		await fetchExchangeRate();
+		derive();
 	},
 );
 
@@ -354,8 +383,13 @@ async function submitCreate(mode) {
 	};
 	if (form.value.memo?.trim()) payload.memo = form.value.memo.trim();
 	if (isCrossCurrency.value) {
+		// to_amount is authoritative; send a from→to directional rate (what the
+		// backend expects: to_amt = from_amt × exchange_rate) derived from the
+		// two amounts, so it never depends on the canonical display direction.
 		payload.to_amount = Number(form.value.to_amount);
-		if (Number(form.value.exchange_rate) > 0) payload.exchange_rate = Number(form.value.exchange_rate);
+		const amt = Number(form.value.from_amount) || 0;
+		if (amt > 0 && Number(form.value.to_amount) > 0)
+			payload.exchange_rate = Number(form.value.to_amount) / amt;
 	}
 
 	submitting.value = true;
@@ -694,9 +728,13 @@ watch(activeCompany, () => {
 						<div class="card-body p-3">
 							<div class="row g-2 align-items-end">
 								<div class="col">
-									<label class="form-label small mb-1">
-										{{ t("Account") }}
-										<span v-if="fromAcc" class="text-secondary fw-normal">({{ fromCurrency }})</span>
+									<label class="form-label small mb-1 d-flex justify-content-between align-items-baseline">
+										<span>{{ t("Account") }}
+											<span v-if="fromAcc" class="text-secondary fw-normal">({{ fromCurrency }})</span>
+										</span>
+										<span v-if="fromAcc && fromAcc.account_balance != null" class="text-secondary fw-normal font-monospace">
+											{{ fmtAmt(fromAcc.account_balance, fromCurrency) }} {{ fromCurrency }}
+										</span>
 									</label>
 									<Select
 										v-model="form.from_account"
@@ -735,20 +773,20 @@ watch(activeCompany, () => {
 						<div v-if="isCrossCurrency" class="flex-grow-1" style="max-width: 340px">
 							<div class="text-center mb-1">
 								<span class="text-secondary small text-uppercase fw-semibold" style="letter-spacing:.04em">
-									{{ t("Exchange rate") }} · {{ fromCurrency }} → {{ toCurrency }}
+									{{ t("Exchange rate") }} · {{ fxBaseCur || fromCurrency }} → {{ fxCounterCur || toCurrency }}
 								</span>
 								<span v-if="!rateManuallyEdited" class="badge bg-blue-lt text-blue ms-1 small">AUTO</span>
 							</div>
 							<MoneyInput
 								:model-value="form.exchange_rate"
-								:currency="toCurrency"
+								:currency="fxCounterCur || toCurrency"
 								:language="user.language"
 								:group-while-typing="true"
 								:disabled="submitting"
 								@update:model-value="onRateInput"
 							/>
 							<div v-if="cbuRate" class="text-center text-secondary small mt-1">
-								CBU: 1 {{ fromCurrency }} = {{ formatRate(cbuRate, user.language) }} {{ toCurrency }}
+								CBU: 1 {{ fxBaseCur || fromCurrency }} = {{ fmtRate(cbuRate) }} {{ fxCounterCur || toCurrency }}
 							</div>
 						</div>
 						<div v-else-if="fromAcc && toAcc" class="text-secondary small px-2">
@@ -776,9 +814,13 @@ watch(activeCompany, () => {
 						<div class="card-body p-3">
 							<div class="row g-2 align-items-end">
 								<div class="col">
-									<label class="form-label small mb-1">
-										{{ t("Account") }}
-										<span v-if="toAcc" class="text-secondary fw-normal">({{ toCurrency }})</span>
+									<label class="form-label small mb-1 d-flex justify-content-between align-items-baseline">
+										<span>{{ t("Account") }}
+											<span v-if="toAcc" class="text-secondary fw-normal">({{ toCurrency }})</span>
+										</span>
+										<span v-if="toAcc && toAcc.account_balance != null" class="text-secondary fw-normal font-monospace">
+											{{ fmtAmt(toAcc.account_balance, toCurrency) }} {{ toCurrency }}
+										</span>
 									</label>
 									<Select
 										v-model="form.to_account"
@@ -828,11 +870,15 @@ watch(activeCompany, () => {
 					<!-- Summary line -->
 					<div
 						v-if="form.from_account && form.to_account && Number(form.from_amount) > 0"
-						class="d-flex gap-3 mt-3 px-1 text-secondary small"
+						class="mt-3 px-1 text-secondary small"
 					>
-						<span class="font-monospace">{{ formatMoney(form.from_amount, fromCurrency, user.language) }} {{ fromCurrency }}</span>
-						<span>→</span>
-						<span class="font-monospace">{{ formatMoney(form.to_amount ?? form.from_amount, toCurrency, user.language) }} {{ toCurrency }}</span>
+						{{ t("Transfer") }}
+						<span class="font-monospace">{{ fmtAmt(form.from_amount, fromCurrency) }} {{ fromCurrency }}</span>
+						→
+						<span class="font-monospace">{{ fmtAmt(form.to_amount ?? form.from_amount, toCurrency) }} {{ toCurrency }}</span>
+						<template v-if="isCrossCurrency && Number(form.exchange_rate) > 0">
+							@ <span class="font-monospace">{{ fmtRate(form.exchange_rate) }}</span>
+						</template>
 					</div>
 				</div>
 

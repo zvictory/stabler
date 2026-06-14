@@ -1385,6 +1385,15 @@ def bank_cash_accounts(company: str, include_equity: int = 0):
 		order_by="account_type asc, account_name asc",
 		limit_page_length=500,
 	)
+	# Attach the current balance in the account's own currency so the SPA can
+	# show "available" next to each From/To account (QuickBooks/NetSuite style).
+	from erpnext.accounts.utils import get_balance_on
+
+	for r in rows:
+		try:
+			r["account_balance"] = flt(get_balance_on(account=r["name"], in_account_currency=True))
+		except Exception:
+			r["account_balance"] = 0.0
 	if int(include_equity or 0):
 		eq = frappe.get_all(
 			"Account",
