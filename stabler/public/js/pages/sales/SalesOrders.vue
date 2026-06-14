@@ -5,7 +5,7 @@ import { useRouter } from "vue-router";
 import { useSession } from "../../stores/session.js";
 import { call } from "../../api/client.js";
 import { formatMoney } from "../../composables/money.js";
-import { formatDateTime } from "../../composables/date.js";
+import { formatDateTime, todayIso} from "../../composables/date.js";
 import { t } from "../../composables/i18n.js";
 import DateInput from "../../components/DateInput.vue";
 import EmptyState from "../../components/EmptyState.vue";
@@ -18,7 +18,7 @@ const session = useSession();
 const { activeCompany, user } = storeToRefs(session);
 const router = useRouter();
 
-const today = new Date().toISOString().slice(0, 10);
+const today = todayIso();
 const monthAgo = new Date(Date.now() - 90 * 86400000).toISOString().slice(0, 10);
 const fromDate = ref(monthAgo);
 const toDate = ref(today);

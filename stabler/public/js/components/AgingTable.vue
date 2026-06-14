@@ -18,6 +18,7 @@ import { formatMoney } from "../composables/money.js";
 import { t } from "../composables/i18n.js";
 import EmptyState from "./EmptyState.vue";
 import DateInput from "./DateInput.vue";
+import { todayIso } from "../composables/date.js";
 
 const props = defineProps({
 	endpoint: { type: String, required: true },
@@ -30,7 +31,7 @@ const props = defineProps({
 const session = useSession();
 const { activeCompany, user } = storeToRefs(session);
 
-const today = new Date().toISOString().slice(0, 10);
+const today = todayIso();
 const asOf = ref(today);
 
 const loading = ref(false);

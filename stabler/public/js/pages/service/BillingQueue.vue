@@ -1,7 +1,7 @@
 <script setup>
 import { computed, onMounted, ref, watch } from "vue";
 import { call } from "../../api/client.js";
-import { formatDate } from "../../composables/date.js";
+import { formatDate, todayIso} from "../../composables/date.js";
 import { formatMoney } from "../../composables/money.js";
 import { t } from "../../composables/i18n.js";
 import { useSession } from "../../stores/session.js";
@@ -21,7 +21,7 @@ const warehouses = ref([]);
 const selected = ref(null);
 const action = ref("invoice");
 const form = ref({
-	posting_date: new Date().toISOString().slice(0, 10),
+	posting_date: todayIso(),
 	warehouse: "",
 	items: [],
 });
@@ -81,7 +81,7 @@ function openAction(visit, nextAction) {
 	actionError.value = "";
 	success.value = "";
 	form.value = {
-		posting_date: new Date().toISOString().slice(0, 10),
+		posting_date: todayIso(),
 		warehouse: form.value.warehouse || warehouses.value[0]?.name || "",
 		items: [blankLine()],
 	};

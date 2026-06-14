@@ -5,7 +5,7 @@ import { useRoute, useRouter } from "vue-router";
 import { useSession } from "../../stores/session.js";
 import { call } from "../../api/client.js";
 import { formatMoney } from "../../composables/money.js";
-import { formatDate, formatDateTime } from "../../composables/date.js";
+import { formatDate, formatDateTime, todayIso} from "../../composables/date.js";
 import { t } from "../../composables/i18n.js";
 import DateInput from "../../components/DateInput.vue";
 import Typeahead from "../../components/Typeahead.vue";
@@ -19,7 +19,7 @@ const { activeCompany, user } = storeToRefs(session);
 const router = useRouter();
 const route = useRoute();
 
-const today = new Date().toISOString().slice(0, 10);
+const today = todayIso();
 
 const currency = computed(() => session.currency || "UZS");
 

@@ -4,7 +4,7 @@ import { storeToRefs } from "pinia";
 import { useSession } from "../../stores/session.js";
 import { call } from "../../api/client.js";
 import { t } from "../../composables/i18n.js";
-import { formatDateTime } from "../../composables/date.js";
+import { formatDateTime, todayIso} from "../../composables/date.js";
 import { useConfirm } from "../../composables/useConfirm.js";
 import { useToast } from "../../composables/useToast.js";
 import EmptyState from "../../components/EmptyState.vue";
@@ -300,7 +300,7 @@ function blankWO() {
 		production_item: "",
 		bom_no: "",
 		qty: 1,
-		planned_start_date: new Date().toISOString().slice(0, 10),
+		planned_start_date: todayIso(),
 		fg_warehouse: "",
 		wip_warehouse: "",
 		source_warehouse: "",

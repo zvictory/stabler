@@ -5,7 +5,7 @@ import { useRoute, useRouter } from "vue-router";
 import { useSession } from "../../stores/session.js";
 import { call } from "../../api/client.js";
 import { formatMoney } from "../../composables/money.js";
-import { formatDateTime } from "../../composables/date.js";
+import { formatDateTime, todayIso} from "../../composables/date.js";
 import { t } from "../../composables/i18n.js";
 import PaymentModal from "../../components/PaymentModal.vue";
 import RelatedDocuments from "../../components/RelatedDocuments.vue";
@@ -111,7 +111,7 @@ async function submitReturn() {
 		}
 		const res = await call("stabler.api.sales.create_sales_return", {
 			sales_invoice: form.value.name,
-			posting_date: new Date().toISOString().slice(0, 10),
+			posting_date: todayIso(),
 			item_returns,
 			submit: 1,
 		});

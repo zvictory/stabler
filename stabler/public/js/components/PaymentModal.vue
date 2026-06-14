@@ -16,6 +16,7 @@ import { storeToRefs } from "pinia";
 import { useSession } from "../stores/session.js";
 import { call } from "../api/client.js";
 import { formatMoney } from "../composables/money.js";
+import { todayIso } from "../composables/date.js";
 import { t } from "../composables/i18n.js";
 import MoneyInput from "./MoneyInput.vue";
 import DateInput from "./DateInput.vue";
@@ -33,7 +34,7 @@ const emit = defineEmits(["close", "paid"]);
 const session = useSession();
 const { activeCompany, user } = storeToRefs(session);
 
-const today = new Date().toISOString().slice(0, 10);
+const today = todayIso();
 
 const loading = ref(false);
 const submitting = ref(false);

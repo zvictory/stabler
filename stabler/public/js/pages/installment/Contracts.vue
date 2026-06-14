@@ -4,7 +4,7 @@ import { call } from "../../api/client.js";
 import { useSession } from "../../stores/session.js";
 import { t } from "../../composables/i18n.js";
 import { formatMoney } from "../../composables/money.js";
-import { formatDate } from "../../composables/date.js";
+import { formatDate, todayIso} from "../../composables/date.js";
 import DateInput from "../../components/DateInput.vue";
 import EmptyState from "../../components/EmptyState.vue";
 import MoneyInput from "../../components/MoneyInput.vue";
@@ -30,7 +30,7 @@ const collection = ref({
 	amount: null,
 	mode_of_payment: "",
 	bank_account: "",
-	posting_date: new Date().toISOString().slice(0, 10),
+	posting_date: todayIso(),
 });
 const collectionPreview = ref(null);
 const collectionLoading = ref(false);
@@ -96,7 +96,7 @@ async function loadCollectionDefaults() {
 		amount: null,
 		mode_of_payment: modesOfPayment.value[0]?.name || "",
 		bank_account: defaults.suggested_cash_bank_account || "",
-		posting_date: new Date().toISOString().slice(0, 10),
+		posting_date: todayIso(),
 	};
 	collectionPreview.value = null;
 	collectionError.value = "";

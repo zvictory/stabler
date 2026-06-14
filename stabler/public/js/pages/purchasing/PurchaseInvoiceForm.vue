@@ -6,7 +6,7 @@ import { useSession } from "../../stores/session.js";
 import { call } from "../../api/client.js";
 import { t } from "../../composables/i18n.js";
 import { formatMoney } from "../../composables/money.js";
-import { formatDateTime } from "../../composables/date.js";
+import { formatDateTime, todayIso} from "../../composables/date.js";
 import MoneyInput from "../../components/MoneyInput.vue";
 import DateInput from "../../components/DateInput.vue";
 import PaymentModal from "../../components/PaymentModal.vue";
@@ -22,7 +22,7 @@ const { activeCompany, user } = storeToRefs(session);
 const router = useRouter();
 const route = useRoute();
 
-const today = new Date().toISOString().slice(0, 10);
+const today = todayIso();
 
 // Lookups/Refs
 const warehouses = ref([]);

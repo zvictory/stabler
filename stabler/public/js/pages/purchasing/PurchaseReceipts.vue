@@ -5,7 +5,7 @@ import { useRoute, useRouter } from "vue-router";
 import { useSession } from "../../stores/session.js";
 import { call } from "../../api/client.js";
 import { formatMoney } from "../../composables/money.js";
-import { formatDate } from "../../composables/date.js";
+import { formatDate, todayIso} from "../../composables/date.js";
 import { t } from "../../composables/i18n.js";
 import { useConfirm } from "../../composables/useConfirm.js";
 import { useToast } from "../../composables/useToast.js";
@@ -27,7 +27,7 @@ const route = useRoute();
 const { confirm } = useConfirm();
 const toast = useToast();
 
-const today = new Date().toISOString().slice(0, 10);
+const today = todayIso();
 const monthAgo = new Date(Date.now() - 90 * 86400000).toISOString().slice(0, 10);
 const fromDate = ref(monthAgo);
 const toDate = ref(today);

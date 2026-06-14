@@ -10,12 +10,13 @@ import DateInput from "../../components/DateInput.vue";
 import EmptyState from "../../components/EmptyState.vue";
 import Select from "../../components/Select.vue";
 import Typeahead from "../../components/Typeahead.vue";
+import { todayIso } from "../../composables/date.js";
 
 const session = useSession();
 const { activeCompany } = storeToRefs(session);
 const router = useRouter();
 
-const today = new Date().toISOString().slice(0, 10);
+const today = todayIso();
 const monthAgo = new Date(Date.now() - 30 * 86400000).toISOString().slice(0, 10);
 
 const activeTab = ref("customer");

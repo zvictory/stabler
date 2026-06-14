@@ -8,6 +8,7 @@ import { formatMoney } from "../../composables/money.js";
 import DateInput from "../../components/DateInput.vue";
 import MoneyInput from "../../components/MoneyInput.vue";
 import Select from "../../components/Select.vue";
+import { todayIso } from "../../composables/date.js";
 
 const router = useRouter();
 const session = useSession();
@@ -27,7 +28,7 @@ const corridors = ref([]);
 const step = ref(1);
 
 const form = ref({
-	posting_date: new Date().toISOString().slice(0, 10),
+	posting_date: todayIso(),
 	from_city: "",
 	to_city: "",
 	send_currency: "USD",

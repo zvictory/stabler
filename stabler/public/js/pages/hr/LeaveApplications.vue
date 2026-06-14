@@ -6,7 +6,7 @@ import { call } from "../../api/client.js";
 import { t } from "../../composables/i18n.js";
 import { useConfirm } from "../../composables/useConfirm.js";
 import { useToast } from "../../composables/useToast.js";
-import { formatDateTime } from "../../composables/date.js";
+import { formatDateTime, todayIso} from "../../composables/date.js";
 import EmptyState from "../../components/EmptyState.vue";
 import DateInput from "../../components/DateInput.vue";
 import Select from "../../components/Select.vue";
@@ -79,8 +79,8 @@ function blankReq() {
 	return {
 		employee: "",
 		leave_type: "",
-		from_date: new Date().toISOString().slice(0, 10),
-		to_date: new Date().toISOString().slice(0, 10),
+		from_date: todayIso(),
+		to_date: todayIso(),
 		description: "",
 	};
 }

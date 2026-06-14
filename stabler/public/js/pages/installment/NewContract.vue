@@ -5,7 +5,7 @@ import { call } from "../../api/client.js";
 import { useSession } from "../../stores/session.js";
 import { t } from "../../composables/i18n.js";
 import { formatMoney } from "../../composables/money.js";
-import { formatDate } from "../../composables/date.js";
+import { formatDate, todayIso} from "../../composables/date.js";
 import DateInput from "../../components/DateInput.vue";
 import MoneyInput from "../../components/MoneyInput.vue";
 import Typeahead from "../../components/Typeahead.vue";
@@ -25,7 +25,7 @@ const form = ref({
 	markup: null,
 	dp_percent: 20,
 	term_months: 12,
-	start_date: new Date().toISOString().slice(0, 10),
+	start_date: todayIso(),
 	remarks: "",
 });
 

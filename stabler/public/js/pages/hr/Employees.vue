@@ -4,7 +4,7 @@ import { storeToRefs } from "pinia";
 import { useSession } from "../../stores/session.js";
 import { call } from "../../api/client.js";
 import { t } from "../../composables/i18n.js";
-import { formatDateTime } from "../../composables/date.js";
+import { formatDateTime, todayIso} from "../../composables/date.js";
 import EmptyState from "../../components/EmptyState.vue";
 import DateInput from "../../components/DateInput.vue";
 import Select from "../../components/Select.vue";
@@ -96,7 +96,7 @@ function blankEmp() {
 		last_name: "",
 		gender: "",
 		date_of_birth: "",
-		date_of_joining: new Date().toISOString().slice(0, 10),
+		date_of_joining: todayIso(),
 		designation: "",
 		department: "",
 		cell_number: "",
