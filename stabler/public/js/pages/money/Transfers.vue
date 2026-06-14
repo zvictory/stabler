@@ -779,7 +779,7 @@ watch(activeCompany, () => {
 							</div>
 							<MoneyInput
 								:model-value="form.exchange_rate"
-								:currency="fxCounterCur || toCurrency"
+								currency=""
 								:language="user.language"
 								:group-while-typing="true"
 								:disabled="submitting"
@@ -847,9 +847,6 @@ watch(activeCompany, () => {
 										:disabled="submitting || !isCrossCurrency"
 										@update:model-value="onRecvInput"
 									/>
-									<div v-if="isCrossCurrency" class="form-hint small mt-1">
-										{{ t("Editing the received amount updates the exchange rate.") }}
-									</div>
 								</div>
 							</div>
 						</div>

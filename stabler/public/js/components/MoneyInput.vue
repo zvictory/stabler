@@ -68,6 +68,23 @@ function format(n) {
 	}).format(num);
 }
 
+// Live grouping while typing: group the integer part, preserve the decimal part
+// the user is typing (so the caret isn't trapped after a forced ".00"). Never
+// pads decimals — they only appear once the user types the decimal separator.
+function liveGroup(text) {
+	const ds = decimalSep.value;
+	const gs = groupSep.value;
+	const s = ds === "."
+		? String(text).replace(/[^0-9.]/g, "")
+		: String(text).replace(/[^0-9,]/g, "");
+	const parts = s.split(ds);
+	const intp = (parts[0] || "").replace(/^0+(?=\d)/, "");
+	const grouped = intp.replace(/\B(?=(\d{3})+(?!\d))/g, gs);
+	if (fractionDigits.value === 0) return grouped; // UZS: integer only
+	if (parts.length > 1) return grouped + ds + parts.slice(1).join("").slice(0, fractionDigits.value);
+	return grouped;
+}
+
 function rawText(n) {
 	if (n === null || n === undefined || n === "") return "";
 	const num = Number(n);
@@ -78,6 +95,10 @@ function rawText(n) {
 }
 
 function syncFromModel() {
+	// While the user is actively typing in group-while-typing mode, onInput owns
+	// the display string — don't clobber it (that re-introduced the forced ".00"
+	// and trapped the caret on the decimal side).
+	if (focused.value && props.groupWhileTyping) return;
 	const showRaw = focused.value && !props.groupWhileTyping;
 	display.value = showRaw ? rawText(props.modelValue) : format(props.modelValue);
 }
@@ -97,24 +118,23 @@ function onInput(event) {
 	if (props.min !== null && next < props.min) next = props.min;
 	if (props.max !== null && next > props.max) next = props.max;
 	emit("update:modelValue", next);
-	display.value = props.groupWhileTyping ? format(next) : text;
+	display.value = props.groupWhileTyping ? liveGroup(text) : text;
 }
 
 function onFocus(event) {
 	focused.value = true;
-	if (props.groupWhileTyping) {
-		display.value = format(props.modelValue);
-	} else {
-		display.value = rawText(props.modelValue);
-		// Select all so the user can overwrite quickly.
-		requestAnimationFrame(() => {
-			try {
-				event.target.select();
-			} catch {
-				/* ignore */
-			}
-		});
-	}
+	// Show a clean grouped value with NO trailing ".00" so the integer side is
+	// immediately editable, and select all so the user can just overwrite.
+	display.value = props.groupWhileTyping
+		? liveGroup(rawText(props.modelValue))
+		: rawText(props.modelValue);
+	requestAnimationFrame(() => {
+		try {
+			event.target.select();
+		} catch {
+			/* ignore */
+		}
+	});
 	emit("focus", event);
 }
 
