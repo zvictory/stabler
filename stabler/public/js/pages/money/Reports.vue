@@ -159,11 +159,11 @@ function indent(row) {
 }
 
 function onPeriodChange({ from, to }) {
-	// "custom" sentinel → keep the existing DateInput values, don't overwrite.
-	if (periodKey.value === "custom") return;
-	fromDate.value = from;
-	toDate.value = to;
-	run();
+	if (periodKey.value !== "custom") {
+		fromDate.value = from;
+		toDate.value = to;
+		run();
+	}
 }
 
 onMounted(run);
@@ -193,16 +193,14 @@ watch([activeCompany, selectedName], run);
 						@change="onPeriodChange"
 					/>
 				</div>
-				<template v-if="periodKey === 'custom'">
-					<div>
-						<label class="form-label small mb-1">{{ t("From") }}</label>
-						<DateInput v-model="fromDate" size="sm" />
-					</div>
-					<div>
-						<label class="form-label small mb-1">{{ t("To") }}</label>
-						<DateInput v-model="toDate" size="sm" />
-					</div>
-				</template>
+				<div>
+					<label class="form-label small mb-1">{{ t("From") }}</label>
+					<DateInput v-model="fromDate" size="sm" />
+				</div>
+				<div>
+					<label class="form-label small mb-1">{{ t("To") }}</label>
+					<DateInput v-model="toDate" size="sm" />
+				</div>
 				<div class="ms-auto d-flex gap-2">
 					<button type="button" class="btn btn-sm btn-primary" @click="run" :disabled="loading">
 						<i class="ti ti-player-play me-1"></i>{{ t("Run") }}
