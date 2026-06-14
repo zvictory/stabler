@@ -1,10 +1,10 @@
 <script setup>
-import { computed, onMounted, ref, watch } from "vue";
+import { computed, onMounted, onUnmounted, ref, watch } from "vue";
 import { storeToRefs } from "pinia";
 import { useSession } from "../../stores/session.js";
 import { call } from "../../api/client.js";
 import { formatMoney } from "../../composables/money.js";
-import { formatDateTime, todayIso} from "../../composables/date.js";
+import { formatDateTime, todayIso } from "../../composables/date.js";
 import { t } from "../../composables/i18n.js";
 import { useConfirm } from "../../composables/useConfirm.js";
 import { useToast } from "../../composables/useToast.js";
@@ -46,10 +46,21 @@ const submitting = ref(false);
 const submitError = ref("");
 const editingName = ref("");
 
-const accounts = ref([]); // Bank + Cash leaves
+const accounts = ref([]);
 const optionsLoading = ref(false);
 
 const form = ref(blankForm());
+
+// QuickBooks-style save mode — persisted per user
+const SAVE_MODE_KEY = "stabler.transfers.saveMode";
+const savedMode = ref(localStorage.getItem(SAVE_MODE_KEY) || "close");
+const SAVE_LABELS = { close: "Record & close", new: "Record & new", clear: "Record & clear" };
+const saveModeLabel = computed(() => t(SAVE_LABELS[savedMode.value] || "Record & close"));
+
+function persistSaveMode(mode) {
+	savedMode.value = mode;
+	localStorage.setItem(SAVE_MODE_KEY, mode);
+}
 
 const formTitle = computed(() => (editingName.value ? t("Amend transfer") : t("New transfer")));
 
@@ -68,8 +79,6 @@ function blankForm() {
 const fromAcc = computed(() => accounts.value.find((a) => a.name === form.value.from_account) || null);
 const toAcc = computed(() => accounts.value.find((a) => a.name === form.value.to_account) || null);
 
-// Disable the account already chosen on the opposite leg (same rule the native
-// per-<option> :disabled enforced) — Select reads `disabled` off each option.
 const fromAccountOptions = computed(() =>
 	accounts.value.map((a) => ({ ...a, disabled: a.name === form.value.to_account })),
 );
@@ -84,39 +93,130 @@ const isCrossCurrency = computed(
 	() => fromAcc.value && toAcc.value && fromCurrency.value !== toCurrency.value,
 );
 
-const rateFromCurrency = computed(() => {
-	if (fromCurrency.value === "UZS" && toCurrency.value === "USD") return "USD";
-	return fromCurrency.value;
-});
-const rateToCurrency = computed(() => {
-	if (fromCurrency.value === "UZS" && toCurrency.value === "USD") return "UZS";
-	return toCurrency.value;
-});
+// CBU rate for display hint
+const cbuRate = ref(null);
 
-const baseEquivalent = computed(() => {
-	const amount = Number(form.value.from_amount) || 0;
-	if (!amount) return 0;
-	if (fromCurrency.value === baseCurrency.value) return amount;
-	if (toCurrency.value === baseCurrency.value) return Number(form.value.to_amount) || 0;
-	return null;
-});
+// --- Three-way reciprocal binding -----------------------------------------
+// Relationship: from_amount × exchange_rate = to_amount
+// "Last two wins" — the field not in the top-2 recently-touched is derived.
+let recent = ["rate", "amt"]; // seed: derived = recv
 
-// Auto-derive to_amount when cross-currency and the user has typed a rate.
-watch(
-	() => [form.value.from_amount, form.value.exchange_rate, isCrossCurrency.value, fromCurrency.value, toCurrency.value],
-	() => {
-		if (!isCrossCurrency.value) {
-			form.value.to_amount = form.value.from_amount;
-			return;
+function computedField() {
+	const top = recent.slice(0, 2);
+	return ["amt", "rate", "recv"].find((f) => !top.includes(f));
+}
+
+function touch(id) {
+	recent = [id, ...recent.filter((x) => x !== id)];
+}
+
+function reseed() {
+	recent = ["rate", "amt"]; // recv is derived
+}
+
+function roundMoney(n, currency) {
+	return (currency || "").toUpperCase() === "UZS" ? Math.round(n) : Math.round(n * 100) / 100;
+}
+
+function roundRate(rate) {
+	// Large rates (e.g. UZS amounts): 2 dp. Small rates (e.g. cross-minor): 6 dp.
+	return rate > 100 ? Math.round(rate * 100) / 100 : Math.round(rate * 1000000) / 1000000;
+}
+
+let _deriving = false;
+
+function derive() {
+	if (!isCrossCurrency.value) {
+		form.value.to_amount = form.value.from_amount;
+		return;
+	}
+	const field = computedField();
+	const amt = Number(form.value.from_amount) || 0;
+	const rate = Number(form.value.exchange_rate) || 0;
+	const recv = Number(form.value.to_amount) || 0;
+
+	_deriving = true;
+	try {
+		if (field === "recv") {
+			if (amt > 0 && rate > 0) form.value.to_amount = roundMoney(amt * rate, toCurrency.value);
+		} else if (field === "amt") {
+			if (recv > 0 && rate > 0) form.value.from_amount = roundMoney(recv / rate, fromCurrency.value);
+		} else if (field === "rate") {
+			if (amt > 0 && recv > 0) form.value.exchange_rate = roundRate(recv / amt);
 		}
-		const amt = Number(form.value.from_amount) || 0;
-		const rate = Number(form.value.exchange_rate) || 0;
-		if (amt > 0 && rate > 0) {
-			if (fromCurrency.value === "UZS" && toCurrency.value === "USD") {
-				form.value.to_amount = Number((amt / rate).toFixed(2));
-			} else {
-				form.value.to_amount = Number((amt * rate).toFixed(2));
+	} finally {
+		_deriving = false;
+	}
+}
+
+function onAmtInput(val) {
+	if (_deriving) return;
+	form.value.from_amount = val;
+	touch("amt");
+	derive();
+}
+
+function onRateInput(val) {
+	if (_deriving) return;
+	form.value.exchange_rate = val;
+	rateManuallyEdited.value = true;
+	touch("rate");
+	derive();
+}
+
+function onRecvInput(val) {
+	if (_deriving) return;
+	form.value.to_amount = val;
+	touch("recv");
+	derive();
+}
+
+// Track whether the user manually typed a rate (so date changes don't clobber it)
+const rateManuallyEdited = ref(false);
+
+async function fetchExchangeRate() {
+	if (!isCrossCurrency.value) {
+		form.value.exchange_rate = null;
+		cbuRate.value = null;
+		return;
+	}
+	try {
+		const rate = await call("stabler.api.money.get_exchange_rate_for_currencies", {
+			from_currency: fromCurrency.value,
+			to_currency: toCurrency.value,
+			posting_date: form.value.posting_date,
+		});
+		if (rate > 0) {
+			cbuRate.value = rate;
+			if (!rateManuallyEdited.value) {
+				_deriving = true;
+				form.value.exchange_rate = rate;
+				_deriving = false;
 			}
+		}
+	} catch (err) {
+		console.error("Failed to load exchange rate", err);
+	}
+}
+
+// Account changes: reseed + re-fetch CBU (currencies may have changed)
+watch(
+	() => [form.value.from_account, form.value.to_account],
+	async () => {
+		reseed();
+		rateManuallyEdited.value = false;
+		await fetchExchangeRate();
+		derive();
+	},
+);
+
+// Date changes: re-fetch CBU only if rate wasn't manually edited
+watch(
+	() => form.value.posting_date,
+	async () => {
+		if (!rateManuallyEdited.value) {
+			await fetchExchangeRate();
+			derive();
 		}
 	},
 );
@@ -127,61 +227,17 @@ const canSubmit = computed(() => {
 	if (form.value.from_account === form.value.to_account) return false;
 	if (!(Number(form.value.from_amount) > 0)) return false;
 	if (isCrossCurrency.value) {
-		if (!(Number(form.value.exchange_rate) > 0) && !(Number(form.value.to_amount) > 0)) return false;
+		if (!(Number(form.value.to_amount) > 0) && !(Number(form.value.exchange_rate) > 0)) return false;
 	}
 	return true;
 });
-
-async function fetchExchangeRate() {
-	if (!isCrossCurrency.value) {
-		form.value.exchange_rate = null;
-		return;
-	}
-	try {
-		let fromCur = fromCurrency.value;
-		let toCur = toCurrency.value;
-		let fromApi = "USD";
-		let toApi = "UZS";
-		if (fromCur === "USD" && toCur === "UZS") {
-			fromApi = "USD";
-			toApi = "UZS";
-		} else if (fromCur === "UZS" && toCur === "USD") {
-			fromApi = "USD";
-			toApi = "UZS";
-		} else {
-			fromApi = fromCur;
-			toApi = toCur;
-		}
-		const rate = await call("stabler.api.money.get_exchange_rate_for_currencies", {
-			from_currency: fromApi,
-			to_currency: toApi,
-			posting_date: form.value.posting_date,
-		});
-		if (rate > 0) {
-			form.value.exchange_rate = rate;
-		} else {
-			form.value.exchange_rate = null;
-		}
-	} catch (err) {
-		console.error("Failed to load exchange rate", err);
-	}
-}
-
-watch(
-	() => [form.value.from_account, form.value.to_account, form.value.posting_date],
-	async () => {
-		await fetchExchangeRate();
-	}
-);
 
 async function loadOptions() {
 	if (!activeCompany.value) return;
 	optionsLoading.value = true;
 	try {
 		accounts.value =
-			(await call("stabler.api.money.bank_cash_accounts", {
-				company: activeCompany.value,
-			})) || [];
+			(await call("stabler.api.money.bank_cash_accounts", { company: activeCompany.value })) || [];
 	} catch (err) {
 		submitError.value = err?.message || "Failed to load accounts.";
 	} finally {
@@ -193,9 +249,12 @@ async function openCreate() {
 	form.value = blankForm();
 	editingName.value = "";
 	submitError.value = "";
+	rateManuallyEdited.value = false;
+	reseed();
 	createOpen.value = true;
 	if (!accounts.value.length) await loadOptions();
 	await fetchExchangeRate();
+	derive();
 }
 
 async function openEditFromDetail() {
@@ -214,8 +273,11 @@ async function openEditFromDetail() {
 	};
 	editingName.value = detail.value.name;
 	submitError.value = "";
+	rateManuallyEdited.value = false;
+	reseed();
 	createOpen.value = true;
 	await fetchExchangeRate();
+	derive();
 }
 
 function closeCreate() {
@@ -229,18 +291,36 @@ function swap() {
 	const b = form.value.to_account;
 	form.value.from_account = b;
 	form.value.to_account = a;
-	// Reset amounts since currencies/rates flip — safer than trying to invert the rate.
 	form.value.from_amount = null;
 	form.value.to_amount = null;
 	form.value.exchange_rate = null;
+	rateManuallyEdited.value = false;
+	reseed();
 }
 
-async function submitCreate() {
+let focusFromAccountFn = null;
+
+async function submitCreate(mode) {
 	submitError.value = "";
+	persistSaveMode(mode);
+
+	// Record & clear: just reset the form, no network call
+	if (mode === "clear") {
+		const keepDate = form.value.posting_date;
+		form.value = blankForm();
+		form.value.posting_date = keepDate;
+		rateManuallyEdited.value = false;
+		reseed();
+		await fetchExchangeRate();
+		derive();
+		return;
+	}
+
 	if (!canSubmit.value) {
 		submitError.value = t("Fill in the required fields before submitting.");
 		return;
 	}
+
 	const payload = {
 		company: activeCompany.value,
 		posting_date: form.value.posting_date,
@@ -251,16 +331,8 @@ async function submitCreate() {
 	};
 	if (form.value.memo?.trim()) payload.memo = form.value.memo.trim();
 	if (isCrossCurrency.value) {
-		if (Number(form.value.to_amount) > 0) payload.to_amount = Number(form.value.to_amount);
-		
-		const rate = Number(form.value.exchange_rate);
-		if (rate > 0) {
-			if (fromCurrency.value === "UZS" && toCurrency.value === "USD") {
-				payload.exchange_rate = 1 / rate;
-			} else {
-				payload.exchange_rate = rate;
-			}
-		}
+		payload.to_amount = Number(form.value.to_amount);
+		if (Number(form.value.exchange_rate) > 0) payload.exchange_rate = Number(form.value.exchange_rate);
 	}
 
 	submitting.value = true;
@@ -269,14 +341,37 @@ async function submitCreate() {
 			? "stabler.api.money.amend_transfer_entry"
 			: "stabler.api.money.submit_transfer_entry";
 		const res = await call(method, editingName.value ? { source_name: editingName.value, ...payload } : payload);
-		createOpen.value = false;
-		editingName.value = "";
-		await load();
-		if (res?.name) await openDetail(res.name);
+
+		load(); // refresh list in background
+
+		if (editingName.value || mode === "close") {
+			createOpen.value = false;
+			editingName.value = "";
+			if (res?.name) await openDetail(res.name);
+		} else if (mode === "new") {
+			const keepDate = form.value.posting_date;
+			form.value = blankForm();
+			form.value.posting_date = keepDate;
+			rateManuallyEdited.value = false;
+			reseed();
+			toast.success(t("Transfer recorded · {name}", { name: res?.name || "" }));
+			await fetchExchangeRate();
+			derive();
+			focusFromAccountFn?.();
+		}
 	} catch (err) {
-		submitError.value = err?.message || "Failed to submit transfer.";
+		submitError.value = err?.message || t("Failed to submit transfer.");
 	} finally {
 		submitting.value = false;
+	}
+}
+
+// Keyboard shortcut: Ctrl/Cmd+Enter fires the current default action
+function onKeydown(e) {
+	if (!createOpen.value) return;
+	if ((e.ctrlKey || e.metaKey) && e.key === "Enter") {
+		e.preventDefault();
+		if (canSubmit.value && !submitting.value) submitCreate(savedMode.value);
 	}
 }
 
@@ -370,6 +465,10 @@ function closeDetail() {
 onMounted(() => {
 	load();
 	loadOptions();
+	document.addEventListener("keydown", onKeydown);
+});
+onUnmounted(() => {
+	document.removeEventListener("keydown", onKeydown);
 });
 watch(activeCompany, () => {
 	accounts.value = [];
@@ -460,7 +559,7 @@ watch(activeCompany, () => {
 		</div>
 	</div>
 
-	<!-- View drawer (re-uses JE detail) -->
+	<!-- View drawer -->
 	<div v-if="detailOpen" class="offcanvas-backdrop fade show" @click="closeDetail"></div>
 	<div
 		v-if="detailOpen"
@@ -541,7 +640,7 @@ watch(activeCompany, () => {
 		</div>
 	</div>
 
-	<!-- Create modal -->
+	<!-- Create / amend modal -->
 	<div v-if="createOpen" class="modal-backdrop fade show" @click="closeCreate"></div>
 	<div v-if="createOpen" class="modal fade show d-block" tabindex="-1" role="dialog" aria-modal="true">
 		<div class="modal-dialog modal-lg modal-dialog-centered" role="document">
@@ -552,151 +651,215 @@ watch(activeCompany, () => {
 					</h5>
 					<button type="button" class="btn-close" @click="closeCreate" aria-label="Close"></button>
 				</div>
+
 				<div class="modal-body">
-					<div v-if="submitError" class="alert alert-danger">{{ submitError }}</div>
+					<div v-if="submitError" class="alert alert-danger mb-3">{{ submitError }}</div>
 
-					<div class="row g-2 mb-3">
-						<div class="col-md-4">
-							<label class="form-label small">{{ t("Posting date") }}</label>
-							<DateInput v-model="form.posting_date" required />
+					<!-- Date -->
+					<div class="mb-3" style="max-width: 230px">
+						<label class="form-label small required">{{ t("Posting date") }}</label>
+						<DateInput v-model="form.posting_date" />
+					</div>
+
+					<!-- FROM panel -->
+					<div class="card card-sm mb-0" style="border: 1.5px solid var(--tblr-blue, #206bc4); border-radius: 6px">
+						<div class="card-header py-2 px-3 d-flex align-items-center gap-2"
+							style="background: var(--tblr-blue-lt, #e9f0fb); border-bottom: 1px solid var(--tblr-blue-lt, #d0e0f7); border-radius: 5px 5px 0 0">
+							<span class="avatar avatar-xs bg-blue text-white rounded-circle" style="width:18px;height:18px;font-size:10px">↑</span>
+							<span class="fw-semibold text-blue small">{{ t("From") }}</span>
 						</div>
-						<div class="col-md-8">
-							<label class="form-label small">{{ t("Memo") }}</label>
-							<input
-								v-model="form.memo"
-								type="text"
-								class="form-control"
-								:placeholder="t('Optional')"
-							/>
+						<div class="card-body p-3">
+							<div class="mb-2">
+								<label class="form-label small mb-1">
+									{{ t("Account") }}
+									<span v-if="fromAcc" class="text-secondary fw-normal">({{ fromCurrency }})</span>
+								</label>
+								<Select
+									v-model="form.from_account"
+									:disabled="optionsLoading"
+									:options="fromAccountOptions"
+									value-key="name"
+									:placeholder="t('Select…')"
+								>
+									<template #option="{ option }">
+										{{ option.account_name || option.name }} ({{ option.account_currency }})
+									</template>
+									<template #selected="{ option }">
+										{{ option.account_name || option.name }} ({{ option.account_currency }})
+									</template>
+								</Select>
+							</div>
+							<div>
+								<label class="form-label small mb-1">{{ t("Amount to transfer") }}</label>
+								<MoneyInput
+									:model-value="form.from_amount"
+									:currency="fromCurrency"
+									:language="user.language"
+									:group-while-typing="true"
+									:disabled="submitting"
+									@update:model-value="onAmtInput"
+								/>
+							</div>
 						</div>
 					</div>
 
-					<div class="row g-2 align-items-end">
-						<div class="col-md-5">
-							<label class="form-label small">{{ t("From account") }}</label>
-							<Select
-								v-model="form.from_account"
-								:disabled="optionsLoading"
-								:options="fromAccountOptions"
-								value-key="name"
-								:placeholder="t('Select…')"
-							>
-								<template #option="{ option }">
-									{{ option.account_name || option.name }} ({{ option.account_currency }})
-								</template>
-								<template #selected="{ option }">
-									{{ option.account_name || option.name }} ({{ option.account_currency }})
-								</template>
-							</Select>
-						</div>
-						<div class="col-md-2 text-center">
-							<button
-								type="button"
-								class="btn btn-outline-secondary"
-								:disabled="!form.from_account && !form.to_account"
-								@click="swap"
-								:aria-label="t('Swap accounts')"
-							>
-								<i class="ti ti-arrows-exchange"></i>
-							</button>
-						</div>
-						<div class="col-md-5">
-							<label class="form-label small">{{ t("To account") }}</label>
-							<Select
-								v-model="form.to_account"
-								:disabled="optionsLoading"
-								:options="toAccountOptions"
-								value-key="name"
-								:placeholder="t('Select…')"
-							>
-								<template #option="{ option }">
-									{{ option.account_name || option.name }} ({{ option.account_currency }})
-								</template>
-								<template #selected="{ option }">
-									{{ option.account_name || option.name }} ({{ option.account_currency }})
-								</template>
-							</Select>
-						</div>
-					</div>
+					<!-- ROE band -->
+					<div class="d-flex align-items-center justify-content-center gap-3 py-3 px-1">
+						<div class="text-secondary" style="font-size: 1.2rem">↓</div>
 
-					<div class="row g-2 mt-3">
-						<div class="col-md-6">
-							<label class="form-label small">
-								{{ t("Amount sent") }}
-								<span v-if="fromAcc" class="text-secondary">({{ fromCurrency }})</span>
+						<div v-if="isCrossCurrency" class="flex-grow-1" style="max-width: 340px">
+							<label class="form-label small mb-1 text-center d-block">
+								{{ t("Exchange rate") }} — 1 {{ fromCurrency }} = ? {{ toCurrency }}
 							</label>
 							<MoneyInput
-								v-model="form.from_amount"
-								:currency="fromCurrency"
-								:language="user.language"
-							/>
-						</div>
-						<div v-if="isCrossCurrency" class="col-md-6">
-							<label class="form-label small">
-								{{ t("Amount received") }}
-								<span class="text-secondary">({{ toCurrency }})</span>
-							</label>
-							<MoneyInput
-								v-model="form.to_amount"
+								:model-value="form.exchange_rate"
 								:currency="toCurrency"
 								:language="user.language"
+								:group-while-typing="true"
+								:disabled="submitting"
+								@update:model-value="onRateInput"
 							/>
+							<div v-if="cbuRate" class="text-center text-secondary small mt-1">
+								CBU: 1 {{ fromCurrency }} = {{ formatMoney(cbuRate, toCurrency, user.language) }} {{ toCurrency }}
+							</div>
+						</div>
+						<div v-else-if="fromAcc && toAcc" class="text-secondary small px-2">
+							{{ t("Same currency") }}
+						</div>
+
+						<button
+							type="button"
+							class="btn btn-outline-secondary btn-icon"
+							:disabled="!form.from_account && !form.to_account"
+							:aria-label="t('Swap accounts')"
+							@click="swap"
+						>
+							<i class="ti ti-arrows-exchange"></i>
+						</button>
+					</div>
+
+					<!-- TO panel -->
+					<div class="card card-sm mb-0" style="border: 1.5px solid var(--tblr-teal, #0ca678); border-radius: 6px">
+						<div class="card-header py-2 px-3 d-flex align-items-center gap-2"
+							style="background: var(--tblr-teal-lt, #d2f4ea); border-bottom: 1px solid var(--tblr-teal-lt, #b8ecdb); border-radius: 5px 5px 0 0">
+							<span class="avatar avatar-xs bg-teal text-white rounded-circle" style="width:18px;height:18px;font-size:10px">↓</span>
+							<span class="fw-semibold text-teal small">{{ t("To") }}</span>
+						</div>
+						<div class="card-body p-3">
+							<div class="mb-2">
+								<label class="form-label small mb-1">
+									{{ t("Account") }}
+									<span v-if="toAcc" class="text-secondary fw-normal">({{ toCurrency }})</span>
+								</label>
+								<Select
+									v-model="form.to_account"
+									:disabled="optionsLoading"
+									:options="toAccountOptions"
+									value-key="name"
+									:placeholder="t('Select…')"
+								>
+									<template #option="{ option }">
+										{{ option.account_name || option.name }} ({{ option.account_currency }})
+									</template>
+									<template #selected="{ option }">
+										{{ option.account_name || option.name }} ({{ option.account_currency }})
+									</template>
+								</Select>
+							</div>
+							<div>
+								<label class="form-label small mb-1">{{ t("Amount received") }}</label>
+								<MoneyInput
+									:model-value="form.to_amount"
+									:currency="toCurrency"
+									:language="user.language"
+									:group-while-typing="true"
+									:disabled="submitting || !isCrossCurrency"
+									@update:model-value="onRecvInput"
+								/>
+								<div v-if="isCrossCurrency" class="form-hint small mt-1">
+									{{ t("Editing the received amount updates the exchange rate.") }}
+								</div>
+							</div>
 						</div>
 					</div>
 
-					<div v-if="isCrossCurrency" class="row g-2 mt-3">
-						<div class="col-md-6">
-							<label class="form-label small">
-								{{ t("Exchange rate") }} — 1 {{ rateFromCurrency }} = ? {{ rateToCurrency }}
-							</label>
-							<MoneyInput
-								v-model="form.exchange_rate"
-								:currency="rateToCurrency"
-								:language="user.language"
-							/>
-							<div class="form-hint small">
-								{{ t("Editing the rate updates the received amount.") }}
-							</div>
-						</div>
+					<!-- Memo -->
+					<div class="mt-3">
+						<label class="form-label small mb-1">{{ t("Memo") }}</label>
+						<input
+							v-model="form.memo"
+							type="text"
+							class="form-control"
+							:placeholder="t('Optional')"
+							:disabled="submitting"
+						/>
 					</div>
-					<div v-if="form.from_account && form.to_account && Number(form.from_amount) > 0" class="alert alert-info mt-3 mb-0">
-						<div class="row g-2 align-items-center">
-							<div class="col-md">
-								<div class="text-secondary small">{{ t("From amount") }}</div>
-								<div class="font-monospace fw-semibold">{{ formatMoney(form.from_amount, fromCurrency, user.language) }}</div>
-							</div>
-							<div class="col-md">
-								<div class="text-secondary small">{{ t("To amount") }}</div>
-								<div class="font-monospace fw-semibold">
-									{{ formatMoney(form.to_amount || form.from_amount, toCurrency, user.language) }}
-								</div>
-							</div>
-							<div class="col-md">
-								<div class="text-secondary small">{{ t("Base equivalent") }}</div>
-								<div v-if="baseEquivalent !== null" class="font-monospace fw-semibold">
-									{{ formatMoney(baseEquivalent, baseCurrency, user.language) }}
-								</div>
-								<div v-else class="text-warning">
-									{{ t("Resolved on submit from ERPNext FX rates") }}
-								</div>
-							</div>
-						</div>
+
+					<!-- Summary line -->
+					<div
+						v-if="form.from_account && form.to_account && Number(form.from_amount) > 0"
+						class="d-flex gap-3 mt-3 px-1 text-secondary small"
+					>
+						<span class="font-monospace">{{ formatMoney(form.from_amount, fromCurrency, user.language) }} {{ fromCurrency }}</span>
+						<span>→</span>
+						<span class="font-monospace">{{ formatMoney(form.to_amount ?? form.from_amount, toCurrency, user.language) }} {{ toCurrency }}</span>
 					</div>
 				</div>
+
 				<div class="modal-footer">
-					<button type="button" class="btn btn-outline-secondary" @click="closeCreate" :disabled="submitting">
-						{{ t("Cancel") }}
-					</button>
 					<button
 						type="button"
-						class="btn btn-primary"
+						class="btn btn-outline-secondary"
+						:disabled="submitting"
+						@click="closeCreate"
+					>
+						{{ t("Cancel") }}
+					</button>
+
+					<!-- Amend mode: single Save & close button -->
+					<button
+						v-if="editingName"
+						type="button"
+						class="btn btn-primary ms-auto"
 						:disabled="!canSubmit || submitting"
-						@click="submitCreate"
+						@click="submitCreate('close')"
 					>
 						<span v-if="submitting" class="spinner-border spinner-border-sm me-1"></span>
 						<i v-else class="ti ti-check me-1"></i>
-						{{ t("Submit transfer") }}
+						{{ t("Save & close") }}
 					</button>
+
+					<!-- Create mode: QuickBooks-style split save group -->
+					<div v-else class="btn-group ms-auto">
+						<button
+							type="button"
+							class="btn btn-primary"
+							:disabled="!canSubmit || submitting"
+							@click="submitCreate(savedMode)"
+						>
+							<span v-if="submitting" class="spinner-border spinner-border-sm me-1"></span>
+							<i v-else class="ti ti-check me-1"></i>
+							{{ saveModeLabel }}
+						</button>
+						<button
+							type="button"
+							class="btn btn-primary dropdown-toggle dropdown-toggle-split"
+							data-bs-toggle="dropdown"
+							:disabled="!canSubmit || submitting"
+							aria-expanded="false"
+						></button>
+						<div class="dropdown-menu dropdown-menu-end stbl-menu stbl-menu--nocheck">
+							<a href="#" class="dropdown-item stbl-menu-item" @click.prevent="submitCreate('close')">
+								<i class="ti ti-x me-2"></i>{{ t("Record & close") }}
+							</a>
+							<a href="#" class="dropdown-item stbl-menu-item" @click.prevent="submitCreate('new')">
+								<i class="ti ti-plus me-2"></i>{{ t("Record & new") }}
+							</a>
+							<a href="#" class="dropdown-item stbl-menu-item" @click.prevent="submitCreate('clear')">
+								<i class="ti ti-eraser me-2"></i>{{ t("Record & clear") }}
+							</a>
+						</div>
+					</div>
 				</div>
 			</div>
 		</div>
