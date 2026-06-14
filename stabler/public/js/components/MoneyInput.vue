@@ -23,6 +23,9 @@ const props = defineProps({
 	max: { type: Number, default: null },
 	id: { type: String, default: "" },
 	size: { type: String, default: "" }, // "sm" | "lg" | ""
+	// When true, keeps grouped display while focused and reformats on every keystroke.
+	// Cursor jumps to end on each input — acceptable for right-aligned money fields.
+	groupWhileTyping: { type: Boolean, default: false },
 });
 
 const emit = defineEmits(["update:modelValue", "blur", "focus"]);
@@ -75,7 +78,8 @@ function rawText(n) {
 }
 
 function syncFromModel() {
-	display.value = focused.value ? rawText(props.modelValue) : format(props.modelValue);
+	const showRaw = focused.value && !props.groupWhileTyping;
+	display.value = showRaw ? rawText(props.modelValue) : format(props.modelValue);
 }
 
 onMounted(syncFromModel);
@@ -83,9 +87,9 @@ watch(() => [props.modelValue, props.language], syncFromModel);
 
 function onInput(event) {
 	const text = event.target.value;
-	display.value = text;
 	const parsed = parse(text);
 	if (parsed === null) {
+		display.value = text;
 		emit("update:modelValue", null);
 		return;
 	}
@@ -93,20 +97,25 @@ function onInput(event) {
 	if (props.min !== null && next < props.min) next = props.min;
 	if (props.max !== null && next > props.max) next = props.max;
 	emit("update:modelValue", next);
+	display.value = props.groupWhileTyping ? format(next) : text;
 }
 
 function onFocus(event) {
 	focused.value = true;
-	display.value = rawText(props.modelValue);
+	if (props.groupWhileTyping) {
+		display.value = format(props.modelValue);
+	} else {
+		display.value = rawText(props.modelValue);
+		// Select all so the user can overwrite quickly.
+		requestAnimationFrame(() => {
+			try {
+				event.target.select();
+			} catch {
+				/* ignore */
+			}
+		});
+	}
 	emit("focus", event);
-	// Select all so the user can overwrite quickly.
-	requestAnimationFrame(() => {
-		try {
-			event.target.select();
-		} catch {
-			/* ignore */
-		}
-	});
 }
 
 function onBlur(event) {
