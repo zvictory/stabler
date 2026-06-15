@@ -47,32 +47,38 @@ def _ensure_currency_exists(code: str) -> None:
 		)
 
 
-def _upsert_rate(from_currency: str, rate: float, on_date: datetime.date) -> bool:
-	"""Insert today's Currency Exchange row if missing. Returns True if inserted."""
-	existing = frappe.db.get_value(
+def _upsert_pair(from_currency: str, to_currency: str, rate: float, on_date: datetime.date) -> bool:
+	"""Insert one directional Currency Exchange row if missing. Idempotent."""
+	if frappe.db.get_value(
 		"Currency Exchange",
-		{
-			"from_currency": from_currency,
-			"to_currency": _BASE_CURRENCY,
-			"date": on_date,
-		},
+		{"from_currency": from_currency, "to_currency": to_currency, "date": on_date},
 		"name",
-	)
-	if existing:
+	):
 		return False
-
 	frappe.get_doc(
 		{
 			"doctype": "Currency Exchange",
 			"date": on_date,
 			"from_currency": from_currency,
-			"to_currency": _BASE_CURRENCY,
+			"to_currency": to_currency,
 			"exchange_rate": rate,
 			"for_buying": 1,
 			"for_selling": 1,
 		}
 	).insert(ignore_permissions=True)
 	return True
+
+
+def _upsert_rate(from_currency: str, rate: float, on_date: datetime.date) -> bool:
+	"""Store BOTH directions for the day so a UZS-base *or* USD-base company (or
+	any cross-check) always finds a rate:
+	  foreign -> UZS = rate       (1 USD = 12 935 UZS)
+	  UZS -> foreign = 1 / rate   (1 UZS = 0.0000773 USD)
+	Returns True if the primary (foreign->UZS) row was inserted."""
+	primary = _upsert_pair(from_currency, _BASE_CURRENCY, rate, on_date)
+	if rate:
+		_upsert_pair(_BASE_CURRENCY, from_currency, round(1.0 / float(rate), 10), on_date)
+	return primary
 
 
 def fetch_and_store() -> dict[str, Any]:
@@ -115,4 +121,72 @@ def fetch_and_store() -> dict[str, Any]:
 		"missing": missing,
 	}
 	print(f"[stabler.tasks.cbu_rate_refresh] {summary}")
+	return summary
+
+
+def _fetch_cbu_for(on_date: datetime.date) -> dict[str, float]:
+	"""Fetch the CBU archive for a specific date → {code: rate}. Empty dict if
+	CBU has no publication for that day (weekend/holiday)."""
+	url = f"https://cbu.uz/uz/arkhiv-kursov-valyut/json/{on_date.isoformat()}/"
+	try:
+		req = Request(url, headers={"User-Agent": "stabler/1.0"})
+		with urlopen(req, timeout=_TIMEOUT) as resp:
+			data = json.loads(resp.read().decode("utf-8"))
+	except Exception:  # noqa: BLE001 — treat as a non-publishing day; carry forward
+		return {}
+	out: dict[str, float] = {}
+	for row in data if isinstance(data, list) else []:
+		code = row.get("Ccy")
+		try:
+			if code in _TRACKED:
+				out[code] = float(row.get("Rate"))
+		except (TypeError, ValueError):
+			continue
+	return out
+
+
+def backfill(start_date: str, end_date: str | None = None) -> dict[str, Any]:
+	"""Backfill Currency Exchange rows (both directions) for every calendar day
+	in [start_date, end_date]. Non-publishing days carry forward the last known
+	rate, so the +/-3-day staleness check in validate_exchange_rate never trips.
+
+	Run once to seed the year:
+	    bench --site anjan.erpstable.com execute \\
+	      stabler.tasks.cbu_rate_refresh.backfill --kwargs "{'start_date':'2026-01-01'}"
+	"""
+	if not frappe.db.exists("DocType", "Currency Exchange"):
+		return {"status": "skipped", "reason": "Currency Exchange doctype missing"}
+
+	start = datetime.date.fromisoformat(start_date)
+	end = datetime.date.fromisoformat(end_date) if end_date else datetime.date.today()
+	last: dict[str, float] = {}
+	days = 0
+	inserted = 0
+
+	cur = start
+	while cur <= end:
+		todays = _fetch_cbu_for(cur)
+		for code in _TRACKED:
+			if code in todays:
+				last[code] = todays[code]
+			rate = last.get(code)
+			if rate:
+				_ensure_currency_exists(code)
+				if _upsert_rate(code, rate, cur):
+					inserted += 1
+		days += 1
+		if days % 20 == 0:
+			frappe.db.commit()
+		cur += datetime.timedelta(days=1)
+
+	frappe.db.commit()
+	summary = {
+		"status": "ok",
+		"from": start.isoformat(),
+		"to": end.isoformat(),
+		"days": days,
+		"rows_inserted": inserted,
+		"tracked": list(_TRACKED),
+	}
+	print(f"[stabler.tasks.cbu_rate_refresh.backfill] {summary}")
 	return summary

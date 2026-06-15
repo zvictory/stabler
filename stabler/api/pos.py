@@ -79,6 +79,9 @@ def _payment_account(mode_of_payment: str, company: str) -> str:
 
 
 def _profile_payload(doc) -> dict:
+	from stabler.integrations.uzpay.common import gateways_for_company
+
+	gateways = gateways_for_company(doc.company)
 	payments = []
 	default_mode = ""
 	for row in doc.payments:
@@ -90,6 +93,8 @@ def _profile_payload(doc) -> dict:
 				"mode_of_payment": mode,
 				"default": int(row.default or 0),
 				"account": _payment_account(mode, doc.company),
+				# Provider name when this mode is an online QR gateway, else None.
+				"gateway": gateways.get(mode),
 			}
 		)
 		if row.default and not default_mode:
@@ -198,15 +203,8 @@ def search_pos_items(company: str, pos_profile: str, search: str = "", limit: in
 	return out
 
 
-@frappe.whitelist()
-def create_pos_invoice(
-	company: str,
-	pos_profile: str,
-	items,
-	payment_mode: str,
-	posting_date: str | None = None,
-):
-	profile = _pos_profile_doc(company, pos_profile)
+def _validate_and_price_cart(profile, items) -> tuple[list[dict], str | None]:
+	"""Normalize the cart, confirm every item exists and is in shop stock."""
 	cart = _normalize_cart_items(items)
 	price_list = profile.selling_price_list or _resolve_price_list(profile.customer)
 
@@ -225,14 +223,13 @@ def create_pos_invoice(
 		as_dict=True,
 	)
 	_assert_cart_available(cart, {r["item_code"]: flt(r["actual_qty"]) for r in bins})
+	return cart, price_list
 
-	allowed_modes = {row.mode_of_payment for row in profile.payments if row.mode_of_payment}
-	if payment_mode not in allowed_modes:
-		frappe.throw(_("Payment mode is not allowed for this POS Profile."), frappe.ValidationError)
 
-	payment_account = _payment_account(payment_mode, company)
+def _assemble_pos_invoice(profile, cart, price_list, posting_date):
+	"""Build (but do not insert) a POS Sales Invoice with totals calculated."""
 	doc = frappe.new_doc("Sales Invoice")
-	doc.company = company
+	doc.company = profile.company
 	doc.customer = profile.customer
 	doc.is_pos = 1
 	doc.pos_profile = profile.name
@@ -266,6 +263,28 @@ def create_pos_invoice(
 
 	doc.set_missing_values()
 	doc.calculate_taxes_and_totals()
+	return doc
+
+
+def build_paid_pos_invoice(
+	company: str,
+	pos_profile: str,
+	items,
+	payment_mode: str,
+	posting_date: str | None = None,
+):
+	"""Create + submit a fully-paid POS Sales Invoice. Shared by the cash path
+	(create_pos_invoice) and the online-gateway finalizer (uzpay.common). Returns
+	the submitted Sales Invoice document."""
+	profile = _pos_profile_doc(company, pos_profile)
+	cart, price_list = _validate_and_price_cart(profile, items)
+
+	allowed_modes = {row.mode_of_payment for row in profile.payments if row.mode_of_payment}
+	if payment_mode not in allowed_modes:
+		frappe.throw(_("Payment mode is not allowed for this POS Profile."), frappe.ValidationError)
+
+	payment_account = _payment_account(payment_mode, company)
+	doc = _assemble_pos_invoice(profile, cart, price_list, posting_date)
 	doc.set("payments", [])
 	doc.append(
 		"payments",
@@ -281,7 +300,18 @@ def create_pos_invoice(
 	doc.insert()
 	doc.submit()
 	frappe.db.commit()
+	return doc
 
+
+@frappe.whitelist()
+def create_pos_invoice(
+	company: str,
+	pos_profile: str,
+	items,
+	payment_mode: str,
+	posting_date: str | None = None,
+):
+	doc = build_paid_pos_invoice(company, pos_profile, items, payment_mode, posting_date)
 	return {
 		"name": doc.name,
 		"status": doc.status,
@@ -290,3 +320,118 @@ def create_pos_invoice(
 		"paid_amount": flt(doc.paid_amount),
 		"currency": doc.currency,
 	}
+
+
+# ---------------------------------------------------------------------------
+# Online QR gateways (Payme / Click / Uzum Bank)
+# ---------------------------------------------------------------------------
+def _checkout_builder(provider: str):
+	from stabler.integrations.uzpay import click, payme, uzum
+
+	return {
+		"Payme": payme.build_checkout_url,
+		"Click": click.build_checkout_url,
+		"Uzum Bank": uzum.build_checkout_url,
+	}.get(provider)
+
+
+@frappe.whitelist()
+def pos_gateway_start(
+	company: str,
+	pos_profile: str,
+	items,
+	payment_mode: str,
+	posting_date: str | None = None,
+):
+	"""Open an online-payment session for the current cart: compute the total,
+	create a POS Payment Session, build the provider checkout URL + QR, and
+	hand them back to the SPA. No invoice is created until the provider
+	confirms payment via its webhook."""
+	from stabler.integrations.uzpay import common as C
+
+	profile = _pos_profile_doc(company, pos_profile)
+	provider = C.gateway_for(company, payment_mode)
+	if not provider:
+		frappe.throw(_("Payment mode {0} is not an online gateway.").format(payment_mode))
+
+	allowed_modes = {row.mode_of_payment for row in profile.payments if row.mode_of_payment}
+	if payment_mode not in allowed_modes:
+		frappe.throw(_("Payment mode is not allowed for this POS Profile."), frappe.ValidationError)
+	# fail fast if the clearing account is misconfigured
+	_payment_account(payment_mode, company)
+
+	cart, price_list = _validate_and_price_cart(profile, items)
+	draft = _assemble_pos_invoice(profile, cart, price_list, posting_date)
+	amount = flt(draft.grand_total)
+	currency = draft.currency
+	if amount <= 0:
+		frappe.throw(_("Cannot start a payment for a zero total."))
+
+	session = C.create_session(
+		provider=provider,
+		company=company,
+		pos_profile=profile.name,
+		payment_mode=payment_mode,
+		amount=amount,
+		currency=currency,
+		cart=cart,
+	)
+
+	builder = _checkout_builder(provider)
+	checkout_url = builder(session)
+	session.checkout_url = checkout_url
+	session.save(ignore_permissions=True)
+	frappe.db.commit()
+
+	return {
+		"session": session.name,
+		"order_id": session.order_id,
+		"provider": provider,
+		"amount": amount,
+		"currency": currency,
+		"checkout_url": checkout_url,
+		"qr_svg": C.qr_svg_data_uri(checkout_url),
+		"expires_at": str(session.expires_at) if session.expires_at else None,
+	}
+
+
+@frappe.whitelist()
+def pos_gateway_status(session: str):
+	"""Poll a payment session. Auto-expires stale pending sessions."""
+	from stabler.integrations.uzpay import common as C
+
+	if not frappe.db.exists(C.SESSION_DT, session):
+		frappe.throw(_("Unknown payment session."), frappe.DoesNotExistError)
+	doc = frappe.get_doc(C.SESSION_DT, session)
+
+	if doc.status == "Pending" and C.is_expired(doc):
+		doc.status = "Expired"
+		doc.save(ignore_permissions=True)
+		frappe.db.commit()
+
+	return {
+		"session": doc.name,
+		"status": doc.status,
+		"provider": doc.provider,
+		"amount": flt(doc.amount),
+		"currency": doc.currency,
+		"sales_invoice": doc.sales_invoice,
+		"paid_at": str(doc.paid_at) if doc.paid_at else None,
+	}
+
+
+@frappe.whitelist()
+def pos_gateway_cancel(session: str):
+	"""Cashier abandoned the QR before payment. Only voids a still-pending
+	session; a paid session is terminal and must be refunded via the provider."""
+	from stabler.integrations.uzpay import common as C
+
+	if not frappe.db.exists(C.SESSION_DT, session):
+		frappe.throw(_("Unknown payment session."), frappe.DoesNotExistError)
+	doc = frappe.get_doc(C.SESSION_DT, session)
+	if doc.status == "Pending":
+		doc.status = "Cancelled"
+		doc.cancel_time_ms = C.epoch_ms()
+		doc.save(ignore_permissions=True)
+		frappe.db.commit()
+	return {"session": doc.name, "status": doc.status}

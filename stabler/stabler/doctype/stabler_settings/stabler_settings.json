@@ -11,7 +11,10 @@
   "onec_mode",
   "onec_last_pulled_at",
   "asl_code_regex",
-  "factura_export_enabled"
+  "factura_export_enabled",
+  "pos_gateways_section",
+  "pos_session_ttl_minutes",
+  "pos_gateways"
  ],
  "fields": [
   {
@@ -54,6 +57,25 @@
    "fieldname": "factura_export_enabled",
    "fieldtype": "Check",
    "label": "Factura.uz Export Enabled"
+  },
+  {
+   "fieldname": "pos_gateways_section",
+   "fieldtype": "Section Break",
+   "label": "POS Online Payment Gateways"
+  },
+  {
+   "default": "15",
+   "description": "Minutes a POS QR payment session stays open before it is auto-expired.",
+   "fieldname": "pos_session_ttl_minutes",
+   "fieldtype": "Int",
+   "label": "POS Session TTL (minutes)"
+  },
+  {
+   "description": "Map each online POS payment mode to its Uzbek provider. Secrets (merchant id / keys) live in site_config.json, not here.",
+   "fieldname": "pos_gateways",
+   "fieldtype": "Table",
+   "label": "POS Gateways",
+   "options": "Stabler POS Gateway"
   }
  ],
  "index_web_pages_for_search": 1,
