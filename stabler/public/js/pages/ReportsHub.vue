@@ -44,6 +44,48 @@ const groups = computed(() => [
 				badge: t("Sales"),
 			},
 			{
+				title: t("Sales by Customer"),
+				description: t("Drill-down report: customer → invoices → document. Returns netted."),
+				path: "/reports/sales-by-customer",
+				icon: "ti-zoom-money",
+				badge: t("Sales"),
+			},
+			{
+				title: t("Sales by Item"),
+				description: t("Drill-down report: item → invoice lines → document."),
+				path: "/reports/sales-by-item",
+				icon: "ti-package",
+				badge: t("Sales"),
+			},
+			{
+				title: t("Item ABC analysis"),
+				description: t("Pareto ranking of items by value with A/B/C classes."),
+				path: "/reports/item-abc",
+				icon: "ti-sort-descending-2",
+				badge: t("Sales"),
+			},
+			{
+				title: t("Customer ABC analysis"),
+				description: t("Pareto ranking of customers by revenue with A/B/C classes."),
+				path: "/reports/customer-abc",
+				icon: "ti-users",
+				badge: t("Sales"),
+			},
+			{
+				title: t("Gross Margin by Item"),
+				description: t("Revenue − COGS per item, with margin %. Cost from item valuation."),
+				path: "/reports/margin-by-item",
+				icon: "ti-percentage",
+				badge: t("Sales"),
+			},
+			{
+				title: t("Gross Margin by Customer"),
+				description: t("Revenue − COGS per customer, with margin %."),
+				path: "/reports/margin-by-customer",
+				icon: "ti-percentage",
+				badge: t("Sales"),
+			},
+			{
 				title: t("AR Aging"),
 				description: t("Customer receivables grouped by aging buckets."),
 				path: "/sales/aging",
@@ -66,6 +108,20 @@ const groups = computed(() => [
 		module: "purchasing",
 		reports: [
 			{
+				title: t("Purchases by Supplier"),
+				description: t("Drill-down report: supplier → bills → document."),
+				path: "/reports/purchases-by-supplier",
+				icon: "ti-truck-delivery",
+				badge: t("Purchasing"),
+			},
+			{
+				title: t("Supplier ABC analysis"),
+				description: t("Pareto ranking of suppliers by spend with A/B/C classes."),
+				path: "/reports/supplier-abc",
+				icon: "ti-sort-descending-2",
+				badge: t("Purchasing"),
+			},
+			{
 				title: t("AP Aging"),
 				description: t("Supplier payables grouped by aging buckets."),
 				path: "/purchasing/aging",
@@ -80,6 +136,20 @@ const groups = computed(() => [
 		icon: "ti-package",
 		module: "inventory",
 		reports: [
+			{
+				title: t("Inventory Aging"),
+				description: t("On-hand value vs sales velocity. Flags slow-moving and dead stock."),
+				path: "/reports/inventory-aging",
+				icon: "ti-hourglass",
+				badge: t("Inventory"),
+			},
+			{
+				title: t("Batch Expiry"),
+				description: t("On-hand batches at risk: expired and expiring soon."),
+				path: "/reports/inventory-expiry",
+				icon: "ti-calendar-x",
+				badge: t("Inventory"),
+			},
 			{
 				title: t("Stock Ledger"),
 				description: t("Item movement, voucher trace, quantities, and stock value."),

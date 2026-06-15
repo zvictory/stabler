@@ -4,6 +4,11 @@ import { t } from "./composables/i18n.js";
 import Dashboard from "./pages/Dashboard.vue";
 import Module from "./pages/Module.vue";
 import ReportsHub from "./pages/ReportsHub.vue";
+import ReportSalesByCustomer from "./pages/reports/SalesByCustomer.vue";
+import ReportSalesByItem from "./pages/reports/SalesByItem.vue";
+import ReportItemAbc from "./pages/reports/ItemAbc.vue";
+import DrillReport from "./pages/reports/DrillReport.vue";
+import ReportInventoryExpiry from "./pages/reports/InventoryExpiry.vue";
 import Profile from "./pages/Profile.vue";
 import MoneyHome from "./pages/money/MoneyHome.vue";
 import Accounts from "./pages/money/Accounts.vue";
@@ -103,6 +108,16 @@ const routes = [
 	{ path: "/", redirect: "/dashboard" },
 	{ path: "/dashboard", name: "dashboard", component: Dashboard, meta: { title: t("Dashboard"), module: "dashboard" } },
 	{ path: "/reports", name: "reports", component: ReportsHub, meta: { title: t("Reports") } },
+	{ path: "/reports/sales-by-customer", name: "report-sales-by-customer", component: ReportSalesByCustomer, meta: { title: t("Sales by Customer"), module: "sales" } },
+	{ path: "/reports/sales-by-item", name: "report-sales-by-item", component: ReportSalesByItem, meta: { title: t("Sales by Item"), module: "sales" } },
+	{ path: "/reports/item-abc", name: "report-item-abc", component: ReportItemAbc, meta: { title: t("Item ABC analysis"), module: "sales" } },
+	{ path: "/reports/customer-abc", name: "report-customer-abc", component: DrillReport, meta: { title: "Customer ABC analysis", module: "sales", report: { title: "Customer ABC analysis", summaryApi: "stabler.api.reports.customer_abc", detailApi: "stabler.api.reports.sales_by_customer_detail", drillKey: "customer", detailParam: "customer", docPrefix: "/sales/invoices/", exportName: "customer_abc" } } },
+	{ path: "/reports/purchases-by-supplier", name: "report-purchases-by-supplier", component: DrillReport, meta: { title: "Purchases by Supplier", module: "purchasing", report: { title: "Purchases by Supplier", summaryApi: "stabler.api.reports.purchases_by_supplier", detailApi: "stabler.api.reports.purchases_by_supplier_detail", drillKey: "supplier", detailParam: "supplier", docPrefix: "/purchasing/invoices/", exportName: "purchases_by_supplier" } } },
+	{ path: "/reports/supplier-abc", name: "report-supplier-abc", component: DrillReport, meta: { title: "Supplier ABC analysis", module: "purchasing", report: { title: "Supplier ABC analysis", summaryApi: "stabler.api.reports.supplier_abc", detailApi: "stabler.api.reports.purchases_by_supplier_detail", drillKey: "supplier", detailParam: "supplier", docPrefix: "/purchasing/invoices/", exportName: "supplier_abc" } } },
+	{ path: "/reports/inventory-aging", name: "report-inventory-aging", component: DrillReport, meta: { title: "Inventory Aging", module: "inventory", report: { title: "Inventory Aging", summaryApi: "stabler.api.reports.inventory_aging", detailApi: "stabler.api.reports.sales_by_item_detail", drillKey: "item_code", detailParam: "item_code", docPrefix: "/sales/invoices/", exportName: "inventory_aging" } } },
+	{ path: "/reports/inventory-expiry", name: "report-inventory-expiry", component: ReportInventoryExpiry, meta: { title: t("Batch Expiry"), module: "inventory" } },
+	{ path: "/reports/margin-by-item", name: "report-margin-by-item", component: DrillReport, meta: { title: "Gross Margin by Item", module: "sales", report: { title: "Gross Margin by Item", summaryApi: "stabler.api.reports.gross_margin_by_item", detailApi: "stabler.api.reports.sales_by_item_detail", drillKey: "item_code", detailParam: "item_code", docPrefix: "/sales/invoices/", exportName: "margin_by_item" } } },
+	{ path: "/reports/margin-by-customer", name: "report-margin-by-customer", component: DrillReport, meta: { title: "Gross Margin by Customer", module: "sales", report: { title: "Gross Margin by Customer", summaryApi: "stabler.api.reports.gross_margin_by_customer", detailApi: "stabler.api.reports.sales_by_customer_detail", drillKey: "customer", detailParam: "customer", docPrefix: "/sales/invoices/", exportName: "margin_by_customer" } } },
 	{ path: "/profile", name: "profile", component: Profile, meta: { title: t("Profile") } },
 	{ path: "/pos", name: "pos", component: POS, meta: { title: t("POS"), module: "sales" } },
 	{ path: "/manufacturing/line", name: "manufacturing-line", component: ManufacturingOperatorBoard, meta: { title: t("Operator Kiosk") } },
