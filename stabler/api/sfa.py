@@ -250,6 +250,21 @@ def update_route(name: str, payload: dict | str) -> dict:
 # Visits
 # ---------------------------------------------------------------------------
 
+def _attach_link_names(rows, link_field, doctype, name_field, out_field=None):
+	"""Attach a human-readable name for a link column via one batched query."""
+	out_field = out_field or f"{link_field}_name"
+	ids = list({r[link_field] for r in rows if r.get(link_field)})
+	names = {}
+	if ids:
+		names = {
+			d.name: d.get(name_field)
+			for d in frappe.get_all(doctype, filters={"name": ["in", ids]}, fields=["name", name_field])
+		}
+	for r in rows:
+		r[out_field] = names.get(r.get(link_field))
+	return rows
+
+
 _VISIT_FIELDS = [
 	"name",
 	"outlet",
@@ -285,12 +300,15 @@ def list_visits(
 	if outlet:
 		filters["outlet"] = outlet
 
-	return frappe.get_all(
-		"Visit",
-		filters=filters,
-		fields=_VISIT_FIELDS,
-		order_by="planned_date desc, creation desc",
-		limit=max(1, min(int(limit or 200), 1000)),
+	return _attach_link_names(
+		frappe.get_all(
+			"Visit",
+			filters=filters,
+			fields=_VISIT_FIELDS,
+			order_by="planned_date desc, creation desc",
+			limit=max(1, min(int(limit or 200), 1000)),
+		),
+		"outlet", "Outlet", "outlet_name",
 	)
 
 
@@ -595,23 +613,26 @@ def list_photo_reports(
 	if category:
 		filters["category"] = category
 
-	return frappe.get_all(
-		"Photo Report",
-		filters=filters,
-		fields=[
-			"name",
-			"visit",
-			"outlet",
-			"field_user",
-			"company",
-			"category",
-			"captured_at",
-			"photo_url",
-			"photo_lat",
-			"photo_lng",
-		],
-		order_by="captured_at desc, creation desc",
-		limit=max(1, min(int(limit or 200), 1000)),
+	return _attach_link_names(
+		frappe.get_all(
+			"Photo Report",
+			filters=filters,
+			fields=[
+				"name",
+				"visit",
+				"outlet",
+				"field_user",
+				"company",
+				"category",
+				"captured_at",
+				"photo_url",
+				"photo_lat",
+				"photo_lng",
+			],
+			order_by="captured_at desc, creation desc",
+			limit=max(1, min(int(limit or 200), 1000)),
+		),
+		"outlet", "Outlet", "outlet_name",
 	)
 
 
@@ -666,19 +687,22 @@ def list_planograms(
 	if is_active is not None and is_active != "":
 		filters["is_active"] = 1 if str(is_active) in ("1", "true", "True") else 0
 
-	return frappe.get_all(
-		"Planogram",
-		filters=filters,
-		fields=[
-			"name",
-			"outlet",
-			"company",
-			"category",
-			"valid_from",
-			"is_active",
-		],
-		order_by="creation desc",
-		limit=max(1, min(int(limit or 200), 1000)),
+	return _attach_link_names(
+		frappe.get_all(
+			"Planogram",
+			filters=filters,
+			fields=[
+				"name",
+				"outlet",
+				"company",
+				"category",
+				"valid_from",
+				"is_active",
+			],
+			order_by="creation desc",
+			limit=max(1, min(int(limit or 200), 1000)),
+		),
+		"outlet", "Outlet", "outlet_name",
 	)
 
 
@@ -728,21 +752,24 @@ def list_osa_audits(
 	if visit:
 		filters["visit"] = visit
 
-	return frappe.get_all(
-		"OSA Audit",
-		filters=filters,
-		fields=[
-			"name",
-			"visit",
-			"outlet",
-			"company",
-			"audited_at",
-			"total_skus",
-			"present_skus",
-			"osa_pct",
-		],
-		order_by="audited_at desc, creation desc",
-		limit=max(1, min(int(limit or 200), 1000)),
+	return _attach_link_names(
+		frappe.get_all(
+			"OSA Audit",
+			filters=filters,
+			fields=[
+				"name",
+				"visit",
+				"outlet",
+				"company",
+				"audited_at",
+				"total_skus",
+				"present_skus",
+				"osa_pct",
+			],
+			order_by="audited_at desc, creation desc",
+			limit=max(1, min(int(limit or 200), 1000)),
+		),
+		"outlet", "Outlet", "outlet_name",
 	)
 
 
@@ -813,6 +840,7 @@ def list_receivables(
 		fields=[
 			"name",
 			"customer",
+			"customer_name",
 			"company",
 			"posting_date",
 			"due_date",

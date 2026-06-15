@@ -11,6 +11,7 @@ import PeriodSelect from "../../components/PeriodSelect.vue";
 import VoucherDrawer from "../../components/VoucherDrawer.vue";
 import EmptyState from "../../components/EmptyState.vue";
 import { t } from "../../composables/i18n.js";
+import { useVoucherDrill } from "../../composables/useVoucherDrill.js";
 
 const route = useRoute();
 const router = useRouter();
@@ -57,52 +58,8 @@ const isMultiCurrency = computed(
 // ---------------------------------------------------------------------------
 // Voucher drawer state (in-place view for JE / Payment)
 // ---------------------------------------------------------------------------
-// Voucher types we can open in-place with an existing detail endpoint.
-const DRAWER_TYPES = new Set(["Journal Entry", "Payment Entry"]);
-
-// Voucher types that navigate to another module page as fallback.
-const VOUCHER_ROUTES = {
-	"Sales Invoice": "/sales/invoices",
-	"Purchase Invoice": "/purchasing/invoices",
-};
-
-const drawerOpen = ref(false);
-const drawerLoading = ref(false);
-const drawerDetail = ref(null);
-
-async function openVoucher(entry) {
-	if (!entry?.voucher_type || !entry?.voucher_no) return;
-
-	if (DRAWER_TYPES.has(entry.voucher_type)) {
-		// Open in-place drawer — no navigation.
-		drawerOpen.value = true;
-		drawerLoading.value = true;
-		drawerDetail.value = null;
-		const method =
-			entry.voucher_type === "Journal Entry"
-				? "stabler.api.money.journal_entry_detail"
-				: "stabler.api.money.payment_entry_detail";
-		try {
-			drawerDetail.value = await call(method, { name: entry.voucher_no });
-		} catch (err) {
-			drawerDetail.value = { error: err?.message || t("Failed to load.") };
-		} finally {
-			drawerLoading.value = false;
-		}
-		return;
-	}
-
-	// For voucher types without a drawer endpoint, navigate to the module page.
-	const path = VOUCHER_ROUTES[entry.voucher_type];
-	if (path) {
-		router.push({ path, query: { open: entry.voucher_no } });
-	}
-}
-
-function closeDrawer() {
-	drawerOpen.value = false;
-	drawerDetail.value = null;
-}
+// Source-voucher drill — shared with StockLedger and the financial statements.
+const { open: drawerOpen, loading: drawerLoading, detail: drawerDetail, close: closeDrawer, openVoucher, canOpen } = useVoucherDrill();
 
 // ---------------------------------------------------------------------------
 // Data fetching
@@ -359,29 +316,20 @@ watch(() => route.params.account, fetchLedger);
 							<td class="text-nowrap">{{ formatDate(e.posting_date) }}</td>
 							<td>
 								<div class="small">{{ e.voucher_type }}</div>
-								<!-- Journal Entry / Payment Entry → open in-place drawer -->
+								<!-- JE/PE open in a drawer; other docs route to their page -->
 								<button
-									v-if="DRAWER_TYPES.has(e.voucher_type)"
+									v-if="canOpen(e)"
 									type="button"
 									class="btn btn-link p-0 font-monospace small text-decoration-none"
 									@click="openVoucher(e)"
 								>
 									{{ e.voucher_no }}
 								</button>
-								<!-- Other voucher types → navigate to module page -->
-								<router-link
-									v-else-if="VOUCHER_ROUTES[e.voucher_type]"
-									:to="{ path: VOUCHER_ROUTES[e.voucher_type], query: { open: e.voucher_no } }"
-									class="font-monospace small text-decoration-none"
-								>
-									{{ e.voucher_no }}
-								</router-link>
-								<!-- Unmapped types → plain text -->
 								<div v-else class="font-monospace small text-secondary">{{ e.voucher_no }}</div>
 							</td>
 							<td class="small">
 								<div v-if="e.party" class="text-body">
-									<span class="text-secondary me-1">{{ e.party_type }}:</span>{{ e.party }}
+									<span class="text-secondary me-1">{{ e.party_type }}:</span>{{ e.party_name || e.party }}
 								</div>
 								<div
 									v-else-if="e.against"

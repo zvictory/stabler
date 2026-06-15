@@ -80,7 +80,7 @@ watch(activeCompany, load);
 				<tbody>
 					<tr v-for="r in rows" :key="r.name">
 						<td>{{ r.name }}</td>
-						<td>{{ r.customer }}</td>
+						<td>{{ r.customer_name || r.customer }}</td>
 						<td>{{ formatDateTime(r.posting_date) || "—" }}</td>
 						<td>{{ formatDateTime(r.due_date) || "—" }}</td>
 						<td class="text-end">

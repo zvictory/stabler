@@ -186,7 +186,7 @@ onMounted(load);
 						</thead>
 						<tbody>
 							<tr v-for="acc in detail.accounts" :key="acc.account">
-								<td class="small">{{ acc.account }}</td>
+								<td class="small">{{ acc.account_name || acc.account }}</td>
 								<td class="text-end font-monospace small">
 									<template v-if="acc.debit_in_account_currency > 0">
 										{{ formatMoney(acc.debit_in_account_currency, acc.account_currency) }}

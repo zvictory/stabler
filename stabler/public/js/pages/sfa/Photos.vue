@@ -239,7 +239,7 @@ watch(category, load);
 				<tbody>
 					<tr v-for="r in rows" :key="r.name">
 						<td>{{ r.name }}</td>
-						<td>{{ r.outlet }}</td>
+						<td>{{ r.outlet_name || r.outlet }}</td>
 						<td>{{ r.field_user || "—" }}</td>
 						<td>{{ categoryLabel(r.category) }}</td>
 						<td>{{ formatDateTime(r.captured_at) }}</td>

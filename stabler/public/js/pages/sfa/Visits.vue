@@ -242,7 +242,7 @@ watch([plannedDate, status], load);
 						@click="openEdit(r)"
 					>
 						<td>{{ r.name }}</td>
-						<td>{{ r.outlet }}</td>
+						<td>{{ r.outlet_name || r.outlet }}</td>
 						<td>{{ r.field_user || "—" }}</td>
 						<td>{{ formatDateTime(r.planned_date) || "—" }}</td>
 						<td><span class="badge" :class="statusBadge(r.status)">{{ t(r.status) }}</span></td>

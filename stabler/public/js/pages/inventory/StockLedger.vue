@@ -8,9 +8,14 @@ import { formatDateTime, todayIso} from "../../composables/date.js";
 import { t } from "../../composables/i18n.js";
 import EmptyState from "../../components/EmptyState.vue";
 import DateInput from "../../components/DateInput.vue";
+import VoucherDrawer from "../../components/VoucherDrawer.vue";
+import { useVoucherDrill } from "../../composables/useVoucherDrill.js";
 
 const session = useSession();
 const { activeCompany, user } = storeToRefs(session);
+
+// Source-voucher drill (JE/PE drawer; stock docs route to their page).
+const { open: drawerOpen, loading: drawerLoading, detail: drawerDetail, close: closeDrawer, openVoucher, canOpen: canOpenVoucher } = useVoucherDrill();
 
 const today = todayIso();
 const monthAgo = new Date(Date.now() - 30 * 86400000).toISOString().slice(0, 10);
@@ -132,13 +137,19 @@ watch(activeCompany, load);
 						<td>{{ formatDateTime(`${r.posting_date} ${r.posting_time}`) }}</td>
 						<td>
 							<span class="badge me-1" :class="voucherBadge(r.voucher_type)">{{ r.voucher_type }}</span>
-							<div class="small font-monospace text-primary">{{ r.voucher_no }}</div>
+							<a
+								v-if="canOpenVoucher(r)"
+								href="#"
+								class="small font-monospace text-primary text-decoration-none"
+								@click.prevent="openVoucher(r)"
+							>{{ r.voucher_no }}</a>
+							<div v-else class="small font-monospace text-secondary">{{ r.voucher_no }}</div>
 						</td>
 						<td>
 							<div class="fw-semibold">{{ r.item_name || r.item_code }}</div>
 							<div class="small text-secondary font-monospace">{{ r.item_code }}</div>
 						</td>
-						<td class="small">{{ r.warehouse }}</td>
+						<td class="small">{{ r.warehouse_name || r.warehouse }}</td>
 						<td
 							class="text-end font-monospace"
 							:class="Number(r.actual_qty) >= 0 ? 'text-green' : 'text-red'"
@@ -152,4 +163,12 @@ watch(activeCompany, load);
 			</table>
 		</div>
 	</div>
+
+	<VoucherDrawer
+		:open="drawerOpen"
+		:loading="drawerLoading"
+		:detail="drawerDetail"
+		:currency="currency"
+		@close="closeDrawer"
+	/>
 </template>

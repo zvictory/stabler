@@ -247,8 +247,16 @@ def gl_entries(
 	)
 
 	as_of = to_d or today()
+	_pn_cache: dict = {}
 	for r in rows:
 		r["posting_date"] = str(r["posting_date"]) if r["posting_date"] else ""
+		# Human-readable party name (cached — a ledger repeats the same parties).
+		party = r.get("party")
+		if party:
+			key = (r.get("party_type"), party)
+			if key not in _pn_cache:
+				_pn_cache[key] = _party_title(r.get("party_type"), party)
+			r["party_name"] = _pn_cache[key]
 
 	return {
 		"entries": rows,
@@ -433,6 +441,83 @@ def list_journal_entries(
 		as_dict=True,
 	)
 	return rows
+
+
+@frappe.whitelist()
+def account_transactions(
+	company: str,
+	account: str,
+	from_date: str | None = None,
+	to_date: str | None = None,
+	limit: int = 500,
+	start: int = 0,
+):
+	"""QuickZoom transaction detail behind a financial-statement line. Works for a
+	leaf account OR a group (gathers descendant leaves via the Account nested set),
+	with opening balance + running balance so the closing balance reconciles to
+	the report figure (period movement for P&L, as-of for Balance Sheet)."""
+	_require_company(company)
+	_assert_can_read("Account", account)
+	acc = frappe.db.get_value("Account", account, ["is_group", "lft", "rgt"], as_dict=True)
+	if not acc:
+		frappe.throw(_("Unknown account: {0}").format(account), frappe.DoesNotExistError)
+
+	if acc.is_group:
+		accounts = frappe.db.sql_list(
+			"""SELECT name FROM `tabAccount`
+			   WHERE company = %s AND is_group = 0 AND lft >= %s AND rgt <= %s""",
+			(company, acc.lft, acc.rgt),
+		)
+	else:
+		accounts = [account]
+	if not accounts:
+		return {"entries": [], "opening_base": 0.0, "total_count": 0, "has_more": False}
+
+	params: dict = {"company": company, "accounts": tuple(accounts)}
+	opening = 0.0
+	if from_date:
+		opening = flt(
+			frappe.db.sql(
+				"""SELECT COALESCE(SUM(debit - credit), 0) FROM `tabGL Entry`
+				   WHERE company = %(company)s AND account IN %(accounts)s
+				     AND is_cancelled = 0 AND posting_date < %(from_date)s""",
+				{**params, "from_date": from_date},
+			)[0][0]
+		)
+
+	conds = ["company = %(company)s", "account IN %(accounts)s", "is_cancelled = 0"]
+	if from_date:
+		conds.append("posting_date >= %(from_date)s")
+		params["from_date"] = from_date
+	if to_date:
+		conds.append("posting_date <= %(to_date)s")
+		params["to_date"] = to_date
+	where = " AND ".join(conds)
+
+	total = frappe.db.sql(f"SELECT COUNT(*) FROM `tabGL Entry` WHERE {where}", params)[0][0]
+	params["limit"] = int(limit)
+	params["start"] = int(start)
+	rows = frappe.db.sql(
+		f"""SELECT posting_date, voucher_type, voucher_no, against, account,
+		           debit, credit
+		    FROM `tabGL Entry` WHERE {where}
+		    ORDER BY posting_date ASC, creation ASC
+		    LIMIT %(limit)s OFFSET %(start)s""",
+		params,
+		as_dict=True,
+	)
+	bal = flt(opening)
+	for r in rows:
+		r["debit"] = flt(r["debit"])
+		r["credit"] = flt(r["credit"])
+		bal += r["debit"] - r["credit"]
+		r["balance"] = bal
+	return {
+		"entries": rows,
+		"opening_base": flt(opening),
+		"total_count": int(total or 0),
+		"has_more": int(total or 0) > int(start) + len(rows),
+	}
 
 
 _PARTY_TITLE_FIELD = {

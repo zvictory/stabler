@@ -5,11 +5,13 @@ import { useSession } from "../../stores/session.js";
 import { call, download } from "../../api/client.js";
 import { formatMoney } from "../../composables/money.js";
 import { t } from "../../composables/i18n.js";
-import { todayIso, presetRange } from "../../composables/date.js";
+import { todayIso, presetRange, formatDate } from "../../composables/date.js";
+import { useVoucherDrill } from "../../composables/useVoucherDrill.js";
 import DateInput from "../../components/DateInput.vue";
 import PeriodSelect from "../../components/PeriodSelect.vue";
 import EmptyState from "../../components/EmptyState.vue";
 import Select from "../../components/Select.vue";
+import VoucherDrawer from "../../components/VoucherDrawer.vue";
 
 const session = useSession();
 const { activeCompany, user } = storeToRefs(session);
@@ -165,6 +167,48 @@ function onPeriodChange({ from, to }) {
 	}
 }
 
+// ---------------------------------------------------------------------------
+// QuickZoom drill-down: account line → transaction detail → source document.
+// ---------------------------------------------------------------------------
+const { open: drawerOpen, loading: drawerLoading, detail: drawerDetail, close: closeDrawer, openVoucher, canOpen } = useVoucherDrill();
+
+const acctOpen = ref(false);
+const acctName = ref("");
+const acctLoading = ref(false);
+const acctError = ref("");
+const acctData = ref(null);
+
+// A row is drillable when it maps to a real account — leaf OR group (group rows
+// gather their descendant accounts on the backend). Synthetic total rows have no
+// account_name and stay non-drillable.
+function canDrill(row) {
+	return !Array.isArray(row) && !!row?.account && !!row?.account_name;
+}
+
+async function openAccountDetail(row) {
+	acctName.value = row.account;
+	acctOpen.value = true;
+	acctLoading.value = true;
+	acctError.value = "";
+	acctData.value = null;
+	try {
+		acctData.value = await call("stabler.api.money.account_transactions", {
+			company: activeCompany.value,
+			account: row.account,
+			from_date: fromDate.value,
+			to_date: toDate.value,
+			limit: 500,
+		});
+	} catch (err) {
+		acctError.value = err?.message || t("Failed to load.");
+	} finally {
+		acctLoading.value = false;
+	}
+}
+
+
+const money = (v) => formatMoney(Number(v || 0), currency.value, user.value.language);
+
 onMounted(run);
 watch([activeCompany, selectedName], run);
 </script>
@@ -260,11 +304,96 @@ watch([activeCompany, selectedName], run);
 							:class="cellClass(row, col)"
 							:style="ci === 0 ? indent(row) : null"
 						>
-							{{ renderCell(row, col, ci) }}
+							<a
+								v-if="ci === 0 && canDrill(row)"
+								href="#"
+								class="report-acct-link"
+								:title="t('View transactions')"
+								@click.prevent="openAccountDetail(row)"
+							>{{ renderCell(row, col, ci) }} <i class="ti ti-zoom-in report-acct-zoom"></i></a>
+							<template v-else>{{ renderCell(row, col, ci) }}</template>
 						</td>
 					</tr>
 				</tbody>
 			</table>
 		</div>
 	</div>
+
+	<div v-if="acctOpen" class="offcanvas-backdrop fade show" @click="acctOpen = false"></div>
+	<div v-if="acctOpen" class="offcanvas offcanvas-end show" tabindex="-1" style="visibility: visible; width: 720px">
+		<div class="offcanvas-header">
+			<h5 class="offcanvas-title"><i class="ti ti-zoom-money me-1"></i>{{ acctName }}</h5>
+			<button type="button" class="btn-close" @click="acctOpen = false"></button>
+		</div>
+		<div class="offcanvas-body">
+			<div v-if="acctLoading" class="text-center py-5"><div class="spinner-border text-primary"></div></div>
+			<div v-else-if="acctError" class="alert alert-danger">{{ acctError }}</div>
+			<div v-else-if="acctData">
+				<div class="text-secondary small mb-2">
+					{{ formatDate(fromDate) }} – {{ formatDate(toDate) }} · {{ t("Opening") }}: <span class="font-monospace">{{ money(acctData.opening_base) }}</span>
+				</div>
+				<div class="table-responsive">
+					<table class="table table-sm table-vcenter">
+						<thead>
+							<tr>
+								<th>{{ t("Date") }}</th>
+								<th>{{ t("Voucher") }}</th>
+								<th>{{ t("Against") }}</th>
+								<th class="text-end">{{ t("Debit") }}</th>
+								<th class="text-end">{{ t("Credit") }}</th>
+								<th class="text-end">{{ t("Balance") }}</th>
+							</tr>
+						</thead>
+						<tbody>
+							<tr v-for="(e, i) in acctData.entries" :key="i">
+								<td class="text-nowrap">{{ formatDate(e.posting_date) }}</td>
+								<td>
+									<a
+										v-if="canOpen(e)"
+										href="#"
+										class="report-acct-link font-monospace small"
+										@click.prevent="openVoucher(e)"
+									>{{ e.voucher_no }}</a>
+									<span v-else class="font-monospace small text-secondary">{{ e.voucher_no }}</span>
+									<div class="text-secondary" style="font-size: 0.7rem">{{ e.voucher_type }}</div>
+								</td>
+								<td class="text-truncate small" style="max-width: 180px">{{ e.against || "—" }}</td>
+								<td class="text-end font-monospace">{{ e.debit ? money(e.debit) : "—" }}</td>
+								<td class="text-end font-monospace">{{ e.credit ? money(e.credit) : "—" }}</td>
+								<td class="text-end font-monospace">{{ money(e.balance) }}</td>
+							</tr>
+							<tr v-if="!acctData.entries.length"><td colspan="6" class="text-center text-secondary py-3">{{ t("No data") }}</td></tr>
+						</tbody>
+					</table>
+				</div>
+				<div v-if="acctData.has_more" class="text-secondary small">{{ t("Showing first 500 — narrow the date range to see more.") }}</div>
+			</div>
+		</div>
+	</div>
+
+	<VoucherDrawer
+		:open="drawerOpen"
+		:loading="drawerLoading"
+		:detail="drawerDetail"
+		:currency="currency"
+		@close="closeDrawer"
+	/>
 </template>
+
+<style scoped>
+.report-acct-link {
+	color: var(--tblr-primary, #206bc4);
+	text-decoration: none;
+	cursor: pointer;
+}
+.report-acct-link:hover {
+	text-decoration: underline;
+}
+.report-acct-zoom {
+	opacity: 0;
+	font-size: 0.85em;
+}
+.report-acct-link:hover .report-acct-zoom {
+	opacity: 0.6;
+}
+</style>

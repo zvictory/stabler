@@ -183,7 +183,7 @@ watch(activeCompany, load);
 				<tbody>
 					<tr v-for="r in rows" :key="r.name">
 						<td>{{ r.name }}</td>
-						<td>{{ r.outlet }}</td>
+						<td>{{ r.outlet_name || r.outlet }}</td>
 						<td>{{ r.category || "—" }}</td>
 						<td>{{ formatDate(r.valid_from) }}</td>
 						<td>

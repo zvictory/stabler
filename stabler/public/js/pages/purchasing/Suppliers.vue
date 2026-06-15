@@ -1233,7 +1233,7 @@ watch(activeCompany, () => {
 								</thead>
 								<tbody>
 									<tr v-for="(ac, i) in voucherDetail.accounts" :key="i">
-										<td class="small">{{ ac.account }}</td>
+										<td class="small">{{ ac.account_name || ac.account }}</td>
 										<td class="text-end font-monospace small">
 											<span v-if="Number(ac.debit) > 0">{{ formatMoney(ac.debit, ac.account_currency, user.language) }}</span>
 											<span v-else class="text-secondary">—</span>
