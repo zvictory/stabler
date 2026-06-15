@@ -45,6 +45,7 @@ const editingName = ref("");
 const payAccounts = ref([]); // bank/cash leaf accounts
 const expAccounts = ref([]); // expense leaf accounts
 const assetAccounts = ref([]); // fixed asset leaves for asset purchases
+const equityAccounts = ref([]); // equity leaves (owner capital / drawings / dividends)
 const optionsLoading = ref(false);
 
 const baseCurrency = computed(
@@ -91,9 +92,12 @@ const totalAmount = computed(() =>
 	form.value.lines.reduce((sum, l) => sum + (Number(l.amount) || 0), 0),
 );
 
-const lineAccounts = computed(() =>
-	form.value.entry_kind === "Asset Purchase" ? assetAccounts.value : expAccounts.value,
-);
+const lineAccounts = computed(() => {
+	const base = form.value.entry_kind === "Asset Purchase" ? assetAccounts.value : expAccounts.value;
+	// Equity leaves (owner drawings / capital / dividends) are valid debit targets
+	// for a bank entry, so surface them in every mode alongside the base accounts.
+	return [...base, ...equityAccounts.value];
+});
 
 const formTitle = computed(() =>
 	editingName.value
@@ -153,14 +157,19 @@ async function loadOptions() {
 	if (!activeCompany.value) return;
 	optionsLoading.value = true;
 	try {
-		const [pay, exp, fixed] = await Promise.all([
-			call("stabler.api.money.bank_cash_accounts", { company: activeCompany.value }),
+		const [pay, exp, fixed, equity] = await Promise.all([
+			call("stabler.api.money.bank_cash_accounts", {
+				company: activeCompany.value,
+				include_equity: 1,
+			}),
 			call("stabler.api.money.expense_accounts", { company: activeCompany.value }),
 			call("stabler.api.money.fixed_asset_accounts", { company: activeCompany.value }),
+			call("stabler.api.money.equity_accounts", { company: activeCompany.value }),
 		]);
 		payAccounts.value = pay || [];
 		expAccounts.value = exp || [];
 		assetAccounts.value = fixed || [];
+		equityAccounts.value = equity || [];
 	} catch (err) {
 		submitError.value = err?.message || "Failed to load accounts.";
 	} finally {
@@ -381,6 +390,7 @@ watch(activeCompany, () => {
 	payAccounts.value = [];
 	expAccounts.value = [];
 	assetAccounts.value = [];
+	equityAccounts.value = [];
 	load();
 	loadOptions();
 });

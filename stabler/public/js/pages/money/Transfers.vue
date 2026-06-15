@@ -289,7 +289,10 @@ async function loadOptions() {
 	optionsLoading.value = true;
 	try {
 		accounts.value =
-			(await call("stabler.api.money.bank_cash_accounts", { company: activeCompany.value })) || [];
+			(await call("stabler.api.money.bank_cash_accounts", {
+				company: activeCompany.value,
+				include_equity: 1,
+			})) || [];
 	} catch (err) {
 		submitError.value = err?.message || "Failed to load accounts.";
 	} finally {

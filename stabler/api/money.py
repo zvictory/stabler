@@ -1448,6 +1448,29 @@ def fixed_asset_accounts(company: str):
 	)
 
 
+@frappe.whitelist()
+def equity_accounts(company: str):
+	"""Leaf Equity-rooted accounts (owner capital / drawings / retained earnings).
+
+	Posting transfers/expenses against equity is valid for owner contributions,
+	drawings and dividends — unusual but legitimate. Surfaced alongside bank/cash
+	and expense accounts so those flows don't have to leave Stabler.
+	"""
+	_require_company(company)
+	return frappe.get_all(
+		"Account",
+		filters={
+			"company": company,
+			"disabled": 0,
+			"is_group": 0,
+			"root_type": "Equity",
+		},
+		fields=["name", "account_name", "account_number", "account_currency", "account_type"],
+		order_by="account_name asc",
+		limit_page_length=500,
+	)
+
+
 def _bank_entry_kind_sql(alias: str = "je") -> str:
 	return f"""
 		CASE
