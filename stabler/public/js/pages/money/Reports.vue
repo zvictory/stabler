@@ -5,7 +5,7 @@ import { useSession } from "../../stores/session.js";
 import { call, download } from "../../api/client.js";
 import { formatMoney } from "../../composables/money.js";
 import { t } from "../../composables/i18n.js";
-import { todayIso, startOfYearIso, presetRange } from "../../composables/date.js";
+import { todayIso, presetRange } from "../../composables/date.js";
 import DateInput from "../../components/DateInput.vue";
 import PeriodSelect from "../../components/PeriodSelect.vue";
 import EmptyState from "../../components/EmptyState.vue";
@@ -45,11 +45,10 @@ const REPORTS = [
 ];
 
 const selectedName = ref(REPORTS[0].name);
-// Default to current year — "all time" going back to 2016 triggers FiscalYearError
-// for any Yearly report because ERPNext requires a Fiscal Year record for the range.
-const fromDate = ref(startOfYearIso());
-const toDate = ref(today);
-const periodKey = ref("ytd");
+const { from: defaultFrom, to: defaultTo } = presetRange("last_month");
+const fromDate = ref(defaultFrom);
+const toDate = ref(defaultTo);
+const periodKey = ref("last_month");
 
 const loading = ref(false);
 const exporting = ref("");

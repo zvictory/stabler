@@ -12,6 +12,7 @@ import MoneyInput from "../../components/MoneyInput.vue";
 import DateInput from "../../components/DateInput.vue";
 import EmptyState from "../../components/EmptyState.vue";
 import Select from "../../components/Select.vue";
+import { useFocusTrap } from "../../composables/useFocusTrap.js";
 
 const session = useSession();
 const { activeCompany, user } = storeToRefs(session);
@@ -42,6 +43,8 @@ const baseCurrency = computed(
 
 // --- Create modal ----------------------------------------------------------
 const createOpen = ref(false);
+const modalEl = ref(null);
+useFocusTrap(modalEl, createOpen);
 const submitting = ref(false);
 const submitError = ref("");
 const editingName = ref("");
@@ -704,7 +707,7 @@ watch(activeCompany, () => {
 	<div v-if="createOpen" class="modal-backdrop fade show" @click="closeCreate"></div>
 	<div v-if="createOpen" class="modal fade show d-block" tabindex="-1" role="dialog" aria-modal="true">
 		<div class="modal-dialog modal-lg modal-dialog-centered" role="document">
-			<div class="modal-content">
+			<div ref="modalEl" class="modal-content">
 				<div class="modal-header">
 					<h5 class="modal-title">
 						<i class="ti ti-transfer me-1"></i>{{ formTitle }}

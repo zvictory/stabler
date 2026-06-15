@@ -7,6 +7,7 @@ import { call } from "../api/client.js";
 import { formatMoney } from "../composables/money.js";
 import { t } from "../composables/i18n.js";
 import Select from "../components/Select.vue";
+import PosGatewayModal from "../components/PosGatewayModal.vue";
 
 const session = useSession();
 const router = useRouter();
@@ -30,6 +31,8 @@ const cart = ref([]);
 const checkoutRunning = ref(false);
 const checkoutError = ref("");
 const lastInvoice = ref(null);
+const gatewayOpen = ref(false);
+const gatewayPayload = ref(null);
 
 const currency = computed(() => profile.value?.currency || session.currency);
 const language = computed(() => user.value?.language || "en");
@@ -43,8 +46,15 @@ const profileOptions = computed(() =>
 const paymentOptions = computed(() =>
 	(profile.value?.payments || []).map((p) => ({
 		value: p.mode_of_payment,
-		label: p.mode_of_payment,
+		label: p.gateway ? `${p.mode_of_payment} · ${p.gateway}` : p.mode_of_payment,
 	}))
+);
+const currentGateway = computed(
+	() => (profile.value?.payments || []).find((p) => p.mode_of_payment === paymentMode.value)?.gateway || null
+);
+const isGatewayMode = computed(() => mode.value === "sale" && !!currentGateway.value);
+const primaryPayLabel = computed(() =>
+	isGatewayMode.value ? t("Charge via {provider}", { provider: currentGateway.value }) : t("Take Payment")
 );
 const cartTotal = computed(() =>
 	cart.value.reduce((sum, item) => sum + Number(item.qty || 0) * Number(item.rate || 0), 0)
@@ -256,8 +266,44 @@ function decrementQty(item) {
 	setQty(item, Number(item.qty || 0) - 1);
 }
 
+async function startGatewayPayment() {
+	if (!canCheckout.value) return;
+	checkoutRunning.value = true;
+	checkoutError.value = "";
+	lastInvoice.value = null;
+	try {
+		gatewayPayload.value = await call("stabler.api.pos.pos_gateway_start", {
+			company: activeCompany.value,
+			pos_profile: profile.value.name,
+			items: cart.value.map((item) => ({ item_code: item.item_code, qty: item.qty })),
+			payment_mode: paymentMode.value,
+		});
+		gatewayOpen.value = true;
+	} catch (err) {
+		checkoutError.value = err?.message || t("Could not start the online payment.");
+	} finally {
+		checkoutRunning.value = false;
+	}
+}
+
+function onGatewayPaid(invoice) {
+	gatewayOpen.value = false;
+	gatewayPayload.value = null;
+	lastInvoice.value = invoice;
+	cart.value = [];
+	searchItems();
+	focusSearch();
+}
+
+function onGatewayClose() {
+	gatewayOpen.value = false;
+	gatewayPayload.value = null;
+	focusSearch();
+}
+
 async function checkout() {
 	if (!canCheckout.value) return;
+	if (isGatewayMode.value) return startGatewayPayment();
 	checkoutRunning.value = true;
 	checkoutError.value = "";
 	lastInvoice.value = null;
@@ -547,23 +593,25 @@ onMounted(loadProfiles);
 				</div>
 
 				<div v-if="mode === 'sale'" class="ice-pos-tenders">
-					<button
-						v-for="tender in cashTenderOptions"
-						:key="tender.key"
-						type="button"
-						class="ice-pos-tender"
-						:disabled="!canCheckout"
-						@click="checkout"
-					>
-						<span>{{ tender.label }}</span>
-						<strong v-if="tender.amount > cartTotal">
-							{{ t("Change") }} {{ formatMoney(tender.amount - cartTotal, currency, language) }}
-						</strong>
-					</button>
+					<template v-if="!isGatewayMode">
+						<button
+							v-for="tender in cashTenderOptions"
+							:key="tender.key"
+							type="button"
+							class="ice-pos-tender"
+							:disabled="!canCheckout"
+							@click="checkout"
+						>
+							<span>{{ tender.label }}</span>
+							<strong v-if="tender.amount > cartTotal">
+								{{ t("Change") }} {{ formatMoney(tender.amount - cartTotal, currency, language) }}
+							</strong>
+						</button>
+					</template>
 					<button type="button" class="ice-pos-tender ice-pos-tender--primary" :disabled="!canCheckout" @click="checkout">
-						<i v-if="!checkoutRunning" class="ti ti-cash"></i>
-						<span v-else class="spinner-border spinner-border-sm"></span>
-						{{ t("Take Payment") }}
+						<i v-if="checkoutRunning" class="spinner-border spinner-border-sm"></i>
+						<i v-else :class="isGatewayMode ? 'ti ti-qrcode' : 'ti ti-cash'"></i>
+						{{ primaryPayLabel }}
 					</button>
 				</div>
 				<button
@@ -582,6 +630,14 @@ onMounted(loadProfiles);
 			</div>
 		</div>
 	</div>
+
+	<PosGatewayModal
+		:open="gatewayOpen"
+		:payload="gatewayPayload"
+		:language="language"
+		@paid="onGatewayPaid"
+		@close="onGatewayClose"
+	/>
 </template>
 
 <style scoped>

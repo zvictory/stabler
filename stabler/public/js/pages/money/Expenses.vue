@@ -14,6 +14,7 @@ import EmptyState from "../../components/EmptyState.vue";
 import Select from "../../components/Select.vue";
 import Typeahead from "../../components/Typeahead.vue";
 import SkeletonRows from "../../components/SkeletonRows.vue";
+import { useFocusTrap } from "../../composables/useFocusTrap.js";
 
 const session = useSession();
 const { activeCompany, user } = storeToRefs(session);
@@ -39,6 +40,8 @@ const detail = ref(null);
 
 // --- Create modal ----------------------------------------------------------
 const createOpen = ref(false);
+const modalEl = ref(null);
+useFocusTrap(modalEl, createOpen);
 const submitting = ref(false);
 const submitError = ref("");
 const editingName = ref("");
@@ -702,7 +705,7 @@ watch(activeCompany, () => {
 	<div v-if="createOpen" class="modal-backdrop fade show" @click="closeCreate"></div>
 	<div v-if="createOpen" class="modal fade show d-block" tabindex="-1" role="dialog" aria-modal="true">
 		<div class="modal-dialog modal-lg modal-dialog-centered modal-dialog-scrollable" role="document">
-			<div class="modal-content">
+			<div ref="modalEl" class="modal-content">
 				<div class="modal-header">
 					<h5 class="modal-title">
 						<i class="ti ti-receipt-2 me-1"></i>{{ formTitle }}
@@ -863,6 +866,7 @@ watch(activeCompany, () => {
 										<button
 											type="button"
 											class="btn btn-sm btn-ghost-danger"
+											tabindex="-1"
 											@click="removeLine(idx)"
 										>
 											<i class="ti ti-trash"></i>

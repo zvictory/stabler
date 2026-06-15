@@ -110,7 +110,24 @@ async function fetchOptions(q) {
 		options.value = [];
 	} finally {
 		loading.value = false;
+		// Highlight the first real (non-group) row so Tab/Enter commits it.
+		activeIdx.value = options.value.findIndex((o) => !o.__group);
 	}
+}
+
+// After a pick the editable input unmounts (replaced by the selected display),
+// which would drop focus to <body>. Move focus to the next field (the amount)
+// instead, so keyboard entry flows account → amount → memo → next row.
+const FOCUSABLE = 'a[href],button:not([disabled]),input:not([disabled]),select:not([disabled]),textarea:not([disabled]),[tabindex]:not([tabindex="-1"])';
+function focusNextAfter(el) {
+	if (!el) return;
+	const all = Array.from(document.querySelectorAll(FOCUSABLE)).filter(
+		(n) => n.offsetWidth || n.offsetHeight || n.getClientRects().length,
+	);
+	const next = all.find(
+		(n) => !el.contains(n) && el.compareDocumentPosition(n) & Node.DOCUMENT_POSITION_FOLLOWING,
+	);
+	next?.focus();
 }
 
 function onSearch() {
@@ -163,6 +180,8 @@ function pick(item) {
 	options.value = [];
 	query.value = "";
 	emit("pick", item);
+	// DOM swaps to the selected display next tick; then advance to the next field.
+	nextTick(() => focusNextAfter(rootEl.value));
 }
 
 function clear() {
@@ -217,6 +236,10 @@ function onKeydown(e) {
 			e.preventDefault();
 			pick(options.value[activeIdx.value]);
 		}
+	} else if (e.key === "Tab" && !e.shiftKey && activeIdx.value >= 0 && !options.value[activeIdx.value]?.__group) {
+		// Commit the highlighted option, then advance to the next field (amount).
+		e.preventDefault();
+		pick(options.value[activeIdx.value]);
 	} else if (e.key === "Tab") {
 		showOptions.value = false;
 	}
@@ -244,8 +267,8 @@ function onKeydown(e) {
 				</span>
 			</div>
 			<div v-else :class="groupClass">
-				<input :value="display" type="text" :class="inputClass" readonly :disabled="disabled" />
-				<button type="button" :class="btnClass" :disabled="disabled" @click="clear" aria-label="Clear selection">
+				<input :value="display" type="text" :class="inputClass" readonly :disabled="disabled" tabindex="-1" />
+				<button type="button" :class="btnClass" :disabled="disabled" tabindex="-1" @click="clear" aria-label="Clear selection">
 					<i class="ti ti-x"></i>
 				</button>
 			</div>
