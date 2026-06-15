@@ -16,10 +16,12 @@ const { activeCompany, user } = storeToRefs(session);
 
 const { confirm } = useConfirm();
 
+// All sales are in the company's base currency (UZS) — CRM is single-currency,
+// so we never surface a per-deal currency picker or a USD fallback.
 const currency = computed(
 	() =>
 		(session.companies.find((c) => c.name === activeCompany.value) || {}).default_currency ||
-		"USD"
+		"UZS"
 );
 
 // ---------------------------------------------------------------------------
@@ -60,10 +62,25 @@ function colorHex(colorName) {
 	return KANBAN_COLORS.find((c) => c.name === (colorName || "").toLowerCase())?.hex || "#6b7280";
 }
 
+// Column forecast = Σ recurring monthly volume (fallback to one-off deal value).
+function colMonthly(col) {
+	return (col.deals || []).reduce(
+		(sum, d) => sum + Number(d.expected_monthly_volume || d.deal_value || 0),
+		0,
+	);
+}
+
 // ---------------------------------------------------------------------------
 // Metadata
 // ---------------------------------------------------------------------------
-const meta = ref({ deal_statuses: [], sources: [], industries: [] });
+const meta = ref({
+	deal_statuses: [],
+	sources: [],
+	industries: [],
+	outlet_types: [],
+	price_tiers: [],
+	win_loss_reasons: [],
+});
 
 async function loadMeta() {
 	try {
@@ -106,6 +123,7 @@ async function fetchDeals() {
 		});
 		deals.value = res.deals || [];
 		total.value = res.total || 0;
+		loadMetrics();
 	} catch (err) {
 		error.value = err?.message || t("Failed to load deals.");
 	} finally {
@@ -125,12 +143,78 @@ function setView(v) {
 	fetchDeals();
 }
 
+// Seasonality quick-filter: pre-season freezer push (open deals needing a freezer).
+const freezerOnly = ref(false);
+
 // Board: deals bucketed by status column (ordered by meta.deal_statuses position).
 const board = computed(() => {
+	const src = freezerOnly.value ? deals.value.filter((d) => d.needs_freezer) : deals.value;
 	return meta.value.deal_statuses.map((s) => ({
 		status: s,
-		deals: deals.value.filter((d) => d.status === s.name),
+		deals: src.filter((d) => d.status === s.name),
 	}));
+});
+
+// --- Pipeline KPIs ---------------------------------------------------------
+const metrics = ref({
+	open_run_rate: 0,
+	won_this_month: 0,
+	freezer_open: 0,
+	reactivation: 0,
+	activation_rate: 0,
+});
+async function loadMetrics() {
+	try {
+		metrics.value = await call("stabler.api.crm.crm_metrics");
+	} catch {
+		/* non-fatal — tiles just stay at zero */
+	}
+}
+const kpiTiles = computed(() => [
+	{
+		label: t("Open pipeline") + " /" + t("mo"),
+		value: formatMoney(metrics.value.open_run_rate || 0, currency.value, user.value.language),
+		mono: true,
+	},
+	{ label: t("Won this month"), value: metrics.value.won_this_month || 0 },
+	{ label: t("Freezer pending"), value: metrics.value.freezer_open || 0 },
+	{ label: t("Activation rate"), value: (metrics.value.activation_rate || 0) + "%" },
+]);
+function showReactivation() {
+	filterStatus.value = "Reactivation";
+	fetchDeals();
+}
+
+// --- Deeper acquisition analytics (lazy) -----------------------------------
+const analyticsOpen = ref(false);
+const analytics = ref(null);
+const analyticsLoading = ref(false);
+async function toggleAnalytics() {
+	analyticsOpen.value = !analyticsOpen.value;
+	if (analyticsOpen.value && !analytics.value) {
+		analyticsLoading.value = true;
+		try {
+			analytics.value = await call("stabler.api.crm.crm_analytics");
+		} catch {
+			/* non-fatal */
+		} finally {
+			analyticsLoading.value = false;
+		}
+	}
+}
+const analyticsTiles = computed(() => {
+	const a = analytics.value;
+	if (!a) return [];
+	const days = a.avg_time_to_first_order_days;
+	const roi = a.freezer_roi;
+	return [
+		{ label: t("Avg time to first order"), value: days == null ? "—" : days + " " + t("days") },
+		{ label: t("Reorder rate"), value: (a.reorder_rate || 0) + "%" },
+		{ label: t("Avg orders / customer"), value: a.avg_orders_per_customer || 0 },
+		{ label: t("New outlets this month"), value: a.new_outlets_this_month || 0 },
+		{ label: t("Lifetime sales"), value: formatMoney(a.lifetime_sales || 0, currency.value, user.value.language), mono: true },
+		{ label: t("Freezer ROI"), value: roi == null ? "—" : "×" + roi },
+	];
 });
 
 // ---------------------------------------------------------------------------
@@ -346,6 +430,14 @@ function blankForm() {
 		email: "",
 		mobile_no: "",
 		source: "",
+		outlet_type: "",
+		region: "",
+		expected_monthly_volume: 0,
+		price_tier: "",
+		needs_freezer: 0,
+		credit_terms_days: null,
+		win_loss_reason: "",
+		linked_customer: "",
 	};
 }
 
@@ -374,6 +466,14 @@ async function openEdit(deal) {
 			email: doc.email || "",
 			mobile_no: doc.mobile_no || "",
 			source: doc.source || "",
+			outlet_type: doc.outlet_type || "",
+			region: doc.region || "",
+			expected_monthly_volume: doc.expected_monthly_volume || 0,
+			price_tier: doc.price_tier || "",
+			needs_freezer: doc.needs_freezer ? 1 : 0,
+			credit_terms_days: doc.credit_terms_days ?? null,
+			win_loss_reason: doc.win_loss_reason || "",
+			linked_customer: doc.linked_customer || "",
 		};
 	} catch (err) {
 		submitError.value = err?.message || t("Failed to load deal.");
@@ -396,6 +496,29 @@ async function submitForm() {
 		submitError.value = err?.message || t("Failed to save deal.");
 	} finally {
 		submitting.value = false;
+	}
+}
+
+function isWonStatus(statusName) {
+	if (!statusName) return false;
+	if (String(statusName).toLowerCase() === "won") return true;
+	const s = meta.value.deal_statuses.find((x) => x.name === statusName);
+	return (s?.type || "").toLowerCase() === "won";
+}
+
+const converting = ref(false);
+async function convertToCustomer() {
+	if (!form.value.name) return;
+	converting.value = true;
+	submitError.value = "";
+	try {
+		const res = await call("stabler.api.crm.convert_deal_to_customer", { name: form.value.name });
+		form.value.linked_customer = res.customer;
+		await fetchDeals();
+	} catch (err) {
+		submitError.value = err?.message || t("Failed to convert deal to customer.");
+	} finally {
+		converting.value = false;
 	}
 }
 
@@ -471,9 +594,63 @@ watch(activeCompany, fetchDeals);
 			</button>
 		</div>
 
-		<button type="button" class="btn btn-sm btn-primary ms-auto" @click="openNew">
+		<router-link to="/crm/report" class="btn btn-sm btn-outline-secondary ms-auto">
+			<i class="ti ti-report-analytics me-1"></i>{{ t("Report") }}
+		</router-link>
+		<button type="button" class="btn btn-sm btn-primary" @click="openNew">
 			<i class="ti ti-plus me-1"></i>{{ t("New Deal") }}
 		</button>
+	</div>
+
+	<!-- Pipeline KPIs -->
+	<div class="row g-2 mb-2">
+		<div v-for="kpi in kpiTiles" :key="kpi.label" class="col-6 col-md-3">
+			<div class="card card-sm">
+				<div class="card-body py-2 px-3">
+					<div class="text-secondary small text-truncate">{{ kpi.label }}</div>
+					<div class="fw-bold" :class="{ 'font-monospace': kpi.mono }">{{ kpi.value }}</div>
+				</div>
+			</div>
+		</div>
+	</div>
+
+	<!-- Seasonality quick views -->
+	<div class="d-flex gap-2 flex-wrap mb-3">
+		<button
+			type="button"
+			class="btn btn-sm"
+			:class="freezerOnly ? 'btn-secondary' : 'btn-outline-secondary'"
+			:title="t('Pre-season freezer push')"
+			@click="freezerOnly = !freezerOnly"
+		>
+			<i class="ti ti-snowflake me-1"></i>{{ t("Freezer push") }}
+		</button>
+		<button type="button" class="btn btn-sm btn-outline-secondary" @click="showReactivation">
+			<i class="ti ti-refresh me-1"></i>{{ t("Reactivation") }}
+		</button>
+		<button
+			type="button"
+			class="btn btn-sm ms-auto"
+			:class="analyticsOpen ? 'btn-secondary' : 'btn-outline-secondary'"
+			@click="toggleAnalytics"
+		>
+			<i class="ti ti-chart-bar me-1"></i>{{ t("Analytics") }}
+		</button>
+	</div>
+
+	<!-- Deeper acquisition analytics -->
+	<div v-if="analyticsOpen" class="card card-sm mb-3">
+		<div class="card-body py-2 px-3">
+			<div v-if="analyticsLoading" class="text-secondary small py-2">
+				<span class="spinner-border spinner-border-sm me-1"></span>{{ t("Loading") }}…
+			</div>
+			<div v-else class="row g-2">
+				<div v-for="a in analyticsTiles" :key="a.label" class="col-6 col-md-2">
+					<div class="text-secondary small text-truncate">{{ a.label }}</div>
+					<div class="fw-bold" :class="{ 'font-monospace': a.mono }">{{ a.value }}</div>
+				</div>
+			</div>
+		</div>
 	</div>
 
 	<div v-if="loading" class="text-center py-5">
@@ -601,6 +778,13 @@ watch(activeCompany, fetchDeals);
 								@dblclick.stop="startRename(col.status)"
 							>{{ col.status.name }}</span>
 
+							<!-- Column monthly run-rate forecast -->
+							<span
+								v-if="colMonthly(col) > 0"
+								class="text-secondary small font-monospace text-nowrap me-1"
+								:title="t('Monthly run-rate')"
+							>{{ formatMoney(colMonthly(col), currency, user.language) }}</span>
+
 							<!-- Quick-add deal -->
 							<button
 								class="btn btn-ghost-secondary btn-icon btn-sm kanban-hdr-btn"
@@ -678,13 +862,31 @@ watch(activeCompany, fetchDeals);
 									{{ deal.organization || deal.lead_name || deal.name }}
 								</div>
 
-								<!-- Deal value -->
+								<!-- Headline: recurring monthly volume (fallback to one-off value) -->
 								<div
-									v-if="deal.deal_value"
-									class="font-monospace fw-bold kanban-card-value mb-2"
+									v-if="deal.expected_monthly_volume || deal.deal_value"
+									class="font-monospace fw-bold kanban-card-value mb-1"
 									:style="{ color: colorHex(col.status.color) }"
 								>
-									{{ formatMoney(deal.deal_value, deal.currency || currency, user.language) }}
+									{{ formatMoney(deal.expected_monthly_volume || deal.deal_value, currency, user.language) }}
+									<span v-if="deal.expected_monthly_volume" class="text-secondary fw-normal small">/{{ t("mo") }}</span>
+								</div>
+
+								<!-- Outlet type / region / freezer chips -->
+								<div v-if="deal.outlet_type || deal.region || deal.needs_freezer" class="d-flex flex-wrap gap-1 mb-2">
+									<span v-if="deal.outlet_type" class="badge bg-secondary-lt">{{ deal.outlet_type }}</span>
+									<span v-if="deal.region" class="badge bg-azure-lt"><i class="ti ti-map-pin me-1"></i>{{ deal.region }}</span>
+									<span v-if="deal.needs_freezer" class="badge bg-blue-lt" :title="t('Needs Freezer')"><i class="ti ti-snowflake me-1"></i>{{ t("Freezer") }}</span>
+								</div>
+
+								<!-- Linked customer + open AR exposure -->
+								<div v-if="deal.linked_customer" class="d-flex flex-wrap gap-1 mb-2">
+									<span class="badge bg-green-lt"><i class="ti ti-user-check me-1"></i>{{ t("Customer") }}</span>
+									<span
+										v-if="deal.ar_outstanding > 0"
+										class="badge bg-red-lt font-monospace"
+										:title="t('Open AR')"
+									><i class="ti ti-alert-triangle me-1"></i>{{ formatMoney(deal.ar_outstanding, currency, user.language) }}</span>
 								</div>
 
 								<!-- Owner + probability -->
@@ -795,13 +997,50 @@ watch(activeCompany, fetchDeals);
 							<option v-for="s in meta.deal_statuses" :key="s.name" :value="s.name">{{ s.name }}</option>
 						</select>
 					</div>
-					<div class="col-8">
-						<label class="form-label">{{ t("Deal Value") }}</label>
-						<MoneyInput v-model="form.deal_value" :currency="form.currency || currency" />
+					<div class="col-12">
+						<label class="form-label">{{ t("Expected Monthly Volume") }}</label>
+						<MoneyInput v-model="form.expected_monthly_volume" :currency="currency" :group-while-typing="true" />
+						<div class="form-text">{{ t("Recurring monthly run-rate — the pipeline forecast.") }}</div>
 					</div>
-					<div class="col-4">
-						<label class="form-label">{{ t("Currency") }}</label>
-						<input v-model="form.currency" type="text" class="form-control" maxlength="3" />
+					<div class="col-6">
+						<label class="form-label">{{ t("Outlet Type") }}</label>
+						<select v-model="form.outlet_type" class="form-select">
+							<option value="">—</option>
+							<option v-for="o in meta.outlet_types" :key="o" :value="o">{{ o }}</option>
+						</select>
+					</div>
+					<div class="col-6">
+						<label class="form-label">{{ t("Price Tier") }}</label>
+						<select v-model="form.price_tier" class="form-select">
+							<option value="">—</option>
+							<option v-for="p in meta.price_tiers" :key="p" :value="p">{{ p }}</option>
+						</select>
+					</div>
+					<div class="col-6">
+						<label class="form-label">{{ t("Region / Route") }}</label>
+						<input v-model="form.region" type="text" class="form-control" />
+					</div>
+					<div class="col-6">
+						<label class="form-label">{{ t("Credit Terms (days)") }}</label>
+						<input v-model="form.credit_terms_days" type="number" class="form-control" min="0" step="1" inputmode="numeric" />
+					</div>
+					<div class="col-6">
+						<label class="form-label d-block">{{ t("Needs Freezer") }}</label>
+						<label class="form-check form-switch mt-1">
+							<input v-model="form.needs_freezer" class="form-check-input" type="checkbox" :true-value="1" :false-value="0" />
+							<span class="form-check-label">{{ form.needs_freezer ? t("Yes") : t("No") }}</span>
+						</label>
+					</div>
+					<div class="col-6">
+						<label class="form-label">{{ t("Win/Loss Reason") }}</label>
+						<select v-model="form.win_loss_reason" class="form-select">
+							<option value="">—</option>
+							<option v-for="r in meta.win_loss_reasons" :key="r" :value="r">{{ r }}</option>
+						</select>
+					</div>
+					<div class="col-12">
+						<label class="form-label">{{ t("Deal Value") }} <span class="text-secondary">({{ t("one-off") }})</span></label>
+						<MoneyInput v-model="form.deal_value" :currency="currency" :group-while-typing="true" />
 					</div>
 					<div class="col-6">
 						<label class="form-label">{{ t("Probability") }} (%)</label>
@@ -830,6 +1069,25 @@ watch(activeCompany, fetchDeals);
 						<label class="form-label">{{ t("Deal Owner") }}</label>
 						<input v-model="form.deal_owner" type="text" class="form-control" :placeholder="t('Email or user ID')" />
 					</div>
+				</div>
+
+				<!-- Won-deal hand-off -->
+				<div
+					v-if="editingDeal && form.linked_customer"
+					class="alert alert-success mt-3 mb-0 d-flex align-items-center gap-2"
+				>
+					<i class="ti ti-user-check"></i>
+					<span>{{ t("Linked customer") }}: <strong>{{ form.linked_customer }}</strong></span>
+				</div>
+				<div
+					v-else-if="editingDeal && isWonStatus(form.status)"
+					class="alert alert-info mt-3 mb-0 d-flex align-items-center justify-content-between gap-2"
+				>
+					<span>{{ t("This deal is Won — create the customer to start invoicing.") }}</span>
+					<button type="button" class="btn btn-sm btn-primary text-nowrap" :disabled="converting" @click="convertToCustomer">
+						<span v-if="converting" class="spinner-border spinner-border-sm me-1"></span>
+						{{ t("Convert to customer") }}
+					</button>
 				</div>
 
 				<div class="mt-4 d-flex gap-2">

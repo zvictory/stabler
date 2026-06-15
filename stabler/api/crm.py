@@ -6,6 +6,7 @@ import json
 
 import frappe
 from frappe import _
+from frappe.utils import flt
 
 from stabler.api.organization import _can_access_module
 
@@ -125,7 +126,10 @@ def list_deals(search="", status="", deal_owner="", page_length=50, start=0):
     rows = frappe.db.sql(
         f"""SELECT name, organization, lead_name, email, mobile_no, status,
                    deal_owner, deal_value, currency, probability,
-                   expected_closure_date, modified
+                   expected_closure_date, modified,
+                   outlet_type, region, expected_monthly_volume, expected_cases_week,
+                   price_tier, needs_freezer, credit_terms_days, win_loss_reason,
+                   linked_customer
             FROM `tabCRM Deal`
             {where}
             ORDER BY modified DESC
@@ -134,6 +138,22 @@ def list_deals(search="", status="", deal_owner="", page_length=50, start=0):
         as_dict=True,
     )
     total = (frappe.db.sql(f"SELECT COUNT(*) FROM `tabCRM Deal` {where}", count_vals) or [[0]])[0][0]
+
+    # Attach the linked customer's open AR so reps see exposure on the board.
+    cust = list({r["linked_customer"] for r in rows if r.get("linked_customer")})
+    ar: dict = {}
+    if cust:
+        for c, bal in frappe.db.sql(
+            """SELECT customer, SUM(outstanding_amount)
+               FROM `tabSales Invoice`
+               WHERE docstatus = 1 AND outstanding_amount > 0 AND customer IN %(cs)s
+               GROUP BY customer""",
+            {"cs": tuple(cust)},
+        ):
+            ar[c] = flt(bal)
+    for r in rows:
+        r["ar_outstanding"] = ar.get(r.get("linked_customer"), 0.0)
+
     return {"deals": rows, "total": total}
 
 
@@ -158,6 +178,14 @@ def save_deal(data: str | dict):
         doc = frappe.new_doc("CRM Deal")
         doc.update(data)
     doc.save()
+    # Won-deal hand-off: create/link the Customer (and outlet/freezer) when the
+    # deal lands in a Won stage. Best-effort — never blocks the save.
+    try:
+        if _is_won_status(doc.get("status")) and not doc.get("linked_customer"):
+            convert_deal_to_customer(doc.name)
+            doc.reload()
+    except Exception:
+        frappe.clear_last_message()
     return doc.as_dict()
 
 
@@ -168,6 +196,155 @@ def delete_deal(name: str):
         frappe.throw(_("Not permitted"), frappe.PermissionError)
     frappe.delete_doc("CRM Deal", name)
     return "ok"
+
+
+# ---------------------------------------------------------------------------
+# Won-deal hand-off: CRM Deal -> Customer (+ best-effort SFA Outlet, freezer task)
+# ---------------------------------------------------------------------------
+
+def _is_won_status(status: str | None) -> bool:
+    if not status:
+        return False
+    if str(status).strip().lower() == "won":
+        return True
+    return (frappe.db.get_value("CRM Deal Status", status, "type") or "").strip().lower() == "won"
+
+
+def _default_company() -> str | None:
+    return frappe.defaults.get_user_default("Company") or (
+        frappe.get_all("Company", pluck="name", limit=1) or [None]
+    )[0]
+
+
+# Deal outlet_type -> SFA Outlet channel.
+_OUTLET_CHANNEL = {
+    "Supermarket": "Modern Trade",
+    "Shop": "Traditional Trade",
+    "Kiosk": "Traditional Trade",
+    "HoReCa": "HoReCa",
+    "Distributor": "Other",
+    "Wholesaler": "Other",
+}
+
+
+def _ensure_outlet(deal, customer: str) -> str | None:
+    """Best-effort: mirror the won customer as an SFA Outlet and assign the rep
+    (deal owner → Outlet.assigned_field_user, which carries their route via the
+    Field User's default_route). Never raises."""
+    if not frappe.db.exists("DocType", "Outlet"):
+        return None
+
+    owner = deal.get("deal_owner")
+    rep = owner if (owner and frappe.db.exists("User", owner)) else None
+
+    existing = frappe.db.get_value("Outlet", {"customer": customer}, "name")
+    if existing:
+        # Backfill the rep if the outlet has none yet.
+        if rep and not frappe.db.get_value("Outlet", existing, "assigned_field_user"):
+            try:
+                frappe.db.set_value("Outlet", existing, "assigned_field_user", rep)
+            except Exception:
+                frappe.clear_last_message()
+        return existing
+
+    company = _default_company()
+    if not company:
+        return None
+
+    base = {
+        "doctype": "Outlet",
+        "outlet_code": "O-" + frappe.generate_hash(length=6).upper(),
+        "outlet_name": deal.get("organization") or deal.get("lead_name") or customer,
+        "company": company,
+        "customer": customer,
+        "is_active": 1,
+    }
+    if rep:
+        base["assigned_field_user"] = rep
+    channel = _OUTLET_CHANNEL.get(deal.get("outlet_type") or "")
+    if channel:
+        base["channel"] = channel
+
+    try:
+        doc = frappe.get_doc(base)
+        doc.insert(ignore_permissions=True)
+        return doc.name
+    except Exception:
+        frappe.clear_last_message()
+        # Retry with only the mandatory fields if an optional link/select was rejected.
+        try:
+            doc = frappe.get_doc({k: base[k] for k in (
+                "doctype", "outlet_code", "outlet_name", "company", "customer", "is_active")})
+            doc.insert(ignore_permissions=True)
+            return doc.name
+        except Exception:
+            frappe.clear_last_message()
+            return None
+
+
+def _freezer_todo(deal, customer: str) -> None:
+    """Best-effort freezer-placement reminder for the deal owner. Never raises."""
+    try:
+        td = frappe.new_doc("ToDo")
+        td.description = _("Place branded freezer at {0} (deal {1})").format(
+            deal.get("organization") or customer, deal.name
+        )
+        if deal.get("deal_owner") and frappe.db.exists("User", deal.deal_owner):
+            td.allocated_to = deal.deal_owner
+        td.reference_type = "Customer"
+        td.reference_name = customer
+        td.insert(ignore_permissions=True)
+    except Exception:
+        frappe.clear_last_message()
+
+
+@frappe.whitelist()
+def convert_deal_to_customer(name: str) -> dict:
+    """Create (or link) a Customer from a Won deal and wire up the outlet/freezer.
+    Idempotent: re-running returns the already-linked customer."""
+    _require_crm()
+    if not frappe.has_permission("CRM Deal", "write", name):
+        frappe.throw(_("Not permitted"), frappe.PermissionError)
+    deal = frappe.get_doc("CRM Deal", name)
+
+    if deal.get("linked_customer") and frappe.db.exists("Customer", deal.linked_customer):
+        return {"customer": deal.linked_customer, "created": False}
+
+    cust_name = (deal.get("organization") or deal.get("lead_name") or "").strip()
+    if not cust_name:
+        frappe.throw(_("Deal has no organization or name to create a customer from."))
+
+    existing = frappe.db.get_value("Customer", {"customer_name": cust_name}, "name")
+    if existing:
+        customer = existing
+        created = False
+    else:
+        doc = frappe.new_doc("Customer")
+        doc.customer_name = cust_name
+        doc.customer_type = "Company"
+        doc.customer_group = (
+            frappe.db.get_single_value("Selling Settings", "customer_group") or "All Customer Groups"
+        )
+        region = deal.get("region")
+        doc.territory = (
+            region
+            if region and frappe.db.exists("Territory", region)
+            else frappe.db.get_single_value("Selling Settings", "territory") or "All Territories"
+        )
+        if deal.get("email"):
+            doc.email_id = deal.email
+        if deal.get("mobile_no"):
+            doc.mobile_no = deal.mobile_no
+        doc.insert(ignore_permissions=True)
+        customer = doc.name
+        created = True
+
+    deal.db_set("linked_customer", customer)
+    outlet = _ensure_outlet(deal, customer)
+    if deal.get("needs_freezer"):
+        _freezer_todo(deal, customer)
+    frappe.db.commit()
+    return {"customer": customer, "created": created, "outlet": outlet}
 
 
 # ---------------------------------------------------------------------------
@@ -190,7 +367,234 @@ def crm_meta():
         ),
         "sources": frappe.get_all("CRM Lead Source", pluck="name", order_by="name"),
         "industries": frappe.get_all("CRM Industry", pluck="name", order_by="name"),
+        # FMCG (ice-cream) deal field options — kept in sync with patch v18.
+        "outlet_types": ["Shop", "Supermarket", "Kiosk", "HoReCa", "Distributor", "Wholesaler"],
+        "price_tiers": ["Wholesale", "Retail", "HoReCa"],
+        "win_loss_reasons": [
+            "No freezer space", "Competitor exclusivity", "Credit terms",
+            "Price", "Quality", "Other",
+        ],
     }
+
+
+@frappe.whitelist()
+def crm_metrics() -> dict:
+    """Pipeline KPIs for the ice-cream board: monthly run-rate of open deals,
+    wins this month, freezer-pending outlets, reactivation count, activation rate."""
+    _require_crm()
+    from frappe.utils import get_first_day, getdate, nowdate
+
+    statuses = frappe.get_all("CRM Deal Status", fields=["name", "type"])
+    won = {s.name for s in statuses if (s.type or "").lower() == "won"} | {"Won"}
+    lost = {s.name for s in statuses if (s.type or "").lower() == "lost"} | {"Lost"}
+
+    deals = frappe.get_all(
+        "CRM Deal",
+        fields=["status", "expected_monthly_volume", "deal_value", "needs_freezer", "modified"],
+    )
+    month_start = getdate(get_first_day(nowdate()))
+    open_rr = won_rr = 0.0
+    won_total = won_month = freezer_open = reactivation = 0
+    for d in deals:
+        vol = flt(d.expected_monthly_volume or d.deal_value or 0)
+        st = d.status or ""
+        if st in won:
+            won_total += 1
+            won_rr += vol
+            if d.modified and getdate(d.modified) >= month_start:
+                won_month += 1
+        elif st not in lost:
+            open_rr += vol
+            if d.needs_freezer:
+                freezer_open += 1
+        if st == "Reactivation":
+            reactivation += 1
+
+    total = len(deals)
+    return {
+        "open_run_rate": open_rr,
+        "won_run_rate": won_rr,
+        "won_total": won_total,
+        "won_this_month": won_month,
+        "freezer_open": freezer_open,
+        "reactivation": reactivation,
+        "deal_count": total,
+        "activation_rate": round((won_total / total) * 100, 1) if total else 0,
+    }
+
+
+@frappe.whitelist()
+def crm_analytics() -> dict:
+    """Deeper acquisition KPIs from won deals × their sales: time-to-first-order,
+    reorder rate, avg orders, lifetime sales, new outlets this month, freezer ROI.
+    Built in ~4 batched queries."""
+    _require_crm()
+    from frappe.utils import get_first_day, getdate, nowdate
+
+    deals = frappe.get_all(
+        "CRM Deal",
+        filters={"linked_customer": ["is", "set"]},
+        fields=["linked_customer", "freezer_asset"],
+    )
+    customers = list({d.linked_customer for d in deals if d.linked_customer})
+    empty = {
+        "won_customers": 0, "with_orders": 0, "avg_time_to_first_order_days": None,
+        "reorder_rate": 0, "avg_orders_per_customer": 0, "lifetime_sales": 0.0,
+        "new_outlets_this_month": 0, "freezer_cost": 0.0, "freezer_sales": 0.0,
+        "freezer_roi": None,
+    }
+    if not customers:
+        return empty
+
+    inv: dict = {}
+    for c, cnt, first, total in frappe.db.sql(
+        """SELECT customer, COUNT(*), MIN(posting_date), SUM(base_grand_total)
+           FROM `tabSales Invoice`
+           WHERE docstatus = 1 AND customer IN %(cs)s GROUP BY customer""",
+        {"cs": tuple(customers)},
+    ):
+        inv[c] = {"count": int(cnt or 0), "first": first, "total": flt(total)}
+
+    created = {
+        r.name: r.creation
+        for r in frappe.get_all("Customer", filters={"name": ["in", customers]}, fields=["name", "creation"])
+    }
+    asset_ids = [d.freezer_asset for d in deals if d.freezer_asset]
+    asset_cost = {}
+    if asset_ids and frappe.db.exists("DocType", "Asset"):
+        for r in frappe.get_all("Asset", filters={"name": ["in", asset_ids]}, fields=["name", "gross_purchase_amount"]):
+            asset_cost[r.name] = flt(r.gross_purchase_amount)
+
+    ttfo = []
+    with_orders = reorder = total_orders = 0
+    lifetime = 0.0
+    for c in customers:
+        i = inv.get(c)
+        if not i:
+            continue
+        with_orders += 1
+        total_orders += i["count"]
+        lifetime += i["total"]
+        if i["count"] >= 2:
+            reorder += 1
+        cr = created.get(c)
+        if cr and i["first"]:
+            days = (getdate(i["first"]) - getdate(cr)).days
+            if days >= 0:
+                ttfo.append(days)
+
+    month_start = getdate(get_first_day(nowdate()))
+    new_month = sum(1 for c in customers if created.get(c) and getdate(created[c]) >= month_start)
+
+    fz_cost = fz_sales = 0.0
+    for d in deals:
+        if d.freezer_asset in asset_cost:
+            fz_cost += asset_cost[d.freezer_asset]
+            i = inv.get(d.linked_customer)
+            if i:
+                fz_sales += i["total"]
+
+    return {
+        "won_customers": len(customers),
+        "with_orders": with_orders,
+        "avg_time_to_first_order_days": round(sum(ttfo) / len(ttfo), 1) if ttfo else None,
+        "reorder_rate": round(reorder / with_orders * 100, 1) if with_orders else 0,
+        "avg_orders_per_customer": round(total_orders / with_orders, 1) if with_orders else 0,
+        "lifetime_sales": lifetime,
+        "new_outlets_this_month": new_month,
+        "freezer_cost": fz_cost,
+        "freezer_sales": fz_sales,
+        "freezer_roi": round(fz_sales / fz_cost, 2) if fz_cost else None,
+    }
+
+
+@frappe.whitelist()
+def crm_report(from_date: str, to_date: str) -> dict:
+    """Cohort acquisition report: outlets won (customer created) in [from,to],
+    broken down by rep (deal owner) and region, each with new outlets, monthly
+    run-rate, cohort sales, reorder rate, avg time-to-first-order, freezer ROI."""
+    _require_crm()
+    from collections import defaultdict
+
+    from frappe.utils import getdate
+
+    fd, td = getdate(from_date), getdate(to_date)
+    empty = {"outlets": 0, "run_rate": 0.0, "sales": 0.0, "reorder_rate": 0, "avg_ttfo": None, "freezer_roi": None, "new_outlets": 0}
+
+    deals = frappe.get_all(
+        "CRM Deal",
+        filters={"linked_customer": ["is", "set"]},
+        fields=["linked_customer", "deal_owner", "region", "expected_monthly_volume", "deal_value", "freezer_asset"],
+    )
+    cust_all = list({d.linked_customer for d in deals if d.linked_customer})
+    if not cust_all:
+        return {"summary": empty, "by_rep": [], "by_region": []}
+
+    created = {
+        r.name: r.creation
+        for r in frappe.get_all("Customer", filters={"name": ["in", cust_all]}, fields=["name", "creation"])
+    }
+    cohort = {c for c in cust_all if created.get(c) and fd <= getdate(created[c]) <= td}
+    cohort_deals = [d for d in deals if d.linked_customer in cohort]
+    if not cohort:
+        return {"summary": empty, "by_rep": [], "by_region": []}
+
+    inv: dict = {}
+    for c, cnt, first, total in frappe.db.sql(
+        """SELECT customer, COUNT(*), MIN(posting_date), SUM(base_grand_total)
+           FROM `tabSales Invoice`
+           WHERE docstatus = 1 AND customer IN %(cs)s GROUP BY customer""",
+        {"cs": tuple(cohort)},
+    ):
+        inv[c] = {"count": int(cnt or 0), "first": first, "total": flt(total)}
+
+    asset_ids = [d.freezer_asset for d in cohort_deals if d.freezer_asset]
+    asset_cost = {}
+    if asset_ids and frappe.db.exists("DocType", "Asset"):
+        for r in frappe.get_all("Asset", filters={"name": ["in", asset_ids]}, fields=["name", "gross_purchase_amount"]):
+            asset_cost[r.name] = flt(r.gross_purchase_amount)
+
+    def agg(rows: list) -> dict:
+        run = sales = fzc = fzs = 0.0
+        reorder = with_orders = 0
+        ttfo = []
+        for d in rows:
+            run += flt(d.expected_monthly_volume or d.deal_value or 0)
+            i = inv.get(d.linked_customer)
+            if i:
+                with_orders += 1
+                sales += i["total"]
+                if i["count"] >= 2:
+                    reorder += 1
+                cr = created.get(d.linked_customer)
+                if cr and i["first"]:
+                    days = (getdate(i["first"]) - getdate(cr)).days
+                    if days >= 0:
+                        ttfo.append(days)
+            if d.freezer_asset in asset_cost:
+                fzc += asset_cost[d.freezer_asset]
+                if i:
+                    fzs += i["total"]
+        return {
+            "outlets": len(rows),
+            "run_rate": run,
+            "sales": sales,
+            "reorder_rate": round(reorder / with_orders * 100, 1) if with_orders else 0,
+            "avg_ttfo": round(sum(ttfo) / len(ttfo), 1) if ttfo else None,
+            "freezer_roi": round(fzs / fzc, 2) if fzc else None,
+        }
+
+    by_rep_map: dict = defaultdict(list)
+    by_region_map: dict = defaultdict(list)
+    for d in cohort_deals:
+        by_rep_map[d.deal_owner or "—"].append(d)
+        by_region_map[d.region or "—"].append(d)
+    by_rep = sorted(({"key": k, **agg(v)} for k, v in by_rep_map.items()), key=lambda x: -x["sales"])
+    by_region = sorted(({"key": k, **agg(v)} for k, v in by_region_map.items()), key=lambda x: -x["sales"])
+
+    summary = agg(cohort_deals)
+    summary["new_outlets"] = len(cohort)
+    return {"summary": summary, "by_rep": by_rep, "by_region": by_region}
 
 
 # ---------------------------------------------------------------------------

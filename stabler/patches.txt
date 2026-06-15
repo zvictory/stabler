@@ -15,3 +15,4 @@ stabler.patches.v14_add_enable_bpm
 stabler.patches.v15_add_work_order_operator
 stabler.patches.v16_service_module_p1
 stabler.patches.v17_service_issue_types_backfill
+stabler.patches.v18_crm_icecream_fields
