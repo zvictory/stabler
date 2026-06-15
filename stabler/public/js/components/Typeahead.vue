@@ -217,6 +217,8 @@ function onKeydown(e) {
 			e.preventDefault();
 			pick(options.value[activeIdx.value]);
 		}
+	} else if (e.key === "Tab") {
+		showOptions.value = false;
 	}
 }
 </script>
@@ -279,6 +281,7 @@ function onKeydown(e) {
 						:class="{ 'is-active': activeIdx === i }"
 						role="option"
 						:aria-selected="activeIdx === i"
+						tabindex="-1"
 						@mousedown.prevent="pick(item)"
 						@mouseenter="activeIdx = i"
 					>
