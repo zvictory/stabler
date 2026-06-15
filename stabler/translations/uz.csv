@@ -38,6 +38,7 @@ Add Decision,Qaror qo'shish
 Add item,Tovar qo'shish
 Add Lane,Yo'lak qo'shish
 Add line,Qator qo'shish
+Add a line…,Qator qo'shish…
 Add outlet,Chakana sotuvni qo'shish
 Add row,Qator qo'shish
 Add supplier,Ta'minotchi qo'shish
@@ -108,6 +109,9 @@ Asl Belgisi Code,Asl Belgisi kodi
 Asl Belgisi — Stock Entries pending scan,Asl Belgisi — skanerdan kutayotgan qoldiq yozuvlari
 Asset Tag,Aktivni belgisi
 Asset Tag and Category are required.,Aktivni belgisi va toifasi talab qilinadi.
+Asset lines,Aktiv satrlari
+Asset purchase,Aktiv xaridi
+Assets,Aktivlar
 Assign operator,Operatorni belgilash
 Assign technician,Texnikni belgilash
 Assigned Field User,Tayinlangan foydalanuvchi
@@ -399,6 +403,7 @@ Equipment,Jihozlar
 Equipment and Issue are required.,Jihozlar va muammo talab qilinadi.
 Equipment is required.,Jihozlar talab qilinadi.
 Equipment name is required.,Jihozning nomi talab qilinadi.
+Equity,Kapital
 Error,Xato
 error(s),xato(lar)
 Estimated value,Taxmin qilingan qiymat
@@ -420,6 +425,7 @@ Expected Facings,Kutilgan yuzlar
 Expected facings is required on row {0}.,Kutilgan yuzlar {0} qatorida talab qilinadi.
 Expense,Xarajat
 Expense lines,Xarajat qatorlari
+Expense saved · {name},Xarajat saqlandi · {name}
 Expenses,Xarajatlar
 Expires in,Tugashiga
 Export,Eksport
@@ -781,6 +787,7 @@ No employees yet,Hozircha xodimlar yo'q
 No equipment yet,Hali asboblar yo'q
 No exchange rate available from {0} to {1} on {2}.,{2} sanada {0} dan {1} gacha almashtirish narxi mavjud emas.
 No exchange rates yet. Click Refresh now to fetch today's rates from cbu.uz.,Hali almashtirish narxlari yo'q. Bugungi narxlarni cbu.uz dan olish uchun Yangilash tugmasini bosing.
+No exchange rate for this date — enter manually.,Ushbu sana uchun kurs yo'q — qo'lda kiriting.
 No field users yet,Hali foydalanuvchilar yo'q
 No files attached.,Fayllar biriktirilmagan.
 No installments due this month.,Bu oyda to'lovlar yo'q.
@@ -1174,6 +1181,9 @@ Same currency,Bir xil valyuta
 Same day,Shu kuni
 Sat,Sh
 Save,Saqlash
+Save & clear,Saqlash va tozalash
+Save & close,Saqlash va yopish
+Save & new,Saqlash va yangi
 Save & submit,Saqlash va tasdiqlash
 Save allowed users,Saqlashga ruxsat etilgan foydalanuvchilar
 Save and submit,Saqlash va tasdiqlash

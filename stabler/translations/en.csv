@@ -38,6 +38,7 @@ Add Decision,Add Decision
 Add item,Add item
 Add Lane,Add Lane
 Add line,Add line
+Add a line…,Add a line…
 Add outlet,Add outlet
 Add row,Add row
 Add supplier,Add supplier
@@ -107,6 +108,9 @@ Asl Belgisi Code,Asl Belgisi Code
 Asl Belgisi — Stock Entries pending scan,Asl Belgisi — Stock Entries pending scan
 Asset Tag,Asset Tag
 Asset Tag and Category are required.,Asset Tag and Category are required.
+Asset lines,Asset lines
+Asset purchase,Asset purchase
+Assets,Assets
 Assign operator,Assign operator
 Assign technician,Assign technician
 Assigned Field User,Assigned Field User
@@ -397,6 +401,7 @@ Equipment,Equipment
 Equipment and Issue are required.,Equipment and Issue are required.
 Equipment is required.,Equipment is required.
 Equipment name is required.,Equipment name is required.
+Equity,Equity
 Error,Error
 error(s),error(s)
 Estimated value,Estimated value
@@ -418,6 +423,7 @@ Expected Facings,Expected Facings
 Expected facings is required on row {0}.,Expected facings is required on row {0}.
 Expense,Expense
 Expense lines,Expense lines
+Expense saved · {name},Expense saved · {name}
 Expenses,Expenses
 Expires in,Expires in
 Export,Export
@@ -778,6 +784,7 @@ No employees yet,No employees yet
 No equipment yet,No equipment yet
 No exchange rate available from {0} to {1} on {2}.,No exchange rate available from {0} to {1} on {2}.
 No exchange rates yet. Click Refresh now to fetch today's rates from cbu.uz.,No exchange rates yet. Click Refresh now to fetch today's rates from cbu.uz.
+No exchange rate for this date — enter manually.,No exchange rate for this date — enter manually.
 No field users yet,No field users yet
 No files attached.,No files attached.
 No installments due this month.,No installments due this month.
@@ -1170,6 +1177,9 @@ Same currency,Same currency
 Same day,Same day
 Sat,Sat
 Save,Save
+Save & clear,Save & clear
+Save & close,Save & close
+Save & new,Save & new
 Save & submit,Save & submit
 Save allowed users,Save allowed users
 Save and submit,Save and submit

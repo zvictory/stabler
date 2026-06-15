@@ -38,6 +38,7 @@ Add Decision,Қарор қўшиш
 Add item,Товар қўшиш
 Add Lane,Йўлак қўшиш
 Add line,Қатор қўшиш
+Add a line…,Қатор қўшиш…
 Add outlet,Сотув жойи қўшиш
 Add row,Қатор қўшиш
 Add supplier,Таъминотчи қўшиш
@@ -108,6 +109,9 @@ Asl Belgisi Code,Аслий белги коди
 Asl Belgisi — Stock Entries pending scan,Аслий белги — сканлаш кутиб турган сток ёзувлари
 Asset Tag,Активлар теги
 Asset Tag and Category are required.,Активлар теги ва категорияси талаб қилинади.
+Asset lines,Актив сатрлари
+Asset purchase,Актив харид
+Assets,Активлар
 Assign operator,Оператор тайинлаш
 Assign technician,Техникни белгилаш
 Assigned Field User,Назначен фойдаланувчи
@@ -399,6 +403,7 @@ Equipment,Ускуна
 Equipment and Issue are required.,Ускуна ва муаммо кераклиларидан.
 Equipment is required.,Ускуна қўлланилиши керак.
 Equipment name is required.,Ускуна номи қўлланилиши керак.
+Equity,Капитал
 Error,Хато
 error(s),хато(лар)
 Estimated value,Баҳоланган қиймат
@@ -420,6 +425,7 @@ Expected Facings,Кутилаётган берувчилик
 Expected facings is required on row {0}.,Кутилаётган берувчилик {0} сатрда қўлланилиши керак.
 Expense,Харжи
 Expense lines,Харжи сатрлари
+Expense saved · {name},Харажат сақланди · {name}
 Expenses,Харжилар
 Expires in,Тугашига
 Export,Экспорт
@@ -781,6 +787,7 @@ No employees yet,Ҳозирча ходимлар йўқ
 No equipment yet,Ҳалиғача ускуналар йўқ
 No exchange rate available from {0} to {1} on {2}.,{2}-да {0} дан {1} гача алмаштириш курси йўқ.
 No exchange rates yet. Click Refresh now to fetch today's rates from cbu.uz.,Ҳалиғача алмаштириш курслари йўқ. cbu.uz дан бугунги курслари олиш учун Янгилаш босинг.
+No exchange rate for this date — enter manually.,Ушбу сана учун курс йўқ — қўлда киритинг.
 No field users yet,Ҳалиғача сахра фойдаланувчилари йўқ
 No files attached.,Файллар бириктирилмаган.
 No installments due this month.,Бу ойда тўловлар йўқ.
@@ -1174,6 +1181,9 @@ Same currency,Бир хил валюта
 Same day,Шу куни
 Sat,Ш
 Save,Сақлаш
+Save & clear,Сақлаш ва тозалаш
+Save & close,Сақлаш ва ёпиш
+Save & new,Сақлаш ва янги
 Save & submit,Сақлаш ва тасдиқлаш
 Save allowed users,Рухсат берилган фойдаланувчиларни сақлаш
 Save and submit,Сақлаш ва тасдиқлаш

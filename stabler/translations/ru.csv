@@ -40,6 +40,7 @@ Add Decision,Добавить решение
 Add item,Добавить товар
 Add Lane,Добавить полосу
 Add line,Добавить строку
+Add a line…,Добавить строку…
 Add outlet,Добавить торговую точку
 Add row,Добавить строку
 Add supplier,Добавить поставщика
@@ -113,6 +114,9 @@ Asl Belgisi Code,Код Asl Belgisi
 Asl Belgisi — Stock Entries pending scan,Asl Belgisi — складские движения к сканированию
 Asset Tag,Тег актива
 Asset Tag and Category are required.,Требуются тег актива и категория.
+Asset lines,Строки активов
+Asset purchase,Покупка актива
+Assets,Активы
 Assign operator,Назначить оператора
 Assign technician,Назначить техника
 Assigned Field User,Закреплённый сотрудник
@@ -406,6 +410,7 @@ Equipment,Оборудование
 Equipment and Issue are required.,Оборудование и проблема обязательны.
 Equipment is required.,Оборудование обязательно.
 Equipment name is required.,Название оборудования обязательно.
+Equity,Капитал
 Error,Ошибка
 error(s),ошибка(и)
 Estimated value,Расчётная стоимость
@@ -427,6 +432,7 @@ Expected Facings,Ожидаемое количество фасадов
 Expected facings is required on row {0}.,Ожидаемое количество фасадов требуется в строке {0}.
 Expense,Расход
 Expense lines,Строки расходов
+Expense saved · {name},Расход сохранён · {name}
 Expenses,Расходы
 Expires in,Истекает через
 Export,Экспорт
@@ -788,6 +794,7 @@ No employees yet,Сотрудников пока нет
 No equipment yet,Оборудования пока нет
 No exchange rate available from {0} to {1} on {2}.,Курс обмена не доступен с {0} на {1} от {2}.
 No exchange rates yet. Click Refresh now to fetch today's rates from cbu.uz.,Курсы валют пока отсутствуют. Нажмите «Обновить сейчас»
+No exchange rate for this date — enter manually.,Нет курса на эту дату — введите вручную.
 No field users yet,Пользователей полей нет
 No files attached.,Файлы не прикреплены.
 No installments due this month.,Нет платежей в этом месяце.
@@ -1181,6 +1188,9 @@ Same currency,Одна валюта
 Same day,В этот день
 Sat,Сб
 Save,Сохранить
+Save & clear,Сохранить и очистить
+Save & close,Сохранить и закрыть
+Save & new,Сохранить и новый
 Save & submit,Сохранить и отправить
 Save allowed users,Сохранить разрешённых пользователей
 Save and submit,Сохранить и провести

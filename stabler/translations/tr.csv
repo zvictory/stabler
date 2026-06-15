@@ -38,6 +38,7 @@ Add Decision,Karar Ekle
 Add item,Kalem ekle
 Add Lane,Şerit Ekle
 Add line,Satır ekle
+Add a line…,Satır ekle…
 Add outlet,Şube ekle
 Add row,Satır ekle
 Add supplier,Tedarikçi ekle
@@ -107,6 +108,9 @@ Asl Belgisi Code,Asl Belgisi Kodu
 Asl Belgisi — Stock Entries pending scan,Asl Belgisi — Tarama Bekleyen Stok Girişleri
 Asset Tag,Varlık Etiketi
 Asset Tag and Category are required.,Varlık etiketi ve kategori gereklidir.
+Asset lines,Varlık satırları
+Asset purchase,Varlık satın alma
+Assets,Varlıklar
 Assign operator,Operatör ata
 Assign technician,Teknisyen ata
 Assigned Field User,Atanan Saha Kullanıcısı
@@ -392,6 +396,7 @@ Equipment,Ekipman
 Equipment and Issue are required.,Ekipman ve Sorun zorunludur.
 Equipment is required.,Ekipman zorunludur.
 Equipment name is required.,Ekipman adı zorunludur.
+Equity,Öz sermaye
 Error,Hata
 error(s),hata(lar)
 Estimated value,Tahmini değer
@@ -413,6 +418,7 @@ Expected Facings,Beklenen Yüz Sayısı
 Expected facings is required on row {0}.,{0}. satırda beklenen yüz sayısı zorunludur.
 Expense,Gider
 Expense lines,Gider kalemleri
+Expense saved · {name},Gider kaydedildi · {name}
 Expenses,Giderler
 Expires in,Bitişine
 Export,Dışa Aktar
@@ -771,6 +777,7 @@ No employees yet,Henüz çalışan yok
 No equipment yet,Henüz ekipman yok
 No exchange rate available from {0} to {1} on {2}.,{2} tarihi için {0} ile {1} arasında döviz kuru bulunamadı.
 No exchange rates yet. Click Refresh now to fetch today's rates from cbu.uz.,Henüz döviz kuru yok. Bugünün kurlarını cbu.uz'dan çekmek için Yenile'ye tıklayın.
+No exchange rate for this date — enter manually.,Bu tarih için kur yok — manuel girin.
 No field users yet,Henüz saha kullanıcısı yok
 No files attached.,Dosya eklenmedi.
 No installments due this month.,Bu ay vadesi gelen taksit yok.
@@ -1158,6 +1165,9 @@ Same currency,Aynı para birimi
 Same day,Aynı gün
 Sat,Cmt
 Save,Kaydet
+Save & clear,Kaydet ve temizle
+Save & close,Kaydet ve kapat
+Save & new,Kaydet ve yeni
 Save & submit,Kaydet ve onayla
 Save allowed users,İzin verilen kullanıcıları kaydet
 Save and submit,Kaydet ve onayla

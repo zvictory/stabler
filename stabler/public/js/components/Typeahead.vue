@@ -157,6 +157,7 @@ function onBlur() {
 }
 
 function pick(item) {
+	if (item.__group) return;
 	clearTimeout(blurTimer);
 	showOptions.value = false;
 	options.value = [];
@@ -212,7 +213,7 @@ function onKeydown(e) {
 			activeIdx.value <= 0 ? options.value.length - 1 : activeIdx.value - 1;
 		scrollActiveIntoView();
 	} else if (e.key === "Enter") {
-		if (activeIdx.value >= 0) {
+		if (activeIdx.value >= 0 && !options.value[activeIdx.value]?.__group) {
 			e.preventDefault();
 			pick(options.value[activeIdx.value]);
 		}
@@ -263,19 +264,27 @@ function onKeydown(e) {
 				<div v-else-if="!options.length" class="stbl-menu-empty small">
 					<i class="ti ti-search-off me-1"></i>{{ noResultsText }}
 				</div>
-				<button
-					v-for="(item, i) in options"
-					:key="item.name || item.item_code || i"
-					type="button"
-					class="stbl-menu-item"
-					:class="{ 'is-active': activeIdx === i }"
-					role="option"
-					:aria-selected="activeIdx === i"
-					@mousedown.prevent="pick(item)"
-					@mouseenter="activeIdx = i"
-				>
-					<slot name="option" :item="item" :query="query">{{ item.name }}</slot>
-				</button>
+				<template v-for="(item, i) in options" :key="item.name || item.__group || i">
+					<div
+						v-if="item.__group"
+						class="px-3 py-1 text-secondary"
+						style="font-size: 0.7em; text-transform: uppercase; letter-spacing: .06em; font-weight: 600; pointer-events: none"
+					>
+						<slot name="option" :item="item" :query="query">{{ item.__group }}</slot>
+					</div>
+					<button
+						v-else
+						type="button"
+						class="stbl-menu-item"
+						:class="{ 'is-active': activeIdx === i }"
+						role="option"
+						:aria-selected="activeIdx === i"
+						@mousedown.prevent="pick(item)"
+						@mouseenter="activeIdx = i"
+					>
+						<slot name="option" :item="item" :query="query">{{ item.name }}</slot>
+					</button>
+				</template>
 			</div>
 		</Teleport>
 	</div>

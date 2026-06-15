@@ -4,7 +4,7 @@ import { storeToRefs } from "pinia";
 import { useSession } from "../../stores/session.js";
 import { call } from "../../api/client.js";
 import { formatMoney } from "../../composables/money.js";
-import { formatDateTime, todayIso} from "../../composables/date.js";
+import { formatDate, formatDateTime, todayIso } from "../../composables/date.js";
 import { t } from "../../composables/i18n.js";
 import { useConfirm } from "../../composables/useConfirm.js";
 import { useToast } from "../../composables/useToast.js";
@@ -13,6 +13,7 @@ import DateInput from "../../components/DateInput.vue";
 import EmptyState from "../../components/EmptyState.vue";
 import Select from "../../components/Select.vue";
 import Typeahead from "../../components/Typeahead.vue";
+import SkeletonRows from "../../components/SkeletonRows.vue";
 
 const session = useSession();
 const { activeCompany, user } = storeToRefs(session);
@@ -42,11 +43,22 @@ const submitting = ref(false);
 const submitError = ref("");
 const editingName = ref("");
 
-const payAccounts = ref([]); // bank/cash leaf accounts
-const expAccounts = ref([]); // expense leaf accounts
-const assetAccounts = ref([]); // fixed asset leaves for asset purchases
-const equityAccounts = ref([]); // equity leaves (owner capital / drawings / dividends)
+const payAccounts = ref([]);
+const expAccounts = ref([]);
+const assetAccounts = ref([]);
+const equityAccounts = ref([]);
 const optionsLoading = ref(false);
+
+// QuickBooks-style save mode — persisted per user
+const SAVE_MODE_KEY = "stabler.expenses.saveMode";
+const savedMode = ref(localStorage.getItem(SAVE_MODE_KEY) || "close");
+const SAVE_LABELS = { close: "Save & close", new: "Save & new", clear: "Save & clear" };
+const saveModeLabel = computed(() => t(SAVE_LABELS[savedMode.value] || "Save & close"));
+
+function persistSaveMode(mode) {
+	savedMode.value = mode;
+	localStorage.setItem(SAVE_MODE_KEY, mode);
+}
 
 const baseCurrency = computed(
 	() =>
@@ -54,9 +66,45 @@ const baseCurrency = computed(
 		"USD",
 );
 
-let lineSeq = 0;
-const newLine = () => ({ id: ++lineSeq, account: "", amount: null, memo: "" });
+// Exchange rate context
+const cbuRate = ref(null);
+const fxBaseCur = ref("");
+const fxCounterCur = ref("");
+const rateDate = ref(null);
+const rateError = ref("");
 
+function isUZS(cur) {
+	return (cur || "").toUpperCase() === "UZS";
+}
+
+function fmtAmt(v, cur) {
+	const dp = isUZS(cur) ? 0 : 2;
+	const s = (Number(v) || 0).toFixed(dp);
+	const [i, d] = s.split(".");
+	const gi = i.replace(/\B(?=(\d{3})+(?!\d))/g, " ");
+	return dp > 0 ? `${gi}.${d}` : gi;
+}
+
+function fmtRate(r) {
+	const n = Number(r) || 0;
+	const dp = n >= 100 ? 2 : 6;
+	const s = n.toFixed(dp).replace(/(\.\d*?)0+$/, "$1").replace(/\.$/, "");
+	const [i, d] = s.split(".");
+	return i.replace(/\B(?=(\d{3})+(?!\d))/g, " ") + (d ? `.${d}` : "");
+}
+
+function norm(s) {
+	return String(s ?? "").toLowerCase().normalize("NFKD").replace(/[\u0300-\u036f]/g, "");
+}
+
+let lineSeq = 0;
+let ghostSeq = 0;
+
+function newGhost() {
+	return { id: `g${++ghostSeq}`, account: "", amount: null, memo: "" };
+}
+
+const ghost = ref(newGhost());
 const form = ref(blankForm());
 
 function blankForm() {
@@ -67,8 +115,18 @@ function blankForm() {
 		payee: "",
 		payment_from: "",
 		exchange_rate: null,
-		lines: [newLine()],
+		lines: [],
 	};
+}
+
+function materialGhost(item) {
+	form.value.lines.push({
+		id: ++lineSeq,
+		account: item.name,
+		amount: ghost.value.amount,
+		memo: ghost.value.memo,
+	});
+	ghost.value = newGhost();
 }
 
 const entryKindOptions = [
@@ -94,8 +152,6 @@ const totalAmount = computed(() =>
 
 const lineAccounts = computed(() => {
 	const base = form.value.entry_kind === "Asset Purchase" ? assetAccounts.value : expAccounts.value;
-	// Equity leaves (owner drawings / capital / dividends) are valid debit targets
-	// for a bank entry, so surface them in every mode alongside the base accounts.
 	return [...base, ...equityAccounts.value];
 });
 
@@ -114,6 +170,13 @@ const baseEquivalent = computed(() => {
 	return totalAmount.value / rate;
 });
 
+function lineBaseAmount(line) {
+	if (!isCrossCurrency.value) return null;
+	const rate = Number(form.value.exchange_rate) || 0;
+	if (rate === 0) return null;
+	return (Number(line.amount) || 0) / rate;
+}
+
 const canSubmit = computed(() => {
 	if (!form.value.payment_from) return false;
 	if (!form.value.posting_date) return false;
@@ -128,21 +191,42 @@ const canSubmit = computed(() => {
 async function fetchExchangeRate() {
 	if (!isCrossCurrency.value) {
 		form.value.exchange_rate = null;
+		cbuRate.value = null;
+		fxBaseCur.value = "";
+		fxCounterCur.value = "";
+		rateDate.value = null;
+		rateError.value = "";
 		return;
 	}
+	rateError.value = "";
 	try {
-		const rate = await call("stabler.api.money.get_exchange_rate_for_currencies", {
+		const raw = await call("stabler.api.money.get_exchange_rate_for_currencies", {
 			from_currency: baseCurrency.value,
 			to_currency: payCurrency.value,
 			posting_date: form.value.posting_date,
 		});
-		if (rate > 0) {
-			form.value.exchange_rate = rate;
+		if (raw > 0) {
+			// Canonical quote: always >= 1 so UZS↔USD reads "1 USD = 12 950 UZS"
+			let base, counter, R;
+			if (raw >= 1) {
+				base = baseCurrency.value; counter = payCurrency.value; R = raw;
+			} else {
+				base = payCurrency.value; counter = baseCurrency.value; R = 1 / raw;
+			}
+			fxBaseCur.value = base;
+			fxCounterCur.value = counter;
+			cbuRate.value = R;
+			rateDate.value = form.value.posting_date;
+			form.value.exchange_rate = raw;
 		} else {
 			form.value.exchange_rate = null;
+			cbuRate.value = null;
+			rateDate.value = null;
+			rateError.value = t("No exchange rate for this date — enter manually.");
 		}
 	} catch (err) {
 		console.error("Failed to load exchange rate", err);
+		rateError.value = t("No exchange rate for this date — enter manually.");
 	}
 }
 
@@ -150,8 +234,49 @@ watch(
 	() => [form.value.payment_from, form.value.posting_date],
 	async () => {
 		await fetchExchangeRate();
-	}
+	},
 );
+
+function searchLineAccount(q) {
+	const n = norm(q);
+	const baseLabel = form.value.entry_kind === "Asset Purchase" ? t("Assets") : t("Expenses");
+	const baseList = form.value.entry_kind === "Asset Purchase" ? assetAccounts.value : expAccounts.value;
+
+	function filter(list) {
+		if (!n) return list;
+		return list.filter(
+			(a) =>
+				norm(a.account_name || a.name).includes(n) ||
+				norm(a.name).includes(n) ||
+				(a.account_number && norm(a.account_number).includes(n)),
+		);
+	}
+
+	const filteredBase = filter(baseList);
+	const filteredEquity = filter(equityAccounts.value);
+	const result = [];
+	if (filteredBase.length) {
+		result.push({ __group: baseLabel });
+		result.push(...filteredBase);
+	}
+	if (filteredEquity.length) {
+		result.push({ __group: t("Equity") });
+		result.push(...filteredEquity);
+	}
+	return result;
+}
+
+function lineAccountDisplay(name) {
+	const a = lineAccounts.value.find((x) => x.name === name);
+	return a ? `${a.account_name || a.name} (${a.account_currency})` : name;
+}
+
+function lineCurrencyMismatch(line) {
+	if (!line.account) return false;
+	const picked = lineAccounts.value.find((a) => a.name === line.account);
+	if (!picked) return false;
+	return picked.account_currency && picked.account_currency !== payCurrency.value;
+}
 
 async function loadOptions() {
 	if (!activeCompany.value) return;
@@ -179,8 +304,11 @@ async function loadOptions() {
 
 async function openCreate() {
 	form.value = blankForm();
+	ghost.value = newGhost();
 	editingName.value = "";
 	submitError.value = "";
+	cbuRate.value = null;
+	rateError.value = "";
 	createOpen.value = true;
 	if (!payAccounts.value.length || !expAccounts.value.length || !assetAccounts.value.length) await loadOptions();
 	await fetchExchangeRate();
@@ -204,9 +332,11 @@ async function openEditFromDetail() {
 			memo: row.user_remark || "",
 		})),
 	};
-	if (!form.value.lines.length) form.value.lines = [newLine()];
+	ghost.value = newGhost();
 	editingName.value = detail.value.name;
 	submitError.value = "";
+	cbuRate.value = null;
+	rateError.value = "";
 	createOpen.value = true;
 	await fetchExchangeRate();
 }
@@ -217,45 +347,28 @@ function closeCreate() {
 	editingName.value = "";
 }
 
-function addLine() {
-	form.value.lines.push(newLine());
-}
-
 function removeLine(idx) {
-	if (form.value.lines.length <= 1) return;
 	form.value.lines.splice(idx, 1);
 }
 
-function searchLineAccount(q) {
-	const lower = (q || "").toLowerCase();
-	if (!lower) return lineAccounts.value.slice(0, 60);
-	return lineAccounts.value.filter(
-		(a) =>
-			(a.account_name || a.name).toLowerCase().includes(lower) ||
-			a.name.toLowerCase().includes(lower),
-	);
-}
-
-function lineAccountDisplay(name) {
-	const a = lineAccounts.value.find((x) => x.name === name);
-	return a ? `${a.account_name || a.name} (${a.account_currency})` : name;
-}
-
-// Expense lines must share currency with the payment-from leg (backend rule).
-// If the user picks an expense account in a different currency, surface a hint.
-function lineCurrencyMismatch(line) {
-	if (!line.account) return false;
-	const picked = lineAccounts.value.find((a) => a.name === line.account);
-	if (!picked) return false;
-	return picked.account_currency && picked.account_currency !== payCurrency.value;
-}
-
-async function submitCreate() {
+async function submitCreate(afterAction) {
 	submitError.value = "";
+	persistSaveMode(afterAction);
+
+	if (afterAction === "clear") {
+		const keepDate = form.value.posting_date;
+		form.value = blankForm();
+		form.value.posting_date = keepDate;
+		ghost.value = newGhost();
+		await fetchExchangeRate();
+		return;
+	}
+
 	if (!canSubmit.value) {
 		submitError.value = t("Fill in the required fields before submitting.");
 		return;
 	}
+
 	const lines = form.value.lines
 		.filter((l) => l.account && Number(l.amount) > 0)
 		.map((l) => ({
@@ -274,7 +387,7 @@ async function submitCreate() {
 	if (form.value.payee?.trim()) payload.payee = form.value.payee.trim();
 	if (isCrossCurrency.value) {
 		const rate = Number(form.value.exchange_rate);
-		payload.exchange_rate = rate > 0 ? (1 / rate) : 0;
+		payload.exchange_rate = rate > 0 ? 1 / rate : 0;
 	}
 
 	submitting.value = true;
@@ -282,13 +395,27 @@ async function submitCreate() {
 		const method = editingName.value
 			? "stabler.api.money.amend_expense_entry"
 			: "stabler.api.money.submit_expense_entry";
-		const res = await call(method, editingName.value ? { source_name: editingName.value, ...payload } : payload);
-		createOpen.value = false;
-		editingName.value = "";
-		await load();
-		if (res?.name) await openDetail(res.name);
+		const res = await call(
+			method,
+			editingName.value ? { source_name: editingName.value, ...payload } : payload,
+		);
+
+		load();
+
+		if (editingName.value || afterAction === "close") {
+			createOpen.value = false;
+			editingName.value = "";
+			if (res?.name) await openDetail(res.name);
+		} else if (afterAction === "new") {
+			const keepDate = form.value.posting_date;
+			form.value = blankForm();
+			form.value.posting_date = keepDate;
+			ghost.value = newGhost();
+			toast.success(t("Expense saved · {name}", { name: res?.name || "" }));
+			await fetchExchangeRate();
+		}
 	} catch (err) {
-		submitError.value = err?.message || "Failed to submit expense.";
+		submitError.value = err?.message || t("Failed to submit expense.");
 	} finally {
 		submitting.value = false;
 	}
@@ -600,7 +727,15 @@ watch(activeCompany, () => {
 							<DateInput v-model="form.posting_date" required />
 						</div>
 						<div class="col-md-4">
-							<label class="form-label small">{{ t("Pay from") }}</label>
+							<label class="form-label small mb-1 d-flex justify-content-between align-items-baseline">
+								<span>{{ t("Pay from") }}</span>
+								<span
+									v-if="paymentFromAccount && paymentFromAccount.account_balance != null"
+									class="text-secondary fw-normal font-monospace"
+								>
+									{{ fmtAmt(paymentFromAccount.account_balance, payCurrency) }} {{ payCurrency }}
+								</span>
+							</label>
 							<Select
 								v-model="form.payment_from"
 								:disabled="optionsLoading"
@@ -627,49 +762,55 @@ watch(activeCompany, () => {
 						</div>
 					</div>
 
-					<div v-if="isCrossCurrency" class="alert alert-info py-2 px-3 mb-3 small">
+					<!-- Exchange rate bar (cross-currency only) -->
+					<div v-if="isCrossCurrency" class="mb-3">
 						<div class="d-flex align-items-end gap-3 flex-wrap">
-							<div>
-								<i class="ti ti-info-circle me-1"></i>
-								<strong>1 {{ baseCurrency }} =</strong>
-							</div>
-							<div style="width: 160px">
+							<div style="min-width: 190px">
+								<label class="form-label small mb-1">
+									1 {{ baseCurrency }} = <span class="text-secondary">?</span> {{ payCurrency }}
+								</label>
 								<MoneyInput
 									v-model="form.exchange_rate"
 									:currency="payCurrency"
 									:language="user.language"
 									size="sm"
-									:placeholder="`Rate to ${payCurrency}`"
+									:placeholder="`Rate in ${payCurrency}`"
 								/>
+								<div v-if="cbuRate" class="text-secondary small mt-1">
+									CBU: 1 {{ fxBaseCur || payCurrency }} = {{ fmtRate(cbuRate) }} {{ fxCounterCur || baseCurrency }}<span v-if="rateDate"> · as of {{ formatDate(rateDate) }}</span>
+								</div>
+								<div v-if="rateError" class="text-danger small mt-1">
+									<i class="ti ti-alert-triangle me-1"></i>{{ rateError }}
+								</div>
 							</div>
-							<div class="ms-auto text-secondary">
+							<div class="text-secondary small pb-1 ms-auto">
 								{{ t("Base equivalent") }}:
 								<span class="fw-semibold font-monospace">
-									{{ formatMoney(baseEquivalent, baseCurrency, user.language) }}
+									{{ fmtAmt(baseEquivalent, baseCurrency) }} {{ baseCurrency }}
 								</span>
 							</div>
 						</div>
 					</div>
 
-					<div class="d-flex align-items-center mb-2">
-						<h6 class="text-uppercase text-secondary small m-0">
-							{{ form.entry_kind === "Asset Purchase" ? t("Asset lines") : t("Expense lines") }}
-						</h6>
-						<button type="button" class="btn btn-sm btn-outline-secondary ms-auto" @click="addLine">
-							<i class="ti ti-plus me-1"></i>{{ t("Add line") }}
-						</button>
-					</div>
+					<h6 class="text-uppercase text-secondary small mb-2">
+						{{ form.entry_kind === "Asset Purchase" ? t("Asset lines") : t("Expense lines") }}
+					</h6>
 					<div class="table-responsive">
 						<table class="table table-sm table-vcenter align-middle">
 							<thead>
 								<tr>
 									<th style="min-width: 240px">{{ t("Account") }}</th>
 									<th style="min-width: 160px" class="text-end">{{ t("Amount") }}</th>
+									<th v-if="isCrossCurrency" class="text-end text-secondary" style="min-width: 120px; font-size: 0.8em">
+										{{ baseCurrency }}
+									</th>
 									<th>{{ t("Memo") }}</th>
 									<th class="w-1"></th>
 								</tr>
 							</thead>
-							<tbody>
+							<SkeletonRows v-if="optionsLoading" :rows="3" :cols="isCrossCurrency ? 5 : 4" />
+							<tbody v-else>
+								<!-- Real lines -->
 								<tr v-for="(line, idx) in form.lines" :key="line.id">
 									<td>
 										<Typeahead
@@ -679,11 +820,18 @@ watch(activeCompany, () => {
 											:placeholder="t('Search account…')"
 											size="sm"
 											open-on-focus
-											@pick="(item) => (line.account = item.name)"
+											@pick="(item) => { if (!item.__group) line.account = item.name; }"
 											@clear="() => (line.account = '')"
 										>
 											<template #option="{ item }">
-												{{ item.account_name || item.name }} ({{ item.account_currency }})
+												<template v-if="item.__group">
+													<span class="text-uppercase text-secondary fw-semibold" style="font-size: 0.7em; letter-spacing: .04em">{{ item.__group }}</span>
+												</template>
+												<template v-else>
+													<span>{{ item.account_name || item.name }}</span>
+													<span v-if="item.account_number" class="text-secondary ms-1 small">{{ item.account_number }}</span>
+													<span class="ms-auto text-secondary small font-monospace">{{ item.account_currency }}</span>
+												</template>
 											</template>
 										</Typeahead>
 										<div v-if="lineCurrencyMismatch(line)" class="text-danger small mt-1">
@@ -699,6 +847,10 @@ watch(activeCompany, () => {
 											size="sm"
 										/>
 									</td>
+									<td v-if="isCrossCurrency" class="text-end font-monospace text-secondary small">
+										<template v-if="lineBaseAmount(line) != null">{{ fmtAmt(lineBaseAmount(line), baseCurrency) }}</template>
+										<template v-else>—</template>
+									</td>
 									<td>
 										<input
 											v-model="line.memo"
@@ -711,12 +863,54 @@ watch(activeCompany, () => {
 										<button
 											type="button"
 											class="btn btn-sm btn-ghost-danger"
-											:disabled="form.lines.length <= 1"
 											@click="removeLine(idx)"
 										>
 											<i class="ti ti-trash"></i>
 										</button>
 									</td>
+								</tr>
+								<!-- Ghost trailing row -->
+								<tr :key="ghost.id" class="opacity-50">
+									<td>
+										<Typeahead
+											:model-value="''"
+											:search="searchLineAccount"
+											:display="''"
+											:placeholder="t('Add a line…')"
+											size="sm"
+											open-on-focus
+											@pick="(item) => { if (!item.__group) materialGhost(item); }"
+										>
+											<template #option="{ item }">
+												<template v-if="item.__group">
+													<span class="text-uppercase text-secondary fw-semibold" style="font-size: 0.7em; letter-spacing: .04em">{{ item.__group }}</span>
+												</template>
+												<template v-else>
+													<span>{{ item.account_name || item.name }}</span>
+													<span v-if="item.account_number" class="text-secondary ms-1 small">{{ item.account_number }}</span>
+													<span class="ms-auto text-secondary small font-monospace">{{ item.account_currency }}</span>
+												</template>
+											</template>
+										</Typeahead>
+									</td>
+									<td>
+										<MoneyInput
+											v-model="ghost.amount"
+											:currency="payCurrency"
+											:language="user.language"
+											size="sm"
+										/>
+									</td>
+									<td v-if="isCrossCurrency"></td>
+									<td>
+										<input
+											v-model="ghost.memo"
+											type="text"
+											class="form-control form-control-sm"
+											:placeholder="t('Optional')"
+										/>
+									</td>
+									<td></td>
 								</tr>
 							</tbody>
 							<tfoot>
@@ -725,6 +919,9 @@ watch(activeCompany, () => {
 									<td class="text-end font-monospace">
 										{{ formatMoney(totalAmount, payCurrency, user.language) }}
 									</td>
+									<td v-if="isCrossCurrency" class="text-end font-monospace text-secondary">
+										{{ fmtAmt(baseEquivalent, baseCurrency) }} {{ baseCurrency }}
+									</td>
 									<td colspan="2"></td>
 								</tr>
 							</tfoot>
@@ -732,19 +929,59 @@ watch(activeCompany, () => {
 					</div>
 				</div>
 				<div class="modal-footer">
-					<button type="button" class="btn btn-outline-secondary" @click="closeCreate" :disabled="submitting">
-						{{ t("Cancel") }}
-					</button>
 					<button
 						type="button"
-						class="btn btn-primary"
+						class="btn btn-outline-secondary"
+						:disabled="submitting"
+						@click="closeCreate"
+					>
+						{{ t("Cancel") }}
+					</button>
+
+					<!-- Amend mode: single Save & close button -->
+					<button
+						v-if="editingName"
+						type="button"
+						class="btn btn-primary ms-auto"
 						:disabled="!canSubmit || submitting"
-						@click="submitCreate"
+						@click="submitCreate('close')"
 					>
 						<span v-if="submitting" class="spinner-border spinner-border-sm me-1"></span>
 						<i v-else class="ti ti-check me-1"></i>
-						{{ t("Submit expense") }}
+						{{ t("Save & close") }}
 					</button>
+
+					<!-- Create mode: QuickBooks-style split save group -->
+					<div v-else class="btn-group ms-auto">
+						<button
+							type="button"
+							class="btn btn-primary"
+							:disabled="!canSubmit || submitting"
+							@click="submitCreate(savedMode)"
+						>
+							<span v-if="submitting" class="spinner-border spinner-border-sm me-1"></span>
+							<i v-else class="ti ti-check me-1"></i>
+							{{ saveModeLabel }}
+						</button>
+						<button
+							type="button"
+							class="btn btn-primary dropdown-toggle dropdown-toggle-split"
+							data-bs-toggle="dropdown"
+							:disabled="!canSubmit || submitting"
+							aria-expanded="false"
+						></button>
+						<div class="dropdown-menu dropdown-menu-end stbl-menu stbl-menu--nocheck">
+							<a href="#" class="dropdown-item stbl-menu-item" @click.prevent="submitCreate('close')">
+								<i class="ti ti-x me-2"></i>{{ t("Save & close") }}
+							</a>
+							<a href="#" class="dropdown-item stbl-menu-item" @click.prevent="submitCreate('new')">
+								<i class="ti ti-plus me-2"></i>{{ t("Save & new") }}
+							</a>
+							<a href="#" class="dropdown-item stbl-menu-item" @click.prevent="submitCreate('clear')">
+								<i class="ti ti-eraser me-2"></i>{{ t("Save & clear") }}
+							</a>
+						</div>
+					</div>
 				</div>
 			</div>
 		</div>
