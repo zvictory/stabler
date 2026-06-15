@@ -301,18 +301,18 @@ function startRename(status) {
 
 async function commitRename(status) {
 	const newName = colRenameVal.value.trim();
+	const oldName = status.name;
 	colRenaming.value = "";
-	if (!newName || newName === status.name) return;
+	if (!newName || newName === oldName) return;
 
 	// Optimistic update in meta
 	status.name = newName;
 	try {
-		await call("stabler.api.crm.save_deal_status", {
-			data: JSON.stringify({ name: newName, color: status.color, position: status.position, type: status.type || "Ongoing" }),
-		});
+		await call("stabler.api.crm.rename_deal_status", { old_name: oldName, new_name: newName });
 		await loadMeta();
 		fetchDeals();
 	} catch (err) {
+		status.name = oldName;
 		error.value = err?.message || t("Failed to rename column.");
 		await loadMeta();
 	}

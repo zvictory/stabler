@@ -105,24 +105,31 @@ def _seed_stages() -> None:
 	existing = {s.lower() for s in frappe.get_all("CRM Deal Status", pluck="name")}
 	base = (frappe.db.sql("SELECT COALESCE(MAX(position), 0) FROM `tabCRM Deal Status`") or [[0]])[0][0] or 0
 	pos = int(base)
+	# Frappe CRM names the status from a required Data field (label "Status"); set
+	# every such field to the name so insert doesn't fail with "Status is required".
+	name_fields = [
+		f.fieldname
+		for f in frappe.get_meta("CRM Deal Status").fields
+		if f.fieldtype == "Data" and (f.reqd or f.fieldname in ("status", "deal_status", "title"))
+	]
 	for name, color, type_ in _STAGES:
 		if name.lower() in existing:
 			continue
 		pos += 1
-		# Mirror the proven shape used by api.crm.save_deal_status.
-		payload = {"doctype": "CRM Deal Status", "name": name, "color": color, "position": pos, "type": type_}
 		try:
 			doc = frappe.new_doc("CRM Deal Status")
-			doc.update(payload)
-			doc.insert(ignore_permissions=True)
-		except Exception:
-			payload.pop("type", None)
+			doc.name = name
+			for fn in name_fields:
+				doc.set(fn, name)
+			doc.color = color
+			doc.position = pos
 			try:
-				doc = frappe.new_doc("CRM Deal Status")
-				doc.update(payload)
-				doc.insert(ignore_permissions=True)
+				doc.type = type_
 			except Exception:
 				frappe.clear_last_message()
+			doc.insert(ignore_permissions=True)
+		except Exception:
+			frappe.clear_last_message()
 
 
 def execute() -> None:

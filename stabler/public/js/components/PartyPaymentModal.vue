@@ -286,8 +286,8 @@ async function submit() {
 			reference_no: form.value.reference_no || undefined,
 			reference_date: form.value.reference_date || undefined,
 			references: references.length ? references : undefined,
+			submit: 1,
 		});
-		await call("stabler.api.money.submit_payment_entry", { name: created.name });
 		emit("paid", created.name);
 	} catch (err) {
 		error.value = err?.message || t("Failed to record payment.");

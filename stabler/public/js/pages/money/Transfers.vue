@@ -677,7 +677,7 @@ watch(activeCompany, () => {
 						</thead>
 						<tbody>
 							<tr v-for="(a, i) in detail.accounts" :key="i">
-								<td>{{ a.account }}</td>
+								<td>{{ a.account_name || a.account }}</td>
 								<td class="text-end font-monospace">
 									{{ a.debit_in_account_currency ? formatMoney(a.debit_in_account_currency, a.account_currency || baseCurrency, user.language) : "—" }}
 								</td>

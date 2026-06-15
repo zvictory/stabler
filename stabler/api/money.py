@@ -435,6 +435,28 @@ def list_journal_entries(
 	return rows
 
 
+_PARTY_TITLE_FIELD = {
+	"Customer": "customer_name",
+	"Supplier": "supplier_name",
+	"Employee": "employee_name",
+}
+
+
+def _party_title(party_type: str | None, party: str | None) -> str | None:
+	"""Human-readable name for a party link (customer/supplier/employee)."""
+	field = _PARTY_TITLE_FIELD.get(party_type or "")
+	if not (field and party):
+		return None
+	return frappe.db.get_value(party_type, party, field)
+
+
+def _account_title(account: str | None) -> str | None:
+	"""Description part of an Account docname ('Cash on hand - ANJ' -> 'Cash on hand')."""
+	if not account:
+		return None
+	return frappe.get_cached_value("Account", account, "account_name")
+
+
 @frappe.whitelist()
 def journal_entry_detail(name: str):
 	if not name:
@@ -464,8 +486,10 @@ def journal_entry_detail(name: str):
 		"accounts": [
 			{
 				"account": a.account,
+				"account_name": _account_title(a.account),
 				"party_type": a.party_type,
 				"party": a.party,
+				"party_name": _party_title(a.party_type, a.party),
 				"debit_in_account_currency": flt(a.debit_in_account_currency),
 				"credit_in_account_currency": flt(a.credit_in_account_currency),
 				"debit_base": flt(a.debit),
@@ -829,8 +853,11 @@ def create_payment_entry(
 	reference_date: str | None = None,
 	references: list | str | None = None,
 	exchange_rate: float | str | None = None,
+	submit: int = 0,
 ) -> dict:
-	"""Create a Payment Entry as Draft (docstatus=0).
+	"""Create a Payment Entry as Draft (docstatus=0), optionally submitting it
+	atomically when `submit=1` (used by the one-click party-payment modal so
+	there is no second request to trip the concurrency guard).
 
 	payment_type:
 	  - "Receive" — paid_from is the party's receivable account, paid_to is bank/cash.
@@ -944,7 +971,9 @@ def create_payment_entry(
 	doc.setup_party_account_field()
 	doc.set_missing_values()
 	doc.insert(ignore_permissions=False)
-	return {"name": doc.name, "docstatus": doc.docstatus}
+	if int(submit or 0):
+		doc.submit()
+	return {"name": doc.name, "docstatus": doc.docstatus, "modified": str(doc.modified)}
 
 
 @frappe.whitelist()

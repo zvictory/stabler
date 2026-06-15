@@ -601,6 +601,35 @@ def crm_report(from_date: str, to_date: str) -> dict:
 # Deal status (Kanban column) management
 # ---------------------------------------------------------------------------
 
+def _status_name_fields() -> list[str]:
+    """Fieldname(s) Frappe CRM names a CRM Deal Status from (label 'Status').
+    We set every required Data field to the status name so insert never fails
+    with 'Status is required', regardless of the exact field name."""
+    return [
+        f.fieldname
+        for f in frappe.get_meta("CRM Deal Status").fields
+        if f.fieldtype == "Data" and (f.reqd or f.fieldname in ("status", "deal_status", "title"))
+    ]
+
+
+def _insert_deal_status(name: str, color=None, position=None, type_=None):
+    doc = frappe.new_doc("CRM Deal Status")
+    doc.name = name
+    for fn in _status_name_fields():
+        doc.set(fn, name)
+    if color is not None:
+        doc.color = color
+    if position is not None:
+        doc.position = position
+    if type_:
+        try:
+            doc.type = type_
+        except Exception:
+            frappe.clear_last_message()
+    doc.insert(ignore_permissions=True)
+    return doc
+
+
 @frappe.whitelist()
 def save_deal_status(data):
     """Upsert a CRM Deal Status. data = JSON {name, color, position, type}."""
@@ -617,12 +646,34 @@ def save_deal_status(data):
                 doc.set(k, d[k])
         doc.save(ignore_permissions=True)
     else:
-        doc = frappe.new_doc("CRM Deal Status")
-        doc.update(d)
-        doc.insert(ignore_permissions=True)
+        doc = _insert_deal_status(name, d.get("color"), d.get("position"), d.get("type"))
 
     frappe.db.commit()
     return {"name": doc.name, "color": doc.get("color"), "position": doc.get("position"), "type": doc.get("type")}
+
+
+@frappe.whitelist()
+def rename_deal_status(old_name: str, new_name: str):
+    """Rename a kanban column: create the new status, repoint every deal from the
+    old status to the new one, then delete the old. Avoids orphaning deals."""
+    _require_crm_manager()
+    old_name = (old_name or "").strip()
+    new_name = (new_name or "").strip()
+    if not new_name:
+        frappe.throw(_("Status name is required"))
+    if old_name == new_name:
+        return {"name": new_name}
+    if not frappe.db.exists("CRM Deal Status", old_name):
+        frappe.throw(_("Status not found"))
+    if frappe.db.exists("CRM Deal Status", new_name):
+        frappe.throw(_("A status with that name already exists."))
+
+    old = frappe.get_doc("CRM Deal Status", old_name)
+    _insert_deal_status(new_name, old.get("color"), old.get("position"), old.get("type"))
+    frappe.db.sql("UPDATE `tabCRM Deal` SET status = %s WHERE status = %s", (new_name, old_name))
+    frappe.delete_doc("CRM Deal Status", old_name, ignore_permissions=True, force=True)
+    frappe.db.commit()
+    return {"name": new_name}
 
 
 @frappe.whitelist()
