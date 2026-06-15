@@ -266,7 +266,8 @@ async function submit() {
 
 	submitting.value = true;
 
-	const payloadPaidAmount = isReceive.value ? amount : Number(bankAmount.value || 0);
+	const payloadPaidAmount =
+		isReceive.value || !needsExchange.value ? amount : Number(bankAmount.value || 0);
 	const payloadReceivedAmount = isReceive.value ? Number(bankAmount.value || 0) : amount;
 
 	try {
