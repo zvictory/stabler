@@ -1,6 +1,7 @@
 <script setup>
 import { computed, onMounted, ref, watch } from "vue";
 import { storeToRefs } from "pinia";
+import { useRouter } from "vue-router";
 import { useSession } from "../../stores/session.js";
 import { call } from "../../api/client.js";
 import { t } from "../../composables/i18n.js";
@@ -9,6 +10,7 @@ import EmptyState from "../../components/EmptyState.vue";
 import DateInput from "../../components/DateInput.vue";
 import Select from "../../components/Select.vue";
 
+const router = useRouter();
 const session = useSession();
 const { activeCompany } = storeToRefs(session);
 
@@ -60,22 +62,18 @@ onMounted(load);
 watch(activeCompany, load);
 watch(statusFilter, load);
 
-// ----- Detail drawer -----
+// ----- Profile navigation -----
+function openProfile(name) {
+	router.push(`/hr/employees/${name}`);
+}
+
+// ----- Detail drawer (kept for compatibility but now superseded by profile page) -----
 const detailOpen = ref(false);
 const detailLoading = ref(false);
 const detail = ref(null);
 
 async function openDetail(name) {
-	detailOpen.value = true;
-	detailLoading.value = true;
-	detail.value = null;
-	try {
-		detail.value = await call("stabler.api.hr.employee_detail", { name });
-	} catch (err) {
-		detail.value = { error: err?.message || "Failed to load." };
-	} finally {
-		detailLoading.value = false;
-	}
+	openProfile(name);
 }
 function closeDetail() {
 	detailOpen.value = false;
@@ -229,10 +227,11 @@ function initials(name) {
 						<th>{{ t("Department") }}</th>
 						<th>{{ t("Contact") }}</th>
 						<th>{{ t("Status") }}</th>
+						<th style="width: 4rem;"></th>
 					</tr>
 				</thead>
 				<tbody>
-					<tr v-for="r in rows" :key="r.name" class="cursor-pointer" @click="openDetail(r.name)">
+					<tr v-for="r in rows" :key="r.name" class="cursor-pointer" @click="openProfile(r.name)">
 						<td>
 							<div class="d-flex align-items-center gap-2">
 								<span v-if="r.image" class="avatar avatar-sm" :style="{ backgroundImage: `url('${r.image}')` }"></span>
@@ -251,6 +250,16 @@ function initials(name) {
 						</td>
 						<td>
 							<span class="badge" :class="statusBadge(r.status)">{{ r.status }}</span>
+						</td>
+						<td @click.stop>
+							<button
+								type="button"
+								class="btn btn-ghost-secondary btn-sm"
+								:title="t('Edit')"
+								@click="openProfile(r.name)"
+							>
+								<i class="ti ti-edit"></i>
+							</button>
 						</td>
 					</tr>
 				</tbody>

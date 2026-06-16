@@ -5,8 +5,10 @@ import { useRoute, useRouter } from "vue-router";
 import { useSession } from "../../stores/session.js";
 import { call } from "../../api/client.js";
 import { formatMoney } from "../../composables/money.js";
-import { formatDateTime, todayIso} from "../../composables/date.js";
+import { formatDate, formatDateTime, todayIso} from "../../composables/date.js";
 import { t } from "../../composables/i18n.js";
+import { getStatusBadgeClass } from "../../composables/status.js";
+import { useConfirm } from "../../composables/useConfirm.js";
 import DateInput from "../../components/DateInput.vue";
 import Typeahead from "../../components/Typeahead.vue";
 import Select from "../../components/Select.vue";
@@ -672,6 +674,59 @@ const paymentBadge = computed(() => {
 	if (due >= grand - 0.005) return { label: t("Unpaid"), cls: "bg-red-lt", icon: "ti-clock" };
 	return { label: t("Partly paid"), cls: "bg-yellow-lt", icon: "ti-progress" };
 });
+
+const { confirm } = useConfirm();
+const closingSo = ref(false);
+
+const canCloseSo = computed(() => {
+	if (isCreate.value || docstatus.value !== 1) return false;
+	const s = form.value?.status;
+	return !!s && s !== "Closed" && s !== "On Hold" && s !== "Cancelled";
+});
+
+// Computes a plain-language explanation for why a submitted SO is still open.
+const whyStillOpen = computed(() => {
+	if (!form.value || docstatus.value !== 1) return null;
+	if (form.value.status === "Closed") return null;
+
+	const sis = form.value.sales_invoices || [];
+	const hasDraft = sis.some((si) => Number(si.docstatus) === 0);
+	const submittedSis = sis.filter((si) => Number(si.docstatus) === 1);
+	const hasNoStock = submittedSis.some((si) => !si.update_stock);
+	const billingStatus = form.value.billing_status || "";
+	const perBilled = Number(form.value.per_billed || 0);
+
+	if (hasDraft) return t("Invoice not submitted yet.");
+	if (hasNoStock)
+		return t("Invoiced without stock movement — stock still reserved; needs a delivery/backfill or manual close.");
+	if (billingStatus !== "Fully Billed")
+		return t("Partially billed — {pct}% invoiced.", { pct: perBilled.toFixed(0) });
+	// billing_status is Fully Billed but SO is still open — auto-close didn't fire
+	return t("Fully billed but auto-close did not run — use Close below.");
+});
+
+async function closeSalesOrder() {
+	const ok = await confirm({
+		title: t("Close Sales Order"),
+		body: t("This will close the order and release any reserved stock. Continue?"),
+		confirmLabel: t("Close & release"),
+		danger: true,
+	});
+	if (!ok) return;
+	closingSo.value = true;
+	actionError.value = "";
+	try {
+		await call("stabler.api.sales.close_sales_order", {
+			name: docName.value,
+			modified: modified.value,
+		});
+		await loadDoc();
+	} catch (err) {
+		actionError.value = err?.message || t("Failed to close sales order.");
+	} finally {
+		closingSo.value = false;
+	}
+}
 </script>
 
 <template>
@@ -984,6 +1039,108 @@ const paymentBadge = computed(() => {
 
 		<RelatedDocuments v-if="!isCreate && form" doctype="Sales Order" :name="docName" />
 
+		<!-- Fulfilment & Billing panel (submitted view only) -->
+		<div v-if="!isCreate && form && docstatus === 1" class="card mt-3">
+			<div class="card-header">
+				<h5 class="card-title mb-0">{{ t("Fulfilment & Billing") }}</h5>
+			</div>
+			<div class="card-body">
+				<!-- Totals -->
+				<div class="datagrid mb-3">
+					<div class="datagrid-item">
+						<div class="datagrid-title">{{ t("Grand total") }}</div>
+						<div class="datagrid-content font-monospace fw-bold">{{ formatMoney(form.grand_total, form.currency, user.language) }}</div>
+					</div>
+					<div class="datagrid-item">
+						<div class="datagrid-title">{{ t("Advance paid") }}</div>
+						<div class="datagrid-content font-monospace">{{ formatMoney(form.advance_paid, form.currency, user.language) }}</div>
+					</div>
+				</div>
+
+				<!-- Progress bars -->
+				<div class="mb-3">
+					<div class="d-flex justify-content-between mb-1">
+						<span class="text-secondary small">{{ t("Billed") }}</span>
+						<span class="font-monospace small fw-semibold">{{ Number(form.per_billed || 0).toFixed(0) }}%</span>
+					</div>
+					<div class="progress mb-2" style="height: 6px;">
+						<div class="progress-bar bg-green" :style="{ width: Math.min(Number(form.per_billed || 0), 100) + '%' }"></div>
+					</div>
+					<div class="d-flex justify-content-between mb-1">
+						<span class="text-secondary small">{{ t("Delivered") }}</span>
+						<span class="font-monospace small fw-semibold">{{ Number(form.per_delivered || 0).toFixed(0) }}%</span>
+					</div>
+					<div class="progress" style="height: 6px;">
+						<div class="progress-bar bg-blue" :style="{ width: Math.min(Number(form.per_delivered || 0), 100) + '%' }"></div>
+					</div>
+				</div>
+
+				<!-- Per-line fulfilment table -->
+				<h6 class="text-uppercase text-secondary small mb-2">{{ t("Line details") }}</h6>
+				<table class="table table-sm table-vcenter mb-3">
+					<thead>
+						<tr>
+							<th>{{ t("Item") }}</th>
+							<th class="text-end">{{ t("Ordered") }}</th>
+							<th class="text-end">{{ t("Delivered") }}</th>
+							<th class="text-end">{{ t("Billed amt") }}</th>
+							<th class="text-end">{{ t("Reserved") }}</th>
+						</tr>
+					</thead>
+					<tbody>
+						<tr v-for="it in form.items" :key="it.name">
+							<td class="font-monospace small">{{ it.item_code }}</td>
+							<td class="text-end font-monospace small">{{ it.qty }}</td>
+							<td class="text-end font-monospace small">{{ it.delivered_qty }}</td>
+							<td class="text-end font-monospace small">{{ formatMoney(it.billed_amt, form.currency, user.language) }}</td>
+							<td class="text-end font-monospace small">
+								<span v-if="Number(it.reserved_qty) > 0" class="badge bg-green-lt">{{ it.reserved_qty }}</span>
+								<span v-else class="text-secondary">—</span>
+							</td>
+						</tr>
+					</tbody>
+				</table>
+
+				<!-- Linked invoices detail table -->
+				<h6 class="text-uppercase text-secondary small mb-2">{{ t("Linked invoices") }}</h6>
+				<table class="table table-sm table-vcenter mb-3">
+					<thead>
+						<tr>
+							<th>{{ t("Invoice") }}</th>
+							<th>{{ t("Date") }}</th>
+							<th>{{ t("Status") }}</th>
+							<th class="text-end">{{ t("Total") }}</th>
+							<th>{{ t("Stock") }}</th>
+						</tr>
+					</thead>
+					<tbody>
+						<tr v-for="si in form.sales_invoices" :key="si.name">
+							<td>
+								<router-link
+									:to="'/sales/invoices/' + si.name"
+									class="font-monospace text-decoration-none"
+								>{{ si.name }}</router-link>
+							</td>
+							<td class="font-monospace small">{{ formatDate(si.posting_date) }}</td>
+							<td>
+								<span class="badge" :class="getStatusBadgeClass('Sales Invoice', si.status)">{{ si.status }}</span>
+							</td>
+							<td class="text-end font-monospace small">{{ formatMoney(si.grand_total, form.currency, user.language) }}</td>
+							<td>
+								<span v-if="si.update_stock" class="badge bg-green-lt">{{ t("moves stock") }}</span>
+								<span v-else class="badge bg-orange-lt">{{ t("no stock movement") }}</span>
+							</td>
+						</tr>
+					</tbody>
+				</table>
+
+				<!-- Why is this still open? -->
+				<div v-if="whyStillOpen" class="alert alert-warning mb-0">
+					<i class="ti ti-info-circle me-1"></i>{{ whyStillOpen }}
+				</div>
+			</div>
+		</div>
+
 		<!-- Actions -->
 		<template #actions>
 			<template v-if="isCreate">
@@ -1049,6 +1206,16 @@ const paymentBadge = computed(() => {
 				>
 					<span v-if="actionRunning" class="spinner-border spinner-border-sm me-1"></span>
 					<i v-else class="ti ti-copy me-1"></i>{{ t("Amend") }}
+				</button>
+				<button
+					v-if="canCloseSo"
+					type="button"
+					class="btn btn-outline-secondary"
+					:disabled="actionRunning || closingSo"
+					@click="closeSalesOrder"
+				>
+					<span v-if="closingSo" class="spinner-border spinner-border-sm me-1"></span>
+					<i v-else class="ti ti-lock me-1"></i>{{ t("Close & release reserved stock") }}
 				</button>
 				<button
 					v-if="can.delete"

@@ -320,8 +320,11 @@ async function openCreate() {
 async function openEditFromDetail() {
 	if (!detail.value?.name) return;
 	if (!payAccounts.value.length || !expAccounts.value.length || !assetAccounts.value.length) await loadOptions();
-	const credit = (detail.value.accounts || []).find((row) => Number(row.credit_in_account_currency) > 0);
-	const debits = (detail.value.accounts || []).filter((row) => Number(row.debit_in_account_currency) > 0);
+	// Exclude the auto exchange-rounding line — it's a base-currency GL detail
+	// (re-derived on save by fx_balance), never a user expense leg.
+	const rows = (detail.value.accounts || []).filter((row) => !row.is_fx_rounding);
+	const credit = rows.find((row) => Number(row.credit_in_account_currency) > 0);
+	const debits = rows.filter((row) => Number(row.debit_in_account_currency) > 0);
 	form.value = {
 		posting_date: detail.value.posting_date || today,
 		entry_kind: detail.value.entry_kind || "Expense",
@@ -404,17 +407,24 @@ async function submitCreate(afterAction) {
 		);
 
 		load();
+		// Maker-checker may route the expense to the approvals queue as a Draft.
+		const pendingApproval = !!res?.pending_approval;
 
 		if (editingName.value || afterAction === "close") {
 			createOpen.value = false;
 			editingName.value = "";
 			if (res?.name) await openDetail(res.name);
+			if (pendingApproval) toast.warning(t("Saved — pending approval before it posts."));
 		} else if (afterAction === "new") {
 			const keepDate = form.value.posting_date;
 			form.value = blankForm();
 			form.value.posting_date = keepDate;
 			ghost.value = newGhost();
-			toast.success(t("Expense saved · {name}", { name: res?.name || "" }));
+			if (pendingApproval) {
+				toast.warning(t("Saved — pending approval before it posts."));
+			} else {
+				toast.success(t("Expense saved · {name}", { name: res?.name || "" }));
+			}
 			await fetchExchangeRate();
 		}
 	} catch (err) {

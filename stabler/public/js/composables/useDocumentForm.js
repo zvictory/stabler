@@ -103,7 +103,13 @@ export function useDocumentForm({
 			const payload = toPayload ? toPayload(model.value) : model.value;
 			if (isCreate.value) {
 				const res = await call(createApi, payload);
-				toast.success(t("Document saved successfully."));
+				// Maker-checker: when the create-and-submit routes to the approvals
+				// queue, the doc stays a Draft — say so instead of "submitted".
+				if (res?.pending_approval) {
+					toast.warning(t("Saved — pending approval before it posts."));
+				} else {
+					toast.success(t("Document saved successfully."));
+				}
 				reset(model.value); // Prevent dirty warning
 				if (res?.name) {
 					// Redirect to edit/view page
@@ -153,7 +159,11 @@ export function useDocumentForm({
 		error.value = "";
 		try {
 			const res = await call(submitApi, { name: docName.value, modified: modified.value });
-			toast.success(t("Document submitted successfully."));
+			if (res?.pending_approval) {
+				toast.warning(t("Saved — pending approval before it posts."));
+			} else {
+				toast.success(t("Document submitted successfully."));
+			}
 			await load(docName.value);
 			return res;
 		} catch (err) {

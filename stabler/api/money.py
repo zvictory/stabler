@@ -9,6 +9,7 @@ from __future__ import annotations
 import json
 
 import frappe
+from frappe import _
 from frappe.utils import cint, flt, getdate, today
 
 EXPORT_FORMATS = {"Excel", "CSV"}
@@ -32,6 +33,24 @@ def _invoice_payment_amount(doc) -> float:
 	return 0.0
 
 
+def _payment_entry_list_amount(row: dict) -> dict:
+	"""Party-side original amount for the Payment Entry list."""
+	if (row.get("payment_type") or "") == "Receive":
+		return {
+			"amount": flt(row.get("paid_amount")),
+			"currency": row.get("paid_from_account_currency"),
+		}
+	if (row.get("payment_type") or "") == "Pay":
+		return {
+			"amount": flt(row.get("received_amount")),
+			"currency": row.get("paid_to_account_currency"),
+		}
+	return {
+		"amount": flt(row.get("paid_amount") or row.get("received_amount")),
+		"currency": row.get("paid_from_account_currency") or row.get("paid_to_account_currency"),
+	}
+
+
 ALLOWED_REPORTS = {
 	"Profit and Loss Statement",
 	"Balance Sheet",
@@ -41,7 +60,12 @@ ALLOWED_REPORTS = {
 }
 
 
-from stabler.api._common import _assert_can_read, _require_company, check_concurrency
+from stabler.api._common import (
+	_assert_can_read,
+	_assert_can_write,
+	_require_company,
+	check_concurrency,
+)
 
 
 @frappe.whitelist()
@@ -584,6 +608,10 @@ def journal_entry_detail(name: str):
 				"reference_type": a.reference_type,
 				"reference_name": a.reference_name,
 				"user_remark": a.user_remark,
+				# Auto exchange-rounding line (booked by stabler.api.fx_balance) — the
+				# SPA hides this from the editable legs; it's a base-currency GL detail,
+				# never part of the user-entered transaction amount.
+				"is_fx_rounding": (a.user_remark or "") == "fx-rounding-auto",
 			}
 			for a in doc.accounts
 		],
@@ -710,6 +738,10 @@ def list_payment_entries(
 		params,
 		as_dict=True,
 	)
+	for row in rows:
+		display = _payment_entry_list_amount(row)
+		row["display_amount"] = display["amount"]
+		row["display_currency"] = display["currency"]
 	return rows
 
 
@@ -766,6 +798,7 @@ def update_payment_entry(
 ):
 	if not name:
 		frappe.throw("Payment Entry name is required.")
+	_assert_can_write("Payment Entry", name, "write")
 	check_concurrency("Payment Entry", name, modified)
 	doc = frappe.get_doc("Payment Entry", name)
 	if doc.docstatus != 0:
@@ -1057,8 +1090,26 @@ def create_payment_entry(
 	doc.set_missing_values()
 	doc.insert(ignore_permissions=False)
 	if int(submit or 0):
+		from stabler.api.approvals import ensure_request_for_doc, requires_approval
+
+		if requires_approval(doc):
+			# Maker-checker: leave it as a Draft and route to the approvals
+			# queue instead of self-submitting. A different user must approve.
+			req = ensure_request_for_doc(doc)
+			return {
+				"name": doc.name,
+				"docstatus": doc.docstatus,
+				"modified": str(doc.modified),
+				"pending_approval": True,
+				"approval_request": req,
+			}
 		doc.submit()
-	return {"name": doc.name, "docstatus": doc.docstatus, "modified": str(doc.modified)}
+	return {
+		"name": doc.name,
+		"docstatus": doc.docstatus,
+		"modified": str(doc.modified),
+		"pending_approval": False,
+	}
 
 
 @frappe.whitelist()
@@ -1101,6 +1152,7 @@ def submit_payment_entry(name: str, modified: str | None = None):
 	"""Submit a Draft Payment Entry (docstatus 0 → 1)."""
 	if not name:
 		frappe.throw("Payment Entry name is required.")
+	_assert_can_write("Payment Entry", name, "submit")
 	check_concurrency("Payment Entry", name, modified)
 	doc = frappe.get_doc("Payment Entry", name)
 	if doc.docstatus == 1:
@@ -1116,6 +1168,7 @@ def cancel_payment_entry(name: str, modified: str | None = None):
 	"""Cancel a submitted Payment Entry."""
 	if not name:
 		frappe.throw("Payment Entry name is required.")
+	_assert_can_write("Payment Entry", name, "cancel")
 	check_concurrency("Payment Entry", name, modified)
 	doc = frappe.get_doc("Payment Entry", name)
 	if doc.docstatus == 0:
@@ -1131,6 +1184,7 @@ def delete_payment_entry(name: str, modified: str | None = None):
 	"""Delete a Draft Payment Entry."""
 	if not name:
 		frappe.throw("Payment Entry name is required.")
+	_assert_can_write("Payment Entry", name, "delete")
 	check_concurrency("Payment Entry", name, modified)
 	doc = frappe.get_doc("Payment Entry", name)
 	if doc.docstatus != 0:
@@ -1246,6 +1300,10 @@ def create_payment_for_invoice(
 	exchange_rate: float | str | None = None,
 ):
 	"""Create a Payment Entry allocated to a single invoice, optionally submit it in the same call."""
+	if invoice_type not in ("Sales Invoice", "Purchase Invoice"):
+		frappe.throw("invoice_type must be Sales Invoice or Purchase Invoice.")
+	_require_company(company)
+	_assert_can_read(invoice_type, invoice_name)  # no allocating against an invoice you can't see
 	check_concurrency(invoice_type, invoice_name, modified)
 	defaults = payment_defaults_for_invoice(company, invoice_type, invoice_name)
 	posting_date = posting_date or today()
@@ -1345,15 +1403,30 @@ def create_payment_for_invoice(
 	doc.setup_party_account_field()
 	doc.set_missing_values()
 	doc.insert(ignore_permissions=False)
+	pending_approval = False
+	approval_request = None
 	if int(submit):
-		try:
-			doc.submit()
-		except Exception:
-			# Roll back the just-inserted Draft so no orphan remains in the DB.
-			# The validation error is re-raised and surfaced as a toast in the UI.
-			frappe.db.rollback()
-			raise
-	return {"name": doc.name, "docstatus": doc.docstatus, "allocated_to_invoice": can_allocate}
+		from stabler.api.approvals import ensure_request_for_doc, requires_approval
+
+		if requires_approval(doc):
+			# Maker-checker: keep the Draft + route to the approvals queue.
+			approval_request = ensure_request_for_doc(doc)
+			pending_approval = True
+		else:
+			try:
+				doc.submit()
+			except Exception:
+				# Roll back the just-inserted Draft so no orphan remains in the DB.
+				# The validation error is re-raised and surfaced as a toast in the UI.
+				frappe.db.rollback()
+				raise
+	return {
+		"name": doc.name,
+		"docstatus": doc.docstatus,
+		"allocated_to_invoice": can_allocate,
+		"pending_approval": pending_approval,
+		"approval_request": approval_request,
+	}
 
 
 def _resolve_fiscal_year(date_str: str | None) -> str | None:
@@ -1813,7 +1886,9 @@ def submit_expense_entry(
 
 	doc.insert(ignore_permissions=False)
 	if int(submit or 0):
-		doc.submit()
+		from stabler.api.approvals import submit_or_route
+
+		return submit_or_route(doc)
 	return {"name": doc.name, "docstatus": doc.docstatus}
 
 
@@ -1829,6 +1904,7 @@ def _load_bank_entry(name: str):
 
 @frappe.whitelist()
 def cancel_bank_entry(name: str) -> dict:
+	_assert_can_write("Journal Entry", name, "cancel")
 	doc = _load_bank_entry(name)
 	if doc.docstatus != 1:
 		frappe.throw("Only submitted Bank Entries can be cancelled.")
@@ -1839,6 +1915,7 @@ def cancel_bank_entry(name: str) -> dict:
 
 @frappe.whitelist()
 def delete_bank_entry(name: str) -> dict:
+	_assert_can_write("Journal Entry", name, "delete")
 	doc = _load_bank_entry(name)
 	if doc.docstatus != 0:
 		frappe.throw("Only draft Bank Entries can be deleted.")
@@ -1849,6 +1926,7 @@ def delete_bank_entry(name: str) -> dict:
 
 @frappe.whitelist()
 def amend_expense_entry(source_name: str, **kwargs) -> dict:
+	_assert_can_write("Journal Entry", source_name, "cancel")
 	source = _load_bank_entry(source_name)
 	if source.docstatus == 1:
 		source.cancel()
@@ -1864,6 +1942,7 @@ def amend_expense_entry(source_name: str, **kwargs) -> dict:
 
 @frappe.whitelist()
 def amend_transfer_entry(source_name: str, **kwargs) -> dict:
+	_assert_can_write("Journal Entry", source_name, "cancel")
 	source = _load_bank_entry(source_name)
 	if source.docstatus == 1:
 		source.cancel()
@@ -1981,7 +2060,9 @@ def submit_transfer_entry(
 
 	doc.insert(ignore_permissions=False)
 	if int(submit or 0):
-		doc.submit()
+		from stabler.api.approvals import submit_or_route
+
+		return submit_or_route(doc)
 	return {"name": doc.name, "docstatus": doc.docstatus}
 
 

@@ -573,6 +573,9 @@ def collect_payment(
 
     try:
         pe.insert(ignore_permissions=False)
+        # System auto-collection against an existing installment schedule —
+        # not a discretionary clerk payment, so it bypasses maker-checker.
+        pe.flags.ignore_approval_gate = True
         pe.submit()
         _apply_collection_to_schedule(doc, allocations)
         frappe.db.commit()

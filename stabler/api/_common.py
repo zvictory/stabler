@@ -32,6 +32,18 @@ def _assert_can_read(doctype: str, name: str) -> None:
 		)
 
 
+def _assert_can_write(doctype: str, name: str, ptype: str = "write") -> None:
+	"""Guard a named-record mutator against IDOR (defense in depth).
+
+	ERPNext's save()/submit()/cancel() check permission themselves, but loading
+	with get_doc and then mutating — or using ignore_permissions — can bypass
+	that. Call this explicitly. `ptype` may be write / submit / cancel / delete."""
+	if not frappe.has_permission(doctype, ptype, doc=name):
+		raise frappe.PermissionError(
+			_("Not permitted to {0} {1} {2}").format(ptype, doctype, name)
+		)
+
+
 def _validate_money_overrides(patch: dict, *, row_label: str) -> None:
 	if patch.get("rate") not in (None, "") and flt(patch["rate"]) < 0:
 		frappe.throw(_("{0}: rate cannot be negative").format(row_label))

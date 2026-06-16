@@ -19,9 +19,22 @@ def list_processes(search="", status="", company="", page_length=50, start=0):
     page_length = min(int(page_length or 50), 500)
     start = int(start or 0)
 
+    # Multi-tenant scoping: validate a passed company against the caller's
+    # allowed set; when omitted, restrict a scoped non-admin to their allowed
+    # companies rather than returning every tenant's processes. Admins /
+    # unrestricted users (empty allowed list) are unaffected.
+    from stabler.api.organization import _ADMIN_ROLES, _user_allowed_companies
+
+    is_admin = any(r in frappe.get_roles() for r in _ADMIN_ROLES)
+    allowed = [] if is_admin else _user_allowed_companies(frappe.session.user)
+
     filters = {}
     if company:
+        if allowed and company not in allowed:
+            frappe.throw(_("Not permitted for company {0}").format(company), frappe.PermissionError)
         filters["company"] = company
+    elif allowed:
+        filters["company"] = ["in", allowed]
     if status:
         filters["status"] = status
 

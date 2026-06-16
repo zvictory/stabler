@@ -3,6 +3,7 @@
 from __future__ import annotations
 
 import frappe
+from frappe import _
 
 
 def _like(q: str) -> str:
@@ -17,6 +18,21 @@ def palette_search(query: str, company: str | None = None, limit_per_kind: int =
 
 	limit = max(1, min(int(limit_per_kind), 20))
 	like = _like(query)
+
+	# Multi-tenant scoping applies ONLY to the company-bearing result sets
+	# (Sales/Purchase Invoice). Customer/Supplier/Item are company-agnostic
+	# ERPNext masters with no `company` column — intentionally shared across
+	# companies within a site — so they are not filtered here.
+	# Validate a passed company against the caller's allowed set; when omitted,
+	# restrict a scoped non-admin to their allowed companies rather than
+	# returning every tenant's invoices. Admins / unrestricted users (empty
+	# allowed list) are unaffected.
+	from stabler.api.organization import _ADMIN_ROLES, _user_allowed_companies
+
+	is_admin = any(r in frappe.get_roles() for r in _ADMIN_ROLES)
+	allowed = [] if is_admin else _user_allowed_companies(frappe.session.user)
+	if company and allowed and company not in allowed:
+		frappe.throw(_("Not permitted for company {0}").format(company), frappe.PermissionError)
 
 	customers = frappe.db.sql(
 		"""
@@ -62,6 +78,9 @@ def palette_search(query: str, company: str | None = None, limit_per_kind: int =
 	if company:
 		invoice_conds.append("company = %(company)s")
 		invoice_params["company"] = company
+	elif allowed:
+		invoice_conds.append("company IN %(allowed)s")
+		invoice_params["allowed"] = tuple(allowed)
 	sales_invoices = frappe.db.sql(
 		f"""
 		SELECT name, name AS title, customer_name AS subtitle,
@@ -80,6 +99,9 @@ def palette_search(query: str, company: str | None = None, limit_per_kind: int =
 	if company:
 		pi_conds.append("company = %(company)s")
 		pi_params["company"] = company
+	elif allowed:
+		pi_conds.append("company IN %(allowed)s")
+		pi_params["allowed"] = tuple(allowed)
 	purchase_invoices = frappe.db.sql(
 		f"""
 		SELECT name, name AS title, supplier_name AS subtitle,

@@ -9,7 +9,7 @@ import frappe
 from frappe import _
 from frappe.utils import cint, flt, getdate, today
 
-from stabler.api._common import _assert_can_read, _require_company, _validate_money_overrides, check_concurrency
+from stabler.api._common import _assert_can_read, _assert_can_write, _require_company, _validate_money_overrides, check_concurrency
 
 
 _BOILERPLATE_RE = re.compile(
@@ -1262,6 +1262,7 @@ def update_customer(
 	default_price_list: str | None = None,
 	default_currency: str | None = None,
 ):
+	_assert_can_write("Customer", name, "write")
 	if not frappe.db.exists("Customer", name):
 		frappe.throw(f"Unknown customer: {name}")
 	customer_name = (customer_name or "").strip()
@@ -1289,6 +1290,7 @@ def update_customer(
 
 @frappe.whitelist()
 def delete_customer(name: str):
+	_assert_can_write("Customer", name, "delete")
 	if not frappe.db.exists("Customer", name):
 		frappe.throw(f"Unknown customer: {name}")
 	frappe.delete_doc("Customer", name, ignore_permissions=False)
@@ -1477,6 +1479,7 @@ def _require_warehouses_for_stock_update(doc) -> None:
 @frappe.whitelist()
 def submit_sales_invoice(name: str, modified: str | None = None):
 	"""Submit a Draft Sales Invoice (docstatus 0 → 1)."""
+	_assert_can_write("Sales Invoice", name, "submit")
 	if not name:
 		frappe.throw("Invoice name is required.")
 	check_concurrency("Sales Invoice", name, modified)
@@ -1500,6 +1503,7 @@ def submit_sales_invoice(name: str, modified: str | None = None):
 @frappe.whitelist()
 def cancel_sales_invoice(name: str, modified: str | None = None):
 	"""Cancel a Submitted Sales Invoice (docstatus 1 → 2)."""
+	_assert_can_write("Sales Invoice", name, "cancel")
 	if not name:
 		frappe.throw("Invoice name is required.")
 	check_concurrency("Sales Invoice", name, modified)
@@ -1795,6 +1799,7 @@ def update_quotation(
 
 	Only docstatus=0 (Draft) quotations may be edited.
 	"""
+	_assert_can_write("Quotation", name, "write")
 	if not name:
 		frappe.throw("Quotation name is required.")
 	check_concurrency("Quotation", name, modified)
@@ -1864,6 +1869,7 @@ def update_quotation(
 @frappe.whitelist()
 def delete_quotation(name: str, modified: str | None = None):
 	"""Delete a Draft Quotation."""
+	_assert_can_write("Quotation", name, "delete")
 	if not name:
 		frappe.throw("Quotation name is required.")
 	check_concurrency("Quotation", name, modified)
@@ -1877,6 +1883,7 @@ def delete_quotation(name: str, modified: str | None = None):
 @frappe.whitelist()
 def submit_quotation(name: str, modified: str | None = None):
 
+	_assert_can_write("Quotation", name, "submit")
 	if not name:
 		frappe.throw("Quotation name is required.")
 	check_concurrency("Quotation", name, modified)
@@ -1891,6 +1898,7 @@ def submit_quotation(name: str, modified: str | None = None):
 
 @frappe.whitelist()
 def cancel_quotation(name: str, modified: str | None = None):
+	_assert_can_write("Quotation", name, "cancel")
 	if not name:
 		frappe.throw("Quotation name is required.")
 	check_concurrency("Quotation", name, modified)
@@ -1991,7 +1999,7 @@ def sales_order_detail(name: str):
 	si_links = frappe.db.sql(
 		"""
 		SELECT DISTINCT si.name, si.docstatus, si.status,
-			si.outstanding_amount, si.grand_total
+			si.outstanding_amount, si.grand_total, si.update_stock, si.posting_date
 		FROM `tabSales Invoice Item` sii
 		JOIN `tabSales Invoice` si ON si.name = sii.parent
 		WHERE sii.sales_order = %(name)s AND si.docstatus < 2
@@ -2017,6 +2025,8 @@ def sales_order_detail(name: str):
 		"advance_paid": flt(doc.advance_paid),
 		"per_delivered": flt(doc.per_delivered),
 		"per_billed": flt(doc.per_billed),
+		"billing_status": doc.billing_status,
+		"delivery_status": doc.delivery_status,
 		"status": doc.status,
 		"docstatus": doc.docstatus,
 		"remarks": getattr(doc, "terms", None),
@@ -2045,6 +2055,51 @@ def sales_order_detail(name: str):
 			for it in (doc.items or [])
 		],
 	}
+
+
+@frappe.whitelist()
+def close_sales_order(name: str, modified: str | None = None):
+	"""Manually close a submitted SO, releasing the classic reserved_qty.
+
+	Mirrors the automatic path in close_billed_so.py: update_status("Closed")
+	drops the SO's contribution to tabBin.reserved_qty via get_reserved_qty()
+	filtering OUT Closed SOs — no new SLE is created.
+	"""
+	if not name:
+		frappe.throw(_("Sales order name is required."))
+	_assert_can_write("Sales Order", name, "write")
+	check_concurrency("Sales Order", name, modified)
+	so = frappe.get_doc("Sales Order", name)
+	if so.docstatus != 1:
+		frappe.throw(_("Only submitted Sales Orders can be closed."))
+	if so.status in ("Closed", "On Hold"):
+		frappe.throw(_("Sales Order is already {0}.").format(so.status))
+	so.update_status("Closed")
+	return {"status": "Closed", "reservations_released": True}
+
+
+@frappe.whitelist()
+def reopen_sales_order(name: str, modified: str | None = None):
+	"""Reopen a Closed or On Hold SO, recalculating its status from delivery/billing.
+
+	Use when a SO was closed by mistake. ERPNext's set_status() recomputes the
+	correct open status (To Deliver and Bill / To Bill / To Deliver / Completed)
+	from per_delivered and per_billed, then update_reserved_qty() restores the
+	classic reserved_qty contribution to tabBin.
+	"""
+	if not name:
+		frappe.throw(_("Sales order name is required."))
+	_assert_can_write("Sales Order", name, "write")
+	check_concurrency("Sales Order", name, modified)
+	so = frappe.get_doc("Sales Order", name)
+	if so.docstatus != 1:
+		frappe.throw(_("Only submitted Sales Orders can be reopened."))
+	if so.status not in ("Closed", "On Hold"):
+		frappe.throw(_("Sales Order is not closed or on hold."))
+	so.set_status(update=True)
+	so.update_reserved_qty()
+	frappe.db.commit()
+	return {"status": so.status}
 
 
 def _company_stock_reservation_enabled(company: str) -> bool:
@@ -2264,6 +2319,7 @@ def create_sales_order(
 
 @frappe.whitelist()
 def submit_sales_order(name: str, modified: str | None = None):
+	_assert_can_write("Sales Order", name, "submit")
 	if not name:
 		frappe.throw("Sales order name is required.")
 	check_concurrency("Sales Order", name, modified)
@@ -2299,6 +2355,7 @@ def update_sales_order(
 	Replaces item lines entirely (matching create_sales_order validation). Does NOT
 	submit or create Stock Reservation Entries; those happen in submit_sales_order.
 	"""
+	_assert_can_write("Sales Order", name, "write")
 	if not name:
 		frappe.throw("Sales order name is required.")
 	check_concurrency("Sales Order", name, modified)
@@ -2406,6 +2463,7 @@ def update_sales_order(
 
 @frappe.whitelist()
 def cancel_sales_order(name: str, modified: str | None = None):
+	_assert_can_write("Sales Order", name, "cancel")
 	if not name:
 		frappe.throw("Sales order name is required.")
 	check_concurrency("Sales Order", name, modified)
@@ -2491,6 +2549,7 @@ def clear_open_reservations(company: str):
 @frappe.whitelist()
 def amend_sales_order(name: str):
 	"""Create a new draft Sales Order as an amendment of a cancelled one."""
+	_assert_can_write("Sales Order", name, "cancel")
 	if not name or not frappe.db.exists("Sales Order", name):
 		frappe.throw(f"Unknown Sales Order: {name}")
 	doc = frappe.get_doc("Sales Order", name)
@@ -2505,6 +2564,7 @@ def amend_sales_order(name: str):
 @frappe.whitelist()
 def amend_sales_invoice(name: str):
 	"""Create a new draft Sales Invoice as an amendment of a cancelled one."""
+	_assert_can_write("Sales Invoice", name, "cancel")
 	if not name or not frappe.db.exists("Sales Invoice", name):
 		frappe.throw(f"Unknown Sales Invoice: {name}")
 	doc = frappe.get_doc("Sales Invoice", name)
@@ -2521,6 +2581,7 @@ def get_linked_documents(doctype: str, name: str):
 	"""Server-side wrapper over Frappe's linked-docs query, filtered to
 	sales-relevant doctypes. Returns {doctype: [{name, docstatus}]} — keeps the
 	SPA self-contained with no Desk calls from the browser."""
+	_assert_can_read(doctype, name)
 	allowed_doctypes = {"Sales Order", "Sales Invoice", "Delivery Note", "Payment Entry"}
 	if doctype not in {"Sales Order", "Sales Invoice"}:
 		frappe.throw("doctype must be Sales Order or Sales Invoice")

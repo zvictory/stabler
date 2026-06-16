@@ -157,7 +157,7 @@ watch(activeCompany, load);
 							<div class="font-monospace small text-truncate" style="max-width: 150px">{{ r.reference_no || "—" }}</div>
 						</td>
 						<td class="text-end font-monospace">
-							{{ formatMoney(r.grand_total, r.party_account_currency || currency, user.language) }}
+							{{ formatMoney(r.display_amount, r.display_currency || currency, user.language) }}
 						</td>
 						<td><span class="badge" :class="statusBadge(r.docstatus).cls">{{ statusBadge(r.docstatus).label }}</span></td>
 					</tr>

@@ -1,0 +1,42 @@
+{
+ "actions": [],
+ "allow_rename": 0,
+ "creation": "2026-06-16 09:16:00.000000",
+ "doctype": "DocType",
+ "editable_grid": 0,
+ "engine": "InnoDB",
+ "field_order": [
+  "raw_event",
+  "processor_version",
+  "result",
+  "created_document",
+  "column_break_1",
+  "error",
+  "before_value",
+  "after_value"
+ ],
+ "fields": [
+  {"fieldname": "raw_event", "fieldtype": "Link", "label": "Raw Event", "options": "Stabler Raw Attendance Event", "in_list_view": 1},
+  {"fieldname": "processor_version", "fieldtype": "Data", "label": "Processor Version", "in_list_view": 1},
+  {"fieldname": "result", "fieldtype": "Select", "label": "Result", "options": "Processed\nDuplicate\nUnmatched\nError\nReprocessed\nSkipped Manual", "in_list_view": 1},
+  {"fieldname": "created_document", "fieldtype": "Data", "label": "Created Document"},
+  {"fieldname": "column_break_1", "fieldtype": "Column Break"},
+  {"fieldname": "error", "fieldtype": "Small Text", "label": "Error"},
+  {"fieldname": "before_value", "fieldtype": "Code", "label": "Before", "options": "JSON"},
+  {"fieldname": "after_value", "fieldtype": "Code", "label": "After", "options": "JSON"}
+ ],
+ "links": [],
+ "modified": "2026-06-16 09:16:00.000000",
+ "modified_by": "Administrator",
+ "module": "Stabler",
+ "name": "Stabler Attendance Processing Log",
+ "owner": "Administrator",
+ "permissions": [
+  {"role": "System Manager", "read": 1, "write": 1, "create": 1, "delete": 1, "report": 1, "export": 1},
+  {"role": "HR Manager", "read": 1, "report": 1, "export": 1}
+ ],
+ "sort_field": "modified",
+ "sort_order": "DESC",
+ "states": [],
+ "track_changes": 0
+}

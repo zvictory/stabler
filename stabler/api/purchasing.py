@@ -8,7 +8,7 @@ import frappe
 from frappe.utils import cint, flt, getdate, today
 
 
-from stabler.api._common import _assert_can_read, _require_company, check_concurrency
+from stabler.api._common import _assert_can_read, _assert_can_write, _require_company, check_concurrency
 
 
 @frappe.whitelist()
@@ -542,6 +542,7 @@ def update_supplier(
 	default_price_list: str | None = None,
 	default_currency: str | None = None,
 ):
+	_assert_can_write("Supplier", name, "write")
 	if not frappe.db.exists("Supplier", name):
 		frappe.throw(f"Unknown supplier: {name}")
 	supplier_name = (supplier_name or "").strip()
@@ -569,6 +570,7 @@ def update_supplier(
 
 @frappe.whitelist()
 def delete_supplier(name: str):
+	_assert_can_write("Supplier", name, "delete")
 	if not frappe.db.exists("Supplier", name):
 		frappe.throw(f"Unknown supplier: {name}")
 	frappe.delete_doc("Supplier", name, ignore_permissions=False)
@@ -774,6 +776,7 @@ def update_purchase_invoice(
 	"""Replace a draft Purchase Invoice's fields and rows (full-row replace).
 
 	Submitted/cancelled invoices are immutable — use cancel + amend instead."""
+	_assert_can_write("Purchase Invoice", name, "write")
 	if not name or not frappe.db.exists("Purchase Invoice", name):
 		frappe.throw(f"Unknown Purchase Invoice: {name}")
 	check_concurrency("Purchase Invoice", name, modified)
@@ -811,6 +814,7 @@ def update_purchase_invoice(
 @frappe.whitelist()
 def delete_purchase_invoice(name: str, modified: str | None = None):
 	"""Delete a draft Purchase Invoice. Submitted documents cannot be deleted."""
+	_assert_can_write("Purchase Invoice", name, "delete")
 	if not name or not frappe.db.exists("Purchase Invoice", name):
 		frappe.throw(f"Unknown Purchase Invoice: {name}")
 	check_concurrency("Purchase Invoice", name, modified)
@@ -896,6 +900,7 @@ def get_purchase_exchange_rate(
 @frappe.whitelist()
 def submit_purchase_invoice(name: str, modified: str | None = None):
 	"""Submit a Draft Purchase Invoice (docstatus 0 → 1)."""
+	_assert_can_write("Purchase Invoice", name, "submit")
 	if not name:
 		frappe.throw("Invoice name is required.")
 	check_concurrency("Purchase Invoice", name, modified)
@@ -911,6 +916,7 @@ def submit_purchase_invoice(name: str, modified: str | None = None):
 @frappe.whitelist()
 def cancel_purchase_invoice(name: str, modified: str | None = None):
 	"""Cancel a Submitted Purchase Invoice (docstatus 1 → 2)."""
+	_assert_can_write("Purchase Invoice", name, "cancel")
 	if not name:
 		frappe.throw("Invoice name is required.")
 	check_concurrency("Purchase Invoice", name, modified)
@@ -1186,8 +1192,18 @@ def create_purchase_order(
 			line.discount_amount = row["discount_amount"]
 
 	doc.insert(ignore_permissions=False)
+	pending_approval = False
+	approval_request = None
 	if cint(auto_submit):
-		doc.submit()
+		from stabler.api.approvals import ensure_request_for_doc, requires_approval
+
+		if requires_approval(doc):
+			# Maker-checker: keep the PO a Draft and route it to the approvals
+			# queue instead of self-submitting. A different user must approve.
+			approval_request = ensure_request_for_doc(doc)
+			pending_approval = True
+		else:
+			doc.submit()
 
 	return {
 		"name": doc.name,
@@ -1195,6 +1211,8 @@ def create_purchase_order(
 		"supplier": doc.supplier,
 		"docstatus": doc.docstatus,
 		"status": doc.status,
+		"pending_approval": pending_approval,
+		"approval_request": approval_request,
 	}
 
 
@@ -1215,6 +1233,7 @@ def update_purchase_order(
 	Only docstatus=0 (Draft) orders may be edited — submitted orders are immutable.
 	Replaces item lines entirely.
 	"""
+	_assert_can_write("Purchase Order", name, "write")
 	if not name:
 		frappe.throw("Purchase order name is required.")
 	check_concurrency("Purchase Order", name, modified)
@@ -1316,6 +1335,7 @@ def update_purchase_order(
 @frappe.whitelist()
 def submit_purchase_order(name: str, modified: str | None = None):
 	"""Submit a draft Purchase Order (docstatus 0 → 1)."""
+	_assert_can_write("Purchase Order", name, "submit")
 	if not name:
 		frappe.throw("Purchase order name is required.")
 	check_concurrency("Purchase Order", name, modified)
@@ -1324,13 +1344,34 @@ def submit_purchase_order(name: str, modified: str | None = None):
 		frappe.throw("Purchase order is already submitted.")
 	if doc.docstatus == 2:
 		frappe.throw("Purchase order is cancelled and cannot be submitted.")
+
+	from stabler.api.approvals import ensure_request_for_doc, requires_approval
+
+	if requires_approval(doc):
+		# Route to the approvals queue instead of submitting; a different user
+		# must approve. (The before_submit gate is the backstop if anyone tries
+		# to submit it directly.)
+		req = ensure_request_for_doc(doc)
+		return {
+			"name": doc.name,
+			"docstatus": doc.docstatus,
+			"status": doc.status,
+			"pending_approval": True,
+			"approval_request": req,
+		}
 	doc.submit()
-	return {"name": doc.name, "docstatus": doc.docstatus, "status": doc.status}
+	return {
+		"name": doc.name,
+		"docstatus": doc.docstatus,
+		"status": doc.status,
+		"pending_approval": False,
+	}
 
 
 @frappe.whitelist()
 def cancel_purchase_order(name: str, modified: str | None = None):
 	"""Cancel a submitted Purchase Order (docstatus 1 → 2)."""
+	_assert_can_write("Purchase Order", name, "cancel")
 	if not name:
 		frappe.throw("Purchase order name is required.")
 	check_concurrency("Purchase Order", name, modified)
@@ -1344,6 +1385,7 @@ def cancel_purchase_order(name: str, modified: str | None = None):
 @frappe.whitelist()
 def amend_purchase_order(name: str):
 	"""Create a new draft Purchase Order as an amendment of a cancelled one."""
+	_assert_can_write("Purchase Order", name, "cancel")
 	if not name or not frappe.db.exists("Purchase Order", name):
 		frappe.throw(f"Unknown Purchase Order: {name}")
 	doc = frappe.get_doc("Purchase Order", name)
@@ -1655,6 +1697,7 @@ def create_purchase_receipt(
 @frappe.whitelist()
 def submit_purchase_receipt(name: str):
 	"""Submit a draft Purchase Receipt (docstatus 0 → 1) — this moves stock."""
+	_assert_can_write("Purchase Receipt", name, "submit")
 	if not name:
 		frappe.throw("Purchase receipt name is required.")
 	doc = frappe.get_doc("Purchase Receipt", name)
@@ -1669,6 +1712,7 @@ def submit_purchase_receipt(name: str):
 @frappe.whitelist()
 def cancel_purchase_receipt(name: str):
 	"""Cancel a submitted Purchase Receipt (docstatus 1 → 2) — reverses stock."""
+	_assert_can_write("Purchase Receipt", name, "cancel")
 	if not name:
 		frappe.throw("Purchase receipt name is required.")
 	doc = frappe.get_doc("Purchase Receipt", name)

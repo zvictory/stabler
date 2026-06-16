@@ -8,9 +8,11 @@ const route = useRoute();
 const tabs = [
 	{ name: "inventory-items", path: "/inventory/items", label: t("Items"), icon: "ti-box" },
 	{ name: "inventory-warehouses", path: "/inventory/warehouses", label: t("Warehouses"), icon: "ti-building-warehouse" },
+	{ name: "inventory-stock-status", path: "/inventory/stock-status", label: t("Stock Status"), icon: "ti-packages" },
 	{ name: "inventory-staging", path: "/inventory/staging", label: t("Material Staging"), icon: "ti-transfer" },
 	{ name: "inventory-entries", path: "/inventory/entries", label: t("Stock Entries"), icon: "ti-clipboard-list" },
 	{ name: "inventory-ledger", path: "/inventory/ledger", label: t("Stock Ledger"), icon: "ti-list-details" },
+	{ name: "inventory-reconcile", path: "/inventory/reconcile", label: t("Reconcile"), icon: "ti-checkup-list" },
 	{ name: "inventory-alerts", path: "/inventory/alerts", label: t("Low Stock"), icon: "ti-alert-triangle" },
 ];
 const activeTab = computed(() => route.name);

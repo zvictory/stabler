@@ -57,26 +57,54 @@ def on_si_submit(doc, method=None):
     for so_name in so_names:
         try:
             _maybe_close(so_name)
-        except Exception:
+        except Exception as exc:
             frappe.log_error(
                 title=f"close_billed_so: failed to close {so_name}",
                 message=frappe.get_traceback(),
             )
+            # Also record on the SO itself so failures are queryable without
+            # trawling the Error Log (silent failures are the whole bug class).
+            billing_status = frappe.db.get_value("Sales Order", so_name, "billing_status") or "unknown"
+            _record_close_failure(so_name, billing_status, str(exc))
+
+
+def _record_close_failure(so_name: str, billing_status: str, reason: str) -> None:
+    """Leave a visible trace on the SO when auto-close fails silently."""
+    try:
+        frappe.get_doc({
+            "doctype": "Comment",
+            "comment_type": "Info",
+            "reference_doctype": "Sales Order",
+            "reference_name": so_name,
+            "content": (
+                f"[stabler] auto-close failed (billing_status={billing_status}): "
+                f"{reason or 'see Error Log'}. Close manually via Stabler or investigate."
+            ),
+        }).insert(ignore_permissions=True)
+    except Exception:
+        pass  # Never let the recorder abort anything
 
 
 def _maybe_close(so_name: str) -> None:
-    """Close *so_name* if it is submitted, open, and fully billed."""
+    """Close *so_name* if it is submitted, open, and fully billed.
+
+    ERPNext's update_billing_status() runs inside SI.submit() before doc_events
+    fire, so billing_status in the DB is already current by the time we arrive.
+    We load fresh with get_doc (not a cached copy) and then re-read billing_status
+    directly from the DB as a belt-and-suspenders check.
+    """
     so = frappe.get_doc("Sales Order", so_name)
 
     # Already closed/on-hold — nothing to do.
     if so.docstatus != 1 or so.status in ("Closed", "On Hold"):
         return
 
-    # billing_status is maintained by ERPNext's update_billing_status() on each SI
-    # submit/cancel.  "Fully Billed" means every SO line's amount is covered.
-    # Note: billed_qty is NOT a physical DB column in this ERPNext version, so we
-    # rely on the SO-level billing_status rather than per-item billed_qty checks.
-    if so.billing_status != "Fully Billed":
+    # Re-read billing_status directly from DB to be explicit about intent and
+    # guard against any future Frappe get_doc caching changes.
+    # ERPNext's update_billing_status() runs earlier in the submit pipeline so
+    # the value here already reflects this SI's contribution.
+    billing_status = frappe.db.get_value("Sales Order", so_name, "billing_status")
+    if billing_status != "Fully Billed":
         return
 
     # Every line fully billed: close the SO.

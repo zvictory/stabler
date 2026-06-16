@@ -1,0 +1,2 @@
+"""Timepay attendance integration."""
+

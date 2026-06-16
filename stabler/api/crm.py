@@ -5,6 +5,7 @@ from __future__ import annotations
 import json
 
 import frappe
+from stabler.api._common import _assert_can_read, _assert_can_write
 from frappe import _
 from frappe.utils import flt
 
@@ -656,6 +657,7 @@ def save_deal_status(data):
 def rename_deal_status(old_name: str, new_name: str):
     """Rename a kanban column: create the new status, repoint every deal from the
     old status to the new one, then delete the old. Avoids orphaning deals."""
+    _assert_can_write("CRM Deal Status", old_name, "delete")
     _require_crm_manager()
     old_name = (old_name or "").strip()
     new_name = (new_name or "").strip()
@@ -679,6 +681,7 @@ def rename_deal_status(old_name: str, new_name: str):
 @frappe.whitelist()
 def delete_deal_status(name):
     """Delete a CRM Deal Status. Blocked if any deal is in that status."""
+    _assert_can_write("CRM Deal Status", name, "delete")
     _require_crm_manager()
     count = frappe.db.count("CRM Deal", {"status": name})
     if count:

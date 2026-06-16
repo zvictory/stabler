@@ -132,5 +132,8 @@ def _create_payment_entry(invoice: str, amount: float, reference: str) -> str:
 	for ref in pe.references or []:
 		ref.allocated_amount = amount
 	pe.insert(ignore_permissions=True)
+	# Bank-initiated (ARCA) auto-reconciliation — no human maker, so it
+	# bypasses the maker-checker approval gate.
+	pe.flags.ignore_approval_gate = True
 	pe.submit()
 	return pe.name

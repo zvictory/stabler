@@ -12,6 +12,7 @@ from __future__ import annotations
 from typing import Any
 
 import frappe
+from stabler.api._common import _assert_can_read, _assert_can_write
 from frappe import _
 from frappe.utils import flt, getdate, nowdate
 
@@ -99,6 +100,7 @@ def list_promo_plans(
 
 @frappe.whitelist()
 def get_promo_plan(name: str) -> dict:
+	_assert_can_read("Promo Plan", name)
 	if not name:
 		frappe.throw(_("Promo Plan name is required."))
 	if not frappe.db.exists("Promo Plan", name):
@@ -125,6 +127,7 @@ def create_promo_plan(payload: dict | str) -> dict:
 
 @frappe.whitelist()
 def update_promo_plan_status(name: str, status: str) -> dict:
+	_assert_can_write("Promo Plan", name, "write")
 	_require_write_marketing()
 	if not name:
 		frappe.throw(_("Promo Plan name is required."))
@@ -141,6 +144,7 @@ def update_promo_plan_status(name: str, status: str) -> dict:
 
 @frappe.whitelist()
 def update_promo_plan(name: str, payload: dict | str) -> dict:
+	_assert_can_write("Promo Plan", name, "write")
 	return _update_doc("Promo Plan", name, payload)
 
 
@@ -235,6 +239,7 @@ def list_claims(filters: dict | str | None = None) -> list[dict]:
 
 @frappe.whitelist()
 def get_claim(name: str) -> dict:
+	_assert_can_read("Marketing Claim", name)
 	if not name:
 		frappe.throw(_("Claim name is required."))
 	if not frappe.db.exists("Marketing Claim", name):
@@ -274,6 +279,7 @@ def submit_claim(
 
 @frappe.whitelist()
 def review_claim(name: str, decision: str, reviewer_notes: str | None = None) -> dict:
+	_assert_can_write("Marketing Claim", name, "write")
 	_require_write_marketing()
 	if not name or not frappe.db.exists("Marketing Claim", name):
 		frappe.throw(_("Claim {0} not found.").format(name))
@@ -333,6 +339,7 @@ def _default_payment_account(company: str) -> str:
 
 @frappe.whitelist()
 def settle_claim(name: str) -> dict:
+	_assert_can_write("Marketing Claim", name, "write")
 	_require_write_marketing()
 	if not name or not frappe.db.exists("Marketing Claim", name):
 		frappe.throw(_("Claim {0} not found.").format(name))
@@ -407,6 +414,8 @@ def settle_claim(name: str) -> dict:
 		}
 	)
 	pe.insert(ignore_permissions=True)
+	# Automated marketing payout posting — exempt from maker-checker.
+	pe.flags.ignore_approval_gate = True
 	pe.submit()
 
 	doc.settled_payment_entry = pe.name

@@ -53,6 +53,26 @@ def _pos_profile_doc(company: str, pos_profile: str):
 	doc = frappe.get_doc("POS Profile", pos_profile)
 	if doc.company != company:
 		frappe.throw(_("POS Profile belongs to a different company."), frappe.PermissionError)
+	# Entitlement gate (multi-tenant): _require_company only checks existence.
+	# Verify the caller is actually allowed this company, and — when the POS
+	# Profile restricts users via `tabPOS Profile User` — that the caller is a
+	# member. Admins / unrestricted users (empty allowed list) bypass, mirroring
+	# the company-match-only path used by list_pos_profiles for unrestricted
+	# profiles.
+	from stabler.api.organization import _ADMIN_ROLES, _user_allowed_companies
+
+	user = frappe.session.user
+	is_admin = any(r in frappe.get_roles() for r in _ADMIN_ROLES)
+	if not is_admin:
+		allowed = _user_allowed_companies(user)
+		if allowed and company not in allowed:
+			frappe.throw(_("Not permitted for company {0}").format(company), frappe.PermissionError)
+		# If the profile has an explicit user list, the caller must be on it.
+		has_user_list = frappe.db.exists("POS Profile User", {"parent": pos_profile})
+		if has_user_list and not frappe.db.exists(
+			"POS Profile User", {"parent": pos_profile, "user": user}
+		):
+			frappe.throw(_("You are not assigned to this POS Profile."), frappe.PermissionError)
 	if doc.disabled:
 		frappe.throw(_("POS Profile is disabled."), frappe.ValidationError)
 	if not doc.customer:

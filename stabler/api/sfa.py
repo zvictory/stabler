@@ -17,6 +17,7 @@ import math
 from typing import Any
 
 import frappe
+from stabler.api._common import _assert_can_read, _assert_can_write
 from frappe import _
 
 from stabler.api.organization import _user_allowed_companies
@@ -149,6 +150,7 @@ def list_outlets(
 
 @frappe.whitelist()
 def get_outlet(name: str) -> dict:
+	_assert_can_read("Outlet", name)
 	if not name:
 		frappe.throw(_("Outlet name is required."))
 	doc = frappe.get_doc("Outlet", name)
@@ -173,6 +175,7 @@ def create_outlet(payload: dict | str) -> dict:
 
 @frappe.whitelist()
 def update_outlet(name: str, payload: dict | str) -> dict:
+	_assert_can_write("Outlet", name, "write")
 	return _update_doc("Outlet", name, payload)
 
 
@@ -217,6 +220,7 @@ def list_routes(
 
 @frappe.whitelist()
 def get_route(name: str) -> dict:
+	_assert_can_read("Route", name)
 	if not name:
 		frappe.throw(_("Route name is required."))
 	doc = frappe.get_doc("Route", name)
@@ -243,6 +247,7 @@ def create_route(payload: dict | str) -> dict:
 
 @frappe.whitelist()
 def update_route(name: str, payload: dict | str) -> dict:
+	_assert_can_write("Route", name, "write")
 	return _update_doc("Route", name, payload)
 
 
@@ -314,6 +319,7 @@ def list_visits(
 
 @frappe.whitelist()
 def get_visit(name: str) -> dict:
+	_assert_can_read("Visit", name)
 	if not name:
 		frappe.throw(_("Visit name is required."))
 	doc = frappe.get_doc("Visit", name)
@@ -340,6 +346,7 @@ def create_visit(payload: dict | str) -> dict:
 
 @frappe.whitelist()
 def update_visit(name: str, payload: dict | str) -> dict:
+	_assert_can_write("Visit", name, "write")
 	return _update_doc("Visit", name, payload)
 
 
@@ -429,6 +436,7 @@ def list_field_users(
 
 @frappe.whitelist()
 def get_field_user(name: str) -> dict:
+	_assert_can_read("Field User", name)
 	if not name:
 		frappe.throw(_("Field User name is required."))
 	doc = frappe.get_doc("Field User", name)
@@ -453,6 +461,7 @@ def create_field_user(payload: dict | str) -> dict:
 
 @frappe.whitelist()
 def update_field_user(name: str, payload: dict | str) -> dict:
+	_assert_can_write("Field User", name, "write")
 	return _update_doc("Field User", name, payload)
 
 
@@ -494,6 +503,7 @@ def list_van_stock(
 
 @frappe.whitelist()
 def get_van_stock(name: str) -> dict:
+	_assert_can_read("Van Stock", name)
 	if not name:
 		frappe.throw(_("Van Stock name is required."))
 	doc = frappe.get_doc("Van Stock", name)
@@ -518,6 +528,7 @@ def create_van_stock(payload: dict | str) -> dict:
 
 @frappe.whitelist()
 def update_van_stock(name: str, payload: dict | str) -> dict:
+	_assert_can_write("Van Stock", name, "write")
 	return _update_doc("Van Stock", name, payload)
 
 
@@ -561,6 +572,7 @@ def list_promo_schemes(
 
 @frappe.whitelist()
 def get_promo_scheme(name: str) -> dict:
+	_assert_can_read("Promo Scheme", name)
 	if not name:
 		frappe.throw(_("Promo Scheme name is required."))
 	doc = frappe.get_doc("Promo Scheme", name)
@@ -585,6 +597,7 @@ def create_promo_scheme(payload: dict | str) -> dict:
 
 @frappe.whitelist()
 def update_promo_scheme(name: str, payload: dict | str) -> dict:
+	_assert_can_write("Promo Scheme", name, "write")
 	return _update_doc("Promo Scheme", name, payload)
 
 
@@ -638,6 +651,7 @@ def list_photo_reports(
 
 @frappe.whitelist()
 def get_photo_report(name: str) -> dict:
+	_assert_can_read("Photo Report", name)
 	if not name:
 		frappe.throw(_("Photo Report name is required."))
 	doc = frappe.get_doc("Photo Report", name)
@@ -664,6 +678,7 @@ def create_photo_report(payload: dict | str) -> dict:
 
 @frappe.whitelist()
 def update_photo_report(name: str, payload: dict | str) -> dict:
+	_assert_can_write("Photo Report", name, "write")
 	return _update_doc("Photo Report", name, payload)
 
 
@@ -708,6 +723,7 @@ def list_planograms(
 
 @frappe.whitelist()
 def get_planogram(name: str) -> dict:
+	_assert_can_read("Planogram", name)
 	if not name:
 		frappe.throw(_("Planogram name is required."))
 	doc = frappe.get_doc("Planogram", name)
@@ -732,6 +748,7 @@ def create_planogram(payload: dict | str) -> dict:
 
 @frappe.whitelist()
 def update_planogram(name: str, payload: dict | str) -> dict:
+	_assert_can_write("Planogram", name, "write")
 	return _update_doc("Planogram", name, payload)
 
 
@@ -775,6 +792,7 @@ def list_osa_audits(
 
 @frappe.whitelist()
 def get_osa_audit(name: str) -> dict:
+	_assert_can_read("OSA Audit", name)
 	if not name:
 		frappe.throw(_("OSA Audit name is required."))
 	doc = frappe.get_doc("OSA Audit", name)
@@ -800,6 +818,7 @@ def create_osa_audit(payload: dict | str) -> dict:
 
 @frappe.whitelist()
 def update_osa_audit(name: str, payload: dict | str) -> dict:
+	_assert_can_write("OSA Audit", name, "write")
 	return _update_doc("OSA Audit", name, payload)
 
 
@@ -866,6 +885,7 @@ def update_step(
 	reference_name: str | None = None,
 	notes: str | None = None,
 ) -> dict:
+	_assert_can_write("Visit", visit, "write")
 	_require_write()
 	if not visit:
 		frappe.throw(_("Visit is required."))

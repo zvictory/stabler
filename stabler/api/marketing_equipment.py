@@ -13,6 +13,7 @@ from __future__ import annotations
 from typing import Any
 
 import frappe
+from stabler.api._common import _assert_can_read, _assert_can_write
 from frappe import _
 
 from stabler.api.sfa import _company_filter, _is_admin
@@ -113,6 +114,7 @@ def list_equipment(
 
 @frappe.whitelist()
 def get_equipment(name: str) -> dict:
+	_assert_can_read("Equipment", name)
 	if not name:
 		frappe.throw(_("Equipment name is required."))
 	doc = frappe.get_doc("Equipment", name)
@@ -148,6 +150,7 @@ def create_equipment(payload: dict | str) -> dict:
 
 @frappe.whitelist()
 def update_equipment_status(name: str, status: str) -> dict:
+	_assert_can_write("Equipment", name, "write")
 	_require_write_equipment()
 	if not name:
 		frappe.throw(_("Equipment name is required."))
@@ -239,6 +242,7 @@ def list_repair_requests(
 
 @frappe.whitelist()
 def get_repair_request(name: str) -> dict:
+	_assert_can_read("Equipment Repair Request", name)
 	if not name:
 		frappe.throw(_("Repair Request name is required."))
 	doc = frappe.get_doc("Equipment Repair Request", name)
@@ -288,6 +292,7 @@ def update_repair_status(
 	status: str,
 	assigned_technician: str | None = None,
 ) -> dict:
+	_assert_can_write("Equipment Repair Request", name, "write")
 	_require_write_repair()
 	if not name:
 		frappe.throw(_("Repair Request name is required."))

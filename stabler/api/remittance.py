@@ -249,6 +249,9 @@ def create_remittance(
     )
     je.insert(ignore_permissions=True)
     if int(submit):
+        # Remittance module posts its own balanced JE through its dedicated
+        # flow; exempt from the money-module maker-checker gate.
+        je.flags.ignore_approval_gate = True
         je.submit()
     frappe.db.commit()
     return {"name": je.name, "docstatus": je.docstatus}

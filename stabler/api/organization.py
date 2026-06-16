@@ -53,6 +53,8 @@ _MODULE_ROLES: dict[str, list[str]] = {
 	"crm": ["Sales User", "Sales Manager"],
 	"service": ["Sales Manager", "Support Team", "Maintenance User", "Maintenance Manager"],
 	"bpm": ["Sales Manager"],
+	"fx_revaluation": ["Accounts Manager"],
+	"budget": ["Accounts User", "Accounts Manager"],
 }
 
 _ADMIN_ROLES = ("System Manager", "Stabler Admin")

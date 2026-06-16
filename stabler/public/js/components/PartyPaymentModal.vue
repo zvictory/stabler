@@ -20,6 +20,7 @@ import { call } from "../api/client.js";
 import { formatMoney } from "../composables/money.js";
 import { todayIso } from "../composables/date.js";
 import { t } from "../composables/i18n.js";
+import { useToast } from "../composables/useToast.js";
 import MoneyInput from "./MoneyInput.vue";
 import DateInput from "./DateInput.vue";
 import Select from "./Select.vue";
@@ -33,6 +34,7 @@ const props = defineProps({
 
 const emit = defineEmits(["close", "paid"]);
 
+const toast = useToast();
 const { user } = storeToRefs(useSession());
 
 const today = todayIso();
@@ -288,7 +290,10 @@ async function submit() {
 			references: references.length ? references : undefined,
 			submit: 1,
 		});
-		emit("paid", created.name);
+		if (created.pending_approval) {
+			toast.warning(t("Payment saved — pending approval before it posts."));
+		}
+		emit("paid", created.name, !!created.pending_approval);
 	} catch (err) {
 		error.value = err?.message || t("Failed to record payment.");
 	} finally {

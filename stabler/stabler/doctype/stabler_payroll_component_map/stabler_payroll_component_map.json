@@ -1,0 +1,151 @@
+{
+ "actions": [],
+ "allow_rename": 1,
+ "autoname": "field:map_name",
+ "creation": "2026-06-16 09:00:00.000000",
+ "doctype": "DocType",
+ "editable_grid": 1,
+ "engine": "InnoDB",
+ "field_order": [
+  "map_name",
+  "company",
+  "enabled",
+  "components_section",
+  "late_deduction_component",
+  "late_deduction_type",
+  "overtime_component",
+  "overtime_type",
+  "night_premium_component",
+  "night_premium_type",
+  "duty_supplement_component",
+  "duty_supplement_type",
+  "kpi_component",
+  "kpi_type",
+  "region_rate_component",
+  "region_rate_type"
+ ],
+ "fields": [
+  {
+   "fieldname": "map_name",
+   "fieldtype": "Data",
+   "label": "Map Name",
+   "reqd": 1,
+   "unique": 1,
+   "in_list_view": 1
+  },
+  {
+   "fieldname": "company",
+   "fieldtype": "Link",
+   "label": "Company",
+   "options": "Company",
+   "in_list_view": 1
+  },
+  {
+   "fieldname": "enabled",
+   "fieldtype": "Check",
+   "label": "Enabled",
+   "default": "1",
+   "in_list_view": 1
+  },
+  {
+   "fieldname": "components_section",
+   "fieldtype": "Section Break",
+   "label": "Components"
+  },
+  {
+   "fieldname": "late_deduction_component",
+   "fieldtype": "Link",
+   "label": "Late Deduction Component",
+   "options": "Salary Component"
+  },
+  {
+   "fieldname": "late_deduction_type",
+   "fieldtype": "Select",
+   "label": "Late Deduction Type",
+   "options": "Earning\nDeduction",
+   "default": "Deduction"
+  },
+  {
+   "fieldname": "overtime_component",
+   "fieldtype": "Link",
+   "label": "Overtime Component",
+   "options": "Salary Component"
+  },
+  {
+   "fieldname": "overtime_type",
+   "fieldtype": "Select",
+   "label": "Overtime Type",
+   "options": "Earning\nDeduction",
+   "default": "Earning"
+  },
+  {
+   "fieldname": "night_premium_component",
+   "fieldtype": "Link",
+   "label": "Night Premium Component",
+   "options": "Salary Component"
+  },
+  {
+   "fieldname": "night_premium_type",
+   "fieldtype": "Select",
+   "label": "Night Premium Type",
+   "options": "Earning\nDeduction",
+   "default": "Earning"
+  },
+  {
+   "fieldname": "duty_supplement_component",
+   "fieldtype": "Link",
+   "label": "Duty Supplement Component",
+   "options": "Salary Component"
+  },
+  {
+   "fieldname": "duty_supplement_type",
+   "fieldtype": "Select",
+   "label": "Duty Supplement Type",
+   "options": "Earning\nDeduction",
+   "default": "Earning"
+  },
+  {
+   "fieldname": "kpi_component",
+   "fieldtype": "Link",
+   "label": "KPI Component",
+   "options": "Salary Component"
+  },
+  {
+   "fieldname": "kpi_type",
+   "fieldtype": "Select",
+   "label": "KPI Type",
+   "options": "Earning\nDeduction\nSign-based",
+   "default": "Sign-based"
+  },
+  {
+   "fieldname": "region_rate_component",
+   "fieldtype": "Link",
+   "label": "Region Rate Component",
+   "options": "Salary Component"
+  },
+  {
+   "fieldname": "region_rate_type",
+   "fieldtype": "Select",
+   "label": "Region Rate Type",
+   "options": "Earning\nDeduction",
+   "default": "Earning"
+  }
+ ],
+ "links": [],
+ "modified": "2026-06-16 09:00:00.000000",
+ "modified_by": "Administrator",
+ "module": "Stabler",
+ "name": "Stabler Payroll Component Map",
+ "naming_rule": "By fieldname",
+ "owner": "Administrator",
+ "permissions": [
+  {"role": "System Manager", "read": 1, "write": 1, "create": 1, "delete": 1, "report": 1, "export": 1},
+  {"role": "HR Manager", "read": 1, "write": 1, "create": 1, "delete": 0, "report": 1, "export": 1},
+  {"role": "Accounts Manager", "read": 1, "write": 1, "create": 1, "delete": 0, "report": 1, "export": 1},
+  {"role": "HR User", "read": 1, "write": 0, "create": 0, "delete": 0, "report": 1, "export": 0}
+ ],
+ "sort_field": "modified",
+ "sort_order": "DESC",
+ "states": [],
+ "track_changes": 1
+}

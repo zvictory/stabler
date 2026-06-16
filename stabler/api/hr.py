@@ -8,7 +8,66 @@ import frappe
 from frappe.utils import flt, getdate, today, add_days, date_diff
 
 
-from stabler.api._common import _require_company
+from stabler.api._common import _require_company, _assert_can_read, _assert_can_write
+
+
+# ---------------------------------------------------------------------------
+# Salary-visibility helper
+# ---------------------------------------------------------------------------
+
+#: Roles whose holders may read/write salary-sensitive fields.
+_PAYROLL_VISIBLE_ROLES = frozenset(
+	("Accounts Manager", "Payroll Manager", "HR Manager", "System Manager")
+)
+
+#: Fields masked for non-payroll-visible users.
+SALARY_FIELDS = frozenset(("custom_base_salary", "custom_allowance_config"))
+
+#: All native + custom employee fields surfaced by Stabler.
+_EMPLOYEE_NATIVE_FIELDS = (
+	"employee_name",
+	"image",
+	"department",
+	"designation",
+	"date_of_joining",
+	"relieving_date",
+	"status",
+	"cell_number",
+	"company",
+)
+
+_EMPLOYEE_CUSTOM_FIELDS = (
+	"custom_timepay_id",
+	"custom_timepay_name",
+	"custom_base_salary",
+	"custom_shift_class",
+	"custom_region",
+	"custom_work_mode",
+	"custom_stake_coefficient",
+	"custom_heavy_conditions",
+	"custom_additional_duties",
+	"custom_allowance_config",
+)
+
+#: All writable field names (whitelist for update_employee).
+_EMPLOYEE_WRITABLE_FIELDS = frozenset(
+	_EMPLOYEE_NATIVE_FIELDS + _EMPLOYEE_CUSTOM_FIELDS
+)
+
+#: Enum validators for custom fields.
+_VALID_SHIFT_CLASS = frozenset(("DAY", "NIGHT", "OFFICE", "LIGHT"))
+_VALID_REGION = frozenset(("CITY", "DISTRICT", "FAR_DISTRICT", "NO_TRAVEL"))
+_VALID_WORK_MODE = frozenset(("SHIFT_8H", "SHIFT_12H", "HALF_RATE", "FLEXIBLE", "REMOTE"))
+
+
+def _user_can_see_salary(user: str | None = None) -> bool:
+	"""Return True when the session/given user holds a payroll-visible role."""
+	user = user or frappe.session.user
+	if user in ("Administrator",):
+		return True
+	from stabler.api.organization import _ADMIN_ROLES
+	roles = set(frappe.get_roles(user))
+	return bool(roles & (_PAYROLL_VISIBLE_ROLES | set(_ADMIN_ROLES)))
 
 
 def _parse_items(items):
@@ -55,29 +114,51 @@ def list_employees(company: str, search: str = "", status: str = "", limit: int 
 
 @frappe.whitelist()
 def employee_detail(name: str):
+	_assert_can_read("Employee", name)
 	if not name or not frappe.db.exists("Employee", name):
 		frappe.throw(f"Unknown employee: {name}")
 	doc = frappe.get_doc("Employee", name)
-	return {
+	can_see_salary = _user_can_see_salary()
+	payload = {
+		# Core identity
 		"name": doc.name,
 		"employee_name": doc.employee_name,
 		"first_name": doc.first_name,
 		"last_name": doc.last_name,
 		"status": doc.status,
 		"company": doc.company,
+		"image": getattr(doc, "image", None),
+		# Role / org
 		"department": doc.department,
 		"designation": doc.designation,
+		# Dates
 		"date_of_birth": doc.date_of_birth,
 		"date_of_joining": doc.date_of_joining,
+		"relieving_date": getattr(doc, "relieving_date", None),
+		# Contact
 		"gender": doc.gender,
 		"cell_number": doc.cell_number,
 		"personal_email": getattr(doc, "personal_email", None),
 		"company_email": getattr(doc, "company_email", None),
 		"user_id": doc.user_id,
-		"image": doc.image,
+		# Misc
 		"holiday_list": doc.holiday_list,
 		"employment_type": getattr(doc, "employment_type", None),
+		# Custom — identity / integration
+		"custom_timepay_id": getattr(doc, "custom_timepay_id", None),
+		"custom_timepay_name": getattr(doc, "custom_timepay_name", None),
+		# Custom — work configuration
+		"custom_shift_class": getattr(doc, "custom_shift_class", None),
+		"custom_region": getattr(doc, "custom_region", None),
+		"custom_work_mode": getattr(doc, "custom_work_mode", None),
+		"custom_stake_coefficient": flt(getattr(doc, "custom_stake_coefficient", 1.0)),
+		"custom_heavy_conditions": int(getattr(doc, "custom_heavy_conditions", 0) or 0),
+		"custom_additional_duties": int(getattr(doc, "custom_additional_duties", 0) or 0),
+		# Custom — salary (masked for non-payroll roles)
+		"custom_base_salary": flt(getattr(doc, "custom_base_salary", 0)) if can_see_salary else None,
+		"custom_allowance_config": getattr(doc, "custom_allowance_config", None) if can_see_salary else None,
 	}
+	return payload
 
 
 @frappe.whitelist()
@@ -92,6 +173,17 @@ def create_employee(
 	department: str = "",
 	cell_number: str = "",
 	user_id: str = "",
+	# Custom fields (all optional)
+	custom_timepay_id: str = "",
+	custom_timepay_name: str = "",
+	custom_shift_class: str = "",
+	custom_region: str = "",
+	custom_work_mode: str = "",
+	custom_stake_coefficient: float = 1.0,
+	custom_heavy_conditions: int = 0,
+	custom_additional_duties: int = 0,
+	custom_base_salary: float = 0.0,
+	custom_allowance_config: str = "",
 ):
 	_require_company(company)
 	if not first_name:
@@ -102,6 +194,31 @@ def create_employee(
 		frappe.throw("Date of birth is required.")
 	if not date_of_joining:
 		date_of_joining = today()
+
+	# Validate custom enums
+	if custom_shift_class and custom_shift_class not in _VALID_SHIFT_CLASS:
+		frappe.throw(f"Invalid custom_shift_class: {custom_shift_class}. Must be one of {sorted(_VALID_SHIFT_CLASS)}.")
+	if custom_region and custom_region not in _VALID_REGION:
+		frappe.throw(f"Invalid custom_region: {custom_region}. Must be one of {sorted(_VALID_REGION)}.")
+	if custom_work_mode and custom_work_mode not in _VALID_WORK_MODE:
+		frappe.throw(f"Invalid custom_work_mode: {custom_work_mode}. Must be one of {sorted(_VALID_WORK_MODE)}.")
+
+	# Validate stake_coefficient
+	coeff = flt(custom_stake_coefficient or 1.0)
+	if custom_work_mode != "HALF_RATE":
+		coeff = 1.0
+	elif not (0.1 <= coeff <= 2.0):
+		frappe.throw("custom_stake_coefficient must be between 0.1 and 2.0.")
+
+	# Validate allowance_config JSON if provided
+	if custom_allowance_config:
+		try:
+			json.loads(custom_allowance_config)
+		except Exception:
+			frappe.throw("custom_allowance_config must be valid JSON.")
+
+	# Salary fields — only payroll-visible users may set them
+	can_see_salary = _user_can_see_salary()
 
 	doc = frappe.new_doc("Employee")
 	doc.company = company
@@ -119,8 +236,113 @@ def create_employee(
 		doc.cell_number = cell_number
 	if user_id:
 		doc.user_id = user_id
+	# Custom fields
+	if custom_timepay_id:
+		doc.custom_timepay_id = custom_timepay_id
+	if custom_timepay_name:
+		doc.custom_timepay_name = custom_timepay_name
+	if custom_shift_class:
+		doc.custom_shift_class = custom_shift_class
+	if custom_region:
+		doc.custom_region = custom_region
+	if custom_work_mode:
+		doc.custom_work_mode = custom_work_mode
+	doc.custom_stake_coefficient = coeff
+	doc.custom_heavy_conditions = int(custom_heavy_conditions or 0)
+	doc.custom_additional_duties = int(custom_additional_duties or 0)
+	if can_see_salary:
+		if flt(custom_base_salary):
+			doc.custom_base_salary = flt(custom_base_salary)
+		if custom_allowance_config:
+			doc.custom_allowance_config = custom_allowance_config
 	doc.insert()
 	return {"name": doc.name, "employee_name": doc.employee_name}
+
+
+@frappe.whitelist()
+def update_employee(name: str, payload=None):
+	"""Update an existing Employee record.
+
+	Parameters
+	----------
+	name:
+		Employee docname (e.g. ``"HR-EMP-00001"``).
+	payload:
+		Dict (or JSON string) of fields to update.  Only fields in the
+		explicit whitelist are applied; arbitrary keys are silently ignored.
+		Salary fields (``custom_base_salary``, ``custom_allowance_config``)
+		are silently ignored unless the caller holds a payroll-visible role.
+
+	Returns
+	-------
+	``{"name": doc.name}``
+	"""
+	if frappe.session.user == "Guest":
+		frappe.throw(frappe._("Not permitted"), frappe.PermissionError)
+	_assert_can_write("Employee", name, "write")
+	if not name or not frappe.db.exists("Employee", name):
+		frappe.throw(f"Unknown employee: {name}")
+
+	# Normalise payload
+	if payload is None:
+		payload = {}
+	if isinstance(payload, str):
+		try:
+			payload = json.loads(payload)
+		except Exception:
+			frappe.throw("payload must be a valid JSON object.")
+	if not isinstance(payload, dict):
+		frappe.throw("payload must be a JSON object.")
+
+	can_see_salary = _user_can_see_salary()
+
+	# Validate enum fields if present in payload
+	shift_class = payload.get("custom_shift_class")
+	if shift_class is not None and shift_class not in _VALID_SHIFT_CLASS:
+		frappe.throw(f"Invalid custom_shift_class: {shift_class}. Must be one of {sorted(_VALID_SHIFT_CLASS)}.")
+
+	region = payload.get("custom_region")
+	if region is not None and region not in _VALID_REGION:
+		frappe.throw(f"Invalid custom_region: {region}. Must be one of {sorted(_VALID_REGION)}.")
+
+	work_mode = payload.get("custom_work_mode")
+	if work_mode is not None and work_mode not in _VALID_WORK_MODE:
+		frappe.throw(f"Invalid custom_work_mode: {work_mode}. Must be one of {sorted(_VALID_WORK_MODE)}.")
+
+	# Validate stake_coefficient
+	if "custom_stake_coefficient" in payload:
+		# Determine effective work_mode: either from payload or from DB
+		effective_work_mode = work_mode
+		if effective_work_mode is None:
+			effective_work_mode = frappe.db.get_value("Employee", name, "custom_work_mode")
+		coeff = flt(payload["custom_stake_coefficient"])
+		if effective_work_mode != "HALF_RATE":
+			# Force 1.0 for non-HALF_RATE modes
+			payload["custom_stake_coefficient"] = 1.0
+		elif not (0.1 <= coeff <= 2.0):
+			frappe.throw("custom_stake_coefficient must be between 0.1 and 2.0.")
+	elif work_mode is not None and work_mode != "HALF_RATE":
+		# Changing work_mode away from HALF_RATE resets coefficient to 1.0
+		payload["custom_stake_coefficient"] = 1.0
+
+	# Validate custom_allowance_config JSON
+	if "custom_allowance_config" in payload and payload["custom_allowance_config"]:
+		try:
+			json.loads(payload["custom_allowance_config"])
+		except Exception:
+			frappe.throw("custom_allowance_config must be valid JSON.")
+
+	# Apply whitelisted fields only
+	doc = frappe.get_doc("Employee", name)
+	for field, value in payload.items():
+		if field not in _EMPLOYEE_WRITABLE_FIELDS:
+			continue
+		if field in SALARY_FIELDS and not can_see_salary:
+			continue
+		setattr(doc, field, value)
+
+	doc.save()
+	return {"name": doc.name}
 
 
 @frappe.whitelist()
@@ -140,11 +362,35 @@ def list_designations(search: str = "", limit: int = 50):
 
 @frappe.whitelist()
 def list_departments(company: str = "", search: str = "", limit: int = 50):
+	# Authn/authz: require the HR module (the rest of hr.py gates via
+	# _require_company; this reader is company-optional so it needs its own
+	# guard). Then scope by company: validate a passed company against the
+	# caller's allowed set, and when omitted restrict a scoped non-admin to
+	# their allowed companies (global / NULL-company departments stay visible).
+	from stabler.api.organization import (
+		_ADMIN_ROLES,
+		_can_access_module,
+		_user_allowed_companies,
+	)
+
+	if not _can_access_module(frappe.session.user, "hr"):
+		frappe.throw(frappe._("Not permitted"), frappe.PermissionError)
+
+	is_admin = any(r in frappe.get_roles() for r in _ADMIN_ROLES)
+	allowed = [] if is_admin else _user_allowed_companies(frappe.session.user)
+
 	conds = []
 	params: dict = {"limit": int(limit)}
 	if company:
+		if allowed and company not in allowed:
+			frappe.throw(
+				frappe._("Not permitted for company {0}").format(company), frappe.PermissionError
+			)
 		conds.append("(company = %(c)s OR company IS NULL OR company = '')")
 		params["c"] = company
+	elif allowed:
+		conds.append("(company IN %(allowed)s OR company IS NULL OR company = '')")
+		params["allowed"] = tuple(allowed)
 	if search:
 		conds.append("name LIKE %(s)s")
 		params["s"] = f"%{search}%"
@@ -326,6 +572,7 @@ def create_leave_application(
 
 @frappe.whitelist()
 def approve_leave(name: str, status: str = "Approved"):
+	_assert_can_write("Leave Application", name, "submit")
 	if not name or not frappe.db.exists("Leave Application", name):
 		frappe.throw(f"Unknown leave application: {name}")
 	if status not in ("Approved", "Rejected"):
@@ -386,6 +633,7 @@ def list_salary_slips(
 
 @frappe.whitelist()
 def salary_slip_detail(name: str):
+	_assert_can_read("Salary Slip", name)
 	if not name or not frappe.db.exists("Salary Slip", name):
 		frappe.throw(f"Unknown salary slip: {name}")
 	doc = frappe.get_doc("Salary Slip", name)

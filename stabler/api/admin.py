@@ -134,11 +134,19 @@ def update_user(name: str, full_name: str | None = None, enabled=None, roles=Non
 
 	doc.save(ignore_permissions=True)
 
+	sod_warnings: list = []
 	if roles is not None:
 		# `roles` may arrive as JSON string from form-encoded request.
 		if isinstance(roles, str):
 			roles = frappe.parse_json(roles) or []
-		_replace_user_roles(name, [r for r in roles if r])
+		target_roles = [r for r in roles if r]
+		# Segregation-of-duties check. Returns the violations the target set
+		# carries; when 'Enforce SoD' is on it throws on a new critical/high
+		# conflict before any role rows are written.
+		from stabler.api.access_review import assert_role_change_allowed
+
+		sod_warnings = assert_role_change_allowed(name, target_roles)
+		_replace_user_roles(name, target_roles)
 
 	if allowed_modules is not None:
 		# `allowed_modules` may arrive as JSON string from form-encoded request.
@@ -153,7 +161,10 @@ def update_user(name: str, full_name: str | None = None, enabled=None, roles=Non
 		user_doc.save(ignore_permissions=True)
 
 	frappe.db.commit()
-	return get_user(name)
+	result = get_user(name)
+	if isinstance(result, dict):
+		result["sod_warnings"] = sod_warnings
+	return result
 
 
 def _replace_user_roles(user: str, target_roles: list[str]) -> None:

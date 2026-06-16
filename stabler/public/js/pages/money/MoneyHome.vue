@@ -13,6 +13,8 @@ const tabs = [
 	{ name: "money-expenses", path: "/money/expenses", label: t("Expenses"), icon: "ti-receipt-2" },
 	{ name: "money-transfers", path: "/money/transfers", label: t("Transfers"), icon: "ti-transfer" },
 	{ name: "money-reports", path: "/money/reports", label: t("Reports"), icon: "ti-report-money" },
+	{ name: "money-approvals", path: "/money/approvals", label: t("Approvals"), icon: "ti-checklist" },
+	{ name: "money-reconcile", path: "/money/reconcile", label: t("Reconcile"), icon: "ti-arrows-left-right" },
 ];
 
 const activeTab = computed(() => route.name);

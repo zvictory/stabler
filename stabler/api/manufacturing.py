@@ -9,7 +9,7 @@ from frappe import _
 from frappe.utils import flt, getdate, today
 
 
-from stabler.api._common import _require_company
+from stabler.api._common import _require_company, _assert_can_read, _assert_can_write
 from stabler.api.organization import _can_access_module
 
 
@@ -80,6 +80,7 @@ def list_boms(company: str, search: str = "", item: str | None = None, limit: in
 
 @frappe.whitelist()
 def bom_detail(name: str):
+	_assert_can_read("BOM", name)
 	_require_mfg_manager()
 	if not name or not frappe.db.exists("BOM", name):
 		frappe.throw(f"Unknown BOM: {name}")
@@ -175,6 +176,7 @@ def create_bom(
 
 @frappe.whitelist()
 def submit_bom(name: str):
+	_assert_can_write("BOM", name, "submit")
 	_require_mfg_manager()
 	doc = frappe.get_doc("BOM", name)
 	if doc.docstatus != 0:
@@ -185,6 +187,7 @@ def submit_bom(name: str):
 
 @frappe.whitelist()
 def cancel_bom(name: str):
+	_assert_can_write("BOM", name, "cancel")
 	_require_mfg_manager()
 	doc = frappe.get_doc("BOM", name)
 	if doc.docstatus != 1:
@@ -239,6 +242,7 @@ def list_work_orders(
 
 @frappe.whitelist()
 def work_order_detail(name: str):
+	_assert_can_read("Work Order", name)
 	_require_mfg()
 	if not name or not frappe.db.exists("Work Order", name):
 		frappe.throw(f"Unknown Work Order: {name}")
@@ -348,6 +352,7 @@ def create_work_order(
 @frappe.whitelist()
 def submit_work_order(name: str):
 	"""Release a Work Order from Draft → Not Started. Manager-only action."""
+	_assert_can_write("Work Order", name, "submit")
 	_require_mfg_manager()
 	doc = frappe.get_doc("Work Order", name)
 	if doc.docstatus != 0:
@@ -358,6 +363,7 @@ def submit_work_order(name: str):
 
 @frappe.whitelist()
 def stop_work_order(name: str, reason: str = "Production Stopped"):
+	_assert_can_write("Work Order", name, "write")
 	from erpnext.manufacturing.doctype.work_order.work_order import stop_unstop
 
 	_require_mfg()
@@ -371,6 +377,7 @@ def stop_work_order(name: str, reason: str = "Production Stopped"):
 @frappe.whitelist()
 def resume_work_order(name: str):
 	"""Resume a previously stopped Work Order."""
+	_assert_can_write("Work Order", name, "write")
 	from erpnext.manufacturing.doctype.work_order.work_order import stop_unstop
 
 	_require_mfg()
@@ -384,6 +391,7 @@ def resume_work_order(name: str):
 @frappe.whitelist()
 def close_work_order(name: str):
 	"""Finalize a completed Work Order. Manager-only."""
+	_assert_can_write("Work Order", name, "write")
 	_require_mfg_manager()
 	doc = frappe.get_doc("Work Order", name)
 	if doc.docstatus != 1:
@@ -431,6 +439,7 @@ def make_work_order_stock_entry(
 @frappe.whitelist()
 def assign_work_order_operator(name: str, operator: str):
 	"""Assign a shop-floor operator to this Work Order. Manager-only."""
+	_assert_can_write("Work Order", name, "write")
 	_require_mfg_manager()
 	if not frappe.db.exists("Work Order", name):
 		frappe.throw(f"Unknown Work Order: {name}")

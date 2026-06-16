@@ -1,9 +1,10 @@
 from __future__ import annotations
 
 import frappe
+from erpnext.accounts.party import get_party_account
 from frappe import _
 from frappe.utils import flt, getdate, today
-from erpnext.accounts.party import get_party_account
+
 
 def resolve_party_account(party_type: str, party: str, company: str, currency: str) -> str:
 	"""Wrap ERPNext get_party_account, then enforce that the account's currency
@@ -13,9 +14,9 @@ def resolve_party_account(party_type: str, party: str, company: str, currency: s
 	"""
 	# Get the default account (which could be the one from Party Account or Company default)
 	account = get_party_account(party_type=party_type, party=party, company=company)
-	
+
 	account_type = "Receivable" if party_type == "Customer" else "Payable"
-	
+
 	if account:
 		account_currency = frappe.get_cached_value("Account", account, "account_currency")
 		# If currency matches, return immediately
@@ -107,6 +108,77 @@ def validate_purchase_invoice(doc, method=None):
 	if doc.supplier:
 		doc.credit_to = resolve_party_account("Supplier", doc.supplier, doc.company, doc.currency)
 		validate_exchange_rate(doc.company, doc.currency, doc.conversion_rate, doc.posting_date)
+	_three_way_match_check(doc)
+
+
+def _three_way_match_check(doc) -> None:
+	"""Three-way match (PO vs Receipt vs Bill). Opt-in via Stabler Settings.
+
+	Does NOT re-implement ERPNext's native amount-based Over Billing Allowance —
+	it adds rate-variance and billed-vs-received-qty exception surfacing. When
+	enforcement is on, blocking exceptions stop submission; otherwise they are
+	attached to the doc as a warning comment.
+	"""
+	if not frappe.db.exists("DocType", "Stabler Settings"):
+		return
+	enabled = frappe.db.get_single_value("Stabler Settings", "enable_three_way_match")
+	if not (enabled and int(enabled or 0)):
+		return
+
+	from stabler.api._three_way_match import evaluate_invoice
+
+	qty_tol = flt(frappe.db.get_single_value("Stabler Settings", "three_way_qty_tolerance_pct") or 0)
+	rate_tol = flt(frappe.db.get_single_value("Stabler Settings", "three_way_rate_tolerance_pct") or 0)
+
+	# Build PO-row and PR-row indices for the rows this invoice references.
+	po_details = {r.po_detail for r in doc.get("items", []) if r.get("po_detail")}
+	pr_details = {r.pr_detail for r in doc.get("items", []) if r.get("pr_detail")}
+	po_rows = _rows_by_name("Purchase Order Item", po_details, ["qty", "rate"])
+	pr_rows = _rows_by_name("Purchase Receipt Item", pr_details, ["qty", "received_qty"])
+
+	lines = []
+	for r in doc.get("items", []):
+		po = po_rows.get(r.get("po_detail")) if r.get("po_detail") else None
+		pr = pr_rows.get(r.get("pr_detail")) if r.get("pr_detail") else None
+		lines.append(
+			{
+				"idx": r.idx,
+				"item_code": r.get("item_code"),
+				"bill_qty": flt(r.get("qty")),
+				"bill_rate": flt(r.get("rate")),
+				"po_qty": flt(po["qty"]) if po else None,
+				"po_rate": flt(po["rate"]) if po else None,
+				"received_qty": (flt(pr.get("received_qty") or pr.get("qty")) if pr else None),
+			}
+		)
+
+	result = evaluate_invoice(lines, qty_tol_pct=qty_tol, rate_tol_pct=rate_tol)
+	if not result["exceptions"]:
+		return
+	msg = "<br>".join(
+		"Row {0} ({1}): {2}".format(e.get("idx"), e.get("item_code") or "", e.get("detail"))
+		for e in result["exceptions"]
+	)
+	if result["has_block"]:
+		frappe.throw(
+			_("Three-way match failed:") + "<br>" + msg,
+			title=_("Vendor bill does not match PO / receipt"),
+		)
+	else:
+		# Advisory only — record so it shows on the document timeline.
+		doc.add_comment("Comment", _("Three-way match warnings:") + "<br>" + msg)
+
+
+def _rows_by_name(child_doctype: str, names: set, fields: list[str]) -> dict:
+	"""Fetch child rows by name into {name: {field: value}} (parameterized)."""
+	out: dict = {}
+	if not names:
+		return out
+	for row in frappe.get_all(
+		child_doctype, filters={"name": ["in", list(names)]}, fields=["name", *fields]
+	):
+		out[row["name"]] = row
+	return out
 
 
 def validate_payment_entry(doc, method=None):
@@ -139,7 +211,7 @@ def validate_journal_entry(doc, method=None):
 	for row in getattr(doc, "accounts", []):
 		if not row.account:
 			continue
-		
+
 		if row.party_type and row.party:
 			# Verify account type matches party type
 			expected_type = "Receivable" if row.party_type == "Customer" else "Payable"
@@ -149,17 +221,17 @@ def validate_journal_entry(doc, method=None):
 					_("Account {0} is not a {1} account for party {2}.").format(row.account, expected_type.lower(), row.party),
 					frappe.ValidationError
 				)
-				
+
 		account_currency = frappe.get_cached_value("Account", row.account, "account_currency")
 		if not account_currency or account_currency == company_currency:
 			continue
-		
+
 		# Non-base currency row validation
 		debit = flt(row.debit)
 		credit = flt(row.credit)
 		debit_in_acc = flt(row.debit_in_account_currency)
 		credit_in_acc = flt(row.credit_in_account_currency)
-		
+
 		if debit > 0:
 			if abs(debit - debit_in_acc) < 0.01:
 				frappe.throw(

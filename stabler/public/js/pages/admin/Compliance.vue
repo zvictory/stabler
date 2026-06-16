@@ -8,6 +8,8 @@ import OneCSyncLog from "./compliance/OneCSyncLog.vue";
 import AslBelgisi from "./compliance/AslBelgisi.vue";
 import ARCA from "./compliance/ARCA.vue";
 import ExchangeRates from "./compliance/ExchangeRates.vue";
+import AuditLog from "./compliance/AuditLog.vue";
+import Backup from "./compliance/Backup.vue";
 
 const session = useSession();
 
@@ -17,6 +19,8 @@ const tabs = computed(() => [
 	{ key: "asl", label: t("Asl Belgisi"), icon: "ti-barcode", component: AslBelgisi },
 	{ key: "arca", label: t("ARCA"), icon: "ti-credit-card", component: ARCA },
 	{ key: "rates", label: t("Exchange Rates"), icon: "ti-currency-dollar", component: ExchangeRates },
+	{ key: "audit", label: t("Audit Trail"), icon: "ti-history", component: AuditLog },
+	{ key: "backup", label: t("Backup & DR"), icon: "ti-database-export", component: Backup },
 ]);
 
 const active = ref("ehf");

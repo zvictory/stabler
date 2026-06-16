@@ -1,0 +1,148 @@
+{
+ "actions": [],
+ "allow_rename": 0,
+ "creation": "2026-06-16 09:14:00.000000",
+ "doctype": "DocType",
+ "editable_grid": 0,
+ "engine": "InnoDB",
+ "field_order": [
+  "external_event_id",
+  "device",
+  "device_user_id",
+  "device_user_name",
+  "timestamp",
+  "direction",
+  "source",
+  "column_break_1",
+  "processing_status",
+  "matched_employee",
+  "created_checkin",
+  "error_message",
+  "section_payload",
+  "raw_payload"
+ ],
+ "fields": [
+  {
+   "fieldname": "external_event_id",
+   "fieldtype": "Data",
+   "label": "External Event ID",
+   "unique": 1,
+   "in_list_view": 1,
+   "description": "The device's own id (or a deterministic hash). The dedupe key."
+  },
+  {
+   "fieldname": "device",
+   "fieldtype": "Link",
+   "label": "Device",
+   "options": "Stabler Gate Device"
+  },
+  {
+   "fieldname": "device_user_id",
+   "fieldtype": "Data",
+   "label": "Device User ID",
+   "in_list_view": 1
+  },
+  {
+   "fieldname": "device_user_name",
+   "fieldtype": "Data",
+   "label": "Device User Name (Timepay)",
+   "read_only": 1,
+   "in_list_view": 1,
+   "description": "Timepay-reported full name, kept as a reference to disambiguate ERPNext name collisions."
+  },
+  {
+   "fieldname": "timestamp",
+   "fieldtype": "Datetime",
+   "label": "Punch Timestamp",
+   "in_list_view": 1
+  },
+  {
+   "fieldname": "direction",
+   "fieldtype": "Select",
+   "label": "Direction",
+   "options": "IN\nOUT\nUNKNOWN",
+   "default": "UNKNOWN"
+  },
+  {
+   "fieldname": "source",
+   "fieldtype": "Select",
+   "label": "Source",
+   "options": "TIMEPAY_API\nEXCEL\nMANUAL",
+   "default": "TIMEPAY_API"
+  },
+  {
+   "fieldname": "column_break_1",
+   "fieldtype": "Column Break"
+  },
+  {
+   "fieldname": "processing_status",
+   "fieldtype": "Select",
+   "label": "Processing Status",
+   "options": "Pending\nProcessed\nDuplicate\nUnmatched\nError",
+   "default": "Pending",
+   "in_list_view": 1
+  },
+  {
+   "fieldname": "matched_employee",
+   "fieldtype": "Link",
+   "label": "Matched Employee",
+   "options": "Employee",
+   "read_only": 1
+  },
+  {
+   "fieldname": "created_checkin",
+   "fieldtype": "Data",
+   "label": "Created Employee Checkin",
+   "read_only": 1
+  },
+  {
+   "fieldname": "error_message",
+   "fieldtype": "Small Text",
+   "label": "Error Message",
+   "read_only": 1
+  },
+  {
+   "fieldname": "section_payload",
+   "fieldtype": "Section Break",
+   "label": "Raw Payload"
+  },
+  {
+   "fieldname": "raw_payload",
+   "fieldtype": "Code",
+   "label": "Raw Payload (JSON)",
+   "options": "JSON"
+  }
+ ],
+ "links": [],
+ "modified": "2026-06-16 09:14:00.000000",
+ "modified_by": "Administrator",
+ "module": "Stabler",
+ "name": "Stabler Raw Attendance Event",
+ "owner": "Administrator",
+ "permissions": [
+  {
+   "role": "System Manager",
+   "read": 1,
+   "write": 1,
+   "create": 1,
+   "delete": 1,
+   "report": 1,
+   "export": 1
+  },
+  {
+   "role": "HR Manager",
+   "read": 1,
+   "report": 1,
+   "export": 1
+  },
+  {
+   "role": "HR User",
+   "read": 1,
+   "report": 1
+  }
+ ],
+ "sort_field": "timestamp",
+ "sort_order": "DESC",
+ "states": [],
+ "track_changes": 1
+}

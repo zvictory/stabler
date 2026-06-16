@@ -318,8 +318,11 @@ async function openCreate() {
 async function openEditFromDetail() {
 	if (!detail.value?.name) return;
 	if (!accounts.value.length) await loadOptions();
-	const credit = (detail.value.accounts || []).find((row) => Number(row.credit_in_account_currency) > 0);
-	const debit = (detail.value.accounts || []).find((row) => Number(row.debit_in_account_currency) > 0);
+	// Skip the auto exchange-rounding line — it's a base-currency GL detail
+	// (re-derived on save by fx_balance), not a transfer leg.
+	const rows = (detail.value.accounts || []).filter((row) => !row.is_fx_rounding);
+	const credit = rows.find((row) => Number(row.credit_in_account_currency) > 0);
+	const debit = rows.find((row) => Number(row.debit_in_account_currency) > 0);
 	form.value = {
 		posting_date: detail.value.posting_date || today,
 		from_account: credit?.account || "",
@@ -406,18 +409,26 @@ async function submitCreate(mode) {
 		const res = await call(method, editingName.value ? { source_name: editingName.value, ...payload } : payload);
 
 		load(); // refresh list in background
+		// When maker-checker is on, the transfer stays a Draft and is routed to
+		// the approvals queue instead of posting — say so, don't imply success.
+		const pendingApproval = !!res?.pending_approval;
 
 		if (editingName.value || mode === "close") {
 			createOpen.value = false;
 			editingName.value = "";
 			if (res?.name) await openDetail(res.name);
+			if (pendingApproval) toast.warning(t("Saved — pending approval before it posts."));
 		} else if (mode === "new") {
 			const keepDate = form.value.posting_date;
 			form.value = blankForm();
 			form.value.posting_date = keepDate;
 			rateManuallyEdited.value = false;
 			reseed();
-			toast.success(t("Transfer recorded · {name}", { name: res?.name || "" }));
+			if (pendingApproval) {
+				toast.warning(t("Saved — pending approval before it posts."));
+			} else {
+				toast.success(t("Transfer recorded · {name}", { name: res?.name || "" }));
+			}
 			await fetchExchangeRate();
 			derive();
 			focusFromAccountFn?.();

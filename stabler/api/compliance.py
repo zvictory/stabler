@@ -14,6 +14,7 @@ from urllib.error import HTTPError, URLError
 from urllib.request import Request, urlopen
 
 import frappe
+from stabler.api._common import _assert_can_read, _assert_can_write
 from frappe import _
 from frappe.utils import flt, getdate
 
@@ -284,6 +285,7 @@ def scan_asl_code(parent: str, row_name: str, code: str) -> dict:
 	Returns {ok, message}. On success, the row's asl_belgisi_code is set
 	and persisted. The Stock Entry doc is NOT submitted/recomputed.
 	"""
+	_assert_can_write("Stock Entry", parent, "write")
 	_require_admin_or_warehouse()
 	code = (code or "").strip()
 	if not code:

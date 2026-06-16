@@ -35,6 +35,13 @@ ignore = [
 ]
 typing-modules = ["frappe.types.DF"]
 
+[tool.ruff.lint.per-file-ignores]
+# The bank-statement parser and its tests must contain Cyrillic field keys to
+# parse the 1C ClientBank Exchange (Russian-language) format. Disable the
+# Latin-confusable lints there; they are false positives by design.
+"stabler/integrations/bank_statement/*" = ["RUF001", "RUF002", "RUF003"]
+"stabler/tests/test_bank_statement_parser.py" = ["RUF001", "RUF002", "RUF003"]
+
 [tool.ruff.format]
 quote-style = "double"
 indent-style = "tab"

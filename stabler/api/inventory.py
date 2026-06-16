@@ -8,8 +8,8 @@ import frappe
 from frappe import _
 from frappe.utils import flt, getdate, today
 
-
-from stabler.api._common import _require_company
+from stabler.api._common import _require_company, _assert_can_read, _assert_can_write
+from stabler.api._stock_recon import prepare_reconciliation
 
 
 @frappe.whitelist()
@@ -137,6 +137,61 @@ def list_warehouses(company: str):
 	for r in rows:
 		r["stock_value"] = flt(totals.get(r["name"], 0))
 	return rows
+
+
+def _format_warehouse_stock_row(row: dict) -> dict:
+	actual_qty = flt(row.get("actual_qty"))
+	reserved_qty = flt(row.get("reserved_qty"))
+	valuation_rate = flt(row.get("valuation_rate"))
+	return {
+		"item_code": row.get("item_code"),
+		"item_name": row.get("item_name"),
+		"item_group": row.get("item_group"),
+		"stock_uom": row.get("stock_uom"),
+		"actual_qty": actual_qty,
+		"reserved_qty": reserved_qty,
+		"ordered_qty": flt(row.get("ordered_qty")),
+		"projected_qty": flt(row.get("projected_qty")),
+		"free_qty": actual_qty - reserved_qty,
+		"valuation_rate": valuation_rate,
+		"stock_value": actual_qty * valuation_rate,
+	}
+
+
+@frappe.whitelist()
+def warehouse_stock(company: str, warehouse: str, limit: int = 100):
+	"""Stock rows for the selected warehouse drill-down."""
+	_require_company(company)
+	if not warehouse:
+		frappe.throw(_("Warehouse is required."))
+	if not frappe.db.exists("Warehouse", {"name": warehouse, "company": company}):
+		frappe.throw(_("Warehouse does not belong to the selected company."))
+	rows = frappe.db.sql(
+		"""
+		SELECT b.item_code, i.item_name, i.item_group,
+		       COALESCE(b.stock_uom, i.stock_uom) AS stock_uom,
+		       b.actual_qty, b.reserved_qty, b.ordered_qty,
+		       b.projected_qty, b.valuation_rate
+		FROM `tabBin` b
+		LEFT JOIN `tabItem` i ON i.name = b.item_code
+		WHERE b.warehouse = %(warehouse)s
+		  AND b.actual_qty != 0
+		ORDER BY (b.actual_qty * b.valuation_rate) DESC, i.item_name ASC
+		LIMIT %(limit)s
+		""",
+		{"warehouse": warehouse, "limit": int(limit)},
+		as_dict=True,
+	)
+	items = [_format_warehouse_stock_row(row) for row in rows]
+	return {
+		"warehouse": warehouse,
+		"items": items,
+		"item_count": len(items),
+		"total_qty": sum(row["actual_qty"] for row in items),
+		"total_reserved_qty": sum(row["reserved_qty"] for row in items),
+		"total_free_qty": sum(row["free_qty"] for row in items),
+		"total_value": sum(row["stock_value"] for row in items),
+	}
 
 
 @frappe.whitelist()
@@ -421,6 +476,7 @@ def list_stock_entries(
 
 @frappe.whitelist()
 def stock_entry_detail(name: str):
+	_assert_can_read("Stock Entry", name)
 	if not name or not frappe.db.exists("Stock Entry", name):
 		frappe.throw(f"Unknown stock entry: {name}")
 	doc = frappe.get_doc("Stock Entry", name)
@@ -535,6 +591,7 @@ def create_stock_entry(
 
 @frappe.whitelist()
 def submit_stock_entry(name: str):
+	_assert_can_write("Stock Entry", name, "submit")
 	doc = frappe.get_doc("Stock Entry", name)
 	if doc.docstatus != 0:
 		frappe.throw(f"Stock Entry is already {['Draft','Submitted','Cancelled'][doc.docstatus]}.")
@@ -544,6 +601,7 @@ def submit_stock_entry(name: str):
 
 @frappe.whitelist()
 def cancel_stock_entry(name: str):
+	_assert_can_write("Stock Entry", name, "cancel")
 	doc = frappe.get_doc("Stock Entry", name)
 	if doc.docstatus != 1:
 		frappe.throw("Only submitted Stock Entries can be cancelled.")
@@ -580,3 +638,122 @@ def low_stock_alerts(company: str, limit: int = 50):
 		as_dict=True,
 	)
 	return rows
+
+
+# --------------------------------------------------------------------------- #
+# Stock Reconciliation (count-to-actual) — surfaces ERPNext Stock Reconciliation.
+# ERPNext posts the Stock Ledger difference on submit; we never touch the ledger.
+# --------------------------------------------------------------------------- #
+def _assert_warehouse_company(warehouse: str, company: str) -> None:
+	wc = frappe.db.get_value("Warehouse", warehouse, "company")
+	if not wc:
+		frappe.throw(_("Warehouse '{0}' not found.").format(warehouse))
+	if wc != company:
+		frappe.throw(_("Warehouse '{0}' is not in company '{1}'.").format(warehouse, company))
+
+
+@frappe.whitelist()
+def warehouse_stock_balance(company: str, warehouse: str, search: str | None = None, limit: int = 200):
+	"""Current Bin qty + valuation for items in a warehouse — prefills the count."""
+	_require_company(company)
+	_assert_warehouse_company(warehouse, company)
+	conds = ["b.warehouse = %(wh)s"]
+	params: dict = {"wh": warehouse, "limit": min(int(limit or 200), 1000)}
+	if search:
+		conds.append("(b.item_code LIKE %(s)s OR i.item_name LIKE %(s)s)")
+		params["s"] = f"%{search}%"
+	rows = frappe.db.sql(
+		f"""SELECT b.item_code, i.item_name, b.actual_qty, b.valuation_rate, b.stock_uom
+		    FROM `tabBin` b JOIN `tabItem` i ON i.name = b.item_code
+		    WHERE {" AND ".join(conds)} AND i.disabled = 0
+		    ORDER BY i.item_name LIMIT %(limit)s""",
+		params,
+		as_dict=True,
+	)
+	return {"warehouse": warehouse, "items": rows, "count": len(rows)}
+
+
+@frappe.whitelist()
+def preview_reconciliation(items: list | str):
+	"""Pure preview: which counted lines changed + variance summary (no write)."""
+	_require_recon_role()
+	if isinstance(items, str):
+		items = json.loads(items or "[]")
+	return prepare_reconciliation(items if isinstance(items, list) else [])
+
+
+def _require_recon_role() -> None:
+	"""Stock reconciliation is sensitive (can mask shrinkage) — Stock Manager/admin."""
+	roles = set(frappe.get_roles())
+	if not roles & {"Stock Manager", "System Manager", "Stabler Admin"}:
+		frappe.throw(_("Only a Stock Manager can reconcile stock."), frappe.PermissionError)
+
+
+@frappe.whitelist()
+def create_stock_reconciliation(
+	company: str,
+	items: list | str,
+	posting_date: str | None = None,
+	remarks: str | None = None,
+	submit: int = 0,
+):
+	"""Create an ERPNext Stock Reconciliation from counted quantities.
+
+	`items`: [{item_code, warehouse, current_qty, counted_qty, valuation_rate?}].
+	Only lines whose count differs from the system qty are sent; ERPNext posts
+	the Stock Ledger difference (to the Stock Adjustment account) on submit.
+	"""
+	_require_company(company)
+	_require_recon_role()
+	if isinstance(items, str):
+		items = json.loads(items or "[]")
+	if not isinstance(items, list) or not items:
+		frappe.throw(_("At least one counted item line is required."))
+
+	prepared = prepare_reconciliation(items)
+	lines = prepared["lines"]
+	if not lines:
+		frappe.throw(_("No lines differ from the system quantity — nothing to reconcile."))
+	for ln in lines:
+		_assert_warehouse_company(ln["warehouse"], company)
+
+	doc = frappe.new_doc("Stock Reconciliation")
+	doc.company = company
+	doc.purpose = "Stock Reconciliation"
+	if posting_date:
+		doc.posting_date = getdate(posting_date)
+	if remarks:
+		doc.remarks = remarks.strip()
+	for ln in lines:
+		row = doc.append("items", {})
+		row.item_code = ln["item_code"]
+		row.warehouse = ln["warehouse"]
+		row.qty = ln["qty"]  # the counted (target) quantity
+		if ln.get("valuation_rate"):
+			row.valuation_rate = ln["valuation_rate"]
+	doc.set_missing_values()
+	doc.insert(ignore_permissions=False)
+	if int(submit or 0):
+		doc.submit()  # ERPNext posts the SLE difference
+	frappe.logger("stabler.stockrecon").info(
+		f"stock reconciliation {doc.name} ({len(lines)} lines) by {frappe.session.user}"
+	)
+	return {
+		"name": doc.name,
+		"docstatus": doc.docstatus,
+		"changed_lines": len(lines),
+		"summary": prepared["summary"],
+	}
+
+
+@frappe.whitelist()
+def list_stock_reconciliations(company: str, limit: int = 25):
+	"""Recent stock reconciliations for the history panel."""
+	_require_company(company)
+	return frappe.get_all(
+		"Stock Reconciliation",
+		filters={"company": company},
+		fields=["name", "posting_date", "docstatus", "remarks", "owner", "creation"],
+		order_by="creation desc",
+		limit=min(int(limit or 25), 100),
+	)

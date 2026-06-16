@@ -1,6 +1,7 @@
 <script setup>
 import { computed, onMounted, ref, watch } from "vue";
 import { storeToRefs } from "pinia";
+import { useRouter } from "vue-router";
 import { useSession } from "../../stores/session.js";
 import { call } from "../../api/client.js";
 import { formatMoney } from "../../composables/money.js";
@@ -9,6 +10,7 @@ import { t } from "../../composables/i18n.js";
 import Select from "../../components/Select.vue";
 
 const session = useSession();
+const router = useRouter();
 const { activeCompany, user } = storeToRefs(session);
 
 const loading = ref(false);
@@ -77,6 +79,15 @@ async function load() {
 	} finally {
 		loading.value = false;
 	}
+}
+
+async function selectWarehouse(warehouse) {
+	if (!warehouse?.name) return;
+	if (warehouse.is_group) {
+		toggle(warehouse.name);
+		return;
+	}
+	router.push({ path: "/inventory/stock-status", query: { warehouse: warehouse.name } });
 }
 
 function toggle(name) {
@@ -201,7 +212,12 @@ watch(activeCompany, load);
 					</tr>
 				</thead>
 				<tbody>
-					<tr v-for="n in flattened" :key="n.name">
+					<tr
+						v-for="n in flattened"
+						:key="n.name"
+						:class="{ 'warehouse-select-row': !n.is_group }"
+						@click="selectWarehouse(n)"
+					>
 						<td>
 							<div
 								class="d-flex align-items-center gap-1 wh-row"
@@ -211,7 +227,7 @@ watch(activeCompany, load);
 									v-if="n.is_group"
 									type="button"
 									class="btn btn-icon btn-sm btn-ghost-secondary"
-									@click="toggle(n.name)"
+									@click.stop="toggle(n.name)"
 									:aria-label="expanded.has(n.name) ? t('Collapse') : t('Expand')"
 								>
 									<i class="ti" :class="expanded.has(n.name) ? 'ti-chevron-down' : 'ti-chevron-right'"></i>
@@ -227,7 +243,7 @@ watch(activeCompany, load);
 									type="button"
 									class="btn btn-icon btn-sm btn-ghost-primary wh-add ms-1"
 									:title="t('Add child warehouse')"
-									@click="openCreate(n.name)"
+									@click.stop="openCreate(n.name)"
 								>
 									<i class="ti ti-plus"></i>
 								</button>
@@ -313,4 +329,6 @@ watch(activeCompany, load);
 <style scoped>
 .wh-add { opacity: 0; transition: opacity 0.15s ease; }
 .wh-row:hover .wh-add { opacity: 1; }
+.warehouse-select-row { cursor: pointer; }
+.warehouse-select-row:hover { background: rgba(32, 107, 196, 0.04); }
 </style>

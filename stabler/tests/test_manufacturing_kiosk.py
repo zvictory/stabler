@@ -7,12 +7,14 @@ from frappe import PermissionError
 from stabler.api.manufacturing import work_order_detail
 
 class TestManufacturingKiosk(unittest.TestCase):
+	@patch("stabler.api.manufacturing._require_mfg")
+	@patch("stabler.api.manufacturing._assert_can_read")
 	@patch("stabler.api.manufacturing.frappe.db.exists")
 	@patch("stabler.api.manufacturing.frappe.get_doc")
 	@patch("stabler.api.manufacturing._is_mfg_manager")
 	@patch("stabler.api.manufacturing._is_warehouse_role")
 	@patch("stabler.api.manufacturing.frappe.session")
-	def test_operator_a_viewing_own_work_order(self, mock_session, mock_is_wh, mock_is_mgr, mock_get_doc, mock_exists):
+	def test_operator_a_viewing_own_work_order(self, mock_session, mock_is_wh, mock_is_mgr, mock_get_doc, mock_exists, mock_assert_can_read, mock_require_mfg):
 		# Setup
 		mock_exists.return_value = True
 		mock_is_mgr.return_value = False
@@ -61,12 +63,14 @@ class TestManufacturingKiosk(unittest.TestCase):
 		self.assertNotIn("timeline", payload)
 		mock_doc.get.assert_called_with("operator")
 
+	@patch("stabler.api.manufacturing._require_mfg")
+	@patch("stabler.api.manufacturing._assert_can_read")
 	@patch("stabler.api.manufacturing.frappe.db.exists")
 	@patch("stabler.api.manufacturing.frappe.get_doc")
 	@patch("stabler.api.manufacturing._is_mfg_manager")
 	@patch("stabler.api.manufacturing._is_warehouse_role")
 	@patch("stabler.api.manufacturing.frappe.session")
-	def test_operator_a_viewing_operator_b_work_order_fails(self, mock_session, mock_is_wh, mock_is_mgr, mock_get_doc, mock_exists):
+	def test_operator_a_viewing_operator_b_work_order_fails(self, mock_session, mock_is_wh, mock_is_mgr, mock_get_doc, mock_exists, mock_assert_can_read, mock_require_mfg):
 		# Setup
 		mock_exists.return_value = True
 		mock_is_mgr.return_value = False
@@ -81,12 +85,14 @@ class TestManufacturingKiosk(unittest.TestCase):
 		with self.assertRaises(PermissionError):
 			work_order_detail("WO-00002")
 
+	@patch("stabler.api.manufacturing._require_mfg")
+	@patch("stabler.api.manufacturing._assert_can_read")
 	@patch("stabler.api.manufacturing.frappe.db.exists")
 	@patch("stabler.api.manufacturing.frappe.get_doc")
 	@patch("stabler.api.manufacturing._is_mfg_manager")
 	@patch("stabler.api.manufacturing._is_warehouse_role")
 	@patch("stabler.api.manufacturing.frappe.session")
-	def test_warehouse_user_viewing_work_order(self, mock_session, mock_is_wh, mock_is_mgr, mock_get_doc, mock_exists):
+	def test_warehouse_user_viewing_work_order(self, mock_session, mock_is_wh, mock_is_mgr, mock_get_doc, mock_exists, mock_assert_can_read, mock_require_mfg):
 		# Setup
 		mock_exists.return_value = True
 		mock_is_mgr.return_value = False
@@ -125,13 +131,15 @@ class TestManufacturingKiosk(unittest.TestCase):
 		self.assertNotIn("rate", req_items_payload[0])
 		self.assertNotIn("amount", req_items_payload[0])
 
+	@patch("stabler.api.manufacturing._require_mfg")
+	@patch("stabler.api.manufacturing._assert_can_read")
 	@patch("stabler.api.manufacturing.frappe.db.exists")
 	@patch("stabler.api.manufacturing.frappe.get_doc")
 	@patch("stabler.api.manufacturing._is_mfg_manager")
 	@patch("stabler.api.manufacturing._is_warehouse_role")
 	@patch("stabler.api.manufacturing.frappe.session")
 	@patch("stabler.api.manufacturing.frappe.get_all")
-	def test_manager_viewing_work_order(self, mock_get_all, mock_session, mock_is_wh, mock_is_mgr, mock_get_doc, mock_exists):
+	def test_manager_viewing_work_order(self, mock_get_all, mock_session, mock_is_wh, mock_is_mgr, mock_get_doc, mock_exists, mock_assert_can_read, mock_require_mfg):
 		# Setup
 		mock_exists.return_value = True
 		mock_is_mgr.return_value = True # User is manager

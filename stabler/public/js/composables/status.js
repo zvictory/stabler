@@ -1,6 +1,58 @@
 import { t } from "./i18n.js";
 
 export const STATUS_MAP = {
+	"Budget Variance": {
+		favorable: "bg-green-lt",
+		unfavorable: "bg-red-lt",
+		on_budget: "bg-secondary-lt",
+	},
+	"Attendance Status": {
+		present: "bg-green-lt",
+		late_flat: "bg-yellow-lt",
+		late_step: "bg-orange-lt",
+		half_day: "bg-azure-lt",
+		absent: "bg-red-lt",
+		holiday: "bg-purple-lt",
+	},
+	"Gate Device": {
+		Active: "bg-green-lt",
+		Paused: "bg-yellow-lt",
+		Error: "bg-red-lt",
+	},
+	"Device Mapping": {
+		Active: "bg-green-lt",
+		Inactive: "bg-secondary-lt",
+	},
+	"Raw Gate Event": {
+		Pending: "bg-yellow-lt",
+		Processed: "bg-green-lt",
+		Duplicate: "bg-secondary-lt",
+		Unmatched: "bg-orange-lt",
+		Error: "bg-red-lt",
+	},
+	"Attendance Exception": {
+		Open: "bg-yellow-lt",
+		Resolved: "bg-green-lt",
+		Ignored: "bg-secondary-lt",
+	},
+	"Correction Status": {
+		Draft: "bg-secondary-lt",
+		Pending: "bg-yellow-lt",
+		Approved: "bg-green-lt",
+		Rejected: "bg-red-lt",
+		Applied: "bg-blue-lt",
+	},
+	"Summary Status": {
+		Draft: "bg-secondary-lt",
+		Ready: "bg-azure-lt",
+		Locked: "bg-green-lt",
+	},
+	"Employee": {
+		Active: "bg-success-lt",
+		Inactive: "bg-secondary-lt",
+		Suspended: "bg-yellow-lt",
+		Left: "bg-red-lt",
+	},
 	"Sales Order": {
 		Draft: "bg-secondary-lt",
 		"To Deliver and Bill": "bg-yellow-lt",
@@ -38,6 +90,17 @@ export const STATUS_MAP = {
 		"Credit Note Issued": "bg-purple-lt",
 		"Partly Paid": "bg-blue-lt",
 		Draft: "bg-secondary-lt",
+	},
+	"Stabler Approval Request": {
+		Pending: "bg-yellow-lt",
+		Approved: "bg-green-lt",
+		Rejected: "bg-red-lt",
+		Cancelled: "bg-secondary-lt",
+	},
+	"Stabler Bank Import": {
+		Imported: "bg-green-lt",
+		Partial: "bg-yellow-lt",
+		Failed: "bg-red-lt",
 	},
 	"docstatus": {
 		0: "bg-yellow-lt", // Draft

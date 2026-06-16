@@ -16,3 +16,7 @@ stabler.patches.v15_add_work_order_operator
 stabler.patches.v16_service_module_p1
 stabler.patches.v17_service_issue_types_backfill
 stabler.patches.v18_crm_icecream_fields
+stabler.patches.v19_add_user_allowed_owners_territories
+stabler.patches.v20_cost_field_perm_level
+stabler.patches.v21_employee_timepay_fields
+stabler.patches.v22_employee_comp_fields

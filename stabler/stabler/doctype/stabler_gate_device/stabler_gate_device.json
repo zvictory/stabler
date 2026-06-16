@@ -1,0 +1,46 @@
+{
+ "actions": [],
+ "allow_rename": 1,
+ "autoname": "field:device_name",
+ "creation": "2026-06-16 09:10:00.000000",
+ "doctype": "DocType",
+ "editable_grid": 1,
+ "engine": "InnoDB",
+ "field_order": [
+  "device_name",
+  "device_type",
+  "integration_type",
+  "enabled",
+  "column_break_1",
+  "branch",
+  "timezone",
+  "last_sync",
+  "status"
+ ],
+ "fields": [
+  {"fieldname": "device_name", "fieldtype": "Data", "label": "Device Name", "reqd": 1, "unique": 1, "in_list_view": 1},
+  {"fieldname": "device_type", "fieldtype": "Data", "label": "Device Type", "in_list_view": 1},
+  {"fieldname": "integration_type", "fieldtype": "Select", "label": "Integration", "options": "Timepay\nManual\nExcel\nOther", "default": "Timepay", "in_list_view": 1},
+  {"fieldname": "enabled", "fieldtype": "Check", "label": "Enabled", "default": "1"},
+  {"fieldname": "column_break_1", "fieldtype": "Column Break"},
+  {"fieldname": "branch", "fieldtype": "Link", "label": "Branch", "options": "Branch"},
+  {"fieldname": "timezone", "fieldtype": "Data", "label": "Timezone", "default": "Asia/Tashkent"},
+  {"fieldname": "last_sync", "fieldtype": "Datetime", "label": "Last Sync", "read_only": 1},
+  {"fieldname": "status", "fieldtype": "Select", "label": "Status", "options": "Active\nPaused\nError", "default": "Active", "in_list_view": 1}
+ ],
+ "links": [],
+ "modified": "2026-06-16 09:10:00.000000",
+ "modified_by": "Administrator",
+ "module": "Stabler",
+ "name": "Stabler Gate Device",
+ "naming_rule": "By fieldname",
+ "owner": "Administrator",
+ "permissions": [
+  {"role": "System Manager", "read": 1, "write": 1, "create": 1, "delete": 1, "report": 1, "export": 1},
+  {"role": "HR Manager", "read": 1, "write": 1, "create": 1, "report": 1, "export": 1}
+ ],
+ "sort_field": "modified",
+ "sort_order": "DESC",
+ "states": [],
+ "track_changes": 1
+}

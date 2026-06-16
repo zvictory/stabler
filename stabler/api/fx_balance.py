@@ -1,0 +1,121 @@
+"""System-wide multi-currency rounding-residual auto-balancing.
+
+A document that posts to the GL must balance in the company (reporting) currency.
+When the transaction currency differs, translating the amount and its allocations
+can leave a sub-unit base-currency residual — a realized exchange gain/loss
+(IAS 21 §28 / ASC 830-20-35-1), not a user error. ERPNext blocks submit
+("Difference Amount must be zero" / "Total Debit must equal Total Credit").
+
+This module auto-books a *tiny* residual to the company Exchange Gain/Loss
+account, leaving the transaction-currency amount (the user-typed amount)
+untouched as ground truth — exactly how NetSuite/QuickBooks/Xero handle it.
+
+Registered in hooks.py as a `before_validate` doc-event for Payment Entry and
+Journal Entry, so it runs BEFORE ERPNext's own balance check, on every save and
+submit, regardless of where the document was created (SPA, Desk, transfer,
+expense, remittance, import). Idempotent: prior auto-rows are stripped and
+recomputed each pass, so re-saving never stacks duplicate lines. A residual
+larger than the rounding tolerance is left alone for ERPNext to reject loudly —
+that's a real allocation error, not rounding.
+"""
+
+from __future__ import annotations
+
+import frappe
+from frappe import _
+from frappe.utils import flt
+
+from stabler.api._fx_residual import base_precision_for, residual_tolerance, within_tolerance
+
+_PE_MARKER = "Exchange rounding (auto)"
+_JE_MARKER = "fx-rounding-auto"
+
+
+def auto_balance_fx_residual(doc, method=None):
+	"""doc_event entrypoint (before_validate). Dispatches by doctype."""
+	try:
+		if doc.doctype == "Payment Entry":
+			_balance_payment_entry(doc)
+		elif doc.doctype == "Journal Entry":
+			_balance_journal_entry(doc)
+	except Exception:
+		# Never let auto-balancing break a legitimate save/submit; ERPNext's own
+		# balance validation remains the backstop.
+		frappe.log_error(title="fx_balance: auto-balance failed", message=frappe.get_traceback())
+
+
+def _gl_and_cost_center(company: str):
+	gl = (
+		frappe.get_cached_value("Company", company, "exchange_gain_loss_account")
+		or frappe.get_cached_value("Company", company, "round_off_account")
+	)
+	cc = (
+		frappe.get_cached_value("Company", company, "round_off_cost_center")
+		or frappe.get_cached_value("Company", company, "cost_center")
+	)
+	return gl, cc
+
+
+def _balance_payment_entry(doc) -> None:
+	# Strip any prior auto deduction so we recompute cleanly (idempotent).
+	deductions = doc.get("deductions") or []
+	if any((d.description or "") == _PE_MARKER for d in deductions):
+		doc.set("deductions", [d for d in deductions if (d.description or "") != _PE_MARKER])
+
+	if hasattr(doc, "set_difference_amount"):
+		doc.set_difference_amount()
+	diff = flt(getattr(doc, "difference_amount", 0))
+	if not diff:
+		return
+
+	company_currency = frappe.get_cached_value("Company", doc.company, "default_currency") or "UZS"
+	tol = residual_tolerance(len(doc.get("references") or []), base_precision_for(company_currency))
+	if not within_tolerance(diff, tol):
+		return  # real imbalance — let ERPNext reject it
+
+	gl, cc = _gl_and_cost_center(doc.company)
+	if not gl:
+		return  # no account to book to — ERPNext will raise its standard error
+
+	doc.append("deductions", {
+		"account": gl,
+		"cost_center": cc,
+		"amount": diff,
+		"description": _PE_MARKER,
+	})
+	if hasattr(doc, "set_difference_amount"):
+		doc.set_difference_amount()
+
+
+def _balance_journal_entry(doc) -> None:
+	# Strip any prior auto row first (idempotent).
+	accounts = doc.get("accounts") or []
+	if any((a.user_remark or "") == _JE_MARKER for a in accounts):
+		doc.set("accounts", [a for a in accounts if (a.user_remark or "") != _JE_MARKER])
+
+	if hasattr(doc, "set_total_debit_credit"):
+		doc.set_total_debit_credit()
+	diff = flt(flt(getattr(doc, "total_debit", 0)) - flt(getattr(doc, "total_credit", 0)))
+	if not diff:
+		return
+
+	company_currency = frappe.get_cached_value("Company", doc.company, "default_currency") or "UZS"
+	tol = residual_tolerance(len(doc.get("accounts") or []), base_precision_for(company_currency))
+	if not within_tolerance(diff, tol):
+		return
+
+	gl, cc = _gl_and_cost_center(doc.company)
+	if not gl:
+		return
+
+	row = {"account": gl, "cost_center": cc, "user_remark": _JE_MARKER}
+	# total_debit > total_credit  → add a credit to balance; else add a debit.
+	if diff > 0:
+		row["credit_in_account_currency"] = abs(diff)
+		row["credit"] = abs(diff)
+	else:
+		row["debit_in_account_currency"] = abs(diff)
+		row["debit"] = abs(diff)
+	doc.append("accounts", row)
+	if hasattr(doc, "set_total_debit_credit"):
+		doc.set_total_debit_credit()

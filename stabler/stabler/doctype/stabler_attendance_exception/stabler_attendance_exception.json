@@ -1,0 +1,53 @@
+{
+ "actions": [],
+ "allow_rename": 1,
+ "creation": "2026-06-16 10:00:00.000000",
+ "doctype": "DocType",
+ "editable_grid": 0,
+ "engine": "InnoDB",
+ "field_order": [
+  "employee",
+  "employee_name",
+  "exception_date",
+  "exception_type",
+  "column_break_1",
+  "status",
+  "company",
+  "raw_event",
+  "section_details",
+  "details",
+  "section_resolution",
+  "resolved_by",
+  "resolved_at"
+ ],
+ "fields": [
+  {"fieldname": "employee", "fieldtype": "Link", "label": "Employee", "options": "Employee", "in_list_view": 1},
+  {"fieldname": "employee_name", "fieldtype": "Data", "label": "Employee Name", "fetch_from": "employee.employee_name", "read_only": 1, "in_list_view": 1},
+  {"fieldname": "exception_date", "fieldtype": "Date", "label": "Exception Date", "reqd": 1, "in_list_view": 1},
+  {"fieldname": "exception_type", "fieldtype": "Select", "label": "Exception Type", "options": "unmatched_gate_user\nmissing_check_in\nmissing_check_out\nduplicate_event\nlate\nearly_leave\novertime\nabsent\nshift_mismatch\nclock_drift\nmanual_review", "in_list_view": 1},
+  {"fieldname": "column_break_1", "fieldtype": "Column Break"},
+  {"fieldname": "status", "fieldtype": "Select", "label": "Status", "options": "Open\nResolved\nIgnored", "default": "Open", "in_list_view": 1},
+  {"fieldname": "company", "fieldtype": "Link", "label": "Company", "options": "Company"},
+  {"fieldname": "raw_event", "fieldtype": "Link", "label": "Raw Event", "options": "Stabler Raw Attendance Event"},
+  {"fieldname": "section_details", "fieldtype": "Section Break", "label": "Details"},
+  {"fieldname": "details", "fieldtype": "Small Text", "label": "Details"},
+  {"fieldname": "section_resolution", "fieldtype": "Section Break", "label": "Resolution"},
+  {"fieldname": "resolved_by", "fieldtype": "Link", "label": "Resolved By", "options": "User", "read_only": 1},
+  {"fieldname": "resolved_at", "fieldtype": "Datetime", "label": "Resolved At", "read_only": 1}
+ ],
+ "links": [],
+ "modified": "2026-06-16 10:00:00.000000",
+ "modified_by": "Administrator",
+ "module": "Stabler",
+ "name": "Stabler Attendance Exception",
+ "owner": "Administrator",
+ "permissions": [
+  {"role": "System Manager", "read": 1, "write": 1, "create": 1, "delete": 1, "report": 1, "export": 1},
+  {"role": "HR Manager", "read": 1, "write": 1, "create": 1, "delete": 0, "report": 1, "export": 1},
+  {"role": "HR User", "read": 1, "report": 1}
+ ],
+ "sort_field": "exception_date",
+ "sort_order": "DESC",
+ "states": [],
+ "track_changes": 1
+}

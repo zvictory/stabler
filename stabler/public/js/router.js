@@ -18,6 +18,11 @@ import PaymentEntries from "./pages/money/PaymentEntries.vue";
 import Expenses from "./pages/money/Expenses.vue";
 import Transfers from "./pages/money/Transfers.vue";
 import Reports from "./pages/money/Reports.vue";
+import Approvals from "./pages/money/Approvals.vue";
+import Reconcile from "./pages/money/Reconcile.vue";
+import FxRevaluation from "./pages/money/FxRevaluation.vue";
+import Budgets from "./pages/money/Budgets.vue";
+import BudgetVsActual from "./pages/money/BudgetVsActual.vue";
 import SalesHome from "./pages/sales/SalesHome.vue";
 import Customers from "./pages/sales/Customers.vue";
 import Quotations from "./pages/sales/Quotations.vue";
@@ -45,20 +50,34 @@ import PurchasingAging from "./pages/purchasing/Aging.vue";
 import InventoryHome from "./pages/inventory/InventoryHome.vue";
 import Items from "./pages/inventory/Items.vue";
 import Warehouses from "./pages/inventory/Warehouses.vue";
+import StockStatus from "./pages/inventory/StockStatus.vue";
 import StockLedger from "./pages/inventory/StockLedger.vue";
 import StockEntries from "./pages/inventory/StockEntries.vue";
 import LowStockAlerts from "./pages/inventory/LowStockAlerts.vue";
 import MaterialStaging from "./pages/inventory/MaterialStaging.vue";
+import StockReconciliation from "./pages/inventory/StockReconciliation.vue";
 import ManufacturingHome from "./pages/manufacturing/ManufacturingHome.vue";
 import BOMs from "./pages/manufacturing/BOMs.vue";
 import WorkOrders from "./pages/manufacturing/WorkOrders.vue";
 import ManufacturingOperatorBoard from "./pages/manufacturing/ManufacturingOperatorBoard.vue";
 import HRHome from "./pages/hr/HRHome.vue";
+import HROverview from "./pages/hr/Overview.vue";
 import Employees from "./pages/hr/Employees.vue";
+import EmployeeProfile from "./pages/hr/EmployeeProfile.vue";
 import HROrgChart from "./pages/hr/OrgChart.vue";
 import HRAttendance from "./pages/hr/Attendance.vue";
 import LeaveApplications from "./pages/hr/LeaveApplications.vue";
 import Payroll from "./pages/hr/Payroll.vue";
+import RuleSets from "./pages/hr/RuleSets.vue";
+import RuleSetEditor from "./pages/hr/RuleSetEditor.vue";
+import AttendanceSimulator from "./pages/hr/AttendanceSimulator.vue";
+import GateDevices from "./pages/hr/GateDevices.vue";
+import EmployeeDeviceMapping from "./pages/hr/EmployeeDeviceMapping.vue";
+import RawGateEvents from "./pages/hr/RawGateEvents.vue";
+import AttendanceDashboard from "./pages/hr/AttendanceDashboard.vue";
+import ExceptionsQueue from "./pages/hr/ExceptionsQueue.vue";
+import CorrectionsQueue from "./pages/hr/CorrectionsQueue.vue";
+import PayrollReadiness from "./pages/hr/PayrollReadiness.vue";
 import SFAHome from "./pages/sfa/SFAHome.vue";
 import Outlets from "./pages/sfa/Outlets.vue";
 import Routes from "./pages/sfa/Routes.vue";
@@ -101,6 +120,7 @@ import AdminUsers from "./pages/admin/Users.vue";
 import AdminRoles from "./pages/admin/Roles.vue";
 import AdminCompanies from "./pages/admin/Companies.vue";
 import AdminCompliance from "./pages/admin/Compliance.vue";
+import AdminAccessReview from "./pages/admin/AccessReview.vue";
 import NotFound from "./pages/NotFound.vue";
 import ServerError from "./pages/ServerError.vue";
 
@@ -136,6 +156,11 @@ const routes = [
 			{ path: "expenses", name: "money-expenses", component: Expenses, meta: { title: t("Expenses") } },
 			{ path: "transfers", name: "money-transfers", component: Transfers, meta: { title: t("Transfers") } },
 			{ path: "reports", name: "money-reports", component: Reports, meta: { title: t("Reports") } },
+			{ path: "approvals", name: "money-approvals", component: Approvals, meta: { title: t("Approvals") } },
+			{ path: "reconcile", name: "money-reconcile", component: Reconcile, meta: { title: t("Reconcile") } },
+			{ path: "fx-revaluation", name: "money-fx-revaluation", component: FxRevaluation, meta: { title: t("FX Revaluation"), module: "fx_revaluation" } },
+			{ path: "budgets", name: "money-budgets", component: Budgets, meta: { title: t("Budgets"), module: "budget" } },
+			{ path: "budgets/vs-actual", name: "budget-vs-actual", component: BudgetVsActual, meta: { title: t("Budget vs Actual"), module: "budget" } },
 		],
 	},
 	{
@@ -188,9 +213,11 @@ const routes = [
 			{ path: "", redirect: "/inventory/items" },
 			{ path: "items", name: "inventory-items", component: Items, meta: { title: t("Items") } },
 			{ path: "warehouses", name: "inventory-warehouses", component: Warehouses, meta: { title: t("Warehouses") } },
+			{ path: "stock-status", name: "inventory-stock-status", component: StockStatus, meta: { title: t("Stock Status") } },
 			{ path: "staging", name: "inventory-staging", component: MaterialStaging, meta: { title: t("Material Staging") } },
 			{ path: "entries", name: "inventory-entries", component: StockEntries, meta: { title: t("Stock Entries") } },
 			{ path: "ledger", name: "inventory-ledger", component: StockLedger, meta: { title: t("Stock Ledger") } },
+			{ path: "reconcile", name: "inventory-reconcile", component: StockReconciliation, meta: { title: t("Stock Reconciliation") } },
 			{ path: "alerts", name: "inventory-alerts", component: LowStockAlerts, meta: { title: t("Low Stock Alerts") } },
 		],
 	},
@@ -209,12 +236,25 @@ const routes = [
 		component: HRHome,
 		meta: { title: t("People"), module: "hr" },
 		children: [
-			{ path: "", redirect: "/hr/employees" },
+			{ path: "", redirect: "/hr/overview" },
+			{ path: "overview", name: "hr-overview", component: HROverview, meta: { title: t("Overview") } },
 			{ path: "employees", name: "hr-employees", component: Employees, meta: { title: t("Employees") } },
+			{ path: "employees/:name", name: "hr-employee-profile", component: EmployeeProfile, meta: { title: t("Employee Profile") } },
 			{ path: "org", name: "hr-org", component: HROrgChart, meta: { title: t("Positions") } },
 			{ path: "attendance", name: "hr-attendance", component: HRAttendance, meta: { title: t("Attendance") } },
 			{ path: "leave", name: "hr-leave", component: LeaveApplications, meta: { title: t("Leave") } },
 			{ path: "payroll", name: "hr-payroll", component: Payroll, meta: { title: t("Payroll") } },
+			{ path: "attendance-rules", name: "hr-attendance-rules", component: RuleSets, meta: { title: t("Attendance Rule Sets") } },
+			{ path: "attendance-rules/new", name: "hr-attendance-rule-new", component: RuleSetEditor, meta: { title: t("New Rule Set") } },
+			{ path: "attendance-rules/:name", name: "hr-attendance-rule", component: RuleSetEditor, meta: { title: t("Rule Set") } },
+			{ path: "attendance-simulator", name: "hr-attendance-simulator", component: AttendanceSimulator, meta: { title: t("Attendance Simulator") } },
+			{ path: "gate-devices", name: "hr-gate-devices", component: GateDevices, meta: { title: t("Gate Devices") } },
+			{ path: "employee-device-mapping", name: "hr-device-mapping", component: EmployeeDeviceMapping, meta: { title: t("Employee Device Mapping") } },
+			{ path: "raw-gate-events", name: "hr-raw-events", component: RawGateEvents, meta: { title: t("Raw Gate Events") } },
+			{ path: "attendance-dashboard", name: "hr-attendance-dashboard", component: AttendanceDashboard, meta: { title: t("Attendance Dashboard") } },
+			{ path: "exceptions-queue", name: "hr-exceptions-queue", component: ExceptionsQueue, meta: { title: t("Exceptions Queue") } },
+			{ path: "corrections", name: "hr-corrections", component: CorrectionsQueue, meta: { title: t("Corrections") } },
+			{ path: "payroll-readiness", name: "hr-payroll-readiness", component: PayrollReadiness, meta: { title: t("Payroll Readiness") } },
 		],
 	},
 	{
@@ -312,6 +352,7 @@ const routes = [
 			{ path: "", redirect: "/admin/users" },
 			{ path: "users", name: "admin-users", component: AdminUsers, meta: { title: t("Users") } },
 			{ path: "roles", name: "admin-roles", component: AdminRoles, meta: { title: t("Roles") } },
+			{ path: "access-review", name: "admin-access", component: AdminAccessReview, meta: { title: t("Access Review") } },
 			{ path: "companies", name: "admin-companies", component: AdminCompanies, meta: { title: t("Companies") } },
 			{ path: "compliance", name: "admin-compliance", component: AdminCompliance, meta: { title: t("Compliance") } },
 		],

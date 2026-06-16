@@ -9,7 +9,7 @@ import frappe
 from frappe import _
 from frappe.utils import cint, flt, get_datetime, getdate, now_datetime, today
 
-from stabler.api._common import _assert_can_read, _require_company
+from stabler.api._common import _assert_can_read, _require_company, _assert_can_write
 from stabler.api.organization import _can_access_module
 from stabler.stabler.doctype.stabler_settings.stabler_settings import module_map_for
 
@@ -312,6 +312,7 @@ def create_ticket(
 
 @frappe.whitelist()
 def update_ticket_status(name: str, status: str, tech_state: str | None = None):
+	_assert_can_write("Issue", name, "write")
 	if not name:
 		frappe.throw(_("Ticket is required."))
 	if status in TECH_STATES:
@@ -334,6 +335,7 @@ def update_ticket_status(name: str, status: str, tech_state: str | None = None):
 
 @frappe.whitelist()
 def assign_ticket(name: str, user: str):
+	_assert_can_write("Issue", name, "write")
 	if not name:
 		frappe.throw(_("Ticket is required."))
 	if not user or not frappe.db.exists("User", user):
@@ -653,6 +655,7 @@ def calendar_feed(company: str, month: str, service_person: str | None = None, c
 
 @frappe.whitelist()
 def reschedule_detail(name: str, date: str):
+	_assert_can_write("Maintenance Schedule Detail", name, "write")
 	if not name or not frappe.db.exists("Maintenance Schedule Detail", name):
 		frappe.throw(_("Schedule detail is required."))
 	detail = frappe.get_doc("Maintenance Schedule Detail", name)

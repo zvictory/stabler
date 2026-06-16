@@ -14,7 +14,44 @@
   "factura_export_enabled",
   "pos_gateways_section",
   "pos_session_ttl_minutes",
-  "pos_gateways"
+  "pos_gateways",
+  "approvals_section",
+  "enable_payment_approvals",
+  "approval_threshold_base",
+  "enable_po_approvals",
+  "po_approval_threshold_base",
+  "enable_three_way_match",
+  "three_way_qty_tolerance_pct",
+  "three_way_rate_tolerance_pct",
+  "backups_section",
+  "enable_scheduled_backup",
+  "backup_with_files",
+  "backup_retention_days",
+  "last_backup_at",
+  "backup_drive_column",
+  "backup_to_google_drive",
+  "gdrive_folder_id",
+  "last_gdrive_upload_at",
+  "restore_section",
+  "restore_test_interval_days",
+  "last_restore_test_date",
+  "access_section",
+  "enforce_sod",
+  "period_close_section",
+  "enable_period_close",
+  "period_close_date",
+  "period_close_override_roles",
+  "enable_sod_enforcement",
+  "pi_approvals_section",
+  "enable_pi_approvals",
+  "pi_approval_threshold_base",
+  "pi_approval_tiers",
+  "master_scoping_section",
+  "restrict_masters_to_owner",
+  "restrict_masters_to_territory",
+  "cost_visible_roles",
+  "backup_keep_daily",
+  "backup_keep_weekly"
  ],
  "fields": [
   {
@@ -76,6 +113,234 @@
    "fieldtype": "Table",
    "label": "POS Gateways",
    "options": "Stabler POS Gateway"
+  },
+  {
+   "fieldname": "approvals_section",
+   "fieldtype": "Section Break",
+   "label": "Payment Approvals (Maker-Checker)"
+  },
+  {
+   "default": "1",
+   "description": "When on, controlled money-movement documents (Payment Entry, Journal Entry) must be approved by a second user before they can be posted. The approver must differ from the requester (segregation of duties).",
+   "fieldname": "enable_payment_approvals",
+   "fieldtype": "Check",
+   "label": "Require approval to post payments"
+  },
+  {
+   "default": "0",
+   "description": "Only require approval when the amount (in company base currency) is at or above this value. Leave 0 to require approval for every controlled document.",
+   "fieldname": "approval_threshold_base",
+   "fieldtype": "Currency",
+   "label": "Approval threshold (base currency)"
+  },
+  {
+   "default": "0",
+   "description": "When on, a Purchase Order must be approved by a second user before it can be submitted (procurement spend control). Off by default so enabling Stabler does not suddenly block existing POs — turn on deliberately, ideally with a threshold below.",
+   "fieldname": "enable_po_approvals",
+   "fieldtype": "Check",
+   "label": "Require approval to submit Purchase Orders"
+  },
+  {
+   "default": "0",
+   "description": "Only require PO approval at or above this base-currency amount. Leave 0 to require approval for every Purchase Order.",
+   "fieldname": "po_approval_threshold_base",
+   "fieldtype": "Currency",
+   "label": "PO approval threshold (base currency)"
+  },
+  {
+   "default": "0",
+   "description": "When on, a Vendor Bill (Purchase Invoice) is checked against its Purchase Order and Receipt before posting: billed rate vs PO rate, and billed qty vs received qty. Exceptions beyond tolerance block submission. This complements (does not replace) ERPNext's native Over Billing Allowance, which caps the billed amount. Off by default.",
+   "fieldname": "enable_three_way_match",
+   "fieldtype": "Check",
+   "label": "Three-way match on vendor bills"
+  },
+  {
+   "default": "0",
+   "description": "Allowed % a billed quantity may exceed the received/ordered quantity before it is flagged.",
+   "fieldname": "three_way_qty_tolerance_pct",
+   "fieldtype": "Percent",
+   "label": "3-way match: qty tolerance (%)"
+  },
+  {
+   "default": "0",
+   "description": "Allowed % a billed rate may differ from the PO rate before it is flagged.",
+   "fieldname": "three_way_rate_tolerance_pct",
+   "fieldtype": "Percent",
+   "label": "3-way match: rate tolerance (%)"
+  },
+  {
+   "fieldname": "backups_section",
+   "fieldtype": "Section Break",
+   "label": "Backups & Disaster Recovery"
+  },
+  {
+   "default": "1",
+   "description": "Run an automatic backup every day (via the Frappe scheduler).",
+   "fieldname": "enable_scheduled_backup",
+   "fieldtype": "Check",
+   "label": "Daily automatic backup"
+  },
+  {
+   "default": "0",
+   "description": "Include uploaded files (attachments) in backups. Larger and slower; the database alone is enough to restore ledgers.",
+   "fieldname": "backup_with_files",
+   "fieldtype": "Check",
+   "label": "Include files in backup"
+  },
+  {
+   "default": "14",
+   "description": "Delete backup sets older than this many days. The most recent 3 sets are always kept regardless of age.",
+   "fieldname": "backup_retention_days",
+   "fieldtype": "Int",
+   "label": "Keep backups for (days)"
+  },
+  {
+   "fieldname": "last_backup_at",
+   "fieldtype": "Datetime",
+   "label": "Last backup at",
+   "read_only": 1
+  },
+  {
+   "fieldname": "backup_drive_column",
+   "fieldtype": "Column Break"
+  },
+  {
+   "default": "0",
+   "description": "After each backup, upload the set to Google Drive (off-box copy). Requires a service account in site_config (stabler_gdrive_service_account) and a folder ID below.",
+   "fieldname": "backup_to_google_drive",
+   "fieldtype": "Check",
+   "label": "Copy backups to Google Drive"
+  },
+  {
+   "description": "Target Google Drive folder ID (the part after /folders/ in the URL). Use a Shared Drive folder, and share it with the service account email.",
+   "fieldname": "gdrive_folder_id",
+   "fieldtype": "Data",
+   "label": "Google Drive folder ID"
+  },
+  {
+   "fieldname": "last_gdrive_upload_at",
+   "fieldtype": "Datetime",
+   "label": "Last Drive upload at",
+   "read_only": 1
+  },
+  {
+   "fieldname": "restore_section",
+   "fieldtype": "Section Break",
+   "label": "Restore testing"
+  },
+  {
+   "default": "90",
+   "description": "Warn when the last successful restore test is older than this. A backup you have never restored is not a backup you can trust.",
+   "fieldname": "restore_test_interval_days",
+   "fieldtype": "Int",
+   "label": "Restore-test interval (days)"
+  },
+  {
+   "fieldname": "last_restore_test_date",
+   "fieldtype": "Date",
+   "label": "Last restore tested on"
+  },
+  {
+   "fieldname": "access_section",
+   "fieldtype": "Section Break",
+   "label": "Access Control"
+  },
+  {
+   "default": "0",
+   "description": "When on, block assigning a role combination that creates a new critical/high segregation-of-duties conflict. Off (default) = warn only; review on the Access Review page.",
+   "fieldname": "enforce_sod",
+   "fieldtype": "Check",
+   "label": "Enforce segregation of duties"
+  },
+  {
+   "fieldname": "period_close_section",
+   "fieldtype": "Section Break",
+   "label": "Period Close"
+  },
+  {
+   "fieldname": "enable_period_close",
+   "fieldtype": "Check",
+   "label": "Enable Period Close",
+   "default": "0",
+   "description": "When on, posting on or before the Period Close Date is blocked for users without an override role."
+  },
+  {
+   "fieldname": "period_close_date",
+   "fieldtype": "Date",
+   "label": "Period Close Date",
+   "description": "Inclusive. Dates on or before this are locked."
+  },
+  {
+   "fieldname": "period_close_override_roles",
+   "fieldtype": "Small Text",
+   "label": "Period Close Override Roles",
+   "description": "Comma/newline separated roles allowed to post into a closed period. System Manager / Stabler Admin always allowed."
+  },
+  {
+   "fieldname": "enable_sod_enforcement",
+   "fieldtype": "Check",
+   "label": "Enable SoD Enforcement (blocking)",
+   "default": "0",
+   "description": "When on, block a user from performing conflicting lifecycle actions on the same document (e.g. create + approve). Off = advisory only."
+  },
+  {
+   "fieldname": "pi_approvals_section",
+   "fieldtype": "Section Break",
+   "label": "Purchase Invoice Approvals"
+  },
+  {
+   "fieldname": "enable_pi_approvals",
+   "fieldtype": "Check",
+   "label": "Enable Purchase Invoice Approvals",
+   "default": "0"
+  },
+  {
+   "fieldname": "pi_approval_threshold_base",
+   "fieldtype": "Currency",
+   "label": "PI Approval Threshold (Base Currency)"
+  },
+  {
+   "fieldname": "pi_approval_tiers",
+   "fieldtype": "Long Text",
+   "label": "PI Approval Tiers (JSON)",
+   "description": "Optional multi-level config: [{\"threshold\":0,\"approver_role\":\"Purchase Manager\",\"level\":1},...]. Empty = single-level."
+  },
+  {
+   "fieldname": "master_scoping_section",
+   "fieldtype": "Section Break",
+   "label": "Master Record Scoping"
+  },
+  {
+   "fieldname": "restrict_masters_to_owner",
+   "fieldtype": "Check",
+   "label": "Restrict Masters to Owner",
+   "default": "0",
+   "description": "Scope Customer/Supplier visibility by the user's Allowed Owner list."
+  },
+  {
+   "fieldname": "restrict_masters_to_territory",
+   "fieldtype": "Check",
+   "label": "Restrict Masters to Territory",
+   "default": "0",
+   "description": "Scope Customer/Supplier visibility by the user's Allowed Territory list."
+  },
+  {
+   "fieldname": "cost_visible_roles",
+   "fieldtype": "Small Text",
+   "label": "Cost-visible Roles",
+   "description": "Comma/newline separated roles allowed to see cost/margin fields. Others get them masked."
+  },
+  {
+   "fieldname": "backup_keep_daily",
+   "fieldtype": "Int",
+   "label": "Backups: keep daily",
+   "default": "7"
+  },
+  {
+   "fieldname": "backup_keep_weekly",
+   "fieldtype": "Int",
+   "label": "Backups: keep weekly",
+   "default": "4"
   }
  ],
  "index_web_pages_for_search": 1,

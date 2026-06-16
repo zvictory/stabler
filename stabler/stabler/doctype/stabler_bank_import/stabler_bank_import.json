@@ -1,0 +1,165 @@
+{
+ "actions": [],
+ "autoname": "format:BSTMT-{YYYY}-{######}",
+ "creation": "2026-06-15 10:00:00.000000",
+ "doctype": "DocType",
+ "editable_grid": 1,
+ "engine": "InnoDB",
+ "field_order": [
+  "bank_account",
+  "company",
+  "status",
+  "column_break_core",
+  "statement_account",
+  "period_from",
+  "period_to",
+  "counts_section",
+  "total_rows",
+  "imported_rows",
+  "column_break_counts",
+  "duplicate_rows",
+  "skipped_rows",
+  "source_section",
+  "file_name",
+  "format",
+  "notes"
+ ],
+ "fields": [
+  {
+   "fieldname": "bank_account",
+   "fieldtype": "Link",
+   "in_list_view": 1,
+   "in_standard_filter": 1,
+   "label": "Bank Account",
+   "options": "Bank Account",
+   "reqd": 1
+  },
+  {
+   "fieldname": "company",
+   "fieldtype": "Link",
+   "in_standard_filter": 1,
+   "label": "Company",
+   "options": "Company"
+  },
+  {
+   "default": "Imported",
+   "fieldname": "status",
+   "fieldtype": "Select",
+   "in_list_view": 1,
+   "in_standard_filter": 1,
+   "label": "Status",
+   "options": "Imported\nPartial\nFailed"
+  },
+  {
+   "fieldname": "column_break_core",
+   "fieldtype": "Column Break"
+  },
+  {
+   "description": "The account number the statement belongs to (РасчСчет).",
+   "fieldname": "statement_account",
+   "fieldtype": "Data",
+   "label": "Statement Account"
+  },
+  {
+   "fieldname": "period_from",
+   "fieldtype": "Date",
+   "label": "Period From"
+  },
+  {
+   "fieldname": "period_to",
+   "fieldtype": "Date",
+   "label": "Period To"
+  },
+  {
+   "fieldname": "counts_section",
+   "fieldtype": "Section Break",
+   "label": "Results"
+  },
+  {
+   "fieldname": "total_rows",
+   "fieldtype": "Int",
+   "in_list_view": 1,
+   "label": "Total Rows"
+  },
+  {
+   "fieldname": "imported_rows",
+   "fieldtype": "Int",
+   "in_list_view": 1,
+   "label": "Imported"
+  },
+  {
+   "fieldname": "column_break_counts",
+   "fieldtype": "Column Break"
+  },
+  {
+   "description": "Rows already present (matched by dedupe key) and skipped.",
+   "fieldname": "duplicate_rows",
+   "fieldtype": "Int",
+   "label": "Duplicates"
+  },
+  {
+   "description": "Rows skipped for missing direction/amount/date.",
+   "fieldname": "skipped_rows",
+   "fieldtype": "Int",
+   "label": "Skipped"
+  },
+  {
+   "fieldname": "source_section",
+   "fieldtype": "Section Break",
+   "label": "Source"
+  },
+  {
+   "fieldname": "file_name",
+   "fieldtype": "Data",
+   "label": "File Name"
+  },
+  {
+   "default": "1CClientBankExchange",
+   "fieldname": "format",
+   "fieldtype": "Data",
+   "label": "Format"
+  },
+  {
+   "fieldname": "notes",
+   "fieldtype": "Small Text",
+   "label": "Notes"
+  }
+ ],
+ "index_web_pages_for_search": 1,
+ "links": [],
+ "modified": "2026-06-15 10:00:00.000000",
+ "modified_by": "Administrator",
+ "module": "Stabler",
+ "name": "Stabler Bank Import",
+ "owner": "Administrator",
+ "permissions": [
+  {
+   "create": 1,
+   "delete": 1,
+   "email": 1,
+   "export": 1,
+   "print": 1,
+   "read": 1,
+   "report": 1,
+   "role": "System Manager",
+   "share": 1,
+   "write": 1
+  },
+  {
+   "create": 1,
+   "read": 1,
+   "report": 1,
+   "role": "Accounts Manager",
+   "write": 1
+  },
+  {
+   "create": 1,
+   "read": 1,
+   "report": 1,
+   "role": "Accounts User"
+  }
+ ],
+ "sort_field": "creation",
+ "sort_order": "DESC",
+ "states": []
+}
