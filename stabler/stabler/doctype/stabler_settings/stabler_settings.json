@@ -120,7 +120,7 @@
    "label": "Payment Approvals (Maker-Checker)"
   },
   {
-   "default": "1",
+   "default": "0",
    "description": "When on, controlled money-movement documents (Payment Entry, Journal Entry) must be approved by a second user before they can be posted. The approver must differ from the requester (segregation of duties).",
    "fieldname": "enable_payment_approvals",
    "fieldtype": "Check",
