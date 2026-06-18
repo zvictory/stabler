@@ -8,6 +8,7 @@
 31–60,31–60
 61–90,61–90
 90+,90+
+A new version is available.,Yangi versiya mavjud.
 A password reset email will be sent. The account is disabled until the user sets a password.,Parol o'zgartirishning elektron xati yuboriladi. Hisob foydalanuvchi parol belgilamaguncha o'chiriladi.
 A valid email is required,To'g'ri elektron pochta talab qilinadi
 "A ≤ {0}%, B ≤ {1}%, C rest — by revenue.","A ≤ {0}%, B ≤ {1}%, C qolgan — tushum bo'yicha."
@@ -405,6 +406,7 @@ Desk access,Stol kirishi
 Details,Tafsilotlar
 Direction,Yo'nalish
 Disabled,O'chirilgan
+Dismiss,Yopish
 Disc,Chegirma
 Disc %,Chegirma %
 Discount,Chegirma

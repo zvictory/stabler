@@ -5,6 +5,7 @@ import App from "./App.vue";
 import { useSession } from "./stores/session.js";
 
 import { useToast } from "./composables/useToast.js";
+import { startVersionCheck } from "./composables/version-check.js";
 
 const mountEl = document.getElementById("app");
 if (mountEl) {
@@ -56,6 +57,7 @@ if (mountEl) {
 
 	const session = useSession(pinia);
 	session.ensureBoot();
+	startVersionCheck();
 } else {
 	console.error("[stabler] #app mount point not found");
 }

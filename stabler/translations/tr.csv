@@ -8,6 +8,7 @@
 31–60,31–60
 61–90,61–90
 90+,90+
+A new version is available.,Yeni bir sürüm mevcut.
 A password reset email will be sent. The account is disabled until the user sets a password.,Şifre sıfırlama e-postası gönderilecek. Kullanıcı şifresini belirleyene kadar hesap devre dışı kalacak.
 A valid email is required,Geçerli bir e-posta adresi gereklidir
 "A ≤ {0}%, B ≤ {1}%, C rest — by revenue.","A ≤ {0}%, B ≤ {1}%, C diğer — gelir bazında."
@@ -400,6 +401,7 @@ Desk access,Desk erişimi
 Details,Ayrıntılar
 Direction,Yön
 Disabled,Devre Dışı
+Dismiss,Kapat
 Disc,İndirim
 Disc %,İndirim %
 Discount,İndirim

@@ -8,6 +8,7 @@
 31–60,31–60
 61–90,61–90
 90+,90+
+A new version is available.,Янги версия мавжуд.
 A password reset email will be sent. The account is disabled until the user sets a password.,Парол қайта тиклаш электрон хати юборилади. Ҳисоб фойдаланувчи парол белгилагунча ўчирилган ҳолатда қолади.
 A valid email is required,Тўғри электрон манзил зарур.
 "A ≤ {0}%, B ≤ {1}%, C rest — by revenue.","А ≤ {0}%, B ≤ {1}%, C қолган — тушум бўйича."
@@ -405,6 +406,7 @@ Desk access,Стол орқали кириш
 Details,Тафсилотлар
 Direction,Йўналиш
 Disabled,Ўчирилган
+Dismiss,Ёпиш
 Disc,Чегирма
 Disc %,Чегирма %
 Discount,Чегирма

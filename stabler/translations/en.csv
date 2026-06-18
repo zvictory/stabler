@@ -8,6 +8,7 @@
 31–60,31–60
 61–90,61–90
 90+,90+
+A new version is available.,A new version is available.
 A password reset email will be sent. The account is disabled until the user sets a password.,A password reset email will be sent. The account is disabled until the user sets a password.
 A valid email is required,A valid email is required
 "A ≤ {0}%, B ≤ {1}%, C rest — by revenue.","A ≤ {0}%, B ≤ {1}%, C rest — by revenue."
@@ -403,6 +404,7 @@ Desk access,Desk access
 Details,Details
 Direction,Direction
 Disabled,Disabled
+Dismiss,Dismiss
 Disc,Disc
 Disc %,Disc %
 Discount,Discount

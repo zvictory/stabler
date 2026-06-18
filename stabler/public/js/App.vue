@@ -4,6 +4,7 @@ import Sidebar from "./components/Sidebar.vue";
 import CommandPalette from "./components/CommandPalette.vue";
 import ToastHost from "./components/ToastHost.vue";
 import ConfirmHost from "./components/ConfirmHost.vue";
+import UpdateBanner from "./components/UpdateBanner.vue";
 import { useSession } from "./stores/session.js";
 
 const session = useSession();
@@ -16,6 +17,7 @@ onMounted(() => {
 	<div class="page">
 		<Sidebar />
 		<div class="page-wrapper">
+			<UpdateBanner />
 			<router-view v-slot="{ Component }">
 				<component :is="Component" />
 			</router-view>

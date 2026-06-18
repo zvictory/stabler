@@ -9,6 +9,7 @@
 31–60,31–60
 61–90,61–90
 90+,90+
+A new version is available.,Доступна новая версия.
 A password reset email will be sent. The account is disabled until the user sets a password.,"На адрес будет отправлено письмо с инструкциями по восстановлению пароля. Учётная запись отключена до тех пор, пока пользователь не установит пароль."
 A valid email is required,Требуется действительный адрес электронной почты
 "A ≤ {0}%, B ≤ {1}%, C rest — by revenue.","A ≤ {0}%, B ≤ {1}%, C прочее — по выручке."
@@ -411,6 +412,7 @@ Desk access,Доступ к Desk
 Details,Детали
 Direction,Направление
 Disabled,Отключено
+Dismiss,Закрыть
 Disc,Скидка
 Disc %,Скидка %
 Discount,Скидка
