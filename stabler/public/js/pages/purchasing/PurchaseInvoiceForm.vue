@@ -716,7 +716,7 @@ async function submitDoc() {
 						min="0"
 						max="100"
 						inputmode="decimal"
-						class="form-control form-control-sm font-monospace text-end"
+						class="form-control font-monospace text-end"
 						placeholder="0"
 					/>
 					<div v-else class="text-end font-monospace small py-2">{{ line.discount_percentage > 0 ? line.discount_percentage + "%" : "—" }}</div>
@@ -725,7 +725,6 @@ async function submitDoc() {
 					<MoneyInput
 						v-if="editable"
 						v-model="line.discount_amount"
-						size="sm"
 					/>
 					<div v-else class="text-end font-monospace small py-2">
 						{{ line.discount_amount > 0 ? formatMoney(line.discount_amount, modalCurrency, user.language) : "—" }}

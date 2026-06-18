@@ -236,10 +236,13 @@ watch(docName, loadDoc);
 
 onMounted(async () => {
 	await Promise.all([loadWarehouses(), loadPriceLists(), loadCurrencies()]);
-	if (isCreate.value) {
-		form.value = blankForm();
-	} else {
+	// Branch on the route param (present on a hard load), not the composable's
+	// isCreate (null-based, true until load() runs) — else direct URL/refresh of an
+	// edit route renders a blank "New".
+	if (docName.value) {
 		await loadDoc();
+	} else {
+		form.value = blankForm();
 	}
 });
 
@@ -532,7 +535,7 @@ function handleValidityChange(valid) {
 						min="0"
 						max="100"
 						inputmode="decimal"
-						class="form-control form-control-sm font-monospace text-end"
+						class="form-control font-monospace text-end"
 						placeholder="0"
 					/>
 					<div v-else class="text-end font-monospace small py-2">{{ line.discount_percentage > 0 ? line.discount_percentage + "%" : "—" }}</div>
@@ -541,7 +544,6 @@ function handleValidityChange(valid) {
 					<MoneyInput
 						v-if="editable"
 						v-model="line.discount_amount"
-						size="sm"
 					/>
 					<div v-else class="text-end font-monospace small py-2">
 						{{ line.discount_amount > 0 ? formatMoney(line.discount_amount, form.currency, user.language) : "—" }}

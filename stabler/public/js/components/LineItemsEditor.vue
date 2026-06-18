@@ -319,7 +319,6 @@ const grandTotal = computed(() => {
 								v-model="line.item_code"
 								:display="line.item_code ? `${line.item_code} — ${line.item_name || ''}` : ''"
 								:search="searchItems"
-								size="sm"
 								@pick="(item) => handlePickItem(line, item, idx)"
 								@clear="() => { line.item_code = ''; line.item_name = ''; line.uom = ''; }"
 							>
@@ -345,7 +344,7 @@ const grandTotal = computed(() => {
 								type="number"
 								step="any"
 								inputmode="decimal"
-								class="form-control form-control-sm font-monospace text-end"
+								class="form-control font-monospace text-end"
 								:class="{ 'is-invalid': getLineErrors(line).qty }"
 							/>
 							<div v-if="getLineErrors(line).qty" class="invalid-feedback d-block">
@@ -360,7 +359,7 @@ const grandTotal = computed(() => {
 						<template v-if="editable && line.item_code">
 							<div
 								v-if="line.uoms && line.uoms.length > 1 && line.uoms.length <= 3"
-								class="btn-group btn-group-sm w-100"
+								class="btn-group w-100"
 								role="group"
 							>
 								<button
@@ -375,13 +374,12 @@ const grandTotal = computed(() => {
 							<Select
 								v-else-if="line.uoms && line.uoms.length > 3"
 								v-model="line.uom"
-								size="sm"
 								:options="orderedLineUoms(line)"
 								value-key="uom"
 								label-key="uom"
 								@change="onUomSelectChange(line)"
 							/>
-							<input v-else v-model="line.uom" type="text" class="form-control form-control-sm" readonly />
+							<input v-else v-model="line.uom" type="text" class="form-control" readonly />
 						</template>
 						<div v-else class="text-secondary small">{{ line.uom }}</div>
 						<slot name="uom-extra" :line="line" :index="idx" />
@@ -393,7 +391,6 @@ const grandTotal = computed(() => {
 							<MoneyInput
 								v-model="line.rate"
 								:currency="currency"
-								size="sm"
 								:class="{ 'is-invalid': getLineErrors(line).rate }"
 							/>
 							<div v-if="getLineErrors(line).rate" class="invalid-feedback d-block">
