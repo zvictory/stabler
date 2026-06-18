@@ -190,6 +190,10 @@ function fromDetail(d) {
 		conversion_rate: d.currency === d.base_currency ? 0 : Number(d.conversion_rate || 0),
 		price_list: d.buying_price_list || "",
 		taxes_template: d.taxes_and_charges || "",
+		is_return: !!d.is_return,
+		return_against: d.return_against || "",
+		amended_from: d.amended_from || "",
+		debit_notes: d.debit_notes || [],
 		items: (d.items || []).map((it) => ({
 			item_code: it.item_code,
 			item_name: it.item_name,
@@ -246,6 +250,7 @@ const {
 	save,
 	submit,
 	cancel,
+	amend,
 	remove,
 	can,
 } = useDocumentForm({
@@ -255,6 +260,7 @@ const {
 	updateApi: "stabler.api.purchasing.update_purchase_invoice",
 	submitApi: "stabler.api.purchasing.submit_purchase_invoice",
 	cancelApi: "stabler.api.purchasing.cancel_purchase_invoice",
+	amendApi: "stabler.api.purchasing.amend_purchase_invoice",
 	deleteApi: "stabler.api.purchasing.delete_purchase_invoice",
 	blankModel: blankForm,
 	toPayload,
@@ -347,6 +353,65 @@ async function onPaid() {
 	await loadDoc();
 }
 
+// Debit note (purchase return) modal
+const returnOpen = ref(false);
+const returnLines = ref([]);
+const returnSubmitting = ref(false);
+const returnError = ref("");
+
+const canReturn = computed(
+	() =>
+		!!form.value &&
+		form.value.docstatus === 1 &&
+		!form.value.is_return &&
+		form.value.status !== "Return"
+);
+
+function openReturn() {
+	returnError.value = "";
+	returnLines.value = (form.value?.items || []).map((it) => ({
+		item_code: it.item_code,
+		item_name: it.item_name || it.item_code,
+		max_qty: Number(it.qty || 0),
+		return_qty: Number(it.qty || 0),
+	}));
+	returnOpen.value = true;
+}
+function closeReturn() {
+	if (returnSubmitting.value) return;
+	returnOpen.value = false;
+}
+async function submitReturn() {
+	returnError.value = "";
+	returnSubmitting.value = true;
+	try {
+		const item_returns = returnLines.value
+			.filter((r) => Number(r.return_qty) > 0)
+			.map((r) => ({ item_code: r.item_code, qty: Number(r.return_qty) }));
+		if (!item_returns.length) {
+			returnError.value = t("Enter at least one return qty.");
+			return;
+		}
+		const res = await call("stabler.api.purchasing.create_purchase_return", {
+			purchase_invoice: form.value.name,
+			posting_date: todayIso(),
+			item_returns,
+			submit: 1,
+		});
+		returnOpen.value = false;
+		if (res?.name) router.push("/purchasing/invoices/" + res.name);
+		else await loadDoc();
+	} catch (err) {
+		returnError.value = err?.message || t("Failed to create debit note.");
+	} finally {
+		returnSubmitting.value = false;
+	}
+}
+
+function goToInvoice(name) {
+	if (name) router.push("/purchasing/invoices/" + name);
+}
+
 // Calculations
 const createTotal = computed(() => {
 	if (!form.value) return 0;
@@ -424,6 +489,38 @@ async function submitDoc() {
 		:error="actionError"
 		back-path="/purchasing/invoices"
 	>
+		<!-- Supplier subtitle + return badge -->
+		<div v-if="!isCreate" class="d-flex align-items-center gap-2 mb-3 flex-wrap">
+			<span class="text-secondary">{{ form.supplier_name }}</span>
+			<span v-if="form.is_return" class="badge bg-secondary-lt">{{ t("Return") }}</span>
+		</div>
+
+		<!-- Return_against banner -->
+		<div v-if="form.return_against" class="alert alert-info py-2 small">
+			<i class="ti ti-corner-down-left me-1"></i>
+			{{ t("Debit note for") }}
+			<button
+				type="button"
+				class="badge bg-blue-lt font-monospace border-0"
+				style="cursor: pointer"
+				@click="goToInvoice(form.return_against)"
+			>{{ form.return_against }}</button>
+		</div>
+
+		<!-- Linked debit notes banner -->
+		<div v-if="form.debit_notes?.length" class="alert alert-light py-2 small">
+			<i class="ti ti-receipt-refund me-1"></i>
+			{{ t("Debit notes:") }}
+			<button
+				v-for="dn in form.debit_notes"
+				:key="dn.name"
+				type="button"
+				class="badge bg-secondary-lt font-monospace ms-1 border-0"
+				style="cursor: pointer"
+				@click="goToInvoice(dn.name)"
+			>{{ dn.name }}</button>
+		</div>
+
 		<!-- Header fields -->
 		<div class="row g-3 mb-3">
 			<div class="col-md-6">
@@ -682,6 +779,15 @@ async function submitDoc() {
 					<i class="ti ti-cash me-1"></i>{{ t("Make payment") }}
 				</button>
 				<button
+					v-if="canReturn"
+					type="button"
+					class="btn btn-outline-warning"
+					:disabled="actionRunning"
+					@click="openReturn"
+				>
+					<i class="ti ti-receipt-refund me-1"></i>{{ t("Issue debit note") }}
+				</button>
+				<button
 					v-if="can.cancel"
 					type="button"
 					class="btn btn-outline-danger ms-auto"
@@ -691,10 +797,20 @@ async function submitDoc() {
 					<i class="ti ti-ban me-1"></i>{{ t("Cancel") }}
 				</button>
 				<button
+					v-if="can.amend"
+					type="button"
+					class="btn btn-outline-secondary"
+					:disabled="actionRunning"
+					@click="amend"
+				>
+					<span v-if="actionRunning" class="spinner-border spinner-border-sm me-1"></span>
+					<i v-else class="ti ti-copy me-1"></i>{{ t("Amend") }}
+				</button>
+				<button
 					v-if="can.delete"
 					type="button"
 					class="btn btn-outline-danger"
-					:class="{ 'ms-auto': !can.cancel }"
+					:class="{ 'ms-auto': !can.cancel && !can.amend }"
 					:disabled="actionRunning"
 					@click="remove"
 				>
@@ -712,4 +828,60 @@ async function submitDoc() {
 		@close="paymentOpen = false"
 		@paid="onPaid"
 	/>
+
+	<!-- Debit note modal -->
+	<div v-if="returnOpen" class="modal-backdrop fade show" @click="closeReturn"></div>
+	<div v-if="returnOpen" class="modal fade show d-block" tabindex="-1" role="dialog" @click.self="closeReturn">
+		<div class="modal-dialog modal-dialog-centered" role="document">
+			<div class="modal-content">
+				<div class="modal-header">
+					<h5 class="modal-title">{{ t("Issue debit note") }}</h5>
+					<button type="button" class="btn-close" @click="closeReturn" :disabled="returnSubmitting"></button>
+				</div>
+				<div class="modal-body">
+					<div v-if="returnError" class="alert alert-danger">{{ returnError }}</div>
+					<p class="small text-secondary">{{ t("Enter the quantity to return for each line. Leave 0 to exclude a line.") }}</p>
+					<table class="table table-sm table-no-stripe">
+						<thead>
+							<tr>
+								<th>{{ t("Item") }}</th>
+								<th class="text-end">{{ t("Original qty") }}</th>
+								<th class="text-end" style="width: 110px">{{ t("Return qty") }}</th>
+							</tr>
+						</thead>
+						<tbody>
+							<tr v-for="(r, i) in returnLines" :key="i">
+								<td>
+									<div class="fw-semibold small">{{ r.item_name }}</div>
+									<div class="small text-secondary font-monospace">{{ r.item_code }}</div>
+								</td>
+								<td class="text-end font-monospace">{{ r.max_qty }}</td>
+								<td>
+									<input
+										v-model.number="r.return_qty"
+										type="number"
+										step="any"
+										inputmode="decimal"
+										:min="0"
+										:max="r.max_qty"
+										class="form-control form-control-sm font-monospace text-end"
+										:disabled="returnSubmitting"
+									/>
+								</td>
+							</tr>
+						</tbody>
+					</table>
+				</div>
+				<div class="modal-footer">
+					<button type="button" class="btn btn-link link-secondary" @click="closeReturn" :disabled="returnSubmitting">
+						{{ t("Cancel") }}
+					</button>
+					<button type="button" class="btn btn-warning ms-auto" @click="submitReturn" :disabled="returnSubmitting">
+						<span v-if="returnSubmitting" class="spinner-border spinner-border-sm me-1"></span>
+						<i v-else class="ti ti-receipt-refund me-1"></i>{{ t("Create debit note") }}
+					</button>
+				</div>
+			</div>
+		</div>
+	</div>
 </template>

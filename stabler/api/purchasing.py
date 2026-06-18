@@ -401,6 +401,17 @@ def purchase_invoice_detail(name: str):
 			}
 			for t in (doc.taxes or [])
 		],
+		"is_return": cint(doc.is_return),
+		"return_against": doc.return_against or "",
+		"amended_from": doc.amended_from or "",
+		"debit_notes": frappe.db.sql(
+			"""
+			SELECT name, docstatus FROM `tabPurchase Invoice`
+			WHERE return_against = %(name)s AND docstatus < 2
+			""",
+			{"name": name},
+			as_dict=True,
+		),
 	}
 
 
@@ -925,6 +936,85 @@ def cancel_purchase_invoice(name: str, modified: str | None = None):
 		frappe.throw("Only submitted invoices can be cancelled.")
 	doc.cancel()
 	return {"name": doc.name, "docstatus": doc.docstatus, "status": doc.status}
+
+
+@frappe.whitelist()
+def amend_purchase_invoice(name: str):
+	"""Create a new draft Purchase Invoice as an amendment of a cancelled one."""
+	_assert_can_write("Purchase Invoice", name, "cancel")
+	if not name or not frappe.db.exists("Purchase Invoice", name):
+		frappe.throw(f"Unknown Purchase Invoice: {name}")
+	doc = frappe.get_doc("Purchase Invoice", name)
+	if doc.docstatus != 2:
+		frappe.throw("Only cancelled purchase invoices can be amended.")
+	new = frappe.copy_doc(doc)
+	new.amended_from = name
+	new.insert(ignore_permissions=False)
+	return {"name": new.name, "docstatus": new.docstatus, "amended_from": name}
+
+
+@frappe.whitelist()
+def create_purchase_return(
+	purchase_invoice: str,
+	posting_date: str | None = None,
+	item_returns=None,
+	submit: int = 0,
+):
+	"""Issue a debit note (is_return=1) against a submitted Purchase Invoice.
+
+	`item_returns` is an optional list of `{item_code, qty}` where qty is
+	entered positive (negated internally). Pass nothing to return the full invoice.
+	"""
+	from frappe.utils import today as _today, getdate
+	from frappe.utils.data import flt as _flt
+
+	if not purchase_invoice or not frappe.db.exists("Purchase Invoice", purchase_invoice):
+		frappe.throw(_("Unknown Purchase Invoice: {0}").format(purchase_invoice))
+	src = frappe.get_doc("Purchase Invoice", purchase_invoice)
+	if src.docstatus != 1:
+		frappe.throw(_("Only submitted invoices can be returned."))
+	if src.is_return:
+		frappe.throw(_("Cannot create a return against a return document."))
+
+	from erpnext.controllers.sales_and_purchase_return import make_return_doc
+
+	doc = make_return_doc("Purchase Invoice", purchase_invoice)
+	doc.posting_date = getdate(posting_date or _today())
+
+	if isinstance(item_returns, str):
+		try:
+			item_returns = frappe.parse_json(item_returns)
+		except Exception:
+			frappe.throw(_("Invalid item_returns payload"))
+
+	if item_returns:
+		src_qty: dict[str, float] = {it.item_code: _flt(it.qty) for it in src.items}
+		override: dict[str, float] = {
+			row["item_code"]: _flt(row.get("qty", 0))
+			for row in (item_returns or [])
+			if isinstance(row, dict) and row.get("item_code")
+		}
+		for line in doc.items:
+			requested = override.get(line.item_code)
+			if requested is None:
+				continue
+			clamped = min(abs(requested), abs(src_qty.get(line.item_code, 0)))
+			line.qty = -clamped if clamped else line.qty
+
+		non_zero = [ln for ln in doc.items if _flt(ln.qty) != 0]
+		if non_zero:
+			doc.items = non_zero
+
+	doc.insert(ignore_permissions=False)
+	if int(submit or 0):
+		doc.submit()
+	return {
+		"name": doc.name,
+		"is_return": 1,
+		"grand_total": _flt(doc.grand_total),
+		"docstatus": doc.docstatus,
+		"return_against": purchase_invoice,
+	}
 
 
 @frappe.whitelist()
