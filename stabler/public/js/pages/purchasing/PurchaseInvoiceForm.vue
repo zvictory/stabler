@@ -6,7 +6,7 @@ import { useSession } from "../../stores/session.js";
 import { call } from "../../api/client.js";
 import { t } from "../../composables/i18n.js";
 import { formatMoney } from "../../composables/money.js";
-import { formatDateTime, todayIso} from "../../composables/date.js";
+import { formatDate, formatDateTime, todayIso } from "../../composables/date.js";
 import MoneyInput from "../../components/MoneyInput.vue";
 import DateInput from "../../components/DateInput.vue";
 import PaymentModal from "../../components/PaymentModal.vue";
@@ -315,10 +315,13 @@ watch(docName, loadDoc);
 
 onMounted(async () => {
 	await Promise.all([loadWarehouses(), loadCurrencies(), loadPriceLists(), loadTaxTemplates()]);
-	if (isCreate.value) {
-		form.value = blankForm();
-	} else {
+	// Branch on the route param (present synchronously on a hard load), NOT the
+	// composable's isCreate — that is null-based and always true until load() runs,
+	// so on a direct URL or refresh the edit form would wrongly render a blank "New".
+	if (docName.value) {
 		await loadDoc();
+	} else {
+		form.value = blankForm();
 	}
 });
 
