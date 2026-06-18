@@ -809,7 +809,7 @@ watch(activeCompany, () => {
 						<div class="card-body p-3">
 
 					<div class="row g-2">
-						<div class="col-md-4">
+						<div class="col-md-3">
 							<label class="form-label small">{{ t("Mode") }}</label>
 							<div class="btn-group w-100" role="group">
 								<input type="radio" class="btn-check" name="entry_kind" id="ek_expense" value="Expense" autocomplete="off" v-model="form.entry_kind">
@@ -818,11 +818,11 @@ watch(activeCompany, () => {
 								<label class="btn btn-outline-primary" for="ek_asset">{{ t("Asset purchase") }}</label>
 							</div>
 						</div>
-						<div class="col-md-4">
+						<div class="col-md-3">
 							<label class="form-label small">{{ t("Posting date") }}</label>
 							<DateInput v-model="form.posting_date" required />
 						</div>
-						<div class="col-md-4">
+						<div class="col-md-3">
 							<label class="form-label small mb-1 d-flex justify-content-between align-items-baseline">
 								<span>{{ t("Pay from") }}</span>
 								<span
@@ -847,7 +847,27 @@ watch(activeCompany, () => {
 								</template>
 							</Select>
 						</div>
-						<div class="col-md-12">
+						<!-- Exchange rate: inline, same row as Mode/Date/Pay from (cross-currency only) -->
+						<div v-if="isCrossCurrency" class="col-md-3">
+							<label class="form-label small">
+								{{ fxBaseCur ? `1 ${fxBaseCur} =` : t("Rate") }}
+							</label>
+							<MoneyInput
+								v-model="form.exchange_rate"
+								:currency="payCurrency"
+								:language="user.language"
+								:placeholder="payCurrency"
+							/>
+							<div v-if="cbuRate" class="text-secondary small mt-1">
+								<i class="ti ti-building-bank" style="font-size: 0.75rem"></i>
+								CBU: {{ fmtRate(cbuRate) }}<span v-if="rateDate"> · {{ formatDate(rateDate) }}</span>
+							</div>
+							<div v-if="rateError" class="text-danger small mt-1">
+								<i class="ti ti-alert-triangle me-1"></i>{{ rateError }}
+							</div>
+						</div>
+						<!-- Payee: shrinks to col-3 when no rate field; col-6 otherwise -->
+						<div :class="isCrossCurrency ? 'col-md-6' : 'col-md-3'">
 							<label class="form-label small">{{ t("Payee") }}</label>
 							<input
 								v-model="form.payee"
@@ -855,36 +875,6 @@ watch(activeCompany, () => {
 								class="form-control"
 								:placeholder="t('Optional')"
 							/>
-						</div>
-					</div>
-
-					<!-- Cross-currency exchange rate -->
-					<div v-if="isCrossCurrency" class="border-top pt-3 mt-3">
-						<div class="d-flex align-items-end gap-3 flex-wrap">
-							<div style="min-width: 190px">
-								<label class="form-label small mb-1">
-									1 {{ baseCurrency }} = <span class="text-secondary">?</span> {{ payCurrency }}
-								</label>
-								<MoneyInput
-									v-model="form.exchange_rate"
-									:currency="payCurrency"
-									:language="user.language"
-									size="sm"
-									:placeholder="`Rate in ${payCurrency}`"
-								/>
-								<div v-if="cbuRate" class="text-secondary small mt-1">
-									CBU: 1 {{ fxBaseCur || payCurrency }} = {{ fmtRate(cbuRate) }} {{ fxCounterCur || baseCurrency }}<span v-if="rateDate"> · as of {{ formatDate(rateDate) }}</span>
-								</div>
-								<div v-if="rateError" class="text-danger small mt-1">
-									<i class="ti ti-alert-triangle me-1"></i>{{ rateError }}
-								</div>
-							</div>
-							<div class="text-secondary small pb-1 ms-auto">
-								{{ t("Base equivalent") }}:
-								<span class="fw-semibold font-monospace">
-									{{ fmtAmt(baseEquivalent, baseCurrency) }} {{ baseCurrency }}
-								</span>
-							</div>
 						</div>
 					</div>
 						</div><!-- /Panel A body -->
