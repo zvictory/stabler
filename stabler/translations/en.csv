@@ -344,6 +344,7 @@ Currency,Currency
 Current total,Current total
 Custom,Custom
 Customer,Customer
+Customer ID,Customer ID
 Customer ABC analysis,Customer ABC analysis
 Customer group,Customer group
 Customer is required.,Customer is required.
@@ -360,6 +361,7 @@ Date,Date
 Date of birth,Date of birth
 Date of birth is required.,Date of birth is required.
 Date of joining,Date of joining
+Date basis,Date basis
 Dates,Dates
 Day of Week,Day of Week
 Days,Days
@@ -635,6 +637,7 @@ First name,First name
 First name is required.,First name is required.
 First payment date,First payment date
 Fixtures directory missing: {0},Fixtures directory missing: {0}
+Force submit & reserve,Force submit & reserve
 Free Qty,Free Qty
 Freezer,Freezer
 Freezer ROI,Freezer ROI
@@ -1037,6 +1040,7 @@ Outlets,Outlets
 Outstanding,Outstanding
 Overdue,Overdue
 Override qty must be greater than zero,Override qty must be greater than zero
+Override — submit despite low stock (admin),Override — submit despite low stock (admin)
 Overview,Overview
 Owes us,Owes us
 Owner,Owner
@@ -1301,6 +1305,7 @@ Retries,Retries
 Retry submission,Retry submission
 Retrying…,Retrying…
 Return,Return
+Returns,Returns
 Return qty,Return qty
 Returned,Returned
 Revenue,Revenue
@@ -1344,6 +1349,7 @@ Sales Order {0} must be submitted before invoicing,Sales Order {0} must be submi
 Sales Orders,Sales Orders
 Sales by Customer,Sales by Customer
 Sales by Item,Sales by Item
+Salesperson,Salesperson
 Sales item,Sales item
 Same currency,Same currency
 Same day,Same day
@@ -1751,3 +1757,8 @@ vs. last month,vs. last month
 — select account —,— select account —
 — top-level —,— top-level —
 ⚠ {0} line(s) had no cost — verify item valuation; margin may be overstated.,⚠ {0} line(s) had no cost — verify item valuation; margin may be overstated.
+Include drafts,Include drafts
+Including unposted drafts — does not tie to the GL.,Including unposted drafts — does not tie to the GL.
+Booked,Booked
+To deliver,To deliver
+To bill,To bill

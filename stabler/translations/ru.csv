@@ -352,6 +352,7 @@ Currency,Валюта
 Current total,Текущая сумма
 Custom,
 Customer,Клиент
+Customer ID,ID клиента
 Customer ABC analysis,ABC-анализ клиентов
 Customer group,Группа клиентов
 Customer is required.,Покупатель обязателен.
@@ -368,6 +369,7 @@ Date,Дата
 Date of birth,Дата рождения
 Date of birth is required.,Укажите дату рождения.
 Date of joining,Дата приёма
+Date basis,Тип даты
 Dates,Даты
 Day of Week,День недели
 Days,Дней
@@ -644,6 +646,7 @@ First name,Имя
 First name is required.,Введите имя.
 First payment date,Дата первого платежа
 Fixtures directory missing: {0},Директория приспособлений отсутствует: {0}
+Force submit & reserve,Принудительно отправить и зарезервировать
 Free Qty,Свободное кол-во
 Freezer,Морозильник
 Freezer ROI,ROI морозильников
@@ -1046,6 +1049,7 @@ Outlets,Торговые точки
 Outstanding,Невыплаченная
 Overdue,Просрочено
 Override qty must be greater than zero,Переопределённое количество должно быть больше нуля
+Override — submit despite low stock (admin),Отменить блок — принудительно отправить при нехватке запасов (администратор)
 Overview,Обзор
 Owes us,Должен нам
 Owner,
@@ -1311,6 +1315,7 @@ Retries,Повторы
 Retry submission,Повторить отправку
 Retrying…,Повтор…
 Return,Возврат
+Returns,Возвраты
 Return qty,Кол-во возврата
 Returned,Возвращено
 Revenue,Доход
@@ -1354,6 +1359,7 @@ Sales Order {0} must be submitted before invoicing,Заказ продажи {0}
 Sales Orders,Заказы продажи
 Sales by Customer,Продажи по клиентам
 Sales by Item,Продажи по товарам
+Salesperson,Продавец
 Sales item,Товар продажи
 Same currency,Одна валюта
 Same day,В этот день
@@ -1765,3 +1771,8 @@ vs. last month,в сравнении с прошлым месяцем
 — select account —,— выберите счёт —
 — top-level —,— верхний уровень —
 ⚠ {0} line(s) had no cost — verify item valuation; margin may be overstated.,⚠ {0} строк(а) без себестоимости — проверьте оценку товара; маржа может быть завышена.
+Include drafts,Включая черновики
+Including unposted drafts — does not tie to the GL.,Включая непроведённые черновики — не сверяется с ГК.
+Booked,Заказано
+To deliver,К отгрузке
+To bill,К выставлению

@@ -346,6 +346,7 @@ Currency,Валюта
 Current total,Жорий сумма
 Custom,
 Customer,Хариди
+Customer ID,Мижоз ID
 Customer ABC analysis,Мижозлар ABC таҳлили
 Customer group,Харидиларнинг гуруҳи
 Customer is required.,Харидор мажбурий.
@@ -362,6 +363,7 @@ Date,Сана
 Date of birth,Туғилган сана
 Date of birth is required.,Туғилган санани киритинг.
 Date of joining,Ишга қабул санаси
+Date basis,Сана асоси
 Dates,Саналар
 Day of Week,Ҳафтаннинг кун номи
 Days,Кун
@@ -637,6 +639,7 @@ First name,Исм
 First name is required.,Исмни киритинг.
 First payment date,Биринчи тўлов санаси
 Fixtures directory missing: {0},Арматура директорияси йўқ: {0}
+Force submit & reserve,Мажбуран юбориш ва захиралаш
 Free Qty,Сўз бутун миқдори
 Freezer,Донғалаш
 Freezer ROI,Музлатгич ROI
@@ -1039,6 +1042,7 @@ Outlets,Чўнтаклар
 Outstanding,Ишдан кетган
 Overdue,Муддати ўтган
 Override qty must be greater than zero,Қўллаш миқдори нолдан катта бўлиши керак
+Override — submit despite low stock (admin),Бекор қилиш — кам қолдиқда ҳам юбориш (admin)
 Overview,Умумий кўриниш
 Owes us,Бизга қарздор
 Owner,
@@ -1304,6 +1308,7 @@ Retries,Қайта уринишлар
 Retry submission,Қайта юбориш
 Retrying…,Қайта уринмоқда…
 Return,Қайтариш
+Returns,Қайтаришлар
 Return qty,Қайтариш миқдори
 Returned,Қайтарилган
 Revenue,Даромад
@@ -1347,6 +1352,7 @@ Sales Order {0} must be submitted before invoicing,Сотув буюртмаси
 Sales Orders,Сотув буюртмалари
 Sales by Customer,Мижозлар бўйича савдо
 Sales by Item,Маҳсулот бўйича савдо
+Salesperson,Сотувчи
 Sales item,Сотув товари
 Same currency,Бир хил валюта
 Same day,Шу куни
@@ -1758,3 +1764,8 @@ vs. last month,ўткан ойга қарши
 — select account —,— ҳисобни танланг —
 — top-level —,— юқори сатҳ —
 ⚠ {0} line(s) had no cost — verify item valuation; margin may be overstated.,⚠ {0} сатр(да) таннарх йўқ — товар баҳолашни текширинг; маржа ошириган бўлиши мумкин.
+Include drafts,Қораламалар билан
+Including unposted drafts — does not tie to the GL.,Жойланмаган қораламалар билан — бош китобга мос келмайди.
+Booked,Буюртма қилинган
+To deliver,Етказишга
+To bill,Ҳисоб-фактурага

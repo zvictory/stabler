@@ -34,6 +34,7 @@ const showDiscounts = ref(false);
 const lastReservationErrors = ref([]);
 const autoSubmit = ref(1);
 const exchangeRate = ref(1);
+const forceOverStock = ref(false);
 
 const currency = computed(
 	() =>
@@ -597,7 +598,7 @@ async function submitCreate({ autoSubmitMode = 1 } = {}) {
 			.filter((l) => l.item_code && l.warehouse && !l.availability)
 			.map((l) => loadAvailability(l))
 	);
-	if (autoSubmitMode && hasOverAvailable.value) {
+	if (autoSubmitMode && hasOverAvailable.value && !(session.isAdmin && forceOverStock.value)) {
 		const { line, i } = overAvailableRows.value[0];
 		actionError.value = t(
 			"Row {n} ({item}): qty exceeds available stock (available {free}).",
@@ -1147,14 +1148,25 @@ async function closeSalesOrder() {
 				<div v-if="hasOverAvailable" class="w-100 small text-danger mb-1">
 					<i class="ti ti-alert-triangle me-1"></i>{{ t("One or more lines exceed available stock. Reduce qty or choose a different warehouse.") }}
 				</div>
+				<div v-if="hasOverAvailable && session.isAdmin" class="w-100 small mb-1 d-flex align-items-center gap-2">
+					<input
+						id="force-over-stock"
+						v-model="forceOverStock"
+						type="checkbox"
+						class="form-check-input m-0"
+					/>
+					<label for="force-over-stock" class="text-warning mb-0" style="cursor:pointer">
+						{{ t("Override — submit despite low stock (admin)") }}
+					</label>
+				</div>
 				<button type="button" class="btn btn-link link-secondary" :disabled="actionRunning" @click="router.push('/sales/orders')">{{ t("Cancel") }}</button>
 				<button type="button" class="btn btn-outline-primary ms-auto" :disabled="actionRunning || !isFormValid" @click="submitCreate({ autoSubmitMode: 0 })">
 					<span v-if="actionRunning" class="spinner-border spinner-border-sm me-1"></span>
 					{{ t("Save as draft") }}
 				</button>
-				<button type="button" class="btn btn-primary" :disabled="actionRunning || hasOverAvailable || !isFormValid" @click="submitCreate({ autoSubmitMode: 1 })">
+				<button type="button" class="btn btn-primary" :disabled="actionRunning || !isFormValid || (hasOverAvailable && !(session.isAdmin && forceOverStock))" @click="submitCreate({ autoSubmitMode: 1 })">
 					<span v-if="actionRunning" class="spinner-border spinner-border-sm me-1"></span>
-					{{ t("Submit & reserve stock") }}
+					{{ session.isAdmin && forceOverStock ? t("Force submit & reserve") : t("Submit & reserve stock") }}
 				</button>
 			</template>
 			<template v-else>

@@ -346,6 +346,7 @@ Currency,Valyuta
 Current total,Joriy summa
 Custom,
 Customer,Xaridor
+Customer ID,Mijoz ID
 Customer ABC analysis,Mijozlar ABC tahlili
 Customer group,Xaridor guruhi
 Customer is required.,Xaridor majburiy.
@@ -362,6 +363,7 @@ Date,Sana
 Date of birth,Tug'ilgan sana
 Date of birth is required.,Tug'ilgan sanani kiriting.
 Date of joining,Ishga qabul sanasi
+Date basis,Sana asosi
 Dates,Sanalar
 Day of Week,Haftaning kuni
 Days,Kun
@@ -637,6 +639,7 @@ First name,Ism
 First name is required.,Ismni kiriting.
 First payment date,Birinchi to'lov sanasi
 Fixtures directory missing: {0},Fixtures direktoriyasi yo'q: {0}
+Force submit & reserve,Majburan yuborish va zaxiralash
 Free Qty,Bepul miqdori
 Freezer,Muzlatgich
 Freezer ROI,Muzlatgich ROI
@@ -1039,6 +1042,7 @@ Outlets,Savdo nuqtalari
 Outstanding,Qolgan
 Overdue,Muddati o'tgan
 Override qty must be greater than zero,Miqdorni qaytadan o'rnatish noldan katta bo'lishi kerak
+Override — submit despite low stock (admin),Bekor qilish — kam qoldiqda ham yuborish (admin)
 Overview,Umumiy ko'rinish
 Owes us,Bizga qarzdor
 Owner,
@@ -1304,6 +1308,7 @@ Retries,Takrorlanishlar
 Retry submission,Takroriy yuborish
 Retrying…,Takrorlanmoqda…
 Return,Qaytarish
+Returns,Qaytarishlar
 Return qty,Qaytarish miqdori
 Returned,Qaytarildi
 Revenue,Daromad
@@ -1347,6 +1352,7 @@ Sales Order {0} must be submitted before invoicing,Sotuv buyurtmasi {0} hisob-fa
 Sales Orders,Sotuv buyurtmalari
 Sales by Customer,Mijozlar bo‘yicha savdo
 Sales by Item,Mahsulot bo‘yicha savdo
+Salesperson,Sotuvchi
 Sales item,Sotuv turi
 Same currency,Bir xil valyuta
 Same day,Shu kuni
@@ -1758,3 +1764,8 @@ vs. last month,o'tgan oyga nisbatan
 — select account —,— hisob tanlang —
 — top-level —,— eng yuqori darajali —
 ⚠ {0} line(s) had no cost — verify item valuation; margin may be overstated.,⚠ {0} qator(da) tannarx yo'q — tovar baholashni tekshiring; marja oshirilgan bo'lishi mumkin.
+Include drafts,Qoralamalar bilan
+Including unposted drafts — does not tie to the GL.,Joylanmagan qoralamalar bilan — bosh kitobga mos kelmaydi.
+Booked,Buyurtma qilingan
+To deliver,Yetkazishga
+To bill,Hisob-fakturaga

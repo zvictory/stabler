@@ -341,6 +341,7 @@ Currency,Para Birimi
 Current total,Güncel toplam
 Custom,
 Customer,Müşteri
+Customer ID,Müşteri ID
 Customer ABC analysis,Müşteri ABC analizi
 Customer group,Müşteri grubu
 Customer is required.,Müşteri zorunludur.
@@ -357,6 +358,7 @@ Date,Tarih
 Date of birth,Doğum tarihi
 Date of birth is required.,Doğum tarihi zorunludur.
 Date of joining,İşe başlama tarihi
+Date basis,Tarih esası
 Dates,Tarihler
 Day of Week,Haftanın Günü
 Days,Günler
@@ -630,6 +632,7 @@ First name,Ad
 First name is required.,Ad zorunludur.
 First payment date,İlk ödeme tarihi
 Fixtures directory missing: {0},Fikstür dizini eksik: {0}
+Force submit & reserve,Zorla gönder ve rezerve et
 Free Qty,Ücretsiz Miktar
 Freezer,Dondurucu
 Freezer ROI,Dondurucu ROI
@@ -1028,6 +1031,7 @@ Outlets,Satış Noktaları
 Outstanding,Açık
 Overdue,Gecikmiş
 Override qty must be greater than zero,Geçersiz kılma miktarı sıfırdan büyük olmalıdır
+Override — submit despite low stock (admin),Geçersiz kıl — düşük stoka rağmen gönder (yönetici)
 Overview,Genel Bakış
 Owes us,Bize borçlu
 Owner,
@@ -1291,6 +1295,7 @@ Retries,Yeniden denemeler
 Retry submission,Gönderimi yeniden dene
 Retrying…,Yeniden deneniyor…
 Return,İade
+Returns,İadeler
 Return qty,İade miktarı
 Revenue,Gelir
 Revenue MTD,Gelir (Bu Ay)
@@ -1333,6 +1338,7 @@ Sales Order {0} must be submitted before invoicing,Fatura düzenlenmeden önce {
 Sales Orders,Satış Siparişleri
 Sales by Customer,Müşteriye göre satış
 Sales by Item,Ürüne göre satış
+Salesperson,Satış temsilcisi
 Sales item,Satış kalemi
 Same currency,Aynı para birimi
 Same day,Aynı gün
@@ -1739,3 +1745,8 @@ vs. last month,geçen aya kıyasla
 — select account —,— hesap seçin —
 — top-level —,— üst düzey —
 ⚠ {0} line(s) had no cost — verify item valuation; margin may be overstated.,⚠ {0} satır(da) maliyet yok — kalem değerlemesini doğrulayın; marj abartılmış olabilir.
+Include drafts,Taslakları dahil et
+Including unposted drafts — does not tie to the GL.,Kaydedilmemiş taslaklar dahil — defter-i kebir ile uyuşmaz.
+Booked,Sipariş edildi
+To deliver,Teslim edilecek
+To bill,Faturalanacak
