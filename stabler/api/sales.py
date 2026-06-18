@@ -1629,6 +1629,9 @@ def cancel_sales_invoice(name: str, modified: str | None = None):
 	doc = frappe.get_doc("Sales Invoice", name)
 	if doc.docstatus != 1:
 		frappe.throw("Only submitted invoices can be cancelled.")
+	# skip creation-time validators (e.g. so_dn_required) that fire on cancel too;
+	# structural cancel guards (linked documents, stock reversal) run separately.
+	doc.flags.ignore_validate = True
 	doc.cancel()
 	return {"name": doc.name, "docstatus": doc.docstatus, "status": doc.status}
 
