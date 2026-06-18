@@ -17,6 +17,7 @@ const tabs = computed(() => {
 		{ name: "admin-access", path: "/admin/access-review", label: t("Access Review"), icon: "ti-user-shield", show: true },
 		{ name: "admin-companies", path: "/admin/companies", label: "Companies", icon: "ti-building", show: true },
 		{ name: "admin-compliance", path: "/admin/compliance", label: "Compliance", icon: "ti-shield-check", show: on("compliance") },
+		{ name: "admin-posting-window", path: "/admin/posting-window", label: t("Posting Window"), icon: "ti-calendar-lock", show: true },
 	];
 	return list.filter((tab) => tab.show);
 });

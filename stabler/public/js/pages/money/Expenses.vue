@@ -275,6 +275,10 @@ function lineAccountDisplay(name) {
 }
 
 function lineCurrencyMismatch(line) {
+	// Don't accuse a line of a currency mismatch until a "Pay from" account is
+	// actually chosen — before that, payCurrency falls back to the base currency
+	// (often USD) and would wrongly flag every UZS expense account on open.
+	if (!form.value.payment_from) return false;
 	if (!line.account) return false;
 	const picked = lineAccounts.value.find((a) => a.name === line.account);
 	if (!picked) return false;

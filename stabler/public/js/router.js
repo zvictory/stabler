@@ -64,7 +64,7 @@ import HRHome from "./pages/hr/HRHome.vue";
 import HROverview from "./pages/hr/Overview.vue";
 import Employees from "./pages/hr/Employees.vue";
 import EmployeeProfile from "./pages/hr/EmployeeProfile.vue";
-import HROrgChart from "./pages/hr/OrgChart.vue";
+const HROrgChart = () => import("./pages/hr/OrgChart.vue");
 import HRAttendance from "./pages/hr/Attendance.vue";
 import LeaveApplications from "./pages/hr/LeaveApplications.vue";
 import Payroll from "./pages/hr/Payroll.vue";
@@ -121,6 +121,7 @@ import AdminRoles from "./pages/admin/Roles.vue";
 import AdminCompanies from "./pages/admin/Companies.vue";
 import AdminCompliance from "./pages/admin/Compliance.vue";
 import AdminAccessReview from "./pages/admin/AccessReview.vue";
+import AdminPostingWindow from "./pages/admin/PostingWindow.vue";
 import NotFound from "./pages/NotFound.vue";
 import ServerError from "./pages/ServerError.vue";
 
@@ -355,6 +356,7 @@ const routes = [
 			{ path: "access-review", name: "admin-access", component: AdminAccessReview, meta: { title: t("Access Review") } },
 			{ path: "companies", name: "admin-companies", component: AdminCompanies, meta: { title: t("Companies") } },
 			{ path: "compliance", name: "admin-compliance", component: AdminCompliance, meta: { title: t("Compliance") } },
+			{ path: "posting-window", name: "admin-posting-window", component: AdminPostingWindow, meta: { title: t("Posting Window") } },
 		],
 	},
 	{ path: "/error", name: "server-error", component: ServerError, meta: { title: t("Error") } },

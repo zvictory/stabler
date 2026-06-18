@@ -171,6 +171,11 @@ function toggle() {
 function pick(o) {
 	if (optionDisabled(o)) return;
 	const v = optionValue(o);
+	// Return focus to the trigger BEFORE tearing down the Teleport. When the
+	// search box is visible, focus lives inside the Teleport'd menu. Removing
+	// that DOM node while it holds focus makes the browser hunt for a new focus
+	// target at body-end — which lands on the page footer.
+	triggerEl.value?.focus();
 	open.value = false;
 	if (v !== props.modelValue) {
 		emit("update:modelValue", v);
@@ -179,6 +184,7 @@ function pick(o) {
 }
 
 function clear() {
+	triggerEl.value?.focus();
 	open.value = false;
 	if (hasValue.value) {
 		emit("update:modelValue", "");
@@ -238,6 +244,7 @@ function onKeydown(e) {
 	switch (e.key) {
 		case "Escape":
 			e.preventDefault();
+			triggerEl.value?.focus();
 			open.value = false;
 			break;
 		case "ArrowDown":
@@ -268,6 +275,14 @@ function onKeydown(e) {
 			if (showSearch.value) break; // let Space type into the search box
 			e.preventDefault();
 			if (activeIdx.value >= 0) pick(visibleOptions.value[activeIdx.value]);
+			break;
+		case "Tab":
+			// pick() already returns focus to the trigger (see comment there).
+			// preventDefault stops the Teleport-body Tab-order from jumping to
+			// the footer; focus is on the trigger so the user's next Tab advances
+			// from the trigger's natural document position.
+			if (activeIdx.value >= 0) pick(visibleOptions.value[activeIdx.value]);
+			e.preventDefault();
 			break;
 		default:
 			// When the search box is shown, characters go to the input (don't

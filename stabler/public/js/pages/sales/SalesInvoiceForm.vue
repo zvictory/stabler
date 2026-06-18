@@ -334,7 +334,7 @@ onMounted(loadDoc);
 		:open="paymentOpen"
 		invoice-type="Sales Invoice"
 		:invoice-name="form?.name || ''"
-		:modified="modified"
+		:modified="form?.modified || ''"
 		@close="paymentOpen = false"
 		@paid="onPaid"
 	/>

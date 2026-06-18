@@ -1,10 +1,29 @@
 <script setup>
-import { computed } from "vue";
+import { computed, onMounted, ref } from "vue";
 import { useRoute, RouterLink, RouterView } from "vue-router";
+import { call } from "../../api/client.js";
 import { t } from "../../composables/i18n.js";
+import { formatDate } from "../../composables/date.js";
 import ModuleHeader from "../../components/ModuleHeader.vue";
 
 const route = useRoute();
+
+// Effective ERPNext back-dating freeze for this user — shown as a thin banner so
+// people know up-front why old-dated postings are blocked, and where to change it.
+const backdating = ref(null);
+onMounted(async () => {
+	try {
+		backdating.value = await call("stabler.api.money.get_backdating_status");
+	} catch {
+		backdating.value = null;
+	}
+});
+const freezeDate = computed(() => {
+	const b = backdating.value;
+	if (!b || !b.active) return null;
+	const dates = [b.stock_earliest_date, b.acc_earliest_date].filter(Boolean);
+	return dates.length ? dates.sort().reverse()[0] : null;
+});
 
 const tabs = [
 	{ name: "money-accounts", path: "/money/accounts", label: t("Chart of Accounts"), icon: "ti-list-tree" },
@@ -25,6 +44,15 @@ const activeTab = computed(() => route.name);
 
 	<div class="page-body">
 		<div class="container-xl">
+			<div v-if="freezeDate" class="alert alert-warning py-2 px-3 mb-3 d-flex align-items-center" role="alert">
+				<i class="ti ti-calendar-lock me-2"></i>
+				<span class="flex-fill">
+					{{ t("Backdated postings are frozen before {0}.").replace("{0}", formatDate(freezeDate)) }}
+				</span>
+				<RouterLink to="/admin/posting-window" class="small text-reset text-decoration-underline ms-2">
+					{{ t("Change") }}
+				</RouterLink>
+			</div>
 			<router-view />
 		</div>
 	</div>

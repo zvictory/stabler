@@ -74,12 +74,23 @@ scheduler_events = {
 
 doc_events = {
 	"Sales Invoice": {
+		"before_validate": [
+			# Guard first — fail fast before diag/validation runs.
+			"stabler.api.desk_write_guard.assert_write_via_stabler",
+			"stabler.api._diag.on_txn_validate",
+		],
 		"validate": [
 			"stabler.api._accounts.validate_sales_invoice",
 			"stabler.api.period_close.enforce_on_validate",
 		],
 		"before_submit": [
 			"stabler.api.sod_enforce.assert_no_sod_conflict",
+		],
+		"before_cancel": [
+			"stabler.api.desk_write_guard.assert_write_via_stabler",
+		],
+		"on_trash": [
+			"stabler.api.desk_write_guard.assert_write_via_stabler",
 		],
 		"on_submit": [
 			"stabler.integrations.ehf.hooks.enqueue_ehf_submit",
@@ -89,6 +100,9 @@ doc_events = {
 		],
 	},
 	"Purchase Invoice": {
+		"before_validate": [
+			"stabler.api._diag.on_txn_validate",
+		],
 		"validate": [
 			"stabler.api._accounts.validate_purchase_invoice",
 			"stabler.api.period_close.enforce_on_validate",
@@ -99,12 +113,36 @@ doc_events = {
 		],
 	},
 	"Purchase Order": {
+		"before_validate": [
+			"stabler.api._diag.on_txn_validate",
+		],
 		"before_submit": [
 			"stabler.api.approvals.before_submit_gate",
 			"stabler.api.sod_enforce.assert_no_sod_conflict",
 		],
 	},
+	"Sales Order": {
+		"before_validate": [
+			# Guard first — fail fast before diag/validation runs.
+			"stabler.api.desk_write_guard.assert_write_via_stabler",
+			"stabler.api._diag.on_txn_validate",
+		],
+		"before_cancel": [
+			"stabler.api.desk_write_guard.assert_write_via_stabler",
+		],
+		"on_trash": [
+			"stabler.api.desk_write_guard.assert_write_via_stabler",
+		],
+	},
+	"Delivery Note": {
+		"before_validate": [
+			"stabler.api._diag.on_txn_validate",
+		],
+	},
 	"Purchase Receipt": {
+		"before_validate": [
+			"stabler.api._diag.on_txn_validate",
+		],
 		"before_submit": [
 			"stabler.api.sod_enforce.assert_no_sod_conflict",
 		],
@@ -112,6 +150,7 @@ doc_events = {
 	"Payment Entry": {
 		"before_validate": [
 			"stabler.api.fx_balance.auto_balance_fx_residual",
+			"stabler.api._diag.on_txn_validate",
 		],
 		"validate": [
 			"stabler.api._accounts.validate_payment_entry",
@@ -128,6 +167,7 @@ doc_events = {
 	"Journal Entry": {
 		"before_validate": [
 			"stabler.api.fx_balance.auto_balance_fx_residual",
+			"stabler.api._diag.on_txn_validate",
 		],
 		"validate": [
 			"stabler.api._accounts.validate_journal_entry",
@@ -139,6 +179,9 @@ doc_events = {
 		],
 	},
 	"Stock Entry": {
+		"before_validate": [
+			"stabler.api._diag.on_txn_validate",
+		],
 		"validate": [
 			"stabler.api.period_close.enforce_on_validate",
 		],

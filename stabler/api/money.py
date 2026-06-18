@@ -10,6 +10,7 @@ import json
 
 import frappe
 from frappe import _
+from frappe.rate_limiter import rate_limit
 from frappe.utils import cint, flt, getdate, today
 
 EXPORT_FORMATS = {"Excel", "CSV"}
@@ -955,6 +956,62 @@ def setup_payment_entry_exchange_rates(doc, exchange_rate: float | str | None = 
 				doc.target_exchange_rate = flt(get_exchange_rate_for_currencies(paid_to_currency, company_currency, doc.posting_date))
 
 
+def _log_payment(stage: str, data: dict) -> None:
+	"""Structured diagnostic line → logs/stabler.payments.log. Never raises.
+
+	Use this to investigate multi-currency payment problems: it records what the
+	user TYPED (transaction currency) next to what ERPNext computes for the GL
+	(company-currency base + the difference). Tail it with:
+	  bench --site <site> --verbose console   # or
+	  tail -f sites/<site>/logs/stabler.payments.log
+	"""
+	try:
+		payload = {"stage": stage, "user": frappe.session.user}
+		payload.update(data)
+		frappe.logger("stabler.payments", allow_site=True, file_count=10).info(
+			json.dumps(payload, default=str)
+		)
+	except Exception:
+		pass
+
+
+def _payment_gl_snapshot(doc) -> dict:
+	"""The GL (company-currency) view of a Payment Entry — what hits the ledger.
+
+	Surfaces the base amounts and difference_amount so the 'UZS in, USD GL with a
+	one-cent difference' situation is visible in the log.
+	"""
+	return {
+		"name": getattr(doc, "name", None),
+		"company": doc.company,
+		"company_currency": frappe.get_cached_value("Company", doc.company, "default_currency"),
+		"payment_type": doc.payment_type,
+		"party": f"{doc.party_type}:{doc.party}",
+		"paid_from": doc.paid_from,
+		"paid_from_ccy": getattr(doc, "paid_from_account_currency", None),
+		"paid_to": doc.paid_to,
+		"paid_to_ccy": getattr(doc, "paid_to_account_currency", None),
+		"paid_amount": flt(doc.paid_amount),
+		"received_amount": flt(doc.received_amount),
+		"base_paid_amount": flt(getattr(doc, "base_paid_amount", 0)),
+		"base_received_amount": flt(getattr(doc, "base_received_amount", 0)),
+		"source_exchange_rate": flt(getattr(doc, "source_exchange_rate", 0)),
+		"target_exchange_rate": flt(getattr(doc, "target_exchange_rate", 0)),
+		"total_allocated_amount": flt(getattr(doc, "total_allocated_amount", 0)),
+		"base_total_allocated_amount": flt(getattr(doc, "base_total_allocated_amount", 0)),
+		"unallocated_amount": flt(getattr(doc, "unallocated_amount", 0)),
+		"difference_amount": flt(getattr(doc, "difference_amount", 0)),
+		"deductions": [
+			{"account": d.account, "amount": flt(d.amount), "desc": d.description}
+			for d in (doc.get("deductions") or [])
+		],
+		"references": [
+			{"ref": f"{r.reference_doctype}:{r.reference_name}", "alloc": flt(r.allocated_amount), "outstanding": flt(r.outstanding_amount)}
+			for r in (doc.get("references") or [])
+		],
+	}
+
+
 @frappe.whitelist()
 def create_payment_entry(
 	company: str,
@@ -1006,8 +1063,23 @@ def create_payment_entry(
 	paid_from_currency = frappe.db.get_value("Account", paid_from, "account_currency") or company_currency
 	paid_to_currency = frappe.db.get_value("Account", paid_to, "account_currency") or company_currency
 
+	# Capture exactly what the user typed BEFORE any validation can reject it —
+	# this is the row that explains "Paid amount must be greater than zero" and the
+	# multi-currency 'UZS in, USD GL off by a cent' cases.
+	_log_payment("input", {
+		"fn": "create_payment_entry",
+		"company": company, "company_currency": company_currency,
+		"posting_date": str(posting_date), "payment_type": payment_type,
+		"party": f"{party_type}:{party}",
+		"paid_from": paid_from, "paid_from_ccy": paid_from_currency,
+		"paid_to": paid_to, "paid_to_ccy": paid_to_currency,
+		"paid_amount_in": paid_amount, "received_amount_in": received_amount,
+		"exchange_rate_in": exchange_rate, "submit": int(submit or 0),
+	})
+
 	paid = flt(paid_amount)
 	if paid <= 0:
+		_log_payment("reject", {"fn": "create_payment_entry", "reason": "paid<=0", "paid": paid})
 		frappe.throw("Paid amount must be greater than zero.")
 	recv = flt(received_amount) if received_amount not in (None, "") else 0.0
 
@@ -1088,22 +1160,34 @@ def create_payment_entry(
 	setup_payment_entry_exchange_rates(doc, exchange_rate)
 	doc.setup_party_account_field()
 	doc.set_missing_values()
-	doc.insert(ignore_permissions=False)
-	if int(submit or 0):
-		from stabler.api.approvals import ensure_request_for_doc, requires_approval
+	# GL view is now computed — log what will actually hit the ledger (base
+	# amounts + difference_amount) before insert/submit can reject it.
+	_log_payment("computed", _payment_gl_snapshot(doc))
+	try:
+		doc.insert(ignore_permissions=False)
+		if int(submit or 0):
+			from stabler.api.approvals import ensure_request_for_doc, requires_approval
 
-		if requires_approval(doc):
-			# Maker-checker: leave it as a Draft and route to the approvals
-			# queue instead of self-submitting. A different user must approve.
-			req = ensure_request_for_doc(doc)
-			return {
-				"name": doc.name,
-				"docstatus": doc.docstatus,
-				"modified": str(doc.modified),
-				"pending_approval": True,
-				"approval_request": req,
-			}
-		doc.submit()
+			if requires_approval(doc):
+				# Maker-checker: leave it as a Draft and route to the approvals
+				# queue instead of self-submitting. A different user must approve.
+				req = ensure_request_for_doc(doc)
+				_log_payment("ok", {"fn": "create_payment_entry", "name": doc.name,
+					"docstatus": doc.docstatus, "pending_approval": True})
+				return {
+					"name": doc.name,
+					"docstatus": doc.docstatus,
+					"modified": str(doc.modified),
+					"pending_approval": True,
+					"approval_request": req,
+				}
+			doc.submit()
+	except Exception as e:
+		snap = _payment_gl_snapshot(doc)
+		snap.update({"fn": "create_payment_entry", "error": str(e)})
+		_log_payment("error", snap)
+		raise
+	_log_payment("ok", {"fn": "create_payment_entry", "name": doc.name, "docstatus": doc.docstatus})
 	return {
 		"name": doc.name,
 		"docstatus": doc.docstatus,
@@ -1145,6 +1229,49 @@ def list_cash_bank_accounts(company: str, limit: int = 100):
 		{"company": company, "limit": int(limit)},
 		as_dict=True,
 	)
+
+
+@frappe.whitelist()
+def get_backdating_status() -> dict:
+	"""Effective ERPNext back-dating freeze for the CURRENT user — informational,
+	for the money-page banner. Any authenticated user may read.
+
+	Returns the earliest date the user can still post to (stock + accounting),
+	whether they're exempt (hold the override role / System Manager), and whether
+	a freeze is actively constraining them.
+	"""
+	if frappe.session.user == "Guest":
+		frappe.throw(_("Login required."), frappe.PermissionError)
+	from frappe.utils import add_days, getdate, nowdate
+
+	stk = frappe.get_single("Stock Settings")
+	acc = frappe.get_single("Accounts Settings")
+	days = cint(stk.get("stock_frozen_upto_days") or 0)
+	stock_fixed = stk.get("stock_frozen_upto") or None
+	acc_frozen = acc.get("acc_frozen_upto") or None
+
+	roles = set(frappe.get_roles())
+	exempt = (
+		"System Manager" in roles
+		or (stk.get("role_allowed_to_create_edit_back_dated_transactions") in roles if stk.get("role_allowed_to_create_edit_back_dated_transactions") else False)
+		or (acc.get("frozen_accounts_modifier") in roles if acc.get("frozen_accounts_modifier") else False)
+	)
+
+	stock_candidates = []
+	if days > 0:
+		stock_candidates.append(getdate(add_days(nowdate(), -days)))
+	if stock_fixed:
+		stock_candidates.append(getdate(add_days(getdate(stock_fixed), 1)))
+	stock_earliest = max(stock_candidates) if stock_candidates else None
+	acc_earliest = getdate(add_days(getdate(acc_frozen), 1)) if acc_frozen else None
+
+	return {
+		"stock_earliest_date": str(stock_earliest) if stock_earliest else None,
+		"acc_earliest_date": str(acc_earliest) if acc_earliest else None,
+		"stock_frozen_upto_days": days,
+		"exempt": bool(exempt),
+		"active": bool((stock_earliest or acc_earliest) and not exempt),
+	}
 
 
 @frappe.whitelist()
@@ -1319,8 +1446,21 @@ def create_payment_for_invoice(
 	paid_from_currency = frappe.db.get_value("Account", paid_from, "account_currency") or company_currency
 	paid_to_currency = frappe.db.get_value("Account", paid_to, "account_currency") or company_currency
 
+	_log_payment("input", {
+		"fn": "create_payment_for_invoice",
+		"company": company, "company_currency": company_currency,
+		"posting_date": str(posting_date), "payment_type": defaults["payment_type"],
+		"invoice": f"{invoice_type}:{invoice_name}",
+		"paid_from": paid_from, "paid_from_ccy": paid_from_currency,
+		"paid_to": paid_to, "paid_to_ccy": paid_to_currency,
+		"paid_amount_in": paid_amount, "received_amount_in": received_amount,
+		"allocated_amount_in": allocated_amount, "exchange_rate_in": exchange_rate,
+		"submit": int(submit or 0),
+	})
+
 	paid = flt(paid_amount)
 	if paid <= 0:
+		_log_payment("reject", {"fn": "create_payment_for_invoice", "reason": "paid<=0", "paid": paid})
 		frappe.throw("Paid amount must be greater than zero.")
 	recv = flt(received_amount) if received_amount not in (None, "") else 0.0
 
@@ -1402,7 +1542,15 @@ def create_payment_for_invoice(
 	setup_payment_entry_exchange_rates(doc, exchange_rate)
 	doc.setup_party_account_field()
 	doc.set_missing_values()
-	doc.insert(ignore_permissions=False)
+	# GL view computed — log the base amounts + difference before insert/submit.
+	_log_payment("computed", _payment_gl_snapshot(doc))
+	try:
+		doc.insert(ignore_permissions=False)
+	except Exception as e:
+		snap = _payment_gl_snapshot(doc)
+		snap.update({"fn": "create_payment_for_invoice", "stage_detail": "insert", "error": str(e)})
+		_log_payment("error", snap)
+		raise
 	pending_approval = False
 	approval_request = None
 	if int(submit):
@@ -1415,11 +1563,16 @@ def create_payment_for_invoice(
 		else:
 			try:
 				doc.submit()
-			except Exception:
+			except Exception as e:
 				# Roll back the just-inserted Draft so no orphan remains in the DB.
 				# The validation error is re-raised and surfaced as a toast in the UI.
+				snap = _payment_gl_snapshot(doc)
+				snap.update({"fn": "create_payment_for_invoice", "stage_detail": "submit", "error": str(e)})
+				_log_payment("error", snap)
 				frappe.db.rollback()
 				raise
+	_log_payment("ok", {"fn": "create_payment_for_invoice", "name": doc.name,
+		"docstatus": doc.docstatus, "pending_approval": pending_approval})
 	return {
 		"name": doc.name,
 		"docstatus": doc.docstatus,
@@ -1444,6 +1597,7 @@ def _resolve_fiscal_year(date_str: str | None) -> str | None:
 
 
 @frappe.whitelist()
+@rate_limit(limit=60, seconds=60)
 def run_report(report_name: str, filters: dict | str | None = None):
 	"""Thin wrapper around frappe.desk.query_report.run with an allow-list.
 	Returns the same `{columns, result, ...}` shape as the underlying call.
@@ -1475,6 +1629,7 @@ def run_report(report_name: str, filters: dict | str | None = None):
 
 
 @frappe.whitelist()
+@rate_limit(limit=30, seconds=60)
 def export_report(
 	report_name: str,
 	file_format_type: str,

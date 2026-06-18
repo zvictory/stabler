@@ -1,0 +1,123 @@
+name: CI
+
+# Stabler continuous integration.
+#
+#   job 1 (fast, always)  — lint + the frappe-free unit tests. No DB, seconds.
+#   job 2 (integration)   — spin up MariaDB + Redis + a throwaway Frappe site,
+#                           install stabler, run the full test suite.
+#
+# Keep job 1 green as a hard gate on every PR; job 2 is the deeper safety net.
+
+on:
+  push:
+    branches: [main, master]
+  pull_request:
+
+concurrency:
+  group: ci-${{ github.ref }}
+  cancel-in-progress: true
+
+jobs:
+  lint-and-unit:
+    name: Lint + unit (no DB)
+    runs-on: ubuntu-22.04
+    steps:
+      - uses: actions/checkout@v4
+
+      - uses: actions/setup-python@v5
+        with:
+          # Frappe 16 runtime. pyproject declares >=3.14, but 3.14 is not yet GA
+          # on CI runners; 3.12 is Frappe 16's supported interpreter and runs the
+          # frappe-free unit tests fine. Bump to 3.14 once runners ship it.
+          python-version: "3.12"
+
+      - name: Install ruff
+        run: pip install ruff
+
+      - name: Ruff lint
+        run: ruff check stabler
+
+      - name: Ruff format check
+        run: ruff format --check stabler
+
+      - name: Byte-compile all Python
+        run: python -m compileall -q stabler
+
+      - name: Pure unit tests (frappe-free)
+        # These import only stabler.api._approval_rules, so they run without a
+        # bench. Add new frappe-free test modules here as the suite grows.
+        run: |
+          python -m unittest stabler.tests.test_approval_rules -v
+
+  bench-tests:
+    name: Integration (bench run-tests)
+    runs-on: ubuntu-22.04
+    services:
+      mariadb:
+        image: mariadb:10.6
+        env:
+          MYSQL_ROOT_PASSWORD: root
+        ports: ["3306:3306"]
+        options: >-
+          --health-cmd="mysqladmin ping -proot"
+          --health-interval=5s --health-timeout=5s --health-retries=10
+      redis:
+        image: redis:7-alpine
+        ports: ["6379:6379"]
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          path: stabler  # checkout the app into a named dir for get-app
+
+      - uses: actions/setup-python@v5
+        with:
+          # Frappe 16 runtime. pyproject declares >=3.14, but 3.14 is not yet GA
+          # on CI runners; 3.12 is Frappe 16's supported interpreter and runs the
+          # frappe-free unit tests fine. Bump to 3.14 once runners ship it.
+          python-version: "3.12"
+
+      - uses: actions/setup-node@v4
+        with:
+          node-version: "20"
+
+      - name: System deps
+        run: |
+          sudo apt-get update
+          sudo apt-get install -y --no-install-recommends \
+            mariadb-client redis-tools wkhtmltopdf
+          npm install -g yarn
+          pip install frappe-bench
+
+      - name: Configure MariaDB for Frappe
+        run: |
+          mysql -h127.0.0.1 -uroot -proot -e "
+            SET GLOBAL character_set_server = 'utf8mb4';
+            SET GLOBAL collation_server = 'utf8mb4_unicode_ci';"
+
+      - name: Init bench + site + install stabler
+        run: |
+          cd ~
+          bench init --skip-redis-config-generation --frappe-branch version-16 frappe-bench
+          cd frappe-bench
+          # Point bench at the CI service containers.
+          bench set-config -g redis_cache "redis://localhost:6379"
+          bench set-config -g redis_queue "redis://localhost:6379"
+          bench set-config -g redis_socketio "redis://localhost:6379"
+          bench get-app erpnext --branch version-16
+          bench get-app stabler "$GITHUB_WORKSPACE/stabler"
+          bench new-site test_site \
+            --mariadb-root-password root \
+            --admin-password admin \
+            --db-host 127.0.0.1 --no-mariadb-socket
+          bench --site test_site install-app erpnext stabler
+          bench --site test_site set-config allow_tests true
+
+      - name: Run stabler tests
+        run: |
+          cd ~/frappe-bench
+          bench --site test_site run-tests --app stabler
+
+      - name: Build frontend
+        run: |
+          cd ~/frappe-bench
+          bench build --app stabler

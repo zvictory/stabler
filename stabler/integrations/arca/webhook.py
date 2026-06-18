@@ -22,6 +22,7 @@ from typing import Any
 
 import frappe
 from frappe import _
+from frappe.rate_limiter import rate_limit
 
 
 _SIGNATURE_HEADER = "X-ARCA-Signature"
@@ -51,6 +52,7 @@ def _verify_signature(secret: str, body: bytes, signature: str) -> bool:
 
 
 @frappe.whitelist(allow_guest=True)
+@rate_limit(limit=600, seconds=60)
 def handle_payment_webhook() -> dict[str, Any]:
 	secret = getattr(frappe.conf, "arca_webhook_secret", None)
 	if not secret:

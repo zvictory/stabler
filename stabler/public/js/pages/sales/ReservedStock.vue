@@ -15,8 +15,19 @@ const loading = ref(false);
 const error = ref("");
 const kpis = ref(null);
 const groups = ref([]);
+const warehouseFilter = ref("");
 // Set of "item_code||warehouse" strings that are currently expanded.
 const expanded = ref(new Set());
+
+const warehouseOptions = computed(() => {
+	const names = [...new Set(groups.value.map((g) => g.warehouse))].sort();
+	return names.map((w) => ({ value: w, label: w }));
+});
+
+const filteredGroups = computed(() => {
+	if (!warehouseFilter.value) return groups.value;
+	return groups.value.filter((g) => g.warehouse === warehouseFilter.value);
+});
 
 function rowKey(g) {
 	return `${g.item_code}||${g.warehouse}`;
@@ -45,6 +56,8 @@ async function load() {
 		});
 		kpis.value = data.kpis;
 		groups.value = data.groups || [];
+		const defaultWh = "Tayyor mahsulot - A";
+		warehouseFilter.value = groups.value.some((g) => g.warehouse === defaultWh) ? defaultWh : "";
 		expanded.value = new Set();
 	} catch (err) {
 		error.value = err?.message || t("Failed to load reserved stock data.");
@@ -127,6 +140,23 @@ watch(activeCompany, load);
 
 	<!-- Rollup table -->
 	<div v-else class="card">
+		<div v-if="warehouseOptions.length > 1" class="card-header">
+			<div class="d-flex align-items-center gap-2">
+				<i class="ti ti-building-warehouse text-secondary"></i>
+				<select
+					v-model="warehouseFilter"
+					class="form-select form-select-sm w-auto"
+				>
+					<option value="">{{ t("All warehouses") }}</option>
+					<option v-for="opt in warehouseOptions" :key="opt.value" :value="opt.value">
+						{{ opt.label }}
+					</option>
+				</select>
+				<span class="text-secondary small ms-auto">
+					{{ filteredGroups.length }} {{ t("lines") }}
+				</span>
+			</div>
+		</div>
 		<div class="table-responsive">
 			<table class="table table-sm table-vcenter mb-0">
 				<thead>
@@ -140,7 +170,12 @@ watch(activeCompany, load);
 					</tr>
 				</thead>
 				<tbody>
-					<template v-for="g in groups" :key="rowKey(g)">
+					<tr v-if="filteredGroups.length === 0">
+						<td colspan="6" class="text-center text-secondary py-4">
+							{{ t("No reservations for this warehouse") }}
+						</td>
+					</tr>
+					<template v-for="g in filteredGroups" :key="rowKey(g)">
 						<!-- Summary row -->
 						<tr
 							class="cursor-pointer"

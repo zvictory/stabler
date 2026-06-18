@@ -108,6 +108,34 @@ def _d(value: Any) -> Decimal:
 	return Decimal(str(value))
 
 
+def _js_str(value: Decimal) -> str:
+	"""Serialize a Decimal to a string matching Decimal.js .toString() behaviour.
+
+	Decimal.js .toString() strips trailing zeros after the decimal point and
+	removes the decimal point entirely when there is no fractional part.
+	Python's str(Decimal) preserves all digits (including trailing zeros) that
+	were accumulated during arithmetic, and may also produce scientific notation
+	for zero values (e.g. '0E-29'). Both diverge from Decimal.js.
+
+	Examples:
+	  Decimal('3600000.0000') → '3600000'
+	  Decimal('0.40')         → '0.4'
+	  Decimal('0.10')         → '0.1'
+	  Decimal('0.00')         → '0'
+	  Decimal('0E-29')        → '0'
+	  Decimal('15.00')        → '15'
+	  Decimal('54545.454...')  → '54545.454...' (no trailing zeros → unchanged)
+	"""
+	s = str(value)
+	# Python Decimal may produce scientific notation (e.g. '0E-29', '1E+7').
+	# Convert to fixed-point first, then strip trailing zeros.
+	if 'E' in s or 'e' in s:
+		s = format(value, 'f')
+	if '.' in s:
+		s = s.rstrip('0').rstrip('.')
+	return s
+
+
 # ---------------------------------------------------------------------------
 # round_money — mirrors round.ts: ROUND_HALF_UP to 0 decimal places
 # ---------------------------------------------------------------------------
@@ -451,7 +479,7 @@ def calculate_payroll(inp: dict) -> dict:
 	# Night premium factor
 	if policies and policies.get("night") and policies["night"].get("night_premium_pct") is not None:
 		night_premium_factor = _d(policies["night"]["night_premium_pct"]) / Decimal("100")
-		night_premium_pct_str = str(_d(policies["night"]["night_premium_pct"]))
+		night_premium_pct_str = _js_str(_d(policies["night"]["night_premium_pct"]))
 	else:
 		night_premium_factor = Decimal("0.10")
 		night_premium_pct_str = "10"
@@ -616,57 +644,57 @@ def calculate_payroll(inp: dict) -> dict:
 	breakdown = {
 		"formula_version": "v2",
 		"work_mode": work_mode,
-		"stake_coefficient": str(sched["stake"]),
+		"stake_coefficient": _js_str(sched["stake"]),
 		"hours_per_day": sched["hours_per_day"],
 		"proration_mode": sched["proration"],
-		"effective_base": str(effective_base),
-		"base_salary": str(base_salary),
+		"effective_base": _js_str(effective_base),
+		"base_salary": _js_str(base_salary),
 		"attended_days": attended_days,
 		"expected_days": expected_days,
 		"full_days": full_days,
 		"half_days": half_days,
-		"attendance_ratio": str(attendance_ratio),
-		"prorated_base": str(prorated_base),
-		"seniority_allowance": str(seniority_allowance),
+		"attendance_ratio": _js_str(attendance_ratio),
+		"prorated_base": _js_str(prorated_base),
+		"seniority_allowance": _js_str(seniority_allowance),
 		"seniority_years": seniority_years_val,
-		"seniority_percent": str(seniority_percent_val) if seniority_percent_val is not None else None,
-		"night_hours_worked": str(night_hours_worked),
-		"night_rate_per_hour": str(night_rate_per_hour),
-		"night_allowance": str(night_allowance),
-		"transport": str(transport),
+		"seniority_percent": _js_str(seniority_percent_val) if seniority_percent_val is not None else None,
+		"night_hours_worked": _js_str(night_hours_worked),
+		"night_rate_per_hour": _js_str(night_rate_per_hour),
+		"night_allowance": _js_str(night_allowance),
+		"transport": _js_str(transport),
 		"custom_allowances": [
-			{"name": c["name"], "amount": str(c["amount"])}
+			{"name": c["name"], "amount": _js_str(_d(c["amount"]))}
 			for c in custom_allowances_list
 		],
-		"custom_allowances_sum": str(custom_allowances_sum),
-		"manual_seniority": str(manual_seniority) if has_manual_seniority else None,
-		"manual_night": str(manual_night) if has_manual_night else None,
-		"manual_other": str(manual_other),
-		"manual_travel": str(manual_travel),
-		"heavy_conditions_allowance": str(heavy_conditions_allowance),
-		"additional_duties_allowance": str(additional_duties_allowance),
-		"advance": str(advance),
-		"allowances_sum": str(allowances_sum),
-		"overtime": str(resolved_overtime),
-		"overtime_minutes": str(ot_minutes),
-		"overtime_rate_per_hour": str(ot_hourly),
-		"overtime_multiplier": str(ot_multiplier),
-		"manual_overtime": str(manual_overtime_sum) if has_manual_overtime else None,
+		"custom_allowances_sum": _js_str(custom_allowances_sum),
+		"manual_seniority": _js_str(manual_seniority) if has_manual_seniority else None,
+		"manual_night": _js_str(manual_night) if has_manual_night else None,
+		"manual_other": _js_str(manual_other),
+		"manual_travel": _js_str(manual_travel),
+		"heavy_conditions_allowance": _js_str(heavy_conditions_allowance),
+		"additional_duties_allowance": _js_str(additional_duties_allowance),
+		"advance": _js_str(advance),
+		"allowances_sum": _js_str(allowances_sum),
+		"overtime": _js_str(resolved_overtime),
+		"overtime_minutes": _js_str(ot_minutes),
+		"overtime_rate_per_hour": _js_str(ot_hourly),
+		"overtime_multiplier": _js_str(ot_multiplier),
+		"manual_overtime": _js_str(manual_overtime_sum) if has_manual_overtime else None,
 		"night_premium_pct": night_premium_pct_str,
-		"duty_supplement": str(duty_supplement),
-		"kpi": str(kpi),
-		"kpi_auto": str(auto_kpi),
-		"kpi_manual": str(manual_kpi),
-		"fixed_share_factor": str(fixed_share_factor),
-		"kpi_share_factor": str(kpi_share_factor),
-		"fixed_base": str(fixed_base),
-		"kpi_pool": str(kpi_pool),
-		"performance_pct": str(kpi_performance_pct),
-		"bonus": str(bonus),
-		"late_fee_uzs": str(late_fee_uzs),
-		"fines": str(fines),
-		"gross": str(gross),
-		"net": str(net),
+		"duty_supplement": _js_str(duty_supplement),
+		"kpi": _js_str(kpi),
+		"kpi_auto": _js_str(auto_kpi),
+		"kpi_manual": _js_str(manual_kpi),
+		"fixed_share_factor": _js_str(fixed_share_factor),
+		"kpi_share_factor": _js_str(kpi_share_factor),
+		"fixed_base": _js_str(fixed_base),
+		"kpi_pool": _js_str(kpi_pool),
+		"performance_pct": _js_str(kpi_performance_pct),
+		"bonus": _js_str(bonus),
+		"late_fee_uzs": _js_str(late_fee_uzs),
+		"fines": _js_str(fines),
+		"gross": _js_str(gross),
+		"net": _js_str(net),
 	}
 
 	return {

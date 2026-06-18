@@ -28,6 +28,7 @@ import binascii
 from typing import Any
 
 import frappe
+from frappe.rate_limiter import rate_limit
 
 from stabler.integrations.uzpay import common as C
 
@@ -269,6 +270,7 @@ _DISPATCH = {
 # entrypoint
 # ---------------------------------------------------------------------------
 @frappe.whitelist(allow_guest=True)
+@rate_limit(limit=600, seconds=60)
 def merchant_endpoint() -> dict:
 	frappe.local.response["type"] = "json"
 	body = C.json_body()

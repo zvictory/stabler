@@ -343,3 +343,86 @@ def list_role_templates():
 	"""Public-ish: any logged-in admin user can see templates."""
 	_require_admin()
 	return [{"key": k, "label": k.replace("-", " ").title(), "roles": v} for k, v in ROLE_TEMPLATES.items()]
+
+
+# --- Posting / back-dating window -------------------------------------------
+# Surfaces ERPNext's native back-dating freezes so Finance can manage them from
+# the SPA instead of the Desk. These are the settings behind "can't create/edit
+# transactions older than N days".
+
+def _read_posting_window() -> dict:
+	stk = frappe.get_single("Stock Settings")
+	acc = frappe.get_single("Accounts Settings")
+	return {
+		# Stock: rolling N-day freeze on stock-affecting transactions.
+		"stock_frozen_upto_days": int(stk.get("stock_frozen_upto_days") or 0),
+		"stock_frozen_upto": str(stk.get("stock_frozen_upto") or "") or None,
+		"stock_backdated_role": stk.get("role_allowed_to_create_edit_back_dated_transactions") or None,
+		# Accounts: fixed freeze date + override role.
+		"acc_frozen_upto": str(acc.get("acc_frozen_upto") or "") or None,
+		"frozen_accounts_modifier": acc.get("frozen_accounts_modifier") or None,
+		# Exchange-rate staleness (affects back-dated multi-currency docs).
+		"allow_stale": int(acc.get("allow_stale") or 0),
+		"stale_days": int(acc.get("stale_days") or 0),
+	}
+
+
+@frappe.whitelist()
+def get_posting_window_settings() -> dict:
+	"""Read the ERPNext back-dating freeze settings (Stock + Accounts). Admin only."""
+	_require_admin()
+	return _read_posting_window()
+
+
+@frappe.whitelist()
+def set_posting_window_settings(payload=None) -> dict:
+	"""Update the back-dating freeze settings. Admin only.
+
+	Accepts any subset of: stock_frozen_upto_days, stock_frozen_upto,
+	stock_backdated_role, acc_frozen_upto, frozen_accounts_modifier, allow_stale,
+	stale_days. Validates numbers and that any role actually exists.
+	"""
+	_require_admin()
+	if isinstance(payload, str):
+		try:
+			payload = frappe.parse_json(payload)
+		except Exception:
+			frappe.throw(_("Invalid payload — expected JSON object."))
+	if not isinstance(payload, dict):
+		frappe.throw(_("payload must be a JSON object."))
+
+	stk = frappe.get_single("Stock Settings")
+	acc = frappe.get_single("Accounts Settings")
+
+	if "stock_frozen_upto_days" in payload:
+		days = frappe.utils.cint(payload.get("stock_frozen_upto_days"))
+		if days < 0:
+			frappe.throw(_("Frozen days cannot be negative."))
+		stk.stock_frozen_upto_days = days
+	if "stock_frozen_upto" in payload:
+		stk.stock_frozen_upto = frappe.utils.getdate(payload["stock_frozen_upto"]) if payload["stock_frozen_upto"] else None
+	if "stock_backdated_role" in payload:
+		role = payload["stock_backdated_role"] or None
+		if role and not frappe.db.exists("Role", role):
+			frappe.throw(_("Unknown role: {0}").format(role))
+		stk.role_allowed_to_create_edit_back_dated_transactions = role
+
+	if "acc_frozen_upto" in payload:
+		acc.acc_frozen_upto = frappe.utils.getdate(payload["acc_frozen_upto"]) if payload["acc_frozen_upto"] else None
+	if "frozen_accounts_modifier" in payload:
+		role = payload["frozen_accounts_modifier"] or None
+		if role and not frappe.db.exists("Role", role):
+			frappe.throw(_("Unknown role: {0}").format(role))
+		acc.frozen_accounts_modifier = role
+	if "allow_stale" in payload:
+		acc.allow_stale = 1 if frappe.utils.cint(payload["allow_stale"]) else 0
+	if "stale_days" in payload:
+		sd = frappe.utils.cint(payload.get("stale_days"))
+		if sd < 0:
+			frappe.throw(_("Stale days cannot be negative."))
+		acc.stale_days = sd
+
+	stk.save(ignore_permissions=True)
+	acc.save(ignore_permissions=True)
+	frappe.db.commit()
+	return _read_posting_window()

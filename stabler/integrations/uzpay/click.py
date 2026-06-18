@@ -21,6 +21,7 @@ from __future__ import annotations
 import hashlib
 
 import frappe
+from frappe.rate_limiter import rate_limit
 from frappe.utils import flt
 
 from stabler.integrations.uzpay import common as C
@@ -143,6 +144,7 @@ def _complete(f: dict) -> dict:
 
 
 @frappe.whitelist(allow_guest=True)
+@rate_limit(limit=600, seconds=60)
 def merchant_endpoint() -> dict:
 	frappe.local.response["type"] = "json"
 	f = _form()

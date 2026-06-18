@@ -268,9 +268,22 @@ async function submit() {
 
 	submitting.value = true;
 
-	const payloadPaidAmount =
+	let payloadPaidAmount =
 		isReceive.value || !needsExchange.value ? amount : Number(bankAmount.value || 0);
+	// Supplier Pay with a currency conversion: paid_amount is the bank-currency
+	// (cash) leg. If the live exchange UI never computed it (rate didn't load, or
+	// the paying account was switched), derive it from amount × rate so we never
+	// submit a zero — which the backend rejects with "Paid amount must be greater
+	// than zero". The party-currency amount the user typed is kept as received.
+	if (!isReceive.value && needsExchange.value && !(payloadPaidAmount > 0)) {
+		payloadPaidAmount = Math.round(amount * Number(exchangeRate.value || 1) * 100) / 100;
+	}
 	const payloadReceivedAmount = isReceive.value ? Number(bankAmount.value || 0) : amount;
+	if (!(payloadPaidAmount > 0)) {
+		error.value = t("Couldn't work out the cash amount to pay — check the exchange rate and the paying account.");
+		submitting.value = false;
+		return;
+	}
 
 	try {
 		const created = await call("stabler.api.money.create_payment_entry", {

@@ -1,7 +1,6 @@
 <script setup>
 import { computed, nextTick, onMounted, onBeforeUnmount, ref, watch } from "vue";
 import { storeToRefs } from "pinia";
-import { ApexTree } from "apextree";
 import { useSession } from "../../stores/session.js";
 import { call } from "../../api/client.js";
 import { t } from "../../composables/i18n.js";
@@ -17,6 +16,7 @@ const rootNode = ref(null);
 const direction = ref("top");
 const statusFilter = ref("Active");
 const chartHost = ref(null);
+let ApexTree = null;
 let tree = null;
 
 const STATUSES = ["Active", "Left", "Suspended", "Inactive"];
@@ -156,7 +156,14 @@ function refresh() {
 	load();
 }
 
-onMounted(load);
+onMounted(async () => {
+	// apextree's ESM build (apextree.es.min.js) has a TDZ bug in its minified
+	// output that crashes the app on startup when imported statically.
+	// Load the CJS build lazily here so only this route is affected if it fails.
+	const mod = await import("apextree/apextree.min.js");
+	ApexTree = mod.ApexTree ?? mod.default?.ApexTree ?? mod.default;
+	load();
+});
 watch(activeCompany, load);
 watch(statusFilter, load);
 onBeforeUnmount(destroyTree);

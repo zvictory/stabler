@@ -4,6 +4,7 @@ from __future__ import annotations
 
 import frappe
 from frappe import _
+from frappe.rate_limiter import rate_limit
 
 
 def _like(q: str) -> str:
@@ -11,6 +12,7 @@ def _like(q: str) -> str:
 
 
 @frappe.whitelist()
+@rate_limit(limit=120, seconds=60)
 def palette_search(query: str, company: str | None = None, limit_per_kind: int = 5):
 	query = (query or "").strip()
 	if not query:
