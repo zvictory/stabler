@@ -181,8 +181,7 @@ function focusNewLineAmount() {
 	inputs[1]?.select?.();
 }
 
-// Tab on a line's Amount jumps to the ghost "add a line" row to start the next
-// expense — mirroring how Tab on a Sales Order qty advances to a fresh row.
+// Tab flow in line rows: Amount → Memo (same row) → ghost account (new line).
 function handleLineKeyDown(e) {
 	if (e.key !== "Tab" || e.shiftKey) return;
 	const activeEl = document.activeElement;
@@ -192,10 +191,16 @@ function handleLineKeyDown(e) {
 	if (!tbody) return;
 	const rows = Array.from(tbody.querySelectorAll("tr"));
 	const inputs = Array.from(row.querySelectorAll("input"));
-	if (inputs.indexOf(activeEl) !== 1) return; // only from the Amount field
-	if (row === rows[rows.length - 1]) return; // not from the ghost row itself
-	e.preventDefault();
-	rows[rows.length - 1]?.querySelector("input")?.focus();
+	const idx = inputs.indexOf(activeEl);
+	if (idx === 1) {
+		// Tab from Amount → Memo (same row)
+		e.preventDefault();
+		inputs[2]?.focus();
+	} else if (idx === 2 && row !== rows[rows.length - 1]) {
+		// Tab from Memo of a real line → ghost row's account
+		e.preventDefault();
+		rows[rows.length - 1]?.querySelector("input")?.focus();
+	}
 }
 
 const entryKindOptions = [
@@ -806,12 +811,12 @@ watch(activeCompany, () => {
 					<div class="row g-2">
 						<div class="col-md-4">
 							<label class="form-label small">{{ t("Mode") }}</label>
-							<Select
-								v-model="form.entry_kind"
-								:options="entryKindOptions"
-								value-key="value"
-								label-key="label"
-							/>
+							<div class="btn-group w-100" role="group">
+								<input type="radio" class="btn-check" name="entry_kind" id="ek_expense" value="Expense" autocomplete="off" v-model="form.entry_kind">
+								<label class="btn btn-outline-primary" for="ek_expense">{{ t("Expense") }}</label>
+								<input type="radio" class="btn-check" name="entry_kind" id="ek_asset" value="Asset Purchase" autocomplete="off" v-model="form.entry_kind">
+								<label class="btn btn-outline-primary" for="ek_asset">{{ t("Asset purchase") }}</label>
+							</div>
 						</div>
 						<div class="col-md-4">
 							<label class="form-label small">{{ t("Posting date") }}</label>
@@ -920,7 +925,6 @@ watch(activeCompany, () => {
 											:search="searchLineAccount"
 											:display="lineAccountDisplay(line.account)"
 											:placeholder="t('Search account…')"
-											size="sm"
 											open-on-focus
 											@pick="(item) => { if (!item.__group) line.account = item.name; }"
 											@clear="() => (line.account = '')"
@@ -946,7 +950,6 @@ watch(activeCompany, () => {
 											v-model="line.amount"
 											:currency="payCurrency"
 											:language="user.language"
-											size="sm"
 										/>
 									</td>
 									<td v-if="isCrossCurrency" class="text-end font-monospace text-secondary small">
@@ -957,7 +960,7 @@ watch(activeCompany, () => {
 										<input
 											v-model="line.memo"
 											type="text"
-											class="form-control form-control-sm"
+											class="form-control"
 											:placeholder="t('Optional')"
 										/>
 									</td>
@@ -980,7 +983,6 @@ watch(activeCompany, () => {
 											:search="searchLineAccount"
 											:display="''"
 											:placeholder="t('Add a line…')"
-											size="sm"
 											open-on-focus
 											@pick="(item) => { if (!item.__group) materialGhost(item); }"
 										>
@@ -1001,7 +1003,6 @@ watch(activeCompany, () => {
 											v-model="ghost.amount"
 											:currency="payCurrency"
 											:language="user.language"
-											size="sm"
 										/>
 									</td>
 									<td v-if="isCrossCurrency"></td>
@@ -1009,7 +1010,7 @@ watch(activeCompany, () => {
 										<input
 											v-model="ghost.memo"
 											type="text"
-											class="form-control form-control-sm"
+											class="form-control"
 											:placeholder="t('Optional')"
 										/>
 									</td>
