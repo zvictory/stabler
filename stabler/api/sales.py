@@ -10,6 +10,7 @@ from frappe import _
 from frappe.utils import cint, flt, getdate, today
 
 from stabler.api._common import _assert_can_read, _assert_can_write, _require_company, _validate_money_overrides, check_concurrency
+from stabler.api._sales_margin import attach_margins
 
 
 _BOILERPLATE_RE = re.compile(
@@ -995,12 +996,27 @@ def create_direct_sales_return(
 	}
 
 
-def _sales_report_period_expr(granularity: str) -> str:
+def _sales_report_period_expr(granularity: str, date_field: str = "posting_date") -> str:
 	if granularity == "month":
-		return "DATE_FORMAT(si.posting_date, '%%Y-%%m')"
+		return f"DATE_FORMAT(si.{date_field}, '%%Y-%%m')"
 	if granularity == "day":
-		return "DATE_FORMAT(si.posting_date, '%%Y-%%m-%%d')"
+		return f"DATE_FORMAT(si.{date_field}, '%%Y-%%m-%%d')"
 	raise frappe.ValidationError("Granularity must be day or month.")
+
+
+def _sales_report_date_field(date_basis: str | None, *, alias: str = "") -> str:
+	"""Which Sales Invoice date column the report filters/groups on. Whitelisted to
+	a fixed column name (never raw user text) so it is safe to interpolate in SQL.
+	Default is posting_date; 'due' switches to due_date."""
+	col = "due_date" if (date_basis or "posting") == "due" else "posting_date"
+	return f"{alias}.{col}" if alias else col
+
+
+def _sales_report_docstatus(include_drafts, *, alias: str = "") -> str:
+	"""Docstatus filter. Default = submitted only (ties to the GL). When drafts are
+	included we widen to (0, 1) — the UI shows an 'unposted' banner in that case."""
+	col = f"{alias}.docstatus" if alias else "docstatus"
+	return f"{col} IN (0, 1)" if cint(include_drafts) else f"{col} = 1"
 
 
 def _sales_report_dates(from_date: str, to_date: str) -> tuple:
@@ -1011,24 +1027,38 @@ def _sales_report_dates(from_date: str, to_date: str) -> tuple:
 	return start, end
 
 
+def _sii_cost_expr() -> str:
+	"""Per-line COGS expression in COMPANY (base) currency: prefer the line's
+	captured buying rate (incoming_rate), fall back to the item's valuation rate.
+	Mirrors reports._cost_expr so margin numbers agree across the two pages."""
+	if frappe.get_meta("Sales Invoice Item").has_field("incoming_rate"):
+		return "COALESCE(NULLIF(sii.incoming_rate, 0), i.valuation_rate, 0)"
+	return "COALESCE(i.valuation_rate, 0)"
+
+
 @frappe.whitelist()
 def sales_report_by_customer(
 	company: str,
 	from_date: str,
 	to_date: str,
 	customer: str | None = None,
+	date_basis: str | None = None,
+	include_drafts: int | str = 0,
 ):
 	_require_company(company)
 	start, end = _sales_report_dates(from_date, to_date)
+	dfield = _sales_report_date_field(date_basis)
 	params = {"company": company, "from_date": start, "to_date": end}
-	conds = ["company = %(company)s", "docstatus = 1", "posting_date BETWEEN %(from_date)s AND %(to_date)s"]
+	conds = ["company = %(company)s", _sales_report_docstatus(include_drafts), f"{dfield} BETWEEN %(from_date)s AND %(to_date)s"]
 	if customer:
 		conds.append("customer = %(customer)s")
 		params["customer"] = customer
-	return frappe.db.sql(
+	rows = frappe.db.sql(
 		f"""
 		SELECT customer, customer_name, currency,
 		       SUM(grand_total) AS total,
+		       SUM(CASE WHEN is_return = 1 THEN 0 ELSE grand_total END) AS gross,
+		       SUM(CASE WHEN is_return = 1 THEN grand_total ELSE 0 END) AS returns_amt,
 		       SUM(outstanding_amount) AS outstanding,
 		       COUNT(*) AS invoice_count
 		FROM `tabSales Invoice`
@@ -1040,6 +1070,41 @@ def sales_report_by_customer(
 		params,
 		as_dict=True,
 	)
+	# COGS/margin come from item lines; computing them in the header query above
+	# would multiply grand_total by the line count. Pull line costs separately
+	# (item grain) and merge by (customer, currency) so the header totals stay true.
+	cost = _sii_cost_expr()
+	cost_conds = [
+		"si.company = %(company)s",
+		_sales_report_docstatus(include_drafts, alias="si"),
+		f"si.{dfield} BETWEEN %(from_date)s AND %(to_date)s",
+	]
+	if customer:
+		cost_conds.append("si.customer = %(customer)s")
+	cost_rows = frappe.db.sql(
+		f"""
+		SELECT si.customer, si.currency,
+		       SUM(sii.base_net_amount) AS base_net_revenue,
+		       SUM(sii.qty * {cost}) AS cogs
+		FROM `tabSales Invoice Item` sii
+		JOIN `tabSales Invoice` si ON si.name = sii.parent
+		LEFT JOIN `tabItem` i ON i.name = sii.item_code
+		WHERE {" AND ".join(cost_conds)}
+		GROUP BY si.customer, si.currency
+		""",
+		params,
+		as_dict=True,
+	)
+	cost_map = {(c["customer"], c["currency"]): c for c in cost_rows}
+	for r in rows:
+		c = cost_map.get((r["customer"], r["currency"]), {})
+		r["base_net_revenue"] = c.get("base_net_revenue") or 0
+		r["cogs"] = c.get("cogs") or 0
+	attach_margins(rows)
+	base_currency = frappe.get_cached_value("Company", company, "default_currency")
+	for r in rows:
+		r["base_currency"] = base_currency
+	return rows
 
 
 @frappe.whitelist()
@@ -1049,9 +1114,13 @@ def sales_report_by_item(
 	to_date: str,
 	item_group: str | None = None,
 	item_code: str | None = None,
+	date_basis: str | None = None,
+	include_drafts: int | str = 0,
 ):
 	_require_company(company)
 	start, end = _sales_report_dates(from_date, to_date)
+	dfield = _sales_report_date_field(date_basis, alias="si")
+	dstatus = _sales_report_docstatus(include_drafts, alias="si")
 	params = {"company": company, "from_date": start, "to_date": end}
 	item_group_clause = ""
 	if item_group:
@@ -1061,7 +1130,8 @@ def sales_report_by_item(
 	if item_code:
 		item_clause = "AND sii.item_code = %(item_code)s"
 		params["item_code"] = item_code
-	return frappe.db.sql(
+	cost = _sii_cost_expr()
+	rows = frappe.db.sql(
 		f"""
 		SELECT sii.item_code,
 		       sii.item_name,
@@ -1069,13 +1139,17 @@ def sales_report_by_item(
 		       si.currency,
 		       SUM(sii.qty) AS qty,
 		       SUM(sii.amount) AS revenue,
+		       SUM(CASE WHEN si.is_return = 1 THEN 0 ELSE sii.amount END) AS gross,
+		       SUM(CASE WHEN si.is_return = 1 THEN sii.amount ELSE 0 END) AS returns_amt,
+		       SUM(sii.base_net_amount) AS base_net_revenue,
+		       SUM(sii.qty * {cost}) AS cogs,
 		       COUNT(DISTINCT si.name) AS invoice_count
 		FROM `tabSales Invoice Item` sii
 		JOIN `tabSales Invoice` si ON si.name = sii.parent
 		LEFT JOIN `tabItem` i ON i.name = sii.item_code
 		WHERE si.company = %(company)s
-		  AND si.docstatus = 1
-		  AND si.posting_date BETWEEN %(from_date)s AND %(to_date)s
+		  AND {dstatus}
+		  AND {dfield} BETWEEN %(from_date)s AND %(to_date)s
 		  {item_group_clause}
 		  {item_clause}
 		GROUP BY sii.item_code, sii.item_name, COALESCE(i.item_group, sii.item_group), si.currency
@@ -1085,6 +1159,12 @@ def sales_report_by_item(
 		params,
 		as_dict=True,
 	)
+	# margin & % computed in base currency (base_net_revenue − base COGS)
+	attach_margins(rows)
+	base_currency = frappe.get_cached_value("Company", company, "default_currency")
+	for r in rows:
+		r["base_currency"] = base_currency
+	return rows
 
 
 @frappe.whitelist()
@@ -1124,10 +1204,13 @@ def sales_report_by_date(
 	from_date: str,
 	to_date: str,
 	granularity: str = "day",
+	date_basis: str | None = None,
+	include_drafts: int | str = 0,
 ):
 	_require_company(company)
 	start, end = _sales_report_dates(from_date, to_date)
-	period_expr = _sales_report_period_expr(granularity)
+	dfield = _sales_report_date_field(date_basis, alias="si")
+	period_expr = _sales_report_period_expr(granularity, _sales_report_date_field(date_basis))
 	return frappe.db.sql(
 		f"""
 		SELECT {period_expr} AS period,
@@ -1137,8 +1220,8 @@ def sales_report_by_date(
 		       COUNT(*) AS invoice_count
 		FROM `tabSales Invoice` si
 		WHERE si.company = %(company)s
-		  AND si.docstatus = 1
-		  AND si.posting_date BETWEEN %(from_date)s AND %(to_date)s
+		  AND {_sales_report_docstatus(include_drafts, alias="si")}
+		  AND {dfield} BETWEEN %(from_date)s AND %(to_date)s
 		GROUP BY {period_expr}, si.currency
 		ORDER BY period ASC
 		""",
@@ -1148,11 +1231,12 @@ def sales_report_by_date(
 
 
 @frappe.whitelist()
-def sales_report_by_salesperson(company: str, from_date: str, to_date: str):
+def sales_report_by_salesperson(company: str, from_date: str, to_date: str, date_basis: str | None = None, include_drafts: int | str = 0):
 	_require_company(company)
 	start, end = _sales_report_dates(from_date, to_date)
+	dfield = _sales_report_date_field(date_basis, alias="si")
 	return frappe.db.sql(
-		"""
+		f"""
 		SELECT COALESCE(st.sales_person, 'Unassigned') AS sales_person,
 		       si.currency,
 		       SUM(CASE
@@ -1163,10 +1247,45 @@ def sales_report_by_salesperson(company: str, from_date: str, to_date: str):
 		FROM `tabSales Invoice` si
 		LEFT JOIN `tabSales Team` st ON st.parent = si.name AND st.parenttype = 'Sales Invoice'
 		WHERE si.company = %(company)s
-		  AND si.docstatus = 1
-		  AND si.posting_date BETWEEN %(from_date)s AND %(to_date)s
+		  AND {_sales_report_docstatus(include_drafts, alias="si")}
+		  AND {dfield} BETWEEN %(from_date)s AND %(to_date)s
 		GROUP BY COALESCE(st.sales_person, 'Unassigned'), si.currency
 		ORDER BY total DESC, sales_person ASC
+		LIMIT 500
+		""",
+		{"company": company, "from_date": start, "to_date": end},
+		as_dict=True,
+	)
+
+
+@frappe.whitelist()
+def sales_report_orders(
+	company: str,
+	from_date: str,
+	to_date: str,
+	date_basis: str | None = None,
+	include_drafts: int | str = 0,
+):
+	"""Order-based lens (booked/committed) — distinct from invoiced revenue. Groups
+	Sales Orders by customer and shows booked value plus the amounts still to deliver
+	and still to bill. date_basis maps to order date (default) or delivery date."""
+	_require_company(company)
+	start, end = _sales_report_dates(from_date, to_date)
+	so_date = "delivery_date" if (date_basis or "posting") == "due" else "transaction_date"
+	dstatus = _sales_report_docstatus(include_drafts)
+	return frappe.db.sql(
+		f"""
+		SELECT customer, customer_name, currency,
+		       COUNT(*) AS order_count,
+		       SUM(grand_total) AS booked,
+		       SUM(grand_total * (100 - COALESCE(per_delivered, 0)) / 100) AS to_deliver,
+		       SUM(grand_total * (100 - COALESCE(per_billed, 0)) / 100) AS to_bill
+		FROM `tabSales Order`
+		WHERE company = %(company)s
+		  AND {dstatus}
+		  AND {so_date} BETWEEN %(from_date)s AND %(to_date)s
+		GROUP BY customer, customer_name, currency
+		ORDER BY booked DESC, customer_name ASC
 		LIMIT 500
 		""",
 		{"company": company, "from_date": start, "to_date": end},
@@ -2059,11 +2178,12 @@ def sales_order_detail(name: str):
 
 @frappe.whitelist()
 def close_sales_order(name: str, modified: str | None = None):
-	"""Manually close a submitted SO, releasing the classic reserved_qty.
+	"""Manually close a submitted SO, releasing both reservation layers.
 
-	Mirrors the automatic path in close_billed_so.py: update_status("Closed")
-	drops the SO's contribution to tabBin.reserved_qty via get_reserved_qty()
-	filtering OUT Closed SOs — no new SLE is created.
+	1. update_status("Closed") drops the classic reserved_qty (tabBin.reserved_qty)
+	   via get_reserved_qty() filtering OUT Closed SOs — no new SLE is created.
+	2. Any still-open Stock Reservation Entries are cancelled (sre_list= form so
+	   already-Delivered SREs are left intact).
 	"""
 	if not name:
 		frappe.throw(_("Sales order name is required."))
@@ -2075,6 +2195,27 @@ def close_sales_order(name: str, modified: str | None = None):
 	if so.status in ("Closed", "On Hold"):
 		frappe.throw(_("Sales Order is already {0}.").format(so.status))
 	so.update_status("Closed")
+	try:
+		from erpnext.stock.doctype.stock_reservation_entry.stock_reservation_entry import (
+			cancel_stock_reservation_entries,
+		)
+
+		open_sres = frappe.get_all(
+			"Stock Reservation Entry",
+			filters={
+				"voucher_type": "Sales Order",
+				"voucher_no": name,
+				"docstatus": 1,
+				"status": ["not in", ["Delivered", "Cancelled"]],
+			},
+			pluck="name",
+		)
+		if open_sres:
+			cancel_stock_reservation_entries(sre_list=open_sres, notify=False)
+	except Exception:
+		# Swallow — the SO is already Closed; a stale SRE is preferable to
+		# surfacing a confusing error to the user for a manual close action.
+		pass
 	return {"status": "Closed", "reservations_released": True}
 
 
@@ -2654,7 +2795,6 @@ def reserved_stock_analysis(company: str):
 		  AND sre.docstatus = 1
 		  AND sre.status NOT IN ('Delivered', 'Cancelled')
 		  AND itm.is_sales_item = 1
-		  AND sre.warehouse = 'Tayyor mahsulot - A'
 		ORDER BY sre.warehouse, sre.item_code, sre.creation
 		""",
 		{"company": company},
