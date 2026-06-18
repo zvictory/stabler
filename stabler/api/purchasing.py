@@ -416,6 +416,34 @@ def purchase_invoice_detail(name: str):
 
 
 @frappe.whitelist()
+def purchase_invoice_print(name: str):
+	"""Full payload for the in-SPA printable PI receipt (extends detail with
+	company header, in_words, and supplier running balance from GL)."""
+	if not name:
+		frappe.throw("Invoice name is required.")
+	_assert_can_read("Purchase Invoice", name)
+	base = purchase_invoice_detail(name)
+	doc = frappe.get_doc("Purchase Invoice", name)
+	company_doc = frappe.get_doc("Company", doc.company)
+	bal = frappe.db.sql(
+		"""SELECT SUM(debit_in_account_currency - credit_in_account_currency)
+		   FROM `tabGL Entry`
+		   WHERE company=%s AND party_type='Supplier' AND party=%s AND is_cancelled=0""",
+		(doc.company, doc.supplier),
+	)
+	supplier_balance = flt(bal[0][0]) if bal and bal[0][0] is not None else 0.0
+	return {
+		**base,
+		"company_name": company_doc.company_name,
+		"company_abbr": company_doc.abbr,
+		"company_tax_id": getattr(company_doc, "tax_id", "") or "",
+		"discount_amount": flt(doc.discount_amount),
+		"in_words": doc.in_words or "",
+		"supplier_balance": supplier_balance,
+	}
+
+
+@frappe.whitelist()
 def ap_aging(company: str, as_of: str | None = None):
 	"""Bucket outstanding Purchase Invoices by age into 0-30/31-60/61-90/90+.
 

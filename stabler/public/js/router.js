@@ -37,6 +37,7 @@ import SalesAging from "./pages/sales/Aging.vue";
 import ReservedStock from "./pages/sales/ReservedStock.vue";
 import InvoicePrint from "./pages/sales/InvoicePrint.vue";
 import Waybill from "./pages/sales/Waybill.vue";
+import PurchaseInvoicePrint from "./pages/purchasing/InvoicePrint.vue";
 import PurchasingHome from "./pages/purchasing/PurchasingHome.vue";
 import Suppliers from "./pages/purchasing/Suppliers.vue";
 import PurchaseInvoices from "./pages/purchasing/PurchaseInvoices.vue";
@@ -202,6 +203,7 @@ const routes = [
 			{ path: "receipts", name: "purchasing-receipts", component: PurchaseReceipts, meta: { title: t("Purchase Receipts") } },
 			{ path: "invoices", name: "purchasing-invoices", component: PurchaseInvoices, meta: { title: t("Purchase Invoices") } },
 			{ path: "invoices/new", name: "purchasing-invoice-new", component: PurchaseInvoiceForm, meta: { title: t("New Purchase Invoice") } },
+			{ path: "invoices/:name/print", name: "purchasing-invoice-print", component: PurchaseInvoicePrint, meta: { title: t("Invoice") } },
 			{ path: "invoices/:name", name: "purchasing-invoice", component: PurchaseInvoiceForm, meta: { title: t("Purchase Invoice") } },
 			{ path: "aging", name: "purchasing-aging", component: PurchasingAging, meta: { title: t("AP Aging") } },
 		],

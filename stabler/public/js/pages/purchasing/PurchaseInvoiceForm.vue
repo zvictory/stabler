@@ -679,14 +679,15 @@ async function submitDoc() {
 		<!-- Items -->
 		<div class="d-flex align-items-center mb-2">
 			<h6 class="text-uppercase text-secondary small mb-0">{{ t("Items") }}</h6>
-			<div class="form-check form-switch ms-auto mb-0">
+			<div v-if="editable" class="form-check form-switch ms-auto mb-0">
 				<input class="form-check-input" type="checkbox" id="piShowDisc" v-model="showDiscounts" />
 				<label class="form-check-label small text-secondary" for="piShowDisc">{{ t("Show discounts") }}</label>
 			</div>
 		</div>
 
+		<!-- Editable: full inline editor with discount toggles -->
 		<LineItemsEditor
-			v-if="form"
+			v-if="form && editable"
 			:items="form.items"
 			:editable="editable"
 			:currency="modalCurrency"
@@ -746,6 +747,50 @@ async function submitDoc() {
 			</template>
 		</LineItemsEditor>
 
+		<!-- Read-only: striped table mirroring the Sales Invoice view -->
+		<div v-else-if="form" class="table-responsive">
+			<table class="table table-sm table-vcenter">
+				<thead>
+					<tr>
+						<th style="width: 36px;">#</th>
+						<th>{{ t("Item") }}</th>
+						<th class="text-end" style="width: 80px;">{{ t("Qty") }}</th>
+						<th style="width: 70px;">{{ t("UOM") }}</th>
+						<th class="text-end" style="width: 120px;">{{ t("List rate") }}</th>
+						<th class="text-end" style="width: 70px;">{{ t("Disc %") }}</th>
+						<th class="text-end" style="width: 120px;">{{ t("Disc") }}</th>
+						<th class="text-end" style="width: 120px;">{{ t("Rate") }}</th>
+						<th class="text-end" style="width: 120px;">{{ t("Amount") }}</th>
+					</tr>
+				</thead>
+				<tbody>
+					<tr v-for="(it, idx) in form.items" :key="idx">
+						<td class="text-secondary font-monospace small">{{ idx + 1 }}</td>
+						<td>
+							<div class="fw-semibold">{{ it.item_code }}</div>
+							<div class="small text-secondary">{{ it.item_name }}</div>
+						</td>
+						<td class="text-end font-monospace">{{ it.qty }}</td>
+						<td class="text-secondary small">{{ it.uom || "—" }}</td>
+						<td class="text-end font-monospace text-secondary small">{{ it.price_list_rate > 0 ? formatMoney(it.price_list_rate, modalCurrency, user.language) : "—" }}</td>
+						<td class="text-end font-monospace small">{{ it.discount_percentage > 0 ? it.discount_percentage + "%" : "—" }}</td>
+						<td class="text-end font-monospace small">{{ it.discount_amount > 0 ? formatMoney(it.discount_amount, modalCurrency, user.language) : "—" }}</td>
+						<td class="text-end font-monospace">{{ formatMoney(it.rate, modalCurrency, user.language) }}</td>
+						<td class="text-end font-monospace fw-semibold">{{ formatMoney(Number(it.amount || 0), modalCurrency, user.language) }}</td>
+					</tr>
+				</tbody>
+				<tfoot>
+					<tr>
+						<td colspan="2">
+							<span class="badge bg-secondary-lt">{{ form.items.length }} {{ form.items.length === 1 ? t('item') : t('items') }}</span>
+						</td>
+						<td colspan="6"></td>
+						<td class="text-end font-monospace fw-bold py-2">{{ formatMoney(form.net_total, modalCurrency, user.language) }}</td>
+					</tr>
+				</tfoot>
+			</table>
+		</div>
+
 		<div class="mt-3">
 			<label class="form-label">{{ t("Terms / remarks") }}</label>
 			<textarea v-if="editable" v-model="form.remarks" class="form-control" rows="2"></textarea>
@@ -802,6 +847,13 @@ async function submitDoc() {
 				>
 					<i class="ti ti-receipt-refund me-1"></i>{{ t("Issue debit note") }}
 				</button>
+				<router-link
+					v-if="form && !isCreate"
+					:to="'/purchasing/invoices/' + form.name + '/print'"
+					class="btn btn-outline-secondary"
+				>
+					<i class="ti ti-printer me-1"></i>{{ t("Print") }}
+				</router-link>
 				<button
 					v-if="can.cancel"
 					type="button"

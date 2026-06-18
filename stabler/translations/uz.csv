@@ -1,15 +1,24 @@
+source,target
 #,#
 % of total,Jami %
 (none),(yoʿq)
+(only for half-rate),
+"(path to the JSON, or the JSON inline).",
++998 XX XXX XX XX,
+0,
 0.00,0.00
 0–30,0–30
+1:1 Foreign Postings,
 1C ClientBank Exchange format (.txt). Uzbek bank-client export.,1C ClientBank Exchange formati (.txt). Bank-mijoz eksporti.
 1C Sync Log,1C Sinxronizatsiya Jurnali
 31–60,31–60
 61–90,61–90
 90+,90+
+A Payroll Attendance Summary for employee {0} and period {1} already exists: {2},
+A mapping for employee {0} with device user ID {1} already exists ({2}).,
 A new version is available.,Yangi versiya mavjud.
 A password reset email will be sent. The account is disabled until the user sets a password.,Parol o'zgartirishning elektron xati yuboriladi. Hisob foydalanuvchi parol belgilamaguncha o'chiriladi.
+A status with that name already exists.,
 A valid email is required,To'g'ri elektron pochta talab qilinadi
 "A ≤ {0}%, B ≤ {1}%, C rest — by revenue.","A ≤ {0}%, B ≤ {1}%, C qolgan — tushum bo'yicha."
 "A ≤ {0}%, B ≤ {1}%, C rest — by spend.","A ≤ {0}%, B ≤ {1}%, C qolgan — xarajat bo'yicha."
@@ -20,12 +29,17 @@ ARCA,ARCA
 ARCA Payment Events,ARCA To'lov Voqealari
 Abbr,Qisqartma
 Absent,Yo'q
+Accept Return,
 Access Review,Kirishni tekshirish
 Account,Hisob
 Account Ledger,Hisob Balansi
 Account currency must match the payment account.,Hisob valyutasi to'lov hisobiga mos kelishi kerak.
 Account matches,Hisob mos keladi
+Account or cost centre…,
+Account {0} is not a {1} account for party {2}.,
+Accounting entries,
 Accounts,Hisoblar
+Accounts frozen up to (date),
 Accrual (bill date),Hisoblama (xarid hisob-faktura sanasi)
 Accrual (invoice date),Hisoblama (sotuv hisob-faktura sanasi)
 Acquisition report,Jalb qilish hisoboti
@@ -34,16 +48,21 @@ Action failed.,Harakat bajarilmadi.
 Actions,Harakatlar
 Activation rate,Konversiya
 Active,Faol
+Active Company,
+Active from,
+Active to,
 Activities,Faoliyatlar
 Actual,Haqiqiy
 Add,Qo'shish
 Add Deal,
 Add Decision,Qaror qo'shish
 Add Lane,Yo'lak qo'shish
+Add Row,
 Add Task,Vazifa qo'shish
 Add a column to start organising your deals.,Bitimlarni tartibga solishni boshlash uchun ustun qo'shing.
 Add a customer,Xaridor qo'shish
 Add a line…,Qator qo'shish…
+Add a service account to site_config.json key,
 Add a warehouse to start tracking stock locations.,Zaxiralarni kuzatishni boshlash uchun omborxonani qo'shing.
 Add another item,Yana bir tovar qo'shish
 Add at least one item line.,Kamida bitta tovar qatorini qo'shing.
@@ -56,6 +75,7 @@ Add deal,Bitim qo'shish
 Add item,Tovar qo'shish
 Add line,Qator qo'shish
 Add outlet,Chakana sotuvni qo'shish
+Add punch,
 Add row,Qator qo'shish
 Add supplier,Ta'minotchi qo'shish
 Add warehouse,Omborxona qo'shish
@@ -63,20 +83,34 @@ Add your first customer to start sending quotes and invoices.,Koʻrsatmalar va h
 Add your first employee to start tracking attendance, leave and payroll.
 "Add your first employee to start tracking attendance, leave and payroll.","Qayd etish, ta'til va maoshni kuzatishni boshlash uchun birinchi xodimingizni qo'shing."
 Add your first supplier to start recording bills and purchases.,Hisob-fakturalar va xaridlarni qaydga olishni boshlash uchun birinchi ta'minotchingizni qo'shing.
+Additional,
+Additional duties,
 Address,Manzil
 Adjust dates or check that {company} has posted transactions in this period.,Sanalarni o'zgartiring yoki {company} ushbu davr ichida tranzaksiyalar joylashtirganini tekshiring.
+Adjust filters and run the report again.,
 Adjust quantities for a partial receipt. Rows left at zero are skipped.,Qisman qabul qilish uchun miqdorlarni o'zgartiring. Nol qoldirilgan qatorlar o'tkazib yuboriladi.
 Admin,Admin
 Administer users & roles,Foydalanuvchilar va rollarni boshqarish
+Advance amount,
 Advance paid,Avans to'landi
 Against,Qarshi
+Alerts,
 All,Hammasi
 All Reports,Barcha hisobotlar
+All attendance exceptions have been resolved or ignored.,
 All categories,Barcha kategoriyalar
+All computed allocation amounts were zero.,
+All cost centres,
+All current production runs are fully staged or inactive.,
+All customers,
+All devices,
 All directions,Barcha yo'nalishlar
 All documents,Barcha hujjatlar
+All fiscal years,
 All groups,Barcha guruhlar
 All invoices are settled as of {date}.,Barcha hisob-fakturalar {date} holatiga ko'ra to'langan.
+All item groups,
+All items,
 All items above reorder level.,Barcha tovarlar to'ldirish darajasidan yuqori.
 All items are above their warehouse reorder thresholds — nice work.,Barcha tovarlar omborxona qayta buyurtma chegaralarining ustida — yaxshi ish.
 All object types,Barcha ob'ekt turlari
@@ -84,21 +118,38 @@ All promo plans,Barcha promo rejalar
 All sales invoices for this company are fully paid.,Ushbu kompaniyaning barcha sotuv hisob-fakturalari to'liq to'langan.
 All service people,Barcha texniklar
 All statuses,Barcha holatlar
+All suppliers,
 All technicians,Barcha texniklar
 All territories,Barcha hududlar
 All three accounts are required.,Uchta hisob majburiy.
 All time,
 All types,Barcha turlar
+All vouchers,
+All warehouses,
+All {0} employee summaries are clean — no unresolved exceptions.,
 Allocate against,Qarshi ajratish
 Allocated,Ajratilgan
 Allocated against,Qarshi ajratilgan
+Allocated amount must be greater than zero.,
+Allocation exceeds the unreconciled amount on this transaction.,
+Allocation preview,
+Allow stale exchange rates,
+Allowance name,
+Allowances,
+Allowances are hidden — payroll access required.,
 Allowed users,Ruxsat etilgan foydalanuvchilar
+Already Transferred,
 Amend,O'zgartirilgan
+Amend expense,
 Amend failed.,O'zgartirilish muvaffaq bo'lmadi.
 Amend of,O'zgartirilgan
+Amend transfer,
+Amendment created.,
 Amount,Summa
+Amount (UZS),
 Amount exceeds outstanding ({amount}).,Summa qarz miqdorini ({amount}) osib ketdi.
 Amount exceeds the available balance.,Summa mavjud qoldiqdan oshib ketdi.
+Amount in {0},
 Amount must be greater than zero.,Summa noldan katta bo'lishi kerak.
 Amount must be positive.,Summa musbat bo'lishi kerak.
 Amount paid,To'langan summa
@@ -106,22 +157,37 @@ Amount received,Qabul qilingan summa
 Amount sent,Yuborilgan summa
 Amount to transfer,O'tkazma summasi
 Analytics,Tahlil
+Anchor DAY hours (h),
+Anchor LIGHT hours (h),
+Anchor NIGHT hours (h),
+Anchor OFFICE hours (h),
 Animated,Animatsiyali
 Any,Ixtiyoriy
+Applied,
+Applied corrections are locked. Cannot change: {0},
 Applied to,Qo'llanildi
 Apply,Qo'llash
 Apply role template,Rol shablonini qo'llash
+Approval level {0} has not been completed yet.,
+Approval request name is required.,
 Approval required,Tasdiq talab qilinadi
 Approvals,Tasdiqlashlar
 Approve,Tasdiqlash
 Approve & post,Tasdiqlash va kiritish
+Approve Leave?,
 Approve and post,Tasdiqlash va kiritish
 Approve and submit,Tasdiqlash va o'tkazish
+Approve correction,
+Approve level {0},
 Approve payments,To'lovlarni tasdiqlash
+Approve this correction request? The change will be queued for payroll.,
 Approve this leave request?,Ta'til arizasini tasdiqlaysizmi?
 Approved,Tasdiqlangan
 Approved and posted.,Tasdiqlandi va kiritildi.
 Approx. at current valuation rate,"Tax., joriy tan narxida"
+Are you sure you want to cancel this document? This action is irreversible.,
+Are you sure you want to delete this draft? This cannot be undone.,
+Are you sure you want to submit this document? This will finalize transactions.,
 Artifacts,Artefaktlar
 As of,Sana bilan
 Asl Belgisi,Asl Belgisi
@@ -136,56 +202,95 @@ Assign operator,Operatorni belgilash
 Assign technician,Texnikni belgilash
 Assigned Field User,Tayinlangan foydalanuvchi
 Assigned Technician,Tayinlangan texnik mutaxassis
+At least one counted item line is required.,
+At least one visit purpose is required.,
+At least one voucher is required.,
 At least two account lines are required.,Kamida ikkita hisob qatori talab qilinadi.
 At-risk,Xavf ostida
 Attendance,Davomat
+Attendance Dashboard,
+Attendance Rule Sets,
+Attendance Simulator,
 Audit Trail,O'zgarishlar tarixi
 Audit trail,O'zgarishlar tarixi
 Audited At,Tekshirilgan sana
+Authentication required.,
 Available,Mavjud
 Avg orders / customer,Mijozga buyurtmalar
 Avg time to first order,Birinchi buyurtmagacha vaqt
+Awaiting level {0},
 Awaiting release by manager,Menejer ruxsatini kutmoqda
 BOM,Spetsifikatsiya
+BOM cancelled successfully.,
+BOM submitted successfully.,
 BOMs,Spetsifikatsiyalar
 Back,Ortga
 Back to dashboard,Boshqaruvga qaytish
+Back to summary,
 Back up now,Hozir zaxiralash
 Back up with files,Fayllar bilan zaxiralash
+Backdated postings are frozen before {0}.,
 Backup & DR,Zaxira va tiklash
 Backup created.,Zaxira nusxa yaratildi.
+Backup file not found: {0},
 Backup set,Zaxira to'plami
 Badge,Belgi
+Badge Timeline,
+Badge UID is required.,
 Balance,Balans
 Balance (Account Currency),Balans (hisob valyutasi)
 Balanced,Muvozanatli
+Bank Account '{0}' not found.,
 Bank account,Bank hisobi
+Bank account does not belong to company '{0}'.,
+Bank account has no linked GL account.,
 Bank amount,Bank summası
+Bank transaction is required.,
+Bank transaction not found.,
 Bank/cash account is required.,Bank/kassa hisob talab qilinadi.
 Base equivalent,Asosiy ekvivalent
+Base salary,
+Base salary (UZS),
 Basic rate,Asosiy narx
 Batch,Partiya
 Batch Expiry,Partiya muddati
 Batch tracking is not enabled.,Partiyani kuzatish yoqilmagan.
 Batches expiring within {0} days are flagged. Value at item valuation rate.,{0} kun ichida muddati tugaydigan partiyalar belgilangan. Qiymat tovar baholash narxida.
+Before → Requested,
+Berry,
 Bill,Hisob
 Bill #,Hisob raqami
 Bill / invoice number printed on supplier document,Ta'minotchi hujjatida chop etilgan hisob/hisob-faktura raqami
+Bill Date,
+Bill No.,
 Bill date,Hisob sanasi
+Bill number or supplier…,
 Billed,Hisob-fakturalashtir
+Billed amt,
 Billing,Hisob-faktura
 Bills,Hisoblar
 Bimonthly,Ikki haftada bir
 Board,Doska
+Book rate,
+Booked,Buyurtma qilingan
+Branch,
 Brand,Brend
+Break minutes,
 Budget,Byudjet
+"Budget name, fiscal year…",
+Budget vs Actual,
+Budgets,
 Buy,Sotib olish
 Buy X get Y,"X sotib oling, Y olish"
 Buy markup,Sotib olish ustamasi
 Buying price list,Sotib olish narx ro'yxati
+By,
 By region,Hudud bo‘yicha
 By rep,Menejer bo‘yicha
+C,
+CBU rate: {rate} ({date}),
 CBU.uz exchange rates (last 30 days),CBU.uz almashtirish kurslari (oxirgi 30 kun)
+CBU:,
 COGS,Tannarx
 CRM,CRM
 CRM Report,CRM hisoboti
@@ -196,45 +301,71 @@ Campaign Name,Kampaniya nomi
 Campaign ROI,Kampaniya ROI
 Cancel,Bekor qilish
 Cancel ALL open stock reservations for {0}? Reserved stock will be released.,{0} uchun BARCHA ochiq qoldiq bronirovanishlarini bekor qilasizmi? Bronirlangan qoldiq chiqarib yuboriladi.
+Cancel BOM?,
+Cancel Document,
+Cancel Entry,
+Cancel Expense Entry,
+Cancel Purchase Receipt,
 Cancel Request,Bekor qilish so'rovi
+Cancel Transfer,
 "Cancel all open (submitted, non-delivered) Stock Reservation Entries for this company. Reserved stock will be returned to available quantity.","Ushbu kompaniya uchun barcha ochiq (taqdim etilgan, etib berilmagan) qoldiq bronirovanishi yozuvlarini bekor qiling. Bronirlangan qoldiq mavjud miqdorga qaytariladi."
 Cancel bill {name}? This is reversible only by amendment.,{name} hisobni bekor qilasizmi? Bu faqat o'zgartirilish orqali qayta tiklanadi.
+Cancel document?,
 Cancel entry,Yozuvni bekor qiling
 Cancel failed.,Bekor qilish muvaffaq bo'lmadi.
 Cancel invoice {name}? This is reversible only by amendment.,{name} hisob-fakturasini bekor qilasizmi? Bu faqat o'zgartirilish orqali qayta tiklanadi.
 Cancel or delete Sales Invoice {0} before cancelling this Sales Order.,Ushbu sotuv buyurtmasini bekor qilishdan oldin {0} sotuv hisob-fakturasini bekor qiling yoki o'chirib tashlang.
 Cancel payment,To‘lovni bekor qilish
+Cancel purchase receipt {0}?,
 Cancel quotation {name}?,Kotirovka {name} bekor qilinsinmi?
+Cancel reservations?,
 Cancel sales order {name}? Stock reservations will be released.,Sotuv buyurtmasi {name} bekor qilinsinmi? Zaxira bronirovalari chiqariladi.
+Cancel stock entry?,
+Cancel this entry?,
 Cancel this submitted BOM?,Bu tasdiqlangan spetsifikatsiyani bekor qilasizmi?
+Cancel this transfer?,
 Cancel {name}? This will reverse the stock movements.,{name} bekor qilinsinmi? Bu zaxira harakatlarini teskari yo'naltiradi.
 Cancelled,Bekor qilingan
 Cannot check out before checking in.,Kirish qilmasdan chiqish qila olmaysiz.
+Cannot create a return against a return document.,
 Cannot create invoice: no warehouse set for stock item(s) {0}.,Hisob-faktura yaratib bo'lmaydi: {0} tovar(lar) uchun ombor ko'rsatilmagan.
 Cannot delete: {0} deal(s) are still in this status.,
+Cannot lock period — resolve the following blockers first: {0},
+Cannot post UZS 1:1 into non-base currency account {0}. ,
+Cannot start a payment for a zero total.,
 Capability grid,Vakolatlar jadvali
 Captured At,Qabul qilingan vaqti
 Car / Item,Avtomobil / Mahsulot
 Car item is required.,Mahsulot (avtomobil) majburiy.
+Card not recognized,
 Cases / Week,Quti / hafta
 Cash flow,Pul oqimi
 Cash on hand,Kassadagi pul
 "Cash, Bank, …","Naqd, Bank, …"
 Cash-in account,Naqd qabul qilish hisobi
+Cash/bank account,
+Cashier,
+Cashier Lock,
 Categories,Toifalar
 Category,Toifasi
 Category is required.,Toifasi talab qilinadi.
+Change,
 Changed,O'zgartirildi
 Channel,Kanal
 Charge via {provider},{provider} orqali to‘lash
 Chart of Accounts,Hisoblar rejasi
 Checked in,Kirish qilindi
 Checking availability…,Mavjudligini tekshirilmoqda…
+Checking readiness…,
+Checkout failed.,
 Chegirma,Chegirma
 Cheque,Chek
 Cheque / transfer ref,Chek / o'tkazma havolasi
 Cheque no.,Chek raqami
+Chocolate,
 Choose a statement file first.,Avval ko'chirma faylini tanlang.
+Choose the retail shop warehouse before selling.,
+City,
 Claim,Da'vo
 Claim No.,Da'vo raqami
 Claim amount must be greater than zero.,Da'vo summasi noldan katta bo'lishi kerak.
@@ -244,14 +375,22 @@ Claim name is required.,Da'vo nomi talab qilinadi.
 Claim {0} not found.,Da'vo {0} topilmadi.
 Claims,Da'volar
 Class,Sinf
+Classic,
 Clear,Tozalash
 Clear open reservations,Ochiq bronirovalari tozalash
 Clear search,Qidiruvni tozalash
 Cleared {0} of {1},{1} dan {0} tozalandi
+Click New Revaluation to preview unrealised FX deltas and post an Exchange Rate Revaluation.,
 Click a line to see suggested matches.,Taklif etilgan mosliklarni ko'rish uchun qatorni bosing.
 Click an installment chip to view the contract.,Shartnomani ko'rish uchun bo'lib to'lash chipini bosing.
+Click to Activate Scanner,
+Clock drift tolerance (min),
 Close,Yopish
+Close & release,
+Close & release reserved stock,
+Close Sales Order,
 Close Visit,Tashrifni yopish
+Close Work Order,
 Close this Work Order? This finalizes it.,Bu buyurtmani yopasizmi? Bu yakuniy harakat.
 Close visit,Tashrifni yopish
 Closing,Yopilmoqda
@@ -265,6 +404,9 @@ Cohort sales,Kogorta savdosi
 Collapse,Yig'ish
 Collapse all,Hammasini yig'ish
 Collapse all groups,Barcha guruhlarni yig'ish
+Collect,
+Collect payment,
+Collection progress,
 Color,Rang
 Column name,Ustun nomi
 Comment,Izoh
@@ -279,13 +421,21 @@ Commission mode,Komissiya turi
 Companies,Kompaniyalar
 Company,Kompaniya
 Company email,Ish emaili
+Company is required for an enabled Payroll Component Map.,
 Company is required.,Kompaniya talab qilinadi.
+Compensation,
+Compensation details are hidden — payroll access required.,
 Complete,To'ldirish
 Completed,To'ldirildi
 Completed visit,Bajarilgan tashrif
 Completion,Yakunlash
 Compliance,Mos kelish
+Component map {0} not found.,
+Component mapping is incomplete. The following quantities have no salary ,
 Components,Tarkibiy qismlar
+Conditions,
+Configure Google Drive below first.,
+Confirm Submit,
 Confirm finish,Yakunlashni tasdiqlash
 Confirm restore test,Tiklash sinovini tasdiqlang
 Conflict,Nizo
@@ -298,14 +448,28 @@ Contents,Tarkibi
 Contract,Shartnoma
 Contract detail,Shartnoma tafsilotlari
 Contracts,Shartnomalar
+Conversion rate for USD to UZS cannot be less than 1000 (got {0}).,
+Conversion rate {0} is outside the allowed CBU tolerance band (+/-20%) for {1} to {2}. ,
 Convert to customer,Mijozga aylantirish
 Cooler,Sovutgich
+Correction approved.,
+Correction locked,
+Correction rejected.,
+Correction request name is required.,
+Corrections,
+Corrections to approve,
 Corridor,Yo'nalish
 Corridor / Memo,Yo'nalish / Izoh
 Cost,Tannarx
+Cost Centre,
+Cost centre,
 Cost must be positive.,Tannarx musbat bo'lishi kerak.
 Could not check payment status.,To‘lov holatini tekshirib bo‘lmadi.
+Could not read backup file: {0},
+Could not read the uploaded file.,
+Could not resolve payroll period: {0},
 Could not start the online payment.,Onlayn to‘lovni boshlab bo‘lmadi.
+Couldn't work out the cash amount to pay — check the exchange rate and the paying account.,
 Count,Miqdori
 Count:,Miqdori:
 Counted qty,Sanab chiqilgan miqdor
@@ -323,9 +487,14 @@ Create Scheme,Sxema yaratish
 Create Ticket,Murojaat yaratish
 Create a Bill of Materials to define what raw materials go into a finished good.,Tayyor mahsulotga qanday xom ashyo kirishini belgilash uchun spetsifikatsiya yarating.
 Create a Work Order to plan and track production runs against a BOM.,Ishlab chiqarishni rejalashtirish va kuzatish uchun buyurtma yarating.
+Create a new Sales Order for this customer to begin.,
 Create a plan to start tracking campaign budget and ROI.,Kampaniya byujetini va ROI ni kuzatishni boshlash uchun rejani yarating.
+Create an active leaf warehouse before viewing item stock status.,
+"Create an attendance rule set to define late fees, overtime, and night shift premiums.",
 Create contract,Shartnoma yaratish
 Create credit note,Kredit xatni yaratish
+Create debit note,
+Create first order,
 Create outlets to start planning routes and visits.,Marshrutlarni va tashrif etishlarni rejalashtirishni boshlash uchun shubelalarni yarating.
 Create payments / journals,To'lov / o'tkazmalar yaratish
 Create receipt,Qabul hujjatini yaratish
@@ -344,38 +513,55 @@ Critical,Jiddiy
 Critical conflicts,Kritik nizolar
 Cumulative %,Jamlangan %
 Currency,Valyuta
+Current Return,
+Current Sale,
 Current total,Joriy summa
 Custom,
+Custom allowances,
 Customer,Xaridor
-Customer ID,Mijoz ID
 Customer ABC analysis,Mijozlar ABC tahlili
+Customer ID,Mijoz ID
+Customer credit,
+Customer deleted.,
 Customer group,Xaridor guruhi
+Customer invoices,
 Customer is required.,Xaridor majburiy.
 Customer name,Xaridor nomi
 Customer name is required.,Xaridor nomi talab qilinadi.
+Customer receivables grouped by aging buckets.,
+"Customer, item, trend, and salesperson reports from submitted invoices.",
 Customers,Mijozlar
 Daily,Kunlik
+Daily attendance records and employee presence checks.,
 Daily auto-backup,Kunlik avto-zaxira
+Daily cap (UZS),
 Dashboard,Boshqaruv paneli
 Dashed,Nuqta-chiziqli
 Data,Maʿlumotlar
 Database,Ma'lumotlar bazasi
 Date,Sana
+Date basis,Sana asosi
 Date of birth,Tug'ilgan sana
 Date of birth is required.,Tug'ilgan sanani kiriting.
 Date of joining,Ishga qabul sanasi
-Date basis,Sana asosi
 Dates,Sanalar
+Day,
 Day of Week,Haftaning kuni
 Days,Kun
 Days left,Qolgan kun
 Days of cover,Zaxira kunlari
 Deal Owner,Shartnoma egasi
 Deal Value,Shartnoma summasi
+Deal has no organization or name to create a customer from.,
 Deals,Bitimlar
 Debit,Debet
+Debit note for,
+Debit notes:,
+Deducted from worked time daily.,
+Deducted per each step interval of lateness.,
 Deductions,Ushlanmalar
 Default,Asosiy
+Default Exchange Gain/Loss Account is missing for company {0}. ,
 Default Route,Asosiy marshrut
 Default Warehouse,Asosiy ombor
 Default currency,Asosiy valyuta
@@ -383,19 +569,33 @@ Default price list,Asosiy narx ro'yxati
 Define promotions that field users can apply during visits.,Dala foydalanuvchilari tashrif etish paytida qo'llashi mumkin bo'lgan aksiyalarni aniqlang.
 Define routes so field users know which outlets to visit each day.,Dala foydalanuvchilari har kun qaysi shubelalarni tashrif etishni biladilar uchun marshrutlarni aniqlang.
 Delete,O'chirish
+Delete Customer,
+Delete Draft Entry,
+Delete Draft Transfer,
+Delete Supplier,
+Delete blocked,
 Delete customer,Xaridorni o'chirish
+Delete deal?,
+Delete document?,
+Delete draft,
 Delete draft bill {name}? This cannot be undone.,{name} qoralama hisobini o'chirasizmi? Buni bekor qilib bo'lmaydi.
 Delete failed.,O'chirish xatosi.
 Delete invoice {name}?,
+Delete lead?,
+Delete mapping,
 Delete order {name}? This cannot be undone.,
+Delete process?,
 Delete supplier,Yetkazuvchini o'chirish
 Delete this deal?,Ushbu bitimni oʼchirasizmi?
+Delete this draft entry?,
+Delete this draft transfer?,
 Delete this lead?,Ushbu lidni oʼchirasizmi?
 Delete this process?,Bu jarayonni o'chirishni xohlaysizmi?
 Deliv,Yetk.
 Deliver,Yetkazib berish
 Delivered,Yetkazib berilgan
 Delivery date,Yetkazib berish sanasi
+Delta,
 Department,Bo'lim
 Deposit,Tushum
 Deposit to,Gacha depozit qo'yish
@@ -404,19 +604,44 @@ Description,Tavsifi
 Designation,Lavozim
 Desk access,Stol kirishi
 Details,Tafsilotlar
+Device,
+Device created.,
+Device late (min),
+Device mapping,
+Device name,
+Device name is required.,
+Device name or branch…,
+Device updated.,
+Device user,
+Device user ID,
+Device user ID is required.,
+Direct credit note,
+Direct sales return,
 Direction,Yo'nalish
 Disabled,O'chirilgan
-Dismiss,Yopish
 Disc,Chegirma
 Disc %,Chegirma %
+Discard,
+Discard unsaved changes?,
 Discount,Chegirma
 Discount %,Chegirma %
+Dismiss,Yopish
 Dispatched,Yuborilgan
 Distributor,Distribyutor
 Distributor claims will appear here once submitted.,Distribyutor arizalari tasdiqlangandan keyin bu yerda ko'rinadi.
+District,
 DocType,Hujjat turi
 Document,Hujjat
+Document cancelled successfully.,
+Document changed,
+Document deleted successfully.,
+Document not found.,
+Document or company…,
+Document saved successfully.,
+Document submitted successfully.,
 Document type,Hujjat turi
+Document type and name are required.,
+Document updated successfully.,
 "Document, party or requester…","Hujjat, kontragent yoki so'rovchi…"
 Documents,Hujjatlar
 Done,Bajarildi
@@ -424,6 +649,8 @@ Downpayment,Boshlang'ich to'lov
 Downpayment %,Boshlang'ich to'lov %
 Draft,Qoralama
 Draft Sales Invoice created: {0},Sotuv fakturasi qoralamasi yaratildi: {0}
+Draft entry deleted.,
+Draft transfer deleted.,
 Drill-down report: customer → invoices → document. Returns netted.,Tafsilot: mijoz → hisob-fakturalar → hujjat. Qaytarishlar hisobga olingan.
 Drill-down report: item → invoice lines → document.,Tafsilot: mahsulot → hisob-faktura qatorlari → hujjat.
 Drill-down report: supplier → bills → document.,Tafsilot: yetkazib beruvchi → hisoblar → hujjat.
@@ -431,12 +658,23 @@ Drop deal here,Bitimni shu yerga tashlang
 Due,Muddati
 Due Date,Muddati tugash sanasi
 Due date,Muddati tugash sanasi
+Duplicate,
+Duplicate Event,
+Duplicate approval,
 Duplicate sequence {0} on this route.,Bu marshrutda {0} ketma-ketligini takrorlash.
+Duplicate summary,
 Duplicates,Dublikatlar
 Duration (ms),Davomiylik (ms)
 EHF Status,EHF holati
 EHF Submissions,EHF taqdimotlari
+ERPNext,
+ERPNext Employee docname (EMP-XXXXX).,
 EUR → UZS,EUR → UZS
+Each additional step charges the step fee.,
+Each purpose row must be an object.,
+Each purpose row needs a service person.,
+Early Exit,
+Early leave deduction,
 Earnings,Hisoblanganlar
 Edit,Tahrirlash
 Edit Deal,Bitimni tahrirlash
@@ -447,7 +685,10 @@ Edit Promo Scheme,Reklama sxemasini tahrirlash
 Edit Van Stock,Van ehtiyotini tahrirlash
 Edit Visit,Tashrif buyrumasini tahrirlash
 Edit customer,Xaridorni tahrirlash
+Edit device,
+Edit draft,
 Edit field user,Maydon foydalanuvchisini tahrirlash
+Edit mapping,
 Edit outlet,Savdo nuqtasini tahrirlash
 Edit photo report,Fotosuratli hisobotni tahrirlash
 Edit planogram,Planogramni tahrirlash
@@ -456,13 +697,30 @@ Edit route,Marshurutni tahrirlash
 Edit supplier,Ta'minotchini tahrirlash
 Edited,Tahrirlandi
 Edited 1 field,1 maydon tahrirlandi
+Edited {0} field(s),
 Editing the rate updates the received amount.,Narxni tahrirlash qabul qilingan summani yangilaydi.
 Editing the received amount updates the exchange rate.,Qabul qilingan summani tahrirlash kursni yangilaydi.
 Email,Elektron pochta
 Email and name are required.,Elektron pochta va ism talab qilinadi.
 Email or user ID,Email yoki foydalanuvchi ID
 Employee,Xodim
+Employee Device Mapping,
+Employee Device Mapping {0} not found.,
+Employee ID,
+Employee ID and PIN are required.,
+Employee ID is required.,
+Employee Profile,
+Employee carries additional responsibilities.,
+Employee has no linked user account.,
+Employee name,
+Employee or exception type…,
+Employee saved.,
+Employee summaries,
+Employee works in heavy/hazardous conditions.,
+"Employee, device ID or phone…",
+"Employee, type or reason…",
 Employees,Xodimlar
+Employment,
 Empty allowed list = user can access every company.,Bo'sh ruxsat ro'yxati = foydalanuvchi barcha kompaniyalarga kirishi mumkin.
 Enabled,Faollashtirish
 End,Oxiri
@@ -476,6 +734,9 @@ Enter at least one count that differs from the system quantity.,Tizimdagi miqdor
 Enter at least one return qty.,Kamida bitta qaytarish miqdorini kiriting.
 Enter cost and term to see the payment schedule.,To'lov jadvalini ko'rish uchun tannarx va muddatni kiriting.
 Enter the quantity to return for each line. Leave 0 to exclude a line.,Har bir qator uchun qaytarish miqdorini kiriting. Qatorni istisno qilish uchun 0 ni qoldiring.
+Enter your Employee ID and secure PIN,
+Entered rate deviates by {pct}% from CBU rate.,
+Entries on/before this date are frozen.,
 Entry,
 Equipment,Jihozlar
 Equipment and Issue are required.,Jihozlar va muammo talab qilinadi.
@@ -484,14 +745,35 @@ Equipment name is required.,Jihozning nomi talab qilinadi.
 Equity,Kapital
 Error,Xato
 Estimated value,Taxmin qilingan qiymat
+Event ID,
+"Event ID, device user or employee…",
+Event requeued for processing.,
 Events,Hodisalar
+Events appear here as soon as a device or integration pushes data. Use the filters above to narrow results.,
 Every route row needs an outlet.,Har bir marshrut qatori savdo nuqtasiga ehtiyoj bor.
+Exact,
+Exceeded (Annual),
+Exceeded (Monthly),
+Excel,
 Excel (.xlsx),Excel (.xlsx)
+Exception Type,
+Exception ignored.,
+Exception name is required.,
+Exception resolved.,
+Exceptions,
+Exceptions Queue,
+Exceptions by Type,
+Exchange Rate Revaluation,
 Exchange Rates,Valyuta kurslari
 Exchange rate,Valyuta kursi
+Exchange rate ({0}),
 Exchange rate must be greater than zero.,Valyuta kursi noldan katta bo'lishi kerak.
+Exchange rate staleness,
 Exclusive,Ustiga
 Exclusive: commission added on top — sender pays more.,Ustiga: komissiya qo'shiladi — jo'natuvchi ko'proq to'laydi.
+Execute material transfer for this Work Order? This will move required raw materials to the WIP warehouse.,
+Execute transfer?,
+Exit,
 Expand,Kengaytirish
 Expand all,Hammasini kengaytirish
 Expand all groups,Barcha guruhlarni kengaytirish
@@ -501,6 +783,7 @@ Expected Facings,Kutilgan yuzlar
 Expected Monthly Volume,Kutilayotgan oylik hajm
 Expected facings is required on row {0}.,Kutilgan yuzlar {0} qatorida talab qilinadi.
 Expense,Xarajat
+Expense entry cancelled.,
 Expense lines,Xarajat qatorlari
 Expense saved · {name},Xarajat saqlandi · {name}
 Expenses,Xarajatlar
@@ -509,17 +792,26 @@ Expiring within,Tugash muddati
 Expiry,Muddati
 Export,Eksport
 Export failed.,Eksport muvaffaq bo'lmadi.
+Extra lateness from slow device clock.,
 F.I.O.,F.I.Sh.
+FG Whse,
+FX Revaluation,
+FX accounts as of {0},
 Failed,Xatolik
 Failed to assign ticket.,Murojaatni belgilab bo'lmadi.
+Failed to cancel entry.,
+Failed to cancel transfer.,
 Failed to cancel.,Bekor qilish muvaffaq bo'lmadi.
 Failed to clear reservations.,Reservatsiyalarni o'chirish muvaffaq bo'lmadi.
+Failed to close sales order.,
 Failed to close visit.,Tashrifni yopib boʻlmadi.
+Failed to collect payment.,
 Failed to convert deal to customer.,Bitimni mijozga aylantirib bo‘lmadi.
 Failed to create bill.,Hisob-faktura yaratish muvaffaq bo'lmadi.
 Failed to create billing document.,Hujjatni yaratib boʻlmadi.
 Failed to create column.,
 Failed to create contract.,Shartnoma yaratib bo'lmadi.
+Failed to create debit note.,
 Failed to create equipment.,Jihozlar yaratish muvaffaq bo'lmadi.
 Failed to create invoice.,Faktura yaratish muvaffaq bo'lmadi.
 Failed to create item.,Tovar yaratish muvaffaq bo'lmadi.
@@ -538,9 +830,13 @@ Failed to delete bill.,Hisobni o'chirib bo'lmadi.
 Failed to delete column.,
 Failed to delete customer.,Mijozni o'chirishda xato.
 Failed to delete deal.,Bitimni oʼchirib boʼlmadi.
+Failed to delete entry.,
 Failed to delete lead.,Lidni oʼchirib boʼlmadi.
 Failed to delete supplier.,Ta'minchi o'chirishda xato.
+Failed to delete transfer.,
 Failed to load OSA audit.,OSA auditini yuklashda xato.
+Failed to load POS profile.,
+Failed to load POS profiles.,
 Failed to load accounts.,Hisoblarni yuklashda xato.
 Failed to load aging.,Qadimiylik ma'lumotlarini yuklashda xato.
 Failed to load alerts.,Ogohlantirishlarni yuklashda xato.
@@ -549,12 +845,16 @@ Failed to load calendar.,Taqvimni yuklashda xatolik.
 Failed to load claim.,Shikoyatni yuklashda xato.
 Failed to load contract.,Shartnomani yuklashda xatolik.
 Failed to load contracts.,Shartnomalarni yuklashda xatolik.
+Failed to load customer invoices.,
 Failed to load customer.,Mijozni yuklashda xato.
 Failed to load customers.,Mijozlarni yuklashda xato.
 Failed to load dashboard.,Panelni yuklashda xato.
 Failed to load deal.,Bitimni yuklab boʼlmadi.
 Failed to load deals.,Bitimlarni yuklab boʼlmadi.
 Failed to load detail.,Tafsilotni yuklab bo‘lmadi.
+Failed to load details.,
+Failed to load document.,
+Failed to load employee.,
 Failed to load form options.,Forma variantlarini yuklashda xato.
 Failed to load invoice.,Hisob-fakturani yuklashda xato.
 Failed to load invoices.,Hisob-fakturalarni yuklashda xato.
@@ -573,16 +873,20 @@ Failed to load process.,Jarayonni yuklab bo'lmadi.
 Failed to load processes.,Jarayonlarni yuklab bo'lmadi.
 Failed to load promo plan.,Reklama rejasini yuklashda xato.
 Failed to load promo scheme.,Reklama sxemasini yuklashda xato.
+Failed to load purchase orders.,
 Failed to load quotations.,Taklifnomalarni yuklashda xato.
 Failed to load report.,Hisobotni yuklab bo‘lmadi.
 Failed to load reserved stock data.,
 Failed to load sales order.,
 Failed to load sales orders.,Sotuv buyurtmalarini yuklashda xato.
+Failed to load sales report.,
 Failed to load service calendar.,Xizmat kalendarini yuklab boʻlmadi.
 Failed to load service tickets.,Servis murojaatlarini yuklab bo'lmadi.
 Failed to load service visits.,Tashrif roʻyxatini yuklab boʻlmadi.
+Failed to load staging queue.,
 Failed to load stock entries.,Ombor yozuvlarini yuklashda xato.
 Failed to load stock ledger.,Ombor kunlikni yuklashda xato.
+Failed to load stock status.,
 Failed to load supplier.,Ta'minchini yuklashda xato.
 Failed to load suppliers.,Ta'minchilarni yuklashda xato.
 Failed to load ticket.,Murojaatni yuklab bo'lmadi.
@@ -596,11 +900,13 @@ Failed to load work orders.,
 Failed to load.,Yuklashda xato.
 Failed to move deal.,Bitimni ko'chirish muvaffaqiyatsiz bo'ldi.
 Failed to move ticket.,Murojaatni ko'chirib bo'lmadi.
+Failed to preview collection.,
 Failed to record payment.,To'lovni qaydda xato.
 Failed to refresh claim.,Shikoyatni yangilanishda xato.
 Failed to rename column.,
 Failed to reorder columns.,
 Failed to reschedule visit.,Tashrifni qayta rejalashtirish amalga oshmadi.
+Failed to reset password.,
 Failed to run report.,Hisobotni ishga tushirishda xato.
 Failed to save OSA audit.,OSA auditini saqlashda xato.
 Failed to save customer.,Mijozni saqlashda xato.
@@ -613,13 +919,19 @@ Failed to save promo scheme.,Reklama sxemasini saqlashda xato.
 Failed to save stock entry.,Tovar kiritmasini saqlashda xato.
 Failed to save van stock.,Van tovarini saqlashda xato.
 Failed to save visit.,Vizitni saqlashda xato.
+Failed to search items.,
+Failed to submit expense.,
+Failed to submit transfer.,
 Failed to submit.,Tasdiqlashda xato.
 Failed to switch language.,Tilni almashtirib bo'lmadi.
+Failed to toggle status.,
 Failed to update bill.,Hisobni yangilab bo'lmadi.
 Failed to update color.,
 Failed to update promo plan.,Promo rejasini yangilashda xato.
 Failed to update status.,Holatni yangilashda xato.
+Far district,
 Female,Ayol
+Field Receivables,
 Field Sales,Sotuv maydoni
 Field User,Foydalanuvchi maydoni
 Field User is required.,Foydalanuvchi maydoni talab qilinadi.
@@ -628,35 +940,68 @@ Field Users,Foydalanuvchilar maydoni
 Field user is required.,Foydalanuvchi maydoni talab qilinadi.
 Field users represent sales reps who execute visits and own van stock.,Foydalanuvchilar maydoni vizitlarni amalga oshiradigan va van tovarini egallagan sotuv vakilllarini ifodalaydi.
 Files,Fayllar
+Fill in the inputs on the left to see the day result.,
 Fill in the required fields before submitting.,Tasdiqlashdan oldin talab qilingan maydonlarni to'ldiring.
 Finance,Moliya
 Financed,Moliyalashtirilgan
+Financial,
+Financial Statements,
+Find item,
 Finish,Yakunlash
 Finish Google Drive setup,Google Drive sozlashni yakunlang
+Finish Order,
+Finish Production Run,
 Finish failed.,Yakunlash muvaffaqiyatsiz.
+Finished Good,
 Finished good,Tayyor mahsulot
 Finished-goods warehouse,Tayyor mahsulot ombori
 First Name,Ism
 First name,Ism
 First name is required.,Ismni kiriting.
 First payment date,Birinchi to'lov sanasi
+Fiscal Year,
+Fiscal year,
+Fixed cut-off. Optional.,
+Fixed deduction on first late minute past grace.,
 Fixtures directory missing: {0},Fixtures direktoriyasi yo'q: {0}
+Flat fee (UZS),
+Flat fee per step,
+Flexible,
 Force submit & reserve,Majburan yuborish va zaxiralash
+Free,
 Free Qty,Bepul miqdori
+Free qty,
+Freeze older than (days),
 Freezer,Muzlatgich
 Freezer ROI,Muzlatgich ROI
 Freezer pending,Muzlatgich kutilmoqda
 Freezer push,Muzlatgichlar
 Frequency,Davriylik
 Fri,Ju
+Friday,
 From,Dan
 From account,Hisob dan
+From date,
+From date cannot be after To date.,
 From warehouse,Sklad dan
 From → To,Dan → Gacha
+Frozen accounts modifier role,
+Frozen days cannot be negative.,
+Frozen up to (date),
+Fulfilment & Billing,
 Full name,To'liq ism
+Full name (optional — filled automatically on save),
 Fully Completed,Toʻliq bajarildi
+Fully Staged,
+Fully billed but auto-close did not run — use Close below.,
+GL Integrity Anomaly Alert,
 GPS Latitude,GPS kengligi
 GPS Longitude,GPS uzunligi
+Gain / Loss,
+Gate Devices,
+Gate device,
+Gate devices,
+Gate events,
 Gateways,Shlyuzlar
 Gender,Jins
 Gender is required.,Jinsni tanlang.
@@ -664,8 +1009,12 @@ Generate and submit,Yaratish va tasdiqlash
 Generate drafts,Qoralama yaratish
 Generated salary slips,Yaratilgan varaqalar
 Go to Sales Orders,Sotuv buyurtmalariga o'ting
+Good Produced Qty,
+Google Drive libraries are not installed on the server. ,
+Grace period (min),
 Grand Total,Umumiy summa
 Grand total,Umumiy summa
+Granularity,
 Gross,Hisoblangan
 Gross Margin by Customer,Mijoz bo‘yicha yalpi foyda
 Gross Margin by Item,Mahsulot bo‘yicha yalpi foyda
@@ -675,10 +1024,25 @@ Group,Guruhi
 "Group warehouse (can contain children, holds no stock itself)","Guruhi sklad (bolalarni saqlashi mumkin, o'zi zaxira saqlash olmaydi)"
 HR,Ish Boshqarma
 Half Day,Yarim kun
+Half rate,
+Half-day & Presence,
+Half-day threshold (min),
+Heavy conditions,
 Hello {name},"Salom, {name}"
 High conflicts,Yuqori nizolar
+Hire date,
+Holiday OT premium (%),
 Horizontal lanes (flow left→right),Gorizontal yoʿlaklar (oqim chap→oʿng)
 Hours,Soat
+I have tested a restore,
+ID as it appears in raw gate events,
+Identity,
+"If off, a back-dated multi-currency document needs a rate within the days below.",
+Ignore,
+Ignore exception,
+Ignored,
+Immutable record,
+Impact,
 Import,Import
 Import bank statement,Bank ko'chirmasini import qilish
 Import {0} lines,{0} qatorni import qilish
@@ -689,27 +1053,49 @@ In progress,Jarayonda
 In time,Kirish vaqti
 InService,Xizmatda
 Inactive,Faol emas
+Include drafts,Qoralamalar bilan
+Including unposted drafts — does not tie to the GL.,Joylanmagan qoralamalar bilan — bosh kitobga mos kelmaydi.
 Inclusive,Ichida
 Inclusive: commission deducted from amount — receiver gets less.,Ichida: komissiya ayiriladi — qabul qiluvchi kamroq oladi.
 Incremental Units,Ortuvchi birliklar
 Inflow,Kirish oqimi
 Install Date,O'rnatish sanasi
+Install libraries on the server:,
 Installment,Bo'lib to'lash
+Installment Calendar,
+Integration,
+Integration type,
+Invalid completion status.,
+Invalid correction_type '{0}'. Valid values: {1},
+Invalid date value.,
+Invalid date: {0}. Expected YYYY-MM-DD.,
 Invalid decision: {0},Noto'g'ri qaror: {0}
+Invalid filename.,
 Invalid item_overrides payload,Noto'g'ri item_overrides yuklamasi
 Invalid item_returns payload,Noto'g'ri item_returns yuklamasi
+Invalid maintenance type.,
+Invalid month.,
+Invalid payload — expected JSON object.,
+Invalid period format,
+Invalid punches payload.,
+Invalid resolution '{0}'. Must be one of: {1},
 Invalid status: {0},Noto'g'ri holat: {0}
 Invalid step status: {0},Noto'g'ri qadam holati: {0}
+Invalid technician state: {0},
+Invalid ticket status: {0},
 Inventory,Ombor
 Inventory Aging,Zaxira eskirishi
 Invite user,Foydalanuvchini taklif qiling
 Invoice,Hisob-faktura
 Invoice #,Hisob-faktura №
+Invoice not submitted yet.,
 Invoice number or customer…,
 Invoiced,Hisob-faktura berilgan
+Invoiced without stock movement — stock still reserved; needs a delivery/backfill or manual close.,
 Invoices,Hisob-fakturalar
 Issue,Masala
 Issue credit note,Kredit notasini chiqaring
+Issue debit note,
 Issue is required.,Masala talab qilinadi.
 Issue type,Murojaat turi
 Issues,Masalalar
@@ -717,44 +1103,73 @@ Item,Tovar
 Item #{0}: item is required.,Tovar #{0}: tovar talab qilinadi.
 Item #{0}: qty must be greater than 0.,Tovar #{0}: miqdori 0 dan katta bo'lishi kerak.
 Item ABC analysis,Mahsulot ABC tahlili
+Item Code,
+Item Group,
 Item code,Tovar kodi
+Item code or name…,
+"Item code, name, or group…",
 Item does not require Asl Belgisi,Tovar Asl Belgisini talab qilmaydi
 Item is required on row {0}.,Tovar {0} qatorida talab qilinadi.
 Item is required.,Tovar talab qilinadi.
+"Item movement, voucher trace, quantities, and stock value.",
 Item name,Tovar nomi
 Item name is required.,Tovar nomi talab qilinadi.
 Items,Tovarlar
+Items below replenishment thresholds.,
 Item·WH lines,Tovar·Ombor
 Jami,Jami
 Jami muzqaymoq soni (dona),Jami muzqaymoq (dona)
 Jami summa,Jami summa
 Job Title,Lavozim
+Joined,
+Journal,
 Journal Entries,Jurnal yozuvlari
 Journal Entry,Jurnal yozuvi
 Journal Entry legs,Jurnal yozuv qatorlari
 Keep,Saqlash
+Keep Editing,
 Keep typing to narrow…,Toraytirish uchun yozishda davom eting…
+Kind,
 Label,Nom
 Landed cost vouchers,Qo'shimcha xarajat vaucherlari
 Lane,Yo'lak
 Lanes,Yo'laklar
 Language,Til
 Last Name,Familiya
+Last Payment,
 Last backup,Oxirgi zaxira
 Last login,Oxirgi kirish
 Last month,
 Last name,Familiya
+Last sync,
 Last year,
+Late,
+Late Arrival,
+Late deduction,
+Late fee,
 Latitude,Kenglik
 Lead Owner,Lid egasi
 Leads,Lidlar
 Leave,Ta'til
 Leave all unchecked to use role-based access. Checking any replaces it with exactly these modules. Visibility only — backend permissions still apply.,Rol asosidagi kirish huquqlarini qo'llash uchun hammasini belgilasiz qoldiring. Istalgan birini belgilash uni aniq ushbu modullar bilan almashtirib beradi. Faqat ko'rinish — backend ruxsatnomalar amal qiladi.
+Leave blank for open-ended.,
+Leave request approved.,
+Leave request rejected.,
 Leave type,Ta'til turi
+Ledger,
 Ledger spans multiple account currencies; amounts shown in base currency.,Ledger bir nechta hisob valyutalarini qamrab oladi; summalar asosiy valyutada ko'rsatilgan.
 Left,Ishdan ketgan
+Level {0},
+Level {0} approved — awaiting level {1}.,
+Level {0} cannot be approved yet — level {1} must be completed first.,
+Lifetime Purchases,
+Lifetime Sales,
 Lifetime sales,Umumiy savdo
+Light,
+Line Operator Kiosk,
+Line details,
 Lines,Qatorlar
+"Link an ERPNext employee to a TimePay (or other device) user ID. When a raw gate event arrives with this device user ID, it will be matched to this employee automatically.",
 Link to an existing Customer for receivables.,Qabul uchun mavjud Mijozga havola.
 Linked customer,Bog‘langan mijoz
 Linked invoices,Bog'langan invoyslar
@@ -762,12 +1177,24 @@ Linked receipts,Bog'langan qabul hujjatlari
 List rate,Ro'yxat narxi
 Loaded,Yuklandi
 Loading,Yuklanmoqda
+Loading FX account balances…,
+Loading invoices,
 Loading more…,
 Loading warehouses…,Omborlar yuklanmoqda…
 Loading…,Yuklanmoqda…
+Lock,
+Lock payroll period,
+Lock period,
+Lock the payroll period before generating salary components. ,
+Lock {0}? No further changes will be allowed once locked.,
+Locked at,
+Log Out,
 Log out,Chiqish
 Login required,Kirish talab qilinadi
+Login required.,
+Login with PIN,
 Longitude,Uzunlik
+Lost Badge? Login with PIN,
 Low,Past
 Low Stock,Past Zaxira
 Low Stock Alerts,Past qoldiq haqida ogohlantirishlar
@@ -775,9 +1202,15 @@ Low stock,Past qoldiq
 Mahsulot nomi,Mahsulot nomi
 Maintenance Visit,Xizmat tashrifi
 Make default BOM for this item,Ushbu tovar uchun asosiy spetsifikatsiya qilish
+Make payment,
 Male,Erkak
+Manual,
 Manufacturing,Ishlab chiqarish
 Map,Xarita
+Map employees to device user IDs so gate events resolve to attendance records.,
+Mapping created.,
+Mapping deleted.,
+Mapping updated.,
 Margin,Foyda
 Margin %,Foyda %
 Mark Resolved,Hal qilindi deb belgilash
@@ -785,18 +1218,33 @@ Mark and submit,Belgilash va tasdiqlash
 Mark attendance,Davomatni belgilash
 Mark daily attendance to start building reports.,Hisobotlar uchun har kuni davomatni belgilang.
 Mark restore tested,Tiklash sinovdan o'tdi deb belgilash
+Mark this exception as ignored? It will no longer appear in the Open queue.,
+Mark this exception as resolved? This records your name against the action.,
+Marked,
 Marketing,Marketing
 Marketing Claims,Marketing shikoyatlari
 Marketing claim settlement for {0},{0} uchun marketing shikoyati hisoblash
 Match & reconcile,Moslashtirish va solishtirish
+Matched employee,
 Material Issue submitted: {0},Materiallar chiqimi tasdiqlandi: {0}
+Material Staging,
+Materials transferred successfully!,
+Maximum late deduction per day (0 = unlimited).,
 Memo,Eslatma
 Message,Xabar
 Mijoz balansi,Mijoz balansi
+Min for present (min),
+Minimum minutes worked to count as half-day.,
+Minimum minutes worked to count as present.,
+Minutes tolerated before late penalty starts.,
+Minutes worked before overtime begins.,
+Missing Entry,
+Missing site config key: {0},
 Mitigation:,Yumshatish:
 Mobile,Mobil
 Mobile Phone,Mobil telefon
 Mode,Rejim
+Mode of Payment {0} has no default account for company {1}.,
 Mode of payment,To'lov rejimi
 Model,Model
 Modified,
@@ -804,24 +1252,34 @@ Module,Modul
 Module access override,Modul kirish huquqini bekor qilish
 Modules,Modullar
 Mon,Du
+Monday,
 Money,Pul
+Month,
+Month is required in YYYY-MM format.,
 Month to date,
 Monthly,Oylik
 Monthly installment,Oylik to'lov
 Monthly run-rate,Oylik aylanma
 Move to Under Review,Tekshirish ostiga ko'chirish
 Movement,Harakat
+Multi-Currency Parties,
+Multi-level approval incomplete,
+Multiplier (× hourly rate),
+My Work Orders Queue,
 My requests,Mening so'rovlarim
 My work orders,Mening ishlab chiqarish buyurtmalarim
 Name,Nomi
+Name is required.,
 Name or email,Nomi yoki elektron pochta
 Narxi,Narxi
 Needs Freezer,Muzlatgich kerak
 Needs setup,Sozlash kerak
+Needs your attention,
 Net,To'lanadi
 Net ROI %,Toza ROI %
 Net pay,Toza maosh
 Net total,Toza jami
+Net unrealised gain / loss,
 Never,Hech qachon
 Never tested,Hech qachon sinalmagan
 New,Yangi
@@ -829,6 +1287,7 @@ New BOM,Yangi spetsifikatsiya
 New Contract,Yangi shartnoma
 New Deal,Yangi bitim
 New Equipment,Yangi uskunalar
+New Exchange Rate Revaluation,
 New Lead,Yangi lid
 New Murabaha Contract,Yangi Murobaha shartnomasi
 New OSA audit,Yangi OSA audit
@@ -836,8 +1295,15 @@ New Plan,Yangi reja
 New Process,Yangi jarayon
 New Promo Plan,Yangi reklama rejasi
 New Promo Scheme,Yangi reklama sxemasi
+New Purchase Invoice,
+New Purchase Order,
+New Quotation,
+New Return,
+New Revaluation,
+New Rule Set,
 New SO,Yangi SO
 New Sales Order,
+New Sales Return,
 New Scheme,Yangi sxema
 New Service Ticket,Yangi murojaat
 New Ticket,Yangi murojaat
@@ -845,16 +1311,21 @@ New Transfer,Yangi o'tkazma
 New Van Stock,Yangi furgon inventari
 New Visit,Yangi tashrif
 New Work Order,Yangi ishlab chiqarish buyurtmasi
+New asset purchase,
 New bill,Yangi hisob
 New customer,Yangi mijoz
+New device,
 New employee,Yangi xodim
+New employee–device mapping,
 New entry,Yangi kiritma
 New expense,Yangi xarajat
 New field user,Yangi foydalanuvchi
+New gate device,
 New item,Yangi tovar
 New journal,Yangi yozuv
 New journal entry,Yangi jurnaldi kiritma
 New leave request,Yangi ariza
+New mapping,
 New outlet,Yangi filial
 New outlets,Yangi nuqtalar
 New outlets this month,Shu oydagi yangi nuqtalar
@@ -862,49 +1333,83 @@ New payment,Yangi to'lov
 New photo report,Yangi foto hisobot
 New planogram,Yangi planogram
 New purchase bill,Yangi xarid qo'lyozuvchisi
+New purchase invoice,
 New purchase order,Yangi xarid buyurtmasi
 New quotation,Yangi qo'llashni taklif etish
+New rate,
 New receipt,Yangi qabul
 New route,Yangi marshrut
+New rule set,
 New sales order,Yangi sotuv buyurtmasi
 New stock entry,Yangi ombor kiritmasi
 New supplier,Yangi ta'minotchi
 New transfer,Yangi o'tkazma
 New warehouse,Yangi ombor
 Next,Keyingisi
+Night,
+Night & Overtime,
+Night allowance per hour (UZS),
+Night end (hour),
+Night premium (%),
+Night shift,
+Night start (hour),
 No,Yo'q
 No 1C sync events yet.,Hali 1C sinxronizatsiya hodisalari yo'q.
 No ARCA payment events yet.,Hali ARCA to'lov hodisalari yo'q.
 No BOMs yet,Hozircha spetsifikatsiyalar yo'q
+No CBU exchange rate found for {0} to {1} on or before {2}.,
 No EHF submissions yet. Submit a Sales Invoice to enqueue one.,Hali EHF topshiriqlari yo'q. Bitta qo'shish uchun Sotuv qo'lyozuvchisini tasdiqlang.
+No Google service account configured (site_config: stabler_gdrive_service_account).,
 No OSA audits yet,Hali OSA auditlari yo'q
 No ROI snapshots yet,Hali ROI suratlar yo'q
 No Stock Entries with Asl Belgisi items found.,Asl Belgisi tovarlaridan foydalangan ombor kiritmalari topilmadi.
+No access,
+No account rows,
+No activity recorded yet.,
 No attendance records,Davomat yozuvlari yo'q
 No backups on disk yet. Click “Back up now”.,Diskda hali zaxira yo'q. «Hozir zaxiralash»ni bosing.
 No bills in this range,Bu diapazonida qo'lyozuvchilar yo'q
+No budget data for this period,
+No budgets found,
 No claim selected.,Talaba tanlanmagan.
 No claims yet,Hali talabalyar yo'q
 No columns,Ustunlar yo'q
 No comments yet.,Hali izoh yo'q.
 No company selected,Kompaniya tanlanmagan
+No correction requests,
+No corrections are waiting for review.,
+No corrections found for this status.,
+No creditors found.,
+No custom allowances. Click Add to create one.,
 No customers,Mijozlar yo'q
 No customers match that name,Shu nomdagi mijozlar topilmadi
 No data,Ma'lumot yo'q
 No data for the selected range,Tanlangan diapazon uchun ma'lumot yo'q
 No deals,Bitimlar yoʼq
+No debtors found.,
 No deductions,Ushlanmalar yo'q
 No default Bank or Cash account configured for company {0}.,{0} kompaniyasi uchun asosiy Bank yoki Naqd hisob sozlamagan.
+No default {0} account found to copy parent from.,
 No earnings,Hisoblanganlar yo'q
 No employees yet,Hozircha xodimlar yo'q
+No employee–device mappings,
+No enabled Stabler Payroll Component Map found for company {0}. ,
 No equipment yet,Hali asboblar yo'q
+No exceptions found,
+No exceptions.,
 No exchange rate available from {0} to {1} on {2}.,{2} sanada {0} dan {1} gacha almashtirish narxi mavjud emas.
 No exchange rate for this date — enter manually.,Ushbu sana uchun kurs yo'q — qo'lda kiriting.
+No exchange rate found for {0} to {1} on {2},
+No exchange rate found for {0} to {1} on {2}: {3},
 No exchange rates yet. Click Refresh now to fetch today's rates from cbu.uz.,Hali almashtirish narxlari yo'q. Bugungi narxlarni cbu.uz dan olish uchun Yangilash tugmasini bosing.
 No field users yet,Hali foydalanuvchilar yo'q
 No files attached.,Fayllar biriktirilmagan.
+No foreign-currency account balances found for this date.,
+No gate devices,
 No installments due this month.,Bu oyda to'lovlar yo'q.
 No interest — fixed Murabaha markup. Sum equals total exactly.,Foizsiz — qat'iy Murobaha ustamasi. Yig'indi aniq jami bilan teng.
+No invoices found,
+No invoices found.,
 No invoices in this range,Bu diapazonida qo'lyozuvchilar yo'q
 No items found,Tovarlar topilmadi
 No items match,Tovarlar mos kelmadi
@@ -915,26 +1420,41 @@ No lanes. Click + to add.,Yo'laklar yo'q. Qo'shish uchun + bosing.
 No leads,Lidlar yoʼq
 No leave requests,Ta'til arizalari yo'q
 No ledger entries found for the selected period.,Tanlangan davr uchun ledger kiritmalari topilmadi.
+No lines differ from the system quantity — nothing to reconcile.,
 No lines yet.,Hali satrlar yo'q.
 No local backups to upload. Create one first.,Yuklash uchun mahalliy zaxira yo'q. Avval yarating.
 No low-stock items,Kam ombordagi tovarlar yo'q
 No matches found,Mos keluvchilar topilmadi
+No matching items,
 "No matching vouchers found. Create a payment, or widen the date/amount window.",Mos hujjatlar topilmadi. To'lov yarating yoki sana/summa oynasini kengaytiring.
+No materials to stage,
+No new Version rows since the last seal.,
+No open exceptions,
 No open reservations,Ochiq zahiralar yo'q
+No orders yet,
 No orders.,Buyurtmalar yo'q.
 No org chart yet,Hali tashkiliy sxema yo'q
 No outlets in this route yet.,Bu marshrutda hali filiallari yo'q.
 No outlets yet,Hali filiallari yo'q
 No outstanding balances,O'tkazib beriladigan balanslar yo'q
 No payments in this range,Bu oraliqda to'lovlar yo'q
+No payments recorded in this range,
 No payments waiting for approval,Tasdiq kutayotgan to'lovlar yo'q
+No payroll summaries found for this period.,
 No photo reports yet,Foto hisobotlar hali yo'q
 No planograms yet,Planogramlar hali yo'q
+No preview loaded,
 No processes,Jarayonlar yo'q
 No promo plans yet,Reklamaviy rejalar hali yo'q
 No promo schemes yet,Reklamaviy sxemalar hali yo'q
+No punches — employee will be marked absent.,
+No purchase invoices in this range,
+No purchase orders have been registered for this supplier.,
 No purchase orders in this range,Bu oraliqda xarid buyurtmalari yo'q
+No purchase receipts in this range,
 No quotations in this range,Bu oraliqda takliflar yo'q
+No raw events,
+No readiness data,
 No receivable account configured for distributor {0} in company {1}.,Distributor {0} uchun {1} kompaniyasida qabul qilinishi kerak bo'lgan hisob sozlanmagan.
 No receivable account configured for distributor {0} in company {1}: {2},Distributor {0} uchun {1} kompaniyasida qabul qilinishi kerak bo'lgan hisob sozlanmagan: {2}
 No receivables,Qabul qilinishi kerak bo'lgan hisoblar yo'q
@@ -943,84 +1463,140 @@ No reconciliations yet.,Hali solishtirishlar yo'q.
 No recorded activity in this period.,Bu davr uchun yozilgan faoliyat yo'q.
 No recorded history for this document.,Bu hujjat uchun yozilgan tarix yo'q.
 No repair requests,Ta'mirlash so'rovlari yo'q
+No reports found,
+No reservations for this warehouse,
 "No results for ""{query}"".","""{query}"" uchun natijalar yo'q."
+No revaluations yet,
 No routes yet,Marshrutlar hali yo'q
+No rule sets,
 No salary slips yet,Hali maosh varaqalari yo'q
+No sales data found,
 No sales orders in this range,Bu oraliqda sotuv buyurtmalari yo'q
+No seal has been created yet.,
 No segregation-of-duties conflicts found.,Vazifalar taqsimoti nizolari topilmadi.
 No serial,Seriya raqami yo'q
 No service tickets,Murojaatlar yo'q
+No service visits,
 No statements imported yet.,Hali ko'chirma import qilinmagan.
 No steps yet.,Qadamlar hali yo'q.
 No stock entries yet,Ombor kiritmalari hali yo'q
 No stock in any warehouse for this company.,Bu kompaniya uchun hech bir omborida tovar yo'q.
+No stock in this warehouse,
 No stock in this warehouse.,Bu omborda zaxira yo'q.
 No stock moves in this range,Bu oraliqda ombor harakatlanishlari yo'q
 No stock update,Ombor harakatsiz
+No stock warehouses,
+No stocked items found,
+No summaries,
 No suppliers,Ta'minotchilar yo'q
 No suppliers match that name,Shu nomdagi ta'minotchilar topilmadi
 No template,Shablonlar yo'q
 No transactions,Operatsiyalar yo'q
 No transactions in this period.,Bu davrada operatsiyalar yo'q.
 No transactions yet.,Operatsiyalar hali yo'q.
+No travel,
+No unbilled service visits,
 No van stock yet,Mashin ombori hali yo'q
+No verified restore on record. A backup you have never restored is not a backup you can trust — test one and record it.,
 No visits yet,Tashrif yo'q
 No warehouses for this company,Bu kompaniya uchun omborlar yo'q
 No work orders,Ishlab chiqarish buyurtmalari yo'q
 No work orders assigned to you yet.,Sizga hali hech qanday buyurtma tayinlanmagan.
 No {0} receivable account exists for company {1}. ,{0} uchun {1} kompaniyasida debitorlik hisobi mavjud emas. 
+No {0} {1} account exists for company {2}. ,
 None,Yo'q
 Normal,Oddiy
 Nos,Raqamlar
 Not found,Topilmadi
 Not permitted,Ruxsat yo'q
+Not permitted for Service module.,
 Not permitted for company {0},{0} kompaniyasi uchun ruxsat yo'q
+Not permitted to create Attendance Rule Sets.,
+Not permitted to create Employee Device Mappings.,
+Not permitted to create Exchange Rate Revaluation.,
+Not permitted to create Gate Devices.,
+Not permitted to process Timepay attendance.,
+Not permitted to read Budget.,
+Not permitted to read GL entries.,
 Not permitted to read {0} {1},{0} {1} ni o'qish ruxsati yo'q
+Not permitted to reconcile this voucher.,
+Not permitted to reconcile {0} {1}.,
+Not permitted to submit Exchange Rate Revaluation.,
+Not permitted to sync Timepay attendance.,
+Not permitted to {0} {1} {2},
+Not permitted — admins only.,
+Not permitted.,
+Not ready to lock,
 Not uploaded yet,Hali yuklanmagan
 Notes,Eslatmalar
 Nothing to reconcile — all clear.,Solishtirish uchun hech narsa yo'q — hammasi toza.
 O'lchov birlik,O'lchov birligi
+OK,
 OSA,OSA
 OSA %,OSA %
 OSA Audit name is required.,OSA Auditi nomi talab qilinadi.
 OSA Audits,OSA Auditlari
+OT (min),
+OT flag,
+OT method,
+OT threshold (min),
 Object Name,Ob'ekt nomi
 Object Type,Ob'ekt turi
 Off,O'chiq
+Off-CBU Documents,
 Off-box (Google Drive),Server tashqarisi (Google Drive)
+Office,
+Office branch or location,
 Oldest reservation,Eng eski zahira
 On,Yoniq
 On Leave,Ta'tilda
 On hand,Qo'lda
+On leave,
 On leave today,Bugun ta'tilda
 On-Shelf-Availability audits compare expected vs actual facings during visits.,On-Shelf-Availability auditlari tashrif paytida kutilgan va haqiqiy yuzlarni solishtiradi.
 On-hand batches at risk: expired and expiring soon.,Xavf ostidagi partiyalar: muddati o‘tgan va tugayotgan.
 On-hand value vs sales velocity. Flags slow-moving and dead stock.,Zaxira qiymati savdo tezligiga nisbatan. Sekin va o‘lik zaxira belgilanadi.
 On-hand value vs {0}-day sales. Dead = no sales in period.,Ombordagi qiymat {0} kunlik sotuvga nisbatan. O'lik = davrda sotuv yo'q.
+On-shelf availability checks from field visits.,
 One or more lines exceed available stock. Reduce qty or choose a different warehouse.,Bir yoki bir nechta satrlar mavjud stockni oshib ketdi. Miqdorini kamaytiring yoki boshqa omborni tanlang.
 Online payment,Onlayn to‘lov
 Only Approved claims can be settled. Current status: {0},Faqat Tasdiqlangan da'volar ko'rib chiqilishi mumkin. Hozirgi holat: {0}
+Only Payment Entry / Journal Entry can be reconciled here.,
 Only a Stock Manager can reconcile stock.,Faqat ombor menejeri qoldiqlarni solishtira oladi.
+Only confirm after you have actually restored a backup to a scratch site and verified the data. This records today as the last successful restore test.,
 Only draft sales orders can be edited.,
+Only items with available stock in this POS warehouse appear here.,
+Only pending schedule rows can be rescheduled.,
+Only submitted Sales Orders can be closed.,
+Only submitted Sales Orders can be reopened.,
 Only submitted invoices can be returned.,Faqat topshirilgan hisob-fakturalar qaytarilishi mumkin.
 Only with balance,Faqat balansi bilan
 Open,Ochiq
 Open AR,Ochiq qarz
 Open Desk,Deskni ochish
+Open Exceptions,
 Open SREs,Ochiq SRElar
+Open exceptions,
 Open payment link,To‘lov havolasini ochish
 Open pipeline,Ochiq voronka
 Opened,Ochildi
 Opening,Ochish
 Opening balance,Ochilish balansi
+"Opening balance, period movement, and running balance by account.",
 Opening balances,Ochilish balans
 Operations,Operatsiyalar
 Operator,Operator
+Operator Kiosk,
 Optional,Ixtiyoriy
+Optional note (leave blank to skip):,
 Order,
+Order #,
 Order Date,Buyurtma sanasi
 Order date,Buyurtma sanasi
+Order number or supplier…,
+Ordered,
 Orders,Buyurtmalar
+Org chart,
 Organization,Tashkilot
 Orientation,Yoʿnalish
 Original qty,Dastlabki miqdori
@@ -1028,6 +1604,7 @@ Other,Boshqa
 Out,Chiqish
 Out of stock,Zaxirasi tugagan
 Out time,Chiqish vaqti
+Out-of-sequence approval,
 Outflow,Chiqish
 Outlet,Savdo nuqtasi
 Outlet Class,Savdo nuqtasi sinfi
@@ -1042,12 +1619,23 @@ Outlet name is required.,Savdo nuqtasi nomi talab qilinadi.
 Outlet {0} appears twice on this route.,Savdo nuqtasi {0} bu marshrutda ikki marta uchraydi.
 Outlets,Savdo nuqtalari
 Outstanding,Qolgan
+Outstanding customer balances for field teams.,
 Overdue,Muddati o'tgan
 Override qty must be greater than zero,Miqdorni qaytadan o'rnatish noldan katta bo'lishi kerak
+Override role,
 Override — submit despite low stock (admin),Bekor qilish — kam qoldiqda ham yuborish (admin)
+Overtime,
 Overview,Umumiy ko'rinish
 Owes us,Bizga qarzdor
 Owner,
+PIN,
+POS,
+POS Profile,
+POS Profile belongs to a different company.,
+POS Profile is disabled.,
+POS Profile must define a shop warehouse.,
+POS Profile must define a walk-in customer.,
+POS Profile must define at least one payment mode.,
 POSM,POSM
 Page not found,Sahifa topilmadi
 Paid,To'langan
@@ -1061,36 +1649,61 @@ Pareto ranking of items by value with A/B/C classes.,"Mahsulotlarni qiymat bo‘
 Pareto ranking of suppliers by spend with A/B/C classes.,"Yetkazib beruvchilarni xarajat bo‘yicha Pareto saralash, A/B/C sinflar bilan."
 Partial,Qisman
 Partially Completed,Qisman bajarildi
+Partially Reserved,
+Partially approved — awaiting level {0},
+Partially billed — {pct}% invoiced.,
 Partly paid,Qisman to'langan
 Parts Issue,Ehtiyot qismlar chiqimi
 Party,Tomon
 Party account not resolved — re-select the party.,Tomon hisobi aniqlanmadi — tomonni qayta tanlang.
 Party is required.,Tomon talab qilinadi.
+Paste a direct image URL or leave blank to use initials.,
+Pause,
+Pause Work,
+Pause Work Order,
 Pause failed.,To'xtatish muvaffaqiyatsiz.
+Pause this Work Order?,
 Pause this Work Order? You can resume it later.,Bu buyurtmani to'xtatilsinmi? Keyinroq davom ettirishingiz mumkin.
 Pay,To'lash
 Pay from,Qayerdan to'lash
 Pay supplier,Yetkazib beruvchiga to'lash
 Payable,To'lanadi
 Payable (AP),Kreditorlik qarzi
+Payable Trend (Last 8 Weeks),
 Payable:,To'lanadi:
+Payables,
 Payee,To'lov oluvchi
 Payload,Ma'lumot to'plami
 Payload must be an object.,Ma'lumot to'plami ob'ekt bo'lishi kerak.
 Payment,
 Payment Entry,To'lov yozuvi
+Payment Mode,
 Payment cancelled,To‘lov bekor qilindi
 Payment failed,To‘lov amalga oshmadi
+Payment mode is not allowed for this POS Profile.,
+Payment mode {0} is not an online gateway.,
+"Payment number, reference or party…",
 Payment received,To‘lov qabul qilindi
 Payment saved — pending approval before it posts.,To'lov saqlandi — kiritilishidan oldin tasdiq kutilmoqda.
 Payment schedule,To'lov jadvali
 Payment type,To'lov turi
 Payments,To'lovlar
+Payments paid today,
+Payments received today,
 Payments you submit that need a second approver will show here.,"Siz yuborgan, ikkinchi tasdiqlovchini talab qiladigan to'lovlar shu yerda ko'rinadi."
 Payout account,To'lov hisobi
 Payroll,Maosh
+Payroll Attendance Summary is Locked. Cannot change: {0},
+Payroll Attendance Summary {0} not found.,
+"Payroll Period must be in YYYY-MM format (e.g. 2026-05), got: {0}",
+Payroll Readiness,
 Payroll entry,Maosh yozuvi
+Payroll impacting,
+Payroll period,
+Payroll period end date cannot be before start date.,
+Payroll-impacting pending,
 Pending,Kutilmoqda
+Pending Corrections,
 Pending approvals,Tasdiq kutilmoqda
 Pending requests,Kutilayotgan arizalar
 People,Xodimlar
@@ -1100,6 +1713,8 @@ Period,Davr
 Period Credit,Davr krediti
 Period Debit,Davr debiti
 Period end,Davr oxiri
+Period locked.,
+Period readiness,
 Period start,Davr boshi
 Permissions,Ruxsatnomalar
 Personal email,Shaxsiy email
@@ -1117,6 +1732,7 @@ Pick a destination warehouse.,Manzil omborini tanlang.
 Pick a finished-good item.,Tayyor mahsulotni tanlang.
 Pick a leave type,
 Pick a leave type.,Ta'til turini tanlang.
+Pick a rule set…,
 Pick a source warehouse.,Manba omborini tanlang.
 Pick a supplier.,Yetkazib beradigan kompaniyani tanlang.
 Pick a warehouse,Omborni tanlang
@@ -1124,13 +1740,20 @@ Pick a warehouse to receive stock into.,Tovarni qabul qilish uchun omborni tanla
 Pick a warehouse.,Omborni tanlang.
 Pick an employee,
 Pick an employee.,Xodimni tanlang.
+Pick return warehouse,
 Pick the account funds will be paid from.,Pullar to'lanadigan hisobni tanlang.
 Pick the account that will receive the funds.,Pullarni qabul qiladigan hisobni tanlang.
+Pistachio,
+Place branded freezer at {0} (deal {1}),
+Place your RFID badge on the reader to log in,
 Placed Freezer,Muzlatgich o'rnatildi
 Plan Type,Rejani turi
 Planned,Rejalashtirilgan
 Planned Date,Rejalashtirilgan sana
+Planned Qty,
+Planned Start,
 Planned Time,Rejalashtirilgan vaqt
+Planned Total,
 Planned date,Rejalashtirilgan sana
 Planned service,Rejalashtirilgan xizmat
 Planned start,Boshlanish sanasi
@@ -1146,13 +1769,17 @@ Post stock reconciliation,Qoldiqlar solishtirilishini kiritish
 Post transfer,O'tkazmani rasmiylashtirish
 Posting Date,Kiritish sanasi
 Posting Date is required.,Kiritish sanasi talab qilinadi.
+Posting Window,
 Posting date,Hisob sanasi
 Posting date is required.,Kiritish sanasi talab qilinadi.
+Posting window saved.,
 Postings,Kiritishlar
 Pre-season freezer push,Mavsum oldidan muzlatgich o‘rnatish
+Premium,
 Prepaid,Avans
 Present,Hozir
 Present SKUs,Mavjud SKU'lar
+Present today,
 Preview,Ko'rib chiqish
 Price Tier,Narx darajasi
 Price list,Narx ro'yxati
@@ -1166,9 +1793,12 @@ Processed,Qayta ishlangan
 Processes,Jarayonlar
 Produce how many units? Leave blank for full balance.,Necha dona ishlab chiqarish kerak? To'liq qoldiq uchun bo'sh qoldiring.
 Produced,Ishlab chiqarilgan
+Produced Qty,
 Produced quantity,Ishlab chiqarilgan miqdor
 Produced quantity must be positive.,Ishlab chiqarilgan miqdor musbat bo'lishi kerak.
+Production Item,
 Profile,Profil
+"Profit and Loss, Balance Sheet, Trial Balance, and Cash Flow.",
 Projected,Prognozlangan
 Promo,Aksiya
 Promo Plan,Aksiya rejasi
@@ -1179,12 +1809,17 @@ Promo Plans,Aksiya rejalashtirish
 Promo Scheme name is required.,Aksiya sxemasi nomi talab qilinadi.
 Promo Schemes,Aksiya sxemalari
 Promos,Aksiyalar
+Promotion spend and uplift analysis.,
 Properties,Xususiyatlar
+Public holiday,
+Punches,
 Purchase Invoice,Xarid qilish hisob-fakturasi
 Purchase Invoices,Xarid hisob-fakturalari
 Purchase Order,Xarid qilish buyurtmasi
 Purchase Orders,Xarid qilish buyurtmalari
 Purchase Receipt,Tovar qabul qilish
+Purchase Receipt cancelled.,
+Purchase Receipt submitted.,
 Purchase Receipts,Tovar qabul qilish hujjatlari
 Purchase item,Tovarni xarid qilish
 Purchases,Xaridlar
@@ -1194,16 +1829,26 @@ Purpose,Maqsad
 QR code expired,QR kod muddati tugadi
 QR unavailable — open the link below,QR mavjud emas — quyidagi havolani oching
 Qty,Miqdori
+Qty must be greater than zero.,
 Quantity,Miqdor
 Quantity must be positive.,Miqdor musbat bo'lishi kerak.
+Queue is empty,
 Quotation,Taklif
+Quotation number or customer…,
 Quotations,Takliflar
 RUB → UZS,RUB → UZS
 Rack,Stend
 Rank by,Saralash
 Raqam,Raqam
 Rate,Narx
+Rate cannot be negative.,
+Rate diff,
 Rate:,Narx:
+Raw Attendance Event {0} not found.,
+Raw Gate Events,
+Raw attendance events are immutable. Cannot change: {0},
+Raw attendance events cannot be deleted (audit evidence).,
+Raw gate events are immutable — they represent exactly what the device reported. Use Reprocess to re-run matching on unmatched or errored events.,
 Raw material cost,Xom ashyo xarajati
 Raw materials,Xom ashyo
 Re-fetch balances for all accounts,Barcha hisoblar uchun balansni qayta olish
@@ -1211,10 +1856,15 @@ Reactivation,Qayta faollashtirish
 Read,O'qish
 Read-only,Faqat o'qish
 Read-only view. Edit permissions in Frappe's Role Permission Manager.,Faqat o'qish uchun ko'rinish. Ruxsatlarni Frappe'ning Rol Ruxsatlari Menejeridagi ruxsatlari tahrirlang.
+Read-only — from TimePay system.,
+Readiness,
 Ready,Tayyor
+Ready to lock,
 Reason,Sabab
+Receipt number or supplier…,
 Receipts,Qabul qilish
 Receivable (AR),Debitorlik qarzi
+Receivable Trend (Last 8 Weeks),
 Receivables,Qabul qilinadigan summalar
 Receive,Qabul qilish
 Receive currency,Qabul qilish valyutasi
@@ -1245,6 +1895,7 @@ Record a sale,Sotuvni qayd qiling
 Record production,Ishlab chiqarishni qayd etish
 Record stock movements,Zaxira harakatini qayd etish
 Recurring monthly run-rate — the pipeline forecast.,Takroriy oylik aylanma — voronka prognozi.
+Ref No.,
 Reference,Havolа
 Reference #,Havolа raqami
 Reference date,Havolа sanasi
@@ -1252,24 +1903,37 @@ Reference no.,Havolа raqami
 Refresh,Yangilash
 Refresh balances,Balanslarni yangilash
 Refresh now,Hozir yangilash
+Refresh preview,
 Refreshing…,Yangilanmoqda…
+Region,
 Region / Route,Hudud / marshrut
+Register a hardware reader or integration to start collecting raw attendance events.,
 "Register coolers, freezers, racks, and POSM assets here.","Sovutgichlar, muzlatgichlar, stendlar va POSM aktivlarini shu yerda ro'yxatdan o'tkazing."
 Reject,Rad etish
+Reject Leave?,
+Reject correction,
 Reject request,So'rovni rad etish
+Reject this correction request? The requester will be notified.,
 Reject this leave request?,Ta'til arizasini rad etasizmi?
+Reject this request? The draft is left untouched for the maker to fix or delete.,
 Rejected,Rad etilgan
 Related documents,Tegishli hujjatlar
+Relieving date,
 Reload,Qayta yuklash
 Remaining,Qoldiq
+Remaining Staging,
 Remark,Izoh
 Remarks,Izohlar
 Remittance,Pul o'tkazma
+Remote,
 Remove,O'chirish
 Remove Lane,Yo'lakni o'chirish
+Remove Lane?,
 Remove column,Ustunni o'chirish
+Remove column?,
 Remove operator,
 Remove row,Qatorni o'chirish
+Remove the link between {0} and device user {1}? This will not affect attendance records already generated.,
 Rename,Nomini o'zgartirish
 Reorder,Takror
 Reorder at,Qayta buyurtma
@@ -1286,12 +1950,15 @@ Report Issue,Muammoni xabar qilish
 Reported At,Xabar qilish vaqti
 Reported By,Kimga xabar qilindi
 Reports,Hisobotlar
+Reprocess,
+Reprocess this event,
 Request,Ariza
 Request rejected.,So'rov rad etildi.
 Requested,So'ralgan
 Requested by,So'rovchi
 Require approval to post payments,To'lovlarni kiritish uchun tasdiq talab qilinsin
 Required,Talab qilinadi
+Required Items to Transfer,
 Required materials,Kerakli materiallar
 Reschedule,Vaqtini oʻzgartirish
 Reserved,Zaxirada
@@ -1299,20 +1966,35 @@ Reserved Stock,Zahiralangan tovar
 Reserved value,Zahira qiymati
 Reset email sent.,Parolni tiklash elektron xati yuborildi.
 Reset password,Parolni tiklash
+Reset password?,
+Resolve,
+Resolve all blockers before locking the period.,
+Resolve all blockers first,
+Resolve exception,
+Resolved,
 Resolved At,Hal qilish vaqti
 Restore test,Tiklash sinovi
 Restore test recorded.,Tiklash sinovi qayd etildi.
+"Restrict this mapping to a specific reader, or leave blank to match all devices.",
 Resume,Davom ettirish
+Resume Work,
+Resume Work Order,
 Resume failed.,Davom ettirish muvaffaqiyatsiz.
 Resume this Work Order?,
+Retail,
 Retired,Foydalanishdan chiqarilgan
 Retries,Takrorlanishlar
 Retry submission,Takroriy yuborish
 Retrying…,Takrorlanmoqda…
 Return,Qaytarish
-Returns,Qaytarishlar
+Return completed,
 Return qty,Qaytarish miqdori
 Returned,Qaytarildi
+Returned items can be accepted even if current shop stock is zero.,
+Returns,Qaytarishlar
+Revaluation date,
+Revaluation saved as draft: {0},
+Revaluation submitted: {0},
 Revenue,Daromad
 Revenue MTD,Oy boshidan daromad
 Revenue vs. Expense (12 months),Daromad va xarajat (12 oy)
@@ -1325,7 +2007,9 @@ Role,Rol
 Role change blocked,Rol o'zgarishi bloklandi
 Role not found,Rol topilmadi
 Role template (optional),Rol shabloni (ixtiyoriy)
+Role template applied successfully.,
 Roles,Rollar
+Rolling window. 0 = no freeze. This is usually the one set to 49.,
 Route,Yo'nalish
 Route Code,Yo'nalish kodi
 Route Name,Yo'nalish nomi
@@ -1336,62 +2020,99 @@ Row not found on this Stock Entry,Ushbu Inventar kiritishida qator topilmadi
 Row {n} ({item}): qty exceeds available stock (available {free}).,Qator {n} ({item}): miqdori mavjud inventardan ortiq (mavjud {free}).
 Row {n}: qty must be greater than zero.,Qator {n}: miqdori noldan katta bo'lishi kerak.
 Rsvd,Zahira
+Rule Set,
+Rule set,
+Rule set name,
+Rule set name is required.,
+Rule set name or company…,
+Rule set saved.,
+Rule sets,
 Run,Ishga tushirish
 Run a payroll cycle to generate salary slips for assigned employees.,Tayinlangan xodimlar uchun maosh varaqalarini yaratish uchun hisoblashni ishga tushiring.
 Run payroll,Maoshni hisoblash
 Run-rate,Oylik aylanma
+SFA,
 SO number or customer…,
 SRE module unavailable: {0},SRE moduli mavjud emas: {0}
 SREs,SRE
+Salary Slip {0} not found.,
+Salary and payroll summaries.,
 Salary slip,Maosh varaqasi
+Salary slips,
+Sale,
+Sale completed,
 Sales,Sotuv
 Sales Invoice,Sotuv hisob-fakturasi
 Sales Invoice must be created from a Sales Order,Sotuv hisob-fakturasi Sotuv buyurtmasidan yaratilishi kerak
 Sales Invoices,Sotuv hisob-fakturalari
 Sales Invoices are created from submitted Sales Orders. Open a Sales Order and use Create Invoice.,"Sotuv hisob-fakturaalari taqdim etilgan Sotuv buyurtmalaridan yaratiladi. Sotuv buyurtmasini oching va ""Hisob-faktura yaratish"" dan foydalaning."
 Sales Order,Sotuv buyurtmasi
+Sales Order is already {0}.,
+Sales Order is not closed or on hold.,
 Sales Order {0} must be submitted before invoicing,Sotuv buyurtmasi {0} hisob-faktura qilinishidan oldin taqdim etilishi kerak
 Sales Orders,Sotuv buyurtmalari
+Sales Orders and Sales Invoices can only be created or changed through the Stabler app.,
+Sales Performance,
+Sales Reports,
+Sales Trend,
 Sales by Customer,Mijozlar bo‘yicha savdo
 Sales by Item,Mahsulot bo‘yicha savdo
-Salesperson,Sotuvchi
+Sales by Salesperson,
 Sales item,Sotuv turi
+Sales order name is required.,
+Sales reservations and stock committed to orders.,
+Salesperson,Sotuvchi
 Same currency,Bir xil valyuta
 Same day,Shu kuni
 Sampling,Namuna
 Sat,Sh
+Saturday,
 Save,Saqlash
 Save & clear,Saqlash va tozalash
 Save & close,Saqlash va yopish
 Save & new,Saqlash va yangi
 Save & submit,Saqlash va tasdiqlash
 Save Changes,O'zgarishlarni saqlash
+Save Draft Revaluation,
 Save allowed users,Saqlashga ruxsat etilgan foydalanuvchilar
 Save and submit,Saqlash va tasdiqlash
 Save as Draft,Qoralama sifatida saqlash
 Save as draft,Qoralama sifatida saqlash
 Save changes,O'zgarishlarni saqlash
+Save device,
+Save draft,
 Save failed.,Saqlashda xatolik yuz berdi.
+Save mapping,
 Save modules,Modullarni saqlash
 Saved — pending approval before it posts.,Saqlandi — kiritilishidan oldin tasdiq kutilmoqda.
 Saving…,Saqlanmoqda…
+Scan,
+Scan barcode or search packaged ice cream,
 Scan code for,Kod skaneri
+Scan or tap products to build the sale.,
+Scan or tap returned products.,
 Scan or type code,Kodni skanerlang yoki yozing
+Scan returned item or search,
 Scan to pay,To‘lash uchun skanerlang
 Scanned,Skaneerlandi
 Scanned / Required,Skaneerlandi / Talab qilinadi
+Scanner Ready,
 Scanning…,Skanelanmoqda…
 Schedule,Jadval
 Schedule date,Jadval sanasi
+Schedule detail is required.,
 Schedule preview,Jadval ko'rib chiqish
+Scheduled installment collections and outstanding balances.,
 Scheme Code,Sxema kodi
 Scheme Name,Sxema nomi
 Scheme Type,Sxema turi
+Scrap / Rejects Qty,
 Scrap / rejects,Chiqindi / nosoz
 Search,Qidirish
 Search BOMs or finished goods…,Spetsifikatsiya yoki tayyor mahsulotni qidirish…
 Search account…,Hisob qidirish…
 Search asset tag…,Aktivlar tegini qidirish…
+"Search by Work Order, Item, or Warehouse…",
 Search campaigns…,Kampaniyalarni qidirish…
 Search customer,Mijozni qidirish
 Search customer name…,Mijoz nomini qidirish…
@@ -1401,33 +2122,45 @@ Search customer…,Mijozni qidirish…
 Search deals…,Bitimlarni qidirish…
 Search employees…,Xodimlarni qidirish…
 Search item code or name…,Tovar kodini yoki nomini qidirish…
+Search item...,
 Search items…,Tovarlarni qidirish…
 Search item…,Tovarni qidirish…
 Search leads…,Lidlarni qidirish…
 Search outlets…,Filiallarni qidirish…
 Search processes…,Jarayonlarni qidirish…
+Search reports,
 Search supplier name…,Ta'minotchi nomini qidirish…
 Search suppliers…,Ta'minotchilarni qidirish…
 Search supplier…,Ta'minotchini qidirish…
+Search voucher…,
 Search warehouse…,Ombor qidirish…
 Search work orders…,Ishlab chiqarish buyurtmalarini qidirish…
 Search {type} name…,{type} nomini qidirish…
 Searching…,Qidirilmoqda…
 Segregation of duties: the approver must be a different user from the requester.,Vazifalar taqsimoti: tasdiqlovchi so'rovchidan boshqa foydalanuvchi bo'lishi kerak.
+Segregation of duties: this role combination is not allowed ({0}). Disable 'Enforce SoD' to override.,
+Segregation of duties: you raised this correction request — it must be approved by someone else.,
+Segregation of duties: you raised this correction request — it must be reviewed by someone else.,
+Select POS Profile,
+Select a POS Profile,
 Select a bank account.,Bank hisobini tanlang.
 Select a company first.,Avval kompaniya tanlang.
 Select a customer to view transactions,Operatsiyalarni ko'rish uchun xaridorni tanlang
+Select a date and click Refresh preview.,
+Select a period and company to check readiness.,
 Select a shape or connector to edit its properties.,Xususiyatlarni tahrirlash uchun shakl yoki bogʿlovchini tanlang.
 Select a source warehouse.,Manba omborini tanlang.
 Select a supplier to view transactions,Operatsiyalarni ko'rish uchun tadarkorlni tanlang
 Select a warehouse to count.,Sanash uchun omborni tanlang.
 Select account…,Hisob tanlang…
 Select an account…,Hisobni tanlang…
+Select an active leaf warehouse for returns.,
 Select bank account…,Bank hisobini tanlang…
 Select city…,Shahar tanlang…
 Select company,Kompaniya tanlang
 Select corridor…,Yo'nalish tanlang…
 Select gender,
+Select payment,
 Select service person,Texnikni tanlang
 Select technician,Texnikni tanlang
 Select template…,Shablonni tanlang…
@@ -1436,6 +2169,7 @@ Select warehouse,Omborni tanlang
 Select warehouse…,Omborni tanlang…
 Select…,Tanlang…
 Self-approval blocked,O'z-o'zini tasdiqlash taqiqlangan
+Self-review blocked,
 Sell,Sotish
 Sell markup,Sotish ustamasi
 Send currency,Jo'natish valyutasi
@@ -1443,12 +2177,26 @@ Send invite,Taklif yuborish
 Send password reset email to ,Parolni tiklash uchun elektron pochta jo'natish 
 Sender name,Jo'natuvchi ismi
 Sender pays,Jo'natuvchi to'laydi
+Seniority allowance (UZS),
+Separation-of-duties violation — you cannot perform this action:\n{0},
 Serial No,Seriya raqami
 Service,Servis
 Service Billing,Xizmat hisob-fakturasi
+Service Calendar,
+Service Dashboard,
+Service Equipment,
+Service Map,
+Service Tickets,
+Service Visits,
+Service module is not enabled for {0}.,
 Service person,Texnik
+Service ticket assignment,
+Service visit {0},
+Session {0} has no cart snapshot.,
 Set Reports-To on employees to build the positions hierarchy.,Lavozimlar ierarxiyasini yaratish uchun xodimlarda Reports-To ni o'rnating.
 Set a Google Drive folder ID first.,Avval Google Drive papka ID'sini kiriting.
+"Set the Google Drive folder ID in Stabler Settings, and share that Shared-Drive folder with the service account email.",
+Settings,
 Settle,Yechish
 Settled,Hisob-kitob qilingan
 Settlement failed.,Yechish muvaffaqiyatsiz bo'ldi.
@@ -1457,16 +2205,27 @@ Shape,Shakl
 Shapes,Shakllar
 Shelf,Polka
 Shelf Position,Polka pozitsiyasi
+Shift,
+Shift & region,
+Shift 12h,
+Shift 8h,
+Shift class,
+Shift start,
 Show discounts,Chegirtilarni ko'rsatish
 Showing,Koʼrsatilmoqda
 Showing first 500 — narrow the date range to see more.,Birinchi 500 ko‘rsatildi — ko‘proq ko‘rish uchun davrni toraytiring.
 Showing the newest,Eng yangilarni ko'rsatmoqda
+Simulation result,
+Simulator,
+Simulator inputs,
+Size,
 Skip Reason,O'tkazib yuborish sababi
 Skip reason is required when status is Skipped.,Status O'tkazib yuborilgan bo'lganda o'tkazib yuborish sababi talab qilinadi.
 Skipped,O'tkazib yuborilgan
 Slip,Hisob varaqasi
 Snapshots are generated by the daily ROI task for Active promo plans.,Suratlar Faol promo rejalar uchun kunlik ROI vazifasi tomonidan yaratiladi.
 So'z bilan:,So'z bilan:
+SoD Enforcement,
 SoD violations,Vazifalar taqsimoti buzilishlari
 Sold,Sotilgan
 SoliqOnline UUID,SoliqOnline UUID
@@ -1475,20 +2234,34 @@ Something went wrong,Xatolik yuz berdi
 Soni (korobka),Soni (korobka)
 Source,Manba
 Source warehouse,Manba ombor
+Source warehouse is required.,
 Spend,Xarajat
+Stabler Settings doctype does not exist. Run migrations first.,
+Stage Materials,
+Stake coefficient,
+Stale days,
+Stale days cannot be negative.,
+Stale exchange rate: the nearest CBU rate for {0} to {1} is from {2} ({3} days old). ,
+Stale request: reload the document.,
+Standard allowances,
 Standard rate,Standart narx
 Start,Boshlash
 Start Date,Boshlanish sanasi
 Start Work,Ishni boshlash
+Start Work Order,
+Start Work Order and transfer raw materials?,
 Start failed.,Boshlash muvaffaqiyatsiz.
 Statement account does not match the selected bank account ({0}).,Ko'chirma hisobi tanlangan hisobga mos kelmaydi ({0}).
 Statement file,Ko'chirma fayli
 Status,Holat
 Status is required.,Holat talab qilinadi.
 Status name is required,
+Status not found,
 Step,Qadam
 Step #{0} not found on this visit.,Qadam #{0} ushbu tashrif davomida topilmadi.
 Step #{0}: type is required.,Qadam #{0}: turi talab qilinadi.
+Step fee (UZS),
+Step interval (min),
 Steps,Qadamlar
 Stock,Zaxira
 Stock Entries,Zaxira Yozuvlari
@@ -1496,50 +2269,72 @@ Stock Entry,Zaxira kiritish
 Stock Ledger,Ombor kitobi
 Stock Reconciliation,Qoldiqlarni solishtirish
 Stock Reservation,Ombor rezervi
+Stock Status,
 Stock UOM,Zaxira o'lchov birligi
 Stock entries,Zaxira kiritishlari
 Stock entry,Zaxira kiritish
 Stock issued,Materiallar chiqarilgan
 Stock item,Zaxira tovari
 Stock reservations,Zaxira bronilari
+Stock transactions,
 Stock value,Zaxira qiymati
 Stop,To'xtatish
+Stop Work Order,
 Stop this Work Order? You can resume it later.,Bu buyurtmani to'xtatasizmi? Keyin davom ettirsa bo'ladi.
 Storefront,Do'kon ko'rinishi
 Subject,Mavzu
+Subject is required.,
 Submit,Tasdiqlash
 Submit & reserve stock,Tasdiqlash va omborni rezerv qilish
+Submit BOM?,
+Submit Revaluation,
+Submit Work Order,
+Submit a Budget document covering this date range and cost centre.,
+Submit a Budget document in ERPNext to see it here.,
 Submit a leave request on behalf of an employee.,Xodim nomidan ariza yuboring.
 Submit a request to track equipment service tickets.,Asbob-uskunalarni xizmat chiptalarini kuzatish uchun so'rov yuboring.
 Submit and release this Work Order?,Bu buyurtmani tasdiqlash va ishga tushirishmi?
+Submit document?,
 Submit expense,Xarajatni tasdiqlash
 Submit failed.,Tasdiqlash muvaffaqiyatsiz bo'ldi.
 Submit this BOM? You won't be able to edit it after.,Bu spetsifikatsiyani tasdiqlaysizmi? Keyin tahrirlay olmaysiz.
 Submit transfer,Transferni tasdiqlash
 Submitted,Tasdiqlangan
 Submitted At,Tasdiqlangan vaqti
+Submitted Sales Invoices only,
 Submitted bills; returns netted.,Tasdiqlangan xarid hisob-fakturalari; qaytarishlar netto.
+Submitted budgets vs GL actuals (debit − credit). Income favorable = actual > budget; cost favorable = actual < budget.,
 Submitted for approval,Tasdiqlashga yuborildi
 Submitted invoices; returns netted.,Tasdiqlangan sotuv hisob-fakturalari; qaytarishlar netto.
 Submitted visits waiting for invoice or parts issue.,Faktura yoki ehtiyot qism chiqimini kutayotgan tashrif.
 Subtotal,Oraliq jami
 Suggested,Tavsiya etilgan
+Summary locked,
 Sun,Ya
+Sunday,
 Supplier,Ta'minotchi
 Supplier ABC analysis,Yetkazib beruvchilar ABC tahlili
+Supplier balance,Yetkazib beruvchi balansi
 Supplier bill #,Ta'minotchi hisob raqami
+Supplier deleted.,
 Supplier group,Ta'minotchi guruhi
+Supplier invoice,Ta'minotchi hisob-fakturasi
 Supplier is required.,Ta'minotchi majburiy.
 Supplier name,Ta'minotchi nomi
 Supplier name is required.,Ta'minotchi nomi talab qilinadi.
+Supplier payables grouped by aging buckets.,
 Suppliers,Yetkazib beruvchilar
 Suspended,To'xtatilgan
 Swap accounts,Hisoblarni almashish
 System qty,Tizimdagi miqdor
 TIN,STIR
 Table,Jadval
+Take Payment,
+Target Remaining,
+Target WIP Warehouse,
 Task,Vazifa
 Tax ID,Soliq ID
+Tax amount,
 Tax template,Soliq shabloni
 Taxes,Soliqlar
 Technician,Texnik
@@ -1549,35 +2344,82 @@ Terms,Shartlar
 Terms / remarks,Shartlar / izohlar
 Terms:,Shartlar:
 Territory,Hudud
+That voucher is not linked to this transaction.,
 The Compliance module is disabled for this company.,Bu kompaniya uchun Muvofiqlik moduli o'chirilgan.
+The GL ledger scan detected {0} issues that require immediate attention.,
+The referenced document is cancelled and cannot be approved.,
+The referenced document no longer exists.,
+There are currently no work orders assigned to you.,
+These are ERPNext's back-dating guards — the reason it blocks creating or editing transactions older than a set window. They protect closed periods; relax them only deliberately.,
 "These are the toxic role combinations Stabler checks for. Findings are advisory — accept them with a compensating control, or split the duties.",Bular Stabler tekshiradigan xavfli rol kombinatsiyalari. Natijalar tavsiyaviy — ularni kompensatsion nazorat bilan qabul qiling yoki vazifalarni ajrating.
 This Service workspace will be added after Tickets P1.,Bu ish maydoni P1 dan so'ng qo'shiladi.
 This adjusts stock for {0} item(s) and posts the difference to the ledger. The action is recorded against your name.,Bu {0} ta tovar bo'yicha zaxirani tuzatadi va farqni hisobga kiritadi. Amal sizning nomingizga yoziladi.
+This bank transaction is already fully reconciled.,
 This cannot be undone.,Buni qaytarish mumkin emas.
+This correction affects payroll calculations,
+This correction is already {0} and cannot be approved.,
+This correction is already {0} and cannot be rejected.,
+This creates a submitted credit note (return invoice) and updates inventory automatically.,
+This customer has no submitted invoices for the selected period.,
 This deal is Won — create the customer to start invoicing.,Bitim yutildi — hisob-faktura uchun mijoz yarating.
+This document was changed by someone else. Reload to see the latest.,
+This document was changed by someone else. Reload to see the latest?,
+This does not look like a 1C ClientBank Exchange file. Other formats are not supported yet.,
+This draft invoice has no ledger balance yet. The payment will be submitted as a customer advance.,
+This draft invoice has no ledger balance yet. The payment will be submitted as a supplier advance.,
+This exception is already {0}.,
 This month,
+"This must match exactly the value in raw events (TimePay user ID, badge code, etc.).",
+This request belongs to a company you cannot access.,
+This request is already {0}.,
+This role may create/edit back-dated stock entries.,
+This role may edit frozen accounting entries.,
+This warehouse has no current item balances.,
+This will close the order and release any reserved stock. Continue?,
 This will post {0} {1}. The action is recorded against your name.,{0} {1} kiritiladi. Amal sizning nomingizga yoziladi.
+This will record your level {0} approval for {1} {2}.,
+This will {0} an Exchange Rate Revaluation for {1} on {2}. ERPNext will post the GL entries on submit.,
 This year,
+This {0} needs an approval before it can be posted. It has been routed to the approvals queue.,
 Three-way match failed:,Uch tomonlama moslik o'tmadi:
 Three-way match warnings:,Uch tomonlama moslik ogohlantirishlari:
 Threshold,Chegara
 Threshold Qty,Chegara miqdori
 Thu,Pa
+Thursday,
+Ticket is required.,
+Ticket must have a customer before closing a visit.,
 Tickets,Murojaatlar
+Time,
+TimePay ID,
+TimePay name,
+Timepay,
+Timepay refresh token must expire after the access token.,
+Timestamp,
 To,Gacha
 To Bill,Hisob-faktura uchun
 To Deliver,Yetkazib berish uchun
 To Deliver and Bill,Yetkazib berish va hisob-faktura uchun
 To account,Gacha hisob
+To bill,Hisob-fakturaga
+To date,
+To deliver,Yetkazishga
 To warehouse,Gacha omborga
 Today,
+Toggle date sort,
+Too many failed attempts. Please try again in 5 minutes.,
+Top 10 Creditors,
+Top 10 Debtors,
 Total,Jami
 Total (cost + markup),Jami (tannarx + ustama)
 Total / Present / OSA % are computed server-side.,Jami / Hozir / OSA% server tomonidan hisoblanadi.
+Total Marked,
+Total Required,
 Total SKUs,Jami SKU
 Total allocated,Jami taqsimlangan
 Total allocated cannot exceed the payment amount.,Taqsimlangan jami to'lov summasi osha olmaydi.
 Total cost,Umumiy xarajat
+Total credit value,
 Total in {0},Jami {0} da
 Total outstanding,Jami qoldiq
 Total payable,Jami to'lanadi
@@ -1585,21 +2427,31 @@ Total receivable,Jami qabul qilinadigan
 Total value,Jami qiymat
 Total:,Jami:
 Trade Marketing,Savdo marketingi
+Trade marketing claims and settlement tracking.,
 Transaction,
 Transaction Id,Tranzaksiya ID
 Transfer,O'tkazma
+Transfer cancelled.,
 Transfer detail,O'tkazma tafsilotlari
+Transfer failed.,
 Transfer how many units of materials? Leave blank for full.,Necha dona material o'tkaziladi? To'liq uchun bo'sh qoldiring.
 Transfer materials,Materiallarni o'tkazish
 Transfer materials and start this Work Order?,"Materiallarni topshirib, buyurtmani boshlash kerakmi?"
 Transfer recorded · {name},O'tkazma yozildi · {name}
 Transfer stock,Zaxiralarni o'tkazish
+Transfer to WIP Warehouse,
 Transferred,Berilgan
+Transferred Qty,
 Transfers,O'tkazmalar
+Trend,
 Trigger Item,Ishga tushiruvchi tovar
 Try a different search term or clear the filter.,Boshqa qidiruv atamasi ishlatib ko'ring yoki filtrni o'chiring.
+Try adjusting your filters to find exceptions.,
 Try again,Qayta urinib ko'ring
+"Try another item code, name, or group.",
+Try another search term.,
 Tue,Se
+Tuesday,
 Type,Turi
 "Type to search, or pick a quick action",Qidirish uchun yozing yoki tez harakatni tanlang
 UOM,O'lchov birligi
@@ -1607,20 +2459,36 @@ USD → UZS,USD → UZS
 Unassigned,Belgilanmagan
 Unbilled,Hisoblanmagan
 Units Sold,Sotilgan birliklar
+Unknown Cost Center: {0},
+Unknown Fiscal Year: {0},
+Unknown POS Profile: {0},
+Unknown Purchase Invoice: {0},
 Unknown Sales Invoice: {0},Noma'lum sotuv hisob-fakturasi: {0}
 Unknown Sales Order: {0},Noma'lum sotuv buyurtmasi: {0}
+Unknown account: {0},
 Unknown company: {0},Noma'lum kompaniya: {0}
+Unknown customer: {0},
+Unknown hash algorithm: {0},
+Unknown item: {0},
+Unknown payment session.,
 Unknown role template: {0},Noma'lum rol shabloni: {0}
+Unknown role: {0},
+Unknown serial number: {0},
 Unknown user: {0},
 Unknown vertical pack: {0},Noma'lum vertikal paket: {0}
 Unknown warehouse: {0},Noma'lum omborga: {0}
+Unmatched,
+Unmatched Event,
 Unpaid,To'lanmagan
 Unreconciled transactions,Solishtirilmagan operatsiyalar
 Unsupported language: {0},Qo'llanilmagan til: {0}
+Unsupported statement format (expected 1C ClientBank Exchange).,
 Untitled Process,Nomsiz jarayon
+Update stock,
 Uplift Value,Ko'tarilish qiymati
 Upload failed,Yuklash muvaffaqiyatsiz bo'ldi
 Upload latest to Drive,Oxirgisini Drive'ga yuklash
+Uploaded {0} file(s) to Google Drive.,
 Uploading…,Yuklanmoqda…
 Use source warehouse,Manba omboridan foydalanish
 User,Foydalanuvchi
@@ -1628,6 +2496,7 @@ User account,Foydalanuvchi hisobi
 User already exists,Foydalanuvchi allaqachon mavjud
 User is required.,Foydalanuvchi majburiy.
 User not found,Foydalanuvchi topilmadi
+User status updated.,
 Users,Foydalanuvchilar
 Users flagged,Belgilangan foydalanuvchilar
 Utilization %,Foydalanish %
@@ -1636,7 +2505,9 @@ Valid From,Dan to'g'ri
 Valid Promo Plan is required.,To'g'ri promo-rejasi majburiy.
 Valid To,Gacha to'g'ri
 Valid To must be on or after Valid From.,Gacha to'g'ri Dan to'g'ri yoki keyin bo'lishi kerak.
+Valid issue type is required.,
 Valid till,Amal qilish muddati
+Valid user is required.,
 Valuation,Baholash
 Value,Qiymati
 Value (approx.),Qiymat (tax.)
@@ -1645,36 +2516,57 @@ Value Δ,Qiymati o'zgarishi
 Van Stock,Avtomobilning zaxirasi
 Van Stock name is required.,Avtomobilning zaxirasi nomi majburiy.
 Van stock tracks what each field user has loaded for the day.,Avtomobilning zaxirasi har bir maydon foydalanuvchisining kunlik yuki qayd etadi.
+Var %,
 Variance,Farq
 Vendor bill does not match PO / receipt,Yetkazib beruvchi hisobi buyurtma / qabulga mos kelmaydi
 Vertical lanes (flow top→bottom),Vertikal yoʿlaklar (oqim yuqori→pastki)
 View all,Hammasini ko'rish
 View attachment,Ilova ko'rish
 View audit log,O'zgarishlar tarixini ko'rish
+View corrections queue,
+View exceptions queue,
 View ledger,Daftar ko'rish
+View report,
 View transactions,Operatsiyalarni ko‘rish
 Visit,Tashrif
 Visit already checked in at {0}.,Tashrif allaqachon {0} da kirishjoy ko'rsatdi.
 Visit already checked out at {0}.,Tashrif allaqachon {0} da chiqishjoy ko'rsatdi.
+Visit already has a linked Sales Invoice.,
+Visit already has a linked Stock Entry.,
 Visit closed,Tashrif yopildi
 Visit is required.,Tashrif majburiy.
 Visit name is required.,Tashrif nomi majburiy.
+Visit photos and outlet execution evidence.,
 Visits,Tashrif
 Visits appear once they are planned from a route or created manually.,Tashrif marshrut asosida rejalashtirilib yoki qo'l bilan yaratilgandan keyin paydo bo'ladi.
+Void Cart,
 Voucher,Vaucheri
+Voucher not found.,
+Voucher not found: {0} {1},
+WIP Warehouse,
+WIP Whse,
 WIP warehouse,Tugallanmagan ishlab chiqarish ombori
 Waiting for payment…,To‘lov kutilmoqda…
 Warehouse,Ombarxona
+Warehouse '{0}' is not in company '{1}'.,
+Warehouse '{0}' not found.,
+Warehouse (returns),
 Warehouse balances,Ombarxonaning qoldiqlar
+Warehouse belongs to a different company.,
+Warehouse does not belong to the selected company.,
 Warehouse is required for Sales Orders,Sotuv buyurtmalari uchun ombarxona majburiy
+Warehouse is required.,
 Warehouse name,Ombarxona nomi
 Warehouse name is required.,Ombarxona nomi majburiy.
+Warehouse stock,
 Warehouses,Omborlar
 Warn only,Faqat ogohlantirish
 Warranty Until,Kafolat muddati
 We owe,Biz qarzdormiz
 Wed,Ch
+Wednesday,
 Weekly,Haftalik
+Weekly off days,
 Weight,Og'irligi
 Welcome to Stabler,Stableriga xush kelibsiz
 What is this entry for?,Bu yozuv nima uchun?
@@ -1682,9 +2574,13 @@ When,Qachon
 "When someone submits a payment that needs review, it appears here.","Kimdir ko'rib chiqishni talab qiladigan to'lovni yuborsa, u shu yerda paydo bo'ladi."
 Why it matters,Nega bu muhim
 Widen the date range or clear filters to see stock activity.,Zaxira faoliyatini ko'rish uchun sana oralig'ini kengaytiring yoki filtrlari tozalang.
+Widen the date range or create a new payment receipt/payment.,
 Widen the date range or post a manual journal.,Sana oralig'ini kengaytiring yoki qo'l bilan jurnalni joylashtiring.
 Widen the date range or record a payment receipt or disbursement.,Sana oralig'ini kengaytiring yoki to'lov kvitansiyasi yoki rasxodlarni qayd etingilang.
+"Widen the date range, relax the filters, or log a direct receipt.",
+"Widen the date range, relax the status filter, or create a new invoice.",
 "Widen the date range, relax the status filter, or create a new order.","Sana oralig'ini kengaytiring, holat filtri bo'yicha cheklovni yumshoq qiling yoki yangi buyurtma yarating."
+"Widen the date range, relax the status filter, or create a new quotation.",
 "Widen the date range, relax the status filter, or log a new bill.","Sana oralig'ini kengaytiring, holat filtri bo'yicha cheklovni yumshoq qiling yoki yangi hisob-fakturaning qaydini joylashtiring."
 "Widen the date range, relax the status filter, or send a new proposal.","Sana oralig'ini kengaytiring, holat filtri bo'yicha cheklovni yumshoq qiling yoki yangi taklifni yuboring."
 "Widen the date range, relax the status filter, or start a new order.","Sana oralig'ini kengaytiring, holat filtri bo'yicha cheklovni yumshoq qiling yoki yangi buyurtmani boshlang."
@@ -1694,63 +2590,122 @@ Withheld,Ushlab qolingan
 Won this month,Shu oyda yutilgan
 Work From Home,Uydan ish
 Work Order,Ishlab chiqarish buyurtmasi
+Work Order closed.,
+Work Order resumed.,
+Work Order stopped.,
+Work Order submitted and released.,
 Work Orders,Ishlab chiqarish buyurtmalari
 Work done,Bajarilgan ishlar
+Work done is required.,
+Work mode,
+Worked,
 Working,Ish kuni
+Workspace,
 Write,Yozish
+Wrong Account Postings,
 YTD,Yil boshidan
 Year to date,
 Yes,Ha
+You,
+You are not assigned to this POS Profile.,
+You are not permitted to approve or reject correction requests.,
+You are not permitted to review approval requests.,
 You are not permitted to view the audit log.,Sizda o'zgarishlar tarixini ko'rish huquqi yo'q.
+You have already approved level {0} for this request.,
 You have no approval requests,Sizda tasdiq so'rovlari yo'q
+You have unsaved changes. Leaving this page will discard them.,
+"You must hold an HR Manager, System Manager, or Stabler Admin role to lock a payroll period.",
 You need administrator access to view this page.,Ushbu sahifani ko'rish uchun administrator huquqiga ega bo'lish kerak.
+You raised this request — it must be approved by someone else.,
+You raised this request — it must be reviewed by someone else.,
 You raised this — another user must approve it.,Bu so'rovni siz yaratdingiz — uni boshqa foydalanuvchi tasdiqlashi kerak.
 "Your books are empty. Get started by adding a customer, recording your first sale, or logging an opening balance.","Sizning kitoplaringiz bo'sh. Xaridor qo'shish, birinchi sotuvi qayd etish yoki ochilish qoldiqlarini kiritish bilan boshlang."
 Yuk xati,Yuk xati
+against,
 avail,mavj.
+available,
+blocker(s),
 cheque / txn id,Chek / tranzaksiya ID
 company currency,kompaniya valyutasi
+company is required.,
+correction_date is required.,
+correction_type is required.,
+create and submit,
 critical,kritik
+customer credit,
+date_str and hire_date are required.,
 days,kun
+default,
+device_name is required.,
+device_user_id is required.,
+e.g. EMP-00042,
+e.g. Main entrance reader,
 "e.g. OK, Approved","mas. Ha, Tasdiqlandi"
+e.g. Standard 8h shift,
+employee is required.,
+employees,
 entries,
 entries. Narrow the date range to see older ones.,yozuvlar. Eskiroq yozuvlarni ko'rish uchun sana oralig'ini toraytiring.
 error(s),xato(lar)
+favorable,
 from exchange rate records,valyuta kurslari yozuvlaridan
 from last bill,oxirgi hisobdan
 high,yuqori
+https://…,
 info,ma'lumot
 item,Tovar
 item_code and warehouse are required,Tovar kodi va omborxona majburiy
 items,Tovarlar
 left,qoldi
 line,Qator
+lines,
 medium,o'rta
+min,
 mo,oy
 more,yana
+moves stock,
+name is required.,
+no stock movement,
+on budget,
 one-off,bir martalik
 optional,Ixtiyoriy
 overdue,kechikdi
 pack_key is required,pack_key majburiy
+payload must be a JSON object.,
+payroll_period is required.,
 planned,rejalashtirilgan
+"punches must be a list of {timestamp, direction}.",
 quantity,miqdor
+reason is required and must not be empty.,
+requested_value is required.,
 reserved,band
 revenue,tushum
+rule_set_name is required.,
+save as draft,
 sets,to'plam
 source,target
 step_idx must be an integer.,step_idx butun son bo'lishi kerak.
 stock,zaxira
+to_date must be >= from_date.,
+unfavorable,
+units,
 user@example.com,user@example.com
+vouchers must be a JSON list.,
 vs. last month,o'tgan oyga nisbatan
+{0} ({1}),
 {0} is required.,{0} majburiy.
+{0} line item change(s),
 {0} must be a number,{0} raqam bo'lishi kerak
+{0} must be an enabled stock sales item.,
 {0} name is required.,{0} nomi majburiy.
+{0} payroll-impacting,
 {0} reservation(s) failed to cancel. See results below.,{0} bronirovanish bekor qilinmadi. Natijalarni quyida ko'ring.
 {0}: discount_amount cannot be negative,{0}: chegirma miqdori manfiy bo'lishi mumkin emas
 {0}: discount_percentage must be between 0 and 100,{0}: chegirma foizi 0 dan 100 gacha bo'lishi kerak
 {0}: rate cannot be negative,{0}: narx manfiy bo'lishi mumkin emas
 {n} outstanding invoice(s),{n} ta to'lanmagan hisob-faktura
 —,—
+— Any device —,
 — Choose account —,— Hisob tanlang —
 — auto from customer —,— xaridordan avtomatik —
 — auto from supplier —,— ta'minotchidan avtomatik —
@@ -1764,10 +2719,6 @@ vs. last month,o'tgan oyga nisbatan
 — pick destination —,— manziliga tanlang —
 — pick source —,— manbaadan tanlang —
 — select account —,— hisob tanlang —
+— select —,
 — top-level —,— eng yuqori darajali —
 ⚠ {0} line(s) had no cost — verify item valuation; margin may be overstated.,⚠ {0} qator(da) tannarx yo'q — tovar baholashni tekshiring; marja oshirilgan bo'lishi mumkin.
-Include drafts,Qoralamalar bilan
-Including unposted drafts — does not tie to the GL.,Joylanmagan qoralamalar bilan — bosh kitobga mos kelmaydi.
-Booked,Buyurtma qilingan
-To deliver,Yetkazishga
-To bill,Hisob-fakturaga
