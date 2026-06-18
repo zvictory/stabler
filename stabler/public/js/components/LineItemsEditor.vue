@@ -231,6 +231,8 @@ function handlePickItem(line, item, index) {
 }
 
 function formatLineAmount(line) {
+	// Trust the server-computed amount in read-only mode — avoids phantom-discount re-derivation.
+	if (!props.editable && line.amount != null) return Number(line.amount);
 	const qty = Number(line.qty || 0);
 	const rate = Number(line.rate || 0);
 	const discPct = Number(line.discount_percentage || 0);

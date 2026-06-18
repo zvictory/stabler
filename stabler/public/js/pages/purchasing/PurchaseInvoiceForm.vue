@@ -129,13 +129,6 @@ async function fetchRateHint() {
 	}
 }
 
-watch(
-	() => [form.value.currency, form.value.posting_date],
-	() => {
-		if (editable.value) fetchRateHint();
-	}
-);
-
 const rateHintLabel = computed(() => {
 	if (!rateHint.value) return "";
 	const src =
@@ -176,6 +169,9 @@ function blankForm() {
 }
 
 function fromDetail(d) {
+	// Detect phantom discounts: ERPNext stores price_list_rate in base currency for
+	// foreign-currency PIs; (plr × conversion_rate ≈ rate) means no real discount was set.
+	const cr = d.currency !== d.base_currency ? Number(d.conversion_rate || 0) : 0;
 	return {
 		supplier: d.supplier,
 		supplier_name: d.supplier_name || d.supplier,
@@ -194,16 +190,28 @@ function fromDetail(d) {
 		return_against: d.return_against || "",
 		amended_from: d.amended_from || "",
 		debit_notes: d.debit_notes || [],
-		items: (d.items || []).map((it) => ({
-			item_code: it.item_code,
-			item_name: it.item_name,
-			uom: it.uom || "",
-			qty: Number(it.qty || 0),
-			rate: Number(it.rate || 0),
-			discount_percentage: Number(it.discount_percentage || 0),
-			discount_amount: Number(it.discount_amount || 0),
-			amount: Number(it.amount || 0),
-		})),
+		net_total: Number(d.net_total || 0),
+		total_taxes_and_charges: Number(d.total_taxes_and_charges || 0),
+		grand_total: Number(d.grand_total || 0),
+		base_net_total: Number(d.base_net_total || 0),
+		base_grand_total: Number(d.base_grand_total || 0),
+		outstanding_amount: Number(d.outstanding_amount || 0),
+		items: (d.items || []).map((it) => {
+			const rate = Number(it.rate || 0);
+			const plr = Number(it.price_list_rate || 0);
+			const isArtifact = cr > 0 && plr > 0 && Math.abs(plr * cr - rate) < 1;
+			return {
+				item_code: it.item_code,
+				item_name: it.item_name,
+				uom: it.uom || "",
+				qty: Number(it.qty || 0),
+				rate,
+				price_list_rate: isArtifact ? 0 : plr,
+				discount_percentage: isArtifact ? 0 : Number(it.discount_percentage || 0),
+				discount_amount: isArtifact ? 0 : Number(it.discount_amount || 0),
+				amount: Number(it.amount || 0),
+			};
+		}),
 	};
 }
 
@@ -267,6 +275,13 @@ const {
 	fromDetail,
 	backPath: "/purchasing/invoices",
 });
+
+watch(
+	() => [form.value.currency, form.value.posting_date],
+	() => {
+		if (editable.value) fetchRateHint();
+	}
+);
 
 const docName = computed(() => (route.params.name ? String(route.params.name) : null));
 
