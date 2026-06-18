@@ -1629,8 +1629,25 @@ def cancel_sales_invoice(name: str, modified: str | None = None):
 	doc = frappe.get_doc("Sales Invoice", name)
 	if doc.docstatus != 1:
 		frappe.throw("Only submitted invoices can be cancelled.")
-	# skip creation-time validators (e.g. so_dn_required) that fire on cancel too;
-	# structural cancel guards (linked documents, stock reversal) run separately.
+
+	# ERPNext's on_cancel calls check_sales_order_on_hold_or_close which reads
+	# SO.status from DB and throws when status == "Closed".  SOs may be Closed
+	# because our on_si_submit hook auto-closed them when this SI was submitted.
+	# Temporarily reset those SOs to "To Deliver and Bill" so the check passes;
+	# ERPNext's own on_cancel → update_prevdoc_status() recalculates status
+	# correctly once per_billed drops (SI cancelled).
+	# We only unblock "Closed" — "On Hold" is set manually and should still block.
+	so_names = {item.sales_order for item in doc.items if item.sales_order}
+	closed_sos = [
+		so for so in so_names
+		if frappe.db.get_value("Sales Order", so, "status") == "Closed"
+	]
+	for so in closed_sos:
+		frappe.db.set_value(
+			"Sales Order", so, "status", "To Deliver and Bill", update_modified=False
+		)
+
+	# skip creation-time validators (e.g. so_dn_required) that fire on cancel too
 	doc.flags.ignore_validate = True
 	doc.cancel()
 	return {"name": doc.name, "docstatus": doc.docstatus, "status": doc.status}
