@@ -1,5 +1,6 @@
 <script setup>
-import { computed, onMounted, ref, watch } from "vue";
+import { computed, nextTick, onBeforeUnmount, onMounted, ref, watch } from "vue";
+import { onBeforeRouteLeave } from "vue-router";
 import { storeToRefs } from "pinia";
 import { useSession } from "../../stores/session.js";
 import { call } from "../../api/client.js";
@@ -109,6 +110,36 @@ function newGhost() {
 
 const ghost = ref(newGhost());
 const form = ref(blankForm());
+const linesTableEl = ref(null);
+
+// Unsaved-changes guard: if the form is open and edited, confirm before leaving
+// the page (sidebar click, browser back/refresh). Gated on createOpen so the list
+// view never triggers it.
+const dirtyPristine = ref("");
+function markFormPristine() {
+	dirtyPristine.value = JSON.stringify(form.value);
+}
+const formDirty = computed(
+	() => createOpen.value && JSON.stringify(form.value) !== dirtyPristine.value,
+);
+onBeforeRouteLeave(async () => {
+	if (!formDirty.value) return true;
+	return await confirm({
+		title: t("Discard unsaved changes?"),
+		body: t("You have unsaved changes. Leaving this page will discard them."),
+		danger: true,
+		confirmLabel: t("Discard"),
+		cancelLabel: t("Keep Editing"),
+	});
+});
+function onBeforeUnloadGuard(e) {
+	if (formDirty.value) {
+		e.preventDefault();
+		e.returnValue = "";
+	}
+}
+onMounted(() => window.addEventListener("beforeunload", onBeforeUnloadGuard));
+onBeforeUnmount(() => window.removeEventListener("beforeunload", onBeforeUnloadGuard));
 
 function blankForm() {
 	lineSeq = 0;
@@ -130,6 +161,41 @@ function materialGhost(item) {
 		memo: ghost.value.memo,
 	});
 	ghost.value = newGhost();
+	// Like the Sales Order line editor: once the account is picked, drop the cursor
+	// into the new line's amount so the user can keep typing without reaching for
+	// the mouse.
+	nextTick(focusNewLineAmount);
+}
+
+function lineRows() {
+	const tbody = linesTableEl.value?.querySelector("tbody");
+	return tbody ? Array.from(tbody.querySelectorAll("tr")) : [];
+}
+
+function focusNewLineAmount() {
+	const rows = lineRows();
+	// Real lines render before the trailing ghost row, so the just-added line is
+	// the second-to-last row; its amount is the 2nd input.
+	const inputs = Array.from(rows[rows.length - 2]?.querySelectorAll("input") || []);
+	inputs[1]?.focus();
+	inputs[1]?.select?.();
+}
+
+// Tab on a line's Amount jumps to the ghost "add a line" row to start the next
+// expense — mirroring how Tab on a Sales Order qty advances to a fresh row.
+function handleLineKeyDown(e) {
+	if (e.key !== "Tab" || e.shiftKey) return;
+	const activeEl = document.activeElement;
+	if (!activeEl || activeEl.tagName !== "INPUT") return;
+	const row = activeEl.closest("tr");
+	const tbody = row?.closest("tbody");
+	if (!tbody) return;
+	const rows = Array.from(tbody.querySelectorAll("tr"));
+	const inputs = Array.from(row.querySelectorAll("input"));
+	if (inputs.indexOf(activeEl) !== 1) return; // only from the Amount field
+	if (row === rows[rows.length - 1]) return; // not from the ghost row itself
+	e.preventDefault();
+	rows[rows.length - 1]?.querySelector("input")?.focus();
 }
 
 const entryKindOptions = [
@@ -316,9 +382,11 @@ async function openCreate() {
 	submitError.value = "";
 	cbuRate.value = null;
 	rateError.value = "";
+	detailOpen.value = false;
 	createOpen.value = true;
 	if (!payAccounts.value.length || !expAccounts.value.length || !assetAccounts.value.length) await loadOptions();
 	await fetchExchangeRate();
+	markFormPristine();
 }
 
 async function openEditFromDetail() {
@@ -347,8 +415,10 @@ async function openEditFromDetail() {
 	submitError.value = "";
 	cbuRate.value = null;
 	rateError.value = "";
+	detailOpen.value = false;
 	createOpen.value = true;
 	await fetchExchangeRate();
+	markFormPristine();
 }
 
 function closeCreate() {
@@ -468,6 +538,7 @@ async function load() {
 }
 
 async function openDetail(name) {
+	createOpen.value = false;
 	detailOpen.value = true;
 	detailLoading.value = true;
 	detail.value = null;
@@ -541,7 +612,7 @@ watch(activeCompany, () => {
 </script>
 
 <template>
-	<div class="card">
+	<div v-if="!createOpen && !detailOpen" class="card">
 		<div class="card-header">
 			<div class="card-title">{{ t("Expenses") }}</div>
 			<div class="ms-auto d-flex gap-2 align-items-end">
@@ -626,21 +697,17 @@ watch(activeCompany, () => {
 		</div>
 	</div>
 
-	<!-- View drawer -->
-	<div v-if="detailOpen" class="offcanvas-backdrop fade show" @click="closeDetail"></div>
-	<div
-		v-if="detailOpen"
-		class="offcanvas offcanvas-end show"
-		tabindex="-1"
-		style="visibility: visible; width: 620px"
-	>
-		<div class="offcanvas-header">
-			<h5 class="offcanvas-title">
+	<!-- Detail page -->
+	<div v-if="detailOpen" class="card">
+		<div class="card-header">
+			<button type="button" class="btn btn-sm btn-outline-secondary me-2" @click="closeDetail">
+				<i class="ti ti-arrow-left me-1"></i>{{ t("Back") }}
+			</button>
+			<div class="card-title m-0">
 				<i class="ti ti-receipt-2 me-1"></i>{{ t("Expense") }}
-			</h5>
-			<button type="button" class="btn-close" @click="closeDetail"></button>
+			</div>
 		</div>
-		<div class="offcanvas-body">
+		<div class="card-body">
 			<div v-if="detailLoading" class="text-center py-5">
 				<div class="spinner-border text-primary"></div>
 			</div>
@@ -715,21 +782,28 @@ watch(activeCompany, () => {
 		</div>
 	</div>
 
-	<!-- Create modal -->
-	<div v-if="createOpen" class="modal-backdrop fade show" @click="closeCreate"></div>
-	<div v-if="createOpen" class="modal fade show d-block" tabindex="-1" role="dialog" aria-modal="true">
-		<div class="modal-dialog modal-lg modal-dialog-centered modal-dialog-scrollable" role="document">
-			<div ref="modalEl" class="modal-content">
-				<div class="modal-header">
-					<h5 class="modal-title">
-						<i class="ti ti-receipt-2 me-1"></i>{{ formTitle }}
-					</h5>
-					<button type="button" class="btn-close" @click="closeCreate" aria-label="Close"></button>
-				</div>
-				<div class="modal-body">
-					<div v-if="submitError" class="alert alert-danger">{{ submitError }}</div>
+	<!-- Create / amend page -->
+	<div v-if="createOpen" ref="modalEl" class="card">
+		<div class="card-header">
+			<button type="button" class="btn btn-sm btn-outline-secondary me-2" :disabled="submitting" @click="closeCreate">
+				<i class="ti ti-arrow-left me-1"></i>{{ t("Back") }}
+			</button>
+			<div class="card-title m-0">
+				<i class="ti ti-receipt-2 me-1"></i>{{ formTitle }}
+			</div>
+		</div>
+		<div class="card-body p-3 d-flex flex-column gap-3">
+					<div v-if="submitError" class="alert alert-danger mb-0">{{ submitError }}</div>
 
-					<div class="row g-2 mb-3">
+					<!-- Panel A: Details (blue) -->
+					<div class="card card-sm mb-0" style="border: 1.5px solid var(--tblr-blue, #206bc4); border-radius: 6px">
+						<div class="card-header py-2 px-3 d-flex align-items-center gap-2" style="background: var(--tblr-blue-lt, #e9f0fb); border-bottom: 1px solid var(--tblr-blue-lt, #d0e0f7); border-radius: 5px 5px 0 0">
+							<i class="ti ti-adjustments text-blue" style="font-size: 1rem"></i>
+							<span class="fw-semibold text-blue small">{{ t("Details") }}</span>
+						</div>
+						<div class="card-body p-3">
+
+					<div class="row g-2">
 						<div class="col-md-4">
 							<label class="form-label small">{{ t("Mode") }}</label>
 							<Select
@@ -779,8 +853,8 @@ watch(activeCompany, () => {
 						</div>
 					</div>
 
-					<!-- Exchange rate bar (cross-currency only) -->
-					<div v-if="isCrossCurrency" class="mb-3">
+					<!-- Cross-currency exchange rate -->
+					<div v-if="isCrossCurrency" class="border-top pt-3 mt-3">
 						<div class="d-flex align-items-end gap-3 flex-wrap">
 							<div style="min-width: 190px">
 								<label class="form-label small mb-1">
@@ -808,20 +882,31 @@ watch(activeCompany, () => {
 							</div>
 						</div>
 					</div>
+						</div><!-- /Panel A body -->
+					</div><!-- /Panel A -->
 
-					<h6 class="text-uppercase text-secondary small mb-2">
-						{{ form.entry_kind === "Asset Purchase" ? t("Asset lines") : t("Expense lines") }}
-					</h6>
+					<!-- Panel B: Expense / Asset lines (amber) -->
+					<div class="card card-sm mb-0" style="border: 1.5px solid var(--tblr-orange, #f76707); border-radius: 6px">
+						<div class="card-header py-2 px-3 d-flex align-items-center gap-2" style="background: var(--tblr-orange-lt, #fff4e6); border-bottom: 1px solid var(--tblr-orange-lt, #ffd8a8); border-radius: 5px 5px 0 0">
+							<i class="ti ti-list-details text-orange" style="font-size: 1rem"></i>
+							<span class="fw-semibold text-orange small">
+								{{ form.entry_kind === "Asset Purchase" ? t("Asset lines") : t("Expense lines") }}
+							</span>
+							<span class="ms-auto fw-bold font-monospace text-orange small">
+								{{ formatMoney(totalAmount, payCurrency, user.language) }}
+							</span>
+						</div>
+						<div class="card-body p-0">
 					<div class="table-responsive">
-						<table class="table table-sm table-vcenter align-middle">
+						<table ref="linesTableEl" class="table table-vcenter card-table" @keydown="handleLineKeyDown">
 							<thead>
 								<tr>
-									<th style="min-width: 240px">{{ t("Account") }}</th>
-									<th style="min-width: 160px" class="text-end">{{ t("Amount") }}</th>
+									<th style="min-width: 240px" class="text-uppercase text-secondary small">{{ t("Account") }}</th>
+									<th style="min-width: 160px" class="text-end text-uppercase text-secondary small">{{ t("Amount") }}</th>
 									<th v-if="isCrossCurrency" class="text-end text-secondary" style="min-width: 120px; font-size: 0.8em">
 										{{ baseCurrency }}
 									</th>
-									<th>{{ t("Memo") }}</th>
+									<th class="text-uppercase text-secondary small">{{ t("Memo") }}</th>
 									<th class="w-1"></th>
 								</tr>
 							</thead>
@@ -944,9 +1029,11 @@ watch(activeCompany, () => {
 								</tr>
 							</tfoot>
 						</table>
-					</div>
-				</div>
-				<div class="modal-footer">
+					</div><!-- /table-responsive -->
+						</div><!-- /Panel B body -->
+					</div><!-- /Panel B -->
+				</div><!-- /outer card-body -->
+				<div class="card-footer d-flex align-items-center gap-2">
 					<button
 						type="button"
 						class="btn btn-outline-secondary"
@@ -1001,7 +1088,5 @@ watch(activeCompany, () => {
 						</div>
 					</div>
 				</div>
-			</div>
-		</div>
 	</div>
 </template>
