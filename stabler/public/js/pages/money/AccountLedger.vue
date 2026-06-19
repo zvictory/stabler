@@ -289,7 +289,7 @@ watch(() => route.params.account, fetchLedger);
 							{{ formatMoney(summary?.closing_balance ?? 0, accountCurrency, user.language) }}
 						</div>
 					</div>
-					<div v-if="isMultiCurrency" class="col-12">
+					<div v-if="isMultiCurrency && !usdApplicable" class="col-12">
 						<div class="text-secondary small">{{ t("Closing in") }} {{ currency }}</div>
 						<div class="font-monospace">
 							{{ formatMoney(summary?.closing_balance ?? 0, currency, user.language) }}
@@ -339,7 +339,7 @@ watch(() => route.params.account, fetchLedger);
 								class="small text-secondary font-monospace"
 								:title="t('USD rate on this date')"
 							>
-								{{ t("1 USD =") }} {{ formatMoney(e.usd_rate, currency, user.language) }}
+								{{ t("1 USD =") }} {{ formatMoney(e.usd_rate, accountCurrency, user.language) }}
 							</div>
 						</td>
 							<td>

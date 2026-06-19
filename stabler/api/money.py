@@ -284,24 +284,29 @@ def gl_entries(
 			r["party_name"] = _pn_cache[key]
 
 	# --- USD-equivalent overlay (display-only) ---------------------------------
-	# UZS-base accounts only: show each row's balance revalued at that day's CBU
-	# USD->UZS rate. For a UZS account running_balance_base == running_balance so
-	# we divide the base track by the rate to get the USD equivalent.
-	# Foreign-currency accounts already carry a foreign balance — skip them.
+	# Show USD running balance + the CBU USD→account_ccy rate for each row.
+	# Two cases:
+	#   Case A – non-USD-base company, same-ccy account (e.g. UZS account in UZS co.)
+	#             → running_balance_base is in base_ccy; divide by CBU rate for USD.
+	#   Case B – USD-base company, non-USD account (e.g. UZS account in USD co.)
+	#             → running_balance_base is already in USD; rate shown for context.
 	base_currency = frappe.get_cached_value("Company", company, "default_currency") or "UZS"
 	row_acct_ccy = rows[0]["account_currency"] if rows else base_currency
-	usd_applicable = bool(rows) and row_acct_ccy == base_currency and base_currency != "USD"
+	is_usd_base = base_currency == "USD"
+	case_a = not is_usd_base and row_acct_ccy == base_currency  # e.g. UZS acct in UZS co.
+	case_b = is_usd_base and row_acct_ccy not in ("USD", "")   # e.g. UZS acct in USD co.
+	usd_applicable = bool(rows) and (case_a or case_b)
 
 	if usd_applicable:
 		distinct_dates = sorted({r["posting_date"] for r in rows if r["posting_date"]})
-		# One batched query: all USD->UZS rate rows on/before the latest page date.
-		# cbu_rate_refresh backfills every calendar day so gaps are rare.
+		# Rate: "how many account_ccy units per 1 USD" (e.g. 12 935 UZS per USD).
+		# One batched query covering all distinct page dates.
 		rate_rows = (
 			frappe.get_all(
 				"Currency Exchange",
 				filters={
 					"from_currency": "USD",
-					"to_currency": base_currency,
+					"to_currency": row_acct_ccy,
 					"date": ("<=", distinct_dates[-1]),
 				},
 				fields=["exchange_rate", "date"],
@@ -324,9 +329,14 @@ def gl_entries(
 		for r in rows:
 			rate = rate_for.get(r["posting_date"], 0.0)
 			r["usd_rate"] = rate if rate > 0 else None
-			r["running_balance_usd"] = (
-				flt(r["running_balance_base"]) / rate if rate > 0 else None
-			)
+			if case_a:
+				# Base track is in account_ccy (= base_ccy); divide by CBU rate → USD.
+				r["running_balance_usd"] = (
+					flt(r["running_balance_base"]) / rate if rate > 0 else None
+				)
+			else:
+				# Case B: running_balance_base is already in USD (company base = USD).
+				r["running_balance_usd"] = flt(r["running_balance_base"])
 
 	return {
 		"entries": rows,
