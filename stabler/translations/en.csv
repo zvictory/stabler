@@ -8,6 +8,7 @@ source,target
 0,0
 0.00,0.00
 0–30,0–30
+1 USD =,1 USD =
 1:1 Foreign Postings,1:1 Foreign Postings
 1C ClientBank Exchange format (.txt). Uzbek bank-client export.,1C ClientBank Exchange format (.txt). Uzbek bank-client export.
 1C Sync Log,1C Sync Log
@@ -283,6 +284,8 @@ Buy X get Y,Buy X get Y
 Buy markup,Buy markup
 Buying price list,Buying price list
 By,By
+By item,By item
+By order,By order
 By region,By region
 By rep,By rep
 C,C
@@ -375,6 +378,7 @@ Claims,Claims
 Class,Class
 Classic,Classic
 Clear,Clear
+Clear filters,Clear filters
 Clear open reservations,Clear open reservations
 Clear search,Clear search
 Cleared {0} of {1},Cleared {0} of {1}
@@ -1140,6 +1144,7 @@ Last login,Last login
 Last month,Last month
 Last name,Last name
 Last sync,Last sync
+Last updated,Last updated
 Last year,Last year
 Late,Late
 Late Arrival,Late Arrival
@@ -1392,6 +1397,7 @@ No earnings,No earnings
 No employees yet,No employees yet
 No employee–device mappings,No employee–device mappings
 No enabled Stabler Payroll Component Map found for company {0}. ,No enabled Stabler Payroll Component Map found for company {0}. 
+No entries match these filters.,No entries match these filters.
 No equipment yet,No equipment yet
 No exceptions found,No exceptions found
 No exceptions.,No exceptions.
@@ -2125,6 +2131,7 @@ Search item…,Search item…
 Search leads…,Search leads…
 Search outlets…,Search outlets…
 Search processes…,Search processes…
+Search reference…,Search reference…
 Search reports,Search reports
 Search supplier name…,Search supplier name…
 Search suppliers…,Search suppliers…
@@ -2211,6 +2218,7 @@ Shift start,Shift start
 Show discounts,Show discounts
 Showing,Showing
 Showing first 500 — narrow the date range to see more.,Showing first 500 — narrow the date range to see more.
+Showing the first {0} records — use filters to narrow.,Showing the first {0} records — use filters to narrow.
 Showing the newest,Showing the newest
 Simulation result,Simulation result
 Simulator,Simulator
@@ -2448,6 +2456,7 @@ Tuesday,Tuesday
 Type,Type
 "Type to search, or pick a quick action","Type to search, or pick a quick action"
 UOM,UOM
+USD rate on this date,USD rate on this date
 USD → UZS,USD → UZS
 Unassigned,Unassigned
 Unbilled,Unbilled
@@ -2662,6 +2671,7 @@ no stock movement,no stock movement
 on budget,on budget
 one-off,one-off
 optional,optional
+orders,orders
 overdue,overdue
 pack_key is required,pack_key is required
 payload must be a JSON object.,payload must be a JSON object.

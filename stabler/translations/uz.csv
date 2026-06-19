@@ -8,6 +8,7 @@ source,target
 0,
 0.00,0.00
 0–30,0–30
+1 USD =,1 USD =
 1:1 Foreign Postings,
 1C ClientBank Exchange format (.txt). Uzbek bank-client export.,1C ClientBank Exchange formati (.txt). Bank-mijoz eksporti.
 1C Sync Log,1C Sinxronizatsiya Jurnali
@@ -285,6 +286,8 @@ Buy X get Y,"X sotib oling, Y olish"
 Buy markup,Sotib olish ustamasi
 Buying price list,Sotib olish narx ro'yxati
 By,
+By item,
+By order,
 By region,Hudud bo‘yicha
 By rep,Menejer bo‘yicha
 C,
@@ -377,6 +380,7 @@ Claims,Da'volar
 Class,Sinf
 Classic,
 Clear,Tozalash
+Clear filters,Filtrlarni tozalash
 Clear open reservations,Ochiq bronirovalari tozalash
 Clear search,Qidiruvni tozalash
 Cleared {0} of {1},{1} dan {0} tozalandi
@@ -1142,6 +1146,7 @@ Last login,Oxirgi kirish
 Last month,
 Last name,Familiya
 Last sync,
+Last updated,
 Last year,
 Late,
 Late Arrival,
@@ -1394,6 +1399,7 @@ No earnings,Hisoblanganlar yo'q
 No employees yet,Hozircha xodimlar yo'q
 No employee–device mappings,
 No enabled Stabler Payroll Component Map found for company {0}. ,
+No entries match these filters.,Bu filtrlarga mos yozuv yo'q.
 No equipment yet,Hali asboblar yo'q
 No exceptions found,
 No exceptions.,
@@ -2128,6 +2134,7 @@ Search item…,Tovarni qidirish…
 Search leads…,Lidlarni qidirish…
 Search outlets…,Filiallarni qidirish…
 Search processes…,Jarayonlarni qidirish…
+Search reference…,Raqam bo'yicha qidirish…
 Search reports,
 Search supplier name…,Ta'minotchi nomini qidirish…
 Search suppliers…,Ta'minotchilarni qidirish…
@@ -2214,6 +2221,7 @@ Shift start,
 Show discounts,Chegirtilarni ko'rsatish
 Showing,Koʼrsatilmoqda
 Showing first 500 — narrow the date range to see more.,Birinchi 500 ko‘rsatildi — ko‘proq ko‘rish uchun davrni toraytiring.
+Showing the first {0} records — use filters to narrow.,Birinchi {0} ta yozuv ko'rsatilmoqda — aniqlashtirish uchun filtrlardan foydalaning.
 Showing the newest,Eng yangilarni ko'rsatmoqda
 Simulation result,
 Simulator,
@@ -2455,6 +2463,7 @@ Tuesday,
 Type,Turi
 "Type to search, or pick a quick action",Qidirish uchun yozing yoki tez harakatni tanlang
 UOM,O'lchov birligi
+USD rate on this date,Ushbu sananing USD kursi
 USD → UZS,USD → UZS
 Unassigned,Belgilanmagan
 Unbilled,Hisoblanmagan
@@ -2669,6 +2678,7 @@ no stock movement,
 on budget,
 one-off,bir martalik
 optional,Ixtiyoriy
+orders,
 overdue,kechikdi
 pack_key is required,pack_key majburiy
 payload must be a JSON object.,

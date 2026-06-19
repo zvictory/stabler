@@ -283,6 +283,51 @@ def gl_entries(
 				_pn_cache[key] = _party_title(r.get("party_type"), party)
 			r["party_name"] = _pn_cache[key]
 
+	# --- USD-equivalent overlay (display-only) ---------------------------------
+	# UZS-base accounts only: show each row's balance revalued at that day's CBU
+	# USD->UZS rate. For a UZS account running_balance_base == running_balance so
+	# we divide the base track by the rate to get the USD equivalent.
+	# Foreign-currency accounts already carry a foreign balance — skip them.
+	base_currency = frappe.get_cached_value("Company", company, "default_currency") or "UZS"
+	row_acct_ccy = rows[0]["account_currency"] if rows else base_currency
+	usd_applicable = bool(rows) and row_acct_ccy == base_currency and base_currency != "USD"
+
+	if usd_applicable:
+		distinct_dates = sorted({r["posting_date"] for r in rows if r["posting_date"]})
+		# One batched query: all USD->UZS rate rows on/before the latest page date.
+		# cbu_rate_refresh backfills every calendar day so gaps are rare.
+		rate_rows = (
+			frappe.get_all(
+				"Currency Exchange",
+				filters={
+					"from_currency": "USD",
+					"to_currency": base_currency,
+					"date": ("<=", distinct_dates[-1]),
+				},
+				fields=["exchange_rate", "date"],
+				order_by="date asc",
+				limit_page_length=0,
+			)
+			if distinct_dates
+			else []
+		)
+		# Resolve "latest rate on/before d" per distinct date with a cursor walk.
+		# Matches the pattern in _accounts.py:63 and fx_revaluation.py:92.
+		rate_for = {}
+		i, cur = 0, 0.0
+		for d in distinct_dates:
+			while i < len(rate_rows) and str(rate_rows[i]["date"]) <= d:
+				cur = flt(rate_rows[i]["exchange_rate"])
+				i += 1
+			rate_for[d] = cur  # 0.0 when no CBU row exists on/before this date
+
+		for r in rows:
+			rate = rate_for.get(r["posting_date"], 0.0)
+			r["usd_rate"] = rate if rate > 0 else None
+			r["running_balance_usd"] = (
+				flt(r["running_balance_base"]) / rate if rate > 0 else None
+			)
+
 	return {
 		"entries": rows,
 		"total_count": total_count,
@@ -290,6 +335,8 @@ def gl_entries(
 		"opening_base": opening_base,
 		"opening_account": opening_acc,
 		"as_of": str(as_of),
+		"usd_applicable": usd_applicable,
+		"base_currency": base_currency,
 	}
 
 

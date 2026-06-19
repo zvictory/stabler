@@ -48,12 +48,25 @@ const periodKey = ref("custom");
 const dateDir = ref("desc"); // "desc" = newest first, "asc" = oldest first
 
 const summary = ref(null);
+// True when the backend confirms this is a UZS-base account eligible for USD display.
+// Value is invariant across pages for a given account; set from the first (and any) page response.
+const usdApplicable = ref(false);
 
 const accountCurrency = computed(() => summary.value?.account_currency || currency.value);
 const accountTitle = computed(() => summary.value?.account_name || accountName.value);
 const isMultiCurrency = computed(
 	() => accountCurrency.value && accountCurrency.value !== currency.value
 );
+// USD closing balance: the newest row's running_balance_usd.
+// In desc order (default) that's entries[0]; in asc order it's the last entry.
+const closingUsd = computed(() => {
+	if (!usdApplicable.value || !entries.value.length) return null;
+	const newest =
+		dateDir.value === "desc"
+			? entries.value[0]
+			: entries.value[entries.value.length - 1];
+	return newest?.running_balance_usd ?? null;
+});
 
 // ---------------------------------------------------------------------------
 // Voucher drawer state (in-place view for JE / Payment)
@@ -106,6 +119,7 @@ async function fetchPage(append = false) {
 
 		hasMore.value = entriesRes.has_more ?? false;
 		totalCount.value = entriesRes.total_count ?? 0;
+		usdApplicable.value = entriesRes.usd_applicable === true;
 
 		if (append) {
 			entries.value = [...entries.value, ...(entriesRes.entries || [])];
@@ -281,6 +295,11 @@ watch(() => route.params.account, fetchLedger);
 							{{ formatMoney(summary?.closing_balance ?? 0, currency, user.language) }}
 						</div>
 					</div>
+					<!-- USD closing (UZS-base accounts only, mutually exclusive with isMultiCurrency) -->
+					<div v-if="usdApplicable && closingUsd != null" class="col-12">
+						<div class="text-secondary small">{{ t("Closing in") }} USD</div>
+						<div class="font-monospace">≈ {{ formatMoney(closingUsd, "USD", user.language) }}</div>
+					</div>
 				</div>
 			</div>
 
@@ -313,7 +332,16 @@ watch(() => route.params.account, fetchLedger);
 					</thead>
 					<tbody>
 						<tr v-for="e in entries" :key="e.name">
-							<td class="text-nowrap">{{ formatDate(e.posting_date) }}</td>
+							<td class="text-nowrap">
+							{{ formatDate(e.posting_date) }}
+							<div
+								v-if="usdApplicable && e.usd_rate"
+								class="small text-secondary font-monospace"
+								:title="t('USD rate on this date')"
+							>
+								{{ t("1 USD =") }} {{ formatMoney(e.usd_rate, currency, user.language) }}
+							</div>
+						</td>
 							<td>
 								<div class="small">{{ e.voucher_type }}</div>
 								<!-- JE/PE open in a drawer; other docs route to their page -->
@@ -355,6 +383,12 @@ watch(() => route.params.account, fetchLedger);
 							</td>
 							<td class="text-end font-monospace fw-semibold">
 								{{ formatMoney(e.running_balance, accountCurrency, user.language) }}
+								<div v-if="usdApplicable" class="small fw-normal text-secondary">
+									<template v-if="e.running_balance_usd != null">
+										≈ {{ formatMoney(e.running_balance_usd, "USD", user.language) }}
+									</template>
+									<template v-else>—</template>
+								</div>
 							</td>
 						</tr>
 					</tbody>

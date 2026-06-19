@@ -8,6 +8,7 @@ source,target
 0,
 0.00,"0,00"
 0–30,0–30
+1 USD =,1 USD =
 1:1 Foreign Postings,
 1C ClientBank Exchange format (.txt). Uzbek bank-client export.,Формат 1C ClientBank Exchange (.txt). Экспорт из банк-клиента.
 1C Sync Log,Журнал синхронизации 1C
@@ -290,6 +291,8 @@ Buy X get Y,Купи X получи Y
 Buy markup,Наценка (покупка)
 Buying price list,Прайс-лист покупки
 By,
+By item,
+By order,
 By region,По региону
 By rep,По менеджеру
 C,
@@ -383,6 +386,7 @@ Claims,Претензии
 Class,Класс
 Classic,
 Clear,Очистить
+Clear filters,Сбросить фильтры
 Clear open reservations,Очистить открытые резервирования
 Clear search,Очистить поиск
 Cleared {0} of {1},Очищено {0} из {1}
@@ -1149,6 +1153,7 @@ Last login,Последний вход
 Last month,
 Last name,Фамилия
 Last sync,
+Last updated,
 Last year,
 Late,
 Late Arrival,
@@ -1401,6 +1406,7 @@ No earnings,Нет начислений
 No employees yet,Сотрудников пока нет
 No employee–device mappings,
 No enabled Stabler Payroll Component Map found for company {0}. ,
+No entries match these filters.,Нет записей по этим фильтрам.
 No equipment yet,Оборудования пока нет
 No exceptions found,
 No exceptions.,
@@ -2135,6 +2141,7 @@ Search item…,Поиск товара…
 Search leads…,Поиск лидов…
 Search outlets…,Поиск точек…
 Search processes…,Поиск процессов…
+Search reference…,Поиск по номеру…
 Search reports,
 Search supplier name…,Поиск названия поставщика…
 Search suppliers…,Поиск поставщиков…
@@ -2221,6 +2228,7 @@ Shift start,
 Show discounts,Показать скидки
 Showing,Показано
 Showing first 500 — narrow the date range to see more.,"Показаны первые 500 — сузьте период, чтобы увидеть больше."
+Showing the first {0} records — use filters to narrow.,Показаны первые {0} записей — используйте фильтры для уточнения.
 Showing the newest,Показаны самые новые
 Simulation result,
 Simulator,
@@ -2462,6 +2470,7 @@ Tuesday,
 Type,Тип
 "Type to search, or pick a quick action",Введите для поиска или выберите быстрое действие
 UOM,Ед. изм.
+USD rate on this date,Курс USD на эту дату
 USD → UZS,USD → UZS
 Unassigned,Не назначен
 Unbilled,Не выставлен счёт
@@ -2676,6 +2685,7 @@ no stock movement,
 on budget,
 one-off,разовый
 optional,необязательно
+orders,
 overdue,просрочено
 pack_key is required,pack_key обязателен
 payload must be a JSON object.,

@@ -8,6 +8,7 @@ source,target
 0,
 0.00,0.00
 0–30,0–30
+1 USD =,1 USD =
 1:1 Foreign Postings,
 1C ClientBank Exchange format (.txt). Uzbek bank-client export.,1C ClientBank Exchange формати (.txt). Банк-мижоз экспорти.
 1C Sync Log,1C Синхрон журнали
@@ -285,6 +286,8 @@ Buy X get Y,X сотиб олинг Y получите
 Buy markup,Сотиб олиш устамаси
 Buying price list,Сотиб олиш нарх рўйхати
 By,
+By item,
+By order,
 By region,Ҳудуд бўйича
 By rep,Менежер бўйича
 C,
@@ -377,6 +380,7 @@ Claims,Даъволар
 Class,Синф
 Classic,
 Clear,Тозалаш
+Clear filters,Фильтрларни тозалаш
 Clear open reservations,Очиқ қарзларни тозалаш
 Clear search,Қидирувни тозалаш
 Cleared {0} of {1},{0} дан {1} тозаланди
@@ -1142,6 +1146,7 @@ Last login,Сўнги кириш
 Last month,
 Last name,Фамилия
 Last sync,
+Last updated,
 Last year,
 Late,
 Late Arrival,
@@ -1394,6 +1399,7 @@ No earnings,Ҳисобланганлар йўқ
 No employees yet,Ҳозирча ходимлар йўқ
 No employee–device mappings,
 No enabled Stabler Payroll Component Map found for company {0}. ,
+No entries match these filters.,Бу фильтрларга мос ёзув йўқ.
 No equipment yet,Ҳалиғача ускуналар йўқ
 No exceptions found,
 No exceptions.,
@@ -2128,6 +2134,7 @@ Search item…,Товарро қидириш…
 Search leads…,Лидларни қидириш…
 Search outlets…,Сотув ўйларини қидириш…
 Search processes…,Жараёнларни қидириш…
+Search reference…,Рақам бўйича қидириш…
 Search reports,
 Search supplier name…,Етказиб берувчи номини қидириш…
 Search suppliers…,Таъминотчиларни қидириш…
@@ -2214,6 +2221,7 @@ Shift start,
 Show discounts,Чегирмаларни кўрсатиш
 Showing,Көрсатилмоқда
 Showing first 500 — narrow the date range to see more.,Биринчи 500 кўрсатилди — кўпроқ кўриш учун даврни торайтиринг.
+Showing the first {0} records — use filters to narrow.,Биринчи {0} та ёзув кўрсатилмоқда — аниқлаштириш учун фильтрлардан фойдаланинг.
 Showing the newest,Энг янги кўрсатилмоқда
 Simulation result,
 Simulator,
@@ -2455,6 +2463,7 @@ Tuesday,
 Type,Турл
 "Type to search, or pick a quick action","Қидириш учун енг, ёки тез амални танланг"
 UOM,Ўлчов бирлиги
+USD rate on this date,Ушбу сананинг USD курси
 USD → UZS,USD → UZS
 Unassigned,Белгиланмаган
 Unbilled,Ҳисобланмаган
@@ -2669,6 +2678,7 @@ no stock movement,
 on budget,
 one-off,бир марталик
 optional,Ихтиёрий
+orders,
 overdue,кечикди
 pack_key is required,pack_key керак
 payload must be a JSON object.,

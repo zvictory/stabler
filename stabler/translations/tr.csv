@@ -8,6 +8,7 @@ source,target
 0,
 0.00,0.00
 0–30,0–30
+1 USD =,1 USD =
 1:1 Foreign Postings,
 1C ClientBank Exchange format (.txt). Uzbek bank-client export.,1C ClientBank Exchange formatı (.txt). Banka-istemci dışa aktarımı.
 1C Sync Log,1C Senkronizasyon Günlüğü
@@ -283,6 +284,8 @@ Buy X get Y,X al Y kazan
 Buy markup,Alış kâr marjı
 Buying price list,Alış fiyat listesi
 By,
+By item,
+By order,
 By region,Bölgeye göre
 By rep,Temsilciye göre
 C,
@@ -375,6 +378,7 @@ Claims,Talepler
 Class,Sınıf
 Classic,
 Clear,Temizle
+Clear filters,Filtreleri temizle
 Clear open reservations,Açık rezervasyonları temizle
 Clear search,Aramayı temizle
 Cleared {0} of {1},{1} içinden {0} temizlendi
@@ -1135,6 +1139,7 @@ Last login,Son giriş
 Last month,
 Last name,Soyadı
 Last sync,
+Last updated,
 Last year,
 Late,
 Late Arrival,
@@ -1386,6 +1391,7 @@ No earnings,Kazanç yok
 No employees yet,Henüz çalışan yok
 No employee–device mappings,
 No enabled Stabler Payroll Component Map found for company {0}. ,
+No entries match these filters.,Bu filtrelere uyan kayıt yok.
 No equipment yet,Henüz ekipman yok
 No exceptions found,
 No exceptions.,
@@ -2115,6 +2121,7 @@ Search item…,Ürün ara…
 Search leads…,Potansiyel ara…
 Search outlets…,Satış noktası ara…
 Search processes…,Süreçleri ara…
+Search reference…,Referans ara…
 Search reports,
 Search supplier name…,Tedarikçi adı ara…
 Search suppliers…,Tedarikçi ara…
@@ -2200,6 +2207,7 @@ Shift start,
 Show discounts,İndirimleri göster
 Showing,Gösteriliyor
 Showing first 500 — narrow the date range to see more.,İlk 500 gösteriliyor — daha fazlası için tarih aralığını daraltın.
+Showing the first {0} records — use filters to narrow.,İlk {0} kayıt gösteriliyor — daraltmak için filtreleri kullanın.
 Showing the newest,En yeniler gösteriliyor
 Simulation result,
 Simulator,
@@ -2437,6 +2445,7 @@ Tuesday,
 Type,Tür
 "Type to search, or pick a quick action",Aramak için yazın veya hızlı bir işlem seçin
 UOM,Ölçü Birimi
+USD rate on this date,Bu tarihteki USD kuru
 USD → UZS,USD → UZS
 Unassigned,Atanmamış
 Unbilled,Faturalanmamış
@@ -2651,6 +2660,7 @@ no stock movement,
 on budget,
 one-off,tek seferlik
 optional,isteğe bağlı
+orders,
 overdue,gecikmiş
 pack_key is required,pack_key zorunludur
 payload must be a JSON object.,
