@@ -759,8 +759,8 @@ watch(activeCompany, () => {
 		<div class="card-body">
 					<div v-if="submitError" class="alert alert-danger mb-3">{{ submitError }}</div>
 
-					<!-- Date + Memo on one row so the date field isn't stranded alone -->
-					<div class="row g-2 mb-3">
+					<!-- Date + Memo compact row -->
+					<div class="row g-2 mb-2">
 						<div class="col-sm-3">
 							<label class="form-label small required">{{ t("Posting date") }}</label>
 							<DateInput v-model="form.posting_date" />
@@ -777,147 +777,137 @@ watch(activeCompany, () => {
 						</div>
 					</div>
 
-					<!-- FROM on top, TO on bottom — always vertical -->
-					<div class="d-flex flex-column gap-2">
+					<!-- FROM on top, TO on bottom — always vertical, compact -->
+					<div class="d-flex flex-column gap-1">
 						<!-- FROM panel -->
 						<div class="card card-sm mb-0" style="border: 1.5px solid var(--tblr-blue, #206bc4); border-radius: 6px">
-						<div class="card-header py-2 px-3 d-flex align-items-center gap-2"
-							style="background: var(--tblr-blue-lt, #e9f0fb); border-bottom: 1px solid var(--tblr-blue-lt, #d0e0f7); border-radius: 5px 5px 0 0">
-							<span class="avatar avatar-xs bg-blue text-white rounded-circle" style="width:18px;height:18px;font-size:10px">↑</span>
-							<span class="fw-semibold text-blue small">{{ t("From") }}</span>
-						</div>
-						<div class="card-body p-3">
-							<div class="row g-2 align-items-end">
-								<div class="col">
-									<label class="form-label small mb-1 d-flex justify-content-between align-items-baseline">
-										<span>{{ t("Account") }}
-											<span v-if="fromAcc" class="text-secondary fw-normal">({{ fromCurrency }})</span>
-										</span>
-										<span v-if="fromAcc && fromAcc.account_balance != null" class="text-secondary fw-normal font-monospace">
-											{{ fmtAmt(fromAcc.account_balance, fromCurrency) }} {{ fromCurrency }}
-										</span>
-									</label>
-									<Select
-										v-model="form.from_account"
-										:disabled="optionsLoading"
-										:options="fromAccountOptions"
-										value-key="name"
-										:placeholder="t('Select…')"
-									>
-										<template #option="{ option }">
-											{{ option.account_name || option.name }} ({{ option.account_currency }})
-										</template>
-										<template #selected="{ option }">
-											{{ option.account_name || option.name }} ({{ option.account_currency }})
-										</template>
-									</Select>
+							<div class="card-header py-2 px-3 d-flex align-items-center gap-2"
+								style="background: var(--tblr-blue-lt, #e9f0fb); border-bottom: 1px solid var(--tblr-blue-lt, #d0e0f7); border-radius: 5px 5px 0 0">
+								<span class="avatar avatar-xs bg-blue text-white rounded-circle" style="width:18px;height:18px;font-size:10px">↑</span>
+								<span class="fw-semibold text-blue small">{{ t("From") }}</span>
+								<span v-if="fromAcc" class="text-secondary fw-normal small ms-1">({{ fromCurrency }})</span>
+								<span v-if="fromAcc && fromAcc.account_balance != null" class="ms-auto text-secondary fw-normal small font-monospace">
+									{{ fmtAmt(fromAcc.account_balance, fromCurrency) }} {{ fromCurrency }}
+								</span>
+							</div>
+							<div class="card-body px-3 py-2">
+								<div class="row g-2 align-items-center">
+									<div class="col">
+										<Select
+											v-model="form.from_account"
+											:disabled="optionsLoading"
+											:options="fromAccountOptions"
+											value-key="name"
+											:placeholder="t('Select…')"
+										>
+											<template #option="{ option }">
+												{{ option.account_name || option.name }} ({{ option.account_currency }})
+											</template>
+											<template #selected="{ option }">
+												{{ option.account_name || option.name }} ({{ option.account_currency }})
+											</template>
+										</Select>
+									</div>
+									<div class="col-5">
+										<MoneyInput
+											:model-value="form.from_amount"
+											:currency="fromCurrency"
+											:language="user.language"
+											:group-while-typing="true"
+											:disabled="submitting"
+											@update:model-value="onAmtInput"
+										/>
+									</div>
 								</div>
-								<div class="col-5">
-									<label class="form-label small mb-1">{{ t("Amount to transfer") }}</label>
+							</div>
+						</div>
+
+						<!-- Connector: down-arrow + rate + swap -->
+						<div class="d-flex align-items-center justify-content-center gap-3 py-1">
+							<i class="ti ti-arrow-down text-secondary" style="font-size: 1.2rem"></i>
+
+							<div v-if="isCrossCurrency" class="d-flex align-items-center gap-2 flex-grow-1" style="max-width: 400px">
+								<span class="text-secondary small text-nowrap">
+									{{ t("Exchange rate") }}
+									<span v-if="!rateManuallyEdited" class="badge bg-blue-lt text-blue ms-1">AUTO</span>
+								</span>
+								<div class="flex-grow-1">
 									<MoneyInput
-										:model-value="form.from_amount"
-										:currency="fromCurrency"
+										:model-value="form.exchange_rate"
+										currency=""
 										:language="user.language"
 										:group-while-typing="true"
 										:disabled="submitting"
-										@update:model-value="onAmtInput"
+										@update:model-value="onRateInput"
 									/>
 								</div>
-							</div>
-						</div>
-					</div>
-
-						<!-- Connector: down-arrow + rate + swap -->
-						<div class="d-flex align-items-center justify-content-center gap-3">
-							<i class="ti ti-arrow-down text-secondary" style="font-size: 1.35rem"></i>
-
-						<div v-if="isCrossCurrency" class="flex-grow-1" style="max-width: 340px">
-							<div class="text-center mb-1">
-								<span class="text-secondary small text-uppercase fw-semibold" style="letter-spacing:.04em">
-									{{ t("Exchange rate") }} · {{ fxBaseCur || fromCurrency }} → {{ fxCounterCur || toCurrency }}
+								<span v-if="cbuRate" class="text-secondary small text-nowrap">
+									CBU: {{ fmtRate(cbuRate) }}
 								</span>
-								<span v-if="!rateManuallyEdited" class="badge bg-blue-lt text-blue ms-1 small">AUTO</span>
 							</div>
-							<MoneyInput
-								:model-value="form.exchange_rate"
-								currency=""
-								:language="user.language"
-								:group-while-typing="true"
-								:disabled="submitting"
-								@update:model-value="onRateInput"
-							/>
-							<div v-if="cbuRate" class="text-center text-secondary small mt-1">
-								CBU: 1 {{ fxBaseCur || fromCurrency }} = {{ fmtRate(cbuRate) }} {{ fxCounterCur || toCurrency }}
+							<div v-else-if="fromAcc && toAcc" class="text-secondary small">
+								{{ t("Same currency") }}
 							</div>
-						</div>
-						<div v-else-if="fromAcc && toAcc" class="text-secondary small px-2">
-							{{ t("Same currency") }}
-						</div>
 
-						<button
-							type="button"
-							class="btn btn-outline-secondary btn-icon"
-							:disabled="!form.from_account && !form.to_account"
-							:aria-label="t('Swap accounts')"
-							@click="swap"
-						>
-							<i class="ti ti-arrows-exchange"></i>
-						</button>
+							<button
+								type="button"
+								class="btn btn-outline-secondary btn-icon btn-sm"
+								:disabled="!form.from_account && !form.to_account"
+								:aria-label="t('Swap accounts')"
+								@click="swap"
+							>
+								<i class="ti ti-arrows-exchange"></i>
+							</button>
 						</div>
 
 						<!-- TO panel -->
 						<div class="card card-sm mb-0" style="border: 1.5px solid var(--tblr-teal, #0ca678); border-radius: 6px">
-						<div class="card-header py-2 px-3 d-flex align-items-center gap-2"
-							style="background: var(--tblr-teal-lt, #d2f4ea); border-bottom: 1px solid var(--tblr-teal-lt, #b8ecdb); border-radius: 5px 5px 0 0">
-							<span class="avatar avatar-xs bg-teal text-white rounded-circle" style="width:18px;height:18px;font-size:10px">↓</span>
-							<span class="fw-semibold text-teal small">{{ t("To") }}</span>
-						</div>
-						<div class="card-body p-3">
-							<div class="row g-2 align-items-end">
-								<div class="col">
-									<label class="form-label small mb-1 d-flex justify-content-between align-items-baseline">
-										<span>{{ t("Account") }}
-											<span v-if="toAcc" class="text-secondary fw-normal">({{ toCurrency }})</span>
-										</span>
-										<span v-if="toAcc && toAcc.account_balance != null" class="text-secondary fw-normal font-monospace">
-											{{ fmtAmt(toAcc.account_balance, toCurrency) }} {{ toCurrency }}
-										</span>
-									</label>
-									<Select
-										v-model="form.to_account"
-										:disabled="optionsLoading"
-										:options="toAccountOptions"
-										value-key="name"
-										:placeholder="t('Select…')"
-									>
-										<template #option="{ option }">
-											{{ option.account_name || option.name }} ({{ option.account_currency }})
-										</template>
-										<template #selected="{ option }">
-											{{ option.account_name || option.name }} ({{ option.account_currency }})
-										</template>
-									</Select>
-								</div>
-								<div class="col-5">
-									<label class="form-label small mb-1">{{ t("Amount received") }}</label>
-									<MoneyInput
-										:model-value="form.to_amount"
-										:currency="toCurrency"
-										:language="user.language"
-										:group-while-typing="true"
-										:disabled="submitting || !isCrossCurrency"
-										@update:model-value="onRecvInput"
-									/>
+							<div class="card-header py-2 px-3 d-flex align-items-center gap-2"
+								style="background: var(--tblr-teal-lt, #d2f4ea); border-bottom: 1px solid var(--tblr-teal-lt, #b8ecdb); border-radius: 5px 5px 0 0">
+								<span class="avatar avatar-xs bg-teal text-white rounded-circle" style="width:18px;height:18px;font-size:10px">↓</span>
+								<span class="fw-semibold text-teal small">{{ t("To") }}</span>
+								<span v-if="toAcc" class="text-secondary fw-normal small ms-1">({{ toCurrency }})</span>
+								<span v-if="toAcc && toAcc.account_balance != null" class="ms-auto text-secondary fw-normal small font-monospace">
+									{{ fmtAmt(toAcc.account_balance, toCurrency) }} {{ toCurrency }}
+								</span>
+							</div>
+							<div class="card-body px-3 py-2">
+								<div class="row g-2 align-items-center">
+									<div class="col">
+										<Select
+											v-model="form.to_account"
+											:disabled="optionsLoading"
+											:options="toAccountOptions"
+											value-key="name"
+											:placeholder="t('Select…')"
+										>
+											<template #option="{ option }">
+												{{ option.account_name || option.name }} ({{ option.account_currency }})
+											</template>
+											<template #selected="{ option }">
+												{{ option.account_name || option.name }} ({{ option.account_currency }})
+											</template>
+										</Select>
+									</div>
+									<div class="col-5">
+										<MoneyInput
+											:model-value="form.to_amount"
+											:currency="toCurrency"
+											:language="user.language"
+											:group-while-typing="true"
+											:disabled="submitting || !isCrossCurrency"
+											@update:model-value="onRecvInput"
+										/>
+									</div>
 								</div>
 							</div>
 						</div>
-					</div>
 					</div>
 
 					<!-- Summary line -->
 					<div
 						v-if="form.from_account && form.to_account && Number(form.from_amount) > 0"
-						class="mt-3 px-1 text-secondary small"
+						class="mt-2 px-1 text-secondary small"
 					>
 						{{ t("Transfer") }}
 						<span class="font-monospace">{{ fmtAmt(form.from_amount, fromCurrency) }} {{ fromCurrency }}</span>
