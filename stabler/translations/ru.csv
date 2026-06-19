@@ -1005,6 +1005,7 @@ Full name (optional — filled automatically on save),
 Fully Completed,Полностью выполнено
 Fully Staged,
 Fully billed but auto-close did not run — use Close below.,
+GL booked USD (historical cost),Сумма в USD по проводкам (историческая)
 GL Integrity Anomaly Alert,
 GPS Latitude,Широта GPS
 GPS Longitude,Долгота GPS

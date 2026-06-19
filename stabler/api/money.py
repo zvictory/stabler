@@ -284,58 +284,62 @@ def gl_entries(
 			r["party_name"] = _pn_cache[key]
 
 	# --- USD-equivalent overlay (display-only) ---------------------------------
-	# Show USD running balance + the CBU USD→account_ccy rate for each row.
-	# Two cases:
+	# Two cases, handled independently:
 	#   Case A – non-USD-base company, same-ccy account (e.g. UZS account in UZS co.)
-	#             → running_balance_base is in base_ccy; divide by CBU rate for USD.
-	#   Case B – USD-base company, non-USD account (e.g. UZS account in USD co.)
-	#             → running_balance_base is already in USD; rate shown for context.
+	#             → running_balance_base is in base_ccy; divide by CBU rate → USD.
+	#             Spot CBU rate line IS meaningful here ("1 USD = X сўм").
+	#   Case B – USD-base company, non-USD account (e.g. UZS account in USD co., Anjan)
+	#             → running_balance_base is already USD (historical-cost accumulation,
+	#               NOT сўм ÷ today's rate). No CBU rate query or rate line — the spot
+	#               rate does not relate to the booked value.
 	base_currency = frappe.get_cached_value("Company", company, "default_currency") or "UZS"
 	row_acct_ccy = rows[0]["account_currency"] if rows else base_currency
 	is_usd_base = base_currency == "USD"
 	case_a = not is_usd_base and row_acct_ccy == base_currency  # e.g. UZS acct in UZS co.
 	case_b = is_usd_base and row_acct_ccy not in ("USD", "")   # e.g. UZS acct in USD co.
 	usd_applicable = bool(rows) and (case_a or case_b)
+	usd_mode = "revalued" if case_a else ("book" if case_b else None)
 
 	if usd_applicable:
-		distinct_dates = sorted({r["posting_date"] for r in rows if r["posting_date"]})
-		# Rate: "how many account_ccy units per 1 USD" (e.g. 12 935 UZS per USD).
-		# One batched query covering all distinct page dates.
-		rate_rows = (
-			frappe.get_all(
-				"Currency Exchange",
-				filters={
-					"from_currency": "USD",
-					"to_currency": row_acct_ccy,
-					"date": ("<=", distinct_dates[-1]),
-				},
-				fields=["exchange_rate", "date"],
-				order_by="date asc",
-				limit_page_length=0,
+		if case_a:
+			# Case A: look up CBU USD→account_ccy rate for each distinct page date.
+			distinct_dates = sorted({r["posting_date"] for r in rows if r["posting_date"]})
+			rate_rows = (
+				frappe.get_all(
+					"Currency Exchange",
+					filters={
+						"from_currency": "USD",
+						"to_currency": row_acct_ccy,
+						"date": ("<=", distinct_dates[-1]),
+					},
+					fields=["exchange_rate", "date"],
+					order_by="date asc",
+					limit_page_length=0,
+				)
+				if distinct_dates
+				else []
 			)
-			if distinct_dates
-			else []
-		)
-		# Resolve "latest rate on/before d" per distinct date with a cursor walk.
-		# Matches the pattern in _accounts.py:63 and fx_revaluation.py:92.
-		rate_for = {}
-		i, cur = 0, 0.0
-		for d in distinct_dates:
-			while i < len(rate_rows) and str(rate_rows[i]["date"]) <= d:
-				cur = flt(rate_rows[i]["exchange_rate"])
-				i += 1
-			rate_for[d] = cur  # 0.0 when no CBU row exists on/before this date
+			# Resolve "latest rate on/before d" per distinct date with a cursor walk.
+			# Matches the pattern in _accounts.py:63 and fx_revaluation.py:92.
+			rate_for = {}
+			i, cur = 0, 0.0
+			for d in distinct_dates:
+				while i < len(rate_rows) and str(rate_rows[i]["date"]) <= d:
+					cur = flt(rate_rows[i]["exchange_rate"])
+					i += 1
+				rate_for[d] = cur  # 0.0 when no CBU row exists on/before this date
 
-		for r in rows:
-			rate = rate_for.get(r["posting_date"], 0.0)
-			r["usd_rate"] = rate if rate > 0 else None
-			if case_a:
-				# Base track is in account_ccy (= base_ccy); divide by CBU rate → USD.
+			for r in rows:
+				rate = rate_for.get(r["posting_date"], 0.0)
+				r["usd_rate"] = rate if rate > 0 else None
 				r["running_balance_usd"] = (
 					flt(r["running_balance_base"]) / rate if rate > 0 else None
 				)
-			else:
-				# Case B: running_balance_base is already in USD (company base = USD).
+		else:
+			# Case B: running_balance_base is already USD (GL historical cost).
+			# No rate lookup; do not set usd_rate — its absence hides the spot-rate
+			# sub-line on the frontend (which would be misleading here).
+			for r in rows:
 				r["running_balance_usd"] = flt(r["running_balance_base"])
 
 	return {
@@ -346,6 +350,7 @@ def gl_entries(
 		"opening_account": opening_acc,
 		"as_of": str(as_of),
 		"usd_applicable": usd_applicable,
+		"usd_mode": usd_mode,
 		"base_currency": base_currency,
 	}
 

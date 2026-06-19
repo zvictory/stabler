@@ -48,9 +48,11 @@ const periodKey = ref("custom");
 const dateDir = ref("desc"); // "desc" = newest first, "asc" = oldest first
 
 const summary = ref(null);
-// True when the backend confirms this is a UZS-base account eligible for USD display.
+// True when the backend confirms this account is eligible for USD display.
 // Value is invariant across pages for a given account; set from the first (and any) page response.
 const usdApplicable = ref(false);
+// "revalued" (Case A: сўм ÷ CBU rate) or "book" (Case B: GL historical-cost USD).
+const usdMode = ref(null);
 
 const accountCurrency = computed(() => summary.value?.account_currency || currency.value);
 const accountTitle = computed(() => summary.value?.account_name || accountName.value);
@@ -120,6 +122,7 @@ async function fetchPage(append = false) {
 		hasMore.value = entriesRes.has_more ?? false;
 		totalCount.value = entriesRes.total_count ?? 0;
 		usdApplicable.value = entriesRes.usd_applicable === true;
+		usdMode.value = entriesRes.usd_mode || null;
 
 		if (append) {
 			entries.value = [...entries.value, ...(entriesRes.entries || [])];
@@ -295,10 +298,13 @@ watch(() => route.params.account, fetchLedger);
 							{{ formatMoney(summary?.closing_balance ?? 0, currency, user.language) }}
 						</div>
 					</div>
-					<!-- USD closing (UZS-base accounts only, mutually exclusive with isMultiCurrency) -->
+					<!-- USD closing (mutually exclusive with isMultiCurrency block above) -->
 					<div v-if="usdApplicable && closingUsd != null" class="col-12">
 						<div class="text-secondary small">{{ t("Closing in") }} USD</div>
-						<div class="font-monospace">≈ {{ formatMoney(closingUsd, "USD", user.language) }}</div>
+						<div
+							class="font-monospace"
+							:title="usdMode === 'book' ? t('GL booked USD (historical cost)') : undefined"
+						>{{ usdMode === "book" ? "= " : "≈ " }}{{ formatMoney(closingUsd, "USD", user.language) }}</div>
 					</div>
 				</div>
 			</div>
@@ -383,9 +389,13 @@ watch(() => route.params.account, fetchLedger);
 							</td>
 							<td class="text-end font-monospace fw-semibold">
 								{{ formatMoney(e.running_balance, accountCurrency, user.language) }}
-								<div v-if="usdApplicable" class="small fw-normal text-secondary">
+								<div
+									v-if="usdApplicable"
+									class="small fw-normal text-secondary"
+									:title="usdMode === 'book' ? t('GL booked USD (historical cost)') : undefined"
+								>
 									<template v-if="e.running_balance_usd != null">
-										≈ {{ formatMoney(e.running_balance_usd, "USD", user.language) }}
+										{{ usdMode === "book" ? "= " : "≈ " }}{{ formatMoney(e.running_balance_usd, "USD", user.language) }}
 									</template>
 									<template v-else>—</template>
 								</div>
