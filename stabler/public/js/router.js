@@ -65,7 +65,6 @@ import HRHome from "./pages/hr/HRHome.vue";
 import HROverview from "./pages/hr/Overview.vue";
 import Employees from "./pages/hr/Employees.vue";
 import EmployeeProfile from "./pages/hr/EmployeeProfile.vue";
-const HROrgChart = () => import("./pages/hr/OrgChart.vue");
 import HRAttendance from "./pages/hr/Attendance.vue";
 import LeaveApplications from "./pages/hr/LeaveApplications.vue";
 import Payroll from "./pages/hr/Payroll.vue";
@@ -243,7 +242,6 @@ const routes = [
 			{ path: "overview", name: "hr-overview", component: HROverview, meta: { title: t("Overview") } },
 			{ path: "employees", name: "hr-employees", component: Employees, meta: { title: t("Employees") } },
 			{ path: "employees/:name", name: "hr-employee-profile", component: EmployeeProfile, meta: { title: t("Employee Profile") } },
-			{ path: "org", name: "hr-org", component: HROrgChart, meta: { title: t("Positions") } },
 			{ path: "attendance", name: "hr-attendance", component: HRAttendance, meta: { title: t("Attendance") } },
 			{ path: "leave", name: "hr-leave", component: LeaveApplications, meta: { title: t("Leave") } },
 			{ path: "payroll", name: "hr-payroll", component: Payroll, meta: { title: t("Payroll") } },

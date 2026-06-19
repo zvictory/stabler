@@ -23,7 +23,6 @@ const AREAS = [
 		landing: "/hr/employees", roles: ["HR User", "HR Manager"],
 		tabs: [
 			{ name: "hr-employees", path: "/hr/employees", label: t("Employees"), icon: "ti-users" },
-			{ name: "hr-org", path: "/hr/org", label: t("Org chart"), icon: "ti-sitemap" },
 		],
 	},
 	{
