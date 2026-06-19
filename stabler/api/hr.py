@@ -745,3 +745,65 @@ def hr_overview(company: str):
 		"on_leave_today": int(on_leave_today or 0),
 		"pending_leave_requests": int(pending_leave or 0),
 	}
+
+
+@frappe.whitelist()
+def import_timepay_names(rows, apply=0, apply_name_matches=0):
+	"""Backfill TimePay names onto Employees from an anjan-hr export.
+
+	`rows`: JSON string (or list) of {timepay_id, fio} exported from anjan-hr.
+	`apply=0`  → dry run: returns the plan without writing.
+	`apply=1`  → writes the SAFE id-matched name updates
+	             (stabler.custom_timepay_id == anjan.timepay_id → set custom_timepay_name).
+	`apply_name_matches=1` → ALSO apply the name-fallback suggestions (sets both
+	             custom_timepay_id and custom_timepay_name). Review these first.
+
+	Admin / HR Manager only.
+	"""
+	from stabler.api.organization import _ADMIN_ROLES
+	from stabler.api._timepay_import import plan_timepay_import
+
+	if not (set(frappe.get_roles()) & ({"HR Manager"} | set(_ADMIN_ROLES))):
+		frappe.throw("Not permitted — admin or HR Manager only.", frappe.PermissionError)
+
+	if isinstance(rows, str):
+		try:
+			rows = json.loads(rows)
+		except Exception:
+			frappe.throw("rows must be valid JSON (a list of {timepay_id, fio}).")
+	rows = list(rows or [])
+
+	emps = frappe.get_all(
+		"Employee",
+		fields=["name", "employee_name", "custom_timepay_id", "custom_timepay_name"],
+		limit_page_length=0,
+	)
+	plan = plan_timepay_import(emps, rows)
+
+	applied_names = 0
+	applied_id_name = 0
+	if int(apply or 0):
+		for u in plan["id_updates"]:
+			frappe.db.set_value("Employee", u["employee"], "custom_timepay_name", u["new_name"])
+			applied_names += 1
+		if int(apply_name_matches or 0):
+			for s in plan["name_suggestions"]:
+				vals = {"custom_timepay_name": s["fio"]}
+				if s.get("timepay_id"):
+					vals["custom_timepay_id"] = s["timepay_id"]
+				frappe.db.set_value("Employee", s["employee"], vals)
+				applied_id_name += 1
+		frappe.db.commit()
+
+	return {
+		"applied": bool(int(apply or 0)),
+		"counts": {
+			"anjan_rows": len(rows),
+			"id_updates": len(plan["id_updates"]),
+			"name_suggestions": len(plan["name_suggestions"]),
+			"unmatched": len(plan["unmatched"]),
+			"applied_names": applied_names,
+			"applied_name_matches": applied_id_name,
+		},
+		"plan": plan,
+	}
