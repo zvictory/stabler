@@ -1,5 +1,6 @@
 <script setup>
 import { computed, onMounted, onUnmounted, ref, watch } from "vue";
+import { onBeforeRouteLeave } from "vue-router";
 import { storeToRefs } from "pinia";
 import { useSession } from "../../stores/session.js";
 import { call } from "../../api/client.js";
@@ -53,6 +54,35 @@ const accounts = ref([]);
 const optionsLoading = ref(false);
 
 const form = ref(blankForm());
+
+// Unsaved-changes guard: if the form is open and edited, confirm before leaving
+// the page (sidebar click, browser back/refresh). Gated on createOpen so the list
+// view never triggers it.
+const dirtyPristine = ref("");
+function markFormPristine() {
+	dirtyPristine.value = JSON.stringify(form.value);
+}
+const formDirty = computed(
+	() => createOpen.value && JSON.stringify(form.value) !== dirtyPristine.value,
+);
+onBeforeRouteLeave(async () => {
+	if (!formDirty.value) return true;
+	return await confirm({
+		title: t("Discard unsaved changes?"),
+		body: t("You have unsaved changes. Leaving this page will discard them."),
+		danger: true,
+		confirmLabel: t("Discard"),
+		cancelLabel: t("Keep Editing"),
+	});
+});
+function onBeforeUnloadGuard(e) {
+	if (formDirty.value) {
+		e.preventDefault();
+		e.returnValue = "";
+	}
+}
+onMounted(() => window.addEventListener("beforeunload", onBeforeUnloadGuard));
+onUnmounted(() => window.removeEventListener("beforeunload", onBeforeUnloadGuard));
 
 // QuickBooks-style save mode — persisted per user
 const SAVE_MODE_KEY = "stabler.transfers.saveMode";
@@ -309,10 +339,12 @@ async function openCreate() {
 	submitError.value = "";
 	rateManuallyEdited.value = false;
 	reseed();
+	detailOpen.value = false;
 	createOpen.value = true;
 	if (!accounts.value.length) await loadOptions();
 	await fetchExchangeRate();
 	derive();
+	markFormPristine();
 }
 
 async function openEditFromDetail() {
@@ -336,9 +368,11 @@ async function openEditFromDetail() {
 	submitError.value = "";
 	rateManuallyEdited.value = false;
 	reseed();
+	detailOpen.value = false;
 	createOpen.value = true;
 	await fetchExchangeRate();
 	derive();
+	markFormPristine();
 }
 
 function closeCreate() {
@@ -479,6 +513,7 @@ async function load() {
 }
 
 async function openDetail(name) {
+	createOpen.value = false;
 	detailOpen.value = true;
 	detailLoading.value = true;
 	detail.value = null;
@@ -552,7 +587,7 @@ watch(activeCompany, () => {
 </script>
 
 <template>
-	<div class="card">
+	<div v-if="!createOpen && !detailOpen" class="card">
 		<div class="card-header">
 			<div class="card-title">{{ t("Transfers") }}</div>
 			<div class="ms-auto d-flex gap-2 align-items-end">
@@ -633,21 +668,17 @@ watch(activeCompany, () => {
 		</div>
 	</div>
 
-	<!-- View drawer -->
-	<div v-if="detailOpen" class="offcanvas-backdrop fade show" @click="closeDetail"></div>
-	<div
-		v-if="detailOpen"
-		class="offcanvas offcanvas-end show"
-		tabindex="-1"
-		style="visibility: visible; width: 620px"
-	>
-		<div class="offcanvas-header">
-			<h5 class="offcanvas-title">
+	<!-- Detail page -->
+	<div v-if="detailOpen" class="card">
+		<div class="card-header">
+			<button type="button" class="btn btn-sm btn-outline-secondary me-2" @click="closeDetail">
+				<i class="ti ti-arrow-left me-1"></i>{{ t("Back") }}
+			</button>
+			<div class="card-title m-0">
 				<i class="ti ti-transfer me-1"></i>{{ t("Transfer") }}
-			</h5>
-			<button type="button" class="btn-close" @click="closeDetail"></button>
+			</div>
 		</div>
-		<div class="offcanvas-body">
+		<div class="card-body">
 			<div v-if="detailLoading" class="text-center py-5">
 				<div class="spinner-border text-primary"></div>
 			</div>
@@ -714,29 +745,42 @@ watch(activeCompany, () => {
 		</div>
 	</div>
 
-	<!-- Create / amend modal -->
-	<div v-if="createOpen" class="modal-backdrop fade show" @click="closeCreate"></div>
-	<div v-if="createOpen" class="modal fade show d-block" tabindex="-1" role="dialog" aria-modal="true">
-		<div class="modal-dialog modal-lg modal-dialog-centered" role="document">
-			<div ref="modalEl" class="modal-content">
-				<div class="modal-header">
-					<h5 class="modal-title">
-						<i class="ti ti-transfer me-1"></i>{{ formTitle }}
-					</h5>
-					<button type="button" class="btn-close" @click="closeCreate" aria-label="Close"></button>
-				</div>
+	<!-- Create / amend page -->
+	<div v-if="createOpen" ref="modalEl" class="card">
+		<div class="card-header">
+			<button type="button" class="btn btn-sm btn-outline-secondary me-2" :disabled="submitting" @click="closeCreate">
+				<i class="ti ti-arrow-left me-1"></i>{{ t("Back") }}
+			</button>
+			<div class="card-title m-0">
+				<i class="ti ti-transfer me-1"></i>{{ formTitle }}
+			</div>
+		</div>
 
-				<div class="modal-body">
+		<div class="card-body">
 					<div v-if="submitError" class="alert alert-danger mb-3">{{ submitError }}</div>
 
-					<!-- Date -->
-					<div class="mb-3" style="max-width: 230px">
-						<label class="form-label small required">{{ t("Posting date") }}</label>
-						<DateInput v-model="form.posting_date" />
+					<!-- Date + Memo on one row so the date field isn't stranded alone -->
+					<div class="row g-2 mb-3">
+						<div class="col-sm-3">
+							<label class="form-label small required">{{ t("Posting date") }}</label>
+							<DateInput v-model="form.posting_date" />
+						</div>
+						<div class="col-sm-9">
+							<label class="form-label small">{{ t("Memo") }}</label>
+							<input
+								v-model="form.memo"
+								type="text"
+								class="form-control"
+								:placeholder="t('Optional')"
+								:disabled="submitting"
+							/>
+						</div>
 					</div>
 
-					<!-- FROM panel -->
-					<div class="card card-sm mb-0" style="border: 1.5px solid var(--tblr-blue, #206bc4); border-radius: 6px">
+					<!-- FROM on top, TO on bottom — always vertical -->
+					<div class="d-flex flex-column gap-2">
+						<!-- FROM panel -->
+						<div class="card card-sm mb-0" style="border: 1.5px solid var(--tblr-blue, #206bc4); border-radius: 6px">
 						<div class="card-header py-2 px-3 d-flex align-items-center gap-2"
 							style="background: var(--tblr-blue-lt, #e9f0fb); border-bottom: 1px solid var(--tblr-blue-lt, #d0e0f7); border-radius: 5px 5px 0 0">
 							<span class="avatar avatar-xs bg-blue text-white rounded-circle" style="width:18px;height:18px;font-size:10px">↑</span>
@@ -783,9 +827,9 @@ watch(activeCompany, () => {
 						</div>
 					</div>
 
-					<!-- ROE band -->
-					<div class="d-flex align-items-center justify-content-center gap-3 py-3 px-1">
-						<div class="text-secondary" style="font-size: 1.2rem">↓</div>
+						<!-- Connector: down-arrow + rate + swap -->
+						<div class="d-flex align-items-center justify-content-center gap-3">
+							<i class="ti ti-arrow-down text-secondary" style="font-size: 1.35rem"></i>
 
 						<div v-if="isCrossCurrency" class="flex-grow-1" style="max-width: 340px">
 							<div class="text-center mb-1">
@@ -819,10 +863,10 @@ watch(activeCompany, () => {
 						>
 							<i class="ti ti-arrows-exchange"></i>
 						</button>
-					</div>
+						</div>
 
-					<!-- TO panel -->
-					<div class="card card-sm mb-0" style="border: 1.5px solid var(--tblr-teal, #0ca678); border-radius: 6px">
+						<!-- TO panel -->
+						<div class="card card-sm mb-0" style="border: 1.5px solid var(--tblr-teal, #0ca678); border-radius: 6px">
 						<div class="card-header py-2 px-3 d-flex align-items-center gap-2"
 							style="background: var(--tblr-teal-lt, #d2f4ea); border-bottom: 1px solid var(--tblr-teal-lt, #b8ecdb); border-radius: 5px 5px 0 0">
 							<span class="avatar avatar-xs bg-teal text-white rounded-circle" style="width:18px;height:18px;font-size:10px">↓</span>
@@ -868,17 +912,6 @@ watch(activeCompany, () => {
 							</div>
 						</div>
 					</div>
-
-					<!-- Memo -->
-					<div class="mt-3">
-						<label class="form-label small mb-1">{{ t("Memo") }}</label>
-						<input
-							v-model="form.memo"
-							type="text"
-							class="form-control"
-							:placeholder="t('Optional')"
-							:disabled="submitting"
-						/>
 					</div>
 
 					<!-- Summary line -->
@@ -896,7 +929,7 @@ watch(activeCompany, () => {
 					</div>
 				</div>
 
-				<div class="modal-footer">
+				<div class="card-footer d-flex align-items-center gap-2">
 					<button
 						type="button"
 						class="btn btn-outline-secondary"
@@ -951,7 +984,5 @@ watch(activeCompany, () => {
 						</div>
 					</div>
 				</div>
-			</div>
-		</div>
 	</div>
 </template>
