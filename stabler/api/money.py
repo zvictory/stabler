@@ -15,6 +15,11 @@ from frappe.utils import cint, flt, getdate, today
 
 EXPORT_FORMATS = {"Excel", "CSV"}
 
+# FX-rate plausibility band (same threshold as the Phase D audit).
+# A per-row booked-USD / expected-USD ratio outside [_FX_LO, _FX_HI] is flagged.
+_FX_LO = 0.2   # 5× too low
+_FX_HI = 5.0   # 5× too high
+
 
 def _invoice_payment_can_allocate(docstatus) -> bool:
 	"""Payment Entries can only allocate against submitted invoices."""
@@ -337,10 +342,48 @@ def gl_entries(
 				)
 		else:
 			# Case B: running_balance_base is already USD (GL historical cost).
-			# No rate lookup; do not set usd_rate — its absence hides the spot-rate
-			# sub-line on the frontend (which would be misleading here).
+			# Do NOT set usd_rate — its absence hides the misleading spot-rate line.
+			# Do run a CBU rate lookup to compute per-row FX plausibility (fx_check).
+			distinct_dates_b = sorted({r["posting_date"] for r in rows if r["posting_date"]})
+			rate_rows_b = (
+				frappe.get_all(
+					"Currency Exchange",
+					filters={
+						"from_currency": "USD",
+						"to_currency": row_acct_ccy,
+						"date": ("<=", distinct_dates_b[-1]),
+					},
+					fields=["exchange_rate", "date"],
+					order_by="date asc",
+					limit_page_length=0,
+				)
+				if distinct_dates_b
+				else []
+			)
+			rate_for_b = {}
+			i_b, cur_b = 0, 0.0
+			for d in distinct_dates_b:
+				while i_b < len(rate_rows_b) and str(rate_rows_b[i_b]["date"]) <= d:
+					cur_b = flt(rate_rows_b[i_b]["exchange_rate"])
+					i_b += 1
+				rate_for_b[d] = cur_b  # 0.0 when no CBU row exists on/before this date
+
 			for r in rows:
 				r["running_balance_usd"] = flt(r["running_balance_base"])
+				rate_b = rate_for_b.get(r["posting_date"], 0.0)
+				booked_usd = flt(r["debit"]) - flt(r["credit"])
+				movement_acc = flt(r["debit_in_account_currency"]) - flt(r["credit_in_account_currency"])
+				if rate_b > 0 and movement_acc:
+					expected = movement_acc / rate_b
+					ratio = abs(booked_usd / expected) if expected else None
+					r["fx_check"] = (
+						"ok" if (ratio is not None and _FX_LO <= ratio <= _FX_HI) else "warn"
+					)
+					r["fx_expected_usd"] = expected
+				else:
+					# Can't verify: zero rate, no CBU data, or $0-movement row.
+					r["fx_check"] = None
+					r["fx_expected_usd"] = None
 
 	return {
 		"entries": rows,

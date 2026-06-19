@@ -801,6 +801,8 @@ F.I.O.,Ф.И.Ш.
 FG Whse,
 FX Revaluation,
 FX accounts as of {0},
+FX rate looks correct,FX курси тўғри
+FX rate looks wrong,FX курси нотўғри
 Failed,Хатолик
 Failed to assign ticket.,Мурожаатни белгилаб бўлмади.
 Failed to cancel entry.,

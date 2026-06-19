@@ -396,6 +396,18 @@ watch(() => route.params.account, fetchLedger);
 								>
 									<template v-if="e.running_balance_usd != null">
 										{{ usdMode === "book" ? "= " : "≈ " }}{{ formatMoney(e.running_balance_usd, "USD", user.language) }}
+										<template v-if="usdMode === 'book'">
+											<span
+												v-if="e.fx_check === 'ok'"
+												class="text-success ms-1"
+												:title="t('FX rate looks correct')"
+											>✓</span>
+											<span
+												v-else-if="e.fx_check === 'warn'"
+												class="text-warning fw-bold ms-1"
+												:title="t('FX rate looks wrong') + ' — ' + t('Expected') + ' ≈ ' + formatMoney(e.fx_expected_usd, 'USD', user.language)"
+											>⚠</span>
+										</template>
 									</template>
 									<template v-else>—</template>
 								</div>

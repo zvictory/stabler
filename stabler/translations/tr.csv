@@ -794,6 +794,8 @@ F.I.O.,"Soyad, Ad, Baba Adı"
 FG Whse,
 FX Revaluation,
 FX accounts as of {0},
+FX rate looks correct,FX kuru doğru
+FX rate looks wrong,FX kuru hatalı
 Failed,Başarısız
 Failed to assign ticket.,Talep atanamadı.
 Failed to cancel entry.,

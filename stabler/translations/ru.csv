@@ -808,6 +808,8 @@ F.I.O.,Ф.И.О.
 FG Whse,
 FX Revaluation,
 FX accounts as of {0},
+FX rate looks correct,Курс FX верный
+FX rate looks wrong,Курс FX некорректный
 Failed,Ошибка
 Failed to assign ticket.,Не удалось назначить заявку.
 Failed to cancel entry.,

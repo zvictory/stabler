@@ -799,6 +799,8 @@ F.I.O.,F.I.O.
 FG Whse,FG Whse
 FX Revaluation,FX Revaluation
 FX accounts as of {0},FX accounts as of {0}
+FX rate looks correct,FX rate looks correct
+FX rate looks wrong,FX rate looks wrong
 Failed,Failed
 Failed to assign ticket.,Failed to assign ticket.
 Failed to cancel entry.,Failed to cancel entry.

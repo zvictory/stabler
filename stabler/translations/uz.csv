@@ -801,6 +801,8 @@ F.I.O.,F.I.Sh.
 FG Whse,
 FX Revaluation,
 FX accounts as of {0},
+FX rate looks correct,FX kursi to'g'ri
+FX rate looks wrong,FX kursi noto'g'ri
 Failed,Xatolik
 Failed to assign ticket.,Murojaatni belgilab bo'lmadi.
 Failed to cancel entry.,
