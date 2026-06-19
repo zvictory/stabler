@@ -3,10 +3,11 @@ import { computed, onMounted, ref, watch } from "vue";
 import { storeToRefs } from "pinia";
 import { useSession } from "../../stores/session.js";
 import { call } from "../../api/client.js";
-import { formatDate, formatDateTime } from "../../composables/date.js";
+import { formatDate, formatDateTime, todayIso } from "../../composables/date.js";
 import { t } from "../../composables/i18n.js";
 import { useConfirm } from "../../composables/useConfirm.js";
 import EmptyState from "../../components/EmptyState.vue";
+import DateInput from "../../components/DateInput.vue";
 
 const session = useSession();
 const { activeCompany } = storeToRefs(session);
@@ -106,6 +107,9 @@ function blankForm() {
 		lead_owner: "",
 		source: "",
 		job_title: "",
+		custom_manzil: "",
+		custom_sana: todayIso(),
+		custom_izoh: "",
 	};
 }
 
@@ -134,6 +138,9 @@ async function openEdit(lead) {
 			lead_owner: doc.lead_owner || "",
 			source: doc.source || "",
 			job_title: doc.job_title || "",
+			custom_manzil: doc.custom_manzil || "",
+			custom_sana: doc.custom_sana || todayIso(),
+			custom_izoh: doc.custom_izoh || "",
 		};
 	} catch (err) {
 		submitError.value = err?.message || t("Failed to load lead.");
@@ -327,6 +334,18 @@ watch(activeCompany, fetchLeads);
 					<div class="col-12">
 						<label class="form-label">{{ t("Lead Owner") }}</label>
 						<input v-model="form.lead_owner" type="text" class="form-control" :placeholder="t('Email or user ID')" />
+					</div>
+					<div class="col-12">
+						<label class="form-label">{{ t("Manzil") }}</label>
+						<input v-model="form.custom_manzil" type="text" class="form-control" />
+					</div>
+					<div class="col-12">
+						<label class="form-label">{{ t("Sana") }}</label>
+						<DateInput v-model="form.custom_sana" />
+					</div>
+					<div class="col-12">
+						<label class="form-label">{{ t("Izoh") }}</label>
+						<textarea v-model="form.custom_izoh" class="form-control" rows="3"></textarea>
 					</div>
 				</div>
 

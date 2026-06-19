@@ -190,3 +190,11 @@ doc_events = {
 		],
 	},
 }
+
+custom_fields = {
+	"CRM Lead": [
+		dict(fieldname="custom_manzil", fieldtype="Data", label="Manzil", insert_after="mobile_no"),
+		dict(fieldname="custom_sana", fieldtype="Date", label="Sana", insert_after="custom_manzil"),
+		dict(fieldname="custom_izoh", fieldtype="Long Text", label="Izoh", insert_after="custom_sana"),
+	]
+}
