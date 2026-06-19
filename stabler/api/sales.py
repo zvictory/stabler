@@ -2799,6 +2799,8 @@ def reserved_stock_analysis(company: str):
 		  so.customer,
 		  so.customer_name,
 		  so.transaction_date                                                 AS so_date,
+		  so.creation                                                         AS so_creation,
+		  so.modified                                                         AS so_modified,
 		  sre.creation                                                        AS reserved_on,
 		  sre.status,
 		  sre.reserved_qty,
@@ -2844,11 +2846,14 @@ def reserved_stock_analysis(company: str):
 				"customer": r.customer,
 				"customer_name": r.customer_name,
 				"so_date": str(r.so_date) if r.so_date else None,
+				"so_creation": str(r.so_creation) if r.so_creation else None,
+				"so_modified": str(r.so_modified) if r.so_modified else None,
 				"reserved_on": str(r.reserved_on) if r.reserved_on else None,
 				"status": r.status,
 				"reserved_qty": flt(r.reserved_qty),
 				"delivered_qty": flt(r.delivered_qty),
 				"outstanding_qty": flt(r.outstanding_qty),
+				"outstanding_value": flt(r.outstanding_value),
 			}
 		)
 
