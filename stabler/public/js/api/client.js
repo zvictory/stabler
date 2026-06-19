@@ -42,10 +42,34 @@ export async function call(name, args = {}) {
 	}
 
 	if (!res.ok) {
-		const err = new Error(
-			(data && (data.exception || data._error_message || data.message)) ||
-				`Request failed: ${res.status}`
-		);
+		// In production Frappe suppresses exception/traceback in the response.
+		// The real user-facing throw text lives in _server_messages — a
+		// JSON-encoded array of JSON strings, each {"message": "...", ...}.
+		// Parse it first; fall back to the other fields.
+		let errMsg = null;
+		if (data && data._server_messages) {
+			try {
+				const msgs = JSON.parse(data._server_messages);
+				const texts = msgs
+					.map((m) => {
+						try {
+							return JSON.parse(m).message || m;
+						} catch {
+							return m;
+						}
+					})
+					.filter(Boolean);
+				if (texts.length) errMsg = texts.join("\n");
+			} catch {
+				/* malformed _server_messages — fall through */
+			}
+		}
+		if (!errMsg) {
+			errMsg =
+				(data && (data.exception || data._error_message || data.message)) ||
+				`Request failed: ${res.status}`;
+		}
+		const err = new Error(errMsg);
 		err.status = res.status;
 		err.response = data;
 		throw err;

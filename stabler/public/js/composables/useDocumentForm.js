@@ -71,17 +71,27 @@ export function useDocumentForm({
 		}
 	}
 
+	// True when an error is a timestamp/concurrency conflict (TimestampMismatchError
+	// or our own "changed by someone else" / "Stale request" guard).
+	// NOTE: 417 alone is NOT sufficient — Frappe uses 417 as the default
+	// http_status_code for ANY ValidationError, not just TimestampMismatchError.
+	// We must look for the specific exc_type or message text so that genuine
+	// submit/save validation errors are not masked behind the "Document changed" dialog.
+	function isConflictError(err) {
+		return !!(
+			err.status === 409 ||
+			(err.response && err.response.exc_type === "TimestampMismatchError") ||
+			(err.response &&
+				err.response.exception &&
+				err.response.exception.includes("TimestampMismatchError")) ||
+			(err.message && err.message.includes("changed by someone else")) ||
+			(err.message && err.message.includes("Stale request: reload the document"))
+		);
+	}
+
 	// Concurrency conflict handler
 	async function handleConflict(err) {
-		const isConflict =
-			err.status === 409 ||
-			err.status === 417 ||
-			(err.message && err.message.includes("changed by someone else")) ||
-			(err.message && err.message.includes("Stale request: reload the document")) ||
-			(err.response && err.response.exception && err.response.exception.includes("TimestampMismatchError")) ||
-			(err.response && err.response.exc_type === "TimestampMismatchError");
-
-		if (isConflict && docName.value) {
+		if (isConflictError(err) && docName.value) {
 			await confirm({
 				title: t("Document changed"),
 				body: t("This document was changed by someone else. Reload to see the latest?"),
@@ -158,7 +168,22 @@ export function useDocumentForm({
 		saving.value = true;
 		error.value = "";
 		try {
-			const res = await call(submitApi, { name: docName.value, modified: modified.value });
+			let res;
+			try {
+				res = await call(submitApi, { name: docName.value, modified: modified.value });
+			} catch (err) {
+				// Submit carries no body — it only flips docstatus on the server's
+				// current doc. So a stale `modified` (e.g. a pre-submit field flip
+				// like update_stock bumped the timestamp) is benign: if the user has
+				// no unsaved edits, silently reload the fresh timestamp and retry ONCE
+				// instead of dead-ending on "changed by someone else".
+				if (isConflictError(err) && !isDirty.value && docName.value) {
+					await load(docName.value);
+					res = await call(submitApi, { name: docName.value, modified: modified.value });
+				} else {
+					throw err;
+				}
+			}
 			if (res?.pending_approval) {
 				toast.warning(t("Saved — pending approval before it posts."));
 			} else {

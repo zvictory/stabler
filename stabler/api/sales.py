@@ -1598,6 +1598,8 @@ def _require_warehouses_for_stock_update(doc) -> None:
 @frappe.whitelist()
 def submit_sales_invoice(name: str, modified: str | None = None):
 	"""Submit a Draft Sales Invoice (docstatus 0 → 1)."""
+	from frappe.utils import add_days, getdate, today
+
 	_assert_can_write("Sales Invoice", name, "submit")
 	if not name:
 		frappe.throw("Invoice name is required.")
@@ -1607,14 +1609,36 @@ def submit_sales_invoice(name: str, modified: str | None = None):
 		frappe.throw("Invoice is already submitted.")
 	if doc.docstatus == 2:
 		frappe.throw("Invoice is cancelled and cannot be submitted.")
+
+	needs_save = False
+
 	# Drafts created before the "always update stock" change may still carry
 	# update_stock=0 — force it on so submit deducts stock + releases the SO
 	# reservation. Persist the flip before submit so the validation sees it.
 	if not doc.update_stock:
 		doc.update_stock = 1
 		_require_warehouses_for_stock_update(doc)
+		needs_save = True
+
+	# ERPNext's validate_posting_time() resets posting_date to today() whenever
+	# set_posting_time is falsy.  If the invoice was drafted yesterday, due_date
+	# ends up *before* the updated posting_date and validate throws "Due Date
+	# cannot be before Posting Date" (417).
+	# Fix: pre-correct due_date to effective_posting_date + 5 days before submit
+	# so the payment schedule is always forward of the (possibly bumped) posting date.
+	effective_posting_date = doc.posting_date if doc.set_posting_time else today()
+	target_due_date = add_days(effective_posting_date, 5)
+	if getdate(doc.due_date) < getdate(target_due_date):
+		doc.due_date = target_due_date
+		for row in doc.get("payment_schedule") or []:
+			if getdate(row.due_date) < getdate(target_due_date):
+				row.due_date = target_due_date
+		needs_save = True
+
+	if needs_save:
 		doc.save()
 		doc.reload()
+
 	doc.submit()
 	return {"name": doc.name, "docstatus": doc.docstatus, "status": doc.status}
 
