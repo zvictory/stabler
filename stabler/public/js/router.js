@@ -78,6 +78,7 @@ import AttendanceDashboard from "./pages/hr/AttendanceDashboard.vue";
 import ExceptionsQueue from "./pages/hr/ExceptionsQueue.vue";
 import CorrectionsQueue from "./pages/hr/CorrectionsQueue.vue";
 import PayrollReadiness from "./pages/hr/PayrollReadiness.vue";
+import TimepaySettings from "./pages/hr/TimepaySettings.vue";
 import SFAHome from "./pages/sfa/SFAHome.vue";
 import Outlets from "./pages/sfa/Outlets.vue";
 import Routes from "./pages/sfa/Routes.vue";
@@ -252,6 +253,7 @@ const routes = [
 			{ path: "gate-devices", name: "hr-gate-devices", component: GateDevices, meta: { title: t("Gate Devices") } },
 			{ path: "employee-device-mapping", name: "hr-device-mapping", component: EmployeeDeviceMapping, meta: { title: t("Employee Device Mapping") } },
 			{ path: "raw-gate-events", name: "hr-raw-events", component: RawGateEvents, meta: { title: t("Raw Gate Events") } },
+			{ path: "timepay-settings", name: "hr-timepay-settings", component: TimepaySettings, meta: { title: t("TimePay Settings") } },
 			{ path: "attendance-dashboard", name: "hr-attendance-dashboard", component: AttendanceDashboard, meta: { title: t("Attendance Dashboard") } },
 			{ path: "exceptions-queue", name: "hr-exceptions-queue", component: ExceptionsQueue, meta: { title: t("Exceptions Queue") } },
 			{ path: "corrections", name: "hr-corrections", component: CorrectionsQueue, meta: { title: t("Corrections") } },

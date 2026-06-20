@@ -54,6 +54,7 @@ const AREAS = [
 			{ name: "hr-device-mapping", path: "/hr/employee-device-mapping", label: t("Device mapping"), icon: "ti-link" },
 			{ name: "hr-gate-devices", path: "/hr/gate-devices", label: t("Gate devices"), icon: "ti-door" },
 			{ name: "hr-raw-events", path: "/hr/raw-gate-events", label: t("Gate events"), icon: "ti-clock-bolt" },
+			{ name: "hr-timepay-settings", path: "/hr/timepay-settings", label: t("TimePay"), icon: "ti-key" },
 		],
 	},
 ];
