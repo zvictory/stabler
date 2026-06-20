@@ -101,8 +101,7 @@ async function save() {
 	submitting.value = true;
 	try {
 		await call("stabler.api.hr_gate_admin.save_gate_device", {
-			...form.value,
-			enabled: form.value.enabled ? 1 : 0,
+			payload: JSON.stringify({ ...form.value, enabled: form.value.enabled ? 1 : 0 }),
 		});
 		toast.success(isEdit.value ? t("Device updated.") : t("Device created."));
 		closeDrawer();
