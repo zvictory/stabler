@@ -2836,3 +2836,10 @@ Attendance edits are open — no hard lock set.,Attendance edits are open — no
 Lock window,Lock window
 Lock attendance older than (days),Lock attendance older than (days)
 0 = no hard lock; past edits still ask for confirmation.,0 = no hard lock; past edits still ask for confirmation.
+Late (min),Late (min)
+Early leave (min),Early leave (min)
+Overtime (min),Overtime (min)
+Pick a status.,Pick a status.
+Select,Select
+selected,selected
+Mark as,Mark as

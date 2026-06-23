@@ -2824,3 +2824,10 @@ Attendance edits are open — no hard lock set.,Devam düzenlemeleri açık — 
 Lock window,Kilit penceresi
 Lock attendance older than (days),Şu günden eski devamı kilitle (gün)
 0 = no hard lock; past edits still ask for confirmation.,0 = sabit kilit yok; geçmiş düzenlemeler yine onay ister.
+Late (min),Gecikme (dk)
+Early leave (min),Erken çıkış (dk)
+Overtime (min),Fazla mesai (dk)
+Pick a status.,Bir durum seçin.
+Select,Seç
+selected,seçili
+Mark as,Şu olarak işaretle

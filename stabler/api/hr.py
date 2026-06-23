@@ -657,13 +657,31 @@ def _drop_existing_attendance(employee: str, att_date) -> None:
 	doc.delete(ignore_permissions=False)
 
 
+_ATT_MIN_FIELDS = ("custom_late_minutes", "custom_early_minutes", "custom_overtime_minutes")
+
+
+def _hm(dt) -> str:
+	return dt.strftime("%H:%M") if dt else ""
+
+
 @frappe.whitelist()
-def set_attendance(company: str, employee: str, attendance_date: str, status: str) -> dict:
+def set_attendance(
+	company: str,
+	employee: str,
+	attendance_date: str,
+	status: str,
+	in_time: str = "",
+	out_time: str = "",
+	late_minutes=0,
+	early_minutes=0,
+	overtime_minutes=0,
+) -> dict:
 	"""Upsert one day's attendance (inline cell edit on the month grid).
 
-	Replaces any existing record for that employee+date, then submits. Mirrors a
-	correction: the previous row is cancelled and removed so there's exactly one
-	authoritative record per day.
+	Records status plus arrival/departure times and the late / early-leave /
+	overtime minutes. Replaces any existing record for that employee+date, then
+	submits — exactly one authoritative record per day. late_entry/early_exit are
+	set from the minute inputs so a day can be flagged late.
 	"""
 	_require_company(company)
 	if not employee or not frappe.db.exists("Employee", employee):
@@ -675,15 +693,111 @@ def set_attendance(company: str, employee: str, attendance_date: str, status: st
 	att_date = getdate(attendance_date or today())
 	_assert_attendance_editable(att_date)
 
+	lm = max(0, int(late_minutes or 0))
+	em = max(0, int(early_minutes or 0))
+	ot = max(0, int(overtime_minutes or 0))
+
 	_drop_existing_attendance(employee, att_date)
 	doc = frappe.new_doc("Attendance")
 	doc.company = company
 	doc.employee = employee
 	doc.attendance_date = att_date
 	doc.status = status
+	if in_time:
+		doc.in_time = f"{att_date} {in_time}:00"
+	if out_time:
+		doc.out_time = f"{att_date} {out_time}:00"
+	doc.late_entry = 1 if lm > 0 else 0
+	doc.early_exit = 1 if em > 0 else 0
+	for fn, val in (("custom_late_minutes", lm), ("custom_early_minutes", em), ("custom_overtime_minutes", ot)):
+		if frappe.db.has_column("Attendance", fn):
+			doc.set(fn, val)
 	doc.insert()
 	doc.submit()
-	return {"name": doc.name, "employee": employee, "day": att_date.day, "status": status, "docstatus": doc.docstatus}
+	return {
+		"name": doc.name, "employee": employee, "day": att_date.day,
+		"status": status, "late": lm > 0, "docstatus": doc.docstatus,
+	}
+
+
+@frappe.whitelist()
+def get_attendance_cell(company: str, employee: str, attendance_date: str) -> dict:
+	"""Prefill data for the inline cell editor: one day's record + lock state."""
+	_require_company(company)
+	att_date = getdate(attendance_date)
+	lock = _attendance_lock_date()
+	locked = bool(lock and att_date <= lock) or att_date > getdate(today())
+	cols = ["status", "in_time", "out_time", "late_entry", "early_exit"]
+	cols += [f for f in _ATT_MIN_FIELDS if frappe.db.has_column("Attendance", f)]
+	rec = frappe.db.get_value(
+		"Attendance",
+		{"employee": employee, "attendance_date": att_date, "docstatus": ("<", 2)},
+		cols,
+		as_dict=True,
+	)
+	if not rec:
+		return {"status": None, "in_time": "", "out_time": "", "late_minutes": 0,
+			"early_minutes": 0, "overtime_minutes": 0, "locked": locked}
+	return {
+		"status": rec.status,
+		"in_time": _hm(rec.in_time),
+		"out_time": _hm(rec.out_time),
+		"late_minutes": int(rec.get("custom_late_minutes") or 0),
+		"early_minutes": int(rec.get("custom_early_minutes") or 0),
+		"overtime_minutes": int(rec.get("custom_overtime_minutes") or 0),
+		"locked": locked,
+	}
+
+
+@frappe.whitelist()
+def bulk_set_attendance(company: str, items, status: str = "") -> dict:
+	"""Mark (or clear, when status is empty) many employee+day cells at once.
+
+	Status-only — used by the matrix multi-select. Each cell respects the future +
+	lock guards; non-editable or unknown cells are reported, the rest are written.
+	"""
+	_require_company(company)
+	if isinstance(items, str):
+		items = frappe.parse_json(items) or []
+	if not isinstance(items, list) or not items:
+		frappe.throw("No cells selected.")
+	if len(items) > 3000:
+		frappe.throw("Too many cells (max 3000).")
+	clearing = not status
+	if not clearing and status not in _VALID_ATT_STATUS:
+		frappe.throw(f"Invalid status: {status}")
+	if not frappe.has_permission("Attendance", "delete" if clearing else "create"):
+		frappe.throw("Not permitted to edit attendance.", frappe.PermissionError)
+
+	updated = 0
+	skipped = []
+	for it in items:
+		emp = (it or {}).get("employee")
+		d = (it or {}).get("date")
+		if not emp or not d:
+			skipped.append({"employee": emp, "date": d, "reason": "incomplete cell"})
+			continue
+		att_date = getdate(d)
+		try:
+			_assert_attendance_editable(att_date)
+		except Exception as exc:
+			skipped.append({"employee": emp, "date": d, "reason": str(exc)})
+			continue
+		if not frappe.db.exists("Employee", emp):
+			skipped.append({"employee": emp, "date": d, "reason": "unknown employee"})
+			continue
+		_drop_existing_attendance(emp, att_date)
+		if not clearing:
+			doc = frappe.new_doc("Attendance")
+			doc.company = company
+			doc.employee = emp
+			doc.attendance_date = att_date
+			doc.status = status
+			doc.insert()
+			doc.submit()
+		updated += 1
+	frappe.db.commit()
+	return {"updated": updated, "skipped": skipped, "status": status or None}
 
 
 @frappe.whitelist()

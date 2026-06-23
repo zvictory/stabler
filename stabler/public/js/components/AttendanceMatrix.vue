@@ -76,36 +76,49 @@ const groupedRows = computed(() => {
 	return out;
 });
 
-// ── Inline cell editing ──────────────────────────────────────────────────────
+// ── Inline cell editor (status + in/out times + late/early/overtime minutes) ──
 const STATUS_BY_CODE = { P: "Present", A: "Absent", L: "On Leave", H: "Half Day", W: "Work From Home" };
-const editor = ref({ open: false, x: 0, y: 0, row: null, day: null, date: null });
+const STATUS_TO_CODE = { Present: "P", Absent: "A", "On Leave": "L", "Half Day": "H", "Work From Home": "W" };
+const blankForm = () => ({ status: null, in_time: "", out_time: "", late: 0, early: 0, ot: 0 });
+const editor = ref({ open: false, x: 0, y: 0, row: null, day: null, date: null, isPast: false, loading: false, form: blankForm() });
 const saving = ref(false);
 
-function onCellClick(ev, row, d) {
+async function onCellClick(ev, row, d) {
 	if (d.is_future || d.is_locked) return;
 	editor.value = {
 		open: true,
-		x: Math.min(ev.clientX, window.innerWidth - 200),
-		y: Math.min(ev.clientY, window.innerHeight - 290),
+		x: Math.min(ev.clientX, window.innerWidth - 270),
+		y: Math.min(ev.clientY, window.innerHeight - 360),
 		row, day: d.day, date: d.date,
 		isPast: !!(data.value && d.date < data.value.today),
-		pending: undefined, // {code} once a change awaits confirmation
+		loading: true,
+		form: blankForm(),
 	};
+	try {
+		const c = await call("stabler.api.hr.get_attendance_cell", {
+			company: props.company, employee: row.employee, attendance_date: d.date,
+		});
+		if (editor.value.open && editor.value.day === d.day && editor.value.row === row) {
+			editor.value.form = {
+				status: c.status || STATUS_BY_CODE[row.cells?.[d.day]] || null,
+				in_time: c.in_time || "",
+				out_time: c.out_time || "",
+				late: c.late_minutes || 0,
+				early: c.early_minutes || 0,
+				ot: c.overtime_minutes || 0,
+			};
+		}
+	} catch {
+		/* prefill best-effort */
+	} finally {
+		editor.value.loading = false;
+	}
 }
 function closeEditor() {
 	editor.value.open = false;
 }
-// Stage 1: choosing a status. Today applies immediately; a past day asks to confirm.
-function requestCode(code) {
-	if (editor.value.isPast) editor.value.pending = { code };
-	else doApply(code);
-}
-function cancelPending() {
-	editor.value.pending = undefined;
-}
-function pendingLabel() {
-	const c = editor.value.pending?.code;
-	return c === null ? t("Clear") : (CODES[c]?.label() || c);
+function pickStatus(code) {
+	editor.value.form.status = STATUS_BY_CODE[code];
 }
 function recompute(row) {
 	const tot = { present: 0, absent: 0, leave: 0, half: 0, wfh: 0, late: (row.late || []).length };
@@ -119,22 +132,121 @@ function recompute(row) {
 	}
 	row.totals = tot;
 }
-async function doApply(code) {
+async function saveCell() {
+	const e = editor.value;
+	if (!e.row || saving.value) return;
+	if (!e.form.status) { error.value = t("Pick a status."); return; }
+	saving.value = true;
+	error.value = "";
+	try {
+		const res = await call("stabler.api.hr.set_attendance", {
+			company: props.company, employee: e.row.employee, attendance_date: e.date,
+			status: e.form.status,
+			in_time: e.form.in_time || "",
+			out_time: e.form.out_time || "",
+			late_minutes: e.form.late || 0,
+			early_minutes: e.form.early || 0,
+			overtime_minutes: e.form.ot || 0,
+		});
+		e.row.cells[e.day] = STATUS_TO_CODE[e.form.status];
+		e.row.late = (e.row.late || []).filter((d) => d !== e.day);
+		if (res.late) e.row.late.push(e.day);
+		recompute(e.row);
+		closeEditor();
+	} catch (err) {
+		error.value = err?.message || t("Failed to save.");
+	} finally {
+		saving.value = false;
+	}
+}
+async function clearCell() {
 	const e = editor.value;
 	if (!e.row || saving.value) return;
 	saving.value = true;
 	error.value = "";
 	try {
-		if (code === null) {
-			await call("stabler.api.hr.clear_attendance", { company: props.company, employee: e.row.employee, attendance_date: e.date });
-			delete e.row.cells[e.day];
-		} else {
-			await call("stabler.api.hr.set_attendance", { company: props.company, employee: e.row.employee, attendance_date: e.date, status: STATUS_BY_CODE[code] });
-			e.row.cells[e.day] = code;
-		}
+		await call("stabler.api.hr.clear_attendance", { company: props.company, employee: e.row.employee, attendance_date: e.date });
+		delete e.row.cells[e.day];
 		e.row.late = (e.row.late || []).filter((d) => d !== e.day);
 		recompute(e.row);
 		closeEditor();
+	} catch (err) {
+		error.value = err?.message || t("Failed to save.");
+	} finally {
+		saving.value = false;
+	}
+}
+
+// ── Bulk select + mark ───────────────────────────────────────────────────────
+const selectMode = ref(false);
+const selected = ref({});
+const dayDate = computed(() => Object.fromEntries(days.value.map((d) => [d.day, d.date])));
+const dayEditable = computed(() => Object.fromEntries(days.value.map((d) => [d.day, !d.is_future && !d.is_locked])));
+const selectedCount = computed(() => Object.keys(selected.value).length);
+const selKey = (emp, day) => `${emp}|${day}`;
+
+function toggleSelectMode() {
+	selectMode.value = !selectMode.value;
+	if (!selectMode.value) selected.value = {};
+}
+function clearSelection() {
+	selected.value = {};
+}
+function toggleCell(emp, day) {
+	if (!dayEditable.value[day]) return;
+	const k = selKey(emp, day);
+	if (selected.value[k]) delete selected.value[k];
+	else selected.value[k] = true;
+}
+function onCellClickGrid(ev, row, d) {
+	if (selectMode.value) {
+		toggleCell(row.employee, d.day);
+		return;
+	}
+	onCellClick(ev, row, d);
+}
+function toggleColumn(d) {
+	if (!dayEditable.value[d.day]) return;
+	const allOn = rows.value.every((r) => selected.value[selKey(r.employee, d.day)]);
+	for (const r of rows.value) {
+		const k = selKey(r.employee, d.day);
+		if (allOn) delete selected.value[k];
+		else selected.value[k] = true;
+	}
+}
+function toggleRow(row) {
+	const editDays = days.value.filter((d) => dayEditable.value[d.day]);
+	const allOn = editDays.every((d) => selected.value[selKey(row.employee, d.day)]);
+	for (const d of editDays) {
+		const k = selKey(row.employee, d.day);
+		if (allOn) delete selected.value[k];
+		else selected.value[k] = true;
+	}
+}
+async function applyBulk(code) {
+	if (!selectedCount.value || saving.value) return;
+	saving.value = true;
+	error.value = "";
+	const status = code ? STATUS_BY_CODE[code] : "";
+	const keys = Object.keys(selected.value);
+	const items = keys.map((k) => {
+		const [emp, day] = k.split("|");
+		return { employee: emp, date: dayDate.value[Number(day)] };
+	});
+	try {
+		await call("stabler.api.hr.bulk_set_attendance", { company: props.company, items, status });
+		const rowByEmp = Object.fromEntries(rows.value.map((r) => [r.employee, r]));
+		for (const k of keys) {
+			const [emp, dayStr] = k.split("|");
+			const day = Number(dayStr);
+			const row = rowByEmp[emp];
+			if (!row) continue;
+			if (code) row.cells[day] = code;
+			else delete row.cells[day];
+			row.late = (row.late || []).filter((d) => d !== day);
+		}
+		for (const r of rows.value) recompute(r);
+		clearSelection();
 	} catch (err) {
 		error.value = err?.message || t("Failed to save.");
 	} finally {
@@ -215,7 +327,8 @@ defineExpose({ exportCsv, exportXlsx, reload: load });
 				<span v-if="data.edit_lock_date" class="d-inline-flex align-items-center gap-1 text-secondary">
 					<i class="ti ti-lock"></i> {{ t("Locked on/before") }} {{ data.edit_lock_date }}
 				</span>
-				<div class="ms-auto d-flex gap-2">
+				<button type="button" class="btn btn-sm ms-auto" :class="selectMode ? 'btn-primary' : 'btn-outline-secondary'" @click="toggleSelectMode"><i class="ti ti-pointer me-1"></i>{{ t("Select") }}</button>
+					<div class="d-flex gap-2">
 					<button type="button" class="btn btn-sm btn-outline-success" @click="exportXlsx">
 						<i class="ti ti-file-spreadsheet me-1"></i>{{ t("Excel") }}
 					</button>
@@ -237,7 +350,8 @@ defineExpose({ exportCsv, exportXlsx, reload: load });
 								v-for="d in days"
 								:key="d.day"
 								class="att-day text-center"
-								:class="{ 'att-col-weekend': d.is_weekend, 'att-col-today': d.is_today, 'att-col-holiday': d.is_holiday }"
+								@click="selectMode && toggleColumn(d)"
+								:class="{ 'att-col-weekend': d.is_weekend, 'att-col-today': d.is_today, 'att-col-holiday': d.is_holiday, 'att-clickable': selectMode && dayEditable[d.day] }"
 							>
 								<div class="att-daynum">{{ d.day }}</div>
 								<div class="att-dow">{{ d.weekday }}</div>
@@ -252,7 +366,7 @@ defineExpose({ exportCsv, exportXlsx, reload: load });
 								</td>
 							</tr>
 							<tr v-else>
-								<td class="att-emp att-sticky-l">
+								<td class="att-emp att-sticky-l" :class="{ 'att-clickable': selectMode }" @click="selectMode && toggleRow(item.row)">
 									<div class="fw-semibold text-truncate">{{ item.row.employee_name }}</div>
 									<div class="text-secondary text-truncate" style="font-size:.7rem">{{ item.row.designation || item.row.department || "—" }}</div>
 								</td>
@@ -263,9 +377,9 @@ defineExpose({ exportCsv, exportXlsx, reload: load });
 									v-for="d in days"
 									:key="d.day"
 									class="att-cell"
-									:class="{ 'att-col-weekend': d.is_weekend, 'att-col-today': d.is_today, 'att-col-holiday': d.is_holiday, 'att-editable': !d.is_future && !d.is_locked, 'att-locked': d.is_locked }"
+									:class="{ 'att-col-weekend': d.is_weekend, 'att-col-today': d.is_today, 'att-col-holiday': d.is_holiday, 'att-editable': !d.is_future && !d.is_locked, 'att-locked': d.is_locked, 'att-sel': selected[selKey(item.row.employee, d.day)] }"
 									:title="cellTitle(item.row, d)"
-									@click="onCellClick($event, item.row, d)"
+									@click="onCellClickGrid($event, item.row, d)"
 								>
 									<span
 										v-if="cellOf(item.row, d.day)"
@@ -286,29 +400,79 @@ defineExpose({ exportCsv, exportXlsx, reload: load });
 			</div>
 			<div class="text-secondary small mt-2">{{ rows.length }} {{ t("employees") }} · {{ data.period }}</div>
 
+			<div v-if="selectMode && selectedCount" class="att-bulkbar">
+				<span class="fw-semibold">{{ selectedCount }} {{ t("selected") }}</span>
+				<span class="text-secondary small mx-2">{{ t("Mark as") }}:</span>
+				<button v-for="(c, code) in CODES" :key="code" type="button" class="att-bulk-chip" :disabled="saving" :style="{ background: c.bg, color: c.fg }" :title="c.label()" @click="applyBulk(code)">{{ code }}</button>
+				<button type="button" class="btn btn-sm btn-ghost-danger ms-1" :disabled="saving" @click="applyBulk(null)"><i class="ti ti-eraser me-1"></i>{{ t("Clear") }}</button>
+				<button type="button" class="btn btn-sm btn-link link-secondary ms-auto" @click="clearSelection">{{ t("Cancel") }}</button>
+			</div>
+
 			<div v-if="editor.open" class="att-pop-backdrop" @click="closeEditor"></div>
-			<div v-if="editor.open" class="att-pop" :style="{ left: editor.x + 'px', top: editor.y + 'px' }">
-				<div class="att-pop-title">
-					{{ editor.row.employee_name }} · {{ editor.date }}
-					<span v-if="editor.isPast" class="att-pop-past"><i class="ti ti-history"></i> {{ t("Past day") }}</span>
-				</div>
-				<div v-if="!editor.pending" class="att-pop-actions">
-					<button v-for="(c, code) in CODES" :key="code" type="button" class="att-pop-btn" :disabled="saving" @click="requestCode(code)">
-						<span class="att-key" :style="{ background: c.bg, color: c.fg }">{{ code }}</span>
-						<span>{{ c.label() }}</span>
-					</button>
-					<button type="button" class="att-pop-btn att-pop-clear" :disabled="saving" @click="requestCode(null)">
-						<i class="ti ti-eraser"></i><span>{{ t("Clear") }}</span>
-					</button>
-				</div>
-				<div v-else class="att-pop-confirm">
-					<div class="small text-secondary">{{ t("Editing a past day") }}.</div>
-					<div class="small mt-1">{{ editor.date }} → <b>{{ pendingLabel() }}</b></div>
-					<div class="d-flex gap-2 mt-2">
-						<button type="button" class="btn btn-sm btn-outline-secondary flex-fill" :disabled="saving" @click="cancelPending">{{ t("Back") }}</button>
-						<button type="button" class="btn btn-sm btn-primary flex-fill" :disabled="saving" @click="doApply(editor.pending.code)">{{ t("Confirm") }}</button>
+			<div v-if="editor.open" class="att-pop att-pop-form" :style="{ left: editor.x + 'px', top: editor.y + 'px' }">
+				<div class="att-pop-title d-flex align-items-center">
+					<div class="text-truncate">
+						<span class="fw-semibold text-body">{{ editor.row.employee_name }}</span>
+						<span class="text-secondary"> · {{ editor.date }}</span>
+						<span v-if="editor.isPast" class="att-pop-past"><i class="ti ti-history"></i> {{ t("Past day") }}</span>
 					</div>
+					<button type="button" class="btn-close ms-auto" style="font-size:.6rem" @click="closeEditor"></button>
 				</div>
+
+				<div v-if="editor.loading" class="text-center py-3"><span class="spinner-border spinner-border-sm text-primary"></span></div>
+				<template v-else>
+					<!-- Status chips -->
+					<div class="att-status-row">
+						<button
+							v-for="(c, code) in CODES"
+							:key="code"
+							type="button"
+							class="att-status-chip"
+							:class="{ 'is-on': editor.form.status === STATUS_BY_CODE[code] }"
+							:style="editor.form.status === STATUS_BY_CODE[code] ? { background: c.bg, color: c.fg, borderColor: c.fg } : {}"
+							:title="c.label()"
+							@click="pickStatus(code)"
+						>{{ code }}</button>
+					</div>
+
+					<!-- In / Out -->
+					<div class="row g-2 mt-1">
+						<div class="col-6">
+							<label class="form-label small mb-1">{{ t("In time") }}</label>
+							<input v-model="editor.form.in_time" type="time" class="form-control form-control-sm" />
+						</div>
+						<div class="col-6">
+							<label class="form-label small mb-1">{{ t("Out time") }}</label>
+							<input v-model="editor.form.out_time" type="time" class="form-control form-control-sm" />
+						</div>
+					</div>
+
+					<!-- Minutes -->
+					<div class="row g-2 mt-1">
+						<div class="col-4">
+							<label class="form-label small mb-1">{{ t("Late (min)") }}</label>
+							<input v-model.number="editor.form.late" type="number" min="0" class="form-control form-control-sm text-end" />
+						</div>
+						<div class="col-4">
+							<label class="form-label small mb-1">{{ t("Early leave (min)") }}</label>
+							<input v-model.number="editor.form.early" type="number" min="0" class="form-control form-control-sm text-end" />
+						</div>
+						<div class="col-4">
+							<label class="form-label small mb-1">{{ t("Overtime (min)") }}</label>
+							<input v-model.number="editor.form.ot" type="number" min="0" class="form-control form-control-sm text-end" />
+						</div>
+					</div>
+
+					<div class="d-flex align-items-center mt-3">
+						<button type="button" class="btn btn-sm btn-ghost-danger" :disabled="saving" @click="clearCell">
+							<i class="ti ti-eraser me-1"></i>{{ t("Clear") }}
+						</button>
+						<button type="button" class="btn btn-sm btn-link link-secondary ms-auto" :disabled="saving" @click="closeEditor">{{ t("Cancel") }}</button>
+						<button type="button" class="btn btn-sm btn-primary" :disabled="saving" @click="saveCell">
+							<span v-if="saving" class="spinner-border spinner-border-sm me-1"></span>{{ t("Save") }}
+						</button>
+					</div>
+				</template>
 			</div>
 		</template>
 	</div>
@@ -353,4 +517,17 @@ defineExpose({ exportCsv, exportXlsx, reload: load });
 .att-locked .att-key { opacity: 0.5; }
 .att-pop-past { float: right; color: #c07a00; font-size: 0.68rem; }
 .att-pop-confirm { padding: 4px 6px; }
+.att-pop-form { width: 264px; padding: 8px; }
+.att-status-row { display: flex; gap: 6px; margin-top: 6px; }
+.att-status-chip {
+	flex: 1; height: 30px; border-radius: 6px; border: 1px solid var(--tblr-border-color, #e6e7e9);
+	background: var(--tblr-light, #f6f8fb); color: var(--tblr-secondary, #6b7689);
+	font-weight: 600; font-size: 0.82rem; cursor: pointer;
+}
+.att-status-chip.is-on { border-width: 1.5px; }
+.att-pop-form .form-label { color: var(--tblr-secondary, #6b7689); }
+.att-clickable { cursor: pointer; }
+.att-cell.att-sel { box-shadow: inset 0 0 0 2px var(--tblr-primary, #206bc4); background: #eef4fe !important; }
+.att-bulkbar { position: sticky; bottom: 0; z-index: 6; margin-top: 8px; display: flex; align-items: center; gap: 6px; flex-wrap: wrap; background: var(--tblr-card-bg, #fff); border: 1px solid var(--tblr-border-color, #e6e7e9); border-radius: 10px; padding: 8px 12px; box-shadow: 0 -4px 16px rgba(0,0,0,0.06); }
+.att-bulk-chip { width: 30px; height: 30px; border-radius: 6px; border: none; font-weight: 700; font-size: 0.8rem; cursor: pointer; }
 </style>

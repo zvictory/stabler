@@ -2842,3 +2842,10 @@ Attendance edits are open — no hard lock set.,Davomat tahriri ochiq — qattiq
 Lock window,Qulflash oynasi
 Lock attendance older than (days),Shu kundan eski davomatni qulflash (kun)
 0 = no hard lock; past edits still ask for confirmation.,0 = qattiq qulf yo'q; o'tgan tahrirlar baribir tasdiq so'raydi.
+Late (min),Kechikish (daq.)
+Early leave (min),Erta ketish (daq.)
+Overtime (min),Qo'shimcha (daq.)
+Pick a status.,Holatni tanlang.
+Select,Tanlash
+selected,tanlandi
+Mark as,Belgilash

@@ -193,7 +193,7 @@ def _checkin_punches(employee: str, date: str) -> list[dict]:
 	]
 
 
-def _attendance_status_summary(status: str | None, date: str) -> dict:
+def _attendance_status_summary(status: str | None, date: str, late_min=0, early_min=0, overtime_min=0) -> dict:
 	normalized = (status or "").lower()
 	if normalized in ("present", "work from home"):
 		mapped = "present"
@@ -203,6 +203,9 @@ def _attendance_status_summary(status: str | None, date: str) -> dict:
 		mapped = "holiday"
 	else:
 		mapped = "absent"
+	lm = int(late_min or 0)
+	em = int(early_min or 0)
+	ot = int(overtime_min or 0)
 	return {
 		"date": date,
 		"entry": None,
@@ -210,12 +213,13 @@ def _attendance_status_summary(status: str | None, date: str) -> dict:
 		"punch_count": 0,
 		"worked_min": 0,
 		"status": mapped,
-		"late_min": 0,
+		"late_min": lm,
 		"late_fee_uzs": 0.0,
-		"overtime_min": 0,
+		"early_leave_min": em,
+		"overtime_min": ot,
 		"is_night": False,
 		"exceptions": [],
-		"payroll_impacting": mapped in ("half_day", "absent"),
+		"payroll_impacting": mapped in ("half_day", "absent") or lm > 0 or ot > 0,
 	}
 
 
@@ -224,12 +228,13 @@ def _daily_summaries(employee: dict, company: str, days: list[str]) -> list[dict
 	shift = _shift_context(employee)
 	hire_date = str(employee.get("date_of_joining") or days[0])
 	termination_date = str(employee.get("relieving_date")) if employee.get("relieving_date") else None
+	att_min_cols = [c for c in ("custom_late_minutes", "custom_early_minutes", "custom_overtime_minutes") if frappe.db.has_column(_ATTENDANCE, c)]
 	summaries = []
 	for date in days:
 		attendance = frappe.db.get_value(
 			_ATTENDANCE,
 			{"employee": employee["name"], "attendance_date": date, "company": company, "docstatus": ["<", 2]},
-			["status"],
+			["status"] + att_min_cols,
 			as_dict=True,
 		)
 		punches = _checkin_punches(employee["name"], date)
@@ -250,7 +255,15 @@ def _daily_summaries(employee: dict, company: str, days: list[str]) -> list[dict
 				)
 			)
 		elif attendance:
-			summaries.append(_attendance_status_summary(attendance.get("status"), date))
+			summaries.append(
+				_attendance_status_summary(
+					attendance.get("status"),
+					date,
+					attendance.get("custom_late_minutes"),
+					attendance.get("custom_early_minutes"),
+					attendance.get("custom_overtime_minutes"),
+				)
+			)
 	return summaries
 
 

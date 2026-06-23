@@ -2842,3 +2842,10 @@ Attendance edits are open — no hard lock set.,Давомат таҳрири о
 Lock window,Қулфлаш ойнаси
 Lock attendance older than (days),Шу кундан эски давоматни қулфлаш (кун)
 0 = no hard lock; past edits still ask for confirmation.,0 = қаттиқ қулф йўқ; ўтган таҳрирлар барибир тасдиқ сўрайди.
+Late (min),Кечикиш (дақ.)
+Early leave (min),Эрта кетиш (дақ.)
+Overtime (min),Қўшимча (дақ.)
+Pick a status.,Ҳолатни танланг.
+Select,Танлаш
+selected,танланди
+Mark as,Белгилаш

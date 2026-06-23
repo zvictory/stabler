@@ -2849,3 +2849,10 @@ Attendance edits are open — no hard lock set.,Изменения посеща�
 Lock window,Окно блокировки
 Lock attendance older than (days),Блокировать посещаемость старше (дней)
 0 = no hard lock; past edits still ask for confirmation.,0 = без жёсткой блокировки; прошлые изменения всё равно требуют подтверждения.
+Late (min),Опоздание (мин)
+Early leave (min),Ранний уход (мин)
+Overtime (min),Сверхурочно (мин)
+Pick a status.,Выберите статус.
+Select,Выбрать
+selected,выбрано
+Mark as,Отметить как
