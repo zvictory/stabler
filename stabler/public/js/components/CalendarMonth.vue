@@ -84,6 +84,7 @@ const grid = computed(() => {
 			day,
 			key,
 			isToday: key === todayKey,
+			isPast: key < todayKey,
 			events: visible,
 			overflow,
 		});
@@ -150,7 +151,7 @@ function chipClass(ev) {
 				v-for="(cell, ci) in week"
 				:key="ci"
 				class="calendar-cell"
-				:class="{ 'calendar-cell--today': !cell.blank && cell.isToday, 'calendar-cell--blank': cell.blank }"
+				:class="{ 'calendar-cell--today': !cell.blank && cell.isToday, 'calendar-cell--blank': cell.blank, 'calendar-cell--weekend': !cell.blank && ci >= 5, 'calendar-cell--past': !cell.blank && cell.isPast }"
 			>
 				<template v-if="!cell.blank">
 					<div class="calendar-day-num small" :class="{ 'fw-bold text-primary': cell.isToday }">
@@ -185,8 +186,11 @@ function chipClass(ev) {
 .calendar-grid {
 	display: grid;
 	grid-template-columns: repeat(7, 1fr);
-	gap: 1px;
-	background: var(--tblr-border-color, #e6e7e9);
+	gap: 2px;
+	background: var(--tblr-border-color, #d7dbe0);
+	border: 1px solid var(--tblr-border-color, #d7dbe0);
+	border-radius: 6px;
+	overflow: hidden;
 }
 
 .calendar-header {
@@ -214,6 +218,19 @@ function chipClass(ev) {
 
 .calendar-cell--today {
 	background: #eef2ff;
+	box-shadow: inset 0 0 0 2px var(--tblr-primary, #206bc4);
+}
+
+.calendar-cell--weekend {
+	background: #f7f9fc;
+}
+
+.calendar-cell--past .calendar-day-num {
+	opacity: 0.45;
+}
+
+.calendar-cell:hover {
+	background: #f1f5fb;
 }
 
 .calendar-day-num {

@@ -2786,3 +2786,21 @@ No equipment found.,Ekipman bulunamadı.
 Failed to load equipment.,Ekipman yüklenemedi.
 Service history,Servis geçmişi
 No tickets for this unit.,Bu birim için talep yok.
+Add to stock,Stoğa ekle
+Search stock items…,Stok ürünü ara…
+valuation,değerleme
+Add item to stock,Stoğa ürün ekle
+e.g. Chevrolet Cobalt 2024,örn. Chevrolet Cobalt 2024
+Opening qty,Açılış adedi
+Unit cost,Birim maliyet
+"Creates a stock item; if qty and cost are given, an opening stock receipt is posted.",Stok ürünü oluşturur; adet ve maliyet verilirse açılış stok girişi yapılır.
+Create & select,Oluştur ve seç
+Payment reminder,Ödeme hatırlatması
+Message copied.,Mesaj kopyalandı.
+Copy failed.,Kopyalanamadı.
+Share,Paylaş
+Telegram,Telegram
+WhatsApp,WhatsApp
+Copy message,Mesajı kopyala
+Add to Google Calendar,Google Takvim'e ekle
+Download .ics,.ics indir

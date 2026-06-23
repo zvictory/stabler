@@ -214,18 +214,106 @@ def list_cars(
     search: str = "",
     limit: int = 100,
 ) -> list:
-    """List ERPNext Items in Item Group 'Vehicles' (or any group)."""
+    """Stock items with on-hand qty (this company) + valuation, for the picker."""
     _require_company(company)
-    filters: dict = {"disabled": 0, "is_stock_item": 1}
-    if search:
-        filters["item_name"] = ["like", f"%{search}%"]
-    return frappe.get_all(
-        "Item",
-        filters=filters,
-        fields=["name", "item_name", "item_group", "description"],
-        order_by="item_name asc",
-        limit=int(limit),
+    needle = f"%{search}%"
+    return frappe.db.sql(
+        """
+        SELECT
+            i.name, i.item_name, i.item_group, i.stock_uom,
+            COALESCE(i.valuation_rate, i.last_purchase_rate, 0) AS valuation_rate,
+            COALESCE((
+                SELECT SUM(b.actual_qty)
+                FROM `tabBin` b
+                JOIN `tabWarehouse` w ON w.name = b.warehouse
+                WHERE b.item_code = i.name AND w.company = %(company)s
+            ), 0) AS actual_qty
+        FROM `tabItem` i
+        WHERE i.disabled = 0 AND i.is_stock_item = 1
+          AND (%(search)s = '' OR i.item_name LIKE %(needle)s OR i.name LIKE %(needle)s)
+        ORDER BY i.item_name ASC
+        LIMIT %(limit)s
+        """,
+        {"company": company, "search": search or "", "needle": needle, "limit": int(limit)},
+        as_dict=True,
     )
+
+
+def _company_default_warehouse(company: str) -> str | None:
+    wh = frappe.get_cached_value("Company", company, "default_warehouse")
+    if wh:
+        return wh
+    return frappe.db.get_value("Warehouse", {"company": company, "is_group": 0}, "name")
+
+
+@frappe.whitelist()
+def quick_create_item(
+    company: str,
+    item_name: str,
+    opening_qty: float = 0,
+    rate: float = 0,
+) -> dict:
+    """Create a stock item inline and, if qty+rate given, post an opening receipt.
+
+    Lets the New Contract form add a product to inventory without leaving the
+    page — the item then behaves like any other stock item in the system.
+    """
+    _require_company(company)
+    if not (item_name or "").strip():
+        frappe.throw("Item name is required.")
+    if not frappe.has_permission("Item", "create"):
+        frappe.throw("Not permitted to create items.", frappe.PermissionError)
+
+    item_group = frappe.db.get_value("Item Group", {"is_group": 0}, "name") or "All Item Groups"
+    item = frappe.get_doc(
+        {
+            "doctype": "Item",
+            "item_name": item_name.strip(),
+            "item_group": item_group,
+            "stock_uom": frappe.db.get_value("UOM", {"enabled": 1}, "name") or "Nos",
+            "is_stock_item": 1,
+        }
+    ).insert()
+
+    qty = flt(opening_qty)
+    basic_rate = flt(rate)
+    warehouse = _company_default_warehouse(company)
+    if qty > 0 and warehouse:
+        se = frappe.get_doc(
+            {
+                "doctype": "Stock Entry",
+                "stock_entry_type": "Material Receipt",
+                "company": company,
+                "items": [
+                    {
+                        "item_code": item.name,
+                        "qty": qty,
+                        "t_warehouse": warehouse,
+                        "basic_rate": basic_rate or None,
+                    }
+                ],
+            }
+        )
+        se.insert()
+        se.submit()
+    elif basic_rate > 0:
+        frappe.db.set_value("Item", item.name, "valuation_rate", basic_rate)
+
+    actual = frappe.db.sql(
+        """
+        SELECT COALESCE(SUM(b.actual_qty), 0)
+        FROM `tabBin` b JOIN `tabWarehouse` w ON w.name = b.warehouse
+        WHERE b.item_code = %(item)s AND w.company = %(company)s
+        """,
+        {"item": item.name, "company": company},
+    )[0][0]
+    return {
+        "name": item.name,
+        "item_name": item.item_name,
+        "stock_uom": item.stock_uom,
+        "actual_qty": flt(actual),
+        "valuation_rate": flt(basic_rate) or flt(frappe.db.get_value("Item", item.name, "valuation_rate")),
+    }
 
 
 def _create_invoice(
@@ -480,10 +568,17 @@ def contract_detail(name: str, side: str = "sell") -> dict:
         for row in (doc.payment_schedule or [])
     ]
     party_field = "customer" if side == "sell" else "supplier"
+    party = getattr(doc, party_field, "")
+    party_doctype = "Customer" if side == "sell" else "Supplier"
+    name_field = "customer_name" if side == "sell" else "supplier_name"
+    party_name = frappe.db.get_value(party_doctype, party, name_field) if party else ""
+    party_mobile = _party_mobile(party_doctype, party) if party else ""
     return {
         "name": doc.name,
         "side": side,
-        "party": getattr(doc, party_field, ""),
+        "party": party,
+        "party_name": party_name or party,
+        "party_mobile": party_mobile,
         "posting_date": str(doc.posting_date),
         "grand_total": doc.grand_total,
         "outstanding_amount": doc.outstanding_amount,
@@ -492,6 +587,24 @@ def contract_detail(name: str, side: str = "sell") -> dict:
         "docstatus": doc.docstatus,
         "payment_schedule": schedule,
     }
+
+
+def _party_mobile(party_doctype: str, party: str) -> str:
+    """Best-effort mobile number from the party's primary contact."""
+    pc_field = "customer_primary_contact" if party_doctype == "Customer" else None
+    contact = None
+    if pc_field:
+        contact = frappe.db.get_value(party_doctype, party, pc_field)
+    if not contact:
+        # Fall back to any linked Contact via Dynamic Link.
+        contact = frappe.db.get_value(
+            "Dynamic Link",
+            {"link_doctype": party_doctype, "link_name": party, "parenttype": "Contact"},
+            "parent",
+        )
+    if not contact:
+        return ""
+    return frappe.db.get_value("Contact", contact, "mobile_no") or frappe.db.get_value("Contact", contact, "phone") or ""
 
 
 @frappe.whitelist()
@@ -649,9 +762,15 @@ def calendar_events(
     if side == "buy":
         doctype = "Purchase Invoice"
         doctype_table = "tabPurchase Invoice"
+        party_field = "supplier"
+        party_table = "tabSupplier"
+        party_name_col = "supplier_name"
     else:
         doctype = "Sales Invoice"
         doctype_table = "tabSales Invoice"
+        party_field = "customer"
+        party_table = "tabCustomer"
+        party_name_col = "customer_name"
     sched_table = "tabPayment Schedule"
 
     return frappe.db.sql(
@@ -659,7 +778,8 @@ def calendar_events(
         SELECT
             ps.due_date AS date,
             inv.name   AS contract_id,
-            inv.name   AS label,
+            inv.{party_field} AS party,
+            COALESCE(pt.{party_name_col}, inv.{party_field}) AS label,
             ps.payment_amount AS amount,
             inv.currency,
             ps.outstanding,
@@ -672,6 +792,7 @@ def calendar_events(
             END AS state
         FROM `{sched_table}` ps
         JOIN `{doctype_table}` inv ON inv.name = ps.parent
+        LEFT JOIN `{party_table}` pt ON pt.name = inv.{party_field}
         WHERE inv.company = %(company)s
           AND inv.stabler_installment_plan = 1
           AND inv.docstatus < 2

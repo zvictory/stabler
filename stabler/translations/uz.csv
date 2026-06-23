@@ -2804,3 +2804,21 @@ No equipment found.,Jihoz topilmadi.
 Failed to load equipment.,Jihozni yuklab bo'lmadi.
 Service history,Xizmat tarixi
 No tickets for this unit.,Bu birlik uchun tiket yo'q.
+Add to stock,Omborga qo'shish
+Search stock items…,Ombor tovarlarini qidirish…
+valuation,baholash
+Add item to stock,Omborga tovar qo'shish
+e.g. Chevrolet Cobalt 2024,masalan Chevrolet Cobalt 2024
+Opening qty,Boshlang'ich miqdor
+Unit cost,Birlik tannarxi
+"Creates a stock item; if qty and cost are given, an opening stock receipt is posted.","Ombor tovari yaratadi; miqdor va narx berilsa, boshlang'ich kirim qilinadi."
+Create & select,Yaratish va tanlash
+Payment reminder,To'lov eslatmasi
+Message copied.,Xabar nusxalandi.
+Copy failed.,Nusxalab bo'lmadi.
+Share,Ulashish
+Telegram,Telegram
+WhatsApp,WhatsApp
+Copy message,Xabarni nusxalash
+Add to Google Calendar,Google Kalendarga qo'shish
+Download .ics,.ics yuklab olish

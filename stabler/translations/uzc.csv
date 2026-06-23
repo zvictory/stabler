@@ -2804,3 +2804,21 @@ No equipment found.,Жиҳоз топилмади.
 Failed to load equipment.,Жиҳозни юклаб бўлмади.
 Service history,Хизмат тарихи
 No tickets for this unit.,Бу бирлик учун тикет йўқ.
+Add to stock,Омборга қўшиш
+Search stock items…,Омбор товарларини қидириш…
+valuation,баҳолаш
+Add item to stock,Омборга товар қўшиш
+e.g. Chevrolet Cobalt 2024,масалан Chevrolet Cobalt 2024
+Opening qty,Бошланғич миқдор
+Unit cost,Бирлик таннархи
+"Creates a stock item; if qty and cost are given, an opening stock receipt is posted.","Омбор товари яратади; миқдор ва нарх берилса, бошланғич кирим қилинади."
+Create & select,Яратиш ва танлаш
+Payment reminder,Тўлов эслатмаси
+Message copied.,Хабар нусхаланди.
+Copy failed.,Нусхалаб бўлмади.
+Share,Улашиш
+Telegram,Telegram
+WhatsApp,WhatsApp
+Copy message,Хабарни нусхалаш
+Add to Google Calendar,Google Календарга қўшиш
+Download .ics,.ics юклаб олиш

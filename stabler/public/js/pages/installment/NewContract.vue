@@ -36,12 +36,15 @@ const submitError = ref("");
 async function searchParty(q) {
 	if (!company.value) return [];
 	try {
-		const doctype = side.value === "sell" ? "Customer" : "Supplier";
+		const sell = side.value === "sell";
+		const doctype = sell ? "Customer" : "Supplier";
+		const nameField = sell ? "customer_name" : "supplier_name";
 		const rows = await call("frappe.client.get_list", {
 			doctype,
-			filters: [["name", "like", `%${q}%`]],
-			fields: ["name"],
+			or_filters: q ? [["name", "like", `%${q}%`], [nameField, "like", `%${q}%`]] : undefined,
+			fields: ["name", nameField],
 			limit: 20,
+			order_by: `${nameField} asc`,
 		});
 		return rows || [];
 	} catch {
@@ -51,7 +54,7 @@ async function searchParty(q) {
 
 function onPartyPick(item) {
 	form.value.party = item.name;
-	form.value.partyLabel = item.name;
+	form.value.partyLabel = item.customer_name || item.supplier_name || item.name;
 }
 
 function onPartyClear() {
@@ -73,14 +76,55 @@ async function searchCar(q) {
 	}
 }
 
+const carStockHint = ref("");
+
 function onCarPick(item) {
 	form.value.car_item = item.name;
 	form.value.carLabel = item.item_name || item.name;
+	const qty = Number(item.actual_qty || 0);
+	const val = Number(item.valuation_rate || 0);
+	carStockHint.value =
+		`${t("On hand")}: ${qty} ${item.stock_uom || ""}` +
+		(val ? ` · ${t("valuation")} ${formatMoney(val, currency.value)}` : "");
+	// Auto-fill cost from valuation when the field is still empty.
+	if (val && (!form.value.cost || Number(form.value.cost) === 0)) form.value.cost = val;
 }
 
 function onCarClear() {
 	form.value.car_item = null;
 	form.value.carLabel = "";
+	carStockHint.value = "";
+}
+
+// ── Quick-add a new stock item ───────────────────────────────────────────────
+const quickAdd = ref({ open: false, item_name: "", opening_qty: null, rate: null, saving: false, error: "" });
+function openQuickAdd() {
+	quickAdd.value = { open: true, item_name: "", opening_qty: null, rate: null, saving: false, error: "" };
+}
+async function submitQuickAdd() {
+	const qa = quickAdd.value;
+	if (!qa.item_name || !qa.item_name.trim()) { qa.error = t("Item name is required."); return; }
+	qa.saving = true; qa.error = "";
+	try {
+		const res = await call("stabler.api.installment.quick_create_item", {
+			company: company.value,
+			item_name: qa.item_name.trim(),
+			opening_qty: qa.opening_qty || 0,
+			rate: qa.rate || 0,
+		});
+		onCarPick({
+			name: res.name,
+			item_name: res.item_name,
+			actual_qty: res.actual_qty,
+			valuation_rate: res.valuation_rate,
+			stock_uom: res.stock_uom,
+		});
+		quickAdd.value.open = false;
+	} catch (err) {
+		qa.error = err?.message || t("Failed to create item.");
+	} finally {
+		qa.saving = false;
+	}
 }
 
 // Reset party when side changes
@@ -203,24 +247,54 @@ async function submit() {
 								{{ side === "sell" ? t("Customer") : t("Supplier") }}
 							</label>
 							<Typeahead
+								v-model="form.party"
 								:search="searchParty"
 								:display="form.partyLabel"
+								:open-on-focus="true"
 								:placeholder="side === 'sell' ? t('Search customers…') : t('Search suppliers…')"
 								@pick="onPartyPick"
 								@clear="onPartyClear"
-							/>
+							>
+								<template #option="{ item }">
+									<div class="fw-semibold small">{{ item.customer_name || item.supplier_name || item.name }}</div>
+									<div v-if="item.customer_name || item.supplier_name" class="text-secondary" style="font-size:.75rem">{{ item.name }}</div>
+								</template>
+							</Typeahead>
 						</div>
 
 						<!-- Car item -->
 						<div class="col-12">
-							<label class="form-label">{{ t("Car / Item") }}</label>
+							<label class="form-label d-flex align-items-center">
+								{{ t("Item") }}
+								<button type="button" class="btn btn-ghost-primary btn-sm ms-auto py-0" @click="openQuickAdd">
+									<i class="ti ti-plus me-1"></i>{{ t("Add to stock") }}
+								</button>
+							</label>
 							<Typeahead
+								v-model="form.car_item"
 								:search="searchCar"
 								:display="form.carLabel"
-								:placeholder="t('Search items…')"
+								:open-on-focus="true"
+								:placeholder="t('Search stock items…')"
 								@pick="onCarPick"
 								@clear="onCarClear"
-							/>
+							>
+								<template #option="{ item }">
+									<div class="d-flex justify-content-between align-items-center">
+										<div>
+											<div class="fw-semibold small">{{ item.item_name || item.name }}</div>
+											<div class="text-secondary" style="font-size:.75rem">{{ item.name }}</div>
+										</div>
+										<span
+											class="badge ms-2"
+											:class="Number(item.actual_qty) > 0 ? 'bg-green-lt' : 'bg-secondary-lt'"
+										>{{ t("Stock") }}: {{ Number(item.actual_qty || 0) }} {{ item.stock_uom || "" }}</span>
+									</div>
+								</template>
+							</Typeahead>
+							<div v-if="form.car_item && carStockHint" class="form-hint mt-1">
+								<i class="ti ti-package me-1"></i>{{ carStockHint }}
+							</div>
 						</div>
 
 						<!-- Cost + Markup -->
@@ -283,6 +357,40 @@ async function submit() {
 							<i v-else class="ti ti-check me-1"></i>{{ t("Create contract") }}
 						</button>
 					</div>
+				</div>
+			</div>
+		</div>
+
+		<!-- Quick-add item to stock -->
+		<div v-if="quickAdd.open" class="offcanvas-backdrop fade show" @click="quickAdd.open = false"></div>
+		<div v-if="quickAdd.open" class="offcanvas offcanvas-end show" tabindex="-1" style="visibility: visible; width: 440px">
+			<div class="offcanvas-header">
+				<h5 class="offcanvas-title"><i class="ti ti-package me-1"></i>{{ t("Add item to stock") }}</h5>
+				<button type="button" class="btn-close" @click="quickAdd.open = false"></button>
+			</div>
+			<div class="offcanvas-body">
+				<div v-if="quickAdd.error" class="alert alert-danger">{{ quickAdd.error }}</div>
+				<div class="mb-3">
+					<label class="form-label">{{ t("Item name") }}</label>
+					<input v-model="quickAdd.item_name" type="text" class="form-control" :placeholder="t('e.g. Chevrolet Cobalt 2024')" />
+				</div>
+				<div class="row g-3">
+					<div class="col-6">
+						<label class="form-label">{{ t("Opening qty") }}</label>
+						<input v-model.number="quickAdd.opening_qty" type="number" min="0" step="any" class="form-control font-monospace text-end" />
+					</div>
+					<div class="col-6">
+						<label class="form-label">{{ t("Unit cost") }}</label>
+						<MoneyInput v-model="quickAdd.rate" :currency="currency" />
+					</div>
+				</div>
+				<p class="form-hint mt-2">{{ t("Creates a stock item; if qty and cost are given, an opening stock receipt is posted.") }}</p>
+				<div class="d-flex justify-content-end gap-2 mt-3">
+					<button type="button" class="btn btn-outline-secondary" @click="quickAdd.open = false">{{ t("Cancel") }}</button>
+					<button type="button" class="btn btn-primary" :disabled="quickAdd.saving" @click="submitQuickAdd">
+						<span v-if="quickAdd.saving" class="spinner-border spinner-border-sm me-1"></span>
+						<i v-else class="ti ti-check me-1"></i>{{ t("Create & select") }}
+					</button>
 				</div>
 			</div>
 		</div>

@@ -2798,3 +2798,21 @@ No equipment found.,No equipment found.
 Failed to load equipment.,Failed to load equipment.
 Service history,Service history
 No tickets for this unit.,No tickets for this unit.
+Add to stock,Add to stock
+Search stock items…,Search stock items…
+valuation,valuation
+Add item to stock,Add item to stock
+e.g. Chevrolet Cobalt 2024,e.g. Chevrolet Cobalt 2024
+Opening qty,Opening qty
+Unit cost,Unit cost
+"Creates a stock item; if qty and cost are given, an opening stock receipt is posted.","Creates a stock item; if qty and cost are given, an opening stock receipt is posted."
+Create & select,Create & select
+Payment reminder,Payment reminder
+Message copied.,Message copied.
+Copy failed.,Copy failed.
+Share,Share
+Telegram,Telegram
+WhatsApp,WhatsApp
+Copy message,Copy message
+Add to Google Calendar,Add to Google Calendar
+Download .ics,Download .ics

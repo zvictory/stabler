@@ -76,6 +76,76 @@ function closeDetail() {
 	detail.value = null;
 }
 
+// ── Share an installment with the customer ───────────────────────────────────
+const shareNotice = ref("");
+function buildMessage(row) {
+	const d = detail.value;
+	const lines = [
+		`${t("Payment reminder")} — ${d.party_name || d.party}`,
+		`${t("Contract")}: ${d.name}`,
+		`${t("Due date")}: ${formatDate(row.due_date)}`,
+		`${t("Amount")}: ${formatMoney(row.payment_amount, d.currency)}`,
+	];
+	if (Number(row.outstanding) > 0) {
+		lines.push(`${t("Outstanding")}: ${formatMoney(row.outstanding, d.currency)}`);
+	}
+	return lines.join("\n");
+}
+function openExternal(url) {
+	window.open(url, "_blank", "noopener");
+}
+function shareTelegram(row) {
+	openExternal(`https://t.me/share/url?url=${encodeURIComponent(" ")}&text=${encodeURIComponent(buildMessage(row))}`);
+}
+function shareWhatsApp(row) {
+	const phone = (detail.value.party_mobile || "").replace(/[^0-9]/g, "");
+	const base = phone ? `https://wa.me/${phone}` : "https://wa.me/";
+	openExternal(`${base}?text=${encodeURIComponent(buildMessage(row))}`);
+}
+async function copyMessage(row) {
+	try {
+		await navigator.clipboard.writeText(buildMessage(row));
+		shareNotice.value = t("Message copied.");
+		setTimeout(() => (shareNotice.value = ""), 2500);
+	} catch {
+		shareNotice.value = t("Copy failed.");
+	}
+}
+function nextDayCompact(yyyymmdd) {
+	const y = +yyyymmdd.slice(0, 4), m = +yyyymmdd.slice(4, 6), d = +yyyymmdd.slice(6, 8);
+	const dt = new Date(y, m - 1, d + 1);
+	const p = (n) => String(n).padStart(2, "0");
+	return `${dt.getFullYear()}${p(dt.getMonth() + 1)}${p(dt.getDate())}`;
+}
+function gcalUrl(row) {
+	const d = detail.value;
+	const start = row.due_date.replaceAll("-", "");
+	const text = `${t("Installment")} — ${d.party_name || d.party}`;
+	return `https://calendar.google.com/calendar/render?action=TEMPLATE&text=${encodeURIComponent(text)}&dates=${start}/${nextDayCompact(start)}&details=${encodeURIComponent(buildMessage(row))}`;
+}
+function addToGoogle(row) {
+	openExternal(gcalUrl(row));
+}
+function downloadIcs(row) {
+	const d = detail.value;
+	const start = row.due_date.replaceAll("-", "");
+	const esc = (s) => String(s).replace(/[\\,;]/g, (m) => "\\" + m).replaceAll("\n", "\\n");
+	const ics = [
+		"BEGIN:VCALENDAR", "VERSION:2.0", "PRODID:-//Stabler//Installment//EN",
+		"BEGIN:VEVENT", `UID:${d.name}-${row.due_date}@stabler`,
+		`DTSTART;VALUE=DATE:${start}`, `DTEND;VALUE=DATE:${nextDayCompact(start)}`,
+		`SUMMARY:${esc(t("Installment") + " — " + (d.party_name || d.party))}`,
+		`DESCRIPTION:${esc(buildMessage(row))}`,
+		"END:VEVENT", "END:VCALENDAR",
+	].join("\r\n");
+	const blob = new Blob([ics], { type: "text/calendar;charset=utf-8" });
+	const a = document.createElement("a");
+	a.href = URL.createObjectURL(blob);
+	a.download = `${d.name}-${row.due_date}.ics`;
+	a.click();
+	URL.revokeObjectURL(a.href);
+}
+
 watch([month, side], load);
 onMounted(load);
 
@@ -159,15 +229,18 @@ const docstatusClass = (s) =>
 					</dd>
 				</dl>
 
-				<div class="fw-semibold small mb-2">{{ t("Payment schedule") }}</div>
+				<div class="d-flex align-items-center mb-2">
+					<div class="fw-semibold small">{{ t("Payment schedule") }}</div>
+					<div v-if="shareNotice" class="ms-auto small text-success"><i class="ti ti-check me-1"></i>{{ shareNotice }}</div>
+				</div>
 				<div style="max-height: 400px; overflow: auto">
 					<table class="table table-sm table-vcenter table-no-stripe">
 						<thead>
 							<tr>
 								<th>{{ t("Due date") }}</th>
-								<th>{{ t("Description") }}</th>
 								<th class="text-end">{{ t("Amount") }}</th>
 								<th class="text-end">{{ t("Outstanding") }}</th>
+								<th class="text-end">{{ t("Share") }}</th>
 							</tr>
 						</thead>
 						<tbody>
@@ -176,13 +249,22 @@ const docstatusClass = (s) =>
 								:key="row.due_date"
 								:class="{ 'table-active': row.due_date === detail._clickedDate }"
 							>
-								<td>{{ formatDate(row.due_date) }}</td>
-								<td class="text-secondary small">{{ row.description }}</td>
+								<td>
+									{{ formatDate(row.due_date) }}
+									<div v-if="row.description" class="text-secondary" style="font-size:.72rem">{{ row.description }}</div>
+								</td>
 								<td class="text-end font-monospace">
 									{{ formatMoney(row.payment_amount, detail.currency) }}
 								</td>
 								<td class="text-end font-monospace">
 									{{ formatMoney(row.outstanding, detail.currency) }}
+								</td>
+								<td class="text-nowrap text-end">
+									<button type="button" class="btn btn-ghost-secondary btn-icon btn-sm" :title="t('Telegram')" @click="shareTelegram(row)"><i class="ti ti-brand-telegram"></i></button>
+									<button type="button" class="btn btn-ghost-secondary btn-icon btn-sm" :title="t('WhatsApp')" @click="shareWhatsApp(row)"><i class="ti ti-brand-whatsapp"></i></button>
+									<button type="button" class="btn btn-ghost-secondary btn-icon btn-sm" :title="t('Copy message')" @click="copyMessage(row)"><i class="ti ti-copy"></i></button>
+									<button type="button" class="btn btn-ghost-secondary btn-icon btn-sm" :title="t('Add to Google Calendar')" @click="addToGoogle(row)"><i class="ti ti-calendar-plus"></i></button>
+									<button type="button" class="btn btn-ghost-secondary btn-icon btn-sm" :title="t('Download .ics')" @click="downloadIcs(row)"><i class="ti ti-download"></i></button>
 								</td>
 							</tr>
 						</tbody>

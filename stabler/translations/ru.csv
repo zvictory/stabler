@@ -2811,3 +2811,21 @@ No equipment found.,Оборудование не найдено.
 Failed to load equipment.,Не удалось загрузить оборудование.
 Service history,История обслуживания
 No tickets for this unit.,Нет заявок по этой единице.
+Add to stock,Добавить на склад
+Search stock items…,Поиск товаров на складе…
+valuation,оценка
+Add item to stock,Добавить товар на склад
+e.g. Chevrolet Cobalt 2024,напр. Chevrolet Cobalt 2024
+Opening qty,Начальный остаток
+Unit cost,Себестоимость
+"Creates a stock item; if qty and cost are given, an opening stock receipt is posted.",Создаёт складской товар; при указании кол-ва и цены проводится начальное оприходование.
+Create & select,Создать и выбрать
+Payment reminder,Напоминание об оплате
+Message copied.,Сообщение скопировано.
+Copy failed.,Не удалось скопировать.
+Share,Поделиться
+Telegram,Telegram
+WhatsApp,WhatsApp
+Copy message,Скопировать сообщение
+Add to Google Calendar,Добавить в Google Календарь
+Download .ics,Скачать .ics
