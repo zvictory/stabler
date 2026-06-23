@@ -127,7 +127,7 @@ watch(open, async (v) => {
 		computeMenuStyle();
 		window.addEventListener("scroll", onScrollOrResize, true);
 		window.addEventListener("resize", onScrollOrResize);
-		if (showSearch.value) searchInputEl.value?.focus();
+		if (showSearch.value) searchInputEl.value?.focus({ preventScroll: true });
 		scrollActiveIntoView();
 	} else {
 		window.removeEventListener("scroll", onScrollOrResize, true);
@@ -151,7 +151,19 @@ async function scrollActiveIntoView() {
 	await nextTick();
 	if (!menuEl.value || activeIdx.value < 0) return;
 	const rows = menuEl.value.querySelectorAll(".stbl-menu-item");
-	rows[activeIdx.value]?.scrollIntoView({ block: "nearest" });
+	const el = rows[activeIdx.value];
+	if (!el) return;
+	// Scroll WITHIN the menu only — never call el.scrollIntoView(), which can scroll
+	// the whole page/document to bring this fixed-positioned menu row into view
+	// (that is the "page jumps down when I open the dropdown" bug).
+	const menu = menuEl.value;
+	const top = el.offsetTop;
+	const bottom = top + el.offsetHeight;
+	if (top < menu.scrollTop) {
+		menu.scrollTop = top;
+	} else if (bottom > menu.scrollTop + menu.clientHeight) {
+		menu.scrollTop = bottom - menu.clientHeight;
+	}
 }
 
 function openMenu() {
@@ -175,7 +187,7 @@ function pick(o) {
 	// search box is visible, focus lives inside the Teleport'd menu. Removing
 	// that DOM node while it holds focus makes the browser hunt for a new focus
 	// target at body-end — which lands on the page footer.
-	triggerEl.value?.focus();
+	triggerEl.value?.focus({ preventScroll: true });
 	open.value = false;
 	if (v !== props.modelValue) {
 		emit("update:modelValue", v);
@@ -184,7 +196,7 @@ function pick(o) {
 }
 
 function clear() {
-	triggerEl.value?.focus();
+	triggerEl.value?.focus({ preventScroll: true });
 	open.value = false;
 	if (hasValue.value) {
 		emit("update:modelValue", "");
@@ -244,7 +256,7 @@ function onKeydown(e) {
 	switch (e.key) {
 		case "Escape":
 			e.preventDefault();
-			triggerEl.value?.focus();
+			triggerEl.value?.focus({ preventScroll: true });
 			open.value = false;
 			break;
 		case "ArrowDown":

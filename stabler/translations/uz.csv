@@ -1973,6 +1973,7 @@ Reschedule,Vaqtini oʻzgartirish
 Reserved,Zaxirada
 Reserved Stock,Zahiralangan tovar
 Reserved value,Zahira qiymati
+Reserved qty,Zahira miqdori
 Reset email sent.,Parolni tiklash elektron xati yuborildi.
 Reset password,Parolni tiklash
 Reset password?,
@@ -2735,3 +2736,15 @@ vs. last month,o'tgan oyga nisbatan
 — select —,
 — top-level —,— eng yuqori darajali —
 ⚠ {0} line(s) had no cost — verify item valuation; margin may be overstated.,⚠ {0} qator(da) tannarx yo'q — tovar baholashni tekshiring; marja oshirilgan bo'lishi mumkin.
+Tenure,Ish staji
+Discipline,Intizom
+All departments,Barcha bo'limlar
+Attendance summary,Davomat xulosasi
+Professional Excel export with current filters,Joriy filtrlar bilan professional Excel eksporti
+Excel — professional,Excel — professional
+Excel — basic,Excel — oddiy
+Professional Excel export of this ledger,Bu reyestrning professional Excel eksporti
+Length,Bo'y
+Width,En
+Height,Balandlik
+Pieces,Dona

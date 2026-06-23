@@ -1973,6 +1973,7 @@ Reschedule,Вақтини ўзгартириш
 Reserved,Зарур қилинган
 Reserved Stock,Захираланган товар
 Reserved value,Захира қиймати
+Reserved qty,Захира миқдори
 Reset email sent.,Электрон почта янгилаш йўлланди.
 Reset password,Паролни янгилаш
 Reset password?,
@@ -2735,3 +2736,15 @@ vs. last month,ўткан ойга қарши
 — select —,
 — top-level —,— юқори сатҳ —
 ⚠ {0} line(s) had no cost — verify item valuation; margin may be overstated.,⚠ {0} сатр(да) таннарх йўқ — товар баҳолашни текширинг; маржа ошириган бўлиши мумкин.
+Tenure,Иш стажи
+Discipline,Интизом
+All departments,Барча бўлимлар
+Attendance summary,Давомат хулосаси
+Professional Excel export with current filters,Жорий фильтрлар билан профессионал Excel экспорти
+Excel — professional,Excel — профессионал
+Excel — basic,Excel — оддий
+Professional Excel export of this ledger,Бу реестрнинг профессионал Excel экспорти
+Length,Бўй
+Width,Эн
+Height,Баландлик
+Pieces,Дона

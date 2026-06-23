@@ -19,6 +19,8 @@ import MoneyInput from "../../components/MoneyInput.vue";
 import DateInput from "../../components/DateInput.vue";
 import Select from "../../components/Select.vue";
 import EmptyState from "../../components/EmptyState.vue";
+import ListToolbar from "../../components/ListToolbar.vue";
+import SkeletonRows from "../../components/SkeletonRows.vue";
 
 const session = useSession();
 const { activeCompany, user } = storeToRefs(session);
@@ -38,6 +40,51 @@ const filterPurpose = ref("");
 const loading = ref(false);
 const error = ref("");
 const rows = ref([]);
+const LIMIT = 200;
+// The server caps at LIMIT rows; if we got exactly that many there are likely more.
+const capped = computed(() => !loading.value && rows.value.length >= LIMIT);
+
+// ──────────────── Advanced filters ────────────────
+const search = ref("");
+const fwhFilter = ref(""); // source warehouse
+const twhFilter = ref(""); // destination warehouse
+const statusFilter = ref(""); // "" | "0" | "1" | "2"
+const fromDate = ref("");
+const toDate = ref("");
+
+const STATUS_OPTIONS = computed(() => [
+	{ key: "", label: t("All statuses") },
+	{ key: "0", label: t("Draft") },
+	{ key: "1", label: t("Submitted") },
+	{ key: "2", label: t("Cancelled") },
+]);
+
+// Warehouse filters adapt to the active purpose: Receipts have no source,
+// Issues have no destination; Transfers/All show both.
+const showFromFilter = computed(() => filterPurpose.value !== "Material Receipt");
+const showToFilter = computed(() => filterPurpose.value !== "Material Issue");
+
+// Active = anything beyond the purpose pills (which live in the header).
+const hasFilters = computed(
+	() =>
+		!!search.value ||
+		!!fwhFilter.value ||
+		!!twhFilter.value ||
+		statusFilter.value !== "" ||
+		!!fromDate.value ||
+		!!toDate.value,
+);
+const hasAnyQuery = computed(() => hasFilters.value || !!filterPurpose.value);
+
+function clearFilters() {
+	search.value = "";
+	fwhFilter.value = "";
+	twhFilter.value = "";
+	statusFilter.value = "";
+	fromDate.value = "";
+	toDate.value = "";
+	load();
+}
 
 const currency = computed(
 	() =>
@@ -53,6 +100,39 @@ const docstatusBadge = (n) => {
 
 const purposeMeta = (p) => PURPOSES.value.find((x) => x.key === p) || PURPOSES.value[0];
 
+// ──────────────── Client-side sort (over the loaded page) ────────────────
+const sortKey = ref("posting_date");
+const sortDir = ref("desc");
+function sortBy(key) {
+	if (sortKey.value === key) {
+		sortDir.value = sortDir.value === "asc" ? "desc" : "asc";
+	} else {
+		sortKey.value = key;
+		sortDir.value = "asc";
+	}
+}
+const sortedRows = computed(() => {
+	const dir = sortDir.value === "asc" ? 1 : -1;
+	const k = sortKey.value;
+	const val = (r) => {
+		if (k === "value") return Number(r.total_amount || r.total_incoming_value || 0);
+		if (k === "item_count") return Number(r.item_count || 0);
+		if (k === "docstatus") return Number(r.docstatus || 0);
+		return r[k] ?? "";
+	};
+	return [...rows.value].sort((a, b) => {
+		const av = val(a);
+		const bv = val(b);
+		if (av < bv) return -dir;
+		if (av > bv) return dir;
+		return 0;
+	});
+});
+function sortIcon(key) {
+	if (sortKey.value !== key) return "ti-selector text-muted opacity-50";
+	return sortDir.value === "asc" ? "ti-chevron-up" : "ti-chevron-down";
+}
+
 async function load() {
 	if (!activeCompany.value) return;
 	loading.value = true;
@@ -61,7 +141,13 @@ async function load() {
 		rows.value = await call("stabler.api.inventory.list_stock_entries", {
 			company: activeCompany.value,
 			purpose: filterPurpose.value || undefined,
-			limit: 200,
+			from_warehouse: fwhFilter.value || undefined,
+			to_warehouse: twhFilter.value || undefined,
+			status: statusFilter.value !== "" ? statusFilter.value : undefined,
+			from_date: fromDate.value || undefined,
+			to_date: toDate.value || undefined,
+			search: search.value.trim() || undefined,
+			limit: LIMIT,
 		});
 	} catch (err) {
 		error.value = err?.message || t("Failed to load stock entries.");
@@ -76,6 +162,26 @@ const detailLoading = ref(false);
 const detail = ref(null);
 const actionRunning = ref(false);
 const actionError = ref("");
+
+// ERPNext suffixes every warehouse with " - <company abbr>". Strip that trailing
+// token for display so the lists/route read cleanly (the full name still lives in
+// the data and the route header).
+function shortWh(name) {
+	if (!name) return "—";
+	return String(name).replace(/\s+-\s+\S+$/, "");
+}
+// In the common transfer case every line shares one route, already shown up top —
+// so the per-row From/To columns are pure noise. Only keep them when lines differ.
+const itemsUniformRoute = computed(() => {
+	const items = detail.value?.items || [];
+	if (items.length < 1) return true;
+	const s = items[0].s_warehouse;
+	const tw = items[0].t_warehouse;
+	return items.every((it) => it.s_warehouse === s && it.t_warehouse === tw);
+});
+const itemsAmountTotal = computed(() =>
+	(detail.value?.items || []).reduce((acc, it) => acc + Number(it.amount || 0), 0),
+);
 
 async function openDetail(name) {
 	detailOpen.value = true;
@@ -170,6 +276,18 @@ const showToWarehouse = computed(() =>
 );
 
 const stockWarehouses = computed(() => warehouseOptions.value.filter((w) => !w.is_group));
+
+// Warehouse options for the filter selects. The empty option doubles as the
+// field's own label ("From warehouse" / "To warehouse") so each select is
+// self-describing without an extra caption.
+const fromWhOptions = computed(() => [
+	{ name: "", warehouse_name: t("From warehouse") },
+	...stockWarehouses.value,
+]);
+const toWhOptions = computed(() => [
+	{ name: "", warehouse_name: t("To warehouse") },
+	...stockWarehouses.value,
+]);
 
 const createTotal = computed(() =>
 	form.value.items.reduce((s, r) => s + Number(r.qty || 0) * Number(r.basic_rate || 0), 0)
@@ -290,12 +408,23 @@ async function submitCreate(andSubmitDoc = false) {
 	}
 }
 
-onMounted(load);
-watch(activeCompany, () => {
-	warehousesLoaded.value = false;
+onMounted(() => {
+	loadWarehouses(); // needed for the filter selects, not just the create modal
 	load();
 });
-watch(filterPurpose, load);
+watch(activeCompany, () => {
+	warehousesLoaded.value = false;
+	loadWarehouses();
+	load();
+});
+watch(filterPurpose, () => {
+	// Drop a now-hidden warehouse filter so it can't keep silently applying.
+	if (!showFromFilter.value) fwhFilter.value = "";
+	if (!showToFilter.value) twhFilter.value = "";
+	load();
+});
+// Advanced filters auto-apply on change (search is debounced via ListToolbar).
+watch([fwhFilter, twhFilter, statusFilter, fromDate, toDate], load);
 </script>
 
 <template>
@@ -329,14 +458,76 @@ watch(filterPurpose, load);
 				</button>
 			</div>
 		</div>
-		<div v-if="loading" class="card-body text-center py-5">
-			<div class="spinner-border text-primary"></div>
+		<ListToolbar
+			v-model="search"
+			:placeholder="t('Search reference…')"
+			:count="rows.length"
+			@search="load"
+		>
+			<template #filters>
+				<Select
+					v-if="showFromFilter"
+					v-model="fwhFilter"
+					:options="fromWhOptions"
+					value-key="name"
+					size="sm"
+					style="min-width: 150px"
+				>
+					<template #option="{ option }">{{ option.warehouse_name || option.name }}</template>
+					<template #selected="{ option }">{{ option.warehouse_name || option.name }}</template>
+				</Select>
+				<i
+					v-if="showFromFilter && showToFilter"
+					class="ti ti-arrow-right text-secondary d-none d-md-inline"
+				></i>
+				<Select
+					v-if="showToFilter"
+					v-model="twhFilter"
+					:options="toWhOptions"
+					value-key="name"
+					size="sm"
+					style="min-width: 150px"
+				>
+					<template #option="{ option }">{{ option.warehouse_name || option.name }}</template>
+					<template #selected="{ option }">{{ option.warehouse_name || option.name }}</template>
+				</Select>
+				<Select
+					v-model="statusFilter"
+					:options="STATUS_OPTIONS"
+					value-key="key"
+					label-key="label"
+					size="sm"
+					style="min-width: 130px"
+				/>
+				<div class="d-flex align-items-center gap-1">
+					<DateInput v-model="fromDate" size="sm" style="width: 132px" />
+					<span class="text-secondary">–</span>
+					<DateInput v-model="toDate" size="sm" style="width: 132px" />
+				</div>
+				<button
+					v-if="hasFilters"
+					type="button"
+					class="btn btn-sm btn-ghost-secondary"
+					@click="clearFilters"
+				>
+					<i class="ti ti-x me-1"></i>{{ t("Clear filters") }}
+				</button>
+			</template>
+		</ListToolbar>
+
+		<div
+			v-if="capped"
+			class="d-flex align-items-center gap-2 small text-secondary py-2 px-3 border-bottom bg-yellow-lt"
+		>
+			<i class="ti ti-info-circle"></i>
+			{{ t("Showing the first {0} records — use filters to narrow.").replace("{0}", LIMIT) }}
 		</div>
-		<div v-else-if="error" class="card-body">
+
+		<div v-if="error" class="card-body">
 			<div class="alert alert-danger m-0">{{ error }}</div>
 		</div>
 		<EmptyState
-			v-else-if="!rows.length"
+			v-else-if="!loading && !rows.length && !hasAnyQuery"
 			icon="ti-clipboard-list"
 			accentIcon="ti-plus"
 			tone="primary"
@@ -355,28 +546,55 @@ watch(filterPurpose, load);
 		<div v-else class="table-responsive">
 			<table class="table table-vcenter card-table table-hover">
 				<thead>
-					<tr>
-						<th>{{ t("Reference") }}</th>
-						<th>{{ t("Date") }}</th>
-						<th>{{ t("Purpose") }}</th>
+					<tr class="user-select-none">
+						<th style="cursor: pointer" @click="sortBy('name')">
+							{{ t("Reference") }}
+							<i class="ti" :class="sortIcon('name')"></i>
+						</th>
+						<th style="cursor: pointer" @click="sortBy('posting_date')">
+							{{ t("Date") }}
+							<i class="ti" :class="sortIcon('posting_date')"></i>
+						</th>
+						<th style="cursor: pointer" @click="sortBy('purpose')">
+							{{ t("Purpose") }}
+							<i class="ti" :class="sortIcon('purpose')"></i>
+						</th>
 						<th>{{ t("From → To") }}</th>
-						<th class="text-end">{{ t("Items") }}</th>
-						<th class="text-end">{{ t("Value") }}</th>
-						<th>{{ t("Status") }}</th>
+						<th class="text-end" style="cursor: pointer" @click="sortBy('item_count')">
+							{{ t("Items") }}
+							<i class="ti" :class="sortIcon('item_count')"></i>
+						</th>
+						<th class="text-end" style="cursor: pointer" @click="sortBy('value')">
+							{{ t("Value") }}
+							<i class="ti" :class="sortIcon('value')"></i>
+						</th>
+						<th style="cursor: pointer" @click="sortBy('docstatus')">
+							{{ t("Status") }}
+							<i class="ti" :class="sortIcon('docstatus')"></i>
+						</th>
 					</tr>
 				</thead>
-				<tbody>
-					<tr v-for="r in rows" :key="r.name" style="cursor: pointer" @click="openDetail(r.name)">
+				<SkeletonRows v-if="loading" :rows="6" :cols="7" />
+				<tbody v-else>
+					<tr v-if="!rows.length">
+						<td colspan="7" class="text-center text-secondary py-4">
+							{{ t("No entries match these filters.") }}
+							<button type="button" class="btn btn-link btn-sm p-0 ms-1" @click="clearFilters">
+								{{ t("Clear filters") }}
+							</button>
+						</td>
+					</tr>
+					<tr v-for="r in sortedRows" :key="r.name" style="cursor: pointer" @click="openDetail(r.name)">
 						<td class="font-monospace text-primary">{{ r.name }}</td>
 						<td>{{ formatDateTime(r.posting_date) }}</td>
 						<td>
 							<i class="ti me-1" :class="[purposeMeta(r.purpose).icon, purposeMeta(r.purpose).color]"></i>
 							{{ purposeMeta(r.purpose).label.replace(/s$/, "") }}
 						</td>
-						<td class="small">
-							<span class="text-secondary">{{ r.from_warehouse || "—" }}</span>
-							<i class="ti ti-arrow-right mx-1 text-secondary"></i>
-							<span>{{ r.to_warehouse || "—" }}</span>
+						<td class="small text-nowrap">
+							<span class="text-secondary">{{ shortWh(r.from_warehouse) }}</span>
+							<i class="ti ti-arrow-narrow-right mx-1 text-blue"></i>
+							<span>{{ shortWh(r.to_warehouse) }}</span>
 						</td>
 						<td class="text-end">{{ r.item_count }}</td>
 						<td class="text-end font-monospace">
@@ -448,31 +666,39 @@ watch(filterPurpose, load);
 					</button>
 				</div>
 
-				<div class="datagrid mb-3">
-					<div class="datagrid-item">
-						<div class="datagrid-title">{{ t("From") }}</div>
-						<div class="datagrid-content">{{ detail.from_warehouse || "—" }}</div>
-					</div>
-					<div class="datagrid-item">
-						<div class="datagrid-title">{{ t("To") }}</div>
-						<div class="datagrid-content">{{ detail.to_warehouse || "—" }}</div>
-					</div>
-					<div class="datagrid-item">
-						<div class="datagrid-title">{{ t("Total value") }}</div>
-						<div class="datagrid-content font-monospace">
-							{{ formatMoney(detail.total_amount || detail.total_incoming_value, currency, user.language) }}
+				<div class="card card-sm mb-4">
+					<div class="card-body d-flex align-items-center gap-3 flex-wrap">
+						<div class="d-flex align-items-center gap-3 flex-fill">
+							<div>
+								<div class="text-secondary text-uppercase" style="font-size: 0.7rem; letter-spacing: 0.03em">{{ t("From") }}</div>
+								<div class="fw-medium">{{ shortWh(detail.from_warehouse) }}</div>
+							</div>
+							<i class="ti ti-arrow-narrow-right text-secondary" style="font-size: 1.5rem"></i>
+							<div>
+								<div class="text-secondary text-uppercase" style="font-size: 0.7rem; letter-spacing: 0.03em">{{ t("To") }}</div>
+								<div class="fw-medium">{{ shortWh(detail.to_warehouse) }}</div>
+							</div>
+						</div>
+						<div class="text-end">
+							<div class="text-secondary text-uppercase" style="font-size: 0.7rem; letter-spacing: 0.03em">{{ t("Total value") }}</div>
+							<div class="h3 m-0 font-monospace">
+								{{ formatMoney(detail.total_amount || detail.total_incoming_value, currency, user.language) }}
+							</div>
 						</div>
 					</div>
 				</div>
 
-				<h6 class="text-uppercase text-secondary small mb-2">{{ t("Items") }}</h6>
+				<h6 class="text-uppercase text-secondary small mb-2 d-flex align-items-center gap-2">
+					{{ t("Items") }}
+					<span class="badge bg-secondary-lt">{{ (detail.items || []).length }}</span>
+				</h6>
 				<div class="table-responsive">
-					<table class="table table-sm table-vcenter">
+					<table class="table table-vcenter align-middle stbl-entry-items">
 						<thead>
 							<tr>
 								<th>{{ t("Item") }}</th>
-								<th>{{ t("From") }}</th>
-								<th>{{ t("To") }}</th>
+								<th v-if="!itemsUniformRoute">{{ t("From") }}</th>
+								<th v-if="!itemsUniformRoute">{{ t("To") }}</th>
 								<th class="text-end">{{ t("Qty") }}</th>
 								<th class="text-end">{{ t("Rate") }}</th>
 								<th class="text-end">{{ t("Amount") }}</th>
@@ -481,20 +707,32 @@ watch(filterPurpose, load);
 						<tbody>
 							<tr v-for="it in detail.items" :key="it.idx">
 								<td>
-									<div class="font-monospace small text-primary">{{ it.item_code }}</div>
-									<div>{{ it.item_name }}</div>
+									<div class="fw-medium">{{ it.item_name }}</div>
+									<div class="font-monospace text-secondary" style="font-size: 0.75rem">{{ it.item_code }}</div>
 								</td>
-								<td class="small text-secondary">{{ it.s_warehouse || "—" }}</td>
-								<td class="small">{{ it.t_warehouse || "—" }}</td>
-								<td class="text-end font-monospace">{{ it.qty }} {{ it.uom }}</td>
-								<td class="text-end font-monospace">
+								<td v-if="!itemsUniformRoute" class="small text-secondary">{{ shortWh(it.s_warehouse) }}</td>
+								<td v-if="!itemsUniformRoute" class="small text-secondary">{{ shortWh(it.t_warehouse) }}</td>
+								<td class="text-end font-monospace text-nowrap">
+									{{ it.qty }} <span class="text-secondary">{{ it.uom }}</span>
+								</td>
+								<td class="text-end font-monospace text-secondary">
 									{{ formatMoney(it.basic_rate, currency, user.language) }}
 								</td>
-								<td class="text-end font-monospace">
+								<td class="text-end font-monospace fw-medium">
 									{{ formatMoney(it.amount, currency, user.language) }}
 								</td>
 							</tr>
 						</tbody>
+						<tfoot>
+							<tr class="fw-bold border-top">
+								<td :colspan="itemsUniformRoute ? 3 : 5" class="text-end text-secondary text-uppercase" style="font-size: 0.72rem; letter-spacing: 0.03em">
+									{{ t("Total") }}
+								</td>
+								<td class="text-end font-monospace">
+									{{ formatMoney(itemsAmountTotal, currency, user.language) }}
+								</td>
+							</tr>
+						</tfoot>
 					</table>
 				</div>
 
@@ -710,3 +948,16 @@ watch(filterPurpose, load);
 		</div>
 	</div>
 </template>
+
+<style scoped>
+/* The default card table is compact; give the detail items table breathing room
+   so dense transfers (20+ lines) don't read as one solid block. */
+.stbl-entry-items th,
+.stbl-entry-items td {
+	padding-top: 0.55rem;
+	padding-bottom: 0.55rem;
+}
+.stbl-entry-items tbody tr + tr td {
+	border-top: 1px solid var(--tblr-border-color, #e6e7e9);
+}
+</style>

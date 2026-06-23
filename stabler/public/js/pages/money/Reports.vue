@@ -22,24 +22,28 @@ const today = todayIso();
 const REPORTS = [
 	{
 		name: "Profit and Loss Statement",
+		key: "profit_and_loss",
 		label: "Profit & Loss",
 		icon: "ti-trending-up",
 		filters: { periodicity: "Yearly", filter_based_on: "Date Range" },
 	},
 	{
 		name: "Balance Sheet",
+		key: "balance_sheet",
 		label: "Balance Sheet",
 		icon: "ti-scale",
 		filters: { periodicity: "Yearly", filter_based_on: "Date Range" },
 	},
 	{
 		name: "Trial Balance",
+		key: "trial_balance",
 		label: "Trial Balance",
 		icon: "ti-columns-2",
 		filters: { periodicity: "Yearly", filter_based_on: "Date Range" },
 	},
 	{
 		name: "Cash Flow",
+		key: "cash_flow",
 		label: "Cash Flow",
 		icon: "ti-arrow-bar-to-down",
 		filters: { periodicity: "Yearly", filter_based_on: "Date Range" },
@@ -68,6 +72,17 @@ function reportFilters() {
 		presentation_currency: currency.value,
 		...selected.value.filters,
 	};
+}
+
+// Professional styled .xlsx (our export service) — re-runs the report server-side
+// with the same filters and applies the financial-statement template (indented
+// sections, bold totals, money formats). Falls back to exportAs('Excel') for the
+// plain Frappe export.
+function exportProXlsx() {
+	const key = selected.value?.key;
+	if (!key) return;
+	const qs = new URLSearchParams({ report_key: key, filters: JSON.stringify(reportFilters()) });
+	window.open(`/api/method/stabler.api.export.export_report_xlsx?${qs.toString()}`, "_blank");
 }
 
 async function exportAs(format) {
@@ -260,8 +275,11 @@ watch([activeCompany, selectedName], run);
 							{{ t("Export") }}
 						</button>
 						<div class="dropdown-menu dropdown-menu-end stbl-menu stbl-menu--nocheck">
+							<a href="#" class="dropdown-item stbl-menu-item" @click.prevent="exportProXlsx">
+								<i class="ti ti-file-spreadsheet me-2"></i>{{ t("Excel — professional") }}
+							</a>
 							<a href="#" class="dropdown-item stbl-menu-item" @click.prevent="exportAs('Excel')">
-								<i class="ti ti-file-spreadsheet me-2"></i>{{ t("Excel (.xlsx)") }}
+								<i class="ti ti-file-spreadsheet me-2"></i>{{ t("Excel — basic") }}
 							</a>
 							<a href="#" class="dropdown-item stbl-menu-item" @click.prevent="exportAs('CSV')">
 								<i class="ti ti-file-text me-2"></i>{{ t("CSV") }}

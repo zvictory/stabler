@@ -32,6 +32,19 @@ const payrollVisible = computed(() => {
 	return d.custom_base_salary !== undefined && d.custom_base_salary !== "MASKED";
 });
 
+// Years of service from the joining date — shown as a headline stat (anjan-hr style).
+const tenure = computed(() => {
+	const d = detail.value?.date_of_joining;
+	if (!d) return "—";
+	const start = new Date(d);
+	if (Number.isNaN(start.getTime())) return "—";
+	const now = new Date();
+	let years = now.getFullYear() - start.getFullYear();
+	const md = now.getMonth() - start.getMonth();
+	if (md < 0 || (md === 0 && now.getDate() < start.getDate())) years--;
+	return years >= 1 ? String(years) : "<1";
+});
+
 // Active tab
 const activeTab = ref("profile");
 
@@ -288,31 +301,43 @@ watch(name, load);
 
 <template>
 	<div>
-		<!-- Header -->
-		<div class="d-flex align-items-center gap-2 mb-3 flex-wrap">
+		<!-- Back -->
+		<div class="mb-2">
 			<button type="button" class="btn btn-ghost-secondary btn-sm" @click="goBack">
 				<i class="ti ti-arrow-left me-1"></i>{{ t("Employees") }}
 			</button>
-			<div class="d-flex align-items-center gap-2 ms-1">
-				<span v-if="detail?.image" class="avatar avatar-sm" :style="{ backgroundImage: `url('${detail.image}')` }"></span>
-				<span v-else class="avatar avatar-sm bg-primary-lt">{{ initials(detail?.employee_name) }}</span>
-				<h3 class="mb-0">{{ detail?.employee_name || name }}</h3>
-				<span
-					v-if="detail?.status"
-					class="badge"
-					:class="statusBadge(detail.status)"
-				>{{ detail.status }}</span>
-			</div>
-			<div class="ms-auto">
-				<button
-					type="button"
-					class="btn btn-primary"
-					:disabled="saving || loading"
-					@click="save"
-				>
-					<i class="ti ti-device-floppy me-1"></i>
-					{{ saving ? t("Saving…") : t("Save") }}
-				</button>
+		</div>
+
+		<!-- Identity summary card (anjan-hr style: avatar + headline stats incl. TimePay ID) -->
+		<div class="card mb-3">
+			<div class="card-body d-flex flex-wrap align-items-center gap-3">
+				<span v-if="detail?.image" class="avatar avatar-xl rounded" :style="{ backgroundImage: `url('${detail.image}')` }"></span>
+				<span v-else class="avatar avatar-xl bg-primary-lt">{{ initials(detail?.employee_name) }}</span>
+				<div class="flex-fill" style="min-width: 200px">
+					<div class="d-flex align-items-center gap-2 flex-wrap">
+						<h3 class="mb-0">{{ detail?.employee_name || name }}</h3>
+						<span v-if="detail?.status" class="badge" :class="statusBadge(detail.status)">{{ detail.status }}</span>
+					</div>
+					<div class="text-secondary small mt-1">
+						<i class="ti ti-briefcase me-1"></i>{{ detail?.designation || "—" }}
+						<span class="mx-1">·</span>{{ detail?.department || "—" }}
+					</div>
+				</div>
+				<div class="d-flex gap-4 text-center px-2">
+					<div>
+						<div class="text-uppercase text-secondary" style="font-size: 0.65rem; letter-spacing: 0.05em">{{ t("Tenure") }}</div>
+						<div class="h3 mb-0">{{ tenure }}</div>
+					</div>
+					<div>
+						<div class="text-uppercase text-secondary" style="font-size: 0.65rem; letter-spacing: 0.05em">{{ t("TimePay ID") }}</div>
+						<div class="h3 mb-0 font-monospace">{{ detail?.custom_timepay_id ? "#" + detail.custom_timepay_id : "—" }}</div>
+					</div>
+				</div>
+				<div>
+					<button type="button" class="btn btn-primary" :disabled="saving || loading" @click="save">
+						<i class="ti ti-device-floppy me-1"></i>{{ saving ? t("Saving…") : t("Save") }}
+					</button>
+				</div>
 			</div>
 		</div>
 

@@ -20,6 +20,15 @@ const { activeCompany, user } = storeToRefs(session);
 const cfg = computed(() => route.meta.report || {});
 const lang = () => user.value?.language || "en";
 
+// Excel export: the registry key is the summary function's last path segment
+// (e.g. "stabler.api.reports.sales_by_customer" → "sales_by_customer").
+const summaryReportKey = computed(() => (cfg.value.summaryApi || "").split(".").pop() || "");
+const exportFilters = computed(() => ({
+	company: activeCompany.value,
+	from_date: range.value?.from_date,
+	to_date: range.value?.to_date,
+}));
+
 const range = ref(null);
 const loading = ref(false);
 const error = ref("");
@@ -107,6 +116,8 @@ watch(() => route.fullPath, () => {
 				:language="lang()"
 				:loading="loading"
 				:export-name="cfg.exportName || 'report'"
+				:report-key="summaryReportKey"
+				:export-filters="exportFilters"
 				@drill="onSummaryDrill"
 			/>
 		</div>

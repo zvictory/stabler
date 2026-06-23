@@ -994,7 +994,7 @@ def party_payment_defaults(company: str, party_type: str, party: str) -> dict:
 
 		cbu = frappe.get_all(
 			"Currency Exchange",
-			filters={"from_currency": foreign, "to_currency": local, "date": ("<= ", today())},
+			filters={"from_currency": foreign, "to_currency": local, "date": ("<=", today())},
 			fields=["exchange_rate", "date"],
 			order_by="date desc",
 			limit=1
@@ -1481,7 +1481,7 @@ def payment_defaults_for_invoice(company: str, invoice_type: str, invoice_name: 
 
 		cbu = frappe.get_all(
 			"Currency Exchange",
-			filters={"from_currency": foreign, "to_currency": local, "date": ("<= ", today())},
+			filters={"from_currency": foreign, "to_currency": local, "date": ("<=", today())},
 			fields=["exchange_rate", "date"],
 			order_by="date desc",
 			limit=1

@@ -88,6 +88,19 @@
   just anjan. Schedule for low traffic, or accept the blip explicitly.
 - Rollback = restore the step-2 tar, `chown`, `bench build`, `bench restart`.
 
+### Post-deploy smoke checks (run every release)
+- **Direct-URL / refresh load of a record form.** Open an existing record by
+  pasting its URL (not by clicking from the list) and hit refresh, e.g.
+  `…/stabler#/purchasing/invoices/<an existing PINV>`. It MUST open populated and
+  in the correct view/edit state — NOT a blank "New …" form. Repeat for one
+  Sales Invoice, Purchase Order, Quotation and Payment Entry. (Regression class:
+  record forms must branch on the **route param**, not the document engine's
+  `isCreate`, which is null-based until `load()` runs — so direct loads/refreshes
+  would otherwise render blank. See the `if (docName.value)` guard in the
+  `*Form.vue` `onMounted`.)
+- **Money/GL log is flowing.** After recording one payment, confirm a line lands
+  in `sites/anjan.erpstable.com/logs/stabler.payments.log`.
+
 ## Migrations / patches
 - `patches.txt` has **NO `[post_model_sync]` marker** → every patch runs BEFORE
   the doctype DDL sync. A patch that reads or writes a **new** column/field must

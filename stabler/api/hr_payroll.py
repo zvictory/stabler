@@ -530,6 +530,25 @@ def list_payroll_summaries(
 	)
 	total = frappe.db.count(_SUMMARY, filters)
 
+	# Enrich for the anjan-hr-style attendance summary table: department,
+	# designation, and a discipline ratio (present / (present + absent)).
+	emp_ids = list({r["employee"] for r in rows if r.get("employee")})
+	emp_meta = {}
+	if emp_ids:
+		for e in frappe.get_all(
+			"Employee",
+			filters={"name": ["in", emp_ids]},
+			fields=["name", "department", "designation"],
+		):
+			emp_meta[e["name"]] = e
+	for r in rows:
+		m = emp_meta.get(r.get("employee"), {})
+		r["department"] = m.get("department")
+		r["designation"] = m.get("designation")
+		present = float(r.get("present_days") or 0)
+		absent = float(r.get("absent_days") or 0)
+		r["discipline"] = round(present / (present + absent), 4) if (present + absent) > 0 else None
+
 	return {"summaries": rows, "total": total}
 
 

@@ -1970,6 +1970,7 @@ Reschedule,Reschedule
 Reserved,Reserved
 Reserved Stock,Reserved Stock
 Reserved value,Reserved value
+Reserved qty,Reserved qty
 Reset email sent.,Reset email sent.
 Reset password,Reset password
 Reset password?,Reset password?
@@ -2729,3 +2730,15 @@ vs. last month,vs. last month
 — top-level —,— top-level —
 ⚠ {0} line(s) had no cost — verify item valuation; margin may be overstated.,⚠ {0} line(s) had no cost — verify item valuation; margin may be overstated.
 ﻿#,#
+Tenure,Tenure
+Discipline,Discipline
+All departments,All departments
+Attendance summary,Attendance summary
+Professional Excel export with current filters,Professional Excel export with current filters
+Excel — professional,Excel — professional
+Excel — basic,Excel — basic
+Professional Excel export of this ledger,Professional Excel export of this ledger
+Length,Length
+Width,Width
+Height,Height
+Pieces,Pieces

@@ -154,10 +154,13 @@ async function handlePickItem({ line, item, index, field }) {
 watch(docName, loadDoc);
 
 onMounted(async () => {
-	if (isCreate.value) {
-		form.value = blankForm();
-	} else {
+	// Branch on the route param (present on a hard load), not the composable's
+	// isCreate (null-based, true until load() runs) — else direct URL/refresh of an
+	// edit route renders a blank "New".
+	if (docName.value) {
 		await loadDoc();
+	} else {
+		form.value = blankForm();
 	}
 });
 

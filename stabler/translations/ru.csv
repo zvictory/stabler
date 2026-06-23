@@ -1980,6 +1980,7 @@ Reschedule,Перенести
 Reserved,Зарезервировано
 Reserved Stock,Зарезервированный запас
 Reserved value,Стоимость резерва
+Reserved qty,Кол-во в резерве
 Reset email sent.,Сообщение сброса отправлено.
 Reset password,Сбросить пароль
 Reset password?,
@@ -2742,3 +2743,15 @@ vs. last month,в сравнении с прошлым месяцем
 — select —,
 — top-level —,— верхний уровень —
 ⚠ {0} line(s) had no cost — verify item valuation; margin may be overstated.,⚠ {0} строк(а) без себестоимости — проверьте оценку товара; маржа может быть завышена.
+Tenure,Стаж
+Discipline,Дисциплина
+All departments,Все отделы
+Attendance summary,Сводка посещаемости
+Professional Excel export with current filters,Профессиональный экспорт в Excel с текущими фильтрами
+Excel — professional,Excel — профессиональный
+Excel — basic,Excel — базовый
+Professional Excel export of this ledger,Профессиональный экспорт этого реестра в Excel
+Length,Длина
+Width,Ширина
+Height,Высота
+Pieces,Штук

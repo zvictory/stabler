@@ -15,6 +15,10 @@ const props = defineProps({
 	language: { type: String, default: "en" },
 	loading: { type: Boolean, default: false },
 	exportName: { type: String, default: "report" },
+	// When set, a professional server-generated .xlsx export is offered (re-runs
+	// the report backend with these filters — never exports stale client rows).
+	reportKey: { type: String, default: "" },
+	exportFilters: { type: Object, default: () => ({}) },
 });
 
 const emit = defineEmits(["drill"]);
@@ -98,14 +102,35 @@ function exportCsv() {
 	URL.revokeObjectURL(a.href);
 }
 
-defineExpose({ exportCsv });
+// Professional .xlsx — re-runs the report on the server (permission + company
+// enforced) and streams a styled workbook. GET download, current filters.
+function exportXlsx() {
+	if (!props.reportKey) return;
+	const qs = new URLSearchParams({
+		report_key: props.reportKey,
+		filters: JSON.stringify(props.exportFilters || {}),
+	});
+	window.open(`/api/method/stabler.api.export.export_report_xlsx?${qs.toString()}`, "_blank");
+}
+
+defineExpose({ exportCsv, exportXlsx });
 </script>
 
 <template>
 	<div>
-		<div class="d-flex justify-content-end mb-2">
+		<div class="d-flex justify-content-end gap-2 mb-2">
+			<button
+				v-if="reportKey"
+				type="button"
+				class="btn btn-sm btn-primary"
+				:disabled="!rows.length"
+				:title="t('Professional Excel export with current filters')"
+				@click="exportXlsx"
+			>
+				<i class="ti ti-file-spreadsheet me-1"></i>{{ t("Excel") }}
+			</button>
 			<button type="button" class="btn btn-sm btn-outline-secondary" :disabled="!rows.length" @click="exportCsv">
-				<i class="ti ti-download me-1"></i>{{ t("Export") }}
+				<i class="ti ti-download me-1"></i>{{ t("CSV") }}
 			</button>
 		</div>
 		<div class="table-responsive">

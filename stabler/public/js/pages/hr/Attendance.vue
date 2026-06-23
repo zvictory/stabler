@@ -1,39 +1,115 @@
 <script setup>
 import { computed, onMounted, ref, watch } from "vue";
 import { storeToRefs } from "pinia";
+import { useRouter } from "vue-router";
 import { useSession } from "../../stores/session.js";
 import { call } from "../../api/client.js";
 import { t } from "../../composables/i18n.js";
-import { formatDateTime, todayIso} from "../../composables/date.js";
+import { todayIso } from "../../composables/date.js";
 import EmptyState from "../../components/EmptyState.vue";
 import DateInput from "../../components/DateInput.vue";
 import Select from "../../components/Select.vue";
+import SkeletonRows from "../../components/SkeletonRows.vue";
 
 const session = useSession();
 const { activeCompany } = storeToRefs(session);
+const router = useRouter();
 
 const today = () => todayIso();
-const firstOfMonth = () => {
-	const d = new Date();
-	return new Date(d.getFullYear(), d.getMonth(), 1).toISOString().slice(0, 10);
-};
+
+// ----- Period (YYYY-MM) — last 12 months -----
+function ym(d) {
+	return `${d.getFullYear()}-${String(d.getMonth() + 1).padStart(2, "0")}`;
+}
+const periodOptions = computed(() => {
+	const now = new Date();
+	const out = [];
+	for (let i = 0; i < 12; i++) {
+		const d = new Date(now.getFullYear(), now.getMonth() - i, 1);
+		out.push({ value: ym(d), label: d.toLocaleDateString("en", { year: "numeric", month: "long" }) });
+	}
+	return out;
+});
+const period = ref(ym(new Date()));
+
+// ----- Department filter -----
+const departments = ref([]);
+const departmentFilter = ref("");
+const departmentOptions = computed(() => [
+	{ name: "", department_name: t("All departments") },
+	...departments.value.map((d) => ({ name: d.name, department_name: d.department_name || d.name })),
+]);
 
 const loading = ref(false);
 const error = ref("");
 const rows = ref([]);
-const fromDate = ref(firstOfMonth());
-const toDate = ref(today());
-const statusFilter = ref("");
-const employeeFilter = ref("");
 
-const statusFilterOptions = computed(() => [
-	{ value: "", label: t("All statuses") },
-	{ value: "Present", label: t("Present") },
-	{ value: "Absent", label: t("Absent") },
-	{ value: "On Leave", label: t("On Leave") },
-	{ value: "Half Day", label: t("Half Day") },
-	{ value: "Work From Home", label: t("Work From Home") },
-]);
+const visibleRows = computed(() =>
+	departmentFilter.value ? rows.value.filter((r) => r.department === departmentFilter.value) : rows.value,
+);
+
+function shortName(n) {
+	// strip the trailing " - <company abbr>" ERPNext appends to dept/designation names
+	return n ? String(n).replace(/\s+-\s+\S+$/, "") : "—";
+}
+
+function disciplinePct(r) {
+	return r.discipline == null ? null : Number(r.discipline) * 100;
+}
+function disciplineBadge(r) {
+	if (r.discipline == null) return "bg-secondary-lt";
+	if (r.discipline >= 0.95) return "bg-success-lt";
+	if (r.discipline >= 0.85) return "bg-warning-lt";
+	return "bg-danger-lt";
+}
+
+function openEmployee(r) {
+	if (r.employee) router.push(`/hr/employees/${encodeURIComponent(r.employee)}`);
+}
+
+async function load() {
+	if (!activeCompany.value) return;
+	loading.value = true;
+	error.value = "";
+	try {
+		const res = await call("stabler.api.hr_payroll.list_payroll_summaries", {
+			company: activeCompany.value,
+			payroll_period: period.value,
+			limit: 500,
+		});
+		rows.value = res?.summaries || [];
+	} catch (err) {
+		error.value = err?.message || t("Failed to load attendance.");
+		rows.value = [];
+	} finally {
+		loading.value = false;
+	}
+}
+
+async function loadDepartments() {
+	if (!activeCompany.value) return;
+	try {
+		departments.value = await call("stabler.api.hr.list_departments", { company: activeCompany.value, limit: 200 });
+	} catch {
+		departments.value = [];
+	}
+}
+
+onMounted(() => {
+	loadDepartments();
+	load();
+});
+watch([activeCompany, period], () => {
+	loadDepartments();
+	load();
+});
+
+// ----- Mark attendance modal (preserved) -----
+const markOpen = ref(false);
+const submitting = ref(false);
+const markError = ref("");
+const employeeOptions = ref([]);
+const empsLoaded = ref(false);
 
 const markStatusOptions = computed(() => [
 	{ value: "Present", label: t("Present") },
@@ -43,44 +119,8 @@ const markStatusOptions = computed(() => [
 	{ value: "Work From Home", label: t("Work From Home") },
 ]);
 
-async function load() {
-	if (!activeCompany.value) return;
-	loading.value = true;
-	error.value = "";
-	try {
-		rows.value = await call("stabler.api.hr.list_attendance", {
-			company: activeCompany.value,
-			from_date: fromDate.value,
-			to_date: toDate.value,
-			employee: employeeFilter.value,
-			status: statusFilter.value,
-			limit: 500,
-		});
-	} catch (err) {
-		error.value = err?.message || "Failed to load attendance.";
-	} finally {
-		loading.value = false;
-	}
-}
-
-onMounted(load);
-watch([activeCompany, fromDate, toDate, statusFilter, employeeFilter], load);
-
-// ----- Mark attendance modal -----
-const markOpen = ref(false);
-const submitting = ref(false);
-const markError = ref("");
-const employeeOptions = ref([]);
-const empsLoaded = ref(false);
-
 function blankMark() {
-	return {
-		employee: "",
-		attendance_date: today(),
-		status: "Present",
-		in_time: "",
-		out_time: "",
-	};
+	return { employee: "", attendance_date: today(), status: "Present", in_time: "", out_time: "" };
 }
 const form = ref(blankMark());
 
@@ -134,41 +174,21 @@ async function save() {
 		submitting.value = false;
 	}
 }
-
-function statusBadge(s) {
-	if (s === "Present") return "bg-success-lt";
-	if (s === "Absent") return "bg-red-lt";
-	if (s === "On Leave") return "bg-azure-lt";
-	if (s === "Half Day") return "bg-yellow-lt";
-	if (s === "Work From Home") return "bg-purple-lt";
-	return "bg-secondary-lt";
-}
-
-function fmtTime(t) {
-	if (!t) return "—";
-	const s = String(t);
-	const m = s.match(/(\d{2}):(\d{2})/);
-	return m ? `${m[1]}:${m[2]}` : s;
-}
 </script>
 
 <template>
 	<div class="card mb-3">
 		<div class="card-body">
 			<div class="row g-2 align-items-end">
-				<div class="col-md-2">
-					<label class="form-label small">{{ t("From") }}</label>
-					<DateInput v-model="fromDate" />
+				<div class="col-12 col-md-3">
+					<label class="form-label small">{{ t("Period") }}</label>
+					<Select v-model="period" :options="periodOptions" value-key="value" label-key="label" />
 				</div>
-				<div class="col-md-2">
-					<label class="form-label small">{{ t("To") }}</label>
-					<DateInput v-model="toDate" />
+				<div class="col-12 col-md-4">
+					<label class="form-label small">{{ t("Department") }}</label>
+					<Select v-model="departmentFilter" :options="departmentOptions" value-key="name" label-key="department_name" />
 				</div>
-				<div class="col-md-3">
-					<label class="form-label small">{{ t("Status") }}</label>
-					<Select v-model="statusFilter" :options="statusFilterOptions" />
-				</div>
-				<div class="col-md-5 d-flex justify-content-md-end gap-2">
+				<div class="col-12 col-md-5 d-flex justify-content-md-end gap-2">
 					<button type="button" class="btn btn-ghost-secondary" @click="load">
 						<i class="ti ti-refresh me-1"></i>{{ t("Refresh") }}
 					</button>
@@ -183,42 +203,58 @@ function fmtTime(t) {
 	<div v-if="error" class="alert alert-danger">{{ error }}</div>
 
 	<EmptyState
-		v-if="!loading && !error && !rows.length"
+		v-else-if="!loading && !visibleRows.length"
 		icon="ti-calendar-event"
 		accentIcon="ti-checkbox"
 		tone="primary"
 		:title="t('No attendance records')"
-		:subtitle="t('Mark daily attendance to start building reports.')"
+		:subtitle="t('Sync TimePay attendance and generate the period summary to populate this table.')"
 	/>
 
-	<div v-else-if="loading" class="card-body text-center py-5">
-		<div class="spinner-border text-primary"></div>
-	</div>
-
 	<div v-else class="card">
+		<div class="card-header">
+			<h3 class="card-title m-0">{{ t("Attendance summary") }}</h3>
+		</div>
 		<div class="table-responsive">
-			<table class="table table-vcenter card-table">
+			<table class="table table-vcenter card-table table-hover">
 				<thead>
 					<tr>
-						<th>{{ t("Date") }}</th>
 						<th>{{ t("Employee") }}</th>
-						<th>{{ t("Status") }}</th>
-						<th>{{ t("In") }}</th>
-						<th>{{ t("Out") }}</th>
-						<th class="text-end">{{ t("Hours") }}</th>
+						<th>{{ t("Department") }}</th>
+						<th>{{ t("Position") }}</th>
+						<th class="text-end">{{ t("Present") }}</th>
+						<th class="text-end">{{ t("Late") }}</th>
+						<th class="text-end">{{ t("Absent") }}</th>
+						<th class="text-end">{{ t("Overtime") }}</th>
+						<th class="text-end">{{ t("Discipline") }}</th>
 					</tr>
 				</thead>
-				<tbody>
-					<tr v-for="r in rows" :key="r.name">
-						<td class="font-monospace">{{ formatDateTime(r.attendance_date) }}</td>
+				<SkeletonRows v-if="loading" :rows="8" :cols="8" />
+				<tbody v-else>
+					<tr
+						v-for="r in visibleRows"
+						:key="r.name"
+						style="cursor: pointer"
+						@click="openEmployee(r)"
+					>
 						<td>
 							<div class="fw-semibold">{{ r.employee_name }}</div>
 							<div class="small text-secondary font-monospace">{{ r.employee }}</div>
 						</td>
-						<td><span class="badge" :class="statusBadge(r.status)">{{ r.status }}</span></td>
-						<td class="font-monospace">{{ fmtTime(r.in_time) }}</td>
-						<td class="font-monospace">{{ fmtTime(r.out_time) }}</td>
-						<td class="text-end font-monospace">{{ r.working_hours ? Number(r.working_hours).toFixed(2) : "—" }}</td>
+						<td class="small text-secondary">{{ shortName(r.department) }}</td>
+						<td class="small text-secondary">{{ shortName(r.designation) }}</td>
+						<td class="text-end font-monospace">{{ r.present_days ?? "—" }}</td>
+						<td class="text-end font-monospace text-warning">{{ r.late_count ?? "—" }}</td>
+						<td class="text-end font-monospace text-danger">{{ r.absent_days ?? "—" }}</td>
+						<td class="text-end font-monospace text-secondary">
+							{{ r.overtime_minutes ? (Number(r.overtime_minutes) / 60).toFixed(1) + " h" : "—" }}
+						</td>
+						<td class="text-end">
+							<span v-if="disciplinePct(r) != null" class="badge" :class="disciplineBadge(r)">
+								{{ disciplinePct(r).toFixed(1) }}%
+							</span>
+							<span v-else class="text-secondary">—</span>
+						</td>
 					</tr>
 				</tbody>
 			</table>

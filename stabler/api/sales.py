@@ -681,6 +681,13 @@ def sales_invoice_detail(name: str):
 		frappe.throw("Invoice name is required.")
 	_assert_can_read("Sales Invoice", name)
 	doc = frappe.get_doc("Sales Invoice", name)
+	_has_dim = frappe.db.has_column("Item", "custom_dimension_mode")
+
+	def _dim_mode(code):
+		if not _has_dim or not code:
+			return ""
+		return frappe.get_cached_value("Item", code, "custom_dimension_mode") or ""
+
 	return {
 		"name": doc.name,
 		"modified": str(doc.modified),
@@ -724,6 +731,11 @@ def sales_invoice_detail(name: str):
 				"discount_percentage": flt(it.discount_percentage),
 				"discount_amount": flt(it.discount_amount),
 				"amount": flt(it.amount),
+				"custom_dimension_mode": _dim_mode(it.item_code),
+				"custom_length": flt(getattr(it, "custom_length", 0)) or None,
+				"custom_width": flt(getattr(it, "custom_width", 0)) or None,
+				"custom_height": flt(getattr(it, "custom_height", 0)) or None,
+				"custom_pieces": flt(getattr(it, "custom_pieces", 0)) or None,
 			}
 			for it in (doc.items or [])
 		],
@@ -2141,6 +2153,12 @@ def sales_order_detail(name: str):
 		frappe.throw("Sales order name is required.")
 	_assert_can_read("Sales Order", name)
 	doc = frappe.get_doc("Sales Order", name)
+	_has_dim = frappe.db.has_column("Item", "custom_dimension_mode")
+
+	def _dim_mode(code):
+		if not _has_dim or not code:
+			return ""
+		return frappe.get_cached_value("Item", code, "custom_dimension_mode") or ""
 	# Per-line reserved totals: there can be multiple SREs per SO Item.
 	# For direct SO reservations, ERPNext sets voucher_detail_no = SO Item name.
 	# from_voucher_detail_no is only set for Pick-List/PR-sourced reservations.
@@ -2214,6 +2232,11 @@ def sales_order_detail(name: str):
 				"discount_percentage": flt(it.discount_percentage),
 				"discount_amount": flt(it.discount_amount),
 				"amount": flt(it.amount),
+				"custom_dimension_mode": _dim_mode(it.item_code),
+				"custom_length": flt(getattr(it, "custom_length", 0)) or None,
+				"custom_width": flt(getattr(it, "custom_width", 0)) or None,
+				"custom_height": flt(getattr(it, "custom_height", 0)) or None,
+				"custom_pieces": flt(getattr(it, "custom_pieces", 0)) or None,
 			}
 			for it in (doc.items or [])
 		],
@@ -2447,6 +2470,10 @@ def create_sales_order(
 				"conversion_factor": flt(row.get("conversion_factor")) or None,
 				"discount_percentage": disc_pct,
 				"discount_amount": flt(row.get("discount_amount")),
+				"custom_length": row.get("custom_length"),
+				"custom_width": row.get("custom_width"),
+				"custom_height": row.get("custom_height"),
+				"custom_pieces": row.get("custom_pieces"),
 			}
 		)
 
@@ -2488,6 +2515,11 @@ def create_sales_order(
 			line.discount_percentage = row["discount_percentage"]
 		if row.get("discount_amount"):
 			line.discount_amount = row["discount_amount"]
+		# Dimensional inputs — qty is recomputed authoritatively by the
+		# apply_dimensional_qty before_validate hook from these.
+		for _df in ("custom_length", "custom_width", "custom_height", "custom_pieces"):
+			if row.get(_df) not in (None, ""):
+				line.set(_df, flt(row.get(_df)))
 	doc.insert(ignore_permissions=False)
 
 	reservation_errors = _submit_and_reserve(doc) if cint(auto_submit) else []
@@ -2597,6 +2629,10 @@ def update_sales_order(
 				"conversion_factor": flt(row.get("conversion_factor")) or None,
 				"discount_percentage": disc_pct,
 				"discount_amount": flt(row.get("discount_amount")),
+				"custom_length": row.get("custom_length"),
+				"custom_width": row.get("custom_width"),
+				"custom_height": row.get("custom_height"),
+				"custom_pieces": row.get("custom_pieces"),
 			}
 		)
 
@@ -2635,6 +2671,10 @@ def update_sales_order(
 			line.discount_percentage = row["discount_percentage"]
 		if row.get("discount_amount"):
 			line.discount_amount = row["discount_amount"]
+		# Dimensional inputs — qty recomputed authoritatively by the hook.
+		for _df in ("custom_length", "custom_width", "custom_height", "custom_pieces"):
+			if row.get(_df) not in (None, ""):
+				line.set(_df, flt(row.get(_df)))
 
 	doc.save(ignore_permissions=False)
 	return {
@@ -2796,7 +2836,7 @@ def get_linked_documents(doctype: str, name: str):
 
 
 @frappe.whitelist()
-def reserved_stock_analysis(company: str):
+def reserved_stock_analysis(company: str, warehouse: str | None = None):
 	"""Live Stock Reservation Entries for a company, grouped for the analyzer.
 
 	Returns KPI headline figures plus a per-(item_code, warehouse) rollup with every
@@ -2809,11 +2849,16 @@ def reserved_stock_analysis(company: str):
 	Value approximation: outstanding_value = outstanding_qty × Item.valuation_rate.
 	Valuation rate drifts over time and is not the SRE's original reservation value,
 	so treat this as an operational estimate, not an accounting figure.
+
+	Optional `warehouse` narrows all results (rows, groups, and KPIs) to a single
+	warehouse.  The comparison is case-insensitive on MariaDB (utf8mb4_unicode_ci).
 	"""
 	_require_company(company)
 
+	wh_clause = "AND sre.warehouse = %(warehouse)s" if warehouse else ""
+
 	rows = frappe.db.sql(
-		"""
+		f"""
 		SELECT
 		  sre.name                                                            AS sre,
 		  sre.item_code,
@@ -2840,9 +2885,10 @@ def reserved_stock_analysis(company: str):
 		WHERE sre.company  = %(company)s
 		  AND sre.docstatus = 1
 		  AND sre.status NOT IN ('Delivered', 'Cancelled')
+		  {wh_clause}
 		ORDER BY sre.warehouse, sre.item_code, sre.creation
 		""",
-		{"company": company},
+		{"company": company, "warehouse": warehouse},
 		as_dict=True,
 	)
 
@@ -2885,6 +2931,7 @@ def reserved_stock_analysis(company: str):
 
 	# ── KPIs ────────────────────────────────────────────────────────────────
 	total_value = sum(flt(g["total_value"]) for g in groups)
+	total_qty = sum(flt(g["total_outstanding"]) for g in groups)
 	oldest = None
 	for r in rows:
 		ts = str(r.reserved_on) if r.reserved_on else None
@@ -2895,6 +2942,7 @@ def reserved_stock_analysis(company: str):
 		"open_sre_count": len(rows),
 		"item_count": len(groups),
 		"total_outstanding_value": total_value,
+		"total_outstanding_qty": total_qty,
 		"oldest_reserved_on": oldest,
 	}
 

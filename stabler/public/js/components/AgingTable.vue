@@ -57,6 +57,16 @@ async function load() {
 onMounted(load);
 watch(activeCompany, load);
 
+// Professional .xlsx — re-runs the aging report server-side for the current as-of.
+function exportXlsx() {
+	const key = props.endpoint.split(".").pop(); // ar_aging | ap_aging
+	const qs = new URLSearchParams({
+		report_key: key,
+		filters: JSON.stringify({ company: activeCompany.value, as_of: asOf.value }),
+	});
+	window.open(`/api/method/stabler.api.export.export_report_xlsx?${qs.toString()}`, "_blank");
+}
+
 function bucketCls(value, bucket) {
 	if (!Number(value)) return "text-secondary";
 	if (bucket === "b_90_plus") return "text-red fw-semibold";
@@ -75,6 +85,15 @@ function bucketCls(value, bucket) {
 					<label class="form-label small mb-1">{{ t("As of") }}</label>
 					<DateInput v-model="asOf" size="sm" />
 				</div>
+				<button
+					type="button"
+					class="btn btn-sm btn-outline-secondary"
+					:disabled="!data.rows?.length"
+					:title="t('Professional Excel export with current filters')"
+					@click="exportXlsx"
+				>
+					<i class="ti ti-file-spreadsheet me-1"></i>{{ t("Excel") }}
+				</button>
 				<button type="button" class="btn btn-sm btn-primary" @click="load">
 					<i class="ti ti-refresh me-1"></i>{{ t("Refresh") }}
 				</button>

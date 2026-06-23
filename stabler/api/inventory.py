@@ -42,11 +42,19 @@ def list_items(
 		)
 		params["warehouse"] = warehouse
 	where = " AND ".join(conds)
+	# custom_dimension_mode drives dimensional pricing (m / m² / m³). Guard the
+	# column so item search keeps working before the v23 patch has run.
+	dim_sel = (
+		"custom_dimension_mode"
+		if frappe.db.has_column("Item", "custom_dimension_mode")
+		else "NULL AS custom_dimension_mode"
+	)
 	return frappe.db.sql(
 		f"""
 		SELECT name, item_code, item_name, item_group, stock_uom,
 		       is_stock_item, is_purchase_item, is_sales_item,
-		       has_variants, image, standard_rate, valuation_rate
+		       has_variants, image, standard_rate, valuation_rate,
+		       {dim_sel}
 		FROM `tabItem`
 		WHERE {where}
 		ORDER BY item_name ASC
@@ -442,6 +450,10 @@ def list_stock_entries(
 	purpose: str | None = None,
 	from_date: str | None = None,
 	to_date: str | None = None,
+	from_warehouse: str | None = None,
+	to_warehouse: str | None = None,
+	status: str | None = None,
+	search: str | None = None,
 	limit: int = 100,
 ):
 	_require_company(company)
@@ -456,6 +468,20 @@ def list_stock_entries(
 	if to_date:
 		conds.append("se.posting_date <= %(to_date)s")
 		params["to_date"] = getdate(to_date)
+	if from_warehouse:
+		conds.append("se.from_warehouse = %(from_warehouse)s")
+		params["from_warehouse"] = from_warehouse
+	if to_warehouse:
+		conds.append("se.to_warehouse = %(to_warehouse)s")
+		params["to_warehouse"] = to_warehouse
+	if status not in (None, ""):
+		sv = int(status)
+		if sv in (0, 1, 2):
+			conds.append("se.docstatus = %(docstatus)s")
+			params["docstatus"] = sv
+	if search:
+		conds.append("se.name LIKE %(search)s")
+		params["search"] = f"%{search}%"
 	where = " AND ".join(conds)
 	return frappe.db.sql(
 		f"""

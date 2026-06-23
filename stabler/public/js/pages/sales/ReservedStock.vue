@@ -11,24 +11,16 @@ import KpiCard from "../../components/KpiCard.vue";
 const session = useSession();
 const { user, activeCompany } = storeToRefs(session);
 
+// Page is scoped to this warehouse only — backend filters accordingly.
+const LOCKED_WAREHOUSE = "Tayyor Mahsulot - A";
+
 const loading = ref(false);
 const error = ref("");
 const kpis = ref(null);
 const groups = ref([]);
-const warehouseFilter = ref("");
 const groupBy = ref("item"); // "item" | "so"
 // Set of row keys that are currently expanded.
 const expanded = ref(new Set());
-
-const warehouseOptions = computed(() => {
-	const names = [...new Set(groups.value.map((g) => g.warehouse))].sort();
-	return names.map((w) => ({ value: w, label: w }));
-});
-
-const filteredGroups = computed(() => {
-	if (!warehouseFilter.value) return groups.value;
-	return groups.value.filter((g) => g.warehouse === warehouseFilter.value);
-});
 
 // SO-based grouping derived from item groups
 const soGroups = computed(() => {
@@ -80,11 +72,10 @@ async function load() {
 	try {
 		const data = await call("stabler.api.sales.reserved_stock_analysis", {
 			company: activeCompany.value,
+			warehouse: LOCKED_WAREHOUSE,
 		});
 		kpis.value = data.kpis;
 		groups.value = data.groups || [];
-		const defaultWh = "Tayyor mahsulot - A";
-		warehouseFilter.value = groups.value.some((g) => g.warehouse === defaultWh) ? defaultWh : "";
 		expanded.value = new Set();
 	} catch (err) {
 		error.value = err?.message || t("Failed to load reserved stock data.");
@@ -97,9 +88,14 @@ function fmt(val) {
 	return formatMoney(val ?? 0, null, user.value?.language);
 }
 
-const totalValueFmt = computed(() =>
-	kpis.value ? fmt(kpis.value.total_outstanding_value) : "—"
-);
+const totalQtyFmt = computed(() => {
+	if (!kpis.value) return "—";
+	const n = Number(kpis.value.total_outstanding_qty ?? 0);
+	return n.toLocaleString(user.value?.language ?? "en", {
+		minimumFractionDigits: 2,
+		maximumFractionDigits: 2,
+	});
+});
 
 function statusTone(status) {
 	const map = {
@@ -118,17 +114,16 @@ watch(activeCompany, load);
 <template>
 	<!-- KPI headline row -->
 	<div class="row row-cards mb-3">
-		<div class="col-6 col-md-3">
+		<div class="col-6 col-md">
 			<KpiCard
-				:label="t('Reserved value')"
-				:value="totalValueFmt"
-				icon="ti-lock"
-				tone="warning"
+				:label="t('Reserved qty')"
+				:value="totalQtyFmt"
+				icon="ti-stack-2"
+				tone="teal"
 				:loading="loading"
-				:hint="t('Approx. at current valuation rate')"
 			/>
 		</div>
-		<div class="col-6 col-md-3">
+		<div class="col-6 col-md">
 			<KpiCard
 				:label="t('Open SREs')"
 				:value="kpis ? String(kpis.open_sre_count) : '—'"
@@ -137,7 +132,7 @@ watch(activeCompany, load);
 				:loading="loading"
 			/>
 		</div>
-		<div class="col-6 col-md-3">
+		<div class="col-6 col-md">
 			<KpiCard
 				:label="t('Item·WH lines')"
 				:value="kpis ? String(kpis.item_count) : '—'"
@@ -146,7 +141,7 @@ watch(activeCompany, load);
 				:loading="loading"
 			/>
 		</div>
-		<div class="col-6 col-md-3">
+		<div class="col-6 col-md">
 			<KpiCard
 				:label="t('Oldest reservation')"
 				:value="kpis?.oldest_reserved_on ? formatDate(kpis.oldest_reserved_on) : '—'"
@@ -181,19 +176,14 @@ watch(activeCompany, load);
 					</label>
 				</div>
 
-				<!-- Warehouse filter (item view only) -->
-				<template v-if="groupBy === 'item' && warehouseOptions.length > 1">
-					<i class="ti ti-building-warehouse text-secondary"></i>
-					<select v-model="warehouseFilter" class="form-select form-select-sm w-auto">
-						<option value="">{{ t("All warehouses") }}</option>
-						<option v-for="opt in warehouseOptions" :key="opt.value" :value="opt.value">
-							{{ opt.label }}
-						</option>
-					</select>
-				</template>
+				<!-- Warehouse indicator (locked) -->
+				<span class="text-secondary small d-flex align-items-center gap-1">
+					<i class="ti ti-building-warehouse"></i>
+					{{ LOCKED_WAREHOUSE }}
+				</span>
 
 				<span class="text-secondary small ms-auto">
-					{{ groupBy === "so" ? soGroups.length : filteredGroups.length }}
+					{{ groupBy === "so" ? soGroups.length : groups.length }}
 					{{ groupBy === "so" ? t("orders") : t("lines") }}
 				</span>
 			</div>
@@ -205,19 +195,18 @@ watch(activeCompany, load);
 					<tr>
 						<th style="width: 28px"></th>
 						<th>{{ t("Item") }}</th>
-						<th>{{ t("Warehouse") }}</th>
 						<th class="text-end font-monospace">{{ t("Outstanding") }}</th>
 						<th class="text-end font-monospace">{{ t("Value (approx.)") }}</th>
 						<th class="text-end" style="width: 80px">{{ t("SREs") }}</th>
 					</tr>
 				</thead>
 				<tbody>
-					<tr v-if="filteredGroups.length === 0">
-						<td colspan="6" class="text-center text-secondary py-4">
+					<tr v-if="groups.length === 0">
+						<td colspan="5" class="text-center text-secondary py-4">
 							{{ t("No reservations for this warehouse") }}
 						</td>
 					</tr>
-					<template v-for="g in filteredGroups" :key="rowKey(g)">
+					<template v-for="g in groups" :key="rowKey(g)">
 						<tr class="cursor-pointer" style="cursor: pointer" @click="toggleExpand(g)">
 							<td class="text-center text-secondary">
 								<i class="ti" :class="isExpanded(g) ? 'ti-chevron-down' : 'ti-chevron-right'"></i>
@@ -226,7 +215,6 @@ watch(activeCompany, load);
 								<div class="fw-semibold">{{ g.item_name }}</div>
 								<div class="small text-secondary font-monospace">{{ g.item_code }}</div>
 							</td>
-							<td class="text-secondary small">{{ g.warehouse }}</td>
 							<td class="text-end font-monospace">
 								{{ Number(g.total_outstanding).toFixed(2) }}
 								<span class="text-secondary small ms-1">{{ g.stock_uom }}</span>
@@ -236,10 +224,7 @@ watch(activeCompany, load);
 						</tr>
 						<template v-if="isExpanded(g)">
 							<tr v-for="e in g.entries" :key="e.sre" class="table-active" style="font-size: 0.85em">
-								<td></td>
-								<td colspan="1">
-									<div class="font-monospace small text-secondary">{{ e.sre }}</div>
-								</td>
+								<td class="text-secondary font-monospace small">{{ e.sre }}</td>
 								<td>
 									<router-link :to="'/sales/orders/' + e.sales_order" class="fw-semibold text-decoration-none">
 										{{ e.sales_order }}

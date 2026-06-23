@@ -191,6 +191,33 @@ function exportColumns() {
 	];
 }
 
+// Professional server-generated .xlsx for the active tab + current filters.
+// Re-runs the report backend (permission + company enforced), never client rows.
+const TAB_REPORT_KEY = {
+	customer: "sales_report_by_customer",
+	item: "sales_report_by_item",
+	trend: "sales_report_by_date",
+	salesperson: "sales_report_by_salesperson",
+	orders: "sales_report_orders",
+};
+function exportXlsx() {
+	const key = TAB_REPORT_KEY[activeTab.value];
+	if (!key) return;
+	const filters = {
+		company: activeCompany.value,
+		from_date: fromDate.value,
+		to_date: toDate.value,
+		date_basis: dateBasis.value,
+		include_drafts: includeDrafts.value ? 1 : 0,
+		customer: customer.value || undefined,
+		item_group: itemGroup.value || undefined,
+		item_code: itemCode.value || undefined,
+		granularity: granularity.value,
+	};
+	const qs = new URLSearchParams({ report_key: key, filters: JSON.stringify(filters) });
+	window.open(`/api/method/stabler.api.export.export_report_xlsx?${qs.toString()}`, "_blank");
+}
+
 function exportCsv() {
 	if (!rows.value.length) return;
 	const cols = exportColumns();
@@ -339,14 +366,23 @@ onMounted(() => {
 				<div class="card-subtitle" :class="includeDrafts ? 'text-warning' : ''">{{ scopeNote }}</div>
 				<h3 class="card-title mb-0">{{ title }}</h3>
 			</div>
-			<div class="card-actions">
+			<div class="card-actions btn-list">
+				<button
+					type="button"
+					class="btn btn-sm btn-primary"
+					:disabled="loading || !rows.length"
+					:title="t('Professional Excel export with current filters')"
+					@click="exportXlsx"
+				>
+					<i class="ti ti-file-spreadsheet me-1"></i>{{ t("Excel") }}
+				</button>
 				<button
 					type="button"
 					class="btn btn-sm btn-outline-secondary"
 					:disabled="loading || !rows.length"
 					@click="exportCsv"
 				>
-					<i class="ti ti-download me-1"></i>{{ t("Export") }}
+					<i class="ti ti-download me-1"></i>{{ t("CSV") }}
 				</button>
 			</div>
 		</div>

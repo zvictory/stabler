@@ -42,6 +42,22 @@ const ledgerTypeFilter = ref("");
 const ledgerSearch = ref("");
 const ledgerSortAsc = ref(true);
 
+// Professional .xlsx of the open customer's ledger (opening / movements / running
+// balance / closing) — re-runs server-side for the current customer + date range.
+function exportLedgerXlsx() {
+	if (!selected.value?.name) return;
+	const qs = new URLSearchParams({
+		report_key: "customer_ledger",
+		filters: JSON.stringify({
+			company: activeCompany.value,
+			customer: selected.value.name,
+			from_date: ledgerFromDate.value || undefined,
+			to_date: ledgerToDate.value || undefined,
+		}),
+	});
+	window.open(`/api/method/stabler.api.export.export_report_xlsx?${qs.toString()}`, "_blank");
+}
+
 const partyPayOpen = ref(false);
 const currentTab = ref("ledger");
 
@@ -894,6 +910,17 @@ watch(activeCompany, () => {
 													:title="t('Toggle date sort')"
 												>
 													<i class="ti fs-3" :class="ledgerSortAsc ? 'ti-arrow-narrow-up' : 'ti-arrow-narrow-down'"></i>
+												</button>
+											</div>
+											<div class="col-auto">
+												<button
+													type="button"
+													class="btn btn-sm btn-outline-secondary"
+													:disabled="!ledger?.entries?.length"
+													:title="t('Professional Excel export of this ledger')"
+													@click="exportLedgerXlsx"
+												>
+													<i class="ti ti-file-spreadsheet me-1"></i>{{ t("Excel") }}
 												</button>
 											</div>
 										</div>
