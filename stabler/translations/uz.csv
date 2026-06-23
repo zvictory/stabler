@@ -2748,3 +2748,59 @@ Length,Bo'y
 Width,En
 Height,Balandlik
 Pieces,Dona
+Upcoming,Kelayotgan
+No visits,Tashriflar yo'q
+without location,joylashuvi yo'q
+Failed to load service map.,Servis xaritasini yuklab bo'lmadi.
+Map library could not be loaded.,Xarita kutubxonasini yuklab bo'lmadi.
+Outlet class,Nuqta klassi
+Last visit,Oxirgi tashrif
+Visits this month,Bu oydagi tashriflar
+Directions,Yo'nalish
+No GPS-located outlets for this period.,Bu davr uchun GPS'li nuqtalar yo'q.
+Outlet locations,Nuqta joylashuvi
+Outlet Locations,Nuqta joylashuvi
+Locations,Joylashuvlar
+located,joylashuvli
+Located,Joylashuvli
+need GPS,GPS kerak
+Need GPS,GPS kerak
+Import (paste / CSV),Import (paste / CSV)
+Search outlets,Nuqta qidirish
+No outlets.,Nuqtalar yo'q.
+Placing,Joylashtirish
+"Pick an outlet, then click the map.","Nuqtani tanlang, so'ng xaritani bosing."
+Pick an outlet from the list first.,Avval ro'yxatdan nuqta tanlang.
+Use my location,Mening joylashuvim
+Geolocation is not available in this browser.,Bu brauzerda geolokatsiya mavjud emas.
+Could not read your location.,Joylashuvni aniqlab bo'lmadi.
+Location saved.,Joylashuv saqlandi.
+Failed to save location.,Joylashuvni saqlab bo'lmadi.
+Failed to load outlets.,Nuqtalarni yuklab bo'lmadi.
+Import outlet locations,Nuqta joylashuvlarini import qilish
+"One outlet per line: code or name, latitude, longitude. Comma, tab or semicolon separated.","Har qatorda bitta nuqta: kod yoki nom, kenglik, uzunlik. Vergul, tabulyatsiya yoki nuqtali vergul bilan ajratilgan."
+No valid rows found.,Yaroqli qatorlar topilmadi.
+Import failed.,Import muvaffaqiyatsiz.
+Row,Qator
+skipped,o'tkazib yuborildi
+Open tickets,Ochiq tiketlar
+across all statuses,barcha holatlar bo'yicha
+Completion rate,Bajarilish darajasi
+Unbilled queue,Hisob-faktura navbati
+ready to invoice,hisob-fakturaga tayyor
+Tickets by status,Holat bo'yicha tiketlar
+Equipment coverage,Jihoz qamrovi
+No coverage,Qamrov yo'q
+units total,jami birlik
+Total units,Jami birliklar
+Covered,Qamrovda
+Expired,Muddati tugagan
+Search by serial or item,Seriya yoki tovar bo'yicha qidirish
+All coverage,Barcha qamrov
+Warranty,Kafolat
+AMC,Yillik xizmat shartnomasi
+Coverage,Qamrov
+No equipment found.,Jihoz topilmadi.
+Failed to load equipment.,Jihozni yuklab bo'lmadi.
+Service history,Xizmat tarixi
+No tickets for this unit.,Bu birlik uchun tiket yo'q.

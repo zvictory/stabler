@@ -2748,3 +2748,59 @@ Length,Бўй
 Width,Эн
 Height,Баландлик
 Pieces,Дона
+Upcoming,Келаётган
+No visits,Ташрифлар йўқ
+without location,жойлашуви йўқ
+Failed to load service map.,Сервис харитасини юклаб бўлмади.
+Map library could not be loaded.,Харита кутубхонасини юклаб бўлмади.
+Outlet class,Нуқта класси
+Last visit,Охирги ташриф
+Visits this month,Бу ойдаги ташрифлар
+Directions,Йўналиш
+No GPS-located outlets for this period.,Бу давр учун GPSли нуқталар йўқ.
+Outlet locations,Нуқта жойлашуви
+Outlet Locations,Нуқта жойлашуви
+Locations,Жойлашувлар
+located,жойлашувли
+Located,Жойлашувли
+need GPS,GPS керак
+Need GPS,GPS керак
+Import (paste / CSV),Импорт (paste / CSV)
+Search outlets,Нуқта қидириш
+No outlets.,Нуқталар йўқ.
+Placing,Жойлаштириш
+"Pick an outlet, then click the map.","Нуқтани танланг, сўнг харитани босинг."
+Pick an outlet from the list first.,Аввал рўйхатдан нуқта танланг.
+Use my location,Менинг жойлашувим
+Geolocation is not available in this browser.,Бу браузерда геолокация мавжуд эмас.
+Could not read your location.,Жойлашувни аниқлаб бўлмади.
+Location saved.,Жойлашув сақланди.
+Failed to save location.,Жойлашувни сақлаб бўлмади.
+Failed to load outlets.,Нуқталарни юклаб бўлмади.
+Import outlet locations,Нуқта жойлашувларини импорт қилиш
+"One outlet per line: code or name, latitude, longitude. Comma, tab or semicolon separated.","Ҳар қаторда битта нуқта: код ёки ном, кенглик, узунлик. Вергул, табуляция ёки нуқтали вергул билан ажратилган."
+No valid rows found.,Яроқли қаторлар топилмади.
+Import failed.,Импорт муваффақиятсиз.
+Row,Қатор
+skipped,ўтказиб юборилди
+Open tickets,Очиқ тикетлар
+across all statuses,барча ҳолатлар бўйича
+Completion rate,Бажарилиш даражаси
+Unbilled queue,Ҳисоб-фактура навбати
+ready to invoice,ҳисоб-фактурага тайёр
+Tickets by status,Ҳолат бўйича тикетлар
+Equipment coverage,Жиҳоз қамрови
+No coverage,Қамров йўқ
+units total,жами бирлик
+Total units,Жами бирликлар
+Covered,Қамровда
+Expired,Муддати тугаган
+Search by serial or item,Серия ёки товар бўйича қидириш
+All coverage,Барча қамров
+Warranty,Кафолат
+AMC,Йиллик хизмат шартномаси
+Coverage,Қамров
+No equipment found.,Жиҳоз топилмади.
+Failed to load equipment.,Жиҳозни юклаб бўлмади.
+Service history,Хизмат тарихи
+No tickets for this unit.,Бу бирлик учун тикет йўқ.

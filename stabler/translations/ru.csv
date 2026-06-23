@@ -2755,3 +2755,59 @@ Length,Длина
 Width,Ширина
 Height,Высота
 Pieces,Штук
+Upcoming,Предстоящие
+No visits,Нет визитов
+without location,без геолокации
+Failed to load service map.,Не удалось загрузить карту сервиса.
+Map library could not be loaded.,Не удалось загрузить библиотеку карты.
+Outlet class,Класс точки
+Last visit,Последний визит
+Visits this month,Визитов в этом месяце
+Directions,Маршрут
+No GPS-located outlets for this period.,Нет точек с GPS за этот период.
+Outlet locations,Геолокация точек
+Outlet Locations,Геолокация точек
+Locations,Локации
+located,с геолокацией
+Located,С геолокацией
+need GPS,без GPS
+Need GPS,Без GPS
+Import (paste / CSV),Импорт (вставка / CSV)
+Search outlets,Поиск точек
+No outlets.,Нет точек.
+Placing,Размещение
+"Pick an outlet, then click the map.","Выберите точку, затем кликните по карте."
+Pick an outlet from the list first.,Сначала выберите точку из списка.
+Use my location,Моё местоположение
+Geolocation is not available in this browser.,Геолокация недоступна в этом браузере.
+Could not read your location.,Не удалось определить местоположение.
+Location saved.,Геолокация сохранена.
+Failed to save location.,Не удалось сохранить геолокацию.
+Failed to load outlets.,Не удалось загрузить точки.
+Import outlet locations,Импорт геолокаций точек
+"One outlet per line: code or name, latitude, longitude. Comma, tab or semicolon separated.","Одна точка на строку: код или название, широта, долгота. Разделители: запятая, табуляция или точка с запятой."
+No valid rows found.,Допустимые строки не найдены.
+Import failed.,Импорт не удался.
+Row,Строка
+skipped,пропущено
+Open tickets,Открытые заявки
+across all statuses,по всем статусам
+Completion rate,Доля завершения
+Unbilled queue,Очередь к выставлению
+ready to invoice,готово к счёту
+Tickets by status,Заявки по статусам
+Equipment coverage,Покрытие оборудования
+No coverage,Без покрытия
+units total,единиц всего
+Total units,Всего единиц
+Covered,Под покрытием
+Expired,Истёк
+Search by serial or item,Поиск по серийному номеру или товару
+All coverage,Любое покрытие
+Warranty,Гарантия
+AMC,Контракт ТО
+Coverage,Покрытие
+No equipment found.,Оборудование не найдено.
+Failed to load equipment.,Не удалось загрузить оборудование.
+Service history,История обслуживания
+No tickets for this unit.,Нет заявок по этой единице.

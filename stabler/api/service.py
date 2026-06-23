@@ -10,6 +10,7 @@ from frappe import _
 from frappe.utils import cint, flt, get_datetime, getdate, now_datetime, today
 
 from stabler.api._common import _assert_can_read, _require_company, _assert_can_write
+from stabler.api._equipment import coverage_state, summarise_coverage
 from stabler.api.organization import _can_access_module
 from stabler.stabler.doctype.stabler_settings.stabler_settings import module_map_for
 
@@ -128,6 +129,20 @@ def _service_calendar_state(completion_status: str | None, scheduled_date, curre
 		return "partial"
 	current = getdate(current_date or today())
 	return "overdue" if getdate(scheduled_date) < current else "upcoming"
+
+
+def _latest_visit_state(visits: list[dict], current_date=None) -> dict:
+	"""Reduce a customer's visits (each {date, completion_status}) to a single map
+	pin state, taken from the most recent visit. No visits → state 'none'."""
+	dated = [v for v in (visits or []) if v.get("date")]
+	if not dated:
+		return {"state": "none", "last_date": None, "visit_count": len(visits or [])}
+	latest = max(dated, key=lambda v: getdate(v["date"]))
+	return {
+		"state": _service_calendar_state(latest.get("completion_status"), latest["date"], current_date),
+		"last_date": latest["date"],
+		"visit_count": len(visits or []),
+	}
 
 
 def _serial_under_coverage(serial_no: str | None) -> bool:
@@ -670,6 +685,131 @@ def reschedule_detail(name: str, date: str):
 
 
 @frappe.whitelist()
+def map_feed(company: str, month: str | None = None, service_person: str | None = None):
+	"""Outlets (HoReCa venues) plotted on a map, each coloured by the service state
+	of its customer's most recent Maintenance Visit in the chosen month.
+
+	Geo lives on Outlet.gps_lat/gps_lng; service state comes via Outlet.customer →
+	Maintenance Visit. Company- and module-scoped. Read-only.
+	"""
+	company = _require_service(company)
+
+	# Period (default = current month), mirroring calendar_feed.
+	if month:
+		try:
+			year, mon = (int(x) for x in str(month).split("-")[:2])
+		except (ValueError, TypeError):
+			frappe.throw(_("Invalid month: {0}").format(month))
+	else:
+		d = getdate(today())
+		year, mon = d.year, d.month
+	last_day = calendar.monthrange(year, mon)[1]
+	start_date = getdate(f"{year:04d}-{mon:02d}-01")
+	end_date = getdate(f"{year:04d}-{mon:02d}-{last_day:02d}")
+
+	# 1) GPS-bearing, active outlets for this company.
+	outlets = frappe.db.sql(
+		"""
+		SELECT name, outlet_name, customer, address, outlet_class,
+			gps_lat, gps_lng, assigned_field_user
+		FROM `tabOutlet`
+		WHERE company = %(company)s AND is_active = 1
+		  AND gps_lat IS NOT NULL AND gps_lng IS NOT NULL
+		  AND gps_lat <> 0 AND gps_lng <> 0
+		ORDER BY outlet_name ASC
+		""",
+		{"company": company},
+		as_dict=True,
+	)
+	total_active = frappe.db.count("Outlet", {"company": company, "is_active": 1})
+
+	customers = sorted({o.customer for o in outlets if o.customer})
+
+	# 2) Customer names (single batched lookup).
+	cust_names: dict[str, str] = {}
+	if customers:
+		for row in frappe.get_all(
+			"Customer", filters={"name": ["in", customers]}, fields=["name", "customer_name"]
+		):
+			cust_names[row.name] = row.customer_name
+
+	# 3) This month's submitted visits for those customers, grouped by customer.
+	visits_by_customer: dict[str, list[dict]] = {}
+	if customers:
+		visit_filters = {
+			"company": company,
+			"docstatus": 1,
+			"mntc_date": ["between", [start_date, end_date]],
+			"customer": ["in", customers],
+		}
+		rows = frappe.get_all(
+			"Maintenance Visit",
+			filters=visit_filters,
+			fields=["name", "customer", "mntc_date", "completion_status"],
+		)
+		if service_person:
+			sp_names = {
+				p.parent
+				for p in frappe.get_all(
+					"Maintenance Visit Purpose",
+					filters={"service_person": service_person},
+					fields=["parent"],
+				)
+			}
+			rows = [r for r in rows if r.name in sp_names]
+		for r in rows:
+			visits_by_customer.setdefault(r.customer, []).append(
+				{"date": r.mntc_date, "completion_status": r.completion_status}
+			)
+
+	# 4) Build one pin per outlet.
+	current = getdate(today())
+	pins = []
+	for o in outlets:
+		agg = _latest_visit_state(visits_by_customer.get(o.customer, []), current)
+		pins.append(
+			{
+				"outlet": o.name,
+				"outlet_name": o.outlet_name,
+				"customer": o.customer,
+				"customer_name": cust_names.get(o.customer) or o.customer,
+				"lat": flt(o.gps_lat),
+				"lng": flt(o.gps_lng),
+				"address": o.address,
+				"outlet_class": o.outlet_class,
+				"state": agg["state"],
+				"last_date": str(agg["last_date"]) if agg["last_date"] else None,
+				"visit_count": agg["visit_count"],
+			}
+		)
+
+	# 5) Service people for the filter dropdown.
+	service_people = [
+		r.service_person
+		for r in frappe.db.sql(
+			"""
+			SELECT DISTINCT p.service_person
+			FROM `tabMaintenance Visit Purpose` p
+			JOIN `tabMaintenance Visit` mv ON mv.name = p.parent
+			WHERE mv.company = %(company)s
+			  AND p.service_person IS NOT NULL AND p.service_person <> ''
+			ORDER BY p.service_person
+			""",
+			{"company": company},
+			as_dict=True,
+		)
+	]
+
+	return {
+		"company": company,
+		"month": f"{year:04d}-{mon:02d}",
+		"pins": pins,
+		"without_gps": max(0, total_active - len(outlets)),
+		"service_people": service_people,
+	}
+
+
+@frappe.whitelist()
 def create_invoice_from_visit(visit: str, items, posting_date: str | None = None, submit: int = 0):
 	if not visit or not frappe.db.exists("Maintenance Visit", visit):
 		frappe.throw(_("Visit is required."))
@@ -788,3 +928,210 @@ def unbilled_visits(company: str, from_date: str | None = None, to_date: str | N
 		params,
 		as_dict=True,
 	)
+
+
+# ---------------------------------------------------------------------------
+# Equipment (ERPNext Serial No — fridges/freezers placed at customers)
+# ---------------------------------------------------------------------------
+
+def _serial_company_clause(company: str) -> tuple[str, dict]:
+	"""Serial No has a company field on standard ERPNext; guard for older schemas."""
+	if _has_field("Serial No", "company"):
+		return "sn.company = %(company)s", {"company": company}
+	return "1=1", {}
+
+
+@frappe.whitelist()
+def list_equipment(
+	company: str,
+	customer: str | None = None,
+	coverage: str | None = None,
+	search: str | None = None,
+	limit: int = 500,
+):
+	"""Serialised equipment under service, with warranty/AMC coverage state.
+
+	`coverage` filters the result to covered | expired | none (client-side of the
+	SQL, since coverage is a derived value). Returns {rows, summary}.
+	"""
+	company = _require_service(company)
+	limit = max(1, min(cint(limit) or 500, 2000))
+	clause, params = _serial_company_clause(company)
+	conds = [clause]
+	if customer:
+		conds.append("sn.customer = %(customer)s")
+		params["customer"] = customer
+	if search:
+		conds.append("(sn.name LIKE %(needle)s OR sn.item_code LIKE %(needle)s OR sn.item_name LIKE %(needle)s)")
+		params["needle"] = f"%{search}%"
+	params["limit"] = limit
+
+	rows = frappe.db.sql(
+		f"""
+		SELECT
+			sn.name AS serial_no, sn.item_code, sn.item_name, sn.customer,
+			c.customer_name, sn.warranty_expiry_date, sn.amc_expiry_date,
+			sn.status, sn.warehouse
+		FROM `tabSerial No` sn
+		LEFT JOIN `tabCustomer` c ON c.name = sn.customer
+		WHERE {" AND ".join(conds)}
+		ORDER BY sn.modified DESC
+		LIMIT %(limit)s
+		""",
+		params,
+		as_dict=True,
+	)
+
+	today_iso = str(today())
+	for r in rows:
+		r["coverage"] = coverage_state(r.get("warranty_expiry_date"), r.get("amc_expiry_date"), today_iso)
+		r["warranty_expiry_date"] = str(r["warranty_expiry_date"]) if r.get("warranty_expiry_date") else None
+		r["amc_expiry_date"] = str(r["amc_expiry_date"]) if r.get("amc_expiry_date") else None
+
+	summary = summarise_coverage(rows, today_iso)
+	if coverage in ("covered", "expired", "none"):
+		rows = [r for r in rows if r["coverage"] == coverage]
+
+	return {"company": company, "rows": rows, "summary": summary}
+
+
+@frappe.whitelist()
+def equipment_detail(serial_no: str):
+	"""One serial's coverage + recent service tickets that referenced it."""
+	if not serial_no or not frappe.db.exists("Serial No", serial_no):
+		frappe.throw(_("Unknown serial number: {0}").format(serial_no))
+	sn = frappe.db.get_value(
+		"Serial No",
+		serial_no,
+		["name", "item_code", "item_name", "customer", "warranty_expiry_date", "amc_expiry_date", "status", "warehouse"],
+		as_dict=True,
+	)
+	serial_company = frappe.db.get_value("Serial No", serial_no, "company") if _has_field("Serial No", "company") else None
+	_require_service(serial_company or _current_company())
+
+	tickets = []
+	if _has_field("Issue", "custom_serial_no"):
+		tickets = frappe.get_all(
+			"Issue",
+			filters={"custom_serial_no": serial_no},
+			fields=["name", "subject", "status", "issue_type", "opening_date"],
+			order_by="modified desc",
+			limit=20,
+		)
+		for t in tickets:
+			t["opening_date"] = str(t["opening_date"]) if t.get("opening_date") else None
+
+	return {
+		"serial_no": sn.name,
+		"item_code": sn.item_code,
+		"item_name": sn.item_name,
+		"customer": sn.customer,
+		"customer_name": frappe.db.get_value("Customer", sn.customer, "customer_name") if sn.customer else None,
+		"warranty_expiry_date": str(sn.warranty_expiry_date) if sn.warranty_expiry_date else None,
+		"amc_expiry_date": str(sn.amc_expiry_date) if sn.amc_expiry_date else None,
+		"status": sn.status,
+		"warehouse": sn.warehouse,
+		"coverage": coverage_state(sn.warranty_expiry_date, sn.amc_expiry_date, str(today())),
+		"tickets": tickets,
+	}
+
+
+# ---------------------------------------------------------------------------
+# Dashboard
+# ---------------------------------------------------------------------------
+
+@frappe.whitelist()
+def dashboard_summary(company: str, month: str | None = None):
+	"""KPI roll-up for the Service dashboard: tickets by status, this month's
+	visits, the unbilled queue size, and equipment coverage."""
+	company = _require_service(company)
+
+	if month:
+		try:
+			year, mon = (int(x) for x in str(month).split("-")[:2])
+		except (ValueError, TypeError):
+			frappe.throw(_("Invalid month: {0}").format(month))
+	else:
+		d = getdate(today())
+		year, mon = d.year, d.month
+	last_day = calendar.monthrange(year, mon)[1]
+	start_date = getdate(f"{year:04d}-{mon:02d}-01")
+	end_date = getdate(f"{year:04d}-{mon:02d}-{last_day:02d}")
+
+	# Tickets by status (open = everything not Closed/Cancelled).
+	ticket_company = "AND i.company = %(company)s" if _has_field("Issue", "company") else ""
+	status_rows = frappe.db.sql(
+		f"""
+		SELECT i.status, COUNT(*) AS n
+		FROM `tabIssue` i
+		WHERE 1=1 {ticket_company}
+		GROUP BY i.status
+		""",
+		{"company": company},
+		as_dict=True,
+	)
+	tickets_by_status = {s: 0 for s in ISSUE_STATUSES}
+	for r in status_rows:
+		tickets_by_status[r.status] = tickets_by_status.get(r.status, 0) + cint(r.n)
+	open_tickets = sum(v for k, v in tickets_by_status.items() if k not in ("Closed", "Cancelled"))
+
+	# This month's visits, by completion state.
+	visit_rows = frappe.db.sql(
+		"""
+		SELECT mv.completion_status, mv.mntc_date
+		FROM `tabMaintenance Visit` mv
+		WHERE mv.company = %(company)s AND mv.docstatus = 1
+		  AND mv.mntc_date BETWEEN %(start_date)s AND %(end_date)s
+		""",
+		{"company": company, "start_date": start_date, "end_date": end_date},
+		as_dict=True,
+	)
+	visits = {"total": 0, "completed": 0, "partial": 0, "open": 0}
+	for r in visit_rows:
+		visits["total"] += 1
+		if r.completion_status == "Fully Completed":
+			visits["completed"] += 1
+		elif r.completion_status == "Partially Completed":
+			visits["partial"] += 1
+		else:
+			visits["open"] += 1
+	visits["completion_rate"] = round(100.0 * visits["completed"] / visits["total"], 1) if visits["total"] else 0.0
+
+	# Unbilled (billing queue) — Refill/Repair visits not yet invoiced/issued.
+	unbilled = frappe.db.sql(
+		"""
+		SELECT COUNT(*) AS n
+		FROM `tabMaintenance Visit` mv
+		INNER JOIN `tabIssue` i ON i.name = mv.custom_issue
+		WHERE mv.company = %(company)s AND mv.docstatus = 1
+		  AND (mv.custom_sales_invoice IS NULL OR mv.custom_sales_invoice = '')
+		  AND (mv.custom_stock_entry IS NULL OR mv.custom_stock_entry = '')
+		  AND i.issue_type IN ('Refill', 'Repair')
+		""",
+		{"company": company},
+		as_dict=True,
+	)
+	unbilled_count = cint(unbilled[0].n) if unbilled else 0
+
+	# Equipment coverage.
+	clause, eparams = _serial_company_clause(company)
+	serials = frappe.db.sql(
+		f"""
+		SELECT sn.warranty_expiry_date, sn.amc_expiry_date
+		FROM `tabSerial No` sn
+		WHERE {clause}
+		""",
+		eparams,
+		as_dict=True,
+	)
+	equipment = summarise_coverage(serials, str(today()))
+
+	return {
+		"company": company,
+		"month": f"{year:04d}-{mon:02d}",
+		"tickets_by_status": tickets_by_status,
+		"open_tickets": open_tickets,
+		"visits": visits,
+		"unbilled": unbilled_count,
+		"equipment": equipment,
+	}

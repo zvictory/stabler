@@ -2742,3 +2742,59 @@ Length,Length
 Width,Width
 Height,Height
 Pieces,Pieces
+Upcoming,Upcoming
+No visits,No visits
+without location,without location
+Failed to load service map.,Failed to load service map.
+Map library could not be loaded.,Map library could not be loaded.
+Outlet class,Outlet class
+Last visit,Last visit
+Visits this month,Visits this month
+Directions,Directions
+No GPS-located outlets for this period.,No GPS-located outlets for this period.
+Outlet locations,Outlet locations
+Outlet Locations,Outlet Locations
+Locations,Locations
+located,located
+Located,Located
+need GPS,need GPS
+Need GPS,Need GPS
+Import (paste / CSV),Import (paste / CSV)
+Search outlets,Search outlets
+No outlets.,No outlets.
+Placing,Placing
+"Pick an outlet, then click the map.","Pick an outlet, then click the map."
+Pick an outlet from the list first.,Pick an outlet from the list first.
+Use my location,Use my location
+Geolocation is not available in this browser.,Geolocation is not available in this browser.
+Could not read your location.,Could not read your location.
+Location saved.,Location saved.
+Failed to save location.,Failed to save location.
+Failed to load outlets.,Failed to load outlets.
+Import outlet locations,Import outlet locations
+"One outlet per line: code or name, latitude, longitude. Comma, tab or semicolon separated.","One outlet per line: code or name, latitude, longitude. Comma, tab or semicolon separated."
+No valid rows found.,No valid rows found.
+Import failed.,Import failed.
+Row,Row
+skipped,skipped
+Open tickets,Open tickets
+across all statuses,across all statuses
+Completion rate,Completion rate
+Unbilled queue,Unbilled queue
+ready to invoice,ready to invoice
+Tickets by status,Tickets by status
+Equipment coverage,Equipment coverage
+No coverage,No coverage
+units total,units total
+Total units,Total units
+Covered,Covered
+Expired,Expired
+Search by serial or item,Search by serial or item
+All coverage,All coverage
+Warranty,Warranty
+AMC,AMC
+Coverage,Coverage
+No equipment found.,No equipment found.
+Failed to load equipment.,Failed to load equipment.
+Service history,Service history
+No tickets for this unit.,No tickets for this unit.

@@ -2730,3 +2730,59 @@ Length,Boy
 Width,En
 Height,Yükseklik
 Pieces,Adet
+Upcoming,Yaklaşan
+No visits,Ziyaret yok
+without location,konumsuz
+Failed to load service map.,Servis haritası yüklenemedi.
+Map library could not be loaded.,Harita kütüphanesi yüklenemedi.
+Outlet class,Nokta sınıfı
+Last visit,Son ziyaret
+Visits this month,Bu ayki ziyaretler
+Directions,Yol tarifi
+No GPS-located outlets for this period.,Bu dönem için GPS konumlu nokta yok.
+Outlet locations,Nokta konumları
+Outlet Locations,Nokta konumları
+Locations,Konumlar
+located,konumlu
+Located,Konumlu
+need GPS,GPS gerekli
+Need GPS,GPS gerekli
+Import (paste / CSV),İçe aktar (yapıştır / CSV)
+Search outlets,Nokta ara
+No outlets.,Nokta yok.
+Placing,Yerleştiriliyor
+"Pick an outlet, then click the map.","Bir nokta seçin, sonra haritaya tıklayın."
+Pick an outlet from the list first.,Önce listeden bir nokta seçin.
+Use my location,Konumumu kullan
+Geolocation is not available in this browser.,Bu tarayıcıda konum mevcut değil.
+Could not read your location.,Konumunuz okunamadı.
+Location saved.,Konum kaydedildi.
+Failed to save location.,Konum kaydedilemedi.
+Failed to load outlets.,Noktalar yüklenemedi.
+Import outlet locations,Nokta konumlarını içe aktar
+"One outlet per line: code or name, latitude, longitude. Comma, tab or semicolon separated.","Satır başına bir nokta: kod veya ad, enlem, boylam. Virgül, sekme veya noktalı virgülle ayrılmış."
+No valid rows found.,Geçerli satır bulunamadı.
+Import failed.,İçe aktarma başarısız.
+Row,Satır
+skipped,atlandı
+Open tickets,Açık talepler
+across all statuses,tüm durumlarda
+Completion rate,Tamamlanma oranı
+Unbilled queue,Faturalanmamış kuyruk
+ready to invoice,faturaya hazır
+Tickets by status,Duruma göre talepler
+Equipment coverage,Ekipman kapsamı
+No coverage,Kapsam yok
+units total,toplam birim
+Total units,Toplam birim
+Covered,Kapsamda
+Expired,Süresi dolmuş
+Search by serial or item,Seri no veya ürünle ara
+All coverage,Tüm kapsam
+Warranty,Garanti
+AMC,Yıllık bakım
+Coverage,Kapsam
+No equipment found.,Ekipman bulunamadı.
+Failed to load equipment.,Ekipman yüklenemedi.
+Service history,Servis geçmişi
+No tickets for this unit.,Bu birim için talep yok.

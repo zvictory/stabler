@@ -8,6 +8,7 @@ const route = useRoute();
 
 const tabs = computed(() => [
 	{ name: "sfa-outlets", path: "/sfa/outlets", label: t("Outlets"), icon: "ti-building-store" },
+	{ name: "sfa-locations", path: "/sfa/locations", label: t("Locations"), icon: "ti-map-pin" },
 	{ name: "sfa-routes", path: "/sfa/routes", label: t("Routes"), icon: "ti-route" },
 	{ name: "sfa-visits", path: "/sfa/visits", label: t("Visits"), icon: "ti-map-pin-check" },
 	{ name: "sfa-field-users", path: "/sfa/field-users", label: t("Field Users"), icon: "ti-user-check" },

@@ -81,6 +81,7 @@ import PayrollReadiness from "./pages/hr/PayrollReadiness.vue";
 import TimepaySettings from "./pages/hr/TimepaySettings.vue";
 import SFAHome from "./pages/sfa/SFAHome.vue";
 import Outlets from "./pages/sfa/Outlets.vue";
+import OutletGeo from "./pages/sfa/OutletGeo.vue";
 import Routes from "./pages/sfa/Routes.vue";
 import Visits from "./pages/sfa/Visits.vue";
 import FieldUsers from "./pages/sfa/FieldUsers.vue";
@@ -112,6 +113,9 @@ import ServiceTickets from "./pages/service/Tickets.vue";
 import ServiceBilling from "./pages/service/BillingQueue.vue";
 import ServiceVisits from "./pages/service/Visits.vue";
 import ServiceCalendar from "./pages/service/Calendar.vue";
+import ServiceMap from "./pages/service/Map.vue";
+import ServiceDashboard from "./pages/service/Dashboard.vue";
+import ServiceEquipment from "./pages/service/Equipment.vue";
 import ServiceComingSoon from "./pages/service/ComingSoon.vue";
 import BpmHome from "./pages/bpm/BpmHome.vue";
 import BpmList from "./pages/bpm/BpmList.vue";
@@ -267,6 +271,7 @@ const routes = [
 		children: [
 			{ path: "", redirect: "/sfa/outlets" },
 			{ path: "outlets", name: "sfa-outlets", component: Outlets, meta: { title: t("Outlets") } },
+			{ path: "locations", name: "sfa-locations", component: OutletGeo, meta: { title: t("Outlet Locations") } },
 			{ path: "routes", name: "sfa-routes", component: Routes, meta: { title: t("Routes") } },
 			{ path: "visits", name: "sfa-visits", component: Visits, meta: { title: t("Visits") } },
 			{ path: "field-users", name: "sfa-field-users", component: FieldUsers, meta: { title: t("Field Users") } },
@@ -329,13 +334,13 @@ const routes = [
 		meta: { title: t("Service"), module: "service" },
 		children: [
 			{ path: "", redirect: "/service/tickets" },
-			{ path: "dashboard", name: "service-dashboard", component: ServiceComingSoon, meta: { title: t("Service Dashboard") } },
+			{ path: "dashboard", name: "service-dashboard", component: ServiceDashboard, meta: { title: t("Service Dashboard") } },
 			{ path: "tickets", name: "service-tickets", component: ServiceTickets, meta: { title: t("Service Tickets") } },
 			{ path: "visits", name: "service-visits", component: ServiceVisits, meta: { title: t("Service Visits") } },
 			{ path: "billing", name: "service-billing", component: ServiceBilling, meta: { title: t("Service Billing") } },
 			{ path: "calendar", name: "service-calendar", component: ServiceCalendar, meta: { title: t("Service Calendar") } },
-			{ path: "equipment", name: "service-equipment", component: ServiceComingSoon, meta: { title: t("Service Equipment") } },
-			{ path: "map", name: "service-map", component: ServiceComingSoon, meta: { title: t("Service Map") } },
+			{ path: "equipment", name: "service-equipment", component: ServiceEquipment, meta: { title: t("Service Equipment") } },
+			{ path: "map", name: "service-map", component: ServiceMap, meta: { title: t("Service Map") } },
 		],
 	},
 	{

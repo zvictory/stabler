@@ -20,6 +20,7 @@ import frappe
 from stabler.api._common import _assert_can_read, _assert_can_write
 from frappe import _
 
+from stabler.api._geo import GeoError, norm_key, parse_coord_pair, resolve_bulk
 from stabler.api.organization import _user_allowed_companies
 
 
@@ -177,6 +178,63 @@ def create_outlet(payload: dict | str) -> dict:
 def update_outlet(name: str, payload: dict | str) -> dict:
 	_assert_can_write("Outlet", name, "write")
 	return _update_doc("Outlet", name, payload)
+
+
+@frappe.whitelist()
+def set_outlet_gps(name: str, lat, lng) -> dict:
+	"""Set one outlet's GPS (pin-drop / use-my-location / manual entry)."""
+	_assert_can_write("Outlet", name, "write")
+	doc = frappe.get_doc("Outlet", name)
+	_company_filter(doc.company)  # raises if not permitted for this company
+	try:
+		lat_f, lng_f = parse_coord_pair(lat, lng)
+	except GeoError as exc:
+		frappe.throw(_("Invalid coordinates: {0}").format(str(exc)))
+	doc.gps_lat = lat_f
+	doc.gps_lng = lng_f
+	doc.save()
+	return {"name": doc.name, "gps_lat": lat_f, "gps_lng": lng_f}
+
+
+@frappe.whitelist()
+def bulk_set_outlet_gps(company: str, rows) -> dict:
+	"""Apply a pasted/CSV batch of (identifier, lat, lng) to a company's outlets.
+
+	Rows match an outlet by docname, outlet_code, or outlet_name (case-insensitive).
+	Coordinates are validated; bad rows are reported, good rows are written. Returns
+	{updated, errors:[{row,identifier,reason}], skipped}.
+	"""
+	_require_write()
+	# Scope strictly to outlets the caller may write in this company.
+	_company_filter(company)
+	if isinstance(rows, str):
+		rows = frappe.parse_json(rows) or []
+	if not isinstance(rows, list) or not rows:
+		frappe.throw(_("No rows to import."))
+	if len(rows) > 5000:
+		frappe.throw(_("Too many rows (max 5000)."))
+
+	outlets = frappe.get_all(
+		"Outlet",
+		filters={"company": company},
+		fields=["name", "outlet_code", "outlet_name"],
+		limit=0,
+	)
+	by_name = {norm_key(o.name): o.name for o in outlets}
+	by_code = {norm_key(o.outlet_code): o.name for o in outlets if o.outlet_code}
+	by_oname = {norm_key(o.outlet_name): o.name for o in outlets if o.outlet_name}
+
+	updates, errors = resolve_bulk(rows, by_name, by_code, by_oname)
+
+	updated = 0
+	for u in updates:
+		frappe.db.set_value(
+			"Outlet", u["outlet"], {"gps_lat": u["lat"], "gps_lng": u["lng"]}, update_modified=True
+		)
+		updated += 1
+	frappe.db.commit()
+
+	return {"updated": updated, "errors": errors, "skipped": len(errors)}
 
 
 # ---------------------------------------------------------------------------

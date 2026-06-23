@@ -5,6 +5,7 @@ import unittest
 from frappe import ValidationError
 
 from stabler.api.service import (
+	_latest_visit_state,
 	_normalize_visit_items,
 	_service_calendar_state,
 	_visit_billing_filter_condition,
@@ -76,6 +77,29 @@ class ServiceHelperTest(unittest.TestCase):
 		self.assertEqual(_service_calendar_state("Partially Completed", "2026-06-01", "2026-06-12"), "partial")
 		self.assertEqual(_service_calendar_state("Pending", "2026-06-01", "2026-06-12"), "overdue")
 		self.assertEqual(_service_calendar_state("Pending", "2026-06-20", "2026-06-12"), "upcoming")
+
+	def test_latest_visit_state_no_visits_is_none(self):
+		got = _latest_visit_state([], "2026-06-12")
+		self.assertEqual(got["state"], "none")
+		self.assertIsNone(got["last_date"])
+		self.assertEqual(got["visit_count"], 0)
+
+	def test_latest_visit_state_picks_most_recent(self):
+		visits = [
+			{"date": "2026-06-02", "completion_status": "Pending"},
+			{"date": "2026-06-20", "completion_status": "Fully Completed"},
+			{"date": "2026-06-10", "completion_status": "Partially Completed"},
+		]
+		got = _latest_visit_state(visits, "2026-06-12")
+		# Latest (2026-06-20, Fully Completed) → paid; counts all three.
+		self.assertEqual(got["state"], "paid")
+		self.assertEqual(str(got["last_date"]), "2026-06-20")
+		self.assertEqual(got["visit_count"], 3)
+
+	def test_latest_visit_state_overdue_when_latest_pending_past_due(self):
+		visits = [{"date": "2026-06-01", "completion_status": "Pending"}]
+		got = _latest_visit_state(visits, "2026-06-12")
+		self.assertEqual(got["state"], "overdue")
 
 
 if __name__ == "__main__":
