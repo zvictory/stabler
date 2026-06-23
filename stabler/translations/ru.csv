@@ -2829,3 +2829,23 @@ WhatsApp,WhatsApp
 Copy message,Скопировать сообщение
 Add to Google Calendar,Добавить в Google Календарь
 Download .ics,Скачать .ics
+Holiday,Праздник
+Weekend,Выходной
+Export CSV,Экспорт CSV
+No employees.,Нет сотрудников.
+Month grid,Месячная сетка
+Summary,Сводка
+Mark,Отметить
+Name…,Имя…
+No department,Без отдела
+Failed to save.,Не удалось сохранить.
+Past day,Прошедший день
+Editing a past day,Изменение прошедшего дня
+Confirm,Подтвердить
+Locked on/before,Заблокировано до
+Attendance on/before,Посещаемость до
+is locked from edits.,заблокирована для изменений.
+Attendance edits are open — no hard lock set.,Изменения посещаемости открыты — жёсткая блокировка не задана.
+Lock window,Окно блокировки
+Lock attendance older than (days),Блокировать посещаемость старше (дней)
+0 = no hard lock; past edits still ask for confirmation.,0 = без жёсткой блокировки; прошлые изменения всё равно требуют подтверждения.

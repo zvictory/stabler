@@ -2822,3 +2822,23 @@ WhatsApp,WhatsApp
 Copy message,Хабарни нусхалаш
 Add to Google Calendar,Google Календарга қўшиш
 Download .ics,.ics юклаб олиш
+Holiday,Байрам
+Weekend,Дам олиш куни
+Export CSV,CSV экспорт
+No employees.,Ходимлар йўқ.
+Month grid,Ойлик жадвал
+Summary,Хулоса
+Mark,Белгилаш
+Name…,Исм…
+No department,Бўлимсиз
+Failed to save.,Сақлаб бўлмади.
+Past day,Ўтган кун
+Editing a past day,Ўтган кунни таҳрирлаш
+Confirm,Тасдиқлаш
+Locked on/before,Бу санагача қулфланган
+Attendance on/before,Давомат шу санагача
+is locked from edits.,таҳрирлаш учун қулфланган.
+Attendance edits are open — no hard lock set.,Давомат таҳрири очиқ — қаттиқ қулф ўрнатилмаган.
+Lock window,Қулфлаш ойнаси
+Lock attendance older than (days),Шу кундан эски давоматни қулфлаш (кун)
+0 = no hard lock; past edits still ask for confirmation.,0 = қаттиқ қулф йўқ; ўтган таҳрирлар барибир тасдиқ сўрайди.

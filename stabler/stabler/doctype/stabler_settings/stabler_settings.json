@@ -51,7 +51,9 @@
   "restrict_masters_to_territory",
   "cost_visible_roles",
   "backup_keep_daily",
-  "backup_keep_weekly"
+  "backup_keep_weekly",
+  "attendance_section",
+  "attendance_edit_lock_days"
  ],
  "fields": [
   {
@@ -135,7 +137,7 @@
   },
   {
    "default": "0",
-   "description": "When on, a Purchase Order must be approved by a second user before it can be submitted (procurement spend control). Off by default so enabling Stabler does not suddenly block existing POs — turn on deliberately, ideally with a threshold below.",
+   "description": "When on, a Purchase Order must be approved by a second user before it can be submitted (procurement spend control). Off by default so enabling Stabler does not suddenly block existing POs \u2014 turn on deliberately, ideally with a threshold below.",
    "fieldname": "enable_po_approvals",
    "fieldtype": "Check",
    "label": "Require approval to submit Purchase Orders"
@@ -341,6 +343,19 @@
    "fieldtype": "Int",
    "label": "Backups: keep weekly",
    "default": "4"
+  },
+  {
+   "fieldname": "attendance_section",
+   "fieldtype": "Section Break",
+   "label": "Attendance"
+  },
+  {
+   "fieldname": "attendance_edit_lock_days",
+   "fieldtype": "Int",
+   "label": "Lock attendance edits older than (days)",
+   "description": "0 = no hard lock (past-day edits still ask for confirmation). N = inline edits to days older than N days back are blocked in the UI and on the server.",
+   "default": "0",
+   "non_negative": 1
   }
  ],
  "index_web_pages_for_search": 1,

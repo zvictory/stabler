@@ -426,3 +426,30 @@ def set_posting_window_settings(payload=None) -> dict:
 	acc.save(ignore_permissions=True)
 	frappe.db.commit()
 	return _read_posting_window()
+
+
+@frappe.whitelist()
+def get_attendance_lock_setting() -> dict:
+	"""Read the attendance edit-lock window (days). Admin only."""
+	_require_admin()
+	try:
+		days = frappe.db.get_single_value("Stabler Settings", "attendance_edit_lock_days")
+	except Exception:
+		days = None
+	return {"attendance_edit_lock_days": int(days or 0)}
+
+
+@frappe.whitelist()
+def set_attendance_lock_setting(days=0) -> dict:
+	"""Set the attendance edit-lock window (days). 0 disables the hard lock."""
+	_require_admin()
+	n = frappe.utils.cint(days)
+	if n < 0:
+		frappe.throw(_("Days cannot be negative."))
+	if n > 3650:
+		frappe.throw(_("Days is unreasonably large."))
+	settings = frappe.get_single("Stabler Settings")
+	settings.attendance_edit_lock_days = n
+	settings.save(ignore_permissions=True)
+	frappe.db.commit()
+	return {"attendance_edit_lock_days": n}

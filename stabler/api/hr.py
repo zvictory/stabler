@@ -444,6 +444,141 @@ def list_attendance(
 	)
 
 
+_ATT_CODE = {
+	"Present": "P",
+	"Absent": "A",
+	"On Leave": "L",
+	"Half Day": "H",
+	"Work From Home": "W",
+}
+
+
+@frappe.whitelist()
+def attendance_matrix(company: str, period: str = "", department: str = "") -> dict:
+	"""Whole-roster month grid: one row per employee, one column per day.
+
+	Returns day metadata (weekend/holiday/today), per-employee day codes
+	(P/A/L/H/W), late-entry days, and per-employee totals. Company-scoped.
+	"""
+	import calendar as _cal
+
+	_require_company(company)
+	if not period:
+		period = today()[:7]
+	year, mon = (int(x) for x in period.split("-")[:2])
+	days_in_month = _cal.monthrange(year, mon)[1]
+	from_date = getdate(f"{year:04d}-{mon:02d}-01")
+	to_date = getdate(f"{year:04d}-{mon:02d}-{days_in_month:02d}")
+	today_d = getdate(today())
+
+	# Holiday list (weekly-off vs real holiday) for shading.
+	weekly_off_days: set[int] = set()
+	holiday_days: set[int] = set()
+	holiday_list = frappe.get_cached_value("Company", company, "default_holiday_list")
+	if holiday_list:
+		for h in frappe.get_all(
+			"Holiday",
+			filters={"parent": holiday_list, "holiday_date": ["between", [from_date, to_date]]},
+			fields=["holiday_date", "weekly_off"],
+		):
+			d = getdate(h.holiday_date).day
+			(weekly_off_days if h.weekly_off else holiday_days).add(d)
+
+	lock_date = _attendance_lock_date()
+	days = []
+	for d in range(1, days_in_month + 1):
+		dt = getdate(f"{year:04d}-{mon:02d}-{d:02d}")
+		wd = dt.weekday()  # 0=Mon … 6=Sun
+		is_weekend = d in weekly_off_days or wd >= 5
+		days.append(
+			{
+				"day": d,
+				"date": str(dt),
+				"weekday": "MTWTFSS"[wd],
+				"is_weekend": bool(is_weekend),
+				"is_holiday": d in holiday_days,
+				"is_today": dt == today_d,
+				"is_future": dt > today_d,
+				"is_locked": bool(lock_date and dt <= lock_date),
+			}
+		)
+
+	# Roster (active employees), optionally filtered by department.
+	emp_filters: dict = {"company": company, "status": "Active"}
+	if department:
+		emp_filters["department"] = department
+	roster = frappe.get_all(
+		"Employee",
+		filters=emp_filters,
+		fields=["name", "employee_name", "department", "designation"],
+		order_by="department asc, employee_name asc",
+		limit_page_length=0,
+	)
+
+	# Attendance for the month.
+	records = frappe.db.sql(
+		"""
+		SELECT employee, attendance_date, status, late_entry, working_hours, leave_type
+		FROM `tabAttendance`
+		WHERE company = %(company)s AND docstatus < 2
+		  AND attendance_date BETWEEN %(from_date)s AND %(to_date)s
+		""",
+		{"company": company, "from_date": from_date, "to_date": to_date},
+		as_dict=True,
+	)
+	by_emp: dict[str, dict] = {}
+	for r in records:
+		day = getdate(r.attendance_date).day
+		by_emp.setdefault(r.employee, {})[day] = r
+
+	rows = []
+	for emp in roster:
+		cells: dict[int, str] = {}
+		late: list[int] = []
+		totals = {"present": 0, "absent": 0, "leave": 0, "half": 0, "wfh": 0, "late": 0}
+		emp_recs = by_emp.get(emp.name, {})
+		for day, rec in emp_recs.items():
+			code = _ATT_CODE.get(rec.status, "")
+			if not code:
+				continue
+			cells[day] = code
+			if code == "P":
+				totals["present"] += 1
+			elif code == "A":
+				totals["absent"] += 1
+			elif code == "L":
+				totals["leave"] += 1
+			elif code == "H":
+				totals["half"] += 1
+			elif code == "W":
+				totals["wfh"] += 1
+				totals["present"] += 1
+			if rec.late_entry:
+				late.append(day)
+				totals["late"] += 1
+		rows.append(
+			{
+				"employee": emp.name,
+				"employee_name": emp.employee_name,
+				"department": (emp.department or "").split(" - ")[0] if emp.department else "",
+				"designation": (emp.designation or "").split(" - ")[0] if emp.designation else "",
+				"cells": cells,
+				"late": late,
+				"totals": totals,
+			}
+		)
+
+	return {
+		"company": company,
+		"period": f"{year:04d}-{mon:02d}",
+		"days_in_month": days_in_month,
+		"days": days,
+		"rows": rows,
+		"edit_lock_date": str(lock_date) if lock_date else None,
+		"today": str(today_d),
+	}
+
+
 @frappe.whitelist()
 def mark_attendance(
 	company: str,
@@ -481,6 +616,201 @@ def mark_attendance(
 	if int(submit or 0):
 		doc.submit()
 	return {"name": doc.name, "status": doc.status, "docstatus": doc.docstatus}
+
+
+_VALID_ATT_STATUS = ("Present", "Absent", "On Leave", "Half Day", "Work From Home")
+
+
+def _attendance_lock_date():
+	"""On/before this date attendance is frozen for inline edits. Sourced from the
+	optional `attendance_edit_lock_days` Stabler Settings field; None = no hard lock
+	(only the front-end confirmation applies)."""
+	try:
+		days = frappe.db.get_single_value("Stabler Settings", "attendance_edit_lock_days")
+	except Exception:
+		days = None
+	if not days or int(days) <= 0:
+		return None
+	return getdate(add_days(today(), -int(days)))
+
+
+def _assert_attendance_editable(att_date) -> None:
+	if att_date > getdate(today()):
+		frappe.throw("Cannot edit attendance for a future date.")
+	lock = _attendance_lock_date()
+	if lock and att_date <= lock:
+		frappe.throw(f"Attendance on/before {lock} is locked and cannot be edited.")
+
+
+def _drop_existing_attendance(employee: str, att_date) -> None:
+	existing = frappe.db.get_value(
+		"Attendance",
+		{"employee": employee, "attendance_date": att_date, "docstatus": ("<", 2)},
+		["name", "docstatus"],
+		as_dict=True,
+	)
+	if not existing:
+		return
+	doc = frappe.get_doc("Attendance", existing.name)
+	if existing.docstatus == 1:
+		doc.cancel()
+	doc.delete(ignore_permissions=False)
+
+
+@frappe.whitelist()
+def set_attendance(company: str, employee: str, attendance_date: str, status: str) -> dict:
+	"""Upsert one day's attendance (inline cell edit on the month grid).
+
+	Replaces any existing record for that employee+date, then submits. Mirrors a
+	correction: the previous row is cancelled and removed so there's exactly one
+	authoritative record per day.
+	"""
+	_require_company(company)
+	if not employee or not frappe.db.exists("Employee", employee):
+		frappe.throw(f"Unknown employee: {employee}")
+	if status not in _VALID_ATT_STATUS:
+		frappe.throw(f"Invalid status: {status}")
+	if not frappe.has_permission("Attendance", "create"):
+		frappe.throw("Not permitted to edit attendance.", frappe.PermissionError)
+	att_date = getdate(attendance_date or today())
+	_assert_attendance_editable(att_date)
+
+	_drop_existing_attendance(employee, att_date)
+	doc = frappe.new_doc("Attendance")
+	doc.company = company
+	doc.employee = employee
+	doc.attendance_date = att_date
+	doc.status = status
+	doc.insert()
+	doc.submit()
+	return {"name": doc.name, "employee": employee, "day": att_date.day, "status": status, "docstatus": doc.docstatus}
+
+
+@frappe.whitelist()
+def clear_attendance(company: str, employee: str, attendance_date: str) -> dict:
+	"""Remove a day's attendance record (inline 'clear' on the grid)."""
+	_require_company(company)
+	if not frappe.has_permission("Attendance", "delete"):
+		frappe.throw("Not permitted to edit attendance.", frappe.PermissionError)
+	att_date = getdate(attendance_date or today())
+	_assert_attendance_editable(att_date)
+	_drop_existing_attendance(employee, att_date)
+	return {"employee": employee, "day": att_date.day, "cleared": True}
+
+
+_ATT_XLSX_STYLE = {
+	"P": ("E7F6EC", "1F9D54"),
+	"A": ("FBE9E9", "D63939"),
+	"L": ("E7EDFB", "3B5BDB"),
+	"H": ("FDF3E3", "C07A00"),
+	"W": ("E6F7F4", "0CA678"),
+}
+
+
+@frappe.whitelist()
+def attendance_matrix_xlsx(company: str, period: str = "", department: str = ""):
+	"""Download the month attendance grid as a colour-coded .xlsx."""
+	from openpyxl import Workbook
+	from openpyxl.styles import Alignment, Border, Font, PatternFill, Side
+	from openpyxl.utils import get_column_letter
+
+	m = attendance_matrix(company, period, department)
+	days = m["days"]
+	rows = m["rows"]
+	ndays = len(days)
+
+	wb = Workbook()
+	ws = wb.active
+	ws.title = "Attendance"
+
+	thin = Side(style="thin", color="E6E7E9")
+	border = Border(left=thin, right=thin, top=thin, bottom=thin)
+	center = Alignment(horizontal="center", vertical="center")
+	weekend_fill = PatternFill("solid", fgColor="F3F5F8")
+	header_fill = PatternFill("solid", fgColor="F7F9FC")
+
+	# Row 1 — title.
+	ws.cell(row=1, column=1, value=f"{company} — Attendance {m['period']}").font = Font(bold=True, size=13)
+
+	FIXED = ["Employee", "Department", "P", "A", "L"]
+	# Row 2 — headers + day numbers; Row 3 — weekday letters.
+	for i, h in enumerate(FIXED, start=1):
+		c = ws.cell(row=2, column=i, value=h)
+		c.font = Font(bold=True)
+		c.fill = header_fill
+		c.alignment = center
+		c.border = border
+	for di, d in enumerate(days):
+		col = 6 + di
+		c = ws.cell(row=2, column=col, value=d["day"])
+		c.font = Font(bold=True, size=9)
+		c.alignment = center
+		c.border = border
+		c.fill = weekend_fill if d["is_weekend"] else header_fill
+		w = ws.cell(row=3, column=col, value=d["weekday"])
+		w.font = Font(size=8, color="9AA4B2")
+		w.alignment = center
+		w.border = border
+		w.fill = weekend_fill if d["is_weekend"] else header_fill
+	for i in range(1, 6):
+		ws.cell(row=3, column=i).fill = header_fill
+		ws.cell(row=3, column=i).border = border
+
+	# Data rows.
+	r = 4
+	for row in rows:
+		ws.cell(row=r, column=1, value=row["employee_name"]).border = border
+		ws.cell(row=r, column=2, value=row.get("department") or "").border = border
+		for col, key, color in ((3, "present", "1F9D54"), (4, "absent", "D63939"), (5, "leave", "3B5BDB")):
+			cc = ws.cell(row=r, column=col, value=row["totals"].get(key) or None)
+			cc.alignment = center
+			cc.font = Font(bold=True, color=color)
+			cc.border = border
+		late = set(row.get("late") or [])
+		for di, d in enumerate(days):
+			col = 6 + di
+			code = (row.get("cells") or {}).get(str(d["day"])) or (row.get("cells") or {}).get(d["day"])
+			cell = ws.cell(row=r, column=col)
+			cell.alignment = center
+			cell.border = border
+			if code in _ATT_XLSX_STYLE:
+				bg, fg = _ATT_XLSX_STYLE[code]
+				cell.value = code
+				cell.fill = PatternFill("solid", fgColor=bg)
+				cell.font = Font(bold=True, color=fg, size=9)
+				if d["day"] in late:
+					cell.value = f"{code}*"
+			elif d["is_weekend"]:
+				cell.fill = weekend_fill
+		r += 1
+
+	# Legend.
+	lr = r + 1
+	ws.cell(row=lr, column=1, value="Legend:").font = Font(bold=True)
+	leg = [("P", "Present"), ("A", "Absent"), ("L", "On Leave"), ("H", "Half Day"), ("W", "WFH"), ("*", "Late")]
+	for i, (code, label) in enumerate(leg):
+		c = ws.cell(row=lr, column=2 + i, value=f"{code} {label}")
+		if code in _ATT_XLSX_STYLE:
+			bg, fg = _ATT_XLSX_STYLE[code]
+			c.fill = PatternFill("solid", fgColor=bg)
+			c.font = Font(color=fg, size=9)
+
+	# Layout: widths + frozen panes.
+	ws.column_dimensions["A"].width = 24
+	ws.column_dimensions["B"].width = 16
+	for i in (3, 4, 5):
+		ws.column_dimensions[get_column_letter(i)].width = 4
+	for di in range(ndays):
+		ws.column_dimensions[get_column_letter(6 + di)].width = 3.6
+	ws.freeze_panes = "F4"
+
+	import io
+
+	buf = io.BytesIO()
+	wb.save(buf)
+	frappe.local.response.filename = f"attendance-{m['period']}.xlsx"
+	frappe.local.response.filecontent = buf.getvalue()
+	frappe.local.response.type = "binary"
 
 
 # ----- Leave Applications --------------------------------------------------

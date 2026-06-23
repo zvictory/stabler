@@ -10,10 +10,50 @@ import EmptyState from "../../components/EmptyState.vue";
 import DateInput from "../../components/DateInput.vue";
 import Select from "../../components/Select.vue";
 import SkeletonRows from "../../components/SkeletonRows.vue";
+import AttendanceMatrix from "../../components/AttendanceMatrix.vue";
 
 const session = useSession();
 const { activeCompany } = storeToRefs(session);
 const router = useRouter();
+
+const view = ref("grid"); // "grid" (month matrix) | "summary"
+const gridSearch = ref("");
+
+// ── Attendance edit-lock window (admin) + banner ─────────────────────────────
+const matrixRef = ref(null);
+const lockDate = ref(null);
+const lockOpen = ref(false);
+const lockDays = ref(0);
+const lockSaving = ref(false);
+const lockError = ref("");
+const isAdmin = computed(() => session.isAdmin);
+
+function onMatrixMeta(m) {
+	lockDate.value = m?.edit_lock_date || null;
+}
+async function loadLockSetting() {
+	if (!isAdmin.value) return;
+	try {
+		const r = await call("stabler.api.admin.get_attendance_lock_setting");
+		lockDays.value = Number(r?.attendance_edit_lock_days || 0);
+	} catch {
+		/* non-fatal */
+	}
+}
+async function saveLock() {
+	lockSaving.value = true;
+	lockError.value = "";
+	try {
+		await call("stabler.api.admin.set_attendance_lock_setting", { days: lockDays.value || 0 });
+		lockOpen.value = false;
+		matrixRef.value?.reload();
+	} catch (err) {
+		lockError.value = err?.message || t("Failed to save.");
+	} finally {
+		lockSaving.value = false;
+	}
+}
+onMounted(loadLockSetting);
 
 const today = () => todayIso();
 
@@ -188,19 +228,64 @@ async function save() {
 					<label class="form-label small">{{ t("Department") }}</label>
 					<Select v-model="departmentFilter" :options="departmentOptions" value-key="name" label-key="department_name" />
 				</div>
-				<div class="col-12 col-md-5 d-flex justify-content-md-end gap-2">
-					<button type="button" class="btn btn-ghost-secondary" @click="load">
-						<i class="ti ti-refresh me-1"></i>{{ t("Refresh") }}
-					</button>
+				<div class="col-12 col-md-2">
+					<label class="form-label small">{{ t("Search") }}</label>
+					<input v-model="gridSearch" class="form-control" :placeholder="t('Name…')" />
+				</div>
+				<div class="col-12 col-md-3 d-flex justify-content-md-end align-items-end gap-2">
+					<div class="btn-group" role="group">
+						<input id="att-grid" v-model="view" type="radio" class="btn-check" value="grid" />
+						<label class="btn btn-outline-primary btn-sm" for="att-grid" :title="t('Month grid')"><i class="ti ti-layout-grid"></i></label>
+						<input id="att-sum" v-model="view" type="radio" class="btn-check" value="summary" />
+						<label class="btn btn-outline-primary btn-sm" for="att-sum" :title="t('Summary')"><i class="ti ti-list"></i></label>
+					</div>
 					<button type="button" class="btn btn-primary" @click="openMark">
-						<i class="ti ti-checkbox me-1"></i>{{ t("Mark attendance") }}
+						<i class="ti ti-checkbox me-1"></i>{{ t("Mark") }}
 					</button>
 				</div>
 			</div>
 		</div>
 	</div>
 
-	<div v-if="error" class="alert alert-danger">{{ error }}</div>
+	<template v-if="view === 'grid'">
+		<div v-if="lockDate || isAdmin" class="alert alert-warning d-flex align-items-center gap-2 py-2 mb-2">
+			<i class="ti ti-lock"></i>
+			<div class="small">
+				<template v-if="lockDate">
+					{{ t("Attendance on/before") }} <b>{{ lockDate }}</b> {{ t("is locked from edits.") }}
+				</template>
+				<template v-else>{{ t("Attendance edits are open — no hard lock set.") }}</template>
+			</div>
+			<button v-if="isAdmin" type="button" class="btn btn-sm btn-ghost-secondary ms-auto" @click="lockOpen = !lockOpen">
+				<i class="ti ti-settings me-1"></i>{{ t("Lock window") }}
+			</button>
+		</div>
+
+		<div v-if="isAdmin && lockOpen" class="card mb-3">
+			<div class="card-body d-flex align-items-end gap-2 flex-wrap py-2">
+				<div>
+					<label class="form-label small mb-1">{{ t("Lock attendance older than (days)") }}</label>
+					<input v-model.number="lockDays" type="number" min="0" class="form-control" style="width: 150px" />
+				</div>
+				<button type="button" class="btn btn-primary" :disabled="lockSaving" @click="saveLock">
+					<span v-if="lockSaving" class="spinner-border spinner-border-sm me-1"></span>{{ t("Save") }}
+				</button>
+				<span class="small text-secondary">{{ t("0 = no hard lock; past edits still ask for confirmation.") }}</span>
+				<span v-if="lockError" class="small text-danger">{{ lockError }}</span>
+			</div>
+		</div>
+
+		<AttendanceMatrix
+			ref="matrixRef"
+			:company="activeCompany"
+			:period="period"
+			:department="departmentFilter"
+			:search="gridSearch"
+			@meta="onMatrixMeta"
+		/>
+	</template>
+
+	<div v-else-if="error" class="alert alert-danger">{{ error }}</div>
 
 	<EmptyState
 		v-else-if="!loading && !visibleRows.length"

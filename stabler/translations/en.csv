@@ -2816,3 +2816,23 @@ WhatsApp,WhatsApp
 Copy message,Copy message
 Add to Google Calendar,Add to Google Calendar
 Download .ics,Download .ics
+Holiday,Holiday
+Weekend,Weekend
+Export CSV,Export CSV
+No employees.,No employees.
+Month grid,Month grid
+Summary,Summary
+Mark,Mark
+Name…,Name…
+No department,No department
+Failed to save.,Failed to save.
+Past day,Past day
+Editing a past day,Editing a past day
+Confirm,Confirm
+Locked on/before,Locked on/before
+Attendance on/before,Attendance on/before
+is locked from edits.,is locked from edits.
+Attendance edits are open — no hard lock set.,Attendance edits are open — no hard lock set.
+Lock window,Lock window
+Lock attendance older than (days),Lock attendance older than (days)
+0 = no hard lock; past edits still ask for confirmation.,0 = no hard lock; past edits still ask for confirmation.

@@ -2822,3 +2822,23 @@ WhatsApp,WhatsApp
 Copy message,Xabarni nusxalash
 Add to Google Calendar,Google Kalendarga qo'shish
 Download .ics,.ics yuklab olish
+Holiday,Bayram
+Weekend,Dam olish kuni
+Export CSV,CSV eksport
+No employees.,Xodimlar yo'q.
+Month grid,Oylik jadval
+Summary,Xulosa
+Mark,Belgilash
+Name…,Ism…
+No department,Bo'limsiz
+Failed to save.,Saqlab bo'lmadi.
+Past day,O'tgan kun
+Editing a past day,O'tgan kunni tahrirlash
+Confirm,Tasdiqlash
+Locked on/before,Bu sanagacha qulflangan
+Attendance on/before,Davomat shu sanagacha
+is locked from edits.,tahrirlash uchun qulflangan.
+Attendance edits are open — no hard lock set.,Davomat tahriri ochiq — qattiq qulf o'rnatilmagan.
+Lock window,Qulflash oynasi
+Lock attendance older than (days),Shu kundan eski davomatni qulflash (kun)
+0 = no hard lock; past edits still ask for confirmation.,0 = qattiq qulf yo'q; o'tgan tahrirlar baribir tasdiq so'raydi.

@@ -2804,3 +2804,23 @@ WhatsApp,WhatsApp
 Copy message,Mesajı kopyala
 Add to Google Calendar,Google Takvim'e ekle
 Download .ics,.ics indir
+Holiday,Tatil
+Weekend,Hafta sonu
+Export CSV,CSV dışa aktar
+No employees.,Personel yok.
+Month grid,Aylık ızgara
+Summary,Özet
+Mark,İşaretle
+Name…,İsim…
+No department,Bölümsüz
+Failed to save.,Kaydedilemedi.
+Past day,Geçmiş gün
+Editing a past day,Geçmiş bir günü düzenliyorsunuz
+Confirm,Onayla
+Locked on/before,Şu tarihe kadar kilitli
+Attendance on/before,Şu tarihe kadar devam
+is locked from edits.,düzenlemeye kilitli.
+Attendance edits are open — no hard lock set.,Devam düzenlemeleri açık — sabit kilit yok.
+Lock window,Kilit penceresi
+Lock attendance older than (days),Şu günden eski devamı kilitle (gün)
+0 = no hard lock; past edits still ask for confirmation.,0 = sabit kilit yok; geçmiş düzenlemeler yine onay ister.
