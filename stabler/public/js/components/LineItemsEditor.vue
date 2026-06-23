@@ -96,12 +96,19 @@ function handleKeyDown(e) {
 
 		if (targetRowIndex >= 0 && targetRowIndex < rows.length) {
 			const targetRow = rows[targetRowIndex];
-			const targetInputs = Array.from(targetRow.querySelectorAll("input, select, button.btn-outline-secondary, button.btn-primary"));
-			if (targetInputs[colIndex]) {
+			// Prefer field-tagged lookup so the same logical column is targeted
+			// regardless of how many inputs each row shape renders.
+			const field = activeEl.dataset.field;
+			let target = field ? targetRow.querySelector(`[data-field="${field}"]`) : null;
+			if (!target) {
+				const targetInputs = Array.from(targetRow.querySelectorAll("input, select, button.btn-outline-secondary, button.btn-primary"));
+				target = targetInputs[colIndex] || null;
+			}
+			if (target) {
 				e.preventDefault();
-				targetInputs[colIndex].focus();
-				if (targetInputs[colIndex].select) {
-					targetInputs[colIndex].select();
+				target.focus();
+				if (target.select) {
+					target.select();
 				}
 			}
 		}
@@ -138,7 +145,7 @@ function handleKeyDown(e) {
 		const inputsInRow = Array.from(row.querySelectorAll("input:not([readonly])"));
 		const inputIndex = inputsInRow.indexOf(activeEl);
 
-		if (inputIndex === 1) {
+		if (activeEl.dataset.field === "qty" || inputIndex === 1) {
 			// Tabbing from qty: go to next row's item search (or add row if last)
 			e.preventDefault();
 			if (rowIndex === rows.length - 1) {
@@ -225,7 +232,54 @@ function onUomSelectChange(line) {
 	emit("pick-item", { line, field: "uom" });
 }
 
+// ── Dimensional items (Linear m / Area m² / Volume m³) ──────────────────────
+// Gated PER LINE on the picked item's custom_dimension_mode, so an ice-cream line
+// (blank mode) keeps the normal Qty/UOM flow while a belt line on the same order
+// shows length/width/pieces and computes qty = L×W×… in the item's stock UOM.
+function isDim(line) {
+	return ["Linear", "Area", "Volume"].includes(line?.dimension_mode);
+}
+function dimNeedsWidth(line) {
+	return line.dimension_mode === "Area" || line.dimension_mode === "Volume";
+}
+function dimNeedsHeight(line) {
+	return line.dimension_mode === "Volume";
+}
+function round6(n) {
+	return Math.round((Number(n) || 0) * 1e6) / 1e6;
+}
+function recalcDim(line) {
+	if (!isDim(line)) return;
+	const L = Number(line.custom_length) || 0;
+	const W = Number(line.custom_width) || 0;
+	const H = Number(line.custom_height) || 0;
+	const P = line.custom_pieces === null || line.custom_pieces === undefined || line.custom_pieces === ""
+		? 1
+		: Number(line.custom_pieces) || 0;
+	if (line.dimension_mode === "Linear") line.qty = round6(L * P);
+	else if (line.dimension_mode === "Area") line.qty = round6(L * W * P);
+	else if (line.dimension_mode === "Volume") line.qty = round6(L * W * H * P);
+}
+function dimSummary(line) {
+	const p = [];
+	if (isDim(line)) p.push(line.custom_length);
+	if (dimNeedsWidth(line)) p.push(line.custom_width);
+	if (dimNeedsHeight(line)) p.push(line.custom_height);
+	const dims = p.filter((x) => x != null && x !== "").join(" × ");
+	const pcs = line.custom_pieces || 1;
+	return dims ? `${dims} × ${pcs} pcs` : "";
+}
+
 function handlePickItem(line, item, index) {
+	// Capture the item's dimension mode so the row renders the right inputs.
+	line.dimension_mode = item?.custom_dimension_mode || "";
+	if (isDim(line)) {
+		line.custom_length = null;
+		line.custom_width = null;
+		line.custom_height = null;
+		line.custom_pieces = null;
+		line.qty = 0;
+	}
 	emit("pick-item", { line, item, index, field: "item" });
 	// Focus is handled by parent after async item load completes
 }
@@ -336,29 +390,76 @@ const grandTotal = computed(() => {
 						</div>
 					</td>
 
-					<!-- Quantity -->
+					<!-- Quantity (or dimensional inputs) -->
 					<td class="align-top">
 						<div v-if="editable">
-							<input
-								v-model.number="line.qty"
-								type="number"
-								step="any"
-								inputmode="decimal"
-								class="form-control font-monospace text-end"
-								:class="{ 'is-invalid': getLineErrors(line).qty }"
-							/>
-							<div v-if="getLineErrors(line).qty" class="invalid-feedback d-block">
-								{{ getLineErrors(line).qty }}
+							<!-- Dimensional item: enter measurements → qty computed -->
+							<div v-if="isDim(line)" class="d-flex flex-column gap-1">
+								<input
+									v-model.number="line.custom_length"
+									type="number" step="any" inputmode="decimal"
+									class="form-control form-control-sm font-monospace text-end"
+									:placeholder="t('Length')" @input="recalcDim(line)"
+								/>
+								<input
+									v-if="dimNeedsWidth(line)"
+									v-model.number="line.custom_width"
+									type="number" step="any" inputmode="decimal"
+									class="form-control form-control-sm font-monospace text-end"
+									:placeholder="t('Width')" @input="recalcDim(line)"
+								/>
+								<input
+									v-if="dimNeedsHeight(line)"
+									v-model.number="line.custom_height"
+									type="number" step="any" inputmode="decimal"
+									class="form-control form-control-sm font-monospace text-end"
+									:placeholder="t('Height')" @input="recalcDim(line)"
+								/>
+								<input
+									v-model.number="line.custom_pieces"
+									type="number" step="any" inputmode="decimal"
+									class="form-control form-control-sm font-monospace text-end"
+									:placeholder="t('Pieces')" @input="recalcDim(line)"
+								/>
+								<div class="small text-secondary text-end">
+									= <span class="fw-semibold font-monospace">{{ Number(line.qty || 0).toLocaleString() }}</span>
+									{{ line.stock_uom }}
+								</div>
 							</div>
+							<!-- Normal item: plain qty -->
+							<template v-else>
+								<input
+									v-model.number="line.qty"
+									type="number"
+									step="any"
+									inputmode="decimal"
+									data-field="qty"
+									class="form-control font-monospace text-end"
+									:class="{ 'is-invalid': getLineErrors(line).qty }"
+								/>
+								<div v-if="getLineErrors(line).qty" class="invalid-feedback d-block">
+									{{ getLineErrors(line).qty }}
+								</div>
+							</template>
 						</div>
-						<div v-else class="font-monospace text-end">{{ line.qty }}</div>
+						<div v-else class="font-monospace text-end">
+							<template v-if="isDim(line)">
+								{{ Number(line.qty || 0).toLocaleString() }} {{ line.stock_uom }}
+								<div class="small text-secondary">{{ dimSummary(line) }}</div>
+							</template>
+							<template v-else>{{ line.qty }}</template>
+						</div>
 					</td>
 
 					<!-- UOM Selection -->
 					<td class="align-top">
 						<template v-if="editable && line.item_code">
+							<!-- Dimensional item: UOM is fixed to the measure (m / m² / m³). -->
+							<div v-if="isDim(line)" class="text-secondary small pt-2 font-monospace">
+								{{ line.stock_uom }}
+							</div>
 							<div
-								v-if="line.uoms && line.uoms.length > 1 && line.uoms.length <= 3"
+								v-else-if="line.uoms && line.uoms.length > 1 && line.uoms.length <= 3"
 								class="btn-group w-100"
 								role="group"
 							>
@@ -389,9 +490,11 @@ const grandTotal = computed(() => {
 					<td class="align-top">
 						<div v-if="editable">
 							<MoneyInput
-								v-model="line.rate"
+								:model-value="line.rate"
+								data-field="rate"
 								:currency="currency"
 								:class="{ 'is-invalid': getLineErrors(line).rate }"
+								@update:model-value="(v) => { line.rate = v; line.rateTouched = true; }"
 							/>
 							<div v-if="getLineErrors(line).rate" class="invalid-feedback d-block">
 								{{ getLineErrors(line).rate }}

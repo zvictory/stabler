@@ -52,6 +52,17 @@ function goToInvoice(name) {
 	if (name) router.push("/sales/invoices/" + name);
 }
 
+// Dimensional line summary (e.g. "2.5 × 0.3 × 10 pcs"). Blank for normal items.
+function dimSummary(it) {
+	const mode = it?.custom_dimension_mode;
+	if (!["Linear", "Area", "Volume"].includes(mode)) return "";
+	const p = [it.custom_length];
+	if (mode === "Area" || mode === "Volume") p.push(it.custom_width);
+	if (mode === "Volume") p.push(it.custom_height);
+	const dims = p.filter((x) => x != null && x !== "").join(" × ");
+	return dims ? `${dims} × ${it.custom_pieces || 1} pcs` : "";
+}
+
 // Payment
 const paymentOpen = ref(false);
 const PAYABLE_STATUSES = new Set(["Unpaid", "Overdue", "Partly Paid"]);
@@ -227,8 +238,11 @@ onMounted(loadDoc);
 							<td>
 								<div class="fw-semibold">{{ it.item_name || it.item_code }}</div>
 								<div class="small text-secondary font-monospace">{{ it.item_code }}</div>
+								<div v-if="dimSummary(it)" class="small text-secondary">{{ dimSummary(it) }}</div>
 							</td>
-							<td class="text-end font-monospace">{{ it.qty }}</td>
+							<td class="text-end font-monospace">
+								{{ it.qty }}<template v-if="it.custom_dimension_mode"> {{ it.stock_uom }}</template>
+							</td>
 							<td>{{ it.uom || "—" }}</td>
 							<td class="text-end font-monospace text-secondary small">
 								{{ it.price_list_rate > 0 ? formatMoney(it.price_list_rate, form.currency, user.language) : "—" }}

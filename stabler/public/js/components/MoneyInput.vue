@@ -23,6 +23,9 @@ const props = defineProps({
 	max: { type: Number, default: null },
 	id: { type: String, default: "" },
 	size: { type: String, default: "" }, // "sm" | "lg" | ""
+	// data-field passed through to the inner <input> so querySelectorAll('[data-field=...]')
+	// can reliably target it for keyboard navigation (the root is a <div>, not focusable).
+	dataField: { type: String, default: "" },
 	// When true, keeps grouped display while focused and reformats on every keystroke.
 	// Cursor jumps to end on each input — acceptable for right-aligned money fields.
 	groupWhileTyping: { type: Boolean, default: false },
@@ -157,6 +160,7 @@ const inputClass = computed(() => {
 		<span v-if="currency && !isUZS" class="input-group-text text-uppercase small">{{ currency }}</span>
 		<input
 			:id="id || undefined"
+			:data-field="dataField || undefined"
 			type="text"
 			inputmode="decimal"
 			autocomplete="off"

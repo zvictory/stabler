@@ -20,3 +20,4 @@ stabler.patches.v19_add_user_allowed_owners_territories
 stabler.patches.v20_cost_field_perm_level
 stabler.patches.v21_employee_timepay_fields
 stabler.patches.v22_employee_comp_fields
+stabler.patches.v23_item_dimension_fields

@@ -88,6 +88,11 @@ function blankLine() {
 		uoms: [],
 		conversion_factor: 1,
 		qty: 1,
+		dimension_mode: "",
+		custom_length: null,
+		custom_width: null,
+		custom_height: null,
+		custom_pieces: null,
 		rate: 0,
 		rateTouched: false,
 		discount_percentage: 0,
@@ -136,6 +141,11 @@ function fromDetail(d) {
 			uoms: [],
 			conversion_factor: Number(it.conversion_factor) || 1,
 			qty: it.qty,
+			dimension_mode: it.custom_dimension_mode || "",
+			custom_length: it.custom_length ?? null,
+			custom_width: it.custom_width ?? null,
+			custom_height: it.custom_height ?? null,
+			custom_pieces: it.custom_pieces ?? null,
 			rate: it.rate,
 			rateTouched: false,
 			discount_percentage: it.discount_percentage || 0,
@@ -163,6 +173,10 @@ function toPayload(m) {
 			discount_percentage: r.discount_percentage || 0,
 			discount_amount: r.discount_amount || 0,
 			warehouse: r.warehouse || m.set_warehouse,
+			custom_length: r.custom_length ?? undefined,
+			custom_width: r.custom_width ?? undefined,
+			custom_height: r.custom_height ?? undefined,
+			custom_pieces: r.custom_pieces ?? undefined,
 		}));
 	return {
 		company: activeCompany.value,
@@ -438,15 +452,17 @@ async function handlePickItem({ line, item, index, field }) {
 		}
 		scheduleAvailability(line);
 		// Focus qty after all async item data is loaded (nextTick here fires after
-		// Vue flushes the reactive updates from the awaits above, not before them)
+		// Vue flushes the reactive updates from the awaits above, not before them).
+		// Use data-field="qty" so the lookup is semantic, not positional — after item
+		// pick the Typeahead input becomes readonly and drops out of :not([readonly]),
+		// which would shift positional index 1 from qty to rate (the corruption cause).
 		await nextTick();
 		const tbody = document.querySelector(".stbl-items-table tbody");
 		if (tbody) {
 			const rows = Array.from(tbody.querySelectorAll("tr"));
 			const row = rows[index];
 			if (row) {
-				const inputs = Array.from(row.querySelectorAll("input:not([readonly])"));
-				const qty = inputs[1];
+				const qty = row.querySelector('[data-field="qty"]');
 				qty?.focus();
 				qty?.select?.();
 			}
@@ -984,6 +1000,7 @@ async function closeSalesOrder() {
 						min="0"
 						max="100"
 						inputmode="decimal"
+						data-field="disc-pct"
 						class="form-control font-monospace text-end"
 						placeholder="0"
 					/>
@@ -993,6 +1010,7 @@ async function closeSalesOrder() {
 					<MoneyInput
 						v-if="editable"
 						v-model="line.discount_amount"
+						data-field="disc-amt"
 					/>
 					<div v-else class="text-end font-monospace small py-2">
 						{{ line.discount_amount > 0 ? formatMoney(line.discount_amount, form.currency, user.language) : "—" }}
