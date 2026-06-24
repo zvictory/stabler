@@ -480,20 +480,20 @@ defineExpose({ exportCsv, exportXlsx, reload: load });
 
 <style scoped>
 .att-wrap { overflow-x: auto; border: 1px solid var(--tblr-border-color, #e6e7e9); border-radius: 8px; }
-.att-table { border-collapse: separate; border-spacing: 0; font-size: 0.78rem; }
+.att-table { border-collapse: separate; border-spacing: 0; font-size: 0.78rem; width: 100%; min-width: 920px; table-layout: fixed; }
 .att-table th, .att-table td { border-bottom: 1px solid var(--tblr-border-color, #eef0f3); border-right: 1px solid var(--tblr-border-color, #eef0f3); padding: 2px; background: #fff; }
 .att-table thead th { position: sticky; top: 0; z-index: 3; background: #f7f9fc; vertical-align: middle; }
-.att-emp { min-width: 168px; max-width: 168px; padding: 4px 8px !important; text-align: left; }
-.att-tot { min-width: 28px; max-width: 28px; }
+.att-emp { width: 168px; padding: 4px 8px !important; text-align: left; }
+.att-tot { width: 28px; }
 .att-sticky-l { position: sticky; left: 0; z-index: 2; }
 .att-sticky-l2 { position: sticky; left: 168px; z-index: 2; }
 .att-sticky-l3 { position: sticky; left: 196px; z-index: 2; }
 .att-sticky-l4 { position: sticky; left: 224px; z-index: 2; box-shadow: 2px 0 0 var(--tblr-border-color, #e6e7e9); }
 .att-table thead .att-sticky-l, .att-table thead .att-sticky-l2, .att-table thead .att-sticky-l3, .att-table thead .att-sticky-l4 { z-index: 4; }
-.att-day { min-width: 30px; max-width: 30px; padding: 2px 0 !important; }
+.att-day { padding: 2px 0 !important; }
 .att-daynum { font-weight: 500; line-height: 1.1; }
 .att-dow { font-size: 0.6rem; color: var(--tblr-secondary, #6b7689); line-height: 1; }
-.att-cell { min-width: 30px; max-width: 30px; height: 30px; text-align: center; vertical-align: middle; }
+.att-cell { height: 30px; text-align: center; vertical-align: middle; }
 .att-col-weekend { background: #f3f5f8 !important; }
 .att-col-holiday { background: #f4f0fb !important; }
 .att-col-today { box-shadow: inset 2px 0 0 var(--tblr-primary, #206bc4), inset -2px 0 0 var(--tblr-primary, #206bc4); }
