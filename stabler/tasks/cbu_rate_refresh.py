@@ -190,3 +190,59 @@ def backfill(start_date: str, end_date: str | None = None) -> dict[str, Any]:
 	}
 	print(f"[stabler.tasks.cbu_rate_refresh.backfill] {summary}")
 	return summary
+
+
+def fill_gap(start_date: str | None = None, end_date: str | None = None) -> dict[str, Any]:
+	"""Close gaps in Currency Exchange WITHOUT calling cbu.uz — carry the most
+	recent stored rate forward over every missing day.
+
+	Use this when the daily fetch had a gap and the cbu.uz archive isn't reachable
+	for the needed dates (e.g. a system clock that runs ahead of real-world dates).
+	For each tracked currency it takes the latest stored foreign->UZS rate and
+	writes both directions for each missing day up to `end_date` (default today).
+	A real row already present for a day is respected and its rate is carried on.
+
+	    bench --site anjan.erpstable.com execute \\
+	      stabler.tasks.cbu_rate_refresh.fill_gap --kwargs "{'start_date':'2026-02-12'}"
+	"""
+	if not frappe.db.exists("DocType", "Currency Exchange"):
+		return {"status": "skipped", "reason": "Currency Exchange doctype missing"}
+
+	end = datetime.date.fromisoformat(end_date) if end_date else datetime.date.today()
+	out: dict[str, Any] = {}
+	for code in _TRACKED:
+		latest = frappe.db.get_value(
+			"Currency Exchange",
+			{"from_currency": code, "to_currency": _BASE_CURRENCY},
+			["exchange_rate", "date"],
+			order_by="date desc",
+			as_dict=True,
+		)
+		if not latest or not latest.get("exchange_rate"):
+			out[code] = "no stored base rate to carry"
+			continue
+		last_date = latest["date"]
+		if not isinstance(last_date, datetime.date):
+			last_date = datetime.date.fromisoformat(str(last_date)[:10])
+		start = datetime.date.fromisoformat(start_date) if start_date else (last_date + datetime.timedelta(days=1))
+		rate = float(latest["exchange_rate"])
+		filled = 0
+		cur = start
+		while cur <= end:
+			existing = frappe.db.get_value(
+				"Currency Exchange",
+				{"from_currency": code, "to_currency": _BASE_CURRENCY, "date": cur},
+				"exchange_rate",
+			)
+			if existing:
+				rate = float(existing)  # adopt a real row and carry it forward
+			else:
+				_ensure_currency_exists(code)
+				_upsert_rate(code, rate, cur)
+				filled += 1
+			cur += datetime.timedelta(days=1)
+		out[code] = {"filled_days": filled, "rate": rate, "from": start.isoformat()}
+	frappe.db.commit()
+	summary = {"status": "ok", "to": end.isoformat(), "currencies": out}
+	print(f"[stabler.tasks.cbu_rate_refresh.fill_gap] {summary}")
+	return summary
