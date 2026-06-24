@@ -2856,3 +2856,14 @@ Pick a status.,Выберите статус.
 Select,Выбрать
 selected,выбрано
 Mark as,Отметить как
+Failed to load overdue installments.,Не удалось загрузить просрочки.
+Payment overdue,Платёж просрочен
+Total overdue,Всего просрочено
+Installments,Платежей
+Oldest (days),Старейший (дн.)
+Aging,Срок давности
+inst.,плат.
+Overdue installments,Просроченные платежи
+Remind,Напомнить
+Copy reminder,Скопировать напоминание
+No overdue installments.,Нет просроченных платежей.

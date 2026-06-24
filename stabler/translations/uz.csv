@@ -2849,3 +2849,14 @@ Pick a status.,Holatni tanlang.
 Select,Tanlash
 selected,tanlandi
 Mark as,Belgilash
+Failed to load overdue installments.,Muddati o'tgan to'lovlarni yuklab bo'lmadi.
+Payment overdue,To'lov muddati o'tgan
+Total overdue,Jami muddati o'tgan
+Installments,To'lovlar
+Oldest (days),Eng eski (kun)
+Aging,Muddat taqsimoti
+inst.,to'lov
+Overdue installments,Muddati o'tgan to'lovlar
+Remind,Eslatish
+Copy reminder,Eslatmani nusxalash
+No overdue installments.,Muddati o'tgan to'lovlar yo'q.

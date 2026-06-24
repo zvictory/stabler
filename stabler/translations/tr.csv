@@ -2831,3 +2831,14 @@ Pick a status.,Bir durum seçin.
 Select,Seç
 selected,seçili
 Mark as,Şu olarak işaretle
+Failed to load overdue installments.,Gecikmiş taksitler yüklenemedi.
+Payment overdue,Ödeme gecikti
+Total overdue,Toplam gecikmiş
+Installments,Taksitler
+Oldest (days),En eski (gün)
+Aging,Yaşlandırma
+inst.,taksit
+Overdue installments,Gecikmiş taksitler
+Remind,Hatırlat
+Copy reminder,Hatırlatmayı kopyala
+No overdue installments.,Gecikmiş taksit yok.

@@ -103,6 +103,7 @@ import RemittanceTransfers from "./pages/remittance/RemittanceTransfers.vue";
 import InstallmentHome from "./pages/installment/InstallmentHome.vue";
 import NewContract from "./pages/installment/NewContract.vue";
 import Contracts from "./pages/installment/Contracts.vue";
+import InstallmentOverdue from "./pages/installment/Overdue.vue";
 import InstallmentCalendar from "./pages/installment/InstallmentCalendar.vue";
 import CrmHome from "./pages/crm/CrmHome.vue";
 import CrmLeads from "./pages/crm/Leads.vue";
@@ -314,6 +315,7 @@ const routes = [
 			{ path: "", redirect: "/installment/new" },
 			{ path: "new", name: "installment-new", component: NewContract, meta: { title: t("New Contract") } },
 			{ path: "contracts", name: "installment-contracts", component: Contracts, meta: { title: t("Contracts") } },
+			{ path: "overdue", name: "installment-overdue", component: InstallmentOverdue, meta: { title: t("Overdue") } },
 			{ path: "calendar", name: "installment-calendar", component: InstallmentCalendar, meta: { title: t("Calendar") } },
 		],
 	},

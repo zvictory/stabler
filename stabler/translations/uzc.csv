@@ -2849,3 +2849,14 @@ Pick a status.,Ҳолатни танланг.
 Select,Танлаш
 selected,танланди
 Mark as,Белгилаш
+Failed to load overdue installments.,Муддати ўтган тўловларни юклаб бўлмади.
+Payment overdue,Тўлов муддати ўтган
+Total overdue,Жами муддати ўтган
+Installments,Тўловлар
+Oldest (days),Энг эски (кун)
+Aging,Муддат тақсимоти
+inst.,тўлов
+Overdue installments,Муддати ўтган тўловлар
+Remind,Эслатиш
+Copy reminder,Эслатмани нусхалаш
+No overdue installments.,Муддати ўтган тўловлар йўқ.

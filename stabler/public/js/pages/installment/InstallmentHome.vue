@@ -8,6 +8,7 @@ const route = useRoute();
 const tabs = [
 	{ name: "installment-new", path: "/installment/new", label: t("New Contract"), icon: "ti-plus" },
 	{ name: "installment-contracts", path: "/installment/contracts", label: t("Contracts"), icon: "ti-file-invoice" },
+	{ name: "installment-overdue", path: "/installment/overdue", label: t("Overdue"), icon: "ti-alert-triangle" },
 	{ name: "installment-calendar", path: "/installment/calendar", label: t("Calendar"), icon: "ti-calendar" },
 ];
 const activeTab = computed(() => route.name);

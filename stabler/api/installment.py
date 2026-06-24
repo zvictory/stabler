@@ -710,13 +710,22 @@ def overdue_rows(company: str, side: str = "sell") -> list:
     """Rows past due with remaining outstanding balance."""
     _require_company(company)
     doctype = _invoice_doctype(side)
-    doctype_table = "tabPurchase Invoice" if side == "buy" else "tabSales Invoice"
-    party_field = "supplier" if side == "buy" else "customer"
-    return frappe.db.sql(
+    if side == "buy":
+        doctype_table = "tabPurchase Invoice"
+        party_field = "supplier"
+        party_table = "tabSupplier"
+        party_name_col = "supplier_name"
+    else:
+        doctype_table = "tabSales Invoice"
+        party_field = "customer"
+        party_table = "tabCustomer"
+        party_name_col = "customer_name"
+    rows = frappe.db.sql(
         f"""
         SELECT
             inv.name AS contract,
             inv.{party_field} AS party,
+            COALESCE(pt.{party_name_col}, inv.{party_field}) AS party_name,
             inv.currency,
             ps.due_date,
             ps.payment_amount,
@@ -725,6 +734,7 @@ def overdue_rows(company: str, side: str = "sell") -> list:
             DATEDIFF(CURDATE(), ps.due_date) AS days_overdue
         FROM `tabPayment Schedule` ps
         JOIN `{doctype_table}` inv ON inv.name = ps.parent
+        LEFT JOIN `{party_table}` pt ON pt.name = inv.{party_field}
         WHERE inv.company = %(company)s
           AND inv.stabler_installment_plan = 1
           AND inv.docstatus = 1
@@ -736,6 +746,14 @@ def overdue_rows(company: str, side: str = "sell") -> list:
         {"company": company, "doctype": doctype},
         as_dict=True,
     )
+    # Attach the party's mobile (one lookup per distinct party) for reminders.
+    party_doctype = "Supplier" if side == "buy" else "Customer"
+    mobiles: dict[str, str] = {}
+    for p in {r.party for r in rows if r.get("party")}:
+        mobiles[p] = _party_mobile(party_doctype, p)
+    for r in rows:
+        r["party_mobile"] = mobiles.get(r.get("party"), "")
+    return rows
 
 
 @frappe.whitelist()
