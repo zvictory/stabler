@@ -22,3 +22,4 @@ stabler.patches.v21_employee_timepay_fields
 stabler.patches.v22_employee_comp_fields
 stabler.patches.v23_item_dimension_fields
 stabler.patches.v24_attendance_edit_fields
+stabler.patches.v25_purchase_dimension_fields

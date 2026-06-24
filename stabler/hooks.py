@@ -102,6 +102,7 @@ doc_events = {
 	},
 	"Purchase Invoice": {
 		"before_validate": [
+			"stabler.api.dimensions_hook.apply_dimensional_qty",
 			"stabler.api._diag.on_txn_validate",
 		],
 		"validate": [
@@ -115,6 +116,7 @@ doc_events = {
 	},
 	"Purchase Order": {
 		"before_validate": [
+			"stabler.api.dimensions_hook.apply_dimensional_qty",
 			"stabler.api._diag.on_txn_validate",
 		],
 		"before_submit": [

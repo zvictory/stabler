@@ -142,6 +142,11 @@ function blankLine() {
 		item_name: "",
 		uom: "",
 		qty: 1,
+		dimension_mode: "",
+		custom_length: null,
+		custom_width: null,
+		custom_height: null,
+		custom_pieces: null,
 		rate: 0,
 		discount_percentage: 0,
 		discount_amount: 0,
@@ -205,6 +210,11 @@ function fromDetail(d) {
 				item_name: it.item_name,
 				uom: it.uom || "",
 				qty: Number(it.qty || 0),
+				dimension_mode: it.custom_dimension_mode || "",
+				custom_length: it.custom_length ?? null,
+				custom_width: it.custom_width ?? null,
+				custom_height: it.custom_height ?? null,
+				custom_pieces: it.custom_pieces ?? null,
 				rate,
 				price_list_rate: isArtifact ? 0 : plr,
 				discount_percentage: isArtifact ? 0 : Number(it.discount_percentage || 0),
@@ -225,6 +235,10 @@ function toPayload(m) {
 			uom: r.uom,
 			discount_percentage: r.discount_percentage || 0,
 			discount_amount: r.discount_amount || 0,
+			custom_length: r.custom_length ?? undefined,
+			custom_width: r.custom_width ?? undefined,
+			custom_height: r.custom_height ?? undefined,
+			custom_pieces: r.custom_pieces ?? undefined,
 		}));
 	return {
 		supplier: m.supplier,
@@ -328,6 +342,7 @@ async function handlePickItem({ line, item, index, field }) {
 		line.item_code = item.item_code || item.name;
 		line.item_name = item.item_name;
 		line.uom = item.stock_uom || "";
+		line.stock_uom = item.stock_uom || "";
 		line.rate = Number(item.standard_rate || 0);
 	}
 }

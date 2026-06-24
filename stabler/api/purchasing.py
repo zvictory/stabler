@@ -351,6 +351,13 @@ def purchase_invoice_detail(name: str):
 		frappe.throw("Invoice name is required.")
 	_assert_can_read("Purchase Invoice", name)
 	doc = frappe.get_doc("Purchase Invoice", name)
+	_has_dim = frappe.db.has_column("Item", "custom_dimension_mode")
+
+	def _dim_mode(code):
+		if not _has_dim or not code:
+			return ""
+		return frappe.get_cached_value("Item", code, "custom_dimension_mode") or ""
+
 	return {
 		"name": doc.name,
 		"modified": str(doc.modified),
@@ -390,6 +397,11 @@ def purchase_invoice_detail(name: str):
 				"discount_amount": flt(it.discount_amount),
 				"price_list_rate": flt(it.price_list_rate),
 				"purchase_order": it.purchase_order or "",
+				"custom_dimension_mode": _dim_mode(it.item_code),
+				"custom_length": flt(getattr(it, "custom_length", 0)) or None,
+				"custom_width": flt(getattr(it, "custom_width", 0)) or None,
+				"custom_height": flt(getattr(it, "custom_height", 0)) or None,
+				"custom_pieces": flt(getattr(it, "custom_pieces", 0)) or None,
 			}
 			for it in (doc.items or [])
 		],
@@ -652,6 +664,10 @@ def _clean_invoice_items(items) -> list[dict]:
 				"uom": row.get("uom") or None,
 				"discount_percentage": disc_pct,
 				"discount_amount": flt(row.get("discount_amount")),
+				"custom_length": row.get("custom_length"),
+				"custom_width": row.get("custom_width"),
+				"custom_height": row.get("custom_height"),
+				"custom_pieces": row.get("custom_pieces"),
 			}
 		)
 	return cleaned
@@ -733,6 +749,9 @@ def _apply_invoice_payload(
 			line.discount_percentage = row["discount_percentage"]
 		if row["discount_amount"]:
 			line.discount_amount = row["discount_amount"]
+		for _df in ("custom_length", "custom_width", "custom_height", "custom_pieces"):
+			if row.get(_df) not in (None, ""):
+				line.set(_df, flt(row.get(_df)))
 
 	doc.set("taxes", [])
 	doc.taxes_and_charges = taxes_template or None
@@ -1135,6 +1154,13 @@ def purchase_order_detail(name: str):
 		frappe.throw("Purchase order name is required.")
 	_assert_can_read("Purchase Order", name)
 	doc = frappe.get_doc("Purchase Order", name)
+	_has_dim = frappe.db.has_column("Item", "custom_dimension_mode")
+
+	def _dim_mode(code):
+		if not _has_dim or not code:
+			return ""
+		return frappe.get_cached_value("Item", code, "custom_dimension_mode") or ""
+
 	# linked Purchase Invoices created via PO→PI bridge (or manually)
 	pi_links = frappe.db.sql(
 		"""
@@ -1198,6 +1224,11 @@ def purchase_order_detail(name: str):
 				"discount_amount": flt(it.discount_amount),
 				"amount": flt(it.amount),
 				"schedule_date": str(it.schedule_date) if it.schedule_date else None,
+				"custom_dimension_mode": _dim_mode(it.item_code),
+				"custom_length": flt(getattr(it, "custom_length", 0)) or None,
+				"custom_width": flt(getattr(it, "custom_width", 0)) or None,
+				"custom_height": flt(getattr(it, "custom_height", 0)) or None,
+				"custom_pieces": flt(getattr(it, "custom_pieces", 0)) or None,
 			}
 			for it in (doc.items or [])
 		],
@@ -1268,6 +1299,10 @@ def create_purchase_order(
 				"conversion_factor": flt(row.get("conversion_factor")) or None,
 				"discount_percentage": disc_pct,
 				"discount_amount": flt(row.get("discount_amount")),
+				"custom_length": row.get("custom_length"),
+				"custom_width": row.get("custom_width"),
+				"custom_height": row.get("custom_height"),
+				"custom_pieces": row.get("custom_pieces"),
 			}
 		)
 
@@ -1308,6 +1343,9 @@ def create_purchase_order(
 			line.discount_percentage = row["discount_percentage"]
 		if row.get("discount_amount"):
 			line.discount_amount = row["discount_amount"]
+		for _df in ("custom_length", "custom_width", "custom_height", "custom_pieces"):
+			if row.get(_df) not in (None, ""):
+				line.set(_df, flt(row.get(_df)))
 
 	doc.insert(ignore_permissions=False)
 	pending_approval = False
@@ -1397,6 +1435,10 @@ def update_purchase_order(
 				"conversion_factor": flt(row.get("conversion_factor")) or None,
 				"discount_percentage": disc_pct,
 				"discount_amount": flt(row.get("discount_amount")),
+				"custom_length": row.get("custom_length"),
+				"custom_width": row.get("custom_width"),
+				"custom_height": row.get("custom_height"),
+				"custom_pieces": row.get("custom_pieces"),
 			}
 		)
 
@@ -1438,6 +1480,9 @@ def update_purchase_order(
 			line.discount_percentage = row["discount_percentage"]
 		if row.get("discount_amount"):
 			line.discount_amount = row["discount_amount"]
+		for _df in ("custom_length", "custom_width", "custom_height", "custom_pieces"):
+			if row.get(_df) not in (None, ""):
+				line.set(_df, flt(row.get(_df)))
 
 	doc.save(ignore_permissions=False)
 	return {
