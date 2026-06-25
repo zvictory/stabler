@@ -28,10 +28,10 @@ const AREAS = [
 	},
 	{
 		key: "attendance", label: t("Attendance"), icon: "ti-calendar-clock",
-		landing: "/hr/attendance-dashboard", roles: ["HR User", "HR Manager"],
+		landing: "/hr/attendance", roles: ["HR User", "HR Manager"],
 		tabs: [
+			{ name: "hr-attendance", path: "/hr/attendance", label: t("Attendance"), icon: "ti-table" },
 			{ name: "hr-attendance-dashboard", path: "/hr/attendance-dashboard", label: t("Dashboard"), icon: "ti-layout-dashboard" },
-			{ name: "hr-attendance", path: "/hr/attendance", label: t("Daily"), icon: "ti-calendar-event" },
 			{ name: "hr-exceptions-queue", path: "/hr/exceptions-queue", label: t("Exceptions"), icon: "ti-alert-triangle" },
 			{ name: "hr-corrections", path: "/hr/corrections", label: t("Corrections"), icon: "ti-edit" },
 			{ name: "hr-leave", path: "/hr/leave", label: t("Leave"), icon: "ti-beach" },

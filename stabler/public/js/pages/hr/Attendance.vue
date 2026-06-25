@@ -61,16 +61,16 @@ const today = () => todayIso();
 function ym(d) {
 	return `${d.getFullYear()}-${String(d.getMonth() + 1).padStart(2, "0")}`;
 }
-const periodOptions = computed(() => {
-	const now = new Date();
-	const out = [];
-	for (let i = 0; i < 12; i++) {
-		const d = new Date(now.getFullYear(), now.getMonth() - i, 1);
-		out.push({ value: ym(d), label: d.toLocaleDateString("en", { year: "numeric", month: "long" }) });
-	}
-	return out;
-});
 const period = ref(ym(new Date()));
+const periodLabel = computed(() => {
+	const [y, m] = period.value.split("-").map(Number);
+	return new Date(y, m - 1, 1).toLocaleDateString("en", { year: "numeric", month: "long" });
+});
+const isCurrentOrFuture = computed(() => period.value >= ym(new Date()));
+function shiftPeriod(delta) {
+	const [y, m] = period.value.split("-").map(Number);
+	period.value = ym(new Date(y, m - 1 + delta, 1));
+}
 
 // ----- Department filter -----
 const departments = ref([]);
@@ -217,33 +217,29 @@ async function save() {
 </script>
 
 <template>
-	<div class="card mb-3">
-		<div class="card-body">
-			<div class="row g-2 align-items-end">
-				<div class="col-12 col-md-3">
-					<label class="form-label small">{{ t("Period") }}</label>
-					<Select v-model="period" :options="periodOptions" value-key="value" label-key="label" />
-				</div>
-				<div class="col-12 col-md-4">
-					<label class="form-label small">{{ t("Department") }}</label>
-					<Select v-model="departmentFilter" :options="departmentOptions" value-key="name" label-key="department_name" />
-				</div>
-				<div class="col-12 col-md-2">
-					<label class="form-label small">{{ t("Search") }}</label>
-					<input v-model="gridSearch" class="form-control" :placeholder="t('Name…')" />
-				</div>
-				<div class="col-12 col-md-3 d-flex justify-content-md-end align-items-end gap-2">
-					<div class="btn-group" role="group">
-						<input id="att-grid" v-model="view" type="radio" class="btn-check" value="grid" />
-						<label class="btn btn-outline-primary btn-sm" for="att-grid" :title="t('Month grid')"><i class="ti ti-layout-grid"></i></label>
-						<input id="att-sum" v-model="view" type="radio" class="btn-check" value="summary" />
-						<label class="btn btn-outline-primary btn-sm" for="att-sum" :title="t('Summary')"><i class="ti ti-list"></i></label>
-					</div>
-					<button type="button" class="btn btn-primary" @click="openMark">
-						<i class="ti ti-checkbox me-1"></i>{{ t("Mark") }}
-					</button>
-				</div>
+	<div class="d-flex flex-wrap align-items-center gap-2 mb-3">
+		<div class="btn-group" role="group">
+			<button type="button" class="btn btn-outline-secondary" @click="shiftPeriod(-1)"><i class="ti ti-chevron-left"></i></button>
+			<span class="btn btn-outline-secondary disabled text-dark" style="min-width: 150px">{{ periodLabel }}</span>
+			<button type="button" class="btn btn-outline-secondary" :disabled="isCurrentOrFuture" @click="shiftPeriod(1)"><i class="ti ti-chevron-right"></i></button>
+		</div>
+		<div style="min-width: 180px">
+			<Select v-model="departmentFilter" :options="departmentOptions" value-key="name" label-key="department_name" size="sm" />
+		</div>
+		<div class="input-icon" style="max-width: 200px">
+			<span class="input-icon-addon"><i class="ti ti-search"></i></span>
+			<input v-model="gridSearch" class="form-control form-control-sm" :placeholder="t('Search name… ⌘K')" />
+		</div>
+		<div class="ms-auto d-flex align-items-center gap-2">
+			<div class="btn-group" role="group">
+				<input id="att-grid" v-model="view" type="radio" class="btn-check" value="grid" />
+				<label class="btn btn-outline-primary btn-sm" for="att-grid" :title="t('Month grid')"><i class="ti ti-table"></i></label>
+				<input id="att-sum" v-model="view" type="radio" class="btn-check" value="summary" />
+				<label class="btn btn-outline-primary btn-sm" for="att-sum" :title="t('Summary')"><i class="ti ti-list"></i></label>
 			</div>
+			<button type="button" class="btn btn-primary btn-sm" @click="openMark">
+				<i class="ti ti-checkbox me-1"></i>{{ t("Mark") }}
+			</button>
 		</div>
 	</div>
 
