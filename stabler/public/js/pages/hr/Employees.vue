@@ -6,13 +6,50 @@ import { useSession } from "../../stores/session.js";
 import { call } from "../../api/client.js";
 import { t } from "../../composables/i18n.js";
 import { formatDateTime, todayIso} from "../../composables/date.js";
+import { formatMoney } from "../../composables/money.js";
+import { useToast } from "../../composables/useToast.js";
 import EmptyState from "../../components/EmptyState.vue";
 import DateInput from "../../components/DateInput.vue";
 import Select from "../../components/Select.vue";
+import MoneyInput from "../../components/MoneyInput.vue";
 
 const router = useRouter();
 const session = useSession();
-const { activeCompany } = storeToRefs(session);
+const { activeCompany, user } = storeToRefs(session);
+const toast = useToast();
+
+const currency = computed(() => session.currency);
+const money = (v) => formatMoney(v, currency.value, user.value.language);
+
+// ── Advance balances + pay (role-gated) ──────────────────────────────────────
+const canAdvances = ref(true);
+const balances = ref({});
+const payAccounts = ref([]);
+
+async function loadBalances() {
+	if (!activeCompany.value) return;
+	try {
+		const res = await call("stabler.api.employee_advance.employee_advance_balances", {
+			company: activeCompany.value, only_outstanding: 0, limit: 1000,
+		});
+		const map = {};
+		for (const r of res?.rows || []) map[r.employee] = Number(r.outstanding || 0);
+		balances.value = map;
+		canAdvances.value = true;
+	} catch (err) {
+		if (err?.status === 403 || /role|permission/i.test(err?.message || "")) canAdvances.value = false;
+		balances.value = {};
+	}
+}
+async function loadPayAccounts() {
+	if (!activeCompany.value || !canAdvances.value) return;
+	try {
+		payAccounts.value = await call("stabler.api.employee_advance.list_pay_accounts", { company: activeCompany.value });
+	} catch {
+		payAccounts.value = [];
+	}
+}
+const balanceOf = (emp) => Number(balances.value[emp] || 0);
 
 const loading = ref(false);
 const error = ref("");
@@ -58,9 +95,57 @@ function onSearchInput() {
 	searchTimer = setTimeout(load, 250);
 }
 
-onMounted(load);
-watch(activeCompany, load);
+async function loadAll() {
+	await Promise.all([load(), loadBalances()]);
+	loadPayAccounts();
+}
+onMounted(loadAll);
+watch(activeCompany, loadAll);
 watch(statusFilter, load);
+
+// ── Pay advance modal ────────────────────────────────────────────────────────
+const payOpen = ref(false);
+const paying = ref(false);
+const payError = ref("");
+const payForm = ref(blankPay());
+function blankPay() {
+	return { employee: "", employee_name: "", amount: null, paid_from: "", posting_date: todayIso(), remark: "" };
+}
+function openPay(r) {
+	payForm.value = blankPay();
+	payForm.value.employee = r.name;
+	payForm.value.employee_name = r.employee_name;
+	payForm.value.paid_from = payAccounts.value[0]?.name || "";
+	payError.value = "";
+	payOpen.value = true;
+}
+function closePay() {
+	if (paying.value) return;
+	payOpen.value = false;
+}
+async function submitPay() {
+	payError.value = "";
+	if (!(Number(payForm.value.amount) > 0)) return (payError.value = t("Enter an amount greater than zero."));
+	if (!payForm.value.paid_from) return (payError.value = t("Choose a cash/bank account."));
+	paying.value = true;
+	try {
+		const res = await call("stabler.api.employee_advance.pay_employee_advance", {
+			company: activeCompany.value,
+			employee: payForm.value.employee,
+			amount: Number(payForm.value.amount),
+			paid_from: payForm.value.paid_from,
+			posting_date: payForm.value.posting_date,
+			remark: payForm.value.remark || undefined,
+		});
+		toast.success(res?.pending_approval ? t("Advance sent for approval.") : t("Advance paid."));
+		payOpen.value = false;
+		await loadBalances();
+	} catch (err) {
+		payError.value = err?.message || t("Failed to pay advance.");
+	} finally {
+		paying.value = false;
+	}
+}
 
 // ----- Profile navigation -----
 function openProfile(name) {
@@ -226,8 +311,9 @@ function initials(name) {
 						<th>{{ t("Designation") }}</th>
 						<th>{{ t("Department") }}</th>
 						<th>{{ t("Contact") }}</th>
+						<th v-if="canAdvances" class="text-end">{{ t("Advance") }}</th>
 						<th>{{ t("Status") }}</th>
-						<th style="width: 4rem;"></th>
+						<th style="width: 7rem;"></th>
 					</tr>
 				</thead>
 				<tbody>
@@ -248,18 +334,32 @@ function initials(name) {
 							<div v-if="r.cell_number" class="small">{{ r.cell_number }}</div>
 							<div v-if="r.user_id" class="small text-secondary">{{ r.user_id }}</div>
 						</td>
+						<td v-if="canAdvances" class="text-end font-monospace" :class="{ 'text-danger fw-semibold': balanceOf(r.name) > 0 }">
+							{{ balanceOf(r.name) > 0 ? money(balanceOf(r.name)) : "—" }}
+						</td>
 						<td>
 							<span class="badge" :class="statusBadge(r.status)">{{ r.status }}</span>
 						</td>
 						<td @click.stop>
-							<button
-								type="button"
-								class="btn btn-ghost-secondary btn-sm"
-								:title="t('Edit')"
-								@click="openProfile(r.name)"
-							>
-								<i class="ti ti-edit"></i>
-							</button>
+							<div class="d-flex gap-1 justify-content-end">
+								<button
+									v-if="canAdvances"
+									type="button"
+									class="btn btn-outline-primary btn-sm"
+									:title="t('Pay advance')"
+									@click="openPay(r)"
+								>
+									<i class="ti ti-cash-banknote"></i>
+								</button>
+								<button
+									type="button"
+									class="btn btn-ghost-secondary btn-sm"
+									:title="t('Edit')"
+									@click="openProfile(r.name)"
+								>
+									<i class="ti ti-edit"></i>
+								</button>
+							</div>
 						</td>
 					</tr>
 				</tbody>
@@ -325,6 +425,50 @@ function initials(name) {
 						<div class="datagrid-title">{{ t("Company email") }}</div>
 						<div class="datagrid-content">{{ detail.company_email }}</div>
 					</div>
+				</div>
+			</div>
+		</div>
+	</div>
+
+	<!-- Pay advance modal -->
+	<div v-if="payOpen" class="modal-backdrop fade show" @click="closePay"></div>
+	<div v-if="payOpen" class="modal modal-blur fade show d-block" tabindex="-1">
+		<div class="modal-dialog modal-dialog-centered">
+			<div class="modal-content">
+				<div class="modal-header">
+					<h5 class="modal-title">{{ t("Pay advance") }} · {{ payForm.employee_name }}</h5>
+					<button type="button" class="btn-close" @click="closePay"></button>
+				</div>
+				<div class="modal-body">
+					<div v-if="payError" class="alert alert-danger py-2">{{ payError }}</div>
+					<div class="row g-2">
+						<div class="col-sm-6">
+							<label class="form-label">{{ t("Amount") }}</label>
+							<MoneyInput v-model="payForm.amount" :currency="currency" :language="user.language" />
+						</div>
+						<div class="col-sm-6">
+							<label class="form-label">{{ t("Posting date") }}</label>
+							<DateInput v-model="payForm.posting_date" />
+						</div>
+						<div class="col-12">
+							<label class="form-label">{{ t("Pay from (cash/bank)") }}</label>
+							<Select v-model="payForm.paid_from" :options="payAccounts" value-key="name" :placeholder="t('— Choose account —')">
+								<template #option="{ option }">{{ option.account_name || option.name }}</template>
+								<template #selected="{ option }">{{ option.account_name || option.name }}</template>
+							</Select>
+						</div>
+						<div class="col-12">
+							<label class="form-label">{{ t("Remark") }}</label>
+							<input v-model="payForm.remark" type="text" class="form-control" :placeholder="t('What is this advance for?')" />
+						</div>
+					</div>
+				</div>
+				<div class="modal-footer">
+					<button type="button" class="btn btn-link link-secondary" :disabled="paying" @click="closePay">{{ t("Cancel") }}</button>
+					<button type="button" class="btn btn-primary" :disabled="paying" @click="submitPay">
+						<span v-if="paying" class="spinner-border spinner-border-sm me-1"></span>
+						<i v-else class="ti ti-cash-banknote me-1"></i>{{ t("Pay advance") }}
+					</button>
 				</div>
 			</div>
 		</div>
