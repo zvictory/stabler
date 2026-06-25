@@ -22,3 +22,4 @@ stabler/public/dist/
 *.pem
 credentials.json
 secrets.json
+deploy_stabler.sh
