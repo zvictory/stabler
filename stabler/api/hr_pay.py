@@ -54,9 +54,8 @@ def _employee_pay_fields(emp_name: str) -> dict:
 
 
 def _ruleset_dict(company: str) -> dict:
-	name = frappe.db.get_value(_RULESET, {"company": company, "enabled": 1, "is_default": 1}, "name") or frappe.db.get_value(
-		_RULESET, {"enabled": 1, "is_default": 1}, "name"
-	)
+	# No cross-company fallback — only the requesting company's ruleset is used.
+	name = frappe.db.get_value(_RULESET, {"company": company, "enabled": 1, "is_default": 1}, "name")
 	return frappe.get_doc(_RULESET, name).as_dict() if name else {}
 
 
@@ -87,11 +86,13 @@ def _compute(s, ruleset: dict) -> dict:
 def preview_payroll_pay(summary_name: str) -> dict:
 	"""Full computed pay + breakdown for one attendance summary (read-only)."""
 	_require_pay_role()
-	if not frappe.db.exists(_SUMMARY, summary_name):
+	# Fetch company before loading the full doc to prevent IDOR enumeration.
+	company = frappe.db.get_value(_SUMMARY, summary_name, "company")
+	if not company:
 		frappe.throw(_("Unknown summary: {0}").format(summary_name))
+	_require_company(company)
 	s = frappe.get_doc(_SUMMARY, summary_name)
-	_require_company(s.company)
-	return _compute(s, _ruleset_dict(s.company))
+	return _compute(s, _ruleset_dict(company))
 
 
 @frappe.whitelist()
@@ -111,6 +112,8 @@ def preview_payroll_period(company: str, payroll_period: str) -> dict:
 	net_total = 0.0
 	for name in names:
 		s = frappe.get_doc(_SUMMARY, name)
+		if s.company != company:
+			continue  # TOCTOU guard — skip if doc moved to another company between query and load
 		r = _compute(s, ruleset)
 		gross_total += float(r["breakdown"].get("gross") or 0)
 		net_total += float(r.get("net") or 0)
