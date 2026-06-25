@@ -228,6 +228,7 @@ Attendance Dashboard,
 Attendance Rule Sets,
 Attendance Simulator,
 Attendance edits are open — no hard lock set.,Давомат таҳрири очиқ — қаттиқ қулф ўрнатилмаган.
+Attendance exceptions,Давомат истиснолари
 Attendance on/before,Давомат шу санагача
 Attendance summary,Давомат хулосаси
 Audit Trail,Ўзгаришлар тарихи
@@ -271,6 +272,7 @@ Base,Асос
 Base equivalent,Асосий эквивалент
 Base salary,
 Base salary (UZS),
+Base salary = 0,Асосий ойлик = 0
 Basic rate,Асосий нарх
 Batch,Партия
 Batch Expiry,Партия муддати
@@ -499,6 +501,8 @@ Cost Centre,
 Cost centre,
 Cost must be positive.,Таннарх мусбат бўлиши керак.
 Could not check payment status.,Тўлов ҳолатини текшириб бўлмади.
+Could not load data health.,Маълумотлар соғлиғини юклаб бўлмади.
+Could not load the HR overview.,HR умумий кўринишини юклаб бўлмади.
 Could not read backup file: {0},
 Could not read the uploaded file.,
 Could not read your location.,Жойлашувни аниқлаб бўлмади.
@@ -577,6 +581,7 @@ Daily cap (UZS),
 Dashboard,Бошқарув панели
 Dashed,Нуқта-чизиқли
 Data,Маълумотлар
+Data health,Маълумотлар соғлиғи
 Database,Маълумотлар базаси
 Date,Сана
 Date basis,Сана асоси
@@ -802,6 +807,7 @@ Event requeued for processing.,
 Events,Ходисалар
 Events appear here as soon as a device or integration pushes data. Use the filters above to narrow results.,
 Every route row needs an outlet.,Ҳар бир маршрут сатри киймасни сўрайди.
+Everything looks complete,Ҳаммаси тўлиқ
 Exact,
 Exceeded (Annual),
 Exceeded (Monthly),
@@ -1028,6 +1034,7 @@ First name is required.,Исмни киритинг.
 First payment date,Биринчи тўлов санаси
 Fiscal Year,
 Fiscal year,
+Fix,Тузатиш
 Fixed cut-off. Optional.,
 Fixed deduction on first late minute past grace.,
 Fixtures directory missing: {0},Арматура директорияси йўқ: {0}
@@ -1094,6 +1101,7 @@ Gross total,Жами (брутто)
 Group,Гуруҳ
 "Group warehouse (can contain children, holds no stock itself)","Гуруҳ омбори (болаларни сақлаши мумкин, ўзи қўй сақламайди)"
 HR,Инсон Ресурслари
+HR overview,HR умумий кўриниш
 Half Day,Ярим кун
 Half rate,
 Half-day & Presence,
@@ -1102,6 +1110,7 @@ Heavy conditions,
 Heavy-conditions allowance,Оғир шароит устамаси
 Height,Баландлик
 Hello {name},Салом {name}
+Hidden for your role,Сизнинг ролингиз учун яширилган
 High conflicts,Юқори низолар
 Hire date,
 Holiday,Байрам
@@ -1337,6 +1346,7 @@ Minutes tolerated before late penalty starts.,
 Minutes worked before overtime begins.,
 Missing Entry,
 Missing site config key: {0},
+Missing work mode / region,Иш режими / ҳудуд йўқ
 Mitigation:,Юмшатиш:
 Mobile,Мобил
 Mobile Phone,Мобил телефон
@@ -1373,8 +1383,10 @@ Name or email,Ном ёки электрон почта
 Name…,Исм…
 Narxi,Нархи
 Need GPS,GPS керак
+Needed for correct allowances and overtime.,Тўғри устамалар ва қўшимча иш учун керак.
 Needs Freezer,Музлатгич керak
 Needs setup,Созлаш керак
+Needs you today,Бугун эътиборингиз керак
 Needs your attention,
 Net,Тўланади
 Net ROI %,Тоза ROI %
@@ -1461,6 +1473,7 @@ No ARCA payment events yet.,Ҳалиғача ARCA тўлов воқеалари 
 No BOMs yet,Ҳозирча спецификациялар йўқ
 No CBU exchange rate found for {0} to {1} on or before {2}.,
 No EHF submissions yet. Submit a Sales Invoice to enqueue one.,Ҳалиғача EHF жунатмалари йўқ. Қуймаға қўшиш учун Сотув счётини жунатинг.
+No Employee Advances account configured.,Аванс ҳисоби созланмаган.
 No GPS-located outlets for this period.,Бу давр учун GPSли нуқталар йўқ.
 No Google service account configured (site_config: stabler_gdrive_service_account).,
 No OSA audits yet,Ҳалиғача OSA аудитлари йўқ
@@ -1473,6 +1486,7 @@ No attendance records,Давомат ёзувлари йўқ
 No attendance summaries for this period,Бу давр учун давомат ҳисоботлари йўқ
 No backups on disk yet. Click “Back up now”.,Дискда ҳали захира йўқ. «Ҳозир захиралаш»ни босинг.
 No bills in this range,Бу диапазонда счётлар йўқ
+No blockers,Тўсиқ йўқ
 No budget data for this period,
 No budgets found,
 No claim selected.,Даво танланмаган.
@@ -1490,6 +1504,7 @@ No customers,Мижозлар йўқ
 No customers match that name,Шу номга мос мижозлар йўқ
 No data,Маълумот йўқ
 No data for the selected range,Танланган диапазон учун маълумот йўқ
+No data gaps found for this company.,Бу компанияда маълумот бўшлиқлари йўқ.
 No deals,Битимлар йўқ
 No debtors found.,
 No deductions,Ушланмалар йўқ
@@ -1696,6 +1711,7 @@ Open Desk,Дескни очиш
 Open Exceptions,
 Open SREs,Очиқ SREлар
 Open exceptions,
+Open matrix,Жадвални очиш
 Open payment link,Тўлов ҳаволасини очиш
 Open pipeline,Очиқ воронка
 Open tickets,Очиқ тикетлар
@@ -1832,8 +1848,10 @@ Payroll Attendance Summary is Locked. Cannot change: {0},
 Payroll Attendance Summary {0} not found.,
 "Payroll Period must be in YYYY-MM format (e.g. 2026-05), got: {0}",
 Payroll Readiness,
+Payroll blockers,Ойлик тўсиқлари
 Payroll entry,Маош ёзуви
 Payroll impacting,
+Payroll outputs zero until a salary is entered.,Ойлик киритилмагунча натижа нол бўлади.
 Payroll period,
 Payroll period end date cannot be before start date.,
 Payroll-impacting pending,
@@ -1945,6 +1963,7 @@ Production Item,
 Professional Excel export of this ledger,Бу реестрнинг профессионал Excel экспорти
 Professional Excel export with current filters,Жорий фильтрлар билан профессионал Excel экспорти
 Profile,Профил
+Profile gaps,Профил бўшлиқлари
 "Profit and Loss, Balance Sheet, Trial Balance, and Cash Flow.",
 Projected,Прогнозланган
 Promo,Акция
@@ -2042,6 +2061,7 @@ Record & new,Ёзиб янги
 Record a sale,Сотув қайд қилиш
 Record production,Ишлаб чиқаришни қайд этиш
 Record stock movements,Захира ҳаракатини қайд этиш
+Records that block payroll or look unfinished. Fix at the source.,Ойликни тўсаётган ёки тугалланмаган ёзувлар. Манбада тузатинг.
 Recovered,Ушлаб қолинган
 Recovered from net pay this period; reduces the outstanding balance. Locked periods are read-only.,Шу давр соф тўловидан ушлаб қолинади; қолдиқни камайтиради. Қулфланган даврлар фақат ўқиш учун.
 Recurring monthly run-rate — the pipeline forecast.,Такрорий ойлик айланма — воронка прогнози.
@@ -2398,6 +2418,7 @@ SoD Enforcement,
 SoD violations,Вазифалар тақсимоти бузилишлари
 Sold,Сотилган
 SoliqOnline UUID,SoliqOnline UUID
+Some affect this month's pay,Баъзилари шу ой ойлигига таъсир қилади
 Some lines could not be reserved,Айрим сатрларни зарарасини олиб кўйиб бўлмади
 Something went wrong,Хатолик юз берди
 Soni (korobka),Сони (коробка)
@@ -2406,6 +2427,7 @@ Source warehouse,Манба омбор
 Source warehouse is required.,
 Spend,Харажат
 Stabler Settings doctype does not exist. Run migrations first.,
+Staff with base salary = 0,Асосий ойлиги = 0 бўлган ходимлар
 Stage Materials,
 Stake coefficient,
 Stale days,
@@ -2638,6 +2660,8 @@ UOM,Ўлчов бирлиги
 USD rate on this date,Ушбу сананинг USD курси
 USD → UZS,USD → UZS
 Unassigned,Белгиланмаган
+Unassigned department or position.,Бўлим ёки лавозим бириктирилмаган.
+Unassigned dept / position,Бўлим / лавозим йўқ
 Unbilled,Ҳисобланмаган
 Unbilled queue,Ҳисоб-фактура навбати
 Unit cost,Бирлик таннархи
@@ -2662,6 +2686,7 @@ Unknown vertical pack: {0},Номаълум верикал пакет: {0}
 Unknown warehouse: {0},Номаълум омбор: {0}
 Unmatched,
 Unmatched Event,
+"Unmatched events, missing punches","Мос келмаган ҳодисалар, ўтказиб юборилган"
 Unpaid,Тўланмаган
 Unreconciled transactions,Солиштирилмаган операциялар
 Unsupported language: {0},Қўллаб-қувватланмайдиган тил: {0}
@@ -2791,6 +2816,7 @@ Work done is required.,
 Work mode,
 Worked,
 Workers with advances,Авансли ходимлар
+Workforce,Ходимлар
 Working,Иш куни
 Workspace,
 Write,Ёзиш
@@ -2816,6 +2842,7 @@ You raised this — another user must approve it.,Бу сўровни сиз я�
 "Your books are empty. Get started by adding a customer, recording your first sale, or logging an opening balance.","Сизнинг китобларингиз бўш. Харидор қўшиб, биринчи сотувингизни ёзиб ёки ўзаро баланси қўйиб бошлаинг."
 Yuk xati,Юк хати
 across all statuses,барча ҳолатлар бўйича
+active staff,фаол ходим
 against,
 avail,мавж.
 available,
@@ -2831,6 +2858,9 @@ customer credit,
 date_str and hire_date are required.,
 days,кун
 default,
+department,бўлим
+depts,бўлим
+designation,лавозим
 device_name is required.,
 device_user_id is required.,
 e.g. Chevrolet Cobalt 2024,масалан Chevrolet Cobalt 2024
@@ -2854,6 +2884,7 @@ is locked from edits.,таҳрирлаш учун қулфланган.
 item,Товар
 item_code and warehouse are required,Товар коди ва омбор керак
 items,Товарлар
+joined this month,шу ой қўшилди
 left,қолди
 line,Қатор
 lines,
@@ -2875,6 +2906,7 @@ pack_key is required,pack_key керак
 payload must be a JSON object.,
 payroll_period is required.,
 planned,режалаштирилган
+pts vs last week,ўтган ҳафтага нисбатан
 "punches must be a list of {timestamp, direction}.",
 quantity,миқдор
 ready to invoice,ҳисоб-фактурага тайёр
@@ -2890,6 +2922,7 @@ skipped,ўтказиб юборилди
 source,target
 step_idx must be an integer.,step_idx бутун сон бўлиши керак.
 stock,захира
+summaries ready,ҳисобот тайёр
 to_date must be >= from_date.,
 unfavorable,
 units,

@@ -227,6 +227,7 @@ Attendance Dashboard,Attendance Dashboard
 Attendance Rule Sets,Attendance Rule Sets
 Attendance Simulator,Attendance Simulator
 Attendance edits are open — no hard lock set.,Attendance edits are open — no hard lock set.
+Attendance exceptions,Attendance exceptions
 Attendance on/before,Attendance on/before
 Attendance summary,Attendance summary
 Audit Trail,Audit Trail
@@ -269,6 +270,7 @@ Base,Base
 Base equivalent,Base equivalent
 Base salary,Base salary
 Base salary (UZS),Base salary (UZS)
+Base salary = 0,Base salary = 0
 Basic rate,Basic rate
 Batch,Batch
 Batch Expiry,Batch Expiry
@@ -497,6 +499,8 @@ Cost Centre,Cost Centre
 Cost centre,Cost centre
 Cost must be positive.,Cost must be positive.
 Could not check payment status.,Could not check payment status.
+Could not load data health.,Could not load data health.
+Could not load the HR overview.,Could not load the HR overview.
 Could not read backup file: {0},Could not read backup file: {0}
 Could not read the uploaded file.,Could not read the uploaded file.
 Could not read your location.,Could not read your location.
@@ -575,6 +579,7 @@ Daily cap (UZS),Daily cap (UZS)
 Dashboard,Dashboard
 Dashed,Dashed
 Data,Data
+Data health,Data health
 Database,Database
 Date,Date
 Date basis,Date basis
@@ -800,6 +805,7 @@ Event requeued for processing.,Event requeued for processing.
 Events,Events
 Events appear here as soon as a device or integration pushes data. Use the filters above to narrow results.,Events appear here as soon as a device or integration pushes data. Use the filters above to narrow results.
 Every route row needs an outlet.,Every route row needs an outlet.
+Everything looks complete,Everything looks complete
 Exact,Exact
 Exceeded (Annual),Exceeded (Annual)
 Exceeded (Monthly),Exceeded (Monthly)
@@ -1026,6 +1032,7 @@ First name is required.,First name is required.
 First payment date,First payment date
 Fiscal Year,Fiscal Year
 Fiscal year,Fiscal year
+Fix,Fix
 Fixed cut-off. Optional.,Fixed cut-off. Optional.
 Fixed deduction on first late minute past grace.,Fixed deduction on first late minute past grace.
 Fixtures directory missing: {0},Fixtures directory missing: {0}
@@ -1092,6 +1099,7 @@ Gross total,Gross total
 Group,Group
 "Group warehouse (can contain children, holds no stock itself)","Group warehouse (can contain children, holds no stock itself)"
 HR,HR
+HR overview,HR overview
 Half Day,Half Day
 Half rate,Half rate
 Half-day & Presence,Half-day & Presence
@@ -1100,6 +1108,7 @@ Heavy conditions,Heavy conditions
 Heavy-conditions allowance,Heavy-conditions allowance
 Height,Height
 Hello {name},Hello {name}
+Hidden for your role,Hidden for your role
 High conflicts,High conflicts
 Hire date,Hire date
 Holiday,Holiday
@@ -1335,6 +1344,7 @@ Minutes tolerated before late penalty starts.,Minutes tolerated before late pena
 Minutes worked before overtime begins.,Minutes worked before overtime begins.
 Missing Entry,Missing Entry
 Missing site config key: {0},Missing site config key: {0}
+Missing work mode / region,Missing work mode / region
 Mitigation:,Mitigation:
 Mobile,Mobile
 Mobile Phone,Mobile Phone
@@ -1371,8 +1381,10 @@ Name or email,Name or email
 Name…,Name…
 Narxi,Narxi
 Need GPS,Need GPS
+Needed for correct allowances and overtime.,Needed for correct allowances and overtime.
 Needs Freezer,Needs Freezer
 Needs setup,Needs setup
+Needs you today,Needs you today
 Needs your attention,Needs your attention
 Net,Net
 Net ROI %,Net ROI %
@@ -1459,6 +1471,7 @@ No ARCA payment events yet.,No ARCA payment events yet.
 No BOMs yet,No BOMs yet
 No CBU exchange rate found for {0} to {1} on or before {2}.,No CBU exchange rate found for {0} to {1} on or before {2}.
 No EHF submissions yet. Submit a Sales Invoice to enqueue one.,No EHF submissions yet. Submit a Sales Invoice to enqueue one.
+No Employee Advances account configured.,No Employee Advances account configured.
 No GPS-located outlets for this period.,No GPS-located outlets for this period.
 No Google service account configured (site_config: stabler_gdrive_service_account).,No Google service account configured (site_config: stabler_gdrive_service_account).
 No OSA audits yet,No OSA audits yet
@@ -1471,6 +1484,7 @@ No attendance records,No attendance records
 No attendance summaries for this period,No attendance summaries for this period
 No backups on disk yet. Click “Back up now”.,No backups on disk yet. Click “Back up now”.
 No bills in this range,No bills in this range
+No blockers,No blockers
 No budget data for this period,No budget data for this period
 No budgets found,No budgets found
 No claim selected.,No claim selected.
@@ -1488,6 +1502,7 @@ No customers,No customers
 No customers match that name,No customers match that name
 No data,No data
 No data for the selected range,No data for the selected range
+No data gaps found for this company.,No data gaps found for this company.
 No deals,No deals
 No debtors found.,No debtors found.
 No deductions,No deductions
@@ -1694,6 +1709,7 @@ Open Desk,Open Desk
 Open Exceptions,Open Exceptions
 Open SREs,Open SREs
 Open exceptions,Open exceptions
+Open matrix,Open matrix
 Open payment link,Open payment link
 Open pipeline,Open pipeline
 Open tickets,Open tickets
@@ -1829,8 +1845,10 @@ Payroll Attendance Summary is Locked. Cannot change: {0},Payroll Attendance Summ
 Payroll Attendance Summary {0} not found.,Payroll Attendance Summary {0} not found.
 "Payroll Period must be in YYYY-MM format (e.g. 2026-05), got: {0}","Payroll Period must be in YYYY-MM format (e.g. 2026-05), got: {0}"
 Payroll Readiness,Payroll Readiness
+Payroll blockers,Payroll blockers
 Payroll entry,Payroll entry
 Payroll impacting,Payroll impacting
+Payroll outputs zero until a salary is entered.,Payroll outputs zero until a salary is entered.
 Payroll period,Payroll period
 Payroll period end date cannot be before start date.,Payroll period end date cannot be before start date.
 Payroll-impacting pending,Payroll-impacting pending
@@ -1942,6 +1960,7 @@ Production Item,Production Item
 Professional Excel export of this ledger,Professional Excel export of this ledger
 Professional Excel export with current filters,Professional Excel export with current filters
 Profile,Profile
+Profile gaps,Profile gaps
 "Profit and Loss, Balance Sheet, Trial Balance, and Cash Flow.","Profit and Loss, Balance Sheet, Trial Balance, and Cash Flow."
 Projected,Projected
 Promo,Promo
@@ -2039,6 +2058,7 @@ Record & new,Record & new
 Record a sale,Record a sale
 Record production,Record production
 Record stock movements,Record stock movements
+Records that block payroll or look unfinished. Fix at the source.,Records that block payroll or look unfinished. Fix at the source.
 Recovered,Recovered
 Recovered from net pay this period; reduces the outstanding balance. Locked periods are read-only.,Recovered from net pay this period; reduces the outstanding balance. Locked periods are read-only.
 Recurring monthly run-rate — the pipeline forecast.,Recurring monthly run-rate — the pipeline forecast.
@@ -2395,6 +2415,7 @@ SoD Enforcement,SoD Enforcement
 SoD violations,SoD violations
 Sold,Sold
 SoliqOnline UUID,SoliqOnline UUID
+Some affect this month's pay,Some affect this month's pay
 Some lines could not be reserved,Some lines could not be reserved
 Something went wrong,Something went wrong
 Soni (korobka),Soni (korobka)
@@ -2403,6 +2424,7 @@ Source warehouse,Source warehouse
 Source warehouse is required.,Source warehouse is required.
 Spend,Spend
 Stabler Settings doctype does not exist. Run migrations first.,Stabler Settings doctype does not exist. Run migrations first.
+Staff with base salary = 0,Staff with base salary = 0
 Stage Materials,Stage Materials
 Stake coefficient,Stake coefficient
 Stale days,Stale days
@@ -2631,6 +2653,8 @@ UOM,UOM
 USD rate on this date,USD rate on this date
 USD → UZS,USD → UZS
 Unassigned,Unassigned
+Unassigned department or position.,Unassigned department or position.
+Unassigned dept / position,Unassigned dept / position
 Unbilled,Unbilled
 Unbilled queue,Unbilled queue
 Unit cost,Unit cost
@@ -2655,6 +2679,7 @@ Unknown vertical pack: {0},Unknown vertical pack: {0}
 Unknown warehouse: {0},Unknown warehouse: {0}
 Unmatched,Unmatched
 Unmatched Event,Unmatched Event
+"Unmatched events, missing punches","Unmatched events, missing punches"
 Unpaid,Unpaid
 Unreconciled transactions,Unreconciled transactions
 Unsupported language: {0},Unsupported language: {0}
@@ -2784,6 +2809,7 @@ Work done is required.,Work done is required.
 Work mode,Work mode
 Worked,Worked
 Workers with advances,Workers with advances
+Workforce,Workforce
 Working,Working
 Workspace,Workspace
 Write,Write
@@ -2809,6 +2835,7 @@ You raised this — another user must approve it.,You raised this — another us
 "Your books are empty. Get started by adding a customer, recording your first sale, or logging an opening balance.","Your books are empty. Get started by adding a customer, recording your first sale, or logging an opening balance."
 Yuk xati,Yuk xati
 across all statuses,across all statuses
+active staff,active staff
 against,against
 avail,avail
 available,available
@@ -2824,6 +2851,9 @@ customer credit,customer credit
 date_str and hire_date are required.,date_str and hire_date are required.
 days,days
 default,default
+department,department
+depts,depts
+designation,designation
 device_name is required.,device_name is required.
 device_user_id is required.,device_user_id is required.
 e.g. Chevrolet Cobalt 2024,e.g. Chevrolet Cobalt 2024
@@ -2847,6 +2877,7 @@ is locked from edits.,is locked from edits.
 item,item
 item_code and warehouse are required,item_code and warehouse are required
 items,items
+joined this month,joined this month
 left,left
 line,line
 lines,lines
@@ -2868,6 +2899,7 @@ pack_key is required,pack_key is required
 payload must be a JSON object.,payload must be a JSON object.
 payroll_period is required.,payroll_period is required.
 planned,planned
+pts vs last week,pts vs last week
 "punches must be a list of {timestamp, direction}.","punches must be a list of {timestamp, direction}."
 quantity,quantity
 ready to invoice,ready to invoice
@@ -2883,6 +2915,7 @@ skipped,skipped
 source,target
 step_idx must be an integer.,step_idx must be an integer.
 stock,stock
+summaries ready,summaries ready
 to_date must be >= from_date.,to_date must be >= from_date.
 unfavorable,unfavorable
 units,units

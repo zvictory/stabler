@@ -233,6 +233,7 @@ Attendance Dashboard,
 Attendance Rule Sets,
 Attendance Simulator,
 Attendance edits are open — no hard lock set.,Изменения посещаемости открыты — жёсткая блокировка не задана.
+Attendance exceptions,Исключения по табелю
 Attendance on/before,Посещаемость до
 Attendance summary,Сводка посещаемости
 Audit Trail,Журнал изменений
@@ -276,6 +277,7 @@ Base,База
 Base equivalent,Эквивалент в базовой валюте
 Base salary,
 Base salary (UZS),
+Base salary = 0,Базовый оклад = 0
 Basic rate,Базовая цена
 Batch,Партия
 Batch Expiry,Срок годности партий
@@ -505,6 +507,8 @@ Cost Centre,
 Cost centre,
 Cost must be positive.,Себестоимость должна быть положительной.
 Could not check payment status.,Не удалось проверить статус платежа.
+Could not load data health.,Не удалось загрузить качество данных.
+Could not load the HR overview.,Не удалось загрузить HR обзор.
 Could not read backup file: {0},
 Could not read the uploaded file.,
 Could not read your location.,Не удалось определить местоположение.
@@ -583,6 +587,7 @@ Daily cap (UZS),
 Dashboard,Панель
 Dashed,Пунктир
 Data,Данные
+Data health,Качество данных
 Database,База данных
 Date,Дата
 Date basis,Тип даты
@@ -809,6 +814,7 @@ Event requeued for processing.,
 Events,События
 Events appear here as soon as a device or integration pushes data. Use the filters above to narrow results.,
 Every route row needs an outlet.,Каждая строка маршрута должна содержать торговую точку.
+Everything looks complete,Всё заполнено
 Exact,
 Exceeded (Annual),
 Exceeded (Monthly),
@@ -1035,6 +1041,7 @@ First name is required.,Введите имя.
 First payment date,Дата первого платежа
 Fiscal Year,
 Fiscal year,
+Fix,Исправить
 Fixed cut-off. Optional.,
 Fixed deduction on first late minute past grace.,
 Fixtures directory missing: {0},Директория приспособлений отсутствует: {0}
@@ -1101,6 +1108,7 @@ Gross total,Итого начислено
 Group,Группа
 "Group warehouse (can contain children, holds no stock itself)","Складская группа (может содержать подгруппы, сама не содержит запасы)"
 HR,HR
+HR overview,HR обзор
 Half Day,Полдня
 Half rate,
 Half-day & Presence,
@@ -1109,6 +1117,7 @@ Heavy conditions,
 Heavy-conditions allowance,Надбавка за тяжёлые условия
 Height,Высота
 Hello {name},"Привет, {name}"
+Hidden for your role,Скрыто для вашей роли
 High conflicts,Высокие конфликты
 Hire date,
 Holiday,Праздник
@@ -1344,6 +1353,7 @@ Minutes tolerated before late penalty starts.,
 Minutes worked before overtime begins.,
 Missing Entry,
 Missing site config key: {0},
+Missing work mode / region,Нет режима работы / региона
 Mitigation:,Смягчение:
 Mobile,Мобильный
 Mobile Phone,Мобильный телефон
@@ -1380,8 +1390,10 @@ Name or email,Название или адрес электронной почт
 Name…,Имя…
 Narxi,Цена
 Need GPS,Без GPS
+Needed for correct allowances and overtime.,Нужно для корректных надбавок и сверхурочных.
 Needs Freezer,Нужен морозильник
 Needs setup,Требует настройки
+Needs you today,Требует внимания
 Needs your attention,
 Net,К выплате
 Net ROI %,Чистая рентабельность инвестиций %
@@ -1468,6 +1480,7 @@ No ARCA payment events yet.,Платежей ARCA пока нет.
 No BOMs yet,Спецификаций пока нет
 No CBU exchange rate found for {0} to {1} on or before {2}.,
 No EHF submissions yet. Submit a Sales Invoice to enqueue one.,Пока нет отправок ЭСФ. Проведите счёт продаж
+No Employee Advances account configured.,Счёт авансов не настроен.
 No GPS-located outlets for this period.,Нет точек с GPS за этот период.
 No Google service account configured (site_config: stabler_gdrive_service_account).,
 No OSA audits yet,Аудитов OSA пока нет
@@ -1480,6 +1493,7 @@ No attendance records,Нет записей о посещаемости
 No attendance summaries for this period,Нет сводок по табелю за этот период
 No backups on disk yet. Click “Back up now”.,На диске ещё нет копий. Нажмите «Создать копию сейчас».
 No bills in this range,Счётов в этом диапазоне нет
+No blockers,Нет блокеров
 No budget data for this period,
 No budgets found,
 No claim selected.,Претензия не выбрана.
@@ -1497,6 +1511,7 @@ No customers,Клиентов нет
 No customers match that name,Нет клиентов с таким названием
 No data,Нет данных
 No data for the selected range,Нет данных для выбранного диапазона
+No data gaps found for this company.,Пробелов в данных не найдено.
 No deals,Нет сделок
 No debtors found.,
 No deductions,Нет удержаний
@@ -1703,6 +1718,7 @@ Open Desk,Открыть Desk
 Open Exceptions,
 Open SREs,Открытые SRE
 Open exceptions,
+Open matrix,Открыть табель
 Open payment link,Открыть ссылку для оплаты
 Open pipeline,Открытая воронка
 Open tickets,Открытые заявки
@@ -1839,8 +1855,10 @@ Payroll Attendance Summary is Locked. Cannot change: {0},
 Payroll Attendance Summary {0} not found.,
 "Payroll Period must be in YYYY-MM format (e.g. 2026-05), got: {0}",
 Payroll Readiness,
+Payroll blockers,Блокеры зарплаты
 Payroll entry,Расчёт зарплаты
 Payroll impacting,
+Payroll outputs zero until a salary is entered.,"Зарплата будет нулевой, пока не введён оклад."
 Payroll period,
 Payroll period end date cannot be before start date.,
 Payroll-impacting pending,
@@ -1952,6 +1970,7 @@ Production Item,
 Professional Excel export of this ledger,Профессиональный экспорт этого реестра в Excel
 Professional Excel export with current filters,Профессиональный экспорт в Excel с текущими фильтрами
 Profile,Профиль
+Profile gaps,Пробелы в профиле
 "Profit and Loss, Balance Sheet, Trial Balance, and Cash Flow.",
 Projected,Прогнозируемо
 Promo,Промоция
@@ -2049,6 +2068,7 @@ Record & new,Записать и новый
 Record a sale,Записать продажу
 Record production,Записать выпуск
 Record stock movements,Учёт движения запасов
+Records that block payroll or look unfinished. Fix at the source.,"Записи, блокирующие зарплату или незаполненные. Исправьте в источнике."
 Recovered,Удержано
 Recovered from net pay this period; reduces the outstanding balance. Locked periods are read-only.,Удерживается из чистой выплаты за период; уменьшает остаток. Заблокированные периоды только для чтения.
 Recurring monthly run-rate — the pipeline forecast.,Регулярный месячный оборот — прогноз воронки.
@@ -2405,6 +2425,7 @@ SoD Enforcement,
 SoD violations,Нарушения разделения обязанностей
 Sold,Продано
 SoliqOnline UUID,UUID SoliqOnline
+Some affect this month's pay,Часть влияет на зарплату месяца
 Some lines could not be reserved,Некоторые строки не удалось зарезервировать
 Something went wrong,Что-то пошло не так
 Soni (korobka),Кол-во (короб)
@@ -2413,6 +2434,7 @@ Source warehouse,Склад источника
 Source warehouse is required.,
 Spend,Расходы
 Stabler Settings doctype does not exist. Run migrations first.,
+Staff with base salary = 0,Сотрудники с базовым окладом = 0
 Stage Materials,
 Stake coefficient,
 Stale days,
@@ -2645,6 +2667,8 @@ UOM,Ед. изм.
 USD rate on this date,Курс USD на эту дату
 USD → UZS,USD → UZS
 Unassigned,Не назначен
+Unassigned department or position.,Не назначен отдел или должность.
+Unassigned dept / position,Без отдела / должности
 Unbilled,Не выставлен счёт
 Unbilled queue,Очередь к выставлению
 Unit cost,Себестоимость
@@ -2669,6 +2693,7 @@ Unknown vertical pack: {0},Неизвестный вертикальный на�
 Unknown warehouse: {0},Неизвестный склад: {0}
 Unmatched,
 Unmatched Event,
+"Unmatched events, missing punches","Несопоставленные события, пропуски"
 Unpaid,Не оплачено
 Unreconciled transactions,Несверенные операции
 Unsupported language: {0},Неподдерживаемый язык: {0}
@@ -2798,6 +2823,7 @@ Work done is required.,
 Work mode,
 Worked,
 Workers with advances,Сотрудников с авансами
+Workforce,Персонал
 Working,Рабочих дней
 Workspace,
 Write,Написать
@@ -2823,6 +2849,7 @@ You raised this — another user must approve it.,Вы создали эту з�
 "Your books are empty. Get started by adding a customer, recording your first sale, or logging an opening balance.","Ваши книги пусты. Начните с добавления клиента, записи первой продажи или ввода начального остатка."
 Yuk xati,Юк хати
 across all statuses,по всем статусам
+active staff,активных сотрудников
 against,
 avail,дост.
 available,
@@ -2838,6 +2865,9 @@ customer credit,
 date_str and hire_date are required.,
 days,дн.
 default,
+department,отдел
+depts,отделов
+designation,должность
 device_name is required.,
 device_user_id is required.,
 e.g. Chevrolet Cobalt 2024,напр. Chevrolet Cobalt 2024
@@ -2861,6 +2891,7 @@ is locked from edits.,заблокирована для изменений.
 item,товар
 item_code and warehouse are required,item_code и warehouse обязательны
 items,товары
+joined this month,принято в этом месяце
 left,осталось
 line,строка
 lines,
@@ -2882,6 +2913,7 @@ pack_key is required,pack_key обязателен
 payload must be a JSON object.,
 payroll_period is required.,
 planned,план
+pts vs last week,п.п. к прош. неделе
 "punches must be a list of {timestamp, direction}.",
 quantity,количество
 ready to invoice,готово к счёту
@@ -2897,6 +2929,7 @@ skipped,пропущено
 source,target
 step_idx must be an integer.,step_idx должен быть целым числом.
 stock,запас
+summaries ready,сводок готово
 to_date must be >= from_date.,
 unfavorable,
 units,

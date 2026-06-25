@@ -80,6 +80,7 @@ import CorrectionsQueue from "./pages/hr/CorrectionsQueue.vue";
 import PayrollReadiness from "./pages/hr/PayrollReadiness.vue";
 import PayrollPreview from "./pages/hr/PayrollPreview.vue";
 import EmployeeAdvances from "./pages/hr/EmployeeAdvances.vue";
+import DataHealth from "./pages/hr/DataHealth.vue";
 import TimepaySettings from "./pages/hr/TimepaySettings.vue";
 import SFAHome from "./pages/sfa/SFAHome.vue";
 import Outlets from "./pages/sfa/Outlets.vue";
@@ -249,6 +250,7 @@ const routes = [
 			{ path: "", redirect: "/hr/overview" },
 			{ path: "overview", name: "hr-overview", component: HROverview, meta: { title: t("Overview") } },
 			{ path: "employees", name: "hr-employees", component: Employees, meta: { title: t("Employees") } },
+			{ path: "data-health", name: "hr-data-health", component: DataHealth, meta: { title: t("Data health") } },
 			{ path: "employees/:name", name: "hr-employee-profile", component: EmployeeProfile, meta: { title: t("Employee Profile") } },
 			{ path: "attendance", name: "hr-attendance", component: HRAttendance, meta: { title: t("Attendance") } },
 			{ path: "leave", name: "hr-leave", component: LeaveApplications, meta: { title: t("Leave") } },

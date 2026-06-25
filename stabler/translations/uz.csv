@@ -228,6 +228,7 @@ Attendance Dashboard,
 Attendance Rule Sets,
 Attendance Simulator,
 Attendance edits are open — no hard lock set.,Davomat tahriri ochiq — qattiq qulf o'rnatilmagan.
+Attendance exceptions,Davomat istisnolari
 Attendance on/before,Davomat shu sanagacha
 Attendance summary,Davomat xulosasi
 Audit Trail,O'zgarishlar tarixi
@@ -271,6 +272,7 @@ Base,Asos
 Base equivalent,Asosiy ekvivalent
 Base salary,
 Base salary (UZS),
+Base salary = 0,Asosiy oylik = 0
 Basic rate,Asosiy narx
 Batch,Partiya
 Batch Expiry,Partiya muddati
@@ -499,6 +501,8 @@ Cost Centre,
 Cost centre,
 Cost must be positive.,Tannarx musbat bo'lishi kerak.
 Could not check payment status.,To‘lov holatini tekshirib bo‘lmadi.
+Could not load data health.,Ma'lumotlar sog'lig'ini yuklab bo'lmadi.
+Could not load the HR overview.,HR umumiy ko'rinishini yuklab bo'lmadi.
 Could not read backup file: {0},
 Could not read the uploaded file.,
 Could not read your location.,Joylashuvni aniqlab bo'lmadi.
@@ -577,6 +581,7 @@ Daily cap (UZS),
 Dashboard,Boshqaruv paneli
 Dashed,Nuqta-chiziqli
 Data,Maʿlumotlar
+Data health,Ma'lumotlar sog'lig'i
 Database,Ma'lumotlar bazasi
 Date,Sana
 Date basis,Sana asosi
@@ -802,6 +807,7 @@ Event requeued for processing.,
 Events,Hodisalar
 Events appear here as soon as a device or integration pushes data. Use the filters above to narrow results.,
 Every route row needs an outlet.,Har bir marshrut qatori savdo nuqtasiga ehtiyoj bor.
+Everything looks complete,Hammasi to'liq
 Exact,
 Exceeded (Annual),
 Exceeded (Monthly),
@@ -1028,6 +1034,7 @@ First name is required.,Ismni kiriting.
 First payment date,Birinchi to'lov sanasi
 Fiscal Year,
 Fiscal year,
+Fix,Tuzatish
 Fixed cut-off. Optional.,
 Fixed deduction on first late minute past grace.,
 Fixtures directory missing: {0},Fixtures direktoriyasi yo'q: {0}
@@ -1094,6 +1101,7 @@ Gross total,Jami (brutto)
 Group,Guruhi
 "Group warehouse (can contain children, holds no stock itself)","Guruhi sklad (bolalarni saqlashi mumkin, o'zi zaxira saqlash olmaydi)"
 HR,Ish Boshqarma
+HR overview,HR umumiy ko'rinish
 Half Day,Yarim kun
 Half rate,
 Half-day & Presence,
@@ -1102,6 +1110,7 @@ Heavy conditions,
 Heavy-conditions allowance,Og'ir sharoit ustamasi
 Height,Balandlik
 Hello {name},"Salom, {name}"
+Hidden for your role,Sizning rolingiz uchun yashirilgan
 High conflicts,Yuqori nizolar
 Hire date,
 Holiday,Bayram
@@ -1337,6 +1346,7 @@ Minutes tolerated before late penalty starts.,
 Minutes worked before overtime begins.,
 Missing Entry,
 Missing site config key: {0},
+Missing work mode / region,Ish rejimi / hudud yo'q
 Mitigation:,Yumshatish:
 Mobile,Mobil
 Mobile Phone,Mobil telefon
@@ -1373,8 +1383,10 @@ Name or email,Nomi yoki elektron pochta
 Name…,Ism…
 Narxi,Narxi
 Need GPS,GPS kerak
+Needed for correct allowances and overtime.,To'g'ri ustamalar va qo'shimcha ish uchun kerak.
 Needs Freezer,Muzlatgich kerak
 Needs setup,Sozlash kerak
+Needs you today,Bugun e'tiboringiz kerak
 Needs your attention,
 Net,To'lanadi
 Net ROI %,Toza ROI %
@@ -1461,6 +1473,7 @@ No ARCA payment events yet.,Hali ARCA to'lov hodisalari yo'q.
 No BOMs yet,Hozircha spetsifikatsiyalar yo'q
 No CBU exchange rate found for {0} to {1} on or before {2}.,
 No EHF submissions yet. Submit a Sales Invoice to enqueue one.,Hali EHF topshiriqlari yo'q. Bitta qo'shish uchun Sotuv qo'lyozuvchisini tasdiqlang.
+No Employee Advances account configured.,Avans hisobi sozlanmagan.
 No GPS-located outlets for this period.,Bu davr uchun GPS'li nuqtalar yo'q.
 No Google service account configured (site_config: stabler_gdrive_service_account).,
 No OSA audits yet,Hali OSA auditlari yo'q
@@ -1473,6 +1486,7 @@ No attendance records,Davomat yozuvlari yo'q
 No attendance summaries for this period,Bu davr uchun davomat hisobotlari yo'q
 No backups on disk yet. Click “Back up now”.,Diskda hali zaxira yo'q. «Hozir zaxiralash»ni bosing.
 No bills in this range,Bu diapazonida qo'lyozuvchilar yo'q
+No blockers,To'siq yo'q
 No budget data for this period,
 No budgets found,
 No claim selected.,Talaba tanlanmagan.
@@ -1490,6 +1504,7 @@ No customers,Mijozlar yo'q
 No customers match that name,Shu nomdagi mijozlar topilmadi
 No data,Ma'lumot yo'q
 No data for the selected range,Tanlangan diapazon uchun ma'lumot yo'q
+No data gaps found for this company.,Bu kompaniyada ma'lumot bo'shliqlari yo'q.
 No deals,Bitimlar yoʼq
 No debtors found.,
 No deductions,Ushlanmalar yo'q
@@ -1696,6 +1711,7 @@ Open Desk,Deskni ochish
 Open Exceptions,
 Open SREs,Ochiq SRElar
 Open exceptions,
+Open matrix,Jadvalni ochish
 Open payment link,To‘lov havolasini ochish
 Open pipeline,Ochiq voronka
 Open tickets,Ochiq tiketlar
@@ -1832,8 +1848,10 @@ Payroll Attendance Summary is Locked. Cannot change: {0},
 Payroll Attendance Summary {0} not found.,
 "Payroll Period must be in YYYY-MM format (e.g. 2026-05), got: {0}",
 Payroll Readiness,
+Payroll blockers,Oylik to'siqlari
 Payroll entry,Maosh yozuvi
 Payroll impacting,
+Payroll outputs zero until a salary is entered.,Oylik kiritilmaguncha natija nol bo'ladi.
 Payroll period,
 Payroll period end date cannot be before start date.,
 Payroll-impacting pending,
@@ -1945,6 +1963,7 @@ Production Item,
 Professional Excel export of this ledger,Bu reyestrning professional Excel eksporti
 Professional Excel export with current filters,Joriy filtrlar bilan professional Excel eksporti
 Profile,Profil
+Profile gaps,Profil bo'shliqlari
 "Profit and Loss, Balance Sheet, Trial Balance, and Cash Flow.",
 Projected,Prognozlangan
 Promo,Aksiya
@@ -2042,6 +2061,7 @@ Record & new,Yozib yangi
 Record a sale,Sotuvni qayd qiling
 Record production,Ishlab chiqarishni qayd etish
 Record stock movements,Zaxira harakatini qayd etish
+Records that block payroll or look unfinished. Fix at the source.,Oylikni to'sayotgan yoki tugallanmagan yozuvlar. Manbada tuzating.
 Recovered,Ushlab qolingan
 Recovered from net pay this period; reduces the outstanding balance. Locked periods are read-only.,Shu davr sof to'lovidan ushlab qolinadi; qoldiqni kamaytiradi. Qulflangan davrlar faqat o'qish uchun.
 Recurring monthly run-rate — the pipeline forecast.,Takroriy oylik aylanma — voronka prognozi.
@@ -2398,6 +2418,7 @@ SoD Enforcement,
 SoD violations,Vazifalar taqsimoti buzilishlari
 Sold,Sotilgan
 SoliqOnline UUID,SoliqOnline UUID
+Some affect this month's pay,Ba'zilari shu oy oyligiga ta'sir qiladi
 Some lines could not be reserved,Ba'zi qatorlar band qilib bo'lmadi
 Something went wrong,Xatolik yuz berdi
 Soni (korobka),Soni (korobka)
@@ -2406,6 +2427,7 @@ Source warehouse,Manba ombor
 Source warehouse is required.,
 Spend,Xarajat
 Stabler Settings doctype does not exist. Run migrations first.,
+Staff with base salary = 0,Asosiy oyligi = 0 bo'lgan xodimlar
 Stage Materials,
 Stake coefficient,
 Stale days,
@@ -2638,6 +2660,8 @@ UOM,O'lchov birligi
 USD rate on this date,Ushbu sananing USD kursi
 USD → UZS,USD → UZS
 Unassigned,Belgilanmagan
+Unassigned department or position.,Bo'lim yoki lavozim biriktirilmagan.
+Unassigned dept / position,Bo'lim / lavozim yo'q
 Unbilled,Hisoblanmagan
 Unbilled queue,Hisob-faktura navbati
 Unit cost,Birlik tannarxi
@@ -2662,6 +2686,7 @@ Unknown vertical pack: {0},Noma'lum vertikal paket: {0}
 Unknown warehouse: {0},Noma'lum omborga: {0}
 Unmatched,
 Unmatched Event,
+"Unmatched events, missing punches","Mos kelmagan hodisalar, o'tkazib yuborilgan"
 Unpaid,To'lanmagan
 Unreconciled transactions,Solishtirilmagan operatsiyalar
 Unsupported language: {0},Qo'llanilmagan til: {0}
@@ -2791,6 +2816,7 @@ Work done is required.,
 Work mode,
 Worked,
 Workers with advances,Avansli xodimlar
+Workforce,Xodimlar
 Working,Ish kuni
 Workspace,
 Write,Yozish
@@ -2816,6 +2842,7 @@ You raised this — another user must approve it.,Bu so'rovni siz yaratdingiz �
 "Your books are empty. Get started by adding a customer, recording your first sale, or logging an opening balance.","Sizning kitoplaringiz bo'sh. Xaridor qo'shish, birinchi sotuvi qayd etish yoki ochilish qoldiqlarini kiritish bilan boshlang."
 Yuk xati,Yuk xati
 across all statuses,barcha holatlar bo'yicha
+active staff,faol xodim
 against,
 avail,mavj.
 available,
@@ -2831,6 +2858,9 @@ customer credit,
 date_str and hire_date are required.,
 days,kun
 default,
+department,bo'lim
+depts,bo'lim
+designation,lavozim
 device_name is required.,
 device_user_id is required.,
 e.g. Chevrolet Cobalt 2024,masalan Chevrolet Cobalt 2024
@@ -2854,6 +2884,7 @@ is locked from edits.,tahrirlash uchun qulflangan.
 item,Tovar
 item_code and warehouse are required,Tovar kodi va omborxona majburiy
 items,Tovarlar
+joined this month,shu oy qo'shildi
 left,qoldi
 line,Qator
 lines,
@@ -2875,6 +2906,7 @@ pack_key is required,pack_key majburiy
 payload must be a JSON object.,
 payroll_period is required.,
 planned,rejalashtirilgan
+pts vs last week,o'tgan haftaga nisbatan
 "punches must be a list of {timestamp, direction}.",
 quantity,miqdor
 ready to invoice,hisob-fakturaga tayyor
@@ -2890,6 +2922,7 @@ skipped,o'tkazib yuborildi
 source,target
 step_idx must be an integer.,step_idx butun son bo'lishi kerak.
 stock,zaxira
+summaries ready,hisobot tayyor
 to_date must be >= from_date.,
 unfavorable,
 units,

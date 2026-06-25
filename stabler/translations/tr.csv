@@ -227,6 +227,7 @@ Attendance Dashboard,
 Attendance Rule Sets,
 Attendance Simulator,
 Attendance edits are open — no hard lock set.,Devam düzenlemeleri açık — sabit kilit yok.
+Attendance exceptions,Devam istisnaları
 Attendance on/before,Şu tarihe kadar devam
 Attendance summary,Devam özeti
 Audit Trail,Denetim İzi
@@ -269,6 +270,7 @@ Base,Taban
 Base equivalent,Baz karşılığı
 Base salary,
 Base salary (UZS),
+Base salary = 0,Temel maaş = 0
 Basic rate,Temel fiyat
 Batch,Parti
 Batch Expiry,Parti son kullanım
@@ -494,6 +496,8 @@ Cost Centre,
 Cost centre,
 Cost must be positive.,Maliyet pozitif olmalıdır.
 Could not check payment status.,Ödeme durumu kontrol edilemedi.
+Could not load data health.,Veri sağlığı yüklenemedi.
+Could not load the HR overview.,İK genel bakışı yüklenemedi.
 Could not read backup file: {0},
 Could not read the uploaded file.,
 Could not read your location.,Konumunuz okunamadı.
@@ -572,6 +576,7 @@ Daily cap (UZS),
 Dashboard,Gösterge Paneli
 Dashed,Kesikli
 Data,Veri
+Data health,Veri sağlığı
 Database,Veritabanı
 Date,Tarih
 Date basis,Tarih esası
@@ -795,6 +800,7 @@ Event requeued for processing.,
 Events,Olaylar
 Events appear here as soon as a device or integration pushes data. Use the filters above to narrow results.,
 Every route row needs an outlet.,Her rota satırı için bir satış noktası gereklidir.
+Everything looks complete,Her şey tam görünüyor
 Exact,
 Exceeded (Annual),
 Exceeded (Monthly),
@@ -1021,6 +1027,7 @@ First name is required.,Ad zorunludur.
 First payment date,İlk ödeme tarihi
 Fiscal Year,
 Fiscal year,
+Fix,Düzelt
 Fixed cut-off. Optional.,
 Fixed deduction on first late minute past grace.,
 Fixtures directory missing: {0},Fikstür dizini eksik: {0}
@@ -1087,6 +1094,7 @@ Gross total,Brüt toplam
 Group,Grup
 "Group warehouse (can contain children, holds no stock itself)","Grup depo (alt depo içerebilir, kendi stoğu yoktur)"
 HR,İK
+HR overview,İK genel bakış
 Half Day,Yarım Gün
 Half rate,
 Half-day & Presence,
@@ -1095,6 +1103,7 @@ Heavy conditions,
 Heavy-conditions allowance,Ağır koşul ek ödemesi
 Height,Yükseklik
 Hello {name},Merhaba {name}
+Hidden for your role,Rolünüz için gizli
 High conflicts,Yüksek çakışmalar
 Hire date,
 Holiday,Tatil
@@ -1329,6 +1338,7 @@ Minutes tolerated before late penalty starts.,
 Minutes worked before overtime begins.,
 Missing Entry,
 Missing site config key: {0},
+Missing work mode / region,Çalışma modu / bölge eksik
 Mitigation:,Azaltma:
 Mobile,Mobil
 Mobile Phone,Cep Telefonu
@@ -1365,8 +1375,10 @@ Name or email,Ad veya e-posta
 Name…,İsim…
 Narxi,Narxi
 Need GPS,GPS gerekli
+Needed for correct allowances and overtime.,Doğru ek ödemeler ve fazla mesai için gerekli.
 Needs Freezer,Dondurucu gerekli
 Needs setup,Kurulum gerekli
+Needs you today,Bugün ilgi bekliyor
 Needs your attention,
 Net,Net
 Net ROI %,Net YGO %
@@ -1453,6 +1465,7 @@ No ARCA payment events yet.,Henüz ARCA ödeme olayı yok.
 No BOMs yet,Henüz BOM yok
 No CBU exchange rate found for {0} to {1} on or before {2}.,
 No EHF submissions yet. Submit a Sales Invoice to enqueue one.,Henüz EHF gönderimi yok. Kuyruğa eklemek için bir Satış Faturası gönderin.
+No Employee Advances account configured.,Avans hesabı yapılandırılmamış.
 No GPS-located outlets for this period.,Bu dönem için GPS konumlu nokta yok.
 No Google service account configured (site_config: stabler_gdrive_service_account).,
 No OSA audits yet,Henüz OSA denetimi yok
@@ -1465,6 +1478,7 @@ No attendance records,Devam kaydı yok
 No attendance summaries for this period,Bu dönem için devam özeti yok
 No backups on disk yet. Click “Back up now”.,Diskte henüz yedek yok. «Şimdi yedekle»ye tıklayın.
 No bills in this range,Bu aralıkta fatura yok
+No blockers,Engel yok
 No budget data for this period,
 No budgets found,
 No claim selected.,Talep seçilmedi.
@@ -1482,6 +1496,7 @@ No customers,Müşteri yok
 No customers match that name,Bu ada uyan müşteri bulunamadı
 No data,Veri yok
 No data for the selected range,Seçilen aralık için veri yok
+No data gaps found for this company.,Bu şirkette veri eksiği bulunamadı.
 No deals,Anlaşma yok
 No debtors found.,
 No deductions,Kesinti yok
@@ -1686,6 +1701,7 @@ Open AR,Açık alacak
 Open Exceptions,
 Open SREs,Açık SRE'ler
 Open exceptions,
+Open matrix,Tabloyu aç
 Open payment link,Ödeme bağlantısını aç
 Open pipeline,Açık satış hattı
 Open tickets,Açık talepler
@@ -1821,8 +1837,10 @@ Payroll Attendance Summary is Locked. Cannot change: {0},
 Payroll Attendance Summary {0} not found.,
 "Payroll Period must be in YYYY-MM format (e.g. 2026-05), got: {0}",
 Payroll Readiness,
+Payroll blockers,Bordro engelleri
 Payroll entry,Bordro kaydı
 Payroll impacting,
+Payroll outputs zero until a salary is entered.,Maaş girilene kadar sonuç sıfırdır.
 Payroll period,
 Payroll period end date cannot be before start date.,
 Payroll-impacting pending,
@@ -1934,6 +1952,7 @@ Production Item,
 Professional Excel export of this ledger,Bu defterin profesyonel Excel dışa aktarımı
 Professional Excel export with current filters,Geçerli filtrelerle profesyonel Excel dışa aktarımı
 Profile,Profil
+Profile gaps,Profil eksikleri
 "Profit and Loss, Balance Sheet, Trial Balance, and Cash Flow.",
 Projected,Tahmini
 Promo,Promosyon
@@ -2030,6 +2049,7 @@ Record & new,Kaydet ve yeni
 Record a sale,Satış kaydet
 Record production,Üretim kaydet
 Record stock movements,Stok hareketi kaydı
+Records that block payroll or look unfinished. Fix at the source.,Bordroyu engelleyen veya eksik kayıtlar. Kaynağında düzeltin.
 Recovered,Tahsil edilen
 Recovered from net pay this period; reduces the outstanding balance. Locked periods are read-only.,Bu dönemin net ödemesinden tahsil edilir; bakiyeyi azaltır. Kilitli dönemler salt okunur.
 Recurring monthly run-rate — the pipeline forecast.,Tekrarlayan aylık ciro — satış hattı tahmini.
@@ -2384,6 +2404,7 @@ SoD Enforcement,
 SoD violations,Görev ayrılığı ihlalleri
 Sold,Satılan
 SoliqOnline UUID,SoliqOnline UUID
+Some affect this month's pay,Bazıları bu ayın maaşını etkiler
 Some lines could not be reserved,Bazı satırlar rezerve edilemedi
 Something went wrong,Bir şeyler ters gitti
 Soni (korobka),Soni (korobka)
@@ -2392,6 +2413,7 @@ Source warehouse,Kaynak depo
 Source warehouse is required.,
 Spend,Harcama
 Stabler Settings doctype does not exist. Run migrations first.,
+Staff with base salary = 0,Temel maaşı = 0 olan çalışanlar
 Stage Materials,
 Stake coefficient,
 Stale days,
@@ -2620,6 +2642,8 @@ UOM,Ölçü Birimi
 USD rate on this date,Bu tarihteki USD kuru
 USD → UZS,USD → UZS
 Unassigned,Atanmamış
+Unassigned department or position.,Bölüm veya pozisyon atanmamış.
+Unassigned dept / position,Atanmamış bölüm / pozisyon
 Unbilled,Faturalanmamış
 Unbilled queue,Faturalanmamış kuyruk
 Unit cost,Birim maliyet
@@ -2644,6 +2668,7 @@ Unknown vertical pack: {0},Bilinmeyen dikey paket: {0}
 Unknown warehouse: {0},Bilinmeyen depo: {0}
 Unmatched,
 Unmatched Event,
+"Unmatched events, missing punches","Eşleşmeyen olaylar, eksik girişler"
 Unpaid,Ödenmedi
 Unreconciled transactions,Mutabık olmayan işlemler
 Unsupported language: {0},Desteklenmeyen dil: {0}
@@ -2773,6 +2798,7 @@ Work done is required.,
 Work mode,
 Worked,
 Workers with advances,Avanslı çalışanlar
+Workforce,İş gücü
 Working,İşleniyor
 Workspace,
 Write,Yaz
@@ -2798,6 +2824,7 @@ You raised this — another user must approve it.,Bu talebi siz oluşturdunuz �
 "Your books are empty. Get started by adding a customer, recording your first sale, or logging an opening balance.","Defteriniz boş. Müşteri ekleyerek, ilk satışınızı kaydederek veya açılış bakiyesi girerek başlayın."
 Yuk xati,Yuk xati
 across all statuses,tüm durumlarda
+active staff,aktif çalışan
 against,
 avail,mev.
 available,
@@ -2813,6 +2840,9 @@ customer credit,
 date_str and hire_date are required.,
 days,gün
 default,
+department,bölüm
+depts,bölüm
+designation,pozisyon
 device_name is required.,
 device_user_id is required.,
 e.g. Chevrolet Cobalt 2024,örn. Chevrolet Cobalt 2024
@@ -2836,6 +2866,7 @@ is locked from edits.,düzenlemeye kilitli.
 item,kalem
 item_code and warehouse are required,item_code ve depo zorunludur
 items,kalemler
+joined this month,bu ay katıldı
 left,kaldı
 line,satır
 lines,
@@ -2857,6 +2888,7 @@ pack_key is required,pack_key zorunludur
 payload must be a JSON object.,
 payroll_period is required.,
 planned,planlanan
+pts vs last week,geçen haftaya göre puan
 "punches must be a list of {timestamp, direction}.",
 quantity,miktar
 ready to invoice,faturaya hazır
@@ -2872,6 +2904,7 @@ skipped,atlandı
 source,target
 step_idx must be an integer.,step_idx bir tam sayı olmalıdır.
 stock,stok
+summaries ready,özet hazır
 to_date must be >= from_date.,
 unfavorable,
 units,
