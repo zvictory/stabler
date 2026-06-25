@@ -302,9 +302,9 @@ async function save() {
 		<div class="ms-auto d-flex align-items-center gap-2">
 			<div class="btn-group" role="group">
 				<input id="att-grid" v-model="view" type="radio" class="btn-check" value="grid" />
-				<label class="btn btn-outline-primary btn-sm" for="att-grid" :title="t('Month grid')"><i class="ti ti-table"></i></label>
+				<label class="btn btn-outline-primary btn-sm" for="att-grid" :title="t('Month grid')" :aria-label="t('Month grid')"><i class="ti ti-table"></i></label>
 				<input id="att-sum" v-model="view" type="radio" class="btn-check" value="summary" />
-				<label class="btn btn-outline-primary btn-sm" for="att-sum" :title="t('Summary')"><i class="ti ti-list"></i></label>
+				<label class="btn btn-outline-primary btn-sm" for="att-sum" :title="t('Summary')" :aria-label="t('Summary')"><i class="ti ti-list"></i></label>
 			</div>
 			<button type="button" class="btn btn-outline-secondary btn-sm" @click="openSync">
 				<i class="ti ti-refresh me-1"></i>{{ t("Sync TimePay") }}
@@ -316,16 +316,16 @@ async function save() {
 	</div>
 
 	<template v-if="view === 'grid'">
-		<div v-if="lockDate || isAdmin" class="alert alert-warning d-flex align-items-center gap-2 py-2 mb-2">
+		<div v-if="lockDate" class="d-flex align-items-center gap-2 mb-2 text-secondary small">
 			<i class="ti ti-lock"></i>
-			<div class="small">
-				<template v-if="lockDate">
-					{{ t("Attendance on/before") }} <b>{{ lockDate }}</b> {{ t("is locked from edits.") }}
-				</template>
-				<template v-else>{{ t("Attendance edits are open — no hard lock set.") }}</template>
-			</div>
+			<span>{{ t("Attendance on/before") }} <b>{{ lockDate }}</b> {{ t("is locked from edits.") }}</span>
 			<button v-if="isAdmin" type="button" class="btn btn-sm btn-ghost-secondary ms-auto" @click="lockOpen = !lockOpen">
 				<i class="ti ti-settings me-1"></i>{{ t("Lock window") }}
+			</button>
+		</div>
+		<div v-else-if="isAdmin" class="mb-2 text-end">
+			<button type="button" class="btn btn-sm btn-ghost-secondary" @click="lockOpen = !lockOpen">
+				<i class="ti ti-lock me-1"></i>{{ t("Lock window") }}
 			</button>
 		</div>
 

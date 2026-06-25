@@ -257,34 +257,23 @@ function initials(name) {
 </script>
 
 <template>
-	<div class="card mb-3">
-		<div class="card-body">
-			<div class="row g-2 align-items-center">
-				<div class="col-md-5">
-					<div class="input-icon">
-						<span class="input-icon-addon"><i class="ti ti-search"></i></span>
-						<input
-							v-model="search"
-							@input="onSearchInput"
-							type="search"
-							class="form-control"
-							:placeholder="t('Search employees…')"
-						/>
-					</div>
-				</div>
-				<div class="col-md-3">
-					<Select v-model="statusFilter" :options="statusFilterOptions" />
-				</div>
-				<div class="col-md-4 d-flex justify-content-md-end gap-2">
-					<button type="button" class="btn btn-ghost-secondary" @click="load">
-						<i class="ti ti-refresh me-1"></i>{{ t("Refresh") }}
-					</button>
-					<button type="button" class="btn btn-primary" @click="openCreate">
-						<i class="ti ti-user-plus me-1"></i>{{ t("New employee") }}
-					</button>
-				</div>
-			</div>
+	<div class="d-flex flex-wrap align-items-center gap-2 mb-3">
+		<div class="input-icon" style="max-width: 280px">
+			<span class="input-icon-addon"><i class="ti ti-search"></i></span>
+			<input
+				v-model="search"
+				@input="onSearchInput"
+				type="search"
+				class="form-control"
+				:placeholder="t('Search employees…')"
+			/>
 		</div>
+		<div style="min-width: 170px">
+			<Select v-model="statusFilter" :options="statusFilterOptions" />
+		</div>
+		<button type="button" class="btn btn-primary ms-auto" @click="openCreate">
+			<i class="ti ti-user-plus me-1"></i>{{ t("New employee") }}
+		</button>
 	</div>
 
 	<div v-if="error" class="alert alert-danger">{{ error }}</div>
@@ -347,6 +336,7 @@ function initials(name) {
 									type="button"
 									class="btn btn-outline-primary btn-sm"
 									:title="t('Pay advance')"
+									:aria-label="`${t('Pay advance')} — ${r.employee_name}`"
 									@click="openPay(r)"
 								>
 									<i class="ti ti-cash-banknote"></i>
@@ -355,6 +345,7 @@ function initials(name) {
 									type="button"
 									class="btn btn-ghost-secondary btn-sm"
 									:title="t('Edit')"
+									:aria-label="`${t('Edit')} — ${r.employee_name}`"
 									@click="openProfile(r.name)"
 								>
 									<i class="ti ti-edit"></i>
