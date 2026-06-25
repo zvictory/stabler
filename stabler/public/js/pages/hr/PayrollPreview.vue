@@ -102,16 +102,23 @@ const breakdownLines = computed(() => {
 
 // ── CSV export (preview view only — NOT the official payroll document) ─────────
 function exportCsv() {
+	// Wrap text in quotes + escape internal quotes + prefix formula-triggering
+	// chars (=+-@\t\r) with a tab to prevent CSV formula injection in Excel/Calc.
+	function csvCell(v) {
+		const s = String(v ?? "");
+		return `"${(/^[=+\-@\t\r]/.test(s) ? "\t" + s : s).replace(/"/g, '""')}"`;
+	}
 	const head = [
 		t("Employee"), t("Period"), t("Base"), t("Prorated base"), t("Allowances"),
 		t("Overtime"), t("KPI"), t("Duty supplement"), t("Bonus"), t("Fines"),
 		t("Advance"), t("Net"),
 	];
-	const lines = [head.join(",")];
+	const lines = [head.map(csvCell).join(",")];
 	for (const r of rows.value) {
 		lines.push([
-			`"${(r.employee_name || r.employee || "").replace(/"/g, '""')}"`,
-			r.period, num(r.base_salary), num(r.prorated_base), num(r.allowances),
+			csvCell(r.employee_name || r.employee || ""),
+			csvCell(r.period),
+			num(r.base_salary), num(r.prorated_base), num(r.allowances),
 			num(r.overtime), num(r.kpi), num(r.duty_supplement), num(r.bonus),
 			num(r.fines), num(r.advance), num(r.net),
 		].join(","));
