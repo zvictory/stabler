@@ -444,6 +444,7 @@ Company is required for an enabled Payroll Component Map.,
 Company is required.,Kompaniya talab qilinadi.
 Compensation,
 Compensation details are hidden — payroll access required.,
+Compensation policy,To'lov siyosati
 Complete,To'ldirish
 Completed,To'ldirildi
 Completed visit,Bajarilgan tashrif
@@ -700,12 +701,14 @@ Duplicate summary,
 Duplicates,Dublikatlar
 Duration (ms),Davomiylik (ms)
 Duty supplement,Vazifa qo'shimchasi
+Duty supplement (%),Vazifa qo'shimchasi (%)
 EHF Status,EHF holati
 EHF Submissions,EHF taqdimotlari
 ERPNext,
 ERPNext Employee docname (EMP-XXXXX).,
 EUR → UZS,EUR → UZS
 Each additional step charges the step fee.,
+Each employee's Region band (on their profile) selects which rate applies; NO_TRAVEL pays nothing.,Xodimning hududi (profilida) qaysi stavka qo'llanishini belgilaydi; NO_TRAVEL — to'lovsiz.
 Each purpose row must be an object.,
 Each purpose row needs a service person.,
 Early Exit,
@@ -834,6 +837,7 @@ Expiry,Muddati
 Export,Eksport
 Export CSV,CSV eksport
 Export failed.,Eksport muvaffaq bo'lmadi.
+Extra duty pay as a % of the effective base (e.g. acting role). 0 = none.,"Vazifa uchun qo'shimcha to'lov, samarali asosning % sifatida (masalan, v.b.). 0 = yo'q."
 Extra lateness from slow device clock.,
 F.I.O.,F.I.Sh.
 FG Whse,
@@ -1091,6 +1095,7 @@ Hire date,
 Holiday,Bayram
 Holiday OT premium (%),
 Horizontal lanes (flow left→right),Gorizontal yoʿlaklar (oqim chap→oʿng)
+Hourly OT pay = base hourly × this (e.g. 1.5 = time-and-a-half).,"Soatlik qo'shimcha ish haqi = bazaviy soat × shu (masalan, 1.5)."
 Hours,Soat
 I have tested a restore,
 ID as it appears in raw gate events,
@@ -1189,6 +1194,9 @@ Journal Entries,Jurnal yozuvlari
 Journal Entry,Jurnal yozuvi
 Journal Entry legs,Jurnal yozuv qatorlari
 KPI,KPI
+KPI performance (%),KPI bajarilishi (%)
+KPI performance must be between 0 and 100.,KPI bajarilishi 0 dan 100 gacha bo'lishi kerak.
+KPI pool share (%),KPI fond ulushi (%)
 Keep,Saqlash
 Keep Editing,
 Keep typing to narrow…,Toraytirish uchun yozishda davom eting…
@@ -1727,6 +1735,7 @@ Override role,
 Override — submit despite low stock (admin),Bekor qilish — kam qoldiqda ham yuborish (admin)
 Overtime,
 Overtime (min),Qo'shimcha (daq.)
+Overtime multiplier,Qo'shimcha ish koeffitsiyenti
 Overview,Umumiy ko'rinish
 Owes us,Bizga qarzdor
 Owner,
@@ -1770,6 +1779,7 @@ Pause this Work Order? You can resume it later.,Bu buyurtmani to'xtatilsinmi? Ke
 Pay,To'lash
 Pay from,Qayerdan to'lash
 Pay supplier,Yetkazib beruvchiga to'lash
+"Pay-formula inputs: overtime rate, KPI pool share, and per-day transport by region band.","Oylik formulasi parametrlari: qo'shimcha ish stavkasi, KPI fond ulushi va hudud bo'yicha kunlik transport."
 Payable,To'lanadi
 Payable (AP),Kreditorlik qarzi
 Payable Trend (Last 8 Weeks),
@@ -1807,6 +1817,7 @@ Payroll impacting,
 Payroll period,
 Payroll period end date cannot be before start date.,
 Payroll-impacting pending,
+Pays out this share of the KPI pool. Locked periods are read-only.,KPI fondining shu ulushini to'laydi. Qulflangan davrlar faqat o'qish uchun.
 Pending,Kutilmoqda
 Pending Corrections,
 Pending approvals,Tasdiq kutilmoqda
@@ -2328,6 +2339,7 @@ Severity,Jiddiylik
 Shape,Shakl
 Shapes,Shakllar
 Share,Ulashish
+Share of base moved into a performance pool (0 = whole base is fixed).,Asosning samaradorlik fondiga o'tkaziladigan ulushi (0 = butun asos qat'iy).
 Shelf,Polka
 Shelf Position,Polka pozitsiyasi
 Shift,
@@ -2576,6 +2588,9 @@ Transferred,Berilgan
 Transferred Qty,
 Transfers,O'tkazmalar
 Transport,Transport
+Transport / day — City,Transport / kun — Shahar
+Transport / day — District,Transport / kun — Tuman
+Transport / day — Far district,Transport / kun — Uzoq tuman
 Trend,
 Trigger Item,Ishga tushiruvchi tovar
 Try a different search term or clear the filter.,Boshqa qidiruv atamasi ishlatib ko'ring yoki filtrni o'chiring.

@@ -38,7 +38,8 @@
   "duty_supplement",
   "column_break_4",
   "kpi_adjustment",
-  "region_rate"
+  "region_rate",
+  "kpi_performance_pct"
  ],
  "fields": [
   {"fieldname": "employee", "fieldtype": "Link", "label": "Employee", "options": "Employee", "reqd": 1, "in_list_view": 1},
@@ -73,7 +74,8 @@
   {"fieldname": "duty_supplement", "fieldtype": "Currency", "label": "Duty Supplement"},
   {"fieldname": "column_break_4", "fieldtype": "Column Break"},
   {"fieldname": "kpi_adjustment", "fieldtype": "Currency", "label": "KPI Adjustment"},
-  {"fieldname": "region_rate", "fieldtype": "Currency", "label": "Region Rate"}
+  {"fieldname": "region_rate", "fieldtype": "Currency", "label": "Region Rate"},
+  {"fieldname": "kpi_performance_pct", "fieldtype": "Percent", "label": "KPI Performance %", "default": "0", "description": "Employee's performance score (0-100) for this period. Pays out their share of the KPI pool (see rule set KPI pool share %)."}
  ],
  "links": [],
  "modified": "2026-06-16 10:00:00.000000",

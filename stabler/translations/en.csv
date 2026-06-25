@@ -442,6 +442,7 @@ Company is required for an enabled Payroll Component Map.,Company is required fo
 Company is required.,Company is required.
 Compensation,Compensation
 Compensation details are hidden — payroll access required.,Compensation details are hidden — payroll access required.
+Compensation policy,Compensation policy
 Complete,Complete
 Completed,Completed
 Completed visit,Completed visit
@@ -698,12 +699,14 @@ Duplicate summary,Duplicate summary
 Duplicates,Duplicates
 Duration (ms),Duration (ms)
 Duty supplement,Duty supplement
+Duty supplement (%),Duty supplement (%)
 EHF Status,EHF Status
 EHF Submissions,EHF Submissions
 ERPNext,ERPNext
 ERPNext Employee docname (EMP-XXXXX).,ERPNext Employee docname (EMP-XXXXX).
 EUR → UZS,EUR → UZS
 Each additional step charges the step fee.,Each additional step charges the step fee.
+Each employee's Region band (on their profile) selects which rate applies; NO_TRAVEL pays nothing.,Each employee's Region band (on their profile) selects which rate applies; NO_TRAVEL pays nothing.
 Each purpose row must be an object.,Each purpose row must be an object.
 Each purpose row needs a service person.,Each purpose row needs a service person.
 Early Exit,Early Exit
@@ -832,6 +835,7 @@ Expiry,Expiry
 Export,Export
 Export CSV,Export CSV
 Export failed.,Export failed.
+Extra duty pay as a % of the effective base (e.g. acting role). 0 = none.,Extra duty pay as a % of the effective base (e.g. acting role). 0 = none.
 Extra lateness from slow device clock.,Extra lateness from slow device clock.
 F.I.O.,F.I.O.
 FG Whse,FG Whse
@@ -1089,6 +1093,7 @@ Hire date,Hire date
 Holiday,Holiday
 Holiday OT premium (%),Holiday OT premium (%)
 Horizontal lanes (flow left→right),Horizontal lanes (flow left→right)
+Hourly OT pay = base hourly × this (e.g. 1.5 = time-and-a-half).,Hourly OT pay = base hourly × this (e.g. 1.5 = time-and-a-half).
 Hours,Hours
 I have tested a restore,I have tested a restore
 ID as it appears in raw gate events,ID as it appears in raw gate events
@@ -1187,6 +1192,9 @@ Journal Entries,Journal Entries
 Journal Entry,Journal Entry
 Journal Entry legs,Journal Entry legs
 KPI,KPI
+KPI performance (%),KPI performance (%)
+KPI performance must be between 0 and 100.,KPI performance must be between 0 and 100.
+KPI pool share (%),KPI pool share (%)
 Keep,Keep
 Keep Editing,Keep Editing
 Keep typing to narrow…,Keep typing to narrow…
@@ -1725,6 +1733,7 @@ Override role,Override role
 Override — submit despite low stock (admin),Override — submit despite low stock (admin)
 Overtime,Overtime
 Overtime (min),Overtime (min)
+Overtime multiplier,Overtime multiplier
 Overview,Overview
 Owes us,Owes us
 Owner,Owner
@@ -1767,6 +1776,7 @@ Pause this Work Order? You can resume it later.,Pause this Work Order? You can r
 Pay,Pay
 Pay from,Pay from
 Pay supplier,Pay supplier
+"Pay-formula inputs: overtime rate, KPI pool share, and per-day transport by region band.","Pay-formula inputs: overtime rate, KPI pool share, and per-day transport by region band."
 Payable,Payable
 Payable (AP),Payable (AP)
 Payable Trend (Last 8 Weeks),Payable Trend (Last 8 Weeks)
@@ -1804,6 +1814,7 @@ Payroll impacting,Payroll impacting
 Payroll period,Payroll period
 Payroll period end date cannot be before start date.,Payroll period end date cannot be before start date.
 Payroll-impacting pending,Payroll-impacting pending
+Pays out this share of the KPI pool. Locked periods are read-only.,Pays out this share of the KPI pool. Locked periods are read-only.
 Pending,Pending
 Pending Corrections,Pending Corrections
 Pending approvals,Pending approvals
@@ -2325,6 +2336,7 @@ Severity,Severity
 Shape,Shape
 Shapes,Shapes
 Share,Share
+Share of base moved into a performance pool (0 = whole base is fixed).,Share of base moved into a performance pool (0 = whole base is fixed).
 Shelf,Shelf
 Shelf Position,Shelf Position
 Shift,Shift
@@ -2570,6 +2582,9 @@ Transferred,Transferred
 Transferred Qty,Transferred Qty
 Transfers,Transfers
 Transport,Transport
+Transport / day — City,Transport / day — City
+Transport / day — District,Transport / day — District
+Transport / day — Far district,Transport / day — Far district
 Trend,Trend
 Trigger Item,Trigger Item
 Try a different search term or clear the filter.,Try a different search term or clear the filter.

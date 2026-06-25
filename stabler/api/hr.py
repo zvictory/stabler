@@ -46,6 +46,7 @@ _EMPLOYEE_CUSTOM_FIELDS = (
 	"custom_stake_coefficient",
 	"custom_heavy_conditions",
 	"custom_additional_duties",
+	"custom_duty_supplement_pct",
 	"custom_allowance_config",
 )
 
@@ -154,6 +155,7 @@ def employee_detail(name: str):
 		"custom_stake_coefficient": flt(getattr(doc, "custom_stake_coefficient", 1.0)),
 		"custom_heavy_conditions": int(getattr(doc, "custom_heavy_conditions", 0) or 0),
 		"custom_additional_duties": int(getattr(doc, "custom_additional_duties", 0) or 0),
+		"custom_duty_supplement_pct": flt(getattr(doc, "custom_duty_supplement_pct", 0) or 0),
 		# Custom — salary (masked for non-payroll roles)
 		"custom_base_salary": flt(getattr(doc, "custom_base_salary", 0)) if can_see_salary else None,
 		"custom_allowance_config": getattr(doc, "custom_allowance_config", None) if can_see_salary else None,
@@ -820,6 +822,11 @@ _ATT_XLSX_STYLE = {
 	"W": ("E6F7F4", "0CA678"),
 }
 
+# Display letter shown in the sheet — follows the anjan-hr standard:
+#   K = keldi (present / WFH / late), Y = yarim kun (half day),
+#   D = kelmadi (absent / on leave).  The P/A/L/H/W code stays the data key.
+_ATT_XLSX_LETTER = {"P": "K", "W": "K", "H": "Y", "A": "D", "L": "D"}
+
 
 @frappe.whitelist()
 def attendance_matrix_xlsx(company: str, period: str = "", department: str = ""):
@@ -889,11 +896,12 @@ def attendance_matrix_xlsx(company: str, period: str = "", department: str = "")
 			cell.border = border
 			if code in _ATT_XLSX_STYLE:
 				bg, fg = _ATT_XLSX_STYLE[code]
-				cell.value = code
+				letter = _ATT_XLSX_LETTER.get(code, code)
+				cell.value = letter
 				cell.fill = PatternFill("solid", fgColor=bg)
 				cell.font = Font(bold=True, color=fg, size=9)
 				if d["day"] in late:
-					cell.value = f"{code}*"
+					cell.value = f"{letter}*"
 			elif d["is_weekend"]:
 				cell.fill = weekend_fill
 		r += 1
@@ -903,7 +911,8 @@ def attendance_matrix_xlsx(company: str, period: str = "", department: str = "")
 	ws.cell(row=lr, column=1, value="Legend:").font = Font(bold=True)
 	leg = [("P", "Present"), ("A", "Absent"), ("L", "On Leave"), ("H", "Half Day"), ("W", "WFH"), ("*", "Late")]
 	for i, (code, label) in enumerate(leg):
-		c = ws.cell(row=lr, column=2 + i, value=f"{code} {label}")
+		letter = _ATT_XLSX_LETTER.get(code, code)
+		c = ws.cell(row=lr, column=2 + i, value=f"{letter} {label}")
 		if code in _ATT_XLSX_STYLE:
 			bg, fg = _ATT_XLSX_STYLE[code]
 			c.fill = PatternFill("solid", fgColor=bg)

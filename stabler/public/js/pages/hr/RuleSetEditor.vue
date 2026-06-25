@@ -69,6 +69,12 @@ function blank() {
 		break_minutes: 60,
 		clock_drift_tolerance_min: 3,
 		early_leave_deduction_enabled: false,
+		// Compensation policy (feeds the payroll engine)
+		ot_multiplier: 1,
+		kpi_share_pct: 0,
+		region_city_rate: null,
+		region_district_rate: null,
+		region_far_district_rate: null,
 	};
 }
 
@@ -495,6 +501,48 @@ watch(() => route.params.name, load);
 										<span class="form-check-label">{{ opt.label }}</span>
 									</label>
 								</div>
+							</div>
+						</div>
+					</div>
+				</div>
+			</div>
+
+			<!-- Compensation policy section -->
+			<div class="col-12">
+				<div class="card">
+					<div class="card-header">
+						<h4 class="card-title mb-0">
+							<i class="ti ti-cash me-2 text-green"></i>{{ t("Compensation policy") }}
+						</h4>
+						<div class="card-subtitle">{{ t("Pay-formula inputs: overtime rate, KPI pool share, and per-day transport by region band.") }}</div>
+					</div>
+					<div class="card-body">
+						<div class="row g-3">
+							<div class="col-md-4">
+								<label class="form-label">{{ t("Overtime multiplier") }}</label>
+								<input v-model.number="form.ot_multiplier" type="number" min="1" step="0.1" class="form-control" />
+								<div class="form-text">{{ t("Hourly OT pay = base hourly × this (e.g. 1.5 = time-and-a-half).") }}</div>
+							</div>
+							<div class="col-md-4">
+								<label class="form-label">{{ t("KPI pool share (%)") }}</label>
+								<input v-model.number="form.kpi_share_pct" type="number" min="0" max="100" class="form-control" />
+								<div class="form-text">{{ t("Share of base moved into a performance pool (0 = whole base is fixed).") }}</div>
+							</div>
+							<div class="col-md-4"></div>
+							<div class="col-md-4">
+								<label class="form-label">{{ t("Transport / day — City") }}</label>
+								<MoneyInput v-model="form.region_city_rate" currency="UZS" :language="lang" :placeholder="t('0')" />
+							</div>
+							<div class="col-md-4">
+								<label class="form-label">{{ t("Transport / day — District") }}</label>
+								<MoneyInput v-model="form.region_district_rate" currency="UZS" :language="lang" :placeholder="t('0')" />
+							</div>
+							<div class="col-md-4">
+								<label class="form-label">{{ t("Transport / day — Far district") }}</label>
+								<MoneyInput v-model="form.region_far_district_rate" currency="UZS" :language="lang" :placeholder="t('0')" />
+							</div>
+							<div class="col-12">
+								<div class="form-text">{{ t("Each employee's Region band (on their profile) selects which rate applies; NO_TRAVEL pays nothing.") }}</div>
 							</div>
 						</div>
 					</div>

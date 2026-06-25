@@ -79,6 +79,7 @@ function blankForm() {
 		custom_stake_coefficient: 1.0,
 		custom_heavy_conditions: 0,
 		custom_additional_duties: 0,
+		custom_duty_supplement_pct: 0,
 		// Allowances (parsed from JSON)
 		allowance_seniority: null,
 		allowance_night_per_hour: null,
@@ -108,6 +109,7 @@ function hydrateForm(d) {
 			d.custom_stake_coefficient !== undefined ? Number(d.custom_stake_coefficient) : 1.0;
 		form.value.custom_heavy_conditions = d.custom_heavy_conditions ? 1 : 0;
 		form.value.custom_additional_duties = d.custom_additional_duties ? 1 : 0;
+		form.value.custom_duty_supplement_pct = d.custom_duty_supplement_pct ?? 0;
 		// Allowances
 		parseAllowances(d.custom_allowance_config);
 	}
@@ -210,6 +212,7 @@ async function save() {
 			payload.custom_stake_coefficient = form.value.custom_stake_coefficient;
 			payload.custom_heavy_conditions = form.value.custom_heavy_conditions;
 			payload.custom_additional_duties = form.value.custom_additional_duties;
+			payload.custom_duty_supplement_pct = form.value.custom_duty_supplement_pct;
 			payload.custom_allowance_config = serializeAllowances();
 		}
 		await call("stabler.api.hr.update_employee", {
@@ -661,6 +664,17 @@ watch(name, load);
 											<span class="form-check-label">{{ t("Additional duties") }}</span>
 										</label>
 										<div class="form-text ms-5">{{ t("Employee carries additional responsibilities.") }}</div>
+									</div>
+									<div class="col-md-6">
+										<label class="form-label">{{ t("Duty supplement (%)") }}</label>
+										<input
+											v-model.number="form.custom_duty_supplement_pct"
+											type="number"
+											min="0"
+											max="100"
+											class="form-control"
+										/>
+										<div class="form-text">{{ t("Extra duty pay as a % of the effective base (e.g. acting role). 0 = none.") }}</div>
 									</div>
 								</div>
 							</div>

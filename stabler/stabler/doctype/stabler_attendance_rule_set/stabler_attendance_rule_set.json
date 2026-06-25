@@ -40,7 +40,14 @@
   "break_minutes",
   "column_break_misc",
   "clock_drift_tolerance_min",
-  "early_leave_deduction_enabled"
+  "early_leave_deduction_enabled",
+  "compensation_section",
+  "ot_multiplier",
+  "kpi_share_pct",
+  "column_break_comp",
+  "region_city_rate",
+  "region_district_rate",
+  "region_far_district_rate"
  ],
  "fields": [
   {"fieldname": "rule_set_name", "fieldtype": "Data", "label": "Rule Set Name", "reqd": 1, "unique": 1, "in_list_view": 1},
@@ -81,7 +88,15 @@
   {"fieldname": "break_minutes", "fieldtype": "Int", "label": "Unpaid break minutes", "default": "0"},
   {"fieldname": "column_break_misc", "fieldtype": "Column Break"},
   {"fieldname": "clock_drift_tolerance_min", "fieldtype": "Int", "label": "Clock drift tolerance (min)", "default": "5"},
-  {"fieldname": "early_leave_deduction_enabled", "fieldtype": "Check", "label": "Deduct for early leave", "default": "0"}
+  {"fieldname": "early_leave_deduction_enabled", "fieldtype": "Check", "label": "Deduct for early leave", "default": "0"},
+
+  {"fieldname": "compensation_section", "fieldtype": "Section Break", "label": "Compensation Policy", "description": "Pay-formula inputs: overtime rate, KPI pool share, and per-day transport rates by region band."},
+  {"fieldname": "ot_multiplier", "fieldtype": "Float", "label": "Overtime multiplier", "default": "1.0", "precision": "2", "description": "Hourly OT pay = base hourly rate × this multiplier (e.g. 1.5 = time-and-a-half)."},
+  {"fieldname": "kpi_share_pct", "fieldtype": "Percent", "label": "KPI pool share %", "default": "0", "description": "Share of base salary moved into a performance pool (0 = whole base is fixed). The pool is paid out by each employee's KPI performance %."},
+  {"fieldname": "column_break_comp", "fieldtype": "Column Break"},
+  {"fieldname": "region_city_rate", "fieldtype": "Currency", "label": "Transport / day — City", "default": "0", "description": "Per worked-day transport allowance for region band CITY."},
+  {"fieldname": "region_district_rate", "fieldtype": "Currency", "label": "Transport / day — District", "default": "0", "description": "Per worked-day transport allowance for region band DISTRICT."},
+  {"fieldname": "region_far_district_rate", "fieldtype": "Currency", "label": "Transport / day — Far district", "default": "0", "description": "Per worked-day transport allowance for region band FAR_DISTRICT."}
  ],
  "links": [],
  "modified": "2026-06-16 09:00:00.000000",

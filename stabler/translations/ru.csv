@@ -450,6 +450,7 @@ Company is required for an enabled Payroll Component Map.,
 Company is required.,Требуется компания.
 Compensation,
 Compensation details are hidden — payroll access required.,
+Compensation policy,Политика оплаты
 Complete,Готово
 Completed,Завершено
 Completed visit,Выполненный выезд
@@ -706,6 +707,7 @@ Duplicate summary,
 Duplicates,Дубликаты
 Duration (ms),Длительность (мс)
 Duty supplement,Доплата за обязанности
+Duty supplement (%),Доплата за обязанности (%)
 EHF (Elektron Hisob-Faktura) submissions appear here.,Здесь отображаются отправки ЭСФ (Elektron Hisob-Faktura).
 EHF Status,Статус ЭСФ
 EHF Submissions,Отправки ЭСФ
@@ -713,6 +715,7 @@ ERPNext,
 ERPNext Employee docname (EMP-XXXXX).,
 EUR → UZS,EUR → UZS
 Each additional step charges the step fee.,
+Each employee's Region band (on their profile) selects which rate applies; NO_TRAVEL pays nothing.,Регион сотрудника (в его профиле) определяет применяемую ставку; NO_TRAVEL — без оплаты.
 Each purpose row must be an object.,
 Each purpose row needs a service person.,
 Early Exit,
@@ -841,6 +844,7 @@ Expiry,Срок годности
 Export,Экспорт
 Export CSV,Экспорт CSV
 Export failed.,Экспорт не удался.
+Extra duty pay as a % of the effective base (e.g. acting role). 0 = none.,Доплата за обязанности в % от эффективной базы (напр. и.о.). 0 = нет.
 Extra lateness from slow device clock.,
 F.I.O.,Ф.И.О.
 FG Whse,
@@ -1098,6 +1102,7 @@ Hire date,
 Holiday,Праздник
 Holiday OT premium (%),
 Horizontal lanes (flow left→right),Горизонтальные дорожки (поток слева→вправо)
+Hourly OT pay = base hourly × this (e.g. 1.5 = time-and-a-half).,Оплата часа сверхурочных = базовый час × это (напр. 1.5 = полуторный тариф).
 Hours,Часы
 I have tested a restore,
 ID as it appears in raw gate events,
@@ -1196,6 +1201,9 @@ Journal Entries,Журнальные записи
 Journal Entry,Запись в журнале
 Journal Entry legs,Проводки журнала
 KPI,KPI
+KPI performance (%),Выполнение KPI (%)
+KPI performance must be between 0 and 100.,Выполнение KPI должно быть от 0 до 100.
+KPI pool share (%),Доля KPI-пула (%)
 Keep,Хранить
 Keep Editing,
 Keep typing to narrow…,Продолжайте вводить для уточнения…
@@ -1734,6 +1742,7 @@ Override role,
 Override — submit despite low stock (admin),Отменить блок — принудительно отправить при нехватке запасов (администратор)
 Overtime,
 Overtime (min),Сверхурочно (мин)
+Overtime multiplier,Множитель сверхурочных
 Overview,Обзор
 Owes us,Должен нам
 Owner,
@@ -1777,6 +1786,7 @@ Pause this Work Order? You can resume it later.,Приостановить за�
 Pay,Выплатить
 Pay from,Выплатить с
 Pay supplier,Выплатить поставщику
+"Pay-formula inputs: overtime rate, KPI pool share, and per-day transport by region band.","Параметры формулы оплаты: ставка сверхурочных, доля KPI-пула и суточный транспорт по региону."
 Payable,К выплате
 Payable (AP),Кредиторская задолженность
 Payable Trend (Last 8 Weeks),
@@ -1814,6 +1824,7 @@ Payroll impacting,
 Payroll period,
 Payroll period end date cannot be before start date.,
 Payroll-impacting pending,
+Pays out this share of the KPI pool. Locked periods are read-only.,Выплачивает эту долю KPI-пула. Заблокированные периоды только для чтения.
 Pending,Ожидание
 Pending Corrections,
 Pending approvals,Ожидают согласования
@@ -2335,6 +2346,7 @@ Severity,Серьёзность
 Shape,Фигура
 Shapes,Фигуры
 Share,Поделиться
+Share of base moved into a performance pool (0 = whole base is fixed).,"Доля базы, переносимая в пул производительности (0 = вся база фиксированная)."
 Shelf,Полка
 Shelf Position,Позиция на полке
 Shift,
@@ -2583,6 +2595,9 @@ Transferred,Передано
 Transferred Qty,
 Transfers,Передачи
 Transport,Транспорт
+Transport / day — City,Транспорт / день — Город
+Transport / day — District,Транспорт / день — Район
+Transport / day — Far district,Транспорт / день — Дальний район
 Trend,
 Trigger Item,Товар-триггер
 Try a different search term or clear the filter.,Попробуйте другой поисковый запрос или очистите фильтр.

@@ -50,6 +50,12 @@ _RULESET_WRITABLE_FIELDS = {
 	"break_minutes",
 	"clock_drift_tolerance_min",
 	"early_leave_deduction_enabled",
+	# Compensation policy (Phase 3 — feeds the payroll engine)
+	"ot_multiplier",
+	"kpi_share_pct",
+	"region_city_rate",
+	"region_district_rate",
+	"region_far_district_rate",
 }
 
 

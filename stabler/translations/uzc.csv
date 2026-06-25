@@ -444,6 +444,7 @@ Company is required for an enabled Payroll Component Map.,
 Company is required.,Компания талаб қилинади.
 Compensation,
 Compensation details are hidden — payroll access required.,
+Compensation policy,Тўлов сиёсати
 Complete,Тугалланди
 Completed,Тугалланди
 Completed visit,Бажарилган ташриф
@@ -700,12 +701,14 @@ Duplicate summary,
 Duplicates,Дубликатлар
 Duration (ms),Давомийлик (миллисекунд)
 Duty supplement,Вазифа қўшимчаси
+Duty supplement (%),Вазифа қўшимчаси (%)
 EHF Status,EHF ҳолати
 EHF Submissions,EHF топширилишлари
 ERPNext,
 ERPNext Employee docname (EMP-XXXXX).,
 EUR → UZS,EUR → сўм
 Each additional step charges the step fee.,
+Each employee's Region band (on their profile) selects which rate applies; NO_TRAVEL pays nothing.,Ходимнинг ҳудуди (профилида) қайси ставка қўлланишини белгилайди; NO_TRAVEL — тўловсиз.
 Each purpose row must be an object.,
 Each purpose row needs a service person.,
 Early Exit,
@@ -834,6 +837,7 @@ Expiry,Муддати
 Export,Экспорт
 Export CSV,CSV экспорт
 Export failed.,Экспорт нокамоб
+Extra duty pay as a % of the effective base (e.g. acting role). 0 = none.,"Вазифа учун қўшимча тўлов, самарали асоснинг % сифатида (масалан, в.б.). 0 = йўқ."
 Extra lateness from slow device clock.,
 F.I.O.,Ф.И.Ш.
 FG Whse,
@@ -1091,6 +1095,7 @@ Hire date,
 Holiday,Байрам
 Holiday OT premium (%),
 Horizontal lanes (flow left→right),Горизонтал йўлаклар (оқим чап→ўнг)
+Hourly OT pay = base hourly × this (e.g. 1.5 = time-and-a-half).,"Соатлик қўшимча иш ҳақи = базавий соат × шу (масалан, 1.5)."
 Hours,Соат
 I have tested a restore,
 ID as it appears in raw gate events,
@@ -1189,6 +1194,9 @@ Journal Entries,Журнал ёзувлари
 Journal Entry,Журнал ёзуви
 Journal Entry legs,Журнал ёзув қаторлари
 KPI,KPI
+KPI performance (%),KPI бажарилиши (%)
+KPI performance must be between 0 and 100.,KPI бажарилиши 0 дан 100 гача бўлиши керак.
+KPI pool share (%),KPI фонд улуши (%)
 Keep,Сақлаш
 Keep Editing,
 Keep typing to narrow…,Торайтириш учун ёзишда давом этинг…
@@ -1727,6 +1735,7 @@ Override role,
 Override — submit despite low stock (admin),Бекор қилиш — кам қолдиқда ҳам юбориш (admin)
 Overtime,
 Overtime (min),Қўшимча (дақ.)
+Overtime multiplier,Қўшимча иш коэффициенти
 Overview,Умумий кўриниш
 Owes us,Бизга қарздор
 Owner,
@@ -1770,6 +1779,7 @@ Pause this Work Order? You can resume it later.,Бу буюртмани тўхт
 Pay,Тўлаш
 Pay from,Дан тўлаш
 Pay supplier,Йўбағочига тўлаш
+"Pay-formula inputs: overtime rate, KPI pool share, and per-day transport by region band.","Ойлик формуласи параметрлари: қўшимча иш ставкаси, KPI фонд улуши ва ҳудуд бўйича кунлик транспорт."
 Payable,Қўллаш
 Payable (AP),Кредиторлик қарзи
 Payable Trend (Last 8 Weeks),
@@ -1807,6 +1817,7 @@ Payroll impacting,
 Payroll period,
 Payroll period end date cannot be before start date.,
 Payroll-impacting pending,
+Pays out this share of the KPI pool. Locked periods are read-only.,KPI фондининг шу улушини тўлайди. Қулфланган даврлар фақат ўқиш учун.
 Pending,Кутилмоқда
 Pending Corrections,
 Pending approvals,Тасдиқ кутилмоқда
@@ -2328,6 +2339,7 @@ Severity,Жиддийлик
 Shape,Шакл
 Shapes,Шакллар
 Share,Улашиш
+Share of base moved into a performance pool (0 = whole base is fixed).,Асоснинг самарадорлик фондига ўтказиладиган улуши (0 = бутун асос қатъий).
 Shelf,Жами
 Shelf Position,Жамидаги ўрни
 Shift,
@@ -2576,6 +2588,9 @@ Transferred,Берилган
 Transferred Qty,
 Transfers,Ўтказмалар
 Transport,Транспорт
+Transport / day — City,Транспорт / кун — Шаҳар
+Transport / day — District,Транспорт / кун — Туман
+Transport / day — Far district,Транспорт / кун — Узоқ туман
 Trend,
 Trigger Item,Триггер товари
 Try a different search term or clear the filter.,Бошқа қидирув атамасини синаб кўринг ёки филтрни тозалаб кўринг.

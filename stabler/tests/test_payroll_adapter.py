@@ -81,6 +81,44 @@ class TestAdapterMapping(unittest.TestCase):
 		out = calculate_payroll(inp)
 		self.assertEqual(Decimal(out["net"]), Decimal("6000000"))
 
+	def test_region_rate_adds_per_day_transport(self):
+		# CITY band, 10000/day, 22 present → transport 220000 on top of base.
+		inp = build_calc_input(
+			_emp(region="CITY"),
+			{"payroll_period": "2026-06", "present_days": 22, "absent_days": 0, "half_days": 0,
+			 "overtime_minutes": 0, "night_minutes": 0, "late_deduction_amount": 0},
+			{"region_rates": {"CITY": "10000"}},
+		)
+		out = calculate_payroll(inp)
+		self.assertEqual(Decimal(out["allowances"]), Decimal("220000"))
+		self.assertEqual(Decimal(out["net"]), Decimal("10220000"))
+
+	def test_duty_supplement_pct_adds_to_pay(self):
+		# 25% of effective base on full attendance → +2 500 000.
+		inp = build_calc_input(
+			_emp(),
+			{"payroll_period": "2026-06", "present_days": 22, "absent_days": 0, "half_days": 0,
+			 "overtime_minutes": 0, "night_minutes": 0, "late_deduction_amount": 0},
+			{},
+			duty_supplements=[{"pct": 25}],
+		)
+		out = calculate_payroll(inp)
+		self.assertEqual(Decimal(out["duty_supplement"]), Decimal("2500000"))
+		self.assertEqual(Decimal(out["net"]), Decimal("12500000"))
+
+	def test_kpi_performance_pays_out_pool(self):
+		# kpi_share 40 + performance 50 → fixed 6M + KPI pool 4M × 50% = 2M → 8M.
+		inp = build_calc_input(
+			_emp(),
+			{"payroll_period": "2026-06", "present_days": 22, "absent_days": 0, "half_days": 0,
+			 "overtime_minutes": 0, "night_minutes": 0, "late_deduction_amount": 0},
+			{"kpi_share_pct": "40"},
+			kpi_performance_pct=50,
+		)
+		out = calculate_payroll(inp)
+		self.assertEqual(Decimal(out["kpi"]), Decimal("2000000"))
+		self.assertEqual(Decimal(out["net"]), Decimal("8000000"))
+
 
 if __name__ == "__main__":
 	unittest.main()

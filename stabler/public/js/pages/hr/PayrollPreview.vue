@@ -71,8 +71,49 @@ function next() { if (!isCurrentOrFuture.value) period.value = shiftPeriod(perio
 // ── Breakdown drawer ─────────────────────────────────────────────────────────
 const detailOpen = ref(false);
 const detail = ref(null);
-function openDetail(r) { detail.value = r; detailOpen.value = true; }
+const kpiDraft = ref(0);
+const kpiSaving = ref(false);
+const kpiError = ref("");
+function openDetail(r) {
+	detail.value = r;
+	kpiDraft.value = Number(r.kpi_performance_pct || 0);
+	kpiError.value = "";
+	detailOpen.value = true;
+}
 function closeDetail() { detailOpen.value = false; detail.value = null; }
+
+// KPI pool exists only when the rule set moves part of base into the pool.
+const hasKpiPool = computed(() => Number(bd.value.kpi_share_factor || 0) > 0);
+
+async function saveKpi() {
+	if (!detail.value?.summary) return;
+	const pct = Number(kpiDraft.value);
+	if (Number.isNaN(pct) || pct < 0 || pct > 100) {
+		kpiError.value = t("KPI performance must be between 0 and 100.");
+		return;
+	}
+	kpiSaving.value = true;
+	kpiError.value = "";
+	try {
+		const updated = await call("stabler.api.hr_pay.set_kpi_performance", {
+			summary_name: detail.value.summary,
+			pct,
+		});
+		// Replace the row in place + refresh the drawer + totals.
+		const idx = rows.value.findIndex((x) => x.summary === updated.summary);
+		if (idx !== -1 && data.value) data.value.rows.splice(idx, 1, updated);
+		if (data.value) {
+			data.value.net_total = Math.round(rows.value.reduce((s, x) => s + Number(x.net || 0), 0));
+			data.value.gross_total = Math.round(rows.value.reduce((s, x) => s + Number(x.breakdown?.gross || 0), 0));
+		}
+		detail.value = updated;
+		kpiDraft.value = Number(updated.kpi_performance_pct || 0);
+	} catch (err) {
+		kpiError.value = err?.message || "Failed to save KPI.";
+	} finally {
+		kpiSaving.value = false;
+	}
+}
 
 const bd = computed(() => detail.value?.breakdown || {});
 // Curated audit lines for the drawer (label, value, kind)
@@ -276,6 +317,33 @@ function exportCsv() {
 				<span class="badge bg-secondary-lt me-1">{{ bd.work_mode }}</span>
 				<span>{{ t("Attendance") }}: {{ bd.attended_days }}/{{ bd.expected_days }}</span>
 				<span v-if="bd.seniority_years"> · {{ t("Seniority") }}: {{ bd.seniority_years }} {{ t("yr") }}</span>
+			</div>
+
+			<!-- KPI performance editor — only when the rule set funds a KPI pool -->
+			<div v-if="hasKpiPool" class="card mb-3">
+				<div class="card-body p-2">
+					<label class="form-label small mb-1">{{ t("KPI performance (%)") }}</label>
+					<div class="input-group input-group-sm">
+						<input
+							v-model.number="kpiDraft"
+							type="number"
+							min="0"
+							max="100"
+							class="form-control"
+							:disabled="kpiSaving || detail?.status === 'Locked'"
+						/>
+						<button
+							type="button"
+							class="btn btn-outline-primary"
+							:disabled="kpiSaving || detail?.status === 'Locked'"
+							@click="saveKpi"
+						>
+							<i class="ti ti-check me-1"></i>{{ kpiSaving ? t("Saving…") : t("Save") }}
+						</button>
+					</div>
+					<div v-if="kpiError" class="text-danger small mt-1">{{ kpiError }}</div>
+					<div v-else class="form-text">{{ t("Pays out this share of the KPI pool. Locked periods are read-only.") }}</div>
+				</div>
 			</div>
 
 			<table class="table table-sm">

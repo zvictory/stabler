@@ -440,6 +440,7 @@ Company is required for an enabled Payroll Component Map.,
 Company is required.,Şirket zorunludur.
 Compensation,
 Compensation details are hidden — payroll access required.,
+Compensation policy,Ödeme politikası
 Complete,Tamamla
 Completed,Tamamlandı
 Completed visit,Tamamlanan ziyaret
@@ -694,12 +695,14 @@ Duplicate summary,
 Duplicates,Yinelenenler
 Duration (ms),Süre (ms)
 Duty supplement,Görev eki
+Duty supplement (%),Görev eki (%)
 EHF Status,EHF Durumu
 EHF Submissions,EHF Gönderimleri
 ERPNext,
 ERPNext Employee docname (EMP-XXXXX).,
 EUR → UZS,EUR → UZS
 Each additional step charges the step fee.,
+Each employee's Region band (on their profile) selects which rate applies; NO_TRAVEL pays nothing.,Çalışanın bölgesi (profilinde) hangi oranın geçerli olduğunu belirler; NO_TRAVEL ödeme yok.
 Each purpose row must be an object.,
 Each purpose row needs a service person.,
 Early Exit,
@@ -827,6 +830,7 @@ Expiry,Son kullanım
 Export,Dışa Aktar
 Export CSV,CSV dışa aktar
 Export failed.,Dışa aktarma başarısız oldu.
+Extra duty pay as a % of the effective base (e.g. acting role). 0 = none.,Etkin tabanın % olarak ek görev ödemesi (örn. vekâlet). 0 = yok.
 Extra lateness from slow device clock.,
 F.I.O.,"Soyad, Ad, Baba Adı"
 FG Whse,
@@ -1084,6 +1088,7 @@ Hire date,
 Holiday,Tatil
 Holiday OT premium (%),
 Horizontal lanes (flow left→right),Yatay şeritler (akış sol→sağ)
+Hourly OT pay = base hourly × this (e.g. 1.5 = time-and-a-half).,Saatlik fazla mesai = temel saat × bu (örn. 1.5).
 Hours,Saat
 I have tested a restore,
 ID as it appears in raw gate events,
@@ -1182,6 +1187,9 @@ Journal Entries,Yevmiye Kayıtları
 Journal Entry,Yevmiye Kaydı
 Journal Entry legs,Yevmiye kaydı kalemleri
 KPI,KPI
+KPI performance (%),KPI performansı (%)
+KPI performance must be between 0 and 100.,KPI performansı 0 ile 100 arasında olmalıdır.
+KPI pool share (%),KPI havuz payı (%)
 Keep,Sakla
 Keep Editing,
 Keep typing to narrow…,Daraltmak için yazmaya devam edin…
@@ -1717,6 +1725,7 @@ Override role,
 Override — submit despite low stock (admin),Geçersiz kıl — düşük stoka rağmen gönder (yönetici)
 Overtime,
 Overtime (min),Fazla mesai (dk)
+Overtime multiplier,Fazla mesai çarpanı
 Overview,Genel Bakış
 Owes us,Bize borçlu
 Owner,
@@ -1759,6 +1768,7 @@ Pause this Work Order? You can resume it later.,Bu iş emri duraklatılsın mı?
 Pay,Öde
 Pay from,Ödeme kaynağı
 Pay supplier,Tedarikçiye öde
+"Pay-formula inputs: overtime rate, KPI pool share, and per-day transport by region band.","Maaş formülü girdileri: fazla mesai oranı, KPI havuz payı ve bölgeye göre günlük ulaşım."
 Payable,Borç
 Payable (AP),Borç Hesapları (AP)
 Payable Trend (Last 8 Weeks),
@@ -1796,6 +1806,7 @@ Payroll impacting,
 Payroll period,
 Payroll period end date cannot be before start date.,
 Payroll-impacting pending,
+Pays out this share of the KPI pool. Locked periods are read-only.,KPI havuzunun bu payını öder. Kilitli dönemler salt okunur.
 Pending,Beklemede
 Pending Corrections,
 Pending approvals,Bekleyen onaylar
@@ -2314,6 +2325,7 @@ Severity,Önem
 Shape,Şekil
 Shapes,Şekiller
 Share,Paylaş
+Share of base moved into a performance pool (0 = whole base is fixed).,Tabanın performans havuzuna aktarılan payı (0 = tüm taban sabit).
 Shelf,Raf
 Shelf Position,Raf Konumu
 Shift,
@@ -2559,6 +2571,9 @@ Transferred,Transfer edildi
 Transferred Qty,
 Transfers,Transferler
 Transport,Ulaşım
+Transport / day — City,Ulaşım / gün — Şehir
+Transport / day — District,Ulaşım / gün — İlçe
+Transport / day — Far district,Ulaşım / gün — Uzak ilçe
 Trend,
 Trigger Item,Tetikleyici Ürün
 Try a different search term or clear the filter.,Farklı bir arama terimi deneyin veya filtreyi temizleyin.

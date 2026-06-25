@@ -34,7 +34,7 @@ def _employee_pay_fields(emp_name: str) -> dict:
 			[
 				"employee_name", "date_of_joining", "custom_base_salary", "custom_allowance_config",
 				"custom_work_mode", "custom_stake_coefficient", "custom_region",
-				"custom_heavy_conditions", "custom_additional_duties",
+				"custom_heavy_conditions", "custom_additional_duties", "custom_duty_supplement_pct",
 			],
 			as_dict=True,
 		)
@@ -50,13 +50,44 @@ def _employee_pay_fields(emp_name: str) -> dict:
 		"additional_duties": bool(e.get("custom_additional_duties")),
 		"allowance_config": e.get("custom_allowance_config"),
 		"hire_date": str(e.get("date_of_joining")) if e.get("date_of_joining") else None,
+		"duty_supplement_pct": e.get("custom_duty_supplement_pct") or 0,
 	}
+
+
+def _region_rates(rs: dict) -> dict:
+	"""Assemble the engine's region_rates map from the rule set's flat per-band
+	Currency fields. Only non-zero bands are included; NO_TRAVEL is always zero
+	(handled in the engine)."""
+	out = {}
+	for band, field in (
+		("CITY", "region_city_rate"),
+		("DISTRICT", "region_district_rate"),
+		("FAR_DISTRICT", "region_far_district_rate"),
+	):
+		val = rs.get(field)
+		if val:
+			out[band] = val
+	return out
 
 
 def _ruleset_dict(company: str) -> dict:
 	# No cross-company fallback — only the requesting company's ruleset is used.
 	name = frappe.db.get_value(_RULESET, {"company": company, "enabled": 1, "is_default": 1}, "name")
-	return frappe.get_doc(_RULESET, name).as_dict() if name else {}
+	if not name:
+		return {}
+	rs = frappe.get_doc(_RULESET, name).as_dict()
+	# Compose the engine-facing region_rates map from the flat per-band fields.
+	rs["region_rates"] = _region_rates(rs)
+	return rs
+
+
+def _duty_supplements(emp: dict) -> list:
+	"""Map the per-employee duty-supplement % onto the engine's list input."""
+	try:
+		pct = float(emp.get("duty_supplement_pct") or 0)
+	except (TypeError, ValueError):
+		pct = 0.0
+	return [{"pct": pct}] if pct else []
 
 
 def _summary_fields(s) -> dict:
@@ -73,12 +104,20 @@ def _summary_fields(s) -> dict:
 
 def _compute(s, ruleset: dict) -> dict:
 	emp = _employee_pay_fields(s.employee)
-	inp = build_calc_input(emp, _summary_fields(s), ruleset)
+	inp = build_calc_input(
+		emp,
+		_summary_fields(s),
+		ruleset,
+		kpi_performance_pct=getattr(s, "kpi_performance_pct", None),
+		duty_supplements=_duty_supplements(emp),
+	)
 	result = calculate_payroll(inp)
+	result["summary"] = s.name
 	result["employee"] = s.employee
 	result["employee_name"] = emp.get("employee_name") or s.employee
 	result["period"] = s.payroll_period
 	result["status"] = s.status
+	result["kpi_performance_pct"] = getattr(s, "kpi_performance_pct", 0) or 0
 	return result
 
 
@@ -92,6 +131,33 @@ def preview_payroll_pay(summary_name: str) -> dict:
 		frappe.throw(_("Unknown summary: {0}").format(summary_name))
 	_require_company(company)
 	s = frappe.get_doc(_SUMMARY, summary_name)
+	return _compute(s, _ruleset_dict(company))
+
+
+@frappe.whitelist()
+def set_kpi_performance(summary_name: str, pct) -> dict:
+	"""Set an employee's KPI performance % (0-100) for a period, then recompute.
+
+	Writes the score onto the attendance summary and returns the freshly computed
+	pay so the UI can update in place. Role-gated + company-scoped + audited via
+	the doctype's track_changes.
+	"""
+	_require_pay_role()
+	company = frappe.db.get_value(_SUMMARY, summary_name, "company")
+	if not company:
+		frappe.throw(_("Unknown summary: {0}").format(summary_name))
+	_require_company(company)
+	try:
+		value = float(pct)
+	except (TypeError, ValueError):
+		frappe.throw(_("KPI performance must be a number."))
+	if value < 0 or value > 100:
+		frappe.throw(_("KPI performance must be between 0 and 100."))
+	s = frappe.get_doc(_SUMMARY, summary_name)
+	if s.status == "Locked":
+		frappe.throw(_("This period is locked; KPI cannot be changed."))
+	s.db_set("kpi_performance_pct", value)
+	s.reload()
 	return _compute(s, _ruleset_dict(company))
 
 

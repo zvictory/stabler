@@ -16,12 +16,18 @@ const error = ref("");
 const data = ref(null);
 
 // code → { label, bg, fg }
+// Display letters follow the anjan-hr standard (lib/timesheet/status-code.ts):
+//   K = keldi (present / late — they came)   → green
+//   Y = yarim kun (half day)                 → orange
+//   D = dam / kelmadi (absent / leave)       → red (leave keeps a blue tone)
+// The ERPNext status code (P/A/L/H/W) stays the source of truth for editing;
+// `letter` is purely how the cell is rendered.
 const CODES = {
-	P: { label: () => t("Present"), bg: "#e7f6ec", fg: "#1f9d54" },
-	A: { label: () => t("Absent"), bg: "#fbe9e9", fg: "#d63939" },
-	L: { label: () => t("On Leave"), bg: "#e7edfb", fg: "#3b5bdb" },
-	H: { label: () => t("Half Day"), bg: "#fdf3e3", fg: "#c07a00" },
-	W: { label: () => t("Work From Home"), bg: "#e6f7f4", fg: "#0ca678" },
+	P: { letter: "K", label: () => t("Present"), bg: "#e7f6ec", fg: "#1f9d54" },
+	A: { letter: "D", label: () => t("Absent"), bg: "#fbe9e9", fg: "#d63939" },
+	L: { letter: "D", label: () => t("On Leave"), bg: "#e7edfb", fg: "#3b5bdb" },
+	H: { letter: "Y", label: () => t("Half Day"), bg: "#fdf3e3", fg: "#c07a00" },
+	W: { letter: "K", label: () => t("Work From Home"), bg: "#e6f7f4", fg: "#0ca678" },
 };
 
 const rows = computed(() => {
@@ -282,7 +288,7 @@ function exportCsv() {
 		const cols = [
 			`"${(r.employee_name || "").replace(/"/g, '""')}"`,
 			`"${(r.department || "").replace(/"/g, '""')}"`,
-			...days.value.map((d) => r.cells?.[d.day] || ""),
+			...days.value.map((d) => (CODES[r.cells?.[d.day]]?.letter) || ""),
 			r.totals.present, r.totals.absent, r.totals.leave,
 		];
 		lines.push(cols.join(","));
@@ -315,11 +321,11 @@ defineExpose({ exportCsv, exportXlsx, reload: load });
 			<!-- Legend -->
 			<div class="d-flex flex-wrap align-items-center gap-3 mb-2 small">
 				<span v-for="(c, k) in CODES" :key="k" class="d-inline-flex align-items-center gap-1">
-					<span class="att-key" :style="{ background: c.bg, color: c.fg }">{{ k }}</span>
+					<span class="att-key" :style="{ background: c.bg, color: c.fg }">{{ c.letter }}</span>
 					<span class="text-secondary">{{ c.label() }}</span>
 				</span>
 				<span class="d-inline-flex align-items-center gap-1">
-					<span class="att-key att-late">P<i></i></span><span class="text-secondary">{{ t("Late") }}</span>
+					<span class="att-key att-late" :style="{ background: CODES.P.bg, color: CODES.P.fg }">K<i></i></span><span class="text-secondary">{{ t("Late") }}</span>
 				</span>
 				<span class="d-inline-flex align-items-center gap-1">
 					<span class="att-key att-weekend"></span><span class="text-secondary">{{ t("Weekend") }}</span>
@@ -343,8 +349,8 @@ defineExpose({ exportCsv, exportXlsx, reload: load });
 					<thead>
 						<tr>
 							<th class="att-emp att-sticky-l">{{ t("Employee") }}</th>
-							<th class="att-tot att-sticky-l2 text-center" :title="t('Present')">P</th>
-							<th class="att-tot att-sticky-l3 text-center" :title="t('Absent')">A</th>
+							<th class="att-tot att-sticky-l2 text-center" :title="t('Present')">K</th>
+							<th class="att-tot att-sticky-l3 text-center" :title="t('Absent')">D</th>
 							<th class="att-tot att-sticky-l4 text-center" :title="t('On Leave')">L</th>
 							<th
 								v-for="d in days"
@@ -386,7 +392,7 @@ defineExpose({ exportCsv, exportXlsx, reload: load });
 										class="att-key"
 										:class="{ 'att-late': isLate(item.row, d.day) }"
 										:style="{ background: cellOf(item.row, d.day).bg, color: cellOf(item.row, d.day).fg }"
-									>{{ item.row.cells[d.day] }}<i v-if="isLate(item.row, d.day)"></i></span>
+									>{{ cellOf(item.row, d.day).letter }}<i v-if="isLate(item.row, d.day)"></i></span>
 									<span v-else-if="d.is_future" class="att-empty"></span>
 									<span v-else-if="!d.is_weekend && !d.is_holiday" class="att-none">·</span>
 								</td>
@@ -403,7 +409,7 @@ defineExpose({ exportCsv, exportXlsx, reload: load });
 			<div v-if="selectMode && selectedCount" class="att-bulkbar">
 				<span class="fw-semibold">{{ selectedCount }} {{ t("selected") }}</span>
 				<span class="text-secondary small mx-2">{{ t("Mark as") }}:</span>
-				<button v-for="(c, code) in CODES" :key="code" type="button" class="att-bulk-chip" :disabled="saving" :style="{ background: c.bg, color: c.fg }" :title="c.label()" @click="applyBulk(code)">{{ code }}</button>
+				<button v-for="(c, code) in CODES" :key="code" type="button" class="att-bulk-chip" :disabled="saving" :style="{ background: c.bg, color: c.fg }" :title="c.label()" @click="applyBulk(code)"><b>{{ c.letter }}</b> · {{ c.label() }}</button>
 				<button type="button" class="btn btn-sm btn-ghost-danger ms-1" :disabled="saving" @click="applyBulk(null)"><i class="ti ti-eraser me-1"></i>{{ t("Clear") }}</button>
 				<button type="button" class="btn btn-sm btn-link link-secondary ms-auto" @click="clearSelection">{{ t("Cancel") }}</button>
 			</div>
@@ -432,7 +438,7 @@ defineExpose({ exportCsv, exportXlsx, reload: load });
 							:style="editor.form.status === STATUS_BY_CODE[code] ? { background: c.bg, color: c.fg, borderColor: c.fg } : {}"
 							:title="c.label()"
 							@click="pickStatus(code)"
-						>{{ code }}</button>
+						><b>{{ c.letter }}</b> · {{ c.label() }}</button>
 					</div>
 
 					<!-- In / Out -->
