@@ -99,7 +99,12 @@ Admin,Yönetici
 Administer users & roles,Kullanıcı ve rol yönetimi
 Advance,Avans
 Advance amount,
+Advance deduction,Avans kesintisi
+Advance deduction cannot be negative.,Avans kesintisi negatif olamaz.
 Advance paid,Ödenen avans
+Advance paid.,Avans ödendi.
+Advance sent for approval.,Avans onaya gönderildi.
+Advances,Avanslar
 Against,Karşılığı
 Aging,Yaşlandırma
 Alerts,
@@ -379,7 +384,9 @@ Cheque,Çek
 Cheque / transfer ref,Çek / havale referansı
 Cheque no.,Çek no.
 Chocolate,
+Choose a cash/bank account.,Bir kasa/banka hesabı seçin.
 Choose a statement file first.,Önce bir ekstre dosyası seçin.
+Choose an employee.,Bir çalışan seçin.
 Choose the retail shop warehouse before selling.,
 City,
 Claim,Talep
@@ -586,6 +593,7 @@ Debit note for,
 Debit notes:,
 Deducted from worked time daily.,
 Deducted per each step interval of lateness.,
+Deduction exceeds the outstanding advance balance.,"Kesinti, kalan avans bakiyesini aşıyor."
 Deductions,Kesintiler
 Default,Varsayılan
 Default Exchange Gain/Loss Account is missing for company {0}. ,
@@ -721,6 +729,7 @@ Edit customer,Müşteriyi düzenle
 Edit device,
 Edit draft,
 Edit field user,Saha kullanıcısını düzenle
+Edit journal entry,Yevmiye kaydını düzenle
 Edit mapping,
 Edit outlet,Satış noktasını düzenle
 Edit photo report,Fotoğraf raporunu düzenle
@@ -763,6 +772,7 @@ End Date must be on or after Start Date.,"Bitiş Tarihi, Başlangıç Tarihinden
 End of ledger,
 Enforcement,Zorlama
 Enter a quantity for at least one row.,En az bir satır için miktar girin.
+Enter an amount greater than zero.,Sıfırdan büyük bir tutar girin.
 Enter at least one count that differs from the system quantity.,Sistem miktarından farklı en az bir sayım girin.
 Enter at least one return qty.,En az bir iade miktarı girin.
 Enter cost and term to see the payment schedule.,Ödeme planını görmek için maliyet ve vadeyi girin.
@@ -945,6 +955,7 @@ Failed to load work orders.,
 Failed to load.,Yüklenemedi.
 Failed to move deal.,Fırsat taşınamadı.
 Failed to move ticket.,Talep taşınamadı.
+Failed to pay advance.,Avans ödenemedi.
 Failed to preview collection.,
 Failed to record payment.,Ödeme kaydedilemedi.
 Failed to refresh claim.,Talep yenilenemedi.
@@ -974,6 +985,7 @@ Failed to switch language.,Dil değiştirilemedi.
 Failed to toggle status.,
 Failed to update bill.,Fatura güncellenemedi.
 Failed to update color.,
+Failed to update journal entry.,Yevmiye kaydı güncellenemedi.
 Failed to update promo plan.,Promosyon planı güncellenemedi.
 Failed to update status.,Durum güncellenemedi.
 Far district,
@@ -1340,6 +1352,7 @@ Monthly installment,Aylık taksit
 Monthly run-rate,Aylık ciro
 Move to Under Review,İncelemeye Al
 Movement,Hareket
+Movements,Hareketler
 Multi-Currency Parties,
 Multi-level approval incomplete,
 Multiplier (× hourly rate),
@@ -1516,6 +1529,7 @@ No matches found,Eşleşme bulunamadı
 No matching items,
 "No matching vouchers found. Create a payment, or widen the date/amount window.",Eşleşen belge bulunamadı. Bir ödeme oluşturun veya tarih/tutar aralığını genişletin.
 No materials to stage,
+No movements yet.,Henüz hareket yok.
 No new Version rows since the last seal.,
 No open exceptions,
 No open reservations,Açık rezervasyon yok
@@ -1525,6 +1539,7 @@ No org chart yet,Henüz organizasyon şeması yok
 No outlets in this route yet.,Bu rotada henüz satış noktası yok.
 No outlets yet,Henüz satış noktası yok
 No outlets.,Nokta yok.
+No outstanding advances,Bekleyen avans yok
 No outstanding balances,Açık bakiye yok
 No overdue installments.,Gecikmiş taksit yok.
 No payments in this range,Bu aralıkta ödeme yok
@@ -1664,6 +1679,7 @@ Only pending schedule rows can be rescheduled.,
 Only submitted Sales Orders can be closed.,
 Only submitted Sales Orders can be reopened.,
 Only submitted invoices can be returned.,Yalnızca onaylanmış faturalar iade alabilir.
+Only with a balance,Yalnızca bakiyesi olanlar
 Only with balance,Yalnızca bakiyesi olanlar
 Open,Açık
 Open AR,Açık alacak
@@ -1717,6 +1733,7 @@ Outlet name is required.,Satış noktası adı zorunludur.
 Outlet {0} appears twice on this route.,{0} satış noktası bu rotada iki kez görünüyor.
 Outlets,Satış Noktaları
 Outstanding,Açık
+Outstanding advance,Kalan avans
 Outstanding customer balances for field teams.,
 Overdue,Gecikmiş
 Overdue installments,Gecikmiş taksitler
@@ -1766,7 +1783,10 @@ Pause failed.,Duraklama başarısız.
 Pause this Work Order?,
 Pause this Work Order? You can resume it later.,Bu iş emri duraklatılsın mı? Daha sonra devam ettirebilirsiniz.
 Pay,Öde
+Pay advance,Avans öde
+"Pay an advance, or turn off the balance filter to see everyone.",Avans ödeyin veya herkesi görmek için bakiye filtresini kapatın.
 Pay from,Ödeme kaynağı
+Pay from (cash/bank),Nereden (kasa/banka)
 Pay supplier,Tedarikçiye öde
 "Pay-formula inputs: overtime rate, KPI pool share, and per-day transport by region band.","Maaş formülü girdileri: fazla mesai oranı, KPI havuz payı ve bölgeye göre günlük ulaşım."
 Payable,Borç
@@ -2006,6 +2026,8 @@ Record & new,Kaydet ve yeni
 Record a sale,Satış kaydet
 Record production,Üretim kaydet
 Record stock movements,Stok hareketi kaydı
+Recovered,Tahsil edilen
+Recovered from net pay this period; reduces the outstanding balance. Locked periods are read-only.,Bu dönemin net ödemesinden tahsil edilir; bakiyeyi azaltır. Kilitli dönemler salt okunur.
 Recurring monthly run-rate — the pipeline forecast.,Tekrarlayan aylık ciro — satış hattı tahmini.
 Ref No.,
 Reference,Referans
@@ -2236,11 +2258,13 @@ Search customers…,Müşteri ara…
 Search customer…,Müşteri ara…
 Search deals…,Anlaşma ara…
 Search employees…,Çalışan ara…
+Search employee… ⌘K,Çalışan ara… ⌘K
 Search item code or name…,Ürün kodu veya adı ara…
 Search item...,
 Search items…,Ürün ara…
 Search item…,Ürün ara…
 Search leads…,Potansiyel ara…
+Search name…,İsimle ara…
 Search outlets,Nokta ara
 Search outlets…,Satış noktası ara…
 Search processes…,Süreçleri ara…
@@ -2707,6 +2731,7 @@ Weekly,Haftalık
 Weekly off days,
 Weight,Ağırlık
 Welcome to Stabler,Stabler'a Hoş Geldiniz
+What is this advance for?,Bu avans ne için?
 What is this entry for?,Bu kayıt ne için?
 WhatsApp,WhatsApp
 When,Ne zaman
@@ -2739,6 +2764,7 @@ Work done,Yapılan işler
 Work done is required.,
 Work mode,
 Worked,
+Workers with advances,Avanslı çalışanlar
 Working,İşleniyor
 Workspace,
 Write,Yaz
@@ -2755,6 +2781,7 @@ You have already approved level {0} for this request.,
 You have no approval requests,Onay talebiniz yok
 You have unsaved changes. Leaving this page will discard them.,
 "You must hold an HR Manager, System Manager, or Stabler Admin role to lock a payroll period.",
+You need a payroll/HR role to manage employee advances.,Avansları yönetmek için bordro/İK rolü gerekir.
 You need a payroll/HR role to view computed pay.,Hesaplanan maaşı görmek için bordro/İK rolü gerekir.
 You need administrator access to view this page.,Bu sayfayı görüntülemek için yönetici erişimine ihtiyacınız var.
 You raised this request — it must be approved by someone else.,
@@ -2862,6 +2889,7 @@ yr,yıl
 —,—
 — Any device —,
 — Choose account —,— Hesap seçin —
+— No party —,— Taraf yok —
 — auto from customer —,— müşteriden otomatik —
 — auto from supplier —,— tedarikçiden otomatik —
 — company default —,— şirket varsayılanı —

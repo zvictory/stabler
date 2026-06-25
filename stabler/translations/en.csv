@@ -99,7 +99,12 @@ Admin,Admin
 Administer users & roles,Administer users & roles
 Advance,Advance
 Advance amount,Advance amount
+Advance deduction,Advance deduction
+Advance deduction cannot be negative.,Advance deduction cannot be negative.
 Advance paid,Advance paid
+Advance paid.,Advance paid.
+Advance sent for approval.,Advance sent for approval.
+Advances,Advances
 Against,Against
 Aging,Aging
 Alerts,Alerts
@@ -379,7 +384,9 @@ Cheque,Cheque
 Cheque / transfer ref,Cheque / transfer ref
 Cheque no.,Cheque no.
 Chocolate,Chocolate
+Choose a cash/bank account.,Choose a cash/bank account.
 Choose a statement file first.,Choose a statement file first.
+Choose an employee.,Choose an employee.
 Choose the retail shop warehouse before selling.,Choose the retail shop warehouse before selling.
 City,City
 Claim,Claim
@@ -589,6 +596,7 @@ Debit note for,Debit note for
 Debit notes:,Debit notes:
 Deducted from worked time daily.,Deducted from worked time daily.
 Deducted per each step interval of lateness.,Deducted per each step interval of lateness.
+Deduction exceeds the outstanding advance balance.,Deduction exceeds the outstanding advance balance.
 Deductions,Deductions
 Default,Default
 Default Exchange Gain/Loss Account is missing for company {0}. ,Default Exchange Gain/Loss Account is missing for company {0}. 
@@ -725,6 +733,7 @@ Edit customer,Edit customer
 Edit device,Edit device
 Edit draft,Edit draft
 Edit field user,Edit field user
+Edit journal entry,Edit journal entry
 Edit mapping,Edit mapping
 Edit outlet,Edit outlet
 Edit photo report,Edit photo report
@@ -768,6 +777,7 @@ End of ledger,End of ledger
 Enforcement,Enforcement
 Enter a quantity for at least one row.,Enter a quantity for at least one row.
 Enter amount and commission to see preview.,Enter amount and commission to see preview.
+Enter an amount greater than zero.,Enter an amount greater than zero.
 Enter at least one count that differs from the system quantity.,Enter at least one count that differs from the system quantity.
 Enter at least one return qty.,Enter at least one return qty.
 Enter cost and term to see the payment schedule.,Enter cost and term to see the payment schedule.
@@ -950,6 +960,7 @@ Failed to load work orders.,Failed to load work orders.
 Failed to load.,Failed to load.
 Failed to move deal.,Failed to move deal.
 Failed to move ticket.,Failed to move ticket.
+Failed to pay advance.,Failed to pay advance.
 Failed to preview collection.,Failed to preview collection.
 Failed to record payment.,Failed to record payment.
 Failed to refresh claim.,Failed to refresh claim.
@@ -979,6 +990,7 @@ Failed to switch language.,Failed to switch language.
 Failed to toggle status.,Failed to toggle status.
 Failed to update bill.,Failed to update bill.
 Failed to update color.,Failed to update color.
+Failed to update journal entry.,Failed to update journal entry.
 Failed to update promo plan.,Failed to update promo plan.
 Failed to update status.,Failed to update status.
 Far district,Far district
@@ -1346,6 +1358,7 @@ Monthly installment,Monthly installment
 Monthly run-rate,Monthly run-rate
 Move to Under Review,Move to Under Review
 Movement,Movement
+Movements,Movements
 Multi-Currency Parties,Multi-Currency Parties
 Multi-level approval incomplete,Multi-level approval incomplete
 Multiplier (× hourly rate),Multiplier (× hourly rate)
@@ -1522,6 +1535,7 @@ No matches found,No matches found
 No matching items,No matching items
 "No matching vouchers found. Create a payment, or widen the date/amount window.","No matching vouchers found. Create a payment, or widen the date/amount window."
 No materials to stage,No materials to stage
+No movements yet.,No movements yet.
 No new Version rows since the last seal.,No new Version rows since the last seal.
 No open exceptions,No open exceptions
 No open reservations,No open reservations
@@ -1531,6 +1545,7 @@ No org chart yet,No org chart yet
 No outlets in this route yet.,No outlets in this route yet.
 No outlets yet,No outlets yet
 No outlets.,No outlets.
+No outstanding advances,No outstanding advances
 No outstanding balances,No outstanding balances
 No overdue installments.,No overdue installments.
 No payments in this range,No payments in this range
@@ -1671,6 +1686,7 @@ Only pending schedule rows can be rescheduled.,Only pending schedule rows can be
 Only submitted Sales Orders can be closed.,Only submitted Sales Orders can be closed.
 Only submitted Sales Orders can be reopened.,Only submitted Sales Orders can be reopened.
 Only submitted invoices can be returned.,Only submitted invoices can be returned.
+Only with a balance,Only with a balance
 Only with balance,Only with balance
 Open,Open
 Open AR,Open AR
@@ -1725,6 +1741,7 @@ Outlet name is required.,Outlet name is required.
 Outlet {0} appears twice on this route.,Outlet {0} appears twice on this route.
 Outlets,Outlets
 Outstanding,Outstanding
+Outstanding advance,Outstanding advance
 Outstanding customer balances for field teams.,Outstanding customer balances for field teams.
 Overdue,Overdue
 Overdue installments,Overdue installments
@@ -1774,7 +1791,10 @@ Pause failed.,Pause failed.
 Pause this Work Order?,Pause this Work Order?
 Pause this Work Order? You can resume it later.,Pause this Work Order? You can resume it later.
 Pay,Pay
+Pay advance,Pay advance
+"Pay an advance, or turn off the balance filter to see everyone.","Pay an advance, or turn off the balance filter to see everyone."
 Pay from,Pay from
+Pay from (cash/bank),Pay from (cash/bank)
 Pay supplier,Pay supplier
 "Pay-formula inputs: overtime rate, KPI pool share, and per-day transport by region band.","Pay-formula inputs: overtime rate, KPI pool share, and per-day transport by region band."
 Payable,Payable
@@ -2015,6 +2035,8 @@ Record & new,Record & new
 Record a sale,Record a sale
 Record production,Record production
 Record stock movements,Record stock movements
+Recovered,Recovered
+Recovered from net pay this period; reduces the outstanding balance. Locked periods are read-only.,Recovered from net pay this period; reduces the outstanding balance. Locked periods are read-only.
 Recurring monthly run-rate — the pipeline forecast.,Recurring monthly run-rate — the pipeline forecast.
 Ref No.,Ref No.
 Reference,Reference
@@ -2246,11 +2268,13 @@ Search customers…,Search customers…
 Search customer…,Search customer…
 Search deals…,Search deals…
 Search employees…,Search employees…
+Search employee… ⌘K,Search employee… ⌘K
 Search item code or name…,Search item code or name…
 Search item...,Search item...
 Search items…,Search items…
 Search item…,Search item…
 Search leads…,Search leads…
+Search name…,Search name…
 Search outlets,Search outlets
 Search outlets…,Search outlets…
 Search processes…,Search processes…
@@ -2718,6 +2742,7 @@ Weekly,Weekly
 Weekly off days,Weekly off days
 Weight,Weight
 Welcome to Stabler,Welcome to Stabler
+What is this advance for?,What is this advance for?
 What is this entry for?,What is this entry for?
 WhatsApp,WhatsApp
 When,When
@@ -2750,6 +2775,7 @@ Work done,Work done
 Work done is required.,Work done is required.
 Work mode,Work mode
 Worked,Worked
+Workers with advances,Workers with advances
 Working,Working
 Workspace,Workspace
 Write,Write
@@ -2766,6 +2792,7 @@ You have already approved level {0} for this request.,You have already approved 
 You have no approval requests,You have no approval requests
 You have unsaved changes. Leaving this page will discard them.,You have unsaved changes. Leaving this page will discard them.
 "You must hold an HR Manager, System Manager, or Stabler Admin role to lock a payroll period.","You must hold an HR Manager, System Manager, or Stabler Admin role to lock a payroll period."
+You need a payroll/HR role to manage employee advances.,You need a payroll/HR role to manage employee advances.
 You need a payroll/HR role to view computed pay.,You need a payroll/HR role to view computed pay.
 You need administrator access to view this page.,You need administrator access to view this page.
 You raised this request — it must be approved by someone else.,You raised this request — it must be approved by someone else.
@@ -2873,6 +2900,7 @@ yr,yr
 —,—
 — Any device —,— Any device —
 — Choose account —,— Choose account —
+— No party —,— No party —
 — auto from customer —,— auto from customer —
 — auto from supplier —,— auto from supplier —
 — company default —,— company default —

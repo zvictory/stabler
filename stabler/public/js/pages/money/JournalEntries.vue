@@ -11,6 +11,7 @@ import MoneyInput from "../../components/MoneyInput.vue";
 import DateInput from "../../components/DateInput.vue";
 import EmptyState from "../../components/EmptyState.vue";
 import Select from "../../components/Select.vue";
+import Typeahead from "../../components/Typeahead.vue";
 
 const session = useSession();
 const route = useRoute();
@@ -50,8 +51,27 @@ const submitError = ref("");
 const accountsLoading = ref(false);
 const accountOptions = ref([]); // posting accounts (is_group=0) for the active company
 
-const emptyRow = () => ({ account: "", debit: null, credit: null });
+const emptyRow = () => ({
+	account: "",
+	account_currency: "",
+	party_type: "",
+	party: "",
+	party_name: "",
+	debit: null,
+	credit: null,
+});
 const form = ref(blankForm());
+
+// The Journal Entry being edited (draft). null = creating a new one.
+const editName = ref(null);
+const isEdit = computed(() => !!editName.value);
+
+const PARTY_TYPES = computed(() => [
+	{ value: "", label: t("— No party —") },
+	{ value: "Employee", label: t("Employee") },
+	{ value: "Customer", label: t("Customer") },
+	{ value: "Supplier", label: t("Supplier") },
+]);
 
 function blankForm() {
 	return {
@@ -62,6 +82,38 @@ function blankForm() {
 		cheque_date: "",
 		accounts: [emptyRow(), emptyRow()],
 	};
+}
+
+// Per-line party search by name (codes resolve to human-readable names).
+function searchParty(row) {
+	return async (q) => {
+		if (!row.party_type || !activeCompany.value) return [];
+		if (row.party_type === "Customer") {
+			const r = await call("stabler.api.sales.list_customers", { company: activeCompany.value, search: q, limit: 10 });
+			return (r || []).map((x) => ({ value: x.name, label: x.customer_name || x.name }));
+		}
+		if (row.party_type === "Supplier") {
+			const r = await call("stabler.api.purchasing.list_suppliers", { company: activeCompany.value, search: q, limit: 10 });
+			return (r || []).map((x) => ({ value: x.name, label: x.supplier_name || x.name }));
+		}
+		const r = await call("stabler.api.hr.list_employees", { company: activeCompany.value, search: q, limit: 10 });
+		return (r || []).map((x) => ({ value: x.name, label: x.employee_name || x.name }));
+	};
+}
+
+function pickParty(row, item) {
+	row.party = item.value;
+	row.party_name = item.label;
+}
+
+function onPartyTypeChange(row) {
+	row.party = "";
+	row.party_name = "";
+}
+
+function onAccountChange(row) {
+	const a = accountOptions.value.find((o) => o.name === row.account);
+	row.account_currency = (a && a.account_currency) || currencyCode.value;
 }
 
 const currencyCode = computed(
@@ -97,9 +149,39 @@ async function loadAccountOptions() {
 
 async function openCreate() {
 	form.value = blankForm();
+	editName.value = null;
 	submitError.value = "";
 	createOpen.value = true;
 	if (!accountOptions.value.length) await loadAccountOptions();
+}
+
+// Load a DRAFT entry into the editor. Skips the auto fx-rounding line — it is
+// re-derived on save by the backend hook.
+async function openEdit(d) {
+	submitError.value = "";
+	if (!accountOptions.value.length) await loadAccountOptions();
+	editName.value = d.name;
+	form.value = {
+		posting_date: d.posting_date,
+		voucher_type: d.voucher_type || "Journal Entry",
+		user_remark: d.user_remark || "",
+		cheque_no: d.cheque_no || "",
+		cheque_date: d.cheque_date || "",
+		accounts: (d.accounts || [])
+			.filter((a) => !a.is_fx_rounding)
+			.map((a) => ({
+				account: a.account,
+				account_currency: a.account_currency || currencyCode.value,
+				party_type: a.party_type || "",
+				party: a.party || "",
+				party_name: a.party_name || "",
+				debit: a.debit_in_account_currency || null,
+				credit: a.credit_in_account_currency || null,
+			})),
+	};
+	while (form.value.accounts.length < 2) form.value.accounts.push(emptyRow());
+	detailOpen.value = false;
+	createOpen.value = true;
 }
 
 function closeCreate() {
@@ -134,10 +216,14 @@ async function submitCreate() {
 		submitError.value = `${t("Debit")} ${totalDebit.value.toFixed(2)} ≠ ${t("Credit")} ${totalCredit.value.toFixed(2)}`;
 		return;
 	}
+	// Empty lines (no account, or zero debit AND credit) are dropped here AND on
+	// the backend, so a stray blank row can never block the save.
 	const accounts = form.value.accounts
 		.filter((r) => r.account && (Number(r.debit) || Number(r.credit)))
 		.map((r) => ({
 			account: r.account,
+			party_type: r.party_type || undefined,
+			party: r.party || undefined,
 			debit: Number(r.debit) || 0,
 			credit: Number(r.credit) || 0,
 		}));
@@ -147,19 +233,30 @@ async function submitCreate() {
 	}
 	submitting.value = true;
 	try {
-		await call("stabler.api.money.create_journal_entry", {
-			company: activeCompany.value,
-			posting_date: form.value.posting_date,
-			voucher_type: form.value.voucher_type,
-			user_remark: form.value.user_remark || undefined,
-			cheque_no: form.value.cheque_no || undefined,
-			cheque_date: form.value.cheque_date || undefined,
-			accounts,
-		});
+		if (isEdit.value) {
+			await call("stabler.api.money.update_journal_entry", {
+				name: editName.value,
+				posting_date: form.value.posting_date,
+				user_remark: form.value.user_remark || undefined,
+				cheque_no: form.value.cheque_no || undefined,
+				cheque_date: form.value.cheque_date || undefined,
+				accounts,
+			});
+		} else {
+			await call("stabler.api.money.create_journal_entry", {
+				company: activeCompany.value,
+				posting_date: form.value.posting_date,
+				voucher_type: form.value.voucher_type,
+				user_remark: form.value.user_remark || undefined,
+				cheque_no: form.value.cheque_no || undefined,
+				cheque_date: form.value.cheque_date || undefined,
+				accounts,
+			});
+		}
 		createOpen.value = false;
 		await load();
 	} catch (err) {
-		submitError.value = err?.message || t("Failed to create journal entry.");
+		submitError.value = err?.message || (isEdit.value ? t("Failed to update journal entry.") : t("Failed to create journal entry."));
 	} finally {
 		submitting.value = false;
 	}
@@ -313,6 +410,14 @@ watch(activeCompany, () => {
 	>
 		<div class="offcanvas-header">
 			<h5 class="offcanvas-title">{{ t("Journal Entry") }}</h5>
+			<button
+				v-if="detail && !detail.error && detail.docstatus === 0"
+				type="button"
+				class="btn btn-sm btn-outline-primary ms-auto me-2"
+				@click="openEdit(detail)"
+			>
+				<i class="ti ti-pencil me-1"></i>{{ t("Edit") }}
+			</button>
 			<button type="button" class="btn-close" @click="closeDetail" aria-label="Close"></button>
 		</div>
 		<div class="offcanvas-body">
@@ -398,7 +503,10 @@ watch(activeCompany, () => {
 		<div class="modal-dialog modal-lg modal-dialog-centered modal-dialog-scrollable" role="document">
 			<div class="modal-content">
 				<div class="modal-header">
-					<h5 class="modal-title">{{ t("New journal entry") }}</h5>
+					<h5 class="modal-title">
+						{{ isEdit ? t("Edit journal entry") : t("New journal entry") }}
+						<span v-if="isEdit" class="text-secondary fw-normal font-monospace small ms-1">· {{ editName }}</span>
+					</h5>
 					<button type="button" class="btn-close" aria-label="Close" @click="closeCreate"></button>
 				</div>
 				<div class="modal-body">
@@ -436,9 +544,10 @@ watch(activeCompany, () => {
 						<table class="table table-sm table-vcenter mb-0">
 							<thead>
 								<tr>
-									<th>{{ t("Account") }}</th>
-									<th class="text-end" style="width: 160px">{{ t("Debit") }}</th>
-									<th class="text-end" style="width: 160px">{{ t("Credit") }}</th>
+									<th style="min-width: 200px">{{ t("Account") }}</th>
+									<th style="min-width: 220px">{{ t("Party") }}</th>
+									<th class="text-end" style="width: 150px">{{ t("Debit") }}</th>
+									<th class="text-end" style="width: 150px">{{ t("Credit") }}</th>
 									<th class="w-1"></th>
 								</tr>
 							</thead>
@@ -451,15 +560,40 @@ watch(activeCompany, () => {
 											:options="accountOptions"
 											value-key="name"
 											:placeholder="t('— Choose account —')"
+											@change="onAccountChange(row)"
 										>
 											<template #option="{ option }">{{ option.account_number ? `${option.account_number} · ` : "" }}{{ option.account_name }}</template>
 											<template #selected="{ option }">{{ option.account_number ? `${option.account_number} · ` : "" }}{{ option.account_name }}</template>
 										</Select>
 									</td>
 									<td>
+										<div class="d-flex gap-1">
+											<Select
+												v-model="row.party_type"
+												size="sm"
+												:options="PARTY_TYPES"
+												style="max-width: 96px"
+												@change="onPartyTypeChange(row)"
+											/>
+											<Typeahead
+												v-if="row.party_type"
+												:model-value="row.party"
+												:search="searchParty(row)"
+												:display="row.party_name"
+												size="sm"
+												class="flex-fill"
+												:placeholder="t('Search name…')"
+												@pick="(item) => pickParty(row, item)"
+												@clear="() => onPartyTypeChange(row)"
+											>
+												<template #option="{ item }">{{ item.label }}</template>
+											</Typeahead>
+										</div>
+									</td>
+									<td>
 										<MoneyInput
 											v-model="row.debit"
-											:currency="currencyCode"
+											:currency="row.account_currency || currencyCode"
 											:language="user.language"
 											size="sm"
 											@blur="onDebitInput(row)"
@@ -468,7 +602,7 @@ watch(activeCompany, () => {
 									<td>
 										<MoneyInput
 											v-model="row.credit"
-											:currency="currencyCode"
+											:currency="row.account_currency || currencyCode"
 											:language="user.language"
 											size="sm"
 											@blur="onCreditInput(row)"
@@ -489,7 +623,7 @@ watch(activeCompany, () => {
 							</tbody>
 							<tfoot>
 								<tr class="fw-bold">
-									<td>
+									<td colspan="2">
 										<button type="button" class="btn btn-sm btn-ghost-primary" @click="addRow">
 											<i class="ti ti-plus me-1"></i>{{ t("Add row") }}
 										</button>
@@ -524,7 +658,7 @@ watch(activeCompany, () => {
 						:disabled="submitting || !balanced || accountsLoading"
 					>
 						<span v-if="submitting" class="spinner-border spinner-border-sm me-1"></span>
-						{{ t("Save as Draft") }}
+						{{ isEdit ? t("Save changes") : t("Save as Draft") }}
 					</button>
 				</div>
 			</div>

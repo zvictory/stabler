@@ -39,7 +39,8 @@
   "column_break_4",
   "kpi_adjustment",
   "region_rate",
-  "kpi_performance_pct"
+  "kpi_performance_pct",
+  "advance_deduction"
  ],
  "fields": [
   {"fieldname": "employee", "fieldtype": "Link", "label": "Employee", "options": "Employee", "reqd": 1, "in_list_view": 1},
@@ -75,7 +76,8 @@
   {"fieldname": "column_break_4", "fieldtype": "Column Break"},
   {"fieldname": "kpi_adjustment", "fieldtype": "Currency", "label": "KPI Adjustment"},
   {"fieldname": "region_rate", "fieldtype": "Currency", "label": "Region Rate"},
-  {"fieldname": "kpi_performance_pct", "fieldtype": "Percent", "label": "KPI Performance %", "default": "0", "description": "Employee's performance score (0-100) for this period. Pays out their share of the KPI pool (see rule set KPI pool share %)."}
+  {"fieldname": "kpi_performance_pct", "fieldtype": "Percent", "label": "KPI Performance %", "default": "0", "description": "Employee's performance score (0-100) for this period. Pays out their share of the KPI pool (see rule set KPI pool share %)."},
+  {"fieldname": "advance_deduction", "fieldtype": "Currency", "label": "Advance Deduction", "default": "0", "description": "Salary advance recovered from net pay this period. Reduces the employee's outstanding advance balance."}
  ],
  "links": [],
  "modified": "2026-06-16 10:00:00.000000",

@@ -100,7 +100,12 @@ Admin,Admin
 Administer users & roles,Foydalanuvchilar va rollarni boshqarish
 Advance,Avans
 Advance amount,
+Advance deduction,Avans ushlab qolish
+Advance deduction cannot be negative.,Avans ushlash manfiy bo'lishi mumkin emas.
 Advance paid,Avans to'landi
+Advance paid.,Avans to'landi.
+Advance sent for approval.,Avans tasdiqqa yuborildi.
+Advances,Avanslar
 Against,Qarshi
 Aging,Muddat taqsimoti
 Alerts,
@@ -381,7 +386,9 @@ Cheque,Chek
 Cheque / transfer ref,Chek / o'tkazma havolasi
 Cheque no.,Chek raqami
 Chocolate,
+Choose a cash/bank account.,Kassa/bank hisobini tanlang.
 Choose a statement file first.,Avval ko'chirma faylini tanlang.
+Choose an employee.,Xodimni tanlang.
 Choose the retail shop warehouse before selling.,
 City,
 Claim,Da'vo
@@ -591,6 +598,7 @@ Debit note for,
 Debit notes:,
 Deducted from worked time daily.,
 Deducted per each step interval of lateness.,
+Deduction exceeds the outstanding advance balance.,Ushlash avans qoldig'idan oshib ketdi.
 Deductions,Ushlanmalar
 Default,Asosiy
 Default Exchange Gain/Loss Account is missing for company {0}. ,
@@ -727,6 +735,7 @@ Edit customer,Xaridorni tahrirlash
 Edit device,
 Edit draft,
 Edit field user,Maydon foydalanuvchisini tahrirlash
+Edit journal entry,Provodkani tahrirlash
 Edit mapping,
 Edit outlet,Savdo nuqtasini tahrirlash
 Edit photo report,Fotosuratli hisobotni tahrirlash
@@ -770,6 +779,7 @@ End of ledger,
 Enforcement,Majburlash
 Enter a quantity for at least one row.,Kamida bitta qator uchun miqdor kiriting.
 Enter amount and commission to see preview.,Ko'rib chiqish uchun summa va komissiyani kiriting.
+Enter an amount greater than zero.,Noldan katta summa kiriting.
 Enter at least one count that differs from the system quantity.,Tizimdagi miqdordan farq qiladigan kamida bitta sanoqni kiriting.
 Enter at least one return qty.,Kamida bitta qaytarish miqdorini kiriting.
 Enter cost and term to see the payment schedule.,To'lov jadvalini ko'rish uchun tannarx va muddatni kiriting.
@@ -952,6 +962,7 @@ Failed to load work orders.,
 Failed to load.,Yuklashda xato.
 Failed to move deal.,Bitimni ko'chirish muvaffaqiyatsiz bo'ldi.
 Failed to move ticket.,Murojaatni ko'chirib bo'lmadi.
+Failed to pay advance.,Avans to'lab bo'lmadi.
 Failed to preview collection.,
 Failed to record payment.,To'lovni qaydda xato.
 Failed to refresh claim.,Shikoyatni yangilanishda xato.
@@ -981,6 +992,7 @@ Failed to switch language.,Tilni almashtirib bo'lmadi.
 Failed to toggle status.,
 Failed to update bill.,Hisobni yangilab bo'lmadi.
 Failed to update color.,
+Failed to update journal entry.,Provodkani yangilab bo'lmadi.
 Failed to update promo plan.,Promo rejasini yangilashda xato.
 Failed to update status.,Holatni yangilashda xato.
 Far district,
@@ -1348,6 +1360,7 @@ Monthly installment,Oylik to'lov
 Monthly run-rate,Oylik aylanma
 Move to Under Review,Tekshirish ostiga ko'chirish
 Movement,Harakat
+Movements,Harakatlar
 Multi-Currency Parties,
 Multi-level approval incomplete,
 Multiplier (× hourly rate),
@@ -1524,6 +1537,7 @@ No matches found,Mos keluvchilar topilmadi
 No matching items,
 "No matching vouchers found. Create a payment, or widen the date/amount window.",Mos hujjatlar topilmadi. To'lov yarating yoki sana/summa oynasini kengaytiring.
 No materials to stage,
+No movements yet.,Hozircha harakatlar yo'q.
 No new Version rows since the last seal.,
 No open exceptions,
 No open reservations,Ochiq zahiralar yo'q
@@ -1533,6 +1547,7 @@ No org chart yet,Hali tashkiliy sxema yo'q
 No outlets in this route yet.,Bu marshrutda hali filiallari yo'q.
 No outlets yet,Hali filiallari yo'q
 No outlets.,Nuqtalar yo'q.
+No outstanding advances,Qoldiq avanslar yo'q
 No outstanding balances,O'tkazib beriladigan balanslar yo'q
 No overdue installments.,Muddati o'tgan to'lovlar yo'q.
 No payments in this range,Bu oraliqda to'lovlar yo'q
@@ -1673,6 +1688,7 @@ Only pending schedule rows can be rescheduled.,
 Only submitted Sales Orders can be closed.,
 Only submitted Sales Orders can be reopened.,
 Only submitted invoices can be returned.,Faqat topshirilgan hisob-fakturalar qaytarilishi mumkin.
+Only with a balance,Faqat balansi borlar
 Only with balance,Faqat balansi bilan
 Open,Ochiq
 Open AR,Ochiq qarz
@@ -1727,6 +1743,7 @@ Outlet name is required.,Savdo nuqtasi nomi talab qilinadi.
 Outlet {0} appears twice on this route.,Savdo nuqtasi {0} bu marshrutda ikki marta uchraydi.
 Outlets,Savdo nuqtalari
 Outstanding,Qolgan
+Outstanding advance,Avans qoldig'i
 Outstanding customer balances for field teams.,
 Overdue,Muddati o'tgan
 Overdue installments,Muddati o'tgan to'lovlar
@@ -1777,7 +1794,10 @@ Pause failed.,To'xtatish muvaffaqiyatsiz.
 Pause this Work Order?,
 Pause this Work Order? You can resume it later.,Bu buyurtmani to'xtatilsinmi? Keyinroq davom ettirishingiz mumkin.
 Pay,To'lash
+Pay advance,Avans berish
+"Pay an advance, or turn off the balance filter to see everyone.",Avans bering yoki hammani ko'rish uchun balans filtrini o'chiring.
 Pay from,Qayerdan to'lash
+Pay from (cash/bank),Qayerdan (kassa/bank)
 Pay supplier,Yetkazib beruvchiga to'lash
 "Pay-formula inputs: overtime rate, KPI pool share, and per-day transport by region band.","Oylik formulasi parametrlari: qo'shimcha ish stavkasi, KPI fond ulushi va hudud bo'yicha kunlik transport."
 Payable,To'lanadi
@@ -2018,6 +2038,8 @@ Record & new,Yozib yangi
 Record a sale,Sotuvni qayd qiling
 Record production,Ishlab chiqarishni qayd etish
 Record stock movements,Zaxira harakatini qayd etish
+Recovered,Ushlab qolingan
+Recovered from net pay this period; reduces the outstanding balance. Locked periods are read-only.,Shu davr sof to'lovidan ushlab qolinadi; qoldiqni kamaytiradi. Qulflangan davrlar faqat o'qish uchun.
 Recurring monthly run-rate — the pipeline forecast.,Takroriy oylik aylanma — voronka prognozi.
 Ref No.,
 Reference,Havolа
@@ -2249,11 +2271,13 @@ Search customers…,Xaridorlarni qidirish…
 Search customer…,Mijozni qidirish…
 Search deals…,Bitimlarni qidirish…
 Search employees…,Xodimlarni qidirish…
+Search employee… ⌘K,Xodimni qidirish… ⌘K
 Search item code or name…,Tovar kodini yoki nomini qidirish…
 Search item...,
 Search items…,Tovarlarni qidirish…
 Search item…,Tovarni qidirish…
 Search leads…,Lidlarni qidirish…
+Search name…,Nom bo'yicha qidirish…
 Search outlets,Nuqta qidirish
 Search outlets…,Filiallarni qidirish…
 Search processes…,Jarayonlarni qidirish…
@@ -2725,6 +2749,7 @@ Weekly,Haftalik
 Weekly off days,
 Weight,Og'irligi
 Welcome to Stabler,Stableriga xush kelibsiz
+What is this advance for?,Bu avans nima uchun?
 What is this entry for?,Bu yozuv nima uchun?
 WhatsApp,WhatsApp
 When,Qachon
@@ -2757,6 +2782,7 @@ Work done,Bajarilgan ishlar
 Work done is required.,
 Work mode,
 Worked,
+Workers with advances,Avansli xodimlar
 Working,Ish kuni
 Workspace,
 Write,Yozish
@@ -2773,6 +2799,7 @@ You have already approved level {0} for this request.,
 You have no approval requests,Sizda tasdiq so'rovlari yo'q
 You have unsaved changes. Leaving this page will discard them.,
 "You must hold an HR Manager, System Manager, or Stabler Admin role to lock a payroll period.",
+You need a payroll/HR role to manage employee advances.,Avanslarni boshqarish uchun oylik/HR roli kerak.
 You need a payroll/HR role to view computed pay.,Hisoblangan oylikni ko'rish uchun oylik/HR roli kerak.
 You need administrator access to view this page.,Ushbu sahifani ko'rish uchun administrator huquqiga ega bo'lish kerak.
 You raised this request — it must be approved by someone else.,
@@ -2880,6 +2907,7 @@ yr,yil
 —,—
 — Any device —,
 — Choose account —,— Hisob tanlang —
+— No party —,— Tomonsiz —
 — auto from customer —,— xaridordan avtomatik —
 — auto from supplier —,— ta'minotchidan avtomatik —
 — company default —,— kompaniya asosiysi —

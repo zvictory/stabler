@@ -724,51 +724,42 @@ def journal_entry_detail(name: str):
 	}
 
 
-@frappe.whitelist()
-def create_journal_entry(
-	company: str,
-	posting_date: str,
-	accounts: list | str,
-	voucher_type: str = "Journal Entry",
-	user_remark: str | None = None,
-	cheque_no: str | None = None,
-	cheque_date: str | None = None,
-) -> dict:
-	"""Create a Journal Entry as Draft (docstatus=0).
+def _clean_je_rows(accounts, company: str) -> tuple[list[dict], bool]:
+	"""Validate + normalize JE account lines for create/update.
 
-	`accounts` is a list of dicts with keys:
-	  account (required), party_type, party, debit, credit, reference_type, reference_name.
-	Exactly one of debit/credit per line must be non-zero. Totals must balance.
+	Empty lines are dropped silently (no account, or BOTH debit and credit zero)
+	so a stray blank row can never trigger ERPNext's "Both Debit and Credit values
+	cannot be zero" on save. Auto-booked fx-rounding lines are also skipped — the
+	before_validate hook re-adds them. Returns (cleaned_rows, any_non_base_ccy).
 	"""
-	_require_company(company)
 	if isinstance(accounts, str):
 		try:
 			accounts = json.loads(accounts)
 		except Exception:
 			frappe.throw("Invalid accounts payload.")
-	if not isinstance(accounts, list) or len(accounts) < 2:
-		frappe.throw("At least two account lines are required.")
+	if not isinstance(accounts, list):
+		frappe.throw("accounts must be a list.")
 
 	total_debit = 0.0
 	total_credit = 0.0
 	cleaned: list[dict] = []
-	for idx, row in enumerate(accounts, start=1):
-		acc = (row or {}).get("account")
-		if not acc:
-			frappe.throw(f"Row {idx}: account is required.")
+	for row in accounts:
+		row = row or {}
+		if row.get("is_fx_rounding") or (row.get("user_remark") or "") == "fx-rounding-auto":
+			continue  # auto rounding leg — the fx hook re-creates it
+		acc = row.get("account")
 		debit = flt(row.get("debit"))
 		credit = flt(row.get("credit"))
+		# Drop empty lines silently (the row-9 zero/zero case the user hit).
+		if not acc or (not debit and not credit):
+			continue
+		idx = len(cleaned) + 1
 		if debit < 0 or credit < 0:
 			frappe.throw(f"Row {idx}: debit / credit must be non-negative.")
 		if debit and credit:
 			frappe.throw(f"Row {idx}: only one of debit / credit may be set.")
-		if not debit and not credit:
-			frappe.throw(f"Row {idx}: enter a debit or credit amount.")
 		acc_doc = frappe.db.get_value(
-			"Account",
-			acc,
-			["company", "is_group", "account_currency"],
-			as_dict=True,
+			"Account", acc, ["company", "is_group", "account_currency"], as_dict=True
 		)
 		if not acc_doc:
 			frappe.throw(f"Row {idx}: account '{acc}' does not exist.")
@@ -791,7 +782,9 @@ def create_journal_entry(
 			}
 		)
 
-	# Allow a 1-cent rounding wobble — the doc.validate() will catch real mismatches.
+	if len(cleaned) < 2:
+		frappe.throw("At least two non-empty account lines are required.")
+	# Allow a 1-cent rounding wobble — doc.validate() catches real mismatches.
 	if abs(total_debit - total_credit) > 0.01:
 		frappe.throw(
 			f"Debit ({total_debit:.2f}) and credit ({total_credit:.2f}) must balance."
@@ -799,6 +792,66 @@ def create_journal_entry(
 
 	base_currency = frappe.db.get_value("Company", company, "default_currency") or ""
 	any_non_base = any(r.pop("_ccy", "") != base_currency for r in cleaned)
+	return cleaned, any_non_base
+
+
+@frappe.whitelist()
+def update_journal_entry(
+	name: str,
+	posting_date: str,
+	accounts: list | str,
+	user_remark: str | None = None,
+	cheque_no: str | None = None,
+	cheque_date: str | None = None,
+) -> dict:
+	"""Edit a DRAFT Journal Entry in place (docstatus must be 0).
+
+	Replaces the account lines from the editor, auto-dropping any empty rows so a
+	blank line can't block the save. Submitted entries are read-only here — they
+	must be cancelled and amended (audit trail), never edited in place.
+	"""
+	if not name:
+		frappe.throw("Journal Entry name is required.")
+	_assert_can_write("Journal Entry", name)
+	doc = frappe.get_doc("Journal Entry", name)
+	if doc.docstatus != 0:
+		frappe.throw(
+			_("Only draft journal entries can be edited here. Submitted entries must be cancelled and amended.")
+		)
+	_require_company(doc.company)
+
+	cleaned, any_non_base = _clean_je_rows(accounts, doc.company)
+
+	doc.posting_date = getdate(posting_date)
+	doc.user_remark = user_remark or None
+	doc.cheque_no = cheque_no or None
+	doc.cheque_date = getdate(cheque_date) if cheque_date else None
+	doc.multi_currency = 1 if any_non_base else 0
+	doc.set("accounts", [])
+	for row in cleaned:
+		doc.append("accounts", row)
+	doc.save(ignore_permissions=False)
+	return {"name": doc.name, "docstatus": doc.docstatus}
+
+
+@frappe.whitelist()
+def create_journal_entry(
+	company: str,
+	posting_date: str,
+	accounts: list | str,
+	voucher_type: str = "Journal Entry",
+	user_remark: str | None = None,
+	cheque_no: str | None = None,
+	cheque_date: str | None = None,
+) -> dict:
+	"""Create a Journal Entry as Draft (docstatus=0).
+
+	`accounts` is a list of dicts with keys:
+	  account (required), party_type, party, debit, credit, reference_type, reference_name.
+	Exactly one of debit/credit per line must be non-zero. Totals must balance.
+	"""
+	_require_company(company)
+	cleaned, any_non_base = _clean_je_rows(accounts, company)
 
 	doc = frappe.new_doc("Journal Entry")
 	doc.company = company

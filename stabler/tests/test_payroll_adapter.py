@@ -119,6 +119,20 @@ class TestAdapterMapping(unittest.TestCase):
 		self.assertEqual(Decimal(out["kpi"]), Decimal("2000000"))
 		self.assertEqual(Decimal(out["net"]), Decimal("8000000"))
 
+	def test_advance_recovery_reduces_net(self):
+		# A salary-advance recovery flows in as an ADVANCE adjustment and is
+		# subtracted from net pay.
+		inp = build_calc_input(
+			_emp(),
+			{"payroll_period": "2026-06", "present_days": 22, "absent_days": 0, "half_days": 0,
+			 "overtime_minutes": 0, "night_minutes": 0, "late_deduction_amount": 0},
+			{},
+			adjustments=[{"type": "ADVANCE", "amount": 1500000}],
+		)
+		out = calculate_payroll(inp)
+		self.assertEqual(Decimal(out["advance"]), Decimal("1500000"))
+		self.assertEqual(Decimal(out["net"]), Decimal("8500000"))
+
 
 if __name__ == "__main__":
 	unittest.main()

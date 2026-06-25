@@ -103,7 +103,12 @@ Admin,Администратор
 Administer users & roles,Управление пользователями и ролями
 Advance,Аванс
 Advance amount,
+Advance deduction,Удержание аванса
+Advance deduction cannot be negative.,Удержание аванса не может быть отрицательным.
 Advance paid,Авансовый платёж
+Advance paid.,Аванс выдан.
+Advance sent for approval.,Аванс отправлен на согласование.
+Advances,Авансы
 Against,По
 Aging,Срок давности
 Alerts,
@@ -387,7 +392,9 @@ Cheque,Чек
 Cheque / transfer ref,Чек / реквизиты перевода
 Cheque no.,Номер чека.
 Chocolate,
+Choose a cash/bank account.,Выберите кассовый/банковский счёт.
 Choose a statement file first.,Сначала выберите файл выписки.
+Choose an employee.,Выберите сотрудника.
 Choose the retail shop warehouse before selling.,
 City,
 Claim,Претензия
@@ -597,6 +604,7 @@ Debit note for,
 Debit notes:,
 Deducted from worked time daily.,
 Deducted per each step interval of lateness.,
+Deduction exceeds the outstanding advance balance.,Удержание превышает остаток аванса.
 Deductions,Удержания
 Default,По умолчанию
 Default Exchange Gain/Loss Account is missing for company {0}. ,
@@ -734,6 +742,7 @@ Edit customer,Редактировать покупателя
 Edit device,
 Edit draft,
 Edit field user,Редактировать полевого сотрудника
+Edit journal entry,Редактировать проводку
 Edit mapping,
 Edit outlet,Редактировать торговую точку
 Edit photo report,Редактировать фотоотчет
@@ -777,6 +786,7 @@ End of ledger,
 Enforcement,Принуждение
 Enter a quantity for at least one row.,Укажите количество хотя бы для одной строки.
 Enter amount and commission to see preview.,Введите сумму и комиссию для предпросмотра.
+Enter an amount greater than zero.,Введите сумму больше нуля.
 Enter at least one count that differs from the system quantity.,"Введите хотя бы один подсчёт, отличающийся от системного количества."
 Enter at least one return qty.,Введите хотя бы одно количество возврата.
 Enter cost and term to see the payment schedule.,Введите себестоимость и срок для просмотра графика платежей.
@@ -959,6 +969,7 @@ Failed to load work orders.,
 Failed to load.,Ошибка загрузки.
 Failed to move deal.,Не удалось переместить сделку.
 Failed to move ticket.,Не удалось переместить заявку.
+Failed to pay advance.,Не удалось выдать аванс.
 Failed to preview collection.,
 Failed to record payment.,Ошибка записи платежа.
 Failed to refresh claim.,Ошибка обновления претензии.
@@ -988,6 +999,7 @@ Failed to switch language.,Не удалось изменить язык.
 Failed to toggle status.,
 Failed to update bill.,Не удалось обновить счёт.
 Failed to update color.,
+Failed to update journal entry.,Не удалось обновить проводку.
 Failed to update promo plan.,Ошибка обновления плана акции.
 Failed to update status.,Ошибка обновления статуса.
 Far district,
@@ -1355,6 +1367,7 @@ Monthly installment,Ежемесячный платёж
 Monthly run-rate,Месячный оборот
 Move to Under Review,Перейти в режим проверки
 Movement,Движение
+Movements,Движения
 Multi-Currency Parties,
 Multi-level approval incomplete,
 Multiplier (× hourly rate),
@@ -1531,6 +1544,7 @@ No matches found,Совпадений не найдено
 No matching items,
 "No matching vouchers found. Create a payment, or widen the date/amount window.",Совпадающие документы не найдены. Создайте платёж или расширьте окно даты/суммы.
 No materials to stage,
+No movements yet.,Движений пока нет.
 No new Version rows since the last seal.,
 No open exceptions,
 No open reservations,Нет открытых резерваций
@@ -1540,6 +1554,7 @@ No org chart yet,Организационная диаграмма отсутс�
 No outlets in this route yet.,Торговых точек на этом маршруте нет.
 No outlets yet,Пока нет торговых точек
 No outlets.,Нет точек.
+No outstanding advances,Нет непогашенных авансов
 No outstanding balances,Нет задолженности
 No overdue installments.,Нет просроченных платежей.
 No payments in this range,Платежей в этом диапазоне нет
@@ -1680,6 +1695,7 @@ Only pending schedule rows can be rescheduled.,
 Only submitted Sales Orders can be closed.,
 Only submitted Sales Orders can be reopened.,
 Only submitted invoices can be returned.,Только отправленные счета могут быть возвращены.
+Only with a balance,Только с балансом
 Only with balance,Только с остатком
 Open,Открыта
 Open AR,Открытая дебиторка
@@ -1734,6 +1750,7 @@ Outlet name is required.,Название торговой точки обяза
 Outlet {0} appears twice on this route.,Торговая точка {0} встречается дважды на этом маршруте.
 Outlets,Торговые точки
 Outstanding,Невыплаченная
+Outstanding advance,Остаток аванса
 Outstanding customer balances for field teams.,
 Overdue,Просрочено
 Overdue installments,Просроченные платежи
@@ -1784,7 +1801,10 @@ Pause failed.,Ошибка паузы.
 Pause this Work Order?,
 Pause this Work Order? You can resume it later.,Приостановить заказ? Можно возобновить позже.
 Pay,Выплатить
+Pay advance,Выдать аванс
+"Pay an advance, or turn off the balance filter to see everyone.","Выдайте аванс или отключите фильтр баланса, чтобы увидеть всех."
 Pay from,Выплатить с
+Pay from (cash/bank),Откуда (касса/банк)
 Pay supplier,Выплатить поставщику
 "Pay-formula inputs: overtime rate, KPI pool share, and per-day transport by region band.","Параметры формулы оплаты: ставка сверхурочных, доля KPI-пула и суточный транспорт по региону."
 Payable,К выплате
@@ -2025,6 +2045,8 @@ Record & new,Записать и новый
 Record a sale,Записать продажу
 Record production,Записать выпуск
 Record stock movements,Учёт движения запасов
+Recovered,Удержано
+Recovered from net pay this period; reduces the outstanding balance. Locked periods are read-only.,Удерживается из чистой выплаты за период; уменьшает остаток. Заблокированные периоды только для чтения.
 Recurring monthly run-rate — the pipeline forecast.,Регулярный месячный оборот — прогноз воронки.
 Ref No.,
 Reference,Ссылка
@@ -2256,11 +2278,13 @@ Search customers…,Поиск покупателей…
 Search customer…,Поиск клиента…
 Search deals…,Поиск сделок…
 Search employees…,Поиск сотрудников…
+Search employee… ⌘K,Поиск сотрудника… ⌘K
 Search item code or name…,Поиск кода или названия товара…
 Search item...,
 Search items…,Поиск товаров…
 Search item…,Поиск товара…
 Search leads…,Поиск лидов…
+Search name…,Поиск по имени…
 Search outlets,Поиск точек
 Search outlets…,Поиск точек…
 Search processes…,Поиск процессов…
@@ -2732,6 +2756,7 @@ Weekly,Еженедельно
 Weekly off days,
 Weight,Вес
 Welcome to Stabler,Добро пожаловать в Stabler
+What is this advance for?,За что этот аванс?
 What is this entry for?,Для чего эта запись?
 WhatsApp,WhatsApp
 When,Когда
@@ -2764,6 +2789,7 @@ Work done,Выполненные работы
 Work done is required.,
 Work mode,
 Worked,
+Workers with advances,Сотрудников с авансами
 Working,Рабочих дней
 Workspace,
 Write,Написать
@@ -2780,6 +2806,7 @@ You have already approved level {0} for this request.,
 You have no approval requests,У вас нет заявок на согласование
 You have unsaved changes. Leaving this page will discard them.,
 "You must hold an HR Manager, System Manager, or Stabler Admin role to lock a payroll period.",
+You need a payroll/HR role to manage employee advances.,Для управления авансами нужна роль расчётчика/HR.
 You need a payroll/HR role to view computed pay.,Для просмотра расчёта зарплаты нужна роль расчётчика/HR.
 You need administrator access to view this page.,Требуется доступ администратора для просмотра этой страницы.
 You raised this request — it must be approved by someone else.,
@@ -2887,6 +2914,7 @@ yr,г.
 —,—
 — Any device —,
 — Choose account —,— Выберите счёт —
+— No party —,— Без контрагента —
 — auto from customer —,— автоматически от клиента —
 — auto from supplier —,— автоматически от поставщика —
 — company default —,— стандартный в компании —

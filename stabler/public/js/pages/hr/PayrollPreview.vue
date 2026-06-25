@@ -74,13 +74,58 @@ const detail = ref(null);
 const kpiDraft = ref(0);
 const kpiSaving = ref(false);
 const kpiError = ref("");
+const advDraft = ref(0);
+const advSaving = ref(false);
+const advError = ref("");
 function openDetail(r) {
 	detail.value = r;
 	kpiDraft.value = Number(r.kpi_performance_pct || 0);
+	advDraft.value = Number(r.advance_deduction || 0);
 	kpiError.value = "";
+	advError.value = "";
 	detailOpen.value = true;
 }
 function closeDetail() { detailOpen.value = false; detail.value = null; }
+
+// Outstanding advance owed by this employee (live ledger balance from backend).
+const advOutstanding = computed(() => Number(detail.value?.advance_outstanding || 0));
+const hasAdvance = computed(() => advOutstanding.value > 0 || Number(detail.value?.advance_deduction || 0) > 0);
+
+function refreshTotals() {
+	if (!data.value) return;
+	data.value.net_total = Math.round(rows.value.reduce((s, x) => s + Number(x.net || 0), 0));
+	data.value.gross_total = Math.round(rows.value.reduce((s, x) => s + Number(x.breakdown?.gross || 0), 0));
+}
+
+async function saveAdvance() {
+	if (!detail.value?.summary) return;
+	const amt = Number(advDraft.value);
+	if (Number.isNaN(amt) || amt < 0) {
+		advError.value = t("Advance deduction cannot be negative.");
+		return;
+	}
+	if (amt > advOutstanding.value + 0.005) {
+		advError.value = t("Deduction exceeds the outstanding advance balance.");
+		return;
+	}
+	advSaving.value = true;
+	advError.value = "";
+	try {
+		const updated = await call("stabler.api.hr_pay.set_advance_deduction", {
+			summary_name: detail.value.summary,
+			amount: amt,
+		});
+		const idx = rows.value.findIndex((x) => x.summary === updated.summary);
+		if (idx !== -1 && data.value) data.value.rows.splice(idx, 1, updated);
+		refreshTotals();
+		detail.value = updated;
+		advDraft.value = Number(updated.advance_deduction || 0);
+	} catch (err) {
+		advError.value = err?.message || "Failed to save advance deduction.";
+	} finally {
+		advSaving.value = false;
+	}
+}
 
 // KPI pool exists only when the rule set moves part of base into the pool.
 const hasKpiPool = computed(() => Number(bd.value.kpi_share_factor || 0) > 0);
@@ -343,6 +388,41 @@ function exportCsv() {
 					</div>
 					<div v-if="kpiError" class="text-danger small mt-1">{{ kpiError }}</div>
 					<div v-else class="form-text">{{ t("Pays out this share of the KPI pool. Locked periods are read-only.") }}</div>
+				</div>
+			</div>
+
+			<!-- Advance recovery — only when the worker owes an advance -->
+			<div v-if="hasAdvance" class="card mb-3">
+				<div class="card-body p-2">
+					<div class="d-flex justify-content-between align-items-baseline mb-1">
+						<label class="form-label small mb-0">{{ t("Advance deduction") }}</label>
+						<span class="small text-secondary">{{ t("Outstanding") }}: <span class="font-monospace fw-bold">{{ money(advOutstanding) }}</span></span>
+					</div>
+					<div class="input-group input-group-sm">
+						<input
+							v-model.number="advDraft"
+							type="number"
+							min="0"
+							class="form-control"
+							:disabled="advSaving || detail?.status === 'Locked'"
+						/>
+						<button
+							type="button"
+							class="btn btn-outline-secondary"
+							:disabled="advSaving || detail?.status === 'Locked'"
+							@click="advDraft = advOutstanding"
+						>{{ t("All") }}</button>
+						<button
+							type="button"
+							class="btn btn-outline-primary"
+							:disabled="advSaving || detail?.status === 'Locked'"
+							@click="saveAdvance"
+						>
+							<i class="ti ti-check me-1"></i>{{ advSaving ? t("Saving…") : t("Save") }}
+						</button>
+					</div>
+					<div v-if="advError" class="text-danger small mt-1">{{ advError }}</div>
+					<div v-else class="form-text">{{ t("Recovered from net pay this period; reduces the outstanding balance. Locked periods are read-only.") }}</div>
 				</div>
 			</div>
 

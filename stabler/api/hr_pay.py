@@ -9,6 +9,7 @@ from __future__ import annotations
 
 import frappe
 from frappe import _
+from frappe.utils import flt
 
 from stabler.api._common import _require_company
 from stabler.api._payroll_adapter import build_calc_input
@@ -102,6 +103,12 @@ def _summary_fields(s) -> dict:
 	}
 
 
+def _advance_adjustments(s) -> list:
+	"""Per-period salary-advance recovery → engine ADVANCE adjustment."""
+	amt = flt(getattr(s, "advance_deduction", 0) or 0)
+	return [{"type": "ADVANCE", "amount": amt}] if amt else []
+
+
 def _compute(s, ruleset: dict) -> dict:
 	emp = _employee_pay_fields(s.employee)
 	inp = build_calc_input(
@@ -110,6 +117,7 @@ def _compute(s, ruleset: dict) -> dict:
 		ruleset,
 		kpi_performance_pct=getattr(s, "kpi_performance_pct", None),
 		duty_supplements=_duty_supplements(emp),
+		adjustments=_advance_adjustments(s),
 	)
 	result = calculate_payroll(inp)
 	result["summary"] = s.name
@@ -118,6 +126,7 @@ def _compute(s, ruleset: dict) -> dict:
 	result["period"] = s.payroll_period
 	result["status"] = s.status
 	result["kpi_performance_pct"] = getattr(s, "kpi_performance_pct", 0) or 0
+	result["advance_deduction"] = flt(getattr(s, "advance_deduction", 0) or 0)
 	return result
 
 
@@ -162,11 +171,56 @@ def set_kpi_performance(summary_name: str, pct) -> dict:
 
 
 @frappe.whitelist()
+def set_advance_deduction(summary_name: str, amount) -> dict:
+	"""Set the salary-advance amount recovered from net pay this period, recompute.
+
+	Capped at the employee's outstanding advance balance so a period can never
+	over-recover. Role-gated, company-scoped, blocked on locked periods.
+	"""
+	_require_pay_role()
+	company = frappe.db.get_value(_SUMMARY, summary_name, "company")
+	if not company:
+		frappe.throw(_("Unknown summary: {0}").format(summary_name))
+	_require_company(company)
+	try:
+		value = flt(amount)
+	except (TypeError, ValueError):
+		frappe.throw(_("Advance deduction must be a number."))
+	if value < 0:
+		frappe.throw(_("Advance deduction cannot be negative."))
+	s = frappe.get_doc(_SUMMARY, summary_name)
+	if s.status == "Locked":
+		frappe.throw(_("This period is locked; the advance deduction cannot be changed."))
+	outstanding = _advance_outstanding(company).get(s.employee, 0.0)
+	if value > outstanding + 0.005:
+		frappe.throw(
+			_("Deduction {0} exceeds the outstanding advance balance {1}.").format(value, round(outstanding, 2))
+		)
+	s.db_set("advance_deduction", value)
+	s.reload()
+	r = _compute(s, _ruleset_dict(company))
+	r["advance_outstanding"] = outstanding
+	return r
+
+
+def _advance_outstanding(company: str) -> dict:
+	"""Outstanding advance balance per employee (delegates to employee_advance)."""
+	try:
+		from stabler.api.employee_advance import _advance_account, _balances
+
+		return _balances(company, _advance_account(company))
+	except Exception:
+		# No advance account configured → treat as no outstanding advances.
+		return {}
+
+
+@frappe.whitelist()
 def preview_payroll_period(company: str, payroll_period: str) -> dict:
 	"""Computed pay for every summary in a period — for a payroll review screen."""
 	_require_pay_role()
 	_require_company(company)
 	ruleset = _ruleset_dict(company)
+	outstanding = _advance_outstanding(company)
 	names = frappe.get_all(
 		_SUMMARY,
 		filters={"company": company, "payroll_period": payroll_period},
@@ -181,6 +235,7 @@ def preview_payroll_period(company: str, payroll_period: str) -> dict:
 		if s.company != company:
 			continue  # TOCTOU guard — skip if doc moved to another company between query and load
 		r = _compute(s, ruleset)
+		r["advance_outstanding"] = outstanding.get(s.employee, 0.0)
 		gross_total += float(r["breakdown"].get("gross") or 0)
 		net_total += float(r.get("net") or 0)
 		rows.append(r)
