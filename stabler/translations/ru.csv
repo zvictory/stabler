@@ -1886,7 +1886,10 @@ Pick an employee,
 Pick an employee.,Выберите сотрудника.
 Pick an outlet from the list first.,Сначала выберите точку из списка.
 "Pick an outlet, then click the map.","Выберите точку, затем кликните по карте."
+"Pick one on the left, or create a new journal.",Выберите слева или создайте новую проводку.
 Pick return warehouse,
+Pick someone on the left to see their advance balance and pay an advance.,"Выберите слева сотрудника, чтобы увидеть остаток аванса и выдать аванс."
+Pick someone on the left to see their pay breakdown.,"Выберите слева сотрудника, чтобы увидеть расчёт его оплаты."
 Pick the account funds will be paid from.,"Выберите счёт, с которого будут переведены средства."
 Pick the account that will receive the funds.,"Выберите счёт, который получит средства."
 Pieces,Штук
@@ -1926,6 +1929,7 @@ Pre-season freezer push,Предсезонная установка морози
 Premium,
 Prepaid,Аванс
 Present,Присутствует
+Present / half-day / absent,Присут. / полдня / отсут.
 Present SKUs,Присутствующие артикулы
 Present today,
 Preview,Предпросмотр
@@ -2278,6 +2282,7 @@ Search customers…,Поиск покупателей…
 Search customer…,Поиск клиента…
 Search deals…,Поиск сделок…
 Search employees…,Поиск сотрудников…
+Search employee…,Поиск сотрудника…
 Search employee… ⌘K,Поиск сотрудника… ⌘K
 Search item code or name…,Поиск кода или названия товара…
 Search item...,
@@ -2310,11 +2315,13 @@ Select a bank account.,Выберите банковский счёт.
 Select a company first.,Сначала выберите компанию.
 Select a customer to view transactions,Выберите клиента для просмотра операций
 Select a date and click Refresh preview.,
+Select a journal entry,Выберите проводку
 Select a period and company to check readiness.,
 Select a shape or connector to edit its properties.,Выберите фигуру или соединитель для редактирования свойств.
 Select a source warehouse.,Выберите склад-источник.
 Select a supplier to view transactions,Выберите поставщика для просмотра операций
 Select a warehouse to count.,Выберите склад для пересчёта.
+Select a worker,Выберите сотрудника
 Select account…,Выберите счёт…
 Select an account…,Выберите счёт…
 Select an active leaf warehouse for returns.,
@@ -2568,6 +2575,7 @@ TimePay ID,
 TimePay name,
 Timepay,
 Timepay refresh token must expire after the access token.,
+Times & minutes,Время и минуты
 Timestamp,
 To,По
 To Bill,К оплате

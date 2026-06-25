@@ -86,7 +86,7 @@ const groupedRows = computed(() => {
 const STATUS_BY_CODE = { P: "Present", A: "Absent", L: "On Leave", H: "Half Day", W: "Work From Home" };
 const STATUS_TO_CODE = { Present: "P", Absent: "A", "On Leave": "L", "Half Day": "H", "Work From Home": "W" };
 const blankForm = () => ({ status: null, in_time: "", out_time: "", late: 0, early: 0, ot: 0 });
-const editor = ref({ open: false, x: 0, y: 0, row: null, day: null, date: null, isPast: false, loading: false, form: blankForm() });
+const editor = ref({ open: false, x: 0, y: 0, row: null, day: null, date: null, isPast: false, loading: false, showDetails: false, form: blankForm() });
 const saving = ref(false);
 
 async function onCellClick(ev, row, d) {
@@ -98,6 +98,7 @@ async function onCellClick(ev, row, d) {
 		row, day: d.day, date: d.date,
 		isPast: !!(data.value && d.date < data.value.today),
 		loading: true,
+		showDetails: false,
 		form: blankForm(),
 	};
 	try {
@@ -318,29 +319,26 @@ defineExpose({ exportCsv, exportXlsx, reload: load });
 		<div v-if="error" class="alert alert-danger">{{ error }}</div>
 		<div v-else-if="loading" class="text-center py-5"><div class="spinner-border text-primary"></div></div>
 		<template v-else-if="data">
-			<!-- Legend -->
-			<div class="d-flex flex-wrap align-items-center gap-3 mb-2 small">
-				<span v-for="(c, k) in CODES" :key="k" class="d-inline-flex align-items-center gap-1">
-					<span class="att-key" :style="{ background: c.bg, color: c.fg }">{{ c.letter }}</span>
-					<span class="text-secondary">{{ c.label() }}</span>
-				</span>
+			<!-- Toolbar: compact legend (3 letters) + lock hint + actions -->
+			<div class="d-flex flex-wrap align-items-center gap-2 mb-2 small">
 				<span class="d-inline-flex align-items-center gap-1">
-					<span class="att-key att-late" :style="{ background: CODES.P.bg, color: CODES.P.fg }">K<i></i></span><span class="text-secondary">{{ t("Late") }}</span>
-				</span>
-				<span class="d-inline-flex align-items-center gap-1">
-					<span class="att-key att-weekend"></span><span class="text-secondary">{{ t("Weekend") }}</span>
+					<span class="att-key" :style="{ background: CODES.P.bg, color: CODES.P.fg }">K</span>
+					<span class="att-key" :style="{ background: CODES.H.bg, color: CODES.H.fg }">Y</span>
+					<span class="att-key" :style="{ background: CODES.A.bg, color: CODES.A.fg }">D</span>
+					<span class="text-secondary ms-1">{{ t("Present / half-day / absent") }}</span>
 				</span>
 				<span v-if="data.edit_lock_date" class="d-inline-flex align-items-center gap-1 text-secondary">
-					<i class="ti ti-lock"></i> {{ t("Locked on/before") }} {{ data.edit_lock_date }}
+					<i class="ti ti-lock"></i> ≤ {{ data.edit_lock_date }}
 				</span>
-				<button type="button" class="btn btn-sm ms-auto" :class="selectMode ? 'btn-primary' : 'btn-outline-secondary'" @click="toggleSelectMode"><i class="ti ti-pointer me-1"></i>{{ t("Select") }}</button>
-					<div class="d-flex gap-2">
-					<button type="button" class="btn btn-sm btn-outline-success" @click="exportXlsx">
-						<i class="ti ti-file-spreadsheet me-1"></i>{{ t("Excel") }}
-					</button>
-					<button type="button" class="btn btn-sm btn-outline-secondary" @click="exportCsv">
-						<i class="ti ti-download me-1"></i>{{ t("CSV") }}
-					</button>
+				<div class="ms-auto d-flex gap-2">
+					<button type="button" class="btn btn-sm" :class="selectMode ? 'btn-primary' : 'btn-outline-secondary'" @click="toggleSelectMode"><i class="ti ti-pointer me-1"></i>{{ t("Select") }}</button>
+					<div class="dropdown">
+						<button type="button" class="btn btn-sm btn-outline-secondary dropdown-toggle" data-bs-toggle="dropdown"><i class="ti ti-download me-1"></i>{{ t("Export") }}</button>
+						<div class="dropdown-menu dropdown-menu-end">
+							<button type="button" class="dropdown-item" @click="exportXlsx"><i class="ti ti-file-spreadsheet me-2"></i>{{ t("Excel") }}</button>
+							<button type="button" class="dropdown-item" @click="exportCsv"><i class="ti ti-file-text me-2"></i>{{ t("CSV") }}</button>
+						</div>
+					</div>
 				</div>
 			</div>
 
@@ -441,33 +439,42 @@ defineExpose({ exportCsv, exportXlsx, reload: load });
 						><b>{{ c.letter }}</b> · {{ c.label() }}</button>
 					</div>
 
-					<!-- In / Out -->
-					<div class="row g-2 mt-1">
-						<div class="col-6">
-							<label class="form-label small mb-1">{{ t("In time") }}</label>
-							<input v-model="editor.form.in_time" type="time" class="form-control form-control-sm" />
-						</div>
-						<div class="col-6">
-							<label class="form-label small mb-1">{{ t("Out time") }}</label>
-							<input v-model="editor.form.out_time" type="time" class="form-control form-control-sm" />
-						</div>
-					</div>
+					<!-- Times & minutes are optional — hidden until needed -->
+					<button
+						type="button"
+						class="btn btn-sm btn-link link-secondary px-0 mt-1"
+						@click="editor.showDetails = !editor.showDetails"
+					>
+						<i class="ti me-1" :class="editor.showDetails ? 'ti-chevron-up' : 'ti-chevron-down'"></i>
+						{{ t("Times & minutes") }}
+					</button>
 
-					<!-- Minutes -->
-					<div class="row g-2 mt-1">
-						<div class="col-4">
-							<label class="form-label small mb-1">{{ t("Late (min)") }}</label>
-							<input v-model.number="editor.form.late" type="number" min="0" class="form-control form-control-sm text-end" />
+					<template v-if="editor.showDetails">
+						<div class="row g-2 mt-1">
+							<div class="col-6">
+								<label class="form-label small mb-1">{{ t("In time") }}</label>
+								<input v-model="editor.form.in_time" type="time" class="form-control form-control-sm" />
+							</div>
+							<div class="col-6">
+								<label class="form-label small mb-1">{{ t("Out time") }}</label>
+								<input v-model="editor.form.out_time" type="time" class="form-control form-control-sm" />
+							</div>
 						</div>
-						<div class="col-4">
-							<label class="form-label small mb-1">{{ t("Early leave (min)") }}</label>
-							<input v-model.number="editor.form.early" type="number" min="0" class="form-control form-control-sm text-end" />
+						<div class="row g-2 mt-1">
+							<div class="col-4">
+								<label class="form-label small mb-1">{{ t("Late (min)") }}</label>
+								<input v-model.number="editor.form.late" type="number" min="0" class="form-control form-control-sm text-end" />
+							</div>
+							<div class="col-4">
+								<label class="form-label small mb-1">{{ t("Early leave (min)") }}</label>
+								<input v-model.number="editor.form.early" type="number" min="0" class="form-control form-control-sm text-end" />
+							</div>
+							<div class="col-4">
+								<label class="form-label small mb-1">{{ t("Overtime (min)") }}</label>
+								<input v-model.number="editor.form.ot" type="number" min="0" class="form-control form-control-sm text-end" />
+							</div>
 						</div>
-						<div class="col-4">
-							<label class="form-label small mb-1">{{ t("Overtime (min)") }}</label>
-							<input v-model.number="editor.form.ot" type="number" min="0" class="form-control form-control-sm text-end" />
-						</div>
-					</div>
+					</template>
 
 					<div class="d-flex align-items-center mt-3">
 						<button type="button" class="btn btn-sm btn-ghost-danger" :disabled="saving" @click="clearCell">

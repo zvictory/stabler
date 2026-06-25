@@ -1868,7 +1868,10 @@ Pick an employee,Çalışan seçin
 Pick an employee.,Bir çalışan seçin.
 Pick an outlet from the list first.,Önce listeden bir nokta seçin.
 "Pick an outlet, then click the map.","Bir nokta seçin, sonra haritaya tıklayın."
+"Pick one on the left, or create a new journal.",Soldan seçin veya yeni bir kayıt oluşturun.
 Pick return warehouse,
+Pick someone on the left to see their advance balance and pay an advance.,Avans bakiyesini görmek ve avans ödemek için soldan birini seçin.
+Pick someone on the left to see their pay breakdown.,Maaş dökümünü görmek için soldan birini seçin.
 Pick the account funds will be paid from.,Ödemenin yapılacağı hesabı seçin.
 Pick the account that will receive the funds.,Fonları alacak hesabı seçin.
 Pieces,Adet
@@ -1908,6 +1911,7 @@ Pre-season freezer push,Sezon öncesi dondurucu yerleştirme
 Premium,
 Prepaid,Avans
 Present,Mevcut
+Present / half-day / absent,Geldi / yarım gün / gelmedi
 Present SKUs,Mevcut SKU'lar
 Present today,
 Preview,Önizleme
@@ -2258,6 +2262,7 @@ Search customers…,Müşteri ara…
 Search customer…,Müşteri ara…
 Search deals…,Anlaşma ara…
 Search employees…,Çalışan ara…
+Search employee…,Çalışan ara…
 Search employee… ⌘K,Çalışan ara… ⌘K
 Search item code or name…,Ürün kodu veya adı ara…
 Search item...,
@@ -2290,11 +2295,13 @@ Select a bank account.,Bir banka hesabı seçin.
 Select a company first.,Önce bir firma seçin.
 Select a customer to view transactions,İşlemleri görüntülemek için bir müşteri seçin
 Select a date and click Refresh preview.,
+Select a journal entry,Bir yevmiye kaydı seçin
 Select a period and company to check readiness.,
 Select a shape or connector to edit its properties.,Özelliklerini düzenlemek için bir şekil veya bağlayıcı seçin.
 Select a source warehouse.,Kaynak depo seçin.
 Select a supplier to view transactions,İşlemleri görüntülemek için bir tedarikçi seçin
 Select a warehouse to count.,Saymak için bir depo seçin.
+Select a worker,Bir çalışan seçin
 Select account…,Hesap seçin…
 Select an account…,Bir hesap seçin…
 Select an active leaf warehouse for returns.,
@@ -2547,6 +2554,7 @@ TimePay ID,
 TimePay name,
 Timepay,
 Timepay refresh token must expire after the access token.,
+Times & minutes,Saatler ve dakikalar
 Timestamp,
 To,Kime
 To account,Alıcı hesap

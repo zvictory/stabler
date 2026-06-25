@@ -1876,7 +1876,10 @@ Pick an employee,Pick an employee
 Pick an employee.,Pick an employee.
 Pick an outlet from the list first.,Pick an outlet from the list first.
 "Pick an outlet, then click the map.","Pick an outlet, then click the map."
+"Pick one on the left, or create a new journal.","Pick one on the left, or create a new journal."
 Pick return warehouse,Pick return warehouse
+Pick someone on the left to see their advance balance and pay an advance.,Pick someone on the left to see their advance balance and pay an advance.
+Pick someone on the left to see their pay breakdown.,Pick someone on the left to see their pay breakdown.
 Pick the account funds will be paid from.,Pick the account funds will be paid from.
 Pick the account that will receive the funds.,Pick the account that will receive the funds.
 Pieces,Pieces
@@ -1916,6 +1919,7 @@ Pre-season freezer push,Pre-season freezer push
 Premium,Premium
 Prepaid,Prepaid
 Present,Present
+Present / half-day / absent,Present / half-day / absent
 Present SKUs,Present SKUs
 Present today,Present today
 Preview,Preview
@@ -2268,6 +2272,7 @@ Search customers…,Search customers…
 Search customer…,Search customer…
 Search deals…,Search deals…
 Search employees…,Search employees…
+Search employee…,Search employee…
 Search employee… ⌘K,Search employee… ⌘K
 Search item code or name…,Search item code or name…
 Search item...,Search item...
@@ -2300,11 +2305,13 @@ Select a bank account.,Select a bank account.
 Select a company first.,Select a company first.
 Select a customer to view transactions,Select a customer to view transactions
 Select a date and click Refresh preview.,Select a date and click Refresh preview.
+Select a journal entry,Select a journal entry
 Select a period and company to check readiness.,Select a period and company to check readiness.
 Select a shape or connector to edit its properties.,Select a shape or connector to edit its properties.
 Select a source warehouse.,Select a source warehouse.
 Select a supplier to view transactions,Select a supplier to view transactions
 Select a warehouse to count.,Select a warehouse to count.
+Select a worker,Select a worker
 Select account…,Select account…
 Select an account…,Select an account…
 Select an active leaf warehouse for returns.,Select an active leaf warehouse for returns.
@@ -2558,6 +2565,7 @@ TimePay ID,TimePay ID
 TimePay name,TimePay name
 Timepay,Timepay
 Timepay refresh token must expire after the access token.,Timepay refresh token must expire after the access token.
+Times & minutes,Times & minutes
 Timestamp,Timestamp
 To,To
 To account,To account

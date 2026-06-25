@@ -1879,7 +1879,10 @@ Pick an employee,
 Pick an employee.,Xodimni tanlang.
 Pick an outlet from the list first.,Avval ro'yxatdan nuqta tanlang.
 "Pick an outlet, then click the map.","Nuqtani tanlang, so'ng xaritani bosing."
+"Pick one on the left, or create a new journal.",Chapdan tanlang yoki yangi provodka yarating.
 Pick return warehouse,
+Pick someone on the left to see their advance balance and pay an advance.,Avans qoldig'ini ko'rish va avans berish uchun chapdan xodimni tanlang.
+Pick someone on the left to see their pay breakdown.,Oylik tafsilotini ko'rish uchun chapdan xodimni tanlang.
 Pick the account funds will be paid from.,Pullar to'lanadigan hisobni tanlang.
 Pick the account that will receive the funds.,Pullarni qabul qiladigan hisobni tanlang.
 Pieces,Dona
@@ -1919,6 +1922,7 @@ Pre-season freezer push,Mavsum oldidan muzlatgich o‘rnatish
 Premium,
 Prepaid,Avans
 Present,Hozir
+Present / half-day / absent,Keldi / yarim kun / kelmadi
 Present SKUs,Mavjud SKU'lar
 Present today,
 Preview,Ko'rib chiqish
@@ -2271,6 +2275,7 @@ Search customers…,Xaridorlarni qidirish…
 Search customer…,Mijozni qidirish…
 Search deals…,Bitimlarni qidirish…
 Search employees…,Xodimlarni qidirish…
+Search employee…,Xodimni qidirish…
 Search employee… ⌘K,Xodimni qidirish… ⌘K
 Search item code or name…,Tovar kodini yoki nomini qidirish…
 Search item...,
@@ -2303,11 +2308,13 @@ Select a bank account.,Bank hisobini tanlang.
 Select a company first.,Avval kompaniya tanlang.
 Select a customer to view transactions,Operatsiyalarni ko'rish uchun xaridorni tanlang
 Select a date and click Refresh preview.,
+Select a journal entry,Provodkani tanlang
 Select a period and company to check readiness.,
 Select a shape or connector to edit its properties.,Xususiyatlarni tahrirlash uchun shakl yoki bogʿlovchini tanlang.
 Select a source warehouse.,Manba omborini tanlang.
 Select a supplier to view transactions,Operatsiyalarni ko'rish uchun tadarkorlni tanlang
 Select a warehouse to count.,Sanash uchun omborni tanlang.
+Select a worker,Xodimni tanlang
 Select account…,Hisob tanlang…
 Select an account…,Hisobni tanlang…
 Select an active leaf warehouse for returns.,
@@ -2561,6 +2568,7 @@ TimePay ID,
 TimePay name,
 Timepay,
 Timepay refresh token must expire after the access token.,
+Times & minutes,Vaqt va daqiqalar
 Timestamp,
 To,Gacha
 To Bill,Hisob-faktura uchun

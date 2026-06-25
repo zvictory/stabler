@@ -1879,7 +1879,10 @@ Pick an employee,
 Pick an employee.,Ходимни танланг.
 Pick an outlet from the list first.,Аввал рўйхатдан нуқта танланг.
 "Pick an outlet, then click the map.","Нуқтани танланг, сўнг харитани босинг."
+"Pick one on the left, or create a new journal.",Чапдан танланг ёки янги проводка яратинг.
 Pick return warehouse,
+Pick someone on the left to see their advance balance and pay an advance.,Аванс қолдиғини кўриш ва аванс бериш учун чапдан ходимни танланг.
+Pick someone on the left to see their pay breakdown.,Ойлик тафсилотини кўриш учун чапдан ходимни танланг.
 Pick the account funds will be paid from.,Пул ўтказилиб юборилаётган ҳисобни танланг.
 Pick the account that will receive the funds.,Пул қабул қилиб олаётган ҳисобни танланг.
 Pieces,Дона
@@ -1919,6 +1922,7 @@ Pre-season freezer push,Мавсум олдидан музлатгич ўрна�
 Premium,
 Prepaid,Аванс
 Present,Ҳозир
+Present / half-day / absent,Келди / ярим кун / келмади
 Present SKUs,Мавжуд АСК-лар
 Present today,
 Preview,Кўриб чиқиш
@@ -2271,6 +2275,7 @@ Search customers…,Харидорларни қидириш…
 Search customer…,Муштериро қидириш…
 Search deals…,Битимларни қидириш…
 Search employees…,Ходимларни қидириш…
+Search employee…,Ходимни қидириш…
 Search employee… ⌘K,Ходимни қидириш… ⌘K
 Search item code or name…,Товар кодини ёки номини қидириш…
 Search item...,
@@ -2303,11 +2308,13 @@ Select a bank account.,Банк ҳисобини танланг.
 Select a company first.,Аввал компанияни танланг.
 Select a customer to view transactions,Транзакцияларни кўриш учун мижозни танланг
 Select a date and click Refresh preview.,
+Select a journal entry,Проводкани танланг
 Select a period and company to check readiness.,
 Select a shape or connector to edit its properties.,Хусусиятларни таҳрирлаш учун шакл ёки боғловчини танланг.
 Select a source warehouse.,Манба омборини танланг.
 Select a supplier to view transactions,Транзакцияларни кўриш учун таъминотчини танланг
 Select a warehouse to count.,Санаш учун омборни танланг.
+Select a worker,Ходимни танланг
 Select account…,Ҳисоб танланг…
 Select an account…,Ҳисобни танланг…
 Select an active leaf warehouse for returns.,
@@ -2561,6 +2568,7 @@ TimePay ID,
 TimePay name,
 Timepay,
 Timepay refresh token must expire after the access token.,
+Times & minutes,Вақт ва дақиқалар
 Timestamp,
 To,Гача
 To Bill,Ҳисоб-фактура учун

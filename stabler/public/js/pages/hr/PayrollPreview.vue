@@ -51,6 +51,11 @@ async function load() {
 			company: activeCompany.value,
 			payroll_period: period.value,
 		});
+		// Keep the selected worker (if any) in sync; clear if they left the period.
+		if (detail.value) {
+			const fresh = (data.value.rows || []).find((x) => x.summary === detail.value.summary);
+			detail.value = fresh || null;
+		}
 	} catch (err) {
 		if (err?.status === 403 || /role|permission/i.test(err?.message || "")) {
 			forbidden.value = true;
@@ -68,8 +73,7 @@ watch([activeCompany, period], load);
 function prev() { period.value = shiftPeriod(period.value, -1); }
 function next() { if (!isCurrentOrFuture.value) period.value = shiftPeriod(period.value, 1); }
 
-// ── Breakdown drawer ─────────────────────────────────────────────────────────
-const detailOpen = ref(false);
+// ── Selected worker (right pane) ─────────────────────────────────────────────
 const detail = ref(null);
 const kpiDraft = ref(0);
 const kpiSaving = ref(false);
@@ -77,15 +81,13 @@ const kpiError = ref("");
 const advDraft = ref(0);
 const advSaving = ref(false);
 const advError = ref("");
-function openDetail(r) {
+function select(r) {
 	detail.value = r;
 	kpiDraft.value = Number(r.kpi_performance_pct || 0);
 	advDraft.value = Number(r.advance_deduction || 0);
 	kpiError.value = "";
 	advError.value = "";
-	detailOpen.value = true;
 }
-function closeDetail() { detailOpen.value = false; detail.value = null; }
 
 // Outstanding advance owed by this employee (live ledger balance from backend).
 const advOutstanding = computed(() => Number(detail.value?.advance_outstanding || 0));
@@ -220,32 +222,19 @@ function exportCsv() {
 </script>
 
 <template>
-	<div class="card mb-3">
-		<div class="card-body">
-			<div class="row g-2 align-items-center">
-				<div class="col-auto">
-					<div class="btn-group" role="group">
-						<button type="button" class="btn btn-outline-secondary" @click="prev">
-							<i class="ti ti-chevron-left"></i>
-						</button>
-						<span class="btn btn-outline-secondary disabled text-dark" style="min-width: 160px">
-							{{ periodLabel }}
-						</span>
-						<button type="button" class="btn btn-outline-secondary" :disabled="isCurrentOrFuture" @click="next">
-							<i class="ti ti-chevron-right"></i>
-						</button>
-					</div>
-				</div>
-				<div class="col text-secondary small">
-					{{ t("Computed from attendance summaries using the payroll formula. Read-only preview — not the official salary run.") }}
-				</div>
-				<div class="col-auto">
-					<button type="button" class="btn btn-ghost-secondary" :disabled="!rows.length" @click="exportCsv">
-						<i class="ti ti-download me-1"></i>{{ t("Export CSV") }}
-					</button>
-				</div>
-			</div>
+	<!-- Period bar -->
+	<div class="d-flex flex-wrap align-items-center gap-2 mb-3">
+		<div class="btn-group" role="group">
+			<button type="button" class="btn btn-outline-secondary" @click="prev"><i class="ti ti-chevron-left"></i></button>
+			<span class="btn btn-outline-secondary disabled text-dark" style="min-width: 150px">{{ periodLabel }}</span>
+			<button type="button" class="btn btn-outline-secondary" :disabled="isCurrentOrFuture" @click="next"><i class="ti ti-chevron-right"></i></button>
 		</div>
+		<span v-if="data && rows.length" class="text-secondary small ms-1">
+			{{ data.count }} · {{ t("Net total") }}: <span class="font-monospace fw-bold">{{ money(data.net_total) }}</span>
+		</span>
+		<button type="button" class="btn btn-ghost-secondary ms-auto" :disabled="!rows.length" @click="exportCsv">
+			<i class="ti ti-download me-1"></i>{{ t("Export CSV") }}
+		</button>
 	</div>
 
 	<div v-if="forbidden" class="alert alert-warning">
@@ -253,36 +242,8 @@ function exportCsv() {
 	</div>
 	<div v-else-if="error" class="alert alert-danger">{{ error }}</div>
 
-	<!-- Totals -->
-	<div v-if="!forbidden && data && rows.length" class="row g-2 mb-3">
-		<div class="col-md-4">
-			<div class="card">
-				<div class="card-body p-2 text-center">
-					<div class="text-secondary small">{{ t("Employees") }}</div>
-					<div class="h2 m-0 font-monospace">{{ data.count }}</div>
-				</div>
-			</div>
-		</div>
-		<div class="col-md-4">
-			<div class="card">
-				<div class="card-body p-2 text-center">
-					<div class="text-secondary small">{{ t("Gross total") }}</div>
-					<div class="h2 m-0 font-monospace">{{ money(data.gross_total) }}</div>
-				</div>
-			</div>
-		</div>
-		<div class="col-md-4">
-			<div class="card bg-primary-lt">
-				<div class="card-body p-2 text-center">
-					<div class="text-secondary small">{{ t("Net total") }}</div>
-					<div class="h2 m-0 font-monospace fw-bold">{{ money(data.net_total) }}</div>
-				</div>
-			</div>
-		</div>
-	</div>
-
 	<EmptyState
-		v-if="!loading && !forbidden && !error && data && !rows.length"
+		v-else-if="!loading && data && !rows.length"
 		icon="ti-calculator"
 		accentIcon="ti-clock"
 		tone="secondary"
@@ -290,159 +251,111 @@ function exportCsv() {
 		:subtitle="t('Generate attendance summaries first, then computed pay appears here.')"
 	/>
 
-	<div v-else-if="!forbidden && (loading || rows.length)" class="card">
-		<div class="table-responsive">
-			<table class="table table-vcenter card-table table-hover">
-				<thead>
-					<tr>
-						<th>{{ t("Employee") }}</th>
-						<th class="text-end">{{ t("Prorated base") }}</th>
-						<th class="text-end">{{ t("Allowances") }}</th>
-						<th class="text-end">{{ t("Overtime") }}</th>
-						<th class="text-end">{{ t("KPI") }}</th>
-						<th class="text-end">{{ t("Fines") }}</th>
-						<th class="text-end">{{ t("Net") }}</th>
-					</tr>
-				</thead>
-				<SkeletonRows v-if="loading" :rows="8" :cols="7" />
-				<tbody v-else>
-					<tr v-for="r in rows" :key="r.employee" class="cursor-pointer" @click="openDetail(r)">
-						<td>
-							<div class="fw-semibold">{{ r.employee_name }}</div>
-							<div class="small text-secondary font-monospace">{{ r.employee }}</div>
-						</td>
-						<td class="text-end font-monospace">{{ money(r.prorated_base) }}</td>
-						<td class="text-end font-monospace">{{ money(r.allowances) }}</td>
-						<td class="text-end font-monospace">{{ money(r.overtime) }}</td>
-						<td class="text-end font-monospace">{{ money(r.kpi) }}</td>
-						<td class="text-end font-monospace" :class="{ 'text-danger': num(r.fines) > 0 }">
-							{{ num(r.fines) > 0 ? "−" + money(r.fines) : money(0) }}
-						</td>
-						<td class="text-end font-monospace fw-bold">{{ money(r.net) }}</td>
-					</tr>
-				</tbody>
-				<tfoot v-if="!loading && rows.length">
-					<tr class="fw-bold">
-						<td>{{ t("Total") }}</td>
-						<td colspan="5" class="text-end text-secondary small">{{ t("Net total") }}</td>
-						<td class="text-end font-monospace">{{ money(data.net_total) }}</td>
-					</tr>
-				</tfoot>
-			</table>
-		</div>
-	</div>
-
-	<!-- Breakdown drawer -->
-	<div v-if="detailOpen" class="offcanvas-backdrop fade show" @click="closeDetail"></div>
-	<div v-if="detailOpen" class="offcanvas offcanvas-end show" tabindex="-1" style="visibility: visible; width: 480px">
-		<div class="offcanvas-header">
-			<div>
-				<h5 class="offcanvas-title m-0">{{ detail?.employee_name }}</h5>
-				<div class="small text-secondary font-monospace">{{ detail?.period }} · {{ detail?.employee }}</div>
-			</div>
-			<button type="button" class="btn-close" @click="closeDetail"></button>
-		</div>
-		<div class="offcanvas-body">
-			<div class="row g-2 mb-3">
-				<div class="col-6">
-					<div class="card"><div class="card-body p-2 text-center">
-						<div class="text-secondary small">{{ t("Gross") }}</div>
-						<div class="h3 m-0 font-monospace">{{ money(bd.gross) }}</div>
-					</div></div>
-				</div>
-				<div class="col-6">
-					<div class="card bg-primary-lt"><div class="card-body p-2 text-center">
-						<div class="text-secondary small">{{ t("Net") }}</div>
-						<div class="h3 m-0 font-monospace fw-bold">{{ money(detail?.net) }}</div>
-					</div></div>
+	<div v-else class="card">
+		<div class="row g-0">
+			<!-- LEFT: workers + net -->
+			<div class="col-12 col-md-5 col-lg-4 border-end">
+				<div style="max-height: calc(100vh - 12rem); overflow-y: auto">
+					<table class="table table-sm table-hover mb-0">
+						<thead><tr><th>{{ t("Employee") }}</th><th class="text-end">{{ t("Net") }}</th></tr></thead>
+						<SkeletonRows v-if="loading" :rows="12" :cols="2" />
+						<tbody v-else>
+							<tr
+								v-for="r in rows"
+								:key="r.employee"
+								class="cursor-pointer"
+								:class="{ 'table-active': detail?.summary === r.summary }"
+								@click="select(r)"
+							>
+								<td>
+									<div class="fw-semibold text-truncate">{{ r.employee_name }}</div>
+									<div class="small text-secondary text-truncate font-monospace">{{ r.employee }}</div>
+								</td>
+								<td class="text-end font-monospace fw-bold align-middle">{{ money(r.net) }}</td>
+							</tr>
+						</tbody>
+					</table>
 				</div>
 			</div>
 
-			<div class="mb-3 small text-secondary">
-				<span class="badge bg-secondary-lt me-1">{{ bd.work_mode }}</span>
-				<span>{{ t("Attendance") }}: {{ bd.attended_days }}/{{ bd.expected_days }}</span>
-				<span v-if="bd.seniority_years"> · {{ t("Seniority") }}: {{ bd.seniority_years }} {{ t("yr") }}</span>
-			</div>
-
-			<!-- KPI performance editor — only when the rule set funds a KPI pool -->
-			<div v-if="hasKpiPool" class="card mb-3">
-				<div class="card-body p-2">
-					<label class="form-label small mb-1">{{ t("KPI performance (%)") }}</label>
-					<div class="input-group input-group-sm">
-						<input
-							v-model.number="kpiDraft"
-							type="number"
-							min="0"
-							max="100"
-							class="form-control"
-							:disabled="kpiSaving || detail?.status === 'Locked'"
-						/>
-						<button
-							type="button"
-							class="btn btn-outline-primary"
-							:disabled="kpiSaving || detail?.status === 'Locked'"
-							@click="saveKpi"
-						>
-							<i class="ti ti-check me-1"></i>{{ kpiSaving ? t("Saving…") : t("Save") }}
-						</button>
+			<!-- RIGHT: selected worker's pay -->
+			<div class="col-12 col-md-7 col-lg-8 bg-light">
+				<EmptyState
+					v-if="!detail"
+					class="py-6"
+					icon="ti-user-dollar"
+					accentIcon="ti-arrow-left"
+					tone="secondary"
+					:title="t('Select a worker')"
+					:subtitle="t('Pick someone on the left to see their pay breakdown.')"
+				/>
+				<div v-else class="p-3">
+					<div class="d-flex align-items-center justify-content-between mb-3">
+						<div>
+							<h3 class="m-0">{{ detail.employee_name }}</h3>
+							<div class="small text-secondary font-monospace">{{ detail.period }} · {{ detail.employee }}</div>
+						</div>
+						<div class="text-end">
+							<div class="small text-secondary">{{ t("Net pay") }}</div>
+							<div class="h1 m-0 font-monospace fw-bold">{{ money(detail.net) }}</div>
+						</div>
 					</div>
-					<div v-if="kpiError" class="text-danger small mt-1">{{ kpiError }}</div>
-					<div v-else class="form-text">{{ t("Pays out this share of the KPI pool. Locked periods are read-only.") }}</div>
+
+					<div class="mb-3 small text-secondary">
+						<span class="badge bg-secondary-lt me-1">{{ bd.work_mode }}</span>
+						<span>{{ t("Attendance") }}: {{ bd.attended_days }}/{{ bd.expected_days }}</span>
+						<span v-if="bd.seniority_years"> · {{ t("Seniority") }}: {{ bd.seniority_years }} {{ t("yr") }}</span>
+						<span> · {{ t("Gross") }}: <span class="font-monospace">{{ money(bd.gross) }}</span></span>
+					</div>
+
+					<div class="row g-2">
+						<!-- KPI editor -->
+						<div v-if="hasKpiPool" class="col-md-6">
+							<div class="card h-100"><div class="card-body p-2">
+								<label class="form-label small mb-1">{{ t("KPI performance (%)") }}</label>
+								<div class="input-group input-group-sm">
+									<input v-model.number="kpiDraft" type="number" min="0" max="100" class="form-control" :disabled="kpiSaving || detail.status === 'Locked'" />
+									<button type="button" class="btn btn-outline-primary" :disabled="kpiSaving || detail.status === 'Locked'" @click="saveKpi">
+										<i class="ti ti-check me-1"></i>{{ kpiSaving ? t("Saving…") : t("Save") }}
+									</button>
+								</div>
+								<div v-if="kpiError" class="text-danger small mt-1">{{ kpiError }}</div>
+							</div></div>
+						</div>
+						<!-- Advance editor -->
+						<div v-if="hasAdvance" class="col-md-6">
+							<div class="card h-100"><div class="card-body p-2">
+								<div class="d-flex justify-content-between align-items-baseline mb-1">
+									<label class="form-label small mb-0">{{ t("Advance deduction") }}</label>
+									<span class="small text-secondary">{{ t("Outstanding") }}: <span class="font-monospace fw-bold">{{ money(advOutstanding) }}</span></span>
+								</div>
+								<div class="input-group input-group-sm">
+									<input v-model.number="advDraft" type="number" min="0" class="form-control" :disabled="advSaving || detail.status === 'Locked'" />
+									<button type="button" class="btn btn-outline-secondary" :disabled="advSaving || detail.status === 'Locked'" @click="advDraft = advOutstanding">{{ t("All") }}</button>
+									<button type="button" class="btn btn-outline-primary" :disabled="advSaving || detail.status === 'Locked'" @click="saveAdvance">
+										<i class="ti ti-check me-1"></i>{{ advSaving ? t("Saving…") : t("Save") }}
+									</button>
+								</div>
+								<div v-if="advError" class="text-danger small mt-1">{{ advError }}</div>
+							</div></div>
+						</div>
+					</div>
+
+					<table class="table table-sm mt-3 mb-0">
+						<tbody>
+							<tr v-for="(l, i) in breakdownLines" :key="i">
+								<td>{{ l.label }}</td>
+								<td class="text-end font-monospace" :class="{ 'text-danger': l.kind === 'neg', 'text-secondary': l.kind === 'neutral' }">
+									{{ l.kind === 'neg' ? '−' : '' }}{{ money(l.val) }}
+								</td>
+							</tr>
+						</tbody>
+						<tfoot>
+							<tr class="fw-bold border-top"><td>{{ t("Net pay") }}</td><td class="text-end font-monospace">{{ money(detail.net) }}</td></tr>
+						</tfoot>
+					</table>
 				</div>
 			</div>
-
-			<!-- Advance recovery — only when the worker owes an advance -->
-			<div v-if="hasAdvance" class="card mb-3">
-				<div class="card-body p-2">
-					<div class="d-flex justify-content-between align-items-baseline mb-1">
-						<label class="form-label small mb-0">{{ t("Advance deduction") }}</label>
-						<span class="small text-secondary">{{ t("Outstanding") }}: <span class="font-monospace fw-bold">{{ money(advOutstanding) }}</span></span>
-					</div>
-					<div class="input-group input-group-sm">
-						<input
-							v-model.number="advDraft"
-							type="number"
-							min="0"
-							class="form-control"
-							:disabled="advSaving || detail?.status === 'Locked'"
-						/>
-						<button
-							type="button"
-							class="btn btn-outline-secondary"
-							:disabled="advSaving || detail?.status === 'Locked'"
-							@click="advDraft = advOutstanding"
-						>{{ t("All") }}</button>
-						<button
-							type="button"
-							class="btn btn-outline-primary"
-							:disabled="advSaving || detail?.status === 'Locked'"
-							@click="saveAdvance"
-						>
-							<i class="ti ti-check me-1"></i>{{ advSaving ? t("Saving…") : t("Save") }}
-						</button>
-					</div>
-					<div v-if="advError" class="text-danger small mt-1">{{ advError }}</div>
-					<div v-else class="form-text">{{ t("Recovered from net pay this period; reduces the outstanding balance. Locked periods are read-only.") }}</div>
-				</div>
-			</div>
-
-			<table class="table table-sm">
-				<tbody>
-					<tr v-for="(l, i) in breakdownLines" :key="i">
-						<td>{{ l.label }}</td>
-						<td class="text-end font-monospace"
-							:class="{ 'text-danger': l.kind === 'neg', 'text-secondary': l.kind === 'neutral' }">
-							{{ l.kind === 'neg' ? '−' : '' }}{{ money(l.val) }}
-						</td>
-					</tr>
-				</tbody>
-				<tfoot>
-					<tr class="fw-bold border-top">
-						<td>{{ t("Net pay") }}</td>
-						<td class="text-end font-monospace">{{ money(detail?.net) }}</td>
-					</tr>
-				</tfoot>
-			</table>
 		</div>
 	</div>
 </template>
