@@ -6,6 +6,7 @@ source,target
 "(path to the JSON, or the JSON inline).",
 +998 XX XXX XX XX,
 0,
+0 = no hard lock; past edits still ask for confirmation.,0 = без жёсткой блокировки; прошлые изменения всё равно требуют подтверждения.
 0.00,"0,00"
 0–30,0–30
 1 USD =,1 USD =
@@ -25,6 +26,7 @@ A valid email is required,Требуется действительный адр
 "A ≤ {0}%, B ≤ {1}%, C rest — by revenue.","A ≤ {0}%, B ≤ {1}%, C прочее — по выручке."
 "A ≤ {0}%, B ≤ {1}%, C rest — by spend.","A ≤ {0}%, B ≤ {1}%, C прочее — по расходам."
 "A ≤ {0}%, B ≤ {1}%, C rest — by {2}. Submitted; returns netted.","A ≤ {0}%, B ≤ {1}%, C прочее — по {2}. Проведённые; возвраты нетто."
+AMC,Контракт ТО
 AP Aging,Анализ кредиторской задолженности
 AR Aging,Анализ дебиторской задолженности
 ARCA,ARCA
@@ -77,11 +79,14 @@ Add column,Добавить колонку
 Add customer,Добавить клиента
 Add deal,Добавить сделку
 Add item,Добавить товар
+Add item to stock,Добавить товар на склад
 Add line,Добавить строку
 Add outlet,Добавить торговую точку
 Add punch,
 Add row,Добавить строку
 Add supplier,Добавить поставщика
+Add to Google Calendar,Добавить в Google Календарь
+Add to stock,Добавить на склад
 Add warehouse,Добавить склад
 Add your first customer to start sending quotes and invoices.,"Добавьте первого клиента, чтобы начать отправку предложений и счётов-фактур."
 Add your first employee to start tracking attendance, leave and payroll.
@@ -89,15 +94,18 @@ Add your first employee to start tracking attendance, leave and payroll.
 Add your first supplier to start recording bills and purchases.,"Добавьте первого поставщика, чтобы начать регистрацию счетов и закупок."
 Additional,
 Additional duties,
+Additional-duties allowance,Надбавка за доп. обязанности
 Address,Адрес
 Adjust dates or check that {company} has posted transactions in this period.,"Измените даты или проверьте, что {company} имеет проведённые операции в этом периоде."
 Adjust filters and run the report again.,
 Adjust quantities for a partial receipt. Rows left at zero are skipped.,Измените количества для частичной приёмки. Строки с нулём будут пропущены.
 Admin,Администратор
 Administer users & roles,Управление пользователями и ролями
+Advance,Аванс
 Advance amount,
 Advance paid,Авансовый платёж
 Against,По
+Aging,Срок давности
 Alerts,
 All,Все
 All Reports,Все отчёты
@@ -105,8 +113,10 @@ All attendance exceptions have been resolved or ignored.,
 All categories,Все категории
 All computed allocation amounts were zero.,
 All cost centres,
+All coverage,Любое покрытие
 All current production runs are fully staged or inactive.,
 All customers,
+All departments,Все отделы
 All devices,
 All directions,Все направления
 All documents,Все документы
@@ -217,6 +227,9 @@ Attendance,Посещаемость
 Attendance Dashboard,
 Attendance Rule Sets,
 Attendance Simulator,
+Attendance edits are open — no hard lock set.,Изменения посещаемости открыты — жёсткая блокировка не задана.
+Attendance on/before,Посещаемость до
+Attendance summary,Сводка посещаемости
 Audit Trail,Журнал изменений
 Audit trail,Журнал изменений
 Audited At,Проверено
@@ -254,6 +267,7 @@ Bank amount,Сумма в банке
 Bank transaction is required.,
 Bank transaction not found.,
 Bank/cash account is required.,Требуется счет в банке или кассе.
+Base,База
 Base equivalent,Эквивалент в базовой валюте
 Base salary,
 Base salary (UZS),
@@ -277,6 +291,7 @@ Billing,Выставление счёта
 Bills,Счета
 Bimonthly,Раз в две недели
 Board,Доска
+Bonus,Премия
 Book rate,
 Booked,Заказано
 Branch,
@@ -439,12 +454,16 @@ Complete,Готово
 Completed,Завершено
 Completed visit,Выполненный выезд
 Completion,Завершение
+Completion rate,Доля завершения
 Compliance,Соответствие
 Component map {0} not found.,
 Component mapping is incomplete. The following quantities have no salary ,
 Components,Компоненты
+Computed Pay,Расчёт зарплаты
+Computed from attendance summaries using the payroll formula. Read-only preview — not the official salary run.,Рассчитано по табелю с использованием формулы зарплаты. Только просмотр — это не официальный расчёт.
 Conditions,
 Configure Google Drive below first.,
+Confirm,Подтвердить
 Confirm Submit,
 Confirm finish,Подтвердить завершение
 Confirm restore test,Подтвердите тест восстановления
@@ -462,6 +481,9 @@ Conversion rate for USD to UZS cannot be less than 1000 (got {0}).,
 Conversion rate {0} is outside the allowed CBU tolerance band (+/-20%) for {1} to {2}. ,
 Convert to customer,Создать клиента
 Cooler,Охладитель
+Copy failed.,Не удалось скопировать.
+Copy message,Скопировать сообщение
+Copy reminder,Скопировать напоминание
 Correction approved.,
 Correction locked,
 Correction rejected.,
@@ -477,6 +499,7 @@ Cost must be positive.,Себестоимость должна быть поло
 Could not check payment status.,Не удалось проверить статус платежа.
 Could not read backup file: {0},
 Could not read the uploaded file.,
+Could not read your location.,Не удалось определить местоположение.
 Could not resolve payroll period: {0},
 Could not start the online payment.,Не удалось начать онлайн-оплату.
 Couldn't work out the cash amount to pay — check the exchange rate and the paying account.,
@@ -485,7 +508,10 @@ Count:,Количество:
 Counted qty,Подсчитанное кол-во
 Counterparty,Контрагент
 Country,Страна
+Coverage,Покрытие
+Covered,Под покрытием
 Create,Создать
+Create & select,Создать и выбрать
 Create / edit customers,Создание / изменение клиентов
 Create / edit suppliers,Создание / изменение поставщиков
 Create Bill,Создать счёт
@@ -514,6 +540,7 @@ Create your first lead or adjust the search filters.,Создайте первы
 Create your first process to model business workflows.,Создайте первый процесс для моделирования бизнес-процессов.
 Created,Создан
 Creates Maintenance Visit,Создаёт запись выезда
+"Creates a stock item; if qty and cost are given, an opening stock receipt is posted.",Создаёт складской товар; при указании кол-ва и цены проводится начальное оприходование.
 Credit,Кредит
 Credit Limit,Кредитный лимит
 Credit Terms (days),Условия кредита (дней)
@@ -628,11 +655,13 @@ Device user ID is required.,
 Direct credit note,
 Direct sales return,
 Direction,Направление
+Directions,Маршрут
 Disabled,Отключено
 Disc,Скидка
 Disc %,Скидка %
 Discard,
 Discard unsaved changes?,
+Discipline,Дисциплина
 Discount,Скидка
 Discount %,Скидка %
 Dismiss,Закрыть
@@ -655,6 +684,7 @@ Document updated successfully.,
 "Document, party or requester…","Документ, контрагент или заявитель…"
 Documents,Документы
 Done,Выполнено
+Download .ics,Скачать .ics
 Downpayment,Первоначальный взнос
 Downpayment %,Первоначальный взнос %
 Draft,Черновик
@@ -675,6 +705,7 @@ Duplicate sequence {0} on this route.,Повторяющаяся последо�
 Duplicate summary,
 Duplicates,Дубликаты
 Duration (ms),Длительность (мс)
+Duty supplement,Доплата за обязанности
 EHF (Elektron Hisob-Faktura) submissions appear here.,Здесь отображаются отправки ЭСФ (Elektron Hisob-Faktura).
 EHF Status,Статус ЭСФ
 EHF Submissions,Отправки ЭСФ
@@ -685,6 +716,7 @@ Each additional step charges the step fee.,
 Each purpose row must be an object.,
 Each purpose row needs a service person.,
 Early Exit,
+Early leave (min),Ранний уход (мин)
 Early leave deduction,
 Earnings,Начисления
 Edit,Редактировать
@@ -709,6 +741,7 @@ Edit supplier,Редактировать поставщика
 Edited,Изменено
 Edited 1 field,Изменено 1 поле
 Edited {0} field(s),
+Editing a past day,Изменение прошедшего дня
 Editing the rate updates the received amount.,Редактирование цены обновляет полученную сумму.
 Editing the received amount updates the exchange rate.,Редактирование полученной суммы обновляет курс.
 Email,Электронная почта
@@ -751,6 +784,7 @@ Entries on/before this date are frozen.,
 Entry,
 Equipment,Оборудование
 Equipment and Issue are required.,Оборудование и проблема обязательны.
+Equipment coverage,Покрытие оборудования
 Equipment is required.,Оборудование обязательно.
 Equipment name is required.,Название оборудования обязательно.
 Equity,Капитал
@@ -767,6 +801,8 @@ Exceeded (Annual),
 Exceeded (Monthly),
 Excel,
 Excel (.xlsx),Excel (.xlsx)
+Excel — basic,Excel — базовый
+Excel — professional,Excel — профессиональный
 Exception Type,
 Exception ignored.,
 Exception name is required.,
@@ -798,10 +834,12 @@ Expense entry cancelled.,
 Expense lines,Строки расходов
 Expense saved · {name},Расход сохранён · {name}
 Expenses,Расходы
+Expired,Истёк
 Expires in,Истекает через
 Expiring within,Истекает в течение
 Expiry,Срок годности
 Export,Экспорт
+Export CSV,Экспорт CSV
 Export failed.,Экспорт не удался.
 Extra lateness from slow device clock.,
 F.I.O.,Ф.И.О.
@@ -868,6 +906,7 @@ Failed to load detail.,Не удалось загрузить детали.
 Failed to load details.,
 Failed to load document.,
 Failed to load employee.,
+Failed to load equipment.,Не удалось загрузить оборудование.
 Failed to load form options.,Не удалось загрузить параметры формы.
 Failed to load invoice.,Не удалось загрузить счёт-фактуру.
 Failed to load invoices.,Не удалось загрузить счета-фактуры.
@@ -877,6 +916,8 @@ Failed to load lead.,Ошибка при загрузке лида.
 Failed to load leads.,Ошибка при загрузке лидов.
 Failed to load ledger.,Не удалось загрузить главную книгу.
 Failed to load options.,Не удалось загрузить параметры.
+Failed to load outlets.,Не удалось загрузить точки.
+Failed to load overdue installments.,Не удалось загрузить просрочки.
 Failed to load party defaults.,Ошибка загрузки реквизитов контрагента.
 Failed to load payment defaults.,Ошибка загрузки реквизитов платежа.
 Failed to load payment entries.,Ошибка загрузки записей платежа.
@@ -894,6 +935,7 @@ Failed to load sales order.,
 Failed to load sales orders.,Ошибка загрузки заказов на продажу.
 Failed to load sales report.,
 Failed to load service calendar.,Не удалось загрузить календарь обслуживания.
+Failed to load service map.,Не удалось загрузить карту сервиса.
 Failed to load service tickets.,Не удалось загрузить заявки на обслуживание.
 Failed to load service visits.,Не удалось загрузить выезды.
 Failed to load staging queue.,
@@ -925,6 +967,7 @@ Failed to save OSA audit.,Ошибка сохранения аудита нал�
 Failed to save customer.,Ошибка сохранения клиента.
 Failed to save deal.,Ошибка при сохранении сделки.
 Failed to save lead.,Ошибка при сохранении лида.
+Failed to save location.,Не удалось сохранить геолокацию.
 Failed to save photo report.,Ошибка сохранения отчёта фотографий.
 Failed to save planogram.,Ошибка сохранения плановой схемы.
 Failed to save process.,Не удалось сохранить процесс.
@@ -932,6 +975,7 @@ Failed to save promo scheme.,Ошибка сохранения схемы акц
 Failed to save stock entry.,Ошибка сохранения записи на складе.
 Failed to save van stock.,Ошибка сохранения запасов фургона.
 Failed to save visit.,Ошибка сохранения визита.
+Failed to save.,Не удалось сохранить.
 Failed to search items.,
 Failed to submit expense.,
 Failed to submit transfer.,
@@ -960,6 +1004,7 @@ Financed,Финансируется
 Financial,
 Financial Statements,
 Find item,
+Fines,Штрафы
 Finish,Завершить
 Finish Google Drive setup,Завершите настройку Google Drive
 Finish Order,
@@ -1007,8 +1052,8 @@ Full name (optional — filled automatically on save),
 Fully Completed,Полностью выполнено
 Fully Staged,
 Fully billed but auto-close did not run — use Close below.,
-GL booked USD (historical cost),Сумма в USD по проводкам (историческая)
 GL Integrity Anomaly Alert,
+GL booked USD (historical cost),Сумма в USD по проводкам (историческая)
 GPS Latitude,Широта GPS
 GPS Longitude,Долгота GPS
 Gain / Loss,
@@ -1020,8 +1065,10 @@ Gateways,Шлюзы
 Gender,Пол
 Gender is required.,Укажите пол.
 Generate and submit,Создать и провести
+"Generate attendance summaries first, then computed pay appears here.",Сначала сформируйте сводки по табелю — расчёт появится здесь.
 Generate drafts,Создать черновики
 Generated salary slips,Создано листков
+Geolocation is not available in this browser.,Геолокация недоступна в этом браузере.
 Go to Sales Orders,Перейти к заказам на продажу
 Good Produced Qty,
 Google Drive libraries are not installed on the server. ,
@@ -1034,6 +1081,7 @@ Gross Margin by Customer,Валовая прибыль по клиентам
 Gross Margin by Item,Валовая прибыль по товарам
 Gross ROI %,Валовая рентабельность инвестиций %
 Gross pay,Начислено
+Gross total,Итого начислено
 Group,Группа
 "Group warehouse (can contain children, holds no stock itself)","Складская группа (может содержать подгруппы, сама не содержит запасы)"
 HR,HR
@@ -1042,9 +1090,12 @@ Half rate,
 Half-day & Presence,
 Half-day threshold (min),
 Heavy conditions,
+Heavy-conditions allowance,Надбавка за тяжёлые условия
+Height,Высота
 Hello {name},"Привет, {name}"
 High conflicts,Высокие конфликты
 Hire date,
+Holiday,Праздник
 Holiday OT premium (%),
 Horizontal lanes (flow left→right),Горизонтальные дорожки (поток слева→вправо)
 Hours,Часы
@@ -1058,7 +1109,10 @@ Ignored,
 Immutable record,
 Impact,
 Import,Импорт
+Import (paste / CSV),Импорт (вставка / CSV)
 Import bank statement,Импорт банковской выписки
+Import failed.,Импорт не удался.
+Import outlet locations,Импорт геолокаций точек
 Import {0} lines,Импортировать {0} строк
 Imported,Импортировано
 Imported {0} of {1} lines ({2} duplicates skipped).,Импортировано {0} из {1} строк ({2} дубликатов пропущено).
@@ -1077,6 +1131,7 @@ Install Date,Дата установки
 Install libraries on the server:,
 Installment,Рассрочка
 Installment Calendar,
+Installments,Платежей
 Integration,
 Integration type,
 Invalid completion status.,
@@ -1140,6 +1195,7 @@ Journal,
 Journal Entries,Журнальные записи
 Journal Entry,Запись в журнале
 Journal Entry legs,Проводки журнала
+KPI,KPI
 Keep,Хранить
 Keep Editing,
 Keep typing to narrow…,Продолжайте вводить для уточнения…
@@ -1157,8 +1213,10 @@ Last month,
 Last name,Фамилия
 Last sync,
 Last updated,
+Last visit,Последний визит
 Last year,
 Late,
+Late (min),Опоздание (мин)
 Late Arrival,
 Late deduction,
 Late fee,
@@ -1174,6 +1232,7 @@ Leave type,Тип отпуска
 Ledger,
 Ledger spans multiple account currencies; amounts shown in base currency.,Бухгалтерская книга охватывает несколько валют счёта; суммы показаны в базовой валюте.
 Left,Уволен
+Length,Длина
 Level {0},
 Level {0} approved — awaiting level {1}.,
 Level {0} cannot be approved yet — level {1} must be completed first.,
@@ -1197,12 +1256,18 @@ Loading invoices,
 Loading more…,
 Loading warehouses…,Загрузка складов…
 Loading…,Загрузка…
+Located,С геолокацией
+Location saved.,Геолокация сохранена.
+Locations,Локации
 Lock,
+Lock attendance older than (days),Блокировать посещаемость старше (дней)
 Lock payroll period,
 Lock period,
 Lock the payroll period before generating salary components. ,
+Lock window,Окно блокировки
 Lock {0}? No further changes will be allowed once locked.,
 Locked at,
+Locked on/before,Заблокировано до
 Log Out,
 Log out,Выйти
 Login required,Требуется вход
@@ -1223,13 +1288,16 @@ Manual,
 Manufacturing,Производство
 Map,Карта
 Map employees to device user IDs so gate events resolve to attendance records.,
+Map library could not be loaded.,Не удалось загрузить библиотеку карты.
 Mapping created.,
 Mapping deleted.,
 Mapping updated.,
 Margin,Прибыль
 Margin %,Прибыль %
+Mark,Отметить
 Mark Resolved,Отметить как решено
 Mark and submit,Отметить и провести
+Mark as,Отметить как
 Mark attendance,Отметить
 Mark daily attendance to start building reports.,"Отмечайте посещаемость ежедневно, чтобы строить отчёты."
 Mark restore tested,Отметить тест восстановления
@@ -1247,6 +1315,7 @@ Materials transferred successfully!,
 Maximum late deduction per day (0 = unlimited).,
 Memo,Заметка
 Message,Сообщение
+Message copied.,Сообщение скопировано.
 Mijoz balansi,Баланс клиента
 Min for present (min),
 Minimum minutes worked to count as half-day.,
@@ -1270,6 +1339,7 @@ Mon,Пн
 Monday,
 Money,Деньги
 Month,
+Month grid,Месячная сетка
 Month is required in YYYY-MM format.,
 Month to date,
 Monthly,Ежемесячно
@@ -1286,7 +1356,9 @@ My work orders,Мои заказы на производство
 Name,Название
 Name is required.,
 Name or email,Название или адрес электронной почты
+Name…,Имя…
 Narxi,Цена
+Need GPS,Без GPS
 Needs Freezer,Нужен морозильник
 Needs setup,Требует настройки
 Needs your attention,
@@ -1363,6 +1435,7 @@ New warehouse,Новый склад
 Next,Далее
 Night,
 Night & Overtime,
+Night allowance,Доплата за ночные
 Night allowance per hour (UZS),
 Night end (hour),
 Night premium (%),
@@ -1374,6 +1447,7 @@ No ARCA payment events yet.,Платежей ARCA пока нет.
 No BOMs yet,Спецификаций пока нет
 No CBU exchange rate found for {0} to {1} on or before {2}.,
 No EHF submissions yet. Submit a Sales Invoice to enqueue one.,Пока нет отправок ЭСФ. Проведите счёт продаж
+No GPS-located outlets for this period.,Нет точек с GPS за этот период.
 No Google service account configured (site_config: stabler_gdrive_service_account).,
 No OSA audits yet,Аудитов OSA пока нет
 No ROI snapshots yet,Снимков ROI пока нет
@@ -1382,6 +1456,7 @@ No access,
 No account rows,
 No activity recorded yet.,
 No attendance records,Нет записей о посещаемости
+No attendance summaries for this period,Нет сводок по табелю за этот период
 No backups on disk yet. Click “Back up now”.,На диске ещё нет копий. Нажмите «Создать копию сейчас».
 No bills in this range,Счётов в этом диапазоне нет
 No budget data for this period,
@@ -1394,6 +1469,7 @@ No company selected,Компания не выбрана
 No correction requests,
 No corrections are waiting for review.,
 No corrections found for this status.,
+No coverage,Без покрытия
 No creditors found.,
 No custom allowances. Click Add to create one.,
 No customers,Клиентов нет
@@ -1405,11 +1481,14 @@ No debtors found.,
 No deductions,Нет удержаний
 No default Bank or Cash account configured for company {0}.,Для компании {0} не настроены банковский или кассовый счёт по умолчанию.
 No default {0} account found to copy parent from.,
+No department,Без отдела
 No earnings,Нет начислений
 No employees yet,Сотрудников пока нет
+No employees.,Нет сотрудников.
 No employee–device mappings,
 No enabled Stabler Payroll Component Map found for company {0}. ,
 No entries match these filters.,Нет записей по этим фильтрам.
+No equipment found.,Оборудование не найдено.
 No equipment yet,Оборудования пока нет
 No exceptions found,
 No exceptions.,
@@ -1452,7 +1531,9 @@ No orders.,Нет заказов.
 No org chart yet,Организационная диаграмма отсутствует
 No outlets in this route yet.,Торговых точек на этом маршруте нет.
 No outlets yet,Пока нет торговых точек
+No outlets.,Нет точек.
 No outstanding balances,Нет задолженности
+No overdue installments.,Нет просроченных платежей.
 No payments in this range,Платежей в этом диапазоне нет
 No payments recorded in this range,
 No payments waiting for approval,"Нет платежей, ожидающих согласования"
@@ -1507,13 +1588,16 @@ No summaries,
 No suppliers,Поставщиков нет
 No suppliers match that name,Поставщики с таким названием не найдены
 No template,Шаблона нет
+No tickets for this unit.,Нет заявок по этой единице.
 No transactions,Операций нет
 No transactions in this period.,Операций в этом периоде нет.
 No transactions yet.,Операций нет.
 No travel,
 No unbilled service visits,
+No valid rows found.,Допустимые строки не найдены.
 No van stock yet,Запасов в автофургоне нет
 No verified restore on record. A backup you have never restored is not a backup you can trust — test one and record it.,
+No visits,Нет визитов
 No visits yet,Пока нет визитов
 No warehouses for this company,Складов для этой компании нет
 No work orders,Нет производственных заказов
@@ -1563,6 +1647,7 @@ Off-CBU Documents,
 Off-box (Google Drive),Вне сервера (Google Drive)
 Office,
 Office branch or location,
+Oldest (days),Старейший (дн.)
 Oldest reservation,Старейшая резервация
 On,Вкл
 On Leave,В отпуске
@@ -1575,6 +1660,7 @@ On-hand value vs sales velocity. Flags slow-moving and dead stock.,Стоимо�
 On-hand value vs {0}-day sales. Dead = no sales in period.,Стоимость запасов на складе против продаж за {0} дней. Мёртвый = нет продаж в периоде.
 On-shelf availability checks from field visits.,
 One or more lines exceed available stock. Reduce qty or choose a different warehouse.,Одна или несколько строк превышают доступный запас. Уменьшите количество или выберите другой склад.
+"One outlet per line: code or name, latitude, longitude. Comma, tab or semicolon separated.","Одна точка на строку: код или название, широта, долгота. Разделители: запятая, табуляция или точка с запятой."
 Online payment,Онлайн-оплата
 Only Approved claims can be settled. Current status: {0},Только одобренные требования могут быть урегулированы. Текущий статус: {0}
 Only Payment Entry / Journal Entry can be reconciled here.,
@@ -1595,11 +1681,13 @@ Open SREs,Открытые SRE
 Open exceptions,
 Open payment link,Открыть ссылку для оплаты
 Open pipeline,Открытая воронка
+Open tickets,Открытые заявки
 Opened,Открыта
 Opening,Начисление
 Opening balance,Начальный остаток
 "Opening balance, period movement, and running balance by account.",
 Opening balances,Начальные остатки
+Opening qty,Начальный остаток
 Operations,Операции
 Operator,Оператор
 Operator Kiosk,
@@ -1625,11 +1713,14 @@ Outflow,Выход
 Outlet,Торговая точка
 Outlet Class,Класс точки
 Outlet Code,Код точки
+Outlet Locations,Геолокация точек
 Outlet Name,Название точки
 Outlet Type,Тип точки
+Outlet class,Класс точки
 Outlet code,Код торговой точки
 Outlet code is required.,Код торговой точки обязателен.
 Outlet is required.,Торговая точка обязательна.
+Outlet locations,Геолокация точек
 Outlet name (e.g. OUT-001),Название торговой точки (например OUT-001)
 Outlet name is required.,Название торговой точки обязательно.
 Outlet {0} appears twice on this route.,Торговая точка {0} встречается дважды на этом маршруте.
@@ -1637,10 +1728,12 @@ Outlets,Торговые точки
 Outstanding,Невыплаченная
 Outstanding customer balances for field teams.,
 Overdue,Просрочено
+Overdue installments,Просроченные платежи
 Override qty must be greater than zero,Переопределённое количество должно быть больше нуля
 Override role,
 Override — submit despite low stock (admin),Отменить блок — принудительно отправить при нехватке запасов (администратор)
 Overtime,
+Overtime (min),Сверхурочно (мин)
 Overview,Обзор
 Owes us,Должен нам
 Owner,
@@ -1673,6 +1766,7 @@ Parts Issue,Списание деталей
 Party,Контрагент
 Party account not resolved — re-select the party.,Счёт контрагента не найден — повторно выберите контрагента.
 Party is required.,Контрагент обязателен.
+Past day,Прошедший день
 Paste a direct image URL or leave blank to use initials.,
 Pause,
 Pause Work,
@@ -1699,7 +1793,9 @@ Payment failed,Платёж не выполнен
 Payment mode is not allowed for this POS Profile.,
 Payment mode {0} is not an online gateway.,
 "Payment number, reference or party…",
+Payment overdue,Платёж просрочен
 Payment received,Оплата получена
+Payment reminder,Напоминание об оплате
 Payment saved — pending approval before it posts.,Платёж сохранён — ожидает согласования перед проведением.
 Payment schedule,График платежей
 Payment type,Тип платежа
@@ -1750,19 +1846,24 @@ Pick a leave type,
 Pick a leave type.,Выберите тип отпуска.
 Pick a rule set…,
 Pick a source warehouse.,Выберите исходный склад.
+Pick a status.,Выберите статус.
 Pick a supplier.,Выберите поставщика.
 Pick a warehouse,Выберите склад
 Pick a warehouse to receive stock into.,Выберите склад для оприходования товара.
 Pick a warehouse.,Выберите склад.
 Pick an employee,
 Pick an employee.,Выберите сотрудника.
+Pick an outlet from the list first.,Сначала выберите точку из списка.
+"Pick an outlet, then click the map.","Выберите точку, затем кликните по карте."
 Pick return warehouse,
 Pick the account funds will be paid from.,"Выберите счёт, с которого будут переведены средства."
 Pick the account that will receive the funds.,"Выберите счёт, который получит средства."
+Pieces,Штук
 Pistachio,
 Place branded freezer at {0} (deal {1}),
 Place your RFID badge on the reader to log in,
 Placed Freezer,Холодильник размещён
+Placing,Размещение
 Plan Type,Тип плана
 Planned,Запланировано
 Planned Date,Плановая дата
@@ -1813,6 +1914,8 @@ Produced Qty,
 Produced quantity,Выпущенное количество
 Produced quantity must be positive.,Выпущенное количество должно быть положительным.
 Production Item,
+Professional Excel export of this ledger,Профессиональный экспорт этого реестра в Excel
+Professional Excel export with current filters,Профессиональный экспорт в Excel с текущими фильтрами
 Profile,Профиль
 "Profit and Loss, Balance Sheet, Trial Balance, and Cash Flow.",
 Projected,Прогнозируемо
@@ -1827,6 +1930,7 @@ Promo Schemes,Схемы промоций
 Promos,Промоции
 Promotion spend and uplift analysis.,
 Properties,Свойства
+Prorated base,База (пропорц.)
 Public holiday,
 Punches,
 Purchase Invoice,Счёт-фактура покупки
@@ -1940,6 +2044,7 @@ Remaining,Остаток
 Remaining Staging,
 Remark,Замечание
 Remarks,Замечания
+Remind,Напомнить
 Remittance,Денежный перевод
 Remote,
 Remove,Удалить
@@ -1979,8 +2084,8 @@ Required materials,Требуемые материалы
 Reschedule,Перенести
 Reserved,Зарезервировано
 Reserved Stock,Зарезервированный запас
-Reserved value,Стоимость резерва
 Reserved qty,Кол-во в резерве
+Reserved value,Стоимость резерва
 Reset email sent.,Сообщение сброса отправлено.
 Reset password,Сбросить пароль
 Reset password?,
@@ -2033,6 +2138,7 @@ Route Name,Название маршрута
 Route code is required.,Требуется код маршрута.
 Route name is required.,Требуется имя маршрута.
 Routes,Маршруты
+Row,Строка
 Row not found on this Stock Entry,Строка не найдена в этой записи товара
 Row {n} ({item}): qty exceeds available stock (available {free}).,Строка {n} ({item}): кол-во превышает доступный товар (доступно {free}).
 Row {n}: qty must be greater than zero.,Строка {n}: кол-во должно быть больше нуля.
@@ -2130,6 +2236,7 @@ Search BOMs or finished goods…,Поиск спецификаций или го
 Search account…,Поиск счёта…
 Search asset tag…,Поиск метки имущества…
 "Search by Work Order, Item, or Warehouse…",
+Search by serial or item,Поиск по серийному номеру или товару
 Search campaigns…,Поиск кампаний…
 Search customer,Поиск клиента
 Search customer name…,Поиск имени клиента…
@@ -2143,10 +2250,12 @@ Search item...,
 Search items…,Поиск товаров…
 Search item…,Поиск товара…
 Search leads…,Поиск лидов…
+Search outlets,Поиск точек
 Search outlets…,Поиск точек…
 Search processes…,Поиск процессов…
 Search reference…,Поиск по номеру…
 Search reports,
+Search stock items…,Поиск товаров на складе…
 Search supplier name…,Поиск названия поставщика…
 Search suppliers…,Поиск поставщиков…
 Search supplier…,Поиск поставщика…
@@ -2159,6 +2268,7 @@ Segregation of duties: the approver must be a different user from the requester.
 Segregation of duties: this role combination is not allowed ({0}). Disable 'Enforce SoD' to override.,
 Segregation of duties: you raised this correction request — it must be approved by someone else.,
 Segregation of duties: you raised this correction request — it must be reviewed by someone else.,
+Select,Выбрать
 Select POS Profile,
 Select a POS Profile,
 Select a bank account.,Выберите банковский счёт.
@@ -2195,6 +2305,8 @@ Send invite,Отправить приглашение
 Send password reset email to ,Отправить письмо для сброса пароля на 
 Sender name,Имя отправителя
 Sender pays,Отправитель платит
+Seniority,Стаж
+Seniority allowance,Надбавка за стаж
 Seniority allowance (UZS),
 Separation-of-duties violation — you cannot perform this action:\n{0},
 Serial No,Серийный номер
@@ -2206,6 +2318,7 @@ Service Equipment,
 Service Map,
 Service Tickets,
 Service Visits,
+Service history,История обслуживания
 Service module is not enabled for {0}.,
 Service person,Исполнитель
 Service ticket assignment,
@@ -2221,6 +2334,7 @@ Settlement failed.,Расчёт не удался.
 Severity,Серьёзность
 Shape,Фигура
 Shapes,Фигуры
+Share,Поделиться
 Shelf,Полка
 Shelf Position,Позиция на полке
 Shift,
@@ -2328,6 +2442,7 @@ Submitted invoices; returns netted.,Проведённые счета прода
 Submitted visits waiting for invoice or parts issue.,"Подтверждённые выезды, ожидающие счёта или списания деталей."
 Subtotal,Подытог
 Suggested,Рекомендуемый
+Summary,Сводка
 Summary locked,
 Sun,Вс
 Sunday,
@@ -2358,6 +2473,8 @@ Tax template,Шаблон налогов
 Taxes,Налоги
 Technician,Техник
 Technician state,Статус техника
+Telegram,Telegram
+Tenure,Стаж
 Term (months),Срок (месяцев)
 Terms,Условия
 Terms / remarks,Условия / примечания
@@ -2409,6 +2526,7 @@ Thursday,
 Ticket is required.,
 Ticket must have a customer before closing a visit.,
 Tickets,Заявки
+Tickets by status,Заявки по статусам
 Time,
 TimePay ID,
 TimePay name,
@@ -2441,8 +2559,10 @@ Total cost,Общая стоимость
 Total credit value,
 Total in {0},Итого в {0}
 Total outstanding,Всего задолженности
+Total overdue,Всего просрочено
 Total payable,Всего к выплате
 Total receivable,Итого к получению
+Total units,Всего единиц
 Total value,Общая стоимость
 Total:,Итого:
 Trade Marketing,Торговый маркетинг
@@ -2462,6 +2582,7 @@ Transfer to WIP Warehouse,
 Transferred,Передано
 Transferred Qty,
 Transfers,Передачи
+Transport,Транспорт
 Trend,
 Trigger Item,Товар-триггер
 Try a different search term or clear the filter.,Попробуйте другой поисковый запрос или очистите фильтр.
@@ -2478,6 +2599,8 @@ USD rate on this date,Курс USD на эту дату
 USD → UZS,USD → UZS
 Unassigned,Не назначен
 Unbilled,Не выставлен счёт
+Unbilled queue,Очередь к выставлению
+Unit cost,Себестоимость
 Units Sold,Проданных единиц
 Unknown Cost Center: {0},
 Unknown Fiscal Year: {0},
@@ -2504,12 +2627,14 @@ Unreconciled transactions,Несверенные операции
 Unsupported language: {0},Неподдерживаемый язык: {0}
 Unsupported statement format (expected 1C ClientBank Exchange).,
 Untitled Process,Без названия
+Upcoming,Предстоящие
 Update stock,
 Uplift Value,Прирост стоимости
 Upload failed,Ошибка загрузки
 Upload latest to Drive,Загрузить последнюю в Drive
 Uploaded {0} file(s) to Google Drive.,
 Uploading…,Загрузка…
+Use my location,Моё местоположение
 Use source warehouse,Использовать склад-источник
 User,Пользователь
 User account,Учётная запись
@@ -2559,6 +2684,7 @@ Visit name is required.,Требуется название визита.
 Visit photos and outlet execution evidence.,
 Visits,Визиты
 Visits appear once they are planned from a route or created manually.,"Визиты появляются здесь, когда они запланированы из маршрута или созданы вручную."
+Visits this month,Визитов в этом месяце
 Void Cart,
 Voucher,Ваучер
 Voucher not found.,
@@ -2581,15 +2707,18 @@ Warehouse name is required.,Требуется название склада.
 Warehouse stock,
 Warehouses,Склады
 Warn only,Только предупреждать
+Warranty,Гарантия
 Warranty Until,Гарантия до
 We owe,Мы должны
 Wed,Ср
 Wednesday,
+Weekend,Выходной
 Weekly,Еженедельно
 Weekly off days,
 Weight,Вес
 Welcome to Stabler,Добро пожаловать в Stabler
 What is this entry for?,Для чего эта запись?
+WhatsApp,WhatsApp
 When,Когда
 "When someone submits a payment that needs review, it appears here.","Когда кто-то отправит платёж на проверку, он появится здесь."
 Why it matters,Почему это важно
@@ -2604,6 +2733,7 @@ Widen the date range or record a payment receipt or disbursement.,Расширь
 "Widen the date range, relax the status filter, or log a new bill.","Расширьте диапазон дат, ослабьте фильтр статуса или зарегистрируйте новый счёт."
 "Widen the date range, relax the status filter, or send a new proposal.","Расширьте диапазон дат, ослабьте фильтр статуса или отправьте новое предложение."
 "Widen the date range, relax the status filter, or start a new order.","Расширьте диапазон дат, ослабьте фильтр статуса или начните новый заказ."
+Width,Ширина
 Win/Loss Reason,Причина выигрыша/проигрыша
 Withdrawal,Списание
 Withheld,Удержано
@@ -2635,12 +2765,14 @@ You have already approved level {0} for this request.,
 You have no approval requests,У вас нет заявок на согласование
 You have unsaved changes. Leaving this page will discard them.,
 "You must hold an HR Manager, System Manager, or Stabler Admin role to lock a payroll period.",
+You need a payroll/HR role to view computed pay.,Для просмотра расчёта зарплаты нужна роль расчётчика/HR.
 You need administrator access to view this page.,Требуется доступ администратора для просмотра этой страницы.
 You raised this request — it must be approved by someone else.,
 You raised this request — it must be reviewed by someone else.,
 You raised this — another user must approve it.,Вы создали эту заявку — её должен согласовать другой пользователь.
 "Your books are empty. Get started by adding a customer, recording your first sale, or logging an opening balance.","Ваши книги пусты. Начните с добавления клиента, записи первой продажи или ввода начального остатка."
 Yuk xati,Юк хати
+across all statuses,по всем статусам
 against,
 avail,дост.
 available,
@@ -2658,6 +2790,7 @@ days,дн.
 default,
 device_name is required.,
 device_user_id is required.,
+e.g. Chevrolet Cobalt 2024,напр. Chevrolet Cobalt 2024
 e.g. EMP-00042,
 e.g. Main entrance reader,
 "e.g. OK, Approved","напр. Да, Одобрено"
@@ -2673,18 +2806,22 @@ from last bill,из последнего счёта
 high,высокий
 https://…,
 info,инфо
+inst.,плат.
+is locked from edits.,заблокирована для изменений.
 item,товар
 item_code and warehouse are required,item_code и warehouse обязательны
 items,товары
 left,осталось
 line,строка
 lines,
+located,с геолокацией
 medium,средний
 min,
 mo,мес
 more,ещё
 moves stock,
 name is required.,
+need GPS,без GPS
 no stock movement,
 on budget,
 one-off,разовый
@@ -2697,22 +2834,29 @@ payroll_period is required.,
 planned,план
 "punches must be a list of {timestamp, direction}.",
 quantity,количество
+ready to invoice,готово к счёту
 reason is required and must not be empty.,
 requested_value is required.,
 reserved,резерв
 revenue,выручка
 rule_set_name is required.,
 save as draft,
+selected,выбрано
 sets,наборов
+skipped,пропущено
 source,target
 step_idx must be an integer.,step_idx должен быть целым числом.
 stock,запас
 to_date must be >= from_date.,
 unfavorable,
 units,
+units total,единиц всего
 user@example.com,user@example.com
+valuation,оценка
 vouchers must be a JSON list.,
 vs. last month,в сравнении с прошлым месяцем
+without location,без геолокации
+yr,г.
 {0} ({1}),
 {0} is required.,{0} обязателен.
 {0} line item change(s),
@@ -2743,127 +2887,3 @@ vs. last month,в сравнении с прошлым месяцем
 — select —,
 — top-level —,— верхний уровень —
 ⚠ {0} line(s) had no cost — verify item valuation; margin may be overstated.,⚠ {0} строк(а) без себестоимости — проверьте оценку товара; маржа может быть завышена.
-Tenure,Стаж
-Discipline,Дисциплина
-All departments,Все отделы
-Attendance summary,Сводка посещаемости
-Professional Excel export with current filters,Профессиональный экспорт в Excel с текущими фильтрами
-Excel — professional,Excel — профессиональный
-Excel — basic,Excel — базовый
-Professional Excel export of this ledger,Профессиональный экспорт этого реестра в Excel
-Length,Длина
-Width,Ширина
-Height,Высота
-Pieces,Штук
-Upcoming,Предстоящие
-No visits,Нет визитов
-without location,без геолокации
-Failed to load service map.,Не удалось загрузить карту сервиса.
-Map library could not be loaded.,Не удалось загрузить библиотеку карты.
-Outlet class,Класс точки
-Last visit,Последний визит
-Visits this month,Визитов в этом месяце
-Directions,Маршрут
-No GPS-located outlets for this period.,Нет точек с GPS за этот период.
-Outlet locations,Геолокация точек
-Outlet Locations,Геолокация точек
-Locations,Локации
-located,с геолокацией
-Located,С геолокацией
-need GPS,без GPS
-Need GPS,Без GPS
-Import (paste / CSV),Импорт (вставка / CSV)
-Search outlets,Поиск точек
-No outlets.,Нет точек.
-Placing,Размещение
-"Pick an outlet, then click the map.","Выберите точку, затем кликните по карте."
-Pick an outlet from the list first.,Сначала выберите точку из списка.
-Use my location,Моё местоположение
-Geolocation is not available in this browser.,Геолокация недоступна в этом браузере.
-Could not read your location.,Не удалось определить местоположение.
-Location saved.,Геолокация сохранена.
-Failed to save location.,Не удалось сохранить геолокацию.
-Failed to load outlets.,Не удалось загрузить точки.
-Import outlet locations,Импорт геолокаций точек
-"One outlet per line: code or name, latitude, longitude. Comma, tab or semicolon separated.","Одна точка на строку: код или название, широта, долгота. Разделители: запятая, табуляция или точка с запятой."
-No valid rows found.,Допустимые строки не найдены.
-Import failed.,Импорт не удался.
-Row,Строка
-skipped,пропущено
-Open tickets,Открытые заявки
-across all statuses,по всем статусам
-Completion rate,Доля завершения
-Unbilled queue,Очередь к выставлению
-ready to invoice,готово к счёту
-Tickets by status,Заявки по статусам
-Equipment coverage,Покрытие оборудования
-No coverage,Без покрытия
-units total,единиц всего
-Total units,Всего единиц
-Covered,Под покрытием
-Expired,Истёк
-Search by serial or item,Поиск по серийному номеру или товару
-All coverage,Любое покрытие
-Warranty,Гарантия
-AMC,Контракт ТО
-Coverage,Покрытие
-No equipment found.,Оборудование не найдено.
-Failed to load equipment.,Не удалось загрузить оборудование.
-Service history,История обслуживания
-No tickets for this unit.,Нет заявок по этой единице.
-Add to stock,Добавить на склад
-Search stock items…,Поиск товаров на складе…
-valuation,оценка
-Add item to stock,Добавить товар на склад
-e.g. Chevrolet Cobalt 2024,напр. Chevrolet Cobalt 2024
-Opening qty,Начальный остаток
-Unit cost,Себестоимость
-"Creates a stock item; if qty and cost are given, an opening stock receipt is posted.",Создаёт складской товар; при указании кол-ва и цены проводится начальное оприходование.
-Create & select,Создать и выбрать
-Payment reminder,Напоминание об оплате
-Message copied.,Сообщение скопировано.
-Copy failed.,Не удалось скопировать.
-Share,Поделиться
-Telegram,Telegram
-WhatsApp,WhatsApp
-Copy message,Скопировать сообщение
-Add to Google Calendar,Добавить в Google Календарь
-Download .ics,Скачать .ics
-Holiday,Праздник
-Weekend,Выходной
-Export CSV,Экспорт CSV
-No employees.,Нет сотрудников.
-Month grid,Месячная сетка
-Summary,Сводка
-Mark,Отметить
-Name…,Имя…
-No department,Без отдела
-Failed to save.,Не удалось сохранить.
-Past day,Прошедший день
-Editing a past day,Изменение прошедшего дня
-Confirm,Подтвердить
-Locked on/before,Заблокировано до
-Attendance on/before,Посещаемость до
-is locked from edits.,заблокирована для изменений.
-Attendance edits are open — no hard lock set.,Изменения посещаемости открыты — жёсткая блокировка не задана.
-Lock window,Окно блокировки
-Lock attendance older than (days),Блокировать посещаемость старше (дней)
-0 = no hard lock; past edits still ask for confirmation.,0 = без жёсткой блокировки; прошлые изменения всё равно требуют подтверждения.
-Late (min),Опоздание (мин)
-Early leave (min),Ранний уход (мин)
-Overtime (min),Сверхурочно (мин)
-Pick a status.,Выберите статус.
-Select,Выбрать
-selected,выбрано
-Mark as,Отметить как
-Failed to load overdue installments.,Не удалось загрузить просрочки.
-Payment overdue,Платёж просрочен
-Total overdue,Всего просрочено
-Installments,Платежей
-Oldest (days),Старейший (дн.)
-Aging,Срок давности
-inst.,плат.
-Overdue installments,Просроченные платежи
-Remind,Напомнить
-Copy reminder,Скопировать напоминание
-No overdue installments.,Нет просроченных платежей.

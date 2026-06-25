@@ -78,6 +78,7 @@ import AttendanceDashboard from "./pages/hr/AttendanceDashboard.vue";
 import ExceptionsQueue from "./pages/hr/ExceptionsQueue.vue";
 import CorrectionsQueue from "./pages/hr/CorrectionsQueue.vue";
 import PayrollReadiness from "./pages/hr/PayrollReadiness.vue";
+import PayrollPreview from "./pages/hr/PayrollPreview.vue";
 import TimepaySettings from "./pages/hr/TimepaySettings.vue";
 import SFAHome from "./pages/sfa/SFAHome.vue";
 import Outlets from "./pages/sfa/Outlets.vue";
@@ -263,6 +264,7 @@ const routes = [
 			{ path: "exceptions-queue", name: "hr-exceptions-queue", component: ExceptionsQueue, meta: { title: t("Exceptions Queue") } },
 			{ path: "corrections", name: "hr-corrections", component: CorrectionsQueue, meta: { title: t("Corrections") } },
 			{ path: "payroll-readiness", name: "hr-payroll-readiness", component: PayrollReadiness, meta: { title: t("Payroll Readiness") } },
+			{ path: "payroll-preview", name: "hr-payroll-preview", component: PayrollPreview, meta: { title: t("Computed Pay") } },
 		],
 	},
 	{
