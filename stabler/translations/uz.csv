@@ -1003,6 +1003,7 @@ Failed to update promo plan.,Promo rejasini yangilashda xato.
 Failed to update status.,Holatni yangilashda xato.
 Far district,
 Female,Ayol
+Fetched,Yuklandi
 Field Receivables,
 Field Sales,Sotuv maydoni
 Field User,Foydalanuvchi maydoni
@@ -1890,6 +1891,7 @@ Pick a rule set…,
 Pick a source warehouse.,Manba omborini tanlang.
 Pick a status.,Holatni tanlang.
 Pick a supplier.,Yetkazib beradigan kompaniyani tanlang.
+Pick a valid date range.,To'g'ri sana oralig'ini tanlang.
 Pick a warehouse,Omborni tanlang
 Pick a warehouse to receive stock into.,Tovarni qabul qilish uchun omborni tanlang.
 Pick a warehouse.,Omborni tanlang.
@@ -1979,6 +1981,7 @@ Promotion spend and uplift analysis.,
 Properties,Xususiyatlar
 Prorated base,Asos (proporsional)
 Public holiday,
+Pull gate punches from TimePay for these days and turn them into attendance. Nightly sync runs automatically; use this to catch up now.,"Shu kunlar uchun TimePay'dan o'tishlarni yuklab, davomatga aylantiring. Tungi sinxron avtomatik ishlaydi; hozir yangilash uchun foydalaning."
 Punches,
 Purchase Invoice,Xarid qilish hisob-fakturasi
 Purchase Invoices,Xarid hisob-fakturalari
@@ -2005,6 +2008,7 @@ Quotation number or customer…,
 Quotations,Takliflar
 RUB → UZS,RUB → UZS
 Rack,Stend
+Range is too wide — sync at most one month at a time.,Oraliq juda keng — bir vaqtda ko'pi bilan bir oy.
 Rank by,Saralash
 Raqam,Raqam
 Rate,Narx
@@ -2519,6 +2523,9 @@ Supplier payables grouped by aging buckets.,
 Suppliers,Yetkazib beruvchilar
 Suspended,To'xtatilgan
 Swap accounts,Hisoblarni almashish
+Sync TimePay,TimePay sinxron
+Sync failed.,Sinxronlash muvaffaqiyatsiz.
+Sync now,Sinxronlash
 System qty,Tizimdagi miqdor
 TIN,STIR
 Table,Jadval
@@ -2589,6 +2596,7 @@ Tickets by status,Holat bo'yicha tiketlar
 Time,
 TimePay ID,
 TimePay name,
+TimePay sync complete.,TimePay sinxroni tugadi.
 Timepay,
 Timepay refresh token must expire after the access token.,
 Times & minutes,Vaqt va daqiqalar

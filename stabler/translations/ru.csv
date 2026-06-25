@@ -1010,6 +1010,7 @@ Failed to update promo plan.,Ошибка обновления плана акц
 Failed to update status.,Ошибка обновления статуса.
 Far district,
 Female,Женский
+Fetched,Загружено
 Field Receivables,
 Field Sales,Полевые продажи
 Field User,Полевой сотрудник
@@ -1897,6 +1898,7 @@ Pick a rule set…,
 Pick a source warehouse.,Выберите исходный склад.
 Pick a status.,Выберите статус.
 Pick a supplier.,Выберите поставщика.
+Pick a valid date range.,Выберите корректный диапазон дат.
 Pick a warehouse,Выберите склад
 Pick a warehouse to receive stock into.,Выберите склад для оприходования товара.
 Pick a warehouse.,Выберите склад.
@@ -1986,6 +1988,7 @@ Promotion spend and uplift analysis.,
 Properties,Свойства
 Prorated base,База (пропорц.)
 Public holiday,
+Pull gate punches from TimePay for these days and turn them into attendance. Nightly sync runs automatically; use this to catch up now.,"Загрузить отметки из TimePay за эти дни и превратить в табель. Ночная синхр. идёт автоматически; используйте, чтобы догнать сейчас."
 Punches,
 Purchase Invoice,Счёт-фактура покупки
 Purchase Invoices,Счета закупок
@@ -2012,6 +2015,7 @@ Quotation number or customer…,
 Quotations,Предложения
 RUB → UZS,RUB → UZS
 Rack,Полка
+Range is too wide — sync at most one month at a time.,Слишком широкий диапазон — не более месяца за раз.
 Rank by,Ранжировать по
 Raqam,Номер
 Rate,Цена
@@ -2526,6 +2530,9 @@ Supplier payables grouped by aging buckets.,
 Suppliers,Поставщики
 Suspended,Приостановлен
 Swap accounts,Поменять счета местами
+Sync TimePay,Синхр. TimePay
+Sync failed.,Сбой синхронизации.
+Sync now,Синхронизировать
 System qty,Кол-во в системе
 TIN,ИНН
 Table,Таблица
@@ -2596,6 +2603,7 @@ Tickets by status,Заявки по статусам
 Time,
 TimePay ID,
 TimePay name,
+TimePay sync complete.,Синхронизация TimePay завершена.
 Timepay,
 Timepay refresh token must expire after the access token.,
 Times & minutes,Время и минуты

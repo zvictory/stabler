@@ -1001,6 +1001,7 @@ Failed to update promo plan.,Failed to update promo plan.
 Failed to update status.,Failed to update status.
 Far district,Far district
 Female,Female
+Fetched,Fetched
 Field Receivables,Field Receivables
 Field Sales,Field Sales
 Field User,Field User
@@ -1887,6 +1888,7 @@ Pick a rule set…,Pick a rule set…
 Pick a source warehouse.,Pick a source warehouse.
 Pick a status.,Pick a status.
 Pick a supplier.,Pick a supplier.
+Pick a valid date range.,Pick a valid date range.
 Pick a warehouse,Pick a warehouse
 Pick a warehouse to receive stock into.,Pick a warehouse to receive stock into.
 Pick a warehouse.,Pick a warehouse.
@@ -1976,6 +1978,7 @@ Promotion spend and uplift analysis.,Promotion spend and uplift analysis.
 Properties,Properties
 Prorated base,Prorated base
 Public holiday,Public holiday
+Pull gate punches from TimePay for these days and turn them into attendance. Nightly sync runs automatically; use this to catch up now.,Pull gate punches from TimePay for these days and turn them into attendance. Nightly sync runs automatically; use this to catch up now.
 Punches,Punches
 Purchase Invoice,Purchase Invoice
 Purchase Invoices,Purchase Invoices
@@ -2002,6 +2005,7 @@ Quotation number or customer…,Quotation number or customer…
 Quotations,Quotations
 RUB → UZS,RUB → UZS
 Rack,Rack
+Range is too wide — sync at most one month at a time.,Range is too wide — sync at most one month at a time.
 Rank by,Rank by
 Raqam,Raqam
 Rate,Rate
@@ -2516,6 +2520,9 @@ Supplier payables grouped by aging buckets.,Supplier payables grouped by aging b
 Suppliers,Suppliers
 Suspended,Suspended
 Swap accounts,Swap accounts
+Sync TimePay,Sync TimePay
+Sync failed.,Sync failed.
+Sync now,Sync now
 System qty,System qty
 TIN,TIN
 Table,Table
@@ -2586,6 +2593,7 @@ Tickets by status,Tickets by status
 Time,Time
 TimePay ID,TimePay ID
 TimePay name,TimePay name
+TimePay sync complete.,TimePay sync complete.
 Timepay,Timepay
 Timepay refresh token must expire after the access token.,Timepay refresh token must expire after the access token.
 Times & minutes,Times & minutes

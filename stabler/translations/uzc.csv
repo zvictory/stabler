@@ -1003,6 +1003,7 @@ Failed to update promo plan.,Реклама режасини янгилаш қу
 Failed to update status.,Ҳолатни янгилаш қутулмади.
 Far district,
 Female,Аёл
+Fetched,Юкланди
 Field Receivables,
 Field Sales,Соли майдони
 Field User,Фойдаланувчи майдони
@@ -1890,6 +1891,7 @@ Pick a rule set…,
 Pick a source warehouse.,Манба омборини танланг.
 Pick a status.,Ҳолатни танланг.
 Pick a supplier.,Таъминотчини танланг.
+Pick a valid date range.,Тўғри сана оралиғини танланг.
 Pick a warehouse,Омборини танланг
 Pick a warehouse to receive stock into.,Товарни қабул қилиш учун омборни танланг.
 Pick a warehouse.,Омборини танланг.
@@ -1979,6 +1981,7 @@ Promotion spend and uplift analysis.,
 Properties,Хусусиятлар
 Prorated base,Асос (пропорсионал)
 Public holiday,
+Pull gate punches from TimePay for these days and turn them into attendance. Nightly sync runs automatically; use this to catch up now.,"Шу кунлар учун TimePay'дан ўтишларни юклаб, давоматга айлантиринг. Тунги синхрон автоматик ишлайди; ҳозир янгилаш учун фойдаланинг."
 Punches,
 Purchase Invoice,Сотиб олиш ҳисоб-фактурасы
 Purchase Invoices,Харид ҳисоб-фактуралари
@@ -2005,6 +2008,7 @@ Quotation number or customer…,
 Quotations,Нарх таклифлари
 RUB → UZS,РУБ → ўзб сўм
 Rack,Полка
+Range is too wide — sync at most one month at a time.,Оралиқ жуда кенг — бир вақтда кўпи билан бир ой.
 Rank by,Саралаш
 Raqam,Рақам
 Rate,Нарх
@@ -2519,6 +2523,9 @@ Supplier payables grouped by aging buckets.,
 Suppliers,Етказиб берувчилар
 Suspended,Тўхтатилган
 Swap accounts,Ҳисобларни алмаштириш
+Sync TimePay,TimePay синхрон
+Sync failed.,Синхронлаш муваффақиятсиз.
+Sync now,Синхронлаш
 System qty,Тизимдаги миқдор
 TIN,СТИР
 Table,Жадвал
@@ -2589,6 +2596,7 @@ Tickets by status,Ҳолат бўйича тикетлар
 Time,
 TimePay ID,
 TimePay name,
+TimePay sync complete.,TimePay синхрони тугади.
 Timepay,
 Timepay refresh token must expire after the access token.,
 Times & minutes,Вақт ва дақиқалар

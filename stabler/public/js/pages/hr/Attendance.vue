@@ -6,11 +6,14 @@ import { useSession } from "../../stores/session.js";
 import { call } from "../../api/client.js";
 import { t } from "../../composables/i18n.js";
 import { todayIso } from "../../composables/date.js";
+import { useToast } from "../../composables/useToast.js";
 import EmptyState from "../../components/EmptyState.vue";
 import DateInput from "../../components/DateInput.vue";
 import Select from "../../components/Select.vue";
 import SkeletonRows from "../../components/SkeletonRows.vue";
 import AttendanceMatrix from "../../components/AttendanceMatrix.vue";
+
+const toast = useToast();
 
 const session = useSession();
 const { activeCompany } = storeToRefs(session);
@@ -144,6 +147,72 @@ watch([activeCompany, period], () => {
 	load();
 });
 
+// ----- TimePay sync (pull gate events → process into attendance) -------------
+const syncOpen = ref(false);
+const syncing = ref(false);
+const syncError = ref("");
+const syncResult = ref(null);
+const syncForm = ref({ from: yesterdayIso(), to: yesterdayIso() });
+
+function yesterdayIso() {
+	const d = new Date();
+	d.setDate(d.getDate() - 1);
+	return d.toISOString().slice(0, 10);
+}
+function openSync() {
+	syncForm.value = { from: yesterdayIso(), to: yesterdayIso() };
+	syncError.value = "";
+	syncResult.value = null;
+	syncOpen.value = true;
+}
+function closeSync() {
+	if (syncing.value) return;
+	syncOpen.value = false;
+}
+function datesInRange(from, to) {
+	const out = [];
+	const d = new Date(from);
+	const end = new Date(to);
+	while (d <= end && out.length <= 62) {
+		out.push(d.toISOString().slice(0, 10));
+		d.setDate(d.getDate() + 1);
+	}
+	return out;
+}
+async function runSync() {
+	syncError.value = "";
+	syncResult.value = null;
+	const { from, to } = syncForm.value;
+	if (!from || !to || to < from) {
+		syncError.value = t("Pick a valid date range.");
+		return;
+	}
+	const days = datesInRange(from, to);
+	if (days.length > 31) {
+		syncError.value = t("Range is too wide — sync at most one month at a time.");
+		return;
+	}
+	syncing.value = true;
+	try {
+		const pulled = await call("stabler.integrations.timepay.sync.manual_sync", { start_date: from, end_date: to });
+		let processed = 0;
+		let unmatched = 0;
+		for (const day of days) {
+			const r = await call("stabler.integrations.timepay.processor.manual_process", { date: day });
+			processed += Number(r?.processed || 0);
+			unmatched += Number(r?.unmatched || 0);
+		}
+		syncResult.value = { fetched: Number(pulled?.fetched ?? pulled?.created ?? 0), processed, unmatched };
+		toast.success(t("TimePay sync complete."));
+		matrixRef.value?.reload();
+		await load();
+	} catch (err) {
+		syncError.value = err?.message || t("Sync failed.");
+	} finally {
+		syncing.value = false;
+	}
+}
+
 // ----- Mark attendance modal (preserved) -----
 const markOpen = ref(false);
 const submitting = ref(false);
@@ -237,6 +306,9 @@ async function save() {
 				<input id="att-sum" v-model="view" type="radio" class="btn-check" value="summary" />
 				<label class="btn btn-outline-primary btn-sm" for="att-sum" :title="t('Summary')"><i class="ti ti-list"></i></label>
 			</div>
+			<button type="button" class="btn btn-outline-secondary btn-sm" @click="openSync">
+				<i class="ti ti-refresh me-1"></i>{{ t("Sync TimePay") }}
+			</button>
 			<button type="button" class="btn btn-primary btn-sm" @click="openMark">
 				<i class="ti ti-checkbox me-1"></i>{{ t("Mark") }}
 			</button>
@@ -339,6 +411,45 @@ async function save() {
 					</tr>
 				</tbody>
 			</table>
+		</div>
+	</div>
+
+	<!-- Sync TimePay modal -->
+	<div v-if="syncOpen" class="modal-backdrop fade show" @click="closeSync"></div>
+	<div v-if="syncOpen" class="modal modal-blur fade show d-block" tabindex="-1">
+		<div class="modal-dialog modal-dialog-centered">
+			<div class="modal-content">
+				<div class="modal-header">
+					<h5 class="modal-title"><i class="ti ti-refresh me-2"></i>{{ t("Sync TimePay") }}</h5>
+					<button type="button" class="btn-close" @click="closeSync"></button>
+				</div>
+				<div class="modal-body">
+					<div class="text-secondary small mb-3">{{ t("Pull gate punches from TimePay for these days and turn them into attendance. Nightly sync runs automatically; use this to catch up now.") }}</div>
+					<div v-if="syncError" class="alert alert-danger py-2">{{ syncError }}</div>
+					<div v-if="syncResult" class="alert alert-success py-2">
+						{{ t("Fetched") }}: <b>{{ syncResult.fetched }}</b> ·
+						{{ t("Processed") }}: <b>{{ syncResult.processed }}</b>
+						<span v-if="syncResult.unmatched"> · {{ t("Unmatched") }}: <b class="text-warning">{{ syncResult.unmatched }}</b></span>
+					</div>
+					<div class="row g-2">
+						<div class="col-6">
+							<label class="form-label small">{{ t("From") }}</label>
+							<DateInput v-model="syncForm.from" />
+						</div>
+						<div class="col-6">
+							<label class="form-label small">{{ t("To") }}</label>
+							<DateInput v-model="syncForm.to" />
+						</div>
+					</div>
+				</div>
+				<div class="modal-footer">
+					<button type="button" class="btn btn-link link-secondary" :disabled="syncing" @click="closeSync">{{ t("Close") }}</button>
+					<button type="button" class="btn btn-primary" :disabled="syncing" @click="runSync">
+						<span v-if="syncing" class="spinner-border spinner-border-sm me-1"></span>
+						<i v-else class="ti ti-refresh me-1"></i>{{ t("Sync now") }}
+					</button>
+				</div>
+			</div>
 		</div>
 	</div>
 
