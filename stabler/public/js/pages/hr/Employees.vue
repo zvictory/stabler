@@ -50,6 +50,9 @@ async function loadPayAccounts() {
 	}
 }
 const balanceOf = (emp) => Number(balances.value[emp] || 0);
+const totalOutstanding = computed(() =>
+	Object.values(balances.value).reduce((s, v) => s + (Number(v) > 0 ? Number(v) : 0), 0),
+);
 
 const loading = ref(false);
 const error = ref("");
@@ -329,31 +332,30 @@ function initials(name) {
 						<td>
 							<span class="badge" :class="statusBadge(r.status)">{{ r.status }}</span>
 						</td>
-						<td @click.stop>
-							<div class="d-flex gap-1 justify-content-end">
+						<td class="text-end">
+							<span v-if="canAdvances" class="me-2" @click.stop>
 								<button
-									v-if="canAdvances"
 									type="button"
-									class="btn btn-outline-primary btn-sm"
+									class="btn btn-outline-primary"
 									:title="t('Pay advance')"
 									:aria-label="`${t('Pay advance')} — ${r.employee_name}`"
 									@click="openPay(r)"
 								>
-									<i class="ti ti-cash-banknote"></i>
+									<i class="ti ti-cash-banknote me-1"></i>{{ t("Pay") }}
 								</button>
-								<button
-									type="button"
-									class="btn btn-ghost-secondary btn-sm"
-									:title="t('Edit')"
-									:aria-label="`${t('Edit')} — ${r.employee_name}`"
-									@click="openProfile(r.name)"
-								>
-									<i class="ti ti-edit"></i>
-								</button>
-							</div>
+							</span>
+							<i class="ti ti-chevron-right text-secondary" aria-hidden="true"></i>
 						</td>
 					</tr>
 				</tbody>
+				<tfoot v-if="canAdvances && totalOutstanding > 0">
+					<tr class="fw-bold">
+						<td colspan="4" class="text-end text-secondary">{{ t("Total outstanding advances") }}</td>
+						<td class="text-end font-monospace text-danger">{{ money(totalOutstanding) }}</td>
+						<td></td>
+						<td></td>
+					</tr>
+				</tfoot>
 			</table>
 		</div>
 	</div>
