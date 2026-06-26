@@ -155,6 +155,7 @@ Allowances are hidden — payroll access required.,Allowances are hidden — pay
 Allowed users,Allowed users
 Already Transferred,Already Transferred
 Amend,Amend
+Amend (new draft),Amend (new draft)
 Amend expense,Amend expense
 Amend failed.,Amend failed.
 Amend of,Amend of
@@ -337,6 +338,7 @@ Cancel document?,Cancel document?
 Cancel entry,Cancel entry
 Cancel failed.,Cancel failed.
 Cancel invoice {name}? This is reversible only by amendment.,Cancel invoice {name}? This is reversible only by amendment.
+Cancel journal entry?,Cancel journal entry?
 Cancel or delete Sales Invoice {0} before cancelling this Sales Order.,Cancel or delete Sales Invoice {0} before cancelling this Sales Order.
 Cancel payment,Cancel payment
 Cancel purchase receipt {0}?,Cancel purchase receipt {0}?
@@ -694,6 +696,7 @@ Download .ics,Download .ics
 Downpayment,Downpayment
 Downpayment %,Downpayment %
 Draft,Draft
+Draft + submitted,Draft + submitted
 Draft Sales Invoice created: {0},Draft Sales Invoice created: {0}
 Draft entry deleted.,Draft entry deleted.
 Draft transfer deleted.,Draft transfer deleted.
@@ -1213,6 +1216,8 @@ Journal,Journal
 Journal Entries,Journal Entries
 Journal Entry,Journal Entry
 Journal Entry legs,Journal Entry legs
+Journal entry cancelled.,Journal entry cancelled.
+Journal entry submitted.,Journal entry submitted.
 KPI,KPI
 KPI performance (%),KPI performance (%)
 KPI performance must be between 0 and 100.,KPI performance must be between 0 and 100.
@@ -2490,6 +2495,7 @@ Submit and release this Work Order?,Submit and release this Work Order?
 Submit document?,Submit document?
 Submit expense,Submit expense
 Submit failed.,Submit failed.
+Submit journal entry?,Submit journal entry?
 Submit this BOM? You won't be able to edit it after.,Submit this BOM? You won't be able to edit it after.
 Submit transfer,Submit transfer
 Submitted,Submitted
@@ -2569,8 +2575,10 @@ This draft invoice has no ledger balance yet. The payment will be submitted as a
 This exception is already {0}.,This exception is already {0}.
 This month,This month
 "This must match exactly the value in raw events (TimePay user ID, badge code, etc.).","This must match exactly the value in raw events (TimePay user ID, badge code, etc.)."
+This posts the entry to the ledger. Submitted entries can't be edited — only cancelled and amended.,This posts the entry to the ledger. Submitted entries can't be edited — only cancelled and amended.
 This request belongs to a company you cannot access.,This request belongs to a company you cannot access.
 This request is already {0}.,This request is already {0}.
+This reverses the ledger postings. The entry stays as an audit record; create an amended one to correct it.,This reverses the ledger postings. The entry stays as an audit record; create an amended one to correct it.
 This role may create/edit back-dated stock entries.,This role may create/edit back-dated stock entries.
 This role may edit frozen accounting entries.,This role may edit frozen accounting entries.
 This warehouse has no current item balances.,This warehouse has no current item balances.

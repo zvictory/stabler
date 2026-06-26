@@ -156,6 +156,7 @@ Allowances are hidden — payroll access required.,
 Allowed users,Ruxsat etilgan foydalanuvchilar
 Already Transferred,
 Amend,O'zgartirilgan
+Amend (new draft),Tuzatish (yangi qoralama)
 Amend expense,
 Amend failed.,O'zgartirilish muvaffaq bo'lmadi.
 Amend of,O'zgartirilgan
@@ -339,6 +340,7 @@ Cancel document?,
 Cancel entry,Yozuvni bekor qiling
 Cancel failed.,Bekor qilish muvaffaq bo'lmadi.
 Cancel invoice {name}? This is reversible only by amendment.,{name} hisob-fakturasini bekor qilasizmi? Bu faqat o'zgartirilish orqali qayta tiklanadi.
+Cancel journal entry?,Provodkani bekor qilasizmi?
 Cancel or delete Sales Invoice {0} before cancelling this Sales Order.,Ushbu sotuv buyurtmasini bekor qilishdan oldin {0} sotuv hisob-fakturasini bekor qiling yoki o'chirib tashlang.
 Cancel payment,To‘lovni bekor qilish
 Cancel purchase receipt {0}?,
@@ -696,6 +698,7 @@ Download .ics,.ics yuklab olish
 Downpayment,Boshlang'ich to'lov
 Downpayment %,Boshlang'ich to'lov %
 Draft,Qoralama
+Draft + submitted,Qoralama + tasdiqlangan
 Draft Sales Invoice created: {0},Sotuv fakturasi qoralamasi yaratildi: {0}
 Draft entry deleted.,
 Draft transfer deleted.,
@@ -1215,6 +1218,8 @@ Journal,
 Journal Entries,Jurnal yozuvlari
 Journal Entry,Jurnal yozuvi
 Journal Entry legs,Jurnal yozuv qatorlari
+Journal entry cancelled.,Provodka bekor qilindi.
+Journal entry submitted.,Provodka tasdiqlandi.
 KPI,KPI
 KPI performance (%),KPI bajarilishi (%)
 KPI performance must be between 0 and 100.,KPI bajarilishi 0 dan 100 gacha bo'lishi kerak.
@@ -2493,6 +2498,7 @@ Submit and release this Work Order?,Bu buyurtmani tasdiqlash va ishga tushirishm
 Submit document?,
 Submit expense,Xarajatni tasdiqlash
 Submit failed.,Tasdiqlash muvaffaqiyatsiz bo'ldi.
+Submit journal entry?,Provodkani tasdiqlaysizmi?
 Submit this BOM? You won't be able to edit it after.,Bu spetsifikatsiyani tasdiqlaysizmi? Keyin tahrirlay olmaysiz.
 Submit transfer,Transferni tasdiqlash
 Submitted,Tasdiqlangan
@@ -2572,8 +2578,10 @@ This draft invoice has no ledger balance yet. The payment will be submitted as a
 This exception is already {0}.,
 This month,
 "This must match exactly the value in raw events (TimePay user ID, badge code, etc.).",
+This posts the entry to the ledger. Submitted entries can't be edited — only cancelled and amended.,"Yozuv hisobga o'tkaziladi. Tasdiqlangan provodkalarni tahrirlab bo'lmaydi — faqat bekor qilib, tuzatilgan yaratish mumkin."
 This request belongs to a company you cannot access.,
 This request is already {0}.,
+This reverses the ledger postings. The entry stays as an audit record; create an amended one to correct it.,Hisobdagi o'tkazmalar bekor qilinadi. Yozuv audit yozuvi sifatida qoladi; tuzatish uchun tuzatilganini yarating.
 This role may create/edit back-dated stock entries.,
 This role may edit frozen accounting entries.,
 This warehouse has no current item balances.,

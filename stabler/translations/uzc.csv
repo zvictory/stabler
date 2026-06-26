@@ -156,6 +156,7 @@ Allowances are hidden — payroll access required.,
 Allowed users,Рухсат этилган фойдаланувчилар
 Already Transferred,
 Amend,Тўзатиш
+Amend (new draft),Тузатиш (янги қоралама)
 Amend expense,
 Amend failed.,Тўзатиш мувафаққиятсиз.
 Amend of,Тўзатиш
@@ -339,6 +340,7 @@ Cancel document?,
 Cancel entry,Ёзувни бекор қилиш
 Cancel failed.,Бекор қилиш мувафаққиятсиз.
 Cancel invoice {name}? This is reversible only by amendment.,{name} инвойсини бекор қилинсинми? Бу фақат тўзатиш орқали алмаштириши мумкин.
+Cancel journal entry?,Проводкани бекор қиласизми?
 Cancel or delete Sales Invoice {0} before cancelling this Sales Order.,Бу Сотув Ордерини бекор қилишдан олдин Сотув Инвойс {0} ни бекор қилинг ёки ўчирибўлинг.
 Cancel payment,Тўловни бекор қилиш
 Cancel purchase receipt {0}?,
@@ -696,6 +698,7 @@ Download .ics,.ics юклаб олиш
 Downpayment,Бошланғич тўлов
 Downpayment %,Бошланғич тўлов %
 Draft,Қоралама
+Draft + submitted,Қоралама + тасдиқланган
 Draft Sales Invoice created: {0},Сотув фактураси қоралами яратилди: {0}
 Draft entry deleted.,
 Draft transfer deleted.,
@@ -1215,6 +1218,8 @@ Journal,
 Journal Entries,Журнал ёзувлари
 Journal Entry,Журнал ёзуви
 Journal Entry legs,Журнал ёзув қаторлари
+Journal entry cancelled.,Проводка бекор қилинди.
+Journal entry submitted.,Проводка тасдиқланди.
 KPI,KPI
 KPI performance (%),KPI бажарилиши (%)
 KPI performance must be between 0 and 100.,KPI бажарилиши 0 дан 100 гача бўлиши керак.
@@ -2493,6 +2498,7 @@ Submit and release this Work Order?,Бу буюртмани тасдиқлаш �
 Submit document?,
 Submit expense,Харажатни тасдиқлаш
 Submit failed.,Тасдиқлаш бажарилмади.
+Submit journal entry?,Проводкани тасдиқлайсизми?
 Submit this BOM? You won't be able to edit it after.,Бу спецификацияни тасдиқлайсизми? Кейин таҳрирлаб бўлмайди.
 Submit transfer,Ўтказмани тасдиқлаш
 Submitted,Тасдиқланган
@@ -2572,8 +2578,10 @@ This draft invoice has no ledger balance yet. The payment will be submitted as a
 This exception is already {0}.,
 This month,
 "This must match exactly the value in raw events (TimePay user ID, badge code, etc.).",
+This posts the entry to the ledger. Submitted entries can't be edited — only cancelled and amended.,"Ёзув ҳисобга ўтказилади. Тасдиқланган проводкаларни таҳрирлаб бўлмайди — фақат бекор қилиб, тузатилган яратиш мумкин."
 This request belongs to a company you cannot access.,
 This request is already {0}.,
+This reverses the ledger postings. The entry stays as an audit record; create an amended one to correct it.,Ҳисобдаги ўтказмалар бекор қилинади. Ёзув аудит ёзуви сифатида қолади; тузатиш учун тузатилганини яратинг.
 This role may create/edit back-dated stock entries.,
 This role may edit frozen accounting entries.,
 This warehouse has no current item balances.,

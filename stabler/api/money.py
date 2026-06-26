@@ -538,6 +538,7 @@ def list_journal_entries(
 	company: str,
 	from_date: str | None = None,
 	to_date: str | None = None,
+	status: str | None = None,
 	limit: int = 50,
 ):
 	_require_company(company)
@@ -545,9 +546,13 @@ def list_journal_entries(
 	params["company"] = company
 	params["limit"] = int(limit)
 	qualified_clauses = [c.replace("posting_date", "je.posting_date") for c in clauses]
+	# Status filter: Draft (0), Submitted (1), Cancelled (2); default hides cancelled.
+	status_clause = {"Draft": "je.docstatus = 0", "Submitted": "je.docstatus = 1", "Cancelled": "je.docstatus = 2"}.get(
+		status or "", "je.docstatus < 2"
+	)
 	where = " AND ".join([
 		"je.company = %(company)s",
-		"je.docstatus < 2",
+		status_clause,
 		*qualified_clauses,
 	])
 	# JE.total_debit/total_credit are base-currency totals. Surface them as
@@ -837,6 +842,36 @@ def update_journal_entry(
 	for row in cleaned:
 		doc.append("accounts", row)
 	doc.save(ignore_permissions=False)
+	return {"name": doc.name, "docstatus": doc.docstatus}
+
+
+@frappe.whitelist()
+def submit_journal_entry(name: str, modified: str | None = None) -> dict:
+	"""Post a draft Journal Entry to the ledger (docstatus 0 → 1)."""
+	if not name:
+		frappe.throw("Journal Entry name is required.")
+	_assert_can_write("Journal Entry", name, "submit")
+	check_concurrency("Journal Entry", name, modified)
+	doc = frappe.get_doc("Journal Entry", name)
+	if doc.docstatus == 1:
+		frappe.throw(_("Journal Entry is already submitted."))
+	if doc.docstatus == 2:
+		frappe.throw(_("Cancelled entries cannot be submitted; amend instead."))
+	doc.submit()
+	return {"name": doc.name, "docstatus": doc.docstatus}
+
+
+@frappe.whitelist()
+def cancel_journal_entry(name: str, modified: str | None = None) -> dict:
+	"""Cancel a submitted Journal Entry (audit trail kept; amend to correct)."""
+	if not name:
+		frappe.throw("Journal Entry name is required.")
+	_assert_can_write("Journal Entry", name, "cancel")
+	check_concurrency("Journal Entry", name, modified)
+	doc = frappe.get_doc("Journal Entry", name)
+	if doc.docstatus != 1:
+		frappe.throw(_("Only submitted entries can be cancelled."))
+	doc.cancel()
 	return {"name": doc.name, "docstatus": doc.docstatus}
 
 

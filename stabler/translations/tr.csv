@@ -155,6 +155,7 @@ Allowances are hidden — payroll access required.,
 Allowed users,İzin verilen kullanıcılar
 Already Transferred,
 Amend,Düzelt
+Amend (new draft),Düzelt (yeni taslak)
 Amend expense,
 Amend failed.,Düzeltme başarısız oldu.
 Amend of,Düzeltmesi:
@@ -337,6 +338,7 @@ Cancel document?,
 Cancel entry,Girişi iptal et
 Cancel failed.,İptal başarısız oldu.
 Cancel invoice {name}? This is reversible only by amendment.,{name} faturası iptal edilsin mi? Bu işlem yalnızca düzeltmeyle geri alınabilir.
+Cancel journal entry?,Yevmiye kaydı iptal edilsin mi?
 Cancel or delete Sales Invoice {0} before cancelling this Sales Order.,Bu Satış Siparişini iptal etmeden önce {0} Satış Faturasını iptal edin veya silin.
 Cancel payment,Ödemeyi iptal et
 Cancel purchase receipt {0}?,
@@ -690,6 +692,7 @@ Download .ics,.ics indir
 Downpayment,Ön ödeme
 Downpayment %,Ön ödeme %
 Draft,Taslak
+Draft + submitted,Taslak + onaylı
 Draft Sales Invoice created: {0},Satış faturası taslağı oluşturuldu: {0}
 Draft entry deleted.,
 Draft transfer deleted.,
@@ -1208,6 +1211,8 @@ Journal,
 Journal Entries,Yevmiye Kayıtları
 Journal Entry,Yevmiye Kaydı
 Journal Entry legs,Yevmiye kaydı kalemleri
+Journal entry cancelled.,Yevmiye kaydı iptal edildi.
+Journal entry submitted.,Yevmiye kaydı onaylandı.
 KPI,KPI
 KPI performance (%),KPI performansı (%)
 KPI performance must be between 0 and 100.,KPI performansı 0 ile 100 arasında olmalıdır.
@@ -2479,6 +2484,7 @@ Submit and release this Work Order?,Bu İş Emri onaylanıp serbest bırakılsı
 Submit document?,
 Submit expense,Masrafı onayla
 Submit failed.,Onaylama başarısız oldu.
+Submit journal entry?,Yevmiye kaydını onayla?
 Submit this BOM? You won't be able to edit it after.,Bu ürün reçetesi onaylansın mı? Onayladıktan sonra düzenleyemezsiniz.
 Submit transfer,Transferi onayla
 Submitted,Onaylandı
@@ -2558,8 +2564,10 @@ This draft invoice has no ledger balance yet. The payment will be submitted as a
 This exception is already {0}.,
 This month,
 "This must match exactly the value in raw events (TimePay user ID, badge code, etc.).",
+This posts the entry to the ledger. Submitted entries can't be edited — only cancelled and amended.,Kayıt deftere işlenir. Onaylı kayıtlar düzenlenemez — yalnızca iptal edilip düzeltilmiş yenisi oluşturulur.
 This request belongs to a company you cannot access.,
 This request is already {0}.,
+This reverses the ledger postings. The entry stays as an audit record; create an amended one to correct it.,Defter kayıtları ters çevrilir. Kayıt denetim için kalır; düzeltmek için düzeltilmiş bir tane oluşturun.
 This role may create/edit back-dated stock entries.,
 This role may edit frozen accounting entries.,
 This warehouse has no current item balances.,

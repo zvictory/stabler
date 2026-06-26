@@ -160,6 +160,7 @@ Allowances are hidden — payroll access required.,
 Allowed users,Разрешённые пользователи
 Already Transferred,
 Amend,Изменить
+Amend (new draft),Исправить (новый черновик)
 Amend expense,
 Amend failed.,Ошибка изменения.
 Amend of,Изменение
@@ -345,6 +346,7 @@ Cancel document?,
 Cancel entry,Отмена записи
 Cancel failed.,Отмена не удалась.
 Cancel invoice {name}? This is reversible only by amendment.,Отменить накладную {name}? Это можно отменить только путем внесения поправки.
+Cancel journal entry?,Отменить проводку?
 Cancel or delete Sales Invoice {0} before cancelling this Sales Order.,Отмените или удалите накладную продаж {0} перед отменой этого заказа продаж.
 Cancel payment,Отменить оплату
 Cancel purchase receipt {0}?,
@@ -702,6 +704,7 @@ Download .ics,Скачать .ics
 Downpayment,Первоначальный взнос
 Downpayment %,Первоначальный взнос %
 Draft,Черновик
+Draft + submitted,Черновики + проведённые
 Draft Sales Invoice created: {0},Черновик счёта-фактуры создан: {0}
 Draft entry deleted.,
 Draft transfer deleted.,
@@ -1222,6 +1225,8 @@ Journal,
 Journal Entries,Журнальные записи
 Journal Entry,Запись в журнале
 Journal Entry legs,Проводки журнала
+Journal entry cancelled.,Проводка отменена.
+Journal entry submitted.,Проводка проведена.
 KPI,KPI
 KPI performance (%),Выполнение KPI (%)
 KPI performance must be between 0 and 100.,Выполнение KPI должно быть от 0 до 100.
@@ -2500,6 +2505,7 @@ Submit and release this Work Order?,Провести и запустить эт�
 Submit document?,
 Submit expense,Отправить расход
 Submit failed.,Ошибка отправки.
+Submit journal entry?,Провести проводку?
 Submit this BOM? You won't be able to edit it after.,Провести эту спецификацию? После этого её нельзя будет редактировать.
 Submit transfer,Отправить перевод
 Submitted,Отправлен
@@ -2579,8 +2585,10 @@ This draft invoice has no ledger balance yet. The payment will be submitted as a
 This exception is already {0}.,
 This month,
 "This must match exactly the value in raw events (TimePay user ID, badge code, etc.).",
+This posts the entry to the ledger. Submitted entries can't be edited — only cancelled and amended.,Запись будет проведена в учёт. Проведённые проводки нельзя редактировать — только отменить и создать исправленную.
 This request belongs to a company you cannot access.,
 This request is already {0}.,
+This reverses the ledger postings. The entry stays as an audit record; create an amended one to correct it.,Проводки в учёте будут сторнированы. Запись останется в журнале аудита; создайте исправленную для корректировки.
 This role may create/edit back-dated stock entries.,
 This role may edit frozen accounting entries.,
 This warehouse has no current item balances.,

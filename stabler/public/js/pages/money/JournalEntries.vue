@@ -13,10 +13,23 @@ import EmptyState from "../../components/EmptyState.vue";
 import Select from "../../components/Select.vue";
 import Typeahead from "../../components/Typeahead.vue";
 import SkeletonRows from "../../components/SkeletonRows.vue";
+import { useToast } from "../../composables/useToast.js";
+import { useConfirm } from "../../composables/useConfirm.js";
 
 const session = useSession();
 const route = useRoute();
 const { activeCompany, user } = storeToRefs(session);
+const toast = useToast();
+const { confirm } = useConfirm();
+
+const statusFilter = ref("");
+const statusOptions = computed(() => [
+	{ value: "", label: t("Draft + submitted") },
+	{ value: "Draft", label: t("Draft") },
+	{ value: "Submitted", label: t("Submitted") },
+	{ value: "Cancelled", label: t("Cancelled") },
+]);
+const acting = ref(false);
 
 const today = todayIso();
 const monthAgo = new Date(Date.now() - 30 * 86400000).toISOString().slice(0, 10);
@@ -155,7 +168,8 @@ async function load() {
 	error.value = "";
 	try {
 		rows.value = await call("stabler.api.money.list_journal_entries", {
-			company: activeCompany.value, from_date: fromDate.value, to_date: toDate.value, limit: limit.value,
+			company: activeCompany.value, from_date: fromDate.value, to_date: toDate.value,
+			status: statusFilter.value || undefined, limit: limit.value,
 		});
 	} catch (err) {
 		error.value = err?.message || t("Failed to load journal entries.");
@@ -261,6 +275,56 @@ async function submitForm() {
 	}
 }
 
+// ── Lifecycle actions: submit / cancel / amend ───────────────────────────────
+async function submitJE() {
+	if (!detail.value?.name) return;
+	const ok = await confirm({
+		title: t("Submit journal entry?"),
+		body: t("This posts the entry to the ledger. Submitted entries can't be edited — only cancelled and amended."),
+		confirmLabel: t("Submit"),
+	});
+	if (!ok) return;
+	acting.value = true;
+	try {
+		await call("stabler.api.money.submit_journal_entry", { name: detail.value.name });
+		toast.success(t("Journal entry submitted."));
+		await load();
+		await select(detail.value.name);
+	} catch (err) {
+		toast.error(err?.message || t("Submit failed."));
+	} finally {
+		acting.value = false;
+	}
+}
+async function cancelJE() {
+	if (!detail.value?.name) return;
+	const ok = await confirm({
+		title: t("Cancel journal entry?"),
+		body: t("This reverses the ledger postings. The entry stays as an audit record; create an amended one to correct it."),
+		confirmLabel: t("Cancel entry"),
+		danger: true,
+	});
+	if (!ok) return;
+	acting.value = true;
+	try {
+		await call("stabler.api.money.cancel_journal_entry", { name: detail.value.name });
+		toast.success(t("Journal entry cancelled."));
+		await load();
+		await select(detail.value.name);
+	} catch (err) {
+		toast.error(err?.message || t("Cancel failed."));
+	} finally {
+		acting.value = false;
+	}
+}
+// Amend = open the entry's lines as a fresh draft (new doc), leaving the
+// cancelled original untouched.
+async function amendJE() {
+	if (!detail.value) return;
+	await openEdit(detail.value);
+	editName.value = null;
+}
+
 onMounted(async () => {
 	await load();
 	const openName = route.query?.open;
@@ -272,6 +336,7 @@ watch(activeCompany, () => {
 	detail.value = null;
 	load();
 });
+watch(statusFilter, load);
 </script>
 
 <template>
@@ -279,6 +344,7 @@ watch(activeCompany, () => {
 	<div class="d-flex flex-wrap align-items-end gap-2 mb-3">
 		<div><label class="form-label small mb-1">{{ t("From") }}</label><DateInput v-model="fromDate" size="sm" /></div>
 		<div><label class="form-label small mb-1">{{ t("To") }}</label><DateInput v-model="toDate" size="sm" /></div>
+		<div style="min-width: 160px"><label class="form-label small mb-1">{{ t("Status") }}</label><Select v-model="statusFilter" :options="statusOptions" size="sm" /></div>
 		<button type="button" class="btn btn-sm btn-outline-secondary" @click="load"><i class="ti ti-refresh me-1"></i>{{ t("Apply") }}</button>
 		<button type="button" class="btn btn-sm btn-primary ms-auto" :disabled="!activeCompany" @click="openCreate">
 			<i class="ti ti-plus me-1"></i>{{ t("New journal") }}
@@ -304,7 +370,11 @@ watch(activeCompany, () => {
 								@click="select(r.name)"
 							>
 								<td>
-									<div class="fw-semibold font-monospace small text-truncate">{{ r.name }}</div>
+									<div class="d-flex align-items-center gap-1">
+										<span class="fw-semibold font-monospace small text-truncate">{{ r.name }}</span>
+										<i v-if="r.multi_currency" class="ti ti-arrows-exchange text-azure" :title="t('Multi-currency')" style="font-size:.85rem"></i>
+									</div>
+									<div v-if="r.user_remark" class="small text-truncate" style="max-width: 220px">{{ r.user_remark }}</div>
 									<div class="small text-secondary">{{ formatDate(r.posting_date) }} ·
 										<span class="badge" :class="statusBadge(r.docstatus).cls">{{ statusBadge(r.docstatus).label }}</span>
 									</div>
@@ -341,9 +411,22 @@ watch(activeCompany, () => {
 									· <span class="badge" :class="statusBadge(detail.docstatus).cls">{{ statusBadge(detail.docstatus).label }}</span>
 								</div>
 							</div>
-							<button v-if="detail.docstatus === 0" type="button" class="btn btn-outline-primary" @click="openEdit(detail)">
-								<i class="ti ti-pencil me-1"></i>{{ t("Edit") }}
-							</button>
+							<div class="d-flex gap-2">
+								<template v-if="detail.docstatus === 0">
+									<button type="button" class="btn btn-outline-secondary" :disabled="acting" @click="openEdit(detail)">
+										<i class="ti ti-pencil me-1"></i>{{ t("Edit") }}
+									</button>
+									<button type="button" class="btn btn-primary" :disabled="acting" @click="submitJE">
+										<i class="ti ti-check me-1"></i>{{ t("Submit") }}
+									</button>
+								</template>
+								<button v-else-if="detail.docstatus === 1" type="button" class="btn btn-outline-danger" :disabled="acting" @click="cancelJE">
+									<i class="ti ti-ban me-1"></i>{{ t("Cancel entry") }}
+								</button>
+								<button v-else-if="detail.docstatus === 2" type="button" class="btn btn-outline-primary" :disabled="acting" @click="amendJE">
+									<i class="ti ti-copy me-1"></i>{{ t("Amend (new draft)") }}
+								</button>
+							</div>
 						</div>
 
 						<div v-if="detail.user_remark" class="text-secondary mb-3">{{ detail.user_remark }}</div>
