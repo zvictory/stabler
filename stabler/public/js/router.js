@@ -82,6 +82,7 @@ import EmployeeAdvances from "./pages/hr/EmployeeAdvances.vue";
 import DataHealth from "./pages/hr/DataHealth.vue";
 import TimepaySettings from "./pages/hr/TimepaySettings.vue";
 import HrCalendar from "./pages/hr/HrCalendar.vue";
+import SalaryPayments from "./pages/hr/SalaryPayments.vue";
 import SFAHome from "./pages/sfa/SFAHome.vue";
 import Outlets from "./pages/sfa/Outlets.vue";
 import OutletGeo from "./pages/sfa/OutletGeo.vue";
@@ -268,6 +269,7 @@ const routes = [
 			{ path: "payroll-readiness", name: "hr-payroll-readiness", component: PayrollReadiness, meta: { title: t("Payroll Readiness") } },
 			{ path: "payroll-preview", name: "hr-payroll-preview", component: PayrollPreview, meta: { title: t("Computed Pay") } },
 			{ path: "advances", name: "hr-advances", component: EmployeeAdvances, meta: { title: t("Advances") } },
+			{ path: "salary-payments", name: "hr-salary-payments", component: SalaryPayments, meta: { title: t("Salary payments") } },
 			{ path: "calendar", name: "hr-calendar", component: HrCalendar, meta: { title: t("Holidays & periods") } },
 		],
 	},

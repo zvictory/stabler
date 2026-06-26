@@ -45,6 +45,7 @@ const AREAS = [
 			{ name: "hr-payroll-readiness", path: "/hr/payroll-readiness", label: t("Readiness"), icon: "ti-lock-check" },
 			{ name: "hr-payroll-preview", path: "/hr/payroll-preview", label: t("Computed Pay"), icon: "ti-calculator" },
 			{ name: "hr-advances", path: "/hr/advances", label: t("Advances"), icon: "ti-cash-banknote" },
+			{ name: "hr-salary-payments", path: "/hr/salary-payments", label: t("Salary payments"), icon: "ti-cash-register" },
 			{ name: "hr-payroll", path: "/hr/payroll", label: t("Salary slips"), icon: "ti-cash" },
 		],
 	},

@@ -46,6 +46,11 @@ Accounts,Hesaplar
 Accounts frozen up to (date),
 Accrual (bill date),Tahakkuk (fatura tarihi)
 Accrual (invoice date),Tahakkuk (satış faturası tarihi)
+Accrual failed.,Tahakkuk başarısız.
+Accrue,Tahakkuk
+Accrue period,Dönemi tahakkuk ettir
+Accrue this period?,Bu dönem tahakkuk ettirilsin mi?
+Accrued {0} employees.,{0} çalışan tahakkuk etti.
 Acquisition report,Kazanım raporu
 Action,İşlem
 Action failed.,İşlem başarısız oldu.
@@ -300,6 +305,8 @@ Board,Pano
 Bonus,Prim
 Book rate,
 Booked,Sipariş edildi
+Books each locked employee's net as a payable (Dr salary expense / Cr salary payable). Idempotent — runs once per period.,Her kilitli çalışanın netini bir borca yazar (Bç maaş gideri / Al maaş borcu). İdempotent — dönem başına bir kez.
+Books locked nets to salary payable.,Kilitli netleri maaş borcuna yazar.
 Branch,
 Brand,Marka
 Break minutes,
@@ -1296,6 +1303,7 @@ Located,Konumlu
 Location saved.,Konum kaydedildi.
 Locations,Konumlar
 Lock,
+Lock a period and accrue it to see balances here.,Bakiyeleri görmek için bir dönemi kilitleyip tahakkuk ettirin.
 Lock attendance older than (days),Şu günden eski devamı kilitle (gün)
 Lock payroll period,
 Lock period,
@@ -1564,6 +1572,7 @@ No ledger entries found for the selected period.,Seçilen dönem için defter ka
 No lines differ from the system quantity — nothing to reconcile.,
 No lines yet.,Henüz satır yok.
 No local backups to upload. Create one first.,Yüklenecek yerel yedek yok. Önce bir tane oluşturun.
+No locked employees to accrue for this period.,Bu dönem için tahakkuk edecek kilitli çalışan yok.
 No low-stock items,Düşük stoklu ürün yok
 No matches found,Eşleşme bulunamadı
 No matching items,
@@ -1581,6 +1590,7 @@ No outlets yet,Henüz satış noktası yok
 No outlets.,Nokta yok.
 No outstanding advances,Bekleyen avans yok
 No outstanding balances,Açık bakiye yok
+No outstanding salary payable.,Ödenmemiş maaş borcu yok.
 No overdue installments.,Gecikmiş taksit yok.
 No payments in this range,Bu aralıkta ödeme yok
 No payments recorded in this range,
@@ -1778,6 +1788,7 @@ Outlets,Satış Noktaları
 Outstanding,Açık
 Outstanding advance,Kalan avans
 Outstanding customer balances for field teams.,
+Outstanding salary payable,Ödenmemiş maaş borcu
 Overdue,Gecikmiş
 Overdue installments,Gecikmiş taksitler
 Override qty must be greater than zero,Geçersiz kılma miktarı sıfırdan büyük olmalıdır
@@ -1803,6 +1814,7 @@ Paid amount,Ödenen tutar
 Paid days,Ücretli günler
 Paid from,Ödeyen
 Paid to,Alıcı
+Paid {0} employees — {1},{0} çalışana ödendi — {1}
 Parent warehouse,Üst depo
 Pareto ranking of customers by revenue with A/B/C classes.,"Müşterilerin gelire göre Pareto sıralaması, A/B/C sınıflarıyla."
 Pareto ranking of items by value with A/B/C classes.,"Ürünlerin değere göre Pareto sıralaması, A/B/C sınıflarıyla."
@@ -1830,7 +1842,9 @@ Pay advance,Avans öde
 "Pay an advance, or turn off the balance filter to see everyone.",Avans ödeyin veya herkesi görmek için bakiye filtresini kapatın.
 Pay from,Ödeme kaynağı
 Pay from (cash/bank),Nereden (kasa/banka)
+Pay from…,Şuradan öde…
 Pay supplier,Tedarikçiye öde
+Pay {0} employees?,{0} çalışana ödensin mi?
 "Pay-formula inputs: overtime rate, KPI pool share, and per-day transport by region band.","Maaş formülü girdileri: fazla mesai oranı, KPI havuz payı ve bölgeye göre günlük ulaşım."
 Payable,Borç
 Payable (AP),Borç Hesapları (AP)
@@ -1845,6 +1859,7 @@ Payment Entry,Ödeme Fişi
 Payment Mode,
 Payment cancelled,Ödeme iptal edildi
 Payment failed,Ödeme başarısız
+Payment failed.,Ödeme başarısız.
 Payment mode is not allowed for this POS Profile.,
 Payment mode {0} is not an online gateway.,
 "Payment number, reference or party…",
@@ -1925,6 +1940,7 @@ Pick someone on the left to see their pay breakdown.,Maaş dökümünü görmek 
 Pick start and end dates.,Başlangıç ve bitiş tarihlerini seçin.
 Pick the account funds will be paid from.,Ödemenin yapılacağı hesabı seçin.
 Pick the account that will receive the funds.,Fonları alacak hesabı seçin.
+Pick the bank/cash account to pay from.,Ödeme yapılacak banka/kasa hesabını seçin.
 Pieces,Adet
 Pistachio,
 Place branded freezer at {0} (deal {1}),
@@ -2239,6 +2255,7 @@ SRE module unavailable: {0},SRE modülü kullanılamıyor: {0}
 SREs,SRE
 Salary Slip {0} not found.,
 Salary and payroll summaries.,
+Salary payments,Maaş ödemeleri
 Salary slip,Bordro Fişi
 Salary slips,
 Sale,
@@ -2379,6 +2396,7 @@ Select template…,Şablon seçin…
 Select the bank account this statement belongs to.,Bu ekstrenin ait olduğu banka hesabını seçin.
 Select warehouse,Depo seçin
 Select warehouse…,Depo seçin…
+Selected,Seçili
 Select…,Seçin…
 Self-approval blocked,Kendi kendine onay engellendi
 Self-review blocked,
@@ -2601,6 +2619,7 @@ This draft invoice has no ledger balance yet. The payment will be submitted as a
 This exception is already {0}.,
 This month,
 "This must match exactly the value in raw events (TimePay user ID, badge code, etc.).",
+This period is already accrued.,Bu dönem zaten tahakkuk etti.
 This posts the entry to the ledger. Submitted entries can't be edited — only cancelled and amended.,Kayıt deftere işlenir. Onaylı kayıtlar düzenlenemez — yalnızca iptal edilip düzeltilmiş yenisi oluşturulur.
 This request belongs to a company you cannot access.,
 This request is already {0}.,
@@ -2942,6 +2961,7 @@ name is required.,
 need GPS,GPS gerekli
 no stock movement,
 on budget,
+"one Journal Entry, clears their payable.","tek yevmiye, borçlarını kapatır."
 one-off,tek seferlik
 optional,isteğe bağlı
 orders,

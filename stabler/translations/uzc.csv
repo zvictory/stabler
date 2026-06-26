@@ -46,6 +46,11 @@ Accounts,Ҳисоблар
 Accounts frozen up to (date),
 Accrual (bill date),Ҳисоблама (харид ҳисоб-фактура санаси)
 Accrual (invoice date),Ҳисоблама (сотув ҳисоб-фактура санаси)
+Accrual failed.,Ҳисоблаш муваффақиятсиз.
+Accrue,Ҳисоблаш
+Accrue period,Даврни ҳисоблаш
+Accrue this period?,Бу давр ҳисоблансинми?
+Accrued {0} employees.,{0} ходим ҳисобланди.
 Acquisition report,Жалб қилиш ҳисоботи
 Action,Амал
 Action failed.,Амал бажарилмади.
@@ -302,6 +307,8 @@ Board,Доска
 Bonus,Бонус
 Book rate,
 Booked,Буюртма қилинган
+Books each locked employee's net as a payable (Dr salary expense / Cr salary payable). Idempotent — runs once per period.,Ҳар бир қулфланган ходимнинг соф ойлигини мажбуриятга ёзади (Дт ойлик харажати / Кт тўланадиган ойлик). Идемпотент — ҳар даврда бир марта.
+Books locked nets to salary payable.,Соф ойликларни тўланадиган ойликка ёзади.
 Branch,
 Brand,Брэнд
 Break minutes,
@@ -1304,6 +1311,7 @@ Located,Жойлашувли
 Location saved.,Жойлашув сақланди.
 Locations,Жойлашувлар
 Lock,
+Lock a period and accrue it to see balances here.,Балансларни кўриш учун даврни қулфланг ва ҳисобланг.
 Lock attendance older than (days),Шу кундан эски давоматни қулфлаш (кун)
 Lock payroll period,
 Lock period,
@@ -1572,6 +1580,7 @@ No ledger entries found for the selected period.,Танланган давр у�
 No lines differ from the system quantity — nothing to reconcile.,
 No lines yet.,Ҳалиғача сатрлар йўқ.
 No local backups to upload. Create one first.,Юклаш учун маҳаллий захира йўқ. Аввал яратинг.
+No locked employees to accrue for this period.,Бу давр учун ҳисобланадиган қулфланган ходим йўқ.
 No low-stock items,Паст омбор товарлари йўқ
 No matches found,Мост булганлар топилмади
 No matching items,
@@ -1589,6 +1598,7 @@ No outlets yet,Ҳалиғача сотув пунктлари йўқ
 No outlets.,Нуқталар йўқ.
 No outstanding advances,Қолдиқ аванслар йўқ
 No outstanding balances,Туривчи қарзлар йўқ
+No outstanding salary payable.,Тўланмаган ойлик йўқ.
 No overdue installments.,Муддати ўтган тўловлар йўқ.
 No payments in this range,Бу диапазонда тўловлар йўқ
 No payments recorded in this range,
@@ -1788,6 +1798,7 @@ Outlets,Чўнтаклар
 Outstanding,Ишдан кетган
 Outstanding advance,Аванс қолдиғи
 Outstanding customer balances for field teams.,
+Outstanding salary payable,Тўланмаган ойлик
 Overdue,Муддати ўтган
 Overdue installments,Муддати ўтган тўловлар
 Override qty must be greater than zero,Қўллаш миқдори нолдан катта бўлиши керак
@@ -1814,6 +1825,7 @@ Paid amount,Тўланган сумма
 Paid days,Тўланган кун
 Paid from,Дан тўланди
 Paid to,Гача тўланди
+Paid {0} employees — {1},{0} ходимга тўланди — {1}
 Parent warehouse,Асосий омбор
 Pareto ranking of customers by revenue with A/B/C classes.,"Мижозларни даромад бўйича Парето саралаш, A/B/C синфлар билан."
 Pareto ranking of items by value with A/B/C classes.,"Маҳсулотларни қиймат бўйича Парето саралаш, A/B/C синфлар билан."
@@ -1841,7 +1853,9 @@ Pay advance,Аванс бериш
 "Pay an advance, or turn off the balance filter to see everyone.",Аванс беринг ёки ҳаммани кўриш учун баланс филтрини ўчиринг.
 Pay from,Дан тўлаш
 Pay from (cash/bank),Қаердан (касса/банк)
+Pay from…,Тўлов ҳисоби…
 Pay supplier,Йўбағочига тўлаш
+Pay {0} employees?,{0} ходимга тўлансинми?
 "Pay-formula inputs: overtime rate, KPI pool share, and per-day transport by region band.","Ойлик формуласи параметрлари: қўшимча иш ставкаси, KPI фонд улуши ва ҳудуд бўйича кунлик транспорт."
 Payable,Қўллаш
 Payable (AP),Кредиторлик қарзи
@@ -1856,6 +1870,7 @@ Payment Entry,Тўлов қайди
 Payment Mode,
 Payment cancelled,Тўлов бекор қилинди
 Payment failed,Тўлов амалга ошмади
+Payment failed.,Тўлов муваффақиятсиз.
 Payment mode is not allowed for this POS Profile.,
 Payment mode {0} is not an online gateway.,
 "Payment number, reference or party…",
@@ -1936,6 +1951,7 @@ Pick someone on the left to see their pay breakdown.,Ойлик тафсилот
 Pick start and end dates.,Бошланиш ва тугаш саналарини танланг.
 Pick the account funds will be paid from.,Пул ўтказилиб юборилаётган ҳисобни танланг.
 Pick the account that will receive the funds.,Пул қабул қилиб олаётган ҳисобни танланг.
+Pick the bank/cash account to pay from.,Тўлов учун банк/касса ҳисобини танланг.
 Pieces,Дона
 Pistachio,
 Place branded freezer at {0} (deal {1}),
@@ -2252,6 +2268,7 @@ SRE module unavailable: {0},SRE модули ишламайди: {0}
 SREs,SRE
 Salary Slip {0} not found.,
 Salary and payroll summaries.,
+Salary payments,Ойлик тўловлари
 Salary slip,Маош варақаси
 Salary slips,
 Sale,
@@ -2393,6 +2410,7 @@ Select template…,Шаблонни танланг…
 Select the bank account this statement belongs to.,Ушбу кўчирма тегишли бўлган ҳисобни танланг.
 Select warehouse,Омборни танланг
 Select warehouse…,Омборни танланг…
+Selected,Танланган
 Select…,Танланг…
 Self-approval blocked,Ўз-ўзини тасдиқлаш тақиқланган
 Self-review blocked,
@@ -2615,6 +2633,7 @@ This draft invoice has no ledger balance yet. The payment will be submitted as a
 This exception is already {0}.,
 This month,
 "This must match exactly the value in raw events (TimePay user ID, badge code, etc.).",
+This period is already accrued.,Бу давр аллақачон ҳисобланган.
 This posts the entry to the ledger. Submitted entries can't be edited — only cancelled and amended.,"Ёзув ҳисобга ўтказилади. Тасдиқланган проводкаларни таҳрирлаб бўлмайди — фақат бекор қилиб, тузатилган яратиш мумкин."
 This request belongs to a company you cannot access.,
 This request is already {0}.,
@@ -2960,6 +2979,7 @@ name is required.,
 need GPS,GPS керак
 no stock movement,
 on budget,
+"one Journal Entry, clears their payable.","битта журнал ёзуви, мажбуриятни ёпади."
 one-off,бир марталик
 optional,Ихтиёрий
 orders,

@@ -46,6 +46,11 @@ Accounts,Accounts
 Accounts frozen up to (date),Accounts frozen up to (date)
 Accrual (bill date),Accrual (bill date)
 Accrual (invoice date),Accrual (invoice date)
+Accrual failed.,Accrual failed.
+Accrue,Accrue
+Accrue period,Accrue period
+Accrue this period?,Accrue this period?
+Accrued {0} employees.,Accrued {0} employees.
 Acquisition report,Acquisition report
 Action,Action
 Action failed.,Action failed.
@@ -300,6 +305,8 @@ Board,Board
 Bonus,Bonus
 Book rate,Book rate
 Booked,Booked
+Books each locked employee's net as a payable (Dr salary expense / Cr salary payable). Idempotent — runs once per period.,Books each locked employee's net as a payable (Dr salary expense / Cr salary payable). Idempotent — runs once per period.
+Books locked nets to salary payable.,Books locked nets to salary payable.
 Branch,Branch
 Brand,Brand
 Break minutes,Break minutes
@@ -1302,6 +1309,7 @@ Located,Located
 Location saved.,Location saved.
 Locations,Locations
 Lock,Lock
+Lock a period and accrue it to see balances here.,Lock a period and accrue it to see balances here.
 Lock attendance older than (days),Lock attendance older than (days)
 Lock payroll period,Lock payroll period
 Lock period,Lock period
@@ -1570,6 +1578,7 @@ No ledger entries found for the selected period.,No ledger entries found for the
 No lines differ from the system quantity — nothing to reconcile.,No lines differ from the system quantity — nothing to reconcile.
 No lines yet.,No lines yet.
 No local backups to upload. Create one first.,No local backups to upload. Create one first.
+No locked employees to accrue for this period.,No locked employees to accrue for this period.
 No low-stock items,No low-stock items
 No matches found,No matches found
 No matching items,No matching items
@@ -1587,6 +1596,7 @@ No outlets yet,No outlets yet
 No outlets.,No outlets.
 No outstanding advances,No outstanding advances
 No outstanding balances,No outstanding balances
+No outstanding salary payable.,No outstanding salary payable.
 No overdue installments.,No overdue installments.
 No payments in this range,No payments in this range
 No payments recorded in this range,No payments recorded in this range
@@ -1786,6 +1796,7 @@ Outlets,Outlets
 Outstanding,Outstanding
 Outstanding advance,Outstanding advance
 Outstanding customer balances for field teams.,Outstanding customer balances for field teams.
+Outstanding salary payable,Outstanding salary payable
 Overdue,Overdue
 Overdue installments,Overdue installments
 Override qty must be greater than zero,Override qty must be greater than zero
@@ -1811,6 +1822,7 @@ Paid amount,Paid amount
 Paid days,Paid days
 Paid from,Paid from
 Paid to,Paid to
+Paid {0} employees — {1},Paid {0} employees — {1}
 Parent warehouse,Parent warehouse
 Pareto ranking of customers by revenue with A/B/C classes.,Pareto ranking of customers by revenue with A/B/C classes.
 Pareto ranking of items by value with A/B/C classes.,Pareto ranking of items by value with A/B/C classes.
@@ -1838,7 +1850,9 @@ Pay advance,Pay advance
 "Pay an advance, or turn off the balance filter to see everyone.","Pay an advance, or turn off the balance filter to see everyone."
 Pay from,Pay from
 Pay from (cash/bank),Pay from (cash/bank)
+Pay from…,Pay from…
 Pay supplier,Pay supplier
+Pay {0} employees?,Pay {0} employees?
 "Pay-formula inputs: overtime rate, KPI pool share, and per-day transport by region band.","Pay-formula inputs: overtime rate, KPI pool share, and per-day transport by region band."
 Payable,Payable
 Payable (AP),Payable (AP)
@@ -1853,6 +1867,7 @@ Payment Entry,Payment Entry
 Payment Mode,Payment Mode
 Payment cancelled,Payment cancelled
 Payment failed,Payment failed
+Payment failed.,Payment failed.
 Payment mode is not allowed for this POS Profile.,Payment mode is not allowed for this POS Profile.
 Payment mode {0} is not an online gateway.,Payment mode {0} is not an online gateway.
 "Payment number, reference or party…","Payment number, reference or party…"
@@ -1933,6 +1948,7 @@ Pick someone on the left to see their pay breakdown.,Pick someone on the left to
 Pick start and end dates.,Pick start and end dates.
 Pick the account funds will be paid from.,Pick the account funds will be paid from.
 Pick the account that will receive the funds.,Pick the account that will receive the funds.
+Pick the bank/cash account to pay from.,Pick the bank/cash account to pay from.
 Pieces,Pieces
 Pistachio,Pistachio
 Place branded freezer at {0} (deal {1}),Place branded freezer at {0} (deal {1})
@@ -2249,6 +2265,7 @@ SRE module unavailable: {0},SRE module unavailable: {0}
 SREs,SREs
 Salary Slip {0} not found.,Salary Slip {0} not found.
 Salary and payroll summaries.,Salary and payroll summaries.
+Salary payments,Salary payments
 Salary slip,Salary slip
 Salary slips,Salary slips
 Sale,Sale
@@ -2390,6 +2407,7 @@ Select template…,Select template…
 Select the bank account this statement belongs to.,Select the bank account this statement belongs to.
 Select warehouse,Select warehouse
 Select warehouse…,Select warehouse…
+Selected,Selected
 Select…,Select…
 Self-approval blocked,Self-approval blocked
 Self-review blocked,Self-review blocked
@@ -2612,6 +2630,7 @@ This draft invoice has no ledger balance yet. The payment will be submitted as a
 This exception is already {0}.,This exception is already {0}.
 This month,This month
 "This must match exactly the value in raw events (TimePay user ID, badge code, etc.).","This must match exactly the value in raw events (TimePay user ID, badge code, etc.)."
+This period is already accrued.,This period is already accrued.
 This posts the entry to the ledger. Submitted entries can't be edited — only cancelled and amended.,This posts the entry to the ledger. Submitted entries can't be edited — only cancelled and amended.
 This request belongs to a company you cannot access.,This request belongs to a company you cannot access.
 This request is already {0}.,This request is already {0}.
@@ -2953,6 +2972,7 @@ name is required.,name is required.
 need GPS,need GPS
 no stock movement,no stock movement
 on budget,on budget
+"one Journal Entry, clears their payable.","one Journal Entry, clears their payable."
 one-off,one-off
 optional,optional
 orders,orders

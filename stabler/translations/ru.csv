@@ -49,6 +49,11 @@ Accounts,Счета
 Accounts frozen up to (date),
 Accrual (bill date),Начисление (дата счёта покупки)
 Accrual (invoice date),Начисление (дата счёта продажи)
+Accrual failed.,Не удалось начислить.
+Accrue,Начислить
+Accrue period,Начислить период
+Accrue this period?,Начислить этот период?
+Accrued {0} employees.,Начислено {0} сотрудников.
 Acquisition report,Отчёт по привлечению
 Action,Действие
 Action failed.,Ошибка выполнения.
@@ -307,6 +312,8 @@ Board,Доска
 Bonus,Премия
 Book rate,
 Booked,Заказано
+Books each locked employee's net as a payable (Dr salary expense / Cr salary payable). Idempotent — runs once per period.,Записывает нетто каждого заблокированного сотрудника в кредиторскую задолженность (Дт расход зарплаты / Кт зарплата к выплате). Идемпотентно — раз на период.
+Books locked nets to salary payable.,Записывает нетто в зарплату к выплате.
 Branch,
 Brand,Бренд
 Break minutes,
@@ -1311,6 +1318,7 @@ Located,С геолокацией
 Location saved.,Геолокация сохранена.
 Locations,Локации
 Lock,
+Lock a period and accrue it to see balances here.,"Заблокируйте период и начислите его, чтобы увидеть балансы."
 Lock attendance older than (days),Блокировать посещаемость старше (дней)
 Lock payroll period,
 Lock period,
@@ -1579,6 +1587,7 @@ No ledger entries found for the selected period.,Записей в главно�
 No lines differ from the system quantity — nothing to reconcile.,
 No lines yet.,Строк нет.
 No local backups to upload. Create one first.,Нет локальных копий для загрузки. Сначала создайте копию.
+No locked employees to accrue for this period.,Нет заблокированных сотрудников для начисления.
 No low-stock items,Товаров с низким уровнем запасов нет
 No matches found,Совпадений не найдено
 No matching items,
@@ -1596,6 +1605,7 @@ No outlets yet,Пока нет торговых точек
 No outlets.,Нет точек.
 No outstanding advances,Нет непогашенных авансов
 No outstanding balances,Нет задолженности
+No outstanding salary payable.,Нет задолженности по зарплате.
 No overdue installments.,Нет просроченных платежей.
 No payments in this range,Платежей в этом диапазоне нет
 No payments recorded in this range,
@@ -1795,6 +1805,7 @@ Outlets,Торговые точки
 Outstanding,Невыплаченная
 Outstanding advance,Остаток аванса
 Outstanding customer balances for field teams.,
+Outstanding salary payable,Зарплата к выплате
 Overdue,Просрочено
 Overdue installments,Просроченные платежи
 Override qty must be greater than zero,Переопределённое количество должно быть больше нуля
@@ -1821,6 +1832,7 @@ Paid amount,Выплаченная сумма
 Paid days,Оплачено дней
 Paid from,Выплачено с
 Paid to,Выплачено
+Paid {0} employees — {1},Оплачено {0} сотрудникам — {1}
 Parent warehouse,Основной склад
 Pareto ranking of customers by revenue with A/B/C classes.,Парето-ранжирование клиентов по выручке с классами A/B/C.
 Pareto ranking of items by value with A/B/C classes.,Парето-ранжирование товаров по ценности с классами A/B/C.
@@ -1848,7 +1860,9 @@ Pay advance,Выдать аванс
 "Pay an advance, or turn off the balance filter to see everyone.","Выдайте аванс или отключите фильтр баланса, чтобы увидеть всех."
 Pay from,Выплатить с
 Pay from (cash/bank),Откуда (касса/банк)
+Pay from…,Платить с…
 Pay supplier,Выплатить поставщику
+Pay {0} employees?,Оплатить {0} сотрудникам?
 "Pay-formula inputs: overtime rate, KPI pool share, and per-day transport by region band.","Параметры формулы оплаты: ставка сверхурочных, доля KPI-пула и суточный транспорт по региону."
 Payable,К выплате
 Payable (AP),Кредиторская задолженность
@@ -1863,6 +1877,7 @@ Payment Entry,Платёжный документ
 Payment Mode,
 Payment cancelled,Оплата отменена
 Payment failed,Платёж не выполнен
+Payment failed.,Не удалось оплатить.
 Payment mode is not allowed for this POS Profile.,
 Payment mode {0} is not an online gateway.,
 "Payment number, reference or party…",
@@ -1943,6 +1958,7 @@ Pick someone on the left to see their pay breakdown.,"Выберите слев�
 Pick start and end dates.,Выберите даты начала и конца.
 Pick the account funds will be paid from.,"Выберите счёт, с которого будут переведены средства."
 Pick the account that will receive the funds.,"Выберите счёт, который получит средства."
+Pick the bank/cash account to pay from.,Выберите счёт для оплаты.
 Pieces,Штук
 Pistachio,
 Place branded freezer at {0} (deal {1}),
@@ -2259,6 +2275,7 @@ SRE module unavailable: {0},Модуль SRE недоступен: {0}
 SREs,SRE
 Salary Slip {0} not found.,
 Salary and payroll summaries.,
+Salary payments,Выплата зарплаты
 Salary slip,Расчётный листок
 Salary slips,
 Sale,
@@ -2400,6 +2417,7 @@ Select template…,Выберите шаблон…
 Select the bank account this statement belongs to.,"Выберите счёт, к которому относится выписка."
 Select warehouse,Выберите склад
 Select warehouse…,Выберите склад…
+Selected,Выбрано
 Select…,Выберите…
 Self-approval blocked,Самосогласование запрещено
 Self-review blocked,
@@ -2622,6 +2640,7 @@ This draft invoice has no ledger balance yet. The payment will be submitted as a
 This exception is already {0}.,
 This month,
 "This must match exactly the value in raw events (TimePay user ID, badge code, etc.).",
+This period is already accrued.,Этот период уже начислен.
 This posts the entry to the ledger. Submitted entries can't be edited — only cancelled and amended.,Запись будет проведена в учёт. Проведённые проводки нельзя редактировать — только отменить и создать исправленную.
 This request belongs to a company you cannot access.,
 This request is already {0}.,
@@ -2967,6 +2986,7 @@ name is required.,
 need GPS,без GPS
 no stock movement,
 on budget,
+"one Journal Entry, clears their payable.","одна проводка, закрывает задолженность."
 one-off,разовый
 optional,необязательно
 orders,
