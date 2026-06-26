@@ -19,6 +19,7 @@
   "enable_crm",
   "enable_service",
   "enable_bpm",
+  "enable_tender",
   "enable_remittance",
   "enable_installment"
  ],
@@ -122,6 +123,14 @@
    "fieldtype": "Check",
    "in_list_view": 1,
    "label": "Processes (BPM)"
+  },
+  {
+   "default": "0",
+   "description": "Tender / contract pipeline (Mikas). OFF by default so other tenants are unaffected.",
+   "fieldname": "enable_tender",
+   "fieldtype": "Check",
+   "in_list_view": 1,
+   "label": "Tender"
   },
   {
    "default": "1",

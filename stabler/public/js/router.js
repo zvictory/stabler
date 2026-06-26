@@ -28,6 +28,7 @@ import Customers from "./pages/sales/Customers.vue";
 import Quotations from "./pages/sales/Quotations.vue";
 import SalesOrders from "./pages/sales/SalesOrders.vue";
 import SalesOrderForm from "./pages/sales/SalesOrderForm.vue";
+import SalesOrderBoard from "./pages/sales/SalesOrderBoard.vue";
 import SalesInvoices from "./pages/sales/SalesInvoices.vue";
 import SalesInvoiceForm from "./pages/sales/SalesInvoiceForm.vue";
 import SalesReturnForm from "./pages/sales/SalesReturnForm.vue";
@@ -152,6 +153,7 @@ const routes = [
 	{ path: "/profile", name: "profile", component: Profile, meta: { title: t("Profile") } },
 	{ path: "/pos", name: "pos", component: POS, meta: { title: t("POS"), module: "sales" } },
 	{ path: "/manufacturing/line", name: "manufacturing-line", component: ManufacturingOperatorBoard, meta: { title: t("Operator Kiosk") } },
+	{ path: "/tender/board", name: "tender-board", component: SalesOrderBoard, meta: { title: t("Contract board"), module: "tender" } },
 	{
 		path: "/money",
 		component: MoneyHome,

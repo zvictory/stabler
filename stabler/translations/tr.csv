@@ -72,6 +72,7 @@ Add a column to start organising your deals.,Anlaşmaları düzenlemeye başlama
 Add a customer,Müşteri ekle
 Add a line…,Satır ekle…
 Add a service account to site_config.json key,
+Add a stage to start tracking contracts.,Sözleşmeleri izlemek için bir aşama ekleyin.
 Add a warehouse to start tracking stock locations.,Stok konumlarını takip etmeye başlamak için bir depo ekleyin.
 Add another item,Başka bir kalem ekle
 Add at least one item line.,En az bir kalem satırı ekleyin.
@@ -88,6 +89,7 @@ Add line,Satır ekle
 Add outlet,Şube ekle
 Add punch,
 Add row,Satır ekle
+Add stage,Aşama ekle
 Add supplier,Tedarikçi ekle
 Add to Google Calendar,Google Takvim'e ekle
 Add to stock,Stoğa ekle
@@ -490,6 +492,7 @@ Contact,İletişim
 Contacted,İletişim Kuruldu
 Contents,İçerik
 Contract,Sözleşme
+Contract board,Sözleşme panosu
 Contract detail,Sözleşme detayı
 Contracts,Sözleşmeler
 Conversion rate for USD to UZS cannot be less than 1000 (got {0}).,
@@ -511,9 +514,11 @@ Cost Centre,
 Cost centre,
 Cost must be positive.,Maliyet pozitif olmalıdır.
 Could not add holiday.,Tatil eklenemedi.
+Could not add stage.,Aşama eklenemedi.
 Could not check payment status.,Ödeme durumu kontrol edilemedi.
 Could not load data health.,Veri sağlığı yüklenemedi.
 Could not load the HR overview.,İK genel bakışı yüklenemedi.
+Could not load the board.,Pano yüklenemedi.
 Could not load unmatched users.,Eşleşmemiş kullanıcılar yüklenemedi.
 Could not read backup file: {0},
 Could not read the uploaded file.,
@@ -643,6 +648,7 @@ Delete lead?,
 Delete mapping,
 Delete order {name}? This cannot be undone.,{name} siparişi silinsin mi? Bu işlem geri alınamaz.
 Delete process?,
+Delete stage?,Aşama silinsin mi?
 Delete supplier,Tedarikçiyi sil
 Delete this deal?,Bu anlaşmayı silinsin mi?
 Delete this draft entry?,
@@ -1071,6 +1077,7 @@ From,Kaynak
 From account,Kaynak hesap
 From date,
 From date cannot be after To date.,
+From tender,İhaleden
 From warehouse,Kaynak depo
 From → To,Kaynak → Hedef
 Frozen accounts modifier role,
@@ -1390,6 +1397,7 @@ Month to date,
 Monthly,Aylık
 Monthly installment,Aylık taksit
 Monthly run-rate,Aylık ciro
+Move failed.,Taşıma başarısız.
 Move to Under Review,İncelemeye Al
 Movement,Hareket
 Movements,Hareketler
@@ -1477,6 +1485,7 @@ New receipt,Yeni mal kabulü
 New route,Yeni rota
 New rule set,
 New sales order,Yeni satış siparişi
+New stage name,Yeni aşama adı
 New stock entry,Yeni stok kaydı
 New supplier,Yeni tedarikçi
 New transfer,Yeni transfer
@@ -1633,6 +1642,7 @@ No segregation-of-duties conflicts found.,Görev ayrılığı çakışması bulu
 No serial,Seri yok
 No service tickets,Servis talebi yok
 No service visits,
+No stages yet.,Henüz aşama yok.
 No statements imported yet.,Henüz ekstre içe aktarılmadı.
 No steps yet.,Henüz adım yok.
 No stock entries yet,Henüz stok hareketi yok
@@ -2478,6 +2488,7 @@ Spend,Harcama
 Stabler Settings doctype does not exist. Run migrations first.,
 Staff with base salary = 0,Temel maaşı = 0 olan çalışanlar
 Stage Materials,
+Stage still has Sales Orders — move them first.,Aşamada hâlâ sipariş var — önce taşıyın.
 Stake coefficient,
 Stale days,
 Stale days cannot be negative.,
@@ -2585,6 +2596,7 @@ Taxes,Vergiler
 Technician,Teknisyen
 Technician state,Teknisyen durumu
 Telegram,Telegram
+Tender,İhale
 Tenure,Kıdem
 Term (months),Vade (ay)
 Terms,Koşullar

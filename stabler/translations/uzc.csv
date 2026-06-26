@@ -72,6 +72,7 @@ Add a column to start organising your deals.,Битимларни тартибг
 Add a customer,Мижоз қўшиш
 Add a line…,Қатор қўшиш…
 Add a service account to site_config.json key,
+Add a stage to start tracking contracts.,Шартномаларни кузатиш учун босқич қўшинг.
 Add a warehouse to start tracking stock locations.,Аларни кузатишни бошлаш учун омбор қўшиш.
 Add another item,Бошқа товар қўшиш
 Add at least one item line.,Камида бир товар қатори қўшиш.
@@ -88,6 +89,7 @@ Add line,Қатор қўшиш
 Add outlet,Сотув жойи қўшиш
 Add punch,
 Add row,Қатор қўшиш
+Add stage,Босқич қўшиш
 Add supplier,Таъминотчи қўшиш
 Add to Google Calendar,Google Календарга қўшиш
 Add to stock,Омборга қўшиш
@@ -494,6 +496,7 @@ Contact,Алоқа
 Contacted,Боғланилди
 Contents,Таркиби
 Contract,Шартнома
+Contract board,Шартнома доскаси
 Contract detail,Шартнома тафсилотлари
 Contracts,Шартномалар
 Conversion rate for USD to UZS cannot be less than 1000 (got {0}).,
@@ -516,9 +519,11 @@ Cost Centre,
 Cost centre,
 Cost must be positive.,Таннарх мусбат бўлиши керак.
 Could not add holiday.,Байрам қўшиб бўлмади.
+Could not add stage.,Босқич қўшиб бўлмади.
 Could not check payment status.,Тўлов ҳолатини текшириб бўлмади.
 Could not load data health.,Маълумотлар соғлиғини юклаб бўлмади.
 Could not load the HR overview.,HR умумий кўринишини юклаб бўлмади.
+Could not load the board.,Доскани юклаб бўлмади.
 Could not load unmatched users.,Боғланмаган фойдаланувчиларни юклаб бўлмади.
 Could not read backup file: {0},
 Could not read the uploaded file.,
@@ -648,6 +653,7 @@ Delete lead?,
 Delete mapping,
 Delete order {name}? This cannot be undone.,
 Delete process?,
+Delete stage?,Босқич ўчирилсинми?
 Delete supplier,Етказувчини ўчириш
 Delete this deal?,Ушбу битимни Ӯчирилсинми?
 Delete this draft entry?,
@@ -1078,6 +1084,7 @@ From,Дан
 From account,Ҳисобдан
 From date,
 From date cannot be after To date.,
+From tender,Тендердан
 From warehouse,Омборидан
 From → To,Дан → Гача
 Frozen accounts modifier role,
@@ -1398,6 +1405,7 @@ Month to date,
 Monthly,Ойлик
 Monthly installment,Ойлик тўлов
 Monthly run-rate,Ойлик айланма
+Move failed.,Кўчириб бўлмади.
 Move to Under Review,Кўзда тутилаётган ҳолатга ўтказиш
 Movement,Ҳаракат
 Movements,Ҳаракатлар
@@ -1485,6 +1493,7 @@ New receipt,Янги қабул
 New route,Янги маршрут
 New rule set,
 New sales order,Янги сотув буйртмаси
+New stage name,Янги босқич номи
 New stock entry,Янги омбор ёзув
 New supplier,Янги етказиб берувчи
 New transfer,Янги ўтказма
@@ -1641,6 +1650,7 @@ No segregation-of-duties conflicts found.,Вазифалар тақсимоти 
 No serial,Серия рақами йўқ
 No service tickets,Мурожаатлар йўқ
 No service visits,
+No stages yet.,Ҳали босқичлар йўқ.
 No statements imported yet.,Ҳали кўчирма импорт қилинмаган.
 No steps yet.,Ҳали қадамлар йўқ.
 No stock entries yet,Ҳали қор ёзувлари йўқ
@@ -2492,6 +2502,7 @@ Spend,Харажат
 Stabler Settings doctype does not exist. Run migrations first.,
 Staff with base salary = 0,Асосий ойлиги = 0 бўлган ходимлар
 Stage Materials,
+Stage still has Sales Orders — move them first.,Босқичда ҳали буюртмалар бор — аввал уларни кўчиринг.
 Stake coefficient,
 Stale days,
 Stale days cannot be negative.,
@@ -2599,6 +2610,7 @@ Taxes,Солиқлар
 Technician,Техник
 Technician state,Техник ҳолати
 Telegram,Telegram
+Tender,Тендер
 Tenure,Иш стажи
 Term (months),Муддат (ой)
 Terms,Шартлар

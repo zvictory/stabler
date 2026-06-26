@@ -72,6 +72,7 @@ Add a column to start organising your deals.,Add a column to start organising yo
 Add a customer,Add a customer
 Add a line…,Add a line…
 Add a service account to site_config.json key,Add a service account to site_config.json key
+Add a stage to start tracking contracts.,Add a stage to start tracking contracts.
 Add a warehouse to start tracking stock locations.,Add a warehouse to start tracking stock locations.
 Add another item,Add another item
 Add at least one item line.,Add at least one item line.
@@ -88,6 +89,7 @@ Add line,Add line
 Add outlet,Add outlet
 Add punch,Add punch
 Add row,Add row
+Add stage,Add stage
 Add supplier,Add supplier
 Add to Google Calendar,Add to Google Calendar
 Add to stock,Add to stock
@@ -492,6 +494,7 @@ Contact,Contact
 Contacted,Contacted
 Contents,Contents
 Contract,Contract
+Contract board,Contract board
 Contract detail,Contract detail
 Contracts,Contracts
 Conversion rate for USD to UZS cannot be less than 1000 (got {0}).,Conversion rate for USD to UZS cannot be less than 1000 (got {0}).
@@ -514,9 +517,11 @@ Cost Centre,Cost Centre
 Cost centre,Cost centre
 Cost must be positive.,Cost must be positive.
 Could not add holiday.,Could not add holiday.
+Could not add stage.,Could not add stage.
 Could not check payment status.,Could not check payment status.
 Could not load data health.,Could not load data health.
 Could not load the HR overview.,Could not load the HR overview.
+Could not load the board.,Could not load the board.
 Could not load unmatched users.,Could not load unmatched users.
 Could not read backup file: {0},Could not read backup file: {0}
 Could not read the uploaded file.,Could not read the uploaded file.
@@ -646,6 +651,7 @@ Delete lead?,Delete lead?
 Delete mapping,Delete mapping
 Delete order {name}? This cannot be undone.,Delete order {name}? This cannot be undone.
 Delete process?,Delete process?
+Delete stage?,Delete stage?
 Delete supplier,Delete supplier
 Delete this deal?,Delete this deal?
 Delete this draft entry?,Delete this draft entry?
@@ -1076,6 +1082,7 @@ From,From
 From account,From account
 From date,From date
 From date cannot be after To date.,From date cannot be after To date.
+From tender,From tender
 From warehouse,From warehouse
 From → To,From → To
 Frozen accounts modifier role,Frozen accounts modifier role
@@ -1396,6 +1403,7 @@ Month to date,Month to date
 Monthly,Monthly
 Monthly installment,Monthly installment
 Monthly run-rate,Monthly run-rate
+Move failed.,Move failed.
 Move to Under Review,Move to Under Review
 Movement,Movement
 Movements,Movements
@@ -1483,6 +1491,7 @@ New receipt,New receipt
 New route,New route
 New rule set,New rule set
 New sales order,New sales order
+New stage name,New stage name
 New stock entry,New stock entry
 New supplier,New supplier
 New transfer,New transfer
@@ -1639,6 +1648,7 @@ No segregation-of-duties conflicts found.,No segregation-of-duties conflicts fou
 No serial,No serial
 No service tickets,No service tickets
 No service visits,No service visits
+No stages yet.,No stages yet.
 No statements imported yet.,No statements imported yet.
 No steps yet.,No steps yet.
 No stock entries yet,No stock entries yet
@@ -2489,6 +2499,7 @@ Spend,Spend
 Stabler Settings doctype does not exist. Run migrations first.,Stabler Settings doctype does not exist. Run migrations first.
 Staff with base salary = 0,Staff with base salary = 0
 Stage Materials,Stage Materials
+Stage still has Sales Orders — move them first.,Stage still has Sales Orders — move them first.
 Stake coefficient,Stake coefficient
 Stale days,Stale days
 Stale days cannot be negative.,Stale days cannot be negative.
@@ -2596,6 +2607,7 @@ Taxes,Taxes
 Technician,Technician
 Technician state,Technician state
 Telegram,Telegram
+Tender,Tender
 Tenure,Tenure
 Term (months),Term (months)
 Terms,Terms

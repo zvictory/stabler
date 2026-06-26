@@ -41,6 +41,7 @@ const items = computed(() => {
 		{ name: "sfa", path: "/sfa", label: t("Field Sales"), icon: "ti-route", show: session.canAccessModule("field_sales") },
 		{ name: "marketing", path: "/marketing", label: t("Trade Marketing"), icon: "ti-target-arrow", show: session.canAccessModule("marketing") },
 		{ name: "crm", path: "/crm", label: t("CRM"), icon: "ti-address-book", show: session.canAccessModule("crm") },
+		{ name: "tender", path: "/tender/board", label: t("Tender"), icon: "ti-gavel", show: session.canAccessModule("tender") },
 		{ name: "service", path: "/service", label: t("Service"), icon: "ti-tool", show: session.canAccessModule("service") },
 		{ name: "bpm", path: "/bpm", label: t("Processes"), icon: "ti-sitemap", show: session.canAccessModule("bpm") },
 		{ name: "remittance", path: "/remittance", label: t("Remittance"), icon: "ti-send", show: session.canAccessModule("remittance") },

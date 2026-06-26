@@ -60,6 +60,7 @@ def module_map_for(company: str) -> dict:
 			"crm": True,
 			"service": False,
 			"bpm": True,
+			"tender": False,
 			"remittance": True,
 			"installment": True,
 		}
@@ -77,6 +78,7 @@ def module_map_for(company: str) -> dict:
 		"crm": bool(getattr(row, "enable_crm", 1)),
 		"service": bool(getattr(row, "enable_service", 0)),
 		"bpm": bool(getattr(row, "enable_bpm", 1)),
+		"tender": bool(getattr(row, "enable_tender", 0)),
 		"remittance": bool(getattr(row, "enable_remittance", 1)),
 		"installment": bool(getattr(row, "enable_installment", 1)),
 	}

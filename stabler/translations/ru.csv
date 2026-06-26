@@ -75,6 +75,7 @@ Add a column to start organising your deals.,Добавьте колонку
 Add a customer,Добавить клиента
 Add a line…,Добавить строку…
 Add a service account to site_config.json key,
+Add a stage to start tracking contracts.,"Добавьте этап, чтобы отслеживать контракты."
 Add a warehouse to start tracking stock locations.,"Добавьте склад, чтобы начать отслеживание мест хранения товаров."
 Add another item,Добавить ещё товар
 Add at least one item line.,Добавьте хотя бы одну строку товара.
@@ -91,6 +92,7 @@ Add line,Добавить строку
 Add outlet,Добавить торговую точку
 Add punch,
 Add row,Добавить строку
+Add stage,Добавить этап
 Add supplier,Добавить поставщика
 Add to Google Calendar,Добавить в Google Календарь
 Add to stock,Добавить на склад
@@ -500,6 +502,7 @@ Contact,Контакт
 Contacted,Контакт установлен
 Contents,Содержимое
 Contract,Договор
+Contract board,Доска контрактов
 Contract detail,Детали договора
 Contracts,Договоры
 Conversion rate for USD to UZS cannot be less than 1000 (got {0}).,
@@ -522,9 +525,11 @@ Cost Centre,
 Cost centre,
 Cost must be positive.,Себестоимость должна быть положительной.
 Could not add holiday.,Не удалось добавить праздник.
+Could not add stage.,Не удалось добавить этап.
 Could not check payment status.,Не удалось проверить статус платежа.
 Could not load data health.,Не удалось загрузить качество данных.
 Could not load the HR overview.,Не удалось загрузить HR обзор.
+Could not load the board.,Не удалось загрузить доску.
 Could not load unmatched users.,Не удалось загрузить несопоставленных пользователей.
 Could not read backup file: {0},
 Could not read the uploaded file.,
@@ -654,6 +659,7 @@ Delete lead?,
 Delete mapping,
 Delete order {name}? This cannot be undone.,
 Delete process?,
+Delete stage?,Удалить этап?
 Delete supplier,Удалить поставщика
 Delete this deal?,Удалить эту сделку?
 Delete this draft entry?,
@@ -1085,6 +1091,7 @@ From,С
 From account,С счёта
 From date,
 From date cannot be after To date.,
+From tender,Из тендера
 From warehouse,Со склада
 From → To,С → По
 Frozen accounts modifier role,
@@ -1405,6 +1412,7 @@ Month to date,
 Monthly,Ежемесячно
 Monthly installment,Ежемесячный платёж
 Monthly run-rate,Месячный оборот
+Move failed.,Не удалось переместить.
 Move to Under Review,Перейти в режим проверки
 Movement,Движение
 Movements,Движения
@@ -1492,6 +1500,7 @@ New receipt,Новая приёмка
 New route,Новый маршрут
 New rule set,
 New sales order,Новый заказ на продажу
+New stage name,Название нового этапа
 New stock entry,Новое движение товаров
 New supplier,Новый поставщик
 New transfer,Новый перевод
@@ -1648,6 +1657,7 @@ No segregation-of-duties conflicts found.,Конфликтов разделен�
 No serial,Нет серийного номера
 No service tickets,Заявок нет
 No service visits,
+No stages yet.,Этапов пока нет.
 No statements imported yet.,Выписки ещё не импортированы.
 No steps yet.,Этапов нет.
 No stock entries yet,Записей о товаре нет
@@ -2499,6 +2509,7 @@ Spend,Расходы
 Stabler Settings doctype does not exist. Run migrations first.,
 Staff with base salary = 0,Сотрудники с базовым окладом = 0
 Stage Materials,
+Stage still has Sales Orders — move them first.,В этапе ещё есть заказы — сначала переместите их.
 Stake coefficient,
 Stale days,
 Stale days cannot be negative.,
@@ -2606,6 +2617,7 @@ Taxes,Налоги
 Technician,Техник
 Technician state,Статус техника
 Telegram,Telegram
+Tender,Тендер
 Tenure,Стаж
 Term (months),Срок (месяцев)
 Terms,Условия

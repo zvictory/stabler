@@ -35,6 +35,7 @@ const moduleOptions = computed(() => [
 	{ key: "marketing", label: t("Trade Marketing") },
 	{ key: "crm", label: t("CRM") },
 	{ key: "service", label: t("Service") },
+	{ key: "tender", label: t("Tender") },
 	{ key: "remittance", label: t("Remittance") },
 	{ key: "installment", label: t("Installment") },
 ]);
