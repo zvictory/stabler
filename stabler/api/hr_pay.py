@@ -247,3 +247,78 @@ def preview_payroll_period(company: str, payroll_period: str) -> dict:
 		"net_total": round(net_total),
 		"rows": rows,
 	}
+
+
+@frappe.whitelist()
+def payroll_xlsx(company: str, payroll_period: str):
+	"""Colored Excel of the period's computed pay (role-gated download)."""
+	import io
+
+	from openpyxl import Workbook
+	from openpyxl.styles import Alignment, Font, PatternFill
+	from openpyxl.utils import get_column_letter
+
+	data = preview_payroll_period(company, payroll_period)
+	rows = data.get("rows") or []
+	base_ccy = frappe.get_cached_value("Company", company, "default_currency") or ""
+
+	wb = Workbook()
+	ws = wb.active
+	ws.title = "Payroll"
+	header_fill = PatternFill("solid", fgColor="206BC4")
+	white = Font(bold=True, color="FFFFFF")
+	center = Alignment(horizontal="center")
+	cols = [
+		(_("Employee"), "employee_name", 28),
+		(_("Prorated base"), "prorated_base", 16),
+		(_("Allowances"), "allowances", 14),
+		(_("Overtime"), "overtime", 12),
+		(_("KPI"), "kpi", 12),
+		(_("Duty supplement"), "duty_supplement", 14),
+		(_("Bonus"), "bonus", 12),
+		(_("Fines"), "fines", 12),
+		(_("Advance"), "advance", 14),
+		(_("Net"), "net", 16),
+	]
+	ws.append([f"{_('Payroll')} · {payroll_period} · {company}"])
+	ws.merge_cells(start_row=1, start_column=1, end_row=1, end_column=len(cols))
+	ws.cell(row=1, column=1).font = Font(bold=True, size=12)
+
+	hr = 2
+	for ci, (label, key, width) in enumerate(cols, start=1):
+		c = ws.cell(row=hr, column=ci, value=label)
+		c.fill = header_fill
+		c.font = white
+		c.alignment = center
+		ws.column_dimensions[get_column_letter(ci)].width = width
+
+	r = hr + 1
+	totals = {key: 0.0 for (label, key, width) in cols if key != "employee_name"}
+	for row in rows:
+		ws.cell(row=r, column=1, value=row.get("employee_name") or row.get("employee"))
+		for ci, (label, key, width) in enumerate(cols[1:], start=2):
+			val = flt(row.get(key))
+			totals[key] = totals.get(key, 0.0) + val
+			cell = ws.cell(row=r, column=ci, value=round(val))
+			cell.number_format = "#,##0"
+			if key in ("fines", "advance") and val:
+				cell.font = Font(color="D63939")
+			if key == "net":
+				cell.font = Font(bold=True)
+		r += 1
+
+	# Totals row.
+	tcell = ws.cell(row=r, column=1, value=_("Total"))
+	tcell.font = Font(bold=True)
+	for ci, (label, key, width) in enumerate(cols[1:], start=2):
+		c = ws.cell(row=r, column=ci, value=round(totals.get(key, 0.0)))
+		c.number_format = "#,##0"
+		c.font = Font(bold=True)
+	ws.cell(row=r + 1, column=1, value=f"{_('Amounts in')} {base_ccy}").font = Font(italic=True, size=9, color="888888")
+	ws.freeze_panes = "A3"
+
+	buf = io.BytesIO()
+	wb.save(buf)
+	frappe.local.response.filename = f"payroll-{payroll_period}.xlsx"
+	frappe.local.response.filecontent = buf.getvalue()
+	frappe.local.response.type = "binary"

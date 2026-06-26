@@ -31,6 +31,7 @@ const AREAS = [
 		landing: "/hr/attendance", roles: ["HR User", "HR Manager"],
 		tabs: [
 			{ name: "hr-attendance", path: "/hr/attendance", label: t("Attendance"), icon: "ti-table" },
+			{ name: "hr-calendar", path: "/hr/calendar", label: t("Holidays"), icon: "ti-calendar-event" },
 			{ name: "hr-exceptions-queue", path: "/hr/exceptions-queue", label: t("Exceptions"), icon: "ti-alert-triangle" },
 			{ name: "hr-corrections", path: "/hr/corrections", label: t("Corrections"), icon: "ti-edit" },
 			{ name: "hr-leave", path: "/hr/leave", label: t("Leave"), icon: "ti-beach" },

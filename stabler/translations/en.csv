@@ -1,6 +1,7 @@
 source,target
 #,#
 % of total,% of total
+(no name),(no name)
 (none),(none)
 (only for half-rate),(only for half-rate)
 "(path to the JSON, or the JSON inline).","(path to the JSON, or the JSON inline)."
@@ -75,6 +76,7 @@ Add child warehouse,Add child warehouse
 Add column,Add column
 Add customer,Add customer
 Add deal,Add deal
+Add holiday,Add holiday
 Add item,Add item
 Add item to stock,Add item to stock
 Add line,Add line
@@ -173,6 +175,7 @@ Amount paid,Amount paid
 Amount received,Amount received
 Amount sent,Amount sent
 Amount to transfer,Amount to transfer
+Amounts in,Amounts in
 Analytics,Analytics
 Anchor DAY hours (h),Anchor DAY hours (h)
 Anchor LIGHT hours (h),Anchor LIGHT hours (h)
@@ -450,6 +453,7 @@ Commission kept,Commission kept
 Commission mode,Commission mode
 Companies,Companies
 Company,Company
+Company default,Company default
 Company email,Company email
 Company is required for an enabled Payroll Component Map.,Company is required for an enabled Payroll Component Map.
 Company is required.,Company is required.
@@ -502,13 +506,16 @@ Cost,Cost
 Cost Centre,Cost Centre
 Cost centre,Cost centre
 Cost must be positive.,Cost must be positive.
+Could not add holiday.,Could not add holiday.
 Could not check payment status.,Could not check payment status.
 Could not load data health.,Could not load data health.
 Could not load the HR overview.,Could not load the HR overview.
+Could not load unmatched users.,Could not load unmatched users.
 Could not read backup file: {0},Could not read backup file: {0}
 Could not read the uploaded file.,Could not read the uploaded file.
 Could not read your location.,Could not read your location.
 Could not resolve payroll period: {0},Could not resolve payroll period: {0}
+Could not save period.,Could not save period.
 Could not start the online payment.,Could not start the online payment.
 Couldn't work out the cash amount to pay — check the exchange rate and the paying account.,Couldn't work out the cash amount to pay — check the exchange rate and the paying account.
 Count,Count
@@ -746,6 +753,7 @@ Edit field user,Edit field user
 Edit journal entry,Edit journal entry
 Edit mapping,Edit mapping
 Edit outlet,Edit outlet
+Edit period,Edit period
 Edit photo report,Edit photo report
 Edit planogram,Edit planogram
 Edit purchase bill,Edit purchase bill
@@ -1119,6 +1127,9 @@ High conflicts,High conflicts
 Hire date,Hire date
 Holiday,Holiday
 Holiday OT premium (%),Holiday OT premium (%)
+Holiday added.,Holiday added.
+Holiday list,Holiday list
+Holidays & periods,Holidays & periods
 Horizontal lanes (flow left→right),Horizontal lanes (flow left→right)
 Hourly OT pay = base hourly × this (e.g. 1.5 = time-and-a-half).,Hourly OT pay = base hourly × this (e.g. 1.5 = time-and-a-half).
 Hours,Hours
@@ -1271,11 +1282,14 @@ Light,Light
 Line Operator Kiosk,Line Operator Kiosk
 Line details,Line details
 Lines,Lines
+Link,Link
 "Link an ERPNext employee to a TimePay (or other device) user ID. When a raw gate event arrives with this device user ID, it will be matched to this employee automatically.","Link an ERPNext employee to a TimePay (or other device) user ID. When a raw gate event arrives with this device user ID, it will be matched to this employee automatically."
+Link failed.,Link failed.
 Link to an existing Customer for receivables.,Link to an existing Customer for receivables.
 Linked customer,Linked customer
 Linked invoices,Linked invoices
 Linked receipts,Linked receipts
+Linked. {0} parked punches re-queued.,Linked. {0} parked punches re-queued.
 List rate,List rate
 Loaded,Loaded
 Loading,Loading
@@ -1449,6 +1463,7 @@ New outlet,New outlet
 New outlets,New outlets
 New outlets this month,New outlets this month
 New payment,New payment
+New period,New period
 New photo report,New photo report
 New planogram,New planogram
 New purchase bill,New purchase bill
@@ -1488,6 +1503,7 @@ No Stock Entries with Asl Belgisi items found.,No Stock Entries with Asl Belgisi
 No access,No access
 No account rows,No account rows
 No activity recorded yet.,No activity recorded yet.
+No attendance for this month.,No attendance for this month.
 No attendance records,No attendance records
 No attendance summaries for this period,No attendance summaries for this period
 No backups on disk yet. Click “Back up now”.,No backups on disk yet. Click “Back up now”.
@@ -1536,6 +1552,7 @@ No field users yet,No field users yet
 No files attached.,No files attached.
 No foreign-currency account balances found for this date.,No foreign-currency account balances found for this date.
 No gate devices,No gate devices
+No holidays yet.,No holidays yet.
 No installments due this month.,No installments due this month.
 No interest — fixed Murabaha markup. Sum equals total exactly.,No interest — fixed Murabaha markup. Sum equals total exactly.
 No invoices found,No invoices found
@@ -1574,6 +1591,7 @@ No overdue installments.,No overdue installments.
 No payments in this range,No payments in this range
 No payments recorded in this range,No payments recorded in this range
 No payments waiting for approval,No payments waiting for approval
+No payroll periods yet.,No payroll periods yet.
 No payroll summaries found for this period.,No payroll summaries found for this period.
 No photo reports yet,No photo reports yet
 No planograms yet,No planograms yet
@@ -1631,6 +1649,7 @@ No transactions in this period.,No transactions in this period.
 No transactions yet.,No transactions yet.
 No travel,No travel
 No unbilled service visits,No unbilled service visits
+No unmatched users. All punches are mapped.,No unmatched users. All punches are mapped.
 No valid rows found.,No valid rows found.
 No van stock yet,No van stock yet
 No verified restore on record. A backup you have never restored is not a backup you can trust — test one and record it.,No verified restore on record. A backup you have never restored is not a backup you can trust — test one and record it.
@@ -1851,6 +1870,7 @@ Payout account,Payout account
 Payroll,Payroll
 Payroll Attendance Summary is Locked. Cannot change: {0},Payroll Attendance Summary is Locked. Cannot change: {0}
 Payroll Attendance Summary {0} not found.,Payroll Attendance Summary {0} not found.
+Payroll Period is not available on this site.,Payroll Period is not available on this site.
 "Payroll Period must be in YYYY-MM format (e.g. 2026-05), got: {0}","Payroll Period must be in YYYY-MM format (e.g. 2026-05), got: {0}"
 Payroll Readiness,Payroll Readiness
 Payroll blockers,Payroll blockers
@@ -1859,6 +1879,7 @@ Payroll impacting,Payroll impacting
 Payroll outputs zero until a salary is entered.,Payroll outputs zero until a salary is entered.
 Payroll period,Payroll period
 Payroll period end date cannot be before start date.,Payroll period end date cannot be before start date.
+Payroll periods,Payroll periods
 Payroll-impacting pending,Payroll-impacting pending
 Pays out this share of the KPI pool. Locked periods are read-only.,Pays out this share of the KPI pool. Locked periods are read-only.
 Pending,Pending
@@ -1887,6 +1908,7 @@ Photos,Photos
 "Photos capture shelves, storefronts and promotions during visits.","Photos capture shelves, storefronts and promotions during visits."
 Pick a company from the switcher in the header to see your financial overview.,Pick a company from the switcher in the header to see your financial overview.
 Pick a customer.,Pick a customer.
+Pick a date.,Pick a date.
 Pick a destination warehouse.,Pick a destination warehouse.
 Pick a finished-good item.,Pick a finished-good item.
 Pick a leave type,Pick a leave type
@@ -1900,6 +1922,7 @@ Pick a warehouse,Pick a warehouse
 Pick a warehouse to receive stock into.,Pick a warehouse to receive stock into.
 Pick a warehouse.,Pick a warehouse.
 Pick an employee,Pick an employee
+Pick an employee first.,Pick an employee first.
 Pick an employee.,Pick an employee.
 Pick an outlet from the list first.,Pick an outlet from the list first.
 "Pick an outlet, then click the map.","Pick an outlet, then click the map."
@@ -1907,6 +1930,7 @@ Pick an outlet from the list first.,Pick an outlet from the list first.
 Pick return warehouse,Pick return warehouse
 Pick someone on the left to see their advance balance and pay an advance.,Pick someone on the left to see their advance balance and pay an advance.
 Pick someone on the left to see their pay breakdown.,Pick someone on the left to see their pay breakdown.
+Pick start and end dates.,Pick start and end dates.
 Pick the account funds will be paid from.,Pick the account funds will be paid from.
 Pick the account that will receive the funds.,Pick the account that will receive the funds.
 Pieces,Pieces
@@ -2000,6 +2024,12 @@ Purchases,Purchases
 Purchases by Supplier,Purchases by Supplier
 Purchasing,Purchasing
 Purpose,Purpose
+Push failed.,Push failed.
+Push net,Push net
+Push net pay to ERPNext?,Push net pay to ERPNext?
+Push net to ERPNext,Push net to ERPNext
+Pushed net pay for {0} employees.,Pushed net pay for {0} employees.
+Pushed {0}; {1} failed.,Pushed {0}; {1} failed.
 QR code expired,QR code expired
 QR unavailable — open the link below,QR unavailable — open the link below
 Qty,Qty
@@ -2110,6 +2140,7 @@ Remove Lane,Remove Lane
 Remove Lane?,Remove Lane?
 Remove column,Remove column
 Remove column?,Remove column?
+Remove holiday?,Remove holiday?
 Remove operator,Remove operator
 Remove row,Remove row
 Remove the link between {0} and device user {1}? This will not affect attendance records already generated.,Remove the link between {0} and device user {1}? This will not affect attendance records already generated.
@@ -2390,6 +2421,8 @@ Service visit {0},Service visit {0}
 Session {0} has no cart snapshot.,Session {0} has no cart snapshot.
 Set Reports-To on employees to build the positions hierarchy.,Set Reports-To on employees to build the positions hierarchy.
 Set a Google Drive folder ID first.,Set a Google Drive folder ID first.
+Set as company default,Set as company default
+Set as company default.,Set as company default.
 "Set the Google Drive folder ID in Stabler Settings, and share that Shared-Drive folder with the service account email.","Set the Google Drive folder ID in Stabler Settings, and share that Shared-Drive folder with the service account email."
 Settings,Settings
 Settle,Settle
@@ -2551,6 +2584,7 @@ Terms,Terms
 Terms / remarks,Terms / remarks
 Terms:,Terms:
 Territory,Territory
+That date is already a holiday.,That date is already a holiday.
 That voucher is not linked to this transaction.,That voucher is not linked to this transaction.
 The Compliance module is disabled for this company.,The Compliance module is disabled for this company.
 The GL ledger scan detected {0} issues that require immediate attention.,The GL ledger scan detected {0} issues that require immediate attention.
@@ -2559,6 +2593,7 @@ The referenced document no longer exists.,The referenced document no longer exis
 There are currently no work orders assigned to you.,There are currently no work orders assigned to you.
 These are ERPNext's back-dating guards — the reason it blocks creating or editing transactions older than a set window. They protect closed periods; relax them only deliberately.,These are ERPNext's back-dating guards — the reason it blocks creating or editing transactions older than a set window. They protect closed periods; relax them only deliberately.
 "These are the toxic role combinations Stabler checks for. Findings are advisory — accept them with a compensating control, or split the duties.","These are the toxic role combinations Stabler checks for. Findings are advisory — accept them with a compensating control, or split the duties."
+These device users have no employee link. Confirm a match to re-queue their punches.,These device users have no employee link. Confirm a match to re-queue their punches.
 This Service workspace will be added after Tickets P1.,This Service workspace will be added after Tickets P1.
 This adjusts stock for {0} item(s) and posts the difference to the ledger. The action is recorded against your name.,This adjusts stock for {0} item(s) and posts the difference to the ledger. The action is recorded against your name.
 This bank transaction is already fully reconciled.,This bank transaction is already fully reconciled.
@@ -2700,6 +2735,7 @@ Unknown vertical pack: {0},Unknown vertical pack: {0}
 Unknown warehouse: {0},Unknown warehouse: {0}
 Unmatched,Unmatched
 Unmatched Event,Unmatched Event
+Unmatched TimePay users,Unmatched TimePay users
 "Unmatched events, missing punches","Unmatched events, missing punches"
 Unpaid,Unpaid
 Unreconciled transactions,Unreconciled transactions
@@ -2793,6 +2829,7 @@ Wed,Wed
 Wednesday,Wednesday
 Weekend,Weekend
 Weekly,Weekly
+Weekly off,Weekly off
 Weekly off days,Weekly off days
 Weight,Weight
 Welcome to Stabler,Welcome to Stabler
@@ -2834,6 +2871,7 @@ Workforce,Workforce
 Working,Working
 Workspace,Workspace
 Write,Write
+Writes one net Additional Salary line per locked employee for this period. Re-running replaces the previous figures.,Writes one net Additional Salary line per locked employee for this period. Re-running replaces the previous figures.
 Wrong Account Postings,Wrong Account Postings
 YTD,YTD
 Year to date,Year to date
@@ -2855,6 +2893,7 @@ You raised this request — it must be reviewed by someone else.,You raised this
 You raised this — another user must approve it.,You raised this — another user must approve it.
 "Your books are empty. Get started by adding a customer, recording your first sale, or logging an opening balance.","Your books are empty. Get started by adding a customer, recording your first sale, or logging an opening balance."
 Yuk xati,Yuk xati
+absent,absent
 across all statuses,across all statuses
 active staff,active staff
 against,against
@@ -2890,6 +2929,7 @@ error(s),error(s)
 favorable,favorable
 from exchange rate records,from exchange rate records
 from last bill,from last bill
+half-day,half-day
 high,high
 https://…,https://…
 info,info
@@ -2899,6 +2939,7 @@ item,item
 item_code and warehouse are required,item_code and warehouse are required
 items,items
 joined this month,joined this month
+late,late
 left,left
 line,line
 lines,lines
@@ -2920,7 +2961,9 @@ pack_key is required,pack_key is required
 payload must be a JSON object.,payload must be a JSON object.
 payroll_period is required.,payroll_period is required.
 planned,planned
+present,present
 pts vs last week,pts vs last week
+punches,punches
 "punches must be a list of {timestamp, direction}.","punches must be a list of {timestamp, direction}."
 quantity,quantity
 ready to invoice,ready to invoice

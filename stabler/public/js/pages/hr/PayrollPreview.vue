@@ -5,11 +5,15 @@ import { useSession } from "../../stores/session.js";
 import { call } from "../../api/client.js";
 import { formatMoney } from "../../composables/money.js";
 import { t } from "../../composables/i18n.js";
+import { useToast } from "../../composables/useToast.js";
+import { useConfirm } from "../../composables/useConfirm.js";
 import EmptyState from "../../components/EmptyState.vue";
 import SkeletonRows from "../../components/SkeletonRows.vue";
 
 const session = useSession();
 const { activeCompany, user } = storeToRefs(session);
+const toast = useToast();
+const { confirm } = useConfirm();
 
 // ── Period selector (YYYY-MM) ────────────────────────────────────────────────
 function currentPeriod() {
@@ -39,6 +43,33 @@ const error = ref("");
 const forbidden = ref(false);
 const data = ref(null); // { rows, gross_total, net_total, count }
 const rows = computed(() => data.value?.rows || []);
+
+// ── Push net pay to ERPNext (locked summaries only) ──────────────────────────
+const lockedCount = computed(() => rows.value.filter((r) => r.status === "Locked").length);
+const pushing = ref(false);
+async function pushNet() {
+	if (!lockedCount.value) return;
+	const ok = await confirm({
+		title: t("Push net pay to ERPNext?"),
+		body: t("Writes one net Additional Salary line per locked employee for this period. Re-running replaces the previous figures."),
+		confirmLabel: t("Push net"),
+	});
+	if (!ok) return;
+	pushing.value = true;
+	try {
+		const res = await call("stabler.api.hr_payroll_calc.emit_payroll_net_period", {
+			company: activeCompany.value,
+			payroll_period: period.value,
+		});
+		const errs = (res?.errors || []).length;
+		if (errs) toast.error(t("Pushed {0}; {1} failed.").replace("{0}", res.pushed).replace("{1}", errs));
+		else toast.success(t("Pushed net pay for {0} employees.").replace("{0}", res.pushed));
+	} catch (err) {
+		toast.error(err?.message || t("Push failed."));
+	} finally {
+		pushing.value = false;
+	}
+}
 
 async function load() {
 	if (!activeCompany.value) return;
@@ -189,6 +220,12 @@ const breakdownLines = computed(() => {
 });
 
 // ── CSV export (preview view only — NOT the official payroll document) ─────────
+function exportXlsx() {
+	if (!activeCompany.value) return;
+	const p = new URLSearchParams({ company: activeCompany.value, payroll_period: period.value });
+	window.open(`/api/method/stabler.api.hr_pay.payroll_xlsx?${p.toString()}`, "_blank");
+}
+
 function exportCsv() {
 	// Wrap text in quotes + escape internal quotes + prefix formula-triggering
 	// chars (=+-@\t\r) with a tab to prevent CSV formula injection in Excel/Calc.
@@ -232,8 +269,15 @@ function exportCsv() {
 		<span v-if="data && rows.length" class="text-secondary small ms-1">
 			{{ data.count }} · {{ t("Net total") }}: <span class="font-monospace fw-bold">{{ money(data.net_total) }}</span>
 		</span>
-		<button type="button" class="btn btn-ghost-secondary ms-auto" :disabled="!rows.length" @click="exportCsv">
-			<i class="ti ti-download me-1"></i>{{ t("Export CSV") }}
+		<button type="button" class="btn btn-primary ms-auto" :disabled="!lockedCount || pushing" @click="pushNet">
+			<span v-if="pushing" class="spinner-border spinner-border-sm me-1"></span>
+			<i v-else class="ti ti-upload me-1"></i>{{ t("Push net to ERPNext") }}<span v-if="lockedCount"> ({{ lockedCount }})</span>
+		</button>
+		<button type="button" class="btn btn-outline-success" :disabled="!rows.length" @click="exportXlsx">
+			<i class="ti ti-file-spreadsheet me-1"></i>{{ t("Excel") }}
+		</button>
+		<button type="button" class="btn btn-ghost-secondary" :disabled="!rows.length" @click="exportCsv">
+			<i class="ti ti-download me-1"></i>{{ t("CSV") }}
 		</button>
 	</div>
 

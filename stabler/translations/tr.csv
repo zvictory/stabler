@@ -1,6 +1,7 @@
 source,target
 #,#
 % of total,Toplam %
+(no name),(isimsiz)
 (none),(yok)
 (only for half-rate),
 "(path to the JSON, or the JSON inline).",
@@ -75,6 +76,7 @@ Add child warehouse,Alt depo ekle
 Add column,Sütun ekle
 Add customer,Müşteri ekle
 Add deal,Anlaşma ekle
+Add holiday,Tatil ekle
 Add item,Kalem ekle
 Add item to stock,Stoğa ürün ekle
 Add line,Satır ekle
@@ -173,6 +175,7 @@ Amount paid,Ödenen tutar
 Amount received,Alınan tutar
 Amount sent,Gönderilen tutar
 Amount to transfer,Transfer tutarı
+Amounts in,Tutarlar
 Analytics,Analitik
 Anchor DAY hours (h),
 Anchor LIGHT hours (h),
@@ -448,6 +451,7 @@ Commission income account,Komisyon gelir hesabı
 Commission mode,Komisyon modu
 Companies,Şirketler
 Company,Şirket
+Company default,Şirket varsayılanı
 Company email,Şirket e-postası
 Company is required for an enabled Payroll Component Map.,
 Company is required.,Şirket zorunludur.
@@ -499,13 +503,16 @@ Cost,Maliyet
 Cost Centre,
 Cost centre,
 Cost must be positive.,Maliyet pozitif olmalıdır.
+Could not add holiday.,Tatil eklenemedi.
 Could not check payment status.,Ödeme durumu kontrol edilemedi.
 Could not load data health.,Veri sağlığı yüklenemedi.
 Could not load the HR overview.,İK genel bakışı yüklenemedi.
+Could not load unmatched users.,Eşleşmemiş kullanıcılar yüklenemedi.
 Could not read backup file: {0},
 Could not read the uploaded file.,
 Could not read your location.,Konumunuz okunamadı.
 Could not resolve payroll period: {0},
+Could not save period.,Dönem kaydedilemedi.
 Could not start the online payment.,Çevrimiçi ödeme başlatılamadı.
 Couldn't work out the cash amount to pay — check the exchange rate and the paying account.,
 Count,Adet
@@ -742,6 +749,7 @@ Edit field user,Saha kullanıcısını düzenle
 Edit journal entry,Yevmiye kaydını düzenle
 Edit mapping,
 Edit outlet,Satış noktasını düzenle
+Edit period,Dönemi düzenle
 Edit photo report,Fotoğraf raporunu düzenle
 Edit planogram,Planogramı düzenle
 Edit purchase bill,Alış faturasını düzenle
@@ -1114,6 +1122,9 @@ High conflicts,Yüksek çakışmalar
 Hire date,
 Holiday,Tatil
 Holiday OT premium (%),
+Holiday added.,Tatil eklendi.
+Holiday list,Tatil listesi
+Holidays & periods,Tatiller ve dönemler
 Horizontal lanes (flow left→right),Yatay şeritler (akış sol→sağ)
 Hourly OT pay = base hourly × this (e.g. 1.5 = time-and-a-half).,Saatlik fazla mesai = temel saat × bu (örn. 1.5).
 Hours,Saat
@@ -1266,11 +1277,14 @@ Light,
 Line Operator Kiosk,
 Line details,
 Lines,Satırlar
+Link,Bağla
 "Link an ERPNext employee to a TimePay (or other device) user ID. When a raw gate event arrives with this device user ID, it will be matched to this employee automatically.",
+Link failed.,Bağlama başarısız.
 Link to an existing Customer for receivables.,Alacaklar için mevcut bir Müşteriye bağlayın.
 Linked customer,Bağlı müşteri
 Linked invoices,Bağlı faturalar
 Linked receipts,Bağlı mal kabulleri
+Linked. {0} parked punches re-queued.,Bağlandı. {0} bekleyen kayıt yeniden kuyruğa alındı.
 List rate,Liste fiyatı
 Loading,Yükleniyor
 Loading FX account balances…,
@@ -1443,6 +1457,7 @@ New outlet,Yeni satış noktası
 New outlets,Yeni noktalar
 New outlets this month,Bu ayki yeni noktalar
 New payment,Yeni ödeme
+New period,Yeni dönem
 New photo report,Yeni fotoğraf raporu
 New planogram,Yeni planogram
 New purchase bill,Yeni alış faturası
@@ -1482,6 +1497,7 @@ No Stock Entries with Asl Belgisi items found.,Asl Belgisi kalemleri içeren Sto
 No access,
 No account rows,
 No activity recorded yet.,
+No attendance for this month.,Bu ay için devam kaydı yok.
 No attendance records,Devam kaydı yok
 No attendance summaries for this period,Bu dönem için devam özeti yok
 No backups on disk yet. Click “Back up now”.,Diskte henüz yedek yok. «Şimdi yedekle»ye tıklayın.
@@ -1530,6 +1546,7 @@ No field users yet,Henüz saha kullanıcısı yok
 No files attached.,Dosya eklenmedi.
 No foreign-currency account balances found for this date.,
 No gate devices,
+No holidays yet.,Henüz tatil yok.
 No installments due this month.,Bu ay vadesi gelen taksit yok.
 No interest — fixed Murabaha markup. Sum equals total exactly.,Faiz yok — sabit Murabaha kâr payı. Toplam tam olarak genel toplamla eşittir.
 No invoices found,
@@ -1568,6 +1585,7 @@ No overdue installments.,Gecikmiş taksit yok.
 No payments in this range,Bu aralıkta ödeme yok
 No payments recorded in this range,
 No payments waiting for approval,Onay bekleyen ödeme yok
+No payroll periods yet.,Henüz bordro dönemi yok.
 No payroll summaries found for this period.,
 No photo reports yet,Henüz fotoğraf raporu yok
 No planograms yet,Henüz planogram yok
@@ -1624,6 +1642,7 @@ No transactions,İşlem yok
 No transactions in this period.,Bu dönemde işlem yok.
 No travel,
 No unbilled service visits,
+No unmatched users. All punches are mapped.,Eşleşmemiş kullanıcı yok. Tüm kayıtlar eşleşti.
 No valid rows found.,Geçerli satır bulunamadı.
 No van stock yet,Henüz araç stoğu yok
 No verified restore on record. A backup you have never restored is not a backup you can trust — test one and record it.,
@@ -1843,6 +1862,7 @@ Payout account,Ödeme hesabı
 Payroll,Bordro
 Payroll Attendance Summary is Locked. Cannot change: {0},
 Payroll Attendance Summary {0} not found.,
+Payroll Period is not available on this site.,Bu sitede bordro dönemi mevcut değil.
 "Payroll Period must be in YYYY-MM format (e.g. 2026-05), got: {0}",
 Payroll Readiness,
 Payroll blockers,Bordro engelleri
@@ -1851,6 +1871,7 @@ Payroll impacting,
 Payroll outputs zero until a salary is entered.,Maaş girilene kadar sonuç sıfırdır.
 Payroll period,
 Payroll period end date cannot be before start date.,
+Payroll periods,Bordro dönemleri
 Payroll-impacting pending,
 Pays out this share of the KPI pool. Locked periods are read-only.,KPI havuzunun bu payını öder. Kilitli dönemler salt okunur.
 Pending,Beklemede
@@ -1879,6 +1900,7 @@ Photos,Fotoğraflar
 "Photos capture shelves, storefronts and promotions during visits.","Fotoğraflar; ziyaretler sırasında rafları, vitrinleri ve promosyonları belgeler."
 Pick a company from the switcher in the header to see your financial overview.,Finansal genel görünümünüzü görmek için başlıktaki değiştiricide bir şirket seçin.
 Pick a customer.,Bir müşteri seçin.
+Pick a date.,Bir tarih seçin.
 Pick a destination warehouse.,Bir hedef depo seçin.
 Pick a finished-good item.,Bir mamul ürün seçin.
 Pick a leave type,İzin türü seçin
@@ -1892,6 +1914,7 @@ Pick a warehouse,Depo seçin
 Pick a warehouse to receive stock into.,Stoğun alınacağı depoyu seçin.
 Pick a warehouse.,Bir depo seçin.
 Pick an employee,Çalışan seçin
+Pick an employee first.,Önce bir çalışan seçin.
 Pick an employee.,Bir çalışan seçin.
 Pick an outlet from the list first.,Önce listeden bir nokta seçin.
 "Pick an outlet, then click the map.","Bir nokta seçin, sonra haritaya tıklayın."
@@ -1899,6 +1922,7 @@ Pick an outlet from the list first.,Önce listeden bir nokta seçin.
 Pick return warehouse,
 Pick someone on the left to see their advance balance and pay an advance.,Avans bakiyesini görmek ve avans ödemek için soldan birini seçin.
 Pick someone on the left to see their pay breakdown.,Maaş dökümünü görmek için soldan birini seçin.
+Pick start and end dates.,Başlangıç ve bitiş tarihlerini seçin.
 Pick the account funds will be paid from.,Ödemenin yapılacağı hesabı seçin.
 Pick the account that will receive the funds.,Fonları alacak hesabı seçin.
 Pieces,Adet
@@ -1992,6 +2016,12 @@ Purchases,Alımlar
 Purchases by Supplier,Tedarikçiye göre alımlar
 Purchasing,Satın Alma
 Purpose,Amaç
+Push failed.,Gönderme başarısız.
+Push net,Net'i gönder
+Push net pay to ERPNext?,Net maaş ERPNext'e gönderilsin mi?
+Push net to ERPNext,Net'i ERPNext'e gönder
+Pushed net pay for {0} employees.,{0} çalışan için net maaş gönderildi.
+Pushed {0}; {1} failed.,{0} gönderildi; {1} başarısız.
 QR code expired,QR kodun süresi doldu
 QR unavailable — open the link below,QR kullanılamıyor — aşağıdaki bağlantıyı açın
 Qty,Miktar
@@ -2101,6 +2131,7 @@ Remove Lane,Şeridi Kaldır
 Remove Lane?,
 Remove column,Sütunu sil
 Remove column?,
+Remove holiday?,Tatil kaldırılsın mı?
 Remove operator,
 Remove row,Satırı kaldır
 Remove the link between {0} and device user {1}? This will not affect attendance records already generated.,
@@ -2379,6 +2410,8 @@ Service visit {0},
 Session {0} has no cart snapshot.,
 Set Reports-To on employees to build the positions hierarchy.,Pozisyon hiyerarşisi oluşturmak için çalışanlarda Bağlı Olduğu Kişi alanını doldurun.
 Set a Google Drive folder ID first.,Önce bir Google Drive klasör kimliği ayarlayın.
+Set as company default,Şirket varsayılanı yap
+Set as company default.,Şirket varsayılanı olarak ayarlandı.
 "Set the Google Drive folder ID in Stabler Settings, and share that Shared-Drive folder with the service account email.",
 Settings,
 Settle,Mahsuplaştır
@@ -2540,6 +2573,7 @@ Terms,Koşullar
 Terms / remarks,Koşullar / notlar
 Terms:,Koşullar:
 Territory,Bölge
+That date is already a holiday.,Bu tarih zaten tatil.
 That voucher is not linked to this transaction.,
 The Compliance module is disabled for this company.,Bu şirket için Uyumluluk modülü devre dışı.
 The GL ledger scan detected {0} issues that require immediate attention.,
@@ -2548,6 +2582,7 @@ The referenced document no longer exists.,
 There are currently no work orders assigned to you.,
 These are ERPNext's back-dating guards — the reason it blocks creating or editing transactions older than a set window. They protect closed periods; relax them only deliberately.,
 "These are the toxic role combinations Stabler checks for. Findings are advisory — accept them with a compensating control, or split the duties.",Bunlar Stabler'ın kontrol ettiği toksik rol kombinasyonlarıdır. Bulgular tavsiye niteliğindedir — telafi edici bir kontrolle kabul edin veya görevleri ayırın.
+These device users have no employee link. Confirm a match to re-queue their punches.,Bu cihaz kullanıcılarının çalışan bağlantısı yok. Kayıtlarını yeniden işlemek için eşleşmeyi onaylayın.
 This Service workspace will be added after Tickets P1.,Bu çalışma alanı P1'den sonra eklenecek.
 This adjusts stock for {0} item(s) and posts the difference to the ledger. The action is recorded against your name.,Bu {0} kalem için stoğu düzeltir ve farkı deftere işler. İşlem sizin adınıza kaydedilir.
 This bank transaction is already fully reconciled.,
@@ -2689,6 +2724,7 @@ Unknown vertical pack: {0},Bilinmeyen dikey paket: {0}
 Unknown warehouse: {0},Bilinmeyen depo: {0}
 Unmatched,
 Unmatched Event,
+Unmatched TimePay users,Eşleşmemiş TimePay kullanıcıları
 "Unmatched events, missing punches","Eşleşmeyen olaylar, eksik girişler"
 Unpaid,Ödenmedi
 Unreconciled transactions,Mutabık olmayan işlemler
@@ -2782,6 +2818,7 @@ Wed,Çar
 Wednesday,
 Weekend,Hafta sonu
 Weekly,Haftalık
+Weekly off,Haftalık izin
 Weekly off days,
 Weight,Ağırlık
 Welcome to Stabler,Stabler'a Hoş Geldiniz
@@ -2823,6 +2860,7 @@ Workforce,İş gücü
 Working,İşleniyor
 Workspace,
 Write,Yaz
+Writes one net Additional Salary line per locked employee for this period. Re-running replaces the previous figures.,Bu dönem için her kilitli çalışana bir net Additional Salary satırı yazar. Tekrar çalıştırmak önceki tutarları değiştirir.
 Wrong Account Postings,
 YTD,Yıl başından
 Year to date,
@@ -2844,6 +2882,7 @@ You raised this request — it must be reviewed by someone else.,
 You raised this — another user must approve it.,Bu talebi siz oluşturdunuz — başka bir kullanıcı onaylamalı.
 "Your books are empty. Get started by adding a customer, recording your first sale, or logging an opening balance.","Defteriniz boş. Müşteri ekleyerek, ilk satışınızı kaydederek veya açılış bakiyesi girerek başlayın."
 Yuk xati,Yuk xati
+absent,gelmedi
 across all statuses,tüm durumlarda
 active staff,aktif çalışan
 against,
@@ -2879,6 +2918,7 @@ error(s),hata(lar)
 favorable,
 from exchange rate records,döviz kuru kayıtlarından
 from last bill,son faturadan
+half-day,yarım gün
 high,yüksek
 https://…,
 info,bilgi
@@ -2888,6 +2928,7 @@ item,kalem
 item_code and warehouse are required,item_code ve depo zorunludur
 items,kalemler
 joined this month,bu ay katıldı
+late,geç
 left,kaldı
 line,satır
 lines,
@@ -2909,7 +2950,9 @@ pack_key is required,pack_key zorunludur
 payload must be a JSON object.,
 payroll_period is required.,
 planned,planlanan
+present,geldi
 pts vs last week,geçen haftaya göre puan
+punches,kayıt
 "punches must be a list of {timestamp, direction}.",
 quantity,miktar
 ready to invoice,faturaya hazır

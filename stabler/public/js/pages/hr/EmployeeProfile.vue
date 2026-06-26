@@ -10,6 +10,7 @@ import { formatDate } from "../../composables/date.js";
 import MoneyInput from "../../components/MoneyInput.vue";
 import DateInput from "../../components/DateInput.vue";
 import Select from "../../components/Select.vue";
+import EmployeeAttendanceCalendar from "../../components/EmployeeAttendanceCalendar.vue";
 
 const route = useRoute();
 const router = useRouter();
@@ -396,7 +397,27 @@ watch(name, load);
 								<i class="ti ti-plus-minus me-1"></i>{{ t("Allowances") }}
 							</button>
 						</li>
+						<li class="nav-item">
+							<button
+								type="button"
+								class="nav-link"
+								:class="{ active: activeTab === 'attendance' }"
+								@click="activeTab = 'attendance'"
+							>
+								<i class="ti ti-calendar-month me-1"></i>{{ t("Attendance") }}
+							</button>
+						</li>
 					</ul>
+				</div>
+			</div>
+
+			<!-- ── ATTENDANCE TAB ── -->
+			<div v-if="activeTab === 'attendance'" class="card">
+				<div class="card-header">
+					<h4 class="card-title mb-0">{{ t("Attendance") }}</h4>
+				</div>
+				<div class="card-body">
+					<EmployeeAttendanceCalendar :employee="name" :company="activeCompany" />
 				</div>
 			</div>
 

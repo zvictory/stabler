@@ -343,6 +343,113 @@ def generate_additional_salary(summary_name: str) -> dict:
 	return {"created": created, "lines": lines}
 
 
+# ---------------------------------------------------------------------------- #
+# Net-only emission — Stabler is the source of truth, ERPNext gets ONE number.
+# ---------------------------------------------------------------------------- #
+
+_NET_COMPONENT = "Stabler Net Pay"
+
+
+def _ensure_net_component() -> str:
+	"""Return the single Earning component used to carry the engine's net pay,
+	creating it once if missing so there is zero manual setup."""
+	if frappe.db.exists("Salary Component", _NET_COMPONENT):
+		return _NET_COMPONENT
+	frappe.get_doc(
+		{
+			"doctype": "Salary Component",
+			"salary_component": _NET_COMPONENT,
+			"type": "Earning",
+			"description": "Net pay computed in Stabler and pushed as a single figure.",
+		}
+	).insert(ignore_permissions=True)
+	return _NET_COMPONENT
+
+
+def _engine_net(summary_name: str) -> float:
+	"""Net pay from the Stabler payroll engine for this summary."""
+	from frappe.utils import flt
+
+	from stabler.api.hr_pay import preview_payroll_pay
+
+	return flt(preview_payroll_pay(summary_name).get("net"))
+
+
+@frappe.whitelist()
+def emit_payroll_net(summary_name: str) -> dict:
+	"""Push the engine's net pay to ERPNext as a SINGLE Additional Salary line.
+
+	Stabler does all the calculation; ERPNext only records the final figure. The
+	period must be Locked. Idempotent: replaces any previously Stabler-generated
+	Additional Salary rows for this employee + period (itemized or net), so the
+	slot always holds exactly one net line.
+	"""
+	_require_auth()
+	_assert_can_write(_SUMMARY, summary_name)
+	summary = _load_summary(summary_name)
+	_assert_company_scope(summary["company"])
+	if summary["status"] != "Locked":
+		frappe.throw(
+			_("Lock the payroll period before pushing net pay. Summary {0} is '{1}'.").format(
+				summary_name, summary["status"]
+			),
+			frappe.ValidationError,
+		)
+
+	from frappe.utils import flt
+
+	net = flt(_engine_net(summary_name))
+	employee = summary["employee"]
+	company = summary["company"]
+	period = summary["payroll_period"]
+
+	# Idempotency: clear any prior Stabler rows (itemized OR net) for this slot.
+	_delete_stabler_additional_salaries(employee, period, company)
+	if not net:
+		return {"net": 0.0, "additional_salary": None, "salary_component": None}
+
+	component = _ensure_net_component()
+	doc = frappe.get_doc(
+		{
+			"doctype": _ADDITIONAL_SALARY,
+			"employee": employee,
+			"company": company,
+			"salary_component": component,
+			"type": "Earning" if net >= 0 else "Deduction",
+			"amount": abs(net),
+			"payroll_date": _payroll_date_from_period(period),
+			"overwrite_salary_structure_amount": 1,
+			"remarks": _STABLER_MARKER,
+		}
+	).insert(ignore_permissions=False)
+	frappe.db.commit()
+	return {"net": net, "additional_salary": doc.name, "salary_component": component}
+
+
+@frappe.whitelist()
+def emit_payroll_net_period(company: str, payroll_period: str) -> dict:
+	"""Push net pay for EVERY locked summary in a period (bulk one-click)."""
+	_require_auth()
+	_assert_company_scope(company)
+	names = frappe.get_all(
+		_SUMMARY,
+		filters={"company": company, "payroll_period": payroll_period, "status": "Locked"},
+		pluck="name",
+		limit=0,
+	)
+	pushed = 0
+	total = 0.0
+	errors = []
+	for name in names:
+		try:
+			r = emit_payroll_net(name)
+			pushed += 1
+			total += float(r.get("net") or 0)
+		except Exception as e:  # noqa: BLE001 — collect per-row failures, keep going
+			errors.append({"summary": name, "error": str(e)})
+	return {"pushed": pushed, "skipped_unlocked": 0, "net_total": round(total), "errors": errors}
+
+
 # ---------------------------------------------------------------------------
 # validate_against_slip
 # ---------------------------------------------------------------------------

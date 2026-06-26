@@ -12,6 +12,7 @@ import DateInput from "../../components/DateInput.vue";
 import Select from "../../components/Select.vue";
 import SkeletonRows from "../../components/SkeletonRows.vue";
 import AttendanceMatrix from "../../components/AttendanceMatrix.vue";
+import TimepayUnmatched from "../../components/TimepayUnmatched.vue";
 
 const toast = useToast();
 
@@ -149,6 +150,7 @@ watch([activeCompany, period], () => {
 
 // ----- TimePay sync (pull gate events → process into attendance) -------------
 const syncOpen = ref(false);
+const unmatchedOpen = ref(false);
 const syncing = ref(false);
 const syncError = ref("");
 const syncResult = ref(null);
@@ -309,6 +311,9 @@ async function save() {
 			<button type="button" class="btn btn-outline-secondary btn-sm" @click="openSync">
 				<i class="ti ti-refresh me-1"></i>{{ t("Sync TimePay") }}
 			</button>
+			<button type="button" class="btn btn-outline-secondary btn-sm" @click="unmatchedOpen = true">
+				<i class="ti ti-user-question me-1"></i>{{ t("Unmatched") }}
+			</button>
 			<button type="button" class="btn btn-primary btn-sm" @click="openMark">
 				<i class="ti ti-checkbox me-1"></i>{{ t("Mark") }}
 			</button>
@@ -429,7 +434,9 @@ async function save() {
 					<div v-if="syncResult" class="alert alert-success py-2">
 						{{ t("Fetched") }}: <b>{{ syncResult.fetched }}</b> ·
 						{{ t("Processed") }}: <b>{{ syncResult.processed }}</b>
-						<span v-if="syncResult.unmatched"> · {{ t("Unmatched") }}: <b class="text-warning">{{ syncResult.unmatched }}</b></span>
+						<span v-if="syncResult.unmatched"> · {{ t("Unmatched") }}:
+						<a href="#" class="fw-bold text-warning" @click.prevent="syncOpen = false; unmatchedOpen = true">{{ syncResult.unmatched }}</a>
+					</span>
 					</div>
 					<div class="row g-2">
 						<div class="col-6">
@@ -452,6 +459,14 @@ async function save() {
 			</div>
 		</div>
 	</div>
+
+	<!-- Unmatched TimePay users resolver -->
+	<TimepayUnmatched
+		v-if="unmatchedOpen"
+		:company="activeCompany"
+		@close="unmatchedOpen = false"
+		@resolved="matrixRef?.reload()"
+	/>
 
 	<!-- Mark modal -->
 	<div v-if="markOpen" class="modal-backdrop fade show"></div>

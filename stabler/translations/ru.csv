@@ -1,6 +1,7 @@
 source,target
 #,#
 % of total,% от итога
+(no name),(без имени)
 (none),(нет)
 (only for half-rate),
 "(path to the JSON, or the JSON inline).",
@@ -78,6 +79,7 @@ Add child warehouse,Добавить подсклад
 Add column,Добавить колонку
 Add customer,Добавить клиента
 Add deal,Добавить сделку
+Add holiday,Добавить праздник
 Add item,Добавить товар
 Add item to stock,Добавить товар на склад
 Add line,Добавить строку
@@ -178,6 +180,7 @@ Amount paid,Сумма оплаты
 Amount received,Сумма получена
 Amount sent,Сумма отправлена
 Amount to transfer,Сумма перевода
+Amounts in,Суммы в
 Analytics,Аналитика
 Anchor DAY hours (h),
 Anchor LIGHT hours (h),
@@ -458,6 +461,7 @@ Commission kept,Комиссия удержана
 Commission mode,Тип комиссии
 Companies,Компании
 Company,Компания
+Company default,По умолчанию для компании
 Company email,Рабочая почта
 Company is required for an enabled Payroll Component Map.,
 Company is required.,Требуется компания.
@@ -510,13 +514,16 @@ Cost,Себестоимость
 Cost Centre,
 Cost centre,
 Cost must be positive.,Себестоимость должна быть положительной.
+Could not add holiday.,Не удалось добавить праздник.
 Could not check payment status.,Не удалось проверить статус платежа.
 Could not load data health.,Не удалось загрузить качество данных.
 Could not load the HR overview.,Не удалось загрузить HR обзор.
+Could not load unmatched users.,Не удалось загрузить несопоставленных пользователей.
 Could not read backup file: {0},
 Could not read the uploaded file.,
 Could not read your location.,Не удалось определить местоположение.
 Could not resolve payroll period: {0},
+Could not save period.,Не удалось сохранить период.
 Could not start the online payment.,Не удалось начать онлайн-оплату.
 Couldn't work out the cash amount to pay — check the exchange rate and the paying account.,
 Count,Количество
@@ -755,6 +762,7 @@ Edit field user,Редактировать полевого сотрудника
 Edit journal entry,Редактировать проводку
 Edit mapping,
 Edit outlet,Редактировать торговую точку
+Edit period,Изменить период
 Edit photo report,Редактировать фотоотчет
 Edit planogram,Редактировать планограмму
 Edit purchase bill,Редактировать счёт поставщика
@@ -1128,6 +1136,9 @@ High conflicts,Высокие конфликты
 Hire date,
 Holiday,Праздник
 Holiday OT premium (%),
+Holiday added.,Праздник добавлен.
+Holiday list,Список праздников
+Holidays & periods,Праздники и периоды
 Horizontal lanes (flow left→right),Горизонтальные дорожки (поток слева→вправо)
 Hourly OT pay = base hourly × this (e.g. 1.5 = time-and-a-half).,Оплата часа сверхурочных = базовый час × это (напр. 1.5 = полуторный тариф).
 Hours,Часы
@@ -1280,11 +1291,14 @@ Light,
 Line Operator Kiosk,
 Line details,
 Lines,Строки
+Link,Связать
 "Link an ERPNext employee to a TimePay (or other device) user ID. When a raw gate event arrives with this device user ID, it will be matched to this employee automatically.",
+Link failed.,Не удалось связать.
 Link to an existing Customer for receivables.,Связь с существующим клиентом для дебиторской задолженности.
 Linked customer,Привязанный клиент
 Linked invoices,Связанные счета
 Linked receipts,Связанные приёмки
+Linked. {0} parked punches re-queued.,Связано. {0} отметок переобработано.
 List rate,Прейскурантная цена
 Loaded,Загружено
 Loading,Загрузка
@@ -1458,6 +1472,7 @@ New outlet,Новая торговая точка
 New outlets,Новые точки
 New outlets this month,Новые точки за месяц
 New payment,Новый платёж
+New period,Новый период
 New photo report,Новый фотоотчёт
 New planogram,Новая спецификация расположения
 New purchase bill,Новая счёт-фактура покупки
@@ -1497,6 +1512,7 @@ No Stock Entries with Asl Belgisi items found.,Складских движени
 No access,
 No account rows,
 No activity recorded yet.,
+No attendance for this month.,Нет посещаемости за этот месяц.
 No attendance records,Нет записей о посещаемости
 No attendance summaries for this period,Нет сводок по табелю за этот период
 No backups on disk yet. Click “Back up now”.,На диске ещё нет копий. Нажмите «Создать копию сейчас».
@@ -1545,6 +1561,7 @@ No field users yet,Пользователей полей нет
 No files attached.,Файлы не прикреплены.
 No foreign-currency account balances found for this date.,
 No gate devices,
+No holidays yet.,Праздников пока нет.
 No installments due this month.,Нет платежей в этом месяце.
 No interest — fixed Murabaha markup. Sum equals total exactly.,Без процентов — фиксированная наценка Мурабаха. Сумма точно равна итогу.
 No invoices found,
@@ -1583,6 +1600,7 @@ No overdue installments.,Нет просроченных платежей.
 No payments in this range,Платежей в этом диапазоне нет
 No payments recorded in this range,
 No payments waiting for approval,"Нет платежей, ожидающих согласования"
+No payroll periods yet.,Платёжных периодов пока нет.
 No payroll summaries found for this period.,
 No photo reports yet,Фотоотчётов нет
 No planograms yet,Плано грамм нет
@@ -1640,6 +1658,7 @@ No transactions in this period.,Операций в этом периоде не
 No transactions yet.,Операций нет.
 No travel,
 No unbilled service visits,
+No unmatched users. All punches are mapped.,Нет несопоставленных пользователей. Все отметки сопоставлены.
 No valid rows found.,Допустимые строки не найдены.
 No van stock yet,Запасов в автофургоне нет
 No verified restore on record. A backup you have never restored is not a backup you can trust — test one and record it.,
@@ -1861,6 +1880,7 @@ Payout account,Счёт выплаты
 Payroll,Зарплата
 Payroll Attendance Summary is Locked. Cannot change: {0},
 Payroll Attendance Summary {0} not found.,
+Payroll Period is not available on this site.,Платёжный период недоступен на этом сайте.
 "Payroll Period must be in YYYY-MM format (e.g. 2026-05), got: {0}",
 Payroll Readiness,
 Payroll blockers,Блокеры зарплаты
@@ -1869,6 +1889,7 @@ Payroll impacting,
 Payroll outputs zero until a salary is entered.,"Зарплата будет нулевой, пока не введён оклад."
 Payroll period,
 Payroll period end date cannot be before start date.,
+Payroll periods,Платёжные периоды
 Payroll-impacting pending,
 Pays out this share of the KPI pool. Locked periods are read-only.,Выплачивает эту долю KPI-пула. Заблокированные периоды только для чтения.
 Pending,Ожидание
@@ -1897,6 +1918,7 @@ Photos,Фото
 "Photos capture shelves, storefronts and promotions during visits.","Фото фиксируют полки, витрины и промоции во время визитов."
 Pick a company from the switcher in the header to see your financial overview.,"Выберите компанию в переключателе заголовка, чтобы увидеть финансовый обзор."
 Pick a customer.,Выберите клиента.
+Pick a date.,Выберите дату.
 Pick a destination warehouse.,Выберите целевой склад.
 Pick a finished-good item.,Выберите готовый продукт.
 Pick a leave type,
@@ -1910,6 +1932,7 @@ Pick a warehouse,Выберите склад
 Pick a warehouse to receive stock into.,Выберите склад для оприходования товара.
 Pick a warehouse.,Выберите склад.
 Pick an employee,
+Pick an employee first.,Сначала выберите сотрудника.
 Pick an employee.,Выберите сотрудника.
 Pick an outlet from the list first.,Сначала выберите точку из списка.
 "Pick an outlet, then click the map.","Выберите точку, затем кликните по карте."
@@ -1917,6 +1940,7 @@ Pick an outlet from the list first.,Сначала выберите точку �
 Pick return warehouse,
 Pick someone on the left to see their advance balance and pay an advance.,"Выберите слева сотрудника, чтобы увидеть остаток аванса и выдать аванс."
 Pick someone on the left to see their pay breakdown.,"Выберите слева сотрудника, чтобы увидеть расчёт его оплаты."
+Pick start and end dates.,Выберите даты начала и конца.
 Pick the account funds will be paid from.,"Выберите счёт, с которого будут переведены средства."
 Pick the account that will receive the funds.,"Выберите счёт, который получит средства."
 Pieces,Штук
@@ -2010,6 +2034,12 @@ Purchases,Закупки
 Purchases by Supplier,Закупки по поставщикам
 Purchasing,Закупки
 Purpose,Назначение
+Push failed.,Не удалось отправить.
+Push net,Отправить нетто
+Push net pay to ERPNext?,Отправить нетто-зарплату в ERPNext?
+Push net to ERPNext,Отправить нетто в ERPNext
+Pushed net pay for {0} employees.,Нетто отправлено для {0} сотрудников.
+Pushed {0}; {1} failed.,Отправлено {0}; не удалось {1}.
 QR code expired,Срок действия QR-кода истёк
 QR unavailable — open the link below,QR недоступен — откройте ссылку ниже
 Qty,Кол-во
@@ -2120,6 +2150,7 @@ Remove Lane,Удалить полосу
 Remove Lane?,
 Remove column,Удалить колонку
 Remove column?,
+Remove holiday?,Удалить праздник?
 Remove operator,
 Remove row,Удалить строку
 Remove the link between {0} and device user {1}? This will not affect attendance records already generated.,
@@ -2400,6 +2431,8 @@ Service visit {0},
 Session {0} has no cart snapshot.,
 Set Reports-To on employees to build the positions hierarchy.,"Установите «Руководитель» для сотрудников, чтобы построить иерархию должностей."
 Set a Google Drive folder ID first.,Сначала укажите ID папки Google Drive.
+Set as company default,Сделать стандартом компании
+Set as company default.,Установлено как стандарт компании.
 "Set the Google Drive folder ID in Stabler Settings, and share that Shared-Drive folder with the service account email.",
 Settings,
 Settle,Рассчитать
@@ -2561,6 +2594,7 @@ Terms,Условия
 Terms / remarks,Условия / примечания
 Terms:,Условия:
 Territory,Территория
+That date is already a holiday.,Эта дата уже праздник.
 That voucher is not linked to this transaction.,
 The Compliance module is disabled for this company.,Модуль соответствия отключён для этой компании.
 The GL ledger scan detected {0} issues that require immediate attention.,
@@ -2569,6 +2603,7 @@ The referenced document no longer exists.,
 There are currently no work orders assigned to you.,
 These are ERPNext's back-dating guards — the reason it blocks creating or editing transactions older than a set window. They protect closed periods; relax them only deliberately.,
 "These are the toxic role combinations Stabler checks for. Findings are advisory — accept them with a compensating control, or split the duties.","Это опасные комбинации ролей, которые проверяет Stabler. Результаты носят рекомендательный характер — примите их с компенсирующим контролем или разделите обязанности."
+These device users have no employee link. Confirm a match to re-queue their punches.,"У этих пользователей устройства нет связи с сотрудником. Подтвердите совпадение, чтобы переобработать их отметки."
 This Service workspace will be added after Tickets P1.,Это рабочее пространство появится после P1.
 This adjusts stock for {0} item(s) and posts the difference to the ledger. The action is recorded against your name.,Это скорректирует остатки по {0} позиции(ям) и проведёт разницу в учёте. Действие записывается на ваше имя.
 This bank transaction is already fully reconciled.,
@@ -2714,6 +2749,7 @@ Unknown vertical pack: {0},Неизвестный вертикальный на�
 Unknown warehouse: {0},Неизвестный склад: {0}
 Unmatched,
 Unmatched Event,
+Unmatched TimePay users,Несопоставленные пользователи TimePay
 "Unmatched events, missing punches","Несопоставленные события, пропуски"
 Unpaid,Не оплачено
 Unreconciled transactions,Несверенные операции
@@ -2807,6 +2843,7 @@ Wed,Ср
 Wednesday,
 Weekend,Выходной
 Weekly,Еженедельно
+Weekly off,Выходной
 Weekly off days,
 Weight,Вес
 Welcome to Stabler,Добро пожаловать в Stabler
@@ -2848,6 +2885,7 @@ Workforce,Персонал
 Working,Рабочих дней
 Workspace,
 Write,Написать
+Writes one net Additional Salary line per locked employee for this period. Re-running replaces the previous figures.,Создаёт по одной нетто-строке Additional Salary на каждого заблокированного сотрудника за период. Повторный запуск заменяет прежние суммы.
 Wrong Account Postings,
 YTD,С начала года
 Year to date,
@@ -2869,6 +2907,7 @@ You raised this request — it must be reviewed by someone else.,
 You raised this — another user must approve it.,Вы создали эту заявку — её должен согласовать другой пользователь.
 "Your books are empty. Get started by adding a customer, recording your first sale, or logging an opening balance.","Ваши книги пусты. Начните с добавления клиента, записи первой продажи или ввода начального остатка."
 Yuk xati,Юк хати
+absent,отсутствовал
 across all statuses,по всем статусам
 active staff,активных сотрудников
 against,
@@ -2904,6 +2943,7 @@ error(s),ошибка(и)
 favorable,
 from exchange rate records,из записей курсов валют
 from last bill,из последнего счёта
+half-day,полдня
 high,высокий
 https://…,
 info,инфо
@@ -2913,6 +2953,7 @@ item,товар
 item_code and warehouse are required,item_code и warehouse обязательны
 items,товары
 joined this month,принято в этом месяце
+late,опоздал
 left,осталось
 line,строка
 lines,
@@ -2934,7 +2975,9 @@ pack_key is required,pack_key обязателен
 payload must be a JSON object.,
 payroll_period is required.,
 planned,план
+present,присутствовал
 pts vs last week,п.п. к прош. неделе
+punches,отметок
 "punches must be a list of {timestamp, direction}.",
 quantity,количество
 ready to invoice,готово к счёту

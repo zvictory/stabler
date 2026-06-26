@@ -456,7 +456,7 @@ _ATT_CODE = {
 
 
 @frappe.whitelist()
-def attendance_matrix(company: str, period: str = "", department: str = "") -> dict:
+def attendance_matrix(company: str, period: str = "", department: str = "", employee: str = "") -> dict:
 	"""Whole-roster month grid: one row per employee, one column per day.
 
 	Returns day metadata (weekend/holiday/today), per-employee day codes
@@ -509,6 +509,8 @@ def attendance_matrix(company: str, period: str = "", department: str = "") -> d
 	emp_filters: dict = {"company": company, "status": "Active"}
 	if department:
 		emp_filters["department"] = department
+	if employee:
+		emp_filters["name"] = employee  # single-employee calendar view
 	roster = frappe.get_all(
 		"Employee",
 		filters=emp_filters,

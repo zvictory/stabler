@@ -1,6 +1,7 @@
 source,target
 #,#
 % of total,Жами %
+(no name),(исмсиз)
 (none),(йўқ)
 (only for half-rate),
 "(path to the JSON, or the JSON inline).",
@@ -75,6 +76,7 @@ Add child warehouse,Қўш омбор қўшиш
 Add column,Устун қўшиш
 Add customer,Мижоз қўшиш
 Add deal,Битим қўшиш
+Add holiday,Байрам қўшиш
 Add item,Товар қўшиш
 Add item to stock,Омборга товар қўшиш
 Add line,Қатор қўшиш
@@ -174,6 +176,7 @@ Amount paid,Тўланган сумма
 Amount received,Қабул қилинган сумма
 Amount sent,Юборилган сумма
 Amount to transfer,Ўтказма суммаси
+Amounts in,Суммалар
 Analytics,Таҳлил
 Anchor DAY hours (h),
 Anchor LIGHT hours (h),
@@ -452,6 +455,7 @@ Commission kept,Комиссия ушлаб қолинди
 Commission mode,Комиссия тури
 Companies,Компаниялар
 Company,Компания
+Company default,Компания стандарти
 Company email,Иш email
 Company is required for an enabled Payroll Component Map.,
 Company is required.,Компания талаб қилинади.
@@ -504,13 +508,16 @@ Cost,Таннарх
 Cost Centre,
 Cost centre,
 Cost must be positive.,Таннарх мусбат бўлиши керак.
+Could not add holiday.,Байрам қўшиб бўлмади.
 Could not check payment status.,Тўлов ҳолатини текшириб бўлмади.
 Could not load data health.,Маълумотлар соғлиғини юклаб бўлмади.
 Could not load the HR overview.,HR умумий кўринишини юклаб бўлмади.
+Could not load unmatched users.,Боғланмаган фойдаланувчиларни юклаб бўлмади.
 Could not read backup file: {0},
 Could not read the uploaded file.,
 Could not read your location.,Жойлашувни аниқлаб бўлмади.
 Could not resolve payroll period: {0},
+Could not save period.,Даврни сақлаб бўлмади.
 Could not start the online payment.,Онлайн тўловни бошлаб бўлмади.
 Couldn't work out the cash amount to pay — check the exchange rate and the paying account.,
 Count,Миқдори
@@ -748,6 +755,7 @@ Edit field user,Майдон фойдаланувчисини таҳриф
 Edit journal entry,Проводкани таҳрирлаш
 Edit mapping,
 Edit outlet,Киймасни таҳриф
+Edit period,Даврни таҳрирлаш
 Edit photo report,Сурат ҳисобатини таҳриф
 Edit planogram,Планограммани таҳриф
 Edit purchase bill,Харид ҳисобини таҳрирлаш
@@ -1121,6 +1129,9 @@ High conflicts,Юқори низолар
 Hire date,
 Holiday,Байрам
 Holiday OT premium (%),
+Holiday added.,Байрам қўшилди.
+Holiday list,Байрамлар рўйхати
+Holidays & periods,Байрамлар ва даврлар
 Horizontal lanes (flow left→right),Горизонтал йўлаклар (оқим чап→ўнг)
 Hourly OT pay = base hourly × this (e.g. 1.5 = time-and-a-half).,"Соатлик қўшимча иш ҳақи = базавий соат × шу (масалан, 1.5)."
 Hours,Соат
@@ -1273,11 +1284,14 @@ Light,
 Line Operator Kiosk,
 Line details,
 Lines,Қаторлар
+Link,Боғлаш
 "Link an ERPNext employee to a TimePay (or other device) user ID. When a raw gate event arrives with this device user ID, it will be matched to this employee automatically.",
+Link failed.,Боғлаш муваффақиятсиз.
 Link to an existing Customer for receivables.,Дебиторлик учун мавжуд бўлган Хариданинг билан боғланг.
 Linked customer,Боғланган мижоз
 Linked invoices,Боғланган счетлар
 Linked receipts,Боғланган қабул ҳужжатлари
+Linked. {0} parked punches re-queued.,Боғланди. {0} белгилаш қайта навбатга қўйилди.
 List rate,Рўйхат нарх
 Loaded,Юклангани
 Loading,Юкланмоқда
@@ -1451,6 +1465,7 @@ New outlet,Янги сотув пункти
 New outlets,Янги нуқталар
 New outlets this month,Шу ойдаги янги нуқталар
 New payment,Янги тўлов
+New period,Янги давр
 New photo report,Янги фото ҳисобот
 New planogram,Янги планограмма
 New purchase bill,Янги қарз счёти
@@ -1490,6 +1505,7 @@ No Stock Entries with Asl Belgisi items found.,Asl Belgisi товарлари б
 No access,
 No account rows,
 No activity recorded yet.,
+No attendance for this month.,Бу ой учун давомат йўқ.
 No attendance records,Давомат ёзувлари йўқ
 No attendance summaries for this period,Бу давр учун давомат ҳисоботлари йўқ
 No backups on disk yet. Click “Back up now”.,Дискда ҳали захира йўқ. «Ҳозир захиралаш»ни босинг.
@@ -1538,6 +1554,7 @@ No field users yet,Ҳалиғача сахра фойдаланувчилари 
 No files attached.,Файллар бириктирилмаган.
 No foreign-currency account balances found for this date.,
 No gate devices,
+No holidays yet.,Ҳали байрамлар йўқ.
 No installments due this month.,Бу ойда тўловлар йўқ.
 No interest — fixed Murabaha markup. Sum equals total exactly.,Фоизсиз — қатъий Муробаҳа устамаси. Йиғинди аниқ жами билан тенг.
 No invoices found,
@@ -1576,6 +1593,7 @@ No overdue installments.,Муддати ўтган тўловлар йўқ.
 No payments in this range,Бу диапазонда тўловлар йўқ
 No payments recorded in this range,
 No payments waiting for approval,Тасдиқ кутаётган тўловлар йўқ
+No payroll periods yet.,Ҳали ойлик даврлари йўқ.
 No payroll summaries found for this period.,
 No photo reports yet,Ҳали суратлар ҳақида ҳисоб йўқ
 No planograms yet,Ҳали планограмма йўқ
@@ -1633,6 +1651,7 @@ No transactions in this period.,Бу давр ичида операциялар 
 No transactions yet.,Ҳали операциялар йўқ.
 No travel,
 No unbilled service visits,
+No unmatched users. All punches are mapped.,Боғланмаган фойдаланувчилар йўқ. Барча белгилашлар боғланган.
 No valid rows found.,Яроқли қаторлар топилмади.
 No van stock yet,Ҳали машина қори йўқ
 No verified restore on record. A backup you have never restored is not a backup you can trust — test one and record it.,
@@ -1854,6 +1873,7 @@ Payout account,Тўлов ҳисоби
 Payroll,Маош
 Payroll Attendance Summary is Locked. Cannot change: {0},
 Payroll Attendance Summary {0} not found.,
+Payroll Period is not available on this site.,Бу сайтда ойлик даври мавжуд эмас.
 "Payroll Period must be in YYYY-MM format (e.g. 2026-05), got: {0}",
 Payroll Readiness,
 Payroll blockers,Ойлик тўсиқлари
@@ -1862,6 +1882,7 @@ Payroll impacting,
 Payroll outputs zero until a salary is entered.,Ойлик киритилмагунча натижа нол бўлади.
 Payroll period,
 Payroll period end date cannot be before start date.,
+Payroll periods,Ойлик даврлари
 Payroll-impacting pending,
 Pays out this share of the KPI pool. Locked periods are read-only.,KPI фондининг шу улушини тўлайди. Қулфланган даврлар фақат ўқиш учун.
 Pending,Кутилмоқда
@@ -1890,6 +1911,7 @@ Photos,Суратлар
 "Photos capture shelves, storefronts and promotions during visits.","Суратлар шифоҳонуш жараёнида жалфаларни, магаза ғўша жойларини ва рекламаларни тушади."
 Pick a company from the switcher in the header to see your financial overview.,Молиявий кўриниш жизмасини кўриш учун сарлавҳадаги алмаштиргичдан компанияни танланг.
 Pick a customer.,Мижозни танланг.
+Pick a date.,Санани танланг.
 Pick a destination warehouse.,Манзил омборини танланг.
 Pick a finished-good item.,Тайёр маҳсулотни танланг.
 Pick a leave type,
@@ -1903,6 +1925,7 @@ Pick a warehouse,Омборини танланг
 Pick a warehouse to receive stock into.,Товарни қабул қилиш учун омборни танланг.
 Pick a warehouse.,Омборини танланг.
 Pick an employee,
+Pick an employee first.,Аввал ходимни танланг.
 Pick an employee.,Ходимни танланг.
 Pick an outlet from the list first.,Аввал рўйхатдан нуқта танланг.
 "Pick an outlet, then click the map.","Нуқтани танланг, сўнг харитани босинг."
@@ -1910,6 +1933,7 @@ Pick an outlet from the list first.,Аввал рўйхатдан нуқта т�
 Pick return warehouse,
 Pick someone on the left to see their advance balance and pay an advance.,Аванс қолдиғини кўриш ва аванс бериш учун чапдан ходимни танланг.
 Pick someone on the left to see their pay breakdown.,Ойлик тафсилотини кўриш учун чапдан ходимни танланг.
+Pick start and end dates.,Бошланиш ва тугаш саналарини танланг.
 Pick the account funds will be paid from.,Пул ўтказилиб юборилаётган ҳисобни танланг.
 Pick the account that will receive the funds.,Пул қабул қилиб олаётган ҳисобни танланг.
 Pieces,Дона
@@ -2003,6 +2027,12 @@ Purchases,Харидлар
 Purchases by Supplier,Етказиб берувчи бўйича харидлар
 Purchasing,Харид
 Purpose,Мақсад
+Push failed.,Юбориш муваффақиятсиз.
+Push net,Софни юбориш
+Push net pay to ERPNext?,Соф ойликни ERPNext'га юборилсинми?
+Push net to ERPNext,Соф ойликни ERPNext'га юбориш
+Pushed net pay for {0} employees.,{0} ходим учун соф ойлик юборилди.
+Pushed {0}; {1} failed.,{0} юборилди; {1} муваффақиятсиз.
 QR code expired,QR код муддати тугади
 QR unavailable — open the link below,QR мавжуд эмас — қуйидаги ҳаволани очинг
 Qty,Миқдори
@@ -2113,6 +2143,7 @@ Remove Lane,Йўлакни ўчириш
 Remove Lane?,
 Remove column,Устунни ўчириш
 Remove column?,
+Remove holiday?,Байрам ўчирилсинми?
 Remove operator,
 Remove row,Қаторни ўчириш
 Remove the link between {0} and device user {1}? This will not affect attendance records already generated.,
@@ -2393,6 +2424,8 @@ Service visit {0},
 Session {0} has no cart snapshot.,
 Set Reports-To on employees to build the positions hierarchy.,"Лавозимлар иерархиясини тузиш учун ходимларга ""Ҳисоб берувчи""ни ўрнатинг."
 Set a Google Drive folder ID first.,Аввал Google Drive папка ID'сини киритинг.
+Set as company default,Компания стандарти қилиш
+Set as company default.,Компания стандарти қилиб ўрнатилди.
 "Set the Google Drive folder ID in Stabler Settings, and share that Shared-Drive folder with the service account email.",
 Settings,
 Settle,Қарзаро қилиш
@@ -2554,6 +2587,7 @@ Terms,Шартлар
 Terms / remarks,Шартлар / изоҳлар
 Terms:,Шартлар:
 Territory,Ҳудуд
+That date is already a holiday.,Бу сана аллақачон байрам.
 That voucher is not linked to this transaction.,
 The Compliance module is disabled for this company.,Мувофиқлик модули бу компанияда ўчирилган.
 The GL ledger scan detected {0} issues that require immediate attention.,
@@ -2562,6 +2596,7 @@ The referenced document no longer exists.,
 There are currently no work orders assigned to you.,
 These are ERPNext's back-dating guards — the reason it blocks creating or editing transactions older than a set window. They protect closed periods; relax them only deliberately.,
 "These are the toxic role combinations Stabler checks for. Findings are advisory — accept them with a compensating control, or split the duties.",Булар Stabler текширадиган хавфли рол комбинациялари. Натижалар тавсиявий — уларни компенсацион назорат билан қабул қилинг ёки вазифаларни ажратинг.
+These device users have no employee link. Confirm a match to re-queue their punches.,Бу қурилма фойдаланувчилари ходимга боғланмаган. Белгилашларни қайта ишлаш учун мосликни тасдиқланг.
 This Service workspace will be added after Tickets P1.,Бу иш майдони P1 дан сўнг қўшилади.
 This adjusts stock for {0} item(s) and posts the difference to the ledger. The action is recorded against your name.,Бу {0} та товар бўйича захирани тузатади ва фарқни ҳисобга киритади. Амал сизнинг номингизга ёзилади.
 This bank transaction is already fully reconciled.,
@@ -2707,6 +2742,7 @@ Unknown vertical pack: {0},Номаълум верикал пакет: {0}
 Unknown warehouse: {0},Номаълум омбор: {0}
 Unmatched,
 Unmatched Event,
+Unmatched TimePay users,Боғланмаган TimePay фойдаланувчилари
 "Unmatched events, missing punches","Мос келмаган ҳодисалар, ўтказиб юборилган"
 Unpaid,Тўланмаган
 Unreconciled transactions,Солиштирилмаган операциялар
@@ -2800,6 +2836,7 @@ Wed,Ч
 Wednesday,
 Weekend,Дам олиш куни
 Weekly,Ҳафталик
+Weekly off,Дам олиш куни
 Weekly off days,
 Weight,Вазни
 Welcome to Stabler,Stabler га хуш келибсиз
@@ -2841,6 +2878,7 @@ Workforce,Ходимлар
 Working,Иш куни
 Workspace,
 Write,Ёзиш
+Writes one net Additional Salary line per locked employee for this period. Re-running replaces the previous figures.,Бу давр учун ҳар бир қулфланган ходимга битта соф Additional Salary қатори ёзади. Қайта ишга тушириш олдинги рақамларни алмаштиради.
 Wrong Account Postings,
 YTD,Йил бошидан
 Year to date,
@@ -2862,6 +2900,7 @@ You raised this request — it must be reviewed by someone else.,
 You raised this — another user must approve it.,Бу сўровни сиз яратдингиз — уни бошқа фойдаланувчи тасдиқлаши керак.
 "Your books are empty. Get started by adding a customer, recording your first sale, or logging an opening balance.","Сизнинг китобларингиз бўш. Харидор қўшиб, биринчи сотувингизни ёзиб ёки ўзаро баланси қўйиб бошлаинг."
 Yuk xati,Юк хати
+absent,келмаган
 across all statuses,барча ҳолатлар бўйича
 active staff,фаол ходим
 against,
@@ -2897,6 +2936,7 @@ error(s),хато(лар)
 favorable,
 from exchange rate records,валюта курслари ёзувларидан
 from last bill,охирги ҳисобдан
+half-day,ярим кун
 high,юқори
 https://…,
 info,маълумот
@@ -2906,6 +2946,7 @@ item,Товар
 item_code and warehouse are required,Товар коди ва омбор керак
 items,Товарлар
 joined this month,шу ой қўшилди
+late,кечиккан
 left,қолди
 line,Қатор
 lines,
@@ -2927,7 +2968,9 @@ pack_key is required,pack_key керак
 payload must be a JSON object.,
 payroll_period is required.,
 planned,режалаштирилган
+present,келган
 pts vs last week,ўтган ҳафтага нисбатан
+punches,белгилаш
 "punches must be a list of {timestamp, direction}.",
 quantity,миқдор
 ready to invoice,ҳисоб-фактурага тайёр
