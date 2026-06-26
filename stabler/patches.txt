@@ -24,3 +24,5 @@ stabler.patches.v23_item_dimension_fields
 stabler.patches.v24_attendance_edit_fields
 stabler.patches.v25_purchase_dimension_fields
 stabler.patches.v26_employee_duty_supplement
+stabler.patches.v27_tender_deal_fields
+stabler.patches.v28_so_tender_fields

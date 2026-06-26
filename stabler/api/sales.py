@@ -2409,6 +2409,7 @@ def create_sales_order(
 	auto_submit: int = 1,
 	currency: str | None = None,
 	price_list: str | None = None,
+	crm_deal: str | None = None,
 ):
 	"""Create a Sales Order; default behaviour is create + submit + reserve.
 
@@ -2490,6 +2491,9 @@ def create_sales_order(
 	price_list = price_list or _resolve_price_list(customer)
 	if price_list:
 		doc.selling_price_list = price_list
+	# Tender spine: link the winning CRM Deal (F7) when present + the field exists.
+	if crm_deal and frappe.db.has_column("Sales Order", "custom_crm_deal") and frappe.db.exists("CRM Deal", crm_deal):
+		doc.custom_crm_deal = crm_deal
 
 	sre_enabled = _company_stock_reservation_enabled(company)
 	for row in cleaned:
@@ -2531,6 +2535,59 @@ def create_sales_order(
 		"docstatus": doc.docstatus,
 		"status": doc.status,
 		"reservation_errors": reservation_errors,
+	}
+
+
+@frappe.whitelist()
+def prepare_so_from_deal(deal: str) -> dict:
+	"""F7 — prep a Sales Order from a won CRM Deal (the contract spine).
+
+	CRM Deal has no line items, so we don't build the SO here. We ensure the
+	deal has a linked Customer (creating it via the won-deal hand-off if needed)
+	and return a prefill payload the SO form opens with. The actual SO is created
+	through ``create_sales_order(..., crm_deal=deal)`` once the user adds positions.
+	If a Sales Order is already linked to this deal, we return it so the caller
+	can open it instead of creating a duplicate.
+	"""
+	from stabler.api.crm import convert_deal_to_customer
+
+	if not frappe.db.exists("CRM Deal", deal):
+		frappe.throw(_("Unknown deal: {0}").format(deal))
+	if not frappe.has_permission("CRM Deal", "read", deal):
+		frappe.throw(_("Not permitted"), frappe.PermissionError)
+
+	d = frappe.get_doc("CRM Deal", deal)
+	company = d.get("company") or frappe.defaults.get_user_default("Company") or (
+		frappe.get_all("Company", pluck="name", limit=1) or [None]
+	)[0]
+	if not company:
+		frappe.throw(_("No company is configured."))
+	_require_company(company)
+
+	# Already linked? Hand back the existing SO.
+	existing = None
+	if frappe.db.has_column("Sales Order", "custom_crm_deal"):
+		existing = frappe.db.get_value(
+			"Sales Order", {"custom_crm_deal": deal, "docstatus": ["<", 2]}, "name"
+		)
+
+	# Ensure a customer exists for the deal.
+	customer = d.get("linked_customer")
+	if not (customer and frappe.db.exists("Customer", customer)):
+		customer = convert_deal_to_customer(deal).get("customer")
+	if not customer:
+		frappe.throw(_("Could not resolve a customer for this deal."))
+
+	return {
+		"deal": deal,
+		"existing_so": existing,
+		"customer": customer,
+		"customer_name": frappe.db.get_value("Customer", customer, "customer_name") or customer,
+		"company": company,
+		"currency": d.get("currency") or frappe.get_cached_value("Company", company, "default_currency"),
+		"deal_value": flt(d.get("deal_value")),
+		"bid_value": flt(d.get("bid_value")) if frappe.db.has_column("CRM Deal", "bid_value") else 0.0,
+		"tender_no": d.get("tender_no") if frappe.db.has_column("CRM Deal", "tender_no") else None,
 	}
 
 
