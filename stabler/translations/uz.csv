@@ -293,6 +293,7 @@ Batch tracking is not enabled.,Partiyani kuzatish yoqilmagan.
 Batches expiring within {0} days are flagged. Value at item valuation rate.,{0} kun ichida muddati tugaydigan partiyalar belgilangan. Qiymat tovar baholash narxida.
 Before → Requested,
 Berry,
+Bid Value,Taklif summasi
 Bill,Hisob
 Bill #,Hisob raqami
 Bill / invoice number printed on supplier document,Ta'minotchi hujjatida chop etilgan hisob/hisob-faktura raqami
@@ -521,6 +522,7 @@ Cost must be positive.,Tannarx musbat bo'lishi kerak.
 Could not add holiday.,Bayram qo'shib bo'lmadi.
 Could not add stage.,Bosqich qo'shib bo'lmadi.
 Could not check payment status.,To‘lov holatini tekshirib bo‘lmadi.
+Could not create contract.,Shartnoma yaratib bo'lmadi.
 Could not load data health.,Ma'lumotlar sog'lig'ini yuklab bo'lmadi.
 Could not load the HR overview.,HR umumiy ko'rinishini yuklab bo'lmadi.
 Could not load the board.,Doskani yuklab bo'lmadi.
@@ -1085,6 +1087,7 @@ From account,Hisob dan
 From date,
 From date cannot be after To date.,
 From tender,Tenderdan
+From tender deal,Tender bitimidan
 From warehouse,Sklad dan
 From → To,Dan → Gacha
 Frozen accounts modifier role,
@@ -2611,6 +2614,9 @@ Technician,Texnik
 Technician state,Texnik holati
 Telegram,Telegram
 Tender,Tender
+Tender Deadline,Tender muddati
+Tender No,Tender raqami
+Tender Source,Tender manbai
 Tenure,Ish staji
 Term (months),Muddat (oy)
 Terms,Shartlar

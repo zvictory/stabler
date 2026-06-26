@@ -291,6 +291,7 @@ Batch tracking is not enabled.,Batch tracking is not enabled.
 Batches expiring within {0} days are flagged. Value at item valuation rate.,Batches expiring within {0} days are flagged. Value at item valuation rate.
 Before → Requested,Before → Requested
 Berry,Berry
+Bid Value,Bid Value
 Bill,Bill
 Bill #,Bill #
 Bill / invoice number printed on supplier document,Bill / invoice number printed on supplier document
@@ -519,6 +520,7 @@ Cost must be positive.,Cost must be positive.
 Could not add holiday.,Could not add holiday.
 Could not add stage.,Could not add stage.
 Could not check payment status.,Could not check payment status.
+Could not create contract.,Could not create contract.
 Could not load data health.,Could not load data health.
 Could not load the HR overview.,Could not load the HR overview.
 Could not load the board.,Could not load the board.
@@ -1083,6 +1085,7 @@ From account,From account
 From date,From date
 From date cannot be after To date.,From date cannot be after To date.
 From tender,From tender
+From tender deal,From tender deal
 From warehouse,From warehouse
 From → To,From → To
 Frozen accounts modifier role,Frozen accounts modifier role
@@ -2608,6 +2611,9 @@ Technician,Technician
 Technician state,Technician state
 Telegram,Telegram
 Tender,Tender
+Tender Deadline,Tender Deadline
+Tender No,Tender No
+Tender Source,Tender Source
 Tenure,Tenure
 Term (months),Term (months)
 Terms,Terms

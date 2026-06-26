@@ -293,6 +293,7 @@ Batch tracking is not enabled.,Партияни кузатиш ёқилмага�
 Batches expiring within {0} days are flagged. Value at item valuation rate.,{0} кун ичида муддати тугайдиган партиялар белгиланган. Қиймат товар баҳолаш нархида.
 Before → Requested,
 Berry,
+Bid Value,Таклиф суммаси
 Bill,Ҳисоб
 Bill #,Ҳисоб #
 Bill / invoice number printed on supplier document,Сатувчи хужжатида чоп этилган ҳисоб / инвойс рақами
@@ -521,6 +522,7 @@ Cost must be positive.,Таннарх мусбат бўлиши керак.
 Could not add holiday.,Байрам қўшиб бўлмади.
 Could not add stage.,Босқич қўшиб бўлмади.
 Could not check payment status.,Тўлов ҳолатини текшириб бўлмади.
+Could not create contract.,Шартнома яратиб бўлмади.
 Could not load data health.,Маълумотлар соғлиғини юклаб бўлмади.
 Could not load the HR overview.,HR умумий кўринишини юклаб бўлмади.
 Could not load the board.,Доскани юклаб бўлмади.
@@ -1085,6 +1087,7 @@ From account,Ҳисобдан
 From date,
 From date cannot be after To date.,
 From tender,Тендердан
+From tender deal,Тендер битимидан
 From warehouse,Омборидан
 From → To,Дан → Гача
 Frozen accounts modifier role,
@@ -2611,6 +2614,9 @@ Technician,Техник
 Technician state,Техник ҳолати
 Telegram,Telegram
 Tender,Тендер
+Tender Deadline,Тендер муддати
+Tender No,Тендер рақами
+Tender Source,Тендер манбаи
 Tenure,Иш стажи
 Term (months),Муддат (ой)
 Terms,Шартлар

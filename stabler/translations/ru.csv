@@ -298,6 +298,7 @@ Batch tracking is not enabled.,Учёт партий не включён.
 Batches expiring within {0} days are flagged. Value at item valuation rate.,"Партии, истекающие в течение {0} дней, отмечены. Стоимость по ставке оценки товара."
 Before → Requested,
 Berry,
+Bid Value,Сумма заявки
 Bill,Счёт
 Bill #,Счет №
 Bill / invoice number printed on supplier document,"Номер счета / накладной, указанный в документе поставщика"
@@ -527,6 +528,7 @@ Cost must be positive.,Себестоимость должна быть поло
 Could not add holiday.,Не удалось добавить праздник.
 Could not add stage.,Не удалось добавить этап.
 Could not check payment status.,Не удалось проверить статус платежа.
+Could not create contract.,Не удалось создать контракт.
 Could not load data health.,Не удалось загрузить качество данных.
 Could not load the HR overview.,Не удалось загрузить HR обзор.
 Could not load the board.,Не удалось загрузить доску.
@@ -1092,6 +1094,7 @@ From account,С счёта
 From date,
 From date cannot be after To date.,
 From tender,Из тендера
+From tender deal,Из тендерной сделки
 From warehouse,Со склада
 From → To,С → По
 Frozen accounts modifier role,
@@ -2618,6 +2621,9 @@ Technician,Техник
 Technician state,Статус техника
 Telegram,Telegram
 Tender,Тендер
+Tender Deadline,Срок тендера
+Tender No,Номер тендера
+Tender Source,Источник тендера
 Tenure,Стаж
 Term (months),Срок (месяцев)
 Terms,Условия

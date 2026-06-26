@@ -118,6 +118,7 @@ function blankForm() {
 		transaction_date: today,
 		remarks: "",
 		items: [blankLine()],
+		crm_deal: "",
 	};
 }
 
@@ -189,6 +190,7 @@ function toPayload(m) {
 		currency: m.currency || undefined,
 		conversion_rate: (m.currency && currency.value && m.currency !== currency.value) ? (exchangeRate.value || 1) : 1,
 		price_list: m.price_list || undefined,
+		crm_deal: m.crm_deal || undefined,
 	};
 }
 
@@ -590,8 +592,9 @@ onMounted(async () => {
 	if (!docName.value) {
 		form.value = blankForm();
 		form.value.set_warehouse = defaultWarehouseName();
-		const newFor = route.query?.new_for;
+		const newFor = route.query?.new_for || route.query?.customer;
 		if (newFor) await prefillNewForCustomer(String(newFor));
+		if (route.query?.crm_deal) form.value.crm_deal = String(route.query.crm_deal);
 	} else {
 		await loadDoc();
 	}
@@ -800,6 +803,12 @@ async function closeSalesOrder() {
 					class="badge bg-blue-lt me-1 font-monospace text-decoration-none"
 				>{{ si.name }}</router-link>
 			</div>
+		</div>
+
+		<!-- Linked tender deal (F7) -->
+		<div v-if="isCreate && form && form.crm_deal" class="alert bg-purple-lt text-purple d-flex align-items-center gap-2 mb-3 py-2">
+			<i class="ti ti-flag"></i>
+			<span>{{ t("From tender deal") }}: <strong>{{ form.crm_deal }}</strong></span>
 		</div>
 
 		<!-- Header fields -->

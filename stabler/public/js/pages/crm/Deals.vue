@@ -1,6 +1,7 @@
 <script setup>
 import { computed, onMounted, ref, watch } from "vue";
 import { storeToRefs } from "pinia";
+import { useRouter } from "vue-router";
 import { useSession } from "../../stores/session.js";
 import { call } from "../../api/client.js";
 import { formatDate, formatDateTime } from "../../composables/date.js";
@@ -13,6 +14,9 @@ import DateInput from "../../components/DateInput.vue";
 
 const session = useSession();
 const { activeCompany, user } = storeToRefs(session);
+const router = useRouter();
+const tenderOn = computed(() => session.canAccessModule("tender"));
+const creatingContract = ref(false);
 
 const { confirm } = useConfirm();
 
@@ -438,6 +442,10 @@ function blankForm() {
 		credit_terms_days: null,
 		win_loss_reason: "",
 		linked_customer: "",
+		tender_no: "",
+		tender_deadline: "",
+		bid_value: 0,
+		tender_source: "",
 	};
 }
 
@@ -474,9 +482,32 @@ async function openEdit(deal) {
 			credit_terms_days: doc.credit_terms_days ?? null,
 			win_loss_reason: doc.win_loss_reason || "",
 			linked_customer: doc.linked_customer || "",
+			tender_no: doc.tender_no || "",
+			tender_deadline: doc.tender_deadline || "",
+			bid_value: doc.bid_value || 0,
+			tender_source: doc.tender_source || "",
 		};
 	} catch (err) {
 		submitError.value = err?.message || t("Failed to load deal.");
+	}
+}
+
+async function createContract() {
+	if (!form.value.name) return;
+	creatingContract.value = true;
+	submitError.value = "";
+	try {
+		const r = await call("stabler.api.sales.prepare_so_from_deal", { deal: form.value.name });
+		if (r.existing_so) {
+			router.push(`/sales/orders/${encodeURIComponent(r.existing_so)}`);
+			return;
+		}
+		const q = new URLSearchParams({ crm_deal: r.deal, customer: r.customer });
+		router.push(`/sales/orders/new?${q.toString()}`);
+	} catch (err) {
+		submitError.value = err?.message || t("Could not create contract.");
+	} finally {
+		creatingContract.value = false;
 	}
 }
 
@@ -1069,6 +1100,33 @@ watch(activeCompany, fetchDeals);
 						<label class="form-label">{{ t("Deal Owner") }}</label>
 						<input v-model="form.deal_owner" type="text" class="form-control" :placeholder="t('Email or user ID')" />
 					</div>
+
+					<!-- Tender fields (gated by the tender module) -->
+					<template v-if="tenderOn">
+						<div class="col-12"><hr class="my-1" /><span class="text-secondary small"><i class="ti ti-gavel me-1"></i>{{ t("Tender") }}</span></div>
+						<div class="col-6">
+							<label class="form-label">{{ t("Tender No") }}</label>
+							<input v-model="form.tender_no" type="text" class="form-control" />
+						</div>
+						<div class="col-6">
+							<label class="form-label">{{ t("Tender Deadline") }}</label>
+							<DateInput v-model="form.tender_deadline" />
+						</div>
+						<div class="col-6">
+							<label class="form-label">{{ t("Bid Value") }}</label>
+							<MoneyInput v-model="form.bid_value" :currency="currency" :group-while-typing="true" />
+						</div>
+						<div class="col-6">
+							<label class="form-label">{{ t("Tender Source") }}</label>
+							<select v-model="form.tender_source" class="form-select">
+								<option value="">—</option>
+								<option value="Telegram">Telegram</option>
+								<option value="Web">Web</option>
+								<option value="Portal">Portal</option>
+								<option value="Direct">Direct</option>
+							</select>
+						</div>
+					</template>
 				</div>
 
 				<!-- Won-deal hand-off -->
@@ -1077,7 +1135,17 @@ watch(activeCompany, fetchDeals);
 					class="alert alert-success mt-3 mb-0 d-flex align-items-center gap-2"
 				>
 					<i class="ti ti-user-check"></i>
-					<span>{{ t("Linked customer") }}: <strong>{{ form.linked_customer }}</strong></span>
+					<span class="flex-grow-1">{{ t("Linked customer") }}: <strong>{{ form.linked_customer }}</strong></span>
+					<button
+						v-if="tenderOn"
+						type="button"
+						class="btn btn-sm btn-primary text-nowrap"
+						:disabled="creatingContract"
+						@click="createContract"
+					>
+						<span v-if="creatingContract" class="spinner-border spinner-border-sm me-1"></span>
+						<i v-else class="ti ti-file-plus me-1"></i>{{ t("Create contract") }}
+					</button>
 				</div>
 				<div
 					v-else-if="editingDeal && isWonStatus(form.status)"

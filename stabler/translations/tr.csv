@@ -291,6 +291,7 @@ Batch tracking is not enabled.,Parti takibi etkin değil.
 Batches expiring within {0} days are flagged. Value at item valuation rate.,"{0} gün içinde süresi dolacak partiler işaretlendi. Değer, kalem değerleme oranında."
 Before → Requested,
 Berry,
+Bid Value,Teklif tutarı
 Bill,Fatura
 Bill #,Fatura No
 Bill / invoice number printed on supplier document,Tedarikçi belgesinde yazan fatura numarası
@@ -516,6 +517,7 @@ Cost must be positive.,Maliyet pozitif olmalıdır.
 Could not add holiday.,Tatil eklenemedi.
 Could not add stage.,Aşama eklenemedi.
 Could not check payment status.,Ödeme durumu kontrol edilemedi.
+Could not create contract.,Sözleşme oluşturulamadı.
 Could not load data health.,Veri sağlığı yüklenemedi.
 Could not load the HR overview.,İK genel bakışı yüklenemedi.
 Could not load the board.,Pano yüklenemedi.
@@ -1078,6 +1080,7 @@ From account,Kaynak hesap
 From date,
 From date cannot be after To date.,
 From tender,İhaleden
+From tender deal,İhale anlaşmasından
 From warehouse,Kaynak depo
 From → To,Kaynak → Hedef
 Frozen accounts modifier role,
@@ -2597,6 +2600,9 @@ Technician,Teknisyen
 Technician state,Teknisyen durumu
 Telegram,Telegram
 Tender,İhale
+Tender Deadline,İhale son tarihi
+Tender No,İhale No
+Tender Source,İhale kaynağı
 Tenure,Kıdem
 Term (months),Vade (ay)
 Terms,Koşullar
