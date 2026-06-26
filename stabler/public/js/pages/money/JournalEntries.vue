@@ -44,7 +44,7 @@ const submitError = ref("");
 const accountsLoading = ref(false);
 const accountOptions = ref([]);
 
-const emptyRow = () => ({ account: "", account_currency: "", party_type: "", party: "", party_name: "", debit: null, credit: null });
+const emptyRow = () => ({ account: "", account_currency: "", party_type: "", party: "", party_name: "", exchange_rate: 1, debit: null, credit: null });
 const form = ref(blankForm());
 const editName = ref(null);
 const isEdit = computed(() => !!editName.value);
@@ -63,10 +63,41 @@ function blankForm() {
 const currencyCode = computed(() => (session.companies.find((c) => c.name === activeCompany.value) || {}).default_currency || "USD");
 const currency = currencyCode;
 
+// A line is "foreign" when its account currency differs from the company base.
+const isForeign = (r) => !!r.account_currency && r.account_currency !== currencyCode.value;
+const rateOf = (r) => (isForeign(r) ? Number(r.exchange_rate) || 0 : 1);
+const isMultiCurrency = computed(() => form.value.accounts.some(isForeign));
+const baseDebit = computed(() => form.value.accounts.reduce((s, r) => s + (Number(r.debit) || 0) * rateOf(r), 0));
+const baseCredit = computed(() => form.value.accounts.reduce((s, r) => s + (Number(r.credit) || 0) * rateOf(r), 0));
+const baseLine = (r) => (Number(r.debit) || Number(r.credit) || 0) * rateOf(r);
+
+// Single-currency: balance in that currency. Multi-currency: balance in the
+// company base (each leg × its rate); sub-unit residuals are sealed by the JE
+// FX hook, so allow a tiny tolerance. Foreign legs must carry a positive rate.
 const totalDebit = computed(() => form.value.accounts.reduce((s, r) => s + (Number(r.debit) || 0), 0));
 const totalCredit = computed(() => form.value.accounts.reduce((s, r) => s + (Number(r.credit) || 0), 0));
-const diff = computed(() => totalDebit.value - totalCredit.value);
-const balanced = computed(() => Math.abs(diff.value) < 0.01);
+const diff = computed(() => (isMultiCurrency.value ? baseDebit.value - baseCredit.value : totalDebit.value - totalCredit.value));
+const balanced = computed(() => {
+	if (isMultiCurrency.value) {
+		const ratesOk = form.value.accounts.every((r) => !isForeign(r) || rateOf(r) > 0);
+		return ratesOk && Math.abs(diff.value) < 1;
+	}
+	return Math.abs(diff.value) < 0.01;
+});
+
+async function fetchRate(row) {
+	if (!isForeign(row) || !activeCompany.value) return;
+	try {
+		const rate = await call("stabler.api.money.get_exchange_rate_for_currencies", {
+			from_currency: row.account_currency,
+			to_currency: currencyCode.value,
+			posting_date: form.value.posting_date,
+		});
+		if (Number(rate) > 0) row.exchange_rate = Number(rate);
+	} catch {
+		/* leave the rate for the user to enter */
+	}
+}
 
 const statusBadge = (d) => {
 	if (d === 0) return { cls: "bg-yellow-lt", label: t("Draft") };
@@ -96,6 +127,11 @@ function onPartyTypeChange(row) { row.party = ""; row.party_name = ""; }
 function onAccountChange(row) {
 	const a = accountOptions.value.find((o) => o.name === row.account);
 	row.account_currency = (a && a.account_currency) || currencyCode.value;
+	if (isForeign(row)) {
+		if (!(Number(row.exchange_rate) > 0) || row.exchange_rate === 1) fetchRate(row);
+	} else {
+		row.exchange_rate = 1;
+	}
 }
 
 async function loadAccountOptions() {
@@ -168,6 +204,7 @@ async function openEdit(d) {
 				party_type: a.party_type || "",
 				party: a.party || "",
 				party_name: a.party_name || "",
+				exchange_rate: Number(a.exchange_rate) > 0 ? Number(a.exchange_rate) : 1,
 				debit: a.debit_in_account_currency || null,
 				credit: a.credit_in_account_currency || null,
 			})),
@@ -196,7 +233,7 @@ async function submitForm() {
 	}
 	const accounts = form.value.accounts
 		.filter((r) => r.account && (Number(r.debit) || Number(r.credit)))
-		.map((r) => ({ account: r.account, party_type: r.party_type || undefined, party: r.party || undefined, debit: Number(r.debit) || 0, credit: Number(r.credit) || 0 }));
+		.map((r) => ({ account: r.account, party_type: r.party_type || undefined, party: r.party || undefined, exchange_rate: rateOf(r), debit: Number(r.debit) || 0, credit: Number(r.credit) || 0 }));
 	if (accounts.length < 2) return (submitError.value = t("At least two account lines are required."));
 	submitting.value = true;
 	try {
@@ -320,8 +357,18 @@ watch(activeCompany, () => {
 								<tr v-for="(a, i) in detail.accounts" :key="i">
 									<td>{{ a.account_name || a.account }}</td>
 									<td>{{ a.party_name || a.party || "—" }}</td>
-									<td class="text-end font-monospace">{{ a.debit_in_account_currency ? formatMoney(a.debit_in_account_currency, a.account_currency || detail.base_currency || currency, user.language) : "—" }}</td>
-									<td class="text-end font-monospace">{{ a.credit_in_account_currency ? formatMoney(a.credit_in_account_currency, a.account_currency || detail.base_currency || currency, user.language) : "—" }}</td>
+									<td class="text-end font-monospace">
+										{{ a.debit_in_account_currency ? formatMoney(a.debit_in_account_currency, a.account_currency || detail.base_currency || currency, user.language) : "—" }}
+										<div v-if="a.debit_in_account_currency && a.account_currency && a.account_currency !== (detail.base_currency || currency)" class="text-secondary" style="font-size:.7rem">
+											@ {{ a.exchange_rate }} → {{ formatMoney(a.debit_base, detail.base_currency || currency, user.language) }}
+										</div>
+									</td>
+									<td class="text-end font-monospace">
+										{{ a.credit_in_account_currency ? formatMoney(a.credit_in_account_currency, a.account_currency || detail.base_currency || currency, user.language) : "—" }}
+										<div v-if="a.credit_in_account_currency && a.account_currency && a.account_currency !== (detail.base_currency || currency)" class="text-secondary" style="font-size:.7rem">
+											@ {{ a.exchange_rate }} → {{ formatMoney(a.credit_base, detail.base_currency || currency, user.language) }}
+										</div>
+									</td>
 								</tr>
 							</tbody>
 							<tfoot><tr class="fw-bold">
@@ -354,6 +401,7 @@ watch(activeCompany, () => {
 						<thead><tr>
 							<th style="min-width: 170px">{{ t("Account") }}</th>
 							<th style="min-width: 200px">{{ t("Party") }}</th>
+							<th v-if="isMultiCurrency" class="text-end" style="width: 110px">{{ t("Rate") }}</th>
 							<th class="text-end" style="width: 130px">{{ t("Debit") }}</th>
 							<th class="text-end" style="width: 130px">{{ t("Credit") }}</th>
 							<th class="w-1"></th>
@@ -374,6 +422,13 @@ watch(activeCompany, () => {
 										</Typeahead>
 									</div>
 								</td>
+								<td v-if="isMultiCurrency" class="text-end">
+									<template v-if="isForeign(row)">
+										<input v-model.number="row.exchange_rate" type="number" min="0" step="0.000001" class="form-control form-control-sm text-end font-monospace" />
+										<div class="text-secondary" style="font-size: .7rem">{{ baseLine(row) ? "= " + formatMoney(baseLine(row), currencyCode, user.language) : "" }}</div>
+									</template>
+									<span v-else class="text-secondary small">1</span>
+								</td>
 								<td><MoneyInput v-model="row.debit" :currency="row.account_currency || currencyCode" :language="user.language" size="sm" @blur="onDebitInput(row)" /></td>
 								<td><MoneyInput v-model="row.credit" :currency="row.account_currency || currencyCode" :language="user.language" size="sm" @blur="onCreditInput(row)" /></td>
 								<td><button type="button" class="btn btn-sm btn-ghost-danger" :disabled="form.accounts.length <= 2" @click="removeRow(idx)"><i class="ti ti-trash"></i></button></td>
@@ -381,11 +436,12 @@ watch(activeCompany, () => {
 						</tbody>
 						<tfoot>
 							<tr class="fw-bold">
-								<td colspan="2"><button type="button" class="btn btn-sm btn-ghost-primary" @click="addRow"><i class="ti ti-plus me-1"></i>{{ t("Add row") }}</button></td>
-								<td class="text-end font-monospace">{{ formatMoney(totalDebit, currencyCode, user.language) }}</td>
-								<td class="text-end font-monospace">{{ formatMoney(totalCredit, currencyCode, user.language) }}</td>
+								<td :colspan="isMultiCurrency ? 3 : 2"><button type="button" class="btn btn-sm btn-ghost-primary" @click="addRow"><i class="ti ti-plus me-1"></i>{{ t("Add row") }}</button></td>
+								<td class="text-end font-monospace">{{ formatMoney(isMultiCurrency ? baseDebit : totalDebit, currencyCode, user.language) }}</td>
+								<td class="text-end font-monospace">{{ formatMoney(isMultiCurrency ? baseCredit : totalCredit, currencyCode, user.language) }}</td>
 								<td><span class="badge" :class="balanced ? 'bg-green-lt' : 'bg-red-lt'">{{ balanced ? t("Balanced") : "Δ " + formatMoney(diff, currencyCode, user.language) }}</span></td>
 							</tr>
+							<tr v-if="isMultiCurrency"><td colspan="5" class="text-secondary small fw-normal pt-0">{{ t("Totals shown in base currency ({0}).").replace("{0}", currencyCode) }}</td></tr>
 						</tfoot>
 					</table>
 

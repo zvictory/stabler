@@ -769,6 +769,11 @@ def _clean_je_rows(accounts, company: str) -> tuple[list[dict], bool]:
 			frappe.throw(f"Row {idx}: '{acc}' is a group account.")
 		total_debit += debit
 		total_credit += credit
+		# Per-line FX rate (account currency → company currency). For base-currency
+		# lines it's 1; for a foreign line the UI sends the rate it displayed. A
+		# 0/blank value lets ERPNext fetch its own rate. The system-wide FX hook on
+		# JE before_validate seals any sub-unit base residual.
+		xr = flt(row.get("exchange_rate"))
 		cleaned.append(
 			{
 				"account": acc,
@@ -776,6 +781,7 @@ def _clean_je_rows(accounts, company: str) -> tuple[list[dict], bool]:
 				"party": row.get("party") or None,
 				"debit_in_account_currency": debit,
 				"credit_in_account_currency": credit,
+				"exchange_rate": xr if xr > 0 else None,
 				"reference_type": row.get("reference_type") or None,
 				"reference_name": row.get("reference_name") or None,
 				"_ccy": acc_doc.account_currency or "",
