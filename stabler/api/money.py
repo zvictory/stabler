@@ -884,6 +884,7 @@ def create_journal_entry(
 	user_remark: str | None = None,
 	cheque_no: str | None = None,
 	cheque_date: str | None = None,
+	amended_from: str | None = None,
 ) -> dict:
 	"""Create a Journal Entry as Draft (docstatus=0).
 
@@ -905,6 +906,12 @@ def create_journal_entry(
 		doc.cheque_no = cheque_no
 	if cheque_date:
 		doc.cheque_date = getdate(cheque_date)
+	# Amendment chain: link this draft to a cancelled original so the ledger keeps
+	# a traceable correction trail (amended_from must point to a cancelled JE).
+	if amended_from:
+		src = frappe.db.get_value("Journal Entry", amended_from, ["company", "docstatus"], as_dict=True)
+		if src and src.company == company and src.docstatus == 2:
+			doc.amended_from = amended_from
 	for row in cleaned:
 		doc.append("accounts", row)
 	doc.insert(ignore_permissions=False)

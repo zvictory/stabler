@@ -160,6 +160,7 @@ Amend expense,Amend expense
 Amend failed.,Amend failed.
 Amend of,Amend of
 Amend transfer,Amend transfer
+Amending,Amending
 Amendment created.,Amendment created.
 Amount,Amount
 Amount (UZS),Amount (UZS)
@@ -256,6 +257,7 @@ Backup set,Backup set
 Badge,Badge
 Badge Timeline,Badge Timeline
 Badge UID is required.,Badge UID is required.
+Bal,Bal
 Balance,Balance
 Balance (Account Currency),Balance (Account Currency)
 Balanced,Balanced

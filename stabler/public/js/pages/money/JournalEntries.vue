@@ -161,7 +161,40 @@ function onAccountChange(row) {
 	} else {
 		row.exchange_rate = 1;
 	}
+	loadAcctBalance(row.account);
 }
+
+// ── Current account balance hint (cached per account) ────────────────────────
+const acctBalances = ref({});
+async function loadAcctBalance(account) {
+	if (!account || !activeCompany.value || acctBalances.value[account]) return;
+	try {
+		const b = await call("stabler.api.money.account_balance", {
+			company: activeCompany.value, account, as_of: form.value.posting_date,
+		});
+		acctBalances.value = { ...acctBalances.value, [account]: b };
+	} catch {
+		/* hint is best-effort */
+	}
+}
+function acctBalanceText(account) {
+	const b = acctBalances.value[account];
+	if (!b) return "";
+	return `${t("Bal")}: ${formatMoney(b.balance_acc ?? b.balance_base, b.account_currency || currencyCode.value, user.value.language)}`;
+}
+
+// ── Contextual back-dating freeze (same source as the money-page banner) ──────
+const backdating = ref(null);
+const freezeDate = computed(() => {
+	const b = backdating.value;
+	if (!b || !b.active) return null;
+	const dates = [b.stock_earliest_date, b.acc_earliest_date].filter(Boolean);
+	return dates.length ? dates.sort().reverse()[0] : null;
+});
+const postingFrozen = computed(() => !!freezeDate.value && !!form.value.posting_date && form.value.posting_date < freezeDate.value);
+
+// The cancelled JE this draft amends (set by amendJE), passed through on save.
+const amendedFrom = ref(null);
 
 async function loadAccountOptions() {
 	if (!activeCompany.value || accountOptions.value.length) return;
@@ -211,6 +244,7 @@ async function select(name) {
 async function openCreate() {
 	form.value = blankForm();
 	editName.value = null;
+	amendedFrom.value = null;
 	submitError.value = "";
 	pane.value = "edit";
 	await loadAccountOptions();
@@ -240,6 +274,7 @@ async function openEdit(d) {
 			})),
 	};
 	while (form.value.accounts.length < 2) form.value.accounts.push(emptyRow());
+	form.value.accounts.forEach((r) => r.account && loadAcctBalance(r.account));
 	pane.value = "edit";
 }
 
@@ -279,7 +314,9 @@ async function submitForm() {
 				company: activeCompany.value, posting_date: form.value.posting_date, voucher_type: form.value.voucher_type,
 				user_remark: form.value.user_remark || undefined, cheque_no: form.value.cheque_no || undefined,
 				cheque_date: form.value.cheque_date || undefined, accounts,
+				amended_from: amendedFrom.value || undefined,
 			});
+			amendedFrom.value = null;
 		}
 		await load();
 		if (res?.name) await select(res.name);
@@ -337,11 +374,18 @@ async function cancelJE() {
 // cancelled original untouched.
 async function amendJE() {
 	if (!detail.value) return;
+	const src = detail.value.name;
 	await openEdit(detail.value);
-	editName.value = null;
+	editName.value = null; // new doc, not an in-place edit
+	amendedFrom.value = src; // …but linked to the cancelled original
 }
 
 onMounted(async () => {
+	try {
+		backdating.value = await call("stabler.api.money.get_backdating_status");
+	} catch {
+		backdating.value = null;
+	}
 	await load();
 	const openName = route.query?.open;
 	if (openName) select(String(openName));
@@ -485,9 +529,15 @@ watch(statusFilter, load);
 						<h3 class="m-0">
 							{{ isEdit ? t("Edit journal entry") : t("New journal entry") }}
 							<span v-if="isEdit" class="text-secondary fw-normal font-monospace small ms-1">· {{ editName }}</span>
+							<span v-if="amendedFrom" class="badge bg-azure-lt ms-1">{{ t("Amending") }} {{ amendedFrom }}</span>
 						</h3>
 					</div>
 					<div v-if="submitError" class="alert alert-danger">{{ submitError }}</div>
+					<div v-if="postingFrozen" class="alert alert-warning py-2 px-3 d-flex align-items-center">
+						<i class="ti ti-calendar-lock me-2"></i>
+						<span class="flex-fill small">{{ t("Backdated postings are frozen before {0}.").replace("{0}", formatDate(freezeDate)) }}</span>
+						<RouterLink to="/admin/posting-window" class="small text-reset text-decoration-underline ms-2">{{ t("Change") }}</RouterLink>
+					</div>
 
 					<div class="row g-2 mb-2">
 						<div class="col-sm-4"><label class="form-label small">{{ t("Posting date") }}</label><DateInput v-model="form.posting_date" size="sm" /></div>
@@ -512,6 +562,7 @@ watch(statusFilter, load);
 										<template #option="{ option }">{{ option.account_number ? `${option.account_number} · ` : "" }}{{ option.account_name }}</template>
 										<template #selected="{ option }">{{ option.account_number ? `${option.account_number} · ` : "" }}{{ option.account_name }}</template>
 									</Select>
+									<div v-if="row.account && acctBalanceText(row.account)" class="text-secondary" style="font-size:.7rem">{{ acctBalanceText(row.account) }}</div>
 								</td>
 								<td>
 									<div class="d-flex gap-1">

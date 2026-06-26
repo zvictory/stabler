@@ -161,6 +161,7 @@ Amend expense,
 Amend failed.,O'zgartirilish muvaffaq bo'lmadi.
 Amend of,O'zgartirilgan
 Amend transfer,
+Amending,Tuzatish
 Amendment created.,
 Amount,Summa
 Amount (UZS),
@@ -258,6 +259,7 @@ Backup set,Zaxira to'plami
 Badge,Belgi
 Badge Timeline,
 Badge UID is required.,
+Bal,Qoldiq
 Balance,Balans
 Balance (Account Currency),Balans (hisob valyutasi)
 Balanced,Muvozanatli

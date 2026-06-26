@@ -160,6 +160,7 @@ Amend expense,
 Amend failed.,Düzeltme başarısız oldu.
 Amend of,Düzeltmesi:
 Amend transfer,
+Amending,Düzeltme
 Amendment created.,
 Amount,Tutar
 Amount (UZS),
@@ -256,6 +257,7 @@ Backup set,Yedek seti
 Badge,Rozet
 Badge Timeline,
 Badge UID is required.,
+Bal,Bakiye
 Balance,Bakiye
 Balance (Account Currency),Bakiye (Hesap Para Birimi)
 Balanced,Dengeli

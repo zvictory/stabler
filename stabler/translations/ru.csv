@@ -165,6 +165,7 @@ Amend expense,
 Amend failed.,Ошибка изменения.
 Amend of,Изменение
 Amend transfer,
+Amending,Исправление
 Amendment created.,
 Amount,Сумма
 Amount (UZS),
@@ -263,6 +264,7 @@ Backup set,Набор копий
 Badge,Значок
 Badge Timeline,
 Badge UID is required.,
+Bal,Остаток
 Balance,Остаток
 Balance (Account Currency),Остаток (валюта счета)
 Balanced,Сбалансировано
