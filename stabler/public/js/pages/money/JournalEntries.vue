@@ -15,6 +15,7 @@ import Typeahead from "../../components/Typeahead.vue";
 import SkeletonRows from "../../components/SkeletonRows.vue";
 import { useToast } from "../../composables/useToast.js";
 import { useConfirm } from "../../composables/useConfirm.js";
+import { readableRate, toLineRate, formatRate } from "../../composables/fx.js";
 
 const session = useSession();
 const route = useRoute();
@@ -97,6 +98,21 @@ const balanced = computed(() => {
 	}
 	return Math.abs(diff.value) < 0.01;
 });
+
+// Readable "1 strong = N weak" quote for a line (always the ≥1 direction).
+const rateQuote = (row) => readableRate(row.exchange_rate, row.account_currency, currencyCode.value);
+const fmtRate = (v) => formatRate(v, user.value.language);
+// Readable quote string for a view-pane line, e.g. "1 USD = 12 034 сўм".
+function viewQuote(a) {
+	const q = readableRate(a.exchange_rate, a.account_currency, detail.value?.base_currency || currency.value);
+	return q ? `1 ${q.strong} = ${fmtRate(q.value)} ${q.weak}` : "";
+}
+// User edits the readable N; store it back as the ERPNext per-line rate.
+function setRateQuote(row, val) {
+	const q = rateQuote(row);
+	if (!q) return;
+	row.exchange_rate = toLineRate(val, q.strong, row.account_currency);
+}
 
 async function fetchRate(row) {
 	if (!isForeign(row) || !activeCompany.value) return;
@@ -443,13 +459,13 @@ watch(statusFilter, load);
 									<td class="text-end font-monospace">
 										{{ a.debit_in_account_currency ? formatMoney(a.debit_in_account_currency, a.account_currency || detail.base_currency || currency, user.language) : "—" }}
 										<div v-if="a.debit_in_account_currency && a.account_currency && a.account_currency !== (detail.base_currency || currency)" class="text-secondary" style="font-size:.7rem">
-											@ {{ a.exchange_rate }} → {{ formatMoney(a.debit_base, detail.base_currency || currency, user.language) }}
+											{{ viewQuote(a) }} → {{ formatMoney(a.debit_base, detail.base_currency || currency, user.language) }}
 										</div>
 									</td>
 									<td class="text-end font-monospace">
 										{{ a.credit_in_account_currency ? formatMoney(a.credit_in_account_currency, a.account_currency || detail.base_currency || currency, user.language) : "—" }}
 										<div v-if="a.credit_in_account_currency && a.account_currency && a.account_currency !== (detail.base_currency || currency)" class="text-secondary" style="font-size:.7rem">
-											@ {{ a.exchange_rate }} → {{ formatMoney(a.credit_base, detail.base_currency || currency, user.language) }}
+											{{ viewQuote(a) }} → {{ formatMoney(a.credit_base, detail.base_currency || currency, user.language) }}
 										</div>
 									</td>
 								</tr>
@@ -506,9 +522,10 @@ watch(statusFilter, load);
 									</div>
 								</td>
 								<td v-if="isMultiCurrency" class="text-end">
-									<template v-if="isForeign(row)">
-										<input v-model.number="row.exchange_rate" type="number" min="0" step="0.000001" class="form-control form-control-sm text-end font-monospace" />
-										<div class="text-secondary" style="font-size: .7rem">{{ baseLine(row) ? "= " + formatMoney(baseLine(row), currencyCode, user.language) : "" }}</div>
+									<template v-if="isForeign(row) && rateQuote(row)">
+										<input :value="rateQuote(row).value" @input="(e) => setRateQuote(row, e.target.value)" type="number" min="0" step="any" class="form-control form-control-sm text-end font-monospace" />
+										<div class="text-secondary" style="font-size: .7rem">1 {{ rateQuote(row).strong }} = {{ fmtRate(rateQuote(row).value) }} {{ rateQuote(row).weak }}</div>
+										<div v-if="baseLine(row)" class="text-secondary" style="font-size: .7rem">= {{ formatMoney(baseLine(row), currencyCode, user.language) }}</div>
 									</template>
 									<span v-else class="text-secondary small">1</span>
 								</td>

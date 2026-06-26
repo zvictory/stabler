@@ -6,6 +6,7 @@ import { useSession } from "../../stores/session.js";
 import { call } from "../../api/client.js";
 import { formatMoney } from "../../composables/money.js";
 import { formatDate, formatDateTime, todayIso} from "../../composables/date.js";
+import { readableRate, formatRate } from "../../composables/fx.js";
 import { t } from "../../composables/i18n.js";
 import MoneyInput from "../../components/MoneyInput.vue";
 import DateInput from "../../components/DateInput.vue";
@@ -69,6 +70,10 @@ const rateDeviation = computed(() => {
 	if (!cbuRate.value || !enteredRate.value) return 0;
 	return Math.abs(enteredRate.value - cbuRate.value) / cbuRate.value;
 });
+
+// Readable "1 strong = N weak" quote (always the ≥1 direction, e.g. 1 USD = 12 034 сўм).
+const enteredQuote = computed(() => readableRate(enteredRate.value, partyAccountCurrency.value, bankCurrency.value));
+const cbuQuote = computed(() => readableRate(cbuRate.value, partyAccountCurrency.value, bankCurrency.value));
 const hasWarning = computed(() => showBankAmount.value && rateDeviation.value > 0.05);
 
 watch(
@@ -485,12 +490,10 @@ const typeBadge = (t) => {
 						:placeholder='t("0.00")'
 					/>
 					<div v-else class="form-control-plaintext font-monospace py-1">{{ formatMoney(form.bank_amount, bankCurrency, user.language) }}</div>
-					<div v-if="editable && isCreate && form.amount && form.bank_amount" class="form-hint text-secondary">
-						{{ t("Rate:") }}
-						{{ enteredRate.toFixed(4) }}
-						{{ bankCurrency }}/{{ partyAccountCurrency }}
-						<span v-if="rateDate" class="ms-1">
-							({{ t("CBU:") }} {{ cbuRate.toFixed(4) }})
+					<div v-if="editable && isCreate && form.amount && form.bank_amount && enteredQuote" class="form-hint text-secondary">
+						1 {{ enteredQuote.strong }} = {{ formatRate(enteredQuote.value, user.language) }} {{ enteredQuote.weak }}
+						<span v-if="rateDate && cbuQuote" class="ms-1">
+							({{ t("CBU:") }} {{ formatRate(cbuQuote.value, user.language) }})
 						</span>
 					</div>
 					<div v-if="hasWarning" class="alert alert-warning py-1 px-2 mt-1 small">
