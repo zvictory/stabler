@@ -1126,6 +1126,11 @@ watch(activeCompany, fetchDeals);
 								<option value="Direct">Direct</option>
 							</select>
 						</div>
+						<div v-if="form.name" class="col-12">
+							<router-link :to="`/tender/sourcing?deal=${encodeURIComponent(form.name)}`" class="btn btn-outline-secondary btn-sm">
+								<i class="ti ti-versions me-1"></i>{{ t("Compare supplier quotations") }}
+							</router-link>
+						</div>
 					</template>
 				</div>
 

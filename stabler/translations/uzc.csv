@@ -286,6 +286,7 @@ Base equivalent,Асосий эквивалент
 Base salary,
 Base salary (UZS),
 Base salary = 0,Асосий ойлик = 0
+Base total,Базавий жами
 Basic rate,Асосий нарх
 Batch,Партия
 Batch Expiry,Партия муддати
@@ -396,6 +397,7 @@ Changed,Ўзгартирилди
 Channel,Канал
 Charge via {provider},{provider} орқали тўлаш
 Chart of Accounts,Ҳисоблар режаси
+Cheapest,Энг арзон
 Checked in,Кириш қабул қилинди
 Checking availability…,Мавжудлик текширилмокда…
 Checking readiness…,
@@ -469,6 +471,7 @@ Company default,Компания стандарти
 Company email,Иш email
 Company is required for an enabled Payroll Component Map.,
 Company is required.,Компания талаб қилинади.
+Compare supplier quotations,Етказиб берувчи котировкаларини таққослаш
 Compensation,
 Compensation details are hidden — payroll access required.,
 Compensation policy,Тўлов сиёсати
@@ -524,6 +527,7 @@ Could not add stage.,Босқич қўшиб бўлмади.
 Could not check payment status.,Тўлов ҳолатини текшириб бўлмади.
 Could not create contract.,Шартнома яратиб бўлмади.
 Could not load data health.,Маълумотлар соғлиғини юклаб бўлмади.
+Could not load quotations.,Котировкаларни юклаб бўлмади.
 Could not load the HR overview.,HR умумий кўринишини юклаб бўлмади.
 Could not load the board.,Доскани юклаб бўлмади.
 Could not load unmatched users.,Боғланмаган фойдаланувчиларни юклаб бўлмади.
@@ -538,6 +542,7 @@ Count,Миқдори
 Count:,Миқдори:
 Counted qty,Санаб чиқилган миқдор
 Counterparty,Контрагент
+Countries,Давлатлар
 Country,Мамлакат
 Coverage,Қамров
 Covered,Қамровда
@@ -1665,6 +1670,7 @@ No stock update,Омбор ҳаракатсиз
 No stock warehouses,
 No stocked items found,
 No summaries,
+No supplier quotations for this tender.,Бу тендер учун етказиб берувчи котировкалари йўқ.
 No suppliers,Таъминотчилар йўқ
 No suppliers match that name,Бу номга мос таъминотчилар йўқ
 No template,Шаблон йўқ
@@ -1948,6 +1954,7 @@ Pick a rule set…,
 Pick a source warehouse.,Манба омборини танланг.
 Pick a status.,Ҳолатни танланг.
 Pick a supplier.,Таъминотчини танланг.
+Pick a tender deal to compare quotations.,Котировкаларни таққослаш учун тендер битимини танланг.
 Pick a valid date range.,Тўғри сана оралиғини танланг.
 Pick a warehouse,Омборини танланг
 Pick a warehouse to receive stock into.,Товарни қабул қилиш учун омборни танланг.
@@ -2355,6 +2362,7 @@ Scrap / Rejects Qty,
 Scrap / rejects,Чиқинди / носоз
 Search,Қидириш
 Search BOMs or finished goods…,Спецификация ёки тайёр маҳсулотни қидириш…
+Search a tender deal… ⌘K,Тендер битимини қидиринг… ⌘K
 Search account…,Ҳисобро қидириш…
 Search asset tag…,Активнинг белгисини қидириш…
 "Search by Work Order, Item, or Warehouse…",
@@ -2501,6 +2509,7 @@ Soni (korobka),Сони (коробка)
 Source,Манба
 Source warehouse,Манба омбор
 Source warehouse is required.,
+Sourcing comparison,Етказиб берувчиларни таққослаш
 Spend,Харажат
 Stabler Settings doctype does not exist. Run migrations first.,
 Staff with base salary = 0,Асосий ойлиги = 0 бўлган ходимлар
@@ -2602,6 +2611,7 @@ Sync now,Синхронлаш
 System qty,Тизимдаги миқдор
 TIN,СТИР
 Table,Жадвал
+Tag Supplier Quotations to this deal to compare them here.,Таққослаш учун котировкаларни шу битимга боғланг.
 Take Payment,
 Target Remaining,
 Target WIP Warehouse,
@@ -2614,6 +2624,7 @@ Technician,Техник
 Technician state,Техник ҳолати
 Telegram,Telegram
 Tender,Тендер
+Tender / deal,Тендер / битим
 Tender Deadline,Тендер муддати
 Tender No,Тендер рақами
 Tender Source,Тендер манбаи

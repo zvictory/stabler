@@ -291,6 +291,7 @@ Base equivalent,Эквивалент в базовой валюте
 Base salary,
 Base salary (UZS),
 Base salary = 0,Базовый оклад = 0
+Base total,"База, всего"
 Basic rate,Базовая цена
 Batch,Партия
 Batch Expiry,Срок годности партий
@@ -402,6 +403,7 @@ Changed,Изменено
 Channel,Канал
 Charge via {provider},Оплата через {provider}
 Chart of Accounts,План счетов
+Cheapest,Дешевле всех
 Checked in,Отметка о приходе
 Checking availability…,Проверка доступности…
 Checking readiness…,
@@ -475,6 +477,7 @@ Company default,По умолчанию для компании
 Company email,Рабочая почта
 Company is required for an enabled Payroll Component Map.,
 Company is required.,Требуется компания.
+Compare supplier quotations,Сравнить котировки поставщиков
 Compensation,
 Compensation details are hidden — payroll access required.,
 Compensation policy,Политика оплаты
@@ -530,6 +533,7 @@ Could not add stage.,Не удалось добавить этап.
 Could not check payment status.,Не удалось проверить статус платежа.
 Could not create contract.,Не удалось создать контракт.
 Could not load data health.,Не удалось загрузить качество данных.
+Could not load quotations.,Не удалось загрузить котировки.
 Could not load the HR overview.,Не удалось загрузить HR обзор.
 Could not load the board.,Не удалось загрузить доску.
 Could not load unmatched users.,Не удалось загрузить несопоставленных пользователей.
@@ -544,6 +548,7 @@ Count,Количество
 Count:,Количество:
 Counted qty,Подсчитанное кол-во
 Counterparty,Контрагент
+Countries,Страны
 Country,Страна
 Coverage,Покрытие
 Covered,Под покрытием
@@ -1672,6 +1677,7 @@ No stock update,Без движения склада
 No stock warehouses,
 No stocked items found,
 No summaries,
+No supplier quotations for this tender.,Нет котировок поставщиков по этому тендеру.
 No suppliers,Поставщиков нет
 No suppliers match that name,Поставщики с таким названием не найдены
 No template,Шаблона нет
@@ -1955,6 +1961,7 @@ Pick a rule set…,
 Pick a source warehouse.,Выберите исходный склад.
 Pick a status.,Выберите статус.
 Pick a supplier.,Выберите поставщика.
+Pick a tender deal to compare quotations.,Выберите тендерную сделку для сравнения котировок.
 Pick a valid date range.,Выберите корректный диапазон дат.
 Pick a warehouse,Выберите склад
 Pick a warehouse to receive stock into.,Выберите склад для оприходования товара.
@@ -2362,6 +2369,7 @@ Scrap / Rejects Qty,
 Scrap / rejects,Брак / отходы
 Search,Поиск
 Search BOMs or finished goods…,Поиск спецификаций или готовой продукции…
+Search a tender deal… ⌘K,Поиск тендерной сделки… ⌘K
 Search account…,Поиск счёта…
 Search asset tag…,Поиск метки имущества…
 "Search by Work Order, Item, or Warehouse…",
@@ -2508,6 +2516,7 @@ Soni (korobka),Кол-во (короб)
 Source,Источник
 Source warehouse,Склад источника
 Source warehouse is required.,
+Sourcing comparison,Сравнение поставщиков
 Spend,Расходы
 Stabler Settings doctype does not exist. Run migrations first.,
 Staff with base salary = 0,Сотрудники с базовым окладом = 0
@@ -2609,6 +2618,7 @@ Sync now,Синхронизировать
 System qty,Кол-во в системе
 TIN,ИНН
 Table,Таблица
+Tag Supplier Quotations to this deal to compare them here.,"Привяжите котировки к сделке, чтобы сравнить их здесь."
 Take Payment,
 Target Remaining,
 Target WIP Warehouse,
@@ -2621,6 +2631,7 @@ Technician,Техник
 Technician state,Статус техника
 Telegram,Telegram
 Tender,Тендер
+Tender / deal,Тендер / сделка
 Tender Deadline,Срок тендера
 Tender No,Номер тендера
 Tender Source,Источник тендера

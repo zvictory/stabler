@@ -284,6 +284,7 @@ Base equivalent,Baz karşılığı
 Base salary,
 Base salary (UZS),
 Base salary = 0,Temel maaş = 0
+Base total,Baz toplam
 Basic rate,Temel fiyat
 Batch,Parti
 Batch Expiry,Parti son kullanım
@@ -394,6 +395,7 @@ Changed,Değişti
 Channel,Kanal
 Charge via {provider},{provider} ile öde
 Chart of Accounts,Hesap Planı
+Cheapest,En ucuz
 Checked in,Giriş yapıldı
 Checking availability…,Uygunluk kontrol ediliyor…
 Checking readiness…,
@@ -465,6 +467,7 @@ Company default,Şirket varsayılanı
 Company email,Şirket e-postası
 Company is required for an enabled Payroll Component Map.,
 Company is required.,Şirket zorunludur.
+Compare supplier quotations,Tedarikçi tekliflerini karşılaştır
 Compensation,
 Compensation details are hidden — payroll access required.,
 Compensation policy,Ödeme politikası
@@ -519,6 +522,7 @@ Could not add stage.,Aşama eklenemedi.
 Could not check payment status.,Ödeme durumu kontrol edilemedi.
 Could not create contract.,Sözleşme oluşturulamadı.
 Could not load data health.,Veri sağlığı yüklenemedi.
+Could not load quotations.,Teklifler yüklenemedi.
 Could not load the HR overview.,İK genel bakışı yüklenemedi.
 Could not load the board.,Pano yüklenemedi.
 Could not load unmatched users.,Eşleşmemiş kullanıcılar yüklenemedi.
@@ -533,6 +537,7 @@ Count,Adet
 Count:,Adet:
 Counted qty,Sayılan miktar
 Counterparty,Karşı taraf
+Countries,Ülkeler
 Country,Ülke
 Coverage,Kapsam
 Covered,Kapsamda
@@ -1657,6 +1662,7 @@ No stock update,Stok hareketi yok
 No stock warehouses,
 No stocked items found,
 No summaries,
+No supplier quotations for this tender.,Bu ihale için tedarikçi teklifi yok.
 No suppliers,Tedarikçi yok
 No suppliers match that name,Bu ada uyan tedarikçi bulunamadı
 No template,Şablon yok
@@ -1937,6 +1943,7 @@ Pick a rule set…,
 Pick a source warehouse.,Bir kaynak depo seçin.
 Pick a status.,Bir durum seçin.
 Pick a supplier.,Bir tedarikçi seçin.
+Pick a tender deal to compare quotations.,Teklifleri karşılaştırmak için bir ihale anlaşması seçin.
 Pick a valid date range.,Geçerli bir tarih aralığı seçin.
 Pick a warehouse,Depo seçin
 Pick a warehouse to receive stock into.,Stoğun alınacağı depoyu seçin.
@@ -2342,6 +2349,7 @@ Scrap / Rejects Qty,
 Scrap / rejects,Hurda / ret
 Search,Ara
 Search BOMs or finished goods…,Ürün reçetesi veya mamul ara…
+Search a tender deal… ⌘K,İhale anlaşması ara… ⌘K
 Search account…,Hesap ara…
 Search asset tag…,Varlık etiketi ara…
 "Search by Work Order, Item, or Warehouse…",
@@ -2487,6 +2495,7 @@ Soni (korobka),Soni (korobka)
 Source,Kaynak
 Source warehouse,Kaynak depo
 Source warehouse is required.,
+Sourcing comparison,Tedarik karşılaştırması
 Spend,Harcama
 Stabler Settings doctype does not exist. Run migrations first.,
 Staff with base salary = 0,Temel maaşı = 0 olan çalışanlar
@@ -2588,6 +2597,7 @@ Sync now,Şimdi senkronla
 System qty,Sistem miktarı
 TIN,TIN
 Table,Tablo
+Tag Supplier Quotations to this deal to compare them here.,Karşılaştırmak için teklifleri bu anlaşmaya bağlayın.
 Take Payment,
 Target Remaining,
 Target WIP Warehouse,
@@ -2600,6 +2610,7 @@ Technician,Teknisyen
 Technician state,Teknisyen durumu
 Telegram,Telegram
 Tender,İhale
+Tender / deal,İhale / anlaşma
 Tender Deadline,İhale son tarihi
 Tender No,İhale No
 Tender Source,İhale kaynağı

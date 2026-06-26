@@ -284,6 +284,7 @@ Base equivalent,Base equivalent
 Base salary,Base salary
 Base salary (UZS),Base salary (UZS)
 Base salary = 0,Base salary = 0
+Base total,Base total
 Basic rate,Basic rate
 Batch,Batch
 Batch Expiry,Batch Expiry
@@ -394,6 +395,7 @@ Changed,Changed
 Channel,Channel
 Charge via {provider},Charge via {provider}
 Chart of Accounts,Chart of Accounts
+Cheapest,Cheapest
 Checked in,Checked in
 Checking availability…,Checking availability…
 Checking readiness…,Checking readiness…
@@ -467,6 +469,7 @@ Company default,Company default
 Company email,Company email
 Company is required for an enabled Payroll Component Map.,Company is required for an enabled Payroll Component Map.
 Company is required.,Company is required.
+Compare supplier quotations,Compare supplier quotations
 Compensation,Compensation
 Compensation details are hidden — payroll access required.,Compensation details are hidden — payroll access required.
 Compensation policy,Compensation policy
@@ -522,6 +525,7 @@ Could not add stage.,Could not add stage.
 Could not check payment status.,Could not check payment status.
 Could not create contract.,Could not create contract.
 Could not load data health.,Could not load data health.
+Could not load quotations.,Could not load quotations.
 Could not load the HR overview.,Could not load the HR overview.
 Could not load the board.,Could not load the board.
 Could not load unmatched users.,Could not load unmatched users.
@@ -536,6 +540,7 @@ Count,Count
 Count:,Count:
 Counted qty,Counted qty
 Counterparty,Counterparty
+Countries,Countries
 Country,Country
 Coverage,Coverage
 Covered,Covered
@@ -1663,6 +1668,7 @@ No stock update,No stock update
 No stock warehouses,No stock warehouses
 No stocked items found,No stocked items found
 No summaries,No summaries
+No supplier quotations for this tender.,No supplier quotations for this tender.
 No suppliers,No suppliers
 No suppliers match that name,No suppliers match that name
 No template,No template
@@ -1945,6 +1951,7 @@ Pick a rule set…,Pick a rule set…
 Pick a source warehouse.,Pick a source warehouse.
 Pick a status.,Pick a status.
 Pick a supplier.,Pick a supplier.
+Pick a tender deal to compare quotations.,Pick a tender deal to compare quotations.
 Pick a valid date range.,Pick a valid date range.
 Pick a warehouse,Pick a warehouse
 Pick a warehouse to receive stock into.,Pick a warehouse to receive stock into.
@@ -2352,6 +2359,7 @@ Scrap / Rejects Qty,Scrap / Rejects Qty
 Scrap / rejects,Scrap / rejects
 Search,Search
 Search BOMs or finished goods…,Search BOMs or finished goods…
+Search a tender deal… ⌘K,Search a tender deal… ⌘K
 Search account…,Search account…
 Search asset tag…,Search asset tag…
 "Search by Work Order, Item, or Warehouse…","Search by Work Order, Item, or Warehouse…"
@@ -2498,6 +2506,7 @@ Soni (korobka),Soni (korobka)
 Source,Source
 Source warehouse,Source warehouse
 Source warehouse is required.,Source warehouse is required.
+Sourcing comparison,Sourcing comparison
 Spend,Spend
 Stabler Settings doctype does not exist. Run migrations first.,Stabler Settings doctype does not exist. Run migrations first.
 Staff with base salary = 0,Staff with base salary = 0
@@ -2599,6 +2608,7 @@ Sync now,Sync now
 System qty,System qty
 TIN,TIN
 Table,Table
+Tag Supplier Quotations to this deal to compare them here.,Tag Supplier Quotations to this deal to compare them here.
 Take Payment,Take Payment
 Target Remaining,Target Remaining
 Target WIP Warehouse,Target WIP Warehouse
@@ -2611,6 +2621,7 @@ Technician,Technician
 Technician state,Technician state
 Telegram,Telegram
 Tender,Tender
+Tender / deal,Tender / deal
 Tender Deadline,Tender Deadline
 Tender No,Tender No
 Tender Source,Tender Source

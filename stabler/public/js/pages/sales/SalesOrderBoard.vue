@@ -98,9 +98,12 @@ function openSo(name) {
 
 <template>
 	<div class="container-fluid py-3">
-		<div class="d-flex align-items-center mb-3">
+		<div class="d-flex align-items-center mb-3 gap-2">
 			<h2 class="mb-0">{{ t("Contract board") }}</h2>
-			<button type="button" class="btn btn-outline-secondary btn-sm ms-auto" @click="addStage">
+			<router-link to="/tender/sourcing" class="btn btn-outline-secondary btn-sm ms-auto">
+				<i class="ti ti-versions me-1"></i>{{ t("Sourcing comparison") }}
+			</router-link>
+			<button type="button" class="btn btn-outline-secondary btn-sm" @click="addStage">
 				<i class="ti ti-plus me-1"></i>{{ t("Add stage") }}
 			</button>
 		</div>
