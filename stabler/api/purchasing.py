@@ -1985,3 +1985,84 @@ def payables_cockpit(company: str):
 		"trend_8_weeks": trend,
 		"top_creditors": top_creditors_raw,
 	}
+
+
+# ──────────────────────────────────────────────────────────────────────────── #
+# Tender sourcing (F3) — compare Supplier Quotations collected for one tender.
+# ──────────────────────────────────────────────────────────────────────────── #
+@frappe.whitelist()
+def tender_quotations(deal: str) -> dict:
+	"""Supplier Quotations tagged to a CRM Deal, side-by-side for comparison.
+
+	Returns one row per quotation with the supplier's country and the base-currency
+	total (the apples-to-apples figure), flags the cheapest, and surfaces the
+	procurement-policy checks: at least 5 quotations from at least 2 countries.
+	Gated to the deal's company having the tender module enabled.
+	"""
+	if not frappe.db.exists("CRM Deal", deal):
+		frappe.throw(frappe._("Unknown deal: {0}").format(deal))
+	company = frappe.db.get_value("CRM Deal", deal, "company") or frappe.defaults.get_user_default("Company") or (
+		frappe.get_all("Company", pluck="name", limit=1) or [None]
+	)[0]
+	_require_company(company)
+
+	from stabler.stabler.doctype.stabler_settings.stabler_settings import module_map_for
+
+	if not module_map_for(company).get("tender"):
+		frappe.throw(frappe._("Tender module is not enabled for {0}.").format(company), frappe.PermissionError)
+
+	base_ccy = frappe.get_cached_value("Company", company, "default_currency")
+	if not frappe.db.has_column("Supplier Quotation", "custom_crm_deal"):
+		return {"rows": [], "base_currency": base_ccy, "count": 0, "countries": 0,
+		        "has_min_5": False, "has_2_countries": False}
+
+	sqs = frappe.get_all(
+		"Supplier Quotation",
+		filters={"custom_crm_deal": deal, "docstatus": ["<", 2]},
+		fields=[
+			"name", "supplier", "supplier_name", "currency", "grand_total",
+			"base_grand_total", "valid_till", "status", "transaction_date", "total_qty",
+		],
+		order_by="base_grand_total asc",
+		limit_page_length=0,
+	)
+	# Supplier → country (for the 2-country policy check).
+	suppliers = list({s["supplier"] for s in sqs if s.get("supplier")})
+	country_map = {}
+	if suppliers:
+		for s in frappe.get_all(
+			"Supplier", filters={"name": ["in", suppliers]}, fields=["name", "country"]
+		):
+			country_map[s["name"]] = s.get("country") or ""
+
+	rows = []
+	cheapest_base = None
+	for s in sqs:
+		base_total = flt(s.get("base_grand_total")) or flt(s.get("grand_total"))
+		if base_total and (cheapest_base is None or base_total < cheapest_base):
+			cheapest_base = base_total
+		rows.append({
+			"name": s["name"],
+			"supplier": s["supplier"],
+			"supplier_name": s.get("supplier_name") or s["supplier"],
+			"country": country_map.get(s["supplier"], ""),
+			"currency": s.get("currency"),
+			"grand_total": flt(s.get("grand_total")),
+			"base_total": base_total,
+			"valid_till": str(s.get("valid_till") or ""),
+			"status": s.get("status"),
+			"transaction_date": str(s.get("transaction_date") or ""),
+			"qty": flt(s.get("total_qty")),
+		})
+	for r in rows:
+		r["cheapest"] = bool(cheapest_base is not None and r["base_total"] == cheapest_base and r["base_total"] > 0)
+
+	countries = {r["country"] for r in rows if r["country"]}
+	return {
+		"rows": rows,
+		"base_currency": base_ccy,
+		"count": len(rows),
+		"countries": len(countries),
+		"has_min_5": len(rows) >= 5,
+		"has_2_countries": len(countries) >= 2,
+	}

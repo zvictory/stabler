@@ -26,3 +26,5 @@ stabler.patches.v25_purchase_dimension_fields
 stabler.patches.v26_employee_duty_supplement
 stabler.patches.v27_tender_deal_fields
 stabler.patches.v28_so_tender_fields
+stabler.patches.v29_lead_intake_fields
+stabler.patches.v30_supplier_quotation_deal
