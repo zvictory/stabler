@@ -120,9 +120,10 @@ def so_board(company: str) -> dict:
 @frappe.whitelist()
 def move_so_stage(name: str, stage: str) -> dict:
 	"""Park a Sales Order on a stage (drag-drop)."""
-	_require_tender()
-	if not frappe.db.exists("Sales Order", name):
+	company = frappe.db.get_value("Sales Order", name, "company")
+	if not company:
 		frappe.throw(_("Unknown Sales Order: {0}").format(name))
+	_require_tender(company)  # role + company-level tender flag
 	if not frappe.db.exists(_STAGE, stage):
 		frappe.throw(_("Unknown stage: {0}").format(stage))
 	if not frappe.has_permission("Sales Order", "write", name):
@@ -133,9 +134,10 @@ def move_so_stage(name: str, stage: str) -> dict:
 
 
 @frappe.whitelist()
-def so_stage_save(stage_name: str, position: int = 0, color: str = "", is_won: int = 0, is_closed: int = 0, old_name: str = "") -> dict:
+def so_stage_save(company: str, stage_name: str, position: int = 0, color: str = "", is_won: int = 0, is_closed: int = 0, old_name: str = "") -> dict:
 	"""Create or rename/update a board stage (manager-defined)."""
-	_require_tender()
+	_require_tender(company)
+	_require_company(company)
 	stage_name = (stage_name or "").strip()
 	if not stage_name:
 		frappe.throw(_("Stage name is required."))
@@ -153,18 +155,20 @@ def so_stage_save(stage_name: str, position: int = 0, color: str = "", is_won: i
 
 
 @frappe.whitelist()
-def so_stage_delete(stage_name: str) -> dict:
+def so_stage_delete(company: str, stage_name: str) -> dict:
 	"""Delete a stage. The doctype's on_trash guard blocks if SOs still sit in it."""
-	_require_tender()
+	_require_tender(company)
+	_require_company(company)
 	frappe.delete_doc(_STAGE, stage_name)  # raises if Sales Orders are parked here
 	frappe.db.commit()
 	return {"deleted": stage_name}
 
 
 @frappe.whitelist()
-def so_stage_reorder(names: str | list) -> dict:
+def so_stage_reorder(company: str, names: str | list) -> dict:
 	"""Persist column order from a list of stage names (left → right)."""
-	_require_tender()
+	_require_tender(company)
+	_require_company(company)
 	names = frappe.parse_json(names) if isinstance(names, str) else names
 	for idx, name in enumerate(names or [], start=1):
 		if frappe.db.exists(_STAGE, name):

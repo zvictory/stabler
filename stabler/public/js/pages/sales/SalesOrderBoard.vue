@@ -75,7 +75,7 @@ async function addStage() {
 	const name = (window.prompt(t("New stage name")) || "").trim();
 	if (!name) return;
 	try {
-		await call("stabler.api.tender.so_stage_save", { stage_name: name, position: stages.value.length + 1 });
+		await call("stabler.api.tender.so_stage_save", { company: activeCompany.value, stage_name: name, position: stages.value.length + 1 });
 		await load();
 	} catch (err) {
 		toast.error(err?.message || t("Could not add stage."));
@@ -85,7 +85,7 @@ async function deleteStage(s) {
 	const ok = await confirm({ title: t("Delete stage?"), body: s.stage_name, danger: true, confirmLabel: t("Delete") });
 	if (!ok) return;
 	try {
-		await call("stabler.api.tender.so_stage_delete", { stage_name: s.name });
+		await call("stabler.api.tender.so_stage_delete", { company: activeCompany.value, stage_name: s.name });
 		await load();
 	} catch (err) {
 		toast.error(err?.message || t("Stage still has Sales Orders — move them first."));
