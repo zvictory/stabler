@@ -76,12 +76,29 @@ def validate_exchange_rate(company: str, doc_currency: str, conversion_rate: flo
 	cbu_rate = flt(cbu_rate_doc[0].exchange_rate)
 	cbu_date = cbu_rate_doc[0].date
 
-	# Check for stale rate (older than 3 days)
+	# Staleness window is admin-configurable (Accounts Settings, set via the
+	# Posting Window page): `allow_stale` bypasses the check entirely — needed for
+	# back-dated corrections into periods the CBU feed never covered — and
+	# `stale_days` widens the default 3-day window. The +/-20% band below still
+	# guards against fat-finger rates regardless.
+	allow_stale = 0
+	stale_days = 3
+	try:
+		acc = frappe.get_cached_doc("Accounts Settings")
+		allow_stale = int(getattr(acc, "allow_stale", 0) or 0)
+		_sd = int(getattr(acc, "stale_days", 0) or 0)
+		if _sd > 0:
+			stale_days = _sd
+	except Exception:
+		pass
+
 	days_diff = (getdate(posting_date) - getdate(cbu_date)).days
-	if days_diff > 3:
+	if not allow_stale and days_diff > stale_days:
 		frappe.throw(
 			_("Stale exchange rate: the nearest CBU rate for {0} to {1} is from {2} ({3} days old). "
-			  "Must be within 3 days.").format(doc_currency, company_currency, cbu_date, days_diff),
+			  "Must be within {4} days (raise the window or enable 'allow stale' in "
+			  "Admin → Posting Window).").format(
+				doc_currency, company_currency, cbu_date, days_diff, stale_days),
 			frappe.ValidationError
 		)
 
