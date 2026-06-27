@@ -30,6 +30,9 @@ const statusFilter = ref("");
 const balances = ref({});
 const canAdvances = ref(true);
 const payAccounts = ref([]);
+const advanceCurrency = ref("");
+// Advance balances are held in the advance account's own (original) currency.
+const moneyOrig = (v) => formatMoney(v, advanceCurrency.value || currency.value, user.value.language);
 
 const statusFilterOptions = computed(() => [
 	{ value: "", label: t("All statuses") },
@@ -79,6 +82,13 @@ async function loadPayAccounts() {
 		payAccounts.value = await call("stabler.api.employee_advance.list_pay_accounts", { company: activeCompany.value });
 	} catch { payAccounts.value = []; }
 }
+async function loadAdvanceCurrency() {
+	if (!activeCompany.value || !canAdvances.value) return;
+	try {
+		const r = await call("stabler.api.employee_advance.advance_account", { company: activeCompany.value });
+		advanceCurrency.value = r?.currency || "";
+	} catch { advanceCurrency.value = ""; }
+}
 const balanceOf = (emp) => Number(balances.value[emp] || 0);
 
 let searchTimer = null;
@@ -89,6 +99,7 @@ function onSearchInput() {
 async function loadAll() {
 	await Promise.all([load(), loadBalances()]);
 	loadPayAccounts();
+	loadAdvanceCurrency();
 }
 onMounted(loadAll);
 watch(activeCompany, () => { selected.value = null; fin.value = null; loadAll(); });
@@ -229,11 +240,18 @@ function initials(name) {
 						>
 							<span class="avatar avatar-sm" :class="selected && selected.name === r.name ? '' : 'bg-blue-lt'">{{ initials(r.employee_name) }}</span>
 							<span class="flex-grow-1 text-truncate text-start">
-								<span class="d-block fw-semibold text-truncate">{{ r.employee_name }}</span>
+								<span class="d-block fw-semibold text-truncate">
+								{{ r.employee_name }}
+								<span
+									v-if="canAdvances"
+									class="font-monospace fw-normal ms-1"
+									:class="selected && selected.name === r.name ? 'text-white-50' : (balanceOf(r.name) > 0 ? 'text-orange' : 'text-secondary')"
+									:title="t('Advance outstanding')"
+								>· {{ moneyOrig(balanceOf(r.name)) }}</span>
+							</span>
 								<span class="d-block small" :class="selected && selected.name === r.name ? 'text-white-50' : 'text-secondary'">{{ r.name }} · {{ r.designation || "—" }}</span>
 							</span>
-							<span v-if="balanceOf(r.name) > 0" class="font-monospace small text-nowrap" :title="t('Advance outstanding')">{{ money(balanceOf(r.name)) }}</span>
-						</button>
+													</button>
 					</div>
 				</div>
 			</div>
