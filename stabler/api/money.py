@@ -1369,6 +1369,14 @@ def create_payment_entry(
 	# GL view is now computed — log what will actually hit the ledger (base
 	# amounts + difference_amount) before insert/submit can reject it.
 	_log_payment("computed", _payment_gl_snapshot(doc))
+	# Submitting a Receive against many invoices makes ERPNext book a tiny FX
+	# residual per invoice and msgprint "Exchange Gain/Loss booked through …" for
+	# each one. The bench returns those informational messages as HTTP 417, which
+	# the SPA client turns into a blocking red error even though the payment
+	# succeeded. Mute msgprints across insert/submit so the response stays a clean
+	# 200; the gain/loss Journal Entries are still created (correct accounting).
+	_prev_mute = frappe.flags.mute_msgprint
+	frappe.flags.mute_msgprint = True
 	try:
 		doc.insert(ignore_permissions=False)
 		if int(submit or 0):
@@ -1392,7 +1400,12 @@ def create_payment_entry(
 		snap = _payment_gl_snapshot(doc)
 		snap.update({"fn": "create_payment_entry", "error": str(e)})
 		_log_payment("error", snap)
-		raise
+		raise  # keep the real error's messages for the client
+	finally:
+		frappe.flags.mute_msgprint = _prev_mute
+	# Drop the informational FX-residual / debug messages so the SPA sees a clean
+	# success instead of a 417 flood. (Only reached on the success path.)
+	frappe.clear_messages()
 	_log_payment("ok", {"fn": "create_payment_entry", "name": doc.name, "docstatus": doc.docstatus})
 	return {
 		"name": doc.name,
@@ -1492,7 +1505,16 @@ def submit_payment_entry(name: str, modified: str | None = None):
 		frappe.throw("Payment Entry is already submitted.")
 	if doc.docstatus == 2:
 		frappe.throw("Payment Entry is cancelled and cannot be submitted.")
-	doc.submit()
+	# Mute ERPNext's informational "Exchange Gain/Loss booked through …" msgprints
+	# (one per reconciled invoice) so a multi-invoice submit returns a clean 200
+	# instead of a 417 flood the SPA renders as a blocking error.
+	_prev_mute = frappe.flags.mute_msgprint
+	frappe.flags.mute_msgprint = True
+	try:
+		doc.submit()
+	finally:
+		frappe.flags.mute_msgprint = _prev_mute
+	frappe.clear_messages()
 	return {"name": doc.name, "docstatus": doc.docstatus}
 
 
