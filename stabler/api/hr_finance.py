@@ -160,8 +160,8 @@ def employee_financials(company: str, employee: str) -> dict:
 		WHERE company = %(c)s AND party_type = 'Employee' AND party = %(e)s
 		  AND ifnull(is_cancelled, 0) = 0 {acc_clause}
 		GROUP BY account, account_currency
-		HAVING ABS(bal) > 0.005
-		ORDER BY ABS(bal) DESC
+		HAVING ABS(SUM(credit_in_account_currency) - SUM(debit_in_account_currency)) > 0.005
+		ORDER BY ABS(SUM(credit_in_account_currency) - SUM(debit_in_account_currency)) DESC
 		""",
 		params,
 		as_dict=True,
