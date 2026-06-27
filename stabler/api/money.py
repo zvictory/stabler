@@ -703,6 +703,7 @@ def journal_entry_detail(name: str):
 		"multi_currency": int(doc.multi_currency or 0),
 		"company": doc.company,
 		"docstatus": doc.docstatus,
+		"modified": str(doc.modified),
 		"accounts": [
 			{
 				"account": a.account,

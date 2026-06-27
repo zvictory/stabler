@@ -339,7 +339,7 @@ async function submitJE() {
 	if (!ok) return;
 	acting.value = true;
 	try {
-		await call("stabler.api.money.submit_journal_entry", { name: detail.value.name });
+		await call("stabler.api.money.submit_journal_entry", { name: detail.value.name, modified: detail.value.modified });
 		toast.success(t("Journal entry submitted."));
 		await load();
 		await select(detail.value.name);
@@ -360,7 +360,7 @@ async function cancelJE() {
 	if (!ok) return;
 	acting.value = true;
 	try {
-		await call("stabler.api.money.cancel_journal_entry", { name: detail.value.name });
+		await call("stabler.api.money.cancel_journal_entry", { name: detail.value.name, modified: detail.value.modified });
 		toast.success(t("Journal entry cancelled."));
 		await load();
 		await select(detail.value.name);
