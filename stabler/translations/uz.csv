@@ -2311,6 +2311,7 @@ SO number or customer…,
 SRE module unavailable: {0},SRE moduli mavjud emas: {0}
 SREs,SRE
 Salaries,Oyliklar
+Salary,Oylik
 Salary Slip {0} not found.,
 Salary and payroll summaries.,
 Salary payable,To'lanadigan oylik
@@ -2761,6 +2762,7 @@ Trade Marketing,Savdo marketingi
 Trade marketing claims and settlement tracking.,
 Transaction,
 Transaction Id,Tranzaksiya ID
+Transactions,Tranzaksiyalar
 Transfer,O'tkazma
 Transfer cancelled.,
 Transfer detail,O'tkazma tafsilotlari

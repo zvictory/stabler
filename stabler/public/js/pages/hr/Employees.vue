@@ -33,6 +33,8 @@ const payAccounts = ref([]);
 const advanceCurrency = ref("");
 // Advance balances are held in the advance account's own (original) currency.
 const moneyOrig = (v) => formatMoney(v, advanceCurrency.value || currency.value, user.value.language);
+// Detail-pane figures render in the selected employee's display currency (UZS).
+const finMoney = (v) => formatMoney(v, (fin.value && fin.value.display_currency) || advanceCurrency.value || currency.value, user.value.language);
 
 const statusFilterOptions = computed(() => [
 	{ value: "", label: t("All statuses") },
@@ -125,6 +127,29 @@ async function select(r) {
 	}
 }
 function openProfile(name) { router.push(`/hr/employees/${name}`); }
+
+// Customer-style ledger: attach a running balance to each movement, anchored to
+// the true current outstanding so it stays correct even if the list is truncated.
+// `sign(+1)` = debit raises the balance (advance); `sign(-1)` = credit raises it
+// (salary payable). Movements arrive newest-first.
+function ledgerWithBalance(movements, outstanding, sign) {
+	let run = Number(outstanding || 0);
+	return (movements || []).map((m) => {
+		const row = { ...m, balance: run };
+		run -= sign * ((Number(m.debit) || 0) - (Number(m.credit) || 0));
+		return row;
+	});
+}
+// One vendor-style ledger across both accounts. Effect on the net balance is
+// (credit - debit), so sign = -1 in the helper. Each row also gets a human label.
+const SOURCE_LABEL = { Advance: () => t("Advance"), Salary: () => t("Salary") };
+const txLedger = computed(() => {
+	if (!fin.value) return [];
+	return ledgerWithBalance(fin.value.transactions, fin.value.net_owed, -1).map((r) => ({
+		...r,
+		label: (SOURCE_LABEL[r.source] || (() => r.source || "—"))(),
+	}));
+});
 
 // ── Pay advance modal ────────────────────────────────────────────────────────
 const payOpen = ref(false);
@@ -278,74 +303,38 @@ function initials(name) {
 
 					<div v-if="finLoading" class="text-center py-4"><span class="spinner-border text-primary"></span></div>
 					<template v-else-if="fin">
-						<!-- Balances -->
-						<div class="row g-3 mb-3">
-							<div class="col-6">
-								<div class="card"><div class="card-body py-2">
-									<div class="text-secondary small">{{ t("Advance outstanding") }}</div>
-									<div class="h3 mb-0 font-monospace" :class="fin.advance.outstanding > 0 ? 'text-orange' : ''">{{ money(fin.advance.outstanding) }}</div>
-								</div></div>
-							</div>
-							<div class="col-6">
-								<div class="card"><div class="card-body py-2">
-									<div class="text-secondary small">{{ t("Salary payable") }}</div>
-									<div class="h3 mb-0 font-monospace" :class="fin.payable.outstanding > 0 ? 'text-green' : ''">{{ money(fin.payable.outstanding) }}</div>
-								</div></div>
+						<!-- Net balance (vendor-style): + = we owe the worker, − = they owe us -->
+						<div class="card mb-3">
+							<div class="card-body py-2 d-flex align-items-center flex-wrap gap-3">
+								<div>
+									<div class="text-secondary small">{{ fin.net_owed >= 0 ? t("We owe") : t("Owes us") }}</div>
+									<div class="h2 mb-0 font-monospace" :class="fin.net_owed >= 0 ? 'text-green' : 'text-orange'">{{ finMoney(Math.abs(fin.net_owed)) }}</div>
+								</div>
+								<div class="ms-auto text-end small text-secondary">
+									<div>{{ t("Salary payable") }}: <span class="font-monospace">{{ finMoney(fin.payable.outstanding) }}</span></div>
+									<div>{{ t("Advance outstanding") }}: <span class="font-monospace">{{ finMoney(fin.advance.outstanding) }}</span></div>
+								</div>
 							</div>
 						</div>
 
-						<!-- Salaries (net emitted) -->
+						<!-- One unified ledger across both accounts -->
 						<div class="card mb-3">
-							<div class="card-header"><h4 class="card-title mb-0"><i class="ti ti-cash-banknote me-1"></i>{{ t("Salaries") }}</h4></div>
+							<div class="card-header"><h4 class="card-title mb-0"><i class="ti ti-list me-1"></i>{{ t("Transactions") }}</h4></div>
 							<div class="card-body p-0">
-								<table v-if="fin.salaries.length" class="table card-table">
-									<thead><tr><th>{{ t("Date") }}</th><th class="text-end">{{ t("Net") }}</th></tr></thead>
+								<table v-if="txLedger.length" class="table card-table">
+									<thead><tr><th>{{ t("Date") }}</th><th>{{ t("Type") }}</th><th>{{ t("Voucher") }}</th><th class="text-end">{{ t("Debit") }}</th><th class="text-end">{{ t("Credit") }}</th><th class="text-end">{{ t("Balance") }}</th></tr></thead>
 									<tbody>
-										<tr v-for="s in fin.salaries" :key="s.name">
-											<td>{{ s.payroll_date ? formatDate(s.payroll_date) : "—" }}</td>
-											<td class="text-end font-monospace">{{ money(s.amount) }}</td>
+										<tr v-for="(m, i) in txLedger" :key="i">
+											<td class="text-nowrap">{{ m.posting_date ? formatDate(m.posting_date) : "—" }}</td>
+											<td><span class="badge" :class="m.source === 'Advance' ? 'bg-orange-lt' : 'bg-green-lt'">{{ m.label }}</span></td>
+											<td class="small text-secondary text-truncate" style="max-width:110px">{{ m.voucher_no }}</td>
+											<td class="text-end font-monospace">{{ m.debit ? finMoney(m.debit) : "—" }}</td>
+											<td class="text-end font-monospace">{{ m.credit ? finMoney(m.credit) : "—" }}</td>
+											<td class="text-end font-monospace fw-bold" :class="m.balance < 0 ? 'text-orange' : ''">{{ finMoney(m.balance) }}</td>
 										</tr>
 									</tbody>
 								</table>
-								<div v-else class="p-3 text-secondary small">{{ t("No salaries pushed yet.") }}</div>
-							</div>
-						</div>
-
-						<!-- Advances -->
-						<div class="card mb-3">
-							<div class="card-header"><h4 class="card-title mb-0"><i class="ti ti-wallet me-1"></i>{{ t("Advances") }}</h4></div>
-							<div class="card-body p-0">
-								<table v-if="fin.advance.movements.length" class="table card-table">
-									<thead><tr><th>{{ t("Date") }}</th><th>{{ t("Voucher") }}</th><th class="text-end">{{ t("Given") }}</th><th class="text-end">{{ t("Recovered") }}</th></tr></thead>
-									<tbody>
-										<tr v-for="(m, i) in fin.advance.movements" :key="i">
-											<td>{{ m.posting_date ? formatDate(m.posting_date) : "—" }}</td>
-											<td class="small text-secondary">{{ m.voucher_no }}</td>
-											<td class="text-end font-monospace">{{ m.debit ? money(m.debit) : "—" }}</td>
-											<td class="text-end font-monospace">{{ m.credit ? money(m.credit) : "—" }}</td>
-										</tr>
-									</tbody>
-								</table>
-								<div v-else class="p-3 text-secondary small">{{ t("No advances yet.") }}</div>
-							</div>
-						</div>
-
-						<!-- Salary payments -->
-						<div class="card mb-3">
-							<div class="card-header"><h4 class="card-title mb-0"><i class="ti ti-receipt me-1"></i>{{ t("Salary payments") }}</h4></div>
-							<div class="card-body p-0">
-								<table v-if="fin.payable.movements.length" class="table card-table">
-									<thead><tr><th>{{ t("Date") }}</th><th>{{ t("Voucher") }}</th><th class="text-end">{{ t("Accrued") }}</th><th class="text-end">{{ t("Paid") }}</th></tr></thead>
-									<tbody>
-										<tr v-for="(m, i) in fin.payable.movements" :key="i">
-											<td>{{ m.posting_date ? formatDate(m.posting_date) : "—" }}</td>
-											<td class="small text-secondary">{{ m.voucher_no }}</td>
-											<td class="text-end font-monospace">{{ m.credit ? money(m.credit) : "—" }}</td>
-											<td class="text-end font-monospace">{{ m.debit ? money(m.debit) : "—" }}</td>
-										</tr>
-									</tbody>
-								</table>
-								<div v-else class="p-3 text-secondary small">{{ t("No salary payments yet.") }}</div>
+								<div v-else class="p-3 text-secondary small">{{ t("No transactions yet.") }}</div>
 							</div>
 						</div>
 

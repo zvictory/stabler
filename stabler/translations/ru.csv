@@ -2318,6 +2318,7 @@ SO number or customer…,
 SRE module unavailable: {0},Модуль SRE недоступен: {0}
 SREs,SRE
 Salaries,Зарплаты
+Salary,Зарплата
 Salary Slip {0} not found.,
 Salary and payroll summaries.,
 Salary payable,Зарплата к выплате
@@ -2768,6 +2769,7 @@ Trade Marketing,Торговый маркетинг
 Trade marketing claims and settlement tracking.,
 Transaction,
 Transaction Id,Идентификатор транзакции
+Transactions,Транзакции
 Transfer,Передача
 Transfer cancelled.,
 Transfer detail,Детали перевода

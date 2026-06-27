@@ -1680,6 +1680,7 @@ No template,Şablon yok
 No tickets for this unit.,Bu birim için talep yok.
 No transactions,İşlem yok
 No transactions in this period.,Bu dönemde işlem yok.
+No transactions yet.,Henüz işlem yok.
 No travel,
 No unbilled service visits,
 No unmatched users. All punches are mapped.,Eşleşmemiş kullanıcı yok. Tüm kayıtlar eşleşti.
@@ -2298,6 +2299,7 @@ SO number or customer…,
 SRE module unavailable: {0},SRE modülü kullanılamıyor: {0}
 SREs,SRE
 Salaries,Maaşlar
+Salary,Maaş
 Salary Slip {0} not found.,
 Salary and payroll summaries.,
 Salary payable,Ödenecek maaş
@@ -2744,6 +2746,7 @@ Trade Marketing,Ticari Pazarlama
 Trade marketing claims and settlement tracking.,
 Transaction,
 Transaction Id,İşlem No
+Transactions,İşlemler
 Transfer,Transfer
 Transfer cancelled.,
 Transfer detail,Transfer detayı

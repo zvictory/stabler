@@ -2308,6 +2308,7 @@ SO number or customer…,SO number or customer…
 SRE module unavailable: {0},SRE module unavailable: {0}
 SREs,SREs
 Salaries,Salaries
+Salary,Salary
 Salary Slip {0} not found.,Salary Slip {0} not found.
 Salary and payroll summaries.,Salary and payroll summaries.
 Salary payable,Salary payable
@@ -2755,6 +2756,7 @@ Trade Marketing,Trade Marketing
 Trade marketing claims and settlement tracking.,Trade marketing claims and settlement tracking.
 Transaction,Transaction
 Transaction Id,Transaction Id
+Transactions,Transactions
 Transfer,Transfer
 Transfer cancelled.,Transfer cancelled.
 Transfer detail,Transfer detail
