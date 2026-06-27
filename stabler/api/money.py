@@ -745,8 +745,14 @@ def _clean_je_rows(accounts, company: str) -> tuple[list[dict], bool]:
 	if not isinstance(accounts, list):
 		frappe.throw("accounts must be a list.")
 
-	total_debit = 0.0
-	total_credit = 0.0
+	base_currency = frappe.db.get_value("Company", company, "default_currency") or ""
+	# Balance must be checked in BASE currency: a foreign line carries its amount in
+	# the account currency (e.g. 1,333,000 UZS) plus a per-line exchange_rate
+	# (base per 1 account unit). Summing the raw account amounts across currencies
+	# is meaningless (UZS vs USD) — convert each leg to base first.
+	total_base_debit = 0.0
+	total_base_credit = 0.0
+	saw_foreign = False
 	cleaned: list[dict] = []
 	for row in accounts:
 		row = row or {}
@@ -772,13 +778,18 @@ def _clean_je_rows(accounts, company: str) -> tuple[list[dict], bool]:
 			frappe.throw(f"Row {idx}: account '{acc}' is not in company '{company}'.")
 		if acc_doc.is_group:
 			frappe.throw(f"Row {idx}: '{acc}' is a group account.")
-		total_debit += debit
-		total_credit += credit
-		# Per-line FX rate (account currency → company currency). For base-currency
-		# lines it's 1; for a foreign line the UI sends the rate it displayed. A
+		# Per-line FX rate (base currency per 1 account-currency unit). For
+		# base-currency lines it's 1; for a foreign line the UI sends the line rate
+		# it derived (e.g. 1 / 12 335.02 for a UZS line in a USD-base company). A
 		# 0/blank value lets ERPNext fetch its own rate. The system-wide FX hook on
 		# JE before_validate seals any sub-unit base residual.
 		xr = flt(row.get("exchange_rate"))
+		ccy = acc_doc.account_currency or ""
+		if ccy and ccy != base_currency:
+			saw_foreign = True
+		rate = xr if xr > 0 else 1.0
+		total_base_debit += debit * rate
+		total_base_credit += credit * rate
 		cleaned.append(
 			{
 				"account": acc,
@@ -789,21 +800,25 @@ def _clean_je_rows(accounts, company: str) -> tuple[list[dict], bool]:
 				"exchange_rate": xr if xr > 0 else None,
 				"reference_type": row.get("reference_type") or None,
 				"reference_name": row.get("reference_name") or None,
-				"_ccy": acc_doc.account_currency or "",
+				"_ccy": ccy,
 			}
 		)
 
 	if len(cleaned) < 2:
 		frappe.throw("At least two non-empty account lines are required.")
-	# Allow a 1-cent rounding wobble — doc.validate() catches real mismatches.
-	if abs(total_debit - total_credit) > 0.01:
+	# Compare in base currency. Allow a wider band for multi-currency entries — the
+	# before_validate FX hook seals sub-unit base residuals; the strict 1-cent check
+	# only applies to single-currency entries. doc.validate() catches real mismatches.
+	tol = 1.0 if saw_foreign else 0.01
+	if abs(total_base_debit - total_base_credit) > tol:
 		frappe.throw(
-			f"Debit ({total_debit:.2f}) and credit ({total_credit:.2f}) must balance."
+			f"Debit ({total_base_debit:.2f}) and credit ({total_base_credit:.2f}) "
+			f"must balance (base {base_currency})."
 		)
 
-	base_currency = frappe.db.get_value("Company", company, "default_currency") or ""
-	any_non_base = any(r.pop("_ccy", "") != base_currency for r in cleaned)
-	return cleaned, any_non_base
+	for r in cleaned:
+		r.pop("_ccy", "")
+	return cleaned, saw_foreign
 
 
 @frappe.whitelist()
