@@ -50,6 +50,7 @@ Accrual failed.,Accrual failed.
 Accrue,Accrue
 Accrue period,Accrue period
 Accrue this period?,Accrue this period?
+Accrued,Accrued
 Accrued {0} employees.,Accrued {0} employees.
 Acquisition report,Acquisition report
 Action,Action
@@ -271,6 +272,7 @@ Bal,Bal
 Balance,Balance
 Balance (Account Currency),Balance (Account Currency)
 Balanced,Balanced
+"Balances, salaries, advances and payments appear here.","Balances, salaries, advances and payments appear here."
 Bank Account '{0}' not found.,Bank Account '{0}' not found.
 Bank account,Bank account
 Bank account does not belong to company '{0}'.,Bank account does not belong to company '{0}'.
@@ -525,6 +527,7 @@ Could not add stage.,Could not add stage.
 Could not check payment status.,Could not check payment status.
 Could not create contract.,Could not create contract.
 Could not load data health.,Could not load data health.
+Could not load employee finances.,Could not load employee finances.
 Could not load quotations.,Could not load quotations.
 Could not load repost status.,Could not load repost status.
 Could not load the HR overview.,Could not load the HR overview.
@@ -1122,6 +1125,7 @@ Generate and submit,Generate and submit
 Generate drafts,Generate drafts
 Generated salary slips,Generated salary slips
 Geolocation is not available in this browser.,Geolocation is not available in this browser.
+Given,Given
 Go to Sales Orders,Go to Sales Orders
 Good Produced Qty,Good Produced Qty
 Google Drive libraries are not installed on the server. ,Google Drive libraries are not installed on the server. 
@@ -1531,6 +1535,7 @@ No Stock Entries with Asl Belgisi items found.,No Stock Entries with Asl Belgisi
 No access,No access
 No account rows,No account rows
 No activity recorded yet.,No activity recorded yet.
+No advances yet.,No advances yet.
 No attendance for this month.,No attendance for this month.
 No attendance records,No attendance records
 No attendance summaries for this period,No attendance summaries for this period
@@ -1562,6 +1567,7 @@ No default Bank or Cash account configured for company {0}.,No default Bank or C
 No default {0} account found to copy parent from.,No default {0} account found to copy parent from.
 No department,No department
 No earnings,No earnings
+No employees found.,No employees found.
 No employees yet,No employees yet
 No employees.,No employees.
 No employee–device mappings,No employee–device mappings
@@ -1651,6 +1657,8 @@ No reservations for this warehouse,No reservations for this warehouse
 No revaluations yet,No revaluations yet
 No routes yet,No routes yet
 No rule sets,No rule sets
+No salaries pushed yet.,No salaries pushed yet.
+No salary payments yet.,No salary payments yet.
 No salary slips yet,No salary slips yet
 No sales data found,No sales data found
 No sales orders in this range,No sales orders in this range
@@ -1772,6 +1780,7 @@ Open exceptions,Open exceptions
 Open matrix,Open matrix
 Open payment link,Open payment link
 Open pipeline,Open pipeline
+Open profile,Open profile
 Open tickets,Open tickets
 Opened,Opened
 Opening,Opening
@@ -2298,8 +2307,10 @@ SFA,SFA
 SO number or customer…,SO number or customer…
 SRE module unavailable: {0},SRE module unavailable: {0}
 SREs,SREs
+Salaries,Salaries
 Salary Slip {0} not found.,Salary Slip {0} not found.
 Salary and payroll summaries.,Salary and payroll summaries.
+Salary payable,Salary payable
 Salary payments,Salary payments
 Salary slip,Salary slip
 Salary slips,Salary slips
@@ -2431,6 +2442,7 @@ Select a worker,Select a worker
 Select account…,Select account…
 Select an account…,Select an account…
 Select an active leaf warehouse for returns.,Select an active leaf warehouse for returns.
+Select an employee,Select an employee
 Select bank account…,Select bank account…
 Select city…,Select city…
 Select company,Select company

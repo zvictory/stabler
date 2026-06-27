@@ -50,6 +50,7 @@ Accrual failed.,Ҳисоблаш муваффақиятсиз.
 Accrue,Ҳисоблаш
 Accrue period,Даврни ҳисоблаш
 Accrue this period?,Бу давр ҳисоблансинми?
+Accrued,Ҳисобланган
 Accrued {0} employees.,{0} ходим ҳисобланди.
 Acquisition report,Жалб қилиш ҳисоботи
 Action,Амал
@@ -273,6 +274,7 @@ Bal,Қолдиқ
 Balance,Баланс
 Balance (Account Currency),Баланс (Ҳисоб валютаси)
 Balanced,Баланс муштаси
+"Balances, salaries, advances and payments appear here.","Бу ерда баланслар, ойликлар, аванслар ва тўловлар кўринади."
 Bank Account '{0}' not found.,
 Bank account,Банк ҳисоби
 Bank account does not belong to company '{0}'.,
@@ -527,6 +529,7 @@ Could not add stage.,Босқич қўшиб бўлмади.
 Could not check payment status.,Тўлов ҳолатини текшириб бўлмади.
 Could not create contract.,Шартнома яратиб бўлмади.
 Could not load data health.,Маълумотлар соғлиғини юклаб бўлмади.
+Could not load employee finances.,Ходим молиясини юклаб бўлмади.
 Could not load quotations.,Котировкаларни юклаб бўлмади.
 Could not load repost status.,Ҳолатни юклаб бўлмади.
 Could not load the HR overview.,HR умумий кўринишини юклаб бўлмади.
@@ -1124,6 +1127,7 @@ Generate and submit,Яратиш ва тасдиқлаш
 Generate drafts,Қоралама яратиш
 Generated salary slips,Яратилган варақалар
 Geolocation is not available in this browser.,Бу браузерда геолокация мавжуд эмас.
+Given,Берилган
 Go to Sales Orders,Сотув буюртмасига ўтиш
 Good Produced Qty,
 Google Drive libraries are not installed on the server. ,
@@ -1533,6 +1537,7 @@ No Stock Entries with Asl Belgisi items found.,Asl Belgisi товарлари б
 No access,
 No account rows,
 No activity recorded yet.,
+No advances yet.,Ҳали аванслар йўқ.
 No attendance for this month.,Бу ой учун давомат йўқ.
 No attendance records,Давомат ёзувлари йўқ
 No attendance summaries for this period,Бу давр учун давомат ҳисоботлари йўқ
@@ -1564,6 +1569,7 @@ No default Bank or Cash account configured for company {0}.,Компания {0}
 No default {0} account found to copy parent from.,
 No department,Бўлимсиз
 No earnings,Ҳисобланганлар йўқ
+No employees found.,Ходимлар топилмади.
 No employees yet,Ҳозирча ходимлар йўқ
 No employees.,Ходимлар йўқ.
 No employee–device mappings,
@@ -1653,6 +1659,8 @@ No reservations for this warehouse,
 No revaluations yet,
 No routes yet,Ҳали маршрутлар йўқ
 No rule sets,
+No salaries pushed yet.,Ҳали ойликлар юборилмаган.
+No salary payments yet.,Ҳали ойлик тўловлари йўқ.
 No salary slips yet,Ҳали маош варақалари йўқ
 No sales data found,
 No sales orders in this range,Бу диапазонда сотув буюртмалари йўқ
@@ -1774,6 +1782,7 @@ Open exceptions,
 Open matrix,Жадвални очиш
 Open payment link,Тўлов ҳаволасини очиш
 Open pipeline,Очиқ воронка
+Open profile,Профилни очиш
 Open tickets,Очиқ тикетлар
 Opened,Очилди
 Opening,Очилиш
@@ -2301,8 +2310,10 @@ SFA,
 SO number or customer…,
 SRE module unavailable: {0},SRE модули ишламайди: {0}
 SREs,SRE
+Salaries,Ойликлар
 Salary Slip {0} not found.,
 Salary and payroll summaries.,
+Salary payable,Тўланадиган ойлик
 Salary payments,Ойлик тўловлари
 Salary slip,Маош варақаси
 Salary slips,
@@ -2434,6 +2445,7 @@ Select a worker,Ходимни танланг
 Select account…,Ҳисоб танланг…
 Select an account…,Ҳисобни танланг…
 Select an active leaf warehouse for returns.,
+Select an employee,Ходимни танланг
 Select bank account…,Банк ҳисобини танланг…
 Select city…,Шаҳар танланг…
 Select company,Компанияни танланг

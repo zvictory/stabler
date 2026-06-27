@@ -53,6 +53,7 @@ Accrual failed.,Не удалось начислить.
 Accrue,Начислить
 Accrue period,Начислить период
 Accrue this period?,Начислить этот период?
+Accrued,Начислено
 Accrued {0} employees.,Начислено {0} сотрудников.
 Acquisition report,Отчёт по привлечению
 Action,Действие
@@ -278,6 +279,7 @@ Bal,Остаток
 Balance,Остаток
 Balance (Account Currency),Остаток (валюта счета)
 Balanced,Сбалансировано
+"Balances, salaries, advances and payments appear here.","Здесь показываются балансы, зарплаты, авансы и выплаты."
 Bank Account '{0}' not found.,
 Bank account,Банковский счёт
 Bank account does not belong to company '{0}'.,
@@ -533,6 +535,7 @@ Could not add stage.,Не удалось добавить этап.
 Could not check payment status.,Не удалось проверить статус платежа.
 Could not create contract.,Не удалось создать контракт.
 Could not load data health.,Не удалось загрузить качество данных.
+Could not load employee finances.,Не удалось загрузить финансы сотрудника.
 Could not load quotations.,Не удалось загрузить котировки.
 Could not load repost status.,Не удалось загрузить статус.
 Could not load the HR overview.,Не удалось загрузить HR обзор.
@@ -1131,6 +1134,7 @@ Generate and submit,Создать и провести
 Generate drafts,Создать черновики
 Generated salary slips,Создано листков
 Geolocation is not available in this browser.,Геолокация недоступна в этом браузере.
+Given,Выдано
 Go to Sales Orders,Перейти к заказам на продажу
 Good Produced Qty,
 Google Drive libraries are not installed on the server. ,
@@ -1540,6 +1544,7 @@ No Stock Entries with Asl Belgisi items found.,Складских движени
 No access,
 No account rows,
 No activity recorded yet.,
+No advances yet.,Авансов пока нет.
 No attendance for this month.,Нет посещаемости за этот месяц.
 No attendance records,Нет записей о посещаемости
 No attendance summaries for this period,Нет сводок по табелю за этот период
@@ -1571,6 +1576,7 @@ No default Bank or Cash account configured for company {0}.,Для компан�
 No default {0} account found to copy parent from.,
 No department,Без отдела
 No earnings,Нет начислений
+No employees found.,Сотрудники не найдены.
 No employees yet,Сотрудников пока нет
 No employees.,Нет сотрудников.
 No employee–device mappings,
@@ -1660,6 +1666,8 @@ No reservations for this warehouse,
 No revaluations yet,
 No routes yet,Пока нет маршрутов
 No rule sets,
+No salaries pushed yet.,Зарплаты ещё не отправлены.
+No salary payments yet.,Выплат зарплаты пока нет.
 No salary slips yet,Нет расчётных листков
 No sales data found,
 No sales orders in this range,Заказов на продажу в этом диапазоне нет
@@ -1781,6 +1789,7 @@ Open exceptions,
 Open matrix,Открыть табель
 Open payment link,Открыть ссылку для оплаты
 Open pipeline,Открытая воронка
+Open profile,Открыть профиль
 Open tickets,Открытые заявки
 Opened,Открыта
 Opening,Начисление
@@ -2308,8 +2317,10 @@ SFA,
 SO number or customer…,
 SRE module unavailable: {0},Модуль SRE недоступен: {0}
 SREs,SRE
+Salaries,Зарплаты
 Salary Slip {0} not found.,
 Salary and payroll summaries.,
+Salary payable,Зарплата к выплате
 Salary payments,Выплата зарплаты
 Salary slip,Расчётный листок
 Salary slips,
@@ -2441,6 +2452,7 @@ Select a worker,Выберите сотрудника
 Select account…,Выберите счёт…
 Select an account…,Выберите счёт…
 Select an active leaf warehouse for returns.,
+Select an employee,Выберите сотрудника
 Select bank account…,Выберите счёт…
 Select city…,Выберите город…
 Select company,Выберите компанию

@@ -50,6 +50,7 @@ Accrual failed.,Hisoblash muvaffaqiyatsiz.
 Accrue,Hisoblash
 Accrue period,Davrni hisoblash
 Accrue this period?,Bu davr hisoblansinmi?
+Accrued,Hisoblangan
 Accrued {0} employees.,{0} xodim hisoblandi.
 Acquisition report,Jalb qilish hisoboti
 Action,Amal
@@ -273,6 +274,7 @@ Bal,Qoldiq
 Balance,Balans
 Balance (Account Currency),Balans (hisob valyutasi)
 Balanced,Muvozanatli
+"Balances, salaries, advances and payments appear here.","Bu yerda balanslar, oyliklar, avanslar va to'lovlar ko'rinadi."
 Bank Account '{0}' not found.,
 Bank account,Bank hisobi
 Bank account does not belong to company '{0}'.,
@@ -527,6 +529,7 @@ Could not add stage.,Bosqich qo'shib bo'lmadi.
 Could not check payment status.,To‘lov holatini tekshirib bo‘lmadi.
 Could not create contract.,Shartnoma yaratib bo'lmadi.
 Could not load data health.,Ma'lumotlar sog'lig'ini yuklab bo'lmadi.
+Could not load employee finances.,Xodim moliyasini yuklab bo'lmadi.
 Could not load quotations.,Kotirovkalarni yuklab bo'lmadi.
 Could not load repost status.,Holatni yuklab bo'lmadi.
 Could not load the HR overview.,HR umumiy ko'rinishini yuklab bo'lmadi.
@@ -1124,6 +1127,7 @@ Generate and submit,Yaratish va tasdiqlash
 Generate drafts,Qoralama yaratish
 Generated salary slips,Yaratilgan varaqalar
 Geolocation is not available in this browser.,Bu brauzerda geolokatsiya mavjud emas.
+Given,Berilgan
 Go to Sales Orders,Sotuv buyurtmalariga o'ting
 Good Produced Qty,
 Google Drive libraries are not installed on the server. ,
@@ -1533,6 +1537,7 @@ No Stock Entries with Asl Belgisi items found.,Asl Belgisi tovarlaridan foydalan
 No access,
 No account rows,
 No activity recorded yet.,
+No advances yet.,Hali avanslar yo'q.
 No attendance for this month.,Bu oy uchun davomat yo'q.
 No attendance records,Davomat yozuvlari yo'q
 No attendance summaries for this period,Bu davr uchun davomat hisobotlari yo'q
@@ -1564,6 +1569,7 @@ No default Bank or Cash account configured for company {0}.,{0} kompaniyasi uchu
 No default {0} account found to copy parent from.,
 No department,Bo'limsiz
 No earnings,Hisoblanganlar yo'q
+No employees found.,Xodimlar topilmadi.
 No employees yet,Hozircha xodimlar yo'q
 No employees.,Xodimlar yo'q.
 No employee–device mappings,
@@ -1653,6 +1659,8 @@ No reservations for this warehouse,
 No revaluations yet,
 No routes yet,Marshrutlar hali yo'q
 No rule sets,
+No salaries pushed yet.,Hali oyliklar yuborilmagan.
+No salary payments yet.,Hali oylik to'lovlari yo'q.
 No salary slips yet,Hali maosh varaqalari yo'q
 No sales data found,
 No sales orders in this range,Bu oraliqda sotuv buyurtmalari yo'q
@@ -1774,6 +1782,7 @@ Open exceptions,
 Open matrix,Jadvalni ochish
 Open payment link,To‘lov havolasini ochish
 Open pipeline,Ochiq voronka
+Open profile,Profilni ochish
 Open tickets,Ochiq tiketlar
 Opened,Ochildi
 Opening,Ochish
@@ -2301,8 +2310,10 @@ SFA,
 SO number or customer…,
 SRE module unavailable: {0},SRE moduli mavjud emas: {0}
 SREs,SRE
+Salaries,Oyliklar
 Salary Slip {0} not found.,
 Salary and payroll summaries.,
+Salary payable,To'lanadigan oylik
 Salary payments,Oylik to'lovlari
 Salary slip,Maosh varaqasi
 Salary slips,
@@ -2434,6 +2445,7 @@ Select a worker,Xodimni tanlang
 Select account…,Hisob tanlang…
 Select an account…,Hisobni tanlang…
 Select an active leaf warehouse for returns.,
+Select an employee,Xodimni tanlang
 Select bank account…,Bank hisobini tanlang…
 Select city…,Shahar tanlang…
 Select company,Kompaniya tanlang

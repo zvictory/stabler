@@ -50,6 +50,7 @@ Accrual failed.,Tahakkuk başarısız.
 Accrue,Tahakkuk
 Accrue period,Dönemi tahakkuk ettir
 Accrue this period?,Bu dönem tahakkuk ettirilsin mi?
+Accrued,Tahakkuk
 Accrued {0} employees.,{0} çalışan tahakkuk etti.
 Acquisition report,Kazanım raporu
 Action,İşlem
@@ -271,6 +272,7 @@ Bal,Bakiye
 Balance,Bakiye
 Balance (Account Currency),Bakiye (Hesap Para Birimi)
 Balanced,Dengeli
+"Balances, salaries, advances and payments appear here.","Bakiyeler, maaşlar, avanslar ve ödemeler burada görünür."
 Bank Account '{0}' not found.,
 Bank account,Banka hesabı
 Bank account does not belong to company '{0}'.,
@@ -522,6 +524,7 @@ Could not add stage.,Aşama eklenemedi.
 Could not check payment status.,Ödeme durumu kontrol edilemedi.
 Could not create contract.,Sözleşme oluşturulamadı.
 Could not load data health.,Veri sağlığı yüklenemedi.
+Could not load employee finances.,Çalışan finansı yüklenemedi.
 Could not load quotations.,Teklifler yüklenemedi.
 Could not load repost status.,Durum yüklenemedi.
 Could not load the HR overview.,İK genel bakışı yüklenemedi.
@@ -1117,6 +1120,7 @@ Generate and submit,Oluştur ve onayla
 Generate drafts,Taslak oluştur
 Generated salary slips,Oluşturulan bordro fişleri
 Geolocation is not available in this browser.,Bu tarayıcıda konum mevcut değil.
+Given,Verilen
 Go to Sales Orders,Satış Siparişlerine Git
 Good Produced Qty,
 Google Drive libraries are not installed on the server. ,
@@ -1525,6 +1529,7 @@ No Stock Entries with Asl Belgisi items found.,Asl Belgisi kalemleri içeren Sto
 No access,
 No account rows,
 No activity recorded yet.,
+No advances yet.,Henüz avans yok.
 No attendance for this month.,Bu ay için devam kaydı yok.
 No attendance records,Devam kaydı yok
 No attendance summaries for this period,Bu dönem için devam özeti yok
@@ -1556,6 +1561,7 @@ No default Bank or Cash account configured for company {0}.,{0} şirketi için v
 No default {0} account found to copy parent from.,
 No department,Bölümsüz
 No earnings,Kazanç yok
+No employees found.,Çalışan bulunamadı.
 No employees yet,Henüz çalışan yok
 No employees.,Personel yok.
 No employee–device mappings,
@@ -1645,6 +1651,8 @@ No reservations for this warehouse,
 No revaluations yet,
 No routes yet,Henüz rota yok
 No rule sets,
+No salaries pushed yet.,Henüz maaş gönderilmedi.
+No salary payments yet.,Henüz maaş ödemesi yok.
 No salary slips yet,Henüz bordro fişi yok
 No sales data found,
 No sales orders in this range,Bu aralıkta satış siparişi yok
@@ -1764,6 +1772,7 @@ Open exceptions,
 Open matrix,Tabloyu aç
 Open payment link,Ödeme bağlantısını aç
 Open pipeline,Açık satış hattı
+Open profile,Profili aç
 Open tickets,Açık talepler
 Opened,Açıldı
 Opening,Açılış
@@ -2288,8 +2297,10 @@ SFA,
 SO number or customer…,
 SRE module unavailable: {0},SRE modülü kullanılamıyor: {0}
 SREs,SRE
+Salaries,Maaşlar
 Salary Slip {0} not found.,
 Salary and payroll summaries.,
+Salary payable,Ödenecek maaş
 Salary payments,Maaş ödemeleri
 Salary slip,Bordro Fişi
 Salary slips,
@@ -2421,6 +2432,7 @@ Select a worker,Bir çalışan seçin
 Select account…,Hesap seçin…
 Select an account…,Bir hesap seçin…
 Select an active leaf warehouse for returns.,
+Select an employee,Bir çalışan seçin
 Select bank account…,Banka hesabı seçin…
 Select city…,Şehir seçin…
 Select company,Firma seçin
