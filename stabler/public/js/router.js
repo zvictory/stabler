@@ -134,6 +134,7 @@ import AdminCompanies from "./pages/admin/Companies.vue";
 import AdminCompliance from "./pages/admin/Compliance.vue";
 import AdminAccessReview from "./pages/admin/AccessReview.vue";
 import AdminPostingWindow from "./pages/admin/PostingWindow.vue";
+import AdminRepostMonitor from "./pages/admin/RepostMonitor.vue";
 import NotFound from "./pages/NotFound.vue";
 import ServerError from "./pages/ServerError.vue";
 
@@ -378,6 +379,7 @@ const routes = [
 			{ path: "companies", name: "admin-companies", component: AdminCompanies, meta: { title: t("Companies") } },
 			{ path: "compliance", name: "admin-compliance", component: AdminCompliance, meta: { title: t("Compliance") } },
 			{ path: "posting-window", name: "admin-posting-window", component: AdminPostingWindow, meta: { title: t("Posting Window") } },
+			{ path: "repost-queue", name: "admin-repost-queue", component: AdminRepostMonitor, meta: { title: t("Repost queue") } },
 		],
 	},
 	{ path: "/error", name: "server-error", component: ServerError, meta: { title: t("Error") } },

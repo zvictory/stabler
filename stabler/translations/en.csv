@@ -526,6 +526,7 @@ Could not check payment status.,Could not check payment status.
 Could not create contract.,Could not create contract.
 Could not load data health.,Could not load data health.
 Could not load quotations.,Could not load quotations.
+Could not load repost status.,Could not load repost status.
 Could not load the HR overview.,Could not load the HR overview.
 Could not load the board.,Could not load the board.
 Could not load unmatched users.,Could not load unmatched users.
@@ -535,6 +536,7 @@ Could not read your location.,Could not read your location.
 Could not resolve payroll period: {0},Could not resolve payroll period: {0}
 Could not save period.,Could not save period.
 Could not start the online payment.,Could not start the online payment.
+Could not start the processor.,Could not start the processor.
 Couldn't work out the cash amount to pay — check the exchange rate and the paying account.,Couldn't work out the cash amount to pay — check the exchange rate and the paying account.
 Count,Count
 Count:,Count:
@@ -831,6 +833,7 @@ Equipment is required.,Equipment is required.
 Equipment name is required.,Equipment name is required.
 Equity,Equity
 Error,Error
+Errors,Errors
 Estimated value,Estimated value
 Event ID,Event ID
 "Event ID, device user or employee…","Event ID, device user or employee…"
@@ -1733,6 +1736,7 @@ Off-box (Google Drive),Off-box (Google Drive)
 Office,Office
 Office branch or location,Office branch or location
 Oldest (days),Oldest (days)
+Oldest queued,Oldest queued
 Oldest reservation,Oldest reservation
 On,On
 On Leave,On Leave
@@ -2072,6 +2076,7 @@ Qty,Qty
 Qty must be greater than zero.,Qty must be greater than zero.
 Quantity,Quantity
 Quantity must be positive.,Quantity must be positive.
+Queue is clear. Nothing pending.,Queue is clear. Nothing pending.
 Queue is empty,Queue is empty
 Quotation,Quotation
 Quotation number or customer…,Quotation number or customer…
@@ -2093,6 +2098,10 @@ Raw gate events are immutable — they represent exactly what the device reporte
 Raw material cost,Raw material cost
 Raw materials,Raw materials
 Re-fetch balances for all accounts,Re-fetch balances for all accounts
+Re-queue,Re-queue
+Re-queue stuck,Re-queue stuck
+Re-queue stuck reposts?,Re-queue stuck reposts?
+Re-queued {0} reposts.,Re-queued {0} reposts.
 Reactivation,Reactivation
 Read,Read
 Read-only,Read-only
@@ -2196,6 +2205,10 @@ Report Issue,Report Issue
 Reported At,Reported At
 Reported By,Reported By
 Reports,Reports
+Repost,Repost
+Repost processor queued. Refresh in a moment.,Repost processor queued. Refresh in a moment.
+Repost queue,Repost queue
+Reposts stuck 'In Progress' for over 30 minutes will be set back to Queued so the processor resumes.,Reposts stuck 'In Progress' for over 30 minutes will be set back to Queued so the processor resumes.
 Reprocess,Reprocess
 Reprocess this event,Reprocess this event
 Request,Request
@@ -2212,6 +2225,7 @@ Reserved Stock,Reserved Stock
 Reserved qty,Reserved qty
 Reserved value,Reserved value
 Reset email sent.,Reset email sent.
+Reset failed.,Reset failed.
 Reset password,Reset password
 Reset password?,Reset password?
 Resolve,Resolve
@@ -2277,6 +2291,7 @@ Rule set saved.,Rule set saved.
 Rule sets,Rule sets
 Run,Run
 Run a payroll cycle to generate salary slips for assigned employees.,Run a payroll cycle to generate salary slips for assigned employees.
+Run now,Run now
 Run payroll,Run payroll
 Run-rate,Run-rate
 SFA,SFA
@@ -2556,6 +2571,7 @@ Stop,Stop
 Stop Work Order,Stop Work Order
 Stop this Work Order? You can resume it later.,Stop this Work Order? You can resume it later.
 Storefront,Storefront
+Stuck (min),Stuck (min)
 Subject,Subject
 Subject is required.,Subject is required.
 Submit,Submit
@@ -2635,6 +2651,7 @@ That date is already a holiday.,That date is already a holiday.
 That voucher is not linked to this transaction.,That voucher is not linked to this transaction.
 The Compliance module is disabled for this company.,The Compliance module is disabled for this company.
 The GL ledger scan detected {0} issues that require immediate attention.,The GL ledger scan detected {0} issues that require immediate attention.
+"The queue is blocked — {0} repost(s) stuck. Re-queue them, then Run now.","The queue is blocked — {0} repost(s) stuck. Re-queue them, then Run now."
 The referenced document is cancelled and cannot be approved.,The referenced document is cancelled and cannot be approved.
 The referenced document no longer exists.,The referenced document no longer exists.
 There are currently no work orders assigned to you.,There are currently no work orders assigned to you.

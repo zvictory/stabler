@@ -534,6 +534,7 @@ Could not check payment status.,Не удалось проверить стат�
 Could not create contract.,Не удалось создать контракт.
 Could not load data health.,Не удалось загрузить качество данных.
 Could not load quotations.,Не удалось загрузить котировки.
+Could not load repost status.,Не удалось загрузить статус.
 Could not load the HR overview.,Не удалось загрузить HR обзор.
 Could not load the board.,Не удалось загрузить доску.
 Could not load unmatched users.,Не удалось загрузить несопоставленных пользователей.
@@ -543,6 +544,7 @@ Could not read your location.,Не удалось определить мест�
 Could not resolve payroll period: {0},
 Could not save period.,Не удалось сохранить период.
 Could not start the online payment.,Не удалось начать онлайн-оплату.
+Could not start the processor.,Не удалось запустить процессор.
 Couldn't work out the cash amount to pay — check the exchange rate and the paying account.,
 Count,Количество
 Count:,Количество:
@@ -840,6 +842,7 @@ Equipment is required.,Оборудование обязательно.
 Equipment name is required.,Название оборудования обязательно.
 Equity,Капитал
 Error,Ошибка
+Errors,Ошибки
 Estimated value,Расчётная стоимость
 Event ID,
 "Event ID, device user or employee…",
@@ -1742,6 +1745,7 @@ Off-box (Google Drive),Вне сервера (Google Drive)
 Office,
 Office branch or location,
 Oldest (days),Старейший (дн.)
+Oldest queued,Самый старый в очереди
 Oldest reservation,Старейшая резервация
 On,Вкл
 On Leave,В отпуске
@@ -2082,6 +2086,7 @@ Qty,Кол-во
 Qty must be greater than zero.,
 Quantity,Количество
 Quantity must be positive.,Количество должно быть положительным.
+Queue is clear. Nothing pending.,Очередь пуста. Ничего не ожидает.
 Queue is empty,
 Quotation,Предложение
 Quotation number or customer…,
@@ -2103,6 +2108,10 @@ Raw gate events are immutable — they represent exactly what the device reporte
 Raw material cost,Стоимость сырья
 Raw materials,Сырьё
 Re-fetch balances for all accounts,Повторно загрузить остатки для всех счётов
+Re-queue,В очередь
+Re-queue stuck,Перезапустить зависшие
+Re-queue stuck reposts?,Перезапустить зависшие пересчёты?
+Re-queued {0} reposts.,Возвращено в очередь: {0}.
 Reactivation,Реактивация
 Read,Читать
 Read-only,Только чтение
@@ -2206,6 +2215,10 @@ Report Issue,Сообщить о проблеме
 Reported At,Сообщено в
 Reported By,Сообщено
 Reports,Отчёты
+Repost,Пересчёт
+Repost processor queued. Refresh in a moment.,Процессор поставлен в очередь. Обновите чуть позже.
+Repost queue,Очередь пересчёта
+Reposts stuck 'In Progress' for over 30 minutes will be set back to Queued so the processor resumes.,Пересчёты в статусе «In Progress» более 30 минут будут возвращены в очередь.
 Reprocess,
 Reprocess this event,
 Request,Заявка
@@ -2222,6 +2235,7 @@ Reserved Stock,Зарезервированный запас
 Reserved qty,Кол-во в резерве
 Reserved value,Стоимость резерва
 Reset email sent.,Сообщение сброса отправлено.
+Reset failed.,Не удалось сбросить.
 Reset password,Сбросить пароль
 Reset password?,
 Resolve,
@@ -2287,6 +2301,7 @@ Rule set saved.,
 Rule sets,
 Run,Запустить
 Run a payroll cycle to generate salary slips for assigned employees.,"Запустите расчёт, чтобы сгенерировать листки для сотрудников."
+Run now,Запустить сейчас
 Run payroll,Запустить расчёт
 Run-rate,Оборот/мес
 SFA,
@@ -2566,6 +2581,7 @@ Stop,Остановить
 Stop Work Order,
 Stop this Work Order? You can resume it later.,Остановить этот производственный заказ? Можно будет возобновить позже.
 Storefront,Витрина
+Stuck (min),Завис (мин)
 Subject,Тема
 Subject is required.,
 Submit,Отправить
@@ -2645,6 +2661,7 @@ That date is already a holiday.,Эта дата уже праздник.
 That voucher is not linked to this transaction.,
 The Compliance module is disabled for this company.,Модуль соответствия отключён для этой компании.
 The GL ledger scan detected {0} issues that require immediate attention.,
+"The queue is blocked — {0} repost(s) stuck. Re-queue them, then Run now.","Очередь заблокирована — зависло {0}. Перезапустите их, затем «Запустить сейчас»."
 The referenced document is cancelled and cannot be approved.,
 The referenced document no longer exists.,
 There are currently no work orders assigned to you.,

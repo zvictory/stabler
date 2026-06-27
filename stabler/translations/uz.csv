@@ -528,6 +528,7 @@ Could not check payment status.,To‘lov holatini tekshirib bo‘lmadi.
 Could not create contract.,Shartnoma yaratib bo'lmadi.
 Could not load data health.,Ma'lumotlar sog'lig'ini yuklab bo'lmadi.
 Could not load quotations.,Kotirovkalarni yuklab bo'lmadi.
+Could not load repost status.,Holatni yuklab bo'lmadi.
 Could not load the HR overview.,HR umumiy ko'rinishini yuklab bo'lmadi.
 Could not load the board.,Doskani yuklab bo'lmadi.
 Could not load unmatched users.,Bog'lanmagan foydalanuvchilarni yuklab bo'lmadi.
@@ -537,6 +538,7 @@ Could not read your location.,Joylashuvni aniqlab bo'lmadi.
 Could not resolve payroll period: {0},
 Could not save period.,Davrni saqlab bo'lmadi.
 Could not start the online payment.,Onlayn to‘lovni boshlab bo‘lmadi.
+Could not start the processor.,Protsessorni ishga tushirib bo'lmadi.
 Couldn't work out the cash amount to pay — check the exchange rate and the paying account.,
 Count,Miqdori
 Count:,Miqdori:
@@ -833,6 +835,7 @@ Equipment is required.,Jihozlar talab qilinadi.
 Equipment name is required.,Jihozning nomi talab qilinadi.
 Equity,Kapital
 Error,Xato
+Errors,Xatolar
 Estimated value,Taxmin qilingan qiymat
 Event ID,
 "Event ID, device user or employee…",
@@ -1735,6 +1738,7 @@ Off-box (Google Drive),Server tashqarisi (Google Drive)
 Office,
 Office branch or location,
 Oldest (days),Eng eski (kun)
+Oldest queued,Eng eski navbatdagi
 Oldest reservation,Eng eski zahira
 On,Yoniq
 On Leave,Ta'tilda
@@ -2075,6 +2079,7 @@ Qty,Miqdori
 Qty must be greater than zero.,
 Quantity,Miqdor
 Quantity must be positive.,Miqdor musbat bo'lishi kerak.
+Queue is clear. Nothing pending.,Navbat bo'sh. Kutilayotgan narsa yo'q.
 Queue is empty,
 Quotation,Taklif
 Quotation number or customer…,
@@ -2096,6 +2101,10 @@ Raw gate events are immutable — they represent exactly what the device reporte
 Raw material cost,Xom ashyo xarajati
 Raw materials,Xom ashyo
 Re-fetch balances for all accounts,Barcha hisoblar uchun balansni qayta olish
+Re-queue,Qayta navbatga
+Re-queue stuck,Osilganni qayta navbatga
+Re-queue stuck reposts?,Osilgan qayta hisoblashlar qayta navbatga qo'yilsinmi?
+Re-queued {0} reposts.,{0} ta qayta navbatga qo'yildi.
 Reactivation,Qayta faollashtirish
 Read,O'qish
 Read-only,Faqat o'qish
@@ -2199,6 +2208,10 @@ Report Issue,Muammoni xabar qilish
 Reported At,Xabar qilish vaqti
 Reported By,Kimga xabar qilindi
 Reports,Hisobotlar
+Repost,Qayta hisoblash
+Repost processor queued. Refresh in a moment.,Protsessor navbatga qo'yildi. Birozdan so'ng yangilang.
+Repost queue,Qayta hisoblash navbati
+Reposts stuck 'In Progress' for over 30 minutes will be set back to Queued so the processor resumes.,30 daqiqadan ko'p 'In Progress'da turgan qayta hisoblashlar qayta navbatga qaytariladi.
 Reprocess,
 Reprocess this event,
 Request,Ariza
@@ -2215,6 +2228,7 @@ Reserved Stock,Zahiralangan tovar
 Reserved qty,Zahira miqdori
 Reserved value,Zahira qiymati
 Reset email sent.,Parolni tiklash elektron xati yuborildi.
+Reset failed.,Qayta o'rnatib bo'lmadi.
 Reset password,Parolni tiklash
 Reset password?,
 Resolve,
@@ -2280,6 +2294,7 @@ Rule set saved.,
 Rule sets,
 Run,Ishga tushirish
 Run a payroll cycle to generate salary slips for assigned employees.,Tayinlangan xodimlar uchun maosh varaqalarini yaratish uchun hisoblashni ishga tushiring.
+Run now,Hozir ishga tushirish
 Run payroll,Maoshni hisoblash
 Run-rate,Oylik aylanma
 SFA,
@@ -2559,6 +2574,7 @@ Stop,To'xtatish
 Stop Work Order,
 Stop this Work Order? You can resume it later.,Bu buyurtmani to'xtatasizmi? Keyin davom ettirsa bo'ladi.
 Storefront,Do'kon ko'rinishi
+Stuck (min),Osilgan (daq)
 Subject,Mavzu
 Subject is required.,
 Submit,Tasdiqlash
@@ -2638,6 +2654,7 @@ That date is already a holiday.,Bu sana allaqachon bayram.
 That voucher is not linked to this transaction.,
 The Compliance module is disabled for this company.,Bu kompaniya uchun Muvofiqlik moduli o'chirilgan.
 The GL ledger scan detected {0} issues that require immediate attention.,
+"The queue is blocked — {0} repost(s) stuck. Re-queue them, then Run now.","Navbat bloklangan — {0} ta osilgan. Ularni qayta navbatga qo'ying, so'ng 'Hozir ishga tushirish'."
 The referenced document is cancelled and cannot be approved.,
 The referenced document no longer exists.,
 There are currently no work orders assigned to you.,

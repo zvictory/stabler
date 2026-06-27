@@ -523,6 +523,7 @@ Could not check payment status.,Ödeme durumu kontrol edilemedi.
 Could not create contract.,Sözleşme oluşturulamadı.
 Could not load data health.,Veri sağlığı yüklenemedi.
 Could not load quotations.,Teklifler yüklenemedi.
+Could not load repost status.,Durum yüklenemedi.
 Could not load the HR overview.,İK genel bakışı yüklenemedi.
 Could not load the board.,Pano yüklenemedi.
 Could not load unmatched users.,Eşleşmemiş kullanıcılar yüklenemedi.
@@ -532,6 +533,7 @@ Could not read your location.,Konumunuz okunamadı.
 Could not resolve payroll period: {0},
 Could not save period.,Dönem kaydedilemedi.
 Could not start the online payment.,Çevrimiçi ödeme başlatılamadı.
+Could not start the processor.,İşlemci başlatılamadı.
 Couldn't work out the cash amount to pay — check the exchange rate and the paying account.,
 Count,Adet
 Count:,Adet:
@@ -826,6 +828,7 @@ Equipment is required.,Ekipman zorunludur.
 Equipment name is required.,Ekipman adı zorunludur.
 Equity,Öz sermaye
 Error,Hata
+Errors,Hatalar
 Estimated value,Tahmini değer
 Event ID,
 "Event ID, device user or employee…",
@@ -1726,6 +1729,7 @@ Off-box (Google Drive),Sunucu dışı (Google Drive)
 Office,
 Office branch or location,
 Oldest (days),En eski (gün)
+Oldest queued,En eski kuyrukta
 Oldest reservation,En eski rezervasyon
 On,Açık
 On Leave,İzinde
@@ -2064,6 +2068,7 @@ Qty,Miktar
 Qty must be greater than zero.,
 Quantity,Miktar
 Quantity must be positive.,Miktar pozitif olmalıdır.
+Queue is clear. Nothing pending.,Kuyruk temiz. Bekleyen yok.
 Queue is empty,
 Quotation,Teklif
 Quotation number or customer…,
@@ -2085,6 +2090,10 @@ Raw gate events are immutable — they represent exactly what the device reporte
 Raw material cost,Hammadde maliyeti
 Raw materials,Hammaddeler
 Re-fetch balances for all accounts,Tüm hesapların bakiyelerini yeniden çek
+Re-queue,Kuyruğa al
+Re-queue stuck,Takılıyı kuyruğa al
+Re-queue stuck reposts?,Takılı yeniden hesaplamalar kuyruğa alınsın mı?
+Re-queued {0} reposts.,{0} adet kuyruğa alındı.
 Reactivation,Yeniden etkinleştirme
 Read,Oku
 Read-only,Salt okunur
@@ -2187,6 +2196,10 @@ Report Issue,Sorun Bildir
 Reported At,Bildirildiği Yer
 Reported By,Bildiren
 Reports,Raporlar
+Repost,Yeniden hesaplama
+Repost processor queued. Refresh in a moment.,İşlemci kuyruğa alındı. Birazdan yenileyin.
+Repost queue,Yeniden hesaplama kuyruğu
+Reposts stuck 'In Progress' for over 30 minutes will be set back to Queued so the processor resumes.,30 dakikadan uzun 'In Progress' kalan yeniden hesaplamalar tekrar kuyruğa alınır.
 Reprocess,
 Reprocess this event,
 Request,Talep
@@ -2203,6 +2216,7 @@ Reserved Stock,Rezerve Stok
 Reserved qty,Rezerve miktarı
 Reserved value,Rezerve değeri
 Reset email sent.,Sıfırlama e-postası gönderildi.
+Reset failed.,Sıfırlama başarısız.
 Reset password,Şifreyi sıfırla
 Reset password?,
 Resolve,
@@ -2267,6 +2281,7 @@ Rule set saved.,
 Rule sets,
 Run,Çalıştır
 Run a payroll cycle to generate salary slips for assigned employees.,Atanmış çalışanlar için bordro fişleri oluşturmak üzere bir bordro döngüsü çalıştırın.
+Run now,Şimdi çalıştır
 Run payroll,Bordroyu Çalıştır
 Run-rate,Aylık ciro
 SFA,
@@ -2545,6 +2560,7 @@ Stop,Durdur
 Stop Work Order,
 Stop this Work Order? You can resume it later.,Bu İş Emri durdurulsun mu? Daha sonra devam edebilirsiniz.
 Storefront,Mağaza Vitrini
+Stuck (min),Takılı (dk)
 Subject,Konu
 Subject is required.,
 Submit,Onayla
@@ -2624,6 +2640,7 @@ That date is already a holiday.,Bu tarih zaten tatil.
 That voucher is not linked to this transaction.,
 The Compliance module is disabled for this company.,Bu şirket için Uyumluluk modülü devre dışı.
 The GL ledger scan detected {0} issues that require immediate attention.,
+"The queue is blocked — {0} repost(s) stuck. Re-queue them, then Run now.",Kuyruk bloke — {0} takılı. Kuyruğa alıp 'Şimdi çalıştır' deyin.
 The referenced document is cancelled and cannot be approved.,
 The referenced document no longer exists.,
 There are currently no work orders assigned to you.,

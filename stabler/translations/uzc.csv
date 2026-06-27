@@ -528,6 +528,7 @@ Could not check payment status.,Тўлов ҳолатини текшириб б�
 Could not create contract.,Шартнома яратиб бўлмади.
 Could not load data health.,Маълумотлар соғлиғини юклаб бўлмади.
 Could not load quotations.,Котировкаларни юклаб бўлмади.
+Could not load repost status.,Ҳолатни юклаб бўлмади.
 Could not load the HR overview.,HR умумий кўринишини юклаб бўлмади.
 Could not load the board.,Доскани юклаб бўлмади.
 Could not load unmatched users.,Боғланмаган фойдаланувчиларни юклаб бўлмади.
@@ -537,6 +538,7 @@ Could not read your location.,Жойлашувни аниқлаб бўлмади
 Could not resolve payroll period: {0},
 Could not save period.,Даврни сақлаб бўлмади.
 Could not start the online payment.,Онлайн тўловни бошлаб бўлмади.
+Could not start the processor.,Процессорни ишга тушириб бўлмади.
 Couldn't work out the cash amount to pay — check the exchange rate and the paying account.,
 Count,Миқдори
 Count:,Миқдори:
@@ -833,6 +835,7 @@ Equipment is required.,Ускуна қўлланилиши керак.
 Equipment name is required.,Ускуна номи қўлланилиши керак.
 Equity,Капитал
 Error,Хато
+Errors,Хатолар
 Estimated value,Баҳоланган қиймат
 Event ID,
 "Event ID, device user or employee…",
@@ -1735,6 +1738,7 @@ Off-box (Google Drive),Сервер ташқариси (Google Drive)
 Office,
 Office branch or location,
 Oldest (days),Энг эски (кун)
+Oldest queued,Энг эски навбатдаги
 Oldest reservation,Энг эски захира
 On,Ёниқ
 On Leave,Таътилда
@@ -2075,6 +2079,7 @@ Qty,Миқдори
 Qty must be greater than zero.,
 Quantity,Миқдор
 Quantity must be positive.,Миқдор мусбат бўлиши керак.
+Queue is clear. Nothing pending.,Навбат бўш. Кутилаётган нарса йўқ.
 Queue is empty,
 Quotation,Нарх таклифи
 Quotation number or customer…,
@@ -2096,6 +2101,10 @@ Raw gate events are immutable — they represent exactly what the device reporte
 Raw material cost,Хом ашё харажати
 Raw materials,Хом ашё
 Re-fetch balances for all accounts,Барча ҳисобларнинг қолдиқларини қайта олиш
+Re-queue,Қайта навбатга
+Re-queue stuck,Осилганни қайта навбатга
+Re-queue stuck reposts?,Осилган қайта ҳисоблашлар қайта навбатга қўйилсинми?
+Re-queued {0} reposts.,{0} та қайта навбатга қўйилди.
 Reactivation,Қайта фаоллаштириш
 Read,Ўқиш
 Read-only,Фақат ўқиш
@@ -2199,6 +2208,10 @@ Report Issue,Мушаммасни қайд қилиш
 Reported At,Қайд қилинган вақти
 Reported By,Қайд қилинган
 Reports,Ҳисоботлар
+Repost,Қайта ҳисоблаш
+Repost processor queued. Refresh in a moment.,Процессор навбатга қўйилди. Бироздан сўнг янгиланг.
+Repost queue,Қайта ҳисоблаш навбати
+Reposts stuck 'In Progress' for over 30 minutes will be set back to Queued so the processor resumes.,30 дақиқадан кўп 'In Progress'да турган қайта ҳисоблашлар қайта навбатга қайтарилади.
 Reprocess,
 Reprocess this event,
 Request,Ариза
@@ -2215,6 +2228,7 @@ Reserved Stock,Захираланган товар
 Reserved qty,Захира миқдори
 Reserved value,Захира қиймати
 Reset email sent.,Электрон почта янгилаш йўлланди.
+Reset failed.,Қайта ўрнатиб бўлмади.
 Reset password,Паролни янгилаш
 Reset password?,
 Resolve,
@@ -2280,6 +2294,7 @@ Rule set saved.,
 Rule sets,
 Run,Ишга тушириш
 Run a payroll cycle to generate salary slips for assigned employees.,Тайинланган ходимлар учун маош варақаларини яратиш учун ҳисоблашни ишга туширинг.
+Run now,Ҳозир ишга тушириш
 Run payroll,Маошни ҳисоблаш
 Run-rate,Ойлик айланма
 SFA,
@@ -2559,6 +2574,7 @@ Stop,Тўхтатиш
 Stop Work Order,
 Stop this Work Order? You can resume it later.,Бу буюртмани тўхтатасизми? Кейин давом эттирса бўлади.
 Storefront,Дўкон саҳнаси
+Stuck (min),Осилган (дақ)
 Subject,Мавзу
 Subject is required.,
 Submit,Тасдиқлаш
@@ -2638,6 +2654,7 @@ That date is already a holiday.,Бу сана аллақачон байрам.
 That voucher is not linked to this transaction.,
 The Compliance module is disabled for this company.,Мувофиқлик модули бу компанияда ўчирилган.
 The GL ledger scan detected {0} issues that require immediate attention.,
+"The queue is blocked — {0} repost(s) stuck. Re-queue them, then Run now.","Навбат бloкланган — {0} та осилган. Уларни қайта навбатга қўйинг, сўнг 'Ҳозир ишга тушириш'."
 The referenced document is cancelled and cannot be approved.,
 The referenced document no longer exists.,
 There are currently no work orders assigned to you.,
