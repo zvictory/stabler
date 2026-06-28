@@ -307,6 +307,38 @@ def stock_ledger(
 
 
 @frappe.whitelist()
+def item_valuation_history(company, item_code, warehouse=None, limit=500):
+	"""Return the full valuation history for a single item, company-wide (or
+	filtered to one warehouse when *warehouse* is given).  Ordered ASC so the
+	chart x-axis runs old → new without client-side reversal."""
+	_require_company(company)
+	conds = ["sle.company = %(company)s", "sle.is_cancelled = 0", "sle.item_code = %(item_code)s"]
+	params = {"company": company, "item_code": item_code, "limit": int(limit)}
+	if warehouse:
+		conds.append("sle.warehouse = %(warehouse)s")
+		params["warehouse"] = warehouse
+	where = " AND ".join(conds)
+	return frappe.db.sql(
+		f"""
+		SELECT sle.name, sle.posting_date, sle.posting_time,
+		       sle.item_code, i.item_name, sle.warehouse, w.warehouse_name,
+		       sle.voucher_type, sle.voucher_no,
+		       sle.actual_qty, sle.qty_after_transaction,
+		       sle.incoming_rate, sle.valuation_rate,
+		       sle.stock_value, sle.stock_value_difference, sle.stock_uom
+		FROM `tabStock Ledger Entry` sle
+		LEFT JOIN `tabItem` i ON i.name = sle.item_code
+		LEFT JOIN `tabWarehouse` w ON w.name = sle.warehouse
+		WHERE {where}
+		ORDER BY sle.posting_date ASC, sle.posting_time ASC, sle.creation ASC
+		LIMIT %(limit)s
+		""",
+		params,
+		as_dict=True,
+	)
+
+
+@frappe.whitelist()
 def list_item_groups(limit: int = 200):
 	return frappe.db.sql(
 		"""

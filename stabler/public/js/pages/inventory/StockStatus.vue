@@ -8,6 +8,7 @@ import { formatMoney } from "../../composables/money.js";
 import EmptyState from "../../components/EmptyState.vue";
 import { t } from "../../composables/i18n.js";
 import Select from "../../components/Select.vue";
+import ItemValuationDrawer from "../../components/ItemValuationDrawer.vue";
 
 const session = useSession();
 const route = useRoute();
@@ -116,6 +117,30 @@ async function selectWarehouse(value) {
 		await router.replace({ path: "/inventory/stock-status", query: { warehouse: selectedWarehouse.value } });
 	}
 	await loadStock();
+}
+
+// ── Item valuation drill-down ─────────────────────────────────────────────────
+const drillOpen = ref(false);
+const drillLoading = ref(false);
+const drillItem = ref(null);
+const drillHistory = ref(null);
+
+async function openItemDrill(item) {
+	drillItem.value = item;
+	drillOpen.value = true;
+	drillLoading.value = true;
+	drillHistory.value = null;
+	try {
+		drillHistory.value = await call("stabler.api.inventory.item_valuation_history", {
+			company: activeCompany.value,
+			item_code: item.item_code,
+			// warehouse intentionally omitted → company-wide history (all warehouses)
+		});
+	} catch (err) {
+		drillHistory.value = { error: err?.message || t("Failed to load valuation history.") };
+	} finally {
+		drillLoading.value = false;
+	}
 }
 
 onMounted(loadWarehouses);
@@ -279,7 +304,12 @@ watch(
 							</tr>
 						</thead>
 						<tbody>
-							<tr v-for="item in filteredItems" :key="item.item_code">
+							<tr
+								v-for="item in filteredItems"
+								:key="item.item_code"
+								style="cursor: pointer"
+								@click="openItemDrill(item)"
+							>
 								<td>
 									<div class="fw-semibold">{{ item.item_name || item.item_code }}</div>
 									<div class="small text-secondary font-monospace">{{ item.item_code }}</div>
@@ -298,5 +328,13 @@ watch(
 				</div>
 			</div>
 		</div>
+		<ItemValuationDrawer
+			:open="drillOpen"
+			:loading="drillLoading"
+			:item="drillItem"
+			:history="drillHistory"
+			:currency="currency"
+			@close="drillOpen = false"
+		/>
 	</div>
 </template>
