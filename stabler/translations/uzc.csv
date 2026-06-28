@@ -1000,6 +1000,7 @@ Failed to load ticket.,Мурожаатни юклаб бўлмади.
 Failed to load transfer detail.,Ўтказма тафсилотларини юклашда хатолик.
 Failed to load transfers.,Ўтказмаларни юклашда хатолик.
 Failed to load unbilled visits.,Ҳисобланмаган ташрифларни юклаб бўлмади.
+Failed to load valuation history.,Баҳолаш тарихини юклашда хатолик.
 Failed to load van stock.,Ўтувчи қоймонасини юклаб бўла олмади.
 Failed to load visit.,Сўроғини юклаб бўла олмади.
 Failed to load warehouses.,Омборларни юклаб бўла олмади.
@@ -1676,6 +1677,7 @@ No stock entries yet,Ҳали қор ёзувлари йўқ
 No stock in any warehouse for this company.,Бу компания учун ҳеч қайси оммабойда қор йўқ.
 No stock in this warehouse,
 No stock in this warehouse.,Бу омборда захира йўқ.
+No stock ledger entries found for this item.,Бу товар бўйича ҳаракатлар топилмади.
 No stock moves in this range,Бу диапазонда қор харакатлари йўқ
 No stock update,Омбор ҳаракатсиз
 No stock warehouses,
@@ -1693,6 +1695,7 @@ No travel,
 No unbilled service visits,
 No unmatched users. All punches are mapped.,Боғланмаган фойдаланувчилар йўқ. Барча белгилашлар боғланган.
 No valid rows found.,Яроқли қаторлар топилмади.
+No valuation history.,Баҳолаш тарихи мавжуд эмас.
 No van stock yet,Ҳали машина қори йўқ
 No verified restore on record. A backup you have never restored is not a backup you can trust — test one and record it.,
 No visits,Ташрифлар йўқ
@@ -1762,6 +1765,7 @@ One or more lines exceed available stock. Reduce qty or choose a different wareh
 "One outlet per line: code or name, latitude, longitude. Comma, tab or semicolon separated.","Ҳар қаторда битта нуқта: код ёки ном, кенглик, узунлик. Вергул, табуляция ёки нуқтали вергул билан ажратилган."
 Online payment,Онлайн тўлов
 Only Approved claims can be settled. Current status: {0},Фақат тасдиқланган даъвалар ҳал этилиши мумкин. Ҳозирги ҳолат: {0}
+Only one entry — chart needs at least two points.,Фақат битта ёзув — график учун камида икки нуқта керак.
 Only Payment Entry / Journal Entry can be reconciled here.,
 Only a Stock Manager can reconcile stock.,Фақат омбор менежери қолдиқларни солиштира олади.
 Only confirm after you have actually restored a backup to a scratch site and verified the data. This records today as the last successful restore test.,
@@ -2027,6 +2031,7 @@ Present SKUs,Мавжуд АСК-лар
 Present today,
 Preview,Кўриб чиқиш
 Price Tier,Нарх даражаси
+Price history,Нарх тарихи
 Price list,Нарх рўйхати
 Print,Босиб чиқариш
 Priority,Муҳимлик
@@ -2306,6 +2311,7 @@ Run a payroll cycle to generate salary slips for assigned employees.,Тайин�
 Run now,Ҳозир ишга тушириш
 Run payroll,Маошни ҳисоблаш
 Run-rate,Ойлик айланма
+Running value,Тўпланган қиймат
 SFA,
 SO number or customer…,
 SRE module unavailable: {0},SRE модули ишламайди: {0}
@@ -2855,6 +2861,8 @@ Valid issue type is required.,
 Valid till,Гача яроқли
 Valid user is required.,
 Valuation,Баҳолаш
+Valuation history,Баҳолаш тарихи
+Valuation rate,Ҳисоб нархи
 Value,Қиймати
 Value (approx.),Қиймат (тах.)
 Value delta,Қиймат ўзгариши

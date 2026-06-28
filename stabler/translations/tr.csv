@@ -993,6 +993,7 @@ Failed to load ticket.,Talep yüklenemedi.
 Failed to load transfer detail.,Transfer detayı yüklenemedi.
 Failed to load transfers.,Transferler yüklenemedi.
 Failed to load unbilled visits.,Faturalanmamış ziyaretler yüklenemedi.
+Failed to load valuation history.,Değerleme geçmişi yüklenemedi.
 Failed to load van stock.,Araç stoğu yüklenemedi.
 Failed to load visit.,Ziyaret yüklenemedi.
 Failed to load warehouses.,Depolar yüklenemedi.
@@ -1668,6 +1669,7 @@ No stock entries yet,Henüz stok hareketi yok
 No stock in any warehouse for this company.,Bu şirkete ait hiçbir depoda stok yok.
 No stock in this warehouse,
 No stock in this warehouse.,Bu depoda stok yok.
+No stock ledger entries found for this item.,Bu ürün için stok hareketi bulunamadı.
 No stock moves in this range,Bu aralıkta stok hareketi yok
 No stock update,Stok hareketi yok
 No stock warehouses,
@@ -1685,6 +1687,7 @@ No travel,
 No unbilled service visits,
 No unmatched users. All punches are mapped.,Eşleşmemiş kullanıcı yok. Tüm kayıtlar eşleşti.
 No valid rows found.,Geçerli satır bulunamadı.
+No valuation history.,Değerleme geçmişi bulunamadı.
 No van stock yet,Henüz araç stoğu yok
 No verified restore on record. A backup you have never restored is not a backup you can trust — test one and record it.,
 No visits,Ziyaret yok
@@ -1754,6 +1757,7 @@ One or more lines exceed available stock. Reduce qty or choose a different wareh
 "One outlet per line: code or name, latitude, longitude. Comma, tab or semicolon separated.","Satır başına bir nokta: kod veya ad, enlem, boylam. Virgül, sekme veya noktalı virgülle ayrılmış."
 Online payment,Çevrimiçi ödeme
 Only Approved claims can be settled. Current status: {0},Yalnızca Onaylanmış talepler kapatılabilir. Mevcut durum: {0}
+Only one entry — chart needs at least two points.,Yalnızca bir kayıt var — grafik en az iki nokta gerektirir.
 Only Payment Entry / Journal Entry can be reconciled here.,
 Only a Stock Manager can reconcile stock.,Yalnızca bir Stok Yöneticisi stok sayımı yapabilir.
 Only confirm after you have actually restored a backup to a scratch site and verified the data. This records today as the last successful restore test.,
@@ -2017,6 +2021,7 @@ Present SKUs,Mevcut SKU'lar
 Present today,
 Preview,Önizleme
 Price Tier,Fiyat kademesi
+Price history,Fiyat geçmişi
 Price list,Fiyat listesi
 Print,Yazdır
 Priority,Öncelik
@@ -2294,6 +2299,7 @@ Run a payroll cycle to generate salary slips for assigned employees.,Atanmış �
 Run now,Şimdi çalıştır
 Run payroll,Bordroyu Çalıştır
 Run-rate,Aylık ciro
+Running value,Kümülatif değer
 SFA,
 SO number or customer…,
 SRE module unavailable: {0},SRE modülü kullanılamıyor: {0}
@@ -2838,6 +2844,8 @@ Valid issue type is required.,
 Valid till,Son geçerlilik
 Valid user is required.,
 Valuation,Değerleme
+Valuation history,Değerleme geçmişi
+Valuation rate,Değerleme oranı
 Value,Değer
 Value (approx.),Değer (yakl.)
 Value delta,Değer farkı

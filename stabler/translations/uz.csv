@@ -1000,6 +1000,7 @@ Failed to load ticket.,Murojaatni yuklab bo'lmadi.
 Failed to load transfer detail.,O'tkazma tafsilotlarini yuklashda xatolik.
 Failed to load transfers.,O'tkazmalarni yuklashda xatolik.
 Failed to load unbilled visits.,Hisoblanmagan tashriflarni yuklab boʻlmadi.
+Failed to load valuation history.,Baholash tarixini yuklashda xatolik.
 Failed to load van stock.,Avtomobil ombor ma'lumotlarini yuklashda xato.
 Failed to load visit.,Tashrif yuklashda xato.
 Failed to load warehouses.,Omborlarni yuklashda xato.
@@ -1676,6 +1677,7 @@ No stock entries yet,Ombor kiritmalari hali yo'q
 No stock in any warehouse for this company.,Bu kompaniya uchun hech bir omborida tovar yo'q.
 No stock in this warehouse,
 No stock in this warehouse.,Bu omborda zaxira yo'q.
+No stock ledger entries found for this item.,Bu tovar bo'yicha harakatlar topilmadi.
 No stock moves in this range,Bu oraliqda ombor harakatlanishlari yo'q
 No stock update,Ombor harakatsiz
 No stock warehouses,
@@ -1693,6 +1695,7 @@ No travel,
 No unbilled service visits,
 No unmatched users. All punches are mapped.,Bog'lanmagan foydalanuvchilar yo'q. Barcha belgilashlar bog'langan.
 No valid rows found.,Yaroqli qatorlar topilmadi.
+No valuation history.,Baholash tarixi mavjud emas.
 No van stock yet,Mashin ombori hali yo'q
 No verified restore on record. A backup you have never restored is not a backup you can trust — test one and record it.,
 No visits,Tashriflar yo'q
@@ -1762,6 +1765,7 @@ One or more lines exceed available stock. Reduce qty or choose a different wareh
 "One outlet per line: code or name, latitude, longitude. Comma, tab or semicolon separated.","Har qatorda bitta nuqta: kod yoki nom, kenglik, uzunlik. Vergul, tabulyatsiya yoki nuqtali vergul bilan ajratilgan."
 Online payment,Onlayn to‘lov
 Only Approved claims can be settled. Current status: {0},Faqat Tasdiqlangan da'volar ko'rib chiqilishi mumkin. Hozirgi holat: {0}
+Only one entry — chart needs at least two points.,Faqat bitta yozuv — grafik uchun kamida ikki nuqta kerak.
 Only Payment Entry / Journal Entry can be reconciled here.,
 Only a Stock Manager can reconcile stock.,Faqat ombor menejeri qoldiqlarni solishtira oladi.
 Only confirm after you have actually restored a backup to a scratch site and verified the data. This records today as the last successful restore test.,
@@ -2027,6 +2031,7 @@ Present SKUs,Mavjud SKU'lar
 Present today,
 Preview,Ko'rib chiqish
 Price Tier,Narx darajasi
+Price history,Narx tarixi
 Price list,Narx ro'yxati
 Print,Chop etish
 Priority,Muhimlik
@@ -2306,6 +2311,7 @@ Run a payroll cycle to generate salary slips for assigned employees.,Tayinlangan
 Run now,Hozir ishga tushirish
 Run payroll,Maoshni hisoblash
 Run-rate,Oylik aylanma
+Running value,To'plangan qiymat
 SFA,
 SO number or customer…,
 SRE module unavailable: {0},SRE moduli mavjud emas: {0}
@@ -2855,6 +2861,8 @@ Valid issue type is required.,
 Valid till,Amal qilish muddati
 Valid user is required.,
 Valuation,Baholash
+Valuation history,Baholash tarixi
+Valuation rate,Hisob narxi
 Value,Qiymati
 Value (approx.),Qiymat (tax.)
 Value delta,Qiymat o'zgarishi

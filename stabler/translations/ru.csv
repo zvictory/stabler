@@ -1007,6 +1007,7 @@ Failed to load ticket.,Не удалось загрузить заявку.
 Failed to load transfer detail.,Не удалось загрузить детали перевода.
 Failed to load transfers.,Не удалось загрузить переводы.
 Failed to load unbilled visits.,Не удалось загрузить невыставленные выезды.
+Failed to load valuation history.,Не удалось загрузить историю оценки.
 Failed to load van stock.,Ошибка загрузки запасов фургона.
 Failed to load visit.,Ошибка загрузки визита.
 Failed to load warehouses.,Ошибка загрузки складов.
@@ -1683,6 +1684,7 @@ No stock entries yet,Записей о товаре нет
 No stock in any warehouse for this company.,Нет товаров в каком-либо складе для этой компании.
 No stock in this warehouse,
 No stock in this warehouse.,На этом складе нет остатков.
+No stock ledger entries found for this item.,Движений по этому товару не найдено.
 No stock moves in this range,Перемещений товаров в этом диапазоне нет
 No stock update,Без движения склада
 No stock warehouses,
@@ -1700,6 +1702,7 @@ No travel,
 No unbilled service visits,
 No unmatched users. All punches are mapped.,Нет несопоставленных пользователей. Все отметки сопоставлены.
 No valid rows found.,Допустимые строки не найдены.
+No valuation history.,История оценки отсутствует.
 No van stock yet,Запасов в автофургоне нет
 No verified restore on record. A backup you have never restored is not a backup you can trust — test one and record it.,
 No visits,Нет визитов
@@ -1769,6 +1772,7 @@ One or more lines exceed available stock. Reduce qty or choose a different wareh
 "One outlet per line: code or name, latitude, longitude. Comma, tab or semicolon separated.","Одна точка на строку: код или название, широта, долгота. Разделители: запятая, табуляция или точка с запятой."
 Online payment,Онлайн-оплата
 Only Approved claims can be settled. Current status: {0},Только одобренные требования могут быть урегулированы. Текущий статус: {0}
+Only one entry — chart needs at least two points.,Только одна запись — для графика нужно минимум две точки.
 Only Payment Entry / Journal Entry can be reconciled here.,
 Only a Stock Manager can reconcile stock.,Только менеджер склада может проводить сверку остатков.
 Only confirm after you have actually restored a backup to a scratch site and verified the data. This records today as the last successful restore test.,
@@ -2034,6 +2038,7 @@ Present SKUs,Присутствующие артикулы
 Present today,
 Preview,Предпросмотр
 Price Tier,Ценовой уровень
+Price history,История цен
 Price list,Прайс-лист
 Print,Печать
 Priority,Приоритет
@@ -2313,6 +2318,7 @@ Run a payroll cycle to generate salary slips for assigned employees.,"Запус
 Run now,Запустить сейчас
 Run payroll,Запустить расчёт
 Run-rate,Оборот/мес
+Running value,Накопленная стоимость
 SFA,
 SO number or customer…,
 SRE module unavailable: {0},Модуль SRE недоступен: {0}
@@ -2862,6 +2868,8 @@ Valid issue type is required.,
 Valid till,Действителен до
 Valid user is required.,
 Valuation,Оценка
+Valuation history,История оценки
+Valuation rate,Учётная цена
 Value,Стоимость
 Value (approx.),Стоимость (прибл.)
 Value delta,Изменение стоимости

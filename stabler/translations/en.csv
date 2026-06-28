@@ -998,6 +998,7 @@ Failed to load ticket.,Failed to load ticket.
 Failed to load transfer detail.,Failed to load transfer detail.
 Failed to load transfers.,Failed to load transfers.
 Failed to load unbilled visits.,Failed to load unbilled visits.
+Failed to load valuation history.,Failed to load valuation history.
 Failed to load van stock.,Failed to load van stock.
 Failed to load visit.,Failed to load visit.
 Failed to load warehouses.,Failed to load warehouses.
@@ -1674,6 +1675,7 @@ No stock entries yet,No stock entries yet
 No stock in any warehouse for this company.,No stock in any warehouse for this company.
 No stock in this warehouse,No stock in this warehouse
 No stock in this warehouse.,No stock in this warehouse.
+No stock ledger entries found for this item.,No stock ledger entries found for this item.
 No stock moves in this range,No stock moves in this range
 No stock update,No stock update
 No stock warehouses,No stock warehouses
@@ -1691,6 +1693,7 @@ No travel,No travel
 No unbilled service visits,No unbilled service visits
 No unmatched users. All punches are mapped.,No unmatched users. All punches are mapped.
 No valid rows found.,No valid rows found.
+No valuation history.,No valuation history.
 No van stock yet,No van stock yet
 No verified restore on record. A backup you have never restored is not a backup you can trust — test one and record it.,No verified restore on record. A backup you have never restored is not a backup you can trust — test one and record it.
 No visits,No visits
@@ -1760,6 +1763,7 @@ One or more lines exceed available stock. Reduce qty or choose a different wareh
 "One outlet per line: code or name, latitude, longitude. Comma, tab or semicolon separated.","One outlet per line: code or name, latitude, longitude. Comma, tab or semicolon separated."
 Online payment,Online payment
 Only Approved claims can be settled. Current status: {0},Only Approved claims can be settled. Current status: {0}
+Only one entry — chart needs at least two points.,Only one entry — chart needs at least two points.
 Only Payment Entry / Journal Entry can be reconciled here.,Only Payment Entry / Journal Entry can be reconciled here.
 Only a Stock Manager can reconcile stock.,Only a Stock Manager can reconcile stock.
 Only confirm after you have actually restored a backup to a scratch site and verified the data. This records today as the last successful restore test.,Only confirm after you have actually restored a backup to a scratch site and verified the data. This records today as the last successful restore test.
@@ -2024,6 +2028,7 @@ Present SKUs,Present SKUs
 Present today,Present today
 Preview,Preview
 Price Tier,Price Tier
+Price history,Price history
 Price list,Price list
 Print,Print
 Priority,Priority
@@ -2303,6 +2308,7 @@ Run a payroll cycle to generate salary slips for assigned employees.,Run a payro
 Run now,Run now
 Run payroll,Run payroll
 Run-rate,Run-rate
+Running value,Running value
 SFA,SFA
 SO number or customer…,SO number or customer…
 SRE module unavailable: {0},SRE module unavailable: {0}
@@ -2848,6 +2854,8 @@ Valid issue type is required.,Valid issue type is required.
 Valid till,Valid till
 Valid user is required.,Valid user is required.
 Valuation,Valuation
+Valuation history,Valuation history
+Valuation rate,Valuation rate
 Value,Value
 Value (approx.),Value (approx.)
 Value delta,Value delta
