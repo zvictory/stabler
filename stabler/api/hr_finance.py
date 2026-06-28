@@ -106,18 +106,25 @@ def employee_financials(company: str, employee: str) -> dict:
 	base_ccy = frappe.get_cached_value("Company", company, "default_currency") or ""
 
 	# ── Vendor-style ledger ───────────────────────────────────────────────────
-	# Anchor on the Employee Credits Payable account (where the worker advances +
-	# salaries are booked); if that account isn't found, fall back to every account
-	# the worker is a party on. Read in the account's own currency.
+	# Anchor on the Employee Credits Payable account. A worker may be booked on it
+	# as an Employee party OR as a Supplier/Customer carrying the same name (the
+	# worker treated as a vendor). So match by party id (the Employee itself) AND
+	# by name (Suppliers/Customers whose display name equals the employee's name).
 	emp_acc = _emp_account(company)
+	emp_name = (emp.get("employee_name") or "").strip()
+	party_ids = {employee}
+	if emp_name:
+		for dt, field in (("Supplier", "supplier_name"), ("Customer", "customer_name")):
+			for pid in frappe.get_all(dt, filters={field: emp_name}, pluck="name"):
+				party_ids.add(pid)
 	acc_clause = "AND account = %(acc)s" if emp_acc else ""
-	params = {"c": company, "e": employee, "acc": emp_acc}
+	params = {"c": company, "acc": emp_acc, "parties": tuple(party_ids)}
 	gl = frappe.db.sql(
 		f"""
 		SELECT posting_date, creation, account, account_currency, voucher_type, voucher_no,
 		       debit_in_account_currency AS debit, credit_in_account_currency AS credit, remarks
 		FROM `tabGL Entry`
-		WHERE company = %(c)s AND party_type = 'Employee' AND party = %(e)s
+		WHERE company = %(c)s AND party IN %(parties)s
 		  AND ifnull(is_cancelled, 0) = 0 {acc_clause}
 		ORDER BY posting_date DESC, creation DESC
 		LIMIT 200
@@ -144,7 +151,7 @@ def employee_financials(company: str, employee: str) -> dict:
 		f"""
 		SELECT COALESCE(SUM(credit_in_account_currency) - SUM(debit_in_account_currency), 0) AS net
 		FROM `tabGL Entry`
-		WHERE company = %(c)s AND party_type = 'Employee' AND party = %(e)s
+		WHERE company = %(c)s AND party IN %(parties)s
 		  AND ifnull(is_cancelled, 0) = 0 {acc_clause}
 		""",
 		params,
@@ -157,7 +164,7 @@ def employee_financials(company: str, employee: str) -> dict:
 		SELECT account, account_currency,
 		       SUM(credit_in_account_currency) - SUM(debit_in_account_currency) AS bal
 		FROM `tabGL Entry`
-		WHERE company = %(c)s AND party_type = 'Employee' AND party = %(e)s
+		WHERE company = %(c)s AND party IN %(parties)s
 		  AND ifnull(is_cancelled, 0) = 0 {acc_clause}
 		GROUP BY account, account_currency
 		HAVING ABS(SUM(credit_in_account_currency) - SUM(debit_in_account_currency)) > 0.005
@@ -197,28 +204,52 @@ def employee_financials(company: str, employee: str) -> dict:
 
 @frappe.whitelist()
 def employee_net_balances(company: str, search: str = "", limit: int = 1000) -> dict:
-	"""Per-employee net balance across ALL party=Employee GL accounts (for the list).
+	"""Per-employee net balance on the Employee Credits Payable account (for the list).
 
-	Net = SUM(credit - debit) in account currency; positive = we owe the worker.
+	Reads every party on that account — Employee, Supplier or Customer — and matches
+	each to an Employee by id (Employee party) or by name (a Supplier/Customer with
+	the same display name). Net = SUM(credit - debit); positive = we owe the worker.
 	"""
 	_require_pay_role()
 	_require_company(company)
+	base_ccy = frappe.get_cached_value("Company", company, "default_currency") or ""
 	emp_acc = _emp_account(company)
 	acc_clause = "AND gl.account = %(acc)s" if emp_acc else ""
 	rows = frappe.db.sql(
 		f"""
-		SELECT gl.party AS employee,
+		SELECT gl.party AS party, gl.party_type AS party_type,
 		       SUM(gl.credit_in_account_currency) - SUM(gl.debit_in_account_currency) AS net,
 		       MAX(gl.account_currency) AS currency
 		FROM `tabGL Entry` gl
-		WHERE gl.company = %(c)s AND gl.party_type = 'Employee'
-		  AND ifnull(gl.is_cancelled, 0) = 0 {acc_clause}
-		GROUP BY gl.party
+		WHERE gl.company = %(c)s AND ifnull(gl.is_cancelled, 0) = 0
+		  AND gl.party IS NOT NULL AND gl.party != '' {acc_clause}
+		GROUP BY gl.party, gl.party_type
 		""",
 		{"c": company, "acc": emp_acc},
 		as_dict=True,
 	)
-	base_ccy = frappe.get_cached_value("Company", company, "default_currency") or ""
-	out = {r["employee"]: flt(r["net"]) for r in rows}
-	ccy = next((r["currency"] for r in rows if r.get("currency")), base_ccy)
+	emps = frappe.get_all("Employee", filters={"company": company}, fields=["name", "employee_name"])
+	by_name = {(e.employee_name or "").strip().lower(): e.name for e in emps if e.employee_name}
+	emp_ids = {e.name for e in emps}
+	sup = [r.party for r in rows if r.party_type == "Supplier"]
+	cus = [r.party for r in rows if r.party_type == "Customer"]
+	sup_name = {x.name: x.supplier_name for x in frappe.get_all(
+		"Supplier", filters={"name": ["in", sup]}, fields=["name", "supplier_name"])} if sup else {}
+	cus_name = {x.name: x.customer_name for x in frappe.get_all(
+		"Customer", filters={"name": ["in", cus]}, fields=["name", "customer_name"])} if cus else {}
+
+	out: dict = {}
+	ccy = None
+	for r in rows:
+		if r.party_type == "Employee":
+			emp_id = r.party if r.party in emp_ids else by_name.get((r.party or "").strip().lower())
+		elif r.party_type == "Supplier":
+			emp_id = by_name.get((sup_name.get(r.party) or "").strip().lower())
+		elif r.party_type == "Customer":
+			emp_id = by_name.get((cus_name.get(r.party) or "").strip().lower())
+		else:
+			emp_id = None
+		if emp_id:
+			out[emp_id] = out.get(emp_id, 0.0) + flt(r.net)
+			ccy = ccy or r.currency
 	return {"balances": out, "currency": ccy or base_ccy}
