@@ -197,19 +197,29 @@ def employee_net_balances(company: str, search: str = "", limit: int = 1000) -> 
 	_require_pay_role()
 	_require_company(company)
 	base_ccy = frappe.get_cached_value("Company", company, "default_currency") or ""
+	# Group by party AND account currency so each worker's balance carries ITS OWN
+	# original currency (UZS), not the base (USD). The detail pane does the same via
+	# display_currency, so the list and the detail agree.
 	rows = frappe.db.sql(
 		"""
-		SELECT party,
-		       SUM(credit_in_account_currency) - SUM(debit_in_account_currency) AS net,
-		       MAX(account_currency) AS currency
+		SELECT party, account_currency AS currency,
+		       SUM(credit_in_account_currency) - SUM(debit_in_account_currency) AS net
 		FROM `tabGL Entry`
 		WHERE company = %(c)s AND party_type = 'Employee'
 		  AND ifnull(is_cancelled, 0) = 0 AND party IS NOT NULL AND party != ''
-		GROUP BY party
+		GROUP BY party, account_currency
 		""",
 		{"c": company},
 		as_dict=True,
 	)
-	out = {r["party"]: flt(r["net"]) for r in rows}
-	ccy = next((r["currency"] for r in rows if r.get("currency")), base_ccy)
-	return {"balances": out, "currency": ccy or base_ccy}
+	totals: dict = {}
+	by_ccy: dict = {}
+	for r in rows:
+		amt = flt(r["net"])
+		totals[r["party"]] = totals.get(r["party"], 0.0) + amt
+		by_ccy.setdefault(r["party"], {})
+		ccy = r["currency"] or base_ccy
+		by_ccy[r["party"]][ccy] = by_ccy[r["party"]].get(ccy, 0.0) + amt
+	# Per-employee display currency = the account currency carrying the most weight.
+	currencies = {p: max(m, key=lambda c: abs(m[c])) for p, m in by_ccy.items() if m}
+	return {"balances": totals, "currencies": currencies, "base_currency": base_ccy}

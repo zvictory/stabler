@@ -29,9 +29,12 @@ const rows = ref([]);
 const search = ref("");
 const statusFilter = ref("");
 const balances = ref({});
+const currencies = ref({}); // per-employee original currency (e.g. UZS)
 const canAdvances = ref(true);
 const payAccounts = ref([]);
 const advanceCurrency = ref("");
+// Format a balance in the employee's OWN currency (falls back to base).
+const fmtBal = (v, ccy) => formatMoney(v, ccy || currency.value, user.value.language);
 const onlyWithBalance = ref(false);
 const sortField = ref("name");
 const sortAsc = ref(true);
@@ -68,7 +71,7 @@ async function loadBalances() {
 	try {
 		const res = await call("stabler.api.hr_finance.employee_net_balances", { company: activeCompany.value });
 		balances.value = res?.balances || {};
-		if (res?.currency) advanceCurrency.value = res.currency;
+		currencies.value = res?.currencies || {};
 		canAdvances.value = true;
 	} catch (err) {
 		if (err?.status === 403 || /role|permission/i.test(err?.message || "")) canAdvances.value = false;
@@ -81,14 +84,8 @@ async function loadPayAccounts() {
 		payAccounts.value = await call("stabler.api.employee_advance.list_pay_accounts", { company: activeCompany.value });
 	} catch { payAccounts.value = []; }
 }
-async function loadAdvanceCurrency() {
-	if (!activeCompany.value || !canAdvances.value) return;
-	try {
-		const r = await call("stabler.api.employee_advance.advance_account", { company: activeCompany.value });
-		advanceCurrency.value = r?.currency || "";
-	} catch { advanceCurrency.value = ""; }
-}
 const balanceOf = (emp) => Number(balances.value[emp] || 0);
+const currencyOf = (emp) => currencies.value[emp] || currency.value;
 
 let searchTimer = null;
 function onSearchInput() {
@@ -98,7 +95,6 @@ function onSearchInput() {
 async function loadAll() {
 	await Promise.all([load(), loadBalances()]);
 	loadPayAccounts();
-	loadAdvanceCurrency();
 }
 onMounted(loadAll);
 watch(activeCompany, () => { selected.value = null; fin.value = null; loadAll(); });
@@ -117,6 +113,13 @@ function toggleSort(field) {
 const totalNetBalance = computed(() =>
 	Object.values(balances.value).reduce((sum, v) => sum + Number(v), 0)
 );
+// Most common employee currency (org runs one currency in practice) — for the total.
+const primaryCurrency = computed(() => {
+	const counts = {};
+	for (const c of Object.values(currencies.value)) counts[c] = (counts[c] || 0) + 1;
+	const top = Object.entries(counts).sort((a, b) => b[1] - a[1])[0];
+	return top ? top[0] : currency.value;
+});
 
 // ── Selection + financials detail ────────────────────────────────────────────
 const selected = ref(null);
@@ -352,7 +355,7 @@ function initials(name) {
 														'text-secondary': !balanceOf(r.name),
 													}"
 												>
-													{{ moneyOrig(balanceOf(r.name)) }}
+													{{ fmtBal(balanceOf(r.name), currencyOf(r.name)) }}
 												</div>
 												<span v-else class="text-secondary">—</span>
 											</td>
@@ -364,7 +367,7 @@ function initials(name) {
 						<!-- Footer: total -->
 						<div v-if="filteredEmployees.length && canAdvances" class="p-3 border-top bg-light d-flex align-items-center justify-content-between">
 							<span class="text-secondary small fw-semibold">{{ t("Total net owed") }}</span>
-							<span class="font-monospace fw-bold text-body">{{ moneyOrig(totalNetBalance) }}</span>
+							<span class="font-monospace fw-bold text-body">{{ fmtBal(totalNetBalance, primaryCurrency) }}</span>
 						</div>
 					</div>
 
