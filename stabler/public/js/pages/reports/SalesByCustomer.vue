@@ -3,7 +3,7 @@
 // Summary (one row per customer) → Detail (that customer's invoices) → Document
 // (the Sales Invoice page). Built entirely on the reusable ReportFilters +
 // ReportTable engine; adding another report is mostly columns + an endpoint.
-import { ref } from "vue";
+import { computed, ref } from "vue";
 import { storeToRefs } from "pinia";
 import { useRouter } from "vue-router";
 import { useSession } from "../../stores/session.js";
@@ -27,6 +27,16 @@ const detail = ref(null);
 const detailCustomer = ref("");
 
 const lang = () => user.value?.language || "en";
+
+const exportFilters = computed(() => ({
+	company: activeCompany.value,
+	from_date: range.value?.from_date,
+	to_date: range.value?.to_date,
+}));
+const detailExportFilters = computed(() => ({
+	...exportFilters.value,
+	customer: detailCustomer.value,
+}));
 
 async function loadSummary(r) {
 	range.value = r;
@@ -94,6 +104,8 @@ function onDetailDrill({ row, col }) {
 				:language="lang()"
 				:loading="loading"
 				export-name="sales_by_customer"
+				report-key="sales_by_customer"
+				:export-filters="exportFilters"
 				@drill="onSummaryDrill"
 			/>
 		</div>
@@ -119,6 +131,8 @@ function onDetailDrill({ row, col }) {
 				:language="lang()"
 				:loading="detailLoading"
 				export-name="customer_invoices"
+				report-key="sales_by_customer_detail"
+				:export-filters="detailExportFilters"
 				@drill="onDetailDrill"
 			/>
 			<div v-else-if="detailLoading" class="text-center py-3"><span class="spinner-border spinner-border-sm"></span></div>

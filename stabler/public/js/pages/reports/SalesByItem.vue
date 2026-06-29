@@ -1,6 +1,6 @@
 <script setup>
 // Report Center: Sales by Item. Summary (item) → Detail (invoice lines) → Document.
-import { ref } from "vue";
+import { computed, ref } from "vue";
 import { storeToRefs } from "pinia";
 import { useRouter } from "vue-router";
 import { useSession } from "../../stores/session.js";
@@ -20,7 +20,18 @@ const summary = ref(null);
 const detailOpen = ref(false);
 const detailLoading = ref(false);
 const detail = ref(null);
+const detailItem = ref("");
 const lang = () => user.value?.language || "en";
+
+const exportFilters = computed(() => ({
+	company: activeCompany.value,
+	from_date: range.value?.from_date,
+	to_date: range.value?.to_date,
+}));
+const detailExportFilters = computed(() => ({
+	...exportFilters.value,
+	item_code: detailItem.value,
+}));
 
 async function loadSummary(r) {
 	range.value = r;
@@ -42,6 +53,7 @@ async function loadSummary(r) {
 }
 
 async function onSummaryDrill({ row }) {
+	detailItem.value = row.item_code;
 	detailOpen.value = true;
 	detailLoading.value = true;
 	try {
@@ -84,6 +96,8 @@ function onDetailDrill({ row, col }) {
 				:language="lang()"
 				:loading="loading"
 				export-name="sales_by_item"
+				report-key="sales_by_item"
+				:export-filters="exportFilters"
 				@drill="onSummaryDrill"
 			/>
 		</div>
@@ -104,6 +118,8 @@ function onDetailDrill({ row, col }) {
 				:language="lang()"
 				:loading="detailLoading"
 				export-name="item_invoices"
+				report-key="sales_by_item_detail"
+				:export-filters="detailExportFilters"
 				@drill="onDetailDrill"
 			/>
 			<div v-else-if="detailLoading" class="text-center py-3"><span class="spinner-border spinner-border-sm"></span></div>

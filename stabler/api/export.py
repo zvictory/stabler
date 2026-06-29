@@ -53,10 +53,24 @@ REPORT_EXPORTS: dict[str, dict] = {
 		"roles": None,
 		"sensitive": False,
 	},
+	"sales_by_customer_detail": {
+		"title": "Sales by Customer – Detail",
+		"source": "stabler.api.reports.sales_by_customer_detail",
+		"filename": "Sales_by_Customer_Detail",
+		"roles": None,
+		"sensitive": False,
+	},
 	"sales_by_item": {
 		"title": "Sales by Item",
 		"source": "stabler.api.reports.sales_by_item",
 		"filename": "Sales_by_Item",
+		"roles": None,
+		"sensitive": False,
+	},
+	"sales_by_item_detail": {
+		"title": "Sales by Item – Detail",
+		"source": "stabler.api.reports.sales_by_item_detail",
+		"filename": "Sales_by_Item_Detail",
 		"roles": None,
 		"sensitive": False,
 	},
@@ -422,7 +436,13 @@ def export_report_xlsx(report_key: str, filters: dict | str | None = None):
 			columns = shaped.get("columns") or []
 			rows = shaped.get("rows") or shaped.get("result") or []
 			totals = shaped.get("totals") or {}
-			shaped_meta = shaped.get("meta") or {}
+			shaped_meta = dict(shaped.get("meta") or {})
+			# Use the most common per-row currency (original transaction currency)
+			# rather than the company base currency stored in meta.currency.
+			row_ccys = [r.get("currency") for r in rows if r.get("currency")]
+			if row_ccys:
+				from collections import Counter
+				shaped_meta["currency"] = Counter(row_ccys).most_common(1)[0][0]
 
 		if spec.get("template") == "financial":
 			wb = build_financial_statement_workbook(

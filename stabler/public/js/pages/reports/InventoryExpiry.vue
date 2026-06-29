@@ -1,7 +1,7 @@
 <script setup>
 // Report Center: Batch Expiry — on-hand batches at risk (perishable / ice-cream).
 // Uses a future "within N days" horizon rather than a past date range.
-import { onMounted, ref } from "vue";
+import { computed, onMounted, ref } from "vue";
 import { storeToRefs } from "pinia";
 import { useSession } from "../../stores/session.js";
 import { call } from "../../api/client.js";
@@ -16,6 +16,11 @@ const loading = ref(false);
 const error = ref("");
 const report = ref(null);
 const lang = () => user.value?.language || "en";
+
+const exportFilters = computed(() => ({
+	company: activeCompany.value,
+	horizon_days: horizon.value,
+}));
 
 async function load() {
 	if (!activeCompany.value) return;
@@ -69,6 +74,8 @@ onMounted(load);
 				:language="lang()"
 				:loading="loading"
 				export-name="batch_expiry"
+				report-key="inventory_expiry"
+				:export-filters="exportFilters"
 			/>
 		</div>
 	</div>

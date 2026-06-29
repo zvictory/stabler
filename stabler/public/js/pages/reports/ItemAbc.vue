@@ -1,7 +1,7 @@
 <script setup>
 // Report Center: Item ABC analysis (Pareto by value concentration).
 // Ranks items, shows A/B/C class + cumulative %, drills into item invoice lines.
-import { ref } from "vue";
+import { computed, ref } from "vue";
 import { storeToRefs } from "pinia";
 import { useRouter } from "vue-router";
 import { useSession } from "../../stores/session.js";
@@ -22,7 +22,19 @@ const report = ref(null);
 const detailOpen = ref(false);
 const detailLoading = ref(false);
 const detail = ref(null);
+const detailItem = ref("");
 const lang = () => user.value?.language || "en";
+
+const exportFilters = computed(() => ({
+	company: activeCompany.value,
+	from_date: range.value?.from_date,
+	to_date: range.value?.to_date,
+	metric: metric.value,
+}));
+const detailExportFilters = computed(() => ({
+	...exportFilters.value,
+	item_code: detailItem.value,
+}));
 
 async function load(r) {
 	if (r) range.value = r;
@@ -45,6 +57,7 @@ async function load(r) {
 }
 
 async function onDrill({ row }) {
+	detailItem.value = row.item_code;
 	detailOpen.value = true;
 	detailLoading.value = true;
 	try {
@@ -101,6 +114,8 @@ function onDetailDrill({ row, col }) {
 				:language="lang()"
 				:loading="loading"
 				export-name="item_abc"
+				report-key="item_abc"
+				:export-filters="exportFilters"
 				@drill="onDrill"
 			/>
 		</div>
@@ -121,6 +136,8 @@ function onDetailDrill({ row, col }) {
 				:language="lang()"
 				:loading="detailLoading"
 				export-name="item_invoices"
+				report-key="sales_by_item_detail"
+				:export-filters="detailExportFilters"
 				@drill="onDetailDrill"
 			/>
 		</div>
