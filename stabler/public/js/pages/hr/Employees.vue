@@ -155,13 +155,20 @@ const txBusy = ref(false);
 const jeOpen = ref(false);
 const jeDetail = ref(null);
 const jeLoading = ref(false);
-async function viewJE(voucher) {
-	if (!voucher) return;
+const voucherKind = ref("");
+// Row click opens the voucher (like the Customer center) — JE or Payment Entry.
+async function openVoucher(m) {
+	if (!m?.voucher_no) return;
 	jeOpen.value = true;
 	jeLoading.value = true;
 	jeDetail.value = null;
+	voucherKind.value = m.voucher_type || "";
 	try {
-		jeDetail.value = await call("stabler.api.money.journal_entry_detail", { name: voucher });
+		if (m.voucher_type === "Journal Entry")
+			jeDetail.value = await call("stabler.api.money.journal_entry_detail", { name: m.voucher_no });
+		else if (m.voucher_type === "Payment Entry")
+			jeDetail.value = await call("stabler.api.money.payment_entry_detail", { name: m.voucher_no });
+		else jeDetail.value = { name: m.voucher_no };
 	} catch (err) {
 		toast.error(err?.message || t("Could not load the entry."));
 	} finally {
@@ -633,7 +640,7 @@ function initials(name) {
 													<tr v-if="!filteredLedger.length">
 														<td colspan="6" class="text-center text-secondary py-3">{{ t("No transactions yet.") }}</td>
 													</tr>
-													<tr v-for="(m, i) in filteredLedger" :key="i" :class="{ 'table-warning': m.docstatus === 0 }">
+													<tr v-for="(m, i) in filteredLedger" :key="i" :class="[{ 'table-warning': m.docstatus === 0 }, m.voucher_no ? 'cursor-pointer' : '']" @click="m.voucher_no && openVoucher(m)">
 														<td class="text-nowrap">{{ m.posting_date ? formatDate(m.posting_date) : "—" }}</td>
 														<td>
 															<div class="d-flex flex-column gap-1">
@@ -653,10 +660,9 @@ function initials(name) {
 															{{ m.balance == null ? "—" : finMoney(m.balance) }}
 														</td>
 														<td class="text-end text-nowrap">
-															<button v-if="m.voucher_type === 'Journal Entry'" type="button" class="btn btn-ghost-secondary btn-sm" :title="t('View')" @click="viewJE(m.voucher_no)"><i class="ti ti-eye"></i></button>
-															<button v-if="m.docstatus === 0" type="button" class="btn btn-ghost-success btn-sm" :disabled="txBusy" :title="t('Submit')" @click="submitTx(m)"><i class="ti ti-check"></i></button>
-															<button v-if="m.docstatus === 0" type="button" class="btn btn-ghost-danger btn-sm" :disabled="txBusy" :title="t('Delete')" @click="deleteTx(m)"><i class="ti ti-trash"></i></button>
-															<button v-else-if="m.docstatus === 1 && m.voucher_type === 'Journal Entry'" type="button" class="btn btn-ghost-danger btn-sm" :disabled="txBusy" :title="t('Cancel')" @click="cancelTx(m)"><i class="ti ti-ban"></i></button>
+															<button v-if="m.docstatus === 0" type="button" class="btn btn-ghost-success btn-sm" :disabled="txBusy" :title="t('Submit')" @click.stop="submitTx(m)"><i class="ti ti-check"></i></button>
+															<button v-if="m.docstatus === 0" type="button" class="btn btn-ghost-danger btn-sm" :disabled="txBusy" :title="t('Delete')" @click.stop="deleteTx(m)"><i class="ti ti-trash"></i></button>
+															<button v-else-if="m.docstatus === 1 && m.voucher_type === 'Journal Entry'" type="button" class="btn btn-ghost-danger btn-sm" :disabled="txBusy" :title="t('Cancel')" @click.stop="cancelTx(m)"><i class="ti ti-ban"></i></button>
 														</td>
 													</tr>
 												</tbody>
@@ -769,8 +775,12 @@ function initials(name) {
 					<div class="modal-body">
 						<div v-if="jeLoading" class="text-center py-3"><span class="spinner-border text-primary"></span></div>
 						<template v-else-if="jeDetail">
-							<div class="text-secondary small mb-2">{{ formatDate(jeDetail.posting_date) }} · {{ jeDetail.user_remark || "—" }}</div>
-							<table class="table card-table">
+							<div class="text-secondary small mb-2">
+								<span class="badge bg-secondary-lt me-1">{{ voucherKind || t("Voucher") }}</span>
+								{{ formatDate(jeDetail.posting_date) }} · {{ jeDetail.user_remark || jeDetail.remark || "—" }}
+							</div>
+							<!-- Journal Entry: account lines -->
+							<table v-if="jeDetail.accounts" class="table card-table">
 								<thead><tr><th>{{ t("Account") }}</th><th>{{ t("Party") }}</th><th class="text-end">{{ t("Debit") }}</th><th class="text-end">{{ t("Credit") }}</th></tr></thead>
 								<tbody>
 									<tr v-for="(a, i) in jeDetail.accounts" :key="i">
@@ -781,6 +791,13 @@ function initials(name) {
 									</tr>
 								</tbody>
 							</table>
+							<!-- Payment Entry: from → to summary -->
+							<dl v-else-if="voucherKind === 'Payment Entry'" class="row mb-0">
+								<dt class="col-4 text-secondary fw-normal">{{ t("Party") }}</dt><dd class="col-8">{{ jeDetail.party_name || jeDetail.party || "—" }}</dd>
+								<dt class="col-4 text-secondary fw-normal">{{ t("Paid from") }}</dt><dd class="col-8 small font-monospace">{{ jeDetail.paid_from || "—" }}</dd>
+								<dt class="col-4 text-secondary fw-normal">{{ t("Paid to") }}</dt><dd class="col-8 small font-monospace">{{ jeDetail.paid_to || "—" }}</dd>
+								<dt class="col-4 text-secondary fw-normal">{{ t("Amount") }}</dt><dd class="col-8 font-monospace fw-bold">{{ formatMoney(jeDetail.paid_amount, jeDetail.paid_from_account_currency || empCcy, user.language) }}</dd>
+							</dl>
 						</template>
 					</div>
 				</div>
