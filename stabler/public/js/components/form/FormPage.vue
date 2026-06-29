@@ -17,7 +17,7 @@
  *   default   — the field grid / form body
  *   actions   — action buttons; renders in a sticky card-footer
  */
-import { computed } from "vue";
+import { computed, onBeforeUnmount, onMounted } from "vue";
 import { useRouter } from "vue-router";
 import { t } from "../../composables/i18n.js";
 import { getStatusBadgeClass } from "../../composables/status.js";
@@ -41,6 +41,22 @@ function goBack() {
 		router.back();
 	}
 }
+
+// ESC → orqaga. Typing va modal/offcanvas ochiq bo'lsa ishlamaydi.
+function onEscKey(e) {
+	if (e.key !== "Escape" || e.defaultPrevented) return;
+	const tag = document.activeElement?.tagName;
+	if (tag === "INPUT" || tag === "TEXTAREA" || tag === "SELECT") return;
+	if (document.activeElement?.isContentEditable) return;
+	if (document.querySelector(".modal.show, .offcanvas.show")) return;
+	if (window.history.state?.back != null) {
+		router.back();
+	} else {
+		router.push(props.backPath || "/");
+	}
+}
+onMounted(() => window.addEventListener("keydown", onEscKey));
+onBeforeUnmount(() => window.removeEventListener("keydown", onEscKey));
 
 // NOTE: Status colors are centralized in composables/status.js. Do not define STATUS_BADGE maps locally in pages/components.
 const badgeClass = computed(() => {

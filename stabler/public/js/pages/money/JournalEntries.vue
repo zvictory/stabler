@@ -1,7 +1,7 @@
 <script setup>
-import { computed, onMounted, ref, watch } from "vue";
+import { computed, onBeforeUnmount, onMounted, ref, watch } from "vue";
 import { storeToRefs } from "pinia";
-import { useRoute } from "vue-router";
+import { useRoute, useRouter } from "vue-router";
 import { useSession } from "../../stores/session.js";
 import { call } from "../../api/client.js";
 import { formatMoney } from "../../composables/money.js";
@@ -19,9 +19,27 @@ import { readableRate, toLineRate, formatRate } from "../../composables/fx.js";
 
 const session = useSession();
 const route = useRoute();
+const router = useRouter();
 const { activeCompany, user } = storeToRefs(session);
 const toast = useToast();
 const { confirm } = useConfirm();
+
+// ESC → orqaga (faqat view panelida, masalan mijoz ledger'idan kelganda).
+function onEscKey(e) {
+	if (pane.value !== "view") return;
+	if (e.key !== "Escape" || e.defaultPrevented) return;
+	const tag = document.activeElement?.tagName;
+	if (tag === "INPUT" || tag === "TEXTAREA" || tag === "SELECT") return;
+	if (document.activeElement?.isContentEditable) return;
+	if (document.querySelector(".modal.show, .offcanvas.show")) return;
+	if (window.history.state?.back != null) {
+		router.back();
+	} else {
+		router.push("/money/journals");
+	}
+}
+onMounted(() => window.addEventListener("keydown", onEscKey));
+onBeforeUnmount(() => window.removeEventListener("keydown", onEscKey));
 
 const statusFilter = ref("");
 const statusOptions = computed(() => [

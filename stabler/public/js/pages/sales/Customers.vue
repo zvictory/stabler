@@ -1,6 +1,7 @@
 <script setup>
 import { computed, onMounted, ref, watch } from "vue";
 import { storeToRefs } from "pinia";
+import { useRoute, useRouter } from "vue-router";
 import { useSession } from "../../stores/session.js";
 import { call } from "../../api/client.js";
 import { formatMoney, balanceState } from "../../composables/money.js";
@@ -18,6 +19,8 @@ import ApexChart from "../../components/ApexChart.vue";
 import { getStatusBadgeClass } from "../../composables/status.js";
 
 const session = useSession();
+const route = useRoute();
+const router = useRouter();
 const { activeCompany, user } = storeToRefs(session);
 
 const { confirm } = useConfirm();
@@ -278,6 +281,7 @@ async function loadLedger(customer) {
 
 async function selectCustomer(c) {
 	selected.value = c;
+	router.replace({ query: { ...route.query, c: c.name } });
 	custOrders.value = [];
 	recentInvoices.value = [];
 	ledgerTypeFilter.value = "";
@@ -323,44 +327,19 @@ async function loadCustOrders(customer) {
 	}
 }
 
-const voucherOpen = ref(false);
-const voucherLoading = ref(false);
-const voucherDetail = ref(null);
-const voucherError = ref("");
-
-async function openVoucher(entry) {
+function openVoucher(entry) {
 	if (!entry?.voucher_no) return;
-	voucherOpen.value = true;
-	voucherLoading.value = true;
-	voucherDetail.value = null;
-	voucherError.value = "";
-	const type = entry.voucher_type;
 	const name = entry.voucher_no;
-	try {
-		let data;
-		if (type === "Sales Invoice") {
-			data = await call("stabler.api.sales.sales_invoice_detail", { name });
-		} else if (type === "Payment Entry") {
-			data = await call("stabler.api.money.payment_entry_detail", { name });
-		} else if (type === "Journal Entry") {
-			data = await call("stabler.api.money.journal_entry_detail", { name });
-		} else if (type === "Sales Order") {
-			data = await call("stabler.api.sales.sales_order_detail", { name });
-		} else {
-			data = { name };
-		}
-		voucherDetail.value = { _type: type, ...data };
-	} catch (err) {
-		voucherError.value = err?.message || t("Failed to load.");
-	} finally {
-		voucherLoading.value = false;
+	const type = entry.voucher_type;
+	if (type === "Payment Entry") {
+		router.push(`/money/payments/${name}`);
+	} else if (type === "Sales Invoice") {
+		router.push(`/sales/invoices/${name}`);
+	} else if (type === "Sales Order") {
+		router.push(`/sales/orders/${name}`);
+	} else if (type === "Journal Entry") {
+		router.push({ path: "/money/journals", query: { open: name } });
 	}
-}
-
-function closeVoucher() {
-	voucherOpen.value = false;
-	voucherDetail.value = null;
-	voucherError.value = "";
 }
 
 let searchTimer = null;
@@ -562,14 +541,20 @@ watch([ledgerFromDate, ledgerToDate], () => {
 	}
 });
 
-onMounted(() => {
-	loadCustomers();
+onMounted(async () => {
+	await loadCustomers();
 	loadCockpit();
+	const cName = route.query?.c;
+	if (cName) {
+		const match = customers.value.find((c) => c.name === cName);
+		if (match) selectCustomer(match);
+	}
 });
 
 watch(activeCompany, () => {
 	selected.value = null;
 	ledger.value = null;
+	router.replace({ query: { ...route.query, c: undefined } });
 	loadCustomers();
 	loadCockpit();
 });
@@ -1128,209 +1113,7 @@ watch(activeCompany, () => {
 		</div>
 	</div>
 
-	<!-- Voucher Drawer -->
-	<template v-if="voucherOpen">
-		<div class="offcanvas-backdrop fade show" @click="closeVoucher"></div>
-		<div class="offcanvas offcanvas-end show" tabindex="-1" style="width: min(520px, 100vw)">
-			<div class="offcanvas-header border-bottom">
-				<h5 class="offcanvas-title">
-					<span v-if="voucherDetail">{{ t(voucherDetail._type) }}</span>
-					<span v-else>…</span>
-				</h5>
-				<button type="button" class="btn-close" @click="closeVoucher"></button>
-			</div>
-			<div class="offcanvas-body">
-				<div v-if="voucherLoading" class="text-center py-5">
-					<div class="spinner-border text-primary"></div>
-				</div>
-				<div v-else-if="voucherError" class="alert alert-danger">{{ voucherError }}</div>
-				<template v-else-if="voucherDetail">
-					<!-- Sales Invoice detail -->
-					<template v-if="voucherDetail._type === 'Sales Invoice'">
-						<div class="datagrid mb-3">
-							<div class="datagrid-item">
-								<div class="datagrid-title">{{ t("Invoice") }}</div>
-								<div class="datagrid-content font-monospace">{{ voucherDetail.name }}</div>
-							</div>
-							<div class="datagrid-item">
-								<div class="datagrid-title">{{ t("Date") }}</div>
-								<div class="datagrid-content">{{ formatDate(voucherDetail.posting_date) }}</div>
-							</div>
-							<div class="datagrid-item">
-								<div class="datagrid-title">{{ t("Status") }}</div>
-								<div class="datagrid-content">
-									<span class="badge" :class="getStatusBadgeClass('Sales Invoice', voucherDetail.status)">
-										{{ t(voucherDetail.status) }}
-									</span>
-								</div>
-							</div>
-							<div class="datagrid-item">
-								<div class="datagrid-title">{{ t("Grand total") }}</div>
-								<div class="datagrid-content font-monospace">{{ formatMoney(voucherDetail.grand_total, voucherDetail.currency, user.language) }}</div>
-							</div>
-							<div class="datagrid-item">
-								<div class="datagrid-title">{{ t("Outstanding") }}</div>
-								<div class="datagrid-content font-monospace">{{ formatMoney(voucherDetail.outstanding_amount, voucherDetail.currency, user.language) }}</div>
-							</div>
-						</div>
-						<table v-if="voucherDetail.items?.length" class="table table-sm table-vcenter">
-							<thead>
-								<tr>
-									<th>{{ t("Item") }}</th>
-									<th class="text-end">{{ t("Qty") }}</th>
-									<th class="text-end">{{ t("Amount") }}</th>
-								</tr>
-							</thead>
-							<tbody>
-								<tr v-for="it in voucherDetail.items" :key="it.item_code">
-									<td>{{ it.item_name || it.item_code }}</td>
-									<td class="text-end font-monospace">{{ it.qty }}</td>
-									<td class="text-end font-monospace">{{ formatMoney(it.amount, voucherDetail.currency, user.language) }}</td>
-								</tr>
-							</tbody>
-						</table>
-					</template>
-
-					<!-- Sales Order detail -->
-					<template v-else-if="voucherDetail._type === 'Sales Order'">
-						<div class="datagrid mb-3">
-							<div class="datagrid-item">
-								<div class="datagrid-title">{{ t("Order") }}</div>
-								<div class="datagrid-content font-monospace">{{ voucherDetail.name }}</div>
-							</div>
-							<div class="datagrid-item">
-								<div class="datagrid-title">{{ t("Date") }}</div>
-								<div class="datagrid-content">{{ formatDate(voucherDetail.transaction_date) }}</div>
-							</div>
-							<div class="datagrid-item">
-								<div class="datagrid-title">{{ t("Status") }}</div>
-								<div class="datagrid-content">
-									<span class="badge" :class="getStatusBadgeClass('Sales Order', voucherDetail.status)">
-										{{ t(voucherDetail.status) }}
-									</span>
-								</div>
-							</div>
-							<div class="datagrid-item">
-								<div class="datagrid-title">{{ t("Grand total") }}</div>
-								<div class="datagrid-content font-monospace">{{ formatMoney(voucherDetail.grand_total, voucherDetail.currency, user.language) }}</div>
-							</div>
-						</div>
-						<table v-if="voucherDetail.items?.length" class="table table-sm table-vcenter">
-							<thead>
-								<tr>
-									<th>{{ t("Item") }}</th>
-									<th class="text-end">{{ t("Qty") }}</th>
-									<th class="text-end">{{ t("Amount") }}</th>
-								</tr>
-							</thead>
-							<tbody>
-								<tr v-for="it in voucherDetail.items" :key="it.item_code">
-									<td>{{ it.item_name || it.item_code }}</td>
-									<td class="text-end font-monospace">{{ it.qty }}</td>
-									<td class="text-end font-monospace">{{ formatMoney(it.amount, voucherDetail.currency, user.language) }}</td>
-								</tr>
-							</tbody>
-						</table>
-					</template>
-
-					<!-- Payment Entry detail -->
-					<template v-else-if="voucherDetail._type === 'Payment Entry'">
-						<div class="datagrid mb-3">
-							<div class="datagrid-item">
-								<div class="datagrid-title">{{ t("Payment") }}</div>
-								<div class="datagrid-content font-monospace">{{ voucherDetail.name }}</div>
-							</div>
-							<div class="datagrid-item">
-								<div class="datagrid-title">{{ t("Date") }}</div>
-								<div class="datagrid-content">{{ formatDate(voucherDetail.posting_date) }}</div>
-							</div>
-							<div class="datagrid-item">
-								<div class="datagrid-title">{{ t("Type") }}</div>
-								<div class="datagrid-content">{{ t(voucherDetail.payment_type) }}</div>
-							</div>
-							<div class="datagrid-item">
-								<div class="datagrid-title">{{ t("Amount paid") }}</div>
-								<div class="datagrid-content font-monospace">{{ formatMoney(voucherDetail.paid_amount, voucherDetail.paid_from_account_currency, user.language) }}</div>
-							</div>
-							<div class="datagrid-item">
-								<div class="datagrid-title">{{ t("Mode") }}</div>
-								<div class="datagrid-content">{{ voucherDetail.mode_of_payment || "—" }}</div>
-							</div>
-							<div v-if="voucherDetail.reference_no" class="datagrid-item">
-								<div class="datagrid-title">{{ t("Reference") }}</div>
-								<div class="datagrid-content font-monospace">{{ voucherDetail.reference_no }}</div>
-							</div>
-						</div>
-						<div v-if="voucherDetail.references?.length">
-							<div class="small text-secondary text-uppercase mb-1">{{ t("Applied to") }}</div>
-							<table class="table table-sm table-vcenter">
-								<thead>
-									<tr>
-										<th>{{ t("Document") }}</th>
-										<th class="text-end">{{ t("Allocated") }}</th>
-									</tr>
-								</thead>
-								<tbody>
-									<tr v-for="ref in voucherDetail.references" :key="ref.reference_name">
-										<td class="font-monospace small">{{ ref.reference_name }}</td>
-										<td class="text-end font-monospace">{{ formatMoney(ref.allocated_amount, voucherDetail.paid_from_account_currency, user.language) }}</td>
-									</tr>
-								</tbody>
-							</table>
-						</div>
-					</template>
-
-					<!-- Journal Entry detail -->
-					<template v-else-if="voucherDetail._type === 'Journal Entry'">
-						<div class="datagrid mb-3">
-							<div class="datagrid-item">
-								<div class="datagrid-title">{{ t("Entry") }}</div>
-								<div class="datagrid-content font-monospace">{{ voucherDetail.name }}</div>
-							</div>
-							<div class="datagrid-item">
-								<div class="datagrid-title">{{ t("Date") }}</div>
-								<div class="datagrid-content">{{ formatDate(voucherDetail.posting_date) }}</div>
-							</div>
-							<div v-if="voucherDetail.user_remark" class="datagrid-item">
-								<div class="datagrid-title">{{ t("Remark") }}</div>
-								<div class="datagrid-content">{{ voucherDetail.user_remark }}</div>
-							</div>
-						</div>
-						<div v-if="voucherDetail.accounts?.length">
-							<div class="small text-secondary text-uppercase mb-1">{{ t("Accounts") }}</div>
-							<table class="table table-sm table-vcenter">
-								<thead>
-									<tr>
-										<th>{{ t("Account") }}</th>
-										<th class="text-end">{{ t("Debit") }}</th>
-										<th class="text-end">{{ t("Credit") }}</th>
-									</tr>
-								</thead>
-								<tbody>
-									<tr v-for="(ac, i) in voucherDetail.accounts" :key="i">
-										<td class="small">{{ ac.account_name || ac.account }}</td>
-										<td class="text-end font-monospace small">
-											<span v-if="Number(ac.debit) > 0">{{ formatMoney(ac.debit, ac.account_currency, user.language) }}</span>
-											<span v-else class="text-secondary">—</span>
-										</td>
-										<td class="text-end font-monospace small">
-											<span v-if="Number(ac.credit) > 0">{{ formatMoney(ac.credit, ac.account_currency, user.language) }}</span>
-											<span v-else class="text-secondary">—</span>
-										</td>
-									</tr>
-								</tbody>
-							</table>
-						</div>
-					</template>
-
-					<!-- Fallback -->
-					<template v-else>
-						<div class="font-monospace small">{{ voucherDetail.name }}</div>
-					</template>
-				</template>
-			</div>
-		</div>
-	</template>
+	<!-- Voucher Drawer removed: voucher links now navigate to full-form routes -->
 
 	<!-- Create/Edit Modal -->
 	<template v-if="createOpen">
