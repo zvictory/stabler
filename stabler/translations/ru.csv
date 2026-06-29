@@ -869,6 +869,7 @@ Event requeued for processing.,
 Events,События
 Events appear here as soon as a device or integration pushes data. Use the filters above to narrow results.,
 Every route row needs an outlet.,Каждая строка маршрута должна содержать торговую точку.
+"Every voucher behind the balance: invoices, payments, journal entries.","Каждый документ за балансом: счета, платежи, проводки."
 Everything looks complete,Всё заполнено
 Exact,
 Exceeded (Annual),
@@ -1326,6 +1327,7 @@ Leave request rejected.,
 Leave type,Тип отпуска
 Ledger,
 Ledger spans multiple account currencies; amounts shown in base currency.,Бухгалтерская книга охватывает несколько валют счёта; суммы показаны в базовой валюте.
+Ledger — all vouchers (reconciles to the balance),Книга — все документы (сходится с балансом)
 Left,Уволен
 Length,Длина
 Level {0},
@@ -2359,6 +2361,7 @@ Sale,
 Sale completed,
 Sales,Продажи
 "Sales = selected period · Balance = current receivable (all-time, all vouchers — ties to the Customer Center).","Продажи = выбранный период · Баланс = текущая задолженность (за всё время, все документы — совпадает с Центром клиентов)."
+"Sales = selected period · Balance = current receivable (all-time, all vouchers — ties to the Customer Center). Click a customer to see the ledger behind the balance.","Продажи = период · Баланс = текущая задолженность (всё время, все документы — как в Центре клиентов). Нажмите на клиента, чтобы увидеть книгу за балансом."
 Sales Invoice,Счёт продажи
 Sales Invoice must be created from a Sales Order,Счёт продажи должен быть создан на основе заказа
 Sales Invoices,Счета продаж

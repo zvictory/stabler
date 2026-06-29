@@ -855,6 +855,7 @@ Event requeued for processing.,
 Events,Olaylar
 Events appear here as soon as a device or integration pushes data. Use the filters above to narrow results.,
 Every route row needs an outlet.,Her rota satırı için bir satış noktası gereklidir.
+"Every voucher behind the balance: invoices, payments, journal entries.","Bakiyenin arkasındaki her belge: faturalar, ödemeler, yevmiyeler."
 Everything looks complete,Her şey tam görünüyor
 Exact,
 Exceeded (Annual),
@@ -1312,6 +1313,7 @@ Leave request rejected.,
 Leave type,İzin türü
 Ledger,
 Ledger spans multiple account currencies; amounts shown in base currency.,Defter birden fazla hesap para birimini kapsamaktadır; tutarlar temel para biriminde gösterilmektedir.
+Ledger — all vouchers (reconciles to the balance),Defter — tüm belgeler (bakiye ile uyumlu)
 Left,Sol
 Length,Boy
 Level {0},
@@ -2340,6 +2342,7 @@ Sale,
 Sale completed,
 Sales,Satış
 "Sales = selected period · Balance = current receivable (all-time, all vouchers — ties to the Customer Center).","Satış = seçilen dönem · Bakiye = güncel alacak (tüm zamanlar, tüm belgeler — Müşteri Merkezi ile eşleşir)."
+"Sales = selected period · Balance = current receivable (all-time, all vouchers — ties to the Customer Center). Click a customer to see the ledger behind the balance.","Satış = dönem · Bakiye = güncel alacak (tüm zamanlar, tüm belgeler — Müşteri Merkezi ile eşleşir). Bakiyenin arkasındaki defteri görmek için bir müşteriye tıklayın."
 Sales Invoice,Satış Faturası
 Sales Invoice must be created from a Sales Order,Satış Faturası bir Satış Siparişinden oluşturulmalıdır
 Sales Invoices,Satış Faturaları

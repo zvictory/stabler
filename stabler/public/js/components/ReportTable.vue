@@ -82,8 +82,16 @@ function cellClass(col) {
 	];
 }
 
+// Discoverability: a summary row drills into its detail. Make the WHOLE row
+// clickable (not just the name cell) so clicking anywhere on the row — including
+// the numbers — opens the breakdown. Document drills (e.g. invoice → open doc)
+// stay per-cell on their specific link.
+const rowDrillCol = computed(() => props.columns.find((c) => c.drill === "detail"));
 function onCell(row, col) {
-	if (col.drill) emit("drill", { row, col });
+	if (col.drill === "document") emit("drill", { row, col }); // "detail" handled at row level
+}
+function onRow(row) {
+	if (rowDrillCol.value) emit("drill", { row, col: rowDrillCol.value });
 }
 
 function exportCsv() {
@@ -164,7 +172,7 @@ defineExpose({ exportCsv, exportXlsx });
 				<tbody>
 					<tr v-if="loading"><td :colspan="columns.length" class="text-center py-4"><span class="spinner-border spinner-border-sm"></span></td></tr>
 					<tr v-else-if="!rows.length"><td :colspan="columns.length" class="text-center text-secondary py-4">{{ t("No data") }}</td></tr>
-					<tr v-for="(row, i) in sortedRows" :key="i">
+					<tr v-for="(row, i) in sortedRows" :key="i" :class="rowDrillCol ? 'cursor-pointer' : ''" @click="onRow(row)">
 						<td
 							v-for="col in columns"
 							:key="col.key"

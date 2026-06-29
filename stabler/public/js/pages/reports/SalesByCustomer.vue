@@ -62,10 +62,9 @@ async function onSummaryDrill({ row }) {
 	detailOpen.value = true;
 	detailLoading.value = true;
 	try {
-		detail.value = await call("stabler.api.reports.sales_by_customer_detail", {
+		// Ledger drill — every voucher behind the Balance, reconciles 1:1.
+		detail.value = await call("stabler.api.reports.customer_balance_detail", {
 			company: activeCompany.value,
-			from_date: range.value.from_date,
-			to_date: range.value.to_date,
 			customer: row.customer,
 		});
 	} catch (err) {
@@ -76,9 +75,7 @@ async function onSummaryDrill({ row }) {
 	}
 }
 
-function onDetailDrill({ row, col }) {
-	if (col.doctype === "Sales Invoice") router.push(`/sales/invoices/${row.name}`);
-}
+function onDetailDrill() {}
 </script>
 
 <template>
@@ -115,7 +112,7 @@ function onDetailDrill({ row, col }) {
 	<div v-if="detailOpen" class="card">
 		<div class="card-header">
 			<div class="card-title">
-				<i class="ti ti-receipt me-1"></i>{{ t("Invoices") }} · {{ detail?.meta?.title || detailCustomer }}
+				<i class="ti ti-list me-1"></i>{{ t("Ledger") }} · {{ detail?.meta?.title || detailCustomer }}
 			</div>
 			<button type="button" class="btn btn-sm btn-ghost-secondary ms-auto" @click="detailOpen = false">
 				<i class="ti ti-x"></i>
@@ -130,8 +127,8 @@ function onDetailDrill({ row, col }) {
 				:currency="detail.meta?.currency || 'UZS'"
 				:language="lang()"
 				:loading="detailLoading"
-				export-name="customer_invoices"
-				report-key="sales_by_customer_detail"
+				export-name="customer_ledger"
+				report-key="customer_balance_detail"
 				:export-filters="detailExportFilters"
 				@drill="onDetailDrill"
 			/>

@@ -862,6 +862,7 @@ Event requeued for processing.,
 Events,Hodisalar
 Events appear here as soon as a device or integration pushes data. Use the filters above to narrow results.,
 Every route row needs an outlet.,Har bir marshrut qatori savdo nuqtasiga ehtiyoj bor.
+"Every voucher behind the balance: invoices, payments, journal entries.","Balans ortidagi har bir hujjat: invoyslar, to'lovlar, jurnal yozuvlari."
 Everything looks complete,Hammasi to'liq
 Exact,
 Exceeded (Annual),
@@ -1319,6 +1320,7 @@ Leave request rejected.,
 Leave type,Ta'til turi
 Ledger,
 Ledger spans multiple account currencies; amounts shown in base currency.,Ledger bir nechta hisob valyutalarini qamrab oladi; summalar asosiy valyutada ko'rsatilgan.
+Ledger — all vouchers (reconciles to the balance),Ledger — barcha hujjatlar (balansga mos)
 Left,Ishdan ketgan
 Length,Bo'y
 Level {0},
@@ -2352,6 +2354,7 @@ Sale,
 Sale completed,
 Sales,Sotuv
 "Sales = selected period · Balance = current receivable (all-time, all vouchers — ties to the Customer Center).","Sotuv = tanlangan davr · Balans = joriy qarz (butun tarix, barcha hujjatlar — Customer Center bilan mos)."
+"Sales = selected period · Balance = current receivable (all-time, all vouchers — ties to the Customer Center). Click a customer to see the ledger behind the balance.","Sotuv = davr · Balans = joriy qarz (butun tarix, barcha hujjatlar — Customer Center bilan mos). Balans ortidagi ledgerni ko'rish uchun mijozni bosing."
 Sales Invoice,Sotuv hisob-fakturasi
 Sales Invoice must be created from a Sales Order,Sotuv hisob-fakturasi Sotuv buyurtmasidan yaratilishi kerak
 Sales Invoices,Sotuv hisob-fakturalari

@@ -154,8 +154,8 @@ def sales_by_customer(company: str, from_date: str, to_date: str) -> dict:
         "currency": base_ccy,
         "from": str(start),
         "to": str(end),
-        "note": _("Sales = selected period · Balance = current receivable (all-time, all vouchers — ties to the Customer Center)."),
-        "drill_report": "sales_by_customer_detail",
+        "note": _("Sales = selected period · Balance = current receivable (all-time, all vouchers — ties to the Customer Center). Click a customer to see the ledger behind the balance."),
+        "drill_report": "customer_balance_detail",
         "drill_param": "customer",
     }
     return _shape(columns, rows, totals, meta)
@@ -235,6 +235,58 @@ def sales_by_customer_detail(company: str, from_date: str, to_date: str, custome
         "currency": _base_currency(company),
         "from": str(start),
         "to": str(end),
+        "title": frappe.db.get_value("Customer", customer, "customer_name") or customer,
+    }
+    return _shape(columns, rows, totals, meta)
+
+
+@frappe.whitelist()
+def customer_balance_detail(company: str, customer: str, from_date: str = None, to_date: str = None) -> dict:
+    """Drill from the summary Balance → the full ledger that PRODUCES it.
+
+    Every voucher behind the receivable (invoices, payments, journal entries),
+    oldest→newest running balance ending exactly at the customer's Balance. Same
+    source as the Customer Center ledger, so it reconciles 1:1. `from_date`/
+    `to_date` are accepted (the summary passes them) but ignored — the ledger is
+    all-time so the running balance ties to the all-time Balance.
+    """
+    _require_company(company)
+    if not customer or not frappe.db.exists("Customer", customer):
+        frappe.throw(_("Customer is required."), frappe.ValidationError)
+    from stabler.api.sales import customer_ledger
+
+    led = customer_ledger(company, customer)  # full history → reconciles to Balance
+    ccy = led.get("account_currency") or _base_currency(company)
+    run = flt(led.get("opening_acc") or 0)
+    rows = []
+    for e in led.get("entries", []):
+        d = flt(e.get("debit_in_account_currency"))
+        c = flt(e.get("credit_in_account_currency"))
+        run += d - c
+        rows.append({
+            "posting_date": e.get("posting_date"),
+            "voucher_type": e.get("voucher_type"),
+            "voucher_no": e.get("voucher_no"),
+            "remarks": e.get("remarks"),
+            "debit": d,
+            "credit": c,
+            "balance": run,
+            "currency": ccy,
+        })
+    rows.reverse()  # newest first for display
+    totals = {"balance": flt(led.get("closing_acc") or 0)}
+    columns = [
+        {"key": "posting_date", "label": _("Date"), "type": "date"},
+        {"key": "voucher_no", "label": _("Voucher"), "type": "text"},
+        {"key": "voucher_type", "label": _("Type"), "type": "text"},
+        {"key": "debit", "label": _("Debit"), "type": "money", "align": "end"},
+        {"key": "credit", "label": _("Credit"), "type": "money", "align": "end"},
+        {"key": "balance", "label": _("Balance"), "type": "money", "align": "end"},
+    ]
+    meta = {
+        "basis": _("Ledger — all vouchers (reconciles to the balance)"),
+        "currency": ccy,
+        "note": _("Every voucher behind the balance: invoices, payments, journal entries."),
         "title": frappe.db.get_value("Customer", customer, "customer_name") or customer,
     }
     return _shape(columns, rows, totals, meta)

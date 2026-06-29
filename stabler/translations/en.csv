@@ -860,6 +860,7 @@ Event requeued for processing.,Event requeued for processing.
 Events,Events
 Events appear here as soon as a device or integration pushes data. Use the filters above to narrow results.,Events appear here as soon as a device or integration pushes data. Use the filters above to narrow results.
 Every route row needs an outlet.,Every route row needs an outlet.
+"Every voucher behind the balance: invoices, payments, journal entries.","Every voucher behind the balance: invoices, payments, journal entries."
 Everything looks complete,Everything looks complete
 Exact,Exact
 Exceeded (Annual),Exceeded (Annual)
@@ -1317,6 +1318,7 @@ Leave request rejected.,Leave request rejected.
 Leave type,Leave type
 Ledger,Ledger
 Ledger spans multiple account currencies; amounts shown in base currency.,Ledger spans multiple account currencies; amounts shown in base currency.
+Ledger — all vouchers (reconciles to the balance),Ledger — all vouchers (reconciles to the balance)
 Left,Left
 Length,Length
 Level {0},Level {0}
@@ -2349,6 +2351,7 @@ Sale,Sale
 Sale completed,Sale completed
 Sales,Sales
 "Sales = selected period · Balance = current receivable (all-time, all vouchers — ties to the Customer Center).","Sales = selected period · Balance = current receivable (all-time, all vouchers — ties to the Customer Center)."
+"Sales = selected period · Balance = current receivable (all-time, all vouchers — ties to the Customer Center). Click a customer to see the ledger behind the balance.","Sales = selected period · Balance = current receivable (all-time, all vouchers — ties to the Customer Center). Click a customer to see the ledger behind the balance."
 Sales Invoice,Sales Invoice
 Sales Invoice must be created from a Sales Order,Sales Invoice must be created from a Sales Order
 Sales Invoices,Sales Invoices
