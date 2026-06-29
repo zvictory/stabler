@@ -18,13 +18,23 @@ const error = ref("");
 const report = ref(null);
 const lang = () => user.value?.language || "en";
 
+const detailOpen = ref(false);
+const detailLoading = ref(false);
+const detail = ref(null);
+const detailCustomer = ref("");
+
 const exportFilters = computed(() => ({
 	company: activeCompany.value,
 	only_with_balance: onlyWithBalance.value,
 }));
+const detailExportFilters = computed(() => ({
+	company: activeCompany.value,
+	customer: detailCustomer.value,
+}));
 
 async function load() {
 	if (!activeCompany.value) return;
+	detailOpen.value = false;
 	loading.value = true;
 	error.value = "";
 	try {
@@ -36,6 +46,23 @@ async function load() {
 		error.value = err?.message || t("Failed to load report.");
 	} finally {
 		loading.value = false;
+	}
+}
+
+async function onDrill({ row }) {
+	detailCustomer.value = row.customer;
+	detailOpen.value = true;
+	detailLoading.value = true;
+	try {
+		detail.value = await call("stabler.api.reports.customer_balance_detail", {
+			company: activeCompany.value,
+			customer: row.customer,
+		});
+	} catch (err) {
+		detail.value = null;
+		error.value = err?.message || t("Failed to load detail.");
+	} finally {
+		detailLoading.value = false;
 	}
 }
 
@@ -78,7 +105,35 @@ onMounted(load);
 				export-name="customer_balance_summary"
 				report-key="customer_balance_summary"
 				:export-filters="exportFilters"
+				@drill="onDrill"
 			/>
+		</div>
+	</div>
+
+	<!-- Ledger drill -->
+	<div v-if="detailOpen" class="card mt-3">
+		<div class="card-header">
+			<div class="card-title">
+				<i class="ti ti-list me-1"></i>{{ t("Ledger") }} · {{ detail?.meta?.title || detailCustomer }}
+			</div>
+			<button type="button" class="btn btn-sm btn-ghost-secondary ms-auto" @click="detailOpen = false">
+				<i class="ti ti-x"></i>
+			</button>
+		</div>
+		<div class="card-body">
+			<ReportTable
+				v-if="detail"
+				:columns="detail.columns"
+				:rows="detail.rows"
+				:totals="detail.totals"
+				:currency="detail.meta?.currency || 'UZS'"
+				:language="lang()"
+				:loading="detailLoading"
+				export-name="customer_ledger"
+				report-key="customer_balance_detail"
+				:export-filters="detailExportFilters"
+			/>
+			<div v-else-if="detailLoading" class="text-center py-3"><span class="spinner-border spinner-border-sm"></span></div>
 		</div>
 	</div>
 </template>

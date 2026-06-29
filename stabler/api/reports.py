@@ -187,7 +187,7 @@ def customer_balance_summary(company: str, only_with_balance: int = 1) -> dict:
     rows.sort(key=lambda x: x["balance"], reverse=True)
     totals = {"balance": sum(r["balance"] for r in rows)}
     columns = [
-        {"key": "customer_name", "label": _("Customer"), "type": "text"},
+        {"key": "customer_name", "label": _("Customer"), "type": "text", "drill": "detail"},
         {"key": "customer_group", "label": _("Group"), "type": "text"},
         {"key": "territory", "label": _("Territory"), "type": "text"},
         {"key": "balance", "label": _("Balance"), "type": "money", "align": "end"},
@@ -195,7 +195,9 @@ def customer_balance_summary(company: str, only_with_balance: int = 1) -> dict:
     meta = {
         "basis": _("Live receivable (all-time, all vouchers)"),
         "currency": base_ccy,
-        "note": _("Current AR balance per customer — ties to the Customer Center."),
+        "note": _("Current AR balance per customer — click a row to see the ledger behind the balance."),
+        "drill_report": "customer_balance_detail",
+        "drill_param": "customer",
     }
     return _shape(columns, rows, totals, meta)
 
