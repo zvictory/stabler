@@ -79,11 +79,16 @@ def advance_account(company: str) -> dict:
 
 
 def _balances(company: str, account: str) -> dict:
-	"""Map of employee -> outstanding advance (debit - credit) on the account."""
+	"""Map of employee -> outstanding advance in the account's OWN currency.
+
+	Sums the account-currency GL columns (not base) so the balance reads in the
+	account's original currency — e.g. UZS for an Employee Advances - UZS account
+	even when the company base currency is USD.
+	"""
 	rows = frappe.db.sql(
 		"""
 		SELECT party AS employee,
-		       SUM(debit) - SUM(credit) AS balance
+		       SUM(debit_in_account_currency) - SUM(credit_in_account_currency) AS balance
 		FROM `tabGL Entry`
 		WHERE company = %(company)s
 		  AND account = %(account)s
