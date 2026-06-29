@@ -49,6 +49,7 @@ Accrual (invoice date),Tahakkuk (satış faturası tarihi)
 Accrual failed.,Tahakkuk başarısız.
 Accrue,Tahakkuk
 Accrue period,Dönemi tahakkuk ettir
+Accrue salary,Maaş tahakkuku
 Accrue this period?,Bu dönem tahakkuk ettirilsin mi?
 Accrued,Tahakkuk
 Accrued {0} employees.,{0} çalışan tahakkuk etti.
@@ -164,6 +165,7 @@ Allowances,
 Allowances are hidden — payroll access required.,
 Allowed users,İzin verilen kullanıcılar
 Already Transferred,
+Already accrued for this month.,Bu ay için zaten tahakkuk yapılmış.
 Amend,Düzelt
 Amend (new draft),Düzelt (yeni taslak)
 Amend expense,
@@ -311,6 +313,7 @@ Board,Pano
 Bonus,Prim
 Book rate,
 Booked,Sipariş edildi
+Books Dr Salary Expense / Cr Salary Payable as a draft — submit it from the ledger to post.,Taslak oluşturur: Borç Maaş Gideri / Alacak Ödenecek Maaş — defterden onaylayın.
 Books each locked employee's net as a payable (Dr salary expense / Cr salary payable). Idempotent — runs once per period.,Her kilitli çalışanın netini bir borca yazar (Bç maaş gideri / Al maaş borcu). İdempotent — dönem başına bir kez.
 Books locked nets to salary payable.,Kilitli netleri maaş borcuna yazar.
 Branch,
@@ -382,6 +385,7 @@ Car / Item,Araç / Kalem
 Car item is required.,Araç kalemi gereklidir.
 Card not recognized,
 Cases / Week,Kasa / Hafta
+Cash / bank account,Kasa / banka hesabı
 Cash flow,Nakit akışı
 Cash on hand,Kasadaki nakit
 "Cash, Bank, …","Kasa, Banka, …"
@@ -519,16 +523,19 @@ Cost,Maliyet
 Cost Centre,
 Cost centre,
 Cost must be positive.,Maliyet pozitif olmalıdır.
+Could not accrue salary.,Maaş tahakkuk ettirilemedi.
 Could not add holiday.,Tatil eklenemedi.
 Could not add stage.,Aşama eklenemedi.
 Could not check payment status.,Ödeme durumu kontrol edilemedi.
 Could not create contract.,Sözleşme oluşturulamadı.
+Could not create the transaction.,İşlem oluşturulamadı.
 Could not load data health.,Veri sağlığı yüklenemedi.
 Could not load employee finances.,Çalışan finansı yüklenemedi.
 Could not load quotations.,Teklifler yüklenemedi.
 Could not load repost status.,Durum yüklenemedi.
 Could not load the HR overview.,İK genel bakışı yüklenemedi.
 Could not load the board.,Pano yüklenemedi.
+Could not load the entry.,Kayıt yüklenemedi.
 Could not load unmatched users.,Eşleşmemiş kullanıcılar yüklenemedi.
 Could not read backup file: {0},
 Could not read the uploaded file.,
@@ -566,6 +573,7 @@ Create an active leaf warehouse before viewing item stock status.,
 Create contract,Sözleşme oluştur
 Create credit note,Alacak notu oluştur
 Create debit note,
+Create draft,Taslak oluştur
 Create first order,
 Create outlets to start planning routes and visits.,Rotaları ve ziyaretleri planlamaya başlamak için satış noktaları oluşturun.
 Create payments / journals,Ödeme / yevmiye oluştur
@@ -576,6 +584,7 @@ Create your first lead or adjust the search filters.,İlk potansiyelinizi oluşt
 Create your first process to model business workflows.,İş akışlarını modellemek için ilk sürecinizi oluşturun.
 Created,Oluşturuldu
 Creates Maintenance Visit,Bakım ziyareti oluşturur
+Creates a draft Journal Entry — review and submit it from the ledger.,Taslak yevmiye oluşturur — defterden inceleyip onaylayın.
 "Creates a stock item; if qty and cost are given, an opening stock receipt is posted.",Stok ürünü oluşturur; adet ve maliyet verilirse açılış stok girişi yapılır.
 Credit,Alacak
 Credit Limit,Kredi Limiti
@@ -654,6 +663,7 @@ Delete deal?,
 Delete document?,
 Delete draft,
 Delete draft bill {name}? This cannot be undone.,{name} taslak faturası silinsin mi? Bu geri alınamaz.
+Delete draft entry?,Taslak silinsin mi?
 Delete failed.,Silme başarısız oldu.
 Delete invoice {name}?,{name} faturası silinsin mi?
 Delete lead?,
@@ -728,7 +738,9 @@ Downpayment %,Ön ödeme %
 Draft,Taslak
 Draft + submitted,Taslak + onaylı
 Draft Sales Invoice created: {0},Satış faturası taslağı oluşturuldu: {0}
+Draft deleted.,Taslak silindi.
 Draft entry deleted.,
+Draft transaction created.,Taslak işlem oluşturuldu.
 Draft transfer deleted.,
 Drill-down report: customer → invoices → document. Returns netted.,Detay: müşteri → faturalar → belge. İadeler netleştirildi.
 Drill-down report: item → invoice lines → document.,Detay: ürün → fatura satırları → belge.
@@ -824,6 +836,8 @@ Enter your Employee ID and secure PIN,
 Entered rate deviates by {pct}% from CBU rate.,
 Entries on/before this date are frozen.,
 Entry,Kayıt
+Entry cancelled.,Kayıt iptal edildi.
+Entry submitted.,Kayıt onaylandı.
 Equipment,Ekipman
 Equipment and Issue are required.,Ekipman ve Sorun zorunludur.
 Equipment coverage,Ekipman kapsamı
@@ -1263,6 +1277,7 @@ KPI pool share (%),KPI havuz payı (%)
 Keep,Sakla
 Keep Editing,
 Keep typing to narrow…,Daraltmak için yazmaya devam edin…
+Keeps the audit trail; amend to correct.,Denetim izini korur; düzeltmek için amend edin.
 Kind,
 Label,Etiket
 Landed cost vouchers,İthal maliyet fişleri
@@ -1504,6 +1519,7 @@ New sales order,Yeni satış siparişi
 New stage name,Yeni aşama adı
 New stock entry,Yeni stok kaydı
 New supplier,Yeni tedarikçi
+New transaction,Yeni işlem
 New transfer,Yeni transfer
 New warehouse,Yeni depo
 Next,İleri
@@ -1539,6 +1555,7 @@ No bills in this range,Bu aralıkta fatura yok
 No blockers,Engel yok
 No budget data for this period,
 No budgets found,
+No cash/bank account in this currency.,Bu para biriminde kasa/banka hesabı yok.
 No claim selected.,Talep seçilmedi.
 No claims yet,Henüz talep yok
 No columns,Sütun yok
@@ -1562,6 +1579,7 @@ No default Bank or Cash account configured for company {0}.,{0} şirketi için v
 No default {0} account found to copy parent from.,
 No department,Bölümsüz
 No earnings,Kazanç yok
+No employee account yet — record an advance first.,Henüz çalışan hesabı yok — önce avans kaydedin.
 No employees found.,Çalışan bulunamadı.
 No employees yet,Henüz çalışan yok
 No employees.,Personel yok.
@@ -1757,12 +1775,12 @@ One or more lines exceed available stock. Reduce qty or choose a different wareh
 "One outlet per line: code or name, latitude, longitude. Comma, tab or semicolon separated.","Satır başına bir nokta: kod veya ad, enlem, boylam. Virgül, sekme veya noktalı virgülle ayrılmış."
 Online payment,Çevrimiçi ödeme
 Only Approved claims can be settled. Current status: {0},Yalnızca Onaylanmış talepler kapatılabilir. Mevcut durum: {0}
-Only one entry — chart needs at least two points.,Yalnızca bir kayıt var — grafik en az iki nokta gerektirir.
 Only Payment Entry / Journal Entry can be reconciled here.,
 Only a Stock Manager can reconcile stock.,Yalnızca bir Stok Yöneticisi stok sayımı yapabilir.
 Only confirm after you have actually restored a backup to a scratch site and verified the data. This records today as the last successful restore test.,
 Only draft sales orders can be edited.,
 Only items with available stock in this POS warehouse appear here.,
+Only one entry — chart needs at least two points.,Yalnızca bir kayıt var — grafik en az iki nokta gerektirir.
 Only pending schedule rows can be rescheduled.,
 Only submitted Sales Orders can be closed.,
 Only submitted Sales Orders can be reopened.,
@@ -1963,6 +1981,7 @@ Pick a status.,Bir durum seçin.
 Pick a supplier.,Bir tedarikçi seçin.
 Pick a tender deal to compare quotations.,Teklifleri karşılaştırmak için bir ihale anlaşması seçin.
 Pick a valid date range.,Geçerli bir tarih aralığı seçin.
+Pick a valid month.,Geçerli bir ay seçin.
 Pick a warehouse,Depo seçin
 Pick a warehouse to receive stock into.,Stoğun alınacağı depoyu seçin.
 Pick a warehouse.,Bir depo seçin.
@@ -2154,6 +2173,7 @@ Records that block payroll or look unfinished. Fix at the source.,Bordroyu engel
 Recovered,Tahsil edilen
 Recovered from net pay this period; reduces the outstanding balance. Locked periods are read-only.,Bu dönemin net ödemesinden tahsil edilir; bakiyeyi azaltır. Kilitli dönemler salt okunur.
 Recurring monthly run-rate — the pipeline forecast.,Tekrarlayan aylık ciro — satış hattı tahmini.
+Reduce (payment / recovery),Azalt (ödeme / tahsilat)
 Ref No.,
 Reference,Referans
 Reference #,Referans #
@@ -2307,6 +2327,7 @@ SREs,SRE
 Salaries,Maaşlar
 Salary,Maaş
 Salary Slip {0} not found.,
+Salary accrued as a draft — review and submit it from the ledger.,Maaş taslak olarak tahakkuk etti — defterden inceleyip onaylayın.
 Salary and payroll summaries.,
 Salary payable,Ödenecek maaş
 Salary payments,Maaş ödemeleri
@@ -2857,6 +2878,7 @@ Var %,
 Variance,Fark
 Vendor bill does not match PO / receipt,Tedarikçi faturası sipariş / mal kabulü ile eşleşmiyor
 Vertical lanes (flow top→bottom),Dikey şeritler (akış yukarı→aşağı)
+View,Görüntüle
 View all,Tümünü görüntüle
 View attachment,Eki görüntüle
 View audit log,Denetim günlüğünü görüntüle
@@ -2902,6 +2924,7 @@ Warn only,Sadece uyar
 Warranty,Garanti
 Warranty Until,Garanti Bitişi
 We owe,Biz borçluyuz
+We owe more (accrual / charge),Daha çok borçluyuz (tahakkuk)
 Wed,Çar
 Wednesday,
 Weekend,Hafta sonu

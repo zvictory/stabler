@@ -49,6 +49,7 @@ Accrual (invoice date),Ҳисоблама (сотув ҳисоб-фактура 
 Accrual failed.,Ҳисоблаш муваффақиятсиз.
 Accrue,Ҳисоблаш
 Accrue period,Даврни ҳисоблаш
+Accrue salary,Ойлик таҳаккук
 Accrue this period?,Бу давр ҳисоблансинми?
 Accrued,Ҳисобланган
 Accrued {0} employees.,{0} ходим ҳисобланди.
@@ -165,6 +166,7 @@ Allowances,
 Allowances are hidden — payroll access required.,
 Allowed users,Рухсат этилган фойдаланувчилар
 Already Transferred,
+Already accrued for this month.,Бу ой учун аллақачон таҳаккук қилинган.
 Amend,Тўзатиш
 Amend (new draft),Тузатиш (янги қоралама)
 Amend expense,
@@ -313,6 +315,7 @@ Board,Доска
 Bonus,Бонус
 Book rate,
 Booked,Буюртма қилинган
+Books Dr Salary Expense / Cr Salary Payable as a draft — submit it from the ledger to post.,Қоралама ёзади: Дт Ойлик харажати / Кт Ойлик тўланадиган — дафтардан тасдиқланг.
 Books each locked employee's net as a payable (Dr salary expense / Cr salary payable). Idempotent — runs once per period.,Ҳар бир қулфланган ходимнинг соф ойлигини мажбуриятга ёзади (Дт ойлик харажати / Кт тўланадиган ойлик). Идемпотент — ҳар даврда бир марта.
 Books locked nets to salary payable.,Соф ойликларни тўланадиган ойликка ёзади.
 Branch,
@@ -384,6 +387,7 @@ Car / Item,Автомобил / Маҳсулот
 Car item is required.,Маҳсулот (автомобил) мажбурий.
 Card not recognized,
 Cases / Week,Қути / ҳафта
+Cash / bank account,Касса / банк ҳисоби
 Cash flow,Пул ағдарлари
 Cash on hand,Кассадаги пул
 "Cash, Bank, …","Касса, Банк, …"
@@ -524,16 +528,19 @@ Cost,Таннарх
 Cost Centre,
 Cost centre,
 Cost must be positive.,Таннарх мусбат бўлиши керак.
+Could not accrue salary.,Ойликни таҳаккук қилиб бўлмади.
 Could not add holiday.,Байрам қўшиб бўлмади.
 Could not add stage.,Босқич қўшиб бўлмади.
 Could not check payment status.,Тўлов ҳолатини текшириб бўлмади.
 Could not create contract.,Шартнома яратиб бўлмади.
+Could not create the transaction.,Транзакция яратиб бўлмади.
 Could not load data health.,Маълумотлар соғлиғини юклаб бўлмади.
 Could not load employee finances.,Ходим молиясини юклаб бўлмади.
 Could not load quotations.,Котировкаларни юклаб бўлмади.
 Could not load repost status.,Ҳолатни юклаб бўлмади.
 Could not load the HR overview.,HR умумий кўринишини юклаб бўлмади.
 Could not load the board.,Доскани юклаб бўлмади.
+Could not load the entry.,Ёзувни юклаб бўлмади.
 Could not load unmatched users.,Боғланмаган фойдаланувчиларни юклаб бўлмади.
 Could not read backup file: {0},
 Could not read the uploaded file.,
@@ -571,6 +578,7 @@ Create an active leaf warehouse before viewing item stock status.,
 Create contract,Шартнома яратиш
 Create credit note,Кредит нотасини яратиш
 Create debit note,
+Create draft,Қоралама яратиш
 Create first order,
 Create outlets to start planning routes and visits.,Маршрутлар ва сўзишмаларни режалаштириш учун сотув ўринларини яратинг.
 Create payments / journals,Тўлов / ўтказмалар яратиш
@@ -581,6 +589,7 @@ Create your first lead or adjust the search filters.,Биринчи лидни �
 Create your first process to model business workflows.,Бизнес жараёнларни моделлаштириш учун биринчи жараёнингизни яратинг.
 Created,Яратилган
 Creates Maintenance Visit,Хизмат ташрифини яратади
+Creates a draft Journal Entry — review and submit it from the ledger.,Қоралама журнал ёзувини яратади — уни дафтардан кўриб тасдиқланг.
 "Creates a stock item; if qty and cost are given, an opening stock receipt is posted.","Омбор товари яратади; миқдор ва нарх берилса, бошланғич кирим қилинади."
 Credit,Кредит
 Credit Limit,Кредит лимити
@@ -659,6 +668,7 @@ Delete deal?,
 Delete document?,
 Delete draft,
 Delete draft bill {name}? This cannot be undone.,{name} қоралама ҳисобини ўчирасизми? Буни бекор қилиб бўлмайди.
+Delete draft entry?,Қоралама ўчирилсинми?
 Delete failed.,Ўчириш хатоси.
 Delete invoice {name}?,
 Delete lead?,
@@ -734,7 +744,9 @@ Downpayment %,Бошланғич тўлов %
 Draft,Қоралама
 Draft + submitted,Қоралама + тасдиқланган
 Draft Sales Invoice created: {0},Сотув фактураси қоралами яратилди: {0}
+Draft deleted.,Қоралама ўчирилди.
 Draft entry deleted.,
+Draft transaction created.,Қоралама транзакция яратилди.
 Draft transfer deleted.,
 Drill-down report: customer → invoices → document. Returns netted.,Тафсилот: мижоз → ҳисоб-фактуралар → ҳужжат. Қайтаришлар ҳисобга олинган.
 Drill-down report: item → invoice lines → document.,Тафсилот: маҳсулот → ҳисоб-фактура қаторлари → ҳужжат.
@@ -831,6 +843,8 @@ Enter your Employee ID and secure PIN,
 Entered rate deviates by {pct}% from CBU rate.,
 Entries on/before this date are frozen.,
 Entry,
+Entry cancelled.,Ёзув бекор қилинди.
+Entry submitted.,Ёзув тасдиқланди.
 Equipment,Ускуна
 Equipment and Issue are required.,Ускуна ва муаммо кераклиларидан.
 Equipment coverage,Жиҳоз қамрови
@@ -1270,6 +1284,7 @@ KPI pool share (%),KPI фонд улуши (%)
 Keep,Сақлаш
 Keep Editing,
 Keep typing to narrow…,Торайтириш учун ёзишда давом этинг…
+Keeps the audit trail; amend to correct.,Аудит изи сақланади; тузатиш учун amend қилинг.
 Kind,
 Label,Ном
 Landed cost vouchers,Қўшимча харажат ваучерлари
@@ -1512,6 +1527,7 @@ New sales order,Янги сотув буйртмаси
 New stage name,Янги босқич номи
 New stock entry,Янги омбор ёзув
 New supplier,Янги етказиб берувчи
+New transaction,Янги транзакция
 New transfer,Янги ўтказма
 New warehouse,Янги омбор
 Next,Кейингиси
@@ -1547,6 +1563,7 @@ No bills in this range,Бу диапазонда счётлар йўқ
 No blockers,Тўсиқ йўқ
 No budget data for this period,
 No budgets found,
+No cash/bank account in this currency.,Бу валютада касса/банк ҳисоби йўқ.
 No claim selected.,Даво танланмаган.
 No claims yet,Ҳалиғача даволар йўқ
 No columns,Устунлар йўқ
@@ -1570,6 +1587,7 @@ No default Bank or Cash account configured for company {0}.,Компания {0}
 No default {0} account found to copy parent from.,
 No department,Бўлимсиз
 No earnings,Ҳисобланганлар йўқ
+No employee account yet — record an advance first.,Ҳали ходим ҳисоби йўқ — аввал аванс киритинг.
 No employees found.,Ходимлар топилмади.
 No employees yet,Ҳозирча ходимлар йўқ
 No employees.,Ходимлар йўқ.
@@ -1765,12 +1783,12 @@ One or more lines exceed available stock. Reduce qty or choose a different wareh
 "One outlet per line: code or name, latitude, longitude. Comma, tab or semicolon separated.","Ҳар қаторда битта нуқта: код ёки ном, кенглик, узунлик. Вергул, табуляция ёки нуқтали вергул билан ажратилган."
 Online payment,Онлайн тўлов
 Only Approved claims can be settled. Current status: {0},Фақат тасдиқланган даъвалар ҳал этилиши мумкин. Ҳозирги ҳолат: {0}
-Only one entry — chart needs at least two points.,Фақат битта ёзув — график учун камида икки нуқта керак.
 Only Payment Entry / Journal Entry can be reconciled here.,
 Only a Stock Manager can reconcile stock.,Фақат омбор менежери қолдиқларни солиштира олади.
 Only confirm after you have actually restored a backup to a scratch site and verified the data. This records today as the last successful restore test.,
 Only draft sales orders can be edited.,
 Only items with available stock in this POS warehouse appear here.,
+Only one entry — chart needs at least two points.,Фақат битта ёзув — график учун камида икки нуқта керак.
 Only pending schedule rows can be rescheduled.,
 Only submitted Sales Orders can be closed.,
 Only submitted Sales Orders can be reopened.,
@@ -1973,6 +1991,7 @@ Pick a status.,Ҳолатни танланг.
 Pick a supplier.,Таъминотчини танланг.
 Pick a tender deal to compare quotations.,Котировкаларни таққослаш учун тендер битимини танланг.
 Pick a valid date range.,Тўғри сана оралиғини танланг.
+Pick a valid month.,Тўғри ойни танланг.
 Pick a warehouse,Омборини танланг
 Pick a warehouse to receive stock into.,Товарни қабул қилиш учун омборни танланг.
 Pick a warehouse.,Омборини танланг.
@@ -2165,6 +2184,7 @@ Records that block payroll or look unfinished. Fix at the source.,Ойликни
 Recovered,Ушлаб қолинган
 Recovered from net pay this period; reduces the outstanding balance. Locked periods are read-only.,Шу давр соф тўловидан ушлаб қолинади; қолдиқни камайтиради. Қулфланган даврлар фақат ўқиш учун.
 Recurring monthly run-rate — the pipeline forecast.,Такрорий ойлик айланма — воронка прогнози.
+Reduce (payment / recovery),Камайтириш (тўлов / ушлаш)
 Ref No.,
 Reference,Шу̃носнома
 Reference #,Шу̃носнома #
@@ -2319,6 +2339,7 @@ SREs,SRE
 Salaries,Ойликлар
 Salary,Ойлик
 Salary Slip {0} not found.,
+Salary accrued as a draft — review and submit it from the ledger.,Ойлик қоралама сифатида таҳаккук қилинди — дафтардан кўриб тасдиқланг.
 Salary and payroll summaries.,
 Salary payable,Тўланадиган ойлик
 Salary payments,Ойлик тўловлари
@@ -2874,6 +2895,7 @@ Var %,
 Variance,Фарқ
 Vendor bill does not match PO / receipt,Етказиб берувчи ҳисоби буюртма / қабулга мос келмайди
 Vertical lanes (flow top→bottom),Вертикал йўлаклар (оқим юқори→пастки)
+View,Кўриш
 View all,Ҳаммасини кўриш
 View attachment,Қўшимчасини кўриш
 View audit log,Ўзгаришлар тарихини кўриш
@@ -2919,6 +2941,7 @@ Warn only,Фақат огоҳлантириш
 Warranty,Кафолат
 Warranty Until,Гарантия гача
 We owe,Биз қарздормиз
+We owe more (accrual / charge),Биз кўпроқ қарздормиз (таҳаккук)
 Wed,Ч
 Wednesday,
 Weekend,Дам олиш куни

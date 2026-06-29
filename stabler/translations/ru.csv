@@ -52,6 +52,7 @@ Accrual (invoice date),Начисление (дата счёта продажи)
 Accrual failed.,Не удалось начислить.
 Accrue,Начислить
 Accrue period,Начислить период
+Accrue salary,Начислить зарплату
 Accrue this period?,Начислить этот период?
 Accrued,Начислено
 Accrued {0} employees.,Начислено {0} сотрудников.
@@ -169,6 +170,7 @@ Allowances,
 Allowances are hidden — payroll access required.,
 Allowed users,Разрешённые пользователи
 Already Transferred,
+Already accrued for this month.,За этот месяц уже начислено.
 Amend,Изменить
 Amend (new draft),Исправить (новый черновик)
 Amend expense,
@@ -318,6 +320,7 @@ Board,Доска
 Bonus,Премия
 Book rate,
 Booked,Заказано
+Books Dr Salary Expense / Cr Salary Payable as a draft — submit it from the ledger to post.,Создаёт черновик: Дт Расходы на ЗП / Кт ЗП к выплате — проведите его в книге.
 Books each locked employee's net as a payable (Dr salary expense / Cr salary payable). Idempotent — runs once per period.,Записывает нетто каждого заблокированного сотрудника в кредиторскую задолженность (Дт расход зарплаты / Кт зарплата к выплате). Идемпотентно — раз на период.
 Books locked nets to salary payable.,Записывает нетто в зарплату к выплате.
 Branch,
@@ -390,6 +393,7 @@ Car / Item,Авто / Товар
 Car item is required.,Товар (автомобиль) обязателен.
 Card not recognized,
 Cases / Week,Ящики / нед.
+Cash / bank account,Касса / банк счёт
 Cash flow,Движение денежных средств
 Cash on hand,Денежные средства
 "Cash, Bank, …","Касса, банк, …"
@@ -530,16 +534,19 @@ Cost,Себестоимость
 Cost Centre,
 Cost centre,
 Cost must be positive.,Себестоимость должна быть положительной.
+Could not accrue salary.,Не удалось начислить зарплату.
 Could not add holiday.,Не удалось добавить праздник.
 Could not add stage.,Не удалось добавить этап.
 Could not check payment status.,Не удалось проверить статус платежа.
 Could not create contract.,Не удалось создать контракт.
+Could not create the transaction.,Не удалось создать операцию.
 Could not load data health.,Не удалось загрузить качество данных.
 Could not load employee finances.,Не удалось загрузить финансы сотрудника.
 Could not load quotations.,Не удалось загрузить котировки.
 Could not load repost status.,Не удалось загрузить статус.
 Could not load the HR overview.,Не удалось загрузить HR обзор.
 Could not load the board.,Не удалось загрузить доску.
+Could not load the entry.,Не удалось загрузить запись.
 Could not load unmatched users.,Не удалось загрузить несопоставленных пользователей.
 Could not read backup file: {0},
 Could not read the uploaded file.,
@@ -577,6 +584,7 @@ Create an active leaf warehouse before viewing item stock status.,
 Create contract,Создать договор
 Create credit note,Создать кредит-ноту
 Create debit note,
+Create draft,Создать черновик
 Create first order,
 Create outlets to start planning routes and visits.,"Создайте торговые точки, чтобы планировать маршруты и визиты."
 Create payments / journals,Создание платежей / проводок
@@ -587,6 +595,7 @@ Create your first lead or adjust the search filters.,Создайте первы
 Create your first process to model business workflows.,Создайте первый процесс для моделирования бизнес-процессов.
 Created,Создан
 Creates Maintenance Visit,Создаёт запись выезда
+Creates a draft Journal Entry — review and submit it from the ledger.,Создаёт черновик проводки — проверьте и проведите его в книге.
 "Creates a stock item; if qty and cost are given, an opening stock receipt is posted.",Создаёт складской товар; при указании кол-ва и цены проводится начальное оприходование.
 Credit,Кредит
 Credit Limit,Кредитный лимит
@@ -665,6 +674,7 @@ Delete deal?,
 Delete document?,
 Delete draft,
 Delete draft bill {name}? This cannot be undone.,Удалить черновик счёта {name}? Это действие необратимо.
+Delete draft entry?,Удалить черновик?
 Delete failed.,Ошибка удаления.
 Delete invoice {name}?,
 Delete lead?,
@@ -740,7 +750,9 @@ Downpayment %,Первоначальный взнос %
 Draft,Черновик
 Draft + submitted,Черновики + проведённые
 Draft Sales Invoice created: {0},Черновик счёта-фактуры создан: {0}
+Draft deleted.,Черновик удалён.
 Draft entry deleted.,
+Draft transaction created.,Черновик операции создан.
 Draft transfer deleted.,
 Drill-down report: customer → invoices → document. Returns netted.,Детализация: клиент → счета → документ. Возвраты учтены.
 Drill-down report: item → invoice lines → document.,Детализация: товар → строки счетов → документ.
@@ -838,6 +850,8 @@ Enter your Employee ID and secure PIN,
 Entered rate deviates by {pct}% from CBU rate.,
 Entries on/before this date are frozen.,
 Entry,
+Entry cancelled.,Запись отменена.
+Entry submitted.,Запись проведена.
 Equipment,Оборудование
 Equipment and Issue are required.,Оборудование и проблема обязательны.
 Equipment coverage,Покрытие оборудования
@@ -1277,6 +1291,7 @@ KPI pool share (%),Доля KPI-пула (%)
 Keep,Хранить
 Keep Editing,
 Keep typing to narrow…,Продолжайте вводить для уточнения…
+Keeps the audit trail; amend to correct.,Сохраняет аудит-след; для исправления — корректировка.
 Kind,
 Label,Надпись
 Landed cost vouchers,Ваучеры дополнительных затрат
@@ -1519,6 +1534,7 @@ New sales order,Новый заказ на продажу
 New stage name,Название нового этапа
 New stock entry,Новое движение товаров
 New supplier,Новый поставщик
+New transaction,Новая операция
 New transfer,Новый перевод
 New warehouse,Новый склад
 Next,Далее
@@ -1554,6 +1570,7 @@ No bills in this range,Счётов в этом диапазоне нет
 No blockers,Нет блокеров
 No budget data for this period,
 No budgets found,
+No cash/bank account in this currency.,Нет кассы/банка в этой валюте.
 No claim selected.,Претензия не выбрана.
 No claims yet,Претензий пока нет
 No columns,Нет колонок
@@ -1577,6 +1594,7 @@ No default Bank or Cash account configured for company {0}.,Для компан�
 No default {0} account found to copy parent from.,
 No department,Без отдела
 No earnings,Нет начислений
+No employee account yet — record an advance first.,Пока нет счёта сотрудника — сначала проведите аванс.
 No employees found.,Сотрудники не найдены.
 No employees yet,Сотрудников пока нет
 No employees.,Нет сотрудников.
@@ -1772,12 +1790,12 @@ One or more lines exceed available stock. Reduce qty or choose a different wareh
 "One outlet per line: code or name, latitude, longitude. Comma, tab or semicolon separated.","Одна точка на строку: код или название, широта, долгота. Разделители: запятая, табуляция или точка с запятой."
 Online payment,Онлайн-оплата
 Only Approved claims can be settled. Current status: {0},Только одобренные требования могут быть урегулированы. Текущий статус: {0}
-Only one entry — chart needs at least two points.,Только одна запись — для графика нужно минимум две точки.
 Only Payment Entry / Journal Entry can be reconciled here.,
 Only a Stock Manager can reconcile stock.,Только менеджер склада может проводить сверку остатков.
 Only confirm after you have actually restored a backup to a scratch site and verified the data. This records today as the last successful restore test.,
 Only draft sales orders can be edited.,
 Only items with available stock in this POS warehouse appear here.,
+Only one entry — chart needs at least two points.,Только одна запись — для графика нужно минимум две точки.
 Only pending schedule rows can be rescheduled.,
 Only submitted Sales Orders can be closed.,
 Only submitted Sales Orders can be reopened.,
@@ -1980,6 +1998,7 @@ Pick a status.,Выберите статус.
 Pick a supplier.,Выберите поставщика.
 Pick a tender deal to compare quotations.,Выберите тендерную сделку для сравнения котировок.
 Pick a valid date range.,Выберите корректный диапазон дат.
+Pick a valid month.,Выберите корректный месяц.
 Pick a warehouse,Выберите склад
 Pick a warehouse to receive stock into.,Выберите склад для оприходования товара.
 Pick a warehouse.,Выберите склад.
@@ -2172,6 +2191,7 @@ Records that block payroll or look unfinished. Fix at the source.,"Записи,
 Recovered,Удержано
 Recovered from net pay this period; reduces the outstanding balance. Locked periods are read-only.,Удерживается из чистой выплаты за период; уменьшает остаток. Заблокированные периоды только для чтения.
 Recurring monthly run-rate — the pipeline forecast.,Регулярный месячный оборот — прогноз воронки.
+Reduce (payment / recovery),Уменьшить (выплата / удержание)
 Ref No.,
 Reference,Ссылка
 Reference #,Номер ссылки
@@ -2326,6 +2346,7 @@ SREs,SRE
 Salaries,Зарплаты
 Salary,Зарплата
 Salary Slip {0} not found.,
+Salary accrued as a draft — review and submit it from the ledger.,Зарплата начислена как черновик — проверьте и проведите в книге.
 Salary and payroll summaries.,
 Salary payable,Зарплата к выплате
 Salary payments,Выплата зарплаты
@@ -2881,6 +2902,7 @@ Var %,
 Variance,Расхождение
 Vendor bill does not match PO / receipt,Счёт поставщика не совпадает с заказом / приёмкой
 Vertical lanes (flow top→bottom),Вертикальные дорожки (поток сверху→вниз)
+View,Просмотр
 View all,Показать все
 View attachment,Просмотреть вложение
 View audit log,Просмотр журнала изменений
@@ -2926,6 +2948,7 @@ Warn only,Только предупреждать
 Warranty,Гарантия
 Warranty Until,Гарантия до
 We owe,Мы должны
+We owe more (accrual / charge),Мы должны больше (начисление)
 Wed,Ср
 Wednesday,
 Weekend,Выходной

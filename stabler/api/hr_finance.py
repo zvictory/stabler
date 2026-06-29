@@ -132,7 +132,40 @@ def employee_financials(company: str, employee: str) -> dict:
 		"voucher_no": m.get("voucher_no"),
 		"debit": flt(m.get("debit")),
 		"credit": flt(m.get("credit")),
+		"docstatus": 1,
 	} for m in gl]
+
+	# Draft Journal Entries aren't in the GL yet — surface them so they can be
+	# reviewed, submitted or deleted from the ledger (transactions CRUD).
+	drafts = frappe.db.sql(
+		"""
+		SELECT je.posting_date, je.creation, jea.account, jea.account_currency,
+		       je.name AS voucher_no,
+		       jea.debit_in_account_currency AS debit, jea.credit_in_account_currency AS credit
+		FROM `tabJournal Entry Account` jea
+		JOIN `tabJournal Entry` je ON je.name = jea.parent
+		WHERE je.company = %(c)s AND je.docstatus = 0
+		  AND jea.party_type = 'Employee' AND jea.party = %(e)s
+		ORDER BY je.posting_date DESC, je.creation DESC
+		LIMIT 50
+		""",
+		{"c": company, "e": employee},
+		as_dict=True,
+	)
+	draft_txns = [{
+		"posting_date": str(d["posting_date"]) if d.get("posting_date") else None,
+		"_creation": str(d.get("creation") or ""),
+		"account": d.get("account"),
+		"label": (d.get("account") or "").split(" - ")[0],
+		"currency": d.get("account_currency") or base_ccy,
+		"voucher_type": "Journal Entry",
+		"voucher_no": d.get("voucher_no"),
+		"debit": flt(d.get("debit")),
+		"credit": flt(d.get("credit")),
+		"docstatus": 0,
+	} for d in drafts]
+	transactions = sorted(draft_txns + transactions,
+	                      key=lambda r: (r.get("posting_date") or "", r.get("_creation") or ""), reverse=True)
 
 	net = frappe.db.sql(
 		"""

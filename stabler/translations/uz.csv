@@ -49,6 +49,7 @@ Accrual (invoice date),Hisoblama (sotuv hisob-faktura sanasi)
 Accrual failed.,Hisoblash muvaffaqiyatsiz.
 Accrue,Hisoblash
 Accrue period,Davrni hisoblash
+Accrue salary,Oylik tahakkuk
 Accrue this period?,Bu davr hisoblansinmi?
 Accrued,Hisoblangan
 Accrued {0} employees.,{0} xodim hisoblandi.
@@ -165,6 +166,7 @@ Allowances,
 Allowances are hidden — payroll access required.,
 Allowed users,Ruxsat etilgan foydalanuvchilar
 Already Transferred,
+Already accrued for this month.,Bu oy uchun allaqachon tahakkuk qilingan.
 Amend,O'zgartirilgan
 Amend (new draft),Tuzatish (yangi qoralama)
 Amend expense,
@@ -313,6 +315,7 @@ Board,Doska
 Bonus,Bonus
 Book rate,
 Booked,Buyurtma qilingan
+Books Dr Salary Expense / Cr Salary Payable as a draft — submit it from the ledger to post.,Qoralama yozadi: Dt Oylik xarajati / Kt Oylik to'lanadigan — daftardan tasdiqlang.
 Books each locked employee's net as a payable (Dr salary expense / Cr salary payable). Idempotent — runs once per period.,Har bir qulflangan xodimning sof oyligini majburiyatga yozadi (Dt oylik xarajati / Kt to'lanadigan oylik). Idempotent — har davrda bir marta.
 Books locked nets to salary payable.,Sof oyliklarni to'lanadigan oylikka yozadi.
 Branch,
@@ -384,6 +387,7 @@ Car / Item,Avtomobil / Mahsulot
 Car item is required.,Mahsulot (avtomobil) majburiy.
 Card not recognized,
 Cases / Week,Quti / hafta
+Cash / bank account,Kassa / bank hisobi
 Cash flow,Pul oqimi
 Cash on hand,Kassadagi pul
 "Cash, Bank, …","Naqd, Bank, …"
@@ -524,16 +528,19 @@ Cost,Tannarx
 Cost Centre,
 Cost centre,
 Cost must be positive.,Tannarx musbat bo'lishi kerak.
+Could not accrue salary.,Oylikni tahakkuk qilib bo'lmadi.
 Could not add holiday.,Bayram qo'shib bo'lmadi.
 Could not add stage.,Bosqich qo'shib bo'lmadi.
 Could not check payment status.,To‘lov holatini tekshirib bo‘lmadi.
 Could not create contract.,Shartnoma yaratib bo'lmadi.
+Could not create the transaction.,Tranzaksiya yaratib bo'lmadi.
 Could not load data health.,Ma'lumotlar sog'lig'ini yuklab bo'lmadi.
 Could not load employee finances.,Xodim moliyasini yuklab bo'lmadi.
 Could not load quotations.,Kotirovkalarni yuklab bo'lmadi.
 Could not load repost status.,Holatni yuklab bo'lmadi.
 Could not load the HR overview.,HR umumiy ko'rinishini yuklab bo'lmadi.
 Could not load the board.,Doskani yuklab bo'lmadi.
+Could not load the entry.,Yozuvni yuklab bo'lmadi.
 Could not load unmatched users.,Bog'lanmagan foydalanuvchilarni yuklab bo'lmadi.
 Could not read backup file: {0},
 Could not read the uploaded file.,
@@ -571,6 +578,7 @@ Create an active leaf warehouse before viewing item stock status.,
 Create contract,Shartnoma yaratish
 Create credit note,Kredit xatni yaratish
 Create debit note,
+Create draft,Qoralama yaratish
 Create first order,
 Create outlets to start planning routes and visits.,Marshrutlarni va tashrif etishlarni rejalashtirishni boshlash uchun shubelalarni yarating.
 Create payments / journals,To'lov / o'tkazmalar yaratish
@@ -581,6 +589,7 @@ Create your first lead or adjust the search filters.,Birinchi lidni yarating yok
 Create your first process to model business workflows.,Biznes jarayonlarni modellashtirish uchun birinchi jarayoningizni yarating.
 Created,Yaratilgan
 Creates Maintenance Visit,Xizmat tashrifini yaratadi
+Creates a draft Journal Entry — review and submit it from the ledger.,Qoralama jurnal yozuvini yaratadi — uni daftardan ko'rib tasdiqlang.
 "Creates a stock item; if qty and cost are given, an opening stock receipt is posted.","Ombor tovari yaratadi; miqdor va narx berilsa, boshlang'ich kirim qilinadi."
 Credit,Kredit
 Credit Limit,Kredit chegarasi
@@ -659,6 +668,7 @@ Delete deal?,
 Delete document?,
 Delete draft,
 Delete draft bill {name}? This cannot be undone.,{name} qoralama hisobini o'chirasizmi? Buni bekor qilib bo'lmaydi.
+Delete draft entry?,Qoralama o'chirilsinmi?
 Delete failed.,O'chirish xatosi.
 Delete invoice {name}?,
 Delete lead?,
@@ -734,7 +744,9 @@ Downpayment %,Boshlang'ich to'lov %
 Draft,Qoralama
 Draft + submitted,Qoralama + tasdiqlangan
 Draft Sales Invoice created: {0},Sotuv fakturasi qoralamasi yaratildi: {0}
+Draft deleted.,Qoralama o'chirildi.
 Draft entry deleted.,
+Draft transaction created.,Qoralama tranzaksiya yaratildi.
 Draft transfer deleted.,
 Drill-down report: customer → invoices → document. Returns netted.,Tafsilot: mijoz → hisob-fakturalar → hujjat. Qaytarishlar hisobga olingan.
 Drill-down report: item → invoice lines → document.,Tafsilot: mahsulot → hisob-faktura qatorlari → hujjat.
@@ -831,6 +843,8 @@ Enter your Employee ID and secure PIN,
 Entered rate deviates by {pct}% from CBU rate.,
 Entries on/before this date are frozen.,
 Entry,
+Entry cancelled.,Yozuv bekor qilindi.
+Entry submitted.,Yozuv tasdiqlandi.
 Equipment,Jihozlar
 Equipment and Issue are required.,Jihozlar va muammo talab qilinadi.
 Equipment coverage,Jihoz qamrovi
@@ -1270,6 +1284,7 @@ KPI pool share (%),KPI fond ulushi (%)
 Keep,Saqlash
 Keep Editing,
 Keep typing to narrow…,Toraytirish uchun yozishda davom eting…
+Keeps the audit trail; amend to correct.,Audit izi saqlanadi; tuzatish uchun amend qiling.
 Kind,
 Label,Nom
 Landed cost vouchers,Qo'shimcha xarajat vaucherlari
@@ -1512,6 +1527,7 @@ New sales order,Yangi sotuv buyurtmasi
 New stage name,Yangi bosqich nomi
 New stock entry,Yangi ombor kiritmasi
 New supplier,Yangi ta'minotchi
+New transaction,Yangi tranzaksiya
 New transfer,Yangi o'tkazma
 New warehouse,Yangi ombor
 Next,Keyingisi
@@ -1547,6 +1563,7 @@ No bills in this range,Bu diapazonida qo'lyozuvchilar yo'q
 No blockers,To'siq yo'q
 No budget data for this period,
 No budgets found,
+No cash/bank account in this currency.,Bu valyutada kassa/bank hisobi yo'q.
 No claim selected.,Talaba tanlanmagan.
 No claims yet,Hali talabalyar yo'q
 No columns,Ustunlar yo'q
@@ -1570,6 +1587,7 @@ No default Bank or Cash account configured for company {0}.,{0} kompaniyasi uchu
 No default {0} account found to copy parent from.,
 No department,Bo'limsiz
 No earnings,Hisoblanganlar yo'q
+No employee account yet — record an advance first.,Hali xodim hisobi yo'q — avval avans kiriting.
 No employees found.,Xodimlar topilmadi.
 No employees yet,Hozircha xodimlar yo'q
 No employees.,Xodimlar yo'q.
@@ -1765,12 +1783,12 @@ One or more lines exceed available stock. Reduce qty or choose a different wareh
 "One outlet per line: code or name, latitude, longitude. Comma, tab or semicolon separated.","Har qatorda bitta nuqta: kod yoki nom, kenglik, uzunlik. Vergul, tabulyatsiya yoki nuqtali vergul bilan ajratilgan."
 Online payment,Onlayn to‘lov
 Only Approved claims can be settled. Current status: {0},Faqat Tasdiqlangan da'volar ko'rib chiqilishi mumkin. Hozirgi holat: {0}
-Only one entry — chart needs at least two points.,Faqat bitta yozuv — grafik uchun kamida ikki nuqta kerak.
 Only Payment Entry / Journal Entry can be reconciled here.,
 Only a Stock Manager can reconcile stock.,Faqat ombor menejeri qoldiqlarni solishtira oladi.
 Only confirm after you have actually restored a backup to a scratch site and verified the data. This records today as the last successful restore test.,
 Only draft sales orders can be edited.,
 Only items with available stock in this POS warehouse appear here.,
+Only one entry — chart needs at least two points.,Faqat bitta yozuv — grafik uchun kamida ikki nuqta kerak.
 Only pending schedule rows can be rescheduled.,
 Only submitted Sales Orders can be closed.,
 Only submitted Sales Orders can be reopened.,
@@ -1973,6 +1991,7 @@ Pick a status.,Holatni tanlang.
 Pick a supplier.,Yetkazib beradigan kompaniyani tanlang.
 Pick a tender deal to compare quotations.,Kotirovkalarni taqqoslash uchun tender bitimini tanlang.
 Pick a valid date range.,To'g'ri sana oralig'ini tanlang.
+Pick a valid month.,To'g'ri oyni tanlang.
 Pick a warehouse,Omborni tanlang
 Pick a warehouse to receive stock into.,Tovarni qabul qilish uchun omborni tanlang.
 Pick a warehouse.,Omborni tanlang.
@@ -2165,6 +2184,7 @@ Records that block payroll or look unfinished. Fix at the source.,Oylikni to'say
 Recovered,Ushlab qolingan
 Recovered from net pay this period; reduces the outstanding balance. Locked periods are read-only.,Shu davr sof to'lovidan ushlab qolinadi; qoldiqni kamaytiradi. Qulflangan davrlar faqat o'qish uchun.
 Recurring monthly run-rate — the pipeline forecast.,Takroriy oylik aylanma — voronka prognozi.
+Reduce (payment / recovery),Kamaytirish (to'lov / ushlash)
 Ref No.,
 Reference,Havolа
 Reference #,Havolа raqami
@@ -2319,6 +2339,7 @@ SREs,SRE
 Salaries,Oyliklar
 Salary,Oylik
 Salary Slip {0} not found.,
+Salary accrued as a draft — review and submit it from the ledger.,Oylik qoralama sifatida tahakkuk qilindi — daftardan ko'rib tasdiqlang.
 Salary and payroll summaries.,
 Salary payable,To'lanadigan oylik
 Salary payments,Oylik to'lovlari
@@ -2874,6 +2895,7 @@ Var %,
 Variance,Farq
 Vendor bill does not match PO / receipt,Yetkazib beruvchi hisobi buyurtma / qabulga mos kelmaydi
 Vertical lanes (flow top→bottom),Vertikal yoʿlaklar (oqim yuqori→pastki)
+View,Ko'rish
 View all,Hammasini ko'rish
 View attachment,Ilova ko'rish
 View audit log,O'zgarishlar tarixini ko'rish
@@ -2919,6 +2941,7 @@ Warn only,Faqat ogohlantirish
 Warranty,Kafolat
 Warranty Until,Kafolat muddati
 We owe,Biz qarzdormiz
+We owe more (accrual / charge),Biz ko'proq qarzdormiz (tahakkuk)
 Wed,Ch
 Wednesday,
 Weekend,Dam olish kuni

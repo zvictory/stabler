@@ -8,6 +8,7 @@ import { t } from "../../composables/i18n.js";
 import { formatDate, todayIso } from "../../composables/date.js";
 import { formatMoney } from "../../composables/money.js";
 import { useToast } from "../../composables/useToast.js";
+import { useConfirm } from "../../composables/useConfirm.js";
 import EmptyState from "../../components/EmptyState.vue";
 import DateInput from "../../components/DateInput.vue";
 import Select from "../../components/Select.vue";
@@ -147,6 +148,135 @@ async function select(r) {
 }
 function openProfile(name) { router.push(`/hr/employees/${name}`); }
 
+const { confirm } = useConfirm();
+
+// ── Transactions CRUD (drafts: submit/delete · submitted: cancel · view any) ──
+const txBusy = ref(false);
+const jeOpen = ref(false);
+const jeDetail = ref(null);
+const jeLoading = ref(false);
+async function viewJE(voucher) {
+	if (!voucher) return;
+	jeOpen.value = true;
+	jeLoading.value = true;
+	jeDetail.value = null;
+	try {
+		jeDetail.value = await call("stabler.api.money.journal_entry_detail", { name: voucher });
+	} catch (err) {
+		toast.error(err?.message || t("Could not load the entry."));
+	} finally {
+		jeLoading.value = false;
+	}
+}
+async function reloadAfterTx() {
+	await Promise.all([loadBalances(), selected.value ? select(selected.value) : Promise.resolve()]);
+}
+async function submitTx(m) {
+	txBusy.value = true;
+	try {
+		await call("stabler.api.money.submit_journal_entry", { name: m.voucher_no });
+		toast.success(t("Entry submitted."));
+		await reloadAfterTx();
+	} catch (err) { toast.error(err?.message || t("Submit failed.")); }
+	finally { txBusy.value = false; }
+}
+async function deleteTx(m) {
+	const ok = await confirm({ title: t("Delete draft entry?"), body: m.voucher_no, danger: true, confirmLabel: t("Delete") });
+	if (!ok) return;
+	txBusy.value = true;
+	try {
+		await call("stabler.api.money.delete_journal_entry", { name: m.voucher_no });
+		toast.success(t("Draft deleted."));
+		await reloadAfterTx();
+	} catch (err) { toast.error(err?.message || t("Delete failed.")); }
+	finally { txBusy.value = false; }
+}
+async function cancelTx(m) {
+	const ok = await confirm({ title: t("Cancel this entry?"), body: t("Keeps the audit trail; amend to correct."), danger: true, confirmLabel: t("Cancel entry") });
+	if (!ok) return;
+	txBusy.value = true;
+	try {
+		await call("stabler.api.money.cancel_journal_entry", { name: m.voucher_no });
+		toast.success(t("Entry cancelled."));
+		await reloadAfterTx();
+	} catch (err) { toast.error(err?.message || t("Cancel failed.")); }
+	finally { txBusy.value = false; }
+}
+
+// ── New transaction (manual JE against the employee) ─────────────────────────
+const newTxOpen = ref(false);
+const newTxBusy = ref(false);
+const newTxError = ref("");
+const newTxForm = ref({ amount: null, direction: "credit", counter: "", remark: "", posting_date: todayIso() });
+const empAccount = computed(() => fin.value?.breakdown?.[0]?.account || "");
+const empCcy = computed(() => fin.value?.display_currency || currency.value);
+// Same-currency counter accounts only: both legs carry account-currency amounts,
+// so equal amounts balance with no cross-FX residual (the in-scope case).
+const counterAccounts = computed(() =>
+	(payAccounts.value || []).filter((a) => (a.account_currency || a.currency) === empCcy.value));
+function openNewTx() {
+	newTxForm.value = { amount: null, direction: "credit", counter: counterAccounts.value[0]?.name || "", remark: "", posting_date: todayIso() };
+	newTxError.value = "";
+	newTxOpen.value = true;
+}
+async function createTx() {
+	newTxError.value = "";
+	if (!empAccount.value) return (newTxError.value = t("No employee account yet — record an advance first."));
+	if (!(Number(newTxForm.value.amount) > 0)) return (newTxError.value = t("Enter an amount greater than zero."));
+	if (!newTxForm.value.counter) return (newTxError.value = t("Pick a cash/bank account."));
+	const amt = Number(newTxForm.value.amount);
+	// direction=credit → we owe the worker more (Cr employee / Dr counter); debit → reduce.
+	const empLine = newTxForm.value.direction === "credit"
+		? { account: empAccount.value, party_type: "Employee", party: selected.value.name, credit: amt }
+		: { account: empAccount.value, party_type: "Employee", party: selected.value.name, debit: amt };
+	const counterLine = newTxForm.value.direction === "credit"
+		? { account: newTxForm.value.counter, debit: amt }
+		: { account: newTxForm.value.counter, credit: amt };
+	newTxBusy.value = true;
+	try {
+		await call("stabler.api.money.create_journal_entry", {
+			company: activeCompany.value,
+			posting_date: newTxForm.value.posting_date,
+			accounts: JSON.stringify([empLine, counterLine]),
+			user_remark: newTxForm.value.remark || undefined,
+		});
+		toast.success(t("Draft transaction created."));
+		newTxOpen.value = false;
+		await reloadAfterTx();
+	} catch (err) { newTxError.value = err?.message || t("Could not create the transaction."); }
+	finally { newTxBusy.value = false; }
+}
+
+// ── Accrue salary (per-employee, erpnext-ui style) ───────────────────────────
+const accrueOpen = ref(false);
+const accrueBusy = ref(false);
+const accrueError = ref("");
+const accrueForm = ref({ month: todayIso().slice(0, 7), amount: null });
+function openAccrue(emp) {
+	accrueForm.value = { month: todayIso().slice(0, 7), amount: Number(emp?.base_salary) || Number(fin.value?.profile?.base_salary) || null };
+	accrueError.value = "";
+	accrueOpen.value = true;
+}
+async function submitAccrue() {
+	accrueError.value = "";
+	if (!/^\d{4}-\d{2}$/.test(accrueForm.value.month || "")) return (accrueError.value = t("Pick a valid month."));
+	if (!(Number(accrueForm.value.amount) > 0)) return (accrueError.value = t("Enter an amount greater than zero."));
+	accrueBusy.value = true;
+	try {
+		const res = await call("stabler.api.salary_payment.accrue_employee_salary", {
+			company: activeCompany.value,
+			employee: selected.value.name,
+			month: accrueForm.value.month,
+			amount: Number(accrueForm.value.amount),
+		});
+		if (res?.created === false && res?.reason === "exists") toast.info(t("Already accrued for this month."));
+		else toast.success(t("Salary accrued as a draft — review and submit it from the ledger."));
+		accrueOpen.value = false;
+		await reloadAfterTx();
+	} catch (err) { accrueError.value = err?.message || t("Could not accrue salary."); }
+	finally { accrueBusy.value = false; }
+}
+
 watch(selected, () => {
 	dateFrom.value = "";
 	dateTo.value = "";
@@ -158,6 +288,7 @@ watch(selected, () => {
 function ledgerWithBalance(movements, outstanding, sign) {
 	let run = Number(outstanding || 0);
 	return (movements || []).map((m) => {
+		if (m.docstatus === 0) return { ...m, balance: null }; // draft — not yet posted
 		const row = { ...m, balance: run };
 		run -= sign * ((Number(m.debit) || 0) - (Number(m.credit) || 0));
 		return row;
@@ -392,6 +523,9 @@ function initials(name) {
 									<button type="button" class="btn btn-sm btn-outline-secondary" @click="openProfile(selected.name)">
 										<i class="ti ti-user me-1"></i>{{ t("Profile") }}
 									</button>
+									<button type="button" class="btn btn-sm btn-outline-secondary" :disabled="!canAdvances" @click="openAccrue(selected)">
+										<i class="ti ti-receipt me-1"></i>{{ t("Accrue salary") }}
+									</button>
 									<button type="button" class="btn btn-sm btn-primary" :disabled="!canAdvances" @click="openPay(selected)">
 										<i class="ti ti-cash me-1"></i>{{ t("Pay advance") }}
 									</button>
@@ -476,6 +610,9 @@ function initials(name) {
 												:placeholder="t('Voucher…') + ' ⌘K'"
 											/>
 										</div>
+										<button type="button" class="btn btn-sm btn-outline-primary ms-auto" @click="openNewTx">
+											<i class="ti ti-plus me-1"></i>{{ t("New transaction") }}
+										</button>
 									</div>
 
 									<!-- Ledger table -->
@@ -489,17 +626,21 @@ function initials(name) {
 														<th class="text-end">{{ t("Debit") }}</th>
 														<th class="text-end">{{ t("Credit") }}</th>
 														<th class="text-end">{{ t("Balance") }} ({{ fin.display_currency }})</th>
+														<th class="text-end"></th>
 													</tr>
 												</thead>
 												<tbody>
 													<tr v-if="!filteredLedger.length">
-														<td colspan="5" class="text-center text-secondary py-3">{{ t("No transactions yet.") }}</td>
+														<td colspan="6" class="text-center text-secondary py-3">{{ t("No transactions yet.") }}</td>
 													</tr>
-													<tr v-for="(m, i) in filteredLedger" :key="i">
+													<tr v-for="(m, i) in filteredLedger" :key="i" :class="{ 'table-warning': m.docstatus === 0 }">
 														<td class="text-nowrap">{{ m.posting_date ? formatDate(m.posting_date) : "—" }}</td>
 														<td>
 															<div class="d-flex flex-column gap-1">
-																<span class="badge bg-secondary-lt d-inline-block text-truncate" style="max-width: 120px">{{ m.voucher_type }}</span>
+																<span class="d-inline-flex gap-1">
+																	<span class="badge bg-secondary-lt d-inline-block text-truncate" style="max-width: 120px">{{ m.voucher_type }}</span>
+																	<span v-if="m.docstatus === 0" class="badge bg-yellow-lt">{{ t("Draft") }}</span>
+																</span>
 																<span class="small font-monospace text-body">{{ m.voucher_no || "—" }}</span>
 															</div>
 														</td>
@@ -507,9 +648,15 @@ function initials(name) {
 														<td class="text-end font-monospace">{{ m.credit ? finMoney(m.credit) : "—" }}</td>
 														<td
 															class="text-end font-monospace fw-bold"
-															:class="m.balance < 0 ? 'text-red' : m.balance > 0 ? 'text-green' : 'text-secondary'"
+															:class="m.balance == null ? 'text-secondary' : (m.balance < 0 ? 'text-red' : m.balance > 0 ? 'text-green' : 'text-secondary')"
 														>
-															{{ finMoney(m.balance) }}
+															{{ m.balance == null ? "—" : finMoney(m.balance) }}
+														</td>
+														<td class="text-end text-nowrap">
+															<button v-if="m.voucher_type === 'Journal Entry'" type="button" class="btn btn-ghost-secondary btn-sm" :title="t('View')" @click="viewJE(m.voucher_no)"><i class="ti ti-eye"></i></button>
+															<button v-if="m.docstatus === 0" type="button" class="btn btn-ghost-success btn-sm" :disabled="txBusy" :title="t('Submit')" @click="submitTx(m)"><i class="ti ti-check"></i></button>
+															<button v-if="m.docstatus === 0" type="button" class="btn btn-ghost-danger btn-sm" :disabled="txBusy" :title="t('Delete')" @click="deleteTx(m)"><i class="ti ti-trash"></i></button>
+															<button v-else-if="m.docstatus === 1 && m.voucher_type === 'Journal Entry'" type="button" class="btn btn-ghost-danger btn-sm" :disabled="txBusy" :title="t('Cancel')" @click="cancelTx(m)"><i class="ti ti-ban"></i></button>
 														</td>
 													</tr>
 												</tbody>
@@ -522,6 +669,7 @@ function initials(name) {
 														>
 															{{ finMoney(fin.net_owed) }}
 														</td>
+														<td></td>
 													</tr>
 												</tfoot>
 											</table>
@@ -604,6 +752,91 @@ function initials(name) {
 						<button type="button" class="btn btn-primary" :disabled="submitting" @click="saveEmp">
 							<span v-if="submitting" class="spinner-border spinner-border-sm me-1"></span>{{ t("Save") }}
 						</button>
+					</div>
+				</div>
+			</div>
+		</div>
+
+		<!-- JE view modal -->
+		<div v-if="jeOpen" class="modal-backdrop fade show" @click="jeOpen = false"></div>
+		<div v-if="jeOpen" class="modal fade show d-block" tabindex="-1">
+			<div class="modal-dialog modal-lg modal-dialog-centered">
+				<div class="modal-content">
+					<div class="modal-header">
+						<h5 class="modal-title font-monospace">{{ jeDetail?.name || t("Journal Entry") }}</h5>
+						<button type="button" class="btn-close" @click="jeOpen = false"></button>
+					</div>
+					<div class="modal-body">
+						<div v-if="jeLoading" class="text-center py-3"><span class="spinner-border text-primary"></span></div>
+						<template v-else-if="jeDetail">
+							<div class="text-secondary small mb-2">{{ formatDate(jeDetail.posting_date) }} · {{ jeDetail.user_remark || "—" }}</div>
+							<table class="table card-table">
+								<thead><tr><th>{{ t("Account") }}</th><th>{{ t("Party") }}</th><th class="text-end">{{ t("Debit") }}</th><th class="text-end">{{ t("Credit") }}</th></tr></thead>
+								<tbody>
+									<tr v-for="(a, i) in jeDetail.accounts" :key="i">
+										<td class="small">{{ a.account }}</td>
+										<td class="small text-secondary">{{ a.party || "—" }}</td>
+										<td class="text-end font-monospace">{{ a.debit_in_account_currency ? formatMoney(a.debit_in_account_currency, a.account_currency, user.language) : "—" }}</td>
+										<td class="text-end font-monospace">{{ a.credit_in_account_currency ? formatMoney(a.credit_in_account_currency, a.account_currency, user.language) : "—" }}</td>
+									</tr>
+								</tbody>
+							</table>
+						</template>
+					</div>
+				</div>
+			</div>
+		</div>
+
+		<!-- New transaction modal -->
+		<div v-if="newTxOpen" class="modal-backdrop fade show" @click="newTxOpen = false"></div>
+		<div v-if="newTxOpen" class="modal fade show d-block" tabindex="-1">
+			<div class="modal-dialog modal-dialog-centered">
+				<div class="modal-content">
+					<div class="modal-header"><h5 class="modal-title">{{ t("New transaction") }} · {{ selected?.employee_name }}</h5><button type="button" class="btn-close" @click="newTxOpen = false"></button></div>
+					<div class="modal-body vstack gap-2">
+						<div v-if="newTxError" class="alert alert-danger py-2">{{ newTxError }}</div>
+						<div>
+							<label class="form-label">{{ t("Direction") }}</label>
+							<select v-model="newTxForm.direction" class="form-select">
+								<option value="credit">{{ t("We owe more (accrual / charge)") }}</option>
+								<option value="debit">{{ t("Reduce (payment / recovery)") }}</option>
+							</select>
+						</div>
+						<div><label class="form-label">{{ t("Amount") }} *</label><MoneyInput v-model="newTxForm.amount" :currency="fin?.display_currency || currency" :group-while-typing="true" /></div>
+						<div><label class="form-label">{{ t("Cash / bank account") }} * <span class="text-secondary">({{ empCcy }})</span></label>
+							<Select v-model="newTxForm.counter" :options="counterAccounts" value-key="name" :placeholder="t('— Choose account —')">
+								<template #option="{ option }">{{ option.account_name || option.name }}</template>
+								<template #selected="{ option }">{{ option.account_name || option.name }}</template>
+							</Select>
+							<div v-if="!counterAccounts.length" class="form-hint text-warning">{{ t("No cash/bank account in this currency.") }}</div>
+						</div>
+						<div><label class="form-label">{{ t("Date") }}</label><DateInput v-model="newTxForm.posting_date" /></div>
+						<div><label class="form-label">{{ t("Remark") }}</label><input v-model="newTxForm.remark" class="form-control" /></div>
+						<div class="text-secondary small">{{ t("Creates a draft Journal Entry — review and submit it from the ledger.") }}</div>
+					</div>
+					<div class="modal-footer">
+						<button type="button" class="btn btn-link link-secondary" :disabled="newTxBusy" @click="newTxOpen = false">{{ t("Cancel") }}</button>
+						<button type="button" class="btn btn-primary" :disabled="newTxBusy" @click="createTx"><span v-if="newTxBusy" class="spinner-border spinner-border-sm me-1"></span>{{ t("Create draft") }}</button>
+					</div>
+				</div>
+			</div>
+		</div>
+
+		<!-- Accrue salary modal -->
+		<div v-if="accrueOpen" class="modal-backdrop fade show" @click="accrueOpen = false"></div>
+		<div v-if="accrueOpen" class="modal fade show d-block" tabindex="-1">
+			<div class="modal-dialog modal-dialog-centered">
+				<div class="modal-content">
+					<div class="modal-header"><h5 class="modal-title">{{ t("Accrue salary") }} · {{ selected?.employee_name }}</h5><button type="button" class="btn-close" @click="accrueOpen = false"></button></div>
+					<div class="modal-body vstack gap-2">
+						<div v-if="accrueError" class="alert alert-danger py-2">{{ accrueError }}</div>
+						<div><label class="form-label">{{ t("Month") }} *</label><input v-model="accrueForm.month" type="month" class="form-control" /></div>
+						<div><label class="form-label">{{ t("Amount") }} * <span class="text-secondary">({{ empCcy }})</span></label><MoneyInput v-model="accrueForm.amount" :currency="empCcy" :group-while-typing="true" /></div>
+						<div class="text-secondary small">{{ t("Books Dr Salary Expense / Cr Salary Payable as a draft — submit it from the ledger to post.") }}</div>
+					</div>
+					<div class="modal-footer">
+						<button type="button" class="btn btn-link link-secondary" :disabled="accrueBusy" @click="accrueOpen = false">{{ t("Cancel") }}</button>
+						<button type="button" class="btn btn-primary" :disabled="accrueBusy" @click="submitAccrue"><span v-if="accrueBusy" class="spinner-border spinner-border-sm me-1"></span>{{ t("Accrue") }}</button>
 					</div>
 				</div>
 			</div>

@@ -892,6 +892,21 @@ def cancel_journal_entry(name: str, modified: str | None = None) -> dict:
 
 
 @frappe.whitelist()
+def delete_journal_entry(name: str, modified: str | None = None) -> dict:
+	"""Delete a DRAFT Journal Entry (docstatus 0 only). Submitted entries must be
+	cancelled, never deleted — the audit trail is kept."""
+	if not name:
+		frappe.throw("Journal Entry name is required.")
+	_assert_can_write("Journal Entry", name, "delete")
+	check_concurrency("Journal Entry", name, modified)
+	docstatus = frappe.db.get_value("Journal Entry", name, "docstatus")
+	if docstatus != 0:
+		frappe.throw(_("Only draft Journal Entries can be deleted; cancel a submitted one instead."))
+	frappe.delete_doc("Journal Entry", name, ignore_permissions=False)
+	return {"deleted": name}
+
+
+@frappe.whitelist()
 def create_journal_entry(
 	company: str,
 	posting_date: str,

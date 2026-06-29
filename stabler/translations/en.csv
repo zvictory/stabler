@@ -49,6 +49,7 @@ Accrual (invoice date),Accrual (invoice date)
 Accrual failed.,Accrual failed.
 Accrue,Accrue
 Accrue period,Accrue period
+Accrue salary,Accrue salary
 Accrue this period?,Accrue this period?
 Accrued,Accrued
 Accrued {0} employees.,Accrued {0} employees.
@@ -164,6 +165,7 @@ Allowances,Allowances
 Allowances are hidden — payroll access required.,Allowances are hidden — payroll access required.
 Allowed users,Allowed users
 Already Transferred,Already Transferred
+Already accrued for this month.,Already accrued for this month.
 Amend,Amend
 Amend (new draft),Amend (new draft)
 Amend expense,Amend expense
@@ -311,6 +313,7 @@ Board,Board
 Bonus,Bonus
 Book rate,Book rate
 Booked,Booked
+Books Dr Salary Expense / Cr Salary Payable as a draft — submit it from the ledger to post.,Books Dr Salary Expense / Cr Salary Payable as a draft — submit it from the ledger to post.
 Books each locked employee's net as a payable (Dr salary expense / Cr salary payable). Idempotent — runs once per period.,Books each locked employee's net as a payable (Dr salary expense / Cr salary payable). Idempotent — runs once per period.
 Books locked nets to salary payable.,Books locked nets to salary payable.
 Branch,Branch
@@ -382,6 +385,7 @@ Car / Item,Car / Item
 Car item is required.,Car item is required.
 Card not recognized,Card not recognized
 Cases / Week,Cases / Week
+Cash / bank account,Cash / bank account
 Cash flow,Cash flow
 Cash on hand,Cash on hand
 "Cash, Bank, …","Cash, Bank, …"
@@ -522,16 +526,19 @@ Cost,Cost
 Cost Centre,Cost Centre
 Cost centre,Cost centre
 Cost must be positive.,Cost must be positive.
+Could not accrue salary.,Could not accrue salary.
 Could not add holiday.,Could not add holiday.
 Could not add stage.,Could not add stage.
 Could not check payment status.,Could not check payment status.
 Could not create contract.,Could not create contract.
+Could not create the transaction.,Could not create the transaction.
 Could not load data health.,Could not load data health.
 Could not load employee finances.,Could not load employee finances.
 Could not load quotations.,Could not load quotations.
 Could not load repost status.,Could not load repost status.
 Could not load the HR overview.,Could not load the HR overview.
 Could not load the board.,Could not load the board.
+Could not load the entry.,Could not load the entry.
 Could not load unmatched users.,Could not load unmatched users.
 Could not read backup file: {0},Could not read backup file: {0}
 Could not read the uploaded file.,Could not read the uploaded file.
@@ -569,6 +576,7 @@ Create an active leaf warehouse before viewing item stock status.,Create an acti
 Create contract,Create contract
 Create credit note,Create credit note
 Create debit note,Create debit note
+Create draft,Create draft
 Create first order,Create first order
 Create outlets to start planning routes and visits.,Create outlets to start planning routes and visits.
 Create payments / journals,Create payments / journals
@@ -579,6 +587,7 @@ Create your first lead or adjust the search filters.,Create your first lead or a
 Create your first process to model business workflows.,Create your first process to model business workflows.
 Created,Created
 Creates Maintenance Visit,Creates Maintenance Visit
+Creates a draft Journal Entry — review and submit it from the ledger.,Creates a draft Journal Entry — review and submit it from the ledger.
 "Creates a stock item; if qty and cost are given, an opening stock receipt is posted.","Creates a stock item; if qty and cost are given, an opening stock receipt is posted."
 Credit,Credit
 Credit Limit,Credit Limit
@@ -657,6 +666,7 @@ Delete deal?,Delete deal?
 Delete document?,Delete document?
 Delete draft,Delete draft
 Delete draft bill {name}? This cannot be undone.,Delete draft bill {name}? This cannot be undone.
+Delete draft entry?,Delete draft entry?
 Delete failed.,Delete failed.
 Delete invoice {name}?,Delete invoice {name}?
 Delete lead?,Delete lead?
@@ -732,7 +742,9 @@ Downpayment %,Downpayment %
 Draft,Draft
 Draft + submitted,Draft + submitted
 Draft Sales Invoice created: {0},Draft Sales Invoice created: {0}
+Draft deleted.,Draft deleted.
 Draft entry deleted.,Draft entry deleted.
+Draft transaction created.,Draft transaction created.
 Draft transfer deleted.,Draft transfer deleted.
 Drill-down report: customer → invoices → document. Returns netted.,Drill-down report: customer → invoices → document. Returns netted.
 Drill-down report: item → invoice lines → document.,Drill-down report: item → invoice lines → document.
@@ -829,6 +841,8 @@ Enter your Employee ID and secure PIN,Enter your Employee ID and secure PIN
 Entered rate deviates by {pct}% from CBU rate.,Entered rate deviates by {pct}% from CBU rate.
 Entries on/before this date are frozen.,Entries on/before this date are frozen.
 Entry,Entry
+Entry cancelled.,Entry cancelled.
+Entry submitted.,Entry submitted.
 Equipment,Equipment
 Equipment and Issue are required.,Equipment and Issue are required.
 Equipment coverage,Equipment coverage
@@ -1268,6 +1282,7 @@ KPI pool share (%),KPI pool share (%)
 Keep,Keep
 Keep Editing,Keep Editing
 Keep typing to narrow…,Keep typing to narrow…
+Keeps the audit trail; amend to correct.,Keeps the audit trail; amend to correct.
 Kind,Kind
 Label,Label
 Landed cost vouchers,Landed cost vouchers
@@ -1510,6 +1525,7 @@ New sales order,New sales order
 New stage name,New stage name
 New stock entry,New stock entry
 New supplier,New supplier
+New transaction,New transaction
 New transfer,New transfer
 New warehouse,New warehouse
 Next,Next
@@ -1545,6 +1561,7 @@ No bills in this range,No bills in this range
 No blockers,No blockers
 No budget data for this period,No budget data for this period
 No budgets found,No budgets found
+No cash/bank account in this currency.,No cash/bank account in this currency.
 No claim selected.,No claim selected.
 No claims yet,No claims yet
 No columns,No columns
@@ -1568,6 +1585,7 @@ No default Bank or Cash account configured for company {0}.,No default Bank or C
 No default {0} account found to copy parent from.,No default {0} account found to copy parent from.
 No department,No department
 No earnings,No earnings
+No employee account yet — record an advance first.,No employee account yet — record an advance first.
 No employees found.,No employees found.
 No employees yet,No employees yet
 No employees.,No employees.
@@ -1763,12 +1781,12 @@ One or more lines exceed available stock. Reduce qty or choose a different wareh
 "One outlet per line: code or name, latitude, longitude. Comma, tab or semicolon separated.","One outlet per line: code or name, latitude, longitude. Comma, tab or semicolon separated."
 Online payment,Online payment
 Only Approved claims can be settled. Current status: {0},Only Approved claims can be settled. Current status: {0}
-Only one entry — chart needs at least two points.,Only one entry — chart needs at least two points.
 Only Payment Entry / Journal Entry can be reconciled here.,Only Payment Entry / Journal Entry can be reconciled here.
 Only a Stock Manager can reconcile stock.,Only a Stock Manager can reconcile stock.
 Only confirm after you have actually restored a backup to a scratch site and verified the data. This records today as the last successful restore test.,Only confirm after you have actually restored a backup to a scratch site and verified the data. This records today as the last successful restore test.
 Only draft sales orders can be edited.,Only draft sales orders can be edited.
 Only items with available stock in this POS warehouse appear here.,Only items with available stock in this POS warehouse appear here.
+Only one entry — chart needs at least two points.,Only one entry — chart needs at least two points.
 Only pending schedule rows can be rescheduled.,Only pending schedule rows can be rescheduled.
 Only submitted Sales Orders can be closed.,Only submitted Sales Orders can be closed.
 Only submitted Sales Orders can be reopened.,Only submitted Sales Orders can be reopened.
@@ -1970,6 +1988,7 @@ Pick a status.,Pick a status.
 Pick a supplier.,Pick a supplier.
 Pick a tender deal to compare quotations.,Pick a tender deal to compare quotations.
 Pick a valid date range.,Pick a valid date range.
+Pick a valid month.,Pick a valid month.
 Pick a warehouse,Pick a warehouse
 Pick a warehouse to receive stock into.,Pick a warehouse to receive stock into.
 Pick a warehouse.,Pick a warehouse.
@@ -2162,6 +2181,7 @@ Records that block payroll or look unfinished. Fix at the source.,Records that b
 Recovered,Recovered
 Recovered from net pay this period; reduces the outstanding balance. Locked periods are read-only.,Recovered from net pay this period; reduces the outstanding balance. Locked periods are read-only.
 Recurring monthly run-rate — the pipeline forecast.,Recurring monthly run-rate — the pipeline forecast.
+Reduce (payment / recovery),Reduce (payment / recovery)
 Ref No.,Ref No.
 Reference,Reference
 Reference #,Reference #
@@ -2316,6 +2336,7 @@ SREs,SREs
 Salaries,Salaries
 Salary,Salary
 Salary Slip {0} not found.,Salary Slip {0} not found.
+Salary accrued as a draft — review and submit it from the ledger.,Salary accrued as a draft — review and submit it from the ledger.
 Salary and payroll summaries.,Salary and payroll summaries.
 Salary payable,Salary payable
 Salary payments,Salary payments
@@ -2867,6 +2888,7 @@ Var %,Var %
 Variance,Variance
 Vendor bill does not match PO / receipt,Vendor bill does not match PO / receipt
 Vertical lanes (flow top→bottom),Vertical lanes (flow top→bottom)
+View,View
 View all,View all
 View attachment,View attachment
 View audit log,View audit log
@@ -2912,6 +2934,7 @@ Warn only,Warn only
 Warranty,Warranty
 Warranty Until,Warranty Until
 We owe,We owe
+We owe more (accrual / charge),We owe more (accrual / charge)
 Wed,Wed
 Wednesday,Wednesday
 Weekend,Weekend

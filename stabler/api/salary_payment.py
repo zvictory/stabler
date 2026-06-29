@@ -165,6 +165,56 @@ def accrue_payroll_period(
 	return {"journal_entry": je["name"], "created": True, "employees": len(nets), "total": total}
 
 
+@frappe.whitelist()
+def accrue_employee_salary(
+	company: str,
+	employee: str,
+	month: str,
+	amount: float | str,
+	expense_account: str = "",
+	payable_account: str = "",
+	posting_date: str = "",
+) -> dict:
+	"""Accrue ONE employee's salary for a month (erpnext-ui style per-employee assign).
+
+	Books Dr Salary Expense / Cr Salary Payable[Employee] as a DRAFT Journal Entry,
+	so it surfaces in the employee ledger for review before submission. Idempotent
+	per (employee, month): refuses if a non-cancelled accrual for that pair exists.
+	`month` is YYYY-MM.
+	"""
+	_require_pay_role()
+	_require_company(company)
+	if not employee:
+		frappe.throw(_("Employee is required."))
+	amt = round(flt(amount))
+	if amt <= 0:
+		frappe.throw(_("Amount must be greater than zero."))
+
+	remark = f"{_ACCRUAL_MARKER}-emp:{employee}:{month}"
+	existing = frappe.get_all(
+		"Journal Entry",
+		filters={"company": company, "user_remark": remark, "docstatus": ["<", 2]},
+		pluck="name",
+		limit=1,
+	)
+	if existing:
+		return {"journal_entry": existing[0], "created": False, "reason": "exists"}
+
+	payable = _salary_payable_account(company, payable_account)
+	expense = _salary_expense_account(company, expense_account)
+	rows = [
+		{"account": expense, "debit": amt, "credit": 0},
+		{"account": payable, "party_type": "Employee", "party": employee, "debit": 0, "credit": amt},
+	]
+	je = create_journal_entry(
+		company=company,
+		posting_date=posting_date or today(),
+		accounts=rows,
+		user_remark=remark,
+	)
+	return {"journal_entry": je["name"], "created": True, "amount": amt}
+
+
 # ── Balances + payout ────────────────────────────────────────────────────────
 @frappe.whitelist()
 def payable_account(company: str) -> dict:
