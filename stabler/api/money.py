@@ -1009,6 +1009,7 @@ def payment_entry_detail(name: str):
 		"reference_no": doc.reference_no,
 		"reference_date": str(doc.reference_date) if doc.reference_date else None,
 		"mode_of_payment": doc.mode_of_payment,
+		"status": doc.status,
 		"docstatus": doc.docstatus,
 		"references": [
 			{

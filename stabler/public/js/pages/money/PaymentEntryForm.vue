@@ -460,6 +460,12 @@ const typeBadge = (t) => {
 				</Select>
 				<div v-else class="form-control-plaintext font-monospace py-1">{{ form.bank_account || "—" }}</div>
 			</div>
+			<div class="col-12" v-else>
+				<label class="form-label">
+					{{ form.payment_type === "Receive" ? t("Deposit to") : t("Pay from") }}
+				</label>
+				<div class="form-control-plaintext font-monospace py-1">{{ form.bank_account || "—" }}</div>
+			</div>
 
 			<div class="col-md-6">
 				<label class="form-label">
