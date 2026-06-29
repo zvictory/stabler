@@ -598,6 +598,7 @@ Critical,Critical
 Critical conflicts,Critical conflicts
 Cumulative %,Cumulative %
 Currency,Currency
+Current AR balance per customer — ties to the Customer Center.,Current AR balance per customer — ties to the Customer Center.
 Current Return,Current Return
 Current Sale,Current Sale
 Current total,Current total
@@ -605,6 +606,7 @@ Custom,Custom
 Custom allowances,Custom allowances
 Customer,Customer
 Customer ABC analysis,Customer ABC analysis
+Customer Balance Summary,Customer Balance Summary
 Customer ID,Customer ID
 Customer credit,Customer credit
 Customer deleted.,Customer deleted.
@@ -1336,6 +1338,7 @@ Linked invoices,Linked invoices
 Linked receipts,Linked receipts
 Linked. {0} parked punches re-queued.,Linked. {0} parked punches re-queued.
 List rate,List rate
+"Live receivable (all-time, all vouchers)","Live receivable (all-time, all vouchers)"
 Loaded,Loaded
 Loading,Loading
 Loading FX account balances…,Loading FX account balances…
@@ -2345,6 +2348,7 @@ Salary slips,Salary slips
 Sale,Sale
 Sale completed,Sale completed
 Sales,Sales
+"Sales = selected period · Balance = current receivable (all-time, all vouchers — ties to the Customer Center).","Sales = selected period · Balance = current receivable (all-time, all vouchers — ties to the Customer Center)."
 Sales Invoice,Sales Invoice
 Sales Invoice must be created from a Sales Order,Sales Invoice must be created from a Sales Order
 Sales Invoices,Sales Invoices

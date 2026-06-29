@@ -5,6 +5,7 @@ import Dashboard from "./pages/Dashboard.vue";
 import Module from "./pages/Module.vue";
 import ReportsHub from "./pages/ReportsHub.vue";
 import ReportSalesByCustomer from "./pages/reports/SalesByCustomer.vue";
+import ReportCustomerBalanceSummary from "./pages/reports/CustomerBalanceSummary.vue";
 import ReportSalesByItem from "./pages/reports/SalesByItem.vue";
 import ReportItemAbc from "./pages/reports/ItemAbc.vue";
 import DrillReport from "./pages/reports/DrillReport.vue";
@@ -143,6 +144,7 @@ const routes = [
 	{ path: "/dashboard", name: "dashboard", component: Dashboard, meta: { title: t("Dashboard"), module: "dashboard" } },
 	{ path: "/reports", name: "reports", component: ReportsHub, meta: { title: t("Reports") } },
 	{ path: "/reports/sales-by-customer", name: "report-sales-by-customer", component: ReportSalesByCustomer, meta: { title: t("Sales by Customer"), module: "sales" } },
+	{ path: "/reports/customer-balance-summary", name: "report-customer-balance-summary", component: ReportCustomerBalanceSummary, meta: { title: t("Customer Balance Summary"), module: "sales" } },
 	{ path: "/reports/sales-by-item", name: "report-sales-by-item", component: ReportSalesByItem, meta: { title: t("Sales by Item"), module: "sales" } },
 	{ path: "/reports/item-abc", name: "report-item-abc", component: ReportItemAbc, meta: { title: t("Item ABC analysis"), module: "sales" } },
 	{ path: "/reports/customer-abc", name: "report-customer-abc", component: DrillReport, meta: { title: "Customer ABC analysis", module: "sales", report: { title: "Customer ABC analysis", summaryApi: "stabler.api.reports.customer_abc", detailApi: "stabler.api.reports.sales_by_customer_detail", drillKey: "customer", detailParam: "customer", docPrefix: "/sales/invoices/", exportName: "customer_abc" } } },

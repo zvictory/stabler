@@ -606,6 +606,7 @@ Critical,Критически
 Critical conflicts,Критические конфликты
 Cumulative %,Накопит. %
 Currency,Валюта
+Current AR balance per customer — ties to the Customer Center.,Текущая задолженность по каждому клиенту — совпадает с Центром клиентов.
 Current Return,
 Current Sale,
 Current total,Текущая сумма
@@ -613,6 +614,7 @@ Custom,
 Custom allowances,
 Customer,Клиент
 Customer ABC analysis,ABC-анализ клиентов
+Customer Balance Summary,Сводка балансов клиентов
 Customer ID,ID клиента
 Customer credit,
 Customer deleted.,
@@ -1345,6 +1347,7 @@ Linked invoices,Связанные счета
 Linked receipts,Связанные приёмки
 Linked. {0} parked punches re-queued.,Связано. {0} отметок переобработано.
 List rate,Прейскурантная цена
+"Live receivable (all-time, all vouchers)","Текущая задолженность (за всё время, все документы)"
 Loaded,Загружено
 Loading,Загрузка
 Loading FX account balances…,
@@ -2355,6 +2358,7 @@ Salary slips,
 Sale,
 Sale completed,
 Sales,Продажи
+"Sales = selected period · Balance = current receivable (all-time, all vouchers — ties to the Customer Center).","Продажи = выбранный период · Баланс = текущая задолженность (за всё время, все документы — совпадает с Центром клиентов)."
 Sales Invoice,Счёт продажи
 Sales Invoice must be created from a Sales Order,Счёт продажи должен быть создан на основе заказа
 Sales Invoices,Счета продаж

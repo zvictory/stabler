@@ -600,6 +600,7 @@ Critical,Jiddiy
 Critical conflicts,Kritik nizolar
 Cumulative %,Jamlangan %
 Currency,Valyuta
+Current AR balance per customer — ties to the Customer Center.,Har mijozning joriy qarzi — Customer Center bilan mos.
 Current Return,
 Current Sale,
 Current total,Joriy summa
@@ -607,6 +608,7 @@ Custom,
 Custom allowances,
 Customer,Xaridor
 Customer ABC analysis,Mijozlar ABC tahlili
+Customer Balance Summary,Mijozlar balansi xulosasi
 Customer ID,Mijoz ID
 Customer credit,
 Customer deleted.,
@@ -1338,6 +1340,7 @@ Linked invoices,Bog'langan invoyslar
 Linked receipts,Bog'langan qabul hujjatlari
 Linked. {0} parked punches re-queued.,Bog'landi. {0} belgilash qayta navbatga qo'yildi.
 List rate,Ro'yxat narxi
+"Live receivable (all-time, all vouchers)","Joriy qarz (butun tarix, barcha hujjatlar)"
 Loaded,Yuklandi
 Loading,Yuklanmoqda
 Loading FX account balances…,
@@ -2348,6 +2351,7 @@ Salary slips,
 Sale,
 Sale completed,
 Sales,Sotuv
+"Sales = selected period · Balance = current receivable (all-time, all vouchers — ties to the Customer Center).","Sotuv = tanlangan davr · Balans = joriy qarz (butun tarix, barcha hujjatlar — Customer Center bilan mos)."
 Sales Invoice,Sotuv hisob-fakturasi
 Sales Invoice must be created from a Sales Order,Sotuv hisob-fakturasi Sotuv buyurtmasidan yaratilishi kerak
 Sales Invoices,Sotuv hisob-fakturalari

@@ -51,6 +51,13 @@ const groups = computed(() => [
 				badge: t("Sales"),
 			},
 			{
+				title: t("Customer Balance Summary"),
+				description: t("Current AR balance per customer — ties to the Customer Center."),
+				path: "/reports/customer-balance-summary",
+				icon: "ti-users",
+				badge: t("Sales"),
+			},
+			{
 				title: t("Sales by Item"),
 				description: t("Drill-down report: item → invoice lines → document."),
 				path: "/reports/sales-by-item",

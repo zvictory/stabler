@@ -600,6 +600,7 @@ Critical,Муҳим
 Critical conflicts,Критик низолар
 Cumulative %,Жамланган %
 Currency,Валюта
+Current AR balance per customer — ties to the Customer Center.,Ҳар мижознинг жорий қарзи — Customer Center билан мос.
 Current Return,
 Current Sale,
 Current total,Жорий сумма
@@ -607,6 +608,7 @@ Custom,
 Custom allowances,
 Customer,Хариди
 Customer ABC analysis,Мижозлар ABC таҳлили
+Customer Balance Summary,Мижозлар баланси хулосаси
 Customer ID,Мижоз ID
 Customer credit,
 Customer deleted.,
@@ -1338,6 +1340,7 @@ Linked invoices,Боғланган счетлар
 Linked receipts,Боғланган қабул ҳужжатлари
 Linked. {0} parked punches re-queued.,Боғланди. {0} белгилаш қайта навбатга қўйилди.
 List rate,Рўйхат нарх
+"Live receivable (all-time, all vouchers)","Жорий қарз (бутун тарих, барча ҳужжатлар)"
 Loaded,Юклангани
 Loading,Юкланмоқда
 Loading FX account balances…,
@@ -2348,6 +2351,7 @@ Salary slips,
 Sale,
 Sale completed,
 Sales,Сотув
+"Sales = selected period · Balance = current receivable (all-time, all vouchers — ties to the Customer Center).","Сотув = танланган давр · Баланс = жорий қарз (бутун тарих, барча ҳужжатлар — Customer Center билан мос)."
 Sales Invoice,Сотув ҳисобномаси
 Sales Invoice must be created from a Sales Order,Сотув ҳисобномаси Сотув буюртмасидан яратилиши керак
 Sales Invoices,Сотув ҳисоб-фактуралари

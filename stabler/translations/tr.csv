@@ -595,6 +595,7 @@ Critical,Kritik
 Critical conflicts,Kritik çakışmalar
 Cumulative %,Kümülatif %
 Currency,Para Birimi
+Current AR balance per customer — ties to the Customer Center.,Müşteri başına güncel alacak — Müşteri Merkezi ile eşleşir.
 Current Return,
 Current Sale,
 Current total,Güncel toplam
@@ -602,6 +603,7 @@ Custom,
 Custom allowances,
 Customer,Müşteri
 Customer ABC analysis,Müşteri ABC analizi
+Customer Balance Summary,Müşteri Bakiye Özeti
 Customer ID,Müşteri ID
 Customer credit,
 Customer deleted.,
@@ -1331,6 +1333,7 @@ Linked invoices,Bağlı faturalar
 Linked receipts,Bağlı mal kabulleri
 Linked. {0} parked punches re-queued.,Bağlandı. {0} bekleyen kayıt yeniden kuyruğa alındı.
 List rate,Liste fiyatı
+"Live receivable (all-time, all vouchers)","Güncel alacak (tüm zamanlar, tüm belgeler)"
 Loading,Yükleniyor
 Loading FX account balances…,
 Loading invoices,
@@ -2336,6 +2339,7 @@ Salary slips,
 Sale,
 Sale completed,
 Sales,Satış
+"Sales = selected period · Balance = current receivable (all-time, all vouchers — ties to the Customer Center).","Satış = seçilen dönem · Bakiye = güncel alacak (tüm zamanlar, tüm belgeler — Müşteri Merkezi ile eşleşir)."
 Sales Invoice,Satış Faturası
 Sales Invoice must be created from a Sales Order,Satış Faturası bir Satış Siparişinden oluşturulmalıdır
 Sales Invoices,Satış Faturaları

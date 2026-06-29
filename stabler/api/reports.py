@@ -36,6 +36,71 @@ def _shape(columns, rows, totals=None, meta=None) -> dict:
     return {"columns": columns, "rows": rows, "totals": totals or {}, "meta": meta or {}}
 
 
+def _customer_gl_balances(company: str) -> dict:
+    """Per-customer live receivable straight from the GL party ledger — the SAME
+    source the Customer Center uses (list_customers_with_balances), so the report
+    ties 1:1 to it.
+
+    All-time, all vouchers (invoices, payments, JEs, advances, credit notes),
+    signed (+ = customer owes us), in the receivable account's own currency, with
+    the Payment-Entry account-currency drift correction applied. This is the real
+    receivable — NOT SUM(Sales Invoice.outstanding_amount), which ignores
+    unallocated payments / on-account credits and is date-bounded.
+    """
+    rows = frappe.db.sql(
+        """
+        SELECT party,
+               SUM(debit_in_account_currency - credit_in_account_currency) AS balance_acc,
+               MAX(account_currency) AS account_currency
+        FROM `tabGL Entry`
+        WHERE company = %(company)s AND party_type = 'Customer' AND is_cancelled = 0
+        GROUP BY party
+        """,
+        {"company": company},
+        as_dict=True,
+    )
+    # PE party-leg drift: GL stores credit_in_account_currency = base÷rate, which can
+    # differ from the user-entered PE.paid_amount by sub-units. Correct it so the
+    # report ties to the ledger exactly (single-leg-per-party PEs only).
+    drift_rows = frappe.db.sql(
+        """
+        SELECT g.party AS party,
+               SUM(
+                 (CASE WHEN g.debit_in_account_currency > 0
+                       THEN (CASE WHEN g.account = pe.paid_from THEN pe.paid_amount
+                                  WHEN g.account = pe.paid_to   THEN pe.received_amount
+                                  ELSE 0 END)
+                       ELSE -(CASE WHEN g.account = pe.paid_from THEN pe.paid_amount
+                                   WHEN g.account = pe.paid_to   THEN pe.received_amount
+                                   ELSE 0 END)
+                  END)
+                 - (g.debit_in_account_currency - g.credit_in_account_currency)
+               ) AS drift
+        FROM `tabGL Entry` g
+        JOIN `tabPayment Entry` pe ON pe.name = g.voucher_no
+        JOIN (
+          SELECT voucher_no FROM `tabGL Entry`
+          WHERE voucher_type = 'Payment Entry' AND company = %(company)s
+            AND party_type = 'Customer' AND is_cancelled = 0
+          GROUP BY voucher_no HAVING COUNT(*) = 1
+        ) single ON single.voucher_no = g.voucher_no
+        WHERE g.voucher_type = 'Payment Entry' AND g.company = %(company)s
+          AND g.party_type = 'Customer' AND g.is_cancelled = 0
+        GROUP BY g.party
+        """,
+        {"company": company},
+        as_dict=True,
+    )
+    drift = {r["party"]: flt(r["drift"]) for r in drift_rows}
+    return {
+        r["party"]: {
+            "balance": flt(r["balance_acc"]) + drift.get(r["party"], 0.0),
+            "currency": r["account_currency"],
+        }
+        for r in rows
+    }
+
+
 # ---------------------------------------------------------------------------
 # Sales by Customer — Summary → Detail → Document (reference report)
 # ---------------------------------------------------------------------------
@@ -43,41 +108,94 @@ def _shape(columns, rows, totals=None, meta=None) -> dict:
 def sales_by_customer(company: str, from_date: str, to_date: str) -> dict:
     _require_company(company)
     start, end = _sales_report_dates(from_date, to_date)
-    rows = frappe.db.sql(
+    # Sales = period (accrual). Balance = the real GL receivable (all-time), joined
+    # per customer so the report shows the SAME number as the Customer Center.
+    sales = frappe.db.sql(
         """
-        SELECT customer, customer_name, currency,
+        SELECT customer, customer_name,
                COUNT(*) AS invoice_count,
-               SUM(grand_total) AS total,
-               SUM(outstanding_amount) AS outstanding
+               SUM(grand_total) AS total
         FROM `tabSales Invoice`
         WHERE company = %(company)s AND docstatus = 1
           AND posting_date BETWEEN %(from_date)s AND %(to_date)s
-        GROUP BY customer, customer_name, currency
+        GROUP BY customer, customer_name
         ORDER BY total DESC, customer_name ASC
         LIMIT 1000
         """,
         {"company": company, "from_date": start, "to_date": end},
         as_dict=True,
     )
+    bal = _customer_gl_balances(company)
+    base_ccy = _base_currency(company)
+    rows = []
+    for r in sales:
+        b = bal.get(r.customer) or {}
+        rows.append({
+            "customer": r.customer,
+            "customer_name": r.customer_name,
+            "invoice_count": int(r.invoice_count or 0),
+            "total": flt(r.total),
+            "balance": flt(b.get("balance") or 0),
+            "currency": b.get("currency") or base_ccy,
+        })
     totals = {
-        "invoice_count": sum(int(r.invoice_count or 0) for r in rows),
-        "total": sum(flt(r.total) for r in rows),
-        "outstanding": sum(flt(r.outstanding) for r in rows),
+        "invoice_count": sum(r["invoice_count"] for r in rows),
+        "total": sum(r["total"] for r in rows),
+        "balance": sum(r["balance"] for r in rows),
     }
     columns = [
         {"key": "customer_name", "label": _("Customer"), "type": "text", "drill": "detail"},
         {"key": "invoice_count", "label": _("Invoices"), "type": "int", "align": "end"},
         {"key": "total", "label": _("Sales"), "type": "money", "align": "end"},
-        {"key": "outstanding", "label": _("Outstanding"), "type": "money", "align": "end"},
+        {"key": "balance", "label": _("Balance"), "type": "money", "align": "end"},
     ]
     meta = {
         "basis": _("Accrual (invoice date)"),
-        "currency": _base_currency(company),
+        "currency": base_ccy,
         "from": str(start),
         "to": str(end),
-        "note": _("Submitted invoices; returns netted."),
+        "note": _("Sales = selected period · Balance = current receivable (all-time, all vouchers — ties to the Customer Center)."),
         "drill_report": "sales_by_customer_detail",
         "drill_param": "customer",
+    }
+    return _shape(columns, rows, totals, meta)
+
+
+@frappe.whitelist()
+def customer_balance_summary(company: str, only_with_balance: int = 1) -> dict:
+    """QuickBooks-style Customer Balance Summary: every customer's CURRENT
+    receivable (all-time, all vouchers), period-independent. Same source as the
+    Customer Center (list_customers_with_balances), so the numbers tie 1:1.
+    """
+    _require_company(company)
+    from stabler.api.sales import list_customers_with_balances
+
+    data = list_customers_with_balances(
+        company, limit=100000, only_with_balance=int(only_with_balance or 0)
+    )
+    base_ccy = _base_currency(company)
+    rows = []
+    for r in data.get("rows", []):
+        rows.append({
+            "customer": r.get("name"),
+            "customer_name": r.get("customer_name"),
+            "customer_group": r.get("customer_group"),
+            "territory": r.get("territory"),
+            "balance": flt(r.get("balance_acc") or 0),
+            "currency": r.get("account_currency") or r.get("company_currency") or base_ccy,
+        })
+    rows.sort(key=lambda x: x["balance"], reverse=True)
+    totals = {"balance": sum(r["balance"] for r in rows)}
+    columns = [
+        {"key": "customer_name", "label": _("Customer"), "type": "text"},
+        {"key": "customer_group", "label": _("Group"), "type": "text"},
+        {"key": "territory", "label": _("Territory"), "type": "text"},
+        {"key": "balance", "label": _("Balance"), "type": "money", "align": "end"},
+    ]
+    meta = {
+        "basis": _("Live receivable (all-time, all vouchers)"),
+        "currency": base_ccy,
+        "note": _("Current AR balance per customer — ties to the Customer Center."),
     }
     return _shape(columns, rows, totals, meta)
 

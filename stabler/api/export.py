@@ -60,6 +60,13 @@ REPORT_EXPORTS: dict[str, dict] = {
 		"roles": None,
 		"sensitive": False,
 	},
+	"customer_balance_summary": {
+		"title": "Customer Balance Summary",
+		"source": "stabler.api.reports.customer_balance_summary",
+		"filename": "Customer_Balance_Summary",
+		"roles": None,
+		"sensitive": False,
+	},
 	"sales_by_item": {
 		"title": "Sales by Item",
 		"source": "stabler.api.reports.sales_by_item",

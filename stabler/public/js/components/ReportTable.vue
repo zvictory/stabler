@@ -58,9 +58,16 @@ function badgeClass(value) {
 	return BADGE_CLASS[String(value).toUpperCase()] || "bg-secondary-lt";
 }
 
-function fmt(value, col) {
+// Per-row currency: a row may carry its own `currency` (e.g. each invoice/customer
+// in its original transaction currency). Fall back to the report-level currency.
+const footerCurrency = computed(() => {
+	const set = new Set((props.rows || []).map((r) => r.currency).filter(Boolean));
+	return set.size === 1 ? [...set][0] : props.currency;
+});
+
+function fmt(value, col, row) {
 	if (value == null || value === "") return "—";
-	if (col.type === "money") return formatMoney(Number(value || 0), props.currency, props.language);
+	if (col.type === "money") return formatMoney(Number(value || 0), (row && row.currency) || props.currency, props.language);
 	if (col.type === "int" || col.type === "number") return Number(value).toLocaleString("en-US").replace(/,/g, " ");
 	if (col.type === "percent") return Number(value).toFixed(1) + "%";
 	if (col.type === "date") return formatDate(value);
@@ -165,7 +172,7 @@ defineExpose({ exportCsv, exportXlsx });
 							@click="onCell(row, col)"
 						>
 							<span v-if="col.type === 'badge'" class="badge" :class="badgeClass(row[col.key])">{{ row[col.key] }}</span>
-							<template v-else>{{ fmt(row[col.key], col) }}</template>
+							<template v-else>{{ fmt(row[col.key], col, row) }}</template>
 						</td>
 					</tr>
 				</tbody>
@@ -177,7 +184,7 @@ defineExpose({ exportCsv, exportXlsx });
 							:class="[col.align === 'end' ? 'text-end' : '', col.type === 'money' || col.type === 'int' ? 'font-monospace' : '']"
 						>
 							<template v-if="idx === 0">{{ t("Total") }}</template>
-							<template v-else-if="col.key in totals">{{ fmt(totals[col.key], col) }}</template>
+							<template v-else-if="col.key in totals">{{ fmt(totals[col.key], col, { currency: footerCurrency }) }}</template>
 						</td>
 					</tr>
 				</tfoot>
