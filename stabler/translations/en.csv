@@ -28,6 +28,7 @@ A valid email is required,A valid email is required
 "A ≤ {0}%, B ≤ {1}%, C rest — by {2}. Submitted; returns netted.","A ≤ {0}%, B ≤ {1}%, C rest — by {2}. Submitted; returns netted."
 AMC,AMC
 AP Aging,AP Aging
+API base URL,API base URL
 AR Aging,AR Aging
 ARCA,ARCA
 ARCA Payment Events,ARCA Payment Events
@@ -35,6 +36,8 @@ Abbr,Abbr
 Absent,Absent
 Accept Return,Accept Return
 Access Review,Access Review
+Access token,Access token
+Access token (JWT),Access token (JWT)
 Account,Account
 Account Ledger,Account Ledger
 Account currency must match the payment account.,Account currency must match the payment account.
@@ -110,12 +113,16 @@ Admin,Admin
 Administer users & roles,Administer users & roles
 Advance,Advance
 Advance amount,Advance amount
+Advance amount must be greater than zero.,Advance amount must be greater than zero.
 Advance deduction,Advance deduction
 Advance deduction cannot be negative.,Advance deduction cannot be negative.
+Advance deduction must be a number.,Advance deduction must be a number.
 Advance paid,Advance paid
 Advance paid.,Advance paid.
 Advance sent for approval.,Advance sent for approval.
+Advanced (API endpoints),Advanced (API endpoints)
 Advances,Advances
+Advances outstanding,Advances outstanding
 Against,Against
 Aging,Aging
 Alerts,Alerts
@@ -245,6 +252,7 @@ Attendance edits are open — no hard lock set.,Attendance edits are open — no
 Attendance exceptions,Attendance exceptions
 Attendance on/before,Attendance on/before
 Attendance summary,Attendance summary
+Attendance today,Attendance today
 Audit Trail,Audit Trail
 Audit trail,Audit trail
 Audited At,Audited At
@@ -274,6 +282,7 @@ Bal,Bal
 Balance,Balance
 Balance (Account Currency),Balance (Account Currency)
 Balanced,Balanced
+"Balances, advances and payments appear here.","Balances, advances and payments appear here."
 "Balances, salaries, advances and payments appear here.","Balances, salaries, advances and payments appear here."
 Bank Account '{0}' not found.,Bank Account '{0}' not found.
 Bank account,Bank account
@@ -372,9 +381,11 @@ Cancel this submitted BOM?,Cancel this submitted BOM?
 Cancel this transfer?,Cancel this transfer?
 Cancel {name}? This will reverse the stock movements.,Cancel {name}? This will reverse the stock movements.
 Cancelled,Cancelled
+Cancelled entries cannot be submitted; amend instead.,Cancelled entries cannot be submitted; amend instead.
 Cannot check out before checking in.,Cannot check out before checking in.
 Cannot create a return against a return document.,Cannot create a return against a return document.
 Cannot create invoice: no warehouse set for stock item(s) {0}.,Cannot create invoice: no warehouse set for stock item(s) {0}.
+Cannot delete stage '{0}' — {1} Sales Order(s) are still in it. ,Cannot delete stage '{0}' — {1} Sales Order(s) are still in it. 
 Cannot delete: {0} deal(s) are still in this status.,Cannot delete: {0} deal(s) are still in this status.
 Cannot lock period — resolve the following blockers first: {0},Cannot lock period — resolve the following blockers first: {0}
 Cannot post UZS 1:1 into non-base currency account {0}. ,Cannot post UZS 1:1 into non-base currency account {0}. 
@@ -543,6 +554,7 @@ Could not load unmatched users.,Could not load unmatched users.
 Could not read backup file: {0},Could not read backup file: {0}
 Could not read the uploaded file.,Could not read the uploaded file.
 Could not read your location.,Could not read your location.
+Could not resolve a customer for this deal.,Could not resolve a customer for this deal.
 Could not resolve payroll period: {0},Could not resolve payroll period: {0}
 Could not save period.,Could not save period.
 Could not start the online payment.,Could not start the online payment.
@@ -598,6 +610,7 @@ Critical,Critical
 Critical conflicts,Critical conflicts
 Cumulative %,Cumulative %
 Currency,Currency
+Current AR balance per customer — click a row to see the ledger behind the balance.,Current AR balance per customer — click a row to see the ledger behind the balance.
 Current AR balance per customer — ties to the Customer Center.,Current AR balance per customer — ties to the Customer Center.
 Current Return,Current Return
 Current Sale,Current Sale
@@ -636,6 +649,8 @@ Dates,Dates
 Day,Day
 Day of Week,Day of Week
 Days,Days
+Days cannot be negative.,Days cannot be negative.
+Days is unreasonably large.,Days is unreasonably large.
 Days left,Days left
 Days of cover,Days of cover
 Deal Owner,Deal Owner
@@ -648,6 +663,7 @@ Debit notes:,Debit notes:
 Deducted from worked time daily.,Deducted from worked time daily.
 Deducted per each step interval of lateness.,Deducted per each step interval of lateness.
 Deduction exceeds the outstanding advance balance.,Deduction exceeds the outstanding advance balance.
+Deduction {0} exceeds the outstanding advance balance {1}.,Deduction {0} exceeds the outstanding advance balance {1}.
 Deductions,Deductions
 Default,Default
 Default Exchange Gain/Loss Account is missing for company {0}. ,Default Exchange Gain/Loss Account is missing for company {0}. 
@@ -773,6 +789,7 @@ Each additional step charges the step fee.,Each additional step charges the step
 Each employee's Region band (on their profile) selects which rate applies; NO_TRAVEL pays nothing.,Each employee's Region band (on their profile) selects which rate applies; NO_TRAVEL pays nothing.
 Each purpose row must be an object.,Each purpose row must be an object.
 Each purpose row needs a service person.,Each purpose row needs a service person.
+Early,Early
 Early Exit,Early Exit
 Early leave (min),Early leave (min)
 Early leave deduction,Early leave deduction
@@ -816,20 +833,24 @@ Employee ID is required.,Employee ID is required.
 Employee Profile,Employee Profile
 Employee carries additional responsibilities.,Employee carries additional responsibilities.
 Employee has no linked user account.,Employee has no linked user account.
+Employee is required.,Employee is required.
 Employee name,Employee name
 Employee or exception type…,Employee or exception type…
 Employee saved.,Employee saved.
 Employee summaries,Employee summaries
 Employee works in heavy/hazardous conditions.,Employee works in heavy/hazardous conditions.
+Employee {0} not found.,Employee {0} not found.
 "Employee, device ID or phone…","Employee, device ID or phone…"
 "Employee, type or reason…","Employee, type or reason…"
 Employees,Employees
 Employment,Employment
 Empty allowed list = user can access every company.,Empty allowed list = user can access every company.
+Enable TimePay sync,Enable TimePay sync
 Enabled,Enabled
 End,End
 End Date,End Date
 End Date must be on or after Start Date.,End Date must be on or after Start Date.
+End date cannot be before start date.,End date cannot be before start date.
 End of ledger,End of ledger
 Enforcement,Enforcement
 Enter a quantity for at least one row.,Enter a quantity for at least one row.
@@ -901,6 +922,7 @@ Expense lines,Expense lines
 Expense saved · {name},Expense saved · {name}
 Expenses,Expenses
 Expired,Expired
+Expires,Expires
 Expires in,Expires in
 Expiring within,Expiring within
 Expiry,Expiry
@@ -958,6 +980,7 @@ Failed to load POS profiles.,Failed to load POS profiles.
 Failed to load accounts.,Failed to load accounts.
 Failed to load aging.,Failed to load aging.
 Failed to load alerts.,Failed to load alerts.
+Failed to load attendance.,Failed to load attendance.
 Failed to load bills.,Failed to load bills.
 Failed to load calendar.,Failed to load calendar.
 Failed to load claim.,Failed to load claim.
@@ -1176,6 +1199,8 @@ Holiday,Holiday
 Holiday OT premium (%),Holiday OT premium (%)
 Holiday added.,Holiday added.
 Holiday list,Holiday list
+Holiday list {0} not found.,Holiday list {0} not found.
+Holidays,Holidays
 Holidays & periods,Holidays & periods
 Horizontal lanes (flow left→right),Horizontal lanes (flow left→right)
 Hourly OT pay = base hourly × this (e.g. 1.5 = time-and-a-half).,Hourly OT pay = base hourly × this (e.g. 1.5 = time-and-a-half).
@@ -1213,19 +1238,24 @@ Install libraries on the server:,Install libraries on the server:
 Installment,Installment
 Installment Calendar,Installment Calendar
 Installments,Installments
+Intake via {0}.,Intake via {0}.
 Integration,Integration
 Integration type,Integration type
 Invalid completion status.,Invalid completion status.
+Invalid coordinates: {0},Invalid coordinates: {0}
 Invalid correction_type '{0}'. Valid values: {1},Invalid correction_type '{0}'. Valid values: {1}
 Invalid date value.,Invalid date value.
 Invalid date: {0}. Expected YYYY-MM-DD.,Invalid date: {0}. Expected YYYY-MM-DD.
 Invalid decision: {0},Invalid decision: {0}
 Invalid filename.,Invalid filename.
+Invalid filters payload.,Invalid filters payload.
 Invalid item_overrides payload,Invalid item_overrides payload
 Invalid item_returns payload,Invalid item_returns payload
 Invalid maintenance type.,Invalid maintenance type.
 Invalid month.,Invalid month.
+Invalid month: {0},Invalid month: {0}
 Invalid payload — expected JSON object.,Invalid payload — expected JSON object.
+Invalid payload.,Invalid payload.
 Invalid period format,Invalid period format
 Invalid punches payload.,Invalid punches payload.
 Invalid resolution '{0}'. Must be one of: {1},Invalid resolution '{0}'. Must be one of: {1}
@@ -1267,6 +1297,7 @@ Item name is required.,Item name is required.
 Items,Items
 Items below replenishment thresholds.,Items below replenishment thresholds.
 Item·WH lines,Item·WH lines
+Izoh,Izoh
 Jami,Jami
 Jami muzqaymoq soni (dona),Jami muzqaymoq soni (dona)
 Jami summa,Jami summa
@@ -1275,11 +1306,13 @@ Joined,Joined
 Journal,Journal
 Journal Entries,Journal Entries
 Journal Entry,Journal Entry
+Journal Entry is already submitted.,Journal Entry is already submitted.
 Journal Entry legs,Journal Entry legs
 Journal entry cancelled.,Journal entry cancelled.
 Journal entry submitted.,Journal entry submitted.
 KPI,KPI
 KPI performance (%),KPI performance (%)
+KPI performance must be a number.,KPI performance must be a number.
 KPI performance must be between 0 and 100.,KPI performance must be between 0 and 100.
 KPI pool share (%),KPI pool share (%)
 Keep,Keep
@@ -1299,6 +1332,7 @@ Last login,Last login
 Last month,Last month
 Last name,Last name
 Last sync,Last sync
+Last transaction,Last transaction
 Last updated,Last updated
 Last visit,Last visit
 Last year,Last year
@@ -1313,6 +1347,7 @@ Leads,Leads
 Leave,Leave
 Leave all unchecked to use role-based access. Checking any replaces it with exactly these modules. Visibility only — backend permissions still apply.,Leave all unchecked to use role-based access. Checking any replaces it with exactly these modules. Visibility only — backend permissions still apply.
 Leave blank for open-ended.,Leave blank for open-ended.
+Leave blank to keep the existing token.,Leave blank to keep the existing token.
 Leave request approved.,Leave request approved.
 Leave request rejected.,Leave request rejected.
 Leave type,Leave type
@@ -1357,8 +1392,10 @@ Lock attendance older than (days),Lock attendance older than (days)
 Lock payroll period,Lock payroll period
 Lock period,Lock period
 Lock the payroll period before generating salary components. ,Lock the payroll period before generating salary components. 
+Lock the payroll period before pushing net pay. Summary {0} is '{1}'.,Lock the payroll period before pushing net pay. Summary {0} is '{1}'.
 Lock window,Lock window
 Lock {0}? No further changes will be allowed once locked.,Lock {0}? No further changes will be allowed once locked.
+Locked,Locked
 Locked at,Locked at
 Locked on/before,Locked on/before
 Log Out,Log Out
@@ -1379,6 +1416,7 @@ Make payment,Make payment
 Male,Male
 Manual,Manual
 Manufacturing,Manufacturing
+Manzil,Manzil
 Map,Map
 Map employees to device user IDs so gate events resolve to attendance records.,Map employees to device user IDs so gate events resolve to attendance records.
 Map library could not be loaded.,Map library could not be loaded.
@@ -1416,6 +1454,7 @@ Minimum minutes worked to count as present.,Minimum minutes worked to count as p
 Minutes tolerated before late penalty starts.,Minutes tolerated before late penalty starts.
 Minutes worked before overtime begins.,Minutes worked before overtime begins.
 Missing Entry,Missing Entry
+Missing TimePay user id.,Missing TimePay user id.
 Missing site config key: {0},Missing site config key: {0}
 Missing work mode / region,Missing work mode / region
 Mitigation:,Mitigation:
@@ -1444,6 +1483,7 @@ Move to Under Review,Move to Under Review
 Movement,Movement
 Movements,Movements
 Multi-Currency Parties,Multi-Currency Parties
+Multi-currency,Multi-currency
 Multi-level approval incomplete,Multi-level approval incomplete
 Multiplier (× hourly rate),Multiplier (× hourly rate)
 My Work Orders Queue,My Work Orders Queue
@@ -1462,6 +1502,7 @@ Needs you today,Needs you today
 Needs your attention,Needs your attention
 Net,Net
 Net ROI %,Net ROI %
+Net owed,Net owed
 Net pay,Net pay
 Net total,Net total
 Net unrealised gain / loss,Net unrealised gain / loss
@@ -1542,6 +1583,7 @@ Night end (hour),Night end (hour)
 Night premium (%),Night premium (%)
 Night shift,Night shift
 Night start (hour),Night start (hour)
+Nightly attendance sync and processing will run when enabled.,Nightly attendance sync and processing will run when enabled.
 No,No
 No 1C sync events yet.,No 1C sync events yet.
 No ARCA payment events yet.,No ARCA payment events yet.
@@ -1549,10 +1591,13 @@ No BOMs yet,No BOMs yet
 No CBU exchange rate found for {0} to {1} on or before {2}.,No CBU exchange rate found for {0} to {1} on or before {2}.
 No EHF submissions yet. Submit a Sales Invoice to enqueue one.,No EHF submissions yet. Submit a Sales Invoice to enqueue one.
 No Employee Advances account configured.,No Employee Advances account configured.
+No Employee Advances account is configured for {0}. Set the company's ,No Employee Advances account is configured for {0}. Set the company's 
 No GPS-located outlets for this period.,No GPS-located outlets for this period.
 No Google service account configured (site_config: stabler_gdrive_service_account).,No Google service account configured (site_config: stabler_gdrive_service_account).
 No OSA audits yet,No OSA audits yet
 No ROI snapshots yet,No ROI snapshots yet
+No Salary Expense account found for {0}. Create an Expense account ,No Salary Expense account found for {0}. Create an Expense account 
+No Salary Payable account found for {0}. Create a Payable account ,No Salary Payable account found for {0}. Create a Payable account 
 No Stock Entries with Asl Belgisi items found.,No Stock Entries with Asl Belgisi items found.
 No access,No access
 No account rows,No account rows
@@ -1571,6 +1616,7 @@ No claim selected.,No claim selected.
 No claims yet,No claims yet
 No columns,No columns
 No comments yet.,No comments yet.
+No company is configured.,No company is configured.
 No company selected,No company selected
 No correction requests,No correction requests
 No corrections are waiting for review.,No corrections are waiting for review.
@@ -1680,6 +1726,7 @@ No reservations for this warehouse,No reservations for this warehouse
 "No results for ""{query}"".","No results for ""{query}""."
 No revaluations yet,No revaluations yet
 No routes yet,No routes yet
+No rows to import.,No rows to import.
 No rule sets,No rule sets
 No salaries pushed yet.,No salaries pushed yet.
 No salary payments yet.,No salary payments yet.
@@ -1737,6 +1784,7 @@ Not permitted to create Attendance Rule Sets.,Not permitted to create Attendance
 Not permitted to create Employee Device Mappings.,Not permitted to create Employee Device Mappings.
 Not permitted to create Exchange Rate Revaluation.,Not permitted to create Exchange Rate Revaluation.
 Not permitted to create Gate Devices.,Not permitted to create Gate Devices.
+Not permitted to export this report.,Not permitted to export this report.
 Not permitted to process Timepay attendance.,Not permitted to process Timepay attendance.
 Not permitted to read Budget.,Not permitted to read Budget.
 Not permitted to read GL entries.,Not permitted to read GL entries.
@@ -1748,9 +1796,12 @@ Not permitted to sync Timepay attendance.,Not permitted to sync Timepay attendan
 Not permitted to {0} {1} {2},Not permitted to {0} {1} {2}
 Not permitted — admins only.,Not permitted — admins only.
 Not permitted.,Not permitted.
+Not ready,Not ready
 Not ready to lock,Not ready to lock
+Not set,Not set
 Not uploaded yet,Not uploaded yet
 Notes,Notes
+Nothing to pay — selected employees have no outstanding balance.,Nothing to pay — selected employees have no outstanding balance.
 Nothing to reconcile — all clear.,Nothing to reconcile — all clear.
 O'lchov birlik,O'lchov birlik
 OK,OK
@@ -1789,12 +1840,15 @@ Only Approved claims can be settled. Current status: {0},Only Approved claims ca
 Only Payment Entry / Journal Entry can be reconciled here.,Only Payment Entry / Journal Entry can be reconciled here.
 Only a Stock Manager can reconcile stock.,Only a Stock Manager can reconcile stock.
 Only confirm after you have actually restored a backup to a scratch site and verified the data. This records today as the last successful restore test.,Only confirm after you have actually restored a backup to a scratch site and verified the data. This records today as the last successful restore test.
+Only draft Journal Entries can be deleted; cancel a submitted one instead.,Only draft Journal Entries can be deleted; cancel a submitted one instead.
+Only draft journal entries can be edited here. Submitted entries must be cancelled and amended.,Only draft journal entries can be edited here. Submitted entries must be cancelled and amended.
 Only draft sales orders can be edited.,Only draft sales orders can be edited.
 Only items with available stock in this POS warehouse appear here.,Only items with available stock in this POS warehouse appear here.
 Only one entry — chart needs at least two points.,Only one entry — chart needs at least two points.
 Only pending schedule rows can be rescheduled.,Only pending schedule rows can be rescheduled.
 Only submitted Sales Orders can be closed.,Only submitted Sales Orders can be closed.
 Only submitted Sales Orders can be reopened.,Only submitted Sales Orders can be reopened.
+Only submitted entries can be cancelled.,Only submitted entries can be cancelled.
 Only submitted invoices can be returned.,Only submitted invoices can be returned.
 Only with a balance,Only with a balance
 Only with balance,Only with balance
@@ -1830,6 +1884,7 @@ Orders,Orders
 Org chart,Org chart
 Organization,Organization
 Orientation,Orientation
+Origin,Origin
 Original qty,Original qty
 Other,Other
 Out,Out
@@ -1898,6 +1953,9 @@ Party account not resolved — re-select the party.,Party account not resolved �
 Party is required.,Party is required.
 Past day,Past day
 Paste a direct image URL or leave blank to use initials.,Paste a direct image URL or leave blank to use initials.
+Paste access token JWT…,Paste access token JWT…
+Paste new token to replace…,Paste new token to replace…
+Paste refresh token JWT…,Paste refresh token JWT…
 Pause,Pause
 Pause Work,Pause Work
 Pause Work Order,Pause Work Order
@@ -1966,6 +2024,7 @@ Percent off,Percent off
 Period,Period
 Period Credit,Period Credit
 Period Debit,Period Debit
+Period belongs to another company.,Period belongs to another company.
 Period end,Period end
 Period locked.,Period locked.
 Period readiness,Period readiness
@@ -1980,6 +2039,7 @@ Photo URL,Photo URL
 Photo is required.,Photo is required.
 Photos,Photos
 "Photos capture shelves, storefronts and promotions during visits.","Photos capture shelves, storefronts and promotions during visits."
+Pick a cash/bank account.,Pick a cash/bank account.
 Pick a company from the switcher in the header to see your financial overview.,Pick a company from the switcher in the header to see your financial overview.
 Pick a customer.,Pick a customer.
 Pick a date.,Pick a date.
@@ -2031,6 +2091,7 @@ Planograms,Planograms
 Planograms describe expected shelf facings per outlet and category.,Planograms describe expected shelf facings per outlet and category.
 Please fill all required fields.,Please fill all required fields.
 Policy,Policy
+Position,Position
 Positions,Positions
 Positions hierarchy,Positions hierarchy
 Post reconciliation,Post reconciliation
@@ -2196,6 +2257,8 @@ Refresh,Refresh
 Refresh balances,Refresh balances
 Refresh now,Refresh now
 Refresh preview,Refresh preview
+Refresh token,Refresh token
+Refresh token (JWT),Refresh token (JWT)
 Refreshing…,Refreshing…
 Region,Region
 Region / Route,Region / Route
@@ -2375,6 +2438,7 @@ Salesperson,Salesperson
 Same currency,Same currency
 Same day,Same day
 Sampling,Sampling
+Sana,Sana
 Sat,Sat
 Saturday,Saturday
 Save,Save
@@ -2395,6 +2459,7 @@ Save failed.,Save failed.
 Save mapping,Save mapping
 Save modules,Save modules
 Saved — pending approval before it posts.,Saved — pending approval before it posts.
+Saved.,Saved.
 Saving…,Saving…
 Scan,Scan
 Scan barcode or search packaged ice cream,Scan barcode or search packaged ice cream
@@ -2478,6 +2543,7 @@ Select account…,Select account…
 Select an account…,Select an account…
 Select an active leaf warehouse for returns.,Select an active leaf warehouse for returns.
 Select an employee,Select an employee
+Select at least one employee to pay.,Select at least one employee to pay.
 Select bank account…,Select bank account…
 Select city…,Select city…
 Select company,Select company
@@ -2520,6 +2586,7 @@ Service person,Service person
 Service ticket assignment,Service ticket assignment
 Service visit {0},Service visit {0}
 Session {0} has no cart snapshot.,Session {0} has no cart snapshot.
+Set,Set
 Set Reports-To on employees to build the positions hierarchy.,Set Reports-To on employees to build the positions hierarchy.
 Set a Google Drive folder ID first.,Set a Google Drive folder ID first.
 Set as company default,Set as company default
@@ -2573,6 +2640,7 @@ Spend,Spend
 Stabler Settings doctype does not exist. Run migrations first.,Stabler Settings doctype does not exist. Run migrations first.
 Staff with base salary = 0,Staff with base salary = 0
 Stage Materials,Stage Materials
+Stage name is required.,Stage name is required.
 Stage still has Sales Orders — move them first.,Stage still has Sales Orders — move them first.
 Stake coefficient,Stake coefficient
 Stale days,Stale days
@@ -2666,6 +2734,7 @@ Suppliers,Suppliers
 Suspended,Suspended
 Swap accounts,Swap accounts
 Sync TimePay,Sync TimePay
+Sync TimePay attendance and generate the period summary to populate this table.,Sync TimePay attendance and generate the period summary to populate this table.
 Sync failed.,Sync failed.
 Sync now,Sync now
 System qty,System qty
@@ -2688,6 +2757,8 @@ Tender / deal,Tender / deal
 Tender Deadline,Tender Deadline
 Tender No,Tender No
 Tender Source,Tender Source
+Tender module is not enabled for {0}.,Tender module is not enabled for {0}.
+Tender: {0}.,Tender: {0}.
 Tenure,Tenure
 Term (months),Term (months)
 Terms,Terms
@@ -2724,6 +2795,8 @@ This exception is already {0}.,This exception is already {0}.
 This month,This month
 "This must match exactly the value in raw events (TimePay user ID, badge code, etc.).","This must match exactly the value in raw events (TimePay user ID, badge code, etc.)."
 This period is already accrued.,This period is already accrued.
+This period is locked; KPI cannot be changed.,This period is locked; KPI cannot be changed.
+This period is locked; the advance deduction cannot be changed.,This period is locked; the advance deduction cannot be changed.
 This posts the entry to the ledger. Submitted entries can't be edited — only cancelled and amended.,This posts the entry to the ledger. Submitted entries can't be edited — only cancelled and amended.
 This request belongs to a company you cannot access.,This request belongs to a company you cannot access.
 This request is already {0}.,This request is already {0}.
@@ -2748,7 +2821,11 @@ Ticket must have a customer before closing a visit.,Ticket must have a customer 
 Tickets,Tickets
 Tickets by status,Tickets by status
 Time,Time
+TimePay,TimePay
 TimePay ID,TimePay ID
+TimePay Settings,TimePay Settings
+TimePay credentials saved.,TimePay credentials saved.
+TimePay id {0} is already linked to {1}.,TimePay id {0} is already linked to {1}.
 TimePay name,TimePay name
 TimePay sync complete.,TimePay sync complete.
 Timepay,Timepay
@@ -2763,7 +2840,9 @@ To deliver,To deliver
 To warehouse,To warehouse
 Today,Today
 Toggle date sort,Toggle date sort
+Token status,Token status
 Too many failed attempts. Please try again in 5 minutes.,Too many failed attempts. Please try again in 5 minutes.
+Too many rows (max 5000).,Too many rows (max 5000).
 Top 10 Creditors,Top 10 Creditors
 Top 10 Debtors,Top 10 Debtors
 Total,Total
@@ -2776,7 +2855,10 @@ Total allocated,Total allocated
 Total allocated cannot exceed the payment amount.,Total allocated cannot exceed the payment amount.
 Total cost,Total cost
 Total credit value,Total credit value
+Total credits,Total credits
+Total debits,Total debits
 Total in {0},Total in {0}
+Total net owed,Total net owed
 Total outstanding,Total outstanding
 Total outstanding advances,Total outstanding advances
 Total overdue,Total overdue
@@ -2828,6 +2910,7 @@ Unbilled,Unbilled
 Unbilled queue,Unbilled queue
 Unit cost,Unit cost
 Units Sold,Units Sold
+Unknown,Unknown
 Unknown Cost Center: {0},Unknown Cost Center: {0}
 Unknown Fiscal Year: {0},Unknown Fiscal Year: {0}
 Unknown POS Profile: {0},Unknown POS Profile: {0}
@@ -2837,12 +2920,17 @@ Unknown Sales Order: {0},Unknown Sales Order: {0}
 Unknown account: {0},Unknown account: {0}
 Unknown company: {0},Unknown company: {0}
 Unknown customer: {0},Unknown customer: {0}
+Unknown deal: {0},Unknown deal: {0}
+Unknown employee: {0},Unknown employee: {0}
 Unknown hash algorithm: {0},Unknown hash algorithm: {0}
 Unknown item: {0},Unknown item: {0}
 Unknown payment session.,Unknown payment session.
+Unknown report: {0},Unknown report: {0}
 Unknown role template: {0},Unknown role template: {0}
 Unknown role: {0},Unknown role: {0}
 Unknown serial number: {0},Unknown serial number: {0}
+Unknown stage: {0},Unknown stage: {0}
+Unknown summary: {0},Unknown summary: {0}
 Unknown user: {0},Unknown user: {0}
 Unknown vertical pack: {0},Unknown vertical pack: {0}
 Unknown warehouse: {0},Unknown warehouse: {0}
@@ -2857,6 +2945,7 @@ Unsupported statement format (expected 1C ClientBank Exchange).,Unsupported stat
 Untitled Process,Untitled Process
 Upcoming,Upcoming
 Update stock,Update stock
+Update tokens,Update tokens
 Uplift Value,Uplift Value
 Upload failed,Upload failed
 Upload latest to Drive,Upload latest to Drive
@@ -2920,6 +3009,7 @@ Void Cart,Void Cart
 Voucher,Voucher
 Voucher not found.,Voucher not found.
 Voucher not found: {0} {1},Voucher not found: {0} {1}
+Voucher…,Voucher…
 WIP Warehouse,WIP Warehouse
 WIP Whse,WIP Whse
 WIP warehouse,WIP warehouse
@@ -3003,7 +3093,9 @@ You have no approval requests,You have no approval requests
 You have unsaved changes. Leaving this page will discard them.,You have unsaved changes. Leaving this page will discard them.
 "You must hold an HR Manager, System Manager, or Stabler Admin role to lock a payroll period.","You must hold an HR Manager, System Manager, or Stabler Admin role to lock a payroll period."
 You need a payroll/HR role to manage employee advances.,You need a payroll/HR role to manage employee advances.
+You need a payroll/HR role to run salary payments.,You need a payroll/HR role to run salary payments.
 You need a payroll/HR role to view computed pay.,You need a payroll/HR role to view computed pay.
+You need a payroll/HR role to view employee finances.,You need a payroll/HR role to view employee finances.
 You need administrator access to view this page.,You need administrator access to view this page.
 You raised this request — it must be approved by someone else.,You raised this request — it must be approved by someone else.
 You raised this request — it must be reviewed by someone else.,You raised this request — it must be reviewed by someone else.
@@ -3012,6 +3104,7 @@ You raised this — another user must approve it.,You raised this — another us
 Yuk xati,Yuk xati
 absent,absent
 across all statuses,across all statuses
+active,active
 active staff,active staff
 against,against
 avail,avail
@@ -3020,6 +3113,7 @@ blocker(s),blocker(s)
 cheque / txn id,cheque / txn id
 company currency,company currency
 company is required.,company is required.
+completed,completed
 correction_date is required.,correction_date is required.
 correction_type is required.,correction_type is required.
 create and submit,create and submit
@@ -3057,6 +3151,7 @@ item_code and warehouse are required,item_code and warehouse are required
 items,items
 joined this month,joined this month
 late,late
+leave,leave
 left,left
 line,line
 lines,lines
@@ -3072,6 +3167,7 @@ no stock movement,no stock movement
 on budget,on budget
 "one Journal Entry, clears their payable.","one Journal Entry, clears their payable."
 one-off,one-off
+open,open
 optional,optional
 orders,orders
 overdue,overdue
@@ -3095,6 +3191,7 @@ selected,selected
 sets,sets
 skipped,skipped
 source,target
+staff,staff
 step_idx must be an integer.,step_idx must be an integer.
 stock,stock
 summaries ready,summaries ready
@@ -3102,6 +3199,7 @@ to_date must be >= from_date.,to_date must be >= from_date.
 unfavorable,unfavorable
 units,units
 units total,units total
+updated,updated
 user@example.com,user@example.com
 valuation,valuation
 vouchers must be a JSON list.,vouchers must be a JSON list.
@@ -3124,6 +3222,7 @@ yr,yr
 — Any device —,— Any device —
 — Choose account —,— Choose account —
 — No party —,— No party —
+— Select —,— Select —
 — auto from customer —,— auto from customer —
 — auto from supplier —,— auto from supplier —
 — company default —,— company default —

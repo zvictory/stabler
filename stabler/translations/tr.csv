@@ -28,6 +28,7 @@ A valid email is required,Geçerli bir e-posta adresi gereklidir
 "A ≤ {0}%, B ≤ {1}%, C rest — by {2}. Submitted; returns netted.","A ≤ {0}%, B ≤ {1}%, C diğer — {2} bazında. Onaylanmış; iadeler netleştirilmiş."
 AMC,Yıllık bakım
 AP Aging,Borç Vade Analizi
+API base URL,
 AR Aging,Alacak Vade Analizi
 ARCA,ARCA
 ARCA Payment Events,ARCA Ödeme Olayları
@@ -35,6 +36,8 @@ Abbr,Kısaltma
 Absent,Devamsız
 Accept Return,
 Access Review,Erişim İncelemesi
+Access token,
+Access token (JWT),
 Account,Hesap
 Account Ledger,Hesap Defteri
 Account currency must match the payment account.,Hesap para birimi ödeme hesabıyla eşleşmelidir.
@@ -110,12 +113,16 @@ Admin,Yönetici
 Administer users & roles,Kullanıcı ve rol yönetimi
 Advance,Avans
 Advance amount,
+Advance amount must be greater than zero.,
 Advance deduction,Avans kesintisi
 Advance deduction cannot be negative.,Avans kesintisi negatif olamaz.
+Advance deduction must be a number.,
 Advance paid,Ödenen avans
 Advance paid.,Avans ödendi.
 Advance sent for approval.,Avans onaya gönderildi.
+Advanced (API endpoints),
 Advances,Avanslar
+Advances outstanding,
 Against,Karşılığı
 Aging,Yaşlandırma
 Alerts,
@@ -245,6 +252,7 @@ Attendance edits are open — no hard lock set.,Devam düzenlemeleri açık — 
 Attendance exceptions,Devam istisnaları
 Attendance on/before,Şu tarihe kadar devam
 Attendance summary,Devam özeti
+Attendance today,
 Audit Trail,Denetim İzi
 Audit trail,Denetim izi
 Audited At,Denetleme Tarihi
@@ -274,6 +282,7 @@ Bal,Bakiye
 Balance,Bakiye
 Balance (Account Currency),Bakiye (Hesap Para Birimi)
 Balanced,Dengeli
+"Balances, advances and payments appear here.",
 "Balances, salaries, advances and payments appear here.","Bakiyeler, maaşlar, avanslar ve ödemeler burada görünür."
 Bank Account '{0}' not found.,
 Bank account,Banka hesabı
@@ -372,9 +381,11 @@ Cancel this submitted BOM?,Gönderilen bu BOM iptal edilsin mi?
 Cancel this transfer?,
 Cancel {name}? This will reverse the stock movements.,{name} iptal edilsin mi? Bu işlem stok hareketlerini tersine çevirecek.
 Cancelled,İptal edildi
+Cancelled entries cannot be submitted; amend instead.,
 Cannot check out before checking in.,Giriş yapmadan çıkış yapılamaz.
 Cannot create a return against a return document.,
 Cannot create invoice: no warehouse set for stock item(s) {0}.,Fatura oluşturulamıyor: {0} stok kalemi için depo ayarlanmamış.
+Cannot delete stage '{0}' — {1} Sales Order(s) are still in it. ,
 Cannot delete: {0} deal(s) are still in this status.,
 Cannot lock period — resolve the following blockers first: {0},
 Cannot post UZS 1:1 into non-base currency account {0}. ,
@@ -540,6 +551,7 @@ Could not load unmatched users.,Eşleşmemiş kullanıcılar yüklenemedi.
 Could not read backup file: {0},
 Could not read the uploaded file.,
 Could not read your location.,Konumunuz okunamadı.
+Could not resolve a customer for this deal.,
 Could not resolve payroll period: {0},
 Could not save period.,Dönem kaydedilemedi.
 Could not start the online payment.,Çevrimiçi ödeme başlatılamadı.
@@ -595,6 +607,7 @@ Critical,Kritik
 Critical conflicts,Kritik çakışmalar
 Cumulative %,Kümülatif %
 Currency,Para Birimi
+Current AR balance per customer — click a row to see the ledger behind the balance.,
 Current AR balance per customer — ties to the Customer Center.,Müşteri başına güncel alacak — Müşteri Merkezi ile eşleşir.
 Current Return,
 Current Sale,
@@ -633,6 +646,8 @@ Dates,Tarihler
 Day,
 Day of Week,Haftanın Günü
 Days,Günler
+Days cannot be negative.,
+Days is unreasonably large.,
 Days left,Kalan gün
 Days of cover,Kapsama günü
 Deal Owner,Anlaşma Sahibi
@@ -645,6 +660,7 @@ Debit notes:,
 Deducted from worked time daily.,
 Deducted per each step interval of lateness.,
 Deduction exceeds the outstanding advance balance.,"Kesinti, kalan avans bakiyesini aşıyor."
+Deduction {0} exceeds the outstanding advance balance {1}.,
 Deductions,Kesintiler
 Default,Varsayılan
 Default Exchange Gain/Loss Account is missing for company {0}. ,
@@ -769,6 +785,7 @@ Each additional step charges the step fee.,
 Each employee's Region band (on their profile) selects which rate applies; NO_TRAVEL pays nothing.,Çalışanın bölgesi (profilinde) hangi oranın geçerli olduğunu belirler; NO_TRAVEL ödeme yok.
 Each purpose row must be an object.,
 Each purpose row needs a service person.,
+Early,Erken çıkış
 Early Exit,
 Early leave (min),Erken çıkış (dk)
 Early leave deduction,
@@ -812,20 +829,24 @@ Employee ID is required.,
 Employee Profile,
 Employee carries additional responsibilities.,
 Employee has no linked user account.,
+Employee is required.,
 Employee name,
 Employee or exception type…,
 Employee saved.,
 Employee summaries,
 Employee works in heavy/hazardous conditions.,
+Employee {0} not found.,
 "Employee, device ID or phone…",
 "Employee, type or reason…",
 Employees,Çalışanlar
 Employment,
 Empty allowed list = user can access every company.,Boş izin listesi = kullanıcı tüm şirketlere erişebilir.
+Enable TimePay sync,
 Enabled,Etkin
 End,Bitiş
 End Date,Bitiş Tarihi
 End Date must be on or after Start Date.,"Bitiş Tarihi, Başlangıç Tarihinden önce olamaz."
+End date cannot be before start date.,
 End of ledger,
 Enforcement,Zorlama
 Enter a quantity for at least one row.,En az bir satır için miktar girin.
@@ -896,6 +917,7 @@ Expense lines,Gider kalemleri
 Expense saved · {name},Gider kaydedildi · {name}
 Expenses,Giderler
 Expired,Süresi dolmuş
+Expires,
 Expires in,Bitişine
 Expiring within,Şu süre içinde
 Expiry,Son kullanım
@@ -953,6 +975,7 @@ Failed to load POS profiles.,
 Failed to load accounts.,Hesaplar yüklenemedi.
 Failed to load aging.,Yaşlandırma raporu yüklenemedi.
 Failed to load alerts.,Uyarılar yüklenemedi.
+Failed to load attendance.,
 Failed to load bills.,Faturalar yüklenemedi.
 Failed to load calendar.,Takvim yüklenemedi.
 Failed to load claim.,Talep yüklenemedi.
@@ -1171,6 +1194,8 @@ Holiday,Tatil
 Holiday OT premium (%),
 Holiday added.,Tatil eklendi.
 Holiday list,Tatil listesi
+Holiday list {0} not found.,
+Holidays,
 Holidays & periods,Tatiller ve dönemler
 Horizontal lanes (flow left→right),Yatay şeritler (akış sol→sağ)
 Hourly OT pay = base hourly × this (e.g. 1.5 = time-and-a-half).,Saatlik fazla mesai = temel saat × bu (örn. 1.5).
@@ -1208,19 +1233,24 @@ Install libraries on the server:,
 Installment,Taksit
 Installment Calendar,
 Installments,Taksitler
+Intake via {0}.,
 Integration,
 Integration type,
 Invalid completion status.,
+Invalid coordinates: {0},
 Invalid correction_type '{0}'. Valid values: {1},
 Invalid date value.,
 Invalid date: {0}. Expected YYYY-MM-DD.,
 Invalid decision: {0},Geçersiz karar: {0}
 Invalid filename.,
+Invalid filters payload.,
 Invalid item_overrides payload,Geçersiz item_overrides verisi
 Invalid item_returns payload,Geçersiz item_returns verisi
 Invalid maintenance type.,
 Invalid month.,
+Invalid month: {0},
 Invalid payload — expected JSON object.,
+Invalid payload.,
 Invalid period format,
 Invalid punches payload.,
 Invalid resolution '{0}'. Must be one of: {1},
@@ -1262,6 +1292,7 @@ Item name is required.,Ürün adı zorunludur.
 Items,Ürünler
 Items below replenishment thresholds.,
 Item·WH lines,Ürün·Depo
+Izoh,
 Jami,Jami
 Jami muzqaymoq soni (dona),Jami muzqaymoq soni (dona)
 Jami summa,Jami summa
@@ -1270,11 +1301,13 @@ Joined,
 Journal,
 Journal Entries,Yevmiye Kayıtları
 Journal Entry,Yevmiye Kaydı
+Journal Entry is already submitted.,
 Journal Entry legs,Yevmiye kaydı kalemleri
 Journal entry cancelled.,Yevmiye kaydı iptal edildi.
 Journal entry submitted.,Yevmiye kaydı onaylandı.
 KPI,KPI
 KPI performance (%),KPI performansı (%)
+KPI performance must be a number.,
 KPI performance must be between 0 and 100.,KPI performansı 0 ile 100 arasında olmalıdır.
 KPI pool share (%),KPI havuz payı (%)
 Keep,Sakla
@@ -1294,10 +1327,11 @@ Last login,Son giriş
 Last month,
 Last name,Soyadı
 Last sync,
+Last transaction,
 Last updated,
 Last visit,Son ziyaret
 Last year,
-Late,
+Late,Geç kalma
 Late (min),Gecikme (dk)
 Late Arrival,
 Late deduction,
@@ -1308,6 +1342,7 @@ Leads,Potansiyeller
 Leave,İzin
 Leave all unchecked to use role-based access. Checking any replaces it with exactly these modules. Visibility only — backend permissions still apply.,Rol tabanlı erişimi kullanmak için tümünü işaretsiz bırakın. Herhangi birini işaretlemek erişimi yalnızca bu modüllerle sınırlandırır. Yalnızca görünürlük — arka uç izinleri geçerliliğini korur.
 Leave blank for open-ended.,
+Leave blank to keep the existing token.,
 Leave request approved.,
 Leave request rejected.,
 Leave type,İzin türü
@@ -1351,8 +1386,10 @@ Lock attendance older than (days),Şu günden eski devamı kilitle (gün)
 Lock payroll period,
 Lock period,
 Lock the payroll period before generating salary components. ,
+Lock the payroll period before pushing net pay. Summary {0} is '{1}'.,
 Lock window,Kilit penceresi
 Lock {0}? No further changes will be allowed once locked.,
+Locked,
 Locked at,
 Locked on/before,Şu tarihe kadar kilitli
 Log Out,
@@ -1373,6 +1410,7 @@ Make payment,
 Male,Erkek
 Manual,
 Manufacturing,Üretim
+Manzil,
 Map,Harita
 Map employees to device user IDs so gate events resolve to attendance records.,
 Map library could not be loaded.,Harita kütüphanesi yüklenemedi.
@@ -1410,6 +1448,7 @@ Minimum minutes worked to count as present.,
 Minutes tolerated before late penalty starts.,
 Minutes worked before overtime begins.,
 Missing Entry,
+Missing TimePay user id.,
 Missing site config key: {0},
 Missing work mode / region,Çalışma modu / bölge eksik
 Mitigation:,Azaltma:
@@ -1438,6 +1477,7 @@ Move to Under Review,İncelemeye Al
 Movement,Hareket
 Movements,Hareketler
 Multi-Currency Parties,
+Multi-currency,
 Multi-level approval incomplete,
 Multiplier (× hourly rate),
 My Work Orders Queue,
@@ -1456,6 +1496,7 @@ Needs you today,Bugün ilgi bekliyor
 Needs your attention,
 Net,Net
 Net ROI %,Net YGO %
+Net owed,
 Net pay,Net maaş
 Net total,Net toplam
 Net unrealised gain / loss,
@@ -1536,6 +1577,7 @@ Night end (hour),
 Night premium (%),
 Night shift,
 Night start (hour),
+Nightly attendance sync and processing will run when enabled.,
 No,Hayır
 No 1C sync events yet.,Henüz 1C senkronizasyon olayı yok.
 No ARCA payment events yet.,Henüz ARCA ödeme olayı yok.
@@ -1543,10 +1585,13 @@ No BOMs yet,Henüz BOM yok
 No CBU exchange rate found for {0} to {1} on or before {2}.,
 No EHF submissions yet. Submit a Sales Invoice to enqueue one.,Henüz EHF gönderimi yok. Kuyruğa eklemek için bir Satış Faturası gönderin.
 No Employee Advances account configured.,Avans hesabı yapılandırılmamış.
+No Employee Advances account is configured for {0}. Set the company's ,
 No GPS-located outlets for this period.,Bu dönem için GPS konumlu nokta yok.
 No Google service account configured (site_config: stabler_gdrive_service_account).,
 No OSA audits yet,Henüz OSA denetimi yok
 No ROI snapshots yet,Henüz YGO anlık görüntüsü yok
+No Salary Expense account found for {0}. Create an Expense account ,
+No Salary Payable account found for {0}. Create a Payable account ,
 No Stock Entries with Asl Belgisi items found.,Asl Belgisi kalemleri içeren Stok Kaydı bulunamadı.
 No access,
 No account rows,
@@ -1565,6 +1610,7 @@ No claim selected.,Talep seçilmedi.
 No claims yet,Henüz talep yok
 No columns,Sütun yok
 No comments yet.,Henüz yorum yok.
+No company is configured.,
 No company selected,Şirket seçilmedi
 No correction requests,
 No corrections are waiting for review.,
@@ -1674,6 +1720,7 @@ No reservations for this warehouse,
 "No results for ""{query}"".","""{query}"" için sonuç bulunamadı."
 No revaluations yet,
 No routes yet,Henüz rota yok
+No rows to import.,
 No rule sets,
 No salaries pushed yet.,Henüz maaş gönderilmedi.
 No salary payments yet.,Henüz maaş ödemesi yok.
@@ -1731,6 +1778,7 @@ Not permitted to create Attendance Rule Sets.,
 Not permitted to create Employee Device Mappings.,
 Not permitted to create Exchange Rate Revaluation.,
 Not permitted to create Gate Devices.,
+Not permitted to export this report.,
 Not permitted to process Timepay attendance.,
 Not permitted to read Budget.,
 Not permitted to read GL entries.,
@@ -1742,9 +1790,12 @@ Not permitted to sync Timepay attendance.,
 Not permitted to {0} {1} {2},
 Not permitted — admins only.,
 Not permitted.,
+Not ready,
 Not ready to lock,
+Not set,
 Not uploaded yet,Henüz yüklenmedi
 Notes,Notlar
+Nothing to pay — selected employees have no outstanding balance.,
 Nothing to reconcile — all clear.,Mutabık kılınacak bir şey yok — her şey temiz.
 O'lchov birlik,O'lchov birlik
 OK,
@@ -1783,12 +1834,15 @@ Only Approved claims can be settled. Current status: {0},Yalnızca Onaylanmış 
 Only Payment Entry / Journal Entry can be reconciled here.,
 Only a Stock Manager can reconcile stock.,Yalnızca bir Stok Yöneticisi stok sayımı yapabilir.
 Only confirm after you have actually restored a backup to a scratch site and verified the data. This records today as the last successful restore test.,
+Only draft Journal Entries can be deleted; cancel a submitted one instead.,
+Only draft journal entries can be edited here. Submitted entries must be cancelled and amended.,
 Only draft sales orders can be edited.,
 Only items with available stock in this POS warehouse appear here.,
 Only one entry — chart needs at least two points.,Yalnızca bir kayıt var — grafik en az iki nokta gerektirir.
 Only pending schedule rows can be rescheduled.,
 Only submitted Sales Orders can be closed.,
 Only submitted Sales Orders can be reopened.,
+Only submitted entries can be cancelled.,
 Only submitted invoices can be returned.,Yalnızca onaylanmış faturalar iade alabilir.
 Only with a balance,Yalnızca bakiyesi olanlar
 Only with balance,Yalnızca bakiyesi olanlar
@@ -1823,6 +1877,7 @@ Orders,Siparişler
 Org chart,
 Organization,Organizasyon
 Orientation,Yönlendirme
+Origin,
 Original qty,Orijinal miktar
 Other,Diğer
 Out,Çıkış
@@ -1854,7 +1909,7 @@ Overdue installments,Gecikmiş taksitler
 Override qty must be greater than zero,Geçersiz kılma miktarı sıfırdan büyük olmalıdır
 Override role,
 Override — submit despite low stock (admin),Geçersiz kıl — düşük stoka rağmen gönder (yönetici)
-Overtime,
+Overtime,Fazla mesai
 Overtime (min),Fazla mesai (dk)
 Overtime multiplier,Fazla mesai çarpanı
 Overview,Genel Bakış
@@ -1891,6 +1946,9 @@ Party account not resolved — re-select the party.,Taraf hesabı çözümleneme
 Party is required.,Taraf zorunludur.
 Past day,Geçmiş gün
 Paste a direct image URL or leave blank to use initials.,
+Paste access token JWT…,
+Paste new token to replace…,
+Paste refresh token JWT…,
 Pause,
 Pause Work,
 Pause Work Order,
@@ -1959,6 +2017,7 @@ Percent off,İndirim oranı
 Period,Dönem
 Period Credit,Dönem Alacağı
 Period Debit,Dönem Borcu
+Period belongs to another company.,
 Period end,Dönem sonu
 Period locked.,
 Period readiness,
@@ -1973,6 +2032,7 @@ Photo URL,Fotoğraf URL
 Photo is required.,Fotoğraf zorunludur.
 Photos,Fotoğraflar
 "Photos capture shelves, storefronts and promotions during visits.","Fotoğraflar; ziyaretler sırasında rafları, vitrinleri ve promosyonları belgeler."
+Pick a cash/bank account.,
 Pick a company from the switcher in the header to see your financial overview.,Finansal genel görünümünüzü görmek için başlıktaki değiştiricide bir şirket seçin.
 Pick a customer.,Bir müşteri seçin.
 Pick a date.,Bir tarih seçin.
@@ -2024,6 +2084,7 @@ Planograms,Planogramlar
 Planograms describe expected shelf facings per outlet and category.,"Planogramlar, her satış noktası ve kategori için beklenen raf düzenini tanımlar."
 Please fill all required fields.,Lütfen tüm zorunlu alanları doldurun.
 Policy,Politika
+Position,
 Positions,Pozisyonlar
 Positions hierarchy,Pozisyon hiyerarşisi
 Post reconciliation,Sayımı işle
@@ -2188,6 +2249,8 @@ Refresh,Yenile
 Refresh balances,Bakiyeleri yenile
 Refresh now,Şimdi yenile
 Refresh preview,
+Refresh token,
+Refresh token (JWT),
 Refreshing…,Yenileniyor…
 Region,
 Region / Route,Bölge / rota
@@ -2366,6 +2429,7 @@ Salesperson,Satış temsilcisi
 Same currency,Aynı para birimi
 Same day,Aynı gün
 Sampling,Örnekleme
+Sana,
 Sat,Cmt
 Saturday,
 Save,Kaydet
@@ -2386,6 +2450,7 @@ Save failed.,Kaydetme başarısız.
 Save mapping,
 Save modules,Modülleri kaydet
 Saved — pending approval before it posts.,Kaydedildi — işlenmeden önce onay bekliyor.
+Saved.,
 Saving…,Kaydediliyor…
 Scan,
 Scan barcode or search packaged ice cream,
@@ -2469,6 +2534,7 @@ Select account…,Hesap seçin…
 Select an account…,Bir hesap seçin…
 Select an active leaf warehouse for returns.,
 Select an employee,Bir çalışan seçin
+Select at least one employee to pay.,
 Select bank account…,Banka hesabı seçin…
 Select city…,Şehir seçin…
 Select company,Firma seçin
@@ -2510,6 +2576,7 @@ Service person,Teknisyen
 Service ticket assignment,
 Service visit {0},
 Session {0} has no cart snapshot.,
+Set,
 Set Reports-To on employees to build the positions hierarchy.,Pozisyon hiyerarşisi oluşturmak için çalışanlarda Bağlı Olduğu Kişi alanını doldurun.
 Set a Google Drive folder ID first.,Önce bir Google Drive klasör kimliği ayarlayın.
 Set as company default,Şirket varsayılanı yap
@@ -2563,6 +2630,7 @@ Spend,Harcama
 Stabler Settings doctype does not exist. Run migrations first.,
 Staff with base salary = 0,Temel maaşı = 0 olan çalışanlar
 Stage Materials,
+Stage name is required.,
 Stage still has Sales Orders — move them first.,Aşamada hâlâ sipariş var — önce taşıyın.
 Stake coefficient,
 Stale days,
@@ -2656,6 +2724,7 @@ Suppliers,Tedarikçiler
 Suspended,Askıya Alındı
 Swap accounts,Hesapları değiştir
 Sync TimePay,TimePay senkron
+Sync TimePay attendance and generate the period summary to populate this table.,
 Sync failed.,Senkron başarısız.
 Sync now,Şimdi senkronla
 System qty,Sistem miktarı
@@ -2678,6 +2747,8 @@ Tender / deal,İhale / anlaşma
 Tender Deadline,İhale son tarihi
 Tender No,İhale No
 Tender Source,İhale kaynağı
+Tender module is not enabled for {0}.,
+Tender: {0}.,
 Tenure,Kıdem
 Term (months),Vade (ay)
 Terms,Koşullar
@@ -2714,6 +2785,8 @@ This exception is already {0}.,
 This month,
 "This must match exactly the value in raw events (TimePay user ID, badge code, etc.).",
 This period is already accrued.,Bu dönem zaten tahakkuk etti.
+This period is locked; KPI cannot be changed.,
+This period is locked; the advance deduction cannot be changed.,
 This posts the entry to the ledger. Submitted entries can't be edited — only cancelled and amended.,Kayıt deftere işlenir. Onaylı kayıtlar düzenlenemez — yalnızca iptal edilip düzeltilmiş yenisi oluşturulur.
 This request belongs to a company you cannot access.,
 This request is already {0}.,
@@ -2738,7 +2811,11 @@ Ticket must have a customer before closing a visit.,
 Tickets,Talepler
 Tickets by status,Duruma göre talepler
 Time,
+TimePay,
 TimePay ID,
+TimePay Settings,
+TimePay credentials saved.,
+TimePay id {0} is already linked to {1}.,
 TimePay name,
 TimePay sync complete.,TimePay senkronu tamamlandı.
 Timepay,
@@ -2753,7 +2830,9 @@ To deliver,Teslim edilecek
 To warehouse,Hedef depo
 Today,
 Toggle date sort,
+Token status,
 Too many failed attempts. Please try again in 5 minutes.,
+Too many rows (max 5000).,
 Top 10 Creditors,
 Top 10 Debtors,
 Total,Toplam
@@ -2766,7 +2845,10 @@ Total allocated,Toplam tahsis edilen
 Total allocated cannot exceed the payment amount.,"Toplam tahsis edilen tutar, ödeme tutarını aşamaz."
 Total cost,Toplam maliyet
 Total credit value,
+Total credits,
+Total debits,
 Total in {0},{0} cinsinden toplam
+Total net owed,
 Total outstanding,Toplam bakiye
 Total outstanding advances,Toplam bekleyen avanslar
 Total overdue,Toplam gecikmiş
@@ -2818,6 +2900,7 @@ Unbilled,Faturalanmamış
 Unbilled queue,Faturalanmamış kuyruk
 Unit cost,Birim maliyet
 Units Sold,Satılan Adet
+Unknown,
 Unknown Cost Center: {0},
 Unknown Fiscal Year: {0},
 Unknown POS Profile: {0},
@@ -2827,12 +2910,17 @@ Unknown Sales Order: {0},Bilinmeyen Satış Siparişi: {0}
 Unknown account: {0},
 Unknown company: {0},Bilinmeyen şirket: {0}
 Unknown customer: {0},
+Unknown deal: {0},
+Unknown employee: {0},
 Unknown hash algorithm: {0},
 Unknown item: {0},
 Unknown payment session.,
+Unknown report: {0},
 Unknown role template: {0},Bilinmeyen rol şablonu: {0}
 Unknown role: {0},
 Unknown serial number: {0},
+Unknown stage: {0},
+Unknown summary: {0},
 Unknown user: {0},
 Unknown vertical pack: {0},Bilinmeyen dikey paket: {0}
 Unknown warehouse: {0},Bilinmeyen depo: {0}
@@ -2847,6 +2935,7 @@ Unsupported statement format (expected 1C ClientBank Exchange).,
 Untitled Process,Adsız Süreç
 Upcoming,Yaklaşan
 Update stock,
+Update tokens,
 Uplift Value,Artış Değeri
 Upload failed,Yükleme başarısız
 Upload latest to Drive,Sonu Drive'a yükle
@@ -2910,6 +2999,7 @@ Void Cart,
 Voucher,Fiş
 Voucher not found.,
 Voucher not found: {0} {1},
+Voucher…,
 WIP Warehouse,
 WIP Whse,
 WIP warehouse,Yarı mamul deposu
@@ -2993,7 +3083,9 @@ You have no approval requests,Onay talebiniz yok
 You have unsaved changes. Leaving this page will discard them.,
 "You must hold an HR Manager, System Manager, or Stabler Admin role to lock a payroll period.",
 You need a payroll/HR role to manage employee advances.,Avansları yönetmek için bordro/İK rolü gerekir.
+You need a payroll/HR role to run salary payments.,
 You need a payroll/HR role to view computed pay.,Hesaplanan maaşı görmek için bordro/İK rolü gerekir.
+You need a payroll/HR role to view employee finances.,
 You need administrator access to view this page.,Bu sayfayı görüntülemek için yönetici erişimine ihtiyacınız var.
 You raised this request — it must be approved by someone else.,
 You raised this request — it must be reviewed by someone else.,
@@ -3002,6 +3094,7 @@ You raised this — another user must approve it.,Bu talebi siz oluşturdunuz �
 Yuk xati,Yuk xati
 absent,gelmedi
 across all statuses,tüm durumlarda
+active,
 active staff,aktif çalışan
 against,
 avail,mev.
@@ -3010,6 +3103,7 @@ blocker(s),
 cheque / txn id,çek / işlem no
 company currency,şirket para birimi
 company is required.,
+completed,
 correction_date is required.,
 correction_type is required.,
 create and submit,
@@ -3047,6 +3141,7 @@ item_code and warehouse are required,item_code ve depo zorunludur
 items,kalemler
 joined this month,bu ay katıldı
 late,geç
+leave,
 left,kaldı
 line,satır
 lines,
@@ -3062,6 +3157,7 @@ no stock movement,
 on budget,
 "one Journal Entry, clears their payable.","tek yevmiye, borçlarını kapatır."
 one-off,tek seferlik
+open,
 optional,isteğe bağlı
 orders,
 overdue,gecikmiş
@@ -3085,6 +3181,7 @@ selected,seçili
 sets,set
 skipped,atlandı
 source,target
+staff,
 step_idx must be an integer.,step_idx bir tam sayı olmalıdır.
 stock,stok
 summaries ready,özet hazır
@@ -3092,6 +3189,7 @@ to_date must be >= from_date.,
 unfavorable,
 units,
 units total,toplam birim
+updated,
 user@example.com,user@example.com
 valuation,değerleme
 vouchers must be a JSON list.,
@@ -3114,6 +3212,7 @@ yr,yıl
 — Any device —,
 — Choose account —,— Hesap seçin —
 — No party —,— Taraf yok —
+— Select —,
 — auto from customer —,— müşteriden otomatik —
 — auto from supplier —,— tedarikçiden otomatik —
 — company default —,— şirket varsayılanı —

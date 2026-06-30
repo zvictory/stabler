@@ -29,6 +29,7 @@ A valid email is required,Требуется действительный адр
 "A ≤ {0}%, B ≤ {1}%, C rest — by {2}. Submitted; returns netted.","A ≤ {0}%, B ≤ {1}%, C прочее — по {2}. Проведённые; возвраты нетто."
 AMC,Контракт ТО
 AP Aging,Анализ кредиторской задолженности
+API base URL,
 AR Aging,Анализ дебиторской задолженности
 ARCA,ARCA
 ARCA Payment Events,Платежи ARCA
@@ -38,6 +39,8 @@ Absent,Отсутствует
 Accept Return,
 Accepted,Принят
 Access Review,Проверка доступа
+Access token,
+Access token (JWT),
 Account,Счёт
 Account Ledger,Журнал счета
 Account currency must match the payment account.,Валюта счета должна соответствовать валюте платёжного счета.
@@ -114,12 +117,16 @@ Admin,Администратор
 Administer users & roles,Управление пользователями и ролями
 Advance,Аванс
 Advance amount,
+Advance amount must be greater than zero.,
 Advance deduction,Удержание аванса
 Advance deduction cannot be negative.,Удержание аванса не может быть отрицательным.
+Advance deduction must be a number.,
 Advance paid,Авансовый платёж
 Advance paid.,Аванс выдан.
 Advance sent for approval.,Аванс отправлен на согласование.
+Advanced (API endpoints),
 Advances,Авансы
+Advances outstanding,
 Against,По
 Aging,Срок давности
 Alerts,
@@ -251,6 +258,7 @@ Attendance edits are open — no hard lock set.,Изменения посеща�
 Attendance exceptions,Исключения по табелю
 Attendance on/before,Посещаемость до
 Attendance summary,Сводка посещаемости
+Attendance today,
 Audit Trail,Журнал изменений
 Audit trail,Журнал изменений
 Audited At,Проверено
@@ -281,6 +289,7 @@ Bal,Остаток
 Balance,Остаток
 Balance (Account Currency),Остаток (валюта счета)
 Balanced,Сбалансировано
+"Balances, advances and payments appear here.",
 "Balances, salaries, advances and payments appear here.","Здесь показываются балансы, зарплаты, авансы и выплаты."
 Bank Account '{0}' not found.,
 Bank account,Банковский счёт
@@ -380,9 +389,11 @@ Cancel this submitted BOM?,Отменить эту проведённую спе
 Cancel this transfer?,
 Cancel {name}? This will reverse the stock movements.,Отменить {name}? Это отменит движения товара.
 Cancelled,Отменено
+Cancelled entries cannot be submitted; amend instead.,
 Cannot check out before checking in.,Невозможно выйти до входа.
 Cannot create a return against a return document.,
 Cannot create invoice: no warehouse set for stock item(s) {0}.,Невозможно создать счёт: не указан склад для товара(ов) {0}.
+Cannot delete stage '{0}' — {1} Sales Order(s) are still in it. ,
 Cannot delete: {0} deal(s) are still in this status.,
 Cannot lock period — resolve the following blockers first: {0},
 Cannot post UZS 1:1 into non-base currency account {0}. ,
@@ -551,6 +562,7 @@ Could not load unmatched users.,Не удалось загрузить несо�
 Could not read backup file: {0},
 Could not read the uploaded file.,
 Could not read your location.,Не удалось определить местоположение.
+Could not resolve a customer for this deal.,
 Could not resolve payroll period: {0},
 Could not save period.,Не удалось сохранить период.
 Could not start the online payment.,Не удалось начать онлайн-оплату.
@@ -606,6 +618,7 @@ Critical,Критически
 Critical conflicts,Критические конфликты
 Cumulative %,Накопит. %
 Currency,Валюта
+Current AR balance per customer — click a row to see the ledger behind the balance.,
 Current AR balance per customer — ties to the Customer Center.,Текущая задолженность по каждому клиенту — совпадает с Центром клиентов.
 Current Return,
 Current Sale,
@@ -644,6 +657,8 @@ Dates,Даты
 Day,
 Day of Week,День недели
 Days,Дней
+Days cannot be negative.,
+Days is unreasonably large.,
 Days left,Дней осталось
 Days of cover,Дней запаса
 Deal Owner,Владелец сделки
@@ -656,6 +671,7 @@ Debit notes:,
 Deducted from worked time daily.,
 Deducted per each step interval of lateness.,
 Deduction exceeds the outstanding advance balance.,Удержание превышает остаток аванса.
+Deduction {0} exceeds the outstanding advance balance {1}.,
 Deductions,Удержания
 Default,По умолчанию
 Default Exchange Gain/Loss Account is missing for company {0}. ,
@@ -782,6 +798,7 @@ Each additional step charges the step fee.,
 Each employee's Region band (on their profile) selects which rate applies; NO_TRAVEL pays nothing.,Регион сотрудника (в его профиле) определяет применяемую ставку; NO_TRAVEL — без оплаты.
 Each purpose row must be an object.,
 Each purpose row needs a service person.,
+Early,Ранний уход
 Early Exit,
 Early leave (min),Ранний уход (мин)
 Early leave deduction,
@@ -825,20 +842,24 @@ Employee ID is required.,
 Employee Profile,
 Employee carries additional responsibilities.,
 Employee has no linked user account.,
+Employee is required.,
 Employee name,
 Employee or exception type…,
 Employee saved.,
 Employee summaries,
 Employee works in heavy/hazardous conditions.,
+Employee {0} not found.,
 "Employee, device ID or phone…",
 "Employee, type or reason…",
 Employees,Сотрудники
 Employment,
 Empty allowed list = user can access every company.,Пустой список разрешений = пользователь может получить доступ к любой компании.
+Enable TimePay sync,
 Enabled,Включено
 End,Конец
 End Date,Дата окончания
 End Date must be on or after Start Date.,Дата окончания должна быть на или после даты начала.
+End date cannot be before start date.,
 End of ledger,
 Enforcement,Принуждение
 Enter a quantity for at least one row.,Укажите количество хотя бы для одной строки.
@@ -910,6 +931,7 @@ Expense lines,Строки расходов
 Expense saved · {name},Расход сохранён · {name}
 Expenses,Расходы
 Expired,Истёк
+Expires,
 Expires in,Истекает через
 Expiring within,Истекает в течение
 Expiry,Срок годности
@@ -967,6 +989,7 @@ Failed to load POS profiles.,
 Failed to load accounts.,Не удалось загрузить счета.
 Failed to load aging.,Не удалось загрузить статистику задолженности.
 Failed to load alerts.,Не удалось загрузить предупреждения.
+Failed to load attendance.,
 Failed to load bills.,Не удалось загрузить счета.
 Failed to load calendar.,Не удалось загрузить календарь.
 Failed to load claim.,Не удалось загрузить претензию.
@@ -1185,6 +1208,8 @@ Holiday,Праздник
 Holiday OT premium (%),
 Holiday added.,Праздник добавлен.
 Holiday list,Список праздников
+Holiday list {0} not found.,
+Holidays,
 Holidays & periods,Праздники и периоды
 Horizontal lanes (flow left→right),Горизонтальные дорожки (поток слева→вправо)
 Hourly OT pay = base hourly × this (e.g. 1.5 = time-and-a-half).,Оплата часа сверхурочных = базовый час × это (напр. 1.5 = полуторный тариф).
@@ -1222,19 +1247,24 @@ Install libraries on the server:,
 Installment,Рассрочка
 Installment Calendar,
 Installments,Платежей
+Intake via {0}.,
 Integration,
 Integration type,
 Invalid completion status.,
+Invalid coordinates: {0},
 Invalid correction_type '{0}'. Valid values: {1},
 Invalid date value.,
 Invalid date: {0}. Expected YYYY-MM-DD.,
 Invalid decision: {0},Неверное решение: {0}
 Invalid filename.,
+Invalid filters payload.,
 Invalid item_overrides payload,Неверный payload переопределений товара
 Invalid item_returns payload,Неверный payload возвратов товара
 Invalid maintenance type.,
 Invalid month.,
+Invalid month: {0},
 Invalid payload — expected JSON object.,
+Invalid payload.,
 Invalid period format,
 Invalid punches payload.,
 Invalid resolution '{0}'. Must be one of: {1},
@@ -1276,6 +1306,7 @@ Item name is required.,Наименование товара обязатель�
 Items,Товары
 Items below replenishment thresholds.,
 Item·WH lines,Товар·Склад
+Izoh,
 Jami,Итого
 Jami muzqaymoq soni (dona),Всего мороженого (шт)
 Jami summa,Итого сумма
@@ -1284,11 +1315,13 @@ Joined,
 Journal,
 Journal Entries,Журнальные записи
 Journal Entry,Запись в журнале
+Journal Entry is already submitted.,
 Journal Entry legs,Проводки журнала
 Journal entry cancelled.,Проводка отменена.
 Journal entry submitted.,Проводка проведена.
 KPI,KPI
 KPI performance (%),Выполнение KPI (%)
+KPI performance must be a number.,
 KPI performance must be between 0 and 100.,Выполнение KPI должно быть от 0 до 100.
 KPI pool share (%),Доля KPI-пула (%)
 Keep,Хранить
@@ -1308,10 +1341,11 @@ Last login,Последний вход
 Last month,
 Last name,Фамилия
 Last sync,
+Last transaction,
 Last updated,
 Last visit,Последний визит
 Last year,
-Late,
+Late,Опоздание
 Late (min),Опоздание (мин)
 Late Arrival,
 Late deduction,
@@ -1322,6 +1356,7 @@ Leads,Лиды
 Leave,Отпуск
 Leave all unchecked to use role-based access. Checking any replaces it with exactly these modules. Visibility only — backend permissions still apply.,Оставьте всё без отметок для доступа на основе ролей. Установка флажков заменяет его ровно этими модулями. Только видимость — разрешения бэкэнда всё ещё действуют.
 Leave blank for open-ended.,
+Leave blank to keep the existing token.,
 Leave request approved.,
 Leave request rejected.,
 Leave type,Тип отпуска
@@ -1366,8 +1401,10 @@ Lock attendance older than (days),Блокировать посещаемост�
 Lock payroll period,
 Lock period,
 Lock the payroll period before generating salary components. ,
+Lock the payroll period before pushing net pay. Summary {0} is '{1}'.,
 Lock window,Окно блокировки
 Lock {0}? No further changes will be allowed once locked.,
+Locked,
 Locked at,
 Locked on/before,Заблокировано до
 Log Out,
@@ -1388,6 +1425,7 @@ Make payment,
 Male,Мужской
 Manual,
 Manufacturing,Производство
+Manzil,
 Map,Карта
 Map employees to device user IDs so gate events resolve to attendance records.,
 Map library could not be loaded.,Не удалось загрузить библиотеку карты.
@@ -1425,6 +1463,7 @@ Minimum minutes worked to count as present.,
 Minutes tolerated before late penalty starts.,
 Minutes worked before overtime begins.,
 Missing Entry,
+Missing TimePay user id.,
 Missing site config key: {0},
 Missing work mode / region,Нет режима работы / региона
 Mitigation:,Смягчение:
@@ -1453,6 +1492,7 @@ Move to Under Review,Перейти в режим проверки
 Movement,Движение
 Movements,Движения
 Multi-Currency Parties,
+Multi-currency,
 Multi-level approval incomplete,
 Multiplier (× hourly rate),
 My Work Orders Queue,
@@ -1471,6 +1511,7 @@ Needs you today,Требует внимания
 Needs your attention,
 Net,К выплате
 Net ROI %,Чистая рентабельность инвестиций %
+Net owed,
 Net pay,К выплате
 Net total,К выплате всего
 Net unrealised gain / loss,
@@ -1551,6 +1592,7 @@ Night end (hour),
 Night premium (%),
 Night shift,
 Night start (hour),
+Nightly attendance sync and processing will run when enabled.,
 No,Нет
 No 1C sync events yet.,Событий синхронизации 1С пока нет.
 No ARCA payment events yet.,Платежей ARCA пока нет.
@@ -1558,10 +1600,13 @@ No BOMs yet,Спецификаций пока нет
 No CBU exchange rate found for {0} to {1} on or before {2}.,
 No EHF submissions yet. Submit a Sales Invoice to enqueue one.,Пока нет отправок ЭСФ. Проведите счёт продаж
 No Employee Advances account configured.,Счёт авансов не настроен.
+No Employee Advances account is configured for {0}. Set the company's ,
 No GPS-located outlets for this period.,Нет точек с GPS за этот период.
 No Google service account configured (site_config: stabler_gdrive_service_account).,
 No OSA audits yet,Аудитов OSA пока нет
 No ROI snapshots yet,Снимков ROI пока нет
+No Salary Expense account found for {0}. Create an Expense account ,
+No Salary Payable account found for {0}. Create a Payable account ,
 No Stock Entries with Asl Belgisi items found.,Складских движений с товарами Asl Belgisi не найдено.
 No access,
 No account rows,
@@ -1580,6 +1625,7 @@ No claim selected.,Претензия не выбрана.
 No claims yet,Претензий пока нет
 No columns,Нет колонок
 No comments yet.,Комментариев пока нет.
+No company is configured.,
 No company selected,Компания не выбрана
 No correction requests,
 No corrections are waiting for review.,
@@ -1689,6 +1735,7 @@ No reservations for this warehouse,
 "No results for ""{query}"".","Нет результатов для ""{query}""."
 No revaluations yet,
 No routes yet,Пока нет маршрутов
+No rows to import.,
 No rule sets,
 No salaries pushed yet.,Зарплаты ещё не отправлены.
 No salary payments yet.,Выплат зарплаты пока нет.
@@ -1746,6 +1793,7 @@ Not permitted to create Attendance Rule Sets.,
 Not permitted to create Employee Device Mappings.,
 Not permitted to create Exchange Rate Revaluation.,
 Not permitted to create Gate Devices.,
+Not permitted to export this report.,
 Not permitted to process Timepay attendance.,
 Not permitted to read Budget.,
 Not permitted to read GL entries.,
@@ -1757,9 +1805,12 @@ Not permitted to sync Timepay attendance.,
 Not permitted to {0} {1} {2},
 Not permitted — admins only.,
 Not permitted.,
+Not ready,
 Not ready to lock,
+Not set,
 Not uploaded yet,Ещё не загружено
 Notes,Примечания
+Nothing to pay — selected employees have no outstanding balance.,
 Nothing to reconcile — all clear.,Нечего сверять — всё чисто.
 O'lchov birlik,Ед. изм.
 OK,
@@ -1798,12 +1849,15 @@ Only Approved claims can be settled. Current status: {0},Только одобр
 Only Payment Entry / Journal Entry can be reconciled here.,
 Only a Stock Manager can reconcile stock.,Только менеджер склада может проводить сверку остатков.
 Only confirm after you have actually restored a backup to a scratch site and verified the data. This records today as the last successful restore test.,
+Only draft Journal Entries can be deleted; cancel a submitted one instead.,
+Only draft journal entries can be edited here. Submitted entries must be cancelled and amended.,
 Only draft sales orders can be edited.,
 Only items with available stock in this POS warehouse appear here.,
 Only one entry — chart needs at least two points.,Только одна запись — для графика нужно минимум две точки.
 Only pending schedule rows can be rescheduled.,
 Only submitted Sales Orders can be closed.,
 Only submitted Sales Orders can be reopened.,
+Only submitted entries can be cancelled.,
 Only submitted invoices can be returned.,Только отправленные счета могут быть возвращены.
 Only with a balance,Только с балансом
 Only with balance,Только с остатком
@@ -1839,6 +1893,7 @@ Orders,Заказы
 Org chart,
 Organization,Организация
 Orientation,Ориентация
+Origin,
 Original qty,Исходное кол-во
 Other,Другое
 Out,Выход
@@ -1870,7 +1925,7 @@ Overdue installments,Просроченные платежи
 Override qty must be greater than zero,Переопределённое количество должно быть больше нуля
 Override role,
 Override — submit despite low stock (admin),Отменить блок — принудительно отправить при нехватке запасов (администратор)
-Overtime,
+Overtime,Переработка
 Overtime (min),Сверхурочно (мин)
 Overtime multiplier,Множитель сверхурочных
 Overview,Обзор
@@ -1908,6 +1963,9 @@ Party account not resolved — re-select the party.,Счёт контраген�
 Party is required.,Контрагент обязателен.
 Past day,Прошедший день
 Paste a direct image URL or leave blank to use initials.,
+Paste access token JWT…,
+Paste new token to replace…,
+Paste refresh token JWT…,
 Pause,
 Pause Work,
 Pause Work Order,
@@ -1976,6 +2034,7 @@ Percent off,Процент скидки
 Period,Период
 Period Credit,Кредит за период
 Period Debit,Дебет за период
+Period belongs to another company.,
 Period end,Конец периода
 Period locked.,
 Period readiness,
@@ -1990,6 +2049,7 @@ Photo URL,URL фото
 Photo is required.,Фото обязательно.
 Photos,Фото
 "Photos capture shelves, storefronts and promotions during visits.","Фото фиксируют полки, витрины и промоции во время визитов."
+Pick a cash/bank account.,
 Pick a company from the switcher in the header to see your financial overview.,"Выберите компанию в переключателе заголовка, чтобы увидеть финансовый обзор."
 Pick a customer.,Выберите клиента.
 Pick a date.,Выберите дату.
@@ -2041,6 +2101,7 @@ Planograms,Планограммы
 Planograms describe expected shelf facings per outlet and category.,Планограммы описывают ожидаемые фасинги полок по торговым точкам и категориям.
 Please fill all required fields.,"Пожалуйста, заполните все обязательные поля."
 Policy,Политика
+Position,
 Positions,Позиции
 Positions hierarchy,Иерархия позиций
 Post reconciliation,Провести сверку
@@ -2206,6 +2267,8 @@ Refresh,Обновить
 Refresh balances,Обновить балансы
 Refresh now,Обновить сейчас
 Refresh preview,
+Refresh token,
+Refresh token (JWT),
 Refreshing…,Обновление…
 Region,
 Region / Route,Регион / маршрут
@@ -2385,6 +2448,7 @@ Salesperson,Продавец
 Same currency,Одна валюта
 Same day,В этот день
 Sampling,Дегустация
+Sana,
 Sat,Сб
 Saturday,
 Save,Сохранить
@@ -2405,6 +2469,7 @@ Save failed.,Ошибка сохранения.
 Save mapping,
 Save modules,Сохранить модули
 Saved — pending approval before it posts.,Сохранено — ожидает согласования перед проведением.
+Saved.,
 Saving…,Сохранение…
 Scan,
 Scan barcode or search packaged ice cream,
@@ -2488,6 +2553,7 @@ Select account…,Выберите счёт…
 Select an account…,Выберите счёт…
 Select an active leaf warehouse for returns.,
 Select an employee,Выберите сотрудника
+Select at least one employee to pay.,
 Select bank account…,Выберите счёт…
 Select city…,Выберите город…
 Select company,Выберите компанию
@@ -2530,6 +2596,7 @@ Service person,Исполнитель
 Service ticket assignment,
 Service visit {0},
 Session {0} has no cart snapshot.,
+Set,
 Set Reports-To on employees to build the positions hierarchy.,"Установите «Руководитель» для сотрудников, чтобы построить иерархию должностей."
 Set a Google Drive folder ID first.,Сначала укажите ID папки Google Drive.
 Set as company default,Сделать стандартом компании
@@ -2583,6 +2650,7 @@ Spend,Расходы
 Stabler Settings doctype does not exist. Run migrations first.,
 Staff with base salary = 0,Сотрудники с базовым окладом = 0
 Stage Materials,
+Stage name is required.,
 Stage still has Sales Orders — move them first.,В этапе ещё есть заказы — сначала переместите их.
 Stake coefficient,
 Stale days,
@@ -2676,6 +2744,7 @@ Suppliers,Поставщики
 Suspended,Приостановлен
 Swap accounts,Поменять счета местами
 Sync TimePay,Синхр. TimePay
+Sync TimePay attendance and generate the period summary to populate this table.,
 Sync failed.,Сбой синхронизации.
 Sync now,Синхронизировать
 System qty,Кол-во в системе
@@ -2698,6 +2767,8 @@ Tender / deal,Тендер / сделка
 Tender Deadline,Срок тендера
 Tender No,Номер тендера
 Tender Source,Источник тендера
+Tender module is not enabled for {0}.,
+Tender: {0}.,
 Tenure,Стаж
 Term (months),Срок (месяцев)
 Terms,Условия
@@ -2734,6 +2805,8 @@ This exception is already {0}.,
 This month,
 "This must match exactly the value in raw events (TimePay user ID, badge code, etc.).",
 This period is already accrued.,Этот период уже начислен.
+This period is locked; KPI cannot be changed.,
+This period is locked; the advance deduction cannot be changed.,
 This posts the entry to the ledger. Submitted entries can't be edited — only cancelled and amended.,Запись будет проведена в учёт. Проведённые проводки нельзя редактировать — только отменить и создать исправленную.
 This request belongs to a company you cannot access.,
 This request is already {0}.,
@@ -2758,7 +2831,11 @@ Ticket must have a customer before closing a visit.,
 Tickets,Заявки
 Tickets by status,Заявки по статусам
 Time,
+TimePay,
 TimePay ID,
+TimePay Settings,
+TimePay credentials saved.,
+TimePay id {0} is already linked to {1}.,
 TimePay name,
 TimePay sync complete.,Синхронизация TimePay завершена.
 Timepay,
@@ -2776,7 +2853,9 @@ To deliver,К отгрузке
 To warehouse,На склад
 Today,
 Toggle date sort,
+Token status,
 Too many failed attempts. Please try again in 5 minutes.,
+Too many rows (max 5000).,
 Top 10 Creditors,
 Top 10 Debtors,
 Total,Итого
@@ -2789,7 +2868,10 @@ Total allocated,Всего распределено
 Total allocated cannot exceed the payment amount.,Сумма распределения не может превышать размер платежа.
 Total cost,Общая стоимость
 Total credit value,
+Total credits,
+Total debits,
 Total in {0},Итого в {0}
+Total net owed,
 Total outstanding,Всего задолженности
 Total outstanding advances,Итого непогашенные авансы
 Total overdue,Всего просрочено
@@ -2842,6 +2924,7 @@ Unbilled,Не выставлен счёт
 Unbilled queue,Очередь к выставлению
 Unit cost,Себестоимость
 Units Sold,Проданных единиц
+Unknown,
 Unknown Cost Center: {0},
 Unknown Fiscal Year: {0},
 Unknown POS Profile: {0},
@@ -2851,12 +2934,17 @@ Unknown Sales Order: {0},Неизвестный заказ на продажу: 
 Unknown account: {0},
 Unknown company: {0},Неизвестная компания: {0}
 Unknown customer: {0},
+Unknown deal: {0},
+Unknown employee: {0},
 Unknown hash algorithm: {0},
 Unknown item: {0},
 Unknown payment session.,
+Unknown report: {0},
 Unknown role template: {0},Неизвестный шаблон роли: {0}
 Unknown role: {0},
 Unknown serial number: {0},
+Unknown stage: {0},
+Unknown summary: {0},
 Unknown user: {0},
 Unknown vertical pack: {0},Неизвестный вертикальный набор: {0}
 Unknown warehouse: {0},Неизвестный склад: {0}
@@ -2871,6 +2959,7 @@ Unsupported statement format (expected 1C ClientBank Exchange).,
 Untitled Process,Без названия
 Upcoming,Предстоящие
 Update stock,
+Update tokens,
 Uplift Value,Прирост стоимости
 Upload failed,Ошибка загрузки
 Upload latest to Drive,Загрузить последнюю в Drive
@@ -2934,6 +3023,7 @@ Void Cart,
 Voucher,Ваучер
 Voucher not found.,
 Voucher not found: {0} {1},
+Voucher…,
 WIP Warehouse,
 WIP Whse,
 WIP warehouse,Склад НЗП
@@ -3017,7 +3107,9 @@ You have no approval requests,У вас нет заявок на согласо�
 You have unsaved changes. Leaving this page will discard them.,
 "You must hold an HR Manager, System Manager, or Stabler Admin role to lock a payroll period.",
 You need a payroll/HR role to manage employee advances.,Для управления авансами нужна роль расчётчика/HR.
+You need a payroll/HR role to run salary payments.,
 You need a payroll/HR role to view computed pay.,Для просмотра расчёта зарплаты нужна роль расчётчика/HR.
+You need a payroll/HR role to view employee finances.,
 You need administrator access to view this page.,Требуется доступ администратора для просмотра этой страницы.
 You raised this request — it must be approved by someone else.,
 You raised this request — it must be reviewed by someone else.,
@@ -3026,6 +3118,7 @@ You raised this — another user must approve it.,Вы создали эту з�
 Yuk xati,Юк хати
 absent,отсутствовал
 across all statuses,по всем статусам
+active,
 active staff,активных сотрудников
 against,
 avail,дост.
@@ -3034,6 +3127,7 @@ blocker(s),
 cheque / txn id,чек / ID транзакции
 company currency,валюта компании
 company is required.,
+completed,
 correction_date is required.,
 correction_type is required.,
 create and submit,
@@ -3071,6 +3165,7 @@ item_code and warehouse are required,item_code и warehouse обязательн
 items,товары
 joined this month,принято в этом месяце
 late,опоздал
+leave,
 left,осталось
 line,строка
 lines,
@@ -3086,6 +3181,7 @@ no stock movement,
 on budget,
 "one Journal Entry, clears their payable.","одна проводка, закрывает задолженность."
 one-off,разовый
+open,
 optional,необязательно
 orders,
 overdue,просрочено
@@ -3109,6 +3205,7 @@ selected,выбрано
 sets,наборов
 skipped,пропущено
 source,target
+staff,
 step_idx must be an integer.,step_idx должен быть целым числом.
 stock,запас
 summaries ready,сводок готово
@@ -3116,6 +3213,7 @@ to_date must be >= from_date.,
 unfavorable,
 units,
 units total,единиц всего
+updated,
 user@example.com,user@example.com
 valuation,оценка
 vouchers must be a JSON list.,
@@ -3138,6 +3236,7 @@ yr,г.
 — Any device —,
 — Choose account —,— Выберите счёт —
 — No party —,— Без контрагента —
+— Select —,
 — auto from customer —,— автоматически от клиента —
 — auto from supplier —,— автоматически от поставщика —
 — company default —,— стандартный в компании —
