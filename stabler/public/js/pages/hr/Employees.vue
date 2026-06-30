@@ -9,6 +9,7 @@ import { formatDate, todayIso } from "../../composables/date.js";
 import { formatMoney } from "../../composables/money.js";
 import { useToast } from "../../composables/useToast.js";
 import { useConfirm } from "../../composables/useConfirm.js";
+import { useListViewState } from "../../composables/useListViewState.js";
 import EmptyState from "../../components/EmptyState.vue";
 import DateInput from "../../components/DateInput.vue";
 import Select from "../../components/Select.vue";
@@ -27,8 +28,10 @@ const finMoney = (v) => formatMoney(v, (fin.value && fin.value.display_currency)
 const loading = ref(false);
 const error = ref("");
 const rows = ref([]);
-const search = ref("");
-const statusFilter = ref("");
+const { search, statusFilter, onlyWithBalance, sortField, sortAsc, c: selectedName } = useListViewState(
+	"stabler.employees.listState",
+	{ search: "", statusFilter: "", onlyWithBalance: false, sortField: "name", sortAsc: true, c: "" }
+);
 const balances = ref({});
 const currencies = ref({}); // per-employee original currency (e.g. UZS)
 const canAdvances = ref(true);
@@ -36,9 +39,6 @@ const payAccounts = ref([]);
 const advanceCurrency = ref("");
 // Format a balance in the employee's OWN currency (falls back to base).
 const fmtBal = (v, ccy) => formatMoney(v, ccy || currency.value, user.value.language);
-const onlyWithBalance = ref(false);
-const sortField = ref("name");
-const sortAsc = ref(true);
 
 const statusFilterOptions = computed(() => [
 	{ value: "", label: t("All statuses") },
@@ -97,13 +97,33 @@ async function loadAll() {
 	await Promise.all([load(), loadBalances()]);
 	loadPayAccounts();
 }
-onMounted(loadAll);
-watch(activeCompany, () => { selected.value = null; fin.value = null; loadAll(); });
+onMounted(async () => {
+	await loadAll();
+	if (selectedName.value) {
+		const r = rows.value.find((e) => e.name === selectedName.value);
+		if (r) select(r);
+	}
+});
+watch(activeCompany, () => { selectedName.value = ""; selected.value = null; fin.value = null; loadAll(); });
 watch(statusFilter, load);
 
 const filteredEmployees = computed(() => {
-	if (!onlyWithBalance.value) return rows.value;
-	return rows.value.filter((r) => Math.abs(balanceOf(r.name)) > 0.005);
+	let list = onlyWithBalance.value
+		? rows.value.filter((r) => Math.abs(balanceOf(r.name)) > 0.005)
+		: [...rows.value];
+	list.sort((a, b) => {
+		let av, bv;
+		if (sortField.value === "balance") {
+			av = balanceOf(a.name); bv = balanceOf(b.name);
+		} else {
+			av = (a.employee_name || a.name).toLowerCase();
+			bv = (b.employee_name || b.name).toLowerCase();
+		}
+		if (av < bv) return sortAsc.value ? -1 : 1;
+		if (av > bv) return sortAsc.value ? 1 : -1;
+		return 0;
+	});
+	return list;
 });
 
 function toggleSort(field) {
@@ -133,6 +153,7 @@ const voucherTypeFilter = ref("");
 const ledgerSearch = ref("");
 
 async function select(r) {
+	selectedName.value = r.name;
 	selected.value = r;
 	fin.value = null;
 	finLoading.value = true;
@@ -327,12 +348,13 @@ const paying = ref(false);
 const payError = ref("");
 const payForm = ref(blankPay());
 function blankPay() {
-	return { employee: "", employee_name: "", amount: null, paid_from: "", posting_date: todayIso(), remark: "" };
+	return { employee: "", employee_name: "", currency: "", amount: null, paid_from: "", posting_date: todayIso(), remark: "" };
 }
 function openPay(r) {
 	payForm.value = blankPay();
 	payForm.value.employee = r.name;
 	payForm.value.employee_name = r.employee_name;
+	payForm.value.currency = currencyOf(r.name);
 	payForm.value.paid_from = payAccounts.value[0]?.name || "";
 	payError.value = "";
 	payOpen.value = true;
@@ -488,8 +510,8 @@ function initials(name) {
 												<div
 													v-if="canAdvances"
 													:class="{
-														'text-green': balanceOf(r.name) > 0,
-														'text-red': balanceOf(r.name) < 0,
+														'text-red': balanceOf(r.name) > 0,
+														'text-green': balanceOf(r.name) < 0,
 														'text-secondary': !balanceOf(r.name),
 													}"
 												>
@@ -547,7 +569,7 @@ function initials(name) {
 											<div class="text-secondary small text-uppercase fw-semibold mb-1">{{ t("Net owed") }}</div>
 											<div
 												class="h3 mb-0 font-monospace stbl-amount"
-												:class="kpiNetOwed > 0 ? 'text-green fw-bold' : kpiNetOwed < 0 ? 'text-red fw-bold' : 'text-body'"
+												:class="kpiNetOwed > 0 ? 'text-red fw-bold' : kpiNetOwed < 0 ? 'text-green fw-bold' : 'text-body'"
 											>
 												{{ finMoney(Math.abs(kpiNetOwed)) }}
 											</div>
@@ -671,7 +693,7 @@ function initials(name) {
 														<td colspan="4" class="text-end text-secondary small text-uppercase">{{ t("Closing balance") }}</td>
 														<td
 															class="text-end font-monospace fw-bold"
-															:class="fin.net_owed < 0 ? 'text-red' : fin.net_owed > 0 ? 'text-green' : 'text-secondary'"
+															:class="fin.net_owed < 0 ? 'text-green' : fin.net_owed > 0 ? 'text-red' : 'text-secondary'"
 														>
 															{{ finMoney(fin.net_owed) }}
 														</td>
@@ -709,7 +731,7 @@ function initials(name) {
 						<div v-if="payError" class="alert alert-danger py-2">{{ payError }}</div>
 						<div>
 							<label class="form-label">{{ t("Amount") }} *</label>
-							<MoneyInput v-model="payForm.amount" :currency="currency" :group-while-typing="true" />
+							<MoneyInput v-model="payForm.amount" :currency="payForm.currency || currency" :group-while-typing="true" />
 						</div>
 						<div>
 							<label class="form-label">{{ t("Pay from") }} *</label>

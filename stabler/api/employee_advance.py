@@ -65,6 +65,20 @@ def _advance_account(company: str) -> str:
 	)
 
 
+def _employee_advance_account(company: str, employee: str) -> str:
+	"""Çalışanın avanslarının aktığı hesap, kendi para biriminde.
+
+	Müşteri/tedarikçi akışını (money.party_payment_defaults) yansıtır:
+	get_party_account, çalışanın mevcut defter girişlerinin para birimine uyan
+	hesabı çözer (UZS çalışan için UZS), böylece Payment Entry party-GLE para
+	birimi doğrulamasını geçer. Henüz GL geçmişi olmayan yeni çalışanda şirket
+	avans hesabına düşer.
+	"""
+	from erpnext.accounts.party import get_party_account
+
+	return get_party_account("Employee", party=employee, company=company) or _advance_account(company)
+
+
 @frappe.whitelist()
 def advance_account(company: str) -> dict:
 	"""The resolved advance account + its currency (for the UI)."""
@@ -243,7 +257,7 @@ def pay_employee_advance(
 	amt = flt(amount)
 	if amt <= 0:
 		frappe.throw(_("Advance amount must be greater than zero."))
-	account = _advance_account(company)
+	account = _employee_advance_account(company, employee)
 
 	res = create_payment_entry(
 		company=company,
