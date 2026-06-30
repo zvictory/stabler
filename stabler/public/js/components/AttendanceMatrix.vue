@@ -93,8 +93,8 @@ async function onCellClick(ev, row, d) {
 	if (d.is_future || d.is_locked) return;
 	editor.value = {
 		open: true,
-		x: Math.min(ev.clientX, window.innerWidth - 270),
-		y: Math.min(ev.clientY, window.innerHeight - 360),
+		x: Math.min(ev.clientX, window.innerWidth - 330),
+		y: Math.min(ev.clientY, window.innerHeight - 420),
 		row, day: d.day, date: d.date,
 		isPast: !!(data.value && d.date < data.value.today),
 		loading: true,
@@ -462,15 +462,15 @@ defineExpose({ exportCsv, exportXlsx, reload: load });
 						</div>
 						<div class="row g-2 mt-1">
 							<div class="col-4">
-								<label class="form-label small mb-1">{{ t("Late (min)") }}</label>
+								<label class="form-label small mb-1">{{ t("Late") }}</label>
 								<input v-model.number="editor.form.late" type="number" min="0" class="form-control form-control-sm text-end" />
 							</div>
 							<div class="col-4">
-								<label class="form-label small mb-1">{{ t("Early leave (min)") }}</label>
+								<label class="form-label small mb-1">{{ t("Early") }}</label>
 								<input v-model.number="editor.form.early" type="number" min="0" class="form-control form-control-sm text-end" />
 							</div>
 							<div class="col-4">
-								<label class="form-label small mb-1">{{ t("Overtime (min)") }}</label>
+								<label class="form-label small mb-1">{{ t("Overtime") }}</label>
 								<input v-model.number="editor.form.ot" type="number" min="0" class="form-control form-control-sm text-end" />
 							</div>
 						</div>
@@ -530,12 +530,13 @@ defineExpose({ exportCsv, exportXlsx, reload: load });
 .att-locked .att-key { opacity: 0.5; }
 .att-pop-past { float: right; color: #c07a00; font-size: 0.68rem; }
 .att-pop-confirm { padding: 4px 6px; }
-.att-pop-form { width: 264px; padding: 8px; }
-.att-status-row { display: flex; gap: 6px; margin-top: 6px; }
+.att-pop-form { width: 320px; padding: 8px; }
+.att-status-row { display: flex; flex-wrap: wrap; gap: 6px; margin-top: 6px; }
 .att-status-chip {
-	flex: 1; height: 30px; border-radius: 6px; border: 1px solid var(--tblr-border-color, #e6e7e9);
+	flex: 1 1 88px; min-width: 0; height: 30px; border-radius: 6px; border: 1px solid var(--tblr-border-color, #e6e7e9);
 	background: var(--tblr-light, #f6f8fb); color: var(--tblr-secondary, #6b7689);
 	font-weight: 600; font-size: 0.82rem; cursor: pointer;
+	overflow: hidden; text-overflow: ellipsis; white-space: nowrap;
 }
 .att-status-chip.is-on { border-width: 1.5px; }
 .att-pop-form .form-label { color: var(--tblr-secondary, #6b7689); }
