@@ -34,6 +34,7 @@ ARCA,ARCA
 ARCA Payment Events,ARCA Payment Events
 Abbr,Abbr
 Absent,Absent
+Ambiguous,Ambiguous
 Accept Return,Accept Return
 Access Review,Access Review
 Access token,Access token
@@ -1612,6 +1613,7 @@ No blockers,No blockers
 No budget data for this period,No budget data for this period
 No budgets found,No budgets found
 No cash/bank account in this currency.,No cash/bank account in this currency.
+No check-out,No check-out
 No claim selected.,No claim selected.
 No claims yet,No claims yet
 No columns,No columns
@@ -2109,6 +2111,7 @@ Premium,Premium
 Prepaid,Prepaid
 Present,Present
 Present / half-day / absent,Present / half-day / absent
+Present / half-day / absent / ambiguous,Present / half-day / absent / ambiguous
 Present SKUs,Present SKUs
 Present today,Present today
 Preview,Preview
@@ -3103,6 +3106,7 @@ You raised this — another user must approve it.,You raised this — another us
 "Your books are empty. Get started by adding a customer, recording your first sale, or logging an opening balance.","Your books are empty. Get started by adding a customer, recording your first sale, or logging an opening balance."
 Yuk xati,Yuk xati
 absent,absent
+ambiguous,ambiguous
 across all statuses,across all statuses
 active,active
 active staff,active staff

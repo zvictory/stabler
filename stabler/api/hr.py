@@ -522,7 +522,7 @@ def attendance_matrix(company: str, period: str = "", department: str = "", empl
 	# Attendance for the month.
 	records = frappe.db.sql(
 		"""
-		SELECT employee, attendance_date, status, late_entry, working_hours, leave_type
+		SELECT employee, attendance_date, status, late_entry, working_hours, leave_type, in_time, out_time
 		FROM `tabAttendance`
 		WHERE company = %(company)s AND docstatus < 2
 		  AND attendance_date BETWEEN %(from_date)s AND %(to_date)s
@@ -539,7 +539,8 @@ def attendance_matrix(company: str, period: str = "", department: str = "", empl
 	for emp in roster:
 		cells: dict[int, str] = {}
 		late: list[int] = []
-		totals = {"present": 0, "absent": 0, "leave": 0, "half": 0, "wfh": 0, "late": 0}
+		ambiguous: list[int] = []
+		totals = {"present": 0, "absent": 0, "leave": 0, "half": 0, "wfh": 0, "late": 0, "ambiguous": 0}
 		emp_recs = by_emp.get(emp.name, {})
 		for day, rec in emp_recs.items():
 			code = _ATT_CODE.get(rec.status, "")
@@ -549,7 +550,11 @@ def attendance_matrix(company: str, period: str = "", department: str = "", empl
 			if code == "P":
 				totals["present"] += 1
 			elif code == "A":
-				totals["absent"] += 1
+				if rec.in_time and not rec.out_time:
+					ambiguous.append(day)
+					totals["ambiguous"] += 1
+				else:
+					totals["absent"] += 1
 			elif code == "L":
 				totals["leave"] += 1
 			elif code == "H":
@@ -568,6 +573,7 @@ def attendance_matrix(company: str, period: str = "", department: str = "", empl
 				"designation": (emp.designation or "").split(" - ")[0] if emp.designation else "",
 				"cells": cells,
 				"late": late,
+				"ambiguous": ambiguous,
 				"totals": totals,
 			}
 		)

@@ -36,6 +36,7 @@ ARCA Payment Events,Платежи ARCA
 ARCA payment webhook events appear here.,Здесь отображаются события вебхуков платежей ARCA.
 Abbr,Сокр.
 Absent,Отсутствует
+Ambiguous,Не определено
 Accept Return,
 Accepted,Принят
 Access Review,Проверка доступа
@@ -1621,6 +1622,7 @@ No blockers,Нет блокеров
 No budget data for this period,
 No budgets found,
 No cash/bank account in this currency.,Нет кассы/банка в этой валюте.
+No check-out,Нет выхода
 No claim selected.,Претензия не выбрана.
 No claims yet,Претензий пока нет
 No columns,Нет колонок
@@ -2119,6 +2121,7 @@ Premium,
 Prepaid,Аванс
 Present,Присутствует
 Present / half-day / absent,Присут. / полдня / отсут.
+Present / half-day / absent / ambiguous,Присут. / полдня / отсут. / неопр.
 Present SKUs,Присутствующие артикулы
 Present today,
 Preview,Предпросмотр
@@ -3117,6 +3120,7 @@ You raised this — another user must approve it.,Вы создали эту з�
 "Your books are empty. Get started by adding a customer, recording your first sale, or logging an opening balance.","Ваши книги пусты. Начните с добавления клиента, записи первой продажи или ввода начального остатка."
 Yuk xati,Юк хати
 absent,отсутствовал
+ambiguous,не определено
 across all statuses,по всем статусам
 active,
 active staff,активных сотрудников

@@ -16,6 +16,8 @@ const CODES = {
 	A: { letter: "D", cls: "text-danger" },
 	L: { letter: "D", cls: "text-azure" },
 };
+// Ambiguous: check-in present but no check-out.
+const AMBIG_CLS = { letter: "N", cls: "text-secondary" };
 
 function ym(d) {
 	return `${d.getFullYear()}-${String(d.getMonth() + 1).padStart(2, "0")}`;
@@ -36,6 +38,7 @@ const data = ref(null);
 const row = computed(() => (data.value?.rows || [])[0] || null);
 const days = computed(() => data.value?.days || []);
 const lateSet = computed(() => new Set(row.value?.late || []));
+const ambiguousSet = computed(() => new Set(row.value?.ambiguous || []));
 
 async function load() {
 	if (!props.employee || !props.company) return;
@@ -65,7 +68,7 @@ const weeks = computed(() => {
 	return out;
 });
 
-const codeOf = (day) => CODES[row.value?.cells?.[day]] || null;
+const codeOf = (day) => ambiguousSet.value.has(day) ? AMBIG_CLS : (CODES[row.value?.cells?.[day]] || null);
 const dow = ["Mo", "Tu", "We", "Th", "Fr", "Sa", "Su"];
 </script>
 
@@ -114,6 +117,7 @@ const dow = ["Mo", "Tu", "We", "Th", "Fr", "Sa", "Su"];
 			<span class="text-success">K</span> {{ t("present") }} ·
 			<span class="text-orange">Y</span> {{ t("half-day") }} ·
 			<span class="text-danger">D</span> {{ t("absent") }} ·
+			<span class="text-secondary">N</span> {{ t("ambiguous") }} ·
 			<span class="text-warning">•</span> {{ t("late") }}
 		</div>
 	</div>

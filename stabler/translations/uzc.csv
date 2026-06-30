@@ -34,6 +34,7 @@ ARCA,ARCA
 ARCA Payment Events,ARCA Тўлов воқеалари
 Abbr,Қисқартма
 Absent,Йўқ
+Ambiguous,Ноаниқ
 Accept Return,
 Access Review,Киришни текшириш
 Access token,
@@ -1614,6 +1615,7 @@ No blockers,Тўсиқ йўқ
 No budget data for this period,
 No budgets found,
 No cash/bank account in this currency.,Бу валютада касса/банк ҳисоби йўқ.
+No check-out,Чиқиш йўқ
 No claim selected.,Даво танланмаган.
 No claims yet,Ҳалиғача даволар йўқ
 No columns,Устунлар йўқ
@@ -2112,6 +2114,7 @@ Premium,
 Prepaid,Аванс
 Present,Ҳозир
 Present / half-day / absent,Келди / ярим кун / келмади
+Present / half-day / absent / ambiguous,Келди / ярим кун / келмади / ноаниқ
 Present SKUs,Мавжуд АСК-лар
 Present today,
 Preview,Кўриб чиқиш
@@ -3110,6 +3113,7 @@ You raised this — another user must approve it.,Бу сўровни сиз я�
 "Your books are empty. Get started by adding a customer, recording your first sale, or logging an opening balance.","Сизнинг китобларингиз бўш. Харидор қўшиб, биринчи сотувингизни ёзиб ёки ўзаро баланси қўйиб бошлаинг."
 Yuk xati,Юк хати
 absent,келмаган
+ambiguous,ноаниқ
 across all statuses,барча ҳолатлар бўйича
 active,
 active staff,фаол ходим

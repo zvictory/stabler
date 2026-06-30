@@ -34,6 +34,7 @@ ARCA,ARCA
 ARCA Payment Events,ARCA To'lov Voqealari
 Abbr,Qisqartma
 Absent,Yo'q
+Ambiguous,Noaniq
 Accept Return,
 Access Review,Kirishni tekshirish
 Access token,
@@ -1614,6 +1615,7 @@ No blockers,To'siq yo'q
 No budget data for this period,
 No budgets found,
 No cash/bank account in this currency.,Bu valyutada kassa/bank hisobi yo'q.
+No check-out,Chiqish yo'q
 No claim selected.,Talaba tanlanmagan.
 No claims yet,Hali talabalyar yo'q
 No columns,Ustunlar yo'q
@@ -2112,6 +2114,7 @@ Premium,
 Prepaid,Avans
 Present,Hozir
 Present / half-day / absent,Keldi / yarim kun / kelmadi
+Present / half-day / absent / ambiguous,Keldi / yarim kun / kelmadi / noaniq
 Present SKUs,Mavjud SKU'lar
 Present today,
 Preview,Ko'rib chiqish
@@ -3110,6 +3113,7 @@ You raised this â€” another user must approve it.,Bu so'rovni siz yaratdingiz â€
 "Your books are empty. Get started by adding a customer, recording your first sale, or logging an opening balance.","Sizning kitoplaringiz bo'sh. Xaridor qo'shish, birinchi sotuvi qayd etish yoki ochilish qoldiqlarini kiritish bilan boshlang."
 Yuk xati,Yuk xati
 absent,kelmagan
+ambiguous,noaniq
 across all statuses,barcha holatlar bo'yicha
 active,
 active staff,faol xodim

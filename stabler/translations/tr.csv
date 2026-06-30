@@ -34,6 +34,7 @@ ARCA,ARCA
 ARCA Payment Events,ARCA Ödeme Olayları
 Abbr,Kısaltma
 Absent,Devamsız
+Ambiguous,Belirsiz
 Accept Return,
 Access Review,Erişim İncelemesi
 Access token,
@@ -1606,6 +1607,7 @@ No blockers,Engel yok
 No budget data for this period,
 No budgets found,
 No cash/bank account in this currency.,Bu para biriminde kasa/banka hesabı yok.
+No check-out,Çıkış yok
 No claim selected.,Talep seçilmedi.
 No claims yet,Henüz talep yok
 No columns,Sütun yok
@@ -2102,6 +2104,7 @@ Premium,
 Prepaid,Avans
 Present,Mevcut
 Present / half-day / absent,Geldi / yarım gün / gelmedi
+Present / half-day / absent / ambiguous,Geldi / yarım gün / gelmedi / belirsiz
 Present SKUs,Mevcut SKU'lar
 Present today,
 Preview,Önizleme
@@ -3093,6 +3096,7 @@ You raised this — another user must approve it.,Bu talebi siz oluşturdunuz �
 "Your books are empty. Get started by adding a customer, recording your first sale, or logging an opening balance.","Defteriniz boş. Müşteri ekleyerek, ilk satışınızı kaydederek veya açılış bakiyesi girerek başlayın."
 Yuk xati,Yuk xati
 absent,gelmedi
+ambiguous,belirsiz
 across all statuses,tüm durumlarda
 active,
 active staff,aktif çalışan

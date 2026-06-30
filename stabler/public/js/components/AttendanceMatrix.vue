@@ -29,6 +29,8 @@ const CODES = {
 	H: { letter: "Y", label: () => t("Half Day"), bg: "#fdf3e3", fg: "#c07a00" },
 	W: { letter: "K", label: () => t("Work From Home"), bg: "#e6f7f4", fg: "#0ca678" },
 };
+// Ambiguous: check-in present but no check-out — distinct from true Absent.
+const AMBIG = { letter: "N", label: () => t("Ambiguous"), bg: "#eef0f3", fg: "#5c6370" };
 
 const rows = computed(() => {
 	const all = data.value?.rows || [];
@@ -50,11 +52,15 @@ function cellOf(row, day) {
 function isLate(row, day) {
 	return (row.late || []).includes(day);
 }
+function isAmbiguous(row, day) {
+	return (row.ambiguous || []).includes(day);
+}
 function cellTitle(row, d) {
 	const code = row.cells?.[d.day];
 	if (code) {
-		let s = CODES[code].label();
+		let s = isAmbiguous(row, d.day) ? AMBIG.label() : CODES[code].label();
 		if (isLate(row, d.day)) s += " · " + t("Late");
+		if (isAmbiguous(row, d.day)) s += " · " + t("No check-out");
 		return `${row.employee_name} — ${d.date}: ${s}`;
 	}
 	if (d.is_holiday) return `${d.date}: ${t("Holiday")}`;
@@ -98,7 +104,7 @@ async function onCellClick(ev, row, d) {
 		row, day: d.day, date: d.date,
 		isPast: !!(data.value && d.date < data.value.today),
 		loading: true,
-		showDetails: false,
+		showDetails: true,
 		form: blankForm(),
 	};
 	try {
@@ -128,11 +134,14 @@ function pickStatus(code) {
 	editor.value.form.status = STATUS_BY_CODE[code];
 }
 function recompute(row) {
-	const tot = { present: 0, absent: 0, leave: 0, half: 0, wfh: 0, late: (row.late || []).length };
+	const tot = { present: 0, absent: 0, leave: 0, half: 0, wfh: 0, late: (row.late || []).length, ambiguous: 0 };
 	for (const day in row.cells) {
 		const c = row.cells[day];
 		if (c === "P") tot.present++;
-		else if (c === "A") tot.absent++;
+		else if (c === "A") {
+			if ((row.ambiguous || []).includes(Number(day))) tot.ambiguous++;
+			else tot.absent++;
+		}
 		else if (c === "L") tot.leave++;
 		else if (c === "H") tot.half++;
 		else if (c === "W") { tot.wfh++; tot.present++; }
@@ -158,6 +167,8 @@ async function saveCell() {
 		e.row.cells[e.day] = STATUS_TO_CODE[e.form.status];
 		e.row.late = (e.row.late || []).filter((d) => d !== e.day);
 		if (res.late) e.row.late.push(e.day);
+		e.row.ambiguous = (e.row.ambiguous || []).filter((d) => d !== e.day);
+		if (e.form.status === "Absent" && e.form.in_time && !e.form.out_time) e.row.ambiguous.push(e.day);
 		recompute(e.row);
 		closeEditor();
 	} catch (err) {
@@ -175,6 +186,7 @@ async function clearCell() {
 		await call("stabler.api.hr.clear_attendance", { company: props.company, employee: e.row.employee, attendance_date: e.date });
 		delete e.row.cells[e.day];
 		e.row.late = (e.row.late || []).filter((d) => d !== e.day);
+		e.row.ambiguous = (e.row.ambiguous || []).filter((d) => d !== e.day);
 		recompute(e.row);
 		closeEditor();
 	} catch (err) {
@@ -251,6 +263,7 @@ async function applyBulk(code) {
 			if (code) row.cells[day] = code;
 			else delete row.cells[day];
 			row.late = (row.late || []).filter((d) => d !== day);
+			row.ambiguous = (row.ambiguous || []).filter((d) => d !== day);
 		}
 		for (const r of rows.value) recompute(r);
 		clearSelection();
@@ -283,14 +296,14 @@ async function load() {
 function exportCsv() {
 	if (!data.value) return;
 	const head = [t("Employee"), t("Department"), ...days.value.map((d) => d.day),
-		t("Present"), t("Absent"), t("On Leave")];
+		t("Present"), t("Absent"), t("Ambiguous"), t("On Leave")];
 	const lines = [head.join(",")];
 	for (const r of rows.value) {
 		const cols = [
 			`"${(r.employee_name || "").replace(/"/g, '""')}"`,
 			`"${(r.department || "").replace(/"/g, '""')}"`,
-			...days.value.map((d) => (CODES[r.cells?.[d.day]]?.letter) || ""),
-			r.totals.present, r.totals.absent, r.totals.leave,
+			...days.value.map((d) => isAmbiguous(r, d.day) ? AMBIG.letter : (CODES[r.cells?.[d.day]]?.letter) || ""),
+			r.totals.present, r.totals.absent, r.totals.ambiguous || 0, r.totals.leave,
 		];
 		lines.push(cols.join(","));
 	}
@@ -325,7 +338,8 @@ defineExpose({ exportCsv, exportXlsx, reload: load });
 					<span class="att-key" :style="{ background: CODES.P.bg, color: CODES.P.fg }">K</span>
 					<span class="att-key" :style="{ background: CODES.H.bg, color: CODES.H.fg }">Y</span>
 					<span class="att-key" :style="{ background: CODES.A.bg, color: CODES.A.fg }">D</span>
-					<span class="text-secondary ms-1">{{ t("Present / half-day / absent") }}</span>
+					<span class="att-key" :style="{ background: AMBIG.bg, color: AMBIG.fg }">N</span>
+					<span class="text-secondary ms-1">{{ t("Present / half-day / absent / ambiguous") }}</span>
 				</span>
 				<span v-if="data.edit_lock_date" class="d-inline-flex align-items-center gap-1 text-secondary">
 					<i class="ti ti-lock"></i> ≤ {{ data.edit_lock_date }}
@@ -349,7 +363,8 @@ defineExpose({ exportCsv, exportXlsx, reload: load });
 							<th class="att-emp att-sticky-l">{{ t("Employee") }}</th>
 							<th class="att-tot att-sticky-l2 text-center" :title="t('Present')">K</th>
 							<th class="att-tot att-sticky-l3 text-center" :title="t('Absent')">D</th>
-							<th class="att-tot att-sticky-l4 text-center" :title="t('On Leave')">L</th>
+							<th class="att-tot att-sticky-l4 text-center" :title="t('Ambiguous')" :style="{ color: AMBIG.fg }">N</th>
+							<th class="att-tot att-sticky-l5 text-center" :title="t('On Leave')">L</th>
 							<th
 								v-for="d in days"
 								:key="d.day"
@@ -365,7 +380,7 @@ defineExpose({ exportCsv, exportXlsx, reload: load });
 					<tbody>
 						<template v-for="item in groupedRows" :key="item.key">
 							<tr v-if="item.type === 'group'" class="att-group">
-								<td class="att-group-cell att-sticky-l" :colspan="days.length + 4">
+								<td class="att-group-cell att-sticky-l" :colspan="days.length + 5">
 									{{ item.dept }} <span class="text-secondary">· {{ item.count }}</span>
 								</td>
 							</tr>
@@ -376,7 +391,8 @@ defineExpose({ exportCsv, exportXlsx, reload: load });
 								</td>
 								<td class="att-tot att-sticky-l2 text-center fw-semibold" style="color:#1f9d54">{{ item.row.totals.present || "" }}</td>
 								<td class="att-tot att-sticky-l3 text-center fw-semibold" style="color:#d63939">{{ item.row.totals.absent || "" }}</td>
-								<td class="att-tot att-sticky-l4 text-center fw-semibold" style="color:#3b5bdb">{{ item.row.totals.leave || "" }}</td>
+								<td class="att-tot att-sticky-l4 text-center fw-semibold" :style="{ color: AMBIG.fg }">{{ item.row.totals.ambiguous || "" }}</td>
+								<td class="att-tot att-sticky-l5 text-center fw-semibold" style="color:#3b5bdb">{{ item.row.totals.leave || "" }}</td>
 								<td
 									v-for="d in days"
 									:key="d.day"
@@ -389,15 +405,15 @@ defineExpose({ exportCsv, exportXlsx, reload: load });
 										v-if="cellOf(item.row, d.day)"
 										class="att-key"
 										:class="{ 'att-late': isLate(item.row, d.day) }"
-										:style="{ background: cellOf(item.row, d.day).bg, color: cellOf(item.row, d.day).fg }"
-									>{{ cellOf(item.row, d.day).letter }}<i v-if="isLate(item.row, d.day)"></i></span>
+										:style="isAmbiguous(item.row, d.day) ? { background: AMBIG.bg, color: AMBIG.fg } : { background: cellOf(item.row, d.day).bg, color: cellOf(item.row, d.day).fg }"
+									>{{ isAmbiguous(item.row, d.day) ? AMBIG.letter : cellOf(item.row, d.day).letter }}<i v-if="isLate(item.row, d.day)"></i></span>
 									<span v-else-if="d.is_future" class="att-empty"></span>
 									<span v-else-if="!d.is_weekend && !d.is_holiday" class="att-none">·</span>
 								</td>
 							</tr>
 						</template>
 						<tr v-if="!rows.length">
-							<td :colspan="days.length + 4" class="text-center text-secondary py-4">{{ t("No employees.") }}</td>
+							<td :colspan="days.length + 5" class="text-center text-secondary py-4">{{ t("No employees.") }}</td>
 						</tr>
 					</tbody>
 				</table>
@@ -501,8 +517,9 @@ defineExpose({ exportCsv, exportXlsx, reload: load });
 .att-sticky-l { position: sticky; left: 0; z-index: 2; }
 .att-sticky-l2 { position: sticky; left: 168px; z-index: 2; }
 .att-sticky-l3 { position: sticky; left: 196px; z-index: 2; }
-.att-sticky-l4 { position: sticky; left: 224px; z-index: 2; box-shadow: 2px 0 0 var(--tblr-border-color, #e6e7e9); }
-.att-table thead .att-sticky-l, .att-table thead .att-sticky-l2, .att-table thead .att-sticky-l3, .att-table thead .att-sticky-l4 { z-index: 4; }
+.att-sticky-l4 { position: sticky; left: 224px; z-index: 2; }
+.att-sticky-l5 { position: sticky; left: 252px; z-index: 2; box-shadow: 2px 0 0 var(--tblr-border-color, #e6e7e9); }
+.att-table thead .att-sticky-l, .att-table thead .att-sticky-l2, .att-table thead .att-sticky-l3, .att-table thead .att-sticky-l4, .att-table thead .att-sticky-l5 { z-index: 4; }
 .att-day { padding: 2px 0 !important; }
 .att-daynum { font-weight: 500; line-height: 1.1; }
 .att-dow { font-size: 0.6rem; color: var(--tblr-secondary, #6b7689); line-height: 1; }
