@@ -1089,6 +1089,10 @@ def party_payment_defaults(company: str, party_type: str, party: str) -> dict:
 	)
 
 	raw = get_outstanding_invoices(party_type, party, [party_account]) or []
+	# Only include actual invoices; advance Payment Entries (voucher_type="Payment Entry")
+	# have no `customer` / `supplier` field and always fail ERPNext's
+	# validate_reference_documents check — so exclude them from the allocation list.
+	invoice_dt = "Sales Invoice" if party_type == "Customer" else "Purchase Invoice"
 	invoices = sorted(
 		[
 			{
@@ -1100,7 +1104,7 @@ def party_payment_defaults(company: str, party_type: str, party: str) -> dict:
 				"outstanding_amount": flt(r.get("outstanding_amount", 0)),
 			}
 			for r in raw
-			if flt(r.get("outstanding_amount", 0)) > 0
+			if flt(r.get("outstanding_amount", 0)) > 0 and r.get("voucher_type") == invoice_dt
 		],
 		key=lambda x: x["posting_date"],
 	)
