@@ -8,6 +8,8 @@ import { formatDateTime, todayIso} from "../../composables/date.js";
 import { t } from "../../composables/i18n.js";
 import EmptyState from "../../components/EmptyState.vue";
 import DateInput from "../../components/DateInput.vue";
+import Typeahead from "../../components/Typeahead.vue";
+import Select from "../../components/Select.vue";
 import VoucherDrawer from "../../components/VoucherDrawer.vue";
 import { useVoucherDrill } from "../../composables/useVoucherDrill.js";
 
@@ -22,8 +24,26 @@ const monthAgo = new Date(Date.now() - 30 * 86400000).toISOString().slice(0, 10)
 const fromDate = ref(monthAgo);
 const toDate = ref(today);
 const itemCode = ref("");
+const itemName = ref("");
 const warehouse = ref("");
+const warehouses = ref([]);
 const limit = ref(200);
+
+const whOptions = computed(() => [
+	{ value: "", label: t("All warehouses") },
+	...warehouses.value.map((w) => ({ value: w.name, label: w.warehouse_name || w.name })),
+]);
+
+async function searchItems(q) {
+	return call("stabler.api.inventory.list_items", { search: q, limit: 30, stock_only: 1 });
+}
+
+async function loadWarehouses() {
+	if (!activeCompany.value) return;
+	warehouses.value = await call("stabler.api.inventory.list_stock_warehouses", {
+		company: activeCompany.value,
+	});
+}
 
 const loading = ref(false);
 const error = ref("");
@@ -73,8 +93,8 @@ async function load() {
 	}
 }
 
-onMounted(load);
-watch(activeCompany, load);
+onMounted(() => { load(); loadWarehouses(); });
+watch(activeCompany, () => { load(); loadWarehouses(); });
 </script>
 
 <template>
@@ -90,13 +110,21 @@ watch(activeCompany, load);
 					<label class="form-label small mb-1">{{ t("To") }}</label>
 					<DateInput v-model="toDate" size="sm" />
 				</div>
-				<div style="min-width: 160px">
+				<div style="min-width: 200px">
 					<label class="form-label small mb-1">{{ t("Item") }}</label>
-					<input v-model="itemCode" type="search" class="form-control form-control-sm" :placeholder="t('Item code')" />
+					<Typeahead
+						v-model="itemCode"
+						:display="itemCode ? (itemName ? `${itemCode} — ${itemName}` : itemCode) : ''"
+						:search="searchItems"
+						size="sm"
+						:placeholder="t('Item code')"
+						@pick="(it) => { itemCode = it.item_code || it.name; itemName = it.item_name || ''; }"
+						@clear="() => { itemCode = ''; itemName = ''; }"
+					/>
 				</div>
-				<div style="min-width: 160px">
+				<div style="min-width: 180px">
 					<label class="form-label small mb-1">{{ t("Warehouse") }}</label>
-					<input v-model="warehouse" type="search" class="form-control form-control-sm" :placeholder="t('Warehouse')" />
+					<Select v-model="warehouse" :options="whOptions" size="sm" />
 				</div>
 				<button type="button" class="btn btn-sm btn-primary" @click="load">
 					<i class="ti ti-refresh me-1"></i>{{ t("Apply") }}

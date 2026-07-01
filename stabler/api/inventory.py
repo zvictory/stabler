@@ -18,14 +18,20 @@ def list_items(
 	item_group: str | None = None,
 	warehouse: str | None = None,
 	limit: int = 100,
+	stock_only: int = 0,
 ):
 	"""Return items matching *search* (code or name), optionally scoped to a warehouse.
 
 	warehouse — when provided, only items that have a Bin row in that warehouse are
 	returned (i.e. items ever stocked there, regardless of current qty). This prevents
 	raw-material items from appearing in a finished-goods warehouse picker.
+
+	stock_only — when truthy, filters by is_stock_item = 1 instead of is_sales_item = 1.
+	Use for ledger / inventory context where raw-material and packaging items must be
+	selectable (e.g. Stock Ledger item picker). Existing callers that omit this param
+	keep the current is_sales_item behaviour unchanged.
 	"""
-	conds = ["disabled = 0", "is_sales_item = 1"]
+	conds = ["disabled = 0", "is_stock_item = 1" if stock_only else "is_sales_item = 1"]
 	params: dict = {"limit": int(limit)}
 	if search:
 		conds.append("(item_name LIKE %(s)s OR item_code LIKE %(s)s)")
