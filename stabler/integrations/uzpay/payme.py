@@ -25,6 +25,7 @@ from __future__ import annotations
 
 import base64
 import binascii
+import hmac
 from typing import Any
 
 import frappe
@@ -73,7 +74,7 @@ def _check_auth() -> None:
 	except (binascii.Error, UnicodeDecodeError):
 		raise PaymeError(ERR_AUTH, "Insufficient privilege to perform this method.")
 	_, _, password = decoded.partition(":")
-	if not password or password != _merchant_key():
+	if not password or not hmac.compare_digest(password, _merchant_key()):
 		raise PaymeError(ERR_AUTH, "Insufficient privilege to perform this method.")
 
 
@@ -225,13 +226,20 @@ def _check_transaction(params: dict) -> dict:
 def _get_statement(params: dict) -> dict:
 	frm = int(params.get("from") or 0)
 	to = int(params.get("to") or 0)
+	filters = {
+		"provider": "Payme",
+		"provider_trans_id": ["is", "set"],
+		"create_time_ms": ["between", [frm, to]],
+	}
+	# If a site hosts more than one Payme merchant/company, set `payme_company` in
+	# site_config to confine the statement to that company's sessions. Unset =
+	# current behaviour (single-merchant site).
+	payme_company = frappe.conf.get("payme_company")
+	if payme_company:
+		filters["company"] = payme_company
 	rows = frappe.get_all(
 		C.SESSION_DT,
-		filters={
-			"provider": "Payme",
-			"provider_trans_id": ["is", "set"],
-			"create_time_ms": ["between", [frm, to]],
-		},
+		filters=filters,
 		fields=[
 			"name", "order_id", "amount", "provider_trans_id", "provider_state",
 			"create_time_ms", "perform_time_ms", "cancel_time_ms", "cancel_reason",

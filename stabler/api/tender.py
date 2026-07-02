@@ -12,6 +12,7 @@ tenants (enable_tender = 0) never reach them.
 from __future__ import annotations
 
 import frappe
+from stabler.api.approvals import _assert_company_scope
 from frappe import _
 from frappe.utils import flt
 
@@ -76,6 +77,7 @@ def _stages() -> list[dict]:
 @frappe.whitelist()
 def so_board(company: str) -> dict:
 	"""Stages + the submitted Sales Orders parked on each (kanban feed)."""
+	_assert_company_scope(company)  # tenant isolation: reject a foreign company arg
 	_require_tender(company)
 	_require_company(company)
 	_ensure_default_stages()
@@ -136,6 +138,7 @@ def move_so_stage(name: str, stage: str) -> dict:
 @frappe.whitelist()
 def so_stage_save(company: str, stage_name: str, position: int = 0, color: str = "", is_won: int = 0, is_closed: int = 0, old_name: str = "") -> dict:
 	"""Create or rename/update a board stage (manager-defined)."""
+	_assert_company_scope(company)  # tenant isolation: reject a foreign company arg
 	_require_tender(company)
 	_require_company(company)
 	stage_name = (stage_name or "").strip()
@@ -157,6 +160,7 @@ def so_stage_save(company: str, stage_name: str, position: int = 0, color: str =
 @frappe.whitelist()
 def so_stage_delete(company: str, stage_name: str) -> dict:
 	"""Delete a stage. The doctype's on_trash guard blocks if SOs still sit in it."""
+	_assert_company_scope(company)  # tenant isolation: reject a foreign company arg
 	_require_tender(company)
 	_require_company(company)
 	frappe.delete_doc(_STAGE, stage_name)  # raises if Sales Orders are parked here
@@ -167,6 +171,7 @@ def so_stage_delete(company: str, stage_name: str) -> dict:
 @frappe.whitelist()
 def so_stage_reorder(company: str, names: str | list) -> dict:
 	"""Persist column order from a list of stage names (left → right)."""
+	_assert_company_scope(company)  # tenant isolation: reject a foreign company arg
 	_require_tender(company)
 	_require_company(company)
 	names = frappe.parse_json(names) if isinstance(names, str) else names

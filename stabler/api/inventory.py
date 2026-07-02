@@ -9,6 +9,7 @@ from frappe import _
 from frappe.utils import flt, getdate, today
 
 from stabler.api._common import _require_company, _assert_can_read, _assert_can_write
+from stabler.api.approvals import _assert_company_scope
 from stabler.api._stock_recon import prepare_reconciliation
 
 
@@ -81,6 +82,7 @@ def item_detail(name: str, company: str | None = None):
 	bin_params: dict = {"item": name}
 	if company:
 		_require_company(company)
+		_assert_company_scope(company)  # tenant isolation: reject a foreign company arg
 		bin_conds.append("w.company = %(company)s")
 		bin_params["company"] = company
 	bin_where = " AND ".join(bin_conds)
@@ -126,6 +128,7 @@ def item_detail(name: str, company: str | None = None):
 def list_warehouses(company: str):
 	"""Tree of warehouses for a company, ordered by left-traversal."""
 	_require_company(company)
+	_assert_company_scope(company)  # tenant isolation: reject a foreign company arg
 	rows = frappe.db.sql(
 		"""
 		SELECT name, warehouse_name, parent_warehouse, is_group,
@@ -176,6 +179,7 @@ def _format_warehouse_stock_row(row: dict) -> dict:
 def warehouse_stock(company: str, warehouse: str, limit: int = 100):
 	"""Stock rows for the selected warehouse drill-down."""
 	_require_company(company)
+	_assert_company_scope(company)  # tenant isolation: reject a foreign company arg
 	if not warehouse:
 		frappe.throw(_("Warehouse is required."))
 	if not frappe.db.exists("Warehouse", {"name": warehouse, "company": company}):
@@ -212,6 +216,7 @@ def warehouse_stock(company: str, warehouse: str, limit: int = 100):
 def list_stock_warehouses(company: str):
 	"""Flat list of active leaf warehouses for transaction pickers."""
 	_require_company(company)
+	_assert_company_scope(company)  # tenant isolation: reject a foreign company arg
 	return frappe.db.sql(
 		"""
 		SELECT name, warehouse_name, warehouse_type, company
@@ -277,6 +282,7 @@ def stock_ledger(
 	limit: int = 200,
 ):
 	_require_company(company)
+	_assert_company_scope(company)  # tenant isolation: reject a foreign company arg
 	conds = ["sle.company = %(company)s", "sle.is_cancelled = 0"]
 	params: dict = {"company": company, "limit": int(limit)}
 	if from_date:
@@ -318,6 +324,7 @@ def item_valuation_history(company, item_code, warehouse=None, limit=500):
 	filtered to one warehouse when *warehouse* is given).  Ordered ASC so the
 	chart x-axis runs old → new without client-side reversal."""
 	_require_company(company)
+	_assert_company_scope(company)  # tenant isolation: reject a foreign company arg
 	conds = ["sle.company = %(company)s", "sle.is_cancelled = 0", "sle.item_code = %(item_code)s"]
 	params = {"company": company, "item_code": item_code, "limit": int(limit)}
 	if warehouse:
@@ -436,6 +443,7 @@ def list_warehouse_types(limit: int = 50):
 def list_parent_warehouses(company: str):
 	"""Group warehouses that can act as parents under the given company."""
 	_require_company(company)
+	_assert_company_scope(company)  # tenant isolation: reject a foreign company arg
 	return frappe.db.sql(
 		"""
 		SELECT name, warehouse_name
@@ -457,6 +465,7 @@ def create_warehouse(
 	is_group: int = 0,
 ):
 	_require_company(company)
+	_assert_company_scope(company)  # tenant isolation: reject a foreign company arg
 	name = (warehouse_name or "").strip()
 	if not name:
 		frappe.throw("Warehouse name is required.")
@@ -495,6 +504,7 @@ def list_stock_entries(
 	limit: int = 100,
 ):
 	_require_company(company)
+	_assert_company_scope(company)  # tenant isolation: reject a foreign company arg
 	conds = ["se.company = %(company)s"]
 	params: dict = {"company": company, "limit": int(limit)}
 	if purpose:
@@ -595,6 +605,7 @@ def create_stock_entry(
 	applied to lines that don't already specify their own — this matches what
 	the ERPNext desk form does."""
 	_require_company(company)
+	_assert_company_scope(company)  # tenant isolation: reject a foreign company arg
 	purpose = (purpose or "").strip()
 	if purpose not in _ALLOWED_STOCK_PURPOSES:
 		frappe.throw(f"Unsupported purpose: {purpose}")
@@ -678,6 +689,7 @@ def low_stock_alerts(company: str, limit: int = 50):
 	"""Items whose total projected_qty (across the company's warehouses) is at or below
 	their warehouse reorder level. Uses tabItem Reorder for per-warehouse thresholds."""
 	_require_company(company)
+	_assert_company_scope(company)  # tenant isolation: reject a foreign company arg
 	rows = frappe.db.sql(
 		"""
 		SELECT
@@ -720,6 +732,7 @@ def _assert_warehouse_company(warehouse: str, company: str) -> None:
 def warehouse_stock_balance(company: str, warehouse: str, search: str | None = None, limit: int = 200):
 	"""Current Bin qty + valuation for items in a warehouse — prefills the count."""
 	_require_company(company)
+	_assert_company_scope(company)  # tenant isolation: reject a foreign company arg
 	_assert_warehouse_company(warehouse, company)
 	conds = ["b.warehouse = %(wh)s"]
 	params: dict = {"wh": warehouse, "limit": min(int(limit or 200), 1000)}
@@ -768,6 +781,7 @@ def create_stock_reconciliation(
 	the Stock Ledger difference (to the Stock Adjustment account) on submit.
 	"""
 	_require_company(company)
+	_assert_company_scope(company)  # tenant isolation: reject a foreign company arg
 	_require_recon_role()
 	if isinstance(items, str):
 		items = json.loads(items or "[]")
@@ -814,6 +828,7 @@ def create_stock_reconciliation(
 def list_stock_reconciliations(company: str, limit: int = 25):
 	"""Recent stock reconciliations for the history panel."""
 	_require_company(company)
+	_assert_company_scope(company)  # tenant isolation: reject a foreign company arg
 	return frappe.get_all(
 		"Stock Reconciliation",
 		filters={"company": company},

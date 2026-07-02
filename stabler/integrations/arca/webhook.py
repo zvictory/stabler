@@ -126,6 +126,31 @@ def handle_payment_webhook() -> dict[str, Any]:
 def _create_payment_entry(invoice: str, amount: float, reference: str) -> str:
 	from erpnext.accounts.doctype.payment_entry.payment_entry import get_payment_entry
 
+	# Defensive validation: the invoice reference and amount are attacker-shaped
+	# (they come straight from the POST body). The HMAC only proves the sender
+	# knows the secret, not that the amount is sane — so re-derive the ceiling
+	# from the invoice itself rather than trusting the payload.
+	si = frappe.get_value(
+		"Sales Invoice",
+		invoice,
+		["docstatus", "outstanding_amount"],
+		as_dict=True,
+	)
+	if not si:
+		frappe.throw(_("Sales Invoice {0} not found").format(invoice))
+	if si.docstatus != 1:
+		frappe.throw(_("Sales Invoice {0} is not submitted").format(invoice))
+	outstanding = float(si.outstanding_amount or 0)
+	if amount <= 0:
+		frappe.throw(_("Payment amount must be positive"))
+	# tiny tolerance for rounding drift between gateway and ledger
+	if amount > outstanding + 0.01:
+		frappe.throw(
+			_("Payment amount {0} exceeds outstanding {1} on {2}").format(
+				amount, outstanding, invoice
+			)
+		)
+
 	pe = get_payment_entry("Sales Invoice", invoice)
 	pe.paid_amount = amount
 	pe.received_amount = amount

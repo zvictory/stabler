@@ -5,6 +5,7 @@ from __future__ import annotations
 import json
 
 import frappe
+from stabler.api.approvals import _assert_company_scope
 from frappe.utils import flt, getdate, today, add_days, date_diff
 
 
@@ -88,6 +89,7 @@ def _parse_items(items):
 @frappe.whitelist()
 def list_employees(company: str, search: str = "", status: str = "", limit: int = 100):
 	_require_company(company)
+	_assert_company_scope(company)  # tenant isolation: reject a foreign company arg
 	conds = ["company = %(company)s"]
 	params: dict = {"company": company, "limit": int(limit)}
 	if status:
@@ -188,6 +190,7 @@ def create_employee(
 	custom_allowance_config: str = "",
 ):
 	_require_company(company)
+	_assert_company_scope(company)  # tenant isolation: reject a foreign company arg
 	if not first_name:
 		frappe.throw("First name is required.")
 	if not gender:
@@ -417,6 +420,7 @@ def list_attendance(
 	limit: int = 200,
 ):
 	_require_company(company)
+	_assert_company_scope(company)  # tenant isolation: reject a foreign company arg
 	conds = ["company = %(company)s"]
 	params: dict = {"company": company, "limit": int(limit)}
 	if from_date:
@@ -465,6 +469,7 @@ def attendance_matrix(company: str, period: str = "", department: str = "", empl
 	import calendar as _cal
 
 	_require_company(company)
+	_assert_company_scope(company)  # tenant isolation: reject a foreign company arg
 	if not period:
 		period = today()[:7]
 	year, mon = (int(x) for x in period.split("-")[:2])
@@ -600,6 +605,7 @@ def mark_attendance(
 	submit: int = 1,
 ):
 	_require_company(company)
+	_assert_company_scope(company)  # tenant isolation: reject a foreign company arg
 	if not employee or not frappe.db.exists("Employee", employee):
 		frappe.throw(f"Unknown employee: {employee}")
 	if status not in ("Present", "Absent", "On Leave", "Half Day", "Work From Home"):
@@ -694,6 +700,7 @@ def set_attendance(
 	set from the minute inputs so a day can be flagged late.
 	"""
 	_require_company(company)
+	_assert_company_scope(company)  # tenant isolation: reject a foreign company arg
 	if not employee or not frappe.db.exists("Employee", employee):
 		frappe.throw(f"Unknown employee: {employee}")
 	if status not in _VALID_ATT_STATUS:
@@ -734,6 +741,7 @@ def set_attendance(
 def get_attendance_cell(company: str, employee: str, attendance_date: str) -> dict:
 	"""Prefill data for the inline cell editor: one day's record + lock state."""
 	_require_company(company)
+	_assert_company_scope(company)  # tenant isolation: reject a foreign company arg
 	att_date = getdate(attendance_date)
 	lock = _attendance_lock_date()
 	locked = bool(lock and att_date <= lock) or att_date > getdate(today())
@@ -767,6 +775,7 @@ def bulk_set_attendance(company: str, items, status: str = "") -> dict:
 	lock guards; non-editable or unknown cells are reported, the rest are written.
 	"""
 	_require_company(company)
+	_assert_company_scope(company)  # tenant isolation: reject a foreign company arg
 	if isinstance(items, str):
 		items = frappe.parse_json(items) or []
 	if not isinstance(items, list) or not items:
@@ -814,6 +823,7 @@ def bulk_set_attendance(company: str, items, status: str = "") -> dict:
 def clear_attendance(company: str, employee: str, attendance_date: str) -> dict:
 	"""Remove a day's attendance record (inline 'clear' on the grid)."""
 	_require_company(company)
+	_assert_company_scope(company)  # tenant isolation: reject a foreign company arg
 	if not frappe.has_permission("Attendance", "delete"):
 		frappe.throw("Not permitted to edit attendance.", frappe.PermissionError)
 	att_date = getdate(attendance_date or today())
@@ -839,6 +849,7 @@ _ATT_XLSX_LETTER = {"P": "K", "W": "K", "H": "Y", "A": "D", "L": "D"}
 @frappe.whitelist()
 def attendance_matrix_xlsx(company: str, period: str = "", department: str = ""):
 	"""Download the month attendance grid as a colour-coded .xlsx."""
+	_assert_company_scope(company)  # tenant isolation: reject a foreign company arg
 	from openpyxl import Workbook
 	from openpyxl.styles import Alignment, Border, Font, PatternFill, Side
 	from openpyxl.utils import get_column_letter
@@ -957,6 +968,7 @@ def list_leave_applications(
 	limit: int = 100,
 ):
 	_require_company(company)
+	_assert_company_scope(company)  # tenant isolation: reject a foreign company arg
 	conds = ["company = %(company)s"]
 	params: dict = {"company": company, "limit": int(limit)}
 	if status:
@@ -1006,6 +1018,7 @@ def create_leave_application(
 	submit: int = 0,
 ):
 	_require_company(company)
+	_assert_company_scope(company)  # tenant isolation: reject a foreign company arg
 	if not employee or not frappe.db.exists("Employee", employee):
 		frappe.throw(f"Unknown employee: {employee}")
 	if not leave_type or not frappe.db.exists("Leave Type", leave_type):
@@ -1062,6 +1075,7 @@ def list_salary_slips(
 	limit: int = 100,
 ):
 	_require_company(company)
+	_assert_company_scope(company)  # tenant isolation: reject a foreign company arg
 	conds = ["company = %(company)s"]
 	params: dict = {"company": company, "limit": int(limit)}
 	if from_date:
@@ -1141,6 +1155,7 @@ def create_payroll_entry(
 	Returns the payroll entry name plus generated salary slip names.
 	"""
 	_require_company(company)
+	_assert_company_scope(company)  # tenant isolation: reject a foreign company arg
 	fd, td = getdate(start_date), getdate(end_date)
 	if td < fd:
 		frappe.throw("End date cannot be before start date.")
@@ -1189,6 +1204,7 @@ def create_payroll_entry(
 def hr_overview(company: str):
 	"""Quick stats for the HR home tab header."""
 	_require_company(company)
+	_assert_company_scope(company)  # tenant isolation: reject a foreign company arg
 	active = frappe.db.count("Employee", {"company": company, "status": "Active"})
 	on_leave_today = frappe.db.sql(
 		"""

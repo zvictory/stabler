@@ -5,6 +5,7 @@ from __future__ import annotations
 import json
 
 import frappe
+from stabler.api.approvals import _assert_company_scope
 from frappe import _
 from frappe.utils import flt, getdate, today
 
@@ -53,6 +54,7 @@ def _require_own_work_order(name: str) -> None:
 
 @frappe.whitelist()
 def list_boms(company: str, search: str = "", item: str | None = None, limit: int = 100):
+	_assert_company_scope(company)  # tenant isolation: reject a foreign company arg
 	_require_company(company)
 	_require_mfg_manager()
 	conds = ["company = %(company)s"]
@@ -129,6 +131,7 @@ def create_bom(
 ):
 	"""Create a Bill of Materials. `items` is a list of
 	{item_code, qty, uom?, rate?, bom_no?}."""
+	_assert_company_scope(company)  # tenant isolation: reject a foreign company arg
 	_require_company(company)
 	_require_mfg_manager()
 	if not item or not frappe.db.exists("Item", item):
@@ -209,6 +212,7 @@ def list_work_orders(
 	search: str = "",
 	limit: int = 100,
 ):
+	_assert_company_scope(company)  # tenant isolation: reject a foreign company arg
 	_require_company(company)
 	_require_mfg()
 	conds = ["company = %(company)s"]
@@ -311,6 +315,7 @@ def create_work_order(
 	source_warehouse: str | None = None,
 	submit: int = 0,
 ):
+	_assert_company_scope(company)  # tenant isolation: reject a foreign company arg
 	_require_company(company)
 	_require_mfg_manager()
 	if not production_item or not frappe.db.exists("Item", production_item):
@@ -452,6 +457,7 @@ def assign_work_order_operator(name: str, operator: str):
 @frappe.whitelist()
 def list_operators(company: str):
 	"""Users with Manufacturing User or Manager role. Manager-only."""
+	_assert_company_scope(company)  # tenant isolation: reject a foreign company arg
 	_require_mfg_manager()
 	_require_company(company)
 	return frappe.db.sql(
@@ -471,6 +477,7 @@ def list_operators(company: str):
 @frappe.whitelist()
 def manufacturable_items(company: str, search: str = "", limit: int = 50):
 	"""Items that have at least one submitted, active BOM in this company."""
+	_assert_company_scope(company)  # tenant isolation: reject a foreign company arg
 	_require_company(company)
 	_require_mfg_manager()
 	conds = ["b.company = %(company)s", "b.is_active = 1", "b.docstatus = 1"]
@@ -508,6 +515,43 @@ def _log_wo_event(work_order: str, text: str):
 
 # ------------------ RFID & PIN Authentication ------------------
 
+# Legacy salt — kept ONLY as a fallback so badge/PIN records hashed before the
+# per-site secret was introduced keep matching. New deployments must set a random
+# `stabler_rfid_salt` in site_config.json; see _kiosk_salt().
+_LEGACY_RFID_SALT = "stabler_rfid_salt"
+
+
+def _kiosk_salt() -> str:
+	"""Per-site RFID/PIN salt from site_config, falling back to the legacy constant.
+
+	The constant is public (it shipped in source), so it provides no secrecy — set
+	`stabler_rfid_salt` in site_config.json to a random value per site."""
+	return frappe.conf.get("stabler_rfid_salt") or _LEGACY_RFID_SALT
+
+
+def _verify_kiosk_token() -> None:
+	"""Gate the guest badge/PIN endpoints behind a device-level shared secret.
+
+	badge_login/pin_login are `allow_guest=True` and mint a full session, so they
+	MUST authenticate the calling kiosk before doing any work. The secret lives in
+	site_config.json (`stabler_kiosk_token`) and is sent by the kiosk in the
+	`X-Stabler-Kiosk-Token` header (header, not a body/query param, so it does not
+	land in access logs). Fails closed if the secret is not configured."""
+	import hmac
+
+	expected = frappe.conf.get("stabler_kiosk_token")
+	if not expected:
+		# Misconfigured site → refuse rather than silently allowing open access.
+		frappe.throw(_("Kiosk login is not configured on this site."), frappe.PermissionError)
+	provided = ""
+	try:
+		provided = frappe.get_request_header("X-Stabler-Kiosk-Token") or ""
+	except Exception:
+		provided = ""
+	if not provided or not hmac.compare_digest(str(provided), str(expected)):
+		frappe.throw(_("Invalid kiosk credentials."), frappe.PermissionError)
+
+
 def get_hashes(val: str) -> list[str]:
 	"""Return plain value and its salted/unsalted SHA256 hashes."""
 	import hashlib
@@ -516,9 +560,8 @@ def get_hashes(val: str) -> list[str]:
 	res = [val]
 	# Unsalted SHA256
 	res.append(hashlib.sha256(val.encode("utf-8")).hexdigest())
-	# Salted SHA256
-	salt = "stabler_rfid_salt"
-	res.append(hashlib.sha256((val + salt).encode("utf-8")).hexdigest())
+	# Salted SHA256 (per-site salt, legacy fallback for old records)
+	res.append(hashlib.sha256((val + _kiosk_salt()).encode("utf-8")).hexdigest())
 	return res
 
 
@@ -578,18 +621,24 @@ def match_employee_pin(employee_id: str, pin: str):
 @frappe.whitelist(allow_guest=True)
 def badge_login(uid: str):
 	import hashlib
+	_verify_kiosk_token()
 	if not uid:
 		frappe.throw(_("Badge UID is required."), frappe.ValidationError)
-	
+
 	ip = frappe.local.ip
+	# Per-IP AND per-badge lockout: per-IP alone is defeated by rotating source IPs,
+	# so also throttle attempts against a specific (low-entropy) card UID.
+	uid_key = f"badge_login_fail:uid:{hashlib.sha256(uid.encode('utf-8')).hexdigest()}"
 	fail_key = f"badge_login_fail:{ip}"
-	fails = frappe.cache().get_value(fail_key) or 0
-	if fails >= 5:
+	fails = (frappe.cache().get_value(fail_key) or 0)
+	uid_fails = (frappe.cache().get_value(uid_key) or 0)
+	if fails >= 5 or uid_fails >= 5:
 		frappe.throw(_("Too many failed attempts. Please try again in 5 minutes."), frappe.PermissionError)
-		
+
 	emp = match_employee_badge(uid)
 	if not emp:
 		frappe.cache().set_value(fail_key, fails + 1, expires_in_sec=300)
+		frappe.cache().set_value(uid_key, uid_fails + 1, expires_in_sec=300)
 		frappe.get_doc({
 			"doctype": "Activity Log",
 			"subject": "Failed Badge Login",
@@ -601,13 +650,14 @@ def badge_login(uid: str):
 		
 	if not emp.user_id:
 		frappe.throw(_("Employee has no linked user account."), frappe.PermissionError)
-		
+
 	frappe.cache().delete_key(fail_key)
-	
+	frappe.cache().delete_key(uid_key)
+
 	from frappe.auth import LoginManager
 	login_manager = LoginManager()
 	login_manager.login_as(emp.user_id)
-	
+
 	frappe.get_doc({
 		"doctype": "Activity Log",
 		"subject": f"Successful Badge Login: {emp.user_id}",
@@ -627,18 +677,24 @@ def badge_login(uid: str):
 @frappe.whitelist(allow_guest=True)
 def pin_login(employee: str, pin: str):
 	import hashlib
+	_verify_kiosk_token()
 	if not employee or not pin:
 		frappe.throw(_("Employee ID and PIN are required."), frappe.ValidationError)
-		
+
 	ip = frappe.local.ip
+	# Per-IP AND per-employee lockout: the employee id is enumerable and the PIN is
+	# short, so a per-IP-only throttle is trivially bypassed by rotating IPs.
+	emp_key = f"pin_login_fail:emp:{hashlib.sha256(employee.encode('utf-8')).hexdigest()}"
 	fail_key = f"pin_login_fail:{ip}"
-	fails = frappe.cache().get_value(fail_key) or 0
-	if fails >= 5:
+	fails = (frappe.cache().get_value(fail_key) or 0)
+	emp_fails = (frappe.cache().get_value(emp_key) or 0)
+	if fails >= 5 or emp_fails >= 5:
 		frappe.throw(_("Too many failed attempts. Please try again in 5 minutes."), frappe.PermissionError)
-		
+
 	emp = match_employee_pin(employee, pin)
 	if not emp:
 		frappe.cache().set_value(fail_key, fails + 1, expires_in_sec=300)
+		frappe.cache().set_value(emp_key, emp_fails + 1, expires_in_sec=300)
 		frappe.get_doc({
 			"doctype": "Activity Log",
 			"subject": "Failed PIN Login",
@@ -650,13 +706,14 @@ def pin_login(employee: str, pin: str):
 		
 	if not emp.user_id:
 		frappe.throw(_("Employee has no linked user account."), frappe.PermissionError)
-		
+
 	frappe.cache().delete_key(fail_key)
-	
+	frappe.cache().delete_key(emp_key)
+
 	from frappe.auth import LoginManager
 	login_manager = LoginManager()
 	login_manager.login_as(emp.user_id)
-	
+
 	frappe.get_doc({
 		"doctype": "Activity Log",
 		"subject": f"Successful PIN Login: {emp.user_id}",

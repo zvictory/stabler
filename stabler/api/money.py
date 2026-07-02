@@ -9,6 +9,7 @@ from __future__ import annotations
 import json
 
 import frappe
+from stabler.api.approvals import _assert_company_scope
 from frappe import _
 from frappe.rate_limiter import rate_limit
 from frappe.utils import cint, flt, getdate, today
@@ -79,6 +80,7 @@ def chart_of_accounts(company: str):
 	"""Return the full chart of accounts for `company` as a flat list.
 	The client assembles the tree from (name, parent_account)."""
 	_require_company(company)
+	_assert_company_scope(company)  # tenant isolation: reject a foreign company arg
 	rows = frappe.get_all(
 		"Account",
 		filters={"company": company, "disabled": 0},
@@ -108,6 +110,7 @@ def chart_balances(company: str, as_of: str | None = None):
 	leaf-only (rolling them up across mixed-currency children is meaningless —
 	same rule as `account_balance`)."""
 	_require_company(company)
+	_assert_company_scope(company)  # tenant isolation: reject a foreign company arg
 	as_of = as_of or today()
 	company_currency = frappe.db.get_value("Company", company, "default_currency") or ""
 
@@ -188,6 +191,7 @@ def gl_entries(
 		as_of        – effective to_date used for closing balance
 	"""
 	_require_company(company)
+	_assert_company_scope(company)  # tenant isolation: reject a foreign company arg
 	if not account:
 		frappe.throw("Account is required.")
 	limit = max(1, min(500, int(limit)))
@@ -406,6 +410,7 @@ def account_balance(company: str, account: str, as_of: str | None = None):
 	(`balance_acc`) aggregates. `balance` is kept as an alias for
 	`balance_base` for backward compatibility with existing callers."""
 	_require_company(company)
+	_assert_company_scope(company)  # tenant isolation: reject a foreign company arg
 	if not account:
 		frappe.throw("Account is required.")
 	as_of = as_of or today()
@@ -457,6 +462,7 @@ def account_summary(
 	debit-minus-credit signed convention (positive for asset/expense, negative
 	for liability/equity/income). Caller renders sign as appropriate."""
 	_require_company(company)
+	_assert_company_scope(company)  # tenant isolation: reject a foreign company arg
 	if not account:
 		frappe.throw("Account is required.")
 	acc_row = frappe.db.get_value(
@@ -542,6 +548,7 @@ def list_journal_entries(
 	limit: int = 50,
 ):
 	_require_company(company)
+	_assert_company_scope(company)  # tenant isolation: reject a foreign company arg
 	clauses, params = _date_filters(from_date, to_date)
 	params["company"] = company
 	params["limit"] = int(limit)
@@ -592,6 +599,7 @@ def account_transactions(
 	with opening balance + running balance so the closing balance reconciles to
 	the report figure (period movement for P&L, as-of for Balance Sheet)."""
 	_require_company(company)
+	_assert_company_scope(company)  # tenant isolation: reject a foreign company arg
 	_assert_can_read("Account", account)
 	acc = frappe.db.get_value("Account", account, ["is_group", "lft", "rgt"], as_dict=True)
 	if not acc:
@@ -846,6 +854,7 @@ def update_journal_entry(
 			_("Only draft journal entries can be edited here. Submitted entries must be cancelled and amended.")
 		)
 	_require_company(doc.company)
+	_assert_company_scope(doc.company)  # tenant isolation: reject a foreign company arg
 
 	cleaned, any_non_base = _clean_je_rows(accounts, doc.company)
 
@@ -924,6 +933,7 @@ def create_journal_entry(
 	Exactly one of debit/credit per line must be non-zero. Totals must balance.
 	"""
 	_require_company(company)
+	_assert_company_scope(company)  # tenant isolation: reject a foreign company arg
 	cleaned, any_non_base = _clean_je_rows(accounts, company)
 
 	doc = frappe.new_doc("Journal Entry")
@@ -957,6 +967,7 @@ def list_payment_entries(
 	limit: int = 50,
 ):
 	_require_company(company)
+	_assert_company_scope(company)  # tenant isolation: reject a foreign company arg
 	clauses, params = _date_filters(from_date, to_date)
 	params["company"] = company
 	params["limit"] = int(limit)
@@ -1075,6 +1086,7 @@ def update_payment_entry(
 def party_payment_defaults(company: str, party_type: str, party: str) -> dict:
 	"""Return party account, outstanding invoices, and cash/bank accounts for the New Payment form."""
 	_require_company(company)
+	_assert_company_scope(company)  # tenant isolation: reject a foreign company arg
 	if party_type not in {"Customer", "Supplier"}:
 		frappe.throw("party_type must be Customer or Supplier.")
 	if not party or not frappe.db.exists(party_type, party):
@@ -1281,6 +1293,7 @@ def create_payment_entry(
 	  - "Pay"     — paid_from is bank/cash, paid_to is the party's payable account.
 	"""
 	_require_company(company)
+	_assert_company_scope(company)  # tenant isolation: reject a foreign company arg
 	if payment_type not in {"Receive", "Pay"}:
 		frappe.throw("payment_type must be 'Receive' or 'Pay'.")
 	if party_type not in {"Customer", "Supplier", "Employee"}:
@@ -1470,6 +1483,7 @@ def list_modes_of_payment(limit: int = 100):
 def list_cash_bank_accounts(company: str, limit: int = 100):
 	"""Cash + Bank leaf accounts for the given company — used to populate paid_from / paid_to pickers."""
 	_require_company(company)
+	_assert_company_scope(company)  # tenant isolation: reject a foreign company arg
 	return frappe.db.sql(
 		"""
 		SELECT name, account_name, account_type, account_currency
@@ -1593,6 +1607,7 @@ def payment_defaults_for_invoice(company: str, invoice_type: str, invoice_name: 
 	  payment_type ('Receive' for SI, 'Pay' for PI), suggested_cash_bank_account.
 	"""
 	_require_company(company)
+	_assert_company_scope(company)  # tenant isolation: reject a foreign company arg
 	if invoice_type not in {"Sales Invoice", "Purchase Invoice"}:
 		frappe.throw("invoice_type must be 'Sales Invoice' or 'Purchase Invoice'.")
 	if not invoice_name or not frappe.db.exists(invoice_type, invoice_name):
@@ -1694,6 +1709,7 @@ def create_payment_for_invoice(
 	if invoice_type not in ("Sales Invoice", "Purchase Invoice"):
 		frappe.throw("invoice_type must be Sales Invoice or Purchase Invoice.")
 	_require_company(company)
+	_assert_company_scope(company)  # tenant isolation: reject a foreign company arg
 	_assert_can_read(invoice_type, invoice_name)  # no allocating against an invoice you can't see
 	check_concurrency(invoice_type, invoice_name, modified)
 	defaults = payment_defaults_for_invoice(company, invoice_type, invoice_name)
@@ -1978,6 +1994,7 @@ def bank_cash_accounts(company: str, include_equity: int = 0):
 	`include_equity=1` adds Equity leaves too (occasionally needed for owner
 	draw / capital-contribution flows; not used by the default UI)."""
 	_require_company(company)
+	_assert_company_scope(company)  # tenant isolation: reject a foreign company arg
 	types = ["Bank", "Cash"]
 	rows = frappe.get_all(
 		"Account",
@@ -2021,6 +2038,7 @@ def bank_cash_accounts(company: str, include_equity: int = 0):
 def expense_accounts(company: str):
 	"""Leaf Expense-rooted accounts for `company` (the debit side of an expense)."""
 	_require_company(company)
+	_assert_company_scope(company)  # tenant isolation: reject a foreign company arg
 	return frappe.get_all(
 		"Account",
 		filters={
@@ -2039,6 +2057,7 @@ def expense_accounts(company: str):
 def fixed_asset_accounts(company: str):
 	"""Leaf Fixed Asset accounts for asset-purchase expense mode."""
 	_require_company(company)
+	_assert_company_scope(company)  # tenant isolation: reject a foreign company arg
 	return frappe.get_all(
 		"Account",
 		filters={
@@ -2063,6 +2082,7 @@ def equity_accounts(company: str):
 	and expense accounts so those flows don't have to leave Stabler.
 	"""
 	_require_company(company)
+	_assert_company_scope(company)  # tenant isolation: reject a foreign company arg
 	return frappe.get_all(
 		"Account",
 		filters={
@@ -2109,6 +2129,7 @@ def list_bank_entries(
 ):
 	"""Recent Bank Entries for the Expense / Transfer history panel."""
 	_require_company(company)
+	_assert_company_scope(company)  # tenant isolation: reject a foreign company arg
 	clauses, params = _date_filters(from_date, to_date)
 	params["company"] = company
 	params["voucher_type"] = voucher_type
@@ -2187,6 +2208,7 @@ def submit_expense_entry(
 	anchored to a single base-currency total derived from `exchange_rate`
 	(payment-from → base) or 1.0 when currencies already match."""
 	_require_company(company)
+	_assert_company_scope(company)  # tenant isolation: reject a foreign company arg
 	if isinstance(lines, str):
 		try:
 			lines = json.loads(lines)
@@ -2316,6 +2338,7 @@ def _load_bank_entry(name: str):
 		frappe.throw(f"Unknown Journal Entry: {name}")
 	doc = frappe.get_doc("Journal Entry", name)
 	_require_company(doc.company)
+	_assert_company_scope(doc.company)  # tenant isolation: reject a foreign company arg
 	if doc.voucher_type != "Bank Entry":
 		frappe.throw("Only Bank Entry journal entries are supported here.")
 	return doc
@@ -2394,6 +2417,7 @@ def submit_transfer_entry(
 	anchor both legs to a single base-currency total so the JE balances by
 	construction regardless of rate-truncation drift."""
 	_require_company(company)
+	_assert_company_scope(company)  # tenant isolation: reject a foreign company arg
 	if from_account == to_account:
 		frappe.throw("From and To accounts must differ.")
 

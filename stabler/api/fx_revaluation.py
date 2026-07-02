@@ -16,6 +16,7 @@ here via explicit frappe.session.user check — consistent with other api module
 from __future__ import annotations
 
 import frappe
+from stabler.api.approvals import _assert_company_scope
 from frappe import _
 from frappe.utils import flt, getdate, today
 
@@ -51,6 +52,7 @@ def list_fx_accounts(company: str, posting_date: str = "") -> dict:
 	    "posting_date": str,
 	  }
 	"""
+	_assert_company_scope(company)  # tenant isolation: reject a foreign company arg
 	_reject_guest()
 	_require_company(company)
 	if not frappe.has_permission("GL Entry", "read"):
@@ -139,6 +141,7 @@ def list_fx_revaluations(
 	limit: int = 100,
 ) -> list:
 	"""List Exchange Rate Revaluation docs for a company (newest first)."""
+	_assert_company_scope(company)  # tenant isolation: reject a foreign company arg
 	_reject_guest()
 	_require_company(company)
 	if not frappe.has_permission("Exchange Rate Revaluation", "read"):
@@ -208,6 +211,7 @@ def create_fx_revaluation(
 
 	Returns the saved/submitted doc as dict.
 	"""
+	_assert_company_scope(company)  # tenant isolation: reject a foreign company arg
 	_reject_guest()
 	_require_company(company)
 	if not frappe.has_permission("Exchange Rate Revaluation", "create"):

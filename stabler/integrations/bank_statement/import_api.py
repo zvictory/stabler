@@ -14,6 +14,7 @@ from __future__ import annotations
 import base64
 
 import frappe
+from stabler.api.approvals import _assert_company_scope
 from frappe import _
 
 from stabler.api._common import _require_company
@@ -54,6 +55,7 @@ def _bank_account_meta(bank_account: str) -> dict:
 @frappe.whitelist()
 def bank_accounts_for_recon(company: str) -> list[dict]:
 	"""Bank Accounts for the company, for the reconciliation account picker."""
+	_assert_company_scope(company)  # tenant isolation: reject a foreign company arg
 	_require_recon()
 	_require_company(company)
 	rows = frappe.get_all(
@@ -102,6 +104,7 @@ def import_statement(
 	file_name: str | None = None,
 ) -> dict:
 	"""Parse a 1C statement and create Bank Transaction rows (idempotent)."""
+	_assert_company_scope(company)  # tenant isolation: reject a foreign company arg
 	_require_recon()
 	_require_company(company)
 	meta = _bank_account_meta(bank_account)

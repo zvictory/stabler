@@ -19,6 +19,7 @@ Config (site_config.json):
 from __future__ import annotations
 
 import hashlib
+import hmac
 
 import frappe
 from frappe.rate_limiter import rate_limit
@@ -57,7 +58,9 @@ def _verify_prepare_sign(f: dict) -> bool:
 		+ f.get("action", "")
 		+ f.get("sign_time", "")
 	)
-	return hashlib.md5(raw.encode("utf-8")).hexdigest() == (f.get("sign_string") or "").lower()
+	expected = hashlib.md5(raw.encode("utf-8")).hexdigest()
+	provided = (f.get("sign_string") or "").lower()
+	return hmac.compare_digest(expected, provided)
 
 
 def _verify_complete_sign(f: dict) -> bool:
@@ -71,7 +74,9 @@ def _verify_complete_sign(f: dict) -> bool:
 		+ f.get("action", "")
 		+ f.get("sign_time", "")
 	)
-	return hashlib.md5(raw.encode("utf-8")).hexdigest() == (f.get("sign_string") or "").lower()
+	expected = hashlib.md5(raw.encode("utf-8")).hexdigest()
+	provided = (f.get("sign_string") or "").lower()
+	return hmac.compare_digest(expected, provided)
 
 
 def _err(f: dict, code: int, note: str, **extra) -> dict:

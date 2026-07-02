@@ -6,6 +6,7 @@ import json
 import re
 
 import frappe
+from stabler.api.approvals import _assert_company_scope
 from frappe import _
 from frappe.utils import cint, flt, getdate, today
 
@@ -72,6 +73,7 @@ def _lookup_item_price(item_code: str, price_list: str, uom: str | None = None) 
 @frappe.whitelist()
 def list_customers(company: str, search: str = "", limit: int = 100):
 	_require_company(company)
+	_assert_company_scope(company)  # tenant isolation: reject a foreign company arg
 	# Customer is multi-company — there's no `company` on the master itself.
 	# We just filter by name search + disabled=0. The detail call scopes to company.
 	conds = ["disabled = 0"]
@@ -102,6 +104,7 @@ def get_customer_defaults(company: str, customer: str):
 	customer.default_price_list if set, otherwise Selling Settings.selling_price_list.
 	"""
 	_require_company(company)
+	_assert_company_scope(company)  # tenant isolation: reject a foreign company arg
 	if not frappe.db.exists("Customer", customer):
 		frappe.throw(f"Unknown customer: {customer}")
 	doc = frappe.get_doc("Customer", customer)
@@ -214,6 +217,7 @@ def list_customers_with_balances(
 	account's currency). When a customer transacted in multiple currencies we
 	expose the dominant one with `acc_currency_count` so the UI can flag it."""
 	_require_company(company)
+	_assert_company_scope(company)  # tenant isolation: reject a foreign company arg
 	company_currency = frappe.db.get_value("Company", company, "default_currency") or ""
 	conds = ["c.disabled = 0"]
 	params: dict = {"company": company, "limit": int(limit)}
@@ -324,6 +328,7 @@ def customer_ledger(
 	ledger shows 6,200,000 UZS — not 6,199,988.02 UZS produced by
 	base÷rate rounding."""
 	_require_company(company)
+	_assert_company_scope(company)  # tenant isolation: reject a foreign company arg
 	if not customer or not frappe.db.exists("Customer", customer):
 		frappe.throw(f"Unknown customer: {customer}")
 	limit = max(1, min(5000, int(limit)))
@@ -500,6 +505,7 @@ def _fetch_party_ledger_rows(
 @frappe.whitelist()
 def customer_detail(name: str, company: str):
 	_require_company(company)
+	_assert_company_scope(company)  # tenant isolation: reject a foreign company arg
 	if not name or not frappe.db.exists("Customer", name):
 		frappe.throw(f"Unknown customer: {name}")
 	_assert_can_read("Customer", name)
@@ -640,6 +646,7 @@ def list_sales_invoices(
 	limit: int = 100,
 ):
 	_require_company(company)
+	_assert_company_scope(company)  # tenant isolation: reject a foreign company arg
 	conds = ["company = %(company)s", "docstatus < 2"]
 	params: dict = {"company": company, "limit": int(limit)}
 	if from_date:
@@ -750,6 +757,7 @@ def ar_aging(company: str, as_of: str | None = None):
 	transaction currency — summing UZS into USD totals would be meaningless.
 	One customer with both UZS and USD invoices produces two rows."""
 	_require_company(company)
+	_assert_company_scope(company)  # tenant isolation: reject a foreign company arg
 	as_of = getdate(as_of or today())
 	rows = frappe.db.sql(
 		"""
@@ -846,6 +854,10 @@ def create_sales_return(
 	"""
 	if not sales_invoice or not frappe.db.exists("Sales Invoice", sales_invoice):
 		frappe.throw(_("Unknown Sales Invoice: {0}").format(sales_invoice))
+	# IDOR guard: @frappe.whitelist gates method access only, not record access.
+	# Without this, a user could issue (and with submit=1, post) a credit note
+	# against another company's invoice by guessing its sequential name.
+	_assert_can_read("Sales Invoice", sales_invoice)
 	src = frappe.get_doc("Sales Invoice", sales_invoice)
 	if src.docstatus != 1:
 		frappe.throw(_("Only submitted invoices can be returned."))
@@ -937,6 +949,7 @@ def create_direct_sales_return(
 	leaves credit on the customer's receivable balance.
 	"""
 	_require_company(company)
+	_assert_company_scope(company)  # tenant isolation: reject a foreign company arg
 	if not customer or not frappe.db.exists("Customer", customer):
 		frappe.throw(_("Unknown customer: {0}").format(customer or ""), frappe.DoesNotExistError)
 	if not warehouse or not frappe.db.exists("Warehouse", warehouse):
@@ -1058,6 +1071,7 @@ def sales_report_by_customer(
 	include_drafts: int | str = 0,
 ):
 	_require_company(company)
+	_assert_company_scope(company)  # tenant isolation: reject a foreign company arg
 	start, end = _sales_report_dates(from_date, to_date)
 	dfield = _sales_report_date_field(date_basis)
 	params = {"company": company, "from_date": start, "to_date": end}
@@ -1130,6 +1144,7 @@ def sales_report_by_item(
 	include_drafts: int | str = 0,
 ):
 	_require_company(company)
+	_assert_company_scope(company)  # tenant isolation: reject a foreign company arg
 	start, end = _sales_report_dates(from_date, to_date)
 	dfield = _sales_report_date_field(date_basis, alias="si")
 	dstatus = _sales_report_docstatus(include_drafts, alias="si")
@@ -1182,6 +1197,7 @@ def sales_report_by_item(
 @frappe.whitelist()
 def sales_report_customer_invoices(company: str, from_date: str, to_date: str, customer: str):
 	_require_company(company)
+	_assert_company_scope(company)  # tenant isolation: reject a foreign company arg
 	if not customer or not frappe.db.exists("Customer", customer):
 		frappe.throw(_("Customer is required."), frappe.ValidationError)
 	start, end = _sales_report_dates(from_date, to_date)
@@ -1220,6 +1236,7 @@ def sales_report_by_date(
 	include_drafts: int | str = 0,
 ):
 	_require_company(company)
+	_assert_company_scope(company)  # tenant isolation: reject a foreign company arg
 	start, end = _sales_report_dates(from_date, to_date)
 	dfield = _sales_report_date_field(date_basis, alias="si")
 	period_expr = _sales_report_period_expr(granularity, _sales_report_date_field(date_basis))
@@ -1245,6 +1262,7 @@ def sales_report_by_date(
 @frappe.whitelist()
 def sales_report_by_salesperson(company: str, from_date: str, to_date: str, date_basis: str | None = None, include_drafts: int | str = 0):
 	_require_company(company)
+	_assert_company_scope(company)  # tenant isolation: reject a foreign company arg
 	start, end = _sales_report_dates(from_date, to_date)
 	dfield = _sales_report_date_field(date_basis, alias="si")
 	return frappe.db.sql(
@@ -1282,6 +1300,7 @@ def sales_report_orders(
 	Sales Orders by customer and shows booked value plus the amounts still to deliver
 	and still to bill. date_basis maps to order date (default) or delivery date."""
 	_require_company(company)
+	_assert_company_scope(company)  # tenant isolation: reject a foreign company arg
 	start, end = _sales_report_dates(from_date, to_date)
 	so_date = "delivery_date" if (date_basis or "posting") == "due" else "transaction_date"
 	dstatus = _sales_report_docstatus(include_drafts)
@@ -1739,6 +1758,7 @@ def get_item_price(item_code: str, company: str, customer: str | None = None, pr
 	generic rows (no uom set). Falls back to generic if no UOM-specific row exists.
 	"""
 	_require_company(company)
+	_assert_company_scope(company)  # tenant isolation: reject a foreign company arg
 	if not item_code:
 		frappe.throw("Item code is required.")
 	if not frappe.db.exists("Item", item_code):
@@ -1784,6 +1804,7 @@ def item_sales_meta(item_code: str, company: str, customer: str | None = None, p
 	through per-customer resolution (useful when the UI has already set a PL).
 	"""
 	_require_company(company)
+	_assert_company_scope(company)  # tenant isolation: reject a foreign company arg
 	if not item_code:
 		frappe.throw("item_code is required.")
 	if not frappe.db.exists("Item", item_code):
@@ -1825,6 +1846,7 @@ def list_quotations(
 	limit: int = 100,
 ):
 	_require_company(company)
+	_assert_company_scope(company)  # tenant isolation: reject a foreign company arg
 	conds = ["company = %(company)s", "docstatus < 2", "quotation_to = 'Customer'"]
 	params: dict = {"company": company, "limit": int(limit)}
 	if from_date:
@@ -1901,6 +1923,7 @@ def create_quotation(
 ):
 	"""Create a Quotation as Draft (docstatus=0)."""
 	_require_company(company)
+	_assert_company_scope(company)  # tenant isolation: reject a foreign company arg
 	if not customer:
 		frappe.throw("Customer is required.")
 	if not frappe.db.exists("Customer", customer):
@@ -2097,6 +2120,7 @@ def list_sales_orders(
 	limit: int = 100,
 ):
 	_require_company(company)
+	_assert_company_scope(company)  # tenant isolation: reject a foreign company arg
 	conds = ["company = %(company)s", "docstatus < 2"]
 	params: dict = {"company": company, "limit": int(limit)}
 	if from_date:
@@ -2420,6 +2444,7 @@ def create_sales_order(
 	lines could not be fully reserved (e.g. insufficient stock).
 	"""
 	_require_company(company)
+	_assert_company_scope(company)  # tenant isolation: reject a foreign company arg
 	if not customer:
 		frappe.throw("Customer is required.")
 	if not frappe.db.exists("Customer", customer):
@@ -2563,6 +2588,7 @@ def prepare_so_from_deal(deal: str) -> dict:
 	if not company:
 		frappe.throw(_("No company is configured."))
 	_require_company(company)
+	_assert_company_scope(company)  # tenant isolation: reject a foreign company arg
 
 	# Already linked? Hand back the existing SO.
 	existing = None
@@ -2911,6 +2937,7 @@ def reserved_stock_analysis(company: str, warehouse: str | None = None):
 	warehouse.  The comparison is case-insensitive on MariaDB (utf8mb4_unicode_ci).
 	"""
 	_require_company(company)
+	_assert_company_scope(company)  # tenant isolation: reject a foreign company arg
 
 	wh_clause = "AND sre.warehouse = %(warehouse)s" if warehouse else ""
 
@@ -3009,6 +3036,7 @@ def reserved_stock_analysis(company: str, warehouse: str | None = None):
 @frappe.whitelist()
 def receivables_cockpit(company: str):
 	_require_company(company)
+	_assert_company_scope(company)  # tenant isolation: reject a foreign company arg
 	
 	# Current total receivables balance
 	current_total = flt(frappe.db.sql(

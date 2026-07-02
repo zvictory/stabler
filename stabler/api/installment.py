@@ -16,6 +16,7 @@ Each side can carry different markup rates.
 from __future__ import annotations
 
 import frappe
+from stabler.api.approvals import _assert_company_scope
 from frappe.utils import flt, getdate, add_months, today
 
 from stabler.api._common import _require_company, _assert_can_read
@@ -215,6 +216,7 @@ def list_cars(
     limit: int = 100,
 ) -> list:
     """Stock items with on-hand qty (this company) + valuation, for the picker."""
+    _assert_company_scope(company)  # tenant isolation: reject a foreign company arg
     _require_company(company)
     needle = f"%{search}%"
     return frappe.db.sql(
@@ -258,6 +260,7 @@ def quick_create_item(
     Lets the New Contract form add a product to inventory without leaving the
     page — the item then behaves like any other stock item in the system.
     """
+    _assert_company_scope(company)  # tenant isolation: reject a foreign company arg
     _require_company(company)
     if not (item_name or "").strip():
         frappe.throw("Item name is required.")
@@ -434,6 +437,7 @@ def create_sell_contract(
     submit: int | str = 0,
 ) -> dict:
     """Create a Murabaha Sell contract (Sales Invoice + payment_schedule)."""
+    _assert_company_scope(company)  # tenant isolation: reject a foreign company arg
     _require_company(company)
     if not start_date:
         from frappe.utils import today
@@ -469,6 +473,7 @@ def create_buy_contract(
     submit: int | str = 0,
 ) -> dict:
     """Create a Murabaha Buy contract (Purchase Invoice + payment_schedule)."""
+    _assert_company_scope(company)  # tenant isolation: reject a foreign company arg
     _require_company(company)
     if not start_date:
         from frappe.utils import today
@@ -498,6 +503,7 @@ def list_contracts(
     limit: int = 50,
 ) -> list:
     """List Murabaha contracts (Sales or Purchase Invoices with stabler_installment_plan=1)."""
+    _assert_company_scope(company)  # tenant isolation: reject a foreign company arg
     _require_company(company)
     from stabler.api.money import _date_filters
 
@@ -708,6 +714,7 @@ def collect_payment(
 @frappe.whitelist()
 def overdue_rows(company: str, side: str = "sell") -> list:
     """Rows past due with remaining outstanding balance."""
+    _assert_company_scope(company)  # tenant isolation: reject a foreign company arg
     _require_company(company)
     doctype = _invoice_doctype(side)
     if side == "buy":
@@ -766,6 +773,7 @@ def calendar_events(
     Return payment_schedule rows whose due_date falls in `month` (yyyy-mm).
     Used by InstallmentCalendar.vue to populate the month grid.
     """
+    _assert_company_scope(company)  # tenant isolation: reject a foreign company arg
     _require_company(company)
     if not month:
         from frappe.utils import today

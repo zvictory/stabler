@@ -8,6 +8,7 @@ in hr_payroll_calc. Salary is sensitive → gated to payroll-visible roles.
 from __future__ import annotations
 
 import frappe
+from stabler.api.approvals import _assert_company_scope
 from frappe import _
 from frappe.utils import flt
 
@@ -139,6 +140,7 @@ def preview_payroll_pay(summary_name: str) -> dict:
 	if not company:
 		frappe.throw(_("Unknown summary: {0}").format(summary_name))
 	_require_company(company)
+	_assert_company_scope(company)  # tenant isolation: reject a foreign company arg
 	s = frappe.get_doc(_SUMMARY, summary_name)
 	return _compute(s, _ruleset_dict(company))
 
@@ -156,6 +158,7 @@ def set_kpi_performance(summary_name: str, pct) -> dict:
 	if not company:
 		frappe.throw(_("Unknown summary: {0}").format(summary_name))
 	_require_company(company)
+	_assert_company_scope(company)  # tenant isolation: reject a foreign company arg
 	try:
 		value = float(pct)
 	except (TypeError, ValueError):
@@ -182,6 +185,7 @@ def set_advance_deduction(summary_name: str, amount) -> dict:
 	if not company:
 		frappe.throw(_("Unknown summary: {0}").format(summary_name))
 	_require_company(company)
+	_assert_company_scope(company)  # tenant isolation: reject a foreign company arg
 	try:
 		value = flt(amount)
 	except (TypeError, ValueError):
@@ -219,6 +223,7 @@ def preview_payroll_period(company: str, payroll_period: str) -> dict:
 	"""Computed pay for every summary in a period — for a payroll review screen."""
 	_require_pay_role()
 	_require_company(company)
+	_assert_company_scope(company)  # tenant isolation: reject a foreign company arg
 	ruleset = _ruleset_dict(company)
 	outstanding = _advance_outstanding(company)
 	names = frappe.get_all(
@@ -252,6 +257,7 @@ def preview_payroll_period(company: str, payroll_period: str) -> dict:
 @frappe.whitelist()
 def payroll_xlsx(company: str, payroll_period: str):
 	"""Colored Excel of the period's computed pay (role-gated download)."""
+	_assert_company_scope(company)  # tenant isolation: reject a foreign company arg
 	import io
 
 	from openpyxl import Workbook

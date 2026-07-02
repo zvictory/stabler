@@ -10,6 +10,7 @@ GL Entry — the same source the advance and salary-payment modules use.
 from __future__ import annotations
 
 import frappe
+from stabler.api.approvals import _assert_company_scope
 from frappe import _
 from frappe.utils import flt
 
@@ -93,6 +94,7 @@ def employee_financials(company: str, employee: str) -> dict:
 	"""Balances + salaries + advances + salary payments for one employee."""
 	_require_pay_role()
 	_require_company(company)
+	_assert_company_scope(company)  # tenant isolation: reject a foreign company arg
 	if not frappe.db.exists("Employee", employee):
 		frappe.throw(_("Unknown employee: {0}").format(employee))
 
@@ -229,6 +231,7 @@ def employee_net_balances(company: str, search: str = "", limit: int = 1000) -> 
 	"""
 	_require_pay_role()
 	_require_company(company)
+	_assert_company_scope(company)  # tenant isolation: reject a foreign company arg
 	base_ccy = frappe.get_cached_value("Company", company, "default_currency") or ""
 	# Group by party AND account currency so each worker's balance carries ITS OWN
 	# original currency (UZS), not the base (USD). The detail pane does the same via

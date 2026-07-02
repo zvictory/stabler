@@ -15,6 +15,7 @@ Invariant: cash_in_base == payout_base + commission_base  (balances by construct
 from __future__ import annotations
 
 import frappe
+from stabler.api.approvals import _assert_company_scope
 from frappe.utils import flt, getdate
 
 from stabler.api._common import _require_company, _assert_can_read
@@ -39,6 +40,7 @@ REMITTANCE_CURRENCIES = ["USD", "EUR", "USDT"]
 @frappe.whitelist()
 def remittance_accounts(company: str) -> dict:
     """Return account pools for the remittance form selectors."""
+    _assert_company_scope(company)  # tenant isolation: reject a foreign company arg
     _require_company(company)
     cash = bank_cash_accounts(company)
     income = frappe.get_all(
@@ -98,6 +100,7 @@ def create_remittance(
                         Only needed for cross-currency transfers.
                         If omitted for cross-currency, fetched from ERPNext FX.
     """
+    _assert_company_scope(company)  # tenant isolation: reject a foreign company arg
     _require_company(company)
     amount = _round2(amount)
     if commission_percent is not None:
@@ -265,6 +268,7 @@ def list_remittances(
     limit: int = 50,
 ) -> list:
     """List remittance JEs for this company (cheque_no LIKE 'Rem-%')."""
+    _assert_company_scope(company)  # tenant isolation: reject a foreign company arg
     _require_company(company)
     clauses, params = _date_filters(from_date, to_date)
     params["company"] = company

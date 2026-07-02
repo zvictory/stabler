@@ -62,7 +62,7 @@ def _recent_duplicate(phone: str, email: str) -> str | None:
 @frappe.whitelist(allow_guest=True)
 @rate_limit(limit=60, seconds=60)
 def intake_lead(
-	token: str,
+	token: str = "",
 	channel: str = "Web",
 	name: str = "",
 	phone: str = "",
@@ -72,7 +72,11 @@ def intake_lead(
 	tender_no: str = "",
 ) -> dict:
 	"""Create a CRM Lead from an inbound enquiry. Returns {ok, lead, duplicate}."""
-	if not _check_token(token):
+	# Prefer the token from the X-Intake-Token header so it stays out of access
+	# logs / referer / browser history; fall back to the body param for older
+	# callers (Telegram sidecar, existing web form).
+	header_token = frappe.get_request_header("X-Intake-Token") or ""
+	if not _check_token(header_token or token):
 		return {"ok": False, "reason": "unauthorized"}
 
 	channel = channel if channel in _CHANNELS else "Web"

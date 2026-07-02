@@ -15,6 +15,7 @@ Guest is rejected at the whitelist level.
 from __future__ import annotations
 
 import frappe
+from stabler.api.approvals import _assert_company_scope
 from frappe import _
 from frappe.utils import flt, getdate, today
 
@@ -55,6 +56,7 @@ def list_budgets(
 	limit: int = 100,
 ) -> list:
 	"""List Budget docs for a company (optionally filtered by fiscal year / cost centre)."""
+	_assert_company_scope(company)  # tenant isolation: reject a foreign company arg
 	_reject_guest()
 	_require_company(company)
 	if not frappe.has_permission("Budget", "read"):
@@ -127,6 +129,7 @@ def budget_vs_actual(
 	    "meta": {currency, from, to, favorable_count, unfavorable_count, on_budget_count},
 	  }
 	"""
+	_assert_company_scope(company)  # tenant isolation: reject a foreign company arg
 	_reject_guest()
 	_require_company(company)
 	if not frappe.has_permission("Budget", "read"):

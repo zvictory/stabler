@@ -23,6 +23,7 @@ from frappe import _
 from frappe.utils import flt, getdate, today
 
 from stabler.api._common import _require_company
+from stabler.api.approvals import _assert_company_scope
 from stabler.api.money import create_journal_entry, list_cash_bank_accounts, submit_journal_entry
 
 _SUMMARY = "Stabler Payroll Attendance Summary"
@@ -125,6 +126,7 @@ def accrue_payroll_period(
 	"""
 	_require_pay_role()
 	_require_company(company)
+	_assert_company_scope(company)  # tenant isolation: reject a foreign company arg
 
 	remark = f"{_ACCRUAL_MARKER}:{payroll_period}"
 	existing = frappe.get_all(
@@ -184,6 +186,7 @@ def accrue_employee_salary(
 	"""
 	_require_pay_role()
 	_require_company(company)
+	_assert_company_scope(company)  # tenant isolation: reject a foreign company arg
 	if not employee:
 		frappe.throw(_("Employee is required."))
 	amt = round(flt(amount))
@@ -220,6 +223,7 @@ def accrue_employee_salary(
 def payable_account(company: str) -> dict:
 	_require_pay_role()
 	_require_company(company)
+	_assert_company_scope(company)  # tenant isolation: reject a foreign company arg
 	acc = _salary_payable_account(company)
 	return {
 		"account": acc,
@@ -233,6 +237,7 @@ def salary_payable_balances(company: str, search: str = "", limit: int = 500) ->
 	"""Employees with an outstanding salary payable (owed but not yet paid)."""
 	_require_pay_role()
 	_require_company(company)
+	_assert_company_scope(company)  # tenant isolation: reject a foreign company arg
 	account = _salary_payable_account(company)
 	balances = _payable_balances(company, account)
 	names = [e for e, b in balances.items() if b > 0.005]
@@ -279,6 +284,7 @@ def pay_salaries(
 	"""
 	_require_pay_role()
 	_require_company(company)
+	_assert_company_scope(company)  # tenant isolation: reject a foreign company arg
 	if isinstance(employees, str):
 		employees = json.loads(employees or "[]")
 	if not employees:
@@ -322,4 +328,5 @@ def list_pay_accounts(company: str) -> list:
 	"""Cash/bank accounts to pay salaries from (the Cr side)."""
 	_require_pay_role()
 	_require_company(company)
+	_assert_company_scope(company)  # tenant isolation: reject a foreign company arg
 	return list_cash_bank_accounts(company)

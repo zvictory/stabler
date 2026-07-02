@@ -21,6 +21,7 @@ from frappe import _
 from frappe.utils import flt, getdate, today
 
 from stabler.api._common import _require_company
+from stabler.api.approvals import _assert_company_scope
 from stabler.api.money import create_payment_entry, list_cash_bank_accounts
 
 _PAY_ROLES = {"HR Manager", "Payroll Manager", "Accounts Manager", "System Manager", "Stabler Admin"}
@@ -84,6 +85,7 @@ def advance_account(company: str) -> dict:
 	"""The resolved advance account + its currency (for the UI)."""
 	_require_pay_role()
 	_require_company(company)
+	_assert_company_scope(company)  # tenant isolation: reject a foreign company arg
 	acc = _advance_account(company)
 	return {
 		"account": acc,
@@ -126,6 +128,7 @@ def employee_advance_balances(
 	"""
 	_require_pay_role()
 	_require_company(company)
+	_assert_company_scope(company)  # tenant isolation: reject a foreign company arg
 	account = _advance_account(company)
 	balances = _balances(company, account)
 
@@ -196,6 +199,7 @@ def employee_advance_detail(company: str, employee: str) -> dict:
 	"""One employee's advance balance + recent GL movements (newest first)."""
 	_require_pay_role()
 	_require_company(company)
+	_assert_company_scope(company)  # tenant isolation: reject a foreign company arg
 	if not frappe.db.exists("Employee", employee):
 		frappe.throw(_("Unknown employee: {0}").format(employee))
 	account = _advance_account(company)
@@ -229,6 +233,7 @@ def list_pay_accounts(company: str) -> list:
 	"""Cash/bank accounts to pay an advance from (paid_from picker)."""
 	_require_pay_role()
 	_require_company(company)
+	_assert_company_scope(company)  # tenant isolation: reject a foreign company arg
 	return list_cash_bank_accounts(company)
 
 
@@ -252,6 +257,7 @@ def pay_employee_advance(
 	"""
 	_require_pay_role()
 	_require_company(company)
+	_assert_company_scope(company)  # tenant isolation: reject a foreign company arg
 	if not frappe.db.exists("Employee", employee):
 		frappe.throw(_("Unknown employee: {0}").format(employee))
 	amt = flt(amount)

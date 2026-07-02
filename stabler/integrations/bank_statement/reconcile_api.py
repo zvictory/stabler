@@ -22,6 +22,7 @@ Phase 2 additions:
 from __future__ import annotations
 
 import frappe
+from stabler.api.approvals import _assert_company_scope
 from frappe import _
 from frappe.utils import add_days, flt, getdate
 
@@ -77,6 +78,7 @@ def list_unreconciled(
 	limit: int = 100,
 ) -> dict:
 	"""Submitted Bank Transactions with an unallocated balance, for one account."""
+	_assert_company_scope(company)  # tenant isolation: reject a foreign company arg
 	_require_recon()
 	_require_company(company)
 	acc = frappe.db.get_value("Bank Account", bank_account, ["company"], as_dict=True)

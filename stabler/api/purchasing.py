@@ -5,6 +5,7 @@ from __future__ import annotations
 import json
 
 import frappe
+from stabler.api.approvals import _assert_company_scope
 from frappe.utils import cint, flt, getdate, today
 
 
@@ -14,6 +15,7 @@ from stabler.api._common import _assert_can_read, _assert_can_write, _require_co
 @frappe.whitelist()
 def list_suppliers(company: str, search: str = "", limit: int = 100):
 	_require_company(company)
+	_assert_company_scope(company)  # tenant isolation: reject a foreign company arg
 	conds = ["disabled = 0"]
 	params: dict = {"limit": int(limit)}
 	if search:
@@ -48,6 +50,7 @@ def list_suppliers_with_balances(
 	the supplier. GL stores payables as credit-natured, so we aggregate
 	`SUM(credit - debit)`."""
 	_require_company(company)
+	_assert_company_scope(company)  # tenant isolation: reject a foreign company arg
 	company_currency = frappe.db.get_value("Company", company, "default_currency") or ""
 	conds = ["s.disabled = 0"]
 	params: dict = {"company": company, "limit": int(limit)}
@@ -134,7 +137,7 @@ def list_suppliers_with_balances(
 		r["balance_base"] = flt(r["balance_base"])
 		r["balance_acc"] = flt(r["balance_acc"]) + drift_map.get(r["name"], 0.0)
 		r["company_currency"] = company_currency
-	if only_with_balance:
+	if cint(only_with_balance):
 		rows = [r for r in rows if flt(r["balance_base"]) != 0]
 	return {"rows": rows, "company_currency": company_currency}
 
@@ -155,6 +158,7 @@ def supplier_ledger(
 	/ received_amount), preventing the base÷rate rounding drift baked into
 	GL Entry's *_in_account_currency columns."""
 	_require_company(company)
+	_assert_company_scope(company)  # tenant isolation: reject a foreign company arg
 	if not supplier or not frappe.db.exists("Supplier", supplier):
 		frappe.throw(f"Unknown supplier: {supplier}")
 	limit = max(1, min(5000, int(limit)))
@@ -209,6 +213,7 @@ def supplier_ledger(
 @frappe.whitelist()
 def supplier_detail(name: str, company: str):
 	_require_company(company)
+	_assert_company_scope(company)  # tenant isolation: reject a foreign company arg
 	if not name or not frappe.db.exists("Supplier", name):
 		frappe.throw(f"Unknown supplier: {name}")
 	_assert_can_read("Supplier", name)
@@ -313,6 +318,7 @@ def list_purchase_invoices(
 	limit: int = 100,
 ):
 	_require_company(company)
+	_assert_company_scope(company)  # tenant isolation: reject a foreign company arg
 	conds = ["company = %(company)s", "docstatus < 2"]
 	params: dict = {"company": company, "limit": int(limit)}
 	if from_date:
@@ -461,6 +467,7 @@ def ap_aging(company: str, as_of: str | None = None):
 
 	Grouped by (supplier, currency); totals broken out per currency."""
 	_require_company(company)
+	_assert_company_scope(company)  # tenant isolation: reject a foreign company arg
 	as_of = getdate(as_of or today())
 	rows = frappe.db.sql(
 		"""
@@ -787,6 +794,7 @@ def create_purchase_invoice(
 	received into stock on submit. Foreign-currency bills require a positive
 	`conversion_rate` (1 foreign = X company currency)."""
 	_require_company(company)
+	_assert_company_scope(company)  # tenant isolation: reject a foreign company arg
 	if not supplier:
 		frappe.throw("Supplier is required.")
 	if not frappe.db.exists("Supplier", supplier):
@@ -888,6 +896,7 @@ def list_purchase_tax_templates(company: str):
 	"""Purchase tax templates for `company`, each with its tax rows so the UI
 	can preview tax/grand totals before the server computes them."""
 	_require_company(company)
+	_assert_company_scope(company)  # tenant isolation: reject a foreign company arg
 	templates = frappe.db.get_all(
 		"Purchase Taxes and Charges Template",
 		filters={"company": company, "disabled": 0},
@@ -918,6 +927,7 @@ def get_purchase_exchange_rate(
 	currency. Returns rate=0 when no trustworthy source exists — the UI must
 	then require manual entry (never default a foreign rate to 1.0)."""
 	_require_company(company)
+	_assert_company_scope(company)  # tenant isolation: reject a foreign company arg
 	company_currency = frappe.db.get_value("Company", company, "default_currency") or ""
 	if not currency or currency == company_currency:
 		return {"rate": 1.0, "source": "company"}
@@ -1017,6 +1027,10 @@ def create_purchase_return(
 
 	if not purchase_invoice or not frappe.db.exists("Purchase Invoice", purchase_invoice):
 		frappe.throw(_("Unknown Purchase Invoice: {0}").format(purchase_invoice))
+	# IDOR guard: @frappe.whitelist gates method access only, not record access.
+	# Without this, a user could issue (and with submit=1, post) a debit note
+	# against another company's invoice by guessing its sequential name.
+	_assert_can_read("Purchase Invoice", purchase_invoice)
 	src = frappe.get_doc("Purchase Invoice", purchase_invoice)
 	if src.docstatus != 1:
 		frappe.throw(_("Only submitted invoices can be returned."))
@@ -1118,6 +1132,7 @@ def list_purchase_orders(
 	limit: int = 100,
 ):
 	_require_company(company)
+	_assert_company_scope(company)  # tenant isolation: reject a foreign company arg
 	conds = ["company = %(company)s", "docstatus < 2"]
 	params: dict = {"company": company, "limit": int(limit)}
 	if from_date:
@@ -1254,6 +1269,7 @@ def create_purchase_order(
 	When `auto_submit` is truthy (default) the PO is submitted immediately.
 	"""
 	_require_company(company)
+	_assert_company_scope(company)  # tenant isolation: reject a foreign company arg
 	if not supplier:
 		frappe.throw("Supplier is required.")
 	if not frappe.db.exists("Supplier", supplier):
@@ -1599,6 +1615,7 @@ def list_purchase_receipts(
 	limit: int = 100,
 ):
 	_require_company(company)
+	_assert_company_scope(company)  # tenant isolation: reject a foreign company arg
 	conds = ["company = %(company)s", "docstatus < 2"]
 	params: dict = {"company": company, "limit": int(limit)}
 	if from_date:
@@ -1787,6 +1804,7 @@ def create_purchase_receipt(
 	A receipt moves stock, so `set_warehouse` is required.
 	"""
 	_require_company(company)
+	_assert_company_scope(company)  # tenant isolation: reject a foreign company arg
 	if not supplier:
 		frappe.throw("Supplier is required.")
 	if not frappe.db.exists("Supplier", supplier):
@@ -1916,6 +1934,7 @@ def create_purchase_invoice_from_pr(name: str):
 @frappe.whitelist()
 def payables_cockpit(company: str):
 	_require_company(company)
+	_assert_company_scope(company)  # tenant isolation: reject a foreign company arg
 	
 	# Current total payables balance (credit - debit)
 	current_total = flt(frappe.db.sql(
@@ -2005,6 +2024,7 @@ def tender_quotations(deal: str) -> dict:
 		frappe.get_all("Company", pluck="name", limit=1) or [None]
 	)[0]
 	_require_company(company)
+	_assert_company_scope(company)  # tenant isolation: reject a foreign company arg
 
 	from stabler.stabler.doctype.stabler_settings.stabler_settings import module_map_for
 

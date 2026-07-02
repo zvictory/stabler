@@ -24,6 +24,7 @@ from __future__ import annotations
 
 import base64
 import binascii
+import hmac
 
 import frappe
 from frappe.rate_limiter import rate_limit
@@ -63,9 +64,9 @@ def _check_auth() -> None:
 	except (binascii.Error, UnicodeDecodeError):
 		raise UzumError(E_AUTH, "Unauthorized")
 	user, _, pwd = decoded.partition(":")
-	if user != C.require_conf("uzum_merchant_username") or pwd != C.require_conf(
-		"uzum_merchant_password"
-	):
+	user_ok = hmac.compare_digest(user, C.require_conf("uzum_merchant_username"))
+	pwd_ok = hmac.compare_digest(pwd, C.require_conf("uzum_merchant_password"))
+	if not (user_ok and pwd_ok):
 		raise UzumError(E_AUTH, "Unauthorized")
 
 

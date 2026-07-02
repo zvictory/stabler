@@ -8,6 +8,7 @@ CRUD so HR can edit them in the SPA. All writes are role-gated and idempotent.
 from __future__ import annotations
 
 import frappe
+from stabler.api.approvals import _assert_company_scope
 from frappe import _
 from frappe.utils import getdate
 
@@ -25,6 +26,7 @@ def _require_hr() -> None:
 @frappe.whitelist()
 def list_holiday_lists(company: str = "") -> dict:
 	"""All holiday lists + which one is this company's default."""
+	_assert_company_scope(company)  # tenant isolation: reject a foreign company arg
 	_require_hr()
 	lists = frappe.get_all(
 		"Holiday List",
@@ -100,6 +102,7 @@ def remove_holiday(holiday_list: str, holiday_date: str) -> dict:
 @frappe.whitelist()
 def set_company_holiday_list(company: str, holiday_list: str) -> dict:
 	"""Point a company at a default holiday list."""
+	_assert_company_scope(company)  # tenant isolation: reject a foreign company arg
 	_require_hr()
 	if not frappe.db.exists("Holiday List", holiday_list):
 		frappe.throw(_("Holiday list {0} not found.").format(holiday_list))
@@ -112,6 +115,7 @@ def set_company_holiday_list(company: str, holiday_list: str) -> dict:
 @frappe.whitelist()
 def list_payroll_periods(company: str = "") -> dict:
 	"""Payroll periods for a company (or all)."""
+	_assert_company_scope(company)  # tenant isolation: reject a foreign company arg
 	_require_hr()
 	if not frappe.db.exists("DocType", "Payroll Period"):
 		return {"periods": [], "supported": False}
@@ -129,6 +133,7 @@ def list_payroll_periods(company: str = "") -> dict:
 @frappe.whitelist()
 def upsert_payroll_period(company: str, start_date: str, end_date: str, name: str = "") -> dict:
 	"""Create or update a payroll period (start must precede end)."""
+	_assert_company_scope(company)  # tenant isolation: reject a foreign company arg
 	_require_hr()
 	if getdate(end_date) < getdate(start_date):
 		frappe.throw(_("End date cannot be before start date."))

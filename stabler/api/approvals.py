@@ -439,6 +439,7 @@ def my_requests(
 	company: str | None = None, status: str | None = None, limit: int = 100, start: int = 0
 ) -> dict:
 	"""Requests raised by the current user — the maker's view of their queue."""
+	_assert_company_scope(company)  # tenant isolation: reject a foreign company arg
 	limit = min(int(limit or 100), 500)
 	start = int(start or 0)
 	filters: dict = {"requested_by": frappe.session.user}

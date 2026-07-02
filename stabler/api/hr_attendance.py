@@ -14,6 +14,7 @@ from __future__ import annotations
 import json
 
 import frappe
+from stabler.api.approvals import _assert_company_scope
 from frappe import _
 
 from stabler.api._attendance_processor import summarize_day
@@ -69,6 +70,7 @@ def _guard(ptype: str = "read") -> None:
 @frappe.whitelist()
 def list_rule_sets(company: str | None = None) -> list[dict]:
 	"""Rule sets, optionally filtered by company."""
+	_assert_company_scope(company)  # tenant isolation: reject a foreign company arg
 	_guard("read")
 	filters: dict = {}
 	if company:
@@ -169,6 +171,7 @@ def simulate_day(
 	"""Preview how the rule engine classifies one day. `punches` is a list (or
 	JSON string) of {timestamp, direction}. Read-only — computes nothing on the
 	ledger."""
+	_assert_company_scope(company)  # tenant isolation: reject a foreign company arg
 	_guard("read")
 	if isinstance(punches, str):
 		try:

@@ -10,6 +10,7 @@ from frappe import _
 from frappe.utils import cint, flt, get_datetime, getdate, now_datetime, today
 
 from stabler.api._common import _assert_can_read, _require_company, _assert_can_write
+from stabler.api.approvals import _assert_company_scope
 from stabler.api._equipment import coverage_state, summarise_coverage
 from stabler.api.organization import _can_access_module
 from stabler.stabler.doctype.stabler_settings.stabler_settings import module_map_for
@@ -44,6 +45,9 @@ def _company_for_issue(doc) -> str | None:
 
 def _require_service(company: str | None = None) -> str:
 	company = _require_company(company or _current_company())
+	# Tenant isolation for every Service endpoint at once: reject a company the
+	# caller is not permitted to see (admins / unrestricted users pass through).
+	_assert_company_scope(company)
 	if not module_map_for(company).get("service"):
 		frappe.throw(_("Service module is not enabled for {0}.").format(company), frappe.PermissionError)
 	if not _can_access_module(frappe.session.user, "service"):
@@ -813,6 +817,7 @@ def map_feed(company: str, month: str | None = None, service_person: str | None 
 def create_invoice_from_visit(visit: str, items, posting_date: str | None = None, submit: int = 0):
 	if not visit or not frappe.db.exists("Maintenance Visit", visit):
 		frappe.throw(_("Visit is required."))
+	_assert_can_read("Maintenance Visit", visit)
 	visit_doc = frappe.get_doc("Maintenance Visit", visit)
 	company = _require_service(_company_for_visit(visit_doc))
 	if visit_doc.get("custom_sales_invoice"):
@@ -860,6 +865,7 @@ def create_material_issue_from_visit(
 		frappe.throw(_("Visit is required."))
 	if not warehouse or not frappe.db.exists("Warehouse", warehouse):
 		frappe.throw(_("Source warehouse is required."))
+	_assert_can_read("Maintenance Visit", visit)
 	visit_doc = frappe.get_doc("Maintenance Visit", visit)
 	company = _require_service(_company_for_visit(visit_doc))
 	if visit_doc.get("custom_stock_entry"):

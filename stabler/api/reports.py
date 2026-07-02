@@ -21,6 +21,7 @@ Conventions (the Critic's non-negotiables):
 from __future__ import annotations
 
 import frappe
+from stabler.api.approvals import _assert_company_scope
 from frappe import _
 from frappe.utils import flt
 
@@ -107,6 +108,7 @@ def _customer_gl_balances(company: str) -> dict:
 @frappe.whitelist()
 def sales_by_customer(company: str, from_date: str, to_date: str) -> dict:
     _require_company(company)
+    _assert_company_scope(company)  # tenant isolation: reject a foreign company arg
     start, end = _sales_report_dates(from_date, to_date)
     # Sales = period (accrual). Balance = the real GL receivable (all-time), joined
     # per customer so the report shows the SAME number as the Customer Center.
@@ -168,6 +170,7 @@ def customer_balance_summary(company: str, only_with_balance: int = 1) -> dict:
     Customer Center (list_customers_with_balances), so the numbers tie 1:1.
     """
     _require_company(company)
+    _assert_company_scope(company)  # tenant isolation: reject a foreign company arg
     from stabler.api.sales import list_customers_with_balances
 
     data = list_customers_with_balances(
@@ -205,6 +208,7 @@ def customer_balance_summary(company: str, only_with_balance: int = 1) -> dict:
 @frappe.whitelist()
 def sales_by_customer_detail(company: str, from_date: str, to_date: str, customer: str) -> dict:
     _require_company(company)
+    _assert_company_scope(company)  # tenant isolation: reject a foreign company arg
     if not customer or not frappe.db.exists("Customer", customer):
         frappe.throw(_("Customer is required."), frappe.ValidationError)
     start, end = _sales_report_dates(from_date, to_date)
@@ -253,6 +257,7 @@ def customer_balance_detail(company: str, customer: str, from_date: str = None, 
     all-time so the running balance ties to the all-time Balance.
     """
     _require_company(company)
+    _assert_company_scope(company)  # tenant isolation: reject a foreign company arg
     if not customer or not frappe.db.exists("Customer", customer):
         frappe.throw(_("Customer is required."), frappe.ValidationError)
     from stabler.api.sales import customer_ledger
@@ -322,6 +327,7 @@ def _item_lines(company, start, end):
 @frappe.whitelist()
 def sales_by_item(company: str, from_date: str, to_date: str) -> dict:
     _require_company(company)
+    _assert_company_scope(company)  # tenant isolation: reject a foreign company arg
     start, end = _sales_report_dates(from_date, to_date)
     rows = _item_lines(company, start, end)
     totals = {"qty": sum(flt(r.qty) for r in rows), "revenue": sum(flt(r.revenue) for r in rows)}
@@ -346,6 +352,7 @@ def sales_by_item(company: str, from_date: str, to_date: str) -> dict:
 @frappe.whitelist()
 def sales_by_item_detail(company: str, from_date: str, to_date: str, item_code: str) -> dict:
     _require_company(company)
+    _assert_company_scope(company)  # tenant isolation: reject a foreign company arg
     if not item_code:
         frappe.throw(_("Item is required."), frappe.ValidationError)
     start, end = _sales_report_dates(from_date, to_date)
@@ -395,6 +402,7 @@ def item_abc(
     """Rank items descending by metric (revenue|qty), compute cumulative %, and
     classify A (≤a%), B (≤b%), C (rest). Drills into Sales by Item detail."""
     _require_company(company)
+    _assert_company_scope(company)  # tenant isolation: reject a foreign company arg
     start, end = _sales_report_dates(from_date, to_date)
     metric = "qty" if metric == "qty" else "revenue"
     a_t, b_t = flt(a_threshold), flt(b_threshold)
@@ -460,6 +468,7 @@ def _abc_classify(rows, metric, a_t, b_t):
 def customer_abc(company: str, from_date: str, to_date: str, a_threshold: float = 80, b_threshold: float = 95) -> dict:
     """Pareto ranking of customers by revenue. Drills to Sales by Customer detail."""
     _require_company(company)
+    _assert_company_scope(company)  # tenant isolation: reject a foreign company arg
     start, end = _sales_report_dates(from_date, to_date)
     rows = frappe.db.sql(
         """
@@ -495,6 +504,7 @@ def customer_abc(company: str, from_date: str, to_date: str, a_threshold: float 
 @frappe.whitelist()
 def purchases_by_supplier(company: str, from_date: str, to_date: str) -> dict:
     _require_company(company)
+    _assert_company_scope(company)  # tenant isolation: reject a foreign company arg
     start, end = _sales_report_dates(from_date, to_date)
     rows = frappe.db.sql(
         """
@@ -534,6 +544,7 @@ def purchases_by_supplier(company: str, from_date: str, to_date: str) -> dict:
 @frappe.whitelist()
 def purchases_by_supplier_detail(company: str, from_date: str, to_date: str, supplier: str) -> dict:
     _require_company(company)
+    _assert_company_scope(company)  # tenant isolation: reject a foreign company arg
     if not supplier or not frappe.db.exists("Supplier", supplier):
         frappe.throw(_("Supplier is required."), frappe.ValidationError)
     start, end = _sales_report_dates(from_date, to_date)
@@ -571,6 +582,7 @@ def purchases_by_supplier_detail(company: str, from_date: str, to_date: str, sup
 def supplier_abc(company: str, from_date: str, to_date: str, a_threshold: float = 80, b_threshold: float = 95) -> dict:
     """Pareto ranking of suppliers by spend. Drills to Purchases by Supplier detail."""
     _require_company(company)
+    _assert_company_scope(company)  # tenant isolation: reject a foreign company arg
     start, end = _sales_report_dates(from_date, to_date)
     rows = frappe.db.sql(
         """
@@ -608,6 +620,7 @@ def inventory_aging(company: str, from_date: str, to_date: str) -> dict:
     """Current on-hand value vs sales in the period. Flags Dead (no sales),
     Slow (>1 period of cover) and Moving stock. Drills to the item's sales."""
     _require_company(company)
+    _assert_company_scope(company)  # tenant isolation: reject a foreign company arg
     start, end = _sales_report_dates(from_date, to_date)
     from frappe.utils import date_diff
 
@@ -681,6 +694,7 @@ def inventory_expiry(company: str, horizon_days: int = 60) -> dict:
     """On-hand batches with their expiry, flagged Expired / Expiring (≤horizon) /
     OK. Returns empty with a note if batch tracking isn't enabled."""
     _require_company(company)
+    _assert_company_scope(company)  # tenant isolation: reject a foreign company arg
     from frappe.utils import date_diff, nowdate
 
     columns = [
@@ -765,6 +779,7 @@ def _margin_meta(company, start, end, zero_cost):
 @frappe.whitelist()
 def gross_margin_by_item(company: str, from_date: str, to_date: str) -> dict:
     _require_company(company)
+    _assert_company_scope(company)  # tenant isolation: reject a foreign company arg
     start, end = _sales_report_dates(from_date, to_date)
     cost = _cost_expr()
     rows = frappe.db.sql(
@@ -810,6 +825,7 @@ def gross_margin_by_item(company: str, from_date: str, to_date: str) -> dict:
 @frappe.whitelist()
 def gross_margin_by_customer(company: str, from_date: str, to_date: str) -> dict:
     _require_company(company)
+    _assert_company_scope(company)  # tenant isolation: reject a foreign company arg
     start, end = _sales_report_dates(from_date, to_date)
     cost = _cost_expr()
     rows = frappe.db.sql(

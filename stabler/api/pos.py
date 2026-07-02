@@ -3,6 +3,7 @@
 from __future__ import annotations
 
 import frappe
+from stabler.api.approvals import _assert_company_scope
 from frappe import _
 from frappe.utils import flt, getdate, today
 
@@ -145,6 +146,7 @@ def _rate_for_item(item_code: str, price_list: str | None, stock_uom: str | None
 
 @frappe.whitelist()
 def list_pos_profiles(company: str):
+	_assert_company_scope(company)  # tenant isolation: reject a foreign company arg
 	_require_company(company)
 	user = frappe.session.user
 	return frappe.db.sql(
@@ -172,11 +174,13 @@ def list_pos_profiles(company: str):
 
 @frappe.whitelist()
 def pos_bootstrap(company: str, pos_profile: str):
+	_assert_company_scope(company)  # tenant isolation: reject a foreign company arg
 	return _profile_payload(_pos_profile_doc(company, pos_profile))
 
 
 @frappe.whitelist()
 def search_pos_items(company: str, pos_profile: str, search: str = "", limit: int = 20):
+	_assert_company_scope(company)  # tenant isolation: reject a foreign company arg
 	profile = _pos_profile_doc(company, pos_profile)
 	price_list = profile.selling_price_list or _resolve_price_list(profile.customer)
 	params = {
@@ -331,6 +335,7 @@ def create_pos_invoice(
 	payment_mode: str,
 	posting_date: str | None = None,
 ):
+	_assert_company_scope(company)  # tenant isolation: reject a foreign company arg
 	doc = build_paid_pos_invoice(company, pos_profile, items, payment_mode, posting_date)
 	return {
 		"name": doc.name,
@@ -367,6 +372,7 @@ def pos_gateway_start(
 	create a POS Payment Session, build the provider checkout URL + QR, and
 	hand them back to the SPA. No invoice is created until the provider
 	confirms payment via its webhook."""
+	_assert_company_scope(company)  # tenant isolation: reject a foreign company arg
 	from stabler.integrations.uzpay import common as C
 
 	profile = _pos_profile_doc(company, pos_profile)

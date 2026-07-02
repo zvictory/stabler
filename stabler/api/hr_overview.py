@@ -12,6 +12,7 @@ for users without a payroll-visible role.
 from __future__ import annotations
 
 import frappe
+from stabler.api.approvals import _assert_company_scope
 from frappe.utils import flt, getdate, add_days, get_first_day, today
 
 from stabler.api._common import _require_company
@@ -98,6 +99,7 @@ def _advances(company: str, can_see_money: bool) -> dict:
 @frappe.whitelist()
 def hr_overview(company: str) -> dict:
 	"""Single payload for the HR landing cockpit."""
+	_assert_company_scope(company)  # tenant isolation: reject a foreign company arg
 	_require_company(company)
 	can_money = _user_can_see_salary()
 	period = _current_period()
@@ -162,6 +164,7 @@ def data_health(company: str) -> dict:
 	what's missing, with a link target of the employee profile. The base-salary
 	list is salary-sensitive → only returned to payroll-visible roles.
 	"""
+	_assert_company_scope(company)  # tenant isolation: reject a foreign company arg
 	_require_company(company)
 	can_money = _user_can_see_salary()
 

@@ -9,6 +9,7 @@ from __future__ import annotations
 from datetime import date, timedelta
 
 import frappe
+from stabler.api.approvals import _assert_company_scope
 from frappe import _
 from frappe.utils import flt, getdate
 
@@ -91,6 +92,7 @@ def _by_currency(rows) -> list[dict]:
 @frappe.whitelist()
 def summary(company: str):
 	"""Return per-currency cash / AR / AP / revenue-MTD for the dashboard tiles."""
+	_assert_company_scope(company)  # tenant isolation: reject a foreign company arg
 	company = _require_company(company)
 	if not _can_access_module(frappe.session.user, "dashboard"):
 		frappe.throw(_("Not permitted"), frappe.PermissionError)
@@ -232,6 +234,7 @@ def _revenue_dominant_between(company: str, currency: str, start: date, end: dat
 @frappe.whitelist()
 def revenue_trend(company: str, months: int = 12):
 	"""Monthly revenue & expense for the past `months` months in the dominant currency."""
+	_assert_company_scope(company)  # tenant isolation: reject a foreign company arg
 	company = _require_company(company)
 	if not _can_access_module(frappe.session.user, "dashboard"):
 		frappe.throw(_("Not permitted"), frappe.PermissionError)
@@ -310,6 +313,7 @@ def _monthly_totals_by_currency(
 @frappe.whitelist()
 def recent_activity(company: str, limit: int = 10):
 	"""Latest submitted documents across SI, PI, Payment Entry, Journal Entry."""
+	_assert_company_scope(company)  # tenant isolation: reject a foreign company arg
 	company = _require_company(company)
 	if not _can_access_module(frappe.session.user, "dashboard"):
 		frappe.throw(_("Not permitted"), frappe.PermissionError)

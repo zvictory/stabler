@@ -9,12 +9,29 @@ from stabler.api._common import _assert_can_read, _assert_can_write
 from frappe import _
 from frappe.utils import flt
 
-from stabler.api.organization import _can_access_module
+from stabler.api.organization import (
+    _ADMIN_ROLES,
+    _can_access_module,
+    _user_allowed_companies,
+)
 
 
 def _require_crm():
     if not _can_access_module(frappe.session.user, "crm"):
         frappe.throw(_("Not permitted"), frappe.PermissionError)
+
+
+def _scope_companies() -> list | None:
+    """Companies the current user may see in aggregate CRM reports, or None for
+    "no company filter". Admins and users with an empty allowed-companies list
+    (the "all companies" sentinel) return None. Otherwise the explicit list is
+    returned so callers can add a parametrized `company IN %(companies)s` filter.
+    """
+    user = frappe.session.user
+    if any(r in frappe.get_roles(user) for r in _ADMIN_ROLES):
+        return None
+    allowed = _user_allowed_companies(user)
+    return allowed or None
 
 
 _CRM_MANAGER_ROLES = {"Sales Manager", "System Manager", "Stabler Admin"}
@@ -389,8 +406,14 @@ def crm_metrics() -> dict:
     won = {s.name for s in statuses if (s.type or "").lower() == "won"} | {"Won"}
     lost = {s.name for s in statuses if (s.type or "").lower() == "lost"} | {"Lost"}
 
+    deal_filters: dict = {}
+    companies = _scope_companies()
+    if companies is not None:
+        deal_filters["company"] = ["in", companies]
+
     deals = frappe.get_all(
         "CRM Deal",
+        filters=deal_filters,
         fields=["status", "expected_monthly_volume", "deal_value", "needs_freezer", "modified"],
     )
     month_start = getdate(get_first_day(nowdate()))
@@ -432,9 +455,14 @@ def crm_analytics() -> dict:
     _require_crm()
     from frappe.utils import get_first_day, getdate, nowdate
 
+    deal_filters: dict = {"linked_customer": ["is", "set"]}
+    companies = _scope_companies()
+    if companies is not None:
+        deal_filters["company"] = ["in", companies]
+
     deals = frappe.get_all(
         "CRM Deal",
-        filters={"linked_customer": ["is", "set"]},
+        filters=deal_filters,
         fields=["linked_customer", "freezer_asset"],
     )
     customers = list({d.linked_customer for d in deals if d.linked_customer})
@@ -448,11 +476,16 @@ def crm_analytics() -> dict:
         return empty
 
     inv: dict = {}
+    inv_where = "docstatus = 1 AND customer IN %(cs)s"
+    inv_vals: dict = {"cs": tuple(customers)}
+    if companies is not None:
+        inv_where += " AND company IN %(companies)s"
+        inv_vals["companies"] = tuple(companies)
     for c, cnt, first, total in frappe.db.sql(
-        """SELECT customer, COUNT(*), MIN(posting_date), SUM(base_grand_total)
+        f"""SELECT customer, COUNT(*), MIN(posting_date), SUM(base_grand_total)
            FROM `tabSales Invoice`
-           WHERE docstatus = 1 AND customer IN %(cs)s GROUP BY customer""",
-        {"cs": tuple(customers)},
+           WHERE {inv_where} GROUP BY customer""",
+        inv_vals,
     ):
         inv[c] = {"count": int(cnt or 0), "first": first, "total": flt(total)}
 
@@ -522,9 +555,14 @@ def crm_report(from_date: str, to_date: str) -> dict:
     fd, td = getdate(from_date), getdate(to_date)
     empty = {"outlets": 0, "run_rate": 0.0, "sales": 0.0, "reorder_rate": 0, "avg_ttfo": None, "freezer_roi": None, "new_outlets": 0}
 
+    deal_filters: dict = {"linked_customer": ["is", "set"]}
+    companies = _scope_companies()
+    if companies is not None:
+        deal_filters["company"] = ["in", companies]
+
     deals = frappe.get_all(
         "CRM Deal",
-        filters={"linked_customer": ["is", "set"]},
+        filters=deal_filters,
         fields=["linked_customer", "deal_owner", "region", "expected_monthly_volume", "deal_value", "freezer_asset"],
     )
     cust_all = list({d.linked_customer for d in deals if d.linked_customer})
@@ -541,11 +579,16 @@ def crm_report(from_date: str, to_date: str) -> dict:
         return {"summary": empty, "by_rep": [], "by_region": []}
 
     inv: dict = {}
+    inv_where = "docstatus = 1 AND customer IN %(cs)s"
+    inv_vals: dict = {"cs": tuple(cohort)}
+    if companies is not None:
+        inv_where += " AND company IN %(companies)s"
+        inv_vals["companies"] = tuple(companies)
     for c, cnt, first, total in frappe.db.sql(
-        """SELECT customer, COUNT(*), MIN(posting_date), SUM(base_grand_total)
+        f"""SELECT customer, COUNT(*), MIN(posting_date), SUM(base_grand_total)
            FROM `tabSales Invoice`
-           WHERE docstatus = 1 AND customer IN %(cs)s GROUP BY customer""",
-        {"cs": tuple(cohort)},
+           WHERE {inv_where} GROUP BY customer""",
+        inv_vals,
     ):
         inv[c] = {"count": int(cnt or 0), "first": first, "total": flt(total)}
 
