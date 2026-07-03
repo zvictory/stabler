@@ -17,6 +17,7 @@ import BalanceChip from "../../components/BalanceChip.vue";
 import PartyAvatar from "../../components/PartyAvatar.vue";
 import ApexChart from "../../components/ApexChart.vue";
 import { getStatusBadgeClass } from "../../composables/status.js";
+import { useListViewState } from "../../composables/useListViewState.js";
 
 const session = useSession();
 const route = useRoute();
@@ -30,8 +31,12 @@ const loading = ref(false);
 const error = ref("");
 const customers = ref([]);
 const companyCurrency = ref("");
-const search = ref("");
-const onlyWithBalance = ref(false);
+
+// Persistent list state: URL ↔ localStorage (URL = source of truth).
+const { search, onlyWithBalance, filterGroup, filterTerritory, sortField, sortAsc, c: selectedName } = useListViewState(
+	"stabler.customers.listState",
+	{ search: "", filterGroup: "", filterTerritory: "", onlyWithBalance: false, sortField: "name", sortAsc: true, c: "" }
+);
 
 const selected = ref(null);
 const selectedDetail = ref(null);
@@ -43,7 +48,7 @@ const ledgerFromDate = ref("");
 const ledgerToDate = ref("");
 const ledgerTypeFilter = ref("");
 const ledgerSearch = ref("");
-const ledgerSortAsc = ref(true);
+const ledgerSortAsc = ref(false); // newest date first by default
 
 // Professional .xlsx of the open customer's ledger (opening / movements / running
 // balance / closing) — re-runs server-side for the current customer + date range.
@@ -97,11 +102,7 @@ const form = ref(blankCustomer());
 
 const currency = computed(() => companyCurrency.value || session.currency);
 
-// Sorting & Filtering for Master List
-const sortField = ref("name");
-const sortAsc = ref(true);
-const filterGroup = ref("");
-const filterTerritory = ref("");
+// Sorting & Filtering for Master List — provided by useListViewState above.
 
 const availableGroups = computed(() =>
 	[...new Set(customers.value.map((c) => c.customer_group).filter(Boolean))].sort()
@@ -281,12 +282,12 @@ async function loadLedger(customer) {
 
 async function selectCustomer(c) {
 	selected.value = c;
-	router.replace({ query: { ...route.query, c: c.name } });
+	selectedName.value = c.name; // composable syncs → URL + localStorage
 	custOrders.value = [];
 	recentInvoices.value = [];
 	ledgerTypeFilter.value = "";
 	ledgerSearch.value = "";
-	ledgerSortAsc.value = true;
+	ledgerSortAsc.value = false; // newest date first by default
 
 	if (!ledgerFromDate.value && !ledgerToDate.value) {
 		const r = defaultDateRange();
@@ -544,9 +545,9 @@ watch([ledgerFromDate, ledgerToDate], () => {
 onMounted(async () => {
 	await loadCustomers();
 	loadCockpit();
-	const cName = route.query?.c;
-	if (cName) {
-		const match = customers.value.find((c) => c.name === cName);
+	// selectedName is hydrated from URL/localStorage by useListViewState before this runs.
+	if (selectedName.value) {
+		const match = customers.value.find((c) => c.name === selectedName.value);
 		if (match) selectCustomer(match);
 	}
 });
@@ -554,7 +555,7 @@ onMounted(async () => {
 watch(activeCompany, () => {
 	selected.value = null;
 	ledger.value = null;
-	router.replace({ query: { ...route.query, c: undefined } });
+	selectedName.value = ""; // composable clears c from URL + localStorage
 	loadCustomers();
 	loadCockpit();
 });
@@ -650,8 +651,8 @@ watch(activeCompany, () => {
 											<td class="text-end font-monospace stbl-amount align-middle">
 												<div
 													:class="{
-														'text-red': Number(c.balance_acc ?? c.balance_base) > 0,
-														'text-green': Number(c.balance_acc ?? c.balance_base) < 0,
+														'text-green': Number(c.balance_acc ?? c.balance_base) > 0,
+														'text-red': Number(c.balance_acc ?? c.balance_base) < 0,
 														'text-secondary': !Number(c.balance_acc ?? c.balance_base),
 													}"
 												>
@@ -1217,6 +1218,7 @@ watch(activeCompany, () => {
 		:open="partyPayOpen"
 		party-type="Customer"
 		:party="selected.name"
+		:party-name="selected.customer_name"
 		:company="activeCompany"
 		@close="partyPayOpen = false"
 		@paid="partyPayOpen = false; loadLedger(selected); loadCustOrders(selected); selectCustomer(selected);"
