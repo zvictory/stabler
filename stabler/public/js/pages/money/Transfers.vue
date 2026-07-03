@@ -347,6 +347,27 @@ async function openCreate() {
 	markFormPristine();
 }
 
+// Render the transfer detail in transfer terms (From → To), not raw JE Dr/Cr rows.
+const transferView = computed(() => {
+	const d = detail.value;
+	if (!d?.accounts) return null;
+	const rows = d.accounts.filter((r) => !r.is_fx_rounding);
+	const credit = rows.find((r) => Number(r.credit_in_account_currency) > 0);
+	const debit = rows.find((r) => Number(r.debit_in_account_currency) > 0);
+	if (!credit || !debit) return null;
+	const fromAmt = Number(credit.credit_in_account_currency) || 0;
+	const toAmt = Number(debit.debit_in_account_currency) || 0;
+	const fromCcy = credit.account_currency || baseCurrency.value;
+	const toCcy = debit.account_currency || baseCurrency.value;
+	return {
+		fromAccount: credit.account_name || credit.account,
+		toAccount: debit.account_name || debit.account,
+		fromAmt, toAmt, fromCcy, toCcy,
+		cross: fromCcy !== toCcy,
+		rate: fromCcy !== toCcy && fromAmt ? toAmt / fromAmt : null,
+	};
+});
+
 async function openEditFromDetail() {
 	if (!detail.value?.name) return;
 	if (!accounts.value.length) await loadOptions();
@@ -707,8 +728,29 @@ watch(activeCompany, () => {
 					</div>
 				</div>
 
-				<h6 class="text-uppercase text-secondary small mb-2">{{ t("Postings") }}</h6>
-				<div class="table-responsive">
+				<h6 class="text-uppercase text-secondary small mb-2">{{ t("Transfer") }}</h6>
+				<div v-if="transferView" class="card border shadow-none mb-2">
+					<div class="card-body py-3">
+						<div class="row g-2 align-items-center">
+							<div class="col">
+								<div class="text-secondary small text-uppercase">{{ t("From") }}</div>
+								<div class="fw-medium text-truncate">{{ transferView.fromAccount }}</div>
+								<div class="font-monospace text-red">− {{ formatMoney(transferView.fromAmt, transferView.fromCcy, user.language) }}</div>
+							</div>
+							<div class="col-auto text-secondary"><i class="ti ti-arrow-right fs-2"></i></div>
+							<div class="col">
+								<div class="text-secondary small text-uppercase">{{ t("To") }}</div>
+								<div class="fw-medium text-truncate">{{ transferView.toAccount }}</div>
+								<div class="font-monospace text-green">+ {{ formatMoney(transferView.toAmt, transferView.toCcy, user.language) }}</div>
+							</div>
+						</div>
+						<div v-if="transferView.cross" class="text-secondary small mt-2 pt-2 border-top">
+							{{ t("Rate") }}: 1 {{ transferView.fromCcy }} = {{ formatMoney(transferView.rate, transferView.toCcy, user.language) }}
+						</div>
+					</div>
+				</div>
+				<!-- Fallback: raw postings if the legs can't be resolved -->
+				<div v-else class="table-responsive">
 					<table class="table table-sm table-vcenter">
 						<thead>
 							<tr>
