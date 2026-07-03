@@ -16,6 +16,7 @@ import BalanceChip from "../../components/BalanceChip.vue";
 import PartyAvatar from "../../components/PartyAvatar.vue";
 import ApexChart from "../../components/ApexChart.vue";
 import { getStatusBadgeClass } from "../../composables/status.js";
+import { useListViewState } from "../../composables/useListViewState.js";
 
 const session = useSession();
 const { activeCompany, user } = storeToRefs(session);
@@ -27,8 +28,12 @@ const loading = ref(false);
 const error = ref("");
 const suppliers = ref([]);
 const companyCurrency = ref("");
-const search = ref("");
-const onlyWithBalance = ref(false);
+
+// Persistent list state: URL ↔ localStorage (URL = source of truth).
+const { search, onlyWithBalance, filterGroup, sortField, sortAsc, c: selectedName } = useListViewState(
+	"stabler.suppliers.listState",
+	{ search: "", filterGroup: "", onlyWithBalance: false, sortField: "name", sortAsc: true, c: "" }
+);
 
 const selected = ref(null);
 const selectedDetail = ref(null);
@@ -92,13 +97,19 @@ const form = ref(blankSupplier());
 
 const currency = computed(() => companyCurrency.value || session.currency);
 
-// Sorting & Filtering for Master List
-const sortField = ref("name");
-const sortAsc = ref(true);
+// Sorting & Filtering for Master List — provided by useListViewState above.
+
+const availableGroups = computed(() =>
+	[...new Set(suppliers.value.map((s) => s.supplier_group).filter(Boolean))].sort()
+);
+const groupFilterOptions = computed(() => [
+	{ value: "", label: t("All groups") },
+	...availableGroups.value.map((g) => ({ value: g, label: g })),
+]);
 
 const filteredSuppliers = computed(() => {
 	let list = suppliers.value;
-	
+
 	if (search.value.trim()) {
 		const term = search.value.trim().toLowerCase();
 		list = list.filter(
@@ -107,7 +118,9 @@ const filteredSuppliers = computed(() => {
 				(s.name || "").toLowerCase().includes(term)
 		);
 	}
-	
+
+	if (filterGroup.value) list = list.filter((s) => s.supplier_group === filterGroup.value);
+
 	if (sortField.value === "name") {
 		list = [...list].sort((a, b) => {
 			const cmp = (a.supplier_name || "").localeCompare(b.supplier_name || "");
@@ -140,13 +153,14 @@ const ledgerRows = computed(() => {
 	const e = ledger.value?.entries || [];
 	let runBase = Number(ledger.value?.opening_base || 0);
 	let runAcc = Number(ledger.value?.opening_acc || 0);
-	return e.map((row) => {
+	return e.map((row, idx) => {
 		// Payables: credit increases amount we owe, debit reduces it
 		runBase += Number(row.credit || 0) - Number(row.debit || 0);
 		runAcc +=
 			Number(row.credit_in_account_currency || 0) -
 			Number(row.debit_in_account_currency || 0);
-		return { ...row, running_base: runBase, running_acc: runAcc };
+		// _seq preserves backend chronological order for same-date tiebreak.
+		return { ...row, _seq: idx, running_base: runBase, running_acc: runAcc };
 	});
 });
 
@@ -160,7 +174,15 @@ const voucherTypes = computed(() => [
 
 const filteredLedgerRows = computed(() => {
 	let list = ledgerRows.value || [];
-	
+
+	// Hide pure FX-revaluation rows — base-currency-only "Exchange Gain Or Loss"
+	// entries with ZERO account-currency movement. They never change the account-
+	// currency running balance, so here they're just empty "—/—" noise.
+	list = list.filter((r) =>
+		Math.abs(Number(r.debit_in_account_currency || 0)) > 0.005 ||
+		Math.abs(Number(r.credit_in_account_currency || 0)) > 0.005
+	);
+
 	if (ledgerTypeFilter.value) {
 		if (ledgerTypeFilter.value === "Invoice") {
 			list = list.filter(r => r.voucher_type === "Purchase Invoice");
@@ -183,7 +205,8 @@ const filteredLedgerRows = computed(() => {
 	}
 	
 	list = [...list].sort((a, b) => {
-		const cmp = String(a.posting_date || "").localeCompare(String(b.posting_date || ""));
+		const cmp = String(a.posting_date || "").localeCompare(String(b.posting_date || ""))
+			|| ((a._seq || 0) - (b._seq || 0)); // same-date tiebreak by chronological order
 		return ledgerSortAsc.value ? cmp : -cmp;
 	});
 	
@@ -262,6 +285,7 @@ async function loadLedger(supplier) {
 
 async function selectSupplier(s) {
 	selected.value = s;
+	selectedName.value = s.name; // composable syncs → URL + localStorage
 	suppOrders.value = [];
 	recentInvoices.value = [];
 	ledgerTypeFilter.value = "";
@@ -531,14 +555,20 @@ watch([ledgerFromDate, ledgerToDate], () => {
 	}
 });
 
-onMounted(() => {
-	loadSuppliers();
+onMounted(async () => {
+	await loadSuppliers();
 	loadCockpit();
+	// selectedName is hydrated from URL/localStorage by useListViewState before this runs.
+	if (selectedName.value) {
+		const match = suppliers.value.find((s) => s.name === selectedName.value);
+		if (match) selectSupplier(match);
+	}
 });
 
 watch(activeCompany, () => {
 	selected.value = null;
 	ledger.value = null;
+	selectedName.value = ""; // composable clears c from URL + localStorage
 	loadSuppliers();
 	loadCockpit();
 });
@@ -568,6 +598,13 @@ watch(activeCompany, () => {
 							</button>
 						</div>
 						<div class="p-2 border-bottom bg-light d-flex gap-2 flex-wrap align-items-center">
+							<Select
+								v-if="availableGroups.length"
+								v-model="filterGroup"
+								size="sm"
+								:options="groupFilterOptions"
+								style="max-width: 140px"
+							/>
 							<label class="form-check form-check-inline mb-0">
 								<input
 									v-model="onlyWithBalance"

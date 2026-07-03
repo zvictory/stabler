@@ -161,12 +161,14 @@ const ledgerRows = computed(() => {
 	const e = ledger.value?.entries || [];
 	let runBase = Number(ledger.value?.opening_base || 0);
 	let runAcc = Number(ledger.value?.opening_acc || 0);
-	return e.map((row) => {
+	return e.map((row, idx) => {
 		runBase += Number(row.debit || 0) - Number(row.credit || 0);
 		runAcc +=
 			Number(row.debit_in_account_currency || 0) -
 			Number(row.credit_in_account_currency || 0);
-		return { ...row, running_base: runBase, running_acc: runAcc };
+		// _seq preserves the backend chronological order (posting_date, creation ASC)
+		// so same-date rows sort correctly and the running balance stays monotonic.
+		return { ...row, _seq: idx, running_base: runBase, running_acc: runAcc };
 	});
 });
 
@@ -180,7 +182,16 @@ const voucherTypes = computed(() => [
 
 const filteredLedgerRows = computed(() => {
 	let list = ledgerRows.value || [];
-	
+
+	// Hide pure FX-revaluation rows — base-currency-only "Exchange Gain Or Loss"
+	// entries that adjust the USD value of the UZS receivable but have ZERO
+	// account-currency (UZS) movement. They never change the UZS running balance,
+	// so in this account-currency ledger they're just empty "—/—" noise.
+	list = list.filter((r) =>
+		Math.abs(Number(r.debit_in_account_currency || 0)) > 0.005 ||
+		Math.abs(Number(r.credit_in_account_currency || 0)) > 0.005
+	);
+
 	if (ledgerTypeFilter.value) {
 		if (ledgerTypeFilter.value === "Invoice") {
 			list = list.filter(r => r.voucher_type === "Sales Invoice");
@@ -203,7 +214,8 @@ const filteredLedgerRows = computed(() => {
 	}
 	
 	list = [...list].sort((a, b) => {
-		const cmp = String(a.posting_date || "").localeCompare(String(b.posting_date || ""));
+		const cmp = String(a.posting_date || "").localeCompare(String(b.posting_date || ""))
+			|| ((a._seq || 0) - (b._seq || 0)); // same-date tiebreak by chronological order
 		return ledgerSortAsc.value ? cmp : -cmp;
 	});
 	

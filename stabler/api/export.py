@@ -16,7 +16,7 @@ import json
 
 import frappe
 from frappe import _
-from frappe.utils import now_datetime
+from frappe.utils import flt, now_datetime
 
 from stabler.utils.excel_export import (
 	build_financial_statement_workbook,
@@ -412,6 +412,14 @@ def export_report_xlsx(report_key: str, filters: dict | str | None = None):
 		# Party ledger: opening/movements/running/closing via the ledger template.
 		data = _call_source(spec["source"], filters)
 		rows = data.get("entries") or []
+		# Hide pure FX-revaluation rows (base-only "Exchange Gain Or Loss", zero
+		# account-currency movement) so the exported ledger matches the on-screen
+		# ledger. Opening/closing come from the source unchanged.
+		rows = [
+			r for r in rows
+			if abs(flt(r.get("debit_in_account_currency"))) > 0.005
+			or abs(flt(r.get("credit_in_account_currency"))) > 0.005
+		]
 		party = filters.get(spec.get("party_filter", "")) or ""
 		shaped_meta = {
 			"currency": data.get("account_currency") or "",

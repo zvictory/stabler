@@ -270,6 +270,11 @@ def customer_balance_detail(company: str, customer: str, from_date: str = None, 
         d = flt(e.get("debit_in_account_currency"))
         c = flt(e.get("credit_in_account_currency"))
         run += d - c
+        # Skip pure FX-revaluation rows (base-only "Exchange Gain Or Loss") — zero
+        # account-currency movement, so they don't change the running balance; they
+        # would only add empty rows to this account-currency ledger.
+        if abs(d) < 0.005 and abs(c) < 0.005:
+            continue
         rows.append({
             "posting_date": e.get("posting_date"),
             "voucher_type": e.get("voucher_type"),

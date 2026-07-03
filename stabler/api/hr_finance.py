@@ -124,6 +124,10 @@ def employee_financials(company: str, employee: str) -> dict:
 		{"c": company, "e": employee},
 		as_dict=True,
 	)
+	# Skip pure FX-revaluation rows — base-currency-only "Exchange Gain Or Loss"
+	# entries with ZERO account-currency movement. They don't change the account-
+	# currency balance (net_owed is summed separately over all GL), so here they
+	# would only add empty rows to the ledger.
 	transactions = [{
 		"posting_date": str(m["posting_date"]) if m.get("posting_date") else None,
 		"_creation": str(m.get("creation") or ""),
@@ -135,7 +139,7 @@ def employee_financials(company: str, employee: str) -> dict:
 		"debit": flt(m.get("debit")),
 		"credit": flt(m.get("credit")),
 		"docstatus": 1,
-	} for m in gl]
+	} for m in gl if abs(flt(m.get("debit"))) > 0.005 or abs(flt(m.get("credit"))) > 0.005]
 
 	# Draft Journal Entries aren't in the GL yet — surface them so they can be
 	# reviewed, submitted or deleted from the ledger (transactions CRUD).
