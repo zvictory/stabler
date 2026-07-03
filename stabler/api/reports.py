@@ -26,7 +26,7 @@ from frappe import _
 from frappe.utils import flt
 
 from stabler.api._common import _require_company
-from stabler.api.sales import _sales_report_dates
+from stabler.api.sales import _sales_report_dates, _sales_report_period_expr
 
 
 def _base_currency(company: str) -> str:
@@ -868,4 +868,146 @@ def gross_margin_by_customer(company: str, from_date: str, to_date: str) -> dict
         {"key": "margin_pct", "label": _("Margin %"), "type": "percent", "align": "end"},
     ]
     meta = {**_margin_meta(company, start, end, zero_cost), "drill_param": "customer"}
+    return _shape(columns, rows, totals, meta)
+
+
+@frappe.whitelist()
+def sales_by_salesperson(company: str, from_date: str, to_date: str) -> dict:
+    _require_company(company)
+    _assert_company_scope(company)  # tenant isolation: reject a foreign company arg
+    start, end = _sales_report_dates(from_date, to_date)
+    rows = frappe.db.sql(
+        """
+        SELECT COALESCE(st.sales_person, 'Unassigned') AS sales_person,
+               si.currency,
+               SUM(CASE
+                   WHEN st.sales_person IS NULL THEN si.grand_total
+                   ELSE si.grand_total * COALESCE(st.allocated_percentage, 100) / 100
+               END) AS total,
+               COUNT(DISTINCT si.name) AS invoice_count
+        FROM `tabSales Invoice` si
+        LEFT JOIN `tabSales Team` st ON st.parent = si.name AND st.parenttype = 'Sales Invoice'
+        WHERE si.company = %(company)s
+          AND si.docstatus = 1
+          AND si.posting_date BETWEEN %(from_date)s AND %(to_date)s
+        GROUP BY COALESCE(st.sales_person, 'Unassigned'), si.currency
+        ORDER BY total DESC, sales_person ASC
+        LIMIT 500
+        """,
+        {"company": company, "from_date": start, "to_date": end},
+        as_dict=True,
+    )
+    totals = {
+        "total": sum(flt(r.total) for r in rows),
+        "invoice_count": sum(flt(r.invoice_count) for r in rows),
+    }
+    columns = [
+        {"key": "sales_person", "label": _("Salesperson"), "type": "text"},
+        {"key": "currency", "label": _("Currency"), "type": "text"},
+        {"key": "total", "label": _("Total"), "type": "money", "align": "end"},
+        {"key": "invoice_count", "label": _("Invoices"), "type": "int", "align": "end"},
+    ]
+    meta = {
+        "basis": "posting_date",
+        "currency": _base_currency(company),
+        "from": start,
+        "to": end,
+        "note": _(
+            "Submitted Sales Invoices only. Revenue allocated by Sales Team percentage; "
+            "unassigned invoices credited in full to 'Unassigned'."
+        ),
+    }
+    return _shape(columns, rows, totals, meta)
+
+
+@frappe.whitelist()
+def sales_orders(company: str, from_date: str, to_date: str) -> dict:
+    _require_company(company)
+    _assert_company_scope(company)  # tenant isolation: reject a foreign company arg
+    start, end = _sales_report_dates(from_date, to_date)
+    rows = frappe.db.sql(
+        """
+        SELECT customer, customer_name, currency,
+               COUNT(*) AS order_count,
+               SUM(grand_total) AS booked,
+               SUM(grand_total * (100 - COALESCE(per_delivered, 0)) / 100) AS to_deliver,
+               SUM(grand_total * (100 - COALESCE(per_billed, 0)) / 100) AS to_bill
+        FROM `tabSales Order`
+        WHERE company = %(company)s
+          AND docstatus = 1
+          AND transaction_date BETWEEN %(from_date)s AND %(to_date)s
+        GROUP BY customer, customer_name, currency
+        ORDER BY booked DESC, customer_name ASC
+        LIMIT 500
+        """,
+        {"company": company, "from_date": start, "to_date": end},
+        as_dict=True,
+    )
+    totals = {
+        "order_count": sum(flt(r.order_count) for r in rows),
+        "booked": sum(flt(r.booked) for r in rows),
+        "to_deliver": sum(flt(r.to_deliver) for r in rows),
+        "to_bill": sum(flt(r.to_bill) for r in rows),
+    }
+    columns = [
+        {"key": "customer_name", "label": _("Customer"), "type": "text"},
+        {"key": "currency", "label": _("Currency"), "type": "text"},
+        {"key": "order_count", "label": _("Orders"), "type": "int", "align": "end"},
+        {"key": "booked", "label": _("Booked"), "type": "money", "align": "end"},
+        {"key": "to_deliver", "label": _("To Deliver"), "type": "money", "align": "end"},
+        {"key": "to_bill", "label": _("To Bill"), "type": "money", "align": "end"},
+    ]
+    meta = {
+        "basis": "transaction_date",
+        "currency": _base_currency(company),
+        "from": start,
+        "to": end,
+        "note": _("Submitted Sales Orders only — booked (committed) value, not invoiced revenue."),
+    }
+    return _shape(columns, rows, totals, meta)
+
+
+@frappe.whitelist()
+def sales_trend(company: str, from_date: str, to_date: str, granularity: str = "month") -> dict:
+    _require_company(company)
+    _assert_company_scope(company)  # tenant isolation: reject a foreign company arg
+    start, end = _sales_report_dates(from_date, to_date)
+    period_expr = _sales_report_period_expr(granularity)
+    rows = frappe.db.sql(
+        f"""
+        SELECT {period_expr} AS period,
+               si.currency,
+               SUM(si.grand_total) AS total,
+               SUM(si.outstanding_amount) AS outstanding,
+               COUNT(*) AS invoice_count
+        FROM `tabSales Invoice` si
+        WHERE si.company = %(company)s
+          AND si.docstatus = 1
+          AND si.posting_date BETWEEN %(from_date)s AND %(to_date)s
+        GROUP BY {period_expr}, si.currency
+        ORDER BY period ASC
+        """,
+        {"company": company, "from_date": start, "to_date": end},
+        as_dict=True,
+    )
+    totals = {
+        "total": sum(flt(r.total) for r in rows),
+        "outstanding": sum(flt(r.outstanding) for r in rows),
+        "invoice_count": sum(flt(r.invoice_count) for r in rows),
+    }
+    columns = [
+        {"key": "period", "label": _("Period"), "type": "text"},
+        {"key": "currency", "label": _("Currency"), "type": "text"},
+        {"key": "total", "label": _("Total"), "type": "money", "align": "end"},
+        {"key": "outstanding", "label": _("Outstanding"), "type": "money", "align": "end"},
+        {"key": "invoice_count", "label": _("Invoices"), "type": "int", "align": "end"},
+    ]
+    meta = {
+        "basis": "posting_date",
+        "currency": _base_currency(company),
+        "from": start,
+        "to": end,
+        "note": _("Submitted Sales Invoices only, grouped by %s.")
+        % (_("day") if granularity == "day" else _("month")),
+    }
     return _shape(columns, rows, totals, meta)
