@@ -12,7 +12,7 @@ const tabs = [
 	{ name: "sales-invoices", path: "/sales/invoices", label: t("Invoices"), icon: "ti-file-invoice" },
 	{ name: "sales-aging", path: "/sales/aging", label: t("AR Aging"), icon: "ti-clock-hour-4" },
 	{ name: "sales-reserved-stock", path: "/sales/reserved-stock", label: t("Reserved Stock"), icon: "ti-lock" },
-	{ name: "sales-reports", path: "/sales/reports", label: t("Reports"), icon: "ti-chart-bar" },
+	{ name: "sales-reports", path: "/reports", label: t("Reports"), icon: "ti-chart-bar" },
 ];
 const activeTab = computed(() => route.name);
 </script>

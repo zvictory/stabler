@@ -10,6 +10,7 @@ import ReportSalesByItem from "./pages/reports/SalesByItem.vue";
 import ReportItemAbc from "./pages/reports/ItemAbc.vue";
 import DrillReport from "./pages/reports/DrillReport.vue";
 import ReportInventoryExpiry from "./pages/reports/InventoryExpiry.vue";
+import ReportSalesTrend from "./pages/reports/ReportSalesTrend.vue";
 import Profile from "./pages/Profile.vue";
 import MoneyHome from "./pages/money/MoneyHome.vue";
 import Accounts from "./pages/money/Accounts.vue";
@@ -34,7 +35,6 @@ import SourcingCompare from "./pages/sales/SourcingCompare.vue";
 import SalesInvoices from "./pages/sales/SalesInvoices.vue";
 import SalesInvoiceForm from "./pages/sales/SalesInvoiceForm.vue";
 import SalesReturnForm from "./pages/sales/SalesReturnForm.vue";
-import SalesReports from "./pages/sales/SalesReports.vue";
 import POS from "./pages/pos.vue";
 import SalesAging from "./pages/sales/Aging.vue";
 import ReservedStock from "./pages/sales/ReservedStock.vue";
@@ -154,6 +154,9 @@ const routes = [
 	{ path: "/reports/inventory-expiry", name: "report-inventory-expiry", component: ReportInventoryExpiry, meta: { title: t("Batch Expiry"), module: "inventory" } },
 	{ path: "/reports/margin-by-item", name: "report-margin-by-item", component: DrillReport, meta: { title: "Gross Margin by Item", module: "sales", report: { title: "Gross Margin by Item", summaryApi: "stabler.api.reports.gross_margin_by_item", detailApi: "stabler.api.reports.sales_by_item_detail", drillKey: "item_code", detailParam: "item_code", docPrefix: "/sales/invoices/", exportName: "margin_by_item" } } },
 	{ path: "/reports/margin-by-customer", name: "report-margin-by-customer", component: DrillReport, meta: { title: "Gross Margin by Customer", module: "sales", report: { title: "Gross Margin by Customer", summaryApi: "stabler.api.reports.gross_margin_by_customer", detailApi: "stabler.api.reports.sales_by_customer_detail", drillKey: "customer", detailParam: "customer", docPrefix: "/sales/invoices/", exportName: "margin_by_customer" } } },
+	{ path: "/reports/sales-by-salesperson", name: "report-sales-by-salesperson", component: DrillReport, meta: { title: "Sales by Salesperson", module: "sales", report: { title: "Sales by Salesperson", summaryApi: "stabler.api.reports.sales_by_salesperson", exportName: "sales_by_salesperson" } } },
+	{ path: "/reports/sales-orders", name: "report-sales-orders", component: DrillReport, meta: { title: "Sales Orders (Booked)", module: "sales", report: { title: "Sales Orders (Booked)", summaryApi: "stabler.api.reports.sales_orders", exportName: "sales_orders" } } },
+	{ path: "/reports/sales-trend", name: "report-sales-trend", component: ReportSalesTrend, meta: { title: t("Sales Trend"), module: "sales" } },
 	{ path: "/profile", name: "profile", component: Profile, meta: { title: t("Profile") } },
 	{ path: "/pos", name: "pos", component: POS, meta: { title: t("POS"), module: "sales" } },
 	{ path: "/manufacturing/line", name: "manufacturing-line", component: ManufacturingOperatorBoard, meta: { title: t("Operator Kiosk") } },
@@ -198,7 +201,7 @@ const routes = [
 			{ path: "returns/new", name: "sales-return-new", component: SalesReturnForm, meta: { title: t("New Sales Return") } },
 			{ path: "returns/:name", redirect: to => `/sales/invoices/${to.params.name}` },
 			{ path: "pos", redirect: "/pos" },
-			{ path: "reports", name: "sales-reports", component: SalesReports, meta: { title: t("Sales Reports") } },
+			{ path: "reports", redirect: "/reports" },
 			{ path: "invoices/:name/print", name: "sales-invoice-print", component: InvoicePrint, meta: { title: t("Invoice") } },
 			{ path: "invoices/:name/waybill", name: "sales-invoice-waybill", component: Waybill, meta: { title: t("Yuk xati") } },
 			{ path: "invoices/:name", name: "sales-invoice", component: SalesInvoiceForm, meta: { title: t("Sales Invoice") } },

@@ -37,10 +37,24 @@ const groups = computed(() => [
 		module: "sales",
 		reports: [
 			{
-				title: t("Sales Performance"),
-				description: t("Customer, item, trend, and salesperson reports from submitted invoices."),
-				path: "/sales/reports",
+				title: t("Sales by Salesperson"),
+				description: t("Revenue allocated by sales team member."),
+				path: "/reports/sales-by-salesperson",
 				icon: "ti-chart-bar",
+				badge: t("Sales"),
+			},
+			{
+				title: t("Sales Trend"),
+				description: t("Invoiced totals over time, by day or month."),
+				path: "/reports/sales-trend",
+				icon: "ti-trending-up",
+				badge: t("Sales"),
+			},
+			{
+				title: t("Sales Orders (Booked)"),
+				description: t("Booked value from Sales Orders, with amounts still to deliver and to bill."),
+				path: "/reports/sales-orders",
+				icon: "ti-truck-delivery",
 				badge: t("Sales"),
 			},
 			{
