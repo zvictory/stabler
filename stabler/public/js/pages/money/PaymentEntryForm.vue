@@ -142,6 +142,7 @@ function fromDetail(d) {
 		references: (d.references || []).map((r) => ({
 			voucher_type: r.reference_doctype,
 			voucher_no: r.reference_name,
+			reference_date: r.reference_date || "",
 			invoice_amount: Number(r.total_amount || 0),
 			outstanding_amount: Number(r.outstanding_amount || 0),
 			allocated: Number(r.allocated_amount || 0),
@@ -464,7 +465,11 @@ const typeBadge = (t) => {
 				<label class="form-label">
 					{{ form.payment_type === "Receive" ? t("Deposit to") : t("Pay from") }}
 				</label>
-				<div class="form-control-plaintext font-monospace py-1">{{ form.bank_account || "—" }}</div>
+				<div>
+					<span class="badge bg-blue-lt fs-3 fw-medium font-monospace px-3 py-2">
+						<i class="ti ti-wallet me-1"></i>{{ form.bank_account || "—" }}
+					</span>
+				</div>
 			</div>
 
 			<div class="col-md-6">
@@ -574,6 +579,7 @@ const typeBadge = (t) => {
 					<thead>
 						<tr>
 							<th>{{ t("Document") }}</th>
+							<th>{{ t("Date") }}</th>
 							<th class="text-end">{{ t("Total") }}</th>
 							<th class="text-end">{{ t("Outstanding") }}</th>
 							<th class="text-end">{{ t("Allocated") }}</th>
@@ -585,6 +591,7 @@ const typeBadge = (t) => {
 								<div class="fw-semibold">{{ r.voucher_no }}</div>
 								<div class="small text-secondary">{{ r.voucher_type }}</div>
 							</td>
+							<td class="text-nowrap">{{ r.reference_date ? formatDate(r.reference_date) : "—" }}</td>
 							<td class="text-end font-monospace">{{ formatMoney(r.invoice_amount, partyAccountCurrency || currency, user.language) }}</td>
 							<td class="text-end font-monospace">{{ formatMoney(r.outstanding_amount, partyAccountCurrency || currency, user.language) }}</td>
 							<td class="text-end font-monospace">{{ formatMoney(r.allocated, partyAccountCurrency || currency, user.language) }}</td>

@@ -1029,6 +1029,10 @@ def payment_entry_detail(name: str):
 				"total_amount": flt(r.total_amount),
 				"outstanding_amount": flt(r.outstanding_amount),
 				"allocated_amount": flt(r.allocated_amount),
+				"reference_date": (
+					str(frappe.db.get_value(r.reference_doctype, r.reference_name, "posting_date") or "")
+					if r.reference_doctype and r.reference_name else ""
+				),
 			}
 			for r in (doc.references or [])
 		],

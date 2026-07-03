@@ -29,6 +29,7 @@ const props = defineProps({
 	open: { type: Boolean, required: true },
 	partyType: { type: String, required: true }, // "Customer" | "Supplier"
 	party: { type: String, required: true },
+	partyName: { type: String, default: "" },
 	company: { type: String, required: true },
 });
 
@@ -322,7 +323,7 @@ async function submit() {
 			<div class="modal-content">
 				<div class="modal-header">
 					<h5 class="modal-title">
-						{{ titleVerb }} · <span class="text-secondary">{{ party }}</span>
+						{{ titleVerb }} · <span>{{ partyName || party }}</span>
 					</h5>
 					<button type="button" class="btn-close" :disabled="submitting" @click="close"></button>
 				</div>
@@ -336,7 +337,10 @@ async function submit() {
 						<div class="datagrid mb-3">
 							<div class="datagrid-item">
 								<div class="datagrid-title">{{ isReceive ? t("Customer") : t("Supplier") }}</div>
-								<div class="datagrid-content">{{ party }}</div>
+								<div class="datagrid-content">
+									<span class="fw-medium">{{ partyName || party }}</span>
+									<span v-if="partyName" class="text-secondary small font-monospace ms-1">{{ party }}</span>
+								</div>
 							</div>
 							<div class="datagrid-item">
 								<div class="datagrid-title">{{ t("Outstanding") }}</div>
@@ -458,10 +462,6 @@ async function submit() {
 								</div>
 							</div>
 
-							<div class="col-md-4 offset-md-8">
-								<label class="form-label">{{ t("Reference date") }}</label>
-								<DateInput v-model="form.reference_date" :disabled="submitting" />
-							</div>
 						</div>
 					</div>
 				</div>
