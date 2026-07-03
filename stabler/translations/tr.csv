@@ -34,7 +34,6 @@ ARCA,ARCA
 ARCA Payment Events,ARCA Ödeme Olayları
 Abbr,Kısaltma
 Absent,Devamsız
-Ambiguous,Belirsiz
 Accept Return,
 Access Review,Erişim İncelemesi
 Access token,
@@ -174,6 +173,7 @@ Allowances are hidden — payroll access required.,
 Allowed users,İzin verilen kullanıcılar
 Already Transferred,
 Already accrued for this month.,Bu ay için zaten tahakkuk yapılmış.
+Ambiguous,Belirsiz
 Amend,Düzelt
 Amend (new draft),Düzelt (yeni taslak)
 Amend expense,
@@ -323,6 +323,7 @@ Board,Pano
 Bonus,Prim
 Book rate,
 Booked,Sipariş edildi
+"Booked value from Sales Orders, with amounts still to deliver and to bill.","Satış Siparişlerinden rezerve edilen tutar; teslim edilecek ve faturalanacak tutarlarla birlikte."
 Books Dr Salary Expense / Cr Salary Payable as a draft — submit it from the ledger to post.,Taslak oluşturur: Borç Maaş Gideri / Alacak Ödenecek Maaş — defterden onaylayın.
 Books each locked employee's net as a payable (Dr salary expense / Cr salary payable). Idempotent — runs once per period.,Her kilitli çalışanın netini bir borca yazar (Bç maaş gideri / Al maaş borcu). İdempotent — dönem başına bir kez.
 Books locked nets to salary payable.,Kilitli netleri maaş borcuna yazar.
@@ -1169,7 +1170,7 @@ Google Drive libraries are not installed on the server. ,
 Grace period (min),
 Grand Total,Genel Toplam
 Grand total,Genel toplam
-Granularity,
+Granularity,Ayrıntı Düzeyi
 Gross,Brüt
 Gross Margin by Customer,Müşteriye göre brüt marj
 Gross Margin by Item,Ürüne göre brüt marj
@@ -1267,6 +1268,7 @@ Invoice #,
 Invoice not submitted yet.,
 Invoice number or customer…,
 Invoiced,Faturalandı
+"Invoiced totals over time, by day or month.","Zaman içinde günlük veya aylık faturalanan toplamlar."
 Invoiced without stock movement — stock still reserved; needs a delivery/backfill or manual close.,
 Invoices,Faturalar
 Issue,Sorun
@@ -2354,6 +2356,7 @@ Revaluation saved as draft: {0},
 Revaluation submitted: {0},
 Revenue,Gelir
 Revenue MTD,Gelir (Bu Ay)
+Revenue allocated by sales team member.,
 Revenue vs. Expense (12 months),Gelir - Gider (12 ay)
 "Revenue − COGS (line buying rate, fallback item valuation). Submitted; returns netted.","Gelir − SMM (satır alış fiyatı, yedek: kalem değerleme). Onaylanmış; iadeler netleştirilmiş."
 "Revenue − COGS per customer, with margin %.","Müşteri başına gelir − SMM, marj % ile."
@@ -2418,13 +2421,14 @@ Sales Order is already {0}.,
 Sales Order is not closed or on hold.,
 Sales Order {0} must be submitted before invoicing,Fatura düzenlenmeden önce {0} Satış Siparişi onaylanmalıdır
 Sales Orders,Satış Siparişleri
+Sales Orders (Booked),Satış Siparişleri (Rezerve Edilen)
 Sales Orders and Sales Invoices can only be created or changed through the Stabler app.,
 Sales Performance,
 Sales Reports,
-Sales Trend,
+Sales Trend,Satış Trendi
 Sales by Customer,Müşteriye göre satış
 Sales by Item,Ürüne göre satış
-Sales by Salesperson,
+Sales by Salesperson,Satış temsilcisine göre satış
 Sales item,Satış kalemi
 Sales order name is required.,
 Sales reservations and stock committed to orders.,
@@ -2701,6 +2705,9 @@ Submit transfer,Transferi onayla
 Submitted,Onaylandı
 Submitted At,Onaylanma Zamanı
 Submitted Sales Invoices only,
+"Submitted Sales Invoices only, grouped by %s.","Yalnızca onaylanmış Satış Faturaları, %s'e göre gruplanmış."
+Submitted Sales Invoices only. Revenue allocated by Sales Team percentage; ,Yalnızca onaylanmış Satış Faturaları. Gelir, Satış Ekibi yüzdesine göre dağıtılır;
+"Submitted Sales Orders only — booked (committed) value, not invoiced revenue.","Yalnızca onaylanmış Satış Siparişleri — rezerve edilen (taahhüt edilen) tutar, faturalanan gelir değil."
 Submitted bills; returns netted.,Onaylanmış alış faturaları; iadeler netleştirilmiş.
 Submitted budgets vs GL actuals (debit − credit). Income favorable = actual > budget; cost favorable = actual < budget.,
 Submitted for approval,Onaya gönderildi
@@ -2826,6 +2833,8 @@ Timepay refresh token must expire after the access token.,
 Times & minutes,Saatler ve dakikalar
 Timestamp,
 To,Kime
+To Bill,Faturalanacak
+To Deliver,Teslim Edilecek
 To account,Alıcı hesap
 To bill,Faturalanacak
 To date,
@@ -3096,11 +3105,11 @@ You raised this — another user must approve it.,Bu talebi siz oluşturdunuz �
 "Your books are empty. Get started by adding a customer, recording your first sale, or logging an opening balance.","Defteriniz boş. Müşteri ekleyerek, ilk satışınızı kaydederek veya açılış bakiyesi girerek başlayın."
 Yuk xati,Yuk xati
 absent,gelmedi
-ambiguous,belirsiz
 across all statuses,tüm durumlarda
 active,
 active staff,aktif çalışan
 against,
+ambiguous,belirsiz
 avail,mev.
 available,
 blocker(s),
@@ -3114,6 +3123,7 @@ create and submit,
 critical,kritik
 customer credit,
 date_str and hire_date are required.,
+day,gün
 days,gün
 default,
 department,bölüm
@@ -3153,6 +3163,7 @@ located,konumlu
 medium,orta
 min,
 mo,ay
+month,ay
 more,daha fazla
 moves stock,
 name is required.,

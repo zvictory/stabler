@@ -34,7 +34,6 @@ ARCA,ARCA
 ARCA Payment Events,ARCA Тўлов воқеалари
 Abbr,Қисқартма
 Absent,Йўқ
-Ambiguous,Ноаниқ
 Accept Return,
 Access Review,Киришни текшириш
 Access token,
@@ -175,6 +174,7 @@ Allowances are hidden — payroll access required.,
 Allowed users,Рухсат этилган фойдаланувчилар
 Already Transferred,
 Already accrued for this month.,Бу ой учун аллақачон таҳаккук қилинган.
+Ambiguous,Ноаниқ
 Amend,Тўзатиш
 Amend (new draft),Тузатиш (янги қоралама)
 Amend expense,
@@ -325,6 +325,7 @@ Board,Доска
 Bonus,Бонус
 Book rate,
 Booked,Буюртма қилинган
+"Booked value from Sales Orders, with amounts still to deliver and to bill.","Сотув буюртмаларидан банд қилинган сумма, етказиб бериш ва ҳисоб-фактура қилиш учун қолган суммалар билан."
 Books Dr Salary Expense / Cr Salary Payable as a draft — submit it from the ledger to post.,Қоралама ёзади: Дт Ойлик харажати / Кт Ойлик тўланадиган — дафтардан тасдиқланг.
 Books each locked employee's net as a payable (Dr salary expense / Cr salary payable). Idempotent — runs once per period.,Ҳар бир қулфланган ходимнинг соф ойлигини мажбуриятга ёзади (Дт ойлик харажати / Кт тўланадиган ойлик). Идемпотент — ҳар даврда бир марта.
 Books locked nets to salary payable.,Соф ойликларни тўланадиган ойликка ёзади.
@@ -1176,7 +1177,7 @@ Google Drive libraries are not installed on the server. ,
 Grace period (min),
 Grand Total,Умумий жами
 Grand total,Умумий жами
-Granularity,
+Granularity,Тафсилот даражаси
 Gross,Ҳисобланган
 Gross Margin by Customer,Мижоз бўйича ялпи фойда
 Gross Margin by Item,Маҳсулот бўйича ялпи фойда
@@ -1274,6 +1275,7 @@ Invoice #,Ҳисоб варақаси #
 Invoice not submitted yet.,
 Invoice number or customer…,
 Invoiced,Ҳисоб-фактура берилган
+"Invoiced totals over time, by day or month.","Вақт давомида кунлик ёки ойлик ҳисоб-фактура суммалари."
 Invoiced without stock movement — stock still reserved; needs a delivery/backfill or manual close.,
 Invoices,Ҳисоб варақалари
 Issue,Мушаммас
@@ -2366,6 +2368,7 @@ Revaluation saved as draft: {0},
 Revaluation submitted: {0},
 Revenue,Даромад
 Revenue MTD,Ой бошидан даромад
+Revenue allocated by sales team member.,
 Revenue vs. Expense (12 months),Даромад ва харажатлар (12 ой)
 "Revenue − COGS (line buying rate, fallback item valuation). Submitted; returns netted.","Тушум − Таннарх (сатр харид нархи, заҳира: товар баҳолаш). Тасдиқланган; қайтаришлар нетто."
 "Revenue − COGS per customer, with margin %.","Даромад − таннарх мижоз бўйича, фойда % билан."
@@ -2430,13 +2433,14 @@ Sales Order is already {0}.,
 Sales Order is not closed or on hold.,
 Sales Order {0} must be submitted before invoicing,Сотув буюртмаси {0} ҳисобнома яратишдан олдин жўнатилиши керак
 Sales Orders,Сотув буюртмалари
+Sales Orders (Booked),Сотув буюртмалари (Банд қилинган)
 Sales Orders and Sales Invoices can only be created or changed through the Stabler app.,
 Sales Performance,
 Sales Reports,
-Sales Trend,
+Sales Trend,Савдо динамикаси
 Sales by Customer,Мижозлар бўйича савдо
 Sales by Item,Маҳсулот бўйича савдо
-Sales by Salesperson,
+Sales by Salesperson,Сотувчи бўйича савдо
 Sales item,Сотув товари
 Sales order name is required.,
 Sales reservations and stock committed to orders.,
@@ -2714,6 +2718,9 @@ Submit transfer,Ўтказмани тасдиқлаш
 Submitted,Тасдиқланган
 Submitted At,Тасдиқланган вақти
 Submitted Sales Invoices only,
+"Submitted Sales Invoices only, grouped by %s.","Фақат тасдиқланган Савдо ҳисоб-фактуралари, %s бўйича гуруҳланган."
+Submitted Sales Invoices only. Revenue allocated by Sales Team percentage; ,Фақат тасдиқланган Савдо ҳисоб-фактуралари. Даромад Савдо жамоаси фоизи бўйича тақсимланган;
+"Submitted Sales Orders only — booked (committed) value, not invoiced revenue.","Фақат тасдиқланган Сотув буюртмалари — банд қилинган (мажбурий) сумма, ҳисоб-фактура қилинган даромад эмас."
 Submitted bills; returns netted.,Тасдиқланган харид ҳисоб-фактуралари; қайтаришлар нетто.
 Submitted budgets vs GL actuals (debit − credit). Income favorable = actual > budget; cost favorable = actual < budget.,
 Submitted for approval,Тасдиқлашга юборилди
@@ -3113,11 +3120,11 @@ You raised this — another user must approve it.,Бу сўровни сиз я�
 "Your books are empty. Get started by adding a customer, recording your first sale, or logging an opening balance.","Сизнинг китобларингиз бўш. Харидор қўшиб, биринчи сотувингизни ёзиб ёки ўзаро баланси қўйиб бошлаинг."
 Yuk xati,Юк хати
 absent,келмаган
-ambiguous,ноаниқ
 across all statuses,барча ҳолатлар бўйича
 active,
 active staff,фаол ходим
 against,
+ambiguous,ноаниқ
 avail,мавж.
 available,
 blocker(s),
@@ -3131,6 +3138,7 @@ create and submit,
 critical,критик
 customer credit,
 date_str and hire_date are required.,
+day,кун
 days,кун
 default,
 department,бўлим
@@ -3170,6 +3178,7 @@ located,жойлашувли
 medium,ўрта
 min,
 mo,ой
+month,ой
 more,яна
 moves stock,
 name is required.,

@@ -34,7 +34,6 @@ ARCA,ARCA
 ARCA Payment Events,ARCA Payment Events
 Abbr,Abbr
 Absent,Absent
-Ambiguous,Ambiguous
 Accept Return,Accept Return
 Access Review,Access Review
 Access token,Access token
@@ -174,6 +173,7 @@ Allowances are hidden — payroll access required.,Allowances are hidden — pay
 Allowed users,Allowed users
 Already Transferred,Already Transferred
 Already accrued for this month.,Already accrued for this month.
+Ambiguous,Ambiguous
 Amend,Amend
 Amend (new draft),Amend (new draft)
 Amend expense,Amend expense
@@ -323,6 +323,7 @@ Board,Board
 Bonus,Bonus
 Book rate,Book rate
 Booked,Booked
+"Booked value from Sales Orders, with amounts still to deliver and to bill.","Booked value from Sales Orders, with amounts still to deliver and to bill."
 Books Dr Salary Expense / Cr Salary Payable as a draft — submit it from the ledger to post.,Books Dr Salary Expense / Cr Salary Payable as a draft — submit it from the ledger to post.
 Books each locked employee's net as a payable (Dr salary expense / Cr salary payable). Idempotent — runs once per period.,Books each locked employee's net as a payable (Dr salary expense / Cr salary payable). Idempotent — runs once per period.
 Books locked nets to salary payable.,Books locked nets to salary payable.
@@ -1272,6 +1273,7 @@ Invoice #,Invoice #
 Invoice not submitted yet.,Invoice not submitted yet.
 Invoice number or customer…,Invoice number or customer…
 Invoiced,Invoiced
+"Invoiced totals over time, by day or month.","Invoiced totals over time, by day or month."
 Invoiced without stock movement — stock still reserved; needs a delivery/backfill or manual close.,Invoiced without stock movement — stock still reserved; needs a delivery/backfill or manual close.
 Invoices,Invoices
 Issue,Issue
@@ -2363,6 +2365,7 @@ Revaluation saved as draft: {0},Revaluation saved as draft: {0}
 Revaluation submitted: {0},Revaluation submitted: {0}
 Revenue,Revenue
 Revenue MTD,Revenue MTD
+Revenue allocated by sales team member.,Revenue allocated by sales team member.
 Revenue vs. Expense (12 months),Revenue vs. Expense (12 months)
 "Revenue − COGS (line buying rate, fallback item valuation). Submitted; returns netted.","Revenue − COGS (line buying rate, fallback item valuation). Submitted; returns netted."
 "Revenue − COGS per customer, with margin %.","Revenue − COGS per customer, with margin %."
@@ -2427,6 +2430,7 @@ Sales Order is already {0}.,Sales Order is already {0}.
 Sales Order is not closed or on hold.,Sales Order is not closed or on hold.
 Sales Order {0} must be submitted before invoicing,Sales Order {0} must be submitted before invoicing
 Sales Orders,Sales Orders
+Sales Orders (Booked),Sales Orders (Booked)
 Sales Orders and Sales Invoices can only be created or changed through the Stabler app.,Sales Orders and Sales Invoices can only be created or changed through the Stabler app.
 Sales Performance,Sales Performance
 Sales Reports,Sales Reports
@@ -2711,6 +2715,9 @@ Submit transfer,Submit transfer
 Submitted,Submitted
 Submitted At,Submitted At
 Submitted Sales Invoices only,Submitted Sales Invoices only
+"Submitted Sales Invoices only, grouped by %s.","Submitted Sales Invoices only, grouped by %s."
+Submitted Sales Invoices only. Revenue allocated by Sales Team percentage; ,Submitted Sales Invoices only. Revenue allocated by Sales Team percentage; 
+"Submitted Sales Orders only — booked (committed) value, not invoiced revenue.","Submitted Sales Orders only — booked (committed) value, not invoiced revenue."
 Submitted bills; returns netted.,Submitted bills; returns netted.
 Submitted budgets vs GL actuals (debit − credit). Income favorable = actual > budget; cost favorable = actual < budget.,Submitted budgets vs GL actuals (debit − credit). Income favorable = actual > budget; cost favorable = actual < budget.
 Submitted for approval,Submitted for approval
@@ -2836,6 +2843,8 @@ Timepay refresh token must expire after the access token.,Timepay refresh token 
 Times & minutes,Times & minutes
 Timestamp,Timestamp
 To,To
+To Bill,To Bill
+To Deliver,To Deliver
 To account,To account
 To bill,To bill
 To date,To date
@@ -3106,11 +3115,11 @@ You raised this — another user must approve it.,You raised this — another us
 "Your books are empty. Get started by adding a customer, recording your first sale, or logging an opening balance.","Your books are empty. Get started by adding a customer, recording your first sale, or logging an opening balance."
 Yuk xati,Yuk xati
 absent,absent
-ambiguous,ambiguous
 across all statuses,across all statuses
 active,active
 active staff,active staff
 against,against
+ambiguous,ambiguous
 avail,avail
 available,available
 blocker(s),blocker(s)
@@ -3124,6 +3133,7 @@ create and submit,create and submit
 critical,critical
 customer credit,customer credit
 date_str and hire_date are required.,date_str and hire_date are required.
+day,day
 days,days
 default,default
 department,department
@@ -3163,6 +3173,7 @@ located,located
 medium,medium
 min,min
 mo,mo
+month,month
 more,more
 moves stock,moves stock
 name is required.,name is required.

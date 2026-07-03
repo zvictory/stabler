@@ -36,7 +36,6 @@ ARCA Payment Events,Платежи ARCA
 ARCA payment webhook events appear here.,Здесь отображаются события вебхуков платежей ARCA.
 Abbr,Сокр.
 Absent,Отсутствует
-Ambiguous,Не определено
 Accept Return,
 Accepted,Принят
 Access Review,Проверка доступа
@@ -179,6 +178,7 @@ Allowances are hidden — payroll access required.,
 Allowed users,Разрешённые пользователи
 Already Transferred,
 Already accrued for this month.,За этот месяц уже начислено.
+Ambiguous,Не определено
 Amend,Изменить
 Amend (new draft),Исправить (новый черновик)
 Amend expense,
@@ -330,6 +330,7 @@ Board,Доска
 Bonus,Премия
 Book rate,
 Booked,Заказано
+"Booked value from Sales Orders, with amounts still to deliver and to bill.","Забронированная сумма по заказам на продажу, с указанием сумм к доставке и к оплате."
 Books Dr Salary Expense / Cr Salary Payable as a draft — submit it from the ledger to post.,Создаёт черновик: Дт Расходы на ЗП / Кт ЗП к выплате — проведите его в книге.
 Books each locked employee's net as a payable (Dr salary expense / Cr salary payable). Idempotent — runs once per period.,Записывает нетто каждого заблокированного сотрудника в кредиторскую задолженность (Дт расход зарплаты / Кт зарплата к выплате). Идемпотентно — раз на период.
 Books locked nets to salary payable.,Записывает нетто в зарплату к выплате.
@@ -1183,7 +1184,7 @@ Google Drive libraries are not installed on the server. ,
 Grace period (min),
 Grand Total,Итого
 Grand total,Итого
-Granularity,
+Granularity,Детализация
 Gross,Начислено
 Gross Margin by Customer,Валовая прибыль по клиентам
 Gross Margin by Item,Валовая прибыль по товарам
@@ -1281,6 +1282,7 @@ Invoice #,Счёт №
 Invoice not submitted yet.,
 Invoice number or customer…,
 Invoiced,Выставлен счёт
+"Invoiced totals over time, by day or month.","Суммы по счетам за период, по дням или месяцам."
 Invoiced without stock movement — stock still reserved; needs a delivery/backfill or manual close.,
 Invoices,Счета
 Issue,Проблема
@@ -2373,6 +2375,7 @@ Revaluation saved as draft: {0},
 Revaluation submitted: {0},
 Revenue,Доход
 Revenue MTD,Выручка с начала месяца
+Revenue allocated by sales team member.,
 Revenue vs. Expense (12 months),Доход против расходов (12 месяцев)
 "Revenue − COGS (line buying rate, fallback item valuation). Submitted; returns netted.","Выручка − СБП (закупочная цена строки, запасная: оценка товара). Проведённые; возвраты нетто."
 "Revenue − COGS per customer, with margin %.","Выручка − себестоимость по клиентам, с маржой %."
@@ -2437,13 +2440,14 @@ Sales Order is already {0}.,
 Sales Order is not closed or on hold.,
 Sales Order {0} must be submitted before invoicing,Заказ продажи {0} должен быть отправлен перед выставлением счёта
 Sales Orders,Заказы продажи
+Sales Orders (Booked),Заказы на продажу (забронировано)
 Sales Orders and Sales Invoices can only be created or changed through the Stabler app.,
 Sales Performance,
 Sales Reports,
-Sales Trend,
+Sales Trend,Динамика продаж
 Sales by Customer,Продажи по клиентам
 Sales by Item,Продажи по товарам
-Sales by Salesperson,
+Sales by Salesperson,Продажи по продавцам
 Sales item,Товар продажи
 Sales order name is required.,
 Sales reservations and stock committed to orders.,
@@ -2721,6 +2725,9 @@ Submit transfer,Отправить перевод
 Submitted,Отправлен
 Submitted At,Время отправки
 Submitted Sales Invoices only,
+"Submitted Sales Invoices only, grouped by %s.","Только проведённые счета-фактуры продаж, сгруппированные по %s."
+Submitted Sales Invoices only. Revenue allocated by Sales Team percentage; ,Только проведённые счета-фактуры продаж. Выручка распределена по проценту команды продаж;
+"Submitted Sales Orders only — booked (committed) value, not invoiced revenue.","Только проведённые заказы на продажу — забронированная (подтверждённая) сумма, а не выручка по счетам."
 Submitted bills; returns netted.,Проведённые счета покупки; возвраты нетто.
 Submitted budgets vs GL actuals (debit − credit). Income favorable = actual > budget; cost favorable = actual < budget.,
 Submitted for approval,Отправлено на согласование
@@ -3120,11 +3127,11 @@ You raised this — another user must approve it.,Вы создали эту з�
 "Your books are empty. Get started by adding a customer, recording your first sale, or logging an opening balance.","Ваши книги пусты. Начните с добавления клиента, записи первой продажи или ввода начального остатка."
 Yuk xati,Юк хати
 absent,отсутствовал
-ambiguous,не определено
 across all statuses,по всем статусам
 active,
 active staff,активных сотрудников
 against,
+ambiguous,не определено
 avail,дост.
 available,
 blocker(s),
@@ -3138,6 +3145,7 @@ create and submit,
 critical,критический
 customer credit,
 date_str and hire_date are required.,
+day,день
 days,дн.
 default,
 department,отдел
@@ -3177,6 +3185,7 @@ located,с геолокацией
 medium,средний
 min,
 mo,мес
+month,месяц
 more,ещё
 moves stock,
 name is required.,

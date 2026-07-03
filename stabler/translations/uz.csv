@@ -34,7 +34,6 @@ ARCA,ARCA
 ARCA Payment Events,ARCA To'lov Voqealari
 Abbr,Qisqartma
 Absent,Yo'q
-Ambiguous,Noaniq
 Accept Return,
 Access Review,Kirishni tekshirish
 Access token,
@@ -175,6 +174,7 @@ Allowances are hidden — payroll access required.,
 Allowed users,Ruxsat etilgan foydalanuvchilar
 Already Transferred,
 Already accrued for this month.,Bu oy uchun allaqachon tahakkuk qilingan.
+Ambiguous,Noaniq
 Amend,O'zgartirilgan
 Amend (new draft),Tuzatish (yangi qoralama)
 Amend expense,
@@ -325,6 +325,7 @@ Board,Doska
 Bonus,Bonus
 Book rate,
 Booked,Buyurtma qilingan
+"Booked value from Sales Orders, with amounts still to deliver and to bill.","Sotuv buyurtmalaridan band qilingan summa, yetkazib berish va hisob-faktura qilish uchun qolgan summalar bilan."
 Books Dr Salary Expense / Cr Salary Payable as a draft — submit it from the ledger to post.,Qoralama yozadi: Dt Oylik xarajati / Kt Oylik to'lanadigan — daftardan tasdiqlang.
 Books each locked employee's net as a payable (Dr salary expense / Cr salary payable). Idempotent — runs once per period.,Har bir qulflangan xodimning sof oyligini majburiyatga yozadi (Dt oylik xarajati / Kt to'lanadigan oylik). Idempotent — har davrda bir marta.
 Books locked nets to salary payable.,Sof oyliklarni to'lanadigan oylikka yozadi.
@@ -1176,7 +1177,7 @@ Google Drive libraries are not installed on the server. ,
 Grace period (min),
 Grand Total,Umumiy summa
 Grand total,Umumiy summa
-Granularity,
+Granularity,Tafsilot darajasi
 Gross,Hisoblangan
 Gross Margin by Customer,Mijoz bo‘yicha yalpi foyda
 Gross Margin by Item,Mahsulot bo‘yicha yalpi foyda
@@ -1274,6 +1275,7 @@ Invoice #,Hisob-faktura №
 Invoice not submitted yet.,
 Invoice number or customer…,
 Invoiced,Hisob-faktura berilgan
+"Invoiced totals over time, by day or month.","Vaqt davomida kunlik yoki oylik hisob-faktura summalari."
 Invoiced without stock movement — stock still reserved; needs a delivery/backfill or manual close.,
 Invoices,Hisob-fakturalar
 Issue,Masala
@@ -2366,6 +2368,7 @@ Revaluation saved as draft: {0},
 Revaluation submitted: {0},
 Revenue,Daromad
 Revenue MTD,Oy boshidan daromad
+Revenue allocated by sales team member.,
 Revenue vs. Expense (12 months),Daromad va xarajat (12 oy)
 "Revenue − COGS (line buying rate, fallback item valuation). Submitted; returns netted.","Tushum − Tannarx (satr xarid narxi, zahira: tovar baholash). Tasdiqlangan; qaytarishlar netto."
 "Revenue − COGS per customer, with margin %.","Daromad − tannarx mijoz bo‘yicha, foyda % bilan."
@@ -2430,13 +2433,14 @@ Sales Order is already {0}.,
 Sales Order is not closed or on hold.,
 Sales Order {0} must be submitted before invoicing,Sotuv buyurtmasi {0} hisob-faktura qilinishidan oldin taqdim etilishi kerak
 Sales Orders,Sotuv buyurtmalari
+Sales Orders (Booked),Sotuv buyurtmalari (Band qilingan)
 Sales Orders and Sales Invoices can only be created or changed through the Stabler app.,
 Sales Performance,
 Sales Reports,
-Sales Trend,
+Sales Trend,Savdo dinamikasi
 Sales by Customer,Mijozlar bo‘yicha savdo
 Sales by Item,Mahsulot bo‘yicha savdo
-Sales by Salesperson,
+Sales by Salesperson,Sotuvchi bo'yicha savdo
 Sales item,Sotuv turi
 Sales order name is required.,
 Sales reservations and stock committed to orders.,
@@ -2714,6 +2718,9 @@ Submit transfer,Transferni tasdiqlash
 Submitted,Tasdiqlangan
 Submitted At,Tasdiqlangan vaqti
 Submitted Sales Invoices only,
+"Submitted Sales Invoices only, grouped by %s.","Faqat tasdiqlangan Savdo hisob-fakturalari, %s bo'yicha guruhlangan."
+Submitted Sales Invoices only. Revenue allocated by Sales Team percentage; ,Faqat tasdiqlangan Savdo hisob-fakturalari. Daromad Savdo jamoasi foizi bo'yicha taqsimlangan;
+"Submitted Sales Orders only — booked (committed) value, not invoiced revenue.","Faqat tasdiqlangan Sotuv buyurtmalari — band qilingan (majburiy) summa, hisob-faktura qilingan daromad emas."
 Submitted bills; returns netted.,Tasdiqlangan xarid hisob-fakturalari; qaytarishlar netto.
 Submitted budgets vs GL actuals (debit − credit). Income favorable = actual > budget; cost favorable = actual < budget.,
 Submitted for approval,Tasdiqlashga yuborildi
@@ -3113,11 +3120,11 @@ You raised this — another user must approve it.,Bu so'rovni siz yaratdingiz �
 "Your books are empty. Get started by adding a customer, recording your first sale, or logging an opening balance.","Sizning kitoplaringiz bo'sh. Xaridor qo'shish, birinchi sotuvi qayd etish yoki ochilish qoldiqlarini kiritish bilan boshlang."
 Yuk xati,Yuk xati
 absent,kelmagan
-ambiguous,noaniq
 across all statuses,barcha holatlar bo'yicha
 active,
 active staff,faol xodim
 against,
+ambiguous,noaniq
 avail,mavj.
 available,
 blocker(s),
@@ -3131,6 +3138,7 @@ create and submit,
 critical,kritik
 customer credit,
 date_str and hire_date are required.,
+day,kun
 days,kun
 default,
 department,bo'lim
@@ -3170,6 +3178,7 @@ located,joylashuvli
 medium,o'rta
 min,
 mo,oy
+month,oy
 more,yana
 moves stock,
 name is required.,
