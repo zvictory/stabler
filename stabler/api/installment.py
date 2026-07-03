@@ -15,11 +15,14 @@ Each side can carry different markup rates.
 
 from __future__ import annotations
 
+import json
+
 import frappe
+from frappe import _
 from stabler.api.approvals import _assert_company_scope
 from frappe.utils import flt, getdate, add_months, today
 
-from stabler.api._common import _require_company, _assert_can_read
+from stabler.api._common import _require_company, _assert_can_read, _assert_can_write, check_concurrency
 from stabler.api.money import payment_defaults_for_invoice
 
 
@@ -92,6 +95,50 @@ def _apply_collection_to_schedule(doc, allocations: list[dict]) -> None:
             },
             update_modified=False,
         )
+
+
+def _reverse_allocations(current: dict[str, dict], allocations: list[dict]) -> list[dict]:
+    """Pure reversal: given the CURRENT (payment_amount, paid_amount, outstanding)
+    of each schedule row keyed by row_name, and the allocation snapshot a Payment
+    Entry recorded when it collected, return the writes that un-apply exactly this
+    PE's effect — newest-covered row first.
+
+    Uses subtraction against *current* values (new_paid = current_paid − allocated),
+    NOT restoration of the snapshot's previous_* absolutes, so a later same-day
+    collection against the same row is preserved rather than clobbered. paid_amount
+    is clamped at 0 and outstanding is re-derived from payment_amount, keeping the
+    row internally consistent even if the schedule drifted.
+    """
+    # Newest-covered first: latest due_date, then latest original row index.
+    ordered = sorted(
+        allocations,
+        key=lambda a: (getdate(a["due_date"]), int(a.get("row_index", 0))),
+        reverse=True,
+    )
+    writes: list[dict] = []
+    for a in ordered:
+        row = current.get(a["row_name"])
+        if not row:
+            # Row vanished (schedule edited) — skip; nothing safe to reverse.
+            continue
+        allocated = _round2(a["allocated_amount"])
+        payment_amount = _round2(row["payment_amount"])
+        new_paid = _round2(max(0.0, _round2(row["paid_amount"]) - allocated))
+        new_outstanding = _round2(payment_amount - new_paid)
+        writes.append(
+            {
+                "row_name": a["row_name"],
+                "due_date": a["due_date"],
+                "row_index": a.get("row_index", 0),
+                "allocated_amount": allocated,
+                "paid_amount": new_paid,
+                "outstanding": new_outstanding,
+            }
+        )
+        # Reflect the write so repeated row_names within one snapshot chain correctly.
+        row["paid_amount"] = new_paid
+        row["outstanding"] = new_outstanding
+    return writes
 
 
 def _collection_preview_payload(doc, allocations: list[dict], amount: float) -> dict:
@@ -677,6 +724,25 @@ def collect_payment(
     pe.mode_of_payment = mode_of_payment
     pe.reference_no = f"INST-{contract}"
     pe.reference_date = pe.posting_date
+    # Persist exactly which schedule rows this collection covered, so a same-day
+    # cancel can reverse precisely (see cancel_collection / _reverse_allocations).
+    pe.stabler_installment_alloc = json.dumps(
+        {
+            "contract": doc.name,
+            "side": side,
+            "rows": [
+                {
+                    "row_name": a["row_name"],
+                    "row_index": a["row_index"],
+                    "due_date": a["due_date"],
+                    "allocated_amount": a["allocated_amount"],
+                    "previous_paid": a["previous_paid"],
+                    "previous_outstanding": a["previous_outstanding"],
+                }
+                for a in allocations
+            ],
+        }
+    )
     pe.append(
         "references",
         {
@@ -708,6 +774,82 @@ def collect_payment(
         "payment_entry": pe.name,
         "docstatus": pe.docstatus,
         "outstanding_amount": _round2(updated.outstanding_amount),
+    }
+
+
+@frappe.whitelist()
+def cancel_collection(payment_entry: str, modified: str | None = None) -> dict:
+    """Same-day cashier cancel of a mistaken installment collection.
+
+    Cancels the collection Payment Entry (which reverses its GL and restores the
+    invoice outstanding) AND un-applies its effect on the payment_schedule — the
+    covered rows are restored newest-first from the snapshot the collection saved.
+    Restricted to collections dated today, so it is a cashier correction, not a
+    way to unwind historical postings (use a proper reversal for those).
+    """
+    if not payment_entry:
+        frappe.throw(_("Payment Entry is required."))
+    _assert_can_write("Payment Entry", payment_entry, "cancel")
+    pe = frappe.get_doc("Payment Entry", payment_entry)
+    _assert_company_scope(pe.company)
+    check_concurrency("Payment Entry", pe.name, modified)
+
+    if pe.docstatus == 2:
+        frappe.throw(_("This payment is already cancelled."))
+    if pe.docstatus != 1:
+        frappe.throw(_("Only a submitted collection can be cancelled."))
+    snapshot_raw = pe.get("stabler_installment_alloc")
+    if not (pe.reference_no or "").startswith("INST-") or not snapshot_raw:
+        frappe.throw(_("This payment is not an installment collection."))
+    if getdate(pe.posting_date) != getdate(today()):
+        frappe.throw(_("Only same-day collections can be cancelled by the cashier."))
+
+    try:
+        snapshot = json.loads(snapshot_raw)
+    except Exception:
+        frappe.throw(_("Collection allocation data is corrupt; cancel manually."))
+    contract = snapshot.get("contract")
+    side = snapshot.get("side", "sell")
+    alloc_rows = snapshot.get("rows") or []
+    doctype = _invoice_doctype(side)
+
+    doc = frappe.get_doc(doctype, contract)
+    current = {
+        r.name: {
+            "payment_amount": _round2(r.payment_amount),
+            "paid_amount": _round2(r.paid_amount),
+            "outstanding": _round2(r.outstanding),
+        }
+        for r in (doc.payment_schedule or [])
+    }
+    writes = _reverse_allocations(current, alloc_rows)
+
+    try:
+        # Cancel first: reverses the PE's GL + invoice outstanding. Then un-apply
+        # the schedule writeback (custom fields ERPNext does not manage). Both live
+        # in one transaction, so any failure rolls the whole cancel back.
+        pe.flags.ignore_approval_gate = True
+        pe.cancel()
+        for w in writes:
+            frappe.db.set_value(
+                "Payment Schedule",
+                w["row_name"],
+                {"paid_amount": w["paid_amount"], "outstanding": w["outstanding"]},
+                update_modified=False,
+            )
+        frappe.db.commit()
+    except Exception:
+        frappe.db.rollback()
+        raise
+
+    updated = frappe.get_doc(doctype, contract)
+    return {
+        "contract": contract,
+        "payment_entry": pe.name,
+        "docstatus": pe.docstatus,
+        "restored_rows": writes,
+        "outstanding_amount": _round2(updated.outstanding_amount),
+        "schedule": [_schedule_state(r) for r in (updated.payment_schedule or [])],
     }
 
 

@@ -33,9 +33,9 @@
 - [x] Add installment schedule states for paid, partial, overdue, and upcoming rows in contract detail and calendar chips.
 - [x] Add backend overdue schedule row API for collections follow-up lists.
 - [ ] Add printable installment collection receipt route linked to the created Payment Entry.
-- [ ] Add same-day cashier cancel flow for mistaken installment collections, restoring schedule rows newest-covered first.
+- [x] Add same-day cashier cancel flow for mistaken installment collections, restoring schedule rows newest-covered first. (installment.cancel_collection; alloc snapshot persisted via patch v32; reversal unit-tested in test_installment_cancel.py)
 - [ ] Add overdue installment list page with customer/supplier phone and days overdue.
-- [ ] Decide remittance refund policy: return commission or keep commission on refund.
-- [ ] Decide remittance pickup verification: pickup code only, or pickup code plus receiver name/ID.
-- [ ] Confirm whether remittance corridors stay within one company ledger; if not, inter-company settlement becomes P0.
-- [ ] After remittance decisions, split remittance posting into register, payout, and refund stages with in-transit liability accounting.
+- [x] Decide remittance refund policy: return commission or keep commission on refund. → **Full make-whole**: refund returns principal AND claws back commission.
+- [x] Decide remittance pickup verification: pickup code only, or pickup code plus receiver name/ID. → **Pickup code only** (constant-time match, never displayed by reads).
+- [x] Confirm whether remittance corridors stay within one company ledger; if not, inter-company settlement becomes P0. → **Single company now** (per-company in-transit liability); structured so cross-company can be added without reshaping stages.
+- [x] After remittance decisions, split remittance posting into register, payout, and refund stages with in-transit liability accounting. (remittance.create_remittance / payout_remittance / refund_remittance; JE-only + custom fields via patch v33; stage balancing verified.)

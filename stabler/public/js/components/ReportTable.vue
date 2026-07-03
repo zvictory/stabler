@@ -60,10 +60,11 @@ function badgeClass(value) {
 
 // Per-row currency: a row may carry its own `currency` (e.g. each invoice/customer
 // in its original transaction currency). Fall back to the report-level currency.
-const footerCurrency = computed(() => {
-	const set = new Set((props.rows || []).map((r) => r.currency).filter(Boolean));
-	return set.size === 1 ? [...set][0] : props.currency;
-});
+const rowCurrencies = computed(() => new Set((props.rows || []).map((r) => r.currency).filter(Boolean)));
+const footerCurrency = computed(() => (rowCurrencies.value.size === 1 ? [...rowCurrencies.value][0] : props.currency));
+// A summed money total across rows with different currencies is meaningless —
+// suppress it rather than show a number labeled with an arbitrary currency.
+const mixedCurrency = computed(() => rowCurrencies.value.size > 1);
 
 function fmt(value, col, row) {
 	if (value == null || value === "") return "—";
@@ -192,7 +193,10 @@ defineExpose({ exportCsv, exportXlsx });
 							:class="[col.align === 'end' ? 'text-end' : '', col.type === 'money' || col.type === 'int' ? 'font-monospace' : '']"
 						>
 							<template v-if="idx === 0">{{ t("Total") }}</template>
-							<template v-else-if="col.key in totals">{{ fmt(totals[col.key], col, { currency: footerCurrency }) }}</template>
+							<template v-else-if="col.key in totals">
+								<template v-if="col.type === 'money' && mixedCurrency">—</template>
+								<template v-else>{{ fmt(totals[col.key], col, { currency: footerCurrency }) }}</template>
+							</template>
 						</td>
 					</tr>
 				</tfoot>

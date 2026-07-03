@@ -29,3 +29,5 @@ stabler.patches.v28_so_tender_fields
 stabler.patches.v29_lead_intake_fields
 stabler.patches.v30_supplier_quotation_deal
 stabler.patches.v31_accounts_stale_rate_fields
+stabler.patches.v32_installment_collection_cancel
+stabler.patches.v33_remittance_stage_fields
