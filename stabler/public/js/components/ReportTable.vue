@@ -19,27 +19,40 @@ const props = defineProps({
 	// the report backend with these filters — never exports stale client rows).
 	reportKey: { type: String, default: "" },
 	exportFilters: { type: Object, default: () => ({}) },
+	// Server-authoritative sort: when true, header clicks emit "sort" instead of
+	// sorting client-side, so the on-screen order matches the Excel export exactly.
+	serverSort: { type: Boolean, default: false },
+	sortBy: { type: String, default: "" },
+	sortDir: { type: String, default: "desc" },
 });
 
-const emit = defineEmits(["drill"]);
+const emit = defineEmits(["drill", "sort"]);
 
-const sortKey = ref("");
-const sortDir = ref("desc");
+const clientSortKey = ref("");
+const clientSortDir = ref("desc");
+
+const activeSortKey = computed(() => (props.serverSort ? props.sortBy : clientSortKey.value));
+const activeSortDir = computed(() => (props.serverSort ? props.sortDir : clientSortDir.value));
 
 function toggleSort(col) {
-	if (sortKey.value === col.key) {
-		sortDir.value = sortDir.value === "asc" ? "desc" : "asc";
-	} else {
-		sortKey.value = col.key;
-		sortDir.value = col.type === "money" || col.type === "int" || col.type === "number" ? "desc" : "asc";
+	const nextDir =
+		activeSortKey.value === col.key
+			? activeSortDir.value === "asc" ? "desc" : "asc"
+			: col.type === "money" || col.type === "int" || col.type === "number" ? "desc" : "asc";
+
+	if (props.serverSort) {
+		emit("sort", { sort_by: col.key, sort_dir: nextDir });
+		return;
 	}
+	clientSortKey.value = col.key;
+	clientSortDir.value = nextDir;
 }
 
 const sortedRows = computed(() => {
-	if (!sortKey.value) return props.rows;
-	const dir = sortDir.value === "asc" ? 1 : -1;
+	if (props.serverSort || !clientSortKey.value) return props.rows;
+	const dir = clientSortDir.value === "asc" ? 1 : -1;
 	return [...props.rows].sort((a, b) => {
-		const av = a[sortKey.value], bv = b[sortKey.value];
+		const av = a[clientSortKey.value], bv = b[clientSortKey.value];
 		if (av == null) return 1;
 		if (bv == null) return -1;
 		if (typeof av === "number" && typeof bv === "number") return (av - bv) * dir;
@@ -162,9 +175,9 @@ defineExpose({ exportCsv, exportXlsx });
 						>
 							{{ col.label }}
 							<i
-								v-if="sortKey === col.key"
+								v-if="activeSortKey === col.key"
 								class="ti"
-								:class="sortDir === 'asc' ? 'ti-caret-up-filled' : 'ti-caret-down-filled'"
+								:class="activeSortDir === 'asc' ? 'ti-caret-up-filled' : 'ti-caret-down-filled'"
 								style="font-size: 12px"
 							></i>
 						</th>
