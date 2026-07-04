@@ -478,6 +478,7 @@ Collapse all,Свернуть всё
 Collapse all groups,Свернуть все группы
 Collect,
 Collect payment,
+Collection allocation data is corrupt; cancel manually.,Данные распределения инкассации повреждены; отмените вручную.
 Collection progress,
 Color,Цвет
 Column name,Название колонки
@@ -1262,6 +1263,7 @@ Invalid filename.,
 Invalid filters payload.,
 Invalid item_overrides payload,Неверный payload переопределений товара
 Invalid item_returns payload,Неверный payload возвратов товара
+Invalid kiosk credentials.,Неверные учётные данные киоска.
 Invalid maintenance type.,
 Invalid month.,
 Invalid month: {0},
@@ -1301,6 +1303,9 @@ Item code,Код товара
 Item code or name…,
 "Item code, name, or group…",
 Item does not require Asl Belgisi,Товар не требует Asl Belgisi
+Item filter active — figures are line-level (pre-tax). ,Фильтр по товару активен — суммы указаны на уровне строк (до налога).
+Item filter active — figures are line-level (pre-tax); invoice balance/outstanding is not shown because it cannot be split by item.,Фильтр по товару активен — суммы указаны на уровне строк (до налога); остаток по счёту не показан — его нельзя разделить по товарам.
+Item filter active — figures are line-level (pre-tax); outstanding is not shown because it cannot be split by item.,Фильтр по товару активен — суммы указаны на уровне строк (до налога); задолженность не показана — её нельзя разделить по товарам.
 Item is required on row {0}.,Товар обязателен в строке {0}.
 Item is required.,Требуется товар.
 "Item movement, voucher trace, quantities, and stock value.",
@@ -1332,6 +1337,7 @@ Keep Editing,
 Keep typing to narrow…,Продолжайте вводить для уточнения…
 Keeps the audit trail; amend to correct.,Сохраняет аудит-след; для исправления — корректировка.
 Kind,
+Kiosk login is not configured on this site.,Вход через киоск не настроен на этом сайте.
 Label,Надпись
 Landed cost vouchers,Ваучеры дополнительных затрат
 Lane,Полоса
@@ -1343,6 +1349,7 @@ Last backup,Последняя копия
 Last login,Последний вход
 Last month,
 Last name,Фамилия
+Last quarter,Прошлый квартал
 Last sync,
 Last transaction,
 Last updated,
@@ -1377,6 +1384,7 @@ Lifetime sales,Продажи за всё время
 Light,
 Line Operator Kiosk,
 Line details,
+Line-level (pre-tax) — item-filtered,На уровне строк (до налога) — с фильтром по товару
 Lines,Строки
 Link,Связать
 "Link an ERPNext employee to a TimePay (or other device) user ID. When a raw gate event arrives with this device user ID, it will be matched to this employee automatically.",
@@ -1852,6 +1860,7 @@ Online payment,Онлайн-оплата
 Only Approved claims can be settled. Current status: {0},Только одобренные требования могут быть урегулированы. Текущий статус: {0}
 Only Payment Entry / Journal Entry can be reconciled here.,
 Only a Stock Manager can reconcile stock.,Только менеджер склада может проводить сверку остатков.
+Only a submitted collection can be cancelled.,Отменить можно только проведённую инкассацию.
 Only confirm after you have actually restored a backup to a scratch site and verified the data. This records today as the last successful restore test.,
 Only draft Journal Entries can be deleted; cancel a submitted one instead.,
 Only draft journal entries can be edited here. Submitted entries must be cancelled and amended.,
@@ -1859,6 +1868,7 @@ Only draft sales orders can be edited.,
 Only items with available stock in this POS warehouse appear here.,
 Only one entry — chart needs at least two points.,Только одна запись — для графика нужно минимум две точки.
 Only pending schedule rows can be rescheduled.,
+Only same-day collections can be cancelled by the cashier.,Кассир может отменить только инкассацию текущего дня.
 Only submitted Sales Orders can be closed.,
 Only submitted Sales Orders can be reopened.,
 Only submitted entries can be cancelled.,
@@ -1995,7 +2005,10 @@ Payload,Тело запроса
 Payload must be an object.,Полезная нагрузка должна быть объектом.
 Payment,
 Payment Entry,Платёжный документ
+Payment Entry is required.,Требуется платёжная операция (Payment Entry).
 Payment Mode,
+Payment amount must be positive,Сумма платежа должна быть положительной
+Payment amount {0} exceeds outstanding {1} on {2},Сумма платежа {0} превышает задолженность {1} по {2}
 Payment cancelled,Оплата отменена
 Payment failed,Платёж не выполнен
 Payment failed.,Не удалось оплатить.
@@ -2433,6 +2446,8 @@ Sales,Продажи
 "Sales = selected period · Balance = current receivable (all-time, all vouchers — ties to the Customer Center). Click a customer to see the ledger behind the balance.","Продажи = период · Баланс = текущая задолженность (всё время, все документы — как в Центре клиентов). Нажмите на клиента, чтобы увидеть книгу за балансом."
 Sales Invoice,Счёт продажи
 Sales Invoice must be created from a Sales Order,Счёт продажи должен быть создан на основе заказа
+Sales Invoice {0} is not submitted,Счёт-фактура продажи {0} не проведён
+Sales Invoice {0} not found,Счёт-фактура продажи {0} не найден
 Sales Invoices,Счета продаж
 Sales Invoices are created from submitted Sales Orders. Open a Sales Order and use Create Invoice.,Счета продажи создаются на основе отправленных заказов. Откройте заказ и используйте «Создать счёт».
 Sales Order,Заказ продажи
@@ -2814,10 +2829,13 @@ This draft invoice has no ledger balance yet. The payment will be submitted as a
 This exception is already {0}.,
 This month,
 "This must match exactly the value in raw events (TimePay user ID, badge code, etc.).",
+This payment is already cancelled.,Этот платёж уже отменён.
+This payment is not an installment collection.,Этот платёж не является инкассацией рассрочки.
 This period is already accrued.,Этот период уже начислен.
 This period is locked; KPI cannot be changed.,
 This period is locked; the advance deduction cannot be changed.,
 This posts the entry to the ledger. Submitted entries can't be edited — only cancelled and amended.,Запись будет проведена в учёт. Проведённые проводки нельзя редактировать — только отменить и создать исправленную.
+This quarter,Этот квартал
 This request belongs to a company you cannot access.,
 This request is already {0}.,
 This reverses the ledger postings. The entry stays as an audit record; create an amended one to correct it.,Проводки в учёте будут сторнированы. Запись останется в журнале аудита; создайте исправленную для корректировки.

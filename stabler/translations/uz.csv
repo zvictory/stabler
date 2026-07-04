@@ -472,6 +472,7 @@ Collapse all,Hammasini yig'ish
 Collapse all groups,Barcha guruhlarni yig'ish
 Collect,
 Collect payment,
+Collection allocation data is corrupt; cancel manually.,Inkassatsiya taqsimoti ma'lumotlari buzilgan; qo'lda bekor qiling.
 Collection progress,
 Color,Rang
 Column name,Ustun nomi
@@ -1255,6 +1256,7 @@ Invalid filename.,
 Invalid filters payload.,
 Invalid item_overrides payload,Noto'g'ri item_overrides yuklamasi
 Invalid item_returns payload,Noto'g'ri item_returns yuklamasi
+Invalid kiosk credentials.,Kiosk login ma'lumotlari noto'g'ri.
 Invalid maintenance type.,
 Invalid month.,
 Invalid month: {0},
@@ -1275,7 +1277,7 @@ Invoice #,Hisob-faktura №
 Invoice not submitted yet.,
 Invoice number or customer…,
 Invoiced,Hisob-faktura berilgan
-"Invoiced totals over time, by day or month.","Vaqt davomida kunlik yoki oylik hisob-faktura summalari."
+"Invoiced totals over time, by day or month.",Vaqt davomida kunlik yoki oylik hisob-faktura summalari.
 Invoiced without stock movement — stock still reserved; needs a delivery/backfill or manual close.,
 Invoices,Hisob-fakturalar
 Issue,Masala
@@ -1294,6 +1296,9 @@ Item code,Tovar kodi
 Item code or name…,
 "Item code, name, or group…",
 Item does not require Asl Belgisi,Tovar Asl Belgisini talab qilmaydi
+Item filter active — figures are line-level (pre-tax). ,Mahsulot filtri faol — ko'rsatkichlar qator darajasida (soliqsiz).
+Item filter active — figures are line-level (pre-tax); invoice balance/outstanding is not shown because it cannot be split by item.,Mahsulot filtri faol — ko'rsatkichlar qator darajasida (soliqsiz); hisob-faktura qoldig'i ko'rsatilmaydi — uni mahsulotlar bo'yicha bo'lib bo'lmaydi.
+Item filter active — figures are line-level (pre-tax); outstanding is not shown because it cannot be split by item.,Mahsulot filtri faol — ko'rsatkichlar qator darajasida (soliqsiz); qarzdorlik ko'rsatilmaydi — uni mahsulotlar bo'yicha bo'lib bo'lmaydi.
 Item is required on row {0}.,Tovar {0} qatorida talab qilinadi.
 Item is required.,Tovar talab qilinadi.
 "Item movement, voucher trace, quantities, and stock value.",
@@ -1325,6 +1330,7 @@ Keep Editing,
 Keep typing to narrow…,Toraytirish uchun yozishda davom eting…
 Keeps the audit trail; amend to correct.,Audit izi saqlanadi; tuzatish uchun amend qiling.
 Kind,
+Kiosk login is not configured on this site.,Bu saytda kiosk login sozlanmagan.
 Label,Nom
 Landed cost vouchers,Qo'shimcha xarajat vaucherlari
 Lane,Yo'lak
@@ -1336,6 +1342,7 @@ Last backup,Oxirgi zaxira
 Last login,Oxirgi kirish
 Last month,
 Last name,Familiya
+Last quarter,O'tgan chorak
 Last sync,
 Last transaction,
 Last updated,
@@ -1370,6 +1377,7 @@ Lifetime sales,Umumiy savdo
 Light,
 Line Operator Kiosk,
 Line details,
+Line-level (pre-tax) — item-filtered,Qator darajasida (soliqsiz) — mahsulot bo'yicha filtrlangan
 Lines,Qatorlar
 Link,Bog'lash
 "Link an ERPNext employee to a TimePay (or other device) user ID. When a raw gate event arrives with this device user ID, it will be matched to this employee automatically.",
@@ -1845,6 +1853,7 @@ Online payment,Onlayn to‘lov
 Only Approved claims can be settled. Current status: {0},Faqat Tasdiqlangan da'volar ko'rib chiqilishi mumkin. Hozirgi holat: {0}
 Only Payment Entry / Journal Entry can be reconciled here.,
 Only a Stock Manager can reconcile stock.,Faqat ombor menejeri qoldiqlarni solishtira oladi.
+Only a submitted collection can be cancelled.,Faqat tasdiqlangan inkassatsiyani bekor qilish mumkin.
 Only confirm after you have actually restored a backup to a scratch site and verified the data. This records today as the last successful restore test.,
 Only draft Journal Entries can be deleted; cancel a submitted one instead.,
 Only draft journal entries can be edited here. Submitted entries must be cancelled and amended.,
@@ -1852,6 +1861,7 @@ Only draft sales orders can be edited.,
 Only items with available stock in this POS warehouse appear here.,
 Only one entry — chart needs at least two points.,Faqat bitta yozuv — grafik uchun kamida ikki nuqta kerak.
 Only pending schedule rows can be rescheduled.,
+Only same-day collections can be cancelled by the cashier.,Kassir faqat shu kunlik inkassatsiyani bekor qila oladi.
 Only submitted Sales Orders can be closed.,
 Only submitted Sales Orders can be reopened.,
 Only submitted entries can be cancelled.,
@@ -1988,7 +1998,10 @@ Payload,Ma'lumot to'plami
 Payload must be an object.,Ma'lumot to'plami ob'ekt bo'lishi kerak.
 Payment,
 Payment Entry,To'lov yozuvi
+Payment Entry is required.,Payment Entry talab qilinadi.
 Payment Mode,
+Payment amount must be positive,To'lov summasi musbat bo'lishi kerak
+Payment amount {0} exceeds outstanding {1} on {2},{2} bo'yicha to'lov summasi {0} qarzdorlik {1} dan oshib ketmoqda
 Payment cancelled,To‘lov bekor qilindi
 Payment failed,To‘lov amalga oshmadi
 Payment failed.,To'lov muvaffaqiyatsiz.
@@ -2426,6 +2439,8 @@ Sales,Sotuv
 "Sales = selected period · Balance = current receivable (all-time, all vouchers — ties to the Customer Center). Click a customer to see the ledger behind the balance.","Sotuv = davr · Balans = joriy qarz (butun tarix, barcha hujjatlar — Customer Center bilan mos). Balans ortidagi ledgerni ko'rish uchun mijozni bosing."
 Sales Invoice,Sotuv hisob-fakturasi
 Sales Invoice must be created from a Sales Order,Sotuv hisob-fakturasi Sotuv buyurtmasidan yaratilishi kerak
+Sales Invoice {0} is not submitted,Sotish hisob-fakturasi {0} tasdiqlanmagan
+Sales Invoice {0} not found,Sotish hisob-fakturasi {0} topilmadi
 Sales Invoices,Sotuv hisob-fakturalari
 Sales Invoices are created from submitted Sales Orders. Open a Sales Order and use Create Invoice.,"Sotuv hisob-fakturaalari taqdim etilgan Sotuv buyurtmalaridan yaratiladi. Sotuv buyurtmasini oching va ""Hisob-faktura yaratish"" dan foydalaning."
 Sales Order,Sotuv buyurtmasi
@@ -2807,10 +2822,13 @@ This draft invoice has no ledger balance yet. The payment will be submitted as a
 This exception is already {0}.,
 This month,
 "This must match exactly the value in raw events (TimePay user ID, badge code, etc.).",
+This payment is already cancelled.,Bu to'lov allaqachon bekor qilingan.
+This payment is not an installment collection.,Bu to'lov bo'lib-bo'lib to'lash inkassatsiyasi emas.
 This period is already accrued.,Bu davr allaqachon hisoblangan.
 This period is locked; KPI cannot be changed.,
 This period is locked; the advance deduction cannot be changed.,
 This posts the entry to the ledger. Submitted entries can't be edited — only cancelled and amended.,"Yozuv hisobga o'tkaziladi. Tasdiqlangan provodkalarni tahrirlab bo'lmaydi — faqat bekor qilib, tuzatilgan yaratish mumkin."
+This quarter,Bu chorak
 This request belongs to a company you cannot access.,
 This request is already {0}.,
 This reverses the ledger postings. The entry stays as an audit record; create an amended one to correct it.,Hisobdagi o'tkazmalar bekor qilinadi. Yozuv audit yozuvi sifatida qoladi; tuzatish uchun tuzatilganini yarating.

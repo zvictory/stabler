@@ -470,6 +470,7 @@ Collapse all,Collapse all
 Collapse all groups,Collapse all groups
 Collect,Collect
 Collect payment,Collect payment
+Collection allocation data is corrupt; cancel manually.,Collection allocation data is corrupt; cancel manually.
 Collection progress,Collection progress
 Color,Color
 Column name,Column name
@@ -1253,6 +1254,7 @@ Invalid filename.,Invalid filename.
 Invalid filters payload.,Invalid filters payload.
 Invalid item_overrides payload,Invalid item_overrides payload
 Invalid item_returns payload,Invalid item_returns payload
+Invalid kiosk credentials.,Invalid kiosk credentials.
 Invalid maintenance type.,Invalid maintenance type.
 Invalid month.,Invalid month.
 Invalid month: {0},Invalid month: {0}
@@ -1292,6 +1294,9 @@ Item code,Item code
 Item code or name…,Item code or name…
 "Item code, name, or group…","Item code, name, or group…"
 Item does not require Asl Belgisi,Item does not require Asl Belgisi
+Item filter active — figures are line-level (pre-tax). ,Item filter active — figures are line-level (pre-tax). 
+Item filter active — figures are line-level (pre-tax); invoice balance/outstanding is not shown because it cannot be split by item.,Item filter active — figures are line-level (pre-tax); invoice balance/outstanding is not shown because it cannot be split by item.
+Item filter active — figures are line-level (pre-tax); outstanding is not shown because it cannot be split by item.,Item filter active — figures are line-level (pre-tax); outstanding is not shown because it cannot be split by item.
 Item is required on row {0}.,Item is required on row {0}.
 Item is required.,Item is required.
 "Item movement, voucher trace, quantities, and stock value.","Item movement, voucher trace, quantities, and stock value."
@@ -1323,6 +1328,7 @@ Keep Editing,Keep Editing
 Keep typing to narrow…,Keep typing to narrow…
 Keeps the audit trail; amend to correct.,Keeps the audit trail; amend to correct.
 Kind,Kind
+Kiosk login is not configured on this site.,Kiosk login is not configured on this site.
 Label,Label
 Landed cost vouchers,Landed cost vouchers
 Lane,Lane
@@ -1334,6 +1340,7 @@ Last backup,Last backup
 Last login,Last login
 Last month,Last month
 Last name,Last name
+Last quarter,Last quarter
 Last sync,Last sync
 Last transaction,Last transaction
 Last updated,Last updated
@@ -1368,6 +1375,7 @@ Lifetime sales,Lifetime sales
 Light,Light
 Line Operator Kiosk,Line Operator Kiosk
 Line details,Line details
+Line-level (pre-tax) — item-filtered,Line-level (pre-tax) — item-filtered
 Lines,Lines
 Link,Link
 "Link an ERPNext employee to a TimePay (or other device) user ID. When a raw gate event arrives with this device user ID, it will be matched to this employee automatically.","Link an ERPNext employee to a TimePay (or other device) user ID. When a raw gate event arrives with this device user ID, it will be matched to this employee automatically."
@@ -1843,6 +1851,7 @@ Online payment,Online payment
 Only Approved claims can be settled. Current status: {0},Only Approved claims can be settled. Current status: {0}
 Only Payment Entry / Journal Entry can be reconciled here.,Only Payment Entry / Journal Entry can be reconciled here.
 Only a Stock Manager can reconcile stock.,Only a Stock Manager can reconcile stock.
+Only a submitted collection can be cancelled.,Only a submitted collection can be cancelled.
 Only confirm after you have actually restored a backup to a scratch site and verified the data. This records today as the last successful restore test.,Only confirm after you have actually restored a backup to a scratch site and verified the data. This records today as the last successful restore test.
 Only draft Journal Entries can be deleted; cancel a submitted one instead.,Only draft Journal Entries can be deleted; cancel a submitted one instead.
 Only draft journal entries can be edited here. Submitted entries must be cancelled and amended.,Only draft journal entries can be edited here. Submitted entries must be cancelled and amended.
@@ -1850,6 +1859,7 @@ Only draft sales orders can be edited.,Only draft sales orders can be edited.
 Only items with available stock in this POS warehouse appear here.,Only items with available stock in this POS warehouse appear here.
 Only one entry — chart needs at least two points.,Only one entry — chart needs at least two points.
 Only pending schedule rows can be rescheduled.,Only pending schedule rows can be rescheduled.
+Only same-day collections can be cancelled by the cashier.,Only same-day collections can be cancelled by the cashier.
 Only submitted Sales Orders can be closed.,Only submitted Sales Orders can be closed.
 Only submitted Sales Orders can be reopened.,Only submitted Sales Orders can be reopened.
 Only submitted entries can be cancelled.,Only submitted entries can be cancelled.
@@ -1985,7 +1995,10 @@ Payload,Payload
 Payload must be an object.,Payload must be an object.
 Payment,Payment
 Payment Entry,Payment Entry
+Payment Entry is required.,Payment Entry is required.
 Payment Mode,Payment Mode
+Payment amount must be positive,Payment amount must be positive
+Payment amount {0} exceeds outstanding {1} on {2},Payment amount {0} exceeds outstanding {1} on {2}
 Payment cancelled,Payment cancelled
 Payment failed,Payment failed
 Payment failed.,Payment failed.
@@ -2423,6 +2436,8 @@ Sales,Sales
 "Sales = selected period · Balance = current receivable (all-time, all vouchers — ties to the Customer Center). Click a customer to see the ledger behind the balance.","Sales = selected period · Balance = current receivable (all-time, all vouchers — ties to the Customer Center). Click a customer to see the ledger behind the balance."
 Sales Invoice,Sales Invoice
 Sales Invoice must be created from a Sales Order,Sales Invoice must be created from a Sales Order
+Sales Invoice {0} is not submitted,Sales Invoice {0} is not submitted
+Sales Invoice {0} not found,Sales Invoice {0} not found
 Sales Invoices,Sales Invoices
 Sales Invoices are created from submitted Sales Orders. Open a Sales Order and use Create Invoice.,Sales Invoices are created from submitted Sales Orders. Open a Sales Order and use Create Invoice.
 Sales Order,Sales Order
@@ -2804,10 +2819,13 @@ This draft invoice has no ledger balance yet. The payment will be submitted as a
 This exception is already {0}.,This exception is already {0}.
 This month,This month
 "This must match exactly the value in raw events (TimePay user ID, badge code, etc.).","This must match exactly the value in raw events (TimePay user ID, badge code, etc.)."
+This payment is already cancelled.,This payment is already cancelled.
+This payment is not an installment collection.,This payment is not an installment collection.
 This period is already accrued.,This period is already accrued.
 This period is locked; KPI cannot be changed.,This period is locked; KPI cannot be changed.
 This period is locked; the advance deduction cannot be changed.,This period is locked; the advance deduction cannot be changed.
 This posts the entry to the ledger. Submitted entries can't be edited — only cancelled and amended.,This posts the entry to the ledger. Submitted entries can't be edited — only cancelled and amended.
+This quarter,This quarter
 This request belongs to a company you cannot access.,This request belongs to a company you cannot access.
 This request is already {0}.,This request is already {0}.
 This reverses the ledger postings. The entry stays as an audit record; create an amended one to correct it.,This reverses the ledger postings. The entry stays as an audit record; create an amended one to correct it.

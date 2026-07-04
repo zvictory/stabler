@@ -323,7 +323,7 @@ Board,Pano
 Bonus,Prim
 Book rate,
 Booked,Sipariş edildi
-"Booked value from Sales Orders, with amounts still to deliver and to bill.","Satış Siparişlerinden rezerve edilen tutar; teslim edilecek ve faturalanacak tutarlarla birlikte."
+"Booked value from Sales Orders, with amounts still to deliver and to bill.",Satış Siparişlerinden rezerve edilen tutar; teslim edilecek ve faturalanacak tutarlarla birlikte.
 Books Dr Salary Expense / Cr Salary Payable as a draft — submit it from the ledger to post.,Taslak oluşturur: Borç Maaş Gideri / Alacak Ödenecek Maaş — defterden onaylayın.
 Books each locked employee's net as a payable (Dr salary expense / Cr salary payable). Idempotent — runs once per period.,Her kilitli çalışanın netini bir borca yazar (Bç maaş gideri / Al maaş borcu). İdempotent — dönem başına bir kez.
 Books locked nets to salary payable.,Kilitli netleri maaş borcuna yazar.
@@ -470,6 +470,7 @@ Collapse all,Tümünü daralt
 Collapse all groups,Tüm grupları daralt
 Collect,
 Collect payment,
+Collection allocation data is corrupt; cancel manually.,Tahsilat dağıtım verileri bozuk; manuel olarak iptal edin.
 Collection progress,
 Color,Renk
 Column name,Sütun adı
@@ -1248,6 +1249,7 @@ Invalid filename.,
 Invalid filters payload.,
 Invalid item_overrides payload,Geçersiz item_overrides verisi
 Invalid item_returns payload,Geçersiz item_returns verisi
+Invalid kiosk credentials.,Geçersiz kiosk kimlik bilgileri.
 Invalid maintenance type.,
 Invalid month.,
 Invalid month: {0},
@@ -1268,7 +1270,7 @@ Invoice #,
 Invoice not submitted yet.,
 Invoice number or customer…,
 Invoiced,Faturalandı
-"Invoiced totals over time, by day or month.","Zaman içinde günlük veya aylık faturalanan toplamlar."
+"Invoiced totals over time, by day or month.",Zaman içinde günlük veya aylık faturalanan toplamlar.
 Invoiced without stock movement — stock still reserved; needs a delivery/backfill or manual close.,
 Invoices,Faturalar
 Issue,Sorun
@@ -1287,6 +1289,9 @@ Item code,Ürün kodu
 Item code or name…,
 "Item code, name, or group…",
 Item does not require Asl Belgisi,Ürün için Asl Belgisi gerekli değil
+Item filter active — figures are line-level (pre-tax). ,Ürün filtresi etkin — tutarlar satır düzeyindedir (vergi öncesi).
+Item filter active — figures are line-level (pre-tax); invoice balance/outstanding is not shown because it cannot be split by item.,Ürün filtresi etkin — tutarlar satır düzeyindedir (vergi öncesi); fatura bakiyesi/kalan tutar gösterilmez çünkü ürüne bölünemez.
+Item filter active — figures are line-level (pre-tax); outstanding is not shown because it cannot be split by item.,Ürün filtresi etkin — tutarlar satır düzeyindedir (vergi öncesi); kalan tutar gösterilmez çünkü ürüne bölünemez.
 Item is required on row {0}.,{0}. satırda ürün zorunludur.
 Item is required.,Kalem gereklidir.
 "Item movement, voucher trace, quantities, and stock value.",
@@ -1318,6 +1323,7 @@ Keep Editing,
 Keep typing to narrow…,Daraltmak için yazmaya devam edin…
 Keeps the audit trail; amend to correct.,Denetim izini korur; düzeltmek için amend edin.
 Kind,
+Kiosk login is not configured on this site.,Bu sitede kiosk girişi yapılandırılmamış.
 Label,Etiket
 Landed cost vouchers,İthal maliyet fişleri
 Lane,Şerit
@@ -1329,6 +1335,7 @@ Last backup,Son yedek
 Last login,Son giriş
 Last month,
 Last name,Soyadı
+Last quarter,Geçen çeyrek
 Last sync,
 Last transaction,
 Last updated,
@@ -1363,6 +1370,7 @@ Lifetime sales,Toplam satış
 Light,
 Line Operator Kiosk,
 Line details,
+Line-level (pre-tax) — item-filtered,Satır düzeyinde (vergi öncesi) — ürüne göre filtrelenmiş
 Lines,Satırlar
 Link,Bağla
 "Link an ERPNext employee to a TimePay (or other device) user ID. When a raw gate event arrives with this device user ID, it will be matched to this employee automatically.",
@@ -1837,6 +1845,7 @@ Online payment,Çevrimiçi ödeme
 Only Approved claims can be settled. Current status: {0},Yalnızca Onaylanmış talepler kapatılabilir. Mevcut durum: {0}
 Only Payment Entry / Journal Entry can be reconciled here.,
 Only a Stock Manager can reconcile stock.,Yalnızca bir Stok Yöneticisi stok sayımı yapabilir.
+Only a submitted collection can be cancelled.,Yalnızca onaylanmış bir tahsilat iptal edilebilir.
 Only confirm after you have actually restored a backup to a scratch site and verified the data. This records today as the last successful restore test.,
 Only draft Journal Entries can be deleted; cancel a submitted one instead.,
 Only draft journal entries can be edited here. Submitted entries must be cancelled and amended.,
@@ -1844,6 +1853,7 @@ Only draft sales orders can be edited.,
 Only items with available stock in this POS warehouse appear here.,
 Only one entry — chart needs at least two points.,Yalnızca bir kayıt var — grafik en az iki nokta gerektirir.
 Only pending schedule rows can be rescheduled.,
+Only same-day collections can be cancelled by the cashier.,Kasiyer yalnızca aynı günkü tahsilatları iptal edebilir.
 Only submitted Sales Orders can be closed.,
 Only submitted Sales Orders can be reopened.,
 Only submitted entries can be cancelled.,
@@ -1978,7 +1988,10 @@ Payload,Veri yükü
 Payload must be an object.,Veri yükü bir nesne olmalıdır.
 Payment,Ödeme
 Payment Entry,Ödeme Fişi
+Payment Entry is required.,Payment Entry gereklidir.
 Payment Mode,
+Payment amount must be positive,Ödeme tutarı pozitif olmalıdır
+Payment amount {0} exceeds outstanding {1} on {2},{2} tarihli ödeme tutarı {0} kalan {1} bakiyesini aşıyor
 Payment cancelled,Ödeme iptal edildi
 Payment failed,Ödeme başarısız
 Payment failed.,Ödeme başarısız.
@@ -2414,6 +2427,8 @@ Sales,Satış
 "Sales = selected period · Balance = current receivable (all-time, all vouchers — ties to the Customer Center). Click a customer to see the ledger behind the balance.","Satış = dönem · Bakiye = güncel alacak (tüm zamanlar, tüm belgeler — Müşteri Merkezi ile eşleşir). Bakiyenin arkasındaki defteri görmek için bir müşteriye tıklayın."
 Sales Invoice,Satış Faturası
 Sales Invoice must be created from a Sales Order,Satış Faturası bir Satış Siparişinden oluşturulmalıdır
+Sales Invoice {0} is not submitted,Satış Faturası {0} onaylanmamış
+Sales Invoice {0} not found,Satış Faturası {0} bulunamadı
 Sales Invoices,Satış Faturaları
 Sales Invoices are created from submitted Sales Orders. Open a Sales Order and use Create Invoice.,Satış Faturaları onaylanmış Satış Siparişlerinden oluşturulur. Bir Satış Siparişi açın ve Fatura Oluştur'u kullanın.
 Sales Order,Satış Siparişi
@@ -2706,7 +2721,7 @@ Submitted,Onaylandı
 Submitted At,Onaylanma Zamanı
 Submitted Sales Invoices only,
 "Submitted Sales Invoices only, grouped by %s.","Yalnızca onaylanmış Satış Faturaları, %s'e göre gruplanmış."
-Submitted Sales Invoices only. Revenue allocated by Sales Team percentage; ,Yalnızca onaylanmış Satış Faturaları. Gelir, Satış Ekibi yüzdesine göre dağıtılır;
+Submitted Sales Invoices only. Revenue allocated by Sales Team percentage; ,Yalnızca onaylanmış Satış Faturaları. Gelir
 "Submitted Sales Orders only — booked (committed) value, not invoiced revenue.","Yalnızca onaylanmış Satış Siparişleri — rezerve edilen (taahhüt edilen) tutar, faturalanan gelir değil."
 Submitted bills; returns netted.,Onaylanmış alış faturaları; iadeler netleştirilmiş.
 Submitted budgets vs GL actuals (debit − credit). Income favorable = actual > budget; cost favorable = actual < budget.,
@@ -2794,10 +2809,13 @@ This draft invoice has no ledger balance yet. The payment will be submitted as a
 This exception is already {0}.,
 This month,
 "This must match exactly the value in raw events (TimePay user ID, badge code, etc.).",
+This payment is already cancelled.,Bu ödeme zaten iptal edilmiş.
+This payment is not an installment collection.,Bu ödeme bir taksit tahsilatı değil.
 This period is already accrued.,Bu dönem zaten tahakkuk etti.
 This period is locked; KPI cannot be changed.,
 This period is locked; the advance deduction cannot be changed.,
 This posts the entry to the ledger. Submitted entries can't be edited — only cancelled and amended.,Kayıt deftere işlenir. Onaylı kayıtlar düzenlenemez — yalnızca iptal edilip düzeltilmiş yenisi oluşturulur.
+This quarter,Bu çeyrek
 This request belongs to a company you cannot access.,
 This request is already {0}.,
 This reverses the ledger postings. The entry stays as an audit record; create an amended one to correct it.,Defter kayıtları ters çevrilir. Kayıt denetim için kalır; düzeltmek için düzeltilmiş bir tane oluşturun.
