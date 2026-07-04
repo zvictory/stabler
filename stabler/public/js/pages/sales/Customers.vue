@@ -18,6 +18,7 @@ import PartyAvatar from "../../components/PartyAvatar.vue";
 import ApexChart from "../../components/ApexChart.vue";
 import { getStatusBadgeClass } from "../../composables/status.js";
 import { useListViewState } from "../../composables/useListViewState.js";
+import { useEscapeBack } from "../../composables/useEscapeBack.js";
 
 const session = useSession();
 const route = useRoute();
@@ -40,6 +41,16 @@ const { search, onlyWithBalance, filterGroup, filterTerritory, sortField, sortAs
 
 const selected = ref(null);
 const selectedDetail = ref(null);
+
+// ESC → deselect the open customer first (clear the right pane), else go back.
+useEscapeBack(() => {
+	if (selected.value) {
+		selected.value = null;
+		selectedName.value = ""; // composable clears c from URL + localStorage
+		return true;
+	}
+	return false;
+}, "/sales");
 const recentInvoices = ref([]);
 const ledger = ref(null);
 const ledgerLoading = ref(false);

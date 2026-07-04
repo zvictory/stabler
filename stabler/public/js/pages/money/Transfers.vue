@@ -14,6 +14,7 @@ import DateInput from "../../components/DateInput.vue";
 import EmptyState from "../../components/EmptyState.vue";
 import Select from "../../components/Select.vue";
 import { useFocusTrap } from "../../composables/useFocusTrap.js";
+import { useEscapeBack } from "../../composables/useEscapeBack.js";
 
 const session = useSession();
 const { activeCompany, user } = storeToRefs(session);
@@ -46,6 +47,13 @@ const baseCurrency = computed(
 const createOpen = ref(false);
 const modalEl = ref(null);
 useFocusTrap(modalEl, createOpen);
+
+// ESC → close the open form/detail first, otherwise go back (general app rule).
+useEscapeBack(() => {
+	if (createOpen.value) { closeCreate(); return true; }
+	if (detailOpen.value) { closeDetail(); return true; }
+	return false;
+}, "/money");
 const submitting = ref(false);
 const submitError = ref("");
 const editingName = ref("");
@@ -547,6 +555,23 @@ async function openDetail(name) {
 	}
 }
 
+// Read a saved transfer back directly into the SAME From→To form (view / edit /
+// amend) instead of a separate read-only detail card.
+async function openInForm(name) {
+	createOpen.value = false;
+	detailOpen.value = false;
+	detailLoading.value = true;
+	try {
+		detail.value = await call("stabler.api.money.journal_entry_detail", { name });
+		await openEditFromDetail(); // populates the form + sets amend/edit mode
+	} catch (err) {
+		detail.value = { error: err?.message || "Failed to load." };
+		detailOpen.value = true; // fall back to the detail card to show the error
+	} finally {
+		detailLoading.value = false;
+	}
+}
+
 async function cancelEntry() {
 	if (!detail.value?.name) return;
 	const ok = await confirm({
@@ -670,7 +695,7 @@ watch(activeCompany, () => {
 						v-for="r in rows"
 						:key="r.name"
 						style="cursor: pointer"
-						@click="openDetail(r.name)"
+						@click="openInForm(r.name)"
 					>
 						<td class="font-monospace text-primary">{{ r.name }}</td>
 						<td>{{ formatDateTime(r.posting_date) }}</td>

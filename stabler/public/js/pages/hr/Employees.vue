@@ -10,6 +10,7 @@ import { formatMoney } from "../../composables/money.js";
 import { useToast } from "../../composables/useToast.js";
 import { useConfirm } from "../../composables/useConfirm.js";
 import { useListViewState } from "../../composables/useListViewState.js";
+import { useEscapeBack } from "../../composables/useEscapeBack.js";
 import EmptyState from "../../components/EmptyState.vue";
 import DateInput from "../../components/DateInput.vue";
 import Select from "../../components/Select.vue";
@@ -146,6 +147,17 @@ const primaryCurrency = computed(() => {
 const selected = ref(null);
 const fin = ref(null);
 const finLoading = ref(false);
+
+// ESC → deselect the open employee first (clear the right pane), else go back.
+useEscapeBack(() => {
+	if (selected.value) {
+		selected.value = null;
+		selectedName.value = ""; // composable clears c from URL + localStorage
+		fin.value = null;
+		return true;
+	}
+	return false;
+}, "/hr");
 const activeTab = ref("ledger");
 const dateFrom = ref("");
 const dateTo = ref("");
