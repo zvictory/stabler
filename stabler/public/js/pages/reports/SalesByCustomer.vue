@@ -26,12 +26,38 @@ const detailLoading = ref(false);
 const detail = ref(null);
 const detailCustomer = ref("");
 
+const sortBy = ref("total");
+const sortDir = ref("desc");
+
+const filterDescriptors = [
+	{
+		key: "customers",
+		label: t("Customers"),
+		searchApi: "stabler.api.sales.list_customers",
+		idKey: "name",
+		display: (r) => r.customer_name || r.name,
+		placeholder: t("All customers"),
+	},
+	{
+		key: "items",
+		label: t("Items"),
+		searchApi: "stabler.api.inventory.list_items",
+		idKey: "name",
+		display: (r) => r.item_name || r.name,
+		placeholder: t("All items"),
+	},
+];
+
 const lang = () => user.value?.language || "en";
 
 const exportFilters = computed(() => ({
 	company: activeCompany.value,
 	from_date: range.value?.from_date,
 	to_date: range.value?.to_date,
+	customers: range.value?.customers || [],
+	items: range.value?.items || [],
+	sort_by: sortBy.value,
+	sort_dir: sortDir.value,
 }));
 const detailExportFilters = computed(() => ({
 	...exportFilters.value,
@@ -49,12 +75,22 @@ async function loadSummary(r) {
 			company: activeCompany.value,
 			from_date: r.from_date,
 			to_date: r.to_date,
+			customers: r.customers || [],
+			items: r.items || [],
+			sort_by: sortBy.value,
+			sort_dir: sortDir.value,
 		});
 	} catch (err) {
 		error.value = err?.message || t("Failed to load report.");
 	} finally {
 		loading.value = false;
 	}
+}
+
+function onSort({ sort_by, sort_dir }) {
+	sortBy.value = sort_by;
+	sortDir.value = sort_dir;
+	if (range.value) loadSummary(range.value);
 }
 
 async function onSummaryDrill({ row }) {
@@ -84,7 +120,7 @@ function onDetailDrill() {}
 		<h2 class="page-title">{{ t("Sales by Customer") }}</h2>
 	</div>
 
-	<ReportFilters @apply="loadSummary" />
+	<ReportFilters :filters="filterDescriptors" :company="activeCompany" @apply="loadSummary" />
 
 	<div v-if="error" class="alert alert-danger">{{ error }}</div>
 
@@ -103,6 +139,10 @@ function onDetailDrill() {}
 				export-name="sales_by_customer"
 				report-key="sales_by_customer"
 				:export-filters="exportFilters"
+				server-sort
+				:sort-by="sortBy"
+				:sort-dir="sortDir"
+				@sort="onSort"
 				@drill="onSummaryDrill"
 			/>
 		</div>

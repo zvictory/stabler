@@ -27,6 +27,9 @@ const exportFilters = computed(() => ({
 	company: activeCompany.value,
 	from_date: range.value?.from_date,
 	to_date: range.value?.to_date,
+	...filterValues.value,
+	sort_by: sortBy.value,
+	sort_dir: sortDir.value,
 }));
 
 const range = ref(null);
@@ -36,9 +39,25 @@ const summary = ref(null);
 const detailOpen = ref(false);
 const detailLoading = ref(false);
 const detail = ref(null);
+const filterValues = ref({});
+const sortBy = ref("");
+const sortDir = ref("desc");
+
+// Reset sort/filter defaults whenever the route switches to a different report.
+watch(
+	cfg,
+	(c) => {
+		sortBy.value = c.defaultSort?.sort_by || "";
+		sortDir.value = c.defaultSort?.sort_dir || "desc";
+	},
+	{ immediate: true },
+);
 
 async function loadSummary(r) {
 	range.value = r;
+	filterValues.value = { ...r };
+	delete filterValues.value.from_date;
+	delete filterValues.value.to_date;
 	detailOpen.value = false;
 	summary.value = null;
 	if (!activeCompany.value) return;
@@ -49,12 +68,21 @@ async function loadSummary(r) {
 			company: activeCompany.value,
 			from_date: r.from_date,
 			to_date: r.to_date,
+			...filterValues.value,
+			sort_by: sortBy.value,
+			sort_dir: sortDir.value,
 		});
 	} catch (err) {
 		error.value = err?.message || t("Failed to load report.");
 	} finally {
 		loading.value = false;
 	}
+}
+
+function onSort({ sort_by, sort_dir }) {
+	sortBy.value = sort_by;
+	sortDir.value = sort_dir;
+	if (range.value) loadSummary(range.value);
 }
 
 async function onSummaryDrill({ row }) {
@@ -94,7 +122,7 @@ watch(() => route.fullPath, () => {
 		<h2 class="page-title">{{ t(cfg.title) }}</h2>
 	</div>
 
-	<ReportFilters @apply="loadSummary" />
+	<ReportFilters :filters="cfg.filters" :company="activeCompany" @apply="loadSummary" />
 	<div v-if="error" class="alert alert-danger">{{ error }}</div>
 
 	<div v-if="summary" class="card mb-3">
@@ -118,6 +146,10 @@ watch(() => route.fullPath, () => {
 				:export-name="cfg.exportName || 'report'"
 				:report-key="summaryReportKey"
 				:export-filters="exportFilters"
+				server-sort
+				:sort-by="sortBy"
+				:sort-dir="sortDir"
+				@sort="onSort"
 				@drill="onSummaryDrill"
 			/>
 		</div>

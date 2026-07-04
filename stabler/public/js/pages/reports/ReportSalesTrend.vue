@@ -19,12 +19,27 @@ const loading = ref(false);
 const error = ref("");
 const report = ref(null);
 const lang = () => user.value?.language || "en";
+const filterDescriptors = [
+	{
+		key: "customers",
+		label: t("Customers"),
+		searchApi: "stabler.api.sales.list_customers",
+		idKey: "name",
+		display: (r) => r.customer_name || r.name,
+		placeholder: t("All customers"),
+	},
+];
+const sortBy = ref("period");
+const sortDir = ref("asc");
 
 const exportFilters = computed(() => ({
 	company: activeCompany.value,
 	from_date: range.value?.from_date,
 	to_date: range.value?.to_date,
 	granularity: granularity.value,
+	customers: range.value?.customers || [],
+	sort_by: sortBy.value,
+	sort_dir: sortDir.value,
 }));
 
 async function load(r) {
@@ -38,6 +53,9 @@ async function load(r) {
 			from_date: range.value.from_date,
 			to_date: range.value.to_date,
 			granularity: granularity.value,
+			customers: range.value.customers || [],
+			sort_by: sortBy.value,
+			sort_dir: sortDir.value,
 		});
 	} catch (err) {
 		error.value = err?.message || t("Failed to load report.");
@@ -50,6 +68,12 @@ function setGranularity(g) {
 	granularity.value = g;
 	load();
 }
+
+function onSort({ sort_by, sort_dir }) {
+	sortBy.value = sort_by;
+	sortDir.value = sort_dir;
+	load();
+}
 </script>
 
 <template>
@@ -58,7 +82,7 @@ function setGranularity(g) {
 		<h2 class="page-title">{{ t("Sales Trend") }}</h2>
 	</div>
 
-	<ReportFilters @apply="load">
+	<ReportFilters :filters="filterDescriptors" :company="activeCompany" @apply="load">
 		<div class="btn-group btn-group-sm" role="group">
 			<button
 				type="button"
@@ -94,6 +118,10 @@ function setGranularity(g) {
 				export-name="sales_trend"
 				report-key="sales_trend"
 				:export-filters="exportFilters"
+				server-sort
+				:sort-by="sortBy"
+				:sort-dir="sortDir"
+				@sort="onSort"
 			/>
 		</div>
 	</div>

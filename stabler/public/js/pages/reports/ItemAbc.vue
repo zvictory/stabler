@@ -17,6 +17,24 @@ const { activeCompany, user } = storeToRefs(session);
 const range = ref(null);
 const metric = ref("revenue");
 const loading = ref(false);
+const filterDescriptors = [
+	{
+		key: "customers",
+		label: t("Customers"),
+		searchApi: "stabler.api.sales.list_customers",
+		idKey: "name",
+		display: (r) => r.customer_name || r.name,
+		placeholder: t("All customers"),
+	},
+	{
+		key: "items",
+		label: t("Items"),
+		searchApi: "stabler.api.inventory.list_items",
+		idKey: "name",
+		display: (r) => r.item_name || r.name,
+		placeholder: t("All items"),
+	},
+];
 const error = ref("");
 const report = ref(null);
 const detailOpen = ref(false);
@@ -30,6 +48,8 @@ const exportFilters = computed(() => ({
 	from_date: range.value?.from_date,
 	to_date: range.value?.to_date,
 	metric: metric.value,
+	customers: range.value?.customers || [],
+	items: range.value?.items || [],
 }));
 const detailExportFilters = computed(() => ({
 	...exportFilters.value,
@@ -48,6 +68,8 @@ async function load(r) {
 			from_date: range.value.from_date,
 			to_date: range.value.to_date,
 			metric: metric.value,
+			customers: range.value.customers || [],
+			items: range.value.items || [],
 		});
 	} catch (err) {
 		error.value = err?.message || t("Failed to load report.");
@@ -86,7 +108,7 @@ function onDetailDrill({ row, col }) {
 		<h2 class="page-title">{{ t("Item ABC analysis") }}</h2>
 	</div>
 
-	<ReportFilters @apply="load">
+	<ReportFilters :filters="filterDescriptors" :company="activeCompany" @apply="load">
 		<div>
 			<label class="form-label small mb-1">{{ t("Rank by") }}</label>
 			<select v-model="metric" class="form-select form-select-sm" style="max-width: 160px" @change="load()">

@@ -7,11 +7,13 @@ import { useSession } from "../../stores/session.js";
 import { call } from "../../api/client.js";
 import { t } from "../../composables/i18n.js";
 import ReportTable from "../../components/ReportTable.vue";
+import MultiSelect from "../../components/MultiSelect.vue";
 
 const session = useSession();
 const { activeCompany, user } = storeToRefs(session);
 
 const horizon = ref(60);
+const items = ref([]);
 const loading = ref(false);
 const error = ref("");
 const report = ref(null);
@@ -20,6 +22,7 @@ const lang = () => user.value?.language || "en";
 const exportFilters = computed(() => ({
 	company: activeCompany.value,
 	horizon_days: horizon.value,
+	items: items.value,
 }));
 
 async function load() {
@@ -30,6 +33,7 @@ async function load() {
 		report.value = await call("stabler.api.reports.inventory_expiry", {
 			company: activeCompany.value,
 			horizon_days: horizon.value,
+			items: items.value,
 		});
 	} catch (err) {
 		error.value = err?.message || t("Failed to load report.");
@@ -56,6 +60,15 @@ onMounted(load);
 				<option :value="90">90 {{ t("days") }}</option>
 			</select>
 		</div>
+		<MultiSelect
+			v-model="items"
+			search-api="stabler.api.inventory.list_items"
+			id-key="item_code"
+			:display="(r) => r.item_name || r.item_code"
+			:placeholder="t('Items')"
+			size="sm"
+			@update:model-value="load"
+		/>
 		<button type="button" class="btn btn-sm btn-primary ms-auto" :disabled="loading" @click="load">
 			<i class="ti ti-refresh me-1"></i>{{ t("Apply") }}
 		</button>

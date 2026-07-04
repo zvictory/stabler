@@ -8,11 +8,15 @@ import { useSession } from "../../stores/session.js";
 import { call } from "../../api/client.js";
 import { t } from "../../composables/i18n.js";
 import ReportTable from "../../components/ReportTable.vue";
+import MultiSelect from "../../components/MultiSelect.vue";
 
 const session = useSession();
 const { activeCompany, user } = storeToRefs(session);
 
 const onlyWithBalance = ref(1);
+const customers = ref([]);
+const sortBy = ref("balance");
+const sortDir = ref("desc");
 const loading = ref(false);
 const error = ref("");
 const report = ref(null);
@@ -26,6 +30,9 @@ const detailCustomer = ref("");
 const exportFilters = computed(() => ({
 	company: activeCompany.value,
 	only_with_balance: onlyWithBalance.value,
+	customers: customers.value,
+	sort_by: sortBy.value,
+	sort_dir: sortDir.value,
 }));
 const detailExportFilters = computed(() => ({
 	company: activeCompany.value,
@@ -41,12 +48,21 @@ async function load() {
 		report.value = await call("stabler.api.reports.customer_balance_summary", {
 			company: activeCompany.value,
 			only_with_balance: onlyWithBalance.value,
+			customers: customers.value,
+			sort_by: sortBy.value,
+			sort_dir: sortDir.value,
 		});
 	} catch (err) {
 		error.value = err?.message || t("Failed to load report.");
 	} finally {
 		loading.value = false;
 	}
+}
+
+function onSort({ sort_by, sort_dir }) {
+	sortBy.value = sort_by;
+	sortDir.value = sort_dir;
+	load();
 }
 
 async function onDrill({ row }) {
@@ -85,6 +101,16 @@ onMounted(load);
 			/>
 			<span class="form-check-label">{{ t("Only with balance") }}</span>
 		</label>
+		<MultiSelect
+			v-model="customers"
+			search-api="stabler.api.sales.list_customers"
+			:extra-params="{ company: activeCompany }"
+			id-key="name"
+			:display="(r) => r.customer_name || r.name"
+			:placeholder="t('Customers')"
+			size="sm"
+			@update:model-value="load"
+		/>
 		<button type="button" class="btn btn-sm btn-primary ms-auto" :disabled="loading" @click="load">
 			<i class="ti ti-refresh me-1"></i>{{ t("Apply") }}
 		</button>
@@ -105,6 +131,10 @@ onMounted(load);
 				export-name="customer_balance_summary"
 				report-key="customer_balance_summary"
 				:export-filters="exportFilters"
+				server-sort
+				:sort-by="sortBy"
+				:sort-dir="sortDir"
+				@sort="onSort"
 				@drill="onDrill"
 			/>
 		</div>
