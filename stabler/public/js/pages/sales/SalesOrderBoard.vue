@@ -105,6 +105,9 @@ function openSo(name) {
 			<router-link to="/tender/sourcing" class="btn btn-outline-secondary btn-sm ms-auto">
 				<i class="ti ti-versions me-1"></i>{{ t("Sourcing comparison") }}
 			</router-link>
+			<router-link to="/tender/po-control" class="btn btn-outline-secondary btn-sm">
+				<i class="ti ti-clipboard-check me-1"></i>{{ t("Tender PO control") }}
+			</router-link>
 			<button type="button" class="btn btn-outline-secondary btn-sm" @click="addStage">
 				<i class="ti ti-plus me-1"></i>{{ t("Add stage") }}
 			</button>

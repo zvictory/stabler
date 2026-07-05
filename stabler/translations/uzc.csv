@@ -18,6 +18,7 @@ source,target
 61–90,61–90
 90+,90+
 A Payroll Attendance Summary for employee {0} and period {1} already exists: {2},
+A company with this name already exists.,Бу номдаги компания аллақачон мавжуд.
 A few quick questions and you're ready to sell.,Бир неча тезкор савол — ва сотишга тайёрсиз.
 A mapping for employee {0} with device user ID {1} already exists ({2}).,
 A new version is available.,Янги версия мавжуд.
@@ -65,9 +66,11 @@ Activation rate,Конверсия
 Active,Фаол
 Active Company,
 Active from,
+Active tenders,Фаол тендерлар
 Active to,
 Activities,Фаолиятлар
 Actual,Ҳақиқий
+Actual landed,Ҳақиқий етказилган
 Add,Қўшиш
 Add Deal,
 Add Decision,Қарор қўшиш
@@ -86,6 +89,7 @@ Add at least one item with a positive quantity.,Камида битта ижоб
 Add at least one raw material line.,Камида битта хом ашё қаторини қўшинг.
 Add child warehouse,Қўш омбор қўшиш
 Add column,Устун қўшиш
+Add cost item,Харажат моддасини қўшиш
 Add customer,Мижоз қўшиш
 Add deal,Битим қўшиш
 Add holiday,Байрам қўшиш
@@ -196,6 +200,7 @@ Amount received,Қабул қилинган сумма
 Amount sent,Юборилган сумма
 Amount to transfer,Ўтказма суммаси
 Amounts in,Суммалар
+Amounts in company currency,Суммалар компания валютасида
 Analytics,Таҳлил
 Anchor DAY hours (h),
 Anchor LIGHT hours (h),
@@ -246,6 +251,7 @@ At least one counted item line is required.,
 At least one visit purpose is required.,
 At least one voucher is required.,
 At least two account lines are required.,Камида икки ҳисоб қатори талаб қилинади.
+At risk,Хавф остида
 At-risk,Хавф остида
 Attendance,Давомат
 Attendance Dashboard,
@@ -261,6 +267,7 @@ Audit trail,Ўзгаришлар тарихи
 Audited At,Текширилган
 Authentication required.,
 Available,Мавжуд
+Avg margin,Ўртача маржа
 Avg orders / customer,Мижозга буюртмалар
 Avg time to first order,Биринчи буюртмагача вақт
 Awaiting level {0},
@@ -288,6 +295,7 @@ Balance (Account Currency),Баланс (Ҳисоб валютаси)
 Balanced,Баланс муштаси
 "Balances, advances and payments appear here.",
 "Balances, salaries, advances and payments appear here.","Бу ерда баланслар, ойликлар, аванслар ва тўловлар кўринади."
+Bank / transfer,Банк / ўтказма
 Bank Account '{0}' not found.,
 Bank account,Банк ҳисоби
 Bank account does not belong to company '{0}'.,
@@ -311,6 +319,10 @@ Batches expiring within {0} days are flagged. Value at item valuation rate.,{0} 
 Before → Requested,
 Berry,
 Bid Value,Таклиф суммаси
+Bid deadline,Таклиф муддати
+Bid price (Договор),Таклиф нархи (Договор)
+"Bid price (Договор, VAT incl.)","Таклиф нархи (Договор, ҚҚС билан)"
+Bid pricing saved.,Нарх режаси сақланди.
 Bill,Ҳисоб
 Bill #,Ҳисоб #
 Bill / invoice number printed on supplier document,Сатувчи хужжатида чоп этилган ҳисоб / инвойс рақами
@@ -334,6 +346,7 @@ Books locked nets to salary payable.,Соф ойликларни тўланад�
 Branch,
 Brand,Брэнд
 Break minutes,
+Broker,Брокер
 Budget,Бюджет
 "Budget name, fiscal year…",
 Budget vs Actual,
@@ -343,6 +356,7 @@ Business name is required.,Бизнес номи мажбурий.
 Buy,Сотиб олиш
 Buy X get Y,X сотиб олинг Y получите
 Buy markup,Сотиб олиш устамаси
+Buyer,Буюртмачи
 Buying price list,Сотиб олиш нарх рўйхати
 By,
 By item,
@@ -351,6 +365,8 @@ By region,Ҳудуд бўйича
 By rep,Менежер бўйича
 C,
 CBU rate: {rate} ({date}),
+CBU rates are already up to date.,CBU курслари аллақачон долзарб.
+CBU rates updated: {rates},CBU курслари янгиланди: {rates}
 CBU.uz exchange rates (last 30 days),CBU.uz алмаштириш курслари (охирги 30 кун)
 CBU:,
 COGS,Таннарх
@@ -415,12 +431,16 @@ Cashier Lock,
 Categories,Тоифалар
 Category,Турғун
 Category is required.,Турғун талаб қилинади.
+Certificate required,Сертификат талаб қилинади
+Certification,Сертификатлаш
 Change,
 Changed,Ўзгартирилди
 Channel,Канал
 Charge via {provider},{provider} орқали тўлаш
+Charges,Харажатлар
 Chart of Accounts,Ҳисоблар режаси
 Cheapest,Энг арзон
+Cheapest (landed),Энг арзон (етказилган)
 Checked in,Кириш қабул қилинди
 Checking availability…,Мавжудлик текширилмокда…
 Checking readiness…,
@@ -449,6 +469,7 @@ Clear,Тозалаш
 Clear filters,Фильтрларни тозалаш
 Clear open reservations,Очиқ қарзларни тозалаш
 Clear search,Қидирувни тозалаш
+Cleared,Тозаланган
 Cleared {0} of {1},{0} дан {1} тозаланди
 Click New Revaluation to preview unrealised FX deltas and post an Exchange Rate Revaluation.,
 Click a line to see suggested matches.,Таклиф этилган мосликларни кўриш учун қаторни босинг.
@@ -547,26 +568,38 @@ Cost,Таннарх
 Cost Centre,
 Cost centre,
 Cost must be positive.,Таннарх мусбат бўлиши керак.
+Costs after dividends (office…),Дивиденддан кейинги харажатлар (офис…)
 Could not accrue salary.,Ойликни таҳаккук қилиб бўлмади.
 Could not add holiday.,Байрам қўшиб бўлмади.
 Could not add stage.,Босқич қўшиб бўлмади.
 Could not check payment status.,Тўлов ҳолатини текшириб бўлмади.
 Could not create contract.,Шартнома яратиб бўлмади.
 Could not create the transaction.,Транзакция яратиб бўлмади.
+Could not load bid pricing.,Нарх режасини юклаб бўлмади.
 Could not load data health.,Маълумотлар соғлиғини юклаб бўлмади.
 Could not load employee finances.,Ходим молиясини юклаб бўлмади.
+Could not load landed charges.,Харажатларни юклаб бўлмади.
 Could not load quotations.,Котировкаларни юклаб бўлмади.
 Could not load repost status.,Ҳолатни юклаб бўлмади.
+Could not load tender intake.,Тендер маълумотини юклаб бўлмади.
 Could not load the HR overview.,HR умумий кўринишини юклаб бўлмади.
+Could not load the PO board.,PO панелини юклаб бўлмади.
 Could not load the board.,Доскани юклаб бўлмади.
+Could not load the customs queue.,Божхона навбатини юклаб бўлмади.
+Could not load the director board.,Директор панелини юклаб бўлмади.
 Could not load the entry.,Ёзувни юклаб бўлмади.
+Could not load the logistics board.,Логистика панелини юклаб бўлмади.
 Could not load unmatched users.,Боғланмаган фойдаланувчиларни юклаб бўлмади.
+Could not load your tenders.,Тендерларингизни юклаб бўлмади.
 Could not read backup file: {0},
 Could not read the uploaded file.,
 Could not read your location.,Жойлашувни аниқлаб бўлмади.
 Could not resolve a customer for this deal.,
 Could not resolve payroll period: {0},
+Could not save bid pricing.,Нарх режасини сақлаб бўлмади.
+Could not save landed charges.,Харажатларни сақлаб бўлмади.
 Could not save period.,Даврни сақлаб бўлмади.
+Could not save tender intake.,Тендер маълумотини сақлаб бўлмади.
 Could not start setup.,Созлашни бошлаб бўлмади.
 Could not start the online payment.,Онлайн тўловни бошлаб бўлмади.
 Could not start the processor.,Процессорни ишга тушириб бўлмади.
@@ -642,6 +675,8 @@ Customer name is required.,Харидининг номи мажбур.
 Customer receivables grouped by aging buckets.,
 "Customer, item, trend, and salesperson reports from submitted invoices.",
 Customers,Мижозлар
+Customs,Божхона
+Customs queue,Божхона навбати
 Daily,Кунлик
 Daily attendance records and employee presence checks.,
 Daily auto-backup,Кунлик авто-захира
@@ -664,6 +699,8 @@ Days cannot be negative.,
 Days is unreasonably large.,
 Days left,Қолган кун
 Days of cover,Захира кунлари
+Deadline control,Муддат назорати
+Deadline near,Муддат яқин
 Deal Owner,Шартнома эгаси
 Deal Value,Шартнома суммаси
 Deal has no organization or name to create a customer from.,
@@ -671,6 +708,8 @@ Deals,Битимлар
 Debit,Дебет
 Debit note for,
 Debit notes:,
+Decision,Қарор
+Declarant,Декларант
 Deducted from worked time daily.,
 Deducted per each step interval of lateness.,
 Deduction exceeds the outstanding advance balance.,Ушлаш аванс қолдиғидан ошиб кетди.
@@ -684,6 +723,7 @@ Default currency,Асосий валюта
 Default price list,Асосий нарх рўйхати
 Define promotions that field users can apply during visits.,Далалар сўзишмалар давомида қўллай оладиган рекламаларни таъриф бер.
 Define routes so field users know which outlets to visit each day.,Далалар ҳар кун қайси сотув ўринларига бориши керак эканлигини билишлари учун маршрутларни таъриф бер.
+Delayed,Кечиккан
 Delete,Ўчириш
 Delete Customer,
 Delete Draft Entry,
@@ -712,7 +752,9 @@ Delete this process?,Бу жараённи ўчиришни хоҳлайсизм
 Deliv,Йетк.
 Deliver,Етказиш
 Delivered,Етказилган
+Delivery,Етказиш
 Delivery date,Етказиш санаси
+Delivery deadline,Етказиш муддати
 Delta,
 Department,Бўлим
 Deposit,Тушум
@@ -737,6 +779,7 @@ Direct credit note,
 Direct sales return,
 Direction,Йўналиш
 Directions,Йўналиш
+Director board,Директор панели
 Disabled,Ўчирилган
 Disc,Чегирма
 Disc %,Чегирма %
@@ -750,6 +793,8 @@ Dispatched,Юборилган
 Distributor,Тарқатувчи
 Distributor claims will appear here once submitted.,Тарқатувчи талаблари тасдиқланганидан сўнг бу ерда пайдо бўлади.
 District,
+Dividend tax,Дивиденд солиғи
+Dividends,Дивидендлар
 DocType,Ҳужжат тури
 Document,Ҳужжат
 Document cancelled successfully.,
@@ -766,6 +811,7 @@ Document updated successfully.,
 Documents,Ҳужжатлар
 Done,Бажарилди
 Download .ics,.ics юклаб олиш
+Download CBU exchange rates,CBU валюта курсларини юклаб олиш
 Downpayment,Бошланғич тўлов
 Downpayment %,Бошланғич тўлов %
 Draft,Қоралама
@@ -910,6 +956,7 @@ Exceptions Queue,
 Exceptions by Type,
 Exchange Rate Revaluation,
 Exchange Rates,Валюта курслари
+Exchange fee,Биржа комиссияси
 Exchange rate,Алмашта нарх
 Exchange rate ({0}),
 Exchange rate must be greater than zero.,Валюта курси нолдан катта бўлиши керак.
@@ -1085,6 +1132,7 @@ Failed to submit transfer.,
 Failed to submit.,Тасдиқлаш қутулмади.
 Failed to switch language.,Тилни алмаштириб бўлмади.
 Failed to toggle status.,
+Failed to update CBU rates.,CBU курсларини янгилаб бўлмади.
 Failed to update bill.,Ҳисобни янгилаб бўлмади.
 Failed to update color.,
 Failed to update journal entry.,Проводкани янгилаб бўлмади.
@@ -1180,8 +1228,11 @@ Generate drafts,Қоралама яратиш
 Generated salary slips,Яратилган варақалар
 Geolocation is not available in this browser.,Бу браузерда геолокация мавжуд эмас.
 Given,Берилган
+Go,Борамиз
 Go to Sales Orders,Сотув буюртмасига ўтиш
 Good Produced Qty,
+Goods,Товар
+Goods (PO),Товар (PO)
 Google Drive libraries are not installed on the server. ,
 Grace period (min),
 Grand Total,Умумий жами
@@ -1195,8 +1246,11 @@ Gross pay,Ҳисобланган маош
 Gross total,Жами (брутто)
 Group,Гуруҳ
 "Group warehouse (can contain children, holds no stock itself)","Гуруҳ омбори (болаларни сақлаши мумкин, ўзи қўй сақламайди)"
+Guarantee,Кафолат
+Guarantee return,Кафолат қайтиши
 HR,Инсон Ресурслари
 HR overview,HR умумий кўриниш
+HS code (ТН ВЭД),ТН ВЭД коди
 Half Day,Ярим кун
 Half rate,
 Half-day & Presence,
@@ -1238,6 +1292,7 @@ Imported {0} of {1} lines ({2} duplicates skipped).,{1} қатордан {0} и�
 In,Кириш
 In progress,Кўл остидан
 In time,Кириш вақти
+In transit,Йўлда
 InService,Ишда
 Inactive,Фаол эмас
 Include drafts,Қораламалар билан
@@ -1252,6 +1307,7 @@ Install libraries on the server:,
 Installment,Бўлиб тўлаш
 Installment Calendar,
 Installments,Тўловлар
+Insurance,Суғурта
 Intake via {0}.,
 Integration,
 Integration type,
@@ -1263,6 +1319,7 @@ Invalid date: {0}. Expected YYYY-MM-DD.,
 Invalid decision: {0},Нотўғри қарор: {0}
 Invalid filename.,
 Invalid filters payload.,
+Invalid intake payload.,Тендер маълумоти нотўғри.
 Invalid item_overrides payload,Нотўғри item_overrides юки
 Invalid item_returns payload,Нотўғри item_returns юки
 Invalid kiosk credentials.,Киоск логин маълумотлари нотўғри.
@@ -1272,6 +1329,7 @@ Invalid month: {0},
 Invalid payload — expected JSON object.,
 Invalid payload.,
 Invalid period format,
+Invalid pricing payload.,Нарх маълумоти нотўғри.
 Invalid punches payload.,
 Invalid resolution '{0}'. Must be one of: {1},
 Invalid status: {0},Нотўғри ҳолат: {0}
@@ -1341,7 +1399,13 @@ Keeps the audit trail; amend to correct.,Аудит изи сақланади; �
 Kind,
 Kiosk login is not configured on this site.,Бу сайтда киоск логин созланмаган.
 Label,Ном
+Landed,Етказилган
+Landed cost (goods + import),Етказилган нарх (товар + импорт)
+Landed cost + our margin → the price we bid,Етказилган нарх + маржамиз → биз таклиф қиладиган нарх
+Landed cost plan,Етказилган харажат режаси
 Landed cost vouchers,Қўшимча харажат ваучерлари
+Landed plan saved.,Режа сақланди.
+Landed total,Етказилган жами
 Lane,Йўлак
 Lanes,Йўлаклар
 Language,Тил
@@ -1376,6 +1440,7 @@ Ledger,
 Ledger spans multiple account currencies; amounts shown in base currency.,Ҳисоб китоби бирнечта ҳисоб валютасига тўхтайди; сумалар асос валютасида кўрсатилади.
 Ledger — all vouchers (reconciles to the balance),Ledger — барча ҳужжатлар (балансга мос)
 Left,Ишдан кетган
+Legal / lawyer,Юрист
 Length,Бўй
 Level {0},
 Level {0} approved — awaiting level {1}.,
@@ -1400,6 +1465,7 @@ List rate,Рўйхат нарх
 "Live receivable (all-time, all vouchers)","Жорий қарз (бутун тарих, барча ҳужжатлар)"
 Loaded,Юклангани
 Loading,Юкланмоқда
+Loading / unloading,Юклаш / тушириш
 Loading FX account balances…,
 Loading invoices,
 Loading more…,
@@ -1425,8 +1491,11 @@ Log out,Чиқиш
 Login required,Кириш зарур
 Login required.,
 Login with PIN,
+Logistics,Логистика
 Longitude,Географик узунлик
+Lost,Ютқаздик
 Lost Badge? Login with PIN,
+Lot no,Лот №
 Low,Паст
 Low Stock,Паст Захира
 Low Stock Alerts,Паст қолдиқ ҳақида огоҳлантиришлар
@@ -1447,6 +1516,8 @@ Mapping deleted.,
 Mapping updated.,
 Margin,Фойда
 Margin %,Фойда %
+Margin on revenue,Тушумга маржа
+Margin → price,Маржа → нарх
 Mark,Белгилаш
 Mark Resolved,Ҳал қилинган деб белгилаш
 Mark and submit,Белгилаш ва тасдиқлаш
@@ -1460,6 +1531,7 @@ Marked,
 Marketing,Маркетинг
 Marketing Claims,Маркетинг даъволари
 Marketing claim settlement for {0},{0} учун маркетинг даъволари ҳисобо бўлиши
+Markup on cost,Таннархга устама
 Match & reconcile,Мослаштириш ва солиштириш
 Matched employee,
 Material Issue submitted: {0},Материаллар чиқими тасдиқланди: {0}
@@ -1510,6 +1582,7 @@ Multi-level approval incomplete,
 Multiplier (× hourly rate),
 My Work Orders Queue,
 My requests,Менинг сўровларим
+My tenders,Менинг тендерларим
 My work orders,Менинг ишлаб чиқариш буюртмаларим
 Name,Ном
 Name is required.,
@@ -1526,6 +1599,8 @@ Net,Тўланади
 Net ROI %,Тоза ROI %
 Net owed,
 Net pay,Тоза маош
+Net profit,Соф фойда
+Net revenue,Соф тушум
 Net total,Тоза жами
 Net unrealised gain / loss,
 Never,Ҳеч қачон
@@ -1644,6 +1719,7 @@ No company selected,Компания танланмаган
 No correction requests,
 No corrections are waiting for review.,
 No corrections found for this status.,
+"No cost items yet — add transport, customs, certification…","Ҳозирча харажат йўқ — транспорт, божхона, сертификатлаш қўшинг…"
 No coverage,Қамров йўқ
 No creditors found.,
 No custom allowances. Click Add to create one.,
@@ -1731,7 +1807,9 @@ No promo schemes yet,Ҳали рекламалаш схемалари йўқ
 No punches — employee will be marked absent.,
 No purchase invoices in this range,
 No purchase orders have been registered for this supplier.,
+No purchase orders in the customs queue.,Божхона навбатида буюртма йўқ.
 No purchase orders in this range,Бу диапазонда сотиб олиш буюртмалари йўқ
+No purchase orders tagged to this tender yet.,Бу тендерга ҳали PO бириктирилмаган.
 No purchase receipts in this range,
 No quotations in this range,Бу диапазонда қўллашмалар йўқ
 No raw events,
@@ -1761,6 +1839,7 @@ No segregation-of-duties conflicts found.,Вазифалар тақсимоти 
 No serial,Серия рақами йўқ
 No service tickets,Мурожаатлар йўқ
 No service visits,
+No shipments yet.,Ҳозирча жўнатма йўқ.
 No stages yet.,Ҳали босқичлар йўқ.
 No statements imported yet.,Ҳали кўчирма импорт қилинмаган.
 No steps yet.,Ҳали қадамлар йўқ.
@@ -1778,6 +1857,8 @@ No supplier quotations for this tender.,Бу тендер учун еткази�
 No suppliers,Таъминотчилар йўқ
 No suppliers match that name,Бу номга мос таъминотчилар йўқ
 No template,Шаблон йўқ
+No tenders assigned yet.,Ҳозирча бириктирилган тендер йўқ.
+No tenders yet.,Ҳозирча тендер йўқ.
 No tickets for this unit.,Бу бирлик учун тикет йўқ.
 No transactions,Операциялар йўқ
 No transactions in this period.,Бу давр ичида операциялар йўқ.
@@ -1796,6 +1877,7 @@ No work orders,Ишлаб чиқариш буюртмалари йўқ
 No work orders assigned to you yet.,Сизга ҳали ҳеч қандай буюртма тайинланмаган.
 No {0} receivable account exists for company {1}. ,{0} учун {1} компаниясида дебиторлик ҳисоби мавжуд эмас. 
 No {0} {1} account exists for company {2}. ,
+No-go,Бормаймиз
 None,Йўқ
 Normal,Оддий
 Nos,Йўқ
@@ -1852,6 +1934,7 @@ On Leave,Таътилда
 On hand,Қўлда
 On leave,
 On leave today,Бугун таътилда
+On track,Вақтида
 On-Shelf-Availability audits compare expected vs actual facings during visits.,Ўринда сотувга ҳозирлик аудитлари қариндашликлар давомида кутилган ва ҳақиқий ҷойлашув ўрнини солиштиради.
 On-hand batches at risk: expired and expiring soon.,Хавф остидаги партиялар: муддати ўтган ва тугаётган.
 On-hand value vs sales velocity. Flags slow-moving and dead stock.,Захира қиймати савдо тезлигига нисбатан. Секин ва ўлик захира белгиланади.
@@ -1913,6 +1996,8 @@ Orientation,Йўналиш
 Origin,
 Original qty,Асосий миқдори
 Other,Бошқа
+Other cost,Бошқа харажат
+Other costs (before profit),Бошқа харажатлар (фойдадан олдин)
 Out,Чиқиш
 Out of stock,Омборда йўқ
 Out time,Чиқиш вақти
@@ -1949,6 +2034,11 @@ Overview,Умумий кўриниш
 Owes us,Бизга қарздор
 Owner,
 PIN,
+PO,PO
+PO ETA,PO ETA
+PO count,PO сони
+PO total,PO жами
+PO vs quote,PO vs котировка
 POS,
 POS Profile,
 POS Profile belongs to a different company.,
@@ -1973,6 +2063,7 @@ Partially Completed,Қисман бажарилди
 Partially Reserved,
 Partially approved — awaiting level {0},
 Partially billed — {pct}% invoiced.,
+Partially received,Қисман қабул қилинган
 Partly paid,Қисман тўланган
 Parts Issue,Эҳтиёт қисмлар чиқими
 Party,Томон
@@ -2044,6 +2135,7 @@ Payroll period end date cannot be before start date.,
 Payroll periods,Ойлик даврлари
 Payroll-impacting pending,
 Pays out this share of the KPI pool. Locked periods are read-only.,KPI фондининг шу улушини тўлайди. Қулфланган даврлар фақат ўқиш учун.
+Penalty %/day,Жарима %/кун
 Pending,Кутилмоқда
 Pending Corrections,
 Pending approvals,Тасдиқ кутилмоқда
@@ -2082,6 +2174,7 @@ Pick a source warehouse.,Манба омборини танланг.
 Pick a status.,Ҳолатни танланг.
 Pick a supplier.,Таъминотчини танланг.
 Pick a tender deal to compare quotations.,Котировкаларни таққослаш учун тендер битимини танланг.
+Pick a tender deal to see its purchase orders.,PO ларни кўриш учун тендерни танланг.
 Pick a valid date range.,Тўғри сана оралиғини танланг.
 Pick a valid month.,Тўғри ойни танланг.
 Pick a warehouse,Омборини танланг
@@ -2107,6 +2200,7 @@ Place your RFID badge on the reader to log in,
 Placed Freezer,Музлатгич ўрнатилди
 Placing,Жойлаштириш
 Plan Type,Режа тури
+Plan vs actual,Режа vs ҳақиқий
 Planned,Режалаштирилган
 Planned Date,Режалаштирилган сана
 Planned Qty,
@@ -2121,6 +2215,7 @@ Planograms,Планограммалар
 Planograms describe expected shelf facings per outlet and category.,Планограммалар ҳар бир сотув жойи ва категория учун полка ўрнашувини ўзида мужассам ўтади.
 Please fill all required fields.,Зарур бўлган барча майдонларни тўлдиринг.
 Policy,Сиёсат
+Portfolio value,Портфел қиймати
 Position,
 Positions,Вазифалар
 Positions hierarchy,Вазифалар иерархияси
@@ -2146,6 +2241,7 @@ Preview,Кўриб чиқиш
 Price Tier,Нарх даражаси
 Price history,Нарх тарихи
 Price list,Нарх рўйхати
+Price → margin,Нарх → маржа
 Print,Босиб чиқариш
 Priority,Муҳимлик
 Probability,Еҳтимоллик
@@ -2164,7 +2260,9 @@ Professional Excel export of this ledger,Бу реестрнинг профес�
 Professional Excel export with current filters,Жорий фильтрлар билан профессионал Excel экспорти
 Profile,Профил
 Profile gaps,Профил бўшлиқлари
+Profit,Фойда
 "Profit and Loss, Balance Sheet, Trial Balance, and Cash Flow.",
+Profit tax,Фойда солиғи
 Projected,Прогнозланган
 Promo,Акция
 Promo Plan,Акция режаси
@@ -2178,6 +2276,7 @@ Promos,Акциялар
 Promotion spend and uplift analysis.,
 Properties,Хусусиятлар
 Prorated base,Асос (пропорсионал)
+Provider (supplier),Ижрочи (етказиб берувчи)
 Public holiday,
 Pull gate punches from TimePay for these days and turn them into attendance. Nightly sync runs automatically; use this to catch up now.,"Шу кунлар учун TimePay'дан ўтишларни юклаб, давоматга айлантиринг. Тунги синхрон автоматик ишлайди; ҳозир янгилаш учун фойдаланинг."
 Punches,
@@ -2215,6 +2314,7 @@ RUB → UZS,РУБ → ўзб сўм
 Rack,Полка
 Range is too wide — sync at most one month at a time.,Оралиқ жуда кенг — бир вақтда кўпи билан бир ой.
 Rank by,Саралаш
+Ranked by delivered cost,Етказилган нарх бўйича тартибланган
 Raqam,Рақам
 Rate,Нарх
 Rate cannot be negative.,
@@ -2370,6 +2470,7 @@ Resolved At,ҳалқилинган вақти
 Restore test,Тиклаш синови
 Restore test recorded.,Тиклаш синови қайд этилди.
 "Restrict this mapping to a specific reader, or leave blank to match all devices.",
+Result,Натижа
 Resume,Давом эттириш
 Resume Work,
 Resume Work Order,
@@ -2398,6 +2499,7 @@ Revenue vs. Expense (12 months),Даромад ва харажатлар (12 о�
 "Revenue − COGS per item, with margin %. Cost from item valuation.","Даромад − таннарх маҳсулот бўйича, фойда % билан. Таннарх маҳсулот баҳосидан."
 Reviewed by,Кўриб чиққан
 Reviewer Notes,Кўриб чиқувчи изоҳлари
+Risk,Хавф
 Role,Ролъ
 Role change blocked,Рол ўзгариши блокланди
 Role not found,Ролъ топилмади
@@ -2425,11 +2527,15 @@ Rule set saved.,
 Rule sets,
 Run,Ишга тушириш
 Run a payroll cycle to generate salary slips for assigned employees.,Тайинланган ходимлар учун маош варақаларини яратиш учун ҳисоблашни ишга туширинг.
+Run migrate to enable bid pricing.,Нарх режасини ёқиш учун migrate ишга туширинг.
+Run migrate to enable landed-cost planning.,Етказилган харажат режасини ёқиш учун migrate ишга туширинг.
+Run migrate to enable tender intake.,Тендер қабулини ёқиш учун migrate ишга туширинг.
 Run now,Ҳозир ишга тушириш
 Run payroll,Маошни ҳисоблаш
 Run-rate,Ойлик айланма
 Running value,Тўпланган қиймат
 SFA,
+SO,SO
 SO number or customer…,
 SRE module unavailable: {0},SRE модули ишламайди: {0}
 SREs,SRE
@@ -2487,12 +2593,14 @@ Save allowed users,Рухсат берилган фойдаланувчилар�
 Save and submit,Сақлаш ва тасдиқлаш
 Save as Draft,Қоралама сифатида сақлаш
 Save as draft,Қоралама сифатида сақлаш
+Save bid pricing,Нарх режасини сақлаш
 Save changes,Ўзгаришларни сақлаш
 Save device,
 Save draft,
 Save failed.,Сақлашда хатолик юз берди.
 Save mapping,
 Save modules,Модулларни сақлаш
+Save plan,Режани сақлаш
 Saved — pending approval before it posts.,Сақланди — киритилишидан олдин тасдиқ кутилмоқда.
 Saved.,
 Saving…,Сақланмоқда…
@@ -2551,6 +2659,7 @@ Search stock items…,Омбор товарларини қидириш…
 Search supplier name…,Етказиб берувчи номини қидириш…
 Search suppliers…,Таъминотчиларни қидириш…
 Search supplier…,Етказиб берувчиро қидириш…
+Search supplier… ⌘K,Етказиб берувчини қидириш… ⌘K
 Search voucher…,
 Search warehouse…,Омбор ичида қидириш…
 Search work orders…,Ишлаб чиқариш буюртмаларини қидириш…
@@ -2627,6 +2736,7 @@ Set Reports-To on employees to build the positions hierarchy.,"Лавозимл�
 Set a Google Drive folder ID first.,Аввал Google Drive папка ID'сини киритинг.
 Set as company default,Компания стандарти қилиш
 Set as company default.,Компания стандарти қилиб ўрнатилди.
+Set deadlines in Tender details.,Муддатларни тендер тафсилотларида киритинг.
 "Set the Google Drive folder ID in Stabler Settings, and share that Shared-Drive folder with the service account email.",
 Setting up your business…,Бизнесингиз созланмоқда…
 Settings,
@@ -2725,6 +2835,7 @@ Stock value,Сўзи қиймати
 Stop,Тўхтатиш
 Stop Work Order,
 Stop this Work Order? You can resume it later.,Бу буюртмани тўхтатасизми? Кейин давом эттирса бўлади.
+Storage,Сақлаш
 Storefront,Дўкон саҳнаси
 Stuck (min),Осилган (дақ)
 Subject,Мавзу
@@ -2783,13 +2894,16 @@ Sync now,Синхронлаш
 System qty,Тизимдаги миқдор
 TIN,СТИР
 Table,Жадвал
+Tag Sales/Purchase Orders to a tender deal to see them here.,Уларни бу ерда кўриш учун буюртмаларни тендерга боғланг.
 Tag Supplier Quotations to this deal to compare them here.,Таққослаш учун котировкаларни шу битимга боғланг.
 Take Payment,
 Target Remaining,
 Target WIP Warehouse,
+Target margin (profit ÷ net revenue),Мақсадли маржа (фойда ÷ соф тушум)
 Task,Вазифа
 Tax ID,Солиқ ID
 Tax amount,
+Tax rates,Солиқ ставкалари
 Tax template,Солиқ шаблони
 Tax type,Солиқ тури
 Taxes,Солиқлар
@@ -2800,7 +2914,11 @@ Tender,Тендер
 Tender / deal,Тендер / битим
 Tender Deadline,Тендер муддати
 Tender No,Тендер рақами
+Tender PO control,Тендер PO назорати
 Tender Source,Тендер манбаи
+Tender bid pricing,Тендер таклиф нархи
+Tender details,Тендер тафсилотлари
+Tender intake saved.,Тендер маълумоти сақланди.
 Tender module is not enabled for {0}.,
 Tender: {0}.,
 Tenure,Иш стажи
@@ -2887,12 +3005,14 @@ To account,Гача ҳисобга
 To bill,Ҳисоб-фактурага
 To date,
 To deliver,Етказишга
+To receive,Қабул кутилмоқда
 To warehouse,Гача омборга
 Today,
 Toggle date sort,
 Token status,
 Too many failed attempts. Please try again in 5 minutes.,
 Too many rows (max 5000).,
+Tools,Воситалар
 Top 10 Creditors,
 Top 10 Debtors,
 Total,Жами
@@ -2903,6 +3023,7 @@ Total Required,
 Total SKUs,Жами SKU
 Total allocated,Жами ажратилган
 Total allocated cannot exceed the payment amount.,Жами ажратилган сумма тўлов суммасидан кўп бўла олмайди.
+Total committed,Жами мажбурият
 Total cost,Умумий харажат
 Total credit value,
 Total credits,
@@ -2959,6 +3080,7 @@ Unassigned department or position.,Бўлим ёки лавозим бирикт
 Unassigned dept / position,Бўлим / лавозим йўқ
 Unbilled,Ҳисобланмаган
 Unbilled queue,Ҳисоб-фактура навбати
+Unit,Бирлик
 Unit cost,Бирлик таннархи
 Units Sold,Сотилган бирлик
 Unknown,
@@ -2976,6 +3098,7 @@ Unknown employee: {0},
 Unknown hash algorithm: {0},
 Unknown item: {0},
 Unknown payment session.,
+Unknown purchase order: {0},Номаълум харид буюртмаси: {0}
 Unknown report: {0},
 Unknown role template: {0},Номаълум рол шаблони: {0}
 Unknown role: {0},
@@ -3002,6 +3125,8 @@ Upload failed,Юклаш ишламади
 Upload latest to Drive,Охиргисини Drive'га юклаш
 Uploaded {0} file(s) to Google Drive.,
 Uploading…,Юклаунмоқда…
+Use POs' landed,PO’лардан олиш (етказилган)
+Use Sales Orders,Сотув буюртмаларидан олиш
 Use my location,Менинг жойлашувим
 Use source warehouse,Манба омборидан фойдаланиш
 User,Фойдаланувчи
@@ -3013,6 +3138,7 @@ User status updated.,
 Users,Фойдаланувчилар
 Users flagged,Белгиланган фойдаланувчилар
 Utilization %,Фойдаланиш %
+VAT,ҚҚС
 VAT registered,ҚҚС тўловчиси
 Valid Distributor (Customer) is required.,Яроқли Тарқатувчи (Харидор) талаб қилинади.
 Valid From,Дан бошлаб яроқли
@@ -3034,7 +3160,11 @@ Van Stock name is required.,Автомобил қўйи номи талаб қи
 Van stock tracks what each field user has loaded for the day.,Автомобил қўйи ҳар бир фаол фойдаланувчи кун давомида юклаган нарсаларни кузатади.
 Var %,
 Variance,Фарқ
+Vendor,Етказиб берувчи
 Vendor bill does not match PO / receipt,Етказиб берувчи ҳисоби буюртма / қабулга мос келмайди
+Vendor comparison,Вендор таққослаш
+Vendor comparison (landed),Етказиб берувчиларни солиштириш (етказилган)
+Vendors,Вендорлар
 Vertical lanes (flow top→bottom),Вертикал йўлаклар (оқим юқори→пастки)
 View,Кўриш
 View all,Ҳаммасини кўриш
@@ -3058,6 +3188,7 @@ Visits,Сафарилар
 Visits appear once they are planned from a route or created manually.,Сафарилар йўл бўйича режалаштирилганда ёки қўл билан яратилганда пайдо бўлади.
 Visits this month,Бу ойдаги ташрифлар
 Void Cart,
+Volume,Ҳажм
 Voucher,Чек
 Voucher not found.,
 Voucher not found: {0} {1},
@@ -3115,6 +3246,8 @@ Width,Эн
 Win/Loss Reason,Ютуқ/ютқазиқ сабаби
 Withdrawal,Ечиб олиш
 Withheld,Ушлаб қолинган
+Won,Ютдик
+Won price,Ютуқ нархи
 Won this month,Шу ойда ютилган
 Work From Home,Уйдан иш
 Work Order,Ишлаб чиқариш буюртмаси
@@ -3161,6 +3294,7 @@ absent,келмаган
 across all statuses,барча ҳолатлар бўйича
 active,
 active staff,фаол ходим
+actual so far,ҳозирча ҳақиқий
 against,
 ambiguous,ноаниқ
 avail,мавж.
@@ -3178,6 +3312,8 @@ customer credit,
 date_str and hire_date are required.,
 day,кун
 days,кун
+days late,кун кечиккан
+days left,кун қолди
 default,
 department,бўлим
 depts,бўлим
@@ -3190,6 +3326,8 @@ e.g. EMP-00042,
 e.g. Main entrance reader,
 "e.g. OK, Approved","мас. Ҳа, Тасдиқланди"
 e.g. Standard 8h shift,
+e.g. bank / SWIFT,масалан банк / SWIFT
+e.g. office,масалан офис
 employee is required.,
 employees,
 entries,
@@ -3208,6 +3346,7 @@ item,Товар
 item_code and warehouse are required,Товар коди ва омбор керак
 items,Товарлар
 joined this month,шу ой қўшилди
+landed,етказилган
 late,кечиккан
 leave,
 left,қолди
@@ -3223,6 +3362,7 @@ moves stock,
 name is required.,
 need GPS,GPS керак
 no stock movement,
+not set,киритилмаган
 on budget,
 "one Journal Entry, clears their payable.","битта журнал ёзуви, мажбуриятни ёпади."
 one-off,бир марталик
@@ -3241,6 +3381,7 @@ punches,белгилаш
 quantity,миқдор
 ready to invoice,ҳисоб-фактурага тайёр
 reason is required and must not be empty.,
+received,қабул қилинган
 requested_value is required.,
 reserved,банд
 revenue,тушум
@@ -3255,6 +3396,7 @@ step_idx must be an integer.,step_idx бутун сон бўлиши керак.
 stock,захира
 summaries ready,ҳисобот тайёр
 to_date must be >= from_date.,
+today,бугун
 unfavorable,
 units,
 units total,жами бирлик
@@ -3262,6 +3404,7 @@ updated,
 user@example.com,user@example.com
 valuation,баҳолаш
 vouchers must be a JSON list.,
+vs cheapest,энг арзонга нисбатан
 vs. last month,ўткан ойга қарши
 without location,жойлашуви йўқ
 yr,йил
@@ -3277,6 +3420,8 @@ yr,йил
 {0}: discount_percentage must be between 0 and 100,{0}: чегирма фоизи 0 ва 100 орасида бўлиши керак
 {0}: rate cannot be negative,{0}: нарх манфий бўла олмайди
 {n} outstanding invoice(s),{n} та тўланмаган ҳисоб-фактура
+Δ,Δ
+Остаток (net remaining),Остаток (соф қолдиқ)
 —,—
 — Any device —,
 — Choose account —,— Ҳисобни танланг —
@@ -3298,3 +3443,26 @@ yr,йил
 — select —,
 — top-level —,— юқори сатҳ —
 ⚠ {0} line(s) had no cost — verify item valuation; margin may be overstated.,⚠ {0} сатр(да) таннарх йўқ — товар баҳолашни текширинг; маржа ошириган бўлиши мумкин.
+Purchase method,Харид усули
+Auction,Ауксион
+Shop,Дўкон
+Selection,Танлов
+Document checklist,Ҳужжатлар рўйхати
+Standard set,Стандарт тўплам
+"No documents yet — add the standard set (ГТД, certificate, acceptance act…).","Ҳозирча ҳужжат йўқ — стандарт тўпламни қўшинг (ГТД, сертификат, далолатнома…)."
+Manager,Менежер
+Assigned.,Бириктирилди.
+Could not assign.,Бириктириб бўлмади.
+Win rate,Ютуқ фоизи
+W,Ю
+L,Юқ
+P,Ку
+Customs value (CIF),Божхона қиймати (CIF)
+Duty,Бож
+Currency risk (foreign purchase),Валюта риски (чет эл хариди)
+Exposure amount,Экспозиция суммаси
+Bid rate,Таклиф курси
+Payment rate,Тўлов курси
+FX favorable,Курс фойдали
+FX risk,Валюта риски
+FX open,Валюта: очиқ

@@ -70,6 +70,9 @@ watch(() => route.query.deal, (d) => {
 			<router-link to="/tender/board" class="btn btn-outline-secondary btn-sm ms-auto">
 				<i class="ti ti-layout-kanban me-1"></i>{{ t("Contract board") }}
 			</router-link>
+			<router-link to="/tender/po-control" class="btn btn-outline-secondary btn-sm">
+				<i class="ti ti-clipboard-check me-1"></i>{{ t("Tender PO control") }}
+			</router-link>
 		</div>
 
 		<!-- Deal picker -->

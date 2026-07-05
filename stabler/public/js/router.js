@@ -33,6 +33,11 @@ import SalesOrders from "./pages/sales/SalesOrders.vue";
 import SalesOrderForm from "./pages/sales/SalesOrderForm.vue";
 import SalesOrderBoard from "./pages/sales/SalesOrderBoard.vue";
 import SourcingCompare from "./pages/sales/SourcingCompare.vue";
+import PoControlBoard from "./pages/tender/PoControlBoard.vue";
+import DirectorBoard from "./pages/tender/DirectorBoard.vue";
+import DeclarantQueue from "./pages/tender/DeclarantQueue.vue";
+import LogistBoard from "./pages/tender/LogistBoard.vue";
+import MyTenders from "./pages/tender/MyTenders.vue";
 import SalesInvoices from "./pages/sales/SalesInvoices.vue";
 import SalesInvoiceForm from "./pages/sales/SalesInvoiceForm.vue";
 import SalesReturnForm from "./pages/sales/SalesReturnForm.vue";
@@ -167,6 +172,11 @@ const routes = [
 	{ path: "/manufacturing/line", name: "manufacturing-line", component: ManufacturingOperatorBoard, meta: { title: t("Operator Kiosk") } },
 	{ path: "/tender/board", name: "tender-board", component: SalesOrderBoard, meta: { title: t("Contract board"), module: "tender" } },
 	{ path: "/tender/sourcing", name: "tender-sourcing", component: SourcingCompare, meta: { title: t("Sourcing comparison"), module: "tender" } },
+	{ path: "/tender/po-control", name: "tender-po-control", component: PoControlBoard, meta: { title: t("Tender PO control"), module: "tender" } },
+	{ path: "/tender/director", name: "tender-director", component: DirectorBoard, meta: { title: t("Director board"), module: "tender" } },
+	{ path: "/tender/my-tenders", name: "tender-my-tenders", component: MyTenders, meta: { title: t("My tenders"), module: "tender" } },
+	{ path: "/tender/customs", name: "tender-customs", component: DeclarantQueue, meta: { title: t("Customs queue"), module: "tender" } },
+	{ path: "/tender/logistics", name: "tender-logistics", component: LogistBoard, meta: { title: t("Logistics"), module: "tender" } },
 	{
 		path: "/money",
 		component: MoneyHome,

@@ -323,7 +323,6 @@ def build_paid_pos_invoice(
 	doc.set_paid_amount()
 	doc.insert()
 	doc.submit()
-	frappe.db.commit()
 	return doc
 
 
@@ -433,7 +432,6 @@ def pos_gateway_status(session: str):
 	if doc.status == "Pending" and C.is_expired(doc):
 		doc.status = "Expired"
 		doc.save(ignore_permissions=True)
-		frappe.db.commit()
 
 	return {
 		"session": doc.name,
@@ -459,5 +457,4 @@ def pos_gateway_cancel(session: str):
 		doc.status = "Cancelled"
 		doc.cancel_time_ms = C.epoch_ms()
 		doc.save(ignore_permissions=True)
-		frappe.db.commit()
 	return {"session": doc.name, "status": doc.status}

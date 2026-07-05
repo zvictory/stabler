@@ -19,6 +19,7 @@ source,target
 61–90,61–90
 90+,90+
 A Payroll Attendance Summary for employee {0} and period {1} already exists: {2},
+A company with this name already exists.,Компания с таким названием уже существует.
 A few quick questions and you're ready to sell.,Пара быстрых вопросов — и можно продавать.
 A mapping for employee {0} with device user ID {1} already exists ({2}).,
 A new version is available.,Доступна новая версия.
@@ -68,9 +69,11 @@ Activation rate,Конверсия
 Active,Активные
 Active Company,
 Active from,
+Active tenders,Активные тендеры
 Active to,
 Activities,Действия
 Actual,Фактический
+Actual landed,Факт. с доставкой
 Add,Добавить
 Add Deal,
 Add Decision,Добавить решение
@@ -89,6 +92,7 @@ Add at least one item with a positive quantity.,Добавьте хотя бы �
 Add at least one raw material line.,Добавьте хотя бы одну строку сырья.
 Add child warehouse,Добавить подсклад
 Add column,Добавить колонку
+Add cost item,Добавить статью расходов
 Add customer,Добавить клиента
 Add deal,Добавить сделку
 Add holiday,Добавить праздник
@@ -200,6 +204,7 @@ Amount received,Сумма получена
 Amount sent,Сумма отправлена
 Amount to transfer,Сумма перевода
 Amounts in,Суммы в
+Amounts in company currency,Суммы в валюте компании
 Analytics,Аналитика
 Anchor DAY hours (h),
 Anchor LIGHT hours (h),
@@ -251,6 +256,7 @@ At least one counted item line is required.,
 At least one visit purpose is required.,
 At least one voucher is required.,
 At least two account lines are required.,Требуется минимум две строки счета.
+At risk,Риск
 At-risk,Под угрозой
 Attendance,Посещаемость
 Attendance Dashboard,
@@ -266,6 +272,7 @@ Audit trail,Журнал изменений
 Audited At,Проверено
 Authentication required.,
 Available,Доступно
+Avg margin,Средняя маржа
 Avg orders / customer,Заказов на клиента
 Avg time to first order,Срок до первого заказа
 Awaiting level {0},
@@ -293,6 +300,7 @@ Balance (Account Currency),Остаток (валюта счета)
 Balanced,Сбалансировано
 "Balances, advances and payments appear here.",
 "Balances, salaries, advances and payments appear here.","Здесь показываются балансы, зарплаты, авансы и выплаты."
+Bank / transfer,Банк / перевод
 Bank Account '{0}' not found.,
 Bank account,Банковский счёт
 Bank account does not belong to company '{0}'.,
@@ -316,6 +324,10 @@ Batches expiring within {0} days are flagged. Value at item valuation rate.,"П�
 Before → Requested,
 Berry,
 Bid Value,Сумма заявки
+Bid deadline,Срок подачи
+Bid price (Договор),Цена предложения (Договор)
+"Bid price (Договор, VAT incl.)","Цена предложения (Договор, с НДС)"
+Bid pricing saved.,Ценообразование сохранено.
 Bill,Счёт
 Bill #,Счет №
 Bill / invoice number printed on supplier document,"Номер счета / накладной, указанный в документе поставщика"
@@ -339,6 +351,7 @@ Books locked nets to salary payable.,Записывает нетто в зарп
 Branch,
 Brand,Бренд
 Break minutes,
+Broker,Брокер
 Budget,Бюджет
 "Budget name, fiscal year…",
 Budget vs Actual,
@@ -348,6 +361,7 @@ Business name is required.,Название бизнеса обязательн�
 Buy,Купить
 Buy X get Y,Купи X получи Y
 Buy markup,Наценка (покупка)
+Buyer,Покупатель
 Buying price list,Прайс-лист покупки
 By,
 By item,
@@ -356,6 +370,8 @@ By region,По региону
 By rep,По менеджеру
 C,
 CBU rate: {rate} ({date}),
+CBU rates are already up to date.,Курсы ЦБ уже актуальны.
+CBU rates updated: {rates},Курсы ЦБ обновлены: {rates}
 CBU.uz exchange rates (last 30 days),Курсы валют ЦБУ.uz (последние 30 дней)
 CBU.uz exchange rates appear here.,Здесь отображаются курсы валют ЦБУ.uz.
 CBU:,
@@ -421,12 +437,16 @@ Cashier Lock,
 Categories,Категории
 Category,Категория
 Category is required.,Категория обязательна.
+Certificate required,Требуется сертификат
+Certification,Сертификация
 Change,
 Changed,Изменено
 Channel,Канал
 Charge via {provider},Оплата через {provider}
+Charges,Расходы
 Chart of Accounts,План счетов
 Cheapest,Дешевле всех
+Cheapest (landed),Самый дешёвый (с доставкой)
 Checked in,Отметка о приходе
 Checking availability…,Проверка доступности…
 Checking readiness…,
@@ -455,6 +475,7 @@ Clear,Очистить
 Clear filters,Сбросить фильтры
 Clear open reservations,Очистить открытые резервирования
 Clear search,Очистить поиск
+Cleared,Очищено
 Cleared {0} of {1},Очищено {0} из {1}
 Click New Revaluation to preview unrealised FX deltas and post an Exchange Rate Revaluation.,
 Click a line to see suggested matches.,"Нажмите на строку, чтобы увидеть предложенные совпадения."
@@ -553,26 +574,38 @@ Cost,Себестоимость
 Cost Centre,
 Cost centre,
 Cost must be positive.,Себестоимость должна быть положительной.
+Costs after dividends (office…),Расходы после дивидендов (офис…)
 Could not accrue salary.,Не удалось начислить зарплату.
 Could not add holiday.,Не удалось добавить праздник.
 Could not add stage.,Не удалось добавить этап.
 Could not check payment status.,Не удалось проверить статус платежа.
 Could not create contract.,Не удалось создать контракт.
 Could not create the transaction.,Не удалось создать операцию.
+Could not load bid pricing.,Не удалось загрузить ценообразование.
 Could not load data health.,Не удалось загрузить качество данных.
 Could not load employee finances.,Не удалось загрузить финансы сотрудника.
+Could not load landed charges.,Не удалось загрузить расходы.
 Could not load quotations.,Не удалось загрузить котировки.
 Could not load repost status.,Не удалось загрузить статус.
+Could not load tender intake.,Не удалось загрузить данные тендера.
 Could not load the HR overview.,Не удалось загрузить HR обзор.
+Could not load the PO board.,Не удалось загрузить доску PO.
 Could not load the board.,Не удалось загрузить доску.
+Could not load the customs queue.,Не удалось загрузить очередь таможни.
+Could not load the director board.,Не удалось загрузить панель директора.
 Could not load the entry.,Не удалось загрузить запись.
+Could not load the logistics board.,Не удалось загрузить логистику.
 Could not load unmatched users.,Не удалось загрузить несопоставленных пользователей.
+Could not load your tenders.,Не удалось загрузить ваши тендеры.
 Could not read backup file: {0},
 Could not read the uploaded file.,
 Could not read your location.,Не удалось определить местоположение.
 Could not resolve a customer for this deal.,
 Could not resolve payroll period: {0},
+Could not save bid pricing.,Не удалось сохранить ценообразование.
+Could not save landed charges.,Не удалось сохранить расходы.
 Could not save period.,Не удалось сохранить период.
+Could not save tender intake.,Не удалось сохранить данные тендера.
 Could not start setup.,Не удалось начать настройку.
 Could not start the online payment.,Не удалось начать онлайн-оплату.
 Could not start the processor.,Не удалось запустить процессор.
@@ -648,6 +681,8 @@ Customer name is required.,Требуется имя клиента.
 Customer receivables grouped by aging buckets.,
 "Customer, item, trend, and salesperson reports from submitted invoices.",
 Customers,Клиенты
+Customs,Таможня
+Customs queue,Очередь таможни
 Daily,Ежедневно
 Daily attendance records and employee presence checks.,
 Daily auto-backup,Ежедневная авто-копия
@@ -670,6 +705,8 @@ Days cannot be negative.,
 Days is unreasonably large.,
 Days left,Дней осталось
 Days of cover,Дней запаса
+Deadline control,Контроль сроков
+Deadline near,Срок близко
 Deal Owner,Владелец сделки
 Deal Value,Сумма сделки
 Deal has no organization or name to create a customer from.,
@@ -677,6 +714,8 @@ Deals,Сделки
 Debit,Дебет
 Debit note for,
 Debit notes:,
+Decision,Решение
+Declarant,Декларант
 Deducted from worked time daily.,
 Deducted per each step interval of lateness.,
 Deduction exceeds the outstanding advance balance.,Удержание превышает остаток аванса.
@@ -690,6 +729,7 @@ Default currency,Валюта по умолчанию
 Default price list,Прайс-лист по умолчанию
 Define promotions that field users can apply during visits.,"Определите акции, которые полевые сотрудники могут применять во время визитов."
 Define routes so field users know which outlets to visit each day.,"Определите маршруты, чтобы полевые сотрудники знали, какие точки посещать каждый день."
+Delayed,Задержка
 Delete,Удалить
 Delete Customer,
 Delete Draft Entry,
@@ -718,7 +758,9 @@ Delete this process?,Удалить этот процесс?
 Deliv,Доставл.
 Deliver,Доставить
 Delivered,Доставлено
+Delivery,Доставка
 Delivery date,Дата доставки
+Delivery deadline,Срок поставки
 Delta,
 Department,Подразделение
 Deposit,Поступление
@@ -743,6 +785,7 @@ Direct credit note,
 Direct sales return,
 Direction,Направление
 Directions,Маршрут
+Director board,Панель директора
 Disabled,Отключено
 Disc,Скидка
 Disc %,Скидка %
@@ -756,6 +799,8 @@ Dispatched,Отправлено
 Distributor,Дистрибьютор
 Distributor claims will appear here once submitted.,Претензии дистрибьютора появятся здесь после отправки.
 District,
+Dividend tax,Налог на дивиденды
+Dividends,Дивиденды
 DocType,Тип документа
 Document,Документ
 Document cancelled successfully.,
@@ -772,6 +817,7 @@ Document updated successfully.,
 Documents,Документы
 Done,Выполнено
 Download .ics,Скачать .ics
+Download CBU exchange rates,Загрузить курсы ЦБ
 Downpayment,Первоначальный взнос
 Downpayment %,Первоначальный взнос %
 Draft,Черновик
@@ -917,6 +963,7 @@ Exceptions Queue,
 Exceptions by Type,
 Exchange Rate Revaluation,
 Exchange Rates,Курсы валют
+Exchange fee,Биржевая комиссия
 Exchange rate,Обменный курс
 Exchange rate ({0}),
 Exchange rate must be greater than zero.,Курс валюты должен быть больше нуля.
@@ -1092,6 +1139,7 @@ Failed to submit transfer.,
 Failed to submit.,Ошибка отправки.
 Failed to switch language.,Не удалось изменить язык.
 Failed to toggle status.,
+Failed to update CBU rates.,Не удалось обновить курсы ЦБ.
 Failed to update bill.,Не удалось обновить счёт.
 Failed to update color.,
 Failed to update journal entry.,Не удалось обновить проводку.
@@ -1187,8 +1235,11 @@ Generate drafts,Создать черновики
 Generated salary slips,Создано листков
 Geolocation is not available in this browser.,Геолокация недоступна в этом браузере.
 Given,Выдано
+Go,Идём
 Go to Sales Orders,Перейти к заказам на продажу
 Good Produced Qty,
+Goods,Товар
+Goods (PO),Товар (PO)
 Google Drive libraries are not installed on the server. ,
 Grace period (min),
 Grand Total,Итого
@@ -1202,8 +1253,11 @@ Gross pay,Начислено
 Gross total,Итого начислено
 Group,Группа
 "Group warehouse (can contain children, holds no stock itself)","Складская группа (может содержать подгруппы, сама не содержит запасы)"
+Guarantee,Гарантия
+Guarantee return,Возврат гарантии
 HR,HR
 HR overview,HR обзор
+HS code (ТН ВЭД),Код ТН ВЭД
 Half Day,Полдня
 Half rate,
 Half-day & Presence,
@@ -1245,6 +1299,7 @@ Imported {0} of {1} lines ({2} duplicates skipped).,Импортировано {
 In,Вход
 In progress,В процессе
 In time,Время входа
+In transit,В пути
 InService,В эксплуатации
 Inactive,Неактивные
 Include drafts,Включая черновики
@@ -1259,6 +1314,7 @@ Install libraries on the server:,
 Installment,Рассрочка
 Installment Calendar,
 Installments,Платежей
+Insurance,Страхование
 Intake via {0}.,
 Integration,
 Integration type,
@@ -1270,6 +1326,7 @@ Invalid date: {0}. Expected YYYY-MM-DD.,
 Invalid decision: {0},Неверное решение: {0}
 Invalid filename.,
 Invalid filters payload.,
+Invalid intake payload.,Некорректные данные тендера.
 Invalid item_overrides payload,Неверный payload переопределений товара
 Invalid item_returns payload,Неверный payload возвратов товара
 Invalid kiosk credentials.,Неверные учётные данные киоска.
@@ -1279,6 +1336,7 @@ Invalid month: {0},
 Invalid payload — expected JSON object.,
 Invalid payload.,
 Invalid period format,
+Invalid pricing payload.,Некорректные данные ценообразования.
 Invalid punches payload.,
 Invalid resolution '{0}'. Must be one of: {1},
 Invalid status: {0},Неверный статус: {0}
@@ -1348,7 +1406,13 @@ Keeps the audit trail; amend to correct.,Сохраняет аудит-след;
 Kind,
 Kiosk login is not configured on this site.,Вход через киоск не настроен на этом сайте.
 Label,Надпись
+Landed,С доставкой
+Landed cost (goods + import),Стоимость с доставкой (товар + импорт)
+Landed cost + our margin → the price we bid,"Стоимость с доставкой + наша маржа → цена, которую мы предлагаем"
+Landed cost plan,План стоимости с доставкой
 Landed cost vouchers,Ваучеры дополнительных затрат
+Landed plan saved.,План сохранён.
+Landed total,Итого с доставкой
 Lane,Полоса
 Lanes,Полосы
 Language,Язык
@@ -1383,6 +1447,7 @@ Ledger,
 Ledger spans multiple account currencies; amounts shown in base currency.,Бухгалтерская книга охватывает несколько валют счёта; суммы показаны в базовой валюте.
 Ledger — all vouchers (reconciles to the balance),Книга — все документы (сходится с балансом)
 Left,Уволен
+Legal / lawyer,Юрист
 Length,Длина
 Level {0},
 Level {0} approved — awaiting level {1}.,
@@ -1407,6 +1472,7 @@ List rate,Прейскурантная цена
 "Live receivable (all-time, all vouchers)","Текущая задолженность (за всё время, все документы)"
 Loaded,Загружено
 Loading,Загрузка
+Loading / unloading,Погрузка / разгрузка
 Loading FX account balances…,
 Loading invoices,
 Loading more…,
@@ -1432,8 +1498,11 @@ Log out,Выйти
 Login required,Требуется вход
 Login required.,
 Login with PIN,
+Logistics,Логистика
 Longitude,Долгота
+Lost,Проиграли
 Lost Badge? Login with PIN,
+Lot no,№ лота
 Low,Низкий
 Low Stock,Низкий уровень запасов
 Low Stock Alerts,Уведомления о низком остатке
@@ -1454,6 +1523,8 @@ Mapping deleted.,
 Mapping updated.,
 Margin,Прибыль
 Margin %,Прибыль %
+Margin on revenue,Маржа к выручке
+Margin → price,Маржа → цена
 Mark,Отметить
 Mark Resolved,Отметить как решено
 Mark and submit,Отметить и провести
@@ -1467,6 +1538,7 @@ Marked,
 Marketing,Маркетинг
 Marketing Claims,Маркетинговые претензии
 Marketing claim settlement for {0},Расчёт маркетинговой претензии для {0}
+Markup on cost,Наценка к себестоимости
 Match & reconcile,Сопоставить и сверить
 Matched employee,
 Material Issue submitted: {0},Списание материалов подтверждено: {0}
@@ -1517,6 +1589,7 @@ Multi-level approval incomplete,
 Multiplier (× hourly rate),
 My Work Orders Queue,
 My requests,Мои заявки
+My tenders,Мои тендеры
 My work orders,Мои заказы на производство
 Name,Название
 Name is required.,
@@ -1533,6 +1606,8 @@ Net,К выплате
 Net ROI %,Чистая рентабельность инвестиций %
 Net owed,
 Net pay,К выплате
+Net profit,Чистая прибыль
+Net revenue,Чистая выручка
 Net total,К выплате всего
 Net unrealised gain / loss,
 Never,Никогда
@@ -1651,6 +1726,7 @@ No company selected,Компания не выбрана
 No correction requests,
 No corrections are waiting for review.,
 No corrections found for this status.,
+"No cost items yet — add transport, customs, certification…","Пока нет статей — добавьте транспорт, таможню, сертификацию…"
 No coverage,Без покрытия
 No creditors found.,
 No custom allowances. Click Add to create one.,
@@ -1738,7 +1814,9 @@ No promo schemes yet,Промо-схем нет
 No punches — employee will be marked absent.,
 No purchase invoices in this range,
 No purchase orders have been registered for this supplier.,
+No purchase orders in the customs queue.,Нет заказов в очереди таможни.
 No purchase orders in this range,Заказов на закупку в этом диапазоне нет
+No purchase orders tagged to this tender yet.,К этому тендеру ещё не привязаны заказы.
 No purchase receipts in this range,
 No quotations in this range,Предложений в этом диапазоне нет
 No raw events,
@@ -1768,6 +1846,7 @@ No segregation-of-duties conflicts found.,Конфликтов разделен�
 No serial,Нет серийного номера
 No service tickets,Заявок нет
 No service visits,
+No shipments yet.,Пока нет отгрузок.
 No stages yet.,Этапов пока нет.
 No statements imported yet.,Выписки ещё не импортированы.
 No steps yet.,Этапов нет.
@@ -1785,6 +1864,8 @@ No supplier quotations for this tender.,Нет котировок поставщ
 No suppliers,Поставщиков нет
 No suppliers match that name,Поставщики с таким названием не найдены
 No template,Шаблона нет
+No tenders assigned yet.,Пока нет назначенных тендеров.
+No tenders yet.,Пока нет тендеров.
 No tickets for this unit.,Нет заявок по этой единице.
 No transactions,Операций нет
 No transactions in this period.,Операций в этом периоде нет.
@@ -1803,6 +1884,7 @@ No work orders,Нет производственных заказов
 No work orders assigned to you yet.,Вам ещё не назначены заказы на производство.
 No {0} receivable account exists for company {1}. ,Дебиторский счёт {0} для компании {1} не найден. 
 No {0} {1} account exists for company {2}. ,
+No-go,Не идём
 None,Нет
 Normal,Обычный
 Nos,Номера
@@ -1859,6 +1941,7 @@ On Leave,В отпуске
 On hand,В наличии
 On leave,
 On leave today,В отпуске сегодня
+On track,В графике
 On-Shelf-Availability audits compare expected vs actual facings during visits.,Аудиты доступности товаров на полке сравнивают ожидаемое и фактическое размещение товаров во время визитов.
 On-hand batches at risk: expired and expiring soon.,Партии под риском: просроченные и скоро истекающие.
 On-hand value vs sales velocity. Flags slow-moving and dead stock.,Стоимость запаса против скорости продаж. Отмечает медленные и мёртвые остатки.
@@ -1920,6 +2003,8 @@ Orientation,Ориентация
 Origin,
 Original qty,Исходное кол-во
 Other,Другое
+Other cost,Прочие расходы
+Other costs (before profit),Прочие расходы (до прибыли)
 Out,Выход
 Out of stock,Нет в наличии
 Out time,Время выхода
@@ -1956,6 +2041,11 @@ Overview,Обзор
 Owes us,Должен нам
 Owner,
 PIN,
+PO,PO
+PO ETA,ETA заказа
+PO count,Кол-во PO
+PO total,Сумма PO
+PO vs quote,PO vs котировка
 POS,
 POS Profile,
 POS Profile belongs to a different company.,
@@ -1980,6 +2070,7 @@ Partially Completed,Частично выполнено
 Partially Reserved,
 Partially approved — awaiting level {0},
 Partially billed — {pct}% invoiced.,
+Partially received,Частично получено
 Partly paid,Частично оплачено
 Parts Issue,Списание деталей
 Party,Контрагент
@@ -2051,6 +2142,7 @@ Payroll period end date cannot be before start date.,
 Payroll periods,Платёжные периоды
 Payroll-impacting pending,
 Pays out this share of the KPI pool. Locked periods are read-only.,Выплачивает эту долю KPI-пула. Заблокированные периоды только для чтения.
+Penalty %/day,Штраф %/день
 Pending,Ожидание
 Pending Corrections,
 Pending approvals,Ожидают согласования
@@ -2089,6 +2181,7 @@ Pick a source warehouse.,Выберите исходный склад.
 Pick a status.,Выберите статус.
 Pick a supplier.,Выберите поставщика.
 Pick a tender deal to compare quotations.,Выберите тендерную сделку для сравнения котировок.
+Pick a tender deal to see its purchase orders.,"Выберите тендер, чтобы увидеть заказы."
 Pick a valid date range.,Выберите корректный диапазон дат.
 Pick a valid month.,Выберите корректный месяц.
 Pick a warehouse,Выберите склад
@@ -2114,6 +2207,7 @@ Place your RFID badge on the reader to log in,
 Placed Freezer,Холодильник размещён
 Placing,Размещение
 Plan Type,Тип плана
+Plan vs actual,План vs факт
 Planned,Запланировано
 Planned Date,Плановая дата
 Planned Qty,
@@ -2128,6 +2222,7 @@ Planograms,Планограммы
 Planograms describe expected shelf facings per outlet and category.,Планограммы описывают ожидаемые фасинги полок по торговым точкам и категориям.
 Please fill all required fields.,"Пожалуйста, заполните все обязательные поля."
 Policy,Политика
+Portfolio value,Стоимость портфеля
 Position,
 Positions,Позиции
 Positions hierarchy,Иерархия позиций
@@ -2153,6 +2248,7 @@ Preview,Предпросмотр
 Price Tier,Ценовой уровень
 Price history,История цен
 Price list,Прайс-лист
+Price → margin,Цена → маржа
 Print,Печать
 Priority,Приоритет
 Probability,Вероятность
@@ -2171,7 +2267,9 @@ Professional Excel export of this ledger,Профессиональный экс
 Professional Excel export with current filters,Профессиональный экспорт в Excel с текущими фильтрами
 Profile,Профиль
 Profile gaps,Пробелы в профиле
+Profit,Прибыль
 "Profit and Loss, Balance Sheet, Trial Balance, and Cash Flow.",
+Profit tax,Налог на прибыль
 Projected,Прогнозируемо
 Promo,Промоция
 Promo Plan,План промоции
@@ -2185,6 +2283,7 @@ Promos,Промоции
 Promotion spend and uplift analysis.,
 Properties,Свойства
 Prorated base,База (пропорц.)
+Provider (supplier),Исполнитель (поставщик)
 Public holiday,
 Pull gate punches from TimePay for these days and turn them into attendance. Nightly sync runs automatically; use this to catch up now.,"Загрузить отметки из TimePay за эти дни и превратить в табель. Ночная синхр. идёт автоматически; используйте, чтобы догнать сейчас."
 Punches,
@@ -2222,6 +2321,7 @@ RUB → UZS,RUB → UZS
 Rack,Полка
 Range is too wide — sync at most one month at a time.,Слишком широкий диапазон — не более месяца за раз.
 Rank by,Ранжировать по
+Ranked by delivered cost,Отсортировано по стоимости с доставкой
 Raqam,Номер
 Rate,Цена
 Rate cannot be negative.,
@@ -2377,6 +2477,7 @@ Resolved At,Разрешено в
 Restore test,Тест восстановления
 Restore test recorded.,Тест восстановления записан.
 "Restrict this mapping to a specific reader, or leave blank to match all devices.",
+Result,Результат
 Resume,Возобновить
 Resume Work,
 Resume Work Order,
@@ -2405,6 +2506,7 @@ Revenue vs. Expense (12 months),Доход против расходов (12 м�
 "Revenue − COGS per item, with margin %. Cost from item valuation.","Выручка − себестоимость по товарам, с маржой %. Себестоимость из оценки товара."
 Reviewed by,Кем рассмотрено
 Reviewer Notes,Примечания рецензента
+Risk,Риск
 Role,Роль
 Role change blocked,Изменение роли заблокировано
 Role not found,Роль не найдена
@@ -2432,11 +2534,15 @@ Rule set saved.,
 Rule sets,
 Run,Запустить
 Run a payroll cycle to generate salary slips for assigned employees.,"Запустите расчёт, чтобы сгенерировать листки для сотрудников."
+Run migrate to enable bid pricing.,"Выполните migrate, чтобы включить ценообразование."
+Run migrate to enable landed-cost planning.,"Выполните migrate, чтобы включить планирование стоимости с доставкой."
+Run migrate to enable tender intake.,"Выполните migrate, чтобы включить приём данных тендера."
 Run now,Запустить сейчас
 Run payroll,Запустить расчёт
 Run-rate,Оборот/мес
 Running value,Накопленная стоимость
 SFA,
+SO,SO
 SO number or customer…,
 SRE module unavailable: {0},Модуль SRE недоступен: {0}
 SREs,SRE
@@ -2494,12 +2600,14 @@ Save allowed users,Сохранить разрешённых пользоват�
 Save and submit,Сохранить и провести
 Save as Draft,Сохранить как черновик
 Save as draft,Сохранить черновик
+Save bid pricing,Сохранить ценообразование
 Save changes,Сохранить изменения
 Save device,
 Save draft,
 Save failed.,Ошибка сохранения.
 Save mapping,
 Save modules,Сохранить модули
+Save plan,Сохранить план
 Saved — pending approval before it posts.,Сохранено — ожидает согласования перед проведением.
 Saved.,
 Saving…,Сохранение…
@@ -2558,6 +2666,7 @@ Search stock items…,Поиск товаров на складе…
 Search supplier name…,Поиск названия поставщика…
 Search suppliers…,Поиск поставщиков…
 Search supplier…,Поиск поставщика…
+Search supplier… ⌘K,Поиск поставщика… ⌘K
 Search voucher…,
 Search warehouse…,Поиск склада…
 Search work orders…,Поиск производственных заказов…
@@ -2634,6 +2743,7 @@ Set Reports-To on employees to build the positions hierarchy.,"Установи�
 Set a Google Drive folder ID first.,Сначала укажите ID папки Google Drive.
 Set as company default,Сделать стандартом компании
 Set as company default.,Установлено как стандарт компании.
+Set deadlines in Tender details.,Задайте сроки в деталях тендера.
 "Set the Google Drive folder ID in Stabler Settings, and share that Shared-Drive folder with the service account email.",
 Setting up your business…,Настраиваем ваш бизнес…
 Settings,
@@ -2732,6 +2842,7 @@ Stock value,Стоимость складских остатков
 Stop,Остановить
 Stop Work Order,
 Stop this Work Order? You can resume it later.,Остановить этот производственный заказ? Можно будет возобновить позже.
+Storage,Хранение
 Storefront,Витрина
 Stuck (min),Завис (мин)
 Subject,Тема
@@ -2790,13 +2901,16 @@ Sync now,Синхронизировать
 System qty,Кол-во в системе
 TIN,ИНН
 Table,Таблица
+Tag Sales/Purchase Orders to a tender deal to see them here.,"Привяжите заказы к тендеру, чтобы видеть их здесь."
 Tag Supplier Quotations to this deal to compare them here.,"Привяжите котировки к сделке, чтобы сравнить их здесь."
 Take Payment,
 Target Remaining,
 Target WIP Warehouse,
+Target margin (profit ÷ net revenue),Целевая маржа (прибыль ÷ чистая выручка)
 Task,Задача
 Tax ID,ИНН
 Tax amount,
+Tax rates,Ставки налогов
 Tax template,Шаблон налогов
 Tax type,Тип налога
 Taxes,Налоги
@@ -2807,7 +2921,11 @@ Tender,Тендер
 Tender / deal,Тендер / сделка
 Tender Deadline,Срок тендера
 Tender No,Номер тендера
+Tender PO control,Контроль PO тендера
 Tender Source,Источник тендера
+Tender bid pricing,Ценообразование для тендера
+Tender details,Детали тендера
+Tender intake saved.,Данные тендера сохранены.
 Tender module is not enabled for {0}.,
 Tender: {0}.,
 Tenure,Стаж
@@ -2894,12 +3012,14 @@ To account,На счёт
 To bill,К выставлению
 To date,
 To deliver,К отгрузке
+To receive,К получению
 To warehouse,На склад
 Today,
 Toggle date sort,
 Token status,
 Too many failed attempts. Please try again in 5 minutes.,
 Too many rows (max 5000).,
+Tools,Инструменты
 Top 10 Creditors,
 Top 10 Debtors,
 Total,Итого
@@ -2910,6 +3030,7 @@ Total Required,
 Total SKUs,Всего SKU
 Total allocated,Всего распределено
 Total allocated cannot exceed the payment amount.,Сумма распределения не может превышать размер платежа.
+Total committed,Всего обязательств
 Total cost,Общая стоимость
 Total credit value,
 Total credits,
@@ -2966,6 +3087,7 @@ Unassigned department or position.,Не назначен отдел или до�
 Unassigned dept / position,Без отдела / должности
 Unbilled,Не выставлен счёт
 Unbilled queue,Очередь к выставлению
+Unit,Ед.
 Unit cost,Себестоимость
 Units Sold,Проданных единиц
 Unknown,
@@ -2983,6 +3105,7 @@ Unknown employee: {0},
 Unknown hash algorithm: {0},
 Unknown item: {0},
 Unknown payment session.,
+Unknown purchase order: {0},Неизвестный заказ на закупку: {0}
 Unknown report: {0},
 Unknown role template: {0},Неизвестный шаблон роли: {0}
 Unknown role: {0},
@@ -3009,6 +3132,8 @@ Upload failed,Ошибка загрузки
 Upload latest to Drive,Загрузить последнюю в Drive
 Uploaded {0} file(s) to Google Drive.,
 Uploading…,Загрузка…
+Use POs' landed,Взять из PO (с доставкой)
+Use Sales Orders,Взять из заказов на продажу
 Use my location,Моё местоположение
 Use source warehouse,Использовать склад-источник
 User,Пользователь
@@ -3020,6 +3145,7 @@ User status updated.,
 Users,Пользователи
 Users flagged,Помеченные пользователи
 Utilization %,Использование %
+VAT,НДС
 VAT registered,Плательщик НДС
 Valid Distributor (Customer) is required.,Требуется корректный дистрибьютор (Клиент).
 Valid From,Действителен с
@@ -3041,7 +3167,11 @@ Van Stock name is required.,Требуется название товара в 
 Van stock tracks what each field user has loaded for the day.,"Товар в фургоне отслеживает, какой товар загружен каждым полевым пользователем на день."
 Var %,
 Variance,Расхождение
+Vendor,Поставщик
 Vendor bill does not match PO / receipt,Счёт поставщика не совпадает с заказом / приёмкой
+Vendor comparison,Сравнение поставщиков
+Vendor comparison (landed),Сравнение поставщиков (с доставкой)
+Vendors,Поставщики
 Vertical lanes (flow top→bottom),Вертикальные дорожки (поток сверху→вниз)
 View,Просмотр
 View all,Показать все
@@ -3065,6 +3195,7 @@ Visits,Визиты
 Visits appear once they are planned from a route or created manually.,"Визиты появляются здесь, когда они запланированы из маршрута или созданы вручную."
 Visits this month,Визитов в этом месяце
 Void Cart,
+Volume,Объём
 Voucher,Ваучер
 Voucher not found.,
 Voucher not found: {0} {1},
@@ -3122,6 +3253,8 @@ Width,Ширина
 Win/Loss Reason,Причина выигрыша/проигрыша
 Withdrawal,Списание
 Withheld,Удержано
+Won,Выиграли
+Won price,Цена выигрыша
 Won this month,Выиграно в этом месяце
 Work From Home,Удалённо
 Work Order,Производственный заказ
@@ -3168,6 +3301,7 @@ absent,отсутствовал
 across all statuses,по всем статусам
 active,
 active staff,активных сотрудников
+actual so far,факт на текущий момент
 against,
 ambiguous,не определено
 avail,дост.
@@ -3185,6 +3319,8 @@ customer credit,
 date_str and hire_date are required.,
 day,день
 days,дн.
+days late,дн. просрочки
+days left,дн. осталось
 default,
 department,отдел
 depts,отделов
@@ -3197,6 +3333,8 @@ e.g. EMP-00042,
 e.g. Main entrance reader,
 "e.g. OK, Approved","напр. Да, Одобрено"
 e.g. Standard 8h shift,
+e.g. bank / SWIFT,напр. банк / SWIFT
+e.g. office,напр. офис
 employee is required.,
 employees,
 entries,
@@ -3215,6 +3353,7 @@ item,товар
 item_code and warehouse are required,item_code и warehouse обязательны
 items,товары
 joined this month,принято в этом месяце
+landed,с доставкой
 late,опоздал
 leave,
 left,осталось
@@ -3230,6 +3369,7 @@ moves stock,
 name is required.,
 need GPS,без GPS
 no stock movement,
+not set,не задано
 on budget,
 "one Journal Entry, clears their payable.","одна проводка, закрывает задолженность."
 one-off,разовый
@@ -3248,6 +3388,7 @@ punches,отметок
 quantity,количество
 ready to invoice,готово к счёту
 reason is required and must not be empty.,
+received,получено
 requested_value is required.,
 reserved,резерв
 revenue,выручка
@@ -3262,6 +3403,7 @@ step_idx must be an integer.,step_idx должен быть целым числ�
 stock,запас
 summaries ready,сводок готово
 to_date must be >= from_date.,
+today,сегодня
 unfavorable,
 units,
 units total,единиц всего
@@ -3269,6 +3411,7 @@ updated,
 user@example.com,user@example.com
 valuation,оценка
 vouchers must be a JSON list.,
+vs cheapest,к дешёвому
 vs. last month,в сравнении с прошлым месяцем
 without location,без геолокации
 yr,г.
@@ -3284,6 +3427,8 @@ yr,г.
 {0}: discount_percentage must be between 0 and 100,{0}: discount_percentage должен быть между 0 и 100
 {0}: rate cannot be negative,{0}: rate не может быть отрицательным
 {n} outstanding invoice(s),{n} неоплаченных счёт(ов)
+Δ,Δ
+Остаток (net remaining),Остаток (чистый остаток)
 —,—
 — Any device —,
 — Choose account —,— Выберите счёт —
@@ -3305,3 +3450,26 @@ yr,г.
 — select —,
 — top-level —,— верхний уровень —
 ⚠ {0} line(s) had no cost — verify item valuation; margin may be overstated.,⚠ {0} строк(а) без себестоимости — проверьте оценку товара; маржа может быть завышена.
+Purchase method,Способ закупки
+Auction,Аукцион
+Shop,Магазин
+Selection,Отбор
+Document checklist,Чек-лист документов
+Standard set,Стандартный набор
+"No documents yet — add the standard set (ГТД, certificate, acceptance act…).","Документов пока нет — добавьте стандартный набор (ГТД, сертификат, акт…)."
+Manager,Менеджер
+Assigned.,Назначено.
+Could not assign.,Не удалось назначить.
+Win rate,Процент побед
+W,П
+L,Пр
+P,Ож
+Customs value (CIF),Таможенная стоимость (CIF)
+Duty,Пошлина
+Currency risk (foreign purchase),Валютный риск (импорт)
+Exposure amount,Сумма экспозиции
+Bid rate,Курс на тендер
+Payment rate,Курс оплаты
+FX favorable,Курс в плюс
+FX risk,Валютный риск
+FX open,Валюта: открыто

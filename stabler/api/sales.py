@@ -1007,7 +1007,6 @@ def create_direct_sales_return(
 	doc.calculate_taxes_and_totals()
 	doc.insert(ignore_permissions=False)
 	doc.submit()
-	frappe.db.commit()
 	return {
 		"name": doc.name,
 		"status": doc.status,
@@ -1193,7 +1192,6 @@ def delete_sales_order(name: str, modified: str | None = None):
 	if doc.docstatus != 0:
 		frappe.throw(f"Only Draft Sales Orders can be deleted (docstatus={doc.docstatus}).")
 	frappe.delete_doc("Sales Order", name, ignore_permissions=False)
-	frappe.db.commit()
 	return {"deleted": name}
 
 
@@ -1206,7 +1204,6 @@ def delete_sales_invoice(name: str, modified: str | None = None):
 	if doc.docstatus != 0:
 		frappe.throw(f"Only Draft Sales Invoices can be deleted (docstatus={doc.docstatus}).")
 	frappe.delete_doc("Sales Invoice", name, ignore_permissions=False)
-	frappe.db.commit()
 	return {"deleted": name}
 
 
@@ -2067,7 +2064,6 @@ def reopen_sales_order(name: str, modified: str | None = None):
 		frappe.throw(_("Sales Order is not closed or on hold."))
 	so.set_status(update=True)
 	so.update_reserved_qty()
-	frappe.db.commit()
 	return {"status": so.status}
 
 
@@ -2587,7 +2583,6 @@ def clear_open_reservations(company: str):
 		except Exception as exc:
 			errors.append({"voucher": vno, "error": str(exc)})
 
-	frappe.db.commit()
 	return {"company": company, "total": len(rows), "cleared": cleared, "errors": errors}
 
 

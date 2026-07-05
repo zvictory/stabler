@@ -459,7 +459,6 @@ def _create_invoice(
     if submit:
         doc.submit()
 
-    frappe.db.commit()
 
     return {
         "name": doc.name,

@@ -2355,7 +2355,6 @@ def cancel_bank_entry(name: str) -> dict:
 	if doc.docstatus != 1:
 		frappe.throw("Only submitted Bank Entries can be cancelled.")
 	doc.cancel()
-	frappe.db.commit()
 	return {"name": doc.name, "docstatus": doc.docstatus}
 
 
@@ -2366,7 +2365,6 @@ def delete_bank_entry(name: str) -> dict:
 	if doc.docstatus != 0:
 		frappe.throw("Only draft Bank Entries can be deleted.")
 	doc.delete()
-	frappe.db.commit()
 	return {"name": name, "deleted": 1}
 
 
@@ -2381,7 +2379,6 @@ def amend_expense_entry(source_name: str, **kwargs) -> dict:
 	else:
 		frappe.throw("Cancelled Bank Entries cannot be amended.")
 	result = submit_expense_entry(**kwargs)
-	frappe.db.commit()
 	result["amended_from"] = source_name
 	return result
 
@@ -2397,7 +2394,6 @@ def amend_transfer_entry(source_name: str, **kwargs) -> dict:
 	else:
 		frappe.throw("Cancelled Bank Entries cannot be amended.")
 	result = submit_transfer_entry(**kwargs)
-	frappe.db.commit()
 	result["amended_from"] = source_name
 	return result
 

@@ -31,3 +31,8 @@ stabler.patches.v30_supplier_quotation_deal
 stabler.patches.v31_accounts_stale_rate_fields
 stabler.patches.v32_installment_collection_cancel
 stabler.patches.v33_remittance_stage_fields
+stabler.patches.v34_po_tender_deal
+stabler.patches.v35_po_landed_charges
+stabler.patches.v36_deal_bid_pricing
+stabler.patches.v37_deal_tender_intake
+stabler.patches.v38_tender_view_roles

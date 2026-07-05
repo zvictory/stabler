@@ -1262,6 +1262,7 @@ def create_purchase_order(
 	auto_submit: int = 1,
 	currency: str | None = None,
 	price_list: str | None = None,
+	deal: str | None = None,
 ):
 	"""Create (and optionally submit) a Purchase Order.
 
@@ -1327,6 +1328,10 @@ def create_purchase_order(
 	doc.supplier = supplier
 	doc.transaction_date = txn_date
 	doc.schedule_date = sched_date
+	# Tag the PO to a tender so it appears on the Tender PO control board. Guarded
+	# on the custom field (patch v34) so it's a no-op before migrate runs.
+	if deal and frappe.db.exists("CRM Deal", deal) and frappe.db.has_column("Purchase Order", "custom_crm_deal"):
+		doc.custom_crm_deal = deal
 	if set_warehouse:
 		doc.set_warehouse = set_warehouse
 	if remarks:

@@ -393,7 +393,6 @@ def create_remittance(
     if int(submit):
         je.flags.ignore_approval_gate = True
         je.submit()
-    frappe.db.commit()
     return {
         "name": je.name,
         "docstatus": je.docstatus,
@@ -494,7 +493,6 @@ def payout_remittance(
     if int(submit):
         je.flags.ignore_approval_gate = True
         je.submit()
-    frappe.db.commit()
     return {"name": je.name, "docstatus": je.docstatus, "remittance_id": remittance_id, "status": "Paid Out"}
 
 
@@ -588,7 +586,6 @@ def refund_remittance(
     if int(submit):
         je.flags.ignore_approval_gate = True
         je.submit()
-    frappe.db.commit()
     return {"name": je.name, "docstatus": je.docstatus, "remittance_id": remittance_id, "status": "Refunded"}
 
 

@@ -18,6 +18,7 @@ source,target
 61–90,61–90
 90+,90+
 A Payroll Attendance Summary for employee {0} and period {1} already exists: {2},
+A company with this name already exists.,Bu isimde bir şirket zaten var.
 A few quick questions and you're ready to sell.,Birkaç hızlı soru ve satışa hazırsınız.
 A mapping for employee {0} with device user ID {1} already exists ({2}).,
 A new version is available.,Yeni bir sürüm mevcut.
@@ -65,9 +66,11 @@ Activation rate,Dönüşüm oranı
 Active,Aktif
 Active Company,
 Active from,
+Active tenders,Aktif tenderler
 Active to,
 Activities,Aktiviteler
 Actual,Gerçekleşen
+Actual landed,Gerçek landed
 Add,Ekle
 Add Deal,
 Add Decision,Karar Ekle
@@ -86,6 +89,7 @@ Add at least one item with a positive quantity.,En az bir kalem pozitif miktarla
 Add at least one raw material line.,En az bir hammadde satırı ekleyin.
 Add child warehouse,Alt depo ekle
 Add column,Sütun ekle
+Add cost item,Masraf kalemi ekle
 Add customer,Müşteri ekle
 Add deal,Anlaşma ekle
 Add holiday,Tatil ekle
@@ -195,6 +199,7 @@ Amount received,Alınan tutar
 Amount sent,Gönderilen tutar
 Amount to transfer,Transfer tutarı
 Amounts in,Tutarlar
+Amounts in company currency,Tutarlar şirket para biriminde
 Analytics,Analitik
 Anchor DAY hours (h),
 Anchor LIGHT hours (h),
@@ -245,6 +250,7 @@ At least one counted item line is required.,
 At least one visit purpose is required.,
 At least one voucher is required.,
 At least two account lines are required.,En az iki hesap satırı gereklidir.
+At risk,Riskte
 At-risk,Risk altında
 Attendance,Devam
 Attendance Dashboard,
@@ -260,6 +266,7 @@ Audit trail,Denetim izi
 Audited At,Denetleme Tarihi
 Authentication required.,
 Available,Mevcut
+Avg margin,Ort. marj
 Avg orders / customer,Müşteri başına sipariş
 Avg time to first order,İlk siparişe kadar süre
 Awaiting level {0},
@@ -286,6 +293,7 @@ Balance (Account Currency),Bakiye (Hesap Para Birimi)
 Balanced,Dengeli
 "Balances, advances and payments appear here.",
 "Balances, salaries, advances and payments appear here.","Bakiyeler, maaşlar, avanslar ve ödemeler burada görünür."
+Bank / transfer,Banka / transfer
 Bank Account '{0}' not found.,
 Bank account,Banka hesabı
 Bank account does not belong to company '{0}'.,
@@ -309,6 +317,10 @@ Batches expiring within {0} days are flagged. Value at item valuation rate.,"{0}
 Before → Requested,
 Berry,
 Bid Value,Teklif tutarı
+Bid deadline,Teklif süresi
+Bid price (Договор),Teklif fiyatı (Договор)
+"Bid price (Договор, VAT incl.)","Teklif fiyatı (Договор, KDV dahil)"
+Bid pricing saved.,Fiyatlandırma kaydedildi.
 Bill,Fatura
 Bill #,Fatura No
 Bill / invoice number printed on supplier document,Tedarikçi belgesinde yazan fatura numarası
@@ -332,6 +344,7 @@ Books locked nets to salary payable.,Kilitli netleri maaş borcuna yazar.
 Branch,
 Brand,Marka
 Break minutes,
+Broker,Broker
 Budget,Bütçe
 "Budget name, fiscal year…",
 Budget vs Actual,
@@ -341,6 +354,7 @@ Business name is required.,İşletme adı zorunlu.
 Buy,Satın Al
 Buy X get Y,X al Y kazan
 Buy markup,Alış kâr marjı
+Buyer,Alıcı
 Buying price list,Alış fiyat listesi
 By,
 By item,
@@ -349,6 +363,8 @@ By region,Bölgeye göre
 By rep,Temsilciye göre
 C,
 CBU rate: {rate} ({date}),
+CBU rates are already up to date.,CBU kurları zaten güncel.
+CBU rates updated: {rates},CBU kurları güncellendi: {rates}
 CBU.uz exchange rates (last 30 days),CBU.uz döviz kurları (son 30 gün)
 CBU:,
 COGS,SMM
@@ -413,12 +429,16 @@ Cashier Lock,
 Categories,Kategoriler
 Category,Kategori
 Category is required.,Kategori gereklidir.
+Certificate required,Sertifika gerekli
+Certification,Sertifika
 Change,
 Changed,Değişti
 Channel,Kanal
 Charge via {provider},{provider} ile öde
+Charges,Masraflar
 Chart of Accounts,Hesap Planı
 Cheapest,En ucuz
+Cheapest (landed),En ucuz (landed)
 Checked in,Giriş yapıldı
 Checking availability…,Uygunluk kontrol ediliyor…
 Checking readiness…,
@@ -447,6 +467,7 @@ Clear,Temizle
 Clear filters,Filtreleri temizle
 Clear open reservations,Açık rezervasyonları temizle
 Clear search,Aramayı temizle
+Cleared,Temizlendi
 Cleared {0} of {1},{1} içinden {0} temizlendi
 Click New Revaluation to preview unrealised FX deltas and post an Exchange Rate Revaluation.,
 Click a line to see suggested matches.,Önerilen eşleşmeleri görmek için bir satıra tıklayın.
@@ -542,26 +563,38 @@ Cost,Maliyet
 Cost Centre,
 Cost centre,
 Cost must be positive.,Maliyet pozitif olmalıdır.
+Costs after dividends (office…),Temettü sonrası masraflar (ofis…)
 Could not accrue salary.,Maaş tahakkuk ettirilemedi.
 Could not add holiday.,Tatil eklenemedi.
 Could not add stage.,Aşama eklenemedi.
 Could not check payment status.,Ödeme durumu kontrol edilemedi.
 Could not create contract.,Sözleşme oluşturulamadı.
 Could not create the transaction.,İşlem oluşturulamadı.
+Could not load bid pricing.,Fiyatlandırma yüklenemedi.
 Could not load data health.,Veri sağlığı yüklenemedi.
 Could not load employee finances.,Çalışan finansı yüklenemedi.
+Could not load landed charges.,Masraflar yüklenemedi.
 Could not load quotations.,Teklifler yüklenemedi.
 Could not load repost status.,Durum yüklenemedi.
+Could not load tender intake.,Tender verisi yüklenemedi.
 Could not load the HR overview.,İK genel bakışı yüklenemedi.
+Could not load the PO board.,PO panosu yüklenemedi.
 Could not load the board.,Pano yüklenemedi.
+Could not load the customs queue.,Gümrük kuyruğu yüklenemedi.
+Could not load the director board.,Direktör paneli yüklenemedi.
 Could not load the entry.,Kayıt yüklenemedi.
+Could not load the logistics board.,Lojistik paneli yüklenemedi.
 Could not load unmatched users.,Eşleşmemiş kullanıcılar yüklenemedi.
+Could not load your tenders.,Tenderleriniz yüklenemedi.
 Could not read backup file: {0},
 Could not read the uploaded file.,
 Could not read your location.,Konumunuz okunamadı.
 Could not resolve a customer for this deal.,
 Could not resolve payroll period: {0},
+Could not save bid pricing.,Fiyatlandırma kaydedilemedi.
+Could not save landed charges.,Masraflar kaydedilemedi.
 Could not save period.,Dönem kaydedilemedi.
+Could not save tender intake.,Tender verisi kaydedilemedi.
 Could not start setup.,Kurulum başlatılamadı.
 Could not start the online payment.,Çevrimiçi ödeme başlatılamadı.
 Could not start the processor.,İşlemci başlatılamadı.
@@ -637,6 +670,8 @@ Customer name is required.,Müşteri adı zorunludur.
 Customer receivables grouped by aging buckets.,
 "Customer, item, trend, and salesperson reports from submitted invoices.",
 Customers,Müşteriler
+Customs,Gümrük
+Customs queue,Gümrük kuyruğu
 Daily,Günlük
 Daily attendance records and employee presence checks.,
 Daily auto-backup,Günlük otomatik yedek
@@ -659,6 +694,8 @@ Days cannot be negative.,
 Days is unreasonably large.,
 Days left,Kalan gün
 Days of cover,Kapsama günü
+Deadline control,Süre kontrolü
+Deadline near,Süre yakın
 Deal Owner,Anlaşma Sahibi
 Deal Value,Anlaşma Değeri
 Deal has no organization or name to create a customer from.,
@@ -666,6 +703,8 @@ Deals,Anlaşmalar
 Debit,Borç
 Debit note for,
 Debit notes:,
+Decision,Karar
+Declarant,Deklarant
 Deducted from worked time daily.,
 Deducted per each step interval of lateness.,
 Deduction exceeds the outstanding advance balance.,"Kesinti, kalan avans bakiyesini aşıyor."
@@ -679,6 +718,7 @@ Default currency,Varsayılan para birimi
 Default price list,Varsayılan fiyat listesi
 Define promotions that field users can apply during visits.,Saha kullanıcılarının ziyaretler sırasında uygulayabileceği promosyonları tanımlayın.
 Define routes so field users know which outlets to visit each day.,Saha kullanıcılarının her gün hangi satış noktalarını ziyaret edeceğini bilmesi için rotaları tanımlayın.
+Delayed,Gecikmiş
 Delete,Sil
 Delete Customer,
 Delete Draft Entry,
@@ -707,7 +747,9 @@ Delete this process?,Bu süreç silinsin mi?
 Deliv,Teslim
 Deliver,Teslim Et
 Delivered,Teslim Edildi
+Delivery,Teslim
 Delivery date,Teslimat tarihi
+Delivery deadline,Teslim süresi
 Delta,
 Department,Departman
 Deposit,Yatırma
@@ -732,6 +774,7 @@ Direct credit note,
 Direct sales return,
 Direction,Yön
 Directions,Yol tarifi
+Director board,Direktör paneli
 Disabled,Devre Dışı
 Disc,İndirim
 Disc %,İndirim %
@@ -744,6 +787,8 @@ Dismiss,Kapat
 Distributor,Distribütör
 Distributor claims will appear here once submitted.,Distribütör talepleri gönderildikten sonra burada görünecektir.
 District,
+Dividend tax,Temettü vergisi
+Dividends,Temettü
 DocType,DocType
 Document,Belge
 Document cancelled successfully.,
@@ -760,6 +805,7 @@ Document updated successfully.,
 Documents,Belgeler
 Done,Tamamlandı
 Download .ics,.ics indir
+Download CBU exchange rates,CBU döviz kurlarını indir
 Downpayment,Ön ödeme
 Downpayment %,Ön ödeme %
 Draft,Taslak
@@ -903,6 +949,7 @@ Exceptions Queue,
 Exceptions by Type,
 Exchange Rate Revaluation,
 Exchange Rates,Döviz Kurları
+Exchange fee,Borsa komisyonu
 Exchange rate,Döviz kuru
 Exchange rate ({0}),
 Exchange rate must be greater than zero.,Döviz kuru sıfırdan büyük olmalıdır.
@@ -1078,6 +1125,7 @@ Failed to submit transfer.,
 Failed to submit.,Onaylanamadı.
 Failed to switch language.,Dil değiştirilemedi.
 Failed to toggle status.,
+Failed to update CBU rates.,CBU kurları güncellenemedi.
 Failed to update bill.,Fatura güncellenemedi.
 Failed to update color.,
 Failed to update journal entry.,Yevmiye kaydı güncellenemedi.
@@ -1173,8 +1221,11 @@ Generate drafts,Taslak oluştur
 Generated salary slips,Oluşturulan bordro fişleri
 Geolocation is not available in this browser.,Bu tarayıcıda konum mevcut değil.
 Given,Verilen
+Go,Gir
 Go to Sales Orders,Satış Siparişlerine Git
 Good Produced Qty,
+Goods,Mal bedeli
+Goods (PO),Mal bedeli (PO)
 Google Drive libraries are not installed on the server. ,
 Grace period (min),
 Grand Total,Genel Toplam
@@ -1188,8 +1239,11 @@ Gross pay,Brüt ücret
 Gross total,Brüt toplam
 Group,Grup
 "Group warehouse (can contain children, holds no stock itself)","Grup depo (alt depo içerebilir, kendi stoğu yoktur)"
+Guarantee,Teminat
+Guarantee return,Teminat iadesi
 HR,İK
 HR overview,İK genel bakış
+HS code (ТН ВЭД),GTİP kodu (ТН ВЭД)
 Half Day,Yarım Gün
 Half rate,
 Half-day & Presence,
@@ -1231,6 +1285,7 @@ Imported {0} of {1} lines ({2} duplicates skipped).,{1} satırdan {0} içe aktar
 In,Giriş
 In progress,Devam ediyor
 In time,Zamanında
+In transit,Yolda
 InService,Hizmette
 Inactive,Pasif
 Include drafts,Taslakları dahil et
@@ -1245,6 +1300,7 @@ Install libraries on the server:,
 Installment,Taksit
 Installment Calendar,
 Installments,Taksitler
+Insurance,Sigorta
 Intake via {0}.,
 Integration,
 Integration type,
@@ -1256,6 +1312,7 @@ Invalid date: {0}. Expected YYYY-MM-DD.,
 Invalid decision: {0},Geçersiz karar: {0}
 Invalid filename.,
 Invalid filters payload.,
+Invalid intake payload.,Geçersiz tender verisi.
 Invalid item_overrides payload,Geçersiz item_overrides verisi
 Invalid item_returns payload,Geçersiz item_returns verisi
 Invalid kiosk credentials.,Geçersiz kiosk kimlik bilgileri.
@@ -1265,6 +1322,7 @@ Invalid month: {0},
 Invalid payload — expected JSON object.,
 Invalid payload.,
 Invalid period format,
+Invalid pricing payload.,Geçersiz fiyatlandırma verisi.
 Invalid punches payload.,
 Invalid resolution '{0}'. Must be one of: {1},
 Invalid status: {0},Geçersiz durum: {0}
@@ -1334,7 +1392,13 @@ Keeps the audit trail; amend to correct.,Denetim izini korur; düzeltmek için a
 Kind,
 Kiosk login is not configured on this site.,Bu sitede kiosk girişi yapılandırılmamış.
 Label,Etiket
+Landed,Landed
+Landed cost (goods + import),Landed maliyet (mal + ithalat)
+Landed cost + our margin → the price we bid,Landed maliyet + marjımız → verdiğimiz teklif fiyatı
+Landed cost plan,Landed maliyet planı
 Landed cost vouchers,İthal maliyet fişleri
+Landed plan saved.,Plan kaydedildi.
+Landed total,Landed toplam
 Lane,Şerit
 Lanes,Şeritler
 Language,Dil
@@ -1369,6 +1433,7 @@ Ledger,
 Ledger spans multiple account currencies; amounts shown in base currency.,Defter birden fazla hesap para birimini kapsamaktadır; tutarlar temel para biriminde gösterilmektedir.
 Ledger — all vouchers (reconciles to the balance),Defter — tüm belgeler (bakiye ile uyumlu)
 Left,Sol
+Legal / lawyer,Avukat / hukuk
 Length,Boy
 Level {0},
 Level {0} approved — awaiting level {1}.,
@@ -1392,6 +1457,7 @@ Linked. {0} parked punches re-queued.,Bağlandı. {0} bekleyen kayıt yeniden ku
 List rate,Liste fiyatı
 "Live receivable (all-time, all vouchers)","Güncel alacak (tüm zamanlar, tüm belgeler)"
 Loading,Yükleniyor
+Loading / unloading,Yükleme / boşaltma
 Loading FX account balances…,
 Loading invoices,
 Loading more…,
@@ -1417,8 +1483,11 @@ Log out,Çıkış yap
 Login required,Giriş gerekli
 Login required.,
 Login with PIN,
+Logistics,Lojistik
 Longitude,Boylam
+Lost,Kaybedildi
 Lost Badge? Login with PIN,
+Lot no,Lot №
 Low,Düşük
 Low Stock,Düşük Stok
 Low Stock Alerts,Düşük Stok Uyarıları
@@ -1439,6 +1508,8 @@ Mapping deleted.,
 Mapping updated.,
 Margin,Marj
 Margin %,Marj %
+Margin on revenue,Gelire marj
+Margin → price,Marj → fiyat
 Mark,İşaretle
 Mark Resolved,Çözüldü Olarak İşaretle
 Mark and submit,İşaretle ve gönder
@@ -1452,6 +1523,7 @@ Marked,
 Marketing,Pazarlama
 Marketing Claims,Pazarlama Talepleri
 Marketing claim settlement for {0},{0} için pazarlama talebi ödemesi
+Markup on cost,Maliyete markup
 Match & reconcile,Eşleştir ve mutabık kıl
 Matched employee,
 Material Issue submitted: {0},Malzeme çıkışı onaylandı: {0}
@@ -1502,6 +1574,7 @@ Multi-level approval incomplete,
 Multiplier (× hourly rate),
 My Work Orders Queue,
 My requests,Taleplerim
+My tenders,Tenderlerim
 My work orders,İş emirlerim
 Name,Ad
 Name is required.,
@@ -1518,6 +1591,8 @@ Net,Net
 Net ROI %,Net YGO %
 Net owed,
 Net pay,Net maaş
+Net profit,Net kâr
+Net revenue,Net gelir
 Net total,Net toplam
 Net unrealised gain / loss,
 Never,Hiçbir zaman
@@ -1636,6 +1711,7 @@ No company selected,Şirket seçilmedi
 No correction requests,
 No corrections are waiting for review.,
 No corrections found for this status.,
+"No cost items yet — add transport, customs, certification…","Henüz kalem yok — transport, gümrük, sertifika ekleyin…"
 No coverage,Kapsam yok
 No creditors found.,
 No custom allowances. Click Add to create one.,
@@ -1723,7 +1799,9 @@ No promo schemes yet,Henüz promosyon şeması yok
 No punches — employee will be marked absent.,
 No purchase invoices in this range,
 No purchase orders have been registered for this supplier.,
+No purchase orders in the customs queue.,Gümrük kuyruğunda sipariş yok.
 No purchase orders in this range,Bu aralıkta satın alma siparişi yok
+No purchase orders tagged to this tender yet.,Bu tendere henüz PO bağlanmadı.
 No purchase receipts in this range,
 No quotations in this range,Bu aralıkta teklif yok
 No raw events,
@@ -1753,6 +1831,7 @@ No segregation-of-duties conflicts found.,Görev ayrılığı çakışması bulu
 No serial,Seri yok
 No service tickets,Servis talebi yok
 No service visits,
+No shipments yet.,Henüz sevkiyat yok.
 No stages yet.,Henüz aşama yok.
 No statements imported yet.,Henüz ekstre içe aktarılmadı.
 No steps yet.,Henüz adım yok.
@@ -1770,6 +1849,8 @@ No supplier quotations for this tender.,Bu ihale için tedarikçi teklifi yok.
 No suppliers,Tedarikçi yok
 No suppliers match that name,Bu ada uyan tedarikçi bulunamadı
 No template,Şablon yok
+No tenders assigned yet.,Henüz atanmış tender yok.
+No tenders yet.,Henüz tender yok.
 No tickets for this unit.,Bu birim için talep yok.
 No transactions,İşlem yok
 No transactions in this period.,Bu dönemde işlem yok.
@@ -1788,6 +1869,7 @@ No work orders,İş emri yok
 No work orders assigned to you yet.,Henüz size atanmış iş emri yok.
 No {0} receivable account exists for company {1}. ,{1} şirketi için {0} alacak hesabı mevcut değil. 
 No {0} {1} account exists for company {2}. ,
+No-go,Girme
 None,Yok
 Normal,Normal
 Nos,Nos
@@ -1844,6 +1926,7 @@ On Leave,İzinde
 On hand,Eldeki
 On leave,
 On leave today,Bugün izinde
+On track,Yolunda
 On-Shelf-Availability audits compare expected vs actual facings during visits.,"Raf Varlığı denetimleri, ziyaretler sırasında beklenen ile gerçek raflama sayısını karşılaştırır."
 On-hand batches at risk: expired and expiring soon.,Riskli partiler: süresi dolmuş ve dolmak üzere.
 On-hand value vs sales velocity. Flags slow-moving and dead stock.,Stok değeri satış hızına karşı. Yavaş ve ölü stok işaretlenir.
@@ -1904,6 +1987,8 @@ Orientation,Yönlendirme
 Origin,
 Original qty,Orijinal miktar
 Other,Diğer
+Other cost,Diğer masraf
+Other costs (before profit),Diğer masraflar (kârdan önce)
 Out,Çıkış
 Out of stock,Stok tükendi
 Out time,Çıkış saati
@@ -1940,6 +2025,11 @@ Overview,Genel Bakış
 Owes us,Bize borçlu
 Owner,
 PIN,
+PO,PO
+PO ETA,PO ETA
+PO count,PO adedi
+PO total,PO toplam
+PO vs quote,PO vs teklif
 POS,
 POS Profile,
 POS Profile belongs to a different company.,
@@ -1963,6 +2053,7 @@ Partially Completed,Kısmen tamamlandı
 Partially Reserved,
 Partially approved — awaiting level {0},
 Partially billed — {pct}% invoiced.,
+Partially received,Kısmen alındı
 Partly paid,Kısmen ödendi
 Parts Issue,Parça çıkışı
 Party,Taraf
@@ -2034,6 +2125,7 @@ Payroll period end date cannot be before start date.,
 Payroll periods,Bordro dönemleri
 Payroll-impacting pending,
 Pays out this share of the KPI pool. Locked periods are read-only.,KPI havuzunun bu payını öder. Kilitli dönemler salt okunur.
+Penalty %/day,Ceza %/gün
 Pending,Beklemede
 Pending Corrections,
 Pending approvals,Bekleyen onaylar
@@ -2072,6 +2164,7 @@ Pick a source warehouse.,Bir kaynak depo seçin.
 Pick a status.,Bir durum seçin.
 Pick a supplier.,Bir tedarikçi seçin.
 Pick a tender deal to compare quotations.,Teklifleri karşılaştırmak için bir ihale anlaşması seçin.
+Pick a tender deal to see its purchase orders.,PO'ları görmek için bir tender seçin.
 Pick a valid date range.,Geçerli bir tarih aralığı seçin.
 Pick a valid month.,Geçerli bir ay seçin.
 Pick a warehouse,Depo seçin
@@ -2097,6 +2190,7 @@ Place your RFID badge on the reader to log in,
 Placed Freezer,Yerleştirilen Dondurucu
 Placing,Yerleştiriliyor
 Plan Type,Plan Türü
+Plan vs actual,Plan vs gerçek
 Planned,Planlandı
 Planned Date,Planlanan Tarih
 Planned Qty,
@@ -2111,6 +2205,7 @@ Planograms,Planogramlar
 Planograms describe expected shelf facings per outlet and category.,"Planogramlar, her satış noktası ve kategori için beklenen raf düzenini tanımlar."
 Please fill all required fields.,Lütfen tüm zorunlu alanları doldurun.
 Policy,Politika
+Portfolio value,Portföy değeri
 Position,
 Positions,Pozisyonlar
 Positions hierarchy,Pozisyon hiyerarşisi
@@ -2136,6 +2231,7 @@ Preview,Önizleme
 Price Tier,Fiyat kademesi
 Price history,Fiyat geçmişi
 Price list,Fiyat listesi
+Price → margin,Fiyat → marj
 Print,Yazdır
 Priority,Öncelik
 Probability,Olasılık
@@ -2154,7 +2250,9 @@ Professional Excel export of this ledger,Bu defterin profesyonel Excel dışa ak
 Professional Excel export with current filters,Geçerli filtrelerle profesyonel Excel dışa aktarımı
 Profile,Profil
 Profile gaps,Profil eksikleri
+Profit,Kâr
 "Profit and Loss, Balance Sheet, Trial Balance, and Cash Flow.",
+Profit tax,Kâr vergisi
 Projected,Tahmini
 Promo,Promosyon
 Promo Plan,Promosyon Planı
@@ -2168,6 +2266,7 @@ Promos,Promosyonlar
 Promotion spend and uplift analysis.,
 Properties,Özellikler
 Prorated base,Oransal taban
+Provider (supplier),Sağlayıcı (tedarikçi)
 Public holiday,
 Pull gate punches from TimePay for these days and turn them into attendance. Nightly sync runs automatically; use this to catch up now.,Bu günler için TimePay geçişlerini çekip devama dönüştürün. Gece senkronu otomatik çalışır; şimdi güncellemek için kullanın.
 Punches,
@@ -2205,6 +2304,7 @@ RUB → UZS,RUB → UZS
 Rack,Raf
 Range is too wide — sync at most one month at a time.,Aralık çok geniş — tek seferde en fazla bir ay.
 Rank by,Sırala
+Ranked by delivered cost,Teslim maliyetine göre sıralı
 Raqam,Raqam
 Rate,Oran
 Rate cannot be negative.,
@@ -2359,6 +2459,7 @@ Resolved At,Çözüldüğü Yer
 Restore test,Geri yükleme testi
 Restore test recorded.,Geri yükleme testi kaydedildi.
 "Restrict this mapping to a specific reader, or leave blank to match all devices.",
+Result,Sonuç
 Resume,Devam et
 Resume Work,
 Resume Work Order,
@@ -2386,6 +2487,7 @@ Revenue vs. Expense (12 months),Gelir - Gider (12 ay)
 "Revenue − COGS per item, with margin %. Cost from item valuation.","Ürün başına gelir − SMM, marj % ile. Maliyet ürün değerlemesinden."
 Reviewed by,İnceleyen
 Reviewer Notes,İnceleme Notları
+Risk,Risk
 Role,Rol
 Role change blocked,Rol değişikliği engellendi
 Role not found,Rol bulunamadı
@@ -2413,11 +2515,15 @@ Rule set saved.,
 Rule sets,
 Run,Çalıştır
 Run a payroll cycle to generate salary slips for assigned employees.,Atanmış çalışanlar için bordro fişleri oluşturmak üzere bir bordro döngüsü çalıştırın.
+Run migrate to enable bid pricing.,Fiyatlandırmayı etkinleştirmek için migrate çalıştırın.
+Run migrate to enable landed-cost planning.,Landed maliyet planlamasını etkinleştirmek için migrate çalıştırın.
+Run migrate to enable tender intake.,Tender veri girişini etkinleştirmek için migrate çalıştırın.
 Run now,Şimdi çalıştır
 Run payroll,Bordroyu Çalıştır
 Run-rate,Aylık ciro
 Running value,Kümülatif değer
 SFA,
+SO,SO
 SO number or customer…,
 SRE module unavailable: {0},SRE modülü kullanılamıyor: {0}
 SREs,SRE
@@ -2475,12 +2581,14 @@ Save allowed users,İzin verilen kullanıcıları kaydet
 Save and submit,Kaydet ve onayla
 Save as Draft,Taslak Olarak Kaydet
 Save as draft,Taslak olarak kaydet
+Save bid pricing,Fiyatlandırmayı kaydet
 Save changes,Değişiklikleri kaydet
 Save device,
 Save draft,
 Save failed.,Kaydetme başarısız.
 Save mapping,
 Save modules,Modülleri kaydet
+Save plan,Planı kaydet
 Saved — pending approval before it posts.,Kaydedildi — işlenmeden önce onay bekliyor.
 Saved.,
 Saving…,Kaydediliyor…
@@ -2539,6 +2647,7 @@ Search stock items…,Stok ürünü ara…
 Search supplier name…,Tedarikçi adı ara…
 Search suppliers…,Tedarikçi ara…
 Search supplier…,Tedarikçi ara…
+Search supplier… ⌘K,Tedarikçi ara… ⌘K
 Search voucher…,
 Search warehouse…,Depo ara…
 Search work orders…,İş emri ara…
@@ -2614,6 +2723,7 @@ Set Reports-To on employees to build the positions hierarchy.,Pozisyon hiyerarş
 Set a Google Drive folder ID first.,Önce bir Google Drive klasör kimliği ayarlayın.
 Set as company default,Şirket varsayılanı yap
 Set as company default.,Şirket varsayılanı olarak ayarlandı.
+Set deadlines in Tender details.,Süreleri tender detaylarında girin.
 "Set the Google Drive folder ID in Stabler Settings, and share that Shared-Drive folder with the service account email.",
 Setting up your business…,İşletmeniz kuruluyor…
 Settings,
@@ -2712,6 +2822,7 @@ Stock value,Stok değeri
 Stop,Durdur
 Stop Work Order,
 Stop this Work Order? You can resume it later.,Bu İş Emri durdurulsun mu? Daha sonra devam edebilirsiniz.
+Storage,Depolama
 Storefront,Mağaza Vitrini
 Stuck (min),Takılı (dk)
 Subject,Konu
@@ -2770,13 +2881,16 @@ Sync now,Şimdi senkronla
 System qty,Sistem miktarı
 TIN,TIN
 Table,Tablo
+Tag Sales/Purchase Orders to a tender deal to see them here.,Burada görmek için siparişleri bir tendere bağlayın.
 Tag Supplier Quotations to this deal to compare them here.,Karşılaştırmak için teklifleri bu anlaşmaya bağlayın.
 Take Payment,
 Target Remaining,
 Target WIP Warehouse,
+Target margin (profit ÷ net revenue),Hedef marj (kâr ÷ net gelir)
 Task,Görev
 Tax ID,Vergi Kimlik No
 Tax amount,
+Tax rates,Vergi oranları
 Tax template,Vergi şablonu
 Tax type,Vergi tipi
 Taxes,Vergiler
@@ -2787,7 +2901,11 @@ Tender,İhale
 Tender / deal,İhale / anlaşma
 Tender Deadline,İhale son tarihi
 Tender No,İhale No
+Tender PO control,Tender PO kontrolü
 Tender Source,İhale kaynağı
+Tender bid pricing,Tender teklif fiyatlandırması
+Tender details,Tender detayları
+Tender intake saved.,Tender verisi kaydedildi.
 Tender module is not enabled for {0}.,
 Tender: {0}.,
 Tenure,Kıdem
@@ -2873,12 +2991,14 @@ To account,Alıcı hesap
 To bill,Faturalanacak
 To date,
 To deliver,Teslim edilecek
+To receive,Teslim bekliyor
 To warehouse,Hedef depo
 Today,
 Toggle date sort,
 Token status,
 Too many failed attempts. Please try again in 5 minutes.,
 Too many rows (max 5000).,
+Tools,Araçlar
 Top 10 Creditors,
 Top 10 Debtors,
 Total,Toplam
@@ -2889,6 +3009,7 @@ Total Required,
 Total SKUs,Toplam SKU
 Total allocated,Toplam tahsis edilen
 Total allocated cannot exceed the payment amount.,"Toplam tahsis edilen tutar, ödeme tutarını aşamaz."
+Total committed,Toplam taahhüt
 Total cost,Toplam maliyet
 Total credit value,
 Total credits,
@@ -2944,6 +3065,7 @@ Unassigned department or position.,Bölüm veya pozisyon atanmamış.
 Unassigned dept / position,Atanmamış bölüm / pozisyon
 Unbilled,Faturalanmamış
 Unbilled queue,Faturalanmamış kuyruk
+Unit,Birim
 Unit cost,Birim maliyet
 Units Sold,Satılan Adet
 Unknown,
@@ -2961,6 +3083,7 @@ Unknown employee: {0},
 Unknown hash algorithm: {0},
 Unknown item: {0},
 Unknown payment session.,
+Unknown purchase order: {0},Bilinmeyen satın alma siparişi: {0}
 Unknown report: {0},
 Unknown role template: {0},Bilinmeyen rol şablonu: {0}
 Unknown role: {0},
@@ -2987,6 +3110,8 @@ Upload failed,Yükleme başarısız
 Upload latest to Drive,Sonu Drive'a yükle
 Uploaded {0} file(s) to Google Drive.,
 Uploading…,Yükleniyor…
+Use POs' landed,PO’lardan al (landed)
+Use Sales Orders,Satış siparişlerinden al
 Use my location,Konumumu kullan
 Use source warehouse,Kaynak depoyu kullan
 User,Kullanıcı
@@ -2998,6 +3123,7 @@ User status updated.,
 Users,Kullanıcılar
 Users flagged,İşaretli kullanıcılar
 Utilization %,Kullanım %
+VAT,KDV
 VAT registered,KDV mükellefi
 Valid Distributor (Customer) is required.,Geçerli bir Distribütör (Müşteri) zorunludur.
 Valid From,Geçerlilik Başlangıcı
@@ -3019,7 +3145,11 @@ Van Stock name is required.,Araç Stoğu adı zorunludur.
 Van stock tracks what each field user has loaded for the day.,"Araç stoğu, her saha kullanıcısının gün için yüklediği malzemeleri takip eder."
 Var %,
 Variance,Fark
+Vendor,Tedarikçi
 Vendor bill does not match PO / receipt,Tedarikçi faturası sipariş / mal kabulü ile eşleşmiyor
+Vendor comparison,Vendor karşılaştırma
+Vendor comparison (landed),Tedarikçi karşılaştırması (landed)
+Vendors,Vendorlar
 Vertical lanes (flow top→bottom),Dikey şeritler (akış yukarı→aşağı)
 View,Görüntüle
 View all,Tümünü görüntüle
@@ -3043,6 +3173,7 @@ Visits,Ziyaretler
 Visits appear once they are planned from a route or created manually.,Ziyaretler bir rotadan planlandıktan veya manuel oluşturulduktan sonra görünür.
 Visits this month,Bu ayki ziyaretler
 Void Cart,
+Volume,Hacim
 Voucher,Fiş
 Voucher not found.,
 Voucher not found: {0} {1},
@@ -3100,6 +3231,8 @@ Width,En
 Win/Loss Reason,Kazanma/Kaybetme nedeni
 Withdrawal,Çekim
 Withheld,Tevkif edildi
+Won,Kazanıldı
+Won price,Kazanılan fiyat
 Won this month,Bu ay kazanılan
 Work From Home,Uzaktan Çalışma
 Work Order,İş Emri
@@ -3146,6 +3279,7 @@ absent,gelmedi
 across all statuses,tüm durumlarda
 active,
 active staff,aktif çalışan
+actual so far,şimdiye kadar gerçek
 against,
 ambiguous,belirsiz
 avail,mev.
@@ -3163,6 +3297,8 @@ customer credit,
 date_str and hire_date are required.,
 day,gün
 days,gün
+days late,gün gecikme
+days left,gün kaldı
 default,
 department,bölüm
 depts,bölüm
@@ -3175,6 +3311,8 @@ e.g. EMP-00042,
 e.g. Main entrance reader,
 "e.g. OK, Approved","örn. Tamam, Onaylandı"
 e.g. Standard 8h shift,
+e.g. bank / SWIFT,örn. banka / SWIFT
+e.g. office,örn. ofis
 employee is required.,
 employees,
 entries,
@@ -3193,6 +3331,7 @@ item,kalem
 item_code and warehouse are required,item_code ve depo zorunludur
 items,kalemler
 joined this month,bu ay katıldı
+landed,landed
 late,geç
 leave,
 left,kaldı
@@ -3208,6 +3347,7 @@ moves stock,
 name is required.,
 need GPS,GPS gerekli
 no stock movement,
+not set,girilmedi
 on budget,
 "one Journal Entry, clears their payable.","tek yevmiye, borçlarını kapatır."
 one-off,tek seferlik
@@ -3226,6 +3366,7 @@ punches,kayıt
 quantity,miktar
 ready to invoice,faturaya hazır
 reason is required and must not be empty.,
+received,alındı
 requested_value is required.,
 reserved,rezerve
 revenue,gelir
@@ -3240,6 +3381,7 @@ step_idx must be an integer.,step_idx bir tam sayı olmalıdır.
 stock,stok
 summaries ready,özet hazır
 to_date must be >= from_date.,
+today,bugün
 unfavorable,
 units,
 units total,toplam birim
@@ -3247,6 +3389,7 @@ updated,
 user@example.com,user@example.com
 valuation,değerleme
 vouchers must be a JSON list.,
+vs cheapest,en ucuza göre
 vs. last month,geçen aya kıyasla
 without location,konumsuz
 yr,yıl
@@ -3262,6 +3405,8 @@ yr,yıl
 {0}: discount_percentage must be between 0 and 100,{0}: discount_percentage 0 ile 100 arasında olmalıdır
 {0}: rate cannot be negative,{0}: rate negatif olamaz
 {n} outstanding invoice(s),{n} ödenmemiş fatura
+Δ,Δ
+Остаток (net remaining),Остаток (net kalan)
 —,—
 — Any device —,
 — Choose account —,— Hesap seçin —
@@ -3283,3 +3428,26 @@ yr,yıl
 — select —,
 — top-level —,— üst düzey —
 ⚠ {0} line(s) had no cost — verify item valuation; margin may be overstated.,⚠ {0} satır(da) maliyet yok — kalem değerlemesini doğrulayın; marj abartılmış olabilir.
+Purchase method,Satın alma yöntemi
+Auction,Açık artırma
+Shop,Mağaza
+Selection,Seçim
+Document checklist,Belge kontrol listesi
+Standard set,Standart set
+"No documents yet — add the standard set (ГТД, certificate, acceptance act…).","Henüz belge yok — standart seti ekleyin (ГТД, sertifika, tutanak…)."
+Manager,Yönetici
+Assigned.,Atandı.
+Could not assign.,Atanamadı.
+Win rate,Kazanma oranı
+W,K
+L,Kb
+P,Bk
+Customs value (CIF),Gümrük değeri (CIF)
+Duty,Gümrük vergisi
+Currency risk (foreign purchase),Kur riski (ithalat)
+Exposure amount,Maruz kalan tutar
+Bid rate,Teklif kuru
+Payment rate,Ödeme kuru
+FX favorable,Kur lehte
+FX risk,Kur riski
+FX open,Kur: açık

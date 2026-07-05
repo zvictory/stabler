@@ -160,7 +160,6 @@ def set_close_date(date: str | None = None) -> dict:
 			)
 
 	frappe.db.set_single_value(_SETTINGS, "period_close_date", clean_date or "")
-	frappe.db.commit()
 
 	return {
 		"close_date": clean_date,

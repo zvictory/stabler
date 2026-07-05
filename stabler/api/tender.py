@@ -11,10 +11,12 @@ tenants (enable_tender = 0) never reach them.
 
 from __future__ import annotations
 
+import json
+
 import frappe
 from stabler.api.approvals import _assert_company_scope
 from frappe import _
-from frappe.utils import flt
+from frappe.utils import flt, getdate, today
 
 from stabler.api._common import _require_company
 from stabler.api.organization import _can_access_module
@@ -180,3 +182,985 @@ def so_stage_reorder(company: str, names: str | list) -> dict:
 			frappe.db.set_value(_STAGE, name, "position", idx, update_modified=False)
 	frappe.db.commit()
 	return {"ordered": len(names or [])}
+
+
+# --------------------------------------------------------------------------- #
+# PO control board — every Purchase Order raised for one tender (F9)
+# --------------------------------------------------------------------------- #
+def _po_lane(docstatus: int, per_received: float) -> str:
+	"""Derive the board lane from the PO's own workflow state (read-only)."""
+	if docstatus == 0:
+		return "draft"
+	if per_received >= 100:
+		return "completed"
+	if per_received > 0:
+		return "partial"
+	return "to_receive"
+
+
+# Planned landed-cost charge types (for grouping/iconography in the SPA). The
+# `label` is free text so the plan can hold literally any cost item; `type` only
+# drives the icon/colour. Stored per-PO as a JSON array in `custom_landed_charges`.
+_CHARGE_TYPES = (
+	"transport", "customs", "certification", "insurance", "storage",
+	"declarant", "legal", "broker", "loading", "bank", "other",
+)
+
+
+def _parse_landed(raw) -> list[dict]:
+	"""Parse the JSON stored in Purchase Order.custom_landed_charges into a clean
+	list of dicts (amount in company/base currency). Each line may carry a ТН ВЭД
+	(HS) code and an attributed provider (declarant / lawyer / logistician …) as a
+	Supplier link + denormalized name for display."""
+	if not raw:
+		return []
+	try:
+		data = raw if isinstance(raw, list) else json.loads(raw)
+	except (ValueError, TypeError):
+		return []
+	out: list[dict] = []
+	for it in data if isinstance(data, list) else []:
+		if not isinstance(it, dict):
+			continue
+		ctype = str(it.get("type") or "other")
+		if ctype not in _CHARGE_TYPES:
+			ctype = "other"
+		out.append({
+			"type": ctype,
+			"label": str(it.get("label") or "").strip()[:140],
+			"amount": flt(it.get("amount")),          # planned
+			"actual": flt(it.get("actual")),          # actual (recorded from real invoices)
+			"tnved": str(it.get("tnved") or "").strip()[:40],
+			"supplier": str(it.get("supplier") or "").strip()[:140],
+			"supplier_name": str(it.get("supplier_name") or "").strip()[:140],
+			# Customs calculator inputs (ГТД): customs value (CIF) + duty% + VAT%.
+			"cif": flt(it.get("cif")),
+			"duty_pct": flt(it.get("duty_pct")),
+			"vat_pct": flt(it.get("vat_pct")),
+		})
+	return out
+
+
+def _po_scope(po: str, write: bool = False):
+	"""Resolve + authorize a Purchase Order for landed-charge access.
+	Returns the resolved company. Enforces tender module + company scope + the
+	underlying Frappe permission (the real security boundary)."""
+	if not po or not frappe.db.exists("Purchase Order", po):
+		frappe.throw(_("Unknown purchase order: {0}").format(po), frappe.DoesNotExistError)
+	company = frappe.db.get_value("Purchase Order", po, "company")
+	_require_company(company)
+	_require_tender(company)
+	_assert_company_scope(company)
+	if not frappe.has_permission("Purchase Order", "write" if write else "read", doc=po):
+		frappe.throw(_("Not permitted"), frappe.PermissionError)
+	return company
+
+
+@frappe.whitelist()
+def po_landed_charges(po: str) -> dict:
+	"""Read the planned landed-cost lines for one Purchase Order, with the base
+	amount and the resulting landed total (all in company currency)."""
+	company = _po_scope(po, write=False)
+	base_ccy = frappe.db.get_value("Company", company, "default_currency") or ""
+	charges = []
+	if frappe.db.has_column("Purchase Order", "custom_landed_charges"):
+		charges = _parse_landed(frappe.db.get_value("Purchase Order", po, "custom_landed_charges"))
+	base_total = flt(frappe.db.get_value("Purchase Order", po, "base_grand_total"))
+	charges_total = sum(c["amount"] for c in charges)
+	actual_total = sum(c["actual"] for c in charges)
+	return {
+		"po": po,
+		"currency": base_ccy,
+		"charges": charges,
+		"base_total": base_total,
+		"charges_total": charges_total,
+		"actual_total": actual_total,
+		"landed_total": base_total + charges_total,
+		"actual_landed": base_total + actual_total,
+	}
+
+
+@frappe.whitelist()
+def save_po_landed_charges(po: str, charges) -> dict:
+	"""Replace the planned landed-cost lines for one Purchase Order.
+
+	`charges` is a JSON array of {type, label, amount}. Persisted via db_set so
+	the plan can also be maintained on an already-submitted PO (the field is a
+	read-only, allow_on_submit overlay — it never touches the accounting doc).
+	"""
+	company = _po_scope(po, write=True)
+	if not frappe.db.has_column("Purchase Order", "custom_landed_charges"):
+		frappe.throw(_("Run migrate to enable landed-cost planning."))
+	cleaned = _parse_landed(charges)
+	frappe.db.set_value(
+		"Purchase Order", po, "custom_landed_charges",
+		json.dumps(cleaned, ensure_ascii=False), update_modified=False,
+	)
+	base_total = flt(frappe.db.get_value("Purchase Order", po, "base_grand_total"))
+	charges_total = sum(c["amount"] for c in cleaned)
+	return {
+		"po": po,
+		"charges": cleaned,
+		"base_total": base_total,
+		"charges_total": charges_total,
+		"landed_total": base_total + charges_total,
+	}
+
+
+@frappe.whitelist()
+def po_control_board(deal: str) -> dict:
+	"""Tender PO control board: every Purchase Order raised to vendors for one
+	tender (linked via Purchase Order.custom_crm_deal), grouped into status lanes
+	with KPIs and a per-vendor comparison against the supplier quotations
+	collected for the same tender. Read-only.
+	"""
+	if not deal or not frappe.db.exists("CRM Deal", deal):
+		frappe.throw(_("Unknown deal: {0}").format(deal), frappe.DoesNotExistError)
+	company = frappe.db.get_value("CRM Deal", deal, "company") or frappe.defaults.get_user_default("Company")
+	_require_company(company)
+	_require_tender(company)
+	_assert_company_scope(company)
+
+	lanes_def = [
+		("draft", _("Draft")),
+		("to_receive", _("To receive")),
+		("partial", _("Partially received")),
+		("completed", _("Completed")),
+	]
+	base_ccy = frappe.db.get_value("Company", company, "default_currency") or ""
+
+	# The custom field is added by patch v34 — until migrate runs, return an empty
+	# (but well-shaped) board instead of erroring.
+	if not frappe.db.has_column("Purchase Order", "custom_crm_deal"):
+		return {
+			"deal": deal, "currency": base_ccy,
+			"lanes": [{"key": k, "label": l, "count": 0, "total": 0.0} for k, l in lanes_def],
+			"cards": [], "compare": [],
+			"kpi": {"po_count": 0, "total": 0.0, "received_pct": 0, "vendors": 0},
+		}
+
+	po_fields = [
+		"name", "supplier", "supplier_name", "grand_total", "base_grand_total", "per_received",
+		"per_billed", "status", "currency", "docstatus", "schedule_date", "transaction_date",
+	]
+	has_landed = frappe.db.has_column("Purchase Order", "custom_landed_charges")
+	if has_landed:
+		po_fields.append("custom_landed_charges")
+
+	rows = frappe.get_all(
+		"Purchase Order",
+		filters={"custom_crm_deal": deal, "company": company, "docstatus": ["<", 2]},
+		fields=po_fields,
+		order_by="transaction_date desc, name desc",
+		limit_page_length=1000,
+	)
+
+	today_d = getdate(today())
+	# Landed cost (base currency) = base_grand_total + planned charges. The
+	# vendor comparison ranks on landed, so "cheapest" means cheapest delivered.
+	landed_by_po = {
+		r.name: flt(r.base_grand_total) + sum(c["amount"] for c in _parse_landed(r.get("custom_landed_charges") if has_landed else None))
+		for r in rows
+	}
+	min_landed = min((landed_by_po[r.name] for r in rows), default=0.0)
+	cards: list[dict] = []
+	total = 0.0
+	recv_weighted = 0.0
+	suppliers: dict[str, dict] = {}
+
+	for r in rows:
+		gt = flt(r.grand_total)
+		base_gt = flt(r.base_grand_total)
+		charges_total = flt(landed_by_po[r.name] - base_gt)
+		landed = flt(landed_by_po[r.name])
+		pr = flt(r.per_received)
+		pb = flt(r.per_billed)
+		delayed = bool(r.docstatus == 1 and pr < 100 and r.schedule_date and getdate(r.schedule_date) < today_d)
+		badges: list[str] = []
+		if landed and landed == min_landed:
+			badges.append("cheapest")
+		if r.docstatus == 0:
+			badges.append("draft")
+		if delayed:
+			badges.append("delayed")
+		if pr >= 100:
+			badges.append("received")
+		elif pr > 0:
+			badges.append("partial:%d" % round(pr))
+		if pb >= 100:
+			badges.append("billed")
+		cards.append({
+			"name": r.name, "lane": _po_lane(r.docstatus, pr),
+			"supplier": r.supplier, "supplier_name": r.supplier_name,
+			"amount": gt, "currency": r.currency or base_ccy,
+			"base_amount": base_gt, "charges_total": charges_total, "landed": landed,
+			"schedule_date": str(r.schedule_date) if r.schedule_date else None,
+			"per_received": pr, "per_billed": pb, "status": r.status, "badges": badges,
+		})
+		total += gt
+		recv_weighted += gt * pr
+		s = suppliers.setdefault(r.supplier, {
+			"supplier": r.supplier, "supplier_name": r.supplier_name,
+			"po_total": 0.0, "base_po_total": 0.0, "charges_total": 0.0, "count": 0, "min_sched": None,
+		})
+		s["po_total"] += gt
+		s["base_po_total"] += base_gt
+		s["charges_total"] += charges_total
+		s["count"] += 1
+		if r.schedule_date and (s["min_sched"] is None or str(r.schedule_date) < s["min_sched"]):
+			s["min_sched"] = str(r.schedule_date)
+
+	# Supplier quotation totals for this tender → PO-vs-quotation delta per vendor.
+	q_by_supplier: dict[str, float] = {}
+	if frappe.db.has_column("Supplier Quotation", "custom_crm_deal"):
+		for q in frappe.get_all(
+			"Supplier Quotation",
+			filters={"custom_crm_deal": deal, "docstatus": ["<", 2]},
+			fields=["supplier", "grand_total"],
+			limit_page_length=1000,
+		):
+			q_by_supplier[q.supplier] = q_by_supplier.get(q.supplier, 0.0) + flt(q.grand_total)
+
+	compare = []
+	for s in suppliers.values():
+		qt = q_by_supplier.get(s["supplier"], 0.0)
+		delta = ((s["po_total"] - qt) / qt * 100) if qt else None
+		landed_total = flt(s["base_po_total"] + s["charges_total"])
+		compare.append({
+			"supplier": s["supplier"], "supplier_name": s["supplier_name"],
+			"po_total": s["po_total"], "base_po_total": s["base_po_total"],
+			"charges_total": s["charges_total"], "landed_total": landed_total,
+			"quotation_total": qt,
+			"delta_pct": round(delta, 1) if delta is not None else None,
+			"schedule_date": s["min_sched"], "count": s["count"],
+		})
+	# Cheapest = lowest landed (delivered) cost; rank cheapest-first and flag it,
+	# plus each vendor's landed premium over the cheapest.
+	cheapest_landed = min((c["landed_total"] for c in compare if c["landed_total"]), default=0.0)
+	for c in compare:
+		c["cheapest"] = bool(c["landed_total"] and c["landed_total"] == cheapest_landed)
+		c["landed_delta_pct"] = (
+			round((c["landed_total"] - cheapest_landed) / cheapest_landed * 100, 1)
+			if cheapest_landed else None
+		)
+	compare.sort(key=lambda x: x["landed_total"])
+
+	lanes = []
+	for key, label in lanes_def:
+		lc = [c for c in cards if c["lane"] == key]
+		lanes.append({"key": key, "label": label, "count": len(lc), "total": sum(c["amount"] for c in lc)})
+
+	return {
+		"deal": deal,
+		"currency": (rows[0].currency if rows else base_ccy) or base_ccy,
+		"lanes": lanes,
+		"cards": cards,
+		"compare": compare,
+		"kpi": {
+			"po_count": len(cards),
+			"total": total,
+			"received_pct": round(recv_weighted / total, 1) if total else 0,
+			"vendors": len(suppliers),
+		},
+	}
+
+
+# --------------------------------------------------------------------------- #
+# Tender bid pricing — landed cost + our margin → the price WE bid (Договор).
+# The sell side is a Sales Order (revenue); the cost side is the deal's POs
+# (landed). This mirrors the customer's contract P&L sheet.
+# --------------------------------------------------------------------------- #
+_BID_DEFAULTS = {
+	"mode": "margin",          # "margin" (target margin → bid) | "price" (bid → margin)
+	"margin_pct": 20.0,        # Прибыль ÷ net revenue, %
+	"vat_pct": 12.0,           # НДС
+	"exchange_pct": 0.15,      # биржа комиссия (on gross bid)
+	"profit_tax_pct": 15.0,    # налог на прибыль
+	"dividend_tax_pct": 5.0,   # налог на дивиденды
+}
+
+
+def _deal_scope(deal: str, write: bool = False) -> str:
+	if not deal or not frappe.db.exists("CRM Deal", deal):
+		frappe.throw(_("Unknown deal: {0}").format(deal), frappe.DoesNotExistError)
+	company = frappe.db.get_value("CRM Deal", deal, "company") or frappe.defaults.get_user_default("Company")
+	_require_company(company)
+	_require_tender(company)
+	_assert_company_scope(company)
+	if not frappe.has_permission("CRM Deal", "write" if write else "read", doc=deal):
+		frappe.throw(_("Not permitted"), frappe.PermissionError)
+	return company
+
+
+def _deal_landed_split(deal: str, company: str) -> tuple[float, float, int]:
+	"""(planned_landed, actual_landed, po_count) in base currency across the deal's
+	POs. Planned = base + planned charges; actual = base + recorded actual charges."""
+	if not frappe.db.has_column("Purchase Order", "custom_crm_deal"):
+		return 0.0, 0.0, 0
+	has_landed = frappe.db.has_column("Purchase Order", "custom_landed_charges")
+	po_fields = ["name", "base_grand_total"]
+	if has_landed:
+		po_fields.append("custom_landed_charges")
+	pos = frappe.get_all(
+		"Purchase Order",
+		filters={"custom_crm_deal": deal, "company": company, "docstatus": ["<", 2]},
+		fields=po_fields,
+		limit_page_length=1000,
+	)
+	planned = 0.0
+	actual = 0.0
+	for p in pos:
+		base = flt(p.base_grand_total)
+		lines = _parse_landed(p.get("custom_landed_charges") if has_landed else None)
+		planned += base + sum(c["amount"] for c in lines)
+		actual += base + sum(c["actual"] for c in lines)
+	return planned, actual, len(pos)
+
+
+def _deal_landed(deal: str, company: str) -> tuple[float, int]:
+	"""Sum planned landed cost (base currency) across the deal's Purchase Orders."""
+	planned, _actual, count = _deal_landed_split(deal, company)
+	return planned, count
+
+
+def _deal_revenue_actual(deal: str, company: str) -> float:
+	"""Actual invoiced revenue (base currency) = Σ SO.base_grand_total × per_billed%."""
+	if not frappe.db.has_column("Sales Order", "custom_crm_deal"):
+		return 0.0
+	sos = frappe.get_all(
+		"Sales Order",
+		filters={"custom_crm_deal": deal, "company": company, "docstatus": 1},
+		fields=["base_grand_total", "per_billed"],
+		limit_page_length=1000,
+	)
+	return sum(flt(s.base_grand_total) * flt(s.per_billed) / 100.0 for s in sos)
+
+
+def _deal_revenue(deal: str, company: str) -> tuple[float, int]:
+	"""Sum revenue (base currency) across the deal's Sales Orders (the bid we won)."""
+	if not frappe.db.has_column("Sales Order", "custom_crm_deal"):
+		return 0.0, 0
+	sos = frappe.get_all(
+		"Sales Order",
+		filters={"custom_crm_deal": deal, "company": company, "docstatus": ["<", 2]},
+		fields=["name", "base_grand_total"],
+		limit_page_length=1000,
+	)
+	return sum(flt(s.base_grand_total) for s in sos), len(sos)
+
+
+def _num(v, d=0.0) -> float:
+	try:
+		return float(v)
+	except (TypeError, ValueError):
+		return d
+
+
+def _compute_bid_pnl(p: dict) -> dict:
+	"""Full contract P&L waterfall (mirrors the customer's cost sheet).
+
+	Two directions:
+	  mode="margin" → back-solve the gross bid price from a target margin.
+	  mode="price"  → forward-compute the resulting margin from a given bid.
+	Costs split into above-the-line (before Прибыль, taxable) and below-the-line
+	(after dividends — reduce Остаток only, e.g. office, extra certification).
+	"""
+	landed_goods = _num(p.get("landed_goods"))
+	above_other = [{"label": str(x.get("label") or ""), "amount": _num(x.get("amount"))} for x in (p.get("above_other") or []) if isinstance(x, dict)]
+	below_other = [{"label": str(x.get("label") or ""), "amount": _num(x.get("amount"))} for x in (p.get("below_other") or []) if isinstance(x, dict)]
+	vat_f = _num(p.get("vat_pct", _BID_DEFAULTS["vat_pct"])) / 100.0
+	exch_f = _num(p.get("exchange_pct", _BID_DEFAULTS["exchange_pct"])) / 100.0
+	ptax_f = _num(p.get("profit_tax_pct", _BID_DEFAULTS["profit_tax_pct"])) / 100.0
+	dtax_f = _num(p.get("dividend_tax_pct", _BID_DEFAULTS["dividend_tax_pct"])) / 100.0
+
+	above_excl = landed_goods + sum(x["amount"] for x in above_other)  # excludes exchange commission
+	mode = p.get("mode") or "margin"
+
+	if mode == "margin":
+		m = _num(p.get("margin_pct", _BID_DEFAULTS["margin_pct"])) / 100.0
+		denom = (1.0 - m) - (1.0 + vat_f) * exch_f
+		net_rev = above_excl / denom if denom > 0 else 0.0
+		gross = net_rev * (1.0 + vat_f)
+	else:
+		gross = _num(p.get("bid_price"))
+		net_rev = gross / (1.0 + vat_f) if (1.0 + vat_f) else 0.0
+
+	vat = gross - net_rev
+	exchange = gross * exch_f
+	above_total = above_excl + exchange
+	profit = net_rev - above_total
+	profit_tax = max(profit, 0.0) * ptax_f
+	net_profit = profit - profit_tax
+	dividend_tax = max(net_profit, 0.0) * dtax_f
+	dividends = net_profit - dividend_tax
+	below_total = sum(x["amount"] for x in below_other)
+	ostatok = dividends - below_total
+
+	return {
+		"mode": mode,
+		"bid_price": round(gross, 2),          # Договор (gross, VAT-inclusive)
+		"vat": round(vat, 2),
+		"net_revenue": round(net_rev, 2),      # Чистая выручка
+		"exchange_fee": round(exchange, 2),
+		"landed_goods": round(landed_goods, 2),
+		"above_other": above_other,
+		"above_total": round(above_total, 2),
+		"profit": round(profit, 2),            # Прибыль
+		"profit_tax": round(profit_tax, 2),
+		"net_profit": round(net_profit, 2),    # Чистая прибыль
+		"dividend_tax": round(dividend_tax, 2),
+		"dividends": round(dividends, 2),      # Дивиденды
+		"below_other": below_other,
+		"below_total": round(below_total, 2),
+		"ostatok": round(ostatok, 2),          # Остаток
+		"margin_on_revenue_pct": round(profit / net_rev * 100, 2) if net_rev else 0.0,
+		"markup_on_cost_pct": round(profit / above_total * 100, 2) if above_total else 0.0,
+	}
+
+
+def _bid_inputs(deal: str, company: str) -> tuple[dict, dict]:
+	"""Merge stored pricing plan with defaults + live SO revenue / PO landed."""
+	stored = {}
+	if frappe.db.has_column("CRM Deal", "custom_bid_pricing"):
+		raw = frappe.db.get_value("CRM Deal", deal, "custom_bid_pricing")
+		if raw:
+			try:
+				stored = json.loads(raw) if not isinstance(raw, dict) else raw
+			except (ValueError, TypeError):
+				stored = {}
+	po_landed, po_count = _deal_landed(deal, company)
+	so_revenue, so_count = _deal_revenue(deal, company)
+	inp = dict(_BID_DEFAULTS)
+	inp.update({k: v for k, v in stored.items() if v is not None})
+	# Defaults: landed basis from the deal's POs; bid (price mode) from its SOs.
+	if inp.get("landed_goods") in (None, "", 0, 0.0):
+		inp["landed_goods"] = po_landed
+	if inp.get("mode") == "price" and inp.get("bid_price") in (None, "", 0, 0.0):
+		inp["bid_price"] = so_revenue
+	inp["above_other"] = stored.get("above_other") or []
+	inp["below_other"] = stored.get("below_other") or []
+	return inp, {"po_landed": po_landed, "po_count": po_count, "so_revenue": so_revenue, "so_count": so_count}
+
+
+def _actual_block(deal: str, company: str, inp: dict, planned_pnl: dict) -> dict:
+	"""Realized side: actual landed (recorded) + actual invoiced revenue → actual
+	P&L, reusing the same tax rates and fixed other-costs as the plan."""
+	planned_landed, actual_landed, _ = _deal_landed_split(deal, company)
+	actual_revenue = _deal_revenue_actual(deal, company)
+	a_inp = dict(inp)
+	a_inp["mode"] = "price"
+	a_inp["bid_price"] = actual_revenue or planned_pnl.get("bid_price")
+	a_inp["landed_goods"] = actual_landed or inp.get("landed_goods")
+	a_pnl = _compute_bid_pnl(a_inp)
+	return {
+		"invoiced": bool(actual_revenue),
+		"planned_landed": planned_landed,
+		"actual_landed": actual_landed,
+		"actual_revenue": actual_revenue,
+		"pnl": a_pnl,
+		"ostatok_delta": flt(a_pnl["ostatok"]) - flt(planned_pnl.get("ostatok")),
+	}
+
+
+@frappe.whitelist()
+def deal_bid_pricing(deal: str) -> dict:
+	"""Read the tender bid-pricing plan + computed P&L (plan and actual) for a deal."""
+	company = _deal_scope(deal, write=False)
+	base_ccy = frappe.db.get_value("Company", company, "default_currency") or ""
+	inp, refs = _bid_inputs(deal, company)
+	pnl = _compute_bid_pnl(inp)
+	return {"deal": deal, "currency": base_ccy, "inputs": inp, "pnl": pnl,
+	        "actual": _actual_block(deal, company, inp, pnl), **refs}
+
+
+@frappe.whitelist()
+def save_deal_bid_pricing(deal: str, pricing) -> dict:
+	"""Persist the bid-pricing plan (JSON) on the CRM Deal and return the P&L."""
+	company = _deal_scope(deal, write=True)
+	if not frappe.db.has_column("CRM Deal", "custom_bid_pricing"):
+		frappe.throw(_("Run migrate to enable bid pricing."))
+	try:
+		data = pricing if isinstance(pricing, dict) else json.loads(pricing)
+	except (ValueError, TypeError):
+		frappe.throw(_("Invalid pricing payload."))
+	# Keep only known keys; coerce cost lines.
+	clean = {
+		"mode": "price" if data.get("mode") == "price" else "margin",
+		"margin_pct": _num(data.get("margin_pct"), _BID_DEFAULTS["margin_pct"]),
+		"bid_price": _num(data.get("bid_price")),
+		"landed_goods": _num(data.get("landed_goods")),
+		"vat_pct": _num(data.get("vat_pct"), _BID_DEFAULTS["vat_pct"]),
+		"exchange_pct": _num(data.get("exchange_pct"), _BID_DEFAULTS["exchange_pct"]),
+		"profit_tax_pct": _num(data.get("profit_tax_pct"), _BID_DEFAULTS["profit_tax_pct"]),
+		"dividend_tax_pct": _num(data.get("dividend_tax_pct"), _BID_DEFAULTS["dividend_tax_pct"]),
+		"above_other": [
+			{"label": str(x.get("label") or "").strip()[:140], "amount": _num(x.get("amount"))}
+			for x in (data.get("above_other") or []) if isinstance(x, dict) and _num(x.get("amount"))
+		],
+		"below_other": [
+			{"label": str(x.get("label") or "").strip()[:140], "amount": _num(x.get("amount"))}
+			for x in (data.get("below_other") or []) if isinstance(x, dict) and _num(x.get("amount"))
+		],
+	}
+	frappe.db.set_value("CRM Deal", deal, "custom_bid_pricing", json.dumps(clean, ensure_ascii=False), update_modified=False)
+	base_ccy = frappe.db.get_value("Company", company, "default_currency") or ""
+	inp, refs = _bid_inputs(deal, company)
+	return {"deal": deal, "currency": base_ccy, "inputs": inp, "pnl": _compute_bid_pnl(inp), **refs}
+
+
+# --------------------------------------------------------------------------- #
+# Tender intake + deadline control ("muddat nazorati").
+# Pre-bid intake fields on the deal, plus a milestone timeline (bid / contract /
+# PO ETA / delivery) with days-left + a good/warn/risk status per milestone.
+# --------------------------------------------------------------------------- #
+_INTAKE_KEYS_STR = ("lot_no", "buyer", "unit", "bid_deadline", "delivery_deadline",
+                    "guarantee_return", "go_no_go", "result", "purchase_method",
+                    "assigned_to", "assigned_to_name", "fx_currency", "notes")
+_INTAKE_KEYS_NUM = ("volume", "guarantee_amount", "penalty_pct_per_day", "won_price",
+                    "fx_amount", "fx_bid_rate", "fx_pay_rate")
+# Purchase method (способ закупки) drives the BPM branch: selection/tender require
+# tender documents; auction/shop pass without.
+_PURCHASE_METHODS = ("auction", "shop", "selection", "tender")
+
+
+def _clean_intake(data: dict) -> dict:
+	out = {k: str(data.get(k) or "").strip()[:200] for k in _INTAKE_KEYS_STR}
+	for k in _INTAKE_KEYS_NUM:
+		out[k] = _num(data.get(k))
+	out["cert_required"] = 1 if data.get("cert_required") else 0
+	# normalize decision / result / purchase-method vocab
+	out["go_no_go"] = out["go_no_go"] if out["go_no_go"] in ("go", "no_go") else ""
+	out["result"] = out["result"] if out["result"] in ("won", "lost", "pending") else ""
+	out["purchase_method"] = out["purchase_method"] if out["purchase_method"] in _PURCHASE_METHODS else ""
+	# document checklist (ГТД, certificate, acceptance act, contract, invoice …)
+	out["documents"] = [
+		{
+			"label": str(d.get("label") or "").strip()[:140],
+			"required": 1 if d.get("required") else 0,
+			"done": 1 if d.get("done") else 0,
+			"date": str(d.get("date") or "").strip()[:20],
+		}
+		for d in (data.get("documents") or []) if isinstance(d, dict) and str(d.get("label") or "").strip()
+	][:40]
+	return out
+
+
+def _fx_summary(intake: dict) -> dict:
+	"""FX exposure & risk: goods bought in a foreign currency, sold in UZS. Planned
+	base = amount × bid-rate; realized = amount × pay-rate; a higher pay-rate means
+	the delivered cost rose in UZS (unfavorable → warn/risk)."""
+	cur = str(intake.get("fx_currency") or "").strip().upper()[:8]
+	amt = _num(intake.get("fx_amount"))
+	br = _num(intake.get("fx_bid_rate"))
+	pr = _num(intake.get("fx_pay_rate"))
+	planned = amt * br
+	realized = amt * pr if pr else 0.0
+	delta = (realized - planned) if pr else 0.0
+	delta_pct = (delta / planned * 100) if (pr and planned) else 0.0
+	if not (cur and amt and br):
+		status = "none"
+	elif not pr:
+		status = "open"      # exposure set but rate not yet realized
+	elif delta_pct > 3:
+		status = "risk"
+	elif delta_pct > 0:
+		status = "warn"
+	else:
+		status = "good"
+	return {
+		"currency": cur, "amount": amt, "bid_rate": br, "pay_rate": pr,
+		"planned_base": planned, "realized_base": realized,
+		"delta": delta, "delta_pct": round(delta_pct, 2), "status": status,
+	}
+
+
+def _docs_summary(intake: dict) -> dict:
+	docs = intake.get("documents") or []
+	req = [d for d in docs if d.get("required")]
+	return {
+		"total": len(docs),
+		"required": len(req),
+		"done_required": sum(1 for d in req if d.get("done")),
+		"missing": [d.get("label") for d in req if not d.get("done")],
+	}
+
+
+def _read_intake(deal: str) -> dict:
+	if not frappe.db.has_column("CRM Deal", "custom_tender_intake"):
+		return {}
+	raw = frappe.db.get_value("CRM Deal", deal, "custom_tender_intake")
+	if not raw:
+		return {}
+	try:
+		return raw if isinstance(raw, dict) else json.loads(raw)
+	except (ValueError, TypeError):
+		return {}
+
+
+def _milestone(key: str, label: str, date_val, done: bool, today_d) -> dict | None:
+	"""Build one deadline milestone with days-left + risk status."""
+	if not date_val:
+		return {"key": key, "label": label, "date": None, "days_left": None,
+		        "status": "none", "done": bool(done)}
+	d = getdate(date_val)
+	days = (d - today_d).days
+	if done:
+		status = "good"
+	elif days < 0:
+		status = "risk"
+	elif days <= 7:
+		status = "warn"
+	else:
+		status = "good"
+	return {"key": key, "label": label, "date": str(d), "days_left": days,
+	        "status": status, "done": bool(done)}
+
+
+def _deal_deadlines(deal: str, company: str, intake: dict) -> dict:
+	"""Milestone timeline across the tender chain, from intake + SO + PO dates."""
+	today_d = getdate(today())
+
+	# Sales Orders (revenue / contract / delivery side)
+	so_rows = []
+	if frappe.db.has_column("Sales Order", "custom_crm_deal"):
+		so_rows = frappe.get_all(
+			"Sales Order",
+			filters={"custom_crm_deal": deal, "company": company, "docstatus": ["<", 2]},
+			fields=["transaction_date", "delivery_date", "per_delivered"],
+			limit_page_length=1000,
+		)
+	so_exists = bool(so_rows)
+	so_delivered = bool(so_rows) and all(flt(s.per_delivered) >= 100 for s in so_rows)
+	so_first_txn = min((s.transaction_date for s in so_rows if s.transaction_date), default=None)
+	so_delivery = min((s.delivery_date for s in so_rows if s.delivery_date), default=None)
+
+	# Purchase Orders (procurement / ETA side)
+	po_rows = []
+	if frappe.db.has_column("Purchase Order", "custom_crm_deal"):
+		po_rows = frappe.get_all(
+			"Purchase Order",
+			filters={"custom_crm_deal": deal, "company": company, "docstatus": ["<", 2]},
+			fields=["schedule_date", "per_received"],
+			limit_page_length=1000,
+		)
+	po_exists = bool(po_rows)
+	po_received = bool(po_rows) and all(flt(p.per_received) >= 100 for p in po_rows)
+	po_eta = min((p.schedule_date for p in po_rows if p.schedule_date), default=None)
+
+	bid_done = bool(intake.get("result")) or bool(intake.get("go_no_go") == "no_go")
+	delivery_date = intake.get("delivery_deadline") or so_delivery
+
+	milestones = [
+		_milestone("bid", _("Bid deadline"), intake.get("bid_deadline"), bid_done, today_d),
+		_milestone("contract", _("Contract"), so_first_txn, so_exists, today_d),
+		_milestone("po_eta", _("PO ETA"), po_eta, po_received, today_d),
+		_milestone("delivery", _("Delivery deadline"), delivery_date, so_delivered, today_d),
+	]
+	# Guarantee return (garov qaytishi) — only when a return date is set. Considered
+	# done once the contract is closed (delivered) or the bid was lost.
+	if intake.get("guarantee_return"):
+		g_done = bool(so_delivered or intake.get("result") == "lost")
+		milestones.append(_milestone("guarantee", _("Guarantee return"), intake.get("guarantee_return"), g_done, today_d))
+	milestones = [m for m in milestones if m]
+	worst = "good"
+	for m in milestones:
+		if m["status"] == "risk":
+			worst = "risk"
+			break
+		if m["status"] == "warn":
+			worst = "warn"
+	return {"milestones": milestones, "risk": worst, "today": str(today_d)}
+
+
+@frappe.whitelist()
+def deal_intake(deal: str) -> dict:
+	"""Read the tender intake + the deadline/risk timeline for a deal."""
+	company = _deal_scope(deal, write=False)
+	base_ccy = frappe.db.get_value("Company", company, "default_currency") or ""
+	intake = _read_intake(deal)
+	return {"deal": deal, "currency": base_ccy, "intake": intake,
+	        "deadlines": _deal_deadlines(deal, company, intake),
+	        "docs": _docs_summary(intake), "fx": _fx_summary(intake)}
+
+
+@frappe.whitelist()
+def save_deal_intake(deal: str, intake) -> dict:
+	"""Persist the tender intake (JSON) on the CRM Deal and return it + deadlines."""
+	company = _deal_scope(deal, write=True)
+	if not frappe.db.has_column("CRM Deal", "custom_tender_intake"):
+		frappe.throw(_("Run migrate to enable tender intake."))
+	try:
+		data = intake if isinstance(intake, dict) else json.loads(intake)
+	except (ValueError, TypeError):
+		frappe.throw(_("Invalid intake payload."))
+	clean = _clean_intake(data)
+	frappe.db.set_value("CRM Deal", deal, "custom_tender_intake", json.dumps(clean, ensure_ascii=False), update_modified=False)
+	base_ccy = frappe.db.get_value("Company", company, "default_currency") or ""
+	return {"deal": deal, "currency": base_ccy, "intake": clean,
+	        "deadlines": _deal_deadlines(deal, company, clean),
+	        "docs": _docs_summary(clean), "fx": _fx_summary(clean)}
+
+
+# --------------------------------------------------------------------------- #
+# Tender role windows ("rol oynalari") — director / sourcing / declarant / logist.
+# UX access layer over the existing tender module gate; real security stays in
+# Frappe has_permission on every underlying doctype read.
+# --------------------------------------------------------------------------- #
+_TENDER_VIEW_ROLES = {
+	"director": ("System Manager", "Stabler Admin", "Sales Manager", "Stabler Tender Director"),
+	"sourcing": ("System Manager", "Stabler Admin", "Sales Manager", "Sales User"),
+	"declarant": ("System Manager", "Stabler Admin", "Sales Manager", "Stabler Declarant"),
+	"logist": ("System Manager", "Stabler Admin", "Sales Manager", "Stabler Logist"),
+}
+
+
+def _tender_views(user: str | None = None) -> list[str]:
+	roles = set(frappe.get_roles(user or frappe.session.user))
+	return [v for v, allow in _TENDER_VIEW_ROLES.items() if roles.intersection(allow)]
+
+
+def _require_tender_view(view: str, company: str) -> None:
+	_require_company(company)
+	_require_tender(company)
+	_assert_company_scope(company)
+	if view not in _tender_views():
+		frappe.throw(_("Not permitted"), frappe.PermissionError)
+
+
+@frappe.whitelist()
+def tender_views() -> dict:
+	"""Which role windows the current user may open (drives SPA nav)."""
+	return {"views": _tender_views()}
+
+
+_OVERSIGHT_ROLES = ("System Manager", "Stabler Admin", "Sales Manager", "Stabler Tender Director")
+
+
+def _is_tender_oversight(user: str | None = None) -> bool:
+	"""Oversight = sees every tender (director / dep-head / admin). Plain sourcing
+	users only see tenders assigned to them."""
+	return bool(set(frappe.get_roles(user or frappe.session.user)).intersection(_OVERSIGHT_ROLES))
+
+
+@frappe.whitelist()
+def tender_managers(company: str) -> dict:
+	"""Users a tender can be assigned to (sourcing roles), for the distribution UI."""
+	_require_tender_view("director", company)
+	names: set[str] = set()
+	for r in frappe.get_all(
+		"Has Role", filters={"role": ["in", ["Sales User", "Sales Manager"]], "parenttype": "User"},
+		fields=["parent"], distinct=True, limit_page_length=1000,
+	):
+		names.add(r.parent)
+	out = []
+	for u in names:
+		if u in ("Administrator", "Guest"):
+			continue
+		row = frappe.db.get_value("User", u, ["enabled", "full_name"], as_dict=True)
+		if row and row.enabled:
+			out.append({"name": u, "full_name": row.full_name or u})
+	out.sort(key=lambda x: x["full_name"].lower())
+	return {"managers": out}
+
+
+@frappe.whitelist()
+def assign_tender(deal: str, user: str = "") -> dict:
+	"""Assign a tender to a manager (director / dep-head only). Empty = unassign."""
+	company = _deal_scope(deal, write=True)
+	if not _is_tender_oversight():
+		frappe.throw(_("Not permitted"), frappe.PermissionError)
+	if not frappe.db.has_column("CRM Deal", "custom_tender_intake"):
+		frappe.throw(_("Run migrate to enable tender intake."))
+	name = ""
+	if user:
+		if not frappe.db.exists("User", user):
+			frappe.throw(_("Unknown user: {0}").format(user))
+		name = frappe.db.get_value("User", user, "full_name") or user
+	intake = _read_intake(deal)
+	intake["assigned_to"] = user or ""
+	intake["assigned_to_name"] = name
+	clean = _clean_intake(intake)
+	frappe.db.set_value("CRM Deal", deal, "custom_tender_intake", json.dumps(clean, ensure_ascii=False), update_modified=False)
+	return {"deal": deal, "assigned_to": user or "", "assigned_to_name": name}
+
+
+def _tender_deal_names(company: str) -> set[str]:
+	"""All CRM Deals that are tenders for this company: any tagged SO/PO/quotation,
+	plus deals carrying an intake or pricing plan."""
+	names: set[str] = set()
+	for dt in ("Sales Order", "Purchase Order", "Supplier Quotation"):
+		if frappe.db.has_column(dt, "custom_crm_deal"):
+			for r in frappe.get_all(
+				dt, filters={"company": company, "custom_crm_deal": ["is", "set"], "docstatus": ["<", 2]},
+				fields=["custom_crm_deal"], distinct=True, limit_page_length=5000,
+			):
+				if r.custom_crm_deal:
+					names.add(r.custom_crm_deal)
+	for fld in ("custom_tender_intake", "custom_bid_pricing"):
+		if frappe.db.has_column("CRM Deal", fld):
+			for r in frappe.get_all("CRM Deal", filters={"company": company, fld: ["is", "set"]},
+			                        fields=["name"], limit_page_length=5000):
+				names.add(r.name)
+	return names
+
+
+def _deal_label(deal: str) -> str:
+	return (frappe.db.get_value("CRM Deal", deal, "organization")
+	        or frappe.db.get_value("CRM Deal", deal, "lead_name") or deal)
+
+
+_RISK_ORDER = {"risk": 0, "warn": 1, "good": 2, "none": 3}
+
+
+@frappe.whitelist()
+def tender_director_board(company: str) -> dict:
+	"""Director portfolio: every tender with value, margin, Остаток, deadline risk."""
+	_require_tender_view("director", company)
+	base_ccy = frappe.db.get_value("Company", company, "default_currency") or ""
+	rows = []
+	total_value = 0.0
+	total_ost = 0.0
+	at_risk = 0
+	margins = []
+	won = lost = pending = 0
+	for deal in _tender_deal_names(company):
+		intake = _read_intake(deal)
+		_res = intake.get("result")
+		if _res == "won":
+			won += 1
+		elif _res == "lost":
+			lost += 1
+		elif _res == "pending":
+			pending += 1
+		dl = _deal_deadlines(deal, company, intake)
+		inp, refs = _bid_inputs(deal, company)
+		pnl = _compute_bid_pnl(inp)
+		value = flt(refs["so_revenue"]) or flt(pnl["bid_price"])
+		total_value += value
+		total_ost += flt(pnl["ostatok"])
+		if pnl["margin_on_revenue_pct"]:
+			margins.append(pnl["margin_on_revenue_pct"])
+		if dl["risk"] == "risk":
+			at_risk += 1
+		delivery = next((m["date"] for m in dl["milestones"] if m["key"] == "delivery"), None)
+		rows.append({
+			"deal": deal, "label": _deal_label(deal),
+			"value": value, "landed": refs["po_landed"], "ostatok": pnl["ostatok"],
+			"margin_pct": pnl["margin_on_revenue_pct"],
+			"po_count": refs["po_count"], "so_count": refs["so_count"],
+			"risk": dl["risk"], "delivery": delivery, "result": intake.get("result") or "",
+			"assigned_to": intake.get("assigned_to") or "", "assigned_to_name": intake.get("assigned_to_name") or "",
+		})
+	rows.sort(key=lambda r: (_RISK_ORDER.get(r["risk"], 3), r["delivery"] or "9999-99-99"))
+	kpi = {
+		"count": len(rows), "total_value": total_value,
+		"avg_margin": round(sum(margins) / len(margins), 1) if margins else 0,
+		"at_risk": at_risk, "total_ostatok": total_ost,
+		"won": won, "lost": lost, "pending": pending,
+		"win_rate": round(won / (won + lost) * 100, 1) if (won + lost) else 0,
+	}
+	return {"currency": base_ccy, "rows": rows, "kpi": kpi}
+
+
+def _po_rows_for_views(company: str) -> tuple[list, bool]:
+	"""Shared PO fetch for declarant/logist windows (all tenders)."""
+	if not frappe.db.has_column("Purchase Order", "custom_crm_deal"):
+		return [], False
+	has_landed = frappe.db.has_column("Purchase Order", "custom_landed_charges")
+	fields = ["name", "supplier", "supplier_name", "schedule_date", "per_received", "custom_crm_deal", "status"]
+	if has_landed:
+		fields.append("custom_landed_charges")
+	rows = frappe.get_all(
+		"Purchase Order",
+		filters={"company": company, "custom_crm_deal": ["is", "set"], "docstatus": ["<", 2]},
+		fields=fields, order_by="schedule_date asc", limit_page_length=2000,
+	)
+	return rows, has_landed
+
+
+@frappe.whitelist()
+def declarant_queue(company: str) -> dict:
+	"""Declarant window: POs awaiting customs, with ТН ВЭД + customs charge + ETA."""
+	_require_tender_view("declarant", company)
+	base_ccy = frappe.db.get_value("Company", company, "default_currency") or ""
+	pos, has_landed = _po_rows_for_views(company)
+	today_d = getdate(today())
+	out = []
+	for p in pos:
+		charges = _parse_landed(p.get("custom_landed_charges")) if has_landed else []
+		customs_total = sum(c["amount"] for c in charges if c["type"] == "customs")
+		tnved = next((c["tnved"] for c in charges if c.get("tnved")), "")
+		cleared = flt(p.per_received) >= 100
+		eta = getdate(p.schedule_date) if p.schedule_date else None
+		days = (eta - today_d).days if eta else None
+		out.append({
+			"po": p.name, "supplier_name": p.supplier_name, "deal": p.custom_crm_deal,
+			"deal_label": _deal_label(p.custom_crm_deal) if p.custom_crm_deal else "",
+			"tnved": tnved, "customs_total": customs_total,
+			"eta": str(eta) if eta else None, "days_left": days,
+			"status": "cleared" if cleared else ("in_progress" if customs_total else "pending"),
+		})
+	return {"currency": base_ccy, "rows": out}
+
+
+@frappe.whitelist()
+def logist_board(company: str) -> dict:
+	"""Logistician window: shipments (POs) with ETA, delivery deadline and delay risk."""
+	_require_tender_view("logist", company)
+	base_ccy = frappe.db.get_value("Company", company, "default_currency") or ""
+	pos, has_landed = _po_rows_for_views(company)
+	today_d = getdate(today())
+	deliv_cache: dict[str, object] = {}
+	out = []
+	for p in pos:
+		charges = _parse_landed(p.get("custom_landed_charges")) if has_landed else []
+		transport = sum(c["amount"] for c in charges if c["type"] in ("transport", "loading"))
+		received = flt(p.per_received) >= 100
+		eta = getdate(p.schedule_date) if p.schedule_date else None
+		deal = p.custom_crm_deal
+		if deal not in deliv_cache:
+			intake = _read_intake(deal) if deal else {}
+			dv = intake.get("delivery_deadline")
+			if not dv and deal and frappe.db.has_column("Sales Order", "custom_crm_deal"):
+				dv = min((s.delivery_date for s in frappe.get_all(
+					"Sales Order", filters={"custom_crm_deal": deal, "company": company, "docstatus": ["<", 2]},
+					fields=["delivery_date"], limit_page_length=500) if s.delivery_date), default=None)
+			deliv_cache[deal] = getdate(dv) if dv else None
+		delivery = deliv_cache[deal]
+		late = bool(not received and eta and delivery and eta > delivery)
+		out.append({
+			"po": p.name, "supplier_name": p.supplier_name, "deal": deal,
+			"deal_label": _deal_label(deal) if deal else "",
+			"transport": transport, "eta": str(eta) if eta else None,
+			"delivery": str(delivery) if delivery else None,
+			"received": received,
+			"status": "delivered" if received else ("late" if late else "in_transit"),
+		})
+	return {"currency": base_ccy, "rows": out}
+
+
+@frappe.whitelist()
+def sourcing_my_tenders(company: str) -> dict:
+	"""Sourcing window: the tender pipeline with landed cost, PO/vendor counts and risk."""
+	_require_tender_view("sourcing", company)
+	base_ccy = frappe.db.get_value("Company", company, "default_currency") or ""
+	# Oversight roles see the whole pipeline; a plain sourcing user sees only the
+	# tenders assigned to them (the department head distributes via assign_tender).
+	oversight = _is_tender_oversight()
+	me = frappe.session.user
+	rows = []
+	for deal in _tender_deal_names(company):
+		intake = _read_intake(deal)
+		if not oversight and (intake.get("assigned_to") or "") != me:
+			continue
+		dl = _deal_deadlines(deal, company, intake)
+		po_landed, po_count = _deal_landed(deal, company)
+		delivery = next((m["date"] for m in dl["milestones"] if m["key"] == "delivery"), None)
+		rows.append({
+			"deal": deal, "label": _deal_label(deal),
+			"landed": po_landed, "po_count": po_count,
+			"risk": dl["risk"], "delivery": delivery, "result": intake.get("result") or "",
+			"assigned_to": intake.get("assigned_to") or "", "assigned_to_name": intake.get("assigned_to_name") or "",
+		})
+	rows.sort(key=lambda r: (_RISK_ORDER.get(r["risk"], 3), r["delivery"] or "9999-99-99"))
+	return {"currency": base_ccy, "rows": rows, "oversight": oversight}
