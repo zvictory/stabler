@@ -3,6 +3,7 @@ import { useSession } from "./stores/session.js";
 import { t } from "./composables/i18n.js";
 import Dashboard from "./pages/Dashboard.vue";
 import Module from "./pages/Module.vue";
+import GenesisWizard from "./pages/welcome/GenesisWizard.vue";
 import ReportsHub from "./pages/ReportsHub.vue";
 import ReportSalesByCustomer from "./pages/reports/SalesByCustomer.vue";
 import ReportCustomerBalanceSummary from "./pages/reports/CustomerBalanceSummary.vue";
@@ -141,6 +142,10 @@ import ServerError from "./pages/ServerError.vue";
 
 const routes = [
 	{ path: "/", redirect: "/dashboard" },
+	// Onboarding — reachable by any authenticated user while onboarding is not yet
+	// complete (module: null = no module gating; the guard below confines
+	// un-provisioned users here).
+	{ path: "/welcome", name: "welcome", component: GenesisWizard, meta: { title: t("Welcome"), module: null, "public-after-login": true } },
 	{ path: "/dashboard", name: "dashboard", component: Dashboard, meta: { title: t("Dashboard"), module: "dashboard" } },
 	{ path: "/reports", name: "reports", component: ReportsHub, meta: { title: t("Reports") } },
 	{ path: "/reports/sales-by-customer", name: "report-sales-by-customer", component: ReportSalesByCustomer, meta: { title: t("Sales by Customer"), module: "sales" } },
@@ -423,6 +428,17 @@ function landingPath(session) {
 	return "/error";
 }
 
+// WP-271 — local "onboarding completed" flag, set by the Genesis wizard on a
+// successful provision so the guard lets the user through immediately (before the
+// next boot refresh). Read defensively (private mode can block storage).
+function localOnboardingFlag() {
+	try {
+		return localStorage.getItem("stabler.onboarding.completed") === "1";
+	} catch (_) {
+		return false;
+	}
+}
+
 router.beforeEach(async (to) => {
 	const session = useSession();
 	// Await boot so the access decision uses real allowedModules on the very first navigation.
@@ -433,6 +449,23 @@ router.beforeEach(async (to) => {
 		if (to.path !== "/manufacturing/line") {
 			window.location.href = `/login?redirect-to=${encodeURIComponent(window.location.pathname + window.location.hash)}`;
 			return false;
+		}
+	}
+
+	// WP-271 — force onboarding for authenticated users. A user who has NOT yet
+	// provisioned a company is confined to the Genesis wizard: direct-URL access to
+	// /sales, /money, … is redirected to /welcome until onboarding completes.
+	// "Completed" = the local flag set by the wizard OR the user already owns a
+	// company. Routes flagged `public-after-login` (i.e. /welcome) stay reachable.
+	if (session.user?.id && session.user.id !== "Guest") {
+		const onboardingDone =
+			localOnboardingFlag() || (Array.isArray(session.companies) && session.companies.length > 0);
+		const isPublicAfterLogin = to.matched.some((r) => r.meta && r.meta["public-after-login"]);
+		if (!onboardingDone) {
+			if (!isPublicAfterLogin) return "/welcome";
+		} else if (isPublicAfterLogin && to.path !== landingPath(session)) {
+			// A provisioned user shouldn't re-enter the wizard — send them home.
+			return landingPath(session);
 		}
 	}
 

@@ -11,8 +11,10 @@ import PaymentModal from "../../components/PaymentModal.vue";
 import RelatedDocuments from "../../components/RelatedDocuments.vue";
 import FormPage from "../../components/form/FormPage.vue";
 import { useDocumentForm } from "../../composables/useDocumentForm.js";
+import { useTelemetry } from "../../composables/useTelemetry.js";
 
 const session = useSession();
+const { trackOnce, FUNNEL } = useTelemetry();
 const { user } = storeToRefs(session);
 const route = useRoute();
 const router = useRouter();
@@ -46,6 +48,13 @@ const {
 async function loadDoc() {
 	if (!docName.value) return;
 	await load(docName.value);
+}
+
+// Submitting a sales invoice = a "sale". Track the activation funnel once per
+// company; submit() returns the result only on success, so failures don't emit.
+async function submitSale() {
+	const res = await submit();
+	if (res) trackOnce(FUNNEL.FIRST_SALE);
 }
 
 function goToInvoice(name) {
@@ -275,7 +284,7 @@ onMounted(loadDoc);
 				type="button"
 				class="btn btn-primary"
 				:disabled="actionRunning"
-				@click="submit"
+				@click="submitSale"
 			>
 				<span v-if="actionRunning" class="spinner-border spinner-border-sm me-1"></span>
 				<i v-else class="ti ti-check me-1"></i>{{ t("Submit") }}

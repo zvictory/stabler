@@ -21,6 +21,7 @@ import { formatMoney } from "../composables/money.js";
 import { todayIso } from "../composables/date.js";
 import { t } from "../composables/i18n.js";
 import { useToast } from "../composables/useToast.js";
+import { useTelemetry } from "../composables/useTelemetry.js";
 import MoneyInput from "./MoneyInput.vue";
 import DateInput from "./DateInput.vue";
 import Select from "./Select.vue";
@@ -37,6 +38,7 @@ const emit = defineEmits(["close", "paid"]);
 
 const toast = useToast();
 const { user } = storeToRefs(useSession());
+const { trackOnce, FUNNEL } = useTelemetry();
 
 const today = todayIso();
 
@@ -307,6 +309,7 @@ async function submit() {
 		if (created.pending_approval) {
 			toast.warning(t("Payment saved — pending approval before it posts."));
 		}
+		trackOnce(FUNNEL.FIRST_PAYMENT); // activation funnel — fires once per company
 		emit("paid", created.name, !!created.pending_approval);
 	} catch (err) {
 		error.value = err?.message || t("Failed to record payment.");

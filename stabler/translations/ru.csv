@@ -19,6 +19,7 @@ source,target
 61–90,61–90
 90+,90+
 A Payroll Attendance Summary for employee {0} and period {1} already exists: {2},
+A few quick questions and you're ready to sell.,Пара быстрых вопросов — и можно продавать.
 A mapping for employee {0} with device user ID {1} already exists ({2}).,
 A new version is available.,Доступна новая версия.
 A password reset email will be sent. The account is disabled until the user sets a password.,"На адрес будет отправлено письмо с инструкциями по восстановлению пароля. Учётная запись отключена до тех пор, пока пользователь не установит пароль."
@@ -301,6 +302,7 @@ Bank transaction is required.,
 Bank transaction not found.,
 Bank/cash account is required.,Требуется счет в банке или кассе.
 Base,База
+Base currency,Базовая валюта
 Base equivalent,Эквивалент в базовой валюте
 Base salary,
 Base salary (UZS),
@@ -341,6 +343,8 @@ Budget,Бюджет
 "Budget name, fiscal year…",
 Budget vs Actual,
 Budgets,
+Business name,Название бизнеса
+Business name is required.,Название бизнеса обязательно.
 Buy,Купить
 Buy X get Y,Купи X получи Y
 Buy markup,Наценка (покупка)
@@ -521,6 +525,7 @@ Confirm restore test,Подтвердите тест восстановлени�
 Conflict,Конфликт
 Conflicts,Конфликты
 Connector,Соединитель
+Construction,Строительство
 Consumed,Израсходовано
 Contact,Контакт
 Contacted,Контакт установлен
@@ -568,6 +573,7 @@ Could not read your location.,Не удалось определить мест�
 Could not resolve a customer for this deal.,
 Could not resolve payroll period: {0},
 Could not save period.,Не удалось сохранить период.
+Could not start setup.,Не удалось начать настройку.
 Could not start the online payment.,Не удалось начать онлайн-оплату.
 Could not start the processor.,Не удалось запустить процессор.
 Couldn't work out the cash amount to pay — check the exchange rate and the paying account.,
@@ -1116,6 +1122,7 @@ Finish Google Drive setup,Завершите настройку Google Drive
 Finish Order,
 Finish Production Run,
 Finish failed.,Ошибка завершения.
+Finish setup,Завершить настройку
 Finished Good,
 Finished good,Готовая продукция
 Finished-goods warehouse,Склад готовой продукции
@@ -1132,6 +1139,7 @@ Fixtures directory missing: {0},Директория приспособлени�
 Flat fee (UZS),
 Flat fee per step,
 Flexible,
+Food & Beverage,Еда и напитки
 Force submit & reserve,Принудительно отправить и зарезервировать
 Free,
 Free Qty,Свободное кол-во
@@ -1244,6 +1252,7 @@ Including unposted drafts — does not tie to the GL.,Включая непро�
 Inclusive,Включительно
 Inclusive: commission deducted from amount — receiver gets less.,Включительно: комиссия вычитается — получатель получает меньше.
 Incremental Units,Дополнительные единицы
+Industry,Отрасль
 Inflow,Поступление
 Install Date,Дата установки
 Install libraries on the server:,
@@ -1819,6 +1828,7 @@ Not permitted — admins only.,
 Not permitted.,
 Not ready,
 Not ready to lock,
+Not registered,Не зарегистрирован
 Not set,
 Not uploaded yet,Ещё не загружено
 Notes,Примечания
@@ -2617,6 +2627,7 @@ Service module is not enabled for {0}.,
 Service person,Исполнитель
 Service ticket assignment,
 Service visit {0},
+Services,Услуги
 Session {0} has no cart snapshot.,
 Set,
 Set Reports-To on employees to build the positions hierarchy.,"Установите «Руководитель» для сотрудников, чтобы построить иерархию должностей."
@@ -2624,10 +2635,12 @@ Set a Google Drive folder ID first.,Сначала укажите ID папки 
 Set as company default,Сделать стандартом компании
 Set as company default.,Установлено как стандарт компании.
 "Set the Google Drive folder ID in Stabler Settings, and share that Shared-Drive folder with the service account email.",
+Setting up your business…,Настраиваем ваш бизнес…
 Settings,
 Settle,Рассчитать
 Settled,Рассчитан
 Settlement failed.,Расчёт не удался.
+Setup failed. Please try again.,Настройка не удалась. Попробуйте снова.
 Severity,Серьёзность
 Shape,Фигура
 Shapes,Фигуры
@@ -2641,11 +2654,13 @@ Shift 12h,
 Shift 8h,
 Shift class,
 Shift start,
+Short code,Короткий код
 Show discounts,Показать скидки
 Showing,Показано
 Showing first 500 — narrow the date range to see more.,"Показаны первые 500 — сузьте период, чтобы увидеть больше."
 Showing the first {0} records — use filters to narrow.,Показаны первые {0} записей — используйте фильтры для уточнения.
 Showing the newest,Показаны самые новые
+Simplified / turnover tax,Упрощённый / налог с оборота
 Simulation result,
 Simulator,
 Simulator inputs,
@@ -2783,6 +2798,7 @@ Task,Задача
 Tax ID,ИНН
 Tax amount,
 Tax template,Шаблон налогов
+Tax type,Тип налога
 Taxes,Налоги
 Technician,Техник
 Technician state,Статус техника
@@ -3004,6 +3020,7 @@ User status updated.,
 Users,Пользователи
 Users flagged,Помеченные пользователи
 Utilization %,Использование %
+VAT registered,Плательщик НДС
 Valid Distributor (Customer) is required.,Требуется корректный дистрибьютор (Клиент).
 Valid From,Действителен с
 Valid Promo Plan is required.,Требуется корректный план акции.
@@ -3081,12 +3098,14 @@ Weekly,Еженедельно
 Weekly off,Выходной
 Weekly off days,
 Weight,Вес
+Welcome,Добро пожаловать
 Welcome to Stabler,Добро пожаловать в Stabler
 What is this advance for?,За что этот аванс?
 What is this entry for?,Для чего эта запись?
 WhatsApp,WhatsApp
 When,Когда
 "When someone submits a payment that needs review, it appears here.","Когда кто-то отправит платёж на проверку, он появится здесь."
+Wholesale / Distribution,Опт / Дистрибуция
 Why it matters,Почему это важно
 Widen the date range or clear filters to see stock activity.,"Расширьте диапазон дат или очистите фильтры, чтобы увидеть активность склада."
 Widen the date range or create a new payment receipt/payment.,
@@ -3143,6 +3162,7 @@ You raised this request — it must be approved by someone else.,
 You raised this request — it must be reviewed by someone else.,
 You raised this — another user must approve it.,Вы создали эту заявку — её должен согласовать другой пользователь.
 "Your books are empty. Get started by adding a customer, recording your first sale, or logging an opening balance.","Ваши книги пусты. Начните с добавления клиента, записи первой продажи или ввода начального остатка."
+Your business is ready.,Ваш бизнес готов.
 Yuk xati,Юк хати
 absent,отсутствовал
 across all statuses,по всем статусам
@@ -3171,6 +3191,7 @@ depts,отделов
 designation,должность
 device_name is required.,
 device_user_id is required.,
+e.g. ANJ — leave blank to auto-generate,напр. ANJ — оставьте пустым для авто
 e.g. Chevrolet Cobalt 2024,напр. Chevrolet Cobalt 2024
 e.g. EMP-00042,
 e.g. Main entrance reader,
@@ -3270,6 +3291,7 @@ yr,г.
 — Select —,
 — auto from customer —,— автоматически от клиента —
 — auto from supplier —,— автоматически от поставщика —
+— choose —,— выберите —
 — company default —,— стандартный в компании —
 — default —,— по умолчанию —
 — global default —,— глобальный по умолчанию —

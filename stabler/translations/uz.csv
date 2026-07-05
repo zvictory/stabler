@@ -18,6 +18,7 @@ source,target
 61–90,61–90
 90+,90+
 A Payroll Attendance Summary for employee {0} and period {1} already exists: {2},
+A few quick questions and you're ready to sell.,Bir necha tezkor savol — va sotishga tayyorsiz.
 A mapping for employee {0} with device user ID {1} already exists ({2}).,
 A new version is available.,Yangi versiya mavjud.
 A password reset email will be sent. The account is disabled until the user sets a password.,Parol o'zgartirishning elektron xati yuboriladi. Hisob foydalanuvchi parol belgilamaguncha o'chiriladi.
@@ -296,6 +297,7 @@ Bank transaction is required.,
 Bank transaction not found.,
 Bank/cash account is required.,Bank/kassa hisob talab qilinadi.
 Base,Asos
+Base currency,Asosiy valyuta
 Base equivalent,Asosiy ekvivalent
 Base salary,
 Base salary (UZS),
@@ -336,6 +338,8 @@ Budget,Byudjet
 "Budget name, fiscal year…",
 Budget vs Actual,
 Budgets,
+Business name,Biznes nomi
+Business name is required.,Biznes nomi majburiy.
 Buy,Sotib olish
 Buy X get Y,"X sotib oling, Y olish"
 Buy markup,Sotib olish ustamasi
@@ -515,6 +519,7 @@ Confirm restore test,Tiklash sinovini tasdiqlang
 Conflict,Nizo
 Conflicts,Nizolar
 Connector,Bogʿlovchi
+Construction,Qurilish
 Consumed,Iste'mol qilindi
 Contact,Aloqa
 Contacted,Bog'lanildi
@@ -562,6 +567,7 @@ Could not read your location.,Joylashuvni aniqlab bo'lmadi.
 Could not resolve a customer for this deal.,
 Could not resolve payroll period: {0},
 Could not save period.,Davrni saqlab bo'lmadi.
+Could not start setup.,Sozlashni boshlab bo'lmadi.
 Could not start the online payment.,Onlayn to‘lovni boshlab bo‘lmadi.
 Could not start the processor.,Protsessorni ishga tushirib bo'lmadi.
 Couldn't work out the cash amount to pay — check the exchange rate and the paying account.,
@@ -1109,6 +1115,7 @@ Finish Google Drive setup,Google Drive sozlashni yakunlang
 Finish Order,
 Finish Production Run,
 Finish failed.,Yakunlash muvaffaqiyatsiz.
+Finish setup,Sozlashni yakunlash
 Finished Good,
 Finished good,Tayyor mahsulot
 Finished-goods warehouse,Tayyor mahsulot ombori
@@ -1125,6 +1132,7 @@ Fixtures directory missing: {0},Fixtures direktoriyasi yo'q: {0}
 Flat fee (UZS),
 Flat fee per step,
 Flexible,
+Food & Beverage,Oziq-ovqat va ichimlik
 Force submit & reserve,Majburan yuborish va zaxiralash
 Free,
 Free Qty,Bepul miqdori
@@ -1237,6 +1245,7 @@ Including unposted drafts — does not tie to the GL.,Joylanmagan qoralamalar bi
 Inclusive,Ichida
 Inclusive: commission deducted from amount — receiver gets less.,Ichida: komissiya ayiriladi — qabul qiluvchi kamroq oladi.
 Incremental Units,Ortuvchi birliklar
+Industry,Soha
 Inflow,Kirish oqimi
 Install Date,O'rnatish sanasi
 Install libraries on the server:,
@@ -1812,6 +1821,7 @@ Not permitted — admins only.,
 Not permitted.,
 Not ready,
 Not ready to lock,
+Not registered,Ro'yxatdan o'tmagan
 Not set,
 Not uploaded yet,Hali yuklanmagan
 Notes,Eslatmalar
@@ -2610,6 +2620,7 @@ Service module is not enabled for {0}.,
 Service person,Texnik
 Service ticket assignment,
 Service visit {0},
+Services,Xizmatlar
 Session {0} has no cart snapshot.,
 Set,
 Set Reports-To on employees to build the positions hierarchy.,Lavozimlar ierarxiyasini yaratish uchun xodimlarda Reports-To ni o'rnating.
@@ -2617,10 +2628,12 @@ Set a Google Drive folder ID first.,Avval Google Drive papka ID'sini kiriting.
 Set as company default,Kompaniya standarti qilish
 Set as company default.,Kompaniya standarti qilib o'rnatildi.
 "Set the Google Drive folder ID in Stabler Settings, and share that Shared-Drive folder with the service account email.",
+Setting up your business…,Biznesingiz sozlanmoqda…
 Settings,
 Settle,Yechish
 Settled,Hisob-kitob qilingan
 Settlement failed.,Yechish muvaffaqiyatsiz bo'ldi.
+Setup failed. Please try again.,Sozlash muvaffaqiyatsiz. Qayta urining.
 Severity,Jiddiylik
 Shape,Shakl
 Shapes,Shakllar
@@ -2634,11 +2647,13 @@ Shift 12h,
 Shift 8h,
 Shift class,
 Shift start,
+Short code,Qisqa kod
 Show discounts,Chegirtilarni ko'rsatish
 Showing,Koʼrsatilmoqda
 Showing first 500 — narrow the date range to see more.,Birinchi 500 ko‘rsatildi — ko‘proq ko‘rish uchun davrni toraytiring.
 Showing the first {0} records — use filters to narrow.,Birinchi {0} ta yozuv ko'rsatilmoqda — aniqlashtirish uchun filtrlardan foydalaning.
 Showing the newest,Eng yangilarni ko'rsatmoqda
+Simplified / turnover tax,Soddalashtirilgan / aylanma solig'i
 Simulation result,
 Simulator,
 Simulator inputs,
@@ -2776,6 +2791,7 @@ Task,Vazifa
 Tax ID,Soliq ID
 Tax amount,
 Tax template,Soliq shabloni
+Tax type,Soliq turi
 Taxes,Soliqlar
 Technician,Texnik
 Technician state,Texnik holati
@@ -2997,6 +3013,7 @@ User status updated.,
 Users,Foydalanuvchilar
 Users flagged,Belgilangan foydalanuvchilar
 Utilization %,Foydalanish %
+VAT registered,QQS to'lovchisi
 Valid Distributor (Customer) is required.,To'g'ri tarqatuvchi (Xaridor) majburiy.
 Valid From,Dan to'g'ri
 Valid Promo Plan is required.,To'g'ri promo-rejasi majburiy.
@@ -3074,12 +3091,14 @@ Weekly,Haftalik
 Weekly off,Dam olish kuni
 Weekly off days,
 Weight,Og'irligi
+Welcome,Xush kelibsiz
 Welcome to Stabler,Stableriga xush kelibsiz
 What is this advance for?,Bu avans nima uchun?
 What is this entry for?,Bu yozuv nima uchun?
 WhatsApp,WhatsApp
 When,Qachon
 "When someone submits a payment that needs review, it appears here.","Kimdir ko'rib chiqishni talab qiladigan to'lovni yuborsa, u shu yerda paydo bo'ladi."
+Wholesale / Distribution,Ulgurji / Distribyutsiya
 Why it matters,Nega bu muhim
 Widen the date range or clear filters to see stock activity.,Zaxira faoliyatini ko'rish uchun sana oralig'ini kengaytiring yoki filtrlari tozalang.
 Widen the date range or create a new payment receipt/payment.,
@@ -3136,6 +3155,7 @@ You raised this request — it must be approved by someone else.,
 You raised this request — it must be reviewed by someone else.,
 You raised this — another user must approve it.,Bu so'rovni siz yaratdingiz — uni boshqa foydalanuvchi tasdiqlashi kerak.
 "Your books are empty. Get started by adding a customer, recording your first sale, or logging an opening balance.","Sizning kitoplaringiz bo'sh. Xaridor qo'shish, birinchi sotuvi qayd etish yoki ochilish qoldiqlarini kiritish bilan boshlang."
+Your business is ready.,Biznesingiz tayyor.
 Yuk xati,Yuk xati
 absent,kelmagan
 across all statuses,barcha holatlar bo'yicha
@@ -3164,6 +3184,7 @@ depts,bo'lim
 designation,lavozim
 device_name is required.,
 device_user_id is required.,
+e.g. ANJ — leave blank to auto-generate,masalan ANJ — avtomatik uchun bo'sh qoldiring
 e.g. Chevrolet Cobalt 2024,masalan Chevrolet Cobalt 2024
 e.g. EMP-00042,
 e.g. Main entrance reader,
@@ -3263,6 +3284,7 @@ yr,yil
 — Select —,
 — auto from customer —,— xaridordan avtomatik —
 — auto from supplier —,— ta'minotchidan avtomatik —
+— choose —,— tanlang —
 — company default —,— kompaniya asosiysi —
 — default —,— asosiy —
 — global default —,— global asosiy —

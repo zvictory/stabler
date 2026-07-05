@@ -8,8 +8,12 @@ import { t } from "../../composables/i18n.js";
 import MoneyInput from "../../components/MoneyInput.vue";
 import EmptyState from "../../components/EmptyState.vue";
 import Select from "../../components/Select.vue";
+import { useTelemetry } from "../../composables/useTelemetry.js";
+import { useEscapeBack } from "../../composables/useEscapeBack.js";
 
 const session = useSession();
+useEscapeBack(() => { if (createOpen.value) { closeCreate(); return true; } if (detailOpen.value) { closeDetail(); return true; } return false; }, "/inventory"); // ESC → close open pane, else back
+const { trackOnce, trackCta, FUNNEL } = useTelemetry();
 const { activeCompany, user } = storeToRefs(session);
 
 const loading = ref(false);
@@ -143,6 +147,7 @@ async function submitCreate() {
 			standard_rate: form.value.standard_rate || 0,
 			description: form.value.description?.trim() || undefined,
 		});
+		trackOnce(FUNNEL.FIRST_ITEM); // activation funnel — fires once per company
 		createOpen.value = false;
 		await load();
 		if (created?.name) await openDetail(created.name);
@@ -192,7 +197,7 @@ watch(activeCompany, load);
 				<button v-if="search" type="button" class="btn btn-outline-secondary" @click="search = ''">
 					<i class="ti ti-x me-1"></i>{{ t("Clear search") }}
 				</button>
-				<button type="button" class="btn btn-primary" @click="openCreate">
+				<button type="button" class="btn btn-primary" @click="trackCta('add_first_item'); openCreate()">
 					<i class="ti ti-plus me-1"></i>{{ t("New item") }}
 				</button>
 			</template>

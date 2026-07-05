@@ -18,6 +18,7 @@ source,target
 61–90,61–90
 90+,90+
 A Payroll Attendance Summary for employee {0} and period {1} already exists: {2},
+A few quick questions and you're ready to sell.,Birkaç hızlı soru ve satışa hazırsınız.
 A mapping for employee {0} with device user ID {1} already exists ({2}).,
 A new version is available.,Yeni bir sürüm mevcut.
 A password reset email will be sent. The account is disabled until the user sets a password.,Şifre sıfırlama e-postası gönderilecek. Kullanıcı şifresini belirleyene kadar hesap devre dışı kalacak.
@@ -294,6 +295,7 @@ Bank transaction is required.,
 Bank transaction not found.,
 Bank/cash account is required.,Banka/kasa hesabı gereklidir.
 Base,Taban
+Base currency,Ana para birimi
 Base equivalent,Baz karşılığı
 Base salary,
 Base salary (UZS),
@@ -334,6 +336,8 @@ Budget,Bütçe
 "Budget name, fiscal year…",
 Budget vs Actual,
 Budgets,
+Business name,İşletme adı
+Business name is required.,İşletme adı zorunlu.
 Buy,Satın Al
 Buy X get Y,X al Y kazan
 Buy markup,Alış kâr marjı
@@ -511,6 +515,7 @@ Confirm restore test,Geri yükleme testini onaylayın
 Conflict,Çakışma
 Conflicts,Çakışmalar
 Connector,Bağlayıcı
+Construction,İnşaat
 Consumed,Tüketildi
 Contact,İletişim
 Contacted,İletişim Kuruldu
@@ -557,6 +562,7 @@ Could not read your location.,Konumunuz okunamadı.
 Could not resolve a customer for this deal.,
 Could not resolve payroll period: {0},
 Could not save period.,Dönem kaydedilemedi.
+Could not start setup.,Kurulum başlatılamadı.
 Could not start the online payment.,Çevrimiçi ödeme başlatılamadı.
 Could not start the processor.,İşlemci başlatılamadı.
 Couldn't work out the cash amount to pay — check the exchange rate and the paying account.,
@@ -1102,6 +1108,7 @@ Finish Google Drive setup,Google Drive kurulumunu tamamlayın
 Finish Order,
 Finish Production Run,
 Finish failed.,Bitirme başarısız.
+Finish setup,Kurulumu bitir
 Finished Good,
 Finished good,Mamul ürün
 Finished-goods warehouse,Mamul ürün deposu
@@ -1118,6 +1125,7 @@ Fixtures directory missing: {0},Fikstür dizini eksik: {0}
 Flat fee (UZS),
 Flat fee per step,
 Flexible,
+Food & Beverage,Yiyecek & İçecek
 Force submit & reserve,Zorla gönder ve rezerve et
 Free,
 Free Qty,Ücretsiz Miktar
@@ -1230,6 +1238,7 @@ Including unposted drafts — does not tie to the GL.,Kaydedilmemiş taslaklar d
 Inclusive,Dahil
 Inclusive: commission deducted from amount — receiver gets less.,Dahil: komisyon tutardan düşülür — alıcı daha az alır.
 Incremental Units,Artımlı Birimler
+Industry,Sektör
 Inflow,Giriş
 Install Date,Kurulum Tarihi
 Install libraries on the server:,
@@ -1804,6 +1813,7 @@ Not permitted — admins only.,
 Not permitted.,
 Not ready,
 Not ready to lock,
+Not registered,Kayıtlı değil
 Not set,
 Not uploaded yet,Henüz yüklenmedi
 Notes,Notlar
@@ -2597,6 +2607,7 @@ Service module is not enabled for {0}.,
 Service person,Teknisyen
 Service ticket assignment,
 Service visit {0},
+Services,Hizmetler
 Session {0} has no cart snapshot.,
 Set,
 Set Reports-To on employees to build the positions hierarchy.,Pozisyon hiyerarşisi oluşturmak için çalışanlarda Bağlı Olduğu Kişi alanını doldurun.
@@ -2604,10 +2615,12 @@ Set a Google Drive folder ID first.,Önce bir Google Drive klasör kimliği ayar
 Set as company default,Şirket varsayılanı yap
 Set as company default.,Şirket varsayılanı olarak ayarlandı.
 "Set the Google Drive folder ID in Stabler Settings, and share that Shared-Drive folder with the service account email.",
+Setting up your business…,İşletmeniz kuruluyor…
 Settings,
 Settle,Mahsuplaştır
 Settled,Kapatıldı
 Settlement failed.,Mahsuplaştırma başarısız oldu.
+Setup failed. Please try again.,Kurulum başarısız. Lütfen tekrar deneyin.
 Severity,Önem
 Shape,Şekil
 Shapes,Şekiller
@@ -2621,11 +2634,13 @@ Shift 12h,
 Shift 8h,
 Shift class,
 Shift start,
+Short code,Kısa kod
 Show discounts,İndirimleri göster
 Showing,Gösteriliyor
 Showing first 500 — narrow the date range to see more.,İlk 500 gösteriliyor — daha fazlası için tarih aralığını daraltın.
 Showing the first {0} records — use filters to narrow.,İlk {0} kayıt gösteriliyor — daraltmak için filtreleri kullanın.
 Showing the newest,En yeniler gösteriliyor
+Simplified / turnover tax,Basitleştirilmiş / ciro vergisi
 Simulation result,
 Simulator,
 Simulator inputs,
@@ -2763,6 +2778,7 @@ Task,Görev
 Tax ID,Vergi Kimlik No
 Tax amount,
 Tax template,Vergi şablonu
+Tax type,Vergi tipi
 Taxes,Vergiler
 Technician,Teknisyen
 Technician state,Teknisyen durumu
@@ -2982,6 +2998,7 @@ User status updated.,
 Users,Kullanıcılar
 Users flagged,İşaretli kullanıcılar
 Utilization %,Kullanım %
+VAT registered,KDV mükellefi
 Valid Distributor (Customer) is required.,Geçerli bir Distribütör (Müşteri) zorunludur.
 Valid From,Geçerlilik Başlangıcı
 Valid Promo Plan is required.,Geçerli bir Promosyon Planı zorunludur.
@@ -3059,12 +3076,14 @@ Weekly,Haftalık
 Weekly off,Haftalık izin
 Weekly off days,
 Weight,Ağırlık
+Welcome,Hoş geldiniz
 Welcome to Stabler,Stabler'a Hoş Geldiniz
 What is this advance for?,Bu avans ne için?
 What is this entry for?,Bu kayıt ne için?
 WhatsApp,WhatsApp
 When,Ne zaman
 "When someone submits a payment that needs review, it appears here.",Birisi incelenmesi gereken bir ödeme gönderdiğinde burada görünür.
+Wholesale / Distribution,Toptan / Dağıtım
 Why it matters,Neden önemli
 Widen the date range or clear filters to see stock activity.,Stok hareketlerini görmek için tarih aralığını genişletin veya filtreleri temizleyin.
 Widen the date range or create a new payment receipt/payment.,
@@ -3121,6 +3140,7 @@ You raised this request — it must be approved by someone else.,
 You raised this request — it must be reviewed by someone else.,
 You raised this — another user must approve it.,Bu talebi siz oluşturdunuz — başka bir kullanıcı onaylamalı.
 "Your books are empty. Get started by adding a customer, recording your first sale, or logging an opening balance.","Defteriniz boş. Müşteri ekleyerek, ilk satışınızı kaydederek veya açılış bakiyesi girerek başlayın."
+Your business is ready.,İşletmeniz hazır.
 Yuk xati,Yuk xati
 absent,gelmedi
 across all statuses,tüm durumlarda
@@ -3149,6 +3169,7 @@ depts,bölüm
 designation,pozisyon
 device_name is required.,
 device_user_id is required.,
+e.g. ANJ — leave blank to auto-generate,örn. ANJ — otomatik için boş bırakın
 e.g. Chevrolet Cobalt 2024,örn. Chevrolet Cobalt 2024
 e.g. EMP-00042,
 e.g. Main entrance reader,
@@ -3248,6 +3269,7 @@ yr,yıl
 — Select —,
 — auto from customer —,— müşteriden otomatik —
 — auto from supplier —,— tedarikçiden otomatik —
+— choose —,— seçin —
 — company default —,— şirket varsayılanı —
 — default —,— varsayılan —
 — global default —,— genel varsayılan —

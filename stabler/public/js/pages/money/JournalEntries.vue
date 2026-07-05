@@ -16,10 +16,12 @@ import SkeletonRows from "../../components/SkeletonRows.vue";
 import { useToast } from "../../composables/useToast.js";
 import { useConfirm } from "../../composables/useConfirm.js";
 import { readableRate, toLineRate, formatRate } from "../../composables/fx.js";
+import { useEscapeBack } from "../../composables/useEscapeBack.js";
 
 const session = useSession();
 const route = useRoute();
 const router = useRouter();
+useEscapeBack(null, "/money"); // ESC → back (general app rule)
 const { activeCompany, user } = storeToRefs(session);
 const toast = useToast();
 const { confirm } = useConfirm();

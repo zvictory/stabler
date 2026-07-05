@@ -18,6 +18,7 @@ source,target
 61–90,61–90
 90+,90+
 A Payroll Attendance Summary for employee {0} and period {1} already exists: {2},
+A few quick questions and you're ready to sell.,Бир неча тезкор савол — ва сотишга тайёрсиз.
 A mapping for employee {0} with device user ID {1} already exists ({2}).,
 A new version is available.,Янги версия мавжуд.
 A password reset email will be sent. The account is disabled until the user sets a password.,Парол қайта тиклаш электрон хати юборилади. Ҳисоб фойдаланувчи парол белгилагунча ўчирилган ҳолатда қолади.
@@ -296,6 +297,7 @@ Bank transaction is required.,
 Bank transaction not found.,
 Bank/cash account is required.,Банк/касса ҳисоби талаб қилинади.
 Base,Асос
+Base currency,Асосий валюта
 Base equivalent,Асосий эквивалент
 Base salary,
 Base salary (UZS),
@@ -336,6 +338,8 @@ Budget,Бюджет
 "Budget name, fiscal year…",
 Budget vs Actual,
 Budgets,
+Business name,Бизнес номи
+Business name is required.,Бизнес номи мажбурий.
 Buy,Сотиб олиш
 Buy X get Y,X сотиб олинг Y получите
 Buy markup,Сотиб олиш устамаси
@@ -515,6 +519,7 @@ Confirm restore test,Тиклаш синовини тасдиқланг
 Conflict,Низо
 Conflicts,Низолар
 Connector,Боғловчи
+Construction,Қурилиш
 Consumed,Ишлатилди
 Contact,Алоқа
 Contacted,Боғланилди
@@ -562,6 +567,7 @@ Could not read your location.,Жойлашувни аниқлаб бўлмади
 Could not resolve a customer for this deal.,
 Could not resolve payroll period: {0},
 Could not save period.,Даврни сақлаб бўлмади.
+Could not start setup.,Созлашни бошлаб бўлмади.
 Could not start the online payment.,Онлайн тўловни бошлаб бўлмади.
 Could not start the processor.,Процессорни ишга тушириб бўлмади.
 Couldn't work out the cash amount to pay — check the exchange rate and the paying account.,
@@ -1109,6 +1115,7 @@ Finish Google Drive setup,Google Drive созлашни якунланг
 Finish Order,
 Finish Production Run,
 Finish failed.,Якунлаш муваффақиятсиз.
+Finish setup,Созлашни якунлаш
 Finished Good,
 Finished good,Тайёр маҳсулот
 Finished-goods warehouse,Тайёр маҳсулот омбори
@@ -1125,6 +1132,7 @@ Fixtures directory missing: {0},Арматура директорияси йўқ
 Flat fee (UZS),
 Flat fee per step,
 Flexible,
+Food & Beverage,Озиқ-овқат ва ичимлик
 Force submit & reserve,Мажбуран юбориш ва захиралаш
 Free,
 Free Qty,Сўз бутун миқдори
@@ -1237,6 +1245,7 @@ Including unposted drafts — does not tie to the GL.,Жойланмаган қ�
 Inclusive,Ичида
 Inclusive: commission deducted from amount — receiver gets less.,Ичида: комиссия айирилади — қабул қилувчи камроқ олади.
 Incremental Units,Қўшимча ўлчов бирлиги
+Industry,Соҳа
 Inflow,Кириш оқими
 Install Date,Ўрнатиш саналари
 Install libraries on the server:,
@@ -1812,6 +1821,7 @@ Not permitted — admins only.,
 Not permitted.,
 Not ready,
 Not ready to lock,
+Not registered,Рўйхатдан ўтмаган
 Not set,
 Not uploaded yet,Ҳали юкланмаган
 Notes,Эслатмалар
@@ -2610,6 +2620,7 @@ Service module is not enabled for {0}.,
 Service person,Техник
 Service ticket assignment,
 Service visit {0},
+Services,Хизматлар
 Session {0} has no cart snapshot.,
 Set,
 Set Reports-To on employees to build the positions hierarchy.,"Лавозимлар иерархиясини тузиш учун ходимларга ""Ҳисоб берувчи""ни ўрнатинг."
@@ -2617,10 +2628,12 @@ Set a Google Drive folder ID first.,Аввал Google Drive папка ID'син
 Set as company default,Компания стандарти қилиш
 Set as company default.,Компания стандарти қилиб ўрнатилди.
 "Set the Google Drive folder ID in Stabler Settings, and share that Shared-Drive folder with the service account email.",
+Setting up your business…,Бизнесингиз созланмоқда…
 Settings,
 Settle,Қарзаро қилиш
 Settled,Ҳисоб-китоб қилинган
 Settlement failed.,Қарзаро қилиш бажарилмади.
+Setup failed. Please try again.,Созлаш муваффақиятсиз. Қайта уриниг.
 Severity,Жиддийлик
 Shape,Шакл
 Shapes,Шакллар
@@ -2634,11 +2647,13 @@ Shift 12h,
 Shift 8h,
 Shift class,
 Shift start,
+Short code,Қисқа код
 Show discounts,Чегирмаларни кўрсатиш
 Showing,Көрсатилмоқда
 Showing first 500 — narrow the date range to see more.,Биринчи 500 кўрсатилди — кўпроқ кўриш учун даврни торайтиринг.
 Showing the first {0} records — use filters to narrow.,Биринчи {0} та ёзув кўрсатилмоқда — аниқлаштириш учун фильтрлардан фойдаланинг.
 Showing the newest,Энг янги кўрсатилмоқда
+Simplified / turnover tax,Соддалаштирилган / айланма солиғи
 Simulation result,
 Simulator,
 Simulator inputs,
@@ -2776,6 +2791,7 @@ Task,Вазифа
 Tax ID,Солиқ ID
 Tax amount,
 Tax template,Солиқ шаблони
+Tax type,Солиқ тури
 Taxes,Солиқлар
 Technician,Техник
 Technician state,Техник ҳолати
@@ -2997,6 +3013,7 @@ User status updated.,
 Users,Фойдаланувчилар
 Users flagged,Белгиланган фойдаланувчилар
 Utilization %,Фойдаланиш %
+VAT registered,ҚҚС тўловчиси
 Valid Distributor (Customer) is required.,Яроқли Тарқатувчи (Харидор) талаб қилинади.
 Valid From,Дан бошлаб яроқли
 Valid Promo Plan is required.,Яроқли Рекламалаштириш Режаси талаб қилинади.
@@ -3074,12 +3091,14 @@ Weekly,Ҳафталик
 Weekly off,Дам олиш куни
 Weekly off days,
 Weight,Вазни
+Welcome,Хуш келибсиз
 Welcome to Stabler,Stabler га хуш келибсиз
 What is this advance for?,Бу аванс нима учун?
 What is this entry for?,Бу ёзув немага?
 WhatsApp,WhatsApp
 When,Қачон
 "When someone submits a payment that needs review, it appears here.","Кимдир кўриб чиқишни талаб қиладиган тўловни юборса, у шу ерда пайдо бўлади."
+Wholesale / Distribution,Улгуржи / Дистрибуция
 Why it matters,Нега бу муҳим
 Widen the date range or clear filters to see stock activity.,Саналар оралиғини кенгайтиринг ёки ёрикдалик фаъолиятини кўриш учун фильтрлари очириб тасинг.
 Widen the date range or create a new payment receipt/payment.,
@@ -3136,6 +3155,7 @@ You raised this request — it must be approved by someone else.,
 You raised this request — it must be reviewed by someone else.,
 You raised this — another user must approve it.,Бу сўровни сиз яратдингиз — уни бошқа фойдаланувчи тасдиқлаши керак.
 "Your books are empty. Get started by adding a customer, recording your first sale, or logging an opening balance.","Сизнинг китобларингиз бўш. Харидор қўшиб, биринчи сотувингизни ёзиб ёки ўзаро баланси қўйиб бошлаинг."
+Your business is ready.,Бизнесингиз тайёр.
 Yuk xati,Юк хати
 absent,келмаган
 across all statuses,барча ҳолатлар бўйича
@@ -3164,6 +3184,7 @@ depts,бўлим
 designation,лавозим
 device_name is required.,
 device_user_id is required.,
+e.g. ANJ — leave blank to auto-generate,масалан ANJ — автоматик учун бўш қолдиринг
 e.g. Chevrolet Cobalt 2024,масалан Chevrolet Cobalt 2024
 e.g. EMP-00042,
 e.g. Main entrance reader,
@@ -3263,6 +3284,7 @@ yr,йил
 — Select —,
 — auto from customer —,— ҳаридорчидан авто —
 — auto from supplier —,— сотувчидан авто —
+— choose —,— танланг —
 — company default —,— компания асосий —
 — default —,— асосий —
 — global default —,— жаҳонпараст асосий —

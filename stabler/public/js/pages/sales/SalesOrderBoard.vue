@@ -2,6 +2,7 @@
 import { computed, onMounted, ref } from "vue";
 import { storeToRefs } from "pinia";
 import { useRouter } from "vue-router";
+import { useEscapeBack } from "../../composables/useEscapeBack.js";
 import { useSession } from "../../stores/session.js";
 import { call } from "../../api/client.js";
 import { formatMoney } from "../../composables/money.js";
@@ -14,6 +15,7 @@ import EmptyState from "../../components/EmptyState.vue";
 const session = useSession();
 const { activeCompany, currency, user } = storeToRefs(session);
 const router = useRouter();
+useEscapeBack(null, "/sales"); // ESC → back (general app rule)
 const toast = useToast();
 const { confirm } = useConfirm();
 

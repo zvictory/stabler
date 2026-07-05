@@ -18,6 +18,7 @@ source,target
 61–90,61–90
 90+,90+
 A Payroll Attendance Summary for employee {0} and period {1} already exists: {2},A Payroll Attendance Summary for employee {0} and period {1} already exists: {2}
+A few quick questions and you're ready to sell.,A few quick questions and you're ready to sell.
 A mapping for employee {0} with device user ID {1} already exists ({2}).,A mapping for employee {0} with device user ID {1} already exists ({2}).
 A new version is available.,A new version is available.
 A password reset email will be sent. The account is disabled until the user sets a password.,A password reset email will be sent. The account is disabled until the user sets a password.
@@ -294,6 +295,7 @@ Bank transaction is required.,Bank transaction is required.
 Bank transaction not found.,Bank transaction not found.
 Bank/cash account is required.,Bank/cash account is required.
 Base,Base
+Base currency,Base currency
 Base equivalent,Base equivalent
 Base salary,Base salary
 Base salary (UZS),Base salary (UZS)
@@ -334,6 +336,8 @@ Budget,Budget
 "Budget name, fiscal year…","Budget name, fiscal year…"
 Budget vs Actual,Budget vs Actual
 Budgets,Budgets
+Business name,Business name
+Business name is required.,Business name is required.
 Buy,Buy
 Buy X get Y,Buy X get Y
 Buy markup,Buy markup
@@ -513,6 +517,7 @@ Confirm restore test,Confirm restore test
 Conflict,Conflict
 Conflicts,Conflicts
 Connector,Connector
+Construction,Construction
 Consumed,Consumed
 Contact,Contact
 Contacted,Contacted
@@ -560,6 +565,7 @@ Could not read your location.,Could not read your location.
 Could not resolve a customer for this deal.,Could not resolve a customer for this deal.
 Could not resolve payroll period: {0},Could not resolve payroll period: {0}
 Could not save period.,Could not save period.
+Could not start setup.,Could not start setup.
 Could not start the online payment.,Could not start the online payment.
 Could not start the processor.,Could not start the processor.
 Couldn't work out the cash amount to pay — check the exchange rate and the paying account.,Couldn't work out the cash amount to pay — check the exchange rate and the paying account.
@@ -1107,6 +1113,7 @@ Finish Google Drive setup,Finish Google Drive setup
 Finish Order,Finish Order
 Finish Production Run,Finish Production Run
 Finish failed.,Finish failed.
+Finish setup,Finish setup
 Finished Good,Finished Good
 Finished good,Finished good
 Finished-goods warehouse,Finished-goods warehouse
@@ -1123,6 +1130,7 @@ Fixtures directory missing: {0},Fixtures directory missing: {0}
 Flat fee (UZS),Flat fee (UZS)
 Flat fee per step,Flat fee per step
 Flexible,Flexible
+Food & Beverage,Food & Beverage
 Force submit & reserve,Force submit & reserve
 Free,Free
 Free Qty,Free Qty
@@ -1235,6 +1243,7 @@ Including unposted drafts — does not tie to the GL.,Including unposted drafts 
 Inclusive,Inclusive
 Inclusive: commission deducted from amount — receiver gets less.,Inclusive: commission deducted from amount — receiver gets less.
 Incremental Units,Incremental Units
+Industry,Industry
 Inflow,Inflow
 Install Date,Install Date
 Install libraries on the server:,Install libraries on the server:
@@ -1810,6 +1819,7 @@ Not permitted — admins only.,Not permitted — admins only.
 Not permitted.,Not permitted.
 Not ready,Not ready
 Not ready to lock,Not ready to lock
+Not registered,Not registered
 Not set,Not set
 Not uploaded yet,Not uploaded yet
 Notes,Notes
@@ -2607,6 +2617,7 @@ Service module is not enabled for {0}.,Service module is not enabled for {0}.
 Service person,Service person
 Service ticket assignment,Service ticket assignment
 Service visit {0},Service visit {0}
+Services,Services
 Session {0} has no cart snapshot.,Session {0} has no cart snapshot.
 Set,Set
 Set Reports-To on employees to build the positions hierarchy.,Set Reports-To on employees to build the positions hierarchy.
@@ -2614,10 +2625,12 @@ Set a Google Drive folder ID first.,Set a Google Drive folder ID first.
 Set as company default,Set as company default
 Set as company default.,Set as company default.
 "Set the Google Drive folder ID in Stabler Settings, and share that Shared-Drive folder with the service account email.","Set the Google Drive folder ID in Stabler Settings, and share that Shared-Drive folder with the service account email."
+Setting up your business…,Setting up your business…
 Settings,Settings
 Settle,Settle
 Settled,Settled
 Settlement failed.,Settlement failed.
+Setup failed. Please try again.,Setup failed. Please try again.
 Severity,Severity
 Shape,Shape
 Shapes,Shapes
@@ -2631,11 +2644,13 @@ Shift 12h,Shift 12h
 Shift 8h,Shift 8h
 Shift class,Shift class
 Shift start,Shift start
+Short code,Short code
 Show discounts,Show discounts
 Showing,Showing
 Showing first 500 — narrow the date range to see more.,Showing first 500 — narrow the date range to see more.
 Showing the first {0} records — use filters to narrow.,Showing the first {0} records — use filters to narrow.
 Showing the newest,Showing the newest
+Simplified / turnover tax,Simplified / turnover tax
 Simulation result,Simulation result
 Simulator,Simulator
 Simulator inputs,Simulator inputs
@@ -2773,6 +2788,7 @@ Task,Task
 Tax ID,Tax ID
 Tax amount,Tax amount
 Tax template,Tax template
+Tax type,Tax type
 Taxes,Taxes
 Technician,Technician
 Technician state,Technician state
@@ -2992,6 +3008,7 @@ User status updated.,User status updated.
 Users,Users
 Users flagged,Users flagged
 Utilization %,Utilization %
+VAT registered,VAT registered
 Valid Distributor (Customer) is required.,Valid Distributor (Customer) is required.
 Valid From,Valid From
 Valid Promo Plan is required.,Valid Promo Plan is required.
@@ -3069,12 +3086,14 @@ Weekly,Weekly
 Weekly off,Weekly off
 Weekly off days,Weekly off days
 Weight,Weight
+Welcome,Welcome
 Welcome to Stabler,Welcome to Stabler
 What is this advance for?,What is this advance for?
 What is this entry for?,What is this entry for?
 WhatsApp,WhatsApp
 When,When
 "When someone submits a payment that needs review, it appears here.","When someone submits a payment that needs review, it appears here."
+Wholesale / Distribution,Wholesale / Distribution
 Why it matters,Why it matters
 Widen the date range or clear filters to see stock activity.,Widen the date range or clear filters to see stock activity.
 Widen the date range or create a new payment receipt/payment.,Widen the date range or create a new payment receipt/payment.
@@ -3131,6 +3150,7 @@ You raised this request — it must be approved by someone else.,You raised this
 You raised this request — it must be reviewed by someone else.,You raised this request — it must be reviewed by someone else.
 You raised this — another user must approve it.,You raised this — another user must approve it.
 "Your books are empty. Get started by adding a customer, recording your first sale, or logging an opening balance.","Your books are empty. Get started by adding a customer, recording your first sale, or logging an opening balance."
+Your business is ready.,Your business is ready.
 Yuk xati,Yuk xati
 absent,absent
 across all statuses,across all statuses
@@ -3159,6 +3179,7 @@ depts,depts
 designation,designation
 device_name is required.,device_name is required.
 device_user_id is required.,device_user_id is required.
+e.g. ANJ — leave blank to auto-generate,e.g. ANJ — leave blank to auto-generate
 e.g. Chevrolet Cobalt 2024,e.g. Chevrolet Cobalt 2024
 e.g. EMP-00042,e.g. EMP-00042
 e.g. Main entrance reader,e.g. Main entrance reader
@@ -3258,6 +3279,7 @@ yr,yr
 — Select —,— Select —
 — auto from customer —,— auto from customer —
 — auto from supplier —,— auto from supplier —
+— choose —,— choose —
 — company default —,— company default —
 — default —,— default —
 — global default —,— global default —

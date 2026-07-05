@@ -12,9 +12,15 @@ import Select from "../../components/Select.vue";
 import EmptyState from "../../components/EmptyState.vue";
 import ListToolbar from "../../components/ListToolbar.vue";
 import SkeletonRows from "../../components/SkeletonRows.vue";
+import { useEscapeBack } from "../../composables/useEscapeBack.js";
 
 const session = useSession();
 const router = useRouter();
+
+// ESC → back (general app rule). This is a full-page list; the record opens in
+// its own form route (which already handles ESC via FormPage), so here ESC just
+// navigates back to the Money home.
+useEscapeBack(null, "/money");
 const { activeCompany, user } = storeToRefs(session);
 
 const today = todayIso();

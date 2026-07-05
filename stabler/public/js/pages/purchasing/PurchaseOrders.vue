@@ -2,6 +2,7 @@
 import { computed, onMounted, ref, watch } from "vue";
 import { storeToRefs } from "pinia";
 import { useRouter } from "vue-router";
+import { useEscapeBack } from "../../composables/useEscapeBack.js";
 import { useSession } from "../../stores/session.js";
 import { call } from "../../api/client.js";
 import { formatMoney } from "../../composables/money.js";
@@ -17,6 +18,7 @@ import { getStatusBadgeClass } from "../../composables/status.js";
 const session = useSession();
 const { activeCompany, user } = storeToRefs(session);
 const router = useRouter();
+useEscapeBack(null, "/purchasing"); // ESC → back (general app rule)
 
 const today = todayIso();
 const monthAgo = new Date(Date.now() - 90 * 86400000).toISOString().slice(0, 10);

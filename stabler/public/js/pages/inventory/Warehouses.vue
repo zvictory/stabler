@@ -8,9 +8,11 @@ import { formatMoney } from "../../composables/money.js";
 import EmptyState from "../../components/EmptyState.vue";
 import { t } from "../../composables/i18n.js";
 import Select from "../../components/Select.vue";
+import { useEscapeBack } from "../../composables/useEscapeBack.js";
 
 const session = useSession();
 const router = useRouter();
+useEscapeBack(() => { if (createOpen.value) { closeCreate(); return true; } return false; }, "/inventory"); // ESC → close open pane, else back
 const { activeCompany, user } = storeToRefs(session);
 
 const loading = ref(false);

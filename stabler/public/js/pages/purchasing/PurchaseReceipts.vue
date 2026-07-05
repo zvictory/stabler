@@ -18,10 +18,12 @@ import Select from "../../components/Select.vue";
 import ListToolbar from "../../components/ListToolbar.vue";
 import SkeletonRows from "../../components/SkeletonRows.vue";
 import { getStatusBadgeClass } from "../../composables/status.js";
+import { useEscapeBack } from "../../composables/useEscapeBack.js";
 
 const session = useSession();
 const { activeCompany, user } = storeToRefs(session);
 const router = useRouter();
+useEscapeBack(() => { if (createOpen.value) { closeCreate(); return true; } if (detailOpen.value) { closeDetail(); return true; } return false; }, "/purchasing"); // ESC → close open pane, else back
 const route = useRoute();
 
 const { confirm } = useConfirm();

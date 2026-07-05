@@ -13,8 +13,10 @@ import EmptyState from "../../components/EmptyState.vue";
 import ListToolbar from "../../components/ListToolbar.vue";
 import SkeletonRows from "../../components/SkeletonRows.vue";
 import DateInput from "../../components/DateInput.vue";
+import { useEscapeBack } from "../../composables/useEscapeBack.js";
 
 const session = useSession();
+useEscapeBack(() => { if (detailOpen.value) { closeDetail(); return true; } return false; }, "/money"); // ESC → close open pane, else back
 const { activeCompany, language } = storeToRefs(session);
 const { confirm } = useConfirm();
 const toast = useToast();

@@ -21,8 +21,10 @@ import Select from "../../components/Select.vue";
 import EmptyState from "../../components/EmptyState.vue";
 import ListToolbar from "../../components/ListToolbar.vue";
 import SkeletonRows from "../../components/SkeletonRows.vue";
+import { useEscapeBack } from "../../composables/useEscapeBack.js";
 
 const session = useSession();
+useEscapeBack(() => { if (createOpen.value) { closeCreate(); return true; } if (detailOpen.value) { closeDetail(); return true; } return false; }, "/inventory"); // ESC → close open pane, else back
 const { activeCompany, user } = storeToRefs(session);
 
 const { confirm } = useConfirm();
