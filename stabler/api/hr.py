@@ -815,7 +815,6 @@ def bulk_set_attendance(company: str, items, status: str = "") -> dict:
 			doc.insert()
 			doc.submit()
 		updated += 1
-	frappe.db.commit()
 	return {"updated": updated, "skipped": skipped, "status": status or None}
 
 

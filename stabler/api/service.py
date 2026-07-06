@@ -325,7 +325,6 @@ def create_ticket(
 		doc.custom_serial_no = serial_no
 
 	doc.insert()
-	frappe.db.commit()
 	return _ticket_doc_payload(doc)
 
 
@@ -348,7 +347,6 @@ def update_ticket_status(name: str, status: str, tech_state: str | None = None):
 	if _has_field("Issue", "custom_tech_state"):
 		doc.custom_tech_state = tech_state if status == "In Progress" else ""
 	doc.save()
-	frappe.db.commit()
 	return _ticket_doc_payload(doc)
 
 
@@ -684,7 +682,6 @@ def reschedule_detail(name: str, date: str):
 		frappe.throw(_("Only pending schedule rows can be rescheduled."))
 	detail.scheduled_date = getdate(date)
 	detail.db_update()
-	frappe.db.commit()
 	return {"name": detail.name, "scheduled_date": detail.scheduled_date}
 
 
@@ -849,7 +846,6 @@ def create_invoice_from_visit(visit: str, items, posting_date: str | None = None
 		doc.submit()
 
 	frappe.db.set_value("Maintenance Visit", visit_doc.name, "custom_sales_invoice", doc.name)
-	frappe.db.commit()
 	return {"name": doc.name, "docstatus": doc.docstatus, "grand_total": flt(doc.grand_total)}
 
 
@@ -895,7 +891,6 @@ def create_material_issue_from_visit(
 		doc.submit()
 
 	frappe.db.set_value("Maintenance Visit", visit_doc.name, "custom_stock_entry", doc.name)
-	frappe.db.commit()
 	return {"name": doc.name, "docstatus": doc.docstatus}
 
 

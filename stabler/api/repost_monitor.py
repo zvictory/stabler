@@ -79,6 +79,4 @@ def repost_reset_stuck(minutes: int = 30) -> dict:
 		if time_diff_in_seconds(now, r["modified"]) / 60 >= minutes:
 			frappe.db.set_value(_RIV, r["name"], {"status": "Queued", "current_index": 0}, update_modified=False)
 			reset.append(r["name"])
-	if reset:
-		frappe.db.commit()
 	return {"reset": reset, "count": len(reset)}

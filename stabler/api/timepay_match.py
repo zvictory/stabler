@@ -140,5 +140,4 @@ def link_timepay_user(device_user_id: str, employee: str) -> dict:
 		frappe.db.set_value(
 			_RAW_EVENT, p.name, {"processing_status": "Pending", "error_message": None}, update_modified=False
 		)
-	frappe.db.commit()
 	return {"employee": employee, "device_user_id": device_user_id, "requeued": len(parked)}

@@ -422,7 +422,6 @@ def emit_payroll_net(summary_name: str) -> dict:
 			"remarks": _STABLER_MARKER,
 		}
 	).insert(ignore_permissions=False)
-	frappe.db.commit()
 	return {"net": net, "additional_salary": doc.name, "salary_component": component}
 
 

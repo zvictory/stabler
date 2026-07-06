@@ -10,6 +10,7 @@ import {
 } from "../../api/marketing.js";
 import { formatMoney } from "../../composables/money.js";
 import { t } from "../../composables/i18n.js";
+import { getStatusBadgeClass } from "../../composables/status.js";
 import EmptyState from "../../components/EmptyState.vue";
 
 const session = useSession();
@@ -48,11 +49,7 @@ onMounted(load);
 watch(activeCompany, load);
 
 function statusClass(status) {
-	if (status === "Approved") return "bg-success-lt";
-	if (status === "Paid") return "bg-teal-lt";
-	if (status === "Rejected") return "bg-red-lt";
-	if (status === "UnderReview") return "bg-blue-lt";
-	return "bg-yellow-lt";
+	return getStatusBadgeClass("Marketing Claim", status);
 }
 
 async function openDetail(name) {

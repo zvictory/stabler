@@ -122,7 +122,6 @@ def save_gate_device(payload) -> dict:
 			doc.set(field, payload[field])
 
 	doc.save(ignore_permissions=False)
-	frappe.db.commit()
 	return {"name": doc.name}
 
 
@@ -271,7 +270,6 @@ def save_device_mapping(payload) -> dict:
 			doc.set(field, payload[field])
 
 	doc.save(ignore_permissions=False)
-	frappe.db.commit()
 	return {"name": doc.name}
 
 
@@ -290,7 +288,6 @@ def delete_device_mapping(name: str) -> dict:
 		frappe.throw(_("Employee Device Mapping {0} not found.").format(name), frappe.DoesNotExistError)
 	_assert_can_write(_MAPPING, name, "delete")
 	frappe.delete_doc(_MAPPING, name, ignore_permissions=False)
-	frappe.db.commit()
 	return {"name": name, "deleted": True}
 
 
@@ -373,5 +370,4 @@ def reprocess_raw_event(name: str) -> dict:
 	doc.processing_status = "Pending"
 	doc.error_message = None
 	doc.save(ignore_permissions=False)
-	frappe.db.commit()
 	return {"name": doc.name, "processing_status": doc.processing_status}

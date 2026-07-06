@@ -12,6 +12,7 @@ import {
 import { formatMoney } from "../../composables/money.js";
 import { formatDateTime } from "../../composables/date.js";
 import { t } from "../../composables/i18n.js";
+import { getStatusBadgeClass } from "../../composables/status.js";
 import EmptyState from "../../components/EmptyState.vue";
 import MoneyInput from "../../components/MoneyInput.vue";
 import DateInput from "../../components/DateInput.vue";
@@ -102,9 +103,7 @@ watch(search, () => {
 });
 
 function statusClass(status) {
-	if (status === "Active") return "bg-success-lt";
-	if (status === "Closed") return "bg-secondary-lt";
-	return "bg-yellow-lt";
+	return getStatusBadgeClass("Promo Plan", status);
 }
 
 function planTypeClass(pt) {

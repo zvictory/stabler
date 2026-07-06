@@ -78,7 +78,6 @@ def add_holiday(holiday_list: str, holiday_date: str, description: str = "", wee
 	)
 	doc.total_holidays = len(doc.holidays)
 	doc.save(ignore_permissions=False)
-	frappe.db.commit()
 	return {"added": True}
 
 
@@ -95,7 +94,6 @@ def remove_holiday(holiday_list: str, holiday_date: str) -> dict:
 	doc.set("holidays", keep)
 	doc.total_holidays = len(doc.holidays)
 	doc.save(ignore_permissions=False)
-	frappe.db.commit()
 	return {"removed": removed}
 
 
@@ -107,7 +105,6 @@ def set_company_holiday_list(company: str, holiday_list: str) -> dict:
 	if not frappe.db.exists("Holiday List", holiday_list):
 		frappe.throw(_("Holiday list {0} not found.").format(holiday_list))
 	frappe.db.set_value("Company", company, "default_holiday_list", holiday_list)
-	frappe.db.commit()
 	return {"company": company, "default_holiday_list": holiday_list}
 
 
@@ -153,5 +150,4 @@ def upsert_payroll_period(company: str, start_date: str, end_date: str, name: st
 				"end_date": end_date,
 			}
 		).insert(ignore_permissions=False)
-	frappe.db.commit()
 	return {"name": doc.name}

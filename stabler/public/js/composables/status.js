@@ -102,6 +102,29 @@ export const STATUS_MAP = {
 		Partial: "bg-yellow-lt",
 		Failed: "bg-red-lt",
 	},
+	"Stabler Process": {
+		Draft: "bg-secondary-lt",
+		Active: "bg-green-lt",
+	},
+	"Promo Plan": {
+		Draft: "bg-yellow-lt",
+		Planned: "bg-yellow-lt",
+		Active: "bg-success-lt",
+		Closed: "bg-secondary-lt",
+	},
+	"Marketing Claim": {
+		Pending: "bg-yellow-lt",
+		UnderReview: "bg-blue-lt",
+		Approved: "bg-success-lt",
+		Paid: "bg-teal-lt",
+		Rejected: "bg-red-lt",
+	},
+	"Salary Slip": {
+		Draft: "bg-secondary-lt",
+		Submitted: "bg-success-lt",
+		Withheld: "bg-yellow-lt",
+		Cancelled: "bg-secondary-lt",
+	},
 	"docstatus": {
 		0: "bg-yellow-lt", // Draft
 		1: "bg-green-lt",  // Submitted / Active

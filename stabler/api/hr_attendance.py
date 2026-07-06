@@ -138,7 +138,6 @@ def save_rule_set(payload) -> dict:
 			doc.set(field, payload[field])
 
 	doc.save(ignore_permissions=False)
-	frappe.db.commit()
 	return {"name": doc.name}
 
 

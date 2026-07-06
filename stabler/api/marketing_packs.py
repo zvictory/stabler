@@ -99,7 +99,6 @@ def seed_vertical_packs():
 			doc.insert(ignore_permissions=True)
 			results.append({"pack_key": pack_key, "action": "created"})
 
-	frappe.db.commit()
 	return results
 
 

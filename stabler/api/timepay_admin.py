@@ -80,5 +80,4 @@ def save_timepay_credential(payload) -> dict:
         doc.refresh_token = payload["refresh_token"].strip()
         doc.refresh_expires_at = 0
     doc.save(ignore_permissions=True)
-    frappe.db.commit()
     return {"ok": True}

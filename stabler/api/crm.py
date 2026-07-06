@@ -361,7 +361,6 @@ def convert_deal_to_customer(name: str) -> dict:
     outlet = _ensure_outlet(deal, customer)
     if deal.get("needs_freezer"):
         _freezer_todo(deal, customer)
-    frappe.db.commit()
     return {"customer": customer, "created": created, "outlet": outlet}
 
 
@@ -692,7 +691,6 @@ def save_deal_status(data):
     else:
         doc = _insert_deal_status(name, d.get("color"), d.get("position"), d.get("type"))
 
-    frappe.db.commit()
     return {"name": doc.name, "color": doc.get("color"), "position": doc.get("position"), "type": doc.get("type")}
 
 
@@ -717,7 +715,6 @@ def rename_deal_status(old_name: str, new_name: str):
     _insert_deal_status(new_name, old.get("color"), old.get("position"), old.get("type"))
     frappe.db.sql("UPDATE `tabCRM Deal` SET status = %s WHERE status = %s", (new_name, old_name))
     frappe.delete_doc("CRM Deal Status", old_name, ignore_permissions=True, force=True)
-    frappe.db.commit()
     return {"name": new_name}
 
 
@@ -730,7 +727,6 @@ def delete_deal_status(name):
     if count:
         frappe.throw(_("Cannot delete: {0} deal(s) are still in this status.").format(count))
     frappe.delete_doc("CRM Deal Status", name, ignore_permissions=True)
-    frappe.db.commit()
     return "ok"
 
 
@@ -741,5 +737,4 @@ def reorder_deal_statuses(names):
     order = json.loads(names) if isinstance(names, str) else names
     for i, name in enumerate(order):
         frappe.db.set_value("CRM Deal Status", name, "position", i + 1, update_modified=False)
-    frappe.db.commit()
     return "ok"

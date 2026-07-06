@@ -304,7 +304,6 @@ def update_company_modules(
 		setattr(row, field, 1 if str(val) in ("1", "true", "True") else 0)
 
 	settings.save(ignore_permissions=True)
-	frappe.db.commit()
 	return module_map_for(company)
 
 
@@ -325,7 +324,6 @@ def set_user_allowed_companies(user: str, companies):
 		if frappe.db.exists("Company", c):
 			user_doc.append("allowed_companies", {"company": c})
 	user_doc.save(ignore_permissions=True)
-	frappe.db.commit()
 	return {"ok": True, "allowed_companies": companies}
 
 
@@ -351,7 +349,6 @@ def set_user_allowed_modules(user: str, modules):
 	for m in modules:
 		user_doc.append("allowed_modules", {"module": m})
 	user_doc.save(ignore_permissions=True)
-	frappe.db.commit()
 	return {"ok": True, "allowed_modules": modules}
 
 

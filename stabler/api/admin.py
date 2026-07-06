@@ -228,7 +228,6 @@ def invite_user(email: str, full_name: str, template: str | None = None):
 	except Exception as e:
 		frappe.log_error(f"invite_user reset email failed for {email}: {e}")
 
-	frappe.db.commit()
 	return get_user(user.name)
 
 
@@ -334,7 +333,6 @@ def apply_role_template(user: str, template: str):
 	if not frappe.db.exists("User", user):
 		frappe.throw(_("User not found"))
 	_replace_user_roles(user, ROLE_TEMPLATES[template])
-	frappe.db.commit()
 	return get_user(user)
 
 
@@ -424,7 +422,6 @@ def set_posting_window_settings(payload=None) -> dict:
 
 	stk.save(ignore_permissions=True)
 	acc.save(ignore_permissions=True)
-	frappe.db.commit()
 	return _read_posting_window()
 
 
@@ -451,5 +448,4 @@ def set_attendance_lock_setting(days=0) -> dict:
 	settings = frappe.get_single("Stabler Settings")
 	settings.attendance_edit_lock_days = n
 	settings.save(ignore_permissions=True)
-	frappe.db.commit()
 	return {"attendance_edit_lock_days": n}

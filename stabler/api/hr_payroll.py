@@ -354,7 +354,6 @@ def generate_period_summaries(company: str, payroll_period: str) -> dict:
 		else:
 			locked_skipped += 1
 
-	frappe.db.commit()
 	return {
 		"payroll_period": payroll_period,
 		"employees": len(employees),

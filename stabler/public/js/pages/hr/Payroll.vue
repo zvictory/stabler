@@ -6,6 +6,7 @@ import { call } from "../../api/client.js";
 import { formatMoney } from "../../composables/money.js";
 import { formatDateTime, todayIso} from "../../composables/date.js";
 import { t } from "../../composables/i18n.js";
+import { getStatusBadgeClass } from "../../composables/status.js";
 import EmptyState from "../../components/EmptyState.vue";
 import DateInput from "../../components/DateInput.vue";
 import Select from "../../components/Select.vue";
@@ -138,10 +139,9 @@ async function execute(submit) {
 }
 
 function statusBadge(s, docstatus) {
-	if (docstatus === 2) return "bg-secondary-lt";
-	if (s === "Submitted" || docstatus === 1) return "bg-success-lt";
-	if (s === "Withheld") return "bg-yellow-lt";
-	return "bg-azure-lt";
+	if (docstatus === 2) return getStatusBadgeClass("Salary Slip", "Cancelled");
+	if (docstatus === 1 && s !== "Withheld") return getStatusBadgeClass("Salary Slip", "Submitted");
+	return getStatusBadgeClass("Salary Slip", s);
 }
 </script>
 

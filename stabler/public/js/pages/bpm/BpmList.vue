@@ -6,6 +6,7 @@ import { useSession } from "../../stores/session.js";
 import { call } from "../../api/client.js";
 import { formatDate } from "../../composables/date.js";
 import { t } from "../../composables/i18n.js";
+import { getStatusBadgeClass } from "../../composables/status.js";
 import { useConfirm } from "../../composables/useConfirm.js";
 import EmptyState from "../../components/EmptyState.vue";
 
@@ -79,10 +80,6 @@ function openProcess(proc) {
 	router.push({ name: "bpm-editor", params: { name: proc.name } });
 }
 
-const STATUS_CLASS = {
-	Draft: "bg-secondary-lt",
-	Active: "bg-green-lt",
-};
 
 onMounted(fetchProcesses);
 watch(activeCompany, fetchProcesses);
@@ -143,7 +140,7 @@ watch(activeCompany, fetchProcesses);
 							<td class="fw-semibold">{{ proc.process_name }}</td>
 							<td class="small text-secondary">{{ proc.company }}</td>
 							<td>
-								<span class="badge" :class="STATUS_CLASS[proc.status] || 'bg-secondary-lt'">
+								<span class="badge" :class="getStatusBadgeClass('Stabler Process', proc.status)">
 									{{ proc.status }}
 								</span>
 							</td>

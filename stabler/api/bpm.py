@@ -95,7 +95,6 @@ def save_process(data):
         doc.diagram = data.get("diagram", "")
         doc.insert(ignore_permissions=True)
 
-    frappe.db.commit()
     return {"name": doc.name, "process_name": doc.process_name, "status": doc.status}
 
 
@@ -108,5 +107,4 @@ def delete_process(name):
     if not frappe.has_permission("Stabler Process", "delete", name):
         frappe.throw(_("Not permitted"), frappe.PermissionError)
     frappe.delete_doc("Stabler Process", name, ignore_permissions=True)
-    frappe.db.commit()
     return {"ok": True}

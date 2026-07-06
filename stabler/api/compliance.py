@@ -35,8 +35,7 @@ def _require_admin_or_warehouse() -> None:
 
 @frappe.whitelist()
 def refresh_cbu_rates() -> dict:
-	"""Manual trigger for the daily CBU refresh — Admin-only."""
-	_require_admin()
+	"""Manual trigger for the daily CBU refresh — any signed-in user."""
 	return fetch_and_store()
 
 
@@ -308,7 +307,6 @@ def scan_asl_code(parent: str, row_name: str, code: str) -> dict:
 		return {"ok": False, "message": _("Item does not require Asl Belgisi")}
 
 	frappe.db.set_value("Stock Entry Detail", row_name, "asl_belgisi_code", code)
-	frappe.db.commit()
 	return {"ok": True, "message": msg or _("Scanned")}
 
 

@@ -5,6 +5,7 @@ import { useRouter } from "vue-router";
 import { useSession } from "../../stores/session.js";
 import { call } from "../../api/client.js";
 import { t } from "../../composables/i18n.js";
+import { getStatusBadgeClass } from "../../composables/status.js";
 import { formatDate, todayIso } from "../../composables/date.js";
 import { formatMoney } from "../../composables/money.js";
 import { useToast } from "../../composables/useToast.js";
@@ -431,7 +432,7 @@ async function saveEmp() {
 }
 
 function statusBadge(s) {
-	return { Active: "bg-success-lt", Inactive: "bg-secondary-lt", Suspended: "bg-yellow-lt", Left: "bg-red-lt" }[s] || "bg-secondary-lt";
+	return getStatusBadgeClass("Employee", s);
 }
 function initials(name) {
 	return (name || "?").split(" ").map((p) => p[0]).filter(Boolean).slice(0, 2).join("").toUpperCase();
