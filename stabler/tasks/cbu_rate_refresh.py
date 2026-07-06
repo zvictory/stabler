@@ -19,6 +19,7 @@ from __future__ import annotations
 
 import datetime
 import json
+from decimal import ROUND_HALF_UP, Decimal
 from typing import Any
 from urllib.request import Request, urlopen
 
@@ -77,7 +78,13 @@ def _upsert_rate(from_currency: str, rate: float, on_date: datetime.date) -> boo
 	Returns True if the primary (foreign->UZS) row was inserted."""
 	primary = _upsert_pair(from_currency, _BASE_CURRENCY, rate, on_date)
 	if rate:
-		_upsert_pair(_BASE_CURRENCY, from_currency, round(1.0 / float(rate), 10), on_date)
+		# Reciprocal computed in Decimal (not float) so weak-currency inverses
+		# (1 UZS -> 0.0000773 USD) keep full significance before the 10-dp
+		# quantize; float 1.0/rate drops sub-unit precision on large divisors.
+		inverse = (Decimal(1) / Decimal(str(rate))).quantize(
+			Decimal("1E-10"), rounding=ROUND_HALF_UP
+		)
+		_upsert_pair(_BASE_CURRENCY, from_currency, float(inverse), on_date)
 	return primary
 
 
