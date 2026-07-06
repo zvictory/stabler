@@ -15,6 +15,9 @@ from frappe.custom.doctype.custom_field.custom_field import create_custom_fields
 
 
 def execute():
+	if not frappe.db.exists("DocType", "CRM Lead"):
+		return
+
 	fields = []
 
 	def add(spec):

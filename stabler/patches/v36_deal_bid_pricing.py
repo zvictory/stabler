@@ -19,6 +19,8 @@ from frappe.custom.doctype.custom_field.custom_field import create_custom_fields
 
 
 def execute():
+	if not frappe.db.exists("DocType", "CRM Deal"):
+		return
 	if frappe.db.exists("Custom Field", {"dt": "CRM Deal", "fieldname": "custom_bid_pricing"}):
 		return
 	create_custom_fields(
