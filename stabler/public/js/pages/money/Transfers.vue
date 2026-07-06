@@ -1,5 +1,5 @@
 <script setup>
-import { computed, onMounted, onUnmounted, ref, watch } from "vue";
+import { computed, nextTick, onMounted, onUnmounted, ref, watch } from "vue";
 import { onBeforeRouteLeave } from "vue-router";
 import { storeToRefs } from "pinia";
 import { useSession } from "../../stores/session.js";
@@ -254,6 +254,10 @@ function onRecvInput(val) {
 
 // Track whether the user manually typed a rate (so date changes don't clobber it)
 const rateManuallyEdited = ref(false);
+// True while a historical record is being loaded into the form (amend/edit).
+// Suppresses the live-rate fetch and reciprocal watchers so historical
+// from_amount/to_amount aren't silently overwritten by today's CBU rate.
+const hydrating = ref(false);
 
 async function fetchExchangeRate() {
 	if (!isCrossCurrency.value) {
@@ -282,7 +286,7 @@ async function fetchExchangeRate() {
 		fxBaseCur.value = base;
 		fxCounterCur.value = counter;
 		cbuRate.value = roundRate(R);
-		if (!rateManuallyEdited.value) {
+		if (!rateManuallyEdited.value && !hydrating.value) {
 			_deriving = true;
 			form.value.exchange_rate = roundRate(R);
 			_deriving = false;
@@ -296,6 +300,7 @@ async function fetchExchangeRate() {
 watch(
 	() => [form.value.from_account, form.value.to_account],
 	async () => {
+		if (hydrating.value) return;
 		reseed();
 		rateManuallyEdited.value = false;
 		await fetchExchangeRate();
@@ -308,6 +313,7 @@ watch(
 watch(
 	() => form.value.posting_date,
 	async () => {
+		if (hydrating.value) return;
 		rateManuallyEdited.value = false;
 		await fetchExchangeRate();
 		derive();
@@ -396,11 +402,16 @@ async function openEditFromDetail() {
 	editingName.value = detail.value.name;
 	submitError.value = "";
 	rateManuallyEdited.value = false;
-	reseed();
+	hydrating.value = true;
+	// Tarihsel tutarları otoriter tut: kuru onlardan türet (derived = "rate"),
+	// asla to_amount'ı canlı kurdan yeniden hesaplama.
+	recent = ["recv", "amt"];
+	derive(); // exchange_rate = to_amount / from_amount (tarihsel)
 	detailOpen.value = false;
 	createOpen.value = true;
-	await fetchExchangeRate();
-	derive();
+	await fetchExchangeRate(); // yalnızca referans cbuRate göstergesini tazeler (guard'lı)
+	await nextTick(); // form-atamasının tetiklediği watcher'lar guard altındayken flush olsun
+	hydrating.value = false;
 	markFormPristine();
 }
 
