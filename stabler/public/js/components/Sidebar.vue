@@ -1,5 +1,5 @@
 <script setup>
-import { computed } from "vue";
+import { computed, ref } from "vue";
 import { useRoute } from "vue-router";
 import { useSession } from "../stores/session.js";
 import { orgApi } from "../api/organization.js";
@@ -99,6 +99,26 @@ async function setLanguage(code) {
 	// injects window.__STABLER__.translations from <lang>.csv at render time).
 	window.location.reload();
 }
+
+const cbuLoading = ref(false);
+
+async function downloadCbuRates() {
+	if (cbuLoading.value) return;
+	cbuLoading.value = true;
+	try {
+		const res = await call("stabler.api.compliance.refresh_cbu_rates");
+		const codes = Object.keys(res?.inserted || {});
+		if (codes.length) {
+			toast.success(t("CBU rates updated: {rates}", { rates: codes.join(", ") }));
+		} else {
+			toast.info(t("CBU rates are already up to date."));
+		}
+	} catch (e) {
+		toast.error(e?.message || t("Failed to update CBU rates."));
+	} finally {
+		cbuLoading.value = false;
+	}
+}
 </script>
 
 <template>
@@ -184,6 +204,17 @@ async function setLanguage(code) {
 								<span>{{ lng.label }}</span>
 								<i v-if="lng.code === currentLanguage" class="ti ti-check text-primary"></i>
 							</a>
+							<div class="dropdown-divider"></div>
+							<h6 class="dropdown-header">{{ t("Tools") }}</h6>
+							<button
+								type="button"
+								class="dropdown-item stbl-menu-item"
+								:disabled="cbuLoading"
+								@click="downloadCbuRates"
+							>
+								<i class="ti me-2" :class="cbuLoading ? 'ti-loader-2 ti-spin' : 'ti-refresh'"></i>
+								{{ t("Download CBU exchange rates") }}
+							</button>
 							<div class="dropdown-divider"></div>
 							<router-link to="/profile" class="dropdown-item stbl-menu-item">
 								<i class="ti ti-user me-2"></i>{{ t("Profile") }}
