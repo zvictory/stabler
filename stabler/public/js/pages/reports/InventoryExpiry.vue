@@ -7,7 +7,7 @@ import { useSession } from "../../stores/session.js";
 import { call } from "../../api/client.js";
 import { t } from "../../composables/i18n.js";
 import ReportTable from "../../components/ReportTable.vue";
-import MultiSelect from "../../components/MultiSelect.vue";
+import MultiSelectPicker from "../../components/MultiSelectPicker.vue";
 
 const session = useSession();
 const { activeCompany, user } = storeToRefs(session);
@@ -60,12 +60,13 @@ onMounted(load);
 				<option :value="90">90 {{ t("days") }}</option>
 			</select>
 		</div>
-		<MultiSelect
+		<MultiSelectPicker
 			v-model="items"
 			search-api="stabler.api.inventory.list_items"
 			id-key="item_code"
 			:display="(r) => r.item_name || r.item_code"
 			:placeholder="t('Items')"
+			:title="t('Items')"
 			size="sm"
 			@update:model-value="load"
 		/>

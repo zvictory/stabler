@@ -8,7 +8,7 @@ import { useSession } from "../../stores/session.js";
 import { call } from "../../api/client.js";
 import { t } from "../../composables/i18n.js";
 import ReportTable from "../../components/ReportTable.vue";
-import MultiSelect from "../../components/MultiSelect.vue";
+import MultiSelectPicker from "../../components/MultiSelectPicker.vue";
 
 const session = useSession();
 const { activeCompany, user } = storeToRefs(session);
@@ -101,13 +101,14 @@ onMounted(load);
 			/>
 			<span class="form-check-label">{{ t("Only with balance") }}</span>
 		</label>
-		<MultiSelect
+		<MultiSelectPicker
 			v-model="customers"
 			search-api="stabler.api.sales.list_customers"
 			:extra-params="{ company: activeCompany }"
 			id-key="name"
 			:display="(r) => r.customer_name || r.name"
 			:placeholder="t('Customers')"
+			:title="t('Customers')"
 			size="sm"
 			@update:model-value="load"
 		/>

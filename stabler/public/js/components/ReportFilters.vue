@@ -8,7 +8,7 @@ import { ref, reactive, watch } from "vue";
 import { todayIso } from "../composables/date.js";
 import { t } from "../composables/i18n.js";
 import DateInput from "./DateInput.vue";
-import MultiSelect from "./MultiSelect.vue";
+import MultiSelectPicker from "./MultiSelectPicker.vue";
 
 const props = defineProps({
 	from: { type: String, default: "" },
@@ -101,13 +101,14 @@ defineExpose({ apply });
 
 		<div v-for="d in filters" :key="d.key" style="min-width: 12rem">
 			<label class="form-label small mb-1">{{ d.label || d.key }}</label>
-			<MultiSelect
+			<MultiSelectPicker
 				v-model="filterValues[d.key]"
 				:search-api="d.searchApi"
 				:extra-params="{ ...(d.extraParams || {}), company }"
 				:id-key="d.idKey || 'name'"
 				:display="d.display"
 				:placeholder="d.placeholder || ''"
+				:title="d.label || d.key"
 				size="sm"
 			/>
 		</div>
