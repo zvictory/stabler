@@ -13,7 +13,7 @@ the PAS amount is emitted.  Never round per-component twice.
 
 from __future__ import annotations
 
-import math
+from stabler.api._payroll_residual import round_uzs
 
 
 # ---------------------------------------------------------------------------
@@ -118,8 +118,8 @@ def summary_to_components(
 		else:
 			component_type_resolved = DEFAULT_SIGN_MAP[key]
 
-		# Round to whole UZS (round-half-up)
-		abs_amount = float(math.floor(abs(raw_float) + 0.5))
+		# Round to whole UZS (round-half-up) via the single rounding helper.
+		abs_amount = float(round_uzs(abs(raw_float)))
 
 		# Lookup in caller-supplied map
 		mapping = component_map.get(key)
@@ -177,10 +177,16 @@ def components_total(lines: list[dict]) -> dict:
 		elif ctype == "Deduction":
 			deductions += abs_amount
 
+	# Round earnings and deductions once each, then derive net by subtraction so
+	# the identity net == earnings − deductions holds EXACTLY. The old code
+	# floored (earnings − deductions) independently, which could disagree with
+	# the two rounded aggregates by a so'm (the double-rounding residual).
+	earnings_uzs = round_uzs(earnings)
+	deductions_uzs = round_uzs(deductions)
 	return {
-		"earnings":   float(math.floor(earnings + 0.5)),
-		"deductions": float(math.floor(deductions + 0.5)),
-		"net":        float(math.floor((earnings - deductions) + 0.5)),
+		"earnings":   float(earnings_uzs),
+		"deductions": float(deductions_uzs),
+		"net":        float(earnings_uzs - deductions_uzs),
 	}
 
 
