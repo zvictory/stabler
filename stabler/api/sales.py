@@ -75,6 +75,8 @@ def _lookup_item_price(item_code: str, price_list: str, uom: str | None = None) 
 def list_customers(company: str, search: str = "", limit: int = 100):
 	_require_company(company)
 	_assert_company_scope(company)  # tenant isolation: reject a foreign company arg
+	if not frappe.has_permission("Customer", "read"):
+		frappe.throw(_("You are not permitted to view customers."), frappe.PermissionError)
 	# Customer is multi-company — there's no `company` on the master itself.
 	# We just filter by name search + disabled=0. The detail call scopes to company.
 	conds = ["disabled = 0"]
@@ -106,6 +108,8 @@ def get_customer_defaults(company: str, customer: str):
 	"""
 	_require_company(company)
 	_assert_company_scope(company)  # tenant isolation: reject a foreign company arg
+	if not frappe.has_permission("Customer", "read"):
+		frappe.throw(_("You are not permitted to view customers."), frappe.PermissionError)
 	if not frappe.db.exists("Customer", customer):
 		frappe.throw(f"Unknown customer: {customer}")
 	doc = frappe.get_doc("Customer", customer)

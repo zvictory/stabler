@@ -17,6 +17,8 @@ from stabler.api._common import _assert_can_read, _assert_can_write, _require_co
 def list_suppliers(company: str, search: str = "", limit: int = 100):
 	_require_company(company)
 	_assert_company_scope(company)  # tenant isolation: reject a foreign company arg
+	if not frappe.has_permission("Supplier", "read"):
+		frappe.throw(frappe._("You are not permitted to view suppliers."), frappe.PermissionError)
 	conds = ["disabled = 0"]
 	params: dict = {"limit": int(limit)}
 	if search:
