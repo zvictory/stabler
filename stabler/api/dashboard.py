@@ -9,6 +9,7 @@ from __future__ import annotations
 from datetime import date, timedelta
 
 import frappe
+from stabler.api._money import money_epsilon
 from stabler.api.approvals import _assert_company_scope
 from frappe import _
 from frappe.utils import flt, getdate
@@ -80,7 +81,7 @@ def _by_currency(rows) -> list[dict]:
 	The `base` column (base-currency equivalent, used only for ordering) is dropped
 	from the output — callers receive document/account-currency amounts only.
 	"""
-	filtered = [r for r in rows if abs(flt(r.get("base", 0))) >= 0.005]
+	filtered = [r for r in rows if abs(flt(r.get("base", 0))) >= money_epsilon()]
 	filtered.sort(key=lambda r: abs(flt(r.get("base", 0))), reverse=True)
 	return [{"currency": r["currency"], "amount": flt(r["amount"], 2)} for r in filtered]
 

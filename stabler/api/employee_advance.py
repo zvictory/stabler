@@ -17,6 +17,7 @@ Salary-sensitive → gated to payroll/HR roles, company-scoped.
 from __future__ import annotations
 
 import frappe
+from stabler.api._money import money_epsilon
 from frappe import _
 from frappe.utils import flt, getdate, today
 
@@ -133,8 +134,9 @@ def employee_advance_balances(
 	balances = _balances(company, account)
 
 	out: list[dict] = []
+	eps = money_epsilon(frappe.get_cached_value("Company", company, "default_currency"))
 	if int(only_outstanding or 0):
-		names = [e for e, b in balances.items() if abs(b) > 0.005]
+		names = [e for e, b in balances.items() if abs(b) > eps]
 		if not names:
 			return {"account": account, "rows": [], "total_outstanding": 0.0}
 		emps = frappe.get_all(

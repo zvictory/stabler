@@ -10,6 +10,7 @@ GL Entry — the same source the advance and salary-payment modules use.
 from __future__ import annotations
 
 import frappe
+from stabler.api._money import money_epsilon
 from stabler.api.approvals import _assert_company_scope
 from frappe import _
 from frappe.utils import flt
@@ -139,7 +140,7 @@ def employee_financials(company: str, employee: str) -> dict:
 		"debit": flt(m.get("debit")),
 		"credit": flt(m.get("credit")),
 		"docstatus": 1,
-	} for m in gl if abs(flt(m.get("debit"))) > 0.005 or abs(flt(m.get("credit"))) > 0.005]
+	} for m in gl if abs(flt(m.get("debit"))) > money_epsilon(m.get("account_currency") or base_ccy) or abs(flt(m.get("credit"))) > money_epsilon(m.get("account_currency") or base_ccy)]
 
 	# Draft Journal Entries aren't in the GL yet — surface them so they can be
 	# reviewed, submitted or deleted from the ledger (transactions CRUD).
@@ -184,6 +185,7 @@ def employee_financials(company: str, employee: str) -> dict:
 	)
 	net_owed = flt(net[0][0]) if net and net[0] else 0.0
 
+	eps = money_epsilon(frappe.get_cached_value("Company", company, "default_currency"))
 	brk = frappe.db.sql(
 		"""
 		SELECT account, account_currency,
@@ -192,10 +194,10 @@ def employee_financials(company: str, employee: str) -> dict:
 		WHERE company = %(c)s AND party_type = 'Employee' AND party = %(e)s
 		  AND ifnull(is_cancelled, 0) = 0
 		GROUP BY account, account_currency
-		HAVING ABS(SUM(credit_in_account_currency) - SUM(debit_in_account_currency)) > 0.005
+		HAVING ABS(SUM(credit_in_account_currency) - SUM(debit_in_account_currency)) > %(eps)s
 		ORDER BY ABS(SUM(credit_in_account_currency) - SUM(debit_in_account_currency)) DESC
 		""",
-		{"c": company, "e": employee},
+		{"c": company, "e": employee, "eps": eps},
 		as_dict=True,
 	)
 	breakdown = [

@@ -12,6 +12,7 @@ for users without a payroll-visible role.
 from __future__ import annotations
 
 import frappe
+from stabler.api._money import money_epsilon
 from stabler.api.approvals import _assert_company_scope
 from frappe.utils import flt, getdate, add_days, get_first_day, today
 
@@ -81,7 +82,8 @@ def _advances(company: str, can_see_money: bool) -> dict:
 		balances = _balances(company, _advance_account(company))
 	except Exception:
 		return {"visible": True, "configured": False, "total": 0.0, "count": 0, "top": []}
-	owing = {e: b for e, b in balances.items() if flt(b) > 0.005}
+	eps = money_epsilon(frappe.get_cached_value("Company", company, "default_currency"))
+	owing = {e: b for e, b in balances.items() if flt(b) > eps}
 	top_names = sorted(owing, key=lambda e: owing[e], reverse=True)[:3]
 	name_map = {
 		r["name"]: r.get("employee_name") or r["name"]

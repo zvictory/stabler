@@ -6,6 +6,7 @@ import json
 import re
 
 import frappe
+from stabler.api._money import money_epsilon
 from stabler.api.approvals import _assert_company_scope
 from frappe import _
 from frappe.utils import cint, flt, getdate, today
@@ -2815,6 +2816,7 @@ def receivables_cockpit(company: str):
 
 	# Top 10 debtors. Include account-currency fields so selecting a debtor
 	# from the cockpit has the same balance shape as the main customer list.
+	eps = money_epsilon(frappe.get_cached_value("Company", company, "default_currency"))
 	top_debtors_raw = frappe.db.sql(
 		"""
 		SELECT
@@ -2826,11 +2828,11 @@ def receivables_cockpit(company: str):
 		FROM `tabGL Entry`
 		WHERE company = %(company)s AND party_type = 'Customer' AND is_cancelled = 0
 		GROUP BY party
-		HAVING SUM(debit - credit) > 0.005
+		HAVING SUM(debit - credit) > %(eps)s
 		ORDER BY balance_base DESC
 		LIMIT 10
 		""",
-		{"company": company},
+		{"company": company, "eps": eps},
 		as_dict=True,
 	) or []
 

@@ -8,6 +8,7 @@ in hr_payroll_calc. Salary is sensitive → gated to payroll-visible roles.
 from __future__ import annotations
 
 import frappe
+from stabler.api._money import money_epsilon
 from stabler.api.approvals import _assert_company_scope
 from frappe import _
 from frappe.utils import flt
@@ -196,7 +197,8 @@ def set_advance_deduction(summary_name: str, amount) -> dict:
 	if s.status == "Locked":
 		frappe.throw(_("This period is locked; the advance deduction cannot be changed."))
 	outstanding = _advance_outstanding(company).get(s.employee, 0.0)
-	if value > outstanding + 0.005:
+	eps = money_epsilon(frappe.get_cached_value("Company", company, "default_currency"))
+	if value > outstanding + eps:
 		frappe.throw(
 			_("Deduction {0} exceeds the outstanding advance balance {1}.").format(value, round(outstanding, 2))
 		)

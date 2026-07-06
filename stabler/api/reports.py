@@ -21,6 +21,7 @@ Conventions (the Critic's non-negotiables):
 from __future__ import annotations
 
 import frappe
+from stabler.api._money import money_epsilon
 from stabler.api.approvals import _assert_company_scope
 from frappe import _
 from frappe.utils import flt
@@ -416,6 +417,7 @@ def customer_balance_detail(company: str, customer: str, from_date: str = None, 
 
     led = customer_ledger(company, customer)  # full history → reconciles to Balance
     ccy = led.get("account_currency") or _base_currency(company)
+    eps = money_epsilon(ccy)
     run = flt(led.get("opening_acc") or 0)
     rows = []
     for e in led.get("entries", []):
@@ -425,7 +427,7 @@ def customer_balance_detail(company: str, customer: str, from_date: str = None, 
         # Skip pure FX-revaluation rows (base-only "Exchange Gain Or Loss") — zero
         # account-currency movement, so they don't change the running balance; they
         # would only add empty rows to this account-currency ledger.
-        if abs(d) < 0.005 and abs(c) < 0.005:
+        if abs(d) < eps and abs(c) < eps:
             continue
         rows.append({
             "posting_date": e.get("posting_date"),

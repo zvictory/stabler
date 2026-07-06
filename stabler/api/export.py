@@ -15,6 +15,7 @@ import inspect
 import json
 
 import frappe
+from stabler.api._money import money_epsilon
 from frappe import _
 from frappe.utils import flt, now_datetime
 
@@ -363,10 +364,11 @@ def export_report_xlsx(report_key: str, filters: dict | str | None = None):
 		# Hide pure FX-revaluation rows (base-only "Exchange Gain Or Loss", zero
 		# account-currency movement) so the exported ledger matches the on-screen
 		# ledger. Opening/closing come from the source unchanged.
+		eps = money_epsilon(data.get("account_currency"))
 		rows = [
 			r for r in rows
-			if abs(flt(r.get("debit_in_account_currency"))) > 0.005
-			or abs(flt(r.get("credit_in_account_currency"))) > 0.005
+			if abs(flt(r.get("debit_in_account_currency"))) > eps
+			or abs(flt(r.get("credit_in_account_currency"))) > eps
 		]
 		party = filters.get(spec.get("party_filter", "")) or ""
 		shaped_meta = {

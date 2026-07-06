@@ -9,6 +9,7 @@ from __future__ import annotations
 import json
 
 import frappe
+from stabler.api._money import money_epsilon
 from stabler.api.approvals import _assert_company_scope
 from frappe import _
 from frappe.rate_limiter import rate_limit
@@ -1077,7 +1078,8 @@ def update_payment_entry(
 
 	party_amount = flt(doc.paid_amount) if doc.payment_type == "Receive" else flt(doc.received_amount)
 	total_allocated = sum(flt(r.allocated_amount) for r in (doc.references or []))
-	if total_allocated > party_amount + 0.005:
+	eps = money_epsilon(getattr(doc, "party_account_currency", None))
+	if total_allocated > party_amount + eps:
 		frappe.throw(
 			f"Total allocated ({total_allocated:.2f}) exceeds payment amount ({party_amount:.2f})."
 		)
@@ -1400,8 +1402,9 @@ def create_payment_entry(
 	if references:
 		refs = json.loads(references) if isinstance(references, str) else references
 		party_amt = paid if payment_type == "Receive" else recv
+		eps = money_epsilon(frappe.db.get_value("Account", paid_from if payment_type == "Receive" else paid_to, "account_currency"))
 		total_alloc = sum(flt(r.get("allocated_amount", 0)) for r in refs)
-		if total_alloc > party_amt + 0.005:
+		if total_alloc > party_amt + eps:
 			frappe.throw(
 				f"Total allocated ({total_alloc:.2f}) exceeds payment amount ({party_amt:.2f})."
 			)

@@ -5,6 +5,7 @@ from __future__ import annotations
 import json
 
 import frappe
+from stabler.api._money import money_epsilon
 from stabler.api.approvals import _assert_company_scope
 from frappe.utils import cint, flt, getdate, today
 
@@ -1985,17 +1986,18 @@ def payables_cockpit(company: str):
 	)[0][0])
 
 	# Top 10 creditors
+	eps = money_epsilon(frappe.get_cached_value("Company", company, "default_currency"))
 	top_creditors_raw = frappe.db.sql(
 		"""
 		SELECT party AS name, COALESCE(SUM(credit - debit), 0) AS balance
 		FROM `tabGL Entry`
 		WHERE company = %(company)s AND party_type = 'Supplier' AND is_cancelled = 0
 		GROUP BY party
-		HAVING SUM(credit - debit) > 0.005
+		HAVING SUM(credit - debit) > %(eps)s
 		ORDER BY balance DESC
 		LIMIT 10
 		""",
-		{"company": company},
+		{"company": company, "eps": eps},
 		as_dict=True,
 	) or []
 	

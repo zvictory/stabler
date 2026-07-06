@@ -19,6 +19,7 @@ from __future__ import annotations
 import json
 
 import frappe
+from stabler.api._money import money_epsilon
 from frappe import _
 from frappe.utils import flt, getdate, today
 
@@ -240,7 +241,8 @@ def salary_payable_balances(company: str, search: str = "", limit: int = 500) ->
 	_assert_company_scope(company)  # tenant isolation: reject a foreign company arg
 	account = _salary_payable_account(company)
 	balances = _payable_balances(company, account)
-	names = [e for e, b in balances.items() if b > 0.005]
+	eps = money_epsilon(frappe.get_cached_value("Company", company, "default_currency"))
+	names = [e for e, b in balances.items() if b > eps]
 	if not names:
 		return {"account": account, "rows": [], "total_outstanding": 0.0}
 
