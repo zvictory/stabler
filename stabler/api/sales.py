@@ -223,6 +223,8 @@ def list_customers_with_balances(
 	expose the dominant one with `acc_currency_count` so the UI can flag it."""
 	_require_company(company)
 	_assert_company_scope(company)  # tenant isolation: reject a foreign company arg
+	if not frappe.has_permission("Customer", "read"):
+		frappe.throw(_("You are not permitted to view customers."), frappe.PermissionError)
 	company_currency = frappe.db.get_value("Company", company, "default_currency") or ""
 	conds = ["c.disabled = 0"]
 	params: dict = {"company": company, "limit": int(limit)}

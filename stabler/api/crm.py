@@ -51,6 +51,8 @@ def _require_crm_manager():
 @frappe.whitelist()
 def list_leads(search="", status="", lead_owner="", page_length=50, start=0):
     _require_crm()
+    if not frappe.has_permission("CRM Lead", "read"):
+        frappe.throw(_("Not permitted"), frappe.PermissionError)
     where_parts = []
     values: dict = {"limit": int(page_length), "start": int(start)}
 
@@ -123,6 +125,8 @@ def delete_lead(name: str):
 @frappe.whitelist()
 def list_deals(search="", status="", deal_owner="", page_length=50, start=0):
     _require_crm()
+    if not frappe.has_permission("CRM Deal", "read"):
+        frappe.throw(_("Not permitted"), frappe.PermissionError)
     where_parts = []
     values: dict = {"limit": int(page_length), "start": int(start)}
 

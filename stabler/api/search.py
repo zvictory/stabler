@@ -62,6 +62,10 @@ def palette_search(query: str, company: str | None = None, limit_per_kind: int =
 		as_dict=True,
 	)
 
+	if not frappe.has_permission("Customer", "read"):
+		customers = []
+	if not frappe.has_permission("Supplier", "read"):
+		suppliers = []
 	items = frappe.db.sql(
 		"""
 		SELECT name, item_name AS title, item_group AS subtitle

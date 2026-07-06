@@ -1,11 +1,12 @@
-"""Static guard (WP-001): raw-SQL master-data readers must enforce doctype read
-permission.
+"""Static guard (WP-001 + follow-up): raw-SQL master-data readers must enforce
+doctype read permission.
 
 `@frappe.whitelist()` + `_assert_company_scope` scope a call to the caller's
 company, but a raw `frappe.db.sql` SELECT against a master table (`tabCustomer`,
-`tabSupplier`) still bypasses Frappe's `permission_query_conditions`. A user with
-no read permission on the doctype could otherwise pull the master PII
-(phone / e-mail) for their own company. Every such reader must additionally call
+`tabSupplier`, `tabEmployee`, `tabCRM Lead`, `tabCRM Deal`) still bypasses
+Frappe's `permission_query_conditions`. A user with no read permission on the
+doctype could otherwise pull master PII (name / phone / e-mail / salary hints)
+via these endpoints. Every such reader must additionally call
 `frappe.has_permission("<Doctype>", "read")`.
 
 See audit_critique.md §1.1. Parsed with `ast` — no Frappe runtime needed.
@@ -17,40 +18,60 @@ import ast
 import os
 import unittest
 
-# function -> (raw master table it selects, doctype it must permission-check)
-_REQUIRED: dict[str, tuple[str, str]] = {
-	"list_customers":        ("tabCustomer", "Customer"),
-	"get_customer_defaults": (None, "Customer"),
-	"list_suppliers":        ("tabSupplier", "Supplier"),
+# module file -> {function name: [required has_permission needles]}
+_REQUIRED: dict[str, dict[str, list[str]]] = {
+	"sales.py": {
+		"list_customers": ['has_permission("Customer", "read")'],
+		"get_customer_defaults": ['has_permission("Customer", "read")'],
+		"list_customers_with_balances": ['has_permission("Customer", "read")'],
+	},
+	"purchasing.py": {
+		"list_suppliers": ['has_permission("Supplier", "read")'],
+		"list_suppliers_with_balances": ['has_permission("Supplier", "read")'],
+	},
+	"hr.py": {
+		"list_employees": ['has_permission("Employee", "read")'],
+	},
+	"crm.py": {
+		"list_leads": ['has_permission("CRM Lead", "read")'],
+		"list_deals": ['has_permission("CRM Deal", "read")'],
+	},
+	"search.py": {
+		# palette_search returns Customer + Supplier master rows; both must gate.
+		"palette_search": [
+			'has_permission("Customer", "read")',
+			'has_permission("Supplier", "read")',
+		],
+	},
 }
 
 _APP_ROOT = os.path.dirname(os.path.dirname(os.path.abspath(__file__)))  # .../stabler
 
 
-def _source_of(func_name: str) -> str:
-	for mod in ("sales.py", "purchasing.py"):
-		path = os.path.join(_APP_ROOT, "api", mod)
-		with open(path, encoding="utf-8") as fh:
-			src = fh.read()
-		tree = ast.parse(src)
-		for node in ast.walk(tree):
-			if isinstance(node, ast.FunctionDef) and node.name == func_name:
-				return ast.get_source_segment(src, node) or ""
+def _func_source(module_file: str, func_name: str) -> str:
+	path = os.path.join(_APP_ROOT, "api", module_file)
+	with open(path, encoding="utf-8") as fh:
+		src = fh.read()
+	tree = ast.parse(src)
+	for node in ast.walk(tree):
+		if isinstance(node, ast.FunctionDef) and node.name == func_name:
+			return ast.get_source_segment(src, node) or ""
 	return ""
 
 
 class TestMasterReadPermission(unittest.TestCase):
 	def test_master_readers_check_read_permission(self):
-		for func, (_table, doctype) in _REQUIRED.items():
-			seg = _source_of(func)
-			self.assertTrue(seg, f"{func} not found in api/sales.py or api/purchasing.py")
-			needle = f'has_permission("{doctype}", "read")'
-			self.assertIn(
-				needle,
-				seg,
-				f"{func} reads {doctype} master data but never calls "
-				f'frappe.{needle} — restricted users could read master PII.',
-			)
+		for module_file, funcs in _REQUIRED.items():
+			for func, needles in funcs.items():
+				seg = _func_source(module_file, func)
+				self.assertTrue(seg, f"{module_file}::{func} not found")
+				for needle in needles:
+					self.assertIn(
+						needle,
+						seg,
+						f"{module_file}::{func} reads master data but never calls "
+						f"frappe.{needle} — restricted users could read master PII.",
+					)
 
 
 if __name__ == "__main__":

@@ -90,6 +90,8 @@ def _parse_items(items):
 def list_employees(company: str, search: str = "", status: str = "", limit: int = 100):
 	_require_company(company)
 	_assert_company_scope(company)  # tenant isolation: reject a foreign company arg
+	if not frappe.has_permission("Employee", "read"):
+		frappe.throw(frappe._("You are not permitted to view employees."), frappe.PermissionError)
 	conds = ["company = %(company)s"]
 	params: dict = {"company": company, "limit": int(limit)}
 	if status:

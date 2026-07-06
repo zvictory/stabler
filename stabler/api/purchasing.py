@@ -54,6 +54,8 @@ def list_suppliers_with_balances(
 	`SUM(credit - debit)`."""
 	_require_company(company)
 	_assert_company_scope(company)  # tenant isolation: reject a foreign company arg
+	if not frappe.has_permission("Supplier", "read"):
+		frappe.throw(frappe._("You are not permitted to view suppliers."), frappe.PermissionError)
 	company_currency = frappe.db.get_value("Company", company, "default_currency") or ""
 	conds = ["s.disabled = 0"]
 	params: dict = {"company": company, "limit": int(limit)}
