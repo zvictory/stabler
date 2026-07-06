@@ -4,7 +4,7 @@ import { storeToRefs } from "pinia";
 import { useSession } from "../../stores/session.js";
 import { call } from "../../api/client.js";
 import { formatMoney } from "../../composables/money.js";
-import { formatDateTime, todayIso} from "../../composables/date.js";
+import { formatDateTime, todayIso, toLocalIso} from "../../composables/date.js";
 import { t } from "../../composables/i18n.js";
 import { getStatusBadgeClass } from "../../composables/status.js";
 import EmptyState from "../../components/EmptyState.vue";
@@ -17,11 +17,11 @@ const { activeCompany, user } = storeToRefs(session);
 const today = () => todayIso();
 const firstOfMonth = () => {
 	const d = new Date();
-	return new Date(d.getFullYear(), d.getMonth(), 1).toISOString().slice(0, 10);
+	return toLocalIso(new Date(d.getFullYear(), d.getMonth(), 1));
 };
 const lastOfMonth = () => {
 	const d = new Date();
-	return new Date(d.getFullYear(), d.getMonth() + 1, 0).toISOString().slice(0, 10);
+	return toLocalIso(new Date(d.getFullYear(), d.getMonth() + 1, 0));
 };
 
 const loading = ref(false);

@@ -4,7 +4,7 @@ import { storeToRefs } from "pinia";
 import { useSession } from "../../stores/session.js";
 import { call } from "../../api/client.js";
 import { formatMoney } from "../../composables/money.js";
-import { formatDateTime, todayIso} from "../../composables/date.js";
+import { formatDateTime, todayIso, daysAgoIso} from "../../composables/date.js";
 import { t } from "../../composables/i18n.js";
 import EmptyState from "../../components/EmptyState.vue";
 import DateInput from "../../components/DateInput.vue";
@@ -20,7 +20,7 @@ const { activeCompany, user } = storeToRefs(session);
 const { open: drawerOpen, loading: drawerLoading, detail: drawerDetail, close: closeDrawer, openVoucher, canOpen: canOpenVoucher } = useVoucherDrill();
 
 const today = todayIso();
-const monthAgo = new Date(Date.now() - 30 * 86400000).toISOString().slice(0, 10);
+const monthAgo = daysAgoIso(30);
 const fromDate = ref(monthAgo);
 const toDate = ref(today);
 const itemCode = ref("");

@@ -4,7 +4,7 @@
 import { computed, onMounted, ref } from "vue";
 import { storeToRefs } from "pinia";
 import { call } from "../../../api/client.js";
-import { formatDateTime } from "../../../composables/date.js";
+import { formatDateTime, daysAgoIso, todayIso} from "../../../composables/date.js";
 import { t } from "../../../composables/i18n.js";
 import { useSession } from "../../../stores/session.js";
 import DateInput from "../../../components/DateInput.vue";
@@ -20,8 +20,8 @@ const loading = ref(false);
 const error = ref("");
 const doctypeFilter = ref("");
 const doctypeOptions = ref([]);
-const monthAgo = new Date(Date.now() - 30 * 86400000).toISOString().slice(0, 10);
-const today = new Date().toISOString().slice(0, 10);
+const monthAgo = daysAgoIso(30);
+const today = todayIso();
 const fromDate = ref(monthAgo);
 const toDate = ref(today);
 

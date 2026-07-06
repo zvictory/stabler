@@ -5,7 +5,7 @@ import { useRouter } from "vue-router";
 import { useSession } from "../../stores/session.js";
 import { call } from "../../api/client.js";
 import { t } from "../../composables/i18n.js";
-import { todayIso } from "../../composables/date.js";
+import { todayIso, toLocalIso} from "../../composables/date.js";
 import { useToast } from "../../composables/useToast.js";
 import EmptyState from "../../components/EmptyState.vue";
 import DateInput from "../../components/DateInput.vue";
@@ -159,7 +159,7 @@ const syncForm = ref({ from: yesterdayIso(), to: yesterdayIso() });
 function yesterdayIso() {
 	const d = new Date();
 	d.setDate(d.getDate() - 1);
-	return d.toISOString().slice(0, 10);
+	return toLocalIso(d);
 }
 function openSync() {
 	syncForm.value = { from: yesterdayIso(), to: yesterdayIso() };
@@ -176,7 +176,7 @@ function datesInRange(from, to) {
 	const d = new Date(from);
 	const end = new Date(to);
 	while (d <= end && out.length <= 62) {
-		out.push(d.toISOString().slice(0, 10));
+		out.push(toLocalIso(d));
 		d.setDate(d.getDate() + 1);
 	}
 	return out;

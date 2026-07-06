@@ -278,7 +278,8 @@ function defaultDateRange() {
 	const to = new Date();
 	const from = new Date();
 	from.setDate(from.getDate() - 365);
-	const iso = (d) => d.toISOString().slice(0, 10);
+	// LOCAL date (not toISOString → UTC shift, off-by-one in UTC+N zones).
+	const iso = (d) => `${d.getFullYear()}-${String(d.getMonth() + 1).padStart(2, "0")}-${String(d.getDate()).padStart(2, "0")}`;
 	return { from: iso(from), to: iso(to) };
 }
 

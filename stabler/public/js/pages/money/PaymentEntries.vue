@@ -5,7 +5,7 @@ import { useRouter } from "vue-router";
 import { useSession } from "../../stores/session.js";
 import { call } from "../../api/client.js";
 import { formatMoney } from "../../composables/money.js";
-import { formatDate, todayIso} from "../../composables/date.js";
+import { formatDate, todayIso, daysAgoIso} from "../../composables/date.js";
 import { t } from "../../composables/i18n.js";
 import DateInput from "../../components/DateInput.vue";
 import Select from "../../components/Select.vue";
@@ -24,7 +24,7 @@ useEscapeBack(null, "/money");
 const { activeCompany, user } = storeToRefs(session);
 
 const today = todayIso();
-const monthAgo = new Date(Date.now() - 30 * 86400000).toISOString().slice(0, 10);
+const monthAgo = daysAgoIso(30);
 const fromDate = ref(monthAgo);
 const toDate = ref(today);
 const limit = ref(50);

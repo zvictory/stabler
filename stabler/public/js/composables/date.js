@@ -84,6 +84,25 @@ export function todayIso() {
 	return `${yyyy}-${mm}-${dd}`;
 }
 
+/** Any Date → local ISO yyyy-mm-dd (no UTC shift). Use instead of
+ *  `date.toISOString().slice(0,10)`, which is a day behind in UTC+N zones. */
+export function toLocalIso(date) {
+	const d = date instanceof Date ? date : new Date(date);
+	const yyyy = d.getFullYear();
+	const mm = String(d.getMonth() + 1).padStart(2, "0");
+	const dd = String(d.getDate()).padStart(2, "0");
+	return `${yyyy}-${mm}-${dd}`;
+}
+
+/** N days ago as local ISO yyyy-mm-dd (no UTC shift). */
+export function daysAgoIso(n) {
+	const d = new Date(Date.now() - n * 86400000);
+	const yyyy = d.getFullYear();
+	const mm = String(d.getMonth() + 1).padStart(2, "0");
+	const dd = String(d.getDate()).padStart(2, "0");
+	return `${yyyy}-${mm}-${dd}`;
+}
+
 /** First day of the current calendar year, ISO yyyy-mm-dd. */
 export function startOfYearIso() {
 	return `${new Date().getFullYear()}-01-01`;

@@ -6,7 +6,7 @@ import { useEscapeBack } from "../../composables/useEscapeBack.js";
 import { useSession } from "../../stores/session.js";
 import { call } from "../../api/client.js";
 import { formatMoney } from "../../composables/money.js";
-import { formatDateTime, todayIso} from "../../composables/date.js";
+import { formatDateTime, todayIso, daysAgoIso} from "../../composables/date.js";
 import { t } from "../../composables/i18n.js";
 import DateInput from "../../components/DateInput.vue";
 import EmptyState from "../../components/EmptyState.vue";
@@ -21,7 +21,7 @@ const router = useRouter();
 useEscapeBack(null, "/sales"); // ESC → back (general app rule)
 
 const today = todayIso();
-const monthAgo = new Date(Date.now() - 90 * 86400000).toISOString().slice(0, 10);
+const monthAgo = daysAgoIso(90);
 const fromDate = ref(monthAgo);
 const toDate = ref(today);
 const status = ref("");

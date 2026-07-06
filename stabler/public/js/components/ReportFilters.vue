@@ -41,7 +41,9 @@ watch(
 
 function preset(kind) {
 	const d = new Date();
-	const iso = (x) => x.toISOString().slice(0, 10);
+	// LOCAL calendar date (yyyy-mm-dd) — never toISOString(), which converts to UTC
+	// and shifts the day back in UTC+N zones (e.g. UZT +5 turned 01.06 → 31.05).
+	const iso = (x) => `${x.getFullYear()}-${String(x.getMonth() + 1).padStart(2, "0")}-${String(x.getDate()).padStart(2, "0")}`;
 	if (kind === "this-month") {
 		fromDate.value = iso(new Date(d.getFullYear(), d.getMonth(), 1));
 		toDate.value = today;

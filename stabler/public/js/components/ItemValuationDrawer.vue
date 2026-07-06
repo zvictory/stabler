@@ -20,7 +20,7 @@ import { computed } from "vue";
 import { storeToRefs } from "pinia";
 import { useSession } from "../stores/session.js";
 import { formatMoney } from "../composables/money.js";
-import { formatDate } from "../composables/date.js";
+import { formatDate, toLocalIso} from "../composables/date.js";
 import { t } from "../composables/i18n.js";
 import ApexChart from "./ApexChart.vue";
 import EmptyState from "./EmptyState.vue";
@@ -85,7 +85,7 @@ const chartOptions = computed(() => ({
 	tooltip: {
 		x: {
 			// ms timestamp → YYYY-MM-DD → dd.mm.yyyy via formatDate
-			formatter: (v) => formatDate(new Date(v).toISOString().slice(0, 10)),
+			formatter: (v) => formatDate(toLocalIso(v)),
 		},
 		y: {
 			formatter: (v) => formatMoney(v, props.currency, user.value.language),
