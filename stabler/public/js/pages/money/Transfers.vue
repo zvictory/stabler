@@ -868,7 +868,10 @@ watch(activeCompany, () => {
 											:placeholder="t('Select…')"
 										>
 											<template #option="{ option }">
-												{{ option.account_name || option.name }} ({{ option.account_currency }})
+												<span class="d-flex align-items-center gap-2 w-100">
+													<span class="text-truncate">{{ option.account_name || option.name }} <span class="text-secondary">({{ option.account_currency }})</span></span>
+													<span v-if="option.account_balance != null" class="ms-auto text-secondary font-monospace small text-nowrap">{{ fmtAmt(option.account_balance, option.account_currency) }}</span>
+												</span>
 											</template>
 											<template #selected="{ option }">
 												{{ option.account_name || option.name }} ({{ option.account_currency }})
@@ -949,7 +952,10 @@ watch(activeCompany, () => {
 											:placeholder="t('Select…')"
 										>
 											<template #option="{ option }">
-												{{ option.account_name || option.name }} ({{ option.account_currency }})
+												<span class="d-flex align-items-center gap-2 w-100">
+													<span class="text-truncate">{{ option.account_name || option.name }} <span class="text-secondary">({{ option.account_currency }})</span></span>
+													<span v-if="option.account_balance != null" class="ms-auto text-secondary font-monospace small text-nowrap">{{ fmtAmt(option.account_balance, option.account_currency) }}</span>
+												</span>
 											</template>
 											<template #selected="{ option }">
 												{{ option.account_name || option.name }} ({{ option.account_currency }})

@@ -46,6 +46,30 @@ def resolve_party_account(party_type: str, party: str, company: str, currency: s
 	return matching[0]
 
 
+def _cbu_rate_on_or_before(doc_currency: str, company_currency: str, posting_date):
+	"""Latest CBU rate (doc_currency -> company_currency) on/before posting_date.
+	CBU stores each pair one-way, so if the direct pair is missing we fall back to
+	the inverse pair and return its reciprocal. Returns (rate, date) or (None, None).
+	"""
+	def _latest(frm, to):
+		rows = frappe.get_all(
+			"Currency Exchange",
+			filters={"from_currency": frm, "to_currency": to, "date": ("<=", posting_date)},
+			fields=["exchange_rate", "date"],
+			order_by="date desc",
+			limit=1,
+		)
+		return rows[0] if rows else None
+
+	direct = _latest(doc_currency, company_currency)
+	if direct and flt(direct.exchange_rate) > 0:
+		return flt(direct.exchange_rate), direct.date
+	inv = _latest(company_currency, doc_currency)
+	if inv and flt(inv.exchange_rate) > 0:
+		return 1.0 / flt(inv.exchange_rate), inv.date
+	return None, None
+
+
 def validate_exchange_rate(company: str, doc_currency: str, conversion_rate: float, posting_date) -> None:
 	"""Validate that the exchange rate is within +/-20% CBU tolerance and not stale."""
 	company_currency = frappe.get_cached_value("Company", company, "default_currency") or "UZS"
@@ -59,22 +83,17 @@ def validate_exchange_rate(company: str, doc_currency: str, conversion_rate: flo
 			frappe.ValidationError
 		)
 
-	# Fetch CBU rate from Currency Exchange (CBU task stores daily rates there)
-	cbu_rate_doc = frappe.get_all(
-		"Currency Exchange",
-		filters={"from_currency": doc_currency, "to_currency": company_currency, "date": ("<=", posting_date)},
-		fields=["exchange_rate", "date"],
-		order_by="date desc",
-		limit=1
-	)
-	if not cbu_rate_doc:
+	# Fetch CBU rate from Currency Exchange (CBU task stores daily rates there).
+	# CBU publishes each pair in ONE direction only (e.g. USD -> UZS). If the direct
+	# pair isn't stored, fall back to the inverse pair and invert the rate — so the
+	# validation works regardless of which side is the company base currency
+	# (e.g. a USD-base company converting a UZS leg needs 1 / (USD->UZS)).
+	cbu_rate, cbu_date = _cbu_rate_on_or_before(doc_currency, company_currency, posting_date)
+	if cbu_rate is None:
 		frappe.throw(
 			_("No CBU exchange rate found for {0} to {1} on or before {2}.").format(doc_currency, company_currency, posting_date),
 			frappe.ValidationError
 		)
-
-	cbu_rate = flt(cbu_rate_doc[0].exchange_rate)
-	cbu_date = cbu_rate_doc[0].date
 
 	# Staleness window is admin-configurable (Accounts Settings, set via the
 	# Posting Window page): `allow_stale` bypasses the check entirely — needed for
