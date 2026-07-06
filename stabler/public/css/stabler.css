@@ -122,8 +122,11 @@ body {
 .stbl-balance-chip {
 	align-items: center;
 	display: inline-flex;
-	gap: 0.35rem;
+	flex-wrap: wrap;            /* label + amount wrap to two lines in narrow cards */
+	justify-content: center;
+	gap: 0.15rem 0.35rem;
 	max-width: 100%;
+	white-space: normal;       /* override Tabler .badge nowrap so it never clips */
 }
 
 .stbl-balance-chip-lg {

@@ -681,7 +681,7 @@ watch(activeCompany, () => {
 												>
 													{{ formatMoney(
 														c.balance_acc ?? c.balance_base,
-														c.account_currency || currency,
+														Number(c.balance_acc ?? c.balance_base) ? (c.account_currency || currency) : currency,
 														user.language,
 													) }}
 												</div>

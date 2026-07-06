@@ -74,34 +74,39 @@ def _sort_rows(rows, sort_by, sort_dir, allow_keys, default_key):
     return sorted(rows, key=lambda r: (r.get(key) is None, r.get(key)), reverse=reverse)
 
 
-def _customer_gl_balances(company: str) -> dict:
-    """Per-customer live receivable straight from the GL party ledger — the SAME
-    source the Customer Center uses (list_customers_with_balances), so the report
-    ties 1:1 to it.
+def _customer_gl_balances(company: str, as_of: str | None = None) -> dict:
+    """Per-customer receivable straight from the GL party ledger — the SAME source
+    the Customer Center uses (list_customers_with_balances), so the report ties to it.
 
-    All-time, all vouchers (invoices, payments, JEs, advances, credit notes),
-    signed (+ = customer owes us), in the receivable account's own currency, with
-    the Payment-Entry account-currency drift correction applied. This is the real
-    receivable — NOT SUM(Sales Invoice.outstanding_amount), which ignores
-    unallocated payments / on-account credits and is date-bounded.
+    All vouchers (invoices, payments, JEs, advances, credit notes), signed
+    (+ = customer owes us), in the receivable account's own currency, with the
+    Payment-Entry account-currency drift correction applied. When `as_of` is given
+    the balance is computed AS OF that date (posting_date <= as_of) — a QuickBooks
+    style historical balance that changes with the report's To date; otherwise it is
+    the all-time current receivable.
     """
+    date_cond = " AND posting_date <= %(as_of)s" if as_of else ""
+    g_date_cond = " AND g.posting_date <= %(as_of)s" if as_of else ""
+    params = {"company": company}
+    if as_of:
+        params["as_of"] = as_of
     rows = frappe.db.sql(
-        """
+        f"""
         SELECT party,
                SUM(debit_in_account_currency - credit_in_account_currency) AS balance_acc,
                MAX(account_currency) AS account_currency
         FROM `tabGL Entry`
-        WHERE company = %(company)s AND party_type = 'Customer' AND is_cancelled = 0
+        WHERE company = %(company)s AND party_type = 'Customer' AND is_cancelled = 0{date_cond}
         GROUP BY party
         """,
-        {"company": company},
+        params,
         as_dict=True,
     )
     # PE party-leg drift: GL stores credit_in_account_currency = base÷rate, which can
     # differ from the user-entered PE.paid_amount by sub-units. Correct it so the
     # report ties to the ledger exactly (single-leg-per-party PEs only).
     drift_rows = frappe.db.sql(
-        """
+        f"""
         SELECT g.party AS party,
                SUM(
                  (CASE WHEN g.debit_in_account_currency > 0
@@ -123,10 +128,10 @@ def _customer_gl_balances(company: str) -> dict:
           GROUP BY voucher_no HAVING COUNT(*) = 1
         ) single ON single.voucher_no = g.voucher_no
         WHERE g.voucher_type = 'Payment Entry' AND g.company = %(company)s
-          AND g.party_type = 'Customer' AND g.is_cancelled = 0
+          AND g.party_type = 'Customer' AND g.is_cancelled = 0{g_date_cond}
         GROUP BY g.party
         """,
-        {"company": company},
+        params,
         as_dict=True,
     )
     drift = {r["party"]: flt(r["drift"]) for r in drift_rows}
@@ -135,6 +140,34 @@ def _customer_gl_balances(company: str) -> dict:
             "balance": flt(r["balance_acc"]) + drift.get(r["party"], 0.0),
             "currency": r["account_currency"],
         }
+        for r in rows
+    }
+
+
+def _supplier_gl_balances(company: str, as_of: str | None = None) -> dict:
+    """Per-supplier payable from the GL party ledger (+ = we owe the supplier), in
+    the account's own currency. All-time by default; when `as_of` is given the
+    balance is computed AS OF that date (posting_date <= as_of) — QuickBooks-style.
+    (No PE sub-unit drift correction here — it's a material-level payable balance.)
+    """
+    date_cond = " AND posting_date <= %(as_of)s" if as_of else ""
+    params = {"company": company}
+    if as_of:
+        params["as_of"] = as_of
+    rows = frappe.db.sql(
+        f"""
+        SELECT party,
+               SUM(credit_in_account_currency - debit_in_account_currency) AS balance_acc,
+               MAX(account_currency) AS account_currency
+        FROM `tabGL Entry`
+        WHERE company = %(company)s AND party_type = 'Supplier' AND is_cancelled = 0{date_cond}
+        GROUP BY party
+        """,
+        params,
+        as_dict=True,
+    )
+    return {
+        r["party"]: {"balance": flt(r["balance_acc"]), "currency": r["account_currency"]}
         for r in rows
     }
 
@@ -212,24 +245,29 @@ def sales_by_customer(
     # Sales = period (accrual). Balance = the real GL receivable (all-time), joined
     # per customer so the report shows the SAME number as the Customer Center.
     params = {"company": company, "from_date": start, "to_date": end}
-    conds = _in_clause("customer", "customers", customers, params)
+    conds = _in_clause("si.customer", "customers", customers, params)
+    # Join Customer for the CANONICAL name and GROUP BY the customer id, so a renamed
+    # customer (old invoices carry the old customer_name) collapses to ONE row instead
+    # of splitting into duplicates that each show the same party balance.
     sales = frappe.db.sql(
         f"""
-        SELECT customer, customer_name,
+        SELECT si.customer AS customer, c.customer_name AS customer_name,
                COUNT(*) AS invoice_count,
-               SUM(grand_total) AS total
-        FROM `tabSales Invoice`
-        WHERE company = %(company)s AND docstatus = 1
-          AND posting_date BETWEEN %(from_date)s AND %(to_date)s
+               SUM(si.grand_total) AS total
+        FROM `tabSales Invoice` si
+        JOIN `tabCustomer` c ON c.name = si.customer
+        WHERE si.company = %(company)s AND si.docstatus = 1
+          AND si.posting_date BETWEEN %(from_date)s AND %(to_date)s
           {conds}
-        GROUP BY customer, customer_name
+        GROUP BY si.customer, c.customer_name
         ORDER BY total DESC, customer_name ASC
         LIMIT 1000
         """,
         params,
         as_dict=True,
     )
-    bal = _customer_gl_balances(company)
+    # Balance AS OF the report's To date (QuickBooks-style) — changes with the date.
+    bal = _customer_gl_balances(company, as_of=end)
     rows = []
     for r in sales:
         b = bal.get(r.customer) or {}
@@ -258,7 +296,7 @@ def sales_by_customer(
         "currency": base_ccy,
         "from": str(start),
         "to": str(end),
-        "note": _("Sales = selected period · Balance = current receivable (all-time, all vouchers — ties to the Customer Center). Click a customer to see the ledger behind the balance."),
+        "note": _("Sales = selected period · Balance = receivable as of the To date (changes with the date, QuickBooks-style). Click a customer to see the ledger behind the balance."),
         "drill_report": "customer_balance_detail",
         "drill_param": "customer",
     }
@@ -758,41 +796,57 @@ def purchases_by_supplier(
         }
         return _shape(columns, rows, totals, meta)
 
-    # No item filter: existing header-level behaviour (grand_total + outstanding_amount).
+    # No item filter: Purchases = period (accrual); Balance = real GL payable AS OF
+    # the To date (QuickBooks-style), consistent with Sales by Customer. Join Supplier
+    # for the canonical name + GROUP BY supplier id so renamed suppliers don't split.
     params = {"company": company, "from_date": start, "to_date": end}
-    conds = _in_clause("supplier", "customers", customers, params)
-    rows = frappe.db.sql(
+    conds = _in_clause("pi.supplier", "customers", customers, params)
+    purch = frappe.db.sql(
         f"""
-        SELECT supplier, supplier_name, currency,
+        SELECT pi.supplier AS supplier, s.supplier_name AS supplier_name,
                COUNT(*) AS invoice_count,
-               SUM(grand_total) AS total,
-               SUM(outstanding_amount) AS outstanding
-        FROM `tabPurchase Invoice`
-        WHERE company = %(company)s AND docstatus = 1
-          AND posting_date BETWEEN %(from_date)s AND %(to_date)s
+               SUM(pi.grand_total) AS total
+        FROM `tabPurchase Invoice` pi
+        JOIN `tabSupplier` s ON s.name = pi.supplier
+        WHERE pi.company = %(company)s AND pi.docstatus = 1
+          AND pi.posting_date BETWEEN %(from_date)s AND %(to_date)s
           {conds}
-        GROUP BY supplier, supplier_name, currency
-        {_order_by(sort_by, sort_dir, _PURCHASES_BY_SUPPLIER_SORT_MAP, "total")}
+        GROUP BY pi.supplier, s.supplier_name
+        ORDER BY total DESC, supplier_name ASC
         LIMIT 1000
         """,
         params,
         as_dict=True,
     )
+    bal = _supplier_gl_balances(company, as_of=end)
+    rows = []
+    for r in purch:
+        b = bal.get(r.supplier) or {}
+        rows.append({
+            "supplier": r.supplier,
+            "supplier_name": r.supplier_name,
+            "invoice_count": int(r.invoice_count or 0),
+            "total": flt(r.total),
+            "balance": flt(b.get("balance") or 0),
+            "currency": b.get("currency") or base_ccy,
+        })
+    rows = _sort_rows(rows, sort_by, sort_dir, {"supplier_name", "total", "invoice_count", "balance"}, "total")
     totals = {
-        "invoice_count": sum(int(r.invoice_count or 0) for r in rows),
-        "total": sum(flt(r.total) for r in rows),
-        "outstanding": sum(flt(r.outstanding) for r in rows),
+        "invoice_count": sum(r["invoice_count"] for r in rows),
+        "total": sum(r["total"] for r in rows),
+        "balance": sum(r["balance"] for r in rows),
     }
     columns = [
         {"key": "supplier_name", "label": _("Supplier"), "type": "text", "drill": "detail"},
         {"key": "invoice_count", "label": _("Bills"), "type": "int", "align": "end"},
         {"key": "total", "label": _("Purchases"), "type": "money", "align": "end"},
-        {"key": "outstanding", "label": _("Outstanding"), "type": "money", "align": "end"},
+        {"key": "balance", "label": _("Balance"), "type": "money", "align": "end"},
     ]
     meta = {
         "basis": _("Accrual (bill date)"), "currency": base_ccy,
         "from": str(start), "to": str(end),
-        "note": _("Submitted bills; returns netted."), "drill_param": "supplier",
+        "note": _("Purchases = selected period · Balance = payable as of the To date (changes with the date). Click a supplier to see the bills."),
+        "drill_param": "supplier",
     }
     return _shape(columns, rows, totals, meta)
 
