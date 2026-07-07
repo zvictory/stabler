@@ -9,6 +9,7 @@ import { call } from "../../api/client.js";
 import { formatMoney } from "../../composables/money.js";
 import { formatDate } from "../../composables/date.js";
 import { t } from "../../composables/i18n.js";
+import { useAutoRefresh } from "../../composables/useAutoRefresh.js";
 import { useToast } from "../../composables/useToast.js";
 import { useEscapeBack } from "../../composables/useEscapeBack.js";
 import EmptyState from "../../components/EmptyState.vue";
@@ -53,6 +54,7 @@ async function assign(row, user) {
 	}
 }
 onMounted(() => { load(); loadManagers(); });
+useAutoRefresh(load);
 
 const ccy = computed(() => data.value?.currency || "");
 const kpi = computed(() => data.value?.kpi || {});
