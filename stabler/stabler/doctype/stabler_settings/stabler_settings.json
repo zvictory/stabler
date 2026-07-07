@@ -12,6 +12,7 @@
   "onec_last_pulled_at",
   "asl_code_regex",
   "factura_export_enabled",
+  "didox_export_enabled",
   "pos_gateways_section",
   "pos_session_ttl_minutes",
   "pos_gateways",
@@ -96,6 +97,13 @@
    "fieldname": "factura_export_enabled",
    "fieldtype": "Check",
    "label": "Factura.uz Export Enabled"
+  },
+  {
+   "default": "0",
+   "description": "When on, submitted Sales Invoices can be manually sent to Didox.uz (EDO/e-faktura) from the SPA. Signing happens client-side via the user's own E-IMZO key; this flag only gates whether the send action is offered.",
+   "fieldname": "didox_export_enabled",
+   "fieldtype": "Check",
+   "label": "Didox.uz EDO Enabled"
   },
   {
    "fieldname": "pos_gateways_section",

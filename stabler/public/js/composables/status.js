@@ -125,6 +125,14 @@ export const STATUS_MAP = {
 		Withheld: "bg-yellow-lt",
 		Cancelled: "bg-secondary-lt",
 	},
+	"EDO Status": {
+		Draft: "bg-secondary-lt",
+		Signed: "bg-blue-lt",
+		Sent: "bg-azure-lt",
+		Accepted: "bg-success-lt",
+		Rejected: "bg-red-lt",
+		Error: "bg-red-lt",
+	},
 	"docstatus": {
 		0: "bg-yellow-lt", // Draft
 		1: "bg-green-lt",  // Submitted / Active

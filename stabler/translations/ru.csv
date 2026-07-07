@@ -2721,6 +2721,7 @@ Sender pays,Отправитель платит
 Seniority,Стаж
 Seniority allowance,Надбавка за стаж
 Seniority allowance (UZS),
+Sent,Отправлен
 Separation-of-duties violation — you cannot perform this action:\n{0},
 Serial No,Серийный номер
 Service,Сервис
@@ -2770,6 +2771,7 @@ Showing,Показано
 Showing first 500 — narrow the date range to see more.,"Показаны первые 500 — сузьте период, чтобы увидеть больше."
 Showing the first {0} records — use filters to narrow.,Показаны первые {0} записей — используйте фильтры для уточнения.
 Showing the newest,Показаны самые новые
+Signed,Подписан
 Simplified / turnover tax,Упрощённый / налог с оборота
 Simulation result,
 Simulator,

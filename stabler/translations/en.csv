@@ -37,6 +37,7 @@ ARCA Payment Events,ARCA Payment Events
 Abbr,Abbr
 Absent,Absent
 Accept Return,Accept Return
+Accepted,Accepted
 Access Review,Access Review
 Access token,Access token
 Access token (JWT),Access token (JWT)
@@ -2711,6 +2712,7 @@ Sender pays,Sender pays
 Seniority,Seniority
 Seniority allowance,Seniority allowance
 Seniority allowance (UZS),Seniority allowance (UZS)
+Sent,Sent
 Separation-of-duties violation — you cannot perform this action:\n{0},Separation-of-duties violation — you cannot perform this action:\n{0}
 Serial No,Serial No
 Service,Service
@@ -2760,6 +2762,7 @@ Showing,Showing
 Showing first 500 — narrow the date range to see more.,Showing first 500 — narrow the date range to see more.
 Showing the first {0} records — use filters to narrow.,Showing the first {0} records — use filters to narrow.
 Showing the newest,Showing the newest
+Signed,Signed
 Simplified / turnover tax,Simplified / turnover tax
 Simulation result,Simulation result
 Simulator,Simulator

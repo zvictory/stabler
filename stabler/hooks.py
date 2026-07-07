@@ -200,5 +200,14 @@ custom_fields = {
 		dict(fieldname="custom_manzil", fieldtype="Data", label="Manzil", insert_after="mobile_no"),
 		dict(fieldname="custom_sana", fieldtype="Date", label="Sana", insert_after="custom_manzil"),
 		dict(fieldname="custom_izoh", fieldtype="Long Text", label="Izoh", insert_after="custom_sana"),
-	]
+	],
+	"Item": [
+		dict(
+			fieldname="custom_ikpu_code",
+			fieldtype="Data",
+			label="IKPU / MXIK Code",
+			insert_after="item_group",
+			description="Uzbek product classification code (tasnif.soliq.uz) — required by Didox for e-invoicing",
+		),
+	],
 }

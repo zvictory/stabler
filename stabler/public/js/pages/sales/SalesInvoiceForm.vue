@@ -7,7 +7,9 @@ import { call } from "../../api/client.js";
 import { formatMoney } from "../../composables/money.js";
 import { formatDateTime, todayIso} from "../../composables/date.js";
 import { t } from "../../composables/i18n.js";
+import { getStatusBadgeClass } from "../../composables/status.js";
 import PaymentModal from "../../components/PaymentModal.vue";
+import EdoSubmitModal from "../../components/EdoSubmitModal.vue";
 import RelatedDocuments from "../../components/RelatedDocuments.vue";
 import FormPage from "../../components/form/FormPage.vue";
 import { useDocumentForm } from "../../composables/useDocumentForm.js";
@@ -87,6 +89,19 @@ function openPayment() {
 }
 async function onPaid() {
 	paymentOpen.value = false;
+	await loadDoc();
+}
+
+// Didox EDO (ЭСФ) — manual submit of a posted invoice
+const edoOpen = ref(false);
+const canSendEdo = computed(() => Boolean(form.value) && form.value.docstatus === 1 && !form.value.is_return);
+
+function openEdo() {
+	actionError.value = "";
+	edoOpen.value = true;
+}
+async function onSent() {
+	edoOpen.value = false;
 	await loadDoc();
 }
 
@@ -211,6 +226,10 @@ onMounted(loadDoc);
 					<div class="datagrid-content font-monospace">{{ form.currency }}</div>
 				</div>
 				<div class="datagrid-item">
+					<div class="datagrid-title">{{ t("Warehouse") }}</div>
+					<div class="datagrid-content">{{ form.set_warehouse_name || form.set_warehouse || "—" }}</div>
+				</div>
+				<div class="datagrid-item">
 					<div class="datagrid-title">{{ t("Net total") }}</div>
 					<div class="datagrid-content font-monospace">{{ formatMoney(form.net_total, form.currency, user.language) }}</div>
 				</div>
@@ -232,7 +251,6 @@ onMounted(loadDoc);
 						<tr>
 							<th class="text-end text-secondary" style="width: 36px">#</th>
 							<th style="min-width: 220px">{{ t("Item") }}</th>
-							<th>{{ t("Warehouse") }}</th>
 							<th class="text-end">{{ t("Qty") }}</th>
 							<th>{{ t("UOM") }}</th>
 							<th class="text-end">{{ t("List rate") }}</th>
@@ -250,7 +268,6 @@ onMounted(loadDoc);
 								<div class="small text-secondary font-monospace">{{ it.item_code }}</div>
 								<div v-if="dimSummary(it)" class="small text-secondary">{{ dimSummary(it) }}</div>
 							</td>
-							<td>{{ it.warehouse_name || it.warehouse || "—" }}</td>
 							<td class="text-end font-monospace">
 								{{ it.qty }}<template v-if="it.custom_dimension_mode"> {{ it.stock_uom }}</template>
 							</td>
@@ -323,6 +340,25 @@ onMounted(loadDoc);
 			>
 				<i class="ti ti-truck me-1"></i>{{ t("Yuk xati") }}
 			</router-link>
+			<!-- i18n harvest anchors for the dynamic t(form.edo.status) badge below
+			     (harvest.py only sees literal t("...")):
+			     t("Draft"); t("Signed"); t("Sent"); t("Accepted"); t("Rejected"); t("Error") -->
+			<span
+				v-if="form && form.edo"
+				class="badge align-self-center"
+				:class="getStatusBadgeClass('EDO Status', form.edo.status)"
+			>
+				<i class="ti ti-file-certificate me-1"></i>{{ t("Didox") }}: {{ t(form.edo.status) }}
+			</span>
+			<button
+				v-if="canSendEdo"
+				type="button"
+				class="btn btn-outline-secondary"
+				:disabled="actionRunning"
+				@click="openEdo"
+			>
+				<i class="ti ti-file-certificate me-1"></i>{{ t("Send to Didox") }}
+			</button>
 			<button
 				v-if="can.cancel"
 				type="button"
@@ -362,6 +398,13 @@ onMounted(loadDoc);
 		:modified="form?.modified || ''"
 		@close="paymentOpen = false"
 		@paid="onPaid"
+	/>
+
+	<EdoSubmitModal
+		:open="edoOpen"
+		:invoice-name="form?.name || ''"
+		@close="edoOpen = false"
+		@sent="onSent"
 	/>
 
 	<!-- Return / credit note modal -->

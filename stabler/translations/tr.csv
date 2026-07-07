@@ -37,6 +37,7 @@ ARCA Payment Events,ARCA Ödeme Olayları
 Abbr,Kısaltma
 Absent,Devamsız
 Accept Return,
+Accepted,Kabul edildi
 Access Review,Erişim İncelemesi
 Access token,
 Access token (JWT),
@@ -2701,6 +2702,7 @@ Sender pays,Gönderen öder
 Seniority,Kıdem
 Seniority allowance,Kıdem ek ödemesi
 Seniority allowance (UZS),
+Sent,Gönderildi
 Separation-of-duties violation — you cannot perform this action:\n{0},
 Serial No,Seri No
 Service,Servis
@@ -2750,6 +2752,7 @@ Showing,Gösteriliyor
 Showing first 500 — narrow the date range to see more.,İlk 500 gösteriliyor — daha fazlası için tarih aralığını daraltın.
 Showing the first {0} records — use filters to narrow.,İlk {0} kayıt gösteriliyor — daraltmak için filtreleri kullanın.
 Showing the newest,En yeniler gösteriliyor
+Signed,İmzalandı
 Simplified / turnover tax,Basitleştirilmiş / ciro vergisi
 Simulation result,
 Simulator,

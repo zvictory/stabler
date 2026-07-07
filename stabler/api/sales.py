@@ -689,7 +689,40 @@ def list_sales_invoices(
 	)
 
 
-@frappe.whitelist()
+def _edo_status(invoice_name: str) -> dict | None:
+	"""Latest Didox EDO submission summary for a Sales Invoice, or None.
+
+	Internal helper only — NOT whitelisted. It is called from
+	``sales_invoice_detail`` (which already runs ``_assert_can_read`` on the
+	invoice), so exposing it as its own endpoint would let any authenticated
+	user enumerate Didox status for arbitrary invoices with no permission
+	check. Reach EDO status through ``stabler.api.edo.didox_status`` instead.
+
+	Guarded: the ``Didox Submission`` doctype ships with the EDO module and may
+	not exist on every tenant. Return None (not an error) so the invoice form
+	still loads where EDO is not installed.
+	"""
+	if not frappe.db.exists("DocType", "Didox Submission"):
+		return None
+	rows = frappe.get_all(
+		"Didox Submission",
+		filters={"reference_invoice": invoice_name},
+		fields=["name", "doc_type", "status", "didox_doc_id", "submitted_at"],
+		order_by="creation desc",
+		limit=1,
+	)
+	if not rows:
+		return None
+	r = rows[0]
+	return {
+		"name": r.name,
+		"doc_type": r.doc_type,
+		"status": r.status,
+		"didox_doc_id": r.didox_doc_id or None,
+		"submitted_at": str(r.submitted_at) if r.submitted_at else None,
+	}
+
+
 def sales_invoice_detail(name: str):
 	if not name:
 		frappe.throw("Invoice name is required.")
@@ -723,6 +756,12 @@ def sales_invoice_detail(name: str):
 		"remarks": doc.remarks,
 		"is_return": cint(doc.is_return),
 		"return_against": doc.return_against or "",
+		"set_warehouse": doc.set_warehouse or None,
+		"set_warehouse_name": (
+			frappe.get_cached_value("Warehouse", doc.set_warehouse, "warehouse_name")
+			if doc.set_warehouse else None
+		),
+		"edo": _edo_status(doc.name),
 		"credit_notes": frappe.db.sql(
 			"""
 			SELECT name, docstatus FROM `tabSales Invoice`
@@ -750,6 +789,11 @@ def sales_invoice_detail(name: str):
 				"custom_width": flt(getattr(it, "custom_width", 0)) or None,
 				"custom_height": flt(getattr(it, "custom_height", 0)) or None,
 				"custom_pieces": flt(getattr(it, "custom_pieces", 0)) or None,
+				"warehouse": getattr(it, "warehouse", None),
+				"warehouse_name": (
+					frappe.get_cached_value("Warehouse", it.warehouse, "warehouse_name")
+					if getattr(it, "warehouse", None) else None
+				),
 			}
 			for it in (doc.items or [])
 		],
