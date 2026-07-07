@@ -86,6 +86,41 @@ def didox_status(name: str) -> dict:
 	return rows[0] if rows else {}
 
 
+@frappe.whitelist()
+def didox_refresh_status(name: str) -> dict:
+	"""On-demand poll of Didox for a Sales Invoice's latest submission.
+
+	The hourly ``sync_pending_statuses`` scheduler task already refreshes every
+	open ЭСФ, but a user watching the form wants an immediate answer rather than
+	waiting up to an hour — this endpoint polls the latest submission now and
+	returns the same shape as ``didox_status`` so the badge can update in place.
+
+	Read scope on the invoice is the right guard: refreshing reflects the
+	counterparty's remote state, it does not alter the invoice or send anything.
+	When there is nothing pollable (no submission, or already terminal), it just
+	returns the current status without a network round trip.
+	"""
+	_assert_invoice_scope(name, "read")
+	rows = frappe.get_all(
+		"Didox Submission",
+		filters={"reference_invoice": name},
+		fields=["name", "status"],
+		order_by="creation desc",
+		limit=1,
+	)
+	if not rows:
+		return {}
+
+	from stabler.integrations.didox import client
+
+	if rows[0].status == "Sent":
+		# Only "Sent" has a live Didox state to fetch; poll_status no-ops on
+		# every other status, so skip the import/round trip otherwise.
+		client.poll_status(rows[0].name)
+
+	return didox_status(name)
+
+
 def _is_admin() -> bool:
 	from stabler.api.organization import _ADMIN_ROLES
 

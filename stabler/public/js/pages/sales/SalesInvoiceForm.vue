@@ -104,6 +104,22 @@ async function onSent() {
 	edoOpen.value = false;
 	await loadDoc();
 }
+// On-demand poll of Didox for the counterparty's answer (B4). The hourly
+// scheduler already refreshes every open ЭСФ, but a user watching the form
+// wants an immediate answer instead of waiting up to an hour.
+const edoRefreshing = ref(false);
+async function refreshEdo() {
+	if (!form.value?.name) return;
+	edoRefreshing.value = true;
+	try {
+		const edo = await call("stabler.api.edo.didox_refresh_status", { name: form.value.name });
+		form.value.edo = edo && Object.keys(edo).length ? edo : null;
+	} catch (e) {
+		actionError.value = e?.message || String(e);
+	} finally {
+		edoRefreshing.value = false;
+	}
+}
 
 // Return / credit note modal
 const returnOpen = ref(false);
@@ -350,6 +366,17 @@ onMounted(loadDoc);
 			>
 				<i class="ti ti-file-certificate me-1"></i>{{ t("Didox") }}: {{ t(form.edo.status) }}
 			</span>
+			<button
+				v-if="form && form.edo && form.edo.status === 'Sent'"
+				type="button"
+				class="btn btn-outline-secondary align-self-center"
+				:disabled="edoRefreshing"
+				:title="t('Refresh')"
+				@click="refreshEdo"
+			>
+				<span v-if="edoRefreshing" class="spinner-border spinner-border-sm"></span>
+				<i v-else class="ti ti-refresh"></i>
+			</button>
 			<button
 				v-if="canSendEdo"
 				type="button"

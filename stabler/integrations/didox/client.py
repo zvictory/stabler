@@ -72,6 +72,76 @@ def send(submission_name: str, payload: dict[str, Any], signed_pkcs7: str) -> di
 	}
 
 
+_TERMINAL_STATUSES = {"Accepted", "Rejected"}
+
+
+def poll_status(submission_name: str) -> dict[str, Any]:
+	"""GET the current Didox status for one submission and persist it.
+
+	Read-only counterpart to :func:`send`: it fetches the counterparty-side
+	state of an already-sent document (has the buyer signed/accepted/rejected
+	the ЭСФ yet?) and folds it back onto the row. Unlike ``send`` this does
+	**not** bump ``retry_count`` — a status poll is not a send attempt — and it
+	never re-POSTs the signature, so it is safe to run on a schedule.
+
+	No-ops when the submission is not yet ``Sent`` (nothing to poll) or is
+	already in a terminal state (``Accepted``/``Rejected`` — a legally binding
+	ЭСФ never flips back). Config problems throw rather than mutate the row,
+	mirroring ``send``.
+	"""
+	doc = frappe.get_doc("Didox Submission", submission_name)
+
+	if doc.status in _TERMINAL_STATUSES:
+		return _poll_result(doc, changed=False)
+	if doc.status != "Sent":
+		# Draft/Signed = never left our side; Error = a send failure, not a
+		# remote state we can poll. Only "Sent" has a live Didox counterpart.
+		return _poll_result(doc, changed=False)
+	if not doc.didox_doc_id:
+		# Sent but no doc id means the send response never returned one —
+		# nothing addressable to query.
+		return _poll_result(doc, changed=False)
+
+	conf = frappe.conf
+	endpoint = getattr(conf, "didox_endpoint", None)
+	if not endpoint:
+		frappe.throw(
+			"Didox endpoint not configured. Set `didox_endpoint` (and"
+			" `didox_token`) in site_config.json before polling."
+		)
+	if not str(endpoint).lower().startswith("https://"):
+		frappe.throw("Didox endpoint must use HTTPS.")
+
+	before = doc.status
+	try:
+		result = _get_status(endpoint, doc.didox_doc_id, getattr(conf, "didox_token", None))
+		doc.status = _normalize_status(result.get("status"))
+		if doc.status == "Rejected":
+			doc.error_message = result.get("reason") or json.dumps(result)
+		elif doc.status in ("Accepted", "Sent"):
+			doc.error_message = None
+	except Exception as exc:  # noqa: BLE001 — surface poll failure on the row
+		doc.status = "Error"
+		doc.error_message = str(exc)
+
+	changed = doc.status != before
+	if changed:
+		doc.save(ignore_permissions=True)
+		frappe.db.commit()
+
+	return _poll_result(doc, changed=changed)
+
+
+def _poll_result(doc: Any, changed: bool) -> dict[str, Any]:
+	return {
+		"name": doc.name,
+		"status": doc.status,
+		"didox_doc_id": doc.didox_doc_id,
+		"error_message": doc.error_message,
+		"changed": changed,
+	}
+
+
 def _normalize_status(value: Any) -> str:
 	allowed = {"Draft", "Signed", "Sent", "Accepted", "Rejected", "Error"}
 	if isinstance(value, str) and value in allowed:
@@ -94,6 +164,30 @@ def _post(
 		headers["Authorization"] = f"Bearer {token}"
 
 	req = Request(endpoint, data=body, headers=headers, method="POST")
+	try:
+		with urlopen(req, timeout=20) as resp:
+			text = resp.read().decode("utf-8")
+	except HTTPError as e:
+		raise frappe.ValidationError(f"Didox HTTP {e.code}: {e.reason}") from e
+	except URLError as e:
+		raise frappe.ValidationError(f"Didox unreachable: {e.reason}") from e
+
+	try:
+		return json.loads(text)
+	except json.JSONDecodeError as e:
+		raise frappe.ValidationError(f"Didox returned non-JSON: {text[:200]}") from e
+
+
+def _get_status(endpoint: str, doc_id: str, token: str | None) -> dict[str, Any]:
+	# Best-effort status URL pending real Didox partner docs (Faz 0/B0): query
+	# the document by id under the configured base. When the real endpoint shape
+	# lands, only this join needs adjusting — callers stay unchanged.
+	url = f"{endpoint.rstrip('/')}/{doc_id}"
+	headers = {"Accept": "application/json"}
+	if token:
+		headers["Authorization"] = f"Bearer {token}"
+
+	req = Request(url, headers=headers, method="GET")
 	try:
 		with urlopen(req, timeout=20) as resp:
 			text = resp.read().decode("utf-8")

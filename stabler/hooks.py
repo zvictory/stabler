@@ -69,6 +69,8 @@ scheduler_events = {
 	],
 	"hourly": [
 		"stabler.integrations.one_c.hooks.hourly_sync",
+		# Poll Didox for counterparty acceptance/rejection of sent ЭСФ (B4).
+		"stabler.integrations.didox.hooks.sync_pending_statuses",
 	],
 }
 
