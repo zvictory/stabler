@@ -24,9 +24,32 @@ from typing import Any
 import frappe
 from frappe.utils import now_datetime
 
-from stabler.integrations.uzex import client
+from stabler.integrations.uzex import _status, client
 
 _PORTAL = "etender"
+
+
+def _notify(user: str | None, subject: str, deal_name: str) -> bool:
+	"""Insert a Notification Log for `user`, deduped by (deal, subject).
+
+	Returns True when a new notification was created. A re-run with the same
+	status/deadline produces the same subject → already exists → no duplicate.
+	"""
+	if not user:
+		return False
+	if frappe.db.exists("Notification Log", {"document_name": deal_name, "subject": subject}):
+		return False
+	frappe.get_doc(
+		{
+			"doctype": "Notification Log",
+			"subject": subject,
+			"for_user": user,
+			"type": "Alert",
+			"document_type": "CRM Deal",
+			"document_name": deal_name,
+		}
+	).insert(ignore_permissions=True)
+	return True
 
 
 def _config_list(key: str) -> list:
@@ -51,14 +74,37 @@ def _apply_fields(doc, norm: dict, status_raw: str | None) -> None:
 	doc.custom_uzex_last_synced = now_datetime()
 
 
-def _upsert_deal(norm: dict, status_raw: str | None) -> str:
-	"""Create or update the CRM Deal for one lot. Returns 'created'/'updated'."""
+def _maybe_set_terminal_status(doc, status_id, status_name: str | None) -> None:
+	"""Fold a terminal portal outcome (won/lost) onto the Deal's pipeline status.
+
+	Only moves the deal to a terminal CRM Deal Status that actually exists; an
+	open (pending) lot is never forced backwards, so the human pipeline stays in
+	control until the portal declares a result.
+	"""
+	result = _status.map_result(status_id, status_name)
+	if not _status.is_terminal(result):
+		return
+	target = _status.deal_status_for(result)
+	if target and doc.get("status") != target and frappe.db.exists("CRM Deal Status", target):
+		doc.status = target
+
+
+def _upsert_deal(norm: dict, status_raw, status_id, status_name) -> dict:
+	"""Create or update the CRM Deal for one lot.
+
+	Returns {action, deal, owner, changed} where ``changed`` is True when the raw
+	portal status differs from what we last stored (the Deal row is the dedupe
+	ledger for status-change notifications).
+	"""
 	existing = frappe.db.get_value("CRM Deal", {"custom_uzex_lot_no": norm["lot_no"]}, "name")
 	if existing:
 		doc = frappe.get_doc("CRM Deal", existing)
+		old_status = doc.get("custom_uzex_status")
 		_apply_fields(doc, norm, status_raw)
+		_maybe_set_terminal_status(doc, status_id, status_name)
 		doc.save(ignore_permissions=True)
-		return "updated"
+		return {"action": "updated", "deal": doc.name, "owner": doc.get("deal_owner"),
+		        "changed": bool(status_raw) and status_raw != old_status}
 
 	doc = frappe.new_doc("CRM Deal")
 	# organization = the buyer org (UZEX "seller"); fall back to the lot title.
@@ -66,8 +112,11 @@ def _upsert_deal(norm: dict, status_raw: str | None) -> str:
 	if norm.get("currency"):
 		doc.currency = norm["currency"]
 	_apply_fields(doc, norm, status_raw)
+	_maybe_set_terminal_status(doc, status_id, status_name)
 	doc.insert(ignore_permissions=True)
-	return "created"
+	# A brand-new tracked lot is itself a change worth surfacing.
+	return {"action": "created", "deal": doc.name, "owner": doc.get("deal_owner"),
+	        "changed": bool(status_raw)}
 
 
 def fetch_and_store() -> dict[str, Any]:
@@ -82,8 +131,9 @@ def fetch_and_store() -> dict[str, Any]:
 	type_ids = _config_list("uzex_type_ids") or list(client.UZEX_TYPE_IDS)
 	cap = int(getattr(frappe.conf, "uzex_poll_cap", 50) or 50)
 
-	created = updated = seen = 0
+	created = updated = seen = notified = 0
 	errors: list[str] = []
+	now = now_datetime()
 
 	for type_id in type_ids:
 		try:
@@ -107,17 +157,29 @@ def fetch_and_store() -> dict[str, Any]:
 			if not tracked and not client.matches_keywords(norm["name"], keywords):
 				continue
 
-			status_raw = None
+			status_raw = status_id = status_name = None
 			try:
 				detail = client.get_trade(norm["lot_id"])
 				status_raw = client.status_from_detail(detail)
+				status_id = detail.get("status_id")
+				status_name = detail.get("status_name")
 			except Exception:  # noqa: BLE001 — detail is best-effort; list data still upserts
 				pass
 
 			try:
-				result = _upsert_deal(norm, status_raw)
-				created += result == "created"
-				updated += result == "updated"
+				res = _upsert_deal(norm, status_raw, status_id, status_name)
+				created += res["action"] == "created"
+				updated += res["action"] == "updated"
+				# Status-change notification — deduped by the Deal row (old != new)
+				# and by (deal, subject) inside _notify.
+				if res["changed"] and status_raw:
+					if _notify(res["owner"], f"UZEX {norm['lot_no']}: {status_raw}", res["deal"]):
+						notified += 1
+				# Deadline < 48h alert — deduped by the deadline in the subject.
+				if _status.is_deadline_soon(norm.get("deadline"), now):
+					subj = f"UZEX {norm['lot_no']}: deadline {norm['deadline']}"
+					if _notify(res["owner"], subj, res["deal"]):
+						notified += 1
 			except Exception as exc:  # noqa: BLE001 — one bad row must not abort the batch
 				errors.append(f"lot {norm['lot_no']}: {exc}")
 				frappe.log_error(
@@ -131,6 +193,7 @@ def fetch_and_store() -> dict[str, Any]:
 		"seen": seen,
 		"created": created,
 		"updated": updated,
+		"notified": notified,
 		"errors": errors,
 	}
 	print(f"[stabler.tasks.uzex_poll] {summary}")
