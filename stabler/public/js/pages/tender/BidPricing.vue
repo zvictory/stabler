@@ -20,6 +20,25 @@ const toast = useToast();
 const loading = ref(false);
 const saving = ref(false);
 const showParams = ref(false);
+
+// Assemble the bid submission package (letter + price table docx) for the human
+// to sign with E-IMZO and upload on the portal. No auto-submit.
+const buildingPackage = ref(false);
+const pkgResult = ref(null);
+async function prepareBidPackage() {
+	buildingPackage.value = true;
+	pkgResult.value = null;
+	try {
+		const r = await call("stabler.api.tender.bid_package", { deal: props.deal });
+		pkgResult.value = r;
+		if (r.ready && r.files?.length) toast.success(t("Bid package ready"));
+		else if (!r.ready) toast.error(t("Package incomplete — fill the missing fields"));
+	} catch (e) {
+		toast.error(e?.message || t("Could not prepare the package."));
+	} finally {
+		buildingPackage.value = false;
+	}
+}
 const refs = reactive({ po_landed: 0, po_count: 0, so_revenue: 0, so_count: 0 });
 const actual = ref(null); // { invoiced, planned_landed, actual_landed, actual_revenue, pnl, ostatok_delta }
 const inp = reactive({
@@ -241,9 +260,23 @@ watch(() => props.deal, load, { immediate: true });
 						</table>
 					</div>
 					<div class="text-end mt-3">
+						<button type="button" class="btn btn-outline-secondary me-2" :disabled="buildingPackage" @click="prepareBidPackage">
+							<span v-if="buildingPackage" class="spinner-border spinner-border-sm me-1"></span>{{ t("Prepare application package") }}
+						</button>
 						<button type="button" class="btn btn-primary" :disabled="saving" @click="save">
 							<span v-if="saving" class="spinner-border spinner-border-sm me-1"></span>{{ t("Save bid pricing") }}
 						</button>
+					</div>
+					<div v-if="pkgResult" class="mt-2 text-start">
+						<div v-if="pkgResult.missing && pkgResult.missing.length" class="alert alert-warning py-2 mb-0 small">
+							<strong>{{ t("Missing fields") }}:</strong> {{ pkgResult.missing.join(", ") }}
+						</div>
+						<div v-else-if="pkgResult.files && pkgResult.files.length" class="small">
+							<a v-for="f in pkgResult.files" :key="f.file_url" :href="f.file_url" target="_blank" rel="noopener" class="d-inline-flex align-items-center gap-1 me-3">
+								<i class="ti ti-file-text"></i>{{ f.file_name }}
+							</a>
+						</div>
+						<div v-if="pkgResult.warnings && pkgResult.warnings.length" class="text-muted small mt-1">{{ pkgResult.warnings.join(" ") }}</div>
 					</div>
 				</div>
 			</div>

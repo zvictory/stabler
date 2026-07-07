@@ -3475,3 +3475,8 @@ Fetch,Юклаш
 Paste UZEX lot URL,UZEX лот ҳаволасини жойланг
 Lot loaded from UZEX,Лот UZEX'дан юкланди
 Could not load the UZEX lot.,UZEX лоти юкланмади.
+Prepare application package,Ариза пакетини тайёрлаш
+Bid package ready,Ариза пакети тайёр
+Package incomplete — fill the missing fields,Пакет тўлиқ эмас — етишмаётган майдонларни тўлдиринг
+Could not prepare the package.,Пакет тайёрланмади.
+Missing fields,Етишмаётган майдонлар

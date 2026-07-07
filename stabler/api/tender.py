@@ -19,6 +19,7 @@ from frappe import _
 from frappe.utils import flt, getdate, today
 
 from stabler.api._common import _require_company
+from stabler.api._bid_package import assemble_bid_package, build_bid_docx
 from stabler.api.organization import _can_access_module
 
 _STAGE = "Stabler SO Stage"
@@ -671,6 +672,77 @@ def deal_bid_pricing(deal: str) -> dict:
 	pnl = _compute_bid_pnl(inp)
 	return {"deal": deal, "currency": base_ccy, "inputs": inp, "pnl": pnl,
 	        "actual": _actual_block(deal, company, inp, pnl), **refs}
+
+
+@frappe.whitelist()
+def bid_package(deal: str) -> dict:
+	"""Assemble the tender bid submission dataset and generate a .docx package.
+
+	Read-only on the deal (gated by _deal_scope: company + tender module +
+	CRM Deal read permission). When every required field is present it renders a
+	bid letter + price table and attaches it to the deal as a private File; when
+	something is missing it returns ``missing[]`` so the human sees the gap before
+	anything is produced. No portal submission — the human signs (E-IMZO) and
+	uploads. See docs/plans/uzex-eimzo-feasibility.md.
+	"""
+	company = _deal_scope(deal, write=False)
+	base_ccy = frappe.db.get_value("Company", company, "default_currency") or ""
+
+	intake = _read_intake(deal)
+	inp, _refs = _bid_inputs(deal, company)
+	pnl = _compute_bid_pnl(inp)
+
+	uzex_fields: dict = {}
+	if frappe.db.has_column("CRM Deal", "custom_uzex_lot_no"):
+		uzex_fields = frappe.db.get_value(
+			"CRM Deal",
+			deal,
+			[
+				"custom_uzex_lot_no",
+				"custom_uzex_customer_org",
+				"custom_uzex_deadline",
+				"custom_uzex_start_price",
+				"custom_uzex_portal",
+			],
+			as_dict=True,
+		) or {}
+
+	comp = frappe.db.get_value("Company", company, ["company_name", "tax_id"], as_dict=True) or {}
+	company_info = {"name": comp.get("company_name"), "tax_id": comp.get("tax_id"), "address": None}
+
+	package = assemble_bid_package(deal, intake, pnl, uzex_fields, company_info, base_ccy)
+
+	files: list[dict] = []
+	warnings: list[str] = []
+	if package["ready"]:
+		import os
+		import tempfile
+
+		from frappe.utils.file_manager import save_file
+
+		lot_no = (package["lot"]["lot_no"] or deal).replace("/", "-")
+		tmp = tempfile.mktemp(suffix=".docx")
+		try:
+			build_bid_docx(package, tmp)
+			with open(tmp, "rb") as fh:
+				content = fh.read()
+			f = save_file(f"bid_{lot_no}.docx", content, "CRM Deal", deal, is_private=1)
+			files.append({"file_name": f.file_name, "file_url": f.file_url})
+		except ImportError:
+			# python-docx not installed on this bench — data still returned.
+			warnings.append("python-docx is not installed on the server; document not generated.")
+		finally:
+			if os.path.exists(tmp):
+				os.remove(tmp)
+
+	return {
+		"deal": deal,
+		"package": package,
+		"missing": package["missing"],
+		"ready": package["ready"],
+		"files": files,
+		"warnings": warnings,
+	}
 
 
 @frappe.whitelist()

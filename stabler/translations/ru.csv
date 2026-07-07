@@ -3481,3 +3481,8 @@ Fetch,Загрузить
 Paste UZEX lot URL,Вставьте ссылку на лот UZEX
 Lot loaded from UZEX,Лот загружен из UZEX
 Could not load the UZEX lot.,Не удалось загрузить лот UZEX.
+Prepare application package,Подготовить пакет заявки
+Bid package ready,Пакет заявки готов
+Package incomplete — fill the missing fields,Пакет неполный — заполните недостающие поля
+Could not prepare the package.,Не удалось подготовить пакет.
+Missing fields,Недостающие поля

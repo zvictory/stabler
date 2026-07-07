@@ -3471,3 +3471,8 @@ Fetch,Fetch
 Paste UZEX lot URL,Paste UZEX lot URL
 Lot loaded from UZEX,Lot loaded from UZEX
 Could not load the UZEX lot.,Could not load the UZEX lot.
+Prepare application package,Prepare application package
+Bid package ready,Bid package ready
+Package incomplete — fill the missing fields,Package incomplete — fill the missing fields
+Could not prepare the package.,Could not prepare the package.
+Missing fields,Missing fields

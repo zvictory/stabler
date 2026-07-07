@@ -3460,3 +3460,8 @@ Fetch,Getir
 Paste UZEX lot URL,UZEX lot bağlantısını yapıştırın
 Lot loaded from UZEX,Lot UZEX'ten yüklendi
 Could not load the UZEX lot.,UZEX lotu yüklenemedi.
+Prepare application package,Başvuru paketini hazırla
+Bid package ready,Teklif paketi hazır
+Package incomplete — fill the missing fields,Paket eksik — eksik alanları doldurun
+Could not prepare the package.,Paket hazırlanamadı.
+Missing fields,Eksik alanlar
