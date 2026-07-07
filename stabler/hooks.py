@@ -71,6 +71,8 @@ scheduler_events = {
 		"stabler.integrations.one_c.hooks.hourly_sync",
 		# Poll Didox for counterparty acceptance/rejection of sent ЭСФ (B4).
 		"stabler.integrations.didox.hooks.sync_pending_statuses",
+		# Poll UZEX etender for new/updated lots → CRM Deal upsert (WP-302).
+		"stabler.tasks.uzex_poll.fetch_and_store",
 	],
 }
 
