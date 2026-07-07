@@ -3467,3 +3467,7 @@ FX risk,FX risk
 FX open,FX open
 Search by name or code…,Search by name or code…
 Select all,Select all
+Fetch,Fetch
+Paste UZEX lot URL,Paste UZEX lot URL
+Lot loaded from UZEX,Lot loaded from UZEX
+Could not load the UZEX lot.,Could not load the UZEX lot.

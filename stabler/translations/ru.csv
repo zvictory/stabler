@@ -3477,3 +3477,7 @@ FX risk,Валютный риск
 FX open,Валюта: открыто
 Search by name or code…,Поиск по названию или коду…
 Select all,Выбрать все
+Fetch,Загрузить
+Paste UZEX lot URL,Вставьте ссылку на лот UZEX
+Lot loaded from UZEX,Лот загружен из UZEX
+Could not load the UZEX lot.,Не удалось загрузить лот UZEX.

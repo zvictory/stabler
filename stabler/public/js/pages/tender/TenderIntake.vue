@@ -23,6 +23,27 @@ const toast = useToast();
 const loading = ref(false);
 const saving = ref(false);
 const editing = ref(false);
+
+// Paste a UZEX lot URL (or id) → pull the lot from the portal and prefill the
+// intake (lot no, buyer, bid deadline). Read-only: never sends anything.
+const uzexUrl = ref("");
+const fetchingLot = ref(false);
+async function autofillFromUzex() {
+	const q = uzexUrl.value.trim();
+	if (!q) return;
+	fetchingLot.value = true;
+	try {
+		const lot = await call("stabler.api.uzex.fetch_lot", { lot: q });
+		if (lot.lot_no) intake.lot_no = lot.lot_no;
+		if (lot.buyer) intake.buyer = lot.buyer;
+		if (lot.bid_deadline) intake.bid_deadline = String(lot.bid_deadline).slice(0, 10);
+		toast.success(t("Lot loaded from UZEX"));
+	} catch (e) {
+		toast.error(e?.message || t("Could not load the UZEX lot."));
+	} finally {
+		fetchingLot.value = false;
+	}
+}
 const deadlines = ref({ milestones: [], risk: "good" });
 const docs = ref({ total: 0, required: 0, done_required: 0, missing: [] });
 const intake = reactive({
@@ -146,6 +167,16 @@ watch(() => props.deal, load, { immediate: true });
 			<!-- Intake editor -->
 			<div v-if="editing" class="border-top mt-3 pt-3">
 				<div class="row g-2">
+					<div class="col-12">
+						<label class="form-label small mb-1">{{ t("Paste UZEX lot URL") }}</label>
+						<div class="input-group input-group-sm">
+							<input v-model="uzexUrl" type="text" class="form-control" placeholder="https://etender.uzex.uz/lot/…" @keyup.enter="autofillFromUzex">
+							<button type="button" class="btn btn-outline-secondary" :disabled="fetchingLot || !uzexUrl" @click="autofillFromUzex">
+								<span v-if="fetchingLot" class="spinner-border spinner-border-sm"></span>
+								<span v-else>{{ t("Fetch") }}</span>
+							</button>
+						</div>
+					</div>
 					<div class="col-6 col-md-3"><label class="form-label small mb-1">{{ t("Lot no") }}</label><input v-model="intake.lot_no" type="text" class="form-control form-control-sm"></div>
 					<div class="col-6 col-md-5"><label class="form-label small mb-1">{{ t("Buyer") }}</label><input v-model="intake.buyer" type="text" class="form-control form-control-sm"></div>
 					<div class="col-6 col-md-2"><label class="form-label small mb-1">{{ t("Volume") }}</label><input v-model.number="intake.volume" type="number" step="any" class="form-control form-control-sm"></div>

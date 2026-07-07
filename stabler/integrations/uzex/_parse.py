@@ -13,7 +13,31 @@ API shapes (see docs/plans/uzex-api-discovery-2026-07-08.md):
 
 from __future__ import annotations
 
+import re
 from typing import Any
+
+# etender lot URLs look like https://etender.uzex.uz/lot/500606 ; the API detail
+# call is GetTrade/500606/0. Accept a full URL, a /lot/<id> path, or a bare id.
+_LOT_URL_RE = re.compile(r"/lot/(\d+)")
+_GETTRADE_RE = re.compile(r"/GetTrade/(\d+)")
+
+
+def lot_id_from_url(value: str | int | None) -> int | None:
+	"""Extract the numeric UZEX lot id from a pasted URL or a bare id. None if absent."""
+	if value is None:
+		return None
+	s = str(value).strip()
+	if not s:
+		return None
+	if s.isdigit():
+		return int(s)
+	for rx in (_LOT_URL_RE, _GETTRADE_RE):
+		m = rx.search(s)
+		if m:
+			return int(m.group(1))
+	# last resort: a trailing run of digits (e.g. ".../lot/500606?x=1")
+	m = re.search(r"(\d{4,})", s)
+	return int(m.group(1)) if m else None
 
 
 def to_float(value) -> float | None:

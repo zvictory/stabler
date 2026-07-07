@@ -3456,3 +3456,7 @@ FX risk,Kur riski
 FX open,Kur: açık
 Search by name or code…,Ad veya koda göre ara…
 Select all,Tümünü seç
+Fetch,Getir
+Paste UZEX lot URL,UZEX lot bağlantısını yapıştırın
+Lot loaded from UZEX,Lot UZEX'ten yüklendi
+Could not load the UZEX lot.,UZEX lotu yüklenemedi.

@@ -3471,3 +3471,7 @@ FX risk,Валюта риски
 FX open,Валюта: очиқ
 Search by name or code…,Номи ёки коди бўйича қидириш…
 Select all,Барчасини танлаш
+Fetch,Юклаш
+Paste UZEX lot URL,UZEX лот ҳаволасини жойланг
+Lot loaded from UZEX,Лот UZEX'дан юкланди
+Could not load the UZEX lot.,UZEX лоти юкланмади.

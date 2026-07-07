@@ -10,6 +10,7 @@ from __future__ import annotations
 import unittest
 
 from stabler.integrations.uzex._parse import (
+	lot_id_from_url,
 	matches_keywords,
 	parse_trade_row,
 	parse_uzex_dt,
@@ -110,6 +111,26 @@ class TestStatusFromDetail(unittest.TestCase):
 	def test_empty(self):
 		self.assertIsNone(status_from_detail({}))
 		self.assertIsNone(status_from_detail(None))
+
+
+class TestLotIdFromUrl(unittest.TestCase):
+	def test_full_url(self):
+		self.assertEqual(lot_id_from_url("https://etender.uzex.uz/lot/500606"), 500606)
+
+	def test_url_with_query(self):
+		self.assertEqual(lot_id_from_url("https://etender.uzex.uz/lot/500606?tab=info"), 500606)
+
+	def test_bare_id(self):
+		self.assertEqual(lot_id_from_url("500606"), 500606)
+		self.assertEqual(lot_id_from_url(500606), 500606)
+
+	def test_gettrade_url(self):
+		self.assertEqual(lot_id_from_url("https://apietender.uzex.uz/api/common/GetTrade/500606/0"), 500606)
+
+	def test_none_and_empty(self):
+		self.assertIsNone(lot_id_from_url(None))
+		self.assertIsNone(lot_id_from_url(""))
+		self.assertIsNone(lot_id_from_url("no digits here"))
 
 
 if __name__ == "__main__":
