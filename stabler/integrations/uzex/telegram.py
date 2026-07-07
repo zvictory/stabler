@@ -63,6 +63,19 @@ def build_keyboard(norm: dict, deal_name: str | None) -> dict | None:
 	return {"inline_keyboard": rows} if rows else None
 
 
+def verify_secret(configured, sent) -> bool:
+	"""True only when a secret IS configured AND ``sent`` matches it (constant time).
+
+	Fail-closed: an unset/blank ``configured`` secret rejects everyone — an
+	``allow_guest`` webhook with no secret must NOT accept anonymous writes.
+	"""
+	if not configured or not sent:
+		return False
+	import hmac
+
+	return hmac.compare_digest(str(configured), str(sent))
+
+
 def parse_callback(data: str | None) -> tuple[str | None, str | None]:
 	"""('go'|'no-go', deal_name) from a callback_data string, else (None, None)."""
 	if not data or ":" not in data:

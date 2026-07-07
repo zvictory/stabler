@@ -44,11 +44,18 @@ def _set_go_no_go(deal: str, decision: str) -> None:
 @rate_limit(limit=60, seconds=60)
 def telegram_webhook() -> dict:
 	"""Handle a Telegram callback_query for a go/no-go decision."""
+	# Fail-closed: reject when the secret is unset OR the header does not match.
+	# An allow_guest endpoint with no configured secret must NOT accept anonymous
+	# POSTs that would write to a Deal via ignore_permissions.
 	secret = getattr(frappe.conf, "uzex_telegram_secret", None)
-	if secret:
-		sent = frappe.get_request_header("X-Telegram-Bot-Api-Secret-Token")
-		if sent != secret:
-			frappe.throw(_("Invalid webhook secret"), frappe.PermissionError)
+	sent = frappe.get_request_header("X-Telegram-Bot-Api-Secret-Token")
+	if not telegram.verify_secret(secret, sent):
+		# Never log the secret/header values themselves.
+		frappe.log_error(
+			title="UZEX telegram webhook: rejected (bad/absent secret)",
+			message=f"configured={bool(secret)} header_present={bool(sent)}",
+		)
+		frappe.throw(_("Invalid webhook secret"), frappe.PermissionError)
 
 	try:
 		update = frappe.request.get_json(force=True, silent=True) or {}

@@ -11,6 +11,7 @@ from stabler.integrations.uzex.telegram import (
 	build_keyboard,
 	build_new_lot_text,
 	parse_callback,
+	verify_secret,
 )
 
 _NORM = {
@@ -74,6 +75,24 @@ class TestParseCallback(unittest.TestCase):
 		self.assertEqual(parse_callback(None), (None, None))
 		self.assertEqual(parse_callback("nope"), (None, None))
 		self.assertEqual(parse_callback("other:x"), (None, None))
+
+
+class TestVerifySecret(unittest.TestCase):
+	"""WP-308 fail-closed webhook secret — the three acceptance scenarios."""
+
+	def test_a_unset_secret_rejected(self):
+		# (a) secret unset -> reject (would 403 in the handler)
+		self.assertFalse(verify_secret(None, "anything"))
+		self.assertFalse(verify_secret("", "anything"))
+
+	def test_b_wrong_header_rejected(self):
+		# (b) wrong header -> reject
+		self.assertFalse(verify_secret("s3cr3t", "wrong"))
+		self.assertFalse(verify_secret("s3cr3t", None))
+
+	def test_c_correct_header_accepted(self):
+		# (c) correct header -> accept (handler proceeds to apply)
+		self.assertTrue(verify_secret("s3cr3t", "s3cr3t"))
 
 
 if __name__ == "__main__":
