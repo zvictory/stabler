@@ -24,7 +24,7 @@ from typing import Any
 import frappe
 from frappe.utils import now_datetime
 
-from stabler.integrations.uzex import _status, client
+from stabler.integrations.uzex import _status, client, telegram
 
 _PORTAL = "etender"
 
@@ -170,6 +170,16 @@ def fetch_and_store() -> dict[str, Any]:
 				res = _upsert_deal(norm, status_raw, status_id, status_name)
 				created += res["action"] == "created"
 				updated += res["action"] == "updated"
+				# New lot → Telegram card (once per lot: 'created' fires once).
+				if res["action"] == "created":
+					try:
+						if telegram.send_new_lot(norm, res["deal"]):
+							notified += 1
+					except Exception:  # noqa: BLE001 — Telegram is best-effort
+						frappe.log_error(
+							title="UZEX poll: telegram send failed",
+							message=f"lot_no={norm['lot_no']}\n{frappe.get_traceback()}",
+						)
 				# Status-change notification — deduped by the Deal row (old != new)
 				# and by (deal, subject) inside _notify.
 				if res["changed"] and status_raw:
