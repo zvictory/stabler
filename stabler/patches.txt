@@ -36,3 +36,6 @@ stabler.patches.v35_po_landed_charges
 stabler.patches.v36_deal_bid_pricing
 stabler.patches.v37_deal_tender_intake
 stabler.patches.v38_tender_view_roles
+
+[post_model_sync]
+stabler.patches.v39_deal_uzex_fields
