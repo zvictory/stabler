@@ -232,6 +232,7 @@ onMounted(loadDoc);
 						<tr>
 							<th class="text-end text-secondary" style="width: 36px">#</th>
 							<th style="min-width: 220px">{{ t("Item") }}</th>
+							<th>{{ t("Warehouse") }}</th>
 							<th class="text-end">{{ t("Qty") }}</th>
 							<th>{{ t("UOM") }}</th>
 							<th class="text-end">{{ t("List rate") }}</th>
@@ -249,6 +250,7 @@ onMounted(loadDoc);
 								<div class="small text-secondary font-monospace">{{ it.item_code }}</div>
 								<div v-if="dimSummary(it)" class="small text-secondary">{{ dimSummary(it) }}</div>
 							</td>
+							<td>{{ it.warehouse_name || it.warehouse || "—" }}</td>
 							<td class="text-end font-monospace">
 								{{ it.qty }}<template v-if="it.custom_dimension_mode"> {{ it.stock_uom }}</template>
 							</td>
