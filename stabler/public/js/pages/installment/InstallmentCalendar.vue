@@ -6,6 +6,7 @@ import { t } from "../../composables/i18n.js";
 import { formatMoney } from "../../composables/money.js";
 import { formatDate } from "../../composables/date.js";
 import CalendarMonth from "../../components/CalendarMonth.vue";
+import StatusBadge from "../../components/StatusBadge.vue";
 
 const session = useSession();
 const company = computed(() => session.activeCompany);
@@ -148,11 +149,6 @@ function downloadIcs(row) {
 
 watch([month, side], load);
 onMounted(load);
-
-const docstatusLabel = (s) =>
-	s === 0 ? t("Draft") : s === 1 ? t("Submitted") : t("Cancelled");
-const docstatusClass = (s) =>
-	s === 0 ? "bg-yellow-lt" : s === 1 ? "bg-green-lt" : "bg-red-lt";
 </script>
 
 <template>
@@ -223,9 +219,7 @@ const docstatusClass = (s) =>
 					</dd>
 					<dt class="col-5 text-secondary">{{ t("Status") }}</dt>
 					<dd class="col-7">
-						<span class="badge" :class="docstatusClass(detail.docstatus)">
-							{{ docstatusLabel(detail.docstatus) }}
-						</span>
+						<StatusBadge doctype="Sales Invoice" :docstatus="detail.docstatus" />
 					</dd>
 				</dl>
 

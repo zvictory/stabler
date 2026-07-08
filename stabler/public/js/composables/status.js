@@ -133,6 +133,18 @@ export const STATUS_MAP = {
 		Rejected: "bg-red-lt",
 		Error: "bg-red-lt",
 	},
+	"EHF Status": {
+		Pending: "bg-yellow-lt",
+		Submitted: "bg-azure-lt",
+		Accepted: "bg-success-lt",
+		Rejected: "bg-red-lt",
+		Error: "bg-red-lt",
+	},
+	"1C Sync": {
+		Pending: "bg-yellow-lt",
+		OK: "bg-success-lt",
+		Error: "bg-red-lt",
+	},
 	"docstatus": {
 		0: "bg-yellow-lt", // Draft
 		1: "bg-green-lt",  // Submitted / Active

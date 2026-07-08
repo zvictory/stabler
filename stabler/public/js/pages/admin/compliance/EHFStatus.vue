@@ -4,6 +4,7 @@ import { call } from "../../../api/client.js";
 import { t } from "../../../composables/i18n.js";
 import { formatDateTime } from "../../../composables/date.js";
 import Select from "../../../components/Select.vue";
+import StatusBadge from "../../../components/StatusBadge.vue";
 
 const rows = ref([]);
 const loading = ref(false);
@@ -20,19 +21,7 @@ const statusOptions = computed(() =>
 	STATUSES.map((s) => ({ value: s, label: s ? t(s) : t("All statuses") })),
 );
 
-const BADGE_BY_STATUS = {
-	Pending: "bg-secondary",
-	Submitted: "bg-info",
-	Accepted: "bg-success",
-	Rejected: "bg-warning",
-	Error: "bg-danger",
-};
-
 const filteredRows = computed(() => rows.value);
-
-function badgeClass(status) {
-	return ["badge", BADGE_BY_STATUS[status] || "bg-secondary"];
-}
 
 async function load() {
 	loading.value = true;
@@ -119,7 +108,7 @@ onMounted(load);
 						>
 							<td>{{ formatDateTime(row.creation) }}</td>
 							<td>{{ row.reference_invoice }}</td>
-							<td><span :class="badgeClass(row.soliq_status)">{{ row.soliq_status }}</span></td>
+							<td><StatusBadge doctype="EHF Status" :status="row.soliq_status" /></td>
 							<td class="text-end">{{ row.retry_count }}</td>
 							<td><small class="text-secondary">{{ row.soliq_uuid || "—" }}</small></td>
 							<td>
@@ -143,7 +132,7 @@ onMounted(load);
 						<dt class="col-4">{{ t("Invoice") }}</dt>
 						<dd class="col-8">{{ detail.reference_invoice }}</dd>
 						<dt class="col-4">{{ t("Status") }}</dt>
-						<dd class="col-8"><span :class="badgeClass(detail.soliq_status)">{{ detail.soliq_status }}</span></dd>
+						<dd class="col-8"><StatusBadge doctype="EHF Status" :status="detail.soliq_status" /></dd>
 						<dt class="col-4">{{ t("SoliqOnline UUID") }}</dt>
 						<dd class="col-8">{{ detail.soliq_uuid || "—" }}</dd>
 						<dt class="col-4">{{ t("Retries") }}</dt>

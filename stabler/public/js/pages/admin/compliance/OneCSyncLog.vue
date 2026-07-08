@@ -4,6 +4,7 @@ import { call } from "../../../api/client.js";
 import { t } from "../../../composables/i18n.js";
 import { formatDateTime } from "../../../composables/date.js";
 import Select from "../../../components/Select.vue";
+import StatusBadge from "../../../components/StatusBadge.vue";
 
 const rows = ref([]);
 const loading = ref(false);
@@ -28,12 +29,6 @@ const OBJECT_TYPES = [
 	"StockEntry",
 ];
 
-const BADGE_BY_STATUS = {
-	Pending: "bg-secondary",
-	OK: "bg-success",
-	Error: "bg-danger",
-};
-
 const directionOptions = computed(() =>
 	DIRECTIONS.map((d) => ({ value: d, label: d ? t(d) : t("All directions") })),
 );
@@ -43,10 +38,6 @@ const statusOptions = computed(() =>
 const objectTypeOptions = computed(() =>
 	OBJECT_TYPES.map((o) => ({ value: o, label: o ? t(o) : t("All object types") })),
 );
-
-function badgeClass(status) {
-	return ["badge", BADGE_BY_STATUS[status] || "bg-secondary"];
-}
 
 function directionBadge(direction) {
 	return ["badge", direction === "In" ? "bg-info" : "bg-primary"];
@@ -131,7 +122,7 @@ onMounted(load);
 							<td><span :class="directionBadge(row.direction)">{{ row.direction }}</span></td>
 							<td>{{ row.object_type }}</td>
 							<td><small>{{ row.object_name || "—" }}</small></td>
-							<td><span :class="badgeClass(row.status)">{{ row.status }}</span></td>
+							<td><StatusBadge doctype="1C Sync" :status="row.status" /></td>
 							<td class="text-end">{{ row.duration_ms }}</td>
 							<td><small>{{ (row.message || "").slice(0, 80) }}</small></td>
 						</tr>
@@ -156,7 +147,7 @@ onMounted(load);
 						<dt class="col-4">{{ t("Object Name") }}</dt>
 						<dd class="col-8">{{ detail.object_name || "—" }}</dd>
 						<dt class="col-4">{{ t("Status") }}</dt>
-						<dd class="col-8"><span :class="badgeClass(detail.status)">{{ detail.status }}</span></dd>
+						<dd class="col-8"><StatusBadge doctype="1C Sync" :status="detail.status" /></dd>
 						<dt class="col-4">{{ t("Duration (ms)") }}</dt>
 						<dd class="col-8">{{ detail.duration_ms }}</dd>
 						<dt class="col-4">{{ t("When") }}</dt>
