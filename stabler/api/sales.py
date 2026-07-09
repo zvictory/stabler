@@ -723,6 +723,7 @@ def _edo_status(invoice_name: str) -> dict | None:
 	}
 
 
+@frappe.whitelist()
 def sales_invoice_detail(name: str):
 	if not name:
 		frappe.throw("Invoice name is required.")
