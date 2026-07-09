@@ -7,6 +7,7 @@ All queries are company-scoped and parameterised.
 from __future__ import annotations
 
 import json
+import logging
 
 import frappe
 from stabler.api._money import money_epsilon
@@ -1228,9 +1229,9 @@ def _log_payment(stage: str, data: dict) -> None:
 	try:
 		payload = {"stage": stage, "user": frappe.session.user}
 		payload.update(data)
-		frappe.logger("stabler.payments", allow_site=True, file_count=10).info(
-			json.dumps(payload, default=str)
-		)
+		logger = frappe.logger("stabler.payments", allow_site=True, file_count=10)
+		logger.setLevel(logging.INFO)
+		logger.info(json.dumps(payload, default=str))
 	except Exception:
 		pass
 
