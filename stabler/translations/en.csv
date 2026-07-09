@@ -6,6 +6,7 @@ source,target
 (only for half-rate),(only for half-rate)
 "(path to the JSON, or the JSON inline).","(path to the JSON, or the JSON inline)."
 +998 XX XXX XX XX,+998 XX XXX XX XX
+...,...
 0,0
 0 = no hard lock; past edits still ask for confirmation.,0 = no hard lock; past edits still ask for confirmation.
 0.00,0.00
@@ -115,6 +116,7 @@ Address,Address
 Adjust dates or check that {company} has posted transactions in this period.,Adjust dates or check that {company} has posted transactions in this period.
 Adjust filters and run the report again.,Adjust filters and run the report again.
 Adjust quantities for a partial receipt. Rows left at zero are skipped.,Adjust quantities for a partial receipt. Rows left at zero are skipped.
+Adjustment,Adjustment
 Admin,Admin
 Administer users & roles,Administer users & roles
 Advance,Advance
@@ -247,6 +249,7 @@ Assign operator,Assign operator
 Assign technician,Assign technician
 Assigned Field User,Assigned Field User
 Assigned Technician,Assigned Technician
+Assigned.,Assigned.
 At least one counted item line is required.,At least one counted item line is required.
 At least one visit purpose is required.,At least one visit purpose is required.
 At least one voucher is required.,At least one voucher is required.
@@ -262,6 +265,7 @@ Attendance exceptions,Attendance exceptions
 Attendance on/before,Attendance on/before
 Attendance summary,Attendance summary
 Attendance today,Attendance today
+Auction,Auction
 Audit Trail,Audit Trail
 Audit trail,Audit trail
 Audited At,Audited At
@@ -319,9 +323,11 @@ Before → Requested,Before → Requested
 Berry,Berry
 Bid Value,Bid Value
 Bid deadline,Bid deadline
+Bid package ready,Bid package ready
 Bid price (Договор),Bid price (Договор)
 "Bid price (Договор, VAT incl.)","Bid price (Договор, VAT incl.)"
 Bid pricing saved.,Bid pricing saved.
+Bid rate,Bid rate
 Bill,Bill
 Bill #,Bill #
 Bill / invoice number printed on supplier document,Bill / invoice number printed on supplier document
@@ -356,6 +362,7 @@ Buy,Buy
 Buy X get Y,Buy X get Y
 Buy markup,Buy markup
 Buyer,Buyer
+Buyer TIN,Buyer TIN
 Buying price list,Buying price list
 By,By
 By item,By item
@@ -368,6 +375,7 @@ CBU rates are already up to date.,CBU rates are already up to date.
 CBU rates updated: {rates},CBU rates updated: {rates}
 CBU.uz exchange rates (last 30 days),CBU.uz exchange rates (last 30 days)
 CBU:,CBU:
+CN Return,CN Return
 COGS,COGS
 CRM,CRM
 CRM Report,CRM Report
@@ -484,6 +492,7 @@ Close Work Order,Close Work Order
 Close this Work Order? This finalizes it.,Close this Work Order? This finalizes it.
 Close visit,Close visit
 Closing,Closing
+Closing Balance,Closing Balance
 Closing balance,Closing balance
 Closing in,Closing in
 Closure,Closure
@@ -571,6 +580,7 @@ Costs after dividends (office…),Costs after dividends (office…)
 Could not accrue salary.,Could not accrue salary.
 Could not add holiday.,Could not add holiday.
 Could not add stage.,Could not add stage.
+Could not assign.,Could not assign.
 Could not check payment status.,Could not check payment status.
 Could not create contract.,Could not create contract.
 Could not create the transaction.,Could not create the transaction.
@@ -583,6 +593,7 @@ Could not load repost status.,Could not load repost status.
 Could not load tender intake.,Could not load tender intake.
 Could not load the HR overview.,Could not load the HR overview.
 Could not load the PO board.,Could not load the PO board.
+Could not load the UZEX lot.,Could not load the UZEX lot.
 Could not load the board.,Could not load the board.
 Could not load the customs queue.,Could not load the customs queue.
 Could not load the director board.,Could not load the director board.
@@ -590,6 +601,9 @@ Could not load the entry.,Could not load the entry.
 Could not load the logistics board.,Could not load the logistics board.
 Could not load unmatched users.,Could not load unmatched users.
 Could not load your tenders.,Could not load your tenders.
+Could not prepare the document for Didox.,Could not prepare the document for Didox.
+Could not prepare the package.,Could not prepare the package.
+Could not read a lot number from: {0},Could not read a lot number from: {0}
 Could not read backup file: {0},Could not read backup file: {0}
 Could not read the uploaded file.,Could not read the uploaded file.
 Could not read your location.,Could not read your location.
@@ -653,6 +667,7 @@ Critical,Critical
 Critical conflicts,Critical conflicts
 Cumulative %,Cumulative %
 Currency,Currency
+Currency risk (foreign purchase),Currency risk (foreign purchase)
 Current AR balance per customer — click a row to see the ledger behind the balance.,Current AR balance per customer — click a row to see the ledger behind the balance.
 Current AR balance per customer — ties to the Customer Center.,Current AR balance per customer — ties to the Customer Center.
 Current Return,Current Return
@@ -676,10 +691,12 @@ Customer receivables grouped by aging buckets.,Customer receivables grouped by a
 Customers,Customers
 Customs,Customs
 Customs queue,Customs queue
+Customs value (CIF),Customs value (CIF)
 Daily,Daily
 Daily attendance records and employee presence checks.,Daily attendance records and employee presence checks.
 Daily auto-backup,Daily auto-backup
 Daily cap (UZS),Daily cap (UZS)
+Daily in/out KPI,Daily in/out KPI
 Dashboard,Dashboard
 Dashed,Dashed
 Data,Data
@@ -752,6 +769,7 @@ Deliv,Deliv
 Deliver,Deliver
 Delivered,Delivered
 Delivery,Delivery
+Delivery Note,Delivery Note
 Delivery date,Delivery date
 Delivery deadline,Delivery deadline
 Delta,Delta
@@ -774,6 +792,8 @@ Device updated.,Device updated.
 Device user,Device user
 Device user ID,Device user ID
 Device user ID is required.,Device user ID is required.
+Didox,Didox
+Didox may reject this document — missing data:,Didox may reject this document — missing data:
 Direct credit note,Direct credit note
 Direct sales return,Direct sales return
 Direction,Direction
@@ -796,8 +816,10 @@ Dividend tax,Dividend tax
 Dividends,Dividends
 DocType,DocType
 Document,Document
+Document Type,Document Type
 Document cancelled successfully.,Document cancelled successfully.
 Document changed,Document changed
+Document checklist,Document checklist
 Document deleted successfully.,Document deleted successfully.
 Document not found.,Document not found.
 Document or company…,Document or company…
@@ -834,8 +856,13 @@ Duplicate sequence {0} on this route.,Duplicate sequence {0} on this route.
 Duplicate summary,Duplicate summary
 Duplicates,Duplicates
 Duration (ms),Duration (ms)
+Duty,Duty
 Duty supplement,Duty supplement
 Duty supplement (%),Duty supplement (%)
+E-IMZO did not respond (timeout). Check that the app is running.,E-IMZO did not respond (timeout). Check that the app is running.
+E-IMZO error,E-IMZO error
+E-IMZO is not running. Start the E-IMZO desktop app and try again.,E-IMZO is not running. Start the E-IMZO desktop app and try again.
+E-IMZO returned an invalid response,E-IMZO returned an invalid response
 EHF Status,EHF Status
 EHF Submissions,EHF Submissions
 ERPNext,ERPNext
@@ -986,14 +1013,18 @@ Expiry,Expiry
 Export,Export
 Export CSV,Export CSV
 Export failed.,Export failed.
+Exposure amount,Exposure amount
 Extra duty pay as a % of the effective base (e.g. acting role). 0 = none.,Extra duty pay as a % of the effective base (e.g. acting role). 0 = none.
 Extra lateness from slow device clock.,Extra lateness from slow device clock.
 F.I.O.,F.I.O.
 FG Whse,FG Whse
 FX Revaluation,FX Revaluation
 FX accounts as of {0},FX accounts as of {0}
+FX favorable,FX favorable
+FX open,FX open
 FX rate looks correct,FX rate looks correct
 FX rate looks wrong,FX rate looks wrong
+FX risk,FX risk
 Failed,Failed
 Failed to assign ticket.,Failed to assign ticket.
 Failed to cancel entry.,Failed to cancel entry.
@@ -1139,6 +1170,7 @@ Failed to update promo plan.,Failed to update promo plan.
 Failed to update status.,Failed to update status.
 Far district,Far district
 Female,Female
+Fetch,Fetch
 Fetched,Fetched
 Field Receivables,Field Receivables
 Field Sales,Field Sales
@@ -1273,6 +1305,7 @@ Hourly OT pay = base hourly × this (e.g. 1.5 = time-and-a-half).,Hourly OT pay 
 Hours,Hours
 I have tested a restore,I have tested a restore
 ID as it appears in raw gate events,ID as it appears in raw gate events
+IKPU code on {0} item(s),IKPU code on {0} item(s)
 Identity,Identity
 "If off, a back-dated multi-currency document needs a rate within the days below.","If off, a back-dated multi-currency document needs a rate within the days below."
 Ignore,Ignore
@@ -1292,6 +1325,7 @@ In,In
 In progress,In progress
 In time,In time
 In transit,In transit
+"In, out, returns and net movement totals for the period.","In, out, returns and net movement totals for the period."
 InService,InService
 Inactive,Inactive
 Include drafts,Include drafts
@@ -1335,6 +1369,7 @@ Invalid status: {0},Invalid status: {0}
 Invalid step status: {0},Invalid step status: {0}
 Invalid technician state: {0},Invalid technician state: {0}
 Invalid ticket status: {0},Invalid ticket status: {0}
+Invalid webhook secret,Invalid webhook secret
 Inventory,Inventory
 Inventory Aging,Inventory Aging
 Invite user,Invite user
@@ -1397,6 +1432,7 @@ Keep typing to narrow…,Keep typing to narrow…
 Keeps the audit trail; amend to correct.,Keeps the audit trail; amend to correct.
 Kind,Kind
 Kiosk login is not configured on this site.,Kiosk login is not configured on this site.
+L,L
 Label,Label
 Landed,Landed
 Landed cost (goods + import),Landed cost (goods + import)
@@ -1494,6 +1530,7 @@ Logistics,Logistics
 Longitude,Longitude
 Lost,Lost
 Lost Badge? Login with PIN,Lost Badge? Login with PIN
+Lot loaded from UZEX,Lot loaded from UZEX
 Lot no,Lot no
 Low,Low
 Low Stock,Low Stock
@@ -1504,6 +1541,7 @@ Maintenance Visit,Maintenance Visit
 Make default BOM for this item,Make default BOM for this item
 Make payment,Make payment
 Male,Male
+Manager,Manager
 Manual,Manual
 Manufacturing,Manufacturing
 Manzil,Manzil
@@ -1548,6 +1586,7 @@ Minutes tolerated before late penalty starts.,Minutes tolerated before late pena
 Minutes worked before overtime begins.,Minutes worked before overtime begins.
 Missing Entry,Missing Entry
 Missing TimePay user id.,Missing TimePay user id.
+Missing fields,Missing fields
 Missing site config key: {0},Missing site config key: {0}
 Missing work mode / region,Missing work mode / region
 Mitigation:,Mitigation:
@@ -1685,6 +1724,7 @@ No 1C sync events yet.,No 1C sync events yet.
 No ARCA payment events yet.,No ARCA payment events yet.
 No BOMs yet,No BOMs yet
 No CBU exchange rate found for {0} to {1} on or before {2}.,No CBU exchange rate found for {0} to {1} on or before {2}.
+No E-IMZO keys found. Insert your key and reload E-IMZO.,No E-IMZO keys found. Insert your key and reload E-IMZO.
 No EHF submissions yet. Submit a Sales Invoice to enqueue one.,No EHF submissions yet. Submit a Sales Invoice to enqueue one.
 No Employee Advances account configured.,No Employee Advances account configured.
 No Employee Advances account is configured for {0}. Set the company's ,No Employee Advances account is configured for {0}. Set the company's 
@@ -1733,6 +1773,7 @@ No deductions,No deductions
 No default Bank or Cash account configured for company {0}.,No default Bank or Cash account configured for company {0}.
 No default {0} account found to copy parent from.,No default {0} account found to copy parent from.
 No department,No department
+"No documents yet — add the standard set (ГТД, certificate, acceptance act…).","No documents yet — add the standard set (ГТД, certificate, acceptance act…)."
 No earnings,No earnings
 No employee account yet — record an advance first.,No employee account yet — record an advance first.
 No employees found.,No employees found.
@@ -1892,6 +1933,7 @@ Not permitted to export this report.,Not permitted to export this report.
 Not permitted to process Timepay attendance.,Not permitted to process Timepay attendance.
 Not permitted to read Budget.,Not permitted to read Budget.
 Not permitted to read GL entries.,Not permitted to read GL entries.
+Not permitted to read Stock Ledger Entry,Not permitted to read Stock Ledger Entry
 Not permitted to read {0} {1},Not permitted to read {0} {1}
 Not permitted to reconcile this voucher.,Not permitted to reconcile this voucher.
 Not permitted to reconcile {0} {1}.,Not permitted to reconcile {0} {1}.
@@ -1928,6 +1970,7 @@ Office branch or location,Office branch or location
 Oldest (days),Oldest (days)
 Oldest queued,Oldest queued
 Oldest reservation,Oldest reservation
+Ombor,Ombor
 On,On
 On Leave,On Leave
 On hand,On hand
@@ -1973,10 +2016,12 @@ Open profile,Open profile
 Open tickets,Open tickets
 Opened,Opened
 Opening,Opening
+Opening Balance,Opening Balance
 Opening balance,Opening balance
 "Opening balance, period movement, and running balance by account.","Opening balance, period movement, and running balance by account."
 Opening balances,Opening balances
 Opening qty,Opening qty
+"Opening, in, out and closing quantity per item over a date range.","Opening, in, out and closing quantity per item over a date range."
 Operations,Operations
 Operator,Operator
 Operator Kiosk,Operator Kiosk
@@ -2032,6 +2077,8 @@ Overtime multiplier,Overtime multiplier
 Overview,Overview
 Owes us,Owes us
 Owner,Owner
+P,P
+PI In,PI In
 PIN,PIN
 PO,PO
 PO ETA,PO ETA
@@ -2046,6 +2093,7 @@ POS Profile must define a shop warehouse.,POS Profile must define a shop warehou
 POS Profile must define a walk-in customer.,POS Profile must define a walk-in customer.
 POS Profile must define at least one payment mode.,POS Profile must define at least one payment mode.
 POSM,POSM
+Package incomplete — fill the missing fields,Package incomplete — fill the missing fields
 Paid,Paid
 Paid amount,Paid amount
 Paid days,Paid days
@@ -2068,6 +2116,7 @@ Party,Party
 Party account not resolved — re-select the party.,Party account not resolved — re-select the party.
 Party is required.,Party is required.
 Past day,Past day
+Paste UZEX lot URL,Paste UZEX lot URL
 Paste a direct image URL or leave blank to use initials.,Paste a direct image URL or leave blank to use initials.
 Paste access token JWT…,Paste access token JWT…
 Paste new token to replace…,Paste new token to replace…
@@ -2108,6 +2157,7 @@ Payment mode is not allowed for this POS Profile.,Payment mode is not allowed fo
 Payment mode {0} is not an online gateway.,Payment mode {0} is not an online gateway.
 "Payment number, reference or party…","Payment number, reference or party…"
 Payment overdue,Payment overdue
+Payment rate,Payment rate
 Payment received,Payment received
 Payment reminder,Payment reminder
 Payment saved — pending approval before it posts.,Payment saved — pending approval before it posts.
@@ -2230,6 +2280,7 @@ Postings,Postings
 Pre-season freezer push,Pre-season freezer push
 Premium,Premium
 Prepaid,Prepaid
+Prepare application package,Prepare application package
 Present,Present
 Present / half-day / absent,Present / half-day / absent
 Present / half-day / absent / ambiguous,Present / half-day / absent / ambiguous
@@ -2287,7 +2338,9 @@ Purchase Receipt cancelled.,Purchase Receipt cancelled.
 Purchase Receipt submitted.,Purchase Receipt submitted.
 Purchase Receipts,Purchase Receipts
 Purchase item,Purchase item
+Purchase method,Purchase method
 Purchases,Purchases
+Purchases = selected period · Balance = payable as of the To date (changes with the date). Click a supplier to see the bills.,Purchases = selected period · Balance = payable as of the To date (changes with the date). Click a supplier to see the bills.
 Purchases by Supplier,Purchases by Supplier
 Purchasing,Purchasing
 Purpose,Purpose
@@ -2325,6 +2378,7 @@ Raw attendance events cannot be deleted (audit evidence).,Raw attendance events 
 Raw gate events are immutable — they represent exactly what the device reported. Use Reprocess to re-run matching on unmatched or errored events.,Raw gate events are immutable — they represent exactly what the device reported. Use Reprocess to re-run matching on unmatched or errored events.
 Raw material cost,Raw material cost
 Raw materials,Raw materials
+Raw stock ledger rows with voucher trace and running balance.,Raw stock ledger rows with voucher trace and running balance.
 Re-fetch balances for all accounts,Re-fetch balances for all accounts
 Re-queue,Re-queue
 Re-queue stuck,Re-queue stuck
@@ -2532,7 +2586,9 @@ Run now,Run now
 Run payroll,Run payroll
 Run-rate,Run-rate
 Running value,Running value
+SE In,SE In
 SFA,SFA
+SI Out,SI Out
 SO,SO
 SO number or customer…,SO number or customer…
 SRE module unavailable: {0},SRE module unavailable: {0}
@@ -2551,8 +2607,10 @@ Sale completed,Sale completed
 Sales,Sales
 "Sales = selected period · Balance = current receivable (all-time, all vouchers — ties to the Customer Center).","Sales = selected period · Balance = current receivable (all-time, all vouchers — ties to the Customer Center)."
 "Sales = selected period · Balance = current receivable (all-time, all vouchers — ties to the Customer Center). Click a customer to see the ledger behind the balance.","Sales = selected period · Balance = current receivable (all-time, all vouchers — ties to the Customer Center). Click a customer to see the ledger behind the balance."
+"Sales = selected period · Balance = receivable as of the To date (changes with the date, QuickBooks-style). Click a customer to see the ledger behind the balance.","Sales = selected period · Balance = receivable as of the To date (changes with the date, QuickBooks-style). Click a customer to see the ledger behind the balance."
 Sales Invoice,Sales Invoice
 Sales Invoice must be created from a Sales Order,Sales Invoice must be created from a Sales Order
+Sales Invoice must be submitted before sending to Didox,Sales Invoice must be submitted before sending to Didox
 Sales Invoice {0} is not submitted,Sales Invoice {0} is not submitted
 Sales Invoice {0} not found,Sales Invoice {0} not found
 Sales Invoices,Sales Invoices
@@ -2599,6 +2657,7 @@ Save failed.,Save failed.
 Save mapping,Save mapping
 Save modules,Save modules
 Save plan,Save plan
+Saved,Saved
 Saved — pending approval before it posts.,Saved — pending approval before it posts.
 Saved.,Saved.
 Saving…,Saving…
@@ -2630,6 +2689,7 @@ Search a tender deal… ⌘K,Search a tender deal… ⌘K
 Search account…,Search account…
 Search asset tag…,Search asset tag…
 "Search by Work Order, Item, or Warehouse…","Search by Work Order, Item, or Warehouse…"
+Search by name or code…,Search by name or code…
 Search by serial or item,Search by serial or item
 Search campaigns…,Search campaigns…
 Search customer,Search customer
@@ -2682,6 +2742,7 @@ Select a supplier to view transactions,Select a supplier to view transactions
 Select a warehouse to count.,Select a warehouse to count.
 Select a worker,Select a worker
 Select account…,Select account…
+Select all,Select all
 Select an account…,Select an account…
 Select an active leaf warehouse for returns.,Select an active leaf warehouse for returns.
 Select an employee,Select an employee
@@ -2699,14 +2760,17 @@ Select the bank account this statement belongs to.,Select the bank account this 
 Select warehouse,Select warehouse
 Select warehouse…,Select warehouse…
 Selected,Selected
+Selection,Selection
 Select…,Select…
 Self-approval blocked,Self-approval blocked
 Self-review blocked,Self-review blocked
 Sell,Sell
 Sell markup,Sell markup
+Seller TIN,Seller TIN
 Send currency,Send currency
 Send invite,Send invite
 Send password reset email to ,Send password reset email to 
+Send to Didox,Send to Didox
 Sender name,Sender name
 Sender pays,Sender pays
 Seniority,Seniority
@@ -2756,13 +2820,19 @@ Shift 12h,Shift 12h
 Shift 8h,Shift 8h
 Shift class,Shift class
 Shift start,Shift start
+Shop,Shop
 Short code,Short code
 Show discounts,Show discounts
 Showing,Showing
 Showing first 500 — narrow the date range to see more.,Showing first 500 — narrow the date range to see more.
+Showing first {n} rows. Narrow the filters to see more.,Showing first {n} rows. Narrow the filters to see more.
 Showing the first {0} records — use filters to narrow.,Showing the first {0} records — use filters to narrow.
 Showing the newest,Showing the newest
+Sign & send,Sign & send
 Signed,Signed
+Signed document (PKCS#7) is required,Signed document (PKCS#7) is required
+Signing key,Signing key
+Signing or sending to Didox failed.,Signing or sending to Didox failed.
 Simplified / turnover tax,Simplified / turnover tax
 Simulation result,Simulation result
 Simulator,Simulator
@@ -2799,6 +2869,7 @@ Stale exchange rate: the nearest CBU rate for {0} to {1} is from {2} ({3} days o
 Stale request: reload the document.,Stale request: reload the document.
 Standard allowances,Standard allowances
 Standard rate,Standard rate
+Standard set,Standard set
 Start,Start
 Start Date,Start Date
 Start Work,Start Work
@@ -2829,6 +2900,8 @@ Stock entries,Stock entries
 Stock entry,Stock entry
 Stock issued,Stock issued
 Stock item,Stock item
+Stock ledger detail,Stock ledger detail
+Stock movement summary,Stock movement summary
 Stock reservations,Stock reservations
 Stock transactions,Stock transactions
 Stock value,Stock value
@@ -3073,6 +3146,7 @@ Type,Type
 UOM,UOM
 USD rate on this date,USD rate on this date
 USD → UZS,USD → UZS
+UZEX lot {0} not found.,UZEX lot {0} not found.
 Unassigned,Unassigned
 Unassigned department or position.,Unassigned department or position.
 Unassigned dept / position,Unassigned dept / position
@@ -3083,6 +3157,7 @@ Unit cost,Unit cost
 Units Sold,Units Sold
 Unknown,Unknown
 Unknown Cost Center: {0},Unknown Cost Center: {0}
+Unknown Didox Submission,Unknown Didox Submission
 Unknown Fiscal Year: {0},Unknown Fiscal Year: {0}
 Unknown POS Profile: {0},Unknown POS Profile: {0}
 Unknown Purchase Invoice: {0},Unknown Purchase Invoice: {0}
@@ -3188,9 +3263,12 @@ Visits this month,Visits this month
 Void Cart,Void Cart
 Volume,Volume
 Voucher,Voucher
+Voucher No,Voucher No
+Voucher Type,Voucher Type
 Voucher not found.,Voucher not found.
 Voucher not found: {0} {1},Voucher not found: {0} {1}
 Voucher…,Voucher…
+W,W
 WIP Warehouse,WIP Warehouse
 WIP Whse,WIP Whse
 WIP warehouse,WIP warehouse
@@ -3241,6 +3319,7 @@ Widen the date range or record a payment receipt or disbursement.,Widen the date
 "Widen the date range, relax the status filter, or send a new proposal.","Widen the date range, relax the status filter, or send a new proposal."
 "Widen the date range, relax the status filter, or start a new order.","Widen the date range, relax the status filter, or start a new order."
 Width,Width
+Win rate,Win rate
 Win/Loss Reason,Win/Loss Reason
 Withdrawal,Withdrawal
 Withheld,Withheld
@@ -3272,6 +3351,9 @@ You,You
 You are not assigned to this POS Profile.,You are not assigned to this POS Profile.
 You are not permitted to approve or reject correction requests.,You are not permitted to approve or reject correction requests.
 You are not permitted to review approval requests.,You are not permitted to review approval requests.
+You are not permitted to view customers.,You are not permitted to view customers.
+You are not permitted to view employees.,You are not permitted to view employees.
+You are not permitted to view suppliers.,You are not permitted to view suppliers.
 You are not permitted to view the audit log.,You are not permitted to view the audit log.
 You have already approved level {0} for this request.,You have already approved level {0} for this request.
 You have no approval requests,You have no approval requests
@@ -3285,6 +3367,7 @@ You need administrator access to view this page.,You need administrator access t
 You raised this request — it must be approved by someone else.,You raised this request — it must be approved by someone else.
 You raised this request — it must be reviewed by someone else.,You raised this request — it must be reviewed by someone else.
 You raised this — another user must approve it.,You raised this — another user must approve it.
+You will sign this document in the browser with your own E-IMZO key.,You will sign this document in the browser with your own E-IMZO key.
 "Your books are empty. Get started by adding a customer, recording your first sale, or logging an opening balance.","Your books are empty. Get started by adding a customer, recording your first sale, or logging an opening balance."
 Your business is ready.,Your business is ready.
 Yuk xati,Yuk xati
@@ -3442,37 +3525,3 @@ yr,yr
 — top-level —,— top-level —
 ⚠ {0} line(s) had no cost — verify item valuation; margin may be overstated.,⚠ {0} line(s) had no cost — verify item valuation; margin may be overstated.
 ﻿#,#
-Purchase method,Purchase method
-Auction,Auction
-Shop,Shop
-Selection,Selection
-Document checklist,Document checklist
-Standard set,Standard set
-"No documents yet — add the standard set (ГТД, certificate, acceptance act…).","No documents yet — add the standard set (ГТД, certificate, acceptance act…)."
-Manager,Manager
-Assigned.,Assigned.
-Could not assign.,Could not assign.
-Win rate,Win rate
-W,W
-L,L
-P,P
-Customs value (CIF),Customs value (CIF)
-Duty,Duty
-Currency risk (foreign purchase),Currency risk (foreign purchase)
-Exposure amount,Exposure amount
-Bid rate,Bid rate
-Payment rate,Payment rate
-FX favorable,FX favorable
-FX risk,FX risk
-FX open,FX open
-Search by name or code…,Search by name or code…
-Select all,Select all
-Fetch,Fetch
-Paste UZEX lot URL,Paste UZEX lot URL
-Lot loaded from UZEX,Lot loaded from UZEX
-Could not load the UZEX lot.,Could not load the UZEX lot.
-Prepare application package,Prepare application package
-Bid package ready,Bid package ready
-Package incomplete — fill the missing fields,Package incomplete — fill the missing fields
-Could not prepare the package.,Could not prepare the package.
-Missing fields,Missing fields

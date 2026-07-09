@@ -6,6 +6,7 @@ source,target
 (only for half-rate),
 "(path to the JSON, or the JSON inline).",
 +998 XX XXX XX XX,
+...,
 0,
 0 = no hard lock; past edits still ask for confirmation.,0 = sabit kilit yok; geçmiş düzenlemeler yine onay ister.
 0.00,0.00
@@ -115,6 +116,7 @@ Address,Adres
 Adjust dates or check that {company} has posted transactions in this period.,Tarihleri ayarlayın veya {company} şirketinin bu dönemde işlem kaydettiğini doğrulayın.
 Adjust filters and run the report again.,
 Adjust quantities for a partial receipt. Rows left at zero are skipped.,Kısmi mal kabulü için miktarları ayarlayın. Sıfır bırakılan satırlar atlanır.
+Adjustment,Düzeltme
 Admin,Yönetici
 Administer users & roles,Kullanıcı ve rol yönetimi
 Advance,Avans
@@ -247,6 +249,7 @@ Assign operator,Operatör ata
 Assign technician,Teknisyen ata
 Assigned Field User,Atanan Saha Kullanıcısı
 Assigned Technician,Atanan Teknisyen
+Assigned.,Atandı.
 At least one counted item line is required.,
 At least one visit purpose is required.,
 At least one voucher is required.,
@@ -262,6 +265,7 @@ Attendance exceptions,Devam istisnaları
 Attendance on/before,Şu tarihe kadar devam
 Attendance summary,Devam özeti
 Attendance today,
+Auction,Açık artırma
 Audit Trail,Denetim İzi
 Audit trail,Denetim izi
 Audited At,Denetleme Tarihi
@@ -319,9 +323,11 @@ Before → Requested,
 Berry,
 Bid Value,Teklif tutarı
 Bid deadline,Teklif süresi
+Bid package ready,Teklif paketi hazır
 Bid price (Договор),Teklif fiyatı (Договор)
 "Bid price (Договор, VAT incl.)","Teklif fiyatı (Договор, KDV dahil)"
 Bid pricing saved.,Fiyatlandırma kaydedildi.
+Bid rate,Teklif kuru
 Bill,Fatura
 Bill #,Fatura No
 Bill / invoice number printed on supplier document,Tedarikçi belgesinde yazan fatura numarası
@@ -356,6 +362,7 @@ Buy,Satın Al
 Buy X get Y,X al Y kazan
 Buy markup,Alış kâr marjı
 Buyer,Alıcı
+Buyer TIN,
 Buying price list,Alış fiyat listesi
 By,
 By item,
@@ -368,6 +375,7 @@ CBU rates are already up to date.,CBU kurları zaten güncel.
 CBU rates updated: {rates},CBU kurları güncellendi: {rates}
 CBU.uz exchange rates (last 30 days),CBU.uz döviz kurları (son 30 gün)
 CBU:,
+CN Return,CN İade
 COGS,SMM
 CRM,CRM
 CRM Report,CRM raporu
@@ -484,6 +492,7 @@ Close Work Order,
 Close this Work Order? This finalizes it.,Bu İş Emri kapatılsın mı? Bu işlem sonlandırır.
 Close visit,Ziyareti kapat
 Closing,Kapanış
+Closing Balance,Kapanış Bakiyesi
 Closing balance,Kapanış bakiyesi
 Closing in,Kapanıyor
 Closure,
@@ -568,6 +577,7 @@ Costs after dividends (office…),Temettü sonrası masraflar (ofis…)
 Could not accrue salary.,Maaş tahakkuk ettirilemedi.
 Could not add holiday.,Tatil eklenemedi.
 Could not add stage.,Aşama eklenemedi.
+Could not assign.,Atanamadı.
 Could not check payment status.,Ödeme durumu kontrol edilemedi.
 Could not create contract.,Sözleşme oluşturulamadı.
 Could not create the transaction.,İşlem oluşturulamadı.
@@ -580,6 +590,7 @@ Could not load repost status.,Durum yüklenemedi.
 Could not load tender intake.,Tender verisi yüklenemedi.
 Could not load the HR overview.,İK genel bakışı yüklenemedi.
 Could not load the PO board.,PO panosu yüklenemedi.
+Could not load the UZEX lot.,UZEX lotu yüklenemedi.
 Could not load the board.,Pano yüklenemedi.
 Could not load the customs queue.,Gümrük kuyruğu yüklenemedi.
 Could not load the director board.,Direktör paneli yüklenemedi.
@@ -587,6 +598,9 @@ Could not load the entry.,Kayıt yüklenemedi.
 Could not load the logistics board.,Lojistik paneli yüklenemedi.
 Could not load unmatched users.,Eşleşmemiş kullanıcılar yüklenemedi.
 Could not load your tenders.,Tenderleriniz yüklenemedi.
+Could not prepare the document for Didox.,
+Could not prepare the package.,Paket hazırlanamadı.
+Could not read a lot number from: {0},
 Could not read backup file: {0},
 Could not read the uploaded file.,
 Could not read your location.,Konumunuz okunamadı.
@@ -650,6 +664,7 @@ Critical,Kritik
 Critical conflicts,Kritik çakışmalar
 Cumulative %,Kümülatif %
 Currency,Para Birimi
+Currency risk (foreign purchase),Kur riski (ithalat)
 Current AR balance per customer — click a row to see the ledger behind the balance.,
 Current AR balance per customer — ties to the Customer Center.,Müşteri başına güncel alacak — Müşteri Merkezi ile eşleşir.
 Current Return,
@@ -673,10 +688,12 @@ Customer receivables grouped by aging buckets.,
 Customers,Müşteriler
 Customs,Gümrük
 Customs queue,Gümrük kuyruğu
+Customs value (CIF),Gümrük değeri (CIF)
 Daily,Günlük
 Daily attendance records and employee presence checks.,
 Daily auto-backup,Günlük otomatik yedek
 Daily cap (UZS),
+Daily in/out KPI,Günlük giriş/çıkış KPI
 Dashboard,Gösterge Paneli
 Dashed,Kesikli
 Data,Veri
@@ -749,6 +766,7 @@ Deliv,Teslim
 Deliver,Teslim Et
 Delivered,Teslim Edildi
 Delivery,Teslim
+Delivery Note,İrsaliye
 Delivery date,Teslimat tarihi
 Delivery deadline,Teslim süresi
 Delta,
@@ -771,6 +789,8 @@ Device updated.,
 Device user,
 Device user ID,
 Device user ID is required.,
+Didox,
+Didox may reject this document — missing data:,
 Direct credit note,
 Direct sales return,
 Direction,Yön
@@ -792,8 +812,10 @@ Dividend tax,Temettü vergisi
 Dividends,Temettü
 DocType,DocType
 Document,Belge
+Document Type,Belge Türü
 Document cancelled successfully.,
 Document changed,
+Document checklist,Belge kontrol listesi
 Document deleted successfully.,
 Document not found.,
 Document or company…,
@@ -830,8 +852,13 @@ Duplicate sequence {0} on this route.,Bu rotada {0} sırası yinelenmiş.
 Duplicate summary,
 Duplicates,Yinelenenler
 Duration (ms),Süre (ms)
+Duty,Gümrük vergisi
 Duty supplement,Görev eki
 Duty supplement (%),Görev eki (%)
+E-IMZO did not respond (timeout). Check that the app is running.,
+E-IMZO error,
+E-IMZO is not running. Start the E-IMZO desktop app and try again.,
+E-IMZO returned an invalid response,
 EHF Status,EHF Durumu
 EHF Submissions,EHF Gönderimleri
 ERPNext,
@@ -981,14 +1008,18 @@ Expiry,Son kullanım
 Export,Dışa Aktar
 Export CSV,CSV dışa aktar
 Export failed.,Dışa aktarma başarısız oldu.
+Exposure amount,Maruz kalan tutar
 Extra duty pay as a % of the effective base (e.g. acting role). 0 = none.,Etkin tabanın % olarak ek görev ödemesi (örn. vekâlet). 0 = yok.
 Extra lateness from slow device clock.,
 F.I.O.,"Soyad, Ad, Baba Adı"
 FG Whse,
 FX Revaluation,
 FX accounts as of {0},
+FX favorable,Kur lehte
+FX open,Kur: açık
 FX rate looks correct,FX kuru doğru
 FX rate looks wrong,FX kuru hatalı
+FX risk,Kur riski
 Failed,Başarısız
 Failed to assign ticket.,Talep atanamadı.
 Failed to cancel entry.,
@@ -1134,6 +1165,7 @@ Failed to update promo plan.,Promosyon planı güncellenemedi.
 Failed to update status.,Durum güncellenemedi.
 Far district,
 Female,Kadın
+Fetch,Getir
 Fetched,Çekildi
 Field Receivables,
 Field Sales,Saha Satışı
@@ -1268,6 +1300,7 @@ Hourly OT pay = base hourly × this (e.g. 1.5 = time-and-a-half).,Saatlik fazla 
 Hours,Saat
 I have tested a restore,
 ID as it appears in raw gate events,
+IKPU code on {0} item(s),
 Identity,
 "If off, a back-dated multi-currency document needs a rate within the days below.",
 Ignore,
@@ -1287,6 +1320,7 @@ In,Giriş
 In progress,Devam ediyor
 In time,Zamanında
 In transit,Yolda
+"In, out, returns and net movement totals for the period.","Dönem için giriş, çıkış, iade ve net hareket toplamları."
 InService,Hizmette
 Inactive,Pasif
 Include drafts,Taslakları dahil et
@@ -1330,6 +1364,7 @@ Invalid status: {0},Geçersiz durum: {0}
 Invalid step status: {0},Geçersiz adım durumu: {0}
 Invalid technician state: {0},
 Invalid ticket status: {0},
+Invalid webhook secret,
 Inventory,Stok
 Inventory Aging,Stok yaşlandırma
 Invite user,Kullanıcı davet et
@@ -1392,6 +1427,7 @@ Keep typing to narrow…,Daraltmak için yazmaya devam edin…
 Keeps the audit trail; amend to correct.,Denetim izini korur; düzeltmek için amend edin.
 Kind,
 Kiosk login is not configured on this site.,Bu sitede kiosk girişi yapılandırılmamış.
+L,Kb
 Label,Etiket
 Landed,Landed
 Landed cost (goods + import),Landed maliyet (mal + ithalat)
@@ -1488,6 +1524,7 @@ Logistics,Lojistik
 Longitude,Boylam
 Lost,Kaybedildi
 Lost Badge? Login with PIN,
+Lot loaded from UZEX,Lot UZEX'ten yüklendi
 Lot no,Lot №
 Low,Düşük
 Low Stock,Düşük Stok
@@ -1498,6 +1535,7 @@ Maintenance Visit,Bakım ziyareti
 Make default BOM for this item,Bu ürün için varsayılan BOM yap
 Make payment,
 Male,Erkek
+Manager,Yönetici
 Manual,
 Manufacturing,Üretim
 Manzil,
@@ -1542,6 +1580,7 @@ Minutes tolerated before late penalty starts.,
 Minutes worked before overtime begins.,
 Missing Entry,
 Missing TimePay user id.,
+Missing fields,Eksik alanlar
 Missing site config key: {0},
 Missing work mode / region,Çalışma modu / bölge eksik
 Mitigation:,Azaltma:
@@ -1679,6 +1718,7 @@ No 1C sync events yet.,Henüz 1C senkronizasyon olayı yok.
 No ARCA payment events yet.,Henüz ARCA ödeme olayı yok.
 No BOMs yet,Henüz BOM yok
 No CBU exchange rate found for {0} to {1} on or before {2}.,
+No E-IMZO keys found. Insert your key and reload E-IMZO.,
 No EHF submissions yet. Submit a Sales Invoice to enqueue one.,Henüz EHF gönderimi yok. Kuyruğa eklemek için bir Satış Faturası gönderin.
 No Employee Advances account configured.,Avans hesabı yapılandırılmamış.
 No Employee Advances account is configured for {0}. Set the company's ,
@@ -1727,6 +1767,7 @@ No deductions,Kesinti yok
 No default Bank or Cash account configured for company {0}.,{0} şirketi için varsayılan Banka veya Nakit hesabı yapılandırılmamış.
 No default {0} account found to copy parent from.,
 No department,Bölümsüz
+"No documents yet — add the standard set (ГТД, certificate, acceptance act…).","Henüz belge yok — standart seti ekleyin (ГТД, sertifika, tutanak…)."
 No earnings,Kazanç yok
 No employee account yet — record an advance first.,Henüz çalışan hesabı yok — önce avans kaydedin.
 No employees found.,Çalışan bulunamadı.
@@ -1886,6 +1927,7 @@ Not permitted to export this report.,
 Not permitted to process Timepay attendance.,
 Not permitted to read Budget.,
 Not permitted to read GL entries.,
+Not permitted to read Stock Ledger Entry,
 Not permitted to read {0} {1},{0} {1} kaydını okuma izniniz yok
 Not permitted to reconcile this voucher.,
 Not permitted to reconcile {0} {1}.,
@@ -1922,6 +1964,7 @@ Office branch or location,
 Oldest (days),En eski (gün)
 Oldest queued,En eski kuyrukta
 Oldest reservation,En eski rezervasyon
+Ombor,Depo
 On,Açık
 On Leave,İzinde
 On hand,Eldeki
@@ -1966,10 +2009,12 @@ Open profile,Profili aç
 Open tickets,Açık talepler
 Opened,Açıldı
 Opening,Açılış
+Opening Balance,Açılış Bakiyesi
 Opening balance,Açılış bakiyesi
 "Opening balance, period movement, and running balance by account.",
 Opening balances,Açılış bakiyeleri
 Opening qty,Açılış adedi
+"Opening, in, out and closing quantity per item over a date range.","Tarih aralığında her kalem için açılış, giriş, çıkış ve kapanış miktarı."
 Operations,Operasyonlar
 Operator,Operatör
 Operator Kiosk,
@@ -2025,6 +2070,8 @@ Overtime multiplier,Fazla mesai çarpanı
 Overview,Genel Bakış
 Owes us,Bize borçlu
 Owner,
+P,Bk
+PI In,PI giriş
 PIN,
 PO,PO
 PO ETA,PO ETA
@@ -2039,6 +2086,7 @@ POS Profile must define a shop warehouse.,
 POS Profile must define a walk-in customer.,
 POS Profile must define at least one payment mode.,
 POSM,POSM
+Package incomplete — fill the missing fields,Paket eksik — eksik alanları doldurun
 Paid,Ödendi
 Paid amount,Ödenen tutar
 Paid days,Ücretli günler
@@ -2061,6 +2109,7 @@ Party,Taraf
 Party account not resolved — re-select the party.,Taraf hesabı çözümlenemedi — tarafı yeniden seçin.
 Party is required.,Taraf zorunludur.
 Past day,Geçmiş gün
+Paste UZEX lot URL,UZEX lot bağlantısını yapıştırın
 Paste a direct image URL or leave blank to use initials.,
 Paste access token JWT…,
 Paste new token to replace…,
@@ -2101,6 +2150,7 @@ Payment mode is not allowed for this POS Profile.,
 Payment mode {0} is not an online gateway.,
 "Payment number, reference or party…",
 Payment overdue,Ödeme gecikti
+Payment rate,Ödeme kuru
 Payment received,Ödeme alındı
 Payment reminder,Ödeme hatırlatması
 Payment saved — pending approval before it posts.,Ödeme kaydedildi — işlenmeden önce onay bekliyor.
@@ -2223,6 +2273,7 @@ Postings,Kayıtlar
 Pre-season freezer push,Sezon öncesi dondurucu yerleştirme
 Premium,
 Prepaid,Avans
+Prepare application package,Başvuru paketini hazırla
 Present,Mevcut
 Present / half-day / absent,Geldi / yarım gün / gelmedi
 Present / half-day / absent / ambiguous,Geldi / yarım gün / gelmedi / belirsiz
@@ -2280,7 +2331,9 @@ Purchase Receipt cancelled.,
 Purchase Receipt submitted.,
 Purchase Receipts,Mal Kabulleri
 Purchase item,Satın alma kalemi
+Purchase method,Satın alma yöntemi
 Purchases,Alımlar
+Purchases = selected period · Balance = payable as of the To date (changes with the date). Click a supplier to see the bills.,
 Purchases by Supplier,Tedarikçiye göre alımlar
 Purchasing,Satın Alma
 Purpose,Amaç
@@ -2318,6 +2371,7 @@ Raw attendance events cannot be deleted (audit evidence).,
 Raw gate events are immutable — they represent exactly what the device reported. Use Reprocess to re-run matching on unmatched or errored events.,
 Raw material cost,Hammadde maliyeti
 Raw materials,Hammaddeler
+Raw stock ledger rows with voucher trace and running balance.,Belge izi ve yürüyen bakiye ile ham stok defteri satırları.
 Re-fetch balances for all accounts,Tüm hesapların bakiyelerini yeniden çek
 Re-queue,Kuyruğa al
 Re-queue stuck,Takılıyı kuyruğa al
@@ -2523,7 +2577,9 @@ Run now,Şimdi çalıştır
 Run payroll,Bordroyu Çalıştır
 Run-rate,Aylık ciro
 Running value,Kümülatif değer
+SE In,SE giriş
 SFA,
+SI Out,SI çıkış
 SO,SO
 SO number or customer…,
 SRE module unavailable: {0},SRE modülü kullanılamıyor: {0}
@@ -2542,8 +2598,10 @@ Sale completed,
 Sales,Satış
 "Sales = selected period · Balance = current receivable (all-time, all vouchers — ties to the Customer Center).","Satış = seçilen dönem · Bakiye = güncel alacak (tüm zamanlar, tüm belgeler — Müşteri Merkezi ile eşleşir)."
 "Sales = selected period · Balance = current receivable (all-time, all vouchers — ties to the Customer Center). Click a customer to see the ledger behind the balance.","Satış = dönem · Bakiye = güncel alacak (tüm zamanlar, tüm belgeler — Müşteri Merkezi ile eşleşir). Bakiyenin arkasındaki defteri görmek için bir müşteriye tıklayın."
+"Sales = selected period · Balance = receivable as of the To date (changes with the date, QuickBooks-style). Click a customer to see the ledger behind the balance.",
 Sales Invoice,Satış Faturası
 Sales Invoice must be created from a Sales Order,Satış Faturası bir Satış Siparişinden oluşturulmalıdır
+Sales Invoice must be submitted before sending to Didox,
 Sales Invoice {0} is not submitted,Satış Faturası {0} onaylanmamış
 Sales Invoice {0} not found,Satış Faturası {0} bulunamadı
 Sales Invoices,Satış Faturaları
@@ -2590,6 +2648,7 @@ Save failed.,Kaydetme başarısız.
 Save mapping,
 Save modules,Modülleri kaydet
 Save plan,Planı kaydet
+Saved,
 Saved — pending approval before it posts.,Kaydedildi — işlenmeden önce onay bekliyor.
 Saved.,
 Saving…,Kaydediliyor…
@@ -2621,6 +2680,7 @@ Search a tender deal… ⌘K,İhale anlaşması ara… ⌘K
 Search account…,Hesap ara…
 Search asset tag…,Varlık etiketi ara…
 "Search by Work Order, Item, or Warehouse…",
+Search by name or code…,Ad veya koda göre ara…
 Search by serial or item,Seri no veya ürünle ara
 Search campaigns…,Kampanya ara…
 Search customer,Müşteri ara
@@ -2673,6 +2733,7 @@ Select a supplier to view transactions,İşlemleri görüntülemek için bir ted
 Select a warehouse to count.,Saymak için bir depo seçin.
 Select a worker,Bir çalışan seçin
 Select account…,Hesap seçin…
+Select all,Tümünü seç
 Select an account…,Bir hesap seçin…
 Select an active leaf warehouse for returns.,
 Select an employee,Bir çalışan seçin
@@ -2689,14 +2750,17 @@ Select the bank account this statement belongs to.,Bu ekstrenin ait olduğu bank
 Select warehouse,Depo seçin
 Select warehouse…,Depo seçin…
 Selected,Seçili
+Selection,Seçim
 Select…,Seçin…
 Self-approval blocked,Kendi kendine onay engellendi
 Self-review blocked,
 Sell,Sat
 Sell markup,Satış fark oranı
+Seller TIN,
 Send currency,Gönderilen para birimi
 Send invite,Davet gönder
 Send password reset email to ,Şifre sıfırlama e-postası gönder: 
+Send to Didox,
 Sender name,Gönderen adı
 Sender pays,Gönderen öder
 Seniority,Kıdem
@@ -2746,13 +2810,19 @@ Shift 12h,
 Shift 8h,
 Shift class,
 Shift start,
+Shop,Mağaza
 Short code,Kısa kod
 Show discounts,İndirimleri göster
 Showing,Gösteriliyor
 Showing first 500 — narrow the date range to see more.,İlk 500 gösteriliyor — daha fazlası için tarih aralığını daraltın.
+Showing first {n} rows. Narrow the filters to see more.,İlk {n} satır gösteriliyor. Daha fazlası için filtreleri daraltın.
 Showing the first {0} records — use filters to narrow.,İlk {0} kayıt gösteriliyor — daraltmak için filtreleri kullanın.
 Showing the newest,En yeniler gösteriliyor
+Sign & send,
 Signed,İmzalandı
+Signed document (PKCS#7) is required,
+Signing key,
+Signing or sending to Didox failed.,
 Simplified / turnover tax,Basitleştirilmiş / ciro vergisi
 Simulation result,
 Simulator,
@@ -2789,6 +2859,7 @@ Stale exchange rate: the nearest CBU rate for {0} to {1} is from {2} ({3} days o
 Stale request: reload the document.,
 Standard allowances,
 Standard rate,Standart fiyat
+Standard set,Standart set
 Start,Başlat
 Start Date,Başlangıç Tarihi
 Start Work,İşe Başla
@@ -2819,6 +2890,8 @@ Stock entries,Stok girişleri
 Stock entry,Stok girişi
 Stock issued,Stok çıkışı yapıldı
 Stock item,Stok kalemi
+Stock ledger detail,Stok defteri detayı
+Stock movement summary,Stok hareket özeti
 Stock reservations,Stok rezervasyonları
 Stock transactions,
 Stock value,Stok değeri
@@ -3063,6 +3136,7 @@ Type,Tür
 UOM,Ölçü Birimi
 USD rate on this date,Bu tarihteki USD kuru
 USD → UZS,USD → UZS
+UZEX lot {0} not found.,
 Unassigned,Atanmamış
 Unassigned department or position.,Bölüm veya pozisyon atanmamış.
 Unassigned dept / position,Atanmamış bölüm / pozisyon
@@ -3073,6 +3147,7 @@ Unit cost,Birim maliyet
 Units Sold,Satılan Adet
 Unknown,
 Unknown Cost Center: {0},
+Unknown Didox Submission,
 Unknown Fiscal Year: {0},
 Unknown POS Profile: {0},
 Unknown Purchase Invoice: {0},
@@ -3178,9 +3253,12 @@ Visits this month,Bu ayki ziyaretler
 Void Cart,
 Volume,Hacim
 Voucher,Fiş
+Voucher No,Belge No
+Voucher Type,Belge Türü
 Voucher not found.,
 Voucher not found: {0} {1},
 Voucher…,
+W,K
 WIP Warehouse,
 WIP Whse,
 WIP warehouse,Yarı mamul deposu
@@ -3231,6 +3309,7 @@ Widen the date range or record a payment receipt or disbursement.,Tarih aralığ
 "Widen the date range, relax the status filter, or send a new proposal.","Tarih aralığını genişletin, durum filtresini gevşetin veya yeni bir teklif gönderin."
 "Widen the date range, relax the status filter, or start a new order.","Tarih aralığını genişletin, durum filtresini gevşetin veya yeni bir sipariş başlatın."
 Width,En
+Win rate,Kazanma oranı
 Win/Loss Reason,Kazanma/Kaybetme nedeni
 Withdrawal,Çekim
 Withheld,Tevkif edildi
@@ -3262,6 +3341,9 @@ You,
 You are not assigned to this POS Profile.,
 You are not permitted to approve or reject correction requests.,
 You are not permitted to review approval requests.,
+You are not permitted to view customers.,
+You are not permitted to view employees.,
+You are not permitted to view suppliers.,
 You are not permitted to view the audit log.,Denetim günlüğünü görüntüleme izniniz yok.
 You have already approved level {0} for this request.,
 You have no approval requests,Onay talebiniz yok
@@ -3275,6 +3357,7 @@ You need administrator access to view this page.,Bu sayfayı görüntülemek iç
 You raised this request — it must be approved by someone else.,
 You raised this request — it must be reviewed by someone else.,
 You raised this — another user must approve it.,Bu talebi siz oluşturdunuz — başka bir kullanıcı onaylamalı.
+You will sign this document in the browser with your own E-IMZO key.,
 "Your books are empty. Get started by adding a customer, recording your first sale, or logging an opening balance.","Defteriniz boş. Müşteri ekleyerek, ilk satışınızı kaydederek veya açılış bakiyesi girerek başlayın."
 Your business is ready.,İşletmeniz hazır.
 Yuk xati,Yuk xati
@@ -3431,37 +3514,3 @@ yr,yıl
 — select —,
 — top-level —,— üst düzey —
 ⚠ {0} line(s) had no cost — verify item valuation; margin may be overstated.,⚠ {0} satır(da) maliyet yok — kalem değerlemesini doğrulayın; marj abartılmış olabilir.
-Purchase method,Satın alma yöntemi
-Auction,Açık artırma
-Shop,Mağaza
-Selection,Seçim
-Document checklist,Belge kontrol listesi
-Standard set,Standart set
-"No documents yet — add the standard set (ГТД, certificate, acceptance act…).","Henüz belge yok — standart seti ekleyin (ГТД, sertifika, tutanak…)."
-Manager,Yönetici
-Assigned.,Atandı.
-Could not assign.,Atanamadı.
-Win rate,Kazanma oranı
-W,K
-L,Kb
-P,Bk
-Customs value (CIF),Gümrük değeri (CIF)
-Duty,Gümrük vergisi
-Currency risk (foreign purchase),Kur riski (ithalat)
-Exposure amount,Maruz kalan tutar
-Bid rate,Teklif kuru
-Payment rate,Ödeme kuru
-FX favorable,Kur lehte
-FX risk,Kur riski
-FX open,Kur: açık
-Search by name or code…,Ad veya koda göre ara…
-Select all,Tümünü seç
-Fetch,Getir
-Paste UZEX lot URL,UZEX lot bağlantısını yapıştırın
-Lot loaded from UZEX,Lot UZEX'ten yüklendi
-Could not load the UZEX lot.,UZEX lotu yüklenemedi.
-Prepare application package,Başvuru paketini hazırla
-Bid package ready,Teklif paketi hazır
-Package incomplete — fill the missing fields,Paket eksik — eksik alanları doldurun
-Could not prepare the package.,Paket hazırlanamadı.
-Missing fields,Eksik alanlar

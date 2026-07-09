@@ -1456,3 +1456,245 @@ def sales_trend(
         % (_("day") if granularity == "day" else _("month")),
     }
     return _shape(columns, rows, totals, meta)
+
+
+# ---------------------------------------------------------------------------
+# Ombor (Warehouse) — stock-movement reports
+#
+# Source table: `tabStock Ledger Entry` (the append-only stock ledger). Every
+# report here is READ-ONLY: company-scoped (_assert_company_scope), gated on the
+# caller holding "read" on Stock Ledger Entry, and built with fully parametric
+# SQL — values are ALWAYS bound via %(name)s params, never spliced into the query
+# string. No frappe.db.commit() (these are pure reads).
+# ---------------------------------------------------------------------------
+
+
+def _assert_can_read_stock_ledger() -> None:
+    """Doctype-level read gate for the stock-movement reports.
+
+    Company scope alone protects tenant isolation, but Stock Ledger Entry is
+    sensitive inventory data — a user with no read access to it must not pull it
+    through a report endpoint. Throw a PermissionError (403) when not permitted.
+    """
+    if not frappe.has_permission("Stock Ledger Entry", "read"):
+        frappe.throw(_("Not permitted to read Stock Ledger Entry"), frappe.PermissionError)
+
+
+@frappe.whitelist()
+def stock_movement_summary(
+    company: str,
+    from_date: str,
+    to_date: str,
+    warehouse: str = "",
+) -> dict:
+    """Per-item opening/in/out/closing summary over a date window.
+
+    Uses window functions to pin the opening (first SLE's balance-before) and
+    closing (last SLE's balance-after) per item×warehouse, then buckets the
+    movements by voucher type. `recon` surfaces any residual the buckets don't
+    explain (should be ~0 when every movement is one of the tracked vouchers).
+    """
+    _require_company(company)
+    _assert_company_scope(company)  # tenant isolation: reject a foreign company arg
+    _assert_can_read_stock_ledger()
+    params = {
+        "company": company,
+        "from_date": from_date,
+        "to_date": to_date,
+        "warehouse": warehouse or "",
+    }
+    rows = frappe.db.sql(
+        """
+        WITH sle AS (
+            SELECT item_code, warehouse, actual_qty, qty_after_transaction, voucher_type,
+                ROW_NUMBER() OVER (PARTITION BY item_code, warehouse
+                    ORDER BY posting_date, posting_time, creation) AS rn_asc,
+                ROW_NUMBER() OVER (PARTITION BY item_code, warehouse
+                    ORDER BY posting_date DESC, posting_time DESC, creation DESC) AS rn_desc
+            FROM `tabStock Ledger Entry`
+            WHERE is_cancelled = 0 AND company = %(company)s
+                AND posting_date BETWEEN %(from_date)s AND %(to_date)s
+                AND (%(warehouse)s = '' OR warehouse = %(warehouse)s)
+        ),
+        bounds AS (
+            SELECT item_code,
+                SUM(CASE WHEN rn_asc = 1 THEN qty_after_transaction - actual_qty ELSE 0 END) AS opening,
+                SUM(CASE WHEN rn_desc = 1 THEN qty_after_transaction ELSE 0 END) AS closing
+            FROM sle GROUP BY item_code
+        ),
+        moves AS (
+            SELECT item_code,
+                SUM(CASE WHEN voucher_type = 'Stock Entry' AND actual_qty > 0 THEN actual_qty ELSE 0 END) AS se_in,
+                SUM(CASE WHEN voucher_type = 'Purchase Invoice' AND actual_qty > 0 THEN actual_qty ELSE 0 END) AS pi_in,
+                SUM(CASE WHEN voucher_type = 'Sales Invoice' AND actual_qty > 0 THEN actual_qty ELSE 0 END) AS cn_in,
+                SUM(CASE WHEN voucher_type = 'Sales Invoice' AND actual_qty < 0 THEN -actual_qty ELSE 0 END) AS si_out
+            FROM sle GROUP BY item_code
+        )
+        SELECT b.item_code, i.item_name,
+            ROUND(b.opening, 2) opening, ROUND(m.se_in, 2) se_in, ROUND(m.pi_in, 2) pi_in,
+            ROUND(m.cn_in, 2) cn_in, ROUND(m.si_out, 2) si_out,
+            ROUND(b.closing - (b.opening + m.se_in + m.pi_in + m.cn_in - m.si_out), 2) recon,
+            ROUND(b.closing, 2) closing
+        FROM bounds b
+        LEFT JOIN moves m ON m.item_code = b.item_code
+        LEFT JOIN `tabItem` i ON i.name = b.item_code
+        WHERE (m.se_in <> 0 OR m.pi_in <> 0 OR m.cn_in <> 0 OR m.si_out <> 0)
+        ORDER BY i.item_name
+        """,
+        params,
+        as_dict=True,
+    )
+    totals = {
+        "opening": sum(flt(r.opening) for r in rows),
+        "se_in": sum(flt(r.se_in) for r in rows),
+        "pi_in": sum(flt(r.pi_in) for r in rows),
+        "cn_in": sum(flt(r.cn_in) for r in rows),
+        "si_out": sum(flt(r.si_out) for r in rows),
+        "recon": sum(flt(r.recon) for r in rows),
+        "closing": sum(flt(r.closing) for r in rows),
+    }
+    columns = [
+        {"key": "item_code", "label": _("Item"), "type": "text"},
+        {"key": "item_name", "label": _("Name"), "type": "text"},
+        {"key": "opening", "label": _("Opening Balance"), "type": "number", "align": "end", "negRed": True},
+        {"key": "se_in", "label": _("SE In"), "type": "number", "align": "end"},
+        {"key": "pi_in", "label": _("PI In"), "type": "number", "align": "end"},
+        {"key": "cn_in", "label": _("CN Return"), "type": "number", "align": "end"},
+        {"key": "si_out", "label": _("SI Out"), "type": "number", "align": "end"},
+        {"key": "recon", "label": _("Adjustment"), "type": "number", "align": "end", "negRed": True},
+        {"key": "closing", "label": _("Closing Balance"), "type": "number", "align": "end", "negRed": True},
+    ]
+    meta = {
+        "basis": "posting_date",
+        "from": from_date,
+        "to": to_date,
+        "warehouse": warehouse or "",
+    }
+    return _shape(columns, rows, totals, meta)
+
+
+@frappe.whitelist()
+def stock_daily_kpi(
+    company: str,
+    from_date: str,
+    to_date: str,
+    warehouse: str = "",
+) -> dict:
+    """Movement KPI rolled up by document type × direction (in / out / return).
+
+    Collapses the ledger into a handful of KPI rows (Stock Entry in, Sales
+    Invoice out, Credit-Note return, Purchase Invoice in) — count of lines and
+    total absolute quantity per bucket.
+    """
+    _require_company(company)
+    _assert_company_scope(company)  # tenant isolation: reject a foreign company arg
+    _assert_can_read_stock_ledger()
+    params = {
+        "company": company,
+        "from_date": from_date,
+        "to_date": to_date,
+        "warehouse": warehouse or "",
+    }
+    rows = frappe.db.sql(
+        """
+        SELECT turi, yonalish, COUNT(*) cnt, ROUND(SUM(miqdor), 2) jami FROM (
+            SELECT
+                CASE WHEN voucher_type = 'Stock Entry' AND actual_qty > 0 THEN 'Stock Entry'
+                     WHEN voucher_type = 'Sales Invoice' AND actual_qty < 0 THEN 'Sales Invoice'
+                     WHEN voucher_type = 'Sales Invoice' AND actual_qty > 0 THEN 'Credit Note'
+                     WHEN voucher_type = 'Purchase Invoice' AND actual_qty > 0 THEN 'Purchase Invoice'
+                     ELSE 'Boshqa' END AS turi,
+                CASE WHEN voucher_type = 'Sales Invoice' AND actual_qty < 0 THEN 'Chiqim'
+                     WHEN voucher_type = 'Sales Invoice' AND actual_qty > 0 THEN 'Qaytish'
+                     ELSE 'Kirim' END AS yonalish,
+                ABS(actual_qty) miqdor
+            FROM `tabStock Ledger Entry`
+            WHERE is_cancelled = 0 AND company = %(company)s
+                AND posting_date BETWEEN %(from_date)s AND %(to_date)s
+                AND (%(warehouse)s = '' OR warehouse = %(warehouse)s)
+                AND voucher_type IN ('Stock Entry', 'Sales Invoice', 'Purchase Invoice')
+        ) x WHERE turi <> 'Boshqa' GROUP BY turi, yonalish ORDER BY turi
+        """,
+        params,
+        as_dict=True,
+    )
+    totals = {
+        "cnt": sum(flt(r.cnt) for r in rows),
+        "jami": sum(flt(r.jami) for r in rows),
+    }
+    columns = [
+        {"key": "turi", "label": _("Document Type"), "type": "text"},
+        {"key": "yonalish", "label": _("Direction"), "type": "text"},
+        {"key": "cnt", "label": _("Count"), "type": "int", "align": "end"},
+        {"key": "jami", "label": _("Quantity"), "type": "number", "align": "end"},
+    ]
+    meta = {
+        "basis": "posting_date",
+        "from": from_date,
+        "to": to_date,
+        "warehouse": warehouse or "",
+    }
+    return _shape(columns, rows, totals, meta)
+
+
+@frappe.whitelist()
+def stock_ledger_detail(
+    company: str,
+    from_date: str,
+    to_date: str,
+    warehouse: str = "",
+    voucher_type: str = "",
+    limit: int = 500,
+) -> dict:
+    """Raw stock-ledger lines for the window, most-recent first.
+
+    Always LIMIT-bounded (default 500, hard cap 5000) so a wide date range can
+    never stream an unbounded result set. The frontend links each voucher to its
+    in-SPA document route (never the Frappe Desk).
+    """
+    _require_company(company)
+    _assert_company_scope(company)  # tenant isolation: reject a foreign company arg
+    _assert_can_read_stock_ledger()
+    row_limit = min(max(int(limit or 500), 1), 5000)
+    params = {
+        "company": company,
+        "from_date": from_date,
+        "to_date": to_date,
+        "warehouse": warehouse or "",
+        "voucher_type": voucher_type or "",
+        "limit": row_limit,
+    }
+    rows = frappe.db.sql(
+        """
+        SELECT posting_date, posting_time, item_code, warehouse, voucher_type, voucher_no,
+            ROUND(actual_qty, 2) actual_qty, ROUND(qty_after_transaction, 2) qty_after
+        FROM `tabStock Ledger Entry`
+        WHERE is_cancelled = 0 AND company = %(company)s
+            AND posting_date BETWEEN %(from_date)s AND %(to_date)s
+            AND (%(warehouse)s = '' OR warehouse = %(warehouse)s)
+            AND (%(voucher_type)s = '' OR voucher_type = %(voucher_type)s)
+        ORDER BY posting_date DESC, posting_time DESC
+        LIMIT %(limit)s
+        """,
+        params,
+        as_dict=True,
+    )
+    columns = [
+        {"key": "posting_date", "label": _("Date"), "type": "date"},
+        {"key": "item_code", "label": _("Item"), "type": "text"},
+        {"key": "warehouse", "label": _("Warehouse"), "type": "text"},
+        {"key": "voucher_type", "label": _("Voucher Type"), "type": "text"},
+        {"key": "voucher_no", "label": _("Voucher No"), "type": "text", "drill": "document"},
+        {"key": "actual_qty", "label": _("Qty"), "type": "number", "align": "end", "negRed": True},
+        {"key": "qty_after", "label": _("Balance"), "type": "number", "align": "end"},
+    ]
+    meta = {
+        "basis": "posting_date",
+        "from": from_date,
+        "to": to_date,
+        "warehouse": warehouse or "",
+        "voucher_type": voucher_type or "",
+        "limit": row_limit,
+        "row_count": len(rows),
+    }
+    return _shape(columns, rows, totals=None, meta=meta)

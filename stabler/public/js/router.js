@@ -12,6 +12,9 @@ import ReportItemAbc from "./pages/reports/ItemAbc.vue";
 import DrillReport from "./pages/reports/DrillReport.vue";
 import ReportInventoryExpiry from "./pages/reports/InventoryExpiry.vue";
 import ReportSalesTrend from "./pages/reports/ReportSalesTrend.vue";
+import ReportStockMovementSummary from "./pages/reports/StockMovementSummary.vue";
+import ReportStockDailyKpi from "./pages/reports/StockDailyKpi.vue";
+import ReportStockLedgerDetail from "./pages/reports/StockLedgerDetail.vue";
 import Profile from "./pages/Profile.vue";
 import MoneyHome from "./pages/money/MoneyHome.vue";
 import Accounts from "./pages/money/Accounts.vue";
@@ -167,6 +170,9 @@ const routes = [
 	{ path: "/reports/sales-by-salesperson", name: "report-sales-by-salesperson", component: DrillReport, meta: { title: "Sales by Salesperson", module: "sales", report: { title: "Sales by Salesperson", summaryApi: "stabler.api.reports.sales_by_salesperson", exportName: "sales_by_salesperson", defaultSort: { sort_by: "total", sort_dir: "desc" }, filters: [ { key: "customers", label: t("Customers"), searchApi: "stabler.api.sales.list_customers", idKey: "name", display: (r) => r.customer_name || r.name, placeholder: t("All customers") } ] } } },
 	{ path: "/reports/sales-orders", name: "report-sales-orders", component: DrillReport, meta: { title: "Sales Orders (Booked)", module: "sales", report: { title: "Sales Orders (Booked)", summaryApi: "stabler.api.reports.sales_orders", exportName: "sales_orders", defaultSort: { sort_by: "booked", sort_dir: "desc" }, filters: [ { key: "customers", label: t("Customers"), searchApi: "stabler.api.sales.list_customers", idKey: "name", display: (r) => r.customer_name || r.name, placeholder: t("All customers") } ] } } },
 	{ path: "/reports/sales-trend", name: "report-sales-trend", component: ReportSalesTrend, meta: { title: t("Sales Trend"), module: "sales" } },
+	{ path: "/reports/stock-movement-summary", name: "report-stock-movement-summary", component: ReportStockMovementSummary, meta: { title: t("Stock movement summary"), module: "inventory" } },
+	{ path: "/reports/stock-daily-kpi", name: "report-stock-daily-kpi", component: ReportStockDailyKpi, meta: { title: t("Daily in/out KPI"), module: "inventory" } },
+	{ path: "/reports/stock-ledger-detail", name: "report-stock-ledger-detail", component: ReportStockLedgerDetail, meta: { title: t("Stock ledger detail"), module: "inventory" } },
 	{ path: "/profile", name: "profile", component: Profile, meta: { title: t("Profile") } },
 	{ path: "/pos", name: "pos", component: POS, meta: { title: t("POS"), module: "sales" } },
 	{ path: "/manufacturing/line", name: "manufacturing-line", component: ManufacturingOperatorBoard, meta: { title: t("Operator Kiosk") } },

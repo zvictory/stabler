@@ -6,6 +6,7 @@ source,target
 (only for half-rate),
 "(path to the JSON, or the JSON inline).",
 +998 XX XXX XX XX,
+...,
 0,
 0 = no hard lock; past edits still ask for confirmation.,0 = без жёсткой блокировки; прошлые изменения всё равно требуют подтверждения.
 0.00,"0,00"
@@ -118,6 +119,7 @@ Address,Адрес
 Adjust dates or check that {company} has posted transactions in this period.,"Измените даты или проверьте, что {company} имеет проведённые операции в этом периоде."
 Adjust filters and run the report again.,
 Adjust quantities for a partial receipt. Rows left at zero are skipped.,Измените количества для частичной приёмки. Строки с нулём будут пропущены.
+Adjustment,Корректировка
 Admin,Администратор
 Administer users & roles,Управление пользователями и ролями
 Advance,Аванс
@@ -252,6 +254,7 @@ Assign operator,Назначить оператора
 Assign technician,Назначить техника
 Assigned Field User,Закреплённый сотрудник
 Assigned Technician,Назначенный техник
+Assigned.,Назначено.
 At least one counted item line is required.,
 At least one visit purpose is required.,
 At least one voucher is required.,
@@ -267,6 +270,7 @@ Attendance exceptions,Исключения по табелю
 Attendance on/before,Посещаемость до
 Attendance summary,Сводка посещаемости
 Attendance today,
+Auction,Аукцион
 Audit Trail,Журнал изменений
 Audit trail,Журнал изменений
 Audited At,Проверено
@@ -325,9 +329,11 @@ Before → Requested,
 Berry,
 Bid Value,Сумма заявки
 Bid deadline,Срок подачи
+Bid package ready,Пакет заявки готов
 Bid price (Договор),Цена предложения (Договор)
 "Bid price (Договор, VAT incl.)","Цена предложения (Договор, с НДС)"
 Bid pricing saved.,Ценообразование сохранено.
+Bid rate,Курс на тендер
 Bill,Счёт
 Bill #,Счет №
 Bill / invoice number printed on supplier document,"Номер счета / накладной, указанный в документе поставщика"
@@ -362,6 +368,7 @@ Buy,Купить
 Buy X get Y,Купи X получи Y
 Buy markup,Наценка (покупка)
 Buyer,Покупатель
+Buyer TIN,
 Buying price list,Прайс-лист покупки
 By,
 By item,
@@ -375,6 +382,7 @@ CBU rates updated: {rates},Курсы ЦБ обновлены: {rates}
 CBU.uz exchange rates (last 30 days),Курсы валют ЦБУ.uz (последние 30 дней)
 CBU.uz exchange rates appear here.,Здесь отображаются курсы валют ЦБУ.uz.
 CBU:,
+CN Return,Возврат КН
 COGS,Себестоимость
 CRM,CRM
 CRM Report,Отчёт CRM
@@ -491,6 +499,7 @@ Close Work Order,
 Close this Work Order? This finalizes it.,Закрыть этот производственный заказ? Это финальное действие.
 Close visit,Закрыть выезд
 Closing,Закрытие
+Closing Balance,Конечный остаток
 Closing balance,Сальдо на конец периода
 Closing in,Закрытие в
 Closure,
@@ -578,6 +587,7 @@ Costs after dividends (office…),Расходы после дивидендов
 Could not accrue salary.,Не удалось начислить зарплату.
 Could not add holiday.,Не удалось добавить праздник.
 Could not add stage.,Не удалось добавить этап.
+Could not assign.,Не удалось назначить.
 Could not check payment status.,Не удалось проверить статус платежа.
 Could not create contract.,Не удалось создать контракт.
 Could not create the transaction.,Не удалось создать операцию.
@@ -590,6 +600,7 @@ Could not load repost status.,Не удалось загрузить стату�
 Could not load tender intake.,Не удалось загрузить данные тендера.
 Could not load the HR overview.,Не удалось загрузить HR обзор.
 Could not load the PO board.,Не удалось загрузить доску PO.
+Could not load the UZEX lot.,Не удалось загрузить лот UZEX.
 Could not load the board.,Не удалось загрузить доску.
 Could not load the customs queue.,Не удалось загрузить очередь таможни.
 Could not load the director board.,Не удалось загрузить панель директора.
@@ -597,6 +608,9 @@ Could not load the entry.,Не удалось загрузить запись.
 Could not load the logistics board.,Не удалось загрузить логистику.
 Could not load unmatched users.,Не удалось загрузить несопоставленных пользователей.
 Could not load your tenders.,Не удалось загрузить ваши тендеры.
+Could not prepare the document for Didox.,
+Could not prepare the package.,Не удалось подготовить пакет.
+Could not read a lot number from: {0},
 Could not read backup file: {0},
 Could not read the uploaded file.,
 Could not read your location.,Не удалось определить местоположение.
@@ -660,6 +674,7 @@ Critical,Критически
 Critical conflicts,Критические конфликты
 Cumulative %,Накопит. %
 Currency,Валюта
+Currency risk (foreign purchase),Валютный риск (импорт)
 Current AR balance per customer — click a row to see the ledger behind the balance.,
 Current AR balance per customer — ties to the Customer Center.,Текущая задолженность по каждому клиенту — совпадает с Центром клиентов.
 Current Return,
@@ -683,10 +698,12 @@ Customer receivables grouped by aging buckets.,
 Customers,Клиенты
 Customs,Таможня
 Customs queue,Очередь таможни
+Customs value (CIF),Таможенная стоимость (CIF)
 Daily,Ежедневно
 Daily attendance records and employee presence checks.,
 Daily auto-backup,Ежедневная авто-копия
 Daily cap (UZS),
+Daily in/out KPI,Ежедневный KPI прихода/расхода
 Dashboard,Панель
 Dashed,Пунктир
 Data,Данные
@@ -759,6 +776,7 @@ Deliv,Доставл.
 Deliver,Доставить
 Delivered,Доставлено
 Delivery,Доставка
+Delivery Note,Расходная накладная
 Delivery date,Дата доставки
 Delivery deadline,Срок поставки
 Delta,
@@ -781,6 +799,8 @@ Device updated.,
 Device user,
 Device user ID,
 Device user ID is required.,
+Didox,
+Didox may reject this document — missing data:,
 Direct credit note,
 Direct sales return,
 Direction,Направление
@@ -803,8 +823,10 @@ Dividend tax,Налог на дивиденды
 Dividends,Дивиденды
 DocType,Тип документа
 Document,Документ
+Document Type,Тип документа
 Document cancelled successfully.,
 Document changed,
+Document checklist,Чек-лист документов
 Document deleted successfully.,
 Document not found.,
 Document or company…,
@@ -841,8 +863,13 @@ Duplicate sequence {0} on this route.,Повторяющаяся последо�
 Duplicate summary,
 Duplicates,Дубликаты
 Duration (ms),Длительность (мс)
+Duty,Пошлина
 Duty supplement,Доплата за обязанности
 Duty supplement (%),Доплата за обязанности (%)
+E-IMZO did not respond (timeout). Check that the app is running.,
+E-IMZO error,
+E-IMZO is not running. Start the E-IMZO desktop app and try again.,
+E-IMZO returned an invalid response,
 EHF (Elektron Hisob-Faktura) submissions appear here.,Здесь отображаются отправки ЭСФ (Elektron Hisob-Faktura).
 EHF Status,Статус ЭСФ
 EHF Submissions,Отправки ЭСФ
@@ -994,14 +1021,18 @@ Expiry,Срок годности
 Export,Экспорт
 Export CSV,Экспорт CSV
 Export failed.,Экспорт не удался.
+Exposure amount,Сумма экспозиции
 Extra duty pay as a % of the effective base (e.g. acting role). 0 = none.,Доплата за обязанности в % от эффективной базы (напр. и.о.). 0 = нет.
 Extra lateness from slow device clock.,
 F.I.O.,Ф.И.О.
 FG Whse,
 FX Revaluation,
 FX accounts as of {0},
+FX favorable,Курс в плюс
+FX open,Валюта: открыто
 FX rate looks correct,Курс FX верный
 FX rate looks wrong,Курс FX некорректный
+FX risk,Валютный риск
 Failed,Ошибка
 Failed to assign ticket.,Не удалось назначить заявку.
 Failed to cancel entry.,
@@ -1147,6 +1178,7 @@ Failed to update promo plan.,Ошибка обновления плана акц
 Failed to update status.,Ошибка обновления статуса.
 Far district,
 Female,Женский
+Fetch,Загрузить
 Fetched,Загружено
 Field Receivables,
 Field Sales,Полевые продажи
@@ -1281,6 +1313,7 @@ Hourly OT pay = base hourly × this (e.g. 1.5 = time-and-a-half).,Оплата �
 Hours,Часы
 I have tested a restore,
 ID as it appears in raw gate events,
+IKPU code on {0} item(s),
 Identity,
 "If off, a back-dated multi-currency document needs a rate within the days below.",
 Ignore,
@@ -1300,6 +1333,7 @@ In,Вход
 In progress,В процессе
 In time,Время входа
 In transit,В пути
+"In, out, returns and net movement totals for the period.","Итоги прихода, расхода, возвратов и чистого движения за период."
 InService,В эксплуатации
 Inactive,Неактивные
 Include drafts,Включая черновики
@@ -1343,6 +1377,7 @@ Invalid status: {0},Неверный статус: {0}
 Invalid step status: {0},Неверный статус шага: {0}
 Invalid technician state: {0},
 Invalid ticket status: {0},
+Invalid webhook secret,
 Inventory,Склад
 Inventory Aging,Старение запасов
 Invite user,Пригласить пользователя
@@ -1405,6 +1440,7 @@ Keep typing to narrow…,Продолжайте вводить для уточн
 Keeps the audit trail; amend to correct.,Сохраняет аудит-след; для исправления — корректировка.
 Kind,
 Kiosk login is not configured on this site.,Вход через киоск не настроен на этом сайте.
+L,Пр
 Label,Надпись
 Landed,С доставкой
 Landed cost (goods + import),Стоимость с доставкой (товар + импорт)
@@ -1502,6 +1538,7 @@ Logistics,Логистика
 Longitude,Долгота
 Lost,Проиграли
 Lost Badge? Login with PIN,
+Lot loaded from UZEX,Лот загружен из UZEX
 Lot no,№ лота
 Low,Низкий
 Low Stock,Низкий уровень запасов
@@ -1512,6 +1549,7 @@ Maintenance Visit,Выезд на обслуживание
 Make default BOM for this item,Сделать спецификацией по умолчанию
 Make payment,
 Male,Мужской
+Manager,Менеджер
 Manual,
 Manufacturing,Производство
 Manzil,
@@ -1556,6 +1594,7 @@ Minutes tolerated before late penalty starts.,
 Minutes worked before overtime begins.,
 Missing Entry,
 Missing TimePay user id.,
+Missing fields,Недостающие поля
 Missing site config key: {0},
 Missing work mode / region,Нет режима работы / региона
 Mitigation:,Смягчение:
@@ -1693,6 +1732,7 @@ No 1C sync events yet.,Событий синхронизации 1С пока н
 No ARCA payment events yet.,Платежей ARCA пока нет.
 No BOMs yet,Спецификаций пока нет
 No CBU exchange rate found for {0} to {1} on or before {2}.,
+No E-IMZO keys found. Insert your key and reload E-IMZO.,
 No EHF submissions yet. Submit a Sales Invoice to enqueue one.,Пока нет отправок ЭСФ. Проведите счёт продаж
 No Employee Advances account configured.,Счёт авансов не настроен.
 No Employee Advances account is configured for {0}. Set the company's ,
@@ -1741,6 +1781,7 @@ No deductions,Нет удержаний
 No default Bank or Cash account configured for company {0}.,Для компании {0} не настроены банковский или кассовый счёт по умолчанию.
 No default {0} account found to copy parent from.,
 No department,Без отдела
+"No documents yet — add the standard set (ГТД, certificate, acceptance act…).","Документов пока нет — добавьте стандартный набор (ГТД, сертификат, акт…)."
 No earnings,Нет начислений
 No employee account yet — record an advance first.,Пока нет счёта сотрудника — сначала проведите аванс.
 No employees found.,Сотрудники не найдены.
@@ -1900,6 +1941,7 @@ Not permitted to export this report.,
 Not permitted to process Timepay attendance.,
 Not permitted to read Budget.,
 Not permitted to read GL entries.,
+Not permitted to read Stock Ledger Entry,
 Not permitted to read {0} {1},Не разрешено читать {0} {1}
 Not permitted to reconcile this voucher.,
 Not permitted to reconcile {0} {1}.,
@@ -1936,6 +1978,7 @@ Office branch or location,
 Oldest (days),Старейший (дн.)
 Oldest queued,Самый старый в очереди
 Oldest reservation,Старейшая резервация
+Ombor,Склад
 On,Вкл
 On Leave,В отпуске
 On hand,В наличии
@@ -1981,10 +2024,12 @@ Open profile,Открыть профиль
 Open tickets,Открытые заявки
 Opened,Открыта
 Opening,Начисление
+Opening Balance,Начальный остаток
 Opening balance,Начальный остаток
 "Opening balance, period movement, and running balance by account.",
 Opening balances,Начальные остатки
 Opening qty,Начальный остаток
+"Opening, in, out and closing quantity per item over a date range.","Начальный остаток, приход, расход и конечный остаток по каждой позиции за период."
 Operations,Операции
 Operator,Оператор
 Operator Kiosk,
@@ -2040,6 +2085,8 @@ Overtime multiplier,Множитель сверхурочных
 Overview,Обзор
 Owes us,Должен нам
 Owner,
+P,Ож
+PI In,PI приход
 PIN,
 PO,PO
 PO ETA,ETA заказа
@@ -2054,6 +2101,7 @@ POS Profile must define a shop warehouse.,
 POS Profile must define a walk-in customer.,
 POS Profile must define at least one payment mode.,
 POSM,ПОСМ
+Package incomplete — fill the missing fields,Пакет неполный — заполните недостающие поля
 Page not found,Страница не найдена
 Paid,Оплачено
 Paid amount,Выплаченная сумма
@@ -2077,6 +2125,7 @@ Party,Контрагент
 Party account not resolved — re-select the party.,Счёт контрагента не найден — повторно выберите контрагента.
 Party is required.,Контрагент обязателен.
 Past day,Прошедший день
+Paste UZEX lot URL,Вставьте ссылку на лот UZEX
 Paste a direct image URL or leave blank to use initials.,
 Paste access token JWT…,
 Paste new token to replace…,
@@ -2117,6 +2166,7 @@ Payment mode is not allowed for this POS Profile.,
 Payment mode {0} is not an online gateway.,
 "Payment number, reference or party…",
 Payment overdue,Платёж просрочен
+Payment rate,Курс оплаты
 Payment received,Оплата получена
 Payment reminder,Напоминание об оплате
 Payment saved — pending approval before it posts.,Платёж сохранён — ожидает согласования перед проведением.
@@ -2239,6 +2289,7 @@ Postings,Учёты
 Pre-season freezer push,Предсезонная установка морозильников
 Premium,
 Prepaid,Аванс
+Prepare application package,Подготовить пакет заявки
 Present,Присутствует
 Present / half-day / absent,Присут. / полдня / отсут.
 Present / half-day / absent / ambiguous,Присут. / полдня / отсут. / неопр.
@@ -2296,7 +2347,9 @@ Purchase Receipt cancelled.,
 Purchase Receipt submitted.,
 Purchase Receipts,Приёмки товара
 Purchase item,Товар покупки
+Purchase method,Способ закупки
 Purchases,Закупки
+Purchases = selected period · Balance = payable as of the To date (changes with the date). Click a supplier to see the bills.,
 Purchases by Supplier,Закупки по поставщикам
 Purchasing,Закупки
 Purpose,Назначение
@@ -2334,6 +2387,7 @@ Raw attendance events cannot be deleted (audit evidence).,
 Raw gate events are immutable — they represent exactly what the device reported. Use Reprocess to re-run matching on unmatched or errored events.,
 Raw material cost,Стоимость сырья
 Raw materials,Сырьё
+Raw stock ledger rows with voucher trace and running balance.,Строки складского журнала с трассировкой документов и текущим остатком.
 Re-fetch balances for all accounts,Повторно загрузить остатки для всех счётов
 Re-queue,В очередь
 Re-queue stuck,Перезапустить зависшие
@@ -2541,7 +2595,9 @@ Run now,Запустить сейчас
 Run payroll,Запустить расчёт
 Run-rate,Оборот/мес
 Running value,Накопленная стоимость
+SE In,SE приход
 SFA,
+SI Out,SI расход
 SO,SO
 SO number or customer…,
 SRE module unavailable: {0},Модуль SRE недоступен: {0}
@@ -2560,8 +2616,10 @@ Sale completed,
 Sales,Продажи
 "Sales = selected period · Balance = current receivable (all-time, all vouchers — ties to the Customer Center).","Продажи = выбранный период · Баланс = текущая задолженность (за всё время, все документы — совпадает с Центром клиентов)."
 "Sales = selected period · Balance = current receivable (all-time, all vouchers — ties to the Customer Center). Click a customer to see the ledger behind the balance.","Продажи = период · Баланс = текущая задолженность (всё время, все документы — как в Центре клиентов). Нажмите на клиента, чтобы увидеть книгу за балансом."
+"Sales = selected period · Balance = receivable as of the To date (changes with the date, QuickBooks-style). Click a customer to see the ledger behind the balance.",
 Sales Invoice,Счёт продажи
 Sales Invoice must be created from a Sales Order,Счёт продажи должен быть создан на основе заказа
+Sales Invoice must be submitted before sending to Didox,
 Sales Invoice {0} is not submitted,Счёт-фактура продажи {0} не проведён
 Sales Invoice {0} not found,Счёт-фактура продажи {0} не найден
 Sales Invoices,Счета продаж
@@ -2608,6 +2666,7 @@ Save failed.,Ошибка сохранения.
 Save mapping,
 Save modules,Сохранить модули
 Save plan,Сохранить план
+Saved,
 Saved — pending approval before it posts.,Сохранено — ожидает согласования перед проведением.
 Saved.,
 Saving…,Сохранение…
@@ -2639,6 +2698,7 @@ Search a tender deal… ⌘K,Поиск тендерной сделки… ⌘K
 Search account…,Поиск счёта…
 Search asset tag…,Поиск метки имущества…
 "Search by Work Order, Item, or Warehouse…",
+Search by name or code…,Поиск по названию или коду…
 Search by serial or item,Поиск по серийному номеру или товару
 Search campaigns…,Поиск кампаний…
 Search customer,Поиск клиента
@@ -2691,6 +2751,7 @@ Select a supplier to view transactions,Выберите поставщика д�
 Select a warehouse to count.,Выберите склад для пересчёта.
 Select a worker,Выберите сотрудника
 Select account…,Выберите счёт…
+Select all,Выбрать все
 Select an account…,Выберите счёт…
 Select an active leaf warehouse for returns.,
 Select an employee,Выберите сотрудника
@@ -2708,14 +2769,17 @@ Select the bank account this statement belongs to.,"Выберите счёт, �
 Select warehouse,Выберите склад
 Select warehouse…,Выберите склад…
 Selected,Выбрано
+Selection,Отбор
 Select…,Выберите…
 Self-approval blocked,Самосогласование запрещено
 Self-review blocked,
 Sell,Продать
 Sell markup,Наценка (продажа)
+Seller TIN,
 Send currency,Валюта отправки
 Send invite,Отправить приглашение
 Send password reset email to ,Отправить письмо для сброса пароля на 
+Send to Didox,
 Sender name,Имя отправителя
 Sender pays,Отправитель платит
 Seniority,Стаж
@@ -2765,13 +2829,19 @@ Shift 12h,
 Shift 8h,
 Shift class,
 Shift start,
+Shop,Магазин
 Short code,Короткий код
 Show discounts,Показать скидки
 Showing,Показано
 Showing first 500 — narrow the date range to see more.,"Показаны первые 500 — сузьте период, чтобы увидеть больше."
+Showing first {n} rows. Narrow the filters to see more.,"Показаны первые {n} строк. Уточните фильтры, чтобы увидеть больше."
 Showing the first {0} records — use filters to narrow.,Показаны первые {0} записей — используйте фильтры для уточнения.
 Showing the newest,Показаны самые новые
+Sign & send,
 Signed,Подписан
+Signed document (PKCS#7) is required,
+Signing key,
+Signing or sending to Didox failed.,
 Simplified / turnover tax,Упрощённый / налог с оборота
 Simulation result,
 Simulator,
@@ -2808,6 +2878,7 @@ Stale exchange rate: the nearest CBU rate for {0} to {1} is from {2} ({3} days o
 Stale request: reload the document.,
 Standard allowances,
 Standard rate,Стандартная цена
+Standard set,Стандартный набор
 Start,Начало
 Start Date,Дата начала
 Start Work,Начать работу
@@ -2838,6 +2909,8 @@ Stock entries,Приходно-расходные накладные
 Stock entry,Приходно-расходная накладная
 Stock issued,Материалы списаны
 Stock item,Товар со склада
+Stock ledger detail,Детализация складского журнала
+Stock movement summary,Сводка движения запасов
 Stock reservations,Зарезервированные товары
 Stock transactions,
 Stock value,Стоимость складских остатков
@@ -3084,6 +3157,7 @@ Type,Тип
 UOM,Ед. изм.
 USD rate on this date,Курс USD на эту дату
 USD → UZS,USD → UZS
+UZEX lot {0} not found.,
 Unassigned,Не назначен
 Unassigned department or position.,Не назначен отдел или должность.
 Unassigned dept / position,Без отдела / должности
@@ -3094,6 +3168,7 @@ Unit cost,Себестоимость
 Units Sold,Проданных единиц
 Unknown,
 Unknown Cost Center: {0},
+Unknown Didox Submission,
 Unknown Fiscal Year: {0},
 Unknown POS Profile: {0},
 Unknown Purchase Invoice: {0},
@@ -3199,9 +3274,12 @@ Visits this month,Визитов в этом месяце
 Void Cart,
 Volume,Объём
 Voucher,Ваучер
+Voucher No,№ документа
+Voucher Type,Тип документа
 Voucher not found.,
 Voucher not found: {0} {1},
 Voucher…,
+W,П
 WIP Warehouse,
 WIP Whse,
 WIP warehouse,Склад НЗП
@@ -3252,6 +3330,7 @@ Widen the date range or record a payment receipt or disbursement.,Расширь
 "Widen the date range, relax the status filter, or send a new proposal.","Расширьте диапазон дат, ослабьте фильтр статуса или отправьте новое предложение."
 "Widen the date range, relax the status filter, or start a new order.","Расширьте диапазон дат, ослабьте фильтр статуса или начните новый заказ."
 Width,Ширина
+Win rate,Процент побед
 Win/Loss Reason,Причина выигрыша/проигрыша
 Withdrawal,Списание
 Withheld,Удержано
@@ -3283,6 +3362,9 @@ You,
 You are not assigned to this POS Profile.,
 You are not permitted to approve or reject correction requests.,
 You are not permitted to review approval requests.,
+You are not permitted to view customers.,
+You are not permitted to view employees.,
+You are not permitted to view suppliers.,
 You are not permitted to view the audit log.,У вас нет прав на просмотр журнала изменений.
 You have already approved level {0} for this request.,
 You have no approval requests,У вас нет заявок на согласование
@@ -3296,6 +3378,7 @@ You need administrator access to view this page.,Требуется доступ
 You raised this request — it must be approved by someone else.,
 You raised this request — it must be reviewed by someone else.,
 You raised this — another user must approve it.,Вы создали эту заявку — её должен согласовать другой пользователь.
+You will sign this document in the browser with your own E-IMZO key.,
 "Your books are empty. Get started by adding a customer, recording your first sale, or logging an opening balance.","Ваши книги пусты. Начните с добавления клиента, записи первой продажи или ввода начального остатка."
 Your business is ready.,Ваш бизнес готов.
 Yuk xati,Юк хати
@@ -3452,37 +3535,3 @@ yr,г.
 — select —,
 — top-level —,— верхний уровень —
 ⚠ {0} line(s) had no cost — verify item valuation; margin may be overstated.,⚠ {0} строк(а) без себестоимости — проверьте оценку товара; маржа может быть завышена.
-Purchase method,Способ закупки
-Auction,Аукцион
-Shop,Магазин
-Selection,Отбор
-Document checklist,Чек-лист документов
-Standard set,Стандартный набор
-"No documents yet — add the standard set (ГТД, certificate, acceptance act…).","Документов пока нет — добавьте стандартный набор (ГТД, сертификат, акт…)."
-Manager,Менеджер
-Assigned.,Назначено.
-Could not assign.,Не удалось назначить.
-Win rate,Процент побед
-W,П
-L,Пр
-P,Ож
-Customs value (CIF),Таможенная стоимость (CIF)
-Duty,Пошлина
-Currency risk (foreign purchase),Валютный риск (импорт)
-Exposure amount,Сумма экспозиции
-Bid rate,Курс на тендер
-Payment rate,Курс оплаты
-FX favorable,Курс в плюс
-FX risk,Валютный риск
-FX open,Валюта: открыто
-Search by name or code…,Поиск по названию или коду…
-Select all,Выбрать все
-Fetch,Загрузить
-Paste UZEX lot URL,Вставьте ссылку на лот UZEX
-Lot loaded from UZEX,Лот загружен из UZEX
-Could not load the UZEX lot.,Не удалось загрузить лот UZEX.
-Prepare application package,Подготовить пакет заявки
-Bid package ready,Пакет заявки готов
-Package incomplete — fill the missing fields,Пакет неполный — заполните недостающие поля
-Could not prepare the package.,Не удалось подготовить пакет.
-Missing fields,Недостающие поля

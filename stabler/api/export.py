@@ -154,6 +154,28 @@ REPORT_EXPORTS: dict[str, dict] = {
 		"roles": None,
 		"sensitive": False,
 	},
+	# Ombor — stock movement reports (reports.py). Columns/totals from _shape().
+	"stock_movement_summary": {
+		"title": "Stock movement summary",
+		"source": "stabler.api.reports.stock_movement_summary",
+		"filename": "Stock_Movement_Summary",
+		"roles": None,
+		"sensitive": False,
+	},
+	"stock_daily_kpi": {
+		"title": "Daily in/out KPI",
+		"source": "stabler.api.reports.stock_daily_kpi",
+		"filename": "Stock_Daily_KPI",
+		"roles": None,
+		"sensitive": False,
+	},
+	"stock_ledger_detail": {
+		"title": "Stock ledger detail",
+		"source": "stabler.api.reports.stock_ledger_detail",
+		"filename": "Stock_Ledger_Detail",
+		"roles": None,
+		"sensitive": False,
+	},
 	# Sensitive — exposes cost/margin → finance roles only, audit-logged.
 	"gross_margin_by_item": {
 		"title": "Gross Margin by Item",

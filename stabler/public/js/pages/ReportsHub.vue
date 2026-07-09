@@ -188,6 +188,35 @@ const groups = computed(() => [
 		],
 	},
 	{
+		key: "ombor",
+		label: t("Ombor"),
+		icon: "ti-building-warehouse",
+		module: "inventory",
+		reports: [
+			{
+				title: t("Stock movement summary"),
+				description: t("Opening, in, out and closing quantity per item over a date range."),
+				path: "/reports/stock-movement-summary",
+				icon: "ti-arrows-exchange",
+				badge: t("Stock"),
+			},
+			{
+				title: t("Daily in/out KPI"),
+				description: t("In, out, returns and net movement totals for the period."),
+				path: "/reports/stock-daily-kpi",
+				icon: "ti-arrows-up-down",
+				badge: t("Stock"),
+			},
+			{
+				title: t("Stock ledger detail"),
+				description: t("Raw stock ledger rows with voucher trace and running balance."),
+				path: "/reports/stock-ledger-detail",
+				icon: "ti-list-details",
+				badge: t("Stock"),
+			},
+		],
+	},
+	{
 		key: "people",
 		label: t("People"),
 		icon: "ti-users-group",
