@@ -21,7 +21,8 @@
   "enable_bpm",
   "enable_tender",
   "enable_remittance",
-  "enable_installment"
+  "enable_installment",
+  "enable_imports"
  ],
  "fields": [
   {
@@ -145,6 +146,14 @@
    "fieldtype": "Check",
    "in_list_view": 1,
    "label": "Installment (Murabaha)"
+  },
+  {
+   "default": "0",
+   "description": "Import/customs declaration pipeline (MSAERP migration). OFF by default so other tenants are unaffected.",
+   "fieldname": "enable_imports",
+   "fieldtype": "Check",
+   "in_list_view": 1,
+   "label": "Imports"
   }
  ],
  "index_web_pages_for_search": 1,

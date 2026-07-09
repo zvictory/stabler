@@ -413,6 +413,7 @@ Cancel this transfer?,
 Cancel {name}? This will reverse the stock movements.,{name} iptal edilsin mi? Bu işlem stok hareketlerini tersine çevirecek.
 Cancelled,İptal edildi
 Cancelled entries cannot be submitted; amend instead.,
+Cannot change Commercial Invoice status from {0} to {1}.,Ticari Fatura durumu {0} konumundan {1} konumuna değiştirilemez.
 Cannot check out before checking in.,Giriş yapmadan çıkış yapılamaz.
 Cannot create a return against a return document.,
 Cannot create invoice: no warehouse set for stock item(s) {0}.,Fatura oluşturulamıyor: {0} stok kalemi için depo ayarlanmamış.
@@ -1316,6 +1317,7 @@ Import outlet locations,Nokta konumlarını içe aktar
 Import {0} lines,{0} satırı içe aktar
 Imported,İçe aktarıldı
 Imported {0} of {1} lines ({2} duplicates skipped).,{1} satırdan {0} içe aktarıldı ({2} yinelenen atlandı).
+Imports,İthalat
 In,Giriş
 In progress,Devam ediyor
 In time,Zamanında
@@ -2994,6 +2996,7 @@ That date is already a holiday.,Bu tarih zaten tatil.
 That voucher is not linked to this transaction.,
 The Compliance module is disabled for this company.,Bu şirket için Uyumluluk modülü devre dışı.
 The GL ledger scan detected {0} issues that require immediate attention.,
+The Imports workspace will be built out in the next work package.,İthalat çalışma alanı bir sonraki iş paketinde geliştirilecektir.
 "The queue is blocked — {0} repost(s) stuck. Re-queue them, then Run now.",Kuyruk bloke — {0} takılı. Kuyruğa alıp 'Şimdi çalıştır' deyin.
 The referenced document is cancelled and cannot be approved.,
 The referenced document no longer exists.,

@@ -415,6 +415,7 @@ Cancel this transfer?,
 Cancel {name}? This will reverse the stock movements.,{name} bekor qilinsinmi? Bu zaxira harakatlarini teskari yo'naltiradi.
 Cancelled,Bekor qilingan
 Cancelled entries cannot be submitted; amend instead.,
+Cannot change Commercial Invoice status from {0} to {1}.,Kommersiya invoysi holatini {0} dan {1} ga o'zgartirib bo'lmaydi.
 Cannot check out before checking in.,Kirish qilmasdan chiqish qila olmaysiz.
 Cannot create a return against a return document.,
 Cannot create invoice: no warehouse set for stock item(s) {0}.,Hisob-faktura yaratib bo'lmaydi: {0} tovar(lar) uchun ombor ko'rsatilmagan.
@@ -1323,6 +1324,7 @@ Import outlet locations,Nuqta joylashuvlarini import qilish
 Import {0} lines,{0} qatorni import qilish
 Imported,Import qilindi
 Imported {0} of {1} lines ({2} duplicates skipped).,{1} qatordan {0} import qilindi ({2} dublikat o'tkazib yuborildi).
+Imports,Import
 In,Kirish
 In progress,Jarayonda
 In time,Kirish vaqti
@@ -3007,6 +3009,7 @@ That date is already a holiday.,Bu sana allaqachon bayram.
 That voucher is not linked to this transaction.,
 The Compliance module is disabled for this company.,Bu kompaniya uchun Muvofiqlik moduli o'chirilgan.
 The GL ledger scan detected {0} issues that require immediate attention.,
+The Imports workspace will be built out in the next work package.,Import bo'limi keyingi ish paketida ishlab chiqiladi.
 "The queue is blocked — {0} repost(s) stuck. Re-queue them, then Run now.","Navbat bloklangan — {0} ta osilgan. Ularni qayta navbatga qo'ying, so'ng 'Hozir ishga tushirish'."
 The referenced document is cancelled and cannot be approved.,
 The referenced document no longer exists.,

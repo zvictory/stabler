@@ -26,6 +26,7 @@ _MODULE_FIELDS = {
 	"service": "enable_service",
 	"bpm": "enable_bpm",
 	"tender": "enable_tender",
+	"imports": "enable_imports",
 	# Admin-only modules — toggled via company enable_* field but absent from
 	# _MODULE_ROLES so only System Manager / Stabler Admin can reach them via
 	# the SPA's canAccessModule() check.
@@ -55,6 +56,7 @@ _MODULE_ROLES: dict[str, list[str]] = {
 	"service": ["Sales Manager", "Support Team", "Maintenance User", "Maintenance Manager"],
 	"bpm": ["Sales Manager"],
 	"tender": ["Sales User", "Sales Manager"],
+	"imports": ["Imports User", "Imports Manager", "Stabler Declarant", "Stabler Logist"],
 	"fx_revaluation": ["Accounts Manager"],
 	"budget": ["Accounts User", "Accounts Manager"],
 }

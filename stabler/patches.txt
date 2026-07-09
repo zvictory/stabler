@@ -1,3 +1,4 @@
+[pre_model_sync]
 stabler.patches.v01_add_user_allowed_companies
 stabler.patches.v02_enable_stock_reservation
 stabler.patches.v03_add_enable_compliance
@@ -39,3 +40,5 @@ stabler.patches.v38_tender_view_roles
 
 [post_model_sync]
 stabler.patches.v39_deal_uzex_fields
+stabler.patches.v40_imports_roles
+stabler.patches.v41_po_imports_fields

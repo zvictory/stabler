@@ -145,6 +145,7 @@ import AdminCompliance from "./pages/admin/Compliance.vue";
 import AdminAccessReview from "./pages/admin/AccessReview.vue";
 import AdminPostingWindow from "./pages/admin/PostingWindow.vue";
 import AdminRepostMonitor from "./pages/admin/RepostMonitor.vue";
+import ImportsDashboard from "./pages/imports/ImportsDashboard.vue";
 import NotFound from "./pages/NotFound.vue";
 import ServerError from "./pages/ServerError.vue";
 
@@ -155,6 +156,7 @@ const routes = [
 	// un-provisioned users here).
 	{ path: "/welcome", name: "welcome", component: GenesisWizard, meta: { title: t("Welcome"), module: null, "public-after-login": true } },
 	{ path: "/dashboard", name: "dashboard", component: Dashboard, meta: { title: t("Dashboard"), module: "dashboard" } },
+	{ path: "/imports", name: "imports", component: ImportsDashboard, meta: { title: t("Imports"), module: "imports" } },
 	{ path: "/reports", name: "reports", component: ReportsHub, meta: { title: t("Reports") } },
 	{ path: "/reports/sales-by-customer", name: "report-sales-by-customer", component: ReportSalesByCustomer, meta: { title: t("Sales by Customer"), module: "sales" } },
 	{ path: "/reports/customer-balance-summary", name: "report-customer-balance-summary", component: ReportCustomerBalanceSummary, meta: { title: t("Customer Balance Summary"), module: "sales" } },

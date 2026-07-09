@@ -420,6 +420,7 @@ Cancel this transfer?,
 Cancel {name}? This will reverse the stock movements.,Отменить {name}? Это отменит движения товара.
 Cancelled,Отменено
 Cancelled entries cannot be submitted; amend instead.,
+Cannot change Commercial Invoice status from {0} to {1}.,Невозможно изменить статус «Коммерческий инвойс» с {0} на {1}.
 Cannot check out before checking in.,Невозможно выйти до входа.
 Cannot create a return against a return document.,
 Cannot create invoice: no warehouse set for stock item(s) {0}.,Невозможно создать счёт: не указан склад для товара(ов) {0}.
@@ -1329,6 +1330,7 @@ Import outlet locations,Импорт геолокаций точек
 Import {0} lines,Импортировать {0} строк
 Imported,Импортировано
 Imported {0} of {1} lines ({2} duplicates skipped).,Импортировано {0} из {1} строк ({2} дубликатов пропущено).
+Imports,Импорт
 In,Вход
 In progress,В процессе
 In time,Время входа
@@ -3013,6 +3015,7 @@ That date is already a holiday.,Эта дата уже праздник.
 That voucher is not linked to this transaction.,
 The Compliance module is disabled for this company.,Модуль соответствия отключён для этой компании.
 The GL ledger scan detected {0} issues that require immediate attention.,
+The Imports workspace will be built out in the next work package.,Раздел «Импорт» будет реализован в следующем пакете работ.
 "The queue is blocked — {0} repost(s) stuck. Re-queue them, then Run now.","Очередь заблокирована — зависло {0}. Перезапустите их, затем «Запустить сейчас»."
 The referenced document is cancelled and cannot be approved.,
 The referenced document no longer exists.,

@@ -413,6 +413,7 @@ Cancel this transfer?,Cancel this transfer?
 Cancel {name}? This will reverse the stock movements.,Cancel {name}? This will reverse the stock movements.
 Cancelled,Cancelled
 Cancelled entries cannot be submitted; amend instead.,Cancelled entries cannot be submitted; amend instead.
+Cannot change Commercial Invoice status from {0} to {1}.,Cannot change Commercial Invoice status from {0} to {1}.
 Cannot check out before checking in.,Cannot check out before checking in.
 Cannot create a return against a return document.,Cannot create a return against a return document.
 Cannot create invoice: no warehouse set for stock item(s) {0}.,Cannot create invoice: no warehouse set for stock item(s) {0}.
@@ -1321,6 +1322,7 @@ Import outlet locations,Import outlet locations
 Import {0} lines,Import {0} lines
 Imported,Imported
 Imported {0} of {1} lines ({2} duplicates skipped).,Imported {0} of {1} lines ({2} duplicates skipped).
+Imports,Imports
 In,In
 In progress,In progress
 In time,In time
@@ -3004,6 +3006,7 @@ That date is already a holiday.,That date is already a holiday.
 That voucher is not linked to this transaction.,That voucher is not linked to this transaction.
 The Compliance module is disabled for this company.,The Compliance module is disabled for this company.
 The GL ledger scan detected {0} issues that require immediate attention.,The GL ledger scan detected {0} issues that require immediate attention.
+The Imports workspace will be built out in the next work package.,The Imports workspace will be built out in the next work package.
 "The queue is blocked — {0} repost(s) stuck. Re-queue them, then Run now.","The queue is blocked — {0} repost(s) stuck. Re-queue them, then Run now."
 The referenced document is cancelled and cannot be approved.,The referenced document is cancelled and cannot be approved.
 The referenced document no longer exists.,The referenced document no longer exists.

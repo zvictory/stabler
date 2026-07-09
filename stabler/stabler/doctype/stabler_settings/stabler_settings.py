@@ -63,6 +63,7 @@ def module_map_for(company: str) -> dict:
 			"tender": False,
 			"remittance": True,
 			"installment": True,
+			"imports": False,
 		}
 	return {
 		"money": bool(row.enable_money),
@@ -81,4 +82,5 @@ def module_map_for(company: str) -> dict:
 		"tender": bool(getattr(row, "enable_tender", 0)),
 		"remittance": bool(getattr(row, "enable_remittance", 1)),
 		"installment": bool(getattr(row, "enable_installment", 1)),
+		"imports": bool(getattr(row, "enable_imports", 0)),
 	}
