@@ -1,22 +1,27 @@
 """Commercial Invoice controller.
 
-Enforces the customs-clearance lifecycle as a one-way status pipeline, with
-"Cancelled" reachable as an explicit exit from any non-terminal status.
-Terminal statuses (Reconciled, Cancelled) accept no further transition.
+Enforces the shipping/logistics lifecycle as a one-way status pipeline, with
+"Cancelled" reachable as an explicit exit from any non-terminal status except
+ARRIVED_AT_IRAN — once goods have physically arrived in-country the deal
+cannot be walked back. Customs-clearance statuses (declaration filed, under
+review, cleared, ...) belong to the separate Customs Declaration doctype, not
+here. Terminal statuses (DELIVERED_TO_UZBEKISTAN, Cancelled) accept no
+further transition.
 """
 
 import frappe
 from frappe.model.document import Document
 
 _ALLOWED_TRANSITIONS = {
-	"Draft": {"Pending Documents", "Cancelled"},
-	"Pending Documents": {"Submitted to Broker", "Cancelled"},
-	"Submitted to Broker": {"Declaration Filed", "Cancelled"},
-	"Declaration Filed": {"Under Customs Review", "Cancelled"},
-	"Under Customs Review": {"Customs Cleared", "Cancelled"},
-	"Customs Cleared": {"Goods Received", "Cancelled"},
-	"Goods Received": {"Reconciled"},
-	"Reconciled": set(),
+	"BOOKED": {"STUFFED", "Cancelled"},
+	"STUFFED": {"GATE_IN", "Cancelled"},
+	"GATE_IN": {"ON_BOARD", "Cancelled"},
+	"ON_BOARD": {"IN_TRANSIT", "Cancelled"},
+	"IN_TRANSIT": {"DISCHARGED", "Cancelled"},
+	"DISCHARGED": {"AVAILABLE", "Cancelled"},
+	"AVAILABLE": {"ARRIVED_AT_IRAN", "Cancelled"},
+	"ARRIVED_AT_IRAN": {"DELIVERED_TO_UZBEKISTAN"},
+	"DELIVERED_TO_UZBEKISTAN": set(),
 	"Cancelled": set(),
 }
 

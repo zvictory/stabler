@@ -42,3 +42,4 @@ stabler.patches.v38_tender_view_roles
 stabler.patches.v39_deal_uzex_fields
 stabler.patches.v40_imports_roles
 stabler.patches.v41_po_imports_fields
+stabler.patches.v42_po_imports_costing_fields

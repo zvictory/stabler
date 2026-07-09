@@ -21,18 +21,19 @@ _SOURCE_PATH = os.path.join(
 )
 
 _ALL_STATUSES = {
-	"Draft",
-	"Pending Documents",
-	"Submitted to Broker",
-	"Declaration Filed",
-	"Under Customs Review",
-	"Customs Cleared",
-	"Goods Received",
-	"Reconciled",
+	"BOOKED",
+	"STUFFED",
+	"GATE_IN",
+	"ON_BOARD",
+	"IN_TRANSIT",
+	"DISCHARGED",
+	"AVAILABLE",
+	"ARRIVED_AT_IRAN",
+	"DELIVERED_TO_UZBEKISTAN",
 	"Cancelled",
 }
 
-_TERMINAL_STATUSES = {"Reconciled", "Cancelled"}
+_TERMINAL_STATUSES = {"DELIVERED_TO_UZBEKISTAN", "Cancelled"}
 
 
 def _load_allowed_transitions() -> dict[str, set[str]]:
@@ -59,10 +60,10 @@ class TestAllowedTransitionsShape(unittest.TestCase):
 			self.assertEqual(self.transitions[status], set(), f"{status} should be terminal")
 
 	def test_non_terminal_statuses_can_reach_cancelled(self):
-		# Goods Received is the deliberate exception — see
-		# test_goods_received_only_reaches_reconciled below.
+		# ARRIVED_AT_IRAN is the deliberate exception — see
+		# test_arrived_at_iran_only_reaches_delivered below.
 		for status, targets in self.transitions.items():
-			if status in _TERMINAL_STATUSES or status == "Goods Received":
+			if status in _TERMINAL_STATUSES or status == "ARRIVED_AT_IRAN":
 				continue
 			self.assertIn("Cancelled", targets, f"{status} should be cancellable")
 
@@ -75,14 +76,15 @@ class TestAllowedTransitionsShape(unittest.TestCase):
 		# nominal pipeline order, or to Cancelled. This guards against a typo
 		# reopening a path back to an earlier stage.
 		order = [
-			"Draft",
-			"Pending Documents",
-			"Submitted to Broker",
-			"Declaration Filed",
-			"Under Customs Review",
-			"Customs Cleared",
-			"Goods Received",
-			"Reconciled",
+			"BOOKED",
+			"STUFFED",
+			"GATE_IN",
+			"ON_BOARD",
+			"IN_TRANSIT",
+			"DISCHARGED",
+			"AVAILABLE",
+			"ARRIVED_AT_IRAN",
+			"DELIVERED_TO_UZBEKISTAN",
 		]
 		index = {status: i for i, status in enumerate(order)}
 		for status, targets in self.transitions.items():
@@ -97,10 +99,10 @@ class TestAllowedTransitionsShape(unittest.TestCase):
 					f"{status} -> {target} moves backwards in the pipeline",
 				)
 
-	def test_goods_received_only_reaches_reconciled(self):
-		# Goods Received is the sole status without a Cancelled exit — once
-		# goods have cleared customs the deal cannot be walked back.
-		self.assertEqual(self.transitions["Goods Received"], {"Reconciled"})
+	def test_arrived_at_iran_only_reaches_delivered(self):
+		# ARRIVED_AT_IRAN is the sole status without a Cancelled exit — once
+		# goods have physically arrived the deal cannot be walked back.
+		self.assertEqual(self.transitions["ARRIVED_AT_IRAN"], {"DELIVERED_TO_UZBEKISTAN"})
 
 
 if __name__ == "__main__":

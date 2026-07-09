@@ -13,6 +13,28 @@
   "ci_date",
   "currency",
   "status",
+  "section_logistics",
+  "incoterm",
+  "incoterm_location",
+  "vessel",
+  "voyage",
+  "bl_number",
+  "column_break_logistics",
+  "port_of_loading",
+  "port_of_discharge",
+  "eta_transit_port",
+  "etd",
+  "eta",
+  "atd",
+  "ata",
+  "section_totals",
+  "total_boxes",
+  "total_kg",
+  "column_break_totals",
+  "agreed_total",
+  "docs_total",
+  "cash_difference",
+  "customs_fee",
   "section_items",
   "items"
  ],
@@ -61,13 +83,128 @@
    "options": "Currency"
   },
   {
-   "default": "Draft",
+   "default": "BOOKED",
    "fieldname": "status",
    "fieldtype": "Select",
    "in_list_view": 1,
    "label": "Status",
-   "options": "Draft\nPending Documents\nSubmitted to Broker\nDeclaration Filed\nUnder Customs Review\nCustoms Cleared\nGoods Received\nReconciled\nCancelled",
+   "options": "BOOKED\nSTUFFED\nGATE_IN\nON_BOARD\nIN_TRANSIT\nDISCHARGED\nAVAILABLE\nARRIVED_AT_IRAN\nDELIVERED_TO_UZBEKISTAN\nCancelled",
    "reqd": 1
+  },
+  {
+   "fieldname": "section_logistics",
+   "fieldtype": "Section Break",
+   "label": "Logistics"
+  },
+  {
+   "fieldname": "incoterm",
+   "fieldtype": "Select",
+   "label": "Incoterm",
+   "options": "\nEXW\nFCA\nFAS\nFOB\nCFR\nCIF\nCPT\nCIP\nDAP\nDPU\nDDP"
+  },
+  {
+   "fieldname": "incoterm_location",
+   "fieldtype": "Data",
+   "label": "Incoterm Location"
+  },
+  {
+   "fieldname": "vessel",
+   "fieldtype": "Data",
+   "label": "Vessel"
+  },
+  {
+   "fieldname": "voyage",
+   "fieldtype": "Data",
+   "label": "Voyage"
+  },
+  {
+   "fieldname": "bl_number",
+   "fieldtype": "Data",
+   "label": "BL Number"
+  },
+  {
+   "fieldname": "column_break_logistics",
+   "fieldtype": "Column Break"
+  },
+  {
+   "fieldname": "port_of_loading",
+   "fieldtype": "Data",
+   "label": "Port of Loading"
+  },
+  {
+   "fieldname": "port_of_discharge",
+   "fieldtype": "Data",
+   "label": "Port of Discharge"
+  },
+  {
+   "fieldname": "eta_transit_port",
+   "fieldtype": "Date",
+   "label": "ETA Transit Port"
+  },
+  {
+   "fieldname": "etd",
+   "fieldtype": "Date",
+   "label": "ETD"
+  },
+  {
+   "fieldname": "eta",
+   "fieldtype": "Date",
+   "label": "ETA"
+  },
+  {
+   "fieldname": "atd",
+   "fieldtype": "Date",
+   "label": "ATD"
+  },
+  {
+   "fieldname": "ata",
+   "fieldtype": "Date",
+   "label": "ATA"
+  },
+  {
+   "fieldname": "section_totals",
+   "fieldtype": "Section Break",
+   "label": "Totals"
+  },
+  {
+   "fieldname": "total_boxes",
+   "fieldtype": "Int",
+   "label": "Total Boxes"
+  },
+  {
+   "fieldname": "total_kg",
+   "fieldtype": "Float",
+   "label": "Total Kg"
+  },
+  {
+   "fieldname": "column_break_totals",
+   "fieldtype": "Column Break"
+  },
+  {
+   "fieldname": "agreed_total",
+   "fieldtype": "Currency",
+   "label": "Agreed Total",
+   "options": "currency"
+  },
+  {
+   "fieldname": "docs_total",
+   "fieldtype": "Currency",
+   "label": "Docs Total",
+   "options": "currency",
+   "permlevel": 1
+  },
+  {
+   "fieldname": "cash_difference",
+   "fieldtype": "Currency",
+   "label": "Cash Difference",
+   "options": "currency",
+   "permlevel": 1
+  },
+  {
+   "fieldname": "customs_fee",
+   "fieldtype": "Currency",
+   "label": "Customs Fee",
+   "options": "currency"
   },
   {
    "fieldname": "section_items",

@@ -73,35 +73,35 @@ class CommercialInvoiceModuleGateIntegrationTest(FrappeTestCase):
 	def test_invalid_transition_blocked_when_imports_enabled(self):
 		self._set_imports_enabled(True)
 		ci = self._new_ci()
-		self.assertEqual(ci.status, "Draft")
-		ci.status = "Declaration Filed"  # skips Pending Documents / Submitted to Broker
+		self.assertEqual(ci.status, "BOOKED")
+		ci.status = "ON_BOARD"  # skips STUFFED / GATE_IN
 		with self.assertRaises(frappe.ValidationError):
 			ci.save(ignore_permissions=True)
 
 	def test_valid_transition_allowed_when_imports_enabled(self):
 		self._set_imports_enabled(True)
 		ci = self._new_ci()
-		ci.status = "Pending Documents"
+		ci.status = "STUFFED"
 		ci.save(ignore_permissions=True)  # should not raise
 		ci.reload()
-		self.assertEqual(ci.status, "Pending Documents")
+		self.assertEqual(ci.status, "STUFFED")
 
 	def test_invalid_transition_is_noop_when_imports_disabled(self):
 		self._set_imports_enabled(False)
 		ci = self._new_ci()
-		ci.status = "Declaration Filed"  # would be invalid if imports were on
+		ci.status = "ON_BOARD"  # would be invalid if imports were on
 		ci.save(ignore_permissions=True)  # must not raise: module is off
 		ci.reload()
-		self.assertEqual(ci.status, "Declaration Filed")
+		self.assertEqual(ci.status, "ON_BOARD")
 
 	def test_invalid_transition_is_noop_during_msaerp_migration(self):
 		self._set_imports_enabled(True)
 		ci = self._new_ci()
 		frappe.flags.in_msaerp_migration = True
-		ci.status = "Declaration Filed"  # would be invalid outside migration
+		ci.status = "ON_BOARD"  # would be invalid outside migration
 		ci.save(ignore_permissions=True)  # must not raise: migration bypass
 		ci.reload()
-		self.assertEqual(ci.status, "Declaration Filed")
+		self.assertEqual(ci.status, "ON_BOARD")
 
 
 if __name__ == "__main__":
