@@ -10,8 +10,8 @@ import {
 } from "../../api/marketing.js";
 import { formatMoney } from "../../composables/money.js";
 import { t } from "../../composables/i18n.js";
-import { getStatusBadgeClass } from "../../composables/status.js";
 import EmptyState from "../../components/EmptyState.vue";
+import StatusBadge from "../../components/StatusBadge.vue";
 
 const session = useSession();
 const { activeCompany, user } = storeToRefs(session);
@@ -47,10 +47,6 @@ async function load() {
 
 onMounted(load);
 watch(activeCompany, load);
-
-function statusClass(status) {
-	return getStatusBadgeClass("Marketing Claim", status);
-}
 
 async function openDetail(name) {
 	detailOpen.value = true;
@@ -149,7 +145,7 @@ async function doSettle() {
 						<td>{{ r.promo_plan }}</td>
 						<td>{{ r.distributor }}</td>
 						<td class="text-end font-monospace">{{ formatMoney(r.claim_amount, currency, lang) }}</td>
-						<td><span class="badge" :class="statusClass(r.status)">{{ t(r.status) }}</span></td>
+						<td><StatusBadge doctype="Marketing Claim" :status="r.status" /></td>
 					</tr>
 				</tbody>
 			</table>
@@ -181,7 +177,7 @@ async function doSettle() {
 						<h3 class="m-0">{{ detail.name }}</h3>
 						<div class="small text-secondary">{{ detail.promo_plan }}</div>
 					</div>
-					<span class="badge ms-auto" :class="statusClass(detail.status)">{{ t(detail.status) }}</span>
+					<StatusBadge class="ms-auto" doctype="Marketing Claim" :status="detail.status" />
 				</div>
 
 				<div class="datagrid mb-3">

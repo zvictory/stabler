@@ -145,6 +145,12 @@ export const STATUS_MAP = {
 		OK: "bg-success-lt",
 		Error: "bg-red-lt",
 	},
+	"Installment Schedule State": {
+		paid: "bg-green-lt",
+		partial: "bg-yellow-lt",
+		overdue: "bg-red-lt",
+		upcoming: "bg-blue-lt",
+	},
 	"docstatus": {
 		0: "bg-yellow-lt", // Draft
 		1: "bg-green-lt",  // Submitted / Active

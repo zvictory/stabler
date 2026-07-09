@@ -7,6 +7,7 @@ import { formatMoney } from "../../composables/money.js";
 import { formatDate } from "../../composables/date.js";
 import DateInput from "../../components/DateInput.vue";
 import EmptyState from "../../components/EmptyState.vue";
+import StatusBadge from "../../components/StatusBadge.vue";
 
 const session = useSession();
 const company = computed(() => session.activeCompany);
@@ -58,12 +59,6 @@ function closeDetail() {
 	detailOpen.value = false;
 	detail.value = null;
 }
-
-const docstatusLabel = (s) =>
-	s === 0 ? t("Draft") : s === 1 ? t("Submitted") : t("Cancelled");
-
-const docstatusClass = (s) =>
-	s === 0 ? "bg-yellow-lt" : s === 1 ? "bg-green-lt" : "bg-red-lt";
 
 onMounted(load);
 </script>
@@ -124,9 +119,7 @@ onMounted(load);
 							{{ formatMoney(tr.send_amount, tr.send_currency) }}
 						</td>
 						<td>
-							<span class="badge" :class="docstatusClass(tr.docstatus)">
-								{{ docstatusLabel(tr.docstatus) }}
-							</span>
+							<StatusBadge doctype="Remittance Transfer" :docstatus="tr.docstatus" />
 						</td>
 					</tr>
 				</tbody>
@@ -168,9 +161,7 @@ onMounted(load);
 				</div>
 				<div class="mb-3">
 					<div class="text-secondary small">{{ t("Status") }}</div>
-					<span class="badge" :class="docstatusClass(detail.docstatus)">
-						{{ docstatusLabel(detail.docstatus) }}
-					</span>
+					<StatusBadge doctype="Remittance Transfer" :docstatus="detail.docstatus" />
 				</div>
 
 				<!-- JE accounts table -->

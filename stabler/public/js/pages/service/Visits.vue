@@ -6,6 +6,7 @@ import { t } from "../../composables/i18n.js";
 import { useSession } from "../../stores/session.js";
 import DateInput from "../../components/DateInput.vue";
 import EmptyState from "../../components/EmptyState.vue";
+import StatusBadge from "../../components/StatusBadge.vue";
 import Typeahead from "../../components/Typeahead.vue";
 
 const session = useSession();
@@ -24,18 +25,6 @@ const filters = ref({
 const customerDisplay = ref("");
 
 const company = computed(() => session.activeCompany);
-
-function statusLabel(docstatus) {
-	if (Number(docstatus) === 1) return t("Submitted");
-	if (Number(docstatus) === 2) return t("Cancelled");
-	return t("Draft");
-}
-
-function statusClass(docstatus) {
-	if (Number(docstatus) === 1) return "bg-green-lt";
-	if (Number(docstatus) === 2) return "bg-danger-lt";
-	return "bg-secondary-lt";
-}
 
 function billingLabel(visit) {
 	if (visit.custom_sales_invoice) return visit.custom_sales_invoice;
@@ -201,9 +190,7 @@ onMounted(refreshAll);
 					</td>
 					<td>{{ visit.service_people || "—" }}</td>
 					<td>
-						<span class="badge" :class="statusClass(visit.docstatus)">
-							{{ statusLabel(visit.docstatus) }}
-						</span>
+						<StatusBadge doctype="Visit" :docstatus="visit.docstatus" />
 					</td>
 					<td>
 						<span class="badge" :class="billingClass(visit)">

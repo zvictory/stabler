@@ -12,8 +12,8 @@ import {
 import { formatMoney } from "../../composables/money.js";
 import { formatDateTime } from "../../composables/date.js";
 import { t } from "../../composables/i18n.js";
-import { getStatusBadgeClass } from "../../composables/status.js";
 import EmptyState from "../../components/EmptyState.vue";
+import StatusBadge from "../../components/StatusBadge.vue";
 import MoneyInput from "../../components/MoneyInput.vue";
 import DateInput from "../../components/DateInput.vue";
 import Typeahead from "../../components/Typeahead.vue";
@@ -101,10 +101,6 @@ watch(search, () => {
 	if (searchTimer) clearTimeout(searchTimer);
 	searchTimer = setTimeout(load, 250);
 });
-
-function statusClass(status) {
-	return getStatusBadgeClass("Promo Plan", status);
-}
 
 function planTypeClass(pt) {
 	if (pt === "TPR") return "bg-blue-lt";
@@ -271,7 +267,7 @@ async function submitForm() {
 						</td>
 						<td>{{ r.channel || "—" }}</td>
 						<td>
-							<span class="badge" :class="statusClass(r.status)">{{ t(r.status) }}</span>
+							<StatusBadge doctype="Promo Plan" :status="r.status" />
 						</td>
 						<td class="text-end font-monospace">
 							{{ formatMoney(r.budget, currency, lang) }}

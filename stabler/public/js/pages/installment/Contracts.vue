@@ -145,20 +145,6 @@ async function submitCollection() {
 	}
 }
 
-const docstatusLabel = (s) =>
-	s === 0 ? t("Draft") : s === 1 ? t("Submitted") : t("Cancelled");
-const docstatusClass = (s) =>
-	s === 0 ? "bg-yellow-lt" : s === 1 ? "bg-green-lt" : "bg-red-lt";
-
-function scheduleStateClass(state) {
-	return {
-		paid: "bg-green-lt",
-		partial: "bg-yellow-lt",
-		overdue: "bg-red-lt",
-		upcoming: "bg-blue-lt",
-	}[state || "upcoming"];
-}
-
 function progressPercent(contract) {
 	const total = Number(contract?.grand_total || 0);
 	const outstanding = Number(contract?.outstanding_amount || 0);
@@ -236,9 +222,7 @@ onMounted(load);
 							{{ formatMoney(c.outstanding_amount, c.currency) }}
 						</td>
 						<td>
-							<span class="badge" :class="docstatusClass(c.docstatus)">
-								{{ docstatusLabel(c.docstatus) }}
-							</span>
+							<StatusBadge doctype="Installment Contract" :docstatus="c.docstatus" />
 						</td>
 					</tr>
 				</tbody>
@@ -392,9 +376,7 @@ onMounted(load);
 								<td>{{ formatDate(row.due_date) }}</td>
 								<td class="text-secondary small">
 									<div>{{ row.description }}</div>
-									<span class="badge" :class="scheduleStateClass(row.state)">
-										{{ t(row.state || "upcoming") }}
-									</span>
+									<StatusBadge doctype="Installment Schedule State" :status="row.state || 'upcoming'" />
 								</td>
 								<td class="text-end font-monospace">
 									{{ formatMoney(row.payment_amount, detail.currency) }}
