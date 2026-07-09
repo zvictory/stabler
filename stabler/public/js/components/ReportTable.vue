@@ -88,11 +88,12 @@ function fmt(value, col, row) {
 	return value;
 }
 
-function cellClass(col) {
+function cellClass(col, row) {
 	return [
 		col.align === "end" ? "text-end" : "",
 		col.type === "money" || col.type === "int" || col.type === "number" ? "font-monospace" : "",
 		col.drill ? "report-drill" : "",
+		col.negRed && row && Number(row[col.key]) < 0 ? "text-danger" : "",
 	];
 }
 
@@ -190,7 +191,7 @@ defineExpose({ exportCsv, exportXlsx });
 						<td
 							v-for="col in columns"
 							:key="col.key"
-							:class="cellClass(col)"
+							:class="cellClass(col, row)"
 							@click="onCell(row, col)"
 						>
 							<span v-if="col.type === 'badge'" class="badge" :class="badgeClass(row[col.key])">{{ row[col.key] }}</span>
