@@ -13,7 +13,21 @@ from frappe.utils import cint, flt, getdate, today
 
 from stabler.api._common import _assert_can_read, _assert_can_write, _require_company, _validate_money_overrides, check_concurrency
 from stabler.api._sales_margin import attach_margins
-from stabler.stabler.customer_hierarchy import children_balance_map, cumulative_balance
+from stabler.stabler.customer_hierarchy import (
+	ERR_ALLOC_EMPTY,
+	ERR_ALLOC_EXCEEDS,
+	ERR_ALLOC_NONPOSITIVE,
+	ERR_ALLOC_UNKNOWN_INVOICE,
+	ERR_XFER_EMPTY,
+	ERR_XFER_EXCEEDS,
+	ERR_XFER_NONPOSITIVE,
+	ERR_XFER_UNKNOWN_CHILD,
+	children_balance_map,
+	cumulative_balance,
+	group_allocations_by_party,
+	validate_bulk_allocations,
+	validate_transfers,
+)
 
 
 def _has_parent_field() -> bool:
@@ -447,6 +461,403 @@ def customer_children_balance_map(company: str):
 	base_map = children_balance_map(child_rows, balance_key="balance_base")
 	acc_map = children_balance_map(child_rows, balance_key="balance_acc")
 	return {"base": base_map, "acc": acc_map, "company_currency": company_currency}
+
+
+# ===========================================================================
+# Parent consolidation node — phase 2 (plan §2 K2)
+# ---------------------------------------------------------------------------
+# A parent never carries new transactions; its children do. These endpoints let
+# the operator (1) take one bulk payment on the parent and split it into per-
+# child Payment Entries, and (2) reallocate legacy unallocated advances that
+# were historically booked directly on the parent down to its children.
+# All hierarchy math is delegated to the pure customer_hierarchy module.
+# ===========================================================================
+
+_ALLOC_MESSAGES = {
+	ERR_ALLOC_EMPTY: lambda: _("Enter at least one allocation amount."),
+	ERR_ALLOC_NONPOSITIVE: lambda: _("Allocation amounts must be greater than zero."),
+	ERR_ALLOC_UNKNOWN_INVOICE: lambda: _(
+		"An allocated invoice does not belong to this customer chain."
+	),
+	ERR_ALLOC_EXCEEDS: lambda: _("An allocation exceeds the invoice's outstanding amount."),
+}
+
+_XFER_MESSAGES = {
+	ERR_XFER_EMPTY: lambda: _("Enter at least one transfer amount."),
+	ERR_XFER_NONPOSITIVE: lambda: _("Transfer amounts must be greater than zero."),
+	ERR_XFER_UNKNOWN_CHILD: lambda: _(
+		"A selected location does not belong to this customer chain."
+	),
+	ERR_XFER_EXCEEDS: lambda: _("Transfers exceed the payment's unallocated amount."),
+}
+
+
+def _chain_children(parent: str) -> list[str]:
+	"""Active child customer names under `parent`. Empty when the hierarchy field
+	is absent (shared-bench safety) — the caller then treats the parent as a plain
+	customer with no consolidation behaviour."""
+	if not _has_parent_field():
+		return []
+	return frappe.db.get_all(
+		"Customer",
+		filters={"custom_parent_customer": parent, "disabled": 0},
+		pluck="name",
+	)
+
+
+def _mode_of_payment_account(company: str, mode_of_payment: str) -> str:
+	"""Resolve the cash/bank Account for a Mode of Payment in this company.
+
+	Mirrors stabler.api.pos._payment_account — the Mode of Payment Account child
+	table carries one default_account per company."""
+	account = frappe.db.get_value(
+		"Mode of Payment Account",
+		{"parent": mode_of_payment, "company": company},
+		"default_account",
+	)
+	if not account:
+		frappe.throw(
+			_("Payment mode {0} has no account configured for this company.").format(mode_of_payment),
+			frappe.ValidationError,
+		)
+	return account
+
+
+def _parent_open_invoice_index(company: str, parent: str) -> dict:
+	"""Open (submitted, outstanding>0) Sales Invoices for a parent's chain.
+
+	Surfaces both the children's invoices and any legacy invoices booked directly
+	on the parent. Returns per-invoice maps keyed by invoice name plus an ordered
+	(oldest-first) row list ready for the UI grid. Each invoice's `party` is its
+	real GL customer (child, or the parent for legacy rows) — that is the key the
+	bulk-payment split groups on."""
+	children = _chain_children(parent)
+	parties = [*children, parent]
+	has_child_ref = frappe.db.has_column("Sales Invoice", "custom_child_reference")
+	child_ref_select = "custom_child_reference" if has_child_ref else "NULL AS custom_child_reference"
+	placeholders = []
+	params: dict = {"company": company, "today": today()}
+	for i, name in enumerate(parties):
+		key = f"pt{i}"
+		params[key] = name
+		placeholders.append(f"%({key})s")
+	rows = frappe.db.sql(
+		f"""
+		SELECT name, customer, customer_name, {child_ref_select},
+		       posting_date, due_date, grand_total, outstanding_amount, currency
+		FROM `tabSales Invoice`
+		WHERE company = %(company)s
+		  AND docstatus = 1
+		  AND outstanding_amount > 0
+		  AND customer IN ({", ".join(placeholders)})
+		ORDER BY posting_date ASC, name ASC
+		""",
+		params,
+		as_dict=True,
+	)
+	party_map: dict[str, str] = {}
+	outstanding_map: dict[str, float] = {}
+	grand_total_map: dict[str, float] = {}
+	currency_map: dict[str, str] = {}
+	out_rows: list[dict] = []
+	for r in rows:
+		inv = r["name"]
+		party_map[inv] = r["customer"]
+		outstanding_map[inv] = flt(r["outstanding_amount"])
+		grand_total_map[inv] = flt(r["grand_total"])
+		currency_map[inv] = r["currency"]
+		is_legacy = r["customer"] == parent
+		days_overdue = 0
+		if r["due_date"]:
+			days_overdue = max(0, (getdate(today()) - getdate(r["due_date"])).days)
+		out_rows.append({
+			"invoice": inv,
+			"party": r["customer"],
+			# Display the legacy child reference when the invoice sits on the parent,
+			# otherwise the child customer's own name.
+			"child": r["customer"],
+			"child_name": (r.get("custom_child_reference") or r["customer_name"]) if is_legacy else r["customer_name"],
+			"posting_date": str(r["posting_date"]) if r["posting_date"] else None,
+			"due_date": str(r["due_date"]) if r["due_date"] else None,
+			"grand_total": flt(r["grand_total"]),
+			"outstanding": flt(r["outstanding_amount"]),
+			"currency": r["currency"],
+			"days_overdue": days_overdue,
+			"is_legacy": is_legacy,
+		})
+	return {
+		"rows": out_rows,
+		"party_map": party_map,
+		"outstanding_map": outstanding_map,
+		"grand_total_map": grand_total_map,
+		"currency_map": currency_map,
+	}
+
+
+@frappe.whitelist()
+def parent_open_invoices(company: str, parent: str):
+	"""Open Sales Invoices across a parent's chain, oldest first, for the parent
+	bulk-payment grid."""
+	_require_company(company)
+	_assert_company_scope(company)  # tenant isolation: reject a foreign company arg
+	if not frappe.has_permission("Customer", "read"):
+		frappe.throw(_("You are not permitted to view customers."), frappe.PermissionError)
+	if not parent or not frappe.db.exists("Customer", parent):
+		frappe.throw(_("Unknown customer: {0}").format(parent or ""), frappe.DoesNotExistError)
+	_assert_can_read("Customer", parent)
+	idx = _parent_open_invoice_index(company, parent)
+	company_currency = frappe.db.get_value("Company", company, "default_currency") or ""
+	return {
+		"parent": parent,
+		"parent_name": frappe.db.get_value("Customer", parent, "customer_name") or parent,
+		"rows": idx["rows"],
+		"total_outstanding": sum(r["outstanding"] for r in idx["rows"]),
+		"company_currency": company_currency,
+	}
+
+
+@frappe.whitelist()
+def create_parent_bulk_payment(
+	company: str,
+	parent: str,
+	mode_of_payment: str,
+	payment_date: str,
+	reference_no: str | None = None,
+	allocations=None,
+):
+	"""Split one bulk payment on the parent into one submitted Payment Entry per
+	child party.
+
+	`allocations` = [{invoice, amount}]. Each open invoice already belongs to a
+	real GL party (a child, or the parent for legacy rows). We validate the grid,
+	group it by that party, and create one Receive Payment Entry per party via the
+	shared money.create_payment_entry path — so FX handling, maker-checker
+	approvals, GL logging and request-scoped rollback all behave exactly like a
+	normal single-customer payment. Any failure aborts the whole request (Frappe
+	wraps it in one transaction), so the split is all-or-nothing."""
+	from stabler.api import money as _money
+	from stabler.api._accounts import resolve_party_account
+
+	_require_company(company)
+	_assert_company_scope(company)  # tenant isolation: reject a foreign company arg
+	if not parent or not frappe.db.exists("Customer", parent):
+		frappe.throw(_("Unknown customer: {0}").format(parent or ""), frappe.DoesNotExistError)
+	if not frappe.has_permission("Payment Entry", "create"):
+		frappe.throw(_("You are not permitted to record payments."), frappe.PermissionError)
+	if not mode_of_payment:
+		frappe.throw(_("Select a payment mode."), frappe.ValidationError)
+
+	if isinstance(allocations, str):
+		allocations = frappe.parse_json(allocations) or []
+	allocations = [
+		{"invoice": (r or {}).get("invoice"), "amount": flt((r or {}).get("amount"))}
+		for r in (allocations or [])
+		if isinstance(r, dict)
+	]
+
+	idx = _parent_open_invoice_index(company, parent)
+	code = validate_bulk_allocations(allocations, idx["party_map"], idx["outstanding_map"])
+	if code:
+		frappe.throw(_ALLOC_MESSAGES[code]())
+
+	bank_account = _mode_of_payment_account(company, mode_of_payment)
+	bank_currency = frappe.db.get_value("Account", bank_account, "account_currency") or (
+		frappe.get_cached_value("Company", company, "default_currency") or "UZS"
+	)
+	groups = group_allocations_by_party(allocations, idx["party_map"])
+
+	created: list[dict] = []
+	for party, party_allocs in groups.items():
+		currencies = {idx["currency_map"][a["invoice"]] for a in party_allocs}
+		if len(currencies) > 1:
+			frappe.throw(
+				_("{0} has invoices in more than one currency — record those payments separately.").format(
+					frappe.db.get_value("Customer", party, "customer_name") or party
+				),
+				frappe.ValidationError,
+			)
+		ccy = currencies.pop()
+		paid_from = resolve_party_account("Customer", party, company, ccy)
+		total = round(sum(a["amount"] for a in party_allocs), 2)
+		references = [
+			{
+				"reference_doctype": "Sales Invoice",
+				"reference_name": a["invoice"],
+				"total_amount": idx["grand_total_map"].get(a["invoice"], 0.0),
+				"outstanding_amount": idx["outstanding_map"].get(a["invoice"], 0.0),
+				"allocated_amount": a["amount"],
+			}
+			for a in party_allocs
+		]
+		exchange_rate = None
+		if ccy != bank_currency:
+			exchange_rate = _money.get_exchange_rate_for_currencies(ccy, bank_currency, payment_date)
+		res = _money.create_payment_entry(
+			company=company,
+			posting_date=payment_date,
+			payment_type="Receive",
+			party_type="Customer",
+			party=party,
+			paid_from=paid_from,
+			paid_to=bank_account,
+			paid_amount=total,
+			mode_of_payment=mode_of_payment,
+			reference_no=reference_no or None,
+			reference_date=payment_date,
+			references=references,
+			exchange_rate=exchange_rate,
+			submit=1,
+		)
+		created.append({
+			"child": party,
+			"child_name": frappe.db.get_value("Customer", party, "customer_name") or party,
+			"payment_entry": res.get("name"),
+			"amount": total,
+			"currency": ccy,
+			"pending_approval": bool(res.get("pending_approval")),
+		})
+
+	return {"parent": parent, "count": len(created), "created": created}
+
+
+@frappe.whitelist()
+def parent_unallocated_payments(company: str, parent: str):
+	"""Submitted Payment Entries booked directly on the parent that still carry an
+	unallocated balance — the legacy advances that need reallocating to children."""
+	_require_company(company)
+	_assert_company_scope(company)  # tenant isolation: reject a foreign company arg
+	if not frappe.has_permission("Customer", "read"):
+		frappe.throw(_("You are not permitted to view customers."), frappe.PermissionError)
+	if not parent or not frappe.db.exists("Customer", parent):
+		frappe.throw(_("Unknown customer: {0}").format(parent or ""), frappe.DoesNotExistError)
+	_assert_can_read("Customer", parent)
+	rows = frappe.db.sql(
+		"""
+		SELECT name, posting_date, paid_amount, unallocated_amount, mode_of_payment,
+		       paid_from_account_currency, paid_to_account_currency
+		FROM `tabPayment Entry`
+		WHERE company = %(company)s
+		  AND party_type = 'Customer' AND party = %(parent)s
+		  AND docstatus = 1
+		  AND unallocated_amount > 0
+		ORDER BY posting_date ASC, name ASC
+		""",
+		{"company": company, "parent": parent},
+		as_dict=True,
+	)
+	children = frappe.db.sql(
+		"""
+		SELECT c.name AS name, c.customer_name AS customer_name
+		FROM `tabCustomer` c
+		WHERE c.custom_parent_customer = %(parent)s AND c.disabled = 0
+		ORDER BY c.customer_name ASC
+		""",
+		{"parent": parent},
+		as_dict=True,
+	) if _has_parent_field() else []
+	return {
+		"parent": parent,
+		"parent_name": frappe.db.get_value("Customer", parent, "customer_name") or parent,
+		"rows": [
+			{
+				"name": r["name"],
+				"posting_date": str(r["posting_date"]) if r["posting_date"] else None,
+				"paid_amount": flt(r["paid_amount"]),
+				"unallocated_amount": flt(r["unallocated_amount"]),
+				"mode_of_payment": r["mode_of_payment"] or None,
+				"currency": r["paid_from_account_currency"] or r["paid_to_account_currency"] or None,
+			}
+			for r in rows
+		],
+		"children": children,
+	}
+
+
+def _assert_reallocation_role() -> None:
+	"""Reallocation moves receivable credit between parties — gate it to finance
+	roles. This is the backend enforcement; the SPA also hides the action."""
+	roles = set(frappe.get_roles())
+	if not ({"Accounts Manager", "System Manager"} & roles):
+		frappe.throw(
+			_("Only Accounts Managers can reallocate a payment."), frappe.PermissionError
+		)
+
+
+@frappe.whitelist()
+def reallocate_parent_payment(company: str, payment_entry: str, transfers=None):
+	"""Move unallocated credit from a legacy parent Payment Entry down to children
+	via ONE submitted Journal Entry.
+
+	The source Payment Entry is deliberately left untouched (no cancel/amend) so
+	the original audit trail stays intact — the reallocation is a fresh JE that
+	debits the parent's receivable (reducing its advance credit) and credits each
+	child's receivable (giving them that credit). The JE user_remark links back to
+	the source PE; nothing is written onto the PE itself."""
+	from stabler.api import money as _money
+
+	_require_company(company)
+	_assert_company_scope(company)  # tenant isolation: reject a foreign company arg
+	_assert_reallocation_role()
+	if not payment_entry or not frappe.db.exists("Payment Entry", payment_entry):
+		frappe.throw(_("Unknown Payment Entry: {0}").format(payment_entry or ""), frappe.DoesNotExistError)
+	pe = frappe.db.get_value(
+		"Payment Entry",
+		payment_entry,
+		["company", "party_type", "party", "docstatus", "unallocated_amount"],
+		as_dict=True,
+	)
+	if pe.company != company:
+		frappe.throw(_("Payment belongs to a different company."), frappe.PermissionError)
+	if pe.party_type != "Customer" or pe.docstatus != 1:
+		frappe.throw(_("Only submitted customer payments can be reallocated."), frappe.ValidationError)
+	parent = pe.party
+
+	if isinstance(transfers, str):
+		transfers = frappe.parse_json(transfers) or []
+	transfers = [
+		{"child": (r or {}).get("child"), "amount": flt((r or {}).get("amount"))}
+		for r in (transfers or [])
+		if isinstance(r, dict)
+	]
+
+	children = set(_chain_children(parent))
+	code = validate_transfers(transfers, flt(pe.unallocated_amount), children)
+	if code:
+		frappe.throw(_XFER_MESSAGES[code]())
+
+	# Per plan §2 K2 the whole chain settles against the company's default
+	# receivable account; fall back to the parent's resolved party account.
+	receivable = frappe.get_cached_value("Company", company, "default_receivable_account")
+	if not receivable:
+		from erpnext.accounts.party import get_party_account
+
+		receivable = get_party_account("Customer", party=parent, company=company)
+	if not receivable:
+		frappe.throw(_("No default receivable account is configured for this company."))
+
+	non_zero = [t for t in transfers if flt(t["amount"]) > 0]
+	total = round(sum(flt(t["amount"]) for t in non_zero), 2)
+	remark = _("Reallocation of unallocated advance from {0}").format(payment_entry)
+	accounts = [
+		{"account": receivable, "party_type": "Customer", "party": parent, "debit": total, "credit": 0},
+	]
+	for t in non_zero:
+		accounts.append({
+			"account": receivable,
+			"party_type": "Customer",
+			"party": t["child"],
+			"debit": 0,
+			"credit": round(flt(t["amount"]), 2),
+		})
+
+	je = _money.create_journal_entry(
+		company=company,
+		posting_date=today(),
+		accounts=accounts,
+		user_remark=remark,
+	)
+	_money.submit_journal_entry(je["name"])
+	return {"journal_entry": je["name"], "parent": parent, "source_payment": payment_entry, "total": total}
 
 
 @frappe.whitelist()

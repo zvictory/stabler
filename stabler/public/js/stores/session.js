@@ -23,6 +23,9 @@ export const useSession = defineStore("session", {
 		roles: boot.roles || [],
 		modules: boot.modules || null,
 		allowedModules: boot.allowed_modules || null,
+		// Imports landed-cost visibility (WP6b). Seeded from the shell, refreshed by
+		// boot(). Null = unknown (pre-boot); treat as hidden until confirmed.
+		costVisible: typeof boot.cost_visible === "boolean" ? boot.cost_visible : null,
 		rolesLoaded: Array.isArray(boot.roles) && boot.roles.length > 0,
 	}),
 	getters: {
@@ -76,6 +79,7 @@ export const useSession = defineStore("session", {
 						if (Array.isArray(data.companies)) this.companies = data.companies;
 						if (data.modules) this.modules = data.modules;
 						if (Array.isArray(data.allowed_modules)) this.allowedModules = data.allowed_modules;
+						if (typeof data.cost_visible === "boolean") this.costVisible = data.cost_visible;
 						if (data.user) this.user = { ...this.user, ...data.user };
 					}
 				} catch (e) {

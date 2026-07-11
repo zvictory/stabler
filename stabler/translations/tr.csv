@@ -17,15 +17,37 @@ source,target
 1C Sync Log,1C Senkronizasyon Günlüğü
 31–60,31–60
 61–90,61–90
+70% PE,%70 ÖF
+70% Payment Amount,%70 Ödeme Tutarı
+70% Payment Date,%70 Ödeme Tarihi
+70% Payment Status,%70 Ödeme Durumu
+70% balance due 7 days before Iran arrival,İran'a varıştan 7 gün önce %70 ödeme
+70% payment,%70 ödeme
+70% payment date,%70 ödeme tarihi
+70% payment status,%70 ödeme durumu
 90+,90+
+A GRN checklist is created from a commercial invoice once cargo is ready to receive.,Mal teslim alınmaya hazır olduğunda ticari faturadan bir GRN kontrol listesi oluşturulur.
 A Payroll Attendance Summary for employee {0} and period {1} already exists: {2},
+A category is required.,Kategori gereklidir.
+A certificate number is required.,Sertifika numarası gereklidir.
+A cleared customs declaration is active: its duty and excise replace any Uzbekistan Customs Duty cost line in the next voucher (VAT is never capitalized).,Kapatılmış bir gümrük beyannamesi etkin: gümrük vergisi ve ÖTV'si sonraki fişte herhangi bir Özbekistan Gümrük Vergisi maliyet satırının yerini alır (KDV asla sermayeleştirilmez).
 A company with this name already exists.,Bu isimde bir şirket zaten var.
+A customer cannot be its own parent.,Bir müşteri kendi ana müşterisi olamaz.
 A few quick questions and you're ready to sell.,Birkaç hızlı soru ve satışa hazırsınız.
 A mapping for employee {0} with device user ID {1} already exists ({2}).,
 A new version is available.,Yeni bir sürüm mevcut.
 A password reset email will be sent. The account is disabled until the user sets a password.,Şifre sıfırlama e-postası gönderilecek. Kullanıcı şifresini belirleyene kadar hesap devre dışı kalacak.
+A rejection reason is required.,Ret nedeni gereklidir.
+A status correction reason is required to move {0} back from {1} to {2}.,{0} kaydını {1} durumundan {2} durumuna geri almak için bir durum düzeltme nedeni gereklidir.
 A status with that name already exists.,
+A submitted truck receipt can no longer be edited.,Onaylanmış bir kamyon fişi artık düzenlenemez.
+A supplier is required.,Bir tedarikçi gereklidir.
+A truck number is required.,Kamyon numarası gereklidir.
+A valid commercial invoice for this company is required.,Bu şirket için geçerli bir ticari fatura gereklidir.
 A valid email is required,Geçerli bir e-posta adresi gereklidir
+A valid supplier is required.,Geçerli bir tedarikçi gereklidir.
+A valid truck for this company is required.,Bu şirket için geçerli bir kamyon gereklidir.
+A valid veterinary certificate is required to complete this GRN.,Bu GRN'yi tamamlamak için geçerli bir veteriner sertifikası gereklidir.
 "A ≤ {0}%, B ≤ {1}%, C rest — by revenue.","A ≤ {0}%, B ≤ {1}%, C diğer — gelir bazında."
 "A ≤ {0}%, B ≤ {1}%, C rest — by spend.","A ≤ {0}%, B ≤ {1}%, C diğer — harcama bazında."
 "A ≤ {0}%, B ≤ {1}%, C rest — by {2}. Submitted; returns netted.","A ≤ {0}%, B ≤ {1}%, C diğer — {2} bazında. Onaylanmış; iadeler netleştirilmiş."
@@ -35,6 +57,12 @@ API base URL,
 AR Aging,Alacak Vade Analizi
 ARCA,ARCA
 ARCA Payment Events,ARCA Ödeme Olayları
+ARRIVED,Vardı
+ARRIVED_AT_IRAN,İran'a vardı
+ATA,ATA
+ATD,ATD
+AT_BORDER,Sınırda
+AVAILABLE,Mevcut
 Abbr,Kısaltma
 Absent,Devamsız
 Accept Return,
@@ -72,11 +100,14 @@ Active tenders,Aktif tenderler
 Active to,
 Activities,Aktiviteler
 Actual,Gerçekleşen
+Actual Arrival,Gerçek Varış
+Actual arrival,Gerçek varış
 Actual landed,Gerçek landed
 Add,Ekle
 Add Deal,
 Add Decision,Karar Ekle
 Add Lane,Şerit Ekle
+Add PO link,SS bağlantısı ekle
 Add Row,
 Add Task,Görev Ekle
 Add a column to start organising your deals.,Anlaşmaları düzenlemeye başlamak için bir sütun ekleyin.
@@ -89,14 +120,17 @@ Add another item,Başka bir kalem ekle
 Add at least one item line.,En az bir kalem satırı ekleyin.
 Add at least one item with a positive quantity.,En az bir kalem pozitif miktarla ekleyin.
 Add at least one raw material line.,En az bir hammadde satırı ekleyin.
+Add certificate,Sertifika ekle
 Add child warehouse,Alt depo ekle
 Add column,Sütun ekle
 Add cost item,Masraf kalemi ekle
+Add cost line,Maliyet satırı ekle
 Add customer,Müşteri ekle
 Add deal,Anlaşma ekle
 Add holiday,Tatil ekle
 Add item,Kalem ekle
 Add item to stock,Stoğa ürün ekle
+Add landed cost voucher,Varış maliyeti fişi ekle
 Add line,Satır ekle
 Add outlet,Şube ekle
 Add punch,
@@ -105,6 +139,7 @@ Add stage,Aşama ekle
 Add supplier,Tedarikçi ekle
 Add to Google Calendar,Google Takvim'e ekle
 Add to stock,Stoğa ekle
+Add voucher,Fiş ekle
 Add warehouse,Depo ekle
 Add your first customer to start sending quotes and invoices.,Teklif ve fatura göndermeye başlamak için ilk müşterinizi ekleyin.
 "Add your first employee to start tracking attendance, leave and payroll.","Devam, izin ve bordroyu takip etmeye başlamak için ilk çalışanınızı ekleyin."
@@ -120,6 +155,7 @@ Adjustment,Düzeltme
 Admin,Yönetici
 Administer users & roles,Kullanıcı ve rol yönetimi
 Advance,Avans
+Advance 70% Payment Entry,%70 Avans Ödeme Kaydı
 Advance amount,
 Advance amount must be greater than zero.,
 Advance deduction,Avans kesintisi
@@ -133,6 +169,7 @@ Advances,Avanslar
 Advances outstanding,
 Against,Karşılığı
 Aging,Yaşlandırma
+Agreed total,Anlaşılan toplam
 Alerts,
 All,Tümü
 All Reports,Tüm raporlar
@@ -165,11 +202,13 @@ All territories,Tüm bölgeler
 All three accounts are required.,Üç hesabın tamamı gereklidir.
 All time,
 All types,Tüm türler
+All variance,Tüm sapmalar
 All vouchers,
 All warehouses,Tüm depolar
 All {0} employee summaries are clean — no unresolved exceptions.,
 Allocate against,Karşılığında tahsis et
 Allocated,Tahsis edildi
+Allocated Deposit Amount,Tahsis Edilen Depozito Tutarı
 Allocated against,Karşılığında tahsis edildi
 Allocated amount must be greater than zero.,
 Allocation exceeds the unreconciled amount on this transaction.,
@@ -191,6 +230,7 @@ Amend transfer,
 Amending,Düzeltme
 Amendment created.,
 Amount,Tutar
+Amount & Payment,Tutar ve Ödeme
 Amount (UZS),
 Amount exceeds outstanding ({amount}).,Tutar bekleyen bakiyeyi aşıyor ({amount}).
 Amount exceeds the available balance.,Tutar mevcut bakiyeyi aşıyor.
@@ -203,6 +243,7 @@ Amount sent,Gönderilen tutar
 Amount to transfer,Transfer tutarı
 Amounts in,Tutarlar
 Amounts in company currency,Tutarlar şirket para biriminde
+An expense category is required.,Bir gider kategorisi gereklidir.
 Analytics,Analitik
 Anchor DAY hours (h),
 Anchor LIGHT hours (h),
@@ -235,6 +276,9 @@ Approx. at current valuation rate,"Yaklaşık, mevcut maliyetle"
 Are you sure you want to cancel this document? This action is irreversible.,
 Are you sure you want to delete this draft? This cannot be undone.,
 Are you sure you want to submit this document? This will finalize transactions.,
+Arrival,Varış
+Arrival date,Varış tarihi
+Arrival time,Varış saati
 Artifacts,Artefaktlar
 As of,İtibarıyla
 Asl Belgisi,Asl Belgisi
@@ -251,6 +295,8 @@ Assigned Field User,Atanan Saha Kullanıcısı
 Assigned Technician,Atanan Teknisyen
 Assigned.,Atandı.
 At least one counted item line is required.,
+At least one item is required.,En az bir kalem gereklidir.
+At least one received item line is required.,En az bir alınan ürün satırı gereklidir.
 At least one visit purpose is required.,
 At least one voucher is required.,
 At least two account lines are required.,En az iki hesap satırı gereklidir.
@@ -270,16 +316,25 @@ Audit Trail,Denetim İzi
 Audit trail,Denetim izi
 Audited At,Denetleme Tarihi
 Authentication required.,
+Authority,Kurum
 Available,Mevcut
 Avg margin,Ort. marj
 Avg orders / customer,Müşteri başına sipariş
 Avg time to first order,İlk siparişe kadar süre
 Awaiting level {0},
 Awaiting release by manager,Yönetici onayı bekleniyor
+B/L number,Konşimento numarası
+B/L type,Konşimento türü
+BL Type,Konşimento Tipi
 BOM,BOM
 BOM cancelled successfully.,
 BOM submitted successfully.,
 BOMs,BOM'lar
+BOOKED,Rezerve
+BRV Multiplier,BRV Çarpanı
+BRV Used (UZS),Kullanılan BRV (UZS)
+BRV Value (UZS),BRV Değeri (UZS)
+BRV used,Kullanılan BRV
 Back,Geri
 Back to summary,
 Back up now,Şimdi yedekle
@@ -295,15 +350,18 @@ Badge UID is required.,
 Bal,Bakiye
 Balance,Bakiye
 Balance (Account Currency),Bakiye (Hesap Para Birimi)
+Balance Due Amount,Ödenecek Bakiye Tutarı
 Balanced,Dengeli
 "Balances, advances and payments appear here.",
 "Balances, salaries, advances and payments appear here.","Bakiyeler, maaşlar, avanslar ve ödemeler burada görünür."
 Bank / transfer,Banka / transfer
 Bank Account '{0}' not found.,
+Bank Payment,Banka Ödemesi
 Bank account,Banka hesabı
 Bank account does not belong to company '{0}'.,
 Bank account has no linked GL account.,
 Bank amount,Banka tutarı
+Bank payment,Banka ödemesi
 Bank transaction is required.,
 Bank transaction not found.,
 Bank/cash account is required.,Banka/kasa hesabı gereklidir.
@@ -342,12 +400,27 @@ Bills,Faturalar
 Bimonthly,İki ayda bir
 Board,Pano
 Bonus,Prim
+Book cross-border land freight for a commercial invoice or container.,Bir ticari fatura veya konteyner için sınır ötesi kara nakliyesi rezervasyonu yapın.
 Book rate,
 Booked,Sipariş edildi
 "Booked value from Sales Orders, with amounts still to deliver and to bill.",Satış Siparişlerinden rezerve edilen tutar; teslim edilecek ve faturalanacak tutarlarla birlikte.
+Booking Date,Rezervasyon Tarihi
+Booking Reference,Rezervasyon Referansı
+Booking created.,Rezervasyon oluşturuldu.
+Booking date,Rezervasyon tarihi
+Booking reference,Rezervasyon referansı
+Booking saved.,Rezervasyon kaydedildi.
+"Booking, transporter or vehicle… ⌘K","Rezervasyon, taşıyıcı veya araç… ⌘K"
 Books Dr Salary Expense / Cr Salary Payable as a draft — submit it from the ledger to post.,Taslak oluşturur: Borç Maaş Gideri / Alacak Ödenecek Maaş — defterden onaylayın.
 Books each locked employee's net as a payable (Dr salary expense / Cr salary payable). Idempotent — runs once per period.,Her kilitli çalışanın netini bir borca yazar (Bç maaş gideri / Al maaş borcu). İdempotent — dönem başına bir kez.
 Books locked nets to salary payable.,Kilitli netleri maaş borcuna yazar.
+Border Crossing,Sınır Geçişi
+Border Crossing Date,Sınır Geçiş Tarihi
+Border crossing,Sınır geçişi
+Box Kg,Koli Kg
+Box Qty,Koli Adedi
+Box kg,Kutu kg
+Boxes,Kutular
 Branch,
 Brand,Marka
 Break minutes,
@@ -375,10 +448,14 @@ CBU rates are already up to date.,CBU kurları zaten güncel.
 CBU rates updated: {rates},CBU kurları güncellendi: {rates}
 CBU.uz exchange rates (last 30 days),CBU.uz döviz kurları (son 30 gün)
 CBU:,
+CI number,TF numarası
+CI number or supplier… ⌘K,TF numarası veya tedarikçi… ⌘K
 CN Return,CN İade
 COGS,SMM
+COMPLETED,Tamamlandı
 CRM,CRM
 CRM Report,CRM raporu
+CROSSED_BORDER,Sınırı geçti
 CSV,CSV
 Calendar,Takvim
 Campaign,Kampanya
@@ -395,6 +472,7 @@ Cancel Request,İptal Talebi
 Cancel Transfer,
 "Cancel all open (submitted, non-delivered) Stock Reservation Entries for this company. Reserved stock will be returned to available quantity.","Bu şirkete ait tüm açık (gönderilmiş, teslim edilmemiş) Stok Rezervasyon Girişlerini iptal edin. Rezerve edilen stok mevcut miktara iade edilecek."
 Cancel bill {name}? This is reversible only by amendment.,{name} faturası iptal edilsin mi? Bu işlem yalnızca düzeltmeyle geri alınabilir.
+Cancel booking,Rezervasyonu iptal et
 Cancel document?,
 Cancel entry,Girişi iptal et
 Cancel failed.,İptal başarısız oldu.
@@ -407,6 +485,7 @@ Cancel quotation {name}?,{name} teklifi iptal edilsin mi?
 Cancel reservations?,
 Cancel sales order {name}? Stock reservations will be released.,{name} satış siparişi iptal edilsin mi? Stok rezervasyonları serbest bırakılacak.
 Cancel stock entry?,
+Cancel the linked Purchase Receipt {0} before cancelling this Truck Receipt.,Bu Kamyon Kabulünü iptal etmeden önce bağlı Satın Alma İrsaliyesi {0} belgesini iptal edin.
 Cancel this entry?,
 Cancel this submitted BOM?,Gönderilen bu BOM iptal edilsin mi?
 Cancel this transfer?,
@@ -414,6 +493,7 @@ Cancel {name}? This will reverse the stock movements.,{name} iptal edilsin mi? B
 Cancelled,İptal edildi
 Cancelled entries cannot be submitted; amend instead.,
 Cannot change Commercial Invoice status from {0} to {1}.,Ticari Fatura durumu {0} konumundan {1} konumuna değiştirilemez.
+Cannot change {0} status from {1} to {2}.,{0} durumu {1} durumundan {2} durumuna değiştirilemez.
 Cannot check out before checking in.,Giriş yapmadan çıkış yapılamaz.
 Cannot create a return against a return document.,
 Cannot create invoice: no warehouse set for stock item(s) {0}.,Fatura oluşturulamıyor: {0} stok kalemi için depo ayarlanmamış.
@@ -427,10 +507,15 @@ Captured At,Kaydedilme Tarihi
 Car / Item,Araç / Kalem
 Car item is required.,Araç kalemi gereklidir.
 Card not recognized,
+Cargo,Kargo
+Carrier,Taşıyıcı
 Cases / Week,Kasa / Hafta
 Cash / bank account,Kasa / banka hesabı
+Cash Payment,Nakit Ödeme
+Cash difference,Nakit farkı
 Cash flow,Nakit akışı
 Cash on hand,Kasadaki nakit
+Cash payment,Nakit ödeme
 "Cash, Bank, …","Kasa, Banka, …"
 Cash-in account,Tahsilat hesabı
 Cash/bank account,
@@ -439,9 +524,16 @@ Cashier Lock,
 Categories,Kategoriler
 Category,Kategori
 Category is required.,Kategori gereklidir.
+Certificate,Sertifika
+Certificate approved.,Sertifika onaylandı.
+Certificate number,Sertifika numarası
+Certificate rejected.,Sertifika reddedildi.
 Certificate required,Sertifika gerekli
+"Certificate, CI or authority… ⌘K","Sertifika, fatura veya kurum… ⌘K"
+Certificates appear here as they are registered against imports.,Sertifikalar ithalatlara kaydedildikçe burada görünür.
 Certification,Sertifika
 Change,
+Change status,Durumu değiştir
 Changed,Değişti
 Channel,Kanal
 Charge via {provider},{provider} ile öde
@@ -457,6 +549,7 @@ Chegirma,Chegirma
 Cheque,Çek
 Cheque / transfer ref,Çek / havale referansı
 Cheque no.,Çek no.
+Children,Alt hesaplar
 Chocolate,
 Choose a cash/bank account.,Bir kasa/banka hesabı seçin.
 Choose a statement file first.,Önce bir ekstre dosyası seçin.
@@ -469,6 +562,7 @@ Claim amount must be greater than zero.,Talep tutarı sıfırdan büyük olmalı
 Claim is already settled by {0}.,Talep zaten {0} tarafından kapatılmıştır.
 Claim is already {0} and cannot be re-reviewed.,Talep zaten {0} durumunda olduğundan yeniden incelenemez.
 Claim name is required.,Talep adı zorunludur.
+Claim required,Talep gerekli
 Claim {0} not found.,{0} talebi bulunamadı.
 Claims,Talepler
 Class,Sınıf
@@ -478,6 +572,8 @@ Clear filters,Filtreleri temizle
 Clear open reservations,Açık rezervasyonları temizle
 Clear search,Aramayı temizle
 Cleared,Temizlendi
+Cleared Date,Serbest Bırakma Tarihi
+Cleared date,Kapanış tarihi
 Cleared {0} of {1},{1} içinden {0} temizlendi
 Click New Revaluation to preview unrealised FX deltas and post an Exchange Rate Revaluation.,
 Click a line to see suggested matches.,Önerilen eşleşmeleri görmek için bir satıra tıklayın.
@@ -501,6 +597,7 @@ Code,Kod
 Code does not match expected format,Kod beklenen biçimle eşleşmiyor
 Code is required,Kod zorunludur
 Cohort sales,Kohort satışı
+Cold chain,Soğuk zincir
 Collapse,Daralt
 Collapse all,Tümünü daralt
 Collapse all groups,Tüm grupları daralt
@@ -513,6 +610,10 @@ Column name,Sütun adı
 Comment,Yorum
 Comments,Yorumlar
 Commerce,Ticaret
+Commercial Invoice,Ticari fatura
+Commercial Invoices,Ticari faturalar
+Commercial invoice created.,Ticari fatura oluşturuldu.
+Commercial invoice saved.,Ticari fatura kaydedildi.
 Commission %,Komisyon %
 Commission fee,Komisyon ücreti
 Commission income account,Komisyon gelir hesabı
@@ -528,14 +629,19 @@ Compensation,
 Compensation details are hidden — payroll access required.,
 Compensation policy,Ödeme politikası
 Complete,Tamamla
+Complete GRN,GRN’i tamamla
 Completed,Tamamlandı
 Completed visit,Tamamlanan ziyaret
 Completion,Tamamlama
+Completion date,Tamamlanma tarihi
 Completion rate,Tamamlanma oranı
 Compliance,Uyumluluk
+Component,Bileşen
 Component map {0} not found.,
 Component mapping is incomplete. The following quantities have no salary ,
 Components,Bileşenler
+Compute,Hesapla
+Compute the fee to see the BRV breakdown.,BRV dökümünü görmek için ücreti hesaplayın.
 Computed Pay,Hesaplanan Maaş
 Computed from attendance summaries using the payroll formula. Read-only preview — not the official salary run.,Devam özetlerinden maaş formülüyle hesaplandı. Salt görüntüleme — resmi maaş çalışması değildir.
 Conditions,
@@ -551,6 +657,17 @@ Construction,İnşaat
 Consumed,Tüketildi
 Contact,İletişim
 Contacted,İletişim Kuruldu
+Container,Konteyner
+Container Cost Line,Konteyner Maliyet Satırı
+Container Number,Konteyner Numarası
+Container Size,Konteyner Boyutu
+Container Type,Konteyner Tipi
+Container created.,Konteyner oluşturuldu.
+Container number,Konteyner numarası
+Container or CI number… ⌘K,Konteyner veya TF numarası… ⌘K
+Container saved.,Konteyner kaydedildi.
+Containers,Konteynerler
+Containers in transit,Yoldaki konteynerler
 Contents,İçerik
 Contract,Sözleşme
 Contract board,Sözleşme panosu
@@ -572,16 +689,24 @@ Corrections to approve,
 Corridor / Memo,Koridor / Not
 Cost,Maliyet
 Cost Centre,
+Cost Component,Maliyet Bileşeni
+Cost Lines,Maliyet Satırları
 Cost centre,
+Cost lines,Maliyet kalemleri
 Cost must be positive.,Maliyet pozitif olmalıdır.
+Cost total,Toplam maliyet
 Costs after dividends (office…),Temettü sonrası masraflar (ofis…)
 Could not accrue salary.,Maaş tahakkuk ettirilemedi.
 Could not add holiday.,Tatil eklenemedi.
 Could not add stage.,Aşama eklenemedi.
+Could not add the veterinary certificate.,Veteriner sertifikası eklenemedi.
+Could not approve the certificate.,Sertifika onaylanamadı.
 Could not assign.,Atanamadı.
 Could not check payment status.,Ödeme durumu kontrol edilemedi.
+Could not compute the customs fee.,Gümrük ücreti hesaplanamadı.
 Could not create contract.,Sözleşme oluşturulamadı.
 Could not create the transaction.,İşlem oluşturulamadı.
+Could not create the voucher.,Fiş oluşturulamadı.
 Could not load bid pricing.,Fiyatlandırma yüklenemedi.
 Could not load data health.,Veri sağlığı yüklenemedi.
 Could not load employee finances.,Çalışan finansı yüklenemedi.
@@ -605,6 +730,7 @@ Could not read a lot number from: {0},
 Could not read backup file: {0},
 Could not read the uploaded file.,
 Could not read your location.,Konumunuz okunamadı.
+Could not reject the certificate.,Sertifika reddedilemedi.
 Could not resolve a customer for this deal.,
 Could not resolve payroll period: {0},
 Could not save bid pricing.,Fiyatlandırma kaydedilemedi.
@@ -614,6 +740,9 @@ Could not save tender intake.,Tender verisi kaydedilemedi.
 Could not start setup.,Kurulum başlatılamadı.
 Could not start the online payment.,Çevrimiçi ödeme başlatılamadı.
 Could not start the processor.,İşlemci başlatılamadı.
+Could not submit the GRN checklist.,GRN kontrol listesi gönderilemedi.
+Could not update the certificate.,Sertifika güncellenemedi.
+Could not update the cost line.,Maliyet satırı güncellenemedi.
 Couldn't work out the cash amount to pay — check the exchange rate and the paying account.,
 Count,Adet
 Count:,Adet:
@@ -621,6 +750,7 @@ Counted qty,Sayılan miktar
 Counterparty,Karşı taraf
 Countries,Ülkeler
 Country,Ülke
+Country of Origin,Menşe Ülke
 Coverage,Kapsam
 Covered,Kapsamda
 Create,Oluştur
@@ -629,6 +759,7 @@ Create / edit customers,Müşteri oluştur / düzenle
 Create / edit suppliers,Tedarikçi oluştur / düzenle
 Create Bill,Fatura oluştur
 Create Invoice,Fatura Oluştur
+Create Landed Cost Voucher,Varış maliyeti fişi oluştur
 Create Material Issue,Malzeme çıkışı oluştur
 Create Plan,Plan Oluştur
 Create Sales Invoice,Satış faturası oluştur
@@ -636,6 +767,7 @@ Create Scheme,Şema Oluştur
 Create Ticket,Talep oluştur
 Create a Bill of Materials to define what raw materials go into a finished good.,Mamul ürüne giren hammaddeleri tanımlamak için bir Malzeme Listesi oluşturun.
 Create a Work Order to plan and track production runs against a BOM.,BOM'a karşı üretim çalışmalarını planlamak ve izlemek için bir İş Emri oluşturun.
+Create a draft Landed Cost Voucher from the previewed components? An accountant must review and submit it in the books.,Önizlenen bileşenlerden bir taslak Varış Maliyeti Fişi oluşturulsun mu? Bir muhasebeci gözden geçirip defterlerde onaylamalıdır.
 Create a new Sales Order for this customer to begin.,
 Create a plan to start tracking campaign budget and ROI.,Kampanya bütçesini ve yatırım getirisini takip etmeye başlamak için bir plan oluşturun.
 Create an active leaf warehouse before viewing item stock status.,
@@ -648,6 +780,7 @@ Create first order,
 Create outlets to start planning routes and visits.,Rotaları ve ziyaretleri planlamaya başlamak için satış noktaları oluşturun.
 Create payments / journals,Ödeme / yevmiye oluştur
 Create receipt,Mal kabulü oluştur
+Create voucher,Fiş oluştur
 Create your first deal or adjust the search filters.,İlk anlaşmanızı oluşturun veya filtreleri düzenleyin.
 Create your first item to start tracking stock and price lists.,Stok ve fiyat listelerini takip etmeye başlamak için ilk kaleминizi oluşturun.
 Create your first lead or adjust the search filters.,İlk potansiyelinizi oluşturun veya filtreleri düzenleyin.
@@ -663,8 +796,11 @@ Credit note for,İçin alacak notu
 Credit notes:,Alacak notları:
 Critical,Kritik
 Critical conflicts,Kritik çakışmalar
+Cross-Border Transport,Sınır Ötesi Nakliye
+Cumulative,Kümülatif
 Cumulative %,Kümülatif %
 Currency,Para Birimi
+Currency Exchange as of {date},{date} tarihli döviz kuru
 Currency risk (foreign purchase),Kur riski (ithalat)
 Current AR balance per customer — click a row to see the ledger behind the balance.,
 Current AR balance per customer — ties to the Customer Center.,Müşteri başına güncel alacak — Müşteri Merkezi ile eşleşir.
@@ -688,13 +824,36 @@ Customer receivables grouped by aging buckets.,
 "Customer, item, trend, and salesperson reports from submitted invoices.",
 Customers,Müşteriler
 Customs,Gümrük
+Customs Clearance Date,Gümrük İşlemleri Tarihi
+Customs Clearance Fee,Gümrük İşlem Ücreti
+Customs Declaration,Gümrük Beyannamesi
+Customs Declaration Line,Gümrük Beyannamesi Satırı
+Customs Fee Multiplier,Gümrük Ücreti Çarpanı
+Customs Fee Override (UZS),Gümrük Ücreti Geçersiz Kılma (UZS)
+Customs Office,Gümrük İdaresi
+Customs Value (USD),Gümrük Değeri (USD)
+Customs Value (UZS),Gümrük Değeri (UZS)
+Customs clearance,Gümrük işlemi
+Customs clearance fee,Gümrükleme ücreti
+Customs declaration,Gümrük beyannamesi
+Customs declarations pending,Bekleyen gümrük beyannameleri
+Customs fee applied.,Gümrük ücreti uygulandı.
+Customs office,Gümrük ofisi
 Customs queue,Gümrük kuyruğu
 Customs value (CIF),Gümrük değeri (CIF)
+Customs value (USD),Gümrük değeri (USD)
+Customs value (UZS),Gümrük değeri (UZS)
+Cut Off,Son Teslim (cut-off)
+Cut-off,Son tarih
+DELIVERED_TO_UZBEKISTAN,Özbekistan'a teslim edildi
+DEPARTED_IRAN,İran'dan ayrıldı
+DISCHARGED,Boşaltıldı
 Daily,Günlük
 Daily attendance records and employee presence checks.,
 Daily auto-backup,Günlük otomatik yedek
 Daily cap (UZS),
 Daily in/out KPI,Günlük giriş/çıkış KPI
+Damaged boxes,Hasarlı kutular
 Dashboard,Gösterge Paneli
 Dashed,Kesikli
 Data,Veri
@@ -724,6 +883,15 @@ Debit note for,
 Debit notes:,
 Decision,Karar
 Declarant,Deklarant
+Declaration,Beyanname
+Declaration Date,Beyanname Tarihi
+Declaration Document,Beyanname Belgesi
+Declaration created.,Beyanname oluşturuldu.
+Declaration date,Beyanname tarihi
+Declaration lines,Beyanname satırları
+Declaration saved.,Beyanname kaydedildi.
+Declared,Beyan edildi
+Declared value (USD),Beyan edilen değer (USD)
 Deducted from worked time daily.,
 Deducted per each step interval of lateness.,
 Deduction exceeds the outstanding advance balance.,"Kesinti, kalan avans bakiyesini aşıyor."
@@ -735,6 +903,7 @@ Default Route,Varsayılan Rota
 Default Warehouse,Varsayılan Depo
 Default currency,Varsayılan para birimi
 Default price list,Varsayılan fiyat listesi
+Default rate,Varsayılan kur
 Define promotions that field users can apply during visits.,Saha kullanıcılarının ziyaretler sırasında uygulayabileceği promosyonları tanımlayın.
 Define routes so field users know which outlets to visit each day.,Saha kullanıcılarının her gün hangi satış noktalarını ziyaret edeceğini bilmesi için rotaları tanımlayın.
 Delayed,Gecikmiş
@@ -767,17 +936,24 @@ Deliv,Teslim
 Deliver,Teslim Et
 Delivered,Teslim Edildi
 Delivery,Teslim
+Delivery Date,Teslim Tarihi
+Delivery Location,Teslim Yeri
 Delivery Note,İrsaliye
 Delivery date,Teslimat tarihi
 Delivery deadline,Teslim süresi
+Delivery location,Teslimat yeri
 Delta,
 Department,Departman
+Departure,Kalkış
+Departure Date,Kalkış Tarihi
 Deposit,Yatırma
 Deposit to,Yatırılacak hesap
 Describe the problem…,Sorunu açıklayın…
 Description,Açıklama
 Designation,Unvan
 Desk access,Desk erişimi
+Destination Warehouse,Hedef Depo
+Destination warehouse,Hedef depo
 Details,Ayrıntılar
 Device,
 Device created.,
@@ -812,8 +988,11 @@ District,
 Dividend tax,Temettü vergisi
 Dividends,Temettü
 DocType,DocType
+Docs total,Belge toplamı
 Document,Belge
+Document & notes,Belge ve notlar
 Document Type,Belge Türü
+Document attached.,Belge eklendi.
 Document cancelled successfully.,
 Document changed,
 Document checklist,Belge kontrol listesi
@@ -826,6 +1005,7 @@ Document type,Belge türü
 Document type and name are required.,
 Document updated successfully.,
 "Document, party or requester…","Belge, taraf veya talep eden…"
+Documentation,Belgeleme
 Documents,Belgeler
 Done,Tamamlandı
 Download .ics,.ics indir
@@ -835,13 +1015,19 @@ Downpayment %,Ön ödeme %
 Draft,Taslak
 Draft + submitted,Taslak + onaylı
 Draft Sales Invoice created: {0},Satış faturası taslağı oluşturuldu: {0}
+Draft an additional landed cost voucher for late costs on this GRN?,Bu GRN için geç maliyetlere ek varış maliyeti fişi taslağı oluşturulsun mu?
 Draft deleted.,Taslak silindi.
 Draft entry deleted.,
 Draft transaction created.,Taslak işlem oluşturuldu.
 Draft transfer deleted.,
+Draft voucher {lcv} created — it still needs accountant submit in the books.,{lcv} taslak fişi oluşturuldu — hâlâ bir muhasebecinin defterlerde onaylaması gerekiyor.
 Drill-down report: customer → invoices → document. Returns netted.,Detay: müşteri → faturalar → belge. İadeler netleştirildi.
 Drill-down report: item → invoice lines → document.,Detay: ürün → fatura satırları → belge.
 Drill-down report: supplier → bills → document.,Detay: tedarikçi → faturalar → belge.
+Driver,Sürücü
+Driver Name,Sürücü Adı
+Driver Phone,Sürücü Telefonu
+Driver phone,Sürücü telefonu
 Drop deal here,Anlaşmayı buraya bırakın
 Due,Vadesi gelen
 Due Date,Vade Tarihi
@@ -854,6 +1040,9 @@ Duplicate summary,
 Duplicates,Yinelenenler
 Duration (ms),Süre (ms)
 Duty,Gümrük vergisi
+Duty %,Vergi %
+Duty Amount (UZS),Gümrük Vergisi Tutarı (UZS)
+Duty Rate %,Vergi Oranı %
 Duty supplement,Görev eki
 Duty supplement (%),Görev eki (%)
 E-IMZO did not respond (timeout). Check that the app is running.,
@@ -864,6 +1053,8 @@ EHF Status,EHF Durumu
 EHF Submissions,EHF Gönderimleri
 ERPNext,
 ERPNext Employee docname (EMP-XXXXX).,
+ETA,ETA
+ETD,ETD
 EUR → UZS,EUR → UZS
 Each additional step charges the step fee.,
 Each employee's Region band (on their profile) selects which rate applies; NO_TRAVEL pays nothing.,Çalışanın bölgesi (profilinde) hangi oranın geçerli olduğunu belirler; NO_TRAVEL ödeme yok.
@@ -885,6 +1076,7 @@ Edit Visit,Ziyareti Düzenle
 Edit customer,Müşteriyi düzenle
 Edit device,
 Edit draft,
+Edit expense,Gideri düzenle
 Edit field user,Saha kullanıcısını düzenle
 Edit journal entry,Yevmiye kaydını düzenle
 Edit mapping,
@@ -901,6 +1093,8 @@ Edited {0} field(s),
 Editing a past day,Geçmiş bir günü düzenliyorsunuz
 Editing the rate updates the received amount.,Oranı düzenlemek alınan tutarı günceller.
 Editing the received amount updates the exchange rate.,Alınan tutarı düzenlemek döviz kurunu günceller.
+Effective Date,Yürürlük Tarihi
+Effective fee,Efektif ücret
 Email,E-posta
 Email and name are required.,E-posta ve ad zorunludur.
 Email or user ID,E-posta veya kullanıcı ID
@@ -936,6 +1130,7 @@ Enforcement,Zorlama
 Enter a quantity for at least one row.,En az bir satır için miktar girin.
 Enter an amount greater than zero.,Sıfırdan büyük bir tutar girin.
 Enter at least one count that differs from the system quantity.,Sistem miktarından farklı en az bir sayım girin.
+Enter at least one received line.,En az bir teslim alınan satır girin.
 Enter at least one return qty.,En az bir iade miktarı girin.
 Enter cost and term to see the payment schedule.,Ödeme planını görmek için maliyet ve vadeyi girin.
 Enter the quantity to return for each line. Leave 0 to exclude a line.,Her satır için iade miktarını girin. Satırı dışarıda bırakmak için 0 bırakın.
@@ -953,6 +1148,8 @@ Equipment name is required.,Ekipman adı zorunludur.
 Equity,Öz sermaye
 Error,Hata
 Errors,Hatalar
+Estimated Arrival,Tahmini Varış
+Estimated arrival,Tahmini varış
 Estimated value,Tahmini değer
 Event ID,
 "Event ID, device user or employee…",
@@ -983,29 +1180,42 @@ Exchange rate,Döviz kuru
 Exchange rate ({0}),
 Exchange rate must be greater than zero.,Döviz kuru sıfırdan büyük olmalıdır.
 Exchange rate staleness,
+Excise,ÖTV
+Excise %,ÖTV %
+Excise Amount (UZS),ÖTV Tutarı (UZS)
+Excise Rate %,ÖTV Oranı %
 Exclusive,Hariç
 Exclusive: commission added on top — sender pays more.,Hariç: komisyon üstüne eklenir — gönderen daha fazla öder.
 Execute material transfer for this Work Order? This will move required raw materials to the WIP warehouse.,
 Execute transfer?,
+Existing vouchers,Mevcut fişler
 Exit,
 Expand,Genişlet
 Expand all,Tümünü genişlet
 Expand all groups,Tüm grupları genişlet
 Expected,Beklenen
+Expected (kg),Beklenen (kg)
 Expected Closure,Tahmini Kapanış
 Expected Facings,Beklenen Yüz Sayısı
 Expected Monthly Volume,Beklenen aylık hacim
+Expected arrival,Beklenen varış
 Expected facings is required on row {0}.,{0}. satırda beklenen yüz sayısı zorunludur.
 Expense,Gider
+Expense Date,Gider Tarihi
+Expense created.,Gider oluşturuldu.
 Expense entry cancelled.,
 Expense lines,Gider kalemleri
 Expense saved · {name},Gider kaydedildi · {name}
+Expense saved.,Gider kaydedildi.
+"Expense, supplier or CI… ⌘K","Gider, tedarikçi veya fatura… ⌘K"
 Expenses,Giderler
 Expired,Süresi dolmuş
 Expires,
 Expires in,Bitişine
+Expiring soon,Yakında sona eriyor
 Expiring within,Şu süre içinde
 Expiry,Son kullanım
+Expiry date,Son kullanma tarihi
 Export,Dışa Aktar
 Export CSV,CSV dışa aktar
 Export failed.,Dışa aktarma başarısız oldu.
@@ -1058,6 +1268,7 @@ Failed to delete entry.,
 Failed to delete lead.,Potansiyel silinemedi.
 Failed to delete supplier.,Tedarikçi silinemedi.
 Failed to delete transfer.,
+Failed to load GRN checklists.,GRN kontrol listeleri yüklenemedi.
 Failed to load OSA audit.,OSA denetimi yüklenemedi.
 Failed to load POS profile.,
 Failed to load POS profiles.,
@@ -1068,11 +1279,14 @@ Failed to load attendance.,
 Failed to load bills.,Faturalar yüklenemedi.
 Failed to load calendar.,Takvim yüklenemedi.
 Failed to load claim.,Talep yüklenemedi.
+Failed to load commercial invoices.,Ticari faturalar yüklenemedi.
+Failed to load containers.,Konteynerler yüklenemedi.
 Failed to load contract.,Sözleşme yüklenemedi.
 Failed to load contracts.,Sözleşmeler yüklenemedi.
 Failed to load customer invoices.,
 Failed to load customer.,Müşteri yüklenemedi.
 Failed to load customers.,Müşteriler yüklenemedi.
+Failed to load customs declarations.,Gümrük beyannameleri yüklenemedi.
 Failed to load dashboard.,Gösterge paneli yüklenemedi.
 Failed to load deal.,Anlaşma yüklenemedi.
 Failed to load deals.,Anlaşmalar yüklenemedi.
@@ -1081,7 +1295,9 @@ Failed to load details.,
 Failed to load document.,
 Failed to load employee.,
 Failed to load equipment.,Ekipman yüklenemedi.
+Failed to load expenses.,Giderler yüklenemedi.
 Failed to load form options.,Form seçenekleri yüklenemedi.
+Failed to load freight bookings.,Nakliye rezervasyonları yüklenemedi.
 Failed to load invoice.,Fatura yüklenemedi.
 Failed to load invoices.,Faturalar yüklenemedi.
 Failed to load items.,Ürünler yüklenemedi.
@@ -1118,12 +1334,24 @@ Failed to load stock ledger.,Stok defteri yüklenemedi.
 Failed to load stock status.,
 Failed to load supplier.,Tedarikçi yüklenemedi.
 Failed to load suppliers.,Tedarikçiler yüklenemedi.
+Failed to load the GRN checklist.,GRN kontrol listesi yüklenemedi.
+Failed to load the booking.,Rezervasyon yüklenemedi.
+Failed to load the commercial invoice.,Ticari fatura yüklenemedi.
+Failed to load the container.,Konteyner yüklenemedi.
+Failed to load the declaration.,Beyanname yüklenemedi.
+Failed to load the expense.,Gider yüklenemedi.
+Failed to load the imports dashboard.,İthalat panosu yüklenemedi.
+Failed to load the landed-cost review.,Varış maliyeti incelemesi yüklenemedi.
+Failed to load the truck receipt.,Kamyon teslim kaydı yüklenemedi.
+Failed to load the truck.,Kamyon yüklenemedi.
 Failed to load ticket.,Talep yüklenemedi.
 Failed to load transfer detail.,Transfer detayı yüklenemedi.
 Failed to load transfers.,Transferler yüklenemedi.
+Failed to load trucks.,Kamyonlar yüklenemedi.
 Failed to load unbilled visits.,Faturalanmamış ziyaretler yüklenemedi.
 Failed to load valuation history.,Değerleme geçmişi yüklenemedi.
 Failed to load van stock.,Araç stoğu yüklenemedi.
+Failed to load veterinary certificates.,Veteriner sertifikaları yüklenemedi.
 Failed to load visit.,Ziyaret yüklenemedi.
 Failed to load warehouses.,Depolar yüklenemedi.
 Failed to load work orders.,
@@ -1206,6 +1434,7 @@ Fixed deduction on first late minute past grace.,
 Fixtures directory missing: {0},Fikstür dizini eksik: {0}
 Flat fee (UZS),
 Flat fee per step,
+Flat view,Düz görünüm
 Flexible,
 Food & Beverage,Yiyecek & İçecek
 Force submit & reserve,Zorla gönder ve rezerve et
@@ -1217,6 +1446,8 @@ Freezer,Dondurucu
 Freezer ROI,Dondurucu ROI
 Freezer pending,Dondurucu bekliyor
 Freezer push,Dondurucular
+Freight,Navlun
+Freight Booking,Nakliye Rezervasyonu
 Frequency,Sıklık
 Fri,Cum
 Friday,
@@ -1237,15 +1468,35 @@ Full name (optional — filled automatically on save),
 Fully Completed,Tam tamamlandı
 Fully Staged,
 Fully billed but auto-close did not run — use Close below.,
+GATE_IN,Terminalde
 GL Integrity Anomaly Alert,
 GL booked USD (historical cost),GL kayıtlı USD (tarihsel maliyet)
 GPS Latitude,GPS Enlemi
 GPS Longitude,GPS Boylamı
+GRN,Mal kabul
+GRN Checklist,GRN Kontrol Listesi
+GRN Checklist requires at least one received kg before it can be submitted.,GRN kontrol listesinin onaylanması için en az bir alınan kg gereklidir.
+GRN Checklists,GRN Kontrol Listeleri
+GRN checklist,GRN kontrol listesi
+GRN checklist submitted.,GRN kontrol listesi gönderildi.
+"GRN, CI or supplier… ⌘K","GRN, fatura veya tedarikçi… ⌘K"
+GRN_CREATED,Mal kabul oluşturuldu
+GRNs with variance,Sapmalı mal kabuller
+GTD Number,GTD Numarası
+GTD number,GTB numarası
+GTD number must be in the format XXXXX/DDMMYY/NNNNNNN (e.g. 26010/110726/1234567).,"GTD numarası XXXXX/DDMMYY/NNNNNNN biçiminde olmalıdır (örneğin, 26010/110726/1234567)."
+"GTD, CI or office… ⌘K","GTB, fatura veya ofis… ⌘K"
 Gain / Loss,
+Gate Close,Kapı Kapanışı
 Gate Devices,
+Gate In Date,Giriş Tarihi
+Gate Open,Kapı Açılışı
+Gate close,Kapı kapanışı
 Gate device,
 Gate devices,
 Gate events,
+Gate open,Kapı açılışı
+Gate-in date,Giriş tarihi
 Gateways,Ağ geçitleri
 Gender,Cinsiyet
 Gender is required.,Cinsiyet zorunludur.
@@ -1258,8 +1509,11 @@ Given,Verilen
 Go,Gir
 Go to Sales Orders,Satış Siparişlerine Git
 Good Produced Qty,
+Good kg,Sağlam kg
 Goods,Mal bedeli
 Goods (PO),Mal bedeli (PO)
+Goods receipt,Mal kabulü
+Goods value (total amount),Mal değeri (toplam tutar)
 Google Drive libraries are not installed on the server. ,
 Grace period (min),
 Grand Total,Genel Toplam
@@ -1269,19 +1523,26 @@ Gross,Brüt
 Gross Margin by Customer,Müşteriye göre brüt marj
 Gross Margin by Item,Ürüne göre brüt marj
 Gross ROI %,Brüt YGO %
+Gross Weight,Brüt Ağırlık
+Gross Weight (kg),Brüt Ağırlık (kg)
 Gross pay,Brüt ücret
 Gross total,Brüt toplam
+Gross weight,Brüt ağırlık
 Group,Grup
 "Group warehouse (can contain children, holds no stock itself)","Grup depo (alt depo içerebilir, kendi stoğu yoktur)"
 Guarantee,Teminat
 Guarantee return,Teminat iadesi
 HR,İK
 HR overview,İK genel bakış
+HS Code,GTİP Kodu
+HS code,GTİP kodu
 HS code (ТН ВЭД),GTİP kodu (ТН ВЭД)
 Half Day,Yarım Gün
 Half rate,
 Half-day & Presence,
 Half-day threshold (min),
+Handling,Elleçleme
+Header,Başlık
 Heavy conditions,
 Heavy-conditions allowance,Ağır koşul ek ödemesi
 Height,Yükseklik
@@ -1302,6 +1563,7 @@ Hours,Saat
 I have tested a restore,
 ID as it appears in raw gate events,
 IKPU code on {0} item(s),
+IN_TRANSIT,Yolda
 Identity,
 "If off, a back-dated multi-currency document needs a rate within the days below.",
 Ignore,
@@ -1311,14 +1573,21 @@ Immutable record,
 Impact,
 Import,İçe aktar
 Import (paste / CSV),İçe aktar (yapıştır / CSV)
+Import Container,İthalat Konteyneri
+Import Container Item,İthalat Konteyner Kalemi
+Import Expense,İthalat Gideri
+Import Truck,İthalat Kamyonu
 Import bank statement,Banka ekstresini içe aktar
 Import failed.,İçe aktarma başarısız.
+Import orders,İthalat siparişleri
 Import outlet locations,Nokta konumlarını içe aktar
 Import {0} lines,{0} satırı içe aktar
 Imported,İçe aktarıldı
 Imported {0} of {1} lines ({2} duplicates skipped).,{1} satırdan {0} içe aktarıldı ({2} yinelenen atlandı).
 Imports,İthalat
+Imports module is not enabled for this company.,İthalat modülü bu şirket için etkin değil.
 In,Giriş
+In Transit,Yolda
 In progress,Devam ediyor
 In time,Zamanında
 In transit,Yolda
@@ -1326,9 +1595,11 @@ In transit,Yolda
 InService,Hizmette
 Inactive,Pasif
 Include drafts,Taslakları dahil et
+Include in Landed Cost,Landed Cost'a Dahil Et
 Including unposted drafts — does not tie to the GL.,Kaydedilmemiş taslaklar dahil — defter-i kebir ile uyuşmaz.
 Inclusive,Dahil
 Inclusive: commission deducted from amount — receiver gets less.,Dahil: komisyon tutardan düşülür — alıcı daha az alır.
+Incoterm,Incoterm
 Incremental Units,Artımlı Birimler
 Industry,Sektör
 Inflow,Giriş
@@ -1341,17 +1612,22 @@ Insurance,Sigorta
 Intake via {0}.,
 Integration,
 Integration type,
+Invalid PO links payload.,Geçersiz sipariş bağlantısı verisi.
 Invalid completion status.,
+Invalid container items payload.,Geçersiz konteyner ürün verisi.
 Invalid coordinates: {0},
 Invalid correction_type '{0}'. Valid values: {1},
+Invalid cost lines payload.,Geçersiz maliyet satırı verisi.
 Invalid date value.,
 Invalid date: {0}. Expected YYYY-MM-DD.,
 Invalid decision: {0},Geçersiz karar: {0}
+Invalid declaration lines payload.,Geçersiz beyanname satırı verisi.
 Invalid filename.,
 Invalid filters payload.,
 Invalid intake payload.,Geçersiz tender verisi.
 Invalid item_overrides payload,Geçersiz item_overrides verisi
 Invalid item_returns payload,Geçersiz item_returns verisi
+Invalid items payload.,Geçersiz ürün verisi.
 Invalid kiosk credentials.,Geçersiz kiosk kimlik bilgileri.
 Invalid maintenance type.,
 Invalid month.,
@@ -1372,18 +1648,28 @@ Inventory Aging,Stok yaşlandırma
 Invite user,Kullanıcı davet et
 Invoice,Fatura
 Invoice #,
+Invoice Reference,Fatura Referansı
 Invoice not submitted yet.,
 Invoice number or customer…,
+Invoice reference,Fatura referansı
 Invoiced,Faturalandı
 "Invoiced totals over time, by day or month.",Zaman içinde günlük veya aylık faturalanan toplamlar.
 Invoiced without stock movement — stock still reserved; needs a delivery/backfill or manual close.,
 Invoices,Faturalar
+Iran Customs Duty,İran Gümrük Vergisi
+Iran Demurrage,İran Demuraj
+Iran Inspection,İran Muayenesi
+Iran Port & THC,İran Limanı ve THC
+Iran Storage,İran Depolama
 Issue,Sorun
 Issue credit note,Alacak dekontu düzenle
+Issue date,Veriliş tarihi
 Issue debit note,
 Issue is required.,Sorun zorunludur.
 Issue type,Talep türü
+Issued,Düzenlendi
 Issues,Sorunlar
+Issuing authority,Veren makam
 Item,Ürün
 Item #{0}: item is required.,Ürün #{0}: ürün zorunludur.
 Item #{0}: qty must be greater than 0.,Ürün #{0}: miktar 0'dan büyük olmalıdır.
@@ -1409,6 +1695,7 @@ Izoh,
 Jami,Jami
 Jami muzqaymoq soni (dona),Jami muzqaymoq soni (dona)
 Jami summa,Jami summa
+Job Status,İş durumu
 Job Title,Unvan
 Joined,
 Journal,
@@ -1427,17 +1714,23 @@ Keep,Sakla
 Keep Editing,
 Keep typing to narrow…,Daraltmak için yazmaya devam edin…
 Keeps the audit trail; amend to correct.,Denetim izini korur; düzeltmek için amend edin.
+Kg,Kg
 Kind,
 Kiosk login is not configured on this site.,Bu sitede kiosk girişi yapılandırılmamış.
 L,Kb
+LCV,Fiş
 Label,Etiket
 Landed,Landed
 Landed cost (goods + import),Landed maliyet (mal + ithalat)
 Landed cost + our margin → the price we bid,Landed maliyet + marjımız → verdiğimiz teklif fiyatı
+Landed cost is restricted,Varış maliyeti kısıtlı
 Landed cost plan,Landed maliyet planı
+Landed cost review,Varış maliyeti incelemesi
+Landed cost voucher drafted.,Varış maliyeti fişi taslağı oluşturuldu.
 Landed cost vouchers,İthal maliyet fişleri
 Landed plan saved.,Plan kaydedildi.
 Landed total,Landed toplam
+Landed-cost lines,Varış maliyeti satırları
 Lane,Şerit
 Lanes,Şeritler
 Language,Dil
@@ -1491,6 +1784,8 @@ Link failed.,Bağlama başarısız.
 Link to an existing Customer for receivables.,Alacaklar için mevcut bir Müşteriye bağlayın.
 Linked customer,Bağlı müşteri
 Linked invoices,Bağlı faturalar
+Linked purchase invoice: {pi},Bağlı satın alma faturası: {pi}
+Linked purchase orders,Bağlı satın alma siparişleri
 Linked receipts,Bağlı mal kabulleri
 Linked. {0} parked punches re-queued.,Bağlandı. {0} bekleyen kayıt yeniden kuyruğa alındı.
 List rate,Liste fiyatı
@@ -1570,20 +1865,24 @@ Matched employee,
 Material Issue submitted: {0},Malzeme çıkışı onaylandı: {0}
 Material Staging,
 Materials transferred successfully!,
+Max CI Value (USD),Maks CI Değeri (USD)
 Maximum late deduction per day (0 = unlimited).,
 Memo,Not
 Message,Mesaj
 Message copied.,Mesaj kopyalandı.
 Mijoz balansi,Mijoz balansi
+Min CI Value (USD),Min CI Değeri (USD)
 Min for present (min),
 Minimum minutes worked to count as half-day.,
 Minimum minutes worked to count as present.,
 Minutes tolerated before late penalty starts.,
 Minutes worked before overtime begins.,
+Missing,Eksik
 Missing Entry,
 Missing TimePay user id.,
 Missing fields,Eksik alanlar
 Missing site config key: {0},
+Missing veterinary certificate,Veteriner sertifikası eksik
 Missing work mode / region,Çalışma modu / bölge eksik
 Mitigation:,Azaltma:
 Mobile,Mobil
@@ -1607,12 +1906,18 @@ Monthly,Aylık
 Monthly installment,Aylık taksit
 Monthly run-rate,Aylık ciro
 Move failed.,Taşıma başarısız.
+Move this commercial invoice to {status}?,Bu faturayı {status} durumuna taşınsın mı?
+Move this container to {status}?,Konteyner {status} durumuna taşınsın mı?
+Move this declaration to {status}?,Beyanname {status} durumuna taşınsın mı?
+Move this truck to {status}?,Kamyon {status} durumuna taşınsın mı?
+Move to,Taşı
 Move to Under Review,İncelemeye Al
 Movement,Hareket
 Movements,Hareketler
 Multi-Currency Parties,
 Multi-currency,
 Multi-level approval incomplete,
+Multiplier,Çarpan
 Multiplier (× hourly rate),
 My Work Orders Queue,
 My requests,Taleplerim
@@ -1621,6 +1926,7 @@ My work orders,İş emirlerim
 Name,Ad
 Name is required.,
 Name or email,Ad veya e-posta
+Named place,Belirtilen yer
 Name…,İsim…
 Narxi,Narxi
 Need GPS,GPS gerekli
@@ -1631,6 +1937,8 @@ Needs you today,Bugün ilgi bekliyor
 Needs your attention,
 Net,Net
 Net ROI %,Net YGO %
+Net Weight (kg),Net Ağırlık (kg)
+Net kg,Net kg
 Net owed,
 Net pay,Net maaş
 Net profit,Net kâr
@@ -1670,7 +1978,12 @@ New Visit,Yeni Ziyaret
 New Work Order,Yeni İş Emri
 New asset purchase,
 New bill,Yeni fatura
+New booking,Yeni rezervasyon
+New commercial invoice,Yeni ticari fatura
+New container,Yeni konteyner
 New customer,Yeni müşteri
+New customs declaration,Yeni gümrük beyannamesi
+New declaration,Yeni beyanname
 New device,
 New employee,Yeni çalışan
 New employee–device mapping,
@@ -1704,8 +2017,11 @@ New stock entry,Yeni stok kaydı
 New supplier,Yeni tedarikçi
 New transaction,Yeni işlem
 New transfer,Yeni transfer
+New truck,Yeni kamyon
+New truck receipt,Yeni kamyon teslim kaydı
 New warehouse,Yeni depo
 Next,İleri
+Next voucher preview,Sonraki fiş önizlemesi
 Night,
 Night & Overtime,
 Night allowance,Gece ek ödemesi
@@ -1725,6 +2041,8 @@ No EHF submissions yet. Submit a Sales Invoice to enqueue one.,Henüz EHF gönde
 No Employee Advances account configured.,Avans hesabı yapılandırılmamış.
 No Employee Advances account is configured for {0}. Set the company's ,
 No GPS-located outlets for this period.,Bu dönem için GPS konumlu nokta yok.
+No GRN checklist was provided.,GRN kontrol listesi belirtilmedi.
+No GRN checklists,GRN kontrol listesi yok
 No Google service account configured (site_config: stabler_gdrive_service_account).,
 No OSA audits yet,Henüz OSA denetimi yok
 No ROI snapshots yet,Henüz YGO anlık görüntüsü yok
@@ -1735,6 +2053,8 @@ No access,
 No account rows,
 No activity recorded yet.,
 No advances yet.,Henüz avans yok.
+No approved veterinary certificate exists for this shipment. The submit will be rejected unless an Imports Manager set an override. Continue anyway?,Bu sevkiyat için onaylı veteriner sertifikası yok. İthalat Müdürü geçersiz kılma ayarlamadıkça gönderim reddedilecek. Yine de devam edilsin mi?
+No arrived trucks are waiting to be received for this shipment.,Bu sevkiyat için teslim alınmayı bekleyen varmış kamyon yok.
 No attendance for this month.,Bu ay için devam kaydı yok.
 No attendance records,Devam kaydı yok
 No attendance summaries for this period,Bu dönem için devam özeti yok
@@ -1749,17 +2069,25 @@ No claim selected.,Talep seçilmedi.
 No claims yet,Henüz talep yok
 No columns,Sütun yok
 No comments yet.,Henüz yorum yok.
+No commercial invoices,Ticari fatura yok
+No commercial invoices reach their transit ETA in the next 7 days.,Önümüzdeki 7 günde hiçbir fatura transit ETA'sına ulaşmıyor.
 No company is configured.,
 No company selected,Şirket seçilmedi
+No container cost lines have been entered for this invoice.,Bu fatura için konteyner maliyet satırı girilmemiş.
+No containers,Konteyner yok
 No correction requests,
 No corrections are waiting for review.,
 No corrections found for this status.,
 "No cost items yet — add transport, customs, certification…","Henüz kalem yok — transport, gümrük, sertifika ekleyin…"
+No cost lines,Maliyet satırı yok
+No cost lines yet.,Henüz maliyet satırı yok.
+No cost lines.,Maliyet kalemi yok.
 No coverage,Kapsam yok
 No creditors found.,
 No custom allowances. Click Add to create one.,
 No customers,Müşteri yok
 No customers match that name,Bu ada uyan müşteri bulunamadı
+No customs declarations,Gümrük beyannamesi yok
 No data,Veri yok
 No data for the selected range,Seçilen aralık için veri yok
 No data gaps found for this company.,Bu şirkette veri eksiği bulunamadı.
@@ -1790,8 +2118,10 @@ No exchange rates yet. Click Refresh now to fetch today's rates from cbu.uz.,Hen
 No field users yet,Henüz saha kullanıcısı yok
 No files attached.,Dosya eklenmedi.
 No foreign-currency account balances found for this date.,
+No freight bookings,Nakliye rezervasyonu yok
 No gate devices,
 No holidays yet.,Henüz tatil yok.
+No import expenses,İthalat gideri yok
 No installments due this month.,Bu ay vadesi gelen taksit yok.
 No interest — fixed Murabaha markup. Sum equals total exactly.,Faiz yok — sabit Murabaha kâr payı. Toplam tam olarak genel toplamla eşittir.
 No invoices found,
@@ -1801,7 +2131,9 @@ No items found,Ürün bulunamadı
 No items match,Eşleşen ürün yok
 No items with submitted active BOMs yet — create one first.,Henüz onaylanmış aktif BOM'lu ürün yok — önce bir tane oluşturun.
 No items yet.,Henüz ürün yok.
+No items.,Kalem yok.
 No journal entries in this range,Bu aralıkta yevmiye kaydı yok
+No landed cost vouchers yet.,Henüz varış maliyeti fişi yok.
 No lanes. Click + to add.,Şerit yok. Eklemek için + tıklayın.
 No leads,Potansiyel yok
 No leave requests,İzin talebi yok
@@ -1829,6 +2161,7 @@ No outstanding advances,Bekleyen avans yok
 No outstanding balances,Açık bakiye yok
 No outstanding salary payable.,Ödenmemiş maaş borcu yok.
 No overdue installments.,Gecikmiş taksit yok.
+No payments due,Vadesi gelen ödeme yok
 No payments in this range,Bu aralıkta ödeme yok
 No payments recorded in this range,
 No payments waiting for approval,Onay bekleyen ödeme yok
@@ -1845,11 +2178,13 @@ No purchase invoices in this range,
 No purchase orders have been registered for this supplier.,
 No purchase orders in the customs queue.,Gümrük kuyruğunda sipariş yok.
 No purchase orders in this range,Bu aralıkta satın alma siparişi yok
+No purchase orders linked.,Bağlı satın alma siparişi yok.
 No purchase orders tagged to this tender yet.,Bu tendere henüz PO bağlanmadı.
 No purchase receipts in this range,
 No quotations in this range,Bu aralıkta teklif yok
 No raw events,
 No readiness data,
+No receipts yet.,Henüz kabul yok.
 No receivable account configured for distributor {0} in company {1}.,{1} şirketindeki {0} distribütörü için alacak hesabı yapılandırılmamış.
 No receivable account configured for distributor {0} in company {1}: {2},{1} şirketindeki {0} distribütörü için alacak hesabı yapılandırılmamış: {2}
 No receivables,Alacak yok
@@ -1888,6 +2223,8 @@ No stock moves in this range,Bu aralıkta stok hareketi yok
 No stock update,Stok hareketi yok
 No stock warehouses,
 No stocked items found,
+No submitted Purchase Receipts yet — a voucher cannot be created.,Henüz onaylanmış Satın Alma Makbuzu yok — fiş oluşturulamaz.
+No submitted purchase receipts yet.,Henüz onaylanmış satın alma makbuzu yok.
 No summaries,
 No supplier quotations for this tender.,Bu ihale için tedarikçi teklifi yok.
 No suppliers,Tedarikçi yok
@@ -1900,14 +2237,20 @@ No transactions,İşlem yok
 No transactions in this period.,Bu dönemde işlem yok.
 No transactions yet.,Henüz işlem yok.
 No travel,
+No truck receipts yet.,Henüz kamyon teslim kaydı yok.
+No trucks,Kamyon yok
 No unbilled service visits,
+No unconsumed landed-cost lines to voucher.,Fiş için tüketilmemiş navlun maliyeti satırı yok.
 No unmatched users. All punches are mapped.,Eşleşmemiş kullanıcı yok. Tüm kayıtlar eşleşti.
 No valid rows found.,Geçerli satır bulunamadı.
 No valuation history.,Değerleme geçmişi bulunamadı.
 No van stock yet,Henüz araç stoğu yok
 No verified restore on record. A backup you have never restored is not a backup you can trust — test one and record it.,
+No veterinary certificate on file for this shipment.,Bu sevkiyat için kayıtlı veteriner sertifikası yok.
+No veterinary certificates,Veteriner sertifikası yok
 No visits,Ziyaret yok
 No visits yet,Henüz ziyaret yok
+No vouchers yet.,Henüz fiş yok.
 No warehouses for this company,Bu şirket için depo yok
 No work orders,İş emri yok
 No work orders assigned to you yet.,Henüz size atanmış iş emri yok.
@@ -1943,11 +2286,14 @@ Not ready to lock,
 Not registered,Kayıtlı değil
 Not set,
 Not uploaded yet,Henüz yüklenmedi
+Note,Not
 Notes,Notlar
 Nothing to pay — selected employees have no outstanding balance.,
 Nothing to reconcile — all clear.,Mutabık kılınacak bir şey yok — her şey temiz.
+Nothing to voucher.,Fişe alınacak bir şey yok.
 O'lchov birlik,O'lchov birlik
 OK,Başarılı
+ON_BOARD,Gemide
 OSA,OSA
 OSA %,OSA %
 OSA Audit name is required.,OSA Denetim adı zorunludur.
@@ -1960,7 +2306,10 @@ Object Name,Nesne Adı
 Object Type,Nesne Türü
 Off,Kapalı
 Off-CBU Documents,
+Off-Hours Clearance,Mesai Dışı Gümrükleme
 Off-box (Google Drive),Sunucu dışı (Google Drive)
+Off-hours clearance (+25% BRV),Mesai dışı gümrükleme (+%25 BRV)
+Off-hours surcharge,Mesai dışı ek ücret
 Office,
 Office branch or location,
 Oldest (days),En eski (gün)
@@ -1968,6 +2317,7 @@ Oldest queued,En eski kuyrukta
 Oldest reservation,En eski rezervasyon
 Ombor,Depo
 On,Açık
+On Hold,Beklemede
 On Leave,İzinde
 On hand,Eldeki
 On leave,
@@ -1985,6 +2335,9 @@ Only Approved claims can be settled. Current status: {0},Yalnızca Onaylanmış 
 Only Payment Entry / Journal Entry can be reconciled here.,
 Only a Stock Manager can reconcile stock.,Yalnızca bir Stok Yöneticisi stok sayımı yapabilir.
 Only a submitted collection can be cancelled.,Yalnızca onaylanmış bir tahsilat iptal edilebilir.
+Only an Imports Manager can add a Landed Cost Voucher.,Yalnızca bir İthalat Yöneticisi Varış Maliyeti Fişi ekleyebilir.
+Only an Imports Manager can correct the {0} status backwards.,{0} durumunu bir adım geri yalnızca İthalat Yöneticisi alabilir.
+Only an Imports Manager can override the veterinary certificate requirement.,Veteriner sertifikası şartını yalnızca bir İthalat Yöneticisi geçersiz kılabilir.
 Only confirm after you have actually restored a backup to a scratch site and verified the data. This records today as the last successful restore test.,
 Only draft Journal Entries can be deleted; cancel a submitted one instead.,
 Only draft journal entries can be edited here. Submitted entries must be cancelled and amended.,
@@ -2003,6 +2356,7 @@ Open,Açık
 Open AR,Açık alacak
 Open Exceptions,
 Open SREs,Açık SRE'ler
+Open commercial invoices,Açık ticari faturalar
 Open exceptions,
 Open matrix,Tabloyu aç
 Open payment link,Ödeme bağlantısını aç
@@ -2029,6 +2383,7 @@ Order date,Sipariş tarihi
 Order number or supplier…,
 Ordered,
 Orders,Siparişler
+Orders with advance,Avanslı siparişler
 Org chart,
 Organization,Organizasyon
 Orientation,Yönlendirme
@@ -2039,6 +2394,7 @@ Other cost,Diğer masraf
 Other costs (before profit),Diğer masraflar (kârdan önce)
 Out,Çıkış
 Out of stock,Stok tükendi
+Out of the target range — a QC note is required to save.,Hedef aralığın dışında — kaydetmek için bir KK notu gerekli.
 Out time,Çıkış saati
 Out-of-sequence approval,
 Outflow,Para çıkışı
@@ -2063,6 +2419,7 @@ Outstanding customer balances for field teams.,
 Outstanding salary payable,Ödenmemiş maaş borcu
 Overdue,Gecikmiş
 Overdue installments,Gecikmiş taksitler
+Override (preview only),Geçersiz kılma (yalnızca önizleme)
 Override qty must be greater than zero,Geçersiz kılma miktarı sıfırdan büyük olmalıdır
 Override role,
 Override — submit despite low stock (admin),Geçersiz kıl — düşük stoka rağmen gönder (yönetici)
@@ -2071,8 +2428,10 @@ Overtime (min),Fazla mesai (dk)
 Overtime multiplier,Fazla mesai çarpanı
 Overview,Genel Bakış
 Owes us,Bize borçlu
+Own,Kendi
 Owner,
 P,Bk
+PENDING,Beklemede
 PI In,PI giriş
 PIN,
 PO,PO
@@ -2088,19 +2447,25 @@ POS Profile must define a shop warehouse.,
 POS Profile must define a walk-in customer.,
 POS Profile must define at least one payment mode.,
 POSM,POSM
+PR,Mal kabul
 Package incomplete — fill the missing fields,Paket eksik — eksik alanları doldurun
+Packaging OK,Ambalaj uygun
+Packaging damaged,Ambalaj hasarlı
 Paid,Ödendi
 Paid amount,Ödenen tutar
 Paid days,Ücretli günler
 Paid from,Ödeyen
 Paid to,Alıcı
 Paid {0} employees — {1},{0} çalışana ödendi — {1}
+Parent,Ana
+Parent Customer,Ana müşteri
 Parent warehouse,Üst depo
 Pareto ranking of customers by revenue with A/B/C classes.,"Müşterilerin gelire göre Pareto sıralaması, A/B/C sınıflarıyla."
 Pareto ranking of items by value with A/B/C classes.,"Ürünlerin değere göre Pareto sıralaması, A/B/C sınıflarıyla."
 Pareto ranking of suppliers by spend with A/B/C classes.,"Tedarikçilerin harcamaya göre Pareto sıralaması, A/B/C sınıflarıyla."
 Partial,Kısmi
 Partially Completed,Kısmen tamamlandı
+Partially Paid,Kısmen ödendi
 Partially Reserved,
 Partially approved — awaiting level {0},
 Partially billed — {pct}% invoiced.,
@@ -2157,8 +2522,12 @@ Payment received,Ödeme alındı
 Payment reminder,Ödeme hatırlatması
 Payment saved — pending approval before it posts.,Ödeme kaydedildi — işlenmeden önce onay bekliyor.
 Payment schedule,Ödeme planı
+Payment split is hidden for your role.,Ödeme dağılımı rolünüz için gizlidir.
+Payment status,Ödeme durumu
 Payment type,Ödeme türü
 Payments,Ödemeler
+Payments due,Vadesi gelen ödemeler
+Payments due ≤7 days,Ödemeler ≤7 gün
 Payments paid today,
 Payments received today,
 Payments you submit that need a second approver will show here.,İkinci bir onaylayıcı gereken gönderdiğiniz ödemeler burada görünür.
@@ -2180,9 +2549,11 @@ Payroll-impacting pending,
 Pays out this share of the KPI pool. Locked periods are read-only.,KPI havuzunun bu payını öder. Kilitli dönemler salt okunur.
 Penalty %/day,Ceza %/gün
 Pending,Beklemede
+Pending (kg),Bekleyen (kg)
 Pending Corrections,
 Pending approvals,Bekleyen onaylar
 Pending requests,Bekleyen talepler
+Pending vet certificates,Bekleyen vet sertifikaları
 People,Kişiler
 Per box,Kutu başına
 Percent off,İndirim oranı
@@ -2218,6 +2589,7 @@ Pick a status.,Bir durum seçin.
 Pick a supplier.,Bir tedarikçi seçin.
 Pick a tender deal to compare quotations.,Teklifleri karşılaştırmak için bir ihale anlaşması seçin.
 Pick a tender deal to see its purchase orders.,PO'ları görmek için bir tender seçin.
+Pick a truck to receive.,Teslim almak için bir kamyon seçin.
 Pick a valid date range.,Geçerli bir tarih aralığı seçin.
 Pick a valid month.,Geçerli bir ay seçin.
 Pick a warehouse,Depo seçin
@@ -2236,7 +2608,14 @@ Pick start and end dates.,Başlangıç ve bitiş tarihlerini seçin.
 Pick the account funds will be paid from.,Ödemenin yapılacağı hesabı seçin.
 Pick the account that will receive the funds.,Fonları alacak hesabı seçin.
 Pick the bank/cash account to pay from.,Ödeme yapılacak banka/kasa hesabını seçin.
+Pick the truck to receive,Teslim alınacak kamyonu seçin
+Pickup & Delivery,Alım ve Teslimat
+Pickup Date,Alım Tarihi
+Pickup Location,Alım Yeri
+Pickup date,Alım tarihi
+Pickup location,Alım yeri
 Pieces,Adet
+Pipeline,Süreç
 Pistachio,
 Place branded freezer at {0} (deal {1}),
 Place your RFID badge on the reader to log in,
@@ -2258,6 +2637,8 @@ Planograms,Planogramlar
 Planograms describe expected shelf facings per outlet and category.,"Planogramlar, her satış noktası ve kategori için beklenen raf düzenini tanımlar."
 Please fill all required fields.,Lütfen tüm zorunlu alanları doldurun.
 Policy,Politika
+Port of discharge,Boşaltma limanı
+Port of loading,Yükleme limanı
 Portfolio value,Portföy değeri
 Position,
 Positions,Pozisyonlar
@@ -2334,6 +2715,8 @@ Purchase Receipt submitted.,
 Purchase Receipts,Mal Kabulleri
 Purchase item,Satın alma kalemi
 Purchase method,Satın alma yöntemi
+Purchase receipt,Satın alma makbuzu
+Purchase receipts,Satın alma makbuzları
 Purchases,Alımlar
 Purchases = selected period · Balance = payable as of the To date (changes with the date). Click a supplier to see the bills.,
 Purchases by Supplier,Tedarikçiye göre alımlar
@@ -2345,14 +2728,19 @@ Push net pay to ERPNext?,Net maaş ERPNext'e gönderilsin mi?
 Push net to ERPNext,Net'i ERPNext'e gönder
 Pushed net pay for {0} employees.,{0} çalışan için net maaş gönderildi.
 Pushed {0}; {1} failed.,{0} gönderildi; {1} başarısız.
+QC,KK
+QC notes,KK notları
 QR code expired,QR kodun süresi doldu
 QR unavailable — open the link below,QR kullanılamıyor — aşağıdaki bağlantıyı açın
 Qty,Miktar
+Qty (kg),Miktar (kg)
 Qty must be greater than zero.,
+Quality control,Kalite kontrol
 Quantity,Miktar
 Quantity must be positive.,Miktar pozitif olmalıdır.
 Queue is clear. Nothing pending.,Kuyruk temiz. Bekleyen yok.
 Queue is empty,
+Quick view,Hızlı görünüm
 Quotation,Teklif
 Quotation number or customer…,
 Quotations,Teklifler
@@ -2388,12 +2776,17 @@ Readiness,
 Ready,Hazır
 Ready to lock,
 Reason,Neden
+Reason for rejection:,Ret nedeni:
+Reason for the status correction:,Durum düzeltme nedeni:
+Recalculate,Yeniden hesapla
+Receipt,Kabul
 Receipt number or supplier…,
 Receipts,Makbuzlar
 Receivable (AR),Alacaklar (AR)
 Receivable Trend (Last 8 Weeks),
 Receivables,Alacaklar
 Receive,Al
+Receive Truck,Kamyon Teslim Al
 Receive currency,Alınan para birimi
 Receive goods,Mal kabul et
 Receive goods into stock,Malları stoğa al
@@ -2401,11 +2794,19 @@ Receive now,Şimdi alınan
 Receive payment,Ödeme al
 Receive payments / issue credit notes,Tahsilat / iade dekontu
 Receive stock,Stok al
+Receive truck,Kamyonu teslim al
 Received,Alındı
+Received (kg),Teslim alınan (kg)
+Received / expected (kg),Teslim alınan / beklenen (kg)
 Received At,Alındığı Yer
 Received amount,Alınan tutar
+Received boxes,Teslim alınan kutular
+Received by,Teslim alan
+Received items,Teslim alınan kalemler
+Received kg,Teslim alınan kg
 Receiver gets,Alıcının aldığı
 Receiver name,Alıcı adı
+Receiving notes,Teslim alma notları
 Recent activity,Son etkinlik
 Recent imports,Son içe aktarımlar
 Recent reconciliations,Son sayımlar
@@ -2418,6 +2819,7 @@ Record & close,Kaydet ve kapat
 Record & new,Kaydet ve yeni
 "Record a receipt, issue, or transfer to move stock between warehouses.","Depolar arasında stok taşımak için bir giriş, çıkış veya transfer kaydı oluşturun."
 Record a sale,Satış kaydet
+"Record border-crossing, handling and other import costs here.","Sınır geçişi, elleçleme ve diğer ithalat maliyetlerini burada kaydedin."
 Record production,Üretim kaydet
 Record stock movements,Stok hareketi kaydı
 Records that block payroll or look unfinished. Fix at the source.,Bordroyu engelleyen veya eksik kayıtlar. Kaynağında düzeltin.
@@ -2439,6 +2841,7 @@ Refresh token (JWT),
 Refreshing…,Yenileniyor…
 Region,
 Region / Route,Bölge / rota
+Register a customs declaration (GTD) for an import to clear it.,Bir ithalatı kapatmak için gümrük beyannamesi (GTB) kaydedin.
 Register a hardware reader or integration to start collecting raw attendance events.,
 "Register coolers, freezers, racks, and POSM assets here.","Soğutucuları, donduruculuları, rafları ve POSM varlıklarını burada kaydedin."
 Reject,Reddet
@@ -2449,7 +2852,12 @@ Reject this correction request? The requester will be notified.,
 Reject this leave request?,Bu izin talebi reddedilsin mi?
 Reject this request? The draft is left untouched for the maker to fix or delete.,
 Rejected,Reddedildi
+Rejected boxes,Reddedilen kutular
+Rejection reason:,Ret nedeni:
 Related documents,İlgili belgeler
+Relax the filters or create a new commercial invoice.,Filtreleri gevşetin veya yeni bir fatura oluşturun.
+Relax the filters to see containers.,Konteynerleri görmek için filtreleri gevşetin.
+Relax the filters to see trucks.,Kamyonları görmek için filtreleri gevşetin.
 Relieving date,
 Reload,Yeniden yükle
 Remaining,Kalan
@@ -2551,8 +2959,10 @@ Role not found,Rol bulunamadı
 Role template (optional),Rol şablonu (isteğe bağlı)
 Role template applied successfully.,
 Roles,Roller
+Roll back,Geri al
 Rolling window. 0 = no freeze. This is usually the one set to 49.,
 Route,Rota
+Route & cold chain,Rota ve soğuk zincir
 Route Code,Rota Kodu
 Route Name,Rota Adı
 Route code is required.,Rota kodu zorunludur.
@@ -2560,8 +2970,11 @@ Route name is required.,Rota adı zorunludur.
 Routes,Rotalar
 Row,Satır
 Row not found on this Stock Entry,Bu Stok Girişinde satır bulunamadı
+Row {0}: item is required.,Satır {0}: ürün gereklidir.
+Row {0}: unknown item '{1}'.,Satır {0}: bilinmeyen ürün '{1}'.
 Row {n} ({item}): qty exceeds available stock (available {free}).,Satır {n} ({item}): miktar mevcut stoğu aşıyor (mevcut {free}).
 Row {n}: qty must be greater than zero.,Satır {n}: miktar sıfırdan büyük olmalıdır.
+Rows per page,Sayfa başına satır
 Rsvd,Rezerve
 Rule Set,
 Rule set,
@@ -2586,6 +2999,7 @@ SO,SO
 SO number or customer…,
 SRE module unavailable: {0},SRE modülü kullanılamıyor: {0}
 SREs,SRE
+STUFFED,Yüklendi
 Salaries,Maaşlar
 Salary,Maaş
 Salary Slip {0} not found.,
@@ -2650,6 +3064,7 @@ Save failed.,Kaydetme başarısız.
 Save mapping,
 Save modules,Modülleri kaydet
 Save plan,Planı kaydet
+Save the invoice first to compute the customs fee.,Gümrük ücretini hesaplamak için önce faturayı kaydedin.
 Saved,
 Saved — pending approval before it posts.,Kaydedildi — işlenmeden önce onay bekliyor.
 Saved.,
@@ -2664,6 +3079,7 @@ Scan returned item or search,
 Scan to pay,Ödemek için tarayın
 Scanned,Tarandı
 Scanned / Required,Taranan / Gereken
+Scanned declaration,Taranmış beyanname
 Scanner Ready,
 Scanning…,Taranıyor…
 Schedule,Program
@@ -2676,6 +3092,10 @@ Scheme Name,Plan Adı
 Scheme Type,Plan Türü
 Scrap / Rejects Qty,
 Scrap / rejects,Hurda / ret
+Seal Number,Mühür Numarası
+Seal broken,Mühür kırık
+Seal intact,Mühür sağlam
+Seal number,Mühür numarası
 Search,Ara
 Search BOMs or finished goods…,Ürün reçetesi veya mamul ara…
 Search a tender deal… ⌘K,İhale anlaşması ara… ⌘K
@@ -2685,6 +3105,7 @@ Search asset tag…,Varlık etiketi ara…
 Search by name or code…,Ad veya koda göre ara…
 Search by serial or item,Seri no veya ürünle ara
 Search campaigns…,Kampanya ara…
+Search carrier…,Taşıyıcı ara…
 Search customer,Müşteri ara
 Search customer name…,Müşteri adı ara…
 "Search customers, suppliers, items, invoices…","Müşteri, tedarikçi, ürün, fatura ara…"
@@ -2711,6 +3132,7 @@ Search supplier name…,Tedarikçi adı ara…
 Search suppliers…,Tedarikçi ara…
 Search supplier…,Tedarikçi ara…
 Search supplier… ⌘K,Tedarikçi ara… ⌘K
+Search transporter…,Nakliyeci ara…
 Search voucher…,
 Search warehouse…,Depo ara…
 Search work orders…,İş emri ara…
@@ -2745,6 +3167,7 @@ Select city…,Şehir seçin…
 Select company,Firma seçin
 Select gender,Cinsiyet seçin
 Select payment,
+Select purchase order…,Satın alma siparişi seçin…
 Select service person,Teknisyen seçin
 Select technician,Teknisyen seçin
 Select template…,Şablon seçin…
@@ -2792,7 +3215,10 @@ Set a Google Drive folder ID first.,Önce bir Google Drive klasör kimliği ayar
 Set as company default,Şirket varsayılanı yap
 Set as company default.,Şirket varsayılanı olarak ayarlandı.
 Set deadlines in Tender details.,Süreleri tender detaylarında girin.
+Set exactly one of Commercial Invoice or Container on a Freight Booking.,Nakliye Rezervasyonunda Ticari Fatura veya Konteynerden tam olarak birini belirtin.
+Set exactly one of Commercial Invoice or Container.,Ticari Fatura veya Konteynerden tam olarak birini belirtin.
 "Set the Google Drive folder ID in Stabler Settings, and share that Shared-Drive folder with the service account email.",
+Set the imports landed-cost expense account in Stabler Settings before creating a Landed Cost Voucher.,Bir Navlun Maliyet Fişi oluşturmadan önce Stabler Ayarları'nda ithalat navlun maliyeti gider hesabını ayarlayın.
 Setting up your business…,İşletmeniz kuruluyor…
 Settings,
 Settle,Mahsuplaştır
@@ -2812,6 +3238,7 @@ Shift 12h,
 Shift 8h,
 Shift class,
 Shift start,
+Shipping & logistics,Sevkiyat ve lojistik
 Shop,Mağaza
 Short code,Kısa kod
 Show discounts,İndirimleri göster
@@ -2849,6 +3276,8 @@ Source warehouse,Kaynak depo
 Source warehouse is required.,
 Sourcing comparison,Tedarik karşılaştırması
 Spend,Harcama
+Stabler BRV Setting,BRV Ayarı
+Stabler Customs Fee Tier,Gümrük Ücreti Kademesi
 Stabler Settings doctype does not exist. Run migrations first.,
 Staff with base salary = 0,Temel maaşı = 0 olan çalışanlar
 Stage Materials,
@@ -2868,12 +3297,18 @@ Start Work,İşe Başla
 Start Work Order,
 Start Work Order and transfer raw materials?,
 Start failed.,Başlatma başarısız.
+Stat. value,İst. değer
+State,Durum
 Statement account does not match the selected bank account ({0}).,Ekstre hesabı seçilen banka hesabıyla eşleşmiyor ({0}).
 Statement file,Ekstre dosyası
+Statistical Value (USD),İstatistiki Değer (USD)
 Status,Durum
+Status Correction Reason,Durum Düzeltme Nedeni
+Status change failed.,Durum değiştirilemedi.
 Status is required.,Durum zorunludur.
 Status name is required,
 Status not found,
+Status updated.,Durum güncellendi.
 Step,Adım
 Step #{0} not found on this visit.,Bu ziyarette #{0} numaralı adım bulunamadı.
 Step #{0}: type is required.,#{0}. adım: tür zorunludur.
@@ -2908,6 +3343,7 @@ Subject is required.,
 Submit,Onayla
 Submit & reserve stock,Onayla ve stok rezerve et
 Submit BOM?,
+Submit GRN,GRN’i gönder
 Submit Revaluation,
 Submit Work Order,
 Submit a Budget document covering this date range and cost centre.,
@@ -2919,7 +3355,10 @@ Submit document?,
 Submit expense,Masrafı onayla
 Submit failed.,Onaylama başarısız oldu.
 Submit journal entry?,Yevmiye kaydını onayla?
+Submit receipt,Teslim kaydını gönder
+Submit the GRN Checklist before adding a Landed Cost Voucher.,Bir Navlun Maliyet Fişi eklemeden önce GRN kontrol listesini onaylayın.
 Submit this BOM? You won't be able to edit it after.,Bu ürün reçetesi onaylansın mı? Onayladıktan sonra düzenleyemezsiniz.
+Submit this GRN checklist? This closes receiving and drafts a landed cost voucher.,Bu GRN kontrol listesi gönderilsin mi? Teslim alma kapanır ve bir varış maliyeti fişi taslağı oluşturulur.
 Submit transfer,Transferi onayla
 Submitted,Onaylandı
 Submitted At,Onaylanma Zamanı
@@ -2962,9 +3401,14 @@ Table,Tablo
 Tag Sales/Purchase Orders to a tender deal to see them here.,Burada görmek için siparişleri bir tendere bağlayın.
 Tag Supplier Quotations to this deal to compare them here.,Karşılaştırmak için teklifleri bu anlaşmaya bağlayın.
 Take Payment,
+Target,Hedef
 Target Remaining,
+Target Temp Max,Hedef Maks. Sıcaklık
+Target Temp Min,Hedef Min. Sıcaklık
 Target WIP Warehouse,
 Target margin (profit ÷ net revenue),Hedef marj (kâr ÷ net gelir)
+Target temp max (°C),Maks. sıcaklık (°C)
+Target temp min (°C),Min. sıcaklık (°C)
 Task,Görev
 Tax ID,Vergi Kimlik No
 Tax amount,
@@ -2975,6 +3419,12 @@ Taxes,Vergiler
 Technician,Teknisyen
 Technician state,Teknisyen durumu
 Telegram,Telegram
+Telex Release Date,Teleks Serbest Bırakma Tarihi
+Telex release,Teleks release
+Temperature,Sıcaklık
+Temperature OK,Sıcaklık uygun
+Temperature at arrival (°C),Varıştaki sıcaklık (°C)
+Temperature flagged,Sıcaklık işaretlendi
 Tender,İhale
 Tender / deal,İhale / anlaşma
 Tender Deadline,İhale son tarihi
@@ -2997,13 +3447,20 @@ That voucher is not linked to this transaction.,
 The Compliance module is disabled for this company.,Bu şirket için Uyumluluk modülü devre dışı.
 The GL ledger scan detected {0} issues that require immediate attention.,
 The Imports workspace will be built out in the next work package.,İthalat çalışma alanı bir sonraki iş paketinde geliştirilecektir.
+The commercial invoice has no items to receive.,Ticari faturada kabul edilecek ürün yok.
+The imports module is not enabled for this company.,İthalat modülü bu şirket için etkin değil.
 "The queue is blocked — {0} repost(s) stuck. Re-queue them, then Run now.",Kuyruk bloke — {0} takılı. Kuyruğa alıp 'Şimdi çalıştır' deyin.
 The referenced document is cancelled and cannot be approved.,
 The referenced document no longer exists.,
+The selected parent already belongs to another parent. Only one level of hierarchy is allowed.,Seçilen ana müşteri zaten başka bir ana müşteriye bağlı. Yalnızca tek seviye hiyerarşiye izin verilir.
+The selected parent customer does not exist.,Seçilen ana müşteri mevcut değil.
+The voucher is created as a draft; an accountant reviews and submits it in the books.,Fiş taslak olarak oluşturulur; bir muhasebeci inceleyip defterlerde onaylar.
 There are currently no work orders assigned to you.,
 These are ERPNext's back-dating guards — the reason it blocks creating or editing transactions older than a set window. They protect closed periods; relax them only deliberately.,
 "These are the toxic role combinations Stabler checks for. Findings are advisory — accept them with a compensating control, or split the duties.",Bunlar Stabler'ın kontrol ettiği toksik rol kombinasyonlarıdır. Bulgular tavsiye niteliğindedir — telafi edici bir kontrolle kabul edin veya görevleri ayırın.
 These device users have no employee link. Confirm a match to re-queue their punches.,Bu cihaz kullanıcılarının çalışan bağlantısı yok. Kayıtlarını yeniden işlemek için eşleşmeyi onaylayın.
+This GRN Checklist is not in a draft state.,Bu GRN kontrol listesi taslak durumunda değil.
+This GRN has no item lines.,Bu GRN’de kalem satırı yok.
 This Service workspace will be added after Tickets P1.,Bu çalışma alanı P1'den sonra eklenecek.
 This adjusts stock for {0} item(s) and posts the difference to the ledger. The action is recorded against your name.,Bu {0} kalem için stoğu düzeltir ve farkı deftere işler. İşlem sizin adınıza kaydedilir.
 This bank transaction is already fully reconciled.,
@@ -3011,7 +3468,9 @@ This cannot be undone.,Bu işlem geri alınamaz.
 This correction affects payroll calculations,
 This correction is already {0} and cannot be approved.,
 This correction is already {0} and cannot be rejected.,
+This cost line is already vouchered ({0}) and can no longer be toggled.,Bu maliyet satırı zaten fişe alınmış ({0}) ve artık değiştirilemez.
 This creates a submitted credit note (return invoice) and updates inventory automatically.,
+"This customer already has child locations, so it cannot become a child itself.","Bu müşterinin zaten alt konumları var, bu yüzden kendisi alt müşteri olamaz."
 This customer has no submitted invoices for the selected period.,
 This deal is Won — create the customer to start invoicing.,Anlaşma kazanıldı — fatura için müşteri oluşturun.
 This document was changed by someone else. Reload to see the latest.,
@@ -3034,6 +3493,8 @@ This request is already {0}.,
 This reverses the ledger postings. The entry stays as an audit record; create an amended one to correct it.,Defter kayıtları ters çevrilir. Kayıt denetim için kalır; düzeltmek için düzeltilmiş bir tane oluşturun.
 This role may create/edit back-dated stock entries.,
 This role may edit frozen accounting entries.,
+This truck receipt is not in a draft state.,Bu kamyon fişi taslak durumunda değil.
+This truck receipt is submitted and can no longer be edited.,Bu kamyon teslim kaydı gönderildi ve artık düzenlenemez.
 This warehouse has no current item balances.,
 This will close the order and release any reserved stock. Continue?,
 This will post {0} {1}. The action is recorded against your name.,{0} {1} işlenecek. İşlem sizin adınıza kaydedilir.
@@ -3083,17 +3544,23 @@ Top 10 Debtors,
 Total,Toplam
 Total (cost + markup),Toplam (maliyet + kâr payı)
 Total / Present / OSA % are computed server-side.,Toplam / Mevcut / OSA % sunucu tarafında hesaplanır.
+Total Amount,Toplam Tutar
+Total Boxes,Toplam Koli
+Total Duties (UZS),Toplam Vergiler (UZS)
 Total Marked,
 Total Required,
 Total SKUs,Toplam SKU
 Total allocated,Toplam tahsis edilen
 Total allocated cannot exceed the payment amount.,"Toplam tahsis edilen tutar, ödeme tutarını aşamaz."
+Total boxes,Toplam kutu
 Total committed,Toplam taahhüt
 Total cost,Toplam maliyet
 Total credit value,
 Total credits,
 Total debits,
+Total duties,Toplam vergiler
 Total in {0},{0} cinsinden toplam
+Total kg,Toplam kg
 Total net owed,
 Total outstanding,Toplam bakiye
 Total outstanding advances,Toplam bekleyen avanslar
@@ -3102,13 +3569,16 @@ Total payable,Toplam ödenecek
 Total receivable,Toplam alacak
 Total units,Toplam birim
 Total value,Toplam değer
+Total weight (kg),Toplam ağırlık (kg)
 Total:,Toplam:
+Totals,Toplamlar
 Totals shown in base currency ({0}).,Toplamlar ana para biriminde gösterilir ({0}).
 Trade Marketing,Ticari Pazarlama
 Trade marketing claims and settlement tracking.,
 Transaction,
 Transaction Id,İşlem No
 Transactions,İşlemler
+Transactions are recorded on child locations,İşlemler alt konumlara kaydedilir
 Transfer,Transfer
 Transfer cancelled.,
 Transfer detail,Transfer detayı
@@ -3122,46 +3592,94 @@ Transfer to WIP Warehouse,
 Transferred,Transfer edildi
 Transferred Qty,
 Transfers,Transferler
+Transit ETA,Transit ETA
+Transit ETA (Iran),Transit ETA (İran)
 Transport,Ulaşım
 Transport / day — City,Ulaşım / gün — Şehir
 Transport / day — District,Ulaşım / gün — İlçe
 Transport / day — Far district,Ulaşım / gün — Uzak ilçe
+Transport Cost,Nakliye Maliyeti
+Transport Currency,Nakliye Para Birimi
+Transport PI,Nakliye faturası
+Transport Payment Status,Nakliye Ödeme Durumu
+Transport Purchase Invoice,Nakliye Alış Faturası
+Transport cost,Nakliye ücreti
+Transport cost is hidden for your role.,Nakliye maliyeti rolünüz için gizlidir.
+Transporter,Nakliyeci
+Tree view,Ağaç görünümü
 Trend,
 Trigger Item,Tetikleyici Ürün
+Truck,Kamyon
+Truck & driver,Kamyon ve sürücü
+Truck Number,Kamyon Numarası
+Truck Receipt,Kamyon Teslim Kaydı
+Truck created.,Kamyon oluşturuldu.
+Truck number,Kamyon numarası
+Truck receipt saved.,Kamyon teslim kaydı kaydedildi.
+Truck receipt submitted.,Kamyon teslim kaydı gönderildi.
+Truck receipts,Kamyon kabulleri
+Truck saved.,Kamyon kaydedildi.
+Truck temperature {0} C is outside the target range {1} C to {2} C; record a QC note to save.,Kamyon sıcaklığı {0} C hedef aralığın ({1} C – {2} C) dışında; kaydetmek için bir kalite kontrol notu ekleyin.
+"Truck, driver or CI… ⌘K","Kamyon, sürücü veya TF… ⌘K"
+Trucking Company,Nakliye Şirketi
+Trucks,Kamyonlar
+Trucks on the road,Yoldaki kamyonlar
+Trucks received,Teslim alınan kamyonlar
 Try a different search term or clear the filter.,Farklı bir arama terimi deneyin veya filtreyi temizleyin.
 Try adjusting your filters to find exceptions.,
 "Try another item code, name, or group.",
 Try another search term.,
+Try to submit,Göndermeyi dene
 Tue,Sal
 Tuesday,
 Type,Tür
+Type / size,Tip / boyut
 "Type to search, or pick a quick action",Aramak için yazın veya hızlı bir işlem seçin
+UNLOADING,Boşaltılıyor
 UOM,Ölçü Birimi
 USD rate on this date,Bu tarihteki USD kuru
 USD → UZS,USD → UZS
+USD → {cur} rate,USD → {cur} kuru
 UZEX lot {0} not found.,
+UZS,UZS
 Unassigned,Atanmamış
 Unassigned department or position.,Bölüm veya pozisyon atanmamış.
 Unassigned dept / position,Atanmamış bölüm / pozisyon
 Unbilled,Faturalanmamış
 Unbilled queue,Faturalanmamış kuyruk
+Under Review,İncelemede
 Unit,Birim
 Unit cost,Birim maliyet
 Units Sold,Satılan Adet
 Unknown,
+Unknown Commercial Invoice: {0},Bilinmeyen Ticari Fatura: {0}
 Unknown Cost Center: {0},
+Unknown Customs Declaration: {0},Bilinmeyen Gümrük Beyannamesi: {0}
 Unknown Didox Submission,
 Unknown Fiscal Year: {0},
+Unknown Freight Booking: {0},Bilinmeyen Nakliye Rezervasyonu: {0}
+Unknown GRN Checklist: {0},Bilinmeyen GRN Kontrol Listesi: {0}
+Unknown Import Container: {0},Bilinmeyen İthalat Konteyneri: {0}
+Unknown Import Expense: {0},Bilinmeyen İthalat Gideri: {0}
+Unknown Import Truck: {0},Bilinmeyen İthalat Kamyonu: {0}
 Unknown POS Profile: {0},
 Unknown Purchase Invoice: {0},
+Unknown Purchase Order for this company: {0},Bu şirket için bilinmeyen Satın Alma Siparişi: {0}
 Unknown Sales Invoice: {0},Bilinmeyen Satış Faturası: {0}
 Unknown Sales Order: {0},Bilinmeyen Satış Siparişi: {0}
+Unknown Truck Receipt: {0},Bilinmeyen Kamyon Fişi: {0}
+Unknown Vet Certificate: {0},Bilinmeyen Veteriner Sertifikası: {0}
 Unknown account: {0},
+Unknown commercial invoice for this company: {0},Bu şirket için bilinmeyen ticari fatura: {0}
 Unknown company: {0},Bilinmeyen şirket: {0}
+Unknown cost line: {0},Bilinmeyen maliyet satırı: {0}
 Unknown customer: {0},
+Unknown customs declaration status: {0},Bilinmeyen gümrük beyannamesi durumu: {0}
 Unknown deal: {0},
 Unknown employee: {0},
+Unknown freight booking status: {0},Bilinmeyen nakliye rezervasyonu durumu: {0}
 Unknown hash algorithm: {0},
+Unknown item on declaration line: {0},Beyanname satırında bilinmeyen ürün: {0}
 Unknown item: {0},
 Unknown payment session.,
 Unknown purchase order: {0},Bilinmeyen satın alma siparişi: {0}
@@ -3173,7 +3691,9 @@ Unknown stage: {0},
 Unknown summary: {0},
 Unknown user: {0},
 Unknown vertical pack: {0},Bilinmeyen dikey paket: {0}
+Unknown veterinary certificate status: {0},Bilinmeyen veteriner sertifikası durumu: {0}
 Unknown warehouse: {0},Bilinmeyen depo: {0}
+Unknown {0}: {1},Bilinmeyen {0}: {1}
 Unmatched,
 Unmatched Event,
 Unmatched TimePay users,Eşleşmemiş TimePay kullanıcıları
@@ -3204,8 +3724,16 @@ User status updated.,
 Users,Kullanıcılar
 Users flagged,İşaretli kullanıcılar
 Utilization %,Kullanım %
+Uzbekistan Customs Duty,Özbekistan Gümrük Vergisi
+Uzbekistan Port Handling,Özbekistan Liman Elleçleme
 VAT,KDV
+VAT %,KDV %
+VAT (not capitalized),KDV (sermayeleştirilmez)
+VAT Amount (UZS),KDV Tutarı (UZS)
+VAT Rate %,KDV Oranı %
 VAT registered,KDV mükellefi
+VGM,VGM
+Valid,Geçerli
 Valid Distributor (Customer) is required.,Geçerli bir Distribütör (Müşteri) zorunludur.
 Valid From,Geçerlilik Başlangıcı
 Valid Promo Plan is required.,Geçerli bir Promosyon Planı zorunludur.
@@ -3215,6 +3743,7 @@ Valid issue type is required.,
 Valid till,Son geçerlilik
 Valid user is required.,
 Valuation,Değerleme
+Valuation & duties,Değerleme ve vergiler
 Valuation history,Değerleme geçmişi
 Valuation rate,Değerleme oranı
 Value,Değer
@@ -3226,14 +3755,25 @@ Van Stock name is required.,Araç Stoğu adı zorunludur.
 Van stock tracks what each field user has loaded for the day.,"Araç stoğu, her saha kullanıcısının gün için yüklediği malzemeleri takip eder."
 Var %,
 Variance,Fark
+Variance %,Sapma %
+Vehicle,Araç
+Vehicle & Driver,Araç ve Sürücü
+Vehicle Number,Araç Numarası
+Vehicle number,Araç numarası
 Vendor,Tedarikçi
 Vendor bill does not match PO / receipt,Tedarikçi faturası sipariş / mal kabulü ile eşleşmiyor
 Vendor comparison,Vendor karşılaştırma
 Vendor comparison (landed),Tedarikçi karşılaştırması (landed)
 Vendors,Vendorlar
 Vertical lanes (flow top→bottom),Dikey şeritler (akış yukarı→aşağı)
+Vessel,Gemi
+Vet,Veteriner
+Veterinary certificate,Veteriner sertifikası
+Veterinary certificate added.,Veteriner sertifikası eklendi.
+Veterinary certificate updated.,Veteriner sertifikası güncellendi.
 View,Görüntüle
 View all,Tümünü görüntüle
+View attached document,Ekli belgeyi görüntüle
 View attachment,Eki görüntüle
 View audit log,Denetim günlüğünü görüntüle
 View corrections queue,
@@ -3260,7 +3800,9 @@ Voucher No,Belge No
 Voucher Type,Belge Türü
 Voucher not found.,
 Voucher not found: {0} {1},
+Vouchered,Fişe alındı
 Voucher…,
+Voyage,Sefer
 W,K
 WIP Warehouse,
 WIP Whse,
@@ -3291,6 +3833,7 @@ Weekly,Haftalık
 Weekly off,Haftalık izin
 Weekly off days,
 Weight,Ağırlık
+Weight (kg),Ağırlık (kg)
 Welcome,Hoş geldiniz
 Welcome to Stabler,Stabler'a Hoş Geldiniz
 What is this advance for?,Bu avans ne için?
@@ -3342,12 +3885,15 @@ Year to date,
 Yes,Evet
 You,
 You are not assigned to this POS Profile.,
+You are not permitted to access imports.,İthalata erişim izniniz yok.
 You are not permitted to approve or reject correction requests.,
+You are not permitted to edit landed-cost figures.,Varış maliyeti rakamlarını düzenleme izniniz yok.
 You are not permitted to review approval requests.,
 You are not permitted to view customers.,
 You are not permitted to view employees.,
 You are not permitted to view suppliers.,
 You are not permitted to view the audit log.,Denetim günlüğünü görüntüleme izniniz yok.
+You do not have permission to view landed-cost figures. Ask an imports manager or accountant.,Varış maliyeti rakamlarını görme izniniz yok. Bir ithalat yöneticisine veya muhasebeciye danışın.
 You have already approved level {0} for this request.,
 You have no approval requests,Onay talebiniz yok
 You have unsaved changes. Leaving this page will discard them.,
@@ -3369,11 +3915,13 @@ across all statuses,tüm durumlarda
 active,
 active staff,aktif çalışan
 actual so far,şimdiye kadar gerçek
+additional,ek
 against,
 ambiguous,belirsiz
 avail,mev.
 available,
 blocker(s),
+boxes,kutu
 cheque / txn id,çek / işlem no
 company currency,şirket para birimi
 company is required.,
@@ -3414,12 +3962,14 @@ half-day,yarım gün
 high,yüksek
 https://…,
 info,bilgi
+initial,ilk
 inst.,taksit
 is locked from edits.,düzenlemeye kilitli.
 item,kalem
 item_code and warehouse are required,item_code ve depo zorunludur
 items,kalemler
 joined this month,bu ay katıldı
+kg,kg
 landed,landed
 late,geç
 leave,
@@ -3437,6 +3987,8 @@ name is required.,
 need GPS,GPS gerekli
 no stock movement,
 not set,girilmedi
+of,/
+of {n},{n} içinden
 on budget,
 "one Journal Entry, clears their payable.","tek yevmiye, borçlarını kapatır."
 one-off,tek seferlik
@@ -3517,17 +4069,67 @@ yr,yıl
 — select —,
 — top-level —,— üst düzey —
 ⚠ {0} line(s) had no cost — verify item valuation; margin may be overstated.,⚠ {0} satır(da) maliyet yok — kalem değerlemesini doğrulayın; marj abartılmış olabilir.
-A customer cannot be its own parent.,Bir müşteri kendi ana müşterisi olamaz.
-Children,Alt hesaplar
-Cumulative,Kümülatif
-Flat view,Düz görünüm
-Job Status,İş durumu
-On Hold,Beklemede
-Own,Kendi
-Parent,Ana
-Parent Customer,Ana müşteri
-The selected parent customer does not exist.,Seçilen ana müşteri mevcut değil.
-"This customer already has child locations, so it cannot become a child itself.","Bu müşterinin zaten alt konumları var, bu yüzden kendisi alt müşteri olamaz."
-Transactions are recorded on child locations,İşlemler alt konumlara kaydedilir
-Tree view,Ağaç görünümü
-The selected parent already belongs to another parent. Only one level of hierarchy is allowed.,Seçilen ana müşteri zaten başka bir ana müşteriye bağlı. Yalnızca tek seviye hiyerarşiye izin verilir.
+Container cost ledger,Konteyner maliyet defteri
+Cost ledger,Maliyet defteri
+Landed Cost Bills,İndirilmiş maliyet faturaları
+Open container,Konteyneri aç
+Failed to load the cost ledger.,Maliyet defteri yüklenemedi.
+Product,Ürün
+Cost figures are hidden — ask an imports manager or accountant for landed-cost visibility.,Maliyet tutarları gizli — indirilmiş maliyet erişimi için ithalat yöneticisine veya muhasebeciye başvurun.
+Product cost,Ürün maliyeti
+Per kg,Kg başına
+No linked bills yet.,Henüz bağlı fatura yok.
+Advance payments,Avans ödemeleri
+Unallocated,Dağıtılmamış
+No advance payments yet.,Henüz avans ödemesi yok.
+Nothing booked yet,Henüz hiçbir kayıt yok
+"No cost lines, bills or advances are linked to this container.","Bu konteynere bağlı maliyet, fatura veya avans yok."
+Bill or supplier… ⌘K,Fatura veya tedarikçi… ⌘K
+By supplier,Tedarikçiye göre
+No import bills yet.,Henüz ithalat faturası yok.
+No landed-cost bills,İndirilmiş maliyet faturası yok
+"No purchase invoices are linked to an import container, invoice or truck yet.","İthalat konteynerine, faturaya veya kamyona bağlı satın alma faturası yok."
+References,Referanslar
+Failed to load the supplier summary.,Tedarikçi özeti yüklenemedi.
+Pending landed-cost bills,Bekleyen indirilmiş maliyet faturaları
+{amount} outstanding,{amount} bakiye
+•••,•••
+Failed to load open invoices.,Açık faturalar yüklenemedi.
+Distribute oldest-first,Eskiden yeniye dağıt
+No open invoices for this customer group.,Bu müşteri grubu için açık fatura yok.
+Allocation,Tahsis
+Legacy,Eski
+{n}d,{n}g
+Will create {n} payment(s).,{n} ödeme oluşturulacak.
+Created {n} payment(s): {names},{n} ödeme oluşturuldu: {names}
+Payments saved — some are pending approval before they post.,Ödemeler kaydedildi — bazıları işlenmeden önce onay bekliyor.
+Failed to load payments.,Ödemeler yüklenemedi.
+Pick a payment to reallocate.,Yeniden tahsis için bir ödeme seçin.
+Transfers exceed the payment's unallocated amount.,Transferler ödemenin tahsis edilmemiş tutarını aşıyor.
+Reallocated via {je},{je} ile yeniden tahsis edildi
+Failed to reallocate payment.,Ödeme yeniden tahsis edilemedi.
+Reallocate advance,Avansı yeniden tahsis et
+No unallocated payments on this customer.,Bu müşteride tahsis edilmemiş ödeme yok.
+Transfers to locations,Konumlara transferler
+Add location,Konum ekle
+Reallocate,Yeniden tahsis et
+Reallocate a legacy advance to child locations,Eski bir avansı alt konumlara yeniden tahsis et
+Split one payment across child locations,Bir ödemeyi alt konumlara bölüştür
+Enter at least one allocation amount.,En az bir tahsis tutarı girin.
+Enter at least one transfer amount.,En az bir transfer tutarı girin.
+Select a payment mode.,Bir ödeme yöntemi seçin.
+Allocation amounts must be greater than zero.,Tahsis tutarları sıfırdan büyük olmalıdır.
+An allocated invoice does not belong to this customer chain.,Tahsis edilen fatura bu müşteri zincirine ait değil.
+An allocation exceeds the invoice's outstanding amount.,"Bir tahsis, faturanın kalan tutarını aşıyor."
+Transfer amounts must be greater than zero.,Transfer tutarları sıfırdan büyük olmalıdır.
+A selected location does not belong to this customer chain.,Seçilen konum bu müşteri zincirine ait değil.
+You are not permitted to record payments.,Ödeme kaydetme izniniz yok.
+{0} has invoices in more than one currency — record those payments separately.,«{0}» birden fazla para biriminde faturalara sahip — bu ödemeleri ayrı ayrı kaydedin.
+Payment mode {0} has no account configured for this company.,{0} ödeme yöntemi için bu şirkette hesap yapılandırılmamış.
+Only Accounts Managers can reallocate a payment.,Bir ödemeyi yalnızca Muhasebe Yöneticileri yeniden tahsis edebilir.
+Unknown Payment Entry: {0},Bilinmeyen Ödeme: {0}
+Payment belongs to a different company.,Ödeme başka bir şirkete ait.
+Only submitted customer payments can be reallocated.,Yalnızca onaylanmış müşteri ödemeleri yeniden tahsis edilebilir.
+No default receivable account is configured for this company.,Bu şirket için varsayılan alacak hesabı yapılandırılmamış.
+Reallocation of unallocated advance from {0},{0} kaynaklı tahsis edilmemiş avansın yeniden tahsisi
+"This sale would bring {0}'s group balance to {1}, over its credit limit of {2}. Ask an Accounts Manager to approve or increase the limit.",Bu satış «{0}» grubunun bakiyesini {1} seviyesine taşıyarak {2} kredi limitini aşacak. Onay veya limit artışı için bir Muhasebe Yöneticisine başvurun.

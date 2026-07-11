@@ -17,15 +17,37 @@ source,target
 1C Sync Log,1C Sync Log
 31–60,31–60
 61–90,61–90
+70% PE,70% PE
+70% Payment Amount,70% Payment Amount
+70% Payment Date,70% Payment Date
+70% Payment Status,70% Payment Status
+70% balance due 7 days before Iran arrival,70% balance due 7 days before Iran arrival
+70% payment,70% payment
+70% payment date,70% payment date
+70% payment status,70% payment status
 90+,90+
+A GRN checklist is created from a commercial invoice once cargo is ready to receive.,A GRN checklist is created from a commercial invoice once cargo is ready to receive.
 A Payroll Attendance Summary for employee {0} and period {1} already exists: {2},A Payroll Attendance Summary for employee {0} and period {1} already exists: {2}
+A category is required.,A category is required.
+A certificate number is required.,A certificate number is required.
+A cleared customs declaration is active: its duty and excise replace any Uzbekistan Customs Duty cost line in the next voucher (VAT is never capitalized).,A cleared customs declaration is active: its duty and excise replace any Uzbekistan Customs Duty cost line in the next voucher (VAT is never capitalized).
 A company with this name already exists.,A company with this name already exists.
+A customer cannot be its own parent.,A customer cannot be its own parent.
 A few quick questions and you're ready to sell.,A few quick questions and you're ready to sell.
 A mapping for employee {0} with device user ID {1} already exists ({2}).,A mapping for employee {0} with device user ID {1} already exists ({2}).
 A new version is available.,A new version is available.
 A password reset email will be sent. The account is disabled until the user sets a password.,A password reset email will be sent. The account is disabled until the user sets a password.
+A rejection reason is required.,A rejection reason is required.
+A status correction reason is required to move {0} back from {1} to {2}.,A status correction reason is required to move {0} back from {1} to {2}.
 A status with that name already exists.,A status with that name already exists.
+A submitted truck receipt can no longer be edited.,A submitted truck receipt can no longer be edited.
+A supplier is required.,A supplier is required.
+A truck number is required.,A truck number is required.
+A valid commercial invoice for this company is required.,A valid commercial invoice for this company is required.
 A valid email is required,A valid email is required
+A valid supplier is required.,A valid supplier is required.
+A valid truck for this company is required.,A valid truck for this company is required.
+A valid veterinary certificate is required to complete this GRN.,A valid veterinary certificate is required to complete this GRN.
 "A ≤ {0}%, B ≤ {1}%, C rest — by revenue.","A ≤ {0}%, B ≤ {1}%, C rest — by revenue."
 "A ≤ {0}%, B ≤ {1}%, C rest — by spend.","A ≤ {0}%, B ≤ {1}%, C rest — by spend."
 "A ≤ {0}%, B ≤ {1}%, C rest — by {2}. Submitted; returns netted.","A ≤ {0}%, B ≤ {1}%, C rest — by {2}. Submitted; returns netted."
@@ -35,6 +57,12 @@ API base URL,API base URL
 AR Aging,AR Aging
 ARCA,ARCA
 ARCA Payment Events,ARCA Payment Events
+ARRIVED,ARRIVED
+ARRIVED_AT_IRAN,ARRIVED_AT_IRAN
+ATA,ATA
+ATD,ATD
+AT_BORDER,AT_BORDER
+AVAILABLE,AVAILABLE
 Abbr,Abbr
 Absent,Absent
 Accept Return,Accept Return
@@ -72,11 +100,14 @@ Active tenders,Active tenders
 Active to,Active to
 Activities,Activities
 Actual,Actual
+Actual Arrival,Actual Arrival
+Actual arrival,Actual arrival
 Actual landed,Actual landed
 Add,Add
 Add Deal,Add Deal
 Add Decision,Add Decision
 Add Lane,Add Lane
+Add PO link,Add PO link
 Add Row,Add Row
 Add Task,Add Task
 Add a column to start organising your deals.,Add a column to start organising your deals.
@@ -89,14 +120,17 @@ Add another item,Add another item
 Add at least one item line.,Add at least one item line.
 Add at least one item with a positive quantity.,Add at least one item with a positive quantity.
 Add at least one raw material line.,Add at least one raw material line.
+Add certificate,Add certificate
 Add child warehouse,Add child warehouse
 Add column,Add column
 Add cost item,Add cost item
+Add cost line,Add cost line
 Add customer,Add customer
 Add deal,Add deal
 Add holiday,Add holiday
 Add item,Add item
 Add item to stock,Add item to stock
+Add landed cost voucher,Add landed cost voucher
 Add line,Add line
 Add outlet,Add outlet
 Add punch,Add punch
@@ -105,6 +139,7 @@ Add stage,Add stage
 Add supplier,Add supplier
 Add to Google Calendar,Add to Google Calendar
 Add to stock,Add to stock
+Add voucher,Add voucher
 Add warehouse,Add warehouse
 Add your first customer to start sending quotes and invoices.,Add your first customer to start sending quotes and invoices.
 "Add your first employee to start tracking attendance, leave and payroll.","Add your first employee to start tracking attendance, leave and payroll."
@@ -120,6 +155,7 @@ Adjustment,Adjustment
 Admin,Admin
 Administer users & roles,Administer users & roles
 Advance,Advance
+Advance 70% Payment Entry,Advance 70% Payment Entry
 Advance amount,Advance amount
 Advance amount must be greater than zero.,Advance amount must be greater than zero.
 Advance deduction,Advance deduction
@@ -133,6 +169,7 @@ Advances,Advances
 Advances outstanding,Advances outstanding
 Against,Against
 Aging,Aging
+Agreed total,Agreed total
 Alerts,Alerts
 All,All
 All Reports,All Reports
@@ -165,11 +202,13 @@ All territories,All territories
 All three accounts are required.,All three accounts are required.
 All time,All time
 All types,All types
+All variance,All variance
 All vouchers,All vouchers
 All warehouses,All warehouses
 All {0} employee summaries are clean — no unresolved exceptions.,All {0} employee summaries are clean — no unresolved exceptions.
 Allocate against,Allocate against
 Allocated,Allocated
+Allocated Deposit Amount,Allocated Deposit Amount
 Allocated against,Allocated against
 Allocated amount must be greater than zero.,Allocated amount must be greater than zero.
 Allocation exceeds the unreconciled amount on this transaction.,Allocation exceeds the unreconciled amount on this transaction.
@@ -191,6 +230,7 @@ Amend transfer,Amend transfer
 Amending,Amending
 Amendment created.,Amendment created.
 Amount,Amount
+Amount & Payment,Amount & Payment
 Amount (UZS),Amount (UZS)
 Amount exceeds outstanding ({amount}).,Amount exceeds outstanding ({amount}).
 Amount exceeds the available balance.,Amount exceeds the available balance.
@@ -203,6 +243,7 @@ Amount sent,Amount sent
 Amount to transfer,Amount to transfer
 Amounts in,Amounts in
 Amounts in company currency,Amounts in company currency
+An expense category is required.,An expense category is required.
 Analytics,Analytics
 Anchor DAY hours (h),Anchor DAY hours (h)
 Anchor LIGHT hours (h),Anchor LIGHT hours (h)
@@ -235,6 +276,9 @@ Approx. at current valuation rate,Approx. at current valuation rate
 Are you sure you want to cancel this document? This action is irreversible.,Are you sure you want to cancel this document? This action is irreversible.
 Are you sure you want to delete this draft? This cannot be undone.,Are you sure you want to delete this draft? This cannot be undone.
 Are you sure you want to submit this document? This will finalize transactions.,Are you sure you want to submit this document? This will finalize transactions.
+Arrival,Arrival
+Arrival date,Arrival date
+Arrival time,Arrival time
 Artifacts,Artifacts
 As of,As of
 Asl Belgisi,Asl Belgisi
@@ -251,6 +295,8 @@ Assigned Field User,Assigned Field User
 Assigned Technician,Assigned Technician
 Assigned.,Assigned.
 At least one counted item line is required.,At least one counted item line is required.
+At least one item is required.,At least one item is required.
+At least one received item line is required.,At least one received item line is required.
 At least one visit purpose is required.,At least one visit purpose is required.
 At least one voucher is required.,At least one voucher is required.
 At least two account lines are required.,At least two account lines are required.
@@ -270,16 +316,25 @@ Audit Trail,Audit Trail
 Audit trail,Audit trail
 Audited At,Audited At
 Authentication required.,Authentication required.
+Authority,Authority
 Available,Available
 Avg margin,Avg margin
 Avg orders / customer,Avg orders / customer
 Avg time to first order,Avg time to first order
 Awaiting level {0},Awaiting level {0}
 Awaiting release by manager,Awaiting release by manager
+B/L number,B/L number
+B/L type,B/L type
+BL Type,BL Type
 BOM,BOM
 BOM cancelled successfully.,BOM cancelled successfully.
 BOM submitted successfully.,BOM submitted successfully.
 BOMs,BOMs
+BOOKED,BOOKED
+BRV Multiplier,BRV Multiplier
+BRV Used (UZS),BRV Used (UZS)
+BRV Value (UZS),BRV Value (UZS)
+BRV used,BRV used
 Back,Back
 Back to summary,Back to summary
 Back up now,Back up now
@@ -295,15 +350,18 @@ Badge UID is required.,Badge UID is required.
 Bal,Bal
 Balance,Balance
 Balance (Account Currency),Balance (Account Currency)
+Balance Due Amount,Balance Due Amount
 Balanced,Balanced
 "Balances, advances and payments appear here.","Balances, advances and payments appear here."
 "Balances, salaries, advances and payments appear here.","Balances, salaries, advances and payments appear here."
 Bank / transfer,Bank / transfer
 Bank Account '{0}' not found.,Bank Account '{0}' not found.
+Bank Payment,Bank Payment
 Bank account,Bank account
 Bank account does not belong to company '{0}'.,Bank account does not belong to company '{0}'.
 Bank account has no linked GL account.,Bank account has no linked GL account.
 Bank amount,Bank amount
+Bank payment,Bank payment
 Bank transaction is required.,Bank transaction is required.
 Bank transaction not found.,Bank transaction not found.
 Bank/cash account is required.,Bank/cash account is required.
@@ -342,12 +400,27 @@ Bills,Bills
 Bimonthly,Bimonthly
 Board,Board
 Bonus,Bonus
+Book cross-border land freight for a commercial invoice or container.,Book cross-border land freight for a commercial invoice or container.
 Book rate,Book rate
 Booked,Booked
 "Booked value from Sales Orders, with amounts still to deliver and to bill.","Booked value from Sales Orders, with amounts still to deliver and to bill."
+Booking Date,Booking Date
+Booking Reference,Booking Reference
+Booking created.,Booking created.
+Booking date,Booking date
+Booking reference,Booking reference
+Booking saved.,Booking saved.
+"Booking, transporter or vehicle… ⌘K","Booking, transporter or vehicle… ⌘K"
 Books Dr Salary Expense / Cr Salary Payable as a draft — submit it from the ledger to post.,Books Dr Salary Expense / Cr Salary Payable as a draft — submit it from the ledger to post.
 Books each locked employee's net as a payable (Dr salary expense / Cr salary payable). Idempotent — runs once per period.,Books each locked employee's net as a payable (Dr salary expense / Cr salary payable). Idempotent — runs once per period.
 Books locked nets to salary payable.,Books locked nets to salary payable.
+Border Crossing,Border Crossing
+Border Crossing Date,Border Crossing Date
+Border crossing,Border crossing
+Box Kg,Box Kg
+Box Qty,Box Qty
+Box kg,Box kg
+Boxes,Boxes
 Branch,Branch
 Brand,Brand
 Break minutes,Break minutes
@@ -375,10 +448,14 @@ CBU rates are already up to date.,CBU rates are already up to date.
 CBU rates updated: {rates},CBU rates updated: {rates}
 CBU.uz exchange rates (last 30 days),CBU.uz exchange rates (last 30 days)
 CBU:,CBU:
+CI number,CI number
+CI number or supplier… ⌘K,CI number or supplier… ⌘K
 CN Return,CN Return
 COGS,COGS
+COMPLETED,COMPLETED
 CRM,CRM
 CRM Report,CRM Report
+CROSSED_BORDER,CROSSED_BORDER
 CSV,CSV
 Calendar,Calendar
 Campaign,Campaign
@@ -395,6 +472,7 @@ Cancel Request,Cancel Request
 Cancel Transfer,Cancel Transfer
 "Cancel all open (submitted, non-delivered) Stock Reservation Entries for this company. Reserved stock will be returned to available quantity.","Cancel all open (submitted, non-delivered) Stock Reservation Entries for this company. Reserved stock will be returned to available quantity."
 Cancel bill {name}? This is reversible only by amendment.,Cancel bill {name}? This is reversible only by amendment.
+Cancel booking,Cancel booking
 Cancel document?,Cancel document?
 Cancel entry,Cancel entry
 Cancel failed.,Cancel failed.
@@ -407,6 +485,7 @@ Cancel quotation {name}?,Cancel quotation {name}?
 Cancel reservations?,Cancel reservations?
 Cancel sales order {name}? Stock reservations will be released.,Cancel sales order {name}? Stock reservations will be released.
 Cancel stock entry?,Cancel stock entry?
+Cancel the linked Purchase Receipt {0} before cancelling this Truck Receipt.,Cancel the linked Purchase Receipt {0} before cancelling this Truck Receipt.
 Cancel this entry?,Cancel this entry?
 Cancel this submitted BOM?,Cancel this submitted BOM?
 Cancel this transfer?,Cancel this transfer?
@@ -414,6 +493,7 @@ Cancel {name}? This will reverse the stock movements.,Cancel {name}? This will r
 Cancelled,Cancelled
 Cancelled entries cannot be submitted; amend instead.,Cancelled entries cannot be submitted; amend instead.
 Cannot change Commercial Invoice status from {0} to {1}.,Cannot change Commercial Invoice status from {0} to {1}.
+Cannot change {0} status from {1} to {2}.,Cannot change {0} status from {1} to {2}.
 Cannot check out before checking in.,Cannot check out before checking in.
 Cannot create a return against a return document.,Cannot create a return against a return document.
 Cannot create invoice: no warehouse set for stock item(s) {0}.,Cannot create invoice: no warehouse set for stock item(s) {0}.
@@ -427,10 +507,15 @@ Captured At,Captured At
 Car / Item,Car / Item
 Car item is required.,Car item is required.
 Card not recognized,Card not recognized
+Cargo,Cargo
+Carrier,Carrier
 Cases / Week,Cases / Week
 Cash / bank account,Cash / bank account
+Cash Payment,Cash Payment
+Cash difference,Cash difference
 Cash flow,Cash flow
 Cash on hand,Cash on hand
+Cash payment,Cash payment
 "Cash, Bank, …","Cash, Bank, …"
 Cash-in account,Cash-in account
 Cash/bank account,Cash/bank account
@@ -439,9 +524,16 @@ Cashier Lock,Cashier Lock
 Categories,Categories
 Category,Category
 Category is required.,Category is required.
+Certificate,Certificate
+Certificate approved.,Certificate approved.
+Certificate number,Certificate number
+Certificate rejected.,Certificate rejected.
 Certificate required,Certificate required
+"Certificate, CI or authority… ⌘K","Certificate, CI or authority… ⌘K"
+Certificates appear here as they are registered against imports.,Certificates appear here as they are registered against imports.
 Certification,Certification
 Change,Change
+Change status,Change status
 Changed,Changed
 Channel,Channel
 Charge via {provider},Charge via {provider}
@@ -457,6 +549,7 @@ Chegirma,Chegirma
 Cheque,Cheque
 Cheque / transfer ref,Cheque / transfer ref
 Cheque no.,Cheque no.
+Children,Children
 Chocolate,Chocolate
 Choose a cash/bank account.,Choose a cash/bank account.
 Choose a statement file first.,Choose a statement file first.
@@ -469,6 +562,7 @@ Claim amount must be greater than zero.,Claim amount must be greater than zero.
 Claim is already settled by {0}.,Claim is already settled by {0}.
 Claim is already {0} and cannot be re-reviewed.,Claim is already {0} and cannot be re-reviewed.
 Claim name is required.,Claim name is required.
+Claim required,Claim required
 Claim {0} not found.,Claim {0} not found.
 Claims,Claims
 Class,Class
@@ -478,6 +572,8 @@ Clear filters,Clear filters
 Clear open reservations,Clear open reservations
 Clear search,Clear search
 Cleared,Cleared
+Cleared Date,Cleared Date
+Cleared date,Cleared date
 Cleared {0} of {1},Cleared {0} of {1}
 Click New Revaluation to preview unrealised FX deltas and post an Exchange Rate Revaluation.,Click New Revaluation to preview unrealised FX deltas and post an Exchange Rate Revaluation.
 Click a line to see suggested matches.,Click a line to see suggested matches.
@@ -501,6 +597,7 @@ Code,Code
 Code does not match expected format,Code does not match expected format
 Code is required,Code is required
 Cohort sales,Cohort sales
+Cold chain,Cold chain
 Collapse,Collapse
 Collapse all,Collapse all
 Collapse all groups,Collapse all groups
@@ -513,6 +610,10 @@ Column name,Column name
 Comment,Comment
 Comments,Comments
 Commerce,Commerce
+Commercial Invoice,Commercial Invoice
+Commercial Invoices,Commercial Invoices
+Commercial invoice created.,Commercial invoice created.
+Commercial invoice saved.,Commercial invoice saved.
 Commission,Commission
 Commission %,Commission %
 Commission fee,Commission fee
@@ -530,14 +631,19 @@ Compensation,Compensation
 Compensation details are hidden — payroll access required.,Compensation details are hidden — payroll access required.
 Compensation policy,Compensation policy
 Complete,Complete
+Complete GRN,Complete GRN
 Completed,Completed
 Completed visit,Completed visit
 Completion,Completion
+Completion date,Completion date
 Completion rate,Completion rate
 Compliance,Compliance
+Component,Component
 Component map {0} not found.,Component map {0} not found.
 Component mapping is incomplete. The following quantities have no salary ,Component mapping is incomplete. The following quantities have no salary 
 Components,Components
+Compute,Compute
+Compute the fee to see the BRV breakdown.,Compute the fee to see the BRV breakdown.
 Computed Pay,Computed Pay
 Computed from attendance summaries using the payroll formula. Read-only preview — not the official salary run.,Computed from attendance summaries using the payroll formula. Read-only preview — not the official salary run.
 Conditions,Conditions
@@ -553,6 +659,17 @@ Construction,Construction
 Consumed,Consumed
 Contact,Contact
 Contacted,Contacted
+Container,Container
+Container Cost Line,Container Cost Line
+Container Number,Container Number
+Container Size,Container Size
+Container Type,Container Type
+Container created.,Container created.
+Container number,Container number
+Container or CI number… ⌘K,Container or CI number… ⌘K
+Container saved.,Container saved.
+Containers,Containers
+Containers in transit,Containers in transit
 Contents,Contents
 Contract,Contract
 Contract board,Contract board
@@ -575,16 +692,24 @@ Corridor,Corridor
 Corridor / Memo,Corridor / Memo
 Cost,Cost
 Cost Centre,Cost Centre
+Cost Component,Cost Component
+Cost Lines,Cost Lines
 Cost centre,Cost centre
+Cost lines,Cost lines
 Cost must be positive.,Cost must be positive.
+Cost total,Cost total
 Costs after dividends (office…),Costs after dividends (office…)
 Could not accrue salary.,Could not accrue salary.
 Could not add holiday.,Could not add holiday.
 Could not add stage.,Could not add stage.
+Could not add the veterinary certificate.,Could not add the veterinary certificate.
+Could not approve the certificate.,Could not approve the certificate.
 Could not assign.,Could not assign.
 Could not check payment status.,Could not check payment status.
+Could not compute the customs fee.,Could not compute the customs fee.
 Could not create contract.,Could not create contract.
 Could not create the transaction.,Could not create the transaction.
+Could not create the voucher.,Could not create the voucher.
 Could not load bid pricing.,Could not load bid pricing.
 Could not load data health.,Could not load data health.
 Could not load employee finances.,Could not load employee finances.
@@ -608,6 +733,7 @@ Could not read a lot number from: {0},Could not read a lot number from: {0}
 Could not read backup file: {0},Could not read backup file: {0}
 Could not read the uploaded file.,Could not read the uploaded file.
 Could not read your location.,Could not read your location.
+Could not reject the certificate.,Could not reject the certificate.
 Could not resolve a customer for this deal.,Could not resolve a customer for this deal.
 Could not resolve payroll period: {0},Could not resolve payroll period: {0}
 Could not save bid pricing.,Could not save bid pricing.
@@ -617,6 +743,9 @@ Could not save tender intake.,Could not save tender intake.
 Could not start setup.,Could not start setup.
 Could not start the online payment.,Could not start the online payment.
 Could not start the processor.,Could not start the processor.
+Could not submit the GRN checklist.,Could not submit the GRN checklist.
+Could not update the certificate.,Could not update the certificate.
+Could not update the cost line.,Could not update the cost line.
 Couldn't work out the cash amount to pay — check the exchange rate and the paying account.,Couldn't work out the cash amount to pay — check the exchange rate and the paying account.
 Count,Count
 Count:,Count:
@@ -624,6 +753,7 @@ Counted qty,Counted qty
 Counterparty,Counterparty
 Countries,Countries
 Country,Country
+Country of Origin,Country of Origin
 Coverage,Coverage
 Covered,Covered
 Create,Create
@@ -632,6 +762,7 @@ Create / edit customers,Create / edit customers
 Create / edit suppliers,Create / edit suppliers
 Create Bill,Create Bill
 Create Invoice,Create Invoice
+Create Landed Cost Voucher,Create Landed Cost Voucher
 Create Material Issue,Create Material Issue
 Create Plan,Create Plan
 Create Sales Invoice,Create Sales Invoice
@@ -639,6 +770,7 @@ Create Scheme,Create Scheme
 Create Ticket,Create Ticket
 Create a Bill of Materials to define what raw materials go into a finished good.,Create a Bill of Materials to define what raw materials go into a finished good.
 Create a Work Order to plan and track production runs against a BOM.,Create a Work Order to plan and track production runs against a BOM.
+Create a draft Landed Cost Voucher from the previewed components? An accountant must review and submit it in the books.,Create a draft Landed Cost Voucher from the previewed components? An accountant must review and submit it in the books.
 Create a new Sales Order for this customer to begin.,Create a new Sales Order for this customer to begin.
 Create a plan to start tracking campaign budget and ROI.,Create a plan to start tracking campaign budget and ROI.
 Create an active leaf warehouse before viewing item stock status.,Create an active leaf warehouse before viewing item stock status.
@@ -651,6 +783,7 @@ Create first order,Create first order
 Create outlets to start planning routes and visits.,Create outlets to start planning routes and visits.
 Create payments / journals,Create payments / journals
 Create receipt,Create receipt
+Create voucher,Create voucher
 Create your first deal or adjust the search filters.,Create your first deal or adjust the search filters.
 Create your first item to start tracking stock and price lists.,Create your first item to start tracking stock and price lists.
 Create your first lead or adjust the search filters.,Create your first lead or adjust the search filters.
@@ -666,8 +799,11 @@ Credit note for,Credit note for
 Credit notes:,Credit notes:
 Critical,Critical
 Critical conflicts,Critical conflicts
+Cross-Border Transport,Cross-Border Transport
+Cumulative,Cumulative
 Cumulative %,Cumulative %
 Currency,Currency
+Currency Exchange as of {date},Currency Exchange as of {date}
 Currency risk (foreign purchase),Currency risk (foreign purchase)
 Current AR balance per customer — click a row to see the ledger behind the balance.,Current AR balance per customer — click a row to see the ledger behind the balance.
 Current AR balance per customer — ties to the Customer Center.,Current AR balance per customer — ties to the Customer Center.
@@ -691,13 +827,36 @@ Customer receivables grouped by aging buckets.,Customer receivables grouped by a
 "Customer, item, trend, and salesperson reports from submitted invoices.","Customer, item, trend, and salesperson reports from submitted invoices."
 Customers,Customers
 Customs,Customs
+Customs Clearance Date,Customs Clearance Date
+Customs Clearance Fee,Customs Clearance Fee
+Customs Declaration,Customs Declaration
+Customs Declaration Line,Customs Declaration Line
+Customs Fee Multiplier,Customs Fee Multiplier
+Customs Fee Override (UZS),Customs Fee Override (UZS)
+Customs Office,Customs Office
+Customs Value (USD),Customs Value (USD)
+Customs Value (UZS),Customs Value (UZS)
+Customs clearance,Customs clearance
+Customs clearance fee,Customs clearance fee
+Customs declaration,Customs declaration
+Customs declarations pending,Customs declarations pending
+Customs fee applied.,Customs fee applied.
+Customs office,Customs office
 Customs queue,Customs queue
 Customs value (CIF),Customs value (CIF)
+Customs value (USD),Customs value (USD)
+Customs value (UZS),Customs value (UZS)
+Cut Off,Cut Off
+Cut-off,Cut-off
+DELIVERED_TO_UZBEKISTAN,DELIVERED_TO_UZBEKISTAN
+DEPARTED_IRAN,DEPARTED_IRAN
+DISCHARGED,DISCHARGED
 Daily,Daily
 Daily attendance records and employee presence checks.,Daily attendance records and employee presence checks.
 Daily auto-backup,Daily auto-backup
 Daily cap (UZS),Daily cap (UZS)
 Daily in/out KPI,Daily in/out KPI
+Damaged boxes,Damaged boxes
 Dashboard,Dashboard
 Dashed,Dashed
 Data,Data
@@ -727,6 +886,15 @@ Debit note for,Debit note for
 Debit notes:,Debit notes:
 Decision,Decision
 Declarant,Declarant
+Declaration,Declaration
+Declaration Date,Declaration Date
+Declaration Document,Declaration Document
+Declaration created.,Declaration created.
+Declaration date,Declaration date
+Declaration lines,Declaration lines
+Declaration saved.,Declaration saved.
+Declared,Declared
+Declared value (USD),Declared value (USD)
 Deducted from worked time daily.,Deducted from worked time daily.
 Deducted per each step interval of lateness.,Deducted per each step interval of lateness.
 Deduction exceeds the outstanding advance balance.,Deduction exceeds the outstanding advance balance.
@@ -738,6 +906,7 @@ Default Route,Default Route
 Default Warehouse,Default Warehouse
 Default currency,Default currency
 Default price list,Default price list
+Default rate,Default rate
 Define promotions that field users can apply during visits.,Define promotions that field users can apply during visits.
 Define routes so field users know which outlets to visit each day.,Define routes so field users know which outlets to visit each day.
 Delayed,Delayed
@@ -770,17 +939,24 @@ Deliv,Deliv
 Deliver,Deliver
 Delivered,Delivered
 Delivery,Delivery
+Delivery Date,Delivery Date
+Delivery Location,Delivery Location
 Delivery Note,Delivery Note
 Delivery date,Delivery date
 Delivery deadline,Delivery deadline
+Delivery location,Delivery location
 Delta,Delta
 Department,Department
+Departure,Departure
+Departure Date,Departure Date
 Deposit,Deposit
 Deposit to,Deposit to
 Describe the problem…,Describe the problem…
 Description,Description
 Designation,Designation
 Desk access,Desk access
+Destination Warehouse,Destination Warehouse
+Destination warehouse,Destination warehouse
 Details,Details
 Device,Device
 Device created.,Device created.
@@ -816,8 +992,11 @@ District,District
 Dividend tax,Dividend tax
 Dividends,Dividends
 DocType,DocType
+Docs total,Docs total
 Document,Document
+Document & notes,Document & notes
 Document Type,Document Type
+Document attached.,Document attached.
 Document cancelled successfully.,Document cancelled successfully.
 Document changed,Document changed
 Document checklist,Document checklist
@@ -830,6 +1009,7 @@ Document type,Document type
 Document type and name are required.,Document type and name are required.
 Document updated successfully.,Document updated successfully.
 "Document, party or requester…","Document, party or requester…"
+Documentation,Documentation
 Documents,Documents
 Done,Done
 Download .ics,Download .ics
@@ -839,13 +1019,19 @@ Downpayment %,Downpayment %
 Draft,Draft
 Draft + submitted,Draft + submitted
 Draft Sales Invoice created: {0},Draft Sales Invoice created: {0}
+Draft an additional landed cost voucher for late costs on this GRN?,Draft an additional landed cost voucher for late costs on this GRN?
 Draft deleted.,Draft deleted.
 Draft entry deleted.,Draft entry deleted.
 Draft transaction created.,Draft transaction created.
 Draft transfer deleted.,Draft transfer deleted.
+Draft voucher {lcv} created — it still needs accountant submit in the books.,Draft voucher {lcv} created — it still needs accountant submit in the books.
 Drill-down report: customer → invoices → document. Returns netted.,Drill-down report: customer → invoices → document. Returns netted.
 Drill-down report: item → invoice lines → document.,Drill-down report: item → invoice lines → document.
 Drill-down report: supplier → bills → document.,Drill-down report: supplier → bills → document.
+Driver,Driver
+Driver Name,Driver Name
+Driver Phone,Driver Phone
+Driver phone,Driver phone
 Drop deal here,Drop deal here
 Due,Due
 Due Date,Due Date
@@ -858,6 +1044,9 @@ Duplicate summary,Duplicate summary
 Duplicates,Duplicates
 Duration (ms),Duration (ms)
 Duty,Duty
+Duty %,Duty %
+Duty Amount (UZS),Duty Amount (UZS)
+Duty Rate %,Duty Rate %
 Duty supplement,Duty supplement
 Duty supplement (%),Duty supplement (%)
 E-IMZO did not respond (timeout). Check that the app is running.,E-IMZO did not respond (timeout). Check that the app is running.
@@ -868,6 +1057,8 @@ EHF Status,EHF Status
 EHF Submissions,EHF Submissions
 ERPNext,ERPNext
 ERPNext Employee docname (EMP-XXXXX).,ERPNext Employee docname (EMP-XXXXX).
+ETA,ETA
+ETD,ETD
 EUR → UZS,EUR → UZS
 Each additional step charges the step fee.,Each additional step charges the step fee.
 Each employee's Region band (on their profile) selects which rate applies; NO_TRAVEL pays nothing.,Each employee's Region band (on their profile) selects which rate applies; NO_TRAVEL pays nothing.
@@ -889,6 +1080,7 @@ Edit Visit,Edit Visit
 Edit customer,Edit customer
 Edit device,Edit device
 Edit draft,Edit draft
+Edit expense,Edit expense
 Edit field user,Edit field user
 Edit journal entry,Edit journal entry
 Edit mapping,Edit mapping
@@ -905,6 +1097,8 @@ Edited {0} field(s),Edited {0} field(s)
 Editing a past day,Editing a past day
 Editing the rate updates the received amount.,Editing the rate updates the received amount.
 Editing the received amount updates the exchange rate.,Editing the received amount updates the exchange rate.
+Effective Date,Effective Date
+Effective fee,Effective fee
 Email,Email
 Email and name are required.,Email and name are required.
 Email or user ID,Email or user ID
@@ -941,6 +1135,7 @@ Enter a quantity for at least one row.,Enter a quantity for at least one row.
 Enter amount and commission to see preview.,Enter amount and commission to see preview.
 Enter an amount greater than zero.,Enter an amount greater than zero.
 Enter at least one count that differs from the system quantity.,Enter at least one count that differs from the system quantity.
+Enter at least one received line.,Enter at least one received line.
 Enter at least one return qty.,Enter at least one return qty.
 Enter cost and term to see the payment schedule.,Enter cost and term to see the payment schedule.
 Enter the quantity to return for each line. Leave 0 to exclude a line.,Enter the quantity to return for each line. Leave 0 to exclude a line.
@@ -958,6 +1153,8 @@ Equipment name is required.,Equipment name is required.
 Equity,Equity
 Error,Error
 Errors,Errors
+Estimated Arrival,Estimated Arrival
+Estimated arrival,Estimated arrival
 Estimated value,Estimated value
 Event ID,Event ID
 "Event ID, device user or employee…","Event ID, device user or employee…"
@@ -988,29 +1185,42 @@ Exchange rate,Exchange rate
 Exchange rate ({0}),Exchange rate ({0})
 Exchange rate must be greater than zero.,Exchange rate must be greater than zero.
 Exchange rate staleness,Exchange rate staleness
+Excise,Excise
+Excise %,Excise %
+Excise Amount (UZS),Excise Amount (UZS)
+Excise Rate %,Excise Rate %
 Exclusive,Exclusive
 Exclusive: commission added on top — sender pays more.,Exclusive: commission added on top — sender pays more.
 Execute material transfer for this Work Order? This will move required raw materials to the WIP warehouse.,Execute material transfer for this Work Order? This will move required raw materials to the WIP warehouse.
 Execute transfer?,Execute transfer?
+Existing vouchers,Existing vouchers
 Exit,Exit
 Expand,Expand
 Expand all,Expand all
 Expand all groups,Expand all groups
 Expected,Expected
+Expected (kg),Expected (kg)
 Expected Closure,Expected Closure
 Expected Facings,Expected Facings
 Expected Monthly Volume,Expected Monthly Volume
+Expected arrival,Expected arrival
 Expected facings is required on row {0}.,Expected facings is required on row {0}.
 Expense,Expense
+Expense Date,Expense Date
+Expense created.,Expense created.
 Expense entry cancelled.,Expense entry cancelled.
 Expense lines,Expense lines
 Expense saved · {name},Expense saved · {name}
+Expense saved.,Expense saved.
+"Expense, supplier or CI… ⌘K","Expense, supplier or CI… ⌘K"
 Expenses,Expenses
 Expired,Expired
 Expires,Expires
 Expires in,Expires in
+Expiring soon,Expiring soon
 Expiring within,Expiring within
 Expiry,Expiry
+Expiry date,Expiry date
 Export,Export
 Export CSV,Export CSV
 Export failed.,Export failed.
@@ -1063,6 +1273,7 @@ Failed to delete entry.,Failed to delete entry.
 Failed to delete lead.,Failed to delete lead.
 Failed to delete supplier.,Failed to delete supplier.
 Failed to delete transfer.,Failed to delete transfer.
+Failed to load GRN checklists.,Failed to load GRN checklists.
 Failed to load OSA audit.,Failed to load OSA audit.
 Failed to load POS profile.,Failed to load POS profile.
 Failed to load POS profiles.,Failed to load POS profiles.
@@ -1073,11 +1284,14 @@ Failed to load attendance.,Failed to load attendance.
 Failed to load bills.,Failed to load bills.
 Failed to load calendar.,Failed to load calendar.
 Failed to load claim.,Failed to load claim.
+Failed to load commercial invoices.,Failed to load commercial invoices.
+Failed to load containers.,Failed to load containers.
 Failed to load contract.,Failed to load contract.
 Failed to load contracts.,Failed to load contracts.
 Failed to load customer invoices.,Failed to load customer invoices.
 Failed to load customer.,Failed to load customer.
 Failed to load customers.,Failed to load customers.
+Failed to load customs declarations.,Failed to load customs declarations.
 Failed to load dashboard.,Failed to load dashboard.
 Failed to load deal.,Failed to load deal.
 Failed to load deals.,Failed to load deals.
@@ -1086,7 +1300,9 @@ Failed to load details.,Failed to load details.
 Failed to load document.,Failed to load document.
 Failed to load employee.,Failed to load employee.
 Failed to load equipment.,Failed to load equipment.
+Failed to load expenses.,Failed to load expenses.
 Failed to load form options.,Failed to load form options.
+Failed to load freight bookings.,Failed to load freight bookings.
 Failed to load invoice.,Failed to load invoice.
 Failed to load invoices.,Failed to load invoices.
 Failed to load items.,Failed to load items.
@@ -1123,12 +1339,24 @@ Failed to load stock ledger.,Failed to load stock ledger.
 Failed to load stock status.,Failed to load stock status.
 Failed to load supplier.,Failed to load supplier.
 Failed to load suppliers.,Failed to load suppliers.
+Failed to load the GRN checklist.,Failed to load the GRN checklist.
+Failed to load the booking.,Failed to load the booking.
+Failed to load the commercial invoice.,Failed to load the commercial invoice.
+Failed to load the container.,Failed to load the container.
+Failed to load the declaration.,Failed to load the declaration.
+Failed to load the expense.,Failed to load the expense.
+Failed to load the imports dashboard.,Failed to load the imports dashboard.
+Failed to load the landed-cost review.,Failed to load the landed-cost review.
+Failed to load the truck receipt.,Failed to load the truck receipt.
+Failed to load the truck.,Failed to load the truck.
 Failed to load ticket.,Failed to load ticket.
 Failed to load transfer detail.,Failed to load transfer detail.
 Failed to load transfers.,Failed to load transfers.
+Failed to load trucks.,Failed to load trucks.
 Failed to load unbilled visits.,Failed to load unbilled visits.
 Failed to load valuation history.,Failed to load valuation history.
 Failed to load van stock.,Failed to load van stock.
+Failed to load veterinary certificates.,Failed to load veterinary certificates.
 Failed to load visit.,Failed to load visit.
 Failed to load warehouses.,Failed to load warehouses.
 Failed to load work orders.,Failed to load work orders.
@@ -1211,6 +1439,7 @@ Fixed deduction on first late minute past grace.,Fixed deduction on first late m
 Fixtures directory missing: {0},Fixtures directory missing: {0}
 Flat fee (UZS),Flat fee (UZS)
 Flat fee per step,Flat fee per step
+Flat view,Flat view
 Flexible,Flexible
 Food & Beverage,Food & Beverage
 Force submit & reserve,Force submit & reserve
@@ -1222,6 +1451,8 @@ Freezer,Freezer
 Freezer ROI,Freezer ROI
 Freezer pending,Freezer pending
 Freezer push,Freezer push
+Freight,Freight
+Freight Booking,Freight Booking
 Frequency,Frequency
 Fri,Fri
 Friday,Friday
@@ -1242,15 +1473,35 @@ Full name (optional — filled automatically on save),Full name (optional — fi
 Fully Completed,Fully Completed
 Fully Staged,Fully Staged
 Fully billed but auto-close did not run — use Close below.,Fully billed but auto-close did not run — use Close below.
+GATE_IN,GATE_IN
 GL Integrity Anomaly Alert,GL Integrity Anomaly Alert
 GL booked USD (historical cost),GL booked USD (historical cost)
 GPS Latitude,GPS Latitude
 GPS Longitude,GPS Longitude
+GRN,GRN
+GRN Checklist,GRN Checklist
+GRN Checklist requires at least one received kg before it can be submitted.,GRN Checklist requires at least one received kg before it can be submitted.
+GRN Checklists,GRN Checklists
+GRN checklist,GRN checklist
+GRN checklist submitted.,GRN checklist submitted.
+"GRN, CI or supplier… ⌘K","GRN, CI or supplier… ⌘K"
+GRN_CREATED,GRN_CREATED
+GRNs with variance,GRNs with variance
+GTD Number,GTD Number
+GTD number,GTD number
+GTD number must be in the format XXXXX/DDMMYY/NNNNNNN (e.g. 26010/110726/1234567).,GTD number must be in the format XXXXX/DDMMYY/NNNNNNN (e.g. 26010/110726/1234567).
+"GTD, CI or office… ⌘K","GTD, CI or office… ⌘K"
 Gain / Loss,Gain / Loss
+Gate Close,Gate Close
 Gate Devices,Gate Devices
+Gate In Date,Gate In Date
+Gate Open,Gate Open
+Gate close,Gate close
 Gate device,Gate device
 Gate devices,Gate devices
 Gate events,Gate events
+Gate open,Gate open
+Gate-in date,Gate-in date
 Gateways,Gateways
 Gender,Gender
 Gender is required.,Gender is required.
@@ -1263,8 +1514,11 @@ Given,Given
 Go,Go
 Go to Sales Orders,Go to Sales Orders
 Good Produced Qty,Good Produced Qty
+Good kg,Good kg
 Goods,Goods
 Goods (PO),Goods (PO)
+Goods receipt,Goods receipt
+Goods value (total amount),Goods value (total amount)
 Google Drive libraries are not installed on the server. ,Google Drive libraries are not installed on the server. 
 Grace period (min),Grace period (min)
 Grand Total,Grand Total
@@ -1274,19 +1528,26 @@ Gross,Gross
 Gross Margin by Customer,Gross Margin by Customer
 Gross Margin by Item,Gross Margin by Item
 Gross ROI %,Gross ROI %
+Gross Weight,Gross Weight
+Gross Weight (kg),Gross Weight (kg)
 Gross pay,Gross pay
 Gross total,Gross total
+Gross weight,Gross weight
 Group,Group
 "Group warehouse (can contain children, holds no stock itself)","Group warehouse (can contain children, holds no stock itself)"
 Guarantee,Guarantee
 Guarantee return,Guarantee return
 HR,HR
 HR overview,HR overview
+HS Code,HS Code
+HS code,HS code
 HS code (ТН ВЭД),HS code (ТН ВЭД)
 Half Day,Half Day
 Half rate,Half rate
 Half-day & Presence,Half-day & Presence
 Half-day threshold (min),Half-day threshold (min)
+Handling,Handling
+Header,Header
 Heavy conditions,Heavy conditions
 Heavy-conditions allowance,Heavy-conditions allowance
 Height,Height
@@ -1307,6 +1568,7 @@ Hours,Hours
 I have tested a restore,I have tested a restore
 ID as it appears in raw gate events,ID as it appears in raw gate events
 IKPU code on {0} item(s),IKPU code on {0} item(s)
+IN_TRANSIT,IN_TRANSIT
 Identity,Identity
 "If off, a back-dated multi-currency document needs a rate within the days below.","If off, a back-dated multi-currency document needs a rate within the days below."
 Ignore,Ignore
@@ -1316,14 +1578,21 @@ Immutable record,Immutable record
 Impact,Impact
 Import,Import
 Import (paste / CSV),Import (paste / CSV)
+Import Container,Import Container
+Import Container Item,Import Container Item
+Import Expense,Import Expense
+Import Truck,Import Truck
 Import bank statement,Import bank statement
 Import failed.,Import failed.
+Import orders,Import orders
 Import outlet locations,Import outlet locations
 Import {0} lines,Import {0} lines
 Imported,Imported
 Imported {0} of {1} lines ({2} duplicates skipped).,Imported {0} of {1} lines ({2} duplicates skipped).
 Imports,Imports
+Imports module is not enabled for this company.,Imports module is not enabled for this company.
 In,In
+In Transit,In Transit
 In progress,In progress
 In time,In time
 In transit,In transit
@@ -1331,9 +1600,11 @@ In transit,In transit
 InService,InService
 Inactive,Inactive
 Include drafts,Include drafts
+Include in Landed Cost,Include in Landed Cost
 Including unposted drafts — does not tie to the GL.,Including unposted drafts — does not tie to the GL.
 Inclusive,Inclusive
 Inclusive: commission deducted from amount — receiver gets less.,Inclusive: commission deducted from amount — receiver gets less.
+Incoterm,Incoterm
 Incremental Units,Incremental Units
 Industry,Industry
 Inflow,Inflow
@@ -1346,17 +1617,22 @@ Insurance,Insurance
 Intake via {0}.,Intake via {0}.
 Integration,Integration
 Integration type,Integration type
+Invalid PO links payload.,Invalid PO links payload.
 Invalid completion status.,Invalid completion status.
+Invalid container items payload.,Invalid container items payload.
 Invalid coordinates: {0},Invalid coordinates: {0}
 Invalid correction_type '{0}'. Valid values: {1},Invalid correction_type '{0}'. Valid values: {1}
+Invalid cost lines payload.,Invalid cost lines payload.
 Invalid date value.,Invalid date value.
 Invalid date: {0}. Expected YYYY-MM-DD.,Invalid date: {0}. Expected YYYY-MM-DD.
 Invalid decision: {0},Invalid decision: {0}
+Invalid declaration lines payload.,Invalid declaration lines payload.
 Invalid filename.,Invalid filename.
 Invalid filters payload.,Invalid filters payload.
 Invalid intake payload.,Invalid intake payload.
 Invalid item_overrides payload,Invalid item_overrides payload
 Invalid item_returns payload,Invalid item_returns payload
+Invalid items payload.,Invalid items payload.
 Invalid kiosk credentials.,Invalid kiosk credentials.
 Invalid maintenance type.,Invalid maintenance type.
 Invalid month.,Invalid month.
@@ -1377,18 +1653,28 @@ Inventory Aging,Inventory Aging
 Invite user,Invite user
 Invoice,Invoice
 Invoice #,Invoice #
+Invoice Reference,Invoice Reference
 Invoice not submitted yet.,Invoice not submitted yet.
 Invoice number or customer…,Invoice number or customer…
+Invoice reference,Invoice reference
 Invoiced,Invoiced
 "Invoiced totals over time, by day or month.","Invoiced totals over time, by day or month."
 Invoiced without stock movement — stock still reserved; needs a delivery/backfill or manual close.,Invoiced without stock movement — stock still reserved; needs a delivery/backfill or manual close.
 Invoices,Invoices
+Iran Customs Duty,Iran Customs Duty
+Iran Demurrage,Iran Demurrage
+Iran Inspection,Iran Inspection
+Iran Port & THC,Iran Port & THC
+Iran Storage,Iran Storage
 Issue,Issue
 Issue credit note,Issue credit note
+Issue date,Issue date
 Issue debit note,Issue debit note
 Issue is required.,Issue is required.
 Issue type,Issue type
+Issued,Issued
 Issues,Issues
+Issuing authority,Issuing authority
 Item,Item
 Item #{0}: item is required.,Item #{0}: item is required.
 Item #{0}: qty must be greater than 0.,Item #{0}: qty must be greater than 0.
@@ -1414,6 +1700,7 @@ Izoh,Izoh
 Jami,Jami
 Jami muzqaymoq soni (dona),Jami muzqaymoq soni (dona)
 Jami summa,Jami summa
+Job Status,Job Status
 Job Title,Job Title
 Joined,Joined
 Journal,Journal
@@ -1432,17 +1719,23 @@ Keep,Keep
 Keep Editing,Keep Editing
 Keep typing to narrow…,Keep typing to narrow…
 Keeps the audit trail; amend to correct.,Keeps the audit trail; amend to correct.
+Kg,Kg
 Kind,Kind
 Kiosk login is not configured on this site.,Kiosk login is not configured on this site.
 L,L
+LCV,LCV
 Label,Label
 Landed,Landed
 Landed cost (goods + import),Landed cost (goods + import)
 Landed cost + our margin → the price we bid,Landed cost + our margin → the price we bid
+Landed cost is restricted,Landed cost is restricted
 Landed cost plan,Landed cost plan
+Landed cost review,Landed cost review
+Landed cost voucher drafted.,Landed cost voucher drafted.
 Landed cost vouchers,Landed cost vouchers
 Landed plan saved.,Landed plan saved.
 Landed total,Landed total
+Landed-cost lines,Landed-cost lines
 Lane,Lane
 Lanes,Lanes
 Language,Language
@@ -1496,6 +1789,8 @@ Link failed.,Link failed.
 Link to an existing Customer for receivables.,Link to an existing Customer for receivables.
 Linked customer,Linked customer
 Linked invoices,Linked invoices
+Linked purchase invoice: {pi},Linked purchase invoice: {pi}
+Linked purchase orders,Linked purchase orders
 Linked receipts,Linked receipts
 Linked. {0} parked punches re-queued.,Linked. {0} parked punches re-queued.
 List rate,List rate
@@ -1576,20 +1871,24 @@ Matched employee,Matched employee
 Material Issue submitted: {0},Material Issue submitted: {0}
 Material Staging,Material Staging
 Materials transferred successfully!,Materials transferred successfully!
+Max CI Value (USD),Max CI Value (USD)
 Maximum late deduction per day (0 = unlimited).,Maximum late deduction per day (0 = unlimited).
 Memo,Memo
 Message,Message
 Message copied.,Message copied.
 Mijoz balansi,Mijoz balansi
+Min CI Value (USD),Min CI Value (USD)
 Min for present (min),Min for present (min)
 Minimum minutes worked to count as half-day.,Minimum minutes worked to count as half-day.
 Minimum minutes worked to count as present.,Minimum minutes worked to count as present.
 Minutes tolerated before late penalty starts.,Minutes tolerated before late penalty starts.
 Minutes worked before overtime begins.,Minutes worked before overtime begins.
+Missing,Missing
 Missing Entry,Missing Entry
 Missing TimePay user id.,Missing TimePay user id.
 Missing fields,Missing fields
 Missing site config key: {0},Missing site config key: {0}
+Missing veterinary certificate,Missing veterinary certificate
 Missing work mode / region,Missing work mode / region
 Mitigation:,Mitigation:
 Mobile,Mobile
@@ -1613,12 +1912,18 @@ Monthly,Monthly
 Monthly installment,Monthly installment
 Monthly run-rate,Monthly run-rate
 Move failed.,Move failed.
+Move this commercial invoice to {status}?,Move this commercial invoice to {status}?
+Move this container to {status}?,Move this container to {status}?
+Move this declaration to {status}?,Move this declaration to {status}?
+Move this truck to {status}?,Move this truck to {status}?
+Move to,Move to
 Move to Under Review,Move to Under Review
 Movement,Movement
 Movements,Movements
 Multi-Currency Parties,Multi-Currency Parties
 Multi-currency,Multi-currency
 Multi-level approval incomplete,Multi-level approval incomplete
+Multiplier,Multiplier
 Multiplier (× hourly rate),Multiplier (× hourly rate)
 My Work Orders Queue,My Work Orders Queue
 My requests,My requests
@@ -1627,6 +1932,7 @@ My work orders,My work orders
 Name,Name
 Name is required.,Name is required.
 Name or email,Name or email
+Named place,Named place
 Name…,Name…
 Narxi,Narxi
 Need GPS,Need GPS
@@ -1637,6 +1943,8 @@ Needs you today,Needs you today
 Needs your attention,Needs your attention
 Net,Net
 Net ROI %,Net ROI %
+Net Weight (kg),Net Weight (kg)
+Net kg,Net kg
 Net owed,Net owed
 Net pay,Net pay
 Net profit,Net profit
@@ -1676,7 +1984,12 @@ New Visit,New Visit
 New Work Order,New Work Order
 New asset purchase,New asset purchase
 New bill,New bill
+New booking,New booking
+New commercial invoice,New commercial invoice
+New container,New container
 New customer,New customer
+New customs declaration,New customs declaration
+New declaration,New declaration
 New device,New device
 New employee,New employee
 New employee–device mapping,New employee–device mapping
@@ -1710,8 +2023,11 @@ New stock entry,New stock entry
 New supplier,New supplier
 New transaction,New transaction
 New transfer,New transfer
+New truck,New truck
+New truck receipt,New truck receipt
 New warehouse,New warehouse
 Next,Next
+Next voucher preview,Next voucher preview
 Night,Night
 Night & Overtime,Night & Overtime
 Night allowance,Night allowance
@@ -1731,6 +2047,8 @@ No EHF submissions yet. Submit a Sales Invoice to enqueue one.,No EHF submission
 No Employee Advances account configured.,No Employee Advances account configured.
 No Employee Advances account is configured for {0}. Set the company's ,No Employee Advances account is configured for {0}. Set the company's 
 No GPS-located outlets for this period.,No GPS-located outlets for this period.
+No GRN checklist was provided.,No GRN checklist was provided.
+No GRN checklists,No GRN checklists
 No Google service account configured (site_config: stabler_gdrive_service_account).,No Google service account configured (site_config: stabler_gdrive_service_account).
 No OSA audits yet,No OSA audits yet
 No ROI snapshots yet,No ROI snapshots yet
@@ -1741,6 +2059,8 @@ No access,No access
 No account rows,No account rows
 No activity recorded yet.,No activity recorded yet.
 No advances yet.,No advances yet.
+No approved veterinary certificate exists for this shipment. The submit will be rejected unless an Imports Manager set an override. Continue anyway?,No approved veterinary certificate exists for this shipment. The submit will be rejected unless an Imports Manager set an override. Continue anyway?
+No arrived trucks are waiting to be received for this shipment.,No arrived trucks are waiting to be received for this shipment.
 No attendance for this month.,No attendance for this month.
 No attendance records,No attendance records
 No attendance summaries for this period,No attendance summaries for this period
@@ -1755,17 +2075,25 @@ No claim selected.,No claim selected.
 No claims yet,No claims yet
 No columns,No columns
 No comments yet.,No comments yet.
+No commercial invoices,No commercial invoices
+No commercial invoices reach their transit ETA in the next 7 days.,No commercial invoices reach their transit ETA in the next 7 days.
 No company is configured.,No company is configured.
 No company selected,No company selected
+No container cost lines have been entered for this invoice.,No container cost lines have been entered for this invoice.
+No containers,No containers
 No correction requests,No correction requests
 No corrections are waiting for review.,No corrections are waiting for review.
 No corrections found for this status.,No corrections found for this status.
 "No cost items yet — add transport, customs, certification…","No cost items yet — add transport, customs, certification…"
+No cost lines,No cost lines
+No cost lines yet.,No cost lines yet.
+No cost lines.,No cost lines.
 No coverage,No coverage
 No creditors found.,No creditors found.
 No custom allowances. Click Add to create one.,No custom allowances. Click Add to create one.
 No customers,No customers
 No customers match that name,No customers match that name
+No customs declarations,No customs declarations
 No data,No data
 No data for the selected range,No data for the selected range
 No data gaps found for this company.,No data gaps found for this company.
@@ -1796,8 +2124,10 @@ No exchange rates yet. Click Refresh now to fetch today's rates from cbu.uz.,No 
 No field users yet,No field users yet
 No files attached.,No files attached.
 No foreign-currency account balances found for this date.,No foreign-currency account balances found for this date.
+No freight bookings,No freight bookings
 No gate devices,No gate devices
 No holidays yet.,No holidays yet.
+No import expenses,No import expenses
 No installments due this month.,No installments due this month.
 No interest — fixed Murabaha markup. Sum equals total exactly.,No interest — fixed Murabaha markup. Sum equals total exactly.
 No invoices found,No invoices found
@@ -1807,7 +2137,9 @@ No items found,No items found
 No items match,No items match
 No items with submitted active BOMs yet — create one first.,No items with submitted active BOMs yet — create one first.
 No items yet.,No items yet.
+No items.,No items.
 No journal entries in this range,No journal entries in this range
+No landed cost vouchers yet.,No landed cost vouchers yet.
 No lanes. Click + to add.,No lanes. Click + to add.
 No leads,No leads
 No leave requests,No leave requests
@@ -1835,6 +2167,7 @@ No outstanding advances,No outstanding advances
 No outstanding balances,No outstanding balances
 No outstanding salary payable.,No outstanding salary payable.
 No overdue installments.,No overdue installments.
+No payments due,No payments due
 No payments in this range,No payments in this range
 No payments recorded in this range,No payments recorded in this range
 No payments waiting for approval,No payments waiting for approval
@@ -1851,11 +2184,13 @@ No purchase invoices in this range,No purchase invoices in this range
 No purchase orders have been registered for this supplier.,No purchase orders have been registered for this supplier.
 No purchase orders in the customs queue.,No purchase orders in the customs queue.
 No purchase orders in this range,No purchase orders in this range
+No purchase orders linked.,No purchase orders linked.
 No purchase orders tagged to this tender yet.,No purchase orders tagged to this tender yet.
 No purchase receipts in this range,No purchase receipts in this range
 No quotations in this range,No quotations in this range
 No raw events,No raw events
 No readiness data,No readiness data
+No receipts yet.,No receipts yet.
 No receivable account configured for distributor {0} in company {1}.,No receivable account configured for distributor {0} in company {1}.
 No receivable account configured for distributor {0} in company {1}: {2},No receivable account configured for distributor {0} in company {1}: {2}
 No receivables,No receivables
@@ -1894,6 +2229,8 @@ No stock moves in this range,No stock moves in this range
 No stock update,No stock update
 No stock warehouses,No stock warehouses
 No stocked items found,No stocked items found
+No submitted Purchase Receipts yet — a voucher cannot be created.,No submitted Purchase Receipts yet — a voucher cannot be created.
+No submitted purchase receipts yet.,No submitted purchase receipts yet.
 No summaries,No summaries
 No supplier quotations for this tender.,No supplier quotations for this tender.
 No suppliers,No suppliers
@@ -1906,14 +2243,20 @@ No transactions,No transactions
 No transactions in this period.,No transactions in this period.
 No transactions yet.,No transactions yet.
 No travel,No travel
+No truck receipts yet.,No truck receipts yet.
+No trucks,No trucks
 No unbilled service visits,No unbilled service visits
+No unconsumed landed-cost lines to voucher.,No unconsumed landed-cost lines to voucher.
 No unmatched users. All punches are mapped.,No unmatched users. All punches are mapped.
 No valid rows found.,No valid rows found.
 No valuation history.,No valuation history.
 No van stock yet,No van stock yet
 No verified restore on record. A backup you have never restored is not a backup you can trust — test one and record it.,No verified restore on record. A backup you have never restored is not a backup you can trust — test one and record it.
+No veterinary certificate on file for this shipment.,No veterinary certificate on file for this shipment.
+No veterinary certificates,No veterinary certificates
 No visits,No visits
 No visits yet,No visits yet
+No vouchers yet.,No vouchers yet.
 No warehouses for this company,No warehouses for this company
 No work orders,No work orders
 No work orders assigned to you yet.,No work orders assigned to you yet.
@@ -1949,11 +2292,14 @@ Not ready to lock,Not ready to lock
 Not registered,Not registered
 Not set,Not set
 Not uploaded yet,Not uploaded yet
+Note,Note
 Notes,Notes
 Nothing to pay — selected employees have no outstanding balance.,Nothing to pay — selected employees have no outstanding balance.
 Nothing to reconcile — all clear.,Nothing to reconcile — all clear.
+Nothing to voucher.,Nothing to voucher.
 O'lchov birlik,O'lchov birlik
 OK,OK
+ON_BOARD,ON_BOARD
 OSA,OSA
 OSA %,OSA %
 OSA Audit name is required.,OSA Audit name is required.
@@ -1966,7 +2312,10 @@ Object Name,Object Name
 Object Type,Object Type
 Off,Off
 Off-CBU Documents,Off-CBU Documents
+Off-Hours Clearance,Off-Hours Clearance
 Off-box (Google Drive),Off-box (Google Drive)
+Off-hours clearance (+25% BRV),Off-hours clearance (+25% BRV)
+Off-hours surcharge,Off-hours surcharge
 Office,Office
 Office branch or location,Office branch or location
 Oldest (days),Oldest (days)
@@ -1974,6 +2323,7 @@ Oldest queued,Oldest queued
 Oldest reservation,Oldest reservation
 Ombor,Ombor
 On,On
+On Hold,On Hold
 On Leave,On Leave
 On hand,On hand
 On leave,On leave
@@ -1991,6 +2341,9 @@ Only Approved claims can be settled. Current status: {0},Only Approved claims ca
 Only Payment Entry / Journal Entry can be reconciled here.,Only Payment Entry / Journal Entry can be reconciled here.
 Only a Stock Manager can reconcile stock.,Only a Stock Manager can reconcile stock.
 Only a submitted collection can be cancelled.,Only a submitted collection can be cancelled.
+Only an Imports Manager can add a Landed Cost Voucher.,Only an Imports Manager can add a Landed Cost Voucher.
+Only an Imports Manager can correct the {0} status backwards.,Only an Imports Manager can correct the {0} status backwards.
+Only an Imports Manager can override the veterinary certificate requirement.,Only an Imports Manager can override the veterinary certificate requirement.
 Only confirm after you have actually restored a backup to a scratch site and verified the data. This records today as the last successful restore test.,Only confirm after you have actually restored a backup to a scratch site and verified the data. This records today as the last successful restore test.
 Only draft Journal Entries can be deleted; cancel a submitted one instead.,Only draft Journal Entries can be deleted; cancel a submitted one instead.
 Only draft journal entries can be edited here. Submitted entries must be cancelled and amended.,Only draft journal entries can be edited here. Submitted entries must be cancelled and amended.
@@ -2010,6 +2363,7 @@ Open AR,Open AR
 Open Desk,Open Desk
 Open Exceptions,Open Exceptions
 Open SREs,Open SREs
+Open commercial invoices,Open commercial invoices
 Open exceptions,Open exceptions
 Open matrix,Open matrix
 Open payment link,Open payment link
@@ -2036,6 +2390,7 @@ Order date,Order date
 Order number or supplier…,Order number or supplier…
 Ordered,Ordered
 Orders,Orders
+Orders with advance,Orders with advance
 Org chart,Org chart
 Organization,Organization
 Orientation,Orientation
@@ -2046,6 +2401,7 @@ Other cost,Other cost
 Other costs (before profit),Other costs (before profit)
 Out,Out
 Out of stock,Out of stock
+Out of the target range — a QC note is required to save.,Out of the target range — a QC note is required to save.
 Out time,Out time
 Out-of-sequence approval,Out-of-sequence approval
 Outflow,Outflow
@@ -2070,6 +2426,7 @@ Outstanding customer balances for field teams.,Outstanding customer balances for
 Outstanding salary payable,Outstanding salary payable
 Overdue,Overdue
 Overdue installments,Overdue installments
+Override (preview only),Override (preview only)
 Override qty must be greater than zero,Override qty must be greater than zero
 Override role,Override role
 Override — submit despite low stock (admin),Override — submit despite low stock (admin)
@@ -2078,8 +2435,10 @@ Overtime (min),Overtime (min)
 Overtime multiplier,Overtime multiplier
 Overview,Overview
 Owes us,Owes us
+Own,Own
 Owner,Owner
 P,P
+PENDING,PENDING
 PI In,PI In
 PIN,PIN
 PO,PO
@@ -2095,19 +2454,25 @@ POS Profile must define a shop warehouse.,POS Profile must define a shop warehou
 POS Profile must define a walk-in customer.,POS Profile must define a walk-in customer.
 POS Profile must define at least one payment mode.,POS Profile must define at least one payment mode.
 POSM,POSM
+PR,PR
 Package incomplete — fill the missing fields,Package incomplete — fill the missing fields
+Packaging OK,Packaging OK
+Packaging damaged,Packaging damaged
 Paid,Paid
 Paid amount,Paid amount
 Paid days,Paid days
 Paid from,Paid from
 Paid to,Paid to
 Paid {0} employees — {1},Paid {0} employees — {1}
+Parent,Parent
+Parent Customer,Parent Customer
 Parent warehouse,Parent warehouse
 Pareto ranking of customers by revenue with A/B/C classes.,Pareto ranking of customers by revenue with A/B/C classes.
 Pareto ranking of items by value with A/B/C classes.,Pareto ranking of items by value with A/B/C classes.
 Pareto ranking of suppliers by spend with A/B/C classes.,Pareto ranking of suppliers by spend with A/B/C classes.
 Partial,Partial
 Partially Completed,Partially Completed
+Partially Paid,Partially Paid
 Partially Reserved,Partially Reserved
 Partially approved — awaiting level {0},Partially approved — awaiting level {0}
 Partially billed — {pct}% invoiced.,Partially billed — {pct}% invoiced.
@@ -2164,8 +2529,12 @@ Payment received,Payment received
 Payment reminder,Payment reminder
 Payment saved — pending approval before it posts.,Payment saved — pending approval before it posts.
 Payment schedule,Payment schedule
+Payment split is hidden for your role.,Payment split is hidden for your role.
+Payment status,Payment status
 Payment type,Payment type
 Payments,Payments
+Payments due,Payments due
+Payments due ≤7 days,Payments due ≤7 days
 Payments paid today,Payments paid today
 Payments received today,Payments received today
 Payments you submit that need a second approver will show here.,Payments you submit that need a second approver will show here.
@@ -2187,9 +2556,11 @@ Payroll-impacting pending,Payroll-impacting pending
 Pays out this share of the KPI pool. Locked periods are read-only.,Pays out this share of the KPI pool. Locked periods are read-only.
 Penalty %/day,Penalty %/day
 Pending,Pending
+Pending (kg),Pending (kg)
 Pending Corrections,Pending Corrections
 Pending approvals,Pending approvals
 Pending requests,Pending requests
+Pending vet certificates,Pending vet certificates
 People,People
 Per box,Per box
 Percent off,Percent off
@@ -2225,6 +2596,7 @@ Pick a status.,Pick a status.
 Pick a supplier.,Pick a supplier.
 Pick a tender deal to compare quotations.,Pick a tender deal to compare quotations.
 Pick a tender deal to see its purchase orders.,Pick a tender deal to see its purchase orders.
+Pick a truck to receive.,Pick a truck to receive.
 Pick a valid date range.,Pick a valid date range.
 Pick a valid month.,Pick a valid month.
 Pick a warehouse,Pick a warehouse
@@ -2243,7 +2615,14 @@ Pick start and end dates.,Pick start and end dates.
 Pick the account funds will be paid from.,Pick the account funds will be paid from.
 Pick the account that will receive the funds.,Pick the account that will receive the funds.
 Pick the bank/cash account to pay from.,Pick the bank/cash account to pay from.
+Pick the truck to receive,Pick the truck to receive
+Pickup & Delivery,Pickup & Delivery
+Pickup Date,Pickup Date
+Pickup Location,Pickup Location
+Pickup date,Pickup date
+Pickup location,Pickup location
 Pieces,Pieces
+Pipeline,Pipeline
 Pistachio,Pistachio
 Place branded freezer at {0} (deal {1}),Place branded freezer at {0} (deal {1})
 Place your RFID badge on the reader to log in,Place your RFID badge on the reader to log in
@@ -2265,6 +2644,8 @@ Planograms,Planograms
 Planograms describe expected shelf facings per outlet and category.,Planograms describe expected shelf facings per outlet and category.
 Please fill all required fields.,Please fill all required fields.
 Policy,Policy
+Port of discharge,Port of discharge
+Port of loading,Port of loading
 Portfolio value,Portfolio value
 Position,Position
 Positions,Positions
@@ -2341,6 +2722,8 @@ Purchase Receipt submitted.,Purchase Receipt submitted.
 Purchase Receipts,Purchase Receipts
 Purchase item,Purchase item
 Purchase method,Purchase method
+Purchase receipt,Purchase receipt
+Purchase receipts,Purchase receipts
 Purchases,Purchases
 Purchases = selected period · Balance = payable as of the To date (changes with the date). Click a supplier to see the bills.,Purchases = selected period · Balance = payable as of the To date (changes with the date). Click a supplier to see the bills.
 Purchases by Supplier,Purchases by Supplier
@@ -2352,14 +2735,19 @@ Push net pay to ERPNext?,Push net pay to ERPNext?
 Push net to ERPNext,Push net to ERPNext
 Pushed net pay for {0} employees.,Pushed net pay for {0} employees.
 Pushed {0}; {1} failed.,Pushed {0}; {1} failed.
+QC,QC
+QC notes,QC notes
 QR code expired,QR code expired
 QR unavailable — open the link below,QR unavailable — open the link below
 Qty,Qty
+Qty (kg),Qty (kg)
 Qty must be greater than zero.,Qty must be greater than zero.
+Quality control,Quality control
 Quantity,Quantity
 Quantity must be positive.,Quantity must be positive.
 Queue is clear. Nothing pending.,Queue is clear. Nothing pending.
 Queue is empty,Queue is empty
+Quick view,Quick view
 Quotation,Quotation
 Quotation number or customer…,Quotation number or customer…
 Quotations,Quotations
@@ -2395,12 +2783,17 @@ Readiness,Readiness
 Ready,Ready
 Ready to lock,Ready to lock
 Reason,Reason
+Reason for rejection:,Reason for rejection:
+Reason for the status correction:,Reason for the status correction:
+Recalculate,Recalculate
+Receipt,Receipt
 Receipt number or supplier…,Receipt number or supplier…
 Receipts,Receipts
 Receivable (AR),Receivable (AR)
 Receivable Trend (Last 8 Weeks),Receivable Trend (Last 8 Weeks)
 Receivables,Receivables
 Receive,Receive
+Receive Truck,Receive Truck
 Receive currency,Receive currency
 Receive goods,Receive goods
 Receive goods into stock,Receive goods into stock
@@ -2408,11 +2801,19 @@ Receive now,Receive now
 Receive payment,Receive payment
 Receive payments / issue credit notes,Receive payments / issue credit notes
 Receive stock,Receive stock
+Receive truck,Receive truck
 Received,Received
+Received (kg),Received (kg)
+Received / expected (kg),Received / expected (kg)
 Received At,Received At
 Received amount,Received amount
+Received boxes,Received boxes
+Received by,Received by
+Received items,Received items
+Received kg,Received kg
 Receiver gets,Receiver gets
 Receiver name,Receiver name
+Receiving notes,Receiving notes
 Recent activity,Recent activity
 Recent imports,Recent imports
 Recent reconciliations,Recent reconciliations
@@ -2426,6 +2827,7 @@ Record & close,Record & close
 Record & new,Record & new
 "Record a receipt, issue, or transfer to move stock between warehouses.","Record a receipt, issue, or transfer to move stock between warehouses."
 Record a sale,Record a sale
+"Record border-crossing, handling and other import costs here.","Record border-crossing, handling and other import costs here."
 Record production,Record production
 Record stock movements,Record stock movements
 Records that block payroll or look unfinished. Fix at the source.,Records that block payroll or look unfinished. Fix at the source.
@@ -2447,6 +2849,7 @@ Refresh token (JWT),Refresh token (JWT)
 Refreshing…,Refreshing…
 Region,Region
 Region / Route,Region / Route
+Register a customs declaration (GTD) for an import to clear it.,Register a customs declaration (GTD) for an import to clear it.
 Register a hardware reader or integration to start collecting raw attendance events.,Register a hardware reader or integration to start collecting raw attendance events.
 "Register coolers, freezers, racks, and POSM assets here.","Register coolers, freezers, racks, and POSM assets here."
 Reject,Reject
@@ -2457,7 +2860,12 @@ Reject this correction request? The requester will be notified.,Reject this corr
 Reject this leave request?,Reject this leave request?
 Reject this request? The draft is left untouched for the maker to fix or delete.,Reject this request? The draft is left untouched for the maker to fix or delete.
 Rejected,Rejected
+Rejected boxes,Rejected boxes
+Rejection reason:,Rejection reason:
 Related documents,Related documents
+Relax the filters or create a new commercial invoice.,Relax the filters or create a new commercial invoice.
+Relax the filters to see containers.,Relax the filters to see containers.
+Relax the filters to see trucks.,Relax the filters to see trucks.
 Relieving date,Relieving date
 Reload,Reload
 Remaining,Remaining
@@ -2560,8 +2968,10 @@ Role not found,Role not found
 Role template (optional),Role template (optional)
 Role template applied successfully.,Role template applied successfully.
 Roles,Roles
+Roll back,Roll back
 Rolling window. 0 = no freeze. This is usually the one set to 49.,Rolling window. 0 = no freeze. This is usually the one set to 49.
 Route,Route
+Route & cold chain,Route & cold chain
 Route Code,Route Code
 Route Name,Route Name
 Route code is required.,Route code is required.
@@ -2569,8 +2979,11 @@ Route name is required.,Route name is required.
 Routes,Routes
 Row,Row
 Row not found on this Stock Entry,Row not found on this Stock Entry
+Row {0}: item is required.,Row {0}: item is required.
+Row {0}: unknown item '{1}'.,Row {0}: unknown item '{1}'.
 Row {n} ({item}): qty exceeds available stock (available {free}).,Row {n} ({item}): qty exceeds available stock (available {free}).
 Row {n}: qty must be greater than zero.,Row {n}: qty must be greater than zero.
+Rows per page,Rows per page
 Rsvd,Rsvd
 Rule Set,Rule Set
 Rule set,Rule set
@@ -2595,6 +3008,7 @@ SO,SO
 SO number or customer…,SO number or customer…
 SRE module unavailable: {0},SRE module unavailable: {0}
 SREs,SREs
+STUFFED,STUFFED
 Salaries,Salaries
 Salary,Salary
 Salary Slip {0} not found.,Salary Slip {0} not found.
@@ -2659,6 +3073,7 @@ Save failed.,Save failed.
 Save mapping,Save mapping
 Save modules,Save modules
 Save plan,Save plan
+Save the invoice first to compute the customs fee.,Save the invoice first to compute the customs fee.
 Saved,Saved
 Saved — pending approval before it posts.,Saved — pending approval before it posts.
 Saved.,Saved.
@@ -2673,6 +3088,7 @@ Scan returned item or search,Scan returned item or search
 Scan to pay,Scan to pay
 Scanned,Scanned
 Scanned / Required,Scanned / Required
+Scanned declaration,Scanned declaration
 Scanner Ready,Scanner Ready
 Scanning…,Scanning…
 Schedule,Schedule
@@ -2685,6 +3101,10 @@ Scheme Name,Scheme Name
 Scheme Type,Scheme Type
 Scrap / Rejects Qty,Scrap / Rejects Qty
 Scrap / rejects,Scrap / rejects
+Seal Number,Seal Number
+Seal broken,Seal broken
+Seal intact,Seal intact
+Seal number,Seal number
 Search,Search
 Search BOMs or finished goods…,Search BOMs or finished goods…
 Search a tender deal… ⌘K,Search a tender deal… ⌘K
@@ -2694,6 +3114,7 @@ Search asset tag…,Search asset tag…
 Search by name or code…,Search by name or code…
 Search by serial or item,Search by serial or item
 Search campaigns…,Search campaigns…
+Search carrier…,Search carrier…
 Search customer,Search customer
 Search customer name…,Search customer name…
 "Search customers, suppliers, items, invoices…","Search customers, suppliers, items, invoices…"
@@ -2720,6 +3141,7 @@ Search supplier name…,Search supplier name…
 Search suppliers…,Search suppliers…
 Search supplier…,Search supplier…
 Search supplier… ⌘K,Search supplier… ⌘K
+Search transporter…,Search transporter…
 Search voucher…,Search voucher…
 Search warehouse…,Search warehouse…
 Search work orders…,Search work orders…
@@ -2755,6 +3177,7 @@ Select company,Select company
 Select corridor…,Select corridor…
 Select gender,Select gender
 Select payment,Select payment
+Select purchase order…,Select purchase order…
 Select service person,Select service person
 Select technician,Select technician
 Select template…,Select template…
@@ -2802,7 +3225,10 @@ Set a Google Drive folder ID first.,Set a Google Drive folder ID first.
 Set as company default,Set as company default
 Set as company default.,Set as company default.
 Set deadlines in Tender details.,Set deadlines in Tender details.
+Set exactly one of Commercial Invoice or Container on a Freight Booking.,Set exactly one of Commercial Invoice or Container on a Freight Booking.
+Set exactly one of Commercial Invoice or Container.,Set exactly one of Commercial Invoice or Container.
 "Set the Google Drive folder ID in Stabler Settings, and share that Shared-Drive folder with the service account email.","Set the Google Drive folder ID in Stabler Settings, and share that Shared-Drive folder with the service account email."
+Set the imports landed-cost expense account in Stabler Settings before creating a Landed Cost Voucher.,Set the imports landed-cost expense account in Stabler Settings before creating a Landed Cost Voucher.
 Setting up your business…,Setting up your business…
 Settings,Settings
 Settle,Settle
@@ -2822,6 +3248,7 @@ Shift 12h,Shift 12h
 Shift 8h,Shift 8h
 Shift class,Shift class
 Shift start,Shift start
+Shipping & logistics,Shipping & logistics
 Shop,Shop
 Short code,Short code
 Show discounts,Show discounts
@@ -2859,6 +3286,8 @@ Source warehouse,Source warehouse
 Source warehouse is required.,Source warehouse is required.
 Sourcing comparison,Sourcing comparison
 Spend,Spend
+Stabler BRV Setting,Stabler BRV Setting
+Stabler Customs Fee Tier,Stabler Customs Fee Tier
 Stabler Settings doctype does not exist. Run migrations first.,Stabler Settings doctype does not exist. Run migrations first.
 Staff with base salary = 0,Staff with base salary = 0
 Stage Materials,Stage Materials
@@ -2878,12 +3307,18 @@ Start Work,Start Work
 Start Work Order,Start Work Order
 Start Work Order and transfer raw materials?,Start Work Order and transfer raw materials?
 Start failed.,Start failed.
+Stat. value,Stat. value
+State,State
 Statement account does not match the selected bank account ({0}).,Statement account does not match the selected bank account ({0}).
 Statement file,Statement file
+Statistical Value (USD),Statistical Value (USD)
 Status,Status
+Status Correction Reason,Status Correction Reason
+Status change failed.,Status change failed.
 Status is required.,Status is required.
 Status name is required,Status name is required
 Status not found,Status not found
+Status updated.,Status updated.
 Step,Step
 Step #{0} not found on this visit.,Step #{0} not found on this visit.
 Step #{0}: type is required.,Step #{0}: type is required.
@@ -2918,6 +3353,7 @@ Subject is required.,Subject is required.
 Submit,Submit
 Submit & reserve stock,Submit & reserve stock
 Submit BOM?,Submit BOM?
+Submit GRN,Submit GRN
 Submit Revaluation,Submit Revaluation
 Submit Work Order,Submit Work Order
 Submit a Budget document covering this date range and cost centre.,Submit a Budget document covering this date range and cost centre.
@@ -2929,7 +3365,10 @@ Submit document?,Submit document?
 Submit expense,Submit expense
 Submit failed.,Submit failed.
 Submit journal entry?,Submit journal entry?
+Submit receipt,Submit receipt
+Submit the GRN Checklist before adding a Landed Cost Voucher.,Submit the GRN Checklist before adding a Landed Cost Voucher.
 Submit this BOM? You won't be able to edit it after.,Submit this BOM? You won't be able to edit it after.
+Submit this GRN checklist? This closes receiving and drafts a landed cost voucher.,Submit this GRN checklist? This closes receiving and drafts a landed cost voucher.
 Submit transfer,Submit transfer
 Submitted,Submitted
 Submitted At,Submitted At
@@ -2972,9 +3411,14 @@ Table,Table
 Tag Sales/Purchase Orders to a tender deal to see them here.,Tag Sales/Purchase Orders to a tender deal to see them here.
 Tag Supplier Quotations to this deal to compare them here.,Tag Supplier Quotations to this deal to compare them here.
 Take Payment,Take Payment
+Target,Target
 Target Remaining,Target Remaining
+Target Temp Max,Target Temp Max
+Target Temp Min,Target Temp Min
 Target WIP Warehouse,Target WIP Warehouse
 Target margin (profit ÷ net revenue),Target margin (profit ÷ net revenue)
+Target temp max (°C),Target temp max (°C)
+Target temp min (°C),Target temp min (°C)
 Task,Task
 Tax ID,Tax ID
 Tax amount,Tax amount
@@ -2985,6 +3429,12 @@ Taxes,Taxes
 Technician,Technician
 Technician state,Technician state
 Telegram,Telegram
+Telex Release Date,Telex Release Date
+Telex release,Telex release
+Temperature,Temperature
+Temperature OK,Temperature OK
+Temperature at arrival (°C),Temperature at arrival (°C)
+Temperature flagged,Temperature flagged
 Tender,Tender
 Tender / deal,Tender / deal
 Tender Deadline,Tender Deadline
@@ -3007,13 +3457,20 @@ That voucher is not linked to this transaction.,That voucher is not linked to th
 The Compliance module is disabled for this company.,The Compliance module is disabled for this company.
 The GL ledger scan detected {0} issues that require immediate attention.,The GL ledger scan detected {0} issues that require immediate attention.
 The Imports workspace will be built out in the next work package.,The Imports workspace will be built out in the next work package.
+The commercial invoice has no items to receive.,The commercial invoice has no items to receive.
+The imports module is not enabled for this company.,The imports module is not enabled for this company.
 "The queue is blocked — {0} repost(s) stuck. Re-queue them, then Run now.","The queue is blocked — {0} repost(s) stuck. Re-queue them, then Run now."
 The referenced document is cancelled and cannot be approved.,The referenced document is cancelled and cannot be approved.
 The referenced document no longer exists.,The referenced document no longer exists.
+The selected parent already belongs to another parent. Only one level of hierarchy is allowed.,The selected parent already belongs to another parent. Only one level of hierarchy is allowed.
+The selected parent customer does not exist.,The selected parent customer does not exist.
+The voucher is created as a draft; an accountant reviews and submits it in the books.,The voucher is created as a draft; an accountant reviews and submits it in the books.
 There are currently no work orders assigned to you.,There are currently no work orders assigned to you.
 These are ERPNext's back-dating guards — the reason it blocks creating or editing transactions older than a set window. They protect closed periods; relax them only deliberately.,These are ERPNext's back-dating guards — the reason it blocks creating or editing transactions older than a set window. They protect closed periods; relax them only deliberately.
 "These are the toxic role combinations Stabler checks for. Findings are advisory — accept them with a compensating control, or split the duties.","These are the toxic role combinations Stabler checks for. Findings are advisory — accept them with a compensating control, or split the duties."
 These device users have no employee link. Confirm a match to re-queue their punches.,These device users have no employee link. Confirm a match to re-queue their punches.
+This GRN Checklist is not in a draft state.,This GRN Checklist is not in a draft state.
+This GRN has no item lines.,This GRN has no item lines.
 This Service workspace will be added after Tickets P1.,This Service workspace will be added after Tickets P1.
 This adjusts stock for {0} item(s) and posts the difference to the ledger. The action is recorded against your name.,This adjusts stock for {0} item(s) and posts the difference to the ledger. The action is recorded against your name.
 This bank transaction is already fully reconciled.,This bank transaction is already fully reconciled.
@@ -3021,7 +3478,9 @@ This cannot be undone.,This cannot be undone.
 This correction affects payroll calculations,This correction affects payroll calculations
 This correction is already {0} and cannot be approved.,This correction is already {0} and cannot be approved.
 This correction is already {0} and cannot be rejected.,This correction is already {0} and cannot be rejected.
+This cost line is already vouchered ({0}) and can no longer be toggled.,This cost line is already vouchered ({0}) and can no longer be toggled.
 This creates a submitted credit note (return invoice) and updates inventory automatically.,This creates a submitted credit note (return invoice) and updates inventory automatically.
+"This customer already has child locations, so it cannot become a child itself.","This customer already has child locations, so it cannot become a child itself."
 This customer has no submitted invoices for the selected period.,This customer has no submitted invoices for the selected period.
 This deal is Won — create the customer to start invoicing.,This deal is Won — create the customer to start invoicing.
 This document was changed by someone else. Reload to see the latest.,This document was changed by someone else. Reload to see the latest.
@@ -3044,6 +3503,8 @@ This request is already {0}.,This request is already {0}.
 This reverses the ledger postings. The entry stays as an audit record; create an amended one to correct it.,This reverses the ledger postings. The entry stays as an audit record; create an amended one to correct it.
 This role may create/edit back-dated stock entries.,This role may create/edit back-dated stock entries.
 This role may edit frozen accounting entries.,This role may edit frozen accounting entries.
+This truck receipt is not in a draft state.,This truck receipt is not in a draft state.
+This truck receipt is submitted and can no longer be edited.,This truck receipt is submitted and can no longer be edited.
 This warehouse has no current item balances.,This warehouse has no current item balances.
 This will close the order and release any reserved stock. Continue?,This will close the order and release any reserved stock. Continue?
 This will post {0} {1}. The action is recorded against your name.,This will post {0} {1}. The action is recorded against your name.
@@ -3093,17 +3554,23 @@ Top 10 Debtors,Top 10 Debtors
 Total,Total
 Total (cost + markup),Total (cost + markup)
 Total / Present / OSA % are computed server-side.,Total / Present / OSA % are computed server-side.
+Total Amount,Total Amount
+Total Boxes,Total Boxes
+Total Duties (UZS),Total Duties (UZS)
 Total Marked,Total Marked
 Total Required,Total Required
 Total SKUs,Total SKUs
 Total allocated,Total allocated
 Total allocated cannot exceed the payment amount.,Total allocated cannot exceed the payment amount.
+Total boxes,Total boxes
 Total committed,Total committed
 Total cost,Total cost
 Total credit value,Total credit value
 Total credits,Total credits
 Total debits,Total debits
+Total duties,Total duties
 Total in {0},Total in {0}
+Total kg,Total kg
 Total net owed,Total net owed
 Total outstanding,Total outstanding
 Total outstanding advances,Total outstanding advances
@@ -3112,13 +3579,16 @@ Total payable,Total payable
 Total receivable,Total receivable
 Total units,Total units
 Total value,Total value
+Total weight (kg),Total weight (kg)
 Total:,Total:
+Totals,Totals
 Totals shown in base currency ({0}).,Totals shown in base currency ({0}).
 Trade Marketing,Trade Marketing
 Trade marketing claims and settlement tracking.,Trade marketing claims and settlement tracking.
 Transaction,Transaction
 Transaction Id,Transaction Id
 Transactions,Transactions
+Transactions are recorded on child locations,Transactions are recorded on child locations
 Transfer,Transfer
 Transfer cancelled.,Transfer cancelled.
 Transfer detail,Transfer detail
@@ -3132,46 +3602,94 @@ Transfer to WIP Warehouse,Transfer to WIP Warehouse
 Transferred,Transferred
 Transferred Qty,Transferred Qty
 Transfers,Transfers
+Transit ETA,Transit ETA
+Transit ETA (Iran),Transit ETA (Iran)
 Transport,Transport
 Transport / day — City,Transport / day — City
 Transport / day — District,Transport / day — District
 Transport / day — Far district,Transport / day — Far district
+Transport Cost,Transport Cost
+Transport Currency,Transport Currency
+Transport PI,Transport PI
+Transport Payment Status,Transport Payment Status
+Transport Purchase Invoice,Transport Purchase Invoice
+Transport cost,Transport cost
+Transport cost is hidden for your role.,Transport cost is hidden for your role.
+Transporter,Transporter
+Tree view,Tree view
 Trend,Trend
 Trigger Item,Trigger Item
+Truck,Truck
+Truck & driver,Truck & driver
+Truck Number,Truck Number
+Truck Receipt,Truck Receipt
+Truck created.,Truck created.
+Truck number,Truck number
+Truck receipt saved.,Truck receipt saved.
+Truck receipt submitted.,Truck receipt submitted.
+Truck receipts,Truck receipts
+Truck saved.,Truck saved.
+Truck temperature {0} C is outside the target range {1} C to {2} C; record a QC note to save.,Truck temperature {0} C is outside the target range {1} C to {2} C; record a QC note to save.
+"Truck, driver or CI… ⌘K","Truck, driver or CI… ⌘K"
+Trucking Company,Trucking Company
+Trucks,Trucks
+Trucks on the road,Trucks on the road
+Trucks received,Trucks received
 Try a different search term or clear the filter.,Try a different search term or clear the filter.
 Try adjusting your filters to find exceptions.,Try adjusting your filters to find exceptions.
 "Try another item code, name, or group.","Try another item code, name, or group."
 Try another search term.,Try another search term.
+Try to submit,Try to submit
 Tue,Tue
 Tuesday,Tuesday
 Type,Type
+Type / size,Type / size
 "Type to search, or pick a quick action","Type to search, or pick a quick action"
+UNLOADING,UNLOADING
 UOM,UOM
 USD rate on this date,USD rate on this date
 USD → UZS,USD → UZS
+USD → {cur} rate,USD → {cur} rate
 UZEX lot {0} not found.,UZEX lot {0} not found.
+UZS,UZS
 Unassigned,Unassigned
 Unassigned department or position.,Unassigned department or position.
 Unassigned dept / position,Unassigned dept / position
 Unbilled,Unbilled
 Unbilled queue,Unbilled queue
+Under Review,Under Review
 Unit,Unit
 Unit cost,Unit cost
 Units Sold,Units Sold
 Unknown,Unknown
+Unknown Commercial Invoice: {0},Unknown Commercial Invoice: {0}
 Unknown Cost Center: {0},Unknown Cost Center: {0}
+Unknown Customs Declaration: {0},Unknown Customs Declaration: {0}
 Unknown Didox Submission,Unknown Didox Submission
 Unknown Fiscal Year: {0},Unknown Fiscal Year: {0}
+Unknown Freight Booking: {0},Unknown Freight Booking: {0}
+Unknown GRN Checklist: {0},Unknown GRN Checklist: {0}
+Unknown Import Container: {0},Unknown Import Container: {0}
+Unknown Import Expense: {0},Unknown Import Expense: {0}
+Unknown Import Truck: {0},Unknown Import Truck: {0}
 Unknown POS Profile: {0},Unknown POS Profile: {0}
 Unknown Purchase Invoice: {0},Unknown Purchase Invoice: {0}
+Unknown Purchase Order for this company: {0},Unknown Purchase Order for this company: {0}
 Unknown Sales Invoice: {0},Unknown Sales Invoice: {0}
 Unknown Sales Order: {0},Unknown Sales Order: {0}
+Unknown Truck Receipt: {0},Unknown Truck Receipt: {0}
+Unknown Vet Certificate: {0},Unknown Vet Certificate: {0}
 Unknown account: {0},Unknown account: {0}
+Unknown commercial invoice for this company: {0},Unknown commercial invoice for this company: {0}
 Unknown company: {0},Unknown company: {0}
+Unknown cost line: {0},Unknown cost line: {0}
 Unknown customer: {0},Unknown customer: {0}
+Unknown customs declaration status: {0},Unknown customs declaration status: {0}
 Unknown deal: {0},Unknown deal: {0}
 Unknown employee: {0},Unknown employee: {0}
+Unknown freight booking status: {0},Unknown freight booking status: {0}
 Unknown hash algorithm: {0},Unknown hash algorithm: {0}
+Unknown item on declaration line: {0},Unknown item on declaration line: {0}
 Unknown item: {0},Unknown item: {0}
 Unknown payment session.,Unknown payment session.
 Unknown purchase order: {0},Unknown purchase order: {0}
@@ -3183,7 +3701,9 @@ Unknown stage: {0},Unknown stage: {0}
 Unknown summary: {0},Unknown summary: {0}
 Unknown user: {0},Unknown user: {0}
 Unknown vertical pack: {0},Unknown vertical pack: {0}
+Unknown veterinary certificate status: {0},Unknown veterinary certificate status: {0}
 Unknown warehouse: {0},Unknown warehouse: {0}
+Unknown {0}: {1},Unknown {0}: {1}
 Unmatched,Unmatched
 Unmatched Event,Unmatched Event
 Unmatched TimePay users,Unmatched TimePay users
@@ -3214,8 +3734,16 @@ User status updated.,User status updated.
 Users,Users
 Users flagged,Users flagged
 Utilization %,Utilization %
+Uzbekistan Customs Duty,Uzbekistan Customs Duty
+Uzbekistan Port Handling,Uzbekistan Port Handling
 VAT,VAT
+VAT %,VAT %
+VAT (not capitalized),VAT (not capitalized)
+VAT Amount (UZS),VAT Amount (UZS)
+VAT Rate %,VAT Rate %
 VAT registered,VAT registered
+VGM,VGM
+Valid,Valid
 Valid Distributor (Customer) is required.,Valid Distributor (Customer) is required.
 Valid From,Valid From
 Valid Promo Plan is required.,Valid Promo Plan is required.
@@ -3225,6 +3753,7 @@ Valid issue type is required.,Valid issue type is required.
 Valid till,Valid till
 Valid user is required.,Valid user is required.
 Valuation,Valuation
+Valuation & duties,Valuation & duties
 Valuation history,Valuation history
 Valuation rate,Valuation rate
 Value,Value
@@ -3236,14 +3765,25 @@ Van Stock name is required.,Van Stock name is required.
 Van stock tracks what each field user has loaded for the day.,Van stock tracks what each field user has loaded for the day.
 Var %,Var %
 Variance,Variance
+Variance %,Variance %
+Vehicle,Vehicle
+Vehicle & Driver,Vehicle & Driver
+Vehicle Number,Vehicle Number
+Vehicle number,Vehicle number
 Vendor,Vendor
 Vendor bill does not match PO / receipt,Vendor bill does not match PO / receipt
 Vendor comparison,Vendor comparison
 Vendor comparison (landed),Vendor comparison (landed)
 Vendors,Vendors
 Vertical lanes (flow top→bottom),Vertical lanes (flow top→bottom)
+Vessel,Vessel
+Vet,Vet
+Veterinary certificate,Veterinary certificate
+Veterinary certificate added.,Veterinary certificate added.
+Veterinary certificate updated.,Veterinary certificate updated.
 View,View
 View all,View all
+View attached document,View attached document
 View attachment,View attachment
 View audit log,View audit log
 View corrections queue,View corrections queue
@@ -3270,7 +3810,9 @@ Voucher No,Voucher No
 Voucher Type,Voucher Type
 Voucher not found.,Voucher not found.
 Voucher not found: {0} {1},Voucher not found: {0} {1}
+Vouchered,Vouchered
 Voucher…,Voucher…
+Voyage,Voyage
 W,W
 WIP Warehouse,WIP Warehouse
 WIP Whse,WIP Whse
@@ -3301,6 +3843,7 @@ Weekly,Weekly
 Weekly off,Weekly off
 Weekly off days,Weekly off days
 Weight,Weight
+Weight (kg),Weight (kg)
 Welcome,Welcome
 Welcome to Stabler,Welcome to Stabler
 What is this advance for?,What is this advance for?
@@ -3352,12 +3895,15 @@ Year to date,Year to date
 Yes,Yes
 You,You
 You are not assigned to this POS Profile.,You are not assigned to this POS Profile.
+You are not permitted to access imports.,You are not permitted to access imports.
 You are not permitted to approve or reject correction requests.,You are not permitted to approve or reject correction requests.
+You are not permitted to edit landed-cost figures.,You are not permitted to edit landed-cost figures.
 You are not permitted to review approval requests.,You are not permitted to review approval requests.
 You are not permitted to view customers.,You are not permitted to view customers.
 You are not permitted to view employees.,You are not permitted to view employees.
 You are not permitted to view suppliers.,You are not permitted to view suppliers.
 You are not permitted to view the audit log.,You are not permitted to view the audit log.
+You do not have permission to view landed-cost figures. Ask an imports manager or accountant.,You do not have permission to view landed-cost figures. Ask an imports manager or accountant.
 You have already approved level {0} for this request.,You have already approved level {0} for this request.
 You have no approval requests,You have no approval requests
 You have unsaved changes. Leaving this page will discard them.,You have unsaved changes. Leaving this page will discard them.
@@ -3379,11 +3925,13 @@ across all statuses,across all statuses
 active,active
 active staff,active staff
 actual so far,actual so far
+additional,additional
 against,against
 ambiguous,ambiguous
 avail,avail
 available,available
 blocker(s),blocker(s)
+boxes,boxes
 cheque / txn id,cheque / txn id
 company currency,company currency
 company is required.,company is required.
@@ -3424,12 +3972,14 @@ half-day,half-day
 high,high
 https://…,https://…
 info,info
+initial,initial
 inst.,inst.
 is locked from edits.,is locked from edits.
 item,item
 item_code and warehouse are required,item_code and warehouse are required
 items,items
 joined this month,joined this month
+kg,kg
 landed,landed
 late,late
 leave,leave
@@ -3447,6 +3997,8 @@ name is required.,name is required.
 need GPS,need GPS
 no stock movement,no stock movement
 not set,not set
+of,of
+of {n},of {n}
 on budget,on budget
 "one Journal Entry, clears their payable.","one Journal Entry, clears their payable."
 one-off,one-off
@@ -3528,17 +4080,67 @@ yr,yr
 — top-level —,— top-level —
 ⚠ {0} line(s) had no cost — verify item valuation; margin may be overstated.,⚠ {0} line(s) had no cost — verify item valuation; margin may be overstated.
 ﻿#,#
-A customer cannot be its own parent.,A customer cannot be its own parent.
-Children,Children
-Cumulative,Cumulative
-Flat view,Flat view
-Job Status,Job Status
-On Hold,On Hold
-Own,Own
-Parent,Parent
-Parent Customer,Parent Customer
-The selected parent customer does not exist.,The selected parent customer does not exist.
-"This customer already has child locations, so it cannot become a child itself.","This customer already has child locations, so it cannot become a child itself."
-Transactions are recorded on child locations,Transactions are recorded on child locations
-Tree view,Tree view
-The selected parent already belongs to another parent. Only one level of hierarchy is allowed.,The selected parent already belongs to another parent. Only one level of hierarchy is allowed.
+Container cost ledger,Container cost ledger
+Cost ledger,Cost ledger
+Landed Cost Bills,Landed Cost Bills
+Open container,Open container
+Failed to load the cost ledger.,Failed to load the cost ledger.
+Product,Product
+Cost figures are hidden — ask an imports manager or accountant for landed-cost visibility.,Cost figures are hidden — ask an imports manager or accountant for landed-cost visibility.
+Product cost,Product cost
+Per kg,Per kg
+No linked bills yet.,No linked bills yet.
+Advance payments,Advance payments
+Unallocated,Unallocated
+No advance payments yet.,No advance payments yet.
+Nothing booked yet,Nothing booked yet
+"No cost lines, bills or advances are linked to this container.","No cost lines, bills or advances are linked to this container."
+Bill or supplier… ⌘K,Bill or supplier… ⌘K
+By supplier,By supplier
+No import bills yet.,No import bills yet.
+No landed-cost bills,No landed-cost bills
+"No purchase invoices are linked to an import container, invoice or truck yet.","No purchase invoices are linked to an import container, invoice or truck yet."
+References,References
+Failed to load the supplier summary.,Failed to load the supplier summary.
+Pending landed-cost bills,Pending landed-cost bills
+{amount} outstanding,{amount} outstanding
+•••,•••
+Failed to load open invoices.,Failed to load open invoices.
+Distribute oldest-first,Distribute oldest-first
+No open invoices for this customer group.,No open invoices for this customer group.
+Allocation,Allocation
+Legacy,Legacy
+{n}d,{n}d
+Will create {n} payment(s).,Will create {n} payment(s).
+Created {n} payment(s): {names},Created {n} payment(s): {names}
+Payments saved — some are pending approval before they post.,Payments saved — some are pending approval before they post.
+Failed to load payments.,Failed to load payments.
+Pick a payment to reallocate.,Pick a payment to reallocate.
+Transfers exceed the payment's unallocated amount.,Transfers exceed the payment's unallocated amount.
+Reallocated via {je},Reallocated via {je}
+Failed to reallocate payment.,Failed to reallocate payment.
+Reallocate advance,Reallocate advance
+No unallocated payments on this customer.,No unallocated payments on this customer.
+Transfers to locations,Transfers to locations
+Add location,Add location
+Reallocate,Reallocate
+Reallocate a legacy advance to child locations,Reallocate a legacy advance to child locations
+Split one payment across child locations,Split one payment across child locations
+Enter at least one allocation amount.,Enter at least one allocation amount.
+Enter at least one transfer amount.,Enter at least one transfer amount.
+Select a payment mode.,Select a payment mode.
+Allocation amounts must be greater than zero.,Allocation amounts must be greater than zero.
+An allocated invoice does not belong to this customer chain.,An allocated invoice does not belong to this customer chain.
+An allocation exceeds the invoice's outstanding amount.,An allocation exceeds the invoice's outstanding amount.
+Transfer amounts must be greater than zero.,Transfer amounts must be greater than zero.
+A selected location does not belong to this customer chain.,A selected location does not belong to this customer chain.
+You are not permitted to record payments.,You are not permitted to record payments.
+{0} has invoices in more than one currency — record those payments separately.,{0} has invoices in more than one currency — record those payments separately.
+Payment mode {0} has no account configured for this company.,Payment mode {0} has no account configured for this company.
+Only Accounts Managers can reallocate a payment.,Only Accounts Managers can reallocate a payment.
+Unknown Payment Entry: {0},Unknown Payment Entry: {0}
+Payment belongs to a different company.,Payment belongs to a different company.
+Only submitted customer payments can be reallocated.,Only submitted customer payments can be reallocated.
+No default receivable account is configured for this company.,No default receivable account is configured for this company.
+Reallocation of unallocated advance from {0},Reallocation of unallocated advance from {0}
+"This sale would bring {0}'s group balance to {1}, over its credit limit of {2}. Ask an Accounts Manager to approve or increase the limit.","This sale would bring {0}'s group balance to {1}, over its credit limit of {2}. Ask an Accounts Manager to approve or increase the limit."

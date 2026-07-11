@@ -13,6 +13,7 @@
   "ci_date",
   "currency",
   "status",
+  "status_correction_reason",
   "section_logistics",
   "incoterm",
   "incoterm_location",
@@ -35,6 +36,10 @@
   "docs_total",
   "cash_difference",
   "customs_fee",
+  "customs_fee_override",
+  "customs_fee_off_hours",
+  "customs_fee_brv_used",
+  "customs_fee_multiplier",
   "section_items",
   "items"
  ],
@@ -90,6 +95,12 @@
    "label": "Status",
    "options": "BOOKED\nSTUFFED\nGATE_IN\nON_BOARD\nIN_TRANSIT\nDISCHARGED\nAVAILABLE\nARRIVED_AT_IRAN\nDELIVERED_TO_UZBEKISTAN\nCancelled",
    "reqd": 1
+  },
+  {
+   "description": "Required to move the status one step backwards (Imports Manager only).",
+   "fieldname": "status_correction_reason",
+   "fieldtype": "Small Text",
+   "label": "Status Correction Reason"
   },
   {
    "fieldname": "section_logistics",
@@ -201,10 +212,39 @@
    "permlevel": 1
   },
   {
+   "description": "Computed BRV clearance fee in UZS (via compute_customs_fee).",
    "fieldname": "customs_fee",
    "fieldtype": "Currency",
    "label": "Customs Fee",
    "options": "currency"
+  },
+  {
+   "description": "Manual override in UZS. When set, this is the effective clearance fee instead of the computed value.",
+   "fieldname": "customs_fee_override",
+   "fieldtype": "Currency",
+   "label": "Customs Fee Override (UZS)"
+  },
+  {
+   "default": "0",
+   "description": "Out-of-hours clearance adds a 25%-of-BRV surcharge.",
+   "fieldname": "customs_fee_off_hours",
+   "fieldtype": "Check",
+   "label": "Off-Hours Clearance"
+  },
+  {
+   "description": "BRV value used for the last computation (audit).",
+   "fieldname": "customs_fee_brv_used",
+   "fieldtype": "Currency",
+   "label": "BRV Used (UZS)",
+   "read_only": 1
+  },
+  {
+   "description": "Tier multiplier used for the last computation (audit).",
+   "fieldname": "customs_fee_multiplier",
+   "fieldtype": "Float",
+   "label": "Customs Fee Multiplier",
+   "precision": "4",
+   "read_only": 1
   },
   {
    "fieldname": "section_items",

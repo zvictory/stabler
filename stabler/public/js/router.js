@@ -145,7 +145,27 @@ import AdminCompliance from "./pages/admin/Compliance.vue";
 import AdminAccessReview from "./pages/admin/AccessReview.vue";
 import AdminPostingWindow from "./pages/admin/PostingWindow.vue";
 import AdminRepostMonitor from "./pages/admin/RepostMonitor.vue";
+import ImportsHome from "./pages/imports/ImportsHome.vue";
 import ImportsDashboard from "./pages/imports/ImportsDashboard.vue";
+import ImportOrders from "./pages/imports/ImportOrders.vue";
+import ImportOrderForm from "./pages/imports/ImportOrderForm.vue";
+import CommercialInvoices from "./pages/imports/CommercialInvoices.vue";
+import CommercialInvoiceForm from "./pages/imports/CommercialInvoiceForm.vue";
+import ImportContainers from "./pages/imports/ImportContainers.vue";
+import ImportTrucks from "./pages/imports/ImportTrucks.vue";
+import GRNChecklists from "./pages/imports/GRNChecklists.vue";
+import GRNChecklistDetail from "./pages/imports/GRNChecklistDetail.vue";
+import TruckReceiptForm from "./pages/imports/TruckReceiptForm.vue";
+import ImportContainerForm from "./pages/imports/ImportContainerForm.vue";
+import ImportTruckForm from "./pages/imports/ImportTruckForm.vue";
+import CustomsDeclarations from "./pages/imports/CustomsDeclarations.vue";
+import CustomsDeclarationForm from "./pages/imports/CustomsDeclarationForm.vue";
+import VetCertificates from "./pages/imports/VetCertificates.vue";
+import ImportExpenses from "./pages/imports/ImportExpenses.vue";
+import FreightBookings from "./pages/imports/FreightBookings.vue";
+import LandedCostReview from "./pages/imports/LandedCostReview.vue";
+import ContainerCostLedger from "./pages/imports/ContainerCostLedger.vue";
+import LandedCostBills from "./pages/imports/LandedCostBills.vue";
 import NotFound from "./pages/NotFound.vue";
 import ServerError from "./pages/ServerError.vue";
 
@@ -156,7 +176,40 @@ const routes = [
 	// un-provisioned users here).
 	{ path: "/welcome", name: "welcome", component: GenesisWizard, meta: { title: t("Welcome"), module: null, "public-after-login": true } },
 	{ path: "/dashboard", name: "dashboard", component: Dashboard, meta: { title: t("Dashboard"), module: "dashboard" } },
-	{ path: "/imports", name: "imports", component: ImportsDashboard, meta: { title: t("Imports"), module: "imports" } },
+	{
+		path: "/imports",
+		component: ImportsHome,
+		meta: { title: t("Imports"), module: "imports" },
+		children: [
+			{ path: "", redirect: "/imports/dashboard" },
+			{ path: "dashboard", name: "imports-dashboard", component: ImportsDashboard, meta: { title: t("Imports"), module: "imports" } },
+			{ path: "orders", name: "imports-orders", component: ImportOrders, meta: { title: t("Import Orders"), module: "imports" } },
+			{ path: "orders/new", name: "imports-order-new", component: ImportOrderForm, meta: { title: t("New Import Order"), module: "imports" } },
+			{ path: "orders/:name", name: "imports-order", component: ImportOrderForm, meta: { title: t("Import Order"), module: "imports" } },
+			{ path: "commercial-invoices", name: "imports-commercial-invoices", component: CommercialInvoices, meta: { title: t("Commercial Invoices"), module: "imports" } },
+			{ path: "commercial-invoices/new", name: "imports-commercial-invoice-new", component: CommercialInvoiceForm, meta: { title: t("New Commercial Invoice"), module: "imports" } },
+			{ path: "commercial-invoices/:name", name: "imports-commercial-invoice", component: CommercialInvoiceForm, meta: { title: t("Commercial Invoice"), module: "imports" } },
+			{ path: "containers", name: "imports-containers", component: ImportContainers, meta: { title: t("Containers"), module: "imports" } },
+			{ path: "containers/new", name: "imports-container-new", component: ImportContainerForm, meta: { title: t("New Container"), module: "imports" } },
+			{ path: "containers/:name", name: "imports-container", component: ImportContainerForm, meta: { title: t("Container"), module: "imports" } },
+			{ path: "containers/:name/ledger", name: "imports-container-ledger", component: ContainerCostLedger, meta: { title: t("Container cost ledger"), module: "imports" } },
+			{ path: "trucks", name: "imports-trucks", component: ImportTrucks, meta: { title: t("Trucks"), module: "imports" } },
+			{ path: "trucks/new", name: "imports-truck-new", component: ImportTruckForm, meta: { title: t("New Truck"), module: "imports" } },
+			{ path: "trucks/:name", name: "imports-truck", component: ImportTruckForm, meta: { title: t("Truck"), module: "imports" } },
+			{ path: "grn-checklists", name: "imports-grn-checklists", component: GRNChecklists, meta: { title: t("GRN Checklists"), module: "imports" } },
+			{ path: "grn-checklists/:name", name: "imports-grn-checklist", component: GRNChecklistDetail, meta: { title: t("GRN Checklist"), module: "imports" } },
+			{ path: "truck-receipts/new", name: "imports-truck-receipt-new", component: TruckReceiptForm, meta: { title: t("Receive Truck"), module: "imports" } },
+			{ path: "truck-receipts/:name", name: "imports-truck-receipt", component: TruckReceiptForm, meta: { title: t("Truck Receipt"), module: "imports" } },
+			{ path: "customs", name: "imports-customs", component: CustomsDeclarations, meta: { title: t("Customs Declarations"), module: "imports" } },
+			{ path: "customs/new", name: "imports-customs-new", component: CustomsDeclarationForm, meta: { title: t("New Customs Declaration"), module: "imports" } },
+			{ path: "customs/:name", name: "imports-customs-declaration", component: CustomsDeclarationForm, meta: { title: t("Customs Declaration"), module: "imports" } },
+			{ path: "vet-certificates", name: "imports-vet-certificates", component: VetCertificates, meta: { title: t("Veterinary Certificates"), module: "imports" } },
+			{ path: "freight", name: "imports-freight", component: FreightBookings, meta: { title: t("Freight Bookings"), module: "imports" } },
+			{ path: "expenses", name: "imports-expenses", component: ImportExpenses, meta: { title: t("Import Expenses"), module: "imports" } },
+			{ path: "landed-cost/:grn", name: "imports-landed-cost", component: LandedCostReview, meta: { title: t("Landed Cost Review"), module: "imports" } },
+			{ path: "bills", name: "imports-bills", component: LandedCostBills, meta: { title: t("Landed Cost Bills"), module: "imports" } },
+		],
+	},
 	{ path: "/reports", name: "reports", component: ReportsHub, meta: { title: t("Reports") } },
 	{ path: "/reports/sales-by-customer", name: "report-sales-by-customer", component: ReportSalesByCustomer, meta: { title: t("Sales by Customer"), module: "sales" } },
 	{ path: "/reports/customer-balance-summary", name: "report-customer-balance-summary", component: ReportCustomerBalanceSummary, meta: { title: t("Customer Balance Summary"), module: "sales" } },
@@ -426,6 +479,7 @@ const LANDING_ORDER = [
 	{ key: "money", path: "/money" },
 	{ key: "sales", path: "/sales" },
 	{ key: "purchasing", path: "/purchasing" },
+	{ key: "imports", path: "/imports" },
 	{ key: "inventory", path: "/inventory" },
 	{ key: "manufacturing", path: "/manufacturing" },
 	{ key: "hr", path: "/hr" },

@@ -1,0 +1,328 @@
+{
+ "actions": [],
+ "autoname": "format:IMP-CNT-{YYYY}-{#####}",
+ "creation": "2026-07-09 12:00:00.000000",
+ "doctype": "DocType",
+ "editable_grid": 1,
+ "engine": "InnoDB",
+ "field_order": [
+  "container_number",
+  "commercial_invoice",
+  "supplier",
+  "company",
+  "currency",
+  "column_break_head",
+  "container_type",
+  "container_size",
+  "bl_type",
+  "seal_number",
+  "gross_weight",
+  "vgm",
+  "section_status",
+  "status",
+  "status_correction_reason",
+  "section_totals",
+  "total_boxes",
+  "total_kg",
+  "column_break_totals",
+  "total_amount",
+  "advance_70_payment_entry",
+  "section_dates",
+  "cut_off",
+  "gate_open",
+  "gate_close",
+  "column_break_dates",
+  "gate_in_date",
+  "customs_clearance_date",
+  "telex_release_date",
+  "section_payment",
+  "allocated_deposit_amount",
+  "balance_due_amount",
+  "column_break_payment",
+  "payment_70_status",
+  "payment_70_date",
+  "payment_70_amount",
+  "section_items",
+  "items",
+  "section_costs",
+  "cost_lines"
+ ],
+ "fields": [
+  {
+   "fieldname": "container_number",
+   "fieldtype": "Data",
+   "in_list_view": 1,
+   "label": "Container Number"
+  },
+  {
+   "fieldname": "commercial_invoice",
+   "fieldtype": "Link",
+   "in_list_view": 1,
+   "label": "Commercial Invoice",
+   "options": "Commercial Invoice"
+  },
+  {
+   "fieldname": "supplier",
+   "fieldtype": "Link",
+   "label": "Supplier",
+   "options": "Supplier"
+  },
+  {
+   "fieldname": "company",
+   "fieldtype": "Link",
+   "label": "Company",
+   "options": "Company",
+   "reqd": 1
+  },
+  {
+   "default": "USD",
+   "fieldname": "currency",
+   "fieldtype": "Link",
+   "label": "Currency",
+   "options": "Currency"
+  },
+  {
+   "fieldname": "column_break_head",
+   "fieldtype": "Column Break"
+  },
+  {
+   "default": "RF",
+   "fieldname": "container_type",
+   "fieldtype": "Select",
+   "label": "Container Type",
+   "options": "DC\nRF\nOT\nFR\nTK"
+  },
+  {
+   "fieldname": "container_size",
+   "fieldtype": "Select",
+   "label": "Container Size",
+   "options": "\n20\n40\n40HC"
+  },
+  {
+   "fieldname": "bl_type",
+   "fieldtype": "Select",
+   "label": "BL Type",
+   "options": "\nORIGINAL_BL\nMASTER_BL\nHOUSE_BL\nTELEX_RELEASE\nEXPRESS_BL"
+  },
+  {
+   "fieldname": "seal_number",
+   "fieldtype": "Data",
+   "label": "Seal Number"
+  },
+  {
+   "fieldname": "gross_weight",
+   "fieldtype": "Float",
+   "label": "Gross Weight"
+  },
+  {
+   "fieldname": "vgm",
+   "fieldtype": "Float",
+   "label": "VGM"
+  },
+  {
+   "fieldname": "section_status",
+   "fieldtype": "Section Break",
+   "label": "Status"
+  },
+  {
+   "default": "BOOKED",
+   "fieldname": "status",
+   "fieldtype": "Select",
+   "in_list_view": 1,
+   "label": "Status",
+   "options": "BOOKED\nSTUFFED\nGATE_IN\nON_BOARD\nIN_TRANSIT\nDISCHARGED\nAVAILABLE\nARRIVED_AT_IRAN\nDELIVERED_TO_UZBEKISTAN\nCancelled",
+   "reqd": 1
+  },
+  {
+   "description": "Required to move the status one step backwards (Imports Manager only).",
+   "fieldname": "status_correction_reason",
+   "fieldtype": "Small Text",
+   "label": "Status Correction Reason"
+  },
+  {
+   "fieldname": "section_totals",
+   "fieldtype": "Section Break",
+   "label": "Totals"
+  },
+  {
+   "fieldname": "total_boxes",
+   "fieldtype": "Int",
+   "label": "Total Boxes"
+  },
+  {
+   "fieldname": "total_kg",
+   "fieldtype": "Float",
+   "label": "Total Kg"
+  },
+  {
+   "fieldname": "column_break_totals",
+   "fieldtype": "Column Break"
+  },
+  {
+   "fieldname": "total_amount",
+   "fieldtype": "Currency",
+   "label": "Total Amount",
+   "options": "currency",
+   "permlevel": 1
+  },
+  {
+   "description": "DRAFT 70% advance Payment Entry auto-created on ARRIVED_AT_IRAN.",
+   "fieldname": "advance_70_payment_entry",
+   "fieldtype": "Link",
+   "label": "Advance 70% Payment Entry",
+   "options": "Payment Entry",
+   "read_only": 1
+  },
+  {
+   "fieldname": "section_dates",
+   "fieldtype": "Section Break",
+   "label": "Dates"
+  },
+  {
+   "fieldname": "cut_off",
+   "fieldtype": "Date",
+   "label": "Cut Off"
+  },
+  {
+   "fieldname": "gate_open",
+   "fieldtype": "Date",
+   "label": "Gate Open"
+  },
+  {
+   "fieldname": "gate_close",
+   "fieldtype": "Date",
+   "label": "Gate Close"
+  },
+  {
+   "fieldname": "column_break_dates",
+   "fieldtype": "Column Break"
+  },
+  {
+   "fieldname": "gate_in_date",
+   "fieldtype": "Date",
+   "label": "Gate In Date"
+  },
+  {
+   "fieldname": "customs_clearance_date",
+   "fieldtype": "Date",
+   "label": "Customs Clearance Date"
+  },
+  {
+   "fieldname": "telex_release_date",
+   "fieldtype": "Date",
+   "label": "Telex Release Date"
+  },
+  {
+   "fieldname": "section_payment",
+   "fieldtype": "Section Break",
+   "label": "Payment"
+  },
+  {
+   "fieldname": "allocated_deposit_amount",
+   "fieldtype": "Currency",
+   "label": "Allocated Deposit Amount",
+   "options": "currency",
+   "permlevel": 1
+  },
+  {
+   "fieldname": "balance_due_amount",
+   "fieldtype": "Currency",
+   "label": "Balance Due Amount",
+   "options": "currency",
+   "permlevel": 1
+  },
+  {
+   "fieldname": "column_break_payment",
+   "fieldtype": "Column Break"
+  },
+  {
+   "default": "Pending",
+   "fieldname": "payment_70_status",
+   "fieldtype": "Select",
+   "label": "70% Payment Status",
+   "options": "Pending\nPaid\nPartial"
+  },
+  {
+   "fieldname": "payment_70_date",
+   "fieldtype": "Date",
+   "label": "70% Payment Date"
+  },
+  {
+   "fieldname": "payment_70_amount",
+   "fieldtype": "Currency",
+   "label": "70% Payment Amount",
+   "options": "currency",
+   "permlevel": 1
+  },
+  {
+   "fieldname": "section_items",
+   "fieldtype": "Section Break",
+   "label": "Items"
+  },
+  {
+   "fieldname": "items",
+   "fieldtype": "Table",
+   "label": "Items",
+   "options": "Import Container Item"
+  },
+  {
+   "fieldname": "section_costs",
+   "fieldtype": "Section Break",
+   "label": "Cost Lines"
+  },
+  {
+   "fieldname": "cost_lines",
+   "fieldtype": "Table",
+   "label": "Cost Lines",
+   "options": "Container Cost Line"
+  }
+ ],
+ "index_web_pages_for_search": 1,
+ "links": [],
+ "modified": "2026-07-09 12:00:00.000000",
+ "modified_by": "Administrator",
+ "module": "Stabler",
+ "name": "Import Container",
+ "owner": "Administrator",
+ "permissions": [
+  {
+   "create": 1,
+   "delete": 1,
+   "email": 1,
+   "export": 1,
+   "print": 1,
+   "read": 1,
+   "report": 1,
+   "role": "System Manager",
+   "share": 1,
+   "write": 1
+  },
+  {
+   "create": 1,
+   "delete": 1,
+   "email": 1,
+   "export": 1,
+   "print": 1,
+   "read": 1,
+   "report": 1,
+   "role": "Imports Manager",
+   "share": 1,
+   "write": 1
+  },
+  {
+   "create": 1,
+   "email": 1,
+   "export": 1,
+   "print": 1,
+   "read": 1,
+   "report": 1,
+   "role": "Imports User",
+   "share": 1,
+   "write": 1
+  }
+ ],
+ "sort_field": "creation",
+ "sort_order": "DESC",
+ "states": [],
+ "track_changes": 1
+}

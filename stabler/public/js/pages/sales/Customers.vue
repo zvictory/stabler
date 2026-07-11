@@ -13,6 +13,8 @@ import EmptyState from "../../components/EmptyState.vue";
 import DateInput from "../../components/DateInput.vue";
 import Select from "../../components/Select.vue";
 import PartyPaymentModal from "../../components/PartyPaymentModal.vue";
+import ParentBulkPaymentDialog from "../../components/ParentBulkPaymentDialog.vue";
+import ParentReallocateDialog from "../../components/ParentReallocateDialog.vue";
 import BalanceChip from "../../components/BalanceChip.vue";
 import PartyAvatar from "../../components/PartyAvatar.vue";
 import ApexChart from "../../components/ApexChart.vue";
@@ -78,6 +80,8 @@ function exportLedgerXlsx() {
 }
 
 const partyPayOpen = ref(false);
+const bulkPayOpen = ref(false);
+const reallocateOpen = ref(false);
 const currentTab = ref("ledger");
 
 const CUSTOMER_TYPES = ["Company", "Individual", "Partnership"];
@@ -294,6 +298,12 @@ async function loadChildrenBalanceMap() {
 
 // Right-panel hierarchy helpers.
 const selectedIsParent = computed(() => !!selectedDetail.value?.is_parent);
+// Legacy parent-PE reallocation is a finance-only tool (also enforced server-side).
+const canReallocate = computed(
+	() =>
+		selectedIsParent.value &&
+		(session.isAdmin || (session.roles || []).includes("Accounts Manager"))
+);
 const headerBalanceValue = computed(() => {
 	if (selectedIsParent.value) return selectedDetail.value?.cumulative_balance_acc ?? 0;
 	return selected.value?.balance_acc ?? selected.value?.balance_base ?? 0;
@@ -1003,11 +1013,19 @@ watch(activeCompany, () => {
 										<i class="ti ti-pencil me-1"></i>{{ t("Edit") }}
 									</button>
 									<button
+										v-if="canReallocate"
 										type="button"
 										class="btn btn-sm btn-outline-secondary"
-										:disabled="selectedIsParent"
-										:title="selectedIsParent ? t('Transactions are recorded on child locations') : ''"
-										@click="partyPayOpen = true"
+										:title="t('Reallocate a legacy advance to child locations')"
+										@click="reallocateOpen = true"
+									>
+										<i class="ti ti-arrows-shuffle me-1"></i>{{ t("Reallocate") }}
+									</button>
+									<button
+										type="button"
+										class="btn btn-sm btn-outline-secondary"
+										:title="selectedIsParent ? t('Split one payment across child locations') : ''"
+										@click="selectedIsParent ? (bulkPayOpen = true) : (partyPayOpen = true)"
 									>
 										<i class="ti ti-cash me-1"></i>{{ t("Payment") }}
 									</button>
@@ -1548,6 +1566,28 @@ watch(activeCompany, () => {
 		:company="activeCompany"
 		@close="partyPayOpen = false"
 		@paid="partyPayOpen = false; loadLedger(selected); loadCustOrders(selected); selectCustomer(selected);"
+	/>
+
+	<!-- Parent bulk payment — split one payment across child locations -->
+	<ParentBulkPaymentDialog
+		v-if="selected && selectedIsParent"
+		:open="bulkPayOpen"
+		:company="activeCompany"
+		:parent="selected.name"
+		:parent-name="selected.customer_name"
+		@close="bulkPayOpen = false"
+		@done="bulkPayOpen = false; loadLedger(selected); loadCustomers(); selectCustomer(selected);"
+	/>
+
+	<!-- Legacy parent-PE reallocation (finance only) -->
+	<ParentReallocateDialog
+		v-if="selected && canReallocate"
+		:open="reallocateOpen"
+		:company="activeCompany"
+		:parent="selected.name"
+		:parent-name="selected.customer_name"
+		@close="reallocateOpen = false"
+		@done="reallocateOpen = false; loadLedger(selected); loadCustomers(); selectCustomer(selected);"
 	/>
 </template>
 

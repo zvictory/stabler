@@ -35,6 +35,7 @@ const items = computed(() => {
 		{ name: "money", path: "/money", label: t("Money"), icon: "ti-coin", show: session.canAccessModule("money") },
 		{ name: "sales", path: "/sales", label: t("Sales"), icon: "ti-trending-up", show: session.canAccessModule("sales") },
 		{ name: "purchasing", path: "/purchasing", label: t("Purchasing"), icon: "ti-shopping-cart", show: session.canAccessModule("purchasing") },
+			{ name: "imports", path: "/imports", label: t("Imports"), icon: "ti-plane", show: session.canAccessModule("imports") },
 		{ name: "inventory", path: "/inventory", label: t("Inventory"), icon: "ti-package", show: session.canAccessModule("inventory") },
 		{ name: "manufacturing", path: "/manufacturing", label: t("Manufacturing"), icon: "ti-tools", show: session.canAccessModule("manufacturing") },
 		{ name: "hr", path: "/hr", label: t("People"), icon: "ti-users-group", show: session.canAccessModule("hr") },
@@ -65,7 +66,7 @@ const sections = computed(() => {
 	const groups = [
 		{ label: "", names: ["dashboard"] },
 		{ label: t("Commerce"), names: ["pos", "sales", "crm", "sfa", "marketing"] },
-		{ label: t("Operations"), names: ["purchasing", "inventory", "manufacturing", "service", "bpm"] },
+		{ label: t("Operations"), names: ["purchasing", "imports", "inventory", "manufacturing", "service", "bpm"] },
 		{ label: t("Finance"), names: ["money", "remittance", "installment"] },
 		{ label: t("Company"), names: ["hr", "reports", "admin"] },
 	];

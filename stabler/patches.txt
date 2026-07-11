@@ -43,4 +43,7 @@ stabler.patches.v39_deal_uzex_fields
 stabler.patches.v40_imports_roles
 stabler.patches.v41_po_imports_fields
 stabler.patches.v42_po_imports_costing_fields
+stabler.patches.v43_cross_border_transport_item
 stabler.patches.v44_customer_hierarchy_fields
+stabler.patches.v45_import_service_item
+stabler.patches.v46_pi_import_refs

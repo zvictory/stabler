@@ -1,0 +1,249 @@
+{
+ "actions": [],
+ "autoname": "format:IMP-TRK-{YYYY}-{#####}",
+ "creation": "2026-07-09 12:00:00.000000",
+ "doctype": "DocType",
+ "editable_grid": 1,
+ "engine": "InnoDB",
+ "field_order": [
+  "truck_number",
+  "commercial_invoice",
+  "trucking_company",
+  "company",
+  "column_break_head",
+  "driver_name",
+  "driver_phone",
+  "destination_warehouse",
+  "section_status",
+  "status",
+  "status_correction_reason",
+  "section_dates",
+  "departure_date",
+  "border_crossing_date",
+  "column_break_dates",
+  "estimated_arrival",
+  "actual_arrival",
+  "section_temps",
+  "target_temp_min",
+  "target_temp_max",
+  "section_cargo",
+  "total_boxes",
+  "total_kg",
+  "section_transport",
+  "transport_cost",
+  "transport_currency",
+  "transport_payment_status",
+  "transport_purchase_invoice"
+ ],
+ "fields": [
+  {
+   "fieldname": "truck_number",
+   "fieldtype": "Data",
+   "in_list_view": 1,
+   "label": "Truck Number"
+  },
+  {
+   "fieldname": "commercial_invoice",
+   "fieldtype": "Link",
+   "in_list_view": 1,
+   "label": "Commercial Invoice",
+   "options": "Commercial Invoice"
+  },
+  {
+   "fieldname": "trucking_company",
+   "fieldtype": "Link",
+   "label": "Trucking Company",
+   "options": "Supplier"
+  },
+  {
+   "fieldname": "company",
+   "fieldtype": "Link",
+   "label": "Company",
+   "options": "Company",
+   "reqd": 1
+  },
+  {
+   "fieldname": "column_break_head",
+   "fieldtype": "Column Break"
+  },
+  {
+   "fieldname": "driver_name",
+   "fieldtype": "Data",
+   "label": "Driver Name"
+  },
+  {
+   "fieldname": "driver_phone",
+   "fieldtype": "Data",
+   "label": "Driver Phone"
+  },
+  {
+   "fieldname": "destination_warehouse",
+   "fieldtype": "Link",
+   "label": "Destination Warehouse",
+   "options": "Warehouse"
+  },
+  {
+   "fieldname": "section_status",
+   "fieldtype": "Section Break",
+   "label": "Status"
+  },
+  {
+   "default": "PENDING",
+   "fieldname": "status",
+   "fieldtype": "Select",
+   "in_list_view": 1,
+   "label": "Status",
+   "options": "PENDING\nDEPARTED_IRAN\nAT_BORDER\nCROSSED_BORDER\nIN_TRANSIT\nARRIVED\nUNLOADING\nGRN_CREATED\nCOMPLETED\nCancelled",
+   "reqd": 1
+  },
+  {
+   "description": "Required to move the status one step backwards (Imports Manager only).",
+   "fieldname": "status_correction_reason",
+   "fieldtype": "Small Text",
+   "label": "Status Correction Reason"
+  },
+  {
+   "fieldname": "section_dates",
+   "fieldtype": "Section Break",
+   "label": "Dates"
+  },
+  {
+   "fieldname": "departure_date",
+   "fieldtype": "Date",
+   "label": "Departure Date"
+  },
+  {
+   "fieldname": "border_crossing_date",
+   "fieldtype": "Date",
+   "label": "Border Crossing Date"
+  },
+  {
+   "fieldname": "column_break_dates",
+   "fieldtype": "Column Break"
+  },
+  {
+   "fieldname": "estimated_arrival",
+   "fieldtype": "Date",
+   "label": "Estimated Arrival"
+  },
+  {
+   "fieldname": "actual_arrival",
+   "fieldtype": "Date",
+   "label": "Actual Arrival"
+  },
+  {
+   "fieldname": "section_temps",
+   "fieldtype": "Section Break",
+   "label": "Temperature"
+  },
+  {
+   "default": "-22",
+   "fieldname": "target_temp_min",
+   "fieldtype": "Float",
+   "label": "Target Temp Min"
+  },
+  {
+   "default": "-18",
+   "fieldname": "target_temp_max",
+   "fieldtype": "Float",
+   "label": "Target Temp Max"
+  },
+  {
+   "fieldname": "section_cargo",
+   "fieldtype": "Section Break",
+   "label": "Cargo"
+  },
+  {
+   "fieldname": "total_boxes",
+   "fieldtype": "Int",
+   "label": "Total Boxes"
+  },
+  {
+   "fieldname": "total_kg",
+   "fieldtype": "Float",
+   "label": "Total Kg"
+  },
+  {
+   "fieldname": "section_transport",
+   "fieldtype": "Section Break",
+   "label": "Transport"
+  },
+  {
+   "fieldname": "transport_cost",
+   "fieldtype": "Currency",
+   "label": "Transport Cost",
+   "options": "transport_currency",
+   "permlevel": 1
+  },
+  {
+   "default": "USD",
+   "fieldname": "transport_currency",
+   "fieldtype": "Link",
+   "label": "Transport Currency",
+   "options": "Currency"
+  },
+  {
+   "default": "Unpaid",
+   "fieldname": "transport_payment_status",
+   "fieldtype": "Select",
+   "label": "Transport Payment Status",
+   "options": "Unpaid\nPartially Paid\nPaid"
+  },
+  {
+   "description": "DRAFT cross-border transport Purchase Invoice auto-created on CROSSED_BORDER.",
+   "fieldname": "transport_purchase_invoice",
+   "fieldtype": "Link",
+   "label": "Transport Purchase Invoice",
+   "options": "Purchase Invoice",
+   "read_only": 1
+  }
+ ],
+ "index_web_pages_for_search": 1,
+ "links": [],
+ "modified": "2026-07-09 12:00:00.000000",
+ "modified_by": "Administrator",
+ "module": "Stabler",
+ "name": "Import Truck",
+ "owner": "Administrator",
+ "permissions": [
+  {
+   "create": 1,
+   "delete": 1,
+   "email": 1,
+   "export": 1,
+   "print": 1,
+   "read": 1,
+   "report": 1,
+   "role": "System Manager",
+   "share": 1,
+   "write": 1
+  },
+  {
+   "create": 1,
+   "delete": 1,
+   "email": 1,
+   "export": 1,
+   "print": 1,
+   "read": 1,
+   "report": 1,
+   "role": "Imports Manager",
+   "share": 1,
+   "write": 1
+  },
+  {
+   "create": 1,
+   "email": 1,
+   "export": 1,
+   "print": 1,
+   "read": 1,
+   "report": 1,
+   "role": "Imports User",
+   "share": 1,
+   "write": 1
+  }
+ ],
+ "sort_field": "creation",
+ "sort_order": "DESC",
+ "states": [],
+ "track_changes": 1
+}

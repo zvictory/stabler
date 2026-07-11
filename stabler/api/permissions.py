@@ -305,6 +305,31 @@ def _user_has_cost_visibility(user: str | None, cost_visible_roles) -> bool:
 	return bool(user_roles & set(cost_visible_roles))
 
 
+# Roles that always see landed-cost / dual-pricing figures (migration plan §6),
+# on top of whatever is configured in Stabler Settings ``cost_visible_roles``.
+_DEFAULT_COST_ROLES = ("Imports Manager", "Director")
+
+
+def cost_visible_roles() -> list[str]:
+    """The role names granted cost visibility (Stabler Settings comma list + defaults).
+
+    Single source of truth shared by the imports SPA API (``stabler.api.imports``)
+    and the SPA boot payload (``stabler.api.organization.boot``) so the frontend's
+    ``cost_visible`` flag and the backend masking gate can never drift apart.
+    """
+    raw = frappe.db.get_single_value("Stabler Settings", "cost_visible_roles") or ""
+    roles = [r.strip() for r in raw.replace("\n", ",").split(",") if r.strip()]
+    for default_role in _DEFAULT_COST_ROLES:
+        if default_role not in roles:
+            roles.append(default_role)
+    return roles
+
+
+def cost_visible_for(user: str | None = None) -> bool:
+    """True when *user* (default: the session user) may see landed-cost figures."""
+    return _user_has_cost_visibility(user or frappe.session.user, cost_visible_roles())
+
+
 def apply_cost_mask(payload, user=None, cost_visible_roles=None):
 	"""Strip cost/margin fields from *payload* for users lacking visibility.
 

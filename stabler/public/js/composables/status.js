@@ -53,6 +53,13 @@ export const STATUS_MAP = {
 		Suspended: "bg-yellow-lt",
 		Left: "bg-red-lt",
 	},
+	// Customer hierarchy job/location status (child customers only).
+	"Customer": {
+		Active: "bg-green-lt",
+		Completed: "bg-blue-lt",
+		"On Hold": "bg-yellow-lt",
+		Cancelled: "bg-secondary-lt",
+	},
 	"Sales Order": {
 		Draft: "bg-secondary-lt",
 		"To Deliver and Bill": "bg-yellow-lt",
@@ -90,6 +97,105 @@ export const STATUS_MAP = {
 		"Credit Note Issued": "bg-purple-lt",
 		"Partly Paid": "bg-blue-lt",
 		Draft: "bg-secondary-lt",
+	},
+	// Imports — Import Order (native PO) derived lifecycle badge (WP8, never stored).
+	"Import Order": {
+		DRAFT: "bg-secondary-lt",
+		CONFIRMED: "bg-blue-lt",
+		ADVANCE_PAID: "bg-purple-lt",
+		SHIPPING: "bg-azure-lt",
+		COMPLETED: "bg-green-lt",
+		CANCELLED: "bg-red-lt",
+	},
+	// Import Order advance-payment badge (advance_paid vs prepayment base).
+	"Import Order Payment": {
+		PAID: "bg-green-lt",
+		PARTIAL: "bg-blue-lt",
+		NOT_PAID: "bg-orange-lt",
+	},
+	// Imports — Commercial Invoice / Import Container share the 9-status logistics pipeline.
+	"Commercial Invoice": {
+		BOOKED: "bg-secondary-lt",
+		STUFFED: "bg-blue-lt",
+		GATE_IN: "bg-azure-lt",
+		ON_BOARD: "bg-blue-lt",
+		IN_TRANSIT: "bg-purple-lt",
+		DISCHARGED: "bg-teal-lt",
+		AVAILABLE: "bg-orange-lt",
+		ARRIVED_AT_IRAN: "bg-yellow-lt",
+		DELIVERED_TO_UZBEKISTAN: "bg-green-lt",
+		Cancelled: "bg-red-lt",
+	},
+	"Import Container": {
+		BOOKED: "bg-secondary-lt",
+		STUFFED: "bg-blue-lt",
+		GATE_IN: "bg-azure-lt",
+		ON_BOARD: "bg-blue-lt",
+		IN_TRANSIT: "bg-purple-lt",
+		DISCHARGED: "bg-teal-lt",
+		AVAILABLE: "bg-orange-lt",
+		ARRIVED_AT_IRAN: "bg-yellow-lt",
+		DELIVERED_TO_UZBEKISTAN: "bg-green-lt",
+		Cancelled: "bg-red-lt",
+	},
+	"Import Truck": {
+		PENDING: "bg-secondary-lt",
+		DEPARTED_IRAN: "bg-blue-lt",
+		AT_BORDER: "bg-azure-lt",
+		CROSSED_BORDER: "bg-purple-lt",
+		IN_TRANSIT: "bg-blue-lt",
+		ARRIVED: "bg-teal-lt",
+		UNLOADING: "bg-orange-lt",
+		GRN_CREATED: "bg-yellow-lt",
+		COMPLETED: "bg-green-lt",
+		Cancelled: "bg-red-lt",
+	},
+	// Imports receiving (WP6a) — GRN Checklist header progress status.
+	"GRN Checklist": {
+		Pending: "bg-secondary-lt",
+		Receiving: "bg-blue-lt",
+		Complete: "bg-green-lt",
+		Discrepancy: "bg-red-lt",
+	},
+	// GRN variance band — colour follows severity (±2/5/10 thresholds).
+	"GRN Variance Category": {
+		NORMAL: "bg-green-lt",
+		MINOR: "bg-yellow-lt",
+		MAJOR: "bg-orange-lt",
+		CRITICAL: "bg-red-lt",
+	},
+	// Per-line GRN item receiving status.
+	"GRN Checklist Item": {
+		Pending: "bg-secondary-lt",
+		Partial: "bg-blue-lt",
+		Complete: "bg-green-lt",
+		Discrepancy: "bg-red-lt",
+	},
+	"Vet Certificate": {
+		Pending: "bg-yellow-lt",
+		Approved: "bg-green-lt",
+		Rejected: "bg-red-lt",
+		Expired: "bg-secondary-lt",
+	},
+	// Imports documents (WP6b).
+	"Customs Declaration": {
+		Draft: "bg-secondary-lt",
+		Submitted: "bg-blue-lt",
+		"Under Review": "bg-yellow-lt",
+		Approved: "bg-green-lt",
+		Rejected: "bg-red-lt",
+	},
+	"Freight Booking": {
+		Pending: "bg-secondary-lt",
+		Booked: "bg-blue-lt",
+		"In Transit": "bg-purple-lt",
+		Delivered: "bg-green-lt",
+		Cancelled: "bg-red-lt",
+	},
+	"Import Expense": {
+		Pending: "bg-yellow-lt",
+		Partial: "bg-blue-lt",
+		Paid: "bg-green-lt",
 	},
 	"Stabler Approval Request": {
 		Pending: "bg-yellow-lt",

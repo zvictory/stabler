@@ -54,7 +54,11 @@
   "backup_keep_daily",
   "backup_keep_weekly",
   "attendance_section",
-  "attendance_edit_lock_days"
+  "attendance_edit_lock_days",
+  "imports_section",
+  "imports_lcv_expense_account",
+  "customers_section",
+  "enable_parent_credit_check"
  ],
  "fields": [
   {
@@ -364,6 +368,30 @@
    "description": "0 = no hard lock (past-day edits still ask for confirmation). N = inline edits to days older than N days back are blocked in the UI and on the server.",
    "default": "0",
    "non_negative": 1
+  },
+  {
+   "fieldname": "imports_section",
+   "fieldtype": "Section Break",
+   "label": "Imports"
+  },
+  {
+   "description": "Expense account (type \"Expenses Included In Valuation\") used for every auto-created imports Landed Cost Voucher line. Required before a GRN Checklist can build an LCV.",
+   "fieldname": "imports_lcv_expense_account",
+   "fieldtype": "Link",
+   "label": "Imports Landed-Cost Expense Account",
+   "options": "Account"
+  },
+  {
+   "fieldname": "customers_section",
+   "fieldtype": "Section Break",
+   "label": "Customers"
+  },
+  {
+   "default": "0",
+   "description": "When on, a Sales Invoice is blocked if it would push the customer's whole parent/child group over the credit limit set on the group's parent (root). Accounts Managers and System Managers can override. Off by default.",
+   "fieldname": "enable_parent_credit_check",
+   "fieldtype": "Check",
+   "label": "Enforce Parent-Chain Credit Limit"
   }
  ],
  "index_web_pages_for_search": 1,

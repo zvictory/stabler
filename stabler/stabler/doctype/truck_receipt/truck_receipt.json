@@ -1,0 +1,228 @@
+{
+ "actions": [],
+ "autoname": "format:TRK-RCV-{YYYY}-{#####}",
+ "creation": "2026-07-10 12:00:00.000000",
+ "doctype": "DocType",
+ "editable_grid": 1,
+ "engine": "InnoDB",
+ "is_submittable": 1,
+ "field_order": [
+  "company",
+  "grn_checklist",
+  "truck",
+  "column_break_head",
+  "arrival_date",
+  "arrival_time",
+  "received_by",
+  "section_cargo",
+  "total_boxes_this_truck",
+  "total_kg_this_truck",
+  "column_break_cargo",
+  "purchase_receipt",
+  "section_qc",
+  "temperature_at_arrival",
+  "temperature_check_passed",
+  "packaging_check_passed",
+  "column_break_qc",
+  "seal_intact",
+  "seal_number",
+  "qc_notes",
+  "section_items",
+  "items",
+  "amended_from"
+ ],
+ "fields": [
+  {
+   "fieldname": "company",
+   "fieldtype": "Link",
+   "in_list_view": 1,
+   "label": "Company",
+   "options": "Company",
+   "reqd": 1
+  },
+  {
+   "fieldname": "grn_checklist",
+   "fieldtype": "Link",
+   "in_list_view": 1,
+   "label": "GRN Checklist",
+   "options": "GRN Checklist",
+   "reqd": 1
+  },
+  {
+   "fieldname": "truck",
+   "fieldtype": "Link",
+   "in_list_view": 1,
+   "label": "Truck",
+   "options": "Import Truck",
+   "reqd": 1
+  },
+  {
+   "fieldname": "column_break_head",
+   "fieldtype": "Column Break"
+  },
+  {
+   "fieldname": "arrival_date",
+   "fieldtype": "Date",
+   "in_list_view": 1,
+   "label": "Arrival Date",
+   "reqd": 1
+  },
+  {
+   "fieldname": "arrival_time",
+   "fieldtype": "Time",
+   "label": "Arrival Time"
+  },
+  {
+   "fieldname": "received_by",
+   "fieldtype": "Data",
+   "label": "Received By"
+  },
+  {
+   "fieldname": "section_cargo",
+   "fieldtype": "Section Break",
+   "label": "Cargo"
+  },
+  {
+   "fieldname": "total_boxes_this_truck",
+   "fieldtype": "Int",
+   "label": "Total Boxes (this truck)",
+   "read_only": 1
+  },
+  {
+   "fieldname": "total_kg_this_truck",
+   "fieldtype": "Float",
+   "label": "Total Kg (this truck)",
+   "read_only": 1
+  },
+  {
+   "fieldname": "column_break_cargo",
+   "fieldtype": "Column Break"
+  },
+  {
+   "description": "Partial Purchase Receipt auto-created and submitted on Truck Receipt submit.",
+   "fieldname": "purchase_receipt",
+   "fieldtype": "Link",
+   "label": "Purchase Receipt",
+   "options": "Purchase Receipt",
+   "read_only": 1
+  },
+  {
+   "fieldname": "section_qc",
+   "fieldtype": "Section Break",
+   "label": "Quality Control"
+  },
+  {
+   "fieldname": "temperature_at_arrival",
+   "fieldtype": "Float",
+   "label": "Temperature at Arrival (C)"
+  },
+  {
+   "default": "1",
+   "fieldname": "temperature_check_passed",
+   "fieldtype": "Check",
+   "label": "Temperature Check Passed"
+  },
+  {
+   "default": "1",
+   "fieldname": "packaging_check_passed",
+   "fieldtype": "Check",
+   "label": "Packaging Check Passed"
+  },
+  {
+   "fieldname": "column_break_qc",
+   "fieldtype": "Column Break"
+  },
+  {
+   "default": "1",
+   "fieldname": "seal_intact",
+   "fieldtype": "Check",
+   "label": "Seal Intact"
+  },
+  {
+   "fieldname": "seal_number",
+   "fieldtype": "Data",
+   "label": "Seal Number"
+  },
+  {
+   "fieldname": "qc_notes",
+   "fieldtype": "Small Text",
+   "label": "QC Notes"
+  },
+  {
+   "fieldname": "section_items",
+   "fieldtype": "Section Break",
+   "label": "Items"
+  },
+  {
+   "fieldname": "items",
+   "fieldtype": "Table",
+   "label": "Items",
+   "options": "Truck Receipt Item"
+  },
+  {
+   "fieldname": "amended_from",
+   "fieldtype": "Link",
+   "label": "Amended From",
+   "no_copy": 1,
+   "options": "Truck Receipt",
+   "print_hide": 1,
+   "read_only": 1
+  }
+ ],
+ "index_web_pages_for_search": 1,
+ "links": [],
+ "modified": "2026-07-10 12:00:00.000000",
+ "modified_by": "Administrator",
+ "module": "Stabler",
+ "name": "Truck Receipt",
+ "owner": "Administrator",
+ "permissions": [
+  {
+   "amend": 1,
+   "cancel": 1,
+   "create": 1,
+   "delete": 1,
+   "email": 1,
+   "export": 1,
+   "print": 1,
+   "read": 1,
+   "report": 1,
+   "role": "System Manager",
+   "share": 1,
+   "submit": 1,
+   "write": 1
+  },
+  {
+   "amend": 1,
+   "cancel": 1,
+   "create": 1,
+   "delete": 1,
+   "email": 1,
+   "export": 1,
+   "print": 1,
+   "read": 1,
+   "report": 1,
+   "role": "Imports Manager",
+   "share": 1,
+   "submit": 1,
+   "write": 1
+  },
+  {
+   "amend": 1,
+   "create": 1,
+   "email": 1,
+   "export": 1,
+   "print": 1,
+   "read": 1,
+   "report": 1,
+   "role": "Imports User",
+   "share": 1,
+   "submit": 1,
+   "write": 1
+  }
+ ],
+ "sort_field": "creation",
+ "sort_order": "DESC",
+ "states": [],
+ "track_changes": 1
+}

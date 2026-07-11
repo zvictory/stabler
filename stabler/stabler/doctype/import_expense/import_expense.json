@@ -1,0 +1,205 @@
+{
+ "actions": [],
+ "autoname": "format:IMP-EXP-{YYYY}-{#####}",
+ "creation": "2026-07-11 12:00:00.000000",
+ "doctype": "DocType",
+ "editable_grid": 1,
+ "engine": "InnoDB",
+ "field_order": [
+  "commercial_invoice",
+  "company",
+  "container",
+  "truck",
+  "column_break_head",
+  "category",
+  "expense_date",
+  "supplier",
+  "invoice_reference",
+  "section_detail",
+  "description",
+  "section_amount",
+  "amount",
+  "currency",
+  "column_break_amount",
+  "bank_payment",
+  "cash_payment",
+  "status",
+  "section_link",
+  "purchase_invoice"
+ ],
+ "fields": [
+  {
+   "fieldname": "commercial_invoice",
+   "fieldtype": "Link",
+   "in_list_view": 1,
+   "label": "Commercial Invoice",
+   "options": "Commercial Invoice",
+   "reqd": 1
+  },
+  {
+   "fieldname": "company",
+   "fieldtype": "Link",
+   "label": "Company",
+   "options": "Company",
+   "reqd": 1
+  },
+  {
+   "description": "Optional plain link (not a Dynamic Link — critique m1).",
+   "fieldname": "container",
+   "fieldtype": "Link",
+   "label": "Container",
+   "options": "Import Container"
+  },
+  {
+   "description": "Optional plain link. Transport expenses linked here are billed by the truck border-crossing hook (tier 1).",
+   "fieldname": "truck",
+   "fieldtype": "Link",
+   "label": "Truck",
+   "options": "Import Truck"
+  },
+  {
+   "fieldname": "column_break_head",
+   "fieldtype": "Column Break"
+  },
+  {
+   "fieldname": "category",
+   "fieldtype": "Select",
+   "in_list_view": 1,
+   "label": "Category",
+   "options": "Border Crossing\nTransport\nHandling\nStorage\nInsurance\nDocumentation\nCustoms\nOther"
+  },
+  {
+   "fieldname": "expense_date",
+   "fieldtype": "Date",
+   "label": "Expense Date"
+  },
+  {
+   "fieldname": "supplier",
+   "fieldtype": "Link",
+   "label": "Supplier",
+   "options": "Supplier"
+  },
+  {
+   "fieldname": "invoice_reference",
+   "fieldtype": "Data",
+   "label": "Invoice Reference"
+  },
+  {
+   "fieldname": "section_detail",
+   "fieldtype": "Section Break"
+  },
+  {
+   "fieldname": "description",
+   "fieldtype": "Small Text",
+   "label": "Description"
+  },
+  {
+   "fieldname": "section_amount",
+   "fieldtype": "Section Break",
+   "label": "Amount & Payment"
+  },
+  {
+   "fieldname": "amount",
+   "fieldtype": "Currency",
+   "in_list_view": 1,
+   "label": "Amount",
+   "options": "currency"
+  },
+  {
+   "default": "USD",
+   "fieldname": "currency",
+   "fieldtype": "Link",
+   "label": "Currency",
+   "options": "Currency"
+  },
+  {
+   "fieldname": "column_break_amount",
+   "fieldtype": "Column Break"
+  },
+  {
+   "description": "Amount paid via bank transfer (Счёт).",
+   "fieldname": "bank_payment",
+   "fieldtype": "Currency",
+   "label": "Bank Payment",
+   "options": "currency",
+   "permlevel": 1
+  },
+  {
+   "description": "Amount paid in cash (Наличка).",
+   "fieldname": "cash_payment",
+   "fieldtype": "Currency",
+   "label": "Cash Payment",
+   "options": "currency",
+   "permlevel": 1
+  },
+  {
+   "default": "Pending",
+   "fieldname": "status",
+   "fieldtype": "Select",
+   "in_list_view": 1,
+   "label": "Status",
+   "options": "Pending\nPartial\nPaid",
+   "read_only": 1
+  },
+  {
+   "fieldname": "section_link",
+   "fieldtype": "Section Break"
+  },
+  {
+   "description": "DRAFT service Purchase Invoice auto-created when a supplier and amount are set (non-transport categories).",
+   "fieldname": "purchase_invoice",
+   "fieldtype": "Link",
+   "label": "Purchase Invoice",
+   "options": "Purchase Invoice",
+   "read_only": 1
+  }
+ ],
+ "index_web_pages_for_search": 1,
+ "links": [],
+ "modified": "2026-07-11 12:00:00.000000",
+ "modified_by": "Administrator",
+ "module": "Stabler",
+ "name": "Import Expense",
+ "owner": "Administrator",
+ "permissions": [
+  {
+   "create": 1,
+   "delete": 1,
+   "email": 1,
+   "export": 1,
+   "print": 1,
+   "read": 1,
+   "report": 1,
+   "role": "System Manager",
+   "share": 1,
+   "write": 1
+  },
+  {
+   "create": 1,
+   "delete": 1,
+   "email": 1,
+   "export": 1,
+   "print": 1,
+   "read": 1,
+   "report": 1,
+   "role": "Imports Manager",
+   "share": 1,
+   "write": 1
+  },
+  {
+   "create": 1,
+   "email": 1,
+   "export": 1,
+   "print": 1,
+   "read": 1,
+   "report": 1,
+   "role": "Imports User",
+   "share": 1,
+   "write": 1
+  }
+ ],
+ "sort_field": "creation",
+ "sort_order": "DESC",
+ "states": [],
+ "track_changes": 1
+}

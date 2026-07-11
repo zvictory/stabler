@@ -12,6 +12,8 @@ further transition.
 import frappe
 from frappe.model.document import Document
 
+from stabler.stabler.imports_module.status_pipeline import assert_transition
+
 _ALLOWED_TRANSITIONS = {
 	"BOOKED": {"STUFFED", "Cancelled"},
 	"STUFFED": {"GATE_IN", "Cancelled"},
@@ -28,20 +30,12 @@ _ALLOWED_TRANSITIONS = {
 
 class CommercialInvoice(Document):
 	def validate(self) -> None:
-		if frappe.flags.in_msaerp_migration:
-			return
-		from stabler.stabler.doctype.stabler_settings.stabler_settings import module_map_for
-
-		if not module_map_for(self.company).get("imports"):
-			return
+		# The migration-flag and per-company imports-module bypasses now live in
+		# the shared assert_transition helper (imports_module/status_pipeline.py),
+		# which also adds the privileged single-step backward-correction path.
 		if self.is_new():
 			return
 		previous_status = frappe.db.get_value("Commercial Invoice", self.name, "status")
-		if not previous_status or previous_status == self.status:
-			return
-		if self.status not in _ALLOWED_TRANSITIONS.get(previous_status, set()):
-			frappe.throw(
-				frappe._(
-					"Cannot change Commercial Invoice status from {0} to {1}."
-				).format(previous_status, self.status)
-			)
+		assert_transition(
+			"Commercial Invoice", previous_status, self.status, _ALLOWED_TRANSITIONS, self
+		)

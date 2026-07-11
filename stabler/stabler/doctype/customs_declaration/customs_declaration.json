@@ -1,0 +1,224 @@
+{
+ "actions": [],
+ "autoname": "format:GTD-{YYYY}-{#####}",
+ "creation": "2026-07-11 12:00:00.000000",
+ "doctype": "DocType",
+ "editable_grid": 1,
+ "engine": "InnoDB",
+ "field_order": [
+  "gtd_number",
+  "commercial_invoice",
+  "container",
+  "company",
+  "column_break_head",
+  "declaration_date",
+  "customs_office",
+  "cleared_date",
+  "section_valuation",
+  "customs_value_usd",
+  "customs_value_uzs",
+  "column_break_valuation",
+  "duty_amount",
+  "vat_amount",
+  "excise_amount",
+  "total_duties",
+  "section_status",
+  "status",
+  "status_correction_reason",
+  "column_break_status",
+  "document",
+  "notes",
+  "section_lines",
+  "lines"
+ ],
+ "fields": [
+  {
+   "description": "ГТД number. Format: XXXXX/DDMMYY/NNNNNNN",
+   "fieldname": "gtd_number",
+   "fieldtype": "Data",
+   "in_list_view": 1,
+   "label": "GTD Number",
+   "reqd": 1,
+   "unique": 1
+  },
+  {
+   "fieldname": "commercial_invoice",
+   "fieldtype": "Link",
+   "in_list_view": 1,
+   "label": "Commercial Invoice",
+   "options": "Commercial Invoice",
+   "reqd": 1
+  },
+  {
+   "description": "Optional: a specific container for per-container customs filings.",
+   "fieldname": "container",
+   "fieldtype": "Link",
+   "label": "Container",
+   "options": "Import Container"
+  },
+  {
+   "fieldname": "company",
+   "fieldtype": "Link",
+   "label": "Company",
+   "options": "Company",
+   "reqd": 1
+  },
+  {
+   "fieldname": "column_break_head",
+   "fieldtype": "Column Break"
+  },
+  {
+   "fieldname": "declaration_date",
+   "fieldtype": "Date",
+   "label": "Declaration Date"
+  },
+  {
+   "fieldname": "customs_office",
+   "fieldtype": "Data",
+   "label": "Customs Office"
+  },
+  {
+   "fieldname": "cleared_date",
+   "fieldtype": "Date",
+   "label": "Cleared Date"
+  },
+  {
+   "fieldname": "section_valuation",
+   "fieldtype": "Section Break",
+   "label": "Valuation"
+  },
+  {
+   "fieldname": "customs_value_usd",
+   "fieldtype": "Currency",
+   "label": "Customs Value (USD)",
+   "options": "USD"
+  },
+  {
+   "fieldname": "customs_value_uzs",
+   "fieldtype": "Currency",
+   "label": "Customs Value (UZS)"
+  },
+  {
+   "fieldname": "column_break_valuation",
+   "fieldtype": "Column Break"
+  },
+  {
+   "description": "Import duty in UZS. Feeds the Landed Cost Voucher (supersedes any container cost-line Uzbekistan duty).",
+   "fieldname": "duty_amount",
+   "fieldtype": "Currency",
+   "label": "Duty Amount (UZS)"
+  },
+  {
+   "description": "Import VAT in UZS — a recoverable input credit, never capitalized into landed cost.",
+   "fieldname": "vat_amount",
+   "fieldtype": "Currency",
+   "label": "VAT Amount (UZS)"
+  },
+  {
+   "description": "Excise in UZS (typically 0 for meat). Feeds the Landed Cost Voucher.",
+   "fieldname": "excise_amount",
+   "fieldtype": "Currency",
+   "label": "Excise Amount (UZS)"
+  },
+  {
+   "description": "Duty + VAT + Excise (computed).",
+   "fieldname": "total_duties",
+   "fieldtype": "Currency",
+   "label": "Total Duties (UZS)",
+   "read_only": 1
+  },
+  {
+   "fieldname": "section_status",
+   "fieldtype": "Section Break",
+   "label": "Status"
+  },
+  {
+   "default": "Draft",
+   "fieldname": "status",
+   "fieldtype": "Select",
+   "in_list_view": 1,
+   "label": "Status",
+   "options": "Draft\nSubmitted\nUnder Review\nApproved\nRejected",
+   "reqd": 1
+  },
+  {
+   "description": "Required to move the status one step backwards (Imports Manager only).",
+   "fieldname": "status_correction_reason",
+   "fieldtype": "Small Text",
+   "label": "Status Correction Reason"
+  },
+  {
+   "fieldname": "column_break_status",
+   "fieldtype": "Column Break"
+  },
+  {
+   "fieldname": "document",
+   "fieldtype": "Attach",
+   "label": "Declaration Document"
+  },
+  {
+   "fieldname": "notes",
+   "fieldtype": "Small Text",
+   "label": "Notes"
+  },
+  {
+   "fieldname": "section_lines",
+   "fieldtype": "Section Break",
+   "label": "Lines"
+  },
+  {
+   "fieldname": "lines",
+   "fieldtype": "Table",
+   "label": "Lines",
+   "options": "Customs Declaration Line"
+  }
+ ],
+ "index_web_pages_for_search": 1,
+ "links": [],
+ "modified": "2026-07-11 12:00:00.000000",
+ "modified_by": "Administrator",
+ "module": "Stabler",
+ "name": "Customs Declaration",
+ "owner": "Administrator",
+ "permissions": [
+  {
+   "create": 1,
+   "delete": 1,
+   "email": 1,
+   "export": 1,
+   "print": 1,
+   "read": 1,
+   "report": 1,
+   "role": "System Manager",
+   "share": 1,
+   "write": 1
+  },
+  {
+   "create": 1,
+   "delete": 1,
+   "email": 1,
+   "export": 1,
+   "print": 1,
+   "read": 1,
+   "report": 1,
+   "role": "Imports Manager",
+   "share": 1,
+   "write": 1
+  },
+  {
+   "create": 1,
+   "email": 1,
+   "export": 1,
+   "print": 1,
+   "read": 1,
+   "report": 1,
+   "role": "Imports User",
+   "share": 1,
+   "write": 1
+  }
+ ],
+ "sort_field": "creation",
+ "sort_order": "DESC",
+ "states": [],
+ "track_changes": 1
+}

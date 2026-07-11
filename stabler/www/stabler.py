@@ -50,8 +50,24 @@ def get_context(context):
 	context.app_path = frappe.local.request.path or "/stabler"
 	context.translations = _load_translations(context.user_language)
 	context.asset_version = _asset_version()
+	context.cost_visible = _cost_visible_for_shell(user)
 
 	return context
+
+
+def _cost_visible_for_shell(user: str) -> bool:
+	"""Imports landed-cost visibility flag for window.__STABLER__ (never fatal).
+
+	Seeds the SPA session store before the async boot() round-trip so the create
+	forms show/hide cost inputs without a flash; the backend re-checks on write."""
+	try:
+		if not user or user == "Guest":
+			return False
+		from stabler.api.permissions import cost_visible_for
+
+		return bool(cost_visible_for(user))
+	except Exception:
+		return False
 
 
 def _asset_version() -> str:

@@ -189,7 +189,21 @@ def boot():
 		"allowed_companies": _user_allowed_companies(user),
 		"modules": module_map_for(default_company) if default_company else {},
 		"allowed_modules": allowed_modules,
+		# Imports landed-cost / dual-pricing visibility (WP6b, K3). Shared with the
+		# masking gate in stabler.api.imports via permissions.cost_visible_for so the
+		# SPA never shows a cost input the backend would then reject.
+		"cost_visible": _cost_visible_for_boot(user),
 	}
+
+
+def _cost_visible_for_boot(user: str) -> bool:
+	"""Best-effort cost-visibility flag for the boot payload (never fatal)."""
+	try:
+		from stabler.api.permissions import cost_visible_for
+
+		return bool(cost_visible_for(user))
+	except Exception:
+		return False
 
 
 @frappe.whitelist()

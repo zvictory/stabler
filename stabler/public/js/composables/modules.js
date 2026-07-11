@@ -18,6 +18,7 @@ export const MODULE_CATALOG = [
 	{ key: "money", label: t("Money") },
 	{ key: "sales", label: t("Sales") },
 	{ key: "purchasing", label: t("Purchasing") },
+	{ key: "imports", label: t("Imports") },
 	{ key: "inventory", label: t("Inventory") },
 	{ key: "manufacturing", label: t("Manufacturing") },
 	{ key: "hr", label: t("HR") },

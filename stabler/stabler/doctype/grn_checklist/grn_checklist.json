@@ -1,0 +1,316 @@
+{
+ "actions": [],
+ "autoname": "format:GRN-{YYYY}-{#####}",
+ "creation": "2026-07-10 12:00:00.000000",
+ "doctype": "DocType",
+ "editable_grid": 1,
+ "engine": "InnoDB",
+ "is_submittable": 1,
+ "field_order": [
+  "company",
+  "commercial_invoice",
+  "supplier",
+  "warehouse",
+  "column_break_head",
+  "expected_arrival_date",
+  "first_receipt_date",
+  "completion_date",
+  "receipt_status",
+  "section_totals",
+  "expected_total_boxes",
+  "expected_total_kg",
+  "received_total_boxes",
+  "received_total_kg",
+  "column_break_totals",
+  "pending_total_boxes",
+  "pending_total_kg",
+  "completion_percentage",
+  "trucks_received_count",
+  "section_variance",
+  "variance_boxes",
+  "variance_kg",
+  "variance_percentage",
+  "column_break_variance",
+  "variance_category",
+  "claim_required",
+  "claim_reference",
+  "section_items",
+  "grn_items",
+  "section_compliance",
+  "vet_cert_override",
+  "notes",
+  "section_lcv",
+  "landed_cost_vouchers",
+  "amended_from"
+ ],
+ "fields": [
+  {
+   "fieldname": "company",
+   "fieldtype": "Link",
+   "in_list_view": 1,
+   "label": "Company",
+   "options": "Company",
+   "reqd": 1
+  },
+  {
+   "description": "One GRN Checklist per Commercial Invoice.",
+   "fieldname": "commercial_invoice",
+   "fieldtype": "Link",
+   "in_list_view": 1,
+   "label": "Commercial Invoice",
+   "options": "Commercial Invoice",
+   "reqd": 1,
+   "unique": 1
+  },
+  {
+   "fieldname": "supplier",
+   "fieldtype": "Link",
+   "label": "Supplier",
+   "options": "Supplier"
+  },
+  {
+   "fieldname": "warehouse",
+   "fieldtype": "Link",
+   "label": "Warehouse",
+   "options": "Warehouse"
+  },
+  {
+   "fieldname": "column_break_head",
+   "fieldtype": "Column Break"
+  },
+  {
+   "fieldname": "expected_arrival_date",
+   "fieldtype": "Date",
+   "label": "Expected Arrival Date"
+  },
+  {
+   "fieldname": "first_receipt_date",
+   "fieldtype": "Date",
+   "label": "First Receipt Date",
+   "read_only": 1
+  },
+  {
+   "fieldname": "completion_date",
+   "fieldtype": "Date",
+   "label": "Completion Date"
+  },
+  {
+   "default": "Pending",
+   "fieldname": "receipt_status",
+   "fieldtype": "Select",
+   "in_list_view": 1,
+   "label": "Receipt Status",
+   "options": "Pending\nReceiving\nComplete\nDiscrepancy",
+   "read_only": 1
+  },
+  {
+   "fieldname": "section_totals",
+   "fieldtype": "Section Break",
+   "label": "Totals"
+  },
+  {
+   "fieldname": "expected_total_boxes",
+   "fieldtype": "Int",
+   "label": "Expected Total Boxes",
+   "read_only": 1
+  },
+  {
+   "fieldname": "expected_total_kg",
+   "fieldtype": "Float",
+   "label": "Expected Total Kg",
+   "read_only": 1
+  },
+  {
+   "fieldname": "received_total_boxes",
+   "fieldtype": "Int",
+   "label": "Received Total Boxes",
+   "read_only": 1
+  },
+  {
+   "fieldname": "received_total_kg",
+   "fieldtype": "Float",
+   "label": "Received Total Kg",
+   "read_only": 1
+  },
+  {
+   "fieldname": "column_break_totals",
+   "fieldtype": "Column Break"
+  },
+  {
+   "fieldname": "pending_total_boxes",
+   "fieldtype": "Int",
+   "label": "Pending Total Boxes",
+   "read_only": 1
+  },
+  {
+   "fieldname": "pending_total_kg",
+   "fieldtype": "Float",
+   "label": "Pending Total Kg",
+   "read_only": 1
+  },
+  {
+   "fieldname": "completion_percentage",
+   "fieldtype": "Percent",
+   "label": "Completion %",
+   "read_only": 1
+  },
+  {
+   "fieldname": "trucks_received_count",
+   "fieldtype": "Int",
+   "label": "Trucks Received",
+   "read_only": 1
+  },
+  {
+   "fieldname": "section_variance",
+   "fieldtype": "Section Break",
+   "label": "Variance"
+  },
+  {
+   "fieldname": "variance_boxes",
+   "fieldtype": "Int",
+   "label": "Variance Boxes",
+   "read_only": 1
+  },
+  {
+   "fieldname": "variance_kg",
+   "fieldtype": "Float",
+   "label": "Variance Kg",
+   "read_only": 1
+  },
+  {
+   "fieldname": "variance_percentage",
+   "fieldtype": "Percent",
+   "label": "Variance %",
+   "read_only": 1
+  },
+  {
+   "fieldname": "column_break_variance",
+   "fieldtype": "Column Break"
+  },
+  {
+   "default": "NORMAL",
+   "fieldname": "variance_category",
+   "fieldtype": "Select",
+   "in_list_view": 1,
+   "label": "Variance Category",
+   "options": "NORMAL\nMINOR\nMAJOR\nCRITICAL",
+   "read_only": 1
+  },
+  {
+   "default": "0",
+   "fieldname": "claim_required",
+   "fieldtype": "Check",
+   "label": "Claim Required"
+  },
+  {
+   "depends_on": "claim_required",
+   "fieldname": "claim_reference",
+   "fieldtype": "Data",
+   "label": "Claim Reference"
+  },
+  {
+   "fieldname": "section_items",
+   "fieldtype": "Section Break",
+   "label": "Items"
+  },
+  {
+   "fieldname": "grn_items",
+   "fieldtype": "Table",
+   "label": "GRN Items",
+   "options": "GRN Checklist Item"
+  },
+  {
+   "fieldname": "section_compliance",
+   "fieldtype": "Section Break",
+   "label": "Compliance & Notes"
+  },
+  {
+   "default": "0",
+   "description": "Imports Manager only: bypass the veterinary certificate requirement at submit (verified out-of-band).",
+   "fieldname": "vet_cert_override",
+   "fieldtype": "Check",
+   "label": "Vet Certificate Override"
+  },
+  {
+   "fieldname": "notes",
+   "fieldtype": "Text",
+   "label": "Notes"
+  },
+  {
+   "fieldname": "section_lcv",
+   "fieldtype": "Section Break",
+   "label": "Landed Cost Vouchers"
+  },
+  {
+   "allow_on_submit": 1,
+   "description": "Auto-appended DRAFT Landed Cost Vouchers (initial on submit, plus any additional for late costs).",
+   "fieldname": "landed_cost_vouchers",
+   "fieldtype": "Table",
+   "label": "Landed Cost Vouchers",
+   "options": "GRN LCV Ref"
+  },
+  {
+   "fieldname": "amended_from",
+   "fieldtype": "Link",
+   "label": "Amended From",
+   "no_copy": 1,
+   "options": "GRN Checklist",
+   "print_hide": 1,
+   "read_only": 1
+  }
+ ],
+ "index_web_pages_for_search": 1,
+ "links": [],
+ "modified": "2026-07-10 12:00:00.000000",
+ "modified_by": "Administrator",
+ "module": "Stabler",
+ "name": "GRN Checklist",
+ "owner": "Administrator",
+ "permissions": [
+  {
+   "amend": 1,
+   "cancel": 1,
+   "create": 1,
+   "delete": 1,
+   "email": 1,
+   "export": 1,
+   "print": 1,
+   "read": 1,
+   "report": 1,
+   "role": "System Manager",
+   "share": 1,
+   "submit": 1,
+   "write": 1
+  },
+  {
+   "amend": 1,
+   "cancel": 1,
+   "create": 1,
+   "delete": 1,
+   "email": 1,
+   "export": 1,
+   "print": 1,
+   "read": 1,
+   "report": 1,
+   "role": "Imports Manager",
+   "share": 1,
+   "submit": 1,
+   "write": 1
+  },
+  {
+   "create": 1,
+   "email": 1,
+   "export": 1,
+   "print": 1,
+   "read": 1,
+   "report": 1,
+   "role": "Imports User",
+   "share": 1,
+   "write": 1
+  }
+ ],
+ "sort_field": "creation",
+ "sort_order": "DESC",
+ "states": [],
+ "track_changes": 1
+}

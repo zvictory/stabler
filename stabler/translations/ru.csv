@@ -18,15 +18,37 @@ source,target
 1C:Enterprise sync log appears here.,Здесь отображается журнал синхронизации 1C:Предприятие.
 31–60,31–60
 61–90,61–90
+70% PE,ПП 70%
+70% Payment Amount,Сумма оплаты 70%
+70% Payment Date,Дата оплаты 70%
+70% Payment Status,Статус оплаты 70%
+70% balance due 7 days before Iran arrival,70% оплаты за 7 дней до прибытия в Иран
+70% payment,Платёж 70%
+70% payment date,Дата 70% оплаты
+70% payment status,Статус 70% оплаты
 90+,90+
+A GRN checklist is created from a commercial invoice once cargo is ready to receive.,"Лист приёмки создаётся из коммерческого инвойса, когда груз готов к приёмке."
 A Payroll Attendance Summary for employee {0} and period {1} already exists: {2},
+A category is required.,Требуется категория.
+A certificate number is required.,Требуется номер сертификата.
+A cleared customs declaration is active: its duty and excise replace any Uzbekistan Customs Duty cost line in the next voucher (VAT is never capitalized).,Действует оформленная таможенная декларация: её пошлина и акциз заменяют строку «Таможенная пошлина Узбекистана» в следующем ваучере (НДС не капитализируется).
 A company with this name already exists.,Компания с таким названием уже существует.
+A customer cannot be its own parent.,Клиент не может быть родителем самому себе.
 A few quick questions and you're ready to sell.,Пара быстрых вопросов — и можно продавать.
 A mapping for employee {0} with device user ID {1} already exists ({2}).,
 A new version is available.,Доступна новая версия.
 A password reset email will be sent. The account is disabled until the user sets a password.,"На адрес будет отправлено письмо с инструкциями по восстановлению пароля. Учётная запись отключена до тех пор, пока пользователь не установит пароль."
+A rejection reason is required.,Требуется причина отклонения.
+A status correction reason is required to move {0} back from {1} to {2}.,"Чтобы вернуть {0} с {1} на {2}, укажите причину корректировки статуса."
 A status with that name already exists.,
+A submitted truck receipt can no longer be edited.,Проведённую приёмку грузовика больше нельзя редактировать.
+A supplier is required.,Требуется поставщик.
+A truck number is required.,Требуется номер грузовика.
+A valid commercial invoice for this company is required.,Требуется действительный коммерческий инвойс для этой компании.
 A valid email is required,Требуется действительный адрес электронной почты
+A valid supplier is required.,Требуется действительный поставщик.
+A valid truck for this company is required.,Требуется действительный грузовик для этой компании.
+A valid veterinary certificate is required to complete this GRN.,Для завершения этого GRN требуется действующий ветеринарный сертификат.
 "A ≤ {0}%, B ≤ {1}%, C rest — by revenue.","A ≤ {0}%, B ≤ {1}%, C прочее — по выручке."
 "A ≤ {0}%, B ≤ {1}%, C rest — by spend.","A ≤ {0}%, B ≤ {1}%, C прочее — по расходам."
 "A ≤ {0}%, B ≤ {1}%, C rest — by {2}. Submitted; returns netted.","A ≤ {0}%, B ≤ {1}%, C прочее — по {2}. Проведённые; возвраты нетто."
@@ -37,6 +59,12 @@ AR Aging,Анализ дебиторской задолженности
 ARCA,ARCA
 ARCA Payment Events,Платежи ARCA
 ARCA payment webhook events appear here.,Здесь отображаются события вебхуков платежей ARCA.
+ARRIVED,Прибыл
+ARRIVED_AT_IRAN,Прибыл в Иран
+ATA,ATA
+ATD,ATD
+AT_BORDER,На границе
+AVAILABLE,Доступен
 Abbr,Сокр.
 Absent,Отсутствует
 Accept Return,
@@ -74,11 +102,14 @@ Active tenders,Активные тендеры
 Active to,
 Activities,Действия
 Actual,Фактический
+Actual Arrival,Фактическое прибытие
+Actual arrival,Факт. прибытие
 Actual landed,Факт. с доставкой
 Add,Добавить
 Add Deal,
 Add Decision,Добавить решение
 Add Lane,Добавить полосу
+Add PO link,Добавить связь с заказом
 Add Row,
 Add Task,Добавить задачу
 Add a column to start organising your deals.,Добавьте колонку
@@ -91,14 +122,17 @@ Add another item,Добавить ещё товар
 Add at least one item line.,Добавьте хотя бы одну строку товара.
 Add at least one item with a positive quantity.,Добавьте хотя бы одну позицию с положительным количеством.
 Add at least one raw material line.,Добавьте хотя бы одну строку сырья.
+Add certificate,Добавить сертификат
 Add child warehouse,Добавить подсклад
 Add column,Добавить колонку
 Add cost item,Добавить статью расходов
+Add cost line,Добавить статью затрат
 Add customer,Добавить клиента
 Add deal,Добавить сделку
 Add holiday,Добавить праздник
 Add item,Добавить товар
 Add item to stock,Добавить товар на склад
+Add landed cost voucher,Добавить ваучер себестоимости
 Add line,Добавить строку
 Add outlet,Добавить торговую точку
 Add punch,
@@ -107,6 +141,7 @@ Add stage,Добавить этап
 Add supplier,Добавить поставщика
 Add to Google Calendar,Добавить в Google Календарь
 Add to stock,Добавить на склад
+Add voucher,Добавить ваучер
 Add warehouse,Добавить склад
 Add your first customer to start sending quotes and invoices.,"Добавьте первого клиента, чтобы начать отправку предложений и счётов-фактур."
 Add your first employee to start tracking attendance, leave and payroll.
@@ -123,6 +158,7 @@ Adjustment,Корректировка
 Admin,Администратор
 Administer users & roles,Управление пользователями и ролями
 Advance,Аванс
+Advance 70% Payment Entry,Платёж по авансу 70%
 Advance amount,
 Advance amount must be greater than zero.,
 Advance deduction,Удержание аванса
@@ -136,6 +172,7 @@ Advances,Авансы
 Advances outstanding,
 Against,По
 Aging,Срок давности
+Agreed total,Согласованная сумма
 Alerts,
 All,Все
 All Reports,Все отчёты
@@ -169,11 +206,13 @@ All territories,Все территории
 All three accounts are required.,Все три счёта обязательны.
 All time,
 All types,Все типы
+All variance,Все отклонения
 All vouchers,
 All warehouses,Все склады
 All {0} employee summaries are clean — no unresolved exceptions.,
 Allocate against,Распределить по
 Allocated,Распределено
+Allocated Deposit Amount,Распределённый аванс (депозит)
 Allocated against,Распределено по
 Allocated amount must be greater than zero.,
 Allocation exceeds the unreconciled amount on this transaction.,
@@ -195,6 +234,7 @@ Amend transfer,
 Amending,Исправление
 Amendment created.,
 Amount,Сумма
+Amount & Payment,Сумма и оплата
 Amount (UZS),
 Amount exceeds outstanding ({amount}).,Сумма превышает задолженность ({amount}).
 Amount exceeds the available balance.,Сумма превышает доступный баланс.
@@ -207,6 +247,7 @@ Amount sent,Сумма отправлена
 Amount to transfer,Сумма перевода
 Amounts in,Суммы в
 Amounts in company currency,Суммы в валюте компании
+An expense category is required.,Требуется категория расхода.
 Analytics,Аналитика
 Anchor DAY hours (h),
 Anchor LIGHT hours (h),
@@ -239,6 +280,9 @@ Approx. at current valuation rate,"Прибл., по текущей себест
 Are you sure you want to cancel this document? This action is irreversible.,
 Are you sure you want to delete this draft? This cannot be undone.,
 Are you sure you want to submit this document? This will finalize transactions.,
+Arrival,Прибытие
+Arrival date,Дата прибытия
+Arrival time,Время прибытия
 Artifacts,Артефакты
 As of,На
 Asl Belgisi,Asl Belgisi
@@ -256,6 +300,8 @@ Assigned Field User,Закреплённый сотрудник
 Assigned Technician,Назначенный техник
 Assigned.,Назначено.
 At least one counted item line is required.,
+At least one item is required.,Требуется хотя бы одна позиция.
+At least one received item line is required.,Требуется хотя бы одна строка полученного товара.
 At least one visit purpose is required.,
 At least one voucher is required.,
 At least two account lines are required.,Требуется минимум две строки счета.
@@ -275,16 +321,25 @@ Audit Trail,Журнал изменений
 Audit trail,Журнал изменений
 Audited At,Проверено
 Authentication required.,
+Authority,Орган
 Available,Доступно
 Avg margin,Средняя маржа
 Avg orders / customer,Заказов на клиента
 Avg time to first order,Срок до первого заказа
 Awaiting level {0},
 Awaiting release by manager,Ожидает разрешения руководителя
+B/L number,Номер коносамента
+B/L type,Тип коносамента
+BL Type,Тип коносамента
 BOM,Спецификация
 BOM cancelled successfully.,
 BOM submitted successfully.,
 BOMs,Спецификации
+BOOKED,Забронирован
+BRV Multiplier,Множитель БРВ
+BRV Used (UZS),Использованный БРВ (UZS)
+BRV Value (UZS),Значение БРВ (UZS)
+BRV used,Использованный БРВ
 Back,Назад
 Back to dashboard,Вернуться на панель
 Back to summary,
@@ -301,15 +356,18 @@ Badge UID is required.,
 Bal,Остаток
 Balance,Остаток
 Balance (Account Currency),Остаток (валюта счета)
+Balance Due Amount,Остаток к оплате
 Balanced,Сбалансировано
 "Balances, advances and payments appear here.",
 "Balances, salaries, advances and payments appear here.","Здесь показываются балансы, зарплаты, авансы и выплаты."
 Bank / transfer,Банк / перевод
 Bank Account '{0}' not found.,
+Bank Payment,Оплата через банк
 Bank account,Банковский счёт
 Bank account does not belong to company '{0}'.,
 Bank account has no linked GL account.,
 Bank amount,Сумма в банке
+Bank payment,Банковский платёж
 Bank transaction is required.,
 Bank transaction not found.,
 Bank/cash account is required.,Требуется счет в банке или кассе.
@@ -348,12 +406,27 @@ Bills,Счета
 Bimonthly,Раз в две недели
 Board,Доска
 Bonus,Премия
+Book cross-border land freight for a commercial invoice or container.,Забронируйте трансграничную наземную перевозку для инвойса или контейнера.
 Book rate,
 Booked,Заказано
 "Booked value from Sales Orders, with amounts still to deliver and to bill.","Забронированная сумма по заказам на продажу, с указанием сумм к доставке и к оплате."
+Booking Date,Дата бронирования
+Booking Reference,Ссылка бронирования
+Booking created.,Бронирование создано.
+Booking date,Дата бронирования
+Booking reference,Референс бронирования
+Booking saved.,Бронирование сохранено.
+"Booking, transporter or vehicle… ⌘K","Бронь, перевозчик или ТС… ⌘K"
 Books Dr Salary Expense / Cr Salary Payable as a draft — submit it from the ledger to post.,Создаёт черновик: Дт Расходы на ЗП / Кт ЗП к выплате — проведите его в книге.
 Books each locked employee's net as a payable (Dr salary expense / Cr salary payable). Idempotent — runs once per period.,Записывает нетто каждого заблокированного сотрудника в кредиторскую задолженность (Дт расход зарплаты / Кт зарплата к выплате). Идемпотентно — раз на период.
 Books locked nets to salary payable.,Записывает нетто в зарплату к выплате.
+Border Crossing,Пересечение границы
+Border Crossing Date,Дата пересечения границы
+Border crossing,Пересечение границы
+Box Kg,Кг в коробке
+Box Qty,Кол-во коробок
+Box kg,Кг в коробке
+Boxes,Коробки
 Branch,
 Brand,Бренд
 Break minutes,
@@ -382,10 +455,14 @@ CBU rates updated: {rates},Курсы ЦБ обновлены: {rates}
 CBU.uz exchange rates (last 30 days),Курсы валют ЦБУ.uz (последние 30 дней)
 CBU.uz exchange rates appear here.,Здесь отображаются курсы валют ЦБУ.uz.
 CBU:,
+CI number,Номер КИ
+CI number or supplier… ⌘K,Номер КИ или поставщик… ⌘K
 CN Return,Возврат КН
 COGS,Себестоимость
+COMPLETED,Завершён
 CRM,CRM
 CRM Report,Отчёт CRM
+CROSSED_BORDER,Пересёк границу
 CSV,CSV
 Calendar,Календарь
 Campaign,Кампания
@@ -402,6 +479,7 @@ Cancel Request,Запрос на отмену
 Cancel Transfer,
 "Cancel all open (submitted, non-delivered) Stock Reservation Entries for this company. Reserved stock will be returned to available quantity.","Отменить все открытые (отправленные, не доставленные) записи зарезервированного товара для этой компании. Зарезервированный товар будет возвращен в доступное количество."
 Cancel bill {name}? This is reversible only by amendment.,Отменить счет {name}? Это можно отменить только путем внесения поправки.
+Cancel booking,Отменить бронирование
 Cancel document?,
 Cancel entry,Отмена записи
 Cancel failed.,Отмена не удалась.
@@ -414,6 +492,7 @@ Cancel quotation {name}?,Отменить предложение {name}?
 Cancel reservations?,
 Cancel sales order {name}? Stock reservations will be released.,Отменить заказ продаж {name}? Зарезервированный товар будет освобожден.
 Cancel stock entry?,
+Cancel the linked Purchase Receipt {0} before cancelling this Truck Receipt.,"Сначала отмените связанное поступление {0}, прежде чем отменять этот приём грузовика."
 Cancel this entry?,
 Cancel this submitted BOM?,Отменить эту проведённую спецификацию?
 Cancel this transfer?,
@@ -421,6 +500,7 @@ Cancel {name}? This will reverse the stock movements.,Отменить {name}? �
 Cancelled,Отменено
 Cancelled entries cannot be submitted; amend instead.,
 Cannot change Commercial Invoice status from {0} to {1}.,Невозможно изменить статус «Коммерческий инвойс» с {0} на {1}.
+Cannot change {0} status from {1} to {2}.,Невозможно изменить статус {0} с {1} на {2}.
 Cannot check out before checking in.,Невозможно выйти до входа.
 Cannot create a return against a return document.,
 Cannot create invoice: no warehouse set for stock item(s) {0}.,Невозможно создать счёт: не указан склад для товара(ов) {0}.
@@ -434,10 +514,15 @@ Captured At,Захвачено
 Car / Item,Авто / Товар
 Car item is required.,Товар (автомобиль) обязателен.
 Card not recognized,
+Cargo,Груз
+Carrier,Перевозчик
 Cases / Week,Ящики / нед.
 Cash / bank account,Касса / банк счёт
+Cash Payment,Оплата наличными
+Cash difference,Разница наличными
 Cash flow,Движение денежных средств
 Cash on hand,Денежные средства
+Cash payment,Наличный платёж
 "Cash, Bank, …","Касса, банк, …"
 Cash-in account,Счёт приёма наличных
 Cash/bank account,
@@ -446,9 +531,16 @@ Cashier Lock,
 Categories,Категории
 Category,Категория
 Category is required.,Категория обязательна.
+Certificate,Сертификат
+Certificate approved.,Сертификат утверждён.
+Certificate number,Номер сертификата
+Certificate rejected.,Сертификат отклонён.
 Certificate required,Требуется сертификат
+"Certificate, CI or authority… ⌘K","Сертификат, инвойс или орган… ⌘K"
+Certificates appear here as they are registered against imports.,Сертификаты появляются здесь по мере регистрации по импортам.
 Certification,Сертификация
 Change,
+Change status,Изменить статус
 Changed,Изменено
 Channel,Канал
 Charge via {provider},Оплата через {provider}
@@ -464,6 +556,7 @@ Chegirma,Скидка
 Cheque,Чек
 Cheque / transfer ref,Чек / реквизиты перевода
 Cheque no.,Номер чека.
+Children,Дочерние
 Chocolate,
 Choose a cash/bank account.,Выберите кассовый/банковский счёт.
 Choose a statement file first.,Сначала выберите файл выписки.
@@ -476,6 +569,7 @@ Claim amount must be greater than zero.,Сумма претензии должн
 Claim is already settled by {0}.,Претензия уже урегулирована {0}.
 Claim is already {0} and cannot be re-reviewed.,Претензия уже {0} и не может быть пересмотрена.
 Claim name is required.,Требуется название претензии.
+Claim required,Требуется претензия
 Claim {0} not found.,Претензия {0} не найдена.
 Claims,Претензии
 Class,Класс
@@ -485,6 +579,8 @@ Clear filters,Сбросить фильтры
 Clear open reservations,Очистить открытые резервирования
 Clear search,Очистить поиск
 Cleared,Очищено
+Cleared Date,Дата выпуска
+Cleared date,Дата оформления
 Cleared {0} of {1},Очищено {0} из {1}
 Click New Revaluation to preview unrealised FX deltas and post an Exchange Rate Revaluation.,
 Click a line to see suggested matches.,"Нажмите на строку, чтобы увидеть предложенные совпадения."
@@ -508,6 +604,7 @@ Code,Код
 Code does not match expected format,Код не соответствует ожидаемому формату
 Code is required,Требуется код
 Cohort sales,Продажи когорты
+Cold chain,Холодовая цепь
 Collapse,Свернуть
 Collapse all,Свернуть всё
 Collapse all groups,Свернуть все группы
@@ -520,6 +617,10 @@ Column name,Название колонки
 Comment,Комментарий
 Comments,Комментарии
 Commerce,Коммерция
+Commercial Invoice,Коммерческий инвойс
+Commercial Invoices,Коммерческие инвойсы
+Commercial invoice created.,Коммерческий инвойс создан.
+Commercial invoice saved.,Коммерческий инвойс сохранён.
 Commission,Комиссия
 Commission %,Комиссия %
 Commission fee,Комиссионный сбор
@@ -537,14 +638,19 @@ Compensation,
 Compensation details are hidden — payroll access required.,
 Compensation policy,Политика оплаты
 Complete,Готово
+Complete GRN,Завершить приёмку
 Completed,Завершено
 Completed visit,Выполненный выезд
 Completion,Завершение
+Completion date,Дата завершения
 Completion rate,Доля завершения
 Compliance,Соответствие
+Component,Компонент
 Component map {0} not found.,
 Component mapping is incomplete. The following quantities have no salary ,
 Components,Компоненты
+Compute,Рассчитать
+Compute the fee to see the BRV breakdown.,"Рассчитайте сбор, чтобы увидеть разбивку по БРВ."
 Computed Pay,Расчёт зарплаты
 Computed from attendance summaries using the payroll formula. Read-only preview — not the official salary run.,Рассчитано по табелю с использованием формулы зарплаты. Только просмотр — это не официальный расчёт.
 Conditions,
@@ -560,6 +666,17 @@ Construction,Строительство
 Consumed,Израсходовано
 Contact,Контакт
 Contacted,Контакт установлен
+Container,Контейнер
+Container Cost Line,Строка затрат контейнера
+Container Number,Номер контейнера
+Container Size,Размер контейнера
+Container Type,Тип контейнера
+Container created.,Контейнер создан.
+Container number,Номер контейнера
+Container or CI number… ⌘K,Контейнер или номер КИ… ⌘K
+Container saved.,Контейнер сохранён.
+Containers,Контейнеры
+Containers in transit,Контейнеры в пути
 Contents,Содержимое
 Contract,Договор
 Contract board,Доска контрактов
@@ -582,16 +699,24 @@ Corridor,Коридор
 Corridor / Memo,Коридор / Примечание
 Cost,Себестоимость
 Cost Centre,
+Cost Component,Статья затрат
+Cost Lines,Строки затрат
 Cost centre,
+Cost lines,Строки затрат
 Cost must be positive.,Себестоимость должна быть положительной.
+Cost total,Итого затрат
 Costs after dividends (office…),Расходы после дивидендов (офис…)
 Could not accrue salary.,Не удалось начислить зарплату.
 Could not add holiday.,Не удалось добавить праздник.
 Could not add stage.,Не удалось добавить этап.
+Could not add the veterinary certificate.,Не удалось добавить ветеринарный сертификат.
+Could not approve the certificate.,Не удалось утвердить сертификат.
 Could not assign.,Не удалось назначить.
 Could not check payment status.,Не удалось проверить статус платежа.
+Could not compute the customs fee.,Не удалось рассчитать таможенный сбор.
 Could not create contract.,Не удалось создать контракт.
 Could not create the transaction.,Не удалось создать операцию.
+Could not create the voucher.,Не удалось создать ваучер.
 Could not load bid pricing.,Не удалось загрузить ценообразование.
 Could not load data health.,Не удалось загрузить качество данных.
 Could not load employee finances.,Не удалось загрузить финансы сотрудника.
@@ -615,6 +740,7 @@ Could not read a lot number from: {0},
 Could not read backup file: {0},
 Could not read the uploaded file.,
 Could not read your location.,Не удалось определить местоположение.
+Could not reject the certificate.,Не удалось отклонить сертификат.
 Could not resolve a customer for this deal.,
 Could not resolve payroll period: {0},
 Could not save bid pricing.,Не удалось сохранить ценообразование.
@@ -624,6 +750,9 @@ Could not save tender intake.,Не удалось сохранить данны�
 Could not start setup.,Не удалось начать настройку.
 Could not start the online payment.,Не удалось начать онлайн-оплату.
 Could not start the processor.,Не удалось запустить процессор.
+Could not submit the GRN checklist.,Не удалось провести лист приёмки.
+Could not update the certificate.,Не удалось обновить сертификат.
+Could not update the cost line.,Не удалось обновить статью затрат.
 Couldn't work out the cash amount to pay — check the exchange rate and the paying account.,
 Count,Количество
 Count:,Количество:
@@ -631,6 +760,7 @@ Counted qty,Подсчитанное кол-во
 Counterparty,Контрагент
 Countries,Страны
 Country,Страна
+Country of Origin,Страна происхождения
 Coverage,Покрытие
 Covered,Под покрытием
 Create,Создать
@@ -639,6 +769,7 @@ Create / edit customers,Создание / изменение клиентов
 Create / edit suppliers,Создание / изменение поставщиков
 Create Bill,Создать счёт
 Create Invoice,Создать счёт-фактуру
+Create Landed Cost Voucher,Создать ваучер стоимости доставки
 Create Material Issue,Создать списание материалов
 Create Plan,Создать план
 Create Sales Invoice,Создать счёт-фактуру
@@ -646,6 +777,7 @@ Create Scheme,Создать схему
 Create Ticket,Создать заявку
 Create a Bill of Materials to define what raw materials go into a finished good.,Создайте спецификацию чтобы определить какие материалы входят в готовый продукт.
 Create a Work Order to plan and track production runs against a BOM.,Создайте производственный заказ для планирования и контроля выпуска.
+Create a draft Landed Cost Voucher from the previewed components? An accountant must review and submit it in the books.,Создать черновик ваучера стоимости доставки из показанных компонентов? Бухгалтер должен проверить и провести его в учёте.
 Create a new Sales Order for this customer to begin.,
 Create a plan to start tracking campaign budget and ROI.,"Создайте план, чтобы начать отслеживать бюджет кампании и ROI."
 Create an active leaf warehouse before viewing item stock status.,
@@ -658,6 +790,7 @@ Create first order,
 Create outlets to start planning routes and visits.,"Создайте торговые точки, чтобы планировать маршруты и визиты."
 Create payments / journals,Создание платежей / проводок
 Create receipt,Создать приёмку
+Create voucher,Создать ваучер
 Create your first deal or adjust the search filters.,Создайте первую сделку или измените фильтры.
 Create your first item to start tracking stock and price lists.,"Создайте первый товар, чтобы начать отслеживать склад и прайс-листы."
 Create your first lead or adjust the search filters.,Создайте первый лид или измените фильтры.
@@ -673,8 +806,11 @@ Credit note for,Кредит-нота по
 Credit notes:,Кредит-ноты:
 Critical,Критически
 Critical conflicts,Критические конфликты
+Cross-Border Transport,Трансграничная перевозка
+Cumulative,Совокупный
 Cumulative %,Накопит. %
 Currency,Валюта
+Currency Exchange as of {date},Курс на {date}
 Currency risk (foreign purchase),Валютный риск (импорт)
 Current AR balance per customer — click a row to see the ledger behind the balance.,
 Current AR balance per customer — ties to the Customer Center.,Текущая задолженность по каждому клиенту — совпадает с Центром клиентов.
@@ -698,13 +834,36 @@ Customer receivables grouped by aging buckets.,
 "Customer, item, trend, and salesperson reports from submitted invoices.",
 Customers,Клиенты
 Customs,Таможня
+Customs Clearance Date,Дата таможенной очистки
+Customs Clearance Fee,Сбор за таможенную очистку
+Customs Declaration,Таможенная декларация
+Customs Declaration Line,Строка таможенной декларации
+Customs Fee Multiplier,Множитель таможенного сбора
+Customs Fee Override (UZS),Переопределение таможенного сбора (UZS)
+Customs Office,Таможенный пост
+Customs Value (USD),Таможенная стоимость (USD)
+Customs Value (UZS),Таможенная стоимость (UZS)
+Customs clearance,Таможенное оформление
+Customs clearance fee,Таможенный сбор
+Customs declaration,Таможенная декларация
+Customs declarations pending,Ожидающие ГТД
+Customs fee applied.,Таможенный сбор применён.
+Customs office,Таможенный пост
 Customs queue,Очередь таможни
 Customs value (CIF),Таможенная стоимость (CIF)
+Customs value (USD),Таможенная стоимость (USD)
+Customs value (UZS),Таможенная стоимость (UZS)
+Cut Off,Крайний срок (cut-off)
+Cut-off,Крайний срок
+DELIVERED_TO_UZBEKISTAN,Доставлен в Узбекистан
+DEPARTED_IRAN,Выехал из Ирана
+DISCHARGED,Выгружен
 Daily,Ежедневно
 Daily attendance records and employee presence checks.,
 Daily auto-backup,Ежедневная авто-копия
 Daily cap (UZS),
 Daily in/out KPI,Ежедневный KPI прихода/расхода
+Damaged boxes,Повреждённые коробки
 Dashboard,Панель
 Dashed,Пунктир
 Data,Данные
@@ -734,6 +893,15 @@ Debit note for,
 Debit notes:,
 Decision,Решение
 Declarant,Декларант
+Declaration,Декларация
+Declaration Date,Дата декларации
+Declaration Document,Документ декларации
+Declaration created.,Декларация создана.
+Declaration date,Дата декларации
+Declaration lines,Строки декларации
+Declaration saved.,Декларация сохранена.
+Declared,Задекларировано
+Declared value (USD),Заявленная стоимость (USD)
 Deducted from worked time daily.,
 Deducted per each step interval of lateness.,
 Deduction exceeds the outstanding advance balance.,Удержание превышает остаток аванса.
@@ -745,6 +913,7 @@ Default Route,Маршрут по умолчанию
 Default Warehouse,Склад по умолчанию
 Default currency,Валюта по умолчанию
 Default price list,Прайс-лист по умолчанию
+Default rate,Курс по умолчанию
 Define promotions that field users can apply during visits.,"Определите акции, которые полевые сотрудники могут применять во время визитов."
 Define routes so field users know which outlets to visit each day.,"Определите маршруты, чтобы полевые сотрудники знали, какие точки посещать каждый день."
 Delayed,Задержка
@@ -777,17 +946,24 @@ Deliv,Доставл.
 Deliver,Доставить
 Delivered,Доставлено
 Delivery,Доставка
+Delivery Date,Дата доставки
+Delivery Location,Место доставки
 Delivery Note,Расходная накладная
 Delivery date,Дата доставки
 Delivery deadline,Срок поставки
+Delivery location,Место доставки
 Delta,
 Department,Подразделение
+Departure,Отправление
+Departure Date,Дата отправления
 Deposit,Поступление
 Deposit to,Внести на
 Describe the problem…,Опишите проблему…
 Description,Описание
 Designation,Должность
 Desk access,Доступ к Desk
+Destination Warehouse,Склад назначения
+Destination warehouse,Склад назначения
 Details,Детали
 Device,
 Device created.,
@@ -823,8 +999,11 @@ District,
 Dividend tax,Налог на дивиденды
 Dividends,Дивиденды
 DocType,Тип документа
+Docs total,Сумма по документам
 Document,Документ
+Document & notes,Документ и заметки
 Document Type,Тип документа
+Document attached.,Документ прикреплён.
 Document cancelled successfully.,
 Document changed,
 Document checklist,Чек-лист документов
@@ -837,6 +1016,7 @@ Document type,Тип документа
 Document type and name are required.,
 Document updated successfully.,
 "Document, party or requester…","Документ, контрагент или заявитель…"
+Documentation,Документация
 Documents,Документы
 Done,Выполнено
 Download .ics,Скачать .ics
@@ -846,13 +1026,19 @@ Downpayment %,Первоначальный взнос %
 Draft,Черновик
 Draft + submitted,Черновики + проведённые
 Draft Sales Invoice created: {0},Черновик счёта-фактуры создан: {0}
+Draft an additional landed cost voucher for late costs on this GRN?,Создать дополнительный ваучер себестоимости для поздних расходов по этой приёмке?
 Draft deleted.,Черновик удалён.
 Draft entry deleted.,
 Draft transaction created.,Черновик операции создан.
 Draft transfer deleted.,
+Draft voucher {lcv} created — it still needs accountant submit in the books.,Черновик ваучера {lcv} создан — его ещё должен провести бухгалтер в учёте.
 Drill-down report: customer → invoices → document. Returns netted.,Детализация: клиент → счета → документ. Возвраты учтены.
 Drill-down report: item → invoice lines → document.,Детализация: товар → строки счетов → документ.
 Drill-down report: supplier → bills → document.,Детализация: поставщик → счета → документ.
+Driver,Водитель
+Driver Name,Имя водителя
+Driver Phone,Телефон водителя
+Driver phone,Телефон водителя
 Drop deal here,Перетащите сделку сюда
 Due,К оплате
 Due Date,Срок оплаты
@@ -865,6 +1051,9 @@ Duplicate summary,
 Duplicates,Дубликаты
 Duration (ms),Длительность (мс)
 Duty,Пошлина
+Duty %,Пошлина %
+Duty Amount (UZS),Сумма пошлины (UZS)
+Duty Rate %,Ставка пошлины %
 Duty supplement,Доплата за обязанности
 Duty supplement (%),Доплата за обязанности (%)
 E-IMZO did not respond (timeout). Check that the app is running.,
@@ -876,6 +1065,8 @@ EHF Status,Статус ЭСФ
 EHF Submissions,Отправки ЭСФ
 ERPNext,
 ERPNext Employee docname (EMP-XXXXX).,
+ETA,ETA
+ETD,ETD
 EUR → UZS,EUR → UZS
 Each additional step charges the step fee.,
 Each employee's Region band (on their profile) selects which rate applies; NO_TRAVEL pays nothing.,Регион сотрудника (в его профиле) определяет применяемую ставку; NO_TRAVEL — без оплаты.
@@ -897,6 +1088,7 @@ Edit Visit,Редактировать визит
 Edit customer,Редактировать покупателя
 Edit device,
 Edit draft,
+Edit expense,Редактировать расход
 Edit field user,Редактировать полевого сотрудника
 Edit journal entry,Редактировать проводку
 Edit mapping,
@@ -913,6 +1105,8 @@ Edited {0} field(s),
 Editing a past day,Изменение прошедшего дня
 Editing the rate updates the received amount.,Редактирование цены обновляет полученную сумму.
 Editing the received amount updates the exchange rate.,Редактирование полученной суммы обновляет курс.
+Effective Date,Дата вступления в силу
+Effective fee,Итоговый сбор
 Email,Электронная почта
 Email and name are required.,Требуются электронная почта и имя.
 Email or user ID,Email или ID пользователя
@@ -949,6 +1143,7 @@ Enter a quantity for at least one row.,Укажите количество хо�
 Enter amount and commission to see preview.,Введите сумму и комиссию для предпросмотра.
 Enter an amount greater than zero.,Введите сумму больше нуля.
 Enter at least one count that differs from the system quantity.,"Введите хотя бы один подсчёт, отличающийся от системного количества."
+Enter at least one received line.,Введите хотя бы одну принятую строку.
 Enter at least one return qty.,Введите хотя бы одно количество возврата.
 Enter cost and term to see the payment schedule.,Введите себестоимость и срок для просмотра графика платежей.
 Enter the quantity to return for each line. Leave 0 to exclude a line.,"Введите количество возврата для каждой строки. Укажите 0, чтобы исключить строку."
@@ -966,6 +1161,8 @@ Equipment name is required.,Название оборудования обяза
 Equity,Капитал
 Error,Ошибка
 Errors,Ошибки
+Estimated Arrival,Ожидаемое прибытие
+Estimated arrival,Ожид. прибытие
 Estimated value,Расчётная стоимость
 Event ID,
 "Event ID, device user or employee…",
@@ -996,29 +1193,42 @@ Exchange rate,Обменный курс
 Exchange rate ({0}),
 Exchange rate must be greater than zero.,Курс валюты должен быть больше нуля.
 Exchange rate staleness,
+Excise,Акциз
+Excise %,Акциз %
+Excise Amount (UZS),Сумма акциза (UZS)
+Excise Rate %,Ставка акциза %
 Exclusive,Сверху
 Exclusive: commission added on top — sender pays more.,Сверху: комиссия добавляется — отправитель платит больше.
 Execute material transfer for this Work Order? This will move required raw materials to the WIP warehouse.,
 Execute transfer?,
+Existing vouchers,Существующие ваучеры
 Exit,
 Expand,Развернуть
 Expand all,Развернуть всё
 Expand all groups,Развернуть все группы
 Expected,Ожидаемое
+Expected (kg),Ожидается (кг)
 Expected Closure,Планируемое закрытие
 Expected Facings,Ожидаемое количество фасадов
 Expected Monthly Volume,Ожидаемый месячный объём
+Expected arrival,Ожидаемое прибытие
 Expected facings is required on row {0}.,Ожидаемое количество фасадов требуется в строке {0}.
 Expense,Расход
+Expense Date,Дата расхода
+Expense created.,Расход создан.
 Expense entry cancelled.,
 Expense lines,Строки расходов
 Expense saved · {name},Расход сохранён · {name}
+Expense saved.,Расход сохранён.
+"Expense, supplier or CI… ⌘K","Расход, поставщик или инвойс… ⌘K"
 Expenses,Расходы
 Expired,Истёк
 Expires,
 Expires in,Истекает через
+Expiring soon,Скоро истекает
 Expiring within,Истекает в течение
 Expiry,Срок годности
+Expiry date,Срок годности
 Export,Экспорт
 Export CSV,Экспорт CSV
 Export failed.,Экспорт не удался.
@@ -1071,6 +1281,7 @@ Failed to delete entry.,
 Failed to delete lead.,Ошибка при удалении лида.
 Failed to delete supplier.,Не удалось удалить поставщика.
 Failed to delete transfer.,
+Failed to load GRN checklists.,Не удалось загрузить листы приёмки.
 Failed to load OSA audit.,Не удалось загрузить аудит OSA.
 Failed to load POS profile.,
 Failed to load POS profiles.,
@@ -1081,11 +1292,14 @@ Failed to load attendance.,
 Failed to load bills.,Не удалось загрузить счета.
 Failed to load calendar.,Не удалось загрузить календарь.
 Failed to load claim.,Не удалось загрузить претензию.
+Failed to load commercial invoices.,Не удалось загрузить коммерческие инвойсы.
+Failed to load containers.,Не удалось загрузить контейнеры.
 Failed to load contract.,Не удалось загрузить договор.
 Failed to load contracts.,Не удалось загрузить договоры.
 Failed to load customer invoices.,
 Failed to load customer.,Не удалось загрузить клиента.
 Failed to load customers.,Не удалось загрузить клиентов.
+Failed to load customs declarations.,Не удалось загрузить таможенные декларации.
 Failed to load dashboard.,Не удалось загрузить панель управления.
 Failed to load deal.,Ошибка при загрузке сделки.
 Failed to load deals.,Ошибка при загрузке сделок.
@@ -1094,7 +1308,9 @@ Failed to load details.,
 Failed to load document.,
 Failed to load employee.,
 Failed to load equipment.,Не удалось загрузить оборудование.
+Failed to load expenses.,Не удалось загрузить расходы.
 Failed to load form options.,Не удалось загрузить параметры формы.
+Failed to load freight bookings.,Не удалось загрузить бронирования перевозок.
 Failed to load invoice.,Не удалось загрузить счёт-фактуру.
 Failed to load invoices.,Не удалось загрузить счета-фактуры.
 Failed to load items.,Не удалось загрузить товары.
@@ -1131,12 +1347,24 @@ Failed to load stock ledger.,Ошибка загрузки реестра мат
 Failed to load stock status.,
 Failed to load supplier.,Ошибка загрузки поставщика.
 Failed to load suppliers.,Ошибка загрузки поставщиков.
+Failed to load the GRN checklist.,Не удалось загрузить лист приёмки.
+Failed to load the booking.,Не удалось загрузить бронирование.
+Failed to load the commercial invoice.,Не удалось загрузить коммерческий инвойс.
+Failed to load the container.,Не удалось загрузить контейнер.
+Failed to load the declaration.,Не удалось загрузить декларацию.
+Failed to load the expense.,Не удалось загрузить расход.
+Failed to load the imports dashboard.,Не удалось загрузить панель импорта.
+Failed to load the landed-cost review.,Не удалось загрузить обзор стоимости доставки.
+Failed to load the truck receipt.,Не удалось загрузить приёмку по машине.
+Failed to load the truck.,Не удалось загрузить грузовик.
 Failed to load ticket.,Не удалось загрузить заявку.
 Failed to load transfer detail.,Не удалось загрузить детали перевода.
 Failed to load transfers.,Не удалось загрузить переводы.
+Failed to load trucks.,Не удалось загрузить грузовики.
 Failed to load unbilled visits.,Не удалось загрузить невыставленные выезды.
 Failed to load valuation history.,Не удалось загрузить историю оценки.
 Failed to load van stock.,Ошибка загрузки запасов фургона.
+Failed to load veterinary certificates.,Не удалось загрузить ветеринарные сертификаты.
 Failed to load visit.,Ошибка загрузки визита.
 Failed to load warehouses.,Ошибка загрузки складов.
 Failed to load work orders.,
@@ -1219,6 +1447,7 @@ Fixed deduction on first late minute past grace.,
 Fixtures directory missing: {0},Директория приспособлений отсутствует: {0}
 Flat fee (UZS),
 Flat fee per step,
+Flat view,Список
 Flexible,
 Food & Beverage,Еда и напитки
 Force submit & reserve,Принудительно отправить и зарезервировать
@@ -1230,6 +1459,8 @@ Freezer,Морозильник
 Freezer ROI,ROI морозильников
 Freezer pending,Ожидают морозильник
 Freezer push,Морозильники
+Freight,Фрахт
+Freight Booking,Бронирование перевозки
 Frequency,Периодичность
 Fri,Пт
 Friday,
@@ -1250,15 +1481,35 @@ Full name (optional — filled automatically on save),
 Fully Completed,Полностью выполнено
 Fully Staged,
 Fully billed but auto-close did not run — use Close below.,
+GATE_IN,На терминале
 GL Integrity Anomaly Alert,
 GL booked USD (historical cost),Сумма в USD по проводкам (историческая)
 GPS Latitude,Широта GPS
 GPS Longitude,Долгота GPS
+GRN,Приёмка
+GRN Checklist,Лист приёмки
+GRN Checklist requires at least one received kg before it can be submitted.,Для проведения контрольного листа GRN требуется хотя бы один принятый кг.
+GRN Checklists,Листы приёмки
+GRN checklist,Лист приёмки
+GRN checklist submitted.,Лист приёмки проведён.
+"GRN, CI or supplier… ⌘K","Приёмка, инвойс или поставщик… ⌘K"
+GRN_CREATED,Приёмка создана
+GRNs with variance,Приёмки с расхождением
+GTD Number,Номер ГТД
+GTD number,Номер ГТД
+GTD number must be in the format XXXXX/DDMMYY/NNNNNNN (e.g. 26010/110726/1234567).,"Номер ГТД должен быть в формате XXXXX/DDMMYY/NNNNNNN (например, 26010/110726/1234567)."
+"GTD, CI or office… ⌘K","ГТД, инвойс или пост… ⌘K"
 Gain / Loss,
+Gate Close,Закрытие ворот
 Gate Devices,
+Gate In Date,Дата въезда (gate-in)
+Gate Open,Открытие ворот
+Gate close,Закрытие ворот
 Gate device,
 Gate devices,
 Gate events,
+Gate open,Открытие ворот
+Gate-in date,Дата въезда
 Gateways,Шлюзы
 Gender,Пол
 Gender is required.,Укажите пол.
@@ -1271,8 +1522,11 @@ Given,Выдано
 Go,Идём
 Go to Sales Orders,Перейти к заказам на продажу
 Good Produced Qty,
+Good kg,Годн. кг
 Goods,Товар
 Goods (PO),Товар (PO)
+Goods receipt,Приёмка товара
+Goods value (total amount),Стоимость товара (итого)
 Google Drive libraries are not installed on the server. ,
 Grace period (min),
 Grand Total,Итого
@@ -1282,19 +1536,26 @@ Gross,Начислено
 Gross Margin by Customer,Валовая прибыль по клиентам
 Gross Margin by Item,Валовая прибыль по товарам
 Gross ROI %,Валовая рентабельность инвестиций %
+Gross Weight,Вес брутто
+Gross Weight (kg),Вес брутто (кг)
 Gross pay,Начислено
 Gross total,Итого начислено
+Gross weight,Брутто-вес
 Group,Группа
 "Group warehouse (can contain children, holds no stock itself)","Складская группа (может содержать подгруппы, сама не содержит запасы)"
 Guarantee,Гарантия
 Guarantee return,Возврат гарантии
 HR,HR
 HR overview,HR обзор
+HS Code,Код ТН ВЭД
+HS code,Код ТН ВЭД
 HS code (ТН ВЭД),Код ТН ВЭД
 Half Day,Полдня
 Half rate,
 Half-day & Presence,
 Half-day threshold (min),
+Handling,Обработка
+Header,Заголовок
 Heavy conditions,
 Heavy-conditions allowance,Надбавка за тяжёлые условия
 Height,Высота
@@ -1315,6 +1576,7 @@ Hours,Часы
 I have tested a restore,
 ID as it appears in raw gate events,
 IKPU code on {0} item(s),
+IN_TRANSIT,В пути
 Identity,
 "If off, a back-dated multi-currency document needs a rate within the days below.",
 Ignore,
@@ -1324,14 +1586,21 @@ Immutable record,
 Impact,
 Import,Импорт
 Import (paste / CSV),Импорт (вставка / CSV)
+Import Container,Импортный контейнер
+Import Container Item,Позиция импортного контейнера
+Import Expense,Импортный расход
+Import Truck,Импортная фура
 Import bank statement,Импорт банковской выписки
 Import failed.,Импорт не удался.
+Import orders,Импортные заказы
 Import outlet locations,Импорт геолокаций точек
 Import {0} lines,Импортировать {0} строк
 Imported,Импортировано
 Imported {0} of {1} lines ({2} duplicates skipped).,Импортировано {0} из {1} строк ({2} дубликатов пропущено).
 Imports,Импорт
+Imports module is not enabled for this company.,Модуль импорта не включён для этой компании.
 In,Вход
+In Transit,В пути
 In progress,В процессе
 In time,Время входа
 In transit,В пути
@@ -1339,9 +1608,11 @@ In transit,В пути
 InService,В эксплуатации
 Inactive,Неактивные
 Include drafts,Включая черновики
+Include in Landed Cost,Включать в себестоимость (landed cost)
 Including unposted drafts — does not tie to the GL.,Включая непроведённые черновики — не сверяется с ГК.
 Inclusive,Включительно
 Inclusive: commission deducted from amount — receiver gets less.,Включительно: комиссия вычитается — получатель получает меньше.
+Incoterm,Инкотермс
 Incremental Units,Дополнительные единицы
 Industry,Отрасль
 Inflow,Поступление
@@ -1354,17 +1625,22 @@ Insurance,Страхование
 Intake via {0}.,
 Integration,
 Integration type,
+Invalid PO links payload.,Некорректные данные связей заказа.
 Invalid completion status.,
+Invalid container items payload.,Некорректные данные позиций контейнера.
 Invalid coordinates: {0},
 Invalid correction_type '{0}'. Valid values: {1},
+Invalid cost lines payload.,Некорректные данные статей затрат.
 Invalid date value.,
 Invalid date: {0}. Expected YYYY-MM-DD.,
 Invalid decision: {0},Неверное решение: {0}
+Invalid declaration lines payload.,Некорректные данные строк декларации.
 Invalid filename.,
 Invalid filters payload.,
 Invalid intake payload.,Некорректные данные тендера.
 Invalid item_overrides payload,Неверный payload переопределений товара
 Invalid item_returns payload,Неверный payload возвратов товара
+Invalid items payload.,Некорректные данные позиций.
 Invalid kiosk credentials.,Неверные учётные данные киоска.
 Invalid maintenance type.,
 Invalid month.,
@@ -1385,18 +1661,28 @@ Inventory Aging,Старение запасов
 Invite user,Пригласить пользователя
 Invoice,Счёт
 Invoice #,Счёт №
+Invoice Reference,Ссылка на счёт
 Invoice not submitted yet.,
 Invoice number or customer…,
+Invoice reference,Референс инвойса
 Invoiced,Выставлен счёт
 "Invoiced totals over time, by day or month.","Суммы по счетам за период, по дням или месяцам."
 Invoiced without stock movement — stock still reserved; needs a delivery/backfill or manual close.,
 Invoices,Счета
+Iran Customs Duty,Таможенная пошлина Ирана
+Iran Demurrage,Демередж (Иран)
+Iran Inspection,Инспекция (Иран)
+Iran Port & THC,Порт и THC (Иран)
+Iran Storage,Хранение в Иране
 Issue,Проблема
 Issue credit note,Выпустить кредит-ноту
+Issue date,Дата выдачи
 Issue debit note,
 Issue is required.,Проблема обязательна.
 Issue type,Тип заявки
+Issued,Выдано
 Issues,Проблемы
+Issuing authority,Выдавший орган
 Item,Товар
 Item #{0}: item is required.,Товар #{0}: товар обязателен.
 Item #{0}: qty must be greater than 0.,Товар #{0}: кол-во должно быть больше 0.
@@ -1422,6 +1708,7 @@ Izoh,
 Jami,Итого
 Jami muzqaymoq soni (dona),Всего мороженого (шт)
 Jami summa,Итого сумма
+Job Status,Статус объекта
 Job Title,Должность
 Joined,
 Journal,
@@ -1440,17 +1727,23 @@ Keep,Хранить
 Keep Editing,
 Keep typing to narrow…,Продолжайте вводить для уточнения…
 Keeps the audit trail; amend to correct.,Сохраняет аудит-след; для исправления — корректировка.
+Kg,Кг
 Kind,
 Kiosk login is not configured on this site.,Вход через киоск не настроен на этом сайте.
 L,Пр
+LCV,Ваучер
 Label,Надпись
 Landed,С доставкой
 Landed cost (goods + import),Стоимость с доставкой (товар + импорт)
 Landed cost + our margin → the price we bid,"Стоимость с доставкой + наша маржа → цена, которую мы предлагаем"
+Landed cost is restricted,Стоимость доставки ограничена
 Landed cost plan,План стоимости с доставкой
+Landed cost review,Обзор стоимости доставки
+Landed cost voucher drafted.,Ваучер себестоимости создан как черновик.
 Landed cost vouchers,Ваучеры дополнительных затрат
 Landed plan saved.,План сохранён.
 Landed total,Итого с доставкой
+Landed-cost lines,Статьи стоимости доставки
 Lane,Полоса
 Lanes,Полосы
 Language,Язык
@@ -1504,6 +1797,8 @@ Link failed.,Не удалось связать.
 Link to an existing Customer for receivables.,Связь с существующим клиентом для дебиторской задолженности.
 Linked customer,Привязанный клиент
 Linked invoices,Связанные счета
+Linked purchase invoice: {pi},Связанный счёт закупки: {pi}
+Linked purchase orders,Связанные заказы на закупку
 Linked receipts,Связанные приёмки
 Linked. {0} parked punches re-queued.,Связано. {0} отметок переобработано.
 List rate,Прейскурантная цена
@@ -1584,20 +1879,24 @@ Matched employee,
 Material Issue submitted: {0},Списание материалов подтверждено: {0}
 Material Staging,
 Materials transferred successfully!,
+Max CI Value (USD),Макс. стоимость CI (USD)
 Maximum late deduction per day (0 = unlimited).,
 Memo,Заметка
 Message,Сообщение
 Message copied.,Сообщение скопировано.
 Mijoz balansi,Баланс клиента
+Min CI Value (USD),Мин. стоимость CI (USD)
 Min for present (min),
 Minimum minutes worked to count as half-day.,
 Minimum minutes worked to count as present.,
 Minutes tolerated before late penalty starts.,
 Minutes worked before overtime begins.,
+Missing,Отсутствует
 Missing Entry,
 Missing TimePay user id.,
 Missing fields,Недостающие поля
 Missing site config key: {0},
+Missing veterinary certificate,Отсутствует ветеринарный сертификат
 Missing work mode / region,Нет режима работы / региона
 Mitigation:,Смягчение:
 Mobile,Мобильный
@@ -1621,12 +1920,18 @@ Monthly,Ежемесячно
 Monthly installment,Ежемесячный платёж
 Monthly run-rate,Месячный оборот
 Move failed.,Не удалось переместить.
+Move this commercial invoice to {status}?,Перевести этот инвойс в статус {status}?
+Move this container to {status}?,Перевести контейнер в {status}?
+Move this declaration to {status}?,Перевести декларацию в {status}?
+Move this truck to {status}?,Перевести грузовик в {status}?
+Move to,Перевести в
 Move to Under Review,Перейти в режим проверки
 Movement,Движение
 Movements,Движения
 Multi-Currency Parties,
 Multi-currency,
 Multi-level approval incomplete,
+Multiplier,Множитель
 Multiplier (× hourly rate),
 My Work Orders Queue,
 My requests,Мои заявки
@@ -1635,6 +1940,7 @@ My work orders,Мои заказы на производство
 Name,Название
 Name is required.,
 Name or email,Название или адрес электронной почты
+Named place,Указанное место
 Name…,Имя…
 Narxi,Цена
 Need GPS,Без GPS
@@ -1645,6 +1951,8 @@ Needs you today,Требует внимания
 Needs your attention,
 Net,К выплате
 Net ROI %,Чистая рентабельность инвестиций %
+Net Weight (kg),Вес нетто (кг)
+Net kg,Нетто кг
 Net owed,
 Net pay,К выплате
 Net profit,Чистая прибыль
@@ -1684,7 +1992,12 @@ New Visit,Новый визит
 New Work Order,Новый производственный заказ
 New asset purchase,
 New bill,Новый счёт
+New booking,Новое бронирование
+New commercial invoice,Новый коммерческий инвойс
+New container,Новый контейнер
 New customer,Новый клиент
+New customs declaration,Новая таможенная декларация
+New declaration,Новая декларация
 New device,
 New employee,Новый сотрудник
 New employee–device mapping,
@@ -1718,8 +2031,11 @@ New stock entry,Новое движение товаров
 New supplier,Новый поставщик
 New transaction,Новая операция
 New transfer,Новый перевод
+New truck,Новый грузовик
+New truck receipt,Новая приёмка по машине
 New warehouse,Новый склад
 Next,Далее
+Next voucher preview,Предпросмотр следующего ваучера
 Night,
 Night & Overtime,
 Night allowance,Доплата за ночные
@@ -1739,6 +2055,8 @@ No EHF submissions yet. Submit a Sales Invoice to enqueue one.,Пока нет �
 No Employee Advances account configured.,Счёт авансов не настроен.
 No Employee Advances account is configured for {0}. Set the company's ,
 No GPS-located outlets for this period.,Нет точек с GPS за этот период.
+No GRN checklist was provided.,Лист приёмки не указан.
+No GRN checklists,Нет листов приёмки
 No Google service account configured (site_config: stabler_gdrive_service_account).,
 No OSA audits yet,Аудитов OSA пока нет
 No ROI snapshots yet,Снимков ROI пока нет
@@ -1749,6 +2067,8 @@ No access,
 No account rows,
 No activity recorded yet.,
 No advances yet.,Авансов пока нет.
+No approved veterinary certificate exists for this shipment. The submit will be rejected unless an Imports Manager set an override. Continue anyway?,"По этой поставке нет утверждённого ветеринарного сертификата. Проведение будет отклонено, если менеджер по импорту не установил обход. Продолжить всё равно?"
+No arrived trucks are waiting to be received for this shipment.,"По этой поставке нет прибывших машин, ожидающих приёмки."
 No attendance for this month.,Нет посещаемости за этот месяц.
 No attendance records,Нет записей о посещаемости
 No attendance summaries for this period,Нет сводок по табелю за этот период
@@ -1763,17 +2083,25 @@ No claim selected.,Претензия не выбрана.
 No claims yet,Претензий пока нет
 No columns,Нет колонок
 No comments yet.,Комментариев пока нет.
+No commercial invoices,Нет коммерческих инвойсов
+No commercial invoices reach their transit ETA in the next 7 days.,Ни один инвойс не достигает транзитного ETA в ближайшие 7 дней.
 No company is configured.,
 No company selected,Компания не выбрана
+No container cost lines have been entered for this invoice.,Для этого инвойса не введены статьи затрат контейнера.
+No containers,Нет контейнеров
 No correction requests,
 No corrections are waiting for review.,
 No corrections found for this status.,
 "No cost items yet — add transport, customs, certification…","Пока нет статей — добавьте транспорт, таможню, сертификацию…"
+No cost lines,Нет статей затрат
+No cost lines yet.,Пока нет статей затрат.
+No cost lines.,Нет строк затрат.
 No coverage,Без покрытия
 No creditors found.,
 No custom allowances. Click Add to create one.,
 No customers,Клиентов нет
 No customers match that name,Нет клиентов с таким названием
+No customs declarations,Нет таможенных деклараций
 No data,Нет данных
 No data for the selected range,Нет данных для выбранного диапазона
 No data gaps found for this company.,Пробелов в данных не найдено.
@@ -1804,8 +2132,10 @@ No exchange rates yet. Click Refresh now to fetch today's rates from cbu.uz.,К�
 No field users yet,Пользователей полей нет
 No files attached.,Файлы не прикреплены.
 No foreign-currency account balances found for this date.,
+No freight bookings,Нет бронирований перевозок
 No gate devices,
 No holidays yet.,Праздников пока нет.
+No import expenses,Нет импортных расходов
 No installments due this month.,Нет платежей в этом месяце.
 No interest — fixed Murabaha markup. Sum equals total exactly.,Без процентов — фиксированная наценка Мурабаха. Сумма точно равна итогу.
 No invoices found,
@@ -1815,7 +2145,9 @@ No items found,Товары не найдены
 No items match,Товары не совпадают
 No items with submitted active BOMs yet — create one first.,Нет товаров с проведёнными активными спецификациями — сначала создайте.
 No items yet.,Товаров нет.
+No items.,Нет позиций.
 No journal entries in this range,Записей в журнале в этом диапазоне нет
+No landed cost vouchers yet.,Пока нет ваучеров себестоимости.
 No lanes. Click + to add.,Нет полос. Нажмите + для добавления.
 No leads,Нет лидов
 No leave requests,Нет заявок на отпуск
@@ -1843,6 +2175,7 @@ No outstanding advances,Нет непогашенных авансов
 No outstanding balances,Нет задолженности
 No outstanding salary payable.,Нет задолженности по зарплате.
 No overdue installments.,Нет просроченных платежей.
+No payments due,Нет предстоящих платежей
 No payments in this range,Платежей в этом диапазоне нет
 No payments recorded in this range,
 No payments waiting for approval,"Нет платежей, ожидающих согласования"
@@ -1859,11 +2192,13 @@ No purchase invoices in this range,
 No purchase orders have been registered for this supplier.,
 No purchase orders in the customs queue.,Нет заказов в очереди таможни.
 No purchase orders in this range,Заказов на закупку в этом диапазоне нет
+No purchase orders linked.,Заказы на закупку не связаны.
 No purchase orders tagged to this tender yet.,К этому тендеру ещё не привязаны заказы.
 No purchase receipts in this range,
 No quotations in this range,Предложений в этом диапазоне нет
 No raw events,
 No readiness data,
+No receipts yet.,Приёмок пока нет.
 No receivable account configured for distributor {0} in company {1}.,Счёт дебиторской задолженности не настроен для дистрибьютора {0} в компании {1}.
 No receivable account configured for distributor {0} in company {1}: {2},Счёт дебиторской задолженности не настроен для дистрибьютора {0} в компании {1}: {2}
 No receivables,Нет дебиторской задолженности
@@ -1902,6 +2237,8 @@ No stock moves in this range,Перемещений товаров в этом �
 No stock update,Без движения склада
 No stock warehouses,
 No stocked items found,
+No submitted Purchase Receipts yet — a voucher cannot be created.,Ещё нет проведённых приходов — ваучер создать нельзя.
+No submitted purchase receipts yet.,Ещё нет проведённых приходов.
 No summaries,
 No supplier quotations for this tender.,Нет котировок поставщиков по этому тендеру.
 No suppliers,Поставщиков нет
@@ -1914,14 +2251,20 @@ No transactions,Операций нет
 No transactions in this period.,Операций в этом периоде нет.
 No transactions yet.,Операций нет.
 No travel,
+No truck receipts yet.,Пока нет приёмок по машинам.
+No trucks,Нет грузовиков
 No unbilled service visits,
+No unconsumed landed-cost lines to voucher.,Нет непотреблённых строк затрат для ваучера.
 No unmatched users. All punches are mapped.,Нет несопоставленных пользователей. Все отметки сопоставлены.
 No valid rows found.,Допустимые строки не найдены.
 No valuation history.,История оценки отсутствует.
 No van stock yet,Запасов в автофургоне нет
 No verified restore on record. A backup you have never restored is not a backup you can trust — test one and record it.,
+No veterinary certificate on file for this shipment.,По этой поставке нет ветеринарного сертификата.
+No veterinary certificates,Нет ветеринарных сертификатов
 No visits,Нет визитов
 No visits yet,Пока нет визитов
+No vouchers yet.,Пока нет ваучеров.
 No warehouses for this company,Складов для этой компании нет
 No work orders,Нет производственных заказов
 No work orders assigned to you yet.,Вам ещё не назначены заказы на производство.
@@ -1957,11 +2300,14 @@ Not ready to lock,
 Not registered,Не зарегистрирован
 Not set,
 Not uploaded yet,Ещё не загружено
+Note,Заметка
 Notes,Примечания
 Nothing to pay — selected employees have no outstanding balance.,
 Nothing to reconcile — all clear.,Нечего сверять — всё чисто.
+Nothing to voucher.,Нечего оформлять в ваучер.
 O'lchov birlik,Ед. изм.
 OK,Успешно
+ON_BOARD,На борту
 OSA,ОСА
 OSA %,ОСА %
 OSA Audit name is required.,Требуется имя аудита ОСА.
@@ -1974,7 +2320,10 @@ Object Name,Имя объекта
 Object Type,Тип объекта
 Off,Выкл
 Off-CBU Documents,
+Off-Hours Clearance,Оформление в нерабочее время
 Off-box (Google Drive),Вне сервера (Google Drive)
+Off-hours clearance (+25% BRV),Оформление в нерабочее время (+25% БРВ)
+Off-hours surcharge,Надбавка за нерабочее время
 Office,
 Office branch or location,
 Oldest (days),Старейший (дн.)
@@ -1982,6 +2331,7 @@ Oldest queued,Самый старый в очереди
 Oldest reservation,Старейшая резервация
 Ombor,Склад
 On,Вкл
+On Hold,На паузе
 On Leave,В отпуске
 On hand,В наличии
 On leave,
@@ -1999,6 +2349,9 @@ Only Approved claims can be settled. Current status: {0},Только одобр
 Only Payment Entry / Journal Entry can be reconciled here.,
 Only a Stock Manager can reconcile stock.,Только менеджер склада может проводить сверку остатков.
 Only a submitted collection can be cancelled.,Отменить можно только проведённую инкассацию.
+Only an Imports Manager can add a Landed Cost Voucher.,Только менеджер импорта может добавить ваучер стоимости доставки.
+Only an Imports Manager can correct the {0} status backwards.,Только менеджер по импорту может вернуть статус {0} на шаг назад.
+Only an Imports Manager can override the veterinary certificate requirement.,Только менеджер по импорту может обойти требование ветеринарного сертификата.
 Only confirm after you have actually restored a backup to a scratch site and verified the data. This records today as the last successful restore test.,
 Only draft Journal Entries can be deleted; cancel a submitted one instead.,
 Only draft journal entries can be edited here. Submitted entries must be cancelled and amended.,
@@ -2018,6 +2371,7 @@ Open AR,Открытая дебиторка
 Open Desk,Открыть Desk
 Open Exceptions,
 Open SREs,Открытые SRE
+Open commercial invoices,Открытые коммерческие инвойсы
 Open exceptions,
 Open matrix,Открыть табель
 Open payment link,Открыть ссылку для оплаты
@@ -2044,6 +2398,7 @@ Order date,Дата заказа
 Order number or supplier…,
 Ordered,
 Orders,Заказы
+Orders with advance,Заказы с авансом
 Org chart,
 Organization,Организация
 Orientation,Ориентация
@@ -2054,6 +2409,7 @@ Other cost,Прочие расходы
 Other costs (before profit),Прочие расходы (до прибыли)
 Out,Выход
 Out of stock,Нет в наличии
+Out of the target range — a QC note is required to save.,Вне целевого диапазона — для сохранения требуется примечание ОК.
 Out time,Время выхода
 Out-of-sequence approval,
 Outflow,Выход
@@ -2078,6 +2434,7 @@ Outstanding customer balances for field teams.,
 Outstanding salary payable,Зарплата к выплате
 Overdue,Просрочено
 Overdue installments,Просроченные платежи
+Override (preview only),Переопределение (только предпросмотр)
 Override qty must be greater than zero,Переопределённое количество должно быть больше нуля
 Override role,
 Override — submit despite low stock (admin),Отменить блок — принудительно отправить при нехватке запасов (администратор)
@@ -2086,8 +2443,10 @@ Overtime (min),Сверхурочно (мин)
 Overtime multiplier,Множитель сверхурочных
 Overview,Обзор
 Owes us,Должен нам
+Own,Собственный
 Owner,
 P,Ож
+PENDING,Ожидает
 PI In,PI приход
 PIN,
 PO,PO
@@ -2103,7 +2462,10 @@ POS Profile must define a shop warehouse.,
 POS Profile must define a walk-in customer.,
 POS Profile must define at least one payment mode.,
 POSM,ПОСМ
+PR,Приход
 Package incomplete — fill the missing fields,Пакет неполный — заполните недостающие поля
+Packaging OK,Упаковка в норме
+Packaging damaged,Упаковка повреждена
 Page not found,Страница не найдена
 Paid,Оплачено
 Paid amount,Выплаченная сумма
@@ -2111,12 +2473,15 @@ Paid days,Оплачено дней
 Paid from,Выплачено с
 Paid to,Выплачено
 Paid {0} employees — {1},Оплачено {0} сотрудникам — {1}
+Parent,Родитель
+Parent Customer,Родительский клиент
 Parent warehouse,Основной склад
 Pareto ranking of customers by revenue with A/B/C classes.,Парето-ранжирование клиентов по выручке с классами A/B/C.
 Pareto ranking of items by value with A/B/C classes.,Парето-ранжирование товаров по ценности с классами A/B/C.
 Pareto ranking of suppliers by spend with A/B/C classes.,Парето-ранжирование поставщиков по расходам с классами A/B/C.
 Partial,Частично
 Partially Completed,Частично выполнено
+Partially Paid,Частично оплачено
 Partially Reserved,
 Partially approved — awaiting level {0},
 Partially billed — {pct}% invoiced.,
@@ -2173,8 +2538,12 @@ Payment received,Оплата получена
 Payment reminder,Напоминание об оплате
 Payment saved — pending approval before it posts.,Платёж сохранён — ожидает согласования перед проведением.
 Payment schedule,График платежей
+Payment split is hidden for your role.,Разбивка платежа скрыта для вашей роли.
+Payment status,Статус оплаты
 Payment type,Тип платежа
 Payments,Платежи
+Payments due,Предстоящие платежи
+Payments due ≤7 days,Платежи в течение 7 дней
 Payments paid today,
 Payments received today,
 Payments you submit that need a second approver will show here.,"Платежи, отправленные вами и требующие второго согласующего, появятся здесь."
@@ -2196,9 +2565,11 @@ Payroll-impacting pending,
 Pays out this share of the KPI pool. Locked periods are read-only.,Выплачивает эту долю KPI-пула. Заблокированные периоды только для чтения.
 Penalty %/day,Штраф %/день
 Pending,Ожидание
+Pending (kg),Ожидается (кг)
 Pending Corrections,
 Pending approvals,Ожидают согласования
 Pending requests,Ожидают рассмотрения
+Pending vet certificates,Ожидающие вет. сертификаты
 People,Сотрудники
 Per box,Цена за коробку
 Percent off,Процент скидки
@@ -2234,6 +2605,7 @@ Pick a status.,Выберите статус.
 Pick a supplier.,Выберите поставщика.
 Pick a tender deal to compare quotations.,Выберите тендерную сделку для сравнения котировок.
 Pick a tender deal to see its purchase orders.,"Выберите тендер, чтобы увидеть заказы."
+Pick a truck to receive.,Выберите машину для приёмки.
 Pick a valid date range.,Выберите корректный диапазон дат.
 Pick a valid month.,Выберите корректный месяц.
 Pick a warehouse,Выберите склад
@@ -2252,7 +2624,14 @@ Pick start and end dates.,Выберите даты начала и конца.
 Pick the account funds will be paid from.,"Выберите счёт, с которого будут переведены средства."
 Pick the account that will receive the funds.,"Выберите счёт, который получит средства."
 Pick the bank/cash account to pay from.,Выберите счёт для оплаты.
+Pick the truck to receive,Выберите машину для приёмки
+Pickup & Delivery,Забор и доставка
+Pickup Date,Дата забора
+Pickup Location,Место забора
+Pickup date,Дата забора
+Pickup location,Место забора
 Pieces,Штук
+Pipeline,Конвейер
 Pistachio,
 Place branded freezer at {0} (deal {1}),
 Place your RFID badge on the reader to log in,
@@ -2274,6 +2653,8 @@ Planograms,Планограммы
 Planograms describe expected shelf facings per outlet and category.,Планограммы описывают ожидаемые фасинги полок по торговым точкам и категориям.
 Please fill all required fields.,"Пожалуйста, заполните все обязательные поля."
 Policy,Политика
+Port of discharge,Порт разгрузки
+Port of loading,Порт погрузки
 Portfolio value,Стоимость портфеля
 Position,
 Positions,Позиции
@@ -2350,6 +2731,8 @@ Purchase Receipt submitted.,
 Purchase Receipts,Приёмки товара
 Purchase item,Товар покупки
 Purchase method,Способ закупки
+Purchase receipt,Приходная накладная
+Purchase receipts,Приходы
 Purchases,Закупки
 Purchases = selected period · Balance = payable as of the To date (changes with the date). Click a supplier to see the bills.,
 Purchases by Supplier,Закупки по поставщикам
@@ -2361,14 +2744,19 @@ Push net pay to ERPNext?,Отправить нетто-зарплату в ERPNe
 Push net to ERPNext,Отправить нетто в ERPNext
 Pushed net pay for {0} employees.,Нетто отправлено для {0} сотрудников.
 Pushed {0}; {1} failed.,Отправлено {0}; не удалось {1}.
+QC,ОК
+QC notes,Примечания ОК
 QR code expired,Срок действия QR-кода истёк
 QR unavailable — open the link below,QR недоступен — откройте ссылку ниже
 Qty,Кол-во
+Qty (kg),Кол-во (кг)
 Qty must be greater than zero.,
+Quality control,Контроль качества
 Quantity,Количество
 Quantity must be positive.,Количество должно быть положительным.
 Queue is clear. Nothing pending.,Очередь пуста. Ничего не ожидает.
 Queue is empty,
+Quick view,Быстрый просмотр
 Quotation,Предложение
 Quotation number or customer…,
 Quotations,Предложения
@@ -2404,12 +2792,17 @@ Readiness,
 Ready,Готово
 Ready to lock,
 Reason,Причина
+Reason for rejection:,Причина отклонения:
+Reason for the status correction:,Причина коррекции статуса:
+Recalculate,Пересчитать
+Receipt,Приёмка
 Receipt number or supplier…,
 Receipts,Поступления
 Receivable (AR),Дебиторская задолженность
 Receivable Trend (Last 8 Weeks),
 Receivables,Дебиторская задолженность
 Receive,Получить
+Receive Truck,Приёмка машины
 Receive currency,Валюта получения
 Receive goods,Принять товар
 Receive goods into stock,Оприходовать товар на склад
@@ -2417,11 +2810,19 @@ Receive now,Принять сейчас
 Receive payment,Получить платёж
 Receive payments / issue credit notes,Приём платежей / кредит-ноты
 Receive stock,Получить товар
+Receive truck,Приёмка машины
 Received,Получено
+Received (kg),Принято (кг)
+Received / expected (kg),Принято / ожидается (кг)
 Received At,Время получения
 Received amount,Полученная сумма
+Received boxes,Принятые коробки
+Received by,Принял
+Received items,Принятые позиции
+Received kg,Принято кг
 Receiver gets,Получатель получает
 Receiver name,Имя получателя
+Receiving notes,Примечания по приёмке
 Recent activity,Последние операции
 Recent imports,Недавние импорты
 Recent reconciliations,Недавние сверки
@@ -2435,6 +2836,7 @@ Record & close,Записать и закрыть
 Record & new,Записать и новый
 "Record a receipt, issue, or transfer to move stock between warehouses.","Зарегистрируйте поступление, выпуск или передачу для перемещения товаров между складами."
 Record a sale,Записать продажу
+"Record border-crossing, handling and other import costs here.","Записывайте здесь расходы на пересечение границы, обработку и другие импортные затраты."
 Record production,Записать выпуск
 Record stock movements,Учёт движения запасов
 Records that block payroll or look unfinished. Fix at the source.,"Записи, блокирующие зарплату или незаполненные. Исправьте в источнике."
@@ -2456,6 +2858,7 @@ Refresh token (JWT),
 Refreshing…,Обновление…
 Region,
 Region / Route,Регион / маршрут
+Register a customs declaration (GTD) for an import to clear it.,Зарегистрируйте таможенную декларацию (ГТД) для оформления импорта.
 Register a hardware reader or integration to start collecting raw attendance events.,
 "Register coolers, freezers, racks, and POSM assets here.","Зарегистрируйте охладители, морозильники, стеллажи и активы POSM здесь."
 Reject,Отклонить
@@ -2466,7 +2869,12 @@ Reject this correction request? The requester will be notified.,
 Reject this leave request?,Отклонить заявку на отпуск?
 Reject this request? The draft is left untouched for the maker to fix or delete.,
 Rejected,Отклонён
+Rejected boxes,Отклонённые коробки
+Rejection reason:,Причина отклонения:
 Related documents,Связанные документы
+Relax the filters or create a new commercial invoice.,Ослабьте фильтры или создайте новый инвойс.
+Relax the filters to see containers.,"Ослабьте фильтры, чтобы увидеть контейнеры."
+Relax the filters to see trucks.,"Ослабьте фильтры, чтобы увидеть грузовики."
 Relieving date,
 Reload,Перезагрузить
 Remaining,Остаток
@@ -2569,8 +2977,10 @@ Role not found,Роль не найдена
 Role template (optional),Шаблон роли (опционально)
 Role template applied successfully.,
 Roles,Роли
+Roll back,Откатить
 Rolling window. 0 = no freeze. This is usually the one set to 49.,
 Route,Маршрут
+Route & cold chain,Маршрут и холодовая цепь
 Route Code,Код маршрута
 Route Name,Название маршрута
 Route code is required.,Требуется код маршрута.
@@ -2578,8 +2988,11 @@ Route name is required.,Требуется имя маршрута.
 Routes,Маршруты
 Row,Строка
 Row not found on this Stock Entry,Строка не найдена в этой записи товара
+Row {0}: item is required.,Строка {0}: требуется позиция.
+Row {0}: unknown item '{1}'.,Строка {0}: неизвестная позиция '{1}'.
 Row {n} ({item}): qty exceeds available stock (available {free}).,Строка {n} ({item}): кол-во превышает доступный товар (доступно {free}).
 Row {n}: qty must be greater than zero.,Строка {n}: кол-во должно быть больше нуля.
+Rows per page,Строк на странице
 Rsvd,Зарезерв.
 Rule Set,
 Rule set,
@@ -2604,6 +3017,7 @@ SO,SO
 SO number or customer…,
 SRE module unavailable: {0},Модуль SRE недоступен: {0}
 SREs,SRE
+STUFFED,Загружен
 Salaries,Зарплаты
 Salary,Зарплата
 Salary Slip {0} not found.,
@@ -2668,6 +3082,7 @@ Save failed.,Ошибка сохранения.
 Save mapping,
 Save modules,Сохранить модули
 Save plan,Сохранить план
+Save the invoice first to compute the customs fee.,"Сначала сохраните инвойс, чтобы рассчитать сбор."
 Saved,
 Saved — pending approval before it posts.,Сохранено — ожидает согласования перед проведением.
 Saved.,
@@ -2682,6 +3097,7 @@ Scan returned item or search,
 Scan to pay,Отсканируйте для оплаты
 Scanned,Просканировано
 Scanned / Required,Просканировано / требуется
+Scanned declaration,Скан декларации
 Scanner Ready,
 Scanning…,Сканирование…
 Schedule,График
@@ -2694,6 +3110,10 @@ Scheme Name,Название схемы
 Scheme Type,Тип схемы
 Scrap / Rejects Qty,
 Scrap / rejects,Брак / отходы
+Seal Number,Номер пломбы
+Seal broken,Пломба нарушена
+Seal intact,Пломба цела
+Seal number,Номер пломбы
 Search,Поиск
 Search BOMs or finished goods…,Поиск спецификаций или готовой продукции…
 Search a tender deal… ⌘K,Поиск тендерной сделки… ⌘K
@@ -2703,6 +3123,7 @@ Search asset tag…,Поиск метки имущества…
 Search by name or code…,Поиск по названию или коду…
 Search by serial or item,Поиск по серийному номеру или товару
 Search campaigns…,Поиск кампаний…
+Search carrier…,Поиск перевозчика…
 Search customer,Поиск клиента
 Search customer name…,Поиск имени клиента…
 "Search customers, suppliers, items, invoices…","Поиск клиентов, поставщиков, товаров, счетов…"
@@ -2729,6 +3150,7 @@ Search supplier name…,Поиск названия поставщика…
 Search suppliers…,Поиск поставщиков…
 Search supplier…,Поиск поставщика…
 Search supplier… ⌘K,Поиск поставщика… ⌘K
+Search transporter…,Поиск перевозчика…
 Search voucher…,
 Search warehouse…,Поиск склада…
 Search work orders…,Поиск производственных заказов…
@@ -2764,6 +3186,7 @@ Select company,Выберите компанию
 Select corridor…,Выберите коридор…
 Select gender,
 Select payment,
+Select purchase order…,Выберите заказ на закупку…
 Select service person,Выберите исполнителя
 Select technician,Выберите техника
 Select template…,Выберите шаблон…
@@ -2811,7 +3234,10 @@ Set a Google Drive folder ID first.,Сначала укажите ID папки 
 Set as company default,Сделать стандартом компании
 Set as company default.,Установлено как стандарт компании.
 Set deadlines in Tender details.,Задайте сроки в деталях тендера.
+Set exactly one of Commercial Invoice or Container on a Freight Booking.,Укажите ровно одно из значений: коммерческий инвойс или контейнер в бронировании перевозки.
+Set exactly one of Commercial Invoice or Container.,Укажите ровно одно: коммерческий инвойс или контейнер.
 "Set the Google Drive folder ID in Stabler Settings, and share that Shared-Drive folder with the service account email.",
+Set the imports landed-cost expense account in Stabler Settings before creating a Landed Cost Voucher.,Укажите счёт расходов на доставку импорта в настройках Stabler перед созданием ваучера расходов на доставку.
 Setting up your business…,Настраиваем ваш бизнес…
 Settings,
 Settle,Рассчитать
@@ -2831,6 +3257,7 @@ Shift 12h,
 Shift 8h,
 Shift class,
 Shift start,
+Shipping & logistics,Отгрузка и логистика
 Shop,Магазин
 Short code,Короткий код
 Show discounts,Показать скидки
@@ -2868,6 +3295,8 @@ Source warehouse,Склад источника
 Source warehouse is required.,
 Sourcing comparison,Сравнение поставщиков
 Spend,Расходы
+Stabler BRV Setting,Настройка БРВ
+Stabler Customs Fee Tier,Тариф таможенного сбора
 Stabler Settings doctype does not exist. Run migrations first.,
 Staff with base salary = 0,Сотрудники с базовым окладом = 0
 Stage Materials,
@@ -2887,12 +3316,18 @@ Start Work,Начать работу
 Start Work Order,
 Start Work Order and transfer raw materials?,
 Start failed.,Ошибка запуска.
+Stat. value,Стат. стоимость
+State,Состояние
 Statement account does not match the selected bank account ({0}).,Счёт выписки не совпадает с выбранным счётом ({0}).
 Statement file,Файл выписки
+Statistical Value (USD),Статистическая стоимость (USD)
 Status,Статус
+Status Correction Reason,Причина корректировки статуса
+Status change failed.,Не удалось изменить статус.
 Status is required.,Статус обязателен.
 Status name is required,
 Status not found,
+Status updated.,Статус обновлён.
 Step,Шаг
 Step #{0} not found on this visit.,Шаг #{0} не найден в этом визите.
 Step #{0}: type is required.,Шаг #{0}: тип обязателен.
@@ -2927,6 +3362,7 @@ Subject is required.,
 Submit,Отправить
 Submit & reserve stock,Провести и зарезервировать склад
 Submit BOM?,
+Submit GRN,Провести приёмку
 Submit Revaluation,
 Submit Work Order,
 Submit a Budget document covering this date range and cost centre.,
@@ -2938,7 +3374,10 @@ Submit document?,
 Submit expense,Отправить расход
 Submit failed.,Ошибка отправки.
 Submit journal entry?,Провести проводку?
+Submit receipt,Провести приёмку
+Submit the GRN Checklist before adding a Landed Cost Voucher.,Проведите контрольный лист GRN перед добавлением ваучера расходов на доставку.
 Submit this BOM? You won't be able to edit it after.,Провести эту спецификацию? После этого её нельзя будет редактировать.
+Submit this GRN checklist? This closes receiving and drafts a landed cost voucher.,Провести этот лист приёмки? Приёмка закроется и будет создан черновик ваучера себестоимости.
 Submit transfer,Отправить перевод
 Submitted,Отправлен
 Submitted At,Время отправки
@@ -2981,9 +3420,14 @@ Table,Таблица
 Tag Sales/Purchase Orders to a tender deal to see them here.,"Привяжите заказы к тендеру, чтобы видеть их здесь."
 Tag Supplier Quotations to this deal to compare them here.,"Привяжите котировки к сделке, чтобы сравнить их здесь."
 Take Payment,
+Target,Цель
 Target Remaining,
+Target Temp Max,Целевая макс. температура
+Target Temp Min,Целевая мин. температура
 Target WIP Warehouse,
 Target margin (profit ÷ net revenue),Целевая маржа (прибыль ÷ чистая выручка)
+Target temp max (°C),Макс. темп. (°C)
+Target temp min (°C),Мин. темп. (°C)
 Task,Задача
 Tax ID,ИНН
 Tax amount,
@@ -2994,6 +3438,12 @@ Taxes,Налоги
 Technician,Техник
 Technician state,Статус техника
 Telegram,Telegram
+Telex Release Date,Дата телекс-релиза
+Telex release,Телекс-релиз
+Temperature,Температура
+Temperature OK,Температура в норме
+Temperature at arrival (°C),Температура при прибытии (°C)
+Temperature flagged,Температура отмечена
 Tender,Тендер
 Tender / deal,Тендер / сделка
 Tender Deadline,Срок тендера
@@ -3016,13 +3466,20 @@ That voucher is not linked to this transaction.,
 The Compliance module is disabled for this company.,Модуль соответствия отключён для этой компании.
 The GL ledger scan detected {0} issues that require immediate attention.,
 The Imports workspace will be built out in the next work package.,Раздел «Импорт» будет реализован в следующем пакете работ.
+The commercial invoice has no items to receive.,В коммерческом инвойсе нет позиций для приёмки.
+The imports module is not enabled for this company.,Модуль импорта не включён для этой компании.
 "The queue is blocked — {0} repost(s) stuck. Re-queue them, then Run now.","Очередь заблокирована — зависло {0}. Перезапустите их, затем «Запустить сейчас»."
 The referenced document is cancelled and cannot be approved.,
 The referenced document no longer exists.,
+The selected parent already belongs to another parent. Only one level of hierarchy is allowed.,Выбранный родитель уже относится к другому родителю. Допускается только один уровень иерархии.
+The selected parent customer does not exist.,Выбранный родительский клиент не существует.
+The voucher is created as a draft; an accountant reviews and submits it in the books.,Ваучер создаётся как черновик; бухгалтер проверяет и проводит его в учёте.
 There are currently no work orders assigned to you.,
 These are ERPNext's back-dating guards — the reason it blocks creating or editing transactions older than a set window. They protect closed periods; relax them only deliberately.,
 "These are the toxic role combinations Stabler checks for. Findings are advisory — accept them with a compensating control, or split the duties.","Это опасные комбинации ролей, которые проверяет Stabler. Результаты носят рекомендательный характер — примите их с компенсирующим контролем или разделите обязанности."
 These device users have no employee link. Confirm a match to re-queue their punches.,"У этих пользователей устройства нет связи с сотрудником. Подтвердите совпадение, чтобы переобработать их отметки."
+This GRN Checklist is not in a draft state.,Этот чек-лист приёмки не в статусе черновика.
+This GRN has no item lines.,В этой приёмке нет строк позиций.
 This Service workspace will be added after Tickets P1.,Это рабочее пространство появится после P1.
 This adjusts stock for {0} item(s) and posts the difference to the ledger. The action is recorded against your name.,Это скорректирует остатки по {0} позиции(ям) и проведёт разницу в учёте. Действие записывается на ваше имя.
 This bank transaction is already fully reconciled.,
@@ -3030,7 +3487,9 @@ This cannot be undone.,Это невозможно отменить.
 This correction affects payroll calculations,
 This correction is already {0} and cannot be approved.,
 This correction is already {0} and cannot be rejected.,
+This cost line is already vouchered ({0}) and can no longer be toggled.,Эта статья затрат уже оформлена в ваучер ({0}) и больше не переключается.
 This creates a submitted credit note (return invoice) and updates inventory automatically.,
+"This customer already has child locations, so it cannot become a child itself.","У этого клиента уже есть дочерние локации, поэтому он не может стать дочерним."
 This customer has no submitted invoices for the selected period.,
 This deal is Won — create the customer to start invoicing.,"Сделка выиграна — создайте клиента, чтобы выставлять счета."
 This document was changed by someone else. Reload to see the latest.,
@@ -3053,6 +3512,8 @@ This request is already {0}.,
 This reverses the ledger postings. The entry stays as an audit record; create an amended one to correct it.,Проводки в учёте будут сторнированы. Запись останется в журнале аудита; создайте исправленную для корректировки.
 This role may create/edit back-dated stock entries.,
 This role may edit frozen accounting entries.,
+This truck receipt is not in a draft state.,Эта приёмка грузовика не в статусе черновика.
+This truck receipt is submitted and can no longer be edited.,Эта приёмка по машине проведена и больше не редактируется.
 This warehouse has no current item balances.,
 This will close the order and release any reserved stock. Continue?,
 This will post {0} {1}. The action is recorded against your name.,Будет проведено {0} {1}. Действие записывается на ваше имя.
@@ -3103,17 +3564,23 @@ Top 10 Debtors,
 Total,Итого
 Total (cost + markup),Итого (себестоимость + наценка)
 Total / Present / OSA % are computed server-side.,Значения Итого / Присутствует / OSA % вычисляются на сервере.
+Total Amount,Итоговая сумма
+Total Boxes,Всего коробок
+Total Duties (UZS),Итого пошлины (UZS)
 Total Marked,
 Total Required,
 Total SKUs,Всего SKU
 Total allocated,Всего распределено
 Total allocated cannot exceed the payment amount.,Сумма распределения не может превышать размер платежа.
+Total boxes,Всего коробок
 Total committed,Всего обязательств
 Total cost,Общая стоимость
 Total credit value,
 Total credits,
 Total debits,
+Total duties,Итого пошлины
 Total in {0},Итого в {0}
+Total kg,Всего кг
 Total net owed,
 Total outstanding,Всего задолженности
 Total outstanding advances,Итого непогашенные авансы
@@ -3122,13 +3589,16 @@ Total payable,Всего к выплате
 Total receivable,Итого к получению
 Total units,Всего единиц
 Total value,Общая стоимость
+Total weight (kg),Общий вес (кг)
 Total:,Итого:
+Totals,Итоги
 Totals shown in base currency ({0}).,Итоги показаны в базовой валюте ({0}).
 Trade Marketing,Торговый маркетинг
 Trade marketing claims and settlement tracking.,
 Transaction,
 Transaction Id,Идентификатор транзакции
 Transactions,Транзакции
+Transactions are recorded on child locations,Операции проводятся по дочерним локациям
 Transfer,Передача
 Transfer cancelled.,
 Transfer detail,Детали перевода
@@ -3142,47 +3612,95 @@ Transfer to WIP Warehouse,
 Transferred,Передано
 Transferred Qty,
 Transfers,Передачи
+Transit ETA,Транзитный ETA
+Transit ETA (Iran),Транзитный ETA (Иран)
 Transport,Транспорт
 Transport / day — City,Транспорт / день — Город
 Transport / day — District,Транспорт / день — Район
 Transport / day — Far district,Транспорт / день — Дальний район
+Transport Cost,Стоимость перевозки
+Transport Currency,Валюта перевозки
+Transport PI,Счёт за перевозку
+Transport Payment Status,Статус оплаты перевозки
+Transport Purchase Invoice,Счёт на перевозку
+Transport cost,Стоимость перевозки
+Transport cost is hidden for your role.,Стоимость перевозки скрыта для вашей роли.
+Transporter,Перевозчик
+Tree view,Дерево
 Trend,
 Trigger Item,Товар-триггер
+Truck,Грузовик
+Truck & driver,Грузовик и водитель
+Truck Number,Номер фуры
+Truck Receipt,Приёмка по машине
+Truck created.,Грузовик создан.
+Truck number,Номер грузовика
+Truck receipt saved.,Приёмка по машине сохранена.
+Truck receipt submitted.,Приёмка по машине проведена.
+Truck receipts,Приёмки грузовиков
+Truck saved.,Грузовик сохранён.
+Truck temperature {0} C is outside the target range {1} C to {2} C; record a QC note to save.,Температура грузовика {0} C вне целевого диапазона {1} C – {2} C; добавьте примечание контроля качества для сохранения.
+"Truck, driver or CI… ⌘K","Грузовик, водитель или КИ… ⌘K"
+Trucking Company,Транспортная компания
+Trucks,Грузовики
+Trucks on the road,Грузовики в пути
+Trucks received,Машин принято
 Try a different search term or clear the filter.,Попробуйте другой поисковый запрос или очистите фильтр.
 Try adjusting your filters to find exceptions.,
 Try again,Повторить
 "Try another item code, name, or group.",
 Try another search term.,
+Try to submit,Попробовать провести
 Tue,Вт
 Tuesday,
 Type,Тип
+Type / size,Тип / размер
 "Type to search, or pick a quick action",Введите для поиска или выберите быстрое действие
+UNLOADING,Разгрузка
 UOM,Ед. изм.
 USD rate on this date,Курс USD на эту дату
 USD → UZS,USD → UZS
+USD → {cur} rate,Курс USD → {cur}
 UZEX lot {0} not found.,
+UZS,UZS
 Unassigned,Не назначен
 Unassigned department or position.,Не назначен отдел или должность.
 Unassigned dept / position,Без отдела / должности
 Unbilled,Не выставлен счёт
 Unbilled queue,Очередь к выставлению
+Under Review,На рассмотрении
 Unit,Ед.
 Unit cost,Себестоимость
 Units Sold,Проданных единиц
 Unknown,
+Unknown Commercial Invoice: {0},Неизвестный коммерческий инвойс: {0}
 Unknown Cost Center: {0},
+Unknown Customs Declaration: {0},Неизвестная таможенная декларация: {0}
 Unknown Didox Submission,
 Unknown Fiscal Year: {0},
+Unknown Freight Booking: {0},Неизвестное бронирование перевозки: {0}
+Unknown GRN Checklist: {0},Неизвестный чек-лист приёмки: {0}
+Unknown Import Container: {0},Неизвестный контейнер импорта: {0}
+Unknown Import Expense: {0},Неизвестный импортный расход: {0}
+Unknown Import Truck: {0},Неизвестный грузовик импорта: {0}
 Unknown POS Profile: {0},
 Unknown Purchase Invoice: {0},
+Unknown Purchase Order for this company: {0},Неизвестный заказ на закупку для этой компании: {0}
 Unknown Sales Invoice: {0},Неизвестный счёт-фактура: {0}
 Unknown Sales Order: {0},Неизвестный заказ на продажу: {0}
+Unknown Truck Receipt: {0},Неизвестная приёмка грузовика: {0}
+Unknown Vet Certificate: {0},Неизвестный ветеринарный сертификат: {0}
 Unknown account: {0},
+Unknown commercial invoice for this company: {0},Неизвестный коммерческий инвойс для этой компании: {0}
 Unknown company: {0},Неизвестная компания: {0}
+Unknown cost line: {0},Неизвестная статья затрат: {0}
 Unknown customer: {0},
+Unknown customs declaration status: {0},Неизвестный статус таможенной декларации: {0}
 Unknown deal: {0},
 Unknown employee: {0},
+Unknown freight booking status: {0},Неизвестный статус бронирования перевозки: {0}
 Unknown hash algorithm: {0},
+Unknown item on declaration line: {0},Неизвестная позиция в строке декларации: {0}
 Unknown item: {0},
 Unknown payment session.,
 Unknown purchase order: {0},Неизвестный заказ на закупку: {0}
@@ -3194,7 +3712,9 @@ Unknown stage: {0},
 Unknown summary: {0},
 Unknown user: {0},
 Unknown vertical pack: {0},Неизвестный вертикальный набор: {0}
+Unknown veterinary certificate status: {0},Неизвестный статус ветеринарного сертификата: {0}
 Unknown warehouse: {0},Неизвестный склад: {0}
+Unknown {0}: {1},Неизвестный {0}: {1}
 Unmatched,
 Unmatched Event,
 Unmatched TimePay users,Несопоставленные пользователи TimePay
@@ -3225,8 +3745,16 @@ User status updated.,
 Users,Пользователи
 Users flagged,Помеченные пользователи
 Utilization %,Использование %
+Uzbekistan Customs Duty,Таможенная пошлина Узбекистана
+Uzbekistan Port Handling,Портовые сборы (Узбекистан)
 VAT,НДС
+VAT %,НДС %
+VAT (not capitalized),НДС (не капитализируется)
+VAT Amount (UZS),Сумма НДС (UZS)
+VAT Rate %,Ставка НДС %
 VAT registered,Плательщик НДС
+VGM,VGM
+Valid,Действителен
 Valid Distributor (Customer) is required.,Требуется корректный дистрибьютор (Клиент).
 Valid From,Действителен с
 Valid Promo Plan is required.,Требуется корректный план акции.
@@ -3236,6 +3764,7 @@ Valid issue type is required.,
 Valid till,Действителен до
 Valid user is required.,
 Valuation,Оценка
+Valuation & duties,Оценка и пошлины
 Valuation history,История оценки
 Valuation rate,Учётная цена
 Value,Стоимость
@@ -3247,14 +3776,25 @@ Van Stock name is required.,Требуется название товара в 
 Van stock tracks what each field user has loaded for the day.,"Товар в фургоне отслеживает, какой товар загружен каждым полевым пользователем на день."
 Var %,
 Variance,Расхождение
+Variance %,Отклонение %
+Vehicle,ТС
+Vehicle & Driver,Транспорт и водитель
+Vehicle Number,Номер транспорта
+Vehicle number,Номер ТС
 Vendor,Поставщик
 Vendor bill does not match PO / receipt,Счёт поставщика не совпадает с заказом / приёмкой
 Vendor comparison,Сравнение поставщиков
 Vendor comparison (landed),Сравнение поставщиков (с доставкой)
 Vendors,Поставщики
 Vertical lanes (flow top→bottom),Вертикальные дорожки (поток сверху→вниз)
+Vessel,Судно
+Vet,Ветеринария
+Veterinary certificate,Ветеринарный сертификат
+Veterinary certificate added.,Ветеринарный сертификат добавлен.
+Veterinary certificate updated.,Ветеринарный сертификат обновлён.
 View,Просмотр
 View all,Показать все
+View attached document,Открыть прикреплённый документ
 View attachment,Просмотреть вложение
 View audit log,Просмотр журнала изменений
 View corrections queue,
@@ -3281,7 +3821,9 @@ Voucher No,№ документа
 Voucher Type,Тип документа
 Voucher not found.,
 Voucher not found: {0} {1},
+Vouchered,Оформлено
 Voucher…,
+Voyage,Рейс
 W,П
 WIP Warehouse,
 WIP Whse,
@@ -3312,6 +3854,7 @@ Weekly,Еженедельно
 Weekly off,Выходной
 Weekly off days,
 Weight,Вес
+Weight (kg),Вес (кг)
 Welcome,Добро пожаловать
 Welcome to Stabler,Добро пожаловать в Stabler
 What is this advance for?,За что этот аванс?
@@ -3363,12 +3906,15 @@ Year to date,
 Yes,Да
 You,
 You are not assigned to this POS Profile.,
+You are not permitted to access imports.,У вас нет доступа к импорту.
 You are not permitted to approve or reject correction requests.,
+You are not permitted to edit landed-cost figures.,У вас нет прав редактировать данные стоимости доставки.
 You are not permitted to review approval requests.,
 You are not permitted to view customers.,
 You are not permitted to view employees.,
 You are not permitted to view suppliers.,
 You are not permitted to view the audit log.,У вас нет прав на просмотр журнала изменений.
+You do not have permission to view landed-cost figures. Ask an imports manager or accountant.,У вас нет прав просматривать данные стоимости доставки. Обратитесь к менеджеру импорта или бухгалтеру.
 You have already approved level {0} for this request.,
 You have no approval requests,У вас нет заявок на согласование
 You have unsaved changes. Leaving this page will discard them.,
@@ -3390,11 +3936,13 @@ across all statuses,по всем статусам
 active,
 active staff,активных сотрудников
 actual so far,факт на текущий момент
+additional,дополнительный
 against,
 ambiguous,не определено
 avail,дост.
 available,
 blocker(s),
+boxes,коробки
 cheque / txn id,чек / ID транзакции
 company currency,валюта компании
 company is required.,
@@ -3435,12 +3983,14 @@ half-day,полдня
 high,высокий
 https://…,
 info,инфо
+initial,первоначальный
 inst.,плат.
 is locked from edits.,заблокирована для изменений.
 item,товар
 item_code and warehouse are required,item_code и warehouse обязательны
 items,товары
 joined this month,принято в этом месяце
+kg,кг
 landed,с доставкой
 late,опоздал
 leave,
@@ -3458,6 +4008,8 @@ name is required.,
 need GPS,без GPS
 no stock movement,
 not set,не задано
+of,из
+of {n},из {n}
 on budget,
 "one Journal Entry, clears their payable.","одна проводка, закрывает задолженность."
 one-off,разовый
@@ -3538,17 +4090,67 @@ yr,г.
 — select —,
 — top-level —,— верхний уровень —
 ⚠ {0} line(s) had no cost — verify item valuation; margin may be overstated.,⚠ {0} строк(а) без себестоимости — проверьте оценку товара; маржа может быть завышена.
-A customer cannot be its own parent.,Клиент не может быть родителем самому себе.
-Children,Дочерние
-Cumulative,Совокупный
-Flat view,Список
-Job Status,Статус объекта
-On Hold,На паузе
-Own,Собственный
-Parent,Родитель
-Parent Customer,Родительский клиент
-The selected parent customer does not exist.,Выбранный родительский клиент не существует.
-"This customer already has child locations, so it cannot become a child itself.","У этого клиента уже есть дочерние локации, поэтому он не может стать дочерним."
-Transactions are recorded on child locations,Операции проводятся по дочерним локациям
-Tree view,Дерево
-The selected parent already belongs to another parent. Only one level of hierarchy is allowed.,Выбранный родитель уже относится к другому родителю. Допускается только один уровень иерархии.
+Container cost ledger,Реестр затрат по контейнеру
+Cost ledger,Реестр затрат
+Landed Cost Bills,Счета себестоимости
+Open container,Открыть контейнер
+Failed to load the cost ledger.,Не удалось загрузить реестр затрат.
+Product,Товар
+Cost figures are hidden — ask an imports manager or accountant for landed-cost visibility.,Суммы затрат скрыты — обратитесь к менеджеру по импорту или бухгалтеру для доступа к себестоимости.
+Product cost,Стоимость товара
+Per kg,За кг
+No linked bills yet.,Связанных счетов пока нет.
+Advance payments,Авансовые платежи
+Unallocated,Нераспределено
+No advance payments yet.,Авансовых платежей пока нет.
+Nothing booked yet,Пока ничего не проведено
+"No cost lines, bills or advances are linked to this container.","К этому контейнеру не привязаны затраты, счета или авансы."
+Bill or supplier… ⌘K,Счёт или поставщик… ⌘K
+By supplier,По поставщику
+No import bills yet.,Импортных счетов пока нет.
+No landed-cost bills,Нет счетов себестоимости
+"No purchase invoices are linked to an import container, invoice or truck yet.","Нет счетов на закупку, привязанных к контейнеру, инвойсу или грузовику."
+References,Ссылки
+Failed to load the supplier summary.,Не удалось загрузить сводку по поставщикам.
+Pending landed-cost bills,Неоплаченные счета себестоимости
+{amount} outstanding,{amount} к оплате
+•••,•••
+Failed to load open invoices.,Не удалось загрузить открытые счета.
+Distribute oldest-first,Распределить от старых к новым
+No open invoices for this customer group.,Нет открытых счетов для этой группы клиентов.
+Allocation,Распределение
+Legacy,Старое
+{n}d,{n}д
+Will create {n} payment(s).,Будет создано платежей: {n}.
+Created {n} payment(s): {names},Создано платежей {n}: {names}
+Payments saved — some are pending approval before they post.,Платежи сохранены — некоторые ожидают подтверждения перед проведением.
+Failed to load payments.,Не удалось загрузить платежи.
+Pick a payment to reallocate.,Выберите платёж для перераспределения.
+Transfers exceed the payment's unallocated amount.,Переводы превышают нераспределённую сумму платежа.
+Reallocated via {je},Перераспределено через {je}
+Failed to reallocate payment.,Не удалось перераспределить платёж.
+Reallocate advance,Перераспределить аванс
+No unallocated payments on this customer.,У этого клиента нет нераспределённых платежей.
+Transfers to locations,Переводы по локациям
+Add location,Добавить локацию
+Reallocate,Перераспределить
+Reallocate a legacy advance to child locations,Перераспределить старый аванс на дочерние локации
+Split one payment across child locations,Разделить один платёж между дочерними локациями
+Enter at least one allocation amount.,Введите хотя бы одну сумму распределения.
+Enter at least one transfer amount.,Введите хотя бы одну сумму перевода.
+Select a payment mode.,Выберите способ оплаты.
+Allocation amounts must be greater than zero.,Суммы распределения должны быть больше нуля.
+An allocated invoice does not belong to this customer chain.,Распределяемый счёт не относится к этой цепочке клиентов.
+An allocation exceeds the invoice's outstanding amount.,Распределение превышает непогашенную сумму счёта.
+Transfer amounts must be greater than zero.,Суммы переводов должны быть больше нуля.
+A selected location does not belong to this customer chain.,Выбранная локация не относится к этой цепочке клиентов.
+You are not permitted to record payments.,У вас нет прав для регистрации платежей.
+{0} has invoices in more than one currency — record those payments separately.,У «{0}» есть счета в нескольких валютах — регистрируйте эти платежи отдельно.
+Payment mode {0} has no account configured for this company.,Для способа оплаты {0} не настроен счёт для этой компании.
+Only Accounts Managers can reallocate a payment.,Перераспределять платёж могут только менеджеры по бухгалтерии.
+Unknown Payment Entry: {0},Неизвестный платёж: {0}
+Payment belongs to a different company.,Платёж относится к другой компании.
+Only submitted customer payments can be reallocated.,Перераспределять можно только проведённые платежи клиентов.
+No default receivable account is configured for this company.,Для этой компании не настроен счёт дебиторской задолженности по умолчанию.
+Reallocation of unallocated advance from {0},Перераспределение нераспределённого аванса из {0}
+"This sale would bring {0}'s group balance to {1}, over its credit limit of {2}. Ask an Accounts Manager to approve or increase the limit.","Эта продажа доведёт баланс группы «{0}» до {1}, превысив кредитный лимит {2}. Обратитесь к менеджеру по бухгалтерии для одобрения или увеличения лимита."

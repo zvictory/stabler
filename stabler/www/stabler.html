@@ -34,6 +34,7 @@
 			defaultCompany: {{ (default_company or "") | tojson }},
 			companies: {{ (companies or []) | tojson }},
 			appPath: {{ (app_path or "/stabler") | tojson }},
+			cost_visible: {{ (cost_visible or false) | tojson }},
 			translations: {{ (translations or {}) | tojson }}
 		};
 	</script>

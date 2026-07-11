@@ -6,11 +6,27 @@ import { useSession } from "../../stores/session.js";
 import { call } from "../../api/client.js";
 import { formatMoney } from "../../composables/money.js";
 import { t } from "../../composables/i18n.js";
+import { useConfirm } from "../../composables/useConfirm.js";
+import { useToast } from "../../composables/useToast.js";
+import { useEscapeBack } from "../../composables/useEscapeBack.js";
 import EmptyState from "../../components/EmptyState.vue";
+import Select from "../../components/Select.vue";
+import MoneyInput from "../../components/MoneyInput.vue";
+import DateInput from "../../components/DateInput.vue";
 
 const session = useSession();
 const { activeCompany, user } = storeToRefs(session);
 const router = useRouter();
+const { confirm } = useConfirm();
+const toast = useToast();
+
+useEscapeBack(() => {
+	if (createOpen.value) {
+		closeCreate();
+		return true;
+	}
+	return false;
+}, "/money");
 
 const loading = ref(false);
 const error = ref("");
@@ -19,6 +35,63 @@ const expanded = ref(new Set());
 const balances = ref(new Map());
 const balancesLoading = ref(false);
 const search = ref("");
+const includeDisabled = ref(false);
+
+const ACCOUNT_TYPE_OPTIONS = [
+	"Accumulated Depreciation",
+	"Asset Received But Not Billed",
+	"Bank",
+	"Cash",
+	"Chargeable",
+	"Capital Work in Progress",
+	"Cost of Goods Sold",
+	"Current Asset",
+	"Current Liability",
+	"Depreciation",
+	"Direct Expense",
+	"Direct Income",
+	"Equity",
+	"Expense Account",
+	"Expenses Included In Asset Valuation",
+	"Expenses Included In Valuation",
+	"Fixed Asset",
+	"Income Account",
+	"Indirect Expense",
+	"Indirect Income",
+	"Liability",
+	"Payable",
+	"Receivable",
+	"Round Off",
+	"Round Off for Opening",
+	"Stock",
+	"Stock Adjustment",
+	"Stock Received But Not Billed",
+	"Service Received But Not Billed",
+	"Tax",
+	"Temporary",
+];
+
+const createOpen = ref(false);
+const editMode = ref(false);
+const editingName = ref("");
+const submitting = ref(false);
+const submitError = ref("");
+const currencyOptions = ref([]);
+const optionsLoaded = ref(false);
+
+function blankAccount() {
+	return {
+		account_name: "",
+		account_number: "",
+		parent_account: "",
+		is_group: 0,
+		account_type: "",
+		account_currency: "",
+		opening_balance: null,
+		opening_date: "",
+	};
+}
+const form = ref(blankAccount());
 
 const ROOT_ICONS = {
 	Asset: "ti-building-bank",
@@ -80,6 +153,17 @@ const currency = computed(
 		"USD"
 );
 
+const parentAccountOptions = computed(() =>
+	flat.value
+		.filter((r) => r.is_group && r.name !== editingName.value)
+		.map((r) => ({ value: r.name, label: r.account_name || r.name }))
+);
+
+const selectedParentRootType = computed(() => {
+	const parent = flat.value.find((r) => r.name === form.value.parent_account);
+	return parent ? parent.root_type : "";
+});
+
 async function load() {
 	if (!activeCompany.value) return;
 	loading.value = true;
@@ -87,6 +171,7 @@ async function load() {
 	try {
 		const rows = await call("stabler.api.money.chart_of_accounts", {
 			company: activeCompany.value,
+			include_disabled: includeDisabled.value ? 1 : 0,
 		});
 		flat.value = rows || [];
 		// Expand every group by default — users want the full tree visible
@@ -154,6 +239,120 @@ function collapseAll() {
 	expanded.value = new Set();
 }
 
+async function loadCreateOptions() {
+	if (optionsLoaded.value) return;
+	try {
+		const rows = await call("stabler.api.sales.list_currencies");
+		currencyOptions.value = (rows || []).map((c) => ({ value: c.name, label: c.name }));
+		optionsLoaded.value = true;
+	} catch {
+		currencyOptions.value = [];
+	}
+}
+
+function openCreate(parentNode) {
+	editMode.value = false;
+	editingName.value = "";
+	submitError.value = "";
+	form.value = blankAccount();
+	if (parentNode?.is_group) form.value.parent_account = parentNode.name;
+	loadCreateOptions();
+	createOpen.value = true;
+}
+
+function closeCreate() {
+	createOpen.value = false;
+	submitError.value = "";
+	form.value = blankAccount();
+	editMode.value = false;
+	editingName.value = "";
+}
+
+async function openEdit(node) {
+	if (!node || node.is_group === undefined) return;
+	editMode.value = true;
+	editingName.value = node.name;
+	submitError.value = "";
+	loadCreateOptions();
+	createOpen.value = true;
+	try {
+		const doc = await call("stabler.api.money.get_account", { name: node.name });
+		form.value = {
+			account_name: doc.account_name || "",
+			account_number: doc.account_number || "",
+			parent_account: doc.parent_account || "",
+			is_group: doc.is_group ? 1 : 0,
+			account_type: doc.account_type || "",
+			account_currency: doc.account_currency || "",
+			opening_balance: null,
+			opening_date: "",
+		};
+	} catch (err) {
+		submitError.value = err?.message || "Failed to load account.";
+	}
+}
+
+async function submitForm() {
+	submitting.value = true;
+	submitError.value = "";
+	try {
+		if (editMode.value) {
+			await call("stabler.api.money.update_account", {
+				name: editingName.value,
+				account_name: form.value.account_name,
+				account_number: form.value.account_number || null,
+				account_type: form.value.account_type || null,
+				account_currency: form.value.account_currency || null,
+				parent_account: form.value.parent_account || null,
+			});
+			toast.success(t("Account updated."));
+		} else {
+			await call("stabler.api.money.create_account", {
+				company: activeCompany.value,
+				account_name: form.value.account_name,
+				parent_account: form.value.parent_account,
+				account_number: form.value.account_number || null,
+				is_group: form.value.is_group ? 1 : 0,
+				account_type: form.value.account_type || null,
+				account_currency: form.value.account_currency || null,
+				opening_balance: form.value.opening_balance || 0,
+				opening_date: form.value.opening_date || null,
+			});
+			toast.success(t("Account created."));
+		}
+		closeCreate();
+		await load();
+		await loadBalances();
+	} catch (err) {
+		submitError.value = err?.message || "Failed to save account.";
+	} finally {
+		submitting.value = false;
+	}
+}
+
+async function toggleDisabled(node) {
+	const willDisable = !node.disabled;
+	const ok = await confirm({
+		title: willDisable ? t("Disable account?") : t("Enable account?"),
+		message: willDisable
+			? t("This account will be hidden from the active chart of accounts.")
+			: t("This account will be shown in the active chart of accounts again."),
+		confirmLabel: willDisable ? t("Disable") : t("Enable"),
+	});
+	if (!ok) return;
+	try {
+		await call("stabler.api.money.set_account_disabled", {
+			name: node.name,
+			disabled: willDisable ? 1 : 0,
+		});
+		toast.success(willDisable ? t("Account disabled.") : t("Account enabled."));
+		await load();
+		await loadBalances();
+	} catch (err) {
+		toast.error(err?.message || "Failed to update account.");
+	}
+}
+
 onMounted(async () => {
 	await load();
 	await loadBalances();
@@ -162,8 +361,10 @@ watch(activeCompany, async () => {
 	await load();
 	await loadBalances();
 });
+watch(includeDisabled, async () => {
+	await load();
+});
 </script>
-
 <template>
 	<div class="card">
 		<div class="card-header d-flex align-items-center gap-2 flex-wrap">
@@ -194,13 +395,27 @@ watch(activeCompany, async () => {
 			>
 				<i class="ti ti-fold me-1"></i>{{ t("Collapse all") }}
 			</button>
-			<div class="ms-auto" style="max-width: 320px; width: 100%">
+			<div class="form-check m-0 ms-2">
+				<input
+					v-model="includeDisabled"
+					type="checkbox"
+					class="form-check-input"
+					id="include_disabled"
+				/>
+				<label class="form-check-label text-nowrap" for="include_disabled">
+					{{ t("Include disabled") }}
+				</label>
+			</div>
+			<div class="ms-auto d-flex align-items-center gap-2" style="max-width: 420px; width: 100%">
 				<input
 					v-model="search"
 					type="search"
 					class="form-control form-control-sm"
 					:placeholder="t('Search account…')"
 				/>
+				<button type="button" class="btn btn-primary btn-sm flex-shrink-0" @click="openCreate()">
+					<i class="ti ti-plus me-1"></i>{{ t("New account") }}
+				</button>
 			</div>
 		</div>
 		<div v-if="loading" class="card-body text-center py-5">
@@ -225,6 +440,7 @@ watch(activeCompany, async () => {
 						<th class="w-1">{{ t("Type") }}</th>
 						<th class="w-1 text-end text-nowrap">{{ t("Balance (Account Currency)") }}</th>
 						<th class="w-1 text-end text-nowrap">{{ t("Balance") }} ({{ currency }})</th>
+						<th class="w-1 text-end">{{ t("Actions") }}</th>
 					</tr>
 				</thead>
 				<tbody>
@@ -251,7 +467,7 @@ watch(activeCompany, async () => {
 								</button>
 								<span v-else class="d-inline-block" style="width: 1.75rem"></span>
 								<i class="ti me-1" :class="[rootIcon(n.root_type), rootColor(n.root_type)]"></i>
-								<span v-if="n.is_group" class="fw-semibold">
+								<span v-if="n.is_group" class="fw-semibold" :class="{ 'text-muted': n.disabled }">
 									<span v-if="n.account_number" class="text-secondary me-1">{{ n.account_number }}</span>
 									{{ n.account_name || n.name }}
 								</span>
@@ -259,12 +475,14 @@ watch(activeCompany, async () => {
 									v-else
 									href="#"
 									class="link-body-emphasis text-decoration-none"
+									:class="{ 'text-muted': n.disabled }"
 									:title="t('View ledger')"
 									@click.stop.prevent="openLedger(n)"
 								>
 									<span v-if="n.account_number" class="text-secondary me-1">{{ n.account_number }}</span>
 									{{ n.account_name || n.name }}
 								</a>
+								<span v-if="n.disabled" class="badge bg-secondary-lt ms-2">{{ t("Disabled") }}</span>
 							</div>
 						</td>
 						<td>
@@ -290,10 +508,121 @@ watch(activeCompany, async () => {
 								<span class="placeholder col-6"></span>
 							</span>
 						</td>
+						<td class="text-end text-nowrap">
+							<button
+								v-if="n.is_group"
+								type="button"
+								class="btn btn-icon btn-sm btn-ghost-primary"
+								:title="t('Add child account')"
+								@click.stop="openCreate(n)"
+							>
+								<i class="ti ti-plus"></i>
+							</button>
+							<button
+								type="button"
+								class="btn btn-icon btn-sm btn-ghost-secondary ms-1"
+								:title="t('Edit')"
+								@click.stop="openEdit(n)"
+							>
+								<i class="ti ti-edit"></i>
+							</button>
+							<button
+								type="button"
+								class="btn btn-icon btn-sm ms-1"
+								:class="n.disabled ? 'btn-ghost-success' : 'btn-ghost-warning'"
+								:title="n.disabled ? t('Enable') : t('Disable')"
+								@click.stop="toggleDisabled(n)"
+							>
+								<i class="ti" :class="n.disabled ? 'ti-toggle-left' : 'ti-toggle-right'"></i>
+							</button>
+						</td>
 					</tr>
 				</tbody>
 			</table>
 		</div>
 	</div>
 
+	<div v-if="createOpen" class="modal-backdrop fade show" @click="closeCreate"></div>
+	<div v-if="createOpen" class="modal fade show d-block" tabindex="-1" role="dialog" @click.self="closeCreate">
+		<div class="modal-dialog modal-dialog-centered" role="document">
+			<div class="modal-content">
+				<div class="modal-header">
+					<h5 class="modal-title">
+						{{ editMode ? t("Edit account") : t("New account") }}
+					</h5>
+					<button type="button" class="btn-close" aria-label="Close" @click="closeCreate" :disabled="submitting"></button>
+				</div>
+				<div class="modal-body">
+					<div v-if="submitError" class="alert alert-danger">{{ submitError }}</div>
+					<div class="row g-3">
+						<div class="col-md-8">
+							<label class="form-label required">{{ t("Account name") }}</label>
+							<input v-model="form.account_name" type="text" class="form-control" autofocus required />
+						</div>
+						<div class="col-md-4">
+							<label class="form-label">{{ t("Account number") }}</label>
+							<input v-model="form.account_number" type="text" class="form-control" />
+						</div>
+						<div class="col-12">
+							<label class="form-label">{{ t("Parent account") }}</label>
+							<Select
+								v-model="form.parent_account"
+								:options="parentAccountOptions"
+								placeholder="—"
+								:clearable="true"
+							/>
+						</div>
+						<div class="col-md-6">
+							<label class="form-label">{{ t("Account type") }}</label>
+							<Select
+								v-model="form.account_type"
+								:options="ACCOUNT_TYPE_OPTIONS"
+								placeholder="—"
+								:clearable="true"
+							/>
+						</div>
+						<div class="col-md-6">
+							<label class="form-label">{{ t("Account currency") }}</label>
+							<Select
+								v-model="form.account_currency"
+								:options="currencyOptions"
+								placeholder="—"
+								:clearable="true"
+							/>
+						</div>
+						<div class="col-12" v-if="!editMode">
+							<div class="form-check">
+								<input v-model="form.is_group" :true-value="1" :false-value="0" class="form-check-input" type="checkbox" id="acc_is_group" />
+								<label class="form-check-label" for="acc_is_group">
+									{{ t("Group account (can contain children, holds no transactions itself)") }}
+								</label>
+							</div>
+						</div>
+						<!-- Opening balance fields: only visible when creating a leaf account -->
+						<template v-if="!editMode && !form.is_group">
+							<div class="col-md-6">
+								<label class="form-label">{{ t("Opening balance") }}</label>
+								<MoneyInput
+									v-model="form.opening_balance"
+									:currency="form.account_currency || currency"
+									:language="user.language"
+								/>
+							</div>
+							<div class="col-md-6">
+								<label class="form-label">{{ t("Opening date") }}</label>
+								<DateInput v-model="form.opening_date" />
+							</div>
+						</template>
+					</div>
+				</div>
+				<div class="modal-footer">
+					<button type="button" class="btn btn-link link-secondary" :disabled="submitting" @click="closeCreate">{{ t("Cancel") }}</button>
+					<button type="button" class="btn btn-primary ms-auto" :disabled="submitting" @click="submitForm">
+						<span v-if="submitting" class="spinner-border spinner-border-sm me-1"></span>
+						{{ t("Save") }}
+					</button>
+				</div>
+			</div>
+		</div>
+	</div>
 </template>

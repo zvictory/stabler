@@ -1,0 +1,113 @@
+{
+ "actions": [],
+ "creation": "2026-07-10 12:00:00.000000",
+ "doctype": "DocType",
+ "editable_grid": 1,
+ "engine": "InnoDB",
+ "field_order": [
+  "item_code",
+  "item_name",
+  "expected_boxes",
+  "expected_box_kg",
+  "expected_total_kg",
+  "received_boxes",
+  "received_kg",
+  "pending_boxes",
+  "pending_kg",
+  "variance_kg",
+  "variance_percentage",
+  "status"
+ ],
+ "fields": [
+  {
+   "fieldname": "item_code",
+   "fieldtype": "Link",
+   "in_list_view": 1,
+   "label": "Item",
+   "options": "Item",
+   "reqd": 1
+  },
+  {
+   "fieldname": "item_name",
+   "fieldtype": "Data",
+   "label": "Item Name"
+  },
+  {
+   "fieldname": "expected_boxes",
+   "fieldtype": "Int",
+   "in_list_view": 1,
+   "label": "Expected Boxes"
+  },
+  {
+   "default": "20",
+   "fieldname": "expected_box_kg",
+   "fieldtype": "Float",
+   "label": "Expected Box Kg"
+  },
+  {
+   "fieldname": "expected_total_kg",
+   "fieldtype": "Float",
+   "in_list_view": 1,
+   "label": "Expected Total Kg"
+  },
+  {
+   "fieldname": "received_boxes",
+   "fieldtype": "Int",
+   "in_list_view": 1,
+   "label": "Received Boxes",
+   "read_only": 1
+  },
+  {
+   "fieldname": "received_kg",
+   "fieldtype": "Float",
+   "in_list_view": 1,
+   "label": "Received Kg",
+   "read_only": 1
+  },
+  {
+   "fieldname": "pending_boxes",
+   "fieldtype": "Int",
+   "label": "Pending Boxes",
+   "read_only": 1
+  },
+  {
+   "fieldname": "pending_kg",
+   "fieldtype": "Float",
+   "label": "Pending Kg",
+   "read_only": 1
+  },
+  {
+   "fieldname": "variance_kg",
+   "fieldtype": "Float",
+   "label": "Variance Kg",
+   "read_only": 1
+  },
+  {
+   "fieldname": "variance_percentage",
+   "fieldtype": "Percent",
+   "label": "Variance %",
+   "read_only": 1
+  },
+  {
+   "default": "Pending",
+   "fieldname": "status",
+   "fieldtype": "Select",
+   "in_list_view": 1,
+   "label": "Status",
+   "options": "Pending\nPartial\nComplete\nDiscrepancy",
+   "read_only": 1
+  }
+ ],
+ "index_web_pages_for_search": 1,
+ "istable": 1,
+ "links": [],
+ "modified": "2026-07-10 12:00:00.000000",
+ "modified_by": "Administrator",
+ "module": "Stabler",
+ "name": "GRN Checklist Item",
+ "owner": "Administrator",
+ "permissions": [],
+ "sort_field": "creation",
+ "sort_order": "DESC",
+ "states": []
+}

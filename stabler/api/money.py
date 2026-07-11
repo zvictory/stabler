@@ -78,28 +78,221 @@ from stabler.api._common import (
 
 
 @frappe.whitelist()
-def chart_of_accounts(company: str):
+def chart_of_accounts(company: str, include_disabled: int = 0):
 	"""Return the full chart of accounts for `company` as a flat list.
 	The client assembles the tree from (name, parent_account)."""
 	_require_company(company)
 	_assert_company_scope(company)  # tenant isolation: reject a foreign company arg
+	filters = {"company": company}
+	fields = [
+		"name",
+		"account_name",
+		"parent_account",
+		"is_group",
+		"root_type",
+		"account_type",
+		"account_currency",
+		"account_number",
+	]
+	if cint(include_disabled):
+		fields.append("disabled")
+	else:
+		filters["disabled"] = 0
 	rows = frappe.get_all(
 		"Account",
-		filters={"company": company, "disabled": 0},
-		fields=[
-			"name",
-			"account_name",
-			"parent_account",
-			"is_group",
-			"root_type",
-			"account_type",
-			"account_currency",
-			"account_number",
-		],
+		filters=filters,
+		fields=fields,
 		order_by="lft asc",
 		limit_page_length=5000,
 	)
 	return rows
+
+
+@frappe.whitelist()
+def get_account(name: str) -> dict:
+	"""Fetch one Account's editable fields for the edit modal."""
+	if not name:
+		frappe.throw(_("Account name is required."))
+	if not frappe.db.exists("Account", name):
+		frappe.throw(_("Account {0} not found.").format(name))
+	_assert_can_read("Account", name)
+	doc = frappe.get_doc("Account", name)
+	return {
+		"name": doc.name,
+		"account_name": doc.account_name,
+		"account_number": doc.account_number,
+		"parent_account": doc.parent_account,
+		"is_group": doc.is_group,
+		"account_type": doc.account_type,
+		"account_currency": doc.account_currency,
+		"root_type": doc.root_type,
+		"report_type": doc.report_type,
+		"disabled": doc.disabled,
+		"company": doc.company,
+	}
+
+
+def _resolve_temporary_opening_account(company: str) -> str:
+	rows = frappe.get_all(
+		"Account",
+		filters={"company": company, "account_type": "Temporary", "is_group": 0},
+		fields=["name"],
+		limit_page_length=1,
+	)
+	if not rows:
+		frappe.throw(
+			_("No Temporary Opening account found for {0}; add one before posting an opening balance.").format(
+				company
+			)
+		)
+	return rows[0]["name"]
+
+
+@frappe.whitelist()
+def create_account(
+	company: str,
+	account_name: str,
+	parent_account: str,
+	account_number: str | None = None,
+	is_group: int = 0,
+	account_type: str | None = None,
+	account_currency: str | None = None,
+	opening_balance: float = 0,
+	opening_date: str | None = None,
+) -> dict:
+	"""Create an Account under `parent_account`. If `opening_balance` is non-zero
+	on a leaf account, post a submitted opening Journal Entry against the
+	company's Temporary Opening account."""
+	_require_company(company)
+	_assert_company_scope(company)
+	account_name = (account_name or "").strip()
+	if not account_name:
+		frappe.throw(_("Account name is required."))
+	if not parent_account:
+		frappe.throw(_("Parent account is required."))
+	parent = frappe.db.get_value(
+		"Account", parent_account, ["company", "is_group"], as_dict=True
+	)
+	if not parent:
+		frappe.throw(_("Parent account {0} not found.").format(parent_account))
+	if parent.company != company:
+		frappe.throw(_("Parent account {0} does not belong to {1}.").format(parent_account, company))
+	if not cint(parent.is_group):
+		frappe.throw(_("Parent account {0} is not a group account.").format(parent_account))
+
+	is_group = cint(is_group)
+	account_number = (account_number or "").strip() or None
+	if account_number and frappe.db.exists(
+		"Account", {"company": company, "account_number": account_number}
+	):
+		frappe.throw(_("Account number {0} is already used in {1}.").format(account_number, company))
+
+	doc = frappe.new_doc("Account")
+	doc.company = company
+	doc.account_name = account_name
+	doc.parent_account = parent_account
+	doc.is_group = is_group
+	if account_number:
+		doc.account_number = account_number
+	if account_type:
+		doc.account_type = account_type
+	if account_currency:
+		doc.account_currency = account_currency
+	doc.insert(ignore_permissions=False)
+
+	opening_balance = flt(opening_balance)
+	if opening_balance and not is_group:
+		temp_account = _resolve_temporary_opening_account(company)
+		debit_side = doc.root_type in ("Asset", "Expense")
+		je = frappe.new_doc("Journal Entry")
+		je.company = company
+		je.posting_date = getdate(opening_date) if opening_date else getdate(today())
+		je.voucher_type = "Opening Entry"
+		je.is_opening = "Yes"
+		je.append(
+			"accounts",
+			{
+				"account": doc.name,
+				"debit_in_account_currency": opening_balance if debit_side else 0,
+				"credit_in_account_currency": 0 if debit_side else opening_balance,
+			},
+		)
+		je.append(
+			"accounts",
+			{
+				"account": temp_account,
+				"debit_in_account_currency": 0 if debit_side else opening_balance,
+				"credit_in_account_currency": opening_balance if debit_side else 0,
+			},
+		)
+		je.insert(ignore_permissions=False)
+		je.submit()
+
+	return {"name": doc.name, "account_name": doc.account_name}
+
+
+@frappe.whitelist()
+def update_account(
+	name: str,
+	account_name: str,
+	account_number: str | None = None,
+	account_type: str | None = None,
+	account_currency: str | None = None,
+	parent_account: str | None = None,
+) -> dict:
+	"""Update an existing Account's editable fields (no opening-balance change here)."""
+	if not name:
+		frappe.throw(_("Account name is required."))
+	if not frappe.db.exists("Account", name):
+		frappe.throw(_("Account {0} not found.").format(name))
+	_assert_can_write("Account", name, "write")
+	doc = frappe.get_doc("Account", name)
+	_assert_company_scope(doc.company)
+
+	account_name = (account_name or "").strip()
+	if not account_name:
+		frappe.throw(_("Account name is required."))
+	account_number = (account_number or "").strip() or None
+	if account_number and account_number != doc.account_number and frappe.db.exists(
+		"Account", {"company": doc.company, "account_number": account_number}
+	):
+		frappe.throw(_("Account number {0} is already used in {1}.").format(account_number, doc.company))
+
+	if parent_account and parent_account != doc.parent_account:
+		parent = frappe.db.get_value(
+			"Account", parent_account, ["company", "is_group"], as_dict=True
+		)
+		if not parent:
+			frappe.throw(_("Parent account {0} not found.").format(parent_account))
+		if parent.company != doc.company:
+			frappe.throw(_("Parent account {0} does not belong to {1}.").format(parent_account, doc.company))
+		if not cint(parent.is_group):
+			frappe.throw(_("Parent account {0} is not a group account.").format(parent_account))
+		doc.parent_account = parent_account
+
+	doc.account_name = account_name
+	doc.account_number = account_number
+	if account_type is not None:
+		doc.account_type = account_type
+	if account_currency:
+		doc.account_currency = account_currency
+	doc.save(ignore_permissions=False)
+	return {"name": doc.name, "account_name": doc.account_name}
+
+
+@frappe.whitelist()
+def set_account_disabled(name: str, disabled: int) -> dict:
+	"""Disable / enable an Account. No physical delete is ever exposed."""
+	if not name:
+		frappe.throw(_("Account name is required."))
+	if not frappe.db.exists("Account", name):
+		frappe.throw(_("Account {0} not found.").format(name))
+	_assert_can_write("Account", name, "write")
+	doc = frappe.get_doc("Account", name)
+	_assert_company_scope(doc.company)
+	doc.disabled = 1 if cint(disabled) else 0
+	doc.save(ignore_permissions=False)
+	return {"name": doc.name, "disabled": doc.disabled}
 
 
 @frappe.whitelist()

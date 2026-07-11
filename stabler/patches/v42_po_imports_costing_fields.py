@@ -27,9 +27,13 @@ _FIELD_DEFS = {
 		},
 		{
 			"fieldname": "custom_prepayment_type",
-			"label": "Prepayment Type",
+			"label": "Advance Base",
 			"fieldtype": "Select",
-			"options": "\nAdvance\nLC\nOpen Account",
+			"options": "\nDocs Total\nAgreed Total",
+			"description": (
+				"Which base the advance percentage applies to (Django prepayment_base): "
+				"the declared Docs Total or the real Agreed Total."
+			),
 			"insert_after": "custom_advance_percentage",
 			"permlevel": 1,
 		},

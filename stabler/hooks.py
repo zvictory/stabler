@@ -87,6 +87,7 @@ doc_events = {
 		"validate": [
 			"stabler.api._accounts.validate_sales_invoice",
 			"stabler.api.period_close.enforce_on_validate",
+			"stabler.customer_hooks.check_sales_invoice_credit_limit",
 		],
 		"before_submit": [
 			"stabler.api.sod_enforce.assert_no_sod_conflict",
@@ -195,6 +196,55 @@ doc_events = {
 		],
 		"on_submit": [
 			"stabler.integrations.one_c.hooks.enqueue_push",
+		],
+	},
+	# Imports-module status automation. Each handler self-gates on the migration
+	# flag + per-company enable_imports toggle (critique M6), so these are inert
+	# on the other tenants of the shared bench.
+	"Commercial Invoice": {
+		"on_update": [
+			"stabler.stabler.imports_module.hooks.on_commercial_invoice_update",
+		],
+	},
+	"Import Container": {
+		"on_update": [
+			"stabler.stabler.imports_module.hooks.on_container_update",
+		],
+	},
+	"Import Truck": {
+		"on_update": [
+			"stabler.stabler.imports_module.hooks.on_truck_update",
+		],
+	},
+	# Import Expense: on_update create a DRAFT service Purchase Invoice for a
+	# non-transport expense with a supplier + amount (transport expenses are billed
+	# by the truck CROSSED_BORDER hook via the 3-tier lookup). Self-gated on the
+	# migration flag + per-company enable_imports toggle (critique M6).
+	"Import Expense": {
+		"on_update": [
+			"stabler.stabler.imports_module.hooks.import_expense_on_update",
+		],
+	},
+	# GRN Checklist (submittable): received-kg + vet-cert gates before submit,
+	# DRAFT Landed Cost Voucher build on submit. Both self-gate on the migration
+	# flag + per-company enable_imports toggle (critique M6).
+	"GRN Checklist": {
+		"before_submit": [
+			"stabler.stabler.imports_module.hooks.grn_before_submit",
+		],
+		"on_submit": [
+			"stabler.stabler.imports_module.hooks.grn_on_submit",
+		],
+	},
+	# Truck Receipt (submittable): on submit create + submit the partial Purchase
+	# Receipt, recompute the parent GRN, advance the truck; on cancel block while
+	# the PR is live, then recompute the GRN.
+	"Truck Receipt": {
+		"on_submit": [
+			"stabler.stabler.imports_module.hooks.truck_receipt_on_submit",
+		],
+		"on_cancel": [
+			"stabler.stabler.imports_module.hooks.truck_receipt_on_cancel",
 		],
 	},
 	# Single-level customer parent/child hierarchy (plan §2 K2). Self-gates on the

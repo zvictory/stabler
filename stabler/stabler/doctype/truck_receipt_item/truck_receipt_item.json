@@ -1,0 +1,75 @@
+{
+ "actions": [],
+ "creation": "2026-07-10 12:00:00.000000",
+ "doctype": "DocType",
+ "editable_grid": 1,
+ "engine": "InnoDB",
+ "field_order": [
+  "grn_item_code",
+  "received_boxes",
+  "received_kg",
+  "condition",
+  "damaged_boxes",
+  "rejected_boxes",
+  "expiry_date"
+ ],
+ "fields": [
+  {
+   "fieldname": "grn_item_code",
+   "fieldtype": "Link",
+   "in_list_view": 1,
+   "label": "Item",
+   "options": "Item",
+   "reqd": 1
+  },
+  {
+   "fieldname": "received_boxes",
+   "fieldtype": "Int",
+   "in_list_view": 1,
+   "label": "Received Boxes"
+  },
+  {
+   "fieldname": "received_kg",
+   "fieldtype": "Float",
+   "in_list_view": 1,
+   "label": "Received Kg"
+  },
+  {
+   "default": "Good",
+   "description": "Only Good-condition weight enters the Purchase Receipt; Damaged/Rejected is kept for the claim trail.",
+   "fieldname": "condition",
+   "fieldtype": "Select",
+   "in_list_view": 1,
+   "label": "Condition",
+   "options": "Good\nDamaged\nRejected"
+  },
+  {
+   "fieldname": "damaged_boxes",
+   "fieldtype": "Int",
+   "label": "Damaged Boxes"
+  },
+  {
+   "fieldname": "rejected_boxes",
+   "fieldtype": "Int",
+   "label": "Rejected Boxes"
+  },
+  {
+   "description": "Optional expiry for the auto-created Batch; when empty no expiry is set.",
+   "fieldname": "expiry_date",
+   "fieldtype": "Date",
+   "label": "Expiry Date"
+  }
+ ],
+ "index_web_pages_for_search": 1,
+ "istable": 1,
+ "links": [],
+ "modified": "2026-07-10 12:00:00.000000",
+ "modified_by": "Administrator",
+ "module": "Stabler",
+ "name": "Truck Receipt Item",
+ "owner": "Administrator",
+ "permissions": [],
+ "sort_field": "creation",
+ "sort_order": "DESC",
+ "states": []
+}
