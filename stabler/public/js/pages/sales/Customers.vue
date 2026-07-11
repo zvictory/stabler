@@ -107,6 +107,8 @@ function blankCustomer() {
 		tax_id: "",
 		default_price_list: "",
 		default_currency: "",
+		parent_customer: "",
+		job_status: "",
 	};
 }
 const form = ref(blankCustomer());
@@ -135,25 +137,8 @@ const customerTypeOptions = computed(() =>
 	CUSTOMER_TYPES.map((ct) => ({ value: ct, label: t(ct) }))
 );
 
-const filteredCustomers = computed(() => {
-	let list = customers.value;
-	if (filterGroup.value) list = list.filter((c) => c.customer_group === filterGroup.value);
-	if (filterTerritory.value) list = list.filter((c) => c.territory === filterTerritory.value);
-	
-	if (sortField.value === "name") {
-		list = [...list].sort((a, b) => {
-			const cmp = (a.customer_name || "").localeCompare(b.customer_name || "");
-			return sortAsc.value ? cmp : -cmp;
-		});
-	} else if (sortField.value === "balance") {
-		list = [...list].sort((a, b) => {
-			const av = Number(a.balance_acc ?? a.balance_base ?? 0);
-			const bv = Number(b.balance_acc ?? b.balance_base ?? 0);
-			return sortAsc.value ? av - bv : bv - av;
-		});
-	}
-	return list;
-});
+// Master-list rows are built by `visibleRows` (flat/search or tree). Sorting and
+// filtering live in `sortCustomerList` / `visibleRows` below.
 
 function toggleSort(field) {
 	if (sortField.value === field) {
@@ -167,6 +152,176 @@ function toggleSort(field) {
 const totalReceivable = computed(() =>
 	customers.value.reduce((sum, c) => sum + Number(c.balance_base || 0), 0)
 );
+
+// --- Parent/child hierarchy (QuickBooks-style, single level) ----------------
+// Auto-detected from the API (has_hierarchy). Tree mode groups children under
+// their parent; parent rows show the CUMULATIVE (own + children) balance from a
+// server-side, GL-accurate rollup map. Tenants without the field see flat mode.
+const hasHierarchy = ref(false);
+const HKEY_VIEW = "stabler.customers.viewMode";
+const HKEY_EXPANDED = "stabler.customers.expanded";
+const viewMode = ref(localStorage.getItem(HKEY_VIEW) === "flat" ? "flat" : "tree");
+const childrenBalBase = ref({});
+const childrenBalAcc = ref({});
+const expanded = ref(loadExpanded());
+
+function loadExpanded() {
+	try {
+		return JSON.parse(localStorage.getItem(HKEY_EXPANDED) || "{}") || {};
+	} catch {
+		return {};
+	}
+}
+watch(viewMode, (v) => localStorage.setItem(HKEY_VIEW, v));
+function toggleView() {
+	viewMode.value = viewMode.value === "tree" ? "flat" : "tree";
+}
+function isExpanded(name) {
+	return !!expanded.value[name];
+}
+function toggleExpand(name) {
+	expanded.value = { ...expanded.value, [name]: !expanded.value[name] };
+	localStorage.setItem(HKEY_EXPANDED, JSON.stringify(expanded.value));
+}
+
+const nameToCustomer = computed(() => {
+	const m = {};
+	for (const c of customers.value) m[c.name] = c;
+	return m;
+});
+const childrenByParent = computed(() => {
+	const m = {};
+	for (const c of customers.value) {
+		if (c.parent_customer) (m[c.parent_customer] ||= []).push(c);
+	}
+	return m;
+});
+const isSearching = computed(() => !!(search.value || "").trim());
+const treeMode = computed(
+	() => hasHierarchy.value && viewMode.value === "tree" && !isSearching.value
+);
+
+function ownBalanceOf(c) {
+	return Number(c?.balance_acc ?? c?.balance_base ?? 0);
+}
+function rowIsParent(c) {
+	return (childrenByParent.value[c.name] || []).length > 0;
+}
+function cumulativeAccOf(name) {
+	return ownBalanceOf(nameToCustomer.value[name]) + Number(childrenBalAcc.value[name] || 0);
+}
+
+function sortCustomerList(list, useCumulative) {
+	if (sortField.value === "name") {
+		return [...list].sort((a, b) => {
+			const cmp = (a.customer_name || "").localeCompare(b.customer_name || "");
+			return sortAsc.value ? cmp : -cmp;
+		});
+	}
+	if (sortField.value === "balance") {
+		return [...list].sort((a, b) => {
+			const av = useCumulative && rowIsParent(a) ? cumulativeAccOf(a.name) : ownBalanceOf(a);
+			const bv = useCumulative && rowIsParent(b) ? cumulativeAccOf(b.name) : ownBalanceOf(b);
+			return sortAsc.value ? av - bv : bv - av;
+		});
+	}
+	return list;
+}
+
+// Unified row list the master table renders — flat entries in flat/search mode,
+// parents + expanded children in tree mode. Each entry: { key, c, level,
+// isParent, childCount, parentName }.
+const visibleRows = computed(() => {
+	if (!treeMode.value) {
+		let list = customers.value;
+		if (filterGroup.value) list = list.filter((c) => c.customer_group === filterGroup.value);
+		if (filterTerritory.value) list = list.filter((c) => c.territory === filterTerritory.value);
+		list = sortCustomerList(list, false);
+		return list.map((c) => ({
+			key: c.name,
+			c,
+			level: 0,
+			isParent: false,
+			childCount: 0,
+			parentName: c.parent_customer
+				? nameToCustomer.value[c.parent_customer]?.customer_name || c.parent_customer
+				: "",
+		}));
+	}
+	let tops = customers.value.filter((c) => !c.parent_customer);
+	if (filterGroup.value) tops = tops.filter((c) => c.customer_group === filterGroup.value);
+	if (filterTerritory.value) tops = tops.filter((c) => c.territory === filterTerritory.value);
+	const out = [];
+	for (const p of sortCustomerList(tops, true)) {
+		const kids = childrenByParent.value[p.name] || [];
+		const isParent = kids.length > 0;
+		out.push({ key: p.name, c: p, level: 0, isParent, childCount: kids.length, parentName: "" });
+		if (isParent && isExpanded(p.name)) {
+			for (const k of sortCustomerList(kids, false)) {
+				out.push({ key: k.name, c: k, level: 1, isParent: false, childCount: 0, parentName: "" });
+			}
+		}
+	}
+	return out;
+});
+
+function rowBalanceValue(row) {
+	return row.isParent ? cumulativeAccOf(row.c.name) : ownBalanceOf(row.c);
+}
+function rowBalanceCurrency(row) {
+	return rowBalanceValue(row) ? row.c.account_currency || currency.value : currency.value;
+}
+function rowCumulativeTooltip(row) {
+	if (!row.isParent) return "";
+	const cur = row.c.account_currency || currency.value;
+	const own = formatMoney(ownBalanceOf(row.c), cur, user.value.language);
+	const kids = formatMoney(Number(childrenBalAcc.value[row.c.name] || 0), cur, user.value.language);
+	return `${t("Own")}: ${own} · ${t("Children")}: ${kids}`;
+}
+
+async function loadChildrenBalanceMap() {
+	try {
+		const res = await call("stabler.api.sales.customer_children_balance_map", {
+			company: activeCompany.value,
+		});
+		childrenBalBase.value = res.base || {};
+		childrenBalAcc.value = res.acc || {};
+	} catch {
+		childrenBalBase.value = {};
+		childrenBalAcc.value = {};
+	}
+}
+
+// Right-panel hierarchy helpers.
+const selectedIsParent = computed(() => !!selectedDetail.value?.is_parent);
+const headerBalanceValue = computed(() => {
+	if (selectedIsParent.value) return selectedDetail.value?.cumulative_balance_acc ?? 0;
+	return selected.value?.balance_acc ?? selected.value?.balance_base ?? 0;
+});
+const headerBalanceCurrency = computed(
+	() => selected.value?.account_currency || selectedDetail.value?.account_currency || currency.value
+);
+
+function goToCustomerByName(name) {
+	const row = nameToCustomer.value[name];
+	if (row) selectCustomer(row);
+}
+
+// Parent picker (New/Edit): only standalone/parent customers (no own parent),
+// excluding the customer being edited. Job status shown only when a parent is set.
+const parentPickerOptions = computed(() => {
+	const self = editingName.value;
+	return customers.value
+		.filter((c) => !c.parent_customer && c.name !== self)
+		.map((c) => ({ name: c.name, label: c.customer_name || c.name }));
+});
+const jobStatusOptions = computed(() => [
+	{ value: "", label: t("— none —") },
+	{ value: "Active", label: t("Active") },
+	{ value: "Completed", label: t("Completed") },
+	{ value: "On Hold", label: t("On Hold") },
+	{ value: "Cancelled", label: t("Cancelled") },
+]);
 
 const ledgerRows = computed(() => {
 	const e = ledger.value?.entries || [];
@@ -258,6 +413,8 @@ async function loadCustomers() {
 		});
 		customers.value = res.rows || [];
 		companyCurrency.value = res.company_currency || "";
+		hasHierarchy.value = !!res.has_hierarchy;
+		if (hasHierarchy.value) loadChildrenBalanceMap();
 		if (selected.value) {
 			const fresh = customers.value.find((c) => c.name === selected.value.name);
 			if (fresh) {
@@ -328,6 +485,8 @@ async function selectCustomer(c) {
 		});
 		recentInvoices.value = detail.recent_invoices || [];
 		selectedDetail.value = detail;
+		// The Children tab only exists for parents — fall back to Ledger otherwise.
+		if (currentTab.value === "children" && !detail.is_parent) currentTab.value = "ledger";
 	} catch (err) {
 		console.error(err);
 	}
@@ -419,6 +578,8 @@ async function openEdit(c) {
 			tax_id: data.tax_id || "",
 			default_price_list: data.default_price_list || "",
 			default_currency: data.default_currency || "",
+			parent_customer: data.parent_customer || "",
+			job_status: data.job_status || "",
 		};
 	} catch (err) {
 		submitError.value = err?.message || t("Failed to load customer.");
@@ -434,6 +595,8 @@ async function submitCreate() {
 	submitError.value = "";
 	const f = form.value;
 	if (!f.customer_name.trim()) return (submitError.value = t("Customer name is required."));
+	// Job status only applies to a child (parent set); clear it otherwise.
+	const jobStatus = f.parent_customer ? f.job_status || "" : "";
 	submitting.value = true;
 	try {
 		if (editMode.value) {
@@ -448,6 +611,8 @@ async function submitCreate() {
 				tax_id: f.tax_id || null,
 				default_price_list: f.default_price_list || null,
 				default_currency: f.default_currency || null,
+				parent_customer: f.parent_customer || "",
+				job_status: jobStatus,
 			});
 			createOpen.value = false;
 			await loadCustomers();
@@ -466,6 +631,8 @@ async function submitCreate() {
 				tax_id: f.tax_id || null,
 				default_price_list: f.default_price_list || null,
 				default_currency: f.default_currency || null,
+				parent_customer: f.parent_customer || "",
+				job_status: jobStatus,
 			});
 			createOpen.value = false;
 			await loadCustomers();
@@ -604,6 +771,15 @@ watch(activeCompany, () => {
 								/>
 								<kbd class="position-absolute top-50 translate-middle-y text-secondary font-monospace" style="right: 0.5rem; font-size: 0.68rem">⌘K</kbd>
 							</div>
+							<button
+								v-if="hasHierarchy"
+								type="button"
+								class="btn btn-sm btn-ghost-secondary px-2"
+								:title="viewMode === 'tree' ? t('Flat view') : t('Tree view')"
+								@click="toggleView"
+							>
+								<i class="ti" :class="viewMode === 'tree' ? 'ti-list' : 'ti-sitemap'"></i>
+							</button>
 							<button type="button" class="btn btn-sm btn-primary" @click="openCreate">
 								<i class="ti ti-plus me-1"></i>{{ t("New") }}
 							</button>
@@ -628,7 +804,7 @@ watch(activeCompany, () => {
 							</div>
 							<div v-else-if="error" class="alert alert-danger m-2">{{ error }}</div>
 							<EmptyState
-								v-else-if="!filteredCustomers.length"
+								v-else-if="!visibleRows.length"
 								icon="ti-users"
 								accentIcon="ti-user-plus"
 								tone="purple"
@@ -657,34 +833,48 @@ watch(activeCompany, () => {
 									</thead>
 									<tbody>
 										<tr
-											v-for="c in filteredCustomers"
-											:key="c.name"
-											:class="{ 'table-active': selected?.name === c.name }"
+											v-for="row in visibleRows"
+											:key="row.key"
+											:class="{ 'table-active': selected?.name === row.c.name, 'cust-child-row': row.level === 1 }"
 											class="cursor-pointer"
-											@click="selectCustomer(c)"
+											@click="selectCustomer(row.c)"
 										>
 											<td>
-												<div class="d-flex align-items-center gap-2">
-													<PartyAvatar :name="c.customer_name || c.name" size="sm" class="flex-shrink-0" />
-													<div class="text-truncate min-w-0" style="max-width: 170px;">
-														<div class="fw-semibold text-truncate text-body">{{ c.customer_name }}</div>
-														<div class="small stbl-subtext font-monospace text-truncate">{{ c.name }}</div>
+												<div class="d-flex align-items-center gap-1" :style="row.level === 1 ? 'padding-left: 1.5rem' : ''">
+													<button
+														v-if="row.isParent"
+														type="button"
+														class="btn btn-ghost-secondary btn-icon btn-sm p-0 flex-shrink-0 cust-chevron"
+														:title="isExpanded(row.c.name) ? t('Collapse') : t('Expand')"
+														@click.stop="toggleExpand(row.c.name)"
+													>
+														<i class="ti" :class="isExpanded(row.c.name) ? 'ti-chevron-down' : 'ti-chevron-right'"></i>
+													</button>
+													<span v-else-if="row.level === 1" class="cust-tree-line flex-shrink-0"></span>
+													<PartyAvatar :name="row.c.customer_name || row.c.name" size="sm" class="flex-shrink-0" />
+													<div class="text-truncate min-w-0" style="max-width: 160px;">
+														<div class="text-truncate text-body" :class="row.isParent ? 'fw-bold' : 'fw-semibold'">
+															{{ row.c.customer_name }}
+															<span v-if="row.isParent" class="badge bg-secondary-subtle text-secondary ms-1 fw-normal">{{ row.childCount }}</span>
+														</div>
+														<div v-if="row.parentName" class="small stbl-subtext text-truncate">
+															<i class="ti ti-corner-down-right"></i> {{ row.parentName }}
+														</div>
+														<div v-else class="small stbl-subtext font-monospace text-truncate">{{ row.c.name }}</div>
 													</div>
 												</div>
 											</td>
 											<td class="text-end font-monospace stbl-amount align-middle">
 												<div
 													:class="{
-														'text-green': Number(c.balance_acc ?? c.balance_base) > 0,
-														'text-red': Number(c.balance_acc ?? c.balance_base) < 0,
-														'text-secondary': !Number(c.balance_acc ?? c.balance_base),
+														'text-green': rowBalanceValue(row) > 0,
+														'text-red': rowBalanceValue(row) < 0,
+														'text-secondary': !rowBalanceValue(row),
+														'fw-medium': row.isParent,
 													}"
+													:title="rowCumulativeTooltip(row)"
 												>
-													{{ formatMoney(
-														c.balance_acc ?? c.balance_base,
-														Number(c.balance_acc ?? c.balance_base) ? (c.account_currency || currency) : currency,
-														user.language,
-													) }}
+													{{ formatMoney(rowBalanceValue(row), rowBalanceCurrency(row), user.language) }}
 												</div>
 											</td>
 										</tr>
@@ -692,7 +882,7 @@ watch(activeCompany, () => {
 								</table>
 							</div>
 						</div>
-						<div v-if="filteredCustomers.length" class="cust-list-footer p-3 border-top bg-light d-flex align-items-center justify-content-between">
+						<div v-if="visibleRows.length" class="cust-list-footer p-3 border-top bg-light d-flex align-items-center justify-content-between">
 							<span class="text-secondary small fw-semibold">{{ t("Total receivable") }}</span>
 							<span class="font-monospace fw-bold text-body">
 								{{ formatMoney(totalReceivable, currency, user.language) }}
@@ -793,17 +983,45 @@ watch(activeCompany, () => {
 							<div class="p-3 bg-white border-bottom shadow-sm d-flex align-items-center gap-3 flex-wrap">
 								<PartyAvatar :name="selected.customer_name || selected.name" size="lg" class="rounded-3" />
 								<div class="min-w-0 flex-fill">
-									<h2 class="m-0 text-truncate text-body fw-bold">{{ selected.customer_name }}</h2>
+									<button
+										v-if="selectedDetail?.parent_customer"
+										type="button"
+										class="btn btn-sm btn-ghost-secondary px-2 py-0 mb-1"
+										:title="t('Parent Customer')"
+										@click="goToCustomerByName(selectedDetail.parent_customer)"
+									>
+										<i class="ti ti-arrow-up me-1"></i>{{ selectedDetail.parent_customer_name || selectedDetail.parent_customer }}
+									</button>
+									<h2 class="m-0 text-truncate text-body fw-bold">
+										{{ selected.customer_name }}
+										<span v-if="selectedIsParent" class="badge bg-blue-lt text-blue align-middle ms-1">{{ t("Parent") }}</span>
+									</h2>
 									<div class="small stbl-subtext font-monospace">{{ selected.name }}</div>
 								</div>
 								<div class="d-flex gap-2">
 									<button type="button" class="btn btn-sm btn-outline-secondary" @click="openEdit(selected)">
 										<i class="ti ti-pencil me-1"></i>{{ t("Edit") }}
 									</button>
-									<button type="button" class="btn btn-sm btn-outline-secondary" @click="partyPayOpen = true">
+									<button
+										type="button"
+										class="btn btn-sm btn-outline-secondary"
+										:disabled="selectedIsParent"
+										:title="selectedIsParent ? t('Transactions are recorded on child locations') : ''"
+										@click="partyPayOpen = true"
+									>
 										<i class="ti ti-cash me-1"></i>{{ t("Payment") }}
 									</button>
+									<button
+										v-if="selectedIsParent"
+										type="button"
+										class="btn btn-sm btn-primary"
+										disabled
+										:title="t('Transactions are recorded on child locations')"
+									>
+										<i class="ti ti-file-plus me-1"></i>{{ t("New SO") }}
+									</button>
 									<router-link
+										v-else
 										:to="{ path: '/sales/orders/new', query: { new_for: selected.name } }"
 										class="btn btn-sm btn-primary"
 									>
@@ -817,15 +1035,20 @@ watch(activeCompany, () => {
 								<div class="row g-2">
 									<div class="col-md-3">
 										<div class="card border bg-white py-2 px-3 text-center shadow-none rounded-2">
-											<div class="text-secondary small text-uppercase fw-semibold mb-1">{{ t("Balance") }}</div>
+											<div class="text-secondary small text-uppercase fw-semibold mb-1">
+												{{ selectedIsParent ? t("Balance") + " (" + t("Cumulative") + ")" : t("Balance") }}
+											</div>
 											<BalanceChip
-												:value="selected.balance_acc ?? selected.balance_base"
-												:currency="selected.account_currency || currency"
+												:value="headerBalanceValue"
+												:currency="headerBalanceCurrency"
 												:language="user.language"
 												party-type="Customer"
 												size="md"
 												class="w-100 justify-content-center"
 											/>
+											<div v-if="selectedIsParent" class="small text-secondary mt-1">
+												{{ t("Own") }}: {{ formatMoney(selectedDetail?.own_balance_acc || 0, headerBalanceCurrency, user.language) }}
+											</div>
 										</div>
 									</div>
 									<div class="col-md-3">
@@ -858,6 +1081,17 @@ watch(activeCompany, () => {
 							<!-- Tabs Header -->
 							<div class="bg-white border-bottom">
 								<ul class="nav nav-tabs border-0 px-3">
+									<li v-if="selectedIsParent" class="nav-item">
+										<a
+											href="#"
+											class="nav-link border-0 border-bottom-2 py-3"
+											:class="{ active: currentTab === 'children', 'border-primary': currentTab === 'children' }"
+											@click.prevent="currentTab = 'children'"
+										>
+											{{ t("Children") }}
+											<span class="badge bg-secondary-subtle text-secondary ms-1">{{ selectedDetail?.children?.length || 0 }}</span>
+										</a>
+									</li>
 									<li class="nav-item">
 										<a
 											href="#"
@@ -895,6 +1129,60 @@ watch(activeCompany, () => {
 
 							<!-- Tab Panes -->
 							<div class="cust-tab-content bg-white" style="overflow-y: auto; height: calc(100vh - 20rem);">
+								<!-- CHILDREN TAB (parent only) -->
+								<div v-if="currentTab === 'children' && selectedIsParent" class="p-3">
+									<div class="table-responsive">
+										<table class="table table-vcenter table-hover card-table">
+											<thead>
+												<tr>
+													<th>{{ t("Name") }}</th>
+													<th>{{ t("Job Status") }}</th>
+													<th class="text-end">{{ t("Balance") }}</th>
+												</tr>
+											</thead>
+											<tbody>
+												<tr
+													v-for="ch in selectedDetail?.children || []"
+													:key="ch.name"
+													class="cursor-pointer"
+													@click="goToCustomerByName(ch.name)"
+												>
+													<td>
+														<div class="d-flex align-items-center gap-2">
+															<PartyAvatar :name="ch.customer_name || ch.name" size="sm" class="flex-shrink-0" />
+															<div class="text-truncate min-w-0">
+																<div class="fw-semibold text-truncate text-body">{{ ch.customer_name }}</div>
+																<div class="small stbl-subtext font-monospace text-truncate">{{ ch.name }}</div>
+															</div>
+														</div>
+													</td>
+													<td>
+														<span v-if="ch.job_status" class="badge" :class="getStatusBadgeClass('Customer', ch.job_status)">
+															{{ t(ch.job_status) }}
+														</span>
+														<span v-else class="text-secondary">—</span>
+													</td>
+													<td class="text-end font-monospace stbl-amount">
+														<span
+															:class="{
+																'text-green': Number(ch.balance_acc ?? ch.balance_base) > 0,
+																'text-red': Number(ch.balance_acc ?? ch.balance_base) < 0,
+																'text-secondary': !Number(ch.balance_acc ?? ch.balance_base),
+															}"
+														>
+															{{ formatMoney(
+																ch.balance_acc ?? ch.balance_base,
+																Number(ch.balance_acc ?? ch.balance_base) ? (ch.account_currency || currency) : currency,
+																user.language,
+															) }}
+														</span>
+													</td>
+												</tr>
+											</tbody>
+										</table>
+									</div>
+								</div>
+
 								<!-- LEDGER TAB -->
 								<div v-if="currentTab === 'ledger'" class="d-flex flex-column h-100">
 									<!-- Ledger controls -->
@@ -1203,6 +1491,20 @@ watch(activeCompany, () => {
 									</template>
 								</Select>
 							</div>
+							<div class="col-md-6">
+								<label class="form-label">{{ t("Parent Customer") }}</label>
+								<Select
+									v-model="form.parent_customer"
+									:options="parentPickerOptions"
+									value-key="name"
+									label-key="label"
+									:placeholder="t('— none —')"
+								/>
+							</div>
+							<div v-if="form.parent_customer" class="col-md-6">
+								<label class="form-label">{{ t("Job Status") }}</label>
+								<Select v-model="form.job_status" :options="jobStatusOptions" />
+							</div>
 						</div>
 					</div>
 					<div class="modal-footer">
@@ -1275,5 +1577,25 @@ watch(activeCompany, () => {
 
 .cust-list-footer {
 	margin-top: auto;
+}
+
+/* Hierarchy tree rows */
+.cust-child-row {
+	background-color: #fcfcfd;
+}
+.cust-chevron {
+	width: 1.25rem;
+	height: 1.25rem;
+	line-height: 1;
+}
+.cust-tree-line {
+	display: inline-block;
+	width: 1.25rem;
+	border-left: 2px solid var(--cust-border);
+	border-bottom: 2px solid var(--cust-border);
+	height: 0.9rem;
+	margin-right: 0.15rem;
+	border-bottom-left-radius: 0.25rem;
+	opacity: 0.7;
 }
 </style>

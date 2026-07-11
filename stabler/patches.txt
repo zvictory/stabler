@@ -43,3 +43,4 @@ stabler.patches.v39_deal_uzex_fields
 stabler.patches.v40_imports_roles
 stabler.patches.v41_po_imports_fields
 stabler.patches.v42_po_imports_costing_fields
+stabler.patches.v44_customer_hierarchy_fields

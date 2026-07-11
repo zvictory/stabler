@@ -197,6 +197,14 @@ doc_events = {
 			"stabler.integrations.one_c.hooks.enqueue_push",
 		],
 	},
+	# Single-level customer parent/child hierarchy (plan §2 K2). Self-gates on the
+	# custom_parent_customer field being present + set, so it is inert on tenants
+	# without the Custom Field.
+	"Customer": {
+		"validate": [
+			"stabler.customer_hooks.validate_hierarchy",
+		],
+	},
 }
 
 custom_fields = {

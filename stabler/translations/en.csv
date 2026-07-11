@@ -3528,3 +3528,17 @@ yr,yr
 — top-level —,— top-level —
 ⚠ {0} line(s) had no cost — verify item valuation; margin may be overstated.,⚠ {0} line(s) had no cost — verify item valuation; margin may be overstated.
 ﻿#,#
+A customer cannot be its own parent.,A customer cannot be its own parent.
+Children,Children
+Cumulative,Cumulative
+Flat view,Flat view
+Job Status,Job Status
+On Hold,On Hold
+Own,Own
+Parent,Parent
+Parent Customer,Parent Customer
+The selected parent customer does not exist.,The selected parent customer does not exist.
+"This customer already has child locations, so it cannot become a child itself.","This customer already has child locations, so it cannot become a child itself."
+Transactions are recorded on child locations,Transactions are recorded on child locations
+Tree view,Tree view
+The selected parent already belongs to another parent. Only one level of hierarchy is allowed.,The selected parent already belongs to another parent. Only one level of hierarchy is allowed.

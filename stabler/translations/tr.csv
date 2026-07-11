@@ -3517,3 +3517,17 @@ yr,yıl
 — select —,
 — top-level —,— üst düzey —
 ⚠ {0} line(s) had no cost — verify item valuation; margin may be overstated.,⚠ {0} satır(da) maliyet yok — kalem değerlemesini doğrulayın; marj abartılmış olabilir.
+A customer cannot be its own parent.,Bir müşteri kendi ana müşterisi olamaz.
+Children,Alt hesaplar
+Cumulative,Kümülatif
+Flat view,Düz görünüm
+Job Status,İş durumu
+On Hold,Beklemede
+Own,Kendi
+Parent,Ana
+Parent Customer,Ana müşteri
+The selected parent customer does not exist.,Seçilen ana müşteri mevcut değil.
+"This customer already has child locations, so it cannot become a child itself.","Bu müşterinin zaten alt konumları var, bu yüzden kendisi alt müşteri olamaz."
+Transactions are recorded on child locations,İşlemler alt konumlara kaydedilir
+Tree view,Ağaç görünümü
+The selected parent already belongs to another parent. Only one level of hierarchy is allowed.,Seçilen ana müşteri zaten başka bir ana müşteriye bağlı. Yalnızca tek seviye hiyerarşiye izin verilir.

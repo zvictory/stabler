@@ -13,6 +13,72 @@ from frappe.utils import cint, flt, getdate, today
 
 from stabler.api._common import _assert_can_read, _assert_can_write, _require_company, _validate_money_overrides, check_concurrency
 from stabler.api._sales_margin import attach_margins
+from stabler.stabler.customer_hierarchy import children_balance_map, cumulative_balance
+
+
+def _has_parent_field() -> bool:
+	"""True when the customer parent/child hierarchy Custom Field exists on this
+	site. Every read of custom_parent_customer is guarded by this so the shared
+	app stays safe on tenants that never ran the v44 patch."""
+	return frappe.db.has_column("Customer", "custom_parent_customer")
+
+
+def _has_job_status_field() -> bool:
+	return frappe.db.has_column("Customer", "custom_job_status")
+
+
+def _gl_balances_for_parties(company: str, parties: list[str]) -> dict:
+	"""{customer: {balance_base, balance_acc, account_currency}} from GL Entry.
+
+	Same signed convention as list_customers_with_balances (positive = owes us).
+	Empty parties → {}."""
+	if not parties:
+		return {}
+	params: dict = {"company": company}
+	placeholders = []
+	for i, name in enumerate(parties):
+		key = f"p{i}"
+		params[key] = name
+		placeholders.append(f"%({key})s")
+	rows = frappe.db.sql(
+		f"""
+		SELECT
+		  party,
+		  SUM(debit - credit) AS balance_base,
+		  SUM(debit_in_account_currency - credit_in_account_currency) AS balance_acc,
+		  MAX(account_currency) AS account_currency
+		FROM `tabGL Entry`
+		WHERE company = %(company)s
+		  AND party_type = 'Customer'
+		  AND is_cancelled = 0
+		  AND party IN ({", ".join(placeholders)})
+		GROUP BY party
+		""",
+		params,
+		as_dict=True,
+	)
+	return {
+		r["party"]: {
+			"balance_base": flt(r["balance_base"]),
+			"balance_acc": flt(r["balance_acc"]),
+			"account_currency": r["account_currency"],
+		}
+		for r in rows
+	}
+
+
+def _apply_hierarchy_fields(doc, parent_customer, job_status) -> None:
+	"""Set the optional hierarchy fields on a Customer doc, guarded by column
+	presence. The Customer.validate hook (customer_hooks.validate_hierarchy)
+	enforces the single-level rules on save. `None` means "leave unchanged"; ""
+	clears the value."""
+	if parent_customer is not None and _has_parent_field():
+		parent_customer = (parent_customer or "").strip()
+		if parent_customer and not frappe.db.exists("Customer", parent_customer):
+			frappe.throw(_("The selected parent customer does not exist."))
+		doc.custom_parent_customer = parent_customer or None
+	if job_status is not None and _has_job_status_field():
+		doc.custom_job_status = (job_status or "").strip() or None
 
 
 _BOILERPLATE_RE = re.compile(
@@ -226,6 +292,9 @@ def list_customers_with_balances(
 	if not frappe.has_permission("Customer", "read"):
 		frappe.throw(_("You are not permitted to view customers."), frappe.PermissionError)
 	company_currency = frappe.db.get_value("Company", company, "default_currency") or ""
+	has_parent_field = _has_parent_field()
+	# Column is optional across tenants — select it only when it exists, else NULL.
+	parent_select = "c.custom_parent_customer" if has_parent_field else "NULL"
 	conds = ["c.disabled = 0"]
 	params: dict = {"company": company, "limit": int(limit)}
 	if search:
@@ -243,6 +312,7 @@ def list_customers_with_balances(
 		  c.default_currency,
 		  c.mobile_no,
 		  c.email_id,
+		  {parent_select} AS parent_customer,
 		  COALESCE(g.balance_base, 0) AS balance_base,
 		  COALESCE(g.balance_acc, 0) AS balance_acc,
 		  g.account_currency,
@@ -312,9 +382,71 @@ def list_customers_with_balances(
 		r["balance_base"] = flt(r["balance_base"])
 		r["balance_acc"] = flt(r["balance_acc"]) + drift_map.get(r["name"], 0.0)
 		r["company_currency"] = company_currency
+		r["parent_customer"] = r.get("parent_customer") or None
 	if cint(only_with_balance):
 		rows = [r for r in rows if flt(r["balance_base"]) != 0]
-	return {"rows": rows, "company_currency": company_currency}
+	# has_hierarchy drives the frontend tree/flat auto-detect. True when ANY
+	# customer on this site carries a parent (independent of search/pagination),
+	# so the toggle appears even while a filtered page shows no parents.
+	has_hierarchy = bool(
+		has_parent_field
+		and frappe.db.exists("Customer", {"custom_parent_customer": ["!=", ""]})
+	)
+	return {
+		"rows": rows,
+		"company_currency": company_currency,
+		"has_hierarchy": has_hierarchy,
+	}
+
+
+@frappe.whitelist()
+def customer_children_balance_map(company: str):
+	"""{parent_name: cumulative children balance} for the whole company.
+
+	Server-side, GL-accurate (same GL Entry party source as the customer list),
+	so parent rollups stay correct regardless of the list's search/pagination.
+	Returns two maps — base currency and account currency — plus company_currency.
+	No-op ({} maps) on tenants without the hierarchy field."""
+	_require_company(company)
+	_assert_company_scope(company)
+	if not frappe.has_permission("Customer", "read"):
+		frappe.throw(_("You are not permitted to view customers."), frappe.PermissionError)
+	company_currency = frappe.db.get_value("Company", company, "default_currency") or ""
+	if not _has_parent_field():
+		return {"base": {}, "acc": {}, "company_currency": company_currency}
+
+	child_rows = frappe.db.sql(
+		"""
+		SELECT
+		  c.name AS name,
+		  c.custom_parent_customer AS parent_customer,
+		  COALESCE(g.balance_base, 0) AS balance_base,
+		  COALESCE(g.balance_acc, 0) AS balance_acc
+		FROM `tabCustomer` c
+		LEFT JOIN (
+		  SELECT
+		    party,
+		    SUM(debit - credit) AS balance_base,
+		    SUM(debit_in_account_currency - credit_in_account_currency) AS balance_acc
+		  FROM `tabGL Entry`
+		  WHERE company = %(company)s
+		    AND party_type = 'Customer'
+		    AND is_cancelled = 0
+		  GROUP BY party
+		) g ON g.party = c.name
+		WHERE c.disabled = 0
+		  AND c.custom_parent_customer IS NOT NULL
+		  AND c.custom_parent_customer != ''
+		""",
+		{"company": company},
+		as_dict=True,
+	)
+	for r in child_rows:
+		r["balance_base"] = flt(r["balance_base"])
+		r["balance_acc"] = flt(r["balance_acc"])
+	base_map = children_balance_map(child_rows, balance_key="balance_base")
+	acc_map = children_balance_map(child_rows, balance_key="balance_acc")
+	return {"base": base_map, "acc": acc_map, "company_currency": company_currency}
 
 
 @frappe.whitelist()
@@ -615,7 +747,67 @@ def customer_detail(name: str, company: str):
 		as_dict=True,
 	)
 
+	# --- Parent/child hierarchy (plan §2 K2) -------------------------------
+	has_parent_field = _has_parent_field()
+	has_job_field = _has_job_status_field()
+	parent_customer = getattr(doc, "custom_parent_customer", None) if has_parent_field else None
+	job_status = getattr(doc, "custom_job_status", None) if has_job_field else None
+	parent_name = (
+		frappe.db.get_value("Customer", parent_customer, "customer_name")
+		if parent_customer
+		else None
+	)
+
+	children: list[dict] = []
+	child_names: list[str] = []
+	if has_parent_field:
+		job_col = ", c.custom_job_status AS job_status" if has_job_field else ", NULL AS job_status"
+		child_recs = frappe.db.sql(
+			f"""
+			SELECT c.name AS name, c.customer_name AS customer_name{job_col}
+			FROM `tabCustomer` c
+			WHERE c.custom_parent_customer = %(name)s AND c.disabled = 0
+			ORDER BY c.customer_name ASC
+			""",
+			{"name": name},
+			as_dict=True,
+		)
+		child_names = [r["name"] for r in child_recs]
+		# Own + children balances in one GL query; GL-accurate cumulative rollup.
+		bal = _gl_balances_for_parties(company, [name, *child_names])
+		for r in child_recs:
+			b = bal.get(r["name"], {})
+			children.append({
+				"name": r["name"],
+				"customer_name": r["customer_name"],
+				"balance_base": b.get("balance_base", 0.0),
+				"balance_acc": b.get("balance_acc", 0.0),
+				"account_currency": b.get("account_currency"),
+				"job_status": r.get("job_status") or None,
+			})
+	else:
+		bal = _gl_balances_for_parties(company, [name])
+
+	own = bal.get(name, {})
+	own_base = own.get("balance_base", 0.0)
+	own_acc = own.get("balance_acc", 0.0)
+	own_acc_currency = own.get("account_currency") or company_currency
+	children_base = sum(flt(c["balance_base"]) for c in children)
+	children_acc = sum(flt(c["balance_acc"]) for c in children)
+
 	return {
+		"parent_customer": parent_customer or None,
+		"parent_customer_name": parent_name,
+		"job_status": job_status or None,
+		"is_parent": bool(children),
+		"children": children,
+		"own_balance_base": flt(own_base),
+		"own_balance_acc": flt(own_acc),
+		"children_balance_base": flt(children_base),
+		"children_balance_acc": flt(children_acc),
+		"cumulative_balance_base": cumulative_balance(own_base, children_base),
+		"cumulative_balance_acc": cumulative_balance(own_acc, children_acc),
+		"account_currency": own_acc_currency,
 		"name": doc.name,
 		"customer_name": doc.customer_name,
 		"customer_group": doc.customer_group,
@@ -1126,6 +1318,8 @@ def create_customer(
 	tax_id: str | None = None,
 	default_price_list: str | None = None,
 	default_currency: str | None = None,
+	parent_customer: str | None = None,
+	job_status: str | None = None,
 ):
 	customer_name = (customer_name or "").strip()
 	if not customer_name:
@@ -1163,6 +1357,7 @@ def create_customer(
 			frappe.throw(f"Unknown price list: {default_price_list}")
 		doc.default_price_list = default_price_list
 	doc.default_currency = default_currency or ""
+	_apply_hierarchy_fields(doc, parent_customer, job_status)
 	doc.insert(ignore_permissions=False)
 	return {"name": doc.name, "customer_name": doc.customer_name}
 
@@ -1184,6 +1379,8 @@ def get_customer(name: str):
 		"tax_id": doc.tax_id or "",
 		"default_price_list": doc.default_price_list or "",
 		"default_currency": doc.default_currency or "",
+		"parent_customer": (getattr(doc, "custom_parent_customer", None) if _has_parent_field() else None) or "",
+		"job_status": (getattr(doc, "custom_job_status", None) if _has_job_status_field() else None) or "",
 	}
 
 
@@ -1199,6 +1396,8 @@ def update_customer(
 	tax_id: str | None = None,
 	default_price_list: str | None = None,
 	default_currency: str | None = None,
+	parent_customer: str | None = None,
+	job_status: str | None = None,
 ):
 	_assert_can_write("Customer", name, "write")
 	if not frappe.db.exists("Customer", name):
@@ -1222,6 +1421,7 @@ def update_customer(
 	doc.tax_id = (tax_id or "").strip()
 	doc.default_price_list = default_price_list or ""
 	doc.default_currency = default_currency or ""
+	_apply_hierarchy_fields(doc, parent_customer, job_status)
 	doc.save(ignore_permissions=False)
 	return {"name": doc.name, "customer_name": doc.customer_name}
 

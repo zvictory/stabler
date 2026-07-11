@@ -3538,3 +3538,17 @@ yr,г.
 — select —,
 — top-level —,— верхний уровень —
 ⚠ {0} line(s) had no cost — verify item valuation; margin may be overstated.,⚠ {0} строк(а) без себестоимости — проверьте оценку товара; маржа может быть завышена.
+A customer cannot be its own parent.,Клиент не может быть родителем самому себе.
+Children,Дочерние
+Cumulative,Совокупный
+Flat view,Список
+Job Status,Статус объекта
+On Hold,На паузе
+Own,Собственный
+Parent,Родитель
+Parent Customer,Родительский клиент
+The selected parent customer does not exist.,Выбранный родительский клиент не существует.
+"This customer already has child locations, so it cannot become a child itself.","У этого клиента уже есть дочерние локации, поэтому он не может стать дочерним."
+Transactions are recorded on child locations,Операции проводятся по дочерним локациям
+Tree view,Дерево
+The selected parent already belongs to another parent. Only one level of hierarchy is allowed.,Выбранный родитель уже относится к другому родителю. Допускается только один уровень иерархии.

@@ -3532,3 +3532,17 @@ yr,yil
 — select —,
 — top-level —,— eng yuqori darajali —
 ⚠ {0} line(s) had no cost — verify item valuation; margin may be overstated.,⚠ {0} qator(da) tannarx yo'q — tovar baholashni tekshiring; marja oshirilgan bo'lishi mumkin.
+A customer cannot be its own parent.,Mijoz oʻziga oʻzi bosh boʻla olmaydi.
+Children,Filiallar
+Cumulative,Jami
+Flat view,Roʻyxat koʻrinishi
+Job Status,Obyekt holati
+On Hold,Toʻxtatilgan
+Own,Oʻzi
+Parent,Bosh
+Parent Customer,Bosh mijoz
+The selected parent customer does not exist.,Tanlangan bosh mijoz mavjud emas.
+"This customer already has child locations, so it cannot become a child itself.","Bu mijozda allaqachon filial lokatsiyalari bor, shuning uchun uning oʻzi filial boʻla olmaydi."
+Transactions are recorded on child locations,Operatsiyalar filial lokatsiyalarida qayd etiladi
+Tree view,Daraxt koʻrinishi
+The selected parent already belongs to another parent. Only one level of hierarchy is allowed.,Tanlangan bosh mijoz allaqachon boshqa bosh mijozga tegishli. Faqat bitta ierarxiya darajasi mumkin.
