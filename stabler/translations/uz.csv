@@ -4283,3 +4283,8 @@ yr,yil
 — top-level —,— eng yuqori darajali —
 •••,•••
 ⚠ {0} line(s) had no cost — verify item valuation; margin may be overstated.,⚠ {0} qator(da) tannarx yo'q — tovar baholashni tekshiring; marja oshirilgan bo'lishi mumkin.
+
+Start Work Order & Transfer Materials,Ish buyurtmasini boshlash va materiallarni ko'chirish
+Materials to Transfer,Ko'chiriladigan materiallar
+Start & Transfer,Boshlash va ko'chirish
+Please ensure all items are selected and have a quantity greater than zero.,Iltimos, barcha tovarlar tanlanganligi va miqdori noldan ko'pligiga ishonch hosil qiling.

@@ -7,6 +7,7 @@ import { t } from "../../composables/i18n.js";
 import { useConfirm } from "../../composables/useConfirm.js";
 import { formatDate } from "../../composables/date.js";
 import EmptyState from "../../components/EmptyState.vue";
+import Typeahead from "../../components/Typeahead.vue";
 
 const session = useSession();
 const { activeCompany } = storeToRefs(session);
@@ -36,14 +37,61 @@ async function load() {
 	loading.value = true;
 	loadError.value = "";
 	try {
-		rows.value = await call("stabler.api.manufacturing.list_work_orders", {
+		const currentStatusMap = {};
+		rows.value.forEach(r => {
+			currentStatusMap[r.name] = {
+				showMaterials: r.showMaterials,
+				materialsDirty: r.materialsDirty,
+				required_items: r.required_items
+			};
+		});
+
+		const data = await call("stabler.api.manufacturing.list_work_orders", {
 			company: activeCompany.value,
 			limit: 100,
+		});
+
+		rows.value = data.map(r => {
+			const prev = currentStatusMap[r.name] || {};
+			const items = prev.materialsDirty ? prev.required_items : r.required_items;
+			return {
+				...r,
+				showMaterials: prev.showMaterials ?? false,
+				materialsDirty: prev.materialsDirty ?? false,
+				required_items: items
+			};
 		});
 	} catch (err) {
 		loadError.value = err?.message || t("Failed to load work orders.");
 	} finally {
 		loading.value = false;
+	}
+}
+
+function onQtyChange(row) {
+	row.materialsDirty = true;
+	resetIdleTimer();
+}
+
+async function saveMaterials(row) {
+	busyName.value = row.name;
+	actionError.value = "";
+	resetIdleTimer();
+	try {
+		const materials = row.required_items.map(it => ({
+			item_code: it.item_code,
+			required_qty: it.required_qty
+		}));
+		await call("stabler.api.manufacturing.update_work_order_materials", {
+			work_order: row.name,
+			materials: JSON.stringify(materials)
+		});
+		row.materialsDirty = false;
+		await load();
+	} catch (err) {
+		actionError.value = err?.message || t("Failed to save materials.");
+	} finally {
+		busyName.value = "";
 	}
 }
 
@@ -207,9 +255,9 @@ function isBusy(name) {
 	return busyName.value === name;
 }
 
-const canStart = (r) => r.docstatus === 1 && r.status === "Not Started";
-const canFinish = (r) => r.docstatus === 1 && ["Not Started", "In Process"].includes(r.status);
-const canPause = (r) => r.docstatus === 1 && ["Not Started", "In Process"].includes(r.status);
+const canStart = (r) => r.docstatus === 1 && ["Not Started", "Stock Partially Reserved", "Submitted"].includes(r.status);
+const canFinish = (r) => r.docstatus === 1 && ["Not Started", "In Process", "Stock Partially Reserved", "Material Transferred", "Submitted"].includes(r.status);
+const canPause = (r) => r.docstatus === 1 && ["Not Started", "In Process", "Stock Partially Reserved", "Material Transferred", "Submitted"].includes(r.status);
 const canResume = (r) => r.docstatus === 1 && r.status === "Stopped";
 
 const statusBadge = (s) => {
@@ -235,23 +283,95 @@ function remainingQty(r) {
 	return Math.max(0, (Number(r.qty) || 0) - (Number(r.produced_qty) || 0));
 }
 
-// ----- Action triggers -----
+// ----- Start dialog -----
+const startTarget = ref(null); // the WO row currently starting
+const transferFromWh = ref("");
+const transferToWh = ref("");
+const transferItems = ref([]);
+const warehouses = ref([]);
+
 async function start(row) {
-	const ok = await confirm({
-		title: t("Start Work Order"),
-		body: t("Start Work Order and transfer raw materials?"),
-		confirmLabel: t("Start"),
-		cancelLabel: t("Cancel"),
+	startTarget.value = row;
+	transferFromWh.value = row.source_warehouse || "";
+	transferToWh.value = row.wip_warehouse || "";
+	
+	transferItems.value = (row.required_items || []).map(it => ({
+		item_code: it.item_code,
+		item_name: it.item_name || it.item_code,
+		qty: it.required_qty,
+		uom: it.stock_uom || "",
+		isNew: false,
+	}));
+	
+	actionError.value = "";
+	resetIdleTimer();
+	
+	if (!warehouses.value.length) {
+		try {
+			warehouses.value = await call("stabler.api.inventory.list_warehouses", { company: activeCompany.value });
+		} catch (err) {
+			console.error("Failed to load warehouses", err);
+		}
+	}
+}
+
+function cancelStart() {
+	startTarget.value = null;
+	transferItems.value = [];
+}
+
+function addTransferItem() {
+	transferItems.value.push({
+		item_code: "",
+		item_name: "",
+		qty: 1,
+		uom: "",
+		isNew: true,
 	});
-	if (!ok) return;
+}
+
+function removeTransferItem(idx) {
+	transferItems.value.splice(idx, 1);
+}
+
+function pickTransferItem(it, item) {
+	it.item_code = item.name;
+	it.item_name = item.item_name || item.name;
+	it.uom = item.stock_uom || "";
+}
+
+async function searchItems(q) {
+	return call("stabler.api.inventory.list_items", { search: q || "", limit: 20 });
+}
+
+async function confirmStart() {
+	const row = startTarget.value;
+	if (!row) return;
+
 	busyName.value = row.name;
 	actionError.value = "";
 	resetIdleTimer();
+
+	const invalid = transferItems.value.some(it => !it.item_code || Number(it.qty) <= 0);
+	if (invalid) {
+		actionError.value = t("Please ensure all items are selected and have a quantity greater than zero.");
+		busyName.value = "";
+		return;
+	}
+
 	try {
 		await call("stabler.api.manufacturing.make_work_order_stock_entry", {
 			work_order: row.name,
 			purpose: "Material Transfer for Manufacture",
+			from_warehouse: transferFromWh.value,
+			to_warehouse: transferToWh.value,
+			items: JSON.stringify(transferItems.value.map(it => ({
+				item_code: it.item_code,
+				qty: it.qty,
+				uom: it.uom || undefined,
+			}))),
 		});
+		startTarget.value = null;
 		await load();
 	} catch (err) {
 		actionError.value = err?.message || t("Start failed.");
@@ -546,9 +666,25 @@ const sortedRows = computed(() => {
 
 						<!-- Warehouse & Timestamps info -->
 						<div class="text-secondary small mb-4 flex-grow-1">
-							<div class="d-flex align-items-center gap-2 mb-1">
-								<i class="ti ti-building-warehouse text-muted"></i>
-								<span>{{ t("WIP Whse") }}: <strong class="text-dark">{{ r.wip_warehouse || '—' }}</strong></span>
+							<div class="d-flex align-items-center justify-content-between mb-1">
+								<div class="d-flex align-items-center gap-2">
+									<i class="ti ti-building-warehouse text-muted"></i>
+									<span>{{ t("WIP Whse") }}: <strong class="text-dark">{{ r.wip_warehouse || '—' }}</strong></span>
+								</div>
+								<router-link
+									v-slot="{ navigate }"
+									v-if="r.wip_warehouse"
+									:to="{ path: '/inventory/stock-status', query: { warehouse: r.wip_warehouse } }"
+									custom
+								>
+									<button
+										type="button"
+										class="btn btn-xs btn-outline-secondary py-0 px-2"
+										@click="navigate"
+									>
+										<i class="ti ti-packages me-1"></i>{{ t("View Stock") }}
+									</button>
+								</router-link>
 							</div>
 							<div class="d-flex align-items-center gap-2 mb-1">
 								<i class="ti ti-building-warehouse-filled text-muted"></i>
@@ -557,6 +693,60 @@ const sortedRows = computed(() => {
 							<div class="d-flex align-items-center gap-2 mt-2 pt-2 border-top border-light">
 								<i class="ti ti-calendar text-muted"></i>
 								<span>{{ t("Planned Start") }}: <strong class="text-dark">{{ formatDate(r.planned_start_date) }}</strong></span>
+							</div>
+						</div>
+
+						<!-- Required Materials Section -->
+						<div class="mt-3 mb-3 border-top border-light pt-3">
+							<div class="d-flex align-items-center justify-content-between mb-2">
+								<h6 class="text-uppercase small fw-bold text-secondary mb-0">
+									<i class="ti ti-box-seam me-1"></i>{{ t("Required Materials") }}
+								</h6>
+								<button
+									type="button"
+									class="btn btn-sm btn-ghost-secondary px-2 py-0.5"
+									@click="r.showMaterials = !r.showMaterials"
+								>
+									{{ r.showMaterials ? t("Hide") : t("Show") }}
+								</button>
+							</div>
+
+							<div v-if="r.showMaterials" class="bg-light rounded p-2">
+								<div v-if="!r.required_items || !r.required_items.length" class="text-muted small text-center py-2">
+									{{ t("No materials required.") }}
+								</div>
+								<div v-else>
+									<div v-for="it in r.required_items" :key="it.item_code" class="d-flex align-items-center justify-content-between mb-2.5 pb-2 border-bottom border-light" style="border-style: dashed !important;">
+										<div class="flex-grow-1 min-w-0 me-2">
+											<div class="fw-semibold text-dark text-truncate small">{{ it.item_name || it.item_code }}</div>
+											<div class="small text-muted font-monospace" style="font-size: 0.75rem;">{{ it.item_code }}</div>
+											<div class="text-secondary small mt-0.5">
+												{{ t("WIP Stock") }}: <span class="fw-semibold" :class="it.wip_stock >= it.required_qty ? 'text-success' : 'text-danger'">{{ it.wip_stock || 0 }}</span>
+											</div>
+										</div>
+										<div style="width: 100px;">
+											<input
+												type="number"
+												v-model.number="it.required_qty"
+												class="form-control form-control-sm text-end font-monospace"
+												:disabled="isBusy(r.name) || r.status === 'Completed'"
+												@change="onQtyChange(r)"
+												min="0"
+												step="any"
+											/>
+										</div>
+									</div>
+									<div class="d-flex justify-content-end mt-2">
+										<button
+											type="button"
+											class="btn btn-sm btn-primary py-1 px-3 shadow-sm fw-bold"
+											:disabled="isBusy(r.name) || !r.materialsDirty"
+											@click="saveMaterials(r)"
+										>
+											<i class="ti ti-device-floppy me-1"></i>{{ t("Save") }}
+										</button>
+									</div>
+								</div>
 							</div>
 						</div>
 
@@ -621,6 +811,130 @@ const sortedRows = computed(() => {
 				</div>
 			</div>
 		</div>
+		
+		<!-- Start Modal -->
+		<template v-if="startTarget">
+			<div class="modal-backdrop fade show" @click="cancelStart"></div>
+			<div class="modal fade show d-block" tabindex="-1" style="background: transparent">
+				<div class="modal-dialog modal-dialog-centered modal-lg">
+					<div class="modal-content shadow-lg border-0" style="border-radius: 12px; max-height: 90vh; display: flex; flex-direction: column;">
+						<div class="modal-header bg-light">
+							<h5 class="modal-title fw-bold">
+								{{ t("Start Work Order & Transfer Materials") }}
+							</h5>
+							<button type="button" class="btn-close" @click="cancelStart"></button>
+						</div>
+						<div class="modal-body p-4" style="overflow-y: auto; flex: 1;">
+							<div v-if="actionError" class="alert alert-danger mb-3 border-0 shadow-sm">{{ actionError }}</div>
+							
+							<div class="row g-3 mb-4">
+								<div class="col-md-6">
+									<label class="form-label fw-bold text-secondary text-uppercase small">{{ t("From Warehouse") }}</label>
+									<select v-model="transferFromWh" class="form-select">
+										<option value="">-- {{ t("Select Warehouse") }} --</option>
+										<option v-for="w in warehouses" :key="w.name" :value="w.name">
+											{{ w.warehouse_name || w.name }}
+										</option>
+									</select>
+								</div>
+								<div class="col-md-6">
+									<label class="form-label fw-bold text-secondary text-uppercase small">{{ t("To Warehouse (WIP)") }}</label>
+									<select v-model="transferToWh" class="form-select">
+										<option value="">-- {{ t("Select Warehouse") }} --</option>
+										<option v-for="w in warehouses" :key="w.name" :value="w.name">
+											{{ w.warehouse_name || w.name }}
+										</option>
+									</select>
+								</div>
+							</div>
+
+							<div class="mb-3">
+								<label class="form-label fw-bold text-secondary text-uppercase small d-flex justify-content-between align-items-center">
+									<span>{{ t("Materials to Transfer") }}</span>
+									<button type="button" class="btn btn-xs btn-outline-primary" @click="addTransferItem">
+										<i class="ti ti-plus me-1"></i>{{ t("Add Material") }}
+									</button>
+								</label>
+								
+								<div class="table-responsive border rounded bg-white">
+									<table class="table table-vcenter card-table table-no-stripe mb-0">
+										<thead>
+											<tr>
+												<th>{{ t("Item") }}</th>
+												<th class="text-end" style="width: 140px;">{{ t("Qty") }}</th>
+												<th style="width: 50px;"></th>
+											</tr>
+										</thead>
+										<tbody>
+											<tr v-for="(it, idx) in transferItems" :key="idx">
+												<td class="align-middle">
+													<div v-if="!it.isNew">
+														<div class="fw-semibold text-dark">{{ it.item_name || it.item_code }}</div>
+														<div class="small text-muted font-monospace">{{ it.item_code }}</div>
+													</div>
+													<div v-else style="min-width: 250px;">
+														<Typeahead
+															v-model="it.item_code"
+															:display="it.item_code ? `${it.item_code} — ${it.item_name || ''}` : ''"
+															:search="searchItems"
+															:placeholder="t('Search item…')"
+															open-on-focus
+															@pick="(item) => pickTransferItem(it, item)"
+															@clear="() => { it.item_code = ''; it.item_name = ''; it.uom = ''; }"
+														>
+															<template #option="{ item }">
+																<div class="fw-semibold small">{{ item.item_code || item.name }}</div>
+																<div v-if="item.item_name" class="text-secondary" style="font-size:0.75rem">{{ item.item_name }}</div>
+															</template>
+														</Typeahead>
+													</div>
+												</td>
+												<td class="align-middle text-end">
+													<div class="input-group input-group-sm">
+														<input
+															v-model.number="it.qty"
+															type="number"
+															min="0"
+															step="any"
+															class="form-control text-end font-monospace"
+														/>
+														<span v-if="it.uom" class="input-group-text small text-muted px-1.5 font-monospace" style="font-size: 0.75rem;">{{ it.uom }}</span>
+													</div>
+												</td>
+												<td class="align-middle text-center">
+													<button type="button" class="btn btn-link link-danger p-0" @click="removeTransferItem(idx)">
+														<i class="ti ti-trash fs-3"></i>
+													</button>
+												</td>
+											</tr>
+											<tr v-if="!transferItems.length">
+												<td colspan="3" class="text-center text-muted py-3">
+													{{ t("No items to transfer. Click 'Add Material' to add items manually.") }}
+												</td>
+											</tr>
+										</tbody>
+									</table>
+								</div>
+							</div>
+						</div>
+						<div class="modal-footer bg-light p-3">
+							<button type="button" class="btn btn-link link-secondary fw-semibold" @click="cancelStart">
+								{{ t("Cancel") }}
+							</button>
+							<button
+								type="button"
+								class="btn btn-success btn-lg px-4 fw-bold shadow-sm"
+								:disabled="!transferFromWh || !transferToWh || !transferItems.length || isBusy(startTarget.name)"
+								@click="confirmStart"
+							>
+								<span v-if="isBusy(startTarget.name)" class="spinner-border spinner-border-sm me-1"></span>
+								<i v-else class="ti ti-play-filled me-1"></i>{{ t("Start & Transfer") }}
+							</button>
+						</div>
+					</div>
+				</div>
+			</div>
+		</template>
 
 		<!-- Finish Modal -->
 		<template v-if="finishTarget">

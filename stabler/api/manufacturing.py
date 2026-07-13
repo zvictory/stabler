@@ -412,11 +412,15 @@ def make_work_order_stock_entry(
 	purpose: str,
 	qty: float | None = None,
 	scrap_qty: float | None = None,
+	from_warehouse: str | None = None,
+	to_warehouse: str | None = None,
+	items: str | None = None,
 ):
 	"""Generate and submit a Stock Entry for material transfer or manufacture.
 
 	`scrap_qty` is accepted for the Manufacture purpose and recorded as
 	process loss (operator-reported rejects)."""
+	import json
 	from erpnext.manufacturing.doctype.work_order.work_order import make_stock_entry
 
 	_require_mfg()
@@ -428,11 +432,43 @@ def make_work_order_stock_entry(
 	doc = make_stock_entry(work_order, purpose, qty=flt(qty) if qty else None)
 	stub = doc if isinstance(doc, dict) else doc.as_dict()
 	se = frappe.get_doc(stub)
+
 	if purpose == "Manufacture" and scrap_qty and flt(scrap_qty) > 0:
 		se.process_loss_qty = flt(scrap_qty)
 
-	for item in se.items:
-		item.allow_zero_valuation_rate = 1
+	if items:
+		try:
+			item_list = json.loads(items)
+		except Exception:
+			frappe.throw("Invalid items format.")
+
+		if from_warehouse:
+			se.from_warehouse = from_warehouse
+		if to_warehouse:
+			se.to_warehouse = to_warehouse
+
+		se.set("items", [])
+		for it in item_list:
+			row = se.append("items", {})
+			row.item_code = it["item_code"]
+			row.qty = flt(it["qty"])
+			row.s_warehouse = it.get("s_warehouse") or from_warehouse or se.from_warehouse
+			row.t_warehouse = it.get("t_warehouse") or to_warehouse or se.to_warehouse
+			if it.get("uom"):
+				row.uom = it["uom"]
+			row.allow_zero_valuation_rate = 1
+		se.set_missing_values()
+	else:
+		if from_warehouse:
+			se.from_warehouse = from_warehouse
+		if to_warehouse:
+			se.to_warehouse = to_warehouse
+		for item in se.items:
+			if from_warehouse and purpose in ("Material Transfer for Manufacture", "Material Issue"):
+				item.s_warehouse = from_warehouse
+			if to_warehouse and purpose in ("Material Transfer for Manufacture", "Material Receipt"):
+				item.t_warehouse = to_warehouse
+			item.allow_zero_valuation_rate = 1
 
 	se.insert(ignore_permissions=False)
 	se.submit()
