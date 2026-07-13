@@ -30,16 +30,20 @@ A GRN checklist is created from a commercial invoice once cargo is ready to rece
 A Payroll Attendance Summary for employee {0} and period {1} already exists: {2},A Payroll Attendance Summary for employee {0} and period {1} already exists: {2}
 A category is required.,A category is required.
 A certificate number is required.,A certificate number is required.
+A cleared customs declaration is active: its duty and excise replace any ,A cleared customs declaration is active: its duty and excise replace any 
 A cleared customs declaration is active: its duty and excise replace any Uzbekistan Customs Duty cost line in the next voucher (VAT is never capitalized).,A cleared customs declaration is active: its duty and excise replace any Uzbekistan Customs Duty cost line in the next voucher (VAT is never capitalized).
 A company with this name already exists.,A company with this name already exists.
 A customer cannot be its own parent.,A customer cannot be its own parent.
 A few quick questions and you're ready to sell.,A few quick questions and you're ready to sell.
+A group title is required.,A group title is required.
 A mapping for employee {0} with device user ID {1} already exists ({2}).,A mapping for employee {0} with device user ID {1} already exists ({2}).
 A new version is available.,A new version is available.
 A password reset email will be sent. The account is disabled until the user sets a password.,A password reset email will be sent. The account is disabled until the user sets a password.
 A rejection reason is required.,A rejection reason is required.
+A selected location does not belong to this customer chain.,A selected location does not belong to this customer chain.
 A status correction reason is required to move {0} back from {1} to {2}.,A status correction reason is required to move {0} back from {1} to {2}.
 A status with that name already exists.,A status with that name already exists.
+A submitted import order can no longer be edited here.,A submitted import order can no longer be edited here.
 A submitted truck receipt can no longer be edited.,A submitted truck receipt can no longer be edited.
 A supplier is required.,A supplier is required.
 A truck number is required.,A truck number is required.
@@ -72,10 +76,21 @@ Access token,Access token
 Access token (JWT),Access token (JWT)
 Account,Account
 Account Ledger,Account Ledger
+Account created.,Account created.
+Account currency,Account currency
 Account currency must match the payment account.,Account currency must match the payment account.
+Account disabled.,Account disabled.
+Account enabled.,Account enabled.
 Account matches,Account matches
+Account name,Account name
+Account name is required.,Account name is required.
+Account number,Account number
+Account number {0} is already used in {1}.,Account number {0} is already used in {1}.
 Account or cost centre…,Account or cost centre…
+Account type,Account type
+Account updated.,Account updated.
 Account {0} is not a {1} account for party {2}.,Account {0} is not a {1} account for party {2}.
+Account {0} not found.,Account {0} not found.
 Accounting entries,Accounting entries
 Accounts,Accounts
 Accounts frozen up to (date),Accounts frozen up to (date)
@@ -121,6 +136,7 @@ Add at least one item line.,Add at least one item line.
 Add at least one item with a positive quantity.,Add at least one item with a positive quantity.
 Add at least one raw material line.,Add at least one raw material line.
 Add certificate,Add certificate
+Add child account,Add child account
 Add child warehouse,Add child warehouse
 Add column,Add column
 Add cost item,Add cost item
@@ -132,6 +148,7 @@ Add item,Add item
 Add item to stock,Add item to stock
 Add landed cost voucher,Add landed cost voucher
 Add line,Add line
+Add location,Add location
 Add outlet,Add outlet
 Add punch,Add punch
 Add row,Add row
@@ -155,23 +172,31 @@ Adjustment,Adjustment
 Admin,Admin
 Administer users & roles,Administer users & roles
 Advance,Advance
+Advance %,Advance %
 Advance 70% Payment Entry,Advance 70% Payment Entry
 Advance amount,Advance amount
 Advance amount must be greater than zero.,Advance amount must be greater than zero.
+Advance base,Advance base
 Advance deduction,Advance deduction
 Advance deduction cannot be negative.,Advance deduction cannot be negative.
 Advance deduction must be a number.,Advance deduction must be a number.
 Advance paid,Advance paid
 Advance paid.,Advance paid.
+Advance payments,Advance payments
+Advance recorded (draft).,Advance recorded (draft).
 Advance sent for approval.,Advance sent for approval.
+Advance summary,Advance summary
 Advanced (API endpoints),Advanced (API endpoints)
 Advances,Advances
 Advances outstanding,Advances outstanding
 Against,Against
 Aging,Aging
+Agreed Total,Agreed Total
+Agreed rate,Agreed rate
 Agreed total,Agreed total
 Alerts,Alerts
 All,All
+All PI groups,All PI groups
 All Reports,All Reports
 All attendance exceptions have been resolved or ignored.,All attendance exceptions have been resolved or ignored.
 All categories,All categories
@@ -203,14 +228,19 @@ All three accounts are required.,All three accounts are required.
 All time,All time
 All types,All types
 All variance,All variance
+All vendors,All vendors
 All vouchers,All vouchers
 All warehouses,All warehouses
 All {0} employee summaries are clean — no unresolved exceptions.,All {0} employee summaries are clean — no unresolved exceptions.
 Allocate against,Allocate against
 Allocated,Allocated
+Allocated (kg),Allocated (kg)
 Allocated Deposit Amount,Allocated Deposit Amount
 Allocated against,Allocated against
+Allocated amount,Allocated amount
 Allocated amount must be greater than zero.,Allocated amount must be greater than zero.
+Allocation,Allocation
+Allocation amounts must be greater than zero.,Allocation amounts must be greater than zero.
 Allocation exceeds the unreconciled amount on this transaction.,Allocation exceeds the unreconciled amount on this transaction.
 Allocation preview,Allocation preview
 Allow stale exchange rates,Allow stale exchange rates
@@ -243,6 +273,8 @@ Amount sent,Amount sent
 Amount to transfer,Amount to transfer
 Amounts in,Amounts in
 Amounts in company currency,Amounts in company currency
+An allocated invoice does not belong to this customer chain.,An allocated invoice does not belong to this customer chain.
+An allocation exceeds the invoice's outstanding amount.,An allocation exceeds the invoice's outstanding amount.
 An expense category is required.,An expense category is required.
 Analytics,Analytics
 Anchor DAY hours (h),Anchor DAY hours (h)
@@ -354,6 +386,7 @@ Balance Due Amount,Balance Due Amount
 Balanced,Balanced
 "Balances, advances and payments appear here.","Balances, advances and payments appear here."
 "Balances, salaries, advances and payments appear here.","Balances, salaries, advances and payments appear here."
+Bank,Bank
 Bank / transfer,Bank / transfer
 Bank Account '{0}' not found.,Bank Account '{0}' not found.
 Bank Payment,Bank Payment
@@ -361,6 +394,7 @@ Bank account,Bank account
 Bank account does not belong to company '{0}'.,Bank account does not belong to company '{0}'.
 Bank account has no linked GL account.,Bank account has no linked GL account.
 Bank amount,Bank amount
+Bank and cash amounts are not equal — recorded as entered.,Bank and cash amounts are not equal — recorded as entered.
 Bank payment,Bank payment
 Bank transaction is required.,Bank transaction is required.
 Bank transaction not found.,Bank transaction not found.
@@ -393,6 +427,7 @@ Bill Date,Bill Date
 Bill No.,Bill No.
 Bill date,Bill date
 Bill number or supplier…,Bill number or supplier…
+Bill or supplier… ⌘K,Bill or supplier… ⌘K
 Billed,Billed
 Billed amt,Billed amt
 Billing,Billing
@@ -417,6 +452,7 @@ Books locked nets to salary payable.,Books locked nets to salary payable.
 Border Crossing,Border Crossing
 Border Crossing Date,Border Crossing Date
 Border crossing,Border crossing
+Box (kg),Box (kg)
 Box Kg,Box Kg
 Box Qty,Box Qty
 Box kg,Box kg
@@ -442,12 +478,14 @@ By item,By item
 By order,By order
 By region,By region
 By rep,By rep
+By supplier,By supplier
 C,C
 CBU rate: {rate} ({date}),CBU rate: {rate} ({date})
 CBU rates are already up to date.,CBU rates are already up to date.
 CBU rates updated: {rates},CBU rates updated: {rates}
 CBU.uz exchange rates (last 30 days),CBU.uz exchange rates (last 30 days)
 CBU:,CBU:
+CI,CI
 CI number,CI number
 CI number or supplier… ⌘K,CI number or supplier… ⌘K
 CN Return,CN Return
@@ -510,8 +548,10 @@ Card not recognized,Card not recognized
 Cargo,Cargo
 Carrier,Carrier
 Cases / Week,Cases / Week
+Cash,Cash
 Cash / bank account,Cash / bank account
 Cash Payment,Cash Payment
+Cash amount,Cash amount
 Cash difference,Cash difference
 Cash flow,Cash flow
 Cash on hand,Cash on hand
@@ -649,8 +689,11 @@ Computed from attendance summaries using the payroll formula. Read-only preview 
 Conditions,Conditions
 Configure Google Drive below first.,Configure Google Drive below first.
 Confirm,Confirm
+Confirm (submit) the import order before recording an advance.,Confirm (submit) the import order before recording an advance.
+Confirm (submit) this import order? It can no longer be edited here afterwards.,Confirm (submit) this import order? It can no longer be edited here afterwards.
 Confirm Submit,Confirm Submit
 Confirm finish,Confirm finish
+Confirm import order,Confirm import order
 Confirm restore test,Confirm restore test
 Conflict,Conflict
 Conflicts,Conflicts
@@ -664,6 +707,7 @@ Container Cost Line,Container Cost Line
 Container Number,Container Number
 Container Size,Container Size
 Container Type,Container Type
+Container cost ledger,Container cost ledger
 Container created.,Container created.
 Container number,Container number
 Container or CI number… ⌘K,Container or CI number… ⌘K
@@ -695,6 +739,8 @@ Cost Centre,Cost Centre
 Cost Component,Cost Component
 Cost Lines,Cost Lines
 Cost centre,Cost centre
+Cost figures are hidden — ask an imports manager or accountant for landed-cost visibility.,Cost figures are hidden — ask an imports manager or accountant for landed-cost visibility.
+Cost ledger,Cost ledger
 Cost lines,Cost lines
 Cost must be positive.,Cost must be positive.
 Cost total,Cost total
@@ -707,7 +753,9 @@ Could not approve the certificate.,Could not approve the certificate.
 Could not assign.,Could not assign.
 Could not check payment status.,Could not check payment status.
 Could not compute the customs fee.,Could not compute the customs fee.
+Could not confirm the import order.,Could not confirm the import order.
 Could not create contract.,Could not create contract.
+Could not create the PI group.,Could not create the PI group.
 Could not create the transaction.,Could not create the transaction.
 Could not create the voucher.,Could not create the voucher.
 Could not load bid pricing.,Could not load bid pricing.
@@ -733,6 +781,7 @@ Could not read a lot number from: {0},Could not read a lot number from: {0}
 Could not read backup file: {0},Could not read backup file: {0}
 Could not read the uploaded file.,Could not read the uploaded file.
 Could not read your location.,Could not read your location.
+Could not record the advance.,Could not record the advance.
 Could not reject the certificate.,Could not reject the certificate.
 Could not resolve a customer for this deal.,Could not resolve a customer for this deal.
 Could not resolve payroll period: {0},Could not resolve payroll period: {0}
@@ -789,6 +838,7 @@ Create your first item to start tracking stock and price lists.,Create your firs
 Create your first lead or adjust the search filters.,Create your first lead or adjust the search filters.
 Create your first process to model business workflows.,Create your first process to model business workflows.
 Created,Created
+Created {n} payment(s): {names},Created {n} payment(s): {names}
 Creates Maintenance Visit,Creates Maintenance Visit
 Creates a draft Journal Entry — review and submit it from the ledger.,Creates a draft Journal Entry — review and submit it from the ledger.
 "Creates a stock item; if qty and cost are given, an opening stock receipt is posted.","Creates a stock item; if qty and cost are given, an opening stock receipt is posted."
@@ -831,6 +881,7 @@ Customs Clearance Date,Customs Clearance Date
 Customs Clearance Fee,Customs Clearance Fee
 Customs Declaration,Customs Declaration
 Customs Declaration Line,Customs Declaration Line
+Customs Declarations,Customs Declarations
 Customs Fee Multiplier,Customs Fee Multiplier
 Customs Fee Override (UZS),Customs Fee Override (UZS)
 Customs Office,Customs Office
@@ -971,11 +1022,15 @@ Device user ID,Device user ID
 Device user ID is required.,Device user ID is required.
 Didox,Didox
 Didox may reject this document — missing data:,Didox may reject this document — missing data:
+Diff,Diff
 Direct credit note,Direct credit note
 Direct sales return,Direct sales return
+Direct stock updates via Sales Invoice are disabled by company policy. ,Direct stock updates via Sales Invoice are disabled by company policy. 
 Direction,Direction
 Directions,Directions
 Director board,Director board
+Disable,Disable
+Disable account?,Disable account?
 Disabled,Disabled
 Disc,Disc
 Disc %,Disc %
@@ -986,12 +1041,16 @@ Discount,Discount
 Discount %,Discount %
 Dismiss,Dismiss
 Dispatched,Dispatched
+Distribute oldest-first,Distribute oldest-first
 Distributor,Distributor
 Distributor claims will appear here once submitted.,Distributor claims will appear here once submitted.
 District,District
 Dividend tax,Dividend tax
 Dividends,Dividends
 DocType,DocType
+Docs,Docs
+Docs Total,Docs Total
+Docs rate,Docs rate
 Docs total,Docs total
 Document,Document
 Document & notes,Document & notes
@@ -1077,6 +1136,7 @@ Edit Promo Plan,Edit Promo Plan
 Edit Promo Scheme,Edit Promo Scheme
 Edit Van Stock,Edit Van Stock
 Edit Visit,Edit Visit
+Edit account,Edit account
 Edit customer,Edit customer
 Edit device,Edit device
 Edit draft,Edit draft
@@ -1123,7 +1183,9 @@ Employee {0} not found.,Employee {0} not found.
 Employees,Employees
 Employment,Employment
 Empty allowed list = user can access every company.,Empty allowed list = user can access every company.
+Enable,Enable
 Enable TimePay sync,Enable TimePay sync
+Enable account?,Enable account?
 Enabled,Enabled
 End,End
 End Date,End Date
@@ -1131,12 +1193,15 @@ End Date must be on or after Start Date.,End Date must be on or after Start Date
 End date cannot be before start date.,End date cannot be before start date.
 End of ledger,End of ledger
 Enforcement,Enforcement
+Enter a bank and/or cash amount.,Enter a bank and/or cash amount.
 Enter a quantity for at least one row.,Enter a quantity for at least one row.
 Enter amount and commission to see preview.,Enter amount and commission to see preview.
 Enter an amount greater than zero.,Enter an amount greater than zero.
+Enter at least one allocation amount.,Enter at least one allocation amount.
 Enter at least one count that differs from the system quantity.,Enter at least one count that differs from the system quantity.
 Enter at least one received line.,Enter at least one received line.
 Enter at least one return qty.,Enter at least one return qty.
+Enter at least one transfer amount.,Enter at least one transfer amount.
 Enter cost and term to see the payment schedule.,Enter cost and term to see the payment schedule.
 Enter the quantity to return for each line. Leave 0 to exclude a line.,Enter the quantity to return for each line. Leave 0 to exclude a line.
 Enter your Employee ID and secure PIN,Enter your Employee ID and secure PIN
@@ -1184,6 +1249,7 @@ Exchange fee,Exchange fee
 Exchange rate,Exchange rate
 Exchange rate ({0}),Exchange rate ({0})
 Exchange rate must be greater than zero.,Exchange rate must be greater than zero.
+Exchange rate preview,Exchange rate preview
 Exchange rate staleness,Exchange rate staleness
 Excise,Excise
 Excise %,Excise %
@@ -1203,6 +1269,7 @@ Expected (kg),Expected (kg)
 Expected Closure,Expected Closure
 Expected Facings,Expected Facings
 Expected Monthly Volume,Expected Monthly Volume
+Expected advance,Expected advance
 Expected arrival,Expected arrival
 Expected facings is required on row {0}.,Expected facings is required on row {0}.
 Expense,Expense
@@ -1238,6 +1305,7 @@ FX rate looks wrong,FX rate looks wrong
 FX risk,FX risk
 Failed,Failed
 Failed to assign ticket.,Failed to assign ticket.
+Failed to build Landed Cost Voucher payload.,Failed to build Landed Cost Voucher payload.
 Failed to cancel entry.,Failed to cancel entry.
 Failed to cancel transfer.,Failed to cancel transfer.
 Failed to cancel.,Failed to cancel.
@@ -1303,6 +1371,7 @@ Failed to load equipment.,Failed to load equipment.
 Failed to load expenses.,Failed to load expenses.
 Failed to load form options.,Failed to load form options.
 Failed to load freight bookings.,Failed to load freight bookings.
+Failed to load import orders.,Failed to load import orders.
 Failed to load invoice.,Failed to load invoice.
 Failed to load invoices.,Failed to load invoices.
 Failed to load items.,Failed to load items.
@@ -1310,12 +1379,14 @@ Failed to load journal entries.,Failed to load journal entries.
 Failed to load lead.,Failed to load lead.
 Failed to load leads.,Failed to load leads.
 Failed to load ledger.,Failed to load ledger.
+Failed to load open invoices.,Failed to load open invoices.
 Failed to load options.,Failed to load options.
 Failed to load outlets.,Failed to load outlets.
 Failed to load overdue installments.,Failed to load overdue installments.
 Failed to load party defaults.,Failed to load party defaults.
 Failed to load payment defaults.,Failed to load payment defaults.
 Failed to load payment entries.,Failed to load payment entries.
+Failed to load payments.,Failed to load payments.
 Failed to load photo report.,Failed to load photo report.
 Failed to load planogram.,Failed to load planogram.
 Failed to load process.,Failed to load process.
@@ -1343,10 +1414,13 @@ Failed to load the GRN checklist.,Failed to load the GRN checklist.
 Failed to load the booking.,Failed to load the booking.
 Failed to load the commercial invoice.,Failed to load the commercial invoice.
 Failed to load the container.,Failed to load the container.
+Failed to load the cost ledger.,Failed to load the cost ledger.
 Failed to load the declaration.,Failed to load the declaration.
 Failed to load the expense.,Failed to load the expense.
+Failed to load the import order.,Failed to load the import order.
 Failed to load the imports dashboard.,Failed to load the imports dashboard.
 Failed to load the landed-cost review.,Failed to load the landed-cost review.
+Failed to load the supplier summary.,Failed to load the supplier summary.
 Failed to load the truck receipt.,Failed to load the truck receipt.
 Failed to load the truck.,Failed to load the truck.
 Failed to load ticket.,Failed to load ticket.
@@ -1365,6 +1439,7 @@ Failed to move deal.,Failed to move deal.
 Failed to move ticket.,Failed to move ticket.
 Failed to pay advance.,Failed to pay advance.
 Failed to preview collection.,Failed to preview collection.
+Failed to reallocate payment.,Failed to reallocate payment.
 Failed to record payment.,Failed to record payment.
 Failed to refresh claim.,Failed to refresh claim.
 Failed to rename column.,Failed to rename column.
@@ -1377,6 +1452,7 @@ Failed to save customer.,Failed to save customer.
 Failed to save deal.,Failed to save deal.
 Failed to save lead.,Failed to save lead.
 Failed to save location.,Failed to save location.
+Failed to save materials.,Failed to save materials.
 Failed to save photo report.,Failed to save photo report.
 Failed to save planogram.,Failed to save planogram.
 Failed to save process.,Failed to save process.
@@ -1412,6 +1488,7 @@ Field users represent sales reps who execute visits and own van stock.,Field use
 Files,Files
 Fill in the inputs on the left to see the day result.,Fill in the inputs on the left to see the day result.
 Fill in the required fields before submitting.,Fill in the required fields before submitting.
+Filter warnings,Filter warnings
 Finance,Finance
 Financed,Financed
 Financial,Financial
@@ -1443,6 +1520,7 @@ Flat view,Flat view
 Flexible,Flexible
 Food & Beverage,Food & Beverage
 Force submit & reserve,Force submit & reserve
+Found {0} stock valuation anomalies (missing costs or suspicious rates).,Found {0} stock valuation anomalies (missing costs or suspicious rates).
 Free,Free
 Free Qty,Free Qty
 Free qty,Free qty
@@ -1453,6 +1531,7 @@ Freezer pending,Freezer pending
 Freezer push,Freezer push
 Freight,Freight
 Freight Booking,Freight Booking
+Freight Bookings,Freight Bookings
 Frequency,Frequency
 Fri,Fri
 Friday,Friday
@@ -1534,6 +1613,7 @@ Gross pay,Gross pay
 Gross total,Gross total
 Gross weight,Gross weight
 Group,Group
+"Group account (can contain children, holds no transactions itself)","Group account (can contain children, holds no transactions itself)"
 "Group warehouse (can contain children, holds no stock itself)","Group warehouse (can contain children, holds no stock itself)"
 Guarantee,Guarantee
 Guarantee return,Guarantee return
@@ -1553,6 +1633,7 @@ Heavy-conditions allowance,Heavy-conditions allowance
 Height,Height
 Hello {name},Hello {name}
 Hidden for your role,Hidden for your role
+Hide,Hide
 High conflicts,High conflicts
 Hire date,Hire date
 Holiday,Holiday
@@ -1581,9 +1662,15 @@ Import (paste / CSV),Import (paste / CSV)
 Import Container,Import Container
 Import Container Item,Import Container Item
 Import Expense,Import Expense
+Import Expenses,Import Expenses
+Import Order,Import Order
+Import Orders,Import Orders
 Import Truck,Import Truck
 Import bank statement,Import bank statement
 Import failed.,Import failed.
+Import order confirmed.,Import order confirmed.
+Import order created.,Import order created.
+Import order saved.,Import order saved.
 Import orders,Import orders
 Import outlet locations,Import outlet locations
 Import {0} lines,Import {0} lines
@@ -1599,6 +1686,7 @@ In transit,In transit
 "In, out, returns and net movement totals for the period.","In, out, returns and net movement totals for the period."
 InService,InService
 Inactive,Inactive
+Include disabled,Include disabled
 Include drafts,Include drafts
 Include in Landed Cost,Include in Landed Cost
 Including unposted drafts — does not tie to the GL.,Including unposted drafts — does not tie to the GL.
@@ -1726,6 +1814,8 @@ L,L
 LCV,LCV
 Label,Label
 Landed,Landed
+Landed Cost Bills,Landed Cost Bills
+Landed Cost Review,Landed Cost Review
 Landed cost (goods + import),Landed cost (goods + import)
 Landed cost + our margin → the price we bid,Landed cost + our margin → the price we bid
 Landed cost is restricted,Landed cost is restricted
@@ -1770,6 +1860,7 @@ Ledger,Ledger
 Ledger spans multiple account currencies; amounts shown in base currency.,Ledger spans multiple account currencies; amounts shown in base currency.
 Ledger — all vouchers (reconciles to the balance),Ledger — all vouchers (reconciles to the balance)
 Left,Left
+Legacy,Legacy
 Legal / lawyer,Legal / lawyer
 Length,Length
 Level {0},Level {0}
@@ -1804,6 +1895,7 @@ Loading more…,Loading more…
 Loading warehouses…,Loading warehouses…
 Loading…,Loading…
 Located,Located
+Location,Location
 Location saved.,Location saved.
 Locations,Locations
 Lock,Lock
@@ -1886,6 +1978,7 @@ Minutes worked before overtime begins.,Minutes worked before overtime begins.
 Missing,Missing
 Missing Entry,Missing Entry
 Missing TimePay user id.,Missing TimePay user id.
+Missing document type or name,Missing document type or name
 Missing fields,Missing fields
 Missing site config key: {0},Missing site config key: {0}
 Missing veterinary certificate,Missing veterinary certificate
@@ -1955,13 +2048,19 @@ Never,Never
 Never tested,Never tested
 New,New
 New BOM,New BOM
+New Commercial Invoice,New Commercial Invoice
+New Container,New Container
 New Contract,New Contract
+New Customs Declaration,New Customs Declaration
 New Deal,New Deal
 New Equipment,New Equipment
 New Exchange Rate Revaluation,New Exchange Rate Revaluation
+New Import Order,New Import Order
 New Lead,New Lead
 New Murabaha Contract,New Murabaha Contract
 New OSA audit,New OSA audit
+New PI group,New PI group
+New PI group title:,New PI group title:
 New Plan,New Plan
 New Process,New Process
 New Promo Plan,New Promo Plan
@@ -1979,9 +2078,11 @@ New Scheme,New Scheme
 New Service Ticket,New Service Ticket
 New Ticket,New Ticket
 New Transfer,New Transfer
+New Truck,New Truck
 New Van Stock,New Van Stock
 New Visit,New Visit
 New Work Order,New Work Order
+New account,New account
 New asset purchase,New asset purchase
 New bill,New bill
 New booking,New booking
@@ -1997,6 +2098,7 @@ New entry,New entry
 New expense,New expense
 New field user,New field user
 New gate device,New gate device
+New import order,New import order
 New item,New item
 New journal,New journal
 New journal entry,New journal entry
@@ -2055,9 +2157,11 @@ No ROI snapshots yet,No ROI snapshots yet
 No Salary Expense account found for {0}. Create an Expense account ,No Salary Expense account found for {0}. Create an Expense account 
 No Salary Payable account found for {0}. Create a Payable account ,No Salary Payable account found for {0}. Create a Payable account 
 No Stock Entries with Asl Belgisi items found.,No Stock Entries with Asl Belgisi items found.
+No Temporary Opening account found for {0}; add one before posting an opening balance.,No Temporary Opening account found for {0}; add one before posting an opening balance.
 No access,No access
 No account rows,No account rows
 No activity recorded yet.,No activity recorded yet.
+No advance payments yet.,No advance payments yet.
 No advances yet.,No advances yet.
 No approved veterinary certificate exists for this shipment. The submit will be rejected unless an Imports Manager set an override. Continue anyway?,No approved veterinary certificate exists for this shipment. The submit will be rejected unless an Imports Manager set an override. Continue anyway?
 No arrived trucks are waiting to be received for this shipment.,No arrived trucks are waiting to be received for this shipment.
@@ -2087,6 +2191,7 @@ No corrections found for this status.,No corrections found for this status.
 "No cost items yet — add transport, customs, certification…","No cost items yet — add transport, customs, certification…"
 No cost lines,No cost lines
 No cost lines yet.,No cost lines yet.
+"No cost lines, bills or advances are linked to this container.","No cost lines, bills or advances are linked to this container."
 No cost lines.,No cost lines.
 No coverage,No coverage
 No creditors found.,No creditors found.
@@ -2101,6 +2206,7 @@ No deals,No deals
 No debtors found.,No debtors found.
 No deductions,No deductions
 No default Bank or Cash account configured for company {0}.,No default Bank or Cash account configured for company {0}.
+No default receivable account is configured for this company.,No default receivable account is configured for this company.
 No default {0} account found to copy parent from.,No default {0} account found to copy parent from.
 No department,No department
 "No documents yet — add the standard set (ГТД, certificate, acceptance act…).","No documents yet — add the standard set (ГТД, certificate, acceptance act…)."
@@ -2126,8 +2232,11 @@ No files attached.,No files attached.
 No foreign-currency account balances found for this date.,No foreign-currency account balances found for this date.
 No freight bookings,No freight bookings
 No gate devices,No gate devices
+No group,No group
 No holidays yet.,No holidays yet.
+No import bills yet.,No import bills yet.
 No import expenses,No import expenses
+No import orders,No import orders
 No installments due this month.,No installments due this month.
 No interest — fixed Murabaha markup. Sum equals total exactly.,No interest — fixed Murabaha markup. Sum equals total exactly.
 No invoices found,No invoices found
@@ -2140,22 +2249,27 @@ No items yet.,No items yet.
 No items.,No items.
 No journal entries in this range,No journal entries in this range
 No landed cost vouchers yet.,No landed cost vouchers yet.
+No landed-cost bills,No landed-cost bills
+No landed-cost lines have been found.,No landed-cost lines have been found.
 No lanes. Click + to add.,No lanes. Click + to add.
 No leads,No leads
 No leave requests,No leave requests
 No ledger entries found for the selected period.,No ledger entries found for the selected period.
 No lines differ from the system quantity — nothing to reconcile.,No lines differ from the system quantity — nothing to reconcile.
 No lines yet.,No lines yet.
+No linked bills yet.,No linked bills yet.
 No local backups to upload. Create one first.,No local backups to upload. Create one first.
 No locked employees to accrue for this period.,No locked employees to accrue for this period.
 No low-stock items,No low-stock items
 No matches found,No matches found
 No matching items,No matching items
 "No matching vouchers found. Create a payment, or widen the date/amount window.","No matching vouchers found. Create a payment, or widen the date/amount window."
+No materials required.,No materials required.
 No materials to stage,No materials to stage
 No movements yet.,No movements yet.
 No new Version rows since the last seal.,No new Version rows since the last seal.
 No open exceptions,No open exceptions
+No open invoices for this customer group.,No open invoices for this customer group.
 No open reservations,No open reservations
 No orders yet,No orders yet
 No orders.,No orders.
@@ -2180,6 +2294,7 @@ No processes,No processes
 No promo plans yet,No promo plans yet
 No promo schemes yet,No promo schemes yet
 No punches — employee will be marked absent.,No punches — employee will be marked absent.
+"No purchase invoices are linked to an import container, invoice or truck yet.","No purchase invoices are linked to an import container, invoice or truck yet."
 No purchase invoices in this range,No purchase invoices in this range
 No purchase orders have been registered for this supplier.,No purchase orders have been registered for this supplier.
 No purchase orders in the customs queue.,No purchase orders in the customs queue.
@@ -2245,6 +2360,7 @@ No transactions yet.,No transactions yet.
 No travel,No travel
 No truck receipts yet.,No truck receipts yet.
 No trucks,No trucks
+No unallocated payments on this customer.,No unallocated payments on this customer.
 No unbilled service visits,No unbilled service visits
 No unconsumed landed-cost lines to voucher.,No unconsumed landed-cost lines to voucher.
 No unmatched users. All punches are mapped.,No unmatched users. All punches are mapped.
@@ -2277,13 +2393,16 @@ Not permitted to create Gate Devices.,Not permitted to create Gate Devices.
 Not permitted to export this report.,Not permitted to export this report.
 Not permitted to process Timepay attendance.,Not permitted to process Timepay attendance.
 Not permitted to read Budget.,Not permitted to read Budget.
+Not permitted to read Customer: {0},Not permitted to read Customer: {0}
 Not permitted to read GL entries.,Not permitted to read GL entries.
 Not permitted to read Stock Ledger Entry,Not permitted to read Stock Ledger Entry
+Not permitted to read Supplier: {0},Not permitted to read Supplier: {0}
 Not permitted to read {0} {1},Not permitted to read {0} {1}
 Not permitted to reconcile this voucher.,Not permitted to reconcile this voucher.
 Not permitted to reconcile {0} {1}.,Not permitted to reconcile {0} {1}.
 Not permitted to submit Exchange Rate Revaluation.,Not permitted to submit Exchange Rate Revaluation.
 Not permitted to sync Timepay attendance.,Not permitted to sync Timepay attendance.
+Not permitted to view this warehouse stock.,Not permitted to view this warehouse stock.
 Not permitted to {0} {1} {2},Not permitted to {0} {1} {2}
 Not permitted — admins only.,Not permitted — admins only.
 Not permitted.,Not permitted.
@@ -2294,6 +2413,7 @@ Not set,Not set
 Not uploaded yet,Not uploaded yet
 Note,Note
 Notes,Notes
+Nothing booked yet,Nothing booked yet
 Nothing to pay — selected employees have no outstanding balance.,Nothing to pay — selected employees have no outstanding balance.
 Nothing to reconcile — all clear.,Nothing to reconcile — all clear.
 Nothing to voucher.,Nothing to voucher.
@@ -2337,6 +2457,7 @@ On-shelf availability checks from field visits.,On-shelf availability checks fro
 One or more lines exceed available stock. Reduce qty or choose a different warehouse.,One or more lines exceed available stock. Reduce qty or choose a different warehouse.
 "One outlet per line: code or name, latitude, longitude. Comma, tab or semicolon separated.","One outlet per line: code or name, latitude, longitude. Comma, tab or semicolon separated."
 Online payment,Online payment
+Only Accounts Managers can reallocate a payment.,Only Accounts Managers can reallocate a payment.
 Only Approved claims can be settled. Current status: {0},Only Approved claims can be settled. Current status: {0}
 Only Payment Entry / Journal Entry can be reconciled here.,Only Payment Entry / Journal Entry can be reconciled here.
 Only a Stock Manager can reconcile stock.,Only a Stock Manager can reconcile stock.
@@ -2354,6 +2475,7 @@ Only pending schedule rows can be rescheduled.,Only pending schedule rows can be
 Only same-day collections can be cancelled by the cashier.,Only same-day collections can be cancelled by the cashier.
 Only submitted Sales Orders can be closed.,Only submitted Sales Orders can be closed.
 Only submitted Sales Orders can be reopened.,Only submitted Sales Orders can be reopened.
+Only submitted customer payments can be reallocated.,Only submitted customer payments can be reallocated.
 Only submitted entries can be cancelled.,Only submitted entries can be cancelled.
 Only submitted invoices can be returned.,Only submitted invoices can be returned.
 Only with a balance,Only with a balance
@@ -2364,6 +2486,7 @@ Open Desk,Open Desk
 Open Exceptions,Open Exceptions
 Open SREs,Open SREs
 Open commercial invoices,Open commercial invoices
+Open container,Open container
 Open exceptions,Open exceptions
 Open matrix,Open matrix
 Open payment link,Open payment link
@@ -2376,6 +2499,7 @@ Opening Balance,Opening Balance
 Opening balance,Opening balance
 "Opening balance, period movement, and running balance by account.","Opening balance, period movement, and running balance by account."
 Opening balances,Opening balances
+Opening date,Opening date
 Opening qty,Opening qty
 "Opening, in, out and closing quantity per item over a date range.","Opening, in, out and closing quantity per item over a date range."
 Operations,Operations
@@ -2439,7 +2563,11 @@ Own,Own
 Owner,Owner
 P,P
 PENDING,PENDING
+PI & Exporter,PI & Exporter
 PI In,PI In
+PI group,PI group
+PI group created.,PI group created.
+"PI number, vendor or group… ⌘K","PI number, vendor or group… ⌘K"
 PIN,PIN
 PO,PO
 PO ETA,PO ETA
@@ -2466,6 +2594,11 @@ Paid to,Paid to
 Paid {0} employees — {1},Paid {0} employees — {1}
 Parent,Parent
 Parent Customer,Parent Customer
+Parent account,Parent account
+Parent account is required.,Parent account is required.
+Parent account {0} does not belong to {1}.,Parent account {0} does not belong to {1}.
+Parent account {0} is not a group account.,Parent account {0} is not a group account.
+Parent account {0} not found.,Parent account {0} not found.
 Parent warehouse,Parent warehouse
 Pareto ranking of customers by revenue with A/B/C classes.,Pareto ranking of customers by revenue with A/B/C classes.
 Pareto ranking of items by value with A/B/C classes.,Pareto ranking of items by value with A/B/C classes.
@@ -2517,10 +2650,13 @@ Payment Entry is required.,Payment Entry is required.
 Payment Mode,Payment Mode
 Payment amount must be positive,Payment amount must be positive
 Payment amount {0} exceeds outstanding {1} on {2},Payment amount {0} exceeds outstanding {1} on {2}
+Payment belongs to a different company.,Payment belongs to a different company.
 Payment cancelled,Payment cancelled
+Payment date,Payment date
 Payment failed,Payment failed
 Payment failed.,Payment failed.
 Payment mode is not allowed for this POS Profile.,Payment mode is not allowed for this POS Profile.
+Payment mode {0} has no account configured for this company.,Payment mode {0} has no account configured for this company.
 Payment mode {0} is not an online gateway.,Payment mode {0} is not an online gateway.
 "Payment number, reference or party…","Payment number, reference or party…"
 Payment overdue,Payment overdue
@@ -2531,12 +2667,14 @@ Payment saved — pending approval before it posts.,Payment saved — pending ap
 Payment schedule,Payment schedule
 Payment split is hidden for your role.,Payment split is hidden for your role.
 Payment status,Payment status
+Payment terms,Payment terms
 Payment type,Payment type
 Payments,Payments
 Payments due,Payments due
 Payments due ≤7 days,Payments due ≤7 days
 Payments paid today,Payments paid today
 Payments received today,Payments received today
+Payments saved — some are pending approval before they post.,Payments saved — some are pending approval before they post.
 Payments you submit that need a second approver will show here.,Payments you submit that need a second approver will show here.
 Payout account,Payout account
 Payroll,Payroll
@@ -2559,10 +2697,12 @@ Pending,Pending
 Pending (kg),Pending (kg)
 Pending Corrections,Pending Corrections
 Pending approvals,Pending approvals
+Pending landed-cost bills,Pending landed-cost bills
 Pending requests,Pending requests
 Pending vet certificates,Pending vet certificates
 People,People
 Per box,Per box
+Per kg,Per kg
 Percent off,Percent off
 Period,Period
 Period Credit,Period Credit
@@ -2582,6 +2722,7 @@ Photo URL,Photo URL
 Photo is required.,Photo is required.
 Photos,Photos
 "Photos capture shelves, storefronts and promotions during visits.","Photos capture shelves, storefronts and promotions during visits."
+Physical,Physical
 Pick a cash/bank account.,Pick a cash/bank account.
 Pick a company from the switcher in the header to see your financial overview.,Pick a company from the switcher in the header to see your financial overview.
 Pick a customer.,Pick a customer.
@@ -2590,6 +2731,7 @@ Pick a destination warehouse.,Pick a destination warehouse.
 Pick a finished-good item.,Pick a finished-good item.
 Pick a leave type,Pick a leave type
 Pick a leave type.,Pick a leave type.
+Pick a payment to reallocate.,Pick a payment to reallocate.
 Pick a rule set…,Pick a rule set…
 Pick a source warehouse.,Pick a source warehouse.
 Pick a status.,Pick a status.
@@ -2642,6 +2784,7 @@ Planned start,Planned start
 Planogram name is required.,Planogram name is required.
 Planograms,Planograms
 Planograms describe expected shelf facings per outlet and category.,Planograms describe expected shelf facings per outlet and category.
+Please configure the Landed Cost Expense Account in Stabler Settings.,Please configure the Landed Cost Expense Account in Stabler Settings.
 Please fill all required fields.,Please fill all required fields.
 Policy,Policy
 Port of discharge,Port of discharge
@@ -2674,6 +2817,7 @@ Price Tier,Price Tier
 Price history,Price history
 Price list,Price list
 Price → margin,Price → margin
+Pricing,Pricing
 Print,Print
 Priority,Priority
 Probability,Probability
@@ -2687,7 +2831,10 @@ Produced,Produced
 Produced Qty,Produced Qty
 Produced quantity,Produced quantity
 Produced quantity must be positive.,Produced quantity must be positive.
+Product,Product
+Product cost,Product cost
 Production Item,Production Item
+Products,Products
 Professional Excel export of this ledger,Professional Excel export of this ledger
 Professional Excel export with current filters,Professional Excel export with current filters
 Profile,Profile
@@ -2715,9 +2862,11 @@ Punches,Punches
 Purchase Invoice,Purchase Invoice
 Purchase Invoices,Purchase Invoices
 Purchase Order,Purchase Order
+Purchase Order Landed Charges,Purchase Order Landed Charges
 Purchase Orders,Purchase Orders
 Purchase Receipt,Purchase Receipt
 Purchase Receipt cancelled.,Purchase Receipt cancelled.
+Purchase Receipt must be Submitted to create a Landed Cost Voucher.,Purchase Receipt must be Submitted to create a Landed Cost Voucher.
 Purchase Receipt submitted.,Purchase Receipt submitted.
 Purchase Receipts,Purchase Receipts
 Purchase item,Purchase item
@@ -2782,6 +2931,11 @@ Read-only — from TimePay system.,Read-only — from TimePay system.
 Readiness,Readiness
 Ready,Ready
 Ready to lock,Ready to lock
+Reallocate,Reallocate
+Reallocate a legacy advance to child locations,Reallocate a legacy advance to child locations
+Reallocate advance,Reallocate advance
+Reallocated via {je},Reallocated via {je}
+Reallocation of unallocated advance from {0},Reallocation of unallocated advance from {0}
 Reason,Reason
 Reason for rejection:,Reason for rejection:
 Reason for the status correction:,Reason for the status correction:
@@ -2827,6 +2981,7 @@ Record & close,Record & close
 Record & new,Record & new
 "Record a receipt, issue, or transfer to move stock between warehouses.","Record a receipt, issue, or transfer to move stock between warehouses."
 Record a sale,Record a sale
+Record advance,Record advance
 "Record border-crossing, handling and other import costs here.","Record border-crossing, handling and other import costs here."
 Record production,Record production
 Record stock movements,Record stock movements
@@ -2839,7 +2994,9 @@ Ref No.,Ref No.
 Reference,Reference
 Reference #,Reference #
 Reference date,Reference date
+Reference no,Reference no
 Reference no.,Reference no.
+References,References
 Refresh,Refresh
 Refresh balances,Refresh balances
 Refresh now,Refresh now
@@ -2864,6 +3021,7 @@ Rejected boxes,Rejected boxes
 Rejection reason:,Rejection reason:
 Related documents,Related documents
 Relax the filters or create a new commercial invoice.,Relax the filters or create a new commercial invoice.
+Relax the filters or create a new import order.,Relax the filters or create a new import order.
 Relax the filters to see containers.,Relax the filters to see containers.
 Relax the filters to see trucks.,Relax the filters to see trucks.
 Relieving date,Relieving date
@@ -2913,6 +3071,7 @@ Requested by,Requested by
 Require approval to post payments,Require approval to post payments
 Required,Required
 Required Items to Transfer,Required Items to Transfer
+Required Materials,Required Materials
 Required materials,Required materials
 Reschedule,Reschedule
 Reserved,Reserved
@@ -2979,7 +3138,9 @@ Route name is required.,Route name is required.
 Routes,Routes
 Row,Row
 Row not found on this Stock Entry,Row not found on this Stock Entry
+Row {0}: a positive quantity (kg) is required.,Row {0}: a positive quantity (kg) is required.
 Row {0}: item is required.,Row {0}: item is required.
+Row {0}: quantity {1} kg does not match boxes x box weight ({2} kg).,Row {0}: quantity {1} kg does not match boxes x box weight ({2} kg).
 Row {0}: unknown item '{1}'.,Row {0}: unknown item '{1}'.
 Row {n} ({item}): qty exceeds available stock (available {free}).,Row {n} ({item}): qty exceeds available stock (available {free}).
 Row {n}: qty must be greater than zero.,Row {n}: qty must be greater than zero.
@@ -3061,6 +3222,7 @@ Save & new,Save & new
 Save & submit,Save & submit
 Save Changes,Save Changes
 Save Draft Revaluation,Save Draft Revaluation
+Save advance,Save advance
 Save allowed users,Save allowed users
 Save and submit,Save and submit
 Save as Draft,Save as Draft
@@ -3159,6 +3321,7 @@ Select a company first.,Select a company first.
 Select a customer to view transactions,Select a customer to view transactions
 Select a date and click Refresh preview.,Select a date and click Refresh preview.
 Select a journal entry,Select a journal entry
+Select a payment mode.,Select a payment mode.
 Select a period and company to check readiness.,Select a period and company to check readiness.
 Select a shape or connector to edit its properties.,Select a shape or connector to edit its properties.
 Select a source warehouse.,Select a source warehouse.
@@ -3228,6 +3391,7 @@ Set deadlines in Tender details.,Set deadlines in Tender details.
 Set exactly one of Commercial Invoice or Container on a Freight Booking.,Set exactly one of Commercial Invoice or Container on a Freight Booking.
 Set exactly one of Commercial Invoice or Container.,Set exactly one of Commercial Invoice or Container.
 "Set the Google Drive folder ID in Stabler Settings, and share that Shared-Drive folder with the service account email.","Set the Google Drive folder ID in Stabler Settings, and share that Shared-Drive folder with the service account email."
+Set the imports landed-cost expense account in Stabler Settings ,Set the imports landed-cost expense account in Stabler Settings 
 Set the imports landed-cost expense account in Stabler Settings before creating a Landed Cost Voucher.,Set the imports landed-cost expense account in Stabler Settings before creating a Landed Cost Voucher.
 Setting up your business…,Setting up your business…
 Settings,Settings
@@ -3251,6 +3415,8 @@ Shift start,Shift start
 Shipping & logistics,Shipping & logistics
 Shop,Shop
 Short code,Short code
+Show,Show
+Show all items,Show all items
 Show discounts,Show discounts
 Showing,Showing
 Showing first 500 — narrow the date range to see more.,Showing first 500 — narrow the date range to see more.
@@ -3286,6 +3452,7 @@ Source warehouse,Source warehouse
 Source warehouse is required.,Source warehouse is required.
 Sourcing comparison,Sourcing comparison
 Spend,Spend
+Split one payment across child locations,Split one payment across child locations
 Stabler BRV Setting,Stabler BRV Setting
 Stabler Customs Fee Tier,Stabler Customs Fee Tier
 Stabler Settings doctype does not exist. Run migrations first.,Stabler Settings doctype does not exist. Run migrations first.
@@ -3347,6 +3514,7 @@ Stop Work Order,Stop Work Order
 Stop this Work Order? You can resume it later.,Stop this Work Order? You can resume it later.
 Storage,Storage
 Storefront,Storefront
+Stream,Stream
 Stuck (min),Stuck (min)
 Subject,Subject
 Subject is required.,Subject is required.
@@ -3458,10 +3626,13 @@ The Compliance module is disabled for this company.,The Compliance module is dis
 The GL ledger scan detected {0} issues that require immediate attention.,The GL ledger scan detected {0} issues that require immediate attention.
 The Imports workspace will be built out in the next work package.,The Imports workspace will be built out in the next work package.
 The commercial invoice has no items to receive.,The commercial invoice has no items to receive.
+The import order has no supplier.,The import order has no supplier.
 The imports module is not enabled for this company.,The imports module is not enabled for this company.
+The imports order fields are not available yet.,The imports order fields are not available yet.
 "The queue is blocked — {0} repost(s) stuck. Re-queue them, then Run now.","The queue is blocked — {0} repost(s) stuck. Re-queue them, then Run now."
 The referenced document is cancelled and cannot be approved.,The referenced document is cancelled and cannot be approved.
 The referenced document no longer exists.,The referenced document no longer exists.
+The selected parent already belongs to another parent. ,The selected parent already belongs to another parent. 
 The selected parent already belongs to another parent. Only one level of hierarchy is allowed.,The selected parent already belongs to another parent. Only one level of hierarchy is allowed.
 The selected parent customer does not exist.,The selected parent customer does not exist.
 The voucher is created as a draft; an accountant reviews and submits it in the books.,The voucher is created as a draft; an accountant reviews and submits it in the books.
@@ -3472,6 +3643,8 @@ These device users have no employee link. Confirm a match to re-queue their punc
 This GRN Checklist is not in a draft state.,This GRN Checklist is not in a draft state.
 This GRN has no item lines.,This GRN has no item lines.
 This Service workspace will be added after Tickets P1.,This Service workspace will be added after Tickets P1.
+This account will be hidden from the active chart of accounts.,This account will be hidden from the active chart of accounts.
+This account will be shown in the active chart of accounts again.,This account will be shown in the active chart of accounts again.
 This adjusts stock for {0} item(s) and posts the difference to the ledger. The action is recorded against your name.,This adjusts stock for {0} item(s) and posts the difference to the ledger. The action is recorded against your name.
 This bank transaction is already fully reconciled.,This bank transaction is already fully reconciled.
 This cannot be undone.,This cannot be undone.
@@ -3489,6 +3662,7 @@ This does not look like a 1C ClientBank Exchange file. Other formats are not sup
 This draft invoice has no ledger balance yet. The payment will be submitted as a customer advance.,This draft invoice has no ledger balance yet. The payment will be submitted as a customer advance.
 This draft invoice has no ledger balance yet. The payment will be submitted as a supplier advance.,This draft invoice has no ledger balance yet. The payment will be submitted as a supplier advance.
 This exception is already {0}.,This exception is already {0}.
+This import order is not in a draft state.,This import order is not in a draft state.
 This month,This month
 "This must match exactly the value in raw events (TimePay user ID, badge code, etc.).","This must match exactly the value in raw events (TimePay user ID, badge code, etc.)."
 This payment is already cancelled.,This payment is already cancelled.
@@ -3503,6 +3677,8 @@ This request is already {0}.,This request is already {0}.
 This reverses the ledger postings. The entry stays as an audit record; create an amended one to correct it.,This reverses the ledger postings. The entry stays as an audit record; create an amended one to correct it.
 This role may create/edit back-dated stock entries.,This role may create/edit back-dated stock entries.
 This role may edit frozen accounting entries.,This role may edit frozen accounting entries.
+"This sale would bring {0}'s group balance to {1}, over its credit limit of {2}. ","This sale would bring {0}'s group balance to {1}, over its credit limit of {2}. "
+"This sale would bring {0}'s group balance to {1}, over its credit limit of {2}. Ask an Accounts Manager to approve or increase the limit.","This sale would bring {0}'s group balance to {1}, over its credit limit of {2}. Ask an Accounts Manager to approve or increase the limit."
 This truck receipt is not in a draft state.,This truck receipt is not in a draft state.
 This truck receipt is submitted and can no longer be edited.,This truck receipt is submitted and can no longer be edited.
 This warehouse has no current item balances.,This warehouse has no current item balances.
@@ -3590,6 +3766,7 @@ Transaction Id,Transaction Id
 Transactions,Transactions
 Transactions are recorded on child locations,Transactions are recorded on child locations
 Transfer,Transfer
+Transfer amounts must be greater than zero.,Transfer amounts must be greater than zero.
 Transfer cancelled.,Transfer cancelled.
 Transfer detail,Transfer detail
 Transfer failed.,Transfer failed.
@@ -3602,6 +3779,8 @@ Transfer to WIP Warehouse,Transfer to WIP Warehouse
 Transferred,Transferred
 Transferred Qty,Transferred Qty
 Transfers,Transfers
+Transfers exceed the payment's unallocated amount.,Transfers exceed the payment's unallocated amount.
+Transfers to locations,Transfers to locations
 Transit ETA,Transit ETA
 Transit ETA (Iran),Transit ETA (Iran)
 Transport,Transport
@@ -3629,6 +3808,7 @@ Truck receipt saved.,Truck receipt saved.
 Truck receipt submitted.,Truck receipt submitted.
 Truck receipts,Truck receipts
 Truck saved.,Truck saved.
+Truck temperature {0} C is outside the target range {1} C to {2} C; ,Truck temperature {0} C is outside the target range {1} C to {2} C; 
 Truck temperature {0} C is outside the target range {1} C to {2} C; record a QC note to save.,Truck temperature {0} C is outside the target range {1} C to {2} C; record a QC note to save.
 "Truck, driver or CI… ⌘K","Truck, driver or CI… ⌘K"
 Trucking Company,Trucking Company
@@ -3652,6 +3832,7 @@ USD → UZS,USD → UZS
 USD → {cur} rate,USD → {cur} rate
 UZEX lot {0} not found.,UZEX lot {0} not found.
 UZS,UZS
+Unallocated,Unallocated
 Unassigned,Unassigned
 Unassigned department or position.,Unassigned department or position.
 Unassigned dept / position,Unassigned dept / position
@@ -3673,8 +3854,11 @@ Unknown Import Container: {0},Unknown Import Container: {0}
 Unknown Import Expense: {0},Unknown Import Expense: {0}
 Unknown Import Truck: {0},Unknown Import Truck: {0}
 Unknown POS Profile: {0},Unknown POS Profile: {0}
+Unknown Payment Entry: {0},Unknown Payment Entry: {0}
 Unknown Purchase Invoice: {0},Unknown Purchase Invoice: {0}
 Unknown Purchase Order for this company: {0},Unknown Purchase Order for this company: {0}
+Unknown Purchase Order: {0},Unknown Purchase Order: {0}
+Unknown Purchase Receipt: {0},Unknown Purchase Receipt: {0}
 Unknown Sales Invoice: {0},Unknown Sales Invoice: {0}
 Unknown Sales Order: {0},Unknown Sales Order: {0}
 Unknown Truck Receipt: {0},Unknown Truck Receipt: {0}
@@ -3712,6 +3896,7 @@ Unpaid,Unpaid
 Unreconciled transactions,Unreconciled transactions
 Unsupported language: {0},Unsupported language: {0}
 Unsupported statement format (expected 1C ClientBank Exchange).,Unsupported statement format (expected 1C ClientBank Exchange).
+Unsupported statement format. Please upload a 1C ClientBank file or an Excel statement.,Unsupported statement format. Please upload a 1C ClientBank file or an Excel statement.
 Untitled Process,Untitled Process
 Upcoming,Upcoming
 Update stock,Update stock
@@ -3772,16 +3957,19 @@ Vehicle Number,Vehicle Number
 Vehicle number,Vehicle number
 Vendor,Vendor
 Vendor bill does not match PO / receipt,Vendor bill does not match PO / receipt
+Vendor category '{0}' already exists for this vendor.,Vendor category '{0}' already exists for this vendor.
 Vendor comparison,Vendor comparison
 Vendor comparison (landed),Vendor comparison (landed)
 Vendors,Vendors
 Vertical lanes (flow top→bottom),Vertical lanes (flow top→bottom)
 Vessel,Vessel
 Vet,Vet
+Veterinary Certificates,Veterinary Certificates
 Veterinary certificate,Veterinary certificate
 Veterinary certificate added.,Veterinary certificate added.
 Veterinary certificate updated.,Veterinary certificate updated.
 View,View
+View Stock,View Stock
 View all,View all
 View attached document,View attached document
 View attachment,View attachment
@@ -3814,6 +4002,7 @@ Vouchered,Vouchered
 Voucher…,Voucher…
 Voyage,Voyage
 W,W
+WIP Stock,WIP Stock
 WIP Warehouse,WIP Warehouse
 WIP Whse,WIP Whse
 WIP warehouse,WIP warehouse
@@ -3865,6 +4054,7 @@ Widen the date range or record a payment receipt or disbursement.,Widen the date
 "Widen the date range, relax the status filter, or send a new proposal.","Widen the date range, relax the status filter, or send a new proposal."
 "Widen the date range, relax the status filter, or start a new order.","Widen the date range, relax the status filter, or start a new order."
 Width,Width
+Will create {n} payment(s).,Will create {n} payment(s).
 Win rate,Win rate
 Win/Loss Reason,Win/Loss Reason
 Withdrawal,Withdrawal
@@ -3898,6 +4088,7 @@ You are not assigned to this POS Profile.,You are not assigned to this POS Profi
 You are not permitted to access imports.,You are not permitted to access imports.
 You are not permitted to approve or reject correction requests.,You are not permitted to approve or reject correction requests.
 You are not permitted to edit landed-cost figures.,You are not permitted to edit landed-cost figures.
+You are not permitted to record payments.,You are not permitted to record payments.
 You are not permitted to review approval requests.,You are not permitted to review approval requests.
 You are not permitted to view customers.,You are not permitted to view customers.
 You are not permitted to view employees.,You are not permitted to view employees.
@@ -3932,6 +4123,7 @@ avail,avail
 available,available
 blocker(s),blocker(s)
 boxes,boxes
+check,check
 cheque / txn id,cheque / txn id
 company currency,company currency
 company is required.,company is required.
@@ -3952,6 +4144,7 @@ depts,depts
 designation,designation
 device_name is required.,device_name is required.
 device_user_id is required.,device_user_id is required.
+done,done
 e.g. ANJ — leave blank to auto-generate,e.g. ANJ — leave blank to auto-generate
 e.g. Chevrolet Cobalt 2024,e.g. Chevrolet Cobalt 2024
 e.g. EMP-00042,e.g. EMP-00042
@@ -3974,6 +4167,7 @@ https://…,https://…
 info,info
 initial,initial
 inst.,inst.
+invoiced,invoiced
 is locked from edits.,is locked from edits.
 item,item
 item_code and warehouse are required,item_code and warehouse are required
@@ -4009,6 +4203,7 @@ overdue,overdue
 pack_key is required,pack_key is required
 payload must be a JSON object.,payload must be a JSON object.
 payroll_period is required.,payroll_period is required.
+pending,pending
 planned,planned
 present,present
 pts vs last week,pts vs last week
@@ -4045,6 +4240,7 @@ vs. last month,vs. last month
 without location,without location
 yr,yr
 {0} ({1}),{0} ({1})
+{0} has invoices in more than one currency — record those payments separately.,{0} has invoices in more than one currency — record those payments separately.
 {0} is required.,{0} is required.
 {0} line item change(s),{0} line item change(s)
 {0} must be a number,{0} must be a number
@@ -4055,7 +4251,9 @@ yr,yr
 {0}: discount_amount cannot be negative,{0}: discount_amount cannot be negative
 {0}: discount_percentage must be between 0 and 100,{0}: discount_percentage must be between 0 and 100
 {0}: rate cannot be negative,{0}: rate cannot be negative
+{amount} outstanding,{amount} outstanding
 {n} outstanding invoice(s),{n} outstanding invoice(s)
+{n}d,{n}d
 Δ,Δ
 Остаток (net remaining),Остаток (net remaining)
 —,—
@@ -4078,69 +4276,6 @@ yr,yr
 — select account —,— select account —
 — select —,— select —
 — top-level —,— top-level —
+•••,•••
 ⚠ {0} line(s) had no cost — verify item valuation; margin may be overstated.,⚠ {0} line(s) had no cost — verify item valuation; margin may be overstated.
 ﻿#,#
-Container cost ledger,Container cost ledger
-Cost ledger,Cost ledger
-Landed Cost Bills,Landed Cost Bills
-Open container,Open container
-Failed to load the cost ledger.,Failed to load the cost ledger.
-Product,Product
-Cost figures are hidden — ask an imports manager or accountant for landed-cost visibility.,Cost figures are hidden — ask an imports manager or accountant for landed-cost visibility.
-Product cost,Product cost
-Per kg,Per kg
-No linked bills yet.,No linked bills yet.
-Advance payments,Advance payments
-Unallocated,Unallocated
-No advance payments yet.,No advance payments yet.
-Nothing booked yet,Nothing booked yet
-"No cost lines, bills or advances are linked to this container.","No cost lines, bills or advances are linked to this container."
-Bill or supplier… ⌘K,Bill or supplier… ⌘K
-By supplier,By supplier
-No import bills yet.,No import bills yet.
-No landed-cost bills,No landed-cost bills
-"No purchase invoices are linked to an import container, invoice or truck yet.","No purchase invoices are linked to an import container, invoice or truck yet."
-References,References
-Failed to load the supplier summary.,Failed to load the supplier summary.
-Pending landed-cost bills,Pending landed-cost bills
-{amount} outstanding,{amount} outstanding
-•••,•••
-Failed to load open invoices.,Failed to load open invoices.
-Distribute oldest-first,Distribute oldest-first
-No open invoices for this customer group.,No open invoices for this customer group.
-Allocation,Allocation
-Legacy,Legacy
-{n}d,{n}d
-Will create {n} payment(s).,Will create {n} payment(s).
-Created {n} payment(s): {names},Created {n} payment(s): {names}
-Payments saved — some are pending approval before they post.,Payments saved — some are pending approval before they post.
-Failed to load payments.,Failed to load payments.
-Pick a payment to reallocate.,Pick a payment to reallocate.
-Transfers exceed the payment's unallocated amount.,Transfers exceed the payment's unallocated amount.
-Reallocated via {je},Reallocated via {je}
-Failed to reallocate payment.,Failed to reallocate payment.
-Reallocate advance,Reallocate advance
-No unallocated payments on this customer.,No unallocated payments on this customer.
-Transfers to locations,Transfers to locations
-Add location,Add location
-Reallocate,Reallocate
-Reallocate a legacy advance to child locations,Reallocate a legacy advance to child locations
-Split one payment across child locations,Split one payment across child locations
-Enter at least one allocation amount.,Enter at least one allocation amount.
-Enter at least one transfer amount.,Enter at least one transfer amount.
-Select a payment mode.,Select a payment mode.
-Allocation amounts must be greater than zero.,Allocation amounts must be greater than zero.
-An allocated invoice does not belong to this customer chain.,An allocated invoice does not belong to this customer chain.
-An allocation exceeds the invoice's outstanding amount.,An allocation exceeds the invoice's outstanding amount.
-Transfer amounts must be greater than zero.,Transfer amounts must be greater than zero.
-A selected location does not belong to this customer chain.,A selected location does not belong to this customer chain.
-You are not permitted to record payments.,You are not permitted to record payments.
-{0} has invoices in more than one currency — record those payments separately.,{0} has invoices in more than one currency — record those payments separately.
-Payment mode {0} has no account configured for this company.,Payment mode {0} has no account configured for this company.
-Only Accounts Managers can reallocate a payment.,Only Accounts Managers can reallocate a payment.
-Unknown Payment Entry: {0},Unknown Payment Entry: {0}
-Payment belongs to a different company.,Payment belongs to a different company.
-Only submitted customer payments can be reallocated.,Only submitted customer payments can be reallocated.
-No default receivable account is configured for this company.,No default receivable account is configured for this company.
-Reallocation of unallocated advance from {0},Reallocation of unallocated advance from {0}
-"This sale would bring {0}'s group balance to {1}, over its credit limit of {2}. Ask an Accounts Manager to approve or increase the limit.","This sale would bring {0}'s group balance to {1}, over its credit limit of {2}. Ask an Accounts Manager to approve or increase the limit."

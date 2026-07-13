@@ -30,16 +30,20 @@ A GRN checklist is created from a commercial invoice once cargo is ready to rece
 A Payroll Attendance Summary for employee {0} and period {1} already exists: {2},
 A category is required.,Turkum talab qilinadi.
 A certificate number is required.,Sertifikat raqami talab qilinadi.
+A cleared customs declaration is active: its duty and excise replace any ,
 A cleared customs declaration is active: its duty and excise replace any Uzbekistan Customs Duty cost line in the next voucher (VAT is never capitalized).,Rasmiylashtirilgan bojxona deklaratsiyasi faol: uning boji va aktsizi keyingi vaucherdagi «O‘zbekiston bojxona boji» qatorini almashtiradi (QQS hech qachon kapitallashtirilmaydi).
 A company with this name already exists.,Bu nomdagi kompaniya allaqachon mavjud.
 A customer cannot be its own parent.,Mijoz oʻziga oʻzi bosh boʻla olmaydi.
 A few quick questions and you're ready to sell.,Bir necha tezkor savol — va sotishga tayyorsiz.
+A group title is required.,
 A mapping for employee {0} with device user ID {1} already exists ({2}).,
 A new version is available.,Yangi versiya mavjud.
 A password reset email will be sent. The account is disabled until the user sets a password.,Parol o'zgartirishning elektron xati yuboriladi. Hisob foydalanuvchi parol belgilamaguncha o'chiriladi.
 A rejection reason is required.,Rad etish sababi talab qilinadi.
+A selected location does not belong to this customer chain.,Tanlangan manzil ushbu mijozlar zanjiriga tegishli emas.
 A status correction reason is required to move {0} back from {1} to {2}.,{0} ni {1} dan {2} ga qaytarish uchun holatni tuzatish sababi kerak.
 A status with that name already exists.,
+A submitted import order can no longer be edited here.,
 A submitted truck receipt can no longer be edited.,Tasdiqlangan yuk qabulini endi tahrirlab bo‘lmaydi.
 A supplier is required.,Yetkazib beruvchi talab qilinadi.
 A truck number is required.,Yuk mashinasi raqami talab qilinadi.
@@ -72,10 +76,21 @@ Access token,
 Access token (JWT),
 Account,Hisob
 Account Ledger,Hisob Balansi
+Account created.,
+Account currency,
 Account currency must match the payment account.,Hisob valyutasi to'lov hisobiga mos kelishi kerak.
+Account disabled.,
+Account enabled.,
 Account matches,Hisob mos keladi
+Account name,
+Account name is required.,
+Account number,
+Account number {0} is already used in {1}.,
 Account or cost centre…,
+Account type,
+Account updated.,
 Account {0} is not a {1} account for party {2}.,
+Account {0} not found.,
 Accounting entries,
 Accounts,Hisoblar
 Accounts frozen up to (date),
@@ -121,6 +136,7 @@ Add at least one item line.,Kamida bitta tovar qatorini qo'shing.
 Add at least one item with a positive quantity.,Kamida bitta ijobiy miqdordagi mahsulot qoʻshing.
 Add at least one raw material line.,Kamida bitta xom ashyo qatorini qo'shing.
 Add certificate,Sertifikat qoʻshish
+Add child account,
 Add child warehouse,Bol omborxona qo'shish
 Add column,Ustun qo'shish
 Add cost item,Xarajat moddasini qo‘shish
@@ -132,6 +148,7 @@ Add item,Tovar qo'shish
 Add item to stock,Omborga tovar qo'shish
 Add landed cost voucher,Yetkazilgan tannarx vaucherini qoʻshish
 Add line,Qator qo'shish
+Add location,Manzil qo‘shish
 Add outlet,Chakana sotuvni qo'shish
 Add punch,
 Add row,Qator qo'shish
@@ -156,23 +173,31 @@ Adjustment,Tuzatish
 Admin,Admin
 Administer users & roles,Foydalanuvchilar va rollarni boshqarish
 Advance,Avans
+Advance %,
 Advance 70% Payment Entry,70% avans to‘lovi hujjati
 Advance amount,
 Advance amount must be greater than zero.,
+Advance base,
 Advance deduction,Avans ushlab qolish
 Advance deduction cannot be negative.,Avans ushlash manfiy bo'lishi mumkin emas.
 Advance deduction must be a number.,
 Advance paid,Avans to'landi
 Advance paid.,Avans to'landi.
+Advance payments,Avans to‘lovlari
+Advance recorded (draft).,
 Advance sent for approval.,Avans tasdiqqa yuborildi.
+Advance summary,
 Advanced (API endpoints),
 Advances,Avanslar
 Advances outstanding,
 Against,Qarshi
 Aging,Muddat taqsimoti
+Agreed Total,
+Agreed rate,
 Agreed total,Kelishilgan summa
 Alerts,
 All,Hammasi
+All PI groups,
 All Reports,Barcha hisobotlar
 All attendance exceptions have been resolved or ignored.,
 All categories,Barcha kategoriyalar
@@ -204,14 +229,19 @@ All three accounts are required.,Uchta hisob majburiy.
 All time,
 All types,Barcha turlar
 All variance,Barcha ogʻishlar
+All vendors,
 All vouchers,
 All warehouses,Barcha omborlar
 All {0} employee summaries are clean — no unresolved exceptions.,
 Allocate against,Qarshi ajratish
 Allocated,Ajratilgan
+Allocated (kg),
 Allocated Deposit Amount,Taqsimlangan depozit summasi
 Allocated against,Qarshi ajratilgan
+Allocated amount,
 Allocated amount must be greater than zero.,
+Allocation,Taqsimot
+Allocation amounts must be greater than zero.,Taqsimot summalari noldan katta bo‘lishi kerak.
 Allocation exceeds the unreconciled amount on this transaction.,
 Allocation preview,
 Allow stale exchange rates,
@@ -244,6 +274,8 @@ Amount sent,Yuborilgan summa
 Amount to transfer,O'tkazma summasi
 Amounts in,Summalar
 Amounts in company currency,Summalar kompaniya valyutasida
+An allocated invoice does not belong to this customer chain.,Taqsimlanayotgan hisob-faktura ushbu mijozlar zanjiriga tegishli emas.
+An allocation exceeds the invoice's outstanding amount.,Taqsimot hisob-fakturaning qoldiq summasidan oshib ketdi.
 An expense category is required.,Xarajat turkumi talab qilinadi.
 Analytics,Tahlil
 Anchor DAY hours (h),
@@ -356,6 +388,7 @@ Balance Due Amount,To‘lanadigan qoldiq summa
 Balanced,Muvozanatli
 "Balances, advances and payments appear here.",
 "Balances, salaries, advances and payments appear here.","Bu yerda balanslar, oyliklar, avanslar va to'lovlar ko'rinadi."
+Bank,
 Bank / transfer,Bank / o‘tkazma
 Bank Account '{0}' not found.,
 Bank Payment,Bank to'lovi
@@ -363,6 +396,7 @@ Bank account,Bank hisobi
 Bank account does not belong to company '{0}'.,
 Bank account has no linked GL account.,
 Bank amount,Bank summası
+Bank and cash amounts are not equal — recorded as entered.,
 Bank payment,Bank to‘lovi
 Bank transaction is required.,
 Bank transaction not found.,
@@ -395,6 +429,7 @@ Bill Date,
 Bill No.,
 Bill date,Hisob sanasi
 Bill number or supplier…,
+Bill or supplier… ⌘K,Hisob-faktura yoki yetkazib beruvchi… ⌘K
 Billed,Hisob-fakturalashtir
 Billed amt,
 Billing,Hisob-faktura
@@ -419,6 +454,7 @@ Books locked nets to salary payable.,Sof oyliklarni to'lanadigan oylikka yozadi.
 Border Crossing,Chegara kesib o'tish
 Border Crossing Date,Chegara kesib o‘tish sanasi
 Border crossing,Chegarani kesib o‘tish
+Box (kg),
 Box Kg,Quti kg
 Box Qty,Qutilar soni
 Box kg,Quti kg
@@ -444,12 +480,14 @@ By item,
 By order,
 By region,Hudud bo‘yicha
 By rep,Menejer bo‘yicha
+By supplier,Yetkazib beruvchi bo‘yicha
 C,
 CBU rate: {rate} ({date}),
 CBU rates are already up to date.,CBU kurslari allaqachon dolzarb.
 CBU rates updated: {rates},CBU kurslari yangilandi: {rates}
 CBU.uz exchange rates (last 30 days),CBU.uz almashtirish kurslari (oxirgi 30 kun)
 CBU:,
+CI,
 CI number,KI raqami
 CI number or supplier… ⌘K,KI raqami yoki yetkazib beruvchi… ⌘K
 CN Return,CN qaytarish
@@ -512,8 +550,10 @@ Card not recognized,
 Cargo,Yuk
 Carrier,Tashuvchi
 Cases / Week,Quti / hafta
+Cash,
 Cash / bank account,Kassa / bank hisobi
 Cash Payment,Naqd to'lov
+Cash amount,
 Cash difference,Naqd farqi
 Cash flow,Pul oqimi
 Cash on hand,Kassadagi pul
@@ -651,8 +691,11 @@ Computed from attendance summaries using the payroll formula. Read-only preview 
 Conditions,
 Configure Google Drive below first.,
 Confirm,Tasdiqlash
+Confirm (submit) the import order before recording an advance.,
+Confirm (submit) this import order? It can no longer be edited here afterwards.,
 Confirm Submit,
 Confirm finish,Yakunlashni tasdiqlash
+Confirm import order,
 Confirm restore test,Tiklash sinovini tasdiqlang
 Conflict,Nizo
 Conflicts,Nizolar
@@ -666,6 +709,7 @@ Container Cost Line,Konteyner xarajat qatori
 Container Number,Konteyner raqami
 Container Size,Konteyner o‘lchami
 Container Type,Konteyner turi
+Container cost ledger,Konteyner xarajatlar reyestri
 Container created.,Konteyner yaratildi.
 Container number,Konteyner raqami
 Container or CI number… ⌘K,Konteyner yoki KI raqami… ⌘K
@@ -697,6 +741,8 @@ Cost Centre,
 Cost Component,Xarajat komponenti
 Cost Lines,Xarajat qatorlari
 Cost centre,
+Cost figures are hidden — ask an imports manager or accountant for landed-cost visibility.,Xarajat summalari yashirilgan — yakuniy tannarxni ko‘rish uchun import menejeri yoki buxgalterga murojaat qiling.
+Cost ledger,Xarajatlar reyestri
 Cost lines,Xarajat qatorlari
 Cost must be positive.,Tannarx musbat bo'lishi kerak.
 Cost total,Jami xarajat
@@ -709,7 +755,9 @@ Could not approve the certificate.,Sertifikatni tasdiqlab bo‘lmadi.
 Could not assign.,Biriktirib bo‘lmadi.
 Could not check payment status.,To‘lov holatini tekshirib bo‘lmadi.
 Could not compute the customs fee.,Bojxona yig‘imini hisoblab bo‘lmadi.
+Could not confirm the import order.,
 Could not create contract.,Shartnoma yaratib bo'lmadi.
+Could not create the PI group.,
 Could not create the transaction.,Tranzaksiya yaratib bo'lmadi.
 Could not create the voucher.,Vaucher yaratib boʻlmadi.
 Could not load bid pricing.,Narx rejasini yuklab bo‘lmadi.
@@ -735,6 +783,7 @@ Could not read a lot number from: {0},
 Could not read backup file: {0},
 Could not read the uploaded file.,
 Could not read your location.,Joylashuvni aniqlab bo'lmadi.
+Could not record the advance.,
 Could not reject the certificate.,Sertifikatni rad etib bo‘lmadi.
 Could not resolve a customer for this deal.,
 Could not resolve payroll period: {0},
@@ -791,6 +840,7 @@ Create your first item to start tracking stock and price lists.,Zaxirani va narx
 Create your first lead or adjust the search filters.,Birinchi lidni yarating yoki filtrlarni oʼgarliring.
 Create your first process to model business workflows.,Biznes jarayonlarni modellashtirish uchun birinchi jarayoningizni yarating.
 Created,Yaratilgan
+Created {n} payment(s): {names},{n} ta to‘lov yaratildi: {names}
 Creates Maintenance Visit,Xizmat tashrifini yaratadi
 Creates a draft Journal Entry — review and submit it from the ledger.,Qoralama jurnal yozuvini yaratadi — uni daftardan ko'rib tasdiqlang.
 "Creates a stock item; if qty and cost are given, an opening stock receipt is posted.","Ombor tovari yaratadi; miqdor va narx berilsa, boshlang'ich kirim qilinadi."
@@ -833,6 +883,7 @@ Customs Clearance Date,Bojxona rasmiylashtiruvi sanasi
 Customs Clearance Fee,Bojxona rasmiylashtiruvi yig‘imi
 Customs Declaration,Bojxona deklaratsiyasi
 Customs Declaration Line,Bojxona deklaratsiyasi qatori
+Customs Declarations,
 Customs Fee Multiplier,Bojxona yig'imi ko'paytuvchisi
 Customs Fee Override (UZS),Bojxona yig'imini bekor qilish (UZS)
 Customs Office,Bojxona posti
@@ -973,11 +1024,15 @@ Device user ID,
 Device user ID is required.,
 Didox,
 Didox may reject this document — missing data:,
+Diff,
 Direct credit note,
 Direct sales return,
+Direct stock updates via Sales Invoice are disabled by company policy. ,
 Direction,Yo'nalish
 Directions,Yo'nalish
 Director board,Direktor paneli
+Disable,
+Disable account?,
 Disabled,O'chirilgan
 Disc,Chegirma
 Disc %,Chegirma %
@@ -988,12 +1043,16 @@ Discount,Chegirma
 Discount %,Chegirma %
 Dismiss,Yopish
 Dispatched,Yuborilgan
+Distribute oldest-first,Eskidan yangiga taqsimlash
 Distributor,Distribyutor
 Distributor claims will appear here once submitted.,Distribyutor arizalari tasdiqlangandan keyin bu yerda ko'rinadi.
 District,
 Dividend tax,Dividend solig‘i
 Dividends,Dividendlar
 DocType,Hujjat turi
+Docs,
+Docs Total,
+Docs rate,
 Docs total,Hujjatlar summasi
 Document,Hujjat
 Document & notes,Hujjat va izohlar
@@ -1079,6 +1138,7 @@ Edit Promo Plan,Reklama rejasini tahrirlash
 Edit Promo Scheme,Reklama sxemasini tahrirlash
 Edit Van Stock,Van ehtiyotini tahrirlash
 Edit Visit,Tashrif buyrumasini tahrirlash
+Edit account,
 Edit customer,Xaridorni tahrirlash
 Edit device,
 Edit draft,
@@ -1125,7 +1185,9 @@ Employee {0} not found.,
 Employees,Xodimlar
 Employment,
 Empty allowed list = user can access every company.,Bo'sh ruxsat ro'yxati = foydalanuvchi barcha kompaniyalarga kirishi mumkin.
+Enable,
 Enable TimePay sync,
+Enable account?,
 Enabled,Faollashtirish
 End,Oxiri
 End Date,Yakuniy sana
@@ -1133,12 +1195,15 @@ End Date must be on or after Start Date.,Yakuniy sana Bosh sananingdan keyin yok
 End date cannot be before start date.,
 End of ledger,
 Enforcement,Majburlash
+Enter a bank and/or cash amount.,
 Enter a quantity for at least one row.,Kamida bitta qator uchun miqdor kiriting.
 Enter amount and commission to see preview.,Ko'rib chiqish uchun summa va komissiyani kiriting.
 Enter an amount greater than zero.,Noldan katta summa kiriting.
+Enter at least one allocation amount.,Kamida bitta taqsimot summasini kiriting.
 Enter at least one count that differs from the system quantity.,Tizimdagi miqdordan farq qiladigan kamida bitta sanoqni kiriting.
 Enter at least one received line.,Kamida bitta qabul qilingan qatorni kiriting.
 Enter at least one return qty.,Kamida bitta qaytarish miqdorini kiriting.
+Enter at least one transfer amount.,Kamida bitta o‘tkazma summasini kiriting.
 Enter cost and term to see the payment schedule.,To'lov jadvalini ko'rish uchun tannarx va muddatni kiriting.
 Enter the quantity to return for each line. Leave 0 to exclude a line.,Har bir qator uchun qaytarish miqdorini kiriting. Qatorni istisno qilish uchun 0 ni qoldiring.
 Enter your Employee ID and secure PIN,
@@ -1186,6 +1251,7 @@ Exchange fee,Birja komissiyasi
 Exchange rate,Valyuta kursi
 Exchange rate ({0}),
 Exchange rate must be greater than zero.,Valyuta kursi noldan katta bo'lishi kerak.
+Exchange rate preview,
 Exchange rate staleness,
 Excise,Aktsiz
 Excise %,Aktsiz %
@@ -1205,6 +1271,7 @@ Expected (kg),Kutilgan (kg)
 Expected Closure,Rejalashtirilgan yopilish
 Expected Facings,Kutilgan yuzlar
 Expected Monthly Volume,Kutilayotgan oylik hajm
+Expected advance,
 Expected arrival,Kutilayotgan kelish
 Expected facings is required on row {0}.,Kutilgan yuzlar {0} qatorida talab qilinadi.
 Expense,Xarajat
@@ -1240,6 +1307,7 @@ FX rate looks wrong,FX kursi noto'g'ri
 FX risk,Valyuta riski
 Failed,Xatolik
 Failed to assign ticket.,Murojaatni belgilab bo'lmadi.
+Failed to build Landed Cost Voucher payload.,
 Failed to cancel entry.,
 Failed to cancel transfer.,
 Failed to cancel.,Bekor qilish muvaffaq bo'lmadi.
@@ -1305,6 +1373,7 @@ Failed to load equipment.,Jihozni yuklab bo'lmadi.
 Failed to load expenses.,Xarajatlarni yuklab bo‘lmadi.
 Failed to load form options.,Forma variantlarini yuklashda xato.
 Failed to load freight bookings.,Yuk bronlarini yuklab bo‘lmadi.
+Failed to load import orders.,
 Failed to load invoice.,Hisob-fakturani yuklashda xato.
 Failed to load invoices.,Hisob-fakturalarni yuklashda xato.
 Failed to load items.,Tovarlarni yuklashda xato.
@@ -1312,12 +1381,14 @@ Failed to load journal entries.,Jurnal yozuvlarini yuklashda xato.
 Failed to load lead.,Lidni yuklab boʼlmadi.
 Failed to load leads.,Lidlarni yuklab boʼlmadi.
 Failed to load ledger.,Kunlikni yuklashda xato.
+Failed to load open invoices.,Ochiq hisob-fakturalarni yuklab bo‘lmadi.
 Failed to load options.,Variantlarni yuklashda xato.
 Failed to load outlets.,Nuqtalarni yuklab bo'lmadi.
 Failed to load overdue installments.,Muddati o'tgan to'lovlarni yuklab bo'lmadi.
 Failed to load party defaults.,Tomonning asosiy sozlamalarini yuklashda xato.
 Failed to load payment defaults.,To'lovning asosiy sozlamalarini yuklashda xato.
 Failed to load payment entries.,To'lov yozuvlarini yuklashda xato.
+Failed to load payments.,To‘lovlarni yuklab bo‘lmadi.
 Failed to load photo report.,Fotosurat hisobotini yuklashda xato.
 Failed to load planogram.,Planogrammani yuklashda xato.
 Failed to load process.,Jarayonni yuklab bo'lmadi.
@@ -1345,10 +1416,13 @@ Failed to load the GRN checklist.,Qabul varaqasini yuklab boʻlmadi.
 Failed to load the booking.,Bronni yuklab bo‘lmadi.
 Failed to load the commercial invoice.,Tijorat invoysi yuklanmadi.
 Failed to load the container.,Konteyner yuklanmadi.
+Failed to load the cost ledger.,Xarajatlar reyestrini yuklab bo‘lmadi.
 Failed to load the declaration.,Deklaratsiyani yuklab bo‘lmadi.
 Failed to load the expense.,Xarajatni yuklab bo‘lmadi.
+Failed to load the import order.,
 Failed to load the imports dashboard.,Import paneli yuklanmadi.
 Failed to load the landed-cost review.,Yetkazib berish qiymati ko‘rigini yuklab bo‘lmadi.
+Failed to load the supplier summary.,Yetkazib beruvchi bo‘yicha jamini yuklab bo‘lmadi.
 Failed to load the truck receipt.,Mashina qabulini yuklab boʻlmadi.
 Failed to load the truck.,Yuk mashinasi yuklanmadi.
 Failed to load ticket.,Murojaatni yuklab bo'lmadi.
@@ -1367,6 +1441,7 @@ Failed to move deal.,Bitimni ko'chirish muvaffaqiyatsiz bo'ldi.
 Failed to move ticket.,Murojaatni ko'chirib bo'lmadi.
 Failed to pay advance.,Avans to'lab bo'lmadi.
 Failed to preview collection.,
+Failed to reallocate payment.,To‘lovni qayta taqsimlab bo‘lmadi.
 Failed to record payment.,To'lovni qaydda xato.
 Failed to refresh claim.,Shikoyatni yangilanishda xato.
 Failed to rename column.,
@@ -1379,6 +1454,7 @@ Failed to save customer.,Mijozni saqlashda xato.
 Failed to save deal.,Bitimni saqlab boʼlmadi.
 Failed to save lead.,Lidni saqlab boʼlmadi.
 Failed to save location.,Joylashuvni saqlab bo'lmadi.
+Failed to save materials.,Materiallarni saqlab bo'lmadi.
 Failed to save photo report.,Fotosurat hisobotini saqlashda xato.
 Failed to save planogram.,Planogrammani saqlashda xato.
 Failed to save process.,Jarayonni saqlab bo'lmadi.
@@ -1414,6 +1490,7 @@ Field users represent sales reps who execute visits and own van stock.,Foydalanu
 Files,Fayllar
 Fill in the inputs on the left to see the day result.,
 Fill in the required fields before submitting.,Tasdiqlashdan oldin talab qilingan maydonlarni to'ldiring.
+Filter warnings,Ogohlantirishlarni filtrlash
 Finance,Moliya
 Financed,Moliyalashtirilgan
 Financial,
@@ -1445,6 +1522,7 @@ Flat view,Roʻyxat koʻrinishi
 Flexible,
 Food & Beverage,Oziq-ovqat va ichimlik
 Force submit & reserve,Majburan yuborish va zaxiralash
+Found {0} stock valuation anomalies (missing costs or suspicious rates).,{0} ta zaxira tannorhini baholashda anomaliyalar aniqlandi (tannorh yetishmaydi yoki shubhali narxlar).
 Free,
 Free Qty,Bepul miqdori
 Free qty,
@@ -1455,6 +1533,7 @@ Freezer pending,Muzlatgich kutilmoqda
 Freezer push,Muzlatgichlar
 Freight,Fraxt
 Freight Booking,Yuk tashish bronlashi
+Freight Bookings,
 Frequency,Davriylik
 Fri,Ju
 Friday,
@@ -1536,6 +1615,7 @@ Gross pay,Hisoblangan maosh
 Gross total,Jami (brutto)
 Gross weight,Brutto vazn
 Group,Guruhi
+"Group account (can contain children, holds no transactions itself)",
 "Group warehouse (can contain children, holds no stock itself)","Guruhi sklad (bolalarni saqlashi mumkin, o'zi zaxira saqlash olmaydi)"
 Guarantee,Kafolat
 Guarantee return,Kafolat qaytishi
@@ -1555,6 +1635,7 @@ Heavy-conditions allowance,Og'ir sharoit ustamasi
 Height,Balandlik
 Hello {name},"Salom, {name}"
 Hidden for your role,Sizning rolingiz uchun yashirilgan
+Hide,
 High conflicts,Yuqori nizolar
 Hire date,
 Holiday,Bayram
@@ -1583,9 +1664,15 @@ Import (paste / CSV),Import (paste / CSV)
 Import Container,Import konteyner
 Import Container Item,Import konteyner qatori
 Import Expense,Import xarajati
+Import Expenses,
+Import Order,
+Import Orders,
 Import Truck,Import yuk mashinasi
 Import bank statement,Bank ko'chirmasini import qilish
 Import failed.,Import muvaffaqiyatsiz.
+Import order confirmed.,
+Import order created.,
+Import order saved.,
 Import orders,Import buyurtmalari
 Import outlet locations,Nuqta joylashuvlarini import qilish
 Import {0} lines,{0} qatorni import qilish
@@ -1601,6 +1688,7 @@ In transit,Yo‘lda
 "In, out, returns and net movement totals for the period.","Davr uchun kirim, chiqim, qaytish va sof harakat jami."
 InService,Xizmatda
 Inactive,Faol emas
+Include disabled,
 Include drafts,Qoralamalar bilan
 Include in Landed Cost,Landed cost tarkibiga kiritilsin
 Including unposted drafts — does not tie to the GL.,Joylanmagan qoralamalar bilan — bosh kitobga mos kelmaydi.
@@ -1728,6 +1816,8 @@ L,Yq
 LCV,Vaucher
 Label,Nom
 Landed,Yetkazilgan
+Landed Cost Bills,Tannarx hisob-fakturalari
+Landed Cost Review,
 Landed cost (goods + import),Yetkazilgan narx (tovar + import)
 Landed cost + our margin → the price we bid,Yetkazilgan narx + marjamiz → biz taklif qiladigan narx
 Landed cost is restricted,Yetkazib berish qiymati cheklangan
@@ -1772,6 +1862,7 @@ Ledger,
 Ledger spans multiple account currencies; amounts shown in base currency.,Ledger bir nechta hisob valyutalarini qamrab oladi; summalar asosiy valyutada ko'rsatilgan.
 Ledger — all vouchers (reconciles to the balance),Ledger — barcha hujjatlar (balansga mos)
 Left,Ishdan ketgan
+Legacy,Eski
 Legal / lawyer,Yurist
 Length,Bo'y
 Level {0},
@@ -1806,6 +1897,7 @@ Loading more…,
 Loading warehouses…,Omborlar yuklanmoqda…
 Loading…,Yuklanmoqda…
 Located,Joylashuvli
+Location,
 Location saved.,Joylashuv saqlandi.
 Locations,Joylashuvlar
 Lock,
@@ -1888,6 +1980,7 @@ Minutes worked before overtime begins.,
 Missing,Yoʻq
 Missing Entry,
 Missing TimePay user id.,
+Missing document type or name,
 Missing fields,Yetishmayotgan maydonlar
 Missing site config key: {0},
 Missing veterinary certificate,Veterinariya sertifikati yoʻq
@@ -1957,13 +2050,19 @@ Never,Hech qachon
 Never tested,Hech qachon sinalmagan
 New,Yangi
 New BOM,Yangi spetsifikatsiya
+New Commercial Invoice,
+New Container,
 New Contract,Yangi shartnoma
+New Customs Declaration,
 New Deal,Yangi bitim
 New Equipment,Yangi uskunalar
 New Exchange Rate Revaluation,
+New Import Order,
 New Lead,Yangi lid
 New Murabaha Contract,Yangi Murobaha shartnomasi
 New OSA audit,Yangi OSA audit
+New PI group,
+New PI group title:,
 New Plan,Yangi reja
 New Process,Yangi jarayon
 New Promo Plan,Yangi reklama rejasi
@@ -1981,9 +2080,11 @@ New Scheme,Yangi sxema
 New Service Ticket,Yangi murojaat
 New Ticket,Yangi murojaat
 New Transfer,Yangi o'tkazma
+New Truck,
 New Van Stock,Yangi furgon inventari
 New Visit,Yangi tashrif
 New Work Order,Yangi ishlab chiqarish buyurtmasi
+New account,
 New asset purchase,
 New bill,Yangi hisob
 New booking,Yangi bron
@@ -1999,6 +2100,7 @@ New entry,Yangi kiritma
 New expense,Yangi xarajat
 New field user,Yangi foydalanuvchi
 New gate device,
+New import order,
 New item,Yangi tovar
 New journal,Yangi yozuv
 New journal entry,Yangi jurnaldi kiritma
@@ -2057,9 +2159,11 @@ No ROI snapshots yet,Hali ROI suratlar yo'q
 No Salary Expense account found for {0}. Create an Expense account ,
 No Salary Payable account found for {0}. Create a Payable account ,
 No Stock Entries with Asl Belgisi items found.,Asl Belgisi tovarlaridan foydalangan ombor kiritmalari topilmadi.
+No Temporary Opening account found for {0}; add one before posting an opening balance.,
 No access,
 No account rows,
 No activity recorded yet.,
+No advance payments yet.,Hozircha avans to‘lovlari yo‘q.
 No advances yet.,Hali avanslar yo'q.
 No approved veterinary certificate exists for this shipment. The submit will be rejected unless an Imports Manager set an override. Continue anyway?,Ushbu yetkazib berish uchun tasdiqlangan veterinariya sertifikati yoʻq. Import menejeri chetlab oʻtishni oʻrnatmaguncha tasdiqlash rad etiladi. Baribir davom etilsinmi?
 No arrived trucks are waiting to be received for this shipment.,Ushbu yetkazib berish uchun qabulni kutayotgan kelgan mashinalar yoʻq.
@@ -2089,6 +2193,7 @@ No corrections found for this status.,
 "No cost items yet — add transport, customs, certification…","Hozircha xarajat yo‘q — transport, bojxona, sertifikatlash qo‘shing…"
 No cost lines,Xarajat qatorlari yo‘q
 No cost lines yet.,Hozircha xarajat qatorlari yo‘q.
+"No cost lines, bills or advances are linked to this container.","Bu konteynerga xarajatlar, hisob-fakturalar yoki avanslar bog‘lanmagan."
 No cost lines.,Xarajat qatorlari yo‘q.
 No coverage,Qamrov yo'q
 No creditors found.,
@@ -2103,6 +2208,7 @@ No deals,Bitimlar yoʼq
 No debtors found.,
 No deductions,Ushlanmalar yo'q
 No default Bank or Cash account configured for company {0}.,{0} kompaniyasi uchun asosiy Bank yoki Naqd hisob sozlamagan.
+No default receivable account is configured for this company.,Ushbu kompaniya uchun standart debitorlik hisobi sozlanmagan.
 No default {0} account found to copy parent from.,
 No department,Bo'limsiz
 "No documents yet — add the standard set (ГТД, certificate, acceptance act…).","Hozircha hujjat yo‘q — standart to‘plamni qo‘shing (ГТД, sertifikat, dalolatnoma…)."
@@ -2128,8 +2234,11 @@ No files attached.,Fayllar biriktirilmagan.
 No foreign-currency account balances found for this date.,
 No freight bookings,Yuk bronlari yo‘q
 No gate devices,
+No group,
 No holidays yet.,Hali bayramlar yo'q.
+No import bills yet.,Hozircha import hisob-fakturalari yo‘q.
 No import expenses,Import xarajatlari yo‘q
+No import orders,
 No installments due this month.,Bu oyda to'lovlar yo'q.
 No interest — fixed Murabaha markup. Sum equals total exactly.,Foizsiz — qat'iy Murobaha ustamasi. Yig'indi aniq jami bilan teng.
 No invoices found,
@@ -2142,22 +2251,27 @@ No items yet.,Hali tovarlar yo'q.
 No items.,Pozitsiyalar yo‘q.
 No journal entries in this range,Bu diapazonida jurnaldi kiritmalari yo'q
 No landed cost vouchers yet.,Hozircha tannarx vaucherlari yoʻq.
+No landed-cost bills,Tannarx hisob-fakturalari yo‘q
+No landed-cost lines have been found.,
 No lanes. Click + to add.,Yo'laklar yo'q. Qo'shish uchun + bosing.
 No leads,Lidlar yoʼq
 No leave requests,Ta'til arizalari yo'q
 No ledger entries found for the selected period.,Tanlangan davr uchun ledger kiritmalari topilmadi.
 No lines differ from the system quantity — nothing to reconcile.,
 No lines yet.,Hali satrlar yo'q.
+No linked bills yet.,Hozircha bog‘langan hisob-fakturalar yo‘q.
 No local backups to upload. Create one first.,Yuklash uchun mahalliy zaxira yo'q. Avval yarating.
 No locked employees to accrue for this period.,Bu davr uchun hisoblanadigan qulflangan xodim yo'q.
 No low-stock items,Kam ombordagi tovarlar yo'q
 No matches found,Mos keluvchilar topilmadi
 No matching items,
 "No matching vouchers found. Create a payment, or widen the date/amount window.",Mos hujjatlar topilmadi. To'lov yarating yoki sana/summa oynasini kengaytiring.
+No materials required.,
 No materials to stage,
 No movements yet.,Hozircha harakatlar yo'q.
 No new Version rows since the last seal.,
 No open exceptions,
+No open invoices for this customer group.,Bu mijozlar guruhi uchun ochiq hisob-fakturalar yo‘q.
 No open reservations,Ochiq zahiralar yo'q
 No orders yet,
 No orders.,Buyurtmalar yo'q.
@@ -2182,6 +2296,7 @@ No processes,Jarayonlar yo'q
 No promo plans yet,Reklamaviy rejalar hali yo'q
 No promo schemes yet,Reklamaviy sxemalar hali yo'q
 No punches — employee will be marked absent.,
+"No purchase invoices are linked to an import container, invoice or truck yet.","Konteyner, invoys yoki yuk mashinasiga bog‘langan xarid hisob-fakturalari yo‘q."
 No purchase invoices in this range,
 No purchase orders have been registered for this supplier.,
 No purchase orders in the customs queue.,Bojxona navbatida buyurtma yo‘q.
@@ -2247,6 +2362,7 @@ No transactions yet.,Operatsiyalar hali yo'q.
 No travel,
 No truck receipts yet.,Hozircha mashina qabullari yoʻq.
 No trucks,Yuk mashinalari yo‘q
+No unallocated payments on this customer.,Bu mijozda taqsimlanmagan to‘lovlar yo‘q.
 No unbilled service visits,
 No unconsumed landed-cost lines to voucher.,Voucher uchun ishlatilmagan xarajat qatorlari yo'q.
 No unmatched users. All punches are mapped.,Bog'lanmagan foydalanuvchilar yo'q. Barcha belgilashlar bog'langan.
@@ -2279,13 +2395,16 @@ Not permitted to create Gate Devices.,
 Not permitted to export this report.,
 Not permitted to process Timepay attendance.,
 Not permitted to read Budget.,
+Not permitted to read Customer: {0},
 Not permitted to read GL entries.,
 Not permitted to read Stock Ledger Entry,
+Not permitted to read Supplier: {0},
 Not permitted to read {0} {1},{0} {1} ni o'qish ruxsati yo'q
 Not permitted to reconcile this voucher.,
 Not permitted to reconcile {0} {1}.,
 Not permitted to submit Exchange Rate Revaluation.,
 Not permitted to sync Timepay attendance.,
+Not permitted to view this warehouse stock.,
 Not permitted to {0} {1} {2},
 Not permitted — admins only.,
 Not permitted.,
@@ -2296,6 +2415,7 @@ Not set,
 Not uploaded yet,Hali yuklanmagan
 Note,Izoh
 Notes,Eslatmalar
+Nothing booked yet,Hozircha hech narsa kiritilmagan
 Nothing to pay — selected employees have no outstanding balance.,
 Nothing to reconcile — all clear.,Solishtirish uchun hech narsa yo'q — hammasi toza.
 Nothing to voucher.,Vaucherga o‘tkaziladigan narsa yo‘q.
@@ -2336,9 +2456,10 @@ On-hand batches at risk: expired and expiring soon.,Xavf ostidagi partiyalar: mu
 On-hand value vs sales velocity. Flags slow-moving and dead stock.,Zaxira qiymati savdo tezligiga nisbatan. Sekin va o‘lik zaxira belgilanadi.
 On-hand value vs {0}-day sales. Dead = no sales in period.,Ombordagi qiymat {0} kunlik sotuvga nisbatan. O'lik = davrda sotuv yo'q.
 On-shelf availability checks from field visits.,
-One or more lines exceed available stock. Reduce qty or choose a different warehouse.,Bir yoki bir nechta satrlar mavjud stockni oshib ketdi. Miqdorini kamaytiring yoki boshqa omborni tanlang.
+One or more lines exceed available stock. Reduce qty or choose a different warehouse.,Bir yoki bir nechta qatorda miqdor mavjud zaxiradan ko'p. Miqdorni kamaytiring yoki boshqa omborni tanlang.
 "One outlet per line: code or name, latitude, longitude. Comma, tab or semicolon separated.","Har qatorda bitta nuqta: kod yoki nom, kenglik, uzunlik. Vergul, tabulyatsiya yoki nuqtali vergul bilan ajratilgan."
 Online payment,Onlayn to‘lov
+Only Accounts Managers can reallocate a payment.,To‘lovni faqat buxgalteriya menejerlari qayta taqsimlashi mumkin.
 Only Approved claims can be settled. Current status: {0},Faqat Tasdiqlangan da'volar ko'rib chiqilishi mumkin. Hozirgi holat: {0}
 Only Payment Entry / Journal Entry can be reconciled here.,
 Only a Stock Manager can reconcile stock.,Faqat ombor menejeri qoldiqlarni solishtira oladi.
@@ -2356,6 +2477,7 @@ Only pending schedule rows can be rescheduled.,
 Only same-day collections can be cancelled by the cashier.,Kassir faqat shu kunlik inkassatsiyani bekor qila oladi.
 Only submitted Sales Orders can be closed.,
 Only submitted Sales Orders can be reopened.,
+Only submitted customer payments can be reallocated.,Faqat tasdiqlangan mijoz to‘lovlarini qayta taqsimlash mumkin.
 Only submitted entries can be cancelled.,
 Only submitted invoices can be returned.,Faqat topshirilgan hisob-fakturalar qaytarilishi mumkin.
 Only with a balance,Faqat balansi borlar
@@ -2366,6 +2488,7 @@ Open Desk,Deskni ochish
 Open Exceptions,
 Open SREs,Ochiq SRElar
 Open commercial invoices,Ochiq tijorat invoyslari
+Open container,Konteynerni ochish
 Open exceptions,
 Open matrix,Jadvalni ochish
 Open payment link,To‘lov havolasini ochish
@@ -2378,6 +2501,7 @@ Opening Balance,Boshlang'ich qoldiq
 Opening balance,Ochilish balansi
 "Opening balance, period movement, and running balance by account.",
 Opening balances,Ochilish balans
+Opening date,
 Opening qty,Boshlang'ich miqdor
 "Opening, in, out and closing quantity per item over a date range.","Sana oralig'ida har bir mahsulot bo'yicha boshlang'ich, kirim, chiqim va yakuniy miqdor."
 Operations,Operatsiyalar
@@ -2441,7 +2565,11 @@ Own,Oʻzi
 Owner,
 P,Ku
 PENDING,Kutilmoqda
+PI & Exporter,
 PI In,PI kirim
+PI group,
+PI group created.,
+"PI number, vendor or group… ⌘K",
 PIN,
 PO,PO
 PO ETA,PO ETA
@@ -2469,6 +2597,11 @@ Paid to,Qayga to'landi
 Paid {0} employees — {1},{0} xodimga to'landi — {1}
 Parent,Bosh
 Parent Customer,Bosh mijoz
+Parent account,
+Parent account is required.,
+Parent account {0} does not belong to {1}.,
+Parent account {0} is not a group account.,
+Parent account {0} not found.,
 Parent warehouse,Asosiy ombor
 Pareto ranking of customers by revenue with A/B/C classes.,"Mijozlarni daromad bo‘yicha Pareto saralash, A/B/C sinflar bilan."
 Pareto ranking of items by value with A/B/C classes.,"Mahsulotlarni qiymat bo‘yicha Pareto saralash, A/B/C sinflar bilan."
@@ -2520,10 +2653,13 @@ Payment Entry is required.,Payment Entry talab qilinadi.
 Payment Mode,
 Payment amount must be positive,To'lov summasi musbat bo'lishi kerak
 Payment amount {0} exceeds outstanding {1} on {2},{2} bo'yicha to'lov summasi {0} qarzdorlik {1} dan oshib ketmoqda
+Payment belongs to a different company.,To‘lov boshqa kompaniyaga tegishli.
 Payment cancelled,To‘lov bekor qilindi
+Payment date,
 Payment failed,To‘lov amalga oshmadi
 Payment failed.,To'lov muvaffaqiyatsiz.
 Payment mode is not allowed for this POS Profile.,
+Payment mode {0} has no account configured for this company.,{0} to‘lov usuli uchun ushbu kompaniyada hisob sozlanmagan.
 Payment mode {0} is not an online gateway.,
 "Payment number, reference or party…",
 Payment overdue,To'lov muddati o'tgan
@@ -2534,12 +2670,14 @@ Payment saved — pending approval before it posts.,To'lov saqlandi — kiritili
 Payment schedule,To'lov jadvali
 Payment split is hidden for your role.,To‘lov taqsimoti sizning rolingiz uchun yashirilgan.
 Payment status,To‘lov holati
+Payment terms,
 Payment type,To'lov turi
 Payments,To'lovlar
 Payments due,Muddati kelgan to‘lovlar
 Payments due ≤7 days,To‘lovlar ≤7 kun
 Payments paid today,
 Payments received today,
+Payments saved — some are pending approval before they post.,To‘lovlar saqlandi — ba’zilari o‘tkazishdan oldin tasdiqlanishini kutmoqda.
 Payments you submit that need a second approver will show here.,"Siz yuborgan, ikkinchi tasdiqlovchini talab qiladigan to'lovlar shu yerda ko'rinadi."
 Payout account,To'lov hisobi
 Payroll,Maosh
@@ -2562,10 +2700,12 @@ Pending,Kutilmoqda
 Pending (kg),Kutilmoqda (kg)
 Pending Corrections,
 Pending approvals,Tasdiq kutilmoqda
+Pending landed-cost bills,To‘lanmagan tannarx hisob-fakturalari
 Pending requests,Kutilayotgan arizalar
 Pending vet certificates,Kutilayotgan vet sertifikatlar
 People,Xodimlar
 Per box,Quti narxi
+Per kg,Kg uchun
 Percent off,Foiz chegirma
 Period,Davr
 Period Credit,Davr krediti
@@ -2585,6 +2725,7 @@ Photo URL,Rasm URL manzili
 Photo is required.,Rasm talab qilinadi.
 Photos,Rasmlar
 "Photos capture shelves, storefronts and promotions during visits.","Rasmlar tashrif paytida javonlar, do'konlarning fasadlari va aksiyalarni ushlaб oladi."
+Physical,
 Pick a cash/bank account.,
 Pick a company from the switcher in the header to see your financial overview.,Moliyaviy umumiy ko'rinishni ko'rish uchun sarlavhada turgan kompaniya o'zgartirgichidan kompaniyani tanlang.
 Pick a customer.,Xaridorni tanlang.
@@ -2593,6 +2734,7 @@ Pick a destination warehouse.,Manzil omborini tanlang.
 Pick a finished-good item.,Tayyor mahsulotni tanlang.
 Pick a leave type,
 Pick a leave type.,Ta'til turini tanlang.
+Pick a payment to reallocate.,Qayta taqsimlash uchun to‘lovni tanlang.
 Pick a rule set…,
 Pick a source warehouse.,Manba omborini tanlang.
 Pick a status.,Holatni tanlang.
@@ -2645,6 +2787,7 @@ Planned start,Boshlanish sanasi
 Planogram name is required.,Planogram nomi talab qilinadi.
 Planograms,Planogramlar
 Planograms describe expected shelf facings per outlet and category.,Planogramlar har bir do'kon va kategoriya uchun kutilayotgan polka yuzini tavsiflaydi.
+Please configure the Landed Cost Expense Account in Stabler Settings.,
 Please fill all required fields.,"Iltimos, barcha kerakli maydonlarni to'ldiring."
 Policy,Siyosat
 Port of discharge,Tushirish porti
@@ -2677,6 +2820,7 @@ Price Tier,Narx darajasi
 Price history,Narx tarixi
 Price list,Narx ro'yxati
 Price → margin,Narx → marja
+Pricing,
 Print,Chop etish
 Priority,Muhimlik
 Probability,Ehtimollik
@@ -2690,7 +2834,10 @@ Produced,Ishlab chiqarilgan
 Produced Qty,
 Produced quantity,Ishlab chiqarilgan miqdor
 Produced quantity must be positive.,Ishlab chiqarilgan miqdor musbat bo'lishi kerak.
+Product,Mahsulot
+Product cost,Mahsulot tannarxi
 Production Item,
+Products,
 Professional Excel export of this ledger,Bu reyestrning professional Excel eksporti
 Professional Excel export with current filters,Joriy filtrlar bilan professional Excel eksporti
 Profile,Profil
@@ -2718,9 +2865,11 @@ Punches,
 Purchase Invoice,Xarid qilish hisob-fakturasi
 Purchase Invoices,Xarid hisob-fakturalari
 Purchase Order,Xarid qilish buyurtmasi
+Purchase Order Landed Charges,
 Purchase Orders,Xarid qilish buyurtmalari
 Purchase Receipt,Tovar qabul qilish
 Purchase Receipt cancelled.,
+Purchase Receipt must be Submitted to create a Landed Cost Voucher.,
 Purchase Receipt submitted.,
 Purchase Receipts,Tovar qabul qilish hujjatlari
 Purchase item,Tovarni xarid qilish
@@ -2785,6 +2934,11 @@ Read-only — from TimePay system.,
 Readiness,
 Ready,Tayyor
 Ready to lock,
+Reallocate,Qayta taqsimlash
+Reallocate a legacy advance to child locations,Eski avansni bola manzillarga qayta taqsimlash
+Reallocate advance,Avansni qayta taqsimlash
+Reallocated via {je},{je} orqali qayta taqsimlandi
+Reallocation of unallocated advance from {0},{0} dan taqsimlanmagan avansni qayta taqsimlash
 Reason,Sabab
 Reason for rejection:,Rad etish sababi:
 Reason for the status correction:,Holatni tuzatish sababi:
@@ -2830,6 +2984,7 @@ Record & close,Yozib yopish
 Record & new,Yozib yangi
 "Record a receipt, issue, or transfer to move stock between warehouses.","Ombor orasida tovarni ko'chirish uchun qabul, chiqarilish yoki ko'chirishni qayd qiling."
 Record a sale,Sotuvni qayd qiling
+Record advance,
 "Record border-crossing, handling and other import costs here.","Bu yerda chegara kesib o‘tish, yuk bilan ishlash va boshqa import xarajatlarini yozing."
 Record production,Ishlab chiqarishni qayd etish
 Record stock movements,Zaxira harakatini qayd etish
@@ -2842,7 +2997,9 @@ Ref No.,
 Reference,Havolа
 Reference #,Havolа raqami
 Reference date,Havolа sanasi
+Reference no,
 Reference no.,Havolа raqami
+References,Havolalar
 Refresh,Yangilash
 Refresh balances,Balanslarni yangilash
 Refresh now,Hozir yangilash
@@ -2867,6 +3024,7 @@ Rejected boxes,Rad etilgan qutilar
 Rejection reason:,Rad etish sababi:
 Related documents,Tegishli hujjatlar
 Relax the filters or create a new commercial invoice.,Filtrlarni yumshating yoki yangi invoys yarating.
+Relax the filters or create a new import order.,
 Relax the filters to see containers.,Konteynerlarni ko‘rish uchun filtrlarni yumshating.
 Relax the filters to see trucks.,Yuk mashinalarini ko‘rish uchun filtrlarni yumshating.
 Relieving date,
@@ -2916,6 +3074,7 @@ Requested by,So'rovchi
 Require approval to post payments,To'lovlarni kiritish uchun tasdiq talab qilinsin
 Required,Talab qilinadi
 Required Items to Transfer,
+Required Materials,Zaruriy materiallar
 Required materials,Kerakli materiallar
 Reschedule,Vaqtini oʻzgartirish
 Reserved,Zaxirada
@@ -2982,9 +3141,11 @@ Route name is required.,Yo'nalish nomi talab qilinadi.
 Routes,Yo'nalishlar
 Row,Qator
 Row not found on this Stock Entry,Ushbu Inventar kiritishida qator topilmadi
+Row {0}: a positive quantity (kg) is required.,
 Row {0}: item is required.,{0}-qator: tovar talab qilinadi.
+Row {0}: quantity {1} kg does not match boxes x box weight ({2} kg).,
 Row {0}: unknown item '{1}'.,{0}-qator: noma’lum tovar '{1}'.
-Row {n} ({item}): qty exceeds available stock (available {free}).,Qator {n} ({item}): miqdori mavjud inventardan ortiq (mavjud {free}).
+Row {n} ({item}): qty exceeds available stock (available {free}).,{n}-qator ({item}): miqdor mavjud zaxiradan ko'p (mavjud: {free}).
 Row {n}: qty must be greater than zero.,Qator {n}: miqdori noldan katta bo'lishi kerak.
 Rows per page,Sahifadagi qatorlar
 Rsvd,Zahira
@@ -3064,6 +3225,7 @@ Save & new,Saqlash va yangi
 Save & submit,Saqlash va tasdiqlash
 Save Changes,O'zgarishlarni saqlash
 Save Draft Revaluation,
+Save advance,
 Save allowed users,Saqlashga ruxsat etilgan foydalanuvchilar
 Save and submit,Saqlash va tasdiqlash
 Save as Draft,Qoralama sifatida saqlash
@@ -3162,6 +3324,7 @@ Select a company first.,Avval kompaniya tanlang.
 Select a customer to view transactions,Operatsiyalarni ko'rish uchun xaridorni tanlang
 Select a date and click Refresh preview.,
 Select a journal entry,Provodkani tanlang
+Select a payment mode.,To‘lov usulini tanlang.
 Select a period and company to check readiness.,
 Select a shape or connector to edit its properties.,Xususiyatlarni tahrirlash uchun shakl yoki bogʿlovchini tanlang.
 Select a source warehouse.,Manba omborini tanlang.
@@ -3231,6 +3394,7 @@ Set deadlines in Tender details.,Muddatlarni tender tafsilotlarida kiriting.
 Set exactly one of Commercial Invoice or Container on a Freight Booking.,Yuk tashish bronida Tijoriy hisob-faktura yoki Konteynerdan aynan bittasini belgilang.
 Set exactly one of Commercial Invoice or Container.,Tijorat invoysi yoki konteynerdan aynan bittasini belgilang.
 "Set the Google Drive folder ID in Stabler Settings, and share that Shared-Drive folder with the service account email.",
+Set the imports landed-cost expense account in Stabler Settings ,
 Set the imports landed-cost expense account in Stabler Settings before creating a Landed Cost Voucher.,Yetkazib berish xarajatlari vaucherini yaratishdan oldin Stabler sozlamalarida import yetkazib berish xarajatlari hisobini belgilang.
 Setting up your business…,Biznesingiz sozlanmoqda…
 Settings,
@@ -3254,6 +3418,8 @@ Shift start,
 Shipping & logistics,Yetkazish va logistika
 Shop,Do‘kon
 Short code,Qisqa kod
+Show,
+Show all items,
 Show discounts,Chegirtilarni ko'rsatish
 Showing,Koʼrsatilmoqda
 Showing first 500 — narrow the date range to see more.,Birinchi 500 ko‘rsatildi — ko‘proq ko‘rish uchun davrni toraytiring.
@@ -3289,6 +3455,7 @@ Source warehouse,Manba ombor
 Source warehouse is required.,
 Sourcing comparison,Yetkazib beruvchilarni taqqoslash
 Spend,Xarajat
+Split one payment across child locations,Bitta to‘lovni bola manzillar bo‘yicha bo‘lish
 Stabler BRV Setting,BHM sozlamasi
 Stabler Customs Fee Tier,Bojxona yig'imi bosqichi
 Stabler Settings doctype does not exist. Run migrations first.,
@@ -3350,6 +3517,7 @@ Stop Work Order,
 Stop this Work Order? You can resume it later.,Bu buyurtmani to'xtatasizmi? Keyin davom ettirsa bo'ladi.
 Storage,Saqlash
 Storefront,Do'kon ko'rinishi
+Stream,
 Stuck (min),Osilgan (daq)
 Subject,Mavzu
 Subject is required.,
@@ -3461,10 +3629,13 @@ The Compliance module is disabled for this company.,Bu kompaniya uchun Muvofiqli
 The GL ledger scan detected {0} issues that require immediate attention.,
 The Imports workspace will be built out in the next work package.,Import bo'limi keyingi ish paketida ishlab chiqiladi.
 The commercial invoice has no items to receive.,Tijorat invoysida qabul qilinadigan tovarlar yo‘q.
+The import order has no supplier.,
 The imports module is not enabled for this company.,Import moduli ushbu kompaniya uchun yoqilmagan.
+The imports order fields are not available yet.,
 "The queue is blocked — {0} repost(s) stuck. Re-queue them, then Run now.","Navbat bloklangan — {0} ta osilgan. Ularni qayta navbatga qo'ying, so'ng 'Hozir ishga tushirish'."
 The referenced document is cancelled and cannot be approved.,
 The referenced document no longer exists.,
+The selected parent already belongs to another parent. ,
 The selected parent already belongs to another parent. Only one level of hierarchy is allowed.,Tanlangan bosh mijoz allaqachon boshqa bosh mijozga tegishli. Faqat bitta ierarxiya darajasi mumkin.
 The selected parent customer does not exist.,Tanlangan bosh mijoz mavjud emas.
 The voucher is created as a draft; an accountant reviews and submits it in the books.,"Vaucher qoralama sifatida yaratiladi; buxgalter uni tekshirib, hisobda tasdiqlaydi."
@@ -3475,6 +3646,8 @@ These device users have no employee link. Confirm a match to re-queue their punc
 This GRN Checklist is not in a draft state.,Ushbu GRN nazorat ro‘yxati qoralama holatida emas.
 This GRN has no item lines.,Ushbu qabulda mahsulot qatorlari yoʻq.
 This Service workspace will be added after Tickets P1.,Bu ish maydoni P1 dan so'ng qo'shiladi.
+This account will be hidden from the active chart of accounts.,
+This account will be shown in the active chart of accounts again.,
 This adjusts stock for {0} item(s) and posts the difference to the ledger. The action is recorded against your name.,Bu {0} ta tovar bo'yicha zaxirani tuzatadi va farqni hisobga kiritadi. Amal sizning nomingizga yoziladi.
 This bank transaction is already fully reconciled.,
 This cannot be undone.,Buni qaytarish mumkin emas.
@@ -3492,6 +3665,7 @@ This does not look like a 1C ClientBank Exchange file. Other formats are not sup
 This draft invoice has no ledger balance yet. The payment will be submitted as a customer advance.,
 This draft invoice has no ledger balance yet. The payment will be submitted as a supplier advance.,
 This exception is already {0}.,
+This import order is not in a draft state.,
 This month,
 "This must match exactly the value in raw events (TimePay user ID, badge code, etc.).",
 This payment is already cancelled.,Bu to'lov allaqachon bekor qilingan.
@@ -3506,6 +3680,8 @@ This request is already {0}.,
 This reverses the ledger postings. The entry stays as an audit record; create an amended one to correct it.,Hisobdagi o'tkazmalar bekor qilinadi. Yozuv audit yozuvi sifatida qoladi; tuzatish uchun tuzatilganini yarating.
 This role may create/edit back-dated stock entries.,
 This role may edit frozen accounting entries.,
+"This sale would bring {0}'s group balance to {1}, over its credit limit of {2}. ",
+"This sale would bring {0}'s group balance to {1}, over its credit limit of {2}. Ask an Accounts Manager to approve or increase the limit.",Bu sotuv «{0}» guruhi balansini {1} ga yetkazadi va uning {2} kredit limitidan oshib ketadi. Tasdiqlash yoki limitni oshirish uchun buxgalteriya menejeriga murojaat qiling.
 This truck receipt is not in a draft state.,Ushbu yuk qabuli qoralama holatida emas.
 This truck receipt is submitted and can no longer be edited.,Ushbu mashina qabuli tasdiqlangan va endi tahrirlanmaydi.
 This warehouse has no current item balances.,
@@ -3594,6 +3770,7 @@ Transaction Id,Tranzaksiya ID
 Transactions,Tranzaksiyalar
 Transactions are recorded on child locations,Operatsiyalar filial lokatsiyalarida qayd etiladi
 Transfer,O'tkazma
+Transfer amounts must be greater than zero.,O‘tkazma summalari noldan katta bo‘lishi kerak.
 Transfer cancelled.,
 Transfer detail,O'tkazma tafsilotlari
 Transfer failed.,
@@ -3606,6 +3783,8 @@ Transfer to WIP Warehouse,
 Transferred,Berilgan
 Transferred Qty,
 Transfers,O'tkazmalar
+Transfers exceed the payment's unallocated amount.,O‘tkazmalar to‘lovning taqsimlanmagan summasidan oshib ketdi.
+Transfers to locations,Manzillarga o‘tkazmalar
 Transit ETA,Tranzit ETA
 Transit ETA (Iran),Tranzit ETA (Eron)
 Transport,Transport
@@ -3633,6 +3812,7 @@ Truck receipt saved.,Mashina qabuli saqlandi.
 Truck receipt submitted.,Mashina qabuli tasdiqlandi.
 Truck receipts,Yuk mashinasi qabullari
 Truck saved.,Yuk mashinasi saqlandi.
+Truck temperature {0} C is outside the target range {1} C to {2} C; ,
 Truck temperature {0} C is outside the target range {1} C to {2} C; record a QC note to save.,Yuk mashinasi harorati {0} C maqsadli oraliqdan ({1} C – {2} C) tashqarida; saqlash uchun sifat nazorati izohini qo'shing.
 "Truck, driver or CI… ⌘K","Yuk mashinasi, haydovchi yoki KI… ⌘K"
 Trucking Company,Tashuvchi kompaniya
@@ -3657,6 +3837,7 @@ USD → UZS,USD → UZS
 USD → {cur} rate,USD → {cur} kursi
 UZEX lot {0} not found.,
 UZS,UZS
+Unallocated,Taqsimlanmagan
 Unassigned,Belgilanmagan
 Unassigned department or position.,Bo'lim yoki lavozim biriktirilmagan.
 Unassigned dept / position,Bo'lim / lavozim yo'q
@@ -3678,8 +3859,11 @@ Unknown Import Container: {0},Noma’lum import konteyneri: {0}
 Unknown Import Expense: {0},Noma’lum import xarajati: {0}
 Unknown Import Truck: {0},Noma’lum import yuk mashinasi: {0}
 Unknown POS Profile: {0},
+Unknown Payment Entry: {0},Noma’lum to‘lov: {0}
 Unknown Purchase Invoice: {0},
 Unknown Purchase Order for this company: {0},Ushbu kompaniya uchun noma’lum xarid buyurtmasi: {0}
+Unknown Purchase Order: {0},
+Unknown Purchase Receipt: {0},
 Unknown Sales Invoice: {0},Noma'lum sotuv hisob-fakturasi: {0}
 Unknown Sales Order: {0},Noma'lum sotuv buyurtmasi: {0}
 Unknown Truck Receipt: {0},Noma’lum yuk qabuli: {0}
@@ -3717,6 +3901,7 @@ Unpaid,To'lanmagan
 Unreconciled transactions,Solishtirilmagan operatsiyalar
 Unsupported language: {0},Qo'llanilmagan til: {0}
 Unsupported statement format (expected 1C ClientBank Exchange).,
+Unsupported statement format. Please upload a 1C ClientBank file or an Excel statement.,
 Untitled Process,Nomsiz jarayon
 Upcoming,Kelayotgan
 Update stock,
@@ -3777,16 +3962,19 @@ Vehicle Number,Transport raqami
 Vehicle number,Transport raqami
 Vendor,Yetkazib beruvchi
 Vendor bill does not match PO / receipt,Yetkazib beruvchi hisobi buyurtma / qabulga mos kelmaydi
+Vendor category '{0}' already exists for this vendor.,
 Vendor comparison,Vendor taqqoslash
 Vendor comparison (landed),Yetkazib beruvchilarni solishtirish (yetkazilgan)
 Vendors,Vendorlar
 Vertical lanes (flow top→bottom),Vertikal yoʿlaklar (oqim yuqori→pastki)
 Vessel,Kema
 Vet,Veterinariya
+Veterinary Certificates,
 Veterinary certificate,Veterinariya sertifikati
 Veterinary certificate added.,Veterinariya sertifikati qoʻshildi.
 Veterinary certificate updated.,Veterinariya sertifikati yangilandi.
 View,Ko'rish
+View Stock,Zaxirani ko'rish
 View all,Hammasini ko'rish
 View attached document,Biriktirilgan hujjatni ochish
 View attachment,Ilova ko'rish
@@ -3819,6 +4007,7 @@ Vouchered,Vaucherlangan
 Voucher…,
 Voyage,Reys
 W,Y
+WIP Stock,
 WIP Warehouse,
 WIP Whse,
 WIP warehouse,Tugallanmagan ishlab chiqarish ombori
@@ -3870,6 +4059,7 @@ Widen the date range or record a payment receipt or disbursement.,Sana oralig'in
 "Widen the date range, relax the status filter, or send a new proposal.","Sana oralig'ini kengaytiring, holat filtri bo'yicha cheklovni yumshoq qiling yoki yangi taklifni yuboring."
 "Widen the date range, relax the status filter, or start a new order.","Sana oralig'ini kengaytiring, holat filtri bo'yicha cheklovni yumshoq qiling yoki yangi buyurtmani boshlang."
 Width,En
+Will create {n} payment(s).,{n} ta to‘lov yaratiladi.
 Win rate,Yutuq foizi
 Win/Loss Reason,Yutuq/yutqaziq sababi
 Withdrawal,Yechib olish
@@ -3903,6 +4093,7 @@ You are not assigned to this POS Profile.,
 You are not permitted to access imports.,Sizda importga ruxsat yo‘q.
 You are not permitted to approve or reject correction requests.,
 You are not permitted to edit landed-cost figures.,Sizda yetkazib berish qiymati ma’lumotlarini tahrirlash huquqi yo‘q.
+You are not permitted to record payments.,Sizga to‘lovlarni ro‘yxatga olishga ruxsat berilmagan.
 You are not permitted to review approval requests.,
 You are not permitted to view customers.,
 You are not permitted to view employees.,
@@ -3937,6 +4128,7 @@ avail,mavj.
 available,
 blocker(s),
 boxes,qutilar
+check,
 cheque / txn id,Chek / tranzaksiya ID
 company currency,kompaniya valyutasi
 company is required.,
@@ -3957,6 +4149,7 @@ depts,bo'lim
 designation,lavozim
 device_name is required.,
 device_user_id is required.,
+done,
 e.g. ANJ — leave blank to auto-generate,masalan ANJ — avtomatik uchun bo'sh qoldiring
 e.g. Chevrolet Cobalt 2024,masalan Chevrolet Cobalt 2024
 e.g. EMP-00042,
@@ -3979,6 +4172,7 @@ https://…,
 info,ma'lumot
 initial,dastlabki
 inst.,to'lov
+invoiced,
 is locked from edits.,tahrirlash uchun qulflangan.
 item,Tovar
 item_code and warehouse are required,Tovar kodi va omborxona majburiy
@@ -4014,6 +4208,7 @@ overdue,kechikdi
 pack_key is required,pack_key majburiy
 payload must be a JSON object.,
 payroll_period is required.,
+pending,
 planned,rejalashtirilgan
 present,kelgan
 pts vs last week,o'tgan haftaga nisbatan
@@ -4050,6 +4245,7 @@ vs. last month,o'tgan oyga nisbatan
 without location,joylashuvi yo'q
 yr,yil
 {0} ({1}),
+{0} has invoices in more than one currency — record those payments separately.,«{0}» da bir nechta valyutadagi hisob-fakturalar bor — bu to‘lovlarni alohida ro‘yxatga oling.
 {0} is required.,{0} majburiy.
 {0} line item change(s),
 {0} must be a number,{0} raqam bo'lishi kerak
@@ -4060,7 +4256,9 @@ yr,yil
 {0}: discount_amount cannot be negative,{0}: chegirma miqdori manfiy bo'lishi mumkin emas
 {0}: discount_percentage must be between 0 and 100,{0}: chegirma foizi 0 dan 100 gacha bo'lishi kerak
 {0}: rate cannot be negative,{0}: narx manfiy bo'lishi mumkin emas
+{amount} outstanding,{amount} qoldiq
 {n} outstanding invoice(s),{n} ta to'lanmagan hisob-faktura
+{n}d,{n}k
 Δ,Δ
 Остаток (net remaining),Остаток (sof qoldiq)
 —,—
@@ -4083,68 +4281,5 @@ yr,yil
 — select account —,— hisob tanlang —
 — select —,
 — top-level —,— eng yuqori darajali —
-⚠ {0} line(s) had no cost — verify item valuation; margin may be overstated.,⚠ {0} qator(da) tannarx yo'q — tovar baholashni tekshiring; marja oshirilgan bo'lishi mumkin.
-Container cost ledger,Konteyner xarajatlar reyestri
-Cost ledger,Xarajatlar reyestri
-Landed Cost Bills,Tannarx hisob-fakturalari
-Open container,Konteynerni ochish
-Failed to load the cost ledger.,Xarajatlar reyestrini yuklab bo‘lmadi.
-Product,Mahsulot
-Cost figures are hidden — ask an imports manager or accountant for landed-cost visibility.,Xarajat summalari yashirilgan — yakuniy tannarxni ko‘rish uchun import menejeri yoki buxgalterga murojaat qiling.
-Product cost,Mahsulot tannarxi
-Per kg,Kg uchun
-No linked bills yet.,Hozircha bog‘langan hisob-fakturalar yo‘q.
-Advance payments,Avans to‘lovlari
-Unallocated,Taqsimlanmagan
-No advance payments yet.,Hozircha avans to‘lovlari yo‘q.
-Nothing booked yet,Hozircha hech narsa kiritilmagan
-"No cost lines, bills or advances are linked to this container.","Bu konteynerga xarajatlar, hisob-fakturalar yoki avanslar bog‘lanmagan."
-Bill or supplier… ⌘K,Hisob-faktura yoki yetkazib beruvchi… ⌘K
-By supplier,Yetkazib beruvchi bo‘yicha
-No import bills yet.,Hozircha import hisob-fakturalari yo‘q.
-No landed-cost bills,Tannarx hisob-fakturalari yo‘q
-"No purchase invoices are linked to an import container, invoice or truck yet.","Konteyner, invoys yoki yuk mashinasiga bog‘langan xarid hisob-fakturalari yo‘q."
-References,Havolalar
-Failed to load the supplier summary.,Yetkazib beruvchi bo‘yicha jamini yuklab bo‘lmadi.
-Pending landed-cost bills,To‘lanmagan tannarx hisob-fakturalari
-{amount} outstanding,{amount} qoldiq
 •••,•••
-Failed to load open invoices.,Ochiq hisob-fakturalarni yuklab bo‘lmadi.
-Distribute oldest-first,Eskidan yangiga taqsimlash
-No open invoices for this customer group.,Bu mijozlar guruhi uchun ochiq hisob-fakturalar yo‘q.
-Allocation,Taqsimot
-Legacy,Eski
-{n}d,{n}k
-Will create {n} payment(s).,{n} ta to‘lov yaratiladi.
-Created {n} payment(s): {names},{n} ta to‘lov yaratildi: {names}
-Payments saved — some are pending approval before they post.,To‘lovlar saqlandi — ba’zilari o‘tkazishdan oldin tasdiqlanishini kutmoqda.
-Failed to load payments.,To‘lovlarni yuklab bo‘lmadi.
-Pick a payment to reallocate.,Qayta taqsimlash uchun to‘lovni tanlang.
-Transfers exceed the payment's unallocated amount.,O‘tkazmalar to‘lovning taqsimlanmagan summasidan oshib ketdi.
-Reallocated via {je},{je} orqali qayta taqsimlandi
-Failed to reallocate payment.,To‘lovni qayta taqsimlab bo‘lmadi.
-Reallocate advance,Avansni qayta taqsimlash
-No unallocated payments on this customer.,Bu mijozda taqsimlanmagan to‘lovlar yo‘q.
-Transfers to locations,Manzillarga o‘tkazmalar
-Add location,Manzil qo‘shish
-Reallocate,Qayta taqsimlash
-Reallocate a legacy advance to child locations,Eski avansni bola manzillarga qayta taqsimlash
-Split one payment across child locations,Bitta to‘lovni bola manzillar bo‘yicha bo‘lish
-Enter at least one allocation amount.,Kamida bitta taqsimot summasini kiriting.
-Enter at least one transfer amount.,Kamida bitta o‘tkazma summasini kiriting.
-Select a payment mode.,To‘lov usulini tanlang.
-Allocation amounts must be greater than zero.,Taqsimot summalari noldan katta bo‘lishi kerak.
-An allocated invoice does not belong to this customer chain.,Taqsimlanayotgan hisob-faktura ushbu mijozlar zanjiriga tegishli emas.
-An allocation exceeds the invoice's outstanding amount.,Taqsimot hisob-fakturaning qoldiq summasidan oshib ketdi.
-Transfer amounts must be greater than zero.,O‘tkazma summalari noldan katta bo‘lishi kerak.
-A selected location does not belong to this customer chain.,Tanlangan manzil ushbu mijozlar zanjiriga tegishli emas.
-You are not permitted to record payments.,Sizga to‘lovlarni ro‘yxatga olishga ruxsat berilmagan.
-{0} has invoices in more than one currency — record those payments separately.,«{0}» da bir nechta valyutadagi hisob-fakturalar bor — bu to‘lovlarni alohida ro‘yxatga oling.
-Payment mode {0} has no account configured for this company.,{0} to‘lov usuli uchun ushbu kompaniyada hisob sozlanmagan.
-Only Accounts Managers can reallocate a payment.,To‘lovni faqat buxgalteriya menejerlari qayta taqsimlashi mumkin.
-Unknown Payment Entry: {0},Noma’lum to‘lov: {0}
-Payment belongs to a different company.,To‘lov boshqa kompaniyaga tegishli.
-Only submitted customer payments can be reallocated.,Faqat tasdiqlangan mijoz to‘lovlarini qayta taqsimlash mumkin.
-No default receivable account is configured for this company.,Ushbu kompaniya uchun standart debitorlik hisobi sozlanmagan.
-Reallocation of unallocated advance from {0},{0} dan taqsimlanmagan avansni qayta taqsimlash
-"This sale would bring {0}'s group balance to {1}, over its credit limit of {2}. Ask an Accounts Manager to approve or increase the limit.",Bu sotuv «{0}» guruhi balansini {1} ga yetkazadi va uning {2} kredit limitidan oshib ketadi. Tasdiqlash yoki limitni oshirish uchun buxgalteriya menejeriga murojaat qiling.
+⚠ {0} line(s) had no cost — verify item valuation; margin may be overstated.,⚠ {0} qator(da) tannarx yo'q — tovar baholashni tekshiring; marja oshirilgan bo'lishi mumkin.
