@@ -430,6 +430,10 @@ def make_work_order_stock_entry(
 	se = frappe.get_doc(stub)
 	if purpose == "Manufacture" and scrap_qty and flt(scrap_qty) > 0:
 		se.process_loss_qty = flt(scrap_qty)
+
+	for item in se.items:
+		item.allow_zero_valuation_rate = 1
+
 	se.insert(ignore_permissions=False)
 	se.submit()
 
