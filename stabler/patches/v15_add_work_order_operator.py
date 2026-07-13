@@ -19,6 +19,7 @@ def execute() -> None:
                     "fieldtype": "Link",
                     "options": "User",
                     "insert_after": "wip_warehouse",
+                    "allow_on_submit": 1,
                     "description": "Shop-floor operator (line) responsible for this Work Order",
                 }
             ],
