@@ -79,7 +79,7 @@ async function loadCurrencies() {
 	}
 }
 
-function blankLine() {
+function blankLine(defaultWh = null) {
 	return {
 		item_code: "",
 		item_name: "",
@@ -97,7 +97,7 @@ function blankLine() {
 		rateTouched: false,
 		discount_percentage: 0,
 		discount_amount: 0,
-		warehouse: defaultWarehouseName() || "",
+		warehouse: defaultWh || defaultWarehouseName() || "",
 		availability: null,
 		availabilityLoading: false,
 		reserved_qty: 0,
@@ -958,7 +958,7 @@ async function closeSalesOrder() {
 			:language="user.language"
 			:currency-symbol="currencySymbol"
 			:search-items="searchItems"
-			:blank-line="blankLine"
+			:blank-line="() => blankLine(form.set_warehouse)"
 			@pick-item="handlePickItem"
 			@validity-change="handleValidityChange"
 		>
