@@ -739,3 +739,131 @@ def badge_logout():
 	from frappe.auth import LoginManager
 	LoginManager().logout()
 	return {"message": "Success"}
+
+
+def create_material_request_for_tomorrow_wo(doc, method=None):
+	"""Hook function triggered on Work Order submit (doc_events).
+	If planned_start_date is tomorrow or later, creates a Material Request for any shortages in wip_warehouse.
+	"""
+	from frappe.utils import add_days, today, getdate
+
+	if not doc.wip_warehouse:
+		return
+
+	tomorrow = getdate(add_days(today(), 1))
+	if getdate(doc.planned_start_date) < tomorrow:
+		return
+
+	# Check if a Material Request already exists for this Work Order to avoid duplicate creation
+	if frappe.db.exists("Material Request", {"work_order": doc.name, "docstatus": ["!=", 2]}):
+		return
+
+	mr = frappe.new_doc("Material Request")
+	mr.material_request_type = "Transfer"
+	mr.transaction_date = today()
+	mr.company = doc.company
+	mr.schedule_date = doc.planned_start_date
+	mr.work_order = doc.name
+
+	for item in doc.required_items:
+		actual = frappe.db.get_value("Bin", {"item_code": item.item_code, "warehouse": doc.wip_warehouse}, "actual_qty") or 0.0
+		needed = flt(item.required_qty)
+		if actual < needed:
+			shortage = needed - actual
+			mr.append("items", {
+				"item_code": item.item_code,
+				"qty": shortage,
+				"warehouse": doc.wip_warehouse,
+				"schedule_date": doc.planned_start_date
+			})
+
+	if mr.items:
+		mr.insert(ignore_permissions=True)
+		mr.submit()
+
+
+@frappe.whitelist()
+def update_work_order_materials(work_order: str, materials: str):
+	"""Update required quantities of raw materials for a Work Order.
+	`materials` is a JSON string containing a list of dicts: [{'item_code': '...', 'required_qty': 12.3}]
+
+	Also triggers/re-runs Material Request creation for any updated shortages if the WO is scheduled for tomorrow/future.
+	"""
+	import json
+	_require_mfg()
+
+	doc = frappe.get_doc("Work Order", work_order)
+	if not doc:
+		frappe.throw(f"Unknown Work Order: {work_order}")
+
+	# Operators can only edit their own assigned Work Orders
+	if not _is_mfg_manager():
+		_require_own_work_order(work_order)
+
+	try:
+		mat_list = json.loads(materials)
+	except Exception:
+		frappe.throw("Invalid materials format.")
+
+	# Update the quantities in the child table directly
+	for m in mat_list:
+		item_code = m.get("item_code")
+		new_qty = flt(m.get("required_qty"))
+
+		# Update required_qty directly in db to bypass docstatus read-only restriction
+		frappe.db.sql(
+			"""
+			UPDATE `tabWork Order Item`
+			SET required_qty = %s
+			WHERE parent = %s AND item_code = %s
+			""",
+			(new_qty, work_order, item_code)
+		)
+
+	# Log the event
+	_log_wo_event(work_order, f"Raw materials manually adjusted by {frappe.session.user}")
+
+	# Reload document to reflect database changes
+	doc.reload()
+
+	# If it's a tomorrow or future WO, create/update Material Request for any new shortages
+	from frappe.utils import add_days, today, getdate
+	tomorrow = getdate(add_days(today(), 1))
+	if doc.wip_warehouse and getdate(doc.planned_start_date) >= tomorrow:
+		# Cancel existing draft/submitted Material Request for this WO and create a fresh one with updated shortages
+		existing_mrs = frappe.get_all("Material Request", filters={"work_order": doc.name, "docstatus": ["!=", 2]}, pluck="name")
+		for mr_name in existing_mrs:
+			try:
+				mr_doc = frappe.get_doc("Material Request", mr_name)
+				if mr_doc.docstatus == 1:
+					mr_doc.cancel()
+				elif mr_doc.docstatus == 0:
+					frappe.delete_doc("Material Request", mr_name)
+			except Exception:
+				pass
+
+		# Create fresh MR
+		mr = frappe.new_doc("Material Request")
+		mr.material_request_type = "Transfer"
+		mr.transaction_date = today()
+		mr.company = doc.company
+		mr.schedule_date = doc.planned_start_date
+		mr.work_order = doc.name
+
+		for item in doc.required_items:
+			actual = frappe.db.get_value("Bin", {"item_code": item.item_code, "warehouse": doc.wip_warehouse}, "actual_qty") or 0.0
+			needed = flt(item.required_qty)
+			if actual < needed:
+				shortage = needed - actual
+				mr.append("items", {
+					"item_code": item.item_code,
+					"qty": shortage,
+					"warehouse": doc.wip_warehouse,
+					"schedule_date": doc.planned_start_date
+				})
+
+		if mr.items:
+			mr.insert(ignore_permissions=True)
+			mr.submit()
+
+	return {"ok": True}
