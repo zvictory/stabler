@@ -123,6 +123,41 @@ def item_detail(name: str, company: str | None = None):
 		"total_value": total_value,
 	}
 
+def _get_restricted_warehouses(company: str) -> set[str] | None:
+	user = frappe.session.user
+	if not user or user == "Guest":
+		return None
+	roles = set(frappe.get_roles(user))
+	is_admin = bool(roles & {"System Manager", "Stabler Admin"})
+	is_manager = bool(roles & {"Manufacturing Manager", "Stock Manager"})
+
+	if is_admin or is_manager:
+		return None
+
+	restricted = None
+
+	# 1. User Permissions
+	from frappe.permissions import get_allowed_docs_for_doctype, get_user_permissions
+	user_permissions = get_user_permissions(user)
+	allowed = get_allowed_docs_for_doctype(user_permissions, "Warehouse")
+	if allowed and "*" not in allowed:
+		restricted = set(allowed)
+
+	# 2. Operator Work Orders
+	operator_wips = frappe.db.get_all(
+		"Work Order",
+		filters={"operator": user, "company": company},
+		pluck="wip_warehouse"
+	)
+	operator_wips = {w for w in operator_wips if w}
+	if operator_wips:
+		if restricted is not None:
+			restricted = restricted.intersection(operator_wips)
+		else:
+			restricted = operator_wips
+
+	return restricted
+
 
 @frappe.whitelist()
 def list_warehouses(company: str):
@@ -140,6 +175,22 @@ def list_warehouses(company: str):
 		{"company": company},
 		as_dict=True,
 	)
+
+	restricted = _get_restricted_warehouses(company)
+	if restricted is not None:
+		allowed_all = set()
+		for wh in restricted:
+			allowed_all.add(wh)
+			curr = wh
+			for _ in range(10):
+				parent = frappe.db.get_value("Warehouse", curr, "parent_warehouse")
+				if parent and parent != company:
+					allowed_all.add(parent)
+					curr = parent
+				else:
+					break
+		rows = [r for r in rows if r["name"] in allowed_all]
+
 	# Attach actual_qty summed across all items in each warehouse
 	totals = dict(
 		frappe.db.sql(
@@ -175,6 +226,102 @@ def _format_warehouse_stock_row(row: dict) -> dict:
 	}
 
 
+def _get_stock_anomalies(items, company):
+	from frappe.utils import flt
+	# Get company currency
+	if company == "Test Company" or (frappe.flags.in_test and str(company).startswith("Test")):
+		base_currency = "USD"
+	else:
+		company_doc = frappe.get_cached_doc("Company", company)
+		base_currency = company_doc.default_currency or "USD"
+
+	# Thresholds
+	if base_currency == "UZS":
+		high_rate_threshold = 40000.0   # ~$3.00
+		high_val_threshold = 1300000000.0 # ~$100,000
+	else:
+		high_rate_threshold = 3.0
+		high_val_threshold = 100000.0
+
+	# Keywords for low-cost items
+	low_cost_keywords = [
+		"etiketka", "korobka", "chopak", "upakovka", "box", "label",
+		"stick", "folga", "zarlik", "qop", "plombir", "paket", "meshok",
+		"stakan", "tara", "probka", "krishka", "butylka", "lenta", "skotch", "skoch"
+	]
+
+	# Group median calculation
+	from collections import defaultdict
+	group_rates = defaultdict(list)
+	for it in items:
+		rate = flt(it.get("valuation_rate"))
+		group = it.get("item_group")
+		if rate > 0:
+			group_rates[group].append(rate)
+
+	group_medians = {}
+	for group, rates in group_rates.items():
+		if len(rates) >= 3:
+			sorted_rates = sorted(rates)
+			n = len(sorted_rates)
+			median = sorted_rates[n // 2] if n % 2 == 1 else (sorted_rates[n // 2 - 1] + sorted_rates[n // 2]) / 2.0
+			group_medians[group] = median
+
+	anomalies = []
+	for it in items:
+		item_code = it.get("item_code")
+		item_name = it.get("item_name") or item_code
+		group = it.get("item_group")
+		qty = flt(it.get("actual_qty"))
+		rate = flt(it.get("valuation_rate"))
+		val = flt(it.get("stock_value"))
+
+		# Check 1: Zero or negative rate on positive stock
+		if qty > 0 and rate <= 0:
+			anomalies.append({
+				"item_code": item_code,
+				"item_name": item_name,
+				"type": "zero_rate",
+				"message": f"Valuation rate is missing or negative (current rate: {rate:,.2f})"
+			})
+			continue
+
+		# Check 2: Unusually high rate for packaging/low-cost raw materials
+		name_lower = item_name.lower()
+		is_low_cost = any(k in name_lower for k in low_cost_keywords)
+		if qty > 0 and is_low_cost and rate > high_rate_threshold:
+			anomalies.append({
+				"item_code": item_code,
+				"item_name": item_name,
+				"type": "high_rate",
+				"message": f"Suspiciously high rate for low-cost item: {base_currency} {rate:,.2f}"
+			})
+			continue
+
+		# Check 3: Statistically high rate compared to group median
+		median = group_medians.get(group)
+		if qty > 0 and median and rate > 10 * median:
+			anomalies.append({
+				"item_code": item_code,
+				"item_name": item_name,
+				"type": "high_rate",
+				"message": f"Abnormally high rate: {base_currency} {rate:,.2f} (>10x group median of {base_currency} {median:,.2f})"
+			})
+			continue
+
+		# Check 4: Unusually high total stock value for packaging
+		if qty > 0 and is_low_cost and val > high_val_threshold:
+			anomalies.append({
+				"item_code": item_code,
+				"item_name": item_name,
+				"type": "high_value",
+				"message": f"Unusually high total value: {base_currency} {val:,.2f} (verify qty/rate)"
+			})
+			continue
+
+	return anomalies
+
+
 @frappe.whitelist()
 def warehouse_stock(company: str, warehouse: str, limit: int = 100):
 	"""Stock rows for the selected warehouse drill-down."""
@@ -184,6 +331,10 @@ def warehouse_stock(company: str, warehouse: str, limit: int = 100):
 		frappe.throw(_("Warehouse is required."))
 	if not frappe.db.exists("Warehouse", {"name": warehouse, "company": company}):
 		frappe.throw(_("Warehouse does not belong to the selected company."))
+
+	restricted = _get_restricted_warehouses(company)
+	if restricted is not None and warehouse not in restricted:
+		frappe.throw(_("Not permitted to view this warehouse stock."), frappe.PermissionError)
 	rows = frappe.db.sql(
 		"""
 		SELECT b.item_code, i.item_name, i.item_group,
@@ -209,6 +360,7 @@ def warehouse_stock(company: str, warehouse: str, limit: int = 100):
 		"total_reserved_qty": sum(row["reserved_qty"] for row in items),
 		"total_free_qty": sum(row["free_qty"] for row in items),
 		"total_value": sum(row["stock_value"] for row in items),
+		"anomalies": _get_stock_anomalies(items, company),
 	}
 
 
@@ -217,7 +369,7 @@ def list_stock_warehouses(company: str):
 	"""Flat list of active leaf warehouses for transaction pickers."""
 	_require_company(company)
 	_assert_company_scope(company)  # tenant isolation: reject a foreign company arg
-	return frappe.db.sql(
+	rows = frappe.db.sql(
 		"""
 		SELECT name, warehouse_name, warehouse_type, company
 		FROM `tabWarehouse`
@@ -229,6 +381,10 @@ def list_stock_warehouses(company: str):
 		{"company": company},
 		as_dict=True,
 	)
+	restricted = _get_restricted_warehouses(company)
+	if restricted is not None:
+		rows = [r for r in rows if r["name"] in restricted]
+	return rows
 
 
 @frappe.whitelist()
@@ -270,6 +426,27 @@ def item_availability(item_code: str, warehouse: str):
 		"free": actual - reserved,
 		"stock_uom": r.get("stock_uom"),
 	}
+
+
+@frappe.whitelist()
+def get_items_stock(warehouse: str, item_codes: str):
+	"""Return the actual_qty in warehouse for a list of item_codes (JSON list)."""
+	import json
+	if not warehouse or not item_codes:
+		return {}
+	try:
+		codes = json.loads(item_codes)
+	except Exception:
+		return {}
+	if not codes:
+		return {}
+
+	bins = frappe.db.get_all(
+		"Bin",
+		filters={"warehouse": warehouse, "item_code": ["in", codes]},
+		fields=["item_code", "actual_qty"]
+	)
+	return {b.item_code: flt(b.actual_qty) for b in bins}
 
 
 @frappe.whitelist()

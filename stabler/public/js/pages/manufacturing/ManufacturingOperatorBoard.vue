@@ -289,6 +289,39 @@ const transferFromWh = ref("");
 const transferToWh = ref("");
 const transferItems = ref([]);
 const warehouses = ref([]);
+const sourceStockLevels = ref({});
+
+async function loadSourceStock() {
+	if (!transferFromWh.value || !transferItems.value.length) {
+		sourceStockLevels.value = {};
+		return;
+	}
+	const itemCodes = transferItems.value.map(it => it.item_code).filter(Boolean);
+	if (!itemCodes.length) {
+		sourceStockLevels.value = {};
+		return;
+	}
+	try {
+		const stock = await call("stabler.api.inventory.get_items_stock", {
+			warehouse: transferFromWh.value,
+			item_codes: JSON.stringify(itemCodes),
+		});
+		sourceStockLevels.value = stock || {};
+	} catch (err) {
+		console.error("Failed to load source stock", err);
+	}
+}
+
+watch(transferFromWh, () => {
+	loadSourceStock();
+});
+
+watch(
+	() => transferItems.value.map(it => it.item_code),
+	() => {
+		loadSourceStock();
+	}
+);
 
 async function start(row) {
 	startTarget.value = row;
@@ -305,6 +338,8 @@ async function start(row) {
 	
 	actionError.value = "";
 	resetIdleTimer();
+	
+	await loadSourceStock();
 	
 	if (!warehouses.value.length) {
 		try {
@@ -871,6 +906,9 @@ const sortedRows = computed(() => {
 													<div v-if="!it.isNew">
 														<div class="fw-semibold text-dark">{{ it.item_name || it.item_code }}</div>
 														<div class="small text-muted font-monospace">{{ it.item_code }}</div>
+														<div class="text-secondary small mt-0.5">
+															{{ t("Source Stock") }}: <span class="fw-semibold" :class="(sourceStockLevels[it.item_code] || 0) >= it.qty ? 'text-success' : 'text-danger'">{{ sourceStockLevels[it.item_code] || 0 }}</span>
+														</div>
 													</div>
 													<div v-else style="min-width: 250px;">
 														<Typeahead
@@ -887,6 +925,9 @@ const sortedRows = computed(() => {
 																<div v-if="item.item_name" class="text-secondary" style="font-size:0.75rem">{{ item.item_name }}</div>
 															</template>
 														</Typeahead>
+														<div v-if="it.item_code" class="text-secondary small mt-0.5">
+															{{ t("Source Stock") }}: <span class="fw-semibold" :class="(sourceStockLevels[it.item_code] || 0) >= it.qty ? 'text-success' : 'text-danger'">{{ sourceStockLevels[it.item_code] || 0 }}</span>
+														</div>
 													</div>
 												</td>
 												<td class="align-middle text-end">
