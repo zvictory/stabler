@@ -411,7 +411,6 @@ def build_ledger_workbook(
 		bal += (dr - cr) if sign == "dr" else (cr - dr)
 		_row(e.get(date_key), e.get(voucher_key), dr or None, cr or None, bal)
 	_row(None, "Total", tot_dr, tot_cr, None, bold=True)
-	_row(None, "Closing balance", None, None, bal, bold=True)
 
 	ws.freeze_panes = ws.cell(row=header_row + 1, column=1)
 	for i, w in zip(range(1, ncols + 1), (14, 38, 16, 16, 18)):

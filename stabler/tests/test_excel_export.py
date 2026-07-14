@@ -198,9 +198,6 @@ class TestLedger(unittest.TestCase):
 		self.assertEqual(self.ws.cell(row=9, column=2).value, "Total")
 		self.assertEqual(self.ws.cell(row=9, column=3).value, 1000000)
 		self.assertEqual(self.ws.cell(row=9, column=4).value, 400000)
-		# Closing (10) = 800,000.
-		self.assertEqual(self.ws.cell(row=10, column=2).value, "Closing balance")
-		self.assertEqual(self.ws.cell(row=10, column=5).value, 800000)
 
 	def test_payable_sign(self):
 		wb = build_ledger_workbook(

@@ -1267,7 +1267,7 @@ watch(activeCompany, () => {
 												</thead>
 												<tbody>
 													<!-- Opening Balance Row -->
-													<tr v-if="Number(ledgerCurrencyMixed ? ledger?.opening_base : ledger?.opening_acc) !== 0" class="text-secondary bg-transparent">
+													<tr v-if="ledger" class="text-secondary bg-transparent">
 														<td colspan="4" class="text-end fst-italic py-2">{{ t("Opening balance") }}</td>
 														<td class="text-end font-monospace fst-italic py-2">
 															{{ formatMoney(
@@ -1321,18 +1321,6 @@ watch(activeCompany, () => {
 														</td>
 													</tr>
 												</tbody>
-												<tfoot v-if="ledgerRows.length" class="bg-light border-top">
-													<tr>
-														<th colspan="4" class="text-end py-2 fw-bold">{{ t("Closing balance") }}</th>
-														<th class="text-end font-monospace py-2 fw-bold">
-															{{ formatMoney(
-																ledgerCurrencyMixed ? ledger.closing_base : ledger.closing_acc,
-																ledgerCurrency,
-																user.language,
-															) }}
-														</th>
-													</tr>
-												</tfoot>
 											</table>
 										</template>
 									</div>
@@ -1565,7 +1553,7 @@ watch(activeCompany, () => {
 		:party-name="selected.customer_name"
 		:company="activeCompany"
 		@close="partyPayOpen = false"
-		@paid="partyPayOpen = false; loadLedger(selected); loadCustOrders(selected); selectCustomer(selected);"
+		@paid="partyPayOpen = false; loadLedger(selected); loadCustOrders(selected); loadCustomers(); selectCustomer(selected);"
 	/>
 
 	<!-- Parent bulk payment — split one payment across child locations -->
