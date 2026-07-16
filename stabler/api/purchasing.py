@@ -11,6 +11,8 @@ from frappe.utils import cint, flt, getdate, today
 
 
 from stabler.api._common import _assert_can_read, _assert_can_write, _require_company, check_concurrency
+from stabler.api import _import_exposure
+from stabler.stabler.doctype.stabler_settings.stabler_settings import module_map_for
 
 
 @frappe.whitelist()
@@ -310,6 +312,72 @@ def supplier_detail(name: str, company: str):
 		"overdue_amount": overdue_amount,
 		"last_payment_date": last_payment_date,
 		"recent_invoices": recent,
+	}
+
+
+@frappe.whitelist()
+def supplier_import_exposure(supplier: str, company: str) -> dict:
+	"""Import position for a supplier — SEPARATE from supplier_detail so the base
+	Vendor Center payload is byte-identical for tenants without the imports module.
+
+	Tenant-gated: returns ``{"enabled": False}`` unless the company has the imports
+	module on (enable_imports). Everything here is already in GL — the cash/bank
+	figures are the payment split by the Payment Entry source-account type, and
+	they reconcile to the GL total paid. ``docs_total`` (customs) never appears.
+	"""
+	_require_company(company)
+	_assert_company_scope(company)  # tenant isolation: reject a foreign company arg
+	if not frappe.has_permission("Supplier", "read"):
+		frappe.throw(frappe._("You are not permitted to view suppliers."), frappe.PermissionError)
+
+	# Company-level gate: import-disabled tenants get an inert, empty payload so a
+	# stray SPA call can never surface import figures where the module is off.
+	if not module_map_for(company).get("imports"):
+		return {"enabled": False}
+	if not frappe.db.exists("DocType", "Commercial Invoice"):
+		return {"enabled": False}
+
+	# Open commitments — Commercial Invoices still in flight (not delivered).
+	ci_rows = frappe.db.sql(
+		"""
+		SELECT ci_number, agreed_total, docs_total, currency, status
+		FROM `tabCommercial Invoice`
+		WHERE supplier = %(supplier)s AND company = %(company)s AND docstatus < 2
+		ORDER BY ci_date DESC
+		LIMIT 200
+		""",
+		{"supplier": supplier, "company": company},
+		as_dict=True,
+	)
+
+	# Payments to the supplier, split by the source account's type (Cash / Bank).
+	pay_rows = frappe.db.sql(
+		"""
+		SELECT pe.paid_amount AS amount, acc.account_type AS account_type
+		FROM `tabPayment Entry` pe
+		JOIN `tabAccount` acc ON acc.name = pe.paid_from
+		WHERE pe.party_type = 'Supplier' AND pe.party = %(supplier)s
+		  AND pe.company = %(company)s AND pe.docstatus = 1
+		""",
+		{"supplier": supplier, "company": company},
+		as_dict=True,
+	)
+	gl_total_paid = sum(flt(r.get("amount")) for r in pay_rows)
+
+	summary = _import_exposure.exposure_summary(ci_rows, pay_rows, gl_total_paid)
+	return {
+		"enabled": True,
+		"summary": summary,
+		"commitments": [
+			{
+				"ci_number": r.get("ci_number"),
+				"agreed_total": flt(r.get("agreed_total")),
+				"currency": r.get("currency"),
+				"status": r.get("status"),
+			}
+			for r in ci_rows
+			if (r.get("status") or "") not in ("DELIVERED_TO_UZBEKISTAN", "Cancelled")
+		],
 	}
 
 

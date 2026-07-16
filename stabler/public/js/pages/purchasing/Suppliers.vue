@@ -38,6 +38,9 @@ const { search, onlyWithBalance, filterGroup, sortField, sortAsc, c: selectedNam
 
 const selected = ref(null);
 const selectedDetail = ref(null);
+// Import position (open commitments + cash/bank paid split). Only populated when
+// the company has the imports module on; otherwise stays null and the card hides.
+const selectedExposure = ref(null);
 
 // ESC → deselect the open supplier first (clear the right pane), else go back.
 useEscapeBack(() => {
@@ -321,6 +324,19 @@ async function selectSupplier(s) {
 		selectedDetail.value = detail;
 	} catch (err) {
 		console.error(err);
+	}
+
+	// Import exposure — separate, tenant-gated call. Silent no-op when the
+	// imports module is off (returns {enabled:false}) or on any error.
+	selectedExposure.value = null;
+	try {
+		const exp = await call("stabler.api.purchasing.supplier_import_exposure", {
+			supplier: s.name,
+			company: activeCompany.value,
+		});
+		if (exp && exp.enabled) selectedExposure.value = exp;
+	} catch {
+		selectedExposure.value = null;
 	}
 }
 
@@ -849,6 +865,53 @@ watch(activeCompany, () => {
 											<div class="text-secondary small text-uppercase fw-semibold mb-1">{{ t("Last Payment") }}</div>
 											<div class="h3 mb-0 text-body">
 												{{ selectedDetail?.last_payment_date ? formatDate(selectedDetail.last_payment_date) : "—" }}
+											</div>
+										</div>
+									</div>
+								</div>
+							</div>
+
+							<!-- Import Exposure (only when the imports module is on for this company) -->
+							<div v-if="selectedExposure" class="px-3 py-2 border-bottom">
+								<div class="d-flex align-items-center gap-2 mb-2">
+									<i class="ti ti-ship text-primary"></i>
+									<span class="small text-uppercase fw-semibold text-secondary">{{ t("Import Exposure") }}</span>
+									<span
+										v-if="selectedExposure.summary && !selectedExposure.summary.reconciles_gl"
+										class="badge bg-red-lt"
+										:title="t('Cash + bank paid does not match the GL total')"
+									>{{ t("GL mismatch") }}</span>
+								</div>
+								<div class="row g-2">
+									<div class="col-md-3">
+										<div class="card border bg-white py-2 px-3 text-center shadow-none rounded-2">
+											<div class="text-secondary small text-uppercase fw-semibold mb-1">{{ t("Open commitment") }}</div>
+											<div class="h4 mb-0 font-monospace stbl-amount text-body">
+												{{ formatMoney(selectedExposure.summary?.open_commitment || 0, selected.account_currency || currency, user.language) }}
+											</div>
+										</div>
+									</div>
+									<div class="col-md-3">
+										<div class="card border bg-white py-2 px-3 text-center shadow-none rounded-2">
+											<div class="text-secondary small text-uppercase fw-semibold mb-1">{{ t("Cash paid") }}</div>
+											<div class="h4 mb-0 font-monospace stbl-amount text-body">
+												{{ formatMoney(selectedExposure.summary?.cash_paid || 0, selected.account_currency || currency, user.language) }}
+											</div>
+										</div>
+									</div>
+									<div class="col-md-3">
+										<div class="card border bg-white py-2 px-3 text-center shadow-none rounded-2">
+											<div class="text-secondary small text-uppercase fw-semibold mb-1">{{ t("Bank paid") }}</div>
+											<div class="h4 mb-0 font-monospace stbl-amount text-body">
+												{{ formatMoney(selectedExposure.summary?.bank_paid || 0, selected.account_currency || currency, user.language) }}
+											</div>
+										</div>
+									</div>
+									<div class="col-md-3">
+										<div class="card border bg-white py-2 px-3 text-center shadow-none rounded-2">
+											<div class="text-secondary small text-uppercase fw-semibold mb-1">{{ t("Total paid") }}</div>
+											<div class="h4 mb-0 font-monospace stbl-amount text-body">
+												{{ formatMoney(selectedExposure.summary?.total_paid || 0, selected.account_currency || currency, user.language) }}
 											</div>
 										</div>
 									</div>
