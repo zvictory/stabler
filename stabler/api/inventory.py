@@ -11,6 +11,7 @@ from frappe.utils import flt, getdate, today
 from stabler.api._common import _require_company, _assert_can_read, _assert_can_write
 from stabler.api.approvals import _assert_company_scope
 from stabler.api._stock_recon import prepare_reconciliation
+from erpnext.stock.get_item_details import get_conversion_factor
 
 
 # Central item-picker context → the is_*_item flag each caller must filter by.
@@ -850,8 +851,9 @@ def create_stock_entry(
 		if it.get("custom_line_note"):
 			row.custom_line_note = str(it["custom_line_note"])[:500]
 		row.qty = flt(it.get("qty"))
-		if it.get("uom"):
-			row.uom = it["uom"]
+		uom = it.get("uom") or frappe.get_cached_value("Item", it["item_code"], "stock_uom")
+		row.uom = uom
+		row.conversion_factor = get_conversion_factor(it["item_code"], uom).get("conversion_factor") or 1.0
 		if it.get("basic_rate") not in (None, ""):
 			row.basic_rate = flt(it["basic_rate"])
 		s_wh = it.get("s_warehouse") or (from_warehouse if purpose in ("Material Issue", "Material Transfer") else None)
