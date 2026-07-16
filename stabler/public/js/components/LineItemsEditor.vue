@@ -382,10 +382,19 @@ const grandTotal = computed(() => {
 								</template>
 							</Typeahead>
 							<slot name="item-extra" :line="line" :index="idx" />
+							<input
+								v-model="line.custom_line_note"
+								type="text"
+								class="form-control form-control-sm mt-1"
+								:placeholder="t('Note') + '…'"
+							/>
 						</div>
 						<div v-else>
 							<div class="fw-semibold">{{ line.item_code }}</div>
 							<div class="small text-secondary">{{ line.item_name }}</div>
+							<div v-if="line.custom_line_note" class="small text-secondary fst-italic mt-1">
+								<i class="ti ti-note me-1"></i>{{ line.custom_line_note }}
+							</div>
 							<slot name="item-extra" :line="line" :index="idx" />
 						</div>
 					</td>

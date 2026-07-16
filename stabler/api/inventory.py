@@ -761,6 +761,7 @@ def stock_entry_detail(name: str):
 			"idx": it.idx,
 			"item_code": it.item_code,
 			"item_name": it.item_name,
+			"custom_line_note": getattr(it, "custom_line_note", None) or None,
 			"qty": flt(it.qty),
 			"transfer_qty": flt(it.transfer_qty),
 			"uom": it.uom,
@@ -846,6 +847,8 @@ def create_stock_entry(
 	for it in items:
 		row = doc.append("items", {})
 		row.item_code = it["item_code"]
+		if it.get("custom_line_note"):
+			row.custom_line_note = str(it["custom_line_note"])[:500]
 		row.qty = flt(it.get("qty"))
 		if it.get("uom"):
 			row.uom = it["uom"]

@@ -47,3 +47,4 @@ stabler.patches.v43_cross_border_transport_item
 stabler.patches.v44_customer_hierarchy_fields
 stabler.patches.v45_import_service_item
 stabler.patches.v46_pi_import_refs
+stabler.patches.v49_line_item_note

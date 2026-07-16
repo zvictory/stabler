@@ -250,6 +250,7 @@ function blankLine() {
 	return {
 		item_code: "",
 		item_name: "",
+		custom_line_note: "",
 		uom: "",
 		qty: 1,
 		basic_rate: 0,
@@ -383,6 +384,7 @@ async function submitCreate(andSubmitDoc = false) {
 			qty: Number(l.qty),
 			uom: l.uom || undefined,
 			basic_rate: l.basic_rate ? Number(l.basic_rate) : undefined,
+			custom_line_note: l.custom_line_note || undefined,
 		}));
 	if (!items.length) {
 		submitError.value = t("Add at least one item line.");
@@ -875,6 +877,13 @@ watch([fwhFilter, twhFilter, statusFilter, fromDate, toDate], load);
 												</button>
 											</div>
 										</div>
+										<input
+											v-if="line.item_code"
+											v-model="line.custom_line_note"
+											type="text"
+											class="form-control form-control-sm mt-1"
+											:placeholder="t('Note') + '…'"
+										/>
 									</td>
 									<td>
 										<input

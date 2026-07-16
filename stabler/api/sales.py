@@ -2350,6 +2350,7 @@ def create_quotation(
 				"qty": qty,
 				"rate": flt(row.get("rate")),
 				"uom": row.get("uom") or None,
+				"custom_line_note": (str(row.get("custom_line_note") or "").strip()[:500] or None),
 			}
 		)
 
@@ -2366,6 +2367,7 @@ def create_quotation(
 	for row in cleaned:
 		line = doc.append("items", {})
 		line.item_code = row["item_code"]
+		line.custom_line_note = row.get("custom_line_note") or None
 		line.qty = row["qty"]
 		if row["rate"]:
 			line.rate = row["rate"]
@@ -2431,6 +2433,7 @@ def update_quotation(
 				"qty": qty,
 				"rate": flt(row.get("rate")),
 				"uom": row.get("uom") or None,
+				"custom_line_note": (str(row.get("custom_line_note") or "").strip()[:500] or None),
 			}
 		)
 
@@ -2447,6 +2450,7 @@ def update_quotation(
 	for row in cleaned:
 		line = doc.append("items", {})
 		line.item_code = row["item_code"]
+		line.custom_line_note = row.get("custom_line_note") or None
 		line.qty = row["qty"]
 		if row["rate"]:
 			line.rate = row["rate"]
@@ -2639,6 +2643,7 @@ def sales_order_detail(name: str):
 				"name": it.name,
 				"item_code": it.item_code,
 				"item_name": it.item_name,
+				"custom_line_note": getattr(it, "custom_line_note", None) or None,
 				"warehouse": getattr(it, "warehouse", None),
 				"qty": flt(it.qty),
 				"delivered_qty": flt(getattr(it, "delivered_qty", 0)),
@@ -2888,6 +2893,7 @@ def create_sales_order(
 				"qty": qty,
 				"rate": flt(row.get("rate")),
 				"uom": row.get("uom") or None,
+				"custom_line_note": (str(row.get("custom_line_note") or "").strip()[:500] or None),
 				"warehouse": wh,
 				"conversion_factor": flt(row.get("conversion_factor")) or None,
 				"discount_percentage": disc_pct,
@@ -2920,6 +2926,7 @@ def create_sales_order(
 	for row in cleaned:
 		line = doc.append("items", {})
 		line.item_code = row["item_code"]
+		line.custom_line_note = row.get("custom_line_note") or None
 		line.qty = row["qty"]
 		line.delivery_date = deliver_on
 		line.warehouse = row["warehouse"]
@@ -3104,6 +3111,7 @@ def update_sales_order(
 				"qty": qty,
 				"rate": flt(row.get("rate")),
 				"uom": row.get("uom") or None,
+				"custom_line_note": (str(row.get("custom_line_note") or "").strip()[:500] or None),
 				"warehouse": row_wh,
 				"conversion_factor": flt(row.get("conversion_factor")) or None,
 				"discount_percentage": disc_pct,
@@ -3132,6 +3140,7 @@ def update_sales_order(
 	for row in cleaned:
 		line = doc.append("items", {})
 		line.item_code = row["item_code"]
+		line.custom_line_note = row.get("custom_line_note") or None
 		line.qty = row["qty"]
 		line.delivery_date = deliver_on
 		line.warehouse = row["warehouse"]

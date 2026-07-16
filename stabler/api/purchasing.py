@@ -400,6 +400,7 @@ def purchase_invoice_detail(name: str):
 			{
 				"item_code": it.item_code,
 				"item_name": it.item_name,
+				"custom_line_note": getattr(it, "custom_line_note", None) or None,
 				"qty": flt(it.qty),
 				"uom": it.uom,
 				"rate": flt(it.rate),
@@ -674,6 +675,7 @@ def _clean_invoice_items(items) -> list[dict]:
 				"qty": qty,
 				"rate": flt(row.get("rate")),
 				"uom": row.get("uom") or None,
+				"custom_line_note": (str(row.get("custom_line_note") or "").strip()[:500] or None),
 				"discount_percentage": disc_pct,
 				"discount_amount": flt(row.get("discount_amount")),
 				"custom_length": row.get("custom_length"),
@@ -750,6 +752,7 @@ def _apply_invoice_payload(
 	for row in cleaned:
 		line = doc.append("items", {})
 		line.item_code = row["item_code"]
+		line.custom_line_note = row.get("custom_line_note") or None
 		line.qty = row["qty"]
 		if update_stock and set_warehouse:
 			line.warehouse = set_warehouse
@@ -1230,6 +1233,7 @@ def purchase_order_detail(name: str):
 				"name": it.name,
 				"item_code": it.item_code,
 				"item_name": it.item_name,
+				"custom_line_note": getattr(it, "custom_line_note", None) or None,
 				"warehouse": getattr(it, "warehouse", None) or None,
 				"qty": flt(it.qty),
 				"received_qty": flt(getattr(it, "received_qty", 0)),
@@ -1318,6 +1322,7 @@ def create_purchase_order(
 				"qty": qty,
 				"rate": flt(row.get("rate")),
 				"uom": row.get("uom") or None,
+				"custom_line_note": (str(row.get("custom_line_note") or "").strip()[:500] or None),
 				"conversion_factor": flt(row.get("conversion_factor")) or None,
 				"discount_percentage": disc_pct,
 				"discount_amount": flt(row.get("discount_amount")),
@@ -1350,6 +1355,7 @@ def create_purchase_order(
 	for row in cleaned:
 		line = doc.append("items", {})
 		line.item_code = row["item_code"]
+		line.custom_line_note = row.get("custom_line_note") or None
 		line.qty = row["qty"]
 		line.schedule_date = sched_date
 		if set_warehouse:
@@ -1458,6 +1464,7 @@ def update_purchase_order(
 				"qty": qty,
 				"rate": flt(row.get("rate")),
 				"uom": row.get("uom") or None,
+				"custom_line_note": (str(row.get("custom_line_note") or "").strip()[:500] or None),
 				"conversion_factor": flt(row.get("conversion_factor")) or None,
 				"discount_percentage": disc_pct,
 				"discount_amount": flt(row.get("discount_amount")),
@@ -1487,6 +1494,7 @@ def update_purchase_order(
 	for row in cleaned:
 		line = doc.append("items", {})
 		line.item_code = row["item_code"]
+		line.custom_line_note = row.get("custom_line_note") or None
 		line.qty = row["qty"]
 		line.schedule_date = sched_date
 		if set_warehouse:
@@ -1850,6 +1858,7 @@ def create_purchase_receipt(
 				"qty": qty,
 				"rate": flt(row.get("rate")),
 				"uom": row.get("uom") or None,
+				"custom_line_note": (str(row.get("custom_line_note") or "").strip()[:500] or None),
 				"conversion_factor": flt(row.get("conversion_factor")) or None,
 			}
 		)
@@ -1867,6 +1876,7 @@ def create_purchase_receipt(
 	for row in cleaned:
 		line = doc.append("items", {})
 		line.item_code = row["item_code"]
+		line.custom_line_note = row.get("custom_line_note") or None
 		line.qty = row["qty"]
 		line.warehouse = set_warehouse
 		if row["rate"]:
@@ -2097,3 +2107,36 @@ def tender_quotations(deal: str) -> dict:
 		"has_min_5": len(rows) >= 5,
 		"has_2_countries": len(countries) >= 2,
 	}
+
+
+@frappe.whitelist()
+def get_vendor_category_items(vendor: str, category: str) -> list[dict]:
+	"""Items configured for a supplier + category (Stabler Vendor Category).
+
+	RECONSTRUCTED (WP-310): the original uncommitted version of this function was
+	lost during a tooling accident and rebuilt from the doctype schema — review
+	against the caller before relying on it. Returns each mapped item's code,
+	name, stock UOM and boxes-per-container so the purchasing UI can pre-fill
+	lines for a known vendor category.
+	"""
+	if not frappe.has_permission("Stabler Vendor Category", "read"):
+		frappe.throw(_("Not permitted"), frappe.PermissionError)
+	if not vendor or not category:
+		return []
+	parent = frappe.db.get_value(
+		"Stabler Vendor Category",
+		{"vendor": vendor, "category_name": category, "is_active": 1},
+		"name",
+	)
+	if not parent:
+		return []
+	rows = frappe.get_all(
+		"Stabler Vendor Category Item",
+		filters={"parent": parent, "parenttype": "Stabler Vendor Category"},
+		fields=["item_code", "boxes_per_container"],
+		order_by="idx asc",
+	)
+	for r in rows:
+		r["item_name"] = frappe.db.get_value("Item", r["item_code"], "item_name") or r["item_code"]
+		r["stock_uom"] = frappe.db.get_value("Item", r["item_code"], "stock_uom") or ""
+	return rows

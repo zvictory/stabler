@@ -141,6 +141,7 @@ function blankLine() {
 	return {
 		item_code: "",
 		item_name: "",
+		custom_line_note: "",
 		uom: "",
 		qty: 1,
 		dimension_mode: "",
@@ -209,6 +210,7 @@ function fromDetail(d) {
 			return {
 				item_code: it.item_code,
 				item_name: it.item_name,
+				custom_line_note: it.custom_line_note || "",
 				uom: it.uom || "",
 				qty: Number(it.qty || 0),
 				dimension_mode: it.custom_dimension_mode || "",
@@ -233,6 +235,7 @@ function toPayload(m) {
 			item_code: r.item_code,
 			qty: r.qty,
 			rate: r.rate,
+			custom_line_note: r.custom_line_note || undefined,
 			uom: r.uom,
 			discount_percentage: r.discount_percentage || 0,
 			discount_amount: r.discount_amount || 0,

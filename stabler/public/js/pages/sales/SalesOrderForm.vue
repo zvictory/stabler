@@ -84,6 +84,7 @@ function blankLine(defaultWh = null) {
 	return {
 		item_code: "",
 		item_name: "",
+		custom_line_note: "",
 		uom: "",
 		stock_uom: "",
 		uoms: [],
@@ -138,6 +139,7 @@ function fromDetail(d) {
 		items: (d.items || []).map((it) => ({
 			item_code: it.item_code,
 			item_name: it.item_name,
+			custom_line_note: it.custom_line_note || "",
 			uom: it.uom || "",
 			stock_uom: it.stock_uom || "",
 			uoms: [],
@@ -170,6 +172,7 @@ function toPayload(m) {
 			item_code: r.item_code,
 			qty: r.qty,
 			rate: r.rate,
+			custom_line_note: r.custom_line_note || undefined,
 			uom: r.uom,
 			conversion_factor: r.conversion_factor || 1,
 			discount_percentage: r.discount_percentage || 0,
