@@ -3598,3 +3598,83 @@ def link_proforma_to_ci(proforma: str, commercial_invoice: str, company: str) ->
 
     return {"proforma": pi.name, "status": pi.status,
             "commercial_invoice": commercial_invoice, "changed": True}
+
+
+@frappe.whitelist()
+def list_proformas(company: str, status: str | None = None, supplier: str | None = None,
+                   search: str | None = None, limit: int = 100) -> list[dict]:
+    """Proforma Invoice list rows for the imports SPA (imports-gated)."""
+    _assert_imports_access(company)
+    clauses = ["pi.company = %(company)s"]
+    params: dict = {"company": company, "limit": int(limit)}
+    if status:
+        clauses.append("pi.status = %(status)s")
+        params["status"] = status
+    if supplier:
+        clauses.append("pi.supplier = %(supplier)s")
+        params["supplier"] = supplier
+    if search:
+        clauses.append("(pi.name LIKE %(q)s OR s.supplier_name LIKE %(q)s OR pi.supplier_pi_ref LIKE %(q)s)")
+        params["q"] = f"%{search}%"
+    where = " AND ".join(clauses)
+    return frappe.db.sql(
+        f"""
+        SELECT pi.name, pi.supplier, s.supplier_name, pi.pi_date, pi.supplier_pi_ref,
+               pi.currency, pi.agreed_total, pi.bank_agreed, pi.cash_agreed,
+               pi.status, pi.commercial_invoice, pi.import_pi_group
+        FROM `tabProforma Invoice` pi
+        LEFT JOIN `tabSupplier` s ON s.name = pi.supplier
+        WHERE {where}
+        ORDER BY pi.creation DESC
+        LIMIT %(limit)s
+        """,
+        params,
+        as_dict=True,
+    )
+
+
+@frappe.whitelist()
+def proforma_detail(name: str) -> dict:
+    """Full Proforma Invoice doc (imports-gated on the doc's company)."""
+    if not name or not frappe.db.exists("Proforma Invoice", name):
+        frappe.throw(_("Unknown Proforma Invoice: {0}").format(name))
+    doc = frappe.get_doc("Proforma Invoice", name)
+    _assert_imports_access(doc.company)
+    return doc.as_dict()
+
+
+@frappe.whitelist()
+def save_proforma(payload) -> dict:
+    """Create or update a Proforma Invoice (imports-gated). Controller enforces
+    the bank+cash == agreed_total earmark identity on validate."""
+    data = frappe.parse_json(payload) if isinstance(payload, str) else payload
+    company = data.get("company")
+    _assert_imports_access(company)
+
+    if data.get("name") and frappe.db.exists("Proforma Invoice", data["name"]):
+        doc = frappe.get_doc("Proforma Invoice", data["name"])
+        if doc.company != company:
+            frappe.throw(_("Cannot move a proforma to another company."))
+    else:
+        doc = frappe.new_doc("Proforma Invoice")
+
+    for field in ("supplier", "company", "pi_date", "supplier_pi_ref", "import_pi_group",
+                  "currency", "incoterm", "agreed_total", "advance_pct",
+                  "bank_agreed", "cash_agreed", "status", "remarks"):
+        if field in data:
+            doc.set(field, data.get(field))
+
+    doc.set("items", [])
+    for row in (data.get("items") or []):
+        if not (row or {}).get("item"):
+            continue
+        doc.append("items", {
+            "item": row.get("item"),
+            "description": row.get("description"),
+            "qty": flt(row.get("qty")),
+            "uom": row.get("uom"),
+            "rate": flt(row.get("rate")),
+        })
+
+    doc.save(ignore_permissions=False)
+    return {"name": doc.name, "status": doc.status}

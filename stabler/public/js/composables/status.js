@@ -1,6 +1,12 @@
 import { t } from "./i18n.js";
 
 export const STATUS_MAP = {
+	"Proforma Invoice": {
+		DRAFT: "bg-secondary-lt",
+		CONFIRMED: "bg-blue-lt",
+		SUPERSEDED_BY_CI: "bg-green-lt",
+		CANCELLED: "bg-red-lt",
+	},
 	"Budget Variance": {
 		favorable: "bg-green-lt",
 		unfavorable: "bg-red-lt",
