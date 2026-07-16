@@ -53,3 +53,4 @@ stabler.patches.v48_purchase_receipt_lcv_fields
 
 stabler.patches.v49_line_item_note
 stabler.patches.v50_ci_cash_bank_earmark
+stabler.patches.v51_ci_proforma_link

@@ -25,6 +25,7 @@ from frappe import _
 from frappe.utils import add_days, cint, flt, getdate, today
 
 from stabler.api import _imports_rules as rules
+from stabler.api import _proforma
 from stabler.api._common import _assert_can_read, _require_company
 from stabler.api.organization import _ADMIN_ROLES, _MODULE_ROLES
 from stabler.api.permissions import cost_visible_for
@@ -3557,3 +3558,43 @@ def create_advance_payment(
     if bank > 0 and cash > 0 and abs(bank - cash) > 0.01:
         warning = _("Bank and cash amounts are not equal — recorded as entered.")
     return {"payment_entries": created, "warning": warning}
+
+
+@frappe.whitelist()
+def link_proforma_to_ci(proforma: str, commercial_invoice: str, company: str) -> dict:
+    """Supersede a Proforma Invoice with a Commercial Invoice (bidirectional link).
+
+    Sets PI.status = SUPERSEDED_BY_CI + PI.commercial_invoice, and stamps
+    CI.custom_proforma_invoice. Idempotent: re-linking the same pair is a no-op.
+    Imports-gated; both documents must share the company and supplier.
+    """
+    _assert_imports_access(company)
+    if not frappe.db.exists("Proforma Invoice", proforma):
+        frappe.throw(_("Unknown Proforma Invoice: {0}").format(proforma))
+    if not frappe.db.exists("Commercial Invoice", commercial_invoice):
+        frappe.throw(_("Unknown Commercial Invoice: {0}").format(commercial_invoice))
+
+    pi = frappe.get_doc("Proforma Invoice", proforma)
+    ci = frappe.get_doc("Commercial Invoice", commercial_invoice)
+    if pi.company != company or ci.company != company:
+        frappe.throw(_("Documents belong to a different company."))
+    if (pi.supplier or "") != (ci.supplier or ""):
+        frappe.throw(_("Proforma and Commercial Invoice have different suppliers."))
+
+    if _proforma.is_already_linked(pi.status, pi.get("commercial_invoice"), commercial_invoice):
+        return {"proforma": pi.name, "status": pi.status,
+                "commercial_invoice": commercial_invoice, "changed": False}
+
+    if not _proforma.can_supersede(pi.status):
+        frappe.throw(
+            _("Proforma {0} cannot be superseded from status {1}.").format(pi.name, pi.status)
+        )
+
+    pi.status = _proforma.SUPERSEDED
+    pi.commercial_invoice = commercial_invoice
+    pi.save(ignore_permissions=True)
+    if frappe.db.has_column("Commercial Invoice", "custom_proforma_invoice"):
+        ci.db_set("custom_proforma_invoice", proforma, update_modified=False)
+
+    return {"proforma": pi.name, "status": pi.status,
+            "commercial_invoice": commercial_invoice, "changed": True}
