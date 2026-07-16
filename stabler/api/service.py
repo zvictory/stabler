@@ -6,6 +6,7 @@ import calendar
 import json
 
 import frappe
+from erpnext.stock.get_item_details import get_conversion_factor
 from frappe import _
 from frappe.utils import cint, flt, get_datetime, getdate, now_datetime, today
 
@@ -882,6 +883,8 @@ def create_material_issue_from_visit(
 		item.s_warehouse = row["warehouse"] or warehouse
 		if row["uom"]:
 			item.uom = row["uom"]
+		# set_missing_values() does NOT populate conversion_factor, only validates it.
+		item.conversion_factor = get_conversion_factor(row["item_code"], row["uom"] or None).get("conversion_factor") or 1.0
 		if row["basic_rate"] is not None:
 			item.basic_rate = row["basic_rate"]
 

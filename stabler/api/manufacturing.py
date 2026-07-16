@@ -422,6 +422,7 @@ def make_work_order_stock_entry(
 	process loss (operator-reported rejects)."""
 	import json
 	from erpnext.manufacturing.doctype.work_order.work_order import make_stock_entry
+	from erpnext.stock.get_item_details import get_conversion_factor
 
 	_require_mfg()
 	if purpose not in ("Material Transfer for Manufacture", "Manufacture"):
@@ -454,8 +455,11 @@ def make_work_order_stock_entry(
 			row.qty = flt(it["qty"])
 			row.s_warehouse = it.get("s_warehouse") or from_warehouse or se.from_warehouse
 			row.t_warehouse = it.get("t_warehouse") or to_warehouse or se.to_warehouse
-			if it.get("uom"):
-				row.uom = it["uom"]
+			uom = it.get("uom")
+			if uom:
+				row.uom = uom
+			# set_missing_values() does NOT populate conversion_factor, only validates it.
+			row.conversion_factor = get_conversion_factor(it["item_code"], uom or None).get("conversion_factor") or 1.0
 			row.allow_zero_valuation_rate = 1
 		se.set_missing_values()
 	else:
