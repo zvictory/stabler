@@ -14,8 +14,10 @@ import { call } from "../../api/client.js";
 import { formatMoney } from "../../composables/money.js";
 import { formatDateTime, todayIso} from "../../composables/date.js";
 import { t } from "../../composables/i18n.js";
+import { itemSearcher } from "../../composables/items.js";
 import { useConfirm } from "../../composables/useConfirm.js";
 import MoneyInput from "../../components/MoneyInput.vue";
+import Typeahead from "../../components/Typeahead.vue";
 import DateInput from "../../components/DateInput.vue";
 import Select from "../../components/Select.vue";
 import EmptyState from "../../components/EmptyState.vue";
@@ -254,9 +256,6 @@ function blankLine() {
 		uom: "",
 		qty: 1,
 		basic_rate: 0,
-		search: "",
-		options: [],
-		showOptions: false,
 	};
 }
 function blankForm(purpose = "Material Receipt") {
@@ -320,41 +319,21 @@ function closeCreate() {
 	createOpen.value = false;
 }
 
-const itemTimers = new WeakMap();
-function onItemSearch(line) {
-	const existing = itemTimers.get(line);
-	if (existing) clearTimeout(existing);
-	const q = (line.search || "").trim();
-	if (!q) {
-		line.options = [];
-		line.showOptions = false;
-		return;
-	}
-	line.showOptions = true;
-	const timer = setTimeout(async () => {
-		try {
-			line.options = await call("stabler.api.inventory.list_items", { search: q, limit: 10, context: "stock" });
-		} catch {
-			line.options = [];
-		}
-	}, 200);
-	itemTimers.set(line, timer);
-}
+// Item picking goes through the shared Typeahead (Teleported to <body> with
+// fixed positioning), so the menu can never be clipped by the modal table's
+// overflow container — the bug the old hand-rolled absolute dropdown had.
+const searchItems = itemSearcher("stock", { limit: 10 });
 function pickItem(line, item) {
 	line.item_code = item.item_code || item.name;
 	line.item_name = item.item_name;
 	line.uom = item.stock_uom || "";
 	line.basic_rate = Number(item.valuation_rate || item.standard_rate || 0);
-	line.search = item.item_name || line.item_code;
-	line.showOptions = false;
 }
 function clearItem(line) {
 	line.item_code = "";
 	line.item_name = "";
 	line.uom = "";
 	line.basic_rate = 0;
-	line.search = "";
-	line.options = [];
 }
 function addLine() {
 	form.value.items.push(blankLine());
@@ -832,51 +811,27 @@ watch([fwhFilter, twhFilter, statusFilter, fromDate, toDate], load);
 							<tbody>
 								<tr v-for="(line, idx) in form.items" :key="idx">
 									<td>
-										<div class="position-relative">
-											<div class="input-group input-group-sm">
-												<input
-													v-model="line.search"
-													type="text"
-													class="form-control"
-													:placeholder="t('Search item…')"
-													@input="onItemSearch(line)"
-													@focus="line.showOptions = !!line.options.length"
-													@blur="setTimeout(() => (line.showOptions = false), 150)"
-												/>
-												<button
-													v-if="line.item_code"
-													type="button"
-													class="btn btn-outline-secondary"
-													:title="t('Clear')"
-													@click="clearItem(line)"
-												>
-													<i class="ti ti-x"></i>
-												</button>
-											</div>
-											<div
-												v-if="line.showOptions && line.options.length"
-												class="list-group position-absolute w-100 shadow-sm"
-												style="z-index: 1060; max-height: 240px; overflow-y: auto"
-											>
-												<button
-													v-for="o in line.options"
-													:key="o.name"
-													type="button"
-													class="list-group-item list-group-item-action py-1"
-													@mousedown.prevent="pickItem(line, o)"
-												>
-													<div class="d-flex justify-content-between align-items-center">
-														<div>
-															<div class="fw-semibold small">{{ o.item_name }}</div>
-															<div class="font-monospace text-secondary" style="font-size: 11px">
-																{{ o.item_code }}
-															</div>
+										<Typeahead
+											v-model="line.item_code"
+											:display="line.item_code ? `${line.item_code} — ${line.item_name || ''}` : ''"
+											:search="searchItems"
+											size="sm"
+											:placeholder="t('Search item…')"
+											@pick="(item) => pickItem(line, item)"
+											@clear="clearItem(line)"
+										>
+											<template #option="{ item }">
+												<div class="d-flex justify-content-between align-items-center">
+													<div>
+														<div class="fw-semibold small">{{ item.item_name }}</div>
+														<div class="font-monospace text-secondary" style="font-size: 11px">
+															{{ item.item_code }}
 														</div>
-														<span class="badge bg-secondary-lt">{{ o.stock_uom }}</span>
 													</div>
-												</button>
-											</div>
-										</div>
+													<span class="badge bg-secondary-lt">{{ item.stock_uom }}</span>
+												</div>
+											</template>
+										</Typeahead>
 										<input
 											v-if="line.item_code"
 											v-model="line.custom_line_note"
