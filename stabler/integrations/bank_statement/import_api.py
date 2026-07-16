@@ -76,12 +76,18 @@ def preview_statement(content_base64: str, bank_account: str | None = None) -> d
 	"""Parse a statement WITHOUT saving — returns rows + period for review."""
 	_require_recon()
 	raw = _decode_content(content_base64)
-	text_head = raw[:64].decode("ascii", errors="ignore")
-	if "1CClientBankExchange" not in raw[:64].decode("cp1251", errors="ignore") and "1CClientBankExchange" not in text_head:
-		frappe.throw(
-			_("This does not look like a 1C ClientBank Exchange file. Other formats are not supported yet.")
-		)
-	parsed = parse_statement_bytes(raw)
+	
+	from stabler.integrations.bank_statement.parser_msaerp_xlsx import is_msaerp_xlsx, parse_statement_bytes as parse_xlsx_bytes
+
+	if is_msaerp_xlsx(raw):
+		parsed = parse_xlsx_bytes(raw, our_account=bank_account)
+	else:
+		text_head = raw[:64].decode("ascii", errors="ignore")
+		if "1CClientBankExchange" not in raw[:64].decode("cp1251", errors="ignore") and "1CClientBankExchange" not in text_head:
+			frappe.throw(
+				_("Unsupported statement format. Please upload a 1C ClientBank file or an Excel statement.")
+			)
+		parsed = parse_statement_bytes(raw)
 
 	account_match = None
 	if bank_account:
@@ -103,7 +109,7 @@ def import_statement(
 	content_base64: str,
 	file_name: str | None = None,
 ) -> dict:
-	"""Parse a 1C statement and create Bank Transaction rows (idempotent)."""
+	"""Parse a 1C or Excel statement and create Bank Transaction rows (idempotent)."""
 	_assert_company_scope(company)  # tenant isolation: reject a foreign company arg
 	_require_recon()
 	_require_company(company)
@@ -112,11 +118,19 @@ def import_statement(
 		frappe.throw(_("Bank account does not belong to company '{0}'.").format(company))
 
 	raw = _decode_content(content_base64)
-	text = raw.decode("cp1251", errors="ignore")
-	if not is_1c_exchange(text) and not is_1c_exchange(raw.decode("utf-8", errors="ignore")):
-		frappe.throw(_("Unsupported statement format (expected 1C ClientBank Exchange)."))
+	
+	from stabler.integrations.bank_statement.parser_msaerp_xlsx import is_msaerp_xlsx, parse_statement_bytes as parse_xlsx_bytes
 
-	parsed = parse_statement_bytes(raw, our_account=meta.get("bank_account_no") or None)
+	if is_msaerp_xlsx(raw):
+		parsed = parse_xlsx_bytes(raw, our_account=meta.get("bank_account_no") or None)
+		file_format = "Excel"
+	else:
+		text = raw.decode("cp1251", errors="ignore")
+		if not is_1c_exchange(text) and not is_1c_exchange(raw.decode("utf-8", errors="ignore")):
+			frappe.throw(_("Unsupported statement format. Please upload a 1C ClientBank file or an Excel statement."))
+		parsed = parse_statement_bytes(raw, our_account=meta.get("bank_account_no") or None)
+		file_format = "1CClientBankExchange"
+
 	rows = parsed["rows"]
 
 	imported = duplicates = skipped = 0
@@ -158,7 +172,7 @@ def import_statement(
 	batch.duplicate_rows = duplicates
 	batch.skipped_rows = skipped
 	batch.file_name = file_name
-	batch.format = "1CClientBankExchange"
+	batch.format = file_format
 	batch.status = status
 	batch.insert(ignore_permissions=True)
 	frappe.db.commit()

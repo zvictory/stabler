@@ -138,6 +138,14 @@ def validate_sales_invoice(doc, method=None):
 	if doc.customer:
 		doc.debit_to = resolve_party_account("Customer", doc.customer, doc.company, doc.currency)
 		validate_exchange_rate(doc.company, doc.currency, doc.conversion_rate, doc.posting_date)
+	
+	if frappe.db.get_single_value("Stabler Settings", "require_delivery_note") and doc.update_stock:
+		frappe.throw(
+			frappe._("Direct stock updates via Sales Invoice are disabled by company policy. "
+					 "Please create a Delivery Note first and link it to this Sales Invoice (with Update Stock unchecked)."),
+			frappe.ValidationError
+		)
+
 
 
 def validate_purchase_invoice(doc, method=None):
@@ -243,6 +251,9 @@ def validate_payment_entry(doc, method=None):
 
 
 def validate_journal_entry(doc, method=None):
+	if (doc.voucher_type or "").lower() == "exchange gain or loss" or getattr(doc, "is_system_generated", False):
+		return
+
 	company_currency = frappe.get_cached_value("Company", doc.company, "default_currency") or "UZS"
 	for row in getattr(doc, "accounts", []):
 		if not row.account:

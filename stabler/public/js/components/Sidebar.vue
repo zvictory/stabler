@@ -52,7 +52,7 @@ const items = computed(() => {
 			path: "/reports",
 			label: t("Reports"),
 			icon: "ti-report-analytics",
-			show: true,
+			show: session.isAdmin || session.canAccessModule("sales") || session.canAccessModule("purchasing") || session.canAccessModule("hr") || session.canAccessModule("money") || session.canAccessModule("inventory"),
 		},
 	];
 	if (session.isAdmin) {

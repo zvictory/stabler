@@ -57,6 +57,9 @@
   "attendance_edit_lock_days",
   "imports_section",
   "imports_lcv_expense_account",
+  "require_delivery_note",
+  "enable_landed_cost",
+  "landed_cost_expense_account",
   "customers_section",
   "enable_parent_credit_check"
  ],
@@ -379,6 +382,25 @@
    "fieldname": "imports_lcv_expense_account",
    "fieldtype": "Link",
    "label": "Imports Landed-Cost Expense Account",
+   "options": "Account"
+  },
+  {
+   "default": "0",
+   "description": "If enabled, stock-updating Sales Invoices require a linked Delivery Note and will not update stock directly.",
+   "fieldname": "require_delivery_note",
+   "fieldtype": "Check",
+   "label": "Require Delivery Note for Stock Updates"
+  },
+  {
+   "default": "0",
+   "fieldname": "enable_landed_cost",
+   "fieldtype": "Check",
+   "label": "Enable Landed Cost Voucher Unification"
+  },
+  {
+   "fieldname": "landed_cost_expense_account",
+   "fieldtype": "Link",
+   "label": "Landed Cost Expense Account",
    "options": "Account"
   },
   {

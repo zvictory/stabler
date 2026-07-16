@@ -176,6 +176,15 @@ async function submitReturn() {
 	}
 }
 
+const totalsByUom = computed(() => {
+	const map = new Map();
+	for (const line of form.value?.items || []) {
+		if (!line.qty || !line.uom) continue;
+		map.set(line.uom, (map.get(line.uom) || 0) + Number(line.qty));
+	}
+	return [...map.entries()];
+});
+
 watch(docName, loadDoc);
 onMounted(loadDoc);
 </script>
@@ -301,6 +310,14 @@ onMounted(loadDoc);
 							<td class="text-end font-monospace">{{ formatMoney(it.amount, form.currency, user.language) }}</td>
 						</tr>
 					</tbody>
+					<tfoot>
+						<tr>
+							<td colspan="9" class="pt-2 pb-0">
+								<span class="badge bg-secondary-lt">{{ form.items.length }} {{ form.items.length === 1 ? t('item') : t('items') }}</span>
+								<span v-for="[uom, qty] in totalsByUom" :key="uom" class="badge bg-blue-lt ms-1 font-monospace">{{ qty }} {{ uom }}</span>
+							</td>
+						</tr>
+					</tfoot>
 				</table>
 			</div>
 

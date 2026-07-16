@@ -125,6 +125,15 @@ function getUzbekWords(amount, currency) {
 	return result;
 }
 
+const totalsByUom = computed(() => {
+	const map = new Map();
+	for (const line of doc.value?.items || []) {
+		if (!line.qty || !line.uom) continue;
+		map.set(line.uom, (map.get(line.uom) || 0) + Number(line.qty));
+	}
+	return [...map.entries()];
+});
+
 function triggerPrint() {
 	window.print();
 }
@@ -215,6 +224,16 @@ onMounted(load);
 						<td class="inv-num inv-amount">{{ fmt(it.amount) }}</td>
 					</tr>
 				</tbody>
+				<tfoot>
+					<tr>
+						<td :colspan="hasDiscount ? 8 : 7" style="border-top: 1.5px solid #000; padding: 2mm 1mm 1mm;">
+							<span class="inv-muted" style="margin-right: 4mm;">{{ doc.items.length }} {{ doc.items.length === 1 ? t('item') : t('items') }}</span>
+							<strong v-for="[uom, qty] in totalsByUom" :key="uom" style="margin-right: 3mm; font-variant-numeric: tabular-nums;">
+								{{ qty }} {{ uom }}
+							</strong>
+						</td>
+					</tr>
+				</tfoot>
 			</table>
 
 			<!-- 4. Totals -->

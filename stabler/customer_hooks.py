@@ -155,3 +155,67 @@ def check_sales_invoice_credit_limit(doc, method=None):
 			"Ask an Accounts Manager to approve or increase the limit."
 		).format(root_name, f"{decision.projected:,.2f}", f"{decision.limit:,.2f}")
 	)
+
+
+@frappe.whitelist()
+def get_parent_credit_limit_status(customer: str, company: str | None = None) -> dict:
+	"""Return the credit limit status of the customer's parent chain.
+
+	Gated by Customer read permission (IDOR guard).
+	"""
+	if not frappe.has_permission("Customer", "read", doc=customer):
+		frappe.throw(frappe._("Not permitted to read Customer: {0}").format(customer), frappe.PermissionError)
+
+	if not company:
+		company = frappe.defaults.get_user_default("Company") or frappe.get_all("Company", pluck="name", limit=1)[0]
+
+	parent = frappe.db.get_value("Customer", customer, "custom_parent_customer")
+	root = parent or customer
+	root_name = frappe.db.get_value("Customer", root, "customer_name") or root
+
+	# Get the chain (active, non-disabled children)
+	chain = [root]
+	if frappe.db.has_column("Customer", "custom_parent_customer"):
+		chain.extend(frappe.db.get_all(
+			"Customer", filters={"custom_parent_customer": root, "disabled": 0}, pluck="name"
+		))
+
+	limit = 0.0
+	if frappe.db.exists("DocType", "Customer Credit Limit"):
+		limit = flt(frappe.db.get_value(
+			"Customer Credit Limit", {"parent": root, "company": company}, "credit_limit"
+		))
+
+	chain_outstanding = 0.0
+	if chain:
+		placeholders = [f"%({f'c{i}'})s" for i in range(len(chain))]
+		params = {"company": company}
+		for i, name in enumerate(chain):
+			params[f"c{i}"] = name
+		
+		row = frappe.db.sql(
+			f"""
+			SELECT COALESCE(SUM(debit - credit), 0)
+			FROM `tabGL Entry`
+			WHERE company = %(company)s
+			  AND party_type = 'Customer'
+			  AND is_cancelled = 0
+			  AND party IN ({", ".join(placeholders)})
+			""",
+			params,
+		)
+		chain_outstanding = flt(row[0][0]) if row else 0.0
+
+	remaining = limit - chain_outstanding if limit else 0.0
+	exceeded = bool(limit and chain_outstanding > limit)
+
+	return {
+		"root_customer": root,
+		"root_customer_name": root_name,
+		"company": company,
+		"credit_limit": limit,
+		"chain_outstanding": chain_outstanding,
+		"remaining_limit": remaining,
+		"exceeded": exceeded,
+	}
+

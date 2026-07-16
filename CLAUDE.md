@@ -67,9 +67,15 @@
 ## Production / Deployment
 
 ### Prod site
-- **Prod = `anjan.erpstable.com`** — the ONLY stabler-bearing site on the shared
-  bench (`/home/frappe/frappe-bench`, ~22 tenants). `aliasiya.erpstable.com` and
-  the other sites do NOT have stabler installed.
+- **Primary prod = `anjan.erpstable.com`.** Stabler is actually installed on
+  **6 sites** on the shared bench (`/home/frappe/frappe-bench`, ~22 tenants):
+  `anjan`, `dts`, `horeca`, `laminor`, `mikas`, `smartbox` — verified via
+  `bench --site <site> list-apps` across every tenant. `msa.erpstable.com` and
+  the remaining tenants do NOT have stabler installed.
+- A code change under `apps/stabler/` (shared app code, not per-site) plus
+  `bench restart` takes effect on ALL 6 stabler sites at once — no per-site
+  redeploy needed. Backend fixes should be spot-checked on at least one
+  secondary site (not just anjan) before calling a deploy done.
 - Before ANY `migrate` / `restart` / data command aimed at "prod", confirm the
   target: `bench --site <site> list-apps | grep stabler`. Never assume the site.
 - SSH alias: `ice-production`. Prod is **NOT a git repo** — deploy is rsync.

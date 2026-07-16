@@ -62,6 +62,7 @@ scheduler_events = {
 		"stabler.integrations.timepay.processor.nightly_process",
 		# Seal the audit hash-chain nightly (gap #42 tamper-evidence).
 		"stabler.api.audit.seal_audit_log",
+		"stabler.tasks.eta_payment_alert.check_upcoming_deadlines",
 	],
 	"weekly": [
 		# Two-tier backup retention pruning (gap #47).
@@ -253,6 +254,11 @@ doc_events = {
 	"Customer": {
 		"validate": [
 			"stabler.customer_hooks.validate_hierarchy",
+		],
+	},
+	"Work Order": {
+		"on_submit": [
+			"stabler.api.manufacturing.create_material_request_for_tomorrow_wo",
 		],
 	},
 }

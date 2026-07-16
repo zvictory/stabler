@@ -163,7 +163,7 @@ import CustomsDeclarationForm from "./pages/imports/CustomsDeclarationForm.vue";
 import VetCertificates from "./pages/imports/VetCertificates.vue";
 import ImportExpenses from "./pages/imports/ImportExpenses.vue";
 import FreightBookings from "./pages/imports/FreightBookings.vue";
-import LandedCostReview from "./pages/imports/LandedCostReview.vue";
+import LandedCostReview from "./pages/purchasing/LandedCostReview.vue";
 import ContainerCostLedger from "./pages/imports/ContainerCostLedger.vue";
 import LandedCostBills from "./pages/imports/LandedCostBills.vue";
 import NotFound from "./pages/NotFound.vue";
@@ -301,6 +301,7 @@ const routes = [
 			{ path: "invoices/:name/print", name: "purchasing-invoice-print", component: PurchaseInvoicePrint, meta: { title: t("Invoice") } },
 			{ path: "invoices/:name", name: "purchasing-invoice", component: PurchaseInvoiceForm, meta: { title: t("Purchase Invoice") } },
 			{ path: "aging", name: "purchasing-aging", component: PurchasingAging, meta: { title: t("AP Aging") } },
+			{ path: "landed-cost-review/:document_type/:document_name", name: "purchasing-landed-cost-review", component: LandedCostReview, meta: { title: t("Landed Cost Review") } },
 		],
 	},
 	{
@@ -546,11 +547,28 @@ router.beforeEach(async (to) => {
 		if (to.path === dest) return;
 		return dest;
 	}
+	if (to.path === "/reports" || to.path.startsWith("/reports/")) {
+		const canSeeReports = session.isAdmin ||
+			session.canAccessModule("sales") ||
+			session.canAccessModule("purchasing") ||
+			session.canAccessModule("hr") ||
+			session.canAccessModule("money") ||
+			session.canAccessModule("inventory");
+		if (!canSeeReports) {
+			const dest = landingPath(session);
+			if (to.path === dest) return;
+			return dest;
+		}
+	}
 	const moduleRoute = to.matched.find((r) => r.meta.module);
 	if (moduleRoute && !session.canAccessModule(moduleRoute.meta.module)) {
-		const dest = landingPath(session);
-		if (to.path === dest) return;
-		return dest;
+		if (to.path === "/inventory/stock-status" && session.canAccessModule("manufacturing")) {
+			// Allow line operators to view their assigned stock status page
+		} else {
+			const dest = landingPath(session);
+			if (to.path === dest) return;
+			return dest;
+		}
 	}
 });
 

@@ -787,3 +787,15 @@ def import_order_kpis(rows, *, invoices_total=0, invoices_pending=0, invoices_do
         "invoices_pending": int(invoices_pending),
         "invoices_done": int(invoices_done),
     }
+
+
+def get_7day_payment_deadline(eta_transit_port) -> str | None:
+    """Return the payment deadline (7 days before eta_transit_port) in ISO format."""
+    if not eta_transit_port:
+        return None
+    from frappe.utils import add_days, getdate
+    try:
+        dt = getdate(eta_transit_port)
+        return str(add_days(dt, -7))
+    except Exception:
+        return None

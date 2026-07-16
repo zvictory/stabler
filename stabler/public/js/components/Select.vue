@@ -121,23 +121,34 @@ function onScrollOrResize() {
 	if (open.value) computeMenuStyle();
 }
 
+function onDocumentClick(e) {
+	const trigger = triggerEl.value;
+	const menu = menuEl.value;
+	if (trigger && (trigger === e.target || trigger.contains(e.target))) return;
+	if (menu && (menu === e.target || menu.contains(e.target))) return;
+	open.value = false;
+}
+
 watch(open, async (v) => {
 	if (v) {
 		await nextTick();
 		computeMenuStyle();
 		window.addEventListener("scroll", onScrollOrResize, true);
 		window.addEventListener("resize", onScrollOrResize);
+		document.addEventListener("mousedown", onDocumentClick, true);
 		if (showSearch.value) searchInputEl.value?.focus({ preventScroll: true });
 		scrollActiveIntoView();
 	} else {
 		window.removeEventListener("scroll", onScrollOrResize, true);
 		window.removeEventListener("resize", onScrollOrResize);
+		document.removeEventListener("mousedown", onDocumentClick, true);
 	}
 });
 
 onBeforeUnmount(() => {
 	window.removeEventListener("scroll", onScrollOrResize, true);
 	window.removeEventListener("resize", onScrollOrResize);
+	document.removeEventListener("mousedown", onDocumentClick, true);
 });
 
 // As the query changes the list shrinks/grows: move the cursor to the first
@@ -303,21 +314,7 @@ function onKeydown(e) {
 	}
 }
 
-// Items live in a Teleport, so clicking one blurs the trigger button. Mirror
-// Typeahead: items use @mousedown.prevent to keep focus, and the trigger's blur
-// closes the menu after a beat for genuine outside clicks.
-let blurTimer = null;
-function onBlur() {
-	blurTimer = setTimeout(() => (open.value = false), 150);
-}
-function onItemMouseDown() {
-	clearTimeout(blurTimer);
-}
-// Focusing the search input blurs the trigger; cancel the trigger's close timer
-// so moving focus into the box doesn't snap the menu shut.
-function onSearchFocus() {
-	clearTimeout(blurTimer);
-}
+
 </script>
 
 <template>
@@ -333,7 +330,6 @@ function onSearchFocus() {
 			v-bind="$attrs"
 			@click="toggle"
 			@keydown="onKeydown"
-			@blur="onBlur"
 		>
 			<span class="stbl-select-value" :class="{ 'text-secondary': !selectedOption }">
 				<slot v-if="selectedOption" name="selected" :option="selectedOption">{{ optionLabel(selectedOption) }}</slot>
@@ -344,7 +340,6 @@ function onSearchFocus() {
 				class="ti ti-x stbl-select-clear"
 				role="button"
 				:aria-label="'Clear'"
-				@mousedown.prevent="onItemMouseDown"
 				@click.stop="clear"
 			></i>
 			<i class="ti ti-chevron-down stbl-select-caret"></i>
@@ -365,8 +360,6 @@ function onSearchFocus() {
 						:aria-label="t('Search')"
 						:aria-activedescendant="activeIdx >= 0 ? rowId(activeIdx) : undefined"
 						@keydown="onKeydown"
-						@focus="onSearchFocus"
-						@blur="onBlur"
 					/>
 				</div>
 				<div v-if="!visibleOptions.length" class="stbl-menu-empty small">
@@ -383,7 +376,6 @@ function onSearchFocus() {
 					role="option"
 					:aria-selected="optionValue(o) === modelValue"
 					:disabled="optionDisabled(o)"
-					@mousedown.prevent="onItemMouseDown"
 					@click="pick(o)"
 					@mouseenter="activeIdx = i"
 				>

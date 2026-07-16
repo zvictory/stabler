@@ -23,6 +23,7 @@ const warehouses = ref([]);
 const selectedWarehouse = ref("");
 const stock = ref(null);
 const itemSearch = ref("");
+const showOnlyAnomalous = ref(false);
 
 const currency = computed(
 	() =>
@@ -44,12 +45,21 @@ const selectedWarehouseInfo = computed(
 );
 const stockItems = computed(() => stock.value?.items || []);
 const filteredItems = computed(() => {
+	let list = stockItems.value;
+	if (showOnlyAnomalous.value) {
+		const anomalousCodes = new Set(stock.value?.anomalies?.map((a) => a.item_code) || []);
+		list = list.filter((item) => anomalousCodes.has(item.item_code));
+	}
 	const query = itemSearch.value.trim().toLowerCase();
-	if (!query) return stockItems.value;
-	return stockItems.value.filter((item) =>
+	if (!query) return list;
+	return list.filter((item) =>
 		`${item.item_code || ""} ${item.item_name || ""} ${item.item_group || ""}`.toLowerCase().includes(query)
 	);
 });
+
+function getAnomaly(itemCode) {
+	return stock.value?.anomalies?.find((a) => a.item_code === itemCode) || null;
+}
 
 function formatQty(value, uom) {
 	const qty = Number(value || 0).toLocaleString(user.value.language || "en", {
@@ -97,6 +107,7 @@ async function loadWarehouses() {
 		warehouses.value = rows || [];
 		const nextWarehouse = bestWarehouse(stockWarehouses.value, route.query.warehouse);
 		selectedWarehouse.value = nextWarehouse;
+		showOnlyAnomalous.value = false;
 		if (nextWarehouse && nextWarehouse !== route.query.warehouse) {
 			await router.replace({ path: "/inventory/stock-status", query: { warehouse: nextWarehouse } });
 		}
@@ -113,6 +124,7 @@ async function loadWarehouses() {
 async function selectWarehouse(value) {
 	selectedWarehouse.value = value || "";
 	itemSearch.value = "";
+	showOnlyAnomalous.value = false;
 	if (selectedWarehouse.value) {
 		await router.replace({ path: "/inventory/stock-status", query: { warehouse: selectedWarehouse.value } });
 	}
@@ -259,6 +271,22 @@ watch(
 				</div>
 			</div>
 
+			<div v-if="stock?.anomalies?.length" class="alert alert-warning d-flex align-items-center justify-content-between mb-3 py-2 px-3">
+				<div>
+					<i class="ti ti-alert-triangle text-warning me-2 fs-3"></i>
+					<span>
+						{{ t("Found {0} stock valuation anomalies (missing costs or suspicious rates).", [stock.anomalies.length]) }}
+					</span>
+				</div>
+				<button
+					type="button"
+					class="btn btn-sm btn-outline-warning"
+					@click="showOnlyAnomalous = !showOnlyAnomalous"
+				>
+					{{ showOnlyAnomalous ? t("Show all items") : t("Filter warnings") }}
+				</button>
+			</div>
+
 			<div class="card">
 				<div class="card-header">
 					<div class="card-title m-0">
@@ -311,8 +339,16 @@ watch(
 								@click="openItemDrill(item)"
 							>
 								<td>
-									<div class="fw-semibold">{{ item.item_name || item.item_code }}</div>
+									<div class="fw-semibold">
+										{{ item.item_name || item.item_code }}
+										<span v-if="getAnomaly(item.item_code)" class="badge bg-red-lt ms-2 font-normal text-capitalize">
+											<i class="ti ti-alert-triangle me-1"></i>{{ t("check") }}
+										</span>
+									</div>
 									<div class="small text-secondary font-monospace">{{ item.item_code }}</div>
+									<div v-if="getAnomaly(item.item_code)" class="small text-red mt-1">
+										{{ getAnomaly(item.item_code).message }}
+									</div>
 								</td>
 								<td class="small text-secondary">{{ item.item_group || "—" }}</td>
 								<td class="text-end font-monospace">{{ formatQty(item.actual_qty, item.stock_uom) }}</td>

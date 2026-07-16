@@ -97,11 +97,20 @@
 - **WP4 & WP5 Backend (DONE):** Added missing python controllers, fixed dynamic UOM mapping (v43 patch), and resolved company scope test cases (v46 patch & test_company_scope_guard).
 - **Task 6 (DONE):** Added Commercial Invoice `on_update` status-hook to auto-create `GRN Checklist` when CI status transitions to `STUFFED` (gated and idempotent). Created `test_customer_hierarchy_integration.py` containing a comprehensive DB-backed integration test suite for customer validations, credit limits, bulk payments, and auto-GRN hook. All tests pass successfully (1094 tests green).
 
+## 5.3 MSAERP Parity Features & Owner Decisions (12.07.2026)
+- **Task 1 (DONE)**: Created `Stabler Vendor Category` and `Stabler Vendor Category Item` DocTypes. Exposed `get_vendor_category_items` API in `purchasing.py`.
+- **Task 2 (DONE)**: Calculated ETA - 7 days deadline, daily `eta_payment_alert` background task and hooks.
+- **Task 3 (DONE)**: Ported Excel Sales and Payment Importers to Stabler using native Document APIs (`sales_import.py`, `payment_import.py`).
+- **Task 4 (DONE)**: Added `require_delivery_note` field to `Stabler Settings` and validation check to prevent direct stock updates on Sales Invoices.
+- **Task 5 (DONE)**: Created `parser_msaerp_xlsx` for Excel bank statements and integrated routing in `import_api.py`.
+- **Task 6 (DONE)**: Exposed `get_parent_credit_limit_status` API in `customer_hooks.py`.
+- **Task 7 (DONE)**: Created `v47_bootstrap_fiscal_year` migration patch and registered in `patches.txt`.
+- **Task 8 (DONE)**: Confirmed standardization of SPA list views with ListToolbar and SkeletonRows.
+- **Tests**: All tests passed successfully.
+
 ## 6. Açık Döngüler / Sıradaki Onay Noktaları
 
-1. WP4 / WP5 & Customer Hierarchy (K2): All code is fully written, migrated, and verified locally. Ready for deployment.
-2. WP-000 serisi (WP-001..005): **HEPSİ UYGULANDI+commit'lendi** (1ae3354, 5c9cc81, c475eb1, 012df2b + WP-002 önceki).
-3. **UZEX entegrasyonu (WP-300..309) UYGULANDI+commit'lendi** (22f70e7..3434845). AÇIK KALAN: (a) **UZEX resmi API başvurusu** — belgelenmemiş uçları sözleşmeyle sabitlemek + yazma/gönderim ucu (WP-306 oto-gönderiminin ön koşulu); (b) lokal `bench migrate`/poller/fetch_lot doğrulaması (checklist `docs/plans/uzex-go-live-checklist.md`); (c) prod'da `python-docx` kurulumu + site_config anahtarları + Telegram setWebhook; (d) xarid/dxarid ayrı keşif; (e) WP-304 board chip/countdown wiring (tender.py board endpoint'leri custom_uzex_* emit etmeli).
-4. Tarih standardı kararının CLAUDE.md'ye işlenmesi önerisi (kullanıcı elle ekleyebilir; ajan koda/CLAUDE.md'ye yazmadı).
-5. WP-270→271→260 PLG omurgası (startup_blueprint kapanış checklist #2).
-6. Ek zamanlanmış görevler (wiki §4.2: sabah sağlık raporu, i18n kontrolü, plan hijyeni) — istek üzerine 1 komutla kurulur.
+1. UZEX entegrasyonu (WP-300..309) UYGULANDI+commit'lendi. Sıradaki adım UZEX canlıya geçiş checklist'inin (uzex-go-live-checklist.md) production sitesinde yürütülmesidir.
+2. MSAERP Parite Özellikleri (Task 1-8): Tüm backend implementasyonları, parserlar, şemalar ve testler başarıyla tamamlandı. Gönderilmeye hazır.
+
+
