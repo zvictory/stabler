@@ -175,31 +175,31 @@ Adjustment,Корректировка
 Admin,Администратор
 Administer users & roles,Управление пользователями и ролями
 Advance,Аванс
-Advance %,
+Advance %,Аванс %
 Advance 70% Payment Entry,Платёж по авансу 70%
 Advance amount,
 Advance amount must be greater than zero.,
-Advance base,
+Advance base,База аванса
 Advance deduction,Удержание аванса
 Advance deduction cannot be negative.,Удержание аванса не может быть отрицательным.
 Advance deduction must be a number.,
 Advance paid,Авансовый платёж
 Advance paid.,Аванс выдан.
 Advance payments,Авансовые платежи
-Advance recorded (draft).,
+Advance recorded (draft).,Аванс записан (черновик).
 Advance sent for approval.,Аванс отправлен на согласование.
-Advance summary,
+Advance summary,Сводка авансов
 Advanced (API endpoints),
 Advances,Авансы
 Advances outstanding,
 Against,По
 Aging,Срок давности
-Agreed Total,
-Agreed rate,
+Agreed Total,Согласованная сумма
+Agreed rate,Согласованная цена
 Agreed total,Согласованная сумма
 Alerts,
 All,Все
-All PI groups,
+All PI groups,Все группы PI
 All Reports,Все отчёты
 All attendance exceptions have been resolved or ignored.,
 All categories,Все категории
@@ -232,16 +232,16 @@ All three accounts are required.,Все три счёта обязательны
 All time,
 All types,Все типы
 All variance,Все отклонения
-All vendors,
+All vendors,Все поставщики
 All vouchers,
 All warehouses,Все склады
 All {0} employee summaries are clean — no unresolved exceptions.,
 Allocate against,Распределить по
 Allocated,Распределено
-Allocated (kg),
+Allocated (kg),Распределено (кг)
 Allocated Deposit Amount,Распределённый аванс (депозит)
 Allocated against,Распределено по
-Allocated amount,
+Allocated amount,Распределённая сумма
 Allocated amount must be greater than zero.,
 Allocation,Распределение
 Allocation amounts must be greater than zero.,Суммы распределения должны быть больше нуля.
@@ -392,7 +392,7 @@ Balance Due Amount,Остаток к оплате
 Balanced,Сбалансировано
 "Balances, advances and payments appear here.",
 "Balances, salaries, advances and payments appear here.","Здесь показываются балансы, зарплаты, авансы и выплаты."
-Bank,
+Bank,Банк
 Bank / transfer,Банк / перевод
 Bank Account '{0}' not found.,
 Bank Payment,Оплата через банк
@@ -458,7 +458,7 @@ Books locked nets to salary payable.,Записывает нетто в зарп
 Border Crossing,Пересечение границы
 Border Crossing Date,Дата пересечения границы
 Border crossing,Пересечение границы
-Box (kg),
+Box (kg),Коробка (кг)
 Box Kg,Кг в коробке
 Box Qty,Кол-во коробок
 Box kg,Кг в коробке
@@ -492,7 +492,7 @@ CBU rates updated: {rates},Курсы ЦБ обновлены: {rates}
 CBU.uz exchange rates (last 30 days),Курсы валют ЦБУ.uz (последние 30 дней)
 CBU.uz exchange rates appear here.,Здесь отображаются курсы валют ЦБУ.uz.
 CBU:,
-CI,
+CI,CI
 CI number,Номер КИ
 CI number or supplier… ⌘K,Номер КИ или поставщик… ⌘K
 CN Return,Возврат КН
@@ -555,10 +555,10 @@ Card not recognized,
 Cargo,Груз
 Carrier,Перевозчик
 Cases / Week,Ящики / нед.
-Cash,
+Cash,Наличные
 Cash / bank account,Касса / банк счёт
 Cash Payment,Оплата наличными
-Cash amount,
+Cash amount,Сумма наличными
 Cash difference,Разница наличными
 Cash flow,Движение денежных средств
 Cash on hand,Денежные средства
@@ -697,10 +697,10 @@ Conditions,
 Configure Google Drive below first.,
 Confirm,Подтвердить
 Confirm (submit) the import order before recording an advance.,
-Confirm (submit) this import order? It can no longer be edited here afterwards.,
+Confirm (submit) this import order? It can no longer be edited here afterwards.,Подтвердить (провести) этот импортный заказ? После этого его нельзя будет редактировать здесь.
 Confirm Submit,
 Confirm finish,Подтвердить завершение
-Confirm import order,
+Confirm import order,Подтвердить импортный заказ
 Confirm restore test,Подтвердите тест восстановления
 Conflict,Конфликт
 Conflicts,Конфликты
@@ -760,9 +760,9 @@ Could not approve the certificate.,Не удалось утвердить сер
 Could not assign.,Не удалось назначить.
 Could not check payment status.,Не удалось проверить статус платежа.
 Could not compute the customs fee.,Не удалось рассчитать таможенный сбор.
-Could not confirm the import order.,
+Could not confirm the import order.,Не удалось подтвердить импортный заказ.
 Could not create contract.,Не удалось создать контракт.
-Could not create the PI group.,
+Could not create the PI group.,Не удалось создать группу PI.
 Could not create the transaction.,Не удалось создать операцию.
 Could not create the voucher.,Не удалось создать ваучер.
 Could not load bid pricing.,Не удалось загрузить ценообразование.
@@ -788,7 +788,7 @@ Could not read a lot number from: {0},
 Could not read backup file: {0},
 Could not read the uploaded file.,
 Could not read your location.,Не удалось определить местоположение.
-Could not record the advance.,
+Could not record the advance.,Не удалось записать аванс.
 Could not reject the certificate.,Не удалось отклонить сертификат.
 Could not resolve a customer for this deal.,
 Could not resolve payroll period: {0},
@@ -1029,7 +1029,7 @@ Device user ID,
 Device user ID is required.,
 Didox,
 Didox may reject this document — missing data:,
-Diff,
+Diff,Разница
 Direct credit note,
 Direct sales return,
 Direct stock updates via Sales Invoice are disabled by company policy. ,
@@ -1055,9 +1055,9 @@ District,
 Dividend tax,Налог на дивиденды
 Dividends,Дивиденды
 DocType,Тип документа
-Docs,
-Docs Total,
-Docs rate,
+Docs,Док.
+Docs Total,Сумма по документам
+Docs rate,Цена по документам
 Docs total,Сумма по документам
 Document,Документ
 Document & notes,Документ и заметки
@@ -1201,7 +1201,7 @@ End Date must be on or after Start Date.,Дата окончания должн�
 End date cannot be before start date.,
 End of ledger,
 Enforcement,Принуждение
-Enter a bank and/or cash amount.,
+Enter a bank and/or cash amount.,Укажите сумму банк и/или наличные.
 Enter a quantity for at least one row.,Укажите количество хотя бы для одной строки.
 Enter amount and commission to see preview.,Введите сумму и комиссию для предпросмотра.
 Enter an amount greater than zero.,Введите сумму больше нуля.
@@ -1277,7 +1277,7 @@ Expected (kg),Ожидается (кг)
 Expected Closure,Планируемое закрытие
 Expected Facings,Ожидаемое количество фасадов
 Expected Monthly Volume,Ожидаемый месячный объём
-Expected advance,
+Expected advance,Ожидаемый аванс
 Expected arrival,Ожидаемое прибытие
 Expected facings is required on row {0}.,Ожидаемое количество фасадов требуется в строке {0}.
 Expense,Расход
@@ -1379,7 +1379,7 @@ Failed to load equipment.,Не удалось загрузить оборудо�
 Failed to load expenses.,Не удалось загрузить расходы.
 Failed to load form options.,Не удалось загрузить параметры формы.
 Failed to load freight bookings.,Не удалось загрузить бронирования перевозок.
-Failed to load import orders.,
+Failed to load import orders.,Не удалось загрузить импортные заказы.
 Failed to load invoice.,Не удалось загрузить счёт-фактуру.
 Failed to load invoices.,Не удалось загрузить счета-фактуры.
 Failed to load items.,Не удалось загрузить товары.
@@ -1425,7 +1425,7 @@ Failed to load the container.,Не удалось загрузить конте�
 Failed to load the cost ledger.,Не удалось загрузить реестр затрат.
 Failed to load the declaration.,Не удалось загрузить декларацию.
 Failed to load the expense.,Не удалось загрузить расход.
-Failed to load the import order.,
+Failed to load the import order.,Не удалось загрузить импортный заказ.
 Failed to load the imports dashboard.,Не удалось загрузить панель импорта.
 Failed to load the landed-cost review.,Не удалось загрузить обзор стоимости доставки.
 Failed to load the supplier summary.,Не удалось загрузить сводку по поставщикам.
@@ -1676,9 +1676,9 @@ Import Orders,
 Import Truck,Импортная фура
 Import bank statement,Импорт банковской выписки
 Import failed.,Импорт не удался.
-Import order confirmed.,
-Import order created.,
-Import order saved.,
+Import order confirmed.,Импортный заказ подтверждён.
+Import order created.,Импортный заказ создан.
+Import order saved.,Импортный заказ сохранён.
 Import orders,Импортные заказы
 Import outlet locations,Импорт геолокаций точек
 Import {0} lines,Импортировать {0} строк
@@ -2068,7 +2068,7 @@ New Lead,Новый лид
 New Murabaha Contract,Новый договор Мурабаха
 New OSA audit,Новый аудит OSA
 New PI group,
-New PI group title:,
+New PI group title:,Название новой группы PI:
 New Plan,Новый план
 New Process,Новый процесс
 New Promo Plan,Новый план промо
@@ -2106,7 +2106,7 @@ New entry,Новая запись
 New expense,Новые расходы
 New field user,Новый пользователь поля
 New gate device,
-New import order,
+New import order,Новый импортный заказ
 New item,Новый товар
 New journal,Новая запись
 New journal entry,Новая запись в журнал
@@ -2240,7 +2240,7 @@ No files attached.,Файлы не прикреплены.
 No foreign-currency account balances found for this date.,
 No freight bookings,Нет бронирований перевозок
 No gate devices,
-No group,
+No group,Без группы
 No holidays yet.,Праздников пока нет.
 No import bills yet.,Импортных счетов пока нет.
 No import expenses,Нет импортных расходов
@@ -2571,10 +2571,10 @@ Own,Собственный
 Owner,
 P,Ож
 PENDING,Ожидает
-PI & Exporter,
+PI & Exporter,PI и экспортёр
 PI In,PI приход
-PI group,
-PI group created.,
+PI group,Группа PI
+PI group created.,Группа PI создана.
 "PI number, vendor or group… ⌘K",
 PIN,
 PO,PO
@@ -2653,7 +2653,7 @@ Payables,
 Payee,Получатель платежа
 Payload,Тело запроса
 Payload must be an object.,Полезная нагрузка должна быть объектом.
-Payment,
+Payment,Оплата
 Payment Entry,Платёжный документ
 Payment Entry is required.,Требуется платёжная операция (Payment Entry).
 Payment Mode,
@@ -2661,7 +2661,7 @@ Payment amount must be positive,Сумма платежа должна быть 
 Payment amount {0} exceeds outstanding {1} on {2},Сумма платежа {0} превышает задолженность {1} по {2}
 Payment belongs to a different company.,Платёж относится к другой компании.
 Payment cancelled,Оплата отменена
-Payment date,
+Payment date,Дата оплаты
 Payment failed,Платёж не выполнен
 Payment failed.,Не удалось оплатить.
 Payment mode is not allowed for this POS Profile.,
@@ -2676,7 +2676,7 @@ Payment saved — pending approval before it posts.,Платёж сохранё�
 Payment schedule,График платежей
 Payment split is hidden for your role.,Разбивка платежа скрыта для вашей роли.
 Payment status,Статус оплаты
-Payment terms,
+Payment terms,Условия оплаты
 Payment type,Тип платежа
 Payments,Платежи
 Payments due,Предстоящие платежи
@@ -2731,7 +2731,7 @@ Photo URL,URL фото
 Photo is required.,Фото обязательно.
 Photos,Фото
 "Photos capture shelves, storefronts and promotions during visits.","Фото фиксируют полки, витрины и промоции во время визитов."
-Physical,
+Physical,Физически
 Pick a cash/bank account.,
 Pick a company from the switcher in the header to see your financial overview.,"Выберите компанию в переключателе заголовка, чтобы увидеть финансовый обзор."
 Pick a customer.,Выберите клиента.
@@ -2826,7 +2826,7 @@ Price Tier,Ценовой уровень
 Price history,История цен
 Price list,Прайс-лист
 Price → margin,Цена → маржа
-Pricing,
+Pricing,Цены
 Print,Печать
 Priority,Приоритет
 Probability,Вероятность
@@ -2843,7 +2843,7 @@ Produced quantity must be positive.,Выпущенное количество д
 Product,Товар
 Product cost,Стоимость товара
 Production Item,
-Products,
+Products,Товары
 Professional Excel export of this ledger,Профессиональный экспорт этого реестра в Excel
 Professional Excel export with current filters,Профессиональный экспорт в Excel с текущими фильтрами
 Profile,Профиль
@@ -2990,7 +2990,7 @@ Record & close,Записать и закрыть
 Record & new,Записать и новый
 "Record a receipt, issue, or transfer to move stock between warehouses.","Зарегистрируйте поступление, выпуск или передачу для перемещения товаров между складами."
 Record a sale,Записать продажу
-Record advance,
+Record advance,Записать аванс
 "Record border-crossing, handling and other import costs here.","Записывайте здесь расходы на пересечение границы, обработку и другие импортные затраты."
 Record production,Записать выпуск
 Record stock movements,Учёт движения запасов
@@ -3003,7 +3003,7 @@ Ref No.,
 Reference,Ссылка
 Reference #,Номер ссылки
 Reference date,Дата ссылки
-Reference no,
+Reference no,Номер референса
 Reference no.,Номер ссылки.
 References,Ссылки
 Refresh,Обновить
@@ -3231,7 +3231,7 @@ Save & new,Сохранить и новый
 Save & submit,Сохранить и отправить
 Save Changes,Сохранить изменения
 Save Draft Revaluation,
-Save advance,
+Save advance,Сохранить аванс
 Save allowed users,Сохранить разрешённых пользователей
 Save and submit,Сохранить и провести
 Save as Draft,Сохранить как черновик
@@ -3523,7 +3523,7 @@ Stop Work Order,
 Stop this Work Order? You can resume it later.,Остановить этот производственный заказ? Можно будет возобновить позже.
 Storage,Хранение
 Storefront,Витрина
-Stream,
+Stream,Поток
 Stuck (min),Завис (мин)
 Subject,Тема
 Subject is required.,
@@ -4155,7 +4155,7 @@ depts,отделов
 designation,должность
 device_name is required.,
 device_user_id is required.,
-done,
+done,завершено
 e.g. ANJ — leave blank to auto-generate,напр. ANJ — оставьте пустым для авто
 e.g. Chevrolet Cobalt 2024,напр. Chevrolet Cobalt 2024
 e.g. EMP-00042,
@@ -4178,7 +4178,7 @@ https://…,
 info,инфо
 initial,первоначальный
 inst.,плат.
-invoiced,
+invoiced,выставлено
 is locked from edits.,заблокирована для изменений.
 item,товар
 item_code and warehouse are required,item_code и warehouse обязательны
@@ -4214,7 +4214,7 @@ overdue,просрочено
 pack_key is required,pack_key обязателен
 payload must be a JSON object.,
 payroll_period is required.,
-pending,
+pending,в ожидании
 planned,план
 present,присутствовал
 pts vs last week,п.п. к прош. неделе
@@ -4293,5 +4293,5 @@ yr,г.
 Start Work Order & Transfer Materials,Запуск рабочего ордера и перемещение материалов
 Materials to Transfer,Материалы для перемещения
 Start & Transfer,Запустить и переместить
-Please ensure all items are selected and have a quantity greater than zero.,Пожалуйста, убедитесь, что все товары выбраны и их количество больше нуля.
+Please ensure all items are selected and have a quantity greater than zero.,"Пожалуйста, убедитесь, что все товары выбраны и их количество больше нуля."
 Source Stock,Остаток на источнике

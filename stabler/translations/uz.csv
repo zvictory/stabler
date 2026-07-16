@@ -173,31 +173,31 @@ Adjustment,Tuzatish
 Admin,Admin
 Administer users & roles,Foydalanuvchilar va rollarni boshqarish
 Advance,Avans
-Advance %,
+Advance %,Avans %
 Advance 70% Payment Entry,70% avans to‘lovi hujjati
 Advance amount,
 Advance amount must be greater than zero.,
-Advance base,
+Advance base,Avans asosi
 Advance deduction,Avans ushlab qolish
 Advance deduction cannot be negative.,Avans ushlash manfiy bo'lishi mumkin emas.
 Advance deduction must be a number.,
 Advance paid,Avans to'landi
 Advance paid.,Avans to'landi.
 Advance payments,Avans to‘lovlari
-Advance recorded (draft).,
+Advance recorded (draft).,Avans qayd etildi (qoralama).
 Advance sent for approval.,Avans tasdiqqa yuborildi.
-Advance summary,
+Advance summary,Avanslar xulosasi
 Advanced (API endpoints),
 Advances,Avanslar
 Advances outstanding,
 Against,Qarshi
 Aging,Muddat taqsimoti
-Agreed Total,
-Agreed rate,
+Agreed Total,Kelishilgan summa
+Agreed rate,Kelishilgan narx
 Agreed total,Kelishilgan summa
 Alerts,
 All,Hammasi
-All PI groups,
+All PI groups,Barcha PI guruhlari
 All Reports,Barcha hisobotlar
 All attendance exceptions have been resolved or ignored.,
 All categories,Barcha kategoriyalar
@@ -229,16 +229,16 @@ All three accounts are required.,Uchta hisob majburiy.
 All time,
 All types,Barcha turlar
 All variance,Barcha ogʻishlar
-All vendors,
+All vendors,Barcha yetkazib beruvchilar
 All vouchers,
 All warehouses,Barcha omborlar
 All {0} employee summaries are clean — no unresolved exceptions.,
 Allocate against,Qarshi ajratish
 Allocated,Ajratilgan
-Allocated (kg),
+Allocated (kg),Taqsimlangan (kg)
 Allocated Deposit Amount,Taqsimlangan depozit summasi
 Allocated against,Qarshi ajratilgan
-Allocated amount,
+Allocated amount,Taqsimlangan summa
 Allocated amount must be greater than zero.,
 Allocation,Taqsimot
 Allocation amounts must be greater than zero.,Taqsimot summalari noldan katta bo‘lishi kerak.
@@ -388,7 +388,7 @@ Balance Due Amount,To‘lanadigan qoldiq summa
 Balanced,Muvozanatli
 "Balances, advances and payments appear here.",
 "Balances, salaries, advances and payments appear here.","Bu yerda balanslar, oyliklar, avanslar va to'lovlar ko'rinadi."
-Bank,
+Bank,Bank
 Bank / transfer,Bank / o‘tkazma
 Bank Account '{0}' not found.,
 Bank Payment,Bank to'lovi
@@ -454,7 +454,7 @@ Books locked nets to salary payable.,Sof oyliklarni to'lanadigan oylikka yozadi.
 Border Crossing,Chegara kesib o'tish
 Border Crossing Date,Chegara kesib o‘tish sanasi
 Border crossing,Chegarani kesib o‘tish
-Box (kg),
+Box (kg),Quti (kg)
 Box Kg,Quti kg
 Box Qty,Qutilar soni
 Box kg,Quti kg
@@ -487,7 +487,7 @@ CBU rates are already up to date.,CBU kurslari allaqachon dolzarb.
 CBU rates updated: {rates},CBU kurslari yangilandi: {rates}
 CBU.uz exchange rates (last 30 days),CBU.uz almashtirish kurslari (oxirgi 30 kun)
 CBU:,
-CI,
+CI,CI
 CI number,KI raqami
 CI number or supplier… ⌘K,KI raqami yoki yetkazib beruvchi… ⌘K
 CN Return,CN qaytarish
@@ -550,10 +550,10 @@ Card not recognized,
 Cargo,Yuk
 Carrier,Tashuvchi
 Cases / Week,Quti / hafta
-Cash,
+Cash,Naqd
 Cash / bank account,Kassa / bank hisobi
 Cash Payment,Naqd to'lov
-Cash amount,
+Cash amount,Naqd summa
 Cash difference,Naqd farqi
 Cash flow,Pul oqimi
 Cash on hand,Kassadagi pul
@@ -692,10 +692,10 @@ Conditions,
 Configure Google Drive below first.,
 Confirm,Tasdiqlash
 Confirm (submit) the import order before recording an advance.,
-Confirm (submit) this import order? It can no longer be edited here afterwards.,
+Confirm (submit) this import order? It can no longer be edited here afterwards.,Ushbu import buyurtmasi tasdiqlansinmi (o'tkazilsinmi)? Keyin bu yerda tahrirlab bo'lmaydi.
 Confirm Submit,
 Confirm finish,Yakunlashni tasdiqlash
-Confirm import order,
+Confirm import order,Import buyurtmasini tasdiqlash
 Confirm restore test,Tiklash sinovini tasdiqlang
 Conflict,Nizo
 Conflicts,Nizolar
@@ -755,9 +755,9 @@ Could not approve the certificate.,Sertifikatni tasdiqlab bo‘lmadi.
 Could not assign.,Biriktirib bo‘lmadi.
 Could not check payment status.,To‘lov holatini tekshirib bo‘lmadi.
 Could not compute the customs fee.,Bojxona yig‘imini hisoblab bo‘lmadi.
-Could not confirm the import order.,
+Could not confirm the import order.,Import buyurtmasini tasdiqlab bo'lmadi.
 Could not create contract.,Shartnoma yaratib bo'lmadi.
-Could not create the PI group.,
+Could not create the PI group.,PI guruhini yaratib bo'lmadi.
 Could not create the transaction.,Tranzaksiya yaratib bo'lmadi.
 Could not create the voucher.,Vaucher yaratib boʻlmadi.
 Could not load bid pricing.,Narx rejasini yuklab bo‘lmadi.
@@ -783,7 +783,7 @@ Could not read a lot number from: {0},
 Could not read backup file: {0},
 Could not read the uploaded file.,
 Could not read your location.,Joylashuvni aniqlab bo'lmadi.
-Could not record the advance.,
+Could not record the advance.,Avansni qayd etib bo'lmadi.
 Could not reject the certificate.,Sertifikatni rad etib bo‘lmadi.
 Could not resolve a customer for this deal.,
 Could not resolve payroll period: {0},
@@ -1024,7 +1024,7 @@ Device user ID,
 Device user ID is required.,
 Didox,
 Didox may reject this document — missing data:,
-Diff,
+Diff,Farq
 Direct credit note,
 Direct sales return,
 Direct stock updates via Sales Invoice are disabled by company policy. ,
@@ -1050,9 +1050,9 @@ District,
 Dividend tax,Dividend solig‘i
 Dividends,Dividendlar
 DocType,Hujjat turi
-Docs,
-Docs Total,
-Docs rate,
+Docs,Hujjat
+Docs Total,Hujjat summasi
+Docs rate,Hujjat narxi
 Docs total,Hujjatlar summasi
 Document,Hujjat
 Document & notes,Hujjat va izohlar
@@ -1195,7 +1195,7 @@ End Date must be on or after Start Date.,Yakuniy sana Bosh sananingdan keyin yok
 End date cannot be before start date.,
 End of ledger,
 Enforcement,Majburlash
-Enter a bank and/or cash amount.,
+Enter a bank and/or cash amount.,Bank va/yoki naqd summani kiriting.
 Enter a quantity for at least one row.,Kamida bitta qator uchun miqdor kiriting.
 Enter amount and commission to see preview.,Ko'rib chiqish uchun summa va komissiyani kiriting.
 Enter an amount greater than zero.,Noldan katta summa kiriting.
@@ -1271,7 +1271,7 @@ Expected (kg),Kutilgan (kg)
 Expected Closure,Rejalashtirilgan yopilish
 Expected Facings,Kutilgan yuzlar
 Expected Monthly Volume,Kutilayotgan oylik hajm
-Expected advance,
+Expected advance,Kutilayotgan avans
 Expected arrival,Kutilayotgan kelish
 Expected facings is required on row {0}.,Kutilgan yuzlar {0} qatorida talab qilinadi.
 Expense,Xarajat
@@ -1373,7 +1373,7 @@ Failed to load equipment.,Jihozni yuklab bo'lmadi.
 Failed to load expenses.,Xarajatlarni yuklab bo‘lmadi.
 Failed to load form options.,Forma variantlarini yuklashda xato.
 Failed to load freight bookings.,Yuk bronlarini yuklab bo‘lmadi.
-Failed to load import orders.,
+Failed to load import orders.,Import buyurtmalarini yuklab bo'lmadi.
 Failed to load invoice.,Hisob-fakturani yuklashda xato.
 Failed to load invoices.,Hisob-fakturalarni yuklashda xato.
 Failed to load items.,Tovarlarni yuklashda xato.
@@ -1419,7 +1419,7 @@ Failed to load the container.,Konteyner yuklanmadi.
 Failed to load the cost ledger.,Xarajatlar reyestrini yuklab bo‘lmadi.
 Failed to load the declaration.,Deklaratsiyani yuklab bo‘lmadi.
 Failed to load the expense.,Xarajatni yuklab bo‘lmadi.
-Failed to load the import order.,
+Failed to load the import order.,Import buyurtmasini yuklab bo'lmadi.
 Failed to load the imports dashboard.,Import paneli yuklanmadi.
 Failed to load the landed-cost review.,Yetkazib berish qiymati ko‘rigini yuklab bo‘lmadi.
 Failed to load the supplier summary.,Yetkazib beruvchi bo‘yicha jamini yuklab bo‘lmadi.
@@ -1670,9 +1670,9 @@ Import Orders,
 Import Truck,Import yuk mashinasi
 Import bank statement,Bank ko'chirmasini import qilish
 Import failed.,Import muvaffaqiyatsiz.
-Import order confirmed.,
-Import order created.,
-Import order saved.,
+Import order confirmed.,Import buyurtmasi tasdiqlandi.
+Import order created.,Import buyurtmasi yaratildi.
+Import order saved.,Import buyurtmasi saqlandi.
 Import orders,Import buyurtmalari
 Import outlet locations,Nuqta joylashuvlarini import qilish
 Import {0} lines,{0} qatorni import qilish
@@ -2062,7 +2062,7 @@ New Lead,Yangi lid
 New Murabaha Contract,Yangi Murobaha shartnomasi
 New OSA audit,Yangi OSA audit
 New PI group,
-New PI group title:,
+New PI group title:,Yangi PI guruhi nomi:
 New Plan,Yangi reja
 New Process,Yangi jarayon
 New Promo Plan,Yangi reklama rejasi
@@ -2100,7 +2100,7 @@ New entry,Yangi kiritma
 New expense,Yangi xarajat
 New field user,Yangi foydalanuvchi
 New gate device,
-New import order,
+New import order,Yangi import buyurtmasi
 New item,Yangi tovar
 New journal,Yangi yozuv
 New journal entry,Yangi jurnaldi kiritma
@@ -2234,7 +2234,7 @@ No files attached.,Fayllar biriktirilmagan.
 No foreign-currency account balances found for this date.,
 No freight bookings,Yuk bronlari yo‘q
 No gate devices,
-No group,
+No group,Guruhsiz
 No holidays yet.,Hali bayramlar yo'q.
 No import bills yet.,Hozircha import hisob-fakturalari yo‘q.
 No import expenses,Import xarajatlari yo‘q
@@ -2565,10 +2565,10 @@ Own,Oʻzi
 Owner,
 P,Ku
 PENDING,Kutilmoqda
-PI & Exporter,
+PI & Exporter,PI va eksportyor
 PI In,PI kirim
-PI group,
-PI group created.,
+PI group,PI guruhi
+PI group created.,PI guruhi yaratildi.
 "PI number, vendor or group… ⌘K",
 PIN,
 PO,PO
@@ -2647,7 +2647,7 @@ Payables,
 Payee,To'lov oluvchi
 Payload,Ma'lumot to'plami
 Payload must be an object.,Ma'lumot to'plami ob'ekt bo'lishi kerak.
-Payment,
+Payment,To'lov
 Payment Entry,To'lov yozuvi
 Payment Entry is required.,Payment Entry talab qilinadi.
 Payment Mode,
@@ -2655,7 +2655,7 @@ Payment amount must be positive,To'lov summasi musbat bo'lishi kerak
 Payment amount {0} exceeds outstanding {1} on {2},{2} bo'yicha to'lov summasi {0} qarzdorlik {1} dan oshib ketmoqda
 Payment belongs to a different company.,To‘lov boshqa kompaniyaga tegishli.
 Payment cancelled,To‘lov bekor qilindi
-Payment date,
+Payment date,To'lov sanasi
 Payment failed,To‘lov amalga oshmadi
 Payment failed.,To'lov muvaffaqiyatsiz.
 Payment mode is not allowed for this POS Profile.,
@@ -2670,7 +2670,7 @@ Payment saved — pending approval before it posts.,To'lov saqlandi — kiritili
 Payment schedule,To'lov jadvali
 Payment split is hidden for your role.,To‘lov taqsimoti sizning rolingiz uchun yashirilgan.
 Payment status,To‘lov holati
-Payment terms,
+Payment terms,To'lov shartlari
 Payment type,To'lov turi
 Payments,To'lovlar
 Payments due,Muddati kelgan to‘lovlar
@@ -2725,7 +2725,7 @@ Photo URL,Rasm URL manzili
 Photo is required.,Rasm talab qilinadi.
 Photos,Rasmlar
 "Photos capture shelves, storefronts and promotions during visits.","Rasmlar tashrif paytida javonlar, do'konlarning fasadlari va aksiyalarni ushlaб oladi."
-Physical,
+Physical,Jismoniy
 Pick a cash/bank account.,
 Pick a company from the switcher in the header to see your financial overview.,Moliyaviy umumiy ko'rinishni ko'rish uchun sarlavhada turgan kompaniya o'zgartirgichidan kompaniyani tanlang.
 Pick a customer.,Xaridorni tanlang.
@@ -2820,7 +2820,7 @@ Price Tier,Narx darajasi
 Price history,Narx tarixi
 Price list,Narx ro'yxati
 Price → margin,Narx → marja
-Pricing,
+Pricing,Narxlar
 Print,Chop etish
 Priority,Muhimlik
 Probability,Ehtimollik
@@ -2837,7 +2837,7 @@ Produced quantity must be positive.,Ishlab chiqarilgan miqdor musbat bo'lishi ke
 Product,Mahsulot
 Product cost,Mahsulot tannarxi
 Production Item,
-Products,
+Products,Mahsulotlar
 Professional Excel export of this ledger,Bu reyestrning professional Excel eksporti
 Professional Excel export with current filters,Joriy filtrlar bilan professional Excel eksporti
 Profile,Profil
@@ -2984,7 +2984,7 @@ Record & close,Yozib yopish
 Record & new,Yozib yangi
 "Record a receipt, issue, or transfer to move stock between warehouses.","Ombor orasida tovarni ko'chirish uchun qabul, chiqarilish yoki ko'chirishni qayd qiling."
 Record a sale,Sotuvni qayd qiling
-Record advance,
+Record advance,Avansni qayd etish
 "Record border-crossing, handling and other import costs here.","Bu yerda chegara kesib o‘tish, yuk bilan ishlash va boshqa import xarajatlarini yozing."
 Record production,Ishlab chiqarishni qayd etish
 Record stock movements,Zaxira harakatini qayd etish
@@ -2997,7 +2997,7 @@ Ref No.,
 Reference,Havolа
 Reference #,Havolа raqami
 Reference date,Havolа sanasi
-Reference no,
+Reference no,Referens raqami
 Reference no.,Havolа raqami
 References,Havolalar
 Refresh,Yangilash
@@ -3225,7 +3225,7 @@ Save & new,Saqlash va yangi
 Save & submit,Saqlash va tasdiqlash
 Save Changes,O'zgarishlarni saqlash
 Save Draft Revaluation,
-Save advance,
+Save advance,Avansni saqlash
 Save allowed users,Saqlashga ruxsat etilgan foydalanuvchilar
 Save and submit,Saqlash va tasdiqlash
 Save as Draft,Qoralama sifatida saqlash
@@ -3517,7 +3517,7 @@ Stop Work Order,
 Stop this Work Order? You can resume it later.,Bu buyurtmani to'xtatasizmi? Keyin davom ettirsa bo'ladi.
 Storage,Saqlash
 Storefront,Do'kon ko'rinishi
-Stream,
+Stream,Oqim
 Stuck (min),Osilgan (daq)
 Subject,Mavzu
 Subject is required.,
@@ -4149,7 +4149,7 @@ depts,bo'lim
 designation,lavozim
 device_name is required.,
 device_user_id is required.,
-done,
+done,bajarildi
 e.g. ANJ — leave blank to auto-generate,masalan ANJ — avtomatik uchun bo'sh qoldiring
 e.g. Chevrolet Cobalt 2024,masalan Chevrolet Cobalt 2024
 e.g. EMP-00042,
@@ -4172,7 +4172,7 @@ https://…,
 info,ma'lumot
 initial,dastlabki
 inst.,to'lov
-invoiced,
+invoiced,hisob-faktura qilindi
 is locked from edits.,tahrirlash uchun qulflangan.
 item,Tovar
 item_code and warehouse are required,Tovar kodi va omborxona majburiy
@@ -4208,7 +4208,7 @@ overdue,kechikdi
 pack_key is required,pack_key majburiy
 payload must be a JSON object.,
 payroll_period is required.,
-pending,
+pending,kutilmoqda
 planned,rejalashtirilgan
 present,kelgan
 pts vs last week,o'tgan haftaga nisbatan
@@ -4287,5 +4287,5 @@ yr,yil
 Start Work Order & Transfer Materials,Ish buyurtmasini boshlash va materiallarni ko'chirish
 Materials to Transfer,Ko'chiriladigan materiallar
 Start & Transfer,Boshlash va ko'chirish
-Please ensure all items are selected and have a quantity greater than zero.,Iltimos, barcha tovarlar tanlanganligi va miqdori noldan ko'pligiga ishonch hosil qiling.
+Please ensure all items are selected and have a quantity greater than zero.,"Iltimos, barcha tovarlar tanlanganligi va miqdori noldan ko'pligiga ishonch hosil qiling."
 Source Stock,Manba qoldig'i

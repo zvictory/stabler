@@ -173,31 +173,31 @@ Adjustment,Тузатиш
 Admin,Администратор
 Administer users & roles,Фойдаланувчилар варолларни бошқариш
 Advance,Аванс
-Advance %,
+Advance %,Аванс %
 Advance 70% Payment Entry,70% аванс тўлови ҳужжати
 Advance amount,
 Advance amount must be greater than zero.,
-Advance base,
+Advance base,Аванс асоси
 Advance deduction,Аванс ушлаб қолиш
 Advance deduction cannot be negative.,Аванс ушлаш манфий бўлиши мумкин эмас.
 Advance deduction must be a number.,
 Advance paid,Авансий тўланган
 Advance paid.,Аванс тўланди.
 Advance payments,Аванс тўловлари
-Advance recorded (draft).,
+Advance recorded (draft).,Аванс қайд этилди (қоралама).
 Advance sent for approval.,Аванс тасдиққа юборилди.
-Advance summary,
+Advance summary,Аванслар хулосаси
 Advanced (API endpoints),
 Advances,Аванслар
 Advances outstanding,
 Against,Қарши
 Aging,Муддат тақсимоти
-Agreed Total,
-Agreed rate,
+Agreed Total,Келишилган сумма
+Agreed rate,Келишилган нарх
 Agreed total,Келишилган сумма
 Alerts,
 All,Ҳамма
-All PI groups,
+All PI groups,Барча PI гуруҳлари
 All Reports,Барча ҳисоботлар
 All attendance exceptions have been resolved or ignored.,
 All categories,Барча категориялар
@@ -229,16 +229,16 @@ All three accounts are required.,Учта ҳисоб мажбурий.
 All time,
 All types,Барча турлари
 All variance,Барча оғишлар
-All vendors,
+All vendors,Барча етказиб берувчилар
 All vouchers,
 All warehouses,Барча омборлар
 All {0} employee summaries are clean — no unresolved exceptions.,
 Allocate against,Қарши ажратиш
 Allocated,Ажратилган
-Allocated (kg),
+Allocated (kg),Тақсимланган (кг)
 Allocated Deposit Amount,Тақсимланган депозит суммаси
 Allocated against,Қарши ажратилган
-Allocated amount,
+Allocated amount,Тақсимланган сумма
 Allocated amount must be greater than zero.,
 Allocation,Тақсимот
 Allocation amounts must be greater than zero.,Тақсимот суммалари нолдан катта бўлиши керак.
@@ -388,7 +388,7 @@ Balance Due Amount,Тўланадиган қолдиқ сумма
 Balanced,Баланс муштаси
 "Balances, advances and payments appear here.",
 "Balances, salaries, advances and payments appear here.","Бу ерда баланслар, ойликлар, аванслар ва тўловлар кўринади."
-Bank,
+Bank,Банк
 Bank / transfer,Банк / ўтказма
 Bank Account '{0}' not found.,
 Bank Payment,Банк тўлови
@@ -454,7 +454,7 @@ Books locked nets to salary payable.,Соф ойликларни тўланад�
 Border Crossing,Чегара кесиб ўтиш
 Border Crossing Date,Чегара кесиб ўтиш санаси
 Border crossing,Чегарани кесиб ўтиш
-Box (kg),
+Box (kg),Қути (кг)
 Box Kg,Қути кг
 Box Qty,Қутилар сони
 Box kg,Қути кг
@@ -487,7 +487,7 @@ CBU rates are already up to date.,CBU курслари аллақачон дол
 CBU rates updated: {rates},CBU курслари янгиланди: {rates}
 CBU.uz exchange rates (last 30 days),CBU.uz алмаштириш курслари (охирги 30 кун)
 CBU:,
-CI,
+CI,CI
 CI number,КИ рақами
 CI number or supplier… ⌘K,КИ рақами ёки етказиб берувчи… ⌘K
 CN Return,CN қайтариш
@@ -550,10 +550,10 @@ Card not recognized,
 Cargo,Юк
 Carrier,Ташувчи
 Cases / Week,Қути / ҳафта
-Cash,
+Cash,Нақд
 Cash / bank account,Касса / банк ҳисоби
 Cash Payment,Нақд тўлов
-Cash amount,
+Cash amount,Нақд сумма
 Cash difference,Нақд фарқи
 Cash flow,Пул ағдарлари
 Cash on hand,Кассадаги пул
@@ -692,10 +692,10 @@ Conditions,
 Configure Google Drive below first.,
 Confirm,Тасдиқлаш
 Confirm (submit) the import order before recording an advance.,
-Confirm (submit) this import order? It can no longer be edited here afterwards.,
+Confirm (submit) this import order? It can no longer be edited here afterwards.,Ушбу импорт буюртмаси тасдиқлансинми (ўтказилсинми)? Кейин бу ерда таҳрирлаб бўлмайди.
 Confirm Submit,
 Confirm finish,Якунлашни тасдиқлаш
-Confirm import order,
+Confirm import order,Импорт буюртмасини тасдиқлаш
 Confirm restore test,Тиклаш синовини тасдиқланг
 Conflict,Низо
 Conflicts,Низолар
@@ -755,9 +755,9 @@ Could not approve the certificate.,Сертификатни тасдиқлаб �
 Could not assign.,Бириктириб бўлмади.
 Could not check payment status.,Тўлов ҳолатини текшириб бўлмади.
 Could not compute the customs fee.,Божхона йиғимини ҳисоблаб бўлмади.
-Could not confirm the import order.,
+Could not confirm the import order.,Импорт буюртмасини тасдиқлаб бўлмади.
 Could not create contract.,Шартнома яратиб бўлмади.
-Could not create the PI group.,
+Could not create the PI group.,PI гуруҳини яратиб бўлмади.
 Could not create the transaction.,Транзакция яратиб бўлмади.
 Could not create the voucher.,Ваучер яратиб бўлмади.
 Could not load bid pricing.,Нарх режасини юклаб бўлмади.
@@ -783,7 +783,7 @@ Could not read a lot number from: {0},
 Could not read backup file: {0},
 Could not read the uploaded file.,
 Could not read your location.,Жойлашувни аниқлаб бўлмади.
-Could not record the advance.,
+Could not record the advance.,Авансни қайд этиб бўлмади.
 Could not reject the certificate.,Сертификатни рад этиб бўлмади.
 Could not resolve a customer for this deal.,
 Could not resolve payroll period: {0},
@@ -1024,7 +1024,7 @@ Device user ID,
 Device user ID is required.,
 Didox,
 Didox may reject this document — missing data:,
-Diff,
+Diff,Фарқ
 Direct credit note,
 Direct sales return,
 Direct stock updates via Sales Invoice are disabled by company policy. ,
@@ -1050,9 +1050,9 @@ District,
 Dividend tax,Дивиденд солиғи
 Dividends,Дивидендлар
 DocType,Ҳужжат тури
-Docs,
-Docs Total,
-Docs rate,
+Docs,Ҳужжат
+Docs Total,Ҳужжат суммаси
+Docs rate,Ҳужжат нархи
 Docs total,Ҳужжатлар суммаси
 Document,Ҳужжат
 Document & notes,Ҳужжат ва изоҳлар
@@ -1195,7 +1195,7 @@ End Date must be on or after Start Date.,Охирги сана дастлабк�
 End date cannot be before start date.,
 End of ledger,
 Enforcement,Мажбурлаш
-Enter a bank and/or cash amount.,
+Enter a bank and/or cash amount.,Банк ва/ёки нақд суммани киритинг.
 Enter a quantity for at least one row.,Камида битта қатор учун миқдор киритинг.
 Enter amount and commission to see preview.,Кўриб чиқиш учун сумма ва комиссияни киритинг.
 Enter an amount greater than zero.,Нолдан катта сумма киритинг.
@@ -1271,7 +1271,7 @@ Expected (kg),Кутилган (кг)
 Expected Closure,Режалаштирилган япилиш
 Expected Facings,Кутилаётган берувчилик
 Expected Monthly Volume,Кутилаётган ойлик ҳажм
-Expected advance,
+Expected advance,Кутилаётган аванс
 Expected arrival,Кутилаётган келиш
 Expected facings is required on row {0}.,Кутилаётган берувчилик {0} сатрда қўлланилиши керак.
 Expense,Харжи
@@ -1373,7 +1373,7 @@ Failed to load equipment.,Жиҳозни юклаб бўлмади.
 Failed to load expenses.,Харажатларни юклаб бўлмади.
 Failed to load form options.,Шакл параметрларини юклаб бўла олмади.
 Failed to load freight bookings.,Юк бронларини юклаб бўлмади.
-Failed to load import orders.,
+Failed to load import orders.,Импорт буюртмаларини юклаб бўлмади.
 Failed to load invoice.,Счет-фактураси юклаб бўла олмади.
 Failed to load invoices.,Счет-фактураларни юклаб бўла олмади.
 Failed to load items.,Товарларни юклаб бўла олмади.
@@ -1419,7 +1419,7 @@ Failed to load the container.,Контейнер юкланмади.
 Failed to load the cost ledger.,Харажатлар реестрини юклаб бўлмади.
 Failed to load the declaration.,Декларацияни юклаб бўлмади.
 Failed to load the expense.,Харажатни юклаб бўлмади.
-Failed to load the import order.,
+Failed to load the import order.,Импорт буюртмасини юклаб бўлмади.
 Failed to load the imports dashboard.,Импорт панели юкланмади.
 Failed to load the landed-cost review.,Етказиб бериш қиймати кўригини юклаб бўлмади.
 Failed to load the supplier summary.,Етказиб берувчи бўйича жамини юклаб бўлмади.
@@ -1670,9 +1670,9 @@ Import Orders,
 Import Truck,Импорт юк машинаси
 Import bank statement,Банк кўчирмасини импорт қилиш
 Import failed.,Импорт муваффақиятсиз.
-Import order confirmed.,
-Import order created.,
-Import order saved.,
+Import order confirmed.,Импорт буюртмаси тасдиқланди.
+Import order created.,Импорт буюртмаси яратилди.
+Import order saved.,Импорт буюртмаси сақланди.
 Import orders,Импорт буюртмалари
 Import outlet locations,Нуқта жойлашувларини импорт қилиш
 Import {0} lines,{0} қаторни импорт қилиш
@@ -2062,7 +2062,7 @@ New Lead,Янги лид
 New Murabaha Contract,Янги Муробаҳа шартномаси
 New OSA audit,Янги OSA ревизияси
 New PI group,
-New PI group title:,
+New PI group title:,Янги PI гуруҳи номи:
 New Plan,Янги режа
 New Process,Янги жараён
 New Promo Plan,Янги ҳамёнч режаси
@@ -2100,7 +2100,7 @@ New entry,Янги ёзув
 New expense,Янги харажат
 New field user,Янги сахра фойдаланувчи
 New gate device,
-New import order,
+New import order,Янги импорт буюртмаси
 New item,Янги товар
 New journal,Янги ёзув
 New journal entry,Янги журнал ёзув
@@ -2234,7 +2234,7 @@ No files attached.,Файллар бириктирилмаган.
 No foreign-currency account balances found for this date.,
 No freight bookings,Юк бронлари йўқ
 No gate devices,
-No group,
+No group,Гуруҳсиз
 No holidays yet.,Ҳали байрамлар йўқ.
 No import bills yet.,Ҳозирча импорт ҳисоб-фактуралари йўқ.
 No import expenses,Импорт харажатлари йўқ
@@ -2565,10 +2565,10 @@ Own,Ўзи
 Owner,
 P,Ку
 PENDING,Кутилмоқда
-PI & Exporter,
+PI & Exporter,PI ва экспортёр
 PI In,PI кирим
-PI group,
-PI group created.,
+PI group,PI гуруҳи
+PI group created.,PI гуруҳи яратилди.
 "PI number, vendor or group… ⌘K",
 PIN,
 PO,PO
@@ -2647,7 +2647,7 @@ Payables,
 Payee,Қўлланувчи
 Payload,Юк
 Payload must be an object.,Юк объект бўлиши керак.
-Payment,
+Payment,Тўлов
 Payment Entry,Тўлов қайди
 Payment Entry is required.,Payment Entry талаб қилинади.
 Payment Mode,
@@ -2655,7 +2655,7 @@ Payment amount must be positive,Тўлов суммаси мусбат бўли�
 Payment amount {0} exceeds outstanding {1} on {2},{2} бўйича тўлов суммаси {0} қарздорлик {1} дан ошиб кетмоқда
 Payment belongs to a different company.,Тўлов бошқа компанияга тегишли.
 Payment cancelled,Тўлов бекор қилинди
-Payment date,
+Payment date,Тўлов санаси
 Payment failed,Тўлов амалга ошмади
 Payment failed.,Тўлов муваффақиятсиз.
 Payment mode is not allowed for this POS Profile.,
@@ -2670,7 +2670,7 @@ Payment saved — pending approval before it posts.,Тўлов сақланди 
 Payment schedule,Тўлов жадвали
 Payment split is hidden for your role.,Тўлов тақсимоти сизнинг ролингиз учун яширилган.
 Payment status,Тўлов ҳолати
-Payment terms,
+Payment terms,Тўлов шартлари
 Payment type,Тўлов турн
 Payments,Тўловлар
 Payments due,Муддати келган тўловлар
@@ -2725,7 +2725,7 @@ Photo URL,Сурат URL
 Photo is required.,Сурат керак.
 Photos,Суратлар
 "Photos capture shelves, storefronts and promotions during visits.","Суратлар шифоҳонуш жараёнида жалфаларни, магаза ғўша жойларини ва рекламаларни тушади."
-Physical,
+Physical,Жисмоний
 Pick a cash/bank account.,
 Pick a company from the switcher in the header to see your financial overview.,Молиявий кўриниш жизмасини кўриш учун сарлавҳадаги алмаштиргичдан компанияни танланг.
 Pick a customer.,Мижозни танланг.
@@ -2820,7 +2820,7 @@ Price Tier,Нарх даражаси
 Price history,Нарх тарихи
 Price list,Нарх рўйхати
 Price → margin,Нарх → маржа
-Pricing,
+Pricing,Нархлар
 Print,Босиб чиқариш
 Priority,Муҳимлик
 Probability,Еҳтимоллик
@@ -2837,7 +2837,7 @@ Produced quantity must be positive.,Ишлаб чиқарилган миқдор
 Product,Маҳсулот
 Product cost,Маҳсулот таннархи
 Production Item,
-Products,
+Products,Маҳсулотлар
 Professional Excel export of this ledger,Бу реестрнинг профессионал Excel экспорти
 Professional Excel export with current filters,Жорий фильтрлар билан профессионал Excel экспорти
 Profile,Профил
@@ -2984,7 +2984,7 @@ Record & close,Ёзиб ёпиш
 Record & new,Ёзиб янги
 "Record a receipt, issue, or transfer to move stock between warehouses.","Қўй ўртасида товарни ўтказиш учун қабулотни, сўрови ёки ўтказишни қайд қилинг."
 Record a sale,Сотув қайд қилиш
-Record advance,
+Record advance,Авансни қайд этиш
 "Record border-crossing, handling and other import costs here.","Бу ерда чегара кесиб ўтиш, юк билан ишлаш ва бошқа импорт харажатларини ёзинг."
 Record production,Ишлаб чиқаришни қайд этиш
 Record stock movements,Захира ҳаракатини қайд этиш
@@ -2997,7 +2997,7 @@ Ref No.,
 Reference,Шу̃носнома
 Reference #,Шу̃носнома #
 Reference date,Шу̃носнома санаси
-Reference no,
+Reference no,Референс рақами
 Reference no.,Шу̃носнома рақами
 References,Ҳаволалар
 Refresh,Янгилаш
@@ -3225,7 +3225,7 @@ Save & new,Сақлаш ва янги
 Save & submit,Сақлаш ва тасдиқлаш
 Save Changes,Ўзгаришларни сақлаш
 Save Draft Revaluation,
-Save advance,
+Save advance,Авансни сақлаш
 Save allowed users,Рухсат берилган фойдаланувчиларни сақлаш
 Save and submit,Сақлаш ва тасдиқлаш
 Save as Draft,Қоралама сифатида сақлаш
@@ -3517,7 +3517,7 @@ Stop Work Order,
 Stop this Work Order? You can resume it later.,Бу буюртмани тўхтатасизми? Кейин давом эттирса бўлади.
 Storage,Сақлаш
 Storefront,Дўкон саҳнаси
-Stream,
+Stream,Оқим
 Stuck (min),Осилган (дақ)
 Subject,Мавзу
 Subject is required.,
@@ -4149,7 +4149,7 @@ depts,бўлим
 designation,лавозим
 device_name is required.,
 device_user_id is required.,
-done,
+done,бажарилди
 e.g. ANJ — leave blank to auto-generate,масалан ANJ — автоматик учун бўш қолдиринг
 e.g. Chevrolet Cobalt 2024,масалан Chevrolet Cobalt 2024
 e.g. EMP-00042,
@@ -4172,7 +4172,7 @@ https://…,
 info,маълумот
 initial,дастлабки
 inst.,тўлов
-invoiced,
+invoiced,ҳисоб-фактура қилинди
 is locked from edits.,таҳрирлаш учун қулфланган.
 item,Товар
 item_code and warehouse are required,Товар коди ва омбор керак
@@ -4208,7 +4208,7 @@ overdue,кечикди
 pack_key is required,pack_key керак
 payload must be a JSON object.,
 payroll_period is required.,
-pending,
+pending,кутилмоқда
 planned,режалаштирилган
 present,келган
 pts vs last week,ўтган ҳафтага нисбатан
@@ -4287,5 +4287,5 @@ yr,йил
 Start Work Order & Transfer Materials,Иш буюртмасини бошлаш ва материалларни кўчириш
 Materials to Transfer,Кўчириладиган материаллар
 Start & Transfer,Бошлаш ва кўчириш
-Please ensure all items are selected and have a quantity greater than zero.,Илтимос, барча товарлар танланганлиги ва миқдори нолдан кўплигига ишонч ҳосил қилинг.
+Please ensure all items are selected and have a quantity greater than zero.,"Илтимос, барча товарлар танланганлиги ва миқдори нолдан кўплигига ишонч ҳосил қилинг."
 Source Stock,Манба қолдиғи
