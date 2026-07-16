@@ -4,6 +4,7 @@ from frappe import _
 from frappe.utils import flt, cint
 
 from stabler.api.imports import _assert_cost_visible, _latest_exchange_rate
+from stabler.api._common import _assert_can_read, _assert_can_write
 
 def _company_of(doctype: str, name: str) -> str:
 	return frappe.get_cached_value(doctype, name, "company")
@@ -27,7 +28,7 @@ def get_landed_cost_review(document_type: str, document_name: str, rate=None):
 		if not frappe.db.exists("Purchase Receipt", document_name):
 			frappe.throw(_("Unknown Purchase Receipt: {0}").format(document_name))
 		
-		frappe.has_permission("Purchase Receipt", "read", document_name)
+		_assert_can_read("Purchase Receipt", document_name)
 		_assert_cost_visible()
 
 		pr = frappe.get_doc("Purchase Receipt", document_name)
@@ -182,7 +183,7 @@ def toggle_cost_line_include(document_type: str, document_name: str, container: 
 		return imports_toggle(container, row_name, include)
 
 	elif document_type == "Purchase Receipt":
-		frappe.has_permission("Purchase Receipt", "write", document_name)
+		_assert_can_write("Purchase Receipt", document_name)
 		_assert_cost_visible()
 
 		pr = frappe.get_doc("Purchase Receipt", document_name)
@@ -211,7 +212,7 @@ def create_additional_lcv(document_type: str, document_name: str):
 		return imports_create(document_name)
 
 	elif document_type == "Purchase Receipt":
-		frappe.has_permission("Purchase Receipt", "write", document_name)
+		_assert_can_write("Purchase Receipt", document_name)
 		_assert_cost_visible()
 
 		review = get_landed_cost_review(document_type, document_name)

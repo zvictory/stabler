@@ -1,4 +1,5 @@
 import frappe
+from frappe import _
 from frappe.utils import flt, today, getdate, add_days
 from datetime import date, datetime
 from decimal import Decimal
@@ -6,6 +7,9 @@ import openpyxl
 import io
 import json
 import hashlib
+
+from stabler.api._common import _require_company
+from stabler.api.approvals import _assert_company_scope
 
 REF_PREFIX = "MSA-IMP-"
 
@@ -198,10 +202,13 @@ def _get_file_content(file_url=None):
 	if "file" in frappe.request.files:
 		return frappe.request.files["file"].stream.read()
 	if file_url:
+		file_name = frappe.db.get_value("File", {"file_url": file_url}, "name")
+		if not file_name or not frappe.has_permission("File", "read", file_name):
+			frappe.throw(_("Not permitted to access this file."), frappe.PermissionError)
 		from frappe.utils.file_manager import get_file
-		_, content = get_file(file_url)
+		_file_name, content = get_file(file_url)
 		return content
-	frappe.throw("No file uploaded or file URL provided.")
+	frappe.throw(_("No file uploaded or file URL provided."))
 
 @frappe.whitelist()
 def preview_payment_import(file_url=None):
@@ -266,8 +273,13 @@ def preview_payment_import(file_url=None):
 
 @frappe.whitelist()
 def execute_payment_import(file_url=None, company=None):
+	if not frappe.has_permission("Payment Entry", "create"):
+		frappe.throw(_("You are not permitted to import payments."), frappe.PermissionError)
+
 	if not company:
 		company = frappe.defaults.get_user_default("Company") or frappe.get_all("Company", pluck="name", limit=1)[0]
+	_require_company(company)
+	_assert_company_scope(company)
 
 	content = _get_file_content(file_url)
 	rows = parse_xlsx(content)
@@ -336,7 +348,7 @@ def execute_payment_import(file_url=None, company=None):
 					"allocated_amount": float(alloc["allocated"])
 				})
 
-			pe.insert(ignore_permissions=True)
+			pe.insert()
 			pe.submit()
 			created.append(pe.name)
 		except Exception as exc:

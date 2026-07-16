@@ -1,10 +1,14 @@
 import frappe
+from frappe import _
 from frappe.utils import flt, today, nowtime
 from datetime import date, datetime
 import openpyxl
 import io
 import json
 import hashlib
+
+from stabler.api._common import _require_company
+from stabler.api.approvals import _assert_company_scope
 
 ITEM_CODE_REMAP = {
 	"5": "005",
@@ -224,10 +228,13 @@ def _get_file_content(file_url=None):
 	if "file" in frappe.request.files:
 		return frappe.request.files["file"].stream.read()
 	if file_url:
+		file_name = frappe.db.get_value("File", {"file_url": file_url}, "name")
+		if not file_name or not frappe.has_permission("File", "read", file_name):
+			frappe.throw(_("Not permitted to access this file."), frappe.PermissionError)
 		from frappe.utils.file_manager import get_file
-		_, content = get_file(file_url)
+		_file_name, content = get_file(file_url)
 		return content
-	frappe.throw("No file uploaded or file URL provided.")
+	frappe.throw(_("No file uploaded or file URL provided."))
 
 @frappe.whitelist()
 def preview_sales_import(file_url=None, corrections=None):
@@ -303,8 +310,13 @@ def preview_sales_import(file_url=None, corrections=None):
 
 @frappe.whitelist()
 def execute_sales_import(file_url=None, corrections=None, selected_indices=None, company=None):
+	if not frappe.has_permission("Sales Invoice", "create"):
+		frappe.throw(_("You are not permitted to import sales invoices."), frappe.PermissionError)
+
 	if not company:
 		company = frappe.defaults.get_user_default("Company") or frappe.get_all("Company", pluck="name", limit=1)[0]
+	_require_company(company)
+	_assert_company_scope(company)
 
 	content = _get_file_content(file_url)
 	rows = read_excel(content)
@@ -352,7 +364,7 @@ def execute_sales_import(file_url=None, corrections=None, selected_indices=None,
 		try:
 			doc = frappe.new_doc("Sales Invoice")
 			doc.update(payload)
-			doc.insert(ignore_permissions=True)
+			doc.insert()
 			doc.submit()
 			created.append(doc.name)
 		except Exception as exc:
