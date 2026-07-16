@@ -55,19 +55,46 @@ def reconciles_gl(by_method: dict, gl_total_paid, eps: float = 0.5) -> bool:
 	return abs(total - _amt(gl_total_paid)) <= eps
 
 
-def open_commitment(ci_rows) -> float:
-	"""Σ agreed_total of Commercial Invoices still open (not delivered/cancelled)."""
+def _open_sum(ci_rows, field: str) -> float:
+	"""Σ of ``field`` over Commercial Invoices still open (not delivered/cancelled)."""
 	return sum(
-		_amt((r or {}).get("agreed_total"))
+		_amt((r or {}).get(field))
 		for r in (ci_rows or [])
 		if ((r or {}).get("status") or "") not in _TERMINAL_CI_STATUS
 	)
 
 
+def open_commitment(ci_rows) -> float:
+	"""Σ agreed_total of Commercial Invoices still open (not delivered/cancelled)."""
+	return _open_sum(ci_rows, "agreed_total")
+
+
+def earmark_reconciles(bank_agreed, cash_agreed, agreed_total, eps: float = 0.5) -> bool:
+	"""True when bank_agreed + cash_agreed equals agreed_total (earmark identity)."""
+	return abs((_amt(bank_agreed) + _amt(cash_agreed)) - _amt(agreed_total)) <= eps
+
+
+def _pct(paid, committed) -> float:
+	c = _amt(committed)
+	if c <= 0:
+		return 0.0
+	return round(100.0 * _amt(paid) / c, 1)
+
+
 def exposure_summary(ci_rows, payment_rows, gl_total_paid) -> dict:
-	"""Full supplier import-exposure summary for the Vendor Center."""
+	"""Full supplier import-exposure summary for the Vendor Center.
+
+	Adds the cash/bank EARMARK view when the Commercial Invoice rows carry
+	``custom_bank_agreed`` / ``custom_cash_agreed`` (WP-I3b): committed-per-method
+	over open CIs, remaining balance per method, and % paid. Everything is GL:
+	``cash_paid + bank_paid + other == GL total paid``.
+	"""
 	by_method = split_by_method(payment_rows)
 	total_paid = by_method["cash"] + by_method["bank"] + by_method["other"]
+
+	bank_committed = _open_sum(ci_rows, "custom_bank_agreed")
+	cash_committed = _open_sum(ci_rows, "custom_cash_agreed")
+
 	return {
 		"open_commitment": round(open_commitment(ci_rows), 2),
 		"cash_paid": round(by_method["cash"], 2),
@@ -75,4 +102,11 @@ def exposure_summary(ci_rows, payment_rows, gl_total_paid) -> dict:
 		"other_paid": round(by_method["other"], 2),
 		"total_paid": round(total_paid, 2),
 		"reconciles_gl": reconciles_gl(by_method, gl_total_paid),
+		# Cash/bank earmark (WP-I3b): committed vs paid, per method.
+		"bank_committed": round(bank_committed, 2),
+		"cash_committed": round(cash_committed, 2),
+		"bank_balance": round(bank_committed - by_method["bank"], 2),
+		"cash_balance": round(cash_committed - by_method["cash"], 2),
+		"bank_pct_paid": _pct(by_method["bank"], bank_committed),
+		"cash_pct_paid": _pct(by_method["cash"], cash_committed),
 	}

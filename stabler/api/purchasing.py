@@ -338,9 +338,17 @@ def supplier_import_exposure(supplier: str, company: str) -> dict:
 		return {"enabled": False}
 
 	# Open commitments — Commercial Invoices still in flight (not delivered).
+	# Cash/bank earmark columns are guarded so this works before v50 migrates.
+	_has_earmark = frappe.db.has_column("Commercial Invoice", "custom_bank_agreed")
+	earmark_sel = (
+		"custom_bank_agreed, custom_cash_agreed"
+		if _has_earmark
+		else "0 AS custom_bank_agreed, 0 AS custom_cash_agreed"
+	)
 	ci_rows = frappe.db.sql(
-		"""
-		SELECT ci_number, agreed_total, docs_total, currency, status
+		f"""
+		SELECT ci_number, agreed_total, docs_total, currency, status,
+		       {earmark_sel}
 		FROM `tabCommercial Invoice`
 		WHERE supplier = %(supplier)s AND company = %(company)s AND docstatus < 2
 		ORDER BY ci_date DESC

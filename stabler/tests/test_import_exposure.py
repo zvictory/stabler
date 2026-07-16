@@ -9,6 +9,7 @@ import unittest
 
 from stabler.api._import_exposure import (
 	classify_method,
+	earmark_reconciles,
 	exposure_summary,
 	open_commitment,
 	reconciles_gl,
@@ -81,6 +82,42 @@ class TestSummary(unittest.TestCase):
 	def test_reconcile_fails_on_mismatch(self):
 		s = exposure_summary([], [{"amount": 100, "account_type": "Cash"}], gl_total_paid=999)
 		self.assertFalse(s["reconciles_gl"])
+
+
+class TestEarmark(unittest.TestCase):
+	def test_earmark_reconciles(self):
+		# bank_agreed + cash_agreed == agreed_total
+		self.assertTrue(earmark_reconciles(7000, 3000, 10000))
+		self.assertTrue(earmark_reconciles(7000, 3000, 10000.4))  # within epsilon
+		self.assertFalse(earmark_reconciles(7000, 3000, 12000))
+
+	def test_summary_earmark_balances_and_pct(self):
+		ci = [
+			{
+				"agreed_total": 10000,
+				"status": "IN_TRANSIT",
+				"custom_bank_agreed": 7000,
+				"custom_cash_agreed": 3000,
+			}
+		]
+		pays = [
+			{"amount": 1500, "account_type": "Cash"},
+			{"amount": 4000, "account_type": "Bank"},
+		]
+		s = exposure_summary(ci, pays, gl_total_paid=5500)
+		self.assertEqual(s["bank_committed"], 7000.0)
+		self.assertEqual(s["cash_committed"], 3000.0)
+		self.assertEqual(s["bank_balance"], 3000.0)  # 7000 committed − 4000 paid
+		self.assertEqual(s["cash_balance"], 1500.0)  # 3000 committed − 1500 paid
+		self.assertEqual(s["bank_pct_paid"], round(100 * 4000 / 7000, 1))
+		self.assertEqual(s["cash_pct_paid"], 50.0)
+		self.assertTrue(s["reconciles_gl"])  # 1500 + 4000 == 5500
+
+	def test_summary_without_earmark_columns(self):
+		# Pre-v50 rows lack the earmark keys → committed 0, no crash.
+		s = exposure_summary([{"agreed_total": 5000, "status": "BOOKED"}], [], 0)
+		self.assertEqual(s["bank_committed"], 0.0)
+		self.assertEqual(s["cash_committed"], 0.0)
 
 
 if __name__ == "__main__":
