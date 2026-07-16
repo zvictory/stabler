@@ -328,15 +328,78 @@ async function selectSupplier(s) {
 
 	// Import exposure — separate, tenant-gated call. Silent no-op when the
 	// imports module is off (returns {enabled:false}) or on any error.
+	loadExposure(s.name);
+}
+
+// Load (or reload) the supplier's import position. Tenant-gated: a company with
+// the imports module off returns {enabled:false} and the panel stays hidden.
+async function loadExposure(supplierName) {
 	selectedExposure.value = null;
 	try {
 		const exp = await call("stabler.api.purchasing.supplier_import_exposure", {
-			supplier: s.name,
+			supplier: supplierName,
 			company: activeCompany.value,
 		});
 		if (exp && exp.enabled) selectedExposure.value = exp;
 	} catch {
 		selectedExposure.value = null;
+	}
+}
+
+// --- CI → Purchase Invoice conversion (WP-I6) ---------------------------------
+// A two-step, GL-safe flow: openConvert previews (dry_run=1, writes nothing);
+// confirmConvert creates the DRAFT Purchase Invoice (dry_run=0). Accounts posts
+// it to GL — we never submit here.
+const convertTarget = ref(null); // the CI commitment row being converted
+const convertPreview = ref(null); // dry-run result from the backend
+const convertBusy = ref(false);
+
+async function openConvert(ci) {
+	convertTarget.value = ci;
+	convertPreview.value = null;
+	convertBusy.value = true;
+	try {
+		convertPreview.value = await call(
+			"stabler.api.imports.convert_ci_to_purchase_invoice",
+			{ commercial_invoice: ci.name, company: activeCompany.value, dry_run: 1 },
+		);
+	} catch (err) {
+		toast.error(err?.message || t("Could not preview the conversion."));
+		convertTarget.value = null;
+	} finally {
+		convertBusy.value = false;
+	}
+}
+
+function closeConvert() {
+	convertTarget.value = null;
+	convertPreview.value = null;
+	convertBusy.value = false;
+}
+
+async function confirmConvert() {
+	if (!convertTarget.value || !convertPreview.value?.reconciles_agreed) return;
+	convertBusy.value = true;
+	try {
+		const res = await call("stabler.api.imports.convert_ci_to_purchase_invoice", {
+			commercial_invoice: convertTarget.value.name,
+			company: activeCompany.value,
+			dry_run: 0,
+		});
+		toast.success(
+			res?.already_linked
+				? t("This Commercial Invoice already has a Purchase Invoice.")
+				: t("Draft Purchase Invoice created: {0}").replace("{0}", res.purchase_invoice),
+		);
+		closeConvert();
+		if (selected.value) {
+			loadExposure(selected.value.name);
+			loadSuppOrders(selected.value);
+		}
+	} catch (err) {
+		toast.error(err?.message || t("Could not create the Purchase Invoice."));
+	} finally {
+		convertBusy.value = false;
 	}
 }
 
@@ -924,6 +987,55 @@ watch(activeCompany, () => {
 								</div>
 							</div>
 
+							<!-- Open import commitments (CIs not yet invoiced) — WP-I6 -->
+							<div
+								v-if="selectedExposure && selectedExposure.commitments && selectedExposure.commitments.length"
+								class="px-3 py-2 border-bottom"
+							>
+								<div class="d-flex align-items-center gap-2 mb-2">
+									<i class="ti ti-file-invoice text-secondary"></i>
+									<span class="small text-uppercase fw-semibold text-secondary">{{ t("Open commitments") }}</span>
+								</div>
+								<table class="table table-sm align-middle mb-0">
+									<thead>
+										<tr>
+											<th>{{ t("Commercial Invoice") }}</th>
+											<th>{{ t("Status") }}</th>
+											<th class="text-end">{{ t("Agreed total") }}</th>
+											<th class="text-end"></th>
+										</tr>
+									</thead>
+									<tbody>
+										<tr v-for="c in selectedExposure.commitments" :key="c.name">
+											<td>
+												<router-link
+													:to="{ name: 'imports-commercial-invoice', params: { name: c.name } }"
+													class="text-reset text-decoration-none fw-medium"
+												>
+													{{ c.ci_number || c.name }}
+												</router-link>
+											</td>
+											<td>
+												<span class="badge" :class="getStatusBadgeClass('Commercial Invoice', c.status)">{{ c.status }}</span>
+											</td>
+											<td class="text-end font-monospace stbl-amount">
+												{{ formatMoney(c.agreed_total || 0, c.currency || selected.account_currency || currency, user.language) }}
+											</td>
+											<td class="text-end">
+												<button
+													type="button"
+													class="btn btn-sm btn-outline-primary"
+													:disabled="convertBusy"
+													@click="openConvert(c)"
+												>
+													<i class="ti ti-file-import me-1"></i>{{ t("Convert to Invoice") }}
+												</button>
+											</td>
+										</tr>
+									</tbody>
+								</table>
+							</div>
+
 							<!-- Tabs Header -->
 							<div class="bg-white border-bottom">
 								<ul class="nav nav-tabs border-0 px-3">
@@ -1495,6 +1607,82 @@ watch(activeCompany, () => {
 		@close="partyPayOpen = false"
 		@paid="partyPayOpen = false; loadLedger(selected); loadSuppOrders(selected); loadSuppliers(); selectSupplier(selected);"
 	/>
+
+	<!-- CI → Purchase Invoice convert (WP-I6): preview (dry-run), then confirm -->
+	<template v-if="convertTarget">
+		<div class="modal-backdrop fade show" @click="closeConvert"></div>
+		<div class="modal fade show d-block" tabindex="-1" role="dialog">
+			<div class="modal-dialog modal-dialog-centered" role="document">
+				<div class="modal-content">
+					<div class="modal-header">
+						<h5 class="modal-title">{{ t("Convert to Purchase Invoice") }}</h5>
+						<button type="button" class="btn-close" :aria-label="t('Close')" @click="closeConvert"></button>
+					</div>
+					<div class="modal-body">
+						<div v-if="convertBusy && !convertPreview" class="text-center py-4 text-secondary">
+							<span class="spinner-border spinner-border-sm me-2"></span>{{ t("Previewing…") }}
+						</div>
+						<template v-else-if="convertPreview">
+							<div v-if="convertPreview.already_linked" class="alert alert-info mb-0">
+								{{ t("This Commercial Invoice already has a Purchase Invoice.") }}
+							</div>
+							<template v-else>
+								<div class="mb-3">
+									<div class="d-flex justify-content-between py-1">
+										<span class="text-secondary">{{ t("Commercial Invoice") }}</span>
+										<span class="fw-medium">{{ convertTarget.ci_number || convertTarget.name }}</span>
+									</div>
+									<div class="d-flex justify-content-between py-1">
+										<span class="text-secondary">{{ t("Agreed total") }}</span>
+										<span class="font-monospace">{{ formatMoney(convertPreview.agreed_total || 0, convertPreview.currency, user.language) }}</span>
+									</div>
+									<div class="d-flex justify-content-between py-1">
+										<span class="text-secondary">{{ t("Invoice lines total") }}</span>
+										<span class="font-monospace">{{ formatMoney(convertPreview.lines_total || 0, convertPreview.currency, user.language) }}</span>
+									</div>
+								</div>
+								<div v-if="!convertPreview.reconciles_agreed" class="alert alert-warning">
+									{{ convertPreview.warning || t("Invoice total does not match the agreed total.") }}
+								</div>
+								<div v-if="convertPreview.advance_plan && convertPreview.advance_plan.allocations.length" class="mb-2">
+									<div class="text-secondary small text-uppercase fw-semibold mb-1">{{ t("Advance allocation") }}</div>
+									<div
+										v-for="a in convertPreview.advance_plan.allocations"
+										:key="a.payment_entry"
+										class="d-flex justify-content-between small py-1"
+									>
+										<span class="font-monospace">{{ a.payment_entry }}</span>
+										<span class="font-monospace">{{ formatMoney(a.amount || 0, convertPreview.currency, user.language) }}</span>
+									</div>
+									<div class="d-flex justify-content-between py-1 border-top mt-1">
+										<span class="text-secondary">{{ t("Remaining after advances") }}</span>
+										<span class="font-monospace">{{ formatMoney(convertPreview.advance_plan.outstanding_after || 0, convertPreview.currency, user.language) }}</span>
+									</div>
+								</div>
+								<p class="text-secondary small mb-0">
+									{{ t("A draft Purchase Invoice is created for review — it is not posted to the ledger until Accounts submits it. The customs docs value is excluded.") }}
+								</p>
+							</template>
+						</template>
+					</div>
+					<div class="modal-footer">
+						<button type="button" class="btn btn-link link-secondary" :disabled="convertBusy" @click="closeConvert">
+							{{ t("Cancel") }}
+						</button>
+						<button
+							type="button"
+							class="btn btn-primary"
+							:disabled="convertBusy || !convertPreview || !convertPreview.reconciles_agreed || convertPreview.already_linked"
+							@click="confirmConvert"
+						>
+							<span v-if="convertBusy" class="spinner-border spinner-border-sm me-2"></span>
+							<i v-else class="ti ti-check me-1"></i>{{ t("Create draft invoice") }}
+						</button>
+					</div>
+				</div>
+			</div>
+		</div>
+	</template>
 </template>
 
 <style scoped>

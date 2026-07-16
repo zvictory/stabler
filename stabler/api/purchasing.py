@@ -389,6 +389,7 @@ def supplier_import_exposure(supplier: str, company: str) -> dict:
 		"summary": summary,
 		"commitments": [
 			{
+				"name": r.get("name"),
 				"ci_number": r.get("ci_number"),
 				"agreed_total": flt(r.get("agreed_total")),
 				"currency": r.get("currency"),
