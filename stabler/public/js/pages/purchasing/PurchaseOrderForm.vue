@@ -7,6 +7,7 @@ import { call } from "../../api/client.js";
 import { formatMoney } from "../../composables/money.js";
 import { formatDate, formatDateTime, todayIso} from "../../composables/date.js";
 import { t } from "../../composables/i18n.js";
+import { itemSearcher } from "../../composables/items.js";
 import DateInput from "../../components/DateInput.vue";
 import Typeahead from "../../components/Typeahead.vue";
 import Select from "../../components/Select.vue";
@@ -229,12 +230,7 @@ function clearSupplier() {
 	form.value.price_list = "";
 }
 
-function searchItems(q) {
-	return call("stabler.api.inventory.list_items", {
-		search: q,
-		limit: 30,
-	});
-}
+const searchItems = itemSearcher("purchase");
 
 // Line Item Editor pick handler
 async function handlePickItem({ line, item, index, field }) {

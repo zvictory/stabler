@@ -332,7 +332,7 @@ function onItemSearch(line) {
 	line.showOptions = true;
 	const timer = setTimeout(async () => {
 		try {
-			line.options = await call("stabler.api.inventory.list_items", { search: q, limit: 10 });
+			line.options = await call("stabler.api.inventory.list_items", { search: q, limit: 10, context: "stock" });
 		} catch {
 			line.options = [];
 		}

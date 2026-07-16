@@ -35,7 +35,7 @@ const whOptions = computed(() => [
 ]);
 
 async function searchItems(q) {
-	return call("stabler.api.inventory.list_items", { search: q, limit: 30, stock_only: 1 });
+	return call("stabler.api.inventory.list_items", { search: q, limit: 30, context: "stock" });
 }
 
 async function loadWarehouses() {

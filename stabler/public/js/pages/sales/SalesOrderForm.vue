@@ -7,6 +7,7 @@ import { call } from "../../api/client.js";
 import { formatMoney } from "../../composables/money.js";
 import { formatDate, formatDateTime, todayIso} from "../../composables/date.js";
 import { t } from "../../composables/i18n.js";
+import { itemSearcher } from "../../composables/items.js";
 import { getStatusBadgeClass } from "../../composables/status.js";
 import { useConfirm } from "../../composables/useConfirm.js";
 import DateInput from "../../components/DateInput.vue";
@@ -374,13 +375,7 @@ function clearCustomer() {
 	form.value.price_list = "";
 }
 
-function searchItems(q) {
-	return call("stabler.api.inventory.list_items", {
-		search: q,
-		warehouse: form.value.set_warehouse || undefined,
-		limit: 30,
-	});
-}
+const searchItems = itemSearcher("sales", { warehouse: () => form.value.set_warehouse });
 
 async function resolveRate(itemCode, fallback = 0, uom = undefined) {
 	if (!itemCode || !activeCompany.value) return { rate: Number(fallback || 0) };

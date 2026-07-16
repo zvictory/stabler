@@ -7,6 +7,7 @@ import { call } from "../../api/client.js";
 import { formatMoney } from "../../composables/money.js";
 import { formatDate, formatDateTime, todayIso} from "../../composables/date.js";
 import { t } from "../../composables/i18n.js";
+import { itemSearcher } from "../../composables/items.js";
 import DateInput from "../../components/DateInput.vue";
 import Typeahead from "../../components/Typeahead.vue";
 import RelatedDocuments from "../../components/RelatedDocuments.vue";
@@ -138,9 +139,7 @@ function clearCustomer() {
 	form.value.customer_name = "";
 }
 
-function searchItems(q) {
-	return call("stabler.api.inventory.list_items", { search: q, limit: 30 });
-}
+const searchItems = itemSearcher("sales");
 
 async function handlePickItem({ line, item, index, field }) {
 	if (field === "item") {

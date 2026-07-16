@@ -7,6 +7,7 @@ import { call } from "../../api/client.js";
 import { formatMoney } from "../../composables/money.js";
 import { formatDate, todayIso, daysAgoIso} from "../../composables/date.js";
 import { t } from "../../composables/i18n.js";
+import { itemSearcher } from "../../composables/items.js";
 import { useConfirm } from "../../composables/useConfirm.js";
 import { useToast } from "../../composables/useToast.js";
 import MoneyInput from "../../components/MoneyInput.vue";
@@ -272,9 +273,7 @@ function clearSupplier() {
 	form.value.currency = "";
 }
 
-function searchItems(q) {
-	return call("stabler.api.inventory.list_items", { search: q, limit: 10 });
-}
+const searchItems = itemSearcher("purchase");
 function pickItem(line, item) {
 	line.item_code = item.item_code || item.name;
 	line.item_name = item.item_name;

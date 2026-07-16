@@ -13,6 +13,18 @@ from stabler.api.approvals import _assert_company_scope
 from stabler.api._stock_recon import prepare_reconciliation
 
 
+# Central item-picker context → the is_*_item flag each caller must filter by.
+# One source of truth so a purchase/transfer/sales picker can never silently
+# apply the wrong flag again (that was the root cause of "item not found" in the
+# Purchase Invoice / Stock Transfer pickers). See composables/items.js.
+_ITEM_CONTEXT_FILTER = {
+	"sales": "is_sales_item = 1",
+	"purchase": "is_purchase_item = 1",
+	"stock": "is_stock_item = 1",
+	"all": "1 = 1",
+}
+
+
 @frappe.whitelist()
 def list_items(
 	search: str = "",
@@ -20,19 +32,31 @@ def list_items(
 	warehouse: str | None = None,
 	limit: int = 100,
 	stock_only: int = 0,
+	context: str | None = None,
 ):
 	"""Return items matching *search* (code or name), optionally scoped to a warehouse.
+
+	context — the picker's intent, one of ``sales`` / ``purchase`` / ``stock`` /
+	``all``. This is the sanctioned way to choose the item-type filter: a Purchase
+	picker passes ``purchase`` (is_purchase_item), a transfer/ledger passes
+	``stock`` (is_stock_item), a sales picker passes ``sales`` (is_sales_item), and
+	``all`` disables the type filter. When ``context`` is given it wins over the
+	legacy ``stock_only`` flag.
 
 	warehouse — when provided, only items that have a Bin row in that warehouse are
 	returned (i.e. items ever stocked there, regardless of current qty). This prevents
 	raw-material items from appearing in a finished-goods warehouse picker.
 
-	stock_only — when truthy, filters by is_stock_item = 1 instead of is_sales_item = 1.
-	Use for ledger / inventory context where raw-material and packaging items must be
-	selectable (e.g. Stock Ledger item picker). Existing callers that omit this param
-	keep the current is_sales_item behaviour unchanged.
+	stock_only — legacy flag (is_stock_item). Kept for back-compat; ``context``
+	supersedes it. Callers that omit both keep the historical is_sales_item default.
 	"""
-	conds = ["disabled = 0", "is_stock_item = 1" if stock_only else "is_sales_item = 1"]
+	if context:
+		item_filter = _ITEM_CONTEXT_FILTER.get(context, _ITEM_CONTEXT_FILTER["sales"])
+	elif stock_only:
+		item_filter = "is_stock_item = 1"
+	else:
+		item_filter = "is_sales_item = 1"
+	conds = ["disabled = 0", item_filter]
 	params: dict = {"limit": int(limit)}
 	if search:
 		conds.append("(item_name LIKE %(s)s OR item_code LIKE %(s)s)")

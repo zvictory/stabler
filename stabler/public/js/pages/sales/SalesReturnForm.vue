@@ -7,6 +7,7 @@ import { call } from "../../api/client.js";
 import { formatMoney } from "../../composables/money.js";
 import { formatDate, todayIso} from "../../composables/date.js";
 import { t } from "../../composables/i18n.js";
+import { itemSearcher } from "../../composables/items.js";
 import DateInput from "../../components/DateInput.vue";
 import Select from "../../components/Select.vue";
 import Typeahead from "../../components/Typeahead.vue";
@@ -129,13 +130,7 @@ function clearCustomer() {
 	form.value.price_list = "";
 }
 
-function searchItems(q) {
-	return call("stabler.api.inventory.list_items", {
-		search: q,
-		warehouse: form.value.warehouse || undefined,
-		limit: 30,
-	});
-}
+const searchItems = itemSearcher("sales", { warehouse: () => form.value.warehouse });
 
 function preferredSalesUom(meta) {
 	const preferred = meta.sales_uom || meta.default_uom || meta.stock_uom;
