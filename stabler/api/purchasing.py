@@ -341,17 +341,28 @@ def supplier_import_exposure(supplier: str, company: str) -> dict:
 	# Cash/bank earmark columns are guarded so this works before v50 migrates.
 	_has_earmark = frappe.db.has_column("Commercial Invoice", "custom_bank_agreed")
 	earmark_sel = (
-		"custom_bank_agreed, custom_cash_agreed"
+		"ci.custom_bank_agreed, ci.custom_cash_agreed"
 		if _has_earmark
 		else "0 AS custom_bank_agreed, 0 AS custom_cash_agreed"
 	)
+	# A CI drops out of virtual exposure once it has a linked Purchase Invoice
+	# (WP-I5): the agreed_total then lives on that PInv (draft = pending A/P,
+	# submitted = GL A/P), so counting it here too would double-count.
+	_has_pi_ref = frappe.db.has_column("Purchase Invoice", "custom_commercial_invoice")
+	converted_sel = (
+		"""EXISTS(SELECT 1 FROM `tabPurchase Invoice` pi
+		          WHERE pi.custom_commercial_invoice = ci.name
+		            AND pi.docstatus < 2) AS has_purchase_invoice"""
+		if _has_pi_ref
+		else "0 AS has_purchase_invoice"
+	)
 	ci_rows = frappe.db.sql(
 		f"""
-		SELECT ci_number, agreed_total, docs_total, currency, status,
-		       {earmark_sel}
-		FROM `tabCommercial Invoice`
-		WHERE supplier = %(supplier)s AND company = %(company)s AND docstatus < 2
-		ORDER BY ci_date DESC
+		SELECT ci.name, ci.ci_number, ci.agreed_total, ci.docs_total, ci.currency,
+		       ci.status, {earmark_sel}, {converted_sel}
+		FROM `tabCommercial Invoice` ci
+		WHERE ci.supplier = %(supplier)s AND ci.company = %(company)s AND ci.docstatus < 2
+		ORDER BY ci.ci_date DESC
 		LIMIT 200
 		""",
 		{"supplier": supplier, "company": company},
@@ -385,6 +396,7 @@ def supplier_import_exposure(supplier: str, company: str) -> dict:
 			}
 			for r in ci_rows
 			if (r.get("status") or "") not in ("DELIVERED_TO_UZBEKISTAN", "Cancelled")
+			and not r.get("has_purchase_invoice")
 		],
 	}
 

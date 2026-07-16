@@ -55,12 +55,28 @@ def reconciles_gl(by_method: dict, gl_total_paid, eps: float = 0.5) -> bool:
 	return abs(total - _amt(gl_total_paid)) <= eps
 
 
+def _ci_closed(row) -> bool:
+	"""A Commercial Invoice has left virtual import exposure when it is
+	delivered/cancelled OR has been converted to a Purchase Invoice (WP-I5).
+
+	Once a PInv exists (draft = pending A/P, submitted = GL A/P) the agreed_total
+	lives on that invoice, so counting it here too would double-count the same
+	money. ``has_purchase_invoice`` defaults False, so rows that predate the
+	conversion wiring behave exactly as before.
+	"""
+	r = row or {}
+	if (r.get("status") or "") in _TERMINAL_CI_STATUS:
+		return True
+	return bool(r.get("has_purchase_invoice"))
+
+
 def _open_sum(ci_rows, field: str) -> float:
-	"""Σ of ``field`` over Commercial Invoices still open (not delivered/cancelled)."""
+	"""Σ of ``field`` over Commercial Invoices still open (not delivered/cancelled
+	and not yet converted to a Purchase Invoice)."""
 	return sum(
 		_amt((r or {}).get(field))
 		for r in (ci_rows or [])
-		if ((r or {}).get("status") or "") not in _TERMINAL_CI_STATUS
+		if not _ci_closed(r)
 	)
 
 

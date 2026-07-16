@@ -24,6 +24,7 @@ import frappe
 from frappe import _
 from frappe.utils import add_days, cint, flt, getdate, today
 
+from stabler.api import _ci_to_pinv
 from stabler.api import _imports_rules as rules
 from stabler.api import _proforma
 from stabler.api._common import _assert_can_read, _require_company
@@ -3678,3 +3679,193 @@ def save_proforma(payload) -> dict:
 
     doc.save(ignore_permissions=False)
     return {"name": doc.name, "status": doc.status}
+
+
+# ---------------------------------------------------------------------------
+# WP-I5 — CI → Purchase Invoice conversion + advance allocation
+#
+# The seam where virtual import exposure (design doc §3 layer C) becomes real GL
+# A/P (layer A). A delivered Commercial Invoice opens a DRAFT Purchase Invoice at
+# agreed_total; the advance Payment Entries already paid to the supplier are
+# allocated against it (via ERPNext's own set_advances, restricted to this CI's
+# import advances). Once the PInv links the CI, supplier_import_exposure stops
+# counting the CI's agreed_total in open_commitment — so the same money never
+# appears in both exposure and A/P. docs_total (customs) never enters the PInv.
+# ---------------------------------------------------------------------------
+
+
+def _single_container_of(ci_name: str) -> str | None:
+    """The Import Container name when a CI maps to exactly one, else None."""
+    names = frappe.get_all(
+        "Import Container", filters={"commercial_invoice": ci_name}, pluck="name"
+    )
+    return names[0] if len(names) == 1 else None
+
+
+def _ci_import_advances(company: str, ci) -> list[dict]:
+    """Submitted advance Payment Entries for a CI, across its containers.
+
+    Only submitted PEs (docstatus=1) with an unallocated balance and matching
+    the CI's supplier can be allocated to the invoice. Deduped by PE name.
+    """
+    seen: dict[str, dict] = {}
+    containers = frappe.get_all(
+        "Import Container",
+        filters={"commercial_invoice": ci.name},
+        fields=["name", "advance_70_payment_entry"],
+    )
+    for c in containers:
+        for adv in _container_advances(company, c["name"], c.get("advance_70_payment_entry")):
+            if cint(adv.get("docstatus")) != 1:
+                continue
+            if flt(adv.get("unallocated_amount")) <= 0:
+                continue
+            if (adv.get("party") or "") != (ci.supplier or ""):
+                continue
+            seen[adv["name"]] = {
+                "name": adv["name"],
+                "unallocated_amount": flt(adv.get("unallocated_amount")),
+                "party": adv.get("party"),
+            }
+    return [seen[k] for k in sorted(seen)]
+
+
+def _restrict_advances_to_import(doc, import_pe_names: set) -> float:
+    """Populate the PInv's advances via ERPNext, then keep only this CI's import
+    advances. Returns the total allocated. Degrades safely: if set_advances
+    can't run, the draft simply carries no advances (Accounts adds them)."""
+    try:
+        doc.set_advances()
+    except Exception:
+        doc.set("advances", [])
+        return 0.0
+    kept = []
+    total = 0.0
+    for row in doc.get("advances") or []:
+        if row.reference_type == "Payment Entry" and row.reference_name in import_pe_names:
+            kept.append(row)
+            total += flt(row.allocated_amount)
+    doc.set("advances", kept)
+    return round(total, 2)
+
+
+@frappe.whitelist()
+def convert_ci_to_purchase_invoice(
+    commercial_invoice: str, company: str, dry_run: int = 1
+) -> dict:
+    """Convert a Commercial Invoice into a DRAFT Purchase Invoice at agreed_total.
+
+    ``dry_run`` (default 1): compute and return the plan — invoice lines, grand
+    total, agreed_total reconciliation, the import advances found and how they
+    would allocate — WITHOUT writing anything. ``dry_run=0`` creates the DRAFT
+    Purchase Invoice (NEVER submitted here: Accounts reviews and posts to GL, at
+    which point the CI leaves virtual exposure). ``docs_total`` (customs) is
+    reported for transparency but never enters the invoice.
+
+    Idempotent: if a non-cancelled Purchase Invoice already links this CI, it is
+    returned unchanged. Imports-gated + cost-visible (agreed/advance are K3).
+    """
+    _assert_imports_access(company)
+    _assert_cost_visible()
+    if not commercial_invoice or not frappe.db.exists("Commercial Invoice", commercial_invoice):
+        frappe.throw(_("Unknown Commercial Invoice: {0}").format(commercial_invoice))
+    ci = frappe.get_doc("Commercial Invoice", commercial_invoice)
+    if ci.company != company:
+        frappe.throw(_("Commercial Invoice belongs to a different company."))
+    if not ci.supplier:
+        frappe.throw(_("The Commercial Invoice has no supplier."))
+    if (ci.status or "") == "Cancelled":
+        frappe.throw(_("A cancelled Commercial Invoice cannot be invoiced."))
+
+    has_pi_ref = frappe.db.has_column("Purchase Invoice", "custom_commercial_invoice")
+    if has_pi_ref:
+        existing = frappe.db.get_value(
+            "Purchase Invoice",
+            {"custom_commercial_invoice": commercial_invoice, "docstatus": ["<", 2]},
+            "name",
+        )
+        if existing:
+            return {"purchase_invoice": existing, "created": False, "already_linked": True}
+
+    lines = _ci_to_pinv.pinv_lines_from_ci_items(
+        [
+            {"item": it.item, "qty": flt(it.qty), "rate": flt(it.rate), "amount": flt(it.amount)}
+            for it in (ci.items or [])
+        ]
+    )
+    total = _ci_to_pinv.lines_total(lines)
+    agreed = flt(ci.agreed_total)
+    reconciled = _ci_to_pinv.reconciles(total, agreed)
+
+    advances = _ci_import_advances(company, ci)
+    plan = _ci_to_pinv.plan_advance_allocation(agreed if reconciled else total, advances)
+
+    preview = {
+        "commercial_invoice": commercial_invoice,
+        "supplier": ci.supplier,
+        "currency": ci.currency,
+        "agreed_total": agreed,
+        "lines_total": total,
+        "reconciles_agreed": reconciled,
+        "lines": lines,
+        "advances_found": advances,
+        "advance_plan": plan,
+        "docs_total_excluded": flt(ci.docs_total),
+    }
+    if not reconciled:
+        preview["warning"] = _(
+            "CI line total {0} does not match agreed_total {1}; resolve before invoicing."
+        ).format(total, agreed)
+
+    if cint(dry_run):
+        preview["created"] = False
+        preview["dry_run"] = True
+        return preview
+
+    if not lines:
+        frappe.throw(_("The Commercial Invoice has no invoiceable item lines."))
+    if not reconciled:
+        frappe.throw(preview["warning"])
+
+    doc = frappe.new_doc("Purchase Invoice")
+    doc.company = company
+    doc.supplier = ci.supplier
+    if ci.currency:
+        doc.currency = ci.currency
+    doc.set_posting_time = 1
+    doc.posting_date = getdate(today())
+    if has_pi_ref:
+        doc.custom_commercial_invoice = commercial_invoice
+    container = _single_container_of(commercial_invoice)
+    if container and frappe.db.has_column("Purchase Invoice", "custom_import_container"):
+        doc.custom_import_container = container
+    for ln in lines:
+        doc.append(
+            "items",
+            {"item_code": ln["item_code"], "qty": ln["qty"] or 1, "rate": ln["rate"]},
+        )
+    doc.insert(ignore_permissions=False)
+
+    # Guard: the A/P we open MUST equal the agreed payable. If ERPNext's
+    # qty×rate recompute drifts beyond a kuruş, refuse — never post a silently
+    # wrong A/P (weak-currency truncation, multi-currency rules).
+    if not _ci_to_pinv.reconciles(flt(doc.grand_total), agreed):
+        frappe.db.rollback()
+        frappe.throw(
+            _("Purchase Invoice total {0} drifted from agreed_total {1}; not created.").format(
+                flt(doc.grand_total), agreed
+            )
+        )
+
+    allocated = _restrict_advances_to_import(doc, {a["name"] for a in advances})
+    doc.save(ignore_permissions=False)
+
+    return {
+        "purchase_invoice": doc.name,
+        "created": True,
+        "grand_total": flt(doc.grand_total),
+        "agreed_total": agreed,
+        "reconciles_agreed": True,
+        "advance_allocated": allocated,
+        "advances_found": [a["name"] for a in advances],
+    }
