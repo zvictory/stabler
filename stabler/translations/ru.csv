@@ -4340,3 +4340,8 @@ Total paid,Всего оплачено
 Advances at risk,Авансы под риском
 Age,Давность
 Repatriation horizon,Срок репатриации
+Bank due,К оплате (банк)
+Cash due,К оплате (нал.)
+Next {0} days,Следующие {0} дн.
+Payment calendar,Календарь платежей
+Unbilled landed costs,Незафактурированные расходы
