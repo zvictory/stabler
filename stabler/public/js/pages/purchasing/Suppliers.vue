@@ -960,6 +960,9 @@ watch(activeCompany, () => {
 											<div class="h4 mb-0 font-monospace stbl-amount text-body">
 												{{ formatMoney(selectedExposure.summary?.cash_paid || 0, selected.account_currency || currency, user.language) }}
 											</div>
+											<div v-if="selectedExposure.summary?.cash_committed" class="progress mt-2" style="height: 5px">
+												<div class="progress-bar bg-teal" :style="{ width: Math.min(selectedExposure.summary.cash_pct_paid || 0, 100) + '%' }"></div>
+											</div>
 											<div v-if="selectedExposure.summary?.cash_committed" class="small text-secondary mt-1">
 												{{ t("Balance") }}: {{ formatMoney(selectedExposure.summary.cash_balance || 0, selected.account_currency || currency, user.language) }}
 											</div>
@@ -970,6 +973,9 @@ watch(activeCompany, () => {
 											<div class="text-secondary small text-uppercase fw-semibold mb-1">{{ t("Bank paid") }} <span v-if="selectedExposure.summary?.bank_committed" class="text-secondary">· {{ selectedExposure.summary.bank_pct_paid }}%</span></div>
 											<div class="h4 mb-0 font-monospace stbl-amount text-body">
 												{{ formatMoney(selectedExposure.summary?.bank_paid || 0, selected.account_currency || currency, user.language) }}
+											</div>
+											<div v-if="selectedExposure.summary?.bank_committed" class="progress mt-2" style="height: 5px">
+												<div class="progress-bar bg-primary" :style="{ width: Math.min(selectedExposure.summary.bank_pct_paid || 0, 100) + '%' }"></div>
 											</div>
 											<div v-if="selectedExposure.summary?.bank_committed" class="small text-secondary mt-1">
 												{{ t("Balance") }}: {{ formatMoney(selectedExposure.summary.bank_balance || 0, selected.account_currency || currency, user.language) }}
