@@ -3779,6 +3779,16 @@ def convert_ci_to_purchase_invoice(
 
     has_pi_ref = frappe.db.has_column("Purchase Invoice", "custom_commercial_invoice")
     if has_pi_ref:
+        # WP-I9 — serialize concurrent converts. Two users clicking Confirm at
+        # the same moment would both pass the duplicate check below and create
+        # two draft invoices for one CI. Locking the CI row (SELECT … FOR
+        # UPDATE) makes the second transaction wait; when it proceeds it sees
+        # the first one's Purchase Invoice and returns it instead. Previews
+        # (dry_run) stay lock-free — they never write.
+        if not cint(dry_run):
+            frappe.db.get_value(
+                "Commercial Invoice", commercial_invoice, "name", for_update=True
+            )
         existing = frappe.db.get_value(
             "Purchase Invoice",
             {"custom_commercial_invoice": commercial_invoice, "docstatus": ["<", 2]},
