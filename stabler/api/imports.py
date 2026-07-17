@@ -26,6 +26,7 @@ from frappe.utils import add_days, cint, flt, getdate, today
 
 from stabler.api import _advance_aging
 from stabler.api import _ci_to_pinv
+from stabler.api import _fx_reval
 from stabler.api import _imports_rules as rules
 from stabler.api import _proforma
 from stabler.api._common import _assert_can_read, _require_company
@@ -3920,4 +3921,70 @@ def import_advance_aging(company: str) -> dict:
         "summary": _advance_aging.aging_summary(annotated),
         "warn_days": _advance_aging.WARN_DAYS,
         "breach_days": _advance_aging.BREACH_DAYS,
+    }
+
+
+@frappe.whitelist()
+def fx_revaluation_preview(company: str, closing_rate=None) -> dict:
+    """Period-end unrealized-FX preview on open foreign-currency payables (WP-I11).
+
+    IAS 21: only MONETARY items are retranslated — open Purchase Invoice
+    balances. Advances paid for goods are non-monetary (their rate froze on
+    payment day) and are deliberately absent from this query. Preview only:
+    nothing is posted; the accountant books the revaluation JE after review.
+    ``closing_rate`` (company currency per 1 foreign unit) may be passed; when
+    omitted, each currency's latest rate is resolved via ERPNext.
+    """
+    _assert_imports_access(company)
+    _assert_cost_visible()
+    company_ccy = frappe.get_cached_value("Company", company, "default_currency")
+    rows = frappe.db.sql(
+        """
+        SELECT pi.name, pi.supplier, s.supplier_name, pi.currency,
+               pi.outstanding_amount AS outstanding_foreign,
+               pi.conversion_rate AS booked_rate, pi.posting_date, pi.due_date
+        FROM `tabPurchase Invoice` pi
+        LEFT JOIN `tabSupplier` s ON s.name = pi.supplier
+        WHERE pi.company = %(company)s AND pi.docstatus = 1
+          AND pi.outstanding_amount > 0 AND pi.currency != %(ccy)s
+        ORDER BY pi.posting_date ASC
+        LIMIT 500
+        """,
+        {"company": company, "ccy": company_ccy},
+        as_dict=True,
+    )
+    rates: dict[str, float] = {}
+    override = flt(closing_rate) if closing_rate else 0.0
+    for r in rows:
+        ccy = r.get("currency")
+        if override:
+            rates[ccy] = override
+        elif ccy not in rates:
+            try:
+                from erpnext.setup.utils import get_exchange_rate
+
+                rates[ccy] = flt(get_exchange_rate(ccy, company_ccy))
+            except Exception:
+                rates[ccy] = 0.0
+        r["posting_date"] = str(r["posting_date"]) if r.get("posting_date") else None
+        r["due_date"] = str(r["due_date"]) if r.get("due_date") else None
+
+    annotated: list[dict] = []
+    for ccy, rate in rates.items():
+        bucket = [r for r in rows if r.get("currency") == ccy]
+        if rate <= 0:
+            for r in bucket:
+                r.update({"closing_rate": 0, "unrealized_loss": 0, "rate_missing": True})
+            annotated.extend(bucket)
+        else:
+            annotated.extend(_fx_reval.reval_rows(bucket, rate))
+
+    return {
+        "company_currency": company_ccy,
+        "closing_rates": rates,
+        "rows": annotated,
+        "summary": _fx_reval.reval_summary(
+            [r for r in annotated if not r.get("rate_missing")]
+        ),
+        "note": "Advances excluded (IAS 21 non-monetary); preview only — no GL posting.",
     }
