@@ -4345,3 +4345,40 @@ Cash due,К оплате (нал.)
 Next {0} days,Следующие {0} дн.
 Payment calendar,Календарь платежей
 Unbilled landed costs,Незафактурированные расходы
+Add a row or fill from a vendor category.,Добавьте строку или заполните из категории.
+Agreed price,Договорная цена
+Box weight (kg),Вес коробки (кг)
+Boxes per container,Коробок в контейнере
+Cash Difference,Разница (наличные)
+Category Name,Название категории
+Category or supplier,Категория или поставщик
+Computed from the items grid.,Рассчитано из строк товаров.
+Could not apply the category.,Не удалось применить категорию.
+Could not delete the vendor category.,Не удалось удалить категорию.
+Could not save the vendor category.,Не удалось сохранить категорию.
+Create your first vendor category.,Создайте первую категорию поставщика.
+Delete Vendor Category,Удалить категорию
+Delete category,Удалить категорию
+Display Name,Отображаемое имя
+Docs only,Только по docs
+Docs price,Docs цена
+Edit Vendor Category,Изменить категорию
+FCL,FCL
+Failed to load the category.,Не удалось загрузить категорию.
+Failed to load the proforma.,Не удалось загрузить проформу.
+Failed to load vendor categories.,Не удалось загрузить категории.
+Fill from category,Заполнить из категории
+Incoterm Location,Место (Incoterm)
+Items added from category,Товары добавлены из категории
+New Category,Новая категория
+New Vendor Category,Новая категория поставщика
+No items yet,Товаров пока нет
+No vendor categories yet,Категорий пока нет
+Port of Discharge,Порт выгрузки
+Port of Loading,Порт погрузки
+Prepayment,Предоплата
+Prepayment Base,База предоплаты
+Select a supplier first.,Сначала выберите поставщика.
+Vendor Categories,Категории поставщиков
+Vendor category deleted.,Категория удалена.
+Vendor category saved,Категория сохранена

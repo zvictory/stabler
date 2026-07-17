@@ -4324,3 +4324,40 @@ Cash due,Nakit ödeme
 Next {0} days,Sonraki {0} gün
 Payment calendar,Ödeme takvimi
 Unbilled landed costs,Faturalanmamış landed maliyetler
+Add a row or fill from a vendor category.,Satır ekleyin veya kategoriden doldurun.
+Agreed price,Anlaşılan fiyat
+Box weight (kg),Koli ağırlığı (kg)
+Boxes per container,Konteyner başına koli
+Cash Difference,Nakit farkı
+Category Name,Kategori adı
+Category or supplier,Kategori veya tedarikçi
+Computed from the items grid.,Kalem satırlarından hesaplanır.
+Could not apply the category.,Kategori uygulanamadı.
+Could not delete the vendor category.,Kategori silinemedi.
+Could not save the vendor category.,Kategori kaydedilemedi.
+Create your first vendor category.,İlk tedarikçi kategorinizi oluşturun.
+Delete Vendor Category,Kategoriyi sil
+Delete category,Kategoriyi sil
+Display Name,Görünen ad
+Docs only,Yalnız docs
+Docs price,Docs fiyatı
+Edit Vendor Category,Kategoriyi düzenle
+FCL,FCL
+Failed to load the category.,Kategori yüklenemedi.
+Failed to load the proforma.,Proforma yüklenemedi.
+Failed to load vendor categories.,Kategoriler yüklenemedi.
+Fill from category,Kategoriden doldur
+Incoterm Location,Incoterm yeri
+Items added from category,Kategoriden kalemler eklendi
+New Category,Yeni kategori
+New Vendor Category,Yeni tedarikçi kategorisi
+No items yet,Henüz kalem yok
+No vendor categories yet,Henüz kategori yok
+Port of Discharge,Boşaltma limanı
+Port of Loading,Yükleme limanı
+Prepayment,Ön ödeme
+Prepayment Base,Ön ödeme matrahı
+Select a supplier first.,Önce tedarikçi seçin.
+Vendor Categories,Tedarikçi kategorileri
+Vendor category deleted.,Kategori silindi.
+Vendor category saved,Kategori kaydedildi

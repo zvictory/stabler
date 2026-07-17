@@ -4339,3 +4339,40 @@ Cash due,Нақд тўлов
 Next {0} days,Кейинги {0} кун
 Payment calendar,Тўлов тақвими
 Unbilled landed costs,Фактураланмаган харажатлар
+Add a row or fill from a vendor category.,Қатор қўшинг ёки категориядан тўлдиринг.
+Agreed price,Келишилган нарх
+Box weight (kg),Қути оғирлиги (кг)
+Boxes per container,Контейнердаги қутилар
+Cash Difference,Нақд фарқи
+Category Name,Категория номи
+Category or supplier,Категория ёки етказиб берувчи
+Computed from the items grid.,Маҳсулот қаторларидан ҳисобланади.
+Could not apply the category.,Категорияни қўллаб бўлмади.
+Could not delete the vendor category.,Категорияни ўчириб бўлмади.
+Could not save the vendor category.,Категорияни сақлаб бўлмади.
+Create your first vendor category.,Биринчи категорияни яратинг.
+Delete Vendor Category,Категорияни ўчириш
+Delete category,Категорияни ўчириш
+Display Name,Кўрсатиладиган ном
+Docs only,Фақат docs бўйича
+Docs price,Docs нархи
+Edit Vendor Category,Категорияни таҳрирлаш
+FCL,FCL
+Failed to load the category.,Категорияни юклаб бўлмади.
+Failed to load the proforma.,Проформани юклаб бўлмади.
+Failed to load vendor categories.,Категорияларни юклаб бўлмади.
+Fill from category,Категориядан тўлдириш
+Incoterm Location,Incoterm жойи
+Items added from category,Категориядан маҳсулотлар қўшилди
+New Category,Янги категория
+New Vendor Category,Янги етказиб берувчи категорияси
+No items yet,Ҳозирча маҳсулотлар йўқ
+No vendor categories yet,Ҳозирча категориялар йўқ
+Port of Discharge,Тушириш порти
+Port of Loading,Юклаш порти
+Prepayment,Олдиндан тўлов
+Prepayment Base,Олдиндан тўлов асоси
+Select a supplier first.,Аввал етказиб берувчини танланг.
+Vendor Categories,Етказиб берувчи категориялари
+Vendor category deleted.,Категория ўчирилди.
+Vendor category saved,Категория сақланди
