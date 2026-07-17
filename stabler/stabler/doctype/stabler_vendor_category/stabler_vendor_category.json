@@ -9,6 +9,7 @@
   "vendor",
   "category_name",
   "display_name",
+  "description",
   "is_active",
   "items"
  ],
@@ -47,6 +48,11 @@
    "fieldtype": "Table",
    "label": "Items",
    "options": "Stabler Vendor Category Item"
+  },
+  {
+   "fieldname": "description",
+   "fieldtype": "Data",
+   "label": "Description"
   }
  ],
  "index_web_pages_for_search": 1,

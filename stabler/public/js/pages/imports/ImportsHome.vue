@@ -12,6 +12,7 @@ const tabs = [
 	{ name: "imports-dashboard", path: "/imports/dashboard", label: t("Dashboard"), icon: "ti-layout-dashboard" },
 	{ name: "imports-orders", path: "/imports/orders", label: t("Import Orders"), icon: "ti-clipboard-list" },
 	{ name: "imports-proformas", path: "/imports/proformas", label: t("Proforma Invoices"), icon: "ti-file-dollar" },
+	{ name: "imports-vendor-categories", path: "/imports/vendor-categories", label: t("Vendor Categories"), icon: "ti-category" },
 	{ name: "imports-commercial-invoices", path: "/imports/commercial-invoices", label: t("Commercial Invoices"), icon: "ti-file-invoice" },
 	{ name: "imports-containers", path: "/imports/containers", label: t("Containers"), icon: "ti-box" },
 	{ name: "imports-trucks", path: "/imports/trucks", label: t("Trucks"), icon: "ti-truck" },
