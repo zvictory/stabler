@@ -4394,3 +4394,34 @@ Unlink,Uzish
 Document not found,Hujjat topilmadi
 Could not read the document.,Hujjatni o'qib bo'lmadi.
 from GL,BK dan
+Kassa Bot,Kassa bot
+A kassir with this Telegram User ID already exists.,Bunday Telegram User ID ega kassir allaqachon mavjud.
+Add a Telegram cashier to give bot access to a cash/bank account.,Botga kassa/bank hisobiga kirish huquqini berish uchun Telegram kassir qo'shing.
+All companies,Barcha kompaniyalar
+Cashier created.,Kassir yaratildi.
+Cashier deleted.,Kassir o'chirildi.
+Cashier disabled.,Kassir o'chirib qo'yildi.
+Cashier enabled.,Kassir yoqildi.
+Cashier updated.,Kassir yangilandi.
+Cashiers,Kassirlar
+Delete cashier?,Kassir o'chirilsinmi?
+"Digits only, e.g. 48654899","Faqat raqamlar, masalan 48654899"
+Enabled (bot access),Yoqilgan (bot kirishi)
+Failed to delete cashier.,Kassirni o'chirib bo'lmadi.
+Failed to load cashier.,Kassirni yuklab bo'lmadi.
+Failed to load cashiers.,Kassirlarni yuklab bo'lmadi.
+Failed to save cashier.,Kassirni saqlab bo'lmadi.
+Kassir not found,Kassir topilmadi
+New cashier,Yangi kassir
+No cash/bank accounts found for this company.,Bu kompaniya uchun kassa/bank hisoblari topilmadi.
+No cashiers yet,Hozircha kassirlar yo'q
+Permitted cash/bank accounts,Ruxsat etilgan kassa/bank hisoblari
+Remove Telegram access for {0}? This cannot be undone.,{0} uchun Telegram kirishini olib tashlansinmi? Buni ortga qaytarib bo'lmaydi.
+Select a company to choose accounts.,Hisoblarni tanlash uchun kompaniyani tanlang.
+Select a company…,Kompaniyani tanlang…
+Select a user…,Foydalanuvchini tanlang…
+Telegram ID,Telegram ID
+Telegram ID cannot be changed after creation.,Telegram ID yaratilgandan so'ng o'zgartirib bo'lmaydi.
+Telegram ID or user…,Telegram ID yoki foydalanuvchi…
+Telegram User ID,Telegram User ID
+Telegram User ID is required.,Telegram User ID talab qilinadi.

@@ -4390,3 +4390,34 @@ Unlink,Unlink
 Document not found,Document not found
 Could not read the document.,Could not read the document.
 from GL,from GL
+Kassa Bot,Kassa Bot
+A kassir with this Telegram User ID already exists.,A kassir with this Telegram User ID already exists.
+Add a Telegram cashier to give bot access to a cash/bank account.,Add a Telegram cashier to give bot access to a cash/bank account.
+All companies,All companies
+Cashier created.,Cashier created.
+Cashier deleted.,Cashier deleted.
+Cashier disabled.,Cashier disabled.
+Cashier enabled.,Cashier enabled.
+Cashier updated.,Cashier updated.
+Cashiers,Cashiers
+Delete cashier?,Delete cashier?
+"Digits only, e.g. 48654899","Digits only, e.g. 48654899"
+Enabled (bot access),Enabled (bot access)
+Failed to delete cashier.,Failed to delete cashier.
+Failed to load cashier.,Failed to load cashier.
+Failed to load cashiers.,Failed to load cashiers.
+Failed to save cashier.,Failed to save cashier.
+Kassir not found,Kassir not found
+New cashier,New cashier
+No cash/bank accounts found for this company.,No cash/bank accounts found for this company.
+No cashiers yet,No cashiers yet
+Permitted cash/bank accounts,Permitted cash/bank accounts
+Remove Telegram access for {0}? This cannot be undone.,Remove Telegram access for {0}? This cannot be undone.
+Select a company to choose accounts.,Select a company to choose accounts.
+Select a company…,Select a company…
+Select a user…,Select a user…
+Telegram ID,Telegram ID
+Telegram ID cannot be changed after creation.,Telegram ID cannot be changed after creation.
+Telegram ID or user…,Telegram ID or user…
+Telegram User ID,Telegram User ID
+Telegram User ID is required.,Telegram User ID is required.

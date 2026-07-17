@@ -145,6 +145,7 @@ import AdminCompliance from "./pages/admin/Compliance.vue";
 import AdminAccessReview from "./pages/admin/AccessReview.vue";
 import AdminPostingWindow from "./pages/admin/PostingWindow.vue";
 import AdminRepostMonitor from "./pages/admin/RepostMonitor.vue";
+import AdminKassaBot from "./pages/admin/KassaBot.vue";
 import ImportsHome from "./pages/imports/ImportsHome.vue";
 import ImportsDashboard from "./pages/imports/ImportsDashboard.vue";
 import ImportOrders from "./pages/imports/ImportOrders.vue";
@@ -466,6 +467,7 @@ const routes = [
 			{ path: "compliance", name: "admin-compliance", component: AdminCompliance, meta: { title: t("Compliance") } },
 			{ path: "posting-window", name: "admin-posting-window", component: AdminPostingWindow, meta: { title: t("Posting Window") } },
 			{ path: "repost-queue", name: "admin-repost-queue", component: AdminRepostMonitor, meta: { title: t("Repost queue") } },
+			{ path: "kassa-bot", name: "admin-kassa-bot", component: AdminKassaBot, meta: { title: t("Kassa Bot") } },
 		],
 	},
 	{ path: "/error", name: "server-error", component: ServerError, meta: { title: t("Error") } },

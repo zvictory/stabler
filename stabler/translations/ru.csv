@@ -4400,3 +4400,34 @@ Unlink,Отвязать
 Document not found,Документ не найден
 Could not read the document.,Не удалось прочитать документ.
 from GL,из ГК
+Kassa Bot,Касса-бот
+A kassir with this Telegram User ID already exists.,Кассир с таким Telegram User ID уже существует.
+Add a Telegram cashier to give bot access to a cash/bank account.,"Добавьте Telegram-кассира, чтобы предоставить боту доступ к кассовому/банковскому счёту."
+All companies,Все компании
+Cashier created.,Кассир создан.
+Cashier deleted.,Кассир удалён.
+Cashier disabled.,Кассир отключён.
+Cashier enabled.,Кассир включён.
+Cashier updated.,Кассир обновлён.
+Cashiers,Кассиры
+Delete cashier?,Удалить кассира?
+"Digits only, e.g. 48654899","Только цифры, напр. 48654899"
+Enabled (bot access),Включён (доступ бота)
+Failed to delete cashier.,Не удалось удалить кассира.
+Failed to load cashier.,Не удалось загрузить кассира.
+Failed to load cashiers.,Не удалось загрузить кассиров.
+Failed to save cashier.,Не удалось сохранить кассира.
+Kassir not found,Кассир не найден
+New cashier,Новый кассир
+No cash/bank accounts found for this company.,Для этой компании не найдено кассовых/банковских счетов.
+No cashiers yet,Кассиров пока нет
+Permitted cash/bank accounts,Разрешённые кассовые/банковские счета
+Remove Telegram access for {0}? This cannot be undone.,Убрать доступ Telegram для {0}? Это действие необратимо.
+Select a company to choose accounts.,"Выберите компанию, чтобы выбрать счета."
+Select a company…,Выберите компанию…
+Select a user…,Выберите пользователя…
+Telegram ID,Telegram ID
+Telegram ID cannot be changed after creation.,Telegram ID нельзя изменить после создания.
+Telegram ID or user…,Telegram ID или пользователь…
+Telegram User ID,Telegram User ID
+Telegram User ID is required.,Требуется Telegram User ID.

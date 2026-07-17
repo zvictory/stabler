@@ -19,6 +19,7 @@ const tabs = computed(() => {
 		{ name: "admin-compliance", path: "/admin/compliance", label: "Compliance", icon: "ti-shield-check", show: on("compliance") },
 		{ name: "admin-posting-window", path: "/admin/posting-window", label: t("Posting Window"), icon: "ti-calendar-lock", show: true },
 		{ name: "admin-repost-queue", path: "/admin/repost-queue", label: t("Repost queue"), icon: "ti-refresh-alert", show: true },
+		{ name: "admin-kassa-bot", path: "/admin/kassa-bot", label: t("Kassa Bot"), icon: "ti-brand-telegram", show: true },
 	];
 	return list.filter((tab) => tab.show);
 });

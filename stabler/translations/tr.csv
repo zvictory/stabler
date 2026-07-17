@@ -4379,3 +4379,34 @@ Unlink,Bağı kaldır
 Document not found,Belge bulunamadı
 Could not read the document.,Belge okunamadı.
 from GL,defterden
+Kassa Bot,Kasa Bot
+A kassir with this Telegram User ID already exists.,Bu Telegram Kullanıcı ID'sine sahip bir kasiyer zaten mevcut.
+Add a Telegram cashier to give bot access to a cash/bank account.,Bota bir kasa/banka hesabına erişim vermek için bir Telegram kasiyeri ekleyin.
+All companies,Tüm şirketler
+Cashier created.,Kasiyer oluşturuldu.
+Cashier deleted.,Kasiyer silindi.
+Cashier disabled.,Kasiyer devre dışı bırakıldı.
+Cashier enabled.,Kasiyer etkinleştirildi.
+Cashier updated.,Kasiyer güncellendi.
+Cashiers,Kasiyerler
+Delete cashier?,Kasiyer silinsin mi?
+"Digits only, e.g. 48654899","Yalnızca rakamlar, örn. 48654899"
+Enabled (bot access),Etkin (bot erişimi)
+Failed to delete cashier.,Kasiyer silinemedi.
+Failed to load cashier.,Kasiyer yüklenemedi.
+Failed to load cashiers.,Kasiyerler yüklenemedi.
+Failed to save cashier.,Kasiyer kaydedilemedi.
+Kassir not found,Kasiyer bulunamadı
+New cashier,Yeni kasiyer
+No cash/bank accounts found for this company.,Bu şirket için kasa/banka hesabı bulunamadı.
+No cashiers yet,Henüz kasiyer yok
+Permitted cash/bank accounts,İzin verilen kasa/banka hesapları
+Remove Telegram access for {0}? This cannot be undone.,{0} için Telegram erişimi kaldırılsın mı? Bu geri alınamaz.
+Select a company to choose accounts.,Hesapları seçmek için bir şirket seçin.
+Select a company…,Bir şirket seçin…
+Select a user…,Bir kullanıcı seçin…
+Telegram ID,Telegram ID
+Telegram ID cannot be changed after creation.,Telegram ID oluşturulduktan sonra değiştirilemez.
+Telegram ID or user…,Telegram ID veya kullanıcı…
+Telegram User ID,Telegram Kullanıcı ID
+Telegram User ID is required.,Telegram Kullanıcı ID gereklidir.
