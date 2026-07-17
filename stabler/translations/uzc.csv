@@ -4387,3 +4387,10 @@ Look up rates,Ставкаларни топиш
 from HS table,ТН ВЭД жадвалидан
 not in HS table — enter manually,ТН ВЭД жадвалида йўқ — қўлда киритинг
 Excise,Акциз
+Link a GL document for the actual,Факт учун БК ҳужжатини боғлаш
+Pull actual from GL,Фактни БК дан олиш
+Doc #,Ҳужжат №
+Unlink,Узиш
+Document not found,Ҳужжат топилмади
+Could not read the document.,Ҳужжатни ўқиб бўлмади.
+from GL,БК дан

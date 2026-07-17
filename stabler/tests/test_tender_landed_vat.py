@@ -76,6 +76,26 @@ class TestTenderLandedVat(unittest.TestCase):
 		self.assertIn("excise", body)
 		self.assertIn("+ duty + excise", body)
 
+	def test_actual_from_voucher_gated_and_scoped(self):
+		body = _func_body(self.src, "landed_actual_from_voucher")
+		self.assertIn("_require_tender", body)
+		self.assertIn("_assert_company_scope", body)
+		# Company must match + read permission enforced (the real boundary).
+		self.assertIn('get_value(vt, vn, "company") != company', body)
+		self.assertIn('frappe.has_permission(vt, "read"', body)
+		# Only the three ledger doctypes; base-currency amounts.
+		self.assertIn("_ACTUAL_VOUCHER_TYPES", body)
+		self.assertIn("base_grand_total", body)
+		self.assertIn("base_paid_amount", body)
+		self.assertIn("total_debit", body)
+		# Not-found path returns found=False so the UI keeps manual entry.
+		self.assertIn('"found": False', body)
+
+	def test_actual_voucher_fields_round_trip(self):
+		body = _func_body(self.src, "_parse_landed")
+		self.assertIn("actual_voucher_type", body)
+		self.assertIn("actual_voucher", body)
+
 	def test_landed_split_sums_amount_not_a_recomputed_total(self):
 		# The planned/actual landed roll-up must use the stored `amount` (which the
 		# frontend already computed as duty-only when recoverable) — NOT re-derive

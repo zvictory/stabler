@@ -121,6 +121,8 @@ const editorCharges = computed(() => editorLines.value.reduce((a, l) => a + (Num
 const editorLanded = computed(() => (Number(editorBase.value) || 0) + editorCharges.value);
 const editorActual = computed(() => editorLines.value.reduce((a, l) => a + (Number(l.actual) || 0), 0));
 const editorActualLanded = computed(() => (Number(editorBase.value) || 0) + editorActual.value);
+// WP-T5: how many actual lines are sourced from the ledger vs hand-typed.
+const editorActualLinked = computed(() => editorLines.value.filter((l) => l.actual_voucher).length);
 // WP-T1: recoverable import VAT that sits OUTSIDE landed cost — shown so the
 // user sees the input-tax asset that is deliberately not capitalized.
 const editorRecoverableVat = computed(() =>
@@ -145,6 +147,7 @@ async function openEditor(card) {
 			tnved: c.tnved || "", supplier: c.supplier || "", supplier_name: c.supplier_name || "",
 			cif: c.cif || null, duty_pct: c.duty_pct || null, vat_pct: c.vat_pct || 12, excise_pct: c.excise_pct || 0,
 			vat_recoverable: c.vat_recoverable !== false, rate_source: "",
+			actual_voucher_type: c.actual_voucher_type || "", actual_voucher: c.actual_voucher || "", actual_label: c.actual_voucher ? c.actual_voucher : "",
 		}));
 	} catch (err) {
 		toast.error(err?.message || t("Could not load landed charges."));
@@ -153,7 +156,7 @@ async function openEditor(card) {
 	}
 }
 function addLine() {
-	editorLines.value.push({ type: "transport", label: "", amount: null, actual: null, tnved: "", supplier: "", supplier_name: "", cif: null, duty_pct: null, vat_pct: 12, excise_pct: 0, vat_recoverable: true, rate_source: "" });
+	editorLines.value.push({ type: "transport", label: "", amount: null, actual: null, tnved: "", supplier: "", supplier_name: "", cif: null, duty_pct: null, vat_pct: 12, excise_pct: 0, vat_recoverable: true, rate_source: "", actual_voucher_type: "", actual_voucher: "", actual_label: "" });
 }
 function removeLine(i) {
 	editorLines.value.splice(i, 1);
@@ -183,6 +186,26 @@ function applyCustoms(l) {
 // WP-T2: pull duty/excise/VAT from the real HS Duty Rate engine when a ТН ВЭД
 // code is entered, instead of typing percentages by hand. Falls back silently
 // to manual entry when the code is not in the rate table.
+// WP-T5: pull the actual from a real GL voucher (PInv/PE/JE) instead of typing.
+async function pullActual(l) {
+	const vt = l.actual_voucher_type, vn = (l.actual_voucher || "").trim();
+	if (!vt || !vn) { l.actual_label = ""; return; }
+	try {
+		const r = await call("stabler.api.tender.landed_actual_from_voucher", { voucher_type: vt, voucher: vn, company: activeCompany.value });
+		if (r?.found) {
+			l.actual = Number(r.amount) || 0;
+			l.actual_voucher = r.voucher;
+			l.actual_label = r.label || r.voucher;
+		} else {
+			l.actual_label = t("Document not found");
+		}
+	} catch (e) {
+		l.actual_label = e?.message || t("Could not read the document.");
+	}
+}
+function unlinkActual(l) {
+	l.actual_voucher_type = ""; l.actual_voucher = ""; l.actual_label = "";
+}
 async function lookupHsRate(l) {
 	const code = (l.tnved || "").trim();
 	l.rate_source = "";
@@ -217,6 +240,7 @@ async function saveEditor() {
 				tnved: (l.tnved || "").trim(), supplier: l.supplier || "", supplier_name: l.supplier_name || "",
 				cif: Number(l.cif) || 0, duty_pct: Number(l.duty_pct) || 0, vat_pct: Number(l.vat_pct) || 0, excise_pct: Number(l.excise_pct) || 0,
 				vat_recoverable: l.vat_recoverable !== false,
+				actual_voucher_type: l.actual_voucher_type || "", actual_voucher: l.actual_voucher || "",
 			}));
 		await call("stabler.api.tender.save_po_landed_charges", { po: editorPo.value, charges: JSON.stringify(clean) });
 		toast.success(t("Landed plan saved."));
@@ -449,7 +473,29 @@ watch(() => route.query.deal, (d) => { if (d && d !== deal.value) { deal.value =
 										<MoneyInput v-model="l.amount" :currency="ccy" :language="user.language" size="sm" />
 									</td>
 									<td>
-										<MoneyInput v-model="l.actual" :currency="ccy" :language="user.language" size="sm" />
+										<!-- WP-T5: actual from a linked GL voucher (read-only) or hand-typed -->
+										<template v-if="l.actual_voucher">
+											<div class="font-monospace small text-end">{{ formatMoney(l.actual, ccy, user.language) }}</div>
+											<div class="d-flex align-items-center justify-content-end gap-1 small text-green" :title="l.actual_label">
+												<i class="ti ti-file-check"></i>
+												<span class="text-truncate" style="max-width:90px">{{ l.actual_voucher }}</span>
+												<button type="button" class="btn btn-ghost-secondary btn-icon btn-sm" :title="t('Unlink')" @click="unlinkActual(l)"><i class="ti ti-x"></i></button>
+											</div>
+										</template>
+										<template v-else>
+											<MoneyInput v-model="l.actual" :currency="ccy" :language="user.language" size="sm" />
+											<div class="input-group input-group-sm mt-1">
+												<select v-model="l.actual_voucher_type" class="form-select" style="max-width:64px" :title="t('Link a GL document for the actual')">
+													<option value="">—</option>
+													<option value="Purchase Invoice">PInv</option>
+													<option value="Payment Entry">PE</option>
+													<option value="Journal Entry">JE</option>
+												</select>
+												<input v-model="l.actual_voucher" type="text" class="form-control font-monospace" :placeholder="t('Doc #')" :disabled="!l.actual_voucher_type" @keyup.enter="pullActual(l)">
+												<button type="button" class="btn btn-outline-secondary" :disabled="!l.actual_voucher_type || !l.actual_voucher" :title="t('Pull actual from GL')" @click="pullActual(l)"><i class="ti ti-download"></i></button>
+											</div>
+											<div v-if="l.actual_label" class="small text-orange">{{ l.actual_label }}</div>
+										</template>
 									</td>
 									<td class="text-center">
 										<button type="button" class="btn btn-ghost-danger btn-icon btn-sm" :title="t('Remove')" @click="removeLine(i)">
@@ -521,6 +567,7 @@ watch(() => route.query.deal, (d) => { if (d && d !== deal.value) { deal.value =
 								</div>
 								<div class="col-6">
 									<div class="d-flex justify-content-between small text-secondary"><span>{{ t("Actual") }} {{ t("Charges").toLowerCase() }}</span><span class="font-monospace">+{{ formatMoney(editorActual, ccy, user.language) }}</span></div>
+									<div v-if="editorActualLinked" class="d-flex justify-content-between small text-green"><span><i class="ti ti-file-check"></i> {{ editorActualLinked }} {{ t("from GL") }}</span><span></span></div>
 									<div class="d-flex justify-content-between fw-bold"><span>{{ t("Actual landed") }}</span>
 										<span class="font-monospace" :class="editorActual && editorActualLanded > editorLanded ? 'text-red' : (editorActual ? 'text-green' : '')">{{ formatMoney(editorActualLanded, ccy, user.language) }}</span>
 									</div>

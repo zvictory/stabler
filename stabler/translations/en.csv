@@ -4383,3 +4383,10 @@ Look up rates,Look up rates
 from HS table,from HS table
 not in HS table — enter manually,not in HS table — enter manually
 Excise,Excise
+Link a GL document for the actual,Link a GL document for the actual
+Pull actual from GL,Pull actual from GL
+Doc #,Doc #
+Unlink,Unlink
+Document not found,Document not found
+Could not read the document.,Could not read the document.
+from GL,from GL

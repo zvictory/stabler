@@ -4372,3 +4372,10 @@ Look up rates,Oranları getir
 from HS table,HS tablosundan
 not in HS table — enter manually,HS tablosunda yok — elle girin
 Excise,ÖTV
+Link a GL document for the actual,Gerçekleşen için defter belgesi bağla
+Pull actual from GL,Gerçekleşeni defterden çek
+Doc #,Belge №
+Unlink,Bağı kaldır
+Document not found,Belge bulunamadı
+Could not read the document.,Belge okunamadı.
+from GL,defterden

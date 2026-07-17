@@ -4387,3 +4387,10 @@ Look up rates,Stavkalarni topish
 from HS table,ТН ВЭД jadvalidan
 not in HS table — enter manually,ТН ВЭД jadvalida yo'q — qo'lda kiriting
 Excise,Aktsiz
+Link a GL document for the actual,Fakt uchun BK hujjatini bog'lash
+Pull actual from GL,Faktni BK dan olish
+Doc #,Hujjat №
+Unlink,Uzish
+Document not found,Hujjat topilmadi
+Could not read the document.,Hujjatni o'qib bo'lmadi.
+from GL,BK dan

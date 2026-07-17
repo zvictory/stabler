@@ -4393,3 +4393,10 @@ Look up rates,Найти ставки
 from HS table,из таблицы ТН ВЭД
 not in HS table — enter manually,нет в таблице ТН ВЭД — введите вручную
 Excise,Акциз
+Link a GL document for the actual,Привязать документ ГК к факту
+Pull actual from GL,Взять факт из ГК
+Doc #,Документ №
+Unlink,Отвязать
+Document not found,Документ не найден
+Could not read the document.,Не удалось прочитать документ.
+from GL,из ГК

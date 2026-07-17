@@ -246,8 +246,56 @@ def _parse_landed(raw) -> list[dict]:
 			# scenario where VAT becomes a real cost. Legacy lines with no flag keep
 			# their stored amount until re-saved.
 			"vat_recoverable": bool(it.get("vat_recoverable", True)),
+			# WP-T5: the `actual` may be sourced from a real GL voucher (PInv/PE/JE)
+			# instead of hand-typed. When linked, the amount is pulled read-only from
+			# the document's base total so plan-vs-actual reflects the ledger.
+			"actual_voucher_type": str(it.get("actual_voucher_type") or "").strip()[:40],
+			"actual_voucher": str(it.get("actual_voucher") or "").strip()[:140],
 		})
 	return out
+
+
+_ACTUAL_VOUCHER_TYPES = ("Purchase Invoice", "Payment Entry", "Journal Entry")
+
+
+@frappe.whitelist()
+def landed_actual_from_voucher(voucher_type: str, voucher: str, company: str) -> dict:
+	"""Pull a landed-charge actual from a real GL document (WP-T5).
+
+	Replaces hand-typed actuals with the ledger truth: the base-currency total of
+	a Purchase Invoice / Payment Entry / Journal Entry the user links to a landed
+	line. Read-only, tender-gated + company-scoped, and the underlying Frappe read
+	permission still applies (the real boundary). Returns {found, amount, label,
+	docstatus, currency} — found=False leaves the caller on manual entry."""
+	_require_company(company)
+	_require_tender(company)
+	_assert_company_scope(company)
+	vt = (voucher_type or "").strip()
+	vn = (voucher or "").strip()
+	if vt not in _ACTUAL_VOUCHER_TYPES or not vn or not frappe.db.exists(vt, vn):
+		return {"found": False, "amount": 0.0, "label": "", "docstatus": None}
+	if frappe.db.get_value(vt, vn, "company") != company:
+		frappe.throw(_("Document belongs to another company."), frappe.PermissionError)
+	if not frappe.has_permission(vt, "read", doc=vn):
+		frappe.throw(_("Not permitted"), frappe.PermissionError)
+	# Base-currency amount + a human label per doctype.
+	if vt == "Purchase Invoice":
+		amount = flt(frappe.db.get_value(vt, vn, "base_grand_total"))
+		label = frappe.db.get_value(vt, vn, "supplier_name") or vn
+	elif vt == "Payment Entry":
+		amount = flt(frappe.db.get_value(vt, vn, "base_paid_amount"))
+		label = frappe.db.get_value(vt, vn, "party_name") or frappe.db.get_value(vt, vn, "party") or vn
+	else:  # Journal Entry
+		amount = flt(frappe.db.get_value(vt, vn, "total_debit"))
+		label = frappe.db.get_value(vt, vn, "user_remark") or vn
+	return {
+		"found": True,
+		"voucher_type": vt,
+		"voucher": vn,
+		"amount": round(amount, 2),
+		"label": str(label)[:140],
+		"docstatus": frappe.db.get_value(vt, vn, "docstatus"),
+	}
 
 
 def _po_scope(po: str, write: bool = False):
