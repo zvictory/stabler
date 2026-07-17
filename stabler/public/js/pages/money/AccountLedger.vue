@@ -331,6 +331,7 @@ watch(() => route.params.account, fetchLedger);
 							</th>
 							<th>{{ t("Voucher") }}</th>
 							<th>{{ t("Against") }}</th>
+							<th>{{ t("Remarks") }}</th>
 							<th class="text-end">{{ t("Debit") }}</th>
 							<th class="text-end">{{ t("Credit") }}</th>
 							<th class="text-end">{{ t("Balance") }}</th>
@@ -374,6 +375,13 @@ watch(() => route.params.account, fetchLedger);
 									{{ e.against }}
 								</div>
 								<span v-else class="text-secondary">—</span>
+							</td>
+							<td
+								class="small text-secondary text-truncate"
+								style="max-width: 240px"
+								:title="e.remarks"
+							>
+								{{ e.remarks || "—" }}
 							</td>
 							<td class="text-end font-monospace">
 								<span v-if="Number(e.debit_in_account_currency) > 0">
