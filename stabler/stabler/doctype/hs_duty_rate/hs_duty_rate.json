@@ -1,0 +1,32 @@
+{
+ "actions": [],
+ "autoname": "format:HSR-{#####}",
+ "creation": "2026-07-17 12:00:00.000000",
+ "doctype": "DocType",
+ "engine": "InnoDB",
+ "field_order": ["hs_code", "description", "duty_pct", "excise_pct", "vat_pct", "effective_from"],
+ "fields": [
+  {"fieldname": "hs_code", "fieldtype": "Data", "in_list_view": 1, "in_standard_filter": 1, "label": "HS Code (TN VED)", "reqd": 1},
+  {"fieldname": "description", "fieldtype": "Data", "in_list_view": 1, "label": "Description"},
+  {"fieldname": "duty_pct", "fieldtype": "Percent", "in_list_view": 1, "label": "Import Duty %", "reqd": 1},
+  {"fieldname": "excise_pct", "fieldtype": "Percent", "label": "Excise %", "default": "0"},
+  {"fieldname": "vat_pct", "fieldtype": "Percent", "label": "Import VAT %", "default": "12"},
+  {"fieldname": "effective_from", "fieldtype": "Date", "in_list_view": 1, "label": "Effective From", "reqd": 1}
+ ],
+ "index_web_pages_for_search": 0,
+ "links": [],
+ "modified": "2026-07-17 12:00:00.000000",
+ "modified_by": "Administrator",
+ "module": "Stabler",
+ "name": "HS Duty Rate",
+ "owner": "Administrator",
+ "permissions": [
+  {"create": 1, "delete": 1, "email": 1, "print": 1, "read": 1, "role": "System Manager", "share": 1, "write": 1},
+  {"create": 1, "read": 1, "role": "Imports Manager", "write": 1},
+  {"read": 1, "role": "Imports User"}
+ ],
+ "sort_field": "modified",
+ "sort_order": "DESC",
+ "states": [],
+ "track_changes": 1
+}

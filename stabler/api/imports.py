@@ -26,6 +26,7 @@ from frappe.utils import add_days, cint, flt, getdate, today
 
 from stabler.api import _advance_aging
 from stabler.api import _ci_to_pinv
+from stabler.api import _customs_estimate
 from stabler.api import _fx_reval
 from stabler.api import _imports_rules as rules
 from stabler.api import _proforma
@@ -3988,3 +3989,54 @@ def fx_revaluation_preview(company: str, closing_rate=None) -> dict:
         ),
         "note": "Advances excluded (IAS 21 non-monetary); preview only — no GL posting.",
     }
+
+
+@frappe.whitelist()
+def customs_cost_estimate(commercial_invoice: str) -> dict:
+    """Pre-declaration boj/excise/VAT estimate from the HS Duty Rate table (WP-I13).
+
+    Planning number only — once the GTD clears, its figures are authoritative
+    (the LCV already prefers GTD amounts). Customs value = declared (bank) goods
+    value scaled onto items + the transport bank leg when earmarked. Unrated HS
+    codes are reported so the rate table can be completed.
+    """
+    if not commercial_invoice or not frappe.db.exists("Commercial Invoice", commercial_invoice):
+        frappe.throw(_("Unknown Commercial Invoice: {0}").format(commercial_invoice))
+    company = _company_of("Commercial Invoice", commercial_invoice)
+    _assert_imports_access(company)
+    _assert_cost_visible()
+    ci = frappe.get_doc("Commercial Invoice", commercial_invoice)
+
+    declared = flt(ci.docs_total) or flt(ci.get("custom_bank_agreed"))
+    items = _customs_estimate.scale_to_declared(
+        [{"item": it.item, "hs_code": it.hs_code, "amount": flt(it.amount)} for it in (ci.items or [])],
+        declared,
+    )
+
+    rates: dict[str, dict] = {}
+    if frappe.db.exists("DocType", "HS Duty Rate"):
+        for r in frappe.get_all(
+            "HS Duty Rate",
+            filters={"effective_from": ["<=", today()]},
+            fields=["hs_code", "duty_pct", "excise_pct", "vat_pct", "effective_from"],
+            order_by="effective_from asc",
+        ):
+            rates[(r.hs_code or "").strip()] = r  # later effective_from wins
+
+    vat_pct = 12.0
+    for r in rates.values():
+        if flt(r.get("vat_pct")):
+            vat_pct = flt(r.get("vat_pct"))
+            break
+
+    est = _customs_estimate.estimate(items, rates, transport_bank=0, default_vat_pct=vat_pct)
+    est.update(
+        {
+            "commercial_invoice": commercial_invoice,
+            "declared_total": flt(declared),
+            "declared_source": "docs_total" if flt(ci.docs_total) else "custom_bank_agreed",
+            "authoritative": False,
+            "note": _("Estimate from the HS rate table; the cleared GTD remains authoritative."),
+        }
+    )
+    return est
