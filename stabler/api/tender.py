@@ -234,9 +234,10 @@ def _parse_landed(raw) -> list[dict]:
 			"tnved": str(it.get("tnved") or "").strip()[:40],
 			"supplier": str(it.get("supplier") or "").strip()[:140],
 			"supplier_name": str(it.get("supplier_name") or "").strip()[:140],
-			# Customs calculator inputs (ГТД): customs value (CIF) + duty% + VAT%.
+			# Customs calculator inputs (ГТД): customs value (CIF) + duty% + excise% + VAT%.
 			"cif": flt(it.get("cif")),
 			"duty_pct": flt(it.get("duty_pct")),
+			"excise_pct": flt(it.get("excise_pct")),
 			"vat_pct": flt(it.get("vat_pct")),
 			# WP-T1: for a VAT-registered company (Mikas) import VAT is RECOVERABLE
 			# input tax — it must NOT be capitalized into landed cost (IAS 2 §11;
@@ -265,6 +266,43 @@ def _po_scope(po: str, write: bool = False):
 
 
 @frappe.whitelist()
+def hs_rate_lookup(hs_code: str, company: str) -> dict:
+	"""Look up the customs duty/excise/VAT rates for a ТН ВЭД (HS) code so the
+	PO landed-charge editor can auto-fill them from the real rate engine (WP-T2)
+	instead of the user typing percentages by hand. Same HS Duty Rate table the
+	imports customs estimate uses; the latest effective_from row wins.
+
+	Returns {found, hs_code, duty_pct, excise_pct, vat_pct, effective_from} —
+	found=False (rest zero) when the code is not in the table, so the caller
+	falls back to manual entry. Read-only; gated on the tender module + company
+	scope like every other board endpoint."""
+	_require_company(company)
+	_require_tender(company)
+	_assert_company_scope(company)
+	code = (hs_code or "").strip()
+	if not code or not frappe.db.exists("DocType", "HS Duty Rate"):
+		return {"found": False, "hs_code": code, "duty_pct": 0.0, "excise_pct": 0.0, "vat_pct": 0.0}
+	rows = frappe.get_all(
+		"HS Duty Rate",
+		filters={"hs_code": code, "effective_from": ["<=", today()]},
+		fields=["duty_pct", "excise_pct", "vat_pct", "effective_from"],
+		order_by="effective_from desc",
+		limit_page_length=1,
+	)
+	if not rows:
+		return {"found": False, "hs_code": code, "duty_pct": 0.0, "excise_pct": 0.0, "vat_pct": 0.0}
+	r = rows[0]
+	return {
+		"found": True,
+		"hs_code": code,
+		"duty_pct": flt(r.duty_pct),
+		"excise_pct": flt(r.excise_pct),
+		"vat_pct": flt(r.vat_pct) or 12.0,
+		"effective_from": str(r.effective_from) if r.effective_from else None,
+	}
+
+
+@frappe.whitelist()
 def po_landed_charges(po: str) -> dict:
 	"""Read the planned landed-cost lines for one Purchase Order, with the base
 	amount and the resulting landed total (all in company currency)."""
@@ -283,7 +321,8 @@ def po_landed_charges(po: str) -> dict:
 	for c in charges:
 		if c["type"] == "customs" and c.get("vat_recoverable") and flt(c.get("cif")):
 			duty = flt(c["cif"]) * flt(c["duty_pct"]) / 100.0
-			recoverable_vat += (flt(c["cif"]) + duty) * flt(c["vat_pct"]) / 100.0
+			excise = flt(c["cif"]) * flt(c.get("excise_pct")) / 100.0
+			recoverable_vat += (flt(c["cif"]) + duty + excise) * flt(c["vat_pct"]) / 100.0
 	return {
 		"po": po,
 		"currency": base_ccy,

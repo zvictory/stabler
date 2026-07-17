@@ -143,8 +143,8 @@ async function openEditor(card) {
 		editorLines.value = (r?.charges || []).map((c) => ({
 			type: c.type || "other", label: c.label || "", amount: c.amount || 0, actual: c.actual || null,
 			tnved: c.tnved || "", supplier: c.supplier || "", supplier_name: c.supplier_name || "",
-			cif: c.cif || null, duty_pct: c.duty_pct || null, vat_pct: c.vat_pct || 12,
-			vat_recoverable: c.vat_recoverable !== false,
+			cif: c.cif || null, duty_pct: c.duty_pct || null, vat_pct: c.vat_pct || 12, excise_pct: c.excise_pct || 0,
+			vat_recoverable: c.vat_recoverable !== false, rate_source: "",
 		}));
 	} catch (err) {
 		toast.error(err?.message || t("Could not load landed charges."));
@@ -153,7 +153,7 @@ async function openEditor(card) {
 	}
 }
 function addLine() {
-	editorLines.value.push({ type: "transport", label: "", amount: null, actual: null, tnved: "", supplier: "", supplier_name: "", cif: null, duty_pct: null, vat_pct: 12, vat_recoverable: true });
+	editorLines.value.push({ type: "transport", label: "", amount: null, actual: null, tnved: "", supplier: "", supplier_name: "", cif: null, duty_pct: null, vat_pct: 12, excise_pct: 0, vat_recoverable: true, rate_source: "" });
 }
 function removeLine(i) {
 	editorLines.value.splice(i, 1);
@@ -167,15 +167,40 @@ function pickSupplier(line, s) {
 // NOT capitalized — only duty (and any non-recoverable VAT) lands. `capitalized`
 // is what feeds landed cost; `vat` is tracked separately as a recoverable asset.
 function customsCalc(l) {
-	const cif = Number(l.cif) || 0, d = Number(l.duty_pct) || 0, v = Number(l.vat_pct) || 0;
+	const cif = Number(l.cif) || 0, d = Number(l.duty_pct) || 0, v = Number(l.vat_pct) || 0, ex = Number(l.excise_pct) || 0;
 	const duty = cif * d / 100;
-	const vat = (cif + duty) * v / 100;
+	const excise = cif * ex / 100;
+	// VAT base = customs value + duty + excise (same as the imports engine).
+	const vat = (cif + duty + excise) * v / 100;
 	const recoverable = l.vat_recoverable !== false;
-	const capitalized = duty + (recoverable ? 0 : vat);
-	return { duty, vat, recoverable, capitalized, total: duty + vat };
+	// Duty and excise always capitalize; VAT only when non-recoverable.
+	const capitalized = duty + excise + (recoverable ? 0 : vat);
+	return { duty, excise, vat, recoverable, capitalized, total: duty + excise + vat };
 }
 function applyCustoms(l) {
 	l.amount = Math.round(customsCalc(l).capitalized);
+}
+// WP-T2: pull duty/excise/VAT from the real HS Duty Rate engine when a ТН ВЭД
+// code is entered, instead of typing percentages by hand. Falls back silently
+// to manual entry when the code is not in the rate table.
+async function lookupHsRate(l) {
+	const code = (l.tnved || "").trim();
+	l.rate_source = "";
+	if (l.type !== "customs" || !code) return;
+	try {
+		const r = await call("stabler.api.tender.hs_rate_lookup", { hs_code: code, company: activeCompany.value });
+		if (r?.found) {
+			l.duty_pct = Number(r.duty_pct) || 0;
+			l.vat_pct = Number(r.vat_pct) || 12;
+			if (Number(r.excise_pct)) l.excise_pct = Number(r.excise_pct);
+			l.rate_source = r.effective_from ? t("from HS table") + " · " + r.effective_from : t("from HS table");
+			applyCustoms(l);
+		} else {
+			l.rate_source = t("not in HS table — enter manually");
+		}
+	} catch (e) {
+		l.rate_source = "";
+	}
 }
 const fmc = (v) => formatMoney(v, ccy.value, user.value.language);
 function closeEditor() {
@@ -190,7 +215,7 @@ async function saveEditor() {
 			.map((l) => ({
 				type: l.type || "other", label: (l.label || "").trim(), amount: Number(l.amount), actual: Number(l.actual) || 0,
 				tnved: (l.tnved || "").trim(), supplier: l.supplier || "", supplier_name: l.supplier_name || "",
-				cif: Number(l.cif) || 0, duty_pct: Number(l.duty_pct) || 0, vat_pct: Number(l.vat_pct) || 0,
+				cif: Number(l.cif) || 0, duty_pct: Number(l.duty_pct) || 0, vat_pct: Number(l.vat_pct) || 0, excise_pct: Number(l.excise_pct) || 0,
 				vat_recoverable: l.vat_recoverable !== false,
 			}));
 		await call("stabler.api.tender.save_po_landed_charges", { po: editorPo.value, charges: JSON.stringify(clean) });
@@ -405,7 +430,7 @@ watch(() => route.query.deal, (d) => { if (d && d !== deal.value) { deal.value =
 											</select>
 										</div>
 									</td>
-									<td><input v-model="l.tnved" type="text" class="form-control form-control-sm font-monospace" placeholder="—"></td>
+									<td><input v-model="l.tnved" type="text" class="form-control form-control-sm font-monospace" placeholder="—" @change="l.type === 'customs' && lookupHsRate(l)"></td>
 									<td>
 										<Typeahead
 											:model-value="l.supplier"
@@ -441,6 +466,13 @@ watch(() => route.query.deal, (d) => { if (d && d !== deal.value) { deal.value =
 												<label class="form-label small mb-1">{{ t("Customs value (CIF)") }}</label>
 												<MoneyInput :model-value="l.cif" :currency="ccy" :language="user.language" size="sm" @update:model-value="(v) => { l.cif = v; applyCustoms(l); }" />
 											</div>
+											<div style="width:110px">
+												<label class="form-label small mb-1">{{ t("HS code (ТН ВЭД)") }}</label>
+												<div class="input-group input-group-sm">
+													<input v-model="l.tnved" type="text" class="form-control form-control-sm font-monospace" placeholder="—" @change="lookupHsRate(l)">
+													<button type="button" class="btn btn-outline-secondary" :title="t('Look up rates')" @click="lookupHsRate(l)"><i class="ti ti-search"></i></button>
+												</div>
+											</div>
 											<div style="width:90px">
 												<label class="form-label small mb-1">{{ t("Duty") }} %</label>
 												<input v-model.number="l.duty_pct" type="number" step="0.1" class="form-control form-control-sm" @input="applyCustoms(l)">
@@ -454,6 +486,9 @@ watch(() => route.query.deal, (d) => { if (d && d !== deal.value) { deal.value =
 													<input class="form-check-input" type="checkbox" :checked="l.vat_recoverable !== false" @change="(e) => { l.vat_recoverable = e.target.checked; applyCustoms(l); }">
 													<span class="form-check-label">{{ t("VAT recoverable (registered)") }}</span>
 												</label>
+											</div>
+											<div v-if="l.rate_source" class="small w-100" :class="l.rate_source.includes('—') ? 'text-orange' : 'text-green'">
+												<i class="ti ti-database"></i> {{ l.rate_source }}<template v-if="Number(l.excise_pct)"> · {{ t("Excise") }} {{ l.excise_pct }}%</template>
 											</div>
 											<div class="small text-secondary">
 												{{ t("Duty") }} {{ fmc(customsCalc(l).duty) }}

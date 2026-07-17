@@ -4389,3 +4389,7 @@ VAT recoverable (registered),НДС возмещается (плательщик
 VAT recoverable,НДС к возмещению
 recoverable,возмещается
 Recoverable input VAT — not part of landed cost,Возмещаемый входной НДС — не входит в себестоимость
+Look up rates,Найти ставки
+from HS table,из таблицы ТН ВЭД
+not in HS table — enter manually,нет в таблице ТН ВЭД — введите вручную
+Excise,Акциз

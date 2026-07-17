@@ -4383,3 +4383,7 @@ VAT recoverable (registered),QQS qaytariladi (to'lovchi)
 VAT recoverable,QQS qaytariladi
 recoverable,qaytariladi
 Recoverable input VAT — not part of landed cost,Qaytariladigan kirim QQS — tannarxga kirmaydi
+Look up rates,Stavkalarni topish
+from HS table,ТН ВЭД jadvalidan
+not in HS table — enter manually,ТН ВЭД jadvalida yo'q — qo'lda kiriting
+Excise,Aktsiz

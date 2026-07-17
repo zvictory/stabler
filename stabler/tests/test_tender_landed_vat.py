@@ -59,6 +59,23 @@ class TestTenderLandedVat(unittest.TestCase):
 			"recoverable_vat must be gated on the vat_recoverable flag",
 		)
 
+	def test_hs_rate_lookup_gated_and_effective_dated(self):
+		body = _func_body(self.src, "hs_rate_lookup")
+		# Gated like every board endpoint.
+		self.assertIn("_require_tender", body)
+		self.assertIn("_assert_company_scope", body)
+		# Latest effective row wins; only rows in force today.
+		self.assertIn('"effective_from": ["<=", today()]', body)
+		self.assertIn('order_by="effective_from desc"', body)
+		# Not-found path returns found=False so the UI keeps manual entry.
+		self.assertIn('"found": False', body)
+
+	def test_recoverable_vat_base_includes_excise(self):
+		# VAT base = customs value + duty + excise (imports-engine parity).
+		body = _func_body(self.src, "po_landed_charges")
+		self.assertIn("excise", body)
+		self.assertIn("+ duty + excise", body)
+
 	def test_landed_split_sums_amount_not_a_recomputed_total(self):
 		# The planned/actual landed roll-up must use the stored `amount` (which the
 		# frontend already computed as duty-only when recoverable) — NOT re-derive

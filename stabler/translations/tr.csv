@@ -4368,3 +4368,7 @@ VAT recoverable (registered),KDV indirilebilir (mükellef)
 VAT recoverable,KDV indirilebilir
 recoverable,indirilebilir
 Recoverable input VAT — not part of landed cost,İndirilebilir yüklenilen KDV — landed maliyete girmez
+Look up rates,Oranları getir
+from HS table,HS tablosundan
+not in HS table — enter manually,HS tablosunda yok — elle girin
+Excise,ÖTV
