@@ -786,5 +786,23 @@ class TestStatementRemarkTruncation(unittest.TestCase):
 		self.assertEqual(_direction_emoji(0, 100), "⬇")
 
 
+class TestTypedEcho(unittest.TestCase):
+	"""WP-K8: confirm screen echoes the RAW typed amount ('Yozganingiz: …')
+	only when it differs from the plain formatted number, so a word/shorthand
+	misparse is visible before Tasdiqlash."""
+
+	def test_word_amount_echoed(self):
+		from stabler.integrations.kassa._flow import _typed_echo
+		self.assertEqual(_typed_echo("400ming", 400000, "UZS"), "Yozganingiz: 400ming")
+		self.assertEqual(_typed_echo("besh yuz ming", 500000, "UZS"), "Yozganingiz: besh yuz ming")
+
+	def test_plain_digits_not_echoed(self):
+		from stabler.integrations.kassa._flow import _typed_echo
+		self.assertIsNone(_typed_echo("400 000", 400000, "UZS"))
+		self.assertIsNone(_typed_echo("400000", 400000, "UZS"))
+		self.assertIsNone(_typed_echo("", 400000, "UZS"))
+		self.assertIsNone(_typed_echo(None, 400000, "UZS"))
+
+
 if __name__ == "__main__":
 	unittest.main()

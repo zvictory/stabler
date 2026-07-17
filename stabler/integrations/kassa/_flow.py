@@ -579,6 +579,22 @@ def _try_quick_transfer(state: dict, text: str, ctx: dict):
 # --------------------------------------------------------------------------- #
 # Confirm-text builders
 # --------------------------------------------------------------------------- #
+def _typed_echo(raw, amount, currency) -> str | None:
+	"""'Yozganingiz: <raw>' line — shown only when the kassir typed something
+	other than the plain formatted number (word/shorthand like "400ming",
+	"besh yuz ming"), so a misparse is visible right before Tasdiqlash. Returns
+	None when the raw text already equals the formatted amount (no noise)."""
+	raw = (raw or "").strip()
+	if not raw:
+		return None
+	# Normalize both to digits-only; if identical, the raw adds nothing.
+	digits_raw = "".join(ch for ch in raw if ch.isdigit())
+	digits_fmt = "".join(ch for ch in format_amount(amount, currency) if ch.isdigit())
+	if digits_raw and digits_raw == digits_fmt:
+		return None
+	return f"Yozganingiz: {raw}"
+
+
 def _kirim_confirm_text(state: dict) -> str:
 	leaf = state["sub_kassa"]
 	src = state["src"]
@@ -587,6 +603,11 @@ def _kirim_confirm_text(state: dict) -> str:
 		f"Kassa: {leaf['label']} ({leaf['currency']})",
 		f"Manba: {src['label']}",
 		f"Summa: {format_amount(state['amount'], leaf['currency'])}",
+	]
+	_te = _typed_echo(state.get("amount_raw"), state["amount"], leaf["currency"])
+	if _te:
+		lines.append(_te)
+	lines += [
 		f"Izoh: {state.get('memo') or '-'}",
 		f"Sana: {_fmt_date_human(state.get('posting_date'))}",
 		"",
@@ -611,6 +632,9 @@ def _chiqim_confirm_text(state: dict, ctx: dict) -> str:
 	if deal_label:
 		lines.append(f"Tender: {deal_label}")
 	lines.append(f"Summa: {format_amount(state['amount'], leaf['currency'])}")
+	_te = _typed_echo(state.get("amount_raw"), state["amount"], leaf["currency"])
+	if _te:
+		lines.append(_te)
 	lines.append(f"Izoh: {state.get('memo') or '-'}")
 	lines.append(f"Sana: {_fmt_date_human(state.get('posting_date'))}")
 	lines.append("")
@@ -627,6 +651,14 @@ def _konv_confirm_text(state: dict) -> str:
 		f"Berdingiz: {format_amount(given, src['currency'])} ({src['label']})",
 		f"Oldingiz: {format_amount(received, tgt['currency'])} ({tgt['label']})",
 		f"Kurs: 1 {src['currency']} = {format_amount(rate, tgt['currency'])}",
+	]
+	_tg = _typed_echo(state.get("given_raw"), given, src["currency"])
+	if _tg:
+		lines.append(f"Berdingiz — {_tg.lower()}")
+	_tr = _typed_echo(state.get("received_raw"), received, tgt["currency"])
+	if _tr:
+		lines.append(f"Oldingiz — {_tr.lower()}")
+	lines += [
 		f"Izoh: {state.get('memo') or '-'}",
 		f"Sana: {_fmt_date_human(state.get('posting_date'))}",
 		"",
@@ -642,6 +674,11 @@ def _k2k_confirm_text(state: dict) -> str:
 		f"Manba: {src['label']}",
 		f"Manzil: {tgt['label']}",
 		f"Summa: {format_amount(state['amount'], src['currency'])}",
+	]
+	_te = _typed_echo(state.get("amount_raw"), state["amount"], src["currency"])
+	if _te:
+		lines.append(_te)
+	lines += [
 		f"Izoh: {state.get('memo') or '-'}",
 		f"Sana: {_fmt_date_human(state.get('posting_date'))}",
 		"",
@@ -724,7 +761,7 @@ def _handle_kirim_amount(state: dict, text: str, ctx: dict):
 	if amt is None:
 		return ("Noto'g'ri summa. Qayta kiriting:", None, state, None)
 	leaf = state["sub_kassa"]
-	new_state = {**state, "step": STEP_KIRIM_MEMO, "amount": amt}
+	new_state = {**state, "step": STEP_KIRIM_MEMO, "amount": amt, "amount_raw": text.strip()}
 	reply = f"{_echo_amount(amt, leaf['currency'])}\n\nIzoh (yoki '-' o'tkazib yuborish uchun):"
 	return (reply, None, new_state, None)
 
@@ -833,7 +870,7 @@ def _handle_chiqim_amount(state: dict, text: str, ctx: dict):
 	if amt is None:
 		return ("Noto'g'ri summa. Qayta kiriting:", None, state, None)
 	leaf = state["sub_kassa"]
-	new_state = {**state, "step": STEP_CHIQIM_MEMO, "amount": amt}
+	new_state = {**state, "step": STEP_CHIQIM_MEMO, "amount": amt, "amount_raw": text.strip()}
 	reply = f"{_echo_amount(amt, leaf['currency'])}\n\nIzoh (majburiy):"
 	return (reply, _izoh_keyboard(ctx), new_state, None)
 
@@ -903,7 +940,7 @@ def _handle_konv_given(state: dict, text: str, ctx: dict):
 	if rate and pair_ok:
 		computed = amt * rate if src["currency"] == "USD" else (amt / rate if rate else None)
 		if computed and computed > 0:
-			new_state = {**state, "step": STEP_KONV_CBU_CHOICE, "given": amt, "_cbu_computed": computed}
+			new_state = {**state, "step": STEP_KONV_CBU_CHOICE, "given": amt, "given_raw": text.strip(), "_cbu_computed": computed}
 			accept_label = _konv_cbu_accept_label(computed, tgt["currency"])
 			keyboard = [[accept_label], [BTN_KONV_MANUAL]]
 			reply = (
@@ -911,7 +948,7 @@ def _handle_konv_given(state: dict, text: str, ctx: dict):
 				"Qabul qilingan summani tanlang:"
 			)
 			return (reply, keyboard, new_state, None)
-	new_state = {**state, "step": STEP_KONV_RECEIVED, "given": amt}
+	new_state = {**state, "step": STEP_KONV_RECEIVED, "given": amt, "given_raw": text.strip()}
 	reply = f"{echo}\n\nQancha oldingiz? ({tgt['currency']})"
 	return (reply, None, new_state, None)
 
@@ -938,7 +975,7 @@ def _handle_konv_received(state: dict, text: str, ctx: dict):
 	if amt is None:
 		return ("Noto'g'ri summa. Qayta kiriting:", None, state, None)
 	tgt = state["tgt"]
-	new_state = {**state, "step": STEP_KONV_MEMO, "received": amt}
+	new_state = {**state, "step": STEP_KONV_MEMO, "received": amt, "received_raw": text.strip()}
 	reply = f"{_echo_amount(amt, tgt['currency'])}\n\nIzoh (majburiy):"
 	return (reply, _izoh_keyboard(ctx), new_state, None)
 
@@ -992,7 +1029,7 @@ def _handle_k2k_amount(state: dict, text: str, ctx: dict):
 	if amt is None:
 		return ("Noto'g'ri summa. Qayta kiriting:", None, state, None)
 	src = state["src"]
-	new_state = {**state, "step": STEP_K2K_MEMO, "amount": amt}
+	new_state = {**state, "step": STEP_K2K_MEMO, "amount": amt, "amount_raw": text.strip()}
 	reply = f"{_echo_amount(amt, src['currency'])}\n\nIzoh (majburiy):"
 	return (reply, _izoh_keyboard(ctx), new_state, None)
 
