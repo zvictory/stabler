@@ -114,7 +114,7 @@
     <tr><td>Nihai UZS landed karşılaştırma + kazanan</td><td><span class="tag ex">VAR</span></td><td>landed_total sıralaması, cheapest bayrağı, landed_delta_pct</td></tr>
     <tr><td>Plan Bid P&amp;L (marj/fiyat, KDV, vergiler, Остаток)</td><td><span class="tag ex">VAR</span></td><td>_compute_bid_pnl: margin geri-çözümü, KDV %12, kâr vergisi %15, temettü %5</td></tr>
     <tr><td>Actual P&amp;L (plan-vs-actual)</td><td><span class="tag pa">KISMEN</span></td><td>_actual_block var; ama "actual" masraflar <b>elle yazılıyor</b> — GL/fatura/ödemeden GELMİYOR</td></tr>
-    <tr><td>Kassa / nakit masrafların tender'a bağlanması</td><td><span class="tag mi">YOK</span></td><td>Kassa Operation doctype yok, bot akışının Stabler/GL bağı yok, tender P&amp;L'e GL beslemesi yok (bot+mini app tasarımı Whimsical'da hazır)</td></tr>
+    <tr><td>Kassa / nakit masrafların kaydı</td><td><span class="tag pa">BÜYÜK ÖLÇÜDE VAR</span></td><td>Money modülü tüm operasyonları karşılıyor: <span class="acct">/money/expenses</span> (submit_expense_entry), <span class="acct">/money/transfers</span> (submit_transfer_entry, döviz destekli), <span class="acct">/money/accounts/&lt;acc&gt;/ledger</span> (yürüyen bakiye), maker-checker onay (approvals.py, JE dahil). <b>Eksik yalnız:</b> JE'de tender (crm_deal) etiketi + dışarıdan giriş için Telegram bot katmanı</td></tr>
     <tr><td>Cash account (CoA) yardımcıları</td><td><span class="tag ex">VAR (genel)</span></td><td>list_cash_bank_accounts (money.py) — tender'a bağlanmamış</td></tr>
   </table>
 </section>
@@ -249,52 +249,30 @@
 
 <!-- ═══ C2 ═══ -->
 <section class="slide" id="c2">
-  <h2><span class="stepno">C2</span>Kassa Operasyonları — Whimsical mind-map'in GL karşılığı <span class="chip">çizimden doğrulandı ✓</span></h2>
-  <p class="sub">Çizimdeki akış <b>talep→onay değil, doğrudan kassir girişi</b>: her kassir kendi kassasında operasyon kaydeder (bot reply-keyboard). Mind-map'teki 6 operasyonun her biri belirli bir muhasebe kaydına eşlenir:</p>
+  <h2><span class="stepno">C2</span>Kassa Operasyonları — Whimsical mind-map'in <b>mevcut Money modülü</b> karşılığı <span class="chip">çizim ✓ + kod denetimi ✓</span></h2>
+  <p class="sub">Çizimdeki akış <b>doğrudan kassir girişi</b> — ve Stabler'da bunun altyapısı <b>zaten yaşıyor</b> (anjan'da günlük kullanımda: <span class="acct">/money/expenses</span>, <span class="acct">/money/transfers</span>, <span class="acct">/money/accounts/…/ledger</span>). Yeni doctype GEREKMEZ — bot, mevcut endpoint'leri çağıran ince bir uzak-kumanda katmanıdır:</p>
 
   <table class="gl">
-    <tr><th>Bot operasyonu (çizim)</th><th>Alt seçimi (çizim)</th><th>GL karşılığı</th></tr>
-    <tr><td>🟢 <b>+Kirim</b></td><td>UZS / PK / USD</td><td class="acct">Dr ilgili alt-kassa / Cr kaynak (tahsilat, avans iadesi, sermaye…) — Payment Entry</td></tr>
-    <tr><td>🔴 <b>−Chiqim</b></td><td>—</td><td class="acct">Dr gider hesabı (kategori belirler) / Cr alt-kassa — PE; <b>tender etiketi (crm_deal) burada eklenir</b></td></tr>
-    <tr><td>🔄 <b>Konvertatsiya</b></td><td>„UZS oldim / PK oldim / USD oldim" — <i>ne aldın</i> hedef hesabı belirler</td><td class="acct">JE: Dr hedef alt-kassa / Cr kaynak alt-kassa; USD bacağı CBU kuruyla, fark → Exchange Gain/Loss</td></tr>
-    <tr><td>💱 <b>Kassadan kassaga</b></td><td>„Qaysi kassaga?" → AKASSA_UZS … QKASSA (alt-kassa granülü)</td><td class="acct">İç transfer (Internal Transfer PE) — gider DEĞİL, iki Cash hesabı arası</td></tr>
-    <tr><td>📝 <b>Qolib ketgan amal</b></td><td>—</td><td class="acct">Aynı operasyonlar geçmiş <span class="acct">posting_date</span> ile (unutulan kayıt); kapalı döneme kilit şart</td></tr>
-    <tr><td>ℹ️ <b>Mening jadvalim</b></td><td>UZS / USD</td><td>Kayıt değil — mini app ekstre görünümü (C3); GL'den okunan yürüyen bakiye (Qoldiq)</td></tr>
-    <tr><td>❌ <b>Bekor qilish</b></td><td>—</td><td>Taslaksa sil; submit edilmişse <b>cancel + amend</b> (audit izi bozulmaz)</td></tr>
+    <tr><th>Bot operasyonu (çizim)</th><th>Alt seçimi (çizim)</th><th>Mevcut Stabler karşılığı (money.py)</th></tr>
+    <tr><td>🟢 <b>+Kirim</b></td><td>UZS / PK / USD</td><td class="acct">create_payment_entry (Receive → Dr alt-kassa) — /money/payments; PE taslak+onay disiplinine girer</td></tr>
+    <tr><td>🔴 <b>−Chiqim</b></td><td>—</td><td class="acct">submit_expense_entry — /money/expenses: çok satırlı, satır para birimi ≠ kasa para birimi olsa bile tek base-anchor'la dengeli JE; <b>eksik yalnız crm_deal etiketi</b></td></tr>
+    <tr><td>🔄 <b>Konvertatsiya</b></td><td>„UZS oldim / PK oldim / USD oldim"</td><td class="acct">submit_transfer_entry (cross-currency) — from/to_amount + exchange_rate, CBU inverse-rate düzeltmesi yapılmış; tek base-anchor, fark drift'i yok</td></tr>
+    <tr><td>💱 <b>Kassadan kassaga</b></td><td>„Qaysi kassaga?" → alt-kassa granülü</td><td class="acct">submit_transfer_entry (same-currency) — /money/transfers; gider DEĞİL, P&amp;L'e dokunmaz</td></tr>
+    <tr><td>📝 <b>Qolib ketgan amal</b></td><td>—</td><td class="acct">Aynı endpoint'ler geçmiş posting_date ile; get_backdating_status donmuş-dönem korumasını kullanıcı bazında uygular</td></tr>
+    <tr><td>ℹ️ <b>Mening jadvalim</b></td><td>UZS / USD</td><td class="acct">account_transactions — /money/accounts/&lt;Cash hesabı&gt;/ledger: tarih filtreli ekstre + yürüyen bakiye (Qoldiq) hazır</td></tr>
+    <tr><td>🏦 Kassalar balansi <s>(çizimde iptal)</s></td><td>—</td><td class="acct">chart_balances / account_balance / list_cash_bank_accounts — bot mesajı yerine jadval'a taşınıyor</td></tr>
+    <tr><td>❌ <b>Bekor qilish</b></td><td>—</td><td class="acct">cancel_bank_entry + amend_expense_entry / amend_transfer_entry — cancel+amend disiplini kodda mevcut</td></tr>
   </table>
 
-  <div class="note k">
-    <b>Çizimde iptal edilen buton:</b> „Kassalar balansi" kırmızı X ile çizilmiş — bakiye raporu bot mesajından çıkıp <b>mini app jadval'ına</b> taşınıyor (C3). Konvertatsiya kalıyor.
-    <b>Çizimde olmayan ama önerdiğimiz katman:</b> tutar eşiği üzerindeki Chiqim'ler için hafif bir onay adımı (aşağıda) — kassir disiplinini bozmaz, sadece büyük çıkışları görünür kılar.
+  <div class="note ok">
+    <b>Onay katmanı da hazır:</b> approvals.py maker-checker'ı Journal Entry &amp; Payment Entry'yi zaten kontrol ediyor — eşik (approval_threshold_base), çok kademeli tier ve <span class="acct">before_submit</span> backstop'uyla. Kassirin bot'tan girdiği eşik-üstü Chiqim otomatik olarak Approvals kuyruğuna düşer (<span class="acct">/money/approvals</span>); botla ekstra onay kodu yazılmaz.
   </div>
 
-  <h3>Öneri (çizim-üstü ek): eşikli onay + tender etiketi</h3>
-  <div class="lane"><div class="lh">1 · Kassir (çizimdeki akış — değişmez)</div><div class="lb">
-    <span class="lstep">Bot menüsünden Kirim / Chiqim / Konvertatsiya / Kassadan-kassaga kaydeder</span>
-    <span class="lstep">Chiqim'de: kategori + <b>tender (Deal)</b> + izoh; fiş fotoğrafı (opsiyonel)</span>
-    <span class="lstep">Kayıt → <b>Payment Entry / JE taslağı otomatik</b> (Cr ilgili alt-kassa)</span>
-  </div></div>
-  <div class="lane"><div class="lh">2 · Eşik üstü Chiqim (öneri — çizimde yok)</div><div class="lb">
-    <span class="lstep dec">Tutar &gt; limit → yöneticiye inline onay kartı; onaysız taslak submit edilmez</span>
-  </div></div>
-  <div class="lane"><div class="lh">3 · Muhasebe → kapanış</div><div class="lb">
-    <span class="lstep">Taslakları gözden geçirir → submit → GL + Tender P&amp;L</span>
-    <span class="lstep end">Gün sonu: fiziki sayım vs jadval Qoldiq mutabakatı (UZS + USD ayrı)</span>
-  </div></div>
-
-  <h3>Kassa Operation doctype (öneri şeması — çizimdeki alanlarla)</h3>
+  <h3>Gerçek eksikler — yalnız iki iş</h3>
   <table class="gl">
-    <tr><th>Alan</th><th>Tip</th><th>Not</th></tr>
-    <tr><td class="acct">kassir</td><td>Link → User</td><td>Telegram initData ile eşleşir; kassa yetkisi buradan</td></tr>
-    <tr><td class="acct">kassa_account</td><td>Link → Account (Cash yaprağı)</td><td>Alt-kassa: AKASSA_UZS / AKASSA_PK / … (C1 ağacı)</td></tr>
-    <tr><td class="acct">op_type</td><td>Select: KIRIM / CHIQIM / KONVERTATSIYA / TRANSFER</td><td>Çizimdeki menüyle birebir; merkezi STATUS_MAP'e girer</td></tr>
-    <tr><td class="acct">target_account</td><td>Link → Account</td><td>Konvertatsiya &amp; Kassadan-kassaga hedefi („Qaysi kassaga?")</td></tr>
-    <tr><td class="acct">crm_deal</td><td>Link → CRM Deal</td><td><b>Tender bağı — P&amp;L anahtarı</b>; zorunlu değil (genel gider de olabilir)</td></tr>
-    <tr><td class="acct">amount / currency</td><td>Currency</td><td>USD alt-kassasında USD; PE/JE'de CBU çift bacak</td></tr>
-    <tr><td class="acct">category / izoh</td><td>Select + Small Text</td><td>Jadval'daki „Oper.turi va izoh" kolonu; P&amp;L satır grubu</td></tr>
-    <tr><td class="acct">posting_date</td><td>Date</td><td>„Qolib ketgan amal" = geçmiş tarihli giriş</td></tr>
-    <tr><td class="acct">voucher</td><td>Link → PE/JE (read-only)</td><td>Kayıt anında oluşan taslak</td></tr>
-    <tr><td class="acct">receipt</td><td>Attach (çoklu)</td><td>Chiqim'de teşvik edilir</td></tr>
+    <tr><th>Eksik</th><th>Ne gerekiyor</th></tr>
+    <tr><td><b>1 · Tender etiketi</b></td><td>Journal Entry'ye <span class="acct">custom_crm_deal</span> (Link → CRM Deal) — idempotent patch, PO'daki custom_crm_deal kalıbının aynısı. submit_expense_entry'ye opsiyonel <span class="acct">deal</span> parametresi; Expenses.vue formuna Deal seçici. P&amp;L beslemesi bu etiketi okur.</td></tr>
+    <tr><td><b>2 · Telegram bot</b></td><td>Whimsical menüsü (Kirim/Chiqim/Konvertatsiya/Kassadan-kassaga/Qolib-ketgan-amal/Jadval) → yukarıdaki endpoint'lere ince köprü. TG user ↔ Stabler user eşlemesi (admin onaylı kayıt); tüm yetki/onay/backdating kuralları eşlenen kullanıcının kendi izinleriyle çalışır — bot hiçbir kuralı bypass etmez.</td></tr>
   </table>
 </section>
 
@@ -306,8 +284,8 @@
   <div class="flow">
     <div class="fbox tg"><b>Bot reply-keyboard</b><span>Kirim/Chiqim/Konvertatsiya/<br>Transfer girişi (çizim)</span></div>
     <div class="fbox tg"><b>Mini App „Jadval"</b><span>Telegram initData imzası;<br>qoldiq + ekstre (çizim)</span></div>
-    <div class="fbox doc"><b>Kassa Operation</b><span>doctype + voucher taslağı</span></div>
-    <div class="fbox gl"><b>Payment Entry / JE</b><span>Cr alt-kassa hesabı<br>taslak → muhasebe submit</span></div>
+    <div class="fbox doc"><b>money.py (mevcut)</b><span>expense / transfer / payment /<br>ledger endpoint'leri — yeni kod yok</span></div>
+    <div class="fbox gl"><b>Payment Entry / JE</b><span>Cr alt-kassa hesabı<br>maker-checker → submit</span></div>
   </div>
 
   <table class="gl">
@@ -329,7 +307,7 @@
 <!-- ═══ C4 ═══ -->
 <section class="slide" id="c4">
   <h2><span class="stepno">C4</span>GL Kayıtları — çizimdeki operasyonlardan örnek (tender T-2026-014)</h2>
-  <p class="sub">Kurlar: USD 12.000. Her kayıt Kassa Operation'dan doğan Payment Entry / Journal Entry. Örnek kassa: AKASSA.</p>
+  <p class="sub">Kurlar: USD 12.000. Her kayıt mevcut Money endpoint'lerinden doğan Payment Entry / Journal Entry — anjan'daki /money/expenses ve /money/transfers akışlarının aynısı. Örnek kassa: AKASSA.</p>
 
   <table class="gl">
     <tr><th>Operasyon</th><th>Alt-kassa</th><th class="num">Tutar</th><th>GL</th></tr>
@@ -384,15 +362,15 @@
     <tr><td><b>WP-T4</b></td><td>Kur duyarlılık kolonu: karşılaştırma tablosunda ±%2 senaryolu landed aralığı</td><td>S</td><td>T3</td></tr>
     <tr><td><b>WP-T5</b></td><td>Actual'ı GL'ye bağla: landed satırına ref_doctype/ref_name (PInv/PE/GTD); actual = belge base tutarı, elle giriş yalnız ref'siz satırda</td><td>M</td><td>—</td></tr>
     <tr><td><b>WP-T6</b></td><td>Tender LCV: kazanan PO'nun mal kabulünde imports LCV hook'unu tender bağlamıyla tetikle (EIV → stok; KDV asla)</td><td>L</td><td>T1,T5</td></tr>
-    <tr><td><b>WP-K1</b></td><td>CoA kassa ağacı (kassa × UZS/PK/USD) + Kassa Operation doctype (Kirim/Chiqim/Konvertatsiya/Transfer) + merkezi status map</td><td>M</td><td>—</td></tr>
-    <tr><td><b>WP-K2</b></td><td>Operasyon → otomatik taslak PE/JE (Cr alt-kassa, crm_deal etiketli); Konvertatsiya'da CBU çift bacak + Exchange G/L; Qolib-ketgan-amal = geçmiş posting_date</td><td>M</td><td>K1</td></tr>
-    <tr><td><b>WP-K3</b></td><td>Telegram bot (reply-keyboard, çizimdeki menü) + „Mening kassa jadvalim" mini app'in GL beslemesi: initData auth + webhook secret fail-closed (WP-307/308 kalıbı)</td><td>L</td><td>K1,K2</td></tr>
-    <tr><td><b>WP-K4</b></td><td>Tender P&amp;L'e kassa beslemesi: _actual_block'a crm_deal etiketli submitted PE toplamı; kategori kırılımı</td><td>S</td><td>K2</td></tr>
-    <tr><td><b>WP-K5</b></td><td>Kasa mutabakatı: gün sonu sayım + USD kasası revaluation (WP-I11 motoru) + kart ekstre eşleşmesi (bank_statement import mevcut)</td><td>M</td><td>K2</td></tr>
+    <tr><td><b>WP-K1</b></td><td>CoA kassa ağacı: kassa × UZS/PK/USD Cash hesapları — <b>kod yok, veri işi</b> (mevcut create_account / Accounts sayfası); Mikas Stabler Settings'te kassir→kassa yetki eşlemesi</td><td>S</td><td>—</td></tr>
+    <tr><td><b>WP-K2</b></td><td>Journal Entry'ye <span class="acct">custom_crm_deal</span> patch'i (PO kalıbının aynısı) + submit_expense_entry'ye opsiyonel deal parametresi + Expenses.vue'ya Deal seçici</td><td>S</td><td>—</td></tr>
+    <tr><td><b>WP-K3</b></td><td>Telegram bot (çizimdeki reply-keyboard menü) → mevcut money endpoint'lerine köprü: TG user↔Stabler user eşlemesi, initData HMAC, webhook secret fail-closed (WP-307/308 kalıbı); „Mening kassa jadvalim" mini app = account_transactions render'ı</td><td>L</td><td>K1</td></tr>
+    <tr><td><b>WP-K4</b></td><td>Tender P&amp;L'e kassa beslemesi: _actual_block'a crm_deal etiketli submitted JE/PE toplamı; kategori (hesap) kırılımı</td><td>S</td><td>K2</td></tr>
+    <tr><td><b>WP-K5</b></td><td>Kasa mutabakatı: gün sonu sayım vs jadval Qoldiq + USD kasası revaluation (WP-I11 motoru, Cash hesaplarını kapsa) — Reconcile sayfası zaten var</td><td>M</td><td>K1</td></tr>
   </table>
 
   <div class="note warn">
-    <b>Önerilen ilk sprint:</b> WP-T1 + WP-T5 + WP-K1/K2 — dört iş, rakamların kaynağını deftere bağlar; UI cilası (T4, K3 mini app) ikinci sprint.
+    <b>Önerilen ilk sprint:</b> WP-T1 + WP-T5 + WP-K1/K2 — K tarafı artık çok hafif (K1 veri işi, K2 tek patch + form alanı); asıl geliştirme kalemi tek başına WP-K3 (Telegram bot köprüsü), o da ikinci sprint. Money modülü olduğu gibi yeniden kullanılır — Mikas'a kassa için yeni muhasebe kodu yazılmaz.
     Hepsi <span class="acct">enable_tender</span> gate'i arkasında kalır → yalnız Mikas etkilenir (MSA imports'unun enable_imports ile izole kaldığı gibi).
   </div>
 </section>
