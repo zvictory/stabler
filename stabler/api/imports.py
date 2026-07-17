@@ -4040,3 +4040,151 @@ def customs_cost_estimate(commercial_invoice: str) -> dict:
         }
     )
     return est
+
+
+# ---------------------------------------------------------------------------
+# WP-I14 — Unbilled landed-cost accrual report
+# ---------------------------------------------------------------------------
+
+
+@frappe.whitelist()
+def unbilled_landed_costs(company: str) -> dict:
+    """Month-end accrual candidates — costs known but not yet in an LCV/GL.
+
+    Container Cost Line rows flagged ``include_in_landed_cost`` with an empty
+    ``lcv_ref`` are costs the business has already agreed to (freight, customs,
+    demurrage, ...) but that have not yet been capitalized into a Landed Cost
+    Voucher. At month-end close these are the accrual candidates: costs known
+    but not yet posted to the GL. Mirrors the ``container_cost_summary``
+    convention of summing ``amount`` as-is (single-currency, USD-dominant, no
+    FX conversion).
+    """
+    _assert_imports_access(company)
+    _assert_cost_visible()
+    rows = frappe.db.sql(
+        """
+        SELECT cl.name, cl.parent AS container, c.container_number,
+               c.commercial_invoice, cl.cost_component, cl.description,
+               cl.currency, cl.amount, cl.amount_uzs
+        FROM `tabContainer Cost Line` cl
+        INNER JOIN `tabImport Container` c ON c.name = cl.parent
+        WHERE c.company = %(company)s
+          AND cl.include_in_landed_cost = 1
+          AND (cl.lcv_ref IS NULL OR cl.lcv_ref = '')
+        ORDER BY c.container_number ASC, cl.idx ASC
+        LIMIT 500
+        """,
+        {"company": company},
+        as_dict=True,
+    )
+    total_unbilled = 0.0
+    for r in rows:
+        r["amount"] = flt(r["amount"])
+        r["amount_uzs"] = flt(r["amount_uzs"])
+        total_unbilled += r["amount"]
+    return {
+        "rows": rows,
+        "summary": {"total_unbilled": round(total_unbilled, 2), "rows": len(rows)},
+    }
+
+
+# ---------------------------------------------------------------------------
+# WP-I16 — Channel payment calendar (bank vs cash settlement split)
+# ---------------------------------------------------------------------------
+
+
+@frappe.whitelist()
+def payment_calendar(company: str, days: int = 30) -> dict:
+    """Upcoming + overdue supplier bills, split by settlement channel (WP-I16).
+
+    Submitted Purchase Invoices with an outstanding balance due within the next
+    ``days`` (or already overdue) form the payment calendar. Each bill is then
+    split into a bank-settled and cash-settled share by looking up its earmarked
+    Commercial Invoice (v46 ``custom_commercial_invoice`` ref) and that CI's
+    cash/bank agreement (WP-I3b ``custom_bank_agreed`` / ``custom_cash_agreed``).
+    A bill with no CI ref cannot be split — it is reported ``unsplit`` and
+    counted entirely against the bank channel (the conservative assumption).
+    """
+    _assert_imports_access(company)
+    _assert_cost_visible()
+    today_d = today()
+    upper = add_days(today_d, cint(days))
+
+    has_ci_ref = frappe.db.has_column("Purchase Invoice", "custom_commercial_invoice")
+    has_bank = frappe.db.has_column("Commercial Invoice", "custom_bank_agreed")
+    has_cash = frappe.db.has_column("Commercial Invoice", "custom_cash_agreed")
+
+    ci_col = "pi.custom_commercial_invoice" if has_ci_ref else "NULL"
+    rows = frappe.db.sql(
+        f"""
+        SELECT pi.name, pi.supplier, s.supplier_name, pi.due_date,
+               pi.outstanding_amount, pi.currency, {ci_col} AS commercial_invoice
+        FROM `tabPurchase Invoice` pi
+        LEFT JOIN `tabSupplier` s ON s.name = pi.supplier
+        WHERE pi.company = %(company)s AND pi.docstatus = 1
+          AND pi.outstanding_amount > 0
+          AND (pi.due_date <= %(upper)s OR pi.due_date < %(today)s)
+        ORDER BY pi.due_date ASC
+        LIMIT 500
+        """,
+        {"company": company, "upper": upper, "today": today_d},
+        as_dict=True,
+    )
+
+    ci_names = {r["commercial_invoice"] for r in rows if r.get("commercial_invoice")}
+    ci_split: dict[str, dict] = {}
+    if ci_names and has_bank and has_cash:
+        for ci in frappe.get_all(
+            "Commercial Invoice",
+            filters={"name": ["in", list(ci_names)]},
+            fields=["name", "agreed_total", "custom_bank_agreed", "custom_cash_agreed"],
+        ):
+            ci_split[ci["name"]] = ci
+
+    total_due = 0.0
+    bank_due_total = 0.0
+    cash_due_total = 0.0
+    overdue_amount = 0.0
+    for r in rows:
+        outstanding = flt(r["outstanding_amount"])
+        r["outstanding_amount"] = outstanding
+        r["due_date"] = str(r["due_date"]) if r.get("due_date") else None
+        r["supplier_name"] = r.get("supplier_name") or r.get("supplier")
+        r["overdue"] = bool(r.get("due_date") and getdate(r["due_date"]) < today_d)
+
+        ci = r.pop("commercial_invoice", None)
+        split = ci_split.get(ci) if ci else None
+        if split:
+            agreed_total = flt(split.get("agreed_total"))
+            bank_agreed = flt(split.get("custom_bank_agreed"))
+            bank_share = (bank_agreed / agreed_total) if agreed_total > 0 else 0.0
+            bank_due = round(outstanding * bank_share, 2)
+            r.update(
+                {
+                    "channel": "split",
+                    "bank_due": bank_due,
+                    "cash_due": round(outstanding - bank_due, 2),
+                    "unsplit": False,
+                }
+            )
+        else:
+            r.update(
+                {"channel": "unsplit", "bank_due": outstanding, "cash_due": 0.0, "unsplit": True}
+            )
+
+        total_due += outstanding
+        bank_due_total += r["bank_due"]
+        cash_due_total += r["cash_due"]
+        if r["overdue"]:
+            overdue_amount += outstanding
+
+    return {
+        "rows": rows,
+        "summary": {
+            "total_due": round(total_due, 2),
+            "bank_due": round(bank_due_total, 2),
+            "cash_due": round(cash_due_total, 2),
+            "overdue_amount": round(overdue_amount, 2),
+            "count": len(rows),
+        },
+    }

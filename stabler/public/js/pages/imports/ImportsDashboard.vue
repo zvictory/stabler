@@ -20,6 +20,8 @@ const loading = ref(false);
 const error = ref("");
 const kpi = ref(null);
 const aging = ref(null);
+const paymentCal = ref(null);
+const unbilled = ref(null);
 
 // The 9 logistics statuses, in pipeline order, for the mini-board chips.
 const PIPELINE = [
@@ -46,6 +48,8 @@ async function load() {
 		loading.value = false;
 	}
 	loadAdvanceAging();
+	loadPaymentCalendar();
+	loadUnbilledLandedCosts();
 }
 
 async function loadAdvanceAging() {
@@ -55,6 +59,26 @@ async function loadAdvanceAging() {
 	} catch {
 		// Endpoint throws for users without cost visibility — hide the panel.
 		aging.value = null;
+	}
+}
+
+async function loadPaymentCalendar() {
+	if (!activeCompany.value) return;
+	try {
+		paymentCal.value = await importsApi.paymentCalendar(activeCompany.value, 30);
+	} catch {
+		// Endpoint throws for users without cost visibility — hide the panel.
+		paymentCal.value = null;
+	}
+}
+
+async function loadUnbilledLandedCosts() {
+	if (!activeCompany.value) return;
+	try {
+		unbilled.value = await importsApi.unbilledLandedCosts(activeCompany.value);
+	} catch {
+		// Endpoint throws for users without cost visibility — hide the KPI line.
+		unbilled.value = null;
 	}
 }
 
@@ -297,6 +321,67 @@ watch(activeCompany, load);
 								</tr>
 							</tbody>
 						</table>
+					</div>
+				</div>
+			</div>
+		</div>
+
+		<!-- Payment calendar (channel bank/cash split, WP-I16) -->
+		<div v-if="paymentCal && paymentCal.rows && paymentCal.rows.length" class="row row-cards mt-3">
+			<div class="col-12">
+				<div class="card">
+					<div class="card-header">
+						<h3 class="card-title">{{ t("Payment calendar") }}</h3>
+						<div class="card-subtitle">{{ t("Next {0} days").replace("{0}", 30) }}</div>
+					</div>
+					<div class="card-body py-2">
+						<div class="d-flex flex-wrap gap-3 small">
+							<div>
+								{{ t("Bank due") }}:
+								<b class="font-monospace">{{ formatMoney(paymentCal.summary.bank_due, "USD", user.language) }}</b>
+							</div>
+							<div>
+								{{ t("Cash due") }}:
+								<b class="font-monospace">{{ formatMoney(paymentCal.summary.cash_due, "USD", user.language) }}</b>
+							</div>
+							<div>
+								{{ t("Overdue") }}:
+								<b class="font-monospace text-danger">{{ formatMoney(paymentCal.summary.overdue_amount, "USD", user.language) }}</b>
+							</div>
+						</div>
+					</div>
+					<div class="table-responsive">
+						<table class="table table-vcenter card-table">
+							<thead>
+								<tr>
+									<th>{{ t("Bill") }}</th>
+									<th>{{ t("Supplier") }}</th>
+									<th class="text-nowrap">{{ t("Due") }}</th>
+									<th class="text-end">{{ t("Outstanding") }}</th>
+									<th></th>
+								</tr>
+							</thead>
+							<tbody>
+								<tr v-for="r in paymentCal.rows.slice(0, 10)" :key="r.name">
+									<td class="font-monospace text-nowrap">{{ r.name }}</td>
+									<td>{{ r.supplier_name }}</td>
+									<td class="text-nowrap">{{ formatDate(r.due_date) }}</td>
+									<td class="font-monospace text-end">{{ formatMoney(r.outstanding_amount, r.currency || "USD", user.language) }}</td>
+									<td>
+										<span class="badge" :class="r.overdue ? 'bg-red-lt' : 'bg-blue-lt'">
+											{{ r.overdue ? t("Overdue") : t("Due") }}
+										</span>
+									</td>
+								</tr>
+							</tbody>
+						</table>
+					</div>
+					<div
+						v-if="unbilled && unbilled.summary && unbilled.summary.total_unbilled > 0"
+						class="card-footer small d-flex justify-content-between"
+					>
+						<span class="text-secondary">{{ t("Unbilled landed costs") }}</span>
+						<b class="font-monospace">{{ formatMoney(unbilled.summary.total_unbilled, "USD", user.language) }}</b>
 					</div>
 				</div>
 			</div>

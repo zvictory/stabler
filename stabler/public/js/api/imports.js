@@ -94,4 +94,8 @@ export const importsApi = {
 	createVetCertificate: (payload) => call(`${P}.create_vet_certificate`, payload),
 	setVetCertificateStatus: (name, status, reason) =>
 		call(`${P}.set_vet_certificate_status`, { name, status, reason }),
+
+	// Month-end accrual + channel payment calendar (WP-I14 / WP-I16)
+	unbilledLandedCosts: (company) => call(`${P}.unbilled_landed_costs`, { company }),
+	paymentCalendar: (company, days = 30) => call(`${P}.payment_calendar`, { company, days }),
 };
