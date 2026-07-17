@@ -20,6 +20,9 @@ import { useEscapeBack } from "../../composables/useEscapeBack.js";
 
 const session = useSession();
 const { activeCompany, user } = storeToRefs(session);
+// Tender (Deal) picker is gated on the "tender" module — mirrors the pattern
+// used by crm/Deals.vue and the tender/* pages (router.js meta.module).
+const tenderOn = computed(() => session.canAccessModule("tender"));
 
 const { confirm } = useConfirm();
 const toast = useToast();
@@ -119,6 +122,10 @@ function newGhost() {
 const ghost = ref(newGhost());
 const form = ref(blankForm());
 const linesTableEl = ref(null);
+// Display label for form.deal (a CRM Deal name/id) — kept separate since the
+// Typeahead only stores the id in v-model; resolved via searchDeals/pickDeal
+// or loadDealLabel() when prefilling from an existing entry.
+const dealLabel = ref("");
 
 // Unsaved-changes guard: if the form is open and edited, confirm before leaving
 // the page (sidebar click, browser back/refresh). Gated on createOpen so the list
@@ -157,6 +164,7 @@ function blankForm() {
 		payee: "",
 		payment_from: "",
 		exchange_rate: null,
+		deal: "",
 		lines: [],
 	};
 }
@@ -364,6 +372,38 @@ function lineCurrencyMismatch(line) {
 	return picked.account_currency && picked.account_currency !== payCurrency.value;
 }
 
+// --- Tender (Deal) picker — only rendered when tenderOn is true ------------
+
+async function searchDeals(q) {
+	const r = await call("stabler.api.crm.list_deals", { search: q, page_length: 8 });
+	return (r?.deals || []).map((d) => ({ name: d.name, label: d.organization || d.lead_name || d.name }));
+}
+
+function pickDeal(item) {
+	form.value.deal = item.name;
+	dealLabel.value = item.label;
+}
+
+function clearDeal() {
+	form.value.deal = "";
+	dealLabel.value = "";
+}
+
+// Resolve a display label for a deal id we already have (e.g. prefilled from
+// an amend) without requiring the user to re-search.
+async function loadDealLabel(dealName) {
+	if (!dealName) {
+		dealLabel.value = "";
+		return;
+	}
+	try {
+		const d = await call("stabler.api.crm.get_deal", { name: dealName });
+		dealLabel.value = d?.organization || d?.lead_name || dealName;
+	} catch (err) {
+		dealLabel.value = dealName;
+	}
+}
+
 async function loadOptions() {
 	if (!activeCompany.value) return;
 	optionsLoading.value = true;
@@ -395,6 +435,7 @@ async function openCreate() {
 	submitError.value = "";
 	cbuRate.value = null;
 	rateError.value = "";
+	dealLabel.value = "";
 	detailOpen.value = false;
 	createOpen.value = true;
 	if (!payAccounts.value.length || !expAccounts.value.length || !assetAccounts.value.length) await loadOptions();
@@ -407,15 +448,21 @@ async function openEditFromDetail() {
 	if (!payAccounts.value.length || !expAccounts.value.length || !assetAccounts.value.length) await loadOptions();
 	// Exclude the auto exchange-rounding line — it's a base-currency GL detail
 	// (re-derived on save by fx_balance), never a user expense leg.
-	const rows = (detail.value.accounts || []).filter((row) => !row.is_fx_rounding);
-	const credit = rows.find((row) => Number(row.credit_in_account_currency) > 0);
-	const debits = rows.filter((row) => Number(row.debit_in_account_currency) > 0);
+	// (Named accRows, not rows, to avoid shadowing the outer `rows` list ref
+	// used below to look up the tender tag.)
+	const accRows = (detail.value.accounts || []).filter((row) => !row.is_fx_rounding);
+	const credit = accRows.find((row) => Number(row.credit_in_account_currency) > 0);
+	const debits = accRows.filter((row) => Number(row.debit_in_account_currency) > 0);
+	// journal_entry_detail doesn't carry the tender tag; pull it from the
+	// already-loaded list row instead (list_bank_entries includes crm_deal).
+	const listRow = rows.value.find((r) => r.name === detail.value.name);
 	form.value = {
 		posting_date: detail.value.posting_date || today,
 		entry_kind: detail.value.entry_kind || "Expense",
 		payee: detail.value.pay_to_recd_from || "",
 		payment_from: credit?.account || "",
 		exchange_rate: null,
+		deal: listRow?.crm_deal || "",
 		lines: debits.map((row) => ({
 			id: ++lineSeq,
 			account: row.account,
@@ -428,6 +475,9 @@ async function openEditFromDetail() {
 	submitError.value = "";
 	cbuRate.value = null;
 	rateError.value = "";
+	dealLabel.value = "";
+	// Skip the label round-trip when the picker itself is hidden (tender off).
+	if (tenderOn.value && form.value.deal) await loadDealLabel(form.value.deal);
 	detailOpen.value = false;
 	createOpen.value = true;
 	await fetchExchangeRate();
@@ -453,6 +503,7 @@ async function submitCreate(afterAction) {
 		form.value = blankForm();
 		form.value.posting_date = keepDate;
 		ghost.value = newGhost();
+		dealLabel.value = "";
 		await fetchExchangeRate();
 		return;
 	}
@@ -478,6 +529,7 @@ async function submitCreate(afterAction) {
 		entry_kind: form.value.entry_kind,
 	};
 	if (form.value.payee?.trim()) payload.payee = form.value.payee.trim();
+	if (tenderOn.value && form.value.deal) payload.deal = form.value.deal;
 	if (isCrossCurrency.value) {
 		const rate = Number(form.value.exchange_rate);
 		payload.exchange_rate = rate > 0 ? 1 / rate : 0;
@@ -507,6 +559,7 @@ async function submitCreate(afterAction) {
 			form.value = blankForm();
 			form.value.posting_date = keepDate;
 			ghost.value = newGhost();
+			dealLabel.value = "";
 			if (pendingApproval) {
 				toast.warning(t("Saved — pending approval before it posts."));
 			} else {
@@ -711,7 +764,18 @@ watch(activeCompany, () => {
 						<td>
 							<span class="badge bg-blue-lt">{{ r.entry_kind || t("Expense") }}</span>
 						</td>
-						<td class="text-truncate" style="max-width: 380px">{{ r.user_remark || "—" }}</td>
+						<td style="max-width: 380px">
+							<div class="d-flex align-items-center gap-1">
+								<span class="text-truncate">{{ r.user_remark || "—" }}</span>
+								<span
+									v-if="r.crm_deal"
+									class="badge bg-secondary-lt text-secondary flex-shrink-0"
+									:title="t('Tender (Deal)')"
+								>
+									<i class="ti ti-briefcase me-1"></i>{{ r.crm_deal }}
+								</span>
+							</div>
+						</td>
 						<td class="text-end font-monospace">
 							{{ formatMoney(r.total_amount ?? r.total_debit_base, r.currency || r.base_currency || baseCurrency, user.language) }}
 						</td>
@@ -899,6 +963,22 @@ watch(activeCompany, () => {
 								class="form-control"
 								:placeholder="t('Optional')"
 							/>
+						</div>
+					</div>
+					<!-- Tender (Deal) picker: optional, only when the tender module is enabled -->
+					<div v-if="tenderOn" class="row g-2 mt-0">
+						<div class="col-md-4">
+							<label class="form-label small">{{ t("Tender (Deal)") }}</label>
+							<Typeahead
+								:model-value="form.deal"
+								:display="dealLabel"
+								:search="searchDeals"
+								:placeholder="t('Search a tender deal…')"
+								@pick="pickDeal"
+								@clear="clearDeal"
+							>
+								<template #option="{ item }">{{ item.label }}</template>
+							</Typeahead>
 						</div>
 					</div>
 						</div><!-- /Panel A body -->

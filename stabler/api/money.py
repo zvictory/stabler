@@ -2363,9 +2363,16 @@ def list_bank_entries(
 		"je.docstatus < 2",
 		*qualified_clauses,
 	])
+	# Tender tag (WP-K2): surface custom_crm_deal when the v52 field exists so
+	# the Expenses list can show which tender an entry belongs to.
+	deal_col = (
+		"je.custom_crm_deal AS crm_deal,"
+		if frappe.db.has_column("Journal Entry", "custom_crm_deal")
+		else "NULL AS crm_deal,"
+	)
 	return frappe.db.sql(
 		f"""
-		SELECT je.name, je.posting_date, je.voucher_type, je.user_remark,
+		SELECT je.name, je.posting_date, je.voucher_type, je.user_remark, {deal_col}
 		       je.total_debit AS total_debit_base,
 		       je.total_credit AS total_credit_base,
 		       je.multi_currency,
@@ -2401,13 +2408,19 @@ def submit_expense_entry(
 	exchange_rate: float | None = None,
 	submit: int = 1,
 	entry_kind: str = "Expense",
+	deal: str | None = None,
 ) -> dict:
 	"""Create (and optionally submit) an expense Journal Entry.
 
 	`lines`: [{account, amount, memo?}]. `amount` is in the EXPENSE account's
 	currency. The payment-from leg credits its native currency; both sides are
 	anchored to a single base-currency total derived from `exchange_rate`
-	(payment-from → base) or 1.0 when currencies already match."""
+	(payment-from → base) or 1.0 when currencies already match.
+
+	`deal` (optional, WP-K2): tag the entry with a CRM Deal (tender) so the
+	expense feeds the tender plan-vs-actual P&L. Stored on the Journal Entry's
+	`custom_crm_deal` field (patch v52); silently skipped when the field is
+	absent so mixed-version benches never crash."""
 	_require_company(company)
 	_assert_company_scope(company)  # tenant isolation: reject a foreign company arg
 	if isinstance(lines, str):
@@ -2485,6 +2498,14 @@ def submit_expense_entry(
 	doc.cheque_no = f"Exp-{posting_date}"
 	doc.cheque_date = getdate(posting_date)
 	doc.multi_currency = 1 if pay_acc.account_currency != base_currency else 0
+	if deal:
+		# Tender attribution (WP-K2). Validate existence only — the deal is a
+		# company-scoped tag, not a permission boundary; GL access is already
+		# enforced by the JE itself.
+		if not frappe.db.exists("CRM Deal", deal):
+			frappe.throw("Unknown deal.")
+		if frappe.get_meta("Journal Entry").has_field("custom_crm_deal"):
+			doc.custom_crm_deal = deal
 	if remark:
 		doc.user_remark = remark
 	if payee:
