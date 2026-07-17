@@ -260,6 +260,8 @@ def update_company_modules(
 	bpm=None,
 	remittance=None,
 	installment=None,
+	tender=None,
+	imports=None,
 ):
 	"""Admin-only: toggle per-module flags for a company. Pass 0/1 to update; omit to leave."""
 	_require_admin()
@@ -313,6 +315,8 @@ def update_company_modules(
 		"enable_bpm": bpm,
 		"enable_remittance": remittance,
 		"enable_installment": installment,
+		"enable_tender": tender,
+		"enable_imports": imports,
 	}
 	for field, val in updates.items():
 		if val is None or val == "":
