@@ -550,6 +550,40 @@ def _deal_revenue(deal: str, company: str) -> tuple[float, int]:
 	return sum(flt(s.base_grand_total) for s in sos), len(sos)
 
 
+def _deal_kassa_actual(deal: str, company: str) -> tuple[list[dict], float]:
+	"""Real cash expenses booked against this tender (WP-K4).
+
+	Sums SUBMITTED Journal Entries tagged ``custom_crm_deal = deal`` (the kassa
+	bot / Expenses page write these), grouping the base-currency debit to each
+	Expense account. Returns ([{label: account_name, amount}], total) sorted by
+	amount desc. These are above-the-line, tax-deductible operating costs of
+	winning/executing the tender (per the cost-sheet: subtracted before profit
+	tax), so the caller folds them into ``above_other`` on the actual side.
+
+	Guarded on the v52 field so mixed-version benches return ([], 0.0)."""
+	if not frappe.db.has_column("Journal Entry", "custom_crm_deal"):
+		return [], 0.0
+	rows = frappe.db.sql(
+		"""
+		SELECT a.account_name AS label, SUM(jea.debit) AS amount
+		FROM `tabJournal Entry` je
+		JOIN `tabJournal Entry Account` jea ON jea.parent = je.name
+		JOIN `tabAccount` a ON a.name = jea.account
+		WHERE je.custom_crm_deal = %(deal)s
+		  AND je.company = %(company)s
+		  AND je.docstatus = 1
+		  AND a.root_type = 'Expense'
+		  AND jea.debit > 0
+		GROUP BY a.account_name
+		ORDER BY amount DESC
+		""",
+		{"deal": deal, "company": company},
+		as_dict=True,
+	)
+	lines = [{"label": r.label or "", "amount": flt(r.amount)} for r in rows]
+	return lines, sum(x["amount"] for x in lines)
+
+
 def _num(v, d=0.0) -> float:
 	try:
 		return float(v)
@@ -648,16 +682,23 @@ def _actual_block(deal: str, company: str, inp: dict, planned_pnl: dict) -> dict
 	P&L, reusing the same tax rates and fixed other-costs as the plan."""
 	planned_landed, actual_landed, _ = _deal_landed_split(deal, company)
 	actual_revenue = _deal_revenue_actual(deal, company)
+	kassa_lines, kassa_total = _deal_kassa_actual(deal, company)
 	a_inp = dict(inp)
 	a_inp["mode"] = "price"
 	a_inp["bid_price"] = actual_revenue or planned_pnl.get("bid_price")
 	a_inp["landed_goods"] = actual_landed or inp.get("landed_goods")
+	# Real kassa spend is layered on top of the plan's structural above-line
+	# costs (exchange etc.), each category a distinct line so the actual P&L
+	# shows GL truth rather than a hand-typed estimate.
+	a_inp["above_other"] = list(inp.get("above_other") or []) + kassa_lines
 	a_pnl = _compute_bid_pnl(a_inp)
 	return {
 		"invoiced": bool(actual_revenue),
 		"planned_landed": planned_landed,
 		"actual_landed": actual_landed,
 		"actual_revenue": actual_revenue,
+		"kassa_actual": kassa_lines,
+		"kassa_actual_total": round(kassa_total, 2),
 		"pnl": a_pnl,
 		"ostatok_delta": flt(a_pnl["ostatok"]) - flt(planned_pnl.get("ostatok")),
 	}

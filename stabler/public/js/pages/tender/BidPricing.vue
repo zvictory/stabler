@@ -255,6 +255,8 @@ watch(() => props.deal, load, { immediate: true });
 							<tbody>
 								<tr><td>{{ t("Net revenue") }}</td><td class="text-end font-monospace">{{ fm(pnl.net) }}</td><td class="text-end font-monospace">{{ fm(actual.pnl.net_revenue) }}</td><td class="text-end font-monospace text-secondary">{{ fm(actual.pnl.net_revenue - pnl.net) }}</td></tr>
 								<tr><td>{{ t("Landed cost (goods + import)") }}</td><td class="text-end font-monospace">{{ fm(actual.planned_landed) }}</td><td class="text-end font-monospace">{{ fm(actual.actual_landed) }}</td><td class="text-end font-monospace" :class="actual.actual_landed > actual.planned_landed ? 'text-red' : 'text-green'">{{ fm(actual.actual_landed - actual.planned_landed) }}</td></tr>
+								<tr v-if="actual.kassa_actual_total"><td>{{ t("Kassa expenses (GL)") }}</td><td class="text-end font-monospace text-secondary">—</td><td class="text-end font-monospace">{{ fm(actual.kassa_actual_total) }}</td><td class="text-end font-monospace text-red">{{ fm(actual.kassa_actual_total) }}</td></tr>
+								<tr v-for="(k, i) in (actual.kassa_actual || [])" :key="'ka' + i" class="text-secondary small"><td class="ps-4">− {{ k.label }}</td><td class="text-end font-monospace">—</td><td class="text-end font-monospace">{{ fm(k.amount) }}</td><td></td></tr>
 								<tr class="fw-bold"><td>{{ t("Остаток (net remaining)") }}</td><td class="text-end font-monospace">{{ fm(pnl.ost) }}</td><td class="text-end font-monospace">{{ fm(actual.pnl.ostatok) }}</td><td class="text-end font-monospace" :class="actual.ostatok_delta < 0 ? 'text-red' : 'text-green'">{{ actual.ostatok_delta > 0 ? '+' : '' }}{{ fm(actual.ostatok_delta) }}</td></tr>
 							</tbody>
 						</table>
