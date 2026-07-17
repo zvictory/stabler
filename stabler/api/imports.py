@@ -24,6 +24,7 @@ import frappe
 from frappe import _
 from frappe.utils import add_days, cint, flt, getdate, today
 
+from stabler.api import _advance_aging
 from stabler.api import _ci_to_pinv
 from stabler.api import _imports_rules as rules
 from stabler.api import _proforma
@@ -3878,4 +3879,45 @@ def convert_ci_to_purchase_invoice(
         "reconciles_agreed": True,
         "advance_allocated": allocated,
         "advances_found": [a["name"] for a in advances],
+    }
+
+
+@frappe.whitelist()
+def import_advance_aging(company: str) -> dict:
+    """Unallocated supplier advances aged against the repatriation horizon (WP-I10).
+
+    Uzbek currency control expects an import advance to be closed (goods arrive /
+    money returns) within the contract term — commonly 180 days. Rows are the
+    submitted supplier Payment Entries whose ``unallocated_amount`` is still
+    positive, annotated OK / WARN (>=150d) / BREACH (>=180d), oldest first.
+    Imports-gated + cost-visible (advance figures are K3).
+    """
+    _assert_imports_access(company)
+    _assert_cost_visible()
+    rows = frappe.db.sql(
+        """
+        SELECT pe.name, pe.party, s.supplier_name, pe.posting_date,
+               pe.paid_amount, pe.unallocated_amount,
+               pe.paid_to_account_currency AS currency, pe.reference_no
+        FROM `tabPayment Entry` pe
+        LEFT JOIN `tabSupplier` s ON s.name = pe.party
+        WHERE pe.company = %(company)s AND pe.party_type = 'Supplier'
+          AND pe.docstatus = 1 AND pe.payment_type = 'Pay'
+          AND pe.unallocated_amount > 0
+        ORDER BY pe.posting_date ASC
+        LIMIT 500
+        """,
+        {"company": company},
+        as_dict=True,
+    )
+    for r in rows:
+        r["posting_date"] = str(r["posting_date"]) if r.get("posting_date") else None
+        r["paid_amount"] = flt(r.get("paid_amount"))
+        r["unallocated_amount"] = flt(r.get("unallocated_amount"))
+    annotated = _advance_aging.aging_rows(rows, today())
+    return {
+        "rows": annotated,
+        "summary": _advance_aging.aging_summary(annotated),
+        "warn_days": _advance_aging.WARN_DAYS,
+        "breach_days": _advance_aging.BREACH_DAYS,
     }

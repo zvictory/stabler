@@ -7,6 +7,7 @@ export const STATUS_MAP = {
 		SUPERSEDED_BY_CI: "bg-green-lt",
 		CANCELLED: "bg-red-lt",
 	},
+	"Advance Aging": { OK: "bg-green-lt", WARN: "bg-yellow-lt", BREACH: "bg-red-lt" },
 	"Budget Variance": {
 		favorable: "bg-green-lt",
 		unfavorable: "bg-red-lt",

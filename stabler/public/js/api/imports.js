@@ -4,6 +4,7 @@ const P = "stabler.api.imports";
 
 export const importsApi = {
 	home: (company) => call(`${P}.imports_home`, { company }),
+	advanceAging: (company) => call(`${P}.import_advance_aging`, { company }),
 
 	// Import Orders (native Purchase Order + imports custom fields, WP8)
 	listImportOrders: (params) => call(`${P}.list_import_orders`, params),

@@ -7,6 +7,7 @@ import { importsApi } from "../../api/imports.js";
 import { t } from "../../composables/i18n.js";
 import { formatDate } from "../../composables/date.js";
 import { formatMoney } from "../../composables/money.js";
+import { getStatusBadgeClass } from "../../composables/status.js";
 import KpiCard from "../../components/KpiCard.vue";
 import SkeletonRows from "../../components/SkeletonRows.vue";
 import EmptyState from "../../components/EmptyState.vue";
@@ -18,6 +19,7 @@ const router = useRouter();
 const loading = ref(false);
 const error = ref("");
 const kpi = ref(null);
+const aging = ref(null);
 
 // The 9 logistics statuses, in pipeline order, for the mini-board chips.
 const PIPELINE = [
@@ -42,6 +44,17 @@ async function load() {
 		error.value = err?.message || t("Failed to load the imports dashboard.");
 	} finally {
 		loading.value = false;
+	}
+	loadAdvanceAging();
+}
+
+async function loadAdvanceAging() {
+	if (!activeCompany.value) return;
+	try {
+		aging.value = await importsApi.advanceAging(activeCompany.value);
+	} catch {
+		// Endpoint throws for users without cost visibility — hide the panel.
+		aging.value = null;
 	}
 }
 
@@ -238,6 +251,52 @@ watch(activeCompany, load);
 							<span class="text-secondary">{{ t("Customs declarations pending") }}</span>
 							<strong class="font-monospace" :class="kpi && kpi.gtds_pending ? 'text-warning' : ''">{{ kpi ? kpi.gtds_pending : 0 }}</strong>
 						</button>
+					</div>
+				</div>
+			</div>
+		</div>
+
+		<!-- Advances at risk (Uzbek currency-control repatriation horizon) -->
+		<div v-if="aging && aging.rows && aging.rows.length" class="row row-cards mt-3">
+			<div class="col-12">
+				<div class="card">
+					<div class="card-header">
+						<h3 class="card-title">
+							<i class="ti ti-alarm-exclamation me-2 text-danger"></i>{{ t("Advances at risk") }}
+						</h3>
+						<div class="card-subtitle">{{ t("Repatriation horizon") }}: {{ aging.breach_days }} {{ t("days") }}</div>
+					</div>
+					<div class="card-body py-2">
+						<div class="small">
+							{{ t("At risk") }}:
+							<b class="font-monospace">{{ formatMoney(aging.summary.at_risk_amount, "USD", user.language) }}</b>
+						</div>
+					</div>
+					<div class="table-responsive">
+						<table class="table table-vcenter card-table">
+							<thead>
+								<tr>
+									<th>{{ t("Payment Entry") }}</th>
+									<th>{{ t("Supplier") }}</th>
+									<th class="text-nowrap">{{ t("Date") }}</th>
+									<th class="text-end">{{ t("Unallocated") }}</th>
+									<th class="text-end">{{ t("Age") }}</th>
+									<th>{{ t("Status") }}</th>
+								</tr>
+							</thead>
+							<tbody>
+								<tr v-for="r in aging.rows.slice(0, 10)" :key="r.name">
+									<td class="font-monospace text-nowrap">{{ r.name }}</td>
+									<td>{{ r.supplier_name || r.party }}</td>
+									<td class="text-nowrap">{{ formatDate(r.posting_date) }}</td>
+									<td class="font-monospace text-end">{{ formatMoney(r.unallocated_amount, r.currency || "USD", user.language) }}</td>
+									<td class="text-end">{{ r.age_days }} {{ t("days") }}</td>
+									<td>
+										<span class="badge" :class="getStatusBadgeClass('Advance Aging', r.bucket)">{{ r.bucket }}</span>
+									</td>
+								</tr>
+							</tbody>
+						</table>
 					</div>
 				</div>
 			</div>
