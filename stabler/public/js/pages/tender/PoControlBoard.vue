@@ -121,6 +121,15 @@ const editorCharges = computed(() => editorLines.value.reduce((a, l) => a + (Num
 const editorLanded = computed(() => (Number(editorBase.value) || 0) + editorCharges.value);
 const editorActual = computed(() => editorLines.value.reduce((a, l) => a + (Number(l.actual) || 0), 0));
 const editorActualLanded = computed(() => (Number(editorBase.value) || 0) + editorActual.value);
+// WP-T1: recoverable import VAT that sits OUTSIDE landed cost — shown so the
+// user sees the input-tax asset that is deliberately not capitalized.
+const editorRecoverableVat = computed(() =>
+	editorLines.value.reduce((a, l) => {
+		if (l.type !== "customs" || l.vat_recoverable === false) return a;
+		const c = customsCalc(l);
+		return a + (c.recoverable ? c.vat : 0);
+	}, 0),
+);
 
 async function openEditor(card) {
 	editorPo.value = card.name;
@@ -135,6 +144,7 @@ async function openEditor(card) {
 			type: c.type || "other", label: c.label || "", amount: c.amount || 0, actual: c.actual || null,
 			tnved: c.tnved || "", supplier: c.supplier || "", supplier_name: c.supplier_name || "",
 			cif: c.cif || null, duty_pct: c.duty_pct || null, vat_pct: c.vat_pct || 12,
+			vat_recoverable: c.vat_recoverable !== false,
 		}));
 	} catch (err) {
 		toast.error(err?.message || t("Could not load landed charges."));
@@ -143,7 +153,7 @@ async function openEditor(card) {
 	}
 }
 function addLine() {
-	editorLines.value.push({ type: "transport", label: "", amount: null, actual: null, tnved: "", supplier: "", supplier_name: "", cif: null, duty_pct: null, vat_pct: 12 });
+	editorLines.value.push({ type: "transport", label: "", amount: null, actual: null, tnved: "", supplier: "", supplier_name: "", cif: null, duty_pct: null, vat_pct: 12, vat_recoverable: true });
 }
 function removeLine(i) {
 	editorLines.value.splice(i, 1);
@@ -153,14 +163,19 @@ function pickSupplier(line, s) {
 	line.supplier_name = s.supplier_name || s.name;
 }
 // ТНВЭД customs calculator: duty = CIF × duty% ; VAT = (CIF + duty) × VAT%.
+// WP-T1: for a VAT-registered company, import VAT is recoverable input tax and is
+// NOT capitalized — only duty (and any non-recoverable VAT) lands. `capitalized`
+// is what feeds landed cost; `vat` is tracked separately as a recoverable asset.
 function customsCalc(l) {
 	const cif = Number(l.cif) || 0, d = Number(l.duty_pct) || 0, v = Number(l.vat_pct) || 0;
 	const duty = cif * d / 100;
 	const vat = (cif + duty) * v / 100;
-	return { duty, vat, total: duty + vat };
+	const recoverable = l.vat_recoverable !== false;
+	const capitalized = duty + (recoverable ? 0 : vat);
+	return { duty, vat, recoverable, capitalized, total: duty + vat };
 }
 function applyCustoms(l) {
-	l.amount = Math.round(customsCalc(l).total);
+	l.amount = Math.round(customsCalc(l).capitalized);
 }
 const fmc = (v) => formatMoney(v, ccy.value, user.value.language);
 function closeEditor() {
@@ -176,6 +191,7 @@ async function saveEditor() {
 				type: l.type || "other", label: (l.label || "").trim(), amount: Number(l.amount), actual: Number(l.actual) || 0,
 				tnved: (l.tnved || "").trim(), supplier: l.supplier || "", supplier_name: l.supplier_name || "",
 				cif: Number(l.cif) || 0, duty_pct: Number(l.duty_pct) || 0, vat_pct: Number(l.vat_pct) || 0,
+				vat_recoverable: l.vat_recoverable !== false,
 			}));
 		await call("stabler.api.tender.save_po_landed_charges", { po: editorPo.value, charges: JSON.stringify(clean) });
 		toast.success(t("Landed plan saved."));
@@ -433,9 +449,22 @@ watch(() => route.query.deal, (d) => { if (d && d !== deal.value) { deal.value =
 												<label class="form-label small mb-1">{{ t("VAT") }} %</label>
 												<input v-model.number="l.vat_pct" type="number" step="0.01" class="form-control form-control-sm" @input="applyCustoms(l)">
 											</div>
+											<div class="pb-1">
+												<label class="form-check form-switch mb-0 small">
+													<input class="form-check-input" type="checkbox" :checked="l.vat_recoverable !== false" @change="(e) => { l.vat_recoverable = e.target.checked; applyCustoms(l); }">
+													<span class="form-check-label">{{ t("VAT recoverable (registered)") }}</span>
+												</label>
+											</div>
 											<div class="small text-secondary">
-												{{ t("Duty") }} {{ fmc(customsCalc(l).duty) }} + {{ t("VAT") }} {{ fmc(customsCalc(l).vat) }}
-												= <b class="text-body">{{ fmc(customsCalc(l).total) }}</b>
+												{{ t("Duty") }} {{ fmc(customsCalc(l).duty) }}
+												<template v-if="customsCalc(l).recoverable">
+													→ <b class="text-body">{{ fmc(customsCalc(l).capitalized) }}</b> {{ t("landed") }}
+													<span class="ms-1">({{ t("VAT") }} {{ fmc(customsCalc(l).vat) }} {{ t("recoverable") }})</span>
+												</template>
+												<template v-else>
+													+ {{ t("VAT") }} {{ fmc(customsCalc(l).vat) }}
+													= <b class="text-body">{{ fmc(customsCalc(l).capitalized) }}</b>
+												</template>
 											</div>
 										</div>
 									</td>
@@ -453,6 +482,7 @@ watch(() => route.query.deal, (d) => { if (d && d !== deal.value) { deal.value =
 								<div class="col-6">
 									<div class="d-flex justify-content-between small text-secondary"><span>{{ t("Planned") }} {{ t("Charges").toLowerCase() }}</span><span class="font-monospace">+{{ formatMoney(editorCharges, ccy, user.language) }}</span></div>
 									<div class="d-flex justify-content-between fw-bold"><span>{{ t("Landed total") }}</span><span class="font-monospace">{{ formatMoney(editorLanded, ccy, user.language) }}</span></div>
+									<div v-if="editorRecoverableVat" class="d-flex justify-content-between small text-green" :title="t('Recoverable input VAT — not part of landed cost')"><span><i class="ti ti-receipt-refund"></i> {{ t("VAT recoverable") }}</span><span class="font-monospace">{{ formatMoney(editorRecoverableVat, ccy, user.language) }}</span></div>
 								</div>
 								<div class="col-6">
 									<div class="d-flex justify-content-between small text-secondary"><span>{{ t("Actual") }} {{ t("Charges").toLowerCase() }}</span><span class="font-monospace">+{{ formatMoney(editorActual, ccy, user.language) }}</span></div>

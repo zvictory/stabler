@@ -238,6 +238,13 @@ def _parse_landed(raw) -> list[dict]:
 			"cif": flt(it.get("cif")),
 			"duty_pct": flt(it.get("duty_pct")),
 			"vat_pct": flt(it.get("vat_pct")),
+			# WP-T1: for a VAT-registered company (Mikas) import VAT is RECOVERABLE
+			# input tax — it must NOT be capitalized into landed cost (IAS 2 §11;
+			# same stance as the imports LCV engine). Default True so new customs
+			# lines exclude VAT from `amount`; set False only for a non-registered
+			# scenario where VAT becomes a real cost. Legacy lines with no flag keep
+			# their stored amount until re-saved.
+			"vat_recoverable": bool(it.get("vat_recoverable", True)),
 		})
 	return out
 
@@ -269,6 +276,14 @@ def po_landed_charges(po: str) -> dict:
 	base_total = flt(frappe.db.get_value("Purchase Order", po, "base_grand_total"))
 	charges_total = sum(c["amount"] for c in charges)
 	actual_total = sum(c["actual"] for c in charges)
+	# WP-T1: recoverable import VAT sitting OUTSIDE landed cost — informational,
+	# so the declarant sees the input-tax asset that is deliberately not
+	# capitalized. duty/VAT only meaningful on customs lines with a CIF value.
+	recoverable_vat = 0.0
+	for c in charges:
+		if c["type"] == "customs" and c.get("vat_recoverable") and flt(c.get("cif")):
+			duty = flt(c["cif"]) * flt(c["duty_pct"]) / 100.0
+			recoverable_vat += (flt(c["cif"]) + duty) * flt(c["vat_pct"]) / 100.0
 	return {
 		"po": po,
 		"currency": base_ccy,
@@ -276,6 +291,7 @@ def po_landed_charges(po: str) -> dict:
 		"base_total": base_total,
 		"charges_total": charges_total,
 		"actual_total": actual_total,
+		"recoverable_vat": round(recoverable_vat, 2),
 		"landed_total": base_total + charges_total,
 		"actual_landed": base_total + actual_total,
 	}

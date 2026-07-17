@@ -1,0 +1,72 @@
+"""Source-level guard tests for WP-T1 (recoverable import VAT on tender landed).
+
+Frappe-free: they assert structural properties of api/tender.py that protect the
+money-correctness fix — for a VAT-registered company, import VAT is recoverable
+input tax and must NOT be capitalized into landed cost. A refactor that silently
+re-capitalizes VAT (the very bug this fixes, which makes the board pick the wrong
+vendor) fails here.
+
+    cd /path/to/stabler && PYTHONPATH=$PWD python3 -m unittest stabler.tests.test_tender_landed_vat -v
+"""
+
+from __future__ import annotations
+
+import os
+import re
+import unittest
+
+_HERE = os.path.dirname(os.path.abspath(__file__))
+_TENDER = os.path.normpath(os.path.join(_HERE, "..", "api", "tender.py"))
+
+
+def _read() -> str:
+	with open(_TENDER, encoding="utf-8") as f:
+		return f.read()
+
+
+def _func_body(src: str, name: str) -> str:
+	m = re.search(rf"^def {name}\(", src, re.M)
+	assert m, f"function {name} not found"
+	tail = src[m.start():]
+	nxt = re.search(r"\n(?:@frappe\.whitelist\(\)|def )", tail[1:])
+	return tail[: nxt.start() + 1] if nxt else tail
+
+
+class TestTenderLandedVat(unittest.TestCase):
+	def setUp(self):
+		self.src = _read()
+
+	def test_parse_landed_preserves_recoverable_flag(self):
+		body = _func_body(self.src, "_parse_landed")
+		self.assertIn(
+			"vat_recoverable", body,
+			"_parse_landed must round-trip the vat_recoverable flag so the "
+			"capitalize/exclude decision survives save+reload",
+		)
+		# Default True: new customs lines exclude VAT from landed cost.
+		self.assertRegex(
+			body, r'vat_recoverable["\']?\s*,?\s*True',
+			"vat_recoverable must default True (VAT-registered = recoverable)",
+		)
+
+	def test_recoverable_vat_gated_and_reported(self):
+		body = _func_body(self.src, "po_landed_charges")
+		self.assertIn("recoverable_vat", body, "must surface recoverable_vat total")
+		# The tally must be gated on the flag — never sum VAT for lines that are
+		# genuinely capitalizing it (non-registered scenario).
+		self.assertIn(
+			'vat_recoverable', body,
+			"recoverable_vat must be gated on the vat_recoverable flag",
+		)
+
+	def test_landed_split_sums_amount_not_a_recomputed_total(self):
+		# The planned/actual landed roll-up must use the stored `amount` (which the
+		# frontend already computed as duty-only when recoverable) — NOT re-derive
+		# duty+VAT here, which would re-introduce the capitalized-VAT bug.
+		body = _func_body(self.src, "_deal_landed_split")
+		self.assertIn('c["amount"]', body)
+		self.assertNotIn("vat_pct", body)
+
+
+if __name__ == "__main__":
+	unittest.main()
