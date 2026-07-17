@@ -25,6 +25,10 @@
   "section_status",
   "status",
   "status_correction_reason",
+  "section_amendment",
+  "custom_amendment_of",
+  "custom_amendment_reason",
+  "custom_penalty_amount",
   "column_break_status",
   "document",
   "notes",
@@ -171,6 +175,29 @@
    "fieldtype": "Table",
    "label": "Lines",
    "options": "Customs Declaration Line"
+  },
+  {
+   "fieldname": "section_amendment",
+   "fieldtype": "Section Break",
+   "label": "Amendment (KTS)"
+  },
+  {
+   "fieldname": "custom_amendment_of",
+   "fieldtype": "Link",
+   "label": "Amendment Of",
+   "options": "Customs Declaration",
+   "description": "The original cleared GTD this record amends (KTS post-clearance value correction). Leave empty for an original declaration."
+  },
+  {
+   "fieldname": "custom_amendment_reason",
+   "fieldtype": "Small Text",
+   "label": "Amendment Reason"
+  },
+  {
+   "fieldname": "custom_penalty_amount",
+   "fieldtype": "Currency",
+   "label": "Penalty (P&L)",
+   "description": "Fine on the amendment — expensed to P&L, never capitalized into stock (IAS 2 abnormal cost)."
   }
  ],
  "index_web_pages_for_search": 1,

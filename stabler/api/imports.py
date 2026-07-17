@@ -28,6 +28,7 @@ from stabler.api import _advance_aging
 from stabler.api import _ci_to_pinv
 from stabler.api import _customs_estimate
 from stabler.api import _fx_reval
+from stabler.api import _kts_amendment
 from stabler.api import _imports_rules as rules
 from stabler.api import _proforma
 from stabler.api._common import _assert_can_read, _require_company
@@ -4040,6 +4041,58 @@ def customs_cost_estimate(commercial_invoice: str) -> dict:
         }
     )
     return est
+
+
+@frappe.whitelist()
+def customs_amendment_preview(amendment: str) -> dict:
+    """Route a KTS post-clearance customs amendment into its GL buckets (WP-I15).
+
+    ``amendment`` is a Customs Declaration whose ``custom_amendment_of`` points
+    at the original cleared GTD. Compares the two and splits the delta: extra
+    duty + excise capitalize into stock (delta LCV), extra VAT to Input VAT
+    (asset), penalty to P&L (IAS 2 — abnormal cost, never stock). Preview only:
+    nothing posts and the original GTD is never edited (audit trail). The
+    accountant books the delta LCV + JE after review. Imports-gated + cost-visible.
+    """
+    if not amendment or not frappe.db.exists("Customs Declaration", amendment):
+        frappe.throw(_("Unknown Customs Declaration: {0}").format(amendment))
+    company = _company_of("Customs Declaration", amendment)
+    _assert_imports_access(company)
+    _assert_cost_visible()
+    amd = frappe.get_doc("Customs Declaration", amendment)
+    original_name = amd.get("custom_amendment_of")
+    if not original_name:
+        frappe.throw(_("This declaration is not an amendment (no original GTD linked)."))
+    if not frappe.db.exists("Customs Declaration", original_name):
+        frappe.throw(_("Original GTD {0} not found.").format(original_name))
+    orig = frappe.get_doc("Customs Declaration", original_name)
+
+    delta = _kts_amendment.amendment_delta(
+        {
+            "duty_amount": flt(orig.duty_amount),
+            "excise_amount": flt(orig.excise_amount),
+            "vat_amount": flt(orig.vat_amount),
+        },
+        {
+            "duty_amount": flt(amd.duty_amount),
+            "excise_amount": flt(amd.excise_amount),
+            "vat_amount": flt(amd.vat_amount),
+        },
+        penalty=flt(amd.get("custom_penalty_amount")),
+    )
+    return {
+        "amendment": amendment,
+        "original_gtd": original_name,
+        "commercial_invoice": amd.get("commercial_invoice"),
+        "reason": amd.get("custom_amendment_reason"),
+        "delta": delta,
+        "routing": _kts_amendment.gl_routing(delta),
+        "authoritative": False,
+        "note": _(
+            "Preview only. Book the capitalized delta via an additional Landed "
+            "Cost Voucher, the VAT delta to Input VAT, and any penalty to P&L."
+        ),
+    }
 
 
 # ---------------------------------------------------------------------------
