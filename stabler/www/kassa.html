@@ -1,0 +1,508 @@
+<!DOCTYPE html>
+<html lang="uz">
+<head>
+	<meta charset="utf-8" />
+	<meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover" />
+	<title>Mening kassa jadvalim</title>
+	<script src="https://telegram.org/js/telegram-web-app.js"></script>
+	<style>
+		:root {
+			--tg-bg: #f4f5f7;
+			--tg-text: #14161a;
+			--tg-hint: #7c8591;
+			--card-purple-bg: #5b53d6;
+			--card-purple-text: #ffffff;
+			--card-green-bg: #e8f5ee;
+			--card-green-text: #12351f;
+			--pos-color: #1a8a4c;
+			--neg-color: #d1373f;
+			--border-color: #e3e5e9;
+		}
+
+		* {
+			box-sizing: border-box;
+		}
+
+		html,
+		body {
+			margin: 0;
+			padding: 0;
+			background: var(--tg-bg);
+			color: var(--tg-text);
+			font-family:
+				-apple-system,
+				BlinkMacSystemFont,
+				"Segoe UI",
+				Roboto,
+				Helvetica,
+				Arial,
+				sans-serif;
+			font-size: 15px;
+		}
+
+		#app {
+			max-width: 560px;
+			margin: 0 auto;
+			padding: 12px 12px 32px;
+		}
+
+		h1 {
+			font-size: 18px;
+			font-weight: 600;
+			margin: 4px 0 14px;
+			line-height: 1.3;
+		}
+
+		.cards {
+			display: grid;
+			grid-template-columns: 1fr 1fr;
+			gap: 10px;
+			margin-bottom: 16px;
+		}
+
+		.cards.single {
+			grid-template-columns: 1fr;
+		}
+
+		.card {
+			border-radius: 14px;
+			padding: 14px 16px;
+			min-height: 74px;
+			display: flex;
+			flex-direction: column;
+			justify-content: center;
+			gap: 4px;
+		}
+
+		.card-uzs {
+			background: var(--card-purple-bg);
+			color: var(--card-purple-text);
+		}
+
+		.card-usd {
+			background: var(--card-green-bg);
+			color: var(--card-green-text);
+		}
+
+		.card-other {
+			background: #ffffff;
+			color: var(--tg-text);
+			border: 1px solid var(--border-color);
+		}
+
+		.card-label {
+			font-size: 12.5px;
+			opacity: 0.85;
+			font-weight: 500;
+		}
+
+		.card-balance {
+			font-size: 19px;
+			font-weight: 700;
+			font-variant-numeric: tabular-nums;
+			word-break: break-word;
+		}
+
+		.date-range {
+			display: grid;
+			grid-template-columns: 1fr 1fr;
+			gap: 10px;
+			margin-bottom: 16px;
+		}
+
+		.date-field {
+			display: flex;
+			flex-direction: column;
+			gap: 4px;
+		}
+
+		.date-field label {
+			font-size: 12.5px;
+			color: var(--tg-hint);
+			font-weight: 500;
+		}
+
+		.date-field input[type="date"] {
+			border: 1px solid var(--border-color);
+			border-radius: 10px;
+			padding: 8px 10px;
+			font-size: 14px;
+			background: #ffffff;
+			color: var(--tg-text);
+			width: 100%;
+		}
+
+		.table-wrap {
+			background: #ffffff;
+			border: 1px solid var(--border-color);
+			border-radius: 12px;
+			overflow: hidden;
+		}
+
+		table {
+			width: 100%;
+			border-collapse: collapse;
+			font-size: 13.5px;
+		}
+
+		thead th {
+			text-align: left;
+			font-weight: 600;
+			font-size: 12px;
+			color: var(--tg-hint);
+			padding: 10px 8px;
+			border-bottom: 1px solid var(--border-color);
+			white-space: nowrap;
+		}
+
+		tbody td {
+			padding: 9px 8px;
+			border-bottom: 1px solid var(--border-color);
+			vertical-align: top;
+		}
+
+		tbody tr:last-child td {
+			border-bottom: none;
+		}
+
+		tbody tr:nth-child(even) {
+			background: #fafafa;
+		}
+
+		td.col-date {
+			white-space: nowrap;
+			color: var(--tg-hint);
+		}
+
+		td.col-amount,
+		td.col-running {
+			text-align: right;
+			font-variant-numeric: tabular-nums;
+			white-space: nowrap;
+		}
+
+		.amt-pos {
+			color: var(--pos-color);
+			font-weight: 600;
+		}
+
+		.amt-neg {
+			color: var(--neg-color);
+			font-weight: 600;
+		}
+
+		.empty-row td {
+			text-align: center;
+			color: var(--tg-hint);
+			padding: 28px 8px;
+		}
+
+		.skeleton-row td {
+			padding: 10px 8px;
+		}
+
+		.skeleton-bar {
+			height: 11px;
+			border-radius: 6px;
+			background: linear-gradient(90deg, #eceef1 25%, #f6f7f8 37%, #eceef1 63%);
+			background-size: 400% 100%;
+			animation: skeleton-shine 1.4s ease infinite;
+		}
+
+		@keyframes skeleton-shine {
+			0% {
+				background-position: 100% 50%;
+			}
+			100% {
+				background-position: 0 50%;
+			}
+		}
+
+		.state-banner {
+			border-radius: 12px;
+			padding: 16px;
+			text-align: center;
+			font-size: 14px;
+			margin-bottom: 16px;
+		}
+
+		.state-banner.error {
+			background: #fdecea;
+			color: #8c1d18;
+			border: 1px solid #f3c1bd;
+		}
+	</style>
+</head>
+<body>
+	<div id="app">
+		<h1 id="title">Mening kassa jadvalim</h1>
+
+		<div id="authError" class="state-banner error" hidden></div>
+
+		<div id="content" hidden>
+			<div class="cards" id="cards"></div>
+
+			<div class="date-range">
+				<div class="date-field">
+					<label for="fromDate">Qaysi kundan</label>
+					<input type="date" id="fromDate" />
+				</div>
+				<div class="date-field">
+					<label for="toDate">Qaysi kungacha</label>
+					<input type="date" id="toDate" />
+				</div>
+			</div>
+
+			<div class="table-wrap">
+				<table>
+					<thead>
+						<tr>
+							<th>Sana</th>
+							<th>Oper.turi va izoh</th>
+							<th class="col-amount">Summa</th>
+							<th class="col-running">Qoldiq</th>
+						</tr>
+					</thead>
+					<tbody id="rows"></tbody>
+				</table>
+			</div>
+		</div>
+	</div>
+
+	<script>
+		(function () {
+			"use strict";
+
+			var ENDPOINT = "/api/method/stabler.integrations.kassa.miniapp.kassa_summary";
+
+			var tg = window.Telegram && window.Telegram.WebApp ? window.Telegram.WebApp : null;
+			if (tg) {
+				try {
+					tg.ready();
+					tg.expand();
+					if (tg.themeParams && tg.themeParams.bg_color) {
+						document.documentElement.style.setProperty("--tg-bg", "#" + stripHash(tg.themeParams.bg_color));
+					}
+					if (tg.themeParams && tg.themeParams.text_color) {
+						document.documentElement.style.setProperty("--tg-text", "#" + stripHash(tg.themeParams.text_color));
+					}
+					if (tg.themeParams && tg.themeParams.hint_color) {
+						document.documentElement.style.setProperty("--tg-hint", "#" + stripHash(tg.themeParams.hint_color));
+					}
+				} catch (e) {
+					/* theme application is cosmetic only */
+				}
+			}
+
+			function stripHash(hex) {
+				return String(hex || "").replace(/^#/, "");
+			}
+
+			var titleEl = document.getElementById("title");
+			var authErrorEl = document.getElementById("authError");
+			var contentEl = document.getElementById("content");
+			var cardsEl = document.getElementById("cards");
+			var rowsEl = document.getElementById("rows");
+			var fromInput = document.getElementById("fromDate");
+			var toInput = document.getElementById("toDate");
+
+			function toIso(date) {
+				var y = date.getFullYear();
+				var m = String(date.getMonth() + 1).padStart(2, "0");
+				var d = String(date.getDate()).padStart(2, "0");
+				return y + "-" + m + "-" + d;
+			}
+
+			function isoToDisplay(iso) {
+				if (!iso) return "";
+				var parts = String(iso).split("-");
+				if (parts.length !== 3) return iso;
+				return parts[2] + "." + parts[1] + "." + parts[0];
+			}
+
+			function formatAmount(value, currency) {
+				var decimals = currency === "UZS" ? 0 : 2;
+				var num = Number(value) || 0;
+				var abs = Math.abs(num);
+				var fixed = abs.toFixed(decimals);
+				var parts = fixed.split(".");
+				var intPart = parts[0].replace(/\B(?=(\d{3})+(?!\d))/g, " ");
+				var out = parts[1] ? intPart + "." + parts[1] : intPart;
+				var sign = num < 0 ? "-" : "";
+				var suffix = currency === "UZS" ? " so'm" : currency === "USD" ? " $" : " " + (currency || "");
+				return sign + out + suffix;
+			}
+
+			function cardClass(currency) {
+				if (currency === "UZS") return "card card-uzs";
+				if (currency === "USD") return "card card-usd";
+				return "card card-other";
+			}
+
+			function renderSkeleton() {
+				cardsEl.className = "cards";
+				cardsEl.innerHTML =
+					'<div class="card card-uzs"><div class="skeleton-bar" style="width:60%;background:rgba(255,255,255,.35)"></div></div>' +
+					'<div class="card card-usd"><div class="skeleton-bar" style="width:60%"></div></div>';
+				rowsEl.innerHTML = "";
+				for (var i = 0; i < 5; i++) {
+					var tr = document.createElement("tr");
+					tr.className = "skeleton-row";
+					for (var c = 0; c < 4; c++) {
+						var td = document.createElement("td");
+						td.innerHTML = '<div class="skeleton-bar" style="width:' + (60 + Math.random() * 30) + '%"></div>';
+						tr.appendChild(td);
+					}
+					rowsEl.appendChild(tr);
+				}
+			}
+
+			function renderCards(cards) {
+				cardsEl.className = "cards" + (cards.length <= 1 ? " single" : "");
+				if (!cards.length) {
+					cardsEl.innerHTML = "";
+					return;
+				}
+				cardsEl.innerHTML = cards
+					.map(function (c) {
+						var label = c.currency + " qoldiq";
+						return (
+							'<div class="' +
+							cardClass(c.currency) +
+							'"><div class="card-label">' +
+							escapeHtml(label) +
+							'</div><div class="card-balance">' +
+							escapeHtml(formatAmount(c.balance, c.currency)) +
+							"</div></div>"
+						);
+					})
+					.join("");
+			}
+
+			function renderRows(rows) {
+				if (!rows.length) {
+					rowsEl.innerHTML =
+						'<tr class="empty-row"><td colspan="4">Bu oraliqda operatsiya yo\'q</td></tr>';
+					return;
+				}
+				rowsEl.innerHTML = rows
+					.map(function (r) {
+						var amt = Number(r.amount) || 0;
+						var amtClass = amt < 0 ? "amt-neg" : "amt-pos";
+						var amtText = (amt > 0 ? "+" : "") + formatAmount(amt, r.currency);
+						return (
+							"<tr>" +
+							'<td class="col-date">' +
+							escapeHtml(r.date || "") +
+							"</td>" +
+							"<td>" +
+							escapeHtml(r.op || "") +
+							(r.account_label
+								? '<div style="color:var(--tg-hint);font-size:11.5px;margin-top:2px">' +
+								  escapeHtml(r.account_label) +
+								  "</div>"
+								: "") +
+							"</td>" +
+							'<td class="col-amount"><span class="' +
+							amtClass +
+							'">' +
+							escapeHtml(amtText) +
+							"</span></td>" +
+							'<td class="col-running">' +
+							escapeHtml(formatAmount(r.running, r.currency)) +
+							"</td>" +
+							"</tr>"
+						);
+					})
+					.join("");
+			}
+
+			function escapeHtml(value) {
+				return String(value == null ? "" : value).replace(/[&<>"']/g, function (ch) {
+					return { "&": "&amp;", "<": "&lt;", ">": "&gt;", '"': "&quot;", "'": "&#39;" }[ch];
+				});
+			}
+
+			function showAuthError(message) {
+				contentEl.hidden = true;
+				authErrorEl.hidden = false;
+				authErrorEl.textContent = message;
+			}
+
+			function hideAuthError() {
+				authErrorEl.hidden = true;
+				contentEl.hidden = false;
+			}
+
+			function fetchSummary() {
+				var initData = tg && tg.initData ? tg.initData : "";
+				if (!initData) {
+					showAuthError("Ruxsat yo'q. Iltimos, Telegram orqali oching.");
+					return;
+				}
+				renderSkeleton();
+				hideAuthError();
+
+				var body = new URLSearchParams({
+					init_data: initData,
+					from_date: fromInput.value,
+					to_date: toInput.value,
+				});
+
+				fetch(ENDPOINT, {
+					method: "POST",
+					headers: { "Content-Type": "application/x-www-form-urlencoded" },
+					body: body.toString(),
+				})
+					.then(function (resp) {
+						return resp
+							.json()
+							.catch(function () {
+								return {};
+							})
+							.then(function (data) {
+								if (!resp.ok) {
+									var err = new Error("request failed");
+									err.status = resp.status;
+									throw err;
+								}
+								return data;
+							});
+					})
+					.then(function (data) {
+						var summary = data && Object.prototype.hasOwnProperty.call(data, "message") ? data.message : data;
+						if (!summary) throw new Error("empty response");
+						render(summary);
+					})
+					.catch(function (err) {
+						if (err && (err.status === 403 || err.status === 401)) {
+							showAuthError("Ruxsat yo'q. Telegram orqali oching.");
+						} else {
+							showAuthError("Xatolik yuz berdi. Qayta urinib ko'ring.");
+						}
+					});
+			}
+
+			function render(summary) {
+				titleEl.textContent = "Mening kassa jadvalim [" + (summary.kassir || "") + "]";
+				renderCards(summary.cards || []);
+				renderRows(summary.rows || []);
+			}
+
+			function initDates() {
+				var today = new Date();
+				var from = new Date(today);
+				from.setDate(from.getDate() - 30);
+				toInput.value = toIso(today);
+				fromInput.value = toIso(from);
+			}
+
+			fromInput.addEventListener("change", fetchSummary);
+			toInput.addEventListener("change", fetchSummary);
+
+			initDates();
+			fetchSummary();
+		})();
+	</script>
+</body>
+</html>

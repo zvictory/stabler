@@ -91,14 +91,39 @@ def _post(url: str, payload: dict) -> Any:
 		raise frappe.ValidationError(f"Telegram unreachable: {e.reason}") from e
 
 
+def _statement_button_url() -> str | None:
+	"""HTTPS site URL for the Mini App, or None when the site isn't served
+	over https (local/dev) — Telegram rejects web_app buttons on non-https
+	URLs, so BTN_STATEMENT falls back to a plain text button in that case."""
+	from stabler.integrations.kassa.miniapp import mini_app_url
+
+	url = mini_app_url()
+	return url if url.startswith("https://") else None
+
+
 def _keyboard_markup(keyboard: list[list[str]] | None) -> dict | None:
 	"""None -> omit reply_markup entirely so Telegram keeps showing whatever
 	keyboard the client already has (free-text entry steps: amount/memo/date).
-	"""
+
+	WP-K7: the BTN_STATEMENT ("ℹ️ Mening jadvalim") button is transformed into
+	a Telegram web_app KeyboardButton opening the Kassa Mini App, while every
+	other button stays a plain text button. Typing the label text manually
+	still works as a fallback — _flow.handle() matches it regardless of how
+	the tap was delivered (older clients / no web_app support)."""
 	if keyboard is None:
 		return None
+	web_app_url = _statement_button_url()
+	rows = []
+	for row in keyboard:
+		btn_row = []
+		for label in row:
+			if label == _flow.BTN_STATEMENT and web_app_url:
+				btn_row.append({"text": label, "web_app": {"url": web_app_url}})
+			else:
+				btn_row.append({"text": label})
+		rows.append(btn_row)
 	return {
-		"keyboard": [[{"text": label} for label in row] for row in keyboard],
+		"keyboard": rows,
 		"resize_keyboard": True,
 		"one_time_keyboard": False,
 	}
