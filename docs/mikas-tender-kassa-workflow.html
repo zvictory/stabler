@@ -1,0 +1,408 @@
+<!DOCTYPE html>
+<html lang="tr">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Mikas — Tender Denetimi + Landed Cost Workflow + Kassa Tasarımı</title>
+<style>
+  :root{
+    --ink:#1a2332; --muted:#5c6b80; --line:#e3e8ef; --bg:#f6f8fb; --card:#fff;
+    --blue:#2563eb; --blue-lt:#eff6ff; --green:#16a34a; --green-lt:#f0fdf4;
+    --red:#dc2626; --red-lt:#fef2f2; --amber:#d97706; --amber-lt:#fffbeb;
+    --purple:#7c3aed; --purple-lt:#f5f3ff; --teal:#0d9488; --teal-lt:#f0fdfa;
+    --mono:"SF Mono",Consolas,Menlo,monospace;
+  }
+  *{box-sizing:border-box;margin:0;padding:0}
+  body{font-family:-apple-system,"Segoe UI",Roboto,Inter,sans-serif;background:var(--bg);color:var(--ink);line-height:1.55}
+  .wrap{max-width:1040px;margin:0 auto;padding:24px 20px 80px}
+  header.hero{background:linear-gradient(135deg,#134e4a,#0d9488);color:#fff;border-radius:16px;padding:38px 36px;margin-bottom:26px}
+  header.hero h1{font-size:1.65rem;margin-bottom:10px}
+  header.hero p{opacity:.93;max-width:800px}
+  .chips{margin-top:16px;display:flex;gap:8px;flex-wrap:wrap}
+  .chip{background:rgba(255,255,255,.16);border:1px solid rgba(255,255,255,.28);border-radius:99px;padding:4px 14px;font-size:.8rem}
+  nav.toc{background:var(--card);border:1px solid var(--line);border-radius:12px;padding:14px 20px;margin-bottom:26px;font-size:.9rem}
+  nav.toc b{display:block;margin-bottom:6px;text-transform:uppercase;font-size:.72rem;letter-spacing:.06em;color:var(--muted)}
+  nav.toc a{color:var(--blue);text-decoration:none;margin-right:14px;white-space:nowrap;line-height:2}
+  section.slide{background:var(--card);border:1px solid var(--line);border-radius:16px;padding:28px 32px;margin-bottom:24px;scroll-margin-top:16px}
+  .stepno{display:inline-flex;align-items:center;justify-content:center;min-width:34px;height:34px;border-radius:10px;background:var(--teal);color:#fff;font-weight:700;margin-right:12px;flex:none;padding:0 8px}
+  .slide h2{display:flex;align-items:center;font-size:1.18rem;margin-bottom:6px}
+  .slide h3{font-size:1rem;margin:18px 0 8px}
+  .slide .sub{color:var(--muted);margin-bottom:16px;font-size:.92rem;padding-left:46px}
+  table.gl{width:100%;border-collapse:collapse;margin:12px 0;font-size:.87rem}
+  table.gl caption{text-align:left;font-weight:600;padding:6px 2px;font-size:.85rem;color:var(--muted)}
+  table.gl th{background:#f1f5f9;text-align:left;padding:8px 10px;border:1px solid var(--line);font-size:.74rem;text-transform:uppercase;letter-spacing:.04em;color:var(--muted)}
+  table.gl td{padding:7px 10px;border:1px solid var(--line)}
+  table.gl tr:nth-child(even) td{background:#fafcff}
+  td.num,th.num{text-align:right;font-family:var(--mono);white-space:nowrap;font-size:.83rem}
+  .acct{font-family:var(--mono);font-size:.83rem}
+  .note{border-left:4px solid var(--blue);background:var(--blue-lt);padding:12px 16px;border-radius:0 10px 10px 0;margin:12px 0;font-size:.9rem}
+  .note.warn{border-color:var(--amber);background:var(--amber-lt)}
+  .note.ok{border-color:var(--green);background:var(--green-lt)}
+  .note.bad{border-color:var(--red);background:var(--red-lt)}
+  .note.k{border-color:var(--purple);background:var(--purple-lt)}
+  .note b:first-child{display:block;margin-bottom:4px}
+  .tag{display:inline-block;border-radius:6px;padding:1px 8px;font-size:.73rem;font-weight:600;vertical-align:middle}
+  .tag.ex{background:var(--green-lt);color:var(--green)}
+  .tag.pa{background:var(--amber-lt);color:var(--amber)}
+  .tag.mi{background:var(--red-lt);color:var(--red)}
+  .tag.cash{background:var(--teal-lt);color:var(--teal)}
+  .tag.card{background:var(--blue-lt);color:var(--blue)}
+  .tag.usd{background:var(--purple-lt);color:var(--purple)}
+  .flow{display:flex;flex-wrap:wrap;gap:0;margin:16px 0}
+  .fbox{flex:1 1 140px;min-width:130px;border:1.5px solid var(--line);border-radius:12px;padding:11px 12px;background:#fff;text-align:center;position:relative;margin-right:26px;margin-bottom:8px}
+  .fbox:last-child{margin-right:0}
+  .fbox:not(:last-child)::after{content:"→";position:absolute;right:-22px;top:50%;transform:translateY(-50%);color:var(--muted);font-size:1.15rem}
+  .fbox b{display:block;font-size:.83rem;margin-bottom:3px}
+  .fbox span{font-size:.72rem;color:var(--muted);display:block}
+  .fbox.doc{border-color:var(--blue);background:var(--blue-lt)}
+  .fbox.gl{border-color:var(--green);background:var(--green-lt)}
+  .fbox.tg{border-color:var(--purple);background:var(--purple-lt)}
+  .fbox.warn{border-color:var(--amber);background:var(--amber-lt);border-style:dashed}
+  .lane{border:1px solid var(--line);border-radius:12px;margin:10px 0;overflow:hidden}
+  .lane .lh{background:#f1f5f9;padding:6px 14px;font-size:.75rem;text-transform:uppercase;letter-spacing:.05em;color:var(--muted);font-weight:700}
+  .lane .lb{padding:10px 14px;display:flex;gap:8px;flex-wrap:wrap}
+  .lstep{border:1.5px solid var(--teal);background:var(--teal-lt);border-radius:9px;padding:7px 12px;font-size:.8rem}
+  .lstep.dec{border-color:var(--amber);background:var(--amber-lt)}
+  .lstep.end{border-color:var(--green);background:var(--green-lt)}
+  .kpi{display:grid;grid-template-columns:repeat(auto-fit,minmax(150px,1fr));gap:12px;margin:14px 0}
+  .kpi .k{border:1px solid var(--line);border-radius:12px;padding:13px;text-align:center}
+  .kpi .k .v{font-family:var(--mono);font-size:1.02rem;font-weight:700}
+  .kpi .k .l{font-size:.7rem;text-transform:uppercase;letter-spacing:.05em;color:var(--muted);margin-top:2px}
+  .win{background:var(--green-lt)!important}
+  footer{color:var(--muted);font-size:.8rem;margin-top:28px;line-height:1.8}
+</style>
+</head>
+<body>
+<div class="wrap">
+
+<header class="hero">
+  <h1>Mikas — Tender Workflow Denetimi, UZS Landed Cost Karşılaştırması ve Kassa Tasarımı</h1>
+  <p>Üç bölüm: (A) mevcut tender altyapısının kod denetimi — ne var, ne eksik; (B) hedef workflow — farklı para birimindeki vendor PO'ları gümrük (boj) + yig'im dahil, KDV hariç <b>UZS landed cost</b>'a indirip karşılaştırma ve MSA'daki LCV modelinin buraya uygulanması; (C) Kassa — Whimsical çiziminden doğrulanan çoklu-kassa yapısı (her kassada UZS / plastik karta / USD alt-kassası), bot operasyonlarının GL eşlemesi, Telegram mini app ve her harcamanın tender bazlı P&amp;L'e bağlanması.</p>
+  <div class="chips">
+    <span class="chip">Kaynak: stabler/api/tender.py kod denetimi</span>
+    <span class="chip">CBU kuru altyapısı mevcut</span>
+    <span class="chip">Whimsical: POWERYARN BPM WF — canlı board incelendi ✓ (bot ekranları + Kassa mind-map)</span>
+  </div>
+</header>
+
+<nav class="toc">
+  <b>İçindekiler</b>
+  <a href="#a1">A1 · Denetim Özeti</a>
+  <a href="#a2">A2 · 4 Kritik Bulgu</a>
+  <a href="#b1">B1 · Hedef Workflow</a>
+  <a href="#b2">B2 · Örnek: 3 Vendor UZS Karşılaştırma</a>
+  <a href="#b3">B3 · Tender LCV (MSA modeli)</a>
+  <a href="#c1">C1 · Kassa Kanalları → CoA</a>
+  <a href="#c2">C2 · Kassa Akışı (BPM)</a>
+  <a href="#c3">C3 · Telegram Mini App</a>
+  <a href="#c4">C4 · GL Kayıtları</a>
+  <a href="#c5">C5 · Tender P&amp;L Bağlantısı</a>
+  <a href="#d">D · Uygulama Backlog'u</a>
+</nav>
+
+<!-- ═══ A1 ═══ -->
+<section class="slide" id="a1">
+  <h2><span class="stepno">A1</span>Denetim Özeti — hedef workflow'a karşı mevcut kod</h2>
+  <p class="sub">stabler/api/tender.py (1239 satır, 20+ endpoint) + 8 SPA sayfası satır satır tarandı. Durum:</p>
+
+  <table class="gl">
+    <tr><th>Adım</th><th>Durum</th><th>Nerede / Ne eksik</th></tr>
+    <tr><td>Tender'a katılım (UZEX lot, intake, deadline, go/no-go, görev dağıtımı)</td><td><span class="tag ex">VAR</span></td><td>deal_intake, custom_uzex_* alanları, Telegram lot bildirimi, assign_tender</td></tr>
+    <tr><td>Çoklu vendor PO karşılaştırması</td><td><span class="tag ex">VAR</span></td><td>po_control_board: vendor bazında Goods + Charges → Landed, en ucuz yeşil, "vs cheapest %"</td></tr>
+    <tr><td>Farklı para birimi → UZS çevrimi</td><td><span class="tag pa">KISMEN</span></td><td>CBU günlük kur altyapısı var (cbu_rate_refresh + ±%20 bant koruması); board ERPNext'in PO anındaki base_grand_total'ını kullanıyor — <b>tarih/kur şeffaflığı ve satır bazında döviz yakalama yok</b></td></tr>
+    <tr><td>Gümrük (boj) + KDV hesabı landed içinde</td><td><span class="tag pa">KISMEN</span></td><td>Board'da CIF×duty% + (CIF+duty)×vat% <b>client-side JS hesaplayıcı</b> — imports modülündeki gerçek ТН ВЭД motoruna (hs_duty_rate + customs_estimate) bağlı DEĞİL</td></tr>
+    <tr><td>Nihai UZS landed karşılaştırma + kazanan</td><td><span class="tag ex">VAR</span></td><td>landed_total sıralaması, cheapest bayrağı, landed_delta_pct</td></tr>
+    <tr><td>Plan Bid P&amp;L (marj/fiyat, KDV, vergiler, Остаток)</td><td><span class="tag ex">VAR</span></td><td>_compute_bid_pnl: margin geri-çözümü, KDV %12, kâr vergisi %15, temettü %5</td></tr>
+    <tr><td>Actual P&amp;L (plan-vs-actual)</td><td><span class="tag pa">KISMEN</span></td><td>_actual_block var; ama "actual" masraflar <b>elle yazılıyor</b> — GL/fatura/ödemeden GELMİYOR</td></tr>
+    <tr><td>Kassa / nakit masrafların tender'a bağlanması</td><td><span class="tag mi">YOK</span></td><td>Kassa Operation doctype yok, bot akışının Stabler/GL bağı yok, tender P&amp;L'e GL beslemesi yok (bot+mini app tasarımı Whimsical'da hazır)</td></tr>
+    <tr><td>Cash account (CoA) yardımcıları</td><td><span class="tag ex">VAR (genel)</span></td><td>list_cash_bank_accounts (money.py) — tender'a bağlanmamış</td></tr>
+  </table>
+</section>
+
+<!-- ═══ A2 ═══ -->
+<section class="slide" id="a2">
+  <h2><span class="stepno">A2</span>4 Kritik Bulgu — finansist gözüyle</h2>
+  <p class="sub">Denetimin özü: sistem karşılaştırmayı iyi yapıyor, ama rakamların KAYNAĞI zayıf.</p>
+
+  <div class="note bad">
+    <b>1 · "Actual" maliyet elle yazılıyor — defterden gelmiyor.</b>
+    Landed editördeki Actual kolonu serbest giriş. Gerçek dünyada actual = kesilen Purchase Invoice + yapılan Payment Entry'dir.
+    Elle giriş hem hata hem manipülasyon kapısıdır; tender kârı deftere mutabık olmayan bir rakama dayanamaz.
+    <b>Çözüm B3'te:</b> her landed satırına belge referansı (PInv/PE) → actual otomatik.
+  </div>
+
+  <div class="note warn">
+    <b>2 · İthalat KDV'si landed cost'a gömülüyor — Mikas KDV mükellefiyse bu YANLIŞ.</b>
+    Board hesaplayıcısı (CIF+boj)×%12'yi masrafa ekliyor. Bid P&amp;L satış tarafında zaten output KDV hesaplıyor —
+    yani Mikas KDV mükellefi. Mükellef için ithalat KDV'si <b>indirilecek KDV varlığıdır</b>, maliyet değil.
+    Bugünkü haliyle maliyet şişiyor → teklif gereksiz yüksek → tender kaybettirir. MSA'da bunu doğru kurduk (Input VAT ayrı) — aynısı buraya taşınmalı.
+  </div>
+
+  <div class="note warn">
+    <b>3 · Gümrük hesaplayıcısı oyuncak, gerçek motor yan modülde duruyor.</b>
+    İmports modülünde effective-date'li <span class="acct">HS Duty Rate</span> tablosu + yig'im (tier×BRV) motoru + customs_estimate zaten yazıldı.
+    Tender board'u ise elle CIF/duty%/vat% istiyor. Aynı şirketin iki farklı gümrük gerçeği olamaz — board, HS motoruna bağlanmalı.
+  </div>
+
+  <div class="note warn">
+    <b>4 · Döviz şeffaflığı yok.</b>
+    Karşılaştırma base_grand_total üzerinden doğru ama hangi kurla, hangi tarihte çevrildiği görünmüyor; landed satırlarında döviz alanı hiç yok
+    (Çin nakliyecisi USD ister). Teklif tarihinden teslimata kur %3 oynarsa kazanan vendor değişebilir — kur riski kolonu şart.
+  </div>
+</section>
+
+<!-- ═══ B1 ═══ -->
+<section class="slide" id="b1">
+  <h2><span class="stepno">B1</span>Hedef Workflow — uçtan uca</h2>
+  <p class="sub">MSA import zincirinin tender'a uyarlanmış hali. Yeşil kutular GL'ye yazan noktalar.</p>
+
+  <div class="flow">
+    <div class="fbox doc"><b>1 · UZEX Lot</b><span>intake + deadline<br>go/no-go ✔ mevcut</span></div>
+    <div class="fbox doc"><b>2 · Vendor Teklifleri</b><span>SQ/PO taslakları<br>USD · CNY · RUB · UZS</span></div>
+    <div class="fbox warn"><b>3 · UZS Landed</b><span>CBU kuru + boj (HS motoru)<br>+ yig'im + transport<br>KDV HARİÇ</span></div>
+    <div class="fbox doc"><b>4 · Karşılaştır</b><span>en ucuz landed<br>✔ mevcut board</span></div>
+  </div>
+  <div class="flow">
+    <div class="fbox doc"><b>5 · Bid P&amp;L</b><span>marj → teklif fiyatı<br>✔ mevcut</span></div>
+    <div class="fbox gl"><b>6 · Kazanınca</b><span>PO submit → mal kabul<br>PInv @ anlaşılan</span></div>
+    <div class="fbox gl"><b>7 · Tender LCV</b><span>transport+boj+yig'im<br>→ stok değerine (EIV)</span></div>
+    <div class="fbox gl"><b>8 · Actual P&amp;L</b><span>GL'den otomatik<br>+ Kassa masrafları (C)</span></div>
+  </div>
+
+  <div class="note ok">
+    <b>Altın kural aynı (MSA sunumundaki):</b> mala binecek her masraf → <span class="acct">Expenses Included In Valuation</span> köprüsünden LCV ile stoğa;
+    KDV → <span class="acct">Input VAT</span> (asla maliyet); teklif kıyası her zaman <b>KDV'siz UZS landed</b> üzerinden.
+  </div>
+</section>
+
+<!-- ═══ B2 ═══ -->
+<section class="slide" id="b2">
+  <h2><span class="stepno">B2</span>Örnek — 3 vendor, 3 para birimi, tek UZS landed tablosu</h2>
+  <p class="sub">Tender T-2026-014 (endüstriyel iplik, 20 ton). Kurlar örnek CBU: USD 12.000 · CNY 1.680 · RUB 151. Boj %5 (HS koduna göre tablodan), yig'im 2×BRV = 824.000 сўм. KDV %12 hesaplanır ama <b>landed'a girmez</b> (indirilecek).</p>
+
+  <table class="gl">
+    <caption>Vendor karşılaştırma — hepsi UZS, KDV hariç</caption>
+    <tr><th>Kalem</th><th class="num">A · Çin (CNY)</th><th class="num">B · Rusya (RUB)</th><th class="num">C · Yerli (UZS)</th></tr>
+    <tr><td>Mal bedeli (orijinal)</td><td class="num">350.000 CNY</td><td class="num">4.500.000 RUB</td><td class="num">665.000.000 UZS</td></tr>
+    <tr><td>Mal bedeli → UZS @CBU</td><td class="num">588.000.000</td><td class="num">679.500.000</td><td class="num">665.000.000</td></tr>
+    <tr><td>Transport (sınıra kadar)</td><td class="num">25.000.000</td><td class="num">12.000.000</td><td class="num">3.000.000</td></tr>
+    <tr><td>Gümrük kıymeti (mal+taşıma)</td><td class="num">613.000.000</td><td class="num">691.500.000</td><td class="num">—</td></tr>
+    <tr><td>Boj %5 (HS tablosundan)</td><td class="num">30.650.000</td><td class="num">34.575.000</td><td class="num">—</td></tr>
+    <tr><td>Yig'im (2×BRV)</td><td class="num">824.000</td><td class="num">824.000</td><td class="num">—</td></tr>
+    <tr class="win"><td><b>UZS LANDED (KDV hariç)</b></td><td class="num"><b>644.474.000</b> 🏆</td><td class="num"><b>726.899.000</b></td><td class="num"><b>668.000.000</b></td></tr>
+    <tr><td>vs cheapest</td><td class="num">0%</td><td class="num">+12,8%</td><td class="num">+3,7%</td></tr>
+    <tr><td>İthalat KDV %12 (bilgi — varlık olur)</td><td class="num">77.238.000</td><td class="num">87.129.000</td><td class="num">(yerli KDV faturada)</td></tr>
+  </table>
+
+  <div class="note">
+    <b>Okuma:</b> Çin, gümrük yüküne rağmen yerliden %3,7 ucuz — ama teslim süresi ve kur riski (CNY %2 artarsa fark erir: 588M×%2 ≈ 11,8M → avantaj 23,5M'den 11,7M'ye iner).
+    Bu yüzden karşılaştırma tablosuna <b>kur duyarlılık kolonu</b> (±%2 senaryosu) eklenmesini öneriyorum — B'deki backlog'da (WP-T4).
+  </div>
+
+  <div class="note warn">
+    <b>Bugünkü sistemde aynı örnek yanlış çıkar:</b> board KDV'yi de maliyete kattığı için Çin 721,7M görünür ve yerli (668M) "kazanır" —
+    oysa KDV geri alınacak. Bulgu A2-2'nin somut bedeli: <b>yanlış vendor seçimi</b>.
+  </div>
+</section>
+
+<!-- ═══ B3 ═══ -->
+<section class="slide" id="b3">
+  <h2><span class="stepno">B3</span>Tender LCV — MSA modelinin birebir uygulanışı</h2>
+  <p class="sub">Kazanan PO (Çin, $/CNY) mal kabulünden sonra: MSA'daki zincirin aynısı, tender bağlamıyla.</p>
+
+  <table class="gl">
+    <caption>GL akışı (Vendor A kazandı; rakamlar B2'den)</caption>
+    <tr><th>Adım</th><th>Belge</th><th>GL (UZS)</th></tr>
+    <tr><td>Mal kabul</td><td>Purchase Receipt</td><td class="acct">Dr Stock 588M / Cr SRBNB 588M</td></tr>
+    <tr><td>Mal faturası</td><td>PInv (CNY, @CBU)</td><td class="acct">Dr SRBNB 588M / Cr Creditors-A 588M</td></tr>
+    <tr><td>Nakliye faturası</td><td>PInv (hizmet)</td><td class="acct">Dr EIV 25M / Cr Creditors-Nakliyeci 25M</td></tr>
+    <tr><td>Gümrük (GTD)</td><td>Customs Declaration</td><td class="acct">Dr EIV 31,474M (boj+yig'im) + Dr Input VAT 77,238M / Cr Bojxona 108,712M</td></tr>
+    <tr><td><b>Tender LCV</b></td><td>Landed Cost Voucher</td><td class="acct">Dr Stock 56,474M / Cr EIV 56,474M → EIV=0 ✓</td></tr>
+    <tr class="win"><td><b>Sonuç</b></td><td>Stok = <b>644.474.000</b></td><td>Plan landed ile kuruşuna aynı → plan-vs-actual sapması = tedarik disiplini göstergesi</td></tr>
+  </table>
+
+  <div class="note ok">
+    <b>Actual P&amp;L artık elle değil:</b> her landed satırı belge referansı taşıyınca (PInv/PE/GTD),
+    "Actual" kolonu o belgelerin base tutarından okunur. Plan (editörde yazılan) vs Actual (defter) farkı gerçek yönetim bilgisidir.
+    İmports modülündeki LCV motoru (GRN→otomatik taslak LCV, GTD öncelikli, KDV asla kapitalize edilmez) tender PO'larına da aynı hook'la hizmet verebilir — yeni motor yazılmaz, mevcut olan bağlanır.
+  </div>
+</section>
+
+<!-- ═══ C1 ═══ -->
+<section class="slide" id="c1">
+  <h2><span class="stepno">C1</span>Kassa × Kanal → Chart of Accounts eşlemesi <span class="chip">çizimden doğrulandı ✓</span></h2>
+  <p class="sub">Whimsical çizimindeki gerçek yapı: <b>birden çok fiziki kassa</b> (AKASSA, QKASSA, SKASSA, TKASSA, Admin-kassaları) ve her kassanın <b>üç alt-kassası</b>: <span class="acct">{KASSA}_UZS</span> (naqd), <span class="acct">{KASSA}_PK</span> (plastik karta, UZS), <span class="acct">{KASSA}_USD</span> (naqd döviz). CoA'da her alt-kassa = bir Cash hesabı; mevcut <span class="acct">list_cash_bank_accounts</span> helper'ı (account_type=Cash) bunları zaten listeleyebiliyor.</p>
+
+  <table class="gl">
+    <tr><th>Alt-kassa (çizimdeki ad)</th><th>CoA hesabı</th><th>Para birimi</th><th>Not</th></tr>
+    <tr><td><span class="tag cash">AKASSA_UZS</span></td><td class="acct">Kassalar › AKassa › Naqd UZS (Cash)</td><td class="num">UZS</td><td>Günlük kasa; fiziki sayım mutabakatı</td></tr>
+    <tr><td><span class="tag card">AKASSA_PK</span></td><td class="acct">Kassalar › AKassa › Plastik Karta (Cash)</td><td class="num">UZS</td><td>PK = plastik karta bakiyesi UZS cinsinden; ekstre mutabakatı bank_statement import ile</td></tr>
+    <tr><td><span class="tag usd">AKASSA_USD</span></td><td class="acct">Kassalar › AKassa › Naqd USD (Cash, USD)</td><td class="num">USD</td><td>Döviz kasası; her hareket CBU kuruyla çift bacak, dönem sonu revaluation (WP-I11 motoru!)</td></tr>
+    <tr><td colspan="4" style="opacity:.75">… aynı üçlü QKASSA / SKASSA / TKASSA ve her Admin kassası için tekrarlanır — CoA'da <b>kassa başına bir grup, altında 3 Cash hesabı</b>. Çizimdeki bot bakiye raporu tam da bu kırılımı gösteriyor (AKassa: UZS 26 991 567 / PK 3 000 000 / USD 5 244).</td></tr>
+  </table>
+
+  <div class="note k">
+    <b>Neden hesap ağacı?</b> Kanal + kassa, paranın çıktığı hesaptan okunur: rapor "bu tender'a hangi kassadan, hangi kanaldan ne harcandı"yı ancak hesaplar ayrıysa kuruşuna verir.
+    Grup düğümü (Kassalar › AKassa) kassir bazlı toplam verir; yaprak hesaplar kanal kırılımı. USD alt-kassaları kur farkı üretir — WP-I11'deki revaluation önizlemesi bu hesapları da kapsayacak.
+  </div>
+</section>
+
+<!-- ═══ C2 ═══ -->
+<section class="slide" id="c2">
+  <h2><span class="stepno">C2</span>Kassa Operasyonları — Whimsical mind-map'in GL karşılığı <span class="chip">çizimden doğrulandı ✓</span></h2>
+  <p class="sub">Çizimdeki akış <b>talep→onay değil, doğrudan kassir girişi</b>: her kassir kendi kassasında operasyon kaydeder (bot reply-keyboard). Mind-map'teki 6 operasyonun her biri belirli bir muhasebe kaydına eşlenir:</p>
+
+  <table class="gl">
+    <tr><th>Bot operasyonu (çizim)</th><th>Alt seçimi (çizim)</th><th>GL karşılığı</th></tr>
+    <tr><td>🟢 <b>+Kirim</b></td><td>UZS / PK / USD</td><td class="acct">Dr ilgili alt-kassa / Cr kaynak (tahsilat, avans iadesi, sermaye…) — Payment Entry</td></tr>
+    <tr><td>🔴 <b>−Chiqim</b></td><td>—</td><td class="acct">Dr gider hesabı (kategori belirler) / Cr alt-kassa — PE; <b>tender etiketi (crm_deal) burada eklenir</b></td></tr>
+    <tr><td>🔄 <b>Konvertatsiya</b></td><td>„UZS oldim / PK oldim / USD oldim" — <i>ne aldın</i> hedef hesabı belirler</td><td class="acct">JE: Dr hedef alt-kassa / Cr kaynak alt-kassa; USD bacağı CBU kuruyla, fark → Exchange Gain/Loss</td></tr>
+    <tr><td>💱 <b>Kassadan kassaga</b></td><td>„Qaysi kassaga?" → AKASSA_UZS … QKASSA (alt-kassa granülü)</td><td class="acct">İç transfer (Internal Transfer PE) — gider DEĞİL, iki Cash hesabı arası</td></tr>
+    <tr><td>📝 <b>Qolib ketgan amal</b></td><td>—</td><td class="acct">Aynı operasyonlar geçmiş <span class="acct">posting_date</span> ile (unutulan kayıt); kapalı döneme kilit şart</td></tr>
+    <tr><td>ℹ️ <b>Mening jadvalim</b></td><td>UZS / USD</td><td>Kayıt değil — mini app ekstre görünümü (C3); GL'den okunan yürüyen bakiye (Qoldiq)</td></tr>
+    <tr><td>❌ <b>Bekor qilish</b></td><td>—</td><td>Taslaksa sil; submit edilmişse <b>cancel + amend</b> (audit izi bozulmaz)</td></tr>
+  </table>
+
+  <div class="note k">
+    <b>Çizimde iptal edilen buton:</b> „Kassalar balansi" kırmızı X ile çizilmiş — bakiye raporu bot mesajından çıkıp <b>mini app jadval'ına</b> taşınıyor (C3). Konvertatsiya kalıyor.
+    <b>Çizimde olmayan ama önerdiğimiz katman:</b> tutar eşiği üzerindeki Chiqim'ler için hafif bir onay adımı (aşağıda) — kassir disiplinini bozmaz, sadece büyük çıkışları görünür kılar.
+  </div>
+
+  <h3>Öneri (çizim-üstü ek): eşikli onay + tender etiketi</h3>
+  <div class="lane"><div class="lh">1 · Kassir (çizimdeki akış — değişmez)</div><div class="lb">
+    <span class="lstep">Bot menüsünden Kirim / Chiqim / Konvertatsiya / Kassadan-kassaga kaydeder</span>
+    <span class="lstep">Chiqim'de: kategori + <b>tender (Deal)</b> + izoh; fiş fotoğrafı (opsiyonel)</span>
+    <span class="lstep">Kayıt → <b>Payment Entry / JE taslağı otomatik</b> (Cr ilgili alt-kassa)</span>
+  </div></div>
+  <div class="lane"><div class="lh">2 · Eşik üstü Chiqim (öneri — çizimde yok)</div><div class="lb">
+    <span class="lstep dec">Tutar &gt; limit → yöneticiye inline onay kartı; onaysız taslak submit edilmez</span>
+  </div></div>
+  <div class="lane"><div class="lh">3 · Muhasebe → kapanış</div><div class="lb">
+    <span class="lstep">Taslakları gözden geçirir → submit → GL + Tender P&amp;L</span>
+    <span class="lstep end">Gün sonu: fiziki sayım vs jadval Qoldiq mutabakatı (UZS + USD ayrı)</span>
+  </div></div>
+
+  <h3>Kassa Operation doctype (öneri şeması — çizimdeki alanlarla)</h3>
+  <table class="gl">
+    <tr><th>Alan</th><th>Tip</th><th>Not</th></tr>
+    <tr><td class="acct">kassir</td><td>Link → User</td><td>Telegram initData ile eşleşir; kassa yetkisi buradan</td></tr>
+    <tr><td class="acct">kassa_account</td><td>Link → Account (Cash yaprağı)</td><td>Alt-kassa: AKASSA_UZS / AKASSA_PK / … (C1 ağacı)</td></tr>
+    <tr><td class="acct">op_type</td><td>Select: KIRIM / CHIQIM / KONVERTATSIYA / TRANSFER</td><td>Çizimdeki menüyle birebir; merkezi STATUS_MAP'e girer</td></tr>
+    <tr><td class="acct">target_account</td><td>Link → Account</td><td>Konvertatsiya &amp; Kassadan-kassaga hedefi („Qaysi kassaga?")</td></tr>
+    <tr><td class="acct">crm_deal</td><td>Link → CRM Deal</td><td><b>Tender bağı — P&amp;L anahtarı</b>; zorunlu değil (genel gider de olabilir)</td></tr>
+    <tr><td class="acct">amount / currency</td><td>Currency</td><td>USD alt-kassasında USD; PE/JE'de CBU çift bacak</td></tr>
+    <tr><td class="acct">category / izoh</td><td>Select + Small Text</td><td>Jadval'daki „Oper.turi va izoh" kolonu; P&amp;L satır grubu</td></tr>
+    <tr><td class="acct">posting_date</td><td>Date</td><td>„Qolib ketgan amal" = geçmiş tarihli giriş</td></tr>
+    <tr><td class="acct">voucher</td><td>Link → PE/JE (read-only)</td><td>Kayıt anında oluşan taslak</td></tr>
+    <tr><td class="acct">receipt</td><td>Attach (çoklu)</td><td>Chiqim'de teşvik edilir</td></tr>
+  </table>
+</section>
+
+<!-- ═══ C3 ═══ -->
+<section class="slide" id="c3">
+  <h2><span class="stepno">C3</span>Telegram Bot + Mini App — mimari <span class="chip">çizimden doğrulandı ✓</span></h2>
+  <p class="sub">Çizimde bot (<span class="acct">ppyknbot</span>) ve mini app <b>zaten tasarlanmış</b>: reply-keyboard ile operasyon girişi + „Mening kassa jadvalim" WebApp'i (UZS/USD qoldiq kartları, tarih aralığı, Sana · Oper.turi va izoh · Summa · Qoldiq kolonlu ekstre, yürüyen bakiye). Stabler tarafı bunu besler: WP-307'nin token-gated guest webhook kalıbı + WP-308 fail-closed secret aynen.</p>
+
+  <div class="flow">
+    <div class="fbox tg"><b>Bot reply-keyboard</b><span>Kirim/Chiqim/Konvertatsiya/<br>Transfer girişi (çizim)</span></div>
+    <div class="fbox tg"><b>Mini App „Jadval"</b><span>Telegram initData imzası;<br>qoldiq + ekstre (çizim)</span></div>
+    <div class="fbox doc"><b>Kassa Operation</b><span>doctype + voucher taslağı</span></div>
+    <div class="fbox gl"><b>Payment Entry / JE</b><span>Cr alt-kassa hesabı<br>taslak → muhasebe submit</span></div>
+  </div>
+
+  <table class="gl">
+    <caption>Ekranlar (çizimdekiler + Stabler eklentileri)</caption>
+    <tr><th>Ekran</th><th>Kaynak</th><th>İçerik / Aksiyon</th></tr>
+    <tr><td>Bosh menu → kassa seçimi</td><td>çizim ✓</td><td>Kassir yalnız yetkili kassalarını görür (AKASSA | QKASSA); bakiye özeti UZS/PK/USD</td></tr>
+    <tr><td>Kassa menüsü</td><td>çizim ✓</td><td>Kirim · Chiqim · Konvertatsiya · Kassadan kassaga · Qolib ketgan amal · Mening jadvalim · Bekor qilish</td></tr>
+    <tr><td>„Mening kassa jadvalim"</td><td>çizim ✓</td><td>UZS/USD qoldiq, tarih filtresi, operasyon ekstre + yürüyen bakiye — GL'den okunur</td></tr>
+    <tr><td>Chiqim'de tender alanı</td><td><b>Stabler ekleme</b></td><td>Kategori + Deal seçimi (aktif tender listesi inline) → crm_deal etiketi</td></tr>
+    <tr><td>Direktor özeti</td><td><b>Stabler ekleme</b></td><td>Tender bazlı kassa harcama özeti (C5 raporunun mobili) — salt-okur</td></tr>
+  </table>
+
+  <div class="note k">
+    <b>Güvenlik:</b> initData HMAC doğrulaması sunucuda (bot token ile); Telegram user id ↔ Stabler user eşlemesi admin onaylı bir kayıtla;
+    tutar limitleri ve kanal yetkisi rol bazlı; webhook secret fail-closed (WP-308 kalıbı aynen). Mini app hiçbir GL kaydını kendisi submit ETMEZ — her şey taslak, muhasebe onaylar (MSA convert akışıyla aynı disiplin).
+  </div>
+</section>
+
+<!-- ═══ C4 ═══ -->
+<section class="slide" id="c4">
+  <h2><span class="stepno">C4</span>GL Kayıtları — çizimdeki operasyonlardan örnek (tender T-2026-014)</h2>
+  <p class="sub">Kurlar: USD 12.000. Her kayıt Kassa Operation'dan doğan Payment Entry / Journal Entry. Örnek kassa: AKASSA.</p>
+
+  <table class="gl">
+    <tr><th>Operasyon</th><th>Alt-kassa</th><th class="num">Tutar</th><th>GL</th></tr>
+    <tr><td>Chiqim — deklarant hizmeti</td><td><span class="tag cash">AKASSA_UZS</span></td><td class="num">2.000.000</td><td class="acct">Dr Tender Xarajat—Deklarant 2.000.000 / Cr AKassa Naqd UZS 2.000.000</td></tr>
+    <tr><td>Chiqim — noter tasdiki</td><td><span class="tag card">AKASSA_PK</span></td><td class="num">850.000</td><td class="acct">Dr Tender Xarajat—Notarius 850.000 / Cr AKassa Plastik Karta 850.000</td></tr>
+    <tr><td>Chiqim — sertifikasyon</td><td><span class="tag usd">AKASSA_USD</span></td><td class="num">$300</td><td class="acct">Dr Tender Xarajat—Sertifikat 3.600.000 / Cr AKassa Naqd USD $300 (=3.600.000 @12.000)</td></tr>
+    <tr class="win"><td><b>Tender'a toplam kassa</b></td><td>3 alt-kassa</td><td class="num"><b>6.450.000</b></td><td>Hepsi <span class="acct">crm_deal = T-2026-014</span> etiketli</td></tr>
+    <tr><td colspan="4" style="opacity:.75; padding-top:10px"><b>Tender'a GİTMEYEN operasyonlar</b> (çizimden — bunlar gider değil, P&amp;L'e dokunmaz):</td></tr>
+    <tr><td>Konvertatsiya — „UZS oldim"</td><td><span class="tag usd">USD→UZS</span></td><td class="num">$500</td><td class="acct">Dr AKassa Naqd UZS 6.000.000 / Cr AKassa Naqd USD $500 @12.000; kur farkı varsa → Exchange Gain/Loss</td></tr>
+    <tr><td>Kassadan kassaga</td><td><span class="tag cash">AKASSA_UZS → QKASSA_UZS</span></td><td class="num">1.500.000</td><td class="acct">Internal Transfer: Dr QKassa Naqd UZS / Cr AKassa Naqd UZS 1.500.000</td></tr>
+  </table>
+
+  <div class="note">
+    <b>Maliyet mi gider mi?</b> Kural B'dekiyle aynı: harcama <b>mal maliyetine</b> giriyorsa (örn. zorunlu sertifikasyon ürünün satılabilirlik şartıysa) EIV köprüsünden LCV'ye;
+    tender'ı kazanma sürecinin gideri ise (noter, teklif dosyası) doğrudan tender-etiketli P&amp;L gideri. Kategori alanı bu yönlendirmeyi taşır — kassir düşünmez, kategori karar verir.
+  </div>
+</section>
+
+<!-- ═══ C5 ═══ -->
+<section class="slide" id="c5">
+  <h2><span class="stepno">C5</span>Tender Bazlı P&amp;L — kassa entegrasyonuyla nihai tablo</h2>
+  <p class="sub">Bugünkü _compute_bid_pnl'e tek ekleme: "actual" katmanına GL'den iki besleme — (1) belge-referanslı landed satırları, (2) crm_deal etiketli kassa harcamaları.</p>
+
+  <table class="gl">
+    <caption>T-2026-014 — plan vs actual (örnek)</caption>
+    <tr><th>Kalem</th><th class="num">Plan (UZS)</th><th class="num">Actual (GL'den)</th><th class="num">Δ</th></tr>
+    <tr><td>Satış (SO, KDV'siz)</td><td class="num">780.000.000</td><td class="num">780.000.000</td><td class="num">0</td></tr>
+    <tr><td>Landed maliyet (B3 LCV)</td><td class="num">644.474.000</td><td class="num">646.100.000</td><td class="num">+1.626.000</td></tr>
+    <tr><td><b>Kassa masrafları (C4) — YENİ</b></td><td class="num">5.000.000</td><td class="num"><b>6.450.000</b></td><td class="num">+1.450.000</td></tr>
+    <tr><td>Brüt kâr</td><td class="num">130.526.000</td><td class="num">127.450.000</td><td class="num">−3.076.000</td></tr>
+    <tr><td>Kâr vergisi %15</td><td class="num">19.579.000</td><td class="num">19.118.000</td><td class="num">−461.000</td></tr>
+    <tr class="win"><td><b>Net kâr</b></td><td class="num"><b>110.947.000</b></td><td class="num"><b>108.332.000</b></td><td class="num"><b>−2.615.000</b></td></tr>
+  </table>
+
+  <div class="note ok">
+    <b>Kapanan döngü:</b> sahadaki 300$'lık sertifikasyon harcaması → Telegram'da 30 saniyede talep → kassirin USD kasasından →
+    GL'de kuruşuna → tender P&amp;L'inde görünür kâr etkisi. Direktör "bu tender'da kim, hangi kanaldan, neye harcadı"yı tek ekranda görür;
+    Остаток artık tahmin değil, defter gerçeğidir.
+  </div>
+</section>
+
+<!-- ═══ D ═══ -->
+<section class="slide" id="d">
+  <h2><span class="stepno">D</span>Uygulama Backlog'u — önerilen WP serisi</h2>
+  <p class="sub">Sıralama: önce rakamların kaynağını düzelt (T serisi), sonra kassa (K serisi). Efor: S≈½ gün, M≈1-2 gün, L≈3+ gün.</p>
+
+  <table class="gl">
+    <tr><th>WP</th><th>İş</th><th>Efor</th><th>Bağımlılık</th></tr>
+    <tr><td><b>WP-T1</b></td><td>KDV'yi landed'dan çıkar: board hesaplayıcısında "KDV mükellefi" toggle'ı — mükellefse KDV bilgi satırı olur, maliyete girmez (A2-2 düzeltmesi)</td><td>S</td><td>—</td></tr>
+    <tr><td><b>WP-T2</b></td><td>Board gümrük hesabını HS motoruna bağla: hs_duty_rate + yig'im (customs_estimate) endpoint'ini tender'dan çağır; elle duty%/vat% yalnız fallback</td><td>M</td><td>WP-I13 (var)</td></tr>
+    <tr><td><b>WP-T3</b></td><td>Landed satırına döviz: currency + fx_rate + rate_date alanları; UZS'ye CBU'dan çevir, satırda orijinal+UZS göster</td><td>M</td><td>—</td></tr>
+    <tr><td><b>WP-T4</b></td><td>Kur duyarlılık kolonu: karşılaştırma tablosunda ±%2 senaryolu landed aralığı</td><td>S</td><td>T3</td></tr>
+    <tr><td><b>WP-T5</b></td><td>Actual'ı GL'ye bağla: landed satırına ref_doctype/ref_name (PInv/PE/GTD); actual = belge base tutarı, elle giriş yalnız ref'siz satırda</td><td>M</td><td>—</td></tr>
+    <tr><td><b>WP-T6</b></td><td>Tender LCV: kazanan PO'nun mal kabulünde imports LCV hook'unu tender bağlamıyla tetikle (EIV → stok; KDV asla)</td><td>L</td><td>T1,T5</td></tr>
+    <tr><td><b>WP-K1</b></td><td>CoA kassa ağacı (kassa × UZS/PK/USD) + Kassa Operation doctype (Kirim/Chiqim/Konvertatsiya/Transfer) + merkezi status map</td><td>M</td><td>—</td></tr>
+    <tr><td><b>WP-K2</b></td><td>Operasyon → otomatik taslak PE/JE (Cr alt-kassa, crm_deal etiketli); Konvertatsiya'da CBU çift bacak + Exchange G/L; Qolib-ketgan-amal = geçmiş posting_date</td><td>M</td><td>K1</td></tr>
+    <tr><td><b>WP-K3</b></td><td>Telegram bot (reply-keyboard, çizimdeki menü) + „Mening kassa jadvalim" mini app'in GL beslemesi: initData auth + webhook secret fail-closed (WP-307/308 kalıbı)</td><td>L</td><td>K1,K2</td></tr>
+    <tr><td><b>WP-K4</b></td><td>Tender P&amp;L'e kassa beslemesi: _actual_block'a crm_deal etiketli submitted PE toplamı; kategori kırılımı</td><td>S</td><td>K2</td></tr>
+    <tr><td><b>WP-K5</b></td><td>Kasa mutabakatı: gün sonu sayım + USD kasası revaluation (WP-I11 motoru) + kart ekstre eşleşmesi (bank_statement import mevcut)</td><td>M</td><td>K2</td></tr>
+  </table>
+
+  <div class="note warn">
+    <b>Önerilen ilk sprint:</b> WP-T1 + WP-T5 + WP-K1/K2 — dört iş, rakamların kaynağını deftere bağlar; UI cilası (T4, K3 mini app) ikinci sprint.
+    Hepsi <span class="acct">enable_tender</span> gate'i arkasında kalır → yalnız Mikas etkilenir (MSA imports'unun enable_imports ile izole kaldığı gibi).
+  </div>
+</section>
+
+<footer>
+  Kaynaklar: stabler/api/tender.py + PoControlBoard.vue kod denetimi (Explore ajanı, file:line'lı envanter) · imports modülü LCV/HS motoru (WP-I5/I13) ·
+  CBU kur altyapısı (tasks/cbu_rate_refresh.py) · Whimsical „POWERYARN BPM WF" (canlı board incelendi: bot ekranları — bosh menu / kassa menüsü / kassalar balansi / „Mening kassa jadvalim" mini app + Kassa mind-map: Kirim·Chiqim·Konvertatsiya·Kassadan-kassaga·Qolib-ketgan-amal·Mening-jadvalim·Bekor-qilish).
+  Rakamlar örnek; boj oranı ТН ВЭД koduna göre HS Duty Rate tablosundan gelir. Hazırlayan: Claude (finansist + gümrük + mimari perspektifi).
+</footer>
+
+</div>
+</body>
+</html>
