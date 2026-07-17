@@ -357,6 +357,47 @@ def chart_balances(company: str, as_of: str | None = None):
 	return {"company_currency": company_currency, "as_of": str(as_of), "balances": balances}
 
 
+_JE = "Journal Entry"
+
+# ERPNext's own auto-fill placeholder (erpnext/patches/v15_0/update_invoice_remarks.py
+# writes this literal into Sales/Purchase Invoice.remarks when the user left it
+# blank) — it is not a human remark, so it must fall back to "" like a truly
+# empty field.
+_AUTO_PLACEHOLDER_REMARKS = {"no remarks"}
+
+
+def _overlay_source_remarks(rows):
+	"""Replace GL Entry's auto-generated `remarks` with the source document's
+	human-entered remark (Journal Entry.user_remark; `remarks` for every other
+	voucher type). Unconditional: rows with no source remark become "" so the
+	frontend's `{{ e.remarks || "—" }}` falls back to a dash. Batched per
+	voucher_type — no N+1 — mirrors the `_pn_cache` party-name overlay above.
+	"""
+	by_type: dict = {}
+	for r in rows:
+		vt, vn = r.get("voucher_type"), r.get("voucher_no")
+		if vt and vn:
+			by_type.setdefault(vt, set()).add(vn)
+
+	remark_map: dict = {}  # (voucher_type, voucher_no) -> human remark
+	for vt, names in by_type.items():
+		field = "user_remark" if vt == _JE else "remarks"
+		if not frappe.db.exists("DocType", vt):
+			continue
+		if not frappe.get_meta(vt).has_field(field):
+			continue
+		for name, val in frappe.get_all(
+			vt, filters={"name": ["in", list(names)]},
+			fields=["name", field], as_list=True,
+		):
+			if (val or "").strip().lower() in _AUTO_PLACEHOLDER_REMARKS:
+				val = ""
+			remark_map[(vt, name)] = val
+
+	for r in rows:
+		r["remarks"] = remark_map.get((r.get("voucher_type"), r.get("voucher_no"))) or ""
+
+
 @frappe.whitelist()
 def gl_entries(
 	company: str,
@@ -486,6 +527,7 @@ def gl_entries(
 			if key not in _pn_cache:
 				_pn_cache[key] = _party_title(r.get("party_type"), party)
 			r["party_name"] = _pn_cache[key]
+	_overlay_source_remarks(rows)
 
 	# --- USD-equivalent overlay (display-only) ---------------------------------
 	# Two cases, handled independently:
