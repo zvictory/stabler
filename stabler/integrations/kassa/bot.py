@@ -289,16 +289,29 @@ def _cbu_line(cbu: dict, base_currency: str) -> str | None:
 	return f"\U0001F4B1 1 USD = {_flow.format_amount(rate, base_currency)} (CBU {date_str})"
 
 
-def _balances_line(company: str, leaves: list[dict]) -> str | None:
+def _leaf_balance_strings(company: str, leaves: list[dict]) -> dict[str, str]:
+	"""account -> formatted balance string, for at most _BALANCE_LEAVES_LIMIT
+	leaves. Shared by _balances_line (kassa-level header) and build_ctx's
+	ctx['balances_by_leaf'] (WP-K9 per-leaf 'Yuboruvchi ... Qoldiq' line) so
+	the account_balance lookups happen exactly once per leaf."""
 	from stabler.api import money
 
-	parts = []
+	result: dict[str, str] = {}
 	for leaf in (leaves or [])[:_BALANCE_LEAVES_LIMIT]:
 		bal = money.account_balance(company, leaf["account"])
 		balance_acc = bal.get("balance_acc")
 		if balance_acc is None:
 			balance_acc = bal.get("balance_base", 0)
-		parts.append(f"{leaf['label']}: {_flow.format_amount(balance_acc, leaf['currency'])}")
+		result[leaf["account"]] = _flow.format_amount(balance_acc, leaf["currency"])
+	return result
+
+
+def _balances_line(leaves: list[dict], per_leaf: dict[str, str]) -> str | None:
+	parts = [
+		f"{leaf['label']}: {per_leaf[leaf['account']]}"
+		for leaf in (leaves or [])[:_BALANCE_LEAVES_LIMIT]
+		if leaf["account"] in per_leaf
+	]
 	return " · ".join(parts) if parts else None
 
 
@@ -374,10 +387,13 @@ def build_ctx(kassir, candidate_kassa: str | None = None) -> dict:
 	cbu = _cbu_ctx(company, base_currency)
 
 	balances_by_kassa: dict[str, str] = {}
+	balances_by_leaf: dict[str, str] = {}
 	active_kassa = candidate_kassa if candidate_kassa in kassas else None
 	if active_kassa:
+		per_leaf = _leaf_balance_strings(company, kassas[active_kassa])
+		balances_by_leaf = per_leaf
 		cbu_line = _cbu_line(cbu, base_currency)
-		bal_line = _balances_line(company, kassas[active_kassa])
+		bal_line = _balances_line(kassas[active_kassa], per_leaf)
 		combined = "\n".join(p for p in (cbu_line, bal_line) if p)
 		if combined:
 			balances_by_kassa[active_kassa] = combined
@@ -392,6 +408,7 @@ def build_ctx(kassir, candidate_kassa: str | None = None) -> dict:
 		"recent_memos": recent_memos,
 		"cbu": cbu,
 		"balances_by_kassa": balances_by_kassa,
+		"balances_by_leaf": balances_by_leaf,
 	}
 
 

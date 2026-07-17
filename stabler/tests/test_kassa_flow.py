@@ -21,6 +21,9 @@ from stabler.integrations.kassa._flow import (
 	STEP_MAIN,
 	STEP_MENU,
 	_konv_cbu_accept_label,
+	_konv_direction_keyboard,
+	_konv_direction_label,
+	_konv_direction_pairs,
 	format_amount,
 	handle,
 	parse_amount,
@@ -65,6 +68,16 @@ CTX = {
 CTX_NO_DEALS = {**CTX, "deals": []}
 
 CTX_WITH_CBU = {**CTX, "cbu": {"rate": 12950.0, "date": "17.07"}}
+
+# Mikas-style single-kassa tenant: every same-currency company cash account is
+# itself a leaf of "Kassa 1" -> Kassadan-kassaga has no OTHER kassa to target.
+CTX_SINGLE_KASSA = {
+	**CTX,
+	"targets": [
+		{"account": "Kassa Naqd UZS - M", "label": "Naqd UZS", "currency": "UZS"},
+		{"account": "Kassa Naqd USD - M", "label": "Naqd USD", "currency": "USD"},
+	],
+}
 
 
 def _init_state():
@@ -549,33 +562,106 @@ class TestChiqimFlow(unittest.TestCase):
 		self.assertIn("elektr energiyasi", reply)
 
 
+class TestKonvDirectionPairs(unittest.TestCase):
+	"""WP-K9: Konvertatsiya as one-tap direction-pair buttons (screen A)."""
+
+	def test_pair_count_and_labels(self):
+		leaves = CTX["kassas"]["Kassa 1"]
+		pairs = _konv_direction_pairs(leaves)
+		self.assertEqual(len(pairs), len(leaves) * (len(leaves) - 1))
+		labels = {_konv_direction_label(s, t) for s, t in pairs}
+		self.assertIn("Naqd UZS → Naqd USD", labels)
+		self.assertIn("Naqd USD → Naqd UZS", labels)
+		self.assertIn("Naqd UZS → PK", labels)  # same-currency pair included
+		self.assertIn("PK → Naqd UZS", labels)
+		for src, tgt in pairs:
+			self.assertNotEqual(src["account"], tgt["account"])
+
+	def test_keyboard_two_per_row(self):
+		leaves = CTX["kassas"]["Kassa 1"]
+		kb = _konv_direction_keyboard(leaves)
+		self.assertEqual(sum(len(row) for row in kb), 6)
+		for row in kb:
+			self.assertLessEqual(len(row), 2)
+
+
 class TestKonvertatsiyaFlow(unittest.TestCase):
-	def test_happy_path_no_cbu_asks_both_amounts(self):
-		"""No ctx['cbu'] rate -> falls back to asking both amounts manually
-		('as today'), given (source) first now, then received (target)."""
+	def test_entering_konv_shows_direction_keyboard(self):
 		state = _pick_kassa()
 		reply, kb, state, action = handle(state, BTN_KONV, CTX)
-		self.assertEqual(reply, "Nima oldingiz?")
+		self.assertEqual(reply, "Yo'nalishni tanlang:")
+		self.assertEqual(state["step"], "konv_direction")
+		labels = [label for row in kb for label in row]
+		self.assertIn("Naqd USD → Naqd UZS", labels)
+		self.assertIsNone(action)
 
-		reply, kb, state, action = handle(state, "Naqd USD", CTX)
-		labels = [row[0] for row in kb]
-		self.assertIn("Naqd UZS", labels)
-		self.assertNotIn("Naqd USD", labels)
+	def test_invalid_direction_reprompts(self):
+		state = _pick_kassa()
+		_, _, state, _ = handle(state, BTN_KONV, CTX)
+		reply, kb, new_state, action = handle(state, "garbage", CTX)
+		self.assertEqual(new_state, state)
+		self.assertIsNone(action)
 
-		reply, kb, state, action = handle(state, "Naqd UZS", CTX)
-		self.assertEqual(reply, "Qancha berdingiz? (UZS)")
+	def test_happy_path_cross_currency_asks_both_amounts(self):
+		"""No ctx['cbu'] rate -> falls back to asking both amounts manually,
+		given (source) first, then received (target). Direction picked in a
+		single tap: 'Naqd USD → Naqd UZS' means USD given, UZS received."""
+		state = _pick_kassa()
+		_, _, state, _ = handle(state, BTN_KONV, CTX)
 
-		reply, kb, state, action = handle(state, "1250000", CTX)
-		self.assertIn("1 250 000 UZS", reply)
-		self.assertIn("Qancha oldingiz? (USD)", reply)
+		reply, kb, state, action = handle(state, "Naqd USD → Naqd UZS", CTX)
+		self.assertEqual(reply, "Qancha berdingiz? (USD)")
 
 		reply, kb, state, action = handle(state, "100", CTX)
 		self.assertIn("100 USD", reply)
+		self.assertIn("Qancha oldingiz? (UZS)", reply)
+
+		reply, kb, state, action = handle(state, "1250000", CTX)
+		self.assertIn("1 250 000 UZS", reply)
 		self.assertIn("majburiy", reply)
 
 		reply, kb, state, action = handle(state, "valyuta almashtirish", CTX)
 		self.assertIn("100 USD", reply)
 		self.assertIn("1 250 000 UZS", reply)
+		self.assertIn("Kurs:", reply)
+
+		reply, kb, state, action = handle(state, BTN_CONFIRM, CTX)
+		self.assertEqual(
+			action,
+			{
+				"type": "transfer",
+				"from": "Kassa Naqd USD - M",
+				"to": "Kassa Naqd UZS - M",
+				"from_amount": 100.0,
+				"to_amount": 1250000.0,
+				"memo": "valyuta almashtirish",
+			},
+		)
+
+	def test_happy_path_same_currency_skips_received_and_cbu(self):
+		"""UZS<->PK (same currency) — no CBU offer, no 'received' step, given
+		== received, confirm has no Kurs line."""
+		state = _pick_kassa()
+		_, _, state, _ = handle(state, BTN_KONV, CTX)
+
+		reply, kb, state, action = handle(state, "Naqd UZS → PK", CTX)
+		self.assertEqual(reply, "Qancha o'tkazasiz? (UZS)")
+
+		reply, kb, state, action = handle(state, "500000", CTX)
+		self.assertIn("500 000 UZS", reply)
+		self.assertIn("majburiy", reply)
+		self.assertEqual(state["step"], "konv_memo")
+		self.assertEqual(state["given"], 500000.0)
+		self.assertEqual(state["received"], 500000.0)
+
+		reply, kb, state, action = handle(state, "ichki ko'chirish", CTX)
+		self.assertEqual(state["step"], "konv_confirm")
+		self.assertIn("Manba: Naqd UZS", reply)
+		self.assertIn("Manzil: PK", reply)
+		self.assertIn("Summa: 500 000 UZS", reply)
+		self.assertNotIn("Kurs:", reply)
+		self.assertNotIn("Berdingiz:", reply)
+		self.assertNotIn("Oldingiz:", reply)
 
 		reply, kb, state, action = handle(state, BTN_CONFIRM, CTX)
 		self.assertEqual(
@@ -583,20 +669,19 @@ class TestKonvertatsiyaFlow(unittest.TestCase):
 			{
 				"type": "transfer",
 				"from": "Kassa Naqd UZS - M",
-				"to": "Kassa Naqd USD - M",
-				"from_amount": 1250000.0,
-				"to_amount": 100.0,
-				"memo": "valyuta almashtirish",
+				"to": "PK Naqd UZS - M",
+				"from_amount": 500000.0,
+				"memo": "ichki ko'chirish",
 			},
 		)
+		self.assertNotIn("to_amount", action)
 
 	def test_izoh_dash_rejected(self):
 		state = _pick_kassa()
 		_, _, state, _ = handle(state, BTN_KONV, CTX)
-		_, _, state, _ = handle(state, "Naqd USD", CTX)
-		_, _, state, _ = handle(state, "Naqd UZS", CTX)
-		_, _, state, _ = handle(state, "1250000", CTX)
+		_, _, state, _ = handle(state, "Naqd USD → Naqd UZS", CTX)
 		_, _, state, _ = handle(state, "100", CTX)
+		_, _, state, _ = handle(state, "1250000", CTX)
 		reply, kb, new_state, action = handle(state, "-", CTX)
 		self.assertEqual(new_state["step"], "konv_memo")
 		self.assertIsNone(action)
@@ -604,8 +689,7 @@ class TestKonvertatsiyaFlow(unittest.TestCase):
 	def test_cbu_assist_accept_computed(self):
 		state = _pick_kassa(CTX_WITH_CBU)
 		_, _, state, _ = handle(state, BTN_KONV, CTX_WITH_CBU)
-		_, _, state, _ = handle(state, "Naqd UZS", CTX_WITH_CBU)  # target = UZS
-		reply, kb, state, action = handle(state, "Naqd USD", CTX_WITH_CBU)  # source = USD
+		reply, kb, state, action = handle(state, "Naqd USD → Naqd UZS", CTX_WITH_CBU)
 		self.assertEqual(reply, "Qancha berdingiz? (USD)")
 
 		reply, kb, state, action = handle(state, "100", CTX_WITH_CBU)
@@ -638,8 +722,7 @@ class TestKonvertatsiyaFlow(unittest.TestCase):
 	def test_cbu_assist_manual_override(self):
 		state = _pick_kassa(CTX_WITH_CBU)
 		_, _, state, _ = handle(state, BTN_KONV, CTX_WITH_CBU)
-		_, _, state, _ = handle(state, "Naqd UZS", CTX_WITH_CBU)
-		_, _, state, _ = handle(state, "Naqd USD", CTX_WITH_CBU)
+		_, _, state, _ = handle(state, "Naqd USD → Naqd UZS", CTX_WITH_CBU)
 		reply, kb, state, action = handle(state, "100", CTX_WITH_CBU)
 		self.assertEqual(state["step"], "konv_cbu_choice")
 
@@ -665,8 +748,7 @@ class TestKonvertatsiyaFlow(unittest.TestCase):
 		}
 		state = _pick_kassa(ctx)
 		_, _, state, _ = handle(state, BTN_KONV, ctx)
-		_, _, state, _ = handle(state, "Naqd UZS", ctx)
-		reply, kb, state, action = handle(state, "Naqd EUR", ctx)
+		reply, kb, state, action = handle(state, "Naqd EUR → Naqd UZS", ctx)
 		self.assertEqual(reply, "Qancha berdingiz? (EUR)")
 		reply, kb, state, action = handle(state, "100", ctx)
 		self.assertEqual(state["step"], "konv_received")
@@ -676,13 +758,15 @@ class TestKassadanKassagaFlow(unittest.TestCase):
 	def test_happy_path(self):
 		state = _pick_kassa()
 		reply, kb, state, action = handle(state, BTN_K2K, CTX)
-		self.assertEqual(reply, "Qaysi kassadan?")
+		self.assertEqual(reply, "Qaysi hisobdan yuborasiz?")
 
 		reply, kb, state, action = handle(state, "Naqd UZS", CTX)
 		labels = [row[0] for row in kb]
 		self.assertIn("Bank UZS", labels)
 		self.assertNotIn("Naqd UZS", labels)
 		self.assertNotIn("Naqd USD", labels)
+		self.assertIn("Yuboruvchi: Kassa 1 / UZS", reply)
+		self.assertIn("Qaysi kassaga o'tkazasiz?", reply)
 
 		reply, kb, state, action = handle(state, "Bank UZS", CTX)
 		reply, kb, state, action = handle(state, "300000", CTX)
@@ -727,6 +811,76 @@ class TestKassadanKassagaFlow(unittest.TestCase):
 		self.assertIn("Yoqilg'i", flat)
 		self.assertIn("Ijara", flat)
 		self.assertIn("Boshqa…", flat)
+
+
+class TestKassadanKassagaSeparation(unittest.TestCase):
+	"""WP-K9: K2K now targets only OTHER kassas — same-kassa, same-currency
+	moves belong to Konvertatsiya (screen B separation)."""
+
+	def test_target_list_excludes_current_kassas_own_leaves(self):
+		state = _pick_kassa()
+		_, _, state, _ = handle(state, BTN_K2K, CTX)
+		reply, kb, state, action = handle(state, "Naqd UZS", CTX)
+		labels = [row[0] for row in kb]
+		self.assertIn("Bank UZS", labels)
+		self.assertNotIn("Naqd UZS", labels)
+		self.assertNotIn("Naqd USD", labels)
+		self.assertNotIn("PK", labels)
+
+	def test_empty_target_list_returns_to_menu_with_message(self):
+		"""Mikas-style single-kassa tenant: every same-currency cash account
+		IS a leaf of the only kassa -> no OTHER kassa to send to."""
+		state = _pick_kassa(CTX_SINGLE_KASSA)
+		_, _, state, _ = handle(state, BTN_K2K, CTX_SINGLE_KASSA)
+		reply, kb, new_state, action = handle(state, "Naqd UZS", CTX_SINGLE_KASSA)
+		self.assertIn("Boshqa kassa yo'q", reply)
+		self.assertEqual(new_state["step"], STEP_MENU)
+		self.assertEqual(new_state["kassa"], "Kassa 1")
+		self.assertEqual(kb, MENU_KEYBOARD)
+		self.assertIsNone(action)
+
+
+class TestQoldiqHeaders(unittest.TestCase):
+	"""WP-K9: Konvertatsiya-direction and K2K-source entry prompts, plus the
+	K2K 'Yuboruvchi' prompt, surface a Qoldiq balance header when ctx has it."""
+
+	_CTX_WITH_BALANCES = {
+		**CTX,
+		"balances_by_kassa": {
+			"Kassa 1": "Naqd UZS: 50 000.00 UZS · Naqd USD: 500.00 USD",
+		},
+		"balances_by_leaf": {
+			"Kassa Naqd UZS - M": "50 000.00 UZS",
+		},
+	}
+
+	def test_konv_direction_prompt_includes_qoldiq(self):
+		state = _pick_kassa(self._CTX_WITH_BALANCES)
+		reply, kb, state, action = handle(state, BTN_KONV, self._CTX_WITH_BALANCES)
+		self.assertTrue(reply.startswith("Qoldiq: "))
+		self.assertIn("Naqd UZS: 50 000.00 UZS", reply)
+		self.assertIn("Yo'nalishni tanlang:", reply)
+
+	def test_k2k_source_prompt_includes_qoldiq(self):
+		state = _pick_kassa(self._CTX_WITH_BALANCES)
+		reply, kb, state, action = handle(state, BTN_K2K, self._CTX_WITH_BALANCES)
+		self.assertTrue(reply.startswith("Qoldiq: "))
+		self.assertIn("Qaysi hisobdan yuborasiz?", reply)
+
+	def test_k2k_target_prompt_includes_leaf_balance(self):
+		state = _pick_kassa(self._CTX_WITH_BALANCES)
+		_, _, state, _ = handle(state, BTN_K2K, self._CTX_WITH_BALANCES)
+		reply, kb, state, action = handle(state, "Naqd UZS", self._CTX_WITH_BALANCES)
+		self.assertIn("Yuboruvchi: Kassa 1 / UZS", reply)
+		self.assertIn("Qoldiq: 50 000.00 UZS", reply)
+
+	def test_no_balances_omits_header(self):
+		state = _pick_kassa(CTX)
+		reply, kb, state, action = handle(state, BTN_KONV, CTX)
+		self.assertEqual(reply, "Yo'nalishni tanlang:")
+		state = _pick_kassa(CTX)
+		reply, kb, state, action = handle(state, BTN_K2K, CTX)
+		self.assertEqual(reply, "Qaysi hisobdan yuborasiz?")
 
 
 class TestStatement(unittest.TestCase):

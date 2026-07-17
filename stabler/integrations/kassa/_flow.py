@@ -25,6 +25,7 @@ State shape (plain dict, JSON-serializable):
         "recent_memos": [str, ...],                  # WP-K6 izoh suggestions
         "cbu": {"rate": float | None, "date": "dd.mm"},  # WP-K6 konv assist
         "balances_by_kassa": {kassa_label: str | None}, # WP-K6 menu header
+        "balances_by_leaf": {account: str | None},      # WP-K9 per-leaf Qoldiq line
     }
 
 ``handle(state, text, ctx)`` returns ``(reply_text, keyboard, new_state, action)``.
@@ -60,8 +61,7 @@ STEP_CHIQIM_AMOUNT = "chiqim_amount"
 STEP_CHIQIM_MEMO = "chiqim_memo"
 STEP_CHIQIM_CONFIRM = "chiqim_confirm"
 
-STEP_KONV_TARGET = "konv_target"
-STEP_KONV_SOURCE = "konv_source"
+STEP_KONV_DIRECTION = "konv_direction"
 STEP_KONV_GIVEN = "konv_given"
 STEP_KONV_CBU_CHOICE = "konv_cbu_choice"
 STEP_KONV_RECEIVED = "konv_received"
@@ -387,6 +387,39 @@ def _targets_same_currency(ctx: dict, currency: str, exclude_account: str) -> li
 	]
 
 
+def _targets_other_kassas_same_currency(ctx: dict, kassa: str | None, currency: str) -> list[dict]:
+	"""Kassadan-kassaga (WP-K9) targets: same-currency company cash accounts
+	that are NOT a leaf of the CURRENT kassa — i.e. only OTHER kassas. Own-
+	kassa, same-currency moves belong to Konvertatsiya, not this flow."""
+	own_accounts = {l.get("account") for l in _leaves_for_kassa(ctx, kassa)}
+	return [
+		t
+		for t in (ctx or {}).get("targets", []) or []
+		if t.get("currency") == currency and t.get("account") not in own_accounts
+	]
+
+
+def _qoldiq_header(ctx: dict, kassa: str | None) -> str | None:
+	"""Reuse ctx['balances_by_kassa'][kassa] as a 'Qoldiq: ...' header line for
+	the Konvertatsiya-direction and Kassadan-kassaga entry prompts (WP-K9)."""
+	extra = ((ctx or {}).get("balances_by_kassa") or {}).get(kassa)
+	if not extra:
+		return None
+	if extra.lstrip().lower().startswith("qoldiq"):
+		return extra
+	return f"Qoldiq: {extra}"
+
+
+def _leaf_balance_line(ctx: dict, leaf: dict) -> str | None:
+	"""Per-leaf 'Qoldiq: ...' line for the K2K 'Yuboruvchi' prompt (WP-K9).
+	ctx['balances_by_leaf'] is optional — omitted entirely when bot.py hasn't
+	populated it, never a new lookup from this Frappe-free module."""
+	bal = ((ctx or {}).get("balances_by_leaf") or {}).get((leaf or {}).get("account"))
+	if not bal:
+		return None
+	return f"Qoldiq: {bal}"
+
+
 def _rows(labels: list[str]) -> list[list[str]]:
 	return [[label] for label in labels]
 
@@ -645,6 +678,24 @@ def _chiqim_confirm_text(state: dict, ctx: dict) -> str:
 def _konv_confirm_text(state: dict) -> str:
 	tgt, src = state["tgt"], state["src"]
 	given, received = state["given"], state["received"]
+	if src["currency"] == tgt["currency"]:
+		# Same-currency move — no Kurs line, single Summa (given == received).
+		lines = [
+			BTN_KONV,
+			f"Manba: {src['label']}",
+			f"Manzil: {tgt['label']}",
+			f"Summa: {format_amount(given, src['currency'])}",
+		]
+		_tg = _typed_echo(state.get("given_raw"), given, src["currency"])
+		if _tg:
+			lines.append(_tg)
+		lines += [
+			f"Izoh: {state.get('memo') or '-'}",
+			f"Sana: {_fmt_date_human(state.get('posting_date'))}",
+			"",
+			"Tasdiqlaysizmi?",
+		]
+		return "\n".join(lines)
 	rate = (received / given) if given else 0.0
 	lines = [
 		BTN_KONV,
@@ -721,12 +772,12 @@ def _handle_menu(state: dict, text: str, ctx: dict):
 		return ("Qaysi kassadan chiqim qilasiz?", _rows([l["label"] for l in leaves]), new_state, None)
 	if text == BTN_KONV:
 		leaves = _leaves_for_kassa(ctx, kassa)
-		new_state = {**state, "step": STEP_KONV_TARGET}
-		return ("Nima oldingiz?", _rows([l["label"] for l in leaves]), new_state, None)
+		new_state = {**state, "step": STEP_KONV_DIRECTION}
+		return (_konv_direction_text(ctx, kassa), _konv_direction_keyboard(leaves), new_state, None)
 	if text == BTN_K2K:
 		leaves = _leaves_for_kassa(ctx, kassa)
 		new_state = {**state, "step": STEP_K2K_SOURCE}
-		return ("Qaysi kassadan?", _rows([l["label"] for l in leaves]), new_state, None)
+		return (_k2k_source_text(ctx, kassa), _rows([l["label"] for l in leaves]), new_state, None)
 	if text == BTN_BACKDATE:
 		new_state = {**state, "step": STEP_BACKDATE}
 		return ("Sana (kk.oo.yyyy):", None, new_state, None)
@@ -899,29 +950,59 @@ def _handle_chiqim_confirm(state: dict, text: str, ctx: dict):
 
 
 # --- Konvertatsiya ------------------------------------------------------------ #
-def _handle_konv_target(state: dict, text: str, ctx: dict):
-	leaves = _leaves_for_kassa(ctx, state.get("kassa"))
-	tgt = _find_by_label(leaves, text)
-	if not tgt:
-		return ("Noto'g'ri tanlov. Ro'yxatdan tanlang:", _rows([l["label"] for l in leaves]), state, None)
-	candidates = [
-		l for l in leaves if l["account"] != tgt["account"] and l["currency"] != tgt["currency"]
-	]
-	new_state = {**state, "step": STEP_KONV_SOURCE, "tgt": tgt}
-	return ("Nimani berdingiz?", _rows([c["label"] for c in candidates]), new_state, None)
+_ARROW = "→"
 
 
-def _handle_konv_source(state: dict, text: str, ctx: dict):
+def _konv_direction_pairs(leaves: list[dict]) -> list[tuple[dict, dict]]:
+	"""Every ordered pair of DISTINCT leaves (by account) of a kassa —
+	INCLUDING same-currency pairs (e.g. UZS<->PK). n leaves -> n*(n-1) pairs."""
+	pairs: list[tuple[dict, dict]] = []
+	for src in leaves:
+		for tgt in leaves:
+			if src["account"] == tgt["account"]:
+				continue
+			pairs.append((src, tgt))
+	return pairs
+
+
+def _konv_direction_label(src: dict, tgt: dict) -> str:
+	return f"{src['label']} {_ARROW} {tgt['label']}"
+
+
+def _konv_direction_keyboard(leaves: list[dict]) -> list[list[str]]:
+	labels = [_konv_direction_label(src, tgt) for src, tgt in _konv_direction_pairs(leaves)]
+	return _chunk(labels, 2)
+
+
+def _konv_direction_text(ctx: dict, kassa: str | None) -> str:
+	header = _qoldiq_header(ctx, kassa)
+	if header:
+		return f"{header}\n\nYo'nalishni tanlang:"
+	return "Yo'nalishni tanlang:"
+
+
+def _handle_konv_direction(state: dict, text: str, ctx: dict):
 	leaves = _leaves_for_kassa(ctx, state.get("kassa"))
-	tgt = state["tgt"]
-	candidates = [
-		l for l in leaves if l["account"] != tgt["account"] and l["currency"] != tgt["currency"]
-	]
-	src = _find_by_label(candidates, text)
-	if not src:
-		return ("Noto'g'ri tanlov. Ro'yxatdan tanlang:", _rows([c["label"] for c in candidates]), state, None)
-	new_state = {**state, "step": STEP_KONV_GIVEN, "src": src}
-	return (f"Qancha berdingiz? ({src['currency']})", None, new_state, None)
+	pairs = _konv_direction_pairs(leaves)
+	match = None
+	for src, tgt in pairs:
+		if _konv_direction_label(src, tgt) == text:
+			match = (src, tgt)
+			break
+	if not match:
+		return (
+			"Noto'g'ri tanlov. Ro'yxatdan tanlang:",
+			_konv_direction_keyboard(leaves),
+			state,
+			None,
+		)
+	src, tgt = match
+	new_state = {**state, "step": STEP_KONV_GIVEN, "src": src, "tgt": tgt}
+	if src["currency"] == tgt["currency"]:
+		reply = f"Qancha o'tkazasiz? ({src['currency']})"
+	else:
+		reply = f"Qancha berdingiz? ({src['currency']})"
+	return (reply, None, new_state, None)
 
 
 def _konv_cbu_accept_label(computed: float, currency: str) -> str:
@@ -934,6 +1015,18 @@ def _handle_konv_given(state: dict, text: str, ctx: dict):
 		return ("Noto'g'ri summa. Qayta kiriting:", None, state, None)
 	src, tgt = state["src"], state["tgt"]
 	echo = _echo_amount(amt, src["currency"])
+	if src["currency"] == tgt["currency"]:
+		# Same-currency Konvertatsiya = a straight own-channel move. No CBU
+		# assist, no separate "received" ask — given IS received.
+		new_state = {
+			**state,
+			"step": STEP_KONV_MEMO,
+			"given": amt,
+			"received": amt,
+			"given_raw": text.strip(),
+		}
+		reply = f"{echo}\n\nIzoh (majburiy):"
+		return (reply, _izoh_keyboard(ctx), new_state, None)
 	cbu = (ctx or {}).get("cbu") or {}
 	rate = cbu.get("rate")
 	pair_ok = {src["currency"], tgt["currency"]} == {"USD", "UZS"}
@@ -991,32 +1084,67 @@ def _handle_konv_memo(state: dict, text: str, ctx: dict):
 def _handle_konv_confirm(state: dict, text: str, ctx: dict):
 	if text != BTN_CONFIRM:
 		return (_konv_confirm_text(state), CONFIRM_KEYBOARD, state, None)
+	src, tgt = state["src"], state["tgt"]
 	action = {
 		"type": "transfer",
-		"from": state["src"]["account"],
-		"to": state["tgt"]["account"],
+		"from": src["account"],
+		"to": tgt["account"],
 		"from_amount": state["given"],
-		"to_amount": state["received"],
 		"memo": state.get("memo"),
 	}
+	if src["currency"] != tgt["currency"]:
+		# Cross-currency conversion — carry to_amount so bot.py composes the
+		# "Konvertatsiya CCY→CCY @rate" memo. Same-currency moves omit it, so
+		# the memo reads as a plain transfer, matching Kirim/K2K.
+		action["to_amount"] = state["received"]
 	new_state = _menu_state(state.get("kassa"), None)
 	return ("⏳ Amal bajarilmoqda...", MENU_KEYBOARD, new_state, action)
 
 
 # --- Kassadan kassaga ---------------------------------------------------------- #
+_K2K_NO_OTHER_KASSA_TEXT = (
+	"Boshqa kassa yo'q — bu amal faqat boshqa kassaga o'tkazish uchun. "
+	"Konvertatsiya orqali hisoblar orasida ko'chiring."
+)
+
+
+def _k2k_source_text(ctx: dict, kassa: str | None) -> str:
+	header = _qoldiq_header(ctx, kassa)
+	if header:
+		return f"{header}\n\nQaysi hisobdan yuborasiz?"
+	return "Qaysi hisobdan yuborasiz?"
+
+
+def _k2k_target_text(kassa: str | None, src: dict, ctx: dict) -> str:
+	lines = [f"Yuboruvchi: {kassa} / {src['currency']}"]
+	balance_line = _leaf_balance_line(ctx, src)
+	if balance_line:
+		lines.append(balance_line)
+	lines.append("")
+	lines.append("Qaysi kassaga o'tkazasiz?")
+	return "\n".join(lines)
+
+
 def _handle_k2k_source(state: dict, text: str, ctx: dict):
-	leaves = _leaves_for_kassa(ctx, state.get("kassa"))
+	kassa = state.get("kassa")
+	leaves = _leaves_for_kassa(ctx, kassa)
 	src = _find_by_label(leaves, text)
 	if not src:
 		return ("Noto'g'ri tanlov. Ro'yxatdan tanlang:", _rows([l["label"] for l in leaves]), state, None)
-	targets = _targets_same_currency(ctx, src["currency"], src["account"])
+	targets = _targets_other_kassas_same_currency(ctx, kassa, src["currency"])
+	if not targets:
+		# Single-kassa case (e.g. Mikas): K2K is only for moving between
+		# DIFFERENT kassas — own-channel moves belong to Konvertatsiya.
+		reset_state = _menu_state(kassa, state.get("posting_date"))
+		return (_K2K_NO_OTHER_KASSA_TEXT, MENU_KEYBOARD, reset_state, None)
 	new_state = {**state, "step": STEP_K2K_TARGET, "src": src}
-	return ("Qaysi kassaga?", _rows([t["label"] for t in targets]), new_state, None)
+	return (_k2k_target_text(kassa, src, ctx), _rows([t["label"] for t in targets]), new_state, None)
 
 
 def _handle_k2k_target(state: dict, text: str, ctx: dict):
 	src = state["src"]
-	targets = _targets_same_currency(ctx, src["currency"], src["account"])
+	kassa = state.get("kassa")
+	targets = _targets_other_kassas_same_currency(ctx, kassa, src["currency"])
 	tgt = _find_by_label(targets, text)
 	if not tgt:
 		return ("Noto'g'ri tanlov. Ro'yxatdan tanlang:", _rows([t["label"] for t in targets]), state, None)
@@ -1088,8 +1216,7 @@ _STEP_HANDLERS = {
 	STEP_CHIQIM_AMOUNT: _handle_chiqim_amount,
 	STEP_CHIQIM_MEMO: _handle_chiqim_memo,
 	STEP_CHIQIM_CONFIRM: _handle_chiqim_confirm,
-	STEP_KONV_TARGET: _handle_konv_target,
-	STEP_KONV_SOURCE: _handle_konv_source,
+	STEP_KONV_DIRECTION: _handle_konv_direction,
 	STEP_KONV_GIVEN: _handle_konv_given,
 	STEP_KONV_CBU_CHOICE: _handle_konv_cbu_choice,
 	STEP_KONV_RECEIVED: _handle_konv_received,
