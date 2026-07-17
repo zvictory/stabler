@@ -152,7 +152,7 @@ import ImportOrderForm from "./pages/imports/ImportOrderForm.vue";
 import CommercialInvoices from "./pages/imports/CommercialInvoices.vue";
 import CommercialInvoiceForm from "./pages/imports/CommercialInvoiceForm.vue";
 import ProformaInvoices from "./pages/imports/ProformaInvoices.vue";
-import VendorCategories from "./pages/imports/VendorCategories.vue";
+import VendorCategories from "./pages/inventory/VendorCategories.vue";
 import ImportContainers from "./pages/imports/ImportContainers.vue";
 import ImportTrucks from "./pages/imports/ImportTrucks.vue";
 import GRNChecklists from "./pages/imports/GRNChecklists.vue";
@@ -192,7 +192,6 @@ const routes = [
 			{ path: "commercial-invoices/new", name: "imports-commercial-invoice-new", component: CommercialInvoiceForm, meta: { title: t("New Commercial Invoice"), module: "imports" } },
 			{ path: "commercial-invoices/:name", name: "imports-commercial-invoice", component: CommercialInvoiceForm, meta: { title: t("Commercial Invoice"), module: "imports" } },
 			{ path: "proformas", name: "imports-proformas", component: ProformaInvoices, meta: { title: t("Proforma Invoices"), module: "imports" } },
-			{ path: "vendor-categories", name: "imports-vendor-categories", component: VendorCategories, meta: { title: t("Vendor Categories"), module: "imports" } },
 			{ path: "containers", name: "imports-containers", component: ImportContainers, meta: { title: t("Containers"), module: "imports" } },
 			{ path: "containers/new", name: "imports-container-new", component: ImportContainerForm, meta: { title: t("New Container"), module: "imports" } },
 			{ path: "containers/:name", name: "imports-container", component: ImportContainerForm, meta: { title: t("Container"), module: "imports" } },
@@ -322,6 +321,7 @@ const routes = [
 			{ path: "ledger", name: "inventory-ledger", component: StockLedger, meta: { title: t("Stock Ledger") } },
 			{ path: "reconcile", name: "inventory-reconcile", component: StockReconciliation, meta: { title: t("Stock Reconciliation") } },
 			{ path: "alerts", name: "inventory-alerts", component: LowStockAlerts, meta: { title: t("Low Stock Alerts") } },
+			{ path: "vendor-categories", name: "inventory-vendor-categories", component: VendorCategories, meta: { title: t("Vendor Categories") } },
 		],
 	},
 	{

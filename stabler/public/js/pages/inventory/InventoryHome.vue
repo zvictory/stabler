@@ -14,6 +14,7 @@ const tabs = [
 	{ name: "inventory-ledger", path: "/inventory/ledger", label: t("Stock Ledger"), icon: "ti-list-details" },
 	{ name: "inventory-reconcile", path: "/inventory/reconcile", label: t("Reconcile"), icon: "ti-checkup-list" },
 	{ name: "inventory-alerts", path: "/inventory/alerts", label: t("Low Stock"), icon: "ti-alert-triangle" },
+	{ name: "inventory-vendor-categories", path: "/inventory/vendor-categories", label: t("Vendor Categories"), icon: "ti-category" },
 ];
 const activeTab = computed(() => route.name);
 </script>

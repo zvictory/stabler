@@ -63,6 +63,45 @@ def _assert_imports_access(company: str) -> None:
         frappe.throw(_("You are not permitted to access imports."), frappe.PermissionError)
 
 
+_INVENTORY_ROLES = tuple(_MODULE_ROLES["inventory"])
+
+
+def _assert_inventory_access(company: str) -> None:
+    """Gate an inventory endpoint: company valid + inventory enabled + user role.
+
+    Vendor categories are a purchasing/inventory template (items + boxes per
+    container), NOT import-specific — so they live behind the inventory module,
+    available on every inventory tenant, not only the MSA imports tenant.
+    """
+    _require_company(company)
+    from stabler.api.approvals import _assert_company_scope
+
+    _assert_company_scope(company)
+    if not module_map_for(company).get("inventory"):
+        frappe.throw(
+            _("The inventory module is not enabled for this company."),
+            frappe.PermissionError,
+        )
+    roles = set(frappe.get_roles())
+    if roles.intersection(_ADMIN_ROLES):
+        return
+    if not roles.intersection(_INVENTORY_ROLES):
+        frappe.throw(_("You are not permitted to access inventory."), frappe.PermissionError)
+
+
+def _assert_vendor_category_read(company: str) -> None:
+    """Read gate for vendor categories: allow EITHER inventory or imports access.
+
+    The management page is under Inventory, but the imports PI 'fill from
+    category' flow also reads categories — an MSA importer may hold an imports
+    role without a stock role, so accept either.
+    """
+    try:
+        _assert_inventory_access(company)
+    except frappe.PermissionError:
+        _assert_imports_access(company)
+
+
 def _cost_visible() -> bool:
     """True when the session user may see landed-cost / dual-pricing figures.
 
@@ -3704,12 +3743,14 @@ def save_proforma(payload) -> dict:
 
 @frappe.whitelist()
 def list_vendor_categories(company: str, vendor: str | None = None) -> list[dict]:
-    """Vendor categories grouped for the management page (imports-gated).
+    """Vendor categories grouped for the management page.
 
-    A category is a purchasing TEMPLATE — which items + boxes-per-container —
-    prices are entered per-PI (MSA model: categories store no prices).
+    A category is a purchasing/inventory TEMPLATE — which items + boxes-per-
+    container — prices are entered per-PI (MSA model: categories store no prices).
+    Lives under the inventory module; the read is also reachable from the imports
+    PI 'fill from category' flow, so either module's access is accepted.
     """
-    _assert_imports_access(company)
+    _assert_vendor_category_read(company)
     clauses = "1 = 1"
     params: dict = {}
     if vendor:
@@ -3773,7 +3814,7 @@ def vendor_category_detail(name: str) -> dict:
 @frappe.whitelist()
 def save_vendor_category(payload, company: str) -> dict:
     """Create/update a vendor category with its item rows (imports-gated)."""
-    _assert_imports_access(company)
+    _assert_inventory_access(company)
     data = frappe.parse_json(payload) if isinstance(payload, str) else payload
     if not data.get("vendor") or not frappe.db.exists("Supplier", data.get("vendor")):
         frappe.throw(_("A valid supplier is required."))
@@ -3814,7 +3855,7 @@ def save_vendor_category(payload, company: str) -> dict:
 @frappe.whitelist()
 def delete_vendor_category(name: str, company: str) -> dict:
     """Delete a vendor category (imports-gated; MSA list-page action parity)."""
-    _assert_imports_access(company)
+    _assert_inventory_access(company)
     if not name or not frappe.db.exists("Stabler Vendor Category", name):
         frappe.throw(_("Unknown vendor category: {0}").format(name))
     frappe.delete_doc("Stabler Vendor Category", name, ignore_permissions=False)
