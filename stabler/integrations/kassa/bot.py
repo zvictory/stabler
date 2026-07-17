@@ -33,6 +33,45 @@ _STATE_TTL = 900  # seconds
 
 _NO_ACCESS_TEXT = "Ruxsat yo'q. Administratorga murojaat qiling."
 _STATEMENT_LOOKBACK = 5
+_REMARK_MAX_LEN = 60
+_RECENT_MEMOS_LOOKBACK_DAYS = 90
+_RECENT_MEMOS_LIMIT = 6
+_BALANCE_LEAVES_LIMIT = 3
+
+
+# --------------------------------------------------------------------------- #
+# Pure helpers (no frappe import needed — unit-testable, WP-K6 statement notes)
+# --------------------------------------------------------------------------- #
+def _truncate_remark(remark: str | None, max_len: int = _REMARK_MAX_LEN) -> str | None:
+	"""Clean + truncate a GL Entry remark for statement display. None/blank/
+	the ERPNext default 'No Remarks' placeholder collapse to None (omitted)."""
+	if not remark:
+		return None
+	text = str(remark).strip()
+	if not text or text.lower() == "no remarks":
+		return None
+	if len(text) > max_len:
+		text = text[: max_len - 1].rstrip() + "…"
+	return text
+
+
+def _direction_emoji(debit: float, credit: float) -> str:
+	"""Kirim (debit-positive, money coming IN) -> up-arrow; chiqim
+	(credit, money going OUT) -> down-arrow."""
+	return "⬆" if float(debit or 0) > float(credit or 0) else "⬇"
+
+
+def _strip_memo_prefix(remark: str | None) -> str | None:
+	"""Strip a composed "«A» → «B» | izoh" (or "Konvertatsiya CCY→CCY @rate | izoh")
+	memo down to the bare izoh, for building the recent-memo suggestion list.
+	Remarks without a "|" separator are returned unchanged (already bare)."""
+	if not remark:
+		return None
+	text = str(remark).strip()
+	if "|" not in text:
+		return text or None
+	tail = text.split("|", 1)[1].strip()
+	return tail or None
 
 
 # --------------------------------------------------------------------------- #
@@ -119,11 +158,135 @@ def _tender_enabled(company: str) -> bool:
 		return False
 
 
-def build_ctx(kassir) -> dict:
+# Known leaf-label shorthands for the one-message quick-transfer parser
+# (WP-K6, _flow.parse_quick_transfer): needle (matched by substring, case-
+# insensitive) -> alias keys it should register.
+_SHORTHAND_RULES = [
+	("som", ["som"]),
+	("pk", ["pk"]),
+	("usd", ["usd", "dollar", "valyuta"]),
+]
+
+
+def _build_aliases(kassas: dict, targets: list) -> dict:
+	"""Alias map for _flow.parse_quick_transfer: full leaf label lowered, its
+	first word, plus known shorthand overrides matched by substring on the
+	label. First writer wins on collisions (kassa leaves before bank/cash
+	targets, insertion order)."""
+	aliases: dict[str, str] = {}
+	seen_accounts: set = set()
+	all_leaves: list[dict] = []
+	for leaves in (kassas or {}).values():
+		all_leaves.extend(leaves)
+	all_leaves.extend(targets or [])
+	for leaf in all_leaves:
+		acc = leaf.get("account")
+		if not acc or acc in seen_accounts:
+			continue
+		seen_accounts.add(acc)
+		label = (leaf.get("label") or "").strip()
+		if not label:
+			continue
+		low = label.lower()
+		aliases.setdefault(low, acc)
+		words = low.split()
+		if words:
+			aliases.setdefault(words[0], acc)
+		for needle, alias_list in _SHORTHAND_RULES:
+			if needle in low:
+				for alias in alias_list:
+					aliases.setdefault(alias, acc)
+	return aliases
+
+
+def _recent_memos(company: str, accounts: list[str]) -> list[str]:
+	"""Distinct recent JE memos for this kassir's own accounts, last
+	``_RECENT_MEMOS_LOOKBACK_DAYS`` days, stripped of the "«A» → «B» | " (or
+	"Konvertatsiya ... | ") composed prefix — feeds the izoh suggestion
+	keyboard (WP-K6)."""
+	import frappe
+	from frappe.utils import add_days, today
+
+	if not accounts:
+		return []
+	since = add_days(today(), -_RECENT_MEMOS_LOOKBACK_DAYS)
+	rows = frappe.db.sql(
+		"""
+		SELECT DISTINCT je.user_remark, je.posting_date, je.name
+		FROM `tabJournal Entry` je
+		JOIN `tabJournal Entry Account` jea ON jea.parent = je.name
+		WHERE je.company = %(company)s
+		  AND je.docstatus = 1
+		  AND je.posting_date >= %(since)s
+		  AND jea.account IN %(accounts)s
+		  AND je.user_remark IS NOT NULL AND je.user_remark != ''
+		ORDER BY je.posting_date DESC, je.creation DESC
+		LIMIT 50
+		""",
+		{"company": company, "since": since, "accounts": tuple(accounts)},
+		as_dict=True,
+	)
+	seen: set = set()
+	memos: list[str] = []
+	for r in rows:
+		stripped = _strip_memo_prefix(r.get("user_remark"))
+		if not stripped or stripped in seen:
+			continue
+		seen.add(stripped)
+		memos.append(stripped)
+		if len(memos) >= _RECENT_MEMOS_LIMIT:
+			break
+	return memos
+
+
+def _cbu_ctx(company: str, base_currency: str) -> dict:
+	"""CBU-assist rate for Konvertatsiya (WP-K6): 1 USD -> base_currency,
+	looked up fresh on every ctx build. None when unavailable — the flow
+	always falls back to asking both amounts manually when this is None."""
+	from frappe.utils import formatdate, today
+
+	from stabler.api import money
+
+	try:
+		rate = money.get_exchange_rate_for_currencies("USD", base_currency, today())
+	except Exception:  # noqa: BLE001 — a missing/broken FX rate must never crash the bot
+		rate = None
+	if not rate:
+		return {"rate": None, "date": None}
+	return {"rate": float(rate), "date": formatdate(today(), "dd.MM")}
+
+
+def _cbu_line(cbu: dict, base_currency: str) -> str | None:
+	rate = (cbu or {}).get("rate")
+	if not rate:
+		return None
+	date_str = (cbu or {}).get("date") or ""
+	return f"\U0001F4B1 1 USD = {_flow.format_amount(rate, base_currency)} (CBU {date_str})"
+
+
+def _balances_line(company: str, leaves: list[dict]) -> str | None:
+	from stabler.api import money
+
+	parts = []
+	for leaf in (leaves or [])[:_BALANCE_LEAVES_LIMIT]:
+		bal = money.account_balance(company, leaf["account"])
+		balance_acc = bal.get("balance_acc")
+		if balance_acc is None:
+			balance_acc = bal.get("balance_base", 0)
+		parts.append(f"{leaf['label']}: {_flow.format_amount(balance_acc, leaf['currency'])}")
+	return " · ".join(parts) if parts else None
+
+
+def build_ctx(kassir, candidate_kassa: str | None = None) -> dict:
 	"""Assemble the Frappe-free ``ctx`` dict _flow.handle() needs, scoped to
 	this kassir's company and allowed accounts. Called under the kassir's
 	impersonated session (see handle_update) so company-scope / permission
 	checks inside stabler.api.money behave exactly as they would in the SPA.
+
+	``candidate_kassa`` (usually ``old_state["kassa"] or text``) scopes the
+	live-balance lookups (WP-K6 #6) to at most one kassa group (<=3 leaves ->
+	<=3 account_balance calls) instead of eagerly pricing every kassa the
+	kassir has on every single message.
 	"""
 	import frappe
 
@@ -181,18 +344,64 @@ def build_ctx(kassir) -> dict:
 		for r in (money.bank_cash_accounts(company) or [])
 	]
 
+	aliases = _build_aliases(kassas, targets)
+	recent_memos = _recent_memos(company, [row.account for row in (kassir.accounts or [])])
+	cbu = _cbu_ctx(company, base_currency)
+
+	balances_by_kassa: dict[str, str] = {}
+	active_kassa = candidate_kassa if candidate_kassa in kassas else None
+	if active_kassa:
+		cbu_line = _cbu_line(cbu, base_currency)
+		bal_line = _balances_line(company, kassas[active_kassa])
+		combined = "\n".join(p for p in (cbu_line, bal_line) if p)
+		if combined:
+			balances_by_kassa[active_kassa] = combined
+
 	return {
 		"kassas": kassas,
 		"categories": categories,
 		"deals": deals,
 		"targets": targets,
 		"base_currency": base_currency,
+		"aliases": aliases,
+		"recent_memos": recent_memos,
+		"cbu": cbu,
+		"balances_by_kassa": balances_by_kassa,
 	}
 
 
 # --------------------------------------------------------------------------- #
 # Action execution — thin pass-through into stabler.api.money
 # --------------------------------------------------------------------------- #
+def _account_label(account: str) -> str:
+	import frappe
+
+	return frappe.db.get_value("Account", account, "account_name") or account
+
+
+def _compose_transfer_memo(action: dict) -> str | None:
+	"""WP-K6 memo composition: same-currency transfers (Kirim / Kassadan-
+	kassaga) -> '«FromLabel» → «ToLabel» | izoh'; cross-currency
+	(Konvertatsiya, identified by the presence of `to_amount`) ->
+	'Konvertatsiya CCY→CCY @rate | izoh'. None when no izoh was given
+	(Kirim's izoh is optional)."""
+	import frappe
+
+	raw_memo = action.get("memo")
+	if not raw_memo:
+		return None
+	if action.get("to_amount") is not None:
+		from_ccy = frappe.db.get_value("Account", action["from"], "account_currency") or ""
+		to_ccy = frappe.db.get_value("Account", action["to"], "account_currency") or ""
+		from_amt = float(action["from_amount"])
+		to_amt = float(action["to_amount"])
+		rate = (to_amt / from_amt) if from_amt else 0.0
+		return f"Konvertatsiya {from_ccy}→{to_ccy} @{rate:.4f} | {raw_memo}"
+	from_label = _account_label(action["from"])
+	to_label = _account_label(action["to"])
+	return f"«{from_label}» → «{to_label}» | {raw_memo}"
+
+
 def execute_action(action: dict, state: dict, kassir, ctx: dict) -> dict:
 	"""Map a completed flow action onto the EXISTING money.py endpoints.
 
@@ -218,7 +427,7 @@ def execute_action(action: dict, state: dict, kassir, ctx: dict) -> dict:
 			to_account=action["to"],
 			from_amount=action["from_amount"],
 			to_amount=action.get("to_amount"),
-			memo=action.get("memo"),
+			memo=_compose_transfer_memo(action),
 			submit=1,
 		)
 
@@ -261,6 +470,31 @@ def _format_result_text(result: dict) -> str:
 	return f"✅ Yozildi: {name} (holat: {result.get('docstatus')})"
 
 
+def _affected_account(action: dict) -> str | None:
+	"""Which account's balance to echo back after a successful op (WP-K6 #6)."""
+	if action.get("type") == "transfer":
+		return action.get("to") or action.get("from")
+	if action.get("type") == "expense":
+		return action.get("payment_from")
+	return None
+
+
+def _append_new_balance(follow_up: str, company: str, account: str | None) -> str:
+	if not account:
+		return follow_up
+	from stabler.api import money
+
+	try:
+		bal = money.account_balance(company, account)
+	except Exception:  # noqa: BLE001 — a balance-echo failure must never hide the result text
+		return follow_up
+	balance_acc = bal.get("balance_acc")
+	if balance_acc is None:
+		balance_acc = bal.get("balance_base", 0)
+	currency = bal.get("account_currency") or bal.get("company_currency") or ""
+	return f"{follow_up}\n\nYangi qoldiq: {_flow.format_amount(balance_acc, currency)}"
+
+
 def _build_statement_text(kassir, state: dict, ctx: dict) -> str:
 	"""'Mening jadvalim' — balance + last N transactions per leaf of the
 	currently-selected kassa. Read-only, so no impersonation-sensitive writes."""
@@ -287,11 +521,18 @@ def _build_statement_text(kassir, state: dict, ctx: dict) -> str:
 			parts.append("  (harakatlar yo'q)")
 			continue
 		for row in recent:
-			net = float(row.get("debit") or 0) - float(row.get("credit") or 0)
-			parts.append(
-				f"  {row.get('posting_date')} {row.get('voucher_type')} {row.get('voucher_no')}: "
+			debit = float(row.get("debit") or 0)
+			credit = float(row.get("credit") or 0)
+			net = debit - credit
+			emoji = _direction_emoji(debit, credit)
+			line = (
+				f"  {emoji} {row.get('posting_date')} {row.get('voucher_type')} {row.get('voucher_no')}: "
 				f"{_flow.format_amount(net, leaf['currency'])}"
 			)
+			remark = _truncate_remark(row.get("remarks"))
+			if remark:
+				line += f" — {remark}"
+			parts.append(line)
 	return "\n".join(parts)
 
 
@@ -362,7 +603,7 @@ def handle_update(update: dict) -> None:
 	frappe.set_user(kassir.user)
 	try:
 		old_state = _load_state(chat_id)
-		ctx = build_ctx(kassir)
+		ctx = build_ctx(kassir, candidate_kassa=(old_state.get("kassa") or text))
 		reply, keyboard, new_state, action = _flow.handle(old_state, text, ctx)
 
 		if (
@@ -379,6 +620,7 @@ def handle_update(update: dict) -> None:
 				try:
 					result = execute_action(action, old_state, kassir, ctx)
 					follow_up = _format_result_text(result)
+					follow_up = _append_new_balance(follow_up, kassir.company, _affected_account(action))
 				except Exception as e:  # noqa: BLE001 — surfaced to the kassir, not swallowed
 					frappe.log_error(
 						title="Kassa bot: action failed",

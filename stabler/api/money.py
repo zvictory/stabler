@@ -837,7 +837,7 @@ def account_transactions(
 	params["start"] = int(start)
 	rows = frappe.db.sql(
 		f"""SELECT posting_date, voucher_type, voucher_no, against, account,
-		           debit, credit
+		           debit, credit, remarks
 		    FROM `tabGL Entry` WHERE {where}
 		    ORDER BY posting_date ASC, creation ASC
 		    LIMIT %(limit)s OFFSET %(start)s""",

@@ -1,4 +1,4 @@
-"""Kassa Telegram bot — pure reply-keyboard state machine (WP-K3).
+"""Kassa Telegram bot — pure reply-keyboard state machine (WP-K3, smart-bot WP-K6).
 
 NO frappe import here — this module is fully unit-testable under plain
 unittest (mirrors the style of stabler.integrations.uzex.telegram's
@@ -21,6 +21,10 @@ State shape (plain dict, JSON-serializable):
         "deals": [{"name","label"}, ...],           # [] when tender is off
         "targets": [{"account","label","currency"}, ...],
         "base_currency": "UZS",
+        "aliases": {alias_lower: account_name, ...}, # WP-K6 quick-transfer
+        "recent_memos": [str, ...],                  # WP-K6 izoh suggestions
+        "cbu": {"rate": float | None, "date": "dd.mm"},  # WP-K6 konv assist
+        "balances_by_kassa": {kassa_label: str | None}, # WP-K6 menu header
     }
 
 ``handle(state, text, ctx)`` returns ``(reply_text, keyboard, new_state, action)``.
@@ -58,13 +62,16 @@ STEP_CHIQIM_CONFIRM = "chiqim_confirm"
 
 STEP_KONV_TARGET = "konv_target"
 STEP_KONV_SOURCE = "konv_source"
-STEP_KONV_RECEIVED = "konv_received"
 STEP_KONV_GIVEN = "konv_given"
+STEP_KONV_CBU_CHOICE = "konv_cbu_choice"
+STEP_KONV_RECEIVED = "konv_received"
+STEP_KONV_MEMO = "konv_memo"
 STEP_KONV_CONFIRM = "konv_confirm"
 
 STEP_K2K_SOURCE = "k2k_source"
 STEP_K2K_TARGET = "k2k_target"
 STEP_K2K_AMOUNT = "k2k_amount"
+STEP_K2K_MEMO = "k2k_memo"
 STEP_K2K_CONFIRM = "k2k_confirm"
 
 STEP_BACKDATE = "backdate"
@@ -82,6 +89,8 @@ BTN_CANCEL = "❌ Bekor qilish"
 BTN_CONFIRM = "✅ Tasdiqlash"
 BTN_OTHER = "Boshqa…"
 BTN_SKIP_DEAL = "O'tkazib yuborish"
+BTN_KONV_MANUAL = "✏️ Boshqa summa"
+BTN_KONV_CBU_PREFIX = "✅ CBU bo'yicha: "
 
 MENU_KEYBOARD = [
 	[BTN_KIRIM, BTN_CHIQIM],
@@ -95,22 +104,26 @@ CONFIRM_KEYBOARD = [[BTN_CONFIRM], [BTN_CANCEL]]
 _CATEGORY_PAGE = 10
 _DEAL_PAGE = 8
 
+_MEMO_PRESETS = ["Ijara", "Transport", "Bozor-xarid", BTN_OTHER]
+
 _DATE_RE = re.compile(r"^(\d{2})\.(\d{2})\.(\d{4})$")
 _NBSP = "\xa0"
 
 
 # --------------------------------------------------------------------------- #
-# Pure helpers (exported, unit-tested)
+# Smart amount parser (WP-K6) — numeric formats, suffix shorthand, word-number
+# grammar (Uzbek + Turkish). Never guesses: any ambiguity/garbage -> None.
 # --------------------------------------------------------------------------- #
-def parse_amount(text: str | None) -> float | None:
-	"""'2 000 000' -> 2000000.0 / '1 250,50' -> 1250.5 / garbage or <=0 -> None."""
-	if text is None:
+_NUMERIC_RE = re.compile(r"^[\d\s.,]+$")
+
+
+def _parse_numeric(raw: str) -> float | None:
+	"""'2 000 000' -> 2000000.0 / '1 250,50' -> 1250.5. Only digits/space/./,."""
+	if not _NUMERIC_RE.match(raw):
 		return None
-	raw = str(text).strip().replace(_NBSP, " ")
-	if not raw:
-		return None
-	# Thousands separator is whitespace in this bot's UX — strip all of it.
 	cleaned = re.sub(r"\s+", "", raw)
+	if not cleaned:
+		return None
 	if "," in cleaned and "." in cleaned:
 		# Ambiguous (both separators present) — reject rather than guess.
 		return None
@@ -123,6 +136,184 @@ def parse_amount(text: str | None) -> float | None:
 	if value <= 0:
 		return None
 	return value
+
+
+def _to_float(num_str: str) -> float | None:
+	s = num_str.strip()
+	if "," in s and "." in s:
+		return None
+	s = s.replace(",", ".")
+	try:
+		return float(s)
+	except ValueError:
+		return None
+
+
+# (pattern, multiplier) — every pattern is fully anchored (^...$) so order
+# doesn't matter for correctness (e.g. "500ming" can never match the bare
+# "...m$" pattern because the $ anchor requires the string to end right there).
+_SUFFIX_MULTIPLIERS = [
+	(re.compile(r"^(\d+(?:[.,]\d+)?)\s*k$", re.IGNORECASE), 1_000),
+	(re.compile(r"^(\d+(?:[.,]\d+)?)\s*m$", re.IGNORECASE), 1_000_000),
+	(re.compile(r"^(\d+(?:[.,]\d+)?)\s*(?:mln|млн)$", re.IGNORECASE), 1_000_000),
+	(re.compile(r"^(\d+(?:[.,]\d+)?)\s*(?:ming|минг)$", re.IGNORECASE), 1_000),
+	(re.compile(r"^(\d+(?:[.,]\d+)?)\s*bin$", re.IGNORECASE), 1_000),
+]
+
+
+def _parse_suffix_shorthand(raw: str) -> float | None:
+	"""'100k'->100000 / '1.5m'/'1,5m'->1500000 / '2 mln'/'2млн'->2000000 /
+	'500 ming'/'500минг'->500000 / '3 bin' (tr)->3000."""
+	candidate = raw.strip()
+	if not candidate:
+		return None
+	for pattern, mult in _SUFFIX_MULTIPLIERS:
+		m = pattern.match(candidate)
+		if not m:
+			continue
+		num = _to_float(m.group(1))
+		if num is None or num <= 0:
+			return None
+		return num * mult
+	return None
+
+
+_APOSTROPHES = "’‘ʻʼ`"
+
+
+def _normalize_apostrophes(s: str) -> str:
+	for ch in _APOSTROPHES:
+		s = s.replace(ch, "'")
+	return s
+
+
+# Uzbek (latin, with ASCII-fallback spellings) + Turkish digit/tens words.
+# Values that coincide across languages (e.g. "on" = 10 in both) share one key.
+_DIGIT_WORDS = {
+	"bir": 1,
+	"ikki": 2,
+	"uch": 3,
+	"üç": 3,
+	"to'rt": 4,
+	"tort": 4,
+	"dört": 4,
+	"besh": 5,
+	"olti": 6,
+	"altı": 6,
+	"yetti": 7,
+	"yedi": 7,
+	"sakkiz": 8,
+	"sekiz": 8,
+	"to'qqiz": 9,
+	"toqqiz": 9,
+	"dokuz": 9,
+}
+_TENS_WORDS = {
+	"o'n": 10,
+	"on": 10,
+	"yigirma": 20,
+	"yirmi": 20,
+	"o'ttiz": 30,
+	"ottiz": 30,
+	"otuz": 30,
+	"qirq": 40,
+	"kırk": 40,
+	"ellik": 50,
+	"elli": 50,
+	"oltmish": 60,
+	"altmış": 60,
+	"yetmish": 70,
+	"yetmiş": 70,
+	"sakson": 80,
+	"seksen": 80,
+	"to'qson": 90,
+	"toqson": 90,
+	"doksan": 90,
+}
+_HUNDRED_WORDS = {"yuz", "yüz"}
+_UNIT_WORDS = {
+	"ming": 1_000,
+	"bin": 1_000,
+	"million": 1_000_000,
+	"mln": 1_000_000,
+	"milyon": 1_000_000,
+}
+
+
+def _parse_word_number(raw: str) -> float | None:
+	"""Compositional Uzbek/Turkish number-word grammar.
+
+	'yuz ming'=100000, 'besh yuz ming'=500000,
+	'ikki million uch yuz ming'=2300000, 'bir yarim million'=1500000
+	(X yarim UNIT = (X+0.5)*UNIT), 'yarim million'=500000 (yarim UNIT = 0.5*UNIT).
+	Any unrecognized token aborts the whole parse -> None (never guesses).
+	"""
+	text = _normalize_apostrophes(raw.strip().lower())
+	if not text:
+		return None
+	tokens = text.split()
+	if not tokens:
+		return None
+	total = 0.0
+	current = 0.0
+	seen = False
+	i = 0
+	n = len(tokens)
+	while i < n:
+		tok = tokens[i]
+		if tok == "yarim":
+			if i + 1 >= n or tokens[i + 1] not in _UNIT_WORDS:
+				return None
+			mult = _UNIT_WORDS[tokens[i + 1]]
+			half_value = (current + 0.5) if current else 0.5
+			total += half_value * mult
+			current = 0.0
+			seen = True
+			i += 2
+			continue
+		if tok in _DIGIT_WORDS:
+			current += _DIGIT_WORDS[tok]
+			seen = True
+			i += 1
+			continue
+		if tok in _TENS_WORDS:
+			current += _TENS_WORDS[tok]
+			seen = True
+			i += 1
+			continue
+		if tok in _HUNDRED_WORDS:
+			current = (current or 1) * 100
+			seen = True
+			i += 1
+			continue
+		if tok in _UNIT_WORDS:
+			total += (current or 1) * _UNIT_WORDS[tok]
+			current = 0.0
+			seen = True
+			i += 1
+			continue
+		return None
+	total += current
+	if not seen or total <= 0:
+		return None
+	return total
+
+
+def parse_amount(text: str | None) -> float | None:
+	"""'2 000 000' -> 2000000.0 / '1 250,50' -> 1250.5 / '100k' -> 100000.0 /
+	'besh yuz ming' -> 500000.0 / garbage, ambiguous or <=0 -> None. Never guesses."""
+	if text is None:
+		return None
+	raw = str(text).strip().replace(_NBSP, " ")
+	if not raw:
+		return None
+	numeric = _parse_numeric(raw)
+	if numeric is not None:
+		return numeric
+	suffix = _parse_suffix_shorthand(raw)
+	if suffix is not None:
+		return suffix
+	return _parse_word_number(raw)
 
 
 def parse_date_ddmmyyyy(text: str | None) -> str | None:
@@ -151,6 +342,13 @@ def format_amount(amount: float, currency: str) -> str:
 	int_part = int_part.replace(",", " ")
 	frac_part = frac_part.rstrip("0") or "0"
 	return f"{int_part}.{frac_part} {currency}".strip()
+
+
+def _echo_amount(amount: float, currency: str) -> str:
+	"""Confirmation echo shown right after the bot accepts a typed amount, so
+	the kassir sees what was understood before confirming — money path never
+	silently guesses."""
+	return f"≈ {format_amount(amount, currency)}"
 
 
 def _fmt_date_human(iso: str | None) -> str:
@@ -193,16 +391,189 @@ def _rows(labels: list[str]) -> list[list[str]]:
 	return [[label] for label in labels]
 
 
+def _chunk(items: list, size: int) -> list[list]:
+	return [items[i : i + size] for i in range(0, len(items), size)]
+
+
 def _menu_state(kassa: str | None, posting_date: str | None) -> dict:
 	return {"step": STEP_MENU, "kassa": kassa, "posting_date": posting_date}
 
 
-def _menu_text(state: dict) -> str:
-	return (
-		f"Kassa: {state.get('kassa')}\n"
-		f"Sana: {_fmt_date_human(state.get('posting_date'))}\n\n"
-		"Amalni tanlang:"
-	)
+def _menu_text(state: dict, ctx: dict | None = None) -> str:
+	lines = [
+		f"Kassa: {state.get('kassa')}",
+		f"Sana: {_fmt_date_human(state.get('posting_date'))}",
+	]
+	extra = ((ctx or {}).get("balances_by_kassa") or {}).get(state.get("kassa"))
+	if extra:
+		lines.append(extra)
+	lines.append("")
+	lines.append("Amalni tanlang:")
+	return "\n".join(lines)
+
+
+# --------------------------------------------------------------------------- #
+# Mandatory-izoh helper (WP-K6): shared by Chiqim / Kassadan-kassaga /
+# Konvertatsiya, which now all REQUIRE a non-empty, non-"-" izoh. Kirim keeps
+# its own optional "-"-skips handler, untouched.
+# --------------------------------------------------------------------------- #
+def _izoh_keyboard(ctx: dict | None) -> list[list[str]]:
+	recent = [m for m in ((ctx or {}).get("recent_memos") or []) if m][:6]
+	rows = _chunk(recent, 2)
+	rows.append(list(_MEMO_PRESETS))
+	return rows
+
+
+def _mandatory_memo_step(state: dict, text: str, ctx: dict, confirm_builder):
+	"""Shared body for izoh steps that REQUIRE a non-empty, non-'-' memo.
+
+	``confirm_builder(new_state_with_memo, ctx)`` must return the same
+	``(reply, keyboard, new_state, action)`` tuple shape as any step handler.
+	"""
+	if state.get("_memo_await_free"):
+		stripped = (text or "").strip()
+		if not stripped or stripped == "-":
+			return ("Izoh bo'sh bo'lishi mumkin emas. Yozing:", None, state, None)
+		new_state = {k: v for k, v in state.items() if k != "_memo_await_free"}
+		new_state["memo"] = stripped
+		return confirm_builder(new_state, ctx)
+	if text == BTN_OTHER:
+		new_state = {**state, "_memo_await_free": True}
+		return ("Izohni yozing:", None, new_state, None)
+	stripped = (text or "").strip()
+	if not stripped or stripped == "-":
+		return ("Izoh majburiy. Tanlang yoki yozing:", _izoh_keyboard(ctx), state, None)
+	new_state = {**state, "memo": stripped}
+	return confirm_builder(new_state, ctx)
+
+
+# --------------------------------------------------------------------------- #
+# One-message quick transfer (WP-K6): "somdan pkga 500 ming [izoh]" — same-
+# currency kassa-to-kassa shortcut recognized at MAIN/MENU. Cross-currency and
+# unrecognized text -> None (falls through to normal menu handling).
+# --------------------------------------------------------------------------- #
+def _all_known_leaves(ctx: dict) -> list[dict]:
+	leaves: list[dict] = []
+	for group in ((ctx or {}).get("kassas") or {}).values():
+		leaves.extend(group)
+	leaves.extend((ctx or {}).get("targets") or [])
+	return leaves
+
+
+def _leaf_by_account(ctx: dict, account: str) -> dict | None:
+	for leaf in _all_known_leaves(ctx):
+		if leaf.get("account") == account:
+			return leaf
+	return None
+
+
+def _kassa_for_account(ctx: dict, account: str) -> str | None:
+	for kassa_label, leaves in ((ctx or {}).get("kassas") or {}).items():
+		for leaf in leaves:
+			if leaf.get("account") == account:
+				return kassa_label
+	return None
+
+
+def _extract_izoh(rest: str) -> str | None:
+	rest = (rest or "").strip()
+	if not rest:
+		return None
+	rest = rest.lstrip(",").strip()
+	if not rest or rest == "uchun":
+		return None
+	if rest.endswith(" uchun"):
+		rest = rest[: -len(" uchun")].strip()
+	return rest or None
+
+
+_QT_MAX_AMOUNT_TOKENS = 5
+
+
+def _finish_quick_transfer(from_acc: str, to_acc: str, tail: str, ctx: dict) -> dict | None:
+	tokens = tail.split()
+	if not tokens:
+		return None
+	max_len = min(_QT_MAX_AMOUNT_TOKENS, len(tokens))
+	for length in range(max_len, 0, -1):
+		candidate = " ".join(tokens[:length])
+		amt = parse_amount(candidate)
+		if amt is None:
+			continue
+		from_leaf = _leaf_by_account(ctx, from_acc)
+		to_leaf = _leaf_by_account(ctx, to_acc)
+		if from_leaf and to_leaf and from_leaf.get("currency") != to_leaf.get("currency"):
+			return None  # cross-currency — out of scope for this shortcut
+		izoh = _extract_izoh(" ".join(tokens[length:]))
+		return {"from": from_acc, "to": to_acc, "amount": amt, "izoh": izoh}
+	return None
+
+
+def parse_quick_transfer(text: str | None, ctx: dict) -> dict | None:
+	"""'somdan pkga 500 ming ijara uchun' -> {"from","to","amount","izoh"}.
+
+	``ctx["aliases"]`` is {alias_lower: account_name}, built by bot.py from
+	leaf labels. Matches "X dan Y ga" with -dan/-ga attached or separate.
+	Same-currency only; cross-currency or unrecognized text -> None."""
+	if not text:
+		return None
+	aliases = (ctx or {}).get("aliases") or {}
+	if not aliases:
+		return None
+	lowered = text.strip().lower()
+	if not lowered:
+		return None
+	alias_keys = sorted(aliases.keys(), key=len, reverse=True)
+	for from_alias in alias_keys:
+		remainder = None
+		for dan_variant in (from_alias + "dan", from_alias + " dan"):
+			if lowered.startswith(dan_variant):
+				remainder = lowered[len(dan_variant) :].lstrip()
+				break
+		if remainder is None:
+			continue
+		for to_alias in alias_keys:
+			if to_alias == from_alias or aliases[to_alias] == aliases[from_alias]:
+				continue
+			for ga_variant in (to_alias + "ga", to_alias + " ga"):
+				if remainder.startswith(ga_variant):
+					tail = remainder[len(ga_variant) :].strip()
+					result = _finish_quick_transfer(aliases[from_alias], aliases[to_alias], tail, ctx)
+					if result:
+						return result
+	return None
+
+
+def _try_quick_transfer(state: dict, text: str, ctx: dict):
+	"""Wired into MAIN/MENU, before keyword matching. On a recognized
+	same-currency quick-transfer, jump straight to the Kassadan-kassaga
+	confirm step (or the mandatory-izoh prompt if none was typed)."""
+	qt = parse_quick_transfer(text, ctx)
+	if not qt:
+		return None
+	src = _leaf_by_account(ctx, qt["from"])
+	tgt = _leaf_by_account(ctx, qt["to"])
+	if not src or not tgt or src["account"] == tgt["account"]:
+		return None
+	kassa = state.get("kassa") or _kassa_for_account(ctx, src["account"])
+	if not kassa:
+		labels = _kassa_labels(ctx)
+		kassa = labels[0] if labels else None
+	base_state = {
+		**state,
+		"kassa": kassa,
+		"step": STEP_K2K_TARGET,
+		"src": src,
+		"tgt": tgt,
+		"amount": qt["amount"],
+	}
+	if qt.get("izoh"):
+		base_state["memo"] = qt["izoh"]
+		base_state["step"] = STEP_K2K_CONFIRM
+		return (_k2k_confirm_text(base_state), CONFIRM_KEYBOARD, base_state, None)
+	base_state["step"] = STEP_K2K_MEMO
+	reply = f"{_echo_amount(qt['amount'], src['currency'])}\n\nIzoh (majburiy):"
+	return (reply, _izoh_keyboard(ctx), base_state, None)
 
 
 # --------------------------------------------------------------------------- #
@@ -249,10 +620,14 @@ def _chiqim_confirm_text(state: dict, ctx: dict) -> str:
 
 def _konv_confirm_text(state: dict) -> str:
 	tgt, src = state["tgt"], state["src"]
+	given, received = state["given"], state["received"]
+	rate = (received / given) if given else 0.0
 	lines = [
-		"\U0001F504 Konvertatsiya",
-		f"Oldingiz: {format_amount(state['received'], tgt['currency'])} ({tgt['label']})",
-		f"Berdingiz: {format_amount(state['given'], src['currency'])} ({src['label']})",
+		BTN_KONV,
+		f"Berdingiz: {format_amount(given, src['currency'])} ({src['label']})",
+		f"Oldingiz: {format_amount(received, tgt['currency'])} ({tgt['label']})",
+		f"Kurs: 1 {src['currency']} = {format_amount(rate, tgt['currency'])}",
+		f"Izoh: {state.get('memo') or '-'}",
 		f"Sana: {_fmt_date_human(state.get('posting_date'))}",
 		"",
 		"Tasdiqlaysizmi?",
@@ -263,10 +638,11 @@ def _konv_confirm_text(state: dict) -> str:
 def _k2k_confirm_text(state: dict) -> str:
 	src, tgt = state["src"], state["tgt"]
 	lines = [
-		"\U0001F4B1 Kassadan kassaga",
+		BTN_K2K,
 		f"Manba: {src['label']}",
 		f"Manzil: {tgt['label']}",
 		f"Summa: {format_amount(state['amount'], src['currency'])}",
+		f"Izoh: {state.get('memo') or '-'}",
 		f"Sana: {_fmt_date_human(state.get('posting_date'))}",
 		"",
 		"Tasdiqlaysizmi?",
@@ -283,14 +659,20 @@ def _cancel(state: dict, ctx: dict):
 
 
 def _handle_main(state: dict, text: str, ctx: dict):
+	qt = _try_quick_transfer(state, text, ctx)
+	if qt:
+		return qt
 	labels = _kassa_labels(ctx)
 	if text in labels:
 		new_state = _menu_state(text, state.get("posting_date"))
-		return (_menu_text(new_state), MENU_KEYBOARD, new_state, None)
+		return (_menu_text(new_state, ctx), MENU_KEYBOARD, new_state, None)
 	return ("Kassani tanlang:", _rows(labels), state, None)
 
 
 def _handle_menu(state: dict, text: str, ctx: dict):
+	qt = _try_quick_transfer(state, text, ctx)
+	if qt:
+		return qt
 	kassa = state.get("kassa")
 	if text == BTN_KIRIM:
 		leaves = _leaves_for_kassa(ctx, kassa)
@@ -341,8 +723,10 @@ def _handle_kirim_amount(state: dict, text: str, ctx: dict):
 	amt = parse_amount(text)
 	if amt is None:
 		return ("Noto'g'ri summa. Qayta kiriting:", None, state, None)
+	leaf = state["sub_kassa"]
 	new_state = {**state, "step": STEP_KIRIM_MEMO, "amount": amt}
-	return ("Izoh (yoki '-' o'tkazib yuborish uchun):", None, new_state, None)
+	reply = f"{_echo_amount(amt, leaf['currency'])}\n\nIzoh (yoki '-' o'tkazib yuborish uchun):"
+	return (reply, None, new_state, None)
 
 
 def _handle_kirim_memo(state: dict, text: str, ctx: dict):
@@ -448,14 +832,18 @@ def _handle_chiqim_amount(state: dict, text: str, ctx: dict):
 	amt = parse_amount(text)
 	if amt is None:
 		return ("Noto'g'ri summa. Qayta kiriting:", None, state, None)
+	leaf = state["sub_kassa"]
 	new_state = {**state, "step": STEP_CHIQIM_MEMO, "amount": amt}
-	return ("Izoh (yoki '-' o'tkazib yuborish uchun):", None, new_state, None)
+	reply = f"{_echo_amount(amt, leaf['currency'])}\n\nIzoh (majburiy):"
+	return (reply, _izoh_keyboard(ctx), new_state, None)
 
 
 def _handle_chiqim_memo(state: dict, text: str, ctx: dict):
-	memo = None if text.strip() == "-" else (text.strip() or None)
-	new_state = {**state, "step": STEP_CHIQIM_CONFIRM, "memo": memo}
-	return (_chiqim_confirm_text(new_state, ctx), CONFIRM_KEYBOARD, new_state, None)
+	def _confirm(new_state: dict, ctx: dict):
+		new_state = {**new_state, "step": STEP_CHIQIM_CONFIRM}
+		return (_chiqim_confirm_text(new_state, ctx), CONFIRM_KEYBOARD, new_state, None)
+
+	return _mandatory_memo_step(state, text, ctx, _confirm)
 
 
 def _handle_chiqim_confirm(state: dict, text: str, ctx: dict):
@@ -495,24 +883,72 @@ def _handle_konv_source(state: dict, text: str, ctx: dict):
 	src = _find_by_label(candidates, text)
 	if not src:
 		return ("Noto'g'ri tanlov. Ro'yxatdan tanlang:", _rows([c["label"] for c in candidates]), state, None)
-	new_state = {**state, "step": STEP_KONV_RECEIVED, "src": src}
-	return ("Qancha oldingiz?", None, new_state, None)
+	new_state = {**state, "step": STEP_KONV_GIVEN, "src": src}
+	return (f"Qancha berdingiz? ({src['currency']})", None, new_state, None)
 
 
-def _handle_konv_received(state: dict, text: str, ctx: dict):
-	amt = parse_amount(text)
-	if amt is None:
-		return ("Noto'g'ri summa. Qayta kiriting:", None, state, None)
-	new_state = {**state, "step": STEP_KONV_GIVEN, "received": amt}
-	return ("Qancha berdingiz?", None, new_state, None)
+def _konv_cbu_accept_label(computed: float, currency: str) -> str:
+	return f"{BTN_KONV_CBU_PREFIX}{format_amount(computed, currency)}"
 
 
 def _handle_konv_given(state: dict, text: str, ctx: dict):
 	amt = parse_amount(text)
 	if amt is None:
 		return ("Noto'g'ri summa. Qayta kiriting:", None, state, None)
-	new_state = {**state, "step": STEP_KONV_CONFIRM, "given": amt}
-	return (_konv_confirm_text(new_state), CONFIRM_KEYBOARD, new_state, None)
+	src, tgt = state["src"], state["tgt"]
+	echo = _echo_amount(amt, src["currency"])
+	cbu = (ctx or {}).get("cbu") or {}
+	rate = cbu.get("rate")
+	pair_ok = {src["currency"], tgt["currency"]} == {"USD", "UZS"}
+	if rate and pair_ok:
+		computed = amt * rate if src["currency"] == "USD" else (amt / rate if rate else None)
+		if computed and computed > 0:
+			new_state = {**state, "step": STEP_KONV_CBU_CHOICE, "given": amt, "_cbu_computed": computed}
+			accept_label = _konv_cbu_accept_label(computed, tgt["currency"])
+			keyboard = [[accept_label], [BTN_KONV_MANUAL]]
+			reply = (
+				f"{echo}\n\nCBU kursi: 1 USD = {format_amount(rate, 'UZS')} ({cbu.get('date') or ''})\n\n"
+				"Qabul qilingan summani tanlang:"
+			)
+			return (reply, keyboard, new_state, None)
+	new_state = {**state, "step": STEP_KONV_RECEIVED, "given": amt}
+	reply = f"{echo}\n\nQancha oldingiz? ({tgt['currency']})"
+	return (reply, None, new_state, None)
+
+
+def _handle_konv_cbu_choice(state: dict, text: str, ctx: dict):
+	computed = state.get("_cbu_computed")
+	tgt = state["tgt"]
+	accept_label = _konv_cbu_accept_label(computed, tgt["currency"]) if computed is not None else None
+	if computed is not None and text == accept_label:
+		new_state = {k: v for k, v in state.items() if k != "_cbu_computed"}
+		new_state["received"] = computed
+		new_state["step"] = STEP_KONV_MEMO
+		return ("Izoh (majburiy):", _izoh_keyboard(ctx), new_state, None)
+	if text == BTN_KONV_MANUAL:
+		new_state = {k: v for k, v in state.items() if k != "_cbu_computed"}
+		new_state["step"] = STEP_KONV_RECEIVED
+		return (f"Qancha oldingiz? ({tgt['currency']})", None, new_state, None)
+	keyboard = [[accept_label], [BTN_KONV_MANUAL]] if accept_label else [[BTN_KONV_MANUAL]]
+	return ("Tanlang:", keyboard, state, None)
+
+
+def _handle_konv_received(state: dict, text: str, ctx: dict):
+	amt = parse_amount(text)
+	if amt is None:
+		return ("Noto'g'ri summa. Qayta kiriting:", None, state, None)
+	tgt = state["tgt"]
+	new_state = {**state, "step": STEP_KONV_MEMO, "received": amt}
+	reply = f"{_echo_amount(amt, tgt['currency'])}\n\nIzoh (majburiy):"
+	return (reply, _izoh_keyboard(ctx), new_state, None)
+
+
+def _handle_konv_memo(state: dict, text: str, ctx: dict):
+	def _confirm(new_state: dict, ctx: dict):
+		new_state = {**new_state, "step": STEP_KONV_CONFIRM}
+		return (_konv_confirm_text(new_state), CONFIRM_KEYBOARD, new_state, None)
+
+	return _mandatory_memo_step(state, text, ctx, _confirm)
 
 
 def _handle_konv_confirm(state: dict, text: str, ctx: dict):
@@ -524,6 +960,7 @@ def _handle_konv_confirm(state: dict, text: str, ctx: dict):
 		"to": state["tgt"]["account"],
 		"from_amount": state["given"],
 		"to_amount": state["received"],
+		"memo": state.get("memo"),
 	}
 	new_state = _menu_state(state.get("kassa"), None)
 	return ("⏳ Amal bajarilmoqda...", MENU_KEYBOARD, new_state, action)
@@ -554,8 +991,18 @@ def _handle_k2k_amount(state: dict, text: str, ctx: dict):
 	amt = parse_amount(text)
 	if amt is None:
 		return ("Noto'g'ri summa. Qayta kiriting:", None, state, None)
-	new_state = {**state, "step": STEP_K2K_CONFIRM, "amount": amt}
-	return (_k2k_confirm_text(new_state), CONFIRM_KEYBOARD, new_state, None)
+	src = state["src"]
+	new_state = {**state, "step": STEP_K2K_MEMO, "amount": amt}
+	reply = f"{_echo_amount(amt, src['currency'])}\n\nIzoh (majburiy):"
+	return (reply, _izoh_keyboard(ctx), new_state, None)
+
+
+def _handle_k2k_memo(state: dict, text: str, ctx: dict):
+	def _confirm(new_state: dict, ctx: dict):
+		new_state = {**new_state, "step": STEP_K2K_CONFIRM}
+		return (_k2k_confirm_text(new_state), CONFIRM_KEYBOARD, new_state, None)
+
+	return _mandatory_memo_step(state, text, ctx, _confirm)
 
 
 def _handle_k2k_confirm(state: dict, text: str, ctx: dict):
@@ -566,6 +1013,7 @@ def _handle_k2k_confirm(state: dict, text: str, ctx: dict):
 		"from": state["src"]["account"],
 		"to": state["tgt"]["account"],
 		"from_amount": state["amount"],
+		"memo": state.get("memo"),
 	}
 	new_state = _menu_state(state.get("kassa"), None)
 	return ("⏳ Amal bajarilmoqda...", MENU_KEYBOARD, new_state, action)
@@ -579,7 +1027,7 @@ def _handle_backdate(state: dict, text: str, ctx: dict):
 	new_state = _menu_state(state.get("kassa"), iso)
 	reply = (
 		f"Endi barcha amallar {_fmt_date_human(iso)} sanasida yoziladi "
-		"(bitta amaldan keyin bugungi sanaga qaytadi).\n\n" + _menu_text(new_state)
+		"(bitta amaldan keyin bugungi sanaga qaytadi).\n\n" + _menu_text(new_state, ctx)
 	)
 	return (reply, MENU_KEYBOARD, new_state, None)
 
@@ -605,12 +1053,15 @@ _STEP_HANDLERS = {
 	STEP_CHIQIM_CONFIRM: _handle_chiqim_confirm,
 	STEP_KONV_TARGET: _handle_konv_target,
 	STEP_KONV_SOURCE: _handle_konv_source,
-	STEP_KONV_RECEIVED: _handle_konv_received,
 	STEP_KONV_GIVEN: _handle_konv_given,
+	STEP_KONV_CBU_CHOICE: _handle_konv_cbu_choice,
+	STEP_KONV_RECEIVED: _handle_konv_received,
+	STEP_KONV_MEMO: _handle_konv_memo,
 	STEP_KONV_CONFIRM: _handle_konv_confirm,
 	STEP_K2K_SOURCE: _handle_k2k_source,
 	STEP_K2K_TARGET: _handle_k2k_target,
 	STEP_K2K_AMOUNT: _handle_k2k_amount,
+	STEP_K2K_MEMO: _handle_k2k_memo,
 	STEP_K2K_CONFIRM: _handle_k2k_confirm,
 	STEP_BACKDATE: _handle_backdate,
 }
