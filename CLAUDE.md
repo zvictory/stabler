@@ -87,6 +87,13 @@
    `-rltz --no-owner --no-group` (NO `--delete`), excluding `.git node_modules
    dist __pycache__ *.pyc .claude .tx_*.json graphify-out .smoke tests *.tgz .DS_Store`.
    Then `chown -R frappe:frappe …/apps/stabler`.
+   **cwd trap (near-miss 2026-07-17):** run rsync from the bench **`apps/`** dir so
+   the relative source `stabler/` = the whole app `apps/stabler/`. Running it from
+   inside `apps/stabler/` makes `stabler/` resolve to the inner Python module
+   (`apps/stabler/stabler/`) while the remote is the whole app — rsync then shows a
+   bogus 1500+ deletions and (with `--delete*`) would wipe the sibling
+   `stable-erp-website/`. **ALWAYS `-rltzn` dry-run first and abort if any sibling
+   dir or `stable-erp-website/` appears in the delete list.**
 4. `bench build --app stabler` on prod.
 5. `bench --site anjan.erpstable.com migrate` (only if patches.txt / doctypes changed).
 6. `bench restart` if any `.py` changed.

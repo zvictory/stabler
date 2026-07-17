@@ -38,10 +38,17 @@ ssh ice-production 'tar czf /root/stabler-app-$(date +%F-%H%M).tgz -C /home/frap
 
 ## 3. Dry-run the rsync (SEE what moves before it moves)
 
-Run from your local bench app dir. **Note the `n` in `-rltzn` = dry run.**
+**CRITICAL cwd — run from `apps/`, NOT `apps/stabler/`.** The rsync source is
+`stabler/` (relative), so cwd must be the bench **apps** dir where `stabler/` =
+the whole app `apps/stabler/`. If you `cd apps/stabler` first, `stabler/`
+resolves to the inner Python module `apps/stabler/stabler/` while the remote is
+still the whole app — rsync then reports a bogus 1500+ deletions and would even
+try to delete the sibling `stable-erp-website/`. **Always eyeball the dry-run
+delete list; if `stable-erp-website/` or any sibling appears, STOP — wrong cwd.**
 
 ```bash
-cd /Users/zafar/frappe-bench-local/apps/stabler
+cd /Users/zafar/frappe-bench-local/apps        # apps dir, not apps/stabler
+pwd                                             # must end in /frappe-bench-local/apps
 rsync -rltzn --no-owner --no-group --delete-excluded \
   --exclude='.git' --exclude='node_modules' --exclude='dist' \
   --exclude='__pycache__' --exclude='*.pyc' --exclude='.claude' \
@@ -63,6 +70,8 @@ Eyeball the list. You MUST see: `integrations/kassa/{__init__,_flow,bot,webhook}
 any `*_PROMPT.md`, or scratch. `dist/` is gitignored/excluded (rebuilt on prod).
 
 ## 4. Real rsync (drop the `n`)
+
+Still from `apps/` (same cwd as the dry-run — re-check `pwd`).
 
 ```bash
 rsync -rltz --no-owner --no-group --delete-excluded \
