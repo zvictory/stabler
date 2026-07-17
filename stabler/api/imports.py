@@ -3625,7 +3625,8 @@ def list_proformas(company: str, status: str | None = None, supplier: str | None
     return frappe.db.sql(
         f"""
         SELECT pi.name, pi.supplier, s.supplier_name, pi.pi_date, pi.supplier_pi_ref,
-               pi.currency, pi.agreed_total, pi.bank_agreed, pi.cash_agreed,
+               pi.currency, pi.agreed_total, pi.docs_total, pi.cash_difference,
+               pi.bank_agreed, pi.cash_agreed,
                pi.status, pi.commercial_invoice, pi.import_pi_group
         FROM `tabProforma Invoice` pi
         LEFT JOIN `tabSupplier` s ON s.name = pi.supplier
@@ -3664,7 +3665,8 @@ def save_proforma(payload) -> dict:
         doc = frappe.new_doc("Proforma Invoice")
 
     for field in ("supplier", "company", "pi_date", "supplier_pi_ref", "import_pi_group",
-                  "currency", "incoterm", "agreed_total", "advance_pct",
+                  "currency", "incoterm", "incoterm_location", "port_of_loading",
+                  "port_of_discharge", "prepayment_type", "agreed_total", "advance_pct",
                   "bank_agreed", "cash_agreed", "status", "remarks"):
         if field in data:
             doc.set(field, data.get(field))
@@ -3676,13 +3678,147 @@ def save_proforma(payload) -> dict:
         doc.append("items", {
             "item": row.get("item"),
             "description": row.get("description"),
+            "fcl": flt(row.get("fcl")),
+            "boxes": cint(row.get("boxes")),
+            "box_weight_kg": flt(row.get("box_weight_kg")),
             "qty": flt(row.get("qty")),
             "uom": row.get("uom"),
             "rate": flt(row.get("rate")),
+            "docs_price": flt(row.get("docs_price")),
         })
 
     doc.save(ignore_permissions=False)
-    return {"name": doc.name, "status": doc.status}
+    return {
+        "name": doc.name,
+        "status": doc.status,
+        "agreed_total": flt(doc.agreed_total),
+        "docs_total": flt(doc.docs_total),
+        "cash_difference": flt(doc.cash_difference),
+    }
+
+
+# ---------------------------------------------------------------------------
+# WP-I17 — Vendor Category management (MSA /products/vendor-categories/ parity)
+# ---------------------------------------------------------------------------
+
+
+@frappe.whitelist()
+def list_vendor_categories(company: str, vendor: str | None = None) -> list[dict]:
+    """Vendor categories grouped for the management page (imports-gated).
+
+    A category is a purchasing TEMPLATE — which items + boxes-per-container —
+    prices are entered per-PI (MSA model: categories store no prices).
+    """
+    _assert_imports_access(company)
+    clauses = "1 = 1"
+    params: dict = {}
+    if vendor:
+        clauses = "vc.vendor = %(vendor)s"
+        params["vendor"] = vendor
+    rows = frappe.db.sql(
+        f"""
+        SELECT vc.name, vc.vendor, s.supplier_name, vc.category_name,
+               vc.display_name, vc.description, vc.is_active
+        FROM `tabStabler Vendor Category` vc
+        LEFT JOIN `tabSupplier` s ON s.name = vc.vendor
+        WHERE {clauses}
+        ORDER BY s.supplier_name ASC, vc.category_name ASC
+        LIMIT 500
+        """,
+        params,
+        as_dict=True,
+    )
+    counts = dict(
+        frappe.db.sql(
+            """
+            SELECT parent, COUNT(*) FROM `tabStabler Vendor Category Item`
+            GROUP BY parent
+            """
+        )
+    )
+    for r in rows:
+        r["item_count"] = cint(counts.get(r["name"], 0))
+    return rows
+
+
+@frappe.whitelist()
+def vendor_category_detail(name: str) -> dict:
+    """One category with its item rows (for the edit modal + PI category fill)."""
+    if not name or not frappe.db.exists("Stabler Vendor Category", name):
+        frappe.throw(_("Unknown vendor category: {0}").format(name))
+    doc = frappe.get_doc("Stabler Vendor Category", name)
+    items = []
+    for it in doc.items or []:
+        meta = frappe.db.get_value(
+            "Item", it.item_code, ["item_name", "stock_uom"], as_dict=True
+        ) or {}
+        items.append({
+            "item_code": it.item_code,
+            "item_name": meta.get("item_name"),
+            "stock_uom": meta.get("stock_uom"),
+            "boxes_per_container": cint(it.boxes_per_container),
+        })
+    return {
+        "name": doc.name,
+        "vendor": doc.vendor,
+        "category_name": doc.category_name,
+        "display_name": doc.display_name,
+        "description": doc.get("description"),
+        "is_active": cint(doc.is_active),
+        "items": items,
+        "total_boxes_per_container": sum(i["boxes_per_container"] for i in items),
+    }
+
+
+@frappe.whitelist()
+def save_vendor_category(payload, company: str) -> dict:
+    """Create/update a vendor category with its item rows (imports-gated)."""
+    _assert_imports_access(company)
+    data = frappe.parse_json(payload) if isinstance(payload, str) else payload
+    if not data.get("vendor") or not frappe.db.exists("Supplier", data.get("vendor")):
+        frappe.throw(_("A valid supplier is required."))
+    if not (data.get("category_name") or "").strip():
+        frappe.throw(_("Category name is required."))
+
+    if data.get("name") and frappe.db.exists("Stabler Vendor Category", data["name"]):
+        doc = frappe.get_doc("Stabler Vendor Category", data["name"])
+    else:
+        # MSA parity: (vendor, name) unique — reuse an existing pair instead of duplicating.
+        existing = frappe.db.get_value(
+            "Stabler Vendor Category",
+            {"vendor": data["vendor"], "category_name": data["category_name"].strip()},
+            "name",
+        )
+        doc = (
+            frappe.get_doc("Stabler Vendor Category", existing)
+            if existing
+            else frappe.new_doc("Stabler Vendor Category")
+        )
+    doc.vendor = data["vendor"]
+    doc.category_name = data["category_name"].strip()
+    doc.display_name = (data.get("display_name") or data["category_name"]).strip()
+    doc.description = data.get("description")
+    doc.is_active = cint(data.get("is_active", 1))
+    doc.set("items", [])
+    for row in (data.get("items") or []):
+        if not (row or {}).get("item_code"):
+            continue
+        doc.append("items", {
+            "item_code": row["item_code"],
+            "boxes_per_container": cint(row.get("boxes_per_container")),
+        })
+    doc.save(ignore_permissions=False)
+    return {"name": doc.name}
+
+
+@frappe.whitelist()
+def delete_vendor_category(name: str, company: str) -> dict:
+    """Delete a vendor category (imports-gated; MSA list-page action parity)."""
+    _assert_imports_access(company)
+    if not name or not frappe.db.exists("Stabler Vendor Category", name):
+        frappe.throw(_("Unknown vendor category: {0}").format(name))
+    frappe.delete_doc("Stabler Vendor Category", name, ignore_permissions=False)
+    return {"deleted": name}
 
 
 # ---------------------------------------------------------------------------

@@ -14,8 +14,14 @@
   "commercial_invoice",
   "currency",
   "incoterm",
+  "incoterm_location",
+  "port_of_loading",
+  "port_of_discharge",
   "section_amount",
   "agreed_total",
+  "docs_total",
+  "cash_difference",
+  "prepayment_type",
   "advance_pct",
   "column_break_amount",
   "bank_agreed",
@@ -94,7 +100,7 @@
    "options": "currency"
   },
   {
-   "default": "70",
+   "default": "30",
    "fieldname": "advance_pct",
    "fieldtype": "Percent",
    "label": "Advance %"
@@ -146,6 +152,44 @@
    "fieldname": "remarks",
    "fieldtype": "Small Text",
    "label": "Remarks"
+  },
+  {
+   "fieldname": "incoterm_location",
+   "fieldtype": "Data",
+   "label": "Incoterm Location"
+  },
+  {
+   "fieldname": "port_of_loading",
+   "fieldtype": "Data",
+   "label": "Port of Loading"
+  },
+  {
+   "fieldname": "port_of_discharge",
+   "fieldtype": "Data",
+   "label": "Port of Discharge"
+  },
+  {
+   "fieldname": "docs_total",
+   "fieldtype": "Currency",
+   "label": "Docs Total",
+   "options": "currency",
+   "read_only": 1,
+   "description": "Customs-declaration value only — never enters GL/AP."
+  },
+  {
+   "fieldname": "cash_difference",
+   "fieldtype": "Currency",
+   "label": "Cash Difference",
+   "options": "currency",
+   "read_only": 1,
+   "description": "agreed_total - docs_total."
+  },
+  {
+   "fieldname": "prepayment_type",
+   "fieldtype": "Select",
+   "label": "Prepayment Base",
+   "options": "AGREED_TOTAL\nDOCS_ONLY",
+   "default": "AGREED_TOTAL"
   }
  ],
  "index_web_pages_for_search": 1,

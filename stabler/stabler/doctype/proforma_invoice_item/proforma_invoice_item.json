@@ -7,10 +7,15 @@
  "field_order": [
   "item",
   "description",
+  "fcl",
+  "boxes",
+  "box_weight_kg",
   "qty",
   "uom",
   "rate",
-  "amount"
+  "amount",
+  "docs_price",
+  "docs_amount"
  ],
  "fields": [
   {
@@ -52,6 +57,36 @@
    "in_list_view": 1,
    "label": "Amount",
    "options": "currency",
+   "read_only": 1
+  },
+  {
+   "fieldname": "fcl",
+   "fieldtype": "Float",
+   "label": "FCL",
+   "precision": "2"
+  },
+  {
+   "fieldname": "boxes",
+   "fieldtype": "Int",
+   "label": "Boxes"
+  },
+  {
+   "fieldname": "box_weight_kg",
+   "fieldtype": "Float",
+   "label": "Box Weight (kg)",
+   "precision": "2"
+  },
+  {
+   "fieldname": "docs_price",
+   "fieldtype": "Currency",
+   "label": "Docs Price",
+   "description": "Customs-declared unit price — never enters GL.",
+   "in_list_view": 1
+  },
+  {
+   "fieldname": "docs_amount",
+   "fieldtype": "Currency",
+   "label": "Docs Amount",
    "read_only": 1
   }
  ],
