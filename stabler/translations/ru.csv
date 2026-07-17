@@ -4295,3 +4295,45 @@ Materials to Transfer,Материалы для перемещения
 Start & Transfer,Запустить и переместить
 Please ensure all items are selected and have a quantity greater than zero.,"Пожалуйста, убедитесь, что все товары выбраны и их количество больше нуля."
 Source Stock,Остаток на источнике
+A draft Purchase Invoice is created for review — it is not posted to the ledger until Accounts submits it. The customs docs value is excluded.,"Черновик счёта на закупку создаётся для проверки — он не попадает в книгу, пока бухгалтерия его не проведёт. Таможенная (docs) стоимость не учитывается."
+Advance allocation,Зачёт аванса
+Bank Agreed,Банк (договорено)
+Bank Agreed + Cash Agreed must equal Agreed Total.,Банк + наличные (договорено) должны равняться итоговой сумме.
+Bank paid,Оплачено банком
+Cash + bank paid does not match the GL total,Наличные + банк не совпадают с итогом ГК
+Cash Agreed,Наличные (договорено)
+Cash paid,Оплачено наличными
+Convert to Invoice,Преобразовать в счёт
+Convert to Purchase Invoice,Преобразовать в счёт на закупку
+Could not create the Purchase Invoice.,Не удалось создать счёт на закупку.
+Could not link the proforma.,Не удалось привязать проформу.
+Could not preview the conversion.,Не удалось показать предпросмотр.
+Could not save the proforma.,Не удалось сохранить проформу.
+Create draft invoice,Создать черновик счёта
+Create your first proforma invoice.,Создайте первую проформу.
+Draft Purchase Invoice created: {0},Черновик счёта создан: {0}
+Edit Proforma,Изменить проформу
+Failed to load proformas.,Не удалось загрузить проформы.
+GL mismatch,Расхождение с ГК
+Import Exposure,Импортная экспозиция
+Invoice lines total,Сумма строк счёта
+Invoice total does not match the agreed total.,Сумма счёта не совпадает с договорённой.
+Link CI,Привязать CI
+Link to Commercial Invoice,Привязать к коммерческому инвойсу
+New Proforma,Новая проформа
+No proformas yet,Проформ пока нет
+Open commitment,Открытое обязательство
+Open commitments,Открытые обязательства
+PI,PI
+PI Date,Дата PI
+PI no or supplier,№ PI или поставщик
+Previewing…,Предпросмотр…
+Proforma Invoices,Проформы-инвойсы
+Proforma linked to Commercial Invoice,Проформа привязана к коммерческому инвойсу
+Proforma saved,Проформа сохранена
+Remaining after advances,Остаток после авансов
+Search commercial invoice…,Поиск коммерческого инвойса…
+Superseding proforma,Заменяемая проформа
+Supplier PI No.,№ PI поставщика
+This Commercial Invoice already has a Purchase Invoice.,У этого коммерческого инвойса уже есть счёт на закупку.
+Total paid,Всего оплачено

@@ -4274,3 +4274,45 @@ Materials to Transfer,Transfer Edilecek Malzemeler
 Start & Transfer,Başlat ve Transfer Et
 Please ensure all items are selected and have a quantity greater than zero.,Lütfen tüm ürünlerin seçildiğinden ve miktarın sıfırdan büyük olduğundan emin olun.
 Source Stock,Kaynak Stok
+A draft Purchase Invoice is created for review — it is not posted to the ledger until Accounts submits it. The customs docs value is excluded.,İnceleme için taslak Alış Faturası oluşturulur — Muhasebe onaylayana kadar deftere işlenmez. Gümrük (docs) değeri hariç tutulur.
+Advance allocation,Avans mahsubu
+Bank Agreed,Banka (anlaşılan)
+Bank Agreed + Cash Agreed must equal Agreed Total.,Banka + Nakit (anlaşılan) toplam anlaşılan tutara eşit olmalı.
+Bank paid,Banka ödenen
+Cash + bank paid does not match the GL total,Nakit + banka GL toplamıyla uyuşmuyor
+Cash Agreed,Nakit (anlaşılan)
+Cash paid,Nakit ödenen
+Convert to Invoice,Faturaya dönüştür
+Convert to Purchase Invoice,Alış Faturasına dönüştür
+Could not create the Purchase Invoice.,Alış Faturası oluşturulamadı.
+Could not link the proforma.,Proforma bağlanamadı.
+Could not preview the conversion.,Önizleme yüklenemedi.
+Could not save the proforma.,Proforma kaydedilemedi.
+Create draft invoice,Taslak fatura oluştur
+Create your first proforma invoice.,İlk proforma faturanızı oluşturun.
+Draft Purchase Invoice created: {0},Taslak Alış Faturası oluşturuldu: {0}
+Edit Proforma,Proformayı düzenle
+Failed to load proformas.,Proformalar yüklenemedi.
+GL mismatch,GL uyumsuzluğu
+Import Exposure,İthalat maruziyeti
+Invoice lines total,Fatura satırları toplamı
+Invoice total does not match the agreed total.,Fatura toplamı anlaşılan tutarla uyuşmuyor.
+Link CI,CI bağla
+Link to Commercial Invoice,Ticari Faturaya bağla
+New Proforma,Yeni Proforma
+No proformas yet,Henüz proforma yok
+Open commitment,Açık taahhüt
+Open commitments,Açık taahhütler
+PI,PI
+PI Date,PI tarihi
+PI no or supplier,PI no veya tedarikçi
+Previewing…,Önizleniyor…
+Proforma Invoices,Proforma Faturalar
+Proforma linked to Commercial Invoice,Proforma Ticari Faturaya bağlandı
+Proforma saved,Proforma kaydedildi
+Remaining after advances,Avanslardan sonra kalan
+Search commercial invoice…,Ticari fatura ara…
+Superseding proforma,Devredilen proforma
+Supplier PI No.,Tedarikçi PI No.
+This Commercial Invoice already has a Purchase Invoice.,Bu Ticari Faturanın zaten bir Alış Faturası var.
+Total paid,Toplam ödenen

@@ -4285,3 +4285,45 @@ Materials to Transfer,Materials to Transfer
 Start & Transfer,Start & Transfer
 Please ensure all items are selected and have a quantity greater than zero.,Please ensure all items are selected and have a quantity greater than zero.
 Source Stock,Source Stock
+A draft Purchase Invoice is created for review — it is not posted to the ledger until Accounts submits it. The customs docs value is excluded.,A draft Purchase Invoice is created for review — it is not posted to the ledger until Accounts submits it. The customs docs value is excluded.
+Advance allocation,Advance allocation
+Bank Agreed,Bank Agreed
+Bank Agreed + Cash Agreed must equal Agreed Total.,Bank Agreed + Cash Agreed must equal Agreed Total.
+Bank paid,Bank paid
+Cash + bank paid does not match the GL total,Cash + bank paid does not match the GL total
+Cash Agreed,Cash Agreed
+Cash paid,Cash paid
+Convert to Invoice,Convert to Invoice
+Convert to Purchase Invoice,Convert to Purchase Invoice
+Could not create the Purchase Invoice.,Could not create the Purchase Invoice.
+Could not link the proforma.,Could not link the proforma.
+Could not preview the conversion.,Could not preview the conversion.
+Could not save the proforma.,Could not save the proforma.
+Create draft invoice,Create draft invoice
+Create your first proforma invoice.,Create your first proforma invoice.
+Draft Purchase Invoice created: {0},Draft Purchase Invoice created: {0}
+Edit Proforma,Edit Proforma
+Failed to load proformas.,Failed to load proformas.
+GL mismatch,GL mismatch
+Import Exposure,Import Exposure
+Invoice lines total,Invoice lines total
+Invoice total does not match the agreed total.,Invoice total does not match the agreed total.
+Link CI,Link CI
+Link to Commercial Invoice,Link to Commercial Invoice
+New Proforma,New Proforma
+No proformas yet,No proformas yet
+Open commitment,Open commitment
+Open commitments,Open commitments
+PI,PI
+PI Date,PI Date
+PI no or supplier,PI no or supplier
+Previewing…,Previewing…
+Proforma Invoices,Proforma Invoices
+Proforma linked to Commercial Invoice,Proforma linked to Commercial Invoice
+Proforma saved,Proforma saved
+Remaining after advances,Remaining after advances
+Search commercial invoice…,Search commercial invoice…
+Superseding proforma,Superseding proforma
+Supplier PI No.,Supplier PI No.
+This Commercial Invoice already has a Purchase Invoice.,This Commercial Invoice already has a Purchase Invoice.
+Total paid,Total paid

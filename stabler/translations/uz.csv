@@ -4289,3 +4289,45 @@ Materials to Transfer,Ko'chiriladigan materiallar
 Start & Transfer,Boshlash va ko'chirish
 Please ensure all items are selected and have a quantity greater than zero.,"Iltimos, barcha tovarlar tanlanganligi va miqdori noldan ko'pligiga ishonch hosil qiling."
 Source Stock,Manba qoldig'i
+A draft Purchase Invoice is created for review — it is not posted to the ledger until Accounts submits it. The customs docs value is excluded.,Tekshirish uchun qoralama xarid fakturasi yaratiladi — buxgalteriya tasdiqlamaguncha daftarga o'tmaydi. Bojxona (docs) qiymati hisobga olinmaydi.
+Advance allocation,Avansni taqsimlash
+Bank Agreed,Bank (kelishilgan)
+Bank Agreed + Cash Agreed must equal Agreed Total.,Bank + naqd (kelishilgan) jami kelishilgan summaga teng bo'lishi kerak.
+Bank paid,Bank orqali to'landi
+Cash + bank paid does not match the GL total,Naqd + bank GL jamiga mos kelmaydi
+Cash Agreed,Naqd (kelishilgan)
+Cash paid,Naqd to'landi
+Convert to Invoice,Fakturaga aylantirish
+Convert to Purchase Invoice,Xarid fakturasiga aylantirish
+Could not create the Purchase Invoice.,Xarid fakturasini yaratib bo'lmadi.
+Could not link the proforma.,Proformani bog'lab bo'lmadi.
+Could not preview the conversion.,Oldindan ko'rishni yuklab bo'lmadi.
+Could not save the proforma.,Proformani saqlab bo'lmadi.
+Create draft invoice,Qoralama faktura yaratish
+Create your first proforma invoice.,Birinchi proforma fakturani yarating.
+Draft Purchase Invoice created: {0},Qoralama xarid fakturasi yaratildi: {0}
+Edit Proforma,Proformani tahrirlash
+Failed to load proformas.,Proformalarni yuklab bo'lmadi.
+GL mismatch,GL nomuvofiqligi
+Import Exposure,Import ekspozitsiyasi
+Invoice lines total,Faktura qatorlari jami
+Invoice total does not match the agreed total.,Faktura summasi kelishilgan summaga mos emas.
+Link CI,CI bog'lash
+Link to Commercial Invoice,Tijorat fakturasiga bog'lash
+New Proforma,Yangi proforma
+No proformas yet,Hozircha proformalar yo'q
+Open commitment,Ochiq majburiyat
+Open commitments,Ochiq majburiyatlar
+PI,PI
+PI Date,PI sanasi
+PI no or supplier,PI raqami yoki yetkazib beruvchi
+Previewing…,Oldindan ko'rish…
+Proforma Invoices,Proforma fakturalar
+Proforma linked to Commercial Invoice,Proforma tijorat fakturasiga bog'landi
+Proforma saved,Proforma saqlandi
+Remaining after advances,Avanslardan keyingi qoldiq
+Search commercial invoice…,Tijorat fakturasini qidirish…
+Superseding proforma,Almashtirilayotgan proforma
+Supplier PI No.,Yetkazib beruvchi PI raqami
+This Commercial Invoice already has a Purchase Invoice.,Bu tijorat fakturasida allaqachon xarid fakturasi bor.
+Total paid,Jami to'langan

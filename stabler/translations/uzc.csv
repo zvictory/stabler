@@ -4289,3 +4289,45 @@ Materials to Transfer,Кўчириладиган материаллар
 Start & Transfer,Бошлаш ва кўчириш
 Please ensure all items are selected and have a quantity greater than zero.,"Илтимос, барча товарлар танланганлиги ва миқдори нолдан кўплигига ишонч ҳосил қилинг."
 Source Stock,Манба қолдиғи
+A draft Purchase Invoice is created for review — it is not posted to the ledger until Accounts submits it. The customs docs value is excluded.,Текшириш учун қоралама харид фактураси яратилади — бухгалтерия тасдиқламагунча дафтарга ўтмайди. Божхона (docs) қиймати ҳисобга олинмайди.
+Advance allocation,Авансни тақсимлаш
+Bank Agreed,Банк (келишилган)
+Bank Agreed + Cash Agreed must equal Agreed Total.,Банк + нақд (келишилган) жами келишилган суммага тенг бўлиши керак.
+Bank paid,Банк орқали тўланди
+Cash + bank paid does not match the GL total,Нақд + банк GL жамига мос келмайди
+Cash Agreed,Нақд (келишилган)
+Cash paid,Нақд тўланди
+Convert to Invoice,Фактурага айлантириш
+Convert to Purchase Invoice,Харид фактурасига айлантириш
+Could not create the Purchase Invoice.,Харид фактурасини яратиб бўлмади.
+Could not link the proforma.,Проформани боғлаб бўлмади.
+Could not preview the conversion.,Олдиндан кўришни юклаб бўлмади.
+Could not save the proforma.,Проформани сақлаб бўлмади.
+Create draft invoice,Қоралама фактура яратиш
+Create your first proforma invoice.,Биринчи проформа фактурани яратинг.
+Draft Purchase Invoice created: {0},Қоралама харид фактураси яратилди: {0}
+Edit Proforma,Проформани таҳрирлаш
+Failed to load proformas.,Проформаларни юклаб бўлмади.
+GL mismatch,GL номувофиқлиги
+Import Exposure,Импорт экспозицияси
+Invoice lines total,Фактура қаторлари жами
+Invoice total does not match the agreed total.,Фактура суммаси келишилган суммага мос эмас.
+Link CI,CI боғлаш
+Link to Commercial Invoice,Тижорат фактурасига боғлаш
+New Proforma,Янги проформа
+No proformas yet,Ҳозирча проформалар йўқ
+Open commitment,Очиқ мажбурият
+Open commitments,Очиқ мажбуриятлар
+PI,PI
+PI Date,PI санаси
+PI no or supplier,PI рақами ёки етказиб берувчи
+Previewing…,Олдиндан кўриш…
+Proforma Invoices,Проформа фактуралар
+Proforma linked to Commercial Invoice,Проформа тижорат фактурасига боғланди
+Proforma saved,Проформа сақланди
+Remaining after advances,Аванслардан кейинги қолдиқ
+Search commercial invoice…,Тижорат фактурасини қидириш…
+Superseding proforma,Алмаштирилаётган проформа
+Supplier PI No.,Етказиб берувчи PI рақами
+This Commercial Invoice already has a Purchase Invoice.,Бу тижорат фактурасида аллақачон харид фактураси бор.
+Total paid,Жами тўланган
