@@ -591,81 +591,69 @@ watch(activeCompany, loadPiGroups);
 			</div>
 			<div class="table-responsive" style="max-height: 560px; overflow-y: auto;">
 				<table class="table table-sm table-bordered align-middle mb-0">
-					<thead style="position: sticky; top: 0; z-index: 1">
-						<tr>
-							<th rowspan="2" class="align-middle" style="min-width: 200px">{{ t("Item") }}</th>
-							<th rowspan="2" class="align-middle" style="min-width: 150px">{{ t("Description") }}</th>
-							<th colspan="4" class="text-center bg-orange-lt text-orange">{{ t("Physical") }}</th>
-							<th colspan="2" class="text-center bg-blue-lt text-blue">{{ t("Agreed") }}</th>
-							<th colspan="2" class="text-center bg-green-lt text-green">{{ t("Docs") }}</th>
-							<th rowspan="2" style="width: 36px"></th>
-						</tr>
-						<tr>
-							<th class="text-end bg-orange-lt text-orange" style="width: 70px">{{ t("FCL") }}</th>
-							<th class="text-end bg-orange-lt text-orange" style="width: 80px">{{ t("Boxes") }}</th>
-							<th class="text-end bg-orange-lt text-orange" style="width: 90px">{{ t("Box kg") }}</th>
-							<th class="text-end bg-orange-lt text-orange" style="width: 90px">{{ t("Qty") }}</th>
-							<th class="text-end bg-blue-lt text-blue" style="width: 130px">{{ t("Agreed price") }}</th>
-							<th class="text-end bg-blue-lt text-blue" style="width: 130px">{{ t("Agreed amount") }}</th>
-							<th class="text-end bg-green-lt text-green" style="width: 130px">{{ t("Docs price") }}</th>
-							<th class="text-end bg-green-lt text-green" style="width: 130px">{{ t("Docs amount") }}</th>
-						</tr>
-					</thead>
-					<tbody>
-						<tr v-for="(row, idx) in form.items" :key="idx">
-							<td>
-								<Typeahead
-									v-model="row.item"
-									:display="row.item ? `${row.item}${row.description ? ' — ' + row.description : ''}` : ''"
-									:search="searchItems"
-									size="sm"
-									:placeholder="t('Search item…')"
-									@pick="(item) => pickItemRow(row, item)"
-									@clear="() => clearItemRow(row)"
-								>
-									<template #option="{ item }">
-										<div class="d-flex justify-content-between align-items-center">
-											<div>
-												<div class="fw-semibold small">{{ item.item_name }}</div>
-												<div class="font-monospace text-secondary" style="font-size: 11px">{{ item.item_code }}</div>
+											<thead style="position: sticky; top: 0; z-index: 1">
+							<tr>
+								<th style="min-width: 150px">{{ t("Category") }}</th>
+								<th style="min-width: 200px">{{ t("Product Code/Name") }}</th>
+								<th class="text-end bg-orange-lt text-orange" style="width: 90px">{{ t("Boxes") }}</th>
+								<th class="text-end bg-orange-lt text-orange" style="width: 100px">{{ t("Box Weight") }}</th>
+								<th class="text-end bg-orange-lt text-orange" style="width: 110px">{{ t("Quantity (KG)") }}</th>
+								<th class="text-end bg-blue-lt text-blue" style="width: 120px">{{ t("Agreed Price") }}</th>
+								<th class="text-end bg-green-lt text-green" style="width: 120px">{{ t("Docs Price") }}</th>
+								<th class="text-end bg-blue-lt text-blue" style="width: 130px">{{ t("Agreed Total") }}</th>
+								<th class="text-end bg-green-lt text-green" style="width: 130px">{{ t("Docs Total") }}</th>
+								<th style="width: 36px"></th>
+							</tr>
+						</thead>
+						<tbody>
+							<tr v-for="(row, idx) in form.items" :key="idx">
+								<td><input v-model="row.category" type="text" class="form-control form-control-sm" :placeholder="t('Category')"></td>
+								<td>
+									<Typeahead
+										v-model="row.item"
+										:display="row.item ? `${row.item}${row.description ? ' — ' + row.description : ''}` : ''"
+										:search="searchItems"
+										size="sm"
+										:placeholder="t('Search item…')"
+										@pick="(item) => pickItemRow(row, item)"
+										@clear="() => clearItemRow(row)"
+									>
+										<template #option="{ item }">
+											<div class="d-flex justify-content-between align-items-center">
+												<div>
+													<div class="fw-semibold small">{{ item.item_name }}</div>
+													<div class="font-monospace text-secondary" style="font-size: 11px">{{ item.item_code }}</div>
+												</div>
+												<span class="badge bg-secondary-lt">{{ item.stock_uom }}</span>
 											</div>
-											<span class="badge bg-secondary-lt">{{ item.stock_uom }}</span>
-										</div>
-									</template>
-								</Typeahead>
-								<div class="mt-1">
-									<span v-if="row.category" class="badge bg-blue-lt">{{ row.category }}</span>
-									<span v-else class="text-secondary small">—</span>
-								</div>
-							</td>
-							<td><input v-model="row.description" type="text" class="form-control form-control-sm"></td>
-							<td><input v-model.number="row.fcl" type="number" step="0.01" class="form-control form-control-sm text-end font-monospace"></td>
-							<td><input v-model.number="row.boxes" type="number" step="1" class="form-control form-control-sm text-end font-monospace" @input="onBoxesOrWeightInput(row)"></td>
-							<td><input v-model.number="row.box_weight_kg" type="number" step="0.01" class="form-control form-control-sm text-end font-monospace" @input="onBoxesOrWeightInput(row)"></td>
-							<td><input v-model.number="row.qty" type="number" step="0.01" class="form-control form-control-sm text-end font-monospace text-warning" @input="onQtyInput(row)"></td>
-							<td><MoneyInput v-model="row.rate" :currency="form.currency" :language="user.language" size="sm" /></td>
-							<td class="text-end font-monospace text-blue">{{ fm(rowAmount(row), form.currency) }}</td>
-							<td><MoneyInput v-model="row.docs_price" :currency="form.currency" :language="user.language" size="sm" /></td>
-							<td class="text-end font-monospace text-green">{{ fm(rowDocsAmount(row), form.currency) }}</td>
-							<td>
-								<button type="button" class="btn btn-icon btn-sm btn-ghost-secondary" :title="t('Remove')" @click="removeItemRow(idx)">
-									<i class="ti ti-trash"></i>
-								</button>
-							</td>
-						</tr>
-						<tr v-if="!form.items.length">
-							<td colspan="11" class="text-secondary text-center py-3">{{ t("No items yet.") }}</td>
-						</tr>
-					</tbody>
-					<tfoot v-if="form.items.length">
-						<tr>
-							<td colspan="7" class="text-end fw-semibold small">{{ t("Totals") }}</td>
-							<td class="text-end font-monospace fw-semibold text-blue bg-blue-lt">{{ fm(itemsAgreedTotal, form.currency) }}</td>
-							<td></td>
-							<td class="text-end font-monospace fw-semibold text-green bg-green-lt">{{ fm(itemsDocsTotal, form.currency) }}</td>
-							<td></td>
-						</tr>
-					</tfoot>
+										</template>
+									</Typeahead>
+								</td>
+								<td><input v-model.number="row.boxes" type="number" step="1" class="form-control form-control-sm text-end font-monospace" @input="onBoxesOrWeightInput(row)"></td>
+								<td><input v-model.number="row.box_weight_kg" type="number" step="0.01" class="form-control form-control-sm text-end font-monospace" @input="onBoxesOrWeightInput(row)"></td>
+								<td><input v-model.number="row.qty" type="number" step="0.01" class="form-control form-control-sm text-end font-monospace text-warning" @input="onQtyInput(row)"></td>
+								<td><MoneyInput v-model="row.rate" :currency="form.currency" :language="user.language" size="sm" /></td>
+								<td><MoneyInput v-model="row.docs_price" :currency="form.currency" :language="user.language" size="sm" /></td>
+								<td class="text-end font-monospace text-blue bg-blue-lt">{{ fm(rowAmount(row), form.currency) }}</td>
+								<td class="text-end font-monospace text-green bg-green-lt">{{ fm(rowDocsAmount(row), form.currency) }}</td>
+								<td>
+									<button type="button" class="btn btn-icon btn-sm btn-ghost-secondary" :title="t('Remove')" @click="removeItemRow(idx)">
+										<i class="ti ti-trash"></i>
+									</button>
+								</td>
+							</tr>
+							<tr v-if="!form.items.length">
+								<td colspan="10" class="text-secondary text-center py-3">{{ t("No items yet.") }}</td>
+							</tr>
+						</tbody>
+						<tfoot v-if="form.items.length">
+							<tr>
+								<td colspan="7" class="text-end fw-semibold small">{{ t("Totals") }}</td>
+								<td class="text-end font-monospace fw-semibold text-blue bg-blue-lt">{{ fm(itemsAgreedTotal, form.currency) }}</td>
+								<td class="text-end font-monospace fw-semibold text-green bg-green-lt">{{ fm(itemsDocsTotal, form.currency) }}</td>
+								<td></td>
+							</tr>
+						</tfoot>
 				</table>
 			</div>
 		</div>
