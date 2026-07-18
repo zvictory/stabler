@@ -63,49 +63,49 @@
    "label": "Inventory"
   },
   {
-   "default": "1",
+   "default": "0",
    "fieldname": "enable_manufacturing",
    "fieldtype": "Check",
    "in_list_view": 1,
    "label": "Manufacturing"
   },
   {
-   "default": "1",
+   "default": "0",
    "fieldname": "enable_hr",
    "fieldtype": "Check",
    "in_list_view": 1,
    "label": "HR"
   },
   {
-   "default": "1",
+   "default": "0",
    "fieldname": "enable_stock_reservation",
    "fieldtype": "Check",
    "in_list_view": 1,
    "label": "Stock Reservation"
   },
   {
-   "default": "1",
+   "default": "0",
    "fieldname": "enable_compliance",
    "fieldtype": "Check",
    "in_list_view": 1,
    "label": "Compliance"
   },
   {
-   "default": "1",
+   "default": "0",
    "fieldname": "enable_field_sales",
    "fieldtype": "Check",
    "in_list_view": 1,
    "label": "Field Sales"
   },
   {
-   "default": "1",
+   "default": "0",
    "fieldname": "enable_marketing",
    "fieldtype": "Check",
    "in_list_view": 1,
    "label": "Trade Marketing"
   },
   {
-   "default": "1",
+   "default": "0",
    "fieldname": "enable_crm",
    "fieldtype": "Check",
    "in_list_view": 1,
@@ -119,7 +119,7 @@
    "label": "Service"
   },
   {
-   "default": "1",
+   "default": "0",
    "fieldname": "enable_bpm",
    "fieldtype": "Check",
    "in_list_view": 1,
@@ -134,14 +134,14 @@
    "label": "Tender"
   },
   {
-   "default": "1",
+   "default": "0",
    "fieldname": "enable_remittance",
    "fieldtype": "Check",
    "in_list_view": 1,
    "label": "Remittance"
   },
   {
-   "default": "1",
+   "default": "0",
    "fieldname": "enable_installment",
    "fieldtype": "Check",
    "in_list_view": 1,

@@ -6,6 +6,41 @@ class StablerSettings(Document):
 	pass
 
 
+# Canonical opt-in module defaults for a brand-new company (and the no-row
+# fallback). Lean ERP core — money+sales+purchasing+inventory — is ON; every
+# specialized module is opt-in per owner-tenant. SINGLE SOURCE OF TRUTH: keep
+# this in sync with the `Stabler Company Modules` doctype `default`s; both
+# get_company_module_row and module_map_for derive from it, and
+# organization.update_company_modules seeds new rows from _default_enable_row.
+# Rationale: docs/plans/2026-07-18-multitenant-governance.md
+DEFAULT_MODULE_ENABLED = {
+	"money": True,
+	"sales": True,
+	"purchasing": True,
+	"inventory": True,
+	"manufacturing": False,
+	"hr": False,
+	"stock_reservation": False,
+	"compliance": False,
+	"field_sales": False,
+	"marketing": False,
+	"crm": False,
+	"service": False,
+	"bpm": False,
+	"tender": False,
+	"remittance": False,
+	"installment": False,
+	"imports": False,
+}
+
+
+def _default_enable_row(company: str) -> dict:
+	"""Child-row seed ({company, enable_*}) derived from DEFAULT_MODULE_ENABLED."""
+	row = {"company": company}
+	row.update({f"enable_{key}": int(val) for key, val in DEFAULT_MODULE_ENABLED.items()})
+	return row
+
+
 def get_company_module_row(company: str):
 	"""Return the child row for `company`, creating defaults on demand.
 
@@ -17,27 +52,7 @@ def get_company_module_row(company: str):
 	for row in settings.company_modules or []:
 		if row.company == company:
 			return row
-	row = settings.append(
-		"company_modules",
-		{
-			"company": company,
-			"enable_money": 1,
-			"enable_sales": 1,
-			"enable_purchasing": 1,
-			"enable_inventory": 1,
-			"enable_manufacturing": 1,
-			"enable_hr": 1,
-			"enable_stock_reservation": 1,
-			"enable_compliance": 1,
-			"enable_field_sales": 1,
-			"enable_marketing": 1,
-			"enable_crm": 1,
-			"enable_service": 0,
-			"enable_bpm": 1,
-			"enable_remittance": 1,
-			"enable_installment": 1,
-		},
-	)
+	row = settings.append("company_modules", _default_enable_row(company))
 	settings.save(ignore_permissions=True)
 	frappe.db.commit()
 	return row
@@ -46,41 +61,8 @@ def get_company_module_row(company: str):
 def module_map_for(company: str) -> dict:
 	row = get_company_module_row(company) if company else None
 	if not row:
-		return {
-			"money": True,
-			"sales": True,
-			"purchasing": True,
-			"inventory": True,
-			"manufacturing": True,
-			"hr": True,
-			"stock_reservation": True,
-			"compliance": True,
-			"field_sales": True,
-			"marketing": True,
-			"crm": True,
-			"service": False,
-			"bpm": True,
-			"tender": False,
-			"remittance": True,
-			"installment": True,
-			"imports": False,
-		}
+		return dict(DEFAULT_MODULE_ENABLED)
 	return {
-		"money": bool(row.enable_money),
-		"sales": bool(row.enable_sales),
-		"purchasing": bool(row.enable_purchasing),
-		"inventory": bool(row.enable_inventory),
-		"manufacturing": bool(row.enable_manufacturing),
-		"hr": bool(row.enable_hr),
-		"stock_reservation": bool(getattr(row, "enable_stock_reservation", 1)),
-		"compliance": bool(getattr(row, "enable_compliance", 1)),
-		"field_sales": bool(getattr(row, "enable_field_sales", 1)),
-		"marketing": bool(getattr(row, "enable_marketing", 1)),
-		"crm": bool(getattr(row, "enable_crm", 1)),
-		"service": bool(getattr(row, "enable_service", 0)),
-		"bpm": bool(getattr(row, "enable_bpm", 1)),
-		"tender": bool(getattr(row, "enable_tender", 0)),
-		"remittance": bool(getattr(row, "enable_remittance", 1)),
-		"installment": bool(getattr(row, "enable_installment", 1)),
-		"imports": bool(getattr(row, "enable_imports", 0)),
+		key: bool(getattr(row, f"enable_{key}", int(default)))
+		for key, default in DEFAULT_MODULE_ENABLED.items()
 	}

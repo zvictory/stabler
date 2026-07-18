@@ -6,6 +6,7 @@ import frappe
 from frappe import _
 
 from stabler.stabler.doctype.stabler_settings.stabler_settings import (
+	_default_enable_row,
 	get_company_module_row,
 	module_map_for,
 )
@@ -242,6 +243,29 @@ def get_company_modules(company: str):
 	return module_map_for(company)
 
 
+def audit_company_modules():
+	"""Read-only tenant module audit (bench execute; no changes).
+
+	Prints, per company, which Stabler modules are ON vs OFF so you can compare
+	against the owner-module matrix in CLAUDE.md and spot modules a tenant has
+	enabled but does not use. Run per site:
+
+	    bench --site <site> execute stabler.api.organization.audit_company_modules
+	"""
+	settings = frappe.get_single("Stabler Settings")
+	report = []
+	for row in settings.company_modules or []:
+		on = [key for key, field in _MODULE_FIELDS.items() if row.get(field)]
+		off = [key for key in _MODULE_FIELDS if key not in on]
+		report.append({"company": row.company, "on": on, "off": off})
+		print(f"\n{row.company}")
+		print(f"  ON  ({len(on)}): {', '.join(on) or '—'}")
+		print(f"  OFF ({len(off)}): {', '.join(off) or '—'}")
+	if not report:
+		print("No company_modules rows yet — every company is on the all-on fallback.")
+	return report
+
+
 @frappe.whitelist()
 def update_company_modules(
 	company: str,
@@ -277,27 +301,7 @@ def update_company_modules(
 			row = r
 			break
 	if not row:
-		row = settings.append(
-			"company_modules",
-			{
-				"company": company,
-				"enable_money": 1,
-				"enable_sales": 1,
-				"enable_purchasing": 1,
-				"enable_inventory": 1,
-				"enable_manufacturing": 1,
-				"enable_hr": 1,
-				"enable_stock_reservation": 1,
-				"enable_compliance": 1,
-				"enable_field_sales": 1,
-				"enable_marketing": 1,
-				"enable_crm": 1,
-				"enable_service": 0,
-				"enable_bpm": 1,
-				"enable_remittance": 1,
-				"enable_installment": 1,
-			},
-		)
+		row = settings.append("company_modules", _default_enable_row(company))
 
 	updates = {
 		"enable_money": money,
