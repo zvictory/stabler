@@ -46,6 +46,36 @@
   Frappe's `has_permission`, which runs on every backend endpoint regardless of what
   the SPA shows.
 
+### Tenant & feature ownership (multi-tenant discipline)
+- Stabler is ONE shared app across **7 tenants with different businesses**. Code is
+  shared (one `bench restart` hits all 7); DBs are per-site. A feature built for one
+  tenant ships to all — so **every tenant-specific feature MUST be module-gated**
+  (`enable_*` + role + route `meta.module`) and MUST NOT change shared-core behavior
+  for tenants that don't use it.
+- **Feature → owner-module → owner-tenant** (know who you're changing things for):
+
+  | Tenant | Business | Owns (primary modules) |
+  |--------|----------|------------------------|
+  | anjan | Ice-cream **manufacturing** (main prod) | manufacturing, inventory, sales, money |
+  | msa | Meat **import**/distribution | imports (PI, PI Groups, Vendor Category, CI, containers), money, purchasing |
+  | mikas | **Tender** / kassa | tender, money (kassa bot), purchasing, crm |
+  | dts | Industrial belting **sales** | sales, inventory, money |
+  | horeca | **HoReCa** services | service, sales, field_sales, money |
+  | laminor | *(confirm with owner)* | *(confirm)* |
+  | smartbox | *(confirm with owner)* | *(confirm)* |
+
+  So: PI/PI-Groups/Vendor-Category = `imports` = **msa**. Tender boards/bid/landed +
+  kassa bot = `tender`/`money` = **mikas**. These must be invisible where the module is off.
+- **Caveat — module defaults are opt-OUT today:** 14/17 `enable_*` fields default to `1`
+  in `Stabler Company Modules`, so a new company gets almost everything ON. Prefer
+  gating a new module OFF by default and enabling it per owner-tenant. Don't add a
+  **reqd** field to a doctype a non-owner tenant also carries.
+- **Never branch on tenant name** (`if company == "mikas"`). Parametrize by module +
+  company-setting (`Stabler Company Modules`), the way currency precision is read as
+  metadata. Tenant variance lives in config/data, never in code constants.
+- Full rationale + the professional playbook (opt-in defaults, blast-radius / release
+  governance, leakage tests, fork criteria): `docs/plans/2026-07-18-multitenant-governance.md`.
+
 ### Tables / lists
 - Lists of records use `.table` (or list-group) — striped by default.
 - Currency cells use `font-monospace` for alignment.
@@ -68,12 +98,13 @@
 
 ### Prod site
 - **Primary prod = `anjan.erpstable.com`.** Stabler is actually installed on
-  **6 sites** on the shared bench (`/home/frappe/frappe-bench`, ~22 tenants):
-  `anjan`, `dts`, `horeca`, `laminor`, `mikas`, `smartbox` — verified via
-  `bench --site <site> list-apps` across every tenant. `msa.erpstable.com` and
-  the remaining tenants do NOT have stabler installed.
+  **7 sites** on the shared bench (`/home/frappe/frappe-bench`, ~22 tenants):
+  `anjan`, `dts`, `horeca`, `laminor`, `mikas`, `msa`, `smartbox` — verified via
+  `bench --site <site> list-apps` across every tenant (corrected 2026-07-18: an
+  earlier note wrongly excluded `msa`; it DOES carry stabler and the PI / imports
+  feature lives there). The remaining tenants do NOT have stabler installed.
 - A code change under `apps/stabler/` (shared app code, not per-site) plus
-  `bench restart` takes effect on ALL 6 stabler sites at once — no per-site
+  `bench restart` takes effect on ALL 7 stabler sites at once — no per-site
   redeploy needed. Backend fixes should be spot-checked on at least one
   secondary site (not just anjan) before calling a deploy done.
 - Before ANY `migrate` / `restart` / data command aimed at "prod", confirm the
@@ -95,7 +126,11 @@
    `stable-erp-website/`. **ALWAYS `-rltzn` dry-run first and abort if any sibling
    dir or `stable-erp-website/` appears in the delete list.**
 4. `bench build --app stabler` on prod.
-5. `bench --site anjan.erpstable.com migrate` (only if patches.txt / doctypes changed).
+5. `bench --site anjan.erpstable.com migrate` (only if patches.txt / doctypes changed)
+   — **run for ALL 7 sites, not just anjan.** `migrate` is per-site; rsync+restart
+   are bench-wide, so a doctype/patch change reaches every site's code but only the
+   sites you migrate get the DDL. (Near-miss 2026-07-18: `msa` was skipped and its
+   new `Import PI Group` columns were missing until a follow-up migrate.)
 6. `bench restart` if any `.py` changed.
 - **`bench restart` restarts the whole bench → brief blip for ALL tenants**, not
   just anjan. Schedule for low traffic, or accept the blip explicitly.
