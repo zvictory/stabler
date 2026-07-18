@@ -4465,3 +4465,10 @@ There are no proformas available to link yet.,Пока нет проформ д�
 This group restricts proformas to a single vendor — none match.,Эта группа ограничена одним поставщиком — совпадений нет.
 Use Assign PIs to link proformas to this group.,"Используйте «Привязать PI», чтобы добавить проформы в эту группу."
 Vendor restriction,Ограничение по поставщику
+Agreed,Согласовано
+Agreed (true),Согласовано (реальная)
+Agreed amount,Согласованная сумма
+Docs (customs),Документы (таможня)
+Docs amount,Докум. сумма
+No PI group,Без группы PI
+No supplier selected,Поставщик не выбран

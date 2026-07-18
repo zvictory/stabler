@@ -4444,3 +4444,10 @@ There are no proformas available to link yet.,Bağlanacak proforma henüz yok.
 This group restricts proformas to a single vendor — none match.,Bu grup proformaları tek tedarikçiyle sınırlar — eşleşen yok.
 Use Assign PIs to link proformas to this group.,Proformaları bu gruba bağlamak için «PI ata»yı kullanın.
 Vendor restriction,Tedarikçi kısıtlaması
+Agreed,Anlaşılan
+Agreed (true),Anlaşılan (gerçek)
+Agreed amount,Anlaşılan tutar
+Docs (customs),Belge (gümrük)
+Docs amount,Belge tutarı
+No PI group,PI grubu yok
+No supplier selected,Tedarikçi seçilmedi

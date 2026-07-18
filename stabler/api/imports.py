@@ -4019,6 +4019,7 @@ def save_proforma(payload) -> dict:
             continue
         doc.append("items", {
             "item": row.get("item"),
+            "category": row.get("category"),
             "description": row.get("description"),
             "fcl": flt(row.get("fcl")),
             "boxes": cint(row.get("boxes")),

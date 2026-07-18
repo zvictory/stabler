@@ -4459,3 +4459,10 @@ There are no proformas available to link yet.,Bogʻlash uchun hali proforma yoʻ
 This group restricts proformas to a single vendor — none match.,Bu guruh proformalarni bitta yetkazib beruvchi bilan cheklaydi — mos keladigani yoʻq.
 Use Assign PIs to link proformas to this group.,Proformalarni bu guruhga bogʻlash uchun «PI biriktirish»dan foydalaning.
 Vendor restriction,Yetkazib beruvchi cheklovi
+Agreed,Kelishilgan
+Agreed (true),Kelishilgan (haqiqiy)
+Agreed amount,Kelishilgan summa
+Docs (customs),Hujjatlar (bojxona)
+Docs amount,Hujjat summasi
+No PI group,PI guruhisiz
+No supplier selected,Yetkazib beruvchi tanlanmagan

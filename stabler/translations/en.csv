@@ -4455,3 +4455,10 @@ There are no proformas available to link yet.,There are no proformas available t
 This group restricts proformas to a single vendor — none match.,This group restricts proformas to a single vendor — none match.
 Use Assign PIs to link proformas to this group.,Use Assign PIs to link proformas to this group.
 Vendor restriction,Vendor restriction
+Agreed,Agreed
+Agreed (true),Agreed (true)
+Agreed amount,Agreed amount
+Docs (customs),Docs (customs)
+Docs amount,Docs amount
+No PI group,No PI group
+No supplier selected,No supplier selected

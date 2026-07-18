@@ -6,6 +6,7 @@
  "engine": "InnoDB",
  "field_order": [
   "item",
+  "category",
   "description",
   "fcl",
   "boxes",
@@ -25,6 +26,12 @@
    "label": "Item",
    "options": "Item",
    "reqd": 1
+  },
+  {
+   "fieldname": "category",
+   "fieldtype": "Data",
+   "label": "Category",
+   "description": "Vendor category name this line was filled from (display grouping)."
   },
   {
    "fieldname": "description",
