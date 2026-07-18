@@ -3484,15 +3484,30 @@ def submit_import_order(name: str):
 
 
 @frappe.whitelist()
-def list_pi_groups(company: str):
-    """PI Groups for a company + the count of import orders in each."""
+def list_pi_groups(company: str, search: str | None = None):
+    """PI Groups for a company + the count of import orders and PIs in each.
+
+    Keeps the pre-existing keys (name/title/status/remarks/order_count) used by
+    Import Orders' quick-create picker, and adds code/pi_vendor/pi_count for the
+    PI Group management page."""
     _assert_imports_access(company)
-    groups = frappe.get_all(
-        "Import PI Group",
-        filters={"company": company},
-        fields=["name", "title", "status", "remarks"],
-        order_by="creation desc",
+    clauses = ["company = %(company)s"]
+    params: dict = {"company": company}
+    if search:
+        clauses.append("(title LIKE %(q)s OR code LIKE %(q)s)")
+        params["q"] = f"%{search}%"
+    where = " AND ".join(clauses)
+    groups = frappe.db.sql(
+        f"""
+        SELECT name, title, code, pi_vendor, status, remarks
+        FROM `tabImport PI Group`
+        WHERE {where}
+        ORDER BY creation DESC
+        """,
+        params,
+        as_dict=True,
     )
+    by_grp: dict = {}
     if groups and frappe.db.has_column("Purchase Order", "custom_import_pi_group"):
         counts = frappe.db.sql(
             """
@@ -3506,11 +3521,35 @@ def list_pi_groups(company: str):
             as_dict=True,
         )
         by_grp = {r["grp"]: cint(r["c"]) for r in counts}
-        for g in groups:
-            g["order_count"] = by_grp.get(g["name"], 0)
-    else:
-        for g in groups:
-            g["order_count"] = 0
+    pi_counts: dict = {}
+    if groups:
+        pi_rows = frappe.db.sql(
+            """
+            SELECT import_pi_group AS grp, COUNT(*) AS c
+            FROM `tabProforma Invoice`
+            WHERE company = %(company)s
+              AND import_pi_group IS NOT NULL AND import_pi_group != ''
+            GROUP BY import_pi_group
+            """,
+            {"company": company},
+            as_dict=True,
+        )
+        pi_counts = {r["grp"]: cint(r["c"]) for r in pi_rows}
+    vendor_ids = {g["pi_vendor"] for g in groups if g.get("pi_vendor")}
+    vendor_names: dict = {}
+    if vendor_ids:
+        vn = frappe.db.sql(
+            "SELECT name, supplier_name FROM `tabSupplier` WHERE name IN %(ids)s",
+            {"ids": tuple(vendor_ids)},
+            as_dict=True,
+        )
+        vendor_names = {r["name"]: r["supplier_name"] for r in vn}
+    for g in groups:
+        g["order_count"] = by_grp.get(g["name"], 0)
+        g["pi_count"] = pi_counts.get(g["name"], 0)
+        # Aliases the PI-Group management page reads (title == group_name).
+        g["group_name"] = g["title"]
+        g["pi_vendor_name"] = vendor_names.get(g.get("pi_vendor")) or g.get("pi_vendor")
     return groups
 
 
@@ -3527,6 +3566,214 @@ def create_pi_group(company: str, title: str, remarks: str | None = None):
     doc.remarks = remarks or None
     doc.insert(ignore_permissions=False)
     return {"name": doc.name, "title": doc.title}
+
+
+@frappe.whitelist()
+def pi_group_detail(name: str) -> dict:
+    """One Import PI Group + its linked Proforma Invoices (management page)."""
+    if not name or not frappe.db.exists("Import PI Group", name):
+        frappe.throw(_("Unknown Import PI Group: {0}").format(name))
+    doc = frappe.get_doc("Import PI Group", name)
+    _assert_imports_access(doc.company)
+    pis = frappe.db.sql(
+        """
+        SELECT pi.name, pi.pi_date, pi.supplier, s.supplier_name, pi.status,
+               pi.agreed_total, pi.currency
+        FROM `tabProforma Invoice` pi
+        LEFT JOIN `tabSupplier` s ON s.name = pi.supplier
+        WHERE pi.import_pi_group = %(group)s
+        ORDER BY pi.creation DESC
+        """,
+        {"group": name},
+        as_dict=True,
+    )
+    return {
+        "name": doc.name,
+        "title": doc.title,
+        "group_name": doc.title,  # alias for the management page
+        "code": doc.code,
+        "pi_vendor": doc.pi_vendor,
+        "pi_vendor_name": frappe.db.get_value("Supplier", doc.pi_vendor, "supplier_name")
+        if doc.pi_vendor
+        else None,
+        "notes": doc.remarks,  # alias
+        "status": doc.status,
+        "remarks": doc.remarks,
+        "company": doc.company,
+        "pi_count": len(pis),
+        "pis": pis,
+    }
+
+
+@frappe.whitelist()
+def save_pi_group(payload, company: str) -> dict:
+    """Create or update an Import PI Group (management page; mirrors
+    save_vendor_category). Concurrency-checked on update; no child rows."""
+    _assert_imports_access(company)
+    data = frappe.parse_json(payload) if isinstance(payload, str) else payload
+    # The management page sends group_name/notes; the quick-create sends title/remarks.
+    title = (data.get("title") or data.get("group_name") or "").strip()
+    if not title:
+        frappe.throw(_("A group title is required."))
+    if data.get("pi_vendor") and not frappe.db.exists("Supplier", data.get("pi_vendor")):
+        frappe.throw(_("Unknown supplier: {0}").format(data.get("pi_vendor")))
+
+    if data.get("name") and frappe.db.exists("Import PI Group", data["name"]):
+        doc = frappe.get_doc("Import PI Group", data["name"])
+        if doc.company != company:
+            frappe.throw(_("Cannot move a PI group to another company."))
+        from stabler.api._common import check_concurrency
+
+        check_concurrency("Import PI Group", data["name"], data.get("modified"))
+    else:
+        doc = frappe.new_doc("Import PI Group")
+        doc.company = company
+
+    new_vendor = data.get("pi_vendor") or None
+    if doc.name and new_vendor and new_vendor != doc.pi_vendor:
+        # Tightening/changing the vendor restriction must not silently strand
+        # members of a different supplier — require they be unlinked first.
+        conflicts = frappe.db.sql_list(
+            """
+            SELECT name FROM `tabProforma Invoice`
+            WHERE import_pi_group = %(group)s AND supplier != %(vendor)s
+            """,
+            {"group": doc.name, "vendor": new_vendor},
+        )
+        if conflicts:
+            frappe.throw(
+                _(
+                    "Cannot set vendor restriction to {0}: PI(s) {1} in this group "
+                    "belong to a different supplier. Unlink them first."
+                ).format(new_vendor, ", ".join(conflicts))
+            )
+
+    doc.title = title
+    doc.code = (data.get("code") or "").strip() or None
+    doc.pi_vendor = new_vendor
+    doc.status = data.get("status") or doc.status or "Open"
+    doc.remarks = data.get("remarks") or data.get("notes")
+    doc.save(ignore_permissions=False)
+    return {"name": doc.name}
+
+
+@frappe.whitelist()
+def delete_pi_group(name: str, company: str) -> dict:
+    """Delete an Import PI Group. Member PIs are UNLINKED (import_pi_group set
+    to null), never deleted — mirrors MSA group-delete semantics."""
+    _assert_imports_access(company)
+    if not name or not frappe.db.exists("Import PI Group", name):
+        frappe.throw(_("Unknown Import PI Group: {0}").format(name))
+    grp_company = frappe.db.get_value("Import PI Group", name, "company")
+    if grp_company != company:
+        frappe.throw(_("PI Group does not belong to this company."))
+    try:
+        frappe.db.sql(
+            "UPDATE `tabProforma Invoice` SET import_pi_group = NULL WHERE import_pi_group = %(name)s",
+            {"name": name},
+        )
+        frappe.delete_doc("Import PI Group", name, ignore_permissions=False)
+        frappe.db.commit()
+    except Exception:
+        frappe.db.rollback()
+        raise
+    return {"ok": True, "deleted": name}
+
+
+@frappe.whitelist()
+def list_group_eligible_pis(group: str, company: str) -> list[dict]:
+    """PIs eligible for assignment to ``group``: already members of it, or
+    unlinked from any group (and — if the group restricts by vendor —
+    matching that supplier). Powers the assign-PIs picker."""
+    _assert_imports_access(company)
+    if not group or not frappe.db.exists("Import PI Group", group):
+        frappe.throw(_("Unknown Import PI Group: {0}").format(group))
+    grp = frappe.db.get_value("Import PI Group", group, ["company", "pi_vendor"], as_dict=True)
+    if grp.company != company:
+        frappe.throw(_("PI Group does not belong to this company."))
+    rows = frappe.db.sql(
+        """
+        SELECT pi.name, pi.pi_date, pi.supplier, s.supplier_name, pi.status,
+               pi.agreed_total, pi.currency, pi.import_pi_group
+        FROM `tabProforma Invoice` pi
+        LEFT JOIN `tabSupplier` s ON s.name = pi.supplier
+        WHERE pi.company = %(company)s
+          AND (pi.import_pi_group = %(group)s OR pi.import_pi_group IS NULL OR pi.import_pi_group = '')
+        ORDER BY pi.creation DESC
+        """,
+        {"company": company, "group": group},
+        as_dict=True,
+    )
+    out = []
+    for r in rows:
+        if not _proforma.is_group_eligible(r.get("import_pi_group"), r.get("supplier"), group, grp.pi_vendor):
+            continue
+        r["linked"] = (r.get("import_pi_group") or None) == group
+        out.append(r)
+    return out
+
+
+@frappe.whitelist()
+def assign_pis_to_group(group: str, pi_names, company: str) -> dict:
+    """Bulk-set the membership of ``group`` to exactly ``pi_names``: link the
+    selected PIs, unlink any previously-linked PI that is not in the new
+    selection. Every requested PI is re-validated server-side against the
+    eligible set (incl. the vendor restriction) before anything is written."""
+    _assert_imports_access(company)
+    if not group or not frappe.db.exists("Import PI Group", group):
+        frappe.throw(_("Unknown Import PI Group: {0}").format(group))
+    grp = frappe.db.get_value("Import PI Group", group, ["company", "pi_vendor"], as_dict=True)
+    if grp.company != company:
+        frappe.throw(_("PI Group does not belong to this company."))
+
+    names = frappe.parse_json(pi_names) if isinstance(pi_names, str) else (pi_names or [])
+    names = [n for n in names if n]
+
+    if names:
+        candidates = frappe.db.sql(
+            """
+            SELECT name, supplier, import_pi_group
+            FROM `tabProforma Invoice`
+            WHERE company = %(company)s AND name IN %(names)s
+            """,
+            {"company": company, "names": tuple(names)},
+            as_dict=True,
+        )
+        found = {c["name"] for c in candidates}
+        missing = [n for n in names if n not in found]
+        if missing:
+            frappe.throw(_("Unknown Proforma Invoice(s): {0}").format(", ".join(missing)))
+        bad = _proforma.validate_assignment(candidates, group, grp.pi_vendor)
+        if bad:
+            frappe.throw(
+                _(
+                    "Not eligible for this group (vendor restriction or already in "
+                    "another group): {0}"
+                ).format(", ".join(bad))
+            )
+
+    try:
+        currently_linked = set(
+            frappe.db.sql_list(
+                """
+                SELECT name FROM `tabProforma Invoice`
+                WHERE company = %(company)s AND import_pi_group = %(group)s
+                """,
+                {"company": company, "group": group},
+            )
+        )
+        selected = set(names)
+        to_link = selected - currently_linked
+        to_unlink = currently_linked - selected
+        for n in to_unlink:
+            frappe.db.set_value("Proforma Invoice", n, "import_pi_group", None, update_modified=False)
+        for n in to_link:
+            frappe.db.set_value("Proforma Invoice", n, "import_pi_group", group, update_modified=False)
+        frappe.db.commit()
+    except Exception:
+        frappe.db.rollback()
+        raise
+    return {"linked": len(to_link), "unlinked": len(to_unlink)}
 
 
 # ---------------------------------------------------------------------------
@@ -3644,31 +3891,50 @@ def link_proforma_to_ci(proforma: str, commercial_invoice: str, company: str) ->
             "commercial_invoice": commercial_invoice, "changed": True}
 
 
-@frappe.whitelist()
-def list_proformas(company: str, status: str | None = None, supplier: str | None = None,
-                   search: str | None = None, limit: int = 100) -> list[dict]:
-    """Proforma Invoice list rows for the imports SPA (imports-gated)."""
-    _assert_imports_access(company)
+def _proforma_list_filters(company: str, status: str | None, supplier: str | None,
+                            group: str | None, search: str | None) -> tuple[list[str], dict]:
+    """Shared WHERE-clause builder for list_proformas + proforma_list_stats
+    (kept in sync so the stats always describe the same set the list shows)."""
     clauses = ["pi.company = %(company)s"]
-    params: dict = {"company": company, "limit": int(limit)}
+    params: dict = {"company": company}
     if status:
         clauses.append("pi.status = %(status)s")
         params["status"] = status
     if supplier:
         clauses.append("pi.supplier = %(supplier)s")
         params["supplier"] = supplier
+    if group:
+        clauses.append("pi.import_pi_group = %(group)s")
+        params["group"] = group
     if search:
         clauses.append("(pi.name LIKE %(q)s OR s.supplier_name LIKE %(q)s OR pi.supplier_pi_ref LIKE %(q)s)")
         params["q"] = f"%{search}%"
+    return clauses, params
+
+
+@frappe.whitelist()
+def list_proformas(company: str, status: str | None = None, supplier: str | None = None,
+                   search: str | None = None, group: str | None = None,
+                   limit: int = 100) -> list[dict]:
+    """Proforma Invoice list rows for the imports SPA (imports-gated).
+
+    ``group`` filters to one Import PI Group; every row also carries the PI's
+    group code (``import_pi_group_code``) via a LEFT JOIN, alongside the
+    pre-existing ``import_pi_group`` name key."""
+    _assert_imports_access(company)
+    clauses, params = _proforma_list_filters(company, status, supplier, group, search)
+    params["limit"] = int(limit)
     where = " AND ".join(clauses)
     return frappe.db.sql(
         f"""
         SELECT pi.name, pi.supplier, s.supplier_name, pi.pi_date, pi.supplier_pi_ref,
                pi.currency, pi.agreed_total, pi.docs_total, pi.cash_difference,
                pi.bank_agreed, pi.cash_agreed,
-               pi.status, pi.commercial_invoice, pi.import_pi_group
+               pi.status, pi.commercial_invoice, pi.import_pi_group,
+               g.code AS import_pi_group_code, g.code AS pi_group_code, g.title AS pi_group_title
         FROM `tabProforma Invoice` pi
         LEFT JOIN `tabSupplier` s ON s.name = pi.supplier
+        LEFT JOIN `tabImport PI Group` g ON g.name = pi.import_pi_group
         WHERE {where}
         ORDER BY pi.creation DESC
         LIMIT %(limit)s
@@ -3676,6 +3942,43 @@ def list_proformas(company: str, status: str | None = None, supplier: str | None
         params,
         as_dict=True,
     )
+
+
+@frappe.whitelist()
+def proforma_list_stats(company: str, status: str | None = None, supplier: str | None = None,
+                        group: str | None = None, search: str | None = None) -> dict:
+    """Aggregate totals over the same filter set as list_proformas (no LIMIT) —
+    for the list header/summary strip. docs_total_sum/cash_difference_sum are
+    cost-masked (K3): null when the caller lacks cost visibility."""
+    _assert_imports_access(company)
+    clauses, params = _proforma_list_filters(company, status, supplier, group, search)
+    where = " AND ".join(clauses)
+    rows = frappe.db.sql(
+        f"""
+        SELECT
+            COALESCE(SUM(pi.agreed_total), 0) AS agreed_total_sum,
+            COALESCE(SUM(pi.docs_total), 0) AS docs_total_sum,
+            COALESCE(SUM(pi.cash_difference), 0) AS cash_difference_sum,
+            COUNT(*) AS cnt,
+            SUM(CASE WHEN pi.status = 'DRAFT' THEN 1 ELSE 0 END) AS draft_count,
+            SUM(CASE WHEN pi.status = 'CONFIRMED' THEN 1 ELSE 0 END) AS confirmed_count
+        FROM `tabProforma Invoice` pi
+        LEFT JOIN `tabSupplier` s ON s.name = pi.supplier
+        WHERE {where}
+        """,
+        params,
+        as_dict=True,
+    )
+    r = rows[0] if rows else {}
+    visible = _cost_visible()
+    return {
+        "agreed_total_sum": flt(r.get("agreed_total_sum")),
+        "docs_total_sum": flt(r.get("docs_total_sum")) if visible else None,
+        "cash_difference_sum": flt(r.get("cash_difference_sum")) if visible else None,
+        "count": cint(r.get("cnt")),
+        "draft_count": cint(r.get("draft_count")),
+        "confirmed_count": cint(r.get("confirmed_count")),
+    }
 
 
 @frappe.whitelist()

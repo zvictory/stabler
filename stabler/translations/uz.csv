@@ -4425,3 +4425,37 @@ Telegram ID cannot be changed after creation.,Telegram ID yaratilgandan so'ng o'
 Telegram ID or user…,Telegram ID yoki foydalanuvchi…
 Telegram User ID,Telegram User ID
 Telegram User ID is required.,Telegram User ID talab qilinadi.
+Any vendor,Har qanday yetkazib beruvchi
+Assign PIs,PI biriktirish
+Assign PIs to,PI biriktirish:
+Clear all,Hammasini tozalash
+"Code, name or vendor","Kod, nom yoki yetkazib beruvchi"
+Confirmed,Tasdiqlangan
+Could not assign proformas.,Proformalarni biriktirib boʻlmadi.
+Could not delete the PI group.,PI guruhini oʻchirib boʻlmadi.
+Could not save the PI group.,PI guruhini saqlab boʻlmadi.
+Create your first PI group to bundle proformas together.,Proformalarni birlashtirish uchun birinchi PI guruhini yarating.
+Delete PI Group,PI guruhini oʻchirish
+Delete group,Guruhni oʻchirish
+Edit PI Group,PI guruhini tahrirlash
+Failed to load PI groups.,PI guruhlarini yuklab boʻlmadi.
+Failed to load eligible proformas.,Mos proformalarni yuklab boʻlmadi.
+Failed to load the PI group.,PI guruhini yuklab boʻlmadi.
+Leave empty to allow proformas from any vendor.,Har qanday yetkazib beruvchidan proforma qabul qilish uchun boʻsh qoldiring.
+Linked PIs,Bogʻlangan PI lar
+Linked Proforma Invoices,Bogʻlangan proformalar
+Mixed currencies — sum shown without symbol,Aralash valyutalar — yigʻindi belgisiz
+New PI Group,Yangi PI guruhi
+No PI Groups,PI guruhlari yoʻq
+No eligible proformas,Mos proforma yoʻq
+No proformas linked yet,Hali proforma bogʻlanmagan
+PI Group,PI guruhi
+PI Group deleted.,PI guruhi oʻchirildi.
+PI Group saved,PI guruhi saqlandi
+PI Groups,PI guruhlari
+Proformas assigned,Proformalar biriktirildi
+Search supplier… (optional),Yetkazib beruvchini qidirish… (ixtiyoriy)
+There are no proformas available to link yet.,Bogʻlash uchun hali proforma yoʻq.
+This group restricts proformas to a single vendor — none match.,Bu guruh proformalarni bitta yetkazib beruvchi bilan cheklaydi — mos keladigani yoʻq.
+Use Assign PIs to link proformas to this group.,Proformalarni bu guruhga bogʻlash uchun «PI biriktirish»dan foydalaning.
+Vendor restriction,Yetkazib beruvchi cheklovi

@@ -4410,3 +4410,37 @@ Telegram ID cannot be changed after creation.,Telegram ID oluşturulduktan sonra
 Telegram ID or user…,Telegram ID veya kullanıcı…
 Telegram User ID,Telegram Kullanıcı ID
 Telegram User ID is required.,Telegram Kullanıcı ID gereklidir.
+Any vendor,Herhangi bir tedarikçi
+Assign PIs,PI ata
+Assign PIs to,PI ata:
+Clear all,Tümünü temizle
+"Code, name or vendor","Kod, ad veya tedarikçi"
+Confirmed,Onaylandı
+Could not assign proformas.,Proformalar atanamadı.
+Could not delete the PI group.,PI grubu silinemedi.
+Could not save the PI group.,PI grubu kaydedilemedi.
+Create your first PI group to bundle proformas together.,Proformaları gruplamak için ilk PI grubunuzu oluşturun.
+Delete PI Group,PI grubunu sil
+Delete group,Grubu sil
+Edit PI Group,PI grubunu düzenle
+Failed to load PI groups.,PI grupları yüklenemedi.
+Failed to load eligible proformas.,Uygun proformalar yüklenemedi.
+Failed to load the PI group.,PI grubu yüklenemedi.
+Leave empty to allow proformas from any vendor.,Herhangi bir tedarikçiden proformaya izin vermek için boş bırakın.
+Linked PIs,Bağlı PIʼler
+Linked Proforma Invoices,Bağlı proforma faturalar
+Mixed currencies — sum shown without symbol,Karışık para birimleri — toplam simgesiz gösterilir
+New PI Group,Yeni PI grubu
+No PI Groups,PI grubu yok
+No eligible proformas,Uygun proforma yok
+No proformas linked yet,Henüz proforma bağlanmadı
+PI Group,PI grubu
+PI Group deleted.,PI grubu silindi.
+PI Group saved,PI grubu kaydedildi
+PI Groups,PI grupları
+Proformas assigned,Proformalar atandı
+Search supplier… (optional),Tedarikçi ara… (isteğe bağlı)
+There are no proformas available to link yet.,Bağlanacak proforma henüz yok.
+This group restricts proformas to a single vendor — none match.,Bu grup proformaları tek tedarikçiyle sınırlar — eşleşen yok.
+Use Assign PIs to link proformas to this group.,Proformaları bu gruba bağlamak için «PI ata»yı kullanın.
+Vendor restriction,Tedarikçi kısıtlaması

@@ -12,8 +12,18 @@ export const importsApi = {
 	createImportOrder: (payload) => call(`${P}.create_import_order`, payload),
 	updateImportOrder: (payload) => call(`${P}.update_import_order`, payload),
 	submitImportOrder: (name) => call(`${P}.submit_import_order`, { name }),
-	listPiGroups: (company) => call(`${P}.list_pi_groups`, { company }),
+	// Accepts either a bare company string (legacy call sites) or a params
+	// object { company, search } — PI Groups list page needs server-side search.
+	listPiGroups: (companyOrParams) => {
+		const params = typeof companyOrParams === "string" ? { company: companyOrParams } : (companyOrParams || {});
+		return call(`${P}.list_pi_groups`, params);
+	},
 	createPiGroup: (payload) => call(`${P}.create_pi_group`, payload),
+	piGroupDetail: (name) => call(`${P}.pi_group_detail`, { name }),
+	savePiGroup: (payload, company) => call(`${P}.save_pi_group`, { payload, company }),
+	deletePiGroup: (name, company) => call(`${P}.delete_pi_group`, { name, company }),
+	listGroupEligiblePis: (group, company) => call(`${P}.list_group_eligible_pis`, { group, company }),
+	assignPisToGroup: (group, pi_names, company) => call(`${P}.assign_pis_to_group`, { group, pi_names, company }),
 	createAdvancePayment: (payload) => call(`${P}.create_advance_payment`, payload),
 
 	// Commercial Invoices

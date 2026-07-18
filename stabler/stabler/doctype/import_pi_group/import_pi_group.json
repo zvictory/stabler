@@ -6,12 +6,21 @@
  "editable_grid": 1,
  "engine": "InnoDB",
  "field_order": [
+  "code",
   "title",
   "company",
+  "pi_vendor",
   "status",
   "remarks"
  ],
  "fields": [
+  {
+   "fieldname": "code",
+   "fieldtype": "Data",
+   "in_list_view": 1,
+   "in_standard_filter": 1,
+   "label": "Code"
+  },
   {
    "fieldname": "title",
    "fieldtype": "Data",
@@ -26,6 +35,14 @@
    "label": "Company",
    "options": "Company",
    "reqd": 1
+  },
+  {
+   "description": "Optional supplier restriction — when set, only PIs of this supplier may be assigned to the group.",
+   "fieldname": "pi_vendor",
+   "fieldtype": "Link",
+   "in_standard_filter": 1,
+   "label": "Vendor Restriction",
+   "options": "Supplier"
   },
   {
    "default": "Open",

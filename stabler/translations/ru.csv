@@ -4431,3 +4431,37 @@ Telegram ID cannot be changed after creation.,Telegram ID нельзя изме�
 Telegram ID or user…,Telegram ID или пользователь…
 Telegram User ID,Telegram User ID
 Telegram User ID is required.,Требуется Telegram User ID.
+Any vendor,Любой поставщик
+Assign PIs,Привязать PI
+Assign PIs to,Привязать PI к
+Clear all,Очистить все
+"Code, name or vendor","Код, название или поставщик"
+Confirmed,Подтверждено
+Could not assign proformas.,Не удалось привязать проформы.
+Could not delete the PI group.,Не удалось удалить группу PI.
+Could not save the PI group.,Не удалось сохранить группу PI.
+Create your first PI group to bundle proformas together.,"Создайте первую группу PI, чтобы объединить проформы."
+Delete PI Group,Удалить группу PI
+Delete group,Удалить группу
+Edit PI Group,Изменить группу PI
+Failed to load PI groups.,Не удалось загрузить группы PI.
+Failed to load eligible proformas.,Не удалось загрузить доступные проформы.
+Failed to load the PI group.,Не удалось загрузить группу PI.
+Leave empty to allow proformas from any vendor.,"Оставьте пустым, чтобы разрешить проформы от любого поставщика."
+Linked PIs,Связанные PI
+Linked Proforma Invoices,Связанные проформы
+Mixed currencies — sum shown without symbol,Разные валюты — сумма без символа
+New PI Group,Новая группа PI
+No PI Groups,Нет групп PI
+No eligible proformas,Нет доступных проформ
+No proformas linked yet,Проформы ещё не привязаны
+PI Group,Группа PI
+PI Group deleted.,Группа PI удалена.
+PI Group saved,Группа PI сохранена
+PI Groups,Группы PI
+Proformas assigned,Проформы привязаны
+Search supplier… (optional),Поиск поставщика… (необязательно)
+There are no proformas available to link yet.,Пока нет проформ для привязки.
+This group restricts proformas to a single vendor — none match.,Эта группа ограничена одним поставщиком — совпадений нет.
+Use Assign PIs to link proformas to this group.,"Используйте «Привязать PI», чтобы добавить проформы в эту группу."
+Vendor restriction,Ограничение по поставщику

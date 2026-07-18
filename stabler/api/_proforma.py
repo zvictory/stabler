@@ -26,3 +26,47 @@ def can_supersede(pi_status: str | None) -> bool:
 def is_already_linked(pi_status: str | None, pi_commercial_invoice: str | None, target_ci: str) -> bool:
 	"""True when the PI is already superseded by exactly ``target_ci`` (re-link no-op)."""
 	return (pi_status or "").strip() == SUPERSEDED and (pi_commercial_invoice or "") == (target_ci or "")
+
+
+# ---------------------------------------------------------------------------
+# Import PI Group membership (WP — group ↔ PI assignment, Frappe-free)
+#
+# A PI Group is a thin grouping of Proforma Invoices, optionally restricted to
+# one supplier (``pi_vendor``). A PI is "eligible" for assignment to a group
+# when it is either already a member of that group (so a re-submit of the same
+# selection is a no-op) or currently unlinked from any group AND — if the
+# group restricts by vendor — its supplier matches that vendor. A PI already
+# linked to a *different* group is never eligible (a PI belongs to <=1 group).
+# ---------------------------------------------------------------------------
+
+
+def is_group_eligible(
+	pi_group: str | None,
+	pi_supplier: str | None,
+	group_name: str,
+	group_vendor: str | None,
+) -> bool:
+	"""True when a PI (given its current group + supplier) may be assigned to
+	``group_name``, optionally restricted to ``group_vendor``."""
+	if (pi_group or None) == (group_name or None):
+		return True
+	if pi_group:
+		return False
+	if group_vendor and (pi_supplier or None) != (group_vendor or None):
+		return False
+	return True
+
+
+def validate_assignment(pi_rows: list[dict], group_name: str, group_vendor: str | None) -> list[str]:
+	"""Server-side re-validation of a bulk assign_pis_to_group request.
+
+	``pi_rows`` are dicts with at least ``name``, ``supplier``, ``import_pi_group``
+	(the PIs' *current* DB state). Returns the names of any row that is NOT
+	eligible for assignment to ``group_name`` under ``group_vendor`` — an empty
+	list means every requested PI may be linked."""
+	bad = []
+	for row in pi_rows or []:
+		row = row or {}
+		if not is_group_eligible(row.get("import_pi_group"), row.get("supplier"), group_name, group_vendor):
+			bad.append(row.get("name"))
+	return bad

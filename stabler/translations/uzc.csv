@@ -4425,3 +4425,37 @@ Telegram ID cannot be changed after creation.,Telegram ID яратилганда
 Telegram ID or user…,Telegram ID ёки фойдаланувчи…
 Telegram User ID,Telegram User ID
 Telegram User ID is required.,Telegram User ID талаб қилинади.
+Any vendor,Ҳар қандай етказиб берувчи
+Assign PIs,PI бириктириш
+Assign PIs to,PI бириктириш:
+Clear all,Ҳаммасини тозалаш
+"Code, name or vendor","Код, ном ёки етказиб берувчи"
+Confirmed,Тасдиқланган
+Could not assign proformas.,Проформаларни бириктириб бўлмади.
+Could not delete the PI group.,PI гуруҳини ўчириб бўлмади.
+Could not save the PI group.,PI гуруҳини сақлаб бўлмади.
+Create your first PI group to bundle proformas together.,Проформаларни бирлаштириш учун биринчи PI гуруҳини яратинг.
+Delete PI Group,PI гуруҳини ўчириш
+Delete group,Гуруҳни ўчириш
+Edit PI Group,PI гуруҳини таҳрирлаш
+Failed to load PI groups.,PI гуруҳларини юклаб бўлмади.
+Failed to load eligible proformas.,Мос проформаларни юклаб бўлмади.
+Failed to load the PI group.,PI гуруҳини юклаб бўлмади.
+Leave empty to allow proformas from any vendor.,Ҳар қандай етказиб берувчидан проформа қабул қилиш учун бўш қолдиринг.
+Linked PIs,Боғланган PI лар
+Linked Proforma Invoices,Боғланган проформалар
+Mixed currencies — sum shown without symbol,Аралаш валюталар — йиғинди белгисиз
+New PI Group,Янги PI гуруҳи
+No PI Groups,PI гуруҳлари йўқ
+No eligible proformas,Мос проформа йўқ
+No proformas linked yet,Ҳали проформа боғланмаган
+PI Group,PI гуруҳи
+PI Group deleted.,PI гуруҳи ўчирилди.
+PI Group saved,PI гуруҳи сақланди
+PI Groups,PI гуруҳлари
+Proformas assigned,Проформалар бириктирилди
+Search supplier… (optional),Етказиб берувчини қидириш… (ихтиёрий)
+There are no proformas available to link yet.,Боғлаш учун ҳали проформа йўқ.
+This group restricts proformas to a single vendor — none match.,Бу гуруҳ проформаларни битта етказиб берувчи билан чеклайди — мос келадигани йўқ.
+Use Assign PIs to link proformas to this group.,Проформаларни бу гуруҳга боғлаш учун «PI бириктириш»дан фойдаланинг.
+Vendor restriction,Етказиб берувчи чеклови

@@ -4421,3 +4421,37 @@ Telegram ID cannot be changed after creation.,Telegram ID cannot be changed afte
 Telegram ID or user…,Telegram ID or user…
 Telegram User ID,Telegram User ID
 Telegram User ID is required.,Telegram User ID is required.
+Any vendor,Any vendor
+Assign PIs,Assign PIs
+Assign PIs to,Assign PIs to
+Clear all,Clear all
+"Code, name or vendor","Code, name or vendor"
+Confirmed,Confirmed
+Could not assign proformas.,Could not assign proformas.
+Could not delete the PI group.,Could not delete the PI group.
+Could not save the PI group.,Could not save the PI group.
+Create your first PI group to bundle proformas together.,Create your first PI group to bundle proformas together.
+Delete PI Group,Delete PI Group
+Delete group,Delete group
+Edit PI Group,Edit PI Group
+Failed to load PI groups.,Failed to load PI groups.
+Failed to load eligible proformas.,Failed to load eligible proformas.
+Failed to load the PI group.,Failed to load the PI group.
+Leave empty to allow proformas from any vendor.,Leave empty to allow proformas from any vendor.
+Linked PIs,Linked PIs
+Linked Proforma Invoices,Linked Proforma Invoices
+Mixed currencies — sum shown without symbol,Mixed currencies — sum shown without symbol
+New PI Group,New PI Group
+No PI Groups,No PI Groups
+No eligible proformas,No eligible proformas
+No proformas linked yet,No proformas linked yet
+PI Group,PI Group
+PI Group deleted.,PI Group deleted.
+PI Group saved,PI Group saved
+PI Groups,PI Groups
+Proformas assigned,Proformas assigned
+Search supplier… (optional),Search supplier… (optional)
+There are no proformas available to link yet.,There are no proformas available to link yet.
+This group restricts proformas to a single vendor — none match.,This group restricts proformas to a single vendor — none match.
+Use Assign PIs to link proformas to this group.,Use Assign PIs to link proformas to this group.
+Vendor restriction,Vendor restriction

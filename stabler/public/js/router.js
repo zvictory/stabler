@@ -153,6 +153,7 @@ import ImportOrderForm from "./pages/imports/ImportOrderForm.vue";
 import CommercialInvoices from "./pages/imports/CommercialInvoices.vue";
 import CommercialInvoiceForm from "./pages/imports/CommercialInvoiceForm.vue";
 import ProformaInvoices from "./pages/imports/ProformaInvoices.vue";
+import PiGroups from "./pages/imports/PiGroups.vue";
 import VendorCategories from "./pages/inventory/VendorCategories.vue";
 import ImportContainers from "./pages/imports/ImportContainers.vue";
 import ImportTrucks from "./pages/imports/ImportTrucks.vue";
@@ -193,6 +194,7 @@ const routes = [
 			{ path: "commercial-invoices/new", name: "imports-commercial-invoice-new", component: CommercialInvoiceForm, meta: { title: t("New Commercial Invoice"), module: "imports" } },
 			{ path: "commercial-invoices/:name", name: "imports-commercial-invoice", component: CommercialInvoiceForm, meta: { title: t("Commercial Invoice"), module: "imports" } },
 			{ path: "proformas", name: "imports-proformas", component: ProformaInvoices, meta: { title: t("Proforma Invoices"), module: "imports" } },
+			{ path: "pi-groups", name: "imports-pi-groups", component: PiGroups, meta: { title: t("PI Groups"), module: "imports" } },
 			{ path: "containers", name: "imports-containers", component: ImportContainers, meta: { title: t("Containers"), module: "imports" } },
 			{ path: "containers/new", name: "imports-container-new", component: ImportContainerForm, meta: { title: t("New Container"), module: "imports" } },
 			{ path: "containers/:name", name: "imports-container", component: ImportContainerForm, meta: { title: t("Container"), module: "imports" } },
