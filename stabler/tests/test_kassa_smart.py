@@ -11,6 +11,7 @@ from stabler.integrations.kassa._smart import (
     detect_currency,
     detect_kassa,
     detect_op,
+    detect_transfer_dirs,
     extract_amount,
     extract_counterparty,
     extract_purpose,
@@ -195,6 +196,19 @@ class TestKassaKeyword(unittest.TestCase):
 
     def test_none(self):
         self.assertIsNone(detect_kassa("600 ming"))
+
+
+class TestTransferDirs(unittest.TestCase):
+    def test_dirs(self):
+        self.assertEqual(detect_transfer_dirs("1mln naqddan pk ga"), ("nakit", "pk"))
+        self.assertEqual(detect_transfer_dirs("somdan dollarga"), ("nakit", "usd"))
+        self.assertEqual(detect_transfer_dirs("pkdan naqdga"), ("pk", "nakit"))
+
+    def test_k2k_parse_no_questions(self):
+        r = parse_message("1mln naqddan pk ga", op="kassalararo")
+        self.assertEqual(r["from"], "nakit")
+        self.assertEqual(r["to"], "pk")
+        self.assertEqual(r["amount"], 1_000_000)
 
 
 class TestMultiLeg(unittest.TestCase):

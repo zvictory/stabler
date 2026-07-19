@@ -278,6 +278,25 @@ def detect_kassa(text: str) -> str | None:
     return None
 
 
+_KASSA_DIR_WORDS = (
+    [(w, k) for k, ws in _KASSA_WORDS.items() for w in ws]
+    + [(lt, k) for lt, k in _KASSA_LETTER.items()]
+)
+
+
+def detect_transfer_dirs(text: str):
+    """(from_kassa, to_kassa) from directional text: '…dan' = from, '…ga' = to.
+    'naqddan pk ga' -> ('nakit','pk'); 'somdan dollarga' -> ('nakit','usd')."""
+    t = _norm(text)
+    frm = to = None
+    for w, k in _KASSA_DIR_WORDS:
+        if frm is None and re.search(rf"\b{re.escape(w)}dan\b", t):
+            frm = k
+        if to is None and re.search(rf"\b{re.escape(w)}\s*ga\b", t):
+            to = k
+    return frm, to
+
+
 def parse_legs(text: str) -> list[dict]:
     """Split a message into amount+kassa legs. One kirim/chiqim can move money
     into several kassas at once ("2 mln naqd, 3 mln karta va 500 dollar")."""
@@ -337,9 +356,26 @@ def parse_message(text: str, op: str | None = None, ctx: dict | None = None) -> 
         res["ready"] = True
         return res
 
-    # konversiya / kassalararo — single amount for now
+    frm, to = detect_transfer_dirs(raw)
+
+    if op == "kassalararo":
+        # "1mln naqddan pk ga" -> from nakit, to pk, no questions asked.
+        res["from"] = frm
+        res["to"] = to
+        res["amount"] = extract_amount(raw)
+        return res
+
+    # konversiya — single (USD) amount; pre-fill direction/source from the text.
     r = parse_entry(raw, ctx)
-    r["op"] = op
+    r["op"] = "konversiya"
+    if to == "usd":
+        r["dir"] = "buy"
+        if frm and frm != "usd" and not r.get("source"):
+            r["source"] = frm
+    elif frm == "usd":
+        r["dir"] = "sell"
+        if to and to != "usd" and not r.get("target"):
+            r["target"] = to
     if r.get("amount") is not None:
-        r["legs"] = [{"amount": r["amount"], "kassa": detect_kassa(raw), "currency": r.get("currency")}]
+        r["legs"] = [{"amount": r["amount"], "kassa": "usd", "currency": r.get("currency")}]
     return r

@@ -613,6 +613,25 @@ def _resolve_kassir(telegram_user_id: str):
 	return frappe.get_doc("Stabler Kassir", name)
 
 
+def _shadow_open_kassir(telegram_user_id):
+	"""Open-access fallback for shadow mode: when no Stabler Kassir matches but
+	shadow mode is on and a default company is configured, let ANY Telegram user
+	use the shadow bot (no GL, separate store). Gated by two site-config keys:
+	  kassa_shadow_mode: 1  +  kassa_shadow_company: "<Company name>".
+	Returns a kassir-like object (company + synthetic name + Administrator user)
+	or None (keeps the normal 'Ruxsat yo'q' wall)."""
+	import frappe
+
+	if not getattr(frappe.conf, "kassa_shadow_mode", False):
+		return None
+	company = getattr(frappe.conf, "kassa_shadow_company", None)
+	if not company:
+		return None
+	return frappe._dict(
+		{"name": f"tg:{telegram_user_id}", "company": company, "user": "Administrator", "accounts": []}
+	)
+
+
 def handle_update(update: dict) -> None:
 	"""Process one Telegram Update. Only private-chat text messages are
 	handled; everything else (group chats, edited messages, callback
@@ -632,7 +651,7 @@ def handle_update(update: dict) -> None:
 	if chat_id is None or not telegram_user_id or text is None:
 		return
 
-	kassir = _resolve_kassir(telegram_user_id)
+	kassir = _resolve_kassir(telegram_user_id) or _shadow_open_kassir(telegram_user_id)
 	if not kassir:
 		_send_message(chat_id, _NO_ACCESS_TEXT)
 		return
@@ -673,24 +692,20 @@ def handle_update(update: dict) -> None:
 					)
 					follow_up = f"❌ Xatolik: {e}"
 			elif action and action.get("type") == "set_opening":
-				# Opening balance is admin-only (System Manager / Stabler Admin).
-				roles = frappe.get_roles(kassir.user)
-				if not any(r in ("System Manager", "Stabler Admin") for r in roles):
-					follow_up = "⚠️ Faqat admin ochilish balansini kirita oladi."
-				else:
-					try:
-						for o in action.get("openings") or []:
-							shadow.set_opening(kassir.company, sdate, o["kassa"], o["amount"])
-						reply = ("✅ Ochilish balansi saqlandi.\nQoldiq: "
-						         + shadow_flow.format_balance(shadow.balances(kassir.company, sdate))
-						         + "\n\nAmalni tanlang:")
-						keyboard = shadow_flow.MENU_KEYBOARD
-					except Exception as e:  # noqa: BLE001
-						frappe.log_error(
-							title="Kassa shadow: opening failed",
-							message=f"kassir={kassir.name} error={e}",
-						)
-						follow_up = f"❌ Xatolik: {e}"
+				# No access restriction for now (shadow store, never touches GL).
+				try:
+					for o in action.get("openings") or []:
+						shadow.set_opening(kassir.company, sdate, o["kassa"], o["amount"])
+					reply = ("✅ Ochilish balansi saqlandi.\nQoldiq: "
+					         + shadow_flow.format_balance(shadow.balances(kassir.company, sdate))
+					         + "\n\nAmalni tanlang:")
+					keyboard = shadow_flow.MENU_KEYBOARD
+				except Exception as e:  # noqa: BLE001
+					frappe.log_error(
+						title="Kassa shadow: opening failed",
+						message=f"kassir={kassir.name} error={e}",
+					)
+					follow_up = f"❌ Xatolik: {e}"
 			_save_state(chat_id, new_state)
 		else:
 			ctx = build_ctx(kassir, candidate_kassa=(old_state.get("kassa") or text))
