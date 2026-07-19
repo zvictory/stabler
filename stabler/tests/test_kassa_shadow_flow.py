@@ -1,0 +1,106 @@
+"""Unit tests for stabler.integrations.kassa.shadow_flow (WP-S4b, Frappe-free)."""
+
+from __future__ import annotations
+
+import unittest
+
+from stabler.integrations.kassa import shadow_flow as sf
+from stabler.integrations.kassa.shadow_flow import (
+    BTN_CONFIRM,
+    BTN_KIRIM,
+    BTN_KONV,
+    BTN_PK,
+    BTN_SOM,
+    compute_deltas,
+    format_balance,
+    handle,
+)
+
+CTX = {"balances": {"nakit": 402_250_000, "pk": 3_000_000, "usd": 400}}
+
+
+class TestFormat(unittest.TestCase):
+    def test_balance_spd(self):
+        s = format_balance(CTX["balances"])
+        self.assertIn("402 250 000 s", s)
+        self.assertIn("3 000 000 p", s)
+        self.assertIn("400.00 d", s)
+
+
+class TestDeltas(unittest.TestCase):
+    def test_kirim_multi(self):
+        p = {"op": "kirim", "legs": [
+            {"kassa": "nakit", "amount": 2_000_000}, {"kassa": "pk", "amount": 3_000_000},
+            {"kassa": "usd", "amount": 500}]}
+        self.assertEqual(compute_deltas(p), [
+            {"kassa": "nakit", "delta": 2_000_000.0},
+            {"kassa": "pk", "delta": 3_000_000.0},
+            {"kassa": "usd", "delta": 500.0}])
+
+    def test_chiqim_negative(self):
+        p = {"op": "chiqim", "legs": [{"kassa": "nakit", "amount": 100_000}]}
+        self.assertEqual(compute_deltas(p), [{"kassa": "nakit", "delta": -100_000.0}])
+
+    def test_konv_buy(self):
+        p = {"op": "konversiya", "dir": "buy", "source": "nakit", "amount": 500, "rate": 12900}
+        self.assertEqual(compute_deltas(p), [
+            {"kassa": "nakit", "delta": -6_450_000.0}, {"kassa": "usd", "delta": 500.0}])
+
+    def test_k2k(self):
+        p = {"op": "kassalararo", "from": "nakit", "to": "pk", "amount": 2_000_000}
+        self.assertEqual(compute_deltas(p), [
+            {"kassa": "nakit", "delta": -2_000_000.0}, {"kassa": "pk", "delta": 2_000_000.0}])
+
+
+class TestFlowKirim(unittest.TestCase):
+    def test_full_happy_path(self):
+        # menu -> pick Kirim
+        reply, kb, st, act = handle({}, BTN_KIRIM, CTX)
+        self.assertEqual(st["step"], "await_text")
+        self.assertEqual(st["op"], "kirim")
+        # free text (multi-leg, has counterparty) -> confirm
+        reply, kb, st, act = handle(st, "Mijozdan 2 mln naqd, 3 mln karta va 500 dollar oldim", CTX)
+        self.assertEqual(st["step"], "confirm")
+        self.assertIn("Yozganingiz", reply)
+        self.assertIsNone(act)
+        # confirm -> record action
+        reply, kb, st, act = handle(st, BTN_CONFIRM, CTX)
+        self.assertIsNotNone(act)
+        self.assertEqual(act["type"], "record")
+        self.assertEqual(act["counterparty"], "Mijoz")
+        self.assertEqual(act["deltas"], [
+            {"kassa": "nakit", "delta": 2_000_000.0},
+            {"kassa": "pk", "delta": 3_000_000.0},
+            {"kassa": "usd", "delta": 500.0}])
+        self.assertEqual(st["step"], "menu")
+
+    def test_missing_counterparty_asks_once(self):
+        _, _, st, _ = handle({}, BTN_KIRIM, CTX)
+        reply, kb, st, act = handle(st, "600 ming naqd", CTX)
+        self.assertEqual(st["step"], "await_slot")
+        self.assertEqual(st["slot"], "kirim_from")
+        self.assertIn("Kimdan", reply)
+        # answer the single question -> confirm
+        reply, kb, st, act = handle(st, "Ali", CTX)
+        self.assertEqual(st["step"], "confirm")
+        reply, kb, st, act = handle(st, BTN_CONFIRM, CTX)
+        self.assertEqual(act["counterparty"], "Ali")
+        self.assertEqual(act["deltas"], [{"kassa": "nakit", "delta": 600_000.0}])
+
+
+class TestFlowKonv(unittest.TestCase):
+    def test_buy_usd_asks_source(self):
+        _, _, st, _ = handle({}, BTN_KONV, CTX)
+        reply, kb, st, act = handle(st, "500 dollar oldim 12900 kurs", CTX)
+        self.assertEqual(st["step"], "await_slot")
+        self.assertEqual(st["slot"], "konv_source")
+        # pick Som -> ready (rate already parsed) -> confirm
+        reply, kb, st, act = handle(st, BTN_SOM, CTX)
+        self.assertEqual(st["step"], "confirm")
+        reply, kb, st, act = handle(st, BTN_CONFIRM, CTX)
+        self.assertEqual(act["deltas"], [
+            {"kassa": "nakit", "delta": -6_450_000.0}, {"kassa": "usd", "delta": 500.0}])
+
+
+if __name__ == "__main__":
+    unittest.main()
