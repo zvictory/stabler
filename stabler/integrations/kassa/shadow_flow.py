@@ -94,13 +94,13 @@ def compute_deltas(p):
 
 def confirm_text(p):
     op = p.get("op")
-    head = f"Yozganingiz: «{p.get('raw_text', '')}»"
-    lines = [head, ""]
+    lines = []
     if op in ("kirim", "chiqim"):
+        sign = "+" if op == "kirim" else "−"
         lines.append(_OPLABEL[op] + ":")
         for l in p.get("legs", []):
-            sign = "+" if op == "kirim" else "−"
-            lines.append(f"  {sign}{fmt_amount(l['amount'], l['kassa'])} {KSUF[l['kassa']]}  {KLABEL[l['kassa']]}")
+            emoji = KLABEL[l["kassa"]].split()[0]
+            lines.append(f"{emoji} {sign}{fmt_amount(l['amount'])} {KSUF[l['kassa']]}")
         if p.get("counterparty"):
             lines.append(("Kimdan: " if op == "kirim" else "Kimga: ") + p["counterparty"])
         if p.get("purpose"):
@@ -281,8 +281,8 @@ def _preview(p, ctx):
 def _after_parse(p, ctx):
     slot = _check(p)
     if slot is None:
-        return (confirm_text(p) + _preview(p, ctx), [[BTN_CONFIRM], [BTN_CANCEL]],
-                {"step": "confirm", "p": p}, None)
+        return (confirm_text(p) + _preview(p, ctx) + "\n\nShundaymi?",
+                [[BTN_CONFIRM], [BTN_CANCEL]], {"step": "confirm", "p": p}, None)
     kb = _slot_keyboard(slot, p)
     if kb is None and slot == "kirim_from":
         last_cp = (ctx or {}).get("last_cp")

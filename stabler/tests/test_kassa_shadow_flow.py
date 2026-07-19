@@ -63,7 +63,9 @@ class TestFlowKirim(unittest.TestCase):
         # free text (multi-leg, has counterparty) -> confirm
         reply, kb, st, act = handle(st, "Mijozdan 2 mln naqd, 3 mln karta va 500 dollar oldim", CTX)
         self.assertEqual(st["step"], "confirm")
-        self.assertIn("Yozganingiz", reply)
+        self.assertIn("Kirim:", reply)
+        self.assertIn("+2 000 000.00 s", reply)
+        self.assertIn("Shundaymi?", reply)
         self.assertIsNone(act)
         # confirm -> record action
         reply, kb, st, act = handle(st, BTN_CONFIRM, CTX)
