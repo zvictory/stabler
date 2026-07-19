@@ -77,8 +77,37 @@ def _strip_memo_prefix(remark: str | None) -> str | None:
 # --------------------------------------------------------------------------- #
 # Telegram transport (mirrors stabler.integrations.uzex.telegram._post)
 # --------------------------------------------------------------------------- #
+_SESSION = None
+
+
+def _session():
+	"""Module-level keep-alive HTTP session, reused across webhook calls in the
+	same worker so we skip a fresh DNS+TCP+TLS handshake on every sendMessage
+	(the dominant per-reply latency). Falls back to per-call urllib if requests
+	is somehow unavailable."""
+	global _SESSION
+	if _SESSION is None:
+		try:
+			import requests
+
+			_SESSION = requests.Session()
+		except Exception:  # pragma: no cover — requests ships with Frappe
+			_SESSION = False
+	return _SESSION
+
+
 def _post(url: str, payload: dict) -> Any:
 	import frappe
+
+	sess = _session()
+	if sess:
+		try:
+			resp = sess.post(url, json=payload, timeout=_TIMEOUT)
+		except Exception as e:  # noqa: BLE001 — network layer
+			raise frappe.ValidationError(f"Telegram unreachable: {e}") from e
+		if resp.status_code >= 400:
+			raise frappe.ValidationError(f"Telegram HTTP {resp.status_code}: {resp.reason}")
+		return resp.json()
 
 	body = json.dumps(payload).encode("utf-8")
 	req = Request(url, data=body, headers={"Content-Type": "application/json"}, method="POST")
@@ -656,16 +685,19 @@ def handle_update(update: dict) -> None:
 		_send_message(chat_id, _NO_ACCESS_TEXT)
 		return
 
-	# IMPERSONATION: every stabler.api.money call below runs as the kassir's
-	# own Frappe user, so permissions / maker-checker approvals / back-dating
-	# freezes all apply exactly as they would through the SPA.
+	# IMPERSONATION: the GL bot runs every stabler.api.money call as the kassir's
+	# own Frappe user (permissions / maker-checker / back-dating apply as in the
+	# SPA). SHADOW MODE never touches GL, so we skip that per-message role reload —
+	# it was a large slice of the mikas kassa bot's latency.
 	original_user = frappe.session.user
 	reply = keyboard = new_state = follow_up = None
-	frappe.set_user(kassir.user)
+	shadow_mode = bool(getattr(frappe.conf, "kassa_shadow_mode", False))
+	if not shadow_mode:
+		frappe.set_user(kassir.user)
 	try:
 		old_state = _load_state(chat_id)
 
-		if getattr(frappe.conf, "kassa_shadow_mode", False):
+		if shadow_mode:
 			# SHADOW MODE (mikas): op-first free-text flow → standalone store,
 			# NEVER posts to GL. Config-gated so the GL bot is untouched when off.
 			from . import shadow, shadow_flow
@@ -747,7 +779,8 @@ def handle_update(update: dict) -> None:
 
 			_save_state(chat_id, new_state)
 	finally:
-		frappe.set_user(original_user)
+		if not shadow_mode:
+			frappe.set_user(original_user)
 
 	if reply:
 		_send_message(chat_id, reply, keyboard)

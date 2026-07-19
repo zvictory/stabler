@@ -106,6 +106,14 @@ class TestSlots(unittest.TestCase):
     def test_counterparty_from(self):
         self.assertEqual(extract_counterparty("100mln aldim aliyevdan", "kirim"), "Aliyev")
 
+    def test_counterparty_from_spaced(self):
+        # "Hursand dan" (space before 'dan') must resolve the same as "Hursanddan"
+        self.assertEqual(extract_counterparty("Hursand dan oldim 4.5mln va 15mln p", "kirim"), "Hursand")
+
+    def test_counterparty_not_a_kassa_word(self):
+        # "naqddan" is a kassa direction, not a person's name
+        self.assertIsNone(extract_counterparty("2 mln naqddan pk ga", "kassalararo"))
+
     def test_counterparty_none(self):
         self.assertIsNone(extract_counterparty("100mln aldim", "kirim"))
 

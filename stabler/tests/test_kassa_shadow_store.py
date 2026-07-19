@@ -44,7 +44,7 @@ class TestShadowStore(unittest.TestCase):
         ss.set_opening(self.path, CO, D, "usd", 400)
         # "Mijozdan 2 mln naqd, 3 mln karta va 500 dollar oldim"
         ss.add_entry(self.path, company=CO, kassir="7001", op="kirim",
-                     counterparty="Mijoz", raw_text="Mijozdan 2 mln naqd...",
+                     counterparty="Mijoz", raw_text="Mijozdan 2 mln naqd...", date=D,
                      deltas=[{"kassa": "nakit", "delta": 2_000_000},
                              {"kassa": "pk", "delta": 3_000_000},
                              {"kassa": "usd", "delta": 500}])
@@ -53,7 +53,7 @@ class TestShadowStore(unittest.TestCase):
 
     def test_chiqim_negative_delta(self):
         ss.set_opening(self.path, CO, D, "nakit", 1_000_000)
-        ss.add_entry(self.path, company=CO, kassir="7001", op="chiqim",
+        ss.add_entry(self.path, company=CO, kassir="7001", op="chiqim", date=D,
                      purpose="ijara", deltas=[{"kassa": "nakit", "delta": -100_000}])
         self.assertEqual(ss.balances(self.path, CO, D)["nakit"], 900_000.0)
 
@@ -61,7 +61,7 @@ class TestShadowStore(unittest.TestCase):
         ss.set_opening(self.path, CO, D, "nakit", 13_000_000)
         ss.set_opening(self.path, CO, D, "usd", 0)
         # buy 1000$ @ 12900 from Nakit: nakit -12,900,000 ; usd +1000
-        ss.add_entry(self.path, company=CO, kassir="7001", op="konversiya", rate=12900,
+        ss.add_entry(self.path, company=CO, kassir="7001", op="konversiya", rate=12900, date=D,
                      deltas=[{"kassa": "nakit", "delta": -12_900_000},
                              {"kassa": "usd", "delta": 1000}])
         b = ss.balances(self.path, CO, D)

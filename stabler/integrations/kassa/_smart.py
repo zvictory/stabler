@@ -152,13 +152,15 @@ _CP_STOP = {"uchun", "ga", "dan", "kurs", "som", "dollar", "euro", "pul", "berdi
 
 
 def extract_counterparty(text: str, op: str | None) -> str | None:
-    """Kimdan — the name token before 'dan' (from). '…ga' (to/for) is treated as
-    purpose, not counterparty, so "ijaraga" doesn't become a fake name."""
+    """Kimdan — the name token before 'dan' (from), attached OR space-separated
+    ('Aliyevdan' and 'Aliyev dan' both yield 'Aliyev'). '…ga' (to/for) is treated
+    as purpose, and kassa words (naqd/karta/dollar…) are never taken as a name."""
     t = _norm(text)
-    m = re.search(r"\b([a-zA-Zʼ'Ѐ-ӿ]{3,})dan\b", t)
+    m = re.search(r"\b([a-zA-Zʼ'Ѐ-ӿ]{3,})\s*dan\b", t)
     if m:
         cand = m.group(1)
-        if cand not in _CP_STOP and cand not in _KONV and cand not in _CHIQIM:
+        if (cand not in _CP_STOP and cand not in _KONV and cand not in _CHIQIM
+                and detect_kassa(cand) is None):
             return cand.capitalize()
     return None
 
