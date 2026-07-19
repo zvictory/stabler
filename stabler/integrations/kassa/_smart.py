@@ -247,3 +247,99 @@ def parse_entry(text: str, ctx: dict | None = None) -> dict:
 
     res["ready"] = True
     return res
+
+
+# --------------------------------------------------------------------------- #
+# Kassa channels + multi-leg parsing (WP-S3b)
+# "Mijozdan 2 mln naqd, 3 mln karta va 500 dollar oldim" -> 3 legs, 1 kirim.
+# Kassa keywords: naqd/som->Nakit(UZS), karta/plastik/pk->PK(UZS), dollar->USD.
+# Letter suffixes for balances/legs: s->Nakit, p->PK, d->USD.
+# --------------------------------------------------------------------------- #
+KASSA_CCY = {"nakit": "UZS", "pk": "UZS", "usd": "USD"}
+_KASSA_WORDS = {
+    "nakit": ("naqd", "naxt", "nakit", "som", "so'm", "sum", "kesh", "cash"),
+    "pk": ("karta", "kartaga", "plastik", "plastic", "pk"),
+    "usd": ("dollar", "dollor", "usd", "valyuta"),
+}
+_KASSA_LETTER = {"s": "nakit", "p": "pk", "d": "usd"}
+_SEG_SPLIT = re.compile(r"\s*,\s*|\s+va\s+|\s+и\s+|[\n;]+", re.IGNORECASE)
+
+
+def detect_kassa(text: str) -> str | None:
+    """Which of the 3 kassas a segment names: nakit / pk / usd (or None)."""
+    t = _norm(text)
+    for kid, words in _KASSA_WORDS.items():
+        for w in words:
+            if re.search(rf"\b{re.escape(w)}\b", t):
+                return kid
+    m = re.search(r"\d\s*([spd])\b", t) or re.search(r"\b([spd])\b", t)
+    if m:
+        return _KASSA_LETTER[m.group(1)]
+    return None
+
+
+def parse_legs(text: str) -> list[dict]:
+    """Split a message into amount+kassa legs. One kirim/chiqim can move money
+    into several kassas at once ("2 mln naqd, 3 mln karta va 500 dollar")."""
+    legs = []
+    for seg in _SEG_SPLIT.split(text or ""):
+        amt = extract_amount(seg)
+        if amt is None:
+            continue
+        kid = detect_kassa(seg)
+        ccy = KASSA_CCY[kid] if kid else detect_currency(seg)
+        legs.append({"amount": amt, "kassa": kid, "currency": ccy})
+    return legs
+
+
+def parse_message(text: str, op: str | None = None, ctx: dict | None = None) -> dict:
+    """Bot entry point. `op` is the button the kassir picked first (kirim/chiqim/
+    konversiya/kassalararo); the free text fills amount(s) + kassa(s) + slots.
+    kirim/chiqim support MULTIPLE legs; konv/kassalararo delegate to parse_entry."""
+    raw = text or ""
+    if not op:
+        op = detect_op(raw, detect_currency(raw))
+    res = {
+        "op": op,
+        "counterparty": extract_counterparty(raw, op),
+        "purpose": extract_purpose(raw),
+        "rate": extract_rate(raw),
+        "legs": [],
+        "raw_text": raw,
+        "missing": None,
+        "question": None,
+        "ready": False,
+    }
+
+    def need(slot):
+        res["missing"] = slot
+        res["question"] = _Q[slot]
+        return res
+
+    if not op:
+        return need("op")
+
+    if op in ("kirim", "chiqim"):
+        legs = parse_legs(raw)
+        if not legs:
+            return need("amount")
+        for leg in legs:
+            if leg["kassa"] is None:
+                leg["kassa"] = "nakit"       # default: UZS cash unless PK/USD named
+                leg["currency"] = "UZS"
+            elif leg["currency"] is None:
+                leg["currency"] = KASSA_CCY[leg["kassa"]]
+        res["legs"] = legs
+        if op == "kirim" and not res["counterparty"]:
+            return need("kirim_from")
+        if op == "chiqim" and not res["counterparty"] and not res["purpose"]:
+            return need("chiqim_to")
+        res["ready"] = True
+        return res
+
+    # konversiya / kassalararo — single amount for now
+    r = parse_entry(raw, ctx)
+    r["op"] = op
+    if r.get("amount") is not None:
+        r["legs"] = [{"amount": r["amount"], "kassa": detect_kassa(raw), "currency": r.get("currency")}]
+    return r

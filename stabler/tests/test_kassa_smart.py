@@ -9,12 +9,15 @@ import unittest
 
 from stabler.integrations.kassa._smart import (
     detect_currency,
+    detect_kassa,
     detect_op,
     extract_amount,
     extract_counterparty,
     extract_purpose,
     extract_rate,
     parse_entry,
+    parse_legs,
+    parse_message,
 )
 
 
@@ -173,6 +176,60 @@ class TestParseEntry(unittest.TestCase):
     def test_raw_preserved(self):
         r = parse_entry("100D Aldim")
         self.assertEqual(r["raw_text"], "100D Aldim")
+
+
+class TestKassaKeyword(unittest.TestCase):
+    def test_naqd(self):
+        self.assertEqual(detect_kassa("2 mln naqd"), "nakit")
+
+    def test_karta(self):
+        self.assertEqual(detect_kassa("3 mln karta"), "pk")
+
+    def test_dollar(self):
+        self.assertEqual(detect_kassa("500 dollar"), "usd")
+
+    def test_letters_spd(self):
+        self.assertEqual(detect_kassa("2mln s"), "nakit")
+        self.assertEqual(detect_kassa("3mln p"), "pk")
+        self.assertEqual(detect_kassa("500 d"), "usd")
+
+    def test_none(self):
+        self.assertIsNone(detect_kassa("600 ming"))
+
+
+class TestMultiLeg(unittest.TestCase):
+    def test_three_legs_one_kirim(self):
+        r = parse_message("Mijozdan 2 mln naqd, 3 mln karta va 500 dollar oldim", op="kirim")
+        self.assertEqual(r["op"], "kirim")
+        self.assertEqual(r["counterparty"], "Mijoz")
+        self.assertTrue(r["ready"])
+        self.assertEqual(len(r["legs"]), 3)
+        self.assertEqual(r["legs"][0], {"amount": 2_000_000, "kassa": "nakit", "currency": "UZS"})
+        self.assertEqual(r["legs"][1], {"amount": 3_000_000, "kassa": "pk", "currency": "UZS"})
+        self.assertEqual(r["legs"][2], {"amount": 500, "kassa": "usd", "currency": "USD"})
+
+    def test_single_leg_from_ali(self):
+        r = parse_message("Alidan 600 ming oldim", op="kirim")
+        self.assertEqual(r["counterparty"], "Ali")
+        self.assertTrue(r["ready"])
+        self.assertEqual(r["legs"], [{"amount": 600_000, "kassa": "nakit", "currency": "UZS"}])
+
+    def test_chiqim_purpose(self):
+        r = parse_message("100ming s ijaraga", op="chiqim")
+        self.assertEqual(r["op"], "chiqim")
+        self.assertEqual(r["purpose"], "ijara")
+        self.assertTrue(r["ready"])
+        self.assertEqual(r["legs"], [{"amount": 100_000, "kassa": "nakit", "currency": "UZS"}])
+
+    def test_multi_leg_missing_counterparty(self):
+        r = parse_message("2mln naqd, 500d", op="kirim")
+        self.assertEqual(len(r["legs"]), 2)
+        self.assertFalse(r["ready"])
+        self.assertEqual(r["missing"], "kirim_from")
+
+    def test_parse_legs_direct(self):
+        legs = parse_legs("2 mln naqd, 3 mln karta va 500 dollar")
+        self.assertEqual([l["kassa"] for l in legs], ["nakit", "pk", "usd"])
 
 
 if __name__ == "__main__":
