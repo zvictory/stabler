@@ -94,13 +94,12 @@ def compute_deltas(p):
 
 def confirm_text(p):
     op = p.get("op")
-    lines = []
+    lines = [f"Yozganingiz: «{p.get('raw_text', '')}»", ""]
     if op in ("kirim", "chiqim"):
         sign = "+" if op == "kirim" else "−"
         lines.append(_OPLABEL[op] + ":")
         for l in p.get("legs", []):
-            emoji = KLABEL[l["kassa"]].split()[0]
-            lines.append(f"{emoji} {sign}{fmt_amount(l['amount'])} {KSUF[l['kassa']]}")
+            lines.append(f"{KLABEL[l['kassa']]}  {sign}{fmt_amount(l['amount'])} {KSUF[l['kassa']]}")
         if p.get("counterparty"):
             lines.append(("Kimdan: " if op == "kirim" else "Kimga: ") + p["counterparty"])
         if p.get("purpose"):
@@ -110,10 +109,10 @@ def confirm_text(p):
             lines.append(f"{KLABEL[p['source']]} → \U0001F7E9 USD")
         else:
             lines.append(f"\U0001F7E9 USD → {KLABEL[p['target']]}")
-        lines.append(f"{fmt_amount(p['amount'], 'usd')} $ · kurs {fmt_amount(p['rate'], 'nakit')}")
+        lines.append(f"{fmt_amount(p['amount'])} $ · kurs {fmt_amount(p['rate'])}")
     elif op == "kassalararo":
         lines.append(f"{KLABEL[p['from']]} → {KLABEL[p['to']]}")
-        lines.append(f"{fmt_amount(p['amount'], p['from'])} {KSUF[p['from']]}")
+        lines.append(f"{fmt_amount(p['amount'])} {KSUF[p['from']]}")
     return "\n".join(lines)
 
 
@@ -271,7 +270,7 @@ def _preview(p, ctx):
         return ""
     for d in deltas:
         bals[d["kassa"]] = bals.get(d["kassa"], 0) + d["delta"]
-    out = ["", "Yangi qoldiq: " + format_balance(bals)]
+    out = ["", "Yangi qoldiq:", format_balance_lines(bals)]
     neg = [k for k in ("nakit", "pk", "usd") if bals.get(k, 0) < 0]
     if neg:
         out.append("⚠️ Manfiy bo'ladi: " + ", ".join(KLABEL[k] for k in neg))

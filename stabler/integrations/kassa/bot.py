@@ -684,9 +684,9 @@ def handle_update(update: dict) -> None:
 						purpose=action.get("purpose"), rate=action.get("rate"),
 						raw_text=action.get("raw_text"), parsed=action.get("parsed"), date=sdate,
 					)
-					reply = ("✅ Saqlandi.\nQoldiq: "
-					         + shadow_flow.format_balance(shadow.balances(kassir.company, sdate))
-					         + "\n\nAmalni tanlang:")
+					reply = ("✅ Saqlandi.\nQoldiq:\n"
+					         + shadow_flow.format_balance_lines(shadow.balances(kassir.company, sdate))
+					         + "\n\nkeyingi amalni tanlang:")
 					keyboard = shadow_flow.MENU_KEYBOARD
 				except Exception as e:  # noqa: BLE001 — surfaced to the kassir
 					frappe.log_error(
@@ -699,9 +699,9 @@ def handle_update(update: dict) -> None:
 				try:
 					for o in action.get("openings") or []:
 						shadow.set_opening(kassir.company, sdate, o["kassa"], o["amount"])
-					reply = ("✅ Ochilish balansi saqlandi.\nQoldiq: "
-					         + shadow_flow.format_balance(shadow.balances(kassir.company, sdate))
-					         + "\n\nAmalni tanlang:")
+					reply = ("✅ Ochilish balansi saqlandi.\nQoldiq:\n"
+					         + shadow_flow.format_balance_lines(shadow.balances(kassir.company, sdate))
+					         + "\n\nkeyingi amalni tanlang:")
 					keyboard = shadow_flow.MENU_KEYBOARD
 				except Exception as e:  # noqa: BLE001
 					frappe.log_error(
@@ -714,9 +714,9 @@ def handle_update(update: dict) -> None:
 				if not undone:
 					follow_up = "Bekor qilinadigan amal yo'q."
 				else:
-					reply = ("↩️ Bekor qilindi: «" + (undone.get("raw_text") or "") + "»\nQoldiq: "
-					         + shadow_flow.format_balance(shadow.balances(kassir.company, sdate))
-					         + "\n\nAmalni tanlang:")
+					reply = ("↩️ Bekor qilindi: «" + (undone.get("raw_text") or "") + "»\nQoldiq:\n"
+					         + shadow_flow.format_balance_lines(shadow.balances(kassir.company, sdate))
+					         + "\n\nkeyingi amalni tanlang:")
 					keyboard = shadow_flow.MENU_KEYBOARD
 			_save_state(chat_id, new_state)
 		else:
