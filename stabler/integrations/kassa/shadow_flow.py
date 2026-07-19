@@ -18,7 +18,7 @@ from __future__ import annotations
 from ._smart import extract_amount, parse_legs, parse_message
 
 # --------------------------------------------------------------------------- #
-KLABEL = {"nakit": "\U0001F7E6 Nakit", "pk": "\U0001F7E7 PK", "usd": "\U0001F7E9 USD"}
+KLABEL = {"nakit": "\U0001F7E6 Naqd", "pk": "\U0001F7E7 Karta", "usd": "\U0001F7E9 Dollar"}
 KSUF = {"nakit": "s", "pk": "p", "usd": "d"}
 
 BTN_KIRIM = "\U0001F7E2 Kirim"
@@ -29,9 +29,9 @@ BTN_CONFIRM = "✅ Tasdiqlash"
 BTN_CANCEL = "❌ Bekor"
 BTN_OPENING = "⚙️ Ochilish"
 BTN_UNDO = "↩️ Oxirgi amalni bekor"
-BTN_SOM = "\U0001F7E6 Som"
-BTN_PK = "\U0001F7E7 PK"
-BTN_USD = "\U0001F7E9 USD"
+BTN_SOM = "\U0001F7E6 Naqd"
+BTN_PK = "\U0001F7E7 Karta"
+BTN_USD = "\U0001F7E9 Dollar"
 
 _OP_BTN = {BTN_KIRIM: "kirim", BTN_CHIQIM: "chiqim", BTN_KONV: "konversiya", BTN_K2K: "kassalararo"}
 _OPLABEL = {"kirim": "Kirim", "chiqim": "Chiqim", "konversiya": "Konvertatsiya", "kassalararo": "Kassalararo"}
