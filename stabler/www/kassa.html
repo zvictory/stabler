@@ -90,6 +90,9 @@
 			border: 1px solid var(--border-color);
 		}
 
+		.card-nakit { background: rgba(59, 130, 246, 0.14); color: #2563eb; }
+		.card-pk { background: rgba(245, 158, 11, 0.16); color: #b45309; }
+
 		.card-label {
 			font-size: 12.5px;
 			opacity: 0.85;
@@ -273,7 +276,7 @@
 		(function () {
 			"use strict";
 
-			var ENDPOINT = "/api/method/stabler.integrations.kassa.miniapp.kassa_summary";
+			var ENDPOINT = "/api/method/stabler.integrations.kassa.shadow.shadow_view";
 
 			var tg = window.Telegram && window.Telegram.WebApp ? window.Telegram.WebApp : null;
 			if (tg) {
@@ -357,60 +360,69 @@
 				}
 			}
 
-			function renderCards(cards) {
-				cardsEl.className = "cards" + (cards.length <= 1 ? " single" : "");
-				if (!cards.length) {
-					cardsEl.innerHTML = "";
-					return;
-				}
-				cardsEl.innerHTML = cards
-					.map(function (c) {
-						var label = c.currency + " qoldiq";
-						return (
-							'<div class="' +
-							cardClass(c.currency) +
-							'"><div class="card-label">' +
-							escapeHtml(label) +
-							'</div><div class="card-balance">' +
-							escapeHtml(formatAmount(c.balance, c.currency)) +
-							"</div></div>"
-						);
-					})
-					.join("");
+			var KAS = [
+				{ id: "nakit", label: "Nakit", suf: "s", ccy: "UZS", cls: "card-nakit", icon: "🟦" },
+				{ id: "pk", label: "PK", suf: "p", ccy: "UZS", cls: "card-pk", icon: "🟧" },
+				{ id: "usd", label: "Dollar", suf: "d", ccy: "USD", cls: "card-usd", icon: "🟩" },
+			];
+			var OPLABEL = { kirim: "Kirim", chiqim: "Chiqim", konversiya: "Konvertatsiya", kassalararo: "Kassalararo" };
+			var KSUF = { nakit: "s", pk: "p", usd: "d" };
+
+			function grp(fixed) {
+				var parts = fixed.split(".");
+				var intPart = parts[0].replace(/\B(?=(\d{3})+(?!\d))/g, " ");
+				return parts[1] ? intPart + "." + parts[1] : intPart;
 			}
 
-			function renderRows(rows) {
-				if (!rows.length) {
+			function formatKas(value, k) {
+				var num = Number(value) || 0;
+				var out = grp(Math.abs(num).toFixed(k.ccy === "USD" ? 2 : 0));
+				return (num < 0 ? "-" : "") + out + " " + k.suf;
+			}
+
+			function renderCards(balances) {
+				var b = balances || {};
+				cardsEl.className = "cards";
+				cardsEl.innerHTML = KAS.map(function (k) {
+					return (
+						'<div class="card ' + k.cls + '">' +
+						'<div class="card-label">' + k.icon + " " + escapeHtml(k.label) + "</div>" +
+						'<div class="card-balance">' + escapeHtml(formatKas(b[k.id], k)) + "</div>" +
+						"</div>"
+					);
+				}).join("");
+			}
+
+			function renderRows(entries) {
+				if (!entries || !entries.length) {
 					rowsEl.innerHTML =
-						'<tr class="empty-row"><td colspan="4">Bu oraliqda operatsiya yo\'q</td></tr>';
+						'<tr class="empty-row"><td colspan="4">Bugun operatsiya yo\'q</td></tr>';
 					return;
 				}
-				rowsEl.innerHTML = rows
-					.map(function (r) {
-						var amt = Number(r.amount) || 0;
-						var amtClass = amt < 0 ? "amt-neg" : "amt-pos";
-						var amtText = (amt > 0 ? "+" : "") + formatAmount(amt, r.currency);
+				rowsEl.innerHTML = entries
+					.map(function (e) {
+						var legs = (e.legs || [])
+							.map(function (l) {
+								var sign = Number(l.delta) < 0 ? "−" : "+";
+								var v = grp(Math.abs(Number(l.delta) || 0).toFixed(l.kassa === "usd" ? 2 : 0));
+								return sign + v + " " + (KSUF[l.kassa] || "");
+							})
+							.join(", ");
+						var sub = [];
+						if (e.counterparty) sub.push(e.counterparty);
+						if (e.purpose) sub.push(e.purpose);
+						var d = new Date(e.ts || 0);
+						var hm = e.ts
+							? String(d.getHours()).padStart(2, "0") + ":" + String(d.getMinutes()).padStart(2, "0")
+							: "";
 						return (
 							"<tr>" +
-							'<td class="col-date">' +
-							escapeHtml(r.date || "") +
-							"</td>" +
-							"<td>" +
-							escapeHtml(r.op || "") +
-							(r.account_label
-								? '<div style="color:var(--tg-hint);font-size:11.5px;margin-top:2px">' +
-								  escapeHtml(r.account_label) +
-								  "</div>"
-								: "") +
-							"</td>" +
-							'<td class="col-amount"><span class="' +
-							amtClass +
-							'">' +
-							escapeHtml(amtText) +
-							"</span></td>" +
-							'<td class="col-running">' +
-							escapeHtml(formatAmount(r.running, r.currency)) +
-							"</td>" +
+							'<td class="col-date">' + escapeHtml(hm) + "</td>" +
+							"<td>" + escapeHtml(OPLABEL[e.op] || e.op || "") +
+							'<div style="color:var(--tg-hint);font-size:11.5px;margin-top:2px">' +
+							escapeHtml("«" + (e.raw_text || "") + "»" + (sub.length ? " · " + sub.join(" · ") : "")) +
+							"</div></td>" +
+							'<td class="col-amount" colspan="2"><span>' + escapeHtml(legs) + "</span></td>" +
 							"</tr>"
 						);
 					})
@@ -445,8 +457,7 @@
 
 				var body = new URLSearchParams({
 					init_data: initData,
-					from_date: fromInput.value,
-					to_date: toInput.value,
+					date: toInput.value,
 				});
 
 				fetch(ENDPOINT, {
@@ -484,9 +495,9 @@
 			}
 
 			function render(summary) {
-				titleEl.textContent = "Mening kassa jadvalim [" + (summary.kassir || "") + "]";
-				renderCards(summary.cards || []);
-				renderRows(summary.rows || []);
+				titleEl.textContent = "Mening kassam · " + isoToDisplay(summary.date || "");
+				renderCards(summary.balances || {});
+				renderRows(summary.entries || []);
 			}
 
 			function initDates() {
