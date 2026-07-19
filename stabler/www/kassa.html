@@ -93,6 +93,24 @@
 		.card-nakit { background: rgba(59, 130, 246, 0.14); color: #2563eb; }
 		.card-pk { background: rgba(245, 158, 11, 0.16); color: #b45309; }
 
+		.day-pick { margin-bottom: 14px; }
+		.day-pick label { display: block; font-size: 11px; color: var(--tg-hint); margin-bottom: 4px; }
+		.day-pick input { width: 100%; padding: 9px 11px; border-radius: 10px; border: 1px solid var(--border-color); background: var(--tg-bg); color: var(--tg-text); }
+		.entries-head { font-size: 12px; color: var(--tg-hint); text-transform: uppercase; letter-spacing: 0.04em; margin: 0 2px 8px; font-weight: 600; }
+		.entries { display: flex; flex-direction: column; gap: 8px; }
+		.entry { border: 1px solid var(--border-color); border-radius: 12px; padding: 10px 12px; }
+		.entry .e-top { display: flex; align-items: center; justify-content: space-between; margin-bottom: 3px; }
+		.entry .e-op { font-size: 14px; font-weight: 600; }
+		.entry .e-time { font-size: 11px; color: var(--tg-hint); }
+		.entry .e-raw { font-size: 12px; color: var(--tg-hint); margin-bottom: 6px; word-break: break-word; }
+		.entry .e-legs { display: flex; flex-wrap: wrap; gap: 5px; }
+		.leg { font-size: 12px; font-weight: 600; padding: 2px 8px; border-radius: 999px; font-variant-numeric: tabular-nums; }
+		.leg-nakit { background: rgba(59, 130, 246, 0.16); color: #3b82f6; }
+		.leg-pk { background: rgba(245, 158, 11, 0.18); color: #f59e0b; }
+		.leg-usd { background: rgba(34, 197, 94, 0.16); color: #22c55e; }
+		.entry .e-sub { font-size: 11px; color: var(--tg-hint); margin-top: 5px; }
+		.entries-empty { text-align: center; color: var(--tg-hint); font-size: 13px; padding: 18px; }
+
 		.card-label {
 			font-size: 12.5px;
 			opacity: 0.85;
@@ -245,30 +263,13 @@
 		<div id="content" hidden>
 			<div class="cards" id="cards"></div>
 
-			<div class="date-range">
-				<div class="date-field">
-					<label for="fromDate">Qaysi kundan</label>
-					<input type="date" id="fromDate" />
-				</div>
-				<div class="date-field">
-					<label for="toDate">Qaysi kungacha</label>
-					<input type="date" id="toDate" />
-				</div>
+			<div class="day-pick">
+				<label for="toDate">Kun</label>
+				<input type="date" id="toDate" />
 			</div>
 
-			<div class="table-wrap">
-				<table>
-					<thead>
-						<tr>
-							<th>Sana</th>
-							<th>Oper.turi va izoh</th>
-							<th class="col-amount">Summa</th>
-							<th class="col-running">Qoldiq</th>
-						</tr>
-					</thead>
-					<tbody id="rows"></tbody>
-				</table>
-			</div>
+			<div class="entries-head">Amallar</div>
+			<div class="entries" id="rows"></div>
 		</div>
 	</div>
 
@@ -306,7 +307,6 @@
 			var contentEl = document.getElementById("content");
 			var cardsEl = document.getElementById("cards");
 			var rowsEl = document.getElementById("rows");
-			var fromInput = document.getElementById("fromDate");
 			var toInput = document.getElementById("toDate");
 
 			function toIso(date) {
@@ -345,19 +345,17 @@
 			function renderSkeleton() {
 				cardsEl.className = "cards";
 				cardsEl.innerHTML =
-					'<div class="card card-uzs"><div class="skeleton-bar" style="width:60%;background:rgba(255,255,255,.35)"></div></div>' +
+					'<div class="card card-nakit"><div class="skeleton-bar" style="width:60%"></div></div>' +
+					'<div class="card card-pk"><div class="skeleton-bar" style="width:60%"></div></div>' +
 					'<div class="card card-usd"><div class="skeleton-bar" style="width:60%"></div></div>';
-				rowsEl.innerHTML = "";
-				for (var i = 0; i < 5; i++) {
-					var tr = document.createElement("tr");
-					tr.className = "skeleton-row";
-					for (var c = 0; c < 4; c++) {
-						var td = document.createElement("td");
-						td.innerHTML = '<div class="skeleton-bar" style="width:' + (60 + Math.random() * 30) + '%"></div>';
-						tr.appendChild(td);
-					}
-					rowsEl.appendChild(tr);
+				var s = "";
+				for (var i = 0; i < 3; i++) {
+					s +=
+						'<div class="entry"><div class="skeleton-bar" style="width:' +
+						(45 + Math.random() * 30) +
+						'%"></div><div class="skeleton-bar" style="width:35%;margin-top:7px"></div></div>';
 				}
+				rowsEl.innerHTML = s;
 			}
 
 			var KAS = [
@@ -395,8 +393,7 @@
 
 			function renderRows(entries) {
 				if (!entries || !entries.length) {
-					rowsEl.innerHTML =
-						'<tr class="empty-row"><td colspan="4">Bugun operatsiya yo\'q</td></tr>';
+					rowsEl.innerHTML = '<div class="entries-empty">Bu kunda operatsiya yo\'q</div>';
 					return;
 				}
 				rowsEl.innerHTML = entries
@@ -405,9 +402,12 @@
 							.map(function (l) {
 								var sign = Number(l.delta) < 0 ? "−" : "+";
 								var v = grp(Math.abs(Number(l.delta) || 0).toFixed(l.kassa === "usd" ? 2 : 0));
-								return sign + v + " " + (KSUF[l.kassa] || "");
+								return (
+									'<span class="leg leg-' + (l.kassa || "nakit") + '">' +
+									sign + v + " " + (KSUF[l.kassa] || "") + "</span>"
+								);
 							})
-							.join(", ");
+							.join("");
 						var sub = [];
 						if (e.counterparty) sub.push(e.counterparty);
 						if (e.purpose) sub.push(e.purpose);
@@ -416,14 +416,13 @@
 							? String(d.getHours()).padStart(2, "0") + ":" + String(d.getMinutes()).padStart(2, "0")
 							: "";
 						return (
-							"<tr>" +
-							'<td class="col-date">' + escapeHtml(hm) + "</td>" +
-							"<td>" + escapeHtml(OPLABEL[e.op] || e.op || "") +
-							'<div style="color:var(--tg-hint);font-size:11.5px;margin-top:2px">' +
-							escapeHtml("«" + (e.raw_text || "") + "»" + (sub.length ? " · " + sub.join(" · ") : "")) +
-							"</div></td>" +
-							'<td class="col-amount" colspan="2"><span>' + escapeHtml(legs) + "</span></td>" +
-							"</tr>"
+							'<div class="entry">' +
+							'<div class="e-top"><span class="e-op">' + escapeHtml(OPLABEL[e.op] || e.op || "") +
+							'</span><span class="e-time">' + escapeHtml(hm) + "</span></div>" +
+							(e.raw_text ? '<div class="e-raw">«' + escapeHtml(e.raw_text) + "»</div>" : "") +
+							'<div class="e-legs">' + legs + "</div>" +
+							(sub.length ? '<div class="e-sub">' + escapeHtml(sub.join(" · ")) + "</div>" : "") +
+							"</div>"
 						);
 					})
 					.join("");
@@ -501,14 +500,9 @@
 			}
 
 			function initDates() {
-				var today = new Date();
-				var from = new Date(today);
-				from.setDate(from.getDate() - 30);
-				toInput.value = toIso(today);
-				fromInput.value = toIso(from);
+				toInput.value = toIso(new Date());
 			}
 
-			fromInput.addEventListener("change", fetchSummary);
 			toInput.addEventListener("change", fetchSummary);
 
 			initDates();
