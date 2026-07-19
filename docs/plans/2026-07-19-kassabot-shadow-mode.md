@@ -34,6 +34,21 @@ gerçekle **mutabakat** yapsın. Yani bot = **gölge kasa defteri + akıllı gir
 Alanlar: `kassir` (Link), `company`, `entry_date`, `op_type` (Kirim/Chiqim/Konversiya/Kassalararo), `from_kassa`/`to_kassa` (Link kasa leaf), `currency`, `amount`, `rate` (konversiyada), `counterparty` (kimdan/kimga), `purpose` (izoh), **`raw_text`** (kassir'in yazdığı ham metin), **`parsed_json`** (ayrıştırma sonucu), `created_at`, `status` (Qoralama/Tasdiqlangan/Mutabaqatlangan), `correction_of` (düzeltme zinciri). **GL'e link YOK.** company-scoped, `money`/`tender` gate.
 - Ayrıca `Kassa Shadow Opening` (kassa+currency+date+opening_amount+synced_by) — günlük açılış snapshot'ı.
 
+## 4b. Üç kasa modeli + görsel dil (KİLİTLİ)
+Mikas'ta **3 kasa/kanal** var; tüm işlemler bunlarla olur. Her biri **ayrı running balance** olarak gösterilir (yan yana 3 kart), sabit renk + ikonla:
+
+| Kasa | Para birimi | Renk | Icon (Tabler) |
+|---|---|---|---|
+| **Nakit** (Som) | UZS | **mavi** — `text-blue` / `bg-blue-lt` | `ti-cash` (banknot) |
+| **PK** (plastik kart) | UZS | **turuncu** — `text-orange` / `bg-orange-lt` | `ti-credit-card` (plastik kart) |
+| **Dollar** | USD | **yeşil** — `text-green` / `bg-green-lt` | `ti-currency-dollar` |
+
+- Renk/ikon **her yerde tutarlı**: bot mesaj başlığı, confirm ekranı, Mini App bakiye kartları, gün sonu özet. (Mini App v1'deki UZS-mor → **mavi**'ye güncellenir, PK turuncu eklenir.)
+- Running balance başlığı (her işlem sonrası + menü başı):
+  `🟦 Nakit: 26 991 567 · 🟧 PK: 3 000 000 · 🟩 USD: 5 244` (ikon + renkle).
+
+**"Dolar aldim" semantiği:** dolar *satın almak* = **konversiya** (UZS/PK → USD). Kaynak kasa belirsizse **tek soru**: "Qaysi kassadan? 🟦 Som / 🟧 PK". Metin dışarıdan USD *kirimi* ise ("mijozdan/tashqaridan") → düz Kirim (USD kasasına). Parser bunu ayırt eder; ayırt edemezse tek net soru sorar (asla tahmin etmez).
+
 ## 5. Akıllı Özbekçe serbest-metin (intent + slot) — çekirdek
 Kassir tam cümle yazar; bot **niyeti** ve **slotları** çıkarır, eksikse **tek** soru sorar.
 
