@@ -257,7 +257,7 @@ const canSupersede = (row) => ["DRAFT", "CONFIRMED"].includes(row.status);
 				</thead>
 				<tbody>
 					<SkeletonRows v-if="loading" :cols="12" :rows="6" />
-					<tr v-for="r in rows" :key="r.name" style="cursor: pointer" @click="router.push(`/imports/proformas/${r.name}`)">
+					<tr v-for="r in rows" :key="r.name" style="cursor: pointer" @click="router.push({ name: 'imports-proforma', params: { name: r.name } })">
 						<td class="font-monospace text-primary">{{ r.name }}</td>
 						<td>{{ r.supplier_name || r.supplier }}</td>
 						<td class="text-nowrap">{{ r.pi_date ? formatDate(r.pi_date) : "—" }}</td>

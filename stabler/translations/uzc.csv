@@ -4471,3 +4471,6 @@ Box Weight,Қути вазни
 Docs Price,Ҳужжат нархи
 Product Code/Name,Маҳсулот коди/номи
 Quantity (KG),Миқдор (кг)
+PI number (supplier ref) is required — it becomes the document identity.,PI рақами (етказиб берувчи реф) мажбурий — у ҳужжат идентификаторига айланади.
+The PI number is the document identity and cannot be changed after creation.,PI рақами ҳужжат идентификатори — яратилгандан кейин ўзгартирилмайди.
+e.g. FIR/25-26/29639-29647,масалан FIR/25-26/29639-29647

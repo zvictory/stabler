@@ -4471,3 +4471,6 @@ Box Weight,Quti vazni
 Docs Price,Hujjat narxi
 Product Code/Name,Mahsulot kodi/nomi
 Quantity (KG),Miqdor (kg)
+PI number (supplier ref) is required — it becomes the document identity.,PI raqami (yetkazib beruvchi ref) majburiy — u hujjat identifikatoriga aylanadi.
+The PI number is the document identity and cannot be changed after creation.,PI raqami hujjat identifikatori — yaratilgandan keyin o‘zgartirilmaydi.
+e.g. FIR/25-26/29639-29647,masalan FIR/25-26/29639-29647

@@ -4456,3 +4456,6 @@ Box Weight,Koli ağırlığı
 Docs Price,Belge fiyatı
 Product Code/Name,Ürün kodu/adı
 Quantity (KG),Miktar (kg)
+PI number (supplier ref) is required — it becomes the document identity.,PI numarası (tedarikçi ref) zorunlu — belge kimliği olur.
+The PI number is the document identity and cannot be changed after creation.,"PI numarası belge kimliğidir, oluşturulduktan sonra değiştirilemez."
+e.g. FIR/25-26/29639-29647,örn. FIR/25-26/29639-29647

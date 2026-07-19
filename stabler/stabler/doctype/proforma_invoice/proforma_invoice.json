@@ -1,6 +1,6 @@
 {
  "actions": [],
- "autoname": "format:PI-{YYYY}-{#####}",
+ "autoname": "field:supplier_pi_ref",
  "creation": "2026-07-16 12:00:00.000000",
  "doctype": "DocType",
  "editable_grid": 1,
@@ -59,7 +59,10 @@
   {
    "fieldname": "supplier_pi_ref",
    "fieldtype": "Data",
-   "label": "Supplier PI No."
+   "label": "PI No. (supplier ref)",
+   "reqd": 1,
+   "bold": 1,
+   "description": "The real supplier PI reference — becomes the document identity (name). Cannot be blank."
   },
   {
    "fieldname": "import_pi_group",

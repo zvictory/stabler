@@ -331,6 +331,10 @@ async function saveProforma() {
 		toast.error(t("Supplier is required."));
 		return;
 	}
+	if (isCreate.value && !(form.value.supplier_pi_ref || "").trim()) {
+		toast.error(t("PI number (supplier ref) is required — it becomes the document identity."));
+		return;
+	}
 	if (!earmarkOk.value) {
 		toast.error(t("Bank Agreed + Cash Agreed must equal Agreed Total."));
 		return;
@@ -358,7 +362,7 @@ async function saveProforma() {
 		const res = await call("stabler.api.imports.save_proforma", { payload });
 		toast.success(t("Proforma saved"));
 		if (isCreate.value) {
-			router.replace(`/imports/proformas/${res.name}`);
+			router.replace({ name: "imports-proforma", params: { name: res.name } });
 		} else {
 			await loadDoc();
 		}
@@ -484,8 +488,8 @@ watch(activeCompany, loadPiGroups);
 						<DateInput v-model="form.pi_date" />
 					</div>
 					<div class="col-md-3">
-						<label class="form-label">{{ t("Supplier PI No.") }}</label>
-						<input v-model="form.supplier_pi_ref" type="text" class="form-control">
+						<label class="form-label required">{{ t("Supplier PI No.") }}</label>
+						<input v-model="form.supplier_pi_ref" type="text" class="form-control" :readonly="!isCreate" :placeholder="t('e.g. FIR/25-26/29639-29647')" :title="!isCreate ? t('The PI number is the document identity and cannot be changed after creation.') : ''">
 					</div>
 
 					<div class="col-md-2">
