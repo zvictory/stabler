@@ -390,7 +390,7 @@
 
 			function formatKas(value, k) {
 				var num = Number(value) || 0;
-				var out = grp(Math.abs(num).toFixed(k.ccy === "USD" ? 2 : 0));
+				var out = grp(Math.abs(num).toFixed(2));
 				return (num < 0 ? "-" : "") + out + " " + k.suf;
 			}
 
@@ -419,7 +419,7 @@
 				var k = KAS.filter(function (x) { return x.id === SELECTED; })[0] || KAS[0];
 				document.getElementById("ledgerHead").textContent = k.icon + " " + k.label + " — hisob";
 				if (!LAST) { rowsEl.innerHTML = ""; return; }
-				var dec = k.ccy === "USD" ? 2 : 0;
+				var dec = 2;
 				function n(v) { return grp(Math.abs(Number(v) || 0).toFixed(dec)); }
 				var opening = Number((LAST.openings || {})[k.id]) || 0;
 				var affecting = (LAST.entries || []).filter(function (e) {

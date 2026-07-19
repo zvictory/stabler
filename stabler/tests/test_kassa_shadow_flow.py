@@ -24,8 +24,8 @@ CTX = {"balances": {"nakit": 402_250_000, "pk": 3_000_000, "usd": 400}}
 class TestFormat(unittest.TestCase):
     def test_balance_spd(self):
         s = format_balance(CTX["balances"])
-        self.assertIn("402 250 000 s", s)
-        self.assertIn("3 000 000 p", s)
+        self.assertIn("402 250 000.00 s", s)
+        self.assertIn("3 000 000.00 p", s)
         self.assertIn("400.00 d", s)
 
 

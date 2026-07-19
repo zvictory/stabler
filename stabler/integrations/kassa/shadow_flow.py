@@ -48,23 +48,29 @@ MENU_KEYBOARD = [[BTN_KIRIM, BTN_CHIQIM], [BTN_KONV, BTN_K2K], [BTN_OPENING, BTN
 # --------------------------------------------------------------------------- #
 # Formatting
 # --------------------------------------------------------------------------- #
-def fmt_amount(v, kassa):
-    v = float(v or 0)
-    if kassa == "usd":
-        s = f"{v:,.2f}".replace(",", " ")
-    else:
-        s = f"{round(v):,}".replace(",", " ")
-    return s
+def fmt_amount(v, kassa=None):
+    """Always 2 decimals (decimals shown for every kassa)."""
+    return f"{float(v or 0):,.2f}".replace(",", " ")
 
 
 def format_balance(balances):
-    """'🟦 402 250 000 s · 🟧 3 000 000 p · 🟩 400.00 d'."""
+    """Inline: '🟦 402 250 000.00 s · 🟧 3 000 000.00 p · 🟩 400.00 d'."""
     b = balances or {}
     parts = []
     for k in ("nakit", "pk", "usd"):
         emoji = KLABEL[k].split()[0]
-        parts.append(f"{emoji} {fmt_amount(b.get(k, 0), k)} {KSUF[k]}")
+        parts.append(f"{emoji} {fmt_amount(b.get(k, 0))} {KSUF[k]}")
     return " · ".join(parts)
+
+
+def format_balance_lines(balances):
+    """One kassa per line (for the menu header)."""
+    b = balances or {}
+    lines = []
+    for k in ("nakit", "pk", "usd"):
+        emoji = KLABEL[k].split()[0]
+        lines.append(f"{emoji} {fmt_amount(b.get(k, 0))} {KSUF[k]}")
+    return "\n".join(lines)
 
 
 # --------------------------------------------------------------------------- #
@@ -183,7 +189,7 @@ def _opening_confirm_text(openings):
 
 
 def _menu(ctx):
-    hdr = "Qoldiq: " + format_balance((ctx or {}).get("balances"))
+    hdr = "Qoldiq:\n" + format_balance_lines((ctx or {}).get("balances"))
     return hdr + "\n\nAmalni tanlang:", MENU_KEYBOARD
 
 
@@ -199,8 +205,7 @@ def handle(state, text, ctx=None):
     if step == "menu":
         if t in _OP_BTN:
             op = _OP_BTN[t]
-            return (f"{_OPLABEL[op]} — gap bilan yozing:\n{_PH[op]}",
-                    [[BTN_CANCEL]], {"step": "await_text", "op": op}, None)
+            return (f"{_OPLABEL[op]} ✍️", [[BTN_CANCEL]], {"step": "await_text", "op": op}, None)
         if t == BTN_OPENING:
             return ("Ochilish balansini yozing (masalan: «402 mln naqd, 3 mln karta, 400 dollar»):",
                     [[BTN_CANCEL]], {"step": "await_opening"}, None)
