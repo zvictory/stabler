@@ -645,32 +645,57 @@ def handle_update(update: dict) -> None:
 	frappe.set_user(kassir.user)
 	try:
 		old_state = _load_state(chat_id)
-		ctx = build_ctx(kassir, candidate_kassa=(old_state.get("kassa") or text))
-		reply, keyboard, new_state, action = _flow.handle(old_state, text, ctx)
 
-		if (
-			old_state.get("step") == _flow.STEP_BACKDATE
-			and new_state.get("posting_date")
-			and new_state.get("posting_date") != old_state.get("posting_date")
-		):
-			reply = _append_backdate_warning(reply, new_state["posting_date"])
+		if getattr(frappe.conf, "kassa_shadow_mode", False):
+			# SHADOW MODE (mikas): op-first free-text flow → standalone store,
+			# NEVER posts to GL. Config-gated so the GL bot is untouched when off.
+			from . import shadow, shadow_flow
 
-		if action:
-			if action.get("type") == "statement":
-				follow_up = _build_statement_text(kassir, old_state, ctx)
-			else:
+			sdate = frappe.utils.today()
+			ctx = {"balances": shadow.balances(kassir.company, sdate)}
+			reply, keyboard, new_state, action = shadow_flow.handle(old_state, text, ctx)
+			if action and action.get("type") == "record":
 				try:
-					result = execute_action(action, old_state, kassir, ctx)
-					follow_up = _format_result_text(result)
-					follow_up = _append_new_balance(follow_up, kassir.company, _affected_account(action))
-				except Exception as e:  # noqa: BLE001 — surfaced to the kassir, not swallowed
+					shadow.record(
+						company=kassir.company, kassir=kassir.name, op=action["op"],
+						deltas=action["deltas"], counterparty=action.get("counterparty"),
+						purpose=action.get("purpose"), rate=action.get("rate"),
+						raw_text=action.get("raw_text"), parsed=action.get("parsed"), date=sdate,
+					)
+				except Exception as e:  # noqa: BLE001 — surfaced to the kassir
 					frappe.log_error(
-						title="Kassa bot: action failed",
-						message=f"kassir={kassir.name} action_type={action.get('type')} error={e}",
+						title="Kassa shadow: record failed",
+						message=f"kassir={kassir.name} error={e}",
 					)
 					follow_up = f"❌ Xatolik: {e}"
+			_save_state(chat_id, new_state)
+		else:
+			ctx = build_ctx(kassir, candidate_kassa=(old_state.get("kassa") or text))
+			reply, keyboard, new_state, action = _flow.handle(old_state, text, ctx)
 
-		_save_state(chat_id, new_state)
+			if (
+				old_state.get("step") == _flow.STEP_BACKDATE
+				and new_state.get("posting_date")
+				and new_state.get("posting_date") != old_state.get("posting_date")
+			):
+				reply = _append_backdate_warning(reply, new_state["posting_date"])
+
+			if action:
+				if action.get("type") == "statement":
+					follow_up = _build_statement_text(kassir, old_state, ctx)
+				else:
+					try:
+						result = execute_action(action, old_state, kassir, ctx)
+						follow_up = _format_result_text(result)
+						follow_up = _append_new_balance(follow_up, kassir.company, _affected_account(action))
+					except Exception as e:  # noqa: BLE001 — surfaced to the kassir, not swallowed
+						frappe.log_error(
+							title="Kassa bot: action failed",
+							message=f"kassir={kassir.name} action_type={action.get('type')} error={e}",
+						)
+						follow_up = f"❌ Xatolik: {e}"
+
+			_save_state(chat_id, new_state)
 	finally:
 		frappe.set_user(original_user)
 

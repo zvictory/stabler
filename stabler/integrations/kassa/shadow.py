@@ -46,6 +46,11 @@ def set_opening(company, date, kassa, amount) -> None:
     shadow_store.set_opening(_db_path(), company, date, kassa, float(amount))
 
 
+def balances(company, date) -> dict:
+    """{'nakit':..,'pk':..,'usd':..} for the bot header (ctx['balances'])."""
+    return shadow_store.balances(_db_path(), company, date)
+
+
 def view(company, date) -> dict:
     p = _db_path()
     return {
