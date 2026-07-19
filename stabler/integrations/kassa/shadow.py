@@ -51,6 +51,24 @@ def balances(company, date) -> dict:
     return shadow_store.balances(_db_path(), company, date)
 
 
+def last_counterparty(company, date):
+    """Most-recent entry's counterparty today (for 'yana …' reuse). None if none."""
+    for e in shadow_store.list_entries(_db_path(), company, date):
+        if e.get("counterparty"):
+            return e["counterparty"]
+    return None
+
+
+def undo_last(company, date):
+    """Delete the most-recent entry of the day. Returns the deleted entry dict or None."""
+    entries = shadow_store.list_entries(_db_path(), company, date)
+    if not entries:
+        return None
+    e = entries[0]
+    shadow_store.delete_entry(_db_path(), e["id"], company)
+    return e
+
+
 def view(company, date) -> dict:
     p = _db_path()
     return {

@@ -6,11 +6,13 @@ import unittest
 
 from stabler.integrations.kassa import shadow_flow as sf
 from stabler.integrations.kassa.shadow_flow import (
+    BTN_CHIQIM,
     BTN_CONFIRM,
     BTN_KIRIM,
     BTN_KONV,
     BTN_PK,
     BTN_SOM,
+    BTN_UNDO,
     compute_deltas,
     format_balance,
     handle,
@@ -100,6 +102,40 @@ class TestFlowKonv(unittest.TestCase):
         reply, kb, st, act = handle(st, BTN_CONFIRM, CTX)
         self.assertEqual(act["deltas"], [
             {"kassa": "nakit", "delta": -6_450_000.0}, {"kassa": "usd", "delta": 500.0}])
+
+
+class TestQuickPack(unittest.TestCase):
+    def test_preview_in_confirm(self):
+        _, _, st, _ = handle({}, BTN_KIRIM, CTX)
+        reply, kb, st, act = handle(st, "Mijozdan 2 mln naqd", CTX)
+        self.assertEqual(st["step"], "confirm")
+        self.assertIn("Yangi qoldiq", reply)
+
+    def test_negative_warning(self):
+        ctx = {"balances": {"nakit": 100_000, "pk": 0, "usd": 0}}
+        _, _, st, _ = handle({}, BTN_CHIQIM, ctx)
+        reply, kb, st, act = handle(st, "5 mln naqd ijaraga", ctx)
+        self.assertEqual(st["step"], "confirm")
+        self.assertIn("Manfiy", reply)
+
+    def test_yana_reuses_last_cp(self):
+        ctx = {"balances": {}, "last_cp": "Ali"}
+        _, _, st, _ = handle({}, BTN_KIRIM, ctx)
+        reply, kb, st, act = handle(st, "yana 200 ming naqd", ctx)
+        self.assertEqual(st["step"], "confirm")
+        reply, kb, st, act = handle(st, BTN_CONFIRM, ctx)
+        self.assertEqual(act["counterparty"], "Ali")
+
+    def test_last_cp_chip_offered(self):
+        ctx = {"balances": {}, "last_cp": "Ali"}
+        _, _, st, _ = handle({}, BTN_KIRIM, ctx)
+        reply, kb, st, act = handle(st, "200 ming naqd", ctx)
+        self.assertEqual(st["slot"], "kirim_from")
+        self.assertIn("Ali", [b for row in kb for b in row])
+
+    def test_undo_action(self):
+        reply, kb, st, act = handle({"step": "menu"}, BTN_UNDO, CTX)
+        self.assertEqual(act, {"type": "undo_last"})
 
 
 class TestOpening(unittest.TestCase):

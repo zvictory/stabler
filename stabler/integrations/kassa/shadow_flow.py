@@ -28,6 +28,7 @@ BTN_K2K = "\U0001F4B1 Kassalararo"
 BTN_CONFIRM = "✅ Tasdiqlash"
 BTN_CANCEL = "❌ Bekor"
 BTN_OPENING = "⚙️ Ochilish"
+BTN_UNDO = "↩️ Oxirgi amalni bekor"
 BTN_SOM = "\U0001F7E6 Som"
 BTN_PK = "\U0001F7E7 PK"
 BTN_USD = "\U0001F7E9 USD"
@@ -41,7 +42,7 @@ _PH = {
     "konversiya": "Masalan: «500 dollar oldim 12900 kurs»",
     "kassalararo": "Masalan: «2 mln naqddan pk ga»",
 }
-MENU_KEYBOARD = [[BTN_KIRIM, BTN_CHIQIM], [BTN_KONV, BTN_K2K], [BTN_OPENING]]
+MENU_KEYBOARD = [[BTN_KIRIM, BTN_CHIQIM], [BTN_KONV, BTN_K2K], [BTN_OPENING, BTN_UNDO]]
 
 
 # --------------------------------------------------------------------------- #
@@ -203,6 +204,9 @@ def handle(state, text, ctx=None):
         if t == BTN_OPENING:
             return ("Ochilish balansini yozing (masalan: «402 mln naqd, 3 mln karta, 400 dollar»):",
                     [[BTN_CANCEL]], {"step": "await_opening"}, None)
+        if t == BTN_UNDO:
+            reply, kb = _menu(ctx)
+            return reply, kb, {"step": "menu"}, {"type": "undo_last"}
         reply, kb = _menu(ctx)
         return reply, kb, {"step": "menu"}, None
 
@@ -226,6 +230,9 @@ def handle(state, text, ctx=None):
     if step == "await_text":
         op = state.get("op")
         p = parse_message(t, op=op)
+        last_cp = (ctx or {}).get("last_cp")
+        if op == "kirim" and not p.get("counterparty") and last_cp and "yana" in t.lower():
+            p["counterparty"] = last_cp
         return _after_parse(p, ctx)
 
     if step == "await_slot":
@@ -251,11 +258,31 @@ def handle(state, text, ctx=None):
     return reply, kb, {"step": "menu"}, None
 
 
+def _preview(p, ctx):
+    """Append the projected new balance + a negative-balance warning."""
+    bals = dict((ctx or {}).get("balances") or {})
+    deltas = compute_deltas(p)
+    if not deltas:
+        return ""
+    for d in deltas:
+        bals[d["kassa"]] = bals.get(d["kassa"], 0) + d["delta"]
+    out = ["", "Yangi qoldiq: " + format_balance(bals)]
+    neg = [k for k in ("nakit", "pk", "usd") if bals.get(k, 0) < 0]
+    if neg:
+        out.append("⚠️ Manfiy bo'ladi: " + ", ".join(KLABEL[k] for k in neg))
+    return "\n".join(out)
+
+
 def _after_parse(p, ctx):
     slot = _check(p)
     if slot is None:
-        return confirm_text(p), [[BTN_CONFIRM], [BTN_CANCEL]], {"step": "confirm", "p": p}, None
+        return (confirm_text(p) + _preview(p, ctx), [[BTN_CONFIRM], [BTN_CANCEL]],
+                {"step": "confirm", "p": p}, None)
     kb = _slot_keyboard(slot, p)
+    if kb is None and slot == "kirim_from":
+        last_cp = (ctx or {}).get("last_cp")
+        if last_cp:
+            kb = [[last_cp]]
     if kb is not None:
         kb = kb + [[BTN_CANCEL]]
     return _Q[slot], kb, {"step": "await_slot", "op": p.get("op"), "slot": slot, "p": p}, None

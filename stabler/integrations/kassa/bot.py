@@ -671,7 +671,10 @@ def handle_update(update: dict) -> None:
 			from . import shadow, shadow_flow
 
 			sdate = frappe.utils.today()
-			ctx = {"balances": shadow.balances(kassir.company, sdate)}
+			ctx = {
+				"balances": shadow.balances(kassir.company, sdate),
+				"last_cp": shadow.last_counterparty(kassir.company, sdate),
+			}
 			reply, keyboard, new_state, action = shadow_flow.handle(old_state, text, ctx)
 			if action and action.get("type") == "record":
 				try:
@@ -706,6 +709,15 @@ def handle_update(update: dict) -> None:
 						message=f"kassir={kassir.name} error={e}",
 					)
 					follow_up = f"❌ Xatolik: {e}"
+			elif action and action.get("type") == "undo_last":
+				undone = shadow.undo_last(kassir.company, sdate)
+				if not undone:
+					follow_up = "Bekor qilinadigan amal yo'q."
+				else:
+					reply = ("↩️ Bekor qilindi: «" + (undone.get("raw_text") or "") + "»\nQoldiq: "
+					         + shadow_flow.format_balance(shadow.balances(kassir.company, sdate))
+					         + "\n\nAmalni tanlang:")
+					keyboard = shadow_flow.MENU_KEYBOARD
 			_save_state(chat_id, new_state)
 		else:
 			ctx = build_ctx(kassir, candidate_kassa=(old_state.get("kassa") or text))
