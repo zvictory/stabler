@@ -54,44 +54,25 @@
 		}
 
 		.cards {
-			display: grid;
-			grid-template-columns: 1fr 1fr;
-			gap: 10px;
+			display: flex;
+			flex-direction: column;
+			gap: 8px;
 			margin-bottom: 16px;
 		}
 
-		.cards.single {
-			grid-template-columns: 1fr;
-		}
-
 		.card {
-			border-radius: 14px;
-			padding: 14px 16px;
-			min-height: 74px;
 			display: flex;
-			flex-direction: column;
-			justify-content: center;
-			gap: 4px;
-		}
-
-		.card-uzs {
-			background: var(--card-purple-bg);
-			color: var(--card-purple-text);
-		}
-
-		.card-usd {
-			background: var(--card-green-bg);
-			color: var(--card-green-text);
-		}
-
-		.card-other {
-			background: #ffffff;
-			color: var(--tg-text);
-			border: 1px solid var(--border-color);
+			align-items: center;
+			justify-content: space-between;
+			gap: 12px;
+			border-radius: 12px;
+			padding: 12px 15px;
+			cursor: pointer;
 		}
 
 		.card-nakit { background: rgba(59, 130, 246, 0.14); color: #2563eb; }
 		.card-pk { background: rgba(245, 158, 11, 0.16); color: #b45309; }
+		.card-usd { background: rgba(34, 197, 94, 0.16); color: #15803d; }
 
 		.day-pick { margin-bottom: 14px; }
 		.day-pick label { display: block; font-size: 11px; color: var(--tg-hint); margin-bottom: 4px; }
@@ -111,31 +92,34 @@
 		.entry .e-sub { font-size: 11px; color: var(--tg-hint); margin-top: 5px; }
 		.entries-empty { text-align: center; color: var(--tg-hint); font-size: 13px; padding: 18px; }
 
-		.card { cursor: pointer; }
 		.card.selected { outline: 2px solid currentColor; outline-offset: -2px; }
 		.ledger-head { font-size: 14px; font-weight: 600; margin: 0 2px 10px; }
-		.ltable { width: 100%; border-collapse: collapse; font-size: 12.5px; }
-		.ltable th { text-align: right; font-weight: 600; color: var(--tg-hint); font-size: 10.5px; text-transform: uppercase; letter-spacing: 0.03em; padding: 6px; border-bottom: 1px solid var(--border-color); }
+		.ltable { width: 100%; border-collapse: collapse; font-size: 13px; background: #fff; border: 1px solid var(--border-color); border-radius: 12px; overflow: hidden; }
+		.ltable th { text-align: right; font-weight: 600; color: var(--tg-hint); font-size: 10.5px; text-transform: uppercase; letter-spacing: 0.03em; padding: 9px 10px; border-bottom: 1px solid var(--border-color); }
 		.ltable th.l { text-align: left; }
-		.ltable td { padding: 8px 6px; border-bottom: 1px solid var(--border-color); vertical-align: top; }
+		.ltable td { padding: 9px 10px; border-bottom: 1px solid var(--border-color); vertical-align: top; }
+		.ltable tbody tr:last-child td { border-bottom: none; }
+		.ltable tbody tr:nth-child(even) { background: #fafbfc; }
 		.ltable td.num { text-align: right; font-variant-numeric: tabular-nums; white-space: nowrap; }
-		.ltable .deb { color: #22c55e; }
-		.ltable .cre { color: #f87171; }
+		.ltable .pos { color: var(--pos-color); font-weight: 600; }
+		.ltable .neg { color: var(--neg-color); font-weight: 600; }
 		.ltable .run { font-weight: 700; }
-		.ltable .l-raw { color: var(--tg-hint); font-size: 11px; margin-top: 2px; word-break: break-word; }
+		.ltable .l-time { font-weight: 600; }
+		.ltable .l-raw { color: var(--tg-hint); font-size: 11.5px; margin-top: 2px; word-break: break-word; }
 		.ltable .l-open td { color: var(--tg-hint); font-style: italic; }
 
 		.card-label {
-			font-size: 12.5px;
-			opacity: 0.85;
-			font-weight: 500;
+			font-size: 14px;
+			opacity: 0.9;
+			font-weight: 600;
+			white-space: nowrap;
 		}
 
 		.card-balance {
-			font-size: 19px;
+			font-size: 18px;
 			font-weight: 700;
 			font-variant-numeric: tabular-nums;
-			word-break: break-word;
+			white-space: nowrap;
 		}
 
 		.date-range {
@@ -388,10 +372,15 @@
 				return parts[1] ? intPart + "." + parts[1] : intPart;
 			}
 
+			// Smart: decimals only when the amount actually has a fraction.
+			function smart(value) {
+				var abs = Math.abs(Number(value) || 0);
+				return grp(Number.isInteger(abs) ? abs.toFixed(0) : abs.toFixed(2));
+			}
+
 			function formatKas(value, k) {
 				var num = Number(value) || 0;
-				var out = grp(Math.abs(num).toFixed(2));
-				return (num < 0 ? "-" : "") + out + " " + k.suf;
+				return (num < 0 ? "-" : "") + smart(num) + " " + k.suf;
 			}
 
 			function renderCards(balances) {
@@ -419,8 +408,7 @@
 				var k = KAS.filter(function (x) { return x.id === SELECTED; })[0] || KAS[0];
 				document.getElementById("ledgerHead").textContent = k.icon + " " + k.label + " — hisob";
 				if (!LAST) { rowsEl.innerHTML = ""; return; }
-				var dec = 2;
-				function n(v) { return grp(Math.abs(Number(v) || 0).toFixed(dec)); }
+				function runTxt(v) { return (Number(v) < 0 ? "−" : "") + smart(v); }
 				var opening = Number((LAST.openings || {})[k.id]) || 0;
 				var affecting = (LAST.entries || []).filter(function (e) {
 					return (e.legs || []).some(function (l) { return l.kassa === k.id; });
@@ -435,7 +423,7 @@
 				});
 				var head =
 					'<table class="ltable"><thead><tr>' +
-					'<th class="l">Sana / izoh</th><th>Debet</th><th>Kredit</th><th>Qoldiq</th>' +
+					'<th class="l">Sana / izoh</th><th>Summa</th><th>Qoldiq</th>' +
 					"</tr></thead><tbody>";
 				var body = rows
 					.slice()
@@ -448,21 +436,22 @@
 						if (e.counterparty) sub.push(e.counterparty);
 						if (e.purpose) sub.push(e.purpose);
 						var desc = (OPLABEL[e.op] || e.op || "") + (sub.length ? " · " + sub.join(" · ") : "");
+						var amtCls = r.delta < 0 ? "neg" : "pos";
+						var amt = (r.delta < 0 ? "−" : "+") + smart(r.delta);
 						return (
 							"<tr>" +
-							"<td>" + escapeHtml(hm) +
+							'<td><span class="l-time">' + escapeHtml(hm) + "</span>" +
 							(e.raw_text ? '<div class="l-raw">«' + escapeHtml(e.raw_text) + "»</div>" : "") +
 							'<div class="l-raw">' + escapeHtml(desc) + "</div></td>" +
-							'<td class="num deb">' + (r.delta > 0 ? "+" + n(r.delta) : "") + "</td>" +
-							'<td class="num cre">' + (r.delta < 0 ? "−" + n(r.delta) : "") + "</td>" +
-							'<td class="num run">' + n(r.run) + " " + k.suf + "</td>" +
+							'<td class="num ' + amtCls + '">' + amt + "</td>" +
+							'<td class="num run">' + runTxt(r.run) + "</td>" +
 							"</tr>"
 						);
 					})
 					.join("");
 				var openRow =
-					'<tr class="l-open"><td>Ochilish balansi</td><td class="num"></td><td class="num"></td>' +
-					'<td class="num run">' + n(opening) + " " + k.suf + "</td></tr>";
+					'<tr class="l-open"><td>Ochilish balansi</td><td class="num"></td>' +
+					'<td class="num run">' + runTxt(opening) + "</td></tr>";
 				rowsEl.innerHTML = head + body + openRow + "</tbody></table>";
 			}
 
