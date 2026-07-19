@@ -15,7 +15,7 @@ bot writes to the standalone shadow store (shadow.record). NEVER touches GL.
 
 from __future__ import annotations
 
-from ._smart import extract_amount, parse_message
+from ._smart import extract_amount, parse_legs, parse_message
 
 # --------------------------------------------------------------------------- #
 KLABEL = {"nakit": "\U0001F7E6 Nakit", "pk": "\U0001F7E7 PK", "usd": "\U0001F7E9 USD"}
@@ -27,6 +27,7 @@ BTN_KONV = "\U0001F504 Konvertatsiya"
 BTN_K2K = "\U0001F4B1 Kassalararo"
 BTN_CONFIRM = "✅ Tasdiqlash"
 BTN_CANCEL = "❌ Bekor"
+BTN_OPENING = "⚙️ Ochilish"
 BTN_SOM = "\U0001F7E6 Som"
 BTN_PK = "\U0001F7E7 PK"
 BTN_USD = "\U0001F7E9 USD"
@@ -40,7 +41,7 @@ _PH = {
     "konversiya": "Masalan: «500 dollar oldim 12900 kurs»",
     "kassalararo": "Masalan: «2 mln naqddan pk ga»",
 }
-MENU_KEYBOARD = [[BTN_KIRIM, BTN_CHIQIM], [BTN_KONV, BTN_K2K]]
+MENU_KEYBOARD = [[BTN_KIRIM, BTN_CHIQIM], [BTN_KONV, BTN_K2K], [BTN_OPENING]]
 
 
 # --------------------------------------------------------------------------- #
@@ -170,6 +171,16 @@ def _slot_keyboard(slot, p):
 # --------------------------------------------------------------------------- #
 # State machine
 # --------------------------------------------------------------------------- #
+def _opening_confirm_text(openings):
+    kmap = {o["kassa"]: o["amount"] for o in openings}
+    lines = ["Ochilish balansi:"]
+    for k in ("nakit", "pk", "usd"):
+        if k in kmap:
+            lines.append(f"  {KLABEL[k]}: {fmt_amount(kmap[k], k)} {KSUF[k]}")
+    lines += ["", "Tasdiqlaysizmi?"]
+    return "\n".join(lines)
+
+
 def _menu(ctx):
     hdr = "Qoldiq: " + format_balance((ctx or {}).get("balances"))
     return hdr + "\n\nAmalni tanlang:", MENU_KEYBOARD
@@ -189,6 +200,26 @@ def handle(state, text, ctx=None):
             op = _OP_BTN[t]
             return (f"{_OPLABEL[op]} — gap bilan yozing:\n{_PH[op]}",
                     [[BTN_CANCEL]], {"step": "await_text", "op": op}, None)
+        if t == BTN_OPENING:
+            return ("Ochilish balansini yozing (masalan: «402 mln naqd, 3 mln karta, 400 dollar»):",
+                    [[BTN_CANCEL]], {"step": "await_opening"}, None)
+        reply, kb = _menu(ctx)
+        return reply, kb, {"step": "menu"}, None
+
+    if step == "await_opening":
+        legs = parse_legs(t)
+        if not legs:
+            return ("Tushunmadim. Masalan: «402 mln naqd, 3 mln karta, 400 dollar»",
+                    [[BTN_CANCEL]], {"step": "await_opening"}, None)
+        openings = [{"kassa": l.get("kassa") or "nakit", "amount": float(l["amount"])} for l in legs]
+        return (_opening_confirm_text(openings), [[BTN_CONFIRM], [BTN_CANCEL]],
+                {"step": "confirm_opening", "openings": openings}, None)
+
+    if step == "confirm_opening":
+        if t == BTN_CONFIRM:
+            action = {"type": "set_opening", "openings": state.get("openings") or []}
+            reply, kb = _menu(ctx)
+            return reply, kb, {"step": "menu"}, action
         reply, kb = _menu(ctx)
         return reply, kb, {"step": "menu"}, None
 
@@ -212,7 +243,7 @@ def handle(state, text, ctx=None):
                 "parsed": p, "deltas": compute_deltas(p),
             }
             reply, kb = _menu(ctx)
-            return "✅ Saqlandi.\n" + reply, kb, {"step": "menu"}, action
+            return reply, kb, {"step": "menu"}, action
         reply, kb = _menu(ctx)
         return reply, kb, {"step": "menu"}, None
 

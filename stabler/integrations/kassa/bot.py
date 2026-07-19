@@ -662,12 +662,35 @@ def handle_update(update: dict) -> None:
 						purpose=action.get("purpose"), rate=action.get("rate"),
 						raw_text=action.get("raw_text"), parsed=action.get("parsed"), date=sdate,
 					)
+					reply = ("✅ Saqlandi.\nQoldiq: "
+					         + shadow_flow.format_balance(shadow.balances(kassir.company, sdate))
+					         + "\n\nAmalni tanlang:")
+					keyboard = shadow_flow.MENU_KEYBOARD
 				except Exception as e:  # noqa: BLE001 — surfaced to the kassir
 					frappe.log_error(
 						title="Kassa shadow: record failed",
 						message=f"kassir={kassir.name} error={e}",
 					)
 					follow_up = f"❌ Xatolik: {e}"
+			elif action and action.get("type") == "set_opening":
+				# Opening balance is admin-only (System Manager / Stabler Admin).
+				roles = frappe.get_roles(kassir.user)
+				if not any(r in ("System Manager", "Stabler Admin") for r in roles):
+					follow_up = "⚠️ Faqat admin ochilish balansini kirita oladi."
+				else:
+					try:
+						for o in action.get("openings") or []:
+							shadow.set_opening(kassir.company, sdate, o["kassa"], o["amount"])
+						reply = ("✅ Ochilish balansi saqlandi.\nQoldiq: "
+						         + shadow_flow.format_balance(shadow.balances(kassir.company, sdate))
+						         + "\n\nAmalni tanlang:")
+						keyboard = shadow_flow.MENU_KEYBOARD
+					except Exception as e:  # noqa: BLE001
+						frappe.log_error(
+							title="Kassa shadow: opening failed",
+							message=f"kassir={kassir.name} error={e}",
+						)
+						follow_up = f"❌ Xatolik: {e}"
 			_save_state(chat_id, new_state)
 		else:
 			ctx = build_ctx(kassir, candidate_kassa=(old_state.get("kassa") or text))

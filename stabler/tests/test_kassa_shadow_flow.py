@@ -102,5 +102,22 @@ class TestFlowKonv(unittest.TestCase):
             {"kassa": "nakit", "delta": -6_450_000.0}, {"kassa": "usd", "delta": 500.0}])
 
 
+class TestOpening(unittest.TestCase):
+    def test_opening_flow(self):
+        from stabler.integrations.kassa.shadow_flow import BTN_OPENING
+        _, _, st, _ = handle({"step": "menu"}, BTN_OPENING, CTX)
+        self.assertEqual(st["step"], "await_opening")
+        reply, kb, st, act = handle(st, "402 mln naqd, 3 mln karta, 400 dollar", CTX)
+        self.assertEqual(st["step"], "confirm_opening")
+        self.assertIsNone(act)
+        reply, kb, st, act = handle(st, BTN_CONFIRM, CTX)
+        self.assertEqual(act["type"], "set_opening")
+        self.assertEqual(act["openings"], [
+            {"kassa": "nakit", "amount": 402_000_000.0},
+            {"kassa": "pk", "amount": 3_000_000.0},
+            {"kassa": "usd", "amount": 400.0}])
+        self.assertEqual(st["step"], "menu")
+
+
 if __name__ == "__main__":
     unittest.main()
