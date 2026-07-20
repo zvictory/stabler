@@ -258,7 +258,12 @@ const canSupersede = (row) => ["DRAFT", "CONFIRMED"].includes(row.status);
 				<tbody>
 					<SkeletonRows v-if="loading" :cols="12" :rows="6" />
 					<tr v-for="r in rows" :key="r.name" style="cursor: pointer" @click="router.push({ name: 'imports-proforma', params: { name: r.name } })">
-						<td class="font-monospace text-primary">{{ r.name }}</td>
+						<td class="font-monospace text-primary">
+							{{ r.name }}
+							<div v-if="r.supplier_pi_ref && r.supplier_pi_ref !== r.name" class="small text-secondary text-nowrap">
+								{{ t("Orig. ref") }}: {{ r.supplier_pi_ref }}
+							</div>
+						</td>
 						<td>{{ r.supplier_name || r.supplier }}</td>
 						<td class="text-nowrap">{{ r.pi_date ? formatDate(r.pi_date) : "—" }}</td>
 						<td class="text-end font-monospace">{{ fm(r.agreed_total, r.currency) }}</td>
