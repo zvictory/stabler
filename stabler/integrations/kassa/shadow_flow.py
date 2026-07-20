@@ -15,7 +15,7 @@ bot writes to the standalone shadow store (shadow.record). NEVER touches GL.
 
 from __future__ import annotations
 
-from ._smart import extract_amount, parse_legs, parse_message
+from ._smart import extract_amount, parse_konv_amount_rate, parse_legs, parse_message
 
 # --------------------------------------------------------------------------- #
 KLABEL = {"nakit": "\U0001F7E6 Naqd", "pk": "\U0001F7E7 Karta", "usd": "\U0001F7E9 Dollar"}
@@ -43,6 +43,26 @@ _PH = {
     "kassalararo": "Masalan: «2 mln naqddan pk ga»",
 }
 MENU_KEYBOARD = [[BTN_KIRIM, BTN_CHIQIM], [BTN_KONV, BTN_K2K], [BTN_OPENING, BTN_UNDO]]
+
+# Conversion is button-driven: the kassir picks a direction first, then just
+# types the USD amount + rate ("100 12600"). Only currency-changing directions
+# (USD in/out via Naqd or Karta); same-currency moves are Kassalararo.
+BTN_KONV_NAQD_USD = "\U0001F7E6 Naqd → \U0001F7E9 Dollar"
+BTN_KONV_USD_NAQD = "\U0001F7E9 Dollar → \U0001F7E6 Naqd"
+BTN_KONV_KARTA_USD = "\U0001F7E7 Karta → \U0001F7E9 Dollar"
+BTN_KONV_USD_KARTA = "\U0001F7E9 Dollar → \U0001F7E7 Karta"
+KONV_DIR_KEYBOARD = [
+    [BTN_KONV_NAQD_USD, BTN_KONV_USD_NAQD],
+    [BTN_KONV_KARTA_USD, BTN_KONV_USD_KARTA],
+    [BTN_CANCEL],
+]
+_KONV_DIR = {
+    BTN_KONV_NAQD_USD: {"dir": "buy", "source": "nakit"},
+    BTN_KONV_KARTA_USD: {"dir": "buy", "source": "pk"},
+    BTN_KONV_USD_NAQD: {"dir": "sell", "target": "nakit"},
+    BTN_KONV_USD_KARTA: {"dir": "sell", "target": "pk"},
+}
+_KONV_ASK = "Qancha USD va qaysi kursda?\nMasalan: «100 12600» yoki «100$ 12600»"
 
 
 # --------------------------------------------------------------------------- #
@@ -106,9 +126,9 @@ def confirm_text(p):
             lines.append("Izoh: " + p["purpose"])
     elif op == "konversiya":
         if p.get("dir", "buy") == "buy":
-            lines.append(f"{KLABEL[p['source']]} → \U0001F7E9 USD")
+            lines.append(f"{KLABEL[p['source']]} → {KLABEL['usd']}")
         else:
-            lines.append(f"\U0001F7E9 USD → {KLABEL[p['target']]}")
+            lines.append(f"{KLABEL['usd']} → {KLABEL[p['target']]}")
         lines.append(f"{fmt_amount(p['amount'])} $ · kurs {fmt_amount(p['rate'])}")
     elif op == "kassalararo":
         lines.append(f"{KLABEL[p['from']]} → {KLABEL[p['to']]}")
@@ -202,6 +222,10 @@ def handle(state, text, ctx=None):
         return reply, kb, {"step": "menu"}, None
 
     if step == "menu":
+        if t == BTN_KONV:
+            # Conversion: pick a direction first (buttons), then amount + rate.
+            return ("Konvertatsiya — yo'nalishni tanlang:", KONV_DIR_KEYBOARD,
+                    {"step": "await_konv_dir"}, None)
         if t in _OP_BTN:
             op = _OP_BTN[t]
             return (f"{_OPLABEL[op]} ✍️", [[BTN_CANCEL]], {"step": "await_text", "op": op}, None)
@@ -230,6 +254,23 @@ def handle(state, text, ctx=None):
             return reply, kb, {"step": "menu"}, action
         reply, kb = _menu(ctx)
         return reply, kb, {"step": "menu"}, None
+
+    if step == "await_konv_dir":
+        d = _KONV_DIR.get(t)
+        if not d:
+            return ("Yo'nalishni tanlang:", KONV_DIR_KEYBOARD, {"step": "await_konv_dir"}, None)
+        p = {"op": "konversiya", "raw_text": "", **d}
+        return (_KONV_ASK, [[BTN_CANCEL]], {"step": "await_konv_amt", "op": "konversiya", "p": p}, None)
+
+    if step == "await_konv_amt":
+        p = dict(state.get("p") or {})
+        amount, rate = parse_konv_amount_rate(t)
+        if amount is not None:
+            p["amount"] = amount
+        if rate is not None:
+            p["rate"] = rate
+        p["raw_text"] = t
+        return _after_parse(p, ctx)
 
     if step == "await_text":
         op = state.get("op")

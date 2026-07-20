@@ -148,6 +148,32 @@ def extract_rate(text: str) -> float | None:
     return v if v > 0 else None
 
 
+def parse_konv_amount_rate(text: str):
+    """For the button-driven conversion flow: the kassir picked a direction, then
+    types '100 12600' / '100$ 12600' / '500 11990' — first number is the amount,
+    second is the exchange rate. Multipliers (mln/ming) apply to the amount;
+    currency symbols/letters are ignored. Returns (amount, rate); either may be
+    None when the message doesn't carry it yet."""
+    t = _strip_currency(_norm(text or ""))
+    vals: list[float] = []
+    for num, mult in _DIGIT_AMT_RE.findall(t):
+        if not re.search(r"\d", num or ""):
+            continue
+        raw = re.sub(r"\s+", "", num).replace(",", ".")
+        if "," in num and "." in num:
+            continue
+        try:
+            f = float(raw)
+        except ValueError:
+            continue
+        if f <= 0:
+            continue
+        vals.append(f * _MULT.get((mult or "").lower(), 1))
+    amount = vals[0] if vals else None
+    rate = vals[1] if len(vals) >= 2 else None
+    return amount, rate
+
+
 _CP_STOP = {"uchun", "ga", "dan", "kurs", "som", "dollar", "euro", "pul", "berdim", "oldim", "aldim"}
 
 

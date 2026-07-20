@@ -10,6 +10,8 @@ from stabler.integrations.kassa.shadow_flow import (
     BTN_CONFIRM,
     BTN_KIRIM,
     BTN_KONV,
+    BTN_KONV_NAQD_USD,
+    BTN_KONV_USD_KARTA,
     BTN_PK,
     BTN_SOM,
     BTN_UNDO,
@@ -93,17 +95,29 @@ class TestFlowKirim(unittest.TestCase):
 
 
 class TestFlowKonv(unittest.TestCase):
-    def test_buy_usd_asks_source(self):
-        _, _, st, _ = handle({}, BTN_KONV, CTX)
-        reply, kb, st, act = handle(st, "500 dollar oldim 12900 kurs", CTX)
-        self.assertEqual(st["step"], "await_slot")
-        self.assertEqual(st["slot"], "konv_source")
-        # pick Som -> ready (rate already parsed) -> confirm
-        reply, kb, st, act = handle(st, BTN_SOM, CTX)
+    def test_buy_usd_button_dir_then_amount_rate(self):
+        # Konvertatsiya -> direction buttons
+        reply, kb, st, act = handle({}, BTN_KONV, CTX)
+        self.assertEqual(st["step"], "await_konv_dir")
+        self.assertIn(BTN_KONV_NAQD_USD, [b for row in kb for b in row])
+        # pick Naqd -> Dollar (buy from cash), then just amount + rate
+        reply, kb, st, act = handle(st, BTN_KONV_NAQD_USD, CTX)
+        self.assertEqual(st["step"], "await_konv_amt")
+        reply, kb, st, act = handle(st, "500 12900", CTX)
         self.assertEqual(st["step"], "confirm")
         reply, kb, st, act = handle(st, BTN_CONFIRM, CTX)
         self.assertEqual(act["deltas"], [
             {"kassa": "nakit", "delta": -6_450_000.0}, {"kassa": "usd", "delta": 500.0}])
+
+    def test_sell_usd_to_card_with_dollar_sign(self):
+        _, _, st, _ = handle({}, BTN_KONV, CTX)
+        _, _, st, _ = handle(st, BTN_KONV_USD_KARTA, CTX)  # Dollar -> Karta (sell)
+        self.assertEqual(st["step"], "await_konv_amt")
+        reply, kb, st, act = handle(st, "100$ 12600", CTX)
+        self.assertEqual(st["step"], "confirm")
+        reply, kb, st, act = handle(st, BTN_CONFIRM, CTX)
+        self.assertEqual(act["deltas"], [
+            {"kassa": "usd", "delta": -100.0}, {"kassa": "pk", "delta": 1_260_000.0}])
 
 
 class TestQuickPack(unittest.TestCase):
