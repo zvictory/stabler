@@ -332,6 +332,7 @@ async function start(row) {
 		item_code: it.item_code,
 		item_name: it.item_name || it.item_code,
 		qty: it.required_qty,
+		planned: Number(it.required_qty) || 0, // BOM plan — for the variance chip
 		uom: it.stock_uom || "",
 		isNew: false,
 	}));
@@ -360,10 +361,30 @@ function addTransferItem() {
 		item_code: "",
 		item_name: "",
 		qty: 1,
+		planned: null, // manually added — not part of the BOM plan
 		uom: "",
 		isNew: true,
 	});
 }
+
+// BOM-fidelity helpers: compare the entered qty against the BOM plan, and flag
+// lines the source warehouse can't cover.
+function planVariance(it) {
+	if (it.planned == null) return { type: "extra" };
+	const delta = (Number(it.qty) || 0) - (Number(it.planned) || 0);
+	if (Math.abs(delta) < 1e-9) return { type: "match" };
+	return { type: delta > 0 ? "over" : "under", delta: Math.round(delta * 1000) / 1000 };
+}
+
+function isShort(it) {
+	if (!it.item_code) return false;
+	return (Number(sourceStockLevels.value[it.item_code]) || 0) < (Number(it.qty) || 0);
+}
+
+const anyVariance = computed(() =>
+	transferItems.value.some(it => ["over", "under", "extra"].includes(planVariance(it).type)),
+);
+const anyShortage = computed(() => transferItems.value.some(it => isShort(it)));
 
 function removeTransferItem(idx) {
 	transferItems.value.splice(idx, 1);
@@ -909,6 +930,12 @@ const sortedRows = computed(() => {
 														<div class="text-secondary small mt-0.5">
 															{{ t("Source Stock") }}: <span class="fw-semibold" :class="(sourceStockLevels[it.item_code] || 0) >= it.qty ? 'text-success' : 'text-danger'">{{ sourceStockLevels[it.item_code] || 0 }}</span>
 														</div>
+														<div class="small mt-0.5 d-flex align-items-center gap-1">
+															<span class="text-secondary">{{ t("BOM plan") }}: <span class="font-monospace">{{ it.planned }} {{ it.uom }}</span></span>
+															<span v-if="planVariance(it).type === 'over'" class="badge bg-warning-lt text-warning font-monospace">+{{ planVariance(it).delta }}</span>
+															<span v-else-if="planVariance(it).type === 'under'" class="badge bg-warning-lt text-warning font-monospace">{{ planVariance(it).delta }}</span>
+															<span v-else class="badge bg-success-lt text-success"><i class="ti ti-check"></i></span>
+														</div>
 													</div>
 													<div v-else style="min-width: 250px;">
 														<Typeahead
@@ -925,8 +952,9 @@ const sortedRows = computed(() => {
 																<div v-if="item.item_name" class="text-secondary" style="font-size:0.75rem">{{ item.item_name }}</div>
 															</template>
 														</Typeahead>
-														<div v-if="it.item_code" class="text-secondary small mt-0.5">
-															{{ t("Source Stock") }}: <span class="fw-semibold" :class="(sourceStockLevels[it.item_code] || 0) >= it.qty ? 'text-success' : 'text-danger'">{{ sourceStockLevels[it.item_code] || 0 }}</span>
+														<div v-if="it.item_code" class="text-secondary small mt-0.5 d-flex align-items-center gap-1">
+															<span>{{ t("Source Stock") }}: <span class="fw-semibold" :class="(sourceStockLevels[it.item_code] || 0) >= it.qty ? 'text-success' : 'text-danger'">{{ sourceStockLevels[it.item_code] || 0 }}</span></span>
+															<span class="badge bg-blue-lt text-blue">{{ t("Extra") }}</span>
 														</div>
 													</div>
 												</td>
@@ -955,6 +983,12 @@ const sortedRows = computed(() => {
 											</tr>
 										</tbody>
 									</table>
+								</div>
+								<div v-if="anyShortage" class="text-danger small mt-2">
+									<i class="ti ti-alert-triangle me-1"></i>{{ t("Not enough stock for some materials.") }}
+								</div>
+								<div v-else-if="anyVariance" class="text-warning small mt-2">
+									<i class="ti ti-info-circle me-1"></i>{{ t("Some quantities differ from the BOM plan.") }}
 								</div>
 							</div>
 						</div>

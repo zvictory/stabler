@@ -4462,3 +4462,7 @@ e.g. FIR/25-26/29639-29647,örn. FIR/25-26/29639-29647
 BOM materials,BOM malzemeleri
 Material,Malzeme
 This BOM has no materials.,Bu BOM'da malzeme yok.
+BOM plan,BOM planı
+Extra,Ek
+Not enough stock for some materials.,Bazı malzemeler için stok yetersiz.
+Some quantities differ from the BOM plan.,Bazı miktarlar BOM planından farklı.

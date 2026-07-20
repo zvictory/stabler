@@ -4477,3 +4477,7 @@ e.g. FIR/25-26/29639-29647,masalan FIR/25-26/29639-29647
 BOM materials,BOM materiallari
 Material,Material
 This BOM has no materials.,Bu BOM da materiallar yo'q.
+BOM plan,BOM rejasi
+Extra,Qoʻshimcha
+Not enough stock for some materials.,Baʼzi materiallar zaxirasi yetarli emas.
+Some quantities differ from the BOM plan.,Baʼzi miqdorlar BOM rejasidan farq qiladi.

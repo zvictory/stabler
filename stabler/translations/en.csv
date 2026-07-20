@@ -4473,3 +4473,7 @@ e.g. FIR/25-26/29639-29647,e.g. FIR/25-26/29639-29647
 BOM materials,BOM materials
 Material,Material
 This BOM has no materials.,This BOM has no materials.
+BOM plan,BOM plan
+Extra,Extra
+Not enough stock for some materials.,Not enough stock for some materials.
+Some quantities differ from the BOM plan.,Some quantities differ from the BOM plan.
