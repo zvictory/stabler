@@ -4481,3 +4481,8 @@ BOM plan,BOM rejasi
 Extra,Qoʻshimcha
 Not enough stock for some materials.,Baʼzi materiallar zaxirasi yetarli emas.
 Some quantities differ from the BOM plan.,Baʼzi miqdorlar BOM rejasidan farq qiladi.
+Batch / lot,Partiya / lot
+Batch manufacture date,Partiya ishlab chiqarilgan sana
+Batch expiry,Partiya yaroqlilik muddati
+Consumed materials,Sarflangan materiallar
+Batch number is required.,Partiya raqami talab qilinadi.

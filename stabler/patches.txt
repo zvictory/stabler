@@ -55,3 +55,4 @@ stabler.patches.v49_line_item_note
 stabler.patches.v50_ci_cash_bank_earmark
 stabler.patches.v51_ci_proforma_link
 stabler.patches.v52_je_tender_deal
+stabler.patches.v53_add_work_order_batch

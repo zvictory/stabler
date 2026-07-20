@@ -8,6 +8,7 @@ import { useConfirm } from "../../composables/useConfirm.js";
 import { formatDate } from "../../composables/date.js";
 import EmptyState from "../../components/EmptyState.vue";
 import Typeahead from "../../components/Typeahead.vue";
+import DateInput from "../../components/DateInput.vue";
 
 const session = useSession();
 const { activeCompany } = storeToRefs(session);
@@ -440,13 +441,27 @@ async function confirmStart() {
 const finishTarget = ref(null); // the WO row currently finishing
 const producedQty = ref(0);
 const scrapQty = ref(0);
+const batchNo = ref("");
+const batchMfg = ref("");
+const batchExpiry = ref("");
 
-function openFinish(row) {
+async function openFinish(row) {
 	finishTarget.value = row;
 	producedQty.value = remainingQty(row);
 	scrapQty.value = 0;
+	batchNo.value = "";
+	batchMfg.value = "";
+	batchExpiry.value = "";
 	actionError.value = "";
 	resetIdleTimer();
+	try {
+		const s = await call("stabler.api.manufacturing.suggest_wo_batch", { work_order: row.name });
+		batchNo.value = s?.batch_no || "";
+		batchMfg.value = s?.mfg_date || "";
+		batchExpiry.value = s?.expiry_date || "";
+	} catch (err) {
+		console.error("Failed to suggest batch", err);
+	}
 }
 function cancelFinish() {
 	finishTarget.value = null;
@@ -469,6 +484,9 @@ async function confirmFinish() {
 			purpose: "Manufacture",
 			qty: producedQty.value,
 			scrap_qty: scrapQty.value > 0 ? scrapQty.value : undefined,
+			batch_no: batchNo.value || undefined,
+			mfg_date: batchNo.value && batchMfg.value ? batchMfg.value : undefined,
+			expiry_date: batchNo.value && batchExpiry.value ? batchExpiry.value : undefined,
 		});
 		await load();
 	} catch (err) {
@@ -1064,6 +1082,23 @@ const sortedRows = computed(() => {
 									style="height: 50px;"
 									placeholder="0"
 								/>
+							</div>
+
+							<div class="border-top pt-3 mt-3">
+								<label class="form-label fw-bold text-dark mb-2">
+									<i class="ti ti-versions me-1"></i>{{ t("Batch / lot") }}
+								</label>
+								<input v-model="batchNo" type="text" class="form-control font-monospace mb-2" :placeholder="t('Batch / lot')" />
+								<div class="row g-2">
+									<div class="col-6">
+										<label class="form-label small text-secondary">{{ t("Batch manufacture date") }}</label>
+										<DateInput v-model="batchMfg" />
+									</div>
+									<div class="col-6">
+										<label class="form-label small text-secondary">{{ t("Batch expiry") }}</label>
+										<DateInput v-model="batchExpiry" />
+									</div>
+								</div>
 							</div>
 						</div>
 						<div class="modal-footer bg-light p-3">

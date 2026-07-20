@@ -4477,3 +4477,8 @@ BOM plan,BOM plan
 Extra,Extra
 Not enough stock for some materials.,Not enough stock for some materials.
 Some quantities differ from the BOM plan.,Some quantities differ from the BOM plan.
+Batch / lot,Batch / lot
+Batch manufacture date,Batch manufacture date
+Batch expiry,Batch expiry
+Consumed materials,Consumed materials
+Batch number is required.,Batch number is required.

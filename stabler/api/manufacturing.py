@@ -330,6 +330,9 @@ def work_order_detail(name: str):
 		"source_warehouse": doc.source_warehouse,
 		"company": doc.company,
 		"operator": doc.get("operator") or None,
+		"batch_no": doc.get("custom_batch_no") or None,
+		"batch_mfg_date": str(doc.custom_batch_mfg_date) if doc.get("custom_batch_mfg_date") else None,
+		"batch_expiry": str(doc.custom_batch_expiry) if doc.get("custom_batch_expiry") else None,
 	}
 	# bom_no reveals BOM structure — managers only.
 	if is_manager:
@@ -463,11 +466,16 @@ def make_work_order_stock_entry(
 	from_warehouse: str | None = None,
 	to_warehouse: str | None = None,
 	items: str | None = None,
+	batch_no: str | None = None,
+	mfg_date: str | None = None,
+	expiry_date: str | None = None,
 ):
 	"""Generate and submit a Stock Entry for material transfer or manufacture.
 
 	`scrap_qty` is accepted for the Manufacture purpose and recorded as
-	process loss (operator-reported rejects)."""
+	process loss (operator-reported rejects). On Manufacture, an optional
+	`batch_no` (+ mfg/expiry) is stamped on the Work Order for lot traceability
+	(Faz 4a) — informational only, does not touch the stock batch engine."""
 	import json
 	from erpnext.manufacturing.doctype.work_order.work_order import make_stock_entry
 	from erpnext.stock.get_item_details import get_conversion_factor
@@ -528,7 +536,10 @@ def make_work_order_stock_entry(
 	if purpose == "Material Transfer for Manufacture":
 		_log_wo_event(work_order, "Work Order started (materials transferred)")
 	elif purpose == "Manufacture":
-		_log_wo_event(work_order, f"Work Order finished. Produced: {flt(qty)}, Rejects: {flt(scrap_qty)}")
+		if (batch_no or "").strip():
+			_stamp_wo_batch(work_order, batch_no, mfg_date, expiry_date)
+		batch_note = f", Batch: {batch_no}" if (batch_no or "").strip() else ""
+		_log_wo_event(work_order, f"Work Order finished. Produced: {flt(qty)}, Rejects: {flt(scrap_qty)}{batch_note}")
 
 	return {"name": se.name, "purpose": purpose, "docstatus": se.docstatus}
 
@@ -544,6 +555,114 @@ def assign_work_order_operator(name: str, operator: str):
 		frappe.throw(_("Unknown user: {0}").format(operator))
 	frappe.db.set_value("Work Order", name, "operator", operator or None)
 	return {"name": name, "operator": operator or None}
+
+
+# ----- Batch / lot traceability (Faz 4a) -----------------------------------
+#
+# One Work Order == one production batch. We stamp the lot number + mfg/expiry
+# on the WO (custom fields, patch v53) and derive genealogy from the WO's own
+# submitted Stock Entries — no change to ERPNext's Batch/Bundle stock engine, so
+# it's safe for every tenant and dormant until a WO is given a batch number.
+
+
+def _suggest_batch_no(doc) -> str:
+	"""'<ITEM>-<YYYYMMDD>' with a -N suffix when the day already has batches."""
+	from frappe.utils import nowdate
+
+	base = f"{doc.production_item}-{getdate(doc.planned_start_date or nowdate()).strftime('%Y%m%d')}"
+	existing = frappe.db.count("Work Order", {"custom_batch_no": ["like", f"{base}%"]})
+	return base if not existing else f"{base}-{existing + 1}"
+
+
+@frappe.whitelist()
+def suggest_wo_batch(work_order: str):
+	"""A suggested batch id + default mfg/expiry for the finish dialog.
+
+	Expiry defaults to mfg + Item.shelf_life_in_days when the item defines one."""
+	_assert_can_read("Work Order", work_order)
+	_require_mfg()
+	if not frappe.db.exists("Work Order", work_order):
+		frappe.throw(f"Unknown Work Order: {work_order}")
+	doc = frappe.get_doc("Work Order", work_order)
+	if not _is_mfg_manager():
+		_require_own_work_order(work_order)
+	mfg = today()
+	shelf = frappe.db.get_value("Item", doc.production_item, "shelf_life_in_days")
+	expiry = frappe.utils.add_days(mfg, int(shelf)) if shelf and int(shelf) > 0 else None
+	return {
+		"batch_no": doc.get("custom_batch_no") or _suggest_batch_no(doc),
+		"mfg_date": doc.get("custom_batch_mfg_date") and str(doc.custom_batch_mfg_date) or mfg,
+		"expiry_date": (doc.get("custom_batch_expiry") and str(doc.custom_batch_expiry)) or expiry,
+	}
+
+
+def _stamp_wo_batch(work_order, batch_no, mfg_date=None, expiry_date=None) -> None:
+	"""Set the batch custom fields on a (possibly submitted) Work Order."""
+	frappe.db.set_value(
+		"Work Order",
+		work_order,
+		{
+			"custom_batch_no": (batch_no or "").strip() or None,
+			"custom_batch_mfg_date": mfg_date or None,
+			"custom_batch_expiry": expiry_date or None,
+		},
+	)
+
+
+@frappe.whitelist()
+def set_wo_batch(work_order: str, batch_no: str, mfg_date: str | None = None, expiry_date: str | None = None):
+	"""Record the production batch/lot for a Work Order. Operator (own WO) or manager."""
+	_assert_can_write("Work Order", work_order, "write")
+	_require_mfg()
+	if not frappe.db.exists("Work Order", work_order):
+		frappe.throw(f"Unknown Work Order: {work_order}")
+	if not _is_mfg_manager():
+		_require_own_work_order(work_order)
+	if not (batch_no or "").strip():
+		frappe.throw(_("Batch number is required."))
+	_stamp_wo_batch(work_order, batch_no, mfg_date, expiry_date)
+	return {"name": work_order, "batch_no": batch_no.strip()}
+
+
+@frappe.whitelist()
+def wo_genealogy(work_order: str):
+	"""Backward traceability for a Work Order's batch: the raw materials
+	(item, qty, source warehouse, voucher) that were transferred in, plus the
+	produced batch header. Read from the WO's own submitted Stock Entries."""
+	_assert_can_read("Work Order", work_order)
+	_require_mfg()
+	if not frappe.db.exists("Work Order", work_order):
+		frappe.throw(f"Unknown Work Order: {work_order}")
+	doc = frappe.get_doc("Work Order", work_order)
+	if not (_is_mfg_manager() or _is_warehouse_role()) and doc.get("operator") != frappe.session.user:
+		frappe.throw(_("Not permitted"), frappe.PermissionError)
+	consumed = frappe.db.sql(
+		"""
+		SELECT sed.item_code, sed.item_name, sed.qty, sed.uom,
+		       sed.s_warehouse AS warehouse, se.name AS stock_entry, se.posting_date
+		FROM `tabStock Entry` se
+		JOIN `tabStock Entry Detail` sed ON sed.parent = se.name
+		WHERE se.work_order = %(wo)s AND se.docstatus = 1
+		  AND se.purpose = 'Material Transfer for Manufacture'
+		ORDER BY se.posting_date, sed.idx
+		""",
+		{"wo": work_order},
+		as_dict=True,
+	)
+	for c in consumed:
+		c["qty"] = flt(c["qty"])
+	return {
+		"work_order": doc.name,
+		"produced": {
+			"item_code": doc.production_item,
+			"item_name": doc.item_name,
+			"qty": flt(doc.produced_qty),
+			"batch_no": doc.get("custom_batch_no") or None,
+			"mfg_date": str(doc.custom_batch_mfg_date) if doc.get("custom_batch_mfg_date") else None,
+			"expiry_date": str(doc.custom_batch_expiry) if doc.get("custom_batch_expiry") else None,
+		},
+		"consumed": consumed,
+	}
 
 
 @frappe.whitelist()

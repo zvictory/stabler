@@ -4,7 +4,7 @@ import { storeToRefs } from "pinia";
 import { useSession } from "../../stores/session.js";
 import { call } from "../../api/client.js";
 import { t } from "../../composables/i18n.js";
-import { formatDateTime, todayIso} from "../../composables/date.js";
+import { formatDate, formatDateTime, todayIso} from "../../composables/date.js";
 import { useConfirm } from "../../composables/useConfirm.js";
 import { useToast } from "../../composables/useToast.js";
 import EmptyState from "../../components/EmptyState.vue";
@@ -89,11 +89,13 @@ const detail = ref(null);
 const actionBusy = ref(false);
 const actionError = ref("");
 const activeTab = ref("details");
+const genealogy = ref(null);
 
 async function openDetail(name) {
 	detailOpen.value = true;
 	detailLoading.value = true;
 	detail.value = null;
+	genealogy.value = null;
 	actionError.value = "";
 	activeTab.value = "details";
 	try {
@@ -102,6 +104,11 @@ async function openDetail(name) {
 		detail.value = { error: err?.message || "Failed to load." };
 	} finally {
 		detailLoading.value = false;
+	}
+	try {
+		genealogy.value = await call("stabler.api.manufacturing.wo_genealogy", { work_order: name });
+	} catch (err) {
+		genealogy.value = null;
 	}
 }
 function closeDetail() {
@@ -610,6 +617,39 @@ async function saveWO(submitAfter) {
 								>
 									{{ t("Cancel") }}
 								</button>
+							</div>
+						</div>
+
+						<!-- Batch & genealogy (Faz 4a) -->
+						<div v-if="detail.batch_no || (genealogy && genealogy.consumed && genealogy.consumed.length)" class="mb-3 border rounded p-2">
+							<div class="d-flex align-items-center justify-content-between">
+								<div class="text-secondary small"><i class="ti ti-versions me-1"></i>{{ t("Batch / lot") }}</div>
+								<span v-if="detail.batch_no" class="badge bg-blue-lt text-blue font-monospace">{{ detail.batch_no }}</span>
+							</div>
+							<div v-if="detail.batch_mfg_date || detail.batch_expiry" class="small text-secondary mt-1">
+								<span v-if="detail.batch_mfg_date">{{ t("Batch manufacture date") }}: {{ formatDate(detail.batch_mfg_date) }}</span>
+								<span v-if="detail.batch_expiry" class="ms-2">{{ t("Batch expiry") }}: {{ formatDate(detail.batch_expiry) }}</span>
+							</div>
+							<div v-if="genealogy && genealogy.consumed && genealogy.consumed.length" class="mt-2">
+								<div class="text-secondary small mb-1">{{ t("Consumed materials") }}</div>
+								<div class="table-responsive">
+									<table class="table table-sm mb-0">
+										<thead>
+											<tr>
+												<th>{{ t("Material") }}</th>
+												<th class="text-end">{{ t("Quantity") }}</th>
+												<th>{{ t("Source warehouse") }}</th>
+											</tr>
+										</thead>
+										<tbody>
+											<tr v-for="(c, i) in genealogy.consumed" :key="i">
+												<td>{{ c.item_name || c.item_code }}</td>
+												<td class="text-end font-monospace text-nowrap">{{ formatQty(c.qty) }} {{ c.uom }}</td>
+												<td class="small text-secondary">{{ c.warehouse }}</td>
+											</tr>
+										</tbody>
+									</table>
+								</div>
 							</div>
 						</div>
 

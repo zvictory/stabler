@@ -4487,3 +4487,8 @@ BOM plan,План BOM
 Extra,Дополнительно
 Not enough stock for some materials.,Недостаточно остатка по некоторым материалам.
 Some quantities differ from the BOM plan.,Некоторые количества отличаются от плана BOM.
+Batch / lot,Партия / лот
+Batch manufacture date,Дата производства партии
+Batch expiry,Срок годности партии
+Consumed materials,Израсходованные материалы
+Batch number is required.,Требуется номер партии.
