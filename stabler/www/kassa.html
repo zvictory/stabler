@@ -105,6 +105,7 @@
 		.ltable .neg { color: var(--neg-color); font-weight: 600; }
 		.ltable .run { font-weight: 700; }
 		.ltable .l-time { font-weight: 600; }
+		.ltable .l-when { font-weight: 600; white-space: nowrap; }
 		.ltable .l-raw { color: var(--tg-hint); font-size: 11.5px; margin-top: 2px; word-break: break-word; }
 		.ltable .l-open td { color: var(--tg-hint); font-style: italic; }
 
@@ -415,9 +416,10 @@
 					run += delta;
 					return { e: e, delta: delta, run: run };
 				});
+				function two(n) { return String(n).padStart(2, "0"); }
 				var head =
 					'<table class="ltable"><thead><tr>' +
-					'<th class="l">Sana</th><th class="l">Oper.turi va izoh</th><th>Summa</th><th>Qoldiq</th>' +
+					'<th class="l">Sana</th><th class="l">izoh</th><th>Debet</th><th>Kredit</th><th>Qoldiq</th>' +
 					"</tr></thead><tbody>";
 				var body = rows
 					.slice()
@@ -425,27 +427,28 @@
 					.map(function (r) {
 						var e = r.e;
 						var d = new Date(e.ts || 0);
-						var hm = e.ts ? String(d.getHours()).padStart(2, "0") + ":" + String(d.getMinutes()).padStart(2, "0") : "";
+						var dateStr = e.ts ? two(d.getDate()) + "." + two(d.getMonth() + 1) + "." + d.getFullYear() : "";
+						var hm = e.ts ? two(d.getHours()) + ":" + two(d.getMinutes()) : "";
 						var sub = [];
 						if (e.counterparty) sub.push(e.counterparty);
 						if (e.purpose) sub.push(e.purpose);
 						var desc = (OPLABEL[e.op] || e.op || "") + (sub.length ? " · " + sub.join(" · ") : "");
-						var amtCls = r.delta < 0 ? "neg" : "pos";
-						var amt = (r.delta < 0 ? "−" : "+") + smart(r.delta);
 						return (
 							"<tr>" +
-							'<td class="l-time">' + escapeHtml(hm) + "</td>" +
+							'<td class="l-when">' + escapeHtml(dateStr) + '<div class="l-raw">' + escapeHtml(hm) + "</div></td>" +
 							"<td>" + escapeHtml(desc) +
 							(e.raw_text ? '<div class="l-raw">«' + escapeHtml(e.raw_text) + "»</div>" : "") +
 							"</td>" +
-							'<td class="num ' + amtCls + '">' + amt + "</td>" +
+							'<td class="num pos">' + (r.delta > 0 ? smart(r.delta) : "") + "</td>" +
+							'<td class="num neg">' + (r.delta < 0 ? smart(r.delta) : "") + "</td>" +
 							'<td class="num run">' + runTxt(r.run) + "</td>" +
 							"</tr>"
 						);
 					})
 					.join("");
 				var openRow =
-					'<tr class="l-open"><td>—</td><td>Ochilish balansi</td><td class="num"></td>' +
+					'<tr class="l-open"><td>—</td><td>Ochilish balansi</td>' +
+					'<td class="num"></td><td class="num"></td>' +
 					'<td class="num run">' + runTxt(opening) + "</td></tr>";
 				rowsEl.innerHTML = head + body + openRow + "</tbody></table>";
 			}
