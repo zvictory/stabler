@@ -328,8 +328,31 @@ async function start(row) {
 	startTarget.value = row;
 	transferFromWh.value = row.source_warehouse || "";
 	transferToWh.value = row.wip_warehouse || "";
-	
-	transferItems.value = (row.required_items || []).map(it => ({
+
+	// Operators aren't handed required_items by the API, so seed the transfer
+	// list straight from the BOM — fully exploded to leaf raw materials (sut,
+	// qogoz, korobka…), scaled to the WO qty. Falls back to any required_items
+	// already on the row (manager/warehouse path).
+	let seed = row.required_items || [];
+	if (!seed.length && row.bom_no) {
+		try {
+			const bm = await call("stabler.api.manufacturing.bom_materials", {
+				company: activeCompany.value,
+				bom_no: row.bom_no,
+				qty: row.qty || 1,
+				exploded: 1,
+			});
+			seed = (bm?.items || []).map((it) => ({
+				item_code: it.item_code,
+				item_name: it.item_name,
+				required_qty: it.qty,
+				stock_uom: it.uom,
+			}));
+		} catch (err) {
+			console.error("Failed to load BOM materials", err);
+		}
+	}
+	transferItems.value = seed.map(it => ({
 		item_code: it.item_code,
 		item_name: it.item_name || it.item_code,
 		qty: it.required_qty,
@@ -337,7 +360,7 @@ async function start(row) {
 		uom: it.stock_uom || "",
 		isNew: false,
 	}));
-	
+
 	actionError.value = "";
 	resetIdleTimer();
 	
@@ -398,7 +421,10 @@ function pickTransferItem(it, item) {
 }
 
 async function searchItems(q) {
-	return call("stabler.api.inventory.list_items", { search: q || "", limit: 20 });
+	// context:"stock" → is_stock_item filter, so raw materials (not sales items)
+	// are searchable. Without it list_items defaults to is_sales_item=1 and
+	// returns "No matches found" for every raw material.
+	return call("stabler.api.inventory.list_items", { search: q || "", context: "stock", limit: 20 });
 }
 
 async function confirmStart() {

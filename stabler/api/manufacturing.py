@@ -120,13 +120,18 @@ def bom_detail(name: str):
 
 
 @frappe.whitelist()
-def bom_materials(company: str, bom_no: str, qty: float = 1):
+def bom_materials(company: str, bom_no: str, qty: float = 1, exploded: int = 0):
 	"""BOM raw-material lines scaled to a target finished-goods qty.
 
 	Unlike bom_detail (manager-only, BOM-native quantity), this is available to
 	operators too and returns the components already multiplied out for the WO
 	qty they're about to start — so the create/start modal can preview exactly
-	what will be transferred before anything is posted."""
+	what will be transferred before anything is posted.
+
+	`exploded=1` returns the fully-exploded LEAF raw materials (BOM Explosion
+	Items) instead of the top-level components — so a mix/sub-assembly like
+	'Smes' resolves down to the real ingredients (sut, qogoz, korobka…). That's
+	what a shop-floor operator actually transfers."""
 	_assert_company_scope(company)  # tenant isolation: reject a foreign company arg
 	_require_company(company)
 	_require_mfg()
@@ -137,17 +142,18 @@ def bom_materials(company: str, bom_no: str, qty: float = 1):
 		frappe.throw(_("Not permitted"), frappe.PermissionError)
 	base = flt(doc.quantity) or 1
 	factor = flt(qty) / base if flt(qty) > 0 else 1
+	src = (doc.get("exploded_items") or []) if int(exploded or 0) else (doc.items or [])
 	items = [
 		{
 			"item_code": r.item_code,
 			"item_name": r.item_name,
-			"qty": flt(r.stock_qty or r.qty) * factor,
-			"uom": r.stock_uom or r.uom,
+			"qty": flt(r.stock_qty or getattr(r, "qty", 0)) * factor,
+			"uom": getattr(r, "stock_uom", None) or getattr(r, "uom", None),
 			"rate": flt(r.rate),
 			"amount": flt(r.amount) * factor,
-			"bom_no": r.bom_no,
+			"bom_no": getattr(r, "bom_no", None),
 		}
-		for r in (doc.items or [])
+		for r in src
 	]
 	return {
 		"bom_no": doc.name,
