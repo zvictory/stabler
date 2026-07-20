@@ -34,7 +34,7 @@ const props = defineProps({
 
 const cls = computed(() => {
 	if (props.status) {
-		if (import.meta.env.DEV) {
+		if (import.meta.env?.DEV) {
 			const map = STATUS_MAP[props.doctype];
 			if (!map || !(props.status in map)) {
 				console.warn("STATUS_MAP missing:", props.doctype, props.status);
