@@ -404,6 +404,10 @@ function lineCurrencyMismatch(line) {
 	// (often USD) and would wrongly flag every UZS expense account on open.
 	if (!form.value.payment_from) return false;
 	if (!line.account) return false;
+	// Asset-purchase debits may sit in a different currency from the paying
+	// account (e.g. UZS cash → USD asset account); the backend anchors those to
+	// the base total, so a currency difference is not an error here.
+	if (assetMode.value) return false;
 	const picked = lineAccounts.value.find((a) => a.name === line.account);
 	if (!picked) return false;
 	return picked.account_currency && picked.account_currency !== payCurrency.value;

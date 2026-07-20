@@ -2554,9 +2554,12 @@ def submit_expense_entry(
 			frappe.throw(f"Row {idx}: account must be an Expense account.")
 		if entry_kind == "Asset Purchase" and exp_acc.account_type != "Fixed Asset":
 			frappe.throw(f"Row {idx}: account must be a Fixed Asset account.")
-		# v1: expense account must share currency with payment-from. Cross-currency
-		# per-line FX is non-trivial; defer to a future iteration.
-		if exp_acc.account_currency != pay_acc.account_currency:
+		# Expense mode keeps the single-currency invariant (per-line FX is non-trivial
+		# for arbitrary expense accounts). Asset Purchase supports cross-currency: the
+		# asset's GL account (often the base currency) may differ from the paying
+		# account — the debit is anchored to the base total and booked in the account's
+		# own currency below.
+		if entry_kind != "Asset Purchase" and exp_acc.account_currency != pay_acc.account_currency:
 			frappe.throw(
 				f"Row {idx}: expense account currency ({exp_acc.account_currency}) must match "
 				f"payment account currency ({pay_acc.account_currency}). Cross-currency expense lines "
@@ -2572,7 +2575,10 @@ def submit_expense_entry(
 			if frappe.db.get_value("Asset", asset, "company") != company:
 				frappe.throw(f"Row {idx}: asset belongs to another company.")
 		total_pay_amount += amount
-		cleaned.append({"account": acc_name, "amount": amount, "memo": memo, "asset": asset})
+		cleaned.append({
+			"account": acc_name, "amount": amount, "memo": memo, "asset": asset,
+			"account_currency": exp_acc.account_currency,
+		})
 
 	total_pay_amount = _round2(total_pay_amount)
 	if total_pay_amount <= 0:
@@ -2607,7 +2613,12 @@ def submit_expense_entry(
 	doc.voucher_type = "Bank Entry"
 	doc.cheque_no = f"Exp-{posting_date}"
 	doc.cheque_date = getdate(posting_date)
-	doc.multi_currency = 1 if pay_acc.account_currency != base_currency else 0
+	# Multi-currency when the paying leg OR any debit line isn't in base currency
+	# (asset-purchase debits may sit in a different currency from the payment).
+	_any_foreign = pay_acc.account_currency != base_currency or any(
+		r["account_currency"] != base_currency for r in cleaned
+	)
+	doc.multi_currency = 1 if _any_foreign else 0
 	if deal:
 		# Tender attribution (WP-K2). Validate existence only — the deal is a
 		# company-scoped tag, not a permission boundary; GL access is already
@@ -2646,12 +2657,30 @@ def submit_expense_entry(
 			base_shares.append(_round2(base_total - running))
 
 	for row, base_share in zip(cleaned, base_shares):
-		debit_acc_amount = row["amount"]
-		debit_rate = (base_share / debit_acc_amount) if debit_acc_amount else 1.0
+		acc_ccy = row["account_currency"]
+		if acc_ccy == base_currency:
+			# Debit account is in base currency (e.g. a USD asset account on a
+			# USD-base company): book the base share directly, rate 1.
+			debit_acc_amount = base_share
+			debit_rate = 1.0
+		elif acc_ccy == pay_acc.account_currency:
+			# Same currency as the paying account — the common single-currency path.
+			debit_acc_amount = row["amount"]
+			debit_rate = (base_share / debit_acc_amount) if debit_acc_amount else 1.0
+		else:
+			# Third currency: convert the base share via a fetched account→base rate.
+			from erpnext.setup.utils import get_exchange_rate
+
+			acc_rate = flt(get_exchange_rate(acc_ccy, base_currency, str(getdate(posting_date))))
+			if acc_rate <= 0:
+				frappe.throw(f"No exchange rate {acc_ccy} → {base_currency} on {posting_date}.")
+			debit_acc_amount = _round2(base_share / acc_rate)
+			debit_rate = acc_rate
 		entry = {
 			"account": row["account"],
 			"debit_in_account_currency": debit_acc_amount,
 			"exchange_rate": debit_rate,
+			"account_currency": acc_ccy,
 		}
 		if row.get("memo"):
 			entry["user_remark"] = row["memo"]
