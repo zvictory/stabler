@@ -3925,7 +3925,7 @@ def list_proformas(company: str, status: str | None = None, supplier: str | None
     clauses, params = _proforma_list_filters(company, status, supplier, group, search)
     params["limit"] = int(limit)
     where = " AND ".join(clauses)
-    return frappe.db.sql(
+    rows = frappe.db.sql(
         f"""
         SELECT pi.name, pi.supplier, s.supplier_name, pi.pi_date, pi.supplier_pi_ref,
                pi.currency, pi.agreed_total, pi.docs_total, pi.cash_difference,
@@ -3942,6 +3942,55 @@ def list_proformas(company: str, status: str | None = None, supplier: str | None
         params,
         as_dict=True,
     )
+    _attach_proforma_rollups(rows)
+    return rows
+
+
+def _attach_proforma_rollups(rows: list[dict]) -> None:
+    """Smart-list aggregates per PI: item count + physical totals (boxes/kg/FCL)
+    from the item child, and CI count + invoiced amount from linked Commercial
+    Invoices (custom_proforma_invoice). Kept as follow-up queries so the base
+    list SQL stays simple and column-guards are trivial."""
+    if not rows:
+        return
+    names = [r["name"] for r in rows]
+    phys = {
+        d["parent"]: d
+        for d in frappe.db.sql(
+            """SELECT parent, COUNT(*) AS item_count, COALESCE(SUM(boxes),0) AS boxes,
+                      COALESCE(SUM(qty),0) AS kg, COALESCE(SUM(fcl),0) AS fcl
+               FROM `tabProforma Invoice Item`
+               WHERE parenttype='Proforma Invoice' AND parent IN %(names)s
+               GROUP BY parent""",
+            {"names": names},
+            as_dict=True,
+        )
+    }
+    ci = {}
+    if frappe.db.has_column("Commercial Invoice", "custom_proforma_invoice"):
+        ci = {
+            d["pi"]: d
+            for d in frappe.db.sql(
+                """SELECT custom_proforma_invoice AS pi, COUNT(*) AS ci_count,
+                          COALESCE(SUM(agreed_total),0) AS invoiced_total
+                   FROM `tabCommercial Invoice`
+                   WHERE custom_proforma_invoice IN %(names)s AND docstatus < 2
+                   GROUP BY custom_proforma_invoice""",
+                {"names": names},
+                as_dict=True,
+            )
+        }
+    for r in rows:
+        p = phys.get(r["name"]) or {}
+        c = ci.get(r["name"]) or {}
+        r["item_count"] = cint(p.get("item_count"))
+        r["total_boxes"] = cint(p.get("boxes"))
+        r["total_kg"] = flt(p.get("kg"))
+        r["total_fcl"] = flt(p.get("fcl"))
+        r["ci_count"] = cint(c.get("ci_count"))
+        r["invoiced_total"] = flt(c.get("invoiced_total"))
+        agreed = flt(r.get("agreed_total"))
+        r["invoiced_pct"] = round(min(100.0, r["invoiced_total"] / agreed * 100.0), 1) if agreed > 0 else 0.0
 
 
 @frappe.whitelist()

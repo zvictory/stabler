@@ -59,6 +59,25 @@ function groupLabel(row) {
 	);
 }
 
+// Smart-list cell helpers.
+function refMain(r) {
+	return (r && (r.supplier_pi_ref || r.name)) || "";
+}
+function refSub(r) {
+	// the ERPNext auto name, shown small when the original ref took its place
+	return r && r.supplier_pi_ref && r.supplier_pi_ref !== r.name ? r.name : "";
+}
+function exporterShort(r) {
+	const s = (r && (r.supplier_name || r.supplier)) || "";
+	return (s.split(/\s+/)[0] || "").toUpperCase();
+}
+function grp(v) {
+	return Math.round(Number(v) || 0).toLocaleString("ru-RU");
+}
+function fcl(v) {
+	return (Number(v) || 0).toFixed(1);
+}
+
 async function loadPiGroups() {
 	if (!activeCompany.value) return;
 	try {
@@ -241,42 +260,44 @@ const canSupersede = (row) => ["DRAFT", "CONFIRMED"].includes(row.status);
 			<table class="table table-vcenter">
 				<thead>
 					<tr>
-						<th>{{ t("PI") }}</th>
-						<th>{{ t("Supplier") }}</th>
+						<th>{{ t("PI & exporter") }}</th>
 						<th class="text-nowrap">{{ t("PI Date") }}</th>
-						<th class="text-end">{{ t("Agreed total") }}</th>
-						<th class="text-end">{{ t("Bank Agreed") }}</th>
-						<th class="text-end">{{ t("Cash Agreed") }}</th>
-						<th class="text-end">{{ t("Docs total") }}</th>
-						<th class="text-end">{{ t("Cash Difference") }}</th>
+						<th class="text-center">{{ t("Items") }}</th>
+						<th>{{ t("Physical") }}</th>
+						<th class="text-end">{{ t("Pricing") }}</th>
+						<th style="min-width: 120px">{{ t("Invoiced %") }}</th>
 						<th>{{ t("Status") }}</th>
-						<th>{{ t("PI Group") }}</th>
-						<th>{{ t("Commercial Invoice") }}</th>
 						<th></th>
 					</tr>
 				</thead>
 				<tbody>
-					<SkeletonRows v-if="loading" :cols="12" :rows="6" />
+					<SkeletonRows v-if="loading" :cols="8" :rows="6" />
 					<tr v-for="r in rows" :key="r.name" style="cursor: pointer" @click="router.push({ name: 'imports-proforma', params: { name: r.name } })">
-						<td class="font-monospace text-primary">
-							{{ r.name }}
-							<div v-if="r.supplier_pi_ref && r.supplier_pi_ref !== r.name" class="small text-secondary text-nowrap">
-								{{ t("Orig. ref") }}: {{ r.supplier_pi_ref }}
-							</div>
-						</td>
-						<td>{{ r.supplier_name || r.supplier }}</td>
-						<td class="text-nowrap">{{ r.pi_date ? formatDate(r.pi_date) : "—" }}</td>
-						<td class="text-end font-monospace">{{ fm(r.agreed_total, r.currency) }}</td>
-						<td class="text-end font-monospace">{{ fm(r.bank_agreed, r.currency) }}</td>
-						<td class="text-end font-monospace">{{ fm(r.cash_agreed, r.currency) }}</td>
-						<td class="text-end font-monospace">{{ fm(r.docs_total, r.currency) }}</td>
-						<td class="text-end font-monospace">{{ fm(r.cash_difference, r.currency) }}</td>
-						<td><span class="badge" :class="getStatusBadgeClass('Proforma Invoice', r.status)">{{ r.status }}</span></td>
 						<td>
-							<span v-if="groupLabel(r)" class="badge bg-azure-lt">{{ groupLabel(r) }}</span>
-							<span v-else class="text-secondary">—</span>
+							<div class="fw-bold text-primary font-monospace">{{ refMain(r) }}</div>
+							<div class="small text-secondary text-uppercase">{{ exporterShort(r) }}</div>
+							<div v-if="refSub(r)" class="small text-secondary font-monospace">{{ refSub(r) }}</div>
+							<span v-if="groupLabel(r)" class="badge bg-azure-lt mt-1"><i class="ti ti-stack-2 me-1"></i>{{ groupLabel(r) }}</span>
 						</td>
-						<td class="font-monospace text-secondary small">{{ r.commercial_invoice || "—" }}</td>
+						<td class="text-nowrap">{{ r.pi_date ? formatDate(r.pi_date) : "—" }}</td>
+						<td class="text-center"><span class="fw-semibold">{{ r.item_count || 0 }}</span> <span class="text-secondary small">{{ t("items") }}</span></td>
+						<td class="text-nowrap">
+							<div><span class="fw-semibold font-monospace">{{ grp(r.total_boxes) }}</span> <span class="text-secondary small">bx</span></div>
+							<div class="text-secondary small font-monospace">{{ grp(r.total_kg) }} kg · {{ fcl(r.total_fcl) }} FCL</div>
+						</td>
+						<td class="text-end text-nowrap">
+							<div class="fw-bold font-monospace">{{ fm(r.agreed_total, r.currency) }}</div>
+							<div class="text-secondary small font-monospace">{{ t("Docs") }}: {{ fm(r.docs_total, r.currency) }}</div>
+							<span v-if="r.cash_difference" class="badge bg-warning-lt text-warning font-monospace mt-1">+{{ fm(r.cash_difference, r.currency) }}</span>
+						</td>
+						<td>
+							<span class="badge" :class="(r.invoiced_pct || 0) >= 100 ? 'bg-green-lt text-green' : 'bg-blue-lt text-blue'">{{ Math.round(r.invoiced_pct || 0) }}%</span>
+							<div class="progress mt-1" style="height: 4px">
+								<div class="progress-bar" :style="{ width: Math.min(100, r.invoiced_pct || 0) + '%' }"></div>
+							</div>
+							<div class="text-secondary small mt-1">{{ r.ci_count || 0 }} CI</div>
+						</td>
+						<td><span class="badge" :class="getStatusBadgeClass('Proforma Invoice', r.status)">{{ r.status }}</span></td>
 						<td class="text-end" @click.stop>
 							<button v-if="canSupersede(r)" type="button" class="btn btn-outline-secondary btn-sm" @click="openSupersede(r)">
 								<i class="ti ti-link me-1"></i>{{ t("Link CI") }}
