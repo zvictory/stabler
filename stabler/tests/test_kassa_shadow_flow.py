@@ -134,11 +134,13 @@ class TestFlowKonv(unittest.TestCase):
 
 
 class TestQuickPack(unittest.TestCase):
-    def test_preview_in_confirm(self):
+    def test_confirm_has_no_yangi_qoldiq(self):
+        # 'Yangi qoldiq' projection was removed from the confirm screen.
         _, _, st, _ = handle({}, BTN_KIRIM, CTX)
         reply, kb, st, act = handle(st, "Mijozdan 2 mln naqd", CTX)
         self.assertEqual(st["step"], "confirm")
-        self.assertIn("Yangi qoldiq", reply)
+        self.assertNotIn("Yangi qoldiq", reply)
+        self.assertIn("Shundaymi?", reply)
 
     def test_negative_warning(self):
         ctx = {"balances": {"nakit": 100_000, "pk": 0, "usd": 0}}

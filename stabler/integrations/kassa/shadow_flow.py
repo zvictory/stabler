@@ -101,6 +101,27 @@ def format_balance_lines(balances):
     return "\n".join(lines)
 
 
+def _esc(s):
+    return str(s).replace("&", "&amp;").replace("<", "&lt;").replace(">", "&gt;")
+
+
+def format_balance_block(balances):
+    """Monospace <pre> block, numbers right-aligned with a gap before the suffix:
+        🟦   4 567 000.00  s
+        🟧  19 911 146.00  p
+        🟩         854.00  d
+    Sent with parse_mode=HTML so the digits line up. Callers that embed this must
+    send with parse_mode HTML (bot._send_message auto-detects the <pre> tag)."""
+    b = balances or {}
+    nums = {k: fmt_amount(b.get(k, 0)) for k in ("nakit", "pk", "usd")}
+    w = max(len(v) for v in nums.values())
+    lines = []
+    for k in ("nakit", "pk", "usd"):
+        emoji = KLABEL[k].split()[0]
+        lines.append(f"{emoji} {nums[k].rjust(w)}  {KSUF[k]}")
+    return "<pre>" + _esc("\n".join(lines)) + "</pre>"
+
+
 # --------------------------------------------------------------------------- #
 # Money math — signed per-kassa deltas from a resolved parse
 # --------------------------------------------------------------------------- #
@@ -216,7 +237,7 @@ def _opening_confirm_text(openings):
 
 
 def _menu(ctx):
-    hdr = "Qoldiq:\n" + format_balance_lines((ctx or {}).get("balances"))
+    hdr = "Qoldiq:\n" + format_balance_block((ctx or {}).get("balances"))
     return hdr + "\n\nAmalni tanlang:", MENU_KEYBOARD
 
 
@@ -319,18 +340,18 @@ def handle(state, text, ctx=None):
 
 
 def _preview(p, ctx):
-    """Append the projected new balance + a negative-balance warning."""
+    """Only a negative-balance warning (the 'Yangi qoldiq' projection was removed
+    on request — the fresh balance already shows in the ✅ Saqlandi message)."""
     bals = dict((ctx or {}).get("balances") or {})
     deltas = compute_deltas(p)
     if not deltas:
         return ""
     for d in deltas:
         bals[d["kassa"]] = bals.get(d["kassa"], 0) + d["delta"]
-    out = ["", "Yangi qoldiq:", format_balance_lines(bals)]
     neg = [k for k in ("nakit", "pk", "usd") if bals.get(k, 0) < 0]
     if neg:
-        out.append("⚠️ Manfiy bo'ladi: " + ", ".join(KLABEL[k] for k in neg))
-    return "\n".join(out)
+        return "\n\n⚠️ Manfiy bo'ladi: " + ", ".join(KLABEL[k] for k in neg)
+    return ""
 
 
 def _after_parse(p, ctx):

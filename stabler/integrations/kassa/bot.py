@@ -165,6 +165,10 @@ def _send_message(chat_id, text: str, keyboard: list[list[str]] | None = None) -
 	if not token or not text:
 		return False
 	payload: dict = {"chat_id": chat_id, "text": text}
+	# Monospace balance blocks are wrapped in <pre> and need HTML parse mode so the
+	# right-aligned digits line up. Only the shadow balance messages carry <pre>.
+	if "<pre>" in text:
+		payload["parse_mode"] = "HTML"
 	markup = _keyboard_markup(keyboard)
 	if markup is not None:
 		payload["reply_markup"] = markup
@@ -717,7 +721,7 @@ def handle_update(update: dict) -> None:
 						raw_text=action.get("raw_text"), parsed=action.get("parsed"), date=sdate,
 					)
 					reply = ("✅ Saqlandi.\nQoldiq:\n"
-					         + shadow_flow.format_balance_lines(shadow.balances(kassir.company, sdate))
+					         + shadow_flow.format_balance_block(shadow.balances(kassir.company, sdate))
 					         + "\n\nkeyingi amalni tanlang:")
 					keyboard = shadow_flow.MENU_KEYBOARD
 				except Exception as e:  # noqa: BLE001 — surfaced to the kassir
@@ -732,7 +736,7 @@ def handle_update(update: dict) -> None:
 					for o in action.get("openings") or []:
 						shadow.set_opening(kassir.company, sdate, o["kassa"], o["amount"])
 					reply = ("✅ Ochilish balansi saqlandi.\nQoldiq:\n"
-					         + shadow_flow.format_balance_lines(shadow.balances(kassir.company, sdate))
+					         + shadow_flow.format_balance_block(shadow.balances(kassir.company, sdate))
 					         + "\n\nkeyingi amalni tanlang:")
 					keyboard = shadow_flow.MENU_KEYBOARD
 				except Exception as e:  # noqa: BLE001
@@ -746,8 +750,10 @@ def handle_update(update: dict) -> None:
 				if not undone:
 					follow_up = "Bekor qilinadigan amal yo'q."
 				else:
-					reply = ("↩️ Bekor qilindi: «" + (undone.get("raw_text") or "") + "»\nQoldiq:\n"
-					         + shadow_flow.format_balance_lines(shadow.balances(kassir.company, sdate))
+					# The block below makes this an HTML message, so escape the echoed
+					# raw text (user input may contain < > &).
+					reply = ("↩️ Bekor qilindi: «" + shadow_flow._esc(undone.get("raw_text") or "") + "»\nQoldiq:\n"
+					         + shadow_flow.format_balance_block(shadow.balances(kassir.company, sdate))
 					         + "\n\nkeyingi amalni tanlang:")
 					keyboard = shadow_flow.MENU_KEYBOARD
 			_save_state(chat_id, new_state)
