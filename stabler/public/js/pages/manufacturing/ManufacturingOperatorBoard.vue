@@ -33,6 +33,20 @@ const rows = ref([]);
 const busyName = ref(""); // name of WO currently processing
 const actionError = ref("");
 
+// ERPNext validation errors (e.g. stock shortages) arrive as HTML with /desk
+// links. Strip tags + entities so the kiosk shows plain, Desk-free text instead
+// of raw "<strong>… <a href=/desk/…>" markup.
+function humanizeError(err) {
+	let msg = err && err.message ? String(err.message) : "";
+	if (!msg) return "";
+	if (msg.indexOf("<") !== -1) {
+		const tmp = document.createElement("div");
+		tmp.innerHTML = msg;
+		msg = tmp.textContent || tmp.innerText || "";
+	}
+	return msg.replace(/\s+/g, " ").trim();
+}
+
 async function load() {
 	if (!activeCompany.value || !isLoggedIn.value) return;
 	loading.value = true;
@@ -63,7 +77,7 @@ async function load() {
 			};
 		});
 	} catch (err) {
-		loadError.value = err?.message || t("Failed to load work orders.");
+		loadError.value = humanizeError(err) || t("Failed to load work orders.");
 	} finally {
 		loading.value = false;
 	}
@@ -90,7 +104,7 @@ async function saveMaterials(row) {
 		row.materialsDirty = false;
 		await load();
 	} catch (err) {
-		actionError.value = err?.message || t("Failed to save materials.");
+		actionError.value = humanizeError(err) || t("Failed to save materials.");
 	} finally {
 		busyName.value = "";
 	}
@@ -150,7 +164,7 @@ async function handleScanSubmit() {
 		await call("stabler.api.manufacturing.badge_login", { uid });
 		window.location.reload();
 	} catch (err) {
-		actionError.value = err?.message || t("Card not recognized");
+		actionError.value = humanizeError(err) || t("Card not recognized");
 	} finally {
 		loading.value = false;
 	}
@@ -192,7 +206,7 @@ async function handlePinSubmit() {
 		await call("stabler.api.manufacturing.pin_login", { employee: emp, pin });
 		window.location.reload();
 	} catch (err) {
-		actionError.value = err?.message || t("Card not recognized");
+		actionError.value = humanizeError(err) || t("Card not recognized");
 		pinCode.value = ""; // Clear entered PIN on failure
 	} finally {
 		loading.value = false;
@@ -457,7 +471,7 @@ async function confirmStart() {
 		startTarget.value = null;
 		await load();
 	} catch (err) {
-		actionError.value = err?.message || t("Start failed.");
+		actionError.value = humanizeError(err) || t("Start failed.");
 	} finally {
 		busyName.value = "";
 	}
@@ -516,7 +530,7 @@ async function confirmFinish() {
 		});
 		await load();
 	} catch (err) {
-		actionError.value = err?.message || t("Finish failed.");
+		actionError.value = humanizeError(err) || t("Finish failed.");
 	} finally {
 		busyName.value = "";
 	}
@@ -537,7 +551,7 @@ async function pause(row) {
 		await call("stabler.api.manufacturing.stop_work_order", { name: row.name });
 		await load();
 	} catch (err) {
-		actionError.value = err?.message || t("Pause failed.");
+		actionError.value = humanizeError(err) || t("Pause failed.");
 	} finally {
 		busyName.value = "";
 	}
@@ -551,7 +565,7 @@ async function resume(row) {
 		await call("stabler.api.manufacturing.resume_work_order", { name: row.name });
 		await load();
 	} catch (err) {
-		actionError.value = err?.message || t("Resume failed.");
+		actionError.value = humanizeError(err) || t("Resume failed.");
 	} finally {
 		busyName.value = "";
 	}
