@@ -164,7 +164,10 @@ watch(activeCompany, () => {
 				<SkeletonRows v-if="loading" :rows="6" :cols="13" />
 				<tbody v-else>
 					<tr v-for="r in rows" :key="r.name" style="cursor: pointer" @click="openDetail(r.name)">
-						<td class="font-monospace text-primary text-nowrap">{{ r.ci_number || r.name }}</td>
+						<td class="font-monospace text-primary text-nowrap">
+							{{ r.ci_number || r.name }}
+							<div v-if="r.ci_number && r.ci_number !== r.name" class="small text-secondary">{{ r.name }}</div>
+						</td>
 						<td>{{ r.supplier_name || r.supplier }}</td>
 						<td class="text-nowrap">{{ formatDate(r.ci_date) }}</td>
 						<td>{{ r.incoterm || "—" }}</td>
