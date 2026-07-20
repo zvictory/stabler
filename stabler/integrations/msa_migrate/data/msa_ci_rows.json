@@ -1,0 +1,3653 @@
+[
+{
+"ci_number": "MH/3054/2025-26",
+"vendor": "HMA AGRO INDUSTRIES LIMITED",
+"source_pis": [
+"HMA/PI/2229/2025-26"
+],
+"ci_date": "2026-05-09",
+"status": "DELIVERED_TO_UZBEKISTAN",
+"incoterm": "CIF",
+"total_boxes": 4200,
+"total_kg": 84000.0,
+"agreed_total": 385000.0,
+"docs_total": 365400.0,
+"cash_difference": 19600.0
+},
+{
+"ci_number": "CI/2026/0015",
+"vendor": "Mirha Exports Private limited",
+"source_pis": [
+"PRO/MEPL/0538/25-26"
+],
+"ci_date": "2026-03-26",
+"status": "DELIVERED_TO_UZBEKISTAN",
+"incoterm": "CIF",
+"total_boxes": 1400,
+"total_kg": 28000.0,
+"agreed_total": 122080.0,
+"docs_total": 120400.0,
+"cash_difference": 1680.0
+},
+{
+"ci_number": "MH/2266/2025-26",
+"vendor": "HMA AGRO INDUSTRIES LIMITED",
+"source_pis": [
+"HMA/PI/2230/2025-26",
+"HMA/PI/2229/2025-26"
+],
+"ci_date": "2026-02-25",
+"status": "DELIVERED_TO_UZBEKISTAN",
+"incoterm": "CIF",
+"total_boxes": 4350,
+"total_kg": 84000.0,
+"agreed_total": 380420.0,
+"docs_total": 359680.0,
+"cash_difference": 20740.0
+},
+{
+"ci_number": "MH/2264/2025-26",
+"vendor": "HMA AGRO INDUSTRIES LIMITED",
+"source_pis": [
+"HMA/PI/2229/2025-26"
+],
+"ci_date": "2026-02-25",
+"status": "BOOKED",
+"incoterm": "CIF",
+"total_boxes": 4287,
+"total_kg": 84002.0,
+"agreed_total": 366809.4,
+"docs_total": 357008.7,
+"cash_difference": 9800.7
+},
+{
+"ci_number": "MH/2243/2025-26",
+"vendor": "HMA AGRO INDUSTRIES LIMITED",
+"source_pis": [
+"HMA/PI/2229/2025-26"
+],
+"ci_date": "2026-02-23",
+"status": "BOOKED",
+"incoterm": "CIF",
+"total_boxes": 4200,
+"total_kg": 84000.0,
+"agreed_total": 370860.0,
+"docs_total": 365400.0,
+"cash_difference": 5460.0
+},
+{
+"ci_number": "MH/2242/2025-26",
+"vendor": "HMA AGRO INDUSTRIES LIMITED",
+"source_pis": [
+"HMA/PI/2229/2025-26"
+],
+"ci_date": "2026-02-23",
+"status": "BOOKED",
+"incoterm": "CIF",
+"total_boxes": 4200,
+"total_kg": 84000.0,
+"agreed_total": 370860.0,
+"docs_total": 365400.0,
+"cash_difference": 5460.0
+},
+{
+"ci_number": "MH/2241/2025-26",
+"vendor": "HMA AGRO INDUSTRIES LIMITED",
+"source_pis": [
+"HMA/PI/2229/2025-26"
+],
+"ci_date": "2026-02-23",
+"status": "BOOKED",
+"incoterm": "CIF",
+"total_boxes": 4200,
+"total_kg": 84000.0,
+"agreed_total": 370860.0,
+"docs_total": 365400.0,
+"cash_difference": 5460.0
+},
+{
+"ci_number": "MH/2235/2025-26",
+"vendor": "HMA AGRO INDUSTRIES LIMITED",
+"source_pis": [
+"HMA/PI/2229/2025-26"
+],
+"ci_date": "2026-02-21",
+"status": "BOOKED",
+"incoterm": "CIF",
+"total_boxes": 4200,
+"total_kg": 84000.0,
+"agreed_total": 366203.0,
+"docs_total": 359703.0,
+"cash_difference": 6500.0
+},
+{
+"ci_number": "MH/2197/2025-26",
+"vendor": "HMA AGRO INDUSTRIES LIMITED",
+"source_pis": [
+"HMA/PI/1843/2025-26"
+],
+"ci_date": "2026-02-14",
+"status": "BOOKED",
+"incoterm": "CIF",
+"total_boxes": 4200,
+"total_kg": 84000.0,
+"agreed_total": 371400.0,
+"docs_total": 346900.0,
+"cash_difference": 24500.0
+},
+{
+"ci_number": "MH/2193/2025-26",
+"vendor": "HMA AGRO INDUSTRIES LIMITED",
+"source_pis": [
+"HMA/PI/2229/2025-26"
+],
+"ci_date": "2026-02-14",
+"status": "BOOKED",
+"incoterm": "CIF",
+"total_boxes": 4200,
+"total_kg": 84000.0,
+"agreed_total": 366240.0,
+"docs_total": 362600.0,
+"cash_difference": 3640.0
+},
+{
+"ci_number": "1118909216",
+"vendor": "FAIR EXPORTS (INDIA) PVT. LTD.",
+"source_pis": [
+"FIR/25-26/28917-28925"
+],
+"ci_date": "2026-02-11",
+"status": "BOOKED",
+"incoterm": "CIF",
+"total_boxes": 4356,
+"total_kg": 84008.0,
+"agreed_total": 483616.72,
+"docs_total": 483616.72,
+"cash_difference": 0.0
+},
+{
+"ci_number": "1119679867",
+"vendor": "FAIR EXPORTS (INDIA) PVT. LTD.",
+"source_pis": [
+"FIR/25-26/28917-28925"
+],
+"ci_date": "2026-02-10",
+"status": "BOOKED",
+"incoterm": "CIF",
+"total_boxes": 4326,
+"total_kg": 84018.0,
+"agreed_total": 373039.92,
+"docs_total": 373039.92,
+"cash_difference": 0.0
+},
+{
+"ci_number": "MH/3051/2025-26",
+"vendor": "HMA AGRO INDUSTRIES LIMITED",
+"source_pis": [
+"HMA/PI/2229/2025-26"
+],
+"ci_date": "2026-02-07",
+"status": "BOOKED",
+"incoterm": "CIF",
+"total_boxes": 4200,
+"total_kg": 84000.0,
+"agreed_total": 403200.0,
+"docs_total": 365400.0,
+"cash_difference": 37800.0
+},
+{
+"ci_number": "MH/3038/2025-26",
+"vendor": "HMA AGRO INDUSTRIES LIMITED",
+"source_pis": [
+"HMA/PI/2229/2025-26"
+],
+"ci_date": "2026-02-07",
+"status": "BOOKED",
+"incoterm": "CIF",
+"total_boxes": 4200,
+"total_kg": 84000.0,
+"agreed_total": 370860.0,
+"docs_total": 365400.0,
+"cash_difference": 5460.0
+},
+{
+"ci_number": "MH/3032/2025-26",
+"vendor": "HMA AGRO INDUSTRIES LIMITED",
+"source_pis": [
+"HMA/PI/2229/2025-26"
+],
+"ci_date": "2026-02-06",
+"status": "BOOKED",
+"incoterm": "CIF",
+"total_boxes": 4200,
+"total_kg": 84000.0,
+"agreed_total": 370860.0,
+"docs_total": 365400.0,
+"cash_difference": 5460.0
+},
+{
+"ci_number": "1118909212",
+"vendor": "FAIR EXPORTS (INDIA) PVT. LTD.",
+"source_pis": [
+"FIR/25-26/28611-28616"
+],
+"ci_date": "2026-02-06",
+"status": "BOOKED",
+"incoterm": "CIF",
+"total_boxes": 4200,
+"total_kg": 84000.0,
+"agreed_total": 280000.0,
+"docs_total": 280000.0,
+"cash_difference": 0.0
+},
+{
+"ci_number": "1119379443",
+"vendor": "FAIR EXPORTS (INDIA) PVT. LTD.",
+"source_pis": [
+"FIR/25-26/29639-29647"
+],
+"ci_date": "2026-02-05",
+"status": "BOOKED",
+"incoterm": "CIF",
+"total_boxes": 4326,
+"total_kg": 84018.0,
+"agreed_total": 375560.46,
+"docs_total": 375560.46,
+"cash_difference": 0.0
+},
+{
+"ci_number": "MEPL/P1025/2526",
+"vendor": "Mirha Exports Private limited",
+"source_pis": [
+"PRO/MEPL/0538/25-26"
+],
+"ci_date": "2026-02-04",
+"status": "BOOKED",
+"incoterm": "CIF",
+"total_boxes": 4234,
+"total_kg": 84012.0,
+"agreed_total": 382657.2,
+"docs_total": 346825.42,
+"cash_difference": 35831.78
+},
+{
+"ci_number": "1119189094",
+"vendor": "FAIR EXPORTS (INDIA) PVT. LTD.",
+"source_pis": [
+"FIR/25-26/29639-29647"
+],
+"ci_date": "2026-02-02",
+"status": "BOOKED",
+"incoterm": "CIF",
+"total_boxes": 4326,
+"total_kg": 84018.0,
+"agreed_total": 375560.46,
+"docs_total": 375560.46,
+"cash_difference": 0.0
+},
+{
+"ci_number": "PRO/ALS/0260/25-26",
+"vendor": "Al Super Frozen Food Private Limited",
+"source_pis": [
+"PRO/ALS/100/25-26"
+],
+"ci_date": "2026-01-31",
+"status": "BOOKED",
+"incoterm": "CIF",
+"total_boxes": 4200,
+"total_kg": 84000.0,
+"agreed_total": 366408.0,
+"docs_total": 361200.0,
+"cash_difference": 5208.0
+},
+{
+"ci_number": "1118909202",
+"vendor": "FAIR EXPORTS (INDIA) PVT. LTD.",
+"source_pis": [
+"FIR/25-26/29639-29647"
+],
+"ci_date": "2026-01-29",
+"status": "BOOKED",
+"incoterm": "CIF",
+"total_boxes": 4200,
+"total_kg": 84000.0,
+"agreed_total": 367920.0,
+"docs_total": 367920.0,
+"cash_difference": 0.0
+},
+{
+"ci_number": "MH/2107/2025-26",
+"vendor": "HMA AGRO INDUSTRIES LIMITED",
+"source_pis": [
+"HMA/PI/1843/2025-26"
+],
+"ci_date": "2026-01-25",
+"status": "BOOKED",
+"incoterm": "CIF",
+"total_boxes": 4207,
+"total_kg": 84002.0,
+"agreed_total": 362103.2,
+"docs_total": 343878.7,
+"cash_difference": 18224.5
+},
+{
+"ci_number": "MH/2106/2025-26",
+"vendor": "HMA AGRO INDUSTRIES LIMITED",
+"source_pis": [
+"HMA/PI/2230/2025-26",
+"HMA/PI/2229/2025-26",
+"HMA/PI/1844/2025-26"
+],
+"ci_date": "2026-01-25",
+"status": "IN_TRANSIT",
+"incoterm": "CIF",
+"total_boxes": 4202,
+"total_kg": 83994.0,
+"agreed_total": 325515.4,
+"docs_total": 322262.9,
+"cash_difference": 3252.5
+},
+{
+"ci_number": "PRO/ALS/0251/25-26",
+"vendor": "Al Super Frozen Food Private Limited",
+"source_pis": [
+"PRO/ALS/080/25-26"
+],
+"ci_date": "2026-01-20",
+"status": "BOOKED",
+"incoterm": "CIF",
+"total_boxes": 4200,
+"total_kg": 84000.0,
+"agreed_total": 365400.0,
+"docs_total": 365400.0,
+"cash_difference": 0.0
+},
+{
+"ci_number": "1118909177",
+"vendor": "FAIR EXPORTS (INDIA) PVT. LTD.",
+"source_pis": [
+"FIR/25-26/28917-28925"
+],
+"ci_date": "2026-01-17",
+"status": "BOOKED",
+"incoterm": "CIF",
+"total_boxes": 4326,
+"total_kg": 84018.0,
+"agreed_total": 373039.92,
+"docs_total": 373039.92,
+"cash_difference": 0.0
+},
+{
+"ci_number": "PRO/ALS/0247/25-26",
+"vendor": "Al Super Frozen Food Private Limited",
+"source_pis": [
+"PRO/ALS/080/25-26"
+],
+"ci_date": "2026-01-14",
+"status": "BOOKED",
+"incoterm": "CIF",
+"total_boxes": 4200,
+"total_kg": 84000.0,
+"agreed_total": 365400.0,
+"docs_total": 365400.0,
+"cash_difference": 0.0
+},
+{
+"ci_number": "PRO/ALS/0245/25-26",
+"vendor": "Al Super Frozen Food Private Limited",
+"source_pis": [
+"PRO/ALS/080/25-26"
+],
+"ci_date": "2026-01-13",
+"status": "BOOKED",
+"incoterm": "CIF",
+"total_boxes": 4200,
+"total_kg": 84000.0,
+"agreed_total": 365400.0,
+"docs_total": 365400.0,
+"cash_difference": 0.0
+},
+{
+"ci_number": "MH/2000/2025-26",
+"vendor": "HMA AGRO INDUSTRIES LIMITED",
+"source_pis": [
+"HMA/PI/2229/2025-26"
+],
+"ci_date": "2026-01-13",
+"status": "BOOKED",
+"incoterm": "CIF",
+"total_boxes": 4200,
+"total_kg": 84000.0,
+"agreed_total": 434000.0,
+"docs_total": 365400.0,
+"cash_difference": 68600.0
+},
+{
+"ci_number": "MH/1999/2025-26",
+"vendor": "HMA AGRO INDUSTRIES LIMITED",
+"source_pis": [
+"HMA/PI/2230/2025-26",
+"HMA/PI/2229/2025-26",
+"HMA/PI/1948/2025-26",
+"HMA/PI/1844/2025-26"
+],
+"ci_date": "2026-01-13",
+"status": "IN_TRANSIT",
+"incoterm": "CIF",
+"total_boxes": 4200,
+"total_kg": 84000.0,
+"agreed_total": 343378.0,
+"docs_total": 329338.0,
+"cash_difference": 14040.0
+},
+{
+"ci_number": "MH/1998/2025-26",
+"vendor": "HMA AGRO INDUSTRIES LIMITED",
+"source_pis": [
+"HMA/PI/1843/2025-26"
+],
+"ci_date": "2026-01-13",
+"status": "BOOKED",
+"incoterm": "CIF",
+"total_boxes": 5395,
+"total_kg": 84000.0,
+"agreed_total": 290500.0,
+"docs_total": 278600.0,
+"cash_difference": 11900.0
+},
+{
+"ci_number": "PRO/ALS/0243/25-26",
+"vendor": "Al Super Frozen Food Private Limited",
+"source_pis": [
+"PRO/ALS/080/25-26"
+],
+"ci_date": "2026-01-12",
+"status": "BOOKED",
+"incoterm": "CIF",
+"total_boxes": 4200,
+"total_kg": 84000.0,
+"agreed_total": 365400.0,
+"docs_total": 365400.0,
+"cash_difference": 0.0
+},
+{
+"ci_number": "MH/2652/2025-26",
+"vendor": "HMA AGRO INDUSTRIES LIMITED",
+"source_pis": [
+"HMA/PI/1843/2025-26"
+],
+"ci_date": "2026-01-12",
+"status": "BOOKED",
+"incoterm": "CIF",
+"total_boxes": 4237,
+"total_kg": 83992.0,
+"agreed_total": 405242.0,
+"docs_total": 363602.2,
+"cash_difference": 41639.8
+},
+{
+"ci_number": "MH/2629/2025-26",
+"vendor": "HMA AGRO INDUSTRIES LIMITED",
+"source_pis": [
+"HMA/PI/1844/2025-26"
+],
+"ci_date": "2026-01-10",
+"status": "BOOKED",
+"incoterm": "CIF",
+"total_boxes": 4200,
+"total_kg": 84000.0,
+"agreed_total": 387400.0,
+"docs_total": 363200.0,
+"cash_difference": 24200.0
+},
+{
+"ci_number": "MH/2624/2025-26",
+"vendor": "HMA AGRO INDUSTRIES LIMITED",
+"source_pis": [
+"HMA/PI/2229/2025-26"
+],
+"ci_date": "2026-01-10",
+"status": "BOOKED",
+"incoterm": "CIF",
+"total_boxes": 4200,
+"total_kg": 84000.0,
+"agreed_total": 370860.0,
+"docs_total": 365400.0,
+"cash_difference": 5460.0
+},
+{
+"ci_number": "MH/2623/2025-26",
+"vendor": "HMA AGRO INDUSTRIES LIMITED",
+"source_pis": [
+"HMA/PI/2229/2025-26"
+],
+"ci_date": "2026-01-10",
+"status": "BOOKED",
+"incoterm": "CIF",
+"total_boxes": 5320,
+"total_kg": 84000.0,
+"agreed_total": 288400.0,
+"docs_total": 280000.0,
+"cash_difference": 8400.0
+},
+{
+"ci_number": "MEPL/P0912/2526",
+"vendor": "Mirha Exports Private limited",
+"source_pis": [
+"PRO/MEPL/0538/25-26"
+],
+"ci_date": "2026-01-10",
+"status": "BOOKED",
+"incoterm": "CIF",
+"total_boxes": 2878,
+"total_kg": 56004.0,
+"agreed_total": 291228.2,
+"docs_total": 275408.2,
+"cash_difference": 15820.0
+},
+{
+"ci_number": "MEPL/P0906/2526",
+"vendor": "Mirha Exports Private limited",
+"source_pis": [
+"PRO/MEPL/0538/25-26"
+],
+"ci_date": "2026-01-10",
+"status": "BOOKED",
+"incoterm": "CIF",
+"total_boxes": 1400,
+"total_kg": 28000.0,
+"agreed_total": 121800.0,
+"docs_total": 105980.0,
+"cash_difference": 15820.0
+},
+{
+"ci_number": "MH/1965/2025-26",
+"vendor": "HMA AGRO INDUSTRIES LIMITED",
+"source_pis": [
+"HMA/PI/1843/2025-26"
+],
+"ci_date": "2026-01-08",
+"status": "BOOKED",
+"incoterm": "CIF",
+"total_boxes": 4244,
+"total_kg": 83992.0,
+"agreed_total": 361344.0,
+"docs_total": 327565.2,
+"cash_difference": 33778.8
+},
+{
+"ci_number": "MH/1955/2025-26",
+"vendor": "HMA AGRO INDUSTRIES LIMITED",
+"source_pis": [
+"HMA/PI/1796/2025-26"
+],
+"ci_date": "2026-01-07",
+"status": "BOOKED",
+"incoterm": "CIF",
+"total_boxes": 4200,
+"total_kg": 84000.0,
+"agreed_total": 265300.0,
+"docs_total": 264600.0,
+"cash_difference": 700.0
+},
+{
+"ci_number": "MH/1954/2025-26",
+"vendor": "HMA AGRO INDUSTRIES LIMITED",
+"source_pis": [
+"HMA/PI/1843/2025-26"
+],
+"ci_date": "2026-01-07",
+"status": "BOOKED",
+"incoterm": "CIF",
+"total_boxes": 4200,
+"total_kg": 84000.0,
+"agreed_total": 370440.0,
+"docs_total": 365400.0,
+"cash_difference": 5040.0
+},
+{
+"ci_number": "MH/2569/2025-26",
+"vendor": "HMA AGRO INDUSTRIES LIMITED",
+"source_pis": [
+"HMA/PI/1351/2025-26"
+],
+"ci_date": "2026-01-06",
+"status": "BOOKED",
+"incoterm": "CIF",
+"total_boxes": 4200,
+"total_kg": 84000.0,
+"agreed_total": 383180.0,
+"docs_total": 348600.0,
+"cash_difference": 34580.0
+},
+{
+"ci_number": "PRO/ALS/0234/25-26",
+"vendor": "Al Super Frozen Food Private Limited",
+"source_pis": [
+"PRO/ALS/080/25-26"
+],
+"ci_date": "2026-01-02",
+"status": "BOOKED",
+"incoterm": "CIF",
+"total_boxes": 4200,
+"total_kg": 84000.0,
+"agreed_total": 365400.0,
+"docs_total": 365400.0,
+"cash_difference": 0.0
+},
+{
+"ci_number": "MH/2523/2025-26",
+"vendor": "HMA AGRO INDUSTRIES LIMITED",
+"source_pis": [
+"HMA/PI/1351/2025-26"
+],
+"ci_date": "2026-01-01",
+"status": "BOOKED",
+"incoterm": "CIF",
+"total_boxes": 4311,
+"total_kg": 83998.0,
+"agreed_total": 423466.0,
+"docs_total": 347791.3,
+"cash_difference": 75674.7
+},
+{
+"ci_number": "MH/2514/2025-26",
+"vendor": "HMA AGRO INDUSTRIES LIMITED",
+"source_pis": [
+"HMA/PI/1351/2025-26"
+],
+"ci_date": "2025-12-31",
+"status": "BOOKED",
+"incoterm": "CIF",
+"total_boxes": 4200,
+"total_kg": 84000.0,
+"agreed_total": 374220.0,
+"docs_total": 340200.0,
+"cash_difference": 34020.0
+},
+{
+"ci_number": "MH/2513/2025-26",
+"vendor": "HMA AGRO INDUSTRIES LIMITED",
+"source_pis": [
+"HMA/PI/1351/2025-26"
+],
+"ci_date": "2025-12-31",
+"status": "BOOKED",
+"incoterm": "CIF",
+"total_boxes": 4200,
+"total_kg": 84000.0,
+"agreed_total": 374220.0,
+"docs_total": 340200.0,
+"cash_difference": 34020.0
+},
+{
+"ci_number": "MH/2486/2025-26",
+"vendor": "HMA AGRO INDUSTRIES LIMITED",
+"source_pis": [
+"HMA/PI/1351/2025-26"
+],
+"ci_date": "2025-12-30",
+"status": "BOOKED",
+"incoterm": "CIF",
+"total_boxes": 4200,
+"total_kg": 84000.0,
+"agreed_total": 374220.0,
+"docs_total": 340200.0,
+"cash_difference": 34020.0
+},
+{
+"ci_number": "MH/1891/2025-26",
+"vendor": "HMA AGRO INDUSTRIES LIMITED",
+"source_pis": [
+"HMA/PI/1843/2025-26"
+],
+"ci_date": "2025-12-29",
+"status": "BOOKED",
+"incoterm": "CIF",
+"total_boxes": 4200,
+"total_kg": 84000.0,
+"agreed_total": 370440.0,
+"docs_total": 365400.0,
+"cash_difference": 5040.0
+},
+{
+"ci_number": "MH/1876/2025-26",
+"vendor": "HMA AGRO INDUSTRIES LIMITED",
+"source_pis": [
+"HMA/PI/1843/2025-26"
+],
+"ci_date": "2025-12-27",
+"status": "BOOKED",
+"incoterm": "CIF",
+"total_boxes": 4200,
+"total_kg": 84000.0,
+"agreed_total": 370440.0,
+"docs_total": 365400.0,
+"cash_difference": 5040.0
+},
+{
+"ci_number": "MH/1874/2025-26",
+"vendor": "HMA AGRO INDUSTRIES LIMITED",
+"source_pis": [
+"HMA/PI/1843/2025-26"
+],
+"ci_date": "2025-12-27",
+"status": "BOOKED",
+"incoterm": "CIF",
+"total_boxes": 4200,
+"total_kg": 84000.0,
+"agreed_total": 336280.0,
+"docs_total": 316400.0,
+"cash_difference": 19880.0
+},
+{
+"ci_number": "MH/1872/2025-26",
+"vendor": "HMA AGRO INDUSTRIES LIMITED",
+"source_pis": [
+"HMA/PI/1351/2025-26"
+],
+"ci_date": "2025-12-27",
+"status": "BOOKED",
+"incoterm": "CIF",
+"total_boxes": 4200,
+"total_kg": 84000.0,
+"agreed_total": 378280.0,
+"docs_total": 346500.0,
+"cash_difference": 31780.0
+},
+{
+"ci_number": "MH/2392/2025-26",
+"vendor": "HMA AGRO INDUSTRIES LIMITED",
+"source_pis": [
+"HMA/PI/1351/2025-26"
+],
+"ci_date": "2025-12-25",
+"status": "BOOKED",
+"incoterm": "CIF",
+"total_boxes": 3581,
+"total_kg": 84007.0,
+"agreed_total": 385172.55,
+"docs_total": 357030.45,
+"cash_difference": 28142.1
+},
+{
+"ci_number": "MH/2391/2025-26",
+"vendor": "HMA AGRO INDUSTRIES LIMITED",
+"source_pis": [
+"HMA/PI/1843/2025-26"
+],
+"ci_date": "2025-12-25",
+"status": "BOOKED",
+"incoterm": "CIF",
+"total_boxes": 4200,
+"total_kg": 84000.0,
+"agreed_total": 370440.0,
+"docs_total": 365400.0,
+"cash_difference": 5040.0
+},
+{
+"ci_number": "MH/2370/2025-26",
+"vendor": "HMA AGRO INDUSTRIES LIMITED",
+"source_pis": [
+"HMA/PI/1843/2025-26"
+],
+"ci_date": "2025-12-24",
+"status": "BOOKED",
+"incoterm": "CIF",
+"total_boxes": 4200,
+"total_kg": 84000.0,
+"agreed_total": 370440.0,
+"docs_total": 365400.0,
+"cash_difference": 5040.0
+},
+{
+"ci_number": "MEPL/P0839/2526",
+"vendor": "Mirha Exports Private limited",
+"source_pis": [
+"PRO/MEPL/0421/25-26"
+],
+"ci_date": "2025-12-22",
+"status": "BOOKED",
+"incoterm": "CIF",
+"total_boxes": 4200,
+"total_kg": 84000.0,
+"agreed_total": 365400.0,
+"docs_total": 365400.0,
+"cash_difference": 0.0
+},
+{
+"ci_number": "MH/2296/2025-26",
+"vendor": "HMA AGRO INDUSTRIES LIMITED",
+"source_pis": [
+"HMA/PI/1351/2025-26"
+],
+"ci_date": "2025-12-19",
+"status": "BOOKED",
+"incoterm": "CIF",
+"total_boxes": 4200,
+"total_kg": 84000.0,
+"agreed_total": 325080.0,
+"docs_total": 302400.0,
+"cash_difference": 22680.0
+},
+{
+"ci_number": "MH/1804/2025-26",
+"vendor": "HMA AGRO INDUSTRIES LIMITED",
+"source_pis": [
+"HMA/PI/1843/2025-26"
+],
+"ci_date": "2025-12-18",
+"status": "BOOKED",
+"incoterm": "CIF",
+"total_boxes": 4235,
+"total_kg": 84000.0,
+"agreed_total": 382770.0,
+"docs_total": 362715.0,
+"cash_difference": 20055.0
+},
+{
+"ci_number": "MH/1802/2025-26",
+"vendor": "HMA AGRO INDUSTRIES LIMITED",
+"source_pis": [
+"HMA/PI/1843/2025-26"
+],
+"ci_date": "2025-12-18",
+"status": "BOOKED",
+"incoterm": "CIF",
+"total_boxes": 4200,
+"total_kg": 84000.0,
+"agreed_total": 300592.0,
+"docs_total": 292412.0,
+"cash_difference": 8180.0
+},
+{
+"ci_number": "MH/1801/2025-26",
+"vendor": "HMA AGRO INDUSTRIES LIMITED",
+"source_pis": [
+"HMA/PI/1843/2025-26"
+],
+"ci_date": "2025-12-18",
+"status": "BOOKED",
+"incoterm": "CIF",
+"total_boxes": 4200,
+"total_kg": 84000.0,
+"agreed_total": 370440.0,
+"docs_total": 365400.0,
+"cash_difference": 5040.0
+},
+{
+"ci_number": "MH/1800/2025-26",
+"vendor": "HMA AGRO INDUSTRIES LIMITED",
+"source_pis": [
+"HMA/PI/1843/2025-26"
+],
+"ci_date": "2025-12-18",
+"status": "BOOKED",
+"incoterm": "CIF",
+"total_boxes": 4200,
+"total_kg": 84000.0,
+"agreed_total": 378000.0,
+"docs_total": 359800.0,
+"cash_difference": 18200.0
+},
+{
+"ci_number": "MH/2275/2025-26",
+"vendor": "HMA AGRO INDUSTRIES LIMITED",
+"source_pis": [
+"HMA/PI/1844/2025-26"
+],
+"ci_date": "2025-12-17",
+"status": "BOOKED",
+"incoterm": "CIF",
+"total_boxes": 4200,
+"total_kg": 84000.0,
+"agreed_total": 375200.0,
+"docs_total": 357000.0,
+"cash_difference": 18200.0
+},
+{
+"ci_number": "1118889661",
+"vendor": "FAIR EXPORTS (INDIA) PVT. LTD.",
+"source_pis": [
+"FIR/25-26/27482-27493"
+],
+"ci_date": "2025-12-13",
+"status": "BOOKED",
+"incoterm": "CIF",
+"total_boxes": 4440,
+"total_kg": 84020.0,
+"agreed_total": 405679.16,
+"docs_total": 405679.16,
+"cash_difference": 0.0
+},
+{
+"ci_number": "MH/1759/2025-26",
+"vendor": "HMA AGRO INDUSTRIES LIMITED",
+"source_pis": [
+"HMA/PI/1844/2025-26"
+],
+"ci_date": "2025-12-12",
+"status": "BOOKED",
+"incoterm": "CIF",
+"total_boxes": 4200,
+"total_kg": 84000.0,
+"agreed_total": 294900.0,
+"docs_total": 294800.0,
+"cash_difference": 100.0
+},
+{
+"ci_number": "MH/1721/2025-26",
+"vendor": "HMA AGRO INDUSTRIES LIMITED",
+"source_pis": [
+"HMA/PI/1843/2025-26"
+],
+"ci_date": "2025-12-09",
+"status": "BOOKED",
+"incoterm": "CIF",
+"total_boxes": 4004,
+"total_kg": 84014.0,
+"agreed_total": 367486.0,
+"docs_total": 317804.9,
+"cash_difference": 49681.1
+},
+{
+"ci_number": "MH/1720/2025-26",
+"vendor": "HMA AGRO INDUSTRIES LIMITED",
+"source_pis": [
+"HMA/PI/1796/2025-26"
+],
+"ci_date": "2025-12-09",
+"status": "BOOKED",
+"incoterm": "CIF",
+"total_boxes": 4200,
+"total_kg": 84000.0,
+"agreed_total": 224000.0,
+"docs_total": 224000.0,
+"cash_difference": 0.0
+},
+{
+"ci_number": "MEPL/P0763/2526",
+"vendor": "Mirha Exports Private limited",
+"source_pis": [
+"PRO/MEPL/0421/25-26"
+],
+"ci_date": "2025-12-08",
+"status": "BOOKED",
+"incoterm": "CIF",
+"total_boxes": 4300,
+"total_kg": 84000.0,
+"agreed_total": 420100.0,
+"docs_total": 420100.0,
+"cash_difference": 0.0
+},
+{
+"ci_number": "1118889635",
+"vendor": "FAIR EXPORTS (INDIA) PVT. LTD.",
+"source_pis": [
+"FIR/25-26/28611-28616"
+],
+"ci_date": "2025-12-06",
+"status": "BOOKED",
+"incoterm": "CIF",
+"total_boxes": 4200,
+"total_kg": 84000.0,
+"agreed_total": 378000.0,
+"docs_total": 378000.0,
+"cash_difference": 0.0
+},
+{
+"ci_number": "MH/1648/2025-26",
+"vendor": "HMA AGRO INDUSTRIES LIMITED",
+"source_pis": [
+"HMA/PI/1351/2025-26"
+],
+"ci_date": "2025-12-02",
+"status": "BOOKED",
+"incoterm": "CIF",
+"total_boxes": 4200,
+"total_kg": 84000.0,
+"agreed_total": 302500.0,
+"docs_total": 294400.0,
+"cash_difference": 8100.0
+},
+{
+"ci_number": "MH/1646/2025-26",
+"vendor": "HMA AGRO INDUSTRIES LIMITED",
+"source_pis": [
+"HMA/PI/1796/2025-26"
+],
+"ci_date": "2025-12-02",
+"status": "BOOKED",
+"incoterm": "CIF",
+"total_boxes": 4200,
+"total_kg": 84000.0,
+"agreed_total": 301000.0,
+"docs_total": 281400.0,
+"cash_difference": 19600.0
+},
+{
+"ci_number": "MH/2043/2025-26",
+"vendor": "HMA AGRO INDUSTRIES LIMITED",
+"source_pis": [
+"HMA/PI/1351/2025-26"
+],
+"ci_date": "2025-12-01",
+"status": "BOOKED",
+"incoterm": "CIF",
+"total_boxes": 4200,
+"total_kg": 84000.0,
+"agreed_total": 374220.0,
+"docs_total": 340200.0,
+"cash_difference": 34020.0
+},
+{
+"ci_number": "MH/2042/2025-26",
+"vendor": "HMA AGRO INDUSTRIES LIMITED",
+"source_pis": [
+"HMA/PI/1351/2025-26"
+],
+"ci_date": "2025-12-01",
+"status": "BOOKED",
+"incoterm": "CIF",
+"total_boxes": 4356,
+"total_kg": 84008.0,
+"agreed_total": 358711.2,
+"docs_total": 336031.2,
+"cash_difference": 22680.0
+},
+{
+"ci_number": "MEPL/P0723/2526",
+"vendor": "Mirha Exports Private limited",
+"source_pis": [
+"PRO/MEPL/0291/2526"
+],
+"ci_date": "2025-11-29",
+"status": "BOOKED",
+"incoterm": "CIF",
+"total_boxes": 4200,
+"total_kg": 84000.0,
+"agreed_total": 344400.0,
+"docs_total": 344400.0,
+"cash_difference": 0.0
+},
+{
+"ci_number": "MEPL/P0718/2526",
+"vendor": "Mirha Exports Private limited",
+"source_pis": [
+"PRO/MEPL/0291/2526"
+],
+"ci_date": "2025-11-28",
+"status": "BOOKED",
+"incoterm": "CIF",
+"total_boxes": 4200,
+"total_kg": 84000.0,
+"agreed_total": 344400.0,
+"docs_total": 344400.0,
+"cash_difference": 0.0
+},
+{
+"ci_number": "MEPL/P0695/2526",
+"vendor": "Mirha Exports Private limited",
+"source_pis": [
+"PRO/MEPL/0291/2526"
+],
+"ci_date": "2025-11-24",
+"status": "BOOKED",
+"incoterm": "CIF",
+"total_boxes": 4200,
+"total_kg": 84000.0,
+"agreed_total": 344400.0,
+"docs_total": 344400.0,
+"cash_difference": 0.0
+},
+{
+"ci_number": "1119679599",
+"vendor": "FAIR EXPORTS (INDIA) PVT. LTD.",
+"source_pis": [
+"FIR/25-26/27482-27493"
+],
+"ci_date": "2025-11-22",
+"status": "BOOKED",
+"incoterm": "CIF",
+"total_boxes": 4242,
+"total_kg": 84006.0,
+"agreed_total": 379005.08,
+"docs_total": 379005.08,
+"cash_difference": 0.0
+},
+{
+"ci_number": "1119109170",
+"vendor": "FAIR EXPORTS (INDIA) PVT. LTD.",
+"source_pis": [
+"FIR/25-26/27482-27493"
+],
+"ci_date": "2025-11-21",
+"status": "BOOKED",
+"incoterm": "CIF",
+"total_boxes": 4284,
+"total_kg": 84012.0,
+"agreed_total": 365030.16,
+"docs_total": 365030.16,
+"cash_difference": 0.0
+},
+{
+"ci_number": "MH/1547/2025-26",
+"vendor": "HMA AGRO INDUSTRIES LIMITED",
+"source_pis": [
+"HMA/PI/1351/2025-26"
+],
+"ci_date": "2025-11-20",
+"status": "BOOKED",
+"incoterm": "CIF",
+"total_boxes": 4200,
+"total_kg": 84000.0,
+"agreed_total": 309680.0,
+"docs_total": 299600.0,
+"cash_difference": 10080.0
+},
+{
+"ci_number": "MH/1546/2025-26",
+"vendor": "HMA AGRO INDUSTRIES LIMITED",
+"source_pis": [
+"HMA/PI/1351/2025-26"
+],
+"ci_date": "2025-11-20",
+"status": "BOOKED",
+"incoterm": "CIF",
+"total_boxes": 4260,
+"total_kg": 84014.0,
+"agreed_total": 344287.04,
+"docs_total": 308527.7,
+"cash_difference": 35759.34
+},
+{
+"ci_number": "MEPL/P0678/2526",
+"vendor": "Mirha Exports Private limited",
+"source_pis": [
+"PRO/MEPL/0291/2526"
+],
+"ci_date": "2025-11-18",
+"status": "BOOKED",
+"incoterm": "CIF",
+"total_boxes": 4200,
+"total_kg": 84000.0,
+"agreed_total": 344400.0,
+"docs_total": 344400.0,
+"cash_difference": 0.0
+},
+{
+"ci_number": "MH/1522/2025-26",
+"vendor": "HMA AGRO INDUSTRIES LIMITED",
+"source_pis": [
+"HMA/PI/1351/2025-26"
+],
+"ci_date": "2025-11-17",
+"status": "BOOKED",
+"incoterm": "CIF",
+"total_boxes": 4278,
+"total_kg": 84004.0,
+"agreed_total": 344624.24,
+"docs_total": 304716.2,
+"cash_difference": 39908.04
+},
+{
+"ci_number": "MEPL/P0661/2526",
+"vendor": "Mirha Exports Private limited",
+"source_pis": [
+"PRO/MEPL/0291/2526"
+],
+"ci_date": "2025-11-15",
+"status": "BOOKED",
+"incoterm": "CIF",
+"total_boxes": 4200,
+"total_kg": 84000.0,
+"agreed_total": 344400.0,
+"docs_total": 344400.0,
+"cash_difference": 0.0
+},
+{
+"ci_number": "MH/1501/2025-26",
+"vendor": "HMA AGRO INDUSTRIES LIMITED",
+"source_pis": [
+"HMA/PI/1352/2025-26"
+],
+"ci_date": "2025-11-14",
+"status": "BOOKED",
+"incoterm": "CIF",
+"total_boxes": 4200,
+"total_kg": 84000.0,
+"agreed_total": 284539.0,
+"docs_total": 283339.0,
+"cash_difference": 1200.0
+},
+{
+"ci_number": "MH/1479/2025-26",
+"vendor": "HMA AGRO INDUSTRIES LIMITED",
+"source_pis": [
+"HMA/PI/1351/2025-26"
+],
+"ci_date": "2025-11-13",
+"status": "BOOKED",
+"incoterm": "CIF",
+"total_boxes": 4200,
+"total_kg": 84000.0,
+"agreed_total": 274680.0,
+"docs_total": 259000.0,
+"cash_difference": 15680.0
+},
+{
+"ci_number": "MH/1465/2025-26",
+"vendor": "HMA AGRO INDUSTRIES LIMITED",
+"source_pis": [
+"HMA/PI/1351/2025-26"
+],
+"ci_date": "2025-11-11",
+"status": "BOOKED",
+"incoterm": "CIF",
+"total_boxes": 4200,
+"total_kg": 84000.0,
+"agreed_total": 355320.0,
+"docs_total": 340200.0,
+"cash_difference": 15120.0
+},
+{
+"ci_number": "MH/1464/2025-26",
+"vendor": "HMA AGRO INDUSTRIES LIMITED",
+"source_pis": [
+"HMA/PI/1351/2025-26"
+],
+"ci_date": "2025-11-11",
+"status": "BOOKED",
+"incoterm": "CIF",
+"total_boxes": 4200,
+"total_kg": 84000.0,
+"agreed_total": 315491.0,
+"docs_total": 299111.0,
+"cash_difference": 16380.0
+},
+{
+"ci_number": "MEPL/P0648/2526",
+"vendor": "Mirha Exports Private limited",
+"source_pis": [
+"PRO/MEPL/0291/2526"
+],
+"ci_date": "2025-11-11",
+"status": "BOOKED",
+"incoterm": "CIF",
+"total_boxes": 4200,
+"total_kg": 84000.0,
+"agreed_total": 344400.0,
+"docs_total": 344400.0,
+"cash_difference": 0.0
+},
+{
+"ci_number": "MH/1457/2025-26",
+"vendor": "HMA AGRO INDUSTRIES LIMITED",
+"source_pis": [
+"HMA/PI/1351/2025-26"
+],
+"ci_date": "2025-11-10",
+"status": "BOOKED",
+"incoterm": "CIF",
+"total_boxes": 4356,
+"total_kg": 84008.0,
+"agreed_total": 419768.48,
+"docs_total": 340232.4,
+"cash_difference": 79536.08
+},
+{
+"ci_number": "MH/1456/2025-26",
+"vendor": "HMA AGRO INDUSTRIES LIMITED",
+"source_pis": [
+"HMA/PI/1167/2025-26"
+],
+"ci_date": "2025-11-10",
+"status": "BOOKED",
+"incoterm": "CIF",
+"total_boxes": 4200,
+"total_kg": 84000.0,
+"agreed_total": 366660.0,
+"docs_total": 327600.0,
+"cash_difference": 39060.0
+},
+{
+"ci_number": "MH/1455/2025-26",
+"vendor": "HMA AGRO INDUSTRIES LIMITED",
+"source_pis": [
+"HMA/PI/1168/2025-26"
+],
+"ci_date": "2025-11-10",
+"status": "BOOKED",
+"incoterm": "CIF",
+"total_boxes": 4200,
+"total_kg": 84000.0,
+"agreed_total": 214200.0,
+"docs_total": 214200.0,
+"cash_difference": 0.0
+},
+{
+"ci_number": "1119679547",
+"vendor": "FAIR EXPORTS (INDIA) PVT. LTD.",
+"source_pis": [
+"FIR/25-26/27482-27493"
+],
+"ci_date": "2025-11-07",
+"status": "BOOKED",
+"incoterm": "CIF",
+"total_boxes": 4284,
+"total_kg": 84012.0,
+"agreed_total": 365030.16,
+"docs_total": 365030.16,
+"cash_difference": 0.0
+},
+{
+"ci_number": "MEPL/P0616/2526",
+"vendor": "Mirha Exports Private limited",
+"source_pis": [
+"PRO/MEPL/0291/2526"
+],
+"ci_date": "2025-10-31",
+"status": "BOOKED",
+"incoterm": "CIF",
+"total_boxes": 4200,
+"total_kg": 84000.0,
+"agreed_total": 344400.0,
+"docs_total": 344400.0,
+"cash_difference": 0.0
+},
+{
+"ci_number": "MH/1377/2025-26",
+"vendor": "HMA AGRO INDUSTRIES LIMITED",
+"source_pis": [
+"HMA/PI/1168/2025-26"
+],
+"ci_date": "2025-10-30",
+"status": "BOOKED",
+"incoterm": "CIF",
+"total_boxes": 4200,
+"total_kg": 84000.0,
+"agreed_total": 285530.0,
+"docs_total": 281050.0,
+"cash_difference": 4480.0
+},
+{
+"ci_number": "MH/1376/2025-26",
+"vendor": "HMA AGRO INDUSTRIES LIMITED",
+"source_pis": [
+"HMA/PI/1351/2025-26"
+],
+"ci_date": "2025-10-30",
+"status": "BOOKED",
+"incoterm": "CIF",
+"total_boxes": 4200,
+"total_kg": 84000.0,
+"agreed_total": 355320.0,
+"docs_total": 340200.0,
+"cash_difference": 15120.0
+},
+{
+"ci_number": "MH/1375/2025-26",
+"vendor": "HMA AGRO INDUSTRIES LIMITED",
+"source_pis": [
+"HMA/PI/1351/2025-26"
+],
+"ci_date": "2025-10-30",
+"status": "BOOKED",
+"incoterm": "CIF",
+"total_boxes": 4200,
+"total_kg": 84000.0,
+"agreed_total": 355320.0,
+"docs_total": 340200.0,
+"cash_difference": 15120.0
+},
+{
+"ci_number": "MH/1370/2025-26",
+"vendor": "HMA AGRO INDUSTRIES LIMITED",
+"source_pis": [
+"HMA/PI/1351/2025-26"
+],
+"ci_date": "2025-10-29",
+"status": "BOOKED",
+"incoterm": "CIF",
+"total_boxes": 4200,
+"total_kg": 84000.0,
+"agreed_total": 368480.0,
+"docs_total": 340200.0,
+"cash_difference": 28280.0
+},
+{
+"ci_number": "MH/1366/2025-26",
+"vendor": "HMA AGRO INDUSTRIES LIMITED",
+"source_pis": [
+"HMA/PI/1352/2025-26"
+],
+"ci_date": "2025-10-29",
+"status": "BOOKED",
+"incoterm": "CIF",
+"total_boxes": 4200,
+"total_kg": 84000.0,
+"agreed_total": 343280.0,
+"docs_total": 328800.0,
+"cash_difference": 14480.0
+},
+{
+"ci_number": "MH/1336/2025-26",
+"vendor": "HMA AGRO INDUSTRIES LIMITED",
+"source_pis": [
+"HMA/PI/1351/2025-26"
+],
+"ci_date": "2025-10-27",
+"status": "BOOKED",
+"incoterm": "CIF",
+"total_boxes": 4200,
+"total_kg": 84000.0,
+"agreed_total": 355320.0,
+"docs_total": 340200.0,
+"cash_difference": 15120.0
+},
+{
+"ci_number": "MH/1335/2025-26",
+"vendor": "HMA AGRO INDUSTRIES LIMITED",
+"source_pis": [
+"HMA/PI/1351/2025-26"
+],
+"ci_date": "2025-10-27",
+"status": "BOOKED",
+"incoterm": "CIF",
+"total_boxes": 4200,
+"total_kg": 84000.0,
+"agreed_total": 355320.0,
+"docs_total": 340200.0,
+"cash_difference": 15120.0
+},
+{
+"ci_number": "MH/1593/2025-26_D",
+"vendor": "HMA AGRO INDUSTRIES LIMITED",
+"source_pis": [
+"HMA/PI/1167/2025-26"
+],
+"ci_date": "2025-10-25",
+"status": "BOOKED",
+"incoterm": "CIF",
+"total_boxes": 4200,
+"total_kg": 84000.0,
+"agreed_total": 367640.0,
+"docs_total": 327600.0,
+"cash_difference": 40040.0
+},
+{
+"ci_number": "MH/1329/2025-26",
+"vendor": "HMA AGRO INDUSTRIES LIMITED",
+"source_pis": [
+"HMA/PI/1167/2025-26"
+],
+"ci_date": "2025-10-25",
+"status": "BOOKED",
+"incoterm": "CIF",
+"total_boxes": 3920,
+"total_kg": 84000.0,
+"agreed_total": 354760.0,
+"docs_total": 336000.0,
+"cash_difference": 18760.0
+},
+{
+"ci_number": "MH/1328/2025-26",
+"vendor": "HMA AGRO INDUSTRIES LIMITED",
+"source_pis": [
+"HMA/PI/1167/2025-26"
+],
+"ci_date": "2025-10-25",
+"status": "BOOKED",
+"incoterm": "CIF",
+"total_boxes": 4200,
+"total_kg": 84000.0,
+"agreed_total": 366660.0,
+"docs_total": 327600.0,
+"cash_difference": 39060.0
+},
+{
+"ci_number": "MEPL/P0572/2526",
+"vendor": "Mirha Exports Private limited",
+"source_pis": [
+"PRO/MEPL/0291/2526"
+],
+"ci_date": "2025-10-24",
+"status": "BOOKED",
+"incoterm": "CIF",
+"total_boxes": 4200,
+"total_kg": 84000.0,
+"agreed_total": 344400.0,
+"docs_total": 344400.0,
+"cash_difference": 0.0
+},
+{
+"ci_number": "MH/1310/2025-26",
+"vendor": "HMA AGRO INDUSTRIES LIMITED",
+"source_pis": [
+"HMA/PI/1352/2025-26"
+],
+"ci_date": "2025-10-23",
+"status": "BOOKED",
+"incoterm": "CIF",
+"total_boxes": 4244,
+"total_kg": 83992.0,
+"agreed_total": 352073.56,
+"docs_total": 330568.2,
+"cash_difference": 21505.36
+},
+{
+"ci_number": "MH/1309/2025-26",
+"vendor": "HMA AGRO INDUSTRIES LIMITED",
+"source_pis": [
+"HMA/PI/1168/2025-26"
+],
+"ci_date": "2025-10-23",
+"status": "BOOKED",
+"incoterm": "CIF",
+"total_boxes": 4200,
+"total_kg": 84000.0,
+"agreed_total": 297900.0,
+"docs_total": 297900.0,
+"cash_difference": 0.0
+},
+{
+"ci_number": "MH/1308/2025-26",
+"vendor": "HMA AGRO INDUSTRIES LIMITED",
+"source_pis": [
+"HMA/PI/1351/2025-26"
+],
+"ci_date": "2025-10-23",
+"status": "BOOKED",
+"incoterm": "CIF",
+"total_boxes": 4200,
+"total_kg": 84000.0,
+"agreed_total": 310800.0,
+"docs_total": 305200.0,
+"cash_difference": 5600.0
+},
+{
+"ci_number": "MH/1307/2025-26",
+"vendor": "HMA AGRO INDUSTRIES LIMITED",
+"source_pis": [
+"HMA/PI/1168/2025-26"
+],
+"ci_date": "2025-10-23",
+"status": "BOOKED",
+"incoterm": "CIF",
+"total_boxes": 3640,
+"total_kg": 84000.0,
+"agreed_total": 305200.0,
+"docs_total": 303800.0,
+"cash_difference": 1400.0
+},
+{
+"ci_number": "MH/1531/2025-26_D",
+"vendor": "HMA AGRO INDUSTRIES LIMITED",
+"source_pis": [
+"HMA/PI/1167/2025-26"
+],
+"ci_date": "2025-10-18",
+"status": "BOOKED",
+"incoterm": "CIF",
+"total_boxes": 4200,
+"total_kg": 84000.0,
+"agreed_total": 366660.0,
+"docs_total": 327600.0,
+"cash_difference": 39060.0
+},
+{
+"ci_number": "MH/1284/2025-26",
+"vendor": "HMA AGRO INDUSTRIES LIMITED",
+"source_pis": [
+"HMA/PI/1352/2025-26"
+],
+"ci_date": "2025-10-18",
+"status": "BOOKED",
+"incoterm": "CIF",
+"total_boxes": 4200,
+"total_kg": 84000.0,
+"agreed_total": 327600.0,
+"docs_total": 327600.0,
+"cash_difference": 0.0
+},
+{
+"ci_number": "MH/1280/2025-26",
+"vendor": "HMA AGRO INDUSTRIES LIMITED",
+"source_pis": [
+"HMA/PI/1167/2025-26"
+],
+"ci_date": "2025-10-18",
+"status": "BOOKED",
+"incoterm": "CIF",
+"total_boxes": 4244,
+"total_kg": 83992.0,
+"agreed_total": 373795.6,
+"docs_total": 323568.8,
+"cash_difference": 50226.8
+},
+{
+"ci_number": "MH/1267/2025-26_NSh",
+"vendor": "HMA AGRO INDUSTRIES LIMITED",
+"source_pis": [
+"HMA/PI/1168/2025-26"
+],
+"ci_date": "2025-10-17",
+"status": "BOOKED",
+"incoterm": "CIF",
+"total_boxes": 4200,
+"total_kg": 84000.0,
+"agreed_total": 303800.0,
+"docs_total": 298200.0,
+"cash_difference": 5600.0
+},
+{
+"ci_number": "MH/1266/2025-26",
+"vendor": "HMA AGRO INDUSTRIES LIMITED",
+"source_pis": [
+"HMA/PI/1351/2025-26"
+],
+"ci_date": "2025-10-17",
+"status": "BOOKED",
+"incoterm": "CIF",
+"total_boxes": 4200,
+"total_kg": 84000.0,
+"agreed_total": 348600.0,
+"docs_total": 340200.0,
+"cash_difference": 8400.0
+},
+{
+"ci_number": "MH/1246/2025-26",
+"vendor": "HMA AGRO INDUSTRIES LIMITED",
+"source_pis": [
+"HMA/PI/1167/2025-26"
+],
+"ci_date": "2025-10-14",
+"status": "BOOKED",
+"incoterm": "CIF",
+"total_boxes": 4212,
+"total_kg": 84016.0,
+"agreed_total": 345328.8,
+"docs_total": 308262.4,
+"cash_difference": 37066.4
+},
+{
+"ci_number": "MH/1245/2025-26",
+"vendor": "HMA AGRO INDUSTRIES LIMITED",
+"source_pis": [
+"HMA/PI/1167/2025-26"
+],
+"ci_date": "2025-10-14",
+"status": "BOOKED",
+"incoterm": "CIF",
+"total_boxes": 4200,
+"total_kg": 84000.0,
+"agreed_total": 366660.0,
+"docs_total": 327600.0,
+"cash_difference": 39060.0
+},
+{
+"ci_number": "MH/1244/2025-26",
+"vendor": "HMA AGRO INDUSTRIES LIMITED",
+"source_pis": [
+"HMA/PI/1168/2025-26"
+],
+"ci_date": "2025-10-14",
+"status": "BOOKED",
+"incoterm": "CIF",
+"total_boxes": 4278,
+"total_kg": 84004.0,
+"agreed_total": 324822.2,
+"docs_total": 287015.6,
+"cash_difference": 37806.6
+},
+{
+"ci_number": "MH/1243/2025-26",
+"vendor": "HMA AGRO INDUSTRIES LIMITED",
+"source_pis": [
+"HMA/PI/1167/2025-26"
+],
+"ci_date": "2025-10-14",
+"status": "BOOKED",
+"incoterm": "CIF",
+"total_boxes": 4200,
+"total_kg": 84000.0,
+"agreed_total": 366660.0,
+"docs_total": 327600.0,
+"cash_difference": 39060.0
+},
+{
+"ci_number": "MH/1242/2025-26_NSh",
+"vendor": "HMA AGRO INDUSTRIES LIMITED",
+"source_pis": [
+"HMA/PI/1167/2025-26"
+],
+"ci_date": "2025-10-14",
+"status": "BOOKED",
+"incoterm": "CIF",
+"total_boxes": 4200,
+"total_kg": 84000.0,
+"agreed_total": 366660.0,
+"docs_total": 327600.0,
+"cash_difference": 39060.0
+},
+{
+"ci_number": "MH/1458/2025-26_D",
+"vendor": "HMA AGRO INDUSTRIES LIMITED",
+"source_pis": [
+"HMA/PI/1167/2025-26"
+],
+"ci_date": "2025-10-13",
+"status": "BOOKED",
+"incoterm": "CIF",
+"total_boxes": 4200,
+"total_kg": 84000.0,
+"agreed_total": 366660.0,
+"docs_total": 327600.0,
+"cash_difference": 39060.0
+},
+{
+"ci_number": "MEPL/P0526/2526",
+"vendor": "Mirha Exports Private limited",
+"source_pis": [
+"PRO/MEPL/0187/25-26"
+],
+"ci_date": "2025-10-13",
+"status": "BOOKED",
+"incoterm": "CIF",
+"total_boxes": 4200,
+"total_kg": 84000.0,
+"agreed_total": 343700.0,
+"docs_total": 282240.0,
+"cash_difference": 61460.0
+},
+{
+"ci_number": "MH/1173/2025-26",
+"vendor": "HMA AGRO INDUSTRIES LIMITED",
+"source_pis": [
+"HMA/PI/1240/2025-26"
+],
+"ci_date": "2025-10-04",
+"status": "BOOKED",
+"incoterm": "CIF",
+"total_boxes": 4200,
+"total_kg": 84000.0,
+"agreed_total": 348600.0,
+"docs_total": 327600.0,
+"cash_difference": 21000.0
+},
+{
+"ci_number": "MH/1172/2025-26",
+"vendor": "HMA AGRO INDUSTRIES LIMITED",
+"source_pis": [
+"HMA/PI/405/2025-26"
+],
+"ci_date": "2025-10-04",
+"status": "BOOKED",
+"incoterm": "CIF",
+"total_boxes": 4356,
+"total_kg": 84008.0,
+"agreed_total": 316444.4,
+"docs_total": 265831.2,
+"cash_difference": 50613.2
+},
+{
+"ci_number": "MH/1171/2025-26",
+"vendor": "HMA AGRO INDUSTRIES LIMITED",
+"source_pis": [
+"HMA/PI/1168/2025-26"
+],
+"ci_date": "2025-10-04",
+"status": "BOOKED",
+"incoterm": "CIF",
+"total_boxes": 4200,
+"total_kg": 84000.0,
+"agreed_total": 284200.0,
+"docs_total": 277200.0,
+"cash_difference": 7000.0
+},
+{
+"ci_number": "MEPL/P0510/2526",
+"vendor": "Mirha Exports Private limited",
+"source_pis": [
+"PRO/MEPL/0291/2526"
+],
+"ci_date": "2025-10-04",
+"status": "BOOKED",
+"incoterm": "CIF",
+"total_boxes": 4200,
+"total_kg": 84000.0,
+"agreed_total": 352800.0,
+"docs_total": 305760.0,
+"cash_difference": 47040.0
+},
+{
+"ci_number": "MH/1126/2025-26",
+"vendor": "HMA AGRO INDUSTRIES LIMITED",
+"source_pis": [
+"HMA/PI/1241/2025-26"
+],
+"ci_date": "2025-09-29",
+"status": "BOOKED",
+"incoterm": "CIF",
+"total_boxes": 3360,
+"total_kg": 84000.0,
+"agreed_total": 342300.0,
+"docs_total": 327600.0,
+"cash_difference": 14700.0
+},
+{
+"ci_number": "MH/1119/2025-26",
+"vendor": "HMA AGRO INDUSTRIES LIMITED",
+"source_pis": [
+"HMA/PI/1240/2025-26"
+],
+"ci_date": "2025-09-29",
+"status": "BOOKED",
+"incoterm": "CIF",
+"total_boxes": 4200,
+"total_kg": 84000.0,
+"agreed_total": 348600.0,
+"docs_total": 327600.0,
+"cash_difference": 21000.0
+},
+{
+"ci_number": "MH/1115/2025-26",
+"vendor": "HMA AGRO INDUSTRIES LIMITED",
+"source_pis": [
+"HMA/PI/1167/2025-26"
+],
+"ci_date": "2025-09-29",
+"status": "BOOKED",
+"incoterm": "CIF",
+"total_boxes": 4200,
+"total_kg": 84000.0,
+"agreed_total": 348600.0,
+"docs_total": 327600.0,
+"cash_difference": 21000.0
+},
+{
+"ci_number": "MH/1277/2025-26_D",
+"vendor": "HMA AGRO INDUSTRIES LIMITED",
+"source_pis": [
+"HMA/PI/693/2025-26"
+],
+"ci_date": "2025-09-27",
+"status": "BOOKED",
+"incoterm": "CIF",
+"total_boxes": 4200,
+"total_kg": 84000.0,
+"agreed_total": 357000.0,
+"docs_total": 306600.0,
+"cash_difference": 50400.0
+},
+{
+"ci_number": "MH/1112/2025-26",
+"vendor": "HMA AGRO INDUSTRIES LIMITED",
+"source_pis": [
+"HMA/PI/1167/2025-26"
+],
+"ci_date": "2025-09-27",
+"status": "BOOKED",
+"incoterm": "CIF",
+"total_boxes": 4200,
+"total_kg": 84000.0,
+"agreed_total": 348600.0,
+"docs_total": 327600.0,
+"cash_difference": 21000.0
+},
+{
+"ci_number": "MH/1111/2025-26",
+"vendor": "HMA AGRO INDUSTRIES LIMITED",
+"source_pis": [
+"HMA/PI/1167/2025-26"
+],
+"ci_date": "2025-09-27",
+"status": "BOOKED",
+"incoterm": "CIF",
+"total_boxes": 4200,
+"total_kg": 84000.0,
+"agreed_total": 348600.0,
+"docs_total": 327600.0,
+"cash_difference": 21000.0
+},
+{
+"ci_number": "MH/1109/2025-26",
+"vendor": "HMA AGRO INDUSTRIES LIMITED",
+"source_pis": [
+"HMA/PI/694/2025-26"
+],
+"ci_date": "2025-09-27",
+"status": "BOOKED",
+"incoterm": "CIF",
+"total_boxes": 4200,
+"total_kg": 84000.0,
+"agreed_total": 302400.0,
+"docs_total": 288400.0,
+"cash_difference": 14000.0
+},
+{
+"ci_number": "MH/1269/2025-26_D",
+"vendor": "HMA AGRO INDUSTRIES LIMITED",
+"source_pis": [
+"HMA/PI/693/2025-26"
+],
+"ci_date": "2025-09-26",
+"status": "BOOKED",
+"incoterm": "CIF",
+"total_boxes": 4200,
+"total_kg": 84000.0,
+"agreed_total": 357000.0,
+"docs_total": 306600.0,
+"cash_difference": 50400.0
+},
+{
+"ci_number": "MH/1267/2025-26_D",
+"vendor": "HMA AGRO INDUSTRIES LIMITED",
+"source_pis": [
+"HMA/PI/693/2025-26"
+],
+"ci_date": "2025-09-26",
+"status": "BOOKED",
+"incoterm": "CIF",
+"total_boxes": 4200,
+"total_kg": 84000.0,
+"agreed_total": 357000.0,
+"docs_total": 306600.0,
+"cash_difference": 50400.0
+},
+{
+"ci_number": "MH/1260/2025-26_D",
+"vendor": "HMA AGRO INDUSTRIES LIMITED",
+"source_pis": [
+"HMA/PI/693/2025-26"
+],
+"ci_date": "2025-09-26",
+"status": "BOOKED",
+"incoterm": "CIF",
+"total_boxes": 4200,
+"total_kg": 84000.0,
+"agreed_total": 357000.0,
+"docs_total": 306600.0,
+"cash_difference": 50400.0
+},
+{
+"ci_number": "MH/1108/2025-26",
+"vendor": "HMA AGRO INDUSTRIES LIMITED",
+"source_pis": [
+"HMA/PI/693/2025-26"
+],
+"ci_date": "2025-09-26",
+"status": "BOOKED",
+"incoterm": "CIF",
+"total_boxes": 4356,
+"total_kg": 84008.0,
+"agreed_total": 337442.0,
+"docs_total": 275829.2,
+"cash_difference": 61612.8
+},
+{
+"ci_number": "MH/1105/2025-26",
+"vendor": "HMA AGRO INDUSTRIES LIMITED",
+"source_pis": [
+"HMA/PI/1167/2025-26"
+],
+"ci_date": "2025-09-26",
+"status": "BOOKED",
+"incoterm": "CIF",
+"total_boxes": 4200,
+"total_kg": 84000.0,
+"agreed_total": 348600.0,
+"docs_total": 327600.0,
+"cash_difference": 21000.0
+},
+{
+"ci_number": "MH/1103/2025-26",
+"vendor": "HMA AGRO INDUSTRIES LIMITED",
+"source_pis": [
+"HMA/PI/1168/2025-26"
+],
+"ci_date": "2025-09-26",
+"status": "BOOKED",
+"incoterm": "CIF",
+"total_boxes": 4200,
+"total_kg": 84000.0,
+"agreed_total": 310800.0,
+"docs_total": 299600.0,
+"cash_difference": 11200.0
+},
+{
+"ci_number": "MH/1102/2025-26",
+"vendor": "HMA AGRO INDUSTRIES LIMITED",
+"source_pis": [
+"HMA/PI/1167/2025-26"
+],
+"ci_date": "2025-09-26",
+"status": "BOOKED",
+"incoterm": "CIF",
+"total_boxes": 4200,
+"total_kg": 84000.0,
+"agreed_total": 348600.0,
+"docs_total": 327600.0,
+"cash_difference": 21000.0
+},
+{
+"ci_number": "MEPL/P0461/2526",
+"vendor": "Mirha Exports Private limited",
+"source_pis": [
+"PRO/MEPL/0187/25-26"
+],
+"ci_date": "2025-09-25",
+"status": "BOOKED",
+"incoterm": "CIF",
+"total_boxes": 4200,
+"total_kg": 84000.0,
+"agreed_total": 305200.0,
+"docs_total": 282240.0,
+"cash_difference": 22960.0
+},
+{
+"ci_number": "MH/1242/2025-26_D",
+"vendor": "HMA AGRO INDUSTRIES LIMITED",
+"source_pis": [
+"HMA/PI/693/2025-26"
+],
+"ci_date": "2025-09-24",
+"status": "BOOKED",
+"incoterm": "CIF",
+"total_boxes": 4200,
+"total_kg": 84000.0,
+"agreed_total": 357000.0,
+"docs_total": 306600.0,
+"cash_difference": 50400.0
+},
+{
+"ci_number": "MH/1056/2025-26",
+"vendor": "HMA AGRO INDUSTRIES LIMITED",
+"source_pis": [
+"HMA/PI/694/2025-26"
+],
+"ci_date": "2025-09-19",
+"status": "BOOKED",
+"incoterm": "CIF",
+"total_boxes": 4200,
+"total_kg": 84000.0,
+"agreed_total": 221200.0,
+"docs_total": 221200.0,
+"cash_difference": 0.0
+},
+{
+"ci_number": "MH/1155/2025-26_D",
+"vendor": "HMA AGRO INDUSTRIES LIMITED",
+"source_pis": [
+"HMA/PI/693/2025-26"
+],
+"ci_date": "2025-09-18",
+"status": "BOOKED",
+"incoterm": "CIF",
+"total_boxes": 4200,
+"total_kg": 84000.0,
+"agreed_total": 357000.0,
+"docs_total": 306600.0,
+"cash_difference": 50400.0
+},
+{
+"ci_number": "MH/1052/2025-26",
+"vendor": "HMA AGRO INDUSTRIES LIMITED",
+"source_pis": [
+"HMA/PI/693/2025-26"
+],
+"ci_date": "2025-09-18",
+"status": "BOOKED",
+"incoterm": "CIF",
+"total_boxes": 4200,
+"total_kg": 84000.0,
+"agreed_total": 352800.0,
+"docs_total": 313600.0,
+"cash_difference": 39200.0
+},
+{
+"ci_number": "MH/1051/2025-26",
+"vendor": "HMA AGRO INDUSTRIES LIMITED",
+"source_pis": [
+"HMA/PI/1167/2025-26"
+],
+"ci_date": "2025-09-18",
+"status": "BOOKED",
+"incoterm": "CIF",
+"total_boxes": 4200,
+"total_kg": 84000.0,
+"agreed_total": 352800.0,
+"docs_total": 327600.0,
+"cash_difference": 25200.0
+},
+{
+"ci_number": "MH/1050/2025-26",
+"vendor": "HMA AGRO INDUSTRIES LIMITED",
+"source_pis": [
+"HMA/PI/1167/2025-26"
+],
+"ci_date": "2025-09-18",
+"status": "BOOKED",
+"incoterm": "CIF",
+"total_boxes": 4200,
+"total_kg": 84000.0,
+"agreed_total": 358400.0,
+"docs_total": 327600.0,
+"cash_difference": 30800.0
+},
+{
+"ci_number": "MH/1048/2025-26",
+"vendor": "HMA AGRO INDUSTRIES LIMITED",
+"source_pis": [
+"HMA/PI/694/2025-26"
+],
+"ci_date": "2025-09-18",
+"status": "BOOKED",
+"incoterm": "CIF",
+"total_boxes": 4200,
+"total_kg": 84000.0,
+"agreed_total": 308000.0,
+"docs_total": 274400.0,
+"cash_difference": 33600.0
+},
+{
+"ci_number": "MH/1034/2025-26",
+"vendor": "HMA AGRO INDUSTRIES LIMITED",
+"source_pis": [
+"HMA/PI/693/2025-26"
+],
+"ci_date": "2025-09-17",
+"status": "BOOKED",
+"incoterm": "CIF",
+"total_boxes": 4200,
+"total_kg": 84000.0,
+"agreed_total": 357000.0,
+"docs_total": 306600.0,
+"cash_difference": 50400.0
+},
+{
+"ci_number": "MEPL/P0429/2526",
+"vendor": "Mirha Exports Private limited",
+"source_pis": [
+"PRO/MEPL/0187/25-26"
+],
+"ci_date": "2025-09-16",
+"status": "BOOKED",
+"incoterm": "CIF",
+"total_boxes": 4200,
+"total_kg": 84000.0,
+"agreed_total": 305200.0,
+"docs_total": 282240.0,
+"cash_difference": 22960.0
+},
+{
+"ci_number": "MEPL/P0423/2526",
+"vendor": "Mirha Exports Private limited",
+"source_pis": [
+"PRO/MEPL/0187/25-26"
+],
+"ci_date": "2025-09-15",
+"status": "BOOKED",
+"incoterm": "CIF",
+"total_boxes": 2800,
+"total_kg": 56000.0,
+"agreed_total": 226800.0,
+"docs_total": 188160.0,
+"cash_difference": 38640.0
+},
+{
+"ci_number": "MEPL/P0420/2526",
+"vendor": "Mirha Exports Private limited",
+"source_pis": [
+"PRO/MEPL/0188/25-26"
+],
+"ci_date": "2025-09-15",
+"status": "BOOKED",
+"incoterm": "CIF",
+"total_boxes": 1400,
+"total_kg": 28000.0,
+"agreed_total": 61600.0,
+"docs_total": 56000.0,
+"cash_difference": 5600.0
+},
+{
+"ci_number": "MH/1008/2025-26",
+"vendor": "HMA AGRO INDUSTRIES LIMITED",
+"source_pis": [
+"HMA/PI/693/2025-26"
+],
+"ci_date": "2025-09-13",
+"status": "BOOKED",
+"incoterm": "CIF",
+"total_boxes": 4200,
+"total_kg": 84000.0,
+"agreed_total": 357000.0,
+"docs_total": 306600.0,
+"cash_difference": 50400.0
+},
+{
+"ci_number": "MH/1002/2025-26",
+"vendor": "HMA AGRO INDUSTRIES LIMITED",
+"source_pis": [
+"HMA/PI/694/2025-26"
+],
+"ci_date": "2025-09-13",
+"status": "BOOKED",
+"incoterm": "CIF",
+"total_boxes": 4200,
+"total_kg": 84000.0,
+"agreed_total": 210000.0,
+"docs_total": 210000.0,
+"cash_difference": 0.0
+},
+{
+"ci_number": "MH/980/2025-26",
+"vendor": "HMA AGRO INDUSTRIES LIMITED",
+"source_pis": [
+"HMA/PI/693/2025-26"
+],
+"ci_date": "2025-09-11",
+"status": "BOOKED",
+"incoterm": "CIF",
+"total_boxes": 4200,
+"total_kg": 84000.0,
+"agreed_total": 357000.0,
+"docs_total": 306600.0,
+"cash_difference": 50400.0
+},
+{
+"ci_number": "MH/979/2025-26",
+"vendor": "HMA AGRO INDUSTRIES LIMITED",
+"source_pis": [
+"HMA/PI/693/2025-26"
+],
+"ci_date": "2025-09-11",
+"status": "BOOKED",
+"incoterm": "CIF",
+"total_boxes": 4356,
+"total_kg": 84008.0,
+"agreed_total": 306642.0,
+"docs_total": 306629.2,
+"cash_difference": 12.8
+},
+{
+"ci_number": "1119679342",
+"vendor": "FAIR EXPORTS (INDIA) PVT. LTD.",
+"source_pis": [
+"FIR/25-26/24534-24545"
+],
+"ci_date": "2025-09-11",
+"status": "BOOKED",
+"incoterm": "CIF",
+"total_boxes": 4200,
+"total_kg": 84000.0,
+"agreed_total": 370860.0,
+"docs_total": 370860.0,
+"cash_difference": 0.0
+},
+{
+"ci_number": "MH/956/2025-26",
+"vendor": "HMA AGRO INDUSTRIES LIMITED",
+"source_pis": [
+"HMA/PI/693/2025-26"
+],
+"ci_date": "2025-09-06",
+"status": "BOOKED",
+"incoterm": "CIF",
+"total_boxes": 4200,
+"total_kg": 84000.0,
+"agreed_total": 280000.0,
+"docs_total": 306600.0,
+"cash_difference": 26600.0
+},
+{
+"ci_number": "MH/955/2025-26",
+"vendor": "HMA AGRO INDUSTRIES LIMITED",
+"source_pis": [
+"HMA/PI/693/2025-26"
+],
+"ci_date": "2025-09-06",
+"status": "BOOKED",
+"incoterm": "CIF",
+"total_boxes": 4200,
+"total_kg": 84000.0,
+"agreed_total": 305200.0,
+"docs_total": 315000.0,
+"cash_difference": 9800.0
+},
+{
+"ci_number": "MH/954/2025-26",
+"vendor": "HMA AGRO INDUSTRIES LIMITED",
+"source_pis": [
+"HMA/PI/693/2025-26"
+],
+"ci_date": "2025-09-06",
+"status": "BOOKED",
+"incoterm": "CIF",
+"total_boxes": 4200,
+"total_kg": 84000.0,
+"agreed_total": 346500.0,
+"docs_total": 306600.0,
+"cash_difference": 39900.0
+},
+{
+"ci_number": "MH/876/2025-26",
+"vendor": "HMA AGRO INDUSTRIES LIMITED",
+"source_pis": [
+"HMA/PI/693/2025-26"
+],
+"ci_date": "2025-08-25",
+"status": "BOOKED",
+"incoterm": "CIF",
+"total_boxes": 4200,
+"total_kg": 84000.0,
+"agreed_total": 273000.0,
+"docs_total": 309400.0,
+"cash_difference": 36400.0
+},
+{
+"ci_number": "MH/870/2025-26",
+"vendor": "HMA AGRO INDUSTRIES LIMITED",
+"source_pis": [
+"HMA/PI/693/2025-26"
+],
+"ci_date": "2025-08-25",
+"status": "BOOKED",
+"incoterm": "CIF",
+"total_boxes": 4200,
+"total_kg": 84000.0,
+"agreed_total": 268800.0,
+"docs_total": 295400.0,
+"cash_difference": 26600.0
+},
+{
+"ci_number": "MH/867/2025-26",
+"vendor": "HMA AGRO INDUSTRIES LIMITED",
+"source_pis": [
+"HMA/PI/693/2025-26"
+],
+"ci_date": "2025-08-25",
+"status": "BOOKED",
+"incoterm": "CIF",
+"total_boxes": 4200,
+"total_kg": 84000.0,
+"agreed_total": 346500.0,
+"docs_total": 306600.0,
+"cash_difference": 39900.0
+},
+{
+"ci_number": "1119109105",
+"vendor": "FAIR EXPORTS (INDIA) PVT. LTD.",
+"source_pis": [
+"FIR/25-26/24534-24545"
+],
+"ci_date": "2025-08-25",
+"status": "BOOKED",
+"incoterm": "CIF",
+"total_boxes": 4242,
+"total_kg": 84006.0,
+"agreed_total": 362764.75,
+"docs_total": 362764.75,
+"cash_difference": 0.0
+},
+{
+"ci_number": "MH/864/2025-26",
+"vendor": "HMA AGRO INDUSTRIES LIMITED",
+"source_pis": [
+"HMA/PI/693/2025-26"
+],
+"ci_date": "2025-08-23",
+"status": "BOOKED",
+"incoterm": "CIF",
+"total_boxes": 4200,
+"total_kg": 84000.0,
+"agreed_total": 346500.0,
+"docs_total": 306600.0,
+"cash_difference": 39900.0
+},
+{
+"ci_number": "MH/863/2025-26",
+"vendor": "HMA AGRO INDUSTRIES LIMITED",
+"source_pis": [
+"HMA/PI/405/2025-26"
+],
+"ci_date": "2025-08-23",
+"status": "BOOKED",
+"incoterm": "CIF",
+"total_boxes": 4200,
+"total_kg": 84000.0,
+"agreed_total": 352800.0,
+"docs_total": 309400.0,
+"cash_difference": 43400.0
+},
+{
+"ci_number": "1119679244",
+"vendor": "FAIR EXPORTS (INDIA) PVT. LTD.",
+"source_pis": [
+"FIR/25-26/24534-24545"
+],
+"ci_date": "2025-08-13",
+"status": "BOOKED",
+"incoterm": "CIF",
+"total_boxes": 4200,
+"total_kg": 84000.0,
+"agreed_total": 370860.0,
+"docs_total": 370860.0,
+"cash_difference": 0.0
+},
+{
+"ci_number": "MH/763/2025-26",
+"vendor": "HMA AGRO INDUSTRIES LIMITED",
+"source_pis": [
+"HMA/PI/693/2025-26"
+],
+"ci_date": "2025-08-06",
+"status": "BOOKED",
+"incoterm": "CIF",
+"total_boxes": 4200,
+"total_kg": 84000.0,
+"agreed_total": 268800.0,
+"docs_total": 242200.0,
+"cash_difference": 26600.0
+},
+{
+"ci_number": "MH/762/2025-26",
+"vendor": "HMA AGRO INDUSTRIES LIMITED",
+"source_pis": [
+"HMA/PI/693/2025-26"
+],
+"ci_date": "2025-08-06",
+"status": "BOOKED",
+"incoterm": "CIF",
+"total_boxes": 4200,
+"total_kg": 84000.0,
+"agreed_total": 337400.0,
+"docs_total": 306600.0,
+"cash_difference": 30800.0
+},
+{
+"ci_number": "MH/761/2025-26",
+"vendor": "HMA AGRO INDUSTRIES LIMITED",
+"source_pis": [
+"HMA/PI/405/2025-26"
+],
+"ci_date": "2025-08-06",
+"status": "BOOKED",
+"incoterm": "CIF",
+"total_boxes": 4200,
+"total_kg": 84000.0,
+"agreed_total": 365400.0,
+"docs_total": 310800.0,
+"cash_difference": 54600.0
+},
+{
+"ci_number": "MH/760/2025-26",
+"vendor": "HMA AGRO INDUSTRIES LIMITED",
+"source_pis": [
+"HMA/PI/693/2025-26"
+],
+"ci_date": "2025-08-06",
+"status": "BOOKED",
+"incoterm": "CIF",
+"total_boxes": 4200,
+"total_kg": 84000.0,
+"agreed_total": 346500.0,
+"docs_total": 306600.0,
+"cash_difference": 39900.0
+},
+{
+"ci_number": "MH/743/2025-26",
+"vendor": "HMA AGRO INDUSTRIES LIMITED",
+"source_pis": [
+"HMA/PI/405/2025-26"
+],
+"ci_date": "2025-08-02",
+"status": "BOOKED",
+"incoterm": "CIF",
+"total_boxes": 4200,
+"total_kg": 84000.0,
+"agreed_total": 323400.0,
+"docs_total": 303800.0,
+"cash_difference": 19600.0
+},
+{
+"ci_number": "MH/735/2025-26",
+"vendor": "HMA AGRO INDUSTRIES LIMITED",
+"source_pis": [
+"HMA/PI/405/2025-26"
+],
+"ci_date": "2025-08-02",
+"status": "BOOKED",
+"incoterm": "CIF",
+"total_boxes": 4200,
+"total_kg": 84000.0,
+"agreed_total": 365400.0,
+"docs_total": 310800.0,
+"cash_difference": 54600.0
+},
+{
+"ci_number": "MH/728/2025-26",
+"vendor": "HMA AGRO INDUSTRIES LIMITED",
+"source_pis": [
+"HMA/PI/405/2025-26"
+],
+"ci_date": "2025-08-01",
+"status": "BOOKED",
+"incoterm": "CIF",
+"total_boxes": 4200,
+"total_kg": 84000.0,
+"agreed_total": 365400.0,
+"docs_total": 310800.0,
+"cash_difference": 54600.0
+},
+{
+"ci_number": "IFF/EXP/26/0685",
+"vendor": "IFF India Frozen Foods Private Limited",
+"source_pis": [
+"IFF/EXP/25/247"
+],
+"ci_date": "2025-07-31",
+"status": "BOOKED",
+"incoterm": "CIF",
+"total_boxes": 4200,
+"total_kg": 84000.0,
+"agreed_total": 361200.0,
+"docs_total": 288960.0,
+"cash_difference": 72240.0
+},
+{
+"ci_number": "1119109207",
+"vendor": "FAIR EXPORTS (INDIA) PVT. LTD.",
+"source_pis": [
+"FIR/25-26/24534-24545"
+],
+"ci_date": "2025-07-25",
+"status": "BOOKED",
+"incoterm": "CIF",
+"total_boxes": 4326,
+"total_kg": 84018.0,
+"agreed_total": 346574.25,
+"docs_total": 346574.25,
+"cash_difference": 0.0
+},
+{
+"ci_number": "MH/689/2025-26",
+"vendor": "HMA AGRO INDUSTRIES LIMITED",
+"source_pis": [
+"HMA/PI/405/2025-26"
+],
+"ci_date": "2025-07-24",
+"status": "BOOKED",
+"incoterm": "CIF",
+"total_boxes": 4200,
+"total_kg": 84000.0,
+"agreed_total": 365400.0,
+"docs_total": 310800.0,
+"cash_difference": 54600.0
+},
+{
+"ci_number": "MH/686/2025-26",
+"vendor": "HMA AGRO INDUSTRIES LIMITED",
+"source_pis": [
+"HMA/PI/405/2025-26"
+],
+"ci_date": "2025-07-24",
+"status": "BOOKED",
+"incoterm": "CIF",
+"total_boxes": 4344,
+"total_kg": 84002.0,
+"agreed_total": 346370.6,
+"docs_total": 310807.4,
+"cash_difference": 35563.2
+},
+{
+"ci_number": "MH/678/2025-26",
+"vendor": "HMA AGRO INDUSTRIES LIMITED",
+"source_pis": [
+"HMA/PI/405/2025-26"
+],
+"ci_date": "2025-07-23",
+"status": "BOOKED",
+"incoterm": "CIF",
+"total_boxes": 4200,
+"total_kg": 84000.0,
+"agreed_total": 365400.0,
+"docs_total": 310800.0,
+"cash_difference": 54600.0
+},
+{
+"ci_number": "IFF/EXP/26/0616",
+"vendor": "IFF India Frozen Foods Private Limited",
+"source_pis": [
+"IFF/EXP/25/247"
+],
+"ci_date": "2025-07-23",
+"status": "BOOKED",
+"incoterm": "CIF",
+"total_boxes": 4200,
+"total_kg": 84000.0,
+"agreed_total": 347200.0,
+"docs_total": 277760.0,
+"cash_difference": 69440.0
+},
+{
+"ci_number": "MEPL/P0251/2526",
+"vendor": "Mirha Exports Private limited",
+"source_pis": [
+"PRO/MEPL/0100/25-26"
+],
+"ci_date": "2025-07-19",
+"status": "BOOKED",
+"incoterm": "CIF",
+"total_boxes": 4200,
+"total_kg": 84000.0,
+"agreed_total": 340200.0,
+"docs_total": 272160.0,
+"cash_difference": 68040.0
+},
+{
+"ci_number": "MEPL/P0250/2526",
+"vendor": "Mirha Exports Private limited",
+"source_pis": [
+"PRO/MEPL/0100/25-26"
+],
+"ci_date": "2025-07-19",
+"status": "BOOKED",
+"incoterm": "CIF",
+"total_boxes": 4200,
+"total_kg": 84000.0,
+"agreed_total": 340200.0,
+"docs_total": 272160.0,
+"cash_difference": 68040.0
+},
+{
+"ci_number": "IFF/EXP/26/0595",
+"vendor": "IFF India Frozen Foods Private Limited",
+"source_pis": [
+"IFF/EXP/25/247"
+],
+"ci_date": "2025-07-17",
+"status": "BOOKED",
+"incoterm": "CIF",
+"total_boxes": 4200,
+"total_kg": 84000.0,
+"agreed_total": 340200.0,
+"docs_total": 272160.0,
+"cash_difference": 68040.0
+},
+{
+"ci_number": "MH/634/2025-26",
+"vendor": "HMA AGRO INDUSTRIES LIMITED",
+"source_pis": [
+"HMA/PI/405/2025-26"
+],
+"ci_date": "2025-07-16",
+"status": "BOOKED",
+"incoterm": "CIF",
+"total_boxes": 4200,
+"total_kg": 84000.0,
+"agreed_total": 344400.0,
+"docs_total": 310800.0,
+"cash_difference": 33600.0
+},
+{
+"ci_number": "MH/629/2025-26",
+"vendor": "HMA AGRO INDUSTRIES LIMITED",
+"source_pis": [
+"HMA/PI/405/2025-26"
+],
+"ci_date": "2025-07-15",
+"status": "BOOKED",
+"incoterm": "CIF",
+"total_boxes": 4200,
+"total_kg": 84000.0,
+"agreed_total": 344400.0,
+"docs_total": 310800.0,
+"cash_difference": 33600.0
+},
+{
+"ci_number": "MEPL/P0242/2526",
+"vendor": "Mirha Exports Private limited",
+"source_pis": [
+"PRO/MEPL/0100/25-26"
+],
+"ci_date": "2025-07-15",
+"status": "BOOKED",
+"incoterm": "CIF",
+"total_boxes": 4200,
+"total_kg": 84000.0,
+"agreed_total": 340200.0,
+"docs_total": 272160.0,
+"cash_difference": 68040.0
+},
+{
+"ci_number": "IFF/EXP/26/0576",
+"vendor": "IFF India Frozen Foods Private Limited",
+"source_pis": [
+"IFF/EXP/25/247"
+],
+"ci_date": "2025-07-15",
+"status": "BOOKED",
+"incoterm": "CIF",
+"total_boxes": 4200,
+"total_kg": 84000.0,
+"agreed_total": 347200.0,
+"docs_total": 277760.0,
+"cash_difference": 69440.0
+},
+{
+"ci_number": "MEPL/P0241/2526",
+"vendor": "Mirha Exports Private limited",
+"source_pis": [
+"PRO/MEPL/0100/25-26"
+],
+"ci_date": "2025-07-14",
+"status": "BOOKED",
+"incoterm": "CIF",
+"total_boxes": 4200,
+"total_kg": 84000.0,
+"agreed_total": 340200.0,
+"docs_total": 272160.0,
+"cash_difference": 68040.0
+},
+{
+"ci_number": "1119679193",
+"vendor": "FAIR EXPORTS (INDIA) PVT. LTD.",
+"source_pis": [
+"FIR/25-26/24126-24137"
+],
+"ci_date": "2025-07-14",
+"status": "BOOKED",
+"incoterm": "CIF",
+"total_boxes": 4200,
+"total_kg": 84000.0,
+"agreed_total": 354900.0,
+"docs_total": 354900.0,
+"cash_difference": 0.0
+},
+{
+"ci_number": "1119109072",
+"vendor": "FAIR EXPORTS (INDIA) PVT. LTD.",
+"source_pis": [
+"FIR/25-26/24534-24545"
+],
+"ci_date": "2025-07-12",
+"status": "BOOKED",
+"incoterm": "CIF",
+"total_boxes": 4326,
+"total_kg": 84018.0,
+"agreed_total": 346574.25,
+"docs_total": 346574.25,
+"cash_difference": 0.0
+},
+{
+"ci_number": "IFF/EXP/26/0554",
+"vendor": "IFF India Frozen Foods Private Limited",
+"source_pis": [
+"IFF/EXP/25/247"
+],
+"ci_date": "2025-07-11",
+"status": "BOOKED",
+"incoterm": "CIF",
+"total_boxes": 4200,
+"total_kg": 84000.0,
+"agreed_total": 354200.0,
+"docs_total": 283360.0,
+"cash_difference": 70840.0
+},
+{
+"ci_number": "IFF/EXP/26/0553",
+"vendor": "IFF India Frozen Foods Private Limited",
+"source_pis": [
+"IFF/EXP/25/247"
+],
+"ci_date": "2025-07-11",
+"status": "BOOKED",
+"incoterm": "CIF",
+"total_boxes": 4200,
+"total_kg": 84000.0,
+"agreed_total": 340200.0,
+"docs_total": 272160.0,
+"cash_difference": 68040.0
+},
+{
+"ci_number": "MH/593/2025-26",
+"vendor": "HMA AGRO INDUSTRIES LIMITED",
+"source_pis": [
+"HMA/PI/405/2025-26"
+],
+"ci_date": "2025-07-10",
+"status": "BOOKED",
+"incoterm": "CIF",
+"total_boxes": 4200,
+"total_kg": 84000.0,
+"agreed_total": 344400.0,
+"docs_total": 310800.0,
+"cash_difference": 33600.0
+},
+{
+"ci_number": "MH/589/2025-26",
+"vendor": "HMA AGRO INDUSTRIES LIMITED",
+"source_pis": [
+"HMA/PI/405/2025-26"
+],
+"ci_date": "2025-07-09",
+"status": "BOOKED",
+"incoterm": "CIF",
+"total_boxes": 4212,
+"total_kg": 84006.0,
+"agreed_total": 355771.8,
+"docs_total": 310822.2,
+"cash_difference": 44949.6
+},
+{
+"ci_number": "MH/583/2025-26",
+"vendor": "HMA AGRO INDUSTRIES LIMITED",
+"source_pis": [
+"HMA/PI/405/2025-26"
+],
+"ci_date": "2025-07-09",
+"status": "BOOKED",
+"incoterm": "CIF",
+"total_boxes": 4200,
+"total_kg": 84000.0,
+"agreed_total": 365400.0,
+"docs_total": 310800.0,
+"cash_difference": 54600.0
+},
+{
+"ci_number": "IFF/EXP/26/0539",
+"vendor": "IFF India Frozen Foods Private Limited",
+"source_pis": [
+"IFF/EXP/25/247"
+],
+"ci_date": "2025-07-09",
+"status": "BOOKED",
+"incoterm": "CIF",
+"total_boxes": 4200,
+"total_kg": 84000.0,
+"agreed_total": 340200.0,
+"docs_total": 272160.0,
+"cash_difference": 68040.0
+},
+{
+"ci_number": "MH/541/2025-26",
+"vendor": "HMA AGRO INDUSTRIES LIMITED",
+"source_pis": [
+"HMA/PI/405/2025-26"
+],
+"ci_date": "2025-07-03",
+"status": "BOOKED",
+"incoterm": "CIF",
+"total_boxes": 4200,
+"total_kg": 84000.0,
+"agreed_total": 344400.0,
+"docs_total": 310800.0,
+"cash_difference": 33600.0
+},
+{
+"ci_number": "MH/504/2025-26",
+"vendor": "HMA AGRO INDUSTRIES LIMITED",
+"source_pis": [
+"HMA/PI/405/2025-26"
+],
+"ci_date": "2025-06-28",
+"status": "BOOKED",
+"incoterm": "CIF",
+"total_boxes": 4200,
+"total_kg": 84000.0,
+"agreed_total": 365400.0,
+"docs_total": 310800.0,
+"cash_difference": 54600.0
+},
+{
+"ci_number": "MH/500/2025-26",
+"vendor": "HMA AGRO INDUSTRIES LIMITED",
+"source_pis": [
+"HMA/PI/405/2025-26"
+],
+"ci_date": "2025-06-28",
+"status": "BOOKED",
+"incoterm": "CIF",
+"total_boxes": 4200,
+"total_kg": 84000.0,
+"agreed_total": 270200.0,
+"docs_total": 310800.0,
+"cash_difference": 40600.0
+},
+{
+"ci_number": "MH/490/2025-26",
+"vendor": "HMA AGRO INDUSTRIES LIMITED",
+"source_pis": [
+"HMA/PI/143/2025-26"
+],
+"ci_date": "2025-06-27",
+"status": "BOOKED",
+"incoterm": "CIF",
+"total_boxes": 4200,
+"total_kg": 84000.0,
+"agreed_total": 337610.0,
+"docs_total": 289800.0,
+"cash_difference": 47810.0
+},
+{
+"ci_number": "1119299094",
+"vendor": "FAIR EXPORTS (INDIA) PVT. LTD.",
+"source_pis": [
+"FIR/25-26/24126-24137"
+],
+"ci_date": "2025-06-21",
+"status": "BOOKED",
+"incoterm": "CIF",
+"total_boxes": 4326,
+"total_kg": 84018.0,
+"agreed_total": 340272.9,
+"docs_total": 340272.9,
+"cash_difference": 0.0
+},
+{
+"ci_number": "1119679134",
+"vendor": "FAIR EXPORTS (INDIA) PVT. LTD.",
+"source_pis": [
+"FIR/25-26/24126-24137"
+],
+"ci_date": "2025-06-12",
+"status": "BOOKED",
+"incoterm": "CIF",
+"total_boxes": 4200,
+"total_kg": 84000.0,
+"agreed_total": 354900.0,
+"docs_total": 354900.0,
+"cash_difference": 0.0
+},
+{
+"ci_number": "MH/401/2025-26",
+"vendor": "HMA AGRO INDUSTRIES LIMITED",
+"source_pis": [
+"HMA/PI/143/2025-26"
+],
+"ci_date": "2025-06-10",
+"status": "BOOKED",
+"incoterm": "CIF",
+"total_boxes": 4200,
+"total_kg": 84000.0,
+"agreed_total": 331760.0,
+"docs_total": 289800.0,
+"cash_difference": 41960.0
+},
+{
+"ci_number": "MH/399/2025-26",
+"vendor": "HMA AGRO INDUSTRIES LIMITED",
+"source_pis": [
+"HMA/PI/143/2025-26"
+],
+"ci_date": "2025-06-10",
+"status": "BOOKED",
+"incoterm": "CIF",
+"total_boxes": 4200,
+"total_kg": 84000.0,
+"agreed_total": 347200.0,
+"docs_total": 289800.0,
+"cash_difference": 57400.0
+},
+{
+"ci_number": "MH/398/2025-26",
+"vendor": "HMA AGRO INDUSTRIES LIMITED",
+"source_pis": [
+"HMA/PI/143/2025-26"
+],
+"ci_date": "2025-06-10",
+"status": "BOOKED",
+"incoterm": "CIF",
+"total_boxes": 4200,
+"total_kg": 84000.0,
+"agreed_total": 352800.0,
+"docs_total": 289800.0,
+"cash_difference": 63000.0
+},
+{
+"ci_number": "1119679124",
+"vendor": "FAIR EXPORTS (INDIA) PVT. LTD.",
+"source_pis": [
+"FIR/25-26/24126-24137"
+],
+"ci_date": "2025-06-05",
+"status": "BOOKED",
+"incoterm": "CIF",
+"total_boxes": 4326,
+"total_kg": 84018.0,
+"agreed_total": 340272.9,
+"docs_total": 340272.9,
+"cash_difference": 0.0
+},
+{
+"ci_number": "MH/362/2025-26",
+"vendor": "HMA AGRO INDUSTRIES LIMITED",
+"source_pis": [
+"HMA/PI/143/2025-26"
+],
+"ci_date": "2025-06-02",
+"status": "BOOKED",
+"incoterm": "CIF",
+"total_boxes": 4200,
+"total_kg": 84000.0,
+"agreed_total": 343700.0,
+"docs_total": 289800.0,
+"cash_difference": 53900.0
+},
+{
+"ci_number": "MH/358/2025-26",
+"vendor": "HMA AGRO INDUSTRIES LIMITED",
+"source_pis": [
+"HMA/PI/143/2025-26"
+],
+"ci_date": "2025-05-31",
+"status": "BOOKED",
+"incoterm": "CIF",
+"total_boxes": 4200,
+"total_kg": 84000.0,
+"agreed_total": 343700.0,
+"docs_total": 289800.0,
+"cash_difference": 53900.0
+},
+{
+"ci_number": "MH/357/2025-26",
+"vendor": "HMA AGRO INDUSTRIES LIMITED",
+"source_pis": [
+"HMA/PI/143/2025-26"
+],
+"ci_date": "2025-05-30",
+"status": "BOOKED",
+"incoterm": "CIF",
+"total_boxes": 4200,
+"total_kg": 84000.0,
+"agreed_total": 344400.0,
+"docs_total": 289800.0,
+"cash_difference": 54600.0
+},
+{
+"ci_number": "MH/354/2025-26",
+"vendor": "HMA AGRO INDUSTRIES LIMITED",
+"source_pis": [
+"HMA/PI/143/2025-26"
+],
+"ci_date": "2025-05-30",
+"status": "BOOKED",
+"incoterm": "CIF",
+"total_boxes": 4200,
+"total_kg": 84000.0,
+"agreed_total": 342340.0,
+"docs_total": 289800.0,
+"cash_difference": 52540.0
+},
+{
+"ci_number": "MH/351/2025-26",
+"vendor": "HMA AGRO INDUSTRIES LIMITED",
+"source_pis": [
+"HMA/PI/143/2025-26"
+],
+"ci_date": "2025-05-29",
+"status": "BOOKED",
+"incoterm": "CIF",
+"total_boxes": 4200,
+"total_kg": 84000.0,
+"agreed_total": 344400.0,
+"docs_total": 289800.0,
+"cash_difference": 54600.0
+},
+{
+"ci_number": "MH/350/2025-26",
+"vendor": "HMA AGRO INDUSTRIES LIMITED",
+"source_pis": [
+"HMA/PI/143/2025-26"
+],
+"ci_date": "2025-05-29",
+"status": "BOOKED",
+"incoterm": "CIF",
+"total_boxes": 4200,
+"total_kg": 84000.0,
+"agreed_total": 332500.0,
+"docs_total": 289800.0,
+"cash_difference": 42700.0
+},
+{
+"ci_number": "MH/349/2025-26",
+"vendor": "HMA AGRO INDUSTRIES LIMITED",
+"source_pis": [
+"HMA/PI/143/2025-26"
+],
+"ci_date": "2025-05-29",
+"status": "BOOKED",
+"incoterm": "CIF",
+"total_boxes": 4200,
+"total_kg": 84000.0,
+"agreed_total": 343000.0,
+"docs_total": 289800.0,
+"cash_difference": 53200.0
+},
+{
+"ci_number": "MH/346/2025-26",
+"vendor": "HMA AGRO INDUSTRIES LIMITED",
+"source_pis": [
+"HMA/PI/143/2025-26"
+],
+"ci_date": "2025-05-28",
+"status": "BOOKED",
+"incoterm": "CIF",
+"total_boxes": 4200,
+"total_kg": 84000.0,
+"agreed_total": 341600.0,
+"docs_total": 289800.0,
+"cash_difference": 51800.0
+},
+{
+"ci_number": "MEPL/P0101/2526",
+"vendor": "Mirha Exports Private limited",
+"source_pis": [
+"PRO/MEPL/0034/2526"
+],
+"ci_date": "2025-05-26",
+"status": "BOOKED",
+"incoterm": "CIF",
+"total_boxes": 4200,
+"total_kg": 84000.0,
+"agreed_total": 333900.0,
+"docs_total": 268800.0,
+"cash_difference": 65100.0
+},
+{
+"ci_number": "MH/322/2025-26",
+"vendor": "HMA AGRO INDUSTRIES LIMITED",
+"source_pis": [
+"HMA/PI/143/2025-26"
+],
+"ci_date": "2025-05-24",
+"status": "BOOKED",
+"incoterm": "CIF",
+"total_boxes": 4200,
+"total_kg": 84000.0,
+"agreed_total": 336000.0,
+"docs_total": 289800.0,
+"cash_difference": 46200.0
+},
+{
+"ci_number": "MEPL/P0098/2526",
+"vendor": "Mirha Exports Private limited",
+"source_pis": [
+"PRO/MEPL/0034/2526"
+],
+"ci_date": "2025-05-24",
+"status": "BOOKED",
+"incoterm": "CIF",
+"total_boxes": 4200,
+"total_kg": 84000.0,
+"agreed_total": 333900.0,
+"docs_total": 268800.0,
+"cash_difference": 65100.0
+},
+{
+"ci_number": "MH/323/2025-26",
+"vendor": "HMA AGRO INDUSTRIES LIMITED",
+"source_pis": [
+"HMA/PI/143/2025-26"
+],
+"ci_date": "2025-05-23",
+"status": "BOOKED",
+"incoterm": "CIF",
+"total_boxes": 4356,
+"total_kg": 84008.0,
+"agreed_total": 348121.4,
+"docs_total": 289827.6,
+"cash_difference": 58293.8
+},
+{
+"ci_number": "MH/316/2025-26",
+"vendor": "HMA AGRO INDUSTRIES LIMITED",
+"source_pis": [
+"HMA/PI/143/2025-26"
+],
+"ci_date": "2025-05-23",
+"status": "BOOKED",
+"incoterm": "CIF",
+"total_boxes": 4200,
+"total_kg": 84000.0,
+"agreed_total": 336000.0,
+"docs_total": 289800.0,
+"cash_difference": 46200.0
+},
+{
+"ci_number": "MH/315/2025-26",
+"vendor": "HMA AGRO INDUSTRIES LIMITED",
+"source_pis": [
+"HMA/PI/143/2025-26"
+],
+"ci_date": "2025-05-23",
+"status": "BOOKED",
+"incoterm": "CIF",
+"total_boxes": 4200,
+"total_kg": 84000.0,
+"agreed_total": 336000.0,
+"docs_total": 289800.0,
+"cash_difference": 46200.0
+},
+{
+"ci_number": "MEPL/P0092/2526",
+"vendor": "Mirha Exports Private limited",
+"source_pis": [
+"PRO/MEPL/0034/2526"
+],
+"ci_date": "2025-05-20",
+"status": "BOOKED",
+"incoterm": "CIF",
+"total_boxes": 4356,
+"total_kg": 84008.0,
+"agreed_total": 359839.2,
+"docs_total": 288991.36,
+"cash_difference": 70847.84
+},
+{
+"ci_number": "MH/284/202526",
+"vendor": "HMA AGRO INDUSTRIES LIMITED",
+"source_pis": [
+"HMA/PI/143/2025-26"
+],
+"ci_date": "2025-05-19",
+"status": "BOOKED",
+"incoterm": "CIF",
+"total_boxes": 4200,
+"total_kg": 84000.0,
+"agreed_total": 325650.0,
+"docs_total": 289800.0,
+"cash_difference": 35850.0
+},
+{
+"ci_number": "MEPL/P0085/2526",
+"vendor": "Mirha Exports Private limited",
+"source_pis": [
+"PRO/MEPL/0034/2526"
+],
+"ci_date": "2025-05-17",
+"status": "BOOKED",
+"incoterm": "CIF",
+"total_boxes": 4200,
+"total_kg": 84000.0,
+"agreed_total": 333900.0,
+"docs_total": 268800.0,
+"cash_difference": 65100.0
+},
+{
+"ci_number": "MH/271/2025-26",
+"vendor": "HMA AGRO INDUSTRIES LIMITED",
+"source_pis": [
+"HMA/PI/143/2025-26"
+],
+"ci_date": "2025-05-16",
+"status": "BOOKED",
+"incoterm": "CIF",
+"total_boxes": 4200,
+"total_kg": 84000.0,
+"agreed_total": 302820.0,
+"docs_total": 289800.0,
+"cash_difference": 13020.0
+},
+{
+"ci_number": "MH/270/2025-26",
+"vendor": "HMA AGRO INDUSTRIES LIMITED",
+"source_pis": [
+"HMA/PI/143/2025-26"
+],
+"ci_date": "2025-05-16",
+"status": "BOOKED",
+"incoterm": "CIF",
+"total_boxes": 4200,
+"total_kg": 84000.0,
+"agreed_total": 268380.0,
+"docs_total": 289800.0,
+"cash_difference": 21420.0
+},
+{
+"ci_number": "MH/266/2025-26",
+"vendor": "HMA AGRO INDUSTRIES LIMITED",
+"source_pis": [
+"HMA/PI/143/2025-26"
+],
+"ci_date": "2025-05-15",
+"status": "BOOKED",
+"incoterm": "CIF",
+"total_boxes": 4356,
+"total_kg": 84008.0,
+"agreed_total": 366141.4,
+"docs_total": 289827.6,
+"cash_difference": 76313.8
+},
+{
+"ci_number": "MH/265/2025-26",
+"vendor": "HMA AGRO INDUSTRIES LIMITED",
+"source_pis": [
+"HMA/PI/143/2025-26"
+],
+"ci_date": "2025-05-15",
+"status": "BOOKED",
+"incoterm": "CIF",
+"total_boxes": 4200,
+"total_kg": 84000.0,
+"agreed_total": 352800.0,
+"docs_total": 289800.0,
+"cash_difference": 63000.0
+},
+{
+"ci_number": "MH/263/2025-26",
+"vendor": "HMA AGRO INDUSTRIES LIMITED",
+"source_pis": [
+"HMA/PI/143/2025-26"
+],
+"ci_date": "2025-05-15",
+"status": "BOOKED",
+"incoterm": "CIF",
+"total_boxes": 4200,
+"total_kg": 84000.0,
+"agreed_total": 332500.0,
+"docs_total": 289800.0,
+"cash_difference": 42700.0
+},
+{
+"ci_number": "MEPL/P0084/2526",
+"vendor": "Mirha Exports Private limited",
+"source_pis": [
+"PRO/MEPL/0034/2526"
+],
+"ci_date": "2025-05-15",
+"status": "BOOKED",
+"incoterm": "CIF",
+"total_boxes": 4200,
+"total_kg": 84000.0,
+"agreed_total": 333900.0,
+"docs_total": 268800.0,
+"cash_difference": 65100.0
+},
+{
+"ci_number": "MEPL/P0077/2526",
+"vendor": "Mirha Exports Private limited",
+"source_pis": [
+"PRO/MEPL/0034/2526"
+],
+"ci_date": "2025-05-10",
+"status": "BOOKED",
+"incoterm": "CIF",
+"total_boxes": 4200,
+"total_kg": 84000.0,
+"agreed_total": 333900.0,
+"docs_total": 268800.0,
+"cash_difference": 65100.0
+},
+{
+"ci_number": "MEPL/P0070/2526",
+"vendor": "Mirha Exports Private limited",
+"source_pis": [
+"PRO/MEPL/0034/2526"
+],
+"ci_date": "2025-05-10",
+"status": "BOOKED",
+"incoterm": "CIF",
+"total_boxes": 4200,
+"total_kg": 84000.0,
+"agreed_total": 333900.0,
+"docs_total": 268800.0,
+"cash_difference": 65100.0
+},
+{
+"ci_number": "MEPL/P0054/2526",
+"vendor": "Mirha Exports Private limited",
+"source_pis": [
+"PRO/MEPL/0012/2526"
+],
+"ci_date": "2025-04-30",
+"status": "BOOKED",
+"incoterm": "CIF",
+"total_boxes": 4200,
+"total_kg": 84000.0,
+"agreed_total": 317100.0,
+"docs_total": 317100.0,
+"cash_difference": 0.0
+},
+{
+"ci_number": "MH/154/202526",
+"vendor": "HMA AGRO INDUSTRIES LIMITED",
+"source_pis": [
+"HMA/PI/2677/202425"
+],
+"ci_date": "2025-04-28",
+"status": "BOOKED",
+"incoterm": "CIF",
+"total_boxes": 4256,
+"total_kg": 84008.0,
+"agreed_total": 304429.2,
+"docs_total": 304429.2,
+"cash_difference": 0.0
+},
+{
+"ci_number": "MH/151/202526",
+"vendor": "HMA AGRO INDUSTRIES LIMITED",
+"source_pis": [
+"HMA/PI/2677/202425"
+],
+"ci_date": "2025-04-28",
+"status": "BOOKED",
+"incoterm": "CIF",
+"total_boxes": 4200,
+"total_kg": 84000.0,
+"agreed_total": 326200.0,
+"docs_total": 326200.0,
+"cash_difference": 0.0
+},
+{
+"ci_number": "MH/145/202526",
+"vendor": "HMA AGRO INDUSTRIES LIMITED",
+"source_pis": [
+"HMA/PI/2677/202425"
+],
+"ci_date": "2025-04-26",
+"status": "BOOKED",
+"incoterm": "CIF",
+"total_boxes": 5600,
+"total_kg": 112000.0,
+"agreed_total": 371000.0,
+"docs_total": 371000.0,
+"cash_difference": 0.0
+},
+{
+"ci_number": "MH/144/202526",
+"vendor": "HMA AGRO INDUSTRIES LIMITED",
+"source_pis": [
+"HMA/PI/2677/202425"
+],
+"ci_date": "2025-04-26",
+"status": "BOOKED",
+"incoterm": "CIF",
+"total_boxes": 5600,
+"total_kg": 112000.0,
+"agreed_total": 431200.0,
+"docs_total": 431200.0,
+"cash_difference": 0.0
+},
+{
+"ci_number": "MH/140/202526",
+"vendor": "HMA AGRO INDUSTRIES LIMITED",
+"source_pis": [
+"HMA/PI/2677/202425"
+],
+"ci_date": "2025-04-25",
+"status": "BOOKED",
+"incoterm": "CIF",
+"total_boxes": 5600,
+"total_kg": 112000.0,
+"agreed_total": 442400.0,
+"docs_total": 442400.0,
+"cash_difference": 0.0
+},
+{
+"ci_number": "MEPL/P0049/2526",
+"vendor": "Mirha Exports Private limited",
+"source_pis": [
+"PRO/MEPL/0012/2526"
+],
+"ci_date": "2025-04-25",
+"status": "BOOKED",
+"incoterm": "CIF",
+"total_boxes": 4200,
+"total_kg": 84000.0,
+"agreed_total": 317100.0,
+"docs_total": 317100.0,
+"cash_difference": 0.0
+},
+{
+"ci_number": "MH/129/202526",
+"vendor": "HMA AGRO INDUSTRIES LIMITED",
+"source_pis": [
+"HMA/PI/2677/202425"
+],
+"ci_date": "2025-04-24",
+"status": "BOOKED",
+"incoterm": "CIF",
+"total_boxes": 5700,
+"total_kg": 112000.0,
+"agreed_total": 366020.0,
+"docs_total": 366020.0,
+"cash_difference": 0.0
+},
+{
+"ci_number": "MH/106/202526",
+"vendor": "HMA AGRO INDUSTRIES LIMITED",
+"source_pis": [
+"HMA/PI/2677/202425"
+],
+"ci_date": "2025-04-21",
+"status": "BOOKED",
+"incoterm": "CIF",
+"total_boxes": 5600,
+"total_kg": 112000.0,
+"agreed_total": 442400.0,
+"docs_total": 442400.0,
+"cash_difference": 0.0
+},
+{
+"ci_number": "MH/104/202526",
+"vendor": "HMA AGRO INDUSTRIES LIMITED",
+"source_pis": [
+"HMA/PI/2677/202425"
+],
+"ci_date": "2025-04-21",
+"status": "BOOKED",
+"incoterm": "CIF",
+"total_boxes": 5600,
+"total_kg": 112000.0,
+"agreed_total": 436800.0,
+"docs_total": 436800.0,
+"cash_difference": 0.0
+},
+{
+"ci_number": "MH/093/202526",
+"vendor": "HMA AGRO INDUSTRIES LIMITED",
+"source_pis": [
+"HMA/PI/2677/202425"
+],
+"ci_date": "2025-04-17",
+"status": "BOOKED",
+"incoterm": "CIF",
+"total_boxes": 5756,
+"total_kg": 112008.0,
+"agreed_total": 474641.2,
+"docs_total": 474641.2,
+"cash_difference": 0.0
+},
+{
+"ci_number": "MH/085/202526",
+"vendor": "HMA AGRO INDUSTRIES LIMITED",
+"source_pis": [
+"HMA/PI/2677/202425"
+],
+"ci_date": "2025-04-17",
+"status": "BOOKED",
+"incoterm": "CIF",
+"total_boxes": 5600,
+"total_kg": 112000.0,
+"agreed_total": 431200.0,
+"docs_total": 431200.0,
+"cash_difference": 0.0
+},
+{
+"ci_number": "MH/084/202526",
+"vendor": "HMA AGRO INDUSTRIES LIMITED",
+"source_pis": [
+"HMA/PI/2677/202425"
+],
+"ci_date": "2025-04-17",
+"status": "BOOKED",
+"incoterm": "CIF",
+"total_boxes": 5600,
+"total_kg": 112000.0,
+"agreed_total": 438200.0,
+"docs_total": 438200.0,
+"cash_difference": 0.0
+},
+{
+"ci_number": "MEPL/P0023/2526",
+"vendor": "Mirha Exports Private limited",
+"source_pis": [
+"PRO/MEPL/0012/2526"
+],
+"ci_date": "2025-04-15",
+"status": "BOOKED",
+"incoterm": "CIF",
+"total_boxes": 4200,
+"total_kg": 84000.0,
+"agreed_total": 317100.0,
+"docs_total": 317100.0,
+"cash_difference": 0.0
+},
+{
+"ci_number": "MEPL/P0022/2526",
+"vendor": "Mirha Exports Private limited",
+"source_pis": [
+"PRO/MEPL/0012/2526"
+],
+"ci_date": "2025-04-15",
+"status": "BOOKED",
+"incoterm": "CIF",
+"total_boxes": 4200,
+"total_kg": 84000.0,
+"agreed_total": 317100.0,
+"docs_total": 317100.0,
+"cash_difference": 0.0
+},
+{
+"ci_number": "MH/037/202526",
+"vendor": "HMA AGRO INDUSTRIES LIMITED",
+"source_pis": [
+"HMA/PI/2677/202425"
+],
+"ci_date": "2025-04-07",
+"status": "BOOKED",
+"incoterm": "CIF",
+"total_boxes": 5600,
+"total_kg": 112000.0,
+"agreed_total": 368592.0,
+"docs_total": 368592.0,
+"cash_difference": 0.0
+},
+{
+"ci_number": "MH/036/202526",
+"vendor": "HMA AGRO INDUSTRIES LIMITED",
+"source_pis": [
+"HMA/PI/2677/202425"
+],
+"ci_date": "2025-04-07",
+"status": "BOOKED",
+"incoterm": "CIF",
+"total_boxes": 7000,
+"total_kg": 140000.0,
+"agreed_total": 548800.0,
+"docs_total": 548800.0,
+"cash_difference": 0.0
+}
+]

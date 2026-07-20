@@ -9,9 +9,8 @@ later phase (they need item-code -> Item mapping and extra doctypes).
 Idempotent + DRY-RUN by default. Depends on the PI ref backfill having run first
 (pi_ref_backfill.run) so each source PI ref resolves to a Stabler PI.
 
-Data: this reads the 243 rows from the site's private files — the 73KB JSON is
-kept OUT of the shared app repo (msa-only, one-time). Place it first:
-    <bench>/sites/msa.erpstable.com/private/files/msa_ci_rows.json
+Data: the 243 rows ship with the module (data/msa_ci_rows.json), so no manual
+upload is needed — a site private-files copy still takes precedence if present.
 
 Run on the msa site:
     bench --site msa.erpstable.com execute \
@@ -54,12 +53,12 @@ def _resolve_pi(ref: str):
 
 
 def _load_rows():
-    path = frappe.get_site_path("private", "files", _DATA_FILE)
+    # Prefer a site private-files override; otherwise the copy shipped with the module.
+    site_path = frappe.get_site_path("private", "files", _DATA_FILE)
+    module_path = os.path.join(os.path.dirname(__file__), "data", _DATA_FILE)
+    path = site_path if os.path.exists(site_path) else module_path
     if not os.path.exists(path):
-        frappe.throw(
-            f"Data file not found: {path}\n"
-            f"Upload msa_ci_rows.json to the site's private/files first."
-        )
+        frappe.throw(f"CI data file not found ({module_path}).")
     with open(path, encoding="utf-8") as fh:
         return json.load(fh)
 
