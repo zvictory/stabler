@@ -10,6 +10,7 @@ from stabler.integrations.kassa.shadow_flow import (
     BTN_CONFIRM,
     BTN_KIRIM,
     BTN_KONV,
+    BTN_KONV_NAQD_KARTA,
     BTN_KONV_NAQD_USD,
     BTN_KONV_USD_KARTA,
     BTN_PK,
@@ -108,6 +109,18 @@ class TestFlowKonv(unittest.TestCase):
         reply, kb, st, act = handle(st, BTN_CONFIRM, CTX)
         self.assertEqual(act["deltas"], [
             {"kassa": "nakit", "delta": -6_450_000.0}, {"kassa": "usd", "delta": 500.0}])
+
+    def test_same_currency_transfer_via_konv(self):
+        # Naqd → Karta is a same-currency move: ask amount only (no rate), booked
+        # as a kassalararo transfer.
+        _, _, st, _ = handle({}, BTN_KONV, CTX)
+        _, _, st, _ = handle(st, BTN_KONV_NAQD_KARTA, CTX)
+        self.assertEqual(st["step"], "await_konv_amt")
+        reply, kb, st, act = handle(st, "2 mln", CTX)
+        self.assertEqual(st["step"], "confirm")
+        reply, kb, st, act = handle(st, BTN_CONFIRM, CTX)
+        self.assertEqual(act["deltas"], [
+            {"kassa": "nakit", "delta": -2_000_000.0}, {"kassa": "pk", "delta": 2_000_000.0}])
 
     def test_sell_usd_to_card_with_dollar_sign(self):
         _, _, st, _ = handle({}, BTN_KONV, CTX)

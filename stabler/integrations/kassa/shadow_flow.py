@@ -42,27 +42,35 @@ _PH = {
     "konversiya": "Masalan: «500 dollar oldim 12900 kurs»",
     "kassalararo": "Masalan: «2 mln naqddan pk ga»",
 }
-MENU_KEYBOARD = [[BTN_KIRIM, BTN_CHIQIM], [BTN_KONV, BTN_K2K], [BTN_OPENING, BTN_UNDO]]
+# Menu: Ochilish + Kassalararo removed. Kassa-to-kassa moves live inside the
+# button-driven Konvertatsiya (Naqd↔Karta directions below).
+MENU_KEYBOARD = [[BTN_KIRIM, BTN_CHIQIM], [BTN_KONV, BTN_UNDO]]
 
-# Conversion is button-driven: the kassir picks a direction first, then just
-# types the USD amount + rate ("100 12600"). Only currency-changing directions
-# (USD in/out via Naqd or Karta); same-currency moves are Kassalararo.
+# Konvertatsiya is button-driven — 6 directions. USD-involving ones change
+# currency (ask amount + rate); Naqd↔Karta are same-currency moves (ask amount
+# only, booked as a kassalararo transfer).
 BTN_KONV_NAQD_USD = "\U0001F7E6 Naqd → \U0001F7E9 Dollar"
 BTN_KONV_USD_NAQD = "\U0001F7E9 Dollar → \U0001F7E6 Naqd"
 BTN_KONV_KARTA_USD = "\U0001F7E7 Karta → \U0001F7E9 Dollar"
 BTN_KONV_USD_KARTA = "\U0001F7E9 Dollar → \U0001F7E7 Karta"
+BTN_KONV_NAQD_KARTA = "\U0001F7E6 Naqd → \U0001F7E7 Karta"
+BTN_KONV_KARTA_NAQD = "\U0001F7E7 Karta → \U0001F7E6 Naqd"
 KONV_DIR_KEYBOARD = [
     [BTN_KONV_NAQD_USD, BTN_KONV_USD_NAQD],
     [BTN_KONV_KARTA_USD, BTN_KONV_USD_KARTA],
+    [BTN_KONV_NAQD_KARTA, BTN_KONV_KARTA_NAQD],
     [BTN_CANCEL],
 ]
 _KONV_DIR = {
-    BTN_KONV_NAQD_USD: {"dir": "buy", "source": "nakit"},
-    BTN_KONV_KARTA_USD: {"dir": "buy", "source": "pk"},
-    BTN_KONV_USD_NAQD: {"dir": "sell", "target": "nakit"},
-    BTN_KONV_USD_KARTA: {"dir": "sell", "target": "pk"},
+    BTN_KONV_NAQD_USD: {"op": "konversiya", "dir": "buy", "source": "nakit"},
+    BTN_KONV_KARTA_USD: {"op": "konversiya", "dir": "buy", "source": "pk"},
+    BTN_KONV_USD_NAQD: {"op": "konversiya", "dir": "sell", "target": "nakit"},
+    BTN_KONV_USD_KARTA: {"op": "konversiya", "dir": "sell", "target": "pk"},
+    BTN_KONV_NAQD_KARTA: {"op": "kassalararo", "from": "nakit", "to": "pk"},
+    BTN_KONV_KARTA_NAQD: {"op": "kassalararo", "from": "pk", "to": "nakit"},
 }
 _KONV_ASK = "Qancha USD va qaysi kursda?\nMasalan: «100 12600» yoki «100$ 12600»"
+_K2K_ASK = "Qancha?\nMasalan: «2 mln» yoki «500 ming»"
 
 
 # --------------------------------------------------------------------------- #
@@ -259,17 +267,24 @@ def handle(state, text, ctx=None):
         d = _KONV_DIR.get(t)
         if not d:
             return ("Yo'nalishni tanlang:", KONV_DIR_KEYBOARD, {"step": "await_konv_dir"}, None)
-        p = {"op": "konversiya", "raw_text": "", **d}
-        return (_KONV_ASK, [[BTN_CANCEL]], {"step": "await_konv_amt", "op": "konversiya", "p": p}, None)
+        p = {"raw_text": "", **d}
+        op = p["op"]
+        ask = _KONV_ASK if op == "konversiya" else _K2K_ASK
+        return (ask, [[BTN_CANCEL]], {"step": "await_konv_amt", "op": op, "p": p}, None)
 
     if step == "await_konv_amt":
         p = dict(state.get("p") or {})
-        amount, rate = parse_konv_amount_rate(t)
-        if amount is not None:
-            p["amount"] = amount
-        if rate is not None:
-            p["rate"] = rate
         p["raw_text"] = t
+        if p.get("op") == "kassalararo":
+            amt = extract_amount(t)
+            if amt is not None:
+                p["amount"] = amt
+        else:
+            amount, rate = parse_konv_amount_rate(t)
+            if amount is not None:
+                p["amount"] = amount
+            if rate is not None:
+                p["rate"] = rate
         return _after_parse(p, ctx)
 
     if step == "await_text":

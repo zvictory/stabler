@@ -261,11 +261,6 @@
 		<div id="content" hidden>
 			<div class="cards" id="cards"></div>
 
-			<div class="day-pick">
-				<label for="toDate">Kun</label>
-				<input type="date" id="toDate" />
-			</div>
-
 			<div class="ledger-head" id="ledgerHead">Hisob</div>
 			<div class="ledger" id="rows"></div>
 		</div>
@@ -307,7 +302,6 @@
 			var rowsEl = document.getElementById("rows");
 			var LAST = null;
 			var SELECTED = "nakit";
-			var toInput = document.getElementById("toDate");
 
 			function toIso(date) {
 				var y = date.getFullYear();
@@ -423,7 +417,7 @@
 				});
 				var head =
 					'<table class="ltable"><thead><tr>' +
-					'<th class="l">Sana / izoh</th><th>Summa</th><th>Qoldiq</th>' +
+					'<th class="l">Sana</th><th class="l">Oper.turi va izoh</th><th>Summa</th><th>Qoldiq</th>' +
 					"</tr></thead><tbody>";
 				var body = rows
 					.slice()
@@ -440,9 +434,10 @@
 						var amt = (r.delta < 0 ? "−" : "+") + smart(r.delta);
 						return (
 							"<tr>" +
-							'<td><span class="l-time">' + escapeHtml(hm) + "</span>" +
+							'<td class="l-time">' + escapeHtml(hm) + "</td>" +
+							"<td>" + escapeHtml(desc) +
 							(e.raw_text ? '<div class="l-raw">«' + escapeHtml(e.raw_text) + "»</div>" : "") +
-							'<div class="l-raw">' + escapeHtml(desc) + "</div></td>" +
+							"</td>" +
 							'<td class="num ' + amtCls + '">' + amt + "</td>" +
 							'<td class="num run">' + runTxt(r.run) + "</td>" +
 							"</tr>"
@@ -450,7 +445,7 @@
 					})
 					.join("");
 				var openRow =
-					'<tr class="l-open"><td>Ochilish balansi</td><td class="num"></td>' +
+					'<tr class="l-open"><td>—</td><td>Ochilish balansi</td><td class="num"></td>' +
 					'<td class="num run">' + runTxt(opening) + "</td></tr>";
 				rowsEl.innerHTML = head + body + openRow + "</tbody></table>";
 			}
@@ -483,7 +478,7 @@
 
 				var body = new URLSearchParams({
 					init_data: initData,
-					date: toInput.value,
+					date: toIso(new Date()),
 				});
 
 				fetch(ENDPOINT, {
@@ -527,13 +522,6 @@
 				renderLedger();
 			}
 
-			function initDates() {
-				toInput.value = toIso(new Date());
-			}
-
-			toInput.addEventListener("change", fetchSummary);
-
-			initDates();
 			fetchSummary();
 		})();
 	</script>
