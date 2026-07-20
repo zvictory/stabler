@@ -964,6 +964,7 @@ def journal_entry_detail(name: str):
 				"exchange_rate": flt(a.exchange_rate or 1.0),
 				"reference_type": a.reference_type,
 				"reference_name": a.reference_name,
+				"asset": a.get("custom_asset"),
 				"user_remark": a.user_remark,
 				# Auto exchange-rounding line (booked by stabler.api.fx_balance) — the
 				# SPA hides this from the editable legs; it's a base-currency GL detail,
@@ -2317,6 +2318,60 @@ def fixed_asset_accounts(company: str):
 
 
 @frappe.whitelist()
+def list_assets(company: str, search: str = "", limit: int = 200):
+	"""Existing ERPNext Assets for the company, for the asset-purchase picker.
+
+	Each row carries the Fixed-Asset GL account resolved from its Asset Category
+	(so the form can auto-fill the debit account) and 'invested' — the total of
+	asset-purchase JE lines already linked to it via custom_asset (patch v54).
+	Returns [] gracefully when the assets app isn't installed."""
+	_require_company(company)
+	_assert_company_scope(company)  # tenant isolation: reject a foreign company arg
+	if not frappe.db.exists("DocType", "Asset"):
+		return []
+	conds = ["a.company = %(company)s", "a.docstatus < 2"]
+	params: dict = {"company": company, "limit": int(limit)}
+	if search:
+		conds.append("(a.name LIKE %(s)s OR a.asset_name LIKE %(s)s)")
+		params["s"] = f"%{search}%"
+	where = " AND ".join(conds)
+	rows = frappe.db.sql(
+		f"""
+		SELECT a.name, a.asset_name, a.asset_category, a.status,
+		       a.gross_purchase_amount, aca.fixed_asset_account
+		FROM `tabAsset` a
+		LEFT JOIN `tabAsset Category Account` aca
+		       ON aca.parent = a.asset_category AND aca.company_name = a.company
+		WHERE {where}
+		ORDER BY a.asset_name ASC
+		LIMIT %(limit)s
+		""",
+		params,
+		as_dict=True,
+	)
+	# Invested-so-far via linked asset-purchase JE lines (only if the field exists).
+	invested: dict = {}
+	if rows and frappe.get_meta("Journal Entry Account").has_field("custom_asset"):
+		names = [r["name"] for r in rows]
+		for d in frappe.db.sql(
+			"""
+			SELECT jea.custom_asset AS asset, SUM(jea.debit) AS total
+			FROM `tabJournal Entry Account` jea
+			JOIN `tabJournal Entry` je ON je.name = jea.parent AND je.docstatus = 1
+			WHERE jea.custom_asset IN %(names)s
+			GROUP BY jea.custom_asset
+			""",
+			{"names": names},
+			as_dict=True,
+		):
+			invested[d["asset"]] = flt(d["total"])
+	for r in rows:
+		r["gross_purchase_amount"] = flt(r["gross_purchase_amount"])
+		r["invested"] = invested.get(r["name"], 0.0)
+	return rows
+
+
+@frappe.whitelist()
 def equity_accounts(company: str):
 	"""Leaf Equity-rooted accounts (owner capital / drawings / retained earnings).
 
@@ -2476,6 +2531,13 @@ def submit_expense_entry(
 	entry_kind = _normalize_bank_entry_kind(entry_kind)
 	pay_acc = _validate_account(payment_from, company, 0)
 	base_currency = frappe.db.get_value("Company", company, "default_currency") or ""
+	# Asset-purchase lines may point at a concrete Asset (patch v54); only when
+	# the custom field exists AND the assets app is installed.
+	_asset_ok = (
+		entry_kind == "Asset Purchase"
+		and frappe.db.exists("DocType", "Asset")
+		and frappe.get_meta("Journal Entry Account").has_field("custom_asset")
+	)
 
 	cleaned: list[dict] = []
 	total_pay_amount = 0.0  # in payment-from account currency
@@ -2503,8 +2565,14 @@ def submit_expense_entry(
 		memo = (raw or {}).get("memo")
 		if memo:
 			memos.append(str(memo).strip())
+		asset = (raw or {}).get("asset") if _asset_ok else None
+		if asset:
+			if not frappe.db.exists("Asset", asset):
+				frappe.throw(f"Row {idx}: unknown asset {asset}.")
+			if frappe.db.get_value("Asset", asset, "company") != company:
+				frappe.throw(f"Row {idx}: asset belongs to another company.")
 		total_pay_amount += amount
-		cleaned.append({"account": acc_name, "amount": amount, "memo": memo})
+		cleaned.append({"account": acc_name, "amount": amount, "memo": memo, "asset": asset})
 
 	total_pay_amount = _round2(total_pay_amount)
 	if total_pay_amount <= 0:
@@ -2587,6 +2655,8 @@ def submit_expense_entry(
 		}
 		if row.get("memo"):
 			entry["user_remark"] = row["memo"]
+		if row.get("asset"):
+			entry["custom_asset"] = row["asset"]
 		doc.append("accounts", entry)
 
 	doc.insert(ignore_permissions=False)

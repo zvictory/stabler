@@ -62,6 +62,7 @@ const payAccounts = ref([]);
 const expAccounts = ref([]);
 const assetAccounts = ref([]);
 const equityAccounts = ref([]);
+const assets = ref([]); // existing ERPNext Asset records (asset-purchase picker)
 const optionsLoading = ref(false);
 
 // QuickBooks-style save mode — persisted per user
@@ -116,7 +117,7 @@ let lineSeq = 0;
 let ghostSeq = 0;
 
 function newGhost() {
-	return { id: `g${++ghostSeq}`, account: "", amount: null, memo: "" };
+	return { id: `g${++ghostSeq}`, account: "", amount: null, memo: "", asset: "" };
 }
 
 const ghost = ref(newGhost());
@@ -175,6 +176,7 @@ function materialGhost(item) {
 		account: item.name,
 		amount: ghost.value.amount,
 		memo: ghost.value.memo,
+		asset: "",
 	});
 	ghost.value = newGhost();
 	// Like the Sales Order line editor: once the account is picked, drop the cursor
@@ -361,6 +363,41 @@ function lineAccountDisplay(name) {
 	return a ? `${a.account_name || a.name} (${a.account_currency})` : name;
 }
 
+// ----- Asset picker (Asset-purchase mode) -----
+const assetMode = computed(() => form.value.entry_kind === "Asset Purchase");
+
+function searchAsset(q) {
+	const n = norm(q);
+	if (!n) return assets.value;
+	return assets.value.filter(
+		(a) => norm(a.asset_name || a.name).includes(n) || norm(a.name).includes(n),
+	);
+}
+
+function assetDisplay(name) {
+	const a = assets.value.find((x) => x.name === name);
+	return a ? a.asset_name || a.name : name;
+}
+
+// Selecting an asset auto-fills the line's fixed-asset GL account (from the
+// asset's category), so the user picks the asset and the accounting follows.
+function pickAssetOnLine(line, asset) {
+	line.asset = asset.name;
+	if (asset.fixed_asset_account) line.account = asset.fixed_asset_account;
+}
+
+function materialAssetGhost(asset) {
+	form.value.lines.push({
+		id: ++lineSeq,
+		account: asset.fixed_asset_account || "",
+		amount: ghost.value.amount,
+		memo: ghost.value.memo,
+		asset: asset.name,
+	});
+	ghost.value = newGhost();
+	nextTick(focusNewLineAmount);
+}
+
 function lineCurrencyMismatch(line) {
 	// Don't accuse a line of a currency mismatch until a "Pay from" account is
 	// actually chosen — before that, payCurrency falls back to the base currency
@@ -408,7 +445,7 @@ async function loadOptions() {
 	if (!activeCompany.value) return;
 	optionsLoading.value = true;
 	try {
-		const [pay, exp, fixed, equity] = await Promise.all([
+		const [pay, exp, fixed, equity, assetRows] = await Promise.all([
 			call("stabler.api.money.bank_cash_accounts", {
 				company: activeCompany.value,
 				include_equity: 1,
@@ -416,11 +453,13 @@ async function loadOptions() {
 			call("stabler.api.money.expense_accounts", { company: activeCompany.value }),
 			call("stabler.api.money.fixed_asset_accounts", { company: activeCompany.value }),
 			call("stabler.api.money.equity_accounts", { company: activeCompany.value }),
+			call("stabler.api.money.list_assets", { company: activeCompany.value }).catch(() => []),
 		]);
 		payAccounts.value = pay || [];
 		expAccounts.value = exp || [];
 		assetAccounts.value = fixed || [];
 		equityAccounts.value = equity || [];
+		assets.value = assetRows || [];
 	} catch (err) {
 		submitError.value = err?.message || "Failed to load accounts.";
 	} finally {
@@ -468,6 +507,7 @@ async function openEditFromDetail() {
 			account: row.account,
 			amount: Number(row.debit_in_account_currency) || null,
 			memo: row.user_remark || "",
+			asset: row.asset || "",
 		})),
 	};
 	ghost.value = newGhost();
@@ -519,6 +559,7 @@ async function submitCreate(afterAction) {
 			account: l.account,
 			amount: Number(l.amount),
 			memo: l.memo?.trim() || undefined,
+			asset: assetMode.value && l.asset ? l.asset : undefined,
 		}));
 	const payload = {
 		company: activeCompany.value,
@@ -1000,6 +1041,7 @@ watch(activeCompany, () => {
 						<table ref="linesTableEl" class="table table-vcenter card-table" @keydown="handleLineKeyDown">
 							<thead>
 								<tr>
+									<th v-if="assetMode" style="min-width: 200px" class="text-uppercase text-secondary small">{{ t("Asset") }}</th>
 									<th style="min-width: 240px" class="text-uppercase text-secondary small">{{ t("Account") }}</th>
 									<th style="min-width: 160px" class="text-end text-uppercase text-secondary small">{{ t("Amount") }}</th>
 									<th v-if="isCrossCurrency" class="text-end text-secondary" style="min-width: 120px; font-size: 0.8em">
@@ -1009,10 +1051,26 @@ watch(activeCompany, () => {
 									<th class="w-1"></th>
 								</tr>
 							</thead>
-							<SkeletonRows v-if="optionsLoading" :rows="3" :cols="isCrossCurrency ? 5 : 4" />
+							<SkeletonRows v-if="optionsLoading" :rows="3" :cols="(isCrossCurrency ? 5 : 4) + (assetMode ? 1 : 0)" />
 							<tbody v-else>
 								<!-- Real lines -->
 								<tr v-for="(line, idx) in form.lines" :key="line.id">
+									<td v-if="assetMode">
+										<Typeahead
+											v-model="line.asset"
+											:search="searchAsset"
+											:display="assetDisplay(line.asset)"
+											:placeholder="t('Search an asset…')"
+											open-on-focus
+											@pick="(item) => pickAssetOnLine(line, item)"
+											@clear="() => (line.asset = '')"
+										>
+											<template #option="{ item }">
+												<span>{{ item.asset_name || item.name }}</span>
+												<span v-if="item.status" class="ms-auto text-secondary small">{{ item.status }}</span>
+											</template>
+										</Typeahead>
+									</td>
 									<td>
 										<Typeahead
 											v-model="line.account"
@@ -1071,6 +1129,21 @@ watch(activeCompany, () => {
 								</tr>
 								<!-- Ghost trailing row -->
 								<tr :key="ghost.id" class="opacity-50">
+									<td v-if="assetMode">
+										<Typeahead
+											:model-value="''"
+											:search="searchAsset"
+											:display="''"
+											:placeholder="t('Add an asset…')"
+											open-on-focus
+											@pick="(item) => materialAssetGhost(item)"
+										>
+											<template #option="{ item }">
+												<span>{{ item.asset_name || item.name }}</span>
+												<span v-if="item.status" class="ms-auto text-secondary small">{{ item.status }}</span>
+											</template>
+										</Typeahead>
+									</td>
 									<td>
 										<Typeahead
 											:model-value="''"
@@ -1113,6 +1186,7 @@ watch(activeCompany, () => {
 							</tbody>
 							<tfoot>
 								<tr class="fw-bold">
+									<td v-if="assetMode"></td>
 									<td class="text-end">{{ t("Total") }}</td>
 									<td class="text-end font-monospace">
 										{{ formatMoney(totalAmount, payCurrency, user.language) }}
