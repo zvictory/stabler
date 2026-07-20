@@ -169,6 +169,45 @@ def bom_materials(company: str, bom_no: str, qty: float = 1, exploded: int = 0):
 
 
 @frappe.whitelist()
+def wo_transfer_preview(work_order: str):
+	"""The exact Material-Transfer-for-Manufacture rows ERPNext itself would build
+	for this Work Order — item, qty, uom, source + target warehouse. The operator
+	kiosk seeds its transfer list from this so it matches ERPNext 1:1 (the WO's
+	required materials with the right quantities and warehouses), regardless of BOM
+	nesting. Operators are not handed required_items by the API, so this computes
+	them the same way ERPNext does. Operator (own WO) or manager."""
+	from erpnext.manufacturing.doctype.work_order.work_order import make_stock_entry
+
+	_assert_can_read("Work Order", work_order)
+	_require_mfg()
+	if not frappe.db.exists("Work Order", work_order):
+		frappe.throw(f"Unknown Work Order: {work_order}")
+	if not _is_mfg_manager():
+		_require_own_work_order(work_order)
+	try:
+		se = make_stock_entry(work_order, "Material Transfer for Manufacture")
+	except Exception as e:  # noqa: BLE001 — preview must never hard-fail the kiosk
+		frappe.log_error(title="Kassa/mfg: wo_transfer_preview failed", message=f"wo={work_order} err={e}")
+		return {"items": [], "from_warehouse": None, "to_warehouse": None}
+	stub = se if isinstance(se, dict) else se.as_dict()
+	from_wh = to_wh = None
+	items = []
+	for r in (stub.get("items") or []):
+		s_wh, t_wh = r.get("s_warehouse"), r.get("t_warehouse")
+		from_wh = from_wh or s_wh
+		to_wh = to_wh or t_wh
+		items.append({
+			"item_code": r.get("item_code"),
+			"item_name": r.get("item_name") or frappe.db.get_value("Item", r.get("item_code"), "item_name"),
+			"qty": flt(r.get("qty")),
+			"uom": r.get("uom") or r.get("stock_uom"),
+			"s_warehouse": s_wh,
+			"t_warehouse": t_wh,
+		})
+	return {"items": items, "from_warehouse": from_wh, "to_warehouse": to_wh}
+
+
+@frappe.whitelist()
 def create_bom(
 	company: str,
 	item: str,

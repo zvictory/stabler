@@ -343,35 +343,27 @@ async function start(row) {
 	transferFromWh.value = row.source_warehouse || "";
 	transferToWh.value = row.wip_warehouse || "";
 
-	// Operators aren't handed required_items by the API, so seed the transfer
-	// list straight from the BOM — fully exploded to leaf raw materials (sut,
-	// qogoz, korobka…), scaled to the WO qty. Falls back to any required_items
-	// already on the row (manager/warehouse path).
-	let seed = row.required_items || [];
-	if (!seed.length && row.bom_no) {
-		try {
-			const bm = await call("stabler.api.manufacturing.bom_materials", {
-				company: activeCompany.value,
-				bom_no: row.bom_no,
-				qty: row.qty || 1,
-				exploded: 1,
-			});
-			seed = (bm?.items || []).map((it) => ({
-				item_code: it.item_code,
-				item_name: it.item_name,
-				required_qty: it.qty,
-				stock_uom: it.uom,
-			}));
-		} catch (err) {
-			console.error("Failed to load BOM materials", err);
-		}
+	// Operators aren't handed required_items by the API, so ask the backend for
+	// the exact material-transfer rows ERPNext would build for this WO (item, qty,
+	// source/target warehouse) — matching ERPNext 1:1 regardless of BOM nesting.
+	let seed = [];
+	try {
+		const pv = await call("stabler.api.manufacturing.wo_transfer_preview", { work_order: row.name });
+		seed = pv?.items || [];
+		if (pv?.from_warehouse) transferFromWh.value = pv.from_warehouse;
+		if (pv?.to_warehouse) transferToWh.value = pv.to_warehouse;
+	} catch (err) {
+		console.error("Failed to load transfer preview", err);
+	}
+	if (!seed.length && (row.required_items || []).length) {
+		seed = row.required_items.map((it) => ({ item_code: it.item_code, item_name: it.item_name, qty: it.required_qty, uom: it.stock_uom }));
 	}
 	transferItems.value = seed.map(it => ({
 		item_code: it.item_code,
 		item_name: it.item_name || it.item_code,
-		qty: it.required_qty,
-		planned: Number(it.required_qty) || 0, // BOM plan — for the variance chip
-		uom: it.stock_uom || "",
+		qty: it.qty,
+		planned: Number(it.qty) || 0, // BOM plan — for the variance chip
+		uom: it.uom || "",
 		isNew: false,
 	}));
 
