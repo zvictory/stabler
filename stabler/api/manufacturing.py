@@ -120,6 +120,49 @@ def bom_detail(name: str):
 
 
 @frappe.whitelist()
+def bom_materials(company: str, bom_no: str, qty: float = 1):
+	"""BOM raw-material lines scaled to a target finished-goods qty.
+
+	Unlike bom_detail (manager-only, BOM-native quantity), this is available to
+	operators too and returns the components already multiplied out for the WO
+	qty they're about to start — so the create/start modal can preview exactly
+	what will be transferred before anything is posted."""
+	_assert_company_scope(company)  # tenant isolation: reject a foreign company arg
+	_require_company(company)
+	_require_mfg()
+	if not bom_no or not frappe.db.exists("BOM", bom_no):
+		frappe.throw(f"Unknown BOM: {bom_no}")
+	doc = frappe.get_doc("BOM", bom_no)
+	if doc.company != company:
+		frappe.throw(_("Not permitted"), frappe.PermissionError)
+	base = flt(doc.quantity) or 1
+	factor = flt(qty) / base if flt(qty) > 0 else 1
+	items = [
+		{
+			"item_code": r.item_code,
+			"item_name": r.item_name,
+			"qty": flt(r.stock_qty or r.qty) * factor,
+			"uom": r.stock_uom or r.uom,
+			"rate": flt(r.rate),
+			"amount": flt(r.amount) * factor,
+			"bom_no": r.bom_no,
+		}
+		for r in (doc.items or [])
+	]
+	return {
+		"bom_no": doc.name,
+		"item": doc.item,
+		"item_name": doc.item_name,
+		"base_qty": base,
+		"target_qty": flt(qty),
+		"uom": doc.uom,
+		"currency": doc.currency,
+		"total_cost": flt(doc.total_cost) * factor,
+		"items": items,
+	}
+
+
+@frappe.whitelist()
 def create_bom(
 	company: str,
 	item: str,
@@ -313,6 +356,7 @@ def create_work_order(
 	fg_warehouse: str | None = None,
 	wip_warehouse: str | None = None,
 	source_warehouse: str | None = None,
+	operator: str | None = None,
 	submit: int = 0,
 ):
 	_assert_company_scope(company)  # tenant isolation: reject a foreign company arg
@@ -322,6 +366,8 @@ def create_work_order(
 		frappe.throw(f"Unknown item: {production_item}")
 	if flt(qty) <= 0:
 		frappe.throw("Quantity must be positive.")
+	if operator and not frappe.db.exists("User", operator):
+		frappe.throw(_("Unknown user: {0}").format(operator))
 
 	if not bom_no:
 		bom_no = frappe.db.get_value(
@@ -345,6 +391,8 @@ def create_work_order(
 		doc.wip_warehouse = wip_warehouse
 	if source_warehouse:
 		doc.source_warehouse = source_warehouse
+	if operator:
+		doc.operator = operator
 
 	doc.set_work_order_operations()
 	doc.get_items_and_operations_from_bom()

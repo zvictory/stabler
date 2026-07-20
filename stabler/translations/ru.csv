@@ -4480,3 +4480,6 @@ Quantity (KG),Количество (кг)
 PI number (supplier ref) is required — it becomes the document identity.,Номер PI (реф. поставщика) обязателен — он становится идентификатором документа.
 The PI number is the document identity and cannot be changed after creation.,Номер PI — идентификатор документа и не может быть изменён после создания.
 e.g. FIR/25-26/29639-29647,напр. FIR/25-26/29639-29647
+BOM materials,Материалы BOM
+Material,Материал
+This BOM has no materials.,В этой спецификации нет материалов.

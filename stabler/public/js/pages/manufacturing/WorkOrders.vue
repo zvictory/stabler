@@ -304,9 +304,47 @@ function blankWO() {
 		fg_warehouse: "",
 		wip_warehouse: "",
 		source_warehouse: "",
+		operator: "",
 	};
 }
 const form = ref(blankWO());
+
+// BOM preview: components scaled to the WO qty, shown read-only in the modal.
+const bomPreview = ref(null);
+const bomPreviewLoading = ref(false);
+
+function fmtQty(v) {
+	const n = Number(v) || 0;
+	return (Number.isInteger(n) ? n : Number(n.toFixed(3))).toLocaleString("ru-RU");
+}
+
+async function loadBomPreview() {
+	const bom = form.value.bom_no;
+	if (!bom) {
+		bomPreview.value = null;
+		return;
+	}
+	bomPreviewLoading.value = true;
+	try {
+		bomPreview.value = await call("stabler.api.manufacturing.bom_materials", {
+			company: activeCompany.value,
+			bom_no: bom,
+			qty: form.value.qty || 1,
+		});
+	} catch (err) {
+		bomPreview.value = null;
+		submitError.value = err?.message || "Failed to load BOM materials.";
+	} finally {
+		bomPreviewLoading.value = false;
+	}
+}
+
+watch(
+	() => [form.value.bom_no, form.value.qty],
+	() => {
+		if (createOpen.value) loadBomPreview();
+	},
+);
 
 const bomSelectOptions = computed(() => [
 	{ value: "" },
@@ -321,15 +359,19 @@ const bomSelectOptions = computed(() => [
 async function loadOptions() {
 	if (optionsLoaded.value) return;
 	try {
-		const [items, whs] = await Promise.all([
+		const [items, whs, ops] = await Promise.all([
 			call("stabler.api.manufacturing.manufacturable_items", {
 				company: activeCompany.value,
 				limit: 500,
 			}),
 			call("stabler.api.inventory.list_warehouses", { company: activeCompany.value }),
+			operatorList.value.length
+				? Promise.resolve(operatorList.value)
+				: call("stabler.api.manufacturing.list_operators", { company: activeCompany.value }),
 		]);
 		itemOptions.value = items || [];
 		warehouseOptions.value = (whs || []).filter((w) => !w.is_group);
+		operatorList.value = ops || [];
 		optionsLoaded.value = true;
 	} catch (err) {
 		submitError.value = err?.message || "Failed to load options.";
@@ -358,6 +400,7 @@ async function onProductionItemChange() {
 function openCreate() {
 	form.value = blankWO();
 	bomOptions.value = [];
+	bomPreview.value = null;
 	submitError.value = "";
 	createOpen.value = true;
 	loadOptions();
@@ -387,6 +430,7 @@ async function saveWO(submitAfter) {
 			fg_warehouse: form.value.fg_warehouse || undefined,
 			wip_warehouse: form.value.wip_warehouse || undefined,
 			source_warehouse: form.value.source_warehouse || undefined,
+			operator: form.value.operator || undefined,
 			submit: submitAfter ? 1 : 0,
 		});
 		closeCreate();
@@ -765,6 +809,42 @@ async function saveWO(submitAfter) {
 								<label class="form-label">{{ t("Planned start") }}</label>
 								<DateInput v-model="form.planned_start_date" />
 							</div>
+							<div class="col-md-4">
+								<label class="form-label">{{ t("Operator") }}</label>
+								<Select v-model="form.operator" :options="operatorList" value-key="name" placeholder="—">
+									<template #option="{ option }">{{ option.full_name || option.name }}</template>
+									<template #selected="{ option }">{{ option.full_name || option.name }}</template>
+								</Select>
+							</div>
+						</div>
+
+						<!-- BOM materials preview: scaled to the WO qty, read-only -->
+						<div v-if="form.bom_no" class="mb-3">
+							<label class="form-label mb-1">
+								{{ t("BOM materials") }}
+								<span class="text-secondary fw-normal">· {{ fmtQty(form.qty) }} {{ bomPreview && bomPreview.uom ? bomPreview.uom : "" }}</span>
+							</label>
+							<div v-if="bomPreviewLoading" class="text-secondary small py-2">{{ t("Loading…") }}</div>
+							<div v-else-if="bomPreview && bomPreview.items.length" class="table-responsive border rounded">
+								<table class="table table-sm align-middle mb-0">
+									<thead>
+										<tr>
+											<th>{{ t("Material") }}</th>
+											<th class="text-end">{{ t("Quantity") }}</th>
+										</tr>
+									</thead>
+									<tbody>
+										<tr v-for="(it, i) in bomPreview.items" :key="i">
+											<td>
+												{{ it.item_name || it.item_code }}
+												<div class="text-secondary small">{{ it.item_code }}</div>
+											</td>
+											<td class="text-end font-monospace text-nowrap">{{ fmtQty(it.qty) }} {{ it.uom }}</td>
+										</tr>
+									</tbody>
+								</table>
+							</div>
+							<div v-else-if="bomPreview" class="text-secondary small py-2">{{ t("This BOM has no materials.") }}</div>
 						</div>
 
 						<div class="row g-2 mb-3">

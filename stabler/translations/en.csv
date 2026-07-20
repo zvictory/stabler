@@ -4470,3 +4470,6 @@ Quantity (KG),Quantity (KG)
 PI number (supplier ref) is required — it becomes the document identity.,PI number (supplier ref) is required — it becomes the document identity.
 The PI number is the document identity and cannot be changed after creation.,The PI number is the document identity and cannot be changed after creation.
 e.g. FIR/25-26/29639-29647,e.g. FIR/25-26/29639-29647
+BOM materials,BOM materials
+Material,Material
+This BOM has no materials.,This BOM has no materials.

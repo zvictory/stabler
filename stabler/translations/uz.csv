@@ -4474,3 +4474,6 @@ Quantity (KG),Miqdor (kg)
 PI number (supplier ref) is required — it becomes the document identity.,PI raqami (yetkazib beruvchi ref) majburiy — u hujjat identifikatoriga aylanadi.
 The PI number is the document identity and cannot be changed after creation.,PI raqami hujjat identifikatori — yaratilgandan keyin o‘zgartirilmaydi.
 e.g. FIR/25-26/29639-29647,masalan FIR/25-26/29639-29647
+BOM materials,BOM materiallari
+Material,Material
+This BOM has no materials.,Bu BOM da materiallar yo'q.
