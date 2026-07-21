@@ -274,10 +274,14 @@ const canSupersede = (row) => ["DRAFT", "CONFIRMED"].includes(row.status);
 					<SkeletonRows v-if="loading" :cols="8" :rows="6" />
 					<tr v-for="r in rows" :key="r.name" style="cursor: pointer" @click="router.push({ name: 'imports-proforma', params: { name: r.name } })">
 						<td>
-							<div class="fw-bold text-primary font-monospace">{{ refMain(r) }}</div>
-							<div class="small text-secondary text-uppercase">{{ exporterShort(r) }}</div>
-							<div v-if="refSub(r)" class="small text-secondary font-monospace">{{ refSub(r) }}</div>
-							<span v-if="groupLabel(r)" class="badge bg-azure-lt mt-1"><i class="ti ti-stack-2 me-1"></i>{{ groupLabel(r) }}</span>
+							<div class="fw-bold text-primary font-monospace" style="font-size: 0.95rem">{{ refMain(r) }}</div>
+							<div class="fw-semibold text-dark text-uppercase small mt-1">{{ r.supplier_name || r.supplier }}</div>
+							<div v-if="refSub(r)" class="small text-secondary font-monospace">Ref: {{ refSub(r) }}</div>
+							<div class="d-flex flex-wrap gap-1 mt-1">
+								<span v-if="groupLabel(r)" class="badge bg-azure-lt"><i class="ti ti-stack-2 me-1"></i>{{ groupLabel(r) }}</span>
+								<span v-if="r.incoterm" class="badge bg-secondary-lt">{{ r.incoterm }}</span>
+								<span v-if="r.advance_pct" class="badge bg-blue-lt">{{ r.advance_pct }}% Advance</span>
+							</div>
 						</td>
 						<td class="text-nowrap">{{ r.pi_date ? formatDate(r.pi_date) : "—" }}</td>
 						<td class="text-center"><span class="fw-semibold">{{ r.item_count || 0 }}</span> <span class="text-secondary small">{{ t("items") }}</span></td>

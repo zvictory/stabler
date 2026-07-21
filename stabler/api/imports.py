@@ -4033,7 +4033,9 @@ def list_proformas(company: str, status: str | None = None, supplier: str | None
     rows = frappe.db.sql(
         f"""
         SELECT pi.name, pi.supplier, s.supplier_name, pi.pi_date, pi.supplier_pi_ref,
-               pi.currency, pi.agreed_total, pi.docs_total, pi.cash_difference,
+               pi.currency, pi.incoterm, pi.port_of_loading, pi.port_of_discharge,
+               pi.advance_pct, pi.prepayment_type,
+               pi.agreed_total, pi.docs_total, pi.cash_difference,
                pi.bank_agreed, pi.cash_agreed,
                pi.status, pi.commercial_invoice, pi.import_pi_group,
                g.code AS import_pi_group_code, g.code AS pi_group_code, g.title AS pi_group_title
