@@ -28,6 +28,13 @@ const groups = computed(() => [
 				icon: "ti-list-details",
 				badge: t("Ledger"),
 			},
+			{
+				title: t("Payments Register"),
+				description: t("Submitted receive payment entries with counterparty, account breakdown, and USD equivalents."),
+				path: "/reports/payments-register",
+				icon: "ti-cash-banknote",
+				badge: t("Payments"),
+			},
 		],
 	},
 	{
@@ -107,6 +114,13 @@ const groups = computed(() => [
 				badge: t("Sales"),
 			},
 			{
+				title: t("Sales Detail Report"),
+				description: t("Line item breakdown of all sales invoices with boxes, weight, and pricing."),
+				path: "/reports/sales-detail",
+				icon: "ti-file-description",
+				badge: t("Sales"),
+			},
+			{
 				title: t("AR Aging"),
 				description: t("Customer receivables grouped by aging buckets."),
 				path: "/sales/aging",
@@ -124,10 +138,24 @@ const groups = computed(() => [
 	},
 	{
 		key: "purchasing",
-		label: t("Purchasing"),
+		label: t("Purchasing & Imports"),
 		icon: "ti-shopping-cart",
 		module: "purchasing",
 		reports: [
+			{
+				title: t("PI Progress Report"),
+				description: t("Lifecycle tracking and financial progress per proforma invoice."),
+				path: "/reports/pi-progress",
+				icon: "ti-chart-donut",
+				badge: t("Imports"),
+			},
+			{
+				title: t("PI Group Container Status Report"),
+				description: t("Per-PIGroup planned FCL and container shipment lifecycle tracking."),
+				path: "/reports/pi-group-container-status",
+				icon: "ti-container",
+				badge: t("Imports"),
+			},
 			{
 				title: t("Purchases by Supplier"),
 				description: t("Drill-down report: supplier → bills → document."),

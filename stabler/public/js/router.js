@@ -15,6 +15,10 @@ import ReportSalesTrend from "./pages/reports/ReportSalesTrend.vue";
 import ReportStockMovementSummary from "./pages/reports/StockMovementSummary.vue";
 import ReportStockDailyKpi from "./pages/reports/StockDailyKpi.vue";
 import ReportStockLedgerDetail from "./pages/reports/StockLedgerDetail.vue";
+import ReportPiProgress from "./pages/reports/PiProgress.vue";
+import ReportPiGroupContainerStatus from "./pages/reports/PiGroupContainerStatus.vue";
+import ReportSalesDetail from "./pages/reports/SalesDetail.vue";
+import ReportPaymentsRegister from "./pages/reports/PaymentsRegister.vue";
 import Profile from "./pages/Profile.vue";
 import MoneyHome from "./pages/money/MoneyHome.vue";
 import Accounts from "./pages/money/Accounts.vue";
@@ -237,6 +241,10 @@ const routes = [
 	{ path: "/reports/stock-movement-summary", name: "report-stock-movement-summary", component: ReportStockMovementSummary, meta: { title: t("Stock movement summary"), module: "inventory" } },
 	{ path: "/reports/stock-daily-kpi", name: "report-stock-daily-kpi", component: ReportStockDailyKpi, meta: { title: t("Daily in/out KPI"), module: "inventory" } },
 	{ path: "/reports/stock-ledger-detail", name: "report-stock-ledger-detail", component: ReportStockLedgerDetail, meta: { title: t("Stock ledger detail"), module: "inventory" } },
+	{ path: "/reports/pi-progress", name: "report-pi-progress", component: ReportPiProgress, meta: { title: t("PI Progress"), module: "imports" } },
+	{ path: "/reports/pi-group-container-status", name: "report-pi-group-container-status", component: ReportPiGroupContainerStatus, meta: { title: t("PI Group Container Status"), module: "imports" } },
+	{ path: "/reports/sales-detail", name: "report-sales-detail", component: ReportSalesDetail, meta: { title: t("Sales Detail"), module: "sales" } },
+	{ path: "/reports/payments-register", name: "report-payments-register", component: ReportPaymentsRegister, meta: { title: t("Payments Register"), module: "money" } },
 	{ path: "/profile", name: "profile", component: Profile, meta: { title: t("Profile") } },
 	{ path: "/pos", name: "pos", component: POS, meta: { title: t("POS"), module: "sales" } },
 	{ path: "/manufacturing/line", name: "manufacturing-line", component: ManufacturingOperatorBoard, meta: { title: t("Operator Kiosk") } },
