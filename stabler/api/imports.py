@@ -4189,6 +4189,88 @@ def commercial_invoice_list_stats(company: str, status: str | None = None,
 
 
 @frappe.whitelist()
+def container_list_stats(company: str, status: str | None = None,
+                         commercial_invoice: str | None = None, search: str | None = None) -> dict:
+    """Aggregate totals for Import Containers list metric strip."""
+    _assert_imports_access(company)
+    clauses = ["c.company = %(company)s"]
+    params = {"company": company}
+    if status:
+        clauses.append("c.status = %(status)s")
+        params["status"] = status
+    if commercial_invoice:
+        clauses.append("c.commercial_invoice = %(commercial_invoice)s")
+        params["commercial_invoice"] = commercial_invoice
+    if search:
+        clauses.append("(c.name LIKE %(q)s OR c.container_number LIKE %(q)s OR c.commercial_invoice LIKE %(q)s)")
+        params["q"] = f"%{search}%"
+    where = " AND ".join(clauses)
+    rows = frappe.db.sql(
+        f"""
+        SELECT
+            COALESCE(SUM(c.total_boxes), 0) AS total_boxes_sum,
+            COALESCE(SUM(c.total_kg), 0) AS total_kg_sum,
+            COALESCE(SUM(c.total_amount), 0) AS total_amount_sum,
+            COUNT(*) AS cnt,
+            SUM(CASE WHEN c.status IN ('IN_TRANSIT', 'GATE_IN', 'ON_BOARD', 'STUFFED', 'ARRIVED_AT_IRAN') THEN 1 ELSE 0 END) AS in_transit_count,
+            SUM(CASE WHEN c.status = 'DELIVERED_TO_UZBEKISTAN' THEN 1 ELSE 0 END) AS delivered_count
+        FROM `tabImport Container` c
+        WHERE {where}
+        """,
+        params,
+        as_dict=True,
+    )
+    r = rows[0] if rows else {}
+    visible = _cost_visible()
+    return {
+        "total_boxes_sum": cint(r.get("total_boxes_sum")),
+        "total_kg_sum": flt(r.get("total_kg_sum")),
+        "total_amount_sum": flt(r.get("total_amount_sum")) if visible else None,
+        "count": cint(r.get("cnt")),
+        "in_transit_count": cint(r.get("in_transit_count")),
+        "delivered_count": cint(r.get("delivered_count")),
+    }
+
+
+@frappe.whitelist()
+def truck_list_stats(company: str, status: str | None = None, search: str | None = None) -> dict:
+    """Aggregate totals for Import Trucks list metric strip."""
+    _assert_imports_access(company)
+    clauses = ["t.company = %(company)s"]
+    params = {"company": company}
+    if status:
+        clauses.append("t.status = %(status)s")
+        params["status"] = status
+    if search:
+        clauses.append("(t.name LIKE %(q)s OR t.truck_number LIKE %(q)s OR t.driver_name LIKE %(q)s OR t.commercial_invoice LIKE %(q)s)")
+        params["q"] = f"%{search}%"
+    where = " AND ".join(clauses)
+    rows = frappe.db.sql(
+        f"""
+        SELECT
+            COALESCE(SUM(t.total_kg), 0) AS total_kg_sum,
+            COALESCE(SUM(t.transport_cost), 0) AS transport_cost_sum,
+            COUNT(*) AS cnt,
+            SUM(CASE WHEN t.status IN ('DEPARTED_IRAN', 'AT_BORDER', 'CROSSED_BORDER', 'IN_TRANSIT') THEN 1 ELSE 0 END) AS in_transit_count,
+            SUM(CASE WHEN t.status IN ('ARRIVED', 'UNLOADING', 'GRN_CREATED', 'COMPLETED') THEN 1 ELSE 0 END) AS completed_count
+        FROM `tabImport Truck` t
+        WHERE {where}
+        """,
+        params,
+        as_dict=True,
+    )
+    r = rows[0] if rows else {}
+    visible = _cost_visible()
+    return {
+        "total_kg_sum": flt(r.get("total_kg_sum")),
+        "transport_cost_sum": flt(r.get("transport_cost_sum")) if visible else None,
+        "count": cint(r.get("cnt")),
+        "in_transit_count": cint(r.get("in_transit_count")),
+        "completed_count": cint(r.get("completed_count")),
+    }
+
+
+@frappe.whitelist()
 def proforma_detail(name: str) -> dict:
     """Full Proforma Invoice doc + linked CIs, containers, and advances."""
     if not name or not frappe.db.exists("Proforma Invoice", name):
