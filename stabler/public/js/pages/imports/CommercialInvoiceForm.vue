@@ -811,11 +811,43 @@ watch(activeCompany, loadRefData);
 						</tr>
 					</thead>
 					<tbody>
-						<tr v-for="cnt in form.containers" :key="cnt.name">
+						<tr v-for="cnt in form.containers" :key="cnt.name" style="cursor: pointer" @click="router.push('/imports/containers/' + cnt.name)">
 							<td class="font-monospace fw-bold text-primary">{{ cnt.container_number || cnt.name }}</td>
 							<td><span class="badge bg-secondary-lt">{{ cnt.status }}</span></td>
 							<td class="text-end font-monospace">{{ fn(cnt.total_boxes) }}</td>
 							<td class="text-end font-monospace fw-semibold">{{ fn(cnt.total_kg) }} kg</td>
+						</tr>
+					</tbody>
+				</table>
+			</div>
+		</div>
+
+		<!-- Linked Trucks -->
+		<div v-if="form.trucks && form.trucks.length" class="card mb-3">
+			<div class="card-header">
+				<h3 class="card-title"><i class="ti ti-truck me-2"></i>{{ t("Linked Trucks / Land Transport") }}</h3>
+			</div>
+			<div class="table-responsive">
+				<table class="table table-vcenter table-hover">
+					<thead>
+						<tr>
+							<th>{{ t("Truck / Plate") }}</th>
+							<th>{{ t("Carrier & Driver") }}</th>
+							<th>{{ t("Status") }}</th>
+							<th class="text-end">{{ t("Boxes") }}</th>
+							<th class="text-end">{{ t("Total Weight (kg)") }}</th>
+						</tr>
+					</thead>
+					<tbody>
+						<tr v-for="trk in form.trucks" :key="trk.name" style="cursor: pointer" @click="router.push('/imports/trucks/' + trk.name)">
+							<td class="font-monospace fw-bold text-primary"><i class="ti ti-truck me-1"></i>{{ trk.truck_number || trk.name }}</td>
+							<td>
+								<div class="fw-semibold text-dark">{{ trk.trucking_company || "—" }}</div>
+								<div v-if="trk.driver_name" class="small text-secondary">{{ trk.driver_name }} <span v-if="trk.driver_phone">({{ trk.driver_phone }})</span></div>
+							</td>
+							<td><span class="badge bg-secondary-lt">{{ trk.status }}</span></td>
+							<td class="text-end font-monospace">{{ fn(trk.total_boxes) }}</td>
+							<td class="text-end font-monospace fw-semibold">{{ fn(trk.total_kg) }} kg</td>
 						</tr>
 					</tbody>
 				</table>

@@ -378,13 +378,18 @@ def get_commercial_invoice(name: str):
         "items": [
             {
                 "name": it.name,
+                "category": it.category,
                 "item": it.item,
                 "description": it.description,
                 "hs_code": it.hs_code,
+                "boxes": cint(it.boxes),
+                "box_weight_kg": flt(it.box_weight_kg),
                 "qty": flt(it.qty),
                 "uom": it.uom,
                 "rate": flt(it.rate),
+                "docs_price": flt(it.docs_price),
                 "amount": flt(it.amount),
+                "docs_amount": flt(it.docs_amount),
             }
             for it in (doc.items or [])
         ],
@@ -405,6 +410,12 @@ def get_commercial_invoice(name: str):
             "Import Container",
             filters={"commercial_invoice": name},
             fields=["name", "container_number", "status", "total_kg", "total_boxes"],
+            order_by="creation asc",
+        ),
+        "trucks": frappe.get_all(
+            "Import Truck",
+            filters={"commercial_invoice": name},
+            fields=["name", "truck_number", "driver_name", "driver_phone", "trucking_company", "status", "total_kg", "total_boxes", "transport_cost"],
             order_by="creation asc",
         ),
         "customs_declarations": frappe.get_all(
