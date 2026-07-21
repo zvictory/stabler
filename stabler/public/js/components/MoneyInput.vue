@@ -29,6 +29,8 @@ const props = defineProps({
 	// When true, keeps grouped display while focused and reformats on every keystroke.
 	// Cursor jumps to end on each input — acceptable for right-aligned money fields.
 	groupWhileTyping: { type: Boolean, default: false },
+	// When true, omits the input-group-text currency badge addon (ideal for dense table cells where currency is stated in header).
+	hideCurrency: { type: Boolean, default: false },
 });
 
 const emit = defineEmits(["update:modelValue", "blur", "focus"]);
@@ -98,9 +100,6 @@ function rawText(n) {
 }
 
 function syncFromModel() {
-	// While the user is actively typing in group-while-typing mode, onInput owns
-	// the display string — don't clobber it (that re-introduced the forced ".00"
-	// and trapped the caret on the decimal side).
 	if (focused.value && props.groupWhileTyping) return;
 	const showRaw = focused.value && !props.groupWhileTyping;
 	display.value = showRaw ? rawText(props.modelValue) : format(props.modelValue);
@@ -126,8 +125,6 @@ function onInput(event) {
 
 function onFocus(event) {
 	focused.value = true;
-	// Show a clean grouped value with NO trailing ".00" so the integer side is
-	// immediately editable, and select all so the user can just overwrite.
 	display.value = props.groupWhileTyping
 		? liveGroup(rawText(props.modelValue))
 		: rawText(props.modelValue);
@@ -156,7 +153,22 @@ const inputClass = computed(() => {
 </script>
 
 <template>
-	<div class="input-group" :class="{ 'input-group-sm': size === 'sm', 'input-group-lg': size === 'lg' }">
+	<input
+		v-if="hideCurrency || (!currency && !isUZS)"
+		:id="id || undefined"
+		:data-field="dataField || undefined"
+		type="text"
+		inputmode="decimal"
+		autocomplete="off"
+		:class="inputClass"
+		:value="display"
+		:placeholder="placeholder"
+		:disabled="disabled"
+		@input="onInput"
+		@focus="onFocus"
+		@blur="onBlur"
+	/>
+	<div v-else class="input-group" :class="{ 'input-group-sm': size === 'sm', 'input-group-lg': size === 'lg' }">
 		<span v-if="currency && !isUZS" class="input-group-text text-uppercase small">{{ currency }}</span>
 		<input
 			:id="id || undefined"

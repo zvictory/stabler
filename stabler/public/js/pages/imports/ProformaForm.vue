@@ -99,6 +99,15 @@ function blankItemRow() {
 
 const round2 = (n) => Math.round((Number(n) || 0) * 100) / 100;
 const fm = (v, ccy) => formatMoney(v, ccy || "USD", user.value?.language || "en");
+const fn = (v) => {
+	if (v === null || v === undefined || isNaN(v)) return "0.00";
+	const localeCode = user.value?.language === "en" ? "en-US" : "ru-RU";
+	return new Intl.NumberFormat(localeCode, {
+		minimumFractionDigits: 2,
+		maximumFractionDigits: 2,
+		useGrouping: true,
+	}).format(Number(v) || 0);
+};
 const searchItems = itemSearcher("purchase", { limit: 30 });
 
 const bankTouched = ref(false);
@@ -630,10 +639,10 @@ watch(activeCompany, loadPiGroups);
 							<th class="text-end bg-orange-lt text-orange" style="width: 90px">{{ t("Boxes") }}</th>
 							<th class="text-end bg-orange-lt text-orange" style="width: 100px">{{ t("Box Weight") }}</th>
 							<th class="text-end bg-orange-lt text-orange" style="width: 110px">{{ t("Quantity (KG)") }}</th>
-							<th class="text-end bg-blue-lt text-blue" style="width: 120px">{{ t("Agreed Price") }}</th>
-							<th class="text-end bg-green-lt text-green" style="width: 120px">{{ t("Docs Price") }}</th>
-							<th class="text-end bg-blue-lt text-blue" style="width: 130px">{{ t("Agreed Total") }}</th>
-							<th class="text-end bg-green-lt text-green" style="width: 130px">{{ t("Docs Total") }}</th>
+							<th class="text-end bg-blue-lt text-blue" style="width: 130px">{{ t("Agreed Price") }} ({{ form.currency || 'USD' }})</th>
+							<th class="text-end bg-green-lt text-green" style="width: 130px">{{ t("Docs Price") }} ({{ form.currency || 'USD' }})</th>
+							<th class="text-end bg-blue-lt text-blue" style="width: 140px">{{ t("Agreed Total") }} ({{ form.currency || 'USD' }})</th>
+							<th class="text-end bg-green-lt text-green" style="width: 140px">{{ t("Docs Total") }} ({{ form.currency || 'USD' }})</th>
 							<th style="width: 36px"></th>
 						</tr>
 					</thead>
@@ -670,11 +679,11 @@ watch(activeCompany, loadPiGroups);
 							</td>
 							<td><input v-model.number="row.boxes" type="number" step="1" class="form-control form-control-sm text-end font-monospace" @input="onBoxesOrWeightInput(row)"></td>
 							<td><input v-model.number="row.box_weight_kg" type="number" step="0.01" class="form-control form-control-sm text-end font-monospace" @input="onBoxesOrWeightInput(row)"></td>
-							<td><input v-model.number="row.qty" type="number" step="0.01" class="form-control form-control-sm text-end font-monospace text-warning" @input="onQtyInput(row)"></td>
-							<td><MoneyInput v-model="row.rate" :currency="form.currency" :language="user.language" size="sm" /></td>
-							<td><MoneyInput v-model="row.docs_price" :currency="form.currency" :language="user.language" size="sm" /></td>
-							<td class="text-end font-monospace text-blue bg-blue-lt">{{ fm(rowAmount(row), form.currency) }}</td>
-							<td class="text-end font-monospace text-green bg-green-lt">{{ fm(rowDocsAmount(row), form.currency) }}</td>
+							<td><input v-model.number="row.qty" type="number" step="0.01" class="form-control form-control-sm text-end font-monospace text-warning fw-semibold" @input="onQtyInput(row)"></td>
+							<td><MoneyInput v-model="row.rate" :currency="form.currency" :language="user.language" hide-currency size="sm" /></td>
+							<td><MoneyInput v-model="row.docs_price" :currency="form.currency" :language="user.language" hide-currency size="sm" /></td>
+							<td class="text-end font-monospace text-blue bg-blue-lt fw-semibold">{{ fn(rowAmount(row)) }}</td>
+							<td class="text-end font-monospace text-green bg-green-lt fw-semibold">{{ fn(rowDocsAmount(row)) }}</td>
 							<td>
 								<button type="button" class="btn btn-icon btn-sm btn-ghost-secondary" :title="t('Remove')" @click="removeItemRow(idx)">
 									<i class="ti ti-trash"></i>
