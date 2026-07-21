@@ -4137,12 +4137,67 @@ def proforma_list_stats(company: str, status: str | None = None, supplier: str |
 
 @frappe.whitelist()
 def proforma_detail(name: str) -> dict:
-    """Full Proforma Invoice doc (imports-gated on the doc's company)."""
+    """Full Proforma Invoice doc + linked CIs, containers, and advances."""
     if not name or not frappe.db.exists("Proforma Invoice", name):
         frappe.throw(_("Unknown Proforma Invoice: {0}").format(name))
     doc = frappe.get_doc("Proforma Invoice", name)
     _assert_imports_access(doc.company)
-    return doc.as_dict()
+    data = doc.as_dict()
+
+    cis = frappe.db.sql(
+        """
+        SELECT ci.name, ci.ci_number, ci.ci_date, ci.supplier, s.supplier_name, ci.status,
+               ci.incoterm, ci.etd, ci.eta, ci.agreed_total, ci.currency
+        FROM `tabCommercial Invoice` ci
+        LEFT JOIN `tabSupplier` s ON s.name = ci.supplier
+        WHERE (%(group)s != '' AND ci.import_pi_group = %(group)s)
+           OR (ci.supplier = %(supplier)s AND ci.creation >= %(creation)s)
+        ORDER BY ci.creation DESC
+        LIMIT 50
+        """,
+        {
+            "group": doc.import_pi_group or "",
+            "supplier": doc.supplier,
+            "creation": doc.creation,
+        },
+        as_dict=True,
+    )
+    ci_names = [c["name"] for c in cis]
+    containers_by_ci: dict[str, list[dict]] = {}
+    if ci_names:
+        containers = frappe.db.sql(
+            """
+            SELECT cnt.name, cnt.container_number, cnt.container_type, cnt.container_size,
+                   cnt.status, cnt.commercial_invoice
+            FROM `tabImport Container` cnt
+            WHERE cnt.commercial_invoice IN %(ci_names)s
+            ORDER BY cnt.creation DESC
+            """,
+            {"ci_names": tuple(ci_names)},
+            as_dict=True,
+        )
+        for cnt in containers:
+            containers_by_ci.setdefault(cnt.commercial_invoice, []).append(cnt)
+
+    for c in cis:
+        c["containers"] = containers_by_ci.get(c["name"], [])
+
+    data["linked_cis"] = cis
+
+    advances = frappe.db.sql(
+        """
+        SELECT pe.name, pe.posting_date, pe.paid_amount, pe.paid_amount_after_tax, pe.mode_of_payment, pe.docstatus
+        FROM `tabPayment Entry` pe
+        WHERE pe.party_type = 'Supplier' AND pe.party = %(supplier)s AND pe.docstatus < 2
+        ORDER BY pe.posting_date DESC
+        LIMIT 20
+        """,
+        {"supplier": doc.supplier},
+        as_dict=True,
+    )
+    data["advance_payments"] = advances
+
+    return data
 
 
 @frappe.whitelist()

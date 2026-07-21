@@ -23,10 +23,6 @@ const router = useRouter();
 const toast = useToast();
 useEscapeBack(null, "/imports/proformas");
 
-// Route contract: "/imports/proformas/new" matches the static child route
-// (no :name param) so docName is null there; "/imports/proformas/:name"
-// carries the real PI name. Branch on the route param, never on doc state —
-// a direct load/refresh must populate, not render a blank "New" form.
 const docName = computed(() => (route.params.name ? String(route.params.name) : null));
 const isCreate = computed(() => !docName.value);
 
@@ -37,7 +33,7 @@ const form = ref(blankForm());
 
 const INCOTERMS = ["EXW", "FCA", "FAS", "FOB", "CFR", "CIF", "CPT", "CIP", "DAP", "DPU", "DDP"];
 
-// ---- PI Groups (for the Details section select) ----
+// ---- PI Groups ----
 const piGroups = ref([]);
 const groupOptions = computed(() => [
 	{ value: "", label: t("No PI group") },
@@ -65,7 +61,7 @@ function blankForm() {
 		supplier_pi_ref: "",
 		import_pi_group: "",
 		commercial_invoice: "",
-		currency: "",
+		currency: "USD",
 		incoterm: "CIF",
 		incoterm_location: "",
 		port_of_loading: "",
@@ -80,6 +76,8 @@ function blankForm() {
 		status: "DRAFT",
 		remarks: "",
 		items: [],
+		linked_cis: [],
+		advance_payments: [],
 	};
 }
 
@@ -100,11 +98,9 @@ function blankItemRow() {
 }
 
 const round2 = (n) => Math.round((Number(n) || 0) * 100) / 100;
-const fm = (v, ccy) => formatMoney(v, ccy || "", user.value.language);
+const fm = (v, ccy) => formatMoney(v, ccy || "USD", user.value?.language || "en");
 const searchItems = itemSearcher("purchase", { limit: 30 });
 
-// bank/cash "not yet hand-edited by the user" flags — while true, the split
-// auto-follows the items grid (bank = docs_total, cash = cash_difference).
 const bankTouched = ref(false);
 const cashTouched = ref(false);
 
@@ -115,19 +111,19 @@ function searchSuppliers(q) {
 		limit: 20,
 	});
 }
+
 function pickSupplier(s) {
 	form.value.supplier = s.name;
 	form.value.supplier_name = s.supplier_name || s.name;
 	loadLineCategories();
 }
+
 function clearSupplier() {
 	form.value.supplier = "";
 	form.value.supplier_name = "";
 	lineCategories.value = [];
 }
-// proforma_detail returns the raw doctype dict — Proforma Invoice has no
-// supplier_name field, so resolve it via the same supplier search endpoint
-// the Typeahead already uses (no backend change needed).
+
 async function resolveSupplierName(code) {
 	if (!code) return "";
 	try {
@@ -140,6 +136,27 @@ async function resolveSupplierName(code) {
 		return match ? match.supplier_name || match.name : code;
 	} catch (_err) {
 		return code;
+	}
+}
+
+// Vendor categories for the per-line category dropdown (vendor-scoped).
+const lineCategories = ref([]);
+const categoryOptions = computed(() =>
+	lineCategories.value.map((c) => c.display_name || c.category_name).filter(Boolean)
+);
+
+async function loadLineCategories() {
+	if (!form.value.supplier) {
+		lineCategories.value = [];
+		return;
+	}
+	try {
+		lineCategories.value = await call("stabler.api.imports.list_vendor_categories", {
+			company: activeCompany.value,
+			vendor: form.value.supplier,
+		});
+	} catch (err) {
+		lineCategories.value = [];
 	}
 }
 
@@ -171,11 +188,12 @@ async function loadDoc() {
 				docs_price: it.docs_price || 0,
 				_qtyManual: true,
 			})),
+			linked_cis: detail.linked_cis || [],
+			advance_payments: detail.advance_payments || [],
 		};
-		// Existing saved splits are user intent — don't let the auto-follow
-		// watcher below silently overwrite them.
 		bankTouched.value = true;
 		cashTouched.value = true;
+		loadLineCategories();
 	} catch (err) {
 		error.value = err?.message || t("Failed to load the proforma.");
 	} finally {
@@ -198,8 +216,7 @@ function pickItemRow(row, item) {
 function clearItemRow(row) {
 	row.item = "";
 }
-// Qty auto-follows boxes × box weight until the user types into Qty directly
-// (mirrors the server's own qty-default rule in proforma_invoice.py).
+
 function onBoxesOrWeightInput(row) {
 	if (!row._qtyManual) {
 		row.qty = round2((Number(row.boxes) || 0) * (Number(row.box_weight_kg) || 0));
@@ -223,7 +240,6 @@ const itemCategories = computed(() => [
 	...new Set((form.value.items || []).map((r) => r.category).filter(Boolean)),
 ]);
 
-// Live-sync agreed/bank/cash from the items grid whenever items are present.
 watch([itemsAgreedTotal, itemsDocsTotal, itemsCashDiff, hasItems], () => {
 	if (!hasItems.value) return;
 	form.value.agreed_total = itemsAgreedTotal.value;
@@ -238,7 +254,6 @@ function onCashInput() {
 	cashTouched.value = true;
 }
 
-// Live earmark check mirrors the controller (bank + cash == agreed_total).
 const earmarkOk = computed(() => {
 	const f = form.value;
 	const a = Number(f.agreed_total) || 0;
@@ -258,26 +273,6 @@ const fillBoxWeight = ref(20);
 const fillAgreedPrice = ref(0);
 const fillDocsPrice = ref(0);
 const fillApplying = ref(false);
-
-// Vendor categories for the per-line category dropdown (vendor-scoped).
-const lineCategories = ref([]);
-const categoryOptions = computed(() =>
-	lineCategories.value.map((c) => c.display_name || c.category_name).filter(Boolean),
-);
-async function loadLineCategories() {
-	if (!form.value.supplier) {
-		lineCategories.value = [];
-		return;
-	}
-	try {
-		lineCategories.value = await call("stabler.api.imports.list_vendor_categories", {
-			company: activeCompany.value,
-			vendor: form.value.supplier,
-		});
-	} catch (err) {
-		lineCategories.value = [];
-	}
-}
 
 async function openFillModal() {
 	if (!form.value.supplier) {
@@ -318,8 +313,6 @@ async function applyFillCategory() {
 		const totalBoxes = items.reduce((s, it) => s + (Number(it.boxes_per_container) || 0), 0);
 		const containers = Number(fillContainers.value) || 0;
 		const boxWeight = Number(fillBoxWeight.value) || 0;
-		// The category's own display name tags every row it generates so the
-		// items grid + Categories metric can group by it later.
 		const categoryLabel = detail.display_name || detail.category_name || "";
 		for (const it of items) {
 			const perContainer = Number(it.boxes_per_container) || 0;
@@ -395,8 +388,6 @@ async function saveProforma() {
 	}
 }
 
-// Border tint for the page header — derived from the already-centralized
-// getStatusBadgeClass() output ("bg-blue-lt" -> "blue"), not a new status map.
 const statusColor = computed(() => {
 	const cls = getStatusBadgeClass("Proforma Invoice", form.value.status);
 	const m = /^bg-([a-z]+)-lt$/.exec(cls);
@@ -413,7 +404,7 @@ watch(activeCompany, loadPiGroups);
 
 <template>
 	<div>
-		<!-- Page header: status-coloured left border -->
+		<!-- Page header: status-coloured left border with Supplier PI Ref on top -->
 		<div class="card mb-3" :style="{ borderLeft: `4px solid var(--tblr-${statusColor})` }">
 			<div class="card-body d-flex align-items-center flex-wrap gap-3">
 				<button type="button" class="btn btn-outline-secondary btn-icon" @click="router.push('/imports/proformas')">
@@ -421,9 +412,24 @@ watch(activeCompany, loadPiGroups);
 				</button>
 				<div class="flex-grow-1">
 					<div class="d-flex align-items-center gap-2 flex-wrap">
-						<h2 class="page-title mb-0">{{ isCreate ? t("New Proforma") : form.name }}</h2>
-						<span v-if="!isCreate" class="badge" :class="getStatusBadgeClass('Proforma Invoice', form.status)">{{ form.status }}</span>
-						<span v-if="form.commercial_invoice" class="badge bg-green-lt font-monospace" :title="t('Commercial Invoice')">{{ form.commercial_invoice }}</span>
+						<!-- Main Title is Supplier PI No (e.g. HMA/PI/2677/202425) -->
+						<h2 class="page-title mb-0 font-monospace">
+							{{ isCreate ? t("New Proforma") : (form.supplier_pi_ref || form.name) }}
+						</h2>
+						<!-- Secondary System Reference Badge -->
+						<span
+							v-if="!isCreate && form.supplier_pi_ref && form.supplier_pi_ref !== form.name"
+							class="badge bg-secondary-lt font-monospace text-secondary"
+							:title="t('ERPNext System Reference ID')"
+						>
+							Ref: {{ form.name }}
+						</span>
+						<span v-if="!isCreate" class="badge" :class="getStatusBadgeClass('Proforma Invoice', form.status)">
+							{{ form.status }}
+						</span>
+						<span v-if="form.commercial_invoice" class="badge bg-green-lt font-monospace" :title="t('Commercial Invoice')">
+							{{ form.commercial_invoice }}
+						</span>
 					</div>
 					<div class="text-secondary small mt-1">
 						{{ form.supplier_name || form.supplier || t("No supplier selected") }}
@@ -447,7 +453,7 @@ watch(activeCompany, loadPiGroups);
 				<div class="card card-sm">
 					<div class="card-body">
 						<div class="font-weight-medium text-secondary small">{{ t("Agreed total") }}</div>
-						<div class="h3 mb-0 font-monospace">{{ fm(itemsAgreedTotal, form.currency) }}</div>
+						<div class="h3 mb-0 font-monospace text-primary fw-bold">{{ fm(itemsAgreedTotal, form.currency) }}</div>
 					</div>
 				</div>
 			</div>
@@ -455,7 +461,7 @@ watch(activeCompany, loadPiGroups);
 				<div class="card card-sm">
 					<div class="card-body">
 						<div class="font-weight-medium text-secondary small">{{ t("Docs total") }}</div>
-						<div class="h3 mb-0 font-monospace">{{ fm(itemsDocsTotal, form.currency) }}</div>
+						<div class="h3 mb-0 font-monospace text-azure fw-bold">{{ fm(itemsDocsTotal, form.currency) }}</div>
 					</div>
 				</div>
 			</div>
@@ -463,7 +469,7 @@ watch(activeCompany, loadPiGroups);
 				<div class="card card-sm">
 					<div class="card-body">
 						<div class="font-weight-medium text-secondary small">{{ t("Cash Difference") }}</div>
-						<div class="h3 mb-0 font-monospace" :class="{ 'text-warning': Math.abs(itemsCashDiff) > 0.5 }">{{ fm(itemsCashDiff, form.currency) }}</div>
+						<div class="h3 mb-0 font-monospace" :class="{ 'text-warning fw-bold': Math.abs(itemsCashDiff) > 0.5 }">{{ fm(itemsCashDiff, form.currency) }}</div>
 					</div>
 				</div>
 			</div>
@@ -511,7 +517,7 @@ watch(activeCompany, loadPiGroups);
 					</div>
 					<div class="col-md-3">
 						<label class="form-label required">{{ t("Supplier PI No.") }}</label>
-						<input v-model="form.supplier_pi_ref" type="text" class="form-control" :readonly="!isCreate" :placeholder="t('e.g. FIR/25-26/29639-29647')" :title="!isCreate ? t('The PI number is the document identity and cannot be changed after creation.') : ''">
+						<input v-model="form.supplier_pi_ref" type="text" class="form-control font-monospace fw-bold text-primary" :readonly="!isCreate" :placeholder="t('e.g. FIR/25-26/29639-29647')" :title="!isCreate ? t('The PI number is the document identity and cannot be changed after creation.') : ''">
 					</div>
 
 					<div class="col-md-2">
@@ -595,7 +601,7 @@ watch(activeCompany, loadPiGroups);
 			</div>
 		</div>
 
-		<!-- Items — colour-banded grid: Physical (orange) · Agreed (blue) · Docs (green) -->
+		<!-- Items — colour-banded grid with Vendor Category dropdown -->
 		<div class="card mb-3">
 			<div class="card-header">
 				<h3 class="card-title">{{ t("Items") }}</h3>
@@ -617,69 +623,141 @@ watch(activeCompany, loadPiGroups);
 			</div>
 			<div class="table-responsive" style="max-height: 560px; overflow-y: auto;">
 				<table class="table table-sm table-bordered align-middle mb-0">
-											<thead style="position: sticky; top: 0; z-index: 1">
-							<tr>
-								<th style="min-width: 150px">{{ t("Category") }}</th>
-								<th style="min-width: 200px">{{ t("Product Code/Name") }}</th>
-								<th class="text-end bg-orange-lt text-orange" style="width: 90px">{{ t("Boxes") }}</th>
-								<th class="text-end bg-orange-lt text-orange" style="width: 100px">{{ t("Box Weight") }}</th>
-								<th class="text-end bg-orange-lt text-orange" style="width: 110px">{{ t("Quantity (KG)") }}</th>
-								<th class="text-end bg-blue-lt text-blue" style="width: 120px">{{ t("Agreed Price") }}</th>
-								<th class="text-end bg-green-lt text-green" style="width: 120px">{{ t("Docs Price") }}</th>
-								<th class="text-end bg-blue-lt text-blue" style="width: 130px">{{ t("Agreed Total") }}</th>
-								<th class="text-end bg-green-lt text-green" style="width: 130px">{{ t("Docs Total") }}</th>
-								<th style="width: 36px"></th>
-							</tr>
-						</thead>
-						<tbody>
-							<tr v-for="(row, idx) in form.items" :key="idx">
-								<td><input v-model="row.category" type="text" class="form-control form-control-sm" :placeholder="t('Category')"></td>
-								<td>
-									<Typeahead
-										v-model="row.item"
-										:display="row.item ? `${row.item}${row.description ? ' — ' + row.description : ''}` : ''"
-										:search="searchItems"
-										size="sm"
-										:placeholder="t('Search item…')"
-										@pick="(item) => pickItemRow(row, item)"
-										@clear="() => clearItemRow(row)"
-									>
-										<template #option="{ item }">
-											<div class="d-flex justify-content-between align-items-center">
-												<div>
-													<div class="fw-semibold small">{{ item.item_name }}</div>
-													<div class="font-monospace text-secondary" style="font-size: 11px">{{ item.item_code }}</div>
-												</div>
-												<span class="badge bg-secondary-lt">{{ item.stock_uom }}</span>
+					<thead style="position: sticky; top: 0; z-index: 1">
+						<tr>
+							<th style="min-width: 170px">{{ t("Vendor Category") }}</th>
+							<th style="min-width: 200px">{{ t("Product Code/Name") }}</th>
+							<th class="text-end bg-orange-lt text-orange" style="width: 90px">{{ t("Boxes") }}</th>
+							<th class="text-end bg-orange-lt text-orange" style="width: 100px">{{ t("Box Weight") }}</th>
+							<th class="text-end bg-orange-lt text-orange" style="width: 110px">{{ t("Quantity (KG)") }}</th>
+							<th class="text-end bg-blue-lt text-blue" style="width: 120px">{{ t("Agreed Price") }}</th>
+							<th class="text-end bg-green-lt text-green" style="width: 120px">{{ t("Docs Price") }}</th>
+							<th class="text-end bg-blue-lt text-blue" style="width: 130px">{{ t("Agreed Total") }}</th>
+							<th class="text-end bg-green-lt text-green" style="width: 130px">{{ t("Docs Total") }}</th>
+							<th style="width: 36px"></th>
+						</tr>
+					</thead>
+					<tbody>
+						<tr v-for="(row, idx) in form.items" :key="idx">
+							<td>
+								<!-- Vendor Category Dropdown -->
+								<select v-if="categoryOptions.length" v-model="row.category" class="form-select form-select-sm fw-semibold">
+									<option value="">— {{ t("N/A") }} —</option>
+									<option v-for="cat in categoryOptions" :key="cat" :value="cat">{{ cat }}</option>
+								</select>
+								<input v-else v-model="row.category" type="text" class="form-control form-control-sm" :placeholder="t('Vendor Category')">
+							</td>
+							<td>
+								<Typeahead
+									v-model="row.item"
+									:display="row.item ? `${row.item}${row.description ? ' — ' + row.description : ''}` : ''"
+									:search="searchItems"
+									size="sm"
+									:placeholder="t('Search item…')"
+									@pick="(item) => pickItemRow(row, item)"
+									@clear="() => clearItemRow(row)"
+								>
+									<template #option="{ item }">
+										<div class="d-flex justify-content-between align-items-center">
+											<div>
+												<div class="fw-semibold small">{{ item.item_name }}</div>
+												<div class="font-monospace text-secondary" style="font-size: 11px">{{ item.item_code }}</div>
 											</div>
-										</template>
-									</Typeahead>
-								</td>
-								<td><input v-model.number="row.boxes" type="number" step="1" class="form-control form-control-sm text-end font-monospace" @input="onBoxesOrWeightInput(row)"></td>
-								<td><input v-model.number="row.box_weight_kg" type="number" step="0.01" class="form-control form-control-sm text-end font-monospace" @input="onBoxesOrWeightInput(row)"></td>
-								<td><input v-model.number="row.qty" type="number" step="0.01" class="form-control form-control-sm text-end font-monospace text-warning" @input="onQtyInput(row)"></td>
-								<td><MoneyInput v-model="row.rate" :currency="form.currency" :language="user.language" size="sm" /></td>
-								<td><MoneyInput v-model="row.docs_price" :currency="form.currency" :language="user.language" size="sm" /></td>
-								<td class="text-end font-monospace text-blue bg-blue-lt">{{ fm(rowAmount(row), form.currency) }}</td>
-								<td class="text-end font-monospace text-green bg-green-lt">{{ fm(rowDocsAmount(row), form.currency) }}</td>
-								<td>
-									<button type="button" class="btn btn-icon btn-sm btn-ghost-secondary" :title="t('Remove')" @click="removeItemRow(idx)">
-										<i class="ti ti-trash"></i>
-									</button>
-								</td>
-							</tr>
-							<tr v-if="!form.items.length">
-								<td colspan="10" class="text-secondary text-center py-3">{{ t("No items yet.") }}</td>
-							</tr>
-						</tbody>
-						<tfoot v-if="form.items.length">
-							<tr>
-								<td colspan="7" class="text-end fw-semibold small">{{ t("Totals") }}</td>
-								<td class="text-end font-monospace fw-semibold text-blue bg-blue-lt">{{ fm(itemsAgreedTotal, form.currency) }}</td>
-								<td class="text-end font-monospace fw-semibold text-green bg-green-lt">{{ fm(itemsDocsTotal, form.currency) }}</td>
-								<td></td>
-							</tr>
-						</tfoot>
+											<span class="badge bg-secondary-lt">{{ item.stock_uom }}</span>
+										</div>
+									</template>
+								</Typeahead>
+							</td>
+							<td><input v-model.number="row.boxes" type="number" step="1" class="form-control form-control-sm text-end font-monospace" @input="onBoxesOrWeightInput(row)"></td>
+							<td><input v-model.number="row.box_weight_kg" type="number" step="0.01" class="form-control form-control-sm text-end font-monospace" @input="onBoxesOrWeightInput(row)"></td>
+							<td><input v-model.number="row.qty" type="number" step="0.01" class="form-control form-control-sm text-end font-monospace text-warning" @input="onQtyInput(row)"></td>
+							<td><MoneyInput v-model="row.rate" :currency="form.currency" :language="user.language" size="sm" /></td>
+							<td><MoneyInput v-model="row.docs_price" :currency="form.currency" :language="user.language" size="sm" /></td>
+							<td class="text-end font-monospace text-blue bg-blue-lt">{{ fm(rowAmount(row), form.currency) }}</td>
+							<td class="text-end font-monospace text-green bg-green-lt">{{ fm(rowDocsAmount(row), form.currency) }}</td>
+							<td>
+								<button type="button" class="btn btn-icon btn-sm btn-ghost-secondary" :title="t('Remove')" @click="removeItemRow(idx)">
+									<i class="ti ti-trash"></i>
+								</button>
+							</td>
+						</tr>
+						<tr v-if="!form.items.length">
+							<td colspan="10" class="text-secondary text-center py-3">{{ t("No items yet.") }}</td>
+						</tr>
+					</tbody>
+					<tfoot v-if="form.items.length">
+						<tr>
+							<td colspan="7" class="text-end fw-semibold small">{{ t("Totals") }}</td>
+							<td class="text-end font-monospace fw-semibold text-blue bg-blue-lt">{{ fm(itemsAgreedTotal, form.currency) }}</td>
+							<td class="text-end font-monospace fw-semibold text-green bg-green-lt">{{ fm(itemsDocsTotal, form.currency) }}</td>
+							<td></td>
+						</tr>
+					</tfoot>
+				</table>
+			</div>
+		</div>
+
+		<!-- Linked Commercial Invoices & Containers -->
+		<div v-if="form.linked_cis && form.linked_cis.length" class="card mb-3">
+			<div class="card-header">
+				<h3 class="card-title"><i class="ti ti-truck-delivery me-2"></i>{{ t("Linked Commercial Invoices & Containers") }}</h3>
+			</div>
+			<div class="table-responsive">
+				<table class="table table-vcenter table-hover">
+					<thead>
+						<tr>
+							<th>{{ t("CI Number") }}</th>
+							<th>{{ t("CI Date") }}</th>
+							<th>{{ t("Status") }}</th>
+							<th>{{ t("ETD / ETA") }}</th>
+							<th>{{ t("Containers") }}</th>
+							<th class="text-end">{{ t("Agreed Total") }}</th>
+						</tr>
+					</thead>
+					<tbody>
+						<tr v-for="ci in form.linked_cis" :key="ci.name">
+							<td class="font-monospace fw-bold text-primary">{{ ci.ci_number || ci.name }}</td>
+							<td class="text-nowrap">{{ formatDate(ci.ci_date) }}</td>
+							<td><span class="badge" :class="getStatusBadgeClass('Commercial Invoice', ci.status)">{{ ci.status }}</span></td>
+							<td class="small font-monospace">{{ formatDate(ci.etd) }} / {{ formatDate(ci.eta) }}</td>
+							<td>
+								<div v-if="ci.containers && ci.containers.length" class="d-flex flex-wrap gap-1">
+									<span v-for="cnt in ci.containers" :key="cnt.name" class="badge bg-azure-lt font-monospace py-1 px-2">
+										<i class="ti ti-box me-1"></i>{{ cnt.container_number || cnt.name }} ({{ cnt.container_type || 'RF' }}, {{ cnt.status }})
+									</span>
+								</div>
+								<span v-else class="text-secondary small italic">{{ t("No containers") }}</span>
+							</td>
+							<td class="text-end font-monospace fw-semibold">{{ fm(ci.agreed_total, ci.currency) }}</td>
+						</tr>
+					</tbody>
+				</table>
+			</div>
+		</div>
+
+		<!-- Linked Advance Payments -->
+		<div v-if="form.advance_payments && form.advance_payments.length" class="card mb-3">
+			<div class="card-header">
+				<h3 class="card-title"><i class="ti ti-cash me-2"></i>{{ t("Advance Payments") }}</h3>
+			</div>
+			<div class="table-responsive">
+				<table class="table table-vcenter">
+					<thead>
+						<tr>
+							<th>{{ t("Payment Entry") }}</th>
+							<th>{{ t("Date") }}</th>
+							<th>{{ t("Mode of Payment") }}</th>
+							<th class="text-end">{{ t("Paid Amount") }}</th>
+						</tr>
+					</thead>
+					<tbody>
+						<tr v-for="pe in form.advance_payments" :key="pe.name">
+							<td class="font-monospace fw-bold text-primary">{{ pe.name }}</td>
+							<td>{{ formatDate(pe.posting_date) }}</td>
+							<td><span class="badge bg-secondary-lt">{{ pe.mode_of_payment || 'Bank' }}</span></td>
+							<td class="text-end font-monospace fw-semibold text-success">{{ fm(pe.paid_amount, form.currency) }}</td>
+						</tr>
+					</tbody>
 				</table>
 			</div>
 		</div>
