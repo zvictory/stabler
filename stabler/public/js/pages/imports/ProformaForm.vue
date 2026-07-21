@@ -584,17 +584,16 @@ watch(activeCompany, loadPiGroups);
 				</div>
 
 				<div class="row g-3 mt-1">
-					<div class="col-md-4">
+					<div v-if="!hasItems" class="col-md-4">
 						<label class="form-label">{{ t("Agreed total") }}</label>
-						<MoneyInput v-model="form.agreed_total" :currency="form.currency" :language="user.language" :disabled="hasItems" />
-						<div v-if="hasItems" class="form-text small">{{ t("Computed from the items grid.") }}</div>
+						<MoneyInput v-model="form.agreed_total" :currency="form.currency" :language="user.language" />
 					</div>
-					<div class="col-md-4">
-						<label class="form-label">{{ t("Bank Agreed") }}</label>
+					<div :class="hasItems ? 'col-md-6' : 'col-md-4'">
+						<label class="form-label">{{ t("Bank Agreed") }} <span class="text-secondary small">({{ t("Docs portion") }})</span></label>
 						<MoneyInput v-model="form.bank_agreed" :currency="form.currency" :language="user.language" @focus="onBankInput" />
 					</div>
-					<div class="col-md-4">
-						<label class="form-label">{{ t("Cash Agreed") }}</label>
+					<div :class="hasItems ? 'col-md-6' : 'col-md-4'">
+						<label class="form-label">{{ t("Cash Agreed") }} <span class="text-secondary small">({{ t("Cash portion") }})</span></label>
 						<MoneyInput v-model="form.cash_agreed" :currency="form.currency" :language="user.language" @focus="onCashInput" />
 					</div>
 					<div class="col-12">
