@@ -63,6 +63,23 @@ const canRollback = computed(() =>
 const customsFee = ref(null);
 const computingFee = ref(false);
 
+// Vendor categories for the per-line category dropdown
+const lineCategories = ref([]);
+const categoryOptions = computed(() =>
+	lineCategories.value.map((c) => c.display_name || c.category_name).filter(Boolean)
+);
+
+// Fill from category modal state
+const fillModalOpen = ref(false);
+const fillCategories = ref([]);
+const fillCategory = ref("");
+const fillContainers = ref(1);
+const fillBoxWeight = ref(20);
+const fillAgreedPrice = ref(0);
+const fillDocsPrice = ref(0);
+const fillCategoriesLoading = ref(false);
+const fillApplying = ref(false);
+
 function blankForm() {
 	return {
 		name: null,
@@ -103,12 +120,43 @@ function blankForm() {
 	};
 }
 
-const agreedTotal = computed(() =>
-	form.value.items.reduce((sum, r) => sum + Number(r.qty || 0) * Number(r.rate || 0), 0)
-);
+const round2 = (n) => Math.round((Number(n) || 0) * 100) / 100;
+
+function rowAmount(row) {
+	return (Number(row.qty) || 0) * (Number(row.rate) || 0);
+}
+function rowDocsAmount(row) {
+	return (Number(row.qty) || 0) * (Number(row.docs_price) || 0);
+}
+
+const itemsAgreedTotal = computed(() => (form.value.items || []).reduce((s, r) => s + rowAmount(r), 0));
+const itemsDocsTotal = computed(() => (form.value.items || []).reduce((s, r) => s + rowDocsAmount(r), 0));
+const itemsCashDiff = computed(() => itemsAgreedTotal.value - itemsDocsTotal.value);
+const itemCategories = computed(() => [
+	...new Set((form.value.items || []).map((r) => r.category).filter(Boolean)),
+]);
+
 const totalKg = computed(() =>
 	form.value.items.reduce((sum, r) => sum + Number(r.qty || 0), 0)
 );
+const totalBoxesCount = computed(() =>
+	form.value.items.reduce((sum, r) => sum + Number(r.boxes || 0), 0)
+);
+
+async function loadLineCategories() {
+	if (!form.value.supplier) {
+		lineCategories.value = [];
+		return;
+	}
+	try {
+		lineCategories.value = await call("stabler.api.imports.list_vendor_categories", {
+			company: activeCompany.value,
+			vendor: form.value.supplier,
+		});
+	} catch (_err) {
+		lineCategories.value = [];
+	}
+}
 
 async function searchSuppliers(q) {
 	return call("stabler.api.purchasing.list_suppliers", {
@@ -120,33 +168,48 @@ async function searchSuppliers(q) {
 function pickSupplier(item) {
 	form.value.supplier = item.name;
 	form.value.supplier_name = item.supplier_name || item.name;
+	loadLineCategories();
 }
 
 async function searchItems(q) {
 	return call("stabler.api.inventory.list_items", {
 		search: q || "",
-		limit: 20,
+		limit: 30,
 	});
 }
 
 function addItem() {
 	form.value.items.push({
+		category: "",
 		item: "",
 		item_name: "",
 		description: "",
 		hs_code: "",
+		boxes: 0,
+		box_weight_kg: 20,
 		qty: 0,
 		uom: "Kg",
 		rate: 0,
+		docs_price: 0,
 	});
 }
 function removeItem(i) {
 	form.value.items.splice(i, 1);
 }
 function pickItem(row, item) {
-	row.item = item.name;
+	row.item = item.item_code || item.name;
 	row.item_name = item.item_name || item.name;
 	if (!row.description) row.description = item.item_name || "";
+	if (!row.uom) row.uom = item.stock_uom || "Kg";
+}
+
+function onBoxesOrWeightInput(row) {
+	if (!row._qtyManual) {
+		row.qty = round2((Number(row.boxes) || 0) * (Number(row.box_weight_kg) || 0));
+	}
+}
+function onQtyInput(row) {
+	row._qtyManual = true;
 }
 
 function addPoLink() {
@@ -154,6 +217,59 @@ function addPoLink() {
 }
 function removePoLink(i) {
 	form.value.po_links.splice(i, 1);
+}
+
+// Fill from category modal actions
+async function openFillModal() {
+	fillModalOpen.value = true;
+	fillCategoriesLoading.value = true;
+	try {
+		fillCategories.value = await call("stabler.api.imports.list_vendor_categories", {
+			company: activeCompany.value,
+			vendor: form.value.supplier || undefined,
+		});
+	} catch (_) {
+		fillCategories.value = [];
+	} finally {
+		fillCategoriesLoading.value = false;
+	}
+}
+function closeFillModal() {
+	fillModalOpen.value = false;
+}
+async function applyFillCategory() {
+	if (!fillCategory.value) return;
+	fillApplying.value = true;
+	try {
+		const catItems = await call("stabler.api.imports.get_vendor_category_items", {
+			category: fillCategory.value,
+		});
+		const cnts = Number(fillContainers.value) || 1;
+		const bw = Number(fillBoxWeight.value) || 0;
+		const ap = Number(fillAgreedPrice.value) || 0;
+		const dp = Number(fillDocsPrice.value) || 0;
+		for (const ci of catItems || []) {
+			const boxes = (Number(ci.boxes_per_container) || 0) * cnts;
+			const qty = round2(boxes * bw);
+			form.value.items.push({
+				category: ci.category_display_name || fillCategory.value,
+				item: ci.item_code || ci.item,
+				description: ci.item_name || "",
+				boxes,
+				box_weight_kg: bw,
+				qty,
+				uom: "Kg",
+				rate: ap,
+				docs_price: dp,
+			});
+		}
+		fillModalOpen.value = false;
+		toast.success(t("Added {count} items from category.", { count: (catItems || []).length }));
+	} catch (err) {
+		toast.error(err?.message || t("Could not load category items."));
+	} finally {
+		fillApplying.value = false;
+	}
 }
 
 async function loadDoc() {
@@ -169,19 +285,25 @@ async function loadDoc() {
 			...blankForm(),
 			...d,
 			items: (d.items || []).map((it) => ({
+				category: it.category || "",
 				item: it.item,
 				item_name: it.item,
 				description: it.description || "",
 				hs_code: it.hs_code || "",
-				qty: it.qty,
+				boxes: it.boxes || 0,
+				box_weight_kg: it.box_weight_kg || 0,
+				qty: it.qty || 0,
 				uom: it.uom || "Kg",
-				rate: it.rate,
+				rate: it.rate || 0,
+				docs_price: it.docs_price || 0,
+				_qtyManual: true,
 			})),
 			po_links: (d.po_links || []).map((p) => ({ purchase_order: p.purchase_order })),
 			containers: d.containers || [],
 			customs_declarations: d.customs_declarations || [],
 		};
 		customsFee.value = d.customs_fee_breakdown || null;
+		loadLineCategories();
 	} catch (err) {
 		error.value = err?.message || t("Failed to load the commercial invoice.");
 	} finally {
@@ -230,9 +352,8 @@ function buildValues() {
 		v.customs_fee_override = form.value.customs_fee_override;
 	}
 	if (costVisible.value) {
-		if (form.value.docs_total !== null && form.value.docs_total !== "") v.docs_total = form.value.docs_total;
-		if (form.value.cash_difference !== null && form.value.cash_difference !== "")
-			v.cash_difference = form.value.cash_difference;
+		v.docs_total = itemsDocsTotal.value;
+		v.cash_difference = itemsCashDiff.value;
 	}
 	return v;
 }
@@ -241,12 +362,16 @@ function itemsPayload() {
 	return form.value.items
 		.filter((r) => r.item)
 		.map((r) => ({
+			category: r.category || undefined,
 			item: r.item,
 			description: r.description || undefined,
 			hs_code: r.hs_code || undefined,
+			boxes: Number(r.boxes || 0),
+			box_weight_kg: Number(r.box_weight_kg || 0),
 			qty: Number(r.qty || 0),
 			uom: r.uom || undefined,
 			rate: Number(r.rate || 0),
+			docs_price: Number(r.docs_price || 0),
 		}));
 }
 
@@ -446,7 +571,7 @@ watch(activeCompany, loadRefData);
 				<div class="card card-sm">
 					<div class="card-body">
 						<div class="font-weight-medium text-secondary small">{{ t("Agreed total") }}</div>
-						<div class="h3 mb-0 font-monospace text-primary fw-bold">{{ fm(agreedTotal, form.currency) }}</div>
+						<div class="h3 mb-0 font-monospace text-primary fw-bold">{{ fm(itemsAgreedTotal, form.currency) }}</div>
 					</div>
 				</div>
 			</div>
@@ -455,7 +580,7 @@ watch(activeCompany, loadRefData);
 					<div class="card-body">
 						<div class="font-weight-medium text-secondary small">{{ t("Docs total") }}</div>
 						<div class="h3 mb-0 font-monospace text-azure fw-bold">
-							{{ form.docs_total != null ? fm(form.docs_total, form.currency) : "—" }}
+							{{ fm(itemsDocsTotal, form.currency) }}
 						</div>
 					</div>
 				</div>
@@ -465,7 +590,7 @@ watch(activeCompany, loadRefData);
 					<div class="card-body">
 						<div class="font-weight-medium text-secondary small">{{ t("Cash Difference") }}</div>
 						<div class="h3 mb-0 font-monospace text-warning fw-bold">
-							{{ form.cash_difference != null ? fm(form.cash_difference, form.currency) : "—" }}
+							{{ fm(itemsCashDiff, form.currency) }}
 						</div>
 					</div>
 				</div>
@@ -473,9 +598,10 @@ watch(activeCompany, loadRefData);
 			<div class="col-sm-6 col-lg-3">
 				<div class="card card-sm">
 					<div class="card-body">
-						<div class="font-weight-medium text-secondary small">{{ t("Containers") }}</div>
-						<div class="h3 mb-0 font-monospace">
-							{{ form.containers ? form.containers.length : 0 }} <span class="text-secondary fs-6">cnt</span>
+						<div class="font-weight-medium text-secondary small">{{ t("Categories") }}</div>
+						<div class="mt-1 d-flex flex-wrap gap-1">
+							<span v-for="cat in itemCategories" :key="cat" class="badge bg-blue-lt">{{ cat }}</span>
+							<span v-if="!itemCategories.length" class="text-secondary">—</span>
 						</div>
 					</div>
 				</div>
@@ -574,65 +700,97 @@ watch(activeCompany, loadRefData);
 			</div>
 		</div>
 
-		<!-- Items -->
+		<!-- Items — colour-banded grid with Vendor Category dropdown -->
 		<div class="card mb-3">
 			<div class="card-header">
 				<h3 class="card-title">{{ t("Items") }}</h3>
-				<div class="card-actions">
-					<button type="button" class="btn btn-outline-secondary btn-sm" @click="addItem">
-						<i class="ti ti-plus me-1"></i>{{ t("Add item") }}
+				<div class="card-actions d-flex gap-2">
+					<button type="button" class="btn btn-outline-secondary btn-sm" @click="openFillModal">
+						<i class="ti ti-wand me-1"></i>{{ t("Fill from category") }}
+					</button>
+					<button type="button" class="btn btn-ghost-secondary btn-sm" @click="addItem">
+						<i class="ti ti-plus me-1"></i>{{ t("Add row") }}
 					</button>
 				</div>
 			</div>
-			<div class="table-responsive">
-				<table class="table table-vcenter card-table">
-					<thead>
+			<div class="card-body py-2">
+				<div class="d-flex align-items-center gap-3 small text-secondary">
+					<span><i class="ti ti-square-rounded-filled text-orange me-1"></i>{{ t("Physical") }}</span>
+					<span><i class="ti ti-square-rounded-filled text-blue me-1"></i>{{ t("Agreed (true)") }}</span>
+					<span><i class="ti ti-square-rounded-filled text-green me-1"></i>{{ t("Docs (customs)") }}</span>
+				</div>
+			</div>
+			<div class="table-responsive" style="max-height: 560px; overflow-y: auto;">
+				<table class="table table-sm table-bordered align-middle mb-0">
+					<thead style="position: sticky; top: 0; z-index: 1">
 						<tr>
-							<th style="width: 24%">{{ t("Item") }}</th>
-							<th>{{ t("Description") }}</th>
-							<th style="width: 100px">{{ t("HS code") }}</th>
-							<th class="text-end" style="width: 120px">{{ t("Qty (kg)") }}</th>
-							<th class="text-end" style="width: 130px">{{ t("Rate") }} ({{ form.currency || 'USD' }})</th>
-							<th class="text-end" style="width: 140px">{{ t("Amount") }} ({{ form.currency || 'USD' }})</th>
-							<th style="width: 40px"></th>
+							<th style="min-width: 170px">{{ t("Vendor Category") }}</th>
+							<th style="min-width: 200px">{{ t("Product Code/Name") }}</th>
+							<th class="text-end bg-orange-lt text-orange" style="width: 90px">{{ t("Boxes") }}</th>
+							<th class="text-end bg-orange-lt text-orange" style="width: 100px">{{ t("Box Weight") }}</th>
+							<th class="text-end bg-orange-lt text-orange" style="width: 110px">{{ t("Quantity (KG)") }}</th>
+							<th class="text-end bg-blue-lt text-blue" style="width: 130px">{{ t("Agreed Price") }} ({{ form.currency || 'USD' }})</th>
+							<th class="text-end bg-green-lt text-green" style="width: 130px">{{ t("Docs Price") }} ({{ form.currency || 'USD' }})</th>
+							<th class="text-end bg-blue-lt text-blue" style="width: 140px">{{ t("Agreed Total") }} ({{ form.currency || 'USD' }})</th>
+							<th class="text-end bg-green-lt text-green" style="width: 140px">{{ t("Docs Total") }} ({{ form.currency || 'USD' }})</th>
+							<th style="width: 36px"></th>
 						</tr>
 					</thead>
 					<tbody>
-						<tr v-for="(row, i) in form.items" :key="i">
+						<tr v-for="(row, idx) in form.items" :key="idx">
+							<td>
+								<!-- Vendor Category Dropdown -->
+								<select v-if="categoryOptions.length" v-model="row.category" class="form-select form-select-sm fw-semibold">
+									<option value="">— {{ t("N/A") }} —</option>
+									<option v-for="cat in categoryOptions" :key="cat" :value="cat">{{ cat }}</option>
+								</select>
+								<input v-else v-model="row.category" type="text" class="form-control form-control-sm" :placeholder="t('Vendor Category')">
+							</td>
 							<td>
 								<Typeahead
-									v-slot="{ item }"
 									v-model="row.item"
+									:display="row.item ? `${row.item}${row.description ? ' — ' + row.description : ''}` : ''"
 									:search="searchItems"
-									:display="row.item_name"
+									size="sm"
 									:placeholder="t('Search item…')"
-									@pick="(it) => pickItem(row, it)"
+									@pick="(item) => pickItem(row, item)"
 								>
-									<div class="fw-semibold">{{ item.item_name || item.name }}</div>
-									<div class="small text-secondary font-monospace">{{ item.name }}</div>
+									<template #option="{ item }">
+										<div class="d-flex justify-content-between align-items-center">
+											<div>
+												<div class="fw-semibold small">{{ item.item_name }}</div>
+												<div class="font-monospace text-secondary" style="font-size: 11px">{{ item.item_code || item.name }}</div>
+											</div>
+											<span class="badge bg-secondary-lt">{{ item.stock_uom }}</span>
+										</div>
+									</template>
 								</Typeahead>
 							</td>
-							<td><input v-model="row.description" type="text" class="form-control form-control-sm" /></td>
-							<td><input v-model="row.hs_code" type="text" class="form-control form-control-sm" /></td>
+							<td><input v-model.number="row.boxes" type="number" step="1" class="form-control form-control-sm text-end font-monospace" @input="onBoxesOrWeightInput(row)"></td>
+							<td><input v-model.number="row.box_weight_kg" type="number" step="0.01" class="form-control form-control-sm text-end font-monospace" @input="onBoxesOrWeightInput(row)"></td>
+							<td><input v-model.number="row.qty" type="number" step="0.01" class="form-control form-control-sm text-end font-monospace text-warning fw-semibold" @input="onQtyInput(row)"></td>
+							<td><MoneyInput v-model="row.rate" :currency="form.currency" :language="user.language" hide-currency size="sm" /></td>
+							<td><MoneyInput v-model="row.docs_price" :currency="form.currency" :language="user.language" hide-currency size="sm" /></td>
+							<td class="text-end font-monospace text-blue bg-blue-lt fw-semibold">{{ fn(rowAmount(row)) }}</td>
+							<td class="text-end font-monospace text-green bg-green-lt fw-semibold">{{ fn(rowDocsAmount(row)) }}</td>
 							<td>
-								<MoneyInput v-model="row.qty" :language="user.language" hide-currency size="sm" />
-							</td>
-							<td>
-								<MoneyInput v-model="row.rate" :currency="form.currency" :language="user.language" hide-currency size="sm" />
-							</td>
-							<td class="text-end font-monospace align-middle text-primary fw-semibold">
-								{{ fn(Number(row.qty || 0) * Number(row.rate || 0)) }}
-							</td>
-							<td class="text-center align-middle">
-								<button type="button" class="btn btn-ghost-danger btn-icon btn-sm" @click="removeItem(i)">
+								<button type="button" class="btn btn-icon btn-sm btn-ghost-secondary" :title="t('Remove')" @click="removeItem(idx)">
 									<i class="ti ti-trash"></i>
 								</button>
 							</td>
 						</tr>
 						<tr v-if="!form.items.length">
-							<td colspan="7" class="text-secondary text-center py-3">{{ t("No items yet.") }}</td>
+							<td colspan="10" class="text-secondary text-center py-3">{{ t("No items yet.") }}</td>
 						</tr>
 					</tbody>
+					<tfoot v-if="form.items.length">
+						<tr>
+							<td colspan="7" class="text-end fw-semibold small">{{ t("Totals") }}</td>
+							<td class="text-end font-monospace fw-semibold text-blue bg-blue-lt">{{ fm(itemsAgreedTotal, form.currency) }}</td>
+							<td class="text-end font-monospace fw-semibold text-green bg-green-lt">{{ fm(itemsDocsTotal, form.currency) }}</td>
+							<td></td>
+						</tr>
+					</tfoot>
 				</table>
 			</div>
 		</div>
@@ -696,19 +854,21 @@ watch(activeCompany, loadRefData);
 							<strong class="font-monospace">{{ fn(totalKg) }} kg</strong>
 						</div>
 						<div class="d-flex justify-content-between mb-1">
+							<span class="text-secondary">{{ t("Total boxes") }}</span>
+							<strong class="font-monospace">{{ fn(totalBoxesCount) }} bx</strong>
+						</div>
+						<div class="d-flex justify-content-between mb-1">
 							<span class="text-secondary">{{ t("Agreed total") }}</span>
-							<strong class="font-monospace text-primary">{{ fm(agreedTotal, form.currency) }}</strong>
+							<strong class="font-monospace text-primary">{{ fm(itemsAgreedTotal, form.currency) }}</strong>
 						</div>
 						<template v-if="costVisible">
-							<div class="row g-2 mt-1">
-								<div class="col-6">
-									<label class="form-label small">{{ t("Docs total") }}</label>
-									<MoneyInput v-model="form.docs_total" :currency="form.currency" :language="user.language" size="sm" />
-								</div>
-								<div class="col-6">
-									<label class="form-label small">{{ t("Cash difference") }}</label>
-									<MoneyInput v-model="form.cash_difference" :currency="form.currency" :language="user.language" size="sm" />
-								</div>
+							<div class="d-flex justify-content-between mb-1">
+								<span class="text-secondary">{{ t("Docs total") }}</span>
+								<strong class="font-monospace text-azure">{{ fm(itemsDocsTotal, form.currency) }}</strong>
+							</div>
+							<div class="d-flex justify-content-between mb-1">
+								<span class="text-secondary">{{ t("Cash difference") }}</span>
+								<strong class="font-monospace text-warning">{{ fm(itemsCashDiff, form.currency) }}</strong>
 							</div>
 						</template>
 					</div>
@@ -741,6 +901,51 @@ watch(activeCompany, loadRefData);
 							</button>
 						</div>
 						<div v-else class="text-secondary small mt-2">{{ t("Save the invoice first to compute the customs fee.") }}</div>
+					</div>
+				</div>
+			</div>
+		</div>
+
+		<!-- Fill items from vendor category -->
+		<div v-if="fillModalOpen" class="modal d-block" tabindex="-1" style="background: rgba(0,0,0,0.4)">
+			<div class="modal-dialog modal-dialog-centered">
+				<div class="modal-content">
+					<div class="modal-header">
+						<h5 class="modal-title">{{ t("Fill from category") }}</h5>
+						<button type="button" class="btn-close" @click="closeFillModal"></button>
+					</div>
+					<div class="modal-body">
+						<div class="row g-3">
+							<div class="col-12">
+								<label class="form-label small mb-1">{{ t("Category") }}</label>
+								<select v-model="fillCategory" class="form-select form-select-sm" :disabled="fillCategoriesLoading">
+									<option value="">—</option>
+									<option v-for="c in fillCategories" :key="c.name" :value="c.name">{{ c.display_name || c.category_name }}</option>
+								</select>
+							</div>
+							<div class="col-md-6">
+								<label class="form-label small mb-1">{{ t("Containers") }}</label>
+								<input v-model.number="fillContainers" type="number" min="1" step="1" class="form-control form-control-sm">
+							</div>
+							<div class="col-md-6">
+								<label class="form-label small mb-1">{{ t("Box weight (kg)") }}</label>
+								<input v-model.number="fillBoxWeight" type="number" min="0" step="0.01" class="form-control form-control-sm">
+							</div>
+							<div class="col-md-6">
+								<label class="form-label small mb-1">{{ t("Agreed price") }}</label>
+								<MoneyInput v-model="fillAgreedPrice" :currency="form.currency" :language="user.language" size="sm" />
+							</div>
+							<div class="col-md-6">
+								<label class="form-label small mb-1">{{ t("Docs price") }}</label>
+								<MoneyInput v-model="fillDocsPrice" :currency="form.currency" :language="user.language" size="sm" />
+							</div>
+						</div>
+					</div>
+					<div class="modal-footer">
+						<button type="button" class="btn btn-outline-secondary" @click="closeFillModal">{{ t("Cancel") }}</button>
+						<button type="button" class="btn btn-primary" :disabled="fillApplying || !fillCategory" @click="applyFillCategory">
+							<span v-if="fillApplying" class="spinner-border spinner-border-sm me-1"></span>{{ t("Apply") }}
+						</button>
 					</div>
 				</div>
 			</div>
