@@ -4138,6 +4138,57 @@ def proforma_list_stats(company: str, status: str | None = None, supplier: str |
 
 
 @frappe.whitelist()
+def commercial_invoice_list_stats(company: str, status: str | None = None,
+                                   supplier: str | None = None, search: str | None = None) -> dict:
+    """Aggregate totals over the same filter set as list_commercial_invoices for top metric strip."""
+    _assert_imports_access(company)
+    clauses = ["ci.company = %(company)s"]
+    params = {"company": company}
+    if status:
+        clauses.append("ci.status = %(status)s")
+        params["status"] = status
+    if supplier:
+        clauses.append("ci.supplier = %(supplier)s")
+        params["supplier"] = supplier
+    if search:
+        clauses.append("(ci.name LIKE %(q)s OR ci.ci_number LIKE %(q)s OR s.supplier_name LIKE %(q)s)")
+        params["q"] = f"%{search}%"
+    where = " AND ".join(clauses)
+    rows = frappe.db.sql(
+        f"""
+        SELECT
+            COALESCE(SUM(ci.agreed_total), 0) AS agreed_total_sum,
+            COALESCE(SUM(ci.docs_total), 0) AS docs_total_sum,
+            COALESCE(SUM(ci.cash_difference), 0) AS cash_difference_sum,
+            COALESCE(SUM(ci.total_boxes), 0) AS total_boxes_sum,
+            COALESCE(SUM(ci.total_kg), 0) AS total_kg_sum,
+            COUNT(*) AS cnt,
+            SUM(CASE WHEN ci.status = 'BOOKED' THEN 1 ELSE 0 END) AS booked_count,
+            SUM(CASE WHEN ci.status IN ('IN_TRANSIT', 'GATE_IN', 'ON_BOARD', 'STUFFED') THEN 1 ELSE 0 END) AS in_transit_count,
+            SUM(CASE WHEN ci.status = 'DELIVERED_TO_UZBEKISTAN' THEN 1 ELSE 0 END) AS delivered_count
+        FROM `tabCommercial Invoice` ci
+        LEFT JOIN `tabSupplier` s ON s.name = ci.supplier
+        WHERE {where}
+        """,
+        params,
+        as_dict=True,
+    )
+    r = rows[0] if rows else {}
+    visible = _cost_visible()
+    return {
+        "agreed_total_sum": flt(r.get("agreed_total_sum")),
+        "docs_total_sum": flt(r.get("docs_total_sum")) if visible else None,
+        "cash_difference_sum": flt(r.get("cash_difference_sum")) if visible else None,
+        "total_boxes_sum": cint(r.get("total_boxes_sum")),
+        "total_kg_sum": flt(r.get("total_kg_sum")),
+        "count": cint(r.get("cnt")),
+        "booked_count": cint(r.get("booked_count")),
+        "in_transit_count": cint(r.get("in_transit_count")),
+        "delivered_count": cint(r.get("delivered_count")),
+    }
+
+
+@frappe.whitelist()
 def proforma_detail(name: str) -> dict:
     """Full Proforma Invoice doc + linked CIs, containers, and advances."""
     if not name or not frappe.db.exists("Proforma Invoice", name):

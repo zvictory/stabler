@@ -6,6 +6,7 @@ import { useSession } from "../../stores/session.js";
 import { importsApi } from "../../api/imports.js";
 import { call } from "../../api/client.js";
 import { t } from "../../composables/i18n.js";
+import { formatDate } from "../../composables/date.js";
 import { formatMoney } from "../../composables/money.js";
 import { useToast } from "../../composables/useToast.js";
 import { useConfirm } from "../../composables/useConfirm.js";
@@ -51,9 +52,6 @@ const poOptions = computed(() => [
 	})),
 ]);
 
-// Cost visibility: for an existing doc the server tells us by masking docs_total
-// to null; on create we use the authoritative boot flag (session.costVisible,
-// same server-side logic as the imports masking gate). The backend re-checks on write.
 const costVisible = computed(() => {
 	if (!isCreate.value) return form.value.docs_total !== null;
 	return session.costVisible === true;
@@ -77,7 +75,7 @@ function blankForm() {
 		currency: "USD",
 		import_pi_group: "",
 		status: "BOOKED",
-		incoterm: "",
+		incoterm: "CIF",
 		incoterm_location: "",
 		vessel: "",
 		voyage: "",
@@ -100,6 +98,8 @@ function blankForm() {
 		allowed_transitions: [],
 		items: [],
 		po_links: [],
+		containers: [],
+		customs_declarations: [],
 	};
 }
 
@@ -178,6 +178,8 @@ async function loadDoc() {
 				rate: it.rate,
 			})),
 			po_links: (d.po_links || []).map((p) => ({ purchase_order: p.purchase_order })),
+			containers: d.containers || [],
+			customs_declarations: d.customs_declarations || [],
 		};
 		customsFee.value = d.customs_fee_breakdown || null;
 	} catch (err) {
@@ -313,7 +315,6 @@ async function advanceStatus(nextStatus) {
 	}
 }
 
-// Rollback targets = the single previous step in the pipeline (privileged only).
 const PIPELINE = [
 	"BOOKED",
 	"STUFFED",
@@ -349,6 +350,17 @@ async function computeFee(apply) {
 	}
 }
 
+const fm = (v, ccy) => formatMoney(v, ccy || "USD", user.value?.language || "en");
+const fn = (v) => {
+	if (v === null || v === undefined || isNaN(v)) return "0.00";
+	const localeCode = user.value?.language === "en" ? "en-US" : "ru-RU";
+	return new Intl.NumberFormat(localeCode, {
+		minimumFractionDigits: 2,
+		maximumFractionDigits: 2,
+		useGrouping: true,
+	}).format(Number(v) || 0);
+};
+
 onMounted(() => {
 	loadRefData();
 	loadDoc();
@@ -360,15 +372,28 @@ watch(activeCompany, loadRefData);
 <template>
 	<div>
 		<div class="d-flex align-items-center mb-3">
-			<button type="button" class="btn btn-ghost-secondary btn-icon me-2" @click="router.push('/imports/commercial-invoices')">
+			<button type="button" class="btn btn-outline-secondary btn-icon me-3" @click="router.push('/imports/commercial-invoices')">
 				<i class="ti ti-arrow-left"></i>
 			</button>
-			<div>
-				<h2 class="page-title mb-0">
-					{{ isCreate ? t("New commercial invoice") : (form.ci_number || form.name) }}
-				</h2>
-				<div v-if="!isCreate" class="text-secondary small">
-					<StatusBadge doctype="Commercial Invoice" :status="form.status" />
+			<div class="flex-grow-1">
+				<div class="d-flex align-items-center gap-2 flex-wrap">
+					<!-- Main Title: CI Number (e.g. MH/3054/2025-26) -->
+					<h2 class="page-title mb-0 font-monospace">
+						{{ isCreate ? t("New commercial invoice") : (form.ci_number || form.name) }}
+					</h2>
+					<span
+						v-if="!isCreate && form.ci_number && form.ci_number !== form.name"
+						class="badge bg-secondary-lt font-monospace text-secondary"
+						:title="t('ERPNext System Reference ID')"
+					>
+						Ref: {{ form.name }}
+					</span>
+					<StatusBadge v-if="!isCreate" doctype="Commercial Invoice" :status="form.status" />
+				</div>
+				<div class="text-secondary small mt-1">
+					{{ form.supplier_name || form.supplier || t("No supplier selected") }}
+					<template v-if="form.incoterm"> · {{ form.incoterm }}</template>
+					<template v-if="form.ci_date"> · {{ formatDate(form.ci_date) }}</template>
 				</div>
 			</div>
 			<div class="ms-auto">
@@ -383,7 +408,7 @@ watch(activeCompany, loadRefData);
 		<!-- Status action bar -->
 		<div v-if="!isCreate" class="card mb-3">
 			<div class="card-body d-flex align-items-center flex-wrap gap-2">
-				<span class="text-secondary small">{{ t("Status") }}:</span>
+				<span class="text-secondary small fw-semibold">{{ t("Status Pipeline") }}:</span>
 				<StatusBadge doctype="Commercial Invoice" :status="form.status" />
 				<div class="ms-auto d-flex gap-2 flex-wrap">
 					<button
@@ -415,9 +440,51 @@ watch(activeCompany, loadRefData);
 			</div>
 		</div>
 
-		<!-- Header -->
+		<!-- Top Metric Strip -->
+		<div class="row row-cards mb-3">
+			<div class="col-sm-6 col-lg-3">
+				<div class="card card-sm">
+					<div class="card-body">
+						<div class="font-weight-medium text-secondary small">{{ t("Agreed total") }}</div>
+						<div class="h3 mb-0 font-monospace text-primary fw-bold">{{ fm(agreedTotal, form.currency) }}</div>
+					</div>
+				</div>
+			</div>
+			<div class="col-sm-6 col-lg-3">
+				<div class="card card-sm">
+					<div class="card-body">
+						<div class="font-weight-medium text-secondary small">{{ t("Docs total") }}</div>
+						<div class="h3 mb-0 font-monospace text-azure fw-bold">
+							{{ form.docs_total != null ? fm(form.docs_total, form.currency) : "—" }}
+						</div>
+					</div>
+				</div>
+			</div>
+			<div class="col-sm-6 col-lg-3">
+				<div class="card card-sm">
+					<div class="card-body">
+						<div class="font-weight-medium text-secondary small">{{ t("Cash Difference") }}</div>
+						<div class="h3 mb-0 font-monospace text-warning fw-bold">
+							{{ form.cash_difference != null ? fm(form.cash_difference, form.currency) : "—" }}
+						</div>
+					</div>
+				</div>
+			</div>
+			<div class="col-sm-6 col-lg-3">
+				<div class="card card-sm">
+					<div class="card-body">
+						<div class="font-weight-medium text-secondary small">{{ t("Containers") }}</div>
+						<div class="h3 mb-0 font-monospace">
+							{{ form.containers ? form.containers.length : 0 }} <span class="text-secondary fs-6">cnt</span>
+						</div>
+					</div>
+				</div>
+			</div>
+		</div>
+
+		<!-- Header Details -->
 		<div class="card mb-3">
-			<div class="card-header"><h3 class="card-title">{{ t("Header") }}</h3></div>
+			<div class="card-header"><h3 class="card-title">{{ t("Header Details") }}</h3></div>
 			<div class="card-body">
 				<div class="row g-3">
 					<div class="col-md-6">
@@ -435,8 +502,8 @@ watch(activeCompany, loadRefData);
 						</Typeahead>
 					</div>
 					<div class="col-md-3">
-						<label class="form-label">{{ t("CI number") }}</label>
-						<input v-model="form.ci_number" type="text" class="form-control" />
+						<label class="form-label required">{{ t("CI number") }}</label>
+						<input v-model="form.ci_number" type="text" class="form-control font-monospace fw-bold text-primary" :placeholder="t('e.g. MH/3054/2025-26')" />
 					</div>
 					<div class="col-md-3">
 						<label class="form-label">{{ t("Date") }}</label>
@@ -523,10 +590,10 @@ watch(activeCompany, loadRefData);
 						<tr>
 							<th style="width: 24%">{{ t("Item") }}</th>
 							<th>{{ t("Description") }}</th>
-							<th style="width: 90px">{{ t("HS code") }}</th>
-							<th class="text-end" style="width: 110px">{{ t("Qty (kg)") }}</th>
-							<th class="text-end" style="width: 120px">{{ t("Rate") }}</th>
-							<th class="text-end" style="width: 120px">{{ t("Amount") }}</th>
+							<th style="width: 100px">{{ t("HS code") }}</th>
+							<th class="text-end" style="width: 120px">{{ t("Qty (kg)") }}</th>
+							<th class="text-end" style="width: 130px">{{ t("Rate") }} ({{ form.currency || 'USD' }})</th>
+							<th class="text-end" style="width: 140px">{{ t("Amount") }} ({{ form.currency || 'USD' }})</th>
 							<th style="width: 40px"></th>
 						</tr>
 					</thead>
@@ -548,13 +615,13 @@ watch(activeCompany, loadRefData);
 							<td><input v-model="row.description" type="text" class="form-control form-control-sm" /></td>
 							<td><input v-model="row.hs_code" type="text" class="form-control form-control-sm" /></td>
 							<td>
-								<MoneyInput v-model="row.qty" :language="user.language" size="sm" />
+								<MoneyInput v-model="row.qty" :language="user.language" hide-currency size="sm" />
 							</td>
 							<td>
-								<MoneyInput v-model="row.rate" :language="user.language" size="sm" />
+								<MoneyInput v-model="row.rate" :currency="form.currency" :language="user.language" hide-currency size="sm" />
 							</td>
-							<td class="text-end font-monospace align-middle">
-								{{ formatMoney(Number(row.qty || 0) * Number(row.rate || 0), form.currency, user.language) }}
+							<td class="text-end font-monospace align-middle text-primary fw-semibold">
+								{{ fn(Number(row.qty || 0) * Number(row.rate || 0)) }}
 							</td>
 							<td class="text-center align-middle">
 								<button type="button" class="btn btn-ghost-danger btn-icon btn-sm" @click="removeItem(i)">
@@ -564,6 +631,33 @@ watch(activeCompany, loadRefData);
 						</tr>
 						<tr v-if="!form.items.length">
 							<td colspan="7" class="text-secondary text-center py-3">{{ t("No items yet.") }}</td>
+						</tr>
+					</tbody>
+				</table>
+			</div>
+		</div>
+
+		<!-- Linked Containers -->
+		<div v-if="form.containers && form.containers.length" class="card mb-3">
+			<div class="card-header">
+				<h3 class="card-title"><i class="ti ti-box me-2"></i>{{ t("Linked Containers") }}</h3>
+			</div>
+			<div class="table-responsive">
+				<table class="table table-vcenter table-hover">
+					<thead>
+						<tr>
+							<th>{{ t("Container Number") }}</th>
+							<th>{{ t("Status") }}</th>
+							<th class="text-end">{{ t("Boxes") }}</th>
+							<th class="text-end">{{ t("Total Weight (kg)") }}</th>
+						</tr>
+					</thead>
+					<tbody>
+						<tr v-for="cnt in form.containers" :key="cnt.name">
+							<td class="font-monospace fw-bold text-primary">{{ cnt.container_number || cnt.name }}</td>
+							<td><span class="badge bg-secondary-lt">{{ cnt.status }}</span></td>
+							<td class="text-end font-monospace">{{ fn(cnt.total_boxes) }}</td>
+							<td class="text-end font-monospace fw-semibold">{{ fn(cnt.total_kg) }} kg</td>
 						</tr>
 					</tbody>
 				</table>
@@ -599,11 +693,11 @@ watch(activeCompany, loadRefData);
 					<div class="card-body">
 						<div class="d-flex justify-content-between mb-1">
 							<span class="text-secondary">{{ t("Total weight (kg)") }}</span>
-							<strong class="font-monospace">{{ totalKg.toFixed(0) }}</strong>
+							<strong class="font-monospace">{{ fn(totalKg) }} kg</strong>
 						</div>
 						<div class="d-flex justify-content-between mb-1">
 							<span class="text-secondary">{{ t("Agreed total") }}</span>
-							<strong class="font-monospace">{{ formatMoney(agreedTotal, form.currency, user.language) }}</strong>
+							<strong class="font-monospace text-primary">{{ fm(agreedTotal, form.currency) }}</strong>
 						</div>
 						<template v-if="costVisible">
 							<div class="row g-2 mt-1">
