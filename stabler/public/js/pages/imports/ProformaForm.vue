@@ -118,10 +118,12 @@ function searchSuppliers(q) {
 function pickSupplier(s) {
 	form.value.supplier = s.name;
 	form.value.supplier_name = s.supplier_name || s.name;
+	loadLineCategories();
 }
 function clearSupplier() {
 	form.value.supplier = "";
 	form.value.supplier_name = "";
+	lineCategories.value = [];
 }
 // proforma_detail returns the raw doctype dict — Proforma Invoice has no
 // supplier_name field, so resolve it via the same supplier search endpoint
@@ -256,6 +258,26 @@ const fillBoxWeight = ref(20);
 const fillAgreedPrice = ref(0);
 const fillDocsPrice = ref(0);
 const fillApplying = ref(false);
+
+// Vendor categories for the per-line category dropdown (vendor-scoped).
+const lineCategories = ref([]);
+const categoryOptions = computed(() =>
+	lineCategories.value.map((c) => c.display_name || c.category_name).filter(Boolean),
+);
+async function loadLineCategories() {
+	if (!form.value.supplier) {
+		lineCategories.value = [];
+		return;
+	}
+	try {
+		lineCategories.value = await call("stabler.api.imports.list_vendor_categories", {
+			company: activeCompany.value,
+			vendor: form.value.supplier,
+		});
+	} catch (err) {
+		lineCategories.value = [];
+	}
+}
 
 async function openFillModal() {
 	if (!form.value.supplier) {

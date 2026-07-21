@@ -3485,11 +3485,11 @@ def submit_import_order(name: str):
 
 @frappe.whitelist()
 def list_pi_groups(company: str, search: str | None = None):
-    """PI Groups for a company + the count of import orders and PIs in each.
+    """PI Groups for a company + counts and total amounts.
 
-    Keeps the pre-existing keys (name/title/status/remarks/order_count) used by
-    Import Orders' quick-create picker, and adds code/pi_vendor/pi_count for the
-    PI Group management page."""
+    Keeps pre-existing keys (name/title/status/remarks/order_count) used by
+    Import Orders' quick-create picker, and adds code/pi_vendor/pi_count/agreed_sum
+    for the PI Group management page."""
     _assert_imports_access(company)
     clauses = ["company = %(company)s"]
     params: dict = {"company": company}
@@ -3499,7 +3499,7 @@ def list_pi_groups(company: str, search: str | None = None):
     where = " AND ".join(clauses)
     groups = frappe.db.sql(
         f"""
-        SELECT name, title, code, pi_vendor, status, remarks
+        SELECT name, title, code, pi_vendor, status, remarks, creation, modified
         FROM `tabImport PI Group`
         WHERE {where}
         ORDER BY creation DESC
@@ -3521,11 +3521,11 @@ def list_pi_groups(company: str, search: str | None = None):
             as_dict=True,
         )
         by_grp = {r["grp"]: cint(r["c"]) for r in counts}
-    pi_counts: dict = {}
+    pi_stats: dict = {}
     if groups:
         pi_rows = frappe.db.sql(
             """
-            SELECT import_pi_group AS grp, COUNT(*) AS c
+            SELECT import_pi_group AS grp, COUNT(*) AS c, SUM(agreed_total) AS total_agreed
             FROM `tabProforma Invoice`
             WHERE company = %(company)s
               AND import_pi_group IS NOT NULL AND import_pi_group != ''
@@ -3534,7 +3534,7 @@ def list_pi_groups(company: str, search: str | None = None):
             {"company": company},
             as_dict=True,
         )
-        pi_counts = {r["grp"]: cint(r["c"]) for r in pi_rows}
+        pi_stats = {r["grp"]: {"count": cint(r["c"]), "total_agreed": flt(r["total_agreed"])} for r in pi_rows}
     vendor_ids = {g["pi_vendor"] for g in groups if g.get("pi_vendor")}
     vendor_names: dict = {}
     if vendor_ids:
@@ -3546,9 +3546,12 @@ def list_pi_groups(company: str, search: str | None = None):
         vendor_names = {r["name"]: r["supplier_name"] for r in vn}
     for g in groups:
         g["order_count"] = by_grp.get(g["name"], 0)
-        g["pi_count"] = pi_counts.get(g["name"], 0)
+        st = pi_stats.get(g["name"], {"count": 0, "total_agreed": 0.0})
+        g["pi_count"] = st["count"]
+        g["agreed_total"] = st["total_agreed"]
         # Aliases the PI-Group management page reads (title == group_name).
         g["group_name"] = g["title"]
+        g["notes"] = g["remarks"]
         g["pi_vendor_name"] = vendor_names.get(g.get("pi_vendor")) or g.get("pi_vendor")
     return groups
 
@@ -3570,15 +3573,18 @@ def create_pi_group(company: str, title: str, remarks: str | None = None):
 
 @frappe.whitelist()
 def pi_group_detail(name: str) -> dict:
-    """One Import PI Group + its linked Proforma Invoices (management page)."""
+    """One Import PI Group + its linked PIs, Commercial Invoices, Containers & POs."""
     if not name or not frappe.db.exists("Import PI Group", name):
         frappe.throw(_("Unknown Import PI Group: {0}").format(name))
     doc = frappe.get_doc("Import PI Group", name)
     _assert_imports_access(doc.company)
+
     pis = frappe.db.sql(
         """
-        SELECT pi.name, pi.pi_date, pi.supplier, s.supplier_name, pi.status,
-               pi.agreed_total, pi.currency
+        SELECT pi.name, pi.supplier_pi_ref, pi.pi_date, pi.supplier, s.supplier_name, pi.status,
+               pi.agreed_total, pi.docs_total, pi.cash_difference, pi.currency,
+               pi.incoterm, pi.incoterm_location, pi.port_of_loading, pi.port_of_discharge,
+               pi.creation, pi.modified
         FROM `tabProforma Invoice` pi
         LEFT JOIN `tabSupplier` s ON s.name = pi.supplier
         WHERE pi.import_pi_group = %(group)s
@@ -3587,21 +3593,120 @@ def pi_group_detail(name: str) -> dict:
         {"group": name},
         as_dict=True,
     )
-    return {
+    for p in pis:
+        p["supplier_name"] = p.get("supplier_name") or p.get("supplier") or ""
+
+    cis = frappe.db.sql(
+        """
+        SELECT ci.name, ci.ci_number, ci.ci_date, ci.supplier, s.supplier_name, ci.status,
+               ci.incoterm, ci.incoterm_location, ci.etd, ci.eta, ci.atd, ci.ata,
+               ci.agreed_total, ci.docs_total, ci.cash_difference, ci.currency,
+               ci.import_pi_group
+        FROM `tabCommercial Invoice` ci
+        LEFT JOIN `tabSupplier` s ON s.name = ci.supplier
+        WHERE ci.import_pi_group = %(group)s
+        ORDER BY ci.creation DESC
+        """,
+        {"group": name},
+        as_dict=True,
+    )
+    for c in cis:
+        c["supplier_name"] = c.get("supplier_name") or c.get("supplier") or ""
+
+    ci_names = [c["name"] for c in cis]
+    containers_by_ci: dict[str, list[dict]] = {}
+    all_containers = []
+    if ci_names:
+        containers = frappe.db.sql(
+            """
+            SELECT cnt.name, cnt.container_number, cnt.container_type, cnt.container_size,
+                   cnt.status, cnt.commercial_invoice, cnt.total_boxes, cnt.total_kg, cnt.total_amount
+            FROM `tabImport Container` cnt
+            WHERE cnt.commercial_invoice IN %(ci_names)s
+            ORDER BY cnt.creation DESC
+            """,
+            {"ci_names": tuple(ci_names)},
+            as_dict=True,
+        )
+        all_containers = containers
+        for cnt in containers:
+            ci_ref = cnt.get("commercial_invoice")
+            if ci_ref:
+                containers_by_ci.setdefault(ci_ref, []).append(cnt)
+
+    for c in cis:
+        c["containers"] = containers_by_ci.get(c["name"], [])
+
+    for p in pis:
+        p_cis = [c for c in cis if c.get("supplier") == p.get("supplier")]
+        p["linked_cis"] = p_cis
+
+    pos = []
+    if frappe.db.has_column("Purchase Order", "custom_import_pi_group"):
+        pos = frappe.db.sql(
+            """
+            SELECT po.name, po.transaction_date, po.supplier, s.supplier_name,
+                   po.grand_total, po.currency, po.status, po.docstatus
+            FROM `tabPurchase Order` po
+            LEFT JOIN `tabSupplier` s ON s.name = po.supplier
+            WHERE po.custom_import_pi_group = %(group)s AND po.docstatus < 2
+            ORDER BY po.creation DESC
+            """,
+            {"group": name},
+            as_dict=True,
+        )
+        for po in pos:
+            po["supplier_name"] = po.get("supplier_name") or po.get("supplier") or ""
+
+    vendor_name = frappe.db.get_value("Supplier", doc.pi_vendor, "supplier_name") if doc.pi_vendor else None
+
+    grp_dict = {
         "name": doc.name,
         "title": doc.title,
-        "group_name": doc.title,  # alias for the management page
+        "group_name": doc.title,
         "code": doc.code,
         "pi_vendor": doc.pi_vendor,
-        "pi_vendor_name": frappe.db.get_value("Supplier", doc.pi_vendor, "supplier_name")
-        if doc.pi_vendor
-        else None,
-        "notes": doc.remarks,  # alias
-        "status": doc.status,
+        "pi_vendor_name": vendor_name or doc.pi_vendor or None,
+        "notes": doc.remarks,
         "remarks": doc.remarks,
+        "status": doc.status,
         "company": doc.company,
+        "creation": str(doc.creation),
+        "modified": str(doc.modified),
+    }
+
+    agreed_sum = sum(flt(p.get("agreed_total")) for p in pis)
+    docs_sum = sum(flt(p.get("docs_total")) for p in pis)
+    cash_diff_sum = sum(flt(p.get("cash_difference")) for p in pis)
+
+    return {
+        "group": grp_dict,
+        "name": doc.name,
+        "title": doc.title,
+        "group_name": doc.title,
+        "code": doc.code,
+        "pi_vendor": doc.pi_vendor,
+        "pi_vendor_name": vendor_name or doc.pi_vendor or None,
+        "notes": doc.remarks,
+        "remarks": doc.remarks,
+        "status": doc.status,
+        "company": doc.company,
+        "creation": str(doc.creation),
+        "modified": str(doc.modified),
         "pi_count": len(pis),
         "pis": pis,
+        "cis": cis,
+        "containers": all_containers,
+        "purchase_orders": pos,
+        "totals": {
+            "pi_count": len(pis),
+            "ci_count": len(cis),
+            "container_count": len(all_containers),
+            "po_count": len(pos),
+            "agreed_total": agreed_sum,
+            "docs_total": docs_sum,
+            "cash_difference": cash_diff_sum,
+        },
     }
 
 
