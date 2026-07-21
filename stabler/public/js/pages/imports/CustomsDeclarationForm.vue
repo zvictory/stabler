@@ -59,8 +59,20 @@ const totalDuties = computed(() =>
 	Number(form.value.duty_amount || 0) + Number(form.value.vat_amount || 0) + Number(form.value.excise_amount || 0)
 );
 
-async function searchItems(q) {
-	return call("stabler.api.inventory.list_items", { search: q || "", limit: 20 });
+const itemsList = ref([]);
+async function loadItemsList() {
+	try {
+		itemsList.value = await call("stabler.api.inventory.list_items", { limit: 500 });
+	} catch (_) {
+		itemsList.value = [];
+	}
+}
+function onItemSelect(row) {
+	const found = itemsList.value.find((i) => (i.item_code || i.name) === row.item_code);
+	if (found) {
+		row.item_name = found.item_name || found.name;
+		if (!row.description) row.description = found.item_name || "";
+	}
 }
 function addLine() {
 	form.value.lines.push({ item_code: "", item_name: "", description: "", hs_code: "", country_of_origin: "", gross_weight_kg: 0, net_weight_kg: 0, box_qty: 0, statistical_value_usd: 0, duty_rate_pct: 0, excise_rate_pct: 0, vat_rate_pct: 12 });
@@ -196,7 +208,10 @@ async function advanceStatus(nextStatus) {
 	}
 }
 
-onMounted(loadDoc);
+onMounted(() => {
+	loadItemsList();
+	loadDoc();
+});
 watch(docName, loadDoc);
 </script>
 
@@ -323,10 +338,12 @@ watch(docName, loadDoc);
 					<tbody>
 						<tr v-for="(row, i) in form.lines" :key="i">
 							<td>
-								<Typeahead v-slot="{ item }" v-model="row.item_code" :search="searchItems" :display="row.item_name" :placeholder="t('Search item…')" @pick="(it) => pickItem(row, it)">
-									<div class="fw-semibold">{{ item.item_name || item.name }}</div>
-									<div class="small text-secondary font-monospace">{{ item.name }}</div>
-								</Typeahead>
+								<select v-model="row.item_code" class="form-select form-select-sm fw-semibold" @change="onItemSelect(row)">
+									<option value="">— {{ t("Select product") }} —</option>
+									<option v-for="it in itemsList" :key="it.item_code || it.name" :value="it.item_code || it.name">
+										{{ it.item_code || it.name }} — {{ it.item_name }}
+									</option>
+								</select>
 							</td>
 							<td><input v-model="row.hs_code" type="text" class="form-control form-control-sm" /></td>
 							<td><input v-model="row.country_of_origin" type="text" class="form-control form-control-sm" /></td>

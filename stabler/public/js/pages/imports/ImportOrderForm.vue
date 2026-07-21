@@ -133,8 +133,19 @@ function pickSupplier(item) {
 	form.value.supplier_name = item.supplier_name || item.name;
 }
 
-async function searchItems(q) {
-	return call("stabler.api.inventory.list_items", { search: q || "", limit: 20 });
+const itemsList = ref([]);
+async function loadItemsList() {
+	try {
+		itemsList.value = await call("stabler.api.inventory.list_items", { limit: 500 });
+	} catch (_) {
+		itemsList.value = [];
+	}
+}
+function onItemSelect(row) {
+	const found = itemsList.value.find((i) => (i.item_code || i.name) === row.item_code);
+	if (found) {
+		row.item_name = found.item_name || found.name;
+	}
 }
 function addItem() {
 	form.value.items.push({
@@ -330,6 +341,7 @@ async function recordAdvance() {
 }
 
 onMounted(() => {
+	loadItemsList();
 	loadRefData();
 	loadDoc();
 });
@@ -480,18 +492,12 @@ watch(activeCompany, loadRefData);
 					<tbody>
 						<tr v-for="(row, i) in form.items" :key="i">
 							<td>
-								<Typeahead
-									v-if="isDraft"
-									v-slot="{ item }"
-									v-model="row.item_code"
-									:search="searchItems"
-									:display="row.item_name"
-									:placeholder="t('Search item…')"
-									@pick="(it) => pickItem(row, it)"
-								>
-									<div class="fw-semibold">{{ item.item_name || item.name }}</div>
-									<div class="small text-secondary font-monospace">{{ item.name }}</div>
-								</Typeahead>
+								<select v-if="isDraft" v-model="row.item_code" class="form-select form-select-sm fw-semibold" @change="onItemSelect(row)">
+									<option value="">— {{ t("Select product") }} —</option>
+									<option v-for="it in itemsList" :key="it.item_code || it.name" :value="it.item_code || it.name">
+										{{ it.item_code || it.name }} — {{ it.item_name }}
+									</option>
+								</select>
 								<div v-else>
 									<div class="fw-semibold">{{ row.item_name || row.item_code }}</div>
 									<div class="small text-secondary font-monospace">{{ row.item_code }}</div>

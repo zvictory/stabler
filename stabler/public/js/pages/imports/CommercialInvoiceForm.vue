@@ -171,11 +171,20 @@ function pickSupplier(item) {
 	loadLineCategories();
 }
 
-async function searchItems(q) {
-	return call("stabler.api.inventory.list_items", {
-		search: q || "",
-		limit: 30,
-	});
+const itemsList = ref([]);
+async function loadItemsList() {
+	try {
+		itemsList.value = await call("stabler.api.inventory.list_items", { limit: 500 });
+	} catch (_) {
+		itemsList.value = [];
+	}
+}
+function onItemSelect(row) {
+	const found = itemsList.value.find((i) => (i.item_code || i.name) === row.item);
+	if (found) {
+		if (!row.description) row.description = found.item_name || "";
+		if (!row.uom) row.uom = found.stock_uom || "Kg";
+	}
 }
 
 function addItem() {
@@ -487,6 +496,7 @@ const fn = (v) => {
 };
 
 onMounted(() => {
+	loadItemsList();
 	loadRefData();
 	loadDoc();
 });
@@ -747,24 +757,12 @@ watch(activeCompany, loadRefData);
 								<input v-else v-model="row.category" type="text" class="form-control form-control-sm" :placeholder="t('Vendor Category')">
 							</td>
 							<td>
-								<Typeahead
-									v-model="row.item"
-									:display="row.item ? `${row.item}${row.description ? ' — ' + row.description : ''}` : ''"
-									:search="searchItems"
-									size="sm"
-									:placeholder="t('Search item…')"
-									@pick="(item) => pickItem(row, item)"
-								>
-									<template #option="{ item }">
-										<div class="d-flex justify-content-between align-items-center">
-											<div>
-												<div class="fw-semibold small">{{ item.item_name }}</div>
-												<div class="font-monospace text-secondary" style="font-size: 11px">{{ item.item_code || item.name }}</div>
-											</div>
-											<span class="badge bg-secondary-lt">{{ item.stock_uom }}</span>
-										</div>
-									</template>
-								</Typeahead>
+								<select v-model="row.item" class="form-select form-select-sm fw-semibold" @change="onItemSelect(row)">
+									<option value="">— {{ t("Select product") }} —</option>
+									<option v-for="it in itemsList" :key="it.item_code || it.name" :value="it.item_code || it.name">
+										{{ it.item_code || it.name }} — {{ it.item_name }}
+									</option>
+								</select>
 							</td>
 							<td><input v-model.number="row.boxes" type="number" step="1" class="form-control form-control-sm text-end font-monospace" @input="onBoxesOrWeightInput(row)"></td>
 							<td><input v-model.number="row.box_weight_kg" type="number" step="0.01" class="form-control form-control-sm text-end font-monospace" @input="onBoxesOrWeightInput(row)"></td>

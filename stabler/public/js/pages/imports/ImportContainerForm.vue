@@ -99,8 +99,19 @@ function blankForm() {
 	};
 }
 
-async function searchItems(q) {
-	return call("stabler.api.inventory.list_items", { search: q || "", limit: 20 });
+const itemsList = ref([]);
+async function loadItemsList() {
+	try {
+		itemsList.value = await call("stabler.api.inventory.list_items", { limit: 500 });
+	} catch (_) {
+		itemsList.value = [];
+	}
+}
+function onItemSelect(row) {
+	const found = itemsList.value.find((i) => (i.item_code || i.name) === row.item_code);
+	if (found) {
+		row.item_name = found.item_name || found.name;
+	}
 }
 function addItem() {
 	form.value.items.push({ item_code: "", item_name: "", category: "", box_qty: 0, box_kg: 0, total_kg: 0, rate: 0, amount: 0 });
@@ -265,6 +276,7 @@ async function advanceStatus(nextStatus) {
 }
 
 onMounted(() => {
+	loadItemsList();
 	loadRefData();
 	loadDoc();
 });
@@ -429,17 +441,12 @@ watch(docName, loadDoc);
 					<tbody>
 						<tr v-for="(row, i) in form.items" :key="i">
 							<td>
-								<Typeahead
-									v-slot="{ item }"
-									v-model="row.item_code"
-									:search="searchItems"
-									:display="row.item_name"
-									:placeholder="t('Search item…')"
-									@pick="(it) => pickItem(row, it)"
-								>
-									<div class="fw-semibold">{{ item.item_name || item.name }}</div>
-									<div class="small text-secondary font-monospace">{{ item.name }}</div>
-								</Typeahead>
+								<select v-model="row.item_code" class="form-select form-select-sm fw-semibold" @change="onItemSelect(row)">
+									<option value="">— {{ t("Select product") }} —</option>
+									<option v-for="it in itemsList" :key="it.item_code || it.name" :value="it.item_code || it.name">
+										{{ it.item_code || it.name }} — {{ it.item_name }}
+									</option>
+								</select>
 							</td>
 							<td><input v-model="row.category" type="text" class="form-control form-control-sm" /></td>
 							<td><input v-model.number="row.box_qty" type="number" class="form-control form-control-sm text-end" /></td>
