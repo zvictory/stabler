@@ -481,15 +481,23 @@ def _clean_ci_items(items):
             frappe.throw(_("Row {0}: unknown item '{1}'.").format(idx, item))
         qty = flt(row.get("qty"))
         rate = flt(row.get("rate"))
+        docs_price = flt(row.get("docs_price"))
+        boxes = cint(row.get("boxes"))
+        box_weight_kg = flt(row.get("box_weight_kg"))
         cleaned.append(
             {
+                "category": row.get("category") or None,
                 "item": item,
                 "description": row.get("description") or None,
                 "hs_code": row.get("hs_code") or None,
+                "boxes": boxes,
+                "box_weight_kg": box_weight_kg,
                 "qty": qty,
                 "uom": row.get("uom") or None,
                 "rate": rate,
+                "docs_price": docs_price,
                 "amount": qty * rate,
+                "docs_amount": qty * docs_price if docs_price else 0.0,
             }
         )
     return cleaned
@@ -557,13 +565,19 @@ def _apply_ci_payload(doc, values: dict, items, company: str):
     agreed_total = 0.0
     for row in cleaned:
         line = doc.append("items", {})
+        line.category = row["category"]
         line.item = row["item"]
         line.description = row["description"]
         line.hs_code = row["hs_code"]
+        line.boxes = row["boxes"]
+        line.box_weight_kg = row["box_weight_kg"]
         line.qty = row["qty"]
         line.uom = row["uom"]
         line.rate = row["rate"]
+        line.docs_price = row["docs_price"]
         line.amount = row["amount"]
+        line.docs_amount = row["docs_amount"]
+        total_boxes += row["boxes"]
         total_kg += row["qty"]
         agreed_total += row["amount"]
     doc.total_boxes = total_boxes
