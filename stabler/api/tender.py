@@ -16,7 +16,7 @@ import json
 import frappe
 from stabler.api.approvals import _assert_company_scope
 from frappe import _
-from frappe.utils import flt, getdate, today
+from frappe.utils import flt, getdate, now, today
 
 from stabler.api._common import _require_company
 from stabler.api._bid_package import assemble_bid_package, build_bid_docx
@@ -939,7 +939,14 @@ _INTAKE_KEYS_NUM = ("volume", "guarantee_amount", "penalty_pct_per_day", "won_pr
 _PURCHASE_METHODS = ("auction", "shop", "selection", "tender")
 
 
-def _clean_intake(data: dict) -> dict:
+def _clean_intake(data: dict, prior: dict | None = None) -> dict:
+	"""Normalize client-editable intake fields and preserve server audit facts.
+
+	The browser may submit a stale or forged audit payload, so audit keys are
+	never read from ``data``.  Existing facts survive an unchanged decision;
+	changing a decision records a fresh server timestamp and actor instead.
+	"""
+	prior = prior or {}
 	out = {k: str(data.get(k) or "").strip()[:200] for k in _INTAKE_KEYS_STR}
 	for k in _INTAKE_KEYS_NUM:
 		out[k] = _num(data.get(k))
@@ -948,6 +955,24 @@ def _clean_intake(data: dict) -> dict:
 	out["go_no_go"] = out["go_no_go"] if out["go_no_go"] in ("go", "no_go") else ""
 	out["result"] = out["result"] if out["result"] in ("won", "lost", "pending") else ""
 	out["purchase_method"] = out["purchase_method"] if out["purchase_method"] in _PURCHASE_METHODS else ""
+	actor = frappe.session.user
+	for field, at_key, by_key in (
+		("go_no_go", "go_no_go_at", "go_no_go_by"),
+		("result", "result_at", "result_by"),
+	):
+		if out[field] and out[field] == prior.get(field):
+			out[at_key] = str(prior.get(at_key) or "")[:40]
+			out[by_key] = str(prior.get(by_key) or "")[:140]
+		elif out[field]:
+			out[at_key] = now()
+			out[by_key] = actor
+		else:
+			out[at_key] = ""
+			out[by_key] = ""
+	# Submission can only be created by mark_tender_submitted(). Preserve the
+	# recorded fact across ordinary intake edits; never trust client-provided data.
+	for key, limit in (("submitted_at", 40), ("submitted_by", 140), ("submission_reference", 200)):
+		out[key] = str(prior.get(key) or "")[:limit]
 	# document checklist (ГТД, certificate, acceptance act, contract, invoice …)
 	out["documents"] = [
 		{
@@ -1109,12 +1134,40 @@ def save_deal_intake(deal: str, intake) -> dict:
 		data = intake if isinstance(intake, dict) else json.loads(intake)
 	except (ValueError, TypeError):
 		frappe.throw(_("Invalid intake payload."))
-	clean = _clean_intake(data)
+	clean = _clean_intake(data, _read_intake(deal))
 	frappe.db.set_value("CRM Deal", deal, "custom_tender_intake", json.dumps(clean, ensure_ascii=False), update_modified=False)
 	base_ccy = frappe.db.get_value("Company", company, "default_currency") or ""
 	return {"deal": deal, "currency": base_ccy, "intake": clean,
 	        "deadlines": _deal_deadlines(deal, company, clean),
 	        "docs": _docs_summary(clean), "fx": _fx_summary(clean)}
+
+
+@frappe.whitelist()
+def mark_tender_submitted(deal: str, submission_reference: str = "") -> dict:
+	"""Record a tender submission with an immutable server-side audit trail."""
+	company = _deal_scope(deal, write=True)
+	if not set(_tender_views()).intersection(("director", "sourcing")):
+		frappe.throw(_("Not permitted"), frappe.PermissionError)
+	if not frappe.db.has_column("CRM Deal", "custom_tender_intake"):
+		frappe.throw(_("Run migrate to enable tender intake."))
+	intake = _read_intake(deal)
+	intake["submitted_at"] = now()
+	intake["submitted_by"] = frappe.session.user
+	intake["submission_reference"] = str(submission_reference or "").strip()[:200]
+	clean = _clean_intake(intake, intake)
+	# _clean_intake intentionally ignores client audit keys; submission facts are
+	# introduced here, after access checks, and therefore always server-owned.
+	clean["submitted_at"] = intake["submitted_at"]
+	clean["submitted_by"] = intake["submitted_by"]
+	clean["submission_reference"] = intake["submission_reference"]
+	frappe.db.set_value("CRM Deal", deal, "custom_tender_intake", json.dumps(clean, ensure_ascii=False), update_modified=False)
+	return {
+		"deal": deal,
+		"company": company,
+		"submitted_at": clean["submitted_at"],
+		"submitted_by": clean["submitted_by"],
+		"submission_reference": clean["submission_reference"],
+	}
 
 
 # --------------------------------------------------------------------------- #
@@ -1195,7 +1248,7 @@ def assign_tender(deal: str, user: str = "") -> dict:
 	intake = _read_intake(deal)
 	intake["assigned_to"] = user or ""
 	intake["assigned_to_name"] = name
-	clean = _clean_intake(intake)
+	clean = _clean_intake(intake, intake)
 	frappe.db.set_value("CRM Deal", deal, "custom_tender_intake", json.dumps(clean, ensure_ascii=False), update_modified=False)
 	return {"deal": deal, "assigned_to": user or "", "assigned_to_name": name}
 
@@ -1380,3 +1433,206 @@ def sourcing_my_tenders(company: str) -> dict:
 		})
 	rows.sort(key=lambda r: (_RISK_ORDER.get(r["risk"], 3), r["delivery"] or "9999-99-99"))
 	return {"currency": base_ccy, "rows": rows, "oversight": oversight}
+
+
+# --------------------------------------------------------------------------- #
+# Tender operations centre — compact, role-adaptive aggregate feed for the SPA
+# dashboard. Detail pages remain the source of record; this endpoint only
+# returns counts and a small attention queue, always after the same company,
+# module, role-window and document-permission checks as those pages.
+# --------------------------------------------------------------------------- #
+def _dashboard_period(from_date=None, to_date=None) -> tuple[object, object]:
+	end = getdate(to_date) if to_date else getdate(today())
+	start = getdate(from_date) if from_date else getdate(f"{end.year}-{end.month:02d}-01")
+	if start > end:
+		frappe.throw(_("From date cannot be after to date."))
+	return start, end
+
+
+def _in_dashboard_period(value, start, end) -> bool:
+	if not value:
+		return False
+	try:
+		day = getdate(value)
+	except (TypeError, ValueError):
+		return False
+	return start <= day <= end
+
+
+def _tender_event_date(intake: dict, creation) -> object:
+	"""Use the strongest lifecycle evidence available for period membership."""
+	return intake.get("result_at") or intake.get("submitted_at") or creation
+
+
+def _has_submission_evidence(intake: dict) -> bool:
+	"""A result is not proof of participation; both server audit fields are."""
+	return bool(intake.get("submitted_at") and intake.get("submitted_by"))
+
+
+def _can_view_tender_finance(user: str | None = None) -> bool:
+	roles = set(frappe.get_roles(user or frappe.session.user))
+	return _is_tender_oversight(user) or bool(roles.intersection(("Accounts User", "Accounts Manager")))
+
+
+def _intake_attention(deal: str, intake: dict, today_d) -> list[dict]:
+	items = []
+	deadline = intake.get("bid_deadline")
+	if deadline:
+		try:
+			days_left = (getdate(deadline) - today_d).days
+			if days_left <= 7:
+				items.append({
+					"deal": deal, "kind": "bid_deadline", "date": str(getdate(deadline)),
+					"days_left": days_left, "severity": "risk" if days_left < 0 else "warn",
+				})
+		except (TypeError, ValueError):
+			pass
+	missing = _docs_summary(intake)["missing"]
+	if intake.get("go_no_go") == "go" and missing:
+		items.append({"deal": deal, "kind": "documents", "missing": missing, "severity": "warn"})
+	if intake.get("result") and not _has_submission_evidence(intake):
+		items.append({"deal": deal, "kind": "unverified_history", "severity": "warn"})
+	return items
+
+
+@frappe.whitelist()
+def tender_dashboard(company: str, from_date=None, to_date=None) -> dict:
+	"""Tender lifecycle and execution KPIs for the active company and role.
+
+	Only records the caller can read are considered.  In particular, an old deal
+	with a result but no server submission audit remains ``unverified_history``;
+	it never silently raises submitted, won, or lost participation counts.
+	"""
+	_require_company(company)
+	_require_tender(company)
+	_assert_company_scope(company)
+	views = _tender_views()
+	if not views:
+		frappe.throw(_("Not permitted"), frappe.PermissionError)
+	start, end = _dashboard_period(from_date, to_date)
+	user = frappe.session.user
+	oversight = _is_tender_oversight(user)
+	can_view_finance = _can_view_tender_finance(user)
+	today_d = getdate(today())
+	acquisition = {
+		"identified": 0, "go": 0, "no_go": 0, "ready": 0,
+		"submitted": 0, "won": 0, "lost": 0, "pending": 0,
+		"unverified_history": 0,
+	}
+	attention: list[dict] = []
+	my_assigned = 0
+	visible_deals: set[str] = set()
+	for deal in _tender_deal_names(company):
+		if not frappe.has_permission("CRM Deal", "read", doc=deal):
+			continue
+		creation = frappe.db.get_value("CRM Deal", deal, "creation")
+		intake = _read_intake(deal)
+		if not _in_dashboard_period(_tender_event_date(intake, creation), start, end):
+			continue
+		visible_deals.add(deal)
+		acquisition["identified"] += 1
+		decision = intake.get("go_no_go")
+		if decision in ("go", "no_go"):
+			acquisition[decision] += 1
+		if decision == "go" and not _docs_summary(intake)["missing"]:
+			acquisition["ready"] += 1
+		verified = _has_submission_evidence(intake)
+		result = intake.get("result")
+		if verified:
+			acquisition["submitted"] += 1
+			if result in ("won", "lost", "pending"):
+				acquisition[result] += 1
+		elif result:
+			acquisition["unverified_history"] += 1
+		if (intake.get("assigned_to") or "") == user:
+			my_assigned += 1
+		for item in _intake_attention(deal, intake, today_d):
+			item["label"] = _deal_label(deal)
+			attention.append(item)
+
+	po_fields = ["name", "custom_crm_deal", "transaction_date", "schedule_date", "per_received", "status", "base_grand_total"]
+	has_landed = frappe.db.has_column("Purchase Order", "custom_landed_charges")
+	if has_landed:
+		po_fields.append("custom_landed_charges")
+	po_rows = []
+	if frappe.db.has_column("Purchase Order", "custom_crm_deal"):
+		po_rows = frappe.get_all(
+			"Purchase Order",
+			filters={"company": company, "custom_crm_deal": ["is", "set"], "docstatus": ["<", 2]},
+			fields=po_fields,
+			limit_page_length=5000,
+		)
+	so_rows = []
+	if frappe.db.has_column("Sales Order", "custom_crm_deal"):
+		so_rows = frappe.get_all(
+			"Sales Order",
+			filters={"company": company, "custom_crm_deal": ["is", "set"], "docstatus": ["<", 2]},
+			fields=["name", "custom_crm_deal", "transaction_date", "per_delivered", "status", "base_grand_total"],
+			limit_page_length=5000,
+		)
+	execution = {
+		"purchase_orders": 0, "received": 0, "receiving": 0, "customs_pending": 0,
+		"sales_orders": 0, "delivered": 0, "delivery_pending": 0,
+		"customs": {"cleared": 0, "in_progress": 0, "not_required": 0},
+		"logistics_status": {},
+	}
+	procurement_total = 0.0
+	contract_total = 0.0
+	for po in po_rows:
+		if po.custom_crm_deal not in visible_deals or not _in_dashboard_period(po.transaction_date, start, end):
+			continue
+		if not frappe.has_permission("Purchase Order", "read", doc=po.name):
+			continue
+		execution["purchase_orders"] += 1
+		procurement_total += flt(po.base_grand_total)
+		logistics_status = str(po.status or "unknown")
+		execution["logistics_status"][logistics_status] = execution["logistics_status"].get(logistics_status, 0) + 1
+		charges = _parse_landed(po.get("custom_landed_charges") if has_landed else None)
+		has_customs = any(charge["type"] == "customs" for charge in charges)
+		received = flt(po.per_received) >= 100
+		if received:
+			execution["received"] += 1
+			execution["customs"]["cleared" if has_customs else "not_required"] += 1
+		else:
+			execution["receiving"] += 1
+			if has_customs:
+				execution["customs_pending"] += 1
+				execution["customs"]["in_progress"] += 1
+			else:
+				execution["customs"]["not_required"] += 1
+	for so in so_rows:
+		if so.custom_crm_deal not in visible_deals or not _in_dashboard_period(so.transaction_date, start, end):
+			continue
+		if not frappe.has_permission("Sales Order", "read", doc=so.name):
+			continue
+		execution["sales_orders"] += 1
+		contract_total += flt(so.base_grand_total)
+		if flt(so.per_delivered) >= 100:
+			execution["delivered"] += 1
+		else:
+			execution["delivery_pending"] += 1
+
+	attention.sort(key=lambda item: (0 if item["severity"] == "risk" else 1, item.get("days_left", 9999)))
+	out = {
+		"period": {"from_date": str(start), "to_date": str(end)},
+		"role_scope": {
+			"views": views, "oversight": oversight, "assigned_only": not oversight,
+			"can_view_finance": can_view_finance,
+		},
+		"acquisition": acquisition,
+		"execution": execution,
+		"attention": {"count": len(attention), "items": attention[:100]},
+		"my_work": {
+			"assigned": my_assigned,
+			"customs_pending": execution["customs_pending"] if "declarant" in views else 0,
+			"delivery_pending": execution["delivery_pending"] if "logist" in views else 0,
+		},
+	}
+	if can_view_finance:
+		out["finance"] = {
+			"currency": frappe.db.get_value("Company", company, "default_currency") or "",
+			"procurement_total": procurement_total,
+			"contract_total": contract_total,
+			"execution_spread": contract_total - procurement_total,
+		}
+	return out
