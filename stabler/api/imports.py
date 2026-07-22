@@ -1125,13 +1125,33 @@ def refresh_grn_expected_quantities(name: str):
     company = _company_of("GRN Checklist", name)
     _assert_imports_access(company)
     _assert_can_write("GRN Checklist", name)
-    grn = frappe.get_doc("GRN Checklist", name)
-    submitted_receipt = frappe.db.exists(
-        "Truck Receipt", {"grn_checklist": name, "docstatus": 1}
+    commercial_invoice = frappe.db.get_value(
+        "GRN Checklist", name, "commercial_invoice"
     )
-    if grn.docstatus != 0 or cint(grn.expected_snapshot_locked) or submitted_receipt:
+    packing_service.lock_commercial_invoices([commercial_invoice])
+    grn_state = frappe.db.get_value(
+        "GRN Checklist",
+        name,
+        ["docstatus", "expected_snapshot_locked"],
+        as_dict=True,
+        for_update=True,
+    )
+    grn = frappe.get_doc("GRN Checklist", name)
+    submitted_receipt = frappe.db.get_value(
+        "Truck Receipt",
+        {"grn_checklist": name, "docstatus": 1},
+        "name",
+        for_update=True,
+    )
+    if (
+        cint(grn_state.docstatus) != 0
+        or cint(grn_state.expected_snapshot_locked)
+        or submitted_receipt
+    ):
         frappe.throw(_("Expected quantities are locked after the first submitted Truck Receipt."))
-    summary = packing_service.summary_for_ci(grn.commercial_invoice, company)
+    summary = packing_service.summary_for_ci(
+        grn.commercial_invoice, company, for_update=True
+    )
     packing_service.replace_grn_expected_rows(grn, summary["expected_items"])
     grn.save(ignore_permissions=False)
     return {

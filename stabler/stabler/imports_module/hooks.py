@@ -436,10 +436,23 @@ def _validate_truck_receipt_scope(receipt):
 
 
 def _lock_grn_expected_snapshot(grn_name: str) -> None:
-	grn = frappe.get_doc("GRN Checklist", grn_name)
-	if grn.expected_snapshot_locked:
+	commercial_invoice = frappe.db.get_value(
+		"GRN Checklist", grn_name, "commercial_invoice"
+	)
+	packing_service.lock_commercial_invoices([commercial_invoice])
+	grn_state = frappe.db.get_value(
+		"GRN Checklist",
+		grn_name,
+		["expected_snapshot_locked"],
+		as_dict=True,
+		for_update=True,
+	)
+	if grn_state.expected_snapshot_locked:
 		return
-	summary = packing_service.summary_for_ci(grn.commercial_invoice, grn.company)
+	grn = frappe.get_doc("GRN Checklist", grn_name)
+	summary = packing_service.summary_for_ci(
+		grn.commercial_invoice, grn.company, for_update=True
+	)
 	if summary["status"] != "Ready":
 		frappe.throw(
 			frappe._(

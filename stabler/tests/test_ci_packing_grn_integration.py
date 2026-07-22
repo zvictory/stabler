@@ -1,5 +1,6 @@
 import ast
 import inspect
+import threading
 import textwrap
 from unittest.mock import patch
 
@@ -627,6 +628,132 @@ class CIPackingGrnIntegrationTest(FrappeTestCase):
 			),
 			locked_expected,
 		)
+
+
+class CIPackingGrnConcurrencyTest(FrappeTestCase):
+	def test_freeze_serializes_in_flight_container_mutation(self):
+		from stabler.stabler.imports_module import hooks
+
+		company = frappe.db.get_value("Company", {}, "name")
+		supplier = frappe.db.get_value("Supplier", {}, "name")
+		item = frappe.db.get_value("Item", {"disabled": 0}, "name")
+		if not all((company, supplier, item)):
+			self.skipTest("Company, Supplier and Item fixtures are required")
+
+		ci = frappe.new_doc("Commercial Invoice")
+		ci.update(
+			{
+				"company": company,
+				"supplier": supplier,
+				"ci_number": frappe.generate_hash(length=10),
+				"ci_date": frappe.utils.today(),
+			}
+		)
+		ci.append("items", {"item": item, "qty": 300, "boxes": 15, "box_weight_kg": 20})
+		ci.insert(ignore_permissions=True)
+		container = frappe.new_doc("Import Container")
+		container.update(
+			{
+				"company": company,
+				"commercial_invoice": ci.name,
+				"container_number": f"RACE-{frappe.generate_hash(length=6)}",
+			}
+		)
+		container.append(
+			"items",
+			{"item_code": item, "box_qty": 15, "box_kg": 20, "total_kg": 300},
+		)
+		container.insert(ignore_permissions=True)
+		grn_name = packing_service.create_or_get_grn(ci, ignore_permissions=True)["name"]
+		frappe.db.commit()
+
+		site = frappe.local.site
+		snapshot_derived = threading.Event()
+		allow_freeze = threading.Event()
+		mutation_finished = threading.Event()
+		freeze_errors: list[BaseException] = []
+		mutation_errors: list[BaseException] = []
+		replace_calls = 0
+		original_replace = packing_service.replace_grn_expected_rows
+
+		def replace_after_barrier(grn, expected_items):
+			nonlocal replace_calls
+			replace_calls += 1
+			snapshot_derived.set()
+			if not allow_freeze.wait(timeout=10):
+				raise AssertionError("Timed out waiting to release snapshot freeze")
+			return original_replace(grn, expected_items)
+
+		def freeze_snapshot():
+			frappe.init(site)
+			frappe.connect()
+			try:
+				hooks._lock_grn_expected_snapshot(grn_name)
+				frappe.db.commit()
+			except BaseException as exc:
+				freeze_errors.append(exc)
+				frappe.db.rollback()
+			finally:
+				frappe.destroy()
+
+		def mutate_container():
+			frappe.init(site)
+			frappe.connect()
+			try:
+				doc = frappe.get_doc("Import Container", container.name)
+				doc.items[0].box_qty = 14
+				doc.items[0].total_kg = 280
+				doc.save(ignore_permissions=True)
+				frappe.db.commit()
+			except BaseException as exc:
+				mutation_errors.append(exc)
+				frappe.db.rollback()
+			finally:
+				mutation_finished.set()
+				frappe.destroy()
+
+		freeze_thread = threading.Thread(target=freeze_snapshot)
+		second_freeze_thread = threading.Thread(target=freeze_snapshot)
+		mutation_thread = threading.Thread(target=mutate_container)
+		try:
+			with patch.object(
+				packing_service,
+				"replace_grn_expected_rows",
+				side_effect=replace_after_barrier,
+			):
+				freeze_thread.start()
+				self.assertTrue(snapshot_derived.wait(timeout=10))
+				second_freeze_thread.start()
+				mutation_thread.start()
+				self.assertFalse(mutation_finished.wait(timeout=1))
+				allow_freeze.set()
+				freeze_thread.join(timeout=10)
+				second_freeze_thread.join(timeout=10)
+				mutation_thread.join(timeout=10)
+
+			self.assertFalse(freeze_thread.is_alive())
+			self.assertFalse(second_freeze_thread.is_alive())
+			self.assertFalse(mutation_thread.is_alive())
+			self.assertEqual(freeze_errors, [])
+			self.assertEqual(replace_calls, 1)
+			self.assertEqual(len(mutation_errors), 1)
+			self.assertIsInstance(mutation_errors[0], frappe.ValidationError)
+			self.assertEqual(
+				frappe.db.get_value(
+					"Import Container Item", container.items[0].name, "total_kg"
+				),
+				300,
+			)
+		finally:
+			allow_freeze.set()
+			for thread in (freeze_thread, second_freeze_thread, mutation_thread):
+				if thread.ident is not None:
+					thread.join(timeout=10)
+			frappe.db.rollback()
+			frappe.delete_doc("GRN Checklist", grn_name, force=True, ignore_permissions=True)
+			frappe.delete_doc("Import Container", container.name, force=True, ignore_permissions=True)
+			frappe.delete_doc("Commercial Invoice", ci.name, force=True, ignore_permissions=True)
+			frappe.db.commit()
 
 
 def _frappe_calls(function) -> set[tuple[str, str]]:

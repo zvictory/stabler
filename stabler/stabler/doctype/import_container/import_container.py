@@ -15,6 +15,7 @@ import frappe
 from frappe.model.document import Document
 from frappe.utils import cint, flt
 
+from stabler.stabler.imports_module import packing_service
 from stabler.stabler.imports_module.status_pipeline import assert_transition
 
 _ALLOWED_TRANSITIONS = {
@@ -39,8 +40,23 @@ class ImportContainer(Document):
 			assert_transition(
 				"Import Container", previous_status, self.status, _ALLOWED_TRANSITIONS, self
 			)
+		self._lock_packing_source(before)
 		self._validate_commercial_invoice_company()
 		self._check_packing_snapshot_lock(before)
+
+	def _lock_packing_source(self, before) -> None:
+		if before and (
+			before.commercial_invoice == self.commercial_invoice
+			and before.company == self.company
+			and self._packing_signature(before.items) == self._packing_signature(self.items)
+		):
+			return
+		packing_service.lock_commercial_invoices(
+			[
+				before.commercial_invoice if before else None,
+				self.commercial_invoice,
+			]
+		)
 
 	def _validate_commercial_invoice_company(self) -> None:
 		if not self.commercial_invoice:
@@ -68,20 +84,31 @@ class ImportContainer(Document):
 			)
 		)
 
-	def _locked_grn_for_ci(self, commercial_invoice):
+	def _immutable_grn_for_ci(self, commercial_invoice):
 		if not commercial_invoice:
 			return None
-		return frappe.db.get_value(
+		grn = frappe.db.get_value(
 			"GRN Checklist",
-			{
-				"commercial_invoice": commercial_invoice,
-				"expected_snapshot_locked": 1,
-			},
-			"name",
+			{"commercial_invoice": commercial_invoice},
+			["name", "docstatus", "expected_snapshot_locked"],
+			as_dict=True,
+			for_update=True,
 		)
+		if not grn:
+			return None
+		if cint(grn.docstatus) != 0 or cint(grn.expected_snapshot_locked):
+			return grn.name
+		if frappe.db.get_value(
+			"Truck Receipt",
+			{"grn_checklist": grn.name, "docstatus": 1},
+			"name",
+			for_update=True,
+		):
+			return grn.name
+		return None
 
 	def _reject_locked_packing_source(self, commercial_invoice) -> None:
-		grn_name = self._locked_grn_for_ci(commercial_invoice)
+		grn_name = self._immutable_grn_for_ci(commercial_invoice)
 		if grn_name:
 			frappe.throw(
 				frappe._("Packing source is locked by GRN {0}.").format(grn_name)
@@ -97,19 +124,15 @@ class ImportContainer(Document):
 			return
 		if self._packing_signature(before.items) == self._packing_signature(self.items):
 			return
-		grn = frappe.db.get_value(
-			"GRN Checklist",
-			{"commercial_invoice": self.commercial_invoice},
-			["name", "expected_snapshot_locked"],
-			as_dict=True,
-		)
-		if grn and grn.expected_snapshot_locked:
+		grn_name = self._immutable_grn_for_ci(self.commercial_invoice)
+		if grn_name:
 			frappe.throw(
 				frappe._(
 					"Packing-list quantities are locked by GRN {0} after the first submitted "
 					"Truck Receipt."
-				).format(grn.name)
+				).format(grn_name)
 			)
 
 	def on_trash(self) -> None:
+		packing_service.lock_commercial_invoices([self.commercial_invoice])
 		self._reject_locked_packing_source(self.commercial_invoice)

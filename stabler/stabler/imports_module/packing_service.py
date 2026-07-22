@@ -5,7 +5,19 @@ import frappe
 from stabler.stabler.imports_module import packing_math
 
 
-def summary_for_ci(commercial_invoice: str, company: str) -> dict:
+def lock_commercial_invoices(commercial_invoices) -> None:
+	"""Serialize packing readers and writers on canonical CI rows."""
+	for commercial_invoice in sorted({name for name in commercial_invoices if name}):
+		frappe.db.sql(
+			"""SELECT name
+			FROM `tabCommercial Invoice`
+			WHERE name = %s
+			FOR UPDATE""",
+			commercial_invoice,
+		)
+
+
+def summary_for_ci(commercial_invoice: str, company: str, *, for_update: bool = False) -> dict:
 	containers = frappe.get_list(
 		"Import Container",
 		filters={"commercial_invoice": commercial_invoice, "company": company},
@@ -13,9 +25,37 @@ def summary_for_ci(commercial_invoice: str, company: str) -> dict:
 		order_by="creation asc",
 		limit_page_length=0,
 	)
+	if for_update:
+		containers = frappe.db.get_values(
+			"Import Container",
+			filters={"commercial_invoice": commercial_invoice, "company": company},
+			fieldname=["name", "container_number"],
+			order_by="creation asc",
+			for_update=True,
+			as_dict=True,
+		)
 	container_names = [row.name for row in containers]
 	rows = (
-		frappe.get_all(
+		frappe.db.get_values(
+			"Import Container Item",
+			filters={
+				"parent": ["in", container_names],
+				"parenttype": "Import Container",
+				"parentfield": "items",
+			},
+			fieldname=[
+				"parent as container",
+				"item_code",
+				"item_name",
+				"box_qty",
+				"box_kg",
+				"total_kg",
+			],
+			for_update=True,
+			as_dict=True,
+		)
+		if for_update and container_names
+		else frappe.get_all(
 			"Import Container Item",
 			filters={
 				"parent": ["in", container_names],
@@ -35,14 +75,25 @@ def summary_for_ci(commercial_invoice: str, company: str) -> dict:
 		else []
 	)
 	expected = packing_math.aggregate_container_items(rows)
-	ci_items = frappe.get_all(
-		"Commercial Invoice Item",
-		filters={
-			"parent": commercial_invoice,
-			"parenttype": "Commercial Invoice",
-			"parentfield": "items",
-		},
-		fields=["item as item_code", "qty"],
+	ci_item_filters = {
+		"parent": commercial_invoice,
+		"parenttype": "Commercial Invoice",
+		"parentfield": "items",
+	}
+	ci_items = (
+		frappe.db.get_values(
+			"Commercial Invoice Item",
+			filters=ci_item_filters,
+			fieldname=["item as item_code", "qty"],
+			for_update=True,
+			as_dict=True,
+		)
+		if for_update
+		else frappe.get_all(
+			"Commercial Invoice Item",
+			filters=ci_item_filters,
+			fields=["item as item_code", "qty"],
+		)
 	)
 	reconciliation = packing_math.reconcile_ci_items(ci_items, expected)
 	containers_with_rows = {row.container for row in rows}
