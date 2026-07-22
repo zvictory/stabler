@@ -86,4 +86,9 @@ def create_or_get_grn(ci, *, ignore_permissions: bool) -> dict:
 		if not winner:
 			raise
 		return {"name": winner, "created": False}
-	return {"name": grn.name, "created": True}
+	return {
+		"name": grn.name,
+		"created": True,
+		"packing_status": summary["status"],
+		"expected_snapshot_locked": False,
+	}

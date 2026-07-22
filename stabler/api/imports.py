@@ -1104,8 +1104,9 @@ def create_grn_for_ci(commercial_invoice: str):
 
     ci = frappe.get_doc("Commercial Invoice", commercial_invoice)
     result = packing_service.create_or_get_grn(ci, ignore_permissions=False)
-    if not result["created"]:
-        _assert_can_read("GRN Checklist", result["name"])
+    if result["created"]:
+        return result
+    _assert_can_read("GRN Checklist", result["name"])
     summary = packing_service.summary_for_ci(commercial_invoice, company)
     locked = bool(
         frappe.db.get_value("GRN Checklist", result["name"], "expected_snapshot_locked")

@@ -160,8 +160,58 @@ class CIPackingGrnIntegrationTest(FrappeTestCase):
 			source.index('frappe.get_doc("Commercial Invoice", commercial_invoice)'),
 		)
 		self.assertLess(
+			source.index('if result["created"]:'),
+			source.index('_assert_can_read("GRN Checklist", result["name"])'),
+		)
+		self.assertLess(
 			source.index('_assert_can_read("GRN Checklist", result["name"])'),
 			source.index("packing_service.summary_for_ci"),
+		)
+
+	def test_new_grn_returns_creation_summary_without_post_insert_reads(self):
+		with (
+			patch.object(
+				packing_service,
+				"summary_for_ci",
+				wraps=packing_service.summary_for_ci,
+			) as summary_for_ci,
+			patch.object(frappe.db, "get_value", wraps=frappe.db.get_value) as get_value,
+		):
+			result = imports.create_grn_for_ci(self.ci.name)
+
+		self.assertTrue(result["created"])
+		self.assertEqual(result["packing_status"], "Ready")
+		self.assertFalse(result["expected_snapshot_locked"])
+		self.assertEqual(summary_for_ci.call_count, 1)
+		self.assertFalse(
+			any(
+				call.args[:3]
+				== ("GRN Checklist", result["name"], "expected_snapshot_locked")
+				for call in get_value.call_args_list
+			)
+		)
+
+	def test_existing_grn_is_enriched_only_after_read_check(self):
+		created = imports.create_grn_for_ci(self.ci.name)
+
+		with (
+			patch.object(
+				packing_service,
+				"summary_for_ci",
+				wraps=packing_service.summary_for_ci,
+			) as summary_for_ci,
+			patch.object(frappe.db, "get_value", wraps=frappe.db.get_value) as get_value,
+		):
+			result = imports.create_grn_for_ci(self.ci.name)
+
+		self.assertFalse(result["created"])
+		self.assertEqual(summary_for_ci.call_count, 1)
+		self.assertTrue(
+			any(
+				call.args[:3]
+				== ("GRN Checklist", created["name"], "expected_snapshot_locked")
+				for call in get_value.call_args_list
+			)
 		)
 
 	def test_incomplete_packing_creates_shell_without_invented_rows(self):
