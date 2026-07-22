@@ -287,6 +287,23 @@ def imports_home(company: str):
 # ---------------------------------------------------------------------------
 
 
+#: Columns the CI list may be ordered by. The key is what the SPA sends; the
+#: value is spliced into ORDER BY, so this whitelist is the injection guard —
+#: never interpolate a caller-supplied string here.
+_CI_SORT_COLUMNS = {
+    "ci_date": "ci.ci_date",
+    "ci_number": "ci.ci_number",
+    "supplier": "s.supplier_name",
+    "eta": "ci.eta_transit_port",
+    "total_boxes": "ci.total_boxes",
+    "total_kg": "ci.total_kg",
+    "agreed_total": "ci.agreed_total",
+    "cash_difference": "ci.cash_difference",
+    "container_count": "container_count",
+    "status": "ci.status",
+}
+
+
 @frappe.whitelist()
 def list_commercial_invoices(
     company: str,
@@ -295,28 +312,60 @@ def list_commercial_invoices(
     supplier: str | None = None,
     limit_start: int = 0,
     limit_page_length: int = 50,
+    sort_by: str | None = None,
+    sort_dir: str | None = None,
 ):
-    """Commercial Invoice list rows (docs/cash masked for non-cost users)."""
+    """Commercial Invoice list rows (docs/cash masked for non-cost users).
+
+    Sorting is server-side on purpose: the list is paginated, so sorting only
+    the rows already on screen would silently reorder a slice and read as the
+    full ordering.
+    """
     _assert_imports_access(company)
     clauses, params = rules.ci_filter_clauses(search, status, supplier)
     params["company"] = company
     params["limit_start"] = max(0, cint(limit_start))
     params["limit_page_length"] = rules.clamp_page_length(limit_page_length)
     where = " AND ".join(["ci.company = %(company)s", *clauses])
+
+    order_col = _CI_SORT_COLUMNS.get(sort_by or "", "ci.ci_date")
+    order_dir = "ASC" if str(sort_dir or "").lower() == "asc" else "DESC"
+    order_by = f"{order_col} {order_dir}, ci.name DESC"
+
+    # The proforma link is a custom field, so it may be absent on a site that
+    # has not carried the imports work — fall back to NULL rather than failing
+    # the whole list.
+    has_pi_link = frappe.db.has_column("Commercial Invoice", "custom_proforma_invoice")
+    pi_select = (
+        """ci.custom_proforma_invoice AS proforma_invoice,
+          COALESCE(pi.supplier_pi_ref, ci.custom_proforma_invoice) AS proforma_ref,"""
+        if has_pi_link
+        else "NULL AS proforma_invoice, NULL AS proforma_ref,"
+    )
+    pi_join = (
+        "LEFT JOIN `tabProforma Invoice` pi ON pi.name = ci.custom_proforma_invoice"
+        if has_pi_link
+        else ""
+    )
+
     rows = frappe.db.sql(
         f"""
         SELECT
           ci.name, ci.ci_number, ci.supplier, s.supplier_name, ci.ci_date,
           ci.status, ci.incoterm, ci.eta_transit_port, ci.total_kg, ci.total_boxes,
           ci.agreed_total, ci.docs_total, ci.cash_difference, ci.currency,
+          {pi_select}
           (SELECT COUNT(*) FROM `tabImport Container` c
              WHERE c.commercial_invoice = ci.name) AS container_count,
+          (SELECT COUNT(*) FROM `tabImport Truck` tr
+             WHERE tr.commercial_invoice = ci.name) AS truck_count,
           EXISTS(SELECT 1 FROM `tabGRN Checklist` g
              WHERE g.commercial_invoice = ci.name) AS has_grn
         FROM `tabCommercial Invoice` ci
         LEFT JOIN `tabSupplier` s ON s.name = ci.supplier
+        {pi_join}
         WHERE {where}
-        ORDER BY ci.ci_date DESC, ci.name DESC
+        ORDER BY {order_by}
         LIMIT %(limit_start)s, %(limit_page_length)s
         """,
         params,

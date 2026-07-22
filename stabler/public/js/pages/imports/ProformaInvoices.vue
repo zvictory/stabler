@@ -92,29 +92,26 @@ function grp(v) {
 	// which go through formatMoney(user.language), used commas.
 	return Math.round(Number(v) || 0).toLocaleString(user.value.language || "ru-RU");
 }
-function fcl(v) {
-	return (Number(v) || 0).toFixed(1);
+/** Short vendor code — "HMA AGRO INDUSTRIES LIMITED" reads as HMA in a table. */
+function vendorCode(r) {
+	const s = (r && (r.supplier_name || r.supplier)) || "";
+	return (s.split(/\s+/)[0] || "").toUpperCase();
 }
 
-/** One compact metadata line: items, physical, terms, group. Empty parts drop out. */
-function metaParts(r) {
-	const out = [];
-	if (r.item_count) out.push(`${r.item_count} ${t("items")}`);
-	if (r.total_boxes) out.push(`${grp(r.total_boxes)} bx`);
-	if (r.total_kg) out.push(`${grp(r.total_kg)} kg`);
-	// FCL is only meaningful once it has been captured — it was printing "0.0 FCL"
-	// on every row, which reads as data rather than as an empty field.
-	if (Number(r.total_fcl) > 0) out.push(`${fcl(r.total_fcl)} FCL`);
-	if (r.incoterm) out.push(r.incoterm);
-	if (r.advance_pct) out.push(`${r.advance_pct}% ${t("advance")}`);
-	if (groupLabel(r)) out.push(groupLabel(r));
-	return out.join(" · ");
+/** Days since the proforma was raised — how long this has been open. */
+function ageDays(r) {
+	if (!r.pi_date) return null;
+	const d = new Date(r.pi_date + "T00:00:00");
+	if (Number.isNaN(d.getTime())) return null;
+	return Math.max(0, Math.round((Date.now() - d.getTime()) / 86400000));
 }
 
-/** Under-declared gap between the agreed price and the documented price. */
+/**
+ * Gap between the agreed price and the documented price. Always a number, so
+ * the column stays numeric — a prose "no difference" would break the scan.
+ */
 function docsGap(r) {
-	const gap = Number(r.cash_difference) || 0;
-	return gap ? gap : null;
+	return Number(r.cash_difference) || 0;
 }
 
 function invoicedPct(r) {
@@ -127,6 +124,72 @@ function invoicedBarClass(r) {
 	if (p > 0) return "bg-warning";
 	return "bg-secondary";
 }
+
+// ---- sorting -------------------------------------------------------------
+// The proforma list loads in one page (limit 200), so sorting client-side
+// orders the whole result rather than a slice. The CI list is paginated and
+// therefore sorts on the server instead.
+const SORT_KEYS = {
+	ref: (r) => String(refMain(r)).toLowerCase(),
+	vendor: (r) => vendorCode(r),
+	pi_date: (r) => r.pi_date || "",
+	item_count: (r) => Number(r.item_count) || 0,
+	total_boxes: (r) => Number(r.total_boxes) || 0,
+	total_kg: (r) => Number(r.total_kg) || 0,
+	agreed_total: (r) => Number(r.agreed_total) || 0,
+	invoiced_pct: (r) => Number(r.invoiced_pct) || 0,
+	status: (r) => String(r.status || ""),
+};
+
+const sortBy = ref("pi_date");
+const sortDir = ref("desc");
+
+function toggleSort(key) {
+	if (!SORT_KEYS[key]) return;
+	if (sortBy.value === key) {
+		sortDir.value = sortDir.value === "asc" ? "desc" : "asc";
+	} else {
+		sortBy.value = key;
+		// Text reads best A→Z, magnitudes read best largest-first.
+		sortDir.value = key === "ref" || key === "vendor" || key === "status" ? "asc" : "desc";
+	}
+}
+
+function sortIcon(key) {
+	if (sortBy.value !== key) return "";
+	return sortDir.value === "asc" ? "ti-arrow-narrow-up" : "ti-arrow-narrow-down";
+}
+
+const sortedRows = computed(() => {
+	const get = SORT_KEYS[sortBy.value] || SORT_KEYS.pi_date;
+	const sign = sortDir.value === "asc" ? 1 : -1;
+	return [...rows.value].sort((a, b) => {
+		const x = get(a);
+		const y = get(b);
+		if (x === y) return 0;
+		return x > y ? sign : -sign;
+	});
+});
+
+/** Column totals for the loaded rows — what procurement asks for first. */
+const totals = computed(() => {
+	const acc = { count: 0, items: 0, boxes: 0, kg: 0, agreed: 0, gap: 0, vendors: new Set() };
+	for (const r of rows.value) {
+		acc.count += 1;
+		acc.items += Number(r.item_count) || 0;
+		acc.boxes += Number(r.total_boxes) || 0;
+		acc.kg += Number(r.total_kg) || 0;
+		acc.agreed += Number(r.agreed_total) || 0;
+		acc.gap += Number(r.cash_difference) || 0;
+		if (r.supplier) acc.vendors.add(r.supplier);
+	}
+	return acc;
+});
+
+const totalsCurrency = computed(() => {
+	const set = new Set(rows.value.map((r) => r.currency).filter(Boolean));
+	return set.size === 1 ? [...set][0] : "";
+});
 
 async function loadPiGroups() {
 	if (!activeCompany.value) return;
@@ -314,34 +377,56 @@ const canSupersede = (row) => ["DRAFT", "CONFIRMED"].includes(row.status);
 			<table class="table table-vcenter">
 				<thead>
 					<tr>
-						<th>{{ t("PI & exporter") }}</th>
-						<th class="text-nowrap">{{ t("PI Date") }}</th>
-						<th class="text-end text-nowrap">{{ t("Agreed / docs") }}</th>
-						<th style="min-width: 120px">{{ t("Invoiced %") }}</th>
-						<th>{{ t("Status") }}</th>
+						<th class="pi-sort" @click="toggleSort('ref')">
+							{{ t("PI № / vendor") }} <i v-if="sortIcon('ref')" class="ti" :class="sortIcon('ref')"></i>
+						</th>
+						<th class="text-nowrap pi-sort" @click="toggleSort('pi_date')">
+							{{ t("PI Date") }} <i v-if="sortIcon('pi_date')" class="ti" :class="sortIcon('pi_date')"></i>
+						</th>
+						<th class="text-end pi-sort" @click="toggleSort('item_count')">
+							{{ t("Items") }} <i v-if="sortIcon('item_count')" class="ti" :class="sortIcon('item_count')"></i>
+						</th>
+						<th class="text-end pi-sort" @click="toggleSort('total_boxes')">
+							{{ t("Boxes") }} <i v-if="sortIcon('total_boxes')" class="ti" :class="sortIcon('total_boxes')"></i>
+						</th>
+						<th class="text-end pi-sort" @click="toggleSort('total_kg')">
+							kg <i v-if="sortIcon('total_kg')" class="ti" :class="sortIcon('total_kg')"></i>
+						</th>
+						<th class="text-end text-nowrap pi-sort" @click="toggleSort('agreed_total')">
+							{{ t("Agreed / gap") }} <i v-if="sortIcon('agreed_total')" class="ti" :class="sortIcon('agreed_total')"></i>
+						</th>
+						<th style="min-width: 110px" class="pi-sort" @click="toggleSort('invoiced_pct')">
+							{{ t("Invoiced %") }} <i v-if="sortIcon('invoiced_pct')" class="ti" :class="sortIcon('invoiced_pct')"></i>
+						</th>
+						<th class="pi-sort" @click="toggleSort('status')">
+							{{ t("Status") }} <i v-if="sortIcon('status')" class="ti" :class="sortIcon('status')"></i>
+						</th>
 						<th class="w-1"><span class="visually-hidden">{{ t("Actions") }}</span></th>
 					</tr>
 				</thead>
 				<tbody>
-					<SkeletonRows v-if="loading" :cols="6" :rows="6" />
-					<tr v-for="r in rows" :key="r.name" class="pi-row" style="cursor: pointer" @click="router.push({ name: 'imports-proforma', params: { name: r.name } })">
+					<SkeletonRows v-if="loading" :cols="9" :rows="6" />
+					<tr v-for="r in sortedRows" :key="r.name" class="pi-row" style="cursor: pointer" @click="router.push({ name: 'imports-proforma', params: { name: r.name } })">
 						<td>
-							<div class="d-flex align-items-baseline flex-wrap gap-2">
-								<span class="fw-bold text-primary font-monospace" style="font-size: 0.95rem">{{ refMain(r) }}</span>
-								<span class="text-secondary small">{{ r.supplier_name || r.supplier }}</span>
-							</div>
-							<div class="text-secondary small mt-1">
-								{{ metaParts(r) }}
-								<span v-if="refSub(r)" class="text-muted font-monospace ms-1">· {{ refSub(r) }}</span>
-							</div>
+							<div class="fw-bold text-primary font-monospace" style="font-size: 0.9rem">{{ refMain(r) }}</div>
+							<span class="badge bg-secondary-lt mt-1" :title="r.supplier_name || r.supplier">{{ vendorCode(r) }}</span>
 						</td>
-						<td class="text-nowrap font-monospace pi-num">{{ r.pi_date ? formatDate(r.pi_date) : "—" }}</td>
+						<td class="text-nowrap font-monospace pi-num">
+							{{ r.pi_date ? formatDate(r.pi_date) : "—" }}
+							<div v-if="ageDays(r) !== null" class="text-muted small">{{ ageDays(r) }} {{ t("days") }}</div>
+						</td>
+						<td class="text-end font-monospace pi-num">{{ r.item_count || 0 }}</td>
+						<td class="text-end font-monospace pi-num">{{ grp(r.total_boxes) }}</td>
+						<td class="text-end font-monospace pi-num">{{ grp(r.total_kg) }}</td>
 						<td class="text-end text-nowrap">
 							<div class="fw-bold font-monospace pi-num">{{ fm(r.agreed_total, r.currency) }}</div>
-							<div v-if="docsGap(r)" class="small font-monospace pi-num text-warning">
-								−{{ fm(docsGap(r), r.currency) }} {{ t("docs") }}
+							<div
+								class="small font-monospace pi-num"
+								:class="docsGap(r) ? 'text-danger' : 'text-muted'"
+								:title="t('Gap between the agreed price and the documented price')"
+							>
+								{{ docsGap(r) ? "−" + fm(docsGap(r), r.currency) : fm(0, r.currency) }}
 							</div>
-							<div v-else class="small font-monospace pi-num text-secondary">{{ t("docs match") }}</div>
 						</td>
 						<td>
 							<div class="progress" style="height: 5px">
@@ -364,6 +449,24 @@ const canSupersede = (row) => ["DRAFT", "CONFIRMED"].includes(row.status);
 						</td>
 					</tr>
 				</tbody>
+				<tfoot v-if="!loading && rows.length">
+					<tr class="pi-totals">
+						<td class="text-secondary">
+							{{ totals.count }} PI · {{ totals.vendors.size }} {{ t("vendors") }}
+						</td>
+						<td></td>
+						<td class="text-end font-monospace pi-num">{{ grp(totals.items) }}</td>
+						<td class="text-end font-monospace pi-num">{{ grp(totals.boxes) }}</td>
+						<td class="text-end font-monospace pi-num fw-bold">{{ grp(totals.kg) }}</td>
+						<td class="text-end text-nowrap">
+							<div class="fw-bold font-monospace pi-num">{{ fm(totals.agreed, totalsCurrency) }}</div>
+							<div class="small font-monospace pi-num" :class="totals.gap ? 'text-danger' : 'text-muted'">
+								{{ totals.gap ? "−" + fm(totals.gap, totalsCurrency) : fm(0, totalsCurrency) }}
+							</div>
+						</td>
+						<td colspan="3"></td>
+					</tr>
+				</tfoot>
 			</table>
 			<EmptyState v-if="!loading && !rows.length" :title="t('No proformas yet')" :subtitle="t('Create your first proforma invoice.')" />
 		</div>
@@ -422,5 +525,17 @@ const canSupersede = (row) => ["DRAFT", "CONFIRMED"].includes(row.status);
 	.pi-row:focus-within .pi-row-action {
 		opacity: 1;
 	}
+}
+
+.pi-sort {
+	cursor: pointer;
+	user-select: none;
+}
+.pi-sort:hover {
+	color: var(--tblr-primary);
+}
+.pi-totals td {
+	border-top: 2px solid var(--tblr-border-color);
+	background: var(--tblr-bg-surface-secondary);
 }
 </style>

@@ -77,6 +77,85 @@ async function loadStats() {
 	}
 }
 
+// ---- sorting -------------------------------------------------------------
+// Server-side: this list is paginated, so sorting the rows already on screen
+// would reorder one slice and read as the full ordering.
+const SORTABLE = [
+	"ci_date",
+	"ci_number",
+	"supplier",
+	"eta",
+	"total_boxes",
+	"total_kg",
+	"agreed_total",
+	"cash_difference",
+	"container_count",
+	"status",
+];
+const sortBy = ref("ci_date");
+const sortDir = ref("desc");
+
+function toggleSort(key) {
+	if (!SORTABLE.includes(key)) return;
+	if (sortBy.value === key) {
+		sortDir.value = sortDir.value === "asc" ? "desc" : "asc";
+	} else {
+		sortBy.value = key;
+		sortDir.value = ["ci_number", "supplier", "status"].includes(key) ? "asc" : "desc";
+	}
+	reload();
+}
+
+function sortIcon(key) {
+	if (sortBy.value !== key) return "";
+	return sortDir.value === "asc" ? "ti-arrow-narrow-up" : "ti-arrow-narrow-down";
+}
+
+/** Short vendor code — the full legal name is noise in a dense table. */
+function vendorCode(r) {
+	const s = (r && (r.supplier_name || r.supplier)) || "";
+	return (s.split(/\s+/)[0] || "").toUpperCase();
+}
+
+/** Days until ETA; negative once the date has passed. */
+function etaDays(r) {
+	if (!r.eta_transit_port) return null;
+	const d = new Date(r.eta_transit_port + "T00:00:00");
+	if (Number.isNaN(d.getTime())) return null;
+	return Math.round((d.getTime() - Date.now()) / 86400000);
+}
+
+/** Overdue is red, arriving within a week is amber, anything further is quiet. */
+function etaClass(r) {
+	const d = etaDays(r);
+	if (d === null) return "text-muted";
+	if (d < 0) return "text-danger";
+	if (d <= 7) return "text-warning";
+	return "text-muted";
+}
+
+function docsGap(r) {
+	return Number(r.cash_difference) || 0;
+}
+
+/** Column totals for the current page — labelled as such in the footer. */
+const totals = computed(() => {
+	const acc = { boxes: 0, kg: 0, agreed: 0, gap: 0, containers: 0, trucks: 0, grn: 0, vendors: new Set() };
+	for (const r of rows.value) {
+		acc.boxes += Number(r.total_boxes) || 0;
+		acc.kg += Number(r.total_kg) || 0;
+		acc.agreed += Number(r.agreed_total) || 0;
+		acc.gap += Number(r.cash_difference) || 0;
+		acc.containers += Number(r.container_count) || 0;
+		acc.trucks += Number(r.truck_count) || 0;
+		if (r.has_grn) acc.grn += 1;
+		if (r.supplier) acc.vendors.add(r.supplier);
+	}
+	return acc;
+});
+
+const totalsCurrency = computed(() => (statsCurrencies.value.length === 1 ? statsCurrencies.value[0] : ""));
+
 async function load() {
 	if (!activeCompany.value) return;
 	loading.value = true;
@@ -89,6 +168,8 @@ async function load() {
 			supplier: supplier.value || undefined,
 			limit_start: limitStart.value,
 			limit_page_length: pageLength.value,
+			sort_by: sortBy.value,
+			sort_dir: sortDir.value,
 		});
 		rows.value = res.rows || [];
 		total.value = res.total_count || 0;
@@ -125,7 +206,7 @@ function openCreate() {
 }
 
 const fm = (v, ccy) => formatMoney(v, ccy || "USD", user.value?.language || "en");
-const fn = (v) => Math.round(Number(v) || 0).toLocaleString("ru-RU");
+const fn = (v) => Math.round(Number(v) || 0).toLocaleString(user.value?.language || "ru-RU");
 
 onMounted(() => {
 	loadSuppliers();
@@ -227,64 +308,106 @@ watch(activeCompany, () => {
 				<table class="table table-vcenter card-table table-hover">
 					<thead>
 						<tr>
-							<th>{{ t("CI Number & Exporter") }}</th>
-							<th class="text-nowrap">{{ t("Date") }}</th>
-							<th>{{ t("Incoterm & Logistics") }}</th>
-							<th class="text-end">{{ t("Boxes & Weight") }}</th>
-							<th class="text-end">{{ t("Pricing") }}</th>
-							<th class="text-center">{{ t("Containers / GRN") }}</th>
-							<th>{{ t("Status") }}</th>
+							<th class="ci-sort" @click="toggleSort('ci_number')">
+								{{ t("CI № / vendor") }} <i v-if="sortIcon('ci_number')" class="ti" :class="sortIcon('ci_number')"></i>
+							</th>
+							<th>{{ t("PI ref") }}</th>
+							<th class="text-nowrap ci-sort" @click="toggleSort('ci_date')">
+								{{ t("Date / ETA") }} <i v-if="sortIcon('ci_date')" class="ti" :class="sortIcon('ci_date')"></i>
+							</th>
+							<th class="text-end ci-sort" @click="toggleSort('total_boxes')">
+								{{ t("Boxes") }} <i v-if="sortIcon('total_boxes')" class="ti" :class="sortIcon('total_boxes')"></i>
+							</th>
+							<th class="text-end ci-sort" @click="toggleSort('total_kg')">
+								kg <i v-if="sortIcon('total_kg')" class="ti" :class="sortIcon('total_kg')"></i>
+							</th>
+							<th class="text-end text-nowrap ci-sort" @click="toggleSort('agreed_total')">
+								{{ t("Agreed / gap") }} <i v-if="sortIcon('agreed_total')" class="ti" :class="sortIcon('agreed_total')"></i>
+							</th>
+							<th class="text-end text-nowrap ci-sort" @click="toggleSort('container_count')">
+								{{ t("Cnt / truck") }} <i v-if="sortIcon('container_count')" class="ti" :class="sortIcon('container_count')"></i>
+							</th>
+							<th class="text-center">{{ t("GRN") }}</th>
+							<th class="ci-sort" @click="toggleSort('status')">
+								{{ t("Status") }} <i v-if="sortIcon('status')" class="ti" :class="sortIcon('status')"></i>
+							</th>
 						</tr>
 					</thead>
-					<SkeletonRows v-if="loading" :rows="6" :cols="7" />
+					<SkeletonRows v-if="loading" :rows="6" :cols="9" />
 					<tbody v-else>
 						<tr v-for="r in rows" :key="r.name" style="cursor: pointer" @click="openDetail(r.name)">
 							<td>
-								<!-- Main Title: CI Number (e.g. MH/3054/2025-26) -->
-								<div class="fw-bold text-primary font-monospace" style="font-size: 0.95rem">
+								<div class="fw-bold text-primary font-monospace" style="font-size: 0.9rem">
 									{{ r.ci_number || r.name }}
 								</div>
-								<div class="fw-semibold text-dark text-uppercase small mt-1">
-									{{ r.supplier_name || r.supplier }}
-								</div>
-								<div v-if="r.ci_number && r.ci_number !== r.name" class="small text-secondary font-monospace">
-									Ref: {{ r.name }}
-								</div>
-							</td>
-							<td class="text-nowrap fw-medium">{{ r.ci_date ? formatDate(r.ci_date) : "—" }}</td>
-							<td>
-								<div v-if="r.incoterm" class="badge bg-secondary-lt mb-1">{{ r.incoterm }}</div>
-								<div v-if="r.eta_transit_port" class="text-secondary small font-monospace">
-									Transit ETA: {{ formatDate(r.eta_transit_port) }}
-								</div>
-							</td>
-							<td class="text-end text-nowrap">
-								<div class="fw-semibold font-monospace">{{ fn(r.total_boxes) }} <span class="text-secondary small">bx</span></div>
-								<div class="text-secondary small font-monospace">{{ fn(r.total_kg) }} kg</div>
-							</td>
-							<td class="text-end text-nowrap">
-								<div class="fw-bold font-monospace text-primary" style="font-size: 0.95rem">
-									{{ fm(r.agreed_total, r.currency) }}
-								</div>
-								<div v-if="r.docs_total != null" class="text-secondary small font-monospace">
-									{{ t("Docs") }}: {{ fm(r.docs_total, r.currency) }}
-								</div>
-								<span v-if="r.cash_difference" class="badge bg-warning-lt text-warning font-monospace mt-1">
-									+{{ fm(r.cash_difference, r.currency) }}
+								<span class="badge bg-secondary-lt mt-1" :title="r.supplier_name || r.supplier">
+									{{ vendorCode(r) }}
 								</span>
 							</td>
+							<td class="font-monospace small">
+								<span v-if="r.proforma_ref" class="text-primary">{{ r.proforma_ref }}</span>
+								<span v-else class="text-muted">{{ t("not linked") }}</span>
+							</td>
+							<td class="text-nowrap font-monospace ci-num">
+								{{ r.ci_date ? formatDate(r.ci_date) : "—" }}
+								<div v-if="r.eta_transit_port" class="small" :class="etaClass(r)">
+									ETA {{ formatDate(r.eta_transit_port) }}
+									<span v-if="etaDays(r) !== null">
+										· {{ etaDays(r) < 0 ? -etaDays(r) + " " + t("d late") : etaDays(r) + " " + t("d") }}
+									</span>
+								</div>
+							</td>
+							<td class="text-end font-monospace ci-num">{{ fn(r.total_boxes) }}</td>
+							<td class="text-end font-monospace ci-num">{{ fn(r.total_kg) }}</td>
+							<td class="text-end text-nowrap">
+								<div class="fw-bold font-monospace ci-num">{{ fm(r.agreed_total, r.currency) }}</div>
+								<div
+									class="small font-monospace ci-num"
+									:class="docsGap(r) ? 'text-danger' : 'text-muted'"
+									:title="t('Gap between the agreed price and the documented price')"
+								>
+									{{ docsGap(r) ? "−" + fm(docsGap(r), r.currency) : fm(0, r.currency) }}
+								</div>
+							</td>
+							<td class="text-end text-nowrap font-monospace ci-num">
+								<i class="ti ti-box me-1" :title="t('Containers')" aria-hidden="true"></i>{{ r.container_count || 0 }}
+								<span class="visually-hidden">{{ t("Containers") }}</span>
+								<i
+									class="ti ti-truck ms-2 me-1"
+									:class="{ 'text-muted': !r.truck_count }"
+									:title="t('Trucks')"
+									aria-hidden="true"
+								></i><span :class="{ 'text-muted': !r.truck_count }">{{ r.truck_count || 0 }}</span>
+								<span class="visually-hidden">{{ t("Trucks") }}</span>
+							</td>
 							<td class="text-center">
-								<div class="badge bg-azure-lt font-monospace mb-1">
-									<i class="ti ti-box me-1"></i>{{ r.container_count || 0 }} Containers
-								</div>
-								<div>
-									<span v-if="r.has_grn" class="badge bg-green-lt text-green"><i class="ti ti-check me-1"></i>GRN Created</span>
-									<span v-else class="text-secondary small">—</span>
-								</div>
+								<i v-if="r.has_grn" class="ti ti-check text-green" :title="t('GRN created')"></i>
+								<span v-else class="text-muted">—</span>
 							</td>
 							<td><StatusBadge doctype="Commercial Invoice" :status="r.status" /></td>
 						</tr>
 					</tbody>
+					<tfoot v-if="!loading && rows.length">
+						<tr class="ci-totals">
+							<td class="text-secondary">
+								{{ rows.length }} CI · {{ totals.vendors.size }} {{ t("vendors") }}
+								<div class="text-muted small">{{ t("this page only") }}</div>
+							</td>
+							<td></td>
+							<td></td>
+							<td class="text-end font-monospace ci-num">{{ fn(totals.boxes) }}</td>
+							<td class="text-end font-monospace ci-num fw-bold">{{ fn(totals.kg) }}</td>
+							<td class="text-end text-nowrap">
+								<div class="fw-bold font-monospace ci-num">{{ fm(totals.agreed, totalsCurrency) }}</div>
+								<div class="small font-monospace ci-num" :class="totals.gap ? 'text-danger' : 'text-muted'">
+									{{ totals.gap ? "−" + fm(totals.gap, totalsCurrency) : fm(0, totalsCurrency) }}
+								</div>
+							</td>
+							<td class="text-end font-monospace ci-num">{{ totals.containers }} / {{ totals.trucks }}</td>
+							<td class="text-center font-monospace ci-num">{{ totals.grn }}</td>
+							<td></td>
+						</tr>
+					</tfoot>
 				</table>
 			</div>
 			<Pagination
@@ -297,3 +420,20 @@ watch(activeCompany, () => {
 		</div>
 	</div>
 </template>
+
+<style scoped>
+.ci-num {
+	font-variant-numeric: tabular-nums;
+}
+.ci-sort {
+	cursor: pointer;
+	user-select: none;
+}
+.ci-sort:hover {
+	color: var(--tblr-primary);
+}
+.ci-totals td {
+	border-top: 2px solid var(--tblr-border-color);
+	background: var(--tblr-bg-surface-secondary);
+}
+</style>
