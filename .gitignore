@@ -9,6 +9,7 @@ __pycache__/
 .vscode/
 .idea/
 .worktrees/
+.superpowers/
 *.swp
 *.swo
 

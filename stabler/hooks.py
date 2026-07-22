@@ -237,10 +237,13 @@ doc_events = {
 			"stabler.stabler.imports_module.hooks.grn_on_submit",
 		],
 	},
-	# Truck Receipt (submittable): on submit create + submit the partial Purchase
-	# Receipt, recompute the parent GRN, advance the truck; on cancel block while
-	# the PR is live, then recompute the GRN.
+	# Truck Receipt (submittable): freeze packing before submit; on submit create +
+	# submit the partial Purchase Receipt, recompute the parent GRN, and advance the
+	# truck; on cancel block while the PR is live, then recompute the GRN.
 	"Truck Receipt": {
+		"before_submit": [
+			"stabler.stabler.imports_module.hooks.truck_receipt_before_submit",
+		],
 		"on_submit": [
 			"stabler.stabler.imports_module.hooks.truck_receipt_on_submit",
 		],

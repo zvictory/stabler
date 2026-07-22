@@ -1,11 +1,11 @@
 """Truck Receipt controller.
 
 One record per truck that delivers against a GRN Checklist. SUBMITTABLE: the
-submit is the physical stock event — on submit a partial Purchase Receipt is
-created + submitted (critique M7), the parent GRN Checklist is recomputed, and
-the Import Truck is advanced to GRN_CREATED. Those side effects are wired via
-doc_events (imports_module/hooks.truck_receipt_on_submit / _on_cancel) so they
-self-gate on the migration flag + per-company imports toggle.
+submit is the physical stock event — before submit the expected packing is
+frozen, then a partial Purchase Receipt is created + submitted (critique M7), the
+parent GRN Checklist is recomputed, and the Import Truck is advanced to
+GRN_CREATED. Those side effects are wired via doc_events in imports_module/hooks
+so they self-gate on the migration flag + per-company imports toggle.
 
 The controller stays thin: `validate` recomputes this truck's totals and runs
 the cold-chain temperature check (frappe-free `receipt_math.temperature_ok`) —
@@ -21,6 +21,9 @@ from stabler.stabler.imports_module import receipt_math
 
 class TruckReceipt(Document):
 	def validate(self) -> None:
+		from stabler.stabler.imports_module.hooks import _validate_truck_receipt_scope
+
+		_validate_truck_receipt_scope(self)
 		self._recompute_totals()
 		self._check_temperature()
 

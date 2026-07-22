@@ -31,9 +31,10 @@ from stabler.api import _fx_reval
 from stabler.api import _kts_amendment
 from stabler.api import _imports_rules as rules
 from stabler.api import _proforma
-from stabler.api._common import _assert_can_read, _require_company
+from stabler.api._common import _assert_can_read, _assert_can_write, _require_company
 from stabler.api.organization import _ADMIN_ROLES, _MODULE_ROLES
 from stabler.api.permissions import cost_visible_for
+from stabler.stabler.imports_module import packing_service
 from stabler.stabler.doctype.stabler_settings.stabler_settings import module_map_for
 
 _IMPORTS_ROLES = tuple(_MODULE_ROLES["imports"])
@@ -338,6 +339,15 @@ def get_commercial_invoice(name: str):
     _assert_imports_access(_company_of("Commercial Invoice", name))
     _assert_can_read("Commercial Invoice", name)
     doc = frappe.get_doc("Commercial Invoice", name)
+    grn_fields = ["name", "docstatus", "receipt_status"]
+    if frappe.db.has_column("GRN Checklist", "expected_snapshot_locked"):
+        grn_fields.append("expected_snapshot_locked")
+    grn_rows = frappe.get_list(
+        "GRN Checklist",
+        filters={"commercial_invoice": name, "company": doc.company},
+        fields=grn_fields,
+        limit=1,
+    )
 
     payload = {
         "name": doc.name,
@@ -430,6 +440,8 @@ def get_commercial_invoice(name: str):
             fields=["name", "certificate_number", "status", "expiry_date"],
             order_by="creation asc",
         ),
+        "packing_summary": _safe_packing_summary(name, doc.company),
+        "grn": grn_rows[0] if grn_rows else None,
         "customs_fee_breakdown": _safe_customs_breakdown(name),
     }
     rules.mask_named(payload, rules.CI_MASK_FIELDS, _cost_visible())
@@ -450,6 +462,34 @@ def _safe_customs_breakdown(name: str):
         return compute_customs_fee(name)
     except Exception:
         return None
+
+
+def _safe_packing_summary(name: str, company: str):
+    """Best-effort container-packing summary for the CI detail payload.
+
+    summary_for_ci() deliberately throws when the caller cannot see every
+    container on the CI (partial permissions) or when the container scope
+    shifts mid-read. That guard is correct for the write paths that freeze the
+    GRN snapshot, but on a read-only detail page it would take down the entire
+    CI screen. Degrade to an explicit "unavailable" marker instead so the rest
+    of the payload still renders — same contract as _safe_customs_breakdown.
+    """
+    try:
+        return packing_service.summary_for_ci(name, company)
+    except Exception:
+        frappe.log_error(
+            title="CI packing summary unavailable",
+            message=frappe.get_traceback(),
+        )
+        # Keep the full key contract — the SPA reads .reconciliation.length and
+        # .containers_with_items unguarded.
+        return {
+            "status": "Unavailable",
+            "container_count": 0,
+            "containers_with_items": 0,
+            "expected_items": [],
+            "reconciliation": [],
+        }
 
 
 _CI_HEADER_FIELDS = (
@@ -1080,42 +1120,76 @@ def get_grn_checklist(name: str):
 def create_grn_for_ci(commercial_invoice: str):
     """Create a GRN Checklist from a Commercial Invoice (idempotent).
 
-    The "CI STUFFED → GRN" action, surfaced manually in v1: copies the CI items
-    as expected quantities and carries the supplier/company across. If a GRN
-    already exists for the CI (the field is unique) the existing name is
-    returned — so this can double as "open the GRN for this CI".
-
-    NOTE: an automatic CI-status hook (create the GRN when the CI reaches
-    STUFFED) is a later increment; for now the warehouse triggers it by hand.
+    Expected quantities are a snapshot of the current packing aggregate. An
+    incomplete aggregate still creates a refreshable shell and never falls back
+    to commercial invoice lines. Existing GRNs are returned after a read check.
     """
     if not commercial_invoice or not frappe.db.exists("Commercial Invoice", commercial_invoice):
         frappe.throw(_("Unknown Commercial Invoice: {0}").format(commercial_invoice))
+    _assert_can_read("Commercial Invoice", commercial_invoice)
     company = _company_of("Commercial Invoice", commercial_invoice)
     _assert_imports_access(company)
 
-    existing = frappe.db.get_value("GRN Checklist", {"commercial_invoice": commercial_invoice})
-    if existing:
-        return {"name": existing, "created": False}
-
     ci = frappe.get_doc("Commercial Invoice", commercial_invoice)
-    grn = frappe.new_doc("GRN Checklist")
-    grn.company = company
-    grn.commercial_invoice = commercial_invoice
-    grn.supplier = ci.supplier
-    grn.expected_arrival_date = ci.get("eta_transit_port")
-    for it in ci.items or []:
-        box_kg = 20.0
-        qty = flt(it.qty)
-        line = grn.append("grn_items", {})
-        line.item_code = it.item
-        line.item_name = frappe.db.get_value("Item", it.item, "item_name") or it.item
-        line.expected_box_kg = box_kg
-        line.expected_boxes = round(qty / box_kg) if box_kg else 0
-        line.expected_total_kg = qty
-    if not grn.grn_items:
-        frappe.throw(_("The commercial invoice has no items to receive."))
-    grn.insert(ignore_permissions=False)
-    return {"name": grn.name, "created": True}
+    result = packing_service.create_or_get_grn(ci, ignore_permissions=False)
+    if result["created"]:
+        return result
+    _assert_can_read("GRN Checklist", result["name"])
+    summary = packing_service.summary_for_ci(commercial_invoice, company)
+    locked = bool(
+        frappe.db.get_value("GRN Checklist", result["name"], "expected_snapshot_locked")
+    )
+    return {
+        **result,
+        "packing_status": summary["status"],
+        "expected_snapshot_locked": locked,
+    }
+
+
+@frappe.whitelist()
+def refresh_grn_expected_quantities(name: str):
+    if not name or not frappe.db.exists("GRN Checklist", name):
+        frappe.throw(_("Unknown GRN Checklist: {0}").format(name))
+    company = _company_of("GRN Checklist", name)
+    _assert_imports_access(company)
+    _assert_can_write("GRN Checklist", name)
+    commercial_invoice = frappe.db.get_value(
+        "GRN Checklist", name, "commercial_invoice"
+    )
+    packing_service.lock_commercial_invoices([commercial_invoice])
+    grn_state = frappe.db.get_value(
+        "GRN Checklist",
+        name,
+        ["docstatus", "expected_snapshot_locked"],
+        as_dict=True,
+        for_update=True,
+    )
+    grn = frappe.get_doc("GRN Checklist", name)
+    submitted_receipt = frappe.db.sql(
+        """SELECT name
+        FROM `tabTruck Receipt`
+        WHERE grn_checklist = %s AND docstatus = 1
+        LIMIT 1
+        FOR UPDATE SKIP LOCKED""",
+        name,
+    )
+    if (
+        cint(grn_state.docstatus) != 0
+        or cint(grn_state.expected_snapshot_locked)
+        or submitted_receipt
+    ):
+        frappe.throw(_("Expected quantities are locked after the first submitted Truck Receipt."))
+    summary = packing_service.summary_for_ci(
+        grn.commercial_invoice, company, for_update=True
+    )
+    packing_service.replace_grn_expected_rows(grn, summary["expected_items"])
+    with packing_service.allow_expected_snapshot_update():
+        grn.save(ignore_permissions=False)
+    return {
+        "name": grn.name,
+        "packing_status": summary["status"],
+        "expected_snapshot_locked": False,
+    }
 
 
 @frappe.whitelist()

@@ -4289,7 +4289,6 @@ yr,г.
 — top-level —,— верхний уровень —
 •••,•••
 ⚠ {0} line(s) had no cost — verify item valuation; margin may be overstated.,⚠ {0} строк(а) без себестоимости — проверьте оценку товара; маржа может быть завышена.
-
 Start Work Order & Transfer Materials,Запуск рабочего ордера и перемещение материалов
 Materials to Transfer,Материалы для перемещения
 Start & Transfer,Запустить и переместить
@@ -4497,3 +4496,75 @@ Search an asset…,Поиск актива…
 Add an asset…,Добавить актив…
 PI & exporter,PI и экспортёр
 Invoiced %,Инвойсировано %
+A cancelled Commercial Invoice cannot be invoiced.,Отменённый коммерческий инвойс нельзя провести.
+Added {count} items from category.,Добавлено {count} позиций из категории.
+CI kg,"Инвойс, кг"
+CI line total {0} does not match agreed_total {1}; resolve before invoicing.,Сумма строк инвойса {0} не совпадает с согласованной суммой {1}; устраните до выставления счёта.
+Cannot move a PI group to another company.,Нельзя перенести группу PI в другую компанию.
+Cannot move a proforma to another company.,Нельзя перенести проформу в другую компанию.
+Cannot set vendor restriction to {0}: PI(s) {1} in this group belong to a different supplier. Unlink them first.,Нельзя установить ограничение поставщика {0}: PI {1} в этой группе принадлежат другому поставщику. Сначала отвяжите их.
+Cannot verify all container packing lists because the scope changed or permissions are incomplete. Please try again.,Не удалось проверить все упаковочные листы контейнеров: изменился состав или недостаточно прав. Повторите попытку.
+Carrier & Driver,Перевозчик и водитель
+Category name is required.,Название категории обязательно.
+Commercial Invoice belongs to a different company.,Коммерческий инвойс принадлежит другой компании.
+Commercial invoice is unavailable. Reload and try again.,Коммерческий инвойс недоступен. Обновите страницу и повторите.
+Complete every container packing list before port-transfer readiness.,Заполните упаковочные листы всех контейнеров до готовности к передаче в порту.
+Container packing lists must be complete and reconciled before the first Truck Receipt can be submitted.,Перед проведением первой приёмки по машине упаковочные листы контейнеров должны быть заполнены и сверены.
+Could not create the GRN.,Не удалось создать акт приёмки.
+Could not load category items.,Не удалось загрузить позиции категории.
+Could not refresh expected quantities.,Не удалось обновить ожидаемые количества.
+Create GRN,Создать акт приёмки
+Difference kg,"Разница, кг"
+Documents belong to a different company.,Документы принадлежат другой компании.
+ERPNext System Reference ID,Системный идентификатор
+Estimate from the HS rate table; the cleared GTD remains authoritative.,Расчёт по таблице ставок ТН ВЭД; окончательной остаётся оформленная ГТД.
+Expected quantities are locked after the first submitted Truck Receipt.,Ожидаемые количества фиксируются после первой проведённой приёмки по машине.
+Expected quantities locked,Ожидаемые количества зафиксированы
+Expected quantities refreshed from container packing lists.,Ожидаемые количества обновлены из упаковочных листов контейнеров.
+GRN rows must be changed through GRN Checklist.,Строки приёмки изменяются только через чек-лист приёмки.
+GRN snapshot is locked against direct edits; snapshot-managed fields can only be changed by the receipt workflow.,Снимок приёмки защищён от прямого редактирования; управляемые поля изменяются только процессом приёмки.
+Header Details,Данные шапки
+Import Container company must match Commercial Invoice company.,Компания контейнера должна совпадать с компанией коммерческого инвойса.
+Linked Containers,Связанные контейнеры
+Linked Trucks / Land Transport,Связанные машины / наземный транспорт
+Loading logistics readiness…,Загрузка логистической готовности…
+Logistics readiness,Логистическая готовность
+N/A,—
+No packing-list items yet.,Позиций упаковочного листа пока нет.
+Not eligible for this group (vendor restriction or already in another group): {0},Не подходит для этой группы (ограничение поставщика или уже в другой группе): {0}
+Open GRN,Открыть акт приёмки
+Original GTD {0} not found.,Исходная ГТД {0} не найдена.
+PI Group does not belong to this company.,Группа PI не принадлежит этой компании.
+Packed kg,"Упаковано, кг"
+Packing quantities are reconciled and ready for port transfer.,Количества по упаковке сверены и готовы к передаче в порту.
+Packing readiness could not be calculated — you may not have access to every container on this invoice.,"Не удалось рассчитать готовность упаковки — возможно, у вас нет доступа ко всем контейнерам этого инвойса."
+Packing source is locked by GRN {0}.,Источник упаковки заблокирован актом приёмки {0}.
+Packing-list quantities are locked by GRN {0} after the first submitted Truck Receipt.,Количества упаковочного листа заблокированы актом приёмки {0} после первой проведённой приёмки по машине.
+Packing-list rows must be changed through Import Container.,Строки упаковочного листа изменяются только через контейнер.
+"Preview only. Book the capitalized delta via an additional Landed Cost Voucher, the VAT delta to Input VAT, and any penalty to P&L.","Только предварительный расчёт. Капитализируемую разницу проведите дополнительным документом накладных расходов, разницу НДС — во входящий НДС, штрафы — в отчёт о прибылях и убытках."
+Proforma and Commercial Invoice have different suppliers.,У проформы и коммерческого инвойса разные поставщики.
+Proforma {0} cannot be superseded from status {1}.,Проформу {0} нельзя заменить из статуса {1}.
+Purchase Invoice total {0} drifted from agreed_total {1}; not created.,Сумма счёта на закупку {0} расходится с согласованной {1}; счёт не создан.
+Refresh expected quantities,Обновить ожидаемые количества
+Resolve CI versus packed quantity differences before port-transfer readiness.,Устраните расхождения между инвойсом и упакованным количеством до готовности к передаче в порту.
+Select product,Выберите товар
+Status Pipeline,Этапы статуса
+The Commercial Invoice has no invoiceable item lines.,В коммерческом инвойсе нет позиций для выставления счёта.
+The Commercial Invoice has no supplier.,В коммерческом инвойсе не указан поставщик.
+The GRN expected snapshot is locked because receiving has started.,"Снимок ожидаемых количеств зафиксирован, так как приёмка началась."
+The inventory module is not enabled for this company.,Модуль склада не включён для этой компании.
+This declaration is not an amendment (no original GTD linked).,Эта декларация не является корректировкой (исходная ГТД не привязана).
+Total Weight (kg),Общий вес (кг)
+Truck / Plate,Машина / номер
+Truck Commercial Invoice must match GRN Commercial Invoice.,Коммерческий инвойс машины должен совпадать с инвойсом акта приёмки.
+Truck Receipt company must match GRN company.,Компания приёмки по машине должна совпадать с компанией акта приёмки.
+Truck company must match GRN company.,Компания машины должна совпадать с компанией акта приёмки.
+Unknown Import PI Group: {0},Неизвестная группа PI: {0}
+Unknown Proforma Invoice(s): {0},Неизвестные проформы: {0}
+Unknown Proforma Invoice: {0},Неизвестная проформа: {0}
+Unknown supplier: {0},Неизвестный поставщик: {0}
+Unknown vendor category: {0},Неизвестная категория поставщика: {0}
+Vendor Category,Категория поставщика
+You are not permitted to access inventory.,У вас нет доступа к складу.
+e.g. MH/3054/2025-26,напр. MH/3054/2025-26
+{ready} of {total} containers have packing-list rows.,Упаковочные листы заполнены у {ready} из {total} контейнеров.

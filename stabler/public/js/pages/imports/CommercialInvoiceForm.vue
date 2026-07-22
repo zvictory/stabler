@@ -16,6 +16,7 @@ import Select from "../../components/Select.vue";
 import Typeahead from "../../components/Typeahead.vue";
 import MoneyInput from "../../components/MoneyInput.vue";
 import StatusBadge from "../../components/StatusBadge.vue";
+import CiLogisticsOverview from "./CiLogisticsOverview.vue";
 
 const session = useSession();
 const { activeCompany, user } = storeToRefs(session);
@@ -117,6 +118,14 @@ function blankForm() {
 		po_links: [],
 		containers: [],
 		customs_declarations: [],
+		packing_summary: {
+			status: "Incomplete",
+			container_count: 0,
+			containers_with_items: 0,
+			expected_items: [],
+			reconciliation: [],
+		},
+		grn: null,
 	};
 }
 
@@ -574,6 +583,15 @@ watch(activeCompany, loadRefData);
 				</div>
 			</div>
 		</div>
+
+		<CiLogisticsOverview
+			v-if="!isCreate && form.name"
+			:commercial-invoice="form.name"
+			:packing-summary="form.packing_summary"
+			:grn="form.grn"
+			:loading="loading"
+			@reload="loadDoc"
+		/>
 
 		<!-- Top Metric Strip -->
 		<div class="row row-cards mb-3">

@@ -27,7 +27,41 @@ from stabler.stabler.imports_module import grn_math
 
 class GRNChecklist(Document):
 	def validate(self) -> None:
+		self._validate_locked_snapshot()
 		self.update_totals()
+
+	def _validate_locked_snapshot(self) -> None:
+		before = self.get_doc_before_save()
+		if not before or not cint(before.expected_snapshot_locked):
+			return
+		if frappe.flags.get("in_grn_snapshot_update"):
+			return
+		if (
+			self.company != before.company
+			or self.commercial_invoice != before.commercial_invoice
+			or not cint(self.expected_snapshot_locked)
+			or self._expected_signature(self.grn_items)
+			!= self._expected_signature(before.grn_items)
+		):
+			frappe.throw(
+				frappe._("The GRN identity and expected snapshot is locked after first receipt.")
+			)
+
+	@staticmethod
+	def _expected_signature(rows) -> tuple:
+		return tuple(
+			sorted(
+				(
+					row.name or "",
+					row.item_code or "",
+					row.item_name or "",
+					cint(row.expected_boxes),
+					flt(row.expected_box_kg),
+					flt(row.expected_total_kg),
+				)
+				for row in rows or []
+			)
+		)
 
 	def update_totals(self) -> None:
 		"""Recompute expected/received/pending/variance from the child rows."""

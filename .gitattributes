@@ -1,0 +1,5 @@
+# Translation CSVs are intentionally CRLF-terminated (Frappe writes them that
+# way and the harvest tool round-trips them). Without this, every added row
+# reads as a trailing-whitespace error and drowns out real findings in
+# `git diff --check`.
+stabler/translations/*.csv whitespace=-trailing-space,-cr-at-eol

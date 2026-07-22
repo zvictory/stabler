@@ -4283,7 +4283,6 @@ yr,йил
 — top-level —,— юқори сатҳ —
 •••,•••
 ⚠ {0} line(s) had no cost — verify item valuation; margin may be overstated.,⚠ {0} сатр(да) таннарх йўқ — товар баҳолашни текширинг; маржа ошириган бўлиши мумкин.
-
 Start Work Order & Transfer Materials,Иш буюртмасини бошлаш ва материалларни кўчириш
 Materials to Transfer,Кўчириладиган материаллар
 Start & Transfer,Бошлаш ва кўчириш
@@ -4491,3 +4490,75 @@ Search an asset…,Актив қидириш…
 Add an asset…,Актив қўшиш…
 PI & exporter,PI ва экспортёр
 Invoiced %,Инвойс қилинган %
+A cancelled Commercial Invoice cannot be invoiced.,Бекор қилинган тижорат инвойси бўйича ҳисоб-фактура ёзиб бўлмайди.
+Added {count} items from category.,Категориядан {count} та маҳсулот қўшилди.
+CI kg,"Инвойс, кг"
+CI line total {0} does not match agreed_total {1}; resolve before invoicing.,Инвойс сатрлари йиғиндиси {0} келишилган сумма {1} билан мос эмас; ҳисоб-фактура олдидан ҳал қилинг.
+Cannot move a PI group to another company.,PI гуруҳини бошқа компанияга кўчириб бўлмайди.
+Cannot move a proforma to another company.,Проформани бошқа компанияга кўчириб бўлмайди.
+Cannot set vendor restriction to {0}: PI(s) {1} in this group belong to a different supplier. Unlink them first.,Етказиб берувчи чекловини {0} қилиб бўлмайди: бу гуруҳдаги {1} PI бошқа етказиб берувчига тегишли. Аввал уларни ажратинг.
+Cannot verify all container packing lists because the scope changed or permissions are incomplete. Please try again.,Барча контейнер қадоқлаш рўйхатларини текшириб бўлмади: қамров ўзгарди ёки рухсатлар тўлиқ эмас. Қайта уриниб кўринг.
+Carrier & Driver,Ташувчи ва ҳайдовчи
+Category name is required.,Категория номи мажбурий.
+Commercial Invoice belongs to a different company.,Тижорат инвойси бошқа компанияга тегишли.
+Commercial invoice is unavailable. Reload and try again.,"Тижорат инвойси мавжуд эмас. Саҳифани янгилаб, қайта уриниб кўринг."
+Complete every container packing list before port-transfer readiness.,Портга топширишга тайёрликдан олдин ҳар бир контейнернинг қадоқлаш рўйхатини тўлдиринг.
+Container packing lists must be complete and reconciled before the first Truck Receipt can be submitted.,Биринчи машина қабули тасдиқланишидан олдин контейнер қадоқлаш рўйхатлари тўлиқ ва солиштирилган бўлиши керак.
+Could not create the GRN.,Қабул далолатномасини яратиб бўлмади.
+Could not load category items.,Категория маҳсулотларини юклаб бўлмади.
+Could not refresh expected quantities.,Кутилаётган миқдорларни янгилаб бўлмади.
+Create GRN,Қабул далолатномаси яратиш
+Difference kg,"Фарқ, кг"
+Documents belong to a different company.,Ҳужжатлар бошқа компанияга тегишли.
+ERPNext System Reference ID,Тизим ҳавола рақами
+Estimate from the HS rate table; the cleared GTD remains authoritative.,HS ставкалар жадвали бўйича ҳисоб; расмийлаштирилган ГТД асосий ҳисобланади.
+Expected quantities are locked after the first submitted Truck Receipt.,Кутилаётган миқдорлар биринчи тасдиқланган машина қабулидан сўнг қулфланади.
+Expected quantities locked,Кутилаётган миқдорлар қулфланган
+Expected quantities refreshed from container packing lists.,Кутилаётган миқдорлар контейнер қадоқлаш рўйхатларидан янгиланди.
+GRN rows must be changed through GRN Checklist.,Қабул сатрлари фақат қабул чеклисти орқали ўзгартирилади.
+GRN snapshot is locked against direct edits; snapshot-managed fields can only be changed by the receipt workflow.,Қабул суратлари тўғридан-тўғри таҳрирдан ҳимояланган; бошқариладиган майдонлар фақат қабул жараёни орқали ўзгаради.
+Header Details,Сарлавҳа маълумотлари
+Import Container company must match Commercial Invoice company.,Контейнер компанияси тижорат инвойси компаниясига мос бўлиши керак.
+Linked Containers,Боғланган контейнерлар
+Linked Trucks / Land Transport,Боғланган машиналар / қуруқлик транспорти
+Loading logistics readiness…,Логистика тайёрлиги юкланмоқда…
+Logistics readiness,Логистика тайёрлиги
+N/A,—
+No packing-list items yet.,Ҳозирча қадоқлаш рўйхати маҳсулотлари йўқ.
+Not eligible for this group (vendor restriction or already in another group): {0},Бу гуруҳга мос эмас (етказиб берувчи чекловi ёки бошқа гуруҳда): {0}
+Open GRN,Қабул далолатномасини очиш
+Original GTD {0} not found.,Асл ГТД {0} топилмади.
+PI Group does not belong to this company.,PI гуруҳи бу компанияга тегишли эмас.
+Packed kg,"Қадоқланган, кг"
+Packing quantities are reconciled and ready for port transfer.,Қадоқлаш миқдорлари солиштирилди ва портга топширишга тайёр.
+Packing readiness could not be calculated — you may not have access to every container on this invoice.,Қадоқлаш тайёрлигини ҳисоблаб бўлмади — бу инвойсдаги барча контейнерларга рухсатингиз бўлмаслиги мумкин.
+Packing source is locked by GRN {0}.,Қадоқлаш манбаси {0} қабул далолатномаси билан қулфланган.
+Packing-list quantities are locked by GRN {0} after the first submitted Truck Receipt.,Қадоқлаш рўйхати миқдорлари биринчи тасдиқланган машина қабулидан сўнг {0} қабул далолатномаси билан қулфланган.
+Packing-list rows must be changed through Import Container.,Қадоқлаш рўйхати сатрлари фақат контейнер орқали ўзгартирилади.
+"Preview only. Book the capitalized delta via an additional Landed Cost Voucher, the VAT delta to Input VAT, and any penalty to P&L.","Фақат олдиндан кўриш. Капиталлаштириладиган фарқни қўшимча етказиш харажати ҳужжати орқали, ҚҚС фарқини кирувчи ҚҚСга, жаримани эса фойда ва зарарга киритинг."
+Proforma and Commercial Invoice have different suppliers.,Проформа ва тижорат инвойсининг етказиб берувчилари ҳар хил.
+Proforma {0} cannot be superseded from status {1}.,{0} проформани {1} ҳолатидан алмаштириб бўлмайди.
+Purchase Invoice total {0} drifted from agreed_total {1}; not created.,Харид ҳисоб-фактураси суммаси {0} келишилган {1} дан фарқ қилади; яратилмади.
+Refresh expected quantities,Кутилаётган миқдорларни янгилаш
+Resolve CI versus packed quantity differences before port-transfer readiness.,Портга топширишга тайёрликдан олдин инвойс ва қадоқланган миқдор фарқларини бартараф этинг.
+Select product,Маҳсулотни танланг
+Status Pipeline,Ҳолат босқичлари
+The Commercial Invoice has no invoiceable item lines.,Тижорат инвойсида ҳисоб-фактура ёзиш учун сатрлар йўқ.
+The Commercial Invoice has no supplier.,Тижорат инвойсида етказиб берувчи кўрсатилмаган.
+The GRN expected snapshot is locked because receiving has started.,Қабул бошлангани учун кутилаётган миқдорлар сурати қулфланган.
+The inventory module is not enabled for this company.,Бу компания учун омбор модули ёқилмаган.
+This declaration is not an amendment (no original GTD linked).,Бу декларация тузатиш эмас (асл ГТД боғланмаган).
+Total Weight (kg),Умумий оғирлик (кг)
+Truck / Plate,Машина / рақам
+Truck Commercial Invoice must match GRN Commercial Invoice.,Машинанинг тижорат инвойси қабул далолатномаси инвойсига мос бўлиши керак.
+Truck Receipt company must match GRN company.,Машина қабули компанияси қабул далолатномаси компаниясига мос бўлиши керак.
+Truck company must match GRN company.,Машина компанияси қабул далолатномаси компаниясига мос бўлиши керак.
+Unknown Import PI Group: {0},Номаълум PI гуруҳи: {0}
+Unknown Proforma Invoice(s): {0},Номаълум проформа(лар): {0}
+Unknown Proforma Invoice: {0},Номаълум проформа: {0}
+Unknown supplier: {0},Номаълум етказиб берувчи: {0}
+Unknown vendor category: {0},Номаълум етказиб берувчи категорияси: {0}
+Vendor Category,Етказиб берувчи категорияси
+You are not permitted to access inventory.,Сизда омборга кириш ҳуқуқи йўқ.
+e.g. MH/3054/2025-26,"масалан, MH/3054/2025-26"
+{ready} of {total} containers have packing-list rows.,{total} контейнердан {ready} тасида қадоқлаш рўйхати сатрлари бор.

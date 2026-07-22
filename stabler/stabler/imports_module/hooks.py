@@ -19,9 +19,9 @@ they can be unit-tested without a bench.
 """
 
 import frappe
-from frappe.utils import cint, flt, getdate, today
+from frappe.utils import cint, flt, getdate, now_datetime, today
 
-from stabler.stabler.imports_module import customs_fee_math, lcv_math, receipt_math
+from stabler.stabler.imports_module import customs_fee_math, lcv_math, packing_service, receipt_math
 from stabler.stabler.imports_module import payment_math as pm
 
 
@@ -58,25 +58,7 @@ def on_commercial_invoice_update(doc, method=None):
 
 def create_grn_for_ci_hook(ci):
 	"""Create a GRN Checklist from a Commercial Invoice (idempotent, hook version)."""
-	if frappe.db.exists("GRN Checklist", {"commercial_invoice": ci.name}):
-		return
-	grn = frappe.new_doc("GRN Checklist")
-	grn.company = ci.company
-	grn.commercial_invoice = ci.name
-	grn.supplier = ci.supplier
-	grn.expected_arrival_date = ci.get("eta_transit_port")
-	for it in ci.items or []:
-		box_kg = 20.0
-		qty = flt(it.qty)
-		line = grn.append("grn_items", {})
-		line.item_code = it.item
-		line.item_name = frappe.db.get_value("Item", it.item, "item_name") or it.item
-		line.expected_box_kg = box_kg
-		line.expected_boxes = round(qty / box_kg) if box_kg else 0
-		line.expected_total_kg = qty
-	if not grn.grn_items:
-		return
-	grn.insert(ignore_permissions=True)
+	return packing_service.create_or_get_grn(ci, ignore_permissions=True)
 
 
 # ---------------------------------------------------------------------------
@@ -420,6 +402,14 @@ def _ensure_import_service_item() -> None:
 # ---------------------------------------------------------------------------
 
 
+def truck_receipt_before_submit(doc, method=None):
+	"""Freeze expected packing before the receipt becomes submitted."""
+	grn, _truck = _validate_truck_receipt_scope(doc)
+	if not _should_run(grn):
+		return
+	_lock_grn_expected_snapshot(doc.grn_checklist)
+
+
 def truck_receipt_on_submit(doc, method=None):
 	"""doc_events on_submit for Truck Receipt.
 
@@ -429,16 +419,67 @@ def truck_receipt_on_submit(doc, method=None):
 	  2. recompute the parent GRN Checklist from all submitted receipts,
 	  3. advance the Import Truck to GRN_CREATED where the transition is legal.
 	"""
-	if not _should_run(doc):
+	grn, _truck = _validate_truck_receipt_scope(doc)
+	if not _should_run(grn):
 		return
 	_create_pr_for_truck_receipt(doc)
 	recompute_grn_from_receipts(doc.grn_checklist)
 	advance_truck_after_receipt(doc.truck)
 
 
+def _validate_truck_receipt_scope(receipt):
+	grn = frappe.get_doc("GRN Checklist", receipt.grn_checklist)
+	truck = frappe.get_doc("Import Truck", receipt.truck)
+	if receipt.company != grn.company:
+		frappe.throw(frappe._("Truck Receipt company must match GRN company."))
+	if truck.company != grn.company:
+		frappe.throw(frappe._("Truck company must match GRN company."))
+	if truck.commercial_invoice != grn.commercial_invoice:
+		frappe.throw(
+			frappe._("Truck Commercial Invoice must match GRN Commercial Invoice.")
+		)
+	return grn, truck
+
+
+def _lock_grn_expected_snapshot(grn_name: str) -> None:
+	commercial_invoice = frappe.db.get_value(
+		"GRN Checklist", grn_name, "commercial_invoice"
+	)
+	packing_service.lock_commercial_invoices([commercial_invoice])
+	grn_state = frappe.db.get_value(
+		"GRN Checklist",
+		grn_name,
+		["expected_snapshot_locked"],
+		as_dict=True,
+		for_update=True,
+	)
+	if grn_state.expected_snapshot_locked:
+		return
+	grn = frappe.get_doc("GRN Checklist", grn_name)
+	summary = packing_service.summary_for_ci(
+		grn.commercial_invoice, grn.company, for_update=True
+	)
+	if summary["status"] != "Ready":
+		frappe.throw(
+			frappe._(
+				"Container packing lists must be complete and reconciled before the first "
+				"Truck Receipt can be submitted."
+			)
+		)
+	packing_service.replace_grn_expected_rows(grn, summary["expected_items"])
+	grn.expected_snapshot_locked = 1
+	grn.expected_snapshot_locked_at = now_datetime()
+	with packing_service.allow_expected_snapshot_update():
+		grn.save(ignore_permissions=True)
+
+
 def truck_receipt_on_cancel(doc, method=None):
 	"""doc_events on_cancel for Truck Receipt. Blocks while the PR is live."""
-	if not _should_run(doc):
+	# Gate on the GRN's company, exactly like truck_receipt_on_submit — the receipt
+	# and the GRN are guaranteed to share a company by _validate_truck_receipt_scope,
+	# but that check only runs on submit, so read the authoritative side here.
+	grn_company = frappe.db.get_value("GRN Checklist", doc.grn_checklist, "company")
+	if not _should_run(frappe._dict(company=grn_company)):
 		return
 	if doc.get("purchase_receipt"):
 		pr_docstatus = frappe.db.get_value("Purchase Receipt", doc.purchase_receipt, "docstatus")
