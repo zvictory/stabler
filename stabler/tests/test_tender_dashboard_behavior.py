@@ -214,6 +214,60 @@ class TestTenderDashboardBehaviour(unittest.TestCase):
 		self.assertEqual(payload["execution"]["delivered"], 1)
 		self.assertEqual(payload["execution"]["delivery_pending"], 0)
 
+	def test_execution_targets_exclude_documents_without_read_permission(self):
+		db = _FakeDB({"DEAL-MINE": {"assigned_to": "source@example.com"}})
+		tender = _load_tender(db, ["Sales User"])
+		so_rows = [
+			_Row(name="SO-ALLOWED", customer="Customer", customer_name="Customer", transaction_date="2026-07-05", delivery_date="2026-07-20", currency="UZS", rounded_total=100, grand_total=100, base_grand_total=100, per_delivered=0, per_billed=0, status="To Deliver and Bill", custom_board_stage=None, custom_crm_deal="DEAL-MINE"),
+			_Row(name="SO-DENIED", customer="Customer", customer_name="Customer", transaction_date="2026-07-05", delivery_date="2026-07-20", currency="UZS", rounded_total=200, grand_total=200, base_grand_total=200, per_delivered=0, per_billed=0, status="To Deliver and Bill", custom_board_stage=None, custom_crm_deal="DEAL-MINE"),
+		]
+		po_rows = [
+			_Row(name="PO-ALLOWED", supplier="Supplier", supplier_name="Supplier", transaction_date="2026-07-05", schedule_date="2026-07-20", per_received=0, status="To Receive", base_grand_total=100, custom_crm_deal="DEAL-MINE"),
+			_Row(name="PO-DENIED", supplier="Supplier", supplier_name="Supplier", transaction_date="2026-07-05", schedule_date="2026-07-20", per_received=0, status="To Receive", base_grand_total=200, custom_crm_deal="DEAL-MINE"),
+		]
+
+		def has_column(doctype, field):
+			return (doctype, field) in {
+				("CRM Deal", "custom_tender_intake"),
+				("Sales Order", "custom_crm_deal"),
+				("Purchase Order", "custom_crm_deal"),
+			}
+
+		def document_rows(doctype, **_kwargs):
+			if doctype == "Sales Order":
+				return so_rows
+			if doctype == "Purchase Order":
+				return po_rows
+			return []
+
+		def has_permission(_doctype, _ptype, doc=None):
+			return doc not in {"SO-DENIED", "PO-DENIED"}
+
+		with patch.object(tender, "_tender_deal_names", return_value={"DEAL-MINE"}), patch.object(tender, "_ensure_default_stages"), patch.object(tender, "_stages", return_value=[]), patch.object(tender, "_require_tender_view"), patch.object(tender.frappe.db, "has_column", has_column), patch.object(tender.frappe, "get_all", document_rows), patch.object(tender.frappe, "get_list", document_rows), patch.object(tender.frappe, "has_permission", has_permission):
+			dashboard = tender.tender_dashboard("Test Company", "2026-07-01", "2026-07-31")
+			sales_board = tender.so_board("Test Company", tender_only=1)
+			logistics = tender.logist_board("Test Company")
+
+		self.assertEqual(dashboard["execution"]["sales_orders"], 1)
+		self.assertEqual(dashboard["execution"]["purchase_orders"], 1)
+		self.assertEqual([card["name"] for card in sales_board["cards"]], ["SO-ALLOWED"])
+		self.assertEqual([row["po"] for row in logistics["rows"]], ["PO-ALLOWED"])
+
+	def test_sourcing_target_excludes_deals_without_read_permission(self):
+		db = _FakeDB({
+			"DEAL-ALLOWED": {"assigned_to": "source@example.com"},
+			"DEAL-DENIED": {"assigned_to": "source@example.com"},
+		})
+		tender = _load_tender(db, ["Sales User"])
+
+		def has_permission(doctype, _ptype, doc=None):
+			return not (doctype == "CRM Deal" and doc == "DEAL-DENIED")
+
+		with patch.object(tender, "_tender_deal_names", return_value={"DEAL-ALLOWED", "DEAL-DENIED"}), patch.object(tender, "_require_tender_view"), patch.object(tender, "_deal_deadlines", return_value={"risk": "good", "milestones": []}), patch.object(tender, "_deal_landed", return_value=(0.0, 0)), patch.object(tender, "_deal_label", side_effect=lambda deal: deal), patch.object(tender.frappe, "has_permission", has_permission):
+			payload = tender.sourcing_my_tenders("Test Company")
+
+		self.assertEqual([row["deal"] for row in payload["rows"]], ["DEAL-ALLOWED"])
+
 	def test_declarant_scope_is_execution_portfolio_not_acquisition_portfolio(self):
 		db = _FakeDB({"DEAL-1": {"assigned_to": "other@example.com"}})
 		tender = _load_tender(db, ["Stabler Declarant"])

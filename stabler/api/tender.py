@@ -94,7 +94,7 @@ def so_board(company: str, tender_only: int = 0) -> dict:
 	first_open = next((s["name"] for s in stages if not s["is_closed"]), stages[0]["name"] if stages else None)
 
 	so_filters = {"company": company, "docstatus": ["<", 2]} if int(tender_only or 0) else {"company": company, "docstatus": 1}
-	sos = frappe.get_all(
+	sos = frappe.get_list(
 		"Sales Order",
 		filters=so_filters,
 		fields=[
@@ -107,6 +107,8 @@ def so_board(company: str, tender_only: int = 0) -> dict:
 	)
 	cards = []
 	for so in sos:
+		if not frappe.has_permission("Sales Order", "read", doc=so.name):
+			continue
 		if so.status in ("Closed", "Cancelled"):
 			continue
 		if int(tender_only or 0) and not so.custom_crm_deal:
@@ -459,13 +461,14 @@ def po_control_board(deal: str) -> dict:
 	if has_landed:
 		po_fields.append("custom_landed_charges")
 
-	rows = frappe.get_all(
+	rows = frappe.get_list(
 		"Purchase Order",
 		filters={"custom_crm_deal": deal, "company": company, "docstatus": ["<", 2]},
 		fields=po_fields,
 		order_by="transaction_date desc, name desc",
 		limit_page_length=1000,
 	)
+	rows = [row for row in rows if frappe.has_permission("Purchase Order", "read", doc=row.name)]
 
 	today_d = getdate(today())
 	# Landed cost (base currency) = base_grand_total + planned charges. The
@@ -613,12 +616,13 @@ def _deal_landed_split(deal: str, company: str) -> tuple[float, float, int]:
 	po_fields = ["name", "base_grand_total"]
 	if has_landed:
 		po_fields.append("custom_landed_charges")
-	pos = frappe.get_all(
+	pos = frappe.get_list(
 		"Purchase Order",
 		filters={"custom_crm_deal": deal, "company": company, "docstatus": ["<", 2]},
 		fields=po_fields,
 		limit_page_length=1000,
 	)
+	pos = [row for row in pos if frappe.has_permission("Purchase Order", "read", doc=row.name)]
 	planned = 0.0
 	actual = 0.0
 	for p in pos:
@@ -1072,12 +1076,13 @@ def _deal_deadlines(deal: str, company: str, intake: dict) -> dict:
 	# Sales Orders (revenue / contract / delivery side)
 	so_rows = []
 	if frappe.db.has_column("Sales Order", "custom_crm_deal"):
-		so_rows = frappe.get_all(
+		so_rows = frappe.get_list(
 			"Sales Order",
 			filters={"custom_crm_deal": deal, "company": company, "docstatus": ["<", 2]},
-			fields=["transaction_date", "delivery_date", "per_delivered"],
+			fields=["name", "transaction_date", "delivery_date", "per_delivered"],
 			limit_page_length=1000,
 		)
+		so_rows = [row for row in so_rows if frappe.has_permission("Sales Order", "read", doc=row.name)]
 	so_exists = bool(so_rows)
 	so_delivered = bool(so_rows) and all(flt(s.per_delivered) >= 100 for s in so_rows)
 	so_first_txn = min((s.transaction_date for s in so_rows if s.transaction_date), default=None)
@@ -1086,12 +1091,13 @@ def _deal_deadlines(deal: str, company: str, intake: dict) -> dict:
 	# Purchase Orders (procurement / ETA side)
 	po_rows = []
 	if frappe.db.has_column("Purchase Order", "custom_crm_deal"):
-		po_rows = frappe.get_all(
+		po_rows = frappe.get_list(
 			"Purchase Order",
 			filters={"custom_crm_deal": deal, "company": company, "docstatus": ["<", 2]},
-			fields=["schedule_date", "per_received"],
+			fields=["name", "schedule_date", "per_received"],
 			limit_page_length=1000,
 		)
+		po_rows = [row for row in po_rows if frappe.has_permission("Purchase Order", "read", doc=row.name)]
 	po_exists = bool(po_rows)
 	po_received = bool(po_rows) and all(flt(p.per_received) >= 100 for p in po_rows)
 	po_eta = min((p.schedule_date for p in po_rows if p.schedule_date), default=None)
@@ -1411,12 +1417,12 @@ def _po_rows_for_views(company: str) -> tuple[list, bool]:
 	fields = ["name", "supplier", "supplier_name", "transaction_date", "schedule_date", "per_received", "custom_crm_deal", "status"]
 	if has_landed:
 		fields.append("custom_landed_charges")
-	rows = frappe.get_all(
+	rows = frappe.get_list(
 		"Purchase Order",
 		filters={"company": company, "custom_crm_deal": ["is", "set"], "docstatus": ["<", 2]},
 		fields=fields, order_by="schedule_date asc", limit_page_length=2000,
 	)
-	return rows, has_landed
+	return [row for row in rows if frappe.has_permission("Purchase Order", "read", doc=row.name)], has_landed
 
 
 @frappe.whitelist()
@@ -1466,9 +1472,9 @@ def logist_board(company: str) -> dict:
 			intake = _read_intake(deal) if deal else {}
 			dv = intake.get("delivery_deadline")
 			if not dv and deal and frappe.db.has_column("Sales Order", "custom_crm_deal"):
-				dv = min((s.delivery_date for s in frappe.get_all(
+				dv = min((s.delivery_date for s in frappe.get_list(
 					"Sales Order", filters={"custom_crm_deal": deal, "company": company, "docstatus": ["<", 2]},
-					fields=["delivery_date"], limit_page_length=500) if s.delivery_date), default=None)
+					fields=["name", "delivery_date"], limit_page_length=500) if frappe.has_permission("Sales Order", "read", doc=s.name) and s.delivery_date), default=None)
 			deliv_cache[deal] = getdate(dv) if dv else None
 		delivery = deliv_cache[deal]
 		late = bool(not received and eta and delivery and eta > delivery)
@@ -1496,6 +1502,8 @@ def sourcing_my_tenders(company: str) -> dict:
 	me = frappe.session.user
 	rows = []
 	for deal in _tender_deal_names(company):
+		if not frappe.has_permission("CRM Deal", "read", doc=deal):
+			continue
 		intake = _read_intake(deal)
 		if not oversight and (intake.get("assigned_to") or "") != me:
 			continue
