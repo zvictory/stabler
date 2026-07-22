@@ -4568,3 +4568,7 @@ Vendor Category,Категория поставщика
 You are not permitted to access inventory.,У вас нет доступа к складу.
 e.g. MH/3054/2025-26,напр. MH/3054/2025-26
 {ready} of {total} containers have packing-list rows.,Упаковочные листы заполнены у {ready} из {total} контейнеров.
+Agreed / docs,Согласовано / документы
+docs,документы
+docs match,документы совпадают
+advance,аванс

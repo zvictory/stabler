@@ -86,15 +86,46 @@ function refSub(r) {
 	// the ERPNext auto name, shown small when the original ref took its place
 	return r && r.supplier_pi_ref && r.supplier_pi_ref !== r.name ? r.name : "";
 }
-function exporterShort(r) {
-	const s = (r && (r.supplier_name || r.supplier)) || "";
-	return (s.split(/\s+/)[0] || "").toUpperCase();
-}
 function grp(v) {
-	return Math.round(Number(v) || 0).toLocaleString("ru-RU");
+	// Follow the user's locale like every other number on the page — a hardcoded
+	// "ru-RU" here made the table use space separators while the metric cards,
+	// which go through formatMoney(user.language), used commas.
+	return Math.round(Number(v) || 0).toLocaleString(user.value.language || "ru-RU");
 }
 function fcl(v) {
 	return (Number(v) || 0).toFixed(1);
+}
+
+/** One compact metadata line: items, physical, terms, group. Empty parts drop out. */
+function metaParts(r) {
+	const out = [];
+	if (r.item_count) out.push(`${r.item_count} ${t("items")}`);
+	if (r.total_boxes) out.push(`${grp(r.total_boxes)} bx`);
+	if (r.total_kg) out.push(`${grp(r.total_kg)} kg`);
+	// FCL is only meaningful once it has been captured — it was printing "0.0 FCL"
+	// on every row, which reads as data rather than as an empty field.
+	if (Number(r.total_fcl) > 0) out.push(`${fcl(r.total_fcl)} FCL`);
+	if (r.incoterm) out.push(r.incoterm);
+	if (r.advance_pct) out.push(`${r.advance_pct}% ${t("advance")}`);
+	if (groupLabel(r)) out.push(groupLabel(r));
+	return out.join(" · ");
+}
+
+/** Under-declared gap between the agreed price and the documented price. */
+function docsGap(r) {
+	const gap = Number(r.cash_difference) || 0;
+	return gap ? gap : null;
+}
+
+function invoicedPct(r) {
+	return Math.min(100, Math.round(Number(r.invoiced_pct) || 0));
+}
+
+function invoicedBarClass(r) {
+	const p = Number(r.invoiced_pct) || 0;
+	if (p >= 100) return "bg-success";
+	if (p > 0) return "bg-warning";
+	return "bg-secondary";
 }
 
 async function loadPiGroups() {
@@ -285,48 +316,49 @@ const canSupersede = (row) => ["DRAFT", "CONFIRMED"].includes(row.status);
 					<tr>
 						<th>{{ t("PI & exporter") }}</th>
 						<th class="text-nowrap">{{ t("PI Date") }}</th>
-						<th class="text-center">{{ t("Items") }}</th>
-						<th>{{ t("Physical") }}</th>
-						<th class="text-end">{{ t("Pricing") }}</th>
+						<th class="text-end text-nowrap">{{ t("Agreed / docs") }}</th>
 						<th style="min-width: 120px">{{ t("Invoiced %") }}</th>
 						<th>{{ t("Status") }}</th>
-						<th></th>
+						<th class="w-1"><span class="visually-hidden">{{ t("Actions") }}</span></th>
 					</tr>
 				</thead>
 				<tbody>
-					<SkeletonRows v-if="loading" :cols="8" :rows="6" />
-					<tr v-for="r in rows" :key="r.name" style="cursor: pointer" @click="router.push({ name: 'imports-proforma', params: { name: r.name } })">
+					<SkeletonRows v-if="loading" :cols="6" :rows="6" />
+					<tr v-for="r in rows" :key="r.name" class="pi-row" style="cursor: pointer" @click="router.push({ name: 'imports-proforma', params: { name: r.name } })">
 						<td>
-							<div class="fw-bold text-primary font-monospace" style="font-size: 0.95rem">{{ refMain(r) }}</div>
-							<div class="fw-semibold text-dark text-uppercase small mt-1">{{ r.supplier_name || r.supplier }}</div>
-							<div v-if="refSub(r)" class="small text-secondary font-monospace">Ref: {{ refSub(r) }}</div>
-							<div class="d-flex flex-wrap gap-1 mt-1">
-								<span v-if="groupLabel(r)" class="badge bg-azure-lt"><i class="ti ti-stack-2 me-1"></i>{{ groupLabel(r) }}</span>
-								<span v-if="r.incoterm" class="badge bg-secondary-lt">{{ r.incoterm }}</span>
-								<span v-if="r.advance_pct" class="badge bg-blue-lt">{{ r.advance_pct }}% Advance</span>
+							<div class="d-flex align-items-baseline flex-wrap gap-2">
+								<span class="fw-bold text-primary font-monospace" style="font-size: 0.95rem">{{ refMain(r) }}</span>
+								<span class="text-secondary small">{{ r.supplier_name || r.supplier }}</span>
+							</div>
+							<div class="text-secondary small mt-1">
+								{{ metaParts(r) }}
+								<span v-if="refSub(r)" class="text-muted font-monospace ms-1">· {{ refSub(r) }}</span>
 							</div>
 						</td>
-						<td class="text-nowrap">{{ r.pi_date ? formatDate(r.pi_date) : "—" }}</td>
-						<td class="text-center"><span class="fw-semibold">{{ r.item_count || 0 }}</span> <span class="text-secondary small">{{ t("items") }}</span></td>
-						<td class="text-nowrap">
-							<div><span class="fw-semibold font-monospace">{{ grp(r.total_boxes) }}</span> <span class="text-secondary small">bx</span></div>
-							<div class="text-secondary small font-monospace">{{ grp(r.total_kg) }} kg · {{ fcl(r.total_fcl) }} FCL</div>
-						</td>
+						<td class="text-nowrap font-monospace pi-num">{{ r.pi_date ? formatDate(r.pi_date) : "—" }}</td>
 						<td class="text-end text-nowrap">
-							<div class="fw-bold font-monospace">{{ fm(r.agreed_total, r.currency) }}</div>
-							<div class="text-secondary small font-monospace">{{ t("Docs") }}: {{ fm(r.docs_total, r.currency) }}</div>
-							<span v-if="r.cash_difference" class="badge bg-warning-lt text-warning font-monospace mt-1">+{{ fm(r.cash_difference, r.currency) }}</span>
+							<div class="fw-bold font-monospace pi-num">{{ fm(r.agreed_total, r.currency) }}</div>
+							<div v-if="docsGap(r)" class="small font-monospace pi-num text-warning">
+								−{{ fm(docsGap(r), r.currency) }} {{ t("docs") }}
+							</div>
+							<div v-else class="small font-monospace pi-num text-secondary">{{ t("docs match") }}</div>
 						</td>
 						<td>
-							<span class="badge" :class="(r.invoiced_pct || 0) >= 100 ? 'bg-green-lt text-green' : 'bg-blue-lt text-blue'">{{ Math.round(r.invoiced_pct || 0) }}%</span>
-							<div class="progress mt-1" style="height: 4px">
-								<div class="progress-bar" :style="{ width: Math.min(100, r.invoiced_pct || 0) + '%' }"></div>
+							<div class="progress" style="height: 5px">
+								<div class="progress-bar" :class="invoicedBarClass(r)" :style="{ width: invoicedPct(r) + '%' }"></div>
 							</div>
-							<div class="text-secondary small mt-1">{{ r.ci_count || 0 }} CI</div>
+							<div class="text-secondary small mt-1 pi-num">
+								{{ invoicedPct(r) }}% · {{ r.ci_count || 0 }} CI
+							</div>
 						</td>
 						<td><span class="badge" :class="getStatusBadgeClass('Proforma Invoice', r.status)">{{ r.status }}</span></td>
 						<td class="text-end" @click.stop>
-							<button v-if="canSupersede(r)" type="button" class="btn btn-outline-secondary btn-sm" @click="openSupersede(r)">
+							<button
+								v-if="canSupersede(r)"
+								type="button"
+								class="btn btn-outline-secondary btn-sm pi-row-action"
+								@click="openSupersede(r)"
+							>
 								<i class="ti ti-link me-1"></i>{{ t("Link CI") }}
 							</button>
 						</td>
@@ -371,3 +403,24 @@ const canSupersede = (row) => ["DRAFT", "CONFIRMED"].includes(row.status);
 		</div>
 	</div>
 </template>
+
+<style scoped>
+/* Identifiers and money align only with fixed-width digits. */
+.pi-num {
+	font-variant-numeric: tabular-nums;
+}
+
+/* The row action repeats on every row; fade it back until the row is engaged.
+   Only on hover-capable pointers — on touch there is no hover, so it stays
+   visible. Focus-within keeps it reachable by keyboard. */
+@media (hover: hover) and (pointer: fine) {
+	.pi-row-action {
+		opacity: 0;
+		transition: opacity 0.12s ease-in-out;
+	}
+	.pi-row:hover .pi-row-action,
+	.pi-row:focus-within .pi-row-action {
+		opacity: 1;
+	}
+}
+</style>
