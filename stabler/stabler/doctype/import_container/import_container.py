@@ -74,7 +74,9 @@ class ImportContainer(Document):
 		return tuple(
 			sorted(
 				(
-					row.item_code,
+					# Normalise like GRNChecklist._expected_signature — a None
+					# item_code must not sort-crash or compare unequal to "".
+					row.item_code or "",
 					row.category or "",
 					cint(row.box_qty),
 					flt(row.box_kg),

@@ -475,7 +475,11 @@ def _lock_grn_expected_snapshot(grn_name: str) -> None:
 
 def truck_receipt_on_cancel(doc, method=None):
 	"""doc_events on_cancel for Truck Receipt. Blocks while the PR is live."""
-	if not _should_run(doc):
+	# Gate on the GRN's company, exactly like truck_receipt_on_submit — the receipt
+	# and the GRN are guaranteed to share a company by _validate_truck_receipt_scope,
+	# but that check only runs on submit, so read the authoritative side here.
+	grn_company = frappe.db.get_value("GRN Checklist", doc.grn_checklist, "company")
+	if not _should_run(frappe._dict(company=grn_company)):
 		return
 	if doc.get("purchase_receipt"):
 		pr_docstatus = frappe.db.get_value("Purchase Receipt", doc.purchase_receipt, "docstatus")

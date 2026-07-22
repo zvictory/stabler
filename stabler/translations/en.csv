@@ -4279,7 +4279,6 @@ yr,yr
 •••,•••
 ⚠ {0} line(s) had no cost — verify item valuation; margin may be overstated.,⚠ {0} line(s) had no cost — verify item valuation; margin may be overstated.
 ﻿#,#
-
 Start Work Order & Transfer Materials,Start Work Order & Transfer Materials
 Materials to Transfer,Materials to Transfer
 Start & Transfer,Start & Transfer
@@ -4487,3 +4486,75 @@ Search an asset…,Search an asset…
 Add an asset…,Add an asset…
 PI & exporter,PI & exporter
 Invoiced %,Invoiced %
+A cancelled Commercial Invoice cannot be invoiced.,A cancelled Commercial Invoice cannot be invoiced.
+Added {count} items from category.,Added {count} items from category.
+CI kg,CI kg
+CI line total {0} does not match agreed_total {1}; resolve before invoicing.,CI line total {0} does not match agreed_total {1}; resolve before invoicing.
+Cannot move a PI group to another company.,Cannot move a PI group to another company.
+Cannot move a proforma to another company.,Cannot move a proforma to another company.
+Cannot set vendor restriction to {0}: PI(s) {1} in this group belong to a different supplier. Unlink them first.,Cannot set vendor restriction to {0}: PI(s) {1} in this group belong to a different supplier. Unlink them first.
+Cannot verify all container packing lists because the scope changed or permissions are incomplete. Please try again.,Cannot verify all container packing lists because the scope changed or permissions are incomplete. Please try again.
+Carrier & Driver,Carrier & Driver
+Category name is required.,Category name is required.
+Commercial Invoice belongs to a different company.,Commercial Invoice belongs to a different company.
+Commercial invoice is unavailable. Reload and try again.,Commercial invoice is unavailable. Reload and try again.
+Complete every container packing list before port-transfer readiness.,Complete every container packing list before port-transfer readiness.
+Container packing lists must be complete and reconciled before the first Truck Receipt can be submitted.,Container packing lists must be complete and reconciled before the first Truck Receipt can be submitted.
+Could not create the GRN.,Could not create the GRN.
+Could not load category items.,Could not load category items.
+Could not refresh expected quantities.,Could not refresh expected quantities.
+Create GRN,Create GRN
+Difference kg,Difference kg
+Documents belong to a different company.,Documents belong to a different company.
+ERPNext System Reference ID,ERPNext System Reference ID
+Estimate from the HS rate table; the cleared GTD remains authoritative.,Estimate from the HS rate table; the cleared GTD remains authoritative.
+Expected quantities are locked after the first submitted Truck Receipt.,Expected quantities are locked after the first submitted Truck Receipt.
+Expected quantities locked,Expected quantities locked
+Expected quantities refreshed from container packing lists.,Expected quantities refreshed from container packing lists.
+GRN rows must be changed through GRN Checklist.,GRN rows must be changed through GRN Checklist.
+GRN snapshot is locked against direct edits; snapshot-managed fields can only be changed by the receipt workflow.,GRN snapshot is locked against direct edits; snapshot-managed fields can only be changed by the receipt workflow.
+Header Details,Header Details
+Import Container company must match Commercial Invoice company.,Import Container company must match Commercial Invoice company.
+Linked Containers,Linked Containers
+Linked Trucks / Land Transport,Linked Trucks / Land Transport
+Loading logistics readiness…,Loading logistics readiness…
+Logistics readiness,Logistics readiness
+N/A,N/A
+No packing-list items yet.,No packing-list items yet.
+Not eligible for this group (vendor restriction or already in another group): {0},Not eligible for this group (vendor restriction or already in another group): {0}
+Open GRN,Open GRN
+Original GTD {0} not found.,Original GTD {0} not found.
+PI Group does not belong to this company.,PI Group does not belong to this company.
+Packed kg,Packed kg
+Packing quantities are reconciled and ready for port transfer.,Packing quantities are reconciled and ready for port transfer.
+Packing readiness could not be calculated — you may not have access to every container on this invoice.,Packing readiness could not be calculated — you may not have access to every container on this invoice.
+Packing source is locked by GRN {0}.,Packing source is locked by GRN {0}.
+Packing-list quantities are locked by GRN {0} after the first submitted Truck Receipt.,Packing-list quantities are locked by GRN {0} after the first submitted Truck Receipt.
+Packing-list rows must be changed through Import Container.,Packing-list rows must be changed through Import Container.
+"Preview only. Book the capitalized delta via an additional Landed Cost Voucher, the VAT delta to Input VAT, and any penalty to P&L.","Preview only. Book the capitalized delta via an additional Landed Cost Voucher, the VAT delta to Input VAT, and any penalty to P&L."
+Proforma and Commercial Invoice have different suppliers.,Proforma and Commercial Invoice have different suppliers.
+Proforma {0} cannot be superseded from status {1}.,Proforma {0} cannot be superseded from status {1}.
+Purchase Invoice total {0} drifted from agreed_total {1}; not created.,Purchase Invoice total {0} drifted from agreed_total {1}; not created.
+Refresh expected quantities,Refresh expected quantities
+Resolve CI versus packed quantity differences before port-transfer readiness.,Resolve CI versus packed quantity differences before port-transfer readiness.
+Select product,Select product
+Status Pipeline,Status Pipeline
+The Commercial Invoice has no invoiceable item lines.,The Commercial Invoice has no invoiceable item lines.
+The Commercial Invoice has no supplier.,The Commercial Invoice has no supplier.
+The GRN expected snapshot is locked because receiving has started.,The GRN expected snapshot is locked because receiving has started.
+The inventory module is not enabled for this company.,The inventory module is not enabled for this company.
+This declaration is not an amendment (no original GTD linked).,This declaration is not an amendment (no original GTD linked).
+Total Weight (kg),Total Weight (kg)
+Truck / Plate,Truck / Plate
+Truck Commercial Invoice must match GRN Commercial Invoice.,Truck Commercial Invoice must match GRN Commercial Invoice.
+Truck Receipt company must match GRN company.,Truck Receipt company must match GRN company.
+Truck company must match GRN company.,Truck company must match GRN company.
+Unknown Import PI Group: {0},Unknown Import PI Group: {0}
+Unknown Proforma Invoice(s): {0},Unknown Proforma Invoice(s): {0}
+Unknown Proforma Invoice: {0},Unknown Proforma Invoice: {0}
+Unknown supplier: {0},Unknown supplier: {0}
+Unknown vendor category: {0},Unknown vendor category: {0}
+Vendor Category,Vendor Category
+You are not permitted to access inventory.,You are not permitted to access inventory.
+e.g. MH/3054/2025-26,e.g. MH/3054/2025-26
+{ready} of {total} containers have packing-list rows.,{ready} of {total} containers have packing-list rows.

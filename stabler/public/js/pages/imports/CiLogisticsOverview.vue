@@ -131,6 +131,9 @@ async function refreshExpected() {
 			<div v-else-if="packingSummary.status === 'Ready'" class="alert alert-success">
 				{{ t("Packing quantities are reconciled and ready for port transfer.") }}
 			</div>
+			<div v-else-if="packingSummary.status === 'Unavailable'" class="alert alert-warning">
+				{{ t("Packing readiness could not be calculated — you may not have access to every container on this invoice.") }}
+			</div>
 			<div v-if="grn?.expected_snapshot_locked" class="text-secondary small mb-3">
 				{{ t("The GRN expected snapshot is locked because receiving has started.") }}
 			</div>

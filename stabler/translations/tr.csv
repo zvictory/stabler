@@ -4268,7 +4268,6 @@ yr,yıl
 — top-level —,— üst düzey —
 •••,•••
 ⚠ {0} line(s) had no cost — verify item valuation; margin may be overstated.,⚠ {0} satır(da) maliyet yok — kalem değerlemesini doğrulayın; marj abartılmış olabilir.
-
 Start Work Order & Transfer Materials,İş Emrini Başlat ve Malzemeleri Transfer Et
 Materials to Transfer,Transfer Edilecek Malzemeler
 Start & Transfer,Başlat ve Transfer Et
@@ -4476,3 +4475,85 @@ Search an asset…,Varlık ara…
 Add an asset…,Varlık ekle…
 PI & exporter,PI ve ihracatçı
 Invoiced %,Faturalanan %
+A cancelled Commercial Invoice cannot be invoiced.,İptal edilmiş ticari fatura faturalandırılamaz.
+Added {count} items from category.,Kategoriden {count} kalem eklendi.
+CI kg,Fatura kg
+CI line total {0} does not match agreed_total {1}; resolve before invoicing.,"Fatura satır toplamı {0}, mutabık kalınan tutar {1} ile uyuşmuyor; faturalamadan önce düzeltin."
+Cannot move a PI group to another company.,PI grubu başka bir şirkete taşınamaz.
+Cannot move a proforma to another company.,Proforma başka bir şirkete taşınamaz.
+Cannot set vendor restriction to {0}: PI(s) {1} in this group belong to a different supplier. Unlink them first.,Tedarikçi kısıtı {0} olarak ayarlanamaz: bu gruptaki {1} PI farklı bir tedarikçiye ait. Önce bağlantılarını kaldırın.
+Cannot verify all container packing lists because the scope changed or permissions are incomplete. Please try again.,Tüm konteyner çeki listeleri doğrulanamadı: kapsam değişti veya yetkiler eksik. Lütfen tekrar deneyin.
+Carrier & Driver,Taşıyıcı ve sürücü
+Category name is required.,Kategori adı zorunludur.
+Commercial Invoice belongs to a different company.,Ticari fatura başka bir şirkete ait.
+Commercial invoice is unavailable. Reload and try again.,Ticari fatura kullanılamıyor. Sayfayı yenileyip tekrar deneyin.
+Complete every container packing list before port-transfer readiness.,Liman teslim hazırlığından önce her konteynerin çeki listesini tamamlayın.
+Container packing lists must be complete and reconciled before the first Truck Receipt can be submitted.,İlk araç kabulü onaylanmadan önce konteyner çeki listeleri eksiksiz ve mutabık olmalıdır.
+Could not create the GRN.,Mal kabul belgesi oluşturulamadı.
+Could not load category items.,Kategori kalemleri yüklenemedi.
+Could not refresh expected quantities.,Beklenen miktarlar yenilenemedi.
+Create GRN,Mal kabul belgesi oluştur
+Difference kg,Fark kg
+Documents belong to a different company.,Belgeler başka bir şirkete ait.
+ERPNext System Reference ID,Sistem referans kimliği
+Estimate from the HS rate table; the cleared GTD remains authoritative.,GTİP oran tablosuna göre tahmin; onaylı gümrük beyannamesi esas alınır.
+Expected quantities are locked after the first submitted Truck Receipt.,Beklenen miktarlar ilk onaylanan araç kabulünden sonra kilitlenir.
+Expected quantities locked,Beklenen miktarlar kilitli
+Expected quantities refreshed from container packing lists.,Beklenen miktarlar konteyner çeki listelerinden yenilendi.
+GRN rows must be changed through GRN Checklist.,Kabul satırları yalnızca kabul kontrol listesi üzerinden değiştirilir.
+GRN snapshot is locked against direct edits; snapshot-managed fields can only be changed by the receipt workflow.,Kabul anlık görüntüsü doğrudan düzenlemeye kapalıdır; yönetilen alanlar yalnızca kabul akışıyla değişir.
+Header Details,Başlık bilgileri
+Import Container company must match Commercial Invoice company.,"Konteyner şirketi, ticari fatura şirketiyle aynı olmalıdır."
+Linked Containers,Bağlı konteynerler
+Linked Trucks / Land Transport,Bağlı araçlar / kara taşımacılığı
+Loading logistics readiness…,Lojistik hazırlık yükleniyor…
+Logistics readiness,Lojistik hazırlık
+N/A,—
+No packing-list items yet.,Henüz çeki listesi kalemi yok.
+Not eligible for this group (vendor restriction or already in another group): {0},Bu gruba uygun değil (tedarikçi kısıtı veya başka bir grupta): {0}
+Open GRN,Mal kabul belgesini aç
+Original GTD {0} not found.,Orijinal gümrük beyannamesi {0} bulunamadı.
+PI Group does not belong to this company.,PI grubu bu şirkete ait değil.
+Packed kg,Paketlenen kg
+Packing quantities are reconciled and ready for port transfer.,Paketleme miktarları mutabık ve liman teslimine hazır.
+Packing readiness could not be calculated — you may not have access to every container on this invoice.,Paketleme hazırlığı hesaplanamadı — bu faturadaki tüm konteynerlere erişiminiz olmayabilir.
+Packing source is locked by GRN {0}.,Paketleme kaynağı {0} mal kabul belgesiyle kilitlenmiş.
+Packing-list quantities are locked by GRN {0} after the first submitted Truck Receipt.,"Çeki listesi miktarları, ilk onaylanan araç kabulünden sonra {0} mal kabul belgesiyle kilitlenmiştir."
+Packing-list rows must be changed through Import Container.,Çeki listesi satırları yalnızca konteyner üzerinden değiştirilir.
+"Preview only. Book the capitalized delta via an additional Landed Cost Voucher, the VAT delta to Input VAT, and any penalty to P&L.","Yalnızca önizleme. Aktifleştirilecek farkı ek bir maliyet dağıtım fişiyle, KDV farkını indirilecek KDV'ye, cezaları ise kâr/zarara işleyin."
+Proforma and Commercial Invoice have different suppliers.,Proforma ile ticari faturanın tedarikçileri farklı.
+Proforma {0} cannot be superseded from status {1}.,{0} proforması {1} durumundayken değiştirilemez.
+Purchase Invoice total {0} drifted from agreed_total {1}; not created.,"Alış faturası tutarı {0}, mutabık kalınan {1} tutarından sapıyor; oluşturulmadı."
+Refresh expected quantities,Beklenen miktarları yenile
+Resolve CI versus packed quantity differences before port-transfer readiness.,Liman teslim hazırlığından önce fatura ile paketlenen miktar farklarını giderin.
+Select product,Ürün seçin
+Status Pipeline,Durum akışı
+The Commercial Invoice has no invoiceable item lines.,Ticari faturada faturalanabilir kalem yok.
+The Commercial Invoice has no supplier.,Ticari faturada tedarikçi belirtilmemiş.
+The GRN expected snapshot is locked because receiving has started.,Mal kabulü başladığı için beklenen miktar anlık görüntüsü kilitli.
+The inventory module is not enabled for this company.,Bu şirket için stok modülü etkin değil.
+This declaration is not an amendment (no original GTD linked).,Bu beyanname bir düzeltme değil (orijinal beyanname bağlı değil).
+Total Weight (kg),Toplam ağırlık (kg)
+Truck / Plate,Araç / plaka
+Truck Commercial Invoice must match GRN Commercial Invoice.,"Araç ticari faturası, kabul belgesi faturasıyla aynı olmalıdır."
+Truck Receipt company must match GRN company.,"Araç kabul şirketi, kabul belgesi şirketiyle aynı olmalıdır."
+Truck company must match GRN company.,"Araç şirketi, kabul belgesi şirketiyle aynı olmalıdır."
+Unknown Import PI Group: {0},Bilinmeyen PI grubu: {0}
+Unknown Proforma Invoice(s): {0},Bilinmeyen proforma(lar): {0}
+Unknown Proforma Invoice: {0},Bilinmeyen proforma: {0}
+Unknown supplier: {0},Bilinmeyen tedarikçi: {0}
+Unknown vendor category: {0},Bilinmeyen tedarikçi kategorisi: {0}
+Vendor Category,Tedarikçi kategorisi
+You are not permitted to access inventory.,Stok erişim yetkiniz yok.
+e.g. MH/3054/2025-26,örn. MH/3054/2025-26
+{ready} of {total} containers have packing-list rows.,{total} konteynerin {ready} tanesinde çeki listesi satırı var.
+Commission,Komisyon
+Commission kept,Alıkonan komisyon
+Corridor,Koridor
+Dispatched,Sevk edildi
+Enter amount and commission to see preview.,Önizleme için tutar ve komisyon girin.
+Loaded,Yüklendi
+Open Desk,Desk'i aç
+Reconciled,Mutabık
+Returned,İade edildi
+Select corridor…,Koridor seçin…

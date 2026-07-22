@@ -440,7 +440,7 @@ def get_commercial_invoice(name: str):
             fields=["name", "certificate_number", "status", "expiry_date"],
             order_by="creation asc",
         ),
-        "packing_summary": packing_service.summary_for_ci(name, doc.company),
+        "packing_summary": _safe_packing_summary(name, doc.company),
         "grn": grn_rows[0] if grn_rows else None,
         "customs_fee_breakdown": _safe_customs_breakdown(name),
     }
@@ -462,6 +462,34 @@ def _safe_customs_breakdown(name: str):
         return compute_customs_fee(name)
     except Exception:
         return None
+
+
+def _safe_packing_summary(name: str, company: str):
+    """Best-effort container-packing summary for the CI detail payload.
+
+    summary_for_ci() deliberately throws when the caller cannot see every
+    container on the CI (partial permissions) or when the container scope
+    shifts mid-read. That guard is correct for the write paths that freeze the
+    GRN snapshot, but on a read-only detail page it would take down the entire
+    CI screen. Degrade to an explicit "unavailable" marker instead so the rest
+    of the payload still renders — same contract as _safe_customs_breakdown.
+    """
+    try:
+        return packing_service.summary_for_ci(name, company)
+    except Exception:
+        frappe.log_error(
+            title="CI packing summary unavailable",
+            message=frappe.get_traceback(),
+        )
+        # Keep the full key contract — the SPA reads .reconciliation.length and
+        # .containers_with_items unguarded.
+        return {
+            "status": "Unavailable",
+            "container_count": 0,
+            "containers_with_items": 0,
+            "expected_items": [],
+            "reconciliation": [],
+        }
 
 
 _CI_HEADER_FIELDS = (
