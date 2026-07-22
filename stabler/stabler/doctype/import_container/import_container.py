@@ -13,6 +13,7 @@ stabler/stabler/imports_module/hooks.py:on_container_update.
 
 import frappe
 from frappe.model.document import Document
+from frappe.utils import cint, flt
 
 from stabler.stabler.imports_module.status_pipeline import assert_transition
 
@@ -32,9 +33,37 @@ _ALLOWED_TRANSITIONS = {
 
 class ImportContainer(Document):
 	def validate(self) -> None:
-		if self.is_new():
-			return
-		previous_status = frappe.db.get_value("Import Container", self.name, "status")
-		assert_transition(
-			"Import Container", previous_status, self.status, _ALLOWED_TRANSITIONS, self
+		if not self.is_new():
+			previous_status = frappe.db.get_value("Import Container", self.name, "status")
+			assert_transition(
+				"Import Container", previous_status, self.status, _ALLOWED_TRANSITIONS, self
+			)
+		self._check_packing_snapshot_lock()
+
+	def _packing_signature(self, rows) -> tuple:
+		return tuple(
+			sorted(
+				(row.item_code, cint(row.box_qty), flt(row.box_kg), flt(row.total_kg))
+				for row in rows or []
+			)
 		)
+
+	def _check_packing_snapshot_lock(self) -> None:
+		before = self.get_doc_before_save()
+		if not before or self._packing_signature(before.items) == self._packing_signature(
+			self.items
+		):
+			return
+		grn = frappe.db.get_value(
+			"GRN Checklist",
+			{"commercial_invoice": self.commercial_invoice},
+			["name", "expected_snapshot_locked"],
+			as_dict=True,
+		)
+		if grn and grn.expected_snapshot_locked:
+			frappe.throw(
+				frappe._(
+					"Packing-list quantities are locked by GRN {0} after the first submitted "
+					"Truck Receipt."
+				).format(grn.name)
+			)

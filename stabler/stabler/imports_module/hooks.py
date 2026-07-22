@@ -19,7 +19,7 @@ they can be unit-tested without a bench.
 """
 
 import frappe
-from frappe.utils import cint, flt, getdate, today
+from frappe.utils import cint, flt, getdate, now_datetime, today
 
 from stabler.stabler.imports_module import customs_fee_math, lcv_math, packing_service, receipt_math
 from stabler.stabler.imports_module import payment_math as pm
@@ -407,15 +407,35 @@ def truck_receipt_on_submit(doc, method=None):
 
 	Synchronous (inside the submit transaction) so a failed Purchase Receipt
 	rolls the Truck Receipt submit back atomically:
-	  1. create + submit the partial Purchase Receipt (the stock event),
-	  2. recompute the parent GRN Checklist from all submitted receipts,
-	  3. advance the Import Truck to GRN_CREATED where the transition is legal.
+	  1. freeze the reconciled packing snapshot,
+	  2. create + submit the partial Purchase Receipt (the stock event),
+	  3. recompute the parent GRN Checklist from all submitted receipts,
+	  4. advance the Import Truck to GRN_CREATED where the transition is legal.
 	"""
 	if not _should_run(doc):
 		return
+	_lock_grn_expected_snapshot(doc.grn_checklist)
 	_create_pr_for_truck_receipt(doc)
 	recompute_grn_from_receipts(doc.grn_checklist)
 	advance_truck_after_receipt(doc.truck)
+
+
+def _lock_grn_expected_snapshot(grn_name: str) -> None:
+	grn = frappe.get_doc("GRN Checklist", grn_name)
+	if grn.expected_snapshot_locked:
+		return
+	summary = packing_service.summary_for_ci(grn.commercial_invoice, grn.company)
+	if summary["status"] != "Ready":
+		frappe.throw(
+			frappe._(
+				"Container packing lists must be complete and reconciled before the first "
+				"Truck Receipt can be submitted."
+			)
+		)
+	packing_service.replace_grn_expected_rows(grn, summary["expected_items"])
+	grn.expected_snapshot_locked = 1
+	grn.expected_snapshot_locked_at = now_datetime()
+	grn.save(ignore_permissions=True)
 
 
 def truck_receipt_on_cancel(doc, method=None):

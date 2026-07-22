@@ -318,6 +318,80 @@ class CIPackingGrnIntegrationTest(FrappeTestCase):
 
 		self.assertEqual(result, {"name": winner.name, "created": False})
 
+	def test_snapshot_lock_is_persisted(self):
+		from stabler.stabler.imports_module import hooks
+
+		grn_name = imports.create_grn_for_ci(self.ci.name)["name"]
+		hooks._lock_grn_expected_snapshot(grn_name)
+		grn = frappe.get_doc("GRN Checklist", grn_name)
+
+		self.assertEqual(grn.expected_snapshot_locked, 1)
+		self.assertIsNotNone(grn.expected_snapshot_locked_at)
+
+	def test_snapshot_lock_rejects_incomplete_packing(self):
+		from stabler.stabler.imports_module import hooks
+
+		self.container_2.set("items", [])
+		self.container_2.save(ignore_permissions=True)
+		grn_name = imports.create_grn_for_ci(self.ci.name)["name"]
+
+		with self.assertRaisesRegex(
+			frappe.ValidationError,
+			"packing lists must be complete and reconciled",
+		):
+			hooks._lock_grn_expected_snapshot(grn_name)
+
+	def test_locked_snapshot_blocks_item_change_but_allows_seal_change(self):
+		from stabler.stabler.imports_module import hooks
+
+		grn_name = imports.create_grn_for_ci(self.ci.name)["name"]
+		hooks._lock_grn_expected_snapshot(grn_name)
+
+		self.container_1.seal_number = "NEW-SEAL"
+		self.container_1.save(ignore_permissions=True)
+		self.container_1.items[0].total_kg = 999
+
+		with self.assertRaisesRegex(
+			frappe.ValidationError,
+			"Packing-list quantities are locked",
+		):
+			self.container_1.save(ignore_permissions=True)
+
+	def test_submit_hook_locks_before_creating_purchase_receipt(self):
+		from stabler.stabler.imports_module import hooks
+
+		grn_name = imports.create_grn_for_ci(self.ci.name)["name"]
+		truck = frappe.new_doc("Import Truck")
+		truck.update({"company": self.company, "commercial_invoice": self.ci.name})
+		truck.insert(ignore_permissions=True)
+		receipt = frappe.new_doc("Truck Receipt")
+		receipt.update(
+			{
+				"company": self.company,
+				"grn_checklist": grn_name,
+				"truck": truck.name,
+				"arrival_date": frappe.utils.today(),
+			}
+		)
+		receipt.insert(ignore_permissions=True)
+
+		def assert_snapshot_is_locked(_receipt):
+			self.assertEqual(
+				frappe.db.get_value(
+					"GRN Checklist", grn_name, "expected_snapshot_locked"
+				),
+				1,
+			)
+
+		with patch.object(
+			hooks,
+			"_create_pr_for_truck_receipt",
+			side_effect=assert_snapshot_is_locked,
+		) as create_pr:
+			receipt.submit()
+
+		create_pr.assert_called_once_with(receipt)
+
 
 def _frappe_calls(function) -> set[tuple[str, str]]:
 	tree = ast.parse(textwrap.dedent(inspect.getsource(function)))
