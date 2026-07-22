@@ -23,15 +23,17 @@ class _FakeDB:
 		*,
 		creations: dict[str, str] | None = None,
 		locked_intakes: dict[str, dict] | None = None,
+		users: dict[str, str] | None = None,
 	):
 		self.intakes = intakes or {}
 		self.creations = creations or {}
 		self.locked_intakes = locked_intakes or {}
+		self.users = users or {}
 		self.writes: list[tuple[str, str, str]] = []
 		self.lock_reads: list[tuple[str, object]] = []
 
 	def exists(self, doctype, name):
-		return doctype == "CRM Deal" and name in self.intakes
+		return (doctype == "CRM Deal" and name in self.intakes) or (doctype == "User" and name in self.users)
 
 	def get_value(self, doctype, name, field):
 		if doctype == "CRM Deal" and field == "company":
@@ -42,6 +44,8 @@ class _FakeDB:
 			return json.dumps(self.intakes.get(name, {}))
 		if doctype == "Company" and field == "default_currency":
 			return "UZS"
+		if doctype == "User" and field == "full_name":
+			return self.users.get(name)
 		return None
 
 	def has_column(self, doctype, field):
@@ -188,6 +192,8 @@ class TestTenderDashboardBehaviour(unittest.TestCase):
 			"DEAL-1": {
 				"assigned_to": "owner@example.com",
 				"assigned_to_name": "Original Owner",
+				"assigned_at": "2026-07-01 08:00:00",
+				"assigned_by": "director@example.com",
 				"notes": "before",
 			},
 		})
@@ -198,12 +204,20 @@ class TestTenderDashboardBehaviour(unittest.TestCase):
 			{
 				"assigned_to": "attacker@example.com",
 				"assigned_to_name": "Spoofed Owner",
+				"assigned_at": "2099-01-01 00:00:00",
+				"assigned_by": "attacker@example.com",
+				"ready_at": "2099-01-01 00:00:00",
+				"ready_by": "attacker@example.com",
 				"notes": "after",
 			},
 		)
 
 		self.assertEqual(payload["intake"]["assigned_to"], "owner@example.com")
 		self.assertEqual(payload["intake"]["assigned_to_name"], "Original Owner")
+		self.assertEqual(payload["intake"]["assigned_at"], "2026-07-01 08:00:00")
+		self.assertEqual(payload["intake"]["assigned_by"], "director@example.com")
+		self.assertEqual(payload["intake"]["ready_at"], "")
+		self.assertEqual(payload["intake"]["ready_by"], "")
 		self.assertEqual(payload["intake"]["notes"], "after")
 
 	def test_concurrent_intake_save_preserves_a_submission_that_won_the_row_lock(self):
@@ -235,10 +249,46 @@ class TestTenderDashboardBehaviour(unittest.TestCase):
 		self.assertEqual(payload["assigned_to"], "")
 		self.assertEqual(db.intakes["DEAL-1"]["assigned_to"], "")
 		self.assertEqual(db.intakes["DEAL-1"]["assigned_to_name"], "")
+		self.assertEqual(db.intakes["DEAL-1"]["assigned_at"], "")
+		self.assertEqual(db.intakes["DEAL-1"]["assigned_by"], "")
+
+	def test_assignment_transition_uses_server_time_and_current_director(self):
+		db = _FakeDB(
+			{
+				"DEAL-OLD": {
+					"assigned_to": "previous@example.com",
+					"assigned_to_name": "Previous Manager",
+					"assigned_at": "2026-05-01 08:00:00",
+					"assigned_by": "previous-director@example.com",
+				},
+			},
+			creations={"DEAL-OLD": "2026-01-10"},
+			users={"source@example.com": "Source Manager"},
+		)
+		tender = _load_tender(db, ["Stabler Tender Director"], user="director@example.com")
+
+		assigned = tender.assign_tender("DEAL-OLD", "source@example.com")
+
+		self.assertEqual(assigned["assigned_at"], "2026-07-22 09:00:00")
+		self.assertEqual(assigned["assigned_by"], "director@example.com")
+		self.assertEqual(db.intakes["DEAL-OLD"]["assigned_at"], "2026-07-22 09:00:00")
+
+		tender = _load_tender(db, ["Sales User"], user="source@example.com")
+		with patch.object(tender, "_tender_deal_names", return_value={"DEAL-OLD"}):
+			payload = tender.tender_dashboard("Test Company", "2026-07-01", "2026-07-31")
+		self.assertEqual(payload["acquisition"]["identified"], 0)
+		self.assertEqual(payload["my_work"]["assigned"], 1)
+		evidence = tender._tender_filter_evidence(db.intakes["DEAL-OLD"], "2026-01-10", "good")
+		self.assertEqual(evidence["event_dates"]["assigned"], "2026-07-22 09:00:00")
 
 	def test_sourcing_dashboard_excludes_unassigned_deals(self):
 		db = _FakeDB({
-			"DEAL-MINE": {"assigned_to": "source@example.com", "go_no_go": "go"},
+			"DEAL-MINE": {
+				"assigned_to": "source@example.com",
+				"assigned_at": "2026-07-03 09:00:00",
+				"assigned_by": "director@example.com",
+				"go_no_go": "go",
+			},
 			"DEAL-OTHER": {"assigned_to": "other@example.com", "go_no_go": "go"},
 		})
 		tender = _load_tender(db, ["Sales User"])
@@ -287,6 +337,8 @@ class TestTenderDashboardBehaviour(unittest.TestCase):
 					"assigned_to": "source@example.com",
 					"go_no_go": "go",
 					"go_no_go_at": "2026-06-04 10:00:00",
+					"ready_at": "2026-06-04 10:00:00",
+					"ready_by": "source@example.com",
 					"submitted_at": "2026-07-08 11:00:00",
 					"submitted_by": "source@example.com",
 					"result": "won",
@@ -311,6 +363,72 @@ class TestTenderDashboardBehaviour(unittest.TestCase):
 		self.assertEqual((july["identified"], july["go"], july["won"]), (0, 0, 0))
 		self.assertEqual(august["won"], 1)
 		self.assertEqual((august["identified"], august["go"], august["submitted"]), (0, 0, 0))
+
+	def test_ready_transition_occurs_when_required_documents_complete(self):
+		db = _FakeDB({
+			"DEAL-READY": {
+				"go_no_go": "go",
+				"go_no_go_at": "2026-06-04 10:00:00",
+				"go_no_go_by": "source@example.com",
+				"assigned_to": "source@example.com",
+				"documents": [{"label": "Bid security", "required": 1, "done": 0, "date": ""}],
+			},
+		})
+		tender = _load_tender(db, ["Sales User"])
+
+		completed = tender.save_deal_intake("DEAL-READY", {
+			"go_no_go": "go",
+			"documents": [{"label": "Bid security", "required": 1, "done": 1, "date": "2026-07-22"}],
+		})
+
+		self.assertEqual(completed["intake"]["go_no_go_at"], "2026-06-04 10:00:00")
+		self.assertEqual(completed["intake"]["ready_at"], "2026-07-22 09:00:00")
+		self.assertEqual(completed["intake"]["ready_by"], "source@example.com")
+		with patch.object(tender, "_tender_deal_names", return_value={"DEAL-READY"}):
+			june = tender.tender_dashboard("Test Company", "2026-06-01", "2026-06-30")["acquisition"]
+			july = tender.tender_dashboard("Test Company", "2026-07-01", "2026-07-31")["acquisition"]
+		self.assertEqual((june["go"], june["ready"]), (1, 0))
+		self.assertEqual((july["go"], july["ready"]), (0, 1))
+
+	def test_ready_regression_clears_audit_and_recompletion_records_a_new_transition(self):
+		db = _FakeDB({
+			"DEAL-READY": {
+				"go_no_go": "go",
+				"go_no_go_at": "2026-06-04 10:00:00",
+				"ready_at": "2026-07-01 08:00:00",
+				"ready_by": "first@example.com",
+				"documents": [{"label": "Bid security", "required": 1, "done": 1, "date": ""}],
+			},
+		})
+		tender = _load_tender(db, ["Sales User"], user="second@example.com")
+
+		regressed = tender.save_deal_intake("DEAL-READY", {
+			"go_no_go": "go",
+			"documents": [{"label": "Bid security", "required": 1, "done": 0, "date": ""}],
+		})
+		self.assertEqual((regressed["intake"]["ready_at"], regressed["intake"]["ready_by"]), ("", ""))
+
+		recompleted = tender.save_deal_intake("DEAL-READY", {
+			"go_no_go": "go",
+			"documents": [{"label": "Bid security", "required": 1, "done": 1, "date": ""}],
+		})
+		self.assertEqual(recompleted["intake"]["ready_at"], "2026-07-22 09:00:00")
+		self.assertEqual(recompleted["intake"]["ready_by"], "second@example.com")
+
+	def test_ready_filter_requires_complete_server_audit_evidence(self):
+		db = _FakeDB({"DEAL-READY": {}})
+		tender = _load_tender(db, ["Sales User"])
+		intake = {
+			"go_no_go": "go",
+			"ready_at": "2099-01-01 00:00:00",
+			"ready_by": "",
+			"documents": [{"label": "Bid security", "required": 1, "done": 1}],
+		}
+
+		evidence = tender._tender_filter_evidence(intake, "2026-01-10", "good")
+
+		self.assertFalse(evidence["lifecycle"]["ready"])
+		self.assertEqual(evidence["event_dates"]["ready"], "")
 
 	def test_execution_excludes_closed_and_cancelled_sales_orders(self):
 		db = _FakeDB({"DEAL-MINE": {"assigned_to": "source@example.com"}})

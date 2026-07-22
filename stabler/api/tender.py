@@ -987,7 +987,7 @@ def _clean_intake(data: dict, prior: dict | None = None, audit_actor: str | None
 		out[key] = str(prior.get(key) or "")[:limit]
 	# Assignment defines the sourcing visibility boundary. It is changed only by
 	# assign_tender(); ordinary intake payloads may neither spoof nor clear it.
-	for key, limit in (("assigned_to", 140), ("assigned_to_name", 200)):
+	for key, limit in (("assigned_to", 140), ("assigned_to_name", 200), ("assigned_at", 40), ("assigned_by", 140)):
 		out[key] = str(prior.get(key) or "")[:limit]
 	# document checklist (ГТД, certificate, acceptance act, contract, invoice …)
 	out["documents"] = [
@@ -999,6 +999,21 @@ def _clean_intake(data: dict, prior: dict | None = None, audit_actor: str | None
 		}
 		for d in (data.get("documents") or []) if isinstance(d, dict) and str(d.get("label") or "").strip()
 	][:40]
+	prior_ready = prior.get("go_no_go") == "go" and not any(
+		d.get("required") and not d.get("done") for d in (prior.get("documents") or [])
+	)
+	current_ready = out["go_no_go"] == "go" and not any(
+		d.get("required") and not d.get("done") for d in out["documents"]
+	)
+	if current_ready and prior_ready:
+		out["ready_at"] = str(prior.get("ready_at") or "")[:40]
+		out["ready_by"] = str(prior.get("ready_by") or "")[:140]
+	elif current_ready:
+		out["ready_at"] = now()
+		out["ready_by"] = actor
+	else:
+		out["ready_at"] = ""
+		out["ready_by"] = ""
 	return out
 
 
@@ -1323,8 +1338,18 @@ def assign_tender(deal: str, user: str = "") -> dict:
 	clean = _clean_intake(intake, intake)
 	clean["assigned_to"] = user or ""
 	clean["assigned_to_name"] = name
+	if user:
+		if user != intake.get("assigned_to") or not (intake.get("assigned_at") and intake.get("assigned_by")):
+			clean["assigned_at"] = now()
+			clean["assigned_by"] = frappe.session.user
+	else:
+		clean["assigned_at"] = ""
+		clean["assigned_by"] = ""
 	frappe.db.set_value("CRM Deal", deal, "custom_tender_intake", json.dumps(clean, ensure_ascii=False), update_modified=False)
-	return {"deal": deal, "assigned_to": user or "", "assigned_to_name": name}
+	return {
+		"deal": deal, "assigned_to": user or "", "assigned_to_name": name,
+		"assigned_at": clean["assigned_at"], "assigned_by": clean["assigned_by"],
+	}
 
 
 def _tender_deal_names(company: str) -> set[str]:
@@ -1368,7 +1393,7 @@ def _tender_filter_evidence(intake: dict, creation, risk: str) -> dict:
 			"identified": True,
 			"decided": decision in ("go", "no_go"),
 			"go": decision == "go",
-			"ready": decision == "go" and not _docs_summary(intake)["missing"],
+			"ready": _has_ready_evidence(intake),
 			"submitted": verified,
 			"assigned": (intake.get("assigned_to") or "") == frappe.session.user,
 			"unverified_history": bool(intake.get("result") and not verified),
@@ -1591,7 +1616,7 @@ def _tender_event_dates(intake: dict, creation) -> dict[str, str]:
 	result_at = str(intake.get("result_at") or "")
 	decision = intake.get("go_no_go")
 	result = intake.get("result")
-	ready_at = decision_at if decision == "go" and not _docs_summary(intake)["missing"] else ""
+	ready_at = str(intake.get("ready_at") or "") if _has_ready_evidence(intake) else ""
 	event_dates = {
 		"identified": str(creation or ""),
 		"decided": decision_at if decision in ("go", "no_go") else "",
@@ -1605,15 +1630,23 @@ def _tender_event_dates(intake: dict, creation) -> dict[str, str]:
 		"pending": result_at if result == "pending" and _has_submission_evidence(intake) else "",
 		"unverified_history": result_at if result and not _has_submission_evidence(intake) else "",
 	}
-	# No assignment transition audit exists yet; creation is the only truthful
-	# period evidence available for the current assigned-work drill-down.
-	event_dates["assigned"] = event_dates["identified"]
+	event_dates["assigned"] = str(intake.get("assigned_at") or "") if intake.get("assigned_to") else ""
 	return event_dates
 
 
 def _has_submission_evidence(intake: dict) -> bool:
 	"""A result is not proof of participation; both server audit fields are."""
 	return bool(intake.get("submitted_at") and intake.get("submitted_by"))
+
+
+def _has_ready_evidence(intake: dict) -> bool:
+	"""Readiness is current completeness backed by a server transition audit."""
+	return bool(
+		intake.get("go_no_go") == "go"
+		and not _docs_summary(intake)["missing"]
+		and intake.get("ready_at")
+		and intake.get("ready_by")
+	)
 
 
 def _can_view_tender_finance(user: str | None = None) -> bool:
@@ -1699,7 +1732,7 @@ def tender_dashboard(company: str, from_date=None, to_date=None) -> dict:
 			acquisition[result] += 1
 		elif result and not verified and _in_dashboard_period(event_dates["unverified_history"], start, end):
 			acquisition["unverified_history"] += 1
-		if (intake.get("assigned_to") or "") == user and identified_in_period:
+		if (intake.get("assigned_to") or "") == user and _in_dashboard_period(event_dates["assigned"], start, end):
 			my_assigned += 1
 		if any(_in_dashboard_period(value, start, end) for value in event_dates.values()):
 			for item in _intake_attention(deal, intake, today_d):

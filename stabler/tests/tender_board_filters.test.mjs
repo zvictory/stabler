@@ -19,7 +19,7 @@ const lifecycleRows = [
 				identified: "2026-05-10",
 				decided: "2026-06-02",
 				go: "2026-06-02",
-				ready: "2026-06-02",
+				ready: "2026-07-05",
 				submitted: "2026-07-10",
 				won: "2026-08-12",
 				result: "2026-08-12",
@@ -32,7 +32,8 @@ const lifecycleRows = [
 	{
 		deal: "TENDER-OLD",
 		event_date: "2026-06-30",
-		lifecycle: { identified: true, decided: true, go: true, ready: false, submitted: false, assigned: false },
+		event_dates: { identified: "2026-06-30", assigned: "2026-07-18" },
+		lifecycle: { identified: true, decided: true, go: true, ready: false, submitted: false, assigned: true },
 		status: "pending",
 		risk: "warn",
 		due: "soon",
@@ -41,8 +42,13 @@ const lifecycleRows = [
 
 assert.deepEqual(
 	filterTenderRows(lifecycleRows, { stage: "ready", period: "2026-07" }).map((row) => row.deal),
-	[],
-	"ready must use its June decision date, not the later submission/result date",
+	["TENDER-READY"],
+	"ready must use its July completion transition, not the June Go decision",
+);
+assert.deepEqual(
+	filterTenderRows(lifecycleRows, { stage: "assigned", period: "2026-07" }).map((row) => row.deal),
+	["TENDER-OLD"],
+	"an old Deal assigned in July must appear in the July assigned drill-down",
 );
 assert.deepEqual(
 	filterTenderRows(lifecycleRows, { stage: "submitted", period: "2026-07" }).map((row) => row.deal),
