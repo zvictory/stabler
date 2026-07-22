@@ -1356,6 +1356,8 @@ def _tender_deal_names(company: str) -> set[str]:
 	"""All CRM Deals that are tenders for this company: any tagged SO/PO/quotation,
 	plus deals carrying an intake or pricing plan."""
 	names: set[str] = set()
+	if not frappe.db.exists("DocType", "CRM Deal"):
+		return names
 	for dt in ("Sales Order", "Purchase Order", "Supplier Quotation"):
 		if frappe.db.has_column(dt, "custom_crm_deal"):
 			for r in frappe.get_list(

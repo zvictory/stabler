@@ -123,6 +123,19 @@ def _load_tender(db: _FakeDB, roles: list[str], user: str = "source@example.com"
 
 
 class TestTenderDashboardBehaviour(unittest.TestCase):
+	def test_missing_crm_doctype_returns_no_tender_candidates(self):
+		db = _FakeDB()
+		tender = _load_tender(db, ["Sales Manager"])
+		original_has_column = db.has_column
+
+		def has_column(doctype, field):
+			if doctype == "CRM Deal":
+				raise RuntimeError("CRM Deal metadata is unavailable")
+			return original_has_column(doctype, field)
+
+		with patch.object(db, "has_column", side_effect=has_column):
+			self.assertEqual(tender._tender_deal_names("Test Company"), set())
+
 	def test_tender_role_without_finance_or_oversight_omits_finance(self):
 		db = _FakeDB({"DEAL-1": {}})
 		tender = _load_tender(db, ["Stabler Declarant"])
