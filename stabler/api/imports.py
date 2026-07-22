@@ -31,9 +31,10 @@ from stabler.api import _fx_reval
 from stabler.api import _kts_amendment
 from stabler.api import _imports_rules as rules
 from stabler.api import _proforma
-from stabler.api._common import _assert_can_read, _require_company
+from stabler.api._common import _assert_can_read, _assert_can_write, _require_company
 from stabler.api.organization import _ADMIN_ROLES, _MODULE_ROLES
 from stabler.api.permissions import cost_visible_for
+from stabler.stabler.imports_module import packing_service
 from stabler.stabler.doctype.stabler_settings.stabler_settings import module_map_for
 
 _IMPORTS_ROLES = tuple(_MODULE_ROLES["imports"])
@@ -338,6 +339,9 @@ def get_commercial_invoice(name: str):
     _assert_imports_access(_company_of("Commercial Invoice", name))
     _assert_can_read("Commercial Invoice", name)
     doc = frappe.get_doc("Commercial Invoice", name)
+    grn_fields = ["name", "docstatus", "receipt_status"]
+    if frappe.db.has_column("GRN Checklist", "expected_snapshot_locked"):
+        grn_fields.append("expected_snapshot_locked")
 
     payload = {
         "name": doc.name,
@@ -429,6 +433,13 @@ def get_commercial_invoice(name: str):
             filters={"commercial_invoice": name},
             fields=["name", "certificate_number", "status", "expiry_date"],
             order_by="creation asc",
+        ),
+        "packing_summary": packing_service.summary_for_ci(name, doc.company),
+        "grn": frappe.db.get_value(
+            "GRN Checklist",
+            {"commercial_invoice": name, "company": doc.company},
+            grn_fields,
+            as_dict=True,
         ),
         "customs_fee_breakdown": _safe_customs_breakdown(name),
     }

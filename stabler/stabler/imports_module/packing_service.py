@@ -1,0 +1,56 @@
+from __future__ import annotations
+
+import frappe
+
+from stabler.stabler.imports_module import packing_math
+
+
+def summary_for_ci(commercial_invoice: str, company: str) -> dict:
+	containers = frappe.get_all(
+		"Import Container",
+		filters={"commercial_invoice": commercial_invoice, "company": company},
+		fields=["name", "container_number"],
+		order_by="creation asc",
+	)
+	container_names = [row.name for row in containers]
+	rows = (
+		frappe.get_all(
+			"Import Container Item",
+			filters={
+				"parent": ["in", container_names],
+				"parenttype": "Import Container",
+				"parentfield": "items",
+			},
+			fields=[
+				"parent as container",
+				"item_code",
+				"item_name",
+				"box_qty",
+				"box_kg",
+				"total_kg",
+			],
+		)
+		if container_names
+		else []
+	)
+	expected = packing_math.aggregate_container_items(rows)
+	ci_items = frappe.get_all(
+		"Commercial Invoice Item",
+		filters={
+			"parent": commercial_invoice,
+			"parenttype": "Commercial Invoice",
+			"parentfield": "items",
+		},
+		fields=["item as item_code", "qty"],
+	)
+	reconciliation = packing_math.reconcile_ci_items(ci_items, expected)
+	containers_with_rows = {row.container for row in rows}
+	return {
+		"status": packing_math.packing_readiness(
+			container_names, containers_with_rows, reconciliation
+		),
+		"container_count": len(container_names),
+		"containers_with_items": len(containers_with_rows),
+		"expected_items": expected,
+		"reconciliation": reconciliation,
+	}
