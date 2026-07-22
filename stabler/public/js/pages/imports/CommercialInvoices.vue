@@ -109,9 +109,8 @@ function reload() {
 async function loadSuppliers() {
 	if (!activeCompany.value) return;
 	try {
-		suppliers.value = await call("stabler.api.purchasing.list_suppliers", {
+		suppliers.value = await call("stabler.api.imports.import_suppliers", {
 			company: activeCompany.value,
-			limit: 300,
 		});
 	} catch (_) {
 		suppliers.value = [];

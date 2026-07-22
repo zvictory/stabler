@@ -666,6 +666,7 @@ watch(activeCompany, loadPiGroups);
 								<!-- Vendor Category Dropdown -->
 								<select v-if="categoryOptions.length" v-model="row.category" class="form-select form-select-sm fw-semibold">
 									<option value="">— {{ t("N/A") }} —</option>
+									<option v-if="row.category && !categoryOptions.includes(row.category)" :value="row.category">{{ row.category }}</option>
 									<option v-for="cat in categoryOptions" :key="cat" :value="cat">{{ cat }}</option>
 								</select>
 								<input v-else v-model="row.category" type="text" class="form-control form-control-sm" :placeholder="t('Vendor Category')">

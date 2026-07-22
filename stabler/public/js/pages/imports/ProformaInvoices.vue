@@ -25,6 +25,25 @@ const loading = ref(false);
 const search = ref("");
 const statusFilter = ref("");
 const groupFilter = ref("");
+const supplierFilter = ref("");
+
+// Supplier filter scoped to the import (meat) vendors only — those that appear
+// on Proforma/Commercial invoices, not the whole Supplier master.
+const suppliers = ref([]);
+const supplierOptions = computed(() => [
+	{ value: "", label: t("All suppliers") },
+	...suppliers.value.map((s) => ({ value: s.name, label: s.supplier_name || s.name })),
+]);
+async function loadSuppliers() {
+	if (!activeCompany.value) return;
+	try {
+		suppliers.value = await call("stabler.api.imports.import_suppliers", {
+			company: activeCompany.value,
+		});
+	} catch (_err) {
+		suppliers.value = [];
+	}
+}
 
 const STATUSES = [
 	{ value: "", label: t("All statuses") },
@@ -111,6 +130,7 @@ async function loadStats() {
 			company: activeCompany.value,
 			status: statusFilter.value || undefined,
 			group: groupFilter.value || undefined,
+			supplier: supplierFilter.value || undefined,
 			search: search.value || undefined,
 		});
 	} catch (_err) {
@@ -130,6 +150,7 @@ async function load() {
 			status: statusFilter.value || undefined,
 			search: search.value || undefined,
 			group: groupFilter.value || undefined,
+			supplier: supplierFilter.value || undefined,
 			limit: 200,
 		});
 	} catch (err) {
@@ -142,6 +163,7 @@ async function load() {
 }
 onMounted(() => {
 	loadPiGroups();
+	loadSuppliers();
 	load();
 });
 
@@ -252,6 +274,7 @@ const canSupersede = (row) => ["DRAFT", "CONFIRMED"].includes(row.status);
 		<ListToolbar v-model="search" :placeholder="t('PI no or supplier') + '  ⌘K'" :count="rows.length" @search="load">
 			<template #filters>
 				<Select v-model="statusFilter" size="sm" style="width: 180px" :options="STATUSES" value-key="value" label-key="label" @change="load" />
+				<Select v-model="supplierFilter" size="sm" style="width: 200px" :options="supplierOptions" value-key="value" label-key="label" @change="load" />
 				<Select v-model="groupFilter" size="sm" style="width: 180px" :options="groupOptions" value-key="value" label-key="label" @change="load" />
 			</template>
 		</ListToolbar>

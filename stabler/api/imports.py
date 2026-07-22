@@ -4043,6 +4043,30 @@ def _proforma_list_filters(company: str, status: str | None, supplier: str | Non
 
 
 @frappe.whitelist()
+def import_suppliers(company: str):
+	"""Only the suppliers that actually appear on this company's Proforma or
+	Commercial Invoices (the import/meat vendors) — so the imports list filters
+	don't offer the entire Supplier master."""
+	_assert_imports_access(company)
+	return frappe.db.sql(
+		"""
+		SELECT s.name, s.supplier_name
+		FROM `tabSupplier` s
+		WHERE s.name IN (
+			SELECT supplier FROM `tabProforma Invoice`
+			WHERE company = %(c)s AND supplier IS NOT NULL AND supplier != ''
+			UNION
+			SELECT supplier FROM `tabCommercial Invoice`
+			WHERE company = %(c)s AND supplier IS NOT NULL AND supplier != ''
+		)
+		ORDER BY s.supplier_name ASC
+		""",
+		{"c": company},
+		as_dict=True,
+	)
+
+
+@frappe.whitelist()
 def list_proformas(company: str, status: str | None = None, supplier: str | None = None,
                    search: str | None = None, group: str | None = None,
                    limit: int = 100) -> list[dict]:
