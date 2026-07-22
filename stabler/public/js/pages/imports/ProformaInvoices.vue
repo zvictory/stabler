@@ -86,16 +86,110 @@ function refSub(r) {
 	// the ERPNext auto name, shown small when the original ref took its place
 	return r && r.supplier_pi_ref && r.supplier_pi_ref !== r.name ? r.name : "";
 }
-function exporterShort(r) {
+function grp(v) {
+	// Follow the user's locale like every other number on the page — a hardcoded
+	// "ru-RU" here made the table use space separators while the metric cards,
+	// which go through formatMoney(user.language), used commas.
+	return Math.round(Number(v) || 0).toLocaleString(user.value.language || "ru-RU");
+}
+/** Short vendor code — "HMA AGRO INDUSTRIES LIMITED" reads as HMA in a table. */
+function vendorCode(r) {
 	const s = (r && (r.supplier_name || r.supplier)) || "";
 	return (s.split(/\s+/)[0] || "").toUpperCase();
 }
-function grp(v) {
-	return Math.round(Number(v) || 0).toLocaleString("ru-RU");
+
+/** Days since the proforma was raised — how long this has been open. */
+function ageDays(r) {
+	if (!r.pi_date) return null;
+	const d = new Date(r.pi_date + "T00:00:00");
+	if (Number.isNaN(d.getTime())) return null;
+	return Math.max(0, Math.round((Date.now() - d.getTime()) / 86400000));
 }
-function fcl(v) {
-	return (Number(v) || 0).toFixed(1);
+
+/**
+ * Gap between the agreed price and the documented price. Always a number, so
+ * the column stays numeric — a prose "no difference" would break the scan.
+ */
+function docsGap(r) {
+	return Number(r.cash_difference) || 0;
 }
+
+function invoicedPct(r) {
+	return Math.min(100, Math.round(Number(r.invoiced_pct) || 0));
+}
+
+function invoicedBarClass(r) {
+	const p = Number(r.invoiced_pct) || 0;
+	if (p >= 100) return "bg-success";
+	if (p > 0) return "bg-warning";
+	return "bg-secondary";
+}
+
+// ---- sorting -------------------------------------------------------------
+// The proforma list loads in one page (limit 200), so sorting client-side
+// orders the whole result rather than a slice. The CI list is paginated and
+// therefore sorts on the server instead.
+const SORT_KEYS = {
+	ref: (r) => String(refMain(r)).toLowerCase(),
+	vendor: (r) => vendorCode(r),
+	pi_date: (r) => r.pi_date || "",
+	item_count: (r) => Number(r.item_count) || 0,
+	total_boxes: (r) => Number(r.total_boxes) || 0,
+	total_kg: (r) => Number(r.total_kg) || 0,
+	agreed_total: (r) => Number(r.agreed_total) || 0,
+	invoiced_pct: (r) => Number(r.invoiced_pct) || 0,
+	status: (r) => String(r.status || ""),
+};
+
+const sortBy = ref("pi_date");
+const sortDir = ref("desc");
+
+function toggleSort(key) {
+	if (!SORT_KEYS[key]) return;
+	if (sortBy.value === key) {
+		sortDir.value = sortDir.value === "asc" ? "desc" : "asc";
+	} else {
+		sortBy.value = key;
+		// Text reads best A→Z, magnitudes read best largest-first.
+		sortDir.value = key === "ref" || key === "vendor" || key === "status" ? "asc" : "desc";
+	}
+}
+
+function sortIcon(key) {
+	if (sortBy.value !== key) return "";
+	return sortDir.value === "asc" ? "ti-arrow-narrow-up" : "ti-arrow-narrow-down";
+}
+
+const sortedRows = computed(() => {
+	const get = SORT_KEYS[sortBy.value] || SORT_KEYS.pi_date;
+	const sign = sortDir.value === "asc" ? 1 : -1;
+	return [...rows.value].sort((a, b) => {
+		const x = get(a);
+		const y = get(b);
+		if (x === y) return 0;
+		return x > y ? sign : -sign;
+	});
+});
+
+/** Column totals for the loaded rows — what procurement asks for first. */
+const totals = computed(() => {
+	const acc = { count: 0, items: 0, boxes: 0, kg: 0, agreed: 0, gap: 0, vendors: new Set() };
+	for (const r of rows.value) {
+		acc.count += 1;
+		acc.items += Number(r.item_count) || 0;
+		acc.boxes += Number(r.total_boxes) || 0;
+		acc.kg += Number(r.total_kg) || 0;
+		acc.agreed += Number(r.agreed_total) || 0;
+		acc.gap += Number(r.cash_difference) || 0;
+		if (r.supplier) acc.vendors.add(r.supplier);
+	}
+	return acc;
+});
+
+const totalsCurrency = computed(() => {
+	const set = new Set(rows.value.map((r) => r.currency).filter(Boolean));
+	return set.size === 1 ? [...set][0] : "";
+});
 
 async function loadPiGroups() {
 	if (!activeCompany.value) return;
@@ -283,55 +377,96 @@ const canSupersede = (row) => ["DRAFT", "CONFIRMED"].includes(row.status);
 			<table class="table table-vcenter">
 				<thead>
 					<tr>
-						<th>{{ t("PI & exporter") }}</th>
-						<th class="text-nowrap">{{ t("PI Date") }}</th>
-						<th class="text-center">{{ t("Items") }}</th>
-						<th>{{ t("Physical") }}</th>
-						<th class="text-end">{{ t("Pricing") }}</th>
-						<th style="min-width: 120px">{{ t("Invoiced %") }}</th>
-						<th>{{ t("Status") }}</th>
-						<th></th>
+						<th class="pi-sort" @click="toggleSort('ref')">
+							{{ t("PI № / vendor") }} <i v-if="sortIcon('ref')" class="ti" :class="sortIcon('ref')"></i>
+						</th>
+						<th class="text-nowrap pi-sort" @click="toggleSort('pi_date')">
+							{{ t("PI Date") }} <i v-if="sortIcon('pi_date')" class="ti" :class="sortIcon('pi_date')"></i>
+						</th>
+						<th class="text-end pi-sort" @click="toggleSort('item_count')">
+							{{ t("Items") }} <i v-if="sortIcon('item_count')" class="ti" :class="sortIcon('item_count')"></i>
+						</th>
+						<th class="text-end pi-sort" @click="toggleSort('total_boxes')">
+							{{ t("Boxes") }} <i v-if="sortIcon('total_boxes')" class="ti" :class="sortIcon('total_boxes')"></i>
+						</th>
+						<th class="text-end pi-sort" @click="toggleSort('total_kg')">
+							kg <i v-if="sortIcon('total_kg')" class="ti" :class="sortIcon('total_kg')"></i>
+						</th>
+						<th class="text-end text-nowrap pi-sort" @click="toggleSort('agreed_total')">
+							{{ t("Agreed / gap") }} <i v-if="sortIcon('agreed_total')" class="ti" :class="sortIcon('agreed_total')"></i>
+						</th>
+						<th style="min-width: 110px" class="pi-sort" @click="toggleSort('invoiced_pct')">
+							{{ t("Invoiced %") }} <i v-if="sortIcon('invoiced_pct')" class="ti" :class="sortIcon('invoiced_pct')"></i>
+						</th>
+						<th class="pi-sort" @click="toggleSort('status')">
+							{{ t("Status") }} <i v-if="sortIcon('status')" class="ti" :class="sortIcon('status')"></i>
+						</th>
+						<th class="w-1"><span class="visually-hidden">{{ t("Actions") }}</span></th>
 					</tr>
 				</thead>
 				<tbody>
-					<SkeletonRows v-if="loading" :cols="8" :rows="6" />
-					<tr v-for="r in rows" :key="r.name" style="cursor: pointer" @click="router.push({ name: 'imports-proforma', params: { name: r.name } })">
+					<SkeletonRows v-if="loading" :cols="9" :rows="6" />
+					<tr v-for="r in sortedRows" :key="r.name" class="pi-row" style="cursor: pointer" @click="router.push({ name: 'imports-proforma', params: { name: r.name } })">
 						<td>
-							<div class="fw-bold text-primary font-monospace" style="font-size: 0.95rem">{{ refMain(r) }}</div>
-							<div class="fw-semibold text-dark text-uppercase small mt-1">{{ r.supplier_name || r.supplier }}</div>
-							<div v-if="refSub(r)" class="small text-secondary font-monospace">Ref: {{ refSub(r) }}</div>
-							<div class="d-flex flex-wrap gap-1 mt-1">
-								<span v-if="groupLabel(r)" class="badge bg-azure-lt"><i class="ti ti-stack-2 me-1"></i>{{ groupLabel(r) }}</span>
-								<span v-if="r.incoterm" class="badge bg-secondary-lt">{{ r.incoterm }}</span>
-								<span v-if="r.advance_pct" class="badge bg-blue-lt">{{ r.advance_pct }}% Advance</span>
-							</div>
+							<div class="fw-bold text-primary font-monospace" style="font-size: 0.9rem">{{ refMain(r) }}</div>
+							<span class="badge bg-secondary-lt mt-1" :title="r.supplier_name || r.supplier">{{ vendorCode(r) }}</span>
 						</td>
-						<td class="text-nowrap">{{ r.pi_date ? formatDate(r.pi_date) : "—" }}</td>
-						<td class="text-center"><span class="fw-semibold">{{ r.item_count || 0 }}</span> <span class="text-secondary small">{{ t("items") }}</span></td>
-						<td class="text-nowrap">
-							<div><span class="fw-semibold font-monospace">{{ grp(r.total_boxes) }}</span> <span class="text-secondary small">bx</span></div>
-							<div class="text-secondary small font-monospace">{{ grp(r.total_kg) }} kg · {{ fcl(r.total_fcl) }} FCL</div>
+						<td class="text-nowrap font-monospace pi-num">
+							{{ r.pi_date ? formatDate(r.pi_date) : "—" }}
+							<div v-if="ageDays(r) !== null" class="text-muted small">{{ ageDays(r) }} {{ t("days") }}</div>
 						</td>
+						<td class="text-end font-monospace pi-num">{{ r.item_count || 0 }}</td>
+						<td class="text-end font-monospace pi-num">{{ grp(r.total_boxes) }}</td>
+						<td class="text-end font-monospace pi-num">{{ grp(r.total_kg) }}</td>
 						<td class="text-end text-nowrap">
-							<div class="fw-bold font-monospace">{{ fm(r.agreed_total, r.currency) }}</div>
-							<div class="text-secondary small font-monospace">{{ t("Docs") }}: {{ fm(r.docs_total, r.currency) }}</div>
-							<span v-if="r.cash_difference" class="badge bg-warning-lt text-warning font-monospace mt-1">+{{ fm(r.cash_difference, r.currency) }}</span>
+							<div class="fw-bold font-monospace pi-num">{{ fm(r.agreed_total, r.currency) }}</div>
+							<div
+								class="small font-monospace pi-num"
+								:class="docsGap(r) ? 'text-danger' : 'text-muted'"
+								:title="t('Gap between the agreed price and the documented price')"
+							>
+								{{ docsGap(r) ? "−" + fm(docsGap(r), r.currency) : fm(0, r.currency) }}
+							</div>
 						</td>
 						<td>
-							<span class="badge" :class="(r.invoiced_pct || 0) >= 100 ? 'bg-green-lt text-green' : 'bg-blue-lt text-blue'">{{ Math.round(r.invoiced_pct || 0) }}%</span>
-							<div class="progress mt-1" style="height: 4px">
-								<div class="progress-bar" :style="{ width: Math.min(100, r.invoiced_pct || 0) + '%' }"></div>
+							<div class="progress" style="height: 5px">
+								<div class="progress-bar" :class="invoicedBarClass(r)" :style="{ width: invoicedPct(r) + '%' }"></div>
 							</div>
-							<div class="text-secondary small mt-1">{{ r.ci_count || 0 }} CI</div>
+							<div class="text-secondary small mt-1 pi-num">
+								{{ invoicedPct(r) }}% · {{ r.ci_count || 0 }} CI
+							</div>
 						</td>
 						<td><span class="badge" :class="getStatusBadgeClass('Proforma Invoice', r.status)">{{ r.status }}</span></td>
 						<td class="text-end" @click.stop>
-							<button v-if="canSupersede(r)" type="button" class="btn btn-outline-secondary btn-sm" @click="openSupersede(r)">
+							<button
+								v-if="canSupersede(r)"
+								type="button"
+								class="btn btn-outline-secondary btn-sm pi-row-action"
+								@click="openSupersede(r)"
+							>
 								<i class="ti ti-link me-1"></i>{{ t("Link CI") }}
 							</button>
 						</td>
 					</tr>
 				</tbody>
+				<tfoot v-if="!loading && rows.length">
+					<tr class="pi-totals">
+						<td class="text-secondary">
+							{{ totals.count }} PI · {{ totals.vendors.size }} {{ t("vendors") }}
+						</td>
+						<td></td>
+						<td class="text-end font-monospace pi-num">{{ grp(totals.items) }}</td>
+						<td class="text-end font-monospace pi-num">{{ grp(totals.boxes) }}</td>
+						<td class="text-end font-monospace pi-num fw-bold">{{ grp(totals.kg) }}</td>
+						<td class="text-end text-nowrap">
+							<div class="fw-bold font-monospace pi-num">{{ fm(totals.agreed, totalsCurrency) }}</div>
+							<div class="small font-monospace pi-num" :class="totals.gap ? 'text-danger' : 'text-muted'">
+								{{ totals.gap ? "−" + fm(totals.gap, totalsCurrency) : fm(0, totalsCurrency) }}
+							</div>
+						</td>
+						<td colspan="3"></td>
+					</tr>
+				</tfoot>
 			</table>
 			<EmptyState v-if="!loading && !rows.length" :title="t('No proformas yet')" :subtitle="t('Create your first proforma invoice.')" />
 		</div>
@@ -371,3 +506,36 @@ const canSupersede = (row) => ["DRAFT", "CONFIRMED"].includes(row.status);
 		</div>
 	</div>
 </template>
+
+<style scoped>
+/* Identifiers and money align only with fixed-width digits. */
+.pi-num {
+	font-variant-numeric: tabular-nums;
+}
+
+/* The row action repeats on every row; fade it back until the row is engaged.
+   Only on hover-capable pointers — on touch there is no hover, so it stays
+   visible. Focus-within keeps it reachable by keyboard. */
+@media (hover: hover) and (pointer: fine) {
+	.pi-row-action {
+		opacity: 0;
+		transition: opacity 0.12s ease-in-out;
+	}
+	.pi-row:hover .pi-row-action,
+	.pi-row:focus-within .pi-row-action {
+		opacity: 1;
+	}
+}
+
+.pi-sort {
+	cursor: pointer;
+	user-select: none;
+}
+.pi-sort:hover {
+	color: var(--tblr-primary);
+}
+.pi-totals td {
+	border-top: 2px solid var(--tblr-border-color);
+	background: var(--tblr-bg-surface-secondary);
+}
+</style>

@@ -6,11 +6,12 @@ import json
 
 import frappe
 from frappe import _
-from frappe.utils import flt, getdate, today
+from frappe.utils import cint, flt, getdate, today
 
 from stabler.api._common import _require_company, _assert_can_read, _assert_can_write
 from stabler.api.approvals import _assert_company_scope
 from stabler.api._stock_recon import prepare_reconciliation
+from stabler.api import _fefo
 from erpnext.stock.get_item_details import get_conversion_factor
 
 
@@ -1042,3 +1043,131 @@ def list_stock_reconciliations(company: str, limit: int = 25):
 		order_by="creation desc",
 		limit=min(int(limit or 25), 100),
 	)
+
+
+# ---------------------------------------------------------------------------
+# Batch / expiry visibility (FEFO)
+#
+# Batches are created at goods receipt (imports_module/hooks._ensure_batch) with
+# the supplier's expiry date, and until now nothing downstream could see them:
+# no expiry column, no FEFO order, no batch-level balance. For frozen meat that
+# means shelf life was recorded and then ignored. These endpoints are read-only
+# — they expose what is already in the ledger. Writing the chosen batch onto a
+# sales document is a separate, riskier step.
+# ---------------------------------------------------------------------------
+
+
+def _batch_rows(company: str, item_code: str | None, warehouse: str | None):
+	"""Per-batch balances from the Stock Ledger, with days to expiry.
+
+	Balance comes from summing `tabStock Ledger Entry.actual_qty` rather than
+	`tabBatch.batch_qty`, because the latter is a whole-company figure and says
+	nothing about which warehouse the stock is actually sitting in.
+	"""
+	conds = ["sle.company = %(company)s", "sle.is_cancelled = 0", "sle.batch_no IS NOT NULL"]
+	params = {"company": company, "item_code": item_code, "warehouse": warehouse}
+	if item_code:
+		conds.append("sle.item_code = %(item_code)s")
+	if warehouse:
+		conds.append("sle.warehouse = %(warehouse)s")
+	return frappe.db.sql(
+		f"""
+		SELECT sle.batch_no, sle.item_code, sle.warehouse,
+		       SUM(sle.actual_qty) AS qty,
+		       b.expiry_date,
+		       DATEDIFF(b.expiry_date, CURDATE()) AS days_left,
+		       i.item_name, i.stock_uom
+		FROM `tabStock Ledger Entry` sle
+		LEFT JOIN `tabBatch` b ON b.name = sle.batch_no
+		LEFT JOIN `tabItem` i ON i.name = sle.item_code
+		WHERE {" AND ".join(conds)}
+		GROUP BY sle.batch_no, sle.item_code, sle.warehouse, b.expiry_date, i.item_name, i.stock_uom
+		HAVING SUM(sle.actual_qty) > 0
+		""",
+		params,
+		as_dict=True,
+	)
+
+
+@frappe.whitelist()
+def batch_availability(company: str, item_code: str, warehouse: str | None = None):
+	"""Batches holding stock for one item, nearest expiry first."""
+	_require_company(company)
+	_assert_company_scope(company)
+	if not item_code:
+		frappe.throw(_("item_code is required"))
+	_assert_can_read("Item", item_code)
+
+	rows = _batch_rows(company, item_code, warehouse)
+	for r in rows:
+		r["qty"] = flt(r["qty"])
+		r["days_left"] = int(r["days_left"]) if r["days_left"] is not None else None
+		r["expiry_date"] = str(r["expiry_date"]) if r["expiry_date"] else None
+		r["bucket"] = _fefo.expiry_bucket(r["days_left"])
+	return {
+		"item_code": item_code,
+		"warehouse": warehouse,
+		"batches": _fefo.sort_fefo(rows),
+		"summary": _fefo.summarise(rows),
+	}
+
+
+@frappe.whitelist()
+def suggest_fefo(
+	company: str,
+	item_code: str,
+	warehouse: str,
+	qty,
+	allow_expired: int = 0,
+):
+	"""Which batches should cover ``qty``, nearest expiry first.
+
+	A suggestion only — nothing is written. The caller decides whether to accept
+	it, and a shortfall is returned rather than raised so the picking screen can
+	show partial coverage.
+	"""
+	_require_company(company)
+	_assert_company_scope(company)
+	if not item_code or not warehouse:
+		frappe.throw(_("item_code and warehouse are required"))
+	_assert_can_read("Item", item_code)
+
+	rows = _batch_rows(company, item_code, warehouse)
+	for r in rows:
+		r["qty"] = flt(r["qty"])
+		r["days_left"] = int(r["days_left"]) if r["days_left"] is not None else None
+		r["expiry_date"] = str(r["expiry_date"]) if r["expiry_date"] else None
+	return _fefo.allocate_fefo(flt(qty), rows, allow_expired=bool(cint(allow_expired)))
+
+
+@frappe.whitelist()
+def expiring_batches(
+	company: str,
+	warehouse: str | None = None,
+	within_days: int = 30,
+	include_expired: int = 1,
+	limit: int = 200,
+):
+	"""Stock that has expired or is close to it — the shelf-life watch list."""
+	_require_company(company)
+	_assert_company_scope(company)
+	within = max(0, cint(within_days))
+
+	rows = _batch_rows(company, None, warehouse)
+	out = []
+	for r in rows:
+		days = int(r["days_left"]) if r["days_left"] is not None else None
+		if days is None:
+			continue  # no expiry recorded — surfaced by the summary, not the alert
+		if days < 0 and not cint(include_expired):
+			continue
+		if days > within:
+			continue
+		r["qty"] = flt(r["qty"])
+		r["days_left"] = days
+		r["expiry_date"] = str(r["expiry_date"]) if r["expiry_date"] else None
+		r["bucket"] = _fefo.expiry_bucket(days)
+		out.append(r)
+
+	out = _fefo.sort_fefo(out)[: max(1, cint(limit))]
+	return {"rows": out, "summary": _fefo.summarise(out), "within_days": within}
