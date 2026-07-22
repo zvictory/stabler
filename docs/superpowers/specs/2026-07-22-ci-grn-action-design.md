@@ -1,5 +1,10 @@
 # Commercial Invoice Create/Open GRN Action
 
+> **Superseded on 2026-07-22.** This narrow design is retained as decision
+> history. Its accepted behavior is incorporated into
+> `2026-07-22-ci-logistics-workspace-design.md`; it must not be implemented as
+> a standalone feature.
+
 ## Problem
 
 The production Imports SPA contains migrated Commercial Invoices that have
