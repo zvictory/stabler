@@ -4643,3 +4643,15 @@ Departure released by override: {0},Выезд разрешён в обход п
 Required for departure,Обязательно для выезда
 Departure override,Разрешение в обход
 Departure override reason,Причина разрешения в обход
+Containers do not match the invoice voyage status.,Контейнеры не соответствуют статусу рейса инвойса.
+{count} behind,{count} отстают
+{count} ahead,{count} опережают
+ahead of the invoice,опережает инвойс
+Advance containers,Продвинуть контейнеры
+A container ahead of its invoice is not corrected automatically — fix it on the container.,"Контейнер, опережающий свой инвойс, не исправляется автоматически — исправьте его на карточке контейнера."
+No container is behind the invoice.,Ни один контейнер не отстаёт от инвойса.
+Advance containers to the invoice status,Продвинуть контейнеры до статуса инвойса
+{count} container(s) will move to {status}.,{count} контейнер(ов) перейдёт в статус {status}.
+{count} container(s) could not be advanced.,{count} контейнер(ов) не удалось продвинуть.
+Containers advanced.,Контейнеры продвинуты.
+Containers could not be advanced.,Не удалось продвинуть контейнеры.

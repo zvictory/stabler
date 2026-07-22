@@ -1,9 +1,11 @@
 <script setup>
-import { computed, ref } from "vue";
+import { computed, onMounted, ref, watch } from "vue";
 import { useRouter } from "vue-router";
 import { importsApi } from "../../api/imports.js";
+import { call } from "../../api/client.js";
 import { t } from "../../composables/i18n.js";
 import { useToast } from "../../composables/useToast.js";
+import { useConfirm } from "../../composables/useConfirm.js";
 
 const props = defineProps({
 	commercialInvoice: { type: String, required: true },
@@ -14,8 +16,73 @@ const props = defineProps({
 const emit = defineEmits(["reload"]);
 const router = useRouter();
 const toast = useToast();
+const { confirm } = useConfirm();
 const busy = ref(false);
 const actionError = ref("");
+
+// ---- shared sea lifecycle -------------------------------------------------
+// The invoice owns the voyage; every container keeps its own hand-maintained
+// copy of the same status. They drift silently, so show the gap here instead
+// of letting two screens each look authoritative.
+const sea = ref(null);
+const syncing = ref(false);
+
+async function loadSea() {
+	sea.value = null;
+	if (!props.commercialInvoice) return;
+	try {
+		sea.value = await call("stabler.api.imports.ci_sea_lifecycle", {
+			commercial_invoice: props.commercialInvoice,
+		});
+	} catch (_err) {
+		sea.value = null;
+	}
+}
+
+const seaDrifted = computed(() => !!sea.value && !sea.value.in_sync);
+const seaAhead = computed(() => (sea.value ? sea.value.ahead : 0));
+
+async function syncContainers() {
+	const plan = await call("stabler.api.imports.sync_containers_to_ci", {
+		commercial_invoice: props.commercialInvoice,
+		dry_run: 1,
+	});
+	if (!plan.planned.length) {
+		toast.info(t("No container is behind the invoice."));
+		return;
+	}
+	const ok = await confirm({
+		title: t("Advance containers to the invoice status"),
+		body: t("{count} container(s) will move to {status}.")
+			.replace("{count}", plan.planned.length)
+			.replace("{status}", t(plan.ci_status)),
+		confirmLabel: t("Confirm"),
+	});
+	if (!ok) return;
+	syncing.value = true;
+	try {
+		const res = await call("stabler.api.imports.sync_containers_to_ci", {
+			commercial_invoice: props.commercialInvoice,
+			dry_run: 0,
+		});
+		if (res.failed.length) {
+			toast.error(
+				t("{count} container(s) could not be advanced.").replace("{count}", res.failed.length)
+			);
+		} else {
+			toast.success(t("Containers advanced."));
+		}
+		await loadSea();
+		emit("reload");
+	} catch (err) {
+		toast.error(err?.message || t("Containers could not be advanced."));
+	} finally {
+		syncing.value = false;
+	}
+}
+
+onMounted(loadSea);
+watch(() => props.commercialInvoice, loadSea);
 
 const statusClass = computed(() => {
 	if (props.packingSummary.status === "Ready") return "bg-success-lt text-success";
@@ -122,6 +189,41 @@ async function refreshExpected() {
 					total: packingSummary.container_count,
 				}) }}
 			</p>
+			<div v-if="seaDrifted" class="alert alert-warning">
+				<div class="d-flex align-items-start flex-wrap gap-2">
+					<div class="flex-fill">
+						<div class="fw-semibold">
+							<i class="ti ti-ship me-1"></i>{{ t("Containers do not match the invoice voyage status.") }}
+						</div>
+						<div class="small mt-1">
+							{{ t("Invoice") }}: <span class="fw-semibold">{{ t(sea.ci_status) }}</span>
+							· {{ t("{count} behind", { count: sea.behind }) }}
+							<span v-if="seaAhead"> · {{ t("{count} ahead", { count: seaAhead }) }}</span>
+						</div>
+						<ul class="small mb-0 mt-1 ps-3">
+							<li v-for="r in sea.rows.filter((x) => x.state === 'behind' || x.state === 'ahead')" :key="r.name">
+								<span class="font-monospace">{{ r.container_number || r.name }}</span>
+								— {{ t(r.status) }}
+								<span v-if="r.state === 'ahead'" class="text-danger">({{ t("ahead of the invoice") }})</span>
+							</li>
+						</ul>
+					</div>
+					<button
+						v-if="sea.behind"
+						type="button"
+						class="btn btn-outline-primary btn-sm"
+						:disabled="syncing"
+						@click="syncContainers"
+					>
+						<span v-if="syncing" class="spinner-border spinner-border-sm me-1"></span>
+						{{ t("Advance containers") }}
+					</button>
+				</div>
+				<div v-if="seaAhead" class="small text-secondary mt-2">
+					{{ t("A container ahead of its invoice is not corrected automatically — fix it on the container.") }}
+				</div>
+			</div>
+
 			<div v-if="packingSummary.status === 'Incomplete'" class="alert alert-warning">
 				{{ t("Complete every container packing list before port-transfer readiness.") }}
 			</div>

@@ -4634,3 +4634,15 @@ Departure released by override: {0},Departure released by override: {0}
 Required for departure,Required for departure
 Departure override,Departure override
 Departure override reason,Departure override reason
+Containers do not match the invoice voyage status.,Containers do not match the invoice voyage status.
+{count} behind,{count} behind
+{count} ahead,{count} ahead
+ahead of the invoice,ahead of the invoice
+Advance containers,Advance containers
+A container ahead of its invoice is not corrected automatically — fix it on the container.,A container ahead of its invoice is not corrected automatically — fix it on the container.
+No container is behind the invoice.,No container is behind the invoice.
+Advance containers to the invoice status,Advance containers to the invoice status
+{count} container(s) will move to {status}.,{count} container(s) will move to {status}.
+{count} container(s) could not be advanced.,{count} container(s) could not be advanced.
+Containers advanced.,Containers advanced.
+Containers could not be advanced.,Containers could not be advanced.

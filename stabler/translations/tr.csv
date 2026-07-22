@@ -4622,3 +4622,15 @@ Try again,Tekrar dene
 Unverified,Doğrulanmamış
 Unverified history,Doğrulanmamış geçmiş
 ﻿#,#
+Containers do not match the invoice voyage status.,Konteynerler faturanın sefer durumuyla uyuşmuyor.
+{count} behind,{count} geride
+{count} ahead,{count} ileride
+ahead of the invoice,faturadan ileride
+Advance containers,Konteynerleri ilerlet
+A container ahead of its invoice is not corrected automatically — fix it on the container.,Faturasının ilerisinde olan konteyner otomatik düzeltilmez — konteyner sayfasından düzeltin.
+No container is behind the invoice.,Hiçbir konteyner faturanın gerisinde değil.
+Advance containers to the invoice status,Konteynerleri fatura durumuna ilerlet
+{count} container(s) will move to {status}.,{count} konteyner {status} durumuna geçecek.
+{count} container(s) could not be advanced.,{count} konteyner ilerletilemedi.
+Containers advanced.,Konteynerler ilerletildi.
+Containers could not be advanced.,Konteynerler ilerletilemedi.

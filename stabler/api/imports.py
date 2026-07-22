@@ -5293,3 +5293,115 @@ def truck_departure_status(truck: str):
         "vet_valid": vet_valid,
         "declarations": declarations,
     }
+
+
+# ---------------------------------------------------------------------------
+# Shared sea lifecycle: the CI owns the voyage, containers follow it.
+# ---------------------------------------------------------------------------
+
+
+@frappe.whitelist()
+def ci_sea_lifecycle(commercial_invoice: str):
+    """How far each container has drifted from its invoice's sea status.
+
+    Read-only. CI and Import Container carry the same pipeline and are kept by
+    hand, so they drift silently; this makes the gap visible before anyone is
+    asked to close it.
+    """
+    if not commercial_invoice or not frappe.db.exists("Commercial Invoice", commercial_invoice):
+        frappe.throw(_("Unknown Commercial Invoice: {0}").format(commercial_invoice))
+    _assert_can_read("Commercial Invoice", commercial_invoice)
+    company = _company_of("Commercial Invoice", commercial_invoice)
+    _assert_imports_access(company)
+
+    from stabler.stabler.imports_module import sea_lifecycle
+
+    ci = frappe.db.get_value(
+        "Commercial Invoice", commercial_invoice,
+        ["status", "vessel", "voyage", "eta", "eta_transit_port"], as_dict=True,
+    )
+    containers = frappe.get_all(
+        "Import Container",
+        filters={"commercial_invoice": commercial_invoice, "company": company},
+        fields=["name", "container_number", "status"],
+        order_by="creation asc",
+    )
+    payload = sea_lifecycle.summarise(ci.status, containers)
+    payload["voyage"] = {
+        "vessel": ci.vessel,
+        "voyage": ci.voyage,
+        "eta": str(ci.eta) if ci.eta else None,
+        "eta_transit_port": str(ci.eta_transit_port) if ci.eta_transit_port else None,
+    }
+    return payload
+
+
+@frappe.whitelist()
+def sync_containers_to_ci(commercial_invoice: str, dry_run: int = 1):
+    """Advance every lagging container to its invoice's sea status.
+
+    Deliberately an explicit action, not a hook: an automatic sync would erase
+    the evidence of how far the two copies had drifted, and drift is exactly
+    what needs measuring before the duplicate status field can be retired.
+
+    Only containers that are *behind* move, and each one walks the pipeline one
+    station at a time so the Import Container controller's own transition rules
+    still apply. A container that is ahead of its invoice is reported, never
+    corrected — moving it backwards needs a reason and belongs to the
+    correction workflow.
+    """
+    if not commercial_invoice or not frappe.db.exists("Commercial Invoice", commercial_invoice):
+        frappe.throw(_("Unknown Commercial Invoice: {0}").format(commercial_invoice))
+    company = _company_of("Commercial Invoice", commercial_invoice)
+    _assert_imports_access(company)
+    _assert_can_write("Commercial Invoice", commercial_invoice)
+
+    from stabler.stabler.imports_module import sea_lifecycle
+
+    dry_run = cint(dry_run)
+    ci_status = frappe.db.get_value("Commercial Invoice", commercial_invoice, "status")
+    containers = frappe.get_all(
+        "Import Container",
+        filters={"commercial_invoice": commercial_invoice, "company": company},
+        fields=["name", "container_number", "status"],
+        order_by="creation asc",
+    )
+
+    planned, skipped, failed = [], [], []
+    for c in containers:
+        if not sea_lifecycle.syncable(ci_status, c.status):
+            skipped.append({
+                "container": c.name,
+                "container_number": c.container_number,
+                "status": c.status,
+                "state": sea_lifecycle.drift(ci_status, c.status)["state"],
+            })
+            continue
+        steps = sea_lifecycle.path(c.status, ci_status)
+        planned.append({
+            "container": c.name,
+            "container_number": c.container_number,
+            "from": c.status,
+            "to": ci_status,
+            "steps": steps,
+        })
+        if dry_run:
+            continue
+        try:
+            doc = frappe.get_doc("Import Container", c.name)
+            for step in steps:
+                doc.status = step
+                doc.save()
+            frappe.db.commit()
+        except Exception as e:
+            frappe.db.rollback()
+            failed.append({"container": c.name, "error": str(e)[:200]})
+
+    return {
+        "commercial_invoice": commercial_invoice,
+        "ci_status": ci_status,
+        "dry_run": bool(dry_run),
+        "planned": planned,
+        "skipped": skipped,
+        "failed": failed,
+    }

@@ -4637,3 +4637,15 @@ Departure released by override: {0},Чиқиш истисно тариқасид
 Required for departure,Чиқиш учун мажбурий
 Departure override,Чиқиш истисноси
 Departure override reason,Чиқиш истисноси сабаби
+Containers do not match the invoice voyage status.,Контейнерлар инвойс рейс ҳолатига мос келмаяпти.
+{count} behind,{count} та орқада
+{count} ahead,{count} та олдинда
+ahead of the invoice,инвойсдан олдинда
+Advance containers,Контейнерларни илгарилатиш
+A container ahead of its invoice is not corrected automatically — fix it on the container.,Инвойсдан олдинда кетган контейнер автоматик тузатилмайди — уни контейнер саҳифасида тузатинг.
+No container is behind the invoice.,Ҳеч бир контейнер инвойсдан орқада эмас.
+Advance containers to the invoice status,Контейнерларни инвойс ҳолатига илгарилатиш
+{count} container(s) will move to {status}.,{count} та контейнер {status} ҳолатига ўтади.
+{count} container(s) could not be advanced.,{count} та контейнерни илгарилатиб бўлмади.
+Containers advanced.,Контейнерлар илгарилатилди.
+Containers could not be advanced.,Контейнерларни илгарилатиб бўлмади.
