@@ -104,6 +104,38 @@ def _load_tender(db: _FakeDB, roles: list[str], user: str = "source@example.com"
 
 
 class TestTenderDashboardBehaviour(unittest.TestCase):
+	def test_tender_role_without_finance_or_oversight_omits_finance(self):
+		db = _FakeDB({"DEAL-1": {}})
+		tender = _load_tender(db, ["Stabler Declarant"])
+
+		payload = tender.tender_dashboard("Test Company", "2026-07-01", "2026-07-31")
+
+		self.assertNotIn("finance", payload)
+		self.assertFalse(payload["role_scope"]["can_view_finance"])
+
+	def test_legacy_result_without_submission_is_unverified_not_participation(self):
+		db = _FakeDB({"DEAL-1": {"assigned_to": "source@example.com", "result": "won"}})
+		tender = _load_tender(db, ["Sales User"])
+
+		with patch.object(tender, "_tender_deal_names", return_value={"DEAL-1"}):
+			payload = tender.tender_dashboard("Test Company", "2026-07-01", "2026-07-31")
+
+		self.assertEqual(payload["acquisition"]["unverified_history"], 1)
+		for key in ("submitted", "won", "lost", "pending"):
+			self.assertEqual(payload["acquisition"][key], 0)
+
+	def test_first_submission_writes_server_timestamp_and_current_user(self):
+		db = _FakeDB({"DEAL-1": {}})
+		tender = _load_tender(db, ["Sales User"], user="submitter@example.com")
+
+		payload = tender.mark_tender_submitted("DEAL-1", "REF-123")
+
+		self.assertEqual(payload["submitted_at"], "2026-07-22 09:00:00")
+		self.assertEqual(payload["submitted_by"], "submitter@example.com")
+		self.assertEqual(payload["submission_reference"], "REF-123")
+		self.assertEqual(db.intakes["DEAL-1"]["submitted_at"], "2026-07-22 09:00:00")
+		self.assertEqual(db.intakes["DEAL-1"]["submitted_by"], "submitter@example.com")
+
 	def test_submission_preserves_the_first_server_fact(self):
 		db = _FakeDB({"DEAL-1": {"submitted_at": "2026-07-01 08:00:00", "submitted_by": "first@example.com", "submission_reference": "FIRST"}})
 		tender = _load_tender(db, ["Sales User"])
