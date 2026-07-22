@@ -130,9 +130,12 @@ const tree = computed(() => {
 const flattened = computed(() => {
 	const out = [];
 	const term = search.value.trim().toLowerCase();
+	// Match the code explicitly — it only worked by accident before, via the
+	// docname ("1410 - Cash - MIK"), which breaks on unnumbered charts.
 	const matchesTerm = (n) =>
 		!term ||
 		(n.account_name || "").toLowerCase().includes(term) ||
+		String(n.account_number || "").toLowerCase().includes(term) ||
 		(n.name || "").toLowerCase().includes(term);
 	function walk(node) {
 		const expandedNow = term ? true : expanded.value.has(node.name);
@@ -209,6 +212,48 @@ async function loadBalances() {
 
 async function refreshAllBalances() {
 	await loadBalances();
+}
+
+// --- balance presentation -------------------------------------------------
+// House rule: show the amount in the account's own currency. The base-currency
+// figure is only a hint, and only when the two actually differ — otherwise it
+// is the same number printed twice.
+
+function accCurrencyOf(n) {
+	const b = balances.value.get(n.name);
+	return (b && b.account_currency) || n.account_currency || currency.value;
+}
+
+function baseCurrencyOf(n) {
+	const b = balances.value.get(n.name);
+	return (b && b.company_currency) || currency.value;
+}
+
+/** Numeric value shown on the main line. Groups roll up in base currency. */
+function primaryValue(n) {
+	const b = balances.value.get(n.name);
+	if (!b) return null;
+	if (!n.is_group && b.acc !== null && b.acc !== undefined) return b.acc;
+	return b.base;
+}
+
+function primaryBalance(n) {
+	const v = primaryValue(n);
+	if (v === null || v === undefined) return "—";
+	const ccy = !n.is_group && balances.value.get(n.name).acc !== null ? accCurrencyOf(n) : baseCurrencyOf(n);
+	return formatMoney(v, ccy, user.value.language);
+}
+
+/** Only worth printing when the account is genuinely in a foreign currency. */
+function showBaseHint(n) {
+	const b = balances.value.get(n.name);
+	if (!b || n.is_group || b.acc === null || b.acc === undefined) return false;
+	return accCurrencyOf(n) !== baseCurrencyOf(n);
+}
+
+function isNegative(n) {
+	const v = primaryValue(n);
+	return typeof v === "number" && v < 0;
 }
 
 function toggle(name) {
@@ -436,10 +481,10 @@ watch(includeDisabled, async () => {
 			<table class="table table-vcenter card-table">
 				<thead>
 					<tr>
+						<th class="w-1 text-nowrap">{{ t("Code") }}</th>
 						<th>{{ t("Account") }}</th>
 						<th class="w-1">{{ t("Type") }}</th>
-						<th class="w-1 text-end text-nowrap">{{ t("Balance (Account Currency)") }}</th>
-						<th class="w-1 text-end text-nowrap">{{ t("Balance") }} ({{ currency }})</th>
+						<th class="w-1 text-end text-nowrap">{{ t("Balance") }}</th>
 						<th class="w-1 text-end">{{ t("Actions") }}</th>
 					</tr>
 				</thead>
@@ -451,6 +496,9 @@ watch(includeDisabled, async () => {
 						:style="!n.is_group ? 'cursor: pointer;' : null"
 						@click="!n.is_group && openLedger(n)"
 					>
+						<td class="font-monospace text-secondary text-nowrap coa-code">
+							{{ n.account_number || "" }}
+						</td>
 						<td>
 							<div
 								class="d-flex align-items-center gap-1"
@@ -468,7 +516,6 @@ watch(includeDisabled, async () => {
 								<span v-else class="d-inline-block" style="width: 1.75rem"></span>
 								<i class="ti me-1" :class="[rootIcon(n.root_type), rootColor(n.root_type)]"></i>
 								<span v-if="n.is_group" class="fw-semibold" :class="{ 'text-muted': n.disabled }">
-									<span v-if="n.account_number" class="text-secondary me-1">{{ n.account_number }}</span>
 									{{ n.account_name || n.name }}
 								</span>
 								<a
@@ -479,30 +526,24 @@ watch(includeDisabled, async () => {
 									:title="t('View ledger')"
 									@click.stop.prevent="openLedger(n)"
 								>
-									<span v-if="n.account_number" class="text-secondary me-1">{{ n.account_number }}</span>
 									{{ n.account_name || n.name }}
 								</a>
 								<span v-if="n.disabled" class="badge bg-secondary-lt ms-2">{{ t("Disabled") }}</span>
 							</div>
 						</td>
-						<td>
-							<span class="badge bg-secondary-lt">{{ n.root_type || "—" }}</span>
-							<span v-if="n.account_type" class="badge bg-blue-lt ms-1">{{ n.account_type }}</span>
+						<td class="text-nowrap">
+							<span v-if="n.account_type" class="badge bg-secondary-lt">{{ n.account_type }}</span>
 						</td>
-						<td class="text-end font-monospace">
-							<span v-if="n.is_group" class="text-secondary">—</span>
-							<span v-else-if="balances.has(n.name) && balances.get(n.name).acc !== null">
-								{{ formatMoney(balances.get(n.name).acc, balances.get(n.name).account_currency || n.account_currency || currency, user.language) }}
-							</span>
-							<span v-else-if="balances.has(n.name)" class="text-secondary">—</span>
-							<span v-else class="text-secondary placeholder-glow">
-								<span class="placeholder col-6"></span>
-							</span>
-						</td>
-						<td class="text-end font-monospace" :class="{ 'fw-bold': n.is_group }">
-							<span v-if="balances.has(n.name)">
-								{{ formatMoney(balances.get(n.name).base, balances.get(n.name).company_currency || currency, user.language) }}
-							</span>
+						<td
+							class="text-end font-monospace text-nowrap coa-amount"
+							:class="{ 'fw-bold': n.is_group, 'text-danger': isNegative(n) }"
+						>
+							<template v-if="balances.has(n.name)">
+								<div>{{ primaryBalance(n) }}</div>
+								<div v-if="showBaseHint(n)" class="small text-secondary fw-normal">
+									≈ {{ formatMoney(balances.get(n.name).base, balances.get(n.name).company_currency || currency, user.language) }}
+								</div>
+							</template>
 							<span v-else-if="n.is_group" class="text-secondary">—</span>
 							<span v-else class="text-secondary placeholder-glow">
 								<span class="placeholder col-6"></span>
@@ -626,3 +667,16 @@ watch(includeDisabled, async () => {
 		</div>
 	</div>
 </template>
+
+<style scoped>
+/* Account codes and amounts are identifiers, not prose: fix the digit width so
+   1000 / 1100 / 1210 line up into a scannable column. */
+.coa-code,
+.coa-amount {
+	font-variant-numeric: tabular-nums;
+}
+.coa-code {
+	font-size: 0.8125rem;
+	padding-right: 0.75rem;
+}
+</style>
