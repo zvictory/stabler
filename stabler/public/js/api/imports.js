@@ -88,6 +88,7 @@ export const importsApi = {
 	listGrnChecklists: (params) => call(`${P}.list_grn_checklists`, params),
 	getGrnChecklist: (name) => call(`${P}.get_grn_checklist`, { name }),
 	createGrnForCi: (commercial_invoice) => call(`${P}.create_grn_for_ci`, { commercial_invoice }),
+	refreshGrnExpectedQuantities: (name) => call(`${P}.refresh_grn_expected_quantities`, { name }),
 	submitGrnChecklist: (name) => call(`${P}.submit_grn_checklist`, { name }),
 	createAdditionalLcv: (grn_name) => call(`${P}.create_additional_lcv`, { grn_name }),
 

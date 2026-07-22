@@ -31,7 +31,7 @@ from stabler.api import _fx_reval
 from stabler.api import _kts_amendment
 from stabler.api import _imports_rules as rules
 from stabler.api import _proforma
-from stabler.api._common import _assert_can_read, _require_company
+from stabler.api._common import _assert_can_read, _assert_can_write, _require_company
 from stabler.api.organization import _ADMIN_ROLES, _MODULE_ROLES
 from stabler.api.permissions import cost_visible_for
 from stabler.stabler.imports_module import packing_service
@@ -1092,42 +1092,40 @@ def get_grn_checklist(name: str):
 def create_grn_for_ci(commercial_invoice: str):
     """Create a GRN Checklist from a Commercial Invoice (idempotent).
 
-    The "CI STUFFED → GRN" action, surfaced manually in v1: copies the CI items
-    as expected quantities and carries the supplier/company across. If a GRN
-    already exists for the CI (the field is unique) the existing name is
-    returned — so this can double as "open the GRN for this CI".
-
-    NOTE: an automatic CI-status hook (create the GRN when the CI reaches
-    STUFFED) is a later increment; for now the warehouse triggers it by hand.
+    Expected quantities are a snapshot of the current packing aggregate. An
+    incomplete aggregate still creates a refreshable shell and never falls back
+    to commercial invoice lines. Existing GRNs are returned after a read check.
     """
     if not commercial_invoice or not frappe.db.exists("Commercial Invoice", commercial_invoice):
         frappe.throw(_("Unknown Commercial Invoice: {0}").format(commercial_invoice))
     company = _company_of("Commercial Invoice", commercial_invoice)
     _assert_imports_access(company)
 
-    existing = frappe.db.get_value("GRN Checklist", {"commercial_invoice": commercial_invoice})
-    if existing:
-        return {"name": existing, "created": False}
-
     ci = frappe.get_doc("Commercial Invoice", commercial_invoice)
-    grn = frappe.new_doc("GRN Checklist")
-    grn.company = company
-    grn.commercial_invoice = commercial_invoice
-    grn.supplier = ci.supplier
-    grn.expected_arrival_date = ci.get("eta_transit_port")
-    for it in ci.items or []:
-        box_kg = 20.0
-        qty = flt(it.qty)
-        line = grn.append("grn_items", {})
-        line.item_code = it.item
-        line.item_name = frappe.db.get_value("Item", it.item, "item_name") or it.item
-        line.expected_box_kg = box_kg
-        line.expected_boxes = round(qty / box_kg) if box_kg else 0
-        line.expected_total_kg = qty
-    if not grn.grn_items:
-        frappe.throw(_("The commercial invoice has no items to receive."))
-    grn.insert(ignore_permissions=False)
-    return {"name": grn.name, "created": True}
+    result = packing_service.create_or_get_grn(ci, ignore_permissions=False)
+    if not result["created"]:
+        _assert_can_read("GRN Checklist", result["name"])
+    return result
+
+
+@frappe.whitelist()
+def refresh_grn_expected_quantities(name: str):
+    if not name or not frappe.db.exists("GRN Checklist", name):
+        frappe.throw(_("Unknown GRN Checklist: {0}").format(name))
+    company = _company_of("GRN Checklist", name)
+    _assert_imports_access(company)
+    _assert_can_write("GRN Checklist", name)
+    grn = frappe.get_doc("GRN Checklist", name)
+    if grn.docstatus != 0 or cint(grn.expected_snapshot_locked):
+        frappe.throw(_("Expected quantities are locked after the first submitted Truck Receipt."))
+    summary = packing_service.summary_for_ci(grn.commercial_invoice, company)
+    packing_service.replace_grn_expected_rows(grn, summary["expected_items"])
+    grn.save(ignore_permissions=False)
+    return {
+        "name": grn.name,
+        "packing_status": summary["status"],
+        "expected_snapshot_locked": False,
+    }
 
 
 @frappe.whitelist()

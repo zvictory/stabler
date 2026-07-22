@@ -21,7 +21,7 @@ they can be unit-tested without a bench.
 import frappe
 from frappe.utils import cint, flt, getdate, today
 
-from stabler.stabler.imports_module import customs_fee_math, lcv_math, receipt_math
+from stabler.stabler.imports_module import customs_fee_math, lcv_math, packing_service, receipt_math
 from stabler.stabler.imports_module import payment_math as pm
 
 
@@ -58,25 +58,7 @@ def on_commercial_invoice_update(doc, method=None):
 
 def create_grn_for_ci_hook(ci):
 	"""Create a GRN Checklist from a Commercial Invoice (idempotent, hook version)."""
-	if frappe.db.exists("GRN Checklist", {"commercial_invoice": ci.name}):
-		return
-	grn = frappe.new_doc("GRN Checklist")
-	grn.company = ci.company
-	grn.commercial_invoice = ci.name
-	grn.supplier = ci.supplier
-	grn.expected_arrival_date = ci.get("eta_transit_port")
-	for it in ci.items or []:
-		box_kg = 20.0
-		qty = flt(it.qty)
-		line = grn.append("grn_items", {})
-		line.item_code = it.item
-		line.item_name = frappe.db.get_value("Item", it.item, "item_name") or it.item
-		line.expected_box_kg = box_kg
-		line.expected_boxes = round(qty / box_kg) if box_kg else 0
-		line.expected_total_kg = qty
-	if not grn.grn_items:
-		return
-	grn.insert(ignore_permissions=True)
+	return packing_service.create_or_get_grn(ci, ignore_permissions=True)
 
 
 # ---------------------------------------------------------------------------

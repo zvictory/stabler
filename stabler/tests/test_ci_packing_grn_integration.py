@@ -139,6 +139,65 @@ class CIPackingGrnIntegrationTest(FrappeTestCase):
 		self.assertIn(("get_list", "GRN Checklist"), endpoint_calls)
 		self.assertNotIn(("db.get_value", "GRN Checklist"), endpoint_calls)
 
+	def test_create_grn_uses_packing_aggregate_not_ci_lines(self):
+		result = imports.create_grn_for_ci(self.ci.name)
+		grn = frappe.get_doc("GRN Checklist", result["name"])
+
+		self.assertEqual(result["packing_status"], "Ready")
+		self.assertFalse(result["expected_snapshot_locked"])
+		self.assertEqual(grn.grn_items[0].expected_total_kg, 300.0)
+
+	def test_incomplete_packing_creates_shell_without_invented_rows(self):
+		self.container_2.set("items", [])
+		self.container_2.save(ignore_permissions=True)
+
+		result = imports.create_grn_for_ci(self.ci.name)
+		grn = frappe.get_doc("GRN Checklist", result["name"])
+
+		self.assertEqual(result["packing_status"], "Incomplete")
+		self.assertEqual(grn.grn_items[0].expected_total_kg, 200.0)
+
+	def test_stuffed_hook_uses_the_same_packing_aggregate(self):
+		self.ci.status = "STUFFED"
+		self.ci.save(ignore_permissions=True)
+
+		grn_name = frappe.db.get_value(
+			"GRN Checklist", {"commercial_invoice": self.ci.name}
+		)
+		grn = frappe.get_doc("GRN Checklist", grn_name)
+
+		self.assertEqual(grn.grn_items[0].expected_total_kg, 300.0)
+
+	def test_refresh_replaces_partial_snapshot_from_current_packing(self):
+		self.container_2.set("items", [])
+		self.container_2.save(ignore_permissions=True)
+		created = imports.create_grn_for_ci(self.ci.name)
+		self.container_2.append(
+			"items",
+			{
+				"item_code": self.item,
+				"box_qty": 5,
+				"box_kg": 20,
+				"total_kg": 100,
+			},
+		)
+		self.container_2.save(ignore_permissions=True)
+
+		result = imports.refresh_grn_expected_quantities(created["name"])
+		grn = frappe.get_doc("GRN Checklist", created["name"])
+
+		self.assertEqual(result["packing_status"], "Ready")
+		self.assertEqual(grn.grn_items[0].expected_total_kg, 300.0)
+
+	def test_refresh_rejects_locked_snapshot(self):
+		created = imports.create_grn_for_ci(self.ci.name)
+		frappe.db.set_value(
+			"GRN Checklist", created["name"], "expected_snapshot_locked", 1
+		)
+
+		with self.assertRaisesRegex(frappe.ValidationError, "Expected quantities are locked"):
+			imports.refresh_grn_expected_quantities(created["name"])
+
 
 def _frappe_calls(function) -> set[tuple[str, str]]:
 	tree = ast.parse(textwrap.dedent(inspect.getsource(function)))

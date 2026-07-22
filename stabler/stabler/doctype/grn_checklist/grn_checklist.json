@@ -34,6 +34,8 @@
   "variance_category",
   "claim_required",
   "claim_reference",
+  "expected_snapshot_locked",
+  "expected_snapshot_locked_at",
   "section_items",
   "grn_items",
   "section_compliance",
@@ -207,6 +209,19 @@
    "fieldname": "claim_reference",
    "fieldtype": "Data",
    "label": "Claim Reference"
+  },
+  {
+   "default": "0",
+   "fieldname": "expected_snapshot_locked",
+   "fieldtype": "Check",
+   "label": "Expected Snapshot Locked",
+   "read_only": 1
+  },
+  {
+   "fieldname": "expected_snapshot_locked_at",
+   "fieldtype": "Datetime",
+   "label": "Expected Snapshot Locked At",
+   "read_only": 1
   },
   {
    "fieldname": "section_items",
