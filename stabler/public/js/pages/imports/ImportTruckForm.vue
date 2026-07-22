@@ -118,6 +118,7 @@ async function loadDoc() {
 	} finally {
 		loading.value = false;
 	}
+	loadDeparture();
 }
 
 async function loadRefData() {
@@ -183,6 +184,43 @@ async function save() {
 	}
 }
 
+// ---- departure gate -------------------------------------------------------
+// The controller refuses PENDING -> DEPARTED_IRAN until customs and the vet
+// certificate are in order. Read that verdict up front so the button can
+// explain itself, instead of the user pressing it and reading a thrown error.
+const departure = ref(null);
+
+async function loadDeparture() {
+	departure.value = null;
+	if (isCreate.value || form.value.status !== "PENDING") return;
+	try {
+		departure.value = await call("stabler.api.imports.truck_departure_status", {
+			truck: docName.value,
+		});
+	} catch (_err) {
+		// A preview failure must not hide the action — the controller is still
+		// the enforcement point, so let the user try and see the real error.
+		departure.value = null;
+	}
+}
+
+const departureBlocked = computed(
+	() => !!departure.value && departure.value.gated && !departure.value.allowed
+);
+
+function blockerText(b) {
+	if (b.code === "declaration_not_cleared") {
+		return t("Customs declaration {0} is not cleared.").replace("{0}", b.gtd_number || "—");
+	}
+	if (b.code === "no_required_declaration") {
+		return t("No customs declaration on this invoice is marked as required for departure.");
+	}
+	if (b.code === "vet_certificate_missing") {
+		return t("A valid veterinary certificate is required.");
+	}
+	return b.code;
+}
+
 async function advanceStatus(nextStatus) {
 	const backward = !form.value.allowed_transitions.includes(nextStatus);
 	let reason = null;
@@ -235,6 +273,19 @@ watch(docName, loadDoc);
 
 		<div v-if="error" class="alert alert-danger">{{ error }}</div>
 
+		<!-- Departure gate: why the truck cannot leave yet -->
+		<div v-if="departureBlocked" class="alert alert-warning" role="alert">
+			<div class="fw-semibold mb-1">
+				<i class="ti ti-alert-triangle me-1"></i>{{ t("This truck cannot leave Iran yet:") }}
+			</div>
+			<ul class="mb-0 ps-3">
+				<li v-for="(b, i) in departure.blockers" :key="i">{{ blockerText(b) }}</li>
+			</ul>
+		</div>
+		<div v-else-if="departure && departure.via_override" class="alert alert-info" role="alert">
+			<i class="ti ti-shield-check me-1"></i>{{ t("Departure released by override: {0}").replace("{0}", form.departure_override_reason || "") }}
+		</div>
+
 		<!-- Status action bar -->
 		<div v-if="!isCreate" class="card mb-3">
 			<div class="card-body d-flex align-items-center flex-wrap gap-2">
@@ -246,6 +297,8 @@ watch(docName, loadDoc);
 						:key="ns"
 						type="button"
 						class="btn btn-outline-primary btn-sm"
+						:disabled="ns === 'DEPARTED_IRAN' && departureBlocked"
+						:title="ns === 'DEPARTED_IRAN' && departureBlocked ? t('This truck cannot leave Iran yet:') : null"
 						@click="advanceStatus(ns)"
 					>
 						<i class="ti ti-arrow-right me-1"></i>{{ t(ns) }}

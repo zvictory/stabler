@@ -974,6 +974,10 @@ def get_import_truck(name: str):
         "transport_currency": doc.transport_currency,
         "transport_payment_status": doc.transport_payment_status,
         "transport_purchase_invoice": doc.transport_purchase_invoice,
+        # Departure-gate override — absent on a tenant that has not run v55 yet,
+        # so read through .get() rather than assuming the field exists.
+        "departure_override": cint(doc.get("departure_override")),
+        "departure_override_reason": doc.get("departure_override_reason") or None,
         "allowed_transitions": _truck_next_statuses(doc.status),
         "cost_visible": _cost_visible(),
         "receipts": frappe.get_all(
