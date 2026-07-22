@@ -1,4 +1,14 @@
 source,target
+Price Lists,Fiyat Listeleri
+New Price List,Yeni Fiyat Listesi
+Price List Name,Fiyat Listesi Adı
+Save Changes,Değişiklikleri Kaydet
+Edit Item,Ürünü Düzenle
+Disabled,Pasif
+Add Price,Fiyat Ekle
+Edit Price,Fiyatı Düzenle
+Price List Rate,Fiyat Listesi Fiyatı
+Price Lists (Item Prices),Fiyat Listeleri (Ürün Fiyatları)
 #,#
 % of total,Toplam %
 (no name),(isimsiz)
@@ -4574,3 +4584,41 @@ d,gün
 GRN created,Kabul oluşturuldu
 this page only,yalnızca bu sayfa
 Gap between the agreed price and the documented price,Mutabık kalınan fiyat ile belgedeki fiyat arasındaki fark
+This truck cannot leave Iran yet:,Bu araç henüz İran'dan çıkamaz:
+Customs declaration {0} is not cleared.,{0} gümrük beyannamesi kapatılmamış.
+No customs declaration on this invoice is marked as required for departure.,Bu faturadaki hiçbir gümrük beyannamesi çıkış için zorunlu olarak işaretlenmemiş.
+A valid veterinary certificate is required.,Geçerli bir veteriner sertifikası gerekli.
+Only an Imports Manager can release a truck without customs clearance.,Gümrük kapatılmadan aracı yalnızca ithalat müdürü serbest bırakabilir.
+Departure released by override: {0},Çıkış istisna ile serbest bırakıldı: {0}
+Required for departure,Çıkış için zorunlu
+Departure override,Çıkış istisnası
+Departure override reason,Çıkış istisnası gerekçesi
+Acquisition portfolio is not in your role scope.,Tedarik portföyü rol kapsamınızda değil.
+Assigned tenders,Atanan ihaleler
+Awaiting delivery,Teslimat bekleyen
+Choose another period or start a tender intake to see lifecycle and execution work here.,Başka bir dönem seçin ya da burada yaşam döngüsü ve icra işini görmek için ihale kaydı başlatın.
+Clear filters or select another dashboard period.,Filtreleri temizleyin veya başka bir pano dönemi seçin.
+Contract total,Sözleşme toplamı
+Customs workload,Gümrük iş yükü
+Execution spread,İcra dağılımı
+Missing required checks,Eksik zorunlu kontroller
+No acquisition board is available for your role.,Rolünüz için tedarik panosu yok.
+No priority checks right now.,Şu an öncelikli kontrol yok.
+No purchase orders match these filters.,Bu filtrelerle eşleşen satınalma siparişi yok.
+No shipments match these filters.,Bu filtrelerle eşleşen sevkiyat yok.
+No tenders match these filters.,Bu filtrelerle eşleşen ihale yok.
+Open customs work,Açık gümrük işi
+Pending deliveries,Bekleyen teslimatlar
+Procurement total,Tedarik toplamı
+Purchase orders,Satınalma siparişleri
+"Result exists, but submission evidence is missing.",Sonuç var ama teklif kanıtı eksik.
+Sales orders,Satış siparişleri
+Tender acquisition,İhale tedariki
+Tender activity is empty for this period,Bu dönemde ihale hareketi yok
+Tender control center,İhale kontrol merkezi
+Tender dashboard could not be loaded.,İhale panosu yüklenemedi.
+Tender operations,İhale operasyonları
+Try again,Tekrar dene
+Unverified,Doğrulanmamış
+Unverified history,Doğrulanmamış geçmiş
+﻿#,#

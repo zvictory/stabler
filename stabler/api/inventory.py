@@ -140,6 +140,7 @@ def item_detail(name: str, company: str | None = None):
 		"is_stock_item": doc.is_stock_item,
 		"is_purchase_item": doc.is_purchase_item,
 		"is_sales_item": doc.is_sales_item,
+		"disabled": doc.disabled,
 		"standard_rate": flt(doc.standard_rate),
 		"valuation_rate": flt(doc.valuation_rate),
 		"weight_per_unit": flt(doc.weight_per_unit),
@@ -630,6 +631,233 @@ def create_item(
 
 
 @frappe.whitelist()
+def update_item(
+	name: str,
+	item_name: str | None = None,
+	item_group: str | None = None,
+	stock_uom: str | None = None,
+	is_stock_item: int | None = None,
+	is_sales_item: int | None = None,
+	is_purchase_item: int | None = None,
+	standard_rate: float | None = None,
+	description: str | None = None,
+	disabled: int | None = None,
+	weight_per_unit: float | None = None,
+	weight_uom: str | None = None,
+):
+	if not name or not frappe.db.exists("Item", name):
+		frappe.throw(_("Item '{0}' not found.").format(name))
+	doc = frappe.get_doc("Item", name)
+	if item_name is not None and item_name.strip():
+		doc.item_name = item_name.strip()
+	if item_group is not None and item_group.strip():
+		if not frappe.db.exists("Item Group", item_group.strip()):
+			frappe.throw(_("Unknown item group: {0}").format(item_group))
+		doc.item_group = item_group.strip()
+	if stock_uom is not None and stock_uom.strip():
+		if not frappe.db.exists("UOM", stock_uom.strip()):
+			frappe.throw(_("Unknown UOM: {0}").format(stock_uom))
+		doc.stock_uom = stock_uom.strip()
+	if is_stock_item is not None:
+		doc.is_stock_item = 1 if int(is_stock_item) else 0
+	if is_sales_item is not None:
+		doc.is_sales_item = 1 if int(is_sales_item) else 0
+	if is_purchase_item is not None:
+		doc.is_purchase_item = 1 if int(is_purchase_item) else 0
+	if standard_rate is not None:
+		doc.standard_rate = flt(standard_rate)
+	if description is not None:
+		doc.description = description.strip()
+	if disabled is not None:
+		doc.disabled = 1 if int(disabled) else 0
+	if weight_per_unit is not None:
+		doc.weight_per_unit = flt(weight_per_unit)
+	if weight_uom is not None:
+		doc.weight_uom = weight_uom.strip() if weight_uom else None
+	doc.save(ignore_permissions=False)
+	return {"name": doc.name, "item_code": doc.item_code, "item_name": doc.item_name, "disabled": doc.disabled}
+
+
+# --------------------------------------------------------------------------- #
+# Price List & Item Price APIs — ERPNext tabPrice List & tabItem Price
+# --------------------------------------------------------------------------- #
+@frappe.whitelist()
+def list_price_lists(buying: int | None = None, selling: int | None = None):
+	"""Return list of active Price Lists from ERPNext `tabPrice List`."""
+	conds = ["enabled = 1"]
+	params: dict = {}
+	if buying is not None:
+		conds.append("buying = %(buying)s")
+		params["buying"] = 1 if int(buying) else 0
+	if selling is not None:
+		conds.append("selling = %(selling)s")
+		params["selling"] = 1 if int(selling) else 0
+	where = " AND ".join(conds)
+	return frappe.db.sql(
+		f"""
+		SELECT name, price_list_name, currency, buying, selling
+		FROM `tabPrice List`
+		WHERE {where}
+		ORDER BY name ASC
+		""",
+		params,
+		as_dict=True,
+	)
+
+
+@frappe.whitelist()
+def create_price_list(price_list_name: str, currency: str = "USD", buying: int = 1, selling: int = 1):
+	"""Create a new ERPNext `Price List` doc."""
+	name = (price_list_name or "").strip()
+	if not name:
+		frappe.throw(_("Price List name is required."))
+	if frappe.db.exists("Price List", name):
+		frappe.throw(_("Price List '{0}' already exists.").format(name))
+	doc = frappe.new_doc("Price List")
+	doc.price_list_name = name
+	doc.currency = (currency or "USD").strip()
+	doc.buying = 1 if int(buying) else 0
+	doc.selling = 1 if int(selling) else 0
+	doc.enabled = 1
+	doc.insert(ignore_permissions=False)
+	return {"name": doc.name, "price_list_name": doc.price_list_name, "currency": doc.currency}
+
+
+@frappe.whitelist()
+def list_item_prices_for_item(item_code: str):
+	"""Return all Item Price records for a specific item from `tabItem Price`."""
+	if not item_code:
+		return []
+	return frappe.db.sql(
+		"""
+		SELECT ip.name, ip.price_list, ip.price_list_rate, ip.currency,
+		       ip.packing_unit, ip.uom, pl.buying, pl.selling
+		FROM `tabItem Price` ip
+		LEFT JOIN `tabPrice List` pl ON pl.name = ip.price_list
+		WHERE ip.item_code = %(item_code)s
+		ORDER BY ip.price_list ASC
+		""",
+		{"item_code": item_code},
+		as_dict=True,
+	)
+
+
+@frappe.whitelist()
+def save_item_price(
+	item_code: str,
+	price_list: str,
+	price_list_rate: float,
+	currency: str | None = None,
+	min_qty: float = 1,
+	uom: str | None = None,
+	name: str | None = None,
+):
+	"""Create or update an ERPNext `Item Price` doc."""
+	if not item_code or not frappe.db.exists("Item", item_code):
+		frappe.throw(_("Item '{0}' not found.").format(item_code))
+	if not price_list or not frappe.db.exists("Price List", price_list):
+		frappe.throw(_("Price List '{0}' not found.").format(price_list))
+
+	rate = flt(price_list_rate)
+	if rate < 0:
+		frappe.throw(_("Price list rate cannot be negative."))
+
+	pl_doc = frappe.get_doc("Price List", price_list)
+	curr = (currency or pl_doc.currency or "USD").strip()
+
+	if not name:
+		existing = frappe.db.get_value("Item Price", {"item_code": item_code, "price_list": price_list})
+		if existing:
+			name = existing
+
+	if name and frappe.db.exists("Item Price", name):
+		doc = frappe.get_doc("Item Price", name)
+	else:
+		doc = frappe.new_doc("Item Price")
+		doc.item_code = item_code
+		doc.price_list = price_list
+
+	doc.price_list_rate = rate
+	doc.currency = curr
+	if uom:
+		doc.uom = uom
+	doc.save(ignore_permissions=False)
+	return {"name": doc.name, "item_code": doc.item_code, "price_list": doc.price_list, "price_list_rate": doc.price_list_rate, "currency": doc.currency}
+
+
+@frappe.whitelist()
+def delete_item_price(name: str):
+	"""Delete an Item Price record."""
+	if not name or not frappe.db.exists("Item Price", name):
+		frappe.throw(_("Item Price '{0}' not found.").format(name))
+	frappe.delete_doc("Item Price", name, ignore_permissions=False)
+	return {"status": "ok"}
+
+
+@frappe.whitelist()
+def get_price_list_matrix(price_list: str, item_group: str | None = None, search: str | None = None, limit: int = 200):
+	"""Get all items along with their rate in the specified `price_list` for bulk editing."""
+	if not price_list or not frappe.db.exists("Price List", price_list):
+		frappe.throw(_("Price List '{0}' not found.").format(price_list))
+
+	pl = frappe.get_doc("Price List", price_list)
+	conds = ["i.disabled = 0"]
+	params = {"price_list": price_list, "limit": min(int(limit or 200), 500)}
+
+	if search:
+		conds.append("(i.item_name LIKE %(s)s OR i.item_code LIKE %(s)s)")
+		params["s"] = f"%{search}%"
+	if item_group:
+		conds.append("i.item_group = %(item_group)s")
+		params["item_group"] = item_group
+
+	where = " AND ".join(conds)
+	rows = frappe.db.sql(
+		f"""
+		SELECT i.name AS item_code, i.item_name, i.item_group, i.stock_uom, i.standard_rate,
+		       ip.name AS item_price_name, ip.price_list_rate,
+		       COALESCE(ip.currency, %(pl_curr)s) AS currency
+		FROM `tabItem` i
+		LEFT JOIN `tabItem Price` ip ON ip.item_code = i.name AND ip.price_list = %(price_list)s
+		WHERE {where}
+		ORDER BY i.item_name ASC
+		LIMIT %(limit)s
+		""",
+		{**params, "pl_curr": pl.currency or "USD"},
+		as_dict=True,
+	)
+	return {"price_list": pl.name, "currency": pl.currency, "items": rows}
+
+
+@frappe.whitelist()
+def bulk_update_item_prices(price_list: str, price_updates: list | str):
+	"""Bulk update Item Price rates for a specific Price List."""
+	if not price_list or not frappe.db.exists("Price List", price_list):
+		frappe.throw(_("Price List '{0}' not found.").format(price_list))
+
+	if isinstance(price_updates, str):
+		price_updates = json.loads(price_updates or "[]")
+	if not isinstance(price_updates, list):
+		frappe.throw(_("Invalid price updates format."))
+
+	updated_count = 0
+	for item_upd in price_updates:
+		code = item_upd.get("item_code")
+		rate = flt(item_upd.get("price_list_rate"))
+		if not code or rate < 0:
+			continue
+		save_item_price(
+			item_code=code,
+			price_list=price_list,
+			price_list_rate=rate,
+			currency=item_upd.get("currency"),
+		)
+		updated_count += 1
+
+	return {"status": "ok", "updated_count": updated_count}
+
+
+@frappe.whitelist()
 def list_warehouse_types(limit: int = 50):
 	return frappe.db.sql(
 		"""
@@ -1060,11 +1288,9 @@ def list_stock_reconciliations(company: str, limit: int = 25):
 def _batch_rows(company: str, item_code: str | None, warehouse: str | None):
 	"""Per-batch balances from the Stock Ledger, with days to expiry.
 
-	Balance comes from summing `tabStock Ledger Entry.actual_qty` rather than
-	`tabBatch.batch_qty`, because the latter is a whole-company figure and says
-	nothing about which warehouse the stock is actually sitting in.
+	Supports both ERPNext v15 direct `sle.batch_no` and v16 `serial_and_batch_bundle`.
 	"""
-	conds = ["sle.company = %(company)s", "sle.is_cancelled = 0", "sle.batch_no IS NOT NULL"]
+	conds = ["sle.company = %(company)s", "sle.is_cancelled = 0", "(sle.batch_no IS NOT NULL OR sbe.batch_no IS NOT NULL)"]
 	params = {"company": company, "item_code": item_code, "warehouse": warehouse}
 	if item_code:
 		conds.append("sle.item_code = %(item_code)s")
@@ -1072,17 +1298,19 @@ def _batch_rows(company: str, item_code: str | None, warehouse: str | None):
 		conds.append("sle.warehouse = %(warehouse)s")
 	return frappe.db.sql(
 		f"""
-		SELECT sle.batch_no, sle.item_code, sle.warehouse,
-		       SUM(sle.actual_qty) AS qty,
+		SELECT COALESCE(sle.batch_no, sbe.batch_no) AS batch_no,
+		       sle.item_code, sle.warehouse,
+		       SUM(CASE WHEN sle.serial_and_batch_bundle IS NOT NULL THEN sbe.qty ELSE sle.actual_qty END) AS qty,
 		       b.expiry_date,
 		       DATEDIFF(b.expiry_date, CURDATE()) AS days_left,
 		       i.item_name, i.stock_uom
 		FROM `tabStock Ledger Entry` sle
-		LEFT JOIN `tabBatch` b ON b.name = sle.batch_no
+		LEFT JOIN `tabSerial and Batch Entry` sbe ON sbe.parent = sle.serial_and_batch_bundle
+		LEFT JOIN `tabBatch` b ON b.name = COALESCE(sle.batch_no, sbe.batch_no)
 		LEFT JOIN `tabItem` i ON i.name = sle.item_code
 		WHERE {" AND ".join(conds)}
-		GROUP BY sle.batch_no, sle.item_code, sle.warehouse, b.expiry_date, i.item_name, i.stock_uom
-		HAVING SUM(sle.actual_qty) > 0
+		GROUP BY COALESCE(sle.batch_no, sbe.batch_no), sle.item_code, sle.warehouse, b.expiry_date, i.item_name, i.stock_uom
+		HAVING SUM(CASE WHEN sle.serial_and_batch_bundle IS NOT NULL THEN sbe.qty ELSE sle.actual_qty END) > 0
 		""",
 		params,
 		as_dict=True,

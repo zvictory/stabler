@@ -1,4 +1,14 @@
 source,target
+Price Lists,Narx ro'yxatlari
+New Price List,Yangi narx ro'yxati
+Price List Name,Narx ro'yxati nomi
+Save Changes,O'zgarishlarni saqlash
+Edit Item,Tovarni tahrirlash
+Disabled,Nofaol
+Add Price,Narx qo'shish
+Edit Price,Narxni tahrirlash
+Price List Rate,Narx ro'yxati narxi
+Price Lists (Item Prices),Narx ro'yxatlari (Tovar narxlari)
 #,#
 % of total,Jami %
 (no name),(ismsiz)
@@ -4618,3 +4628,12 @@ d,kun
 GRN created,Qabul yaratilgan
 this page only,faqat shu sahifa
 Gap between the agreed price and the documented price,Kelishilgan va hujjatdagi narx o‘rtasidagi farq
+This truck cannot leave Iran yet:,Bu mashina hali Erondan chiqa olmaydi:
+Customs declaration {0} is not cleared.,{0} bojxona deklaratsiyasi rasmiylashtirilmagan.
+No customs declaration on this invoice is marked as required for departure.,Bu invoysdagi hech bir bojxona deklaratsiyasi chiqish uchun majburiy deb belgilanmagan.
+A valid veterinary certificate is required.,Amaldagi veterinariya sertifikati talab qilinadi.
+Only an Imports Manager can release a truck without customs clearance.,Bojxona rasmiylashtiruvisiz mashinani faqat import menejeri chiqara oladi.
+Departure released by override: {0},Chiqish istisno tariqasida ruxsat etildi: {0}
+Required for departure,Chiqish uchun majburiy
+Departure override,Chiqish istisnosi
+Departure override reason,Chiqish istisnosi sababi

@@ -5238,3 +5238,54 @@ def payment_calendar(company: str, days: int = 30) -> dict:
             "count": len(rows),
         },
     }
+
+
+@frappe.whitelist()
+def truck_departure_status(truck: str):
+    """Why a truck can or cannot leave Iran yet — read-only.
+
+    The UI calls this to explain a disabled "Depart" action instead of letting
+    the user press it and read a stack of errors. Same rule the Import Truck
+    controller enforces, evaluated through the same pure function, so the
+    preview cannot drift from the gate.
+    """
+    if not truck or not frappe.db.exists("Import Truck", truck):
+        frappe.throw(_("Unknown Import Truck: {0}").format(truck))
+    _assert_can_read("Import Truck", truck)
+    company = _company_of("Import Truck", truck)
+    _assert_imports_access(company)
+
+    from stabler.stabler.doctype.vet_certificate.vet_certificate import has_valid_vet_cert
+    from stabler.stabler.imports_module import departure_math
+
+    doc = frappe.get_doc("Import Truck", truck)
+    has_flag = frappe.db.has_column("Customs Declaration", "required_for_departure")
+    declarations = frappe.get_all(
+        "Customs Declaration",
+        filters={"commercial_invoice": doc.commercial_invoice},
+        fields=["name", "gtd_number", "status", "cleared_date"]
+        + (["required_for_departure"] if has_flag else []),
+        order_by="declaration_date asc",
+    )
+    if not has_flag:
+        for d in declarations:
+            d["required_for_departure"] = 1
+
+    vet_valid = has_valid_vet_cert(doc.commercial_invoice)
+    verdict = departure_math.may_depart(
+        declarations,
+        vet_valid=vet_valid,
+        override=bool(doc.get("departure_override")),
+        override_reason=doc.get("departure_override_reason") or "",
+    )
+    return {
+        "truck": truck,
+        "status": doc.status,
+        "gated": departure_math.gates_this_transition("PENDING", "DEPARTED_IRAN")
+        and doc.status == "PENDING",
+        "allowed": verdict["allowed"],
+        "via_override": verdict["via_override"],
+        "blockers": verdict["blockers"],
+        "vet_valid": vet_valid,
+        "declarations": declarations,
+    }

@@ -75,18 +75,25 @@ class BalanceSourceTest(unittest.TestCase):
 
     def test_quantities_come_from_the_ledger_not_batch_qty(self):
         # tabBatch.batch_qty is a company-wide figure — using it would report
-        # stock sitting in another warehouse as available here.
+        # stock sitting in another warehouse as available here. Assert the
+        # property, not the exact SQL: the query legitimately changed shape
+        # when the v16 Serial and Batch Bundle path was added.
         self.assertIn("tabStock Ledger Entry", self.body)
-        self.assertIn("SUM(sle.actual_qty)", self.body)
-        # Match the column reference, not the word — the docstring explains why
-        # batch_qty is wrong, and a prose mention must not fail the guard.
+        self.assertIn("sle.actual_qty", self.body)
         self.assertNotIn("b.batch_qty", self.body)
+
+    def test_v16_bundle_path_is_read_too(self):
+        # ERPNext 16 records the batch on a Serial and Batch Bundle rather than
+        # on the ledger row. Reading only sle.batch_no returns nothing on a v16
+        # site — the end-to-end run on msa proved it.
+        self.assertIn("tabSerial and Batch Entry", self.body)
+        self.assertIn("serial_and_batch_bundle", self.body)
 
     def test_cancelled_ledger_entries_are_excluded(self):
         self.assertIn("is_cancelled = 0", self.body)
 
     def test_zero_and_negative_balances_are_filtered_out(self):
-        self.assertIn("HAVING SUM(sle.actual_qty) > 0", self.body)
+        self.assertRegex(self.body, r"HAVING SUM\(.*?\) > 0")
 
     def test_no_caller_value_reaches_the_sql_string(self):
         # The only interpolation is the joined condition list, built from

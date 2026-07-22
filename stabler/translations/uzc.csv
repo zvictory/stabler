@@ -1,4 +1,14 @@
 source,target
+Price Lists,Нарх рўйхатлари
+New Price List,Янги нарх рўйхати
+Price List Name,Нарх рўйхати номи
+Save Changes,Ўзгаришларни сақлаш
+Edit Item,Товарни таҳрирлаш
+Disabled,Нофаол
+Add Price,Нарх қўшиш
+Edit Price,Нархни таҳрирлаш
+Price List Rate,Нарх рўйхати нархи
+Price Lists (Item Prices),Нарх рўйхатлари (Товар нархлари)
 #,#
 % of total,Жами %
 (no name),(исмсиз)
@@ -4618,3 +4628,12 @@ d,кун
 GRN created,Қабул яратилган
 this page only,фақат шу саҳифа
 Gap between the agreed price and the documented price,Келишилган ва ҳужжатдаги нарх ўртасидаги фарқ
+This truck cannot leave Iran yet:,Бу машина ҳали Эрондан чиқа олмайди:
+Customs declaration {0} is not cleared.,{0} божхона декларацияси расмийлаштирилмаган.
+No customs declaration on this invoice is marked as required for departure.,Бу инвойсдаги ҳеч бир божхона декларацияси чиқиш учун мажбурий деб белгиланмаган.
+A valid veterinary certificate is required.,Амалдаги ветеринария сертификати талаб қилинади.
+Only an Imports Manager can release a truck without customs clearance.,Божхона расмийлаштирувисиз машинани фақат импорт менежери чиқара олади.
+Departure released by override: {0},Чиқиш истисно тариқасида рухсат этилди: {0}
+Required for departure,Чиқиш учун мажбурий
+Departure override,Чиқиш истисноси
+Departure override reason,Чиқиш истисноси сабаби

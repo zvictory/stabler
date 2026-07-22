@@ -1,4 +1,14 @@
 source,target
+Price Lists,Price Lists
+New Price List,New Price List
+Price List Name,Price List Name
+Save Changes,Save Changes
+Edit Item,Edit Item
+Disabled,Disabled
+Add Price,Add Price
+Edit Price,Edit Price
+Price List Rate,Price List Rate
+Price Lists (Item Prices),Price Lists (Item Prices)
 #,#
 % of total,% of total
 (no name),(no name)
@@ -4615,3 +4625,12 @@ d,d
 GRN created,GRN created
 this page only,this page only
 Gap between the agreed price and the documented price,Gap between the agreed price and the documented price
+This truck cannot leave Iran yet:,This truck cannot leave Iran yet:
+Customs declaration {0} is not cleared.,Customs declaration {0} is not cleared.
+No customs declaration on this invoice is marked as required for departure.,No customs declaration on this invoice is marked as required for departure.
+A valid veterinary certificate is required.,A valid veterinary certificate is required.
+Only an Imports Manager can release a truck without customs clearance.,Only an Imports Manager can release a truck without customs clearance.
+Departure released by override: {0},Departure released by override: {0}
+Required for departure,Required for departure
+Departure override,Departure override
+Departure override reason,Departure override reason

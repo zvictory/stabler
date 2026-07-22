@@ -57,3 +57,4 @@ stabler.patches.v51_ci_proforma_link
 stabler.patches.v52_je_tender_deal
 stabler.patches.v53_add_work_order_batch
 stabler.patches.v54_je_account_asset
+stabler.patches.v55_departure_gate

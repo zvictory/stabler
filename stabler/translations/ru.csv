@@ -1,4 +1,14 @@
 source,target
+Price Lists,Прайс-листы
+New Price List,Новый прайс-лист
+Price List Name,Название прайс-листа
+Save Changes,Сохранить изменения
+Edit Item,Редактировать товар
+Disabled,Отключен
+Add Price,Добавить цену
+Edit Price,Редактировать цену
+Price List Rate,Цена в прайс-листе
+Price Lists (Item Prices),Прайс-листы (Цены товаров)
 #,#
 % of total,% от итога
 (no name),(без имени)
@@ -4624,3 +4634,12 @@ d,дн.
 GRN created,Приёмка создана
 this page only,только эта страница
 Gap between the agreed price and the documented price,Разница между согласованной и документальной ценой
+This truck cannot leave Iran yet:,Эта машина ещё не может выехать из Ирана:
+Customs declaration {0} is not cleared.,Таможенная декларация {0} не оформлена.
+No customs declaration on this invoice is marked as required for departure.,Ни одна таможенная декларация по этому инвойсу не отмечена как обязательная для выезда.
+A valid veterinary certificate is required.,Требуется действующий ветеринарный сертификат.
+Only an Imports Manager can release a truck without customs clearance.,Только менеджер импорта может выпустить машину без таможенного оформления.
+Departure released by override: {0},Выезд разрешён в обход правил: {0}
+Required for departure,Обязательно для выезда
+Departure override,Разрешение в обход
+Departure override reason,Причина разрешения в обход
