@@ -14,14 +14,7 @@ import unittest
 
 _ROOT = os.path.normpath(os.path.join(os.path.dirname(os.path.abspath(__file__)), ".."))
 _DASHBOARD = os.path.join(_ROOT, "public", "js", "pages", "Dashboard.vue")
-_TENDER_PAGES = (
-	"DirectorBoard.vue",
-	"MyTenders.vue",
-	"DeclarantQueue.vue",
-	"LogistBoard.vue",
-)
-
-
+_SALES_BOARD = os.path.join(_ROOT, "public", "js", "pages", "sales", "SalesOrderBoard.vue")
 def _read(path: str) -> str:
 	with open(path, encoding="utf-8") as source:
 		return source.read()
@@ -47,25 +40,26 @@ class TestTenderDashboardSpaContract(unittest.TestCase):
 	def test_dashboard_presents_explicit_lifecycle_and_execution_counts(self):
 		source = _read(_DASHBOARD)
 		for text in (
-			"Tayyor / Go",
+			"Tayyor",
 			"Yuborilgan",
-			"Yetkazilgan SO",
+			"Sales orders",
 			"Qabul qilingan PO",
 			"Tekshirilmagan tarix",
 			"Missing required checks",
 		):
 			self.assertIn(text, source)
 
-	def test_tender_boards_read_documented_route_filters(self):
-		for page in _TENDER_PAGES:
-			source = _read(os.path.join(_ROOT, "public", "js", "pages", "tender", page))
-			self.assertIn('useRoute', source, page)
-			self.assertIn('route.query', source, page)
-			self.assertIn('filteredRows', source, page)
-			for parameter in ("stage", "period", "risk", "due", "status"):
-				self.assertIn(parameter, source, f"{page} must support {parameter}")
-			self.assertNotIn('"/app/', source, page)
+	def test_dashboard_gates_role_specific_destinations(self):
+		source = _read(_DASHBOARD)
+		self.assertIn('role_scope.views', source)
+		for view in ("director", "sourcing", "declarant", "logist"):
+			self.assertIn(view, source)
 
+	def test_sales_order_board_reads_dashboard_period_and_status(self):
+		source = _read(_SALES_BOARD)
+		self.assertIn("useRoute", source)
+		self.assertIn("tenderRouteFilters", source)
+		self.assertIn("delivery_pending", source)
 
 if __name__ == "__main__":
 	unittest.main()

@@ -109,5 +109,21 @@ class TestTenderDashboardContract(unittest.TestCase):
 		self.assertIn('"tender": ["Sales User", "Sales Manager", "Stabler Declarant", "Stabler Logist"]', roles)
 
 
+class TestTenderBoardFilterPayloadContract(unittest.TestCase):
+	def test_lifecycle_boards_emit_stage_and_period_evidence(self):
+		src = _read(_TENDER)
+		for name in ("tender_director_board", "sourcing_my_tenders"):
+			body = _func_body(src, name)
+			for field in ('"event_date"', '"lifecycle"', '"status"', '"due"'):
+				self.assertIn(field, body, f"{name} must return {field}")
+
+	def test_execution_boards_emit_po_status_and_period_evidence(self):
+		src = _read(_TENDER)
+		for name in ("declarant_queue", "logist_board"):
+			body = _func_body(src, name)
+			for field in ('"event_date"', '"stage"', '"status"', '"risk"', '"due"'):
+				self.assertIn(field, body, f"{name} must return {field}")
+
+
 if __name__ == "__main__":
 	unittest.main()

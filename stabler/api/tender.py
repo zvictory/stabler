@@ -83,7 +83,7 @@ def _stages() -> list[dict]:
 
 
 @frappe.whitelist()
-def so_board(company: str) -> dict:
+def so_board(company: str, tender_only: int = 0) -> dict:
 	"""Stages + the submitted Sales Orders parked on each (kanban feed)."""
 	_assert_company_scope(company)  # tenant isolation: reject a foreign company arg
 	_require_tender(company)
@@ -93,9 +93,10 @@ def so_board(company: str) -> dict:
 	stages = _stages()
 	first_open = next((s["name"] for s in stages if not s["is_closed"]), stages[0]["name"] if stages else None)
 
+	so_filters = {"company": company, "docstatus": ["<", 2]} if int(tender_only or 0) else {"company": company, "docstatus": 1}
 	sos = frappe.get_all(
 		"Sales Order",
-		filters={"company": company, "docstatus": 1},
+		filters=so_filters,
 		fields=[
 			"name", "customer", "customer_name", "transaction_date", "delivery_date",
 			"currency", "rounded_total", "grand_total", "per_delivered", "per_billed",
@@ -107,6 +108,8 @@ def so_board(company: str) -> dict:
 	cards = []
 	for so in sos:
 		if so.status in ("Closed", "Cancelled"):
+			continue
+		if int(tender_only or 0) and not so.custom_crm_deal:
 			continue
 		stage = so.custom_board_stage or first_open  # lazy placement (virtual until moved)
 		cards.append(
@@ -1324,6 +1327,27 @@ def _deal_label(deal: str) -> str:
 _RISK_ORDER = {"risk": 0, "warn": 1, "good": 2, "none": 3}
 
 
+def _tender_filter_evidence(intake: dict, creation, risk: str) -> dict:
+	"""Evidence-bearing lifecycle fields for client-side tender-board filters."""
+	decision = intake.get("go_no_go")
+	verified = _has_submission_evidence(intake)
+	result = intake.get("result") if verified else ""
+	return {
+		"event_date": str(_tender_event_date(intake, creation) or ""),
+		"lifecycle": {
+			"identified": True,
+			"decided": decision in ("go", "no_go"),
+			"go": decision == "go",
+			"ready": decision == "go" and not _docs_summary(intake)["missing"],
+			"submitted": verified,
+			"assigned": (intake.get("assigned_to") or "") == frappe.session.user,
+			"unverified_history": bool(intake.get("result") and not verified),
+		},
+		"status": result or ("unverified_history" if intake.get("result") else ""),
+		"due": "late" if risk == "risk" else ("soon" if risk == "warn" else "on_time"),
+	}
+
+
 @frappe.whitelist()
 def tender_director_board(company: str) -> dict:
 	"""Director portfolio: every tender with value, margin, Остаток, deadline risk."""
@@ -1345,6 +1369,9 @@ def tender_director_board(company: str) -> dict:
 		elif _res == "pending":
 			pending += 1
 		dl = _deal_deadlines(deal, company, intake)
+		evidence = _tender_filter_evidence(
+			intake, frappe.db.get_value("CRM Deal", deal, "creation"), dl["risk"],
+		)
 		inp, refs = _bid_inputs(deal, company)
 		pnl = _compute_bid_pnl(inp)
 		value = flt(refs["so_revenue"]) or flt(pnl["bid_price"])
@@ -1361,6 +1388,8 @@ def tender_director_board(company: str) -> dict:
 			"margin_pct": pnl["margin_on_revenue_pct"],
 			"po_count": refs["po_count"], "so_count": refs["so_count"],
 			"risk": dl["risk"], "delivery": delivery, "result": intake.get("result") or "",
+			"event_date": evidence["event_date"], "lifecycle": evidence["lifecycle"],
+			"status": evidence["status"], "due": evidence["due"],
 			"assigned_to": intake.get("assigned_to") or "", "assigned_to_name": intake.get("assigned_to_name") or "",
 		})
 	rows.sort(key=lambda r: (_RISK_ORDER.get(r["risk"], 3), r["delivery"] or "9999-99-99"))
@@ -1379,7 +1408,7 @@ def _po_rows_for_views(company: str) -> tuple[list, bool]:
 	if not frappe.db.has_column("Purchase Order", "custom_crm_deal"):
 		return [], False
 	has_landed = frappe.db.has_column("Purchase Order", "custom_landed_charges")
-	fields = ["name", "supplier", "supplier_name", "schedule_date", "per_received", "custom_crm_deal", "status"]
+	fields = ["name", "supplier", "supplier_name", "transaction_date", "schedule_date", "per_received", "custom_crm_deal", "status"]
 	if has_landed:
 		fields.append("custom_landed_charges")
 	rows = frappe.get_all(
@@ -1405,12 +1434,15 @@ def declarant_queue(company: str) -> dict:
 		cleared = flt(p.per_received) >= 100
 		eta = getdate(p.schedule_date) if p.schedule_date else None
 		days = (eta - today_d).days if eta else None
+		status = "cleared" if cleared else ("in_progress" if customs_total else "pending")
+		risk = "risk" if days is not None and days < 0 else ("warn" if days is not None and days <= 7 else "good")
 		out.append({
 			"po": p.name, "supplier_name": p.supplier_name, "deal": p.custom_crm_deal,
 			"deal_label": _deal_label(p.custom_crm_deal) if p.custom_crm_deal else "",
 			"tnved": tnved, "customs_total": customs_total,
-			"eta": str(eta) if eta else None, "days_left": days,
-			"status": "cleared" if cleared else ("in_progress" if customs_total else "pending"),
+			"event_date": str(p.transaction_date or ""), "eta": str(eta) if eta else None, "days_left": days,
+			"stage": status, "status": status, "risk": risk,
+			"due": "late" if risk == "risk" else ("soon" if risk == "warn" else "on_time"),
 		})
 	return {"currency": base_ccy, "rows": out}
 
@@ -1440,13 +1472,15 @@ def logist_board(company: str) -> dict:
 			deliv_cache[deal] = getdate(dv) if dv else None
 		delivery = deliv_cache[deal]
 		late = bool(not received and eta and delivery and eta > delivery)
+		status = "delivered" if received else ("late" if late else "in_transit")
 		out.append({
 			"po": p.name, "supplier_name": p.supplier_name, "deal": deal,
 			"deal_label": _deal_label(deal) if deal else "",
-			"transport": transport, "eta": str(eta) if eta else None,
+			"transport": transport, "event_date": str(p.transaction_date or ""), "eta": str(eta) if eta else None,
 			"delivery": str(delivery) if delivery else None,
 			"received": received,
-			"status": "delivered" if received else ("late" if late else "in_transit"),
+			"stage": status, "status": status, "risk": "risk" if status == "late" else "good",
+			"due": "late" if status == "late" else "on_time",
 		})
 	return {"currency": base_ccy, "rows": out}
 
@@ -1466,12 +1500,17 @@ def sourcing_my_tenders(company: str) -> dict:
 		if not oversight and (intake.get("assigned_to") or "") != me:
 			continue
 		dl = _deal_deadlines(deal, company, intake)
+		evidence = _tender_filter_evidence(
+			intake, frappe.db.get_value("CRM Deal", deal, "creation"), dl["risk"],
+		)
 		po_landed, po_count = _deal_landed(deal, company)
 		delivery = next((m["date"] for m in dl["milestones"] if m["key"] == "delivery"), None)
 		rows.append({
 			"deal": deal, "label": _deal_label(deal),
 			"landed": po_landed, "po_count": po_count,
 			"risk": dl["risk"], "delivery": delivery, "result": intake.get("result") or "",
+			"event_date": evidence["event_date"], "lifecycle": evidence["lifecycle"],
+			"status": evidence["status"], "due": evidence["due"],
 			"assigned_to": intake.get("assigned_to") or "", "assigned_to_name": intake.get("assigned_to_name") or "",
 		})
 	rows.sort(key=lambda r: (_RISK_ORDER.get(r["risk"], 3), r["delivery"] or "9999-99-99"))

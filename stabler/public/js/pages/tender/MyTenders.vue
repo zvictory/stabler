@@ -12,6 +12,7 @@ import { t } from "../../composables/i18n.js";
 import { useAutoRefresh } from "../../composables/useAutoRefresh.js";
 import { useToast } from "../../composables/useToast.js";
 import { useEscapeBack } from "../../composables/useEscapeBack.js";
+import { activeTenderFilters, filterTenderRows, tenderRouteFilters } from "../../composables/tenderBoardFilters.js";
 import EmptyState from "../../components/EmptyState.vue";
 import SkeletonRows from "../../components/SkeletonRows.vue";
 import TenderNav from "./TenderNav.vue";
@@ -42,18 +43,9 @@ useAutoRefresh(load);
 
 const ccy = computed(() => data.value?.currency || "");
 const rows = computed(() => data.value?.rows || []);
-const filters = computed(() => ({
-	stage: String(route.query.stage || ""), period: String(route.query.period || ""),
-	risk: String(route.query.risk || ""), due: String(route.query.due || ""), status: String(route.query.status || ""),
-}));
-const filterSummary = computed(() => Object.entries(filters.value).filter(([, value]) => value).map(([key, value]) => `${key}: ${value}`));
-const filteredRows = computed(() => rows.value.filter((row) => {
-	if (filters.value.risk && row.risk !== filters.value.risk) return false;
-	if (filters.value.status && row.result !== filters.value.status) return false;
-	if (filters.value.due === "late" && row.risk !== "risk") return false;
-	if (filters.value.due === "soon" && row.risk !== "warn") return false;
-	return true;
-}));
+const filters = computed(() => tenderRouteFilters(route.query));
+const filterSummary = computed(() => activeTenderFilters(filters.value).map(([key, value]) => `${key}: ${value}`));
+const filteredRows = computed(() => filterTenderRows(rows.value, filters.value));
 const fm = (v) => formatMoney(v, ccy.value, user.value.language);
 const riskBadge = (r) => ({ good: "bg-green-lt text-green", warn: "bg-yellow-lt text-yellow", risk: "bg-red-lt text-red" }[r] || "bg-secondary-lt");
 const riskLabel = (r) => ({ good: t("On track"), warn: t("Deadline near"), risk: t("At risk"), none: "—" }[r] || "—");

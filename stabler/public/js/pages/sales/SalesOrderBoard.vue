@@ -1,7 +1,7 @@
 <script setup>
 import { computed, onMounted, ref } from "vue";
 import { storeToRefs } from "pinia";
-import { useRouter } from "vue-router";
+import { useRoute, useRouter } from "vue-router";
 import { useEscapeBack } from "../../composables/useEscapeBack.js";
 import { useSession } from "../../stores/session.js";
 import { call } from "../../api/client.js";
@@ -10,10 +10,12 @@ import { formatDate } from "../../composables/date.js";
 import { t } from "../../composables/i18n.js";
 import { useToast } from "../../composables/useToast.js";
 import { useConfirm } from "../../composables/useConfirm.js";
+import { filterTenderRows, tenderRouteFilters } from "../../composables/tenderBoardFilters.js";
 import EmptyState from "../../components/EmptyState.vue";
 
 const session = useSession();
 const { activeCompany, currency, user } = storeToRefs(session);
+const route = useRoute();
 const router = useRouter();
 useEscapeBack(null, "/sales"); // ESC → back (general app rule)
 const toast = useToast();
@@ -27,7 +29,10 @@ async function load() {
 	if (!activeCompany.value) return;
 	loading.value = true;
 	try {
-		const r = await call("stabler.api.tender.so_board", { company: activeCompany.value });
+		const r = await call("stabler.api.tender.so_board", {
+			company: activeCompany.value,
+			tender_only: route.query.tender === "1" ? 1 : 0,
+		});
 		stages.value = r?.stages || [];
 		cards.value = r?.cards || [];
 	} catch (err) {
@@ -39,10 +44,18 @@ async function load() {
 onMounted(load);
 
 const colorOf = (s) => s.color || "#6c757d";
+const boardFilters = computed(() => tenderRouteFilters(route.query));
+const filteredCards = computed(() => filterTenderRows(
+	cards.value.map((card) => ({
+		...card,
+		status: Number(card.per_delivered) >= 100 ? "delivered" : "delivery_pending",
+	})),
+	boardFilters.value,
+));
 const cardsByStage = computed(() => {
 	const map = {};
 	for (const s of stages.value) map[s.name] = [];
-	for (const c of cards.value) (map[c.stage] || (map[c.stage] = [])).push(c);
+	for (const c of filteredCards.value) (map[c.stage] || (map[c.stage] = [])).push(c);
 	return map;
 });
 const colTotal = (stageName) =>

@@ -12,6 +12,7 @@ import { t } from "../../composables/i18n.js";
 import { useAutoRefresh } from "../../composables/useAutoRefresh.js";
 import { useToast } from "../../composables/useToast.js";
 import { useEscapeBack } from "../../composables/useEscapeBack.js";
+import { activeTenderFilters, filterTenderRows, tenderRouteFilters } from "../../composables/tenderBoardFilters.js";
 import EmptyState from "../../components/EmptyState.vue";
 import SkeletonRows from "../../components/SkeletonRows.vue";
 import TenderNav from "./TenderNav.vue";
@@ -42,19 +43,9 @@ useAutoRefresh(load);
 
 const ccy = computed(() => data.value?.currency || "");
 const rows = computed(() => data.value?.rows || []);
-const filters = computed(() => ({
-	stage: String(route.query.stage || ""), period: String(route.query.period || ""),
-	risk: String(route.query.risk || ""), due: String(route.query.due || ""), status: String(route.query.status || ""),
-}));
-const filterSummary = computed(() => Object.entries(filters.value).filter(([, value]) => value).map(([key, value]) => `${key}: ${value}`));
-const filteredRows = computed(() => rows.value.filter((row) => {
-	const risk = row.status === "late" ? "risk" : "good";
-	if (filters.value.risk && risk !== filters.value.risk) return false;
-	if (filters.value.status && row.status !== filters.value.status) return false;
-	if (filters.value.due === "late" && row.status !== "late") return false;
-	if (filters.value.due === "soon" && row.status !== "in_transit") return false;
-	return true;
-}));
+const filters = computed(() => tenderRouteFilters(route.query));
+const filterSummary = computed(() => activeTenderFilters(filters.value).map(([key, value]) => `${key}: ${value}`));
+const filteredRows = computed(() => filterTenderRows(rows.value, filters.value));
 const fm = (v) => formatMoney(v, ccy.value, user.value.language);
 const stBadge = (s) => ({ delivered: "bg-green-lt text-green", in_transit: "bg-blue-lt text-blue", late: "bg-red-lt text-red" }[s] || "bg-secondary-lt");
 const stLabel = (s) => ({ delivered: t("Delivered"), in_transit: t("In transit"), late: t("Delayed") }[s] || s);

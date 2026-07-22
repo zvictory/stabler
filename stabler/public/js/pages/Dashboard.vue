@@ -40,6 +40,12 @@ const execution = computed(() => tenderData.value.execution || {});
 const attention = computed(() => tenderData.value.attention?.items || []);
 const myWork = computed(() => tenderData.value.my_work || {});
 const tenderFinance = computed(() => tenderData.value.finance || null);
+const tenderViews = computed(() => tenderData.value.role_scope.views || []);
+const acquisitionDestination = computed(() =>
+	tenderViews.value.includes("director") ? "tender-director" : (tenderViews.value.includes("sourcing") ? "tender-my-tenders" : ""),
+);
+const canOpenAcquisition = computed(() => hasTenderView("director") || hasTenderView("sourcing"));
+const canOpenSalesExecution = computed(() => tenderData.value.role_scope.execution_scope === "portfolio");
 const tenderEmpty = computed(
 	() =>
 		!tenderLoading.value &&
@@ -130,6 +136,15 @@ async function load() {
 function navigate(name, filters = {}) {
 	const query = { period: tenderPeriod.value, ...filters };
 	router.push({ name, query });
+}
+
+function hasTenderView(view) {
+	return tenderViews.value.includes(view);
+}
+
+function openAttention(item) {
+	if (!item.deal) return;
+	router.push({ name: "tender-po-control", query: { period: tenderPeriod.value, deal: item.deal } });
 }
 
 function attentionLabel(item) {
@@ -290,12 +305,15 @@ const activityIcon = (type) => {
 									<div v-if="tenderData.role_scope.acquisition_scope === 'none'" class="text-secondary">
 										{{ t("Acquisition portfolio is not in your role scope.") }}
 									</div>
-									<div v-else class="row g-2">
-										<div class="col-6 col-md-3"><button type="button" class="tender-metric-card" @click="navigate('tender-director', { stage: 'identified' })"><span>{{ t("Aniqlangan") }}</span><strong>{{ acquisition.identified || 0 }}</strong></button></div>
-										<div class="col-6 col-md-3"><button type="button" class="tender-metric-card" @click="navigate('tender-my-tenders', { stage: 'go' })"><span>{{ t("Tayyor / Go") }}</span><strong>{{ acquisition.ready || 0 }} / {{ acquisition.go || 0 }}</strong></button></div>
-										<div class="col-6 col-md-3"><button type="button" class="tender-metric-card" @click="navigate('tender-my-tenders', { stage: 'submitted' })"><span>{{ t("Yuborilgan") }}</span><strong>{{ acquisition.submitted || 0 }} / {{ acquisition.ready || 0 }}</strong></button></div>
-										<div class="col-6 col-md-3"><button type="button" class="tender-metric-card" @click="navigate('tender-director', { status: 'won' })"><span>{{ t("Yutilgan / Yo'qotilgan") }}</span><strong>{{ acquisition.won || 0 }} / {{ acquisition.lost || 0 }}</strong></button></div>
+									<div v-else-if="canOpenAcquisition && acquisitionDestination" class="row g-2">
+										<div class="col-6 col-md-4"><button type="button" class="tender-metric-card" @click="navigate(acquisitionDestination, { stage: 'identified' })"><span>{{ t("Aniqlangan") }}</span><strong>{{ acquisition.identified || 0 }}</strong></button></div>
+										<div class="col-6 col-md-4"><button type="button" class="tender-metric-card" @click="navigate(acquisitionDestination, { stage: 'decided' })"><span>{{ t("Qaror qilingan") }}</span><strong>{{ (acquisition.go || 0) + (acquisition.no_go || 0) }}</strong></button></div>
+										<div class="col-6 col-md-4"><button type="button" class="tender-metric-card" @click="navigate(acquisitionDestination, { stage: 'ready' })"><span>{{ t("Tayyor") }}</span><strong>{{ acquisition.ready || 0 }}</strong></button></div>
+										<div class="col-6 col-md-4"><button type="button" class="tender-metric-card" @click="navigate(acquisitionDestination, { stage: 'submitted' })"><span>{{ t("Yuborilgan") }}</span><strong>{{ acquisition.submitted || 0 }}</strong></button></div>
+										<div class="col-6 col-md-4"><button type="button" class="tender-metric-card" @click="navigate(acquisitionDestination, { status: 'won' })"><span>{{ t("Yutilgan") }}</span><strong>{{ acquisition.won || 0 }}</strong></button></div>
+										<div class="col-6 col-md-4"><button type="button" class="tender-metric-card" @click="navigate(acquisitionDestination, { status: 'lost' })"><span>{{ t("Yo'qotilgan") }}</span><strong>{{ acquisition.lost || 0 }}</strong></button></div>
 									</div>
+									<div v-else class="text-secondary">{{ t("No acquisition board is available for your role.") }}</div>
 									<div v-if="acquisition.unverified_history" class="alert alert-warning mt-3 mb-0 py-2">
 										<i class="ti ti-shield-exclamation me-1"></i>{{ t("Tekshirilmagan tarix") }}: {{ acquisition.unverified_history }}
 									</div>
@@ -308,7 +326,7 @@ const activityIcon = (type) => {
 								<div class="card-header"><h3 class="card-title"><i class="ti ti-bell-ringing me-1"></i>{{ t("E'tibor talab qiladi") }}</h3><span class="badge bg-red-lt text-red ms-auto">{{ tenderData.attention.count || 0 }}</span></div>
 								<div v-if="!attention.length" class="card-body text-secondary"><i class="ti ti-circle-check text-green me-1"></i>{{ t("No priority checks right now.") }}</div>
 								<div v-else class="list-group list-group-flush">
-									<button v-for="item in attention" :key="`${item.deal}-${item.kind}`" type="button" class="list-group-item list-group-item-action text-start" @click="navigate('tender-my-tenders', { risk: item.severity, due: item.kind })">
+									<button v-for="item in attention" :key="`${item.deal}-${item.kind}`" type="button" class="list-group-item list-group-item-action text-start" @click="openAttention(item)">
 										<div class="fw-semibold">{{ item.label }}</div><div class="small" :class="item.severity === 'risk' ? 'text-red' : 'text-yellow'">{{ attentionLabel(item) }}</div><div v-if="attentionDetail(item)" class="small text-secondary">{{ attentionDetail(item) }}</div>
 									</button>
 								</div>
@@ -319,19 +337,20 @@ const activityIcon = (type) => {
 							<div class="card h-100">
 								<div class="card-header"><h3 class="card-title"><i class="ti ti-truck-loading me-1"></i>{{ t("Ijro oqimi") }}</h3></div>
 								<div class="card-body"><div class="row g-2">
-									<div class="col-6 col-md-3"><button type="button" class="tender-metric-card" @click="navigate('tender-logistics', { status: 'in_transit' })"><span>{{ t("Purchase orders") }}</span><strong>{{ execution.purchase_orders || 0 }}</strong><small>{{ t("Qabul qilingan PO") }}: {{ execution.received || 0 }} / {{ execution.purchase_orders || 0 }}</small></button></div>
-									<div class="col-6 col-md-3"><button type="button" class="tender-metric-card" @click="navigate('tender-customs', { status: 'in_progress' })"><span>{{ t("Customs workload") }}</span><strong>{{ execution.customs_workload_open || 0 }}</strong><small>{{ t("Open planned customs charges") }}</small></button></div>
-									<div class="col-6 col-md-3"><button type="button" class="tender-metric-card" @click="navigate('tender-board', { stage: 'delivery' })"><span>{{ t("Sales orders") }}</span><strong>{{ execution.sales_orders || 0 }}</strong><small>{{ t("Yetkazilgan SO") }}: {{ execution.delivered || 0 }} / {{ execution.sales_orders || 0 }}</small></button></div>
-									<div class="col-6 col-md-3"><button type="button" class="tender-metric-card" @click="navigate('tender-logistics', { due: 'late' })"><span>{{ t("Awaiting delivery") }}</span><strong>{{ execution.delivery_pending || 0 }}</strong><small>{{ t("No overall progress is inferred") }}</small></button></div>
+									<div class="col-6 col-md-3"><button v-if="hasTenderView('logist')" type="button" class="tender-metric-card" @click="navigate('tender-logistics', { status: 'all' })"><span>{{ t("Purchase orders") }}</span><strong>{{ execution.purchase_orders || 0 }}</strong><small>{{ t("Qabul qilingan PO") }}: {{ execution.received || 0 }}</small></button><div v-else class="tender-metric-card tender-metric-card--disabled"><span>{{ t("Purchase orders") }}</span><strong>{{ execution.purchase_orders || 0 }}</strong><small>{{ t("Qabul qilingan PO") }}: {{ execution.received || 0 }}</small></div></div>
+									<div class="col-6 col-md-3"><button v-if="hasTenderView('declarant')" type="button" class="tender-metric-card" @click="navigate('tender-customs', { status: 'in_progress' })"><span>{{ t("Customs workload") }}</span><strong>{{ execution.customs_workload_open || 0 }}</strong></button><div v-else class="tender-metric-card tender-metric-card--disabled"><span>{{ t("Customs workload") }}</span><strong>{{ execution.customs_workload_open || 0 }}</strong></div></div>
+									<div class="col-6 col-md-3"><button v-if="canOpenSalesExecution" type="button" class="tender-metric-card" @click="navigate('tender-board', { tender: '1', status: 'all' })"><span>{{ t("Sales orders") }}</span><strong>{{ execution.sales_orders || 0 }}</strong></button><div v-else class="tender-metric-card tender-metric-card--disabled"><span>{{ t("Sales orders") }}</span><strong>{{ execution.sales_orders || 0 }}</strong></div></div>
+									<div class="col-6 col-md-3"><button v-if="canOpenSalesExecution" type="button" class="tender-metric-card" @click="navigate('tender-board', { tender: '1', status: 'delivery_pending' })"><span>{{ t("Awaiting delivery") }}</span><strong>{{ execution.delivery_pending || 0 }}</strong></button><div v-else class="tender-metric-card tender-metric-card--disabled"><span>{{ t("Awaiting delivery") }}</span><strong>{{ execution.delivery_pending || 0 }}</strong></div></div>
 								</div></div>
 							</div>
 						</div>
 
 						<div class="col-12 col-lg-4">
 							<div class="card h-100"><div class="card-header"><h3 class="card-title"><i class="ti ti-user-check me-1"></i>{{ t("Mening ishlarim") }}</h3></div><div class="list-group list-group-flush">
-								<button type="button" class="list-group-item list-group-item-action d-flex justify-content-between" @click="navigate('tender-my-tenders', { stage: 'assigned' })"><span>{{ t("Assigned tenders") }}</span><strong>{{ myWork.assigned || 0 }}</strong></button>
-								<button v-if="myWork.customs_workload_open" type="button" class="list-group-item list-group-item-action d-flex justify-content-between" @click="navigate('tender-customs', { status: 'in_progress' })"><span>{{ t("Open customs work") }}</span><strong>{{ myWork.customs_workload_open }}</strong></button>
-								<button v-if="myWork.delivery_pending" type="button" class="list-group-item list-group-item-action d-flex justify-content-between" @click="navigate('tender-logistics', { due: 'late' })"><span>{{ t("Pending deliveries") }}</span><strong>{{ myWork.delivery_pending }}</strong></button>
+								<button v-if="acquisitionDestination" type="button" class="list-group-item list-group-item-action d-flex justify-content-between" @click="navigate(acquisitionDestination, { stage: 'assigned' })"><span>{{ t("Assigned tenders") }}</span><strong>{{ myWork.assigned || 0 }}</strong></button>
+								<div v-else class="list-group-item d-flex justify-content-between"><span>{{ t("Assigned tenders") }}</span><strong>{{ myWork.assigned || 0 }}</strong></div>
+								<button v-if="myWork.customs_workload_open && hasTenderView('declarant')" type="button" class="list-group-item list-group-item-action d-flex justify-content-between" @click="navigate('tender-customs', { status: 'in_progress' })"><span>{{ t("Open customs work") }}</span><strong>{{ myWork.customs_workload_open }}</strong></button>
+								<button v-if="myWork.delivery_pending && canOpenSalesExecution" type="button" class="list-group-item list-group-item-action d-flex justify-content-between" @click="navigate('tender-board', { tender: '1', status: 'delivery_pending' })"><span>{{ t("Pending deliveries") }}</span><strong>{{ myWork.delivery_pending }}</strong></button>
 							</div></div>
 						</div>
 
@@ -612,6 +631,12 @@ const activityIcon = (type) => {
 .tender-metric-card strong {
 	font-family: var(--tblr-font-monospace, monospace);
 	font-size: 1.2rem;
+}
+
+.tender-metric-card--disabled {
+	background: var(--tblr-bg-surface-secondary, #f6f8fb);
+	cursor: not-allowed;
+	opacity: 0.72;
 }
 
 @media (max-width: 991.98px) {
