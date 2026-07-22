@@ -1,6 +1,7 @@
 <script setup>
 import { ref, computed, watch, onMounted } from "vue";
 import { storeToRefs } from "pinia";
+import { useRouter } from "vue-router";
 import { useSession } from "../stores/session.js";
 import { dashboardApi } from "../api/dashboard.js";
 import { call } from "../api/client.js";
@@ -13,6 +14,7 @@ import EmptyState from "../components/EmptyState.vue";
 
 const session = useSession();
 const { activeCompany, user, currency } = storeToRefs(session);
+const router = useRouter();
 
 const loading = ref(true);
 const summary = ref({ cash: [], ar: [], ap: [], revenue_mtd: [], revenue_trend_pct: null, dominant_currency: "" });
@@ -20,6 +22,33 @@ const trend = ref({ months: [], revenue: [], expense: [] });
 const activity = ref([]);
 const lowStock = ref([]);
 const error = ref(null);
+const tenderLoading = ref(true);
+const tenderError = ref(null);
+const tenderPeriod = ref(new Date().toISOString().slice(0, 7));
+const tenderData = ref({
+	period: {},
+	role_scope: { views: [], acquisition_scope: "none", execution_scope: "assigned" },
+	acquisition: {},
+	execution: { customs_proxy: {} },
+	attention: { count: 0, items: [] },
+	my_work: {},
+});
+
+const tenderEnabled = computed(() => session.canAccessModule("tender"));
+const acquisition = computed(() => tenderData.value.acquisition || {});
+const execution = computed(() => tenderData.value.execution || {});
+const attention = computed(() => tenderData.value.attention?.items || []);
+const myWork = computed(() => tenderData.value.my_work || {});
+const tenderFinance = computed(() => tenderData.value.finance || null);
+const tenderEmpty = computed(
+	() =>
+		!tenderLoading.value &&
+		!tenderError.value &&
+		!acquisition.value.identified &&
+		!execution.value.purchase_orders &&
+		!execution.value.sales_orders &&
+		!attention.value.length,
+);
 
 const money = (v, ccy) => formatMoney(v, ccy || currency.value, user.value.language);
 // Chart currency: dominant transaction currency once trend data loads, base currency until then.
@@ -37,7 +66,7 @@ const lines = (rows) => {
 	return effective.map((r) => formatMoney(r.amount, r.currency, user.value.language));
 };
 
-async function load() {
+async function loadFinancial() {
 	if (!activeCompany.value) {
 		loading.value = false;
 		return;
@@ -65,8 +94,61 @@ async function load() {
 	}
 }
 
+function periodDates(period) {
+	const [year, month] = String(period || "").split("-").map(Number);
+	if (!year || !month) return {};
+	return {
+		from_date: `${period}-01`,
+		to_date: `${period}-${String(new Date(year, month, 0).getDate()).padStart(2, "0")}`,
+	};
+}
+
+async function loadTender() {
+	if (!activeCompany.value) {
+		tenderLoading.value = false;
+		return;
+	}
+	tenderLoading.value = true;
+	tenderError.value = null;
+	try {
+		tenderData.value = await call("stabler.api.tender.tender_dashboard", {
+			company: activeCompany.value,
+			...periodDates(tenderPeriod.value),
+		});
+	} catch (e) {
+		tenderError.value = e?.response?.data?.exception || e?.message || t("Tender dashboard could not be loaded.");
+	} finally {
+		tenderLoading.value = false;
+	}
+}
+
+async function load() {
+	if (tenderEnabled.value) return loadTender();
+	return loadFinancial();
+}
+
+function navigate(name, filters = {}) {
+	const query = { period: tenderPeriod.value, ...filters };
+	router.push({ name, query });
+}
+
+function attentionLabel(item) {
+	if (item.kind === "bid_deadline") {
+		if (item.days_left < 0) return `${t("Bid deadline")}: ${Math.abs(item.days_left)} ${t("days late")}`;
+		return `${t("Bid deadline")}: ${item.days_left} ${t("days left")}`;
+	}
+	if (item.kind === "documents") return t("Missing required checks");
+	return t("Unverified history");
+}
+
+function attentionDetail(item) {
+	if (item.kind === "documents") return (item.missing || []).join(", ");
+	if (item.kind === "unverified_history") return t("Result exists, but submission evidence is missing.");
+	return item.date || "";
+}
+
 onMounted(load);
-watch(activeCompany, load);
+watch([activeCompany, tenderEnabled], load);
 
 const revenueChartOptions = computed(() => ({
 	chart: { stacked: false, sparkline: { enabled: false } },
@@ -138,11 +220,11 @@ const activityIcon = (type) => {
 		<div class="container-xl">
 			<div class="row g-2 align-items-center">
 				<div class="col">
-					<div class="page-pretitle">{{ t("Overview") }}</div>
-					<h2 class="page-title">{{ t("Dashboard") }}</h2>
+					<div class="page-pretitle">{{ tenderEnabled ? t("Tender operations") : t("Overview") }}</div>
+					<h2 class="page-title">{{ tenderEnabled ? t("Tender control center") : t("Dashboard") }}</h2>
 				</div>
 				<div class="col-auto">
-					<button class="btn btn-outline-primary btn-sm" @click="load" :disabled="loading">
+					<button class="btn btn-outline-primary btn-sm" @click="load" :disabled="tenderEnabled ? tenderLoading : loading">
 						<i class="ti ti-refresh"></i>
 						{{ t("Refresh") }}
 					</button>
@@ -153,7 +235,7 @@ const activityIcon = (type) => {
 
 	<div class="page-body">
 		<div class="container-xl">
-			<div v-if="error" class="alert alert-danger" role="alert">
+			<div v-if="!tenderEnabled && error" class="alert alert-danger" role="alert">
 				<div class="d-flex">
 					<div><i class="ti ti-alert-triangle me-2"></i></div>
 					<div>{{ error }}</div>
@@ -170,6 +252,96 @@ const activityIcon = (type) => {
 			/>
 
 			<template v-else>
+				<template v-if="tenderEnabled">
+					<div class="d-flex flex-wrap align-items-end gap-2 mb-3">
+						<div>
+							<label class="form-label small mb-1" for="tender-period">{{ t("Period") }}</label>
+							<input id="tender-period" v-model="tenderPeriod" type="month" class="form-control" @change="loadTender" />
+						</div>
+						<div class="text-secondary small pb-1">
+							{{ tenderData.period.from_date || periodDates(tenderPeriod).from_date }} — {{ tenderData.period.to_date || periodDates(tenderPeriod).to_date }}
+						</div>
+					</div>
+
+					<div v-if="tenderLoading" class="row row-cards">
+						<div v-for="index in 6" :key="index" class="col-12 col-lg-6">
+							<div class="card"><div class="card-body placeholder-glow"><span class="placeholder col-4 mb-3"></span><span class="placeholder col-12"></span><span class="placeholder col-8"></span></div></div>
+						</div>
+						</div>
+
+					<div v-else-if="tenderError" class="card card-md border-danger">
+						<div class="card-body text-center py-5"><i class="ti ti-alert-triangle text-danger" style="font-size: 2rem"></i><h3 class="mt-2">{{ t("Tender dashboard could not be loaded.") }}</h3><p class="text-secondary mb-3">{{ tenderError }}</p><button type="button" class="btn btn-primary" @click="loadTender"><i class="ti ti-refresh me-1"></i>{{ t("Try again") }}</button></div>
+					</div>
+
+					<EmptyState
+						v-else-if="tenderEmpty"
+						icon="ti-gavel"
+						accentIcon="ti-circle-check"
+						tone="primary"
+						:title='t("Tender activity is empty for this period")'
+						:subtitle='t("Choose another period or start a tender intake to see lifecycle and execution work here.")'
+					/>
+
+					<div v-else class="row row-cards">
+						<div class="col-12 col-lg-8">
+							<div class="card h-100">
+								<div class="card-header"><h3 class="card-title"><i class="ti ti-route-2 me-1"></i>{{ t("Tender acquisition") }}</h3></div>
+								<div class="card-body">
+									<div v-if="tenderData.role_scope.acquisition_scope === 'none'" class="text-secondary">
+										{{ t("Acquisition portfolio is not in your role scope.") }}
+									</div>
+									<div v-else class="row g-2">
+										<div class="col-6 col-md-3"><button type="button" class="tender-metric-card" @click="navigate('tender-director', { stage: 'identified' })"><span>{{ t("Aniqlangan") }}</span><strong>{{ acquisition.identified || 0 }}</strong></button></div>
+										<div class="col-6 col-md-3"><button type="button" class="tender-metric-card" @click="navigate('tender-my-tenders', { stage: 'go' })"><span>{{ t("Tayyor / Go") }}</span><strong>{{ acquisition.ready || 0 }} / {{ acquisition.go || 0 }}</strong></button></div>
+										<div class="col-6 col-md-3"><button type="button" class="tender-metric-card" @click="navigate('tender-my-tenders', { stage: 'submitted' })"><span>{{ t("Yuborilgan") }}</span><strong>{{ acquisition.submitted || 0 }} / {{ acquisition.ready || 0 }}</strong></button></div>
+										<div class="col-6 col-md-3"><button type="button" class="tender-metric-card" @click="navigate('tender-director', { status: 'won' })"><span>{{ t("Yutilgan / Yo'qotilgan") }}</span><strong>{{ acquisition.won || 0 }} / {{ acquisition.lost || 0 }}</strong></button></div>
+									</div>
+									<div v-if="acquisition.unverified_history" class="alert alert-warning mt-3 mb-0 py-2">
+										<i class="ti ti-shield-exclamation me-1"></i>{{ t("Tekshirilmagan tarix") }}: {{ acquisition.unverified_history }}
+									</div>
+								</div>
+							</div>
+						</div>
+
+						<div class="col-12 col-lg-4">
+							<div class="card h-100">
+								<div class="card-header"><h3 class="card-title"><i class="ti ti-bell-ringing me-1"></i>{{ t("E'tibor talab qiladi") }}</h3><span class="badge bg-red-lt text-red ms-auto">{{ tenderData.attention.count || 0 }}</span></div>
+								<div v-if="!attention.length" class="card-body text-secondary"><i class="ti ti-circle-check text-green me-1"></i>{{ t("No priority checks right now.") }}</div>
+								<div v-else class="list-group list-group-flush">
+									<button v-for="item in attention" :key="`${item.deal}-${item.kind}`" type="button" class="list-group-item list-group-item-action text-start" @click="navigate('tender-my-tenders', { risk: item.severity, due: item.kind })">
+										<div class="fw-semibold">{{ item.label }}</div><div class="small" :class="item.severity === 'risk' ? 'text-red' : 'text-yellow'">{{ attentionLabel(item) }}</div><div v-if="attentionDetail(item)" class="small text-secondary">{{ attentionDetail(item) }}</div>
+									</button>
+								</div>
+							</div>
+						</div>
+
+						<div class="col-12 col-lg-8">
+							<div class="card h-100">
+								<div class="card-header"><h3 class="card-title"><i class="ti ti-truck-loading me-1"></i>{{ t("Ijro oqimi") }}</h3></div>
+								<div class="card-body"><div class="row g-2">
+									<div class="col-6 col-md-3"><button type="button" class="tender-metric-card" @click="navigate('tender-logistics', { status: 'in_transit' })"><span>{{ t("Purchase orders") }}</span><strong>{{ execution.purchase_orders || 0 }}</strong><small>{{ t("Qabul qilingan PO") }}: {{ execution.received || 0 }} / {{ execution.purchase_orders || 0 }}</small></button></div>
+									<div class="col-6 col-md-3"><button type="button" class="tender-metric-card" @click="navigate('tender-customs', { status: 'in_progress' })"><span>{{ t("Customs workload") }}</span><strong>{{ execution.customs_workload_open || 0 }}</strong><small>{{ t("Open planned customs charges") }}</small></button></div>
+									<div class="col-6 col-md-3"><button type="button" class="tender-metric-card" @click="navigate('tender-board', { stage: 'delivery' })"><span>{{ t("Sales orders") }}</span><strong>{{ execution.sales_orders || 0 }}</strong><small>{{ t("Yetkazilgan SO") }}: {{ execution.delivered || 0 }} / {{ execution.sales_orders || 0 }}</small></button></div>
+									<div class="col-6 col-md-3"><button type="button" class="tender-metric-card" @click="navigate('tender-logistics', { due: 'late' })"><span>{{ t("Awaiting delivery") }}</span><strong>{{ execution.delivery_pending || 0 }}</strong><small>{{ t("No overall progress is inferred") }}</small></button></div>
+								</div></div>
+							</div>
+						</div>
+
+						<div class="col-12 col-lg-4">
+							<div class="card h-100"><div class="card-header"><h3 class="card-title"><i class="ti ti-user-check me-1"></i>{{ t("Mening ishlarim") }}</h3></div><div class="list-group list-group-flush">
+								<button type="button" class="list-group-item list-group-item-action d-flex justify-content-between" @click="navigate('tender-my-tenders', { stage: 'assigned' })"><span>{{ t("Assigned tenders") }}</span><strong>{{ myWork.assigned || 0 }}</strong></button>
+								<button v-if="myWork.customs_workload_open" type="button" class="list-group-item list-group-item-action d-flex justify-content-between" @click="navigate('tender-customs', { status: 'in_progress' })"><span>{{ t("Open customs work") }}</span><strong>{{ myWork.customs_workload_open }}</strong></button>
+								<button v-if="myWork.delivery_pending" type="button" class="list-group-item list-group-item-action d-flex justify-content-between" @click="navigate('tender-logistics', { due: 'late' })"><span>{{ t("Pending deliveries") }}</span><strong>{{ myWork.delivery_pending }}</strong></button>
+							</div></div>
+						</div>
+
+						<div v-if="tenderFinance" class="col-12">
+							<div class="card"><div class="card-header"><h3 class="card-title"><i class="ti ti-report-money me-1"></i>{{ t("Finance") }}</h3></div><div class="card-body"><div class="row g-2"><div class="col-md-4"><div class="text-secondary small">{{ t("Procurement total") }}</div><div class="font-monospace fw-semibold">{{ money(tenderFinance.procurement_total, tenderFinance.currency) }}</div></div><div class="col-md-4"><div class="text-secondary small">{{ t("Contract total") }}</div><div class="font-monospace fw-semibold">{{ money(tenderFinance.contract_total, tenderFinance.currency) }}</div></div><div class="col-md-4"><div class="text-secondary small">{{ t("Execution spread") }}</div><div class="font-monospace fw-semibold">{{ money(tenderFinance.execution_spread, tenderFinance.currency) }}</div></div></div></div></div>
+						</div>
+					</div>
+				</template>
+
+				<template v-else>
 				<div v-if="isFirstRun" class="card card-md mb-3 border-start border-3 border-primary">
 					<div class="card-body">
 						<div class="row align-items-center">
@@ -396,7 +568,55 @@ const activityIcon = (type) => {
 						</div>
 					</div>
 				</div>
+				</template>
 			</template>
 		</div>
 	</div>
 </template>
+
+<style scoped>
+.tender-metric-card {
+	align-items: flex-start;
+	background: var(--tblr-bg-surface, #fff);
+	border: 1px solid var(--tblr-border-color, #e6e7e9);
+	border-radius: var(--tblr-border-radius, 4px);
+	color: inherit;
+	display: flex;
+	flex-direction: column;
+	gap: 0.35rem;
+	min-height: 7.25rem;
+	padding: 0.9rem;
+	text-align: left;
+	transition: border-color 0.15s ease, box-shadow 0.15s ease, transform 0.15s ease;
+	width: 100%;
+}
+
+.tender-metric-card:hover {
+	border-color: var(--tblr-primary, #206bc4);
+}
+
+.tender-metric-card:focus-visible {
+	box-shadow: 0 0 0 0.2rem rgba(32, 107, 196, 0.25);
+	outline: 0;
+}
+
+.tender-metric-card:active {
+	transform: translateY(1px);
+}
+
+.tender-metric-card span,
+.tender-metric-card small {
+	color: var(--tblr-secondary, #6c7a87);
+}
+
+.tender-metric-card strong {
+	font-family: var(--tblr-font-monospace, monospace);
+	font-size: 1.2rem;
+}
+
+@media (max-width: 991.98px) {
+	.tender-metric-card {
+		min-height: 6.5rem;
+	}
+}
+</style>

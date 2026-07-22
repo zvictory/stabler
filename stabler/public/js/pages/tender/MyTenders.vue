@@ -3,7 +3,7 @@
 // and deadline risk. Entry point into the per-tender sourcing/PO tools.
 import { computed, onMounted, ref } from "vue";
 import { storeToRefs } from "pinia";
-import { useRouter } from "vue-router";
+import { useRoute, useRouter } from "vue-router";
 import { useSession } from "../../stores/session.js";
 import { call } from "../../api/client.js";
 import { formatMoney } from "../../composables/money.js";
@@ -18,6 +18,7 @@ import TenderNav from "./TenderNav.vue";
 
 const session = useSession();
 const { activeCompany, user } = storeToRefs(session);
+const route = useRoute();
 const router = useRouter();
 const toast = useToast();
 useEscapeBack(null, "/tender/board");
@@ -41,15 +42,28 @@ useAutoRefresh(load);
 
 const ccy = computed(() => data.value?.currency || "");
 const rows = computed(() => data.value?.rows || []);
+const filters = computed(() => ({
+	stage: String(route.query.stage || ""), period: String(route.query.period || ""),
+	risk: String(route.query.risk || ""), due: String(route.query.due || ""), status: String(route.query.status || ""),
+}));
+const filterSummary = computed(() => Object.entries(filters.value).filter(([, value]) => value).map(([key, value]) => `${key}: ${value}`));
+const filteredRows = computed(() => rows.value.filter((row) => {
+	if (filters.value.risk && row.risk !== filters.value.risk) return false;
+	if (filters.value.status && row.result !== filters.value.status) return false;
+	if (filters.value.due === "late" && row.risk !== "risk") return false;
+	if (filters.value.due === "soon" && row.risk !== "warn") return false;
+	return true;
+}));
 const fm = (v) => formatMoney(v, ccy.value, user.value.language);
 const riskBadge = (r) => ({ good: "bg-green-lt text-green", warn: "bg-yellow-lt text-yellow", risk: "bg-red-lt text-red" }[r] || "bg-secondary-lt");
 const riskLabel = (r) => ({ good: t("On track"), warn: t("Deadline near"), risk: t("At risk"), none: "—" }[r] || "—");
-function openDeal(deal) { router.push("/tender/po-control?deal=" + encodeURIComponent(deal)); }
+function openDeal(deal) { router.push({ name: "tender-po-control", query: { ...route.query, deal } }); }
+function clearFilters() { router.replace({ query: {} }); }
 </script>
 
 <template>
 	<div class="container-xl py-3">
-		<h2 class="mb-2">{{ t("My tenders") }}</h2>
+		<div class="d-flex align-items-center mb-2 gap-2 flex-wrap"><h2 class="mb-0">{{ t("My tenders") }}</h2><div v-if="filterSummary.length" class="ms-auto d-flex align-items-center gap-2"><span class="text-secondary small">{{ filterSummary.join(" · ") }}</span><button type="button" class="btn btn-sm btn-ghost-secondary" @click="clearFilters">{{ t("Clear filters") }}</button></div></div>
 		<TenderNav />
 		<div class="card"><div class="card-body p-0">
 			<table class="table card-table">
@@ -59,7 +73,7 @@ function openDeal(deal) { router.push("/tender/po-control?deal=" + encodeURIComp
 				</tr></thead>
 				<tbody>
 					<SkeletonRows v-if="loading" :cols="5" :rows="6" />
-					<tr v-for="r in rows" :key="r.deal" style="cursor:pointer" @click="openDeal(r.deal)">
+					<tr v-for="r in filteredRows" :key="r.deal" style="cursor:pointer" @click="openDeal(r.deal)">
 						<td class="fw-semibold">{{ r.label }}</td>
 						<td class="text-end font-monospace">{{ fm(r.landed) }}</td>
 						<td class="text-end">{{ r.po_count }}</td>
@@ -68,7 +82,7 @@ function openDeal(deal) { router.push("/tender/po-control?deal=" + encodeURIComp
 					</tr>
 				</tbody>
 			</table>
-			<EmptyState v-if="!loading && !rows.length" icon="ti-list-check" :title="t('No tenders assigned yet.')" />
+			<EmptyState v-if="!loading && !filteredRows.length" icon="ti-list-check" :title="t('No tenders match these filters.')" />
 		</div></div>
 	</div>
 </template>
