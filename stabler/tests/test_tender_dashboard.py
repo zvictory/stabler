@@ -76,6 +76,13 @@ class TestTenderDashboardContract(unittest.TestCase):
 		self.assertIn("_tender_views()", self.body)
 		self.assertIn("frappe.has_permission(\"CRM Deal\", \"read\"", self.body)
 
+	def test_candidate_queries_apply_frappe_list_permissions_before_field_reads(self):
+		candidates = _func_body(self.src, "_tender_deal_names")
+		self.assertIn("frappe.get_list(", candidates)
+		self.assertNotIn("frappe.get_all(", candidates)
+		self.assertIn("frappe.get_list(", self.body)
+		self.assertNotIn("frappe.get_all(", self.body)
+
 	def test_dashboard_returns_role_adaptive_sections(self):
 		for section in ("period", "role_scope", "acquisition", "execution", "attention", "my_work"):
 			self.assertIn(f'"{section}"', self.body)
@@ -89,7 +96,8 @@ class TestTenderDashboardContract(unittest.TestCase):
 	def test_period_and_execution_use_erpnext_progress_fields(self):
 		for field in ("from_date", "to_date", "per_received", "per_delivered"):
 			self.assertIn(field, self.body)
-		self.assertIn('"customs":', self.body)
+		self.assertIn('"customs_proxy":', self.body)
+		self.assertIn("planned_landed_customs_charge_not_clearance", self.body)
 		self.assertIn('"logistics_status":', self.body)
 
 	def test_finance_is_omitted_unless_finance_role_is_present(self):

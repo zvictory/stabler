@@ -42,10 +42,15 @@ def _require_tender(company: str | None = None) -> None:
 	if not _can_access_module(frappe.session.user, "tender"):
 		frappe.throw(_("Not permitted"), frappe.PermissionError)
 	if company:
-		from stabler.stabler.doctype.stabler_settings.stabler_settings import module_map_for
+		_require_tender_enabled(company)
 
-		if not module_map_for(company).get("tender"):
-			frappe.throw(_("Tender module is not enabled for {0}.").format(company), frappe.PermissionError)
+
+def _require_tender_enabled(company: str) -> None:
+	"""Company module gate shared by interactive and trusted-server writers."""
+	from stabler.stabler.doctype.stabler_settings.stabler_settings import module_map_for
+
+	if not module_map_for(company).get("tender"):
+		frappe.throw(_("Tender module is not enabled for {0}.").format(company), frappe.PermissionError)
 
 
 def _ensure_default_stages() -> None:
@@ -939,7 +944,7 @@ _INTAKE_KEYS_NUM = ("volume", "guarantee_amount", "penalty_pct_per_day", "won_pr
 _PURCHASE_METHODS = ("auction", "shop", "selection", "tender")
 
 
-def _clean_intake(data: dict, prior: dict | None = None) -> dict:
+def _clean_intake(data: dict, prior: dict | None = None, audit_actor: str | None = None) -> dict:
 	"""Normalize client-editable intake fields and preserve server audit facts.
 
 	The browser may submit a stale or forged audit payload, so audit keys are
@@ -955,7 +960,7 @@ def _clean_intake(data: dict, prior: dict | None = None) -> dict:
 	out["go_no_go"] = out["go_no_go"] if out["go_no_go"] in ("go", "no_go") else ""
 	out["result"] = out["result"] if out["result"] in ("won", "lost", "pending") else ""
 	out["purchase_method"] = out["purchase_method"] if out["purchase_method"] in _PURCHASE_METHODS else ""
-	actor = frappe.session.user
+	actor = audit_actor or frappe.session.user
 	for field, at_key, by_key in (
 		("go_no_go", "go_no_go_at", "go_no_go_by"),
 		("result", "result_at", "result_by"),
@@ -1151,6 +1156,14 @@ def mark_tender_submitted(deal: str, submission_reference: str = "") -> dict:
 	if not frappe.db.has_column("CRM Deal", "custom_tender_intake"):
 		frappe.throw(_("Run migrate to enable tender intake."))
 	intake = _read_intake(deal)
+	if _has_submission_evidence(intake):
+		return {
+			"deal": deal,
+			"company": company,
+			"submitted_at": intake["submitted_at"],
+			"submitted_by": intake["submitted_by"],
+			"submission_reference": intake.get("submission_reference") or "",
+		}
 	intake["submitted_at"] = now()
 	intake["submitted_by"] = frappe.session.user
 	intake["submission_reference"] = str(submission_reference or "").strip()[:200]
@@ -1167,6 +1180,36 @@ def mark_tender_submitted(deal: str, submission_reference: str = "") -> dict:
 		"submitted_at": clean["submitted_at"],
 		"submitted_by": clean["submitted_by"],
 		"submission_reference": clean["submission_reference"],
+	}
+
+
+def set_tender_go_no_go_from_trusted_source(deal: str, decision: str, *, actor: str) -> dict:
+	"""Persist a portal decision with the trusted integration actor in its audit.
+
+	This helper is intentionally not whitelisted. Callers are responsible for
+	authenticating their transport (the UZEX webhook verifies Telegram's secret),
+	while this layer still validates the Deal's company and tender enablement.
+	"""
+	if decision not in ("go", "no_go"):
+		frappe.throw(_("Invalid Go/No-Go decision."))
+	if not actor:
+		frappe.throw(_("Trusted actor is required."), frappe.PermissionError)
+	if not deal or not frappe.db.exists("CRM Deal", deal):
+		frappe.throw(_("Unknown deal: {0}").format(deal), frappe.DoesNotExistError)
+	company = frappe.db.get_value("CRM Deal", deal, "company")
+	_require_company(company)
+	_require_tender_enabled(company)
+	if not frappe.db.has_column("CRM Deal", "custom_tender_intake"):
+		frappe.throw(_("Run migrate to enable tender intake."))
+	prior = _read_intake(deal)
+	clean = _clean_intake({**prior, "go_no_go": decision}, prior, audit_actor=actor)
+	frappe.db.set_value("CRM Deal", deal, "custom_tender_intake", json.dumps(clean, ensure_ascii=False), update_modified=False)
+	return {
+		"deal": deal,
+		"company": company,
+		"go_no_go": clean["go_no_go"],
+		"go_no_go_at": clean["go_no_go_at"],
+		"go_no_go_by": clean["go_no_go_by"],
 	}
 
 
@@ -1259,7 +1302,7 @@ def _tender_deal_names(company: str) -> set[str]:
 	names: set[str] = set()
 	for dt in ("Sales Order", "Purchase Order", "Supplier Quotation"):
 		if frappe.db.has_column(dt, "custom_crm_deal"):
-			for r in frappe.get_all(
+			for r in frappe.get_list(
 				dt, filters={"company": company, "custom_crm_deal": ["is", "set"], "docstatus": ["<", 2]},
 				fields=["custom_crm_deal"], distinct=True, limit_page_length=5000,
 			):
@@ -1267,7 +1310,7 @@ def _tender_deal_names(company: str) -> set[str]:
 					names.add(r.custom_crm_deal)
 	for fld in ("custom_tender_intake", "custom_bid_pricing"):
 		if frappe.db.has_column("CRM Deal", fld):
-			for r in frappe.get_all("CRM Deal", filters={"company": company, fld: ["is", "set"]},
+			for r in frappe.get_list("CRM Deal", filters={"company": company, fld: ["is", "set"]},
 			                        fields=["name"], limit_page_length=5000):
 				names.add(r.name)
 	return names
@@ -1513,6 +1556,10 @@ def tender_dashboard(company: str, from_date=None, to_date=None) -> dict:
 	user = frappe.session.user
 	oversight = _is_tender_oversight(user)
 	can_view_finance = _can_view_tender_finance(user)
+	is_sourcing = "sourcing" in views
+	is_operations = bool(set(views).intersection(("declarant", "logist")))
+	acquisition_scope = "portfolio" if oversight else ("assigned" if is_sourcing else "none")
+	execution_scope = "portfolio" if oversight or is_operations else "assigned"
 	today_d = getdate(today())
 	acquisition = {
 		"identified": 0, "go": 0, "no_go": 0, "ready": 0,
@@ -1521,15 +1568,18 @@ def tender_dashboard(company: str, from_date=None, to_date=None) -> dict:
 	}
 	attention: list[dict] = []
 	my_assigned = 0
-	visible_deals: set[str] = set()
-	for deal in _tender_deal_names(company):
+	execution_deals: set[str] = set()
+	deal_names = _tender_deal_names(company) if acquisition_scope != "none" else ()
+	for deal in deal_names:
 		if not frappe.has_permission("CRM Deal", "read", doc=deal):
 			continue
-		creation = frappe.db.get_value("CRM Deal", deal, "creation")
 		intake = _read_intake(deal)
+		if acquisition_scope == "assigned" and (intake.get("assigned_to") or "") != user:
+			continue
+		execution_deals.add(deal)
+		creation = frappe.db.get_value("CRM Deal", deal, "creation")
 		if not _in_dashboard_period(_tender_event_date(intake, creation), start, end):
 			continue
-		visible_deals.add(deal)
 		acquisition["identified"] += 1
 		decision = intake.get("go_no_go")
 		if decision in ("go", "no_go"):
@@ -1556,7 +1606,7 @@ def tender_dashboard(company: str, from_date=None, to_date=None) -> dict:
 		po_fields.append("custom_landed_charges")
 	po_rows = []
 	if frappe.db.has_column("Purchase Order", "custom_crm_deal"):
-		po_rows = frappe.get_all(
+		po_rows = frappe.get_list(
 			"Purchase Order",
 			filters={"company": company, "custom_crm_deal": ["is", "set"], "docstatus": ["<", 2]},
 			fields=po_fields,
@@ -1564,22 +1614,29 @@ def tender_dashboard(company: str, from_date=None, to_date=None) -> dict:
 		)
 	so_rows = []
 	if frappe.db.has_column("Sales Order", "custom_crm_deal"):
-		so_rows = frappe.get_all(
+		so_rows = frappe.get_list(
 			"Sales Order",
 			filters={"company": company, "custom_crm_deal": ["is", "set"], "docstatus": ["<", 2]},
 			fields=["name", "custom_crm_deal", "transaction_date", "per_delivered", "status", "base_grand_total"],
 			limit_page_length=5000,
 		)
 	execution = {
-		"purchase_orders": 0, "received": 0, "receiving": 0, "customs_pending": 0,
+		"purchase_orders": 0, "received": 0, "receiving": 0, "customs_workload_open": 0,
 		"sales_orders": 0, "delivered": 0, "delivery_pending": 0,
-		"customs": {"cleared": 0, "in_progress": 0, "not_required": 0},
+		# No native PO-level customs clearance field exists in this install. This
+		# is workload evidence from planned landed customs charges, not clearance.
+		"customs_proxy": {
+			"basis": "planned_landed_customs_charge_not_clearance",
+			"po_received_with_customs_charge": 0,
+			"po_open_with_customs_charge": 0,
+			"po_without_customs_charge": 0,
+		},
 		"logistics_status": {},
 	}
 	procurement_total = 0.0
 	contract_total = 0.0
 	for po in po_rows:
-		if po.custom_crm_deal not in visible_deals or not _in_dashboard_period(po.transaction_date, start, end):
+		if (execution_scope == "assigned" and po.custom_crm_deal not in execution_deals) or not _in_dashboard_period(po.transaction_date, start, end):
 			continue
 		if not frappe.has_permission("Purchase Order", "read", doc=po.name):
 			continue
@@ -1592,16 +1649,16 @@ def tender_dashboard(company: str, from_date=None, to_date=None) -> dict:
 		received = flt(po.per_received) >= 100
 		if received:
 			execution["received"] += 1
-			execution["customs"]["cleared" if has_customs else "not_required"] += 1
+			execution["customs_proxy"]["po_received_with_customs_charge" if has_customs else "po_without_customs_charge"] += 1
 		else:
 			execution["receiving"] += 1
 			if has_customs:
-				execution["customs_pending"] += 1
-				execution["customs"]["in_progress"] += 1
+				execution["customs_workload_open"] += 1
+				execution["customs_proxy"]["po_open_with_customs_charge"] += 1
 			else:
-				execution["customs"]["not_required"] += 1
+				execution["customs_proxy"]["po_without_customs_charge"] += 1
 	for so in so_rows:
-		if so.custom_crm_deal not in visible_deals or not _in_dashboard_period(so.transaction_date, start, end):
+		if (execution_scope == "assigned" and so.custom_crm_deal not in execution_deals) or not _in_dashboard_period(so.transaction_date, start, end):
 			continue
 		if not frappe.has_permission("Sales Order", "read", doc=so.name):
 			continue
@@ -1616,7 +1673,8 @@ def tender_dashboard(company: str, from_date=None, to_date=None) -> dict:
 	out = {
 		"period": {"from_date": str(start), "to_date": str(end)},
 		"role_scope": {
-			"views": views, "oversight": oversight, "assigned_only": not oversight,
+			"views": views, "oversight": oversight,
+			"acquisition_scope": acquisition_scope, "execution_scope": execution_scope,
 			"can_view_finance": can_view_finance,
 		},
 		"acquisition": acquisition,
@@ -1624,7 +1682,7 @@ def tender_dashboard(company: str, from_date=None, to_date=None) -> dict:
 		"attention": {"count": len(attention), "items": attention[:100]},
 		"my_work": {
 			"assigned": my_assigned,
-			"customs_pending": execution["customs_pending"] if "declarant" in views else 0,
+			"customs_workload_open": execution["customs_workload_open"] if "declarant" in views else 0,
 			"delivery_pending": execution["delivery_pending"] if "logist" in views else 0,
 		},
 	}

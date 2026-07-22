@@ -15,8 +15,6 @@ Register the webhook with Telegram:
 
 from __future__ import annotations
 
-import json
-
 import frappe
 from frappe import _
 from frappe.rate_limiter import rate_limit
@@ -25,19 +23,10 @@ from stabler.integrations.uzex import telegram
 
 
 def _set_go_no_go(deal: str, decision: str) -> None:
-	if not frappe.db.has_column("CRM Deal", "custom_tender_intake"):
-		return
-	doc = frappe.get_doc("CRM Deal", deal)
-	raw = doc.get("custom_tender_intake")
-	try:
-		data = json.loads(raw) if raw else {}
-	except (TypeError, ValueError):
-		data = {}
-	if not isinstance(data, dict):
-		data = {}
-	data["go_no_go"] = decision
-	doc.custom_tender_intake = json.dumps(data, ensure_ascii=False)
-	doc.save(ignore_permissions=True)
+	"""Use the tender lifecycle writer after webhook authentication succeeds."""
+	from stabler.api.tender import set_tender_go_no_go_from_trusted_source
+
+	set_tender_go_no_go_from_trusted_source(deal, decision, actor="uzex:telegram")
 
 
 @frappe.whitelist(allow_guest=True)
