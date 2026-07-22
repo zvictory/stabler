@@ -585,7 +585,7 @@ watch(activeCompany, loadRefData);
 		</div>
 
 		<CiLogisticsOverview
-			v-if="!isCreate"
+			v-if="!isCreate && form.name"
 			:commercial-invoice="form.name"
 			:packing-summary="form.packing_summary"
 			:grn="form.grn"

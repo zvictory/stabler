@@ -22,6 +22,12 @@ const statusClass = computed(() => {
 	if (props.packingSummary.status === "Mismatch") return "bg-warning-lt text-warning";
 	return "bg-secondary-lt text-secondary";
 });
+const canRefreshExpected = computed(
+	() =>
+		Boolean(props.grn?.name) &&
+		Number(props.grn.docstatus) === 0 &&
+		!props.grn.expected_snapshot_locked
+);
 
 const formatKg = (value) =>
 	new Intl.NumberFormat(undefined, {
@@ -34,6 +40,11 @@ function openGrn(name) {
 }
 
 async function createOrOpenGrn() {
+	if (!props.commercialInvoice) {
+		actionError.value = t("Commercial invoice is unavailable. Reload and try again.");
+		toast.error(actionError.value);
+		return;
+	}
 	if (props.grn?.name) return openGrn(props.grn.name);
 	actionError.value = "";
 	busy.value = true;
@@ -50,7 +61,7 @@ async function createOrOpenGrn() {
 }
 
 async function refreshExpected() {
-	if (!props.grn?.name || props.grn.expected_snapshot_locked) return;
+	if (!canRefreshExpected.value) return;
 	actionError.value = "";
 	busy.value = true;
 	try {
@@ -78,10 +89,10 @@ async function refreshExpected() {
 			</span>
 			<div class="ms-auto d-flex gap-2 flex-wrap">
 				<button
-					v-if="grn && !grn.expected_snapshot_locked"
+					v-if="canRefreshExpected"
 					type="button"
 					class="btn btn-outline-primary btn-sm"
-					:disabled="busy || loading"
+					:disabled="busy || loading || !commercialInvoice"
 					@click="refreshExpected"
 				>
 					<span v-if="busy" class="spinner-border spinner-border-sm me-1"></span>
@@ -90,7 +101,7 @@ async function refreshExpected() {
 				<button
 					type="button"
 					class="btn btn-primary btn-sm"
-					:disabled="busy || loading"
+					:disabled="busy || loading || !commercialInvoice"
 					@click="createOrOpenGrn"
 				>
 					<span v-if="busy && !grn" class="spinner-border spinner-border-sm me-1"></span>
