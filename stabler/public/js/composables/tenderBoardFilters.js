@@ -16,6 +16,17 @@ function matchesPeriod(eventDate, period) {
 	return !period || String(eventDate || "").slice(0, 7) === period;
 }
 
+function lifecycleEventDate(row, filters) {
+	if (!row.event_dates) return row.event_date || row.transaction_date;
+	if (filters.stage && filters.stage !== "all") {
+		return row.event_dates[filters.stage];
+	}
+	if (filters.status && filters.status !== "all") {
+		return row.event_dates[filters.status] || row.event_dates.result;
+	}
+	return row.event_dates.identified;
+}
+
 function matchesStage(row, stage) {
 	if (!stage || stage === "all") return true;
 	if (row.lifecycle) return Boolean(row.lifecycle[stage]);
@@ -24,7 +35,7 @@ function matchesStage(row, stage) {
 
 export function filterTenderRows(rows, filters) {
 	return (rows || []).filter((row) =>
-		matchesPeriod(row.event_date || row.transaction_date, filters.period) &&
+		matchesPeriod(lifecycleEventDate(row, filters), filters.period) &&
 		matchesStage(row, filters.stage) &&
 		(!filters.risk || row.risk === filters.risk) &&
 		(!filters.due || row.due === filters.due) &&

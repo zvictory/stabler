@@ -4562,3 +4562,42 @@ Vendor Category,Етказиб берувчи категорияси
 You are not permitted to access inventory.,Сизда омборга кириш ҳуқуқи йўқ.
 e.g. MH/3054/2025-26,"масалан, MH/3054/2025-26"
 {ready} of {total} containers have packing-list rows.,{total} контейнердан {ready} тасида қадоқлаш рўйхати сатрлари бор.
+Acquisition portfolio is not in your role scope.,Харид портфели ролингиз доирасига кирмайди.
+Aniqlangan,Аниқланган
+Assigned tenders,Бириктирилган тендерлар
+Awaiting delivery,Етказиб бериш кутилмоқда
+Choose another period or start a tender intake to see lifecycle and execution work here.,Босқичлар ва ижрони кўриш учун бошқа даврни танланг ёки тендер қабул қилишни бошланг.
+Clear filters or select another dashboard period.,Фильтрларни тозаланг ёки панелнинг бошқа даврини танланг.
+Contract total,Шартномалар жами
+Customs workload,Божхона иш ҳажми
+E'tibor talab qiladi,Эътибор талаб қилади
+Execution spread,Ижро тафовути
+Ijro oqimi,Ижро оқими
+Mening ishlarim,Менинг ишларим
+Missing required checks,Мажбурий текширувлар бажарилмаган
+No acquisition board is available for your role.,Ролингиз учун харидлар панели мавжуд эмас.
+No priority checks right now.,Ҳозир устувор текширувлар йўқ.
+No purchase orders match these filters.,Бу фильтрларга мос харид буюртмалари йўқ.
+No shipments match these filters.,Бу фильтрларга мос жўнатмалар йўқ.
+No tenders match these filters.,Бу фильтрларга мос тендерлар йўқ.
+Open customs work,Очиқ божхона ишлари
+Pending deliveries,Кутилаётган етказиб беришлар
+Procurement total,Харидлар жами
+Purchase orders,Харид буюртмалари
+Qabul qilingan PO,Қабул қилинган PO
+Qaror qilingan,Қарор қилинган
+"Result exists, but submission evidence is missing.","Натижа мавжуд, аммо топширилганлик далили йўқ."
+Sales orders,Сотув буюртмалари
+Tayyor,Тайёр
+Tekshirilmagan tarix,Текширилмаган тарих
+Tender acquisition,Тендер харидлари
+Tender activity is empty for this period,Бу даврда тендер фаоллиги йўқ
+Tender control center,Тендер бошқарув маркази
+Tender dashboard could not be loaded.,Тендер панелини юклаб бўлмади.
+Tender operations,Тендер операциялари
+Unverified,Тасдиқланмаган
+Unverified history,Тасдиқланмаган тарих
+Yetkazilgan SO,Етказилган SO
+Yo'qotilgan,Йўқотилган
+Yuborilgan,Юборилган
+Yutilgan,Ютилган

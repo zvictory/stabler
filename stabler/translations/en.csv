@@ -4558,3 +4558,43 @@ Vendor Category,Vendor Category
 You are not permitted to access inventory.,You are not permitted to access inventory.
 e.g. MH/3054/2025-26,e.g. MH/3054/2025-26
 {ready} of {total} containers have packing-list rows.,{ready} of {total} containers have packing-list rows.
+Acquisition portfolio is not in your role scope.,Acquisition portfolio is not in your role scope.
+Aniqlangan,Identified
+Assigned tenders,Assigned tenders
+Awaiting delivery,Awaiting delivery
+Choose another period or start a tender intake to see lifecycle and execution work here.,Choose another period or start a tender intake to see lifecycle and execution work here.
+Clear filters or select another dashboard period.,Clear filters or select another dashboard period.
+Contract total,Contract total
+Customs workload,Customs workload
+E'tibor talab qiladi,Needs attention
+Execution spread,Execution spread
+Ijro oqimi,Execution flow
+Mening ishlarim,My work
+Missing required checks,Missing required checks
+No acquisition board is available for your role.,No acquisition board is available for your role.
+No priority checks right now.,No priority checks right now.
+No purchase orders match these filters.,No purchase orders match these filters.
+No shipments match these filters.,No shipments match these filters.
+No tenders match these filters.,No tenders match these filters.
+Open customs work,Open customs work
+Pending deliveries,Pending deliveries
+Procurement total,Procurement total
+Purchase orders,Purchase orders
+Qabul qilingan PO,Received POs
+Qaror qilingan,Decided
+"Result exists, but submission evidence is missing.","Result exists, but submission evidence is missing."
+Sales orders,Sales orders
+Tayyor,Ready
+Tekshirilmagan tarix,Unverified history
+Tender acquisition,Tender acquisition
+Tender activity is empty for this period,Tender activity is empty for this period
+Tender control center,Tender control center
+Tender dashboard could not be loaded.,Tender dashboard could not be loaded.
+Tender operations,Tender operations
+Try again,Try again
+Unverified,Unverified
+Unverified history,Unverified history
+Yetkazilgan SO,Delivered SOs
+Yo'qotilgan,Lost
+Yuborilgan,Submitted
+Yutilgan,Won

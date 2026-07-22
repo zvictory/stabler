@@ -93,7 +93,7 @@ function clearFilters() { router.replace({ query: {} }); }
 			<div class="col-6 col-md"><div class="card"><div class="card-body py-2 px-3">
 				<div class="text-secondary small text-uppercase">{{ t("Win rate") }}</div>
 				<div class="h3 m-0 text-green">{{ kpi.win_rate || 0 }}%</div>
-				<div class="text-secondary" style="font-size:11px">{{ kpi.won || 0 }}{{ t("W") }} · {{ kpi.lost || 0 }}{{ t("L") }} · {{ kpi.pending || 0 }}{{ t("P") }}</div>
+				<div class="text-secondary" style="font-size:11px">{{ kpi.won || 0 }}{{ t("W") }} · {{ kpi.lost || 0 }}{{ t("L") }} · {{ kpi.pending || 0 }}{{ t("P") }} · {{ kpi.unverified_history || 0 }} {{ t("Unverified") }}</div>
 			</div></div></div>
 			<div class="col-6 col-md"><div class="card"><div class="card-body py-2 px-3">
 				<div class="text-secondary small text-uppercase">{{ t("Остаток (net remaining)") }}</div><div class="h3 m-0 font-monospace">{{ fm(kpi.total_ostatok || 0) }}</div></div></div></div>
@@ -118,6 +118,7 @@ function clearFilters() { router.replace({ query: {} }); }
 							<td>
 								<span class="fw-semibold">{{ r.label }}</span>
 								<span v-if="r.result" class="badge ms-1" :class="resultBadge(r.result)">{{ t(r.result.charAt(0).toUpperCase() + r.result.slice(1)) }}</span>
+								<span v-else-if="r.lifecycle?.unverified_history" class="badge bg-yellow-lt text-yellow ms-1">{{ t("Unverified") }}</span>
 								<div class="text-secondary small">{{ r.po_count }} PO · {{ r.so_count }} SO</div>
 							</td>
 							<td class="text-end font-monospace">{{ fm(r.value) }}</td>

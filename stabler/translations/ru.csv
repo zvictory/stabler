@@ -4568,3 +4568,42 @@ Vendor Category,Категория поставщика
 You are not permitted to access inventory.,У вас нет доступа к складу.
 e.g. MH/3054/2025-26,напр. MH/3054/2025-26
 {ready} of {total} containers have packing-list rows.,Упаковочные листы заполнены у {ready} из {total} контейнеров.
+Acquisition portfolio is not in your role scope.,Портфель закупок не входит в область вашей роли.
+Aniqlangan,Выявлено
+Assigned tenders,Назначенные тендеры
+Awaiting delivery,Ожидают поставки
+Choose another period or start a tender intake to see lifecycle and execution work here.,Выберите другой период или начните регистрацию тендера для просмотра этапов и исполнения.
+Clear filters or select another dashboard period.,Очистите фильтры или выберите другой период панели.
+Contract total,Сумма контрактов
+Customs workload,Таможенные задачи
+E'tibor talab qiladi,Требует внимания
+Execution spread,Разница исполнения
+Ijro oqimi,Ход исполнения
+Mening ishlarim,Мои задачи
+Missing required checks,Не выполнены обязательные проверки
+No acquisition board is available for your role.,Для вашей роли нет доски закупок.
+No priority checks right now.,Сейчас нет приоритетных проверок.
+No purchase orders match these filters.,Нет заказов на закупку по этим фильтрам.
+No shipments match these filters.,Нет отправок по этим фильтрам.
+No tenders match these filters.,Нет тендеров по этим фильтрам.
+Open customs work,Открытые таможенные задачи
+Pending deliveries,Ожидающие поставки
+Procurement total,Сумма закупок
+Purchase orders,Заказы на закупку
+Qabul qilingan PO,Полученные заказы на закупку
+Qaror qilingan,Решение принято
+"Result exists, but submission evidence is missing.","Результат указан, но подтверждение подачи отсутствует."
+Sales orders,Заказы на продажу
+Tayyor,Готово
+Tekshirilmagan tarix,Непроверенная история
+Tender acquisition,Тендерные закупки
+Tender activity is empty for this period,За этот период нет тендерной активности
+Tender control center,Центр управления тендерами
+Tender dashboard could not be loaded.,Не удалось загрузить панель тендеров.
+Tender operations,Тендерные операции
+Unverified,Не подтверждено
+Unverified history,Непроверенная история
+Yetkazilgan SO,Поставленные заказы на продажу
+Yo'qotilgan,Проиграно
+Yuborilgan,Подано
+Yutilgan,Выиграно

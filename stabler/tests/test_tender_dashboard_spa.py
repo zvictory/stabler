@@ -28,6 +28,11 @@ class TestTenderDashboardSpaContract(unittest.TestCase):
 		self.assertIn('v-if="tenderEnabled"', source)
 		self.assertIn('v-else', source)
 
+	def test_company_disabled_tender_keeps_financial_fallback(self):
+		source = _read(_DASHBOARD)
+		self.assertIn("if (tenderEnabled.value) return loadTender();", source)
+		self.assertIn("return loadFinancial();", source)
+
 	def test_dashboard_has_accessible_spa_drilldowns_without_desk_links(self):
 		source = _read(_DASHBOARD)
 		self.assertIn('router.push({ name, query })', source)

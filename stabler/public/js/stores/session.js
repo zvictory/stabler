@@ -45,10 +45,11 @@ export const useSession = defineStore("session", {
 		// Null allowedModules (boot not yet loaded) defaults open — matches pre-boot behavior.
 		canAccessModule(state) {
 			return (key) => {
-				if (this.isAdmin) return true;
 				const companyOn =
 					!state.modules ||
 					(state.modules[key] !== false && state.modules[key] !== 0);
+				if (!companyOn) return false;
+				if (this.isAdmin) return true;
 				const userOn =
 					!state.allowedModules || state.allowedModules.includes(key);
 				return companyOn && userOn;

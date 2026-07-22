@@ -17,9 +17,18 @@ from unittest.mock import patch
 
 
 class _FakeDB:
-	def __init__(self, intakes: dict[str, dict] | None = None):
+	def __init__(
+		self,
+		intakes: dict[str, dict] | None = None,
+		*,
+		creations: dict[str, str] | None = None,
+		locked_intakes: dict[str, dict] | None = None,
+	):
 		self.intakes = intakes or {}
+		self.creations = creations or {}
+		self.locked_intakes = locked_intakes or {}
 		self.writes: list[tuple[str, str, str]] = []
+		self.lock_reads: list[tuple[str, object]] = []
 
 	def exists(self, doctype, name):
 		return doctype == "CRM Deal" and name in self.intakes
@@ -28,7 +37,7 @@ class _FakeDB:
 		if doctype == "CRM Deal" and field == "company":
 			return "Test Company"
 		if doctype == "CRM Deal" and field == "creation":
-			return "2026-07-10"
+			return self.creations.get(name, "2026-07-10")
 		if doctype == "CRM Deal" and field == "custom_tender_intake":
 			return json.dumps(self.intakes.get(name, {}))
 		if doctype == "Company" and field == "default_currency":
@@ -41,6 +50,12 @@ class _FakeDB:
 	def set_value(self, doctype, name, field, value, **_kwargs):
 		self.writes.append((doctype, name, value))
 		self.intakes[name] = json.loads(value)
+
+	def sql(self, query, values=None, **_kwargs):
+		self.lock_reads.append((query, values))
+		deal = values[0] if isinstance(values, (list, tuple)) else values
+		intake = self.locked_intakes.get(deal, self.intakes.get(deal, {}))
+		return [{"custom_tender_intake": json.dumps(intake)}]
 
 
 class _Row(dict):
@@ -114,7 +129,7 @@ class TestTenderDashboardBehaviour(unittest.TestCase):
 		self.assertFalse(payload["role_scope"]["can_view_finance"])
 
 	def test_legacy_result_without_submission_is_unverified_not_participation(self):
-		db = _FakeDB({"DEAL-1": {"assigned_to": "source@example.com", "result": "won"}})
+		db = _FakeDB({"DEAL-1": {"assigned_to": "source@example.com", "result": "won", "result_at": "2026-07-10"}})
 		tender = _load_tender(db, ["Sales User"])
 
 		with patch.object(tender, "_tender_deal_names", return_value={"DEAL-1"}):
@@ -147,6 +162,80 @@ class TestTenderDashboardBehaviour(unittest.TestCase):
 		self.assertEqual(payload["submission_reference"], "FIRST")
 		self.assertEqual(db.writes, [])
 
+	def test_submission_locks_and_rereads_before_claiming_first_audit_fact(self):
+		db = _FakeDB(
+			{"DEAL-1": {}},
+			locked_intakes={
+				"DEAL-1": {
+					"submitted_at": "2026-07-22 08:59:59",
+					"submitted_by": "concurrent@example.com",
+					"submission_reference": "CONCURRENT-FIRST",
+				},
+			},
+		)
+		tender = _load_tender(db, ["Sales User"], user="second@example.com")
+
+		payload = tender.mark_tender_submitted("DEAL-1", "SECOND")
+
+		self.assertEqual(payload["submitted_by"], "concurrent@example.com")
+		self.assertEqual(payload["submission_reference"], "CONCURRENT-FIRST")
+		self.assertEqual(db.writes, [])
+		self.assertEqual(len(db.lock_reads), 1)
+		self.assertIn("FOR UPDATE", db.lock_reads[0][0].upper())
+
+	def test_intake_save_cannot_spoof_or_clear_server_managed_assignment(self):
+		db = _FakeDB({
+			"DEAL-1": {
+				"assigned_to": "owner@example.com",
+				"assigned_to_name": "Original Owner",
+				"notes": "before",
+			},
+		})
+		tender = _load_tender(db, ["Sales User"])
+
+		payload = tender.save_deal_intake(
+			"DEAL-1",
+			{
+				"assigned_to": "attacker@example.com",
+				"assigned_to_name": "Spoofed Owner",
+				"notes": "after",
+			},
+		)
+
+		self.assertEqual(payload["intake"]["assigned_to"], "owner@example.com")
+		self.assertEqual(payload["intake"]["assigned_to_name"], "Original Owner")
+		self.assertEqual(payload["intake"]["notes"], "after")
+
+	def test_concurrent_intake_save_preserves_a_submission_that_won_the_row_lock(self):
+		db = _FakeDB(
+			{"DEAL-1": {"notes": "stale"}},
+			locked_intakes={
+				"DEAL-1": {
+					"notes": "current",
+					"submitted_at": "2026-07-22 08:59:59",
+					"submitted_by": "first@example.com",
+					"submission_reference": "FIRST",
+				},
+			},
+		)
+		tender = _load_tender(db, ["Sales User"])
+
+		payload = tender.save_deal_intake("DEAL-1", {"notes": "edited"})
+
+		self.assertEqual(payload["intake"]["submitted_by"], "first@example.com")
+		self.assertEqual(payload["intake"]["submission_reference"], "FIRST")
+		self.assertIn("FOR UPDATE", db.lock_reads[0][0].upper())
+
+	def test_director_assignment_is_the_only_path_that_changes_assignment(self):
+		db = _FakeDB({"DEAL-1": {"assigned_to": "old@example.com", "assigned_to_name": "Old"}})
+		tender = _load_tender(db, ["Stabler Tender Director"])
+
+		payload = tender.assign_tender("DEAL-1", "")
+
+		self.assertEqual(payload["assigned_to"], "")
+		self.assertEqual(db.intakes["DEAL-1"]["assigned_to"], "")
+		self.assertEqual(db.intakes["DEAL-1"]["assigned_to_name"], "")
+
 	def test_sourcing_dashboard_excludes_unassigned_deals(self):
 		db = _FakeDB({
 			"DEAL-MINE": {"assigned_to": "source@example.com", "go_no_go": "go"},
@@ -171,7 +260,10 @@ class TestTenderDashboardBehaviour(unittest.TestCase):
 		self.assertEqual(payload["go_no_go_at"], "2026-07-22 09:00:00")
 
 	def test_assigned_execution_uses_document_period_not_lifecycle_period(self):
-		db = _FakeDB({"DEAL-MINE": {"assigned_to": "source@example.com", "result_at": "2026-06-20"}})
+		db = _FakeDB(
+			{"DEAL-MINE": {"assigned_to": "source@example.com", "result_at": "2026-06-20"}},
+			creations={"DEAL-MINE": "2026-06-01"},
+		)
 		tender = _load_tender(db, ["Sales User"])
 		def has_column(doctype, field):
 			return (doctype, field) in {
@@ -187,6 +279,38 @@ class TestTenderDashboardBehaviour(unittest.TestCase):
 
 		self.assertEqual(payload["acquisition"]["identified"], 0)
 		self.assertEqual(payload["execution"]["purchase_orders"], 1)
+
+	def test_acquisition_counts_each_transition_in_its_own_period(self):
+		db = _FakeDB(
+			{
+				"DEAL-MULTI": {
+					"assigned_to": "source@example.com",
+					"go_no_go": "go",
+					"go_no_go_at": "2026-06-04 10:00:00",
+					"submitted_at": "2026-07-08 11:00:00",
+					"submitted_by": "source@example.com",
+					"result": "won",
+					"result_at": "2026-08-12 12:00:00",
+				},
+			},
+			creations={"DEAL-MULTI": "2026-05-02 09:00:00"},
+		)
+		tender = _load_tender(db, ["Sales User"])
+
+		with patch.object(tender, "_tender_deal_names", return_value={"DEAL-MULTI"}):
+			may = tender.tender_dashboard("Test Company", "2026-05-01", "2026-05-31")["acquisition"]
+			june = tender.tender_dashboard("Test Company", "2026-06-01", "2026-06-30")["acquisition"]
+			july = tender.tender_dashboard("Test Company", "2026-07-01", "2026-07-31")["acquisition"]
+			august = tender.tender_dashboard("Test Company", "2026-08-01", "2026-08-31")["acquisition"]
+
+		self.assertEqual(may["identified"], 1)
+		self.assertEqual(sum(may[key] for key in ("go", "ready", "submitted", "won")), 0)
+		self.assertEqual((june["go"], june["ready"]), (1, 1))
+		self.assertEqual((june["identified"], june["submitted"], june["won"]), (0, 0, 0))
+		self.assertEqual(july["submitted"], 1)
+		self.assertEqual((july["identified"], july["go"], july["won"]), (0, 0, 0))
+		self.assertEqual(august["won"], 1)
+		self.assertEqual((august["identified"], august["go"], august["submitted"]), (0, 0, 0))
 
 	def test_execution_excludes_closed_and_cancelled_sales_orders(self):
 		db = _FakeDB({"DEAL-MINE": {"assigned_to": "source@example.com"}})
@@ -267,6 +391,84 @@ class TestTenderDashboardBehaviour(unittest.TestCase):
 			payload = tender.sourcing_my_tenders("Test Company")
 
 		self.assertEqual([row["deal"] for row in payload["rows"]], ["DEAL-ALLOWED"])
+
+	def test_director_board_never_reads_or_returns_denied_deals(self):
+		db = _FakeDB({"DEAL-ALLOWED": {}, "DEAL-DENIED": {"result": "won"}})
+		tender = _load_tender(db, ["Stabler Tender Director"])
+
+		def has_permission(doctype, _ptype, doc=None):
+			return not (doctype == "CRM Deal" and doc == "DEAL-DENIED")
+
+		with (
+			patch.object(tender, "_tender_deal_names", return_value={"DEAL-ALLOWED", "DEAL-DENIED"}),
+			patch.object(tender, "_deal_deadlines", return_value={"risk": "good", "milestones": []}),
+			patch.object(tender, "_bid_inputs", return_value=({}, {"so_revenue": 0, "po_landed": 0, "po_count": 0, "so_count": 0})),
+			patch.object(tender, "_compute_bid_pnl", return_value={"bid_price": 0, "ostatok": 0, "margin_on_revenue_pct": 0}),
+			patch.object(tender, "_deal_label", side_effect=lambda deal: deal),
+			patch.object(tender.frappe, "has_permission", has_permission),
+		):
+			payload = tender.tender_director_board("Test Company")
+
+		self.assertEqual([row["deal"] for row in payload["rows"]], ["DEAL-ALLOWED"])
+
+	def test_operational_boards_redact_denied_deal_data_but_keep_permitted_po(self):
+		db = _FakeDB({"DEAL-DENIED": {"delivery_deadline": "2026-07-01"}})
+		tender = _load_tender(db, ["Stabler Declarant", "Stabler Logist"])
+		po = _Row(
+			name="PO-1",
+			supplier="SUP-1",
+			supplier_name="Permitted Supplier",
+			transaction_date="2026-07-05",
+			schedule_date="2026-07-25",
+			per_received=0,
+			custom_crm_deal="DEAL-DENIED",
+			status="To Receive",
+		)
+
+		def has_permission(doctype, _ptype, doc=None):
+			return not (doctype == "CRM Deal" and doc == "DEAL-DENIED")
+
+		with (
+			patch.object(tender, "_po_rows_for_views", return_value=([po], False)),
+			patch.object(tender.frappe, "has_permission", has_permission),
+		):
+			declarant = tender.declarant_queue("Test Company")
+			logistics = tender.logist_board("Test Company")
+
+		self.assertEqual([row["po"] for row in declarant["rows"]], ["PO-1"])
+		self.assertEqual([row["po"] for row in logistics["rows"]], ["PO-1"])
+		self.assertEqual(declarant["rows"][0]["deal_label"], "")
+		self.assertEqual(logistics["rows"][0]["deal_label"], "")
+		self.assertIsNone(logistics["rows"][0]["delivery"])
+
+	def test_director_legacy_result_is_unverified_not_a_verified_win(self):
+		db = _FakeDB({
+			"DEAL-LEGACY": {"result": "won", "result_at": "2026-06-01"},
+			"DEAL-VERIFIED": {
+				"result": "lost",
+				"result_at": "2026-07-01",
+				"submitted_at": "2026-06-20",
+				"submitted_by": "source@example.com",
+			},
+		})
+		tender = _load_tender(db, ["Stabler Tender Director"])
+
+		with (
+			patch.object(tender, "_tender_deal_names", return_value={"DEAL-LEGACY", "DEAL-VERIFIED"}),
+			patch.object(tender, "_deal_deadlines", return_value={"risk": "good", "milestones": []}),
+			patch.object(tender, "_bid_inputs", return_value=({}, {"so_revenue": 0, "po_landed": 0, "po_count": 0, "so_count": 0})),
+			patch.object(tender, "_compute_bid_pnl", return_value={"bid_price": 0, "ostatok": 0, "margin_on_revenue_pct": 0}),
+			patch.object(tender, "_deal_label", side_effect=lambda deal: deal),
+		):
+			payload = tender.tender_director_board("Test Company")
+
+		self.assertEqual(payload["kpi"]["won"], 0)
+		self.assertEqual(payload["kpi"]["lost"], 1)
+		self.assertEqual(payload["kpi"]["unverified_history"], 1)
+		self.assertEqual(payload["kpi"]["win_rate"], 0)
+		legacy = next(row for row in payload["rows"] if row["deal"] == "DEAL-LEGACY")
+		self.assertEqual(legacy["result"], "")
+		self.assertEqual(legacy["status"], "unverified_history")
 
 	def test_declarant_scope_is_execution_portfolio_not_acquisition_portfolio(self):
 		db = _FakeDB({"DEAL-1": {"assigned_to": "other@example.com"}})

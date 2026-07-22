@@ -12,9 +12,18 @@ await module.evaluate();
 const { activeTenderFilters, filterTenderRows } = module.namespace;
 
 const lifecycleRows = [
-	{
-		deal: "TENDER-READY",
-		event_date: "2026-07-10",
+		{
+			deal: "TENDER-READY",
+			event_date: "2026-05-10",
+			event_dates: {
+				identified: "2026-05-10",
+				decided: "2026-06-02",
+				go: "2026-06-02",
+				ready: "2026-06-02",
+				submitted: "2026-07-10",
+				won: "2026-08-12",
+				result: "2026-08-12",
+			},
 		lifecycle: { identified: true, decided: true, go: true, ready: true, submitted: true, assigned: true },
 		status: "won",
 		risk: "good",
@@ -32,13 +41,23 @@ const lifecycleRows = [
 
 assert.deepEqual(
 	filterTenderRows(lifecycleRows, { stage: "ready", period: "2026-07" }).map((row) => row.deal),
-	["TENDER-READY"],
-	"stage and period must intersect using lifecycle and event-date evidence",
+	[],
+	"ready must use its June decision date, not the later submission/result date",
 );
 assert.deepEqual(
-	filterTenderRows(lifecycleRows, { status: "won", period: "2026-07" }).map((row) => row.deal),
+	filterTenderRows(lifecycleRows, { stage: "submitted", period: "2026-07" }).map((row) => row.deal),
 	["TENDER-READY"],
-	"status and period must intersect using returned row evidence",
+	"submitted must use its own July timestamp",
+);
+assert.deepEqual(
+	filterTenderRows(lifecycleRows, { stage: "submitted", status: "won", period: "2026-07" }).map((row) => row.deal),
+	["TENDER-READY"],
+	"a stage/status intersection must keep the selected stage's event date",
+);
+assert.deepEqual(
+	filterTenderRows(lifecycleRows, { status: "won", period: "2026-08" }).map((row) => row.deal),
+	["TENDER-READY"],
+	"result status must use its own August timestamp",
 );
 
 const customsRows = [

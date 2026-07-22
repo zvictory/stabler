@@ -4562,3 +4562,42 @@ Vendor Category,Yetkazib beruvchi kategoriyasi
 You are not permitted to access inventory.,Sizda omborga kirish huquqi yo‘q.
 e.g. MH/3054/2025-26,"masalan, MH/3054/2025-26"
 {ready} of {total} containers have packing-list rows.,{total} konteynerdan {ready} tasida qadoqlash ro‘yxati satrlari bor.
+Acquisition portfolio is not in your role scope.,Xarid portfeli rolingiz doirasiga kirmaydi.
+Aniqlangan,Aniqlangan
+Assigned tenders,Biriktirilgan tenderlar
+Awaiting delivery,Yetkazib berish kutilmoqda
+Choose another period or start a tender intake to see lifecycle and execution work here.,Bosqichlar va ijroni ko‘rish uchun boshqa davrni tanlang yoki tender qabulini boshlang.
+Clear filters or select another dashboard period.,Filtrlarni tozalang yoki panelning boshqa davrini tanlang.
+Contract total,Shartnomalar jami
+Customs workload,Bojxona ish hajmi
+E'tibor talab qiladi,E’tibor talab qiladi
+Execution spread,Ijro tafovuti
+Ijro oqimi,Ijro oqimi
+Mening ishlarim,Mening ishlarim
+Missing required checks,Majburiy tekshiruvlar bajarilmagan
+No acquisition board is available for your role.,Rolingiz uchun xaridlar paneli mavjud emas.
+No priority checks right now.,Hozir ustuvor tekshiruvlar yo‘q.
+No purchase orders match these filters.,Bu filtrlarga mos xarid buyurtmalari yo‘q.
+No shipments match these filters.,Bu filtrlarga mos jo‘natmalar yo‘q.
+No tenders match these filters.,Bu filtrlarga mos tenderlar yo‘q.
+Open customs work,Ochiq bojxona ishlari
+Pending deliveries,Kutilayotgan yetkazib berishlar
+Procurement total,Xaridlar jami
+Purchase orders,Xarid buyurtmalari
+Qabul qilingan PO,Qabul qilingan PO
+Qaror qilingan,Qaror qilingan
+"Result exists, but submission evidence is missing.","Natija mavjud, ammo topshirilganlik dalili yo‘q."
+Sales orders,Sotuv buyurtmalari
+Tayyor,Tayyor
+Tekshirilmagan tarix,Tekshirilmagan tarix
+Tender acquisition,Tender xaridlari
+Tender activity is empty for this period,Bu davrda tender faolligi yo‘q
+Tender control center,Tender boshqaruv markazi
+Tender dashboard could not be loaded.,Tender panelini yuklab bo‘lmadi.
+Tender operations,Tender operatsiyalari
+Unverified,Tasdiqlanmagan
+Unverified history,Tasdiqlanmagan tarix
+Yetkazilgan SO,Yetkazilgan SO
+Yo'qotilgan,Yo‘qotilgan
+Yuborilgan,Yuborilgan
+Yutilgan,Yutilgan
