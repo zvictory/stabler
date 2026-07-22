@@ -1,7 +1,12 @@
+import ast
+import inspect
+import textwrap
+
 import frappe
 from frappe.tests.utils import FrappeTestCase
 
 from stabler.api import imports
+from stabler.stabler.imports_module import packing_service
 
 
 class CIPackingGrnIntegrationTest(FrappeTestCase):
@@ -19,6 +24,19 @@ class CIPackingGrnIntegrationTest(FrappeTestCase):
 		module = module or settings.append("company_modules", {"company": self.company})
 		module.enable_imports = 1
 		settings.save(ignore_permissions=True)
+		source_company = frappe.get_doc("Company", self.company)
+		company_suffix = frappe.generate_hash(length=6)
+		self.other_company = frappe.new_doc("Company")
+		self.other_company.update(
+			{
+				"company_name": f"Packing Test {company_suffix}",
+				"abbr": company_suffix[:5].upper(),
+				"default_currency": source_company.default_currency,
+				"country": source_company.country,
+				"create_chart_of_accounts_based_on": "Standard Template",
+			}
+		)
+		self.other_company.insert(ignore_permissions=True)
 		self.ci = frappe.new_doc("Commercial Invoice")
 		self.ci.update(
 			{
@@ -81,6 +99,24 @@ class CIPackingGrnIntegrationTest(FrappeTestCase):
 			},
 		)
 		other.insert(ignore_permissions=True)
+		foreign = frappe.new_doc("Import Container")
+		foreign.update(
+			{
+				"company": self.other_company.name,
+				"commercial_invoice": self.ci.name,
+				"container_number": f"FOREIGN-{frappe.generate_hash(length=6)}",
+			}
+		)
+		foreign.append(
+			"items",
+			{
+				"item_code": self.item,
+				"box_qty": 50,
+				"box_kg": 20,
+				"total_kg": 1000,
+			},
+		)
+		foreign.insert(ignore_permissions=True)
 
 		payload = imports.get_commercial_invoice(self.ci.name)
 
@@ -90,3 +126,34 @@ class CIPackingGrnIntegrationTest(FrappeTestCase):
 			300.0,
 		)
 		self.assertIsNone(payload["grn"])
+
+	def test_secondary_parent_reads_use_permission_aware_queries(self):
+		service_calls = _frappe_calls(packing_service.summary_for_ci)
+		endpoint_calls = _frappe_calls(imports.get_commercial_invoice)
+
+		self.assertIn(("get_list", "Import Container"), service_calls)
+		self.assertNotIn(("get_all", "Import Container"), service_calls)
+		self.assertIn(("get_list", "GRN Checklist"), endpoint_calls)
+		self.assertNotIn(("db.get_value", "GRN Checklist"), endpoint_calls)
+
+
+def _frappe_calls(function) -> set[tuple[str, str]]:
+	tree = ast.parse(textwrap.dedent(inspect.getsource(function)))
+	calls = set()
+	for node in ast.walk(tree):
+		if not isinstance(node, ast.Call) or not node.args:
+			continue
+		doctype = node.args[0]
+		if not isinstance(doctype, ast.Constant) or not isinstance(doctype.value, str):
+			continue
+		if isinstance(node.func, ast.Attribute) and isinstance(node.func.value, ast.Name):
+			if node.func.value.id == "frappe":
+				calls.add((node.func.attr, doctype.value))
+		elif (
+			isinstance(node.func, ast.Attribute)
+			and isinstance(node.func.value, ast.Attribute)
+			and isinstance(node.func.value.value, ast.Name)
+			and node.func.value.value.id == "frappe"
+		):
+			calls.add((f"{node.func.value.attr}.{node.func.attr}", doctype.value))
+	return calls

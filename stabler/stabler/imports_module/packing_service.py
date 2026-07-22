@@ -6,11 +6,12 @@ from stabler.stabler.imports_module import packing_math
 
 
 def summary_for_ci(commercial_invoice: str, company: str) -> dict:
-	containers = frappe.get_all(
+	containers = frappe.get_list(
 		"Import Container",
 		filters={"commercial_invoice": commercial_invoice, "company": company},
 		fields=["name", "container_number"],
 		order_by="creation asc",
+		limit=1000,
 	)
 	container_names = [row.name for row in containers]
 	rows = (
