@@ -24,9 +24,24 @@ def aggregate_container_items(rows: Iterable[Mapping[str, object]]) -> list[dict
 
 
 def reconcile_ci_items(ci_rows: Iterable[Mapping[str, object]], packed_rows: Iterable[Mapping[str, object]]) -> list[dict]:
-	ci = {str(row.get("item_code") or row.get("item") or ""): float(row.get("qty") or 0) for row in ci_rows}
+	ci: dict[str, float] = defaultdict(float)
+	for row in ci_rows:
+		item = str(row.get("item_code") or row.get("item") or "")
+		ci[item] += float(row.get("qty") or 0)
 	packed = {str(row.get("item_code") or ""): float(row.get("expected_total_kg") or 0) for row in packed_rows}
-	return [{"item_code": item, "ci_kg": round(ci.get(item, 0), 3), "packed_kg": round(packed.get(item, 0), 3), "difference_kg": round(packed.get(item, 0) - ci.get(item, 0), 3), "matches": abs(packed.get(item, 0) - ci.get(item, 0)) <= 0.01} for item in sorted(set(ci) | set(packed))]
+	reconciliation = []
+	for item in sorted(set(ci) | set(packed)):
+		ci_kg = round(ci.get(item, 0), 3)
+		packed_kg = round(packed.get(item, 0), 3)
+		difference_kg = round(packed_kg - ci_kg, 3)
+		reconciliation.append({
+			"item_code": item,
+			"ci_kg": ci_kg,
+			"packed_kg": packed_kg,
+			"difference_kg": difference_kg,
+			"matches": abs(difference_kg) <= 0.01,
+		})
+	return reconciliation
 
 
 def packing_readiness(container_names: Iterable[str], containers_with_rows: Iterable[str], reconciliation: Iterable[Mapping[str, object]]) -> str:
