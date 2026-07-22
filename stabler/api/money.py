@@ -1344,25 +1344,27 @@ def party_payment_defaults(company: str, party_type: str, party: str) -> dict:
 	)
 
 	raw = get_outstanding_invoices(party_type, party, [party_account]) or []
-	# Only include actual invoices; advance Payment Entries (voucher_type="Payment Entry")
-	# have no `customer` / `supplier` field and always fail ERPNext's
-	# validate_reference_documents check — so exclude them from the allocation list.
+	# Only include actual submitted invoices (docstatus=1, status!='Cancelled'); advance Payment Entries
+	# (voucher_type="Payment Entry") have no `customer`/`supplier` field and fail ERPNext validation.
 	invoice_dt = "Sales Invoice" if party_type == "Customer" else "Purchase Invoice"
-	invoices = sorted(
-		[
-			{
-				"voucher_type": r.get("voucher_type", ""),
-				"voucher_no": r.get("voucher_no", ""),
+	valid_invoices = []
+	for r in raw:
+		v_type = r.get("voucher_type", "")
+		v_no = r.get("voucher_no", "")
+		out_amt = flt(r.get("outstanding_amount", 0))
+		if out_amt <= 0 or v_type != invoice_dt or not v_no:
+			continue
+		st, ds = frappe.db.get_value(invoice_dt, v_no, ["status", "docstatus"]) or (None, None)
+		if ds == 1 and st != "Cancelled":
+			valid_invoices.append({
+				"voucher_type": v_type,
+				"voucher_no": v_no,
 				"posting_date": str(r.get("posting_date") or ""),
 				"due_date": str(r.get("due_date") or ""),
 				"invoice_amount": flt(r.get("invoice_amount", 0)),
-				"outstanding_amount": flt(r.get("outstanding_amount", 0)),
-			}
-			for r in raw
-			if flt(r.get("outstanding_amount", 0)) > 0 and r.get("voucher_type") == invoice_dt
-		],
-		key=lambda x: x["posting_date"],
-	)
+				"outstanding_amount": out_amt,
+			})
+	invoices = sorted(valid_invoices, key=lambda x: x["posting_date"])
 
 	cash_bank = list_cash_bank_accounts(company)
 	suggested = cash_bank[0]["name"] if cash_bank else None
@@ -1646,11 +1648,17 @@ def create_payment_entry(
 				f"Total allocated ({total_alloc:.2f}) exceeds payment amount ({party_amt:.2f})."
 			)
 		for r in refs:
+			ref_dt = r.get("reference_doctype")
+			ref_no = r.get("reference_name")
+			if ref_dt and ref_no:
+				st, ds = frappe.db.get_value(ref_dt, ref_no, ["status", "docstatus"]) or (None, None)
+				if ds != 1 or st == "Cancelled":
+					continue  # Skip cancelled or non-submitted reference documents
 			doc.append(
 				"references",
 				{
-					"reference_doctype": r.get("reference_doctype"),
-					"reference_name": r.get("reference_name"),
+					"reference_doctype": ref_dt,
+					"reference_name": ref_no,
 					"total_amount": flt(r.get("total_amount", 0)),
 					"outstanding_amount": flt(r.get("outstanding_amount", 0)),
 					"allocated_amount": flt(r.get("allocated_amount", 0)),
