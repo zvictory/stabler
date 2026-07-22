@@ -11,7 +11,7 @@ def summary_for_ci(commercial_invoice: str, company: str) -> dict:
 		filters={"commercial_invoice": commercial_invoice, "company": company},
 		fields=["name", "container_number"],
 		order_by="creation asc",
-		limit=1000,
+		limit_page_length=0,
 	)
 	container_names = [row.name for row in containers]
 	rows = (

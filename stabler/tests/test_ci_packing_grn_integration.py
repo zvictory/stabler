@@ -128,11 +128,14 @@ class CIPackingGrnIntegrationTest(FrappeTestCase):
 		self.assertIsNone(payload["grn"])
 
 	def test_secondary_parent_reads_use_permission_aware_queries(self):
+		service_source = inspect.getsource(packing_service.summary_for_ci)
 		service_calls = _frappe_calls(packing_service.summary_for_ci)
 		endpoint_calls = _frappe_calls(imports.get_commercial_invoice)
 
 		self.assertIn(("get_list", "Import Container"), service_calls)
 		self.assertNotIn(("get_all", "Import Container"), service_calls)
+		self.assertIn("limit_page_length=0", service_source)
+		self.assertNotIn("limit=1000", service_source)
 		self.assertIn(("get_list", "GRN Checklist"), endpoint_calls)
 		self.assertNotIn(("db.get_value", "GRN Checklist"), endpoint_calls)
 
