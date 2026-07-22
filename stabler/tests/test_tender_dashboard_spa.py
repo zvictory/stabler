@@ -48,6 +48,18 @@ class TestTenderDashboardSpaContract(unittest.TestCase):
 			"Missing required checks",
 		):
 			self.assertIn(text, source)
+		self.assertIn("execution.received || 0 }} / {{ execution.purchase_orders || 0", source)
+		self.assertIn("execution.delivered || 0 }} / {{ execution.sales_orders || 0", source)
+
+	def test_dashboard_execution_cards_stack_on_phone(self):
+		source = _read(_DASHBOARD)
+		self.assertIn('class="col-12 col-md-6 col-lg-4"', source)
+		self.assertIn('class="col-12 col-md-6 col-lg-3"', source)
+
+	def test_dashboard_error_is_announced_and_focuses_retry(self):
+		source = _read(_DASHBOARD)
+		for text in ('role="alert"', 'aria-live="assertive"', 'ref="retryButton"', 'await nextTick()', 'retryButton.value?.focus()'):
+			self.assertIn(text, source)
 
 	def test_dashboard_gates_role_specific_destinations(self):
 		source = _read(_DASHBOARD)

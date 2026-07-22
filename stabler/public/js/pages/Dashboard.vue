@@ -1,5 +1,5 @@
 <script setup>
-import { ref, computed, watch, onMounted } from "vue";
+import { ref, computed, watch, onMounted, nextTick } from "vue";
 import { storeToRefs } from "pinia";
 import { useRouter } from "vue-router";
 import { useSession } from "../stores/session.js";
@@ -24,6 +24,7 @@ const lowStock = ref([]);
 const error = ref(null);
 const tenderLoading = ref(true);
 const tenderError = ref(null);
+const retryButton = ref(null);
 const tenderPeriod = ref(new Date().toISOString().slice(0, 7));
 const tenderData = ref({
 	period: {},
@@ -125,6 +126,10 @@ async function loadTender() {
 		tenderError.value = e?.response?.data?.exception || e?.message || t("Tender dashboard could not be loaded.");
 	} finally {
 		tenderLoading.value = false;
+		if (tenderError.value) {
+			await nextTick();
+			retryButton.value?.focus();
+		}
 	}
 }
 
@@ -284,8 +289,8 @@ const activityIcon = (type) => {
 						</div>
 						</div>
 
-					<div v-else-if="tenderError" class="card card-md border-danger">
-						<div class="card-body text-center py-5"><i class="ti ti-alert-triangle text-danger" style="font-size: 2rem"></i><h3 class="mt-2">{{ t("Tender dashboard could not be loaded.") }}</h3><p class="text-secondary mb-3">{{ tenderError }}</p><button type="button" class="btn btn-primary" @click="loadTender"><i class="ti ti-refresh me-1"></i>{{ t("Try again") }}</button></div>
+					<div v-else-if="tenderError" class="card card-md border-danger" role="alert" aria-live="assertive" aria-atomic="true">
+						<div class="card-body text-center py-5"><i class="ti ti-alert-triangle text-danger" style="font-size: 2rem"></i><h3 class="mt-2">{{ t("Tender dashboard could not be loaded.") }}</h3><p class="text-secondary mb-3">{{ tenderError }}</p><button ref="retryButton" type="button" class="btn btn-primary" @click="loadTender"><i class="ti ti-refresh me-1"></i>{{ t("Try again") }}</button></div>
 					</div>
 
 					<EmptyState
@@ -306,12 +311,12 @@ const activityIcon = (type) => {
 										{{ t("Acquisition portfolio is not in your role scope.") }}
 									</div>
 									<div v-else-if="canOpenAcquisition && acquisitionDestination" class="row g-2">
-										<div class="col-6 col-md-4"><button type="button" class="tender-metric-card" @click="navigate(acquisitionDestination, { stage: 'identified' })"><span>{{ t("Aniqlangan") }}</span><strong>{{ acquisition.identified || 0 }}</strong></button></div>
-										<div class="col-6 col-md-4"><button type="button" class="tender-metric-card" @click="navigate(acquisitionDestination, { stage: 'decided' })"><span>{{ t("Qaror qilingan") }}</span><strong>{{ (acquisition.go || 0) + (acquisition.no_go || 0) }}</strong></button></div>
-										<div class="col-6 col-md-4"><button type="button" class="tender-metric-card" @click="navigate(acquisitionDestination, { stage: 'ready' })"><span>{{ t("Tayyor") }}</span><strong>{{ acquisition.ready || 0 }}</strong></button></div>
-										<div class="col-6 col-md-4"><button type="button" class="tender-metric-card" @click="navigate(acquisitionDestination, { stage: 'submitted' })"><span>{{ t("Yuborilgan") }}</span><strong>{{ acquisition.submitted || 0 }}</strong></button></div>
-										<div class="col-6 col-md-4"><button type="button" class="tender-metric-card" @click="navigate(acquisitionDestination, { status: 'won' })"><span>{{ t("Yutilgan") }}</span><strong>{{ acquisition.won || 0 }}</strong></button></div>
-										<div class="col-6 col-md-4"><button type="button" class="tender-metric-card" @click="navigate(acquisitionDestination, { status: 'lost' })"><span>{{ t("Yo'qotilgan") }}</span><strong>{{ acquisition.lost || 0 }}</strong></button></div>
+										<div class="col-12 col-md-6 col-lg-4"><button type="button" class="tender-metric-card" @click="navigate(acquisitionDestination, { stage: 'identified' })"><span>{{ t("Aniqlangan") }}</span><strong>{{ acquisition.identified || 0 }}</strong></button></div>
+										<div class="col-12 col-md-6 col-lg-4"><button type="button" class="tender-metric-card" @click="navigate(acquisitionDestination, { stage: 'decided' })"><span>{{ t("Qaror qilingan") }}</span><strong>{{ (acquisition.go || 0) + (acquisition.no_go || 0) }}</strong></button></div>
+										<div class="col-12 col-md-6 col-lg-4"><button type="button" class="tender-metric-card" @click="navigate(acquisitionDestination, { stage: 'ready' })"><span>{{ t("Tayyor") }}</span><strong>{{ acquisition.ready || 0 }}</strong></button></div>
+										<div class="col-12 col-md-6 col-lg-4"><button type="button" class="tender-metric-card" @click="navigate(acquisitionDestination, { stage: 'submitted' })"><span>{{ t("Yuborilgan") }}</span><strong>{{ acquisition.submitted || 0 }}</strong></button></div>
+										<div class="col-12 col-md-6 col-lg-4"><button type="button" class="tender-metric-card" @click="navigate(acquisitionDestination, { status: 'won' })"><span>{{ t("Yutilgan") }}</span><strong>{{ acquisition.won || 0 }}</strong></button></div>
+										<div class="col-12 col-md-6 col-lg-4"><button type="button" class="tender-metric-card" @click="navigate(acquisitionDestination, { status: 'lost' })"><span>{{ t("Yo'qotilgan") }}</span><strong>{{ acquisition.lost || 0 }}</strong></button></div>
 									</div>
 									<div v-else class="text-secondary">{{ t("No acquisition board is available for your role.") }}</div>
 									<div v-if="acquisition.unverified_history" class="alert alert-warning mt-3 mb-0 py-2">
@@ -337,10 +342,10 @@ const activityIcon = (type) => {
 							<div class="card h-100">
 								<div class="card-header"><h3 class="card-title"><i class="ti ti-truck-loading me-1"></i>{{ t("Ijro oqimi") }}</h3></div>
 								<div class="card-body"><div class="row g-2">
-									<div class="col-6 col-md-3"><button v-if="hasTenderView('logist')" type="button" class="tender-metric-card" @click="navigate('tender-logistics', { status: 'all' })"><span>{{ t("Purchase orders") }}</span><strong>{{ execution.purchase_orders || 0 }}</strong><small>{{ t("Qabul qilingan PO") }}: {{ execution.received || 0 }}</small></button><div v-else class="tender-metric-card tender-metric-card--disabled"><span>{{ t("Purchase orders") }}</span><strong>{{ execution.purchase_orders || 0 }}</strong><small>{{ t("Qabul qilingan PO") }}: {{ execution.received || 0 }}</small></div></div>
-									<div class="col-6 col-md-3"><button v-if="hasTenderView('declarant')" type="button" class="tender-metric-card" @click="navigate('tender-customs', { status: 'in_progress' })"><span>{{ t("Customs workload") }}</span><strong>{{ execution.customs_workload_open || 0 }}</strong></button><div v-else class="tender-metric-card tender-metric-card--disabled"><span>{{ t("Customs workload") }}</span><strong>{{ execution.customs_workload_open || 0 }}</strong></div></div>
-									<div class="col-6 col-md-3"><button v-if="canOpenSalesExecution" type="button" class="tender-metric-card" @click="navigate('tender-board', { tender: '1', status: 'all' })"><span>{{ t("Sales orders") }}</span><strong>{{ execution.sales_orders || 0 }}</strong></button><div v-else class="tender-metric-card tender-metric-card--disabled"><span>{{ t("Sales orders") }}</span><strong>{{ execution.sales_orders || 0 }}</strong></div></div>
-									<div class="col-6 col-md-3"><button v-if="canOpenSalesExecution" type="button" class="tender-metric-card" @click="navigate('tender-board', { tender: '1', status: 'delivery_pending' })"><span>{{ t("Awaiting delivery") }}</span><strong>{{ execution.delivery_pending || 0 }}</strong></button><div v-else class="tender-metric-card tender-metric-card--disabled"><span>{{ t("Awaiting delivery") }}</span><strong>{{ execution.delivery_pending || 0 }}</strong></div></div>
+									<div class="col-12 col-md-6 col-lg-3"><button v-if="hasTenderView('logist')" type="button" class="tender-metric-card" @click="navigate('tender-logistics', { status: 'all' })"><span>{{ t("Purchase orders") }}</span><strong>{{ execution.purchase_orders || 0 }}</strong><small>{{ t("Qabul qilingan PO") }}: {{ execution.received || 0 }} / {{ execution.purchase_orders || 0 }}</small></button><div v-else class="tender-metric-card tender-metric-card--disabled"><span>{{ t("Purchase orders") }}</span><strong>{{ execution.purchase_orders || 0 }}</strong><small>{{ t("Qabul qilingan PO") }}: {{ execution.received || 0 }} / {{ execution.purchase_orders || 0 }}</small></div></div>
+									<div class="col-12 col-md-6 col-lg-3"><button v-if="hasTenderView('declarant')" type="button" class="tender-metric-card" @click="navigate('tender-customs', { status: 'in_progress' })"><span>{{ t("Customs workload") }}</span><strong>{{ execution.customs_workload_open || 0 }}</strong></button><div v-else class="tender-metric-card tender-metric-card--disabled"><span>{{ t("Customs workload") }}</span><strong>{{ execution.customs_workload_open || 0 }}</strong></div></div>
+									<div class="col-12 col-md-6 col-lg-3"><button v-if="canOpenSalesExecution" type="button" class="tender-metric-card" @click="navigate('tender-board', { tender: '1', status: 'all' })"><span>{{ t("Sales orders") }}</span><strong>{{ execution.sales_orders || 0 }}</strong><small>{{ t("Yetkazilgan SO") }}: {{ execution.delivered || 0 }} / {{ execution.sales_orders || 0 }}</small></button><div v-else class="tender-metric-card tender-metric-card--disabled"><span>{{ t("Sales orders") }}</span><strong>{{ execution.sales_orders || 0 }}</strong><small>{{ t("Yetkazilgan SO") }}: {{ execution.delivered || 0 }} / {{ execution.sales_orders || 0 }}</small></div></div>
+									<div class="col-12 col-md-6 col-lg-3"><button v-if="canOpenSalesExecution" type="button" class="tender-metric-card" @click="navigate('tender-board', { tender: '1', status: 'delivery_pending' })"><span>{{ t("Awaiting delivery") }}</span><strong>{{ execution.delivery_pending || 0 }}</strong></button><div v-else class="tender-metric-card tender-metric-card--disabled"><span>{{ t("Awaiting delivery") }}</span><strong>{{ execution.delivery_pending || 0 }}</strong></div></div>
 								</div></div>
 							</div>
 						</div>

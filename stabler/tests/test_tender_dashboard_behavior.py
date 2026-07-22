@@ -188,6 +188,32 @@ class TestTenderDashboardBehaviour(unittest.TestCase):
 		self.assertEqual(payload["acquisition"]["identified"], 0)
 		self.assertEqual(payload["execution"]["purchase_orders"], 1)
 
+	def test_execution_excludes_closed_and_cancelled_sales_orders(self):
+		db = _FakeDB({"DEAL-MINE": {"assigned_to": "source@example.com"}})
+		tender = _load_tender(db, ["Sales User"])
+
+		def has_column(doctype, field):
+			return (doctype, field) in {
+				("CRM Deal", "custom_tender_intake"),
+				("Sales Order", "custom_crm_deal"),
+			}
+
+		def get_list(doctype, **_kwargs):
+			if doctype == "Sales Order":
+				return [
+					_Row(name="SO-OPEN", custom_crm_deal="DEAL-MINE", transaction_date="2026-07-05", per_delivered=100, status="To Deliver and Bill", base_grand_total=100),
+					_Row(name="SO-CLOSED", custom_crm_deal="DEAL-MINE", transaction_date="2026-07-06", per_delivered=100, status="Closed", base_grand_total=100),
+					_Row(name="SO-CANCELLED", custom_crm_deal="DEAL-MINE", transaction_date="2026-07-07", per_delivered=0, status="Cancelled", base_grand_total=100),
+				]
+			return []
+
+		with patch.object(tender, "_tender_deal_names", return_value={"DEAL-MINE"}), patch.object(tender.frappe.db, "has_column", has_column), patch.object(tender.frappe, "get_list", get_list):
+			payload = tender.tender_dashboard("Test Company", "2026-07-01", "2026-07-31")
+
+		self.assertEqual(payload["execution"]["sales_orders"], 1)
+		self.assertEqual(payload["execution"]["delivered"], 1)
+		self.assertEqual(payload["execution"]["delivery_pending"], 0)
+
 	def test_declarant_scope_is_execution_portfolio_not_acquisition_portfolio(self):
 		db = _FakeDB({"DEAL-1": {"assigned_to": "other@example.com"}})
 		tender = _load_tender(db, ["Stabler Declarant"])

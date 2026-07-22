@@ -1699,6 +1699,8 @@ def tender_dashboard(company: str, from_date=None, to_date=None) -> dict:
 	for so in so_rows:
 		if (execution_scope == "assigned" and so.custom_crm_deal not in execution_deals) or not _in_dashboard_period(so.transaction_date, start, end):
 			continue
+		if so.status in ("Closed", "Cancelled"):
+			continue
 		if not frappe.has_permission("Sales Order", "read", doc=so.name):
 			continue
 		execution["sales_orders"] += 1
