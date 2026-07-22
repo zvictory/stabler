@@ -1,6 +1,7 @@
 import ast
 import inspect
 import textwrap
+from unittest.mock import patch
 
 import frappe
 from frappe.tests.utils import FrappeTestCase
@@ -147,6 +148,22 @@ class CIPackingGrnIntegrationTest(FrappeTestCase):
 		self.assertFalse(result["expected_snapshot_locked"])
 		self.assertEqual(grn.grn_items[0].expected_total_kg, 300.0)
 
+	def test_manual_create_checks_record_permissions_before_derived_reads(self):
+		source = inspect.getsource(imports.create_grn_for_ci)
+
+		self.assertLess(
+			source.index('_assert_can_read("Commercial Invoice", commercial_invoice)'),
+			source.index('_company_of("Commercial Invoice", commercial_invoice)'),
+		)
+		self.assertLess(
+			source.index('_assert_can_read("Commercial Invoice", commercial_invoice)'),
+			source.index('frappe.get_doc("Commercial Invoice", commercial_invoice)'),
+		)
+		self.assertLess(
+			source.index('_assert_can_read("GRN Checklist", result["name"])'),
+			source.index("packing_service.summary_for_ci"),
+		)
+
 	def test_incomplete_packing_creates_shell_without_invented_rows(self):
 		self.container_2.set("items", [])
 		self.container_2.save(ignore_permissions=True)
@@ -157,7 +174,19 @@ class CIPackingGrnIntegrationTest(FrappeTestCase):
 		self.assertEqual(result["packing_status"], "Incomplete")
 		self.assertEqual(grn.grn_items[0].expected_total_kg, 200.0)
 
+	def test_no_packing_rows_creates_empty_shell(self):
+		for container in self.containers:
+			container.set("items", [])
+			container.save(ignore_permissions=True)
+
+		result = imports.create_grn_for_ci(self.ci.name)
+		grn = frappe.get_doc("GRN Checklist", result["name"])
+
+		self.assertEqual(result["packing_status"], "Incomplete")
+		self.assertEqual(grn.grn_items, [])
+
 	def test_stuffed_hook_uses_the_same_packing_aggregate(self):
+		self.ci.items[0].qty = 450
 		self.ci.status = "STUFFED"
 		self.ci.save(ignore_permissions=True)
 
@@ -189,14 +218,55 @@ class CIPackingGrnIntegrationTest(FrappeTestCase):
 		self.assertEqual(result["packing_status"], "Ready")
 		self.assertEqual(grn.grn_items[0].expected_total_kg, 300.0)
 
-	def test_refresh_rejects_locked_snapshot(self):
+	def test_refresh_rejects_submitted_truck_receipt_before_replacing_rows(self):
 		created = imports.create_grn_for_ci(self.ci.name)
+		truck = frappe.new_doc("Import Truck")
+		truck.update({"company": self.company, "commercial_invoice": self.ci.name})
+		truck.insert(ignore_permissions=True)
+		receipt = frappe.new_doc("Truck Receipt")
+		receipt.update(
+			{
+				"company": self.company,
+				"grn_checklist": created["name"],
+				"truck": truck.name,
+				"arrival_date": frappe.utils.today(),
+			}
+		)
+		receipt.insert(ignore_permissions=True)
 		frappe.db.set_value(
-			"GRN Checklist", created["name"], "expected_snapshot_locked", 1
+			"Truck Receipt", receipt.name, "docstatus", 1
 		)
 
 		with self.assertRaisesRegex(frappe.ValidationError, "Expected quantities are locked"):
 			imports.refresh_grn_expected_quantities(created["name"])
+
+	def test_refresh_rejects_submitted_grn(self):
+		created = imports.create_grn_for_ci(self.ci.name)
+		frappe.db.set_value("GRN Checklist", created["name"], "docstatus", 1)
+
+		with self.assertRaisesRegex(frappe.ValidationError, "Expected quantities are locked"):
+			imports.refresh_grn_expected_quantities(created["name"])
+
+	def test_create_or_get_grn_recovers_concurrent_unique_winner(self):
+		summary = packing_service.summary_for_ci(self.ci.name, self.company)
+		winner = frappe.new_doc("GRN Checklist")
+		winner.update(
+			{
+				"company": self.company,
+				"commercial_invoice": self.ci.name,
+				"supplier": self.supplier,
+			}
+		)
+		packing_service.replace_grn_expected_rows(winner, summary["expected_items"])
+
+		def insert_winner(_commercial_invoice, _company):
+			winner.insert(ignore_permissions=True)
+			return summary
+
+		with patch.object(packing_service, "summary_for_ci", side_effect=insert_winner):
+			result = packing_service.create_or_get_grn(self.ci, ignore_permissions=True)
+
+		self.assertEqual(result, {"name": winner.name, "created": False})
 
 
 def _frappe_calls(function) -> set[tuple[str, str]]:

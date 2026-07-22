@@ -67,28 +67,23 @@ def create_or_get_grn(ci, *, ignore_permissions: bool) -> dict:
 	existing = frappe.db.get_value(
 		"GRN Checklist", {"commercial_invoice": ci.name, "company": ci.company}
 	)
-	summary = summary_for_ci(ci.name, ci.company)
 	if existing:
-		locked = bool(
-			frappe.db.get_value("GRN Checklist", existing, "expected_snapshot_locked")
-		)
-		return {
-			"name": existing,
-			"created": False,
-			"packing_status": summary["status"],
-			"expected_snapshot_locked": locked,
-		}
+		return {"name": existing, "created": False}
 
+	summary = summary_for_ci(ci.name, ci.company)
 	grn = frappe.new_doc("GRN Checklist")
 	grn.company = ci.company
 	grn.commercial_invoice = ci.name
 	grn.supplier = ci.supplier
 	grn.expected_arrival_date = ci.get("eta_transit_port")
 	replace_grn_expected_rows(grn, summary["expected_items"])
-	grn.insert(ignore_permissions=ignore_permissions)
-	return {
-		"name": grn.name,
-		"created": True,
-		"packing_status": summary["status"],
-		"expected_snapshot_locked": False,
-	}
+	try:
+		grn.insert(ignore_permissions=ignore_permissions)
+	except (frappe.DuplicateEntryError, frappe.UniqueValidationError):
+		winner = frappe.db.get_value(
+			"GRN Checklist", {"commercial_invoice": ci.name, "company": ci.company}
+		)
+		if not winner:
+			raise
+		return {"name": winner, "created": False}
+	return {"name": grn.name, "created": True}
