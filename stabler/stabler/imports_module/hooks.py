@@ -402,20 +402,26 @@ def _ensure_import_service_item() -> None:
 # ---------------------------------------------------------------------------
 
 
+def truck_receipt_before_submit(doc, method=None):
+	"""Freeze expected packing before the receipt becomes submitted."""
+	grn, _truck = _validate_truck_receipt_scope(doc)
+	if not _should_run(grn):
+		return
+	_lock_grn_expected_snapshot(doc.grn_checklist)
+
+
 def truck_receipt_on_submit(doc, method=None):
 	"""doc_events on_submit for Truck Receipt.
 
 	Synchronous (inside the submit transaction) so a failed Purchase Receipt
 	rolls the Truck Receipt submit back atomically:
-	  1. freeze the reconciled packing snapshot,
-	  2. create + submit the partial Purchase Receipt (the stock event),
-	  3. recompute the parent GRN Checklist from all submitted receipts,
-	  4. advance the Import Truck to GRN_CREATED where the transition is legal.
+	  1. create + submit the partial Purchase Receipt (the stock event),
+	  2. recompute the parent GRN Checklist from all submitted receipts,
+	  3. advance the Import Truck to GRN_CREATED where the transition is legal.
 	"""
 	grn, _truck = _validate_truck_receipt_scope(doc)
 	if not _should_run(grn):
 		return
-	_lock_grn_expected_snapshot(doc.grn_checklist)
 	_create_pr_for_truck_receipt(doc)
 	recompute_grn_from_receipts(doc.grn_checklist)
 	advance_truck_after_receipt(doc.truck)
@@ -463,7 +469,8 @@ def _lock_grn_expected_snapshot(grn_name: str) -> None:
 	packing_service.replace_grn_expected_rows(grn, summary["expected_items"])
 	grn.expected_snapshot_locked = 1
 	grn.expected_snapshot_locked_at = now_datetime()
-	grn.save(ignore_permissions=True)
+	with packing_service.allow_expected_snapshot_update():
+		grn.save(ignore_permissions=True)
 
 
 def truck_receipt_on_cancel(doc, method=None):

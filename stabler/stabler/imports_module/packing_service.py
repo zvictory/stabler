@@ -1,8 +1,24 @@
 from __future__ import annotations
 
+from contextlib import contextmanager
+
 import frappe
 
 from stabler.stabler.imports_module import packing_math
+
+
+@contextmanager
+def allow_expected_snapshot_update():
+	"""Authorize one server-side GRN snapshot write in the current request."""
+	previous = frappe.flags.get("in_grn_snapshot_update")
+	frappe.flags.in_grn_snapshot_update = True
+	try:
+		yield
+	finally:
+		if previous is None:
+			frappe.flags.pop("in_grn_snapshot_update", None)
+		else:
+			frappe.flags.in_grn_snapshot_update = previous
 
 
 def lock_commercial_invoices(commercial_invoices) -> None:
@@ -25,16 +41,21 @@ def summary_for_ci(commercial_invoice: str, company: str, *, for_update: bool = 
 		order_by="creation asc",
 		limit_page_length=0,
 	)
-	if for_update:
-		containers = frappe.db.get_values(
-			"Import Container",
-			filters={"commercial_invoice": commercial_invoice, "company": company},
-			fieldname=["name", "container_number"],
-			order_by="creation asc",
-			for_update=True,
-			as_dict=True,
-		)
 	container_names = [row.name for row in containers]
+	scoped_count = frappe.db.count(
+		"Import Container",
+		filters={"commercial_invoice": commercial_invoice, "company": company},
+	)
+	if scoped_count != len(container_names):
+		frappe.throw(
+			frappe._(
+				"Cannot verify all container packing lists with your current permissions."
+			)
+		)
+	if for_update:
+		containers = _lock_visible_containers(
+			commercial_invoice, company, container_names
+		)
 	rows = (
 		frappe.db.get_values(
 			"Import Container Item",
@@ -106,6 +127,32 @@ def summary_for_ci(commercial_invoice: str, company: str, *, for_update: bool = 
 		"expected_items": expected,
 		"reconciliation": reconciliation,
 	}
+
+
+def _lock_visible_containers(
+	commercial_invoice: str, company: str, container_names: list[str]
+) -> list:
+	if not container_names:
+		return []
+	placeholders = ", ".join(["%s"] * len(container_names))
+	containers = frappe.db.sql(
+		f"""SELECT name, container_number
+		FROM `tabImport Container`
+		WHERE commercial_invoice = %s
+			AND company = %s
+			AND name IN ({placeholders})
+		ORDER BY creation ASC
+		FOR UPDATE SKIP LOCKED""",
+		(commercial_invoice, company, *container_names),
+		as_dict=True,
+	)
+	if len(containers) != len(container_names):
+		frappe.throw(
+			frappe._(
+				"Container packing is being changed by another user. Please try again."
+			)
+		)
+	return containers
 
 
 def replace_grn_expected_rows(grn, expected_items: list[dict]) -> None:

@@ -1137,11 +1137,13 @@ def refresh_grn_expected_quantities(name: str):
         for_update=True,
     )
     grn = frappe.get_doc("GRN Checklist", name)
-    submitted_receipt = frappe.db.get_value(
-        "Truck Receipt",
-        {"grn_checklist": name, "docstatus": 1},
-        "name",
-        for_update=True,
+    submitted_receipt = frappe.db.sql(
+        """SELECT name
+        FROM `tabTruck Receipt`
+        WHERE grn_checklist = %s AND docstatus = 1
+        LIMIT 1
+        FOR UPDATE SKIP LOCKED""",
+        name,
     )
     if (
         cint(grn_state.docstatus) != 0
@@ -1153,7 +1155,8 @@ def refresh_grn_expected_quantities(name: str):
         grn.commercial_invoice, company, for_update=True
     )
     packing_service.replace_grn_expected_rows(grn, summary["expected_items"])
-    grn.save(ignore_permissions=False)
+    with packing_service.allow_expected_snapshot_update():
+        grn.save(ignore_permissions=False)
     return {
         "name": grn.name,
         "packing_status": summary["status"],

@@ -174,6 +174,25 @@ class CIPackingGrnIntegrationTest(FrappeTestCase):
 		self.assertIn(("get_list", "GRN Checklist"), endpoint_calls)
 		self.assertNotIn(("db.get_value", "GRN Checklist"), endpoint_calls)
 
+	def test_permission_filtered_container_set_is_rejected_without_reading_hidden_rows(self):
+		visible = frappe._dict(
+			name=self.container_1.name,
+			container_number=self.container_1.container_number,
+		)
+		with (
+			patch.object(frappe, "get_list", return_value=[visible]),
+			patch.object(frappe, "get_all", wraps=frappe.get_all) as get_all,
+			self.assertRaisesRegex(frappe.ValidationError, "all container packing lists"),
+		):
+			packing_service.summary_for_ci(self.ci.name, self.company)
+
+		self.assertFalse(
+			any(
+				call.args and call.args[0] == "Import Container Item"
+				for call in get_all.call_args_list
+			)
+		)
+
 	def test_create_grn_uses_packing_aggregate_not_ci_lines(self):
 		result = imports.create_grn_for_ci(self.ci.name)
 		grn = frappe.get_doc("GRN Checklist", result["name"])
@@ -426,6 +445,18 @@ class CIPackingGrnIntegrationTest(FrappeTestCase):
 
 		create_pr.assert_called_once_with(receipt)
 
+	def test_truck_receipt_freeze_is_registered_before_submit(self):
+		hooks_source = (
+			frappe.get_app_path("stabler", "hooks.py")
+		)
+		with open(hooks_source, encoding="utf-8") as source_file:
+			source = source_file.read()
+		truck_block = source[source.index('"Truck Receipt": {'):]
+		truck_block = truck_block[:truck_block.index("},")]
+		self.assertIn('"before_submit"', truck_block)
+		self.assertIn("truck_receipt_before_submit", truck_block)
+		self.assertNotIn("truck_receipt_on_submit\"", truck_block.split('"before_submit"')[1].split("]")[0])
+
 	def test_receipt_company_must_match_grn_before_insert(self):
 		grn_name = imports.create_grn_for_ci(self.ci.name)["name"]
 		receipt = self._new_receipt(
@@ -529,6 +560,129 @@ class CIPackingGrnIntegrationTest(FrappeTestCase):
 		with self.assertRaisesRegex(frappe.ValidationError, "Packing source is locked"):
 			self.container_1.delete(ignore_permissions=True)
 
+	def test_container_item_direct_mutations_are_rejected_but_parent_save_still_works(self):
+		row_name = self.container_1.items[0].name
+		direct = frappe.get_doc("Import Container Item", row_name)
+		direct.total_kg = 999
+		with self.assertRaisesRegex(frappe.ValidationError, "through Import Container"):
+			direct.save(ignore_permissions=True)
+
+		new_row = frappe.new_doc("Import Container Item")
+		new_row.update(
+			{
+				"parent": self.container_1.name,
+				"parenttype": "Import Container",
+				"parentfield": "items",
+				"item_code": self.item,
+				"box_qty": 1,
+				"box_kg": 20,
+				"total_kg": 20,
+			}
+		)
+		with self.assertRaisesRegex(frappe.ValidationError, "through Import Container"):
+			new_row.insert(ignore_permissions=True)
+
+		with self.assertRaisesRegex(frappe.ValidationError, "through Import Container"):
+			frappe.delete_doc(
+				"Import Container Item", row_name, ignore_permissions=True
+			)
+
+		parent = frappe.get_doc("Import Container", self.container_1.name)
+		parent.items[0].box_qty = 9
+		parent.items[0].total_kg = 180
+		parent.save(ignore_permissions=True)
+		self.assertEqual(
+			frappe.db.get_value("Import Container Item", row_name, "total_kg"), 180
+		)
+
+	def test_locked_grn_rejects_parent_and_direct_child_snapshot_mutations(self):
+		from stabler.stabler.imports_module import hooks
+
+		grn_name = imports.create_grn_for_ci(self.ci.name)["name"]
+		hooks._lock_grn_expected_snapshot(grn_name)
+		grn = frappe.get_doc("GRN Checklist", grn_name)
+		row_name = grn.grn_items[0].name
+		other_item = frappe.db.get_value(
+			"Item", {"name": ["!=", self.item], "disabled": 0}, "name"
+		)
+		self.assertIsNotNone(other_item)
+
+		mutations = {
+			"company": lambda doc: setattr(doc, "company", self.other_company.name),
+			"commercial invoice": lambda doc: setattr(
+				doc, "commercial_invoice", self._new_ci().name
+			),
+			"lock reset": lambda doc: setattr(doc, "expected_snapshot_locked", 0),
+			"expected item": lambda doc: setattr(doc.grn_items[0], "item_code", other_item),
+			"expected boxes": lambda doc: setattr(doc.grn_items[0], "expected_boxes", 99),
+			"expected box kg": lambda doc: setattr(doc.grn_items[0], "expected_box_kg", 99),
+			"expected total kg": lambda doc: setattr(doc.grn_items[0], "expected_total_kg", 99),
+			"add expected row": lambda doc: doc.append(
+				"grn_items", {"item_code": self.item, "expected_total_kg": 1}
+			),
+			"delete expected row": lambda doc: doc.remove(doc.grn_items[0]),
+		}
+		for label, mutate in mutations.items():
+			with self.subTest(change=label):
+				doc = frappe.get_doc("GRN Checklist", grn_name)
+				mutate(doc)
+				with self.assertRaisesRegex(frappe.ValidationError, "snapshot is locked"):
+					doc.save(ignore_permissions=True)
+
+		spoofed = frappe.get_doc("GRN Checklist", grn_name)
+		spoofed.flags.allow_expected_snapshot_update = True
+		spoofed.grn_items[0].expected_total_kg = 99
+		with self.assertRaisesRegex(frappe.ValidationError, "snapshot is locked"):
+			spoofed.save(ignore_permissions=True)
+
+		direct = frappe.get_doc("GRN Checklist Item", row_name)
+		direct.expected_total_kg = 99
+		with self.assertRaisesRegex(frappe.ValidationError, "through GRN Checklist"):
+			direct.save(ignore_permissions=True)
+		with self.assertRaisesRegex(frappe.ValidationError, "through GRN Checklist"):
+			frappe.delete_doc("GRN Checklist Item", row_name, ignore_permissions=True)
+
+		new_row = frappe.new_doc("GRN Checklist Item")
+		new_row.update(
+			{
+				"parent": grn_name,
+				"parenttype": "GRN Checklist",
+				"parentfield": "grn_items",
+				"item_code": self.item,
+				"expected_total_kg": 1,
+			}
+		)
+		with self.assertRaisesRegex(frappe.ValidationError, "through GRN Checklist"):
+			new_row.insert(ignore_permissions=True)
+
+	def test_locked_grn_allows_notes_and_receipt_recompute(self):
+		from stabler.stabler.imports_module import hooks
+
+		grn_name = imports.create_grn_for_ci(self.ci.name)["name"]
+		hooks._lock_grn_expected_snapshot(grn_name)
+		grn = frappe.get_doc("GRN Checklist", grn_name)
+		grn.notes = "QC reviewed"
+		grn.save(ignore_permissions=True)
+
+		receipt = self._new_receipt(grn_name, self._new_truck())
+		receipt.append(
+			"items",
+			{
+				"grn_item_code": self.item,
+				"received_boxes": 2,
+				"received_kg": 40,
+				"condition": "Good",
+			},
+		)
+		receipt.insert(ignore_permissions=True)
+		frappe.db.set_value("Truck Receipt", receipt.name, "docstatus", 1)
+		hooks.recompute_grn_from_receipts(grn_name)
+
+		grn.reload()
+		self.assertEqual(grn.notes, "QC reviewed")
+		self.assertEqual(grn.grn_items[0].received_kg, 40)
+		self.assertEqual(grn.grn_items[0].expected_total_kg, 300)
+
 	def test_locked_packing_signature_is_order_independent_and_complete(self):
 		from stabler.stabler.imports_module import hooks
 		other_item = frappe.db.get_value(
@@ -631,7 +785,7 @@ class CIPackingGrnIntegrationTest(FrappeTestCase):
 
 
 class CIPackingGrnConcurrencyTest(FrappeTestCase):
-	def test_freeze_serializes_in_flight_container_mutation(self):
+	def test_reverse_order_container_lock_retries_without_deadlock_then_freezes_new_state(self):
 		from stabler.stabler.imports_module import hooks
 
 		company = frappe.db.get_value("Company", {}, "name")
@@ -668,21 +822,11 @@ class CIPackingGrnConcurrencyTest(FrappeTestCase):
 		frappe.db.commit()
 
 		site = frappe.local.site
-		snapshot_derived = threading.Event()
-		allow_freeze = threading.Event()
+		container_locked = threading.Event()
+		allow_mutation = threading.Event()
 		mutation_finished = threading.Event()
 		freeze_errors: list[BaseException] = []
 		mutation_errors: list[BaseException] = []
-		replace_calls = 0
-		original_replace = packing_service.replace_grn_expected_rows
-
-		def replace_after_barrier(grn, expected_items):
-			nonlocal replace_calls
-			replace_calls += 1
-			snapshot_derived.set()
-			if not allow_freeze.wait(timeout=10):
-				raise AssertionError("Timed out waiting to release snapshot freeze")
-			return original_replace(grn, expected_items)
 
 		def freeze_snapshot():
 			frappe.init(site)
@@ -700,9 +844,12 @@ class CIPackingGrnConcurrencyTest(FrappeTestCase):
 			frappe.init(site)
 			frappe.connect()
 			try:
-				doc = frappe.get_doc("Import Container", container.name)
+				doc = frappe.get_doc("Import Container", container.name, for_update=True)
+				container_locked.set()
+				if not allow_mutation.wait(timeout=10):
+					raise AssertionError("Timed out waiting to continue container mutation")
 				doc.items[0].box_qty = 14
-				doc.items[0].total_kg = 280
+				doc.items[0].box_kg = 300 / 14
 				doc.save(ignore_permissions=True)
 				frappe.db.commit()
 			except BaseException as exc:
@@ -712,45 +859,158 @@ class CIPackingGrnConcurrencyTest(FrappeTestCase):
 				mutation_finished.set()
 				frappe.destroy()
 
-		freeze_thread = threading.Thread(target=freeze_snapshot)
-		second_freeze_thread = threading.Thread(target=freeze_snapshot)
 		mutation_thread = threading.Thread(target=mutate_container)
+		freeze_thread = threading.Thread(target=freeze_snapshot)
 		try:
-			with patch.object(
-				packing_service,
-				"replace_grn_expected_rows",
-				side_effect=replace_after_barrier,
-			):
-				freeze_thread.start()
-				self.assertTrue(snapshot_derived.wait(timeout=10))
-				second_freeze_thread.start()
-				mutation_thread.start()
-				self.assertFalse(mutation_finished.wait(timeout=1))
-				allow_freeze.set()
-				freeze_thread.join(timeout=10)
-				second_freeze_thread.join(timeout=10)
-				mutation_thread.join(timeout=10)
+			mutation_thread.start()
+			self.assertTrue(container_locked.wait(timeout=10))
+			freeze_thread.start()
+			freeze_thread.join(timeout=5)
 
 			self.assertFalse(freeze_thread.is_alive())
-			self.assertFalse(second_freeze_thread.is_alive())
+			self.assertEqual(len(freeze_errors), 1)
+			self.assertIsInstance(freeze_errors[0], frappe.ValidationError)
+			self.assertIn("try again", str(freeze_errors[0]).lower())
+
+			allow_mutation.set()
+			mutation_thread.join(timeout=10)
 			self.assertFalse(mutation_thread.is_alive())
-			self.assertEqual(freeze_errors, [])
-			self.assertEqual(replace_calls, 1)
-			self.assertEqual(len(mutation_errors), 1)
-			self.assertIsInstance(mutation_errors[0], frappe.ValidationError)
+			self.assertEqual(mutation_errors, [])
+
+			frappe.db.rollback()
+			hooks._lock_grn_expected_snapshot(grn_name)
 			self.assertEqual(
 				frappe.db.get_value(
-					"Import Container Item", container.items[0].name, "total_kg"
+					"GRN Checklist Item", {"parent": grn_name}, "expected_boxes"
 				),
-				300,
+				14,
 			)
 		finally:
-			allow_freeze.set()
-			for thread in (freeze_thread, second_freeze_thread, mutation_thread):
+			allow_mutation.set()
+			for thread in (freeze_thread, mutation_thread):
 				if thread.ident is not None:
 					thread.join(timeout=10)
 			frappe.db.rollback()
 			frappe.delete_doc("GRN Checklist", grn_name, force=True, ignore_permissions=True)
+			frappe.delete_doc("Import Container", container.name, force=True, ignore_permissions=True)
+			frappe.delete_doc("Commercial Invoice", ci.name, force=True, ignore_permissions=True)
+			frappe.db.commit()
+
+	def test_refresh_does_not_wait_on_prelocked_receipt_before_submit(self):
+		from stabler.stabler.imports_module import hooks
+
+		company = frappe.db.get_value("Company", {}, "name")
+		supplier = frappe.db.get_value("Supplier", {}, "name")
+		item = frappe.db.get_value("Item", {"disabled": 0}, "name")
+		if not all((company, supplier, item)):
+			self.skipTest("Company, Supplier and Item fixtures are required")
+		settings = frappe.get_single("Stabler Settings")
+		module = next(
+			(row for row in settings.company_modules or [] if row.company == company),
+			None,
+		)
+		module = module or settings.append("company_modules", {"company": company})
+		module.enable_imports = 1
+		settings.save(ignore_permissions=True)
+
+		ci = frappe.new_doc("Commercial Invoice")
+		ci.update(
+			{
+				"company": company,
+				"supplier": supplier,
+				"ci_number": frappe.generate_hash(length=10),
+				"ci_date": frappe.utils.today(),
+			}
+		)
+		ci.append("items", {"item": item, "qty": 100, "boxes": 5, "box_weight_kg": 20})
+		ci.insert(ignore_permissions=True)
+		container = frappe.new_doc("Import Container")
+		container.update(
+			{
+				"company": company,
+				"commercial_invoice": ci.name,
+				"container_number": f"RECEIPT-RACE-{frappe.generate_hash(length=6)}",
+			}
+		)
+		container.append(
+			"items", {"item_code": item, "box_qty": 5, "box_kg": 20, "total_kg": 100}
+		)
+		container.insert(ignore_permissions=True)
+		grn_name = packing_service.create_or_get_grn(ci, ignore_permissions=True)["name"]
+		truck = frappe.new_doc("Import Truck")
+		truck.update({"company": company, "commercial_invoice": ci.name})
+		truck.insert(ignore_permissions=True)
+		receipt = frappe.new_doc("Truck Receipt")
+		receipt.update(
+			{
+				"company": company,
+				"grn_checklist": grn_name,
+				"truck": truck.name,
+				"arrival_date": frappe.utils.today(),
+				"qc_notes": "Concurrency test",
+			}
+		)
+		receipt.insert(ignore_permissions=True)
+		frappe.db.commit()
+
+		site = frappe.local.site
+		receipt_locked = threading.Event()
+		allow_submit = threading.Event()
+		submit_errors: list[BaseException] = []
+		refresh_errors: list[BaseException] = []
+
+		def submit_prelocked_receipt():
+			frappe.init(site)
+			frappe.connect()
+			try:
+				doc = frappe.get_doc("Truck Receipt", receipt.name, for_update=True)
+				receipt_locked.set()
+				if not allow_submit.wait(timeout=10):
+					raise AssertionError("Timed out waiting to submit receipt")
+				doc.submit()
+				frappe.db.commit()
+			except BaseException as exc:
+				submit_errors.append(exc)
+				frappe.db.rollback()
+			finally:
+				frappe.destroy()
+
+		def refresh_snapshot():
+			frappe.init(site)
+			frappe.connect()
+			try:
+				imports.refresh_grn_expected_quantities(grn_name)
+				frappe.db.commit()
+			except BaseException as exc:
+				refresh_errors.append(exc)
+				frappe.db.rollback()
+			finally:
+				frappe.destroy()
+
+		submit_thread = threading.Thread(target=submit_prelocked_receipt)
+		refresh_thread = threading.Thread(target=refresh_snapshot)
+		try:
+			with patch.object(hooks, "_create_pr_for_truck_receipt"):
+				submit_thread.start()
+				self.assertTrue(receipt_locked.wait(timeout=10))
+				refresh_thread.start()
+				refresh_thread.join(timeout=5)
+				self.assertFalse(refresh_thread.is_alive())
+				self.assertEqual(refresh_errors, [])
+				allow_submit.set()
+				submit_thread.join(timeout=10)
+				self.assertFalse(submit_thread.is_alive())
+				self.assertEqual(submit_errors, [])
+		finally:
+			allow_submit.set()
+			for thread in (refresh_thread, submit_thread):
+				if thread.ident is not None:
+					thread.join(timeout=10)
+			frappe.db.rollback()
+			frappe.db.set_value("Truck Receipt", receipt.name, "docstatus", 0)
+			frappe.delete_doc("GRN Checklist", grn_name, force=True, ignore_permissions=True)
+			frappe.delete_doc("Truck Receipt", receipt.name, force=True, ignore_permissions=True)
+			frappe.delete_doc("Import Truck", truck.name, force=True, ignore_permissions=True)
 			frappe.delete_doc("Import Container", container.name, force=True, ignore_permissions=True)
 			frappe.delete_doc("Commercial Invoice", ci.name, force=True, ignore_permissions=True)
 			frappe.db.commit()
