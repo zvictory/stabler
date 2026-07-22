@@ -39,7 +39,19 @@ class ImportContainer(Document):
 			assert_transition(
 				"Import Container", previous_status, self.status, _ALLOWED_TRANSITIONS, self
 			)
+		self._validate_commercial_invoice_company()
 		self._check_packing_snapshot_lock(before)
+
+	def _validate_commercial_invoice_company(self) -> None:
+		if not self.commercial_invoice:
+			return
+		ci_company = frappe.db.get_value(
+			"Commercial Invoice", self.commercial_invoice, "company"
+		)
+		if ci_company and self.company != ci_company:
+			frappe.throw(
+				frappe._("Import Container company must match Commercial Invoice company.")
+			)
 
 	def _packing_signature(self, rows) -> tuple:
 		# Container-row order is non-semantic: packing aggregation groups by item.

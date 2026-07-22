@@ -133,7 +133,7 @@ class CIPackingGrnIntegrationTest(FrappeTestCase):
 		foreign = frappe.new_doc("Import Container")
 		foreign.update(
 			{
-				"company": self.other_company.name,
+				"company": self.company,
 				"commercial_invoice": self.ci.name,
 				"container_number": f"FOREIGN-{frappe.generate_hash(length=6)}",
 			}
@@ -148,6 +148,9 @@ class CIPackingGrnIntegrationTest(FrappeTestCase):
 			},
 		)
 		foreign.insert(ignore_permissions=True)
+		frappe.db.set_value(
+			"Import Container", foreign.name, "company", self.other_company.name
+		)
 
 		payload = imports.get_commercial_invoice(self.ci.name)
 
@@ -464,6 +467,39 @@ class CIPackingGrnIntegrationTest(FrappeTestCase):
 
 		with self.assertRaisesRegex(frappe.ValidationError, "Packing source is locked"):
 			container.insert(ignore_permissions=True)
+
+	def test_container_company_must_match_ci_on_insert(self):
+		container = frappe.new_doc("Import Container")
+		container.update(
+			{
+				"company": self.other_company.name,
+				"commercial_invoice": self.ci.name,
+				"container_number": f"MISMATCH-{frappe.generate_hash(length=6)}",
+			}
+		)
+
+		with self.assertRaisesRegex(frappe.ValidationError, "company must match"):
+			container.insert(ignore_permissions=True)
+
+	def test_container_company_must_match_ci_on_update(self):
+		self.container_1.company = self.other_company.name
+
+		with self.assertRaisesRegex(frappe.ValidationError, "company must match"):
+			self.container_1.save(ignore_permissions=True)
+
+	def test_locked_container_rejects_company_or_full_source_relink(self):
+		from stabler.stabler.imports_module import hooks
+
+		hooks._lock_grn_expected_snapshot(imports.create_grn_for_ci(self.ci.name)["name"])
+		self.container_1.company = self.other_company.name
+		with self.assertRaisesRegex(frappe.ValidationError, "company must match"):
+			self.container_1.save(ignore_permissions=True)
+
+		container = frappe.get_doc("Import Container", self.container_1.name)
+		container.company = self.other_company.name
+		container.commercial_invoice = self._new_ci(company=self.other_company.name).name
+		with self.assertRaisesRegex(frappe.ValidationError, "Packing source is locked"):
+			container.save(ignore_permissions=True)
 
 	def test_container_cannot_relink_into_or_out_of_locked_ci(self):
 		from stabler.stabler.imports_module import hooks
