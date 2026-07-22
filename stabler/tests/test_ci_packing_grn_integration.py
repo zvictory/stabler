@@ -78,6 +78,36 @@ class CIPackingGrnIntegrationTest(FrappeTestCase):
 	def tearDown(self):
 		frappe.db.rollback()
 
+	def _new_truck(self, *, company=None, commercial_invoice=None):
+		truck = frappe.new_doc("Import Truck")
+		truck.update(
+			{
+				"company": company or self.company,
+				"commercial_invoice": commercial_invoice or self.ci.name,
+			}
+		)
+		truck.insert(ignore_permissions=True)
+		return truck
+
+	def _new_receipt(self, grn_name, truck, *, company=None):
+		receipt = frappe.new_doc("Truck Receipt")
+		receipt.update(
+			{
+				"company": company or self.company,
+				"grn_checklist": grn_name,
+				"truck": truck.name,
+				"arrival_date": frappe.utils.today(),
+			}
+		)
+		return receipt
+
+	def _new_ci(self, *, company=None):
+		ci = frappe.copy_doc(self.ci)
+		ci.company = company or self.company
+		ci.ci_number = frappe.generate_hash(length=10)
+		ci.insert(ignore_permissions=True)
+		return ci
+
 	def test_ci_payload_aggregates_only_same_company_linked_containers(self):
 		other_ci = frappe.copy_doc(self.ci)
 		other_ci.ci_number = frappe.generate_hash(length=10)
@@ -391,6 +421,176 @@ class CIPackingGrnIntegrationTest(FrappeTestCase):
 			receipt.submit()
 
 		create_pr.assert_called_once_with(receipt)
+
+	def test_receipt_company_must_match_grn_before_insert(self):
+		grn_name = imports.create_grn_for_ci(self.ci.name)["name"]
+		receipt = self._new_receipt(
+			grn_name,
+			self._new_truck(),
+			company=self.other_company.name,
+		)
+
+		with self.assertRaisesRegex(frappe.ValidationError, "company must match"):
+			receipt.insert(ignore_permissions=True)
+
+		self.assertFalse(
+			frappe.db.get_value("GRN Checklist", grn_name, "expected_snapshot_locked")
+		)
+
+	def test_receipt_truck_must_match_grn_company_and_ci(self):
+		grn_name = imports.create_grn_for_ci(self.ci.name)["name"]
+		other_ci = self._new_ci()
+
+		for truck in (
+			self._new_truck(company=self.other_company.name),
+			self._new_truck(commercial_invoice=other_ci.name),
+		):
+			with self.subTest(truck=truck.name):
+				with self.assertRaisesRegex(frappe.ValidationError, "must match GRN"):
+					self._new_receipt(grn_name, truck).insert(ignore_permissions=True)
+
+	def test_locked_ci_rejects_new_container_even_when_empty(self):
+		from stabler.stabler.imports_module import hooks
+
+		hooks._lock_grn_expected_snapshot(imports.create_grn_for_ci(self.ci.name)["name"])
+		container = frappe.new_doc("Import Container")
+		container.update(
+			{
+				"company": self.company,
+				"commercial_invoice": self.ci.name,
+				"container_number": f"LOCKED-{frappe.generate_hash(length=6)}",
+			}
+		)
+
+		with self.assertRaisesRegex(frappe.ValidationError, "Packing source is locked"):
+			container.insert(ignore_permissions=True)
+
+	def test_container_cannot_relink_into_or_out_of_locked_ci(self):
+		from stabler.stabler.imports_module import hooks
+
+		other_ci = self._new_ci()
+		unlocked = frappe.copy_doc(self.container_1)
+		unlocked.container_number = f"UNLOCKED-{frappe.generate_hash(length=6)}"
+		unlocked.commercial_invoice = other_ci.name
+		unlocked.insert(ignore_permissions=True)
+		hooks._lock_grn_expected_snapshot(imports.create_grn_for_ci(self.ci.name)["name"])
+
+		for container, target_ci in (
+			(self.container_1, other_ci.name),
+			(unlocked, self.ci.name),
+		):
+			with self.subTest(container=container.name):
+				container.commercial_invoice = target_ci
+				with self.assertRaisesRegex(frappe.ValidationError, "Packing source is locked"):
+					container.save(ignore_permissions=True)
+
+	def test_locked_ci_rejects_container_deletion(self):
+		from stabler.stabler.imports_module import hooks
+
+		hooks._lock_grn_expected_snapshot(imports.create_grn_for_ci(self.ci.name)["name"])
+
+		with self.assertRaisesRegex(frappe.ValidationError, "Packing source is locked"):
+			self.container_1.delete(ignore_permissions=True)
+
+	def test_locked_packing_signature_is_order_independent_and_complete(self):
+		from stabler.stabler.imports_module import hooks
+		other_item = frappe.db.get_value(
+			"Item", {"name": ["!=", self.item], "disabled": 0}, "name"
+		)
+		self.assertIsNotNone(other_item)
+
+		first = self.container_1.items[0]
+		first.box_qty = 5
+		first.total_kg = 100
+		self.container_1.append(
+			"items",
+			{
+				"item_code": self.item,
+				"category": "Frozen",
+				"box_qty": 5,
+				"box_kg": 20,
+				"total_kg": 100,
+			},
+		)
+		self.container_1.save(ignore_permissions=True)
+		hooks._lock_grn_expected_snapshot(imports.create_grn_for_ci(self.ci.name)["name"])
+
+		self.container_1.set("items", list(reversed(self.container_1.items)))
+		self.container_1.save(ignore_permissions=True)
+
+		mutations = {
+			"category": lambda doc: setattr(doc.items[1], "category", "Chilled"),
+			"boxes": lambda doc: setattr(doc.items[1], "box_qty", 6),
+			"box kg": lambda doc: setattr(doc.items[1], "box_kg", 21),
+			"item": lambda doc: setattr(doc.items[1], "item_code", other_item),
+			"remove": lambda doc: doc.remove(doc.items[1]),
+			"duplicate": lambda doc: doc.append("items", doc.items[1].as_dict()),
+		}
+		for label, mutate in mutations.items():
+			with self.subTest(change=label):
+				doc = frappe.get_doc("Import Container", self.container_1.name)
+				mutate(doc)
+				with self.assertRaisesRegex(
+					frappe.ValidationError, "Packing-list quantities are locked"
+				):
+					doc.save(ignore_permissions=True)
+
+	def test_purchase_receipt_failure_rolls_back_submit_and_snapshot_lock(self):
+		from stabler.stabler.imports_module import hooks
+
+		grn_name = imports.create_grn_for_ci(self.ci.name)["name"]
+		grn = frappe.get_doc("GRN Checklist", grn_name)
+		grn.grn_items[0].expected_total_kg = 1
+		grn.save(ignore_permissions=True)
+		receipt = self._new_receipt(grn_name, self._new_truck())
+		receipt.insert(ignore_permissions=True)
+		frappe.db.savepoint("before_failed_receipt")
+
+		try:
+			with (
+				patch.object(
+					hooks,
+					"_create_pr_for_truck_receipt",
+					side_effect=frappe.ValidationError("forced PR failure"),
+				),
+				self.assertRaisesRegex(frappe.ValidationError, "forced PR failure"),
+			):
+				receipt.submit()
+		finally:
+			frappe.db.rollback(save_point="before_failed_receipt")
+
+		grn.reload()
+		self.assertEqual(frappe.db.get_value("Truck Receipt", receipt.name, "docstatus"), 0)
+		self.assertFalse(grn.expected_snapshot_locked)
+		self.assertIsNone(grn.expected_snapshot_locked_at)
+		self.assertEqual(grn.grn_items[0].expected_total_kg, 1)
+
+	def test_second_receipt_does_not_resynchronize_locked_snapshot(self):
+		from stabler.stabler.imports_module import hooks
+
+		grn_name = imports.create_grn_for_ci(self.ci.name)["name"]
+		hooks._lock_grn_expected_snapshot(grn_name)
+		locked_expected = frappe.db.get_value(
+			"GRN Checklist Item", {"parent": grn_name}, "expected_total_kg"
+		)
+		frappe.db.set_value(
+			"Import Container Item",
+			self.container_1.items[0].name,
+			"total_kg",
+			999,
+		)
+		receipt = self._new_receipt(grn_name, self._new_truck())
+		receipt.insert(ignore_permissions=True)
+
+		with patch.object(hooks, "_create_pr_for_truck_receipt"):
+			receipt.submit()
+
+		self.assertEqual(
+			frappe.db.get_value(
+				"GRN Checklist Item", {"parent": grn_name}, "expected_total_kg"
+			),
+			locked_expected,
+		)
 
 
 def _frappe_calls(function) -> set[tuple[str, str]]:

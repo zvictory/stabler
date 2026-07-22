@@ -21,6 +21,9 @@ from stabler.stabler.imports_module import receipt_math
 
 class TruckReceipt(Document):
 	def validate(self) -> None:
+		from stabler.stabler.imports_module.hooks import _validate_truck_receipt_scope
+
+		_validate_truck_receipt_scope(self)
 		self._recompute_totals()
 		self._check_temperature()
 

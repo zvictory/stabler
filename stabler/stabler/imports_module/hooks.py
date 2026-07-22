@@ -412,12 +412,27 @@ def truck_receipt_on_submit(doc, method=None):
 	  3. recompute the parent GRN Checklist from all submitted receipts,
 	  4. advance the Import Truck to GRN_CREATED where the transition is legal.
 	"""
-	if not _should_run(doc):
+	grn, _truck = _validate_truck_receipt_scope(doc)
+	if not _should_run(grn):
 		return
 	_lock_grn_expected_snapshot(doc.grn_checklist)
 	_create_pr_for_truck_receipt(doc)
 	recompute_grn_from_receipts(doc.grn_checklist)
 	advance_truck_after_receipt(doc.truck)
+
+
+def _validate_truck_receipt_scope(receipt):
+	grn = frappe.get_doc("GRN Checklist", receipt.grn_checklist)
+	truck = frappe.get_doc("Import Truck", receipt.truck)
+	if receipt.company != grn.company:
+		frappe.throw(frappe._("Truck Receipt company must match GRN company."))
+	if truck.company != grn.company:
+		frappe.throw(frappe._("Truck company must match GRN company."))
+	if truck.commercial_invoice != grn.commercial_invoice:
+		frappe.throw(
+			frappe._("Truck Commercial Invoice must match GRN Commercial Invoice.")
+		)
+	return grn, truck
 
 
 def _lock_grn_expected_snapshot(grn_name: str) -> None:

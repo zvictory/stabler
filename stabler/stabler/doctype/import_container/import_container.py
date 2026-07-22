@@ -33,26 +33,57 @@ _ALLOWED_TRANSITIONS = {
 
 class ImportContainer(Document):
 	def validate(self) -> None:
+		before = self.get_doc_before_save()
 		if not self.is_new():
 			previous_status = frappe.db.get_value("Import Container", self.name, "status")
 			assert_transition(
 				"Import Container", previous_status, self.status, _ALLOWED_TRANSITIONS, self
 			)
-		self._check_packing_snapshot_lock()
+		self._check_packing_snapshot_lock(before)
 
 	def _packing_signature(self, rows) -> tuple:
+		# Container-row order is non-semantic: packing aggregation groups by item.
 		return tuple(
 			sorted(
-				(row.item_code, cint(row.box_qty), flt(row.box_kg), flt(row.total_kg))
+				(
+					row.item_code,
+					row.category or "",
+					cint(row.box_qty),
+					flt(row.box_kg),
+					flt(row.total_kg),
+				)
 				for row in rows or []
 			)
 		)
 
-	def _check_packing_snapshot_lock(self) -> None:
-		before = self.get_doc_before_save()
-		if not before or self._packing_signature(before.items) == self._packing_signature(
-			self.items
-		):
+	def _locked_grn_for_ci(self, commercial_invoice):
+		if not commercial_invoice:
+			return None
+		return frappe.db.get_value(
+			"GRN Checklist",
+			{
+				"commercial_invoice": commercial_invoice,
+				"expected_snapshot_locked": 1,
+			},
+			"name",
+		)
+
+	def _reject_locked_packing_source(self, commercial_invoice) -> None:
+		grn_name = self._locked_grn_for_ci(commercial_invoice)
+		if grn_name:
+			frappe.throw(
+				frappe._("Packing source is locked by GRN {0}.").format(grn_name)
+			)
+
+	def _check_packing_snapshot_lock(self, before) -> None:
+		if not before:
+			self._reject_locked_packing_source(self.commercial_invoice)
+			return
+		if before.commercial_invoice != self.commercial_invoice:
+			self._reject_locked_packing_source(before.commercial_invoice)
+			self._reject_locked_packing_source(self.commercial_invoice)
+			return
+		if self._packing_signature(before.items) == self._packing_signature(self.items):
 			return
 		grn = frappe.db.get_value(
 			"GRN Checklist",
@@ -67,3 +98,6 @@ class ImportContainer(Document):
 					"Truck Receipt."
 				).format(grn.name)
 			)
+
+	def on_trash(self) -> None:
+		self._reject_locked_packing_source(self.commercial_invoice)
