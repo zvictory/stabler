@@ -116,6 +116,16 @@ class TestTenderDashboardSpaContract(unittest.TestCase):
 		self.assertIn("aria-valuenow", portfolio_source)
 		self.assertIn("@media (max-width", portfolio_source)
 
+	def test_portfolio_risk_has_distinct_good_warn_and_risk_semantics(self):
+		source = _read(_PORTFOLIO_PREVIEW)
+		for key, label, color in (
+			("good", "On track", "bg-green-lt text-green"),
+			("warn", "Needs attention", "bg-yellow-lt text-yellow"),
+			("risk", "At risk", "bg-red-lt text-red"),
+		):
+			self.assertIn(f"{key}: {{ label: t(\"{label}\"), class: \"{color}\" }}", source)
+		self.assertIn("riskMeta[row.risk] || riskMeta.good", source)
+
 	def test_sales_order_board_reads_dashboard_period_and_status(self):
 		source = _read(_SALES_BOARD)
 		self.assertIn("useRoute", source)

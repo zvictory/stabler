@@ -2592,7 +2592,7 @@ PO ETA,ETA заказа
 PO count,Кол-во PO
 PO total,Сумма PO
 PO vs quote,PO vs котировка
-POS,
+POS,POS
 POS Profile,
 POS Profile belongs to a different company.,
 POS Profile is disabled.,
@@ -4677,3 +4677,17 @@ Sales invoices,Счета покупателей
 Selected vendor,Выбранный поставщик
 DN,DN
 SI,SI
+2 countries met,Требование по 2 странам выполнено
+2 countries needed,Требуются поставщики из 2 стран
+5 quotes met,Требование по 5 предложениям выполнено
+5 quotes needed,Требуются 5 предложений
+Accounts payable,Кредиторская задолженность
+Accounts receivable,Дебиторская задолженность
+Actual invoice margin,Фактическая маржа по счетам
+Collapse Tender navigation,Свернуть навигацию по тендерам
+Expand Tender navigation,Развернуть навигацию по тендерам
+Needs attention,Требует внимания
+No supplier quotations,Нет предложений поставщиков
+Purchase invoices versus sales invoices,Счета поставщиков и счета покупателей
+Supplier quotations,Предложения поставщиков
+Tender workspace sections,Разделы рабочего пространства тендера

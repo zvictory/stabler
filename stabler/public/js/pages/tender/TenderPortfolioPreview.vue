@@ -16,6 +16,11 @@ const progressFields = [
 ];
 const displayRows = computed(() => props.rows || []);
 const percent = (value) => Math.max(0, Math.min(100, Number(value) || 0));
+const riskMeta = {
+	good: { label: t("On track"), class: "bg-green-lt text-green" },
+	warn: { label: t("Needs attention"), class: "bg-yellow-lt text-yellow" },
+	risk: { label: t("At risk"), class: "bg-red-lt text-red" },
+};
 </script>
 
 <template>
@@ -29,7 +34,7 @@ const percent = (value) => Math.max(0, Math.min(100, Number(value) || 0));
 					<td :data-label="t('Status')"><span class="badge bg-azure-lt">{{ row.status || "—" }}</span></td>
 					<td :data-label="t('Progress')"><div v-for="field in progressFields" :key="field.key" class="progress-line"><span>{{ field.label }}</span><div class="progress flex-grow-1" :aria-label="field.label" role="progressbar" :aria-valuenow="percent(row[field.key])" aria-valuemin="0" aria-valuemax="100"><div class="progress-bar" :style="{ width: `${percent(row[field.key])}%` }"></div></div><span class="font-monospace">{{ percent(row[field.key]) }}%</span></div></td>
 					<td :data-label="t('Spread')" class="text-end font-monospace">{{ formatMoney(row.spread) }}</td>
-					<td :data-label="t('Risk')"><span class="badge" :class="row.risk ? 'bg-red-lt text-red' : 'bg-green-lt text-green'">{{ row.risk || t("On track") }}</span></td>
+					<td :data-label="t('Risk')"><span class="badge" :class="(riskMeta[row.risk] || riskMeta.good).class">{{ (riskMeta[row.risk] || riskMeta.good).label }}</span></td>
 				</tr>
 			</tbody>
 		</table>

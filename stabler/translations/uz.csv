@@ -2586,7 +2586,7 @@ PO ETA,PO ETA
 PO count,PO soni
 PO total,PO jami
 PO vs quote,PO vs kotirovka
-POS,
+POS,POS
 POS Profile,
 POS Profile belongs to a different company.,
 POS Profile is disabled.,
@@ -4671,3 +4671,17 @@ Sales invoices,Savdo invoyslari
 Selected vendor,Tanlangan yetkazib beruvchi
 DN,DN
 SI,SI
+2 countries met,2 mamlakat talabi bajarildi
+2 countries needed,2 mamlakat kerak
+5 quotes met,5 ta taklif talabi bajarildi
+5 quotes needed,5 ta taklif kerak
+Accounts payable,Kreditorlik qarzlari
+Accounts receivable,Debitorlik qarzlari
+Actual invoice margin,Hisob-fakturalar bo‘yicha haqiqiy marja
+Collapse Tender navigation,Tender navigatsiyasini yig‘ish
+Expand Tender navigation,Tender navigatsiyasini ochish
+Needs attention,E’tibor talab qiladi
+No supplier quotations,Yetkazib beruvchilar takliflari yo‘q
+Purchase invoices versus sales invoices,Xarid va savdo invoyslari
+Supplier quotations,Yetkazib beruvchilar takliflari
+Tender workspace sections,Tender ish maydoni bo‘limlari

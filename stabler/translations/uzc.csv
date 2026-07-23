@@ -2586,7 +2586,7 @@ PO ETA,PO ETA
 PO count,PO сони
 PO total,PO жами
 PO vs quote,PO vs котировка
-POS,
+POS,POS
 POS Profile,
 POS Profile belongs to a different company.,
 POS Profile is disabled.,
@@ -4671,3 +4671,17 @@ Sales invoices,Савдо инвойслари
 Selected vendor,Танланган етказиб берувчи
 DN,DN
 SI,SI
+2 countries met,2 мамлакат талаби бажарилди
+2 countries needed,2 мамлакат керак
+5 quotes met,5 та таклиф талаби бажарилди
+5 quotes needed,5 та таклиф керак
+Accounts payable,Кредиторлик қарзлари
+Accounts receivable,Дебиторлик қарзлари
+Actual invoice margin,Ҳисоб-фактуралар бўйича ҳақиқий маржа
+Collapse Tender navigation,Тендер навигациясини йиғиш
+Expand Tender navigation,Тендер навигациясини очиш
+Needs attention,Эътибор талаб қилади
+No supplier quotations,Етказиб берувчилар таклифлари йўқ
+Purchase invoices versus sales invoices,Харид ва савдо инвойслари
+Supplier quotations,Етказиб берувчилар таклифлари
+Tender workspace sections,Тендер иш майдони бўлимлари

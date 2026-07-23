@@ -595,6 +595,7 @@ def _document_row(row, date_field: str, link_field: str, linked_name: str) -> di
 	"""Normalize ERPNext document rows for the SPA's chain component."""
 	return {
 		"name": row.get("name"),
+		"docstatus": row.get("docstatus"),
 		"posting_date": str(row.get(date_field) or ""),
 		"status": row.get("status") or "",
 		"grand_total": flt(row.get("grand_total")),
@@ -622,7 +623,7 @@ def _linked_document_rows(
 	"""
 	if not order_names:
 		return []
-	fields = ["name", date_field, "status", "grand_total", "base_grand_total", "currency"]
+	fields = ["name", date_field, "docstatus", "status", "grand_total", "base_grand_total", "currency"]
 	if include_outstanding:
 		fields.extend(["outstanding_amount", "base_outstanding_amount"])
 	parents = frappe.get_list(
@@ -722,6 +723,38 @@ def _unique_invoice_rows(rows: list[dict]) -> list[dict]:
 			seen.add(name)
 		unique.append(row)
 	return unique
+
+
+def _invoice_status_counts(
+	order_names: list[str],
+	*,
+	parent_doctype: str,
+	item_doctype: str,
+	order_link_field: str,
+	company: str,
+	start,
+	end,
+) -> dict[str, int]:
+	"""Count selected-period invoices linked to readable tender orders.
+
+	The buckets are intentionally exclusive: a submitted invoice that still has
+	an outstanding balance is counted as ``unpaid`` rather than twice.
+	"""
+	counts = {"draft": 0, "submitted": 0, "unpaid": 0}
+	rows = _unique_invoice_rows(_linked_document_rows(
+		parent_doctype, item_doctype, order_names, company,
+		order_link_field, "posting_date", include_outstanding=True,
+	))
+	for invoice in rows:
+		if not _in_dashboard_period(invoice.get("posting_date"), start, end):
+			continue
+		if invoice.get("docstatus") == 0:
+			counts["draft"] += 1
+		elif invoice.get("status") in ("Unpaid", "Partly Paid", "Overdue"):
+			counts["unpaid"] += 1
+		else:
+			counts["submitted"] += 1
+	return counts
 
 
 def _tender_finance_chain(
@@ -2107,22 +2140,33 @@ def tender_dashboard(company: str, from_date=None, to_date=None, trend_from_date
 			"spread": portfolio_contract_total - portfolio_procurement_total,
 		})
 
-	for doctype, key in (("Purchase Invoice", "purchase_invoices"), ("Sales Invoice", "sales_invoices")):
-		for invoice in frappe.get_list(
-			doctype,
-			filters={"company": company, "docstatus": ["<", 2]},
-			fields=["name", "docstatus", "status"],
-			limit_page_length=5000,
-		):
-			if not frappe.has_permission(doctype, "read", doc=invoice.name):
-				continue
-			status = execution["invoice_status"][key]
-			if invoice.docstatus == 0:
-				status["draft"] += 1
-			else:
-				status["submitted"] += 1
-				if invoice.status in ("Unpaid", "Partly Paid", "Overdue"):
-					status["unpaid"] += 1
+	invoice_deals = execution_deals if execution_scope == "assigned" else set(portfolio_intakes)
+	purchase_order_names = [
+		po.name for po in po_rows
+		if po.custom_crm_deal in invoice_deals and frappe.has_permission("Purchase Order", "read", doc=po.name)
+	]
+	sales_order_names = [
+		so.name for so in so_rows
+		if so.custom_crm_deal in invoice_deals and frappe.has_permission("Sales Order", "read", doc=so.name)
+	]
+	execution["invoice_status"]["purchase_invoices"] = _invoice_status_counts(
+		purchase_order_names,
+		parent_doctype="Purchase Invoice",
+		item_doctype="Purchase Invoice Item",
+		order_link_field="purchase_order",
+		company=company,
+		start=start,
+		end=end,
+	)
+	execution["invoice_status"]["sales_invoices"] = _invoice_status_counts(
+		sales_order_names,
+		parent_doctype="Sales Invoice",
+		item_doctype="Sales Invoice Item",
+		order_link_field="sales_order",
+		company=company,
+		start=start,
+		end=end,
+	)
 
 	attention.sort(key=lambda item: (0 if item["severity"] == "risk" else 1, item.get("days_left", 9999)))
 	out = {

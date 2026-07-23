@@ -2577,7 +2577,7 @@ PO ETA,PO ETA
 PO count,PO adedi
 PO total,PO toplam
 PO vs quote,PO vs teklif
-POS,
+POS,POS
 POS Profile,
 POS Profile belongs to a different company.,
 POS Profile is disabled.,
@@ -4666,3 +4666,17 @@ Sales invoices,Satış faturaları
 Selected vendor,Seçili tedarikçi
 DN,DN
 SI,SI
+2 countries met,2 ülke şartı karşılandı
+2 countries needed,2 ülke gerekli
+5 quotes met,5 teklif şartı karşılandı
+5 quotes needed,5 teklif gerekli
+Accounts payable,Borç hesapları
+Accounts receivable,Alacak hesapları
+Actual invoice margin,Fatura gerçekleşen marjı
+Collapse Tender navigation,İhale gezintisini daralt
+Expand Tender navigation,İhale gezintisini genişlet
+Needs attention,Dikkat gerekiyor
+No supplier quotations,Tedarikçi teklifi yok
+Purchase invoices versus sales invoices,Satın alma ve satış faturaları
+Supplier quotations,Tedarikçi teklifleri
+Tender workspace sections,İhale çalışma alanı bölümleri

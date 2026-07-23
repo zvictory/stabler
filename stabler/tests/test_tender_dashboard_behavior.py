@@ -493,6 +493,61 @@ class TestTenderDashboardBehaviour(unittest.TestCase):
 		self.assertEqual(payload["acquisition"]["identified"], 0)
 		self.assertEqual(payload["execution"]["purchase_orders"], 1)
 
+	def test_execution_invoices_are_tender_linked_period_scoped_and_exclusive(self):
+		db = _FakeDB({"DEAL-MINE": {"assigned_to": "source@example.com"}})
+		tender = _load_tender(db, ["Sales User"])
+
+		def has_column(doctype, field):
+			return (doctype, field) in {
+				("CRM Deal", "custom_tender_intake"),
+				("Purchase Order", "custom_crm_deal"),
+				("Sales Order", "custom_crm_deal"),
+			}
+
+		def get_list(doctype, **_kwargs):
+			rows = {
+				"Purchase Order": [_Row(name="PO-MINE", custom_crm_deal="DEAL-MINE", transaction_date="2026-06-05", schedule_date=None, per_received=0, status="To Receive", base_grand_total=100)],
+				"Sales Order": [_Row(name="SO-MINE", custom_crm_deal="DEAL-MINE", transaction_date="2026-06-05", delivery_date=None, per_delivered=0, status="To Deliver and Bill", base_grand_total=100)],
+				"Purchase Invoice": [
+					_Row(name="PINV-DRAFT", posting_date="2026-07-02", docstatus=0, status="Draft"),
+					_Row(name="PINV-UNPAID", posting_date="2026-07-03", docstatus=1, status="Unpaid"),
+					_Row(name="PINV-SUBMITTED", posting_date="2026-07-04", docstatus=1, status="Paid"),
+					_Row(name="PINV-OUTSIDE", posting_date="2026-06-30", docstatus=1, status="Unpaid"),
+					_Row(name="PINV-OTHER", posting_date="2026-07-04", docstatus=1, status="Unpaid"),
+				],
+				"Purchase Invoice Item": [
+					_Row(parent="PINV-DRAFT", purchase_order="PO-MINE"),
+					_Row(parent="PINV-UNPAID", purchase_order="PO-MINE"),
+					_Row(parent="PINV-SUBMITTED", purchase_order="PO-MINE"),
+					_Row(parent="PINV-OUTSIDE", purchase_order="PO-MINE"),
+					_Row(parent="PINV-OTHER", purchase_order="PO-OTHER"),
+				],
+				"Sales Invoice": [_Row(name="SINV-UNPAID", posting_date="2026-07-05", docstatus=1, status="Partly Paid")],
+				"Sales Invoice Item": [_Row(parent="SINV-UNPAID", sales_order="SO-MINE")],
+			}
+			result = rows.get(doctype, [])
+			filters = _kwargs.get("filters", {})
+			if doctype == "Purchase Invoice Item":
+				return [row for row in result if row.purchase_order in filters["purchase_order"][1]]
+			if doctype == "Sales Invoice Item":
+				return [row for row in result if row.sales_order in filters["sales_order"][1]]
+			return result
+
+		with (
+			patch.object(tender, "_tender_deal_names", return_value={"DEAL-MINE"}),
+			patch.object(tender.frappe.db, "has_column", has_column),
+			patch.object(tender.frappe, "get_list", get_list),
+		):
+			payload = tender.tender_dashboard("Test Company", "2026-07-01", "2026-07-31")
+
+		self.assertEqual(
+			payload["execution"]["invoice_status"],
+			{
+				"purchase_invoices": {"draft": 1, "submitted": 1, "unpaid": 1},
+				"sales_invoices": {"draft": 0, "submitted": 0, "unpaid": 1},
+			},
+		)
+
 	def test_acquisition_counts_each_transition_in_its_own_period(self):
 		db = _FakeDB(
 			{
