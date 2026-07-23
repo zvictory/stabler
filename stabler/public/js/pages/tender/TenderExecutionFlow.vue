@@ -13,12 +13,12 @@ const invoiceCount = computed(() => {
 		+ Object.values(status.sales_invoices || {}).reduce((total, count) => total + (Number(count) || 0), 0);
 });
 const stages = computed(() => [
-	{ label: "Won", count: props.acquisition.won || 0 },
-	{ label: "SO", count: props.execution.sales_orders || 0 },
-	{ label: "PO", count: props.execution.purchase_orders || 0 },
-	{ label: "PR", count: props.execution.received || 0 },
-	{ label: "PI/SI", count: invoiceCount.value },
-	{ label: "DN", count: props.execution.delivered || 0 },
+	{ label: t("Won"), count: props.acquisition.won || 0 },
+	{ label: t("SO"), count: props.execution.sales_orders || 0 },
+	{ label: t("PO"), count: props.execution.purchase_orders || 0 },
+	{ label: t("PR"), count: props.execution.received || 0 },
+	{ label: `${t("PI")}/${t("SI")}`, count: invoiceCount.value },
+	{ label: t("DN"), count: props.execution.delivered || 0 },
 ]);
 </script>
 

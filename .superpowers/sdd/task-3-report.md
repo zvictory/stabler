@@ -80,3 +80,34 @@ Ran 30 tests in 0.027s
 
 OK
 ```
+
+## Final i18n review fix
+
+- Localized the execution-stage labels (`Won`, `SO`, `PO`, `PR`, `PI`, `SI`, `DN`) with direct `t()` calls.
+- Localized portfolio progress labels at declaration time so they are literal, scanner-visible translation keys.
+- Added locale and component-call regression coverage, including `DN` and `SI` in all five locale CSV files.
+
+Verification results:
+
+```text
+PYTHONPATH=$PWD python3 -m unittest stabler.tests.test_tender_dashboard_spa -v
+Ran 11 tests in 0.014s
+OK
+
+PYTHONPATH=$PWD python3 -m unittest stabler.tests.test_tender_dashboard_i18n -v
+Ran 3 tests in 0.192s
+OK
+
+node -e '<Vue SFC parser command>'
+SFC parse OK: stabler/public/js/pages/tender/TenderExecutionFlow.vue, stabler/public/js/pages/tender/TenderPortfolioPreview.vue
+```
+
+The final behavior-suite rerun executed 32 tests and failed with two concurrent, non-Task-3 regressions:
+
+```text
+test_workspace_finance_deduplicates_multi_order_invoices_in_base_currency
+TypeError: _tender_finance_chain() got an unexpected keyword argument 'currency'
+
+test_workspace_finance_exposes_planned_margin_from_bid_pricing
+KeyError: 'planned_margin'
+```

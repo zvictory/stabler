@@ -101,8 +101,9 @@ class TestTenderDashboardSpaContract(unittest.TestCase):
 		self.assertIn("prefers-reduced-motion", trend_source)
 
 		execution_source = _read(_EXECUTION_FLOW)
-		self.assertIn("Won", execution_source)
-		self.assertIn("PI/SI", execution_source)
+		self.assertIn('t("Won")', execution_source)
+		self.assertIn('t("PI")', execution_source)
+		self.assertIn('t("SI")', execution_source)
 		self.assertIn("@media (max-width", execution_source)
 
 		portfolio_source = _read(_PORTFOLIO_PREVIEW)
