@@ -19,6 +19,8 @@ import EmptyState from "../../components/EmptyState.vue";
 import MoneyInput from "../../components/MoneyInput.vue";
 import BidPricing from "./BidPricing.vue";
 import TenderIntake from "./TenderIntake.vue";
+import TenderDocumentChain from "./TenderDocumentChain.vue";
+import TenderWorkspaceTabs from "./TenderWorkspaceTabs.vue";
 
 const session = useSession();
 const { user, activeCompany } = storeToRefs(session);
@@ -31,6 +33,8 @@ const deal = ref(route.query.deal ? String(route.query.deal) : "");
 const dealLabel = ref(String(route.query.deal_label || route.query.deal || ""));
 const loading = ref(false);
 const data = ref(null); // { lanes, cards, kpi, compare, currency }
+const workspace = ref(null);
+const selectedVendor = ref("");
 
 // Charge-type catalogue: `type` drives the icon only; `label` is free text so
 // the plan can hold literally any cost item.
@@ -69,27 +73,42 @@ function searchSuppliers(q) {
 function pickDeal(o) {
 	deal.value = o.name;
 	dealLabel.value = o.label;
-	router.replace({ query: { deal: o.name } });
+	router.replace({ query: { ...route.query, deal: o.name } });
 	load();
 }
 
 async function load() {
-	if (!deal.value) { data.value = null; return; }
+	if (!deal.value) { data.value = null; workspace.value = null; return; }
 	loading.value = true;
 	try {
-		data.value = await call("stabler.api.tender.po_control_board", { deal: deal.value });
+		const [workspaceData, board] = await Promise.all([
+			call("stabler.api.tender.tender_workspace", { deal: deal.value }),
+			call("stabler.api.tender.po_control_board", { deal: deal.value }),
+		]);
+		workspace.value = workspaceData;
+		data.value = board;
 	} catch (err) {
 		toast.error(err?.message || t("Could not load the PO board."));
 		data.value = null;
+		workspace.value = null;
 	} finally {
 		loading.value = false;
 	}
 }
 
-const ccy = computed(() => data.value?.currency || "");
+const ccy = computed(() => workspace.value?.overview?.currency || data.value?.currency || "");
 const kpi = computed(() => data.value?.kpi || { po_count: 0, total: 0, received_pct: 0, vendors: 0 });
 const lanes = computed(() => data.value?.lanes || []);
 const compare = computed(() => data.value?.compare || []);
+const sourcing = computed(() => workspace.value?.sourcing || { rows: [] });
+const purchaseExecution = computed(() => workspace.value?.purchase_execution || { orders: [], receipts: [], invoices: [] });
+const salesExecution = computed(() => workspace.value?.sales_execution || { orders: [], deliveries: [], invoices: [] });
+const finance = computed(() => workspace.value?.finance || null);
+const allowedTabs = computed(() => finance.value ? ["overview", "vendor-po", "delivery", "finance"] : ["overview", "vendor-po", "delivery"]);
+const activeWorkspaceTab = computed(() => {
+	const requested = String(route.query.tab || "overview");
+	return allowedTabs.value.includes(requested) ? requested : "overview";
+});
 function cardsFor(key) {
 	return (data.value?.cards || []).filter((c) => c.lane === key);
 }
@@ -283,7 +302,7 @@ watch(() => route.query.deal, (d) => { if (d && d !== deal.value) { deal.value =
 						size="sm"
 						:placeholder="t('Search a tender deal… ⌘K')"
 						@pick="pickDeal"
-						@clear="deal = ''; dealLabel = ''; data = null"
+						@clear="deal = ''; dealLabel = ''; data = null; workspace = null"
 					>
 						<template #option="{ item }">{{ item.label }}</template>
 					</Typeahead>
@@ -291,9 +310,28 @@ watch(() => route.query.deal, (d) => { if (d && d !== deal.value) { deal.value =
 			</div>
 		</div>
 
-		<template v-if="deal && data">
-			<!-- Tender intake + deadline control -->
-			<TenderIntake :deal="deal" :currency="ccy" />
+		<template v-if="deal && workspace && data">
+			<TenderWorkspaceTabs :active="activeWorkspaceTab" :views="workspace" :has-finance="Boolean(finance)" />
+
+			<template v-if="activeWorkspaceTab === 'overview'">
+				<TenderIntake :deal="deal" :currency="ccy" />
+				<BidPricing :deal="deal" :currency="ccy" />
+			</template>
+
+			<template v-else-if="activeWorkspaceTab === 'vendor-po'">
+				<div class="card mb-3">
+					<div class="card-header py-2 d-flex justify-content-between align-items-center">
+						<span class="fw-semibold">{{ t("Supplier quotations") }}</span>
+						<div class="d-flex gap-1">
+							<span class="badge" :class="sourcing.has_min_5 ? 'bg-green-lt text-green' : 'bg-yellow-lt text-yellow'">{{ sourcing.has_min_5 ? t("5 quotes met") : t("5 quotes needed") }}</span>
+							<span class="badge" :class="sourcing.has_2_countries ? 'bg-green-lt text-green' : 'bg-yellow-lt text-yellow'">{{ sourcing.has_2_countries ? t("2 countries met") : t("2 countries needed") }}</span>
+						</div>
+					</div>
+					<div class="card-body py-2">
+						<span v-for="quote in sourcing.rows || []" :key="quote.name" class="badge bg-secondary-lt text-secondary me-1">{{ quote.supplier_name }}</span>
+						<span v-if="!(sourcing.rows || []).length" class="text-secondary small">{{ t("No supplier quotations") }}</span>
+					</div>
+				</div>
 
 			<!-- KPI strip -->
 			<div class="row g-2 mb-3">
@@ -386,10 +424,11 @@ watch(() => route.query.deal, (d) => { if (d && d !== deal.value) { deal.value =
 							</tr>
 						</thead>
 						<tbody>
-							<tr v-for="row in compare" :key="row.supplier" :class="{ 'table-success': row.cheapest }">
+							<tr v-for="row in compare" :key="row.supplier" :class="{ 'table-success': row.cheapest, 'table-primary': selectedVendor === row.supplier }" style="cursor: pointer" @click="selectedVendor = row.supplier">
 								<td class="fw-semibold">
 									{{ row.supplier_name }}
 									<span v-if="row.cheapest" class="badge bg-green text-white ms-1">{{ t("Cheapest (landed)") }}</span>
+									<span v-if="selectedVendor === row.supplier" class="badge bg-blue-lt text-blue ms-1">{{ t("Selected") }}</span>
 								</td>
 								<td class="text-end font-monospace">{{ formatMoney(row.base_po_total, ccy, user.language) }}</td>
 								<td class="text-end font-monospace text-secondary">{{ row.charges_total ? "+" + formatMoney(row.charges_total, ccy, user.language) : "—" }}</td>
@@ -407,8 +446,31 @@ watch(() => route.query.deal, (d) => { if (d && d !== deal.value) { deal.value =
 				</div>
 			</div>
 
-			<!-- Bid pricing: landed cost + our margin → the price we bid to the tender -->
-			<BidPricing :deal="deal" :currency="ccy" />
+			</template>
+
+			<template v-else-if="activeWorkspaceTab === 'delivery'">
+				<TenderDocumentChain :purchase="purchaseExecution" :sales="salesExecution" :currency="ccy" />
+			</template>
+
+			<template v-else-if="finance">
+				<div class="row g-3">
+					<div v-for="metric in [
+						{ label: t('Accounts payable'), value: finance.ap_total, outstanding: finance.ap_outstanding },
+						{ label: t('Accounts receivable'), value: finance.ar_total, outstanding: finance.ar_outstanding },
+					]" :key="metric.label" class="col-12 col-md-4">
+						<div class="card"><div class="card-body">
+							<div class="text-secondary small text-uppercase">{{ metric.label }}</div>
+							<div class="h3 font-monospace mb-1">{{ formatMoney(metric.value, ccy, user.language) }}</div>
+							<div class="small text-secondary">{{ t("Outstanding") }}: <span class="font-monospace">{{ formatMoney(metric.outstanding, ccy, user.language) }}</span></div>
+						</div></div>
+					</div>
+					<div class="col-12 col-md-4"><div class="card"><div class="card-body">
+						<div class="text-secondary small text-uppercase">{{ t("Actual invoice margin") }}</div>
+						<div class="h3 font-monospace mb-1" :class="finance.actual_margin < 0 ? 'text-red' : 'text-green'">{{ formatMoney(finance.actual_margin, ccy, user.language) }}</div>
+						<div class="small text-secondary">{{ t("Purchase invoices versus sales invoices") }}</div>
+					</div></div></div>
+				</div>
+			</template>
 		</template>
 
 		<EmptyState v-else-if="deal && loading" icon="ti-loader" :title="t('Loading…')" />

@@ -71,6 +71,7 @@ def _load_tender(db: _FakeDB, roles: list[str], user: str = "source@example.com"
 	"""Import tender.py against only the Frappe surface the tested APIs need."""
 	for name in (
 		"stabler.api.tender",
+		"stabler.api.purchasing",
 		"frappe",
 		"frappe.utils",
 		"stabler.api.approvals",
@@ -114,6 +115,8 @@ def _load_tender(db: _FakeDB, roles: list[str], user: str = "source@example.com"
 	bid_package.build_bid_docx = lambda *_args, **_kwargs: b""
 	organization = types.ModuleType("stabler.api.organization")
 	organization._can_access_module = lambda *_args, **_kwargs: True
+	purchasing = types.ModuleType("stabler.api.purchasing")
+	purchasing.tender_quotations = lambda _deal: {"rows": []}
 	settings = types.ModuleType("stabler.stabler.doctype.stabler_settings.stabler_settings")
 	settings.module_map_for = lambda _company: {"tender": True}
 	for name, module in (
@@ -121,6 +124,7 @@ def _load_tender(db: _FakeDB, roles: list[str], user: str = "source@example.com"
 		("stabler.api._common", common),
 		("stabler.api._bid_package", bid_package),
 		("stabler.api.organization", organization),
+		("stabler.api.purchasing", purchasing),
 		("stabler.stabler.doctype.stabler_settings.stabler_settings", settings),
 	):
 		sys.modules[name] = module
@@ -128,6 +132,54 @@ def _load_tender(db: _FakeDB, roles: list[str], user: str = "source@example.com"
 
 
 class TestTenderDashboardBehaviour(unittest.TestCase):
+	def test_workspace_omits_finance_for_non_finance_role(self):
+		db = _FakeDB({"DEAL-1": {}})
+		tender = _load_tender(db, ["Stabler Declarant"])
+
+		with (
+			patch.object(tender, "deal_intake", return_value={}),
+			patch.object(tender, "_purchase_document_chain", return_value={"orders": [], "receipts": [], "invoices": []}),
+			patch.object(tender, "_sales_document_chain", return_value={"orders": [], "deliveries": [], "invoices": []}),
+		):
+			result = tender.tender_workspace("DEAL-1")
+
+		self.assertNotIn("finance", result)
+		self.assertIn("purchase_execution", result)
+		self.assertIn("sales_execution", result)
+
+	def test_workspace_traces_invoices_through_order_item_links(self):
+		db = _FakeDB({"DEAL-1": {}})
+		tender = _load_tender(db, ["Accounts User"])
+
+		def get_list(doctype, **_kwargs):
+			rows = {
+				"Purchase Order": [_Row(name="PO-1", transaction_date="2026-07-01", status="To Receive", grand_total=100)],
+				"Purchase Receipt": [],
+				"Purchase Invoice": [_Row(name="PINV-1", posting_date="2026-07-03", status="Unpaid", grand_total=100, outstanding_amount=100)],
+				"Purchase Invoice Item": [_Row(parent="PINV-1", purchase_order="PO-1")],
+				"Sales Order": [_Row(name="SO-1", transaction_date="2026-07-01", status="To Deliver and Bill", grand_total=160)],
+				"Delivery Note": [],
+				"Sales Invoice": [_Row(name="SINV-1", posting_date="2026-07-04", status="Unpaid", grand_total=160, outstanding_amount=160)],
+				"Sales Invoice Item": [_Row(parent="SINV-1", sales_order="SO-1")],
+			}
+			return rows.get(doctype, [])
+
+		def has_column(doctype, field):
+			return (doctype, field) in {
+				("CRM Deal", "custom_tender_intake"),
+				("Purchase Order", "custom_crm_deal"),
+				("Sales Order", "custom_crm_deal"),
+			}
+
+		with (
+			patch.object(tender.frappe.db, "has_column", has_column),
+			patch.object(tender.frappe, "get_list", get_list),
+			patch.object(tender, "deal_intake", return_value={}),
+		):
+			result = tender.tender_workspace("DEAL-1")
+
+		self.assertEqual(result["purchase_execution"]["invoices"][0]["purchase_order"], "PO-1")
+		self.assertEqual(result["sales_execution"]["invoices"][0]["sales_order"], "SO-1")
 	def test_portfolio_progress_is_value_weighted(self):
 		db = _FakeDB()
 		tender = _load_tender(db, ["Sales Manager"])

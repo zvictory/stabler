@@ -581,6 +581,172 @@ def po_control_board(deal: str) -> dict:
 
 
 # --------------------------------------------------------------------------- #
+# Tender execution workspace — the tender's purchase and sales document chains.
+# --------------------------------------------------------------------------- #
+def _deal_link_field(doctype: str) -> str | None:
+	"""Return the installed tender link field without reading unscoped documents."""
+	for field in ("custom_crm_deal", "custom_tender_deal"):
+		if frappe.db.has_column(doctype, field):
+			return field
+	return None
+
+
+def _document_row(row, date_field: str, link_field: str, linked_name: str) -> dict:
+	"""Normalize ERPNext document rows for the SPA's chain component."""
+	return {
+		"name": row.get("name"),
+		"posting_date": str(row.get(date_field) or ""),
+		"status": row.get("status") or "",
+		"grand_total": flt(row.get("grand_total")),
+		"outstanding_amount": flt(row.get("outstanding_amount")),
+		link_field: linked_name,
+	}
+
+
+def _linked_document_rows(
+	parent_doctype: str,
+	item_doctype: str,
+	order_names: list[str],
+	company: str,
+	link_field: str,
+	date_field: str,
+	include_outstanding: bool = False,
+) -> list[dict]:
+	"""Return permitted parent rows linked through one document-item query.
+
+	The parent query establishes company and document-state scope.  The item query
+	then supplies the PO/SO links in one batch, avoiding a query per order.
+	"""
+	if not order_names:
+		return []
+	fields = ["name", date_field, "status", "grand_total"]
+	if include_outstanding:
+		fields.append("outstanding_amount")
+	parents = frappe.get_list(
+		parent_doctype,
+		filters={"company": company, "docstatus": ["<", 2]},
+		fields=fields,
+		order_by=f"{date_field} asc, name asc",
+		limit_page_length=1000,
+	)
+	parents = [row for row in parents if frappe.has_permission(parent_doctype, "read", doc=row.name)]
+	parent_names = [row.name for row in parents]
+	if not parent_names:
+		return []
+	links = frappe.get_list(
+		item_doctype,
+		filters={"parent": ["in", parent_names], link_field: ["in", order_names]},
+		fields=["parent", link_field],
+		limit_page_length=10000,
+	)
+	linked_by_parent: dict[str, list[str]] = {}
+	for link in links:
+		linked_name = link.get(link_field)
+		if linked_name:
+			linked_by_parent.setdefault(link.parent, []).append(linked_name)
+	rows: list[dict] = []
+	for parent in parents:
+		for linked_name in dict.fromkeys(linked_by_parent.get(parent.name, [])):
+			rows.append(_document_row(parent, date_field, link_field, linked_name))
+	return rows
+
+
+def _purchase_document_chain(deal: str, company: str) -> dict:
+	"""Return company-scoped PO, Purchase Receipt, and Purchase Invoice rows."""
+	deal_field = _deal_link_field("Purchase Order")
+	if not deal_field:
+		return {"orders": [], "receipts": [], "invoices": []}
+	orders = frappe.get_list(
+		"Purchase Order",
+		filters={deal_field: deal, "company": company, "docstatus": ["<", 2]},
+		fields=["name", "transaction_date", "status", "grand_total"],
+		order_by="transaction_date asc, name asc",
+		limit_page_length=1000,
+	)
+	orders = [row for row in orders if frappe.has_permission("Purchase Order", "read", doc=row.name)]
+	order_rows = [_document_row(row, "transaction_date", "purchase_order", row.name) for row in orders]
+	order_names = [row.name for row in orders]
+	return {
+		"orders": order_rows,
+		"receipts": _linked_document_rows(
+			"Purchase Receipt", "Purchase Receipt Item", order_names, company,
+			"purchase_order", "posting_date",
+		),
+		"invoices": _linked_document_rows(
+			"Purchase Invoice", "Purchase Invoice Item", order_names, company,
+			"purchase_order", "posting_date", include_outstanding=True,
+		),
+	}
+
+
+def _sales_document_chain(deal: str, company: str) -> dict:
+	"""Return company-scoped SO, Delivery Note, and Sales Invoice rows."""
+	deal_field = _deal_link_field("Sales Order")
+	if not deal_field:
+		return {"orders": [], "deliveries": [], "invoices": []}
+	orders = frappe.get_list(
+		"Sales Order",
+		filters={deal_field: deal, "company": company, "docstatus": ["<", 2]},
+		fields=["name", "transaction_date", "status", "grand_total"],
+		order_by="transaction_date asc, name asc",
+		limit_page_length=1000,
+	)
+	orders = [row for row in orders if frappe.has_permission("Sales Order", "read", doc=row.name)]
+	order_rows = [_document_row(row, "transaction_date", "sales_order", row.name) for row in orders]
+	order_names = [row.name for row in orders]
+	return {
+		"orders": order_rows,
+		"deliveries": _linked_document_rows(
+			"Delivery Note", "Delivery Note Item", order_names, company,
+			"sales_order", "posting_date",
+		),
+		"invoices": _linked_document_rows(
+			"Sales Invoice", "Sales Invoice Item", order_names, company,
+			"sales_order", "posting_date", include_outstanding=True,
+		),
+	}
+
+
+def _tender_finance_chain(purchase: dict, sales: dict) -> dict:
+	"""Derive AP, AR, paid, outstanding, and actual margin from permitted rows."""
+	ap_total = sum(flt(row.get("grand_total")) for row in purchase["invoices"])
+	ap_outstanding = sum(flt(row.get("outstanding_amount")) for row in purchase["invoices"])
+	ar_total = sum(flt(row.get("grand_total")) for row in sales["invoices"])
+	ar_outstanding = sum(flt(row.get("outstanding_amount")) for row in sales["invoices"])
+	return {
+		"ap_total": ap_total,
+		"ap_outstanding": ap_outstanding,
+		"ap_paid": ap_total - ap_outstanding,
+		"ar_total": ar_total,
+		"ar_outstanding": ar_outstanding,
+		"ar_paid": ar_total - ar_outstanding,
+		"actual_margin": ar_total - ap_total,
+	}
+
+
+@frappe.whitelist()
+def tender_workspace(deal: str) -> dict:
+	"""Return the permission-scoped data backing the four-tab tender workspace."""
+	from stabler.api.purchasing import tender_quotations
+
+	company = _deal_scope(deal, write=False)
+	out = {
+		"deal": deal,
+		"company": company,
+		"overview": deal_intake(deal),
+		"sourcing": tender_quotations(deal),
+		"purchase_execution": _purchase_document_chain(deal, company),
+		"sales_execution": _sales_document_chain(deal, company),
+	}
+	if _can_view_tender_finance():
+		out["finance"] = _tender_finance_chain(
+			out["purchase_execution"],
+			out["sales_execution"],
+		)
+	return out
+
+
+# --------------------------------------------------------------------------- #
 # Tender bid pricing — landed cost + our margin → the price WE bid (Договор).
 # The sell side is a Sales Order (revenue); the cost side is the deal's POs
 # (landed). This mirrors the customer's contract P&L sheet.
