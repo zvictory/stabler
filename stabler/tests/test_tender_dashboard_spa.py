@@ -15,6 +15,9 @@ import unittest
 _ROOT = os.path.normpath(os.path.join(os.path.dirname(os.path.abspath(__file__)), ".."))
 _DASHBOARD = os.path.join(_ROOT, "public", "js", "pages", "Dashboard.vue")
 _SALES_BOARD = os.path.join(_ROOT, "public", "js", "pages", "sales", "SalesOrderBoard.vue")
+_TREND_CHART = os.path.join(_ROOT, "public", "js", "pages", "tender", "TenderTrendChart.vue")
+_EXECUTION_FLOW = os.path.join(_ROOT, "public", "js", "pages", "tender", "TenderExecutionFlow.vue")
+_PORTFOLIO_PREVIEW = os.path.join(_ROOT, "public", "js", "pages", "tender", "TenderPortfolioPreview.vue")
 def _read(path: str) -> str:
 	with open(path, encoding="utf-8") as source:
 		return source.read()
@@ -58,8 +61,8 @@ class TestTenderDashboardSpaContract(unittest.TestCase):
 
 	def test_dashboard_execution_cards_stack_on_phone(self):
 		source = _read(_DASHBOARD)
-		self.assertIn('class="col-12 col-md-6 col-lg-4"', source)
 		self.assertIn('class="col-12 col-md-6 col-lg-3"', source)
+		self.assertIn("TenderExecutionFlow", source)
 
 	def test_dashboard_error_is_announced_and_focuses_retry(self):
 		source = _read(_DASHBOARD)
@@ -71,6 +74,38 @@ class TestTenderDashboardSpaContract(unittest.TestCase):
 		self.assertIn('role_scope.views', source)
 		for view in ("director", "sourcing", "declarant", "logist"):
 			self.assertIn(view, source)
+
+	def test_p1_dashboard_composes_accessible_visuals(self):
+		source = _read(_DASHBOARD)
+		for component in (
+			"TenderTrendChart",
+			"TenderExecutionFlow",
+			"TenderPortfolioPreview",
+		):
+			self.assertIn(component, source)
+		self.assertIn("portfolio_preview", source)
+		self.assertIn("prefers-reduced-motion", source)
+		self.assertNotIn("/app/", source)
+
+	def test_p1_components_preserve_visual_and_keyboard_accessibility(self):
+		trend_source = _read(_TREND_CHART)
+		self.assertIn('<svg role="img"', trend_source)
+		self.assertIn("<title", trend_source)
+		self.assertIn("visually-hidden", trend_source)
+		self.assertIn("prefers-reduced-motion", trend_source)
+
+		execution_source = _read(_EXECUTION_FLOW)
+		self.assertIn("Won", execution_source)
+		self.assertIn("PI/SI", execution_source)
+		self.assertIn("@media (max-width", execution_source)
+
+		portfolio_source = _read(_PORTFOLIO_PREVIEW)
+		self.assertIn('tabindex="0"', portfolio_source)
+		self.assertIn("@keydown.enter", portfolio_source)
+		self.assertIn("@keydown.space.prevent", portfolio_source)
+		self.assertIn('role="progressbar"', portfolio_source)
+		self.assertIn("aria-valuenow", portfolio_source)
+		self.assertIn("@media (max-width", portfolio_source)
 
 	def test_sales_order_board_reads_dashboard_period_and_status(self):
 		source = _read(_SALES_BOARD)
