@@ -84,8 +84,13 @@ class TestTenderDashboardContract(unittest.TestCase):
 		self.assertNotIn("frappe.get_all(", self.body)
 
 	def test_dashboard_returns_role_adaptive_sections(self):
-		for section in ("period", "role_scope", "acquisition", "execution", "attention", "my_work"):
+		for section in ("period", "role_scope", "acquisition", "execution", "attention", "my_work", "trend", "portfolio_preview"):
 			self.assertIn(f'"{section}"', self.body)
+
+	def test_dashboard_execution_includes_aggregate_invoice_status_only(self):
+		self.assertIn('"invoice_status"', self.body)
+		self.assertIn('"purchase_invoices"', self.body)
+		self.assertIn('"sales_invoices"', self.body)
 
 	def test_legacy_results_are_unverified_not_submitted(self):
 		self.assertIn("unverified_history", self.body)

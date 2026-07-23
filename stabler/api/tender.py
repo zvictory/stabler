@@ -16,7 +16,7 @@ import json
 import frappe
 from stabler.api.approvals import _assert_company_scope
 from frappe import _
-from frappe.utils import flt, getdate, now, today
+from frappe.utils import add_months, flt, getdate, now, today
 
 from stabler.api._common import _require_company
 from stabler.api._bid_package import assemble_bid_package, build_bid_docx
@@ -1677,6 +1677,52 @@ def _intake_attention(deal: str, intake: dict, today_d) -> list[dict]:
 	return items
 
 
+def _weighted_progress(rows, field: str) -> float:
+	total = sum(flt(row.get("base_grand_total")) for row in rows)
+	if not total:
+		return 0.0
+	done = sum(
+		flt(row.get("base_grand_total")) * flt(row.get(field)) / 100
+		for row in rows
+	)
+	return round(done / total * 100, 1)
+
+
+def _monthly_trend(events: list[dict], start, end) -> list[dict]:
+	months = {}
+	cursor = getdate(start).replace(day=1)
+	while cursor <= end:
+		key = cursor.strftime("%Y-%m")
+		months[key] = {"month": key, "submitted": 0, "won": 0, "won_value": 0.0}
+		cursor = add_months(cursor, 1)
+	for event in events:
+		submitted = str(event.get("submitted_at") or "")[:7]
+		won = str(event.get("result_at") or "")[:7]
+		if submitted in months:
+			months[submitted]["submitted"] += 1
+		if event.get("result") == "won" and won in months:
+			months[won]["won"] += 1
+			months[won]["won_value"] += flt(event.get("value"))
+	return list(months.values())
+
+
+def _portfolio_deadlines(intake: dict, pos, sos, today_d) -> dict:
+	"""Calculate portfolio risk from the already fetched, readable PO/SO rows."""
+	po_received = bool(pos) and all(flt(row.per_received) >= 100 for row in pos)
+	so_delivered = bool(sos) and all(flt(row.per_delivered) >= 100 for row in sos)
+	so_delivery = min((row.get("delivery_date") for row in sos if row.get("delivery_date")), default=None)
+	milestones = [
+		_milestone("bid", _("Bid deadline"), intake.get("bid_deadline"), bool(intake.get("result") or intake.get("go_no_go") == "no_go"), today_d),
+		_milestone("po_eta", _("PO ETA"), min((row.get("schedule_date") for row in pos if row.get("schedule_date")), default=None), po_received, today_d),
+		_milestone("delivery", _("Delivery deadline"), intake.get("delivery_deadline") or so_delivery, so_delivered, today_d),
+	]
+	if any(milestone["status"] == "risk" for milestone in milestones):
+		return {"risk": "risk"}
+	if any(milestone["status"] == "warn" for milestone in milestones):
+		return {"risk": "warn"}
+	return {"risk": "good"}
+
+
 @frappe.whitelist()
 def tender_dashboard(company: str, from_date=None, to_date=None) -> dict:
 	"""Tender lifecycle and execution KPIs for the active company and role.
@@ -1708,16 +1754,30 @@ def tender_dashboard(company: str, from_date=None, to_date=None) -> dict:
 	attention: list[dict] = []
 	my_assigned = 0
 	execution_deals: set[str] = set()
-	deal_names = _tender_deal_names(company) if acquisition_scope != "none" else ()
+	deal_names = _tender_deal_names(company)
+	trend_events: list[dict] = []
+	portfolio_intakes: dict[str, dict] = {}
 	for deal in deal_names:
 		if not frappe.has_permission("CRM Deal", "read", doc=deal):
 			continue
 		intake = _read_intake(deal)
 		if acquisition_scope == "assigned" and (intake.get("assigned_to") or "") != user:
 			continue
-		execution_deals.add(deal)
+		portfolio_intakes[deal] = intake
+		if execution_scope == "assigned":
+			execution_deals.add(deal)
 		creation = frappe.db.get_value("CRM Deal", deal, "creation")
 		event_dates = _tender_event_dates(intake, creation)
+		verified = _has_submission_evidence(intake)
+		if verified:
+			trend_events.append({
+				"submitted_at": event_dates["submitted"],
+				"result": intake.get("result"),
+				"result_at": event_dates["won"],
+				"value": intake.get("won_price"),
+			})
+		if acquisition_scope == "none":
+			continue
 		identified_in_period = _in_dashboard_period(event_dates["identified"], start, end)
 		if identified_in_period:
 			acquisition["identified"] += 1
@@ -1726,7 +1786,6 @@ def tender_dashboard(company: str, from_date=None, to_date=None) -> dict:
 			acquisition[decision] += 1
 		if _in_dashboard_period(event_dates["ready"], start, end):
 			acquisition["ready"] += 1
-		verified = _has_submission_evidence(intake)
 		result = intake.get("result")
 		if verified and _in_dashboard_period(event_dates["submitted"], start, end):
 			acquisition["submitted"] += 1
@@ -1741,7 +1800,7 @@ def tender_dashboard(company: str, from_date=None, to_date=None) -> dict:
 				item["label"] = _deal_label(deal)
 				attention.append(item)
 
-	po_fields = ["name", "custom_crm_deal", "transaction_date", "schedule_date", "per_received", "status", "base_grand_total"]
+	po_fields = ["name", "custom_crm_deal", "transaction_date", "schedule_date", "per_received", "per_billed", "status", "base_grand_total"]
 	has_landed = frappe.db.has_column("Purchase Order", "custom_landed_charges")
 	if has_landed:
 		po_fields.append("custom_landed_charges")
@@ -1758,7 +1817,7 @@ def tender_dashboard(company: str, from_date=None, to_date=None) -> dict:
 		so_rows = frappe.get_list(
 			"Sales Order",
 			filters={"company": company, "custom_crm_deal": ["is", "set"], "docstatus": ["<", 2]},
-			fields=["name", "custom_crm_deal", "transaction_date", "per_delivered", "status", "base_grand_total"],
+			fields=["name", "custom_crm_deal", "transaction_date", "delivery_date", "per_delivered", "per_billed", "status", "base_grand_total"],
 			limit_page_length=5000,
 		)
 	execution = {
@@ -1773,6 +1832,10 @@ def tender_dashboard(company: str, from_date=None, to_date=None) -> dict:
 			"po_without_customs_charge": 0,
 		},
 		"logistics_status": {},
+		"invoice_status": {
+			"purchase_invoices": {"draft": 0, "submitted": 0, "unpaid": 0},
+			"sales_invoices": {"draft": 0, "submitted": 0, "unpaid": 0},
+		},
 	}
 	procurement_total = 0.0
 	contract_total = 0.0
@@ -1812,6 +1875,57 @@ def tender_dashboard(company: str, from_date=None, to_date=None) -> dict:
 		else:
 			execution["delivery_pending"] += 1
 
+	po_by_deal: dict[str, list] = {}
+	for po in po_rows:
+		if po.custom_crm_deal not in portfolio_intakes:
+			continue
+		if frappe.has_permission("Purchase Order", "read", doc=po.name):
+			po_by_deal.setdefault(po.custom_crm_deal, []).append(po)
+	so_by_deal: dict[str, list] = {}
+	for so in so_rows:
+		if so.custom_crm_deal not in portfolio_intakes:
+			continue
+		if frappe.has_permission("Sales Order", "read", doc=so.name):
+			so_by_deal.setdefault(so.custom_crm_deal, []).append(so)
+	portfolio_preview = []
+	for deal, intake in portfolio_intakes.items():
+		deal_pos = po_by_deal.get(deal, [])
+		deal_sos = so_by_deal.get(deal, [])
+		portfolio_procurement_total = sum(flt(row.base_grand_total) for row in deal_pos)
+		portfolio_contract_total = sum(flt(row.base_grand_total) for row in deal_sos)
+		deadlines = _portfolio_deadlines(intake, deal_pos, deal_sos, today_d)
+		portfolio_preview.append({
+			"deal": deal,
+			"label": _deal_label(deal),
+			"lot_no": intake.get("lot_no") or "",
+			"status": intake.get("result") if _has_submission_evidence(intake) else "",
+			"risk": deadlines["risk"],
+			"po_received_pct": _weighted_progress(deal_pos, "per_received"),
+			"po_billed_pct": _weighted_progress(deal_pos, "per_billed"),
+			"so_delivered_pct": _weighted_progress(deal_sos, "per_delivered"),
+			"so_billed_pct": _weighted_progress(deal_sos, "per_billed"),
+			"procurement_total": portfolio_procurement_total,
+			"contract_total": portfolio_contract_total,
+			"spread": portfolio_contract_total - portfolio_procurement_total,
+		})
+
+	for doctype, key in (("Purchase Invoice", "purchase_invoices"), ("Sales Invoice", "sales_invoices")):
+		for invoice in frappe.get_list(
+			doctype,
+			filters={"company": company, "docstatus": ["<", 2]},
+			fields=["name", "docstatus", "status"],
+			limit_page_length=5000,
+		):
+			if not frappe.has_permission(doctype, "read", doc=invoice.name):
+				continue
+			status = execution["invoice_status"][key]
+			if invoice.docstatus == 0:
+				status["draft"] += 1
+			else:
+				status["submitted"] += 1
+				if invoice.status in ("Unpaid", "Partly Paid", "Overdue"):
+					status["unpaid"] += 1
+
 	attention.sort(key=lambda item: (0 if item["severity"] == "risk" else 1, item.get("days_left", 9999)))
 	out = {
 		"period": {"from_date": str(start), "to_date": str(end)},
@@ -1822,6 +1936,8 @@ def tender_dashboard(company: str, from_date=None, to_date=None) -> dict:
 		},
 		"acquisition": acquisition,
 		"execution": execution,
+		"trend": _monthly_trend(trend_events, start, end),
+		"portfolio_preview": portfolio_preview,
 		"attention": {"count": len(attention), "items": attention[:100]},
 		"my_work": {
 			"assigned": my_assigned,

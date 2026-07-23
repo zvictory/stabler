@@ -95,6 +95,11 @@ def _load_tender(db: _FakeDB, roles: list[str], user: str = "source@example.com"
 	utils = types.ModuleType("frappe.utils")
 	utils.flt = lambda value: float(value or 0)
 	utils.getdate = lambda value: date.fromisoformat(str(value)[:10])
+	utils.add_months = lambda value, months: date(
+		value.year + (value.month - 1 + months) // 12,
+		(value.month - 1 + months) % 12 + 1,
+		min(value.day, 28),
+	)
 	utils.today = lambda: "2026-07-22"
 	utils.now = lambda: "2026-07-22 09:00:00"
 	frappe.utils = utils
@@ -123,6 +128,34 @@ def _load_tender(db: _FakeDB, roles: list[str], user: str = "source@example.com"
 
 
 class TestTenderDashboardBehaviour(unittest.TestCase):
+	def test_portfolio_progress_is_value_weighted(self):
+		db = _FakeDB()
+		tender = _load_tender(db, ["Sales Manager"])
+		pos = [
+			_Row(base_grand_total=100, per_received=100, per_billed=100),
+			_Row(base_grand_total=300, per_received=0, per_billed=0),
+		]
+
+		result = tender._weighted_progress(pos, "per_received")
+
+		self.assertEqual(result, 25.0)
+
+	def test_monthly_trend_uses_verified_server_dates(self):
+		db = _FakeDB()
+		tender = _load_tender(db, ["Sales Manager"])
+		events = [
+			{"submitted_at": "2026-05-08", "result": "won", "result_at": "2026-05-12", "value": 165},
+			{"submitted_at": "2026-06-10", "result": "won", "result_at": "2026-06-14", "value": 213.6},
+		]
+
+		self.assertEqual(
+			tender._monthly_trend(events, tender.getdate("2026-05-01"), tender.getdate("2026-06-30")),
+			[
+				{"month": "2026-05", "submitted": 1, "won": 1, "won_value": 165.0},
+				{"month": "2026-06", "submitted": 1, "won": 1, "won_value": 213.6},
+			],
+		)
+
 	def test_missing_crm_doctype_returns_no_tender_candidates(self):
 		db = _FakeDB()
 		tender = _load_tender(db, ["Sales Manager"])
