@@ -1,5 +1,5 @@
 <script setup>
-import { computed, ref } from "vue";
+import { computed, nextTick, onBeforeUnmount, ref, watch } from "vue";
 import { useRoute } from "vue-router";
 import { useSession } from "../stores/session.js";
 import { orgApi } from "../api/organization.js";
@@ -87,6 +87,81 @@ function onCompanyChange(value) {
 }
 
 const currentLanguage = computed(() => session.user?.language || "en");
+const userMenuOpen = ref(false);
+const userMenuTrigger = ref(null);
+const userMenuEl = ref(null);
+const userMenuStyle = ref({});
+
+function positionUserMenu() {
+	const trigger = userMenuTrigger.value;
+	if (!trigger) return;
+	const rect = trigger.getBoundingClientRect();
+	const viewportPadding = 8;
+	const gap = 4;
+	const width = Math.min(Math.max(rect.width, 240), window.innerWidth - viewportPadding * 2);
+	const left = Math.max(
+		viewportPadding,
+		Math.min(rect.left, window.innerWidth - width - viewportPadding)
+	);
+	const availableAbove = Math.max(0, rect.top - gap - viewportPadding);
+	userMenuStyle.value = {
+		position: "fixed",
+		left: `${left}px`,
+		bottom: `${window.innerHeight - rect.top + 4}px`,
+		width: `${width}px`,
+		maxHeight: `${availableAbove}px`,
+		overflowY: "auto",
+		zIndex: 1080,
+	};
+}
+
+function removeUserMenuListeners() {
+	document.removeEventListener("pointerdown", onUserMenuPointerDown);
+	document.removeEventListener("keydown", onUserMenuKeydown);
+	window.removeEventListener("resize", positionUserMenu);
+	window.removeEventListener("scroll", positionUserMenu, true);
+}
+
+function closeUserMenu(restoreFocus = false) {
+	if (!userMenuOpen.value) return;
+	userMenuOpen.value = false;
+	removeUserMenuListeners();
+	if (restoreFocus) nextTick(() => userMenuTrigger.value?.focus());
+}
+
+function onUserMenuPointerDown(event) {
+	const target = event.target;
+	if (!(target instanceof Node)) return;
+	if (userMenuTrigger.value?.contains(target) || userMenuEl.value?.contains(target)) return;
+	closeUserMenu();
+}
+
+function onUserMenuKeydown(event) {
+	if (event.key === "Escape") {
+		event.preventDefault();
+		closeUserMenu(true);
+	}
+}
+
+async function toggleUserMenu(event) {
+	if (userMenuOpen.value) {
+		closeUserMenu(true);
+		return;
+	}
+	userMenuOpen.value = true;
+	await nextTick();
+	positionUserMenu();
+	document.addEventListener("pointerdown", onUserMenuPointerDown);
+	document.addEventListener("keydown", onUserMenuKeydown);
+	window.addEventListener("resize", positionUserMenu);
+	window.addEventListener("scroll", positionUserMenu, true);
+	if (event.detail === 0) {
+		userMenuEl.value?.querySelector("a, button:not(:disabled)")?.focus();
+	}
+}
+
+watch(() => route.fullPath, () => closeUserMenu());
+onBeforeUnmount(removeUserMenuListeners);
 
 async function setLanguage(code) {
 	if (code === currentLanguage.value) return;
@@ -172,12 +247,15 @@ async function downloadCbuRates() {
 						/>
 					</div>
 
-					<div class="dropup px-2 pb-2">
-						<a
-							href="#"
-							class="d-flex align-items-center text-decoration-none text-reset p-2 rounded user-menu-trigger"
-							data-bs-toggle="dropdown"
-							aria-expanded="false"
+					<div class="px-2 pb-2">
+						<button
+							ref="userMenuTrigger"
+							type="button"
+							class="d-flex align-items-center w-100 border-0 bg-transparent text-start text-reset p-2 rounded user-menu-trigger"
+							aria-haspopup="menu"
+							:aria-expanded="userMenuOpen"
+							aria-controls="sidebar-user-menu"
+							@click="toggleUserMenu"
 						>
 							<span
 								v-if="session.user.image"
@@ -192,42 +270,64 @@ async function downloadCbuRates() {
 								</div>
 							</div>
 							<i class="ti ti-dots-vertical text-secondary"></i>
-						</a>
-						<div class="dropdown-menu dropdown-menu-arrow stbl-menu stbl-menu--nocheck">
-							<h6 class="dropdown-header">{{ t("Language") }}</h6>
-							<a
-								v-for="lng in LANGUAGES"
-								:key="lng.code"
-								href="#"
-								class="dropdown-item stbl-menu-item d-flex justify-content-between align-items-center"
-								@click.prevent="setLanguage(lng.code)"
-							>
-								<span>{{ lng.label }}</span>
-								<i v-if="lng.code === currentLanguage" class="ti ti-check text-primary"></i>
-							</a>
-							<div class="dropdown-divider"></div>
-							<h6 class="dropdown-header">{{ t("Tools") }}</h6>
-							<button
-								type="button"
-								class="dropdown-item stbl-menu-item"
-								:disabled="cbuLoading"
-								@click="downloadCbuRates"
-							>
-								<i class="ti me-2" :class="cbuLoading ? 'ti-loader-2 ti-spin' : 'ti-refresh'"></i>
-								{{ t("Download CBU exchange rates") }}
-							</button>
-							<div class="dropdown-divider"></div>
-							<router-link to="/profile" class="dropdown-item stbl-menu-item">
-								<i class="ti ti-user me-2"></i>{{ t("Profile") }}
-							</router-link>
-							<div class="dropdown-divider"></div>
-							<button type="button" class="dropdown-item stbl-menu-item text-danger" @click="logout">
-								<i class="ti ti-logout me-2"></i>{{ t("Log out") }}
-							</button>
-						</div>
+						</button>
 					</div>
 				</div>
 			</div>
 		</div>
 	</aside>
+
+	<Teleport to="body">
+		<div
+			v-if="userMenuOpen"
+			id="sidebar-user-menu"
+			ref="userMenuEl"
+			class="dropdown-menu show stbl-menu stbl-menu--nocheck"
+			:style="userMenuStyle"
+			role="menu"
+		>
+			<h6 class="dropdown-header">{{ t("Language") }}</h6>
+			<a
+				v-for="lng in LANGUAGES"
+				:key="lng.code"
+				href="#"
+				class="dropdown-item stbl-menu-item d-flex justify-content-between align-items-center"
+				role="menuitem"
+				@click.prevent="setLanguage(lng.code)"
+			>
+				<span>{{ lng.label }}</span>
+				<i v-if="lng.code === currentLanguage" class="ti ti-check text-primary"></i>
+			</a>
+			<div class="dropdown-divider"></div>
+			<h6 class="dropdown-header">{{ t("Tools") }}</h6>
+			<button
+				type="button"
+				class="dropdown-item stbl-menu-item"
+				role="menuitem"
+				:disabled="cbuLoading"
+				@click="downloadCbuRates"
+			>
+				<i class="ti me-2" :class="cbuLoading ? 'ti-loader-2 ti-spin' : 'ti-refresh'"></i>
+				{{ t("Download CBU exchange rates") }}
+			</button>
+			<div class="dropdown-divider"></div>
+			<router-link
+				to="/profile"
+				class="dropdown-item stbl-menu-item"
+				role="menuitem"
+				@click="closeUserMenu"
+			>
+				<i class="ti ti-user me-2"></i>{{ t("Profile") }}
+			</router-link>
+			<div class="dropdown-divider"></div>
+			<button
+				type="button"
+				class="dropdown-item stbl-menu-item text-danger"
+				role="menuitem"
+				@click="logout"
+			>
+				<i class="ti ti-logout me-2"></i>{{ t("Log out") }}
+			</button>
+		</div>
+	</Teleport>
 </template>
