@@ -33,3 +33,24 @@ None. Task 3's dashboard components are already complete; Task 4 does not
 depend on its API review fix. Both tasks currently touch `tender.py` and the
 behaviour test file, so commits are being serialized to preserve the review
 hunks.
+
+## Finance review follow-up
+
+- Finance totals now deduplicate invoice rows by invoice name, because one
+  Purchase or Sales Invoice can be linked to multiple deal orders.
+- AP, AR, paid, outstanding, and actual invoice margin now aggregate ERPNext
+  base-currency fields and return the company currency for display.
+- Finance now returns the planned profit from the existing tender bid-pricing
+  P&L and renders it next to actual invoice margin.
+
+Verification passed on 2026-07-24:
+
+```sh
+PYTHONPATH=$PWD python3 -m unittest \
+  stabler.tests.test_tender_workspace_spa \
+  stabler.tests.test_tender_dashboard_behavior -v
+```
+
+All 34 tests passed. The three Tender Workspace Vue SFCs also parse cleanly
+with `@vue/compiler-sfc`; `python3 -m py_compile` and `git diff --check` pass
+for the follow-up files.

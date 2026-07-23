@@ -599,6 +599,9 @@ def _document_row(row, date_field: str, link_field: str, linked_name: str) -> di
 		"status": row.get("status") or "",
 		"grand_total": flt(row.get("grand_total")),
 		"outstanding_amount": flt(row.get("outstanding_amount")),
+		"base_grand_total": flt(row.get("base_grand_total")),
+		"base_outstanding_amount": flt(row.get("base_outstanding_amount")),
+		"currency": row.get("currency") or "",
 		link_field: linked_name,
 	}
 
@@ -619,9 +622,9 @@ def _linked_document_rows(
 	"""
 	if not order_names:
 		return []
-	fields = ["name", date_field, "status", "grand_total"]
+	fields = ["name", date_field, "status", "grand_total", "base_grand_total", "currency"]
 	if include_outstanding:
-		fields.append("outstanding_amount")
+		fields.extend(["outstanding_amount", "base_outstanding_amount"])
 	parents = frappe.get_list(
 		parent_doctype,
 		filters={"company": company, "docstatus": ["<", 2]},
@@ -659,7 +662,7 @@ def _purchase_document_chain(deal: str, company: str) -> dict:
 	orders = frappe.get_list(
 		"Purchase Order",
 		filters={deal_field: deal, "company": company, "docstatus": ["<", 2]},
-		fields=["name", "transaction_date", "status", "grand_total"],
+		fields=["name", "transaction_date", "status", "grand_total", "base_grand_total", "currency"],
 		order_by="transaction_date asc, name asc",
 		limit_page_length=1000,
 	)
@@ -687,7 +690,7 @@ def _sales_document_chain(deal: str, company: str) -> dict:
 	orders = frappe.get_list(
 		"Sales Order",
 		filters={deal_field: deal, "company": company, "docstatus": ["<", 2]},
-		fields=["name", "transaction_date", "status", "grand_total"],
+		fields=["name", "transaction_date", "status", "grand_total", "base_grand_total", "currency"],
 		order_by="transaction_date asc, name asc",
 		limit_page_length=1000,
 	)
@@ -707,13 +710,36 @@ def _sales_document_chain(deal: str, company: str) -> dict:
 	}
 
 
-def _tender_finance_chain(purchase: dict, sales: dict) -> dict:
-	"""Derive AP, AR, paid, outstanding, and actual margin from permitted rows."""
-	ap_total = sum(flt(row.get("grand_total")) for row in purchase["invoices"])
-	ap_outstanding = sum(flt(row.get("outstanding_amount")) for row in purchase["invoices"])
-	ar_total = sum(flt(row.get("grand_total")) for row in sales["invoices"])
-	ar_outstanding = sum(flt(row.get("outstanding_amount")) for row in sales["invoices"])
+def _unique_invoice_rows(rows: list[dict]) -> list[dict]:
+	"""Keep one invoice total when its item links span multiple deal orders."""
+	seen: set[str] = set()
+	unique: list[dict] = []
+	for row in rows:
+		name = str(row.get("name") or "")
+		if name and name in seen:
+			continue
+		if name:
+			seen.add(name)
+		unique.append(row)
+	return unique
+
+
+def _tender_finance_chain(
+	purchase: dict,
+	sales: dict,
+	*,
+	currency: str,
+	planned_margin: float = 0.0,
+) -> dict:
+	"""Derive base-currency AP, AR, paid, outstanding, and tender margins."""
+	purchase_invoices = _unique_invoice_rows(purchase["invoices"])
+	sales_invoices = _unique_invoice_rows(sales["invoices"])
+	ap_total = sum(flt(row.get("base_grand_total")) for row in purchase_invoices)
+	ap_outstanding = sum(flt(row.get("base_outstanding_amount")) for row in purchase_invoices)
+	ar_total = sum(flt(row.get("base_grand_total")) for row in sales_invoices)
+	ar_outstanding = sum(flt(row.get("base_outstanding_amount")) for row in sales_invoices)
 	return {
+		"currency": currency,
 		"ap_total": ap_total,
 		"ap_outstanding": ap_outstanding,
 		"ap_paid": ap_total - ap_outstanding,
@@ -721,6 +747,7 @@ def _tender_finance_chain(purchase: dict, sales: dict) -> dict:
 		"ar_outstanding": ar_outstanding,
 		"ar_paid": ar_total - ar_outstanding,
 		"actual_margin": ar_total - ap_total,
+		"planned_margin": flt(planned_margin),
 	}
 
 
@@ -739,9 +766,13 @@ def tender_workspace(deal: str) -> dict:
 		"sales_execution": _sales_document_chain(deal, company),
 	}
 	if _can_view_tender_finance():
+		bid_inputs, _ = _bid_inputs(deal, company)
+		planned_margin = _compute_bid_pnl(bid_inputs).get("profit")
 		out["finance"] = _tender_finance_chain(
 			out["purchase_execution"],
 			out["sales_execution"],
+			currency=out["overview"].get("currency") or "",
+			planned_margin=planned_margin,
 		)
 	return out
 

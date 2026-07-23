@@ -19,6 +19,14 @@ class TestTenderWorkspaceSpa(unittest.TestCase):
 		self.assertIn("router.replace", self.workspace)
 		self.assertNotIn("/app/", self.workspace)
 
+	def test_finance_tab_distinguishes_base_currency_and_planned_margin(self):
+		board = Path(__file__).parents[1].joinpath(
+			"public/js/pages/tender/PoControlBoard.vue"
+		).read_text()
+		self.assertIn("financeCurrency", board)
+		self.assertIn("finance.planned_margin", board)
+		self.assertIn('t("Planned")', board)
+
 
 if __name__ == "__main__":
 	unittest.main()

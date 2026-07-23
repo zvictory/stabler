@@ -104,6 +104,7 @@ const sourcing = computed(() => workspace.value?.sourcing || { rows: [] });
 const purchaseExecution = computed(() => workspace.value?.purchase_execution || { orders: [], receipts: [], invoices: [] });
 const salesExecution = computed(() => workspace.value?.sales_execution || { orders: [], deliveries: [], invoices: [] });
 const finance = computed(() => workspace.value?.finance || null);
+const financeCurrency = computed(() => finance.value?.currency || ccy.value);
 const allowedTabs = computed(() => finance.value ? ["overview", "vendor-po", "delivery", "finance"] : ["overview", "vendor-po", "delivery"]);
 const activeWorkspaceTab = computed(() => {
 	const requested = String(route.query.tab || "overview");
@@ -457,16 +458,21 @@ watch(() => route.query.deal, (d) => { if (d && d !== deal.value) { deal.value =
 					<div v-for="metric in [
 						{ label: t('Accounts payable'), value: finance.ap_total, outstanding: finance.ap_outstanding },
 						{ label: t('Accounts receivable'), value: finance.ar_total, outstanding: finance.ar_outstanding },
-					]" :key="metric.label" class="col-12 col-md-4">
+					]" :key="metric.label" class="col-12 col-md-6 col-xl-3">
 						<div class="card"><div class="card-body">
 							<div class="text-secondary small text-uppercase">{{ metric.label }}</div>
-							<div class="h3 font-monospace mb-1">{{ formatMoney(metric.value, ccy, user.language) }}</div>
-							<div class="small text-secondary">{{ t("Outstanding") }}: <span class="font-monospace">{{ formatMoney(metric.outstanding, ccy, user.language) }}</span></div>
+							<div class="h3 font-monospace mb-1">{{ formatMoney(metric.value, financeCurrency, user.language) }}</div>
+							<div class="small text-secondary">{{ t("Outstanding") }}: <span class="font-monospace">{{ formatMoney(metric.outstanding, financeCurrency, user.language) }}</span></div>
 						</div></div>
 					</div>
-					<div class="col-12 col-md-4"><div class="card"><div class="card-body">
+					<div class="col-12 col-md-6 col-xl-3"><div class="card"><div class="card-body">
+						<div class="text-secondary small text-uppercase">{{ t("Planned") }} {{ t("Margin") }}</div>
+						<div class="h3 font-monospace mb-1" :class="finance.planned_margin < 0 ? 'text-red' : 'text-green'">{{ formatMoney(finance.planned_margin, financeCurrency, user.language) }}</div>
+						<div class="small text-secondary">{{ t("Tender bid pricing") }}</div>
+					</div></div></div>
+					<div class="col-12 col-md-6 col-xl-3"><div class="card"><div class="card-body">
 						<div class="text-secondary small text-uppercase">{{ t("Actual invoice margin") }}</div>
-						<div class="h3 font-monospace mb-1" :class="finance.actual_margin < 0 ? 'text-red' : 'text-green'">{{ formatMoney(finance.actual_margin, ccy, user.language) }}</div>
+						<div class="h3 font-monospace mb-1" :class="finance.actual_margin < 0 ? 'text-red' : 'text-green'">{{ formatMoney(finance.actual_margin, financeCurrency, user.language) }}</div>
 						<div class="small text-secondary">{{ t("Purchase invoices versus sales invoices") }}</div>
 					</div></div></div>
 				</div>

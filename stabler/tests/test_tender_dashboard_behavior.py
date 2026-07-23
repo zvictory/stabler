@@ -175,11 +175,57 @@ class TestTenderDashboardBehaviour(unittest.TestCase):
 			patch.object(tender.frappe.db, "has_column", has_column),
 			patch.object(tender.frappe, "get_list", get_list),
 			patch.object(tender, "deal_intake", return_value={}),
+			patch.object(tender, "_bid_inputs", return_value=({}, {})),
+			patch.object(tender, "_compute_bid_pnl", return_value={"profit": 0}),
 		):
 			result = tender.tender_workspace("DEAL-1")
 
 		self.assertEqual(result["purchase_execution"]["invoices"][0]["purchase_order"], "PO-1")
 		self.assertEqual(result["sales_execution"]["invoices"][0]["sales_order"], "SO-1")
+
+	def test_workspace_finance_deduplicates_multi_order_invoices_in_base_currency(self):
+		db = _FakeDB()
+		tender = _load_tender(db, ["Accounts User"])
+
+		finance = tender._tender_finance_chain(
+			{
+				"invoices": [
+					{"name": "PINV-USD", "grand_total": 100, "outstanding_amount": 20, "base_grand_total": 1_300_000, "base_outstanding_amount": 260_000, "purchase_order": "PO-1"},
+					{"name": "PINV-USD", "grand_total": 100, "outstanding_amount": 20, "base_grand_total": 1_300_000, "base_outstanding_amount": 260_000, "purchase_order": "PO-2"},
+					{"name": "PINV-EUR", "grand_total": 200, "outstanding_amount": 0, "base_grand_total": 2_800_000, "base_outstanding_amount": 0, "purchase_order": "PO-3"},
+				],
+			},
+			{
+				"invoices": [
+					{"name": "SINV-USD", "grand_total": 500, "outstanding_amount": 50, "base_grand_total": 6_500_000, "base_outstanding_amount": 650_000, "sales_order": "SO-1"},
+					{"name": "SINV-USD", "grand_total": 500, "outstanding_amount": 50, "base_grand_total": 6_500_000, "base_outstanding_amount": 650_000, "sales_order": "SO-2"},
+				],
+			},
+			currency="UZS",
+		)
+
+		self.assertEqual(finance["currency"], "UZS")
+		self.assertEqual(finance["ap_total"], 4_100_000)
+		self.assertEqual(finance["ap_outstanding"], 260_000)
+		self.assertEqual(finance["ar_total"], 6_500_000)
+		self.assertEqual(finance["ar_outstanding"], 650_000)
+		self.assertEqual(finance["actual_margin"], 2_400_000)
+
+	def test_workspace_finance_exposes_planned_margin_from_bid_pricing(self):
+		db = _FakeDB({"DEAL-1": {}})
+		tender = _load_tender(db, ["Accounts User"])
+
+		with (
+			patch.object(tender, "deal_intake", return_value={"currency": "UZS"}),
+			patch.object(tender, "_purchase_document_chain", return_value={"orders": [], "receipts": [], "invoices": []}),
+			patch.object(tender, "_sales_document_chain", return_value={"orders": [], "deliveries": [], "invoices": []}),
+			patch.object(tender, "_bid_inputs", return_value=({}, {})),
+			patch.object(tender, "_compute_bid_pnl", return_value={"profit": 425_000}),
+		):
+			result = tender.tender_workspace("DEAL-1")
+
+		self.assertEqual(result["finance"]["planned_margin"], 425_000)
+		self.assertEqual(result["finance"]["currency"], "UZS")
 	def test_portfolio_progress_is_value_weighted(self):
 		db = _FakeDB()
 		tender = _load_tender(db, ["Sales Manager"])
