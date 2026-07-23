@@ -4662,3 +4662,12 @@ Advance containers to the invoice status,Konteynerlarni invoys holatiga ilgarila
 {count} container(s) could not be advanced.,{count} ta konteynerni ilgarilatib bo'lmadi.
 Containers advanced.,Konteynerlar ilgarilatildi.
 Containers could not be advanced.,Konteynerlarni ilgarilatib bo'lmadi.
+Control Tower,Boshqaruv markazi
+Vendor & PO,Yetkazib beruvchi va xarid buyurtmasi
+Weighted margin,Vaznli marja
+Execution flow,Ijro oqimi
+Purchase invoices,Xarid invoyslari
+Sales invoices,Savdo invoyslari
+Selected vendor,Tanlangan yetkazib beruvchi
+DN,DN
+SI,SI

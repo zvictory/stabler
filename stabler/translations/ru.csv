@@ -4668,3 +4668,12 @@ Advance containers to the invoice status,Продвинуть контейнер
 {count} container(s) could not be advanced.,{count} контейнер(ов) не удалось продвинуть.
 Containers advanced.,Контейнеры продвинуты.
 Containers could not be advanced.,Не удалось продвинуть контейнеры.
+Control Tower,Диспетчерский центр
+Vendor & PO,Поставщик и заказ на покупку
+Weighted margin,Взвешенная маржа
+Execution flow,Процесс исполнения
+Purchase invoices,Счета поставщиков
+Sales invoices,Счета покупателей
+Selected vendor,Выбранный поставщик
+DN,DN
+SI,SI

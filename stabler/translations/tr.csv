@@ -4657,3 +4657,12 @@ Advance containers to the invoice status,Konteynerleri fatura durumuna ilerlet
 {count} container(s) could not be advanced.,{count} konteyner ilerletilemedi.
 Containers advanced.,Konteynerler ilerletildi.
 Containers could not be advanced.,Konteynerler ilerletilemedi.
+Control Tower,Kontrol Merkezi
+Vendor & PO,Tedarikçi ve Satın Alma Siparişi
+Weighted margin,Ağırlıklı marj
+Execution flow,Yürütme akışı
+Purchase invoices,Satın alma faturaları
+Sales invoices,Satış faturaları
+Selected vendor,Seçili tedarikçi
+DN,DN
+SI,SI
