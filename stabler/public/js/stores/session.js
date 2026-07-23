@@ -64,10 +64,13 @@ export const useSession = defineStore("session", {
 			this.activeCompany = company;
 			this.tenderViews = [];
 			this.tenderViewsLoaded = false;
+			this._tenderViewsRequestCompany = null;
 			localStorage.setItem(STORAGE_KEY, company);
 			try {
 				const r = await orgApi.switchCompany(company);
+				if (this.activeCompany !== company) return;
 				if (r && r.modules) this.modules = r.modules;
+				await this.ensureTenderViews();
 			} catch (e) {
 				/* Non-fatal: backend default sync is best-effort. */
 			}
@@ -99,10 +102,28 @@ export const useSession = defineStore("session", {
 		async ensureTenderViews() {
 			if (!this.canAccessModule("tender")) return [];
 			if (this.tenderViewsLoaded) return this.tenderViews;
-			const result = await call("stabler.api.tender.tender_views", {});
-			this.tenderViews = Array.isArray(result?.views) ? result.views : [];
-			this.tenderViewsLoaded = true;
-			return this.tenderViews;
+			const company = this.activeCompany;
+			if (this._tenderViewsPromise && this._tenderViewsRequestCompany === company) {
+				return this._tenderViewsPromise;
+			}
+			const request = call("stabler.api.tender.tender_views", {})
+				.then((result) => {
+					const views = Array.isArray(result?.views) ? result.views : [];
+					if (this.activeCompany === company) {
+						this.tenderViews = views;
+						this.tenderViewsLoaded = true;
+					}
+					return views;
+				})
+				.finally(() => {
+					if (this._tenderViewsPromise === request) {
+						this._tenderViewsPromise = null;
+						this._tenderViewsRequestCompany = null;
+					}
+				});
+			this._tenderViewsPromise = request;
+			this._tenderViewsRequestCompany = company;
+			return request;
 		},
 		setupRehydration() {
 			document.addEventListener("visibilitychange", () => {
@@ -110,6 +131,7 @@ export const useSession = defineStore("session", {
 					this.rolesLoaded = false;
 					this.tenderViews = [];
 					this.tenderViewsLoaded = false;
+					this._tenderViewsRequestCompany = null;
 					this.ensureBoot().then(() => this.ensureTenderViews());
 				}
 			});
