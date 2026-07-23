@@ -16,6 +16,7 @@ _SOURCES = (
 	_ROOT / "public/js/pages/tender/LogistBoard.vue",
 	_ROOT / "public/js/pages/tender/TenderTrendChart.vue",
 	_ROOT / "public/js/pages/tender/TenderExecutionFlow.vue",
+	_ROOT / "public/js/pages/tender/TenderDocumentChain.vue",
 	_ROOT / "public/js/pages/tender/TenderPortfolioPreview.vue",
 	_ROOT / "public/js/components/Sidebar.vue",
 	_ROOT / "public/js/pages/tender/TenderNav.vue",

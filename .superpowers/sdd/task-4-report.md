@@ -54,3 +54,22 @@ PYTHONPATH=$PWD python3 -m unittest \
 All 34 tests passed. The three Tender Workspace Vue SFCs also parse cleanly
 with `@vue/compiler-sfc`; `python3 -m py_compile` and `git diff --check` pass
 for the follow-up files.
+
+## i18n follow-up
+
+- Added `TenderDocumentChain.vue` to the Tender Dashboard i18n source scan.
+- Added nonempty `Purchase execution`, `Sales execution`, `Sales order`, and
+  `No linked documents` translations in en, ru, uz, uzc, and tr.
+
+Verification passed on 2026-07-24:
+
+```sh
+PYTHONPATH=$PWD python3 -m unittest \
+  stabler.tests.test_tender_dashboard_i18n \
+  stabler.tests.test_tender_workspace_spa \
+  stabler.tests.test_tender_dashboard_behavior -v
+```
+
+All 38 tests passed. `TenderDocumentChain.vue` also parses cleanly with
+`@vue/compiler-sfc`, and `git diff --check` passes for the i18n follow-up
+files.
