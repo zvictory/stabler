@@ -2,18 +2,13 @@
 // Role-aware sub-nav for the tender module: shows only the windows the current
 // user's roles allow (director / sourcing / declarant / logist), plus the shared
 // board surfaces. Fetches the permitted views once.
-import { onMounted, ref } from "vue";
-import { call } from "../../api/client.js";
+import { onMounted } from "vue";
+import { useSession } from "../../stores/session.js";
 import { t } from "../../composables/i18n.js";
 
-const views = ref([]);
-onMounted(async () => {
-	try {
-		const r = await call("stabler.api.tender.tender_views", {});
-		views.value = r?.views || [];
-	} catch { /* nav is best-effort */ }
-});
-const can = (v) => views.value.includes(v);
+const session = useSession();
+const can = (view) => session.tenderViews.includes(view);
+onMounted(() => session.ensureTenderViews());
 </script>
 
 <template>
@@ -27,7 +22,7 @@ const can = (v) => views.value.includes(v);
 		<router-link v-if="can('sourcing')" to="/tender/my-tenders" class="btn btn-outline-secondary btn-sm" active-class="btn-primary">
 			<i class="ti ti-list-check me-1"></i>{{ t("My tenders") }}
 		</router-link>
-		<router-link to="/tender/po-control" class="btn btn-outline-secondary btn-sm" active-class="btn-primary">
+		<router-link v-if="can('sourcing')" to="/tender/po-control" class="btn btn-outline-secondary btn-sm" active-class="btn-primary">
 			<i class="ti ti-clipboard-check me-1"></i>{{ t("Tender PO control") }}
 		</router-link>
 		<router-link v-if="can('declarant')" to="/tender/customs" class="btn btn-outline-secondary btn-sm" active-class="btn-primary">

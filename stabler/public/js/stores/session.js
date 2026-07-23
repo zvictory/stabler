@@ -27,6 +27,8 @@ export const useSession = defineStore("session", {
 		// boot(). Null = unknown (pre-boot); treat as hidden until confirmed.
 		costVisible: typeof boot.cost_visible === "boolean" ? boot.cost_visible : null,
 		rolesLoaded: Array.isArray(boot.roles) && boot.roles.length > 0,
+		tenderViews: [],
+		tenderViewsLoaded: false,
 	}),
 	getters: {
 		currentCompany(state) {
@@ -60,6 +62,8 @@ export const useSession = defineStore("session", {
 		async setCompany(company) {
 			if (!company || company === this.activeCompany) return;
 			this.activeCompany = company;
+			this.tenderViews = [];
+			this.tenderViewsLoaded = false;
 			localStorage.setItem(STORAGE_KEY, company);
 			try {
 				const r = await orgApi.switchCompany(company);
@@ -92,11 +96,21 @@ export const useSession = defineStore("session", {
 			})();
 			return this._bootPromise;
 		},
+		async ensureTenderViews() {
+			if (!this.canAccessModule("tender")) return [];
+			if (this.tenderViewsLoaded) return this.tenderViews;
+			const result = await call("stabler.api.tender.tender_views", {});
+			this.tenderViews = Array.isArray(result?.views) ? result.views : [];
+			this.tenderViewsLoaded = true;
+			return this.tenderViews;
+		},
 		setupRehydration() {
 			document.addEventListener("visibilitychange", () => {
 				if (document.visibilityState === "visible") {
 					this.rolesLoaded = false;
-					this.ensureBoot();
+					this.tenderViews = [];
+					this.tenderViewsLoaded = false;
+					this.ensureBoot().then(() => this.ensureTenderViews());
 				}
 			});
 		},

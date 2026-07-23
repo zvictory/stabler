@@ -1,5 +1,5 @@
 <script setup>
-import { computed, nextTick, onBeforeUnmount, ref, watch } from "vue";
+import { computed, nextTick, onBeforeUnmount, onMounted, ref, watch } from "vue";
 import { useRoute } from "vue-router";
 import { useSession } from "../stores/session.js";
 import { orgApi } from "../api/organization.js";
@@ -27,6 +27,23 @@ const route = useRoute();
 const session = useSession();
 
 const isActive = (path) => computed(() => route.path === path || route.path.startsWith(path + "/"));
+
+const tenderChildren = computed(() => [
+	{ view: "director", path: "/tender/director", label: t("Control Tower") },
+	{ view: "sourcing", path: "/tender/my-tenders", label: t("My tenders") },
+	{ view: "sourcing", path: "/tender/po-control", label: t("Vendor & PO") },
+	{ view: "declarant", path: "/tender/customs", label: t("Customs queue") },
+	{ view: "logist", path: "/tender/logistics", label: t("Logistics") },
+].filter((item) => session.tenderViews.includes(item.view)));
+const tenderExpanded = ref(false);
+const tenderActive = computed(() => route.path === "/tender" || route.path.startsWith("/tender/"));
+const isTenderExpanded = computed(() => tenderActive.value || tenderExpanded.value);
+
+function toggleTender() {
+	tenderExpanded.value = !tenderExpanded.value;
+}
+
+onMounted(() => session.ensureTenderViews());
 
 const items = computed(() => {
 	const list = [
@@ -66,7 +83,7 @@ const sections = computed(() => {
 	const groups = [
 		{ label: "", names: ["dashboard"] },
 		{ label: t("Commerce"), names: ["pos", "sales", "crm", "sfa", "marketing"] },
-		{ label: t("Operations"), names: ["purchasing", "imports", "inventory", "manufacturing", "service", "bpm"] },
+		{ label: t("Operations"), names: ["purchasing", "imports", "tender", "inventory", "manufacturing", "service", "bpm"] },
 		{ label: t("Finance"), names: ["money", "remittance", "installment"] },
 		{ label: t("Company"), names: ["hr", "reports", "admin"] },
 	];
@@ -222,12 +239,32 @@ async function downloadCbuRates() {
 							v-for="item in section.items"
 							:key="item.name"
 							class="nav-item"
-							:class="{ active: isActive(item.path).value }"
+							:class="{ active: item.name === 'tender' ? tenderActive : isActive(item.path).value }"
 						>
 							<router-link :to="item.path" class="nav-link">
 								<span class="nav-link-icon"><i class="ti" :class="item.icon"></i></span>
 								<span class="nav-link-title">{{ item.label }}</span>
 							</router-link>
+							<button
+								v-if="item.name === 'tender'"
+								type="button"
+								class="btn btn-sm btn-ghost-secondary ms-auto"
+								:aria-label="isTenderExpanded ? t('Collapse Tender navigation') : t('Expand Tender navigation')"
+								:aria-expanded="isTenderExpanded"
+								aria-controls="sidebar-tender-children"
+								@click="toggleTender"
+							>
+								<i class="ti" :class="isTenderExpanded ? 'ti-chevron-down' : 'ti-chevron-right'"></i>
+							</button>
+							<ul
+								v-if="item.name === 'tender' && isTenderExpanded"
+								id="sidebar-tender-children"
+								class="nav nav-submenu"
+							>
+								<li v-for="child in tenderChildren" :key="child.path" class="nav-item">
+									<router-link :to="child.path" class="nav-link">{{ child.label }}</router-link>
+								</li>
+							</ul>
 						</li>
 					</template>
 				</ul>
