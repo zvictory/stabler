@@ -642,6 +642,10 @@ def _linked_document_rows(
 		filters={"parent": ["in", parent_names], link_field: ["in", order_names]},
 		fields=["parent", link_field],
 		limit_page_length=10000,
+		# Child rows are link evidence only. Parent documents were already
+		# company-scoped and permission-checked above; applying the child
+		# DocType permission query here can reject valid dashboard reads.
+		ignore_permissions=True,
 	)
 	linked_by_parent: dict[str, list[str]] = {}
 	for link in links:
