@@ -4646,3 +4646,15 @@ Advance containers to the invoice status,Advance containers to the invoice statu
 {count} container(s) could not be advanced.,{count} container(s) could not be advanced.
 Containers advanced.,Containers advanced.
 Containers could not be advanced.,Containers could not be advanced.
+Lot,Lot
+No tender activity for this period.,No tender activity for this period.
+No tender rows for this period.,No tender rows for this period.
+PO billing,PO billing
+PO receipt,PO receipt
+Progress,Progress
+SO billing,SO billing
+SO delivery,SO delivery
+Spread,Spread
+Tender execution flow,Tender execution flow
+Three-month tender conversion,Three-month tender conversion
+Won value,Won value

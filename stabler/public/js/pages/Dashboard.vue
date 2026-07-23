@@ -118,6 +118,17 @@ function periodDates(period) {
 	};
 }
 
+function trendDates(period) {
+	const [year, month] = String(period || "").split("-").map(Number);
+	if (!year || !month) return {};
+	const end = new Date(year, month, 0);
+	const start = new Date(year, month - 3, 1);
+	return {
+		from_date: `${start.getFullYear()}-${String(start.getMonth() + 1).padStart(2, "0")}-01`,
+		to_date: `${end.getFullYear()}-${String(end.getMonth() + 1).padStart(2, "0")}-${String(end.getDate()).padStart(2, "0")}`,
+	};
+}
+
 async function loadTender() {
 	if (!activeCompany.value) {
 		tenderLoading.value = false;
@@ -126,9 +137,12 @@ async function loadTender() {
 	tenderLoading.value = true;
 	tenderError.value = null;
 	try {
+		const trendRange = trendDates(tenderPeriod.value);
 		tenderData.value = await call("stabler.api.tender.tender_dashboard", {
 			company: activeCompany.value,
 			...periodDates(tenderPeriod.value),
+			trend_from_date: trendRange.from_date,
+			trend_to_date: trendRange.to_date,
 		});
 	} catch (e) {
 		tenderError.value = e?.response?.data?.exception || e?.message || t("Tender dashboard could not be loaded.");

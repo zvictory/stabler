@@ -87,6 +87,12 @@ class TestTenderDashboardSpaContract(unittest.TestCase):
 		self.assertIn("prefers-reduced-motion", source)
 		self.assertNotIn("/app/", source)
 
+	def test_dashboard_requests_a_three_month_trend_without_widening_kpis(self):
+		source = _read(_DASHBOARD)
+		self.assertIn("function trendDates(period)", source)
+		self.assertIn("trend_from_date: trendRange.from_date", source)
+		self.assertIn("trend_to_date: trendRange.to_date", source)
+
 	def test_p1_components_preserve_visual_and_keyboard_accessibility(self):
 		trend_source = _read(_TREND_CHART)
 		self.assertIn('<svg role="img"', trend_source)
@@ -100,6 +106,8 @@ class TestTenderDashboardSpaContract(unittest.TestCase):
 		self.assertIn("@media (max-width", execution_source)
 
 		portfolio_source = _read(_PORTFOLIO_PREVIEW)
+		self.assertIn(':data-label="t(\'Tender\')"', portfolio_source)
+		self.assertIn(':data-label="t(\'Progress\')"', portfolio_source)
 		self.assertIn('tabindex="0"', portfolio_source)
 		self.assertIn("@keydown.enter", portfolio_source)
 		self.assertIn("@keydown.space.prevent", portfolio_source)

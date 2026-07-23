@@ -4605,6 +4605,19 @@ Tender activity is empty for this period,Бу даврда тендер фаол
 Tender control center,Тендер бошқарув маркази
 Tender dashboard could not be loaded.,Тендер панелини юклаб бўлмади.
 Tender operations,Тендер операциялари
+Lot,Лот
+Month,Ой
+No tender activity for this period.,Бу даврда тендер фаоллиги йўқ.
+No tender rows for this period.,Бу давр учун тендер қаторлари йўқ.
+PO billing,PO ҳисоб-китоби
+PO receipt,PO қабул қилиш
+Progress,Жараён
+SO billing,SO ҳисоб-китоби
+SO delivery,SO етказиб бериш
+Spread,Фарқ
+Tender execution flow,Тендер ижро оқими
+Three-month tender conversion,Уч ойлик тендер конверсияси
+Won value,Ютилган тендерлар қиймати
 Unverified,Тасдиқланмаган
 Unverified history,Тасдиқланмаган тарих
 Yetkazilgan SO,Етказилган SO

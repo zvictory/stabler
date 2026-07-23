@@ -25,11 +25,11 @@ const percent = (value) => Math.max(0, Math.min(100, Number(value) || 0));
 			<tbody>
 				<tr v-if="!displayRows.length"><td colspan="5" class="text-center text-secondary py-4">{{ t("No tender rows for this period.") }}</td></tr>
 				<tr v-for="row in displayRows" :key="row.deal" tabindex="0" class="portfolio-row" @click="$emit('open-deal', row.deal)" @keydown.enter="$emit('open-deal', row.deal)" @keydown.space.prevent="$emit('open-deal', row.deal)">
-					<td data-label="Tender"><div class="fw-semibold">{{ row.label || row.deal }}</div><div v-if="row.lot_no" class="small text-secondary">{{ t("Lot") }} {{ row.lot_no }}</div></td>
-					<td data-label="Status"><span class="badge bg-azure-lt">{{ row.status || "—" }}</span></td>
-					<td data-label="Progress"><div v-for="field in progressFields" :key="field.key" class="progress-line"><span>{{ t(field.label) }}</span><div class="progress flex-grow-1" :aria-label="t(field.label)" role="progressbar" :aria-valuenow="percent(row[field.key])" aria-valuemin="0" aria-valuemax="100"><div class="progress-bar" :style="{ width: `${percent(row[field.key])}%` }"></div></div><span class="font-monospace">{{ percent(row[field.key]) }}%</span></div></td>
-					<td data-label="Spread" class="text-end font-monospace">{{ formatMoney(row.spread) }}</td>
-					<td data-label="Risk"><span class="badge" :class="row.risk ? 'bg-red-lt text-red' : 'bg-green-lt text-green'">{{ row.risk || t("On track") }}</span></td>
+					<td :data-label="t('Tender')"><div class="fw-semibold">{{ row.label || row.deal }}</div><div v-if="row.lot_no" class="small text-secondary">{{ t("Lot") }} {{ row.lot_no }}</div></td>
+					<td :data-label="t('Status')"><span class="badge bg-azure-lt">{{ row.status || "—" }}</span></td>
+					<td :data-label="t('Progress')"><div v-for="field in progressFields" :key="field.key" class="progress-line"><span>{{ t(field.label) }}</span><div class="progress flex-grow-1" :aria-label="t(field.label)" role="progressbar" :aria-valuenow="percent(row[field.key])" aria-valuemin="0" aria-valuemax="100"><div class="progress-bar" :style="{ width: `${percent(row[field.key])}%` }"></div></div><span class="font-monospace">{{ percent(row[field.key]) }}%</span></div></td>
+					<td :data-label="t('Spread')" class="text-end font-monospace">{{ formatMoney(row.spread) }}</td>
+					<td :data-label="t('Risk')"><span class="badge" :class="row.risk ? 'bg-red-lt text-red' : 'bg-green-lt text-green'">{{ row.risk || t("On track") }}</span></td>
 				</tr>
 			</tbody>
 		</table>

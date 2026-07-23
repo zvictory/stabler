@@ -208,6 +208,25 @@ class TestTenderDashboardBehaviour(unittest.TestCase):
 			],
 		)
 
+	def test_dashboard_can_request_three_month_trend_without_widening_kpis(self):
+		db = _FakeDB(
+			{
+				"DEAL-MAY": {"assigned_to": "source@example.com", "submitted_at": "2026-05-08", "submitted_by": "source@example.com"},
+				"DEAL-JULY": {"assigned_to": "source@example.com", "submitted_at": "2026-07-08", "submitted_by": "source@example.com"},
+			},
+		)
+		tender = _load_tender(db, ["Sales User"])
+
+		with patch.object(tender, "_tender_deal_names", return_value={"DEAL-MAY", "DEAL-JULY"}):
+			payload = tender.tender_dashboard(
+				"Test Company", "2026-07-01", "2026-07-31", "2026-05-01", "2026-07-31",
+			)
+
+		self.assertEqual(payload["period"], {"from_date": "2026-07-01", "to_date": "2026-07-31"})
+		self.assertEqual(payload["trend_period"], {"from_date": "2026-05-01", "to_date": "2026-07-31"})
+		self.assertEqual([row["month"] for row in payload["trend"]], ["2026-05", "2026-06", "2026-07"])
+		self.assertEqual(payload["acquisition"]["submitted"], 1)
+
 	def test_missing_crm_doctype_returns_no_tender_candidates(self):
 		db = _FakeDB()
 		tender = _load_tender(db, ["Sales Manager"])

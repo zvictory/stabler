@@ -4618,6 +4618,29 @@ Tender activity is empty for this period,Bu dönemde ihale hareketi yok
 Tender control center,İhale kontrol merkezi
 Tender dashboard could not be loaded.,İhale panosu yüklenemedi.
 Tender operations,İhale operasyonları
+Aniqlangan,Belirlendi
+E'tibor talab qiladi,Dikkat gerektirir
+Ijro oqimi,Yürütme akışı
+Lot,Lot
+Mening ishlarim,İşlerim
+Month,Ay
+No tender activity for this period.,Bu dönemde ihale hareketi yok.
+No tender rows for this period.,Bu dönem için ihale satırı yok.
+PO billing,Satın alma siparişi faturalaması
+PO receipt,Satın alma siparişi teslim alımı
+Progress,İlerleme
+Qabul qilingan PO,Teslim alınan PO
+SO billing,Satış siparişi faturalaması
+SO delivery,Satış siparişi teslimatı
+Spread,Fark
+Tayyor,Hazır
+Tekshirilmagan tarix,Doğrulanmamış geçmiş
+Tender execution flow,İhale yürütme akışı
+Three-month tender conversion,Üç aylık ihale dönüşümü
+Won value,Kazanılan ihale değeri
+Yetkazilgan SO,Teslim edilen SO
+Yuborilgan,Gönderildi
+Yutilgan,Kazanıldı
 Try again,Tekrar dene
 Unverified,Doğrulanmamış
 Unverified history,Doğrulanmamış geçmiş

@@ -14,6 +14,9 @@ _SOURCES = (
 	_ROOT / "public/js/pages/tender/MyTenders.vue",
 	_ROOT / "public/js/pages/tender/DeclarantQueue.vue",
 	_ROOT / "public/js/pages/tender/LogistBoard.vue",
+	_ROOT / "public/js/pages/tender/TenderTrendChart.vue",
+	_ROOT / "public/js/pages/tender/TenderExecutionFlow.vue",
+	_ROOT / "public/js/pages/tender/TenderPortfolioPreview.vue",
 )
 _LITERAL_T = re.compile(r"\bt\(\s*(['\"])(?P<source>(?:\\.|(?!\1).)*?)\1")
 
@@ -25,7 +28,7 @@ class TestTenderDashboardTranslations(unittest.TestCase):
 			for path in _SOURCES
 			for match in _LITERAL_T.finditer(path.read_text(encoding="utf-8"))
 		}
-		for language in ("en", "ru", "uz", "uzc"):
+		for language in ("en", "ru", "uz", "uzc", "tr"):
 			with self.subTest(language=language):
 				with (_ROOT / "translations" / f"{language}.csv").open(encoding="utf-8", newline="") as source:
 					translations = {row[0]: row[1] for row in csv.reader(source) if len(row) >= 2}

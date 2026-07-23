@@ -1890,7 +1890,7 @@ def _portfolio_deadlines(intake: dict, pos, sos, today_d) -> dict:
 
 
 @frappe.whitelist()
-def tender_dashboard(company: str, from_date=None, to_date=None) -> dict:
+def tender_dashboard(company: str, from_date=None, to_date=None, trend_from_date=None, trend_to_date=None) -> dict:
 	"""Tender lifecycle and execution KPIs for the active company and role.
 
 	Only records the caller can read are considered.  In particular, an old deal
@@ -1904,6 +1904,7 @@ def tender_dashboard(company: str, from_date=None, to_date=None) -> dict:
 	if not views:
 		frappe.throw(_("Not permitted"), frappe.PermissionError)
 	start, end = _dashboard_period(from_date, to_date)
+	trend_start, trend_end = _dashboard_period(trend_from_date or start, trend_to_date or end)
 	user = frappe.session.user
 	oversight = _is_tender_oversight(user)
 	can_view_finance = _can_view_tender_finance(user)
@@ -2095,6 +2096,7 @@ def tender_dashboard(company: str, from_date=None, to_date=None) -> dict:
 	attention.sort(key=lambda item: (0 if item["severity"] == "risk" else 1, item.get("days_left", 9999)))
 	out = {
 		"period": {"from_date": str(start), "to_date": str(end)},
+		"trend_period": {"from_date": str(trend_start), "to_date": str(trend_end)},
 		"role_scope": {
 			"views": views, "oversight": oversight,
 			"acquisition_scope": acquisition_scope, "execution_scope": execution_scope,
@@ -2102,7 +2104,7 @@ def tender_dashboard(company: str, from_date=None, to_date=None) -> dict:
 		},
 		"acquisition": acquisition,
 		"execution": execution,
-		"trend": _monthly_trend(trend_events, start, end),
+		"trend": _monthly_trend(trend_events, trend_start, trend_end),
 		"portfolio_preview": portfolio_preview,
 		"attention": {"count": len(attention), "items": attention[:100]},
 		"my_work": {

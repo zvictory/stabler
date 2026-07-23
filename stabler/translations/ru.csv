@@ -4611,6 +4611,19 @@ Tender activity is empty for this period,За этот период нет те�
 Tender control center,Центр управления тендерами
 Tender dashboard could not be loaded.,Не удалось загрузить панель тендеров.
 Tender operations,Тендерные операции
+Lot,Лот
+Month,Месяц
+No tender activity for this period.,Нет тендерной активности за этот период.
+No tender rows for this period.,Нет строк тендеров за этот период.
+PO billing,Выставление счетов по PO
+PO receipt,Приёмка PO
+Progress,Прогресс
+SO billing,Выставление счетов по SO
+SO delivery,Поставка по SO
+Spread,Разница
+Tender execution flow,Поток исполнения тендера
+Three-month tender conversion,Конверсия тендеров за три месяца
+Won value,Сумма выигранных тендеров
 Unverified,Не подтверждено
 Unverified history,Непроверенная история
 Yetkazilgan SO,Поставленные заказы на продажу
