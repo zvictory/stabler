@@ -245,6 +245,7 @@ function toPayload(m) {
 			custom_pieces: r.custom_pieces ?? undefined,
 		}));
 	return {
+		company: activeCompany.value,
 		supplier: m.supplier,
 		posting_date: m.posting_date,
 		due_date: m.due_date || undefined,

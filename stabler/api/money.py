@@ -2664,6 +2664,18 @@ def submit_expense_entry(
 		else:
 			base_shares.append(_round2(base_total - running))
 
+	# Guard: a line with a positive account-currency amount must never end up
+	# with a zero base_share — small amounts can round to 0.00 against a large
+	# exchange rate, and ERPNext rejects a debit=0 row. Bump such a line to the
+	# smallest bookable unit and take it from the largest share, so the shares
+	# still sum exactly to base_total (debit total == credit total).
+	for i, row in enumerate(cleaned):
+		if row["amount"] > 0 and base_shares[i] == 0:
+			base_shares[i] = 0.01
+			donor = max(range(len(base_shares)), key=lambda k: base_shares[k])
+			if donor != i:
+				base_shares[donor] = _round2(base_shares[donor] - 0.01)
+
 	for row, base_share in zip(cleaned, base_shares):
 		acc_ccy = row["account_currency"]
 		if acc_ccy == base_currency:
