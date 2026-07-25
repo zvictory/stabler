@@ -34,7 +34,8 @@ const loading = ref(false);
 const error = ref("");
 const rows = ref([]);
 const directInvoiceOpen = ref(false);
-const isMsaCompany = computed(() => String(activeCompany.value || "").toUpperCase().includes("MSA"));
+// Direct (order-less) sales invoices are an imports-module capability.
+const directInvoiceEnabled = computed(() => session.canAccessModule("imports"));
 
 const currency = computed(
 	() =>
@@ -106,7 +107,7 @@ watch(activeCompany, load);
 			v-model="search"
 			:placeholder="t('Invoice number or customer…')"
 			:count="totalCount"
-			:primary-label="isMsaCompany ? t('New Invoice') : ''"
+			:primary-label="directInvoiceEnabled ? t('New Invoice') : ''"
 			primary-icon="ti-plus"
 			@search="load"
 			@primary-click="router.push('/sales/invoices/new')"
@@ -144,10 +145,10 @@ watch(activeCompany, load);
 			accentIcon="ti-arrow-right"
 			tone="primary"
 			:title='t("No invoices in this range")'
-			:subtitle="isMsaCompany ? t('Create a new Sales Invoice directly or from a Sales Order.') : t('Sales Invoices are created from submitted Sales Orders. Open a Sales Order and use Create Invoice.')"
+			:subtitle="directInvoiceEnabled ? t('Create a new Sales Invoice directly or from a Sales Order.') : t('Sales Invoices are created from submitted Sales Orders. Open a Sales Order and use Create Invoice.')"
 		>
 			<template #actions>
-				<button v-if="isMsaCompany" type="button" class="btn btn-primary btn-sm" @click="router.push('/sales/invoices/new')">
+				<button v-if="directInvoiceEnabled" type="button" class="btn btn-primary btn-sm" @click="router.push('/sales/invoices/new')">
 					<i class="ti ti-plus me-1"></i>{{ t("Create New Invoice") }}
 				</button>
 				<router-link v-else to="/sales/orders" class="btn btn-outline-secondary btn-sm">

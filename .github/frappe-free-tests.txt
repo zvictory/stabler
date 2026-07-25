@@ -1,16 +1,11 @@
 # Test modules under stabler/tests/ that run WITHOUT a bench (no MariaDB,
 # no Redis, no site). CI job 'lint-and-unit' runs exactly this list as its
-# fast gate. Verified 2026-07-25: 81 of 99 modules.
+# fast gate. Verified 2026-07-26: 84 of 99 modules.
 #
 # Adding a test? If it imports frappe only indirectly (or not at all), verify
 # with:  python3 -m unittest stabler.tests.<module>
 # and append it here. Bench-dependent tests need no entry -- job 'bench-tests'
 # picks them up via 'bench run-tests --app stabler'.
-#
-# Known RED (deliberately excluded, see repo issues):
-#   test_company_scope_guard      - vendor_category endpoints lack _assert_company_scope
-#   test_tender_dashboard_i18n    - untranslated tr strings
-#   test_tender_dashboard_spa     - missing v-if="tenderEnabled" gate
 
 stabler.tests.test_advance_aging
 stabler.tests.test_agreement_receivables_contract
@@ -28,6 +23,7 @@ stabler.tests.test_budget
 stabler.tests.test_ci_logistics_workspace_source
 stabler.tests.test_ci_to_pinv
 stabler.tests.test_commercial_invoice_transitions
+stabler.tests.test_company_scope_guard
 stabler.tests.test_container_arrival_hook
 stabler.tests.test_crm_deal_company_scope_patch
 stabler.tests.test_customer_hierarchy
@@ -81,6 +77,8 @@ stabler.tests.test_sod_rules
 stabler.tests.test_stock_recon
 stabler.tests.test_tender_dashboard
 stabler.tests.test_tender_dashboard_behavior
+stabler.tests.test_tender_dashboard_i18n
+stabler.tests.test_tender_dashboard_spa
 stabler.tests.test_tender_landed_vat
 stabler.tests.test_tender_sidebar_navigation
 stabler.tests.test_tender_workspace_spa

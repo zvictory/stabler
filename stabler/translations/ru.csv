@@ -4713,3 +4713,5 @@ Auto-filled {count} remaining item lines from Proforma Invoice {ref},Автоз�
 No remaining (unshipped) items found on this Proforma Invoice.,В этой проформе не осталось неотгруженных позиций.
 Remaining quantities could not be calculated. Loaded the original Proforma quantities. Please check them.,Не удалось рассчитать остатки. Загружены исходные количества проформы. Проверьте их.
 Could not fetch available PI lines.,Не удалось загрузить доступные строки проформы.
+Commerce & imports,Коммерция и импорт
+Imports control center,Центр управления импортом

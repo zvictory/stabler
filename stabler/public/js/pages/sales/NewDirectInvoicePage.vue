@@ -25,7 +25,8 @@ const error = ref("");
 const isDirty = ref(false);
 
 // Strict Tenant Guard: Direct Sales Invoice is ONLY allowed for MSA
-const isMsaCompany = computed(() => String(activeCompany.value || "").toUpperCase().includes("MSA"));
+// Direct (order-less) sales invoices are an imports-module capability.
+const directInvoiceEnabled = computed(() => session.canAccessModule("imports"));
 
 const customer = ref(String(route.query.new_for || route.query.customer || ""));
 const postingDate = ref(todayIso());
@@ -242,7 +243,7 @@ const totalAmount = computed(() => {
 });
 
 async function saveInvoice(submitNow = false) {
-	if (!isMsaCompany.value) {
+	if (!directInvoiceEnabled.value) {
 		error.value = t("Direct Sales Invoicing is only enabled for MSA. For this company, Sales Invoices must be created from a submitted Sales Order.");
 		return;
 	}
@@ -302,11 +303,11 @@ async function saveInvoice(submitNow = false) {
 				<button type="button" class="btn btn-light" :disabled="saving" @click="router.push('/sales/invoices')">
 					{{ t("Cancel") }}
 				</button>
-				<button type="button" class="btn btn-dark px-3" :disabled="saving || !isMsaCompany" @click="saveInvoice(false)">
+				<button type="button" class="btn btn-dark px-3" :disabled="saving || !directInvoiceEnabled" @click="saveInvoice(false)">
 					<i v-if="saving" class="spinner-border spinner-border-sm me-1"></i>
 					<i v-else class="ti ti-file me-1"></i>{{ t("Save Draft") }}
 				</button>
-				<button type="button" class="btn btn-primary px-3" :disabled="saving || !isMsaCompany" @click="saveInvoice(true)">
+				<button type="button" class="btn btn-primary px-3" :disabled="saving || !directInvoiceEnabled" @click="saveInvoice(true)">
 					<i v-if="saving" class="spinner-border spinner-border-sm me-1"></i>
 					<i v-else class="ti ti-check me-1"></i>{{ t("Save & Submit") }}
 				</button>
@@ -314,7 +315,7 @@ async function saveInvoice(submitNow = false) {
 		</template>
 
 		<!-- Non-MSA Guard Banner -->
-		<div v-if="!isMsaCompany" class="alert alert-warning mb-3 shadow-sm d-flex align-items-center gap-2" role="alert">
+		<div v-if="!directInvoiceEnabled" class="alert alert-warning mb-3 shadow-sm d-flex align-items-center gap-2" role="alert">
 			<i class="ti ti-alert-triangle fs-2 text-warning"></i>
 			<div>
 				<div class="fw-bold">{{ t("Direct Sales Invoicing Restricted") }}</div>
@@ -328,7 +329,7 @@ async function saveInvoice(submitNow = false) {
 		</div>
 
 		<!-- Main Form Body -->
-		<div class="card border-0 shadow-sm rounded-4 mb-3" :class="{ 'opacity-50 pointer-events-none': !isMsaCompany }">
+		<div class="card border-0 shadow-sm rounded-4 mb-3" :class="{ 'opacity-50 pointer-events-none': !directInvoiceEnabled }">
 			<div class="card-body p-4 bg-white">
 				<!-- Header Fields -->
 				<div class="row g-3 mb-3">

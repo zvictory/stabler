@@ -27,7 +27,8 @@ const session = useSession();
 const route = useRoute();
 const router = useRouter();
 const { activeCompany, user } = storeToRefs(session);
-const isMsaCompany = computed(() => String(activeCompany.value || "").toUpperCase().includes("MSA"));
+// Direct (order-less) sales invoices are an imports-module capability.
+const directInvoiceEnabled = computed(() => session.canAccessModule("imports"));
 
 const { confirm } = useConfirm();
 const toast = useToast();
@@ -1053,7 +1054,7 @@ watch(activeCompany, () => {
 										<i class="ti ti-cash me-1"></i>{{ t("Payment") }}
 									</button>
 									<button
-										v-if="isMsaCompany"
+										v-if="directInvoiceEnabled"
 										type="button"
 										class="btn btn-sm btn-primary"
 										:disabled="selectedIsParent"

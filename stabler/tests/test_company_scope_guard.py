@@ -28,6 +28,8 @@ import unittest
 #   _require_service        — wraps _assert_company_scope for the Service module
 #   _require_tender_view    — wraps _assert_company_scope for the Tender module
 #   _assert_imports_access  — wraps _assert_company_scope for the Imports module
+#   _assert_inventory_access — wraps _assert_company_scope for the Inventory module
+#   _assert_vendor_category_read — tries inventory, falls back to imports; both scope
 #   _user_allowed_companies — manual scoping against the allowed-companies list
 #   _company_filter         — SFA's per-company filter helper
 #   _require_admin          — admin-only endpoint; company boundary is moot
@@ -36,6 +38,8 @@ _SCOPE_TOKENS = (
     "_require_service",
     "_require_tender_view",
     "_assert_imports_access",
+    "_assert_inventory_access",
+    "_assert_vendor_category_read",
     "_user_allowed_companies",
     "_company_filter",
     "_require_admin",

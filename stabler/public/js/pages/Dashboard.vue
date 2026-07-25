@@ -21,10 +21,7 @@ const { activeCompany, user, currency } = storeToRefs(session);
 const router = useRouter();
 const route = useRoute();
 
-const isMsaCompany = computed(() => {
-	const c = (activeCompany.value || "").toUpperCase();
-	return c.includes("MSA") || session.canAccessModule("imports");
-});
+const importsEnabled = computed(() => session.canAccessModule("imports"));
 
 const loading = ref(true);
 const summary = ref({ cash: [], ar: [], ap: [], revenue_mtd: [], revenue_trend_pct: null, dominant_currency: "" });
@@ -280,8 +277,8 @@ const activityIcon = (type) => {
 		<div class="container-xl">
 			<div class="row g-2 align-items-center">
 				<div class="col">
-					<div class="page-pretitle">{{ isMsaCompany ? t("MSA Commerce & Imports") : (tenderEnabled ? t("Tender operations") : t("Overview")) }}</div>
-					<h2 class="page-title">{{ isMsaCompany ? t("MSA Executive Control Center") : (tenderEnabled ? t("Tender control center") : t("Dashboard")) }}</h2>
+					<div class="page-pretitle">{{ tenderEnabled ? t("Tender operations") : (importsEnabled ? t("Commerce & imports") : t("Overview")) }}</div>
+					<h2 class="page-title">{{ tenderEnabled ? t("Tender control center") : (importsEnabled ? t("Imports control center") : t("Dashboard")) }}</h2>
 				</div>
 				<div class="col-auto">
 					<button class="btn btn-outline-primary btn-sm" @click="load" :disabled="tenderEnabled ? tenderLoading : loading">
@@ -295,7 +292,7 @@ const activityIcon = (type) => {
 
 	<div class="page-body">
 		<div class="container-xl">
-			<div v-if="!tenderEnabled && !isMsaCompany && error" class="alert alert-danger" role="alert">
+			<div v-if="!tenderEnabled && !importsEnabled && error" class="alert alert-danger" role="alert">
 				<div class="d-flex">
 					<div><i class="ti ti-alert-triangle me-2"></i></div>
 					<div>{{ error }}</div>
@@ -312,11 +309,11 @@ const activityIcon = (type) => {
 			/>
 
 			<template v-else>
-				<template v-if="isMsaCompany">
-					<ImportsDashboard />
-				</template>
-
-				<template v-else-if="tenderEnabled">
+				<!-- Branch order is deliberate: when a company has BOTH tender and
+				     imports enabled, tender wins — load() already prefers
+				     loadTender() over loadFinancial(), so the template must agree
+				     or the page would render imports against tender-shaped data. -->
+				<template v-if="tenderEnabled">
 					<div class="d-flex flex-wrap align-items-end gap-2 mb-3">
 						<div>
 							<label class="form-label small mb-1" for="tender-period">{{ t("Period") }}</label>
@@ -408,6 +405,10 @@ const activityIcon = (type) => {
 							<div class="card"><div class="card-header"><h3 class="card-title"><i class="ti ti-report-money me-1"></i>{{ t("Finance") }}</h3></div><div class="card-body"><div class="row g-2"><div class="col-md-4"><div class="text-secondary small">{{ t("Procurement total") }}</div><div class="font-monospace fw-semibold">{{ money(tenderFinance.procurement_total, tenderFinance.currency) }}</div></div><div class="col-md-4"><div class="text-secondary small">{{ t("Contract total") }}</div><div class="font-monospace fw-semibold">{{ money(tenderFinance.contract_total, tenderFinance.currency) }}</div></div><div class="col-md-4"><div class="text-secondary small">{{ t("Execution spread") }}</div><div class="font-monospace fw-semibold">{{ money(tenderFinance.execution_spread, tenderFinance.currency) }}</div></div></div></div></div>
 						</div>
 					</div>
+				</template>
+
+				<template v-else-if="importsEnabled">
+					<ImportsDashboard />
 				</template>
 
 				<template v-else>

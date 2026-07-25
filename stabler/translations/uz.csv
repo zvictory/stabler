@@ -4707,3 +4707,5 @@ Auto-filled {count} remaining item lines from Proforma Invoice {ref},{ref} profo
 No remaining (unshipped) items found on this Proforma Invoice.,Bu proformada yuborilmagan qoldiq pozitsiyalar yo‘q.
 Remaining quantities could not be calculated. Loaded the original Proforma quantities. Please check them.,Qoldiq miqdorlarni hisoblab bo‘lmadi. Proformaning asl miqdorlari yuklandi. Iltimos tekshiring.
 Could not fetch available PI lines.,Mavjud proforma qatorlarini yuklab bo‘lmadi.
+Commerce & imports,Savdo va import
+Imports control center,Import boshqaruv markazi

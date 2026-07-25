@@ -4703,3 +4703,5 @@ Auto-filled {count} remaining item lines from Proforma Invoice {ref},Auto-filled
 No remaining (unshipped) items found on this Proforma Invoice.,No remaining (unshipped) items found on this Proforma Invoice.
 Remaining quantities could not be calculated. Loaded the original Proforma quantities. Please check them.,Remaining quantities could not be calculated. Loaded the original Proforma quantities. Please check them.
 Could not fetch available PI lines.,Could not fetch available PI lines.
+Commerce & imports,Commerce & imports
+Imports control center,Imports control center

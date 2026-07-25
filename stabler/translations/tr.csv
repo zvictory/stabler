@@ -4702,3 +4702,5 @@ Auto-filled {count} remaining item lines from Proforma Invoice {ref},{ref} profo
 No remaining (unshipped) items found on this Proforma Invoice.,Bu proforma faturada sevk edilmemiş kalan kalem yok.
 Remaining quantities could not be calculated. Loaded the original Proforma quantities. Please check them.,Kalan miktarlar hesaplanamadı. Proformanın orijinal miktarları yüklendi. Lütfen kontrol edin.
 Could not fetch available PI lines.,Mevcut proforma satırları alınamadı.
+Commerce & imports,Ticaret ve ithalat
+Imports control center,İthalat kontrol merkezi
