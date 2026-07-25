@@ -255,6 +255,17 @@ function rowDocsAmount(row) {
 	return (Number(row.qty) || 0) * (Number(row.docs_price) || 0);
 }
 
+function getSummaryRow(row) {
+	if (!form.value.invoiced_summary || !form.value.invoiced_summary.items) return null;
+	const cat = row.category || "";
+	const item = row.item || "";
+	return (
+		form.value.invoiced_summary.items.find((s) => s.item === item && (s.category || "") === cat) ||
+		form.value.invoiced_summary.items.find((s) => s.item === item) ||
+		null
+	);
+}
+
 const hasItems = computed(() => (form.value.items || []).some((r) => r.item));
 const itemsAgreedTotal = computed(() => (form.value.items || []).reduce((s, r) => s + rowAmount(r), 0));
 const itemsDocsTotal = computed(() => (form.value.items || []).reduce((s, r) => s + rowDocsAmount(r), 0));
@@ -657,6 +668,8 @@ watch(activeCompany, loadPiGroups);
 							<th class="text-end bg-green-lt text-green" style="width: 130px">{{ t("Docs Price") }} ({{ form.currency || 'USD' }})</th>
 							<th class="text-end bg-blue-lt text-blue" style="width: 140px">{{ t("Agreed Total") }} ({{ form.currency || 'USD' }})</th>
 							<th class="text-end bg-green-lt text-green" style="width: 140px">{{ t("Docs Total") }} ({{ form.currency || 'USD' }})</th>
+							<th class="text-end bg-purple-lt text-purple" style="width: 140px">{{ t("Invoiced (KG)") }}</th>
+							<th class="text-end bg-warning-lt text-warning" style="width: 140px">{{ t("Remaining Bal (KG)") }}</th>
 							<th style="width: 36px"></th>
 						</tr>
 					</thead>
@@ -686,6 +699,21 @@ watch(activeCompany, loadPiGroups);
 							<td><MoneyInput v-model="row.docs_price" :currency="form.currency" :language="user.language" hide-currency size="sm" /></td>
 							<td class="text-end font-monospace text-blue bg-blue-lt fw-semibold">{{ fn(rowAmount(row)) }}</td>
 							<td class="text-end font-monospace text-green bg-green-lt fw-semibold">{{ fn(rowDocsAmount(row)) }}</td>
+							<td class="text-end font-monospace text-nowrap bg-purple-lt">
+								<span v-if="getSummaryRow(row)">
+									<span class="fw-bold text-purple">{{ fn(getSummaryRow(row).invoiced_qty) }}</span>
+									<span class="badge ms-1 font-monospace" :class="getSummaryRow(row).pct >= 100 ? 'bg-success-lt text-success' : 'bg-purple-lt text-purple'" style="font-size: 0.7rem">
+										{{ getSummaryRow(row).pct }}%
+									</span>
+								</span>
+								<span v-else class="text-secondary">—</span>
+							</td>
+							<td class="text-end font-monospace text-nowrap bg-warning-lt">
+								<span v-if="getSummaryRow(row)">
+									<span class="fw-bold text-warning">{{ fn(getSummaryRow(row).remaining_qty) }}</span>
+								</span>
+								<span v-else class="text-secondary">—</span>
+							</td>
 							<td>
 								<button type="button" class="btn btn-icon btn-sm btn-ghost-secondary" :title="t('Remove')" @click="removeItemRow(idx)">
 									<i class="ti ti-trash"></i>
@@ -693,7 +721,7 @@ watch(activeCompany, loadPiGroups);
 							</td>
 						</tr>
 						<tr v-if="!form.items.length">
-							<td colspan="10" class="text-secondary text-center py-3">{{ t("No items yet.") }}</td>
+							<td colspan="13" class="text-secondary text-center py-3">{{ t("No items yet.") }}</td>
 						</tr>
 					</tbody>
 					<tfoot v-if="form.items.length">
@@ -701,10 +729,44 @@ watch(activeCompany, loadPiGroups);
 							<td colspan="7" class="text-end fw-semibold small">{{ t("Totals") }}</td>
 							<td class="text-end font-monospace fw-semibold text-blue bg-blue-lt">{{ fm(itemsAgreedTotal, form.currency) }}</td>
 							<td class="text-end font-monospace fw-semibold text-green bg-green-lt">{{ fm(itemsDocsTotal, form.currency) }}</td>
-							<td></td>
+							<td colspan="4"></td>
 						</tr>
 					</tfoot>
 				</table>
+			</div>
+		</div>
+
+		<!-- Commercial Invoices Fulfillment KPI Card -->
+		<div v-if="form.invoiced_summary && form.invoiced_summary.items && form.invoiced_summary.items.length" class="card mb-3">
+			<div class="card-header bg-green-lt py-2">
+				<h3 class="card-title text-success mb-0">
+					<i class="ti ti-chart-bar me-2"></i>{{ t("Commercial Invoices — Fulfillment Summary") }}
+				</h3>
+			</div>
+			<div class="card-body py-2">
+				<div class="row align-items-center g-3">
+					<div class="col-md-3">
+						<div class="small text-secondary">{{ t("Overall Invoiced Progress") }}</div>
+						<div class="d-flex align-items-center gap-2 mt-1">
+							<div class="progress flex-grow-1" style="height: 8px;">
+								<div class="progress-bar bg-success" :style="{ width: Math.min(100, form.invoiced_summary.pct) + '%' }"></div>
+							</div>
+							<span class="badge bg-success-lt text-success font-monospace fw-bold">{{ form.invoiced_summary.pct }}%</span>
+						</div>
+					</div>
+					<div class="col-md-3">
+						<div class="small text-secondary">{{ t("Total Ordered") }}</div>
+						<div class="fw-bold font-monospace text-body">{{ fn(form.invoiced_summary.total_ordered_kg) }} kg</div>
+					</div>
+					<div class="col-md-3">
+						<div class="small text-secondary">{{ t("Total Invoiced (drawn to CIs)") }}</div>
+						<div class="fw-bold font-monospace text-success">{{ fn(form.invoiced_summary.total_invoiced_kg) }} kg</div>
+					</div>
+					<div class="col-md-3">
+						<div class="small text-secondary">{{ t("Remaining Balance") }}</div>
+						<div class="fw-bold font-monospace text-warning">{{ fn(form.invoiced_summary.total_remaining_kg) }} kg</div>
+					</div>
+				</div>
 			</div>
 		</div>
 

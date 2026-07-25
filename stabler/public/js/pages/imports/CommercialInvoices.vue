@@ -20,7 +20,15 @@ const { activeCompany, user } = storeToRefs(session);
 const route = useRoute();
 const router = useRouter();
 
-const search = ref("");
+const search = ref(
+	route.query.search
+		? String(route.query.search)
+		: route.query.proforma
+		? String(route.query.proforma)
+		: route.query.proforma_invoice
+		? String(route.query.proforma_invoice)
+		: ""
+);
 const status = ref(route.query.status ? String(route.query.status) : "");
 const supplier = ref("");
 const loading = ref(false);
@@ -201,6 +209,25 @@ async function loadSuppliers() {
 function openDetail(name) {
 	router.push("/imports/commercial-invoices/" + name);
 }
+function openPi(name) {
+	if (!name) return;
+	router.push("/imports/proformas/" + name);
+}
+function filterBySupplier(sup) {
+	if (!sup) return;
+	search.value = sup;
+	reload();
+}
+function openContainersForCi(row) {
+	if (!row) return;
+	const query = row.ci_number || row.name;
+	router.push({ path: "/imports/containers", query: { search: query } });
+}
+function openTrucksForCi(row) {
+	if (!row) return;
+	const query = row.ci_number || row.name;
+	router.push({ path: "/imports/trucks", query: { search: query } });
+}
 function openCreate() {
 	router.push("/imports/commercial-invoices/new");
 }
@@ -215,6 +242,18 @@ onMounted(() => {
 watch([status, supplier], reload);
 watch(limitStart, load);
 watch(pageLength, reload);
+watch(
+	() => route.query,
+	(q) => {
+		const newSearch = q.search ? String(q.search) : q.proforma ? String(q.proforma) : q.proforma_invoice ? String(q.proforma_invoice) : "";
+		const newStatus = q.status ? String(q.status) : "";
+		if (newSearch !== search.value || newStatus !== status.value) {
+			search.value = newSearch;
+			status.value = newStatus;
+			reload();
+		}
+	}
+);
 watch(activeCompany, () => {
 	loadSuppliers();
 	reload();
@@ -340,12 +379,25 @@ watch(activeCompany, () => {
 								<div class="fw-bold text-primary font-monospace" style="font-size: 0.9rem">
 									{{ r.ci_number || r.name }}
 								</div>
-								<span class="badge bg-secondary-lt mt-1" :title="r.supplier_name || r.supplier">
+								<span
+									class="badge bg-secondary-lt text-dark font-monospace mt-1"
+									style="cursor: pointer"
+									:title="t('Filter by supplier: ') + (r.supplier_name || r.supplier)"
+									@click.stop="filterBySupplier(r.supplier || r.supplier_name)"
+								>
 									{{ vendorCode(r) }}
 								</span>
 							</td>
 							<td class="font-monospace small">
-								<span v-if="r.proforma_ref" class="text-primary">{{ r.proforma_ref }}</span>
+								<span
+									v-if="r.proforma_invoice || r.proforma_ref"
+									class="badge bg-purple-lt text-purple font-monospace"
+									style="cursor: pointer"
+									:title="t('Open Proforma Invoice: ') + (r.proforma_invoice || r.proforma_ref)"
+									@click.stop="openPi(r.proforma_invoice || r.proforma_ref)"
+								>
+									<i class="ti ti-file-dollar me-1"></i>{{ r.proforma_ref || r.proforma_invoice }}
+								</span>
 								<span v-else class="text-muted">{{ t("not linked") }}</span>
 							</td>
 							<td class="text-nowrap font-monospace ci-num">
@@ -370,15 +422,28 @@ watch(activeCompany, () => {
 								</div>
 							</td>
 							<td class="text-end text-nowrap font-monospace ci-num">
-								<i class="ti ti-box me-1" :title="t('Containers')" aria-hidden="true"></i>{{ r.container_count || 0 }}
-								<span class="visually-hidden">{{ t("Containers") }}</span>
-								<i
-									class="ti ti-truck ms-2 me-1"
-									:class="{ 'text-muted': !r.truck_count }"
-									:title="t('Trucks')"
-									aria-hidden="true"
-								></i><span :class="{ 'text-muted': !r.truck_count }">{{ r.truck_count || 0 }}</span>
-								<span class="visually-hidden">{{ t("Trucks") }}</span>
+								<span
+									style="cursor: pointer"
+									class="hover-underline text-primary me-2"
+									:title="t('View containers for ') + (r.ci_number || r.name)"
+									@click.stop="openContainersForCi(r)"
+								>
+									<i class="ti ti-box me-1" :title="t('Containers')" aria-hidden="true"></i>{{ r.container_count || 0 }}
+								</span>
+								<span
+									style="cursor: pointer"
+									class="hover-underline"
+									:class="r.truck_count ? 'text-primary' : 'text-muted'"
+									:title="t('View trucks for ') + (r.ci_number || r.name)"
+									@click.stop="openTrucksForCi(r)"
+								>
+									<i
+										class="ti ti-truck me-1"
+										:class="{ 'text-muted': !r.truck_count }"
+										:title="t('Trucks')"
+										aria-hidden="true"
+									></i><span>{{ r.truck_count || 0 }}</span>
+								</span>
 							</td>
 							<td class="text-center">
 								<i v-if="r.has_grn" class="ti ti-check text-green" :title="t('GRN created')"></i>

@@ -33,6 +33,12 @@ const loading = ref(false);
 const saving = ref(false);
 const error = ref("");
 const form = ref(blankForm());
+// True when the remaining-qty tracking data could not be fetched, so Smart Fill
+// must not treat an empty remaining list as "fully shipped".
+const piTrackingFailed = ref(false);
+
+// Fallback carton weight when a PI line carries no box_weight_kg.
+const DEFAULT_BOX_WEIGHT_KG = 20;
 
 const INCOTERMS = ["EXW", "FCA", "FAS", "FOB", "CFR", "CIF", "CPT", "CIP", "DAP", "DPU", "DDP"];
 const incotermOptions = computed(() => [
@@ -88,6 +94,7 @@ function blankForm() {
 		company: null,
 		supplier: "",
 		supplier_name: "",
+		custom_proforma_invoice: "",
 		ci_number: "",
 		ci_date: "",
 		currency: "USD",
@@ -136,6 +143,19 @@ function rowAmount(row) {
 }
 function rowDocsAmount(row) {
 	return (Number(row.qty) || 0) * (Number(row.docs_price) || 0);
+}
+
+function getTrackingRow(row) {
+	if (!form.value.pi_tracking) return null;
+	const pi = row.custom_proforma_invoice || form.value.custom_proforma_invoice || "";
+	const cat = row.category || "";
+	const item = row.item || "";
+	return (
+		form.value.pi_tracking.find((tr) => tr.proforma_invoice === pi && tr.item === item && (tr.category || "") === cat) ||
+		form.value.pi_tracking.find((tr) => tr.proforma_invoice === pi && tr.item === item) ||
+		form.value.pi_tracking.find((tr) => tr.item === item) ||
+		null
+	);
 }
 
 const itemsAgreedTotal = computed(() => (form.value.items || []).reduce((s, r) => s + rowAmount(r), 0));
@@ -290,6 +310,87 @@ async function applyFillCategory() {
 	}
 }
 
+// ---- Multi-PI Smart Fill Modal State ----
+const multiPiModalOpen = ref(false);
+const multiPiLoading = ref(false);
+const multiPiProformas = ref([]);
+const multiPiLines = ref([]);
+const multiPiAllocations = ref({});
+
+async function openMultiPiSmartFill() {
+	if (!form.value.supplier) {
+		toast.error(t("Please select a supplier first."));
+		return;
+	}
+	multiPiModalOpen.value = true;
+	multiPiLoading.value = true;
+	multiPiAllocations.value = {};
+	try {
+		const res = await call("stabler.api.imports.get_vendor_available_pi_lines", {
+			company: activeCompany.value,
+			supplier: form.value.supplier,
+			exclude_ci: form.value.name || undefined,
+		});
+		multiPiProformas.value = res.proformas || [];
+		multiPiLines.value = res.lines || [];
+
+		for (const line of multiPiLines.value) {
+			const key = `${line.pi_name}::${line.item}::${line.category}`;
+			multiPiAllocations.value[key] = line.remaining_boxes > 0 ? line.remaining_boxes : 0;
+		}
+	} catch (err) {
+		toast.error(err?.message || t("Could not fetch available PI lines."));
+	} finally {
+		multiPiLoading.value = false;
+	}
+}
+
+function applyMultiPiAllocation() {
+	let addedCount = 0;
+	for (const line of multiPiLines.value) {
+		const key = `${line.pi_name}::${line.item}::${line.category}`;
+		const boxes = Math.max(0, parseInt(multiPiAllocations.value[key] || 0));
+		if (boxes > 0) {
+			const bw = line.box_weight_kg || 20;
+			const qty = round2(boxes * bw);
+			form.value.items.push({
+				custom_proforma_invoice: line.pi_name,
+				category: line.category,
+				item: line.item,
+				description: line.description || "",
+				hs_code: line.hs_code || "",
+				boxes: boxes,
+				box_weight_kg: bw,
+				qty: qty,
+				uom: "Kg",
+				rate: line.agreed_rate,
+				docs_price: line.docs_price,
+				_qtyManual: true,
+			});
+			addedCount++;
+		}
+	}
+
+	if (!form.value.custom_proforma_invoice && multiPiProformas.value.length > 0) {
+		form.value.custom_proforma_invoice = multiPiProformas.value[0].name;
+	}
+
+	multiPiModalOpen.value = false;
+	toast.success(t("Added {count} item lines from selected PIs.", { count: addedCount }));
+}
+
+const bandarAbbasBalance = computed(() => {
+	const agreed = Number(itemsAgreedTotal.value) || 0;
+	const docs = Number(itemsDocsTotal.value) || 0;
+	const cashDiff = Number(itemsCashDiff.value) || 0;
+
+	return {
+		total70Pct: agreed * 0.70,
+		bank70Pct: docs * 0.70,
+		cash70Pct: cashDiff * 0.70,
+	};
+});
+
 async function loadDoc() {
 	if (isCreate.value) {
 		form.value = blankForm();
@@ -303,6 +404,7 @@ async function loadDoc() {
 			...blankForm(),
 			...d,
 			items: (d.items || []).map((it) => ({
+				custom_proforma_invoice: it.custom_proforma_invoice || d.custom_proforma_invoice || "",
 				category: it.category || "",
 				item: it.item,
 				item_name: it.item,
@@ -322,8 +424,156 @@ async function loadDoc() {
 		};
 		customsFee.value = d.customs_fee_breakdown || null;
 		loadLineCategories();
+		await refreshPiTracking();
 	} catch (err) {
 		error.value = err?.message || t("Failed to load the commercial invoice.");
+	} finally {
+		loading.value = false;
+	}
+}
+
+function searchProformas(q) {
+	return call("stabler.api.imports.list_proformas", {
+		company: activeCompany.value,
+		search: q || "",
+		supplier: form.value.supplier || undefined,
+		limit: 20,
+	});
+}
+
+async function refreshPiTracking() {
+	if (!activeCompany.value || !form.value.supplier) {
+		form.value.pi_tracking = [];
+		piTrackingFailed.value = true;
+		return;
+	}
+	piTrackingFailed.value = false;
+	try {
+		const res = await call("stabler.api.imports.get_vendor_available_pi_lines", {
+			company: activeCompany.value,
+			supplier: form.value.supplier,
+			exclude_ci: form.value.name || undefined,
+		});
+		const trackingList = [];
+		for (const line of res?.lines || []) {
+			const boxWeight = line.box_weight_kg || DEFAULT_BOX_WEIGHT_KG;
+			const contractKg = (line.contract_boxes || 0) * boxWeight;
+			const shippedKg = (line.shipped_boxes || 0) * boxWeight;
+			const remainingKg = (line.remaining_boxes || 0) * boxWeight;
+			const pct = contractKg > 0 ? Math.round((shippedKg / contractKg) * 100) : 0;
+
+			trackingList.push({
+				proforma_invoice: line.pi_name,
+				item: line.item,
+				category: line.category || "",
+				contract_boxes: line.contract_boxes,
+				shipped_boxes: line.shipped_boxes,
+				remaining_boxes: line.remaining_boxes,
+				contract_qty: contractKg,
+				total_invoiced_qty: shippedKg,
+				remaining_qty: remainingKg,
+				pct: pct,
+				agreed_rate: line.agreed_rate,
+				docs_price: line.docs_price,
+				box_weight_kg: line.box_weight_kg,
+			});
+		}
+		form.value.pi_tracking = trackingList;
+	} catch (err) {
+		form.value.pi_tracking = [];
+		piTrackingFailed.value = true;
+		toast.error(err?.message || t("Could not fetch available PI lines."));
+	}
+}
+
+async function loadProformaIntoCi(piName) {
+	if (!piName) return;
+	loading.value = true;
+	try {
+		const detail = await call("stabler.api.imports.proforma_detail", { name: piName });
+		if (!detail) return;
+		form.value.custom_proforma_invoice = detail.name;
+		if (detail.supplier) {
+			form.value.supplier = detail.supplier;
+			form.value.supplier_name = detail.supplier_name || detail.supplier;
+		}
+		if (detail.import_pi_group) {
+			form.value.import_pi_group = detail.import_pi_group;
+		}
+		if (detail.currency) {
+			form.value.currency = detail.currency;
+		}
+		if (detail.incoterm) {
+			form.value.incoterm = detail.incoterm;
+		}
+		if (detail.port_of_loading) {
+			form.value.port_of_loading = detail.port_of_loading;
+		}
+		if (detail.port_of_discharge) {
+			form.value.port_of_discharge = detail.port_of_discharge;
+		}
+
+		await refreshPiTracking();
+
+		const piLines = (form.value.pi_tracking || []).filter(
+			(tr) => tr.proforma_invoice === detail.name && tr.remaining_boxes > 0
+		);
+
+		if (piLines.length > 0) {
+			form.value.items = piLines.map((line) => {
+				const bw = line.box_weight_kg || DEFAULT_BOX_WEIGHT_KG;
+				const boxes = line.remaining_boxes;
+				const qty = round2(boxes * bw);
+				return {
+					custom_proforma_invoice: detail.name,
+					category: line.category || "",
+					item: line.item,
+					item_name: line.item,
+					description: line.description || "",
+					hs_code: "",
+					boxes: boxes,
+					box_weight_kg: bw,
+					qty: qty,
+					uom: "Kg",
+					rate: Number(line.agreed_rate || 0),
+					docs_price: Number(line.docs_price || 0),
+					_qtyManual: true,
+				};
+			});
+			toast.success(
+				t("Auto-filled {count} remaining item lines from Proforma Invoice {ref}", {
+					count: piLines.length,
+					ref: detail.supplier_pi_ref || detail.name,
+				})
+			);
+		} else if (piTrackingFailed.value && detail.items && detail.items.length) {
+			// Remaining quantities are unknown, so the contract quantities are the only
+			// data we have. They can over-ship the PI — warn instead of loading silently.
+			form.value.items = detail.items.map((it) => ({
+				custom_proforma_invoice: detail.name,
+				category: it.category || "",
+				item: it.item,
+				item_name: it.item,
+				description: it.description || "",
+				hs_code: "",
+				boxes: Number(it.boxes || 0),
+				box_weight_kg: Number(it.box_weight_kg || 0),
+				qty: Number(it.qty || 0),
+				uom: it.uom || "Kg",
+				rate: Number(it.rate || 0),
+				docs_price: Number(it.docs_price || 0),
+				_qtyManual: true,
+			}));
+			toast.warning(
+				t("Remaining quantities could not be calculated. Loaded the original Proforma quantities. Please check them.")
+			);
+		} else {
+			form.value.items = [];
+			toast.warning(t("No remaining (unshipped) items found on this Proforma Invoice."));
+		}
+		loadLineCategories();
+	} catch (err) {
+		toast.error(err?.message || t("Failed to load proforma details."));
 	} finally {
 		loading.value = false;
 	}
@@ -349,6 +599,7 @@ async function loadRefData() {
 function buildValues() {
 	const v = {
 		import_pi_group: form.value.import_pi_group || undefined,
+		custom_proforma_invoice: form.value.custom_proforma_invoice || undefined,
 		ci_number: form.value.ci_number,
 		ci_date: form.value.ci_date || undefined,
 		currency: form.value.currency,
@@ -380,6 +631,7 @@ function itemsPayload() {
 	return form.value.items
 		.filter((r) => r.item)
 		.map((r) => ({
+			custom_proforma_invoice: r.custom_proforma_invoice || form.value.custom_proforma_invoice || undefined,
 			category: r.category || undefined,
 			item: r.item,
 			description: r.description || undefined,
@@ -504,10 +756,13 @@ const fn = (v) => {
 	}).format(Number(v) || 0);
 };
 
-onMounted(() => {
+onMounted(async () => {
 	loadItemsList();
 	loadRefData();
-	loadDoc();
+	await loadDoc();
+	if (isCreate.value && route.query.proforma) {
+		await loadProformaIntoCi(String(route.query.proforma));
+	}
 });
 watch(docName, loadDoc);
 watch(activeCompany, loadRefData);
@@ -638,7 +893,20 @@ watch(activeCompany, loadRefData);
 
 		<!-- Header Details -->
 		<div class="card mb-3">
-			<div class="card-header"><h3 class="card-title">{{ t("Header Details") }}</h3></div>
+			<div class="card-header d-flex align-items-center justify-content-between">
+				<h3 class="card-title m-0">{{ t("Header Details") }}</h3>
+				<div class="card-actions">
+					<button
+						type="button"
+						class="btn btn-primary shadow-sm fw-bold px-3"
+						:disabled="!form.supplier"
+						:title="t('Smart Fill items and quantities from supplier Proforma Invoices')"
+						@click="openMultiPiSmartFill"
+					>
+						<i class="ti ti-wand me-1"></i>{{ t("Smart Fill from PIs") }}
+					</button>
+				</div>
+			</div>
 			<div class="card-body">
 				<div class="row g-3">
 					<div class="col-md-6">
@@ -653,6 +921,25 @@ watch(activeCompany, loadRefData);
 							@pick="pickSupplier"
 						>
 							<div class="fw-semibold">{{ item.supplier_name || item.name }}</div>
+						</Typeahead>
+					</div>
+					<div class="col-md-6">
+						<label class="form-label d-flex align-items-center gap-1">
+							<span>{{ t("Reference Proforma Invoice") }}</span>
+							<span v-if="form.custom_proforma_invoice" class="badge bg-success-lt ms-auto font-monospace">{{ form.custom_proforma_invoice }}</span>
+						</label>
+						<Typeahead
+							v-slot="{ item }"
+							v-model="form.custom_proforma_invoice"
+							:search="searchProformas"
+							:display="form.custom_proforma_invoice"
+							:placeholder="t('Select Proforma Invoice to copy items…')"
+							open-on-focus
+							@pick="(pi) => loadProformaIntoCi(pi.name)"
+							@clear="() => { form.custom_proforma_invoice = ''; }"
+						>
+							<div class="fw-semibold small">{{ item.supplier_pi_ref || item.name }}</div>
+							<div class="text-secondary" style="font-size:0.75rem">{{ item.supplier_name || item.supplier }} · {{ item.agreed_total ? fm(item.agreed_total, item.currency) : "" }}</div>
 						</Typeahead>
 					</div>
 					<div class="col-md-3">
@@ -733,6 +1020,24 @@ watch(activeCompany, loadRefData);
 			<div class="card-header">
 				<h3 class="card-title">{{ t("Items") }}</h3>
 				<div class="card-actions d-flex gap-2">
+					<button
+						type="button"
+						class="btn btn-primary btn-sm fw-bold"
+						:disabled="!form.supplier"
+						:title="t('Smart Fill items and quantities from supplier Proforma Invoices')"
+						@click="openMultiPiSmartFill"
+					>
+						<i class="ti ti-wand me-1"></i>{{ t("Smart Fill from PIs") }}
+					</button>
+					<button
+						v-if="form.custom_proforma_invoice"
+						type="button"
+						class="btn btn-outline-info btn-sm"
+						:title="t('Reload all items from reference Proforma Invoice')"
+						@click="loadProformaIntoCi(form.custom_proforma_invoice)"
+					>
+						<i class="ti ti-refresh me-1"></i>{{ t("Pull from PI") }}
+					</button>
 					<button type="button" class="btn btn-outline-secondary btn-sm" @click="openFillModal">
 						<i class="ti ti-wand me-1"></i>{{ t("Fill from category") }}
 					</button>
@@ -752,8 +1057,9 @@ watch(activeCompany, loadRefData);
 				<table class="table table-sm table-bordered align-middle mb-0">
 					<thead style="position: sticky; top: 0; z-index: 1">
 						<tr>
-							<th style="min-width: 170px">{{ t("Vendor Category") }}</th>
-							<th style="min-width: 200px">{{ t("Product Code/Name") }}</th>
+							<th style="min-width: 150px">{{ t("Vendor Category") }}</th>
+							<th style="min-width: 140px">{{ t("Ref PI") }}</th>
+							<th style="min-width: 180px">{{ t("Product Code/Name") }}</th>
 							<th class="text-end bg-orange-lt text-orange" style="width: 90px">{{ t("Boxes") }}</th>
 							<th class="text-end bg-orange-lt text-orange" style="width: 100px">{{ t("Box Weight") }}</th>
 							<th class="text-end bg-orange-lt text-orange" style="width: 110px">{{ t("Quantity (KG)") }}</th>
@@ -761,6 +1067,8 @@ watch(activeCompany, loadRefData);
 							<th class="text-end bg-green-lt text-green" style="width: 130px">{{ t("Docs Price") }} ({{ form.currency || 'USD' }})</th>
 							<th class="text-end bg-blue-lt text-blue" style="width: 140px">{{ t("Agreed Total") }} ({{ form.currency || 'USD' }})</th>
 							<th class="text-end bg-green-lt text-green" style="width: 140px">{{ t("Docs Total") }} ({{ form.currency || 'USD' }})</th>
+							<th class="text-end bg-purple-lt text-purple" style="width: 140px">{{ t("Invoiced (KG)") }}</th>
+							<th class="text-end bg-warning-lt text-warning" style="width: 140px">{{ t("Remaining Bal (KG)") }}</th>
 							<th style="width: 36px"></th>
 						</tr>
 					</thead>
@@ -773,6 +1081,11 @@ watch(activeCompany, loadRefData);
 									<option v-for="cat in categoryOptions" :key="cat" :value="cat">{{ cat }}</option>
 								</select>
 								<input v-else v-model="row.category" type="text" class="form-control form-control-sm" :placeholder="t('Vendor Category')">
+							</td>
+							<td>
+								<span class="badge bg-blue-lt font-monospace text-truncate d-inline-block" style="max-width: 130px; font-size: 0.75rem" :title="row.custom_proforma_invoice || form.custom_proforma_invoice || ''">
+									{{ row.custom_proforma_invoice || form.custom_proforma_invoice || "—" }}
+								</span>
 							</td>
 							<td>
 								<select v-model="row.item" class="form-select form-select-sm fw-semibold" @change="onItemSelect(row)">
@@ -789,6 +1102,21 @@ watch(activeCompany, loadRefData);
 							<td><MoneyInput v-model="row.docs_price" :currency="form.currency" :language="user.language" hide-currency size="sm" /></td>
 							<td class="text-end font-monospace text-blue bg-blue-lt fw-semibold">{{ fn(rowAmount(row)) }}</td>
 							<td class="text-end font-monospace text-green bg-green-lt fw-semibold">{{ fn(rowDocsAmount(row)) }}</td>
+							<td class="text-end font-monospace text-nowrap bg-purple-lt">
+								<span v-if="getTrackingRow(row)">
+									<span class="fw-bold text-purple">{{ fn(getTrackingRow(row).total_invoiced_qty) }}</span>
+									<span class="badge ms-1 font-monospace" :class="getTrackingRow(row).pct >= 100 ? 'bg-success-lt text-success' : 'bg-purple-lt text-purple'" style="font-size: 0.7rem">
+										{{ getTrackingRow(row).pct }}%
+									</span>
+								</span>
+								<span v-else class="text-secondary">—</span>
+							</td>
+							<td class="text-end font-monospace text-nowrap bg-warning-lt">
+								<span v-if="getTrackingRow(row)">
+									<span class="fw-bold text-warning">{{ fn(getTrackingRow(row).remaining_qty) }}</span>
+								</span>
+								<span v-else class="text-secondary">—</span>
+							</td>
 							<td>
 								<button type="button" class="btn btn-icon btn-sm btn-ghost-secondary" :title="t('Remove')" @click="removeItem(idx)">
 									<i class="ti ti-trash"></i>
@@ -796,15 +1124,15 @@ watch(activeCompany, loadRefData);
 							</td>
 						</tr>
 						<tr v-if="!form.items.length">
-							<td colspan="10" class="text-secondary text-center py-3">{{ t("No items yet.") }}</td>
+							<td colspan="14" class="text-secondary text-center py-3">{{ t("No items yet.") }}</td>
 						</tr>
 					</tbody>
 					<tfoot v-if="form.items.length">
 						<tr>
-							<td colspan="7" class="text-end fw-semibold small">{{ t("Totals") }}</td>
+							<td colspan="8" class="text-end fw-semibold small">{{ t("Totals") }}</td>
 							<td class="text-end font-monospace fw-semibold text-blue bg-blue-lt">{{ fm(itemsAgreedTotal, form.currency) }}</td>
 							<td class="text-end font-monospace fw-semibold text-green bg-green-lt">{{ fm(itemsDocsTotal, form.currency) }}</td>
-							<td></td>
+							<td colspan="4"></td>
 						</tr>
 					</tfoot>
 				</table>
@@ -888,69 +1216,6 @@ watch(activeCompany, loadRefData);
 					</button>
 				</div>
 				<div v-if="!form.po_links.length" class="text-secondary small">{{ t("No purchase orders linked.") }}</div>
-			</div>
-		</div>
-
-		<div class="row">
-			<!-- Totals -->
-			<div class="col-lg-6">
-				<div class="card mb-3">
-					<div class="card-header"><h3 class="card-title">{{ t("Totals") }}</h3></div>
-					<div class="card-body">
-						<div class="d-flex justify-content-between mb-1">
-							<span class="text-secondary">{{ t("Total weight (kg)") }}</span>
-							<strong class="font-monospace">{{ fn(totalKg) }} kg</strong>
-						</div>
-						<div class="d-flex justify-content-between mb-1">
-							<span class="text-secondary">{{ t("Total boxes") }}</span>
-							<strong class="font-monospace">{{ fn(totalBoxesCount) }} bx</strong>
-						</div>
-						<div class="d-flex justify-content-between mb-1">
-							<span class="text-secondary">{{ t("Agreed total") }}</span>
-							<strong class="font-monospace text-primary">{{ fm(itemsAgreedTotal, form.currency) }}</strong>
-						</div>
-						<template v-if="costVisible">
-							<div class="d-flex justify-content-between mb-1">
-								<span class="text-secondary">{{ t("Docs total") }}</span>
-								<strong class="font-monospace text-azure">{{ fm(itemsDocsTotal, form.currency) }}</strong>
-							</div>
-							<div class="d-flex justify-content-between mb-1">
-								<span class="text-secondary">{{ t("Cash difference") }}</span>
-								<strong class="font-monospace text-warning">{{ fm(itemsCashDiff, form.currency) }}</strong>
-							</div>
-						</template>
-					</div>
-				</div>
-			</div>
-
-			<!-- Customs fee -->
-			<div class="col-lg-6">
-				<div class="card mb-3">
-					<div class="card-header"><h3 class="card-title">{{ t("Customs clearance fee") }}</h3></div>
-					<div class="card-body">
-						<label class="form-check">
-							<input v-model="form.customs_fee_off_hours" type="checkbox" class="form-check-input" :true-value="1" :false-value="0" />
-							<span class="form-check-label">{{ t("Off-hours clearance (+25% BRV)") }}</span>
-						</label>
-						<div v-if="customsFee" class="mt-2 small">
-							<div class="d-flex justify-content-between"><span class="text-secondary">{{ t("Declared value (USD)") }}</span><span class="font-monospace">{{ formatMoney(customsFee.value_usd, "USD", user.language) }}</span></div>
-							<div class="d-flex justify-content-between"><span class="text-secondary">{{ t("BRV used") }}</span><span class="font-monospace">{{ formatMoney(customsFee.brv_value, "UZS", user.language) }}</span></div>
-							<div class="d-flex justify-content-between"><span class="text-secondary">{{ t("Multiplier") }}</span><span class="font-monospace">×{{ customsFee.multiplier }}</span></div>
-							<div class="d-flex justify-content-between"><span class="text-secondary">{{ t("Off-hours surcharge") }}</span><span class="font-monospace">{{ formatMoney(customsFee.off_hours_surcharge, "UZS", user.language) }}</span></div>
-							<div class="d-flex justify-content-between fw-bold"><span>{{ t("Effective fee") }}</span><span class="font-monospace">{{ formatMoney(customsFee.effective_fee_uzs, "UZS", user.language) }}</span></div>
-						</div>
-						<div v-else class="text-secondary small mt-2">{{ t("Compute the fee to see the BRV breakdown.") }}</div>
-						<div v-if="!isCreate" class="d-flex gap-2 mt-2">
-							<button type="button" class="btn btn-outline-secondary btn-sm" :disabled="computingFee" @click="computeFee(false)">
-								<i class="ti ti-calculator me-1"></i>{{ t("Compute") }}
-							</button>
-							<button type="button" class="btn btn-ghost-secondary btn-sm" :disabled="computingFee" @click="computeFee(true)">
-								{{ t("Apply") }}
-							</button>
-						</div>
-						<div v-else class="text-secondary small mt-2">{{ t("Save the invoice first to compute the customs fee.") }}</div>
-					</div>
-				</div>
 			</div>
 		</div>
 

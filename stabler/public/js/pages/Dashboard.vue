@@ -14,11 +14,17 @@ import EmptyState from "../components/EmptyState.vue";
 import TenderTrendChart from "./tender/TenderTrendChart.vue";
 import TenderExecutionFlow from "./tender/TenderExecutionFlow.vue";
 import TenderPortfolioPreview from "./tender/TenderPortfolioPreview.vue";
+import ImportsDashboard from "./imports/ImportsDashboard.vue";
 
 const session = useSession();
 const { activeCompany, user, currency } = storeToRefs(session);
 const router = useRouter();
 const route = useRoute();
+
+const isMsaCompany = computed(() => {
+	const c = (activeCompany.value || "").toUpperCase();
+	return c.includes("MSA") || session.canAccessModule("imports");
+});
 
 const loading = ref(true);
 const summary = ref({ cash: [], ar: [], ap: [], revenue_mtd: [], revenue_trend_pct: null, dominant_currency: "" });
@@ -274,8 +280,8 @@ const activityIcon = (type) => {
 		<div class="container-xl">
 			<div class="row g-2 align-items-center">
 				<div class="col">
-					<div class="page-pretitle">{{ tenderEnabled ? t("Tender operations") : t("Overview") }}</div>
-					<h2 class="page-title">{{ tenderEnabled ? t("Tender control center") : t("Dashboard") }}</h2>
+					<div class="page-pretitle">{{ isMsaCompany ? t("MSA Commerce & Imports") : (tenderEnabled ? t("Tender operations") : t("Overview")) }}</div>
+					<h2 class="page-title">{{ isMsaCompany ? t("MSA Executive Control Center") : (tenderEnabled ? t("Tender control center") : t("Dashboard")) }}</h2>
 				</div>
 				<div class="col-auto">
 					<button class="btn btn-outline-primary btn-sm" @click="load" :disabled="tenderEnabled ? tenderLoading : loading">
@@ -289,7 +295,7 @@ const activityIcon = (type) => {
 
 	<div class="page-body">
 		<div class="container-xl">
-			<div v-if="!tenderEnabled && error" class="alert alert-danger" role="alert">
+			<div v-if="!tenderEnabled && !isMsaCompany && error" class="alert alert-danger" role="alert">
 				<div class="d-flex">
 					<div><i class="ti ti-alert-triangle me-2"></i></div>
 					<div>{{ error }}</div>
@@ -306,7 +312,11 @@ const activityIcon = (type) => {
 			/>
 
 			<template v-else>
-				<template v-if="tenderEnabled">
+				<template v-if="isMsaCompany">
+					<ImportsDashboard />
+				</template>
+
+				<template v-else-if="tenderEnabled">
 					<div class="d-flex flex-wrap align-items-end gap-2 mb-3">
 						<div>
 							<label class="form-label small mb-1" for="tender-period">{{ t("Period") }}</label>

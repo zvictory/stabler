@@ -169,7 +169,8 @@ def ci_filter_clauses(search=None, status=None, supplier=None):
     if search:
         clauses.append(
             "(ci.ci_number LIKE %(search)s OR ci.name LIKE %(search)s "
-            "OR ci.supplier LIKE %(search)s)"
+            "OR ci.supplier LIKE %(search)s OR ci.custom_proforma_invoice LIKE %(search)s "
+            "OR EXISTS (SELECT 1 FROM `tabCommercial Invoice Item` cii WHERE cii.parent = ci.name AND cii.custom_proforma_invoice LIKE %(search)s))"
         )
         params["search"] = f"%{search}%"
     if status:
@@ -181,18 +182,24 @@ def ci_filter_clauses(search=None, status=None, supplier=None):
     return clauses, params
 
 
-def container_filter_clauses(search=None, status=None, commercial_invoice=None):
+def container_filter_clauses(search=None, status=None, commercial_invoice=None, bl_type=None):
     """WHERE fragments + params for ``list_import_containers`` (alias ``c``)."""
     clauses: list[str] = []
     params: dict = {}
     if search:
         clauses.append(
-            "(c.container_number LIKE %(search)s OR c.name LIKE %(search)s)"
+            "(c.container_number LIKE %(search)s OR c.name LIKE %(search)s OR c.seal_number LIKE %(search)s "
+            "OR c.commercial_invoice LIKE %(search)s OR ci.ci_number LIKE %(search)s "
+            "OR ci.vessel LIKE %(search)s OR ci.bl_number LIKE %(search)s OR s.supplier_name LIKE %(search)s "
+            "OR ci.custom_proforma_invoice LIKE %(search)s)"
         )
         params["search"] = f"%{search}%"
     if status:
         clauses.append("c.status = %(status)s")
         params["status"] = status
+    if bl_type:
+        clauses.append("c.bl_type = %(bl_type)s")
+        params["bl_type"] = bl_type
     if commercial_invoice:
         clauses.append("c.commercial_invoice = %(commercial_invoice)s")
         params["commercial_invoice"] = commercial_invoice

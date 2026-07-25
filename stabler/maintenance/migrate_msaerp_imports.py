@@ -45,12 +45,9 @@ def run_migration(company=None):
             print(f"Created Item: {item_code}")
         return item_code
 
-    # --------------------------------------------------------------------------
-    # 2. Backfill CI Line Items (category, boxes, box_weight_kg, docs_price)
-    # --------------------------------------------------------------------------
-    print("\n--- Phase 1: Backfilling Commercial Invoice Line Items ---")
+    print("\n--- Phase 1: Migrating Commercial Invoice Line Items ---")
     ci_items_sqlite = [dict(r) for r in cur.execute("SELECT * FROM proforma_app_cilineitem").fetchall()]
-    ci_updated = 0
+    ci_items_created = 0
 
     # Group SQLite items by commercial_invoice_id
     items_by_ci = {}
@@ -58,39 +55,72 @@ def run_migration(company=None):
         ci_id = row["commercial_invoice_id"]
         items_by_ci.setdefault(ci_id, []).append(row)
 
+    # Build mapping of normalized CI reference -> Frappe CI name
+    all_frappe_cis = frappe.get_all("Commercial Invoice", fields=["name", "ci_number"])
+    ci_norm_map = {}
+    import re
+    for fci in all_frappe_cis:
+        if fci.ci_number:
+            norm = re.sub(r"[^A-Z0-9]", "", str(fci.ci_number).upper())
+            ci_norm_map[norm] = fci.name
+        norm_name = re.sub(r"[^A-Z0-9]", "", str(fci.name).upper())
+        ci_norm_map[norm_name] = fci.name
+
     for ci_id, sql_items in items_by_ci.items():
         ci_row = ci_map.get(ci_id)
         if not ci_row:
             continue
-        ci_number = ci_row["ci_number"]
-        ci_name = frappe.db.get_value("Commercial Invoice", {"ci_number": ci_number}, "name") or \
-                  frappe.db.get_value("Commercial Invoice", {"name": ci_number}, "name")
+        raw_num = ci_row["ci_number"]
+        norm_raw = re.sub(r"[^A-Z0-9]", "", str(raw_num).upper()) if raw_num else ""
+        ci_name = ci_norm_map.get(norm_raw) or frappe.db.get_value("Commercial Invoice", {"ci_number": raw_num}, "name") or \
+                  frappe.db.get_value("Commercial Invoice", {"name": raw_num}, "name")
         if not ci_name:
             continue
 
-        frappe_items = frappe.get_all("Commercial Invoice Item", filters={"parent": ci_name}, fields=["name", "item", "description", "qty"], order_by="idx ascii")
-        for idx, sql_it in enumerate(sql_items):
-            match_item = None
-            if idx < len(frappe_items):
-                match_item = frappe_items[idx]
-            else:
-                code_name = sql_it["code"] or sql_it["name"]
-                for fi in frappe_items:
-                    if fi.item == code_name or fi.description == sql_it["name"]:
-                        match_item = fi
-                        break
-            if match_item:
-                frappe.db.set_value("Commercial Invoice Item", match_item.name, {
-                    "category": sql_it["category"] or None,
-                    "boxes": cint(sql_it["box_qty"]),
-                    "box_weight_kg": flt(sql_it["box_kg"]),
-                    "docs_price": flt(sql_it["docs_price"]),
-                    "docs_amount": flt(sql_it["docs_amount"])
-                }, update_modified=False)
-                ci_updated += 1
+        # Delete existing items for this CI and re-insert complete line items
+        frappe.db.delete("Commercial Invoice Item", {"parent": ci_name})
+        ci_doc = frappe.get_doc("Commercial Invoice", ci_name)
+        ci_doc.set("items", [])
+        total_boxes = 0
+        total_kg = 0.0
+        agreed_total = 0.0
+
+        for idx, sql_it in enumerate(sql_items, start=1):
+            code_name = sql_it["code"] or sql_it["name"] or f"ITEM-{idx}"
+            item_code = ensure_item({"code": code_name, "name": sql_it["name"] or code_name})
+            qty = flt(sql_it["total_kg"])
+            agreed_rate = flt(sql_it["agreed_price"])
+            docs_rate = flt(sql_it["docs_price"])
+            boxes = cint(sql_it["box_qty"])
+
+            ci_doc.append("items", {
+                "category": sql_it["category"] or None,
+                "item": item_code,
+                "description": sql_it["name"] or item_code,
+                "boxes": boxes,
+                "box_weight_kg": flt(sql_it["box_kg"]),
+                "qty": qty,
+                "uom": "Kg",
+                "rate": agreed_rate,
+                "docs_price": docs_rate,
+                "amount": flt(sql_it["agreed_amount"]) or (qty * agreed_rate),
+                "docs_amount": flt(sql_it["docs_amount"]) or (qty * docs_rate if docs_rate else 0.0),
+            })
+            total_boxes += boxes
+            total_kg += qty
+            agreed_total += (flt(sql_it["agreed_amount"]) or (qty * agreed_rate))
+            ci_items_created += 1
+
+        ci_doc.total_boxes = total_boxes
+        ci_doc.total_kg = total_kg
+        ci_doc.agreed_total = agreed_total
+        ci_doc.flags.ignore_permissions = True
+        ci_doc.flags.ignore_validate = True
+        ci_doc.flags.ignore_links = True
+        ci_doc.save()
 
     frappe.db.commit()
-    print(f"Updated {ci_updated} Commercial Invoice Item records.")
+    print(f"Commercial Invoice Items Migration Complete: Created/Rebuilt {ci_items_created} items across {len(items_by_ci)} CIs.")
 
     # --------------------------------------------------------------------------
     # 3. Migrate Import Containers

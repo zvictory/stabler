@@ -1,7 +1,7 @@
 <script setup>
 import { computed, onMounted, ref, watch } from "vue";
 import { storeToRefs } from "pinia";
-import { useRouter } from "vue-router";
+import { useRoute, useRouter } from "vue-router";
 import { useSession } from "../../stores/session.js";
 import { importsApi } from "../../api/imports.js";
 import { call } from "../../api/client.js";
@@ -18,9 +18,12 @@ import Pagination from "../../components/Pagination.vue";
 const session = useSession();
 const { activeCompany, user } = storeToRefs(session);
 const router = useRouter();
+const route = useRoute();
 
-const search = ref("");
-const status = ref("");
+const search = ref(
+	String(route.query.search || route.query.ci || route.query.commercial_invoice || "").trim()
+);
+const status = ref(String(route.query.status || "").trim());
 const loading = ref(false);
 const error = ref("");
 const rows = ref([]);
@@ -120,8 +123,28 @@ const masked = (v) => v === null || v === undefined;
 const fm = (v, ccy) => formatMoney(v, ccy || "USD", user.value?.language || "en");
 const fn = (v) => Math.round(Number(v) || 0).toLocaleString("ru-RU");
 
+function syncFromQuery() {
+	const qSearch = String(route.query.search || route.query.ci || route.query.commercial_invoice || "").trim();
+	const qStatus = String(route.query.status || "").trim();
+
+	let changed = false;
+	if (qSearch !== search.value) {
+		search.value = qSearch;
+		changed = true;
+	}
+	if (qStatus !== status.value) {
+		status.value = qStatus;
+		changed = true;
+	}
+
+	if (changed) {
+		reload();
+	}
+}
+
 onMounted(load);
 watch(status, reload);
+watch(() => route.query, syncFromQuery, { deep: true });
 watch(limitStart, load);
 watch(pageLength, reload);
 watch(activeCompany, reload);
