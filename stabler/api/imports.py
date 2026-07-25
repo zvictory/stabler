@@ -699,6 +699,28 @@ def _apply_ci_payload(doc, values: dict, items, company: str):
     doc.agreed_total = agreed_total
 
 
+def _link_proforma_if_set(doc, company: str) -> None:
+    """Supersede the CI's Proforma Invoice when the payload named one.
+
+    Deliberately NOT wrapped in try/except. Every exception reachable from here
+    is a validation error the user must see: the PI belongs to another company
+    or supplier, or it is already superseded by a *different* CI. Swallowing it
+    saved the CI, silently skipped the PI link, and still reported success.
+    Letting it propagate rolls the request back, so the CI and its link land
+    together or neither does.
+
+    The early return keeps re-saves editable: `save_proforma` accepts a `status`
+    in its payload, so a linked PI can later be moved to CANCELLED. Without this
+    check `can_supersede` would then reject every subsequent CI edit.
+    """
+    proforma = doc.get("custom_proforma_invoice")
+    if not proforma or not frappe.db.exists("Proforma Invoice", proforma):
+        return
+    if frappe.db.get_value("Proforma Invoice", proforma, "commercial_invoice") == doc.name:
+        return
+    link_proforma_to_ci(proforma, doc.name, company)
+
+
 @frappe.whitelist()
 def create_commercial_invoice(
     company: str,
@@ -722,11 +744,7 @@ def create_commercial_invoice(
     _apply_ci_payload(doc, values, items, company)
     doc.insert(ignore_permissions=False)
     _sync_po_links(doc.name, company, po_links)
-    if doc.get("custom_proforma_invoice") and frappe.db.exists("Proforma Invoice", doc.custom_proforma_invoice):
-        try:
-            link_proforma_to_ci(doc.custom_proforma_invoice, doc.name, company)
-        except Exception:
-            pass
+    _link_proforma_if_set(doc, company)
     return {"name": doc.name}
 
 
@@ -758,11 +776,7 @@ def update_commercial_invoice(
     _apply_ci_payload(doc, values, items, company)
     doc.save(ignore_permissions=False)
     _sync_po_links(doc.name, company, po_links)
-    if doc.get("custom_proforma_invoice") and frappe.db.exists("Proforma Invoice", doc.custom_proforma_invoice):
-        try:
-            link_proforma_to_ci(doc.custom_proforma_invoice, doc.name, company)
-        except Exception:
-            pass
+    _link_proforma_if_set(doc, company)
     return {"name": doc.name}
 
 

@@ -113,5 +113,37 @@ class TestDocsPriceNeverInGL(unittest.TestCase):
 			)
 
 
+class TestProformaLinkFailsLoud(unittest.TestCase):
+	"""Saving a CI must never silently drop the PI -> CI supersede.
+
+	Both endpoints used to call link_proforma_to_ci inside a bare
+	`try: ... except Exception: pass`. Every failure reachable from there is a
+	validation error the user has to see -- the PI belongs to another company or
+	supplier, or it is already superseded by a *different* CI -- so the CI saved,
+	the link never happened, and the UI still reported success. The throw must
+	propagate so Frappe rolls the request back.
+	"""
+
+	def setUp(self):
+		self.src = _read("imports.py")
+
+	def test_neither_ci_endpoint_swallows_the_link_error(self):
+		for name in ("create_commercial_invoice", "update_commercial_invoice"):
+			body = _func_body(self.src, name)
+			self.assertIn("_link_proforma_if_set(doc, company)", body)
+			self.assertNotIn("except Exception", body)
+
+	def test_helper_propagates_and_stays_idempotent(self):
+		body = _func_body(self.src, "_link_proforma_if_set")
+		self.assertIn("link_proforma_to_ci(proforma, doc.name, company)", body)
+		self.assertNotIn("except Exception", body)
+		# A PI that already points at this CI is skipped. `save_proforma` accepts
+		# a `status`, so a linked PI can later become CANCELLED; without the skip
+		# can_supersede() would reject every subsequent CI edit forever.
+		self.assertIn(
+			'frappe.db.get_value("Proforma Invoice", proforma, "commercial_invoice")', body
+		)
+
+
 if __name__ == "__main__":
 	unittest.main()
