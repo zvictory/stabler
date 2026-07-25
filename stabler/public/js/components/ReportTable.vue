@@ -81,7 +81,10 @@ const mixedCurrency = computed(() => rowCurrencies.value.size > 1);
 
 function fmt(value, col, row) {
 	if (value == null || value === "") return "—";
-	if (col.type === "money") return formatMoney(Number(value || 0), (row && row.currency) || props.currency, props.language);
+	if (col.type === "money") {
+		const currencyKey = col.currency_key || "currency";
+		return formatMoney(Number(value || 0), (row && row[currencyKey]) || props.currency, props.language);
+	}
 	if (col.type === "int" || col.type === "number") return Number(value).toLocaleString("en-US").replace(/,/g, " ");
 	if (col.type === "percent") return Number(value).toFixed(1) + "%";
 	if (col.type === "date") return formatDate(value);
@@ -208,7 +211,7 @@ defineExpose({ exportCsv, exportXlsx });
 						>
 							<template v-if="idx === 0">{{ t("Total") }}</template>
 							<template v-else-if="col.key in totals">
-								<template v-if="col.type === 'money' && mixedCurrency">—</template>
+							<template v-if="col.type === 'money' && mixedCurrency && !col.currency_key">—</template>
 								<template v-else>{{ fmt(totals[col.key], col, { currency: footerCurrency }) }}</template>
 							</template>
 						</td>

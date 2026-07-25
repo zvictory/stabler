@@ -4695,3 +4695,21 @@ Purchase execution,Исполнение закупок
 Sales execution,Исполнение продаж
 Sales order,Заказ на продажу
 No linked documents,Нет связанных документов
+Receivables by agreement,Дебиторская задолженность по договорам
+Customer outstanding balances grouped by Contract and currency.,Задолженность клиентов по договору и валюте
+Agreement,Договор
+Base outstanding,Остаток в базовой валюте
+Latest due date,Последний срок оплаты
+Grouped by Contract. Unlinked invoices are shown separately; transaction and base currency are never mixed.,Группировка по договору. Непривязанные счета показаны отдельно; валюты не смешиваются.
+Unlinked,Не привязан
+Search agreement…,Поиск договора…
+No agreements match that search,Договоры не найдены
+Agreement management is not enabled for {0}.,Управление договорами не включено для {0}.
+Unknown agreement: {0},Неизвестный договор: {0}
+Agreement {0} belongs to another customer.,Договор {0} принадлежит другому клиенту.
+You are not permitted to view this agreement.,У вас нет доступа к этому договору.
+You are not permitted to view agreements.,У вас нет доступа к договорам.
+Auto-filled {count} remaining item lines from Proforma Invoice {ref},Автозаполнено {count} строк с остатком из проформы {ref}
+No remaining (unshipped) items found on this Proforma Invoice.,В этой проформе не осталось неотгруженных позиций.
+Remaining quantities could not be calculated. Loaded the original Proforma quantities. Please check them.,Не удалось рассчитать остатки. Загружены исходные количества проформы. Проверьте их.
+Could not fetch available PI lines.,Не удалось загрузить доступные строки проформы.

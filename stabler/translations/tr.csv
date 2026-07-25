@@ -4684,3 +4684,21 @@ Purchase execution,Satın alma işlemleri
 Sales execution,Satış işlemleri
 Sales order,Satış siparişi
 No linked documents,Bağlı belge yok
+Receivables by agreement,Sözleşmeye göre alacaklar
+Customer outstanding balances grouped by Contract and currency.,Müşteri bakiyeleri sözleşme ve para birimine göre gruplanır.
+Agreement,Sözleşme
+Base outstanding,Temel para biriminde bakiye
+Latest due date,Son vade tarihi
+Grouped by Contract. Unlinked invoices are shown separately; transaction and base currency are never mixed.,Sözleşmeye göre gruplanır. Bağlantısız faturalar ayrı gösterilir; para birimleri karıştırılmaz.
+Unlinked,Bağlantısız
+Search agreement…,Sözleşme ara…
+No agreements match that search,Eşleşen sözleşme yok
+Agreement management is not enabled for {0}.,{0} için sözleşme yönetimi etkin değil.
+Unknown agreement: {0},{0} bilinmeyen sözleşme.
+Agreement {0} belongs to another customer.,{0} sözleşmesi başka müşteriye ait.
+You are not permitted to view this agreement.,Bu sözleşmeyi görüntüleme yetkiniz yok.
+You are not permitted to view agreements.,Sözleşmeleri görüntüleme yetkiniz yok.
+Auto-filled {count} remaining item lines from Proforma Invoice {ref},{ref} proforma faturasından kalan {count} kalem satırı otomatik dolduruldu
+No remaining (unshipped) items found on this Proforma Invoice.,Bu proforma faturada sevk edilmemiş kalan kalem yok.
+Remaining quantities could not be calculated. Loaded the original Proforma quantities. Please check them.,Kalan miktarlar hesaplanamadı. Proformanın orijinal miktarları yüklendi. Lütfen kontrol edin.
+Could not fetch available PI lines.,Mevcut proforma satırları alınamadı.

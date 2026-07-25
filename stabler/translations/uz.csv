@@ -4689,3 +4689,21 @@ Purchase execution,Xarid ijrosi
 Sales execution,Sotuv ijrosi
 Sales order,Sotuv buyurtmasi
 No linked documents,Bog‘langan hujjatlar yo‘q
+Receivables by agreement,Shartnoma bo‘yicha debitorlik
+Customer outstanding balances grouped by Contract and currency.,Mijoz qarzdorligi shartnoma va valyuta bo‘yicha guruhlangan.
+Agreement,Shartnoma
+Base outstanding,Bazaviy valyutadagi qoldiq
+Latest due date,Eng so‘nggi to‘lov muddati
+Grouped by Contract. Unlinked invoices are shown separately; transaction and base currency are never mixed.,Shartnoma bo‘yicha guruhlangan. Bog‘lanmagan hisob-fakturalar alohida ko‘rsatiladi; valyutalar aralashtirilmaydi.
+Unlinked,Bog‘lanmagan
+Search agreement…,Shartnomani qidiring…
+No agreements match that search,Bunday shartnoma topilmadi
+Agreement management is not enabled for {0}.,{0} uchun shartnoma boshqaruvi yoqilmagan.
+Unknown agreement: {0},Noma’lum shartnoma: {0}
+Agreement {0} belongs to another customer.,{0} shartnomasi boshqa mijozga tegishli.
+You are not permitted to view this agreement.,Bu shartnomani ko‘rishga ruxsatingiz yo‘q.
+You are not permitted to view agreements.,Shartnomalarni ko‘rishga ruxsatingiz yo‘q.
+Auto-filled {count} remaining item lines from Proforma Invoice {ref},{ref} proformasidan qolgan {count} ta qator avtomatik to‘ldirildi
+No remaining (unshipped) items found on this Proforma Invoice.,Bu proformada yuborilmagan qoldiq pozitsiyalar yo‘q.
+Remaining quantities could not be calculated. Loaded the original Proforma quantities. Please check them.,Qoldiq miqdorlarni hisoblab bo‘lmadi. Proformaning asl miqdorlari yuklandi. Iltimos tekshiring.
+Could not fetch available PI lines.,Mavjud proforma qatorlarini yuklab bo‘lmadi.

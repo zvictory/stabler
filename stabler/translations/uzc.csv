@@ -4689,3 +4689,21 @@ Purchase execution,Харид ижроси
 Sales execution,Сотув ижроси
 Sales order,Сотув буюртмаси
 No linked documents,Боғланган ҳужжатлар йўқ
+Receivables by agreement,Шартнома бўйича дебиторлик
+Customer outstanding balances grouped by Contract and currency.,Мижоз қарздорлиги шартнома ва валюта бўйича гуруҳланган.
+Agreement,Шартнома
+Base outstanding,Базавий валютадаги қолдиқ
+Latest due date,Энг сўнгги тўлов муддати
+Grouped by Contract. Unlinked invoices are shown separately; transaction and base currency are never mixed.,Шартнома бўйича гуруҳланган. Боғланмаган ҳисоб-фактуралар алоҳида кўрсатилади; валюталар аралаштирилмайди.
+Unlinked,Боғланмаган
+Search agreement…,Шартномани қидириш…
+No agreements match that search,Бундай шартнома топилмади
+Agreement management is not enabled for {0}.,{0} учун шартнома бошқаруви ёқилмаган.
+Unknown agreement: {0},Номаълум шартнома: {0}
+Agreement {0} belongs to another customer.,{0} шартномаси бошқа мижозга тегишли.
+You are not permitted to view this agreement.,Бу шартномани кўришга рухсат йўқ.
+You are not permitted to view agreements.,Шартномаларни кўришга рухсат йўқ.
+Auto-filled {count} remaining item lines from Proforma Invoice {ref},{ref} проформасидан қолган {count} та қатор автоматик тўлдирилди
+No remaining (unshipped) items found on this Proforma Invoice.,Бу проформада юборилмаган қолдиқ позициялар йўқ.
+Remaining quantities could not be calculated. Loaded the original Proforma quantities. Please check them.,Қолдиқ миқдорларни ҳисоблаб бўлмади. Проформанинг асл миқдорлари юкланди. Илтимос текширинг.
+Could not fetch available PI lines.,Мавжуд проформа қаторларини юклаб бўлмади.
