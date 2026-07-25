@@ -31,6 +31,7 @@ DEFAULT_MODULE_ENABLED = {
 	"remittance": False,
 	"installment": False,
 	"imports": False,
+	"agreements": False,
 }
 
 

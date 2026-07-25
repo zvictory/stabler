@@ -28,6 +28,7 @@ from frappe.utils import flt
 
 from stabler.api._common import _require_company
 from stabler.api.sales import _sales_report_dates, _sales_report_period_expr
+from stabler.api.organization import module_map_for
 
 
 def _base_currency(company: str) -> str:
@@ -356,6 +357,98 @@ def customer_balance_summary(
         "drill_param": "customer",
     }
     return _shape(columns, rows, totals, meta)
+
+
+@frappe.whitelist()
+def agreement_receivables(
+    company: str,
+    only_with_balance: int = 1,
+    customers=None,
+    agreements=None,
+) -> dict:
+    """Live customer receivables grouped by native ERPNext Contract.
+
+    Submitted Sales Invoices remain the financial source of truth. The Contract
+    link is an allocation dimension only; payments reduce the same invoice
+    outstanding amount automatically. Unlinked invoices are returned separately
+    so they cannot silently disappear from the customer balance.
+    """
+    _require_company(company)
+    _assert_company_scope(company)
+    if not module_map_for(company).get("agreements"):
+        frappe.throw(_("Agreement management is not enabled for {0}.").format(company), frappe.PermissionError)
+
+    customer_values = _decode_list(customers)
+    agreement_values = _decode_list(agreements)
+    params = {"company": company}
+    filters = ["si.company = %(company)s", "si.docstatus = 1"]
+    if customer_values:
+        params["customers"] = tuple(customer_values)
+        filters.append("si.customer IN %(customers)s")
+    if agreement_values:
+        params["agreements"] = tuple(agreement_values)
+        filters.append("si.custom_agreement IN %(agreements)s")
+    if int(only_with_balance or 0):
+        filters.append("ABS(si.outstanding_amount) > 0.0001")
+
+    rows = frappe.db.sql(
+        f"""
+        SELECT
+            si.customer,
+            si.customer_name,
+            si.custom_agreement AS agreement,
+            COALESCE(ct.custom_agreement_no, '') AS agreement_no,
+            COALESCE(ct.custom_original_currency, si.currency) AS agreement_currency,
+            si.currency,
+            COUNT(DISTINCT si.name) AS invoice_count,
+            SUM(si.outstanding_amount) AS balance,
+            SUM(si.outstanding_amount * si.conversion_rate) AS base_balance,
+            MAX(si.due_date) AS latest_due_date
+        FROM `tabSales Invoice` si
+        LEFT JOIN `tabContract` ct ON ct.name = si.custom_agreement
+        WHERE {' AND '.join(filters)}
+        GROUP BY si.customer, si.customer_name, si.custom_agreement,
+                 ct.custom_agreement_no, ct.custom_original_currency, si.currency
+        HAVING ABS(SUM(si.outstanding_amount)) > 0.0001
+            OR %(include_zero)s = 1
+        ORDER BY base_balance DESC, si.customer_name ASC, agreement_no ASC
+        LIMIT 5000
+        """,
+        {**params, "include_zero": 0 if int(only_with_balance or 0) else 1},
+        as_dict=True,
+    )
+    for row in rows:
+        row["agreement_no"] = row.get("agreement_no") or _("Unlinked")
+        row["base_currency"] = _base_currency(company)
+        row["invoice_count"] = int(row.get("invoice_count") or 0)
+        row["balance"] = flt(row.get("balance"))
+        row["base_balance"] = flt(row.get("base_balance"))
+
+    columns = [
+        {"key": "customer_name", "label": _("Customer"), "type": "text"},
+        {"key": "agreement_no", "label": _("Agreement"), "type": "text"},
+        {"key": "agreement_currency", "label": _("Currency"), "type": "text"},
+        {"key": "invoice_count", "label": _("Invoices"), "type": "int", "align": "end"},
+        {"key": "balance", "label": _("Outstanding"), "type": "money", "align": "end"},
+        {"key": "base_balance", "label": _("Base outstanding"), "type": "money", "align": "end", "currency_key": "base_currency"},
+        {"key": "latest_due_date", "label": _("Latest due date"), "type": "date"},
+    ]
+    return _shape(
+        columns,
+        rows,
+        {
+            "invoice_count": sum(row["invoice_count"] for row in rows),
+            "balance": sum(row["balance"] for row in rows),
+            "base_balance": sum(row["base_balance"] for row in rows),
+        },
+        {
+            "basis": _("Submitted Sales Invoices, live outstanding balance"),
+            "currency": _base_currency(company),
+            "note": _("Grouped by Contract. Unlinked invoices are shown separately; transaction and base currency are never mixed."),
+            "drill_report": "customer_balance_detail",
+            "drill_param": "customer",
+        },
+    )
 
 
 @frappe.whitelist()
@@ -2201,4 +2294,3 @@ def get_payments_register_report(
             "usd_total": round(usd_total, 2),
         },
     }
-

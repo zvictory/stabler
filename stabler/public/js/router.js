@@ -7,6 +7,7 @@ import GenesisWizard from "./pages/welcome/GenesisWizard.vue";
 import ReportsHub from "./pages/ReportsHub.vue";
 import ReportSalesByCustomer from "./pages/reports/SalesByCustomer.vue";
 import ReportCustomerBalanceSummary from "./pages/reports/CustomerBalanceSummary.vue";
+import ReportAgreementReceivables from "./pages/reports/AgreementReceivables.vue";
 import ReportSalesByItem from "./pages/reports/SalesByItem.vue";
 import ReportItemAbc from "./pages/reports/ItemAbc.vue";
 import DrillReport from "./pages/reports/DrillReport.vue";
@@ -226,6 +227,7 @@ const routes = [
 	{ path: "/reports", name: "reports", component: ReportsHub, meta: { title: t("Reports") } },
 	{ path: "/reports/sales-by-customer", name: "report-sales-by-customer", component: ReportSalesByCustomer, meta: { title: t("Sales by Customer"), module: "sales" } },
 	{ path: "/reports/customer-balance-summary", name: "report-customer-balance-summary", component: ReportCustomerBalanceSummary, meta: { title: t("Customer Balance Summary"), module: "sales" } },
+	{ path: "/reports/agreement-receivables", name: "report-agreement-receivables", component: ReportAgreementReceivables, meta: { title: t("Receivables by agreement"), module: "agreements" } },
 	{ path: "/reports/sales-by-item", name: "report-sales-by-item", component: ReportSalesByItem, meta: { title: t("Sales by Item"), module: "sales" } },
 	{ path: "/reports/item-abc", name: "report-item-abc", component: ReportItemAbc, meta: { title: t("Item ABC analysis"), module: "sales" } },
 	{ path: "/reports/customer-abc", name: "report-customer-abc", component: DrillReport, meta: { title: "Customer ABC analysis", module: "sales", report: { title: "Customer ABC analysis", summaryApi: "stabler.api.reports.customer_abc", detailApi: "stabler.api.reports.sales_by_customer_detail", drillKey: "customer", detailParam: "customer", docPrefix: "/sales/invoices/", exportName: "customer_abc", filters: [ { key: "customers", label: t("Customers"), searchApi: "stabler.api.sales.list_customers", idKey: "name", display: (r) => r.customer_name || r.name, placeholder: t("All customers") }, { key: "items", label: t("Items"), searchApi: "stabler.api.inventory.list_items", idKey: "name", display: (r) => r.item_name || r.name, placeholder: t("All items") } ] } } },
