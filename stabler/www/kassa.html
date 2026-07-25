@@ -6,240 +6,366 @@
 	<title>Mening kassa jadvalim</title>
 	<script src="https://telegram.org/js/telegram-web-app.js"></script>
 	<style>
+		/* Forced Pure Light Theme with Premium UI/UX Polish */
 		:root {
-			--tg-bg: #f4f5f7;
-			--tg-text: #14161a;
-			--tg-hint: #7c8591;
-			--card-purple-bg: #5b53d6;
-			--card-purple-text: #ffffff;
-			--card-green-bg: #e8f5ee;
-			--card-green-text: #12351f;
-			--pos-color: #1a8a4c;
-			--neg-color: #d1373f;
-			--border-color: #e3e5e9;
+			--tg-bg: #f8fafc;
+			--tg-card-bg: #ffffff;
+			--tg-text: #0f172a;
+			--tg-hint: #64748b;
+			--border-color: #e2e8f0;
+			
+			--pos-color: #16a34a;
+			--neg-color: #dc2626;
+			--run-color: #2563eb;
+			--run-bg: #eff6ff;
+
+			--shadow-sm: 0 1px 3px rgba(0, 0, 0, 0.05);
+			--shadow-md: 0 4px 12px rgba(0, 0, 0, 0.06);
 		}
 
 		* {
 			box-sizing: border-box;
+			-webkit-tap-highlight-color: transparent;
 		}
 
-		html,
-		body {
+		html, body {
 			margin: 0;
 			padding: 0;
-			background: var(--tg-bg);
-			color: var(--tg-text);
-			font-family:
-				-apple-system,
-				BlinkMacSystemFont,
-				"Segoe UI",
-				Roboto,
-				Helvetica,
-				Arial,
-				sans-serif;
-			font-size: 15px;
+			background: var(--tg-bg) !important;
+			color: var(--tg-text) !important;
+			font-family: -apple-system, BlinkMacSystemFont, "SF Pro Text", "Segoe UI", Roboto, Helvetica, Arial, sans-serif;
+			font-size: 14px;
+			line-height: 1.4;
 		}
 
 		#app {
-			max-width: 560px;
+			max-width: 600px;
 			margin: 0 auto;
-			padding: 12px 12px 32px;
+			padding: 10px 8px 32px;
 		}
 
-		h1 {
-			font-size: 18px;
-			font-weight: 600;
-			margin: 4px 0 14px;
-			line-height: 1.3;
-		}
-
-		.cards {
+		/* Sleek Compact Header Bar */
+		.header-container {
 			display: flex;
-			flex-direction: column;
+			align-items: center;
+			justify-content: space-between;
+			margin: 2px 2px 12px;
+		}
+
+		.header-badges {
+			display: flex;
+			align-items: center;
 			gap: 8px;
-			margin-bottom: 16px;
+			width: 100%;
+			justify-content: space-between;
+		}
+
+		.date-badge {
+			font-size: 12.5px;
+			font-weight: 700;
+			padding: 5px 12px;
+			border-radius: 20px;
+			background: #ffffff;
+			color: #334155;
+			border: 1px solid var(--border-color);
+			box-shadow: var(--shadow-sm);
+			display: flex;
+			align-items: center;
+			gap: 6px;
+		}
+
+		.tx-count-badge {
+			font-size: 12px;
+			font-weight: 600;
+			padding: 5px 12px;
+			border-radius: 20px;
+			background: #ffffff;
+			color: var(--tg-hint);
+			border: 1px solid var(--border-color);
+			box-shadow: var(--shadow-sm);
+		}
+
+		/* Cards Grid */
+		.cards {
+			display: grid;
+			grid-template-columns: repeat(3, 1fr);
+			gap: 6px;
+			margin-bottom: 14px;
 		}
 
 		.card {
 			display: flex;
-			align-items: center;
+			flex-direction: column;
 			justify-content: space-between;
-			gap: 12px;
-			border-radius: 12px;
-			padding: 12px 15px;
+			border-radius: 14px;
+			padding: 10px 8px;
 			cursor: pointer;
+			transition: all 0.2s cubic-bezier(0.4, 0, 0.2, 1);
+			border: 1px solid var(--border-color);
+			background: var(--tg-card-bg);
+			box-shadow: var(--shadow-sm);
 		}
 
-		.card-nakit { background: rgba(59, 130, 246, 0.14); color: #2563eb; }
-		.card-pk { background: rgba(245, 158, 11, 0.16); color: #b45309; }
-		.card-usd { background: rgba(34, 197, 94, 0.16); color: #15803d; }
+		.card:active {
+			transform: scale(0.97);
+		}
 
-		.day-pick { margin-bottom: 14px; }
-		.day-pick label { display: block; font-size: 11px; color: var(--tg-hint); margin-bottom: 4px; }
-		.day-pick input { width: 100%; padding: 9px 11px; border-radius: 10px; border: 1px solid var(--border-color); background: var(--tg-bg); color: var(--tg-text); }
-		.entries-head { font-size: 12px; color: var(--tg-hint); text-transform: uppercase; letter-spacing: 0.04em; margin: 0 2px 8px; font-weight: 600; }
-		.entries { display: flex; flex-direction: column; gap: 8px; }
-		.entry { border: 1px solid var(--border-color); border-radius: 12px; padding: 10px 12px; }
-		.entry .e-top { display: flex; align-items: center; justify-content: space-between; margin-bottom: 3px; }
-		.entry .e-op { font-size: 14px; font-weight: 600; }
-		.entry .e-time { font-size: 11px; color: var(--tg-hint); }
-		.entry .e-raw { font-size: 12px; color: var(--tg-hint); margin-bottom: 6px; word-break: break-word; }
-		.entry .e-legs { display: flex; flex-wrap: wrap; gap: 5px; }
-		.leg { font-size: 12px; font-weight: 600; padding: 2px 8px; border-radius: 999px; font-variant-numeric: tabular-nums; }
-		.leg-nakit { background: rgba(59, 130, 246, 0.16); color: #3b82f6; }
-		.leg-pk { background: rgba(245, 158, 11, 0.18); color: #f59e0b; }
-		.leg-usd { background: rgba(34, 197, 94, 0.16); color: #22c55e; }
-		.entry .e-sub { font-size: 11px; color: var(--tg-hint); margin-top: 5px; }
-		.entries-empty { text-align: center; color: var(--tg-hint); font-size: 13px; padding: 18px; }
+		.card-nakit { background: linear-gradient(135deg, rgba(59, 130, 246, 0.08), rgba(37, 99, 235, 0.02)); border-color: rgba(59, 130, 246, 0.2); }
+		.card-pk { background: linear-gradient(135deg, rgba(245, 158, 11, 0.08), rgba(217, 119, 6, 0.02)); border-color: rgba(245, 158, 11, 0.2); }
+		.card-usd { background: linear-gradient(135deg, rgba(16, 185, 129, 0.08), rgba(5, 150, 105, 0.02)); border-color: rgba(16, 185, 129, 0.2); }
 
-		.card.selected { outline: 2px solid currentColor; outline-offset: -2px; }
-		.ledger-head { font-size: 14px; font-weight: 600; margin: 0 2px 10px; }
-		.ltable { width: 100%; border-collapse: collapse; font-size: 13px; background: #fff; border: 1px solid var(--border-color); border-radius: 12px; overflow: hidden; }
-		.ltable th { text-align: right; font-weight: 600; color: var(--tg-hint); font-size: 10.5px; text-transform: uppercase; letter-spacing: 0.03em; padding: 9px 10px; border-bottom: 1px solid var(--border-color); }
-		.ltable th.l { text-align: left; }
-		.ltable td { padding: 9px 10px; border-bottom: 1px solid var(--border-color); vertical-align: top; }
-		.ltable tbody tr:last-child td { border-bottom: none; }
-		.ltable tbody tr:nth-child(even) { background: #fafbfc; }
-		.ltable td.num { text-align: right; font-variant-numeric: tabular-nums; white-space: nowrap; }
-		.ltable .pos { color: var(--pos-color); font-weight: 600; }
-		.ltable .neg { color: var(--neg-color); font-weight: 600; }
-		.ltable .run { font-weight: 700; }
-		.ltable .l-time { font-weight: 600; }
-		.ltable .l-when { font-weight: 600; white-space: nowrap; }
-		.ltable .l-raw { color: var(--tg-hint); font-size: 11.5px; margin-top: 2px; word-break: break-word; }
-		.ltable .l-open td { color: var(--tg-hint); font-style: italic; }
+		.card.selected {
+			box-shadow: var(--shadow-md);
+			transform: translateY(-1px);
+		}
+
+		.card-nakit.selected { border-color: #2563eb; outline: 2px solid #2563eb; outline-offset: -2px; }
+		.card-pk.selected { border-color: #d97706; outline: 2px solid #d97706; outline-offset: -2px; }
+		.card-usd.selected { border-color: #059669; outline: 2px solid #059669; outline-offset: -2px; }
 
 		.card-label {
-			font-size: 14px;
-			opacity: 0.9;
+			font-size: 11.5px;
 			font-weight: 600;
+			color: var(--tg-hint);
+			display: flex;
+			align-items: center;
+			gap: 4px;
 			white-space: nowrap;
+			margin-bottom: 4px;
 		}
 
 		.card-balance {
-			font-size: 18px;
-			font-weight: 700;
-			font-variant-numeric: tabular-nums;
+			font-size: 14.5px;
+			font-weight: 800;
+			font-family: -apple-system, BlinkMacSystemFont, "SF Pro Text", "Segoe UI", Roboto, sans-serif !important;
+			font-variant-numeric: tabular-nums !important;
 			white-space: nowrap;
+			letter-spacing: -0.01em;
 		}
 
-		.date-range {
-			display: grid;
-			grid-template-columns: 1fr 1fr;
-			gap: 10px;
-			margin-bottom: 16px;
-		}
+		.card-nakit .card-balance { color: #2563eb; }
+		.card-pk .card-balance { color: #d97706; }
+		.card-usd .card-balance { color: #059669; }
 
-		.date-field {
-			display: flex;
-			flex-direction: column;
-			gap: 4px;
-		}
-
-		.date-field label {
-			font-size: 12.5px;
-			color: var(--tg-hint);
-			font-weight: 500;
-		}
-
-		.date-field input[type="date"] {
-			border: 1px solid var(--border-color);
-			border-radius: 10px;
-			padding: 8px 10px;
-			font-size: 14px;
-			background: #ffffff;
-			color: var(--tg-text);
-			width: 100%;
-		}
-
+		/* Table Container - White Theme & Zebra Striped */
 		.table-wrap {
-			background: #ffffff;
+			background: #ffffff !important;
 			border: 1px solid var(--border-color);
-			border-radius: 12px;
+			border-radius: 16px;
 			overflow: hidden;
+			box-shadow: var(--shadow-sm);
+			transition: border-color 0.25s ease;
 		}
+
+		.table-wrap.th-nakit { border-top: 3px solid #2563eb; }
+		.table-wrap.th-pk { border-top: 3px solid #d97706; }
+		.table-wrap.th-usd { border-top: 3px solid #059669; }
 
 		table {
 			width: 100%;
 			border-collapse: collapse;
-			font-size: 13.5px;
+			font-size: 13px;
+			table-layout: fixed;
+			background: #ffffff !important;
 		}
 
 		thead th {
-			text-align: left;
-			font-weight: 600;
-			font-size: 12px;
-			color: var(--tg-hint);
-			padding: 10px 8px;
+			text-align: right;
+			font-weight: 700;
+			font-size: 11px;
+			text-transform: uppercase;
+			letter-spacing: 0.04em;
+			padding: 11px 6px;
 			border-bottom: 1px solid var(--border-color);
 			white-space: nowrap;
+			transition: background 0.25s ease, color 0.25s ease;
 		}
 
+		/* Interactive Sana Sort Header */
+		thead th.col-sana {
+			cursor: pointer;
+			user-select: none;
+			-webkit-user-select: none;
+		}
+
+		thead th.col-sana:hover {
+			opacity: 0.85;
+		}
+
+		.sort-icon {
+			display: inline-block;
+			margin-left: 2px;
+			font-size: 10px;
+			vertical-align: middle;
+		}
+
+		/* Dynamic Header Themes per Account */
+		.th-nakit thead th { background: #eff6ff !important; color: #1e40af; }
+		.th-pk thead th { background: #fffbeb !important; color: #92400e; }
+		.th-usd thead th { background: #ecfdf5 !important; color: #065f46; }
+
+		thead th.l { text-align: left; }
+		thead th.col-sana { width: 54px; }
+		thead th.col-izoh { width: auto; }
+		thead th.col-miqdor { width: 26%; }
+		thead th.col-qoldiq { width: 26%; }
+
 		tbody td {
-			padding: 9px 8px;
-			border-bottom: 1px solid var(--border-color);
-			vertical-align: top;
+			padding: 10px 6px;
+			border-bottom: 1px solid #f1f5f9;
+			vertical-align: middle;
+			word-break: normal;
+			background: transparent;
+			color: #0f172a;
 		}
 
 		tbody tr:last-child td {
 			border-bottom: none;
 		}
 
+		/* Zebra Striping */
 		tbody tr:nth-child(even) {
-			background: #fafafa;
+			background: #f8fafc !important;
 		}
 
-		td.col-date {
+		tbody tr:nth-child(odd) {
+			background: #ffffff !important;
+		}
+
+		/* Cell Formatting */
+		.col-sana-cell {
 			white-space: nowrap;
-			color: var(--tg-hint);
+			vertical-align: top;
+			padding-top: 10px;
 		}
 
-		td.col-amount,
-		td.col-running {
-			text-align: right;
+		.l-date {
+			font-size: 12px;
+			font-weight: 700;
+			color: #0f172a;
 			font-variant-numeric: tabular-nums;
+			line-height: 1.15;
+		}
+
+		.l-time {
+			font-size: 10px;
+			font-weight: 600;
+			color: #64748b;
+			margin-top: 2px;
+			font-variant-numeric: tabular-nums;
+		}
+
+		.op-badge {
+			display: inline-block;
+			font-size: 12px;
+			font-weight: 700;
+			color: #0f172a;
+			margin-bottom: 1px;
 			white-space: nowrap;
+		}
+
+		.op-sub {
+			font-size: 11px;
+			color: #64748b;
+			line-height: 1.25;
+		}
+
+		.l-raw {
+			font-size: 10.5px;
+			color: #64748b;
+			font-style: italic;
+			margin-top: 2px;
+			opacity: 0.9;
+			display: -webkit-box;
+			-webkit-line-clamp: 2;
+			-webkit-box-orient: vertical;
+			overflow: hidden;
+		}
+
+		/* Proportional Font + Tabular Nums for Ultra-Tight Financial Formatting */
+		.amt-cell {
+			text-align: right;
+			font-family: -apple-system, BlinkMacSystemFont, "SF Pro Text", "Segoe UI", Roboto, sans-serif !important;
+			font-variant-numeric: tabular-nums !important;
+			white-space: nowrap;
+			font-size: 13px;
+			font-weight: 700;
+			letter-spacing: -0.01em;
 		}
 
 		.amt-pos {
-			color: var(--pos-color);
-			font-weight: 600;
+			color: #16a34a;
 		}
 
 		.amt-neg {
-			color: var(--neg-color);
-			font-weight: 600;
+			color: #dc2626;
 		}
 
-		.empty-row td {
-			text-align: center;
-			color: var(--tg-hint);
-			padding: 28px 8px;
+		/* Running Balance Qoldiq Column */
+		.run-cell {
+			text-align: right;
+			font-family: -apple-system, BlinkMacSystemFont, "SF Pro Text", "Segoe UI", Roboto, sans-serif !important;
+			font-variant-numeric: tabular-nums !important;
+			white-space: nowrap;
+			font-weight: 700;
+			font-size: 13px;
+			color: #0f172a;
+			letter-spacing: -0.01em;
 		}
 
-		.skeleton-row td {
-			padding: 10px 8px;
-		}
-
-		.skeleton-bar {
-			height: 11px;
+		.run-badge {
+			display: inline-block;
+			padding: 2px 5px;
 			border-radius: 6px;
-			background: linear-gradient(90deg, #eceef1 25%, #f6f7f8 37%, #eceef1 63%);
+			background: #eff6ff;
+			color: #2563eb;
+			font-weight: 700;
+			border: 1px solid rgba(37, 99, 235, 0.15);
+			font-family: -apple-system, BlinkMacSystemFont, "SF Pro Text", "Segoe UI", Roboto, sans-serif !important;
+			font-variant-numeric: tabular-nums !important;
+			letter-spacing: -0.01em;
+		}
+
+		.th-pk .run-badge { background: #fffbeb; color: #b45309; border-color: rgba(245, 158, 11, 0.2); }
+		.th-usd .run-badge { background: #ecfdf5; color: #047857; border-color: rgba(16, 185, 129, 0.2); }
+
+		.l-open td {
+			color: #64748b;
+			font-style: italic;
+			background: #f8fafc !important;
+			border-top: 1px dashed var(--border-color);
+			font-size: 12px;
+		}
+
+		/* Skeleton & Empty States */
+		.skeleton-bar {
+			height: 12px;
+			border-radius: 6px;
+			background: linear-gradient(90deg, #e2e8f0 25%, #f1f5f9 37%, #e2e8f0 63%);
 			background-size: 400% 100%;
 			animation: skeleton-shine 1.4s ease infinite;
 		}
 
 		@keyframes skeleton-shine {
-			0% {
-				background-position: 100% 50%;
-			}
-			100% {
-				background-position: 0 50%;
-			}
+			0% { background-position: 100% 50%; }
+			100% { background-position: 0 50%; }
+		}
+
+		.empty-state {
+			text-align: center;
+			color: #64748b;
+			padding: 32px 16px;
+			font-size: 13.5px;
+			background: #ffffff;
+		}
+
+		.empty-icon {
+			font-size: 32px;
+			margin-bottom: 6px;
 		}
 
 		.state-banner {
-			border-radius: 12px;
+			border-radius: 14px;
 			padding: 16px;
 			text-align: center;
 			font-size: 14px;
@@ -247,23 +373,29 @@
 		}
 
 		.state-banner.error {
-			background: #fdecea;
-			color: #8c1d18;
-			border: 1px solid #f3c1bd;
+			background: #fef2f2;
+			color: #dc2626;
+			border: 1px solid #fecaca;
 		}
 	</style>
 </head>
 <body>
 	<div id="app">
-		<h1 id="title">Mening kassa jadvalim</h1>
+		<div class="header-container">
+			<div class="header-badges">
+				<div class="date-badge" id="dateBadge">📅 --.--.----</div>
+				<div class="tx-count-badge" id="txCount">0 operatsiya</div>
+			</div>
+		</div>
 
 		<div id="authError" class="state-banner error" hidden></div>
 
 		<div id="content" hidden>
 			<div class="cards" id="cards"></div>
-
-			<div class="ledger-head" id="ledgerHead">Hisob</div>
-			<div class="ledger" id="rows"></div>
+			
+			<div class="table-wrap th-nakit" id="tableWrap">
+				<div id="rows"></div>
+			</div>
 		</div>
 	</div>
 
@@ -278,31 +410,31 @@
 				try {
 					tg.ready();
 					tg.expand();
-					if (tg.themeParams && tg.themeParams.bg_color) {
-						document.documentElement.style.setProperty("--tg-bg", "#" + stripHash(tg.themeParams.bg_color));
-					}
-					if (tg.themeParams && tg.themeParams.text_color) {
-						document.documentElement.style.setProperty("--tg-text", "#" + stripHash(tg.themeParams.text_color));
-					}
-					if (tg.themeParams && tg.themeParams.hint_color) {
-						document.documentElement.style.setProperty("--tg-hint", "#" + stripHash(tg.themeParams.hint_color));
-					}
+					if (tg.setHeaderColor) tg.setHeaderColor("#f8fafc");
+					if (tg.setBackgroundColor) tg.setBackgroundColor("#f8fafc");
 				} catch (e) {
 					/* theme application is cosmetic only */
 				}
 			}
 
-			function stripHash(hex) {
-				return String(hex || "").replace(/^#/, "");
+			function triggerHaptic() {
+				if (tg && tg.HapticFeedback) {
+					try {
+						tg.HapticFeedback.selectionChanged();
+					} catch (e) {}
+				}
 			}
 
-			var titleEl = document.getElementById("title");
+			var dateBadgeEl = document.getElementById("dateBadge");
 			var authErrorEl = document.getElementById("authError");
 			var contentEl = document.getElementById("content");
 			var cardsEl = document.getElementById("cards");
 			var rowsEl = document.getElementById("rows");
+			var txCountEl = document.getElementById("txCount");
+			var tableWrapEl = document.getElementById("tableWrap");
 			var LAST = null;
 			var SELECTED = "nakit";
+			var SORT_DIR = "desc"; /* "desc" = Z-A (Newest first), "asc" = A-Z (Oldest first) */
 
 			function toIso(date) {
 				var y = date.getFullYear();
@@ -318,56 +450,20 @@
 				return parts[2] + "." + parts[1] + "." + parts[0];
 			}
 
-			function formatAmount(value, currency) {
-				var decimals = currency === "UZS" ? 0 : 2;
-				var num = Number(value) || 0;
-				var abs = Math.abs(num);
-				var fixed = abs.toFixed(decimals);
-				var parts = fixed.split(".");
-				var intPart = parts[0].replace(/\B(?=(\d{3})+(?!\d))/g, " ");
-				var out = parts[1] ? intPart + "." + parts[1] : intPart;
-				var sign = num < 0 ? "-" : "";
-				var suffix = currency === "UZS" ? " so'm" : currency === "USD" ? " $" : " " + (currency || "");
-				return sign + out + suffix;
-			}
-
-			function cardClass(currency) {
-				if (currency === "UZS") return "card card-uzs";
-				if (currency === "USD") return "card card-usd";
-				return "card card-other";
-			}
-
-			function renderSkeleton() {
-				cardsEl.className = "cards";
-				cardsEl.innerHTML =
-					'<div class="card card-nakit"><div class="skeleton-bar" style="width:60%"></div></div>' +
-					'<div class="card card-pk"><div class="skeleton-bar" style="width:60%"></div></div>' +
-					'<div class="card card-usd"><div class="skeleton-bar" style="width:60%"></div></div>';
-				var s = "";
-				for (var i = 0; i < 3; i++) {
-					s +=
-						'<div class="entry"><div class="skeleton-bar" style="width:' +
-						(45 + Math.random() * 30) +
-						'%"></div><div class="skeleton-bar" style="width:35%;margin-top:7px"></div></div>';
-				}
-				rowsEl.innerHTML = s;
-			}
-
 			var KAS = [
 				{ id: "nakit", label: "Naqd", suf: "s", ccy: "UZS", cls: "card-nakit", icon: "🟦" },
 				{ id: "pk", label: "Karta", suf: "p", ccy: "UZS", cls: "card-pk", icon: "🟧" },
 				{ id: "usd", label: "Dollar", suf: "d", ccy: "USD", cls: "card-usd", icon: "🟩" },
 			];
 			var OPLABEL = { kirim: "Kirim", chiqim: "Chiqim", konversiya: "Konvertatsiya", kassalararo: "Kassalararo" };
-			var KSUF = { nakit: "s", pk: "p", usd: "d" };
 
+			/* Thin space \u2009 with proportional font creates perfectly tight financial separation */
 			function grp(fixed) {
 				var parts = fixed.split(".");
-				var intPart = parts[0].replace(/\B(?=(\d{3})+(?!\d))/g, " ");
+				var intPart = parts[0].replace(/\B(?=(\d{3})+(?!\d))/g, "\u2009");
 				return parts[1] ? intPart + "." + parts[1] : intPart;
 			}
 
-			// Smart: decimals only when the amount actually has a fraction.
 			function smart(value) {
 				var abs = Math.abs(Number(value) || 0);
 				return grp(Number.isInteger(abs) ? abs.toFixed(0) : abs.toFixed(2));
@@ -375,12 +471,24 @@
 
 			function formatKas(value, k) {
 				var num = Number(value) || 0;
-				return (num < 0 ? "-" : "") + smart(num) + " " + k.suf;
+				return (num < 0 ? "-" : "") + smart(num) + k.suf;
+			}
+
+			function renderSkeleton() {
+				cardsEl.innerHTML =
+					'<div class="card card-nakit"><div class="skeleton-bar" style="width:60%"></div></div>' +
+					'<div class="card card-pk"><div class="skeleton-bar" style="width:60%"></div></div>' +
+					'<div class="card card-usd"><div class="skeleton-bar" style="width:60%"></div></div>';
+				var s = '<div style="padding:12px;background:#ffffff;">';
+				for (var i = 0; i < 4; i++) {
+					s += '<div class="skeleton-bar" style="width:100%;margin-bottom:10px;height:18px;"></div>';
+				}
+				s += '</div>';
+				rowsEl.innerHTML = s;
 			}
 
 			function renderCards(balances) {
 				var b = balances || {};
-				cardsEl.className = "cards";
 				cardsEl.innerHTML = KAS.map(function (k) {
 					return (
 						'<div class="card ' + k.cls + (SELECTED === k.id ? " selected" : "") + '" data-kassa="' + k.id + '">' +
@@ -391,6 +499,7 @@
 				}).join("");
 				Array.prototype.forEach.call(cardsEl.querySelectorAll(".card"), function (el) {
 					el.addEventListener("click", function () {
+						triggerHaptic();
 						SELECTED = el.getAttribute("data-kassa");
 						renderCards(LAST ? LAST.balances : {});
 						renderLedger();
@@ -398,16 +507,22 @@
 				});
 			}
 
-			// Per-kassa ledger: opening + debit/credit + running balance, like a hisob.
 			function renderLedger() {
 				var k = KAS.filter(function (x) { return x.id === SELECTED; })[0] || KAS[0];
-				document.getElementById("ledgerHead").textContent = k.icon + " " + k.label + " — hisob";
+				
+				tableWrapEl.className = "table-wrap th-" + k.id;
+				
 				if (!LAST) { rowsEl.innerHTML = ""; return; }
+				
 				function runTxt(v) { return (Number(v) < 0 ? "−" : "") + smart(v); }
+				
 				var opening = Number((LAST.openings || {})[k.id]) || 0;
 				var affecting = (LAST.entries || []).filter(function (e) {
 					return (e.legs || []).some(function (l) { return l.kassa === k.id; });
 				});
+				
+				txCountEl.textContent = affecting.length + " operatsiya";
+
 				affecting.sort(function (a, b) { return (a.ts || 0) - (b.ts || 0); });
 				var run = opening;
 				var rows = affecting.map(function (e) {
@@ -416,41 +531,90 @@
 					run += delta;
 					return { e: e, delta: delta, run: run };
 				});
+
 				function two(n) { return String(n).padStart(2, "0"); }
+				
+				if (rows.length === 0) {
+					var emptyRow =
+						'<div class="empty-state">' +
+						'<div class="empty-icon">📂</div>' +
+						'<div>Bugun ushbu kassa bo\'yicha operatsiyalar yo\'q</div>' +
+						'</div>' +
+						'<table><tbody>' +
+						'<tr class="l-open"><td class="col-sana-cell">—</td><td>Ochilish balansi</td>' +
+						'<td class="amt-cell"></td>' +
+						'<td class="run-cell"><span class="run-badge">' + runTxt(opening) + '</span></td></tr>' +
+						'</tbody></table>';
+					rowsEl.innerHTML = emptyRow;
+					return;
+				}
+
+				var displayRows = rows.slice();
+				if (SORT_DIR === "desc") {
+					displayRows.reverse();
+				}
+
+				var sortSymbol = SORT_DIR === "desc" ? " ▾" : " ▴";
+
 				var head =
-					'<table class="ltable"><thead><tr>' +
-					'<th class="l">Sana</th><th class="l">izoh</th><th>Debet</th><th>Kredit</th><th>Qoldiq</th>' +
+					'<table><thead><tr>' +
+					'<th class="l col-sana" id="btnSortSana" title="Tartiblash (A-Z / Z-A)">Sana<span class="sort-icon">' + sortSymbol + '</span></th>' +
+					'<th class="l col-izoh">Izoh</th>' +
+					'<th class="col-miqdor">Miqdor</th>' +
+					'<th class="col-qoldiq">Qoldiq</th>' +
 					"</tr></thead><tbody>";
-				var body = rows
-					.slice()
-					.reverse()
+				
+				var body = displayRows
 					.map(function (r) {
 						var e = r.e;
 						var d = new Date(e.ts || 0);
-						var dateStr = e.ts ? two(d.getDate()) + "." + two(d.getMonth() + 1) + "." + d.getFullYear() : "";
 						var hm = e.ts ? two(d.getHours()) + ":" + two(d.getMinutes()) : "";
+						var dateShort = e.ts ? two(d.getDate()) + "." + two(d.getMonth() + 1) : "";
 						var sub = [];
 						if (e.counterparty) sub.push(e.counterparty);
 						if (e.purpose) sub.push(e.purpose);
-						var desc = (OPLABEL[e.op] || e.op || "") + (sub.length ? " · " + sub.join(" · ") : "");
+						var opTitle = (OPLABEL[e.op] || e.op || "");
+						
+						var amtHtml = "";
+						if (r.delta > 0) {
+							amtHtml = '<span class="amt-pos">+' + smart(r.delta) + '</span>';
+						} else if (r.delta < 0) {
+							amtHtml = '<span class="amt-neg">−' + smart(Math.abs(r.delta)) + '</span>';
+						}
+						
 						return (
 							"<tr>" +
-							'<td class="l-when">' + escapeHtml(dateStr) + '<div class="l-raw">' + escapeHtml(hm) + "</div></td>" +
-							"<td>" + escapeHtml(desc) +
+							'<td class="col-sana-cell">' +
+							'<div class="l-date">' + escapeHtml(dateShort) + "</div>" +
+							'<div class="l-time">' + escapeHtml(hm) + "</div>" +
+							"</td>" +
+							"<td>" +
+							'<div class="op-badge">' + escapeHtml(opTitle) + "</div>" +
+							(sub.length ? '<div class="op-sub">' + escapeHtml(sub.join(" · ")) + "</div>" : "") +
 							(e.raw_text ? '<div class="l-raw">«' + escapeHtml(e.raw_text) + "»</div>" : "") +
 							"</td>" +
-							'<td class="num pos">' + (r.delta > 0 ? smart(r.delta) : "") + "</td>" +
-							'<td class="num neg">' + (r.delta < 0 ? smart(r.delta) : "") + "</td>" +
-							'<td class="num run">' + runTxt(r.run) + "</td>" +
+							'<td class="amt-cell">' + amtHtml + "</td>" +
+							'<td class="run-cell"><span class="run-badge">' + runTxt(r.run) + "</span></td>" +
 							"</tr>"
 						);
 					})
 					.join("");
+
 				var openRow =
-					'<tr class="l-open"><td>—</td><td>Ochilish balansi</td>' +
-					'<td class="num"></td><td class="num"></td>' +
-					'<td class="num run">' + runTxt(opening) + "</td></tr>";
-				rowsEl.innerHTML = head + body + openRow + "</tbody></table>";
+					'<tr class="l-open"><td class="col-sana-cell">—</td><td>Ochilish balansi</td>' +
+					'<td class="amt-cell"></td>' +
+					'<td class="run-cell"><span class="run-badge">' + runTxt(opening) + "</span></td></tr>";
+				
+				rowsEl.innerHTML = head + (SORT_DIR === "desc" ? (body + openRow) : (openRow + body)) + "</tbody></table>";
+
+				var btnSort = document.getElementById("btnSortSana");
+				if (btnSort) {
+					btnSort.addEventListener("click", function () {
+						triggerHaptic();
+						SORT_DIR = (SORT_DIR === "desc") ? "asc" : "desc";
+						renderLedger();
+					});
+				}
 			}
 
 			function escapeHtml(value) {
@@ -520,7 +684,7 @@
 
 			function render(summary) {
 				LAST = summary;
-				titleEl.textContent = "Mening kassam · " + isoToDisplay(summary.date || "");
+				dateBadgeEl.textContent = "📅 " + isoToDisplay(summary.date || "");
 				renderCards(summary.balances || {});
 				renderLedger();
 			}

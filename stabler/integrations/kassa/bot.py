@@ -647,22 +647,17 @@ def _resolve_kassir(telegram_user_id: str):
 
 
 def _shadow_open_kassir(telegram_user_id):
-	"""Open-access fallback for shadow mode: when no Stabler Kassir matches but
-	shadow mode is on and a default company is configured, let ANY Telegram user
-	use the shadow bot (no GL, separate store). Gated by two site-config keys:
-	  kassa_shadow_mode: 1  +  kassa_shadow_company: "<Company name>".
-	Returns a kassir-like object (company + synthetic name + Administrator user)
-	or None (keeps the normal 'Ruxsat yo'q' wall)."""
+	"""Strict registration gate: even in shadow mode, ONLY users registered
+	and enabled in Stabler Kassir (/admin/kassa-bot) are granted access. Unregistered
+	Telegram user IDs are rejected outright with _NO_ACCESS_TEXT."""
 	import frappe
 
 	if not getattr(frappe.conf, "kassa_shadow_mode", False):
 		return None
-	company = getattr(frappe.conf, "kassa_shadow_company", None)
-	if not company:
+	kassir = _resolve_kassir(telegram_user_id)
+	if not kassir:
 		return None
-	return frappe._dict(
-		{"name": f"tg:{telegram_user_id}", "company": company, "user": "Administrator", "accounts": []}
-	)
+	return kassir
 
 
 def handle_update(update: dict) -> None:

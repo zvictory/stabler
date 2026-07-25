@@ -105,20 +105,24 @@ def _esc(s):
     return str(s).replace("&", "&amp;").replace("<", "&lt;").replace(">", "&gt;")
 
 
+def fmt_compact(v):
+    amt = float(v or 0)
+    if amt == int(amt):
+        return f"{int(amt):,}".replace(",", " ")
+    return f"{amt:,.2f}".replace(",", " ")
+
+
 def format_balance_block(balances):
-    """Monospace <pre> block, numbers right-aligned with a gap before the suffix:
-        🟦   4 567 000.00  s
-        🟧  19 911 146.00  p
-        🟩         854.00  d
-    Sent with parse_mode=HTML so the digits line up. Callers that embed this must
-    send with parse_mode HTML (bot._send_message auto-detects the <pre> tag)."""
+    """Compact balance block:
+        🟦 7 378 000 s
+        🟧 3 780 000 p
+        🟩 7 400 d
+    Sent with parse_mode=HTML inside <pre> tag."""
     b = balances or {}
-    nums = {k: fmt_amount(b.get(k, 0)) for k in ("nakit", "pk", "usd")}
-    w = max(len(v) for v in nums.values())
     lines = []
     for k in ("nakit", "pk", "usd"):
         emoji = KLABEL[k].split()[0]
-        lines.append(f"{emoji} {nums[k].rjust(w)}  {KSUF[k]}")
+        lines.append(f"{emoji} {fmt_compact(b.get(k, 0))} {KSUF[k]}")
     return "<pre>" + _esc("\n".join(lines)) + "</pre>"
 
 

@@ -7,6 +7,9 @@ shadow-entry intent: op + amount + currency + counterparty + purpose + rate.
 Design principles (mirrors _flow.py):
 - Pure + unit-testable; no frappe import. Reuses _flow.parse_amount for the
   numeric/word-number core.
+- Context-Aware Extraction: In Kirim/Chiqim mode, if the user types an amount
+  along with a remaining name/reason (e.g. "650d ismoil"), automatically infers
+  the counterparty/purpose without requiring "-dan"/"-uchun" suffixes.
 - NEVER guesses on ambiguity. When a required slot is missing or unclear, it
   returns exactly ONE targeted Uzbek question (`question`) — the bot asks that
   instead of the old kasa/miktar step chain.
@@ -151,9 +154,7 @@ def extract_rate(text: str) -> float | None:
 def parse_konv_amount_rate(text: str):
     """For the button-driven conversion flow: the kassir picked a direction, then
     types '100 12600' / '100$ 12600' / '500 11990' — first number is the amount,
-    second is the exchange rate. Multipliers (mln/ming) apply to the amount;
-    currency symbols/letters are ignored. Returns (amount, rate); either may be
-    None when the message doesn't carry it yet."""
+    second is the exchange rate."""
     t = _strip_currency(_norm(text or ""))
     vals: list[float] = []
     for num, mult in _DIGIT_AMT_RE.findall(t):
@@ -174,13 +175,12 @@ def parse_konv_amount_rate(text: str):
     return amount, rate
 
 
-_CP_STOP = {"uchun", "ga", "dan", "kurs", "som", "dollar", "euro", "pul", "berdim", "oldim", "aldim"}
+_CP_STOP = {"uchun", "ga", "dan", "kurs", "som", "dollar", "euro", "pul", "berdim", "oldim", "aldim", "kirim", "chiqim", "va", "и", "yana"}
 
 
 def extract_counterparty(text: str, op: str | None) -> str | None:
-    """Kimdan — the name token before 'dan' (from), attached OR space-separated
-    ('Aliyevdan' and 'Aliyev dan' both yield 'Aliyev'). '…ga' (to/for) is treated
-    as purpose, and kassa words (naqd/karta/dollar…) are never taken as a name."""
+    """Kimdan — explicit token before 'dan' ('ismoildan'), OR in Kirim context,
+    the remaining name token if typed alongside amount (e.g. '650d ismoil')."""
     t = _norm(text)
     m = re.search(r"\b([a-zA-Zʼ'Ѐ-ӿ]{3,})\s*dan\b", t)
     if m:
@@ -188,23 +188,49 @@ def extract_counterparty(text: str, op: str | None) -> str | None:
         if (cand not in _CP_STOP and cand not in _KONV and cand not in _CHIQIM
                 and detect_kassa(cand) is None):
             return cand.capitalize()
+    
+    # Advanced Contextual Fallback for Kirim:
+    # If op is Kirim and no explicit "-dan" suffix was used, check for a remaining
+    # word token that looks like a name (e.g. "650d ismoil")
+    if op == "kirim":
+        clean = _strip_currency(t)
+        clean = _DIGIT_AMT_RE.sub(" ", clean)
+        for tok in clean.split():
+            tok_clean = re.sub(r"[^a-zA-Zʼ'Ѐ-ӿ]", "", tok)
+            if (len(tok_clean) >= 3 and tok_clean not in _CP_STOP 
+                    and tok_clean not in _KONV and tok_clean not in _CHIQIM 
+                    and tok_clean not in _KIRIM and detect_kassa(tok_clean) is None):
+                return tok_clean.capitalize()
+                
     return None
 
 
-def extract_purpose(text: str) -> str | None:
-    """Izoh — the word(s) before 'uchun', or after 'ga' when it's a purpose."""
+def extract_purpose(text: str, op: str | None = None) -> str | None:
+    """Izoh — word(s) before 'uchun', stem before 'ga', OR in Chiqim context,
+    the remaining word token if typed alongside amount (e.g. '50ming s stoyanka')."""
     t = _norm(text)
     m = re.search(r"\b([a-zA-Zʼ'Ѐ-ӿ ]{3,}?)\s*uchun\b", t)
     if m:
         cand = m.group(1).strip().split()[-1]
         if cand not in _CP_STOP:
             return cand
-    # "...ijaraga", "...transportga" -> purpose is the stem before 'ga'
     m2 = re.search(r"\b([a-zA-Zʼ'Ѐ-ӿ]{4,})ga\b", t)
     if m2:
         stem = m2.group(1)
         if stem not in _CP_STOP and stem not in _KONV:
             return stem
+
+    # Advanced Contextual Fallback for Chiqim:
+    if op == "chiqim":
+        clean = _strip_currency(t)
+        clean = _DIGIT_AMT_RE.sub(" ", clean)
+        for tok in clean.split():
+            tok_clean = re.sub(r"[^a-zA-Zʼ'Ѐ-ӿ]", "", tok)
+            if (len(tok_clean) >= 3 and tok_clean not in _CP_STOP 
+                    and tok_clean not in _KONV and tok_clean not in _CHIQIM 
+                    and tok_clean not in _KIRIM and detect_kassa(tok_clean) is None):
+                return tok_clean
+
     return None
 
 
@@ -222,12 +248,7 @@ _Q = {
 
 
 def parse_entry(text: str, ctx: dict | None = None) -> dict:
-    """Parse a kassir free-text message into a structured shadow-entry intent.
-
-    Returns a dict with op/amount/currency/counterparty/purpose/rate/raw_text and,
-    when something required is missing/ambiguous, a single Uzbek `question` plus
-    the `missing` slot name. `ready` is True only when nothing needs asking.
-    """
+    """Parse a kassir free-text message into a structured shadow-entry intent."""
     raw = text or ""
     currency = detect_currency(raw)
     amount = extract_amount(raw)
@@ -237,7 +258,7 @@ def parse_entry(text: str, ctx: dict | None = None) -> dict:
         "amount": amount,
         "currency": currency,
         "counterparty": extract_counterparty(raw, op),
-        "purpose": extract_purpose(raw),
+        "purpose": extract_purpose(raw, op),
         "rate": extract_rate(raw),
         "raw_text": raw,
         "missing": None,
@@ -255,16 +276,11 @@ def parse_entry(text: str, ctx: dict | None = None) -> dict:
     if amount is None:
         return need("amount")
     if op == "konversiya":
-        # Conversion needs a currency; buying foreign (USD/EUR) also needs the
-        # source kassa (Som/PK). Cross-currency two-leg details (given/received,
-        # rate) are refined by the bot's conversion sub-flow afterwards.
         if currency is None:
             return need("currency")
         if currency in ("USD", "EUR") and not res["counterparty"] and not (ctx or {}).get("konv_source"):
             return need("konv_source")
     else:
-        # No explicit currency on a kirim/chiqim/transfer -> default to UZS
-        # (som is base; foreign is written with d/dollar). Don't ask.
         if currency is None:
             currency = "UZS"
             res["currency"] = "UZS"
@@ -277,12 +293,6 @@ def parse_entry(text: str, ctx: dict | None = None) -> dict:
     return res
 
 
-# --------------------------------------------------------------------------- #
-# Kassa channels + multi-leg parsing (WP-S3b)
-# "Mijozdan 2 mln naqd, 3 mln karta va 500 dollar oldim" -> 3 legs, 1 kirim.
-# Kassa keywords: naqd/som->Nakit(UZS), karta/plastik/pk->PK(UZS), dollar->USD.
-# Letter suffixes for balances/legs: s->Nakit, p->PK, d->USD.
-# --------------------------------------------------------------------------- #
 KASSA_CCY = {"nakit": "UZS", "pk": "UZS", "usd": "USD"}
 _KASSA_WORDS = {
     "nakit": ("naqd", "naxt", "nakit", "som", "so'm", "sum", "kesh", "cash"),
@@ -313,8 +323,7 @@ _KASSA_DIR_WORDS = (
 
 
 def detect_transfer_dirs(text: str):
-    """(from_kassa, to_kassa) from directional text: '…dan' = from, '…ga' = to.
-    'naqddan pk ga' -> ('nakit','pk'); 'somdan dollarga' -> ('nakit','usd')."""
+    """(from_kassa, to_kassa) from directional text."""
     t = _norm(text)
     frm = to = None
     for w, k in _KASSA_DIR_WORDS:
@@ -326,8 +335,7 @@ def detect_transfer_dirs(text: str):
 
 
 def parse_legs(text: str) -> list[dict]:
-    """Split a message into amount+kassa legs. One kirim/chiqim can move money
-    into several kassas at once ("2 mln naqd, 3 mln karta va 500 dollar")."""
+    """Split a message into amount+kassa legs."""
     legs = []
     for seg in _SEG_SPLIT.split(text or ""):
         amt = extract_amount(seg)
@@ -340,16 +348,14 @@ def parse_legs(text: str) -> list[dict]:
 
 
 def parse_message(text: str, op: str | None = None, ctx: dict | None = None) -> dict:
-    """Bot entry point. `op` is the button the kassir picked first (kirim/chiqim/
-    konversiya/kassalararo); the free text fills amount(s) + kassa(s) + slots.
-    kirim/chiqim support MULTIPLE legs; konv/kassalararo delegate to parse_entry."""
+    """Bot entry point."""
     raw = text or ""
     if not op:
         op = detect_op(raw, detect_currency(raw))
     res = {
         "op": op,
         "counterparty": extract_counterparty(raw, op),
-        "purpose": extract_purpose(raw),
+        "purpose": extract_purpose(raw, op),
         "rate": extract_rate(raw),
         "legs": [],
         "raw_text": raw,
@@ -372,7 +378,7 @@ def parse_message(text: str, op: str | None = None, ctx: dict | None = None) -> 
             return need("amount")
         for leg in legs:
             if leg["kassa"] is None:
-                leg["kassa"] = "nakit"       # default: UZS cash unless PK/USD named
+                leg["kassa"] = "nakit"
                 leg["currency"] = "UZS"
             elif leg["currency"] is None:
                 leg["currency"] = KASSA_CCY[leg["kassa"]]
@@ -387,13 +393,11 @@ def parse_message(text: str, op: str | None = None, ctx: dict | None = None) -> 
     frm, to = detect_transfer_dirs(raw)
 
     if op == "kassalararo":
-        # "1mln naqddan pk ga" -> from nakit, to pk, no questions asked.
         res["from"] = frm
         res["to"] = to
         res["amount"] = extract_amount(raw)
         return res
 
-    # konversiya — single (USD) amount; pre-fill direction/source from the text.
     r = parse_entry(raw, ctx)
     r["op"] = "konversiya"
     if to == "usd":
