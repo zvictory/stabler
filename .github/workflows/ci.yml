@@ -44,10 +44,48 @@ jobs:
         run: python -m compileall -q stabler
 
       - name: Pure unit tests (frappe-free)
-        # These import only stabler.api._approval_rules, so they run without a
-        # bench. Add new frappe-free test modules here as the suite grows.
+        # The module list lives in .github/frappe-free-tests.txt -- add new
+        # bench-free test modules there, not here.
+        # -n1 = one module per process, deliberately. Several modules install a
+        # fake `frappe` into sys.modules and never restore it, so a single
+        # combined run leaks MagicMocks into whichever module imports next
+        # (test_stock_recon is the current victim). Process isolation keeps the
+        # gate order-independent. xargs still exits non-zero if any module fails.
+        #
+        # xargs, not $(...) word-splitting: zsh does not split unquoted
+        # expansions, so the $(...) form silently breaks when run locally.
         run: |
-          python -m unittest stabler.tests.test_approval_rules -v
+          echo "frappe-free modules: $(grep -cv -e '^#' -e '^$' .github/frappe-free-tests.txt)"
+          grep -v -e '^#' -e '^$' .github/frappe-free-tests.txt \
+            | xargs -n1 python -m unittest
+
+      - name: Hard-rule guards (CLAUDE.md)
+        # CLAUDE.md states these as "reviewers must reject". Prose does not
+        # enforce; this does. All three are at zero violations as of 2026-07-25.
+        run: |
+          fail=0
+          hits=$(grep -rn 'type="date"' stabler/public/js --include='*.vue' \
+                   | grep -v 'components/DateInput.vue' || true)
+          if [ -n "$hits" ]; then
+            echo "::error::bare <input type=\"date\"> is banned -- use DateInput.vue"
+            echo "$hits"; fail=1
+          fi
+
+          # Quote-prefixed only: a bare /app/ match also hits prose that merely
+          # mentions the rule (StockLedgerDetail.vue:6).
+          hits=$(grep -rnE '["'"'"'`]/app/' stabler/public/js --include='*.vue' || true)
+          if [ -n "$hits" ]; then
+            echo "::error::Frappe Desk link (/app/...) is banned -- build the CRUD inside Stabler"
+            echo "$hits"; fail=1
+          fi
+
+          hits=$(grep -rn 'table-striped' stabler/public/js --include='*.vue' || true)
+          if [ -n "$hits" ]; then
+            echo "::error::manual table-striped is redundant -- striping is global in stabler.css"
+            echo "$hits"; fail=1
+          fi
+
+          exit $fail
 
   bench-tests:
     name: Integration (bench run-tests)

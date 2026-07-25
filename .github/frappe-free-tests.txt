@@ -1,0 +1,95 @@
+# Test modules under stabler/tests/ that run WITHOUT a bench (no MariaDB,
+# no Redis, no site). CI job 'lint-and-unit' runs exactly this list as its
+# fast gate. Verified 2026-07-25: 81 of 99 modules.
+#
+# Adding a test? If it imports frappe only indirectly (or not at all), verify
+# with:  python3 -m unittest stabler.tests.<module>
+# and append it here. Bench-dependent tests need no entry -- job 'bench-tests'
+# picks them up via 'bench run-tests --app stabler'.
+#
+# Known RED (deliberately excluded, see repo issues):
+#   test_company_scope_guard      - vendor_category endpoints lack _assert_company_scope
+#   test_tender_dashboard_i18n    - untranslated tr strings
+#   test_tender_dashboard_spa     - missing v-if="tenderEnabled" gate
+
+stabler.tests.test_advance_aging
+stabler.tests.test_agreement_receivables_contract
+stabler.tests.test_approval_rules
+stabler.tests.test_attendance_ingest
+stabler.tests.test_attendance_processor
+stabler.tests.test_attendance_rules
+stabler.tests.test_audit_chain
+stabler.tests.test_backup_rules
+stabler.tests.test_bank_match
+stabler.tests.test_bank_statement_parser
+stabler.tests.test_batch_api_invariants
+stabler.tests.test_bid_package
+stabler.tests.test_budget
+stabler.tests.test_ci_logistics_workspace_source
+stabler.tests.test_ci_to_pinv
+stabler.tests.test_commercial_invoice_transitions
+stabler.tests.test_container_arrival_hook
+stabler.tests.test_crm_deal_company_scope_patch
+stabler.tests.test_customer_hierarchy
+stabler.tests.test_customs_estimate
+stabler.tests.test_customs_fee_math
+stabler.tests.test_departure_gate_source
+stabler.tests.test_departure_math
+stabler.tests.test_dimensions
+stabler.tests.test_equipment
+stabler.tests.test_excel_export
+stabler.tests.test_fefo_math
+stabler.tests.test_fx_residual
+stabler.tests.test_fx_reval
+stabler.tests.test_fx_revaluation
+stabler.tests.test_geo
+stabler.tests.test_grn_variance_math
+stabler.tests.test_import_container_transitions
+stabler.tests.test_import_exposure
+stabler.tests.test_import_truck_transitions
+stabler.tests.test_imports_api_invariants
+stabler.tests.test_imports_rules
+stabler.tests.test_item_crud_and_prices
+stabler.tests.test_item_picker_context
+stabler.tests.test_kassa_flow
+stabler.tests.test_kassa_miniapp
+stabler.tests.test_kassa_shadow_flow
+stabler.tests.test_kassa_shadow_store
+stabler.tests.test_kassa_smart
+stabler.tests.test_kts_amendment
+stabler.tests.test_lcv_gtd_precedence
+stabler.tests.test_lcv_math
+stabler.tests.test_master_read_permission
+stabler.tests.test_no_inline_dropdowns
+stabler.tests.test_packing_math
+stabler.tests.test_payroll_adapter
+stabler.tests.test_payroll_calc
+stabler.tests.test_payroll_components
+stabler.tests.test_payroll_residual
+stabler.tests.test_payroll_summary
+stabler.tests.test_period_close
+stabler.tests.test_perm_rules
+stabler.tests.test_pi_group
+stabler.tests.test_proforma_invoice_doctype
+stabler.tests.test_proforma_transition
+stabler.tests.test_receipt_math
+stabler.tests.test_sales_margin
+stabler.tests.test_sea_lifecycle
+stabler.tests.test_sea_lifecycle_source
+stabler.tests.test_sidebar_profile_menu
+stabler.tests.test_sod_rules
+stabler.tests.test_stock_recon
+stabler.tests.test_tender_dashboard
+stabler.tests.test_tender_dashboard_behavior
+stabler.tests.test_tender_landed_vat
+stabler.tests.test_tender_sidebar_navigation
+stabler.tests.test_tender_workspace_spa
+stabler.tests.test_three_way_match
+stabler.tests.test_timepay_client
+stabler.tests.test_timepay_import
+stabler.tests.test_timepay_processor
+stabler.tests.test_transport_tiers
+stabler.tests.test_uzex_parse
+stabler.tests.test_uzex_status
+stabler.tests.test_uzex_telegram
+stabler.tests.test_vendor_exposure_isolation
