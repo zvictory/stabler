@@ -13,6 +13,7 @@ import Select from "../../components/Select.vue";
 import EmptyState from "../../components/EmptyState.vue";
 import ListToolbar from "../../components/ListToolbar.vue";
 import SkeletonRows from "../../components/SkeletonRows.vue";
+import NewDirectInvoiceModal from "../../components/NewDirectInvoiceModal.vue";
 import { getStatusBadgeClass } from "../../composables/status.js";
 
 const session = useSession();
@@ -32,6 +33,8 @@ const limit = ref(100);
 const loading = ref(false);
 const error = ref("");
 const rows = ref([]);
+const directInvoiceOpen = ref(false);
+const isMsaCompany = computed(() => String(activeCompany.value || "").toUpperCase().includes("MSA"));
 
 const currency = computed(
 	() =>
@@ -103,7 +106,10 @@ watch(activeCompany, load);
 			v-model="search"
 			:placeholder="t('Invoice number or customer…')"
 			:count="totalCount"
+			:primary-label="isMsaCompany ? t('New Invoice') : ''"
+			primary-icon="ti-plus"
 			@search="load"
+			@primary-click="router.push('/sales/invoices/new')"
 		>
 			<template #filters>
 				<div class="d-flex align-items-center gap-2">
@@ -138,10 +144,13 @@ watch(activeCompany, load);
 			accentIcon="ti-arrow-right"
 			tone="primary"
 			:title='t("No invoices in this range")'
-			:subtitle="t('Sales Invoices are created from submitted Sales Orders. Open a Sales Order and use Create Invoice.')"
+			:subtitle="isMsaCompany ? t('Create a new Sales Invoice directly or from a Sales Order.') : t('Sales Invoices are created from submitted Sales Orders. Open a Sales Order and use Create Invoice.')"
 		>
 			<template #actions>
-				<router-link to="/sales/orders" class="btn btn-outline-secondary btn-sm">
+				<button v-if="isMsaCompany" type="button" class="btn btn-primary btn-sm" @click="router.push('/sales/invoices/new')">
+					<i class="ti ti-plus me-1"></i>{{ t("Create New Invoice") }}
+				</button>
+				<router-link v-else to="/sales/orders" class="btn btn-outline-secondary btn-sm">
 					<i class="ti ti-clipboard-check me-1"></i>{{ t("Go to Sales Orders") }}
 				</router-link>
 			</template>
@@ -175,5 +184,11 @@ watch(activeCompany, load);
 				</tbody>
 			</table>
 		</div>
+
+		<NewDirectInvoiceModal
+			:open="directInvoiceOpen"
+			@close="directInvoiceOpen = false"
+			@created="load"
+		/>
 	</div>
 </template>

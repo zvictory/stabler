@@ -48,6 +48,7 @@ import LogistBoard from "./pages/tender/LogistBoard.vue";
 import MyTenders from "./pages/tender/MyTenders.vue";
 import SalesInvoices from "./pages/sales/SalesInvoices.vue";
 import SalesInvoiceForm from "./pages/sales/SalesInvoiceForm.vue";
+import NewDirectInvoicePage from "./pages/sales/NewDirectInvoicePage.vue";
 import SalesReturnForm from "./pages/sales/SalesReturnForm.vue";
 import POS from "./pages/pos.vue";
 import SalesAging from "./pages/sales/Aging.vue";
@@ -296,6 +297,7 @@ const routes = [
 			{ path: "orders/new", name: "sales-order-new", component: SalesOrderForm, meta: { title: t("New Sales Order") } },
 			{ path: "orders/:name", name: "sales-order", component: SalesOrderForm, meta: { title: t("Sales Order") } },
 			{ path: "invoices", name: "sales-invoices", component: SalesInvoices, meta: { title: t("Sales Invoices") } },
+			{ path: "invoices/new", name: "sales-invoice-new", component: NewDirectInvoicePage, meta: { title: t("New Direct Sales Invoice") } },
 			{ path: "returns/new", name: "sales-return-new", component: SalesReturnForm, meta: { title: t("New Sales Return") } },
 			{ path: "returns/:name", redirect: to => `/sales/invoices/${to.params.name}` },
 			{ path: "pos", redirect: "/pos" },
