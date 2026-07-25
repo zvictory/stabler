@@ -402,7 +402,6 @@ def agreement_receivables(
             si.currency,
             COUNT(DISTINCT si.name) AS invoice_count,
             SUM(si.outstanding_amount) AS balance,
-            SUM(si.outstanding_amount * si.conversion_rate) AS base_balance,
             MAX(si.due_date) AS latest_due_date
         FROM `tabSales Invoice` si
         LEFT JOIN `tabContract` ct ON ct.name = si.custom_agreement
@@ -411,7 +410,11 @@ def agreement_receivables(
                  ct.custom_agreement_no, ct.custom_original_currency, si.currency
         HAVING ABS(SUM(si.outstanding_amount)) > 0.0001
             OR %(include_zero)s = 1
-        ORDER BY base_balance DESC, si.customer_name ASC, agreement_no ASC
+        -- Rank by the base-currency value so a 1M UZS row does not outrank a
+        -- 100k USD row. This is a sort key only; it is never selected or shown
+        -- (CLAUDE.md: amounts render in their original transaction currency).
+        ORDER BY SUM(si.outstanding_amount * si.conversion_rate) DESC,
+                 si.customer_name ASC, agreement_no ASC
         LIMIT 5000
         """,
         {**params, "include_zero": 0 if int(only_with_balance or 0) else 1},
@@ -419,10 +422,8 @@ def agreement_receivables(
     )
     for row in rows:
         row["agreement_no"] = row.get("agreement_no") or _("Unlinked")
-        row["base_currency"] = _base_currency(company)
         row["invoice_count"] = int(row.get("invoice_count") or 0)
         row["balance"] = flt(row.get("balance"))
-        row["base_balance"] = flt(row.get("base_balance"))
 
     columns = [
         {"key": "customer_name", "label": _("Customer"), "type": "text"},
@@ -430,7 +431,6 @@ def agreement_receivables(
         {"key": "agreement_currency", "label": _("Currency"), "type": "text"},
         {"key": "invoice_count", "label": _("Invoices"), "type": "int", "align": "end"},
         {"key": "balance", "label": _("Outstanding"), "type": "money", "align": "end"},
-        {"key": "base_balance", "label": _("Base outstanding"), "type": "money", "align": "end", "currency_key": "base_currency"},
         {"key": "latest_due_date", "label": _("Latest due date"), "type": "date"},
     ]
     return _shape(
@@ -439,7 +439,6 @@ def agreement_receivables(
         {
             "invoice_count": sum(row["invoice_count"] for row in rows),
             "balance": sum(row["balance"] for row in rows),
-            "base_balance": sum(row["base_balance"] for row in rows),
         },
         {
             "basis": _("Submitted Sales Invoices, live outstanding balance"),

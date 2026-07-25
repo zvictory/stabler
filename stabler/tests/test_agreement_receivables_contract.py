@@ -31,10 +31,32 @@ class TestAgreementReceivablesContract(unittest.TestCase):
 			"module_map_for(company).get(\"agreements\")",
 			"si.custom_agreement",
 			"SUM(si.outstanding_amount)",
-			"SUM(si.outstanding_amount * si.conversion_rate)",
 			"Unlinked",
 		):
 			self.assertIn(contract, report)
+
+	def test_report_never_emits_a_base_currency_amount(self):
+		"""CLAUDE.md: amounts render in their ORIGINAL transaction currency only.
+
+		Rows are grouped per `si.currency`, so a base-currency column would be the
+		one place the report re-converts and displays a second amount. ReportTable
+		suppresses mixed-currency totals with a `-` UNLESS the column declares a
+		`currency_key` -- so a base column would also silently defeat that guard.
+		The FX conversion may survive only as an ORDER BY sort key, never as an
+		emitted field, so a 1M UZS row does not outrank a 100k USD one.
+		"""
+		report = _read("api", "reports.py")
+		start = report.index("def agreement_receivables(")
+		body = report[start : report.index("\n@frappe.whitelist()", start)]
+		self.assertNotIn("base_balance", body)
+		self.assertNotIn("base_currency\"", body)
+		conversion = "SUM(si.outstanding_amount * si.conversion_rate)"
+		if conversion in body:
+			self.assertGreater(
+				body.index(conversion),
+				body.index("ORDER BY"),
+				"conversion_rate may appear only in ORDER BY, not in the SELECT list",
+			)
 
 	def test_ui_route_is_company_module_gated(self):
 		router = _read("public", "js", "router.js")
