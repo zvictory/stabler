@@ -67,6 +67,7 @@ import PurchaseReceipts from "./pages/purchasing/PurchaseReceipts.vue";
 import PurchasingAging from "./pages/purchasing/Aging.vue";
 import InventoryHome from "./pages/inventory/InventoryHome.vue";
 import Items from "./pages/inventory/Items.vue";
+import PriceLists from "./pages/inventory/PriceLists.vue";
 import Warehouses from "./pages/inventory/Warehouses.vue";
 import StockStatus from "./pages/inventory/StockStatus.vue";
 import StockLedger from "./pages/inventory/StockLedger.vue";
@@ -332,6 +333,7 @@ const routes = [
 		children: [
 			{ path: "", redirect: "/inventory/items" },
 			{ path: "items", name: "inventory-items", component: Items, meta: { title: t("Items") } },
+			{ path: "prices", name: "inventory-prices", component: PriceLists, meta: { title: t("Price Lists") } },
 			{ path: "warehouses", name: "inventory-warehouses", component: Warehouses, meta: { title: t("Warehouses") } },
 			{ path: "stock-status", name: "inventory-stock-status", component: StockStatus, meta: { title: t("Stock Status") } },
 			{ path: "staging", name: "inventory-staging", component: MaterialStaging, meta: { title: t("Material Staging") } },
