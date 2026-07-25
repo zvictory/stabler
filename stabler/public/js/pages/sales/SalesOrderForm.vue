@@ -36,6 +36,8 @@ const lastReservationErrors = ref([]);
 const autoSubmit = ref(1);
 const exchangeRate = ref(1);
 const forceOverStock = ref(false);
+const agreements = ref([]);
+const agreementsEnabled = computed(() => session.canAccessModule("agreements"));
 
 const currency = computed(
 	() =>
@@ -80,6 +82,19 @@ async function loadCurrencies() {
 	}
 }
 
+async function loadAgreements() {
+	if (!agreementsEnabled.value || !activeCompany.value) return;
+	try {
+		agreements.value = await call("stabler.api.sales.list_agreements", {
+			company: activeCompany.value,
+			customer: form.value?.customer || undefined,
+			limit: 100,
+		});
+	} catch {
+		agreements.value = [];
+	}
+}
+
 function blankLine(defaultWh = null) {
 	return {
 		item_code: "",
@@ -121,6 +136,7 @@ function blankForm() {
 		remarks: "",
 		items: [blankLine()],
 		crm_deal: "",
+		agreement: "",
 	};
 }
 
@@ -136,6 +152,7 @@ function fromDetail(d) {
 		transaction_date: d.transaction_date || "",
 		delivery_date: d.delivery_date || "",
 		remarks: d.remarks || "",
+		agreement: d.custom_agreement || "",
 		items: (d.items || []).map((it) => ({
 			item_code: it.item_code,
 			item_name: it.item_name,
@@ -195,6 +212,7 @@ function toPayload(m) {
 		conversion_rate: (m.currency && currency.value && m.currency !== currency.value) ? (exchangeRate.value || 1) : 1,
 		price_list: m.price_list || undefined,
 		crm_deal: m.crm_deal || undefined,
+		agreement: m.agreement || undefined,
 	};
 }
 
@@ -356,6 +374,19 @@ function searchCustomers(q) {
 	});
 }
 
+function searchAgreements(q) {
+	return call("stabler.api.sales.list_agreements", {
+		company: activeCompany.value,
+		customer: form.value?.customer || undefined,
+		search: q,
+		limit: 20,
+	});
+}
+
+function pickAgreement(agreement) {
+	form.value.agreement = agreement.name;
+}
+
 async function pickCustomer(c) {
 	form.value.customer = c.name;
 	form.value.customer_name = c.customer_name;
@@ -366,6 +397,7 @@ async function pickCustomer(c) {
 		});
 		form.value.currency = defaults.default_currency || "";
 		form.value.price_list = defaults.resolved_price_list || "";
+		await loadAgreements();
 	} catch {
 		// non-fatal
 	}
@@ -376,6 +408,8 @@ function clearCustomer() {
 	form.value.customer_name = "";
 	form.value.currency = "";
 	form.value.price_list = "";
+	form.value.agreement = "";
+	agreements.value = [];
 }
 
 const searchItems = itemSearcher("sales", { warehouse: () => form.value.set_warehouse });
@@ -586,13 +620,14 @@ async function prefillNewForCustomer(customerName) {
 watch(docName, loadDoc);
 
 onMounted(async () => {
-	await Promise.all([loadWarehouses(), loadPriceLists(), loadCurrencies()]);
+	await Promise.all([loadWarehouses(), loadPriceLists(), loadCurrencies(), loadAgreements()]);
 	if (!docName.value) {
 		form.value = blankForm();
 		form.value.set_warehouse = defaultWarehouseName();
 		const newFor = route.query?.new_for || route.query?.customer;
 		if (newFor) await prefillNewForCustomer(String(newFor));
 		if (route.query?.crm_deal) form.value.crm_deal = String(route.query.crm_deal);
+		if (route.query?.agreement) form.value.agreement = String(route.query.agreement);
 	} else {
 		await loadDoc();
 	}
@@ -854,6 +889,28 @@ async function closeSalesOrder() {
 					<template #selected="{ option }">{{ option.warehouse_name }} ({{ option.name }})</template>
 				</Select>
 				<div v-else class="form-control-plaintext font-monospace py-1">{{ form.set_warehouse || "—" }}</div>
+			</div>
+			<div v-if="agreementsEnabled" class="col-md-6">
+				<label class="form-label">{{ t("Agreement") }}</label>
+				<Typeahead
+					v-if="editable"
+					v-model="form.agreement"
+					:search="searchAgreements"
+					:display="form.agreement || ''"
+					:placeholder="t('Search agreement…')"
+					:no-results-text="t('No agreements match that search')"
+					open-on-focus
+					@pick="pickAgreement"
+					@clear="form.agreement = ''"
+				>
+					<template #option="{ item }">
+						<div>
+							<div class="fw-semibold">{{ item.agreement_no || item.name }}</div>
+							<div class="small text-secondary">{{ item.name }} · {{ item.status || "—" }}</div>
+						</div>
+					</template>
+				</Typeahead>
+				<div v-else class="form-control-plaintext font-monospace py-1">{{ form.agreement || "—" }}</div>
 			</div>
 			<div class="col-md-3">
 				<label class="form-label">{{ t("Order date") }}</label>

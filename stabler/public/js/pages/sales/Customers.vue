@@ -15,6 +15,7 @@ import Select from "../../components/Select.vue";
 import PartyPaymentModal from "../../components/PartyPaymentModal.vue";
 import ParentBulkPaymentDialog from "../../components/ParentBulkPaymentDialog.vue";
 import ParentReallocateDialog from "../../components/ParentReallocateDialog.vue";
+import NewDirectInvoiceModal from "../../components/NewDirectInvoiceModal.vue";
 import BalanceChip from "../../components/BalanceChip.vue";
 import PartyAvatar from "../../components/PartyAvatar.vue";
 import ApexChart from "../../components/ApexChart.vue";
@@ -26,6 +27,8 @@ const session = useSession();
 const route = useRoute();
 const router = useRouter();
 const { activeCompany, user } = storeToRefs(session);
+// Direct (order-less) sales invoices are an imports-module capability.
+const directInvoiceEnabled = computed(() => session.canAccessModule("imports"));
 
 const { confirm } = useConfirm();
 const toast = useToast();
@@ -82,6 +85,7 @@ function exportLedgerXlsx() {
 const partyPayOpen = ref(false);
 const bulkPayOpen = ref(false);
 const reallocateOpen = ref(false);
+const directInvoiceOpen = ref(false);
 const currentTab = ref("ledger");
 
 const CUSTOMER_TYPES = ["Company", "Individual", "Partnership"];
@@ -450,6 +454,23 @@ function defaultDateRange() {
 	return { from: iso(from), to: iso(to) };
 }
 
+const includeChildren = ref(true);
+
+watch(includeChildren, () => {
+	if (selected.value) {
+		loadLedger(selected.value);
+		loadCustOrders(selected.value);
+		call("stabler.api.sales.customer_detail", {
+			name: selected.value.name,
+			company: activeCompany.value,
+			include_children: includeChildren.value ? 1 : 0,
+		}).then((detail) => {
+			recentInvoices.value = detail.recent_invoices || [];
+			selectedDetail.value = detail;
+		}).catch(console.error);
+	}
+});
+
 async function loadLedger(customer) {
 	if (!customer) return;
 	ledgerLoading.value = true;
@@ -458,6 +479,7 @@ async function loadLedger(customer) {
 		const params = {
 			company: activeCompany.value,
 			customer: customer.name,
+			include_children: includeChildren.value ? 1 : 0,
 			limit: 1000,
 		};
 		if (ledgerFromDate.value) params.from_date = ledgerFromDate.value;
@@ -492,6 +514,7 @@ async function selectCustomer(c) {
 		const detail = await call("stabler.api.sales.customer_detail", {
 			name: c.name,
 			company: activeCompany.value,
+			include_children: includeChildren.value ? 1 : 0,
 		});
 		recentInvoices.value = detail.recent_invoices || [];
 		selectedDetail.value = detail;
@@ -512,6 +535,7 @@ async function loadCustOrders(customer) {
 		custOrders.value = await call("stabler.api.sales.list_sales_orders", {
 			company: activeCompany.value,
 			customer: customer.name,
+			include_children: includeChildren.value ? 1 : 0,
 			limit: 50,
 		});
 	} catch {
@@ -1030,18 +1054,21 @@ watch(activeCompany, () => {
 										<i class="ti ti-cash me-1"></i>{{ t("Payment") }}
 									</button>
 									<button
-										v-if="selectedIsParent"
+										v-if="directInvoiceEnabled"
 										type="button"
 										class="btn btn-sm btn-primary"
-										disabled
-										:title="t('Transactions are recorded on child locations')"
+										:disabled="selectedIsParent"
+										:title="selectedIsParent ? t('Transactions are recorded on child locations') : ''"
+										@click="router.push({ path: '/sales/invoices/new', query: { new_for: selected.name } })"
 									>
-										<i class="ti ti-file-plus me-1"></i>{{ t("New SO") }}
+										<i class="ti ti-file-plus me-1"></i>{{ t("New Invoice") }}
 									</button>
 									<router-link
 										v-else
 										:to="{ path: '/sales/orders/new', query: { new_for: selected.name } }"
 										class="btn btn-sm btn-primary"
+										:class="{ disabled: selectedIsParent }"
+										:title="selectedIsParent ? t('Transactions are recorded on child locations') : ''"
 									>
 										<i class="ti ti-file-plus me-1"></i>{{ t("New SO") }}
 									</router-link>
@@ -1094,6 +1121,22 @@ watch(activeCompany, () => {
 										</div>
 									</div>
 								</div>
+							</div>
+
+							<!-- Parent Child Filter Toggle -->
+							<div v-if="selectedIsParent" class="px-3 py-2 bg-light-subtle border-bottom d-flex align-items-center justify-content-between">
+								<label class="form-check form-switch m-0 cursor-pointer d-flex align-items-center gap-2">
+									<input v-model="includeChildren" type="checkbox" class="form-check-input mt-0" />
+									<span class="fw-semibold text-body small">
+										<i class="ti ti-sitemap me-1 text-primary"></i>{{ t("Include Child Customer Transactions") }}
+									</span>
+								</label>
+								<span v-if="includeChildren" class="badge bg-primary-lt text-primary small">
+									<i class="ti ti-check me-1"></i>{{ t("Consolidated View") }} ({{ selectedDetail?.children?.length || 0 }} {{ t("children") }})
+								</span>
+								<span v-else class="badge bg-secondary-lt text-secondary small">
+									{{ t("Parent Only View") }}
+								</span>
 							</div>
 
 							<!-- Tabs Header -->
@@ -1280,7 +1323,17 @@ watch(activeCompany, () => {
 													<tr v-for="e in filteredLedgerRows" :key="e.name">
 														<td class="text-nowrap small py-2">{{ formatDateTime(e.posting_date) }}</td>
 														<td class="py-2">
-															<div class="small text-secondary fw-semibold">{{ e.voucher_type }}</div>
+															<div class="d-flex align-items-center gap-1">
+																<span class="small text-secondary fw-semibold">{{ e.voucher_type }}</span>
+																<span
+																	v-if="e.party && e.party !== selected.name"
+																	class="badge bg-secondary-lt text-dark ms-1"
+																	style="font-size: 0.72rem;"
+																	:title="e.party_name || e.party"
+																>
+																	<i class="ti ti-building-store me-1 text-primary"></i>{{ e.party_name || e.party }}
+																</span>
+															</div>
 															<button
 																v-if="e.voucher_no"
 																type="button"
@@ -1365,7 +1418,19 @@ watch(activeCompany, () => {
 													class="cursor-pointer"
 													@click="openVoucher({ voucher_type: 'Sales Order', voucher_no: o.name })"
 												>
-													<td class="font-monospace text-primary fw-semibold">{{ o.name }}</td>
+													<td>
+														<div class="d-flex align-items-center gap-1">
+															<span class="font-monospace text-primary fw-semibold">{{ o.name }}</span>
+															<span
+																v-if="o.customer && o.customer !== selected.name"
+																class="badge bg-secondary-lt text-dark font-body ms-1"
+																style="font-size: 0.72rem;"
+																:title="o.customer_name || o.customer"
+															>
+																<i class="ti ti-building-store me-1 text-primary"></i>{{ o.customer_name || o.customer }}
+															</span>
+														</div>
+													</td>
 													<td>{{ formatDate(o.transaction_date) }}</td>
 													<td class="text-end font-monospace">
 														{{ formatMoney(o.grand_total, o.currency || currency, user.language) }}
@@ -1401,7 +1466,19 @@ watch(activeCompany, () => {
 													class="cursor-pointer"
 													@click="openVoucher({ voucher_type: 'Sales Invoice', voucher_no: inv.name })"
 												>
-													<td class="font-monospace text-primary fw-semibold">{{ inv.name }}</td>
+													<td>
+														<div class="d-flex align-items-center gap-1">
+															<span class="font-monospace text-primary fw-semibold">{{ inv.name }}</span>
+															<span
+																v-if="inv.customer && inv.customer !== selected.name"
+																class="badge bg-secondary-lt text-dark font-body ms-1"
+																style="font-size: 0.72rem;"
+																:title="inv.customer_name || inv.customer"
+															>
+																<i class="ti ti-building-store me-1 text-primary"></i>{{ inv.customer_name || inv.customer }}
+															</span>
+														</div>
+													</td>
 													<td>{{ formatDate(inv.posting_date) }}</td>
 													<td class="text-end font-monospace stbl-amount">
 														{{ formatMoney(inv.grand_total, inv.currency || currency, user.language) }}
@@ -1576,6 +1653,15 @@ watch(activeCompany, () => {
 		:parent-name="selected.customer_name"
 		@close="reallocateOpen = false"
 		@done="reallocateOpen = false; loadLedger(selected); loadCustomers(); selectCustomer(selected);"
+	/>
+
+	<!-- Direct Sales Invoice Modal -->
+	<NewDirectInvoiceModal
+		:open="directInvoiceOpen"
+		:initial-customer="selected?.name"
+		:initial-customer-name="selected?.customer_name"
+		@close="directInvoiceOpen = false"
+		@created="if (selected) selectCustomer(selected);"
 	/>
 </template>
 

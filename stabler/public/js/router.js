@@ -7,6 +7,7 @@ import GenesisWizard from "./pages/welcome/GenesisWizard.vue";
 import ReportsHub from "./pages/ReportsHub.vue";
 import ReportSalesByCustomer from "./pages/reports/SalesByCustomer.vue";
 import ReportCustomerBalanceSummary from "./pages/reports/CustomerBalanceSummary.vue";
+import ReportAgreementReceivables from "./pages/reports/AgreementReceivables.vue";
 import ReportSalesByItem from "./pages/reports/SalesByItem.vue";
 import ReportItemAbc from "./pages/reports/ItemAbc.vue";
 import DrillReport from "./pages/reports/DrillReport.vue";
@@ -47,6 +48,7 @@ import LogistBoard from "./pages/tender/LogistBoard.vue";
 import MyTenders from "./pages/tender/MyTenders.vue";
 import SalesInvoices from "./pages/sales/SalesInvoices.vue";
 import SalesInvoiceForm from "./pages/sales/SalesInvoiceForm.vue";
+import NewDirectInvoicePage from "./pages/sales/NewDirectInvoicePage.vue";
 import SalesReturnForm from "./pages/sales/SalesReturnForm.vue";
 import POS from "./pages/pos.vue";
 import SalesAging from "./pages/sales/Aging.vue";
@@ -66,6 +68,7 @@ import PurchaseReceipts from "./pages/purchasing/PurchaseReceipts.vue";
 import PurchasingAging from "./pages/purchasing/Aging.vue";
 import InventoryHome from "./pages/inventory/InventoryHome.vue";
 import Items from "./pages/inventory/Items.vue";
+import PriceLists from "./pages/inventory/PriceLists.vue";
 import Warehouses from "./pages/inventory/Warehouses.vue";
 import StockStatus from "./pages/inventory/StockStatus.vue";
 import StockLedger from "./pages/inventory/StockLedger.vue";
@@ -177,9 +180,11 @@ import ContainerCostLedger from "./pages/imports/ContainerCostLedger.vue";
 import LandedCostBills from "./pages/imports/LandedCostBills.vue";
 import NotFound from "./pages/NotFound.vue";
 import ServerError from "./pages/ServerError.vue";
+import Login from "./pages/Login.vue";
 
 const routes = [
 	{ path: "/", redirect: "/dashboard" },
+	{ path: "/login", name: "login", component: Login, meta: { title: t("Login — Stabler"), standalone: true, public: true, "public-after-login": true } },
 	// Onboarding — reachable by any authenticated user while onboarding is not yet
 	// complete (module: null = no module gating; the guard below confines
 	// un-provisioned users here).
@@ -226,6 +231,7 @@ const routes = [
 	{ path: "/reports", name: "reports", component: ReportsHub, meta: { title: t("Reports") } },
 	{ path: "/reports/sales-by-customer", name: "report-sales-by-customer", component: ReportSalesByCustomer, meta: { title: t("Sales by Customer"), module: "sales" } },
 	{ path: "/reports/customer-balance-summary", name: "report-customer-balance-summary", component: ReportCustomerBalanceSummary, meta: { title: t("Customer Balance Summary"), module: "sales" } },
+	{ path: "/reports/agreement-receivables", name: "report-agreement-receivables", component: ReportAgreementReceivables, meta: { title: t("Receivables by agreement"), module: "agreements" } },
 	{ path: "/reports/sales-by-item", name: "report-sales-by-item", component: ReportSalesByItem, meta: { title: t("Sales by Item"), module: "sales" } },
 	{ path: "/reports/item-abc", name: "report-item-abc", component: ReportItemAbc, meta: { title: t("Item ABC analysis"), module: "sales" } },
 	{ path: "/reports/customer-abc", name: "report-customer-abc", component: DrillReport, meta: { title: "Customer ABC analysis", module: "sales", report: { title: "Customer ABC analysis", summaryApi: "stabler.api.reports.customer_abc", detailApi: "stabler.api.reports.sales_by_customer_detail", drillKey: "customer", detailParam: "customer", docPrefix: "/sales/invoices/", exportName: "customer_abc", filters: [ { key: "customers", label: t("Customers"), searchApi: "stabler.api.sales.list_customers", idKey: "name", display: (r) => r.customer_name || r.name, placeholder: t("All customers") }, { key: "items", label: t("Items"), searchApi: "stabler.api.inventory.list_items", idKey: "name", display: (r) => r.item_name || r.name, placeholder: t("All items") } ] } } },
@@ -291,6 +297,7 @@ const routes = [
 			{ path: "orders/new", name: "sales-order-new", component: SalesOrderForm, meta: { title: t("New Sales Order") } },
 			{ path: "orders/:name", name: "sales-order", component: SalesOrderForm, meta: { title: t("Sales Order") } },
 			{ path: "invoices", name: "sales-invoices", component: SalesInvoices, meta: { title: t("Sales Invoices") } },
+			{ path: "invoices/new", name: "sales-invoice-new", component: NewDirectInvoicePage, meta: { title: t("New Direct Sales Invoice") } },
 			{ path: "returns/new", name: "sales-return-new", component: SalesReturnForm, meta: { title: t("New Sales Return") } },
 			{ path: "returns/:name", redirect: to => `/sales/invoices/${to.params.name}` },
 			{ path: "pos", redirect: "/pos" },
@@ -328,6 +335,7 @@ const routes = [
 		children: [
 			{ path: "", redirect: "/inventory/items" },
 			{ path: "items", name: "inventory-items", component: Items, meta: { title: t("Items") } },
+			{ path: "prices", name: "inventory-prices", component: PriceLists, meta: { title: t("Price Lists") } },
 			{ path: "warehouses", name: "inventory-warehouses", component: Warehouses, meta: { title: t("Warehouses") } },
 			{ path: "stock-status", name: "inventory-stock-status", component: StockStatus, meta: { title: t("Stock Status") } },
 			{ path: "staging", name: "inventory-staging", component: MaterialStaging, meta: { title: t("Material Staging") } },
@@ -533,14 +541,21 @@ function localOnboardingFlag() {
 
 router.beforeEach(async (to) => {
 	const session = useSession();
+
+	if (to.path === "/login" || to.matched.some((r) => r.meta?.public)) {
+		if (session.user?.id && session.user.id !== "Guest") {
+			return landingPath(session);
+		}
+		return;
+	}
+
 	// Await boot so the access decision uses real allowedModules on the very first navigation.
 	// ensureBoot() is idempotent and deduplicates concurrent calls.
 	await session.ensureBoot();
 
 	if (session.user?.id === "Guest" || !session.user?.id) {
-		if (to.path !== "/manufacturing/line") {
-			window.location.href = `/login?redirect-to=${encodeURIComponent(window.location.pathname + window.location.hash)}`;
-			return false;
+		if (to.path !== "/manufacturing/line" && to.path !== "/login") {
+			return { path: "/login", query: { "redirect-to": to.fullPath } };
 		}
 	}
 

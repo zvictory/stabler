@@ -4685,3 +4685,23 @@ Purchase execution,Purchase execution
 Sales execution,Sales execution
 Sales order,Sales order
 No linked documents,No linked documents
+Receivables by agreement,Receivables by agreement
+Customer outstanding balances grouped by Contract and currency.,Customer outstanding balances grouped by Contract and currency.
+Agreement,Agreement
+Base outstanding,Base outstanding
+Latest due date,Latest due date
+Grouped by Contract. Unlinked invoices are shown separately; transaction and base currency are never mixed.,Grouped by Contract. Unlinked invoices are shown separately; transaction and base currency are never mixed.
+Unlinked,Unlinked
+Search agreement…,Search agreement…
+No agreements match that search,No agreements match that search
+Agreement management is not enabled for {0}.,Agreement management is not enabled for {0}.
+Unknown agreement: {0},Unknown agreement: {0}
+Agreement {0} belongs to another customer.,Agreement {0} belongs to another customer.
+You are not permitted to view this agreement.,You are not permitted to view this agreement.
+You are not permitted to view agreements.,You are not permitted to view agreements.
+Auto-filled {count} remaining item lines from Proforma Invoice {ref},Auto-filled {count} remaining item lines from Proforma Invoice {ref}
+No remaining (unshipped) items found on this Proforma Invoice.,No remaining (unshipped) items found on this Proforma Invoice.
+Remaining quantities could not be calculated. Loaded the original Proforma quantities. Please check them.,Remaining quantities could not be calculated. Loaded the original Proforma quantities. Please check them.
+Could not fetch available PI lines.,Could not fetch available PI lines.
+Commerce & imports,Commerce & imports
+Imports control center,Imports control center

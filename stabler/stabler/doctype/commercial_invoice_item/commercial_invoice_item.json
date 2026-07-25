@@ -5,6 +5,7 @@
  "editable_grid": 1,
  "engine": "InnoDB",
  "field_order": [
+  "custom_proforma_invoice",
   "category",
   "item",
   "description",
@@ -19,6 +20,13 @@
   "docs_amount"
  ],
  "fields": [
+  {
+   "fieldname": "custom_proforma_invoice",
+   "fieldtype": "Link",
+   "in_list_view": 1,
+   "label": "Ref PI",
+   "options": "Proforma Invoice"
+  },
   {
    "fieldname": "category",
    "fieldtype": "Data",

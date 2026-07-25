@@ -1,5 +1,6 @@
 <script setup>
-import { onMounted } from "vue";
+import { computed, onMounted } from "vue";
+import { useRoute } from "vue-router";
 import Sidebar from "./components/Sidebar.vue";
 import CommandPalette from "./components/CommandPalette.vue";
 import ToastHost from "./components/ToastHost.vue";
@@ -7,14 +8,27 @@ import ConfirmHost from "./components/ConfirmHost.vue";
 import UpdateBanner from "./components/UpdateBanner.vue";
 import { useSession } from "./stores/session.js";
 
+const route = useRoute();
 const session = useSession();
+
+const isStandalone = computed(() => {
+	return route.path === "/login" || route.matched.some((r) => r.meta?.standalone);
+});
+
 onMounted(() => {
 	session.setupRehydration();
 });
 </script>
 
 <template>
-	<div class="page">
+	<div v-if="isStandalone" class="standalone-page">
+		<router-view v-slot="{ Component }">
+			<component :is="Component" />
+		</router-view>
+		<ToastHost />
+		<ConfirmHost />
+	</div>
+	<div v-else class="page">
 		<Sidebar />
 		<div class="page-wrapper">
 			<UpdateBanner />

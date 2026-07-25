@@ -19,8 +19,9 @@ def resolve_party_account(party_type: str, party: str, company: str, currency: s
 
 	if account:
 		account_currency = frappe.get_cached_value("Account", account, "account_currency")
-		# If currency matches, return immediately
-		if not account_currency or account_currency == currency:
+		company_currency = frappe.get_cached_value("Company", company, "default_currency")
+		# If currency matches, or is unassigned/base currency, return immediately
+		if not account_currency or account_currency == currency or account_currency == company_currency:
 			return account
 
 	# Mismatch or no account resolved! Swap/resolve to the matching receivable/payable account

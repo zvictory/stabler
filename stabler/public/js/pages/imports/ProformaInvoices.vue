@@ -272,6 +272,15 @@ function openSupersede(row) {
 	supersedeFor.value = row;
 	supersedeCi.value = "";
 }
+function openLinkedCis(row) {
+	if (!row || !row.name) return;
+	router.push({ path: "/imports/commercial-invoices", query: { proforma: row.name } });
+}
+function filterBySupplier(sup) {
+	if (!sup) return;
+	search.value = sup;
+	load();
+}
 function searchCIs(q) {
 	return call("stabler.api.imports.list_commercial_invoices", {
 		company: activeCompany.value,
@@ -377,8 +386,8 @@ const canSupersede = (row) => ["DRAFT", "CONFIRMED"].includes(row.status);
 			<table class="table table-vcenter">
 				<thead>
 					<tr>
-						<th class="pi-sort" @click="toggleSort('ref')">
-							{{ t("PI № / vendor") }} <i v-if="sortIcon('ref')" class="ti" :class="sortIcon('ref')"></i>
+						<th style="min-width: 170px" class="pi-sort" @click="toggleSort('ref')">
+							{{ t("PI Group / Ref / Vendor") }} <i v-if="sortIcon('ref')" class="ti" :class="sortIcon('ref')"></i>
 						</th>
 						<th class="text-nowrap pi-sort" @click="toggleSort('pi_date')">
 							{{ t("PI Date") }} <i v-if="sortIcon('pi_date')" class="ti" :class="sortIcon('pi_date')"></i>
@@ -408,8 +417,24 @@ const canSupersede = (row) => ["DRAFT", "CONFIRMED"].includes(row.status);
 					<SkeletonRows v-if="loading" :cols="9" :rows="6" />
 					<tr v-for="r in sortedRows" :key="r.name" class="pi-row" style="cursor: pointer" @click="router.push({ name: 'imports-proforma', params: { name: r.name } })">
 						<td>
+							<div v-if="groupLabel(r)" class="mb-1">
+								<span
+									class="badge bg-purple-lt text-purple font-monospace fw-bold"
+									style="font-size: 0.75rem"
+									:title="t('PI Group: ') + groupLabel(r)"
+								>
+									<i class="ti ti-folders me-1"></i>{{ groupLabel(r) }}
+								</span>
+							</div>
 							<div class="fw-bold text-primary font-monospace" style="font-size: 0.9rem">{{ refMain(r) }}</div>
-							<span class="badge bg-secondary-lt mt-1" :title="r.supplier_name || r.supplier">{{ vendorCode(r) }}</span>
+							<span
+								class="badge bg-secondary-lt text-dark font-monospace mt-1"
+								style="cursor: pointer"
+								:title="t('Filter by supplier: ') + (r.supplier_name || r.supplier)"
+								@click.stop="filterBySupplier(r.supplier || r.supplier_name)"
+							>
+								{{ vendorCode(r) }}
+							</span>
 						</td>
 						<td class="text-nowrap font-monospace pi-num">
 							{{ r.pi_date ? formatDate(r.pi_date) : "—" }}
@@ -428,23 +453,39 @@ const canSupersede = (row) => ["DRAFT", "CONFIRMED"].includes(row.status);
 								{{ docsGap(r) ? "−" + fm(docsGap(r), r.currency) : fm(0, r.currency) }}
 							</div>
 						</td>
-						<td>
+						<td
+							class="pi-invoiced-cell"
+							style="cursor: pointer"
+							:title="t('Click to view linked Commercial Invoices')"
+							@click.stop="openLinkedCis(r)"
+						>
 							<div class="progress" style="height: 5px">
 								<div class="progress-bar" :class="invoicedBarClass(r)" :style="{ width: invoicedPct(r) + '%' }"></div>
 							</div>
-							<div class="text-secondary small mt-1 pi-num">
-								{{ invoicedPct(r) }}% · {{ r.ci_count || 0 }} CI
+							<div class="text-secondary small mt-1 pi-num d-flex align-items-center justify-content-between">
+								<span>{{ invoicedPct(r) }}% · {{ r.ci_count || 0 }} CI</span>
+								<i class="ti ti-chevron-right text-primary ms-1" style="font-size: 0.75rem" :title="t('View linked CIs')"></i>
 							</div>
 						</td>
 						<td><span class="badge" :class="getStatusBadgeClass('Proforma Invoice', r.status)">{{ r.status }}</span></td>
-						<td class="text-end" @click.stop>
+						<td class="text-end text-nowrap" @click.stop>
 							<button
 								v-if="canSupersede(r)"
 								type="button"
-								class="btn btn-outline-secondary btn-sm pi-row-action"
-								@click="openSupersede(r)"
+								class="btn btn-outline-primary btn-sm pi-row-action"
+								:title="t('Create Commercial Invoice from this Proforma')"
+								@click="router.push({ path: '/imports/commercial-invoices/new', query: { proforma: r.name } })"
 							>
-								<i class="ti ti-link me-1"></i>{{ t("Link CI") }}
+								<i class="ti ti-plus me-1"></i>{{ t("Create CI") }}
+							</button>
+							<button
+								v-else-if="r.commercial_invoice"
+								type="button"
+								class="btn btn-ghost-info btn-sm text-nowrap"
+								:title="t('View linked Commercial Invoice')"
+								@click="router.push('/imports/commercial-invoices/' + r.commercial_invoice)"
+							>
+								<i class="ti ti-file-check me-1"></i>{{ r.commercial_invoice }}
 							</button>
 						</td>
 					</tr>
@@ -469,40 +510,6 @@ const canSupersede = (row) => ["DRAFT", "CONFIRMED"].includes(row.status);
 				</tfoot>
 			</table>
 			<EmptyState v-if="!loading && !rows.length" :title="t('No proformas yet')" :subtitle="t('Create your first proforma invoice.')" />
-		</div>
-	</div>
-
-	<!-- Supersede modal -->
-	<div v-if="supersedeFor" class="modal d-block" tabindex="-1" style="background: rgba(0,0,0,0.4)">
-		<div class="modal-dialog modal-dialog-centered">
-			<div class="modal-content">
-				<div class="modal-header">
-					<h5 class="modal-title">{{ t("Link to Commercial Invoice") }}</h5>
-					<button type="button" class="btn-close" @click="supersedeFor = null"></button>
-				</div>
-				<div class="modal-body">
-					<p class="text-secondary small">{{ t("Superseding proforma") }} <strong>{{ supersedeFor.name }}</strong>.</p>
-					<label class="form-label small mb-1">{{ t("Commercial Invoice") }}</label>
-					<Typeahead
-						v-model="supersedeCi"
-						:search="searchCIs"
-						:placeholder="t('Search commercial invoice…')"
-						@pick="(ci) => { supersedeCi = ci.name; }"
-						@clear="() => { supersedeCi = ''; }"
-					>
-						<template #option="{ item }">
-							<div class="fw-semibold small">{{ item.ci_number || item.name }}</div>
-							<div class="text-secondary" style="font-size:0.75rem">{{ item.supplier_name }}</div>
-						</template>
-					</Typeahead>
-				</div>
-				<div class="modal-footer">
-					<button type="button" class="btn btn-outline-secondary" @click="supersedeFor = null">{{ t("Cancel") }}</button>
-					<button type="button" class="btn btn-primary" :disabled="superseding || !supersedeCi" @click="doSupersede">
-						<span v-if="superseding" class="spinner-border spinner-border-sm me-1"></span>{{ t("Link") }}
-					</button>
-				</div>
-			</div>
 		</div>
 	</div>
 </template>

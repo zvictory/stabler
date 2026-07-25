@@ -332,6 +332,21 @@ const groups = computed(() => [
 			},
 		],
 	},
+	{
+		key: "agreements",
+		label: t("Agreements"),
+		icon: "ti-file-invoice",
+		module: "agreements",
+		reports: [
+			{
+				title: t("Receivables by agreement"),
+				description: t("Customer outstanding balances grouped by Contract and currency."),
+				path: "/reports/agreement-receivables",
+				icon: "ti-file-invoice",
+				badge: t("Agreements"),
+			},
+		],
+	},
 ]);
 
 const matchesSearch = (report, group) => {

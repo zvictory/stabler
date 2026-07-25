@@ -293,6 +293,26 @@ const filteredAssignRows = computed(() => {
 	return list;
 });
 
+function openPi(name) {
+	if (!name) return;
+	router.push("/imports/proformas/" + name);
+}
+function openCi(name) {
+	if (!name) return;
+	router.push("/imports/commercial-invoices/" + name);
+}
+function openContainer(name) {
+	if (!name) return;
+	router.push("/imports/containers/" + name);
+}
+function openTruck(name) {
+	if (!name) return;
+	router.push("/imports/trucks/" + name);
+}
+function openProformasBySupplier(sup) {
+	if (!sup) return;
+	router.push({ path: "/imports/proformas", query: { supplier: sup } });
+}
 function assignFromDetail() {
 	if (!detailGroup.value) return;
 	openAssign(detailGroup.value);
@@ -669,13 +689,24 @@ async function saveAssign() {
 							<div v-else class="d-flex flex-column gap-3">
 								<div v-for="pi in detailPis" :key="pi.name" class="card border">
 									<div class="card-header bg-light-subtle d-flex align-items-center flex-wrap gap-2 py-2">
-										<div class="fw-bold font-monospace text-primary fs-5">
+										<div
+											class="fw-bold font-monospace text-primary fs-5 text-decoration-underline-hover"
+											style="cursor: pointer"
+											:title="t('Open Proforma Invoice: ') + pi.name"
+											@click="openPi(pi.name)"
+										>
 											<i class="ti ti-file-description me-1"></i>{{ pi.supplier_pi_ref || pi.name }}
 										</div>
 										<span class="badge" :class="getStatusBadgeClass('Proforma Invoice', pi.status)">
 											{{ pi.status }}
 										</span>
-										<span v-if="pi.supplier_name" class="badge bg-secondary-lt ms-auto">
+										<span
+											v-if="pi.supplier_name"
+											class="badge bg-secondary-lt text-dark font-monospace ms-auto"
+											style="cursor: pointer"
+											:title="t('Filter proformas by supplier: ') + pi.supplier_name"
+											@click="openProformasBySupplier(pi.supplier)"
+										>
 											<i class="ti ti-building me-1"></i>{{ pi.supplier_name }}
 										</span>
 									</div>
@@ -724,8 +755,13 @@ async function saveAssign() {
 											</div>
 											<div v-for="ci in pi.linked_cis" :key="ci.name" class="border rounded bg-white p-2 mb-2">
 												<div class="d-flex align-items-center justify-content-between flex-wrap gap-2">
-													<div class="fw-bold font-monospace text-dark">
-														CI: {{ ci.ci_number || ci.name }}
+													<div
+														class="fw-bold font-monospace text-dark text-decoration-underline-hover"
+														style="cursor: pointer"
+														:title="t('Open Commercial Invoice: ') + ci.name"
+														@click="openCi(ci.name)"
+													>
+														<i class="ti ti-file-check me-1 text-primary"></i>CI: {{ ci.ci_number || ci.name }}
 														<span class="text-secondary small font-normal ms-2">({{ formatDate(ci.ci_date) }})</span>
 													</div>
 													<span class="badge" :class="getStatusBadgeClass('Commercial Invoice', ci.status)">
@@ -739,8 +775,15 @@ async function saveAssign() {
 												<div v-if="ci.containers && ci.containers.length" class="mt-2">
 													<div class="small fw-semibold text-secondary mb-1">{{ t("Containers") }}:</div>
 													<div class="d-flex flex-wrap gap-1">
-														<span v-for="cnt in ci.containers" :key="cnt.name" class="badge bg-azure-lt font-monospace py-1 px-2">
-															<i class="ti ti-box me-1"></i>{{ cnt.container_number || cnt.name }} ({{ cnt.container_type || 'RF' }}, {{ cnt.status }})
+														<span
+															v-for="cnt in ci.containers"
+															:key="cnt.name"
+															class="badge bg-azure-lt font-monospace py-1 px-2"
+															style="cursor: pointer"
+															:title="t('Open Container: ') + (cnt.container_number || cnt.name)"
+															@click.stop="openContainer(cnt.name)"
+														>
+															<i class="ti ti-box me-1"></i>{{ cnt.container_number || cnt.name }} ({{ cnt.status }})
 														</span>
 													</div>
 												</div>
@@ -775,16 +818,32 @@ async function saveAssign() {
 										</tr>
 									</thead>
 									<tbody>
-										<tr v-for="ci in detailCis" :key="ci.name">
-											<td class="font-monospace fw-bold text-primary">{{ ci.ci_number || ci.name }}</td>
+										<tr v-for="ci in detailCis" :key="ci.name" style="cursor: pointer" @click="openCi(ci.name)">
+											<td class="font-monospace fw-bold text-primary text-decoration-underline-hover">{{ ci.ci_number || ci.name }}</td>
 											<td class="text-nowrap">{{ formatDate(ci.ci_date) }}</td>
 											<td><span class="badge" :class="getStatusBadgeClass('Commercial Invoice', ci.status)">{{ ci.status }}</span></td>
-											<td>{{ ci.supplier_name || ci.supplier }}</td>
+											<td>
+												<span
+													class="badge bg-secondary-lt text-dark font-monospace"
+													style="cursor: pointer"
+													:title="ci.supplier_name || ci.supplier"
+													@click.stop="openProformasBySupplier(ci.supplier)"
+												>
+													{{ ci.supplier_name || ci.supplier }}
+												</span>
+											</td>
 											<td class="small font-monospace">{{ formatDate(ci.etd) }} / {{ formatDate(ci.eta) }}</td>
 											<td>
 												<div v-if="ci.containers && ci.containers.length" class="d-flex flex-wrap gap-1">
-													<span v-for="cnt in ci.containers" :key="cnt.name" class="badge bg-azure-lt font-monospace">
-														{{ cnt.container_number || cnt.name }}
+													<span
+														v-for="cnt in ci.containers"
+														:key="cnt.name"
+														class="badge bg-azure-lt font-monospace"
+														style="cursor: pointer"
+														:title="t('Open Container: ') + (cnt.container_number || cnt.name)"
+														@click.stop="openContainer(cnt.name)"
+													>
+														<i class="ti ti-box me-1"></i>{{ cnt.container_number || cnt.name }}
 													</span>
 												</div>
 												<span v-else class="text-secondary small italic">{{ t("No containers") }}</span>

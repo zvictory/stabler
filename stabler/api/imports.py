@@ -352,8 +352,17 @@ def list_commercial_invoices(
         f"""
         SELECT
           ci.name, ci.ci_number, ci.supplier, s.supplier_name, ci.ci_date,
-          ci.status, ci.incoterm, ci.eta_transit_port, ci.total_kg, ci.total_boxes,
-          ci.agreed_total, ci.docs_total, ci.cash_difference, ci.currency,
+          ci.status, ci.incoterm, ci.eta_transit_port,
+          COALESCE(NULLIF(ci.total_kg, 0), (SELECT SUM(qty) FROM `tabCommercial Invoice Item` ii WHERE ii.parent = ci.name), 0) AS total_kg,
+          COALESCE(NULLIF(ci.total_boxes, 0), (SELECT SUM(boxes) FROM `tabCommercial Invoice Item` ii WHERE ii.parent = ci.name), 0) AS total_boxes,
+          COALESCE(NULLIF(ci.agreed_total, 0), (SELECT SUM(amount) FROM `tabCommercial Invoice Item` ii WHERE ii.parent = ci.name), 0) AS agreed_total,
+          COALESCE(NULLIF(ci.docs_total, 0), (SELECT SUM(docs_amount) FROM `tabCommercial Invoice Item` ii WHERE ii.parent = ci.name), 0) AS docs_total,
+          COALESCE(
+            NULLIF(ci.cash_difference, 0),
+            (SELECT (SUM(amount) - SUM(docs_amount)) FROM `tabCommercial Invoice Item` ii WHERE ii.parent = ci.name),
+            0
+          ) AS cash_difference,
+          ci.currency,
           {pi_select}
           (SELECT COUNT(*) FROM `tabImport Container` c
              WHERE c.commercial_invoice = ci.name) AS container_count,
@@ -403,6 +412,7 @@ def get_commercial_invoice(name: str):
         "modified": str(doc.modified),
         "company": doc.company,
         "import_pi_group": doc.import_pi_group,
+        "custom_proforma_invoice": doc.get("custom_proforma_invoice"),
         "supplier": doc.supplier,
         "supplier_name": frappe.db.get_value("Supplier", doc.supplier, "supplier_name")
         if doc.supplier
@@ -437,6 +447,7 @@ def get_commercial_invoice(name: str):
         "items": [
             {
                 "name": it.name,
+                "custom_proforma_invoice": it.get("custom_proforma_invoice") or doc.get("custom_proforma_invoice"),
                 "category": it.category,
                 "item": it.item,
                 "description": it.description,
@@ -492,6 +503,7 @@ def get_commercial_invoice(name: str):
         "packing_summary": _safe_packing_summary(name, doc.company),
         "grn": grn_rows[0] if grn_rows else None,
         "customs_fee_breakdown": _safe_customs_breakdown(name),
+        "pi_tracking": get_pi_tracking_for_ci(doc),
     }
     rules.mask_named(payload, rules.CI_MASK_FIELDS, _cost_visible())
     return payload
@@ -543,6 +555,7 @@ def _safe_packing_summary(name: str, company: str):
 
 _CI_HEADER_FIELDS = (
     "import_pi_group",
+    "custom_proforma_invoice",
     "ci_number",
     "ci_date",
     "currency",
@@ -586,6 +599,7 @@ def _clean_ci_items(items):
         box_weight_kg = flt(row.get("box_weight_kg"))
         cleaned.append(
             {
+                "custom_proforma_invoice": row.get("custom_proforma_invoice") or None,
                 "category": row.get("category") or None,
                 "item": item,
                 "description": row.get("description") or None,
@@ -708,6 +722,11 @@ def create_commercial_invoice(
     _apply_ci_payload(doc, values, items, company)
     doc.insert(ignore_permissions=False)
     _sync_po_links(doc.name, company, po_links)
+    if doc.get("custom_proforma_invoice") and frappe.db.exists("Proforma Invoice", doc.custom_proforma_invoice):
+        try:
+            link_proforma_to_ci(doc.custom_proforma_invoice, doc.name, company)
+        except Exception:
+            pass
     return {"name": doc.name}
 
 
@@ -739,6 +758,11 @@ def update_commercial_invoice(
     _apply_ci_payload(doc, values, items, company)
     doc.save(ignore_permissions=False)
     _sync_po_links(doc.name, company, po_links)
+    if doc.get("custom_proforma_invoice") and frappe.db.exists("Proforma Invoice", doc.custom_proforma_invoice):
+        try:
+            link_proforma_to_ci(doc.custom_proforma_invoice, doc.name, company)
+        except Exception:
+            pass
     return {"name": doc.name}
 
 
@@ -772,12 +796,13 @@ def list_import_containers(
     search: str | None = None,
     status: str | None = None,
     commercial_invoice: str | None = None,
+    bl_type: str | None = None,
     limit_start: int = 0,
     limit_page_length: int = 50,
 ):
     """Import Container list rows (cost total masked for non-cost users)."""
     _assert_imports_access(company)
-    clauses, params = rules.container_filter_clauses(search, status, commercial_invoice)
+    clauses, params = rules.container_filter_clauses(search, status, commercial_invoice, bl_type)
     params["company"] = company
     params["limit_start"] = max(0, cint(limit_start))
     params["limit_page_length"] = rules.clamp_page_length(limit_page_length)
@@ -785,12 +810,22 @@ def list_import_containers(
     rows = frappe.db.sql(
         f"""
         SELECT
-          c.name, c.container_number, c.container_type, c.container_size,
-          c.commercial_invoice, c.supplier, c.status, c.total_kg, c.total_boxes,
+          c.name, c.container_number, c.container_type, c.container_size, c.bl_type, c.seal_number,
+          c.commercial_invoice, c.supplier, s.supplier_name, c.status, c.total_kg, c.total_boxes,
           c.total_amount, c.currency, c.advance_70_payment_entry,
+          c.cut_off, c.gate_open, c.gate_close, c.gate_in_date,
+          ci.ci_number, ci.vessel, ci.voyage, ci.bl_number, ci.port_of_loading, ci.port_of_discharge,
+          ci.etd, ci.eta, ci.eta_transit_port, ci.custom_proforma_invoice AS proforma_invoice,
+          (SELECT COALESCE(s_tr.supplier_name, fb.transporter)
+           FROM `tabFreight Booking` fb
+           LEFT JOIN `tabSupplier` s_tr ON s_tr.name = fb.transporter
+           WHERE fb.container = c.name OR (fb.commercial_invoice = c.commercial_invoice AND c.commercial_invoice IS NOT NULL)
+           ORDER BY fb.creation DESC LIMIT 1) AS transporter,
           (SELECT COALESCE(SUM(cl.amount), 0) FROM `tabContainer Cost Line` cl
              WHERE cl.parent = c.name) AS cost_lines_total
         FROM `tabImport Container` c
+        LEFT JOIN `tabCommercial Invoice` ci ON ci.name = c.commercial_invoice
+        LEFT JOIN `tabSupplier` s ON s.name = c.supplier
         WHERE {where}
         ORDER BY c.creation DESC, c.name DESC
         LIMIT %(limit_start)s, %(limit_page_length)s
@@ -801,7 +836,7 @@ def list_import_containers(
     for r in rows:
         r["cost_lines_total"] = flt(r["cost_lines_total"])
     rules.mask_named(rows, rules.CONTAINER_LIST_MASK_FIELDS, _cost_visible())
-    total = _count(rules.count_query("`tabImport Container` c", where), params)
+    total = _count(rules.count_query("`tabImport Container` c LEFT JOIN `tabCommercial Invoice` ci ON ci.name = c.commercial_invoice LEFT JOIN `tabSupplier` s ON s.name = c.supplier", where), params)
     return {"rows": rows, "total_count": total}
 
 
@@ -4231,9 +4266,8 @@ def list_proformas(company: str, status: str | None = None, supplier: str | None
 
 def _attach_proforma_rollups(rows: list[dict]) -> None:
     """Smart-list aggregates per PI: item count + physical totals (boxes/kg/FCL)
-    from the item child, and CI count + invoiced amount from linked Commercial
-    Invoices (custom_proforma_invoice). Kept as follow-up queries so the base
-    list SQL stays simple and column-guards are trivial."""
+    from the item child, and CI count + invoiced amount/qty from linked Commercial
+    Invoices (child custom_proforma_invoice or header custom_proforma_invoice)."""
     if not rows:
         return
     names = [r["name"] for r in rows]
@@ -4249,31 +4283,50 @@ def _attach_proforma_rollups(rows: list[dict]) -> None:
             as_dict=True,
         )
     }
-    ci = {}
-    if frappe.db.has_column("Commercial Invoice", "custom_proforma_invoice"):
-        ci = {
-            d["pi"]: d
-            for d in frappe.db.sql(
-                """SELECT custom_proforma_invoice AS pi, COUNT(*) AS ci_count,
-                          COALESCE(SUM(agreed_total),0) AS invoiced_total
-                   FROM `tabCommercial Invoice`
-                   WHERE custom_proforma_invoice IN %(names)s AND docstatus < 2
-                   GROUP BY custom_proforma_invoice""",
-                {"names": names},
-                as_dict=True,
-            )
-        }
+
+    ci_rollups = {}
+    ci_data = frappe.db.sql(
+        """
+        SELECT 
+            COALESCE(NULLIF(cii.custom_proforma_invoice, ''), ci.custom_proforma_invoice) AS pi_name,
+            COUNT(DISTINCT ci.name) AS ci_count,
+            COALESCE(SUM(cii.qty), 0) AS invoiced_kg,
+            COALESCE(SUM(cii.amount), 0) AS invoiced_total
+        FROM `tabCommercial Invoice Item` cii
+        JOIN `tabCommercial Invoice` ci ON ci.name = cii.parent
+        WHERE (cii.custom_proforma_invoice IN %(names)s OR (COALESCE(cii.custom_proforma_invoice, '') = '' AND ci.custom_proforma_invoice IN %(names)s))
+          AND ci.status != 'Cancelled'
+          AND ci.docstatus < 2
+        GROUP BY COALESCE(NULLIF(cii.custom_proforma_invoice, ''), ci.custom_proforma_invoice)
+        """,
+        {"names": names},
+        as_dict=True,
+    )
+    for d in ci_data:
+        if d.get("pi_name"):
+            ci_rollups[d["pi_name"]] = d
+
     for r in rows:
         p = phys.get(r["name"]) or {}
-        c = ci.get(r["name"]) or {}
+        c = ci_rollups.get(r["name"]) or {}
         r["item_count"] = cint(p.get("item_count"))
         r["total_boxes"] = cint(p.get("boxes"))
-        r["total_kg"] = flt(p.get("kg"))
+        total_kg = flt(p.get("kg"))
+        r["total_kg"] = total_kg
         r["total_fcl"] = flt(p.get("fcl"))
+
         r["ci_count"] = cint(c.get("ci_count"))
         r["invoiced_total"] = flt(c.get("invoiced_total"))
+        invoiced_kg = flt(c.get("invoiced_kg"))
+        r["invoiced_kg"] = invoiced_kg
+
         agreed = flt(r.get("agreed_total"))
-        r["invoiced_pct"] = round(min(100.0, r["invoiced_total"] / agreed * 100.0), 1) if agreed > 0 else 0.0
+        if total_kg > 0:
+            r["invoiced_pct"] = round(min(100.0, (invoiced_kg / total_kg) * 100.0), 1)
+        elif agreed > 0:
+            r["invoiced_pct"] = round(min(100.0, (r["invoiced_total"] / agreed) * 100.0), 1)
+        else:
+            r["invoiced_pct"] = 0.0
 
 
 @frappe.whitelist()
@@ -4366,21 +4419,13 @@ def commercial_invoice_list_stats(company: str, status: str | None = None,
 
 @frappe.whitelist()
 def container_list_stats(company: str, status: str | None = None,
-                         commercial_invoice: str | None = None, search: str | None = None) -> dict:
+                         commercial_invoice: str | None = None, search: str | None = None,
+                         bl_type: str | None = None) -> dict:
     """Aggregate totals for Import Containers list metric strip."""
     _assert_imports_access(company)
-    clauses = ["c.company = %(company)s"]
-    params = {"company": company}
-    if status:
-        clauses.append("c.status = %(status)s")
-        params["status"] = status
-    if commercial_invoice:
-        clauses.append("c.commercial_invoice = %(commercial_invoice)s")
-        params["commercial_invoice"] = commercial_invoice
-    if search:
-        clauses.append("(c.name LIKE %(q)s OR c.container_number LIKE %(q)s OR c.commercial_invoice LIKE %(q)s)")
-        params["q"] = f"%{search}%"
-    where = " AND ".join(clauses)
+    clauses, params = rules.container_filter_clauses(search, status, commercial_invoice, bl_type)
+    params["company"] = company
+    where = " AND ".join(["c.company = %(company)s", *clauses])
     rows = frappe.db.sql(
         f"""
         SELECT
@@ -4391,6 +4436,8 @@ def container_list_stats(company: str, status: str | None = None,
             SUM(CASE WHEN c.status IN ('IN_TRANSIT', 'GATE_IN', 'ON_BOARD', 'STUFFED', 'ARRIVED_AT_IRAN') THEN 1 ELSE 0 END) AS in_transit_count,
             SUM(CASE WHEN c.status = 'DELIVERED_TO_UZBEKISTAN' THEN 1 ELSE 0 END) AS delivered_count
         FROM `tabImport Container` c
+        LEFT JOIN `tabCommercial Invoice` ci ON ci.name = c.commercial_invoice
+        LEFT JOIN `tabSupplier` s ON s.name = c.supplier
         WHERE {where}
         """,
         params,
@@ -4507,8 +4554,288 @@ def proforma_detail(name: str) -> dict:
         as_dict=True,
     )
     data["advance_payments"] = advances
+    data["invoiced_summary"] = get_pi_invoiced_summary(name)
 
     return data
+
+
+def get_pi_invoiced_summary(name: str) -> dict:
+    """Returns total ordered, invoiced, and remaining quantities per Vendor Category & Item Cut for a PI."""
+    if not name or not frappe.db.exists("Proforma Invoice", name):
+        return {"items": [], "total_ordered_kg": 0.0, "total_invoiced_kg": 0.0, "total_remaining_kg": 0.0, "pct": 0.0}
+
+    pi_doc = frappe.get_doc("Proforma Invoice", name)
+
+    ci_rows = frappe.db.sql(
+        """
+        SELECT cii.category, cii.item, cii.boxes, cii.qty, cii.parent AS ci_name, ci.ci_number
+        FROM `tabCommercial Invoice Item` cii
+        JOIN `tabCommercial Invoice` ci ON ci.name = cii.parent
+        WHERE (cii.custom_proforma_invoice = %(pi)s OR (COALESCE(cii.custom_proforma_invoice, '') = '' AND ci.custom_proforma_invoice = %(pi)s))
+          AND ci.status != 'Cancelled'
+        """,
+        {"pi": name},
+        as_dict=True,
+    )
+
+    invoiced_map = {}
+    by_code_map = {}
+    for r in ci_rows:
+        key = (r["category"] or "", r["item"])
+        if key not in invoiced_map:
+            invoiced_map[key] = {"boxes": 0, "qty": 0.0}
+        invoiced_map[key]["boxes"] += cint(r["boxes"])
+        invoiced_map[key]["qty"] += flt(r["qty"])
+
+        code = r["item"]
+        if code not in by_code_map:
+            by_code_map[code] = {"boxes": 0, "qty": 0.0}
+        by_code_map[code]["boxes"] += cint(r["boxes"])
+        by_code_map[code]["qty"] += flt(r["qty"])
+
+    summary_items = []
+    tot_ordered_kg = 0.0
+    tot_invoiced_kg = 0.0
+
+    for it in pi_doc.items:
+        cat = it.category or ""
+        code = it.item
+        pi_b = cint(it.boxes)
+        pi_q = flt(it.qty)
+
+        inv_data = invoiced_map.get((cat, code)) or by_code_map.get(code, {"boxes": 0, "qty": 0.0})
+        inv_b = inv_data["boxes"]
+        inv_q = inv_data["qty"]
+
+        rem_b = max(0, pi_b - inv_b)
+        rem_q = max(0.0, flt(pi_q - inv_q, 2))
+        pct = flt((inv_q / pi_q) * 100, 1) if pi_q > 0 else (100.0 if inv_q > 0 else 0.0)
+
+        tot_ordered_kg += pi_q
+        tot_invoiced_kg += inv_q
+
+        summary_items.append({
+            "proforma_invoice": name,
+            "supplier_pi_ref": pi_doc.supplier_pi_ref or name,
+            "category": cat,
+            "item": code,
+            "description": it.description or code,
+            "pi_boxes": pi_b,
+            "pi_qty": pi_q,
+            "invoiced_boxes": inv_b,
+            "invoiced_qty": inv_q,
+            "remaining_boxes": rem_b,
+            "remaining_qty": rem_q,
+            "pct": pct,
+        })
+
+    tot_remaining_kg = max(0.0, flt(tot_ordered_kg - tot_invoiced_kg, 2))
+    overall_pct = flt((tot_invoiced_kg / tot_ordered_kg) * 100, 1) if tot_ordered_kg > 0 else 0.0
+
+    return {
+        "items": summary_items,
+        "total_ordered_kg": tot_ordered_kg,
+        "total_invoiced_kg": tot_invoiced_kg,
+        "total_remaining_kg": tot_remaining_kg,
+        "pct": overall_pct,
+    }
+
+
+@frappe.whitelist()
+def get_vendor_available_pi_lines(company: str, supplier: str, exclude_ci: str | None = None) -> dict:
+    """Fetch all open Proforma Invoices for a supplier with remaining unshipped line items.
+    Calculates remaining_boxes = PI_item.boxes - sum(shipped_boxes) across active CIs."""
+    _assert_imports_access(company)
+    if not supplier:
+        return {"proformas": [], "lines": []}
+
+    pis = frappe.db.get_all(
+        "Proforma Invoice",
+        filters={"company": company, "supplier": supplier, "docstatus": ["<", 2], "status": ["!=", "CANCELLED"]},
+        fields=["name", "supplier_pi_ref", "pi_date", "currency", "incoterm", "import_pi_group"],
+        order_by="pi_date desc, name desc",
+    )
+
+    if not pis:
+        return {"proformas": [], "lines": []}
+
+    pi_names = [p.name for p in pis]
+    if not pi_names:
+        return {"proformas": pis, "lines": []}
+
+    pi_items = frappe.db.sql(
+        """
+        SELECT name, parent, item, description, category, '' AS hs_code, boxes, box_weight_kg,
+               qty, rate AS agreed_rate, docs_price, amount AS agreed_amount, docs_amount
+        FROM `tabProforma Invoice Item`
+        WHERE parent IN %(pi_names)s
+        ORDER BY idx ASC
+        """,
+        {"pi_names": tuple(pi_names)},
+        as_dict=True,
+    )
+
+    if not pi_items:
+        return {"proformas": pis, "lines": []}
+
+    ci_conds = ["ci.company = %(company)s", "ci.status != 'Cancelled'", "cii.custom_proforma_invoice IN %(pi_names)s"]
+    params = {"company": company, "pi_names": tuple(pi_names)}
+    if exclude_ci:
+        ci_conds.append("ci.name != %(exclude_ci)s")
+        params["exclude_ci"] = exclude_ci
+
+    ci_where = " AND ".join(ci_conds)
+    shipped_rows = frappe.db.sql(
+        f"""
+        SELECT cii.custom_proforma_invoice AS pi_name, cii.item, cii.category,
+               SUM(cii.boxes) AS shipped_boxes, SUM(cii.qty) AS shipped_qty
+        FROM `tabCommercial Invoice Item` cii
+        JOIN `tabCommercial Invoice` ci ON ci.name = cii.parent
+        WHERE {ci_where}
+        GROUP BY cii.custom_proforma_invoice, cii.item, cii.category
+        """,
+        params,
+        as_dict=True,
+    )
+
+    shipped_map = {}
+    for r in shipped_rows:
+        key = (r["pi_name"], r["item"], r["category"] or "")
+        shipped_map[key] = {
+            "shipped_boxes": cint(r["shipped_boxes"]),
+            "shipped_qty": flt(r["shipped_qty"]),
+        }
+
+    available_lines = []
+    for it in pi_items:
+        key = (it["parent"], it["item"], it["category"] or "")
+        shipped = shipped_map.get(key, {"shipped_boxes": 0, "shipped_qty": 0.0})
+
+        pi_boxes = cint(it["boxes"])
+        shipped_boxes = shipped["shipped_boxes"]
+        remaining_boxes = max(0, pi_boxes - shipped_boxes)
+
+        available_lines.append({
+            "pi_name": it["parent"],
+            "pi_ref": frappe.db.get_value("Proforma Invoice", it["parent"], "supplier_pi_ref") or it["parent"],
+            "item": it["item"],
+            "description": it["description"] or "",
+            "category": it["category"] or "",
+            "hs_code": it["hs_code"] or "",
+            "contract_boxes": pi_boxes,
+            "shipped_boxes": shipped_boxes,
+            "remaining_boxes": remaining_boxes,
+            "box_weight_kg": flt(it["box_weight_kg"]),
+            "agreed_rate": flt(it["agreed_rate"]),
+            "docs_price": flt(it["docs_price"]),
+        })
+
+    return {
+        "proformas": pis,
+        "lines": available_lines,
+    }
+
+
+def get_pi_tracking_for_ci(ci_doc) -> list[dict]:
+    """Returns row-level PI tracking for a Commercial Invoice."""
+    ref_pis = set()
+    if ci_doc.get("custom_proforma_invoice"):
+        ref_pis.add(ci_doc.custom_proforma_invoice)
+    for it in (ci_doc.items or []):
+        if it.get("custom_proforma_invoice"):
+            ref_pis.add(it.custom_proforma_invoice)
+
+    tracking_results = []
+    for pi_name in sorted(ref_pis):
+        if not frappe.db.exists("Proforma Invoice", pi_name):
+            continue
+        pi_doc = frappe.get_doc("Proforma Invoice", pi_name)
+
+        other_ci_rows = frappe.db.sql(
+            """
+            SELECT cii.category, cii.item, cii.boxes, cii.qty
+            FROM `tabCommercial Invoice Item` cii
+            JOIN `tabCommercial Invoice` ci ON ci.name = cii.parent
+            WHERE (cii.custom_proforma_invoice = %(pi)s OR (COALESCE(cii.custom_proforma_invoice, '') = '' AND ci.custom_proforma_invoice = %(pi)s))
+              AND ci.status != 'Cancelled'
+              AND ci.name != %(this_ci)s
+            """,
+            {"pi": pi_name, "this_ci": ci_doc.name},
+            as_dict=True,
+        )
+
+        prior_map = {}
+        prior_by_code = {}
+        for r in other_ci_rows:
+            key = (r["category"] or "", r["item"])
+            if key not in prior_map:
+                prior_map[key] = {"boxes": 0, "qty": 0.0}
+            prior_map[key]["boxes"] += cint(r["boxes"])
+            prior_map[key]["qty"] += flt(r["qty"])
+
+            code = r["item"]
+            if code not in prior_by_code:
+                prior_by_code[code] = {"boxes": 0, "qty": 0.0}
+            prior_by_code[code]["boxes"] += cint(r["boxes"])
+            prior_by_code[code]["qty"] += flt(r["qty"])
+
+        this_ci_map = {}
+        this_by_code = {}
+        for r in (ci_doc.items or []):
+            r_pi = r.get("custom_proforma_invoice") or ci_doc.get("custom_proforma_invoice")
+            if r_pi == pi_name:
+                key = (r.category or "", r.item)
+                if key not in this_ci_map:
+                    this_ci_map[key] = {"boxes": 0, "qty": 0.0}
+                this_ci_map[key]["boxes"] += cint(r.boxes)
+                this_ci_map[key]["qty"] += flt(r.qty)
+
+                code = r.item
+                if code not in this_by_code:
+                    this_by_code[code] = {"boxes": 0, "qty": 0.0}
+                this_by_code[code]["boxes"] += cint(r.boxes)
+                this_by_code[code]["qty"] += flt(r.qty)
+
+        for it in pi_doc.items:
+            cat = it.category or ""
+            code = it.item
+            pi_b = cint(it.boxes)
+            pi_q = flt(it.qty)
+
+            pr_data = prior_map.get((cat, code)) or prior_by_code.get(code, {"boxes": 0, "qty": 0.0})
+            pr_b = pr_data["boxes"]
+            pr_q = pr_data["qty"]
+
+            tc_data = this_ci_map.get((cat, code)) or this_by_code.get(code, {"boxes": 0, "qty": 0.0})
+            tc_b = tc_data["boxes"]
+            tc_q = tc_data["qty"]
+
+            tot_inv_b = pr_b + tc_b
+            tot_inv_q = pr_q + tc_q
+            rem_b = max(0, pi_b - tot_inv_b)
+            rem_q = max(0.0, flt(pi_q - tot_inv_q, 2))
+            pct = flt((tot_inv_q / pi_q) * 100, 1) if pi_q > 0 else (100.0 if tot_inv_q > 0 else 0.0)
+
+            tracking_results.append({
+                "proforma_invoice": pi_name,
+                "supplier_pi_ref": pi_doc.supplier_pi_ref or pi_name,
+                "category": cat,
+                "item": code,
+                "description": it.description or code,
+                "pi_boxes": pi_b,
+                "pi_qty": pi_q,
+                "prior_invoiced_boxes": pr_b,
+                "prior_invoiced_qty": pr_q,
+                "this_ci_boxes": tc_b,
+                "this_ci_qty": tc_q,
+                "total_invoiced_boxes": tot_inv_b,
+                "total_invoiced_qty": tot_inv_q,
+                "remaining_boxes": rem_b,
+                "remaining_qty": rem_q,
+                "pct": pct,
+            })
+
+    return tracking_results
 
 
 @frappe.whitelist()
@@ -5405,3 +5732,42 @@ def sync_containers_to_ci(commercial_invoice: str, dry_run: int = 1):
         "skipped": skipped,
         "failed": failed,
     }
+
+
+@frappe.whitelist()
+def recalculate_all_ci_totals():
+    """Recalculate parent totals (total_boxes, total_kg, agreed_total, docs_total, cash_difference)
+    from child items for all Commercial Invoices."""
+    cis = frappe.get_all("Commercial Invoice", fields=["name"])
+    updated_count = 0
+    for ci in cis:
+        doc = frappe.get_doc("Commercial Invoice", ci.name)
+        total_boxes = 0
+        total_kg = 0.0
+        agreed_total = 0.0
+        docs_total = 0.0
+
+        for item in doc.items or []:
+            b = int(item.boxes or 0)
+            q = float(item.qty or 0.0)
+            a = float(item.amount or (q * float(item.rate or 0.0)))
+            da = float(item.docs_amount or (q * float(item.docs_price or 0.0)))
+
+            total_boxes += b
+            total_kg += q
+            agreed_total += a
+            docs_total += da
+
+        cash_diff = agreed_total - docs_total
+
+        frappe.db.set_value("Commercial Invoice", doc.name, {
+            "total_boxes": total_boxes,
+            "total_kg": total_kg,
+            "agreed_total": agreed_total,
+            "docs_total": docs_total,
+            "cash_difference": cash_diff
+        }, update_modified=False)
+        updated_count += 1
+
+    frappe.db.commit()
+    return {"updated": updated_count}

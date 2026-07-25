@@ -59,3 +59,4 @@ stabler.patches.v53_add_work_order_batch
 stabler.patches.v54_je_account_asset
 stabler.patches.v55_departure_gate
 stabler.patches.v56_crm_deal_company_scope
+stabler.patches.v57_agreement_management_fields

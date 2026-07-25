@@ -12,6 +12,40 @@ from stabler.stabler.doctype.stabler_settings.stabler_settings import (
 )
 
 
+@frappe.whitelist(allow_guest=True)
+def stabler_login(usr: str, pwd: str):
+	"""Authenticate user and initialize session for Stabler SPA."""
+	if not usr or not pwd:
+		frappe.throw(_("Username/Email and Password are required."))
+
+	frappe.local.form_dict["usr"] = usr
+	frappe.local.form_dict["pwd"] = pwd
+
+	try:
+		login_manager = frappe.auth.LoginManager()
+		login_manager.authenticate(user=usr, pwd=pwd)
+		login_manager.post_login()
+	except Exception as e:
+		frappe.clear_messages()
+		frappe.throw(_("Invalid username or password. Please check your credentials."))
+
+	user_doc = frappe.get_doc("User", frappe.session.user)
+	company = frappe.db.get_single_value("Stabler Settings", "default_company") or frappe.db.get_value("Company", {"is_group": 0}, "name") or "MSA"
+
+	return {
+		"message": "Logged In",
+		"user": {
+			"id": user_doc.name,
+			"name": user_doc.full_name or user_doc.name,
+			"email": user_doc.email,
+			"user_image": user_doc.user_image or "",
+			"language": user_doc.language or "en",
+		},
+		"company": company,
+		"redirect_to": "/stabler#/dashboard"
+	}
+
+
 _MODULE_FIELDS = {
 	"money": "enable_money",
 	"sales": "enable_sales",
@@ -28,6 +62,7 @@ _MODULE_FIELDS = {
 	"bpm": "enable_bpm",
 	"tender": "enable_tender",
 	"imports": "enable_imports",
+	"agreements": "enable_agreements",
 	# Admin-only modules — toggled via company enable_* field but absent from
 	# _MODULE_ROLES so only System Manager / Stabler Admin can reach them via
 	# the SPA's canAccessModule() check.
@@ -58,6 +93,7 @@ _MODULE_ROLES: dict[str, list[str]] = {
 	"bpm": ["Sales Manager"],
 	"tender": ["Sales User", "Sales Manager", "Stabler Declarant", "Stabler Logist"],
 	"imports": ["Imports User", "Imports Manager", "Stabler Declarant", "Stabler Logist"],
+	"agreements": ["Sales User", "Sales Manager", "Accounts User", "Accounts Manager"],
 	"fx_revaluation": ["Accounts Manager"],
 	"budget": ["Accounts User", "Accounts Manager"],
 }
@@ -286,6 +322,7 @@ def update_company_modules(
 	installment=None,
 	tender=None,
 	imports=None,
+	agreements=None,
 ):
 	"""Admin-only: toggle per-module flags for a company. Pass 0/1 to update; omit to leave."""
 	_require_admin()
@@ -321,12 +358,15 @@ def update_company_modules(
 		"enable_installment": installment,
 		"enable_tender": tender,
 		"enable_imports": imports,
+		"enable_agreements": agreements,
 	}
 	for field, val in updates.items():
 		if val is None or val == "":
 			continue
 		setattr(row, field, 1 if str(val) in ("1", "true", "True") else 0)
 
+	settings.flags.ignore_mandatory = True
+	settings.flags.ignore_links = True
 	settings.save(ignore_permissions=True)
 	return module_map_for(company)
 
