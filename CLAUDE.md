@@ -116,7 +116,7 @@
 2. Backup first: `ssh ice-production 'tar czf /root/stabler-app-$(date +%F-%H%M).tgz -C /home/frappe/frappe-bench/apps stabler'`.
 3. rsync source → `ice-production:/home/frappe/frappe-bench/apps/stabler/` with
    `-rltz --no-owner --no-group` (NO `--delete`), excluding `.git node_modules
-   dist __pycache__ *.pyc .claude .tx_*.json graphify-out .smoke tests *.tgz .DS_Store`.
+   dist __pycache__ *.pyc .claude .tx_*.json graphify-out .smoke tests scratch *.tgz .DS_Store`.
    Then `chown -R frappe:frappe …/apps/stabler`.
    **cwd trap (near-miss 2026-07-17):** run rsync from the bench **`apps/`** dir so
    the relative source `stabler/` = the whole app `apps/stabler/`. Running it from

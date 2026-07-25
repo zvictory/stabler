@@ -25,3 +25,6 @@ stabler/public/dist/
 credentials.json
 secrets.json
 deploy_stabler.sh
+
+graphify-out/
+scratch/
