@@ -12,6 +12,40 @@ from stabler.stabler.doctype.stabler_settings.stabler_settings import (
 )
 
 
+@frappe.whitelist(allow_guest=True)
+def stabler_login(usr: str, pwd: str):
+	"""Authenticate user and initialize session for Stabler SPA."""
+	if not usr or not pwd:
+		frappe.throw(_("Username/Email and Password are required."))
+
+	frappe.local.form_dict["usr"] = usr
+	frappe.local.form_dict["pwd"] = pwd
+
+	try:
+		login_manager = frappe.auth.LoginManager()
+		login_manager.authenticate(user=usr, pwd=pwd)
+		login_manager.post_login()
+	except Exception as e:
+		frappe.clear_messages()
+		frappe.throw(_("Invalid username or password. Please check your credentials."))
+
+	user_doc = frappe.get_doc("User", frappe.session.user)
+	company = frappe.db.get_single_value("Stabler Settings", "default_company") or frappe.db.get_value("Company", {"is_group": 0}, "name") or "MSA"
+
+	return {
+		"message": "Logged In",
+		"user": {
+			"id": user_doc.name,
+			"name": user_doc.full_name or user_doc.name,
+			"email": user_doc.email,
+			"user_image": user_doc.user_image or "",
+			"language": user_doc.language or "en",
+		},
+		"company": company,
+		"redirect_to": "/stabler#/dashboard"
+	}
+
+
 _MODULE_FIELDS = {
 	"money": "enable_money",
 	"sales": "enable_sales",

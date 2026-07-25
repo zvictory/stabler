@@ -77,6 +77,7 @@ export const useSession = defineStore("session", {
 		},
 		async ensureBoot() {
 			if (this.rolesLoaded) return;
+			if (!this.user?.id || this.user.id === "Guest" || window.location.hash.includes("/login")) return;
 			// Deduplicate concurrent calls (e.g. bundle fire-and-forget + router await).
 			if (this._bootPromise) return this._bootPromise;
 			this._bootPromise = (async () => {
@@ -100,6 +101,7 @@ export const useSession = defineStore("session", {
 			return this._bootPromise;
 		},
 		async ensureTenderViews() {
+			if (!this.user?.id || this.user.id === "Guest" || window.location.hash.includes("/login")) return [];
 			if (!this.canAccessModule("tender")) return [];
 			if (this.tenderViewsLoaded) return this.tenderViews;
 			const company = this.activeCompany;
@@ -128,6 +130,7 @@ export const useSession = defineStore("session", {
 		setupRehydration() {
 			document.addEventListener("visibilitychange", () => {
 				if (document.visibilityState === "visible") {
+					if (!this.user?.id || this.user.id === "Guest" || window.location.hash.includes("/login")) return;
 					this.rolesLoaded = false;
 					this.tenderViews = [];
 					this.tenderViewsLoaded = false;

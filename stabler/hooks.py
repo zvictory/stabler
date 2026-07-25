@@ -5,6 +5,9 @@ app_description = "Financial operations, simplified"
 app_email = "admin@stabler.app"
 app_license = "mit"
 
+login_redirect_url = "/stabler#/dashboard"
+home_page = "/stabler"
+
 website_route_rules = [
 	{"from_route": "/stabler", "to_route": "stabler"},
 	{"from_route": "/stabler/<path:app_path>", "to_route": "stabler"},

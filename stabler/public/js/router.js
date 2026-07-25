@@ -178,9 +178,11 @@ import ContainerCostLedger from "./pages/imports/ContainerCostLedger.vue";
 import LandedCostBills from "./pages/imports/LandedCostBills.vue";
 import NotFound from "./pages/NotFound.vue";
 import ServerError from "./pages/ServerError.vue";
+import Login from "./pages/Login.vue";
 
 const routes = [
 	{ path: "/", redirect: "/dashboard" },
+	{ path: "/login", name: "login", component: Login, meta: { title: t("Login — Stabler"), standalone: true, public: true, "public-after-login": true } },
 	// Onboarding — reachable by any authenticated user while onboarding is not yet
 	// complete (module: null = no module gating; the guard below confines
 	// un-provisioned users here).
@@ -535,14 +537,21 @@ function localOnboardingFlag() {
 
 router.beforeEach(async (to) => {
 	const session = useSession();
+
+	if (to.path === "/login" || to.matched.some((r) => r.meta?.public)) {
+		if (session.user?.id && session.user.id !== "Guest") {
+			return landingPath(session);
+		}
+		return;
+	}
+
 	// Await boot so the access decision uses real allowedModules on the very first navigation.
 	// ensureBoot() is idempotent and deduplicates concurrent calls.
 	await session.ensureBoot();
 
 	if (session.user?.id === "Guest" || !session.user?.id) {
-		if (to.path !== "/manufacturing/line") {
-			window.location.href = `/login?redirect-to=${encodeURIComponent(window.location.pathname + window.location.hash)}`;
-			return false;
+		if (to.path !== "/manufacturing/line" && to.path !== "/login") {
+			return { path: "/login", query: { "redirect-to": to.fullPath } };
 		}
 	}
 
