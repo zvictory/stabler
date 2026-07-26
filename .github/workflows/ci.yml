@@ -32,7 +32,10 @@ jobs:
           python-version: "3.12"
 
       - name: Install ruff
-        run: pip install ruff
+        # PINNED on purpose. Unpinned, a new ruff release adds rules and turns
+        # the gate red with zero code changes (0.16.0's RUF059 alone is 98 hits
+        # here). Bump this together with RUFF_VERSION in the Makefile.
+        run: pip install 'ruff==0.16.0'
 
       - name: Ruff lint
         run: ruff check stabler

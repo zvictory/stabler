@@ -5,13 +5,13 @@ from __future__ import annotations
 import json
 
 import frappe
-from stabler.api._money import money_epsilon
-from stabler.api.approvals import _assert_company_scope
+from frappe import _
 from frappe.utils import cint, flt, getdate, today
 
-
-from stabler.api._common import _assert_can_read, _assert_can_write, _require_company, check_concurrency
 from stabler.api import _import_exposure
+from stabler.api._common import _assert_can_read, _assert_can_write, _require_company, check_concurrency
+from stabler.api._money import money_epsilon
+from stabler.api.approvals import _assert_company_scope
 from stabler.stabler.doctype.stabler_settings.stabler_settings import module_map_for
 
 
@@ -1119,7 +1119,8 @@ def create_purchase_return(
 	`item_returns` is an optional list of `{item_code, qty}` where qty is
 	entered positive (negated internally). Pass nothing to return the full invoice.
 	"""
-	from frappe.utils import today as _today, getdate
+	from frappe.utils import getdate
+	from frappe.utils import today as _today
 	from frappe.utils.data import flt as _flt
 
 	if not purchase_invoice or not frappe.db.exists("Purchase Invoice", purchase_invoice):
@@ -2044,7 +2045,7 @@ def create_purchase_invoice_from_pr(name: str):
 def payables_cockpit(company: str):
 	_require_company(company)
 	_assert_company_scope(company)  # tenant isolation: reject a foreign company arg
-	
+
 	# Current total payables balance (credit - debit)
 	current_total = flt(frappe.db.sql(
 		"""
@@ -2057,6 +2058,7 @@ def payables_cockpit(company: str):
 
 	# 8-week trend (running balance at the end of each of the last 8 weeks)
 	from datetime import datetime, timedelta
+
 	from frappe.utils import getdate
 
 	current_date = getdate(today())
@@ -2103,7 +2105,7 @@ def payables_cockpit(company: str):
 		{"company": company, "eps": eps},
 		as_dict=True,
 	) or []
-	
+
 	for creditor in top_creditors_raw:
 		creditor["supplier_name"] = frappe.db.get_value("Supplier", creditor["name"], "supplier_name") or creditor["name"]
 		creditor["balance"] = flt(creditor["balance"])

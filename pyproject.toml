@@ -33,15 +33,16 @@ ignore = [
     "F401", "F403", "F405", "F722",
     "W191",
     "UP030", "UP031", "UP032", "UP037", "UP040",
+    # Latin-confusable lints (ambiguous unicode in strings / docstrings /
+    # comments). Stabler ships five languages (en, ru, uz, uzc, tr) and parses
+    # the 1C ClientBank Exchange format, whose field keys are Cyrillic. Cyrillic
+    # С next to Latin C is the product, not a typo -- 223 of the tree's 614
+    # findings were this, all false positives. These used to be per-file ignores
+    # for the bank-statement parser; the exception is codebase-wide in practice,
+    # so state it once instead of growing the per-file list forever.
+    "RUF001", "RUF002", "RUF003",
 ]
 typing-modules = ["frappe.types.DF"]
-
-[tool.ruff.lint.per-file-ignores]
-# The bank-statement parser and its tests must contain Cyrillic field keys to
-# parse the 1C ClientBank Exchange (Russian-language) format. Disable the
-# Latin-confusable lints there; they are false positives by design.
-"stabler/integrations/bank_statement/*" = ["RUF001", "RUF002", "RUF003"]
-"stabler/tests/test_bank_statement_parser.py" = ["RUF001", "RUF002", "RUF003"]
 
 [tool.ruff.format]
 quote-style = "double"
