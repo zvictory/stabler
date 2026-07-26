@@ -1,0 +1,88 @@
+# Shared rsync exclude list for deploying apps/stabler -> prod.
+#
+# Used by the deploy scripts:  rsync --exclude-from="$APP_DIR/.rsync-exclude"
+# Mirrored in CLAUDE.md ("Deploy procedure"), which points here rather than
+# repeating the list.
+#
+# THE list. The deploy scripts carry no inline --exclude flags any more.
+#
+# They used to, because the two scripts disagreed on anchoring and nobody had
+# measured what consolidating would change. Measured 2026-07-26 by diffing the
+# two shipped file lists (rsync -rn --out-format='%n'): deploy_stabler.sh was
+# shipping 20 files deploy_full.sh withheld -- .github/, every top-level *.md
+# (CLAUDE.md, DEPLOY-SECURITY.md, todo.md, the blueprints) and all three
+# deploy_*.sh -- while deploy_full.sh alone shipped stabler/docs/. Every file in
+# the divergence was documentation, CI config or deploy tooling; no app code.
+# So the union below is the safe merge: it withholds strictly more junk than
+# either script did, and nothing prod executes.
+#
+# Anchoring: no leading slash = match at ANY depth. Use a leading slash when the
+# pattern would otherwise eat something nested that we DO ship -- /*.md is
+# anchored precisely so stabler/integrations/uzpay/README.md survives.
+
+# ---------------------------------------------------------------------------
+# NOT the same thing as prod hygiene: deploys run WITHOUT --delete, so anything
+# that ever landed on prod stays there forever. Adding a pattern here stops the
+# next deploy from shipping it; it does not remove the copy already on prod.
+# ---------------------------------------------------------------------------
+
+# VCS + build output
+.git
+node_modules
+dist
+__pycache__
+*.pyc
+
+# Local git worktrees. Measured 2026-07-25: 1910 files / ~93M -- more than the
+# app's own 934. Excluded by none of the three scripts until now, and since
+# deploys run without --delete, whatever landed on prod stays there.
+.worktrees
+
+# Tool caches
+.ruff_cache
+.pytest_cache
+
+# Agent / dev tooling, never part of the running app.
+# .claude was already excluded everywhere; .superpowers (46 files) and
+# agent-os (58) are the same category and were shipping in all three scripts.
+.claude
+.superpowers
+agent-os
+graphify-out
+.smoke
+scratch
+
+# Test suite: CI runs it, prod does not
+tests
+
+# Translation harvester caches (CLAUDE.md: never ship .tx_*.json)
+.tx_*.json
+
+# Archives + OS cruft
+*.tgz
+.DS_Store
+
+# --- consolidated 2026-07-26 from the deploy scripts' inline flags ----------
+
+# Documentation. `docs` unanchored on purpose: it catches both the 3.3M
+# top-level docs/ and stabler/docs/ (a backup runbook, not app code).
+docs
+/*.md
+/*.html
+.obsidian
+
+# Sibling projects that live inside the app dir but are not part of the app.
+# stable-erp-website alone is 58M. It is also the directory CLAUDE.md warns a
+# wrong-cwd rsync would delete -- excluding it here means a stray --delete run
+# cannot even see it.
+stable-erp-website
+professional-excel-export
+recon
+
+# Deploy + dev tooling. These carry hardcoded local paths (/Users/zafar/...),
+# so they are actively wrong on prod, not merely useless.
+deploy_*.sh
+Makefile
+
+# CI config: GitHub's, not the app's.
+.github
