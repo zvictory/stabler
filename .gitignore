@@ -24,7 +24,25 @@ stabler/public/dist/
 *.pem
 credentials.json
 secrets.json
-deploy_stabler.sh
+# One-shot deploy script: it contains `git add` + `git commit` for a specific
+# 2026 batch, so re-running it would re-commit that batch. Kept out of the repo
+# so nobody runs it by accident. The repeatable deploys (deploy_stabler.sh,
+# deploy_full.sh) ARE tracked -- they only rsync/build/migrate.
+deploy_hr_employee_crud.sh
 
 graphify-out/
 scratch/
+
+# Sibling projects that live INSIDE apps/stabler but are not part of the app.
+# None of them was ever tracked; without these lines `git status` buries the
+# real changes under their untracked files, and one bad `git add -A` would
+# swallow 778M. stable-erp-website is the big one -- it is also the directory
+# CLAUDE.md warns a wrong-cwd rsync --delete would wipe. All of them are in
+# .rsync-exclude too; that stops the deploy, this stops the commit.
+stable-erp-website/
+professional-excel-export/
+recon/
+
+# Agent / editor scratch, same category as the already-ignored .superpowers/.
+agent-os/
+.obsidian/
