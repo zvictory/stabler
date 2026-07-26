@@ -1,0 +1,179 @@
+# Stabler continuous integration — GitLab.
+#
+# WHY HERE AND NOT GITHUB: `origin` is gitlab.com:zvictory2001/stabler.git and
+# that is the remote every push actually reaches. The GitHub workflow
+# (.github/workflows/ci.yml) has run exactly once — 2026-07-09, failed — and
+# `main` is ~200 commits ahead of `github/main`, so it has never inspected a
+# line of the last three weeks' work. ci.yml is left in place (it still works if
+# the mirror is ever resynced), but THIS file is the gate.
+#
+# WHY THE JOBS CALL `make` INSTEAD OF RESTATING THE STEPS: ci.yml and the
+# Makefile already carry the same lint/compile/guard/test logic twice, in two
+# dialects. A third copy here would drift the same way the rsync exclude list
+# drifted across three deploy scripts (see .rsync-exclude). So CI runs literally
+# `make check` — the identical command .git/hooks/pre-push runs. Local green and
+# CI green cannot diverge, because they are the same target.
+#
+# WHY THE GATE LINTS ONLY CHANGED FILES: measured 2026-07-26, `ruff check
+# stabler` reports 386 errors and `ruff format --check` would rewrite 273 files.
+# ci.yml lints the WHOLE tree, so a verbatim port would be red on its first
+# commit and stay red — which is almost certainly why the one GitHub run failed.
+# The Makefile's ratchet is the answer: new code is clean, old code gets cleaned
+# when next edited. `ruff-debt` below keeps the total from growing back.
+
+stages:
+  - gate
+  - deep
+
+variables:
+  RUFF_VERSION: "0.16.0"
+  # Full clone. The gate diffs against a merge base; GitLab's default shallow
+  # clone (depth 20) makes that resolve to nothing on any older branch point.
+  # Cheap here — .git is 14M after the 2026-07-26 gc.
+  GIT_DEPTH: "0"
+
+# Canonical "don't run twice" rule: without the middle clause, pushing to a
+# branch that already has an open MR starts both a branch pipeline and an MR
+# pipeline for the same commit, doubling the compute-minute burn.
+workflow:
+  rules:
+    - if: $CI_PIPELINE_SOURCE == "merge_request_event"
+    - if: $CI_COMMIT_BRANCH && $CI_OPEN_MERGE_REQUESTS
+      when: never
+    - if: $CI_COMMIT_BRANCH
+  auto_cancel:
+    on_new_commit: interruptible
+
+# python:3.12 (not -slim): Frappe 16's supported interpreter — pyproject says
+# >=3.14 but no runner image ships it yet. The full variant already carries git,
+# make and findutils, which the gate needs; -slim would cost an apt round trip.
+.python: &python
+  image: python:3.12-bookworm
+  interruptible: true
+
+# ------------------------------------------------------------------- gate ---
+
+gate:
+  <<: *python
+  stage: gate
+  variables:
+    PIP_CACHE_DIR: "$CI_PROJECT_DIR/.cache/pip"
+  cache:
+    key: "pip-ruff-$RUFF_VERSION"
+    paths:
+      - .cache/pip
+  before_script:
+    # PINNED. Unpinned, a new ruff release adds rules and turns the gate red
+    # with zero code changes (0.16.0's RUF059 alone is 98 hits here). Bump this
+    # together with RUFF_VERSION in the Makefile — they must stay equal.
+    - pip install --quiet "ruff==$RUFF_VERSION"
+    - ruff --version
+  script:
+    - |
+      # Which commits is this pipeline responsible for?
+      #   MR       -> everything since the target branch forked
+      #   push     -> just the commits in this push
+      #   new ref  -> CI_COMMIT_BEFORE_SHA is all-zeros; fall back to one commit
+      BASE="${CI_MERGE_REQUEST_DIFF_BASE_SHA:-$CI_COMMIT_BEFORE_SHA}"
+      case "$BASE" in
+        ""|0000000000000000000000000000000000000000)
+          BASE="$(git rev-parse HEAD~1 2>/dev/null || git rev-parse HEAD)" ;;
+      esac
+      echo "lint base = $BASE"
+      # PY/RUFF override the Makefile's hardcoded local bench venv path.
+      make check PY=python RUFF=ruff BASE="$BASE"
+
+ruff-debt:
+  <<: *python
+  stage: gate
+  needs: []
+  before_script:
+    - pip install --quiet "ruff==$RUFF_VERSION"
+  script:
+    - |
+      # A ceiling, not a gate: the tree's 386 pre-existing violations are debt we
+      # pay down by editing, and blocking on them would just teach everyone to
+      # push with --no-verify. What this DOES block is the count going up, i.e.
+      # new code sneaking violations in through a file the changed-file gate did
+      # not look at. Lower CEILING whenever a sweep drops the number — that is
+      # the ratchet clicking.
+      CEILING=386
+      n=$(ruff check --output-format=concise stabler | grep -c ':' || true)
+      echo "ruff debt: $n  (ceiling $CEILING)"
+      if [ "$n" -gt "$CEILING" ]; then
+        echo "ERROR: lint debt grew ($n > $CEILING). Run 'make fix' on your files."
+        exit 1
+      fi
+      if [ "$n" -lt "$CEILING" ]; then
+        echo "NOTE: debt is down to $n — lower CEILING in .gitlab-ci.yml to lock it in."
+      fi
+
+# ------------------------------------------------------------------- deep ---
+
+bench-tests:
+  <<: *python
+  stage: deep
+  needs: []
+  # MANUAL, and non-blocking. Two independent reasons:
+  #  1) Cost. gitlab.com's free tier is 400 compute minutes/month. The gate is
+  #     ~2 min; this job (bench init + ERPNext + a site + the full suite) is
+  #     ~20-25. On every push it would eat the monthly quota in about a week and
+  #     take the cheap gate down with it.
+  #  2) Trust. This is a port of a GitHub job that never once ran green, so it
+  #     has not been proven on any runner. allow_failure keeps an unproven
+  #     bootstrap from blocking merges; flip it to false once it goes green.
+  when: manual
+  allow_failure: true
+  timeout: 90m
+  services:
+    - name: mariadb:10.6
+      alias: mariadb
+      # Set on the server, not via SET GLOBAL after the fact: Frappe reads the
+      # server charset when it creates the database, so a post-hoc SET GLOBAL
+      # races the site creation.
+      command:
+        - "--character-set-server=utf8mb4"
+        - "--collation-server=utf8mb4_unicode_ci"
+    - name: redis:7-alpine
+      alias: redis
+  variables:
+    MARIADB_ROOT_PASSWORD: root
+    MYSQL_ROOT_PASSWORD: root
+  before_script:
+    - apt-get update -qq
+    - apt-get install -y -qq --no-install-recommends mariadb-client redis-tools wkhtmltopdf curl
+    - curl -fsSL https://deb.nodesource.com/setup_20.x | bash -
+    - apt-get install -y -qq nodejs
+    - npm install -g --silent yarn
+    - pip install --quiet frappe-bench
+  script:
+    - |
+      # bench refuses to run as root and CI containers are root, so the whole
+      # bootstrap runs as an unprivileged user. The checkout is copied rather
+      # than chowned in place: the runner owns $CI_PROJECT_DIR and reuses it
+      # between jobs, and handing it to another uid breaks the next clone.
+      useradd -m -s /bin/bash frappe
+      cp -a "$CI_PROJECT_DIR" /home/frappe/stabler-src
+      chown -R frappe:frappe /home/frappe
+    - |
+      su frappe -c '
+        set -eu
+        cd ~
+        bench init --skip-redis-config-generation --frappe-branch version-16 frappe-bench
+        cd frappe-bench
+        # Point bench at the CI service containers (GitLab exposes them by alias,
+        # not on localhost the way GitHub Actions does).
+        bench set-config -g redis_cache    "redis://redis:6379"
+        bench set-config -g redis_queue    "redis://redis:6379"
+        bench set-config -g redis_socketio "redis://redis:6379"
+        bench get-app erpnext --branch version-16
+        bench get-app stabler /home/frappe/stabler-src
+        bench new-site test_site \
+          --mariadb-root-password root \
+          --admin-password admin \
+          --db-host mariadb --no-mariadb-socket
+        bench --site test_site install-app erpnext stabler
+        bench --site test_site set-config allow_tests true
+        bench --site test_site run-tests --app stabler
+        bench build --app stabler
+      '

@@ -84,5 +84,7 @@ recon
 deploy_*.sh
 Makefile
 
-# CI config: GitHub's, not the app's.
+# CI config: the forge's, not the app's. .gitlab-ci.yml is the live one
+# (origin = gitlab.com); .github is the stale mirror's. Neither runs on prod.
 .github
+.gitlab-ci.yml
