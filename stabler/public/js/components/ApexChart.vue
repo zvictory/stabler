@@ -1,6 +1,6 @@
 <script setup>
 import { onMounted, onBeforeUnmount, ref, watch } from "vue";
-import ApexCharts from "apexcharts";
+import { loadApexCharts } from "../composables/apexcharts.js";
 
 const props = defineProps({
 	options: { type: Object, required: true },
@@ -31,7 +31,16 @@ function buildConfig() {
 	};
 }
 
-onMounted(() => {
+// ApexCharts is loaded at runtime (see composables/apexcharts.js), so mount is
+// async and `disposed` guards the two races that creates: the component being
+// unmounted while the script is still in flight, and props changing before the
+// chart exists. The latter needs no extra handling -- buildConfig() runs AFTER
+// the await, so it always reads the current props.
+let disposed = false;
+
+onMounted(async () => {
+	const ApexCharts = await loadApexCharts();
+	if (disposed || !el.value) return;
 	chart = new ApexCharts(el.value, buildConfig());
 	chart.render();
 });
@@ -46,6 +55,7 @@ watch(
 );
 
 onBeforeUnmount(() => {
+	disposed = true;
 	if (chart) {
 		chart.destroy();
 		chart = null;
