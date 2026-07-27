@@ -185,6 +185,17 @@ class CustomerHierarchyIntegrationTest(FrappeTestCase):
 		ci.append("items", {"item": self.item, "qty": 100, "rate": 10.0})
 		ci.insert(ignore_permissions=True)
 
+		# The GRN's expected rows come from what was actually stuffed into the
+		# containers, not from the CI lines (packing_service.summary_for_ci).
+		# Without a packed container the checklist is legitimately empty.
+		container = frappe.new_doc("Import Container")
+		container.company = self.company
+		container.commercial_invoice = ci.name
+		container.container_number = frappe.generate_hash(length=8)
+		container.status = "BOOKED"
+		container.append("items", {"item_code": self.item, "box_qty": 10, "box_kg": 10.0, "total_kg": 100.0})
+		container.insert(ignore_permissions=True)
+
 		# Verify no GRN checklist exists yet
 		self.assertFalse(frappe.db.exists("GRN Checklist", {"commercial_invoice": ci.name}))
 

@@ -54,6 +54,10 @@ has_permission = {
 	"Supplier": "stabler.api.permissions.master_has_permission",
 }
 
+# Frappe bu hook'u uygulama bazlı okur (environment.py:193), yani ERPNext'in
+# fixture'ları `--app stabler` koşusuna gelmez. Kendi asgari setimizi kuruyoruz.
+before_tests = "stabler.tests.fixtures.before_tests"
+
 scheduler_events = {
 	"daily": [
 		"stabler.tasks.cbu_rate_refresh.fetch_and_store",

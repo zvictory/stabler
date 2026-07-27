@@ -9,7 +9,12 @@ from stabler.api.compliance import gl_integrity_scan
 
 class TestComplianceGLIntegrity(unittest.TestCase):
 	def setUp(self) -> None:
-		self.company = "ANJAN"
+		# Şirket adına bağlanmıyoruz: "ANJAN" sabiti bu testi tek bir kiracının
+		# verisine bağlıyordu ve test sitesinde hep atlanıyordu.
+		self.company = frappe.db.get_value("Company", {}, "name")
+		if not self.company:
+			self.skipTest("no Company fixture available")
+		self.base_currency = frappe.db.get_value("Company", self.company, "default_currency")
 		self.gle_names = []
 
 	def tearDown(self) -> None:
@@ -18,15 +23,20 @@ class TestComplianceGLIntegrity(unittest.TestCase):
 		frappe.db.commit()
 
 	def test_gl_integrity_scan_detects_d2_posting(self) -> None:
-		# Find a non-base account dynamically (e.g. UZS account in USD base company)
-		non_base_acc = frappe.db.get_value(
-			"Account",
-			{
-				"company": self.company,
-				"account_currency": ["!=", "USD"],
-				"is_group": 0,
-			},
-			"name",
+		# D2 kuralı `acc.account_currency <> c.default_currency` üzerinden çalışır,
+		# dolayısıyla aradığımız şey "USD olmayan" değil, "şirketin tabanı olmayan"
+		# bir hesap (ör. UZS tabanlı şirkette USD kasası).
+		non_base_acc, non_base_currency = (
+			frappe.db.get_value(
+				"Account",
+				{
+					"company": self.company,
+					"account_currency": ["!=", self.base_currency],
+					"is_group": 0,
+				},
+				["name", "account_currency"],
+			)
+			or (None, None)
 		)
 		if not non_base_acc:
 			self.skipTest("No non-base currency account found for testing")
@@ -43,9 +53,9 @@ class TestComplianceGLIntegrity(unittest.TestCase):
 				name, company, account, account_currency, debit, debit_in_account_currency,
 				credit, credit_in_account_currency, is_cancelled, posting_date
 			)
-			VALUES (%s, %s, %s, 'UZS', 100.0, 100.0, 0.0, 0.0, 0, '2026-06-13')
+			VALUES (%s, %s, %s, %s, 100.0, 100.0, 0.0, 0.0, 0, '2026-06-13')
 			""",
-			(name, self.company, non_base_acc),
+			(name, self.company, non_base_acc, non_base_currency),
 		)
 		frappe.db.commit()
 
@@ -78,9 +88,9 @@ class TestComplianceGLIntegrity(unittest.TestCase):
 				name, company, account, account_currency, debit, debit_in_account_currency,
 				credit, credit_in_account_currency, party_type, party, is_cancelled, posting_date
 			)
-			VALUES (%s, %s, %s, 'USD', 100.0, 100.0, 0.0, 0.0, 'Customer', 'Test Customer', 0, '2026-06-13')
+			VALUES (%s, %s, %s, %s, 100.0, 100.0, 0.0, 0.0, 'Customer', 'Test Customer', 0, '2026-06-13')
 			""",
-			(name, self.company, non_rec_acc),
+			(name, self.company, non_rec_acc, self.base_currency),
 		)
 		frappe.db.commit()
 
