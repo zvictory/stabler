@@ -160,6 +160,11 @@ function rowDocsAmount(row) {
 const normKey = (v) => String(v ?? "").replace(/\s+/g, " ").trim().toUpperCase();
 const round4 = (n) => Math.round((Number(n) || 0) * 1e4) / 1e4;
 const QTY_TOLERANCE_KG = 0.5;
+// Half a cent — mirrors `_imports_rules.PRICE_TOLERANCE`. The PI books prices at
+// 3 decimals and the CI at 2, so exact equality flags the stored precision as a
+// pricing error. A real one is at least a whole cent.
+const PRICE_TOLERANCE = 0.005;
+const priceEq = (a, b) => round4(Math.abs(round4(a) - round4(b))) <= PRICE_TOLERANCE;
 
 function getTrackingRow(row) {
 	if (!form.value.pi_tracking) return null;
@@ -170,9 +175,13 @@ function getTrackingRow(row) {
 	// BUFFALO COMPENSATED is a bundle the CI breaks into sub-cuts, so the item
 	// codes legitimately differ. The old `tr.item === item` fallback ignored the
 	// PI entirely and bound the row to another proforma's balance.
-	const exact = form.value.pi_tracking.find(
-		(tr) => tr.proforma_invoice === pi && normKey(tr.category) === cat
-	);
+	// An empty category is a hole, not a key — matching it would bind the row to
+	// whichever other category-less line sits on the same PI.
+	const exact = cat
+		? form.value.pi_tracking.find(
+				(tr) => tr.proforma_invoice === pi && normKey(tr.category) === cat
+			)
+		: null;
 	if (exact) return exact;
 	// A category-less match is only safe on a single-line contract; otherwise
 	// "first line of that PI" would display a foreign remaining balance.
@@ -180,8 +189,8 @@ function getTrackingRow(row) {
 	return ofPi.length === 1 ? ofPi[0] : null;
 }
 
-// Mirrors `_imports_rules.diff_ci_line` — same codes, same 4-decimal rounding,
-// same 0.5 kg tolerance. Client-side so the badge is live while the user edits,
+// Mirrors `_imports_rules.diff_ci_line` — same codes, same half-cent price
+// tolerance, same 0.5 kg tolerance. Client-side so the badge is live while editing,
 // before anything is saved; the server-side report is the authoritative one.
 function rowDiffs(row) {
 	const pi = row.custom_proforma_invoice || form.value.custom_proforma_invoice || "";
@@ -190,12 +199,16 @@ function rowDiffs(row) {
 	}
 	const tr = getTrackingRow(row);
 	if (!tr) {
-		return [{ code: "unattributable", level: "error", label: t("Not on any PI line") }];
+		// Same split as `_imports_rules.diff_ci_line`: a blank category is the
+		// line's own defect, not a missing PI link.
+		return normKey(row.category)
+			? [{ code: "unattributable", level: "error", label: t("Not on any PI line") }]
+			: [{ code: "missing_category", level: "error", label: t("No category on the line") }];
 	}
 
 	const out = [];
 	const agreed = (tr.agreed_prices || []).map(round4);
-	if (agreed.length && !agreed.includes(round4(row.rate))) {
+	if (agreed.length && !agreed.some((p) => priceEq(p, row.rate))) {
 		out.push({
 			code: "price_agreed",
 			level: "warn",
@@ -203,7 +216,7 @@ function rowDiffs(row) {
 		});
 	}
 	const docs = (tr.docs_prices || []).map(round4);
-	if (docs.length && !docs.includes(round4(row.docs_price))) {
+	if (docs.length && !docs.some((p) => priceEq(p, row.docs_price))) {
 		out.push({
 			code: "price_docs",
 			level: "warn",

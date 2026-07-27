@@ -4725,6 +4725,7 @@ Inherited from the invoice header,Invoys sarlavhasidan olingan
 Lines that disagree with the Proforma Invoice,Proforma invoysga mos kelmaydigan qatorlar
 Linked to PI,PI ga bog'langan
 No open proforma lines for this supplier.,Bu yetkazib beruvchida ochiq proforma qatorlari yo'q.
+No category on the line,Qatorda kategoriya ko'rsatilmagan
 Not linked to PI,PI ga bog'lanmagan
 Not linked to any PI,Hech bir PI ga bog'lanmagan
 Not on any PI line,Hech bir PI qatorida yo'q

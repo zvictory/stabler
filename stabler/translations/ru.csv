@@ -4731,6 +4731,7 @@ Inherited from the invoice header,Унаследовано из шапки ин�
 Lines that disagree with the Proforma Invoice,"Строки, расходящиеся с проформа-инвойсом"
 Linked to PI,Связано с ПИ
 No open proforma lines for this supplier.,У этого поставщика нет открытых строк проформы.
+No category on the line,В строке не указана категория
 Not linked to PI,Не связано с ПИ
 Not linked to any PI,Не связано ни с одним ПИ
 Not on any PI line,Нет ни в одной строке ПИ

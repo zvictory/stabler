@@ -966,10 +966,68 @@ class TestPiCiMatching(unittest.TestCase):
 		self.assertEqual([d["code"] for d in diffs], ["qty_arithmetic"])
 		self.assertEqual(diffs[0]["pi_value"], 2000.0)
 
+	def test_blank_category_never_matches_a_contract_line(self):
+		# Post-deploy defect on msa: 29 CI lines carry no category and 27 of them
+		# "matched" whichever other category-less line sat on the same PI —
+		# inheriting a foreign price and netting out of a foreign balance.
+		# (PI, "") is a hole in the data, not a key.
+		pi_rows = [
+			_pi_line("PI-1", "", "12", 4000, 80000, rate=4.675),
+			_pi_line("PI-1", "BLADE", "12", 1000, 20000, rate=4.10),
+		]
+		ci_rows = [_ci_line("CI-1", "PI-1", "", "12", 500, 10000, rate=4.865)]
+		contract = rules.contract_index(pi_rows)
+		self.assertNotIn(rules.match_key("PI-1", ""), contract, "blank key must not be indexed")
+		self.assertEqual(len(contract), 1)
+		self.assertNotIn(rules.match_key("PI-1", ""), rules.shipped_index(ci_rows))
+
+		summary = rules.reconcile(pi_rows, ci_rows)
+		self.assertEqual(summary["orphan_lines"], 1)
+		self.assertEqual(summary["missing_category"], 1)
+		self.assertEqual(summary["price_agreed"], 0, "an unmatched line must not report a price diff")
+		# The dropped contract line is reported, not silently written off.
+		self.assertEqual(summary["contract_unkeyed_lines"], 1)
+		self.assertEqual(summary["contract_unkeyed_boxes"], 4000)
+		# The BLADE line keeps its own balance, untouched by the blank rows.
+		self.assertEqual(summary["remaining_boxes"], 1000)
+
+	def test_blank_category_reports_its_own_code_not_unattributable(self):
+		# "Not on any PI" would send the operator to the proforma; the defect is
+		# on the CI line itself.
+		line = _ci_line("CI-1", "PI-1", "   ", "12", 500, 10000)
+		diffs = rules.diff_ci_line(line, None)
+		self.assertEqual([d["code"] for d in diffs], ["missing_category"])
+		self.assertEqual(diffs[0]["field"], "category")
+		self.assertEqual(rules.worst_level(diffs), "error")
+
+	def test_price_tolerance_absorbs_the_pi_third_decimal(self):
+		# A PI books 4.865 and its CI stores 4.86 — the same price at two
+		# precisions. Exact 4-decimal equality called 816 of 818 agreed-price
+		# comparisons on msa a difference; only 2 were real, and both were the
+		# blank-category defect above. Nothing on that book falls between 0.005
+		# and 0.05, so a whole-cent error is still caught.
+		pi_rows = [_pi_line("PI-1", "BLADE", "12", 100, 2000, rate=4.865, docs_price=4.425)]
+		contract = rules.contract_index(pi_rows)[rules.match_key("PI-1", "BLADE")]
+		rounded = _ci_line("CI-1", "PI-1", "BLADE", "12", 100, 2000, rate=4.86, docs_price=4.43)
+		self.assertEqual(rules.diff_ci_line(rounded, contract), [])
+		# A whole cent out is a real pricing error and still warns.
+		off = _ci_line("CI-1", "PI-1", "BLADE", "12", 100, 2000, rate=4.85, docs_price=4.425)
+		self.assertEqual([d["code"] for d in rules.diff_ci_line(off, contract)], ["price_agreed"])
+		# A missing docs price (0) is a difference, not a rounding artefact.
+		zero = _ci_line("CI-1", "PI-1", "BLADE", "12", 100, 2000, rate=4.865, docs_price=0)
+		self.assertEqual([d["code"] for d in rules.diff_ci_line(zero, contract)], ["price_docs"])
+
 	def test_every_diff_code_has_a_label(self):
 		self.assertEqual(
 			set(rules.DIFF_LABELS),
-			{"unattributable", "price_docs", "price_agreed", "qty_arithmetic", "sub_cut"},
+			{
+				"unattributable",
+				"missing_category",
+				"price_docs",
+				"price_agreed",
+				"qty_arithmetic",
+				"sub_cut",
+			},
 		)
 
 

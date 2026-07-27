@@ -5076,7 +5076,8 @@ def get_ci_pi_discrepancies(
 
 	flagged = []
 	for row in scope_rows:
-		entry = contract.get(rules.match_key(row.pi_name, row.category))
+		key = rules.match_key(row.pi_name, row.category)
+		entry = contract.get(key) if rules.is_keyed(key) else None
 		diffs = rules.diff_ci_line(row, entry)
 		level = rules.worst_level(diffs)
 		if level not in ("error", "warn"):

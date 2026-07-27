@@ -4721,6 +4721,7 @@ Inherited from the invoice header,Inherited from the invoice header
 Lines that disagree with the Proforma Invoice,Lines that disagree with the Proforma Invoice
 Linked to PI,Linked to PI
 No open proforma lines for this supplier.,No open proforma lines for this supplier.
+No category on the line,No category on the line
 Not linked to PI,Not linked to PI
 Not linked to any PI,Not linked to any PI
 Not on any PI line,Not on any PI line

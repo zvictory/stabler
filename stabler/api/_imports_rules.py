@@ -931,12 +931,17 @@ def get_7day_payment_deadline(eta_transit_port) -> str | None:
 # 2. **Both sides of the key must be normalised.** The book writes the same
 #    product as ``Whole leg`` and ``WHOLE LEG``. Raw-text matching invents 40
 #    phantom "not on any PI" lines (144 instead of 104).
-# 3. **Prices compare at 4 decimals.** Raw float equality produced 273 phantom
-#    mismatches (``4.0999999999 != 4.1``) — IEEE-754 residue, not a real
-#    discrepancy.
+# 3. **Prices compare with a half-cent tolerance.** Raw float equality produced
+#    273 phantom mismatches (``4.0999999999 != 4.1``) — IEEE-754 residue. Exact
+#    4-decimal equality then produced 1 067 more on the live msa book, because a
+#    PI is booked at 3 decimals (4.865) and its CI at 2 (4.86). See
+#    ``PRICE_TOLERANCE``.
 # 4. **One key can legitimately carry several contract prices.** e.g.
 #    ``BUFFALO COMPENSATED_3`` is contracted at 4.05 / 4.15 / 4.10. A CI price
 #    equal to *any* of them is compliant.
+# 5. **A blank category is a hole, not a key.** ``(PI, "")`` matches every other
+#    blank-category line on the same PI, so such a line would inherit a foreign
+#    price and net out of a foreign balance. It is reported, never matched.
 #
 # Invariants — nothing is silently corrected:
 #
@@ -958,6 +963,7 @@ DIFF_LEVELS: tuple[str, ...] = ("error", "warn", "info")
 #: proof report, logs). Keep the wording in sync with the five translation CSVs.
 DIFF_LABELS: dict[str, str] = {
 	"unattributable": "Not on any PI",
+	"missing_category": "No category on the line — it can match no PI line",
 	"price_docs": "Invoice price differs from the PI docs price",
 	"price_agreed": "Agreed price differs from the PI",
 	"qty_arithmetic": "Boxes × box weight does not equal the total kg",
@@ -967,6 +973,14 @@ DIFF_LABELS: dict[str, str] = {
 #: Tolerance (kg) for the ``boxes × box_weight_kg == qty`` check. Below this the
 #: gap is rounding in the source book, not a data-entry error.
 QTY_ARITHMETIC_TOLERANCE_KG = 0.5
+
+#: Half a cent — the price tolerance. A Proforma books its prices at 3 decimals
+#: (4.865) while the Commercial Invoice that ships against it stores 2 (4.86), so
+#: exact equality called 816 of 818 agreed-price comparisons on the live msa book
+#: a "difference" when the only difference was the stored precision. A genuine
+#: pricing error is at least a whole cent; measured on that book there is nothing
+#: at all between 0.005 and 0.05, so this threshold separates cleanly.
+PRICE_TOLERANCE = 0.005
 
 _WHITESPACE_RE = re.compile(r"\s+")
 
@@ -989,6 +1003,17 @@ def match_key(pi_name, category) -> tuple[str, str]:
 	return (norm_key(pi_name), norm_key(category))
 
 
+def is_keyed(key) -> bool:
+	"""True when both halves of a match key are filled — see invariant 5.
+
+	``(PI, "")`` is not a key. On msa 29 CI lines carry no category, and 27 of
+	them "matched" whichever other blank-category line sat on the same PI,
+	inheriting its price and netting out of its remaining balance. Such rows are
+	kept out of both indexes and reported as ``missing_category`` instead.
+	"""
+	return bool(key[0]) and bool(key[1])
+
+
 def _num(value) -> float:
 	try:
 		out = float(value or 0)
@@ -1002,7 +1027,13 @@ def _round4(value) -> float:
 
 
 def _price_eq(a, b) -> bool:
-	return _round4(a) == _round4(b)
+	"""Two prices agree when they differ by at most ``PRICE_TOLERANCE``.
+
+	Not exact equality: the PI and the CI store the same price at different
+	precisions. The outer ``round`` keeps float residue from pushing an exact
+	half-cent gap over the threshold.
+	"""
+	return round(abs(_round4(a) - _round4(b)), 4) <= PRICE_TOLERANCE
 
 
 def _contract_pi(row) -> str:
@@ -1034,11 +1065,17 @@ def contract_index(pi_item_rows) -> dict[tuple[str, str], dict]:
 
 	Prices accumulate into *sets* — one key may be contracted at several prices
 	(invariant 4) and a CI matching any of them is compliant.
+
+	Rows without a category are skipped: they carry no product identity, so
+	indexing them would merge unrelated lines under ``(PI, "")``. ``reconcile``
+	counts them as ``contract_unkeyed_lines`` so the omission is visible.
 	"""
 	index: dict[tuple[str, str], dict] = {}
 	for row in pi_item_rows:
 		pi_name = _contract_pi(row)
 		key = match_key(pi_name, row.get("category"))
+		if not is_keyed(key):
+			continue
 		entry = index.get(key)
 		if entry is None:
 			entry = {
@@ -1076,10 +1113,15 @@ def shipped_index(ci_item_rows) -> dict[tuple[str, str], dict]:
 	Each row is a dict with the PI (row-level or inherited from the header),
 	``category``, ``item``, ``boxes``, ``qty``, ``amount`` and the CI docname in
 	``ci_name`` (or ``parent``).
+
+	Rows without a category are skipped for the same reason as on the contract
+	side, and would otherwise be subtracted from a balance they have no claim on.
 	"""
 	index: dict[tuple[str, str], dict] = {}
 	for row in ci_item_rows:
 		key = match_key(_shipped_pi(row), row.get("category"))
+		if not is_keyed(key):
+			continue
 		entry = index.get(key)
 		if entry is None:
 			entry = {
@@ -1143,11 +1185,16 @@ def diff_ci_line(ci_line, contract) -> list[dict]:
 	out: list[dict] = []
 
 	if not contract:
+		# Distinguish the two ways a line can be unmatched: the category is on no
+		# PI (fix the PI link), or there is no category at all (fix the line).
+		# Reporting the second as "not on any PI" sends the operator to the wrong
+		# document.
+		blank_category = not norm_key(ci_line.get("category"))
 		out.append(
 			{
-				"code": "unattributable",
+				"code": "missing_category" if blank_category else "unattributable",
 				"level": "error",
-				"field": "proforma_invoice",
+				"field": "category" if blank_category else "proforma_invoice",
 				"ci_value": ci_line.get("category") or ci_line.get("item") or "",
 				"pi_value": None,
 			}
@@ -1244,10 +1291,24 @@ def reconcile(pi_item_rows, ci_item_rows) -> dict:
 		else:
 			remaining_boxes += rem["remaining_boxes"]
 
+	# Lines the indexes had to drop for want of a category. Counted, never hidden.
+	contract_unkeyed_lines = 0
+	contract_unkeyed_boxes = 0.0
+	for row in pi_item_rows:
+		if not is_keyed(match_key(_contract_pi(row), row.get("category"))):
+			contract_unkeyed_lines += 1
+			contract_unkeyed_boxes += _num(row.get("boxes"))
+
 	orphan_lines = 0
 	orphan_boxes = 0.0
 	orphan_keys: set[tuple[str, str]] = set()
-	counts = {"price_docs": 0, "price_agreed": 0, "qty_arithmetic": 0, "sub_cut": 0}
+	counts = {
+		"missing_category": 0,
+		"price_docs": 0,
+		"price_agreed": 0,
+		"qty_arithmetic": 0,
+		"sub_cut": 0,
+	}
 	matched_lines = 0
 	pis_per_ci: dict[str, set[str]] = {}
 	for row in ci_item_rows:
@@ -1256,11 +1317,14 @@ def reconcile(pi_item_rows, ci_item_rows) -> dict:
 		ci_name = row.get("ci_name") or row.get("parent")
 		if ci_name:
 			pis_per_ci.setdefault(ci_name, set()).add(norm_key(pi_name))
-		entry = contract.get(key)
+		entry = contract.get(key) if is_keyed(key) else None
 		if entry is None:
 			orphan_lines += 1
 			orphan_boxes += _num(row.get("boxes"))
 			orphan_keys.add(key)
+			for diff in diff_ci_line(row, None):
+				if diff["code"] in counts:
+					counts[diff["code"]] += 1
 			continue
 		matched_lines += 1
 		for diff in diff_ci_line(row, entry):
@@ -1272,6 +1336,8 @@ def reconcile(pi_item_rows, ci_item_rows) -> dict:
 		"contract_keys": len(contract),
 		"contract_boxes": contract_boxes,
 		"contract_amount": round(contract_amount, 2),
+		"contract_unkeyed_lines": contract_unkeyed_lines,
+		"contract_unkeyed_boxes": contract_unkeyed_boxes,
 		"ci_count": len(pis_per_ci),
 		"ci_lines": len(ci_item_rows),
 		"shipped_keys": len(shipped),
@@ -1282,6 +1348,7 @@ def reconcile(pi_item_rows, ci_item_rows) -> dict:
 		"orphan_lines": orphan_lines,
 		"orphan_boxes": orphan_boxes,
 		"orphan_keys": len(orphan_keys),
+		"missing_category": counts["missing_category"],
 		"price_docs": counts["price_docs"],
 		"price_agreed": counts["price_agreed"],
 		"qty_arithmetic": counts["qty_arithmetic"],
