@@ -148,6 +148,46 @@ class TestFilterClauses(unittest.TestCase):
 		self.assertEqual(clauses, [f"NULLIF(({rules.ci_effective_group_expr(True)}), '') IS NULL"])
 		self.assertEqual(params, {})
 
+	def test_ci_pi_match_filter_is_opt_in(self):
+		# An unrecognised (or absent) value must mean "no filter" — degrading to
+		# `linked` would quietly hide every invoice the report exists to surface.
+		self.assertIsNone(rules.ci_pi_match_clause(None))
+		self.assertIsNone(rules.ci_pi_match_clause(""))
+		self.assertIsNone(rules.ci_pi_match_clause("whatever"))
+		self.assertEqual(rules.ci_filter_clauses(pi_match=None)[0], [])
+
+	def test_ci_pi_match_linked_is_the_exact_negation_of_unlinked(self):
+		# The two modes must partition the list: an invoice that appears under
+		# neither (or under both) is a hole in the "every CI is linked" claim.
+		unlinked = rules.ci_pi_match_clause("unlinked")
+		linked = rules.ci_pi_match_clause("linked")
+		self.assertEqual(linked, f"NOT {unlinked}")
+
+	def test_ci_pi_match_counts_a_partly_linked_invoice_as_unlinked(self):
+		# A multi-PI invoice where only some rows name a proforma is precisely
+		# the defect being hunted, so the clause must test for the *existence* of
+		# an empty row — not for the absence of any filled one.
+		unlinked = rules.ci_pi_match_clause("unlinked")
+		self.assertIn("OR EXISTS", unlinked)
+		self.assertIn("COALESCE(cim.custom_proforma_invoice, '') = ''", unlinked)
+		# An invoice with no items at all traces to nothing either.
+		self.assertIn("NOT EXISTS", unlinked)
+
+	def test_ci_pi_match_without_the_custom_field_says_nothing_is_linked(self):
+		# On a site that never carried the imports work the header column does
+		# not exist. Emitting the real clause would raise "Unknown column"; and
+		# claiming everything is linked would be a lie.
+		self.assertEqual(rules.ci_pi_match_clause("unlinked", has_pi_link=False), "1=1")
+		self.assertEqual(rules.ci_pi_match_clause("linked", has_pi_link=False), "1=0")
+
+	def test_ci_pi_match_expr_is_self_contained(self):
+		# Same trap as the group expression: `count_query` drops the joins, so a
+		# join alias here would blow up the count only — after the rows rendered.
+		for mode in ("linked", "unlinked"):
+			expr = rules.ci_pi_match_clause(mode)
+			for alias in ("pi.", "s.", "pig."):
+				self.assertNotIn(alias, expr)
+
 	def test_ci_effective_group_expr_is_self_contained(self):
 		# `count_query` mirrors the list's FROM *without* its joins, so the
 		# expression may only touch `ci` and correlated subqueries. Referencing a
@@ -739,6 +779,198 @@ class TestImportOrderKpis(unittest.TestCase):
 		self.assertEqual(k["order_count"], 0)
 		self.assertEqual(k["agreed_total"], 0.0)
 		self.assertEqual(k["total_boxes"], 0)
+
+
+def _pi_line(pi, category, item, boxes, qty, **kw):
+	row = {"pi_name": pi, "category": category, "item": item, "boxes": boxes, "qty": qty}
+	row.update(kw)
+	return row
+
+
+def _ci_line(ci, pi, category, item, boxes, qty, **kw):
+	row = {
+		"ci_name": ci,
+		"custom_proforma_invoice": pi,
+		"category": category,
+		"item": item,
+		"boxes": boxes,
+		"qty": qty,
+	}
+	row.update(kw)
+	return row
+
+
+class TestPiCiMatching(unittest.TestCase):
+	"""The contract↔shipment math ported from the ~/msa-sandbox prototype.
+
+	Each test pins one fact the sandbox established against the real MSA book;
+	the numbers in the assertions are the measured ones, not invented.
+	"""
+
+	def test_norm_key_collapses_whitespace_and_case(self):
+		# The book writes the same product as "Whole leg" and "WHOLE LEG"; raw-text
+		# matching invented 40 phantom "not on any PI" lines.
+		self.assertEqual(rules.norm_key("  Whole   leg "), "WHOLE LEG")
+		self.assertEqual(rules.norm_key("WHOLE LEG"), "WHOLE LEG")
+		self.assertEqual(rules.norm_key(None), "")
+		self.assertEqual(
+			rules.match_key(" HMA/PI/1 ", "Cube  roll"),
+			("HMA/PI/1", "CUBE ROLL"),
+		)
+
+	def test_compensated_bundle_matches_on_category_not_item(self):
+		# One PI line (a compensated bundle) ships as three sub-cuts. Matching on
+		# the category folds them back onto the contract line; matching on the
+		# item — what the old code did — finds nothing.
+		pi_rows = [_pi_line("PI-1", "BUFFALO COMPENSATED", "CM60/40", 16800, 336000)]
+		ci_rows = [
+			_ci_line("CI-1", "PI-1", "BUFFALO COMPENSATED", "41 TOPSIDE", 6000, 120000),
+			_ci_line("CI-1", "PI-1", "buffalo  compensated", "44 SILVER SIDE", 5800, 116000),
+			_ci_line("CI-2", "PI-1", "BUFFALO COMPENSATED", "45 RUMP STEAK", 5000, 100000),
+		]
+		contract = rules.contract_index(pi_rows)
+		shipped = rules.shipped_index(ci_rows)
+		key = rules.match_key("PI-1", "BUFFALO COMPENSATED")
+		self.assertEqual(len(shipped), 1, "all three sub-cuts must fold onto one key")
+		rem = rules.remaining_for(contract[key], shipped[key])
+		self.assertEqual(rem["shipped_boxes"], 16800)
+		self.assertEqual(rem["remaining_boxes"], 0)
+		self.assertFalse(rem["over_shipped"])
+		self.assertEqual(rem["ci_count"], 2)
+		# The sub-cut is reported as info, never as a failure.
+		diffs = rules.diff_ci_line(ci_rows[0], contract[key])
+		self.assertEqual([d["code"] for d in diffs], ["sub_cut"])
+		self.assertEqual(rules.worst_level(diffs), "info")
+
+	def test_over_shipment_is_not_swallowed(self):
+		# HMA/PI/2677/202425 · TRIMING really did ship 38 boxes over contract.
+		# max(0, ...) hid 21 keys / 25 959 boxes book-wide.
+		contract = {"boxes": 4200, "qty": 84000}
+		shipped = {"boxes": 4238, "qty": 84760, "ci_names": {"CI-1"}}
+		rem = rules.remaining_for(contract, shipped)
+		self.assertEqual(rem["remaining_boxes"], -38)
+		self.assertTrue(rem["over_shipped"])
+		self.assertEqual(rem["over_boxes"], 38)
+		self.assertEqual(rem["pct"], 100.0, "pct caps at 100 even when over-shipped")
+
+	def test_unattributable_line_is_flagged_not_netted(self):
+		# A CI line whose key is on no PI must not reduce anyone's remaining
+		# balance — it is surfaced instead.
+		pi_rows = [_pi_line("PI-1", "BLADE", "12", 4911, 98220)]
+		ci_rows = [
+			_ci_line("CI-1", "PI-1", "BLADE", "12", 4911, 98220),
+			_ci_line("CI-1", "PI-1", "MYSTERY CUT", "99", 500, 10000),
+		]
+		summary = rules.reconcile(pi_rows, ci_rows)
+		self.assertEqual(summary["orphan_lines"], 1)
+		self.assertEqual(summary["orphan_boxes"], 500)
+		self.assertEqual(summary["matched_lines"], 1)
+		self.assertEqual(summary["remaining_boxes"], 0, "the orphan must not go negative")
+		diffs = rules.diff_ci_line(ci_rows[1], None)
+		self.assertEqual([d["code"] for d in diffs], ["unattributable"])
+		self.assertEqual(rules.worst_level(diffs), "error")
+
+	def test_multiple_contract_prices_accept_any(self):
+		# BUFFALO COMPENSATED_3 is contracted at 4.05 / 4.15 / 4.10 — four such
+		# keys exist. A CI at any of them is compliant.
+		pi_rows = [
+			_pi_line("PI-1", "BUFFALO COMPENSATED", "CM", 100, 2000, rate=4.05),
+			_pi_line("PI-1", "BUFFALO COMPENSATED", "CM", 100, 2000, rate=4.15),
+			_pi_line("PI-1", "BUFFALO COMPENSATED", "CM", 100, 2000, rate=4.10),
+		]
+		contract = rules.contract_index(pi_rows)[rules.match_key("PI-1", "BUFFALO COMPENSATED")]
+		self.assertEqual(contract["agreed_prices"], {4.05, 4.15, 4.1})
+		compliant = _ci_line("CI-1", "PI-1", "BUFFALO COMPENSATED", "CM", 100, 2000, rate=4.10)
+		self.assertEqual(rules.diff_ci_line(compliant, contract), [])
+		off = _ci_line("CI-1", "PI-1", "BUFFALO COMPENSATED", "CM", 100, 2000, rate=4.20)
+		diffs = rules.diff_ci_line(off, contract)
+		self.assertEqual([d["code"] for d in diffs], ["price_agreed"])
+		self.assertEqual(diffs[0]["pi_value"], [4.05, 4.1, 4.15])
+
+	def test_price_compare_rounds_to_four_places(self):
+		# Raw float equality produced 273 phantom mismatches book-wide.
+		pi_rows = [_pi_line("PI-1", "BLADE", "12", 100, 2000, rate=4.1, docs_price=3.85)]
+		contract = rules.contract_index(pi_rows)[rules.match_key("PI-1", "BLADE")]
+		line = _ci_line("CI-1", "PI-1", "BLADE", "12", 100, 2000, rate=4.0999999999, docs_price=3.8500000001)
+		self.assertEqual(rules.diff_ci_line(line, contract), [])
+
+	def test_reconcile_totals_match_sandbox_fixture(self):
+		# HMA/PI/2677/202425 end to end: BLADE ships exactly, HEAD MEAT is 38
+		# boxes short, TRIMING is 38 boxes over. The shortfall and the overage
+		# must NOT cancel each other out in the summary.
+		pi = "HMA/PI/2677/202425"
+		pi_rows = [
+			_pi_line(pi, "BLADE", "12", 4911, 98220, rate=3.85, amount=378147.0),
+			_pi_line(pi, "HEAD MEAT", "13", 4200, 84000, rate=3.20, amount=268800.0),
+			_pi_line(pi, "TRIMING", "14", 4200, 84000, rate=2.95, amount=247800.0),
+		]
+		ci_rows = [
+			_ci_line("MH/104/202526", pi, "BLADE", "12", 4911, 98220, rate=3.85),
+			_ci_line("MH/104/202526", pi, "HEAD MEAT", "13", 4162, 83240, rate=3.20),
+			_ci_line("MH/105/202526", pi, "TRIMING", "14", 4238, 84760, rate=2.95),
+		]
+		contract = rules.contract_index(pi_rows)
+		shipped = rules.shipped_index(ci_rows)
+		per_key = {
+			category: rules.remaining_for(
+				contract[rules.match_key(pi, category)], shipped.get(rules.match_key(pi, category))
+			)
+			for category in ("BLADE", "HEAD MEAT", "TRIMING")
+		}
+		self.assertEqual(per_key["BLADE"]["remaining_boxes"], 0)
+		self.assertEqual(per_key["HEAD MEAT"]["remaining_boxes"], 38)
+		self.assertEqual(per_key["TRIMING"]["remaining_boxes"], -38)
+		self.assertTrue(per_key["TRIMING"]["over_shipped"])
+
+		summary = rules.reconcile(pi_rows, ci_rows)
+		self.assertEqual(summary["contract_lines"], 3)
+		self.assertEqual(summary["contract_keys"], 3)
+		self.assertEqual(summary["ci_lines"], 3)
+		self.assertEqual(summary["matched_lines"], 3)
+		self.assertEqual(summary["ci_count"], 2)
+		self.assertEqual(summary["orphan_lines"], 0)
+		self.assertEqual(summary["over_keys"], 1)
+		self.assertEqual(summary["over_boxes"], 38)
+		# 38 remaining, NOT 0: the over-shipped key is excluded from the netting.
+		self.assertEqual(summary["remaining_boxes"], 38)
+		self.assertEqual(summary["price_docs"], 0)
+		self.assertEqual(summary["price_agreed"], 0)
+
+	def test_header_pi_is_used_when_the_row_has_none(self):
+		# K1: ~2 127 CI item rows carry no row-level PI; the header link is the
+		# only thing tying them to a contract. They must still count as shipped.
+		pi_rows = [_pi_line("PI-1", "BLADE", "12", 4911, 98220)]
+		ci_rows = [
+			{
+				"ci_name": "CI-1",
+				"custom_proforma_invoice": "",
+				"header_proforma_invoice": "PI-1",
+				"category": "BLADE",
+				"item": "12",
+				"boxes": 4911,
+				"qty": 98220,
+			}
+		]
+		summary = rules.reconcile(pi_rows, ci_rows)
+		self.assertEqual(summary["matched_lines"], 1)
+		self.assertEqual(summary["orphan_lines"], 0)
+		self.assertEqual(summary["remaining_boxes"], 0)
+
+	def test_qty_arithmetic_tolerance(self):
+		pi_rows = [_pi_line("PI-1", "BLADE", "12", 100, 2000)]
+		contract = rules.contract_index(pi_rows)[rules.match_key("PI-1", "BLADE")]
+		ok = _ci_line("CI-1", "PI-1", "BLADE", "12", 100, 2000.4, box_weight_kg=20)
+		self.assertEqual([d["code"] for d in rules.diff_ci_line(ok, contract)], [])
+		bad = _ci_line("CI-1", "PI-1", "BLADE", "12", 100, 1900, box_weight_kg=20)
+		diffs = rules.diff_ci_line(bad, contract)
+		self.assertEqual([d["code"] for d in diffs], ["qty_arithmetic"])
+		self.assertEqual(diffs[0]["pi_value"], 2000.0)
+
+	def test_every_diff_code_has_a_label(self):
+		self.assertEqual(
+			set(rules.DIFF_LABELS),
+			{"unattributable", "price_docs", "price_agreed", "qty_arithmetic", "sub_cut"},
+		)
 
 
 if __name__ == "__main__":

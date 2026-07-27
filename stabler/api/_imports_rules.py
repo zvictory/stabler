@@ -15,11 +15,15 @@ Everything here is I/O-free so it unit-tests in milliseconds without a bench:
   Commercial Invoice / Import Container / Import Truck list endpoints, built as
   parametrised SQL (``%(name)s``) so the Frappe layer passes them straight to
   ``frappe.db.sql`` without string interpolation of user input.
+* **PI ↔ CI matching** — the contract/shipment reconciliation math (see the
+  section header near the bottom of this file for the invariants).
 """
 
 from __future__ import annotations
 
 import datetime
+import math
+import re
 
 # ---------------------------------------------------------------------------
 # Cost masking — the named field sets stripped for users lacking cost visibility
@@ -217,7 +221,47 @@ def ci_effective_group_expr(has_pi_link: bool = True) -> str:
 	return "COALESCE(" + ", ".join(branches) + ")"
 
 
-def ci_filter_clauses(search=None, status=None, supplier=None, group=None, has_pi_link: bool = True):
+#: A CI line is traceable when it names a proforma itself or inherits one from
+#: the invoice header. An invoice counts as *unlinked* the moment a single line
+#: is untraceable — a partly-linked invoice is exactly the case the scope
+#: directive ("every CI must be linked to its PI") exists to surface, so folding
+#: it in with the clean ones would hide it.
+#:
+#: Column-only, no joins: ``count_query`` builds a FROM without any, so every
+#: reference is on ``ci`` or inside a correlated subquery.
+_CI_UNLINKED_EXPR = """(
+    COALESCE(ci.custom_proforma_invoice, '') = ''
+    AND (
+      NOT EXISTS (SELECT 1 FROM `tabCommercial Invoice Item` cim WHERE cim.parent = ci.name)
+      OR EXISTS (
+        SELECT 1 FROM `tabCommercial Invoice Item` cim
+        WHERE cim.parent = ci.name AND COALESCE(cim.custom_proforma_invoice, '') = ''
+      )
+    )
+  )"""
+
+
+def ci_pi_match_clause(pi_match, has_pi_link: bool = True) -> str | None:
+	"""SQL fragment for the CI list's PI-link filter, or ``None`` for "any".
+
+	Deliberately link-status only. Price / quantity compliance needs the
+	per-key contract index (see ``reconcile``), which cannot be expressed as a
+	WHERE fragment on a paginated list without a per-row subquery per column;
+	that report lives in ``get_ci_pi_discrepancies``.
+
+	Without the header Custom Field (``has_pi_link`` false) nothing is linked,
+	so the filter degrades to all-or-nothing rather than lying.
+	"""
+	if pi_match not in ("linked", "unlinked"):
+		return None
+	if not has_pi_link:
+		return "1=1" if pi_match == "unlinked" else "1=0"
+	return _CI_UNLINKED_EXPR if pi_match == "unlinked" else f"NOT {_CI_UNLINKED_EXPR}"
+
+
+def ci_filter_clauses(
+	search=None, status=None, supplier=None, group=None, has_pi_link: bool = True, pi_match=None
+):
 	"""WHERE fragments + params for ``list_commercial_invoices`` (alias ``ci``)."""
 	clauses: list[str] = []
 	params: dict = {}
@@ -241,6 +285,9 @@ def ci_filter_clauses(search=None, status=None, supplier=None, group=None, has_p
 		clause, gparams = group_clause(f"({ci_effective_group_expr(has_pi_link)})", group)
 		clauses.append(clause)
 		params.update(gparams)
+	match_clause = ci_pi_match_clause(pi_match, has_pi_link)
+	if match_clause:
+		clauses.append(match_clause)
 	return clauses, params
 
 
@@ -865,3 +912,379 @@ def get_7day_payment_deadline(eta_transit_port) -> str | None:
 		return str(add_days(dt, -7))
 	except Exception:
 		return None
+
+
+# ---------------------------------------------------------------------------
+# PI ↔ CI matching — contract (Proforma Invoice) vs shipment (Commercial Invoice)
+# ---------------------------------------------------------------------------
+#
+# Ported 1:1 from the ``~/msa-sandbox`` prototype (``lib/match.js``), which was
+# validated against the real MSA book (59 PIs / 353 CIs / 6 223 CI lines) before
+# any of this reached Stabler. The prototype settled four things the previous
+# implementation got wrong:
+#
+# 1. **The match key is the category, not the item.** A PI line is often a
+#    *compensated bundle* (``CM60/40 = BUFFALO COMPENSATED``, 16 800 boxes in one
+#    line) that the CI ships broken into sub-cuts (``41 TOPSIDE``,
+#    ``44 SILVER SIDE``, …). Matching on ``item`` therefore matches 19.5% of the
+#    lines; matching on ``category`` matches 98.3%.
+# 2. **Both sides of the key must be normalised.** The book writes the same
+#    product as ``Whole leg`` and ``WHOLE LEG``. Raw-text matching invents 40
+#    phantom "not on any PI" lines (144 instead of 104).
+# 3. **Prices compare at 4 decimals.** Raw float equality produced 273 phantom
+#    mismatches (``4.0999999999 != 4.1``) — IEEE-754 residue, not a real
+#    discrepancy.
+# 4. **One key can legitimately carry several contract prices.** e.g.
+#    ``BUFFALO COMPENSATED_3`` is contracted at 4.05 / 4.15 / 4.10. A CI price
+#    equal to *any* of them is compliant.
+#
+# Invariants — nothing is silently corrected:
+#
+# * ``remaining_boxes`` MAY BE NEGATIVE. ``max(0, …)`` is forbidden here: it hid
+#   21 over-shipped keys / 25 959 boxes in the real book. Over-shipment comes
+#   back as ``over_shipped=True``.
+# * A CI line whose key is on no PI is NOT netted out of the remaining balance;
+#   it is flagged ``unattributable`` and reported.
+# * Price comparison is set membership, not equality against a single value.
+# * Only the *key* is normalised. Raw text is preserved for display.
+
+#: Severity ordering for a line-level difference — ``error`` beats ``warn``
+#: beats ``info``. ``error`` means the line cannot enter the remaining-balance
+#: math at all; ``warn`` means it can, but a column disagrees with the PI.
+DIFF_LEVELS: tuple[str, ...] = ("error", "warn", "info")
+
+#: Source strings for the difference codes. The SPA translates by ``code``; this
+#: map is the single source of truth for anything rendering server-side (the
+#: proof report, logs). Keep the wording in sync with the five translation CSVs.
+DIFF_LABELS: dict[str, str] = {
+	"unattributable": "Not on any PI",
+	"price_docs": "Invoice price differs from the PI docs price",
+	"price_agreed": "Agreed price differs from the PI",
+	"qty_arithmetic": "Boxes × box weight does not equal the total kg",
+	"sub_cut": "Sub-cut — the PI line is a compensated bundle",
+}
+
+#: Tolerance (kg) for the ``boxes × box_weight_kg == qty`` check. Below this the
+#: gap is rounding in the source book, not a data-entry error.
+QTY_ARITHMETIC_TOLERANCE_KG = 0.5
+
+_WHITESPACE_RE = re.compile(r"\s+")
+
+
+def norm_key(value) -> str:
+	"""Normalise one side of a match key: collapse whitespace, upper-case.
+
+	Cosmetic-looking but mandatory — see invariant 2 in the section header.
+	Never use this for display; the raw value is what the user recognises.
+	"""
+	return _WHITESPACE_RE.sub(" ", str("" if value is None else value)).strip().upper()
+
+
+def match_key(pi_name, category) -> tuple[str, str]:
+	"""The PI ↔ CI match key: ``(normalised PI, normalised category)``.
+
+	``category`` is the product as written on the invoice
+	(``наименование по инвойс``) — NOT the item / Article, which is a sub-cut.
+	"""
+	return (norm_key(pi_name), norm_key(category))
+
+
+def _num(value) -> float:
+	try:
+		out = float(value or 0)
+	except TypeError, ValueError:
+		return 0.0
+	return out if math.isfinite(out) else 0.0
+
+
+def _round4(value) -> float:
+	return round(_num(value), 4)
+
+
+def _price_eq(a, b) -> bool:
+	return _round4(a) == _round4(b)
+
+
+def _contract_pi(row) -> str:
+	"""PI docname of a Proforma Invoice Item row — ``parent`` *is* the PI."""
+	return row.get("pi_name") or row.get("parent") or ""
+
+
+def _shipped_pi(row) -> str:
+	"""PI docname of a Commercial Invoice Item row.
+
+	Two-level link: the PI may sit on the row (``custom_proforma_invoice``) or
+	only on the CI header (``header_proforma_invoice``, projected by the SQL
+	join); the row wins when both are set. There is deliberately no ``parent``
+	fallback here — ``parent`` is the *CI*, and defaulting to it would make every
+	unlinked line look attributed to a PI named after its own invoice.
+	"""
+	for field in ("pi_name", "custom_proforma_invoice", "header_proforma_invoice"):
+		value = row.get(field)
+		if value:
+			return value
+	return ""
+
+
+def contract_index(pi_item_rows) -> dict[tuple[str, str], dict]:
+	"""Index Proforma Invoice Item rows by match key.
+
+	Each row is a dict with ``pi_name`` (or ``parent``), ``category``, ``item``,
+	``boxes``, ``qty``, ``amount``, ``rate``, ``docs_price``, ``box_weight_kg``.
+
+	Prices accumulate into *sets* — one key may be contracted at several prices
+	(invariant 4) and a CI matching any of them is compliant.
+	"""
+	index: dict[tuple[str, str], dict] = {}
+	for row in pi_item_rows:
+		pi_name = _contract_pi(row)
+		key = match_key(pi_name, row.get("category"))
+		entry = index.get(key)
+		if entry is None:
+			entry = {
+				"key": key,
+				"pi_name": pi_name,
+				"label": row.get("category") or row.get("item") or "",
+				"boxes": 0.0,
+				"qty": 0.0,
+				"amount": 0.0,
+				"agreed_prices": set(),
+				"docs_prices": set(),
+				"box_weights": set(),
+				"items": set(),
+				"lines": [],
+			}
+			index[key] = entry
+		entry["boxes"] += _num(row.get("boxes"))
+		entry["qty"] += _num(row.get("qty"))
+		entry["amount"] += _num(row.get("amount"))
+		if row.get("rate") is not None:
+			entry["agreed_prices"].add(_round4(row.get("rate")))
+		if row.get("docs_price") is not None:
+			entry["docs_prices"].add(_round4(row.get("docs_price")))
+		if row.get("box_weight_kg"):
+			entry["box_weights"].add(_round4(row.get("box_weight_kg")))
+		if row.get("item"):
+			entry["items"].add(norm_key(row.get("item")))
+		entry["lines"].append(row)
+	return index
+
+
+def shipped_index(ci_item_rows) -> dict[tuple[str, str], dict]:
+	"""Index Commercial Invoice Item rows by the same match key.
+
+	Each row is a dict with the PI (row-level or inherited from the header),
+	``category``, ``item``, ``boxes``, ``qty``, ``amount`` and the CI docname in
+	``ci_name`` (or ``parent``).
+	"""
+	index: dict[tuple[str, str], dict] = {}
+	for row in ci_item_rows:
+		key = match_key(_shipped_pi(row), row.get("category"))
+		entry = index.get(key)
+		if entry is None:
+			entry = {
+				"key": key,
+				"boxes": 0.0,
+				"qty": 0.0,
+				"amount": 0.0,
+				"ci_names": set(),
+				"items": set(),
+				"lines": [],
+			}
+			index[key] = entry
+		entry["boxes"] += _num(row.get("boxes"))
+		entry["qty"] += _num(row.get("qty"))
+		entry["amount"] += _num(row.get("amount"))
+		ci_name = row.get("ci_name") or row.get("parent")
+		if ci_name:
+			entry["ci_names"].add(ci_name)
+		if row.get("item"):
+			entry["items"].add(norm_key(row.get("item")))
+		entry["lines"].append(row)
+	return index
+
+
+def remaining_for(contract, shipped) -> dict:
+	"""Remaining balance for one match key. ``remaining_boxes`` may be negative.
+
+	``max(0, …)`` is deliberately absent — see invariant 1. Both arguments may be
+	``None``: no contract + shipment = ``unattributable``; contract + no shipment
+	= nothing shipped yet.
+	"""
+	contract_boxes = _num(contract and contract.get("boxes"))
+	shipped_boxes = _num(shipped and shipped.get("boxes"))
+	contract_qty = _num(contract and contract.get("qty"))
+	shipped_qty = _num(shipped and shipped.get("qty"))
+	if contract_boxes > 0:
+		pct = min(100.0, shipped_boxes / contract_boxes * 100.0)
+	else:
+		pct = 100.0 if shipped_boxes > 0 else 0.0
+	return {
+		"contract_boxes": contract_boxes,
+		"shipped_boxes": shipped_boxes,
+		"remaining_boxes": contract_boxes - shipped_boxes,
+		"contract_qty": contract_qty,
+		"shipped_qty": shipped_qty,
+		"remaining_qty": contract_qty - shipped_qty,
+		"pct": round(pct, 1),
+		"over_shipped": shipped_boxes > contract_boxes,
+		"over_boxes": shipped_boxes - contract_boxes if shipped_boxes > contract_boxes else 0.0,
+		"ci_count": len(shipped["ci_names"]) if shipped else 0,
+		"unattributable": contract is None and shipped is not None,
+	}
+
+
+def diff_ci_line(ci_line, contract) -> list[dict]:
+	"""Compare one CI line against its contract key. Empty list = fully compliant.
+
+	``contract`` is the ``contract_index`` entry for the line's key, or ``None``
+	when the key is on no PI at all.
+	"""
+	out: list[dict] = []
+
+	if not contract:
+		out.append(
+			{
+				"code": "unattributable",
+				"level": "error",
+				"field": "proforma_invoice",
+				"ci_value": ci_line.get("category") or ci_line.get("item") or "",
+				"pi_value": None,
+			}
+		)
+		return out  # nothing to compare against; the rest would be noise
+
+	docs_price = ci_line.get("docs_price")
+	if docs_price is not None and contract["docs_prices"]:
+		if not any(_price_eq(v, docs_price) for v in contract["docs_prices"]):
+			out.append(
+				{
+					"code": "price_docs",
+					"level": "warn",
+					"field": "docs_price",
+					"ci_value": _round4(docs_price),
+					"pi_value": sorted(contract["docs_prices"]),
+				}
+			)
+
+	rate = ci_line.get("rate")
+	if rate is not None and contract["agreed_prices"]:
+		if not any(_price_eq(v, rate) for v in contract["agreed_prices"]):
+			out.append(
+				{
+					"code": "price_agreed",
+					"level": "warn",
+					"field": "rate",
+					"ci_value": _round4(rate),
+					"pi_value": sorted(contract["agreed_prices"]),
+				}
+			)
+
+	boxes = _num(ci_line.get("boxes"))
+	box_weight = _num(ci_line.get("box_weight_kg"))
+	qty = _num(ci_line.get("qty"))
+	if boxes and box_weight and qty:
+		expected = boxes * box_weight
+		if abs(expected - qty) > QTY_ARITHMETIC_TOLERANCE_KG:
+			out.append(
+				{
+					"code": "qty_arithmetic",
+					"level": "warn",
+					"field": "qty",
+					"ci_value": qty,
+					"pi_value": round(expected, 3),
+				}
+			)
+
+	# A CI item that is not one of the PI line's items is a sub-cut of a
+	# compensated bundle — expected behaviour, so ``info``, never a failure.
+	item = ci_line.get("item")
+	if item and contract["items"] and norm_key(item) not in contract["items"]:
+		out.append(
+			{
+				"code": "sub_cut",
+				"level": "info",
+				"field": "item",
+				"ci_value": item,
+				"pi_value": sorted(contract["items"]),
+			}
+		)
+
+	return out
+
+
+def worst_level(diffs) -> str | None:
+	"""Heaviest severity in a diff list: ``error`` > ``warn`` > ``info`` > ``None``."""
+	for level in DIFF_LEVELS:
+		if any(d.get("level") == level for d in diffs):
+			return level
+	return None
+
+
+def reconcile(pi_item_rows, ci_item_rows) -> dict:
+	"""Whole-book reconciliation summary over contract + shipment rows.
+
+	Returns the same figures the sandbox prints; the two implementations landing
+	on identical numbers is what proves the port.
+	"""
+	contract = contract_index(pi_item_rows)
+	shipped = shipped_index(ci_item_rows)
+
+	contract_boxes = sum(_num(r.get("boxes")) for r in pi_item_rows)
+	contract_amount = sum(_num(r.get("amount")) for r in pi_item_rows)
+
+	remaining_boxes = 0.0
+	over_keys = 0
+	over_boxes = 0.0
+	for key, entry in contract.items():
+		rem = remaining_for(entry, shipped.get(key))
+		if rem["over_shipped"]:
+			over_keys += 1
+			over_boxes += rem["over_boxes"]
+		else:
+			remaining_boxes += rem["remaining_boxes"]
+
+	orphan_lines = 0
+	orphan_boxes = 0.0
+	orphan_keys: set[tuple[str, str]] = set()
+	counts = {"price_docs": 0, "price_agreed": 0, "qty_arithmetic": 0, "sub_cut": 0}
+	matched_lines = 0
+	pis_per_ci: dict[str, set[str]] = {}
+	for row in ci_item_rows:
+		pi_name = _shipped_pi(row)
+		key = match_key(pi_name, row.get("category"))
+		ci_name = row.get("ci_name") or row.get("parent")
+		if ci_name:
+			pis_per_ci.setdefault(ci_name, set()).add(norm_key(pi_name))
+		entry = contract.get(key)
+		if entry is None:
+			orphan_lines += 1
+			orphan_boxes += _num(row.get("boxes"))
+			orphan_keys.add(key)
+			continue
+		matched_lines += 1
+		for diff in diff_ci_line(row, entry):
+			if diff["code"] in counts:
+				counts[diff["code"]] += 1
+
+	return {
+		"contract_lines": len(pi_item_rows),
+		"contract_keys": len(contract),
+		"contract_boxes": contract_boxes,
+		"contract_amount": round(contract_amount, 2),
+		"ci_count": len(pis_per_ci),
+		"ci_lines": len(ci_item_rows),
+		"shipped_keys": len(shipped),
+		"matched_lines": matched_lines,
+		"remaining_boxes": remaining_boxes,
+		"over_keys": over_keys,
+		"over_boxes": over_boxes,
+		"orphan_lines": orphan_lines,
+		"orphan_boxes": orphan_boxes,
+		"orphan_keys": len(orphan_keys),
+		"price_docs": counts["price_docs"],
+		"price_agreed": counts["price_agreed"],
+		"qty_arithmetic": counts["qty_arithmetic"],
+		"sub_cut": counts["sub_cut"],
+		"multi_pi_cis": sum(1 for pis in pis_per_ci.values() if len(pis) > 1),
+	}
