@@ -115,16 +115,21 @@
 1. Commit locally (specific paths) and `bench build --app stabler` to prove it compiles.
 2. Backup first: `ssh ice-production 'tar czf /root/stabler-app-$(date +%F-%H%M).tgz -C /home/frappe/frappe-bench/apps stabler'`.
 3. rsync source → `ice-production:/home/frappe/frappe-bench/apps/stabler/` with
-   `-rltz --no-owner --no-group` (NO `--delete`), excluding `.git node_modules
-   dist __pycache__ *.pyc .claude .tx_*.json graphify-out .smoke tests scratch *.tgz .DS_Store`.
+   `-rltz --no-owner --no-group` (NO `--delete`) and
+   `--exclude-from=apps/stabler/.rsync-exclude`. **The exclude list lives in that
+   file, not here** — it used to be copy-pasted into three deploy scripts plus this
+   doc, and the four copies drifted. Add new excludes there only.
    Then `chown -R frappe:frappe …/apps/stabler`.
    **cwd trap (near-miss 2026-07-17):** run rsync from the bench **`apps/`** dir so
    the relative source `stabler/` = the whole app `apps/stabler/`. Running it from
    inside `apps/stabler/` makes `stabler/` resolve to the inner Python module
    (`apps/stabler/stabler/`) while the remote is the whole app — rsync then shows a
    bogus 1500+ deletions and (with `--delete*`) would wipe the sibling
-   `stable-erp-website/`. **ALWAYS `-rltzn` dry-run first and abort if any sibling
-   dir or `stable-erp-website/` appears in the delete list.**
+   `stable-erp-website/`. **ALWAYS `-rltzvn` dry-run first and abort if any sibling
+   dir or `stable-erp-website/` appears in the delete list.** The `-v` is not
+   optional: `rsync -n` without it prints nothing, so an empty dry-run reads as
+   "clean" when it actually verified nothing (this cost us a bogus 2026-07-24
+   verification).
 4. `bench build --app stabler` on prod.
 5. `bench --site anjan.erpstable.com migrate` (only if patches.txt / doctypes changed)
    — **run for ALL 7 sites, not just anjan.** `migrate` is per-site; rsync+restart
@@ -166,7 +171,10 @@
   `.smoke/`, `tests/` (untracked scratch), stray heredoc files. `dist/` is gitignored.
 - Stage translations as the five CSVs explicitly (`en/ru/uz/uzc/tr.csv`), never the
   whole `translations/` dir (it pulls the `.tx_*.json` caches).
-- Commit message trailer: `Co-Authored-By: Claude Opus 4.8 (1M context) <noreply@anthropic.com>`.
+- Commit message trailer: `Co-Authored-By: Claude <noreply@anthropic.com>`.
+  Deliberately unversioned — a pinned model name (`Opus 4.8`, `(1M context)`) goes
+  stale and silently conflicts with whatever the harness injects, producing
+  trailers that match neither convention.
 
 ## i18n workflow
 - Five languages: **en, ru, uz, uzc, tr**. Source strings live in `t()` (Vue) / `__()` (py).
