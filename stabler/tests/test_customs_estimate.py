@@ -1,6 +1,6 @@
 """Unit tests for stabler.api._customs_estimate (WP-I13, Frappe-free).
 
-    PYTHONPATH=$PWD python3 -m unittest stabler.tests.test_customs_estimate -v
+PYTHONPATH=$PWD python3 -m unittest stabler.tests.test_customs_estimate -v
 """
 
 from __future__ import annotations

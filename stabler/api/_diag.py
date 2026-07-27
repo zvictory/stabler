@@ -23,15 +23,38 @@ import frappe
 # Money / GL fields worth capturing when present on a doc. We only log the ones
 # the doctype actually has, so one snapshot fn works for every transaction.
 _FIELDS = (
-	"company", "posting_date", "currency", "conversion_rate", "multi_currency",
-	"grand_total", "base_grand_total", "rounded_total", "base_rounded_total",
-	"rounding_adjustment", "base_rounding_adjustment", "outstanding_amount",
-	"paid_amount", "received_amount", "base_paid_amount", "base_received_amount",
-	"source_exchange_rate", "target_exchange_rate",
-	"total_allocated_amount", "base_total_allocated_amount", "unallocated_amount",
-	"difference_amount", "total_debit", "total_credit", "total_amount",
-	"update_stock", "party_type", "party", "paid_from", "paid_to",
-	"paid_from_account_currency", "paid_to_account_currency",
+	"company",
+	"posting_date",
+	"currency",
+	"conversion_rate",
+	"multi_currency",
+	"grand_total",
+	"base_grand_total",
+	"rounded_total",
+	"base_rounded_total",
+	"rounding_adjustment",
+	"base_rounding_adjustment",
+	"outstanding_amount",
+	"paid_amount",
+	"received_amount",
+	"base_paid_amount",
+	"base_received_amount",
+	"source_exchange_rate",
+	"target_exchange_rate",
+	"total_allocated_amount",
+	"base_total_allocated_amount",
+	"unallocated_amount",
+	"difference_amount",
+	"total_debit",
+	"total_credit",
+	"total_amount",
+	"update_stock",
+	"party_type",
+	"party",
+	"paid_from",
+	"paid_to",
+	"paid_from_account_currency",
+	"paid_to_account_currency",
 )
 
 
@@ -40,9 +63,7 @@ def diag_log(channel: str, stage: str, data: dict) -> None:
 	try:
 		payload = {"channel": channel, "stage": stage, "user": frappe.session.user}
 		payload.update(data)
-		frappe.logger("stabler.diag", allow_site=True, file_count=10).info(
-			json.dumps(payload, default=str)
-		)
+		frappe.logger("stabler.diag", allow_site=True, file_count=10).info(json.dumps(payload, default=str))
 	except Exception:
 		pass
 
@@ -62,16 +83,18 @@ def snapshot_doc(doc) -> dict:
 	# Child amount rows that carry currency dimensions (JE accounts, PE deductions/refs).
 	rows = []
 	for table in ("accounts", "deductions", "references"):
-		for r in (doc.get(table) or []):
-			rows.append({
-				"_t": table,
-				"account": r.get("account") if hasattr(r, "get") else None,
-				"debit": r.get("debit") if hasattr(r, "get") else None,
-				"credit": r.get("credit") if hasattr(r, "get") else None,
-				"amount": r.get("amount") if hasattr(r, "get") else None,
-				"allocated_amount": r.get("allocated_amount") if hasattr(r, "get") else None,
-				"user_remark": r.get("user_remark") if hasattr(r, "get") else None,
-			})
+		for r in doc.get(table) or []:
+			rows.append(
+				{
+					"_t": table,
+					"account": r.get("account") if hasattr(r, "get") else None,
+					"debit": r.get("debit") if hasattr(r, "get") else None,
+					"credit": r.get("credit") if hasattr(r, "get") else None,
+					"amount": r.get("amount") if hasattr(r, "get") else None,
+					"allocated_amount": r.get("allocated_amount") if hasattr(r, "get") else None,
+					"user_remark": r.get("user_remark") if hasattr(r, "get") else None,
+				}
+			)
 	if rows:
 		out["rows"] = rows
 	return out

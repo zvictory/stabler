@@ -40,7 +40,16 @@ class TestProformaInvoiceDoctype(unittest.TestCase):
 
 	def test_required_fields_present(self):
 		fns = {f["fieldname"]: f for f in self.pi["fields"]}
-		for req in ("supplier", "company", "agreed_total", "bank_agreed", "cash_agreed", "status", "items", "commercial_invoice"):
+		for req in (
+			"supplier",
+			"company",
+			"agreed_total",
+			"bank_agreed",
+			"cash_agreed",
+			"status",
+			"items",
+			"commercial_invoice",
+		):
 			self.assertIn(req, fns, f"Proforma Invoice missing field {req}")
 		# earmark currency fields
 		self.assertEqual(fns["bank_agreed"]["fieldtype"], "Currency")

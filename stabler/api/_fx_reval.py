@@ -17,7 +17,7 @@ from __future__ import annotations
 def _amt(v) -> float:
 	try:
 		return float(v or 0)
-	except (TypeError, ValueError):
+	except TypeError, ValueError:
 		return 0.0
 
 
@@ -44,21 +44,15 @@ def reval_rows(rows, closing_rate) -> list[dict]:
 	out = []
 	for r in rows or []:
 		row = dict(r or {})
-		row.update(
-			reval_row(row.get("outstanding_foreign"), row.get("booked_rate"), closing_rate)
-		)
+		row.update(reval_row(row.get("outstanding_foreign"), row.get("booked_rate"), closing_rate))
 		out.append(row)
 	out.sort(key=lambda r: -abs(r["unrealized_loss"]))
 	return out
 
 
 def reval_summary(annotated_rows) -> dict:
-	total_loss = sum(
-		r["unrealized_loss"] for r in annotated_rows or [] if r["unrealized_loss"] > 0
-	)
-	total_gain = sum(
-		-r["unrealized_loss"] for r in annotated_rows or [] if r["unrealized_loss"] < 0
-	)
+	total_loss = sum(r["unrealized_loss"] for r in annotated_rows or [] if r["unrealized_loss"] > 0)
+	total_gain = sum(-r["unrealized_loss"] for r in annotated_rows or [] if r["unrealized_loss"] < 0)
 	return {
 		"unrealized_loss": round(total_loss, 2),
 		"unrealized_gain": round(total_gain, 2),

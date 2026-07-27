@@ -22,8 +22,15 @@ class TestAdapterMapping(unittest.TestCase):
 		# 22/22 days, kpi_share default 0 → net == base, no allowances.
 		inp = build_calc_input(
 			_emp(),
-			{"payroll_period": "2026-06", "present_days": 22, "absent_days": 0, "half_days": 0,
-			 "overtime_minutes": 0, "night_minutes": 0, "late_deduction_amount": 0},
+			{
+				"payroll_period": "2026-06",
+				"present_days": 22,
+				"absent_days": 0,
+				"half_days": 0,
+				"overtime_minutes": 0,
+				"night_minutes": 0,
+				"late_deduction_amount": 0,
+			},
 			{},
 		)
 		self.assertEqual(inp["summary"]["attended_days"], 22)
@@ -36,8 +43,15 @@ class TestAdapterMapping(unittest.TestCase):
 		# 11 present, 11 absent of 22 → ratio 0.5 → ~half base.
 		inp = build_calc_input(
 			_emp(),
-			{"payroll_period": "2026-06", "present_days": 11, "absent_days": 11, "half_days": 0,
-			 "overtime_minutes": 0, "night_minutes": 0, "late_deduction_amount": 0},
+			{
+				"payroll_period": "2026-06",
+				"present_days": 11,
+				"absent_days": 11,
+				"half_days": 0,
+				"overtime_minutes": 0,
+				"night_minutes": 0,
+				"late_deduction_amount": 0,
+			},
 			{},
 		)
 		self.assertEqual(inp["summary"]["expected_days"], 22)
@@ -47,8 +61,15 @@ class TestAdapterMapping(unittest.TestCase):
 	def test_night_minutes_to_hours_and_fee_to_fines(self):
 		inp = build_calc_input(
 			_emp(),
-			{"payroll_period": "2026-06", "present_days": 22, "absent_days": 0, "half_days": 0,
-			 "overtime_minutes": 90, "night_minutes": 120, "late_deduction_amount": 15000},
+			{
+				"payroll_period": "2026-06",
+				"present_days": 22,
+				"absent_days": 0,
+				"half_days": 0,
+				"overtime_minutes": 90,
+				"night_minutes": 120,
+				"late_deduction_amount": 15000,
+			},
 			{"night_premium_pct": "10"},
 		)
 		self.assertEqual(inp["summary"]["night_hours_worked"], "2.0")
@@ -61,8 +82,16 @@ class TestAdapterMapping(unittest.TestCase):
 	def test_expected_days_override_respected(self):
 		inp = build_calc_input(
 			_emp(),
-			{"payroll_period": "2026-06", "present_days": 20, "absent_days": 0, "half_days": 0,
-			 "expected_days": 25, "overtime_minutes": 0, "night_minutes": 0, "late_deduction_amount": 0},
+			{
+				"payroll_period": "2026-06",
+				"present_days": 20,
+				"absent_days": 0,
+				"half_days": 0,
+				"expected_days": 25,
+				"overtime_minutes": 0,
+				"night_minutes": 0,
+				"late_deduction_amount": 0,
+			},
 			{},
 		)
 		self.assertEqual(inp["summary"]["expected_days"], 25)
@@ -74,8 +103,15 @@ class TestAdapterMapping(unittest.TestCase):
 		# kpi_share 40, no performance → only 60% fixed base flows.
 		inp = build_calc_input(
 			_emp(),
-			{"payroll_period": "2026-06", "present_days": 22, "absent_days": 0, "half_days": 0,
-			 "overtime_minutes": 0, "night_minutes": 0, "late_deduction_amount": 0},
+			{
+				"payroll_period": "2026-06",
+				"present_days": 22,
+				"absent_days": 0,
+				"half_days": 0,
+				"overtime_minutes": 0,
+				"night_minutes": 0,
+				"late_deduction_amount": 0,
+			},
 			{"kpi_share_pct": "40"},
 		)
 		out = calculate_payroll(inp)
@@ -85,8 +121,15 @@ class TestAdapterMapping(unittest.TestCase):
 		# CITY band, 10000/day, 22 present → transport 220000 on top of base.
 		inp = build_calc_input(
 			_emp(region="CITY"),
-			{"payroll_period": "2026-06", "present_days": 22, "absent_days": 0, "half_days": 0,
-			 "overtime_minutes": 0, "night_minutes": 0, "late_deduction_amount": 0},
+			{
+				"payroll_period": "2026-06",
+				"present_days": 22,
+				"absent_days": 0,
+				"half_days": 0,
+				"overtime_minutes": 0,
+				"night_minutes": 0,
+				"late_deduction_amount": 0,
+			},
 			{"region_rates": {"CITY": "10000"}},
 		)
 		out = calculate_payroll(inp)
@@ -97,8 +140,15 @@ class TestAdapterMapping(unittest.TestCase):
 		# 25% of effective base on full attendance → +2 500 000.
 		inp = build_calc_input(
 			_emp(),
-			{"payroll_period": "2026-06", "present_days": 22, "absent_days": 0, "half_days": 0,
-			 "overtime_minutes": 0, "night_minutes": 0, "late_deduction_amount": 0},
+			{
+				"payroll_period": "2026-06",
+				"present_days": 22,
+				"absent_days": 0,
+				"half_days": 0,
+				"overtime_minutes": 0,
+				"night_minutes": 0,
+				"late_deduction_amount": 0,
+			},
 			{},
 			duty_supplements=[{"pct": 25}],
 		)
@@ -110,8 +160,15 @@ class TestAdapterMapping(unittest.TestCase):
 		# kpi_share 40 + performance 50 → fixed 6M + KPI pool 4M × 50% = 2M → 8M.
 		inp = build_calc_input(
 			_emp(),
-			{"payroll_period": "2026-06", "present_days": 22, "absent_days": 0, "half_days": 0,
-			 "overtime_minutes": 0, "night_minutes": 0, "late_deduction_amount": 0},
+			{
+				"payroll_period": "2026-06",
+				"present_days": 22,
+				"absent_days": 0,
+				"half_days": 0,
+				"overtime_minutes": 0,
+				"night_minutes": 0,
+				"late_deduction_amount": 0,
+			},
 			{"kpi_share_pct": "40"},
 			kpi_performance_pct=50,
 		)
@@ -124,8 +181,15 @@ class TestAdapterMapping(unittest.TestCase):
 		# subtracted from net pay.
 		inp = build_calc_input(
 			_emp(),
-			{"payroll_period": "2026-06", "present_days": 22, "absent_days": 0, "half_days": 0,
-			 "overtime_minutes": 0, "night_minutes": 0, "late_deduction_amount": 0},
+			{
+				"payroll_period": "2026-06",
+				"present_days": 22,
+				"absent_days": 0,
+				"half_days": 0,
+				"overtime_minutes": 0,
+				"night_minutes": 0,
+				"late_deduction_amount": 0,
+			},
 			{},
 			adjustments=[{"type": "ADVANCE", "amount": 1500000}],
 		)

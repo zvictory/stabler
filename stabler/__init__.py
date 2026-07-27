@@ -4,13 +4,14 @@ __version__ = "0.1.0"
 # This prevents UnknownLocaleError from crashing date/time formatting in the framework.
 try:
 	import babel.core
+
 	_orig_locale_parse = babel.core.Locale.parse
 
-	def patched_locale_parse(identifier, sep='_'):
+	def patched_locale_parse(identifier, sep="_"):
 		if isinstance(identifier, str):
-			cleaned = identifier.lower().replace('-', '_')
-			if cleaned == 'uzc' or cleaned.startswith('uzc_'):
-				identifier = 'uz' + identifier[3:]
+			cleaned = identifier.lower().replace("-", "_")
+			if cleaned == "uzc" or cleaned.startswith("uzc_"):
+				identifier = "uz" + identifier[3:]
 		return _orig_locale_parse(identifier, sep=sep)
 
 	babel.core.Locale.parse = patched_locale_parse
@@ -23,6 +24,7 @@ except Exception:
 # doctype table, calling get_doc("Language", "uzc") throws DoesNotExistError 500.
 try:
 	import frappe
+
 	_orig_get_doc = frappe.get_doc
 	_orig_get_cached_doc = frappe.get_cached_doc
 

@@ -47,15 +47,9 @@ def summary_for_ci(commercial_invoice: str, company: str, *, for_update: bool = 
 		filters={"commercial_invoice": commercial_invoice, "company": company},
 	)
 	if scoped_count != len(container_names):
-		frappe.throw(
-			frappe._(
-				"Cannot verify all container packing lists with your current permissions."
-			)
-		)
+		frappe.throw(frappe._("Cannot verify all container packing lists with your current permissions."))
 	if for_update:
-		containers = _lock_visible_containers(
-			commercial_invoice, company, container_names
-		)
+		containers = _lock_visible_containers(commercial_invoice, company, container_names)
 	rows = (
 		frappe.db.get_values(
 			"Import Container Item",
@@ -119,9 +113,7 @@ def summary_for_ci(commercial_invoice: str, company: str, *, for_update: bool = 
 	reconciliation = packing_math.reconcile_ci_items(ci_items, expected)
 	containers_with_rows = {row.container for row in rows}
 	return {
-		"status": packing_math.packing_readiness(
-			container_names, containers_with_rows, reconciliation
-		),
+		"status": packing_math.packing_readiness(container_names, containers_with_rows, reconciliation),
 		"container_count": len(container_names),
 		"containers_with_items": len(containers_with_rows),
 		"expected_items": expected,
@@ -129,9 +121,7 @@ def summary_for_ci(commercial_invoice: str, company: str, *, for_update: bool = 
 	}
 
 
-def _lock_visible_containers(
-	commercial_invoice: str, company: str, container_names: list[str]
-) -> list:
+def _lock_visible_containers(commercial_invoice: str, company: str, container_names: list[str]) -> list:
 	if not container_names:
 		return []
 	placeholders = ", ".join(["%s"] * len(container_names))
@@ -147,11 +137,7 @@ def _lock_visible_containers(
 		as_dict=True,
 	)
 	if len(containers) != len(container_names):
-		frappe.throw(
-			frappe._(
-				"Container packing is being changed by another user. Please try again."
-			)
-		)
+		frappe.throw(frappe._("Container packing is being changed by another user. Please try again."))
 	return containers
 
 
@@ -162,9 +148,7 @@ def replace_grn_expected_rows(grn, expected_items: list[dict]) -> None:
 
 
 def create_or_get_grn(ci, *, ignore_permissions: bool) -> dict:
-	existing = frappe.db.get_value(
-		"GRN Checklist", {"commercial_invoice": ci.name, "company": ci.company}
-	)
+	existing = frappe.db.get_value("GRN Checklist", {"commercial_invoice": ci.name, "company": ci.company})
 	if existing:
 		return {"name": existing, "created": False}
 
@@ -177,10 +161,8 @@ def create_or_get_grn(ci, *, ignore_permissions: bool) -> dict:
 	replace_grn_expected_rows(grn, summary["expected_items"])
 	try:
 		grn.insert(ignore_permissions=ignore_permissions)
-	except (frappe.DuplicateEntryError, frappe.UniqueValidationError):
-		winner = frappe.db.get_value(
-			"GRN Checklist", {"commercial_invoice": ci.name, "company": ci.company}
-		)
+	except frappe.DuplicateEntryError, frappe.UniqueValidationError:
+		winner = frappe.db.get_value("GRN Checklist", {"commercial_invoice": ci.name, "company": ci.company})
 		if not winner:
 			raise
 		return {"name": winner, "created": False}

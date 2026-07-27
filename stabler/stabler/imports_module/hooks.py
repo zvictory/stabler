@@ -270,9 +270,7 @@ def create_transport_pi(truck_name: str):
 	frappe.db.commit()
 
 
-def _first_unbilled_transport_expense(
-	commercial_invoice, *, truck=None, supplier=None, unlinked=False
-):
+def _first_unbilled_transport_expense(commercial_invoice, *, truck=None, supplier=None, unlinked=False):
 	"""First not-yet-billed Import Expense (category Transport) for the tier lookup.
 
 	Returns ``{"name", "amount", "supplier", "currency"}`` or ``None``. ``truck``
@@ -435,16 +433,12 @@ def _validate_truck_receipt_scope(receipt):
 	if truck.company != grn.company:
 		frappe.throw(frappe._("Truck company must match GRN company."))
 	if truck.commercial_invoice != grn.commercial_invoice:
-		frappe.throw(
-			frappe._("Truck Commercial Invoice must match GRN Commercial Invoice.")
-		)
+		frappe.throw(frappe._("Truck Commercial Invoice must match GRN Commercial Invoice."))
 	return grn, truck
 
 
 def _lock_grn_expected_snapshot(grn_name: str) -> None:
-	commercial_invoice = frappe.db.get_value(
-		"GRN Checklist", grn_name, "commercial_invoice"
-	)
+	commercial_invoice = frappe.db.get_value("GRN Checklist", grn_name, "commercial_invoice")
 	packing_service.lock_commercial_invoices([commercial_invoice])
 	grn_state = frappe.db.get_value(
 		"GRN Checklist",
@@ -456,9 +450,7 @@ def _lock_grn_expected_snapshot(grn_name: str) -> None:
 	if grn_state.expected_snapshot_locked:
 		return
 	grn = frappe.get_doc("GRN Checklist", grn_name)
-	summary = packing_service.summary_for_ci(
-		grn.commercial_invoice, grn.company, for_update=True
-	)
+	summary = packing_service.summary_for_ci(grn.commercial_invoice, grn.company, for_update=True)
 	if summary["status"] != "Ready":
 		frappe.throw(
 			frappe._(
@@ -497,9 +489,7 @@ def _create_pr_for_truck_receipt(tr) -> None:
 	if tr.get("purchase_receipt"):
 		return  # idempotent — already received
 	grn = frappe.get_doc("GRN Checklist", tr.grn_checklist)
-	supplier = grn.supplier or frappe.db.get_value(
-		"Commercial Invoice", grn.commercial_invoice, "supplier"
-	)
+	supplier = grn.supplier or frappe.db.get_value("Commercial Invoice", grn.commercial_invoice, "supplier")
 	if not supplier:
 		frappe.logger("stabler.imports").warning(
 			f"Truck Receipt {tr.name}: no supplier on GRN/CI — cannot create Purchase Receipt"
@@ -527,9 +517,7 @@ def _create_pr_for_truck_receipt(tr) -> None:
 				)
 				batch_no = _ensure_batch(bname, it.grn_item_code, it.get("expiry_date"))
 			else:
-				warnings.append(
-					f"Item {it.grn_item_code} is not batch-tracked; received without a batch."
-				)
+				warnings.append(f"Item {it.grn_item_code} is not batch-tracked; received without a batch.")
 		lines.append(
 			receipt_math.build_pr_line(
 				item_code=it.grn_item_code,
@@ -663,9 +651,7 @@ def grn_before_submit(doc, method=None):
 	if not _should_run(doc):
 		return
 	if flt(doc.received_total_kg) <= 0:
-		frappe.throw(
-			frappe._("GRN Checklist requires at least one received kg before it can be submitted.")
-		)
+		frappe.throw(frappe._("GRN Checklist requires at least one received kg before it can be submitted."))
 	if doc.get("vet_cert_override"):
 		if not set(frappe.get_roles()).intersection(("Imports Manager", "System Manager")):
 			frappe.throw(

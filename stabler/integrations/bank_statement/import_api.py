@@ -9,6 +9,7 @@ on ``Bank Transaction.transaction_id`` and skip any line whose key already
 exists for that bank account. Re-importing the same (or an overlapping)
 statement is therefore safe.
 """
+
 from __future__ import annotations
 
 import base64
@@ -65,9 +66,7 @@ def bank_accounts_for_recon(company: str) -> list[dict]:
 		order_by="account_name",
 	)
 	for r in rows:
-		r["currency"] = (
-			frappe.db.get_value("Account", r.account, "account_currency") if r.account else None
-		)
+		r["currency"] = frappe.db.get_value("Account", r.account, "account_currency") if r.account else None
 	return rows
 
 
@@ -86,7 +85,10 @@ def preview_statement(content_base64: str, bank_account: str | None = None) -> d
 		parsed = parse_xlsx_bytes(raw, our_account=bank_account)
 	else:
 		text_head = raw[:64].decode("ascii", errors="ignore")
-		if "1CClientBankExchange" not in raw[:64].decode("cp1251", errors="ignore") and "1CClientBankExchange" not in text_head:
+		if (
+			"1CClientBankExchange" not in raw[:64].decode("cp1251", errors="ignore")
+			and "1CClientBankExchange" not in text_head
+		):
 			frappe.throw(
 				_("Unsupported statement format. Please upload a 1C ClientBank file or an Excel statement.")
 			)
@@ -133,7 +135,9 @@ def import_statement(
 	else:
 		text = raw.decode("cp1251", errors="ignore")
 		if not is_1c_exchange(text) and not is_1c_exchange(raw.decode("utf-8", errors="ignore")):
-			frappe.throw(_("Unsupported statement format. Please upload a 1C ClientBank file or an Excel statement."))
+			frappe.throw(
+				_("Unsupported statement format. Please upload a 1C ClientBank file or an Excel statement.")
+			)
 		parsed = parse_statement_bytes(raw, our_account=meta.get("bank_account_no") or None)
 		file_format = "1CClientBankExchange"
 
@@ -145,9 +149,7 @@ def import_statement(
 			skipped += 1
 			continue
 		key = r["dedupe_key"]
-		if frappe.db.exists(
-			"Bank Transaction", {"bank_account": bank_account, "transaction_id": key}
-		):
+		if frappe.db.exists("Bank Transaction", {"bank_account": bank_account, "transaction_id": key}):
 			duplicates += 1
 			continue
 		bt = frappe.new_doc("Bank Transaction")
@@ -218,9 +220,19 @@ def list_recent_imports(company: str | None = None, limit: int = 25) -> list[dic
 		"Stabler Bank Import",
 		filters=filters,
 		fields=[
-			"name", "bank_account", "statement_account", "period_from", "period_to",
-			"total_rows", "imported_rows", "duplicate_rows", "skipped_rows",
-			"status", "file_name", "creation", "owner",
+			"name",
+			"bank_account",
+			"statement_account",
+			"period_from",
+			"period_to",
+			"total_rows",
+			"imported_rows",
+			"duplicate_rows",
+			"skipped_rows",
+			"status",
+			"file_name",
+			"creation",
+			"owner",
 		],
 		order_by="creation desc",
 		limit=min(int(limit or 25), 100),

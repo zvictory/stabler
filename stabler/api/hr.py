@@ -15,9 +15,7 @@ from stabler.api.approvals import _assert_company_scope
 # ---------------------------------------------------------------------------
 
 #: Roles whose holders may read/write salary-sensitive fields.
-_PAYROLL_VISIBLE_ROLES = frozenset(
-	("Accounts Manager", "Payroll Manager", "HR Manager", "System Manager")
-)
+_PAYROLL_VISIBLE_ROLES = frozenset(("Accounts Manager", "Payroll Manager", "HR Manager", "System Manager"))
 
 #: Fields masked for non-payroll-visible users.
 SALARY_FIELDS = frozenset(("custom_base_salary", "custom_allowance_config"))
@@ -50,9 +48,7 @@ _EMPLOYEE_CUSTOM_FIELDS = (
 )
 
 #: All writable field names (whitelist for update_employee).
-_EMPLOYEE_WRITABLE_FIELDS = frozenset(
-	_EMPLOYEE_NATIVE_FIELDS + _EMPLOYEE_CUSTOM_FIELDS
-)
+_EMPLOYEE_WRITABLE_FIELDS = frozenset(_EMPLOYEE_NATIVE_FIELDS + _EMPLOYEE_CUSTOM_FIELDS)
 
 #: Enum validators for custom fields.
 _VALID_SHIFT_CLASS = frozenset(("DAY", "NIGHT", "OFFICE", "LIGHT"))
@@ -66,6 +62,7 @@ def _user_can_see_salary(user: str | None = None) -> bool:
 	if user in ("Administrator",):
 		return True
 	from stabler.api.organization import _ADMIN_ROLES
+
 	roles = set(frappe.get_roles(user))
 	return bool(roles & (_PAYROLL_VISIBLE_ROLES | set(_ADMIN_ROLES)))
 
@@ -202,11 +199,15 @@ def create_employee(
 
 	# Validate custom enums
 	if custom_shift_class and custom_shift_class not in _VALID_SHIFT_CLASS:
-		frappe.throw(f"Invalid custom_shift_class: {custom_shift_class}. Must be one of {sorted(_VALID_SHIFT_CLASS)}.")
+		frappe.throw(
+			f"Invalid custom_shift_class: {custom_shift_class}. Must be one of {sorted(_VALID_SHIFT_CLASS)}."
+		)
 	if custom_region and custom_region not in _VALID_REGION:
 		frappe.throw(f"Invalid custom_region: {custom_region}. Must be one of {sorted(_VALID_REGION)}.")
 	if custom_work_mode and custom_work_mode not in _VALID_WORK_MODE:
-		frappe.throw(f"Invalid custom_work_mode: {custom_work_mode}. Must be one of {sorted(_VALID_WORK_MODE)}.")
+		frappe.throw(
+			f"Invalid custom_work_mode: {custom_work_mode}. Must be one of {sorted(_VALID_WORK_MODE)}."
+		)
 
 	# Validate stake_coefficient
 	coeff = flt(custom_stake_coefficient or 1.0)
@@ -304,7 +305,9 @@ def update_employee(name: str, payload=None):
 	# Validate enum fields if present in payload
 	shift_class = payload.get("custom_shift_class")
 	if shift_class is not None and shift_class not in _VALID_SHIFT_CLASS:
-		frappe.throw(f"Invalid custom_shift_class: {shift_class}. Must be one of {sorted(_VALID_SHIFT_CLASS)}.")
+		frappe.throw(
+			f"Invalid custom_shift_class: {shift_class}. Must be one of {sorted(_VALID_SHIFT_CLASS)}."
+		)
 
 	region = payload.get("custom_region")
 	if region is not None and region not in _VALID_REGION:
@@ -388,9 +391,7 @@ def list_departments(company: str = "", search: str = "", limit: int = 50):
 	params: dict = {"limit": int(limit)}
 	if company:
 		if allowed and company not in allowed:
-			frappe.throw(
-				frappe._("Not permitted for company {0}").format(company), frappe.PermissionError
-			)
+			frappe.throw(frappe._("Not permitted for company {0}").format(company), frappe.PermissionError)
 		conds.append("(company = %(c)s OR company IS NULL OR company = '')")
 		params["c"] = company
 	elif allowed:
@@ -726,14 +727,22 @@ def set_attendance(
 		doc.out_time = f"{att_date} {out_time}:00"
 	doc.late_entry = 1 if lm > 0 else 0
 	doc.early_exit = 1 if em > 0 else 0
-	for fn, val in (("custom_late_minutes", lm), ("custom_early_minutes", em), ("custom_overtime_minutes", ot)):
+	for fn, val in (
+		("custom_late_minutes", lm),
+		("custom_early_minutes", em),
+		("custom_overtime_minutes", ot),
+	):
 		if frappe.db.has_column("Attendance", fn):
 			doc.set(fn, val)
 	doc.insert()
 	doc.submit()
 	return {
-		"name": doc.name, "employee": employee, "day": att_date.day,
-		"status": status, "late": lm > 0, "docstatus": doc.docstatus,
+		"name": doc.name,
+		"employee": employee,
+		"day": att_date.day,
+		"status": status,
+		"late": lm > 0,
+		"docstatus": doc.docstatus,
 	}
 
 
@@ -754,8 +763,15 @@ def get_attendance_cell(company: str, employee: str, attendance_date: str) -> di
 		as_dict=True,
 	)
 	if not rec:
-		return {"status": None, "in_time": "", "out_time": "", "late_minutes": 0,
-			"early_minutes": 0, "overtime_minutes": 0, "locked": locked}
+		return {
+			"status": None,
+			"in_time": "",
+			"out_time": "",
+			"late_minutes": 0,
+			"early_minutes": 0,
+			"overtime_minutes": 0,
+			"locked": locked,
+		}
 	return {
 		"status": rec.status,
 		"in_time": _hm(rec.in_time),
@@ -927,7 +943,14 @@ def attendance_matrix_xlsx(company: str, period: str = "", department: str = "")
 	# Legend.
 	lr = r + 1
 	ws.cell(row=lr, column=1, value="Legend:").font = Font(bold=True)
-	leg = [("P", "Present"), ("A", "Absent"), ("L", "On Leave"), ("H", "Half Day"), ("W", "WFH"), ("*", "Late")]
+	leg = [
+		("P", "Present"),
+		("A", "Absent"),
+		("L", "On Leave"),
+		("H", "Half Day"),
+		("W", "WFH"),
+		("*", "Late"),
+	]
 	for i, (code, label) in enumerate(leg):
 		letter = _ATT_XLSX_LETTER.get(code, code)
 		c = ws.cell(row=lr, column=2 + i, value=f"{letter} {label}")
@@ -1111,14 +1134,8 @@ def salary_slip_detail(name: str):
 	if not name or not frappe.db.exists("Salary Slip", name):
 		frappe.throw(f"Unknown salary slip: {name}")
 	doc = frappe.get_doc("Salary Slip", name)
-	earnings = [
-		{"component": r.salary_component, "amount": flt(r.amount)}
-		for r in (doc.earnings or [])
-	]
-	deductions = [
-		{"component": r.salary_component, "amount": flt(r.amount)}
-		for r in (doc.deductions or [])
-	]
+	earnings = [{"component": r.salary_component, "amount": flt(r.amount)} for r in (doc.earnings or [])]
+	deductions = [{"component": r.salary_component, "amount": flt(r.amount)} for r in (doc.deductions or [])]
 	return {
 		"name": doc.name,
 		"employee": doc.employee,

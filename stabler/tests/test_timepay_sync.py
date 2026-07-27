@@ -64,7 +64,9 @@ class EventsFromDailyStatTest(unittest.TestCase):
 		self.assertEqual(events[1]["direction"], "OUT")
 
 	def test_missing_checkout_only_creates_checkin_event(self):
-		events = events_from_daily_stat(row(stats={"first_check_in": "09:01", "last_check_out": None}), date="2026-06-15")
+		events = events_from_daily_stat(
+			row(stats={"first_check_in": "09:01", "last_check_out": None}), date="2026-06-15"
+		)
 
 		self.assertEqual(len(events), 1)
 		self.assertEqual(events[0]["direction"], "IN")
@@ -72,9 +74,11 @@ class EventsFromDailyStatTest(unittest.TestCase):
 
 class SyncDateTest(unittest.TestCase):
 	def test_sync_date_inserts_new_raw_events_and_logs_them(self):
-		client = FakeClient([
-			{"count": 1, "next": None, "previous": None, "results": [row()]},
-		])
+		client = FakeClient(
+			[
+				{"count": 1, "next": None, "previous": None, "results": [row()]},
+			]
+		)
 		repo = FakeRepo()
 
 		out = sync_date(client=client, repo=repo, date="2026-06-15", page_limit=50)
@@ -84,9 +88,11 @@ class SyncDateTest(unittest.TestCase):
 		self.assertEqual([log["result"] for log in repo.logs], ["Processed", "Processed"])
 
 	def test_sync_date_can_limit_to_one_timepay_employee(self):
-		client = FakeClient([
-			{"count": 1, "next": None, "previous": None, "results": [row()]},
-		])
+		client = FakeClient(
+			[
+				{"count": 1, "next": None, "previous": None, "results": [row()]},
+			]
+		)
 		repo = FakeRepo()
 
 		sync_date(client=client, repo=repo, date="2026-06-15", employee_ids=[10783])
@@ -95,9 +101,11 @@ class SyncDateTest(unittest.TestCase):
 
 	def test_sync_date_skips_existing_dedupe_keys_and_logs_duplicate(self):
 		existing = events_from_daily_stat(row(), date="2026-06-15")[0]
-		client = FakeClient([
-			{"count": 1, "next": None, "previous": None, "results": [row()]},
-		])
+		client = FakeClient(
+			[
+				{"count": 1, "next": None, "previous": None, "results": [row()]},
+			]
+		)
 		repo = FakeRepo(seen={dedupe_key(existing)})
 
 		out = sync_date(client=client, repo=repo, date="2026-06-15", page_limit=50)

@@ -103,8 +103,12 @@ def _upsert_deal(norm: dict, status_raw, status_id, status_name) -> dict:
 		_apply_fields(doc, norm, status_raw)
 		_maybe_set_terminal_status(doc, status_id, status_name)
 		doc.save(ignore_permissions=True)
-		return {"action": "updated", "deal": doc.name, "owner": doc.get("deal_owner"),
-		        "changed": bool(status_raw) and status_raw != old_status}
+		return {
+			"action": "updated",
+			"deal": doc.name,
+			"owner": doc.get("deal_owner"),
+			"changed": bool(status_raw) and status_raw != old_status,
+		}
 
 	doc = frappe.new_doc("CRM Deal")
 	# organization = the buyer org (UZEX "seller"); fall back to the lot title.
@@ -115,8 +119,12 @@ def _upsert_deal(norm: dict, status_raw, status_id, status_name) -> dict:
 	_maybe_set_terminal_status(doc, status_id, status_name)
 	doc.insert(ignore_permissions=True)
 	# A brand-new tracked lot is itself a change worth surfacing.
-	return {"action": "created", "deal": doc.name, "owner": doc.get("deal_owner"),
-	        "changed": bool(status_raw)}
+	return {
+		"action": "created",
+		"deal": doc.name,
+		"owner": doc.get("deal_owner"),
+		"changed": bool(status_raw),
+	}
 
 
 def fetch_and_store() -> dict[str, Any]:

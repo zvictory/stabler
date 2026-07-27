@@ -49,16 +49,18 @@ def events_from_daily_stat(row: dict[str, Any], *, date: str) -> list[dict[str, 
 		timestamp = _normalize_time(date, stats.get(fieldname))
 		if not timestamp:
 			continue
-		events.append({
-			"external_event_id": f"timepay:{date}:{device_user_id}:{suffix}",
-			"device_user_id": device_user_id,
-			"device_user_name": device_user_name,
-			"timestamp": timestamp,
-			"direction": direction,
-			"source": "TIMEPAY_API",
-			"processing_status": "Pending",
-			"raw_payload": raw_payload,
-		})
+		events.append(
+			{
+				"external_event_id": f"timepay:{date}:{device_user_id}:{suffix}",
+				"device_user_id": device_user_id,
+				"device_user_name": device_user_name,
+				"timestamp": timestamp,
+				"direction": direction,
+				"source": "TIMEPAY_API",
+				"processing_status": "Pending",
+				"raw_payload": raw_payload,
+			}
+		)
 	return events
 
 
@@ -88,23 +90,31 @@ class FrappeRawEventRepository:
 			fields=["external_event_id"],
 			limit_page_length=10000,
 		)
-		return {dedupe_key({"external_event_id": row["external_event_id"]}) for row in rows if row.get("external_event_id")}
+		return {
+			dedupe_key({"external_event_id": row["external_event_id"]})
+			for row in rows
+			if row.get("external_event_id")
+		}
 
 	def insert_raw_event(self, event: dict[str, Any]) -> str:
-		doc = frappe.get_doc({
-			"doctype": RAW_EVENT,
-			"device": self.device,
-			**event,
-		})
+		doc = frappe.get_doc(
+			{
+				"doctype": RAW_EVENT,
+				"device": self.device,
+				**event,
+			}
+		)
 		doc.insert(ignore_permissions=True)
 		return doc.name
 
 	def log(self, **kwargs) -> None:
-		doc = frappe.get_doc({
-			"doctype": PROCESSING_LOG,
-			"processor_version": "timepay-sync-v1",
-			**kwargs,
-		})
+		doc = frappe.get_doc(
+			{
+				"doctype": PROCESSING_LOG,
+				"processor_version": "timepay-sync-v1",
+				**kwargs,
+			}
+		)
 		doc.insert(ignore_permissions=True)
 
 
@@ -156,15 +166,17 @@ def sync_date(
 def ensure_timepay_device() -> str:
 	if frappe.db.exists("Stabler Gate Device", TIMEPAY_DEVICE_NAME):
 		return TIMEPAY_DEVICE_NAME
-	doc = frappe.get_doc({
-		"doctype": "Stabler Gate Device",
-		"device_name": TIMEPAY_DEVICE_NAME,
-		"device_type": "API",
-		"integration_type": "Timepay",
-		"enabled": 1,
-		"timezone": "Asia/Tashkent",
-		"status": "Active",
-	})
+	doc = frappe.get_doc(
+		{
+			"doctype": "Stabler Gate Device",
+			"device_name": TIMEPAY_DEVICE_NAME,
+			"device_type": "API",
+			"integration_type": "Timepay",
+			"enabled": 1,
+			"timezone": "Asia/Tashkent",
+			"status": "Active",
+		}
+	)
 	doc.insert(ignore_permissions=True)
 	return doc.name
 
@@ -175,7 +187,9 @@ def _settings_enabled() -> bool:
 	return bool(frappe.db.get_single_value("Stabler Timepay Credential", "enabled"))
 
 
-def sync_range(start_date: str, end_date: str | None = None, employee_ids: list[int] | None = None) -> dict[str, int]:
+def sync_range(
+	start_date: str, end_date: str | None = None, employee_ids: list[int] | None = None
+) -> dict[str, int]:
 	if not _settings_enabled():
 		return {"inserted": 0, "duplicates": 0, "rows_seen": 0}
 	config = get_client_config()

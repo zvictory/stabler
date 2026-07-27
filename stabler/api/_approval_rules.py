@@ -62,7 +62,7 @@ IGNORE_FIELDS = frozenset(
 def _to_float(value) -> float:
 	try:
 		return float(value)
-	except (TypeError, ValueError):
+	except TypeError, ValueError:
 		return 0.0
 
 
@@ -84,7 +84,7 @@ def _clean_tiers(tiers) -> list:
 			level = int(t["level"])
 			role = str(t["approver_role"]).strip()
 			thr = _to_float(t.get("threshold", 0))
-		except (KeyError, TypeError, ValueError):
+		except KeyError, TypeError, ValueError:
 			continue
 		if not role or level < 1:
 			continue
@@ -108,7 +108,11 @@ def resolve_required_tiers(base_amount, tiers) -> list:
 	"""
 	cleaned = _clean_tiers(tiers)
 	amount = _to_float(base_amount)
-	return [t.copy() for t in cleaned if amount >= (t["threshold"] if t["threshold"] > 0 else 0) or t["threshold"] <= 0]
+	return [
+		t.copy()
+		for t in cleaned
+		if amount >= (t["threshold"] if t["threshold"] > 0 else 0) or t["threshold"] <= 0
+	]
 
 
 def is_fully_approved(required_tiers, approvals_so_far) -> bool:
@@ -120,10 +124,10 @@ def is_fully_approved(required_tiers, approvals_so_far) -> bool:
 	if not required_tiers:
 		return True  # No tiers configured → not this function's concern.
 	approved_levels = set()
-	for a in (approvals_so_far or []):
+	for a in approvals_so_far or []:
 		try:
 			approved_levels.add(int(a["level"]))
-		except (KeyError, TypeError, ValueError):
+		except KeyError, TypeError, ValueError:
 			continue
 	return all(t["level"] in approved_levels for t in required_tiers)
 
@@ -136,10 +140,10 @@ def next_required_level(required_tiers, approvals_so_far) -> int | None:
 	if not required_tiers:
 		return None
 	approved_levels = set()
-	for a in (approvals_so_far or []):
+	for a in approvals_so_far or []:
 		try:
 			approved_levels.add(int(a["level"]))
-		except (KeyError, TypeError, ValueError):
+		except KeyError, TypeError, ValueError:
 			continue
 	for t in required_tiers:  # already sorted by level
 		if t["level"] not in approved_levels:
@@ -158,10 +162,10 @@ def approval_is_in_sequence(level: int, required_tiers, approvals_so_far) -> boo
 	if level not in required_levels:
 		return False
 	approved_levels = set()
-	for a in (approvals_so_far or []):
+	for a in approvals_so_far or []:
 		try:
 			approved_levels.add(int(a["level"]))
-		except (KeyError, TypeError, ValueError):
+		except KeyError, TypeError, ValueError:
 			continue
 	# All required levels strictly below ``level`` must be approved.
 	return all(lvl in approved_levels for lvl in required_levels if lvl < level)
@@ -179,7 +183,7 @@ def would_be_double_approve(level: int, approver: str, approvals_so_far) -> bool
 		try:
 			if int(a["level"]) == level and str(a.get("approver", "")) == approver:
 				return True
-		except (TypeError, ValueError):
+		except TypeError, ValueError:
 			continue
 	return False
 
@@ -216,7 +220,7 @@ def docstatus_kind(changed_rows) -> str | None:
 		if len(row) >= 3 and row[0] == "docstatus":
 			try:
 				new_i = int(row[2])
-			except (TypeError, ValueError):
+			except TypeError, ValueError:
 				continue
 			if new_i == 1:
 				return "submit"

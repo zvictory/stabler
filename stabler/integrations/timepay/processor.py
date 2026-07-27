@@ -68,17 +68,27 @@ def _mapping_rows() -> list[dict]:
 	rows = frappe.get_all(
 		MAPPING,
 		filters={"status": "Active"},
-		fields=["employee", "device", "device_user_id", "timepay_full_name", "active_from", "active_to", "status"],
+		fields=[
+			"employee",
+			"device",
+			"device_user_id",
+			"timepay_full_name",
+			"active_from",
+			"active_to",
+			"status",
+		],
 		limit_page_length=10000,
 	)
 	out = []
 	for row in rows:
-		out.append({
-			**row,
-			"device_id": row.get("device"),
-			"active_from": str(row.get("active_from") or ""),
-			"active_to": str(row.get("active_to") or ""),
-		})
+		out.append(
+			{
+				**row,
+				"device_id": row.get("device"),
+				"active_from": str(row.get("active_from") or ""),
+				"active_to": str(row.get("active_to") or ""),
+			}
+		)
 	return out
 
 
@@ -114,13 +124,15 @@ def _set_raw_status(events: list[dict], status: str, **values) -> None:
 
 
 def _log(raw_event: str | None, result: str, **values) -> None:
-	frappe.get_doc({
-		"doctype": LOG,
-		"raw_event": raw_event,
-		"processor_version": PROCESSOR_VERSION,
-		"result": result,
-		**values,
-	}).insert(ignore_permissions=True)
+	frappe.get_doc(
+		{
+			"doctype": LOG,
+			"raw_event": raw_event,
+			"processor_version": PROCESSOR_VERSION,
+			"result": result,
+			**values,
+		}
+	).insert(ignore_permissions=True)
 
 
 def _upsert_exception(
@@ -262,15 +274,17 @@ def _checkin_for_event(employee: str, event: dict, shift_type: str | None) -> st
 	)
 	if existing:
 		return existing
-	doc = frappe.get_doc({
-		"doctype": "Employee Checkin",
-		"employee": employee,
-		"time": event["timestamp"],
-		"log_type": event["direction"],
-		"device_id": event.get("device"),
-		"shift": shift_type,
-		"skip_auto_attendance": 1,
-	})
+	doc = frappe.get_doc(
+		{
+			"doctype": "Employee Checkin",
+			"employee": employee,
+			"time": event["timestamp"],
+			"log_type": event["direction"],
+			"device_id": event.get("device"),
+			"shift": shift_type,
+			"skip_auto_attendance": 1,
+		}
+	)
 	doc.insert(ignore_permissions=True)
 	return doc.name
 
@@ -340,7 +354,9 @@ def _process_group(group: dict) -> dict:
 	events = group["events"]
 	ctx = _employee_context(employee, date)
 	if _has_manual_correction(employee, date, ctx["company"]):
-		_set_raw_status(events, "Pending", matched_employee=employee, error_message="Skipped: manual correction applied")
+		_set_raw_status(
+			events, "Pending", matched_employee=employee, error_message="Skipped: manual correction applied"
+		)
 		for event in events:
 			_log(event["name"], "Skipped Manual", before_value=_json(event))
 		return {"processed": 0, "skipped_manual": len(events), "errors": 0}
@@ -412,7 +428,9 @@ def _mark_unmatched(event: dict, employees_by_timepay_id: dict[str, list[str]]) 
 		raw_event=event["name"],
 		details=_unmatched_details(event, employees_by_timepay_id),
 	)
-	_set_raw_status([event], "Unmatched", error_message="No active mapping or unique Employee custom_timepay_id")
+	_set_raw_status(
+		[event], "Unmatched", error_message="No active mapping or unique Employee custom_timepay_id"
+	)
 	_log(event["name"], "Unmatched", before_value=_json(event))
 
 
@@ -439,7 +457,9 @@ def process_pending(date: str | None = None, employee: str | None = None, limit:
 			_set_raw_status(group["events"], "Error", error_message=msg[:1000])
 			for event in group["events"]:
 				_log(event["name"], "Error", error=msg[:2000], before_value=_json(event))
-			frappe.log_error(title=f"timepay processor failed {group['employee']} {group['date']}", message=msg)
+			frappe.log_error(
+				title=f"timepay processor failed {group['employee']} {group['date']}", message=msg
+			)
 	frappe.db.commit()
 	return out
 

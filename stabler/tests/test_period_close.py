@@ -31,6 +31,7 @@ from stabler.api._period_close import (
 # _to_date coercion
 # ---------------------------------------------------------------------------
 
+
 class ToDateTest(unittest.TestCase):
 	def test_none_returns_none(self):
 		self.assertIsNone(_to_date(None))
@@ -56,7 +57,7 @@ class ToDateTest(unittest.TestCase):
 	def test_garbage_string_returns_none(self):
 		self.assertIsNone(_to_date("not-a-date"))
 		self.assertIsNone(_to_date("31/03/2025"))
-		self.assertIsNone(_to_date("2025-13-01"))	# month 13 invalid
+		self.assertIsNone(_to_date("2025-13-01"))  # month 13 invalid
 
 	def test_integer_returns_none(self):
 		self.assertIsNone(_to_date(20250331))
@@ -69,8 +70,8 @@ class ToDateTest(unittest.TestCase):
 # is_closed
 # ---------------------------------------------------------------------------
 
-class IsClosedTest(unittest.TestCase):
 
+class IsClosedTest(unittest.TestCase):
 	# --- close_date absent → always open ---
 
 	def test_none_close_date_always_open(self):
@@ -149,8 +150,8 @@ class IsClosedTest(unittest.TestCase):
 # assert_posting_allowed
 # ---------------------------------------------------------------------------
 
-class AssertPostingAllowedTest(unittest.TestCase):
 
+class AssertPostingAllowedTest(unittest.TestCase):
 	# --- allowed cases (no exception raised) ---
 
 	def test_no_close_date_always_allowed(self):

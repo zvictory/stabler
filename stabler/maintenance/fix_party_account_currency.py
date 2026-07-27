@@ -102,17 +102,19 @@ def execute(dry_run: bool = True, company: str = "ANJAN") -> None:
 			outstanding_base = flt(si.outstanding_amount) * flt(si.conversion_rate)
 			outstanding_foreign = flt(si.outstanding_amount)
 
-			results.append({
-				"party_type": "Customer",
-				"party": si.customer,
-				"voucher_type": "Sales Invoice",
-				"voucher_no": si.name,
-				"old_account": si.debit_to,
-				"new_account": correct_account,
-				"amount_foreign": outstanding_foreign,
-				"amount_base": outstanding_base,
-				"currency": si.currency,
-			})
+			results.append(
+				{
+					"party_type": "Customer",
+					"party": si.customer,
+					"voucher_type": "Sales Invoice",
+					"voucher_no": si.name,
+					"old_account": si.debit_to,
+					"new_account": correct_account,
+					"amount_foreign": outstanding_foreign,
+					"amount_base": outstanding_base,
+					"currency": si.currency,
+				}
+			)
 
 	# --- 2. Diagnose & Fix Purchase Invoices ---
 	purchase_invoices = frappe.get_all(
@@ -135,17 +137,19 @@ def execute(dry_run: bool = True, company: str = "ANJAN") -> None:
 			outstanding_base = flt(pi.outstanding_amount) * flt(pi.conversion_rate)
 			outstanding_foreign = flt(pi.outstanding_amount)
 
-			results.append({
-				"party_type": "Supplier",
-				"party": pi.supplier,
-				"voucher_type": "Purchase Invoice",
-				"voucher_no": pi.name,
-				"old_account": pi.credit_to,
-				"new_account": correct_account,
-				"amount_foreign": outstanding_foreign,
-				"amount_base": outstanding_base,
-				"currency": pi.currency,
-			})
+			results.append(
+				{
+					"party_type": "Supplier",
+					"party": pi.supplier,
+					"voucher_type": "Purchase Invoice",
+					"voucher_no": pi.name,
+					"old_account": pi.credit_to,
+					"new_account": correct_account,
+					"amount_foreign": outstanding_foreign,
+					"amount_base": outstanding_base,
+					"currency": pi.currency,
+				}
+			)
 
 	# Write CSV results log
 	csv_filepath = "/tmp/fix_party_account_results.csv"
@@ -153,9 +157,16 @@ def execute(dry_run: bool = True, company: str = "ANJAN") -> None:
 		writer = csv.DictWriter(
 			f,
 			fieldnames=[
-				"party_type", "party", "voucher_type", "voucher_no",
-				"old_account", "new_account", "amount_foreign", "amount_base", "currency"
-			]
+				"party_type",
+				"party",
+				"voucher_type",
+				"voucher_no",
+				"old_account",
+				"new_account",
+				"amount_foreign",
+				"amount_base",
+				"currency",
+			],
 		)
 		writer.writeheader()
 		for row in results:

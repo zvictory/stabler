@@ -131,14 +131,14 @@ class SummarizeVersionTest(unittest.TestCase):
 #   level 1: Department Manager  threshold 0      (all docs)
 #   level 2: Finance Director    threshold 5_000  (large docs only)
 TWO_TIER = [
-	{"threshold": 0,    "approver_role": "Department Manager", "level": 1},
-	{"threshold": 5000, "approver_role": "Finance Director",   "level": 2},
+	{"threshold": 0, "approver_role": "Department Manager", "level": 1},
+	{"threshold": 5000, "approver_role": "Finance Director", "level": 2},
 ]
 
 THREE_TIER = [
-	{"threshold": 0,      "approver_role": "Team Lead",         "level": 1},
-	{"threshold": 10000,  "approver_role": "Finance Manager",   "level": 2},
-	{"threshold": 100000, "approver_role": "CFO",               "level": 3},
+	{"threshold": 0, "approver_role": "Team Lead", "level": 1},
+	{"threshold": 10000, "approver_role": "Finance Manager", "level": 2},
+	{"threshold": 100000, "approver_role": "CFO", "level": 3},
 ]
 
 
@@ -179,7 +179,7 @@ class ResolveRequiredTiersTest(unittest.TestCase):
 		bad_tiers = [
 			None,
 			"not-a-dict",
-			{"threshold": 0},             # missing role and level
+			{"threshold": 0},  # missing role and level
 			{"threshold": 0, "approver_role": "", "level": 1},  # blank role → dropped
 			{"threshold": 0, "approver_role": "Manager", "level": 0},  # level 0 → dropped
 			{"threshold": 0, "approver_role": "Manager", "level": 1},  # good
@@ -423,8 +423,8 @@ class PurchaseInvoiceTierConfigTest(unittest.TestCase):
 	def _pi_tiers(self):
 		# Typical PI tier config: every PI needs L1; large ones need L2.
 		return [
-			{"threshold": 0,      "approver_role": "Purchase Manager", "level": 1},
-			{"threshold": 50000,  "approver_role": "Accounts Manager", "level": 2},
+			{"threshold": 0, "approver_role": "Purchase Manager", "level": 1},
+			{"threshold": 50000, "approver_role": "Accounts Manager", "level": 2},
 		]
 
 	def test_small_pi_needs_only_purchase_manager(self):
@@ -470,9 +470,7 @@ class PurchaseInvoiceTierConfigTest(unittest.TestCase):
 		# Cannot jump straight to level 2.
 		self.assertFalse(approval_is_in_sequence(2, tiers, []))
 		# After level 1, level 2 is OK.
-		self.assertTrue(
-			approval_is_in_sequence(2, tiers, [{"level": 1, "approver": "pm@x.uz"}])
-		)
+		self.assertTrue(approval_is_in_sequence(2, tiers, [{"level": 1, "approver": "pm@x.uz"}]))
 
 
 if __name__ == "__main__":

@@ -51,10 +51,14 @@ _UNDER_BENCH = _under_bench()
 
 mock_frappe = MagicMock()
 mock_frappe._ = lambda s: s
+
+
 def _passthrough_whitelist(*args, **kwargs):
 	if len(args) == 1 and callable(args[0]):
 		return args[0]
 	return lambda fn: fn
+
+
 mock_frappe.whitelist = _passthrough_whitelist
 mock_utils = MagicMock()
 mock_utils.flt = lambda v, p=None: float(v or 0)
@@ -65,14 +69,14 @@ mock_recon = MagicMock()
 mock_erpnext = MagicMock()
 
 _FAKES = {
-	'frappe': mock_frappe,
-	'frappe.utils': mock_utils,
-	'stabler.api._common': mock_common,
-	'stabler.api.approvals': mock_appr,
-	'stabler.api._stock_recon': mock_recon,
-	'erpnext': mock_erpnext,
-	'erpnext.stock': mock_erpnext,
-	'erpnext.stock.get_item_details': mock_erpnext,
+	"frappe": mock_frappe,
+	"frappe.utils": mock_utils,
+	"stabler.api._common": mock_common,
+	"stabler.api.approvals": mock_appr,
+	"stabler.api._stock_recon": mock_recon,
+	"erpnext": mock_erpnext,
+	"erpnext.stock": mock_erpnext,
+	"erpnext.stock.get_item_details": mock_erpnext,
 }
 inventory = None
 if not _UNDER_BENCH:

@@ -91,16 +91,32 @@ def so_board(company: str, tender_only: int = 0) -> dict:
 	_ensure_default_stages()
 
 	stages = _stages()
-	first_open = next((s["name"] for s in stages if not s["is_closed"]), stages[0]["name"] if stages else None)
+	first_open = next(
+		(s["name"] for s in stages if not s["is_closed"]), stages[0]["name"] if stages else None
+	)
 
-	so_filters = {"company": company, "docstatus": ["<", 2]} if int(tender_only or 0) else {"company": company, "docstatus": 1}
+	so_filters = (
+		{"company": company, "docstatus": ["<", 2]}
+		if int(tender_only or 0)
+		else {"company": company, "docstatus": 1}
+	)
 	sos = frappe.get_list(
 		"Sales Order",
 		filters=so_filters,
 		fields=[
-			"name", "customer", "customer_name", "transaction_date", "delivery_date",
-			"currency", "rounded_total", "grand_total", "per_delivered", "per_billed",
-			"status", "custom_board_stage", "custom_crm_deal",
+			"name",
+			"customer",
+			"customer_name",
+			"transaction_date",
+			"delivery_date",
+			"currency",
+			"rounded_total",
+			"grand_total",
+			"per_delivered",
+			"per_billed",
+			"status",
+			"custom_board_stage",
+			"custom_crm_deal",
 		],
 		order_by="transaction_date desc",
 		limit_page_length=2000,
@@ -149,7 +165,15 @@ def move_so_stage(name: str, stage: str) -> dict:
 
 
 @frappe.whitelist()
-def so_stage_save(company: str, stage_name: str, position: int = 0, color: str = "", is_won: int = 0, is_closed: int = 0, old_name: str = "") -> dict:
+def so_stage_save(
+	company: str,
+	stage_name: str,
+	position: int = 0,
+	color: str = "",
+	is_won: int = 0,
+	is_closed: int = 0,
+	old_name: str = "",
+) -> dict:
 	"""Create or rename/update a board stage (manager-defined)."""
 	_assert_company_scope(company)  # tenant isolation: reject a foreign company arg
 	_require_tender(company)
@@ -159,7 +183,9 @@ def so_stage_save(company: str, stage_name: str, position: int = 0, color: str =
 		frappe.throw(_("Stage name is required."))
 	if old_name and old_name != stage_name and frappe.db.exists(_STAGE, old_name):
 		frappe.rename_doc(_STAGE, old_name, stage_name, force=False)
-	doc = frappe.get_doc(_STAGE, stage_name) if frappe.db.exists(_STAGE, stage_name) else frappe.new_doc(_STAGE)
+	doc = (
+		frappe.get_doc(_STAGE, stage_name) if frappe.db.exists(_STAGE, stage_name) else frappe.new_doc(_STAGE)
+	)
 	doc.stage_name = stage_name
 	doc.position = int(position or 0)
 	doc.color = color or doc.color
@@ -213,8 +239,17 @@ def _po_lane(docstatus: int, per_received: float) -> str:
 # `label` is free text so the plan can hold literally any cost item; `type` only
 # drives the icon/colour. Stored per-PO as a JSON array in `custom_landed_charges`.
 _CHARGE_TYPES = (
-	"transport", "customs", "certification", "insurance", "storage",
-	"declarant", "legal", "broker", "loading", "bank", "other",
+	"transport",
+	"customs",
+	"certification",
+	"insurance",
+	"storage",
+	"declarant",
+	"legal",
+	"broker",
+	"loading",
+	"bank",
+	"other",
 )
 
 
@@ -227,7 +262,7 @@ def _parse_landed(raw) -> list[dict]:
 		return []
 	try:
 		data = raw if isinstance(raw, list) else json.loads(raw)
-	except (ValueError, TypeError):
+	except ValueError, TypeError:
 		return []
 	out: list[dict] = []
 	for it in data if isinstance(data, list) else []:
@@ -236,32 +271,34 @@ def _parse_landed(raw) -> list[dict]:
 		ctype = str(it.get("type") or "other")
 		if ctype not in _CHARGE_TYPES:
 			ctype = "other"
-		out.append({
-			"type": ctype,
-			"label": str(it.get("label") or "").strip()[:140],
-			"amount": flt(it.get("amount")),          # planned
-			"actual": flt(it.get("actual")),          # actual (recorded from real invoices)
-			"tnved": str(it.get("tnved") or "").strip()[:40],
-			"supplier": str(it.get("supplier") or "").strip()[:140],
-			"supplier_name": str(it.get("supplier_name") or "").strip()[:140],
-			# Customs calculator inputs (ГТД): customs value (CIF) + duty% + excise% + VAT%.
-			"cif": flt(it.get("cif")),
-			"duty_pct": flt(it.get("duty_pct")),
-			"excise_pct": flt(it.get("excise_pct")),
-			"vat_pct": flt(it.get("vat_pct")),
-			# WP-T1: for a VAT-registered company (Mikas) import VAT is RECOVERABLE
-			# input tax — it must NOT be capitalized into landed cost (IAS 2 §11;
-			# same stance as the imports LCV engine). Default True so new customs
-			# lines exclude VAT from `amount`; set False only for a non-registered
-			# scenario where VAT becomes a real cost. Legacy lines with no flag keep
-			# their stored amount until re-saved.
-			"vat_recoverable": bool(it.get("vat_recoverable", True)),
-			# WP-T5: the `actual` may be sourced from a real GL voucher (PInv/PE/JE)
-			# instead of hand-typed. When linked, the amount is pulled read-only from
-			# the document's base total so plan-vs-actual reflects the ledger.
-			"actual_voucher_type": str(it.get("actual_voucher_type") or "").strip()[:40],
-			"actual_voucher": str(it.get("actual_voucher") or "").strip()[:140],
-		})
+		out.append(
+			{
+				"type": ctype,
+				"label": str(it.get("label") or "").strip()[:140],
+				"amount": flt(it.get("amount")),  # planned
+				"actual": flt(it.get("actual")),  # actual (recorded from real invoices)
+				"tnved": str(it.get("tnved") or "").strip()[:40],
+				"supplier": str(it.get("supplier") or "").strip()[:140],
+				"supplier_name": str(it.get("supplier_name") or "").strip()[:140],
+				# Customs calculator inputs (ГТД): customs value (CIF) + duty% + excise% + VAT%.
+				"cif": flt(it.get("cif")),
+				"duty_pct": flt(it.get("duty_pct")),
+				"excise_pct": flt(it.get("excise_pct")),
+				"vat_pct": flt(it.get("vat_pct")),
+				# WP-T1: for a VAT-registered company (Mikas) import VAT is RECOVERABLE
+				# input tax — it must NOT be capitalized into landed cost (IAS 2 §11;
+				# same stance as the imports LCV engine). Default True so new customs
+				# lines exclude VAT from `amount`; set False only for a non-registered
+				# scenario where VAT becomes a real cost. Legacy lines with no flag keep
+				# their stored amount until re-saved.
+				"vat_recoverable": bool(it.get("vat_recoverable", True)),
+				# WP-T5: the `actual` may be sourced from a real GL voucher (PInv/PE/JE)
+				# instead of hand-typed. When linked, the amount is pulled read-only from
+				# the document's base total so plan-vs-actual reflects the ledger.
+				"actual_voucher_type": str(it.get("actual_voucher_type") or "").strip()[:40],
+				"actual_voucher": str(it.get("actual_voucher") or "").strip()[:140],
+			}
+		)
 	return out
 
 
@@ -407,8 +444,11 @@ def save_po_landed_charges(po: str, charges) -> dict:
 		frappe.throw(_("Run migrate to enable landed-cost planning."))
 	cleaned = _parse_landed(charges)
 	frappe.db.set_value(
-		"Purchase Order", po, "custom_landed_charges",
-		json.dumps(cleaned, ensure_ascii=False), update_modified=False,
+		"Purchase Order",
+		po,
+		"custom_landed_charges",
+		json.dumps(cleaned, ensure_ascii=False),
+		update_modified=False,
 	)
 	base_total = flt(frappe.db.get_value("Purchase Order", po, "base_grand_total"))
 	charges_total = sum(c["amount"] for c in cleaned)
@@ -447,15 +487,27 @@ def po_control_board(deal: str) -> dict:
 	# (but well-shaped) board instead of erroring.
 	if not frappe.db.has_column("Purchase Order", "custom_crm_deal"):
 		return {
-			"deal": deal, "currency": base_ccy,
+			"deal": deal,
+			"currency": base_ccy,
 			"lanes": [{"key": k, "label": l, "count": 0, "total": 0.0} for k, l in lanes_def],
-			"cards": [], "compare": [],
+			"cards": [],
+			"compare": [],
 			"kpi": {"po_count": 0, "total": 0.0, "received_pct": 0, "vendors": 0},
 		}
 
 	po_fields = [
-		"name", "supplier", "supplier_name", "grand_total", "base_grand_total", "per_received",
-		"per_billed", "status", "currency", "docstatus", "schedule_date", "transaction_date",
+		"name",
+		"supplier",
+		"supplier_name",
+		"grand_total",
+		"base_grand_total",
+		"per_received",
+		"per_billed",
+		"status",
+		"currency",
+		"docstatus",
+		"schedule_date",
+		"transaction_date",
 	]
 	has_landed = frappe.db.has_column("Purchase Order", "custom_landed_charges")
 	if has_landed:
@@ -474,7 +526,8 @@ def po_control_board(deal: str) -> dict:
 	# Landed cost (base currency) = base_grand_total + planned charges. The
 	# vendor comparison ranks on landed, so "cheapest" means cheapest delivered.
 	landed_by_po = {
-		r.name: flt(r.base_grand_total) + sum(c["amount"] for c in _parse_landed(r.get("custom_landed_charges") if has_landed else None))
+		r.name: flt(r.base_grand_total)
+		+ sum(c["amount"] for c in _parse_landed(r.get("custom_landed_charges") if has_landed else None))
 		for r in rows
 	}
 	min_landed = min((landed_by_po[r.name] for r in rows), default=0.0)
@@ -490,7 +543,9 @@ def po_control_board(deal: str) -> dict:
 		landed = flt(landed_by_po[r.name])
 		pr = flt(r.per_received)
 		pb = flt(r.per_billed)
-		delayed = bool(r.docstatus == 1 and pr < 100 and r.schedule_date and getdate(r.schedule_date) < today_d)
+		delayed = bool(
+			r.docstatus == 1 and pr < 100 and r.schedule_date and getdate(r.schedule_date) < today_d
+		)
 		badges: list[str] = []
 		if landed and landed == min_landed:
 			badges.append("cheapest")
@@ -504,20 +559,38 @@ def po_control_board(deal: str) -> dict:
 			badges.append("partial:%d" % round(pr))
 		if pb >= 100:
 			badges.append("billed")
-		cards.append({
-			"name": r.name, "lane": _po_lane(r.docstatus, pr),
-			"supplier": r.supplier, "supplier_name": r.supplier_name,
-			"amount": gt, "currency": r.currency or base_ccy,
-			"base_amount": base_gt, "charges_total": charges_total, "landed": landed,
-			"schedule_date": str(r.schedule_date) if r.schedule_date else None,
-			"per_received": pr, "per_billed": pb, "status": r.status, "badges": badges,
-		})
+		cards.append(
+			{
+				"name": r.name,
+				"lane": _po_lane(r.docstatus, pr),
+				"supplier": r.supplier,
+				"supplier_name": r.supplier_name,
+				"amount": gt,
+				"currency": r.currency or base_ccy,
+				"base_amount": base_gt,
+				"charges_total": charges_total,
+				"landed": landed,
+				"schedule_date": str(r.schedule_date) if r.schedule_date else None,
+				"per_received": pr,
+				"per_billed": pb,
+				"status": r.status,
+				"badges": badges,
+			}
+		)
 		total += gt
 		recv_weighted += gt * pr
-		s = suppliers.setdefault(r.supplier, {
-			"supplier": r.supplier, "supplier_name": r.supplier_name,
-			"po_total": 0.0, "base_po_total": 0.0, "charges_total": 0.0, "count": 0, "min_sched": None,
-		})
+		s = suppliers.setdefault(
+			r.supplier,
+			{
+				"supplier": r.supplier,
+				"supplier_name": r.supplier_name,
+				"po_total": 0.0,
+				"base_po_total": 0.0,
+				"charges_total": 0.0,
+				"count": 0,
+				"min_sched": None,
+			},
+		)
 		s["po_total"] += gt
 		s["base_po_total"] += base_gt
 		s["charges_total"] += charges_total
@@ -541,14 +614,20 @@ def po_control_board(deal: str) -> dict:
 		qt = q_by_supplier.get(s["supplier"], 0.0)
 		delta = ((s["po_total"] - qt) / qt * 100) if qt else None
 		landed_total = flt(s["base_po_total"] + s["charges_total"])
-		compare.append({
-			"supplier": s["supplier"], "supplier_name": s["supplier_name"],
-			"po_total": s["po_total"], "base_po_total": s["base_po_total"],
-			"charges_total": s["charges_total"], "landed_total": landed_total,
-			"quotation_total": qt,
-			"delta_pct": round(delta, 1) if delta is not None else None,
-			"schedule_date": s["min_sched"], "count": s["count"],
-		})
+		compare.append(
+			{
+				"supplier": s["supplier"],
+				"supplier_name": s["supplier_name"],
+				"po_total": s["po_total"],
+				"base_po_total": s["base_po_total"],
+				"charges_total": s["charges_total"],
+				"landed_total": landed_total,
+				"quotation_total": qt,
+				"delta_pct": round(delta, 1) if delta is not None else None,
+				"schedule_date": s["min_sched"],
+				"count": s["count"],
+			}
+		)
 	# Cheapest = lowest landed (delivered) cost; rank cheapest-first and flag it,
 	# plus each vendor's landed premium over the cheapest.
 	cheapest_landed = min((c["landed_total"] for c in compare if c["landed_total"]), default=0.0)
@@ -556,7 +635,8 @@ def po_control_board(deal: str) -> dict:
 		c["cheapest"] = bool(c["landed_total"] and c["landed_total"] == cheapest_landed)
 		c["landed_delta_pct"] = (
 			round((c["landed_total"] - cheapest_landed) / cheapest_landed * 100, 1)
-			if cheapest_landed else None
+			if cheapest_landed
+			else None
 		)
 	compare.sort(key=lambda x: x["landed_total"])
 
@@ -677,12 +757,21 @@ def _purchase_document_chain(deal: str, company: str) -> dict:
 	return {
 		"orders": order_rows,
 		"receipts": _linked_document_rows(
-			"Purchase Receipt", "Purchase Receipt Item", order_names, company,
-			"purchase_order", "posting_date",
+			"Purchase Receipt",
+			"Purchase Receipt Item",
+			order_names,
+			company,
+			"purchase_order",
+			"posting_date",
 		),
 		"invoices": _linked_document_rows(
-			"Purchase Invoice", "Purchase Invoice Item", order_names, company,
-			"purchase_order", "posting_date", include_outstanding=True,
+			"Purchase Invoice",
+			"Purchase Invoice Item",
+			order_names,
+			company,
+			"purchase_order",
+			"posting_date",
+			include_outstanding=True,
 		),
 	}
 
@@ -705,12 +794,21 @@ def _sales_document_chain(deal: str, company: str) -> dict:
 	return {
 		"orders": order_rows,
 		"deliveries": _linked_document_rows(
-			"Delivery Note", "Delivery Note Item", order_names, company,
-			"sales_order", "posting_date",
+			"Delivery Note",
+			"Delivery Note Item",
+			order_names,
+			company,
+			"sales_order",
+			"posting_date",
 		),
 		"invoices": _linked_document_rows(
-			"Sales Invoice", "Sales Invoice Item", order_names, company,
-			"sales_order", "posting_date", include_outstanding=True,
+			"Sales Invoice",
+			"Sales Invoice Item",
+			order_names,
+			company,
+			"sales_order",
+			"posting_date",
+			include_outstanding=True,
 		),
 	}
 
@@ -745,10 +843,17 @@ def _invoice_status_counts(
 	an outstanding balance is counted as ``unpaid`` rather than twice.
 	"""
 	counts = {"draft": 0, "submitted": 0, "unpaid": 0}
-	rows = _unique_invoice_rows(_linked_document_rows(
-		parent_doctype, item_doctype, order_names, company,
-		order_link_field, "posting_date", include_outstanding=True,
-	))
+	rows = _unique_invoice_rows(
+		_linked_document_rows(
+			parent_doctype,
+			item_doctype,
+			order_names,
+			company,
+			order_link_field,
+			"posting_date",
+			include_outstanding=True,
+		)
+	)
 	for invoice in rows:
 		if not _in_dashboard_period(invoice.get("posting_date"), start, end):
 			continue
@@ -820,12 +925,12 @@ def tender_workspace(deal: str) -> dict:
 # (landed). This mirrors the customer's contract P&L sheet.
 # --------------------------------------------------------------------------- #
 _BID_DEFAULTS = {
-	"mode": "margin",          # "margin" (target margin → bid) | "price" (bid → margin)
-	"margin_pct": 20.0,        # Прибыль ÷ net revenue, %
-	"vat_pct": 12.0,           # НДС
-	"exchange_pct": 0.15,      # биржа комиссия (on gross bid)
-	"profit_tax_pct": 15.0,    # налог на прибыль
-	"dividend_tax_pct": 5.0,   # налог на дивиденды
+	"mode": "margin",  # "margin" (target margin → bid) | "price" (bid → margin)
+	"margin_pct": 20.0,  # Прибыль ÷ net revenue, %
+	"vat_pct": 12.0,  # НДС
+	"exchange_pct": 0.15,  # биржа комиссия (on gross bid)
+	"profit_tax_pct": 15.0,  # налог на прибыль
+	"dividend_tax_pct": 5.0,  # налог на дивиденды
 }
 
 
@@ -936,7 +1041,7 @@ def _deal_kassa_actual(deal: str, company: str) -> tuple[list[dict], float]:
 def _num(v, d=0.0) -> float:
 	try:
 		return float(v)
-	except (TypeError, ValueError):
+	except TypeError, ValueError:
 		return d
 
 
@@ -950,8 +1055,16 @@ def _compute_bid_pnl(p: dict) -> dict:
 	(after dividends — reduce Остаток only, e.g. office, extra certification).
 	"""
 	landed_goods = _num(p.get("landed_goods"))
-	above_other = [{"label": str(x.get("label") or ""), "amount": _num(x.get("amount"))} for x in (p.get("above_other") or []) if isinstance(x, dict)]
-	below_other = [{"label": str(x.get("label") or ""), "amount": _num(x.get("amount"))} for x in (p.get("below_other") or []) if isinstance(x, dict)]
+	above_other = [
+		{"label": str(x.get("label") or ""), "amount": _num(x.get("amount"))}
+		for x in (p.get("above_other") or [])
+		if isinstance(x, dict)
+	]
+	below_other = [
+		{"label": str(x.get("label") or ""), "amount": _num(x.get("amount"))}
+		for x in (p.get("below_other") or [])
+		if isinstance(x, dict)
+	]
 	vat_f = _num(p.get("vat_pct", _BID_DEFAULTS["vat_pct"])) / 100.0
 	exch_f = _num(p.get("exchange_pct", _BID_DEFAULTS["exchange_pct"])) / 100.0
 	ptax_f = _num(p.get("profit_tax_pct", _BID_DEFAULTS["profit_tax_pct"])) / 100.0
@@ -982,21 +1095,21 @@ def _compute_bid_pnl(p: dict) -> dict:
 
 	return {
 		"mode": mode,
-		"bid_price": round(gross, 2),          # Договор (gross, VAT-inclusive)
+		"bid_price": round(gross, 2),  # Договор (gross, VAT-inclusive)
 		"vat": round(vat, 2),
-		"net_revenue": round(net_rev, 2),      # Чистая выручка
+		"net_revenue": round(net_rev, 2),  # Чистая выручка
 		"exchange_fee": round(exchange, 2),
 		"landed_goods": round(landed_goods, 2),
 		"above_other": above_other,
 		"above_total": round(above_total, 2),
-		"profit": round(profit, 2),            # Прибыль
+		"profit": round(profit, 2),  # Прибыль
 		"profit_tax": round(profit_tax, 2),
-		"net_profit": round(net_profit, 2),    # Чистая прибыль
+		"net_profit": round(net_profit, 2),  # Чистая прибыль
 		"dividend_tax": round(dividend_tax, 2),
-		"dividends": round(dividends, 2),      # Дивиденды
+		"dividends": round(dividends, 2),  # Дивиденды
 		"below_other": below_other,
 		"below_total": round(below_total, 2),
-		"ostatok": round(ostatok, 2),          # Остаток
+		"ostatok": round(ostatok, 2),  # Остаток
 		"margin_on_revenue_pct": round(profit / net_rev * 100, 2) if net_rev else 0.0,
 		"markup_on_cost_pct": round(profit / above_total * 100, 2) if above_total else 0.0,
 	}
@@ -1010,7 +1123,7 @@ def _bid_inputs(deal: str, company: str) -> tuple[dict, dict]:
 		if raw:
 			try:
 				stored = json.loads(raw) if not isinstance(raw, dict) else raw
-			except (ValueError, TypeError):
+			except ValueError, TypeError:
 				stored = {}
 	po_landed, po_count = _deal_landed(deal, company)
 	so_revenue, so_count = _deal_revenue(deal, company)
@@ -1060,8 +1173,14 @@ def deal_bid_pricing(deal: str) -> dict:
 	base_ccy = frappe.db.get_value("Company", company, "default_currency") or ""
 	inp, refs = _bid_inputs(deal, company)
 	pnl = _compute_bid_pnl(inp)
-	return {"deal": deal, "currency": base_ccy, "inputs": inp, "pnl": pnl,
-	        "actual": _actual_block(deal, company, inp, pnl), **refs}
+	return {
+		"deal": deal,
+		"currency": base_ccy,
+		"inputs": inp,
+		"pnl": pnl,
+		"actual": _actual_block(deal, company, inp, pnl),
+		**refs,
+	}
 
 
 @frappe.whitelist()
@@ -1084,18 +1203,21 @@ def bid_package(deal: str) -> dict:
 
 	uzex_fields: dict = {}
 	if frappe.db.has_column("CRM Deal", "custom_uzex_lot_no"):
-		uzex_fields = frappe.db.get_value(
-			"CRM Deal",
-			deal,
-			[
-				"custom_uzex_lot_no",
-				"custom_uzex_customer_org",
-				"custom_uzex_deadline",
-				"custom_uzex_start_price",
-				"custom_uzex_portal",
-			],
-			as_dict=True,
-		) or {}
+		uzex_fields = (
+			frappe.db.get_value(
+				"CRM Deal",
+				deal,
+				[
+					"custom_uzex_lot_no",
+					"custom_uzex_customer_org",
+					"custom_uzex_deadline",
+					"custom_uzex_start_price",
+					"custom_uzex_portal",
+				],
+				as_dict=True,
+			)
+			or {}
+		)
 
 	comp = frappe.db.get_value("Company", company, ["company_name", "tax_id"], as_dict=True) or {}
 	company_info = {"name": comp.get("company_name"), "tax_id": comp.get("tax_id"), "address": None}
@@ -1143,7 +1265,7 @@ def save_deal_bid_pricing(deal: str, pricing) -> dict:
 		frappe.throw(_("Run migrate to enable bid pricing."))
 	try:
 		data = pricing if isinstance(pricing, dict) else json.loads(pricing)
-	except (ValueError, TypeError):
+	except ValueError, TypeError:
 		frappe.throw(_("Invalid pricing payload."))
 	# Keep only known keys; coerce cost lines.
 	clean = {
@@ -1157,14 +1279,18 @@ def save_deal_bid_pricing(deal: str, pricing) -> dict:
 		"dividend_tax_pct": _num(data.get("dividend_tax_pct"), _BID_DEFAULTS["dividend_tax_pct"]),
 		"above_other": [
 			{"label": str(x.get("label") or "").strip()[:140], "amount": _num(x.get("amount"))}
-			for x in (data.get("above_other") or []) if isinstance(x, dict) and _num(x.get("amount"))
+			for x in (data.get("above_other") or [])
+			if isinstance(x, dict) and _num(x.get("amount"))
 		],
 		"below_other": [
 			{"label": str(x.get("label") or "").strip()[:140], "amount": _num(x.get("amount"))}
-			for x in (data.get("below_other") or []) if isinstance(x, dict) and _num(x.get("amount"))
+			for x in (data.get("below_other") or [])
+			if isinstance(x, dict) and _num(x.get("amount"))
 		],
 	}
-	frappe.db.set_value("CRM Deal", deal, "custom_bid_pricing", json.dumps(clean, ensure_ascii=False), update_modified=False)
+	frappe.db.set_value(
+		"CRM Deal", deal, "custom_bid_pricing", json.dumps(clean, ensure_ascii=False), update_modified=False
+	)
 	base_ccy = frappe.db.get_value("Company", company, "default_currency") or ""
 	inp, refs = _bid_inputs(deal, company)
 	return {"deal": deal, "currency": base_ccy, "inputs": inp, "pnl": _compute_bid_pnl(inp), **refs}
@@ -1175,11 +1301,28 @@ def save_deal_bid_pricing(deal: str, pricing) -> dict:
 # Pre-bid intake fields on the deal, plus a milestone timeline (bid / contract /
 # PO ETA / delivery) with days-left + a good/warn/risk status per milestone.
 # --------------------------------------------------------------------------- #
-_INTAKE_KEYS_STR = ("lot_no", "buyer", "unit", "bid_deadline", "delivery_deadline",
-                    "guarantee_return", "go_no_go", "result", "purchase_method",
-                    "fx_currency", "notes")
-_INTAKE_KEYS_NUM = ("volume", "guarantee_amount", "penalty_pct_per_day", "won_price",
-                    "fx_amount", "fx_bid_rate", "fx_pay_rate")
+_INTAKE_KEYS_STR = (
+	"lot_no",
+	"buyer",
+	"unit",
+	"bid_deadline",
+	"delivery_deadline",
+	"guarantee_return",
+	"go_no_go",
+	"result",
+	"purchase_method",
+	"fx_currency",
+	"notes",
+)
+_INTAKE_KEYS_NUM = (
+	"volume",
+	"guarantee_amount",
+	"penalty_pct_per_day",
+	"won_price",
+	"fx_amount",
+	"fx_bid_rate",
+	"fx_pay_rate",
+)
 # Purchase method (способ закупки) drives the BPM branch: selection/tender require
 # tender documents; auction/shop pass without.
 _PURCHASE_METHODS = ("auction", "shop", "selection", "tender")
@@ -1221,7 +1364,12 @@ def _clean_intake(data: dict, prior: dict | None = None, audit_actor: str | None
 		out[key] = str(prior.get(key) or "")[:limit]
 	# Assignment defines the sourcing visibility boundary. It is changed only by
 	# assign_tender(); ordinary intake payloads may neither spoof nor clear it.
-	for key, limit in (("assigned_to", 140), ("assigned_to_name", 200), ("assigned_at", 40), ("assigned_by", 140)):
+	for key, limit in (
+		("assigned_to", 140),
+		("assigned_to_name", 200),
+		("assigned_at", 40),
+		("assigned_by", 140),
+	):
 		out[key] = str(prior.get(key) or "")[:limit]
 	# document checklist (ГТД, certificate, acceptance act, contract, invoice …)
 	out["documents"] = [
@@ -1231,7 +1379,8 @@ def _clean_intake(data: dict, prior: dict | None = None, audit_actor: str | None
 			"done": 1 if d.get("done") else 0,
 			"date": str(d.get("date") or "").strip()[:20],
 		}
-		for d in (data.get("documents") or []) if isinstance(d, dict) and str(d.get("label") or "").strip()
+		for d in (data.get("documents") or [])
+		if isinstance(d, dict) and str(d.get("label") or "").strip()
 	][:40]
 	prior_ready = prior.get("go_no_go") == "go" and not any(
 		d.get("required") and not d.get("done") for d in (prior.get("documents") or [])
@@ -1266,7 +1415,7 @@ def _fx_summary(intake: dict) -> dict:
 	if not (cur and amt and br):
 		status = "none"
 	elif not pr:
-		status = "open"      # exposure set but rate not yet realized
+		status = "open"  # exposure set but rate not yet realized
 	elif delta_pct > 3:
 		status = "risk"
 	elif delta_pct > 0:
@@ -1274,9 +1423,15 @@ def _fx_summary(intake: dict) -> dict:
 	else:
 		status = "good"
 	return {
-		"currency": cur, "amount": amt, "bid_rate": br, "pay_rate": pr,
-		"planned_base": planned, "realized_base": realized,
-		"delta": delta, "delta_pct": round(delta_pct, 2), "status": status,
+		"currency": cur,
+		"amount": amt,
+		"bid_rate": br,
+		"pay_rate": pr,
+		"planned_base": planned,
+		"realized_base": realized,
+		"delta": delta,
+		"delta_pct": round(delta_pct, 2),
+		"status": status,
 	}
 
 
@@ -1302,7 +1457,7 @@ def _parse_intake(raw) -> dict:
 		return {}
 	try:
 		return raw if isinstance(raw, dict) else json.loads(raw)
-	except (ValueError, TypeError):
+	except ValueError, TypeError:
 		return {}
 
 
@@ -1322,8 +1477,14 @@ def _read_intake_for_update(deal: str) -> dict:
 def _milestone(key: str, label: str, date_val, done: bool, today_d) -> dict | None:
 	"""Build one deadline milestone with days-left + risk status."""
 	if not date_val:
-		return {"key": key, "label": label, "date": None, "days_left": None,
-		        "status": "none", "done": bool(done)}
+		return {
+			"key": key,
+			"label": label,
+			"date": None,
+			"days_left": None,
+			"status": "none",
+			"done": bool(done),
+		}
 	d = getdate(date_val)
 	days = (d - today_d).days
 	if done:
@@ -1334,8 +1495,14 @@ def _milestone(key: str, label: str, date_val, done: bool, today_d) -> dict | No
 		status = "warn"
 	else:
 		status = "good"
-	return {"key": key, "label": label, "date": str(d), "days_left": days,
-	        "status": status, "done": bool(done)}
+	return {
+		"key": key,
+		"label": label,
+		"date": str(d),
+		"days_left": days,
+		"status": status,
+		"done": bool(done),
+	}
 
 
 def _deal_deadlines(deal: str, company: str, intake: dict) -> dict:
@@ -1383,7 +1550,9 @@ def _deal_deadlines(deal: str, company: str, intake: dict) -> dict:
 	# done once the contract is closed (delivered) or the bid was lost.
 	if intake.get("guarantee_return"):
 		g_done = bool(so_delivered or intake.get("result") == "lost")
-		milestones.append(_milestone("guarantee", _("Guarantee return"), intake.get("guarantee_return"), g_done, today_d))
+		milestones.append(
+			_milestone("guarantee", _("Guarantee return"), intake.get("guarantee_return"), g_done, today_d)
+		)
 	milestones = [m for m in milestones if m]
 	worst = "good"
 	for m in milestones:
@@ -1401,9 +1570,14 @@ def deal_intake(deal: str) -> dict:
 	company = _deal_scope(deal, write=False)
 	base_ccy = frappe.db.get_value("Company", company, "default_currency") or ""
 	intake = _read_intake(deal)
-	return {"deal": deal, "currency": base_ccy, "intake": intake,
-	        "deadlines": _deal_deadlines(deal, company, intake),
-	        "docs": _docs_summary(intake), "fx": _fx_summary(intake)}
+	return {
+		"deal": deal,
+		"currency": base_ccy,
+		"intake": intake,
+		"deadlines": _deal_deadlines(deal, company, intake),
+		"docs": _docs_summary(intake),
+		"fx": _fx_summary(intake),
+	}
 
 
 @frappe.whitelist()
@@ -1414,14 +1588,21 @@ def save_deal_intake(deal: str, intake) -> dict:
 		frappe.throw(_("Run migrate to enable tender intake."))
 	try:
 		data = intake if isinstance(intake, dict) else json.loads(intake)
-	except (ValueError, TypeError):
+	except ValueError, TypeError:
 		frappe.throw(_("Invalid intake payload."))
 	clean = _clean_intake(data, _read_intake_for_update(deal))
-	frappe.db.set_value("CRM Deal", deal, "custom_tender_intake", json.dumps(clean, ensure_ascii=False), update_modified=False)
+	frappe.db.set_value(
+		"CRM Deal", deal, "custom_tender_intake", json.dumps(clean, ensure_ascii=False), update_modified=False
+	)
 	base_ccy = frappe.db.get_value("Company", company, "default_currency") or ""
-	return {"deal": deal, "currency": base_ccy, "intake": clean,
-	        "deadlines": _deal_deadlines(deal, company, clean),
-	        "docs": _docs_summary(clean), "fx": _fx_summary(clean)}
+	return {
+		"deal": deal,
+		"currency": base_ccy,
+		"intake": clean,
+		"deadlines": _deal_deadlines(deal, company, clean),
+		"docs": _docs_summary(clean),
+		"fx": _fx_summary(clean),
+	}
 
 
 @frappe.whitelist()
@@ -1452,7 +1633,9 @@ def mark_tender_submitted(deal: str, submission_reference: str = "") -> dict:
 	clean["submitted_at"] = intake["submitted_at"]
 	clean["submitted_by"] = intake["submitted_by"]
 	clean["submission_reference"] = intake["submission_reference"]
-	frappe.db.set_value("CRM Deal", deal, "custom_tender_intake", json.dumps(clean, ensure_ascii=False), update_modified=False)
+	frappe.db.set_value(
+		"CRM Deal", deal, "custom_tender_intake", json.dumps(clean, ensure_ascii=False), update_modified=False
+	)
 	return {
 		"deal": deal,
 		"company": company,
@@ -1482,7 +1665,9 @@ def set_tender_go_no_go_from_trusted_source(deal: str, decision: str, *, actor: 
 		frappe.throw(_("Run migrate to enable tender intake."))
 	prior = _read_intake_for_update(deal)
 	clean = _clean_intake({**prior, "go_no_go": decision}, prior, audit_actor=actor)
-	frappe.db.set_value("CRM Deal", deal, "custom_tender_intake", json.dumps(clean, ensure_ascii=False), update_modified=False)
+	frappe.db.set_value(
+		"CRM Deal", deal, "custom_tender_intake", json.dumps(clean, ensure_ascii=False), update_modified=False
+	)
 	return {
 		"deal": deal,
 		"company": company,
@@ -1539,8 +1724,11 @@ def tender_managers(company: str) -> dict:
 	_require_tender_view("director", company)
 	names: set[str] = set()
 	for r in frappe.get_all(
-		"Has Role", filters={"role": ["in", ["Sales User", "Sales Manager"]], "parenttype": "User"},
-		fields=["parent"], distinct=True, limit_page_length=1000,
+		"Has Role",
+		filters={"role": ["in", ["Sales User", "Sales Manager"]], "parenttype": "User"},
+		fields=["parent"],
+		distinct=True,
+		limit_page_length=1000,
 	):
 		names.add(r.parent)
 	out = []
@@ -1578,10 +1766,15 @@ def assign_tender(deal: str, user: str = "") -> dict:
 	else:
 		clean["assigned_at"] = ""
 		clean["assigned_by"] = ""
-	frappe.db.set_value("CRM Deal", deal, "custom_tender_intake", json.dumps(clean, ensure_ascii=False), update_modified=False)
+	frappe.db.set_value(
+		"CRM Deal", deal, "custom_tender_intake", json.dumps(clean, ensure_ascii=False), update_modified=False
+	)
 	return {
-		"deal": deal, "assigned_to": user or "", "assigned_to_name": name,
-		"assigned_at": clean["assigned_at"], "assigned_by": clean["assigned_by"],
+		"deal": deal,
+		"assigned_to": user or "",
+		"assigned_to_name": name,
+		"assigned_at": clean["assigned_at"],
+		"assigned_by": clean["assigned_by"],
 	}
 
 
@@ -1594,22 +1787,32 @@ def _tender_deal_names(company: str) -> set[str]:
 	for dt in ("Sales Order", "Purchase Order", "Supplier Quotation"):
 		if frappe.db.has_column(dt, "custom_crm_deal"):
 			for r in frappe.get_list(
-				dt, filters={"company": company, "custom_crm_deal": ["is", "set"], "docstatus": ["<", 2]},
-				fields=["custom_crm_deal"], distinct=True, limit_page_length=5000,
+				dt,
+				filters={"company": company, "custom_crm_deal": ["is", "set"], "docstatus": ["<", 2]},
+				fields=["custom_crm_deal"],
+				distinct=True,
+				limit_page_length=5000,
 			):
 				if r.custom_crm_deal:
 					names.add(r.custom_crm_deal)
 	for fld in ("custom_tender_intake", "custom_bid_pricing"):
 		if frappe.db.has_column("CRM Deal", fld):
-			for r in frappe.get_list("CRM Deal", filters={"company": company, fld: ["is", "set"]},
-			                        fields=["name"], limit_page_length=5000):
+			for r in frappe.get_list(
+				"CRM Deal",
+				filters={"company": company, fld: ["is", "set"]},
+				fields=["name"],
+				limit_page_length=5000,
+			):
 				names.add(r.name)
 	return names
 
 
 def _deal_label(deal: str) -> str:
-	return (frappe.db.get_value("CRM Deal", deal, "organization")
-	        or frappe.db.get_value("CRM Deal", deal, "lead_name") or deal)
+	return (
+		frappe.db.get_value("CRM Deal", deal, "organization")
+		or frappe.db.get_value("CRM Deal", deal, "lead_name")
+		or deal
+	)
 
 
 _RISK_ORDER = {"risk": 0, "warn": 1, "good": 2, "none": 3}
@@ -1666,7 +1869,9 @@ def tender_director_board(company: str) -> dict:
 			unverified_history += 1
 		dl = _deal_deadlines(deal, company, intake)
 		evidence = _tender_filter_evidence(
-			intake, frappe.db.get_value("CRM Deal", deal, "creation"), dl["risk"],
+			intake,
+			frappe.db.get_value("CRM Deal", deal, "creation"),
+			dl["risk"],
 		)
 		inp, refs = _bid_inputs(deal, company)
 		pnl = _compute_bid_pnl(inp)
@@ -1678,22 +1883,39 @@ def tender_director_board(company: str) -> dict:
 		if dl["risk"] == "risk":
 			at_risk += 1
 		delivery = next((m["date"] for m in dl["milestones"] if m["key"] == "delivery"), None)
-		rows.append({
-			"deal": deal, "label": _deal_label(deal),
-			"value": value, "landed": refs["po_landed"], "ostatok": pnl["ostatok"],
-			"margin_pct": pnl["margin_on_revenue_pct"],
-			"po_count": refs["po_count"], "so_count": refs["so_count"],
-			"risk": dl["risk"], "delivery": delivery, "result": _res,
-			"event_date": evidence["event_date"], "event_dates": evidence["event_dates"], "lifecycle": evidence["lifecycle"],
-			"status": evidence["status"], "due": evidence["due"],
-			"assigned_to": intake.get("assigned_to") or "", "assigned_to_name": intake.get("assigned_to_name") or "",
-		})
+		rows.append(
+			{
+				"deal": deal,
+				"label": _deal_label(deal),
+				"value": value,
+				"landed": refs["po_landed"],
+				"ostatok": pnl["ostatok"],
+				"margin_pct": pnl["margin_on_revenue_pct"],
+				"po_count": refs["po_count"],
+				"so_count": refs["so_count"],
+				"risk": dl["risk"],
+				"delivery": delivery,
+				"result": _res,
+				"event_date": evidence["event_date"],
+				"event_dates": evidence["event_dates"],
+				"lifecycle": evidence["lifecycle"],
+				"status": evidence["status"],
+				"due": evidence["due"],
+				"assigned_to": intake.get("assigned_to") or "",
+				"assigned_to_name": intake.get("assigned_to_name") or "",
+			}
+		)
 	rows.sort(key=lambda r: (_RISK_ORDER.get(r["risk"], 3), r["delivery"] or "9999-99-99"))
 	kpi = {
-		"count": len(rows), "total_value": total_value,
+		"count": len(rows),
+		"total_value": total_value,
 		"avg_margin": round(sum(margins) / len(margins), 1) if margins else 0,
-		"at_risk": at_risk, "total_ostatok": total_ost,
-		"won": won, "lost": lost, "pending": pending, "unverified_history": unverified_history,
+		"at_risk": at_risk,
+		"total_ostatok": total_ost,
+		"won": won,
+		"lost": lost,
+		"pending": pending,
+		"unverified_history": unverified_history,
 		"win_rate": round(won / (won + lost) * 100, 1) if (won + lost) else 0,
 	}
 	return {"currency": base_ccy, "rows": rows, "kpi": kpi}
@@ -1704,13 +1926,24 @@ def _po_rows_for_views(company: str) -> tuple[list, bool]:
 	if not frappe.db.has_column("Purchase Order", "custom_crm_deal"):
 		return [], False
 	has_landed = frappe.db.has_column("Purchase Order", "custom_landed_charges")
-	fields = ["name", "supplier", "supplier_name", "transaction_date", "schedule_date", "per_received", "custom_crm_deal", "status"]
+	fields = [
+		"name",
+		"supplier",
+		"supplier_name",
+		"transaction_date",
+		"schedule_date",
+		"per_received",
+		"custom_crm_deal",
+		"status",
+	]
 	if has_landed:
 		fields.append("custom_landed_charges")
 	rows = frappe.get_list(
 		"Purchase Order",
 		filters={"company": company, "custom_crm_deal": ["is", "set"], "docstatus": ["<", 2]},
-		fields=fields, order_by="schedule_date asc", limit_page_length=2000,
+		fields=fields,
+		order_by="schedule_date asc",
+		limit_page_length=2000,
 	)
 	return [row for row in rows if frappe.has_permission("Purchase Order", "read", doc=row.name)], has_landed
 
@@ -1731,17 +1964,30 @@ def declarant_queue(company: str) -> dict:
 		eta = getdate(p.schedule_date) if p.schedule_date else None
 		days = (eta - today_d).days if eta else None
 		status = "cleared" if cleared else ("in_progress" if customs_total else "pending")
-		risk = "risk" if days is not None and days < 0 else ("warn" if days is not None and days <= 7 else "good")
+		risk = (
+			"risk"
+			if days is not None and days < 0
+			else ("warn" if days is not None and days <= 7 else "good")
+		)
 		deal = p.custom_crm_deal
 		can_read_deal = bool(deal and frappe.has_permission("CRM Deal", "read", doc=deal))
-		out.append({
-			"po": p.name, "supplier_name": p.supplier_name, "deal": deal,
-			"deal_label": _deal_label(deal) if can_read_deal else "",
-			"tnved": tnved, "customs_total": customs_total,
-			"event_date": str(p.transaction_date or ""), "eta": str(eta) if eta else None, "days_left": days,
-			"stage": status, "status": status, "risk": risk,
-			"due": "late" if risk == "risk" else ("soon" if risk == "warn" else "on_time"),
-		})
+		out.append(
+			{
+				"po": p.name,
+				"supplier_name": p.supplier_name,
+				"deal": deal,
+				"deal_label": _deal_label(deal) if can_read_deal else "",
+				"tnved": tnved,
+				"customs_total": customs_total,
+				"event_date": str(p.transaction_date or ""),
+				"eta": str(eta) if eta else None,
+				"days_left": days,
+				"stage": status,
+				"status": status,
+				"risk": risk,
+				"due": "late" if risk == "risk" else ("soon" if risk == "warn" else "on_time"),
+			}
+		)
 	return {"currency": base_ccy, "rows": out}
 
 
@@ -1766,22 +2012,42 @@ def logist_board(company: str) -> dict:
 				intake = _read_intake(deal)
 				dv = intake.get("delivery_deadline")
 				if not dv and frappe.db.has_column("Sales Order", "custom_crm_deal"):
-					dv = min((s.delivery_date for s in frappe.get_list(
-						"Sales Order", filters={"custom_crm_deal": deal, "company": company, "docstatus": ["<", 2]},
-						fields=["name", "delivery_date"], limit_page_length=500) if frappe.has_permission("Sales Order", "read", doc=s.name) and s.delivery_date), default=None)
+					dv = min(
+						(
+							s.delivery_date
+							for s in frappe.get_list(
+								"Sales Order",
+								filters={"custom_crm_deal": deal, "company": company, "docstatus": ["<", 2]},
+								fields=["name", "delivery_date"],
+								limit_page_length=500,
+							)
+							if frappe.has_permission("Sales Order", "read", doc=s.name) and s.delivery_date
+						),
+						default=None,
+					)
 			deliv_cache[deal] = getdate(dv) if dv else None
 		delivery = deliv_cache[deal]
 		late = bool(not received and eta and delivery and eta > delivery)
 		status = "delivered" if received else ("late" if late else "in_transit")
-		out.append({
-			"po": p.name, "supplier_name": p.supplier_name, "deal": deal,
-			"deal_label": _deal_label(deal) if deal and frappe.has_permission("CRM Deal", "read", doc=deal) else "",
-			"transport": transport, "event_date": str(p.transaction_date or ""), "eta": str(eta) if eta else None,
-			"delivery": str(delivery) if delivery else None,
-			"received": received,
-			"stage": status, "status": status, "risk": "risk" if status == "late" else "good",
-			"due": "late" if status == "late" else "on_time",
-		})
+		out.append(
+			{
+				"po": p.name,
+				"supplier_name": p.supplier_name,
+				"deal": deal,
+				"deal_label": _deal_label(deal)
+				if deal and frappe.has_permission("CRM Deal", "read", doc=deal)
+				else "",
+				"transport": transport,
+				"event_date": str(p.transaction_date or ""),
+				"eta": str(eta) if eta else None,
+				"delivery": str(delivery) if delivery else None,
+				"received": received,
+				"stage": status,
+				"status": status,
+				"risk": "risk" if status == "late" else "good",
+				"due": "late" if status == "late" else "on_time",
+			}
+		)
 	return {"currency": base_ccy, "rows": out}
 
 
@@ -1803,18 +2069,30 @@ def sourcing_my_tenders(company: str) -> dict:
 			continue
 		dl = _deal_deadlines(deal, company, intake)
 		evidence = _tender_filter_evidence(
-			intake, frappe.db.get_value("CRM Deal", deal, "creation"), dl["risk"],
+			intake,
+			frappe.db.get_value("CRM Deal", deal, "creation"),
+			dl["risk"],
 		)
 		po_landed, po_count = _deal_landed(deal, company)
 		delivery = next((m["date"] for m in dl["milestones"] if m["key"] == "delivery"), None)
-		rows.append({
-			"deal": deal, "label": _deal_label(deal),
-			"landed": po_landed, "po_count": po_count,
-			"risk": dl["risk"], "delivery": delivery, "result": intake.get("result") or "",
-			"event_date": evidence["event_date"], "event_dates": evidence["event_dates"], "lifecycle": evidence["lifecycle"],
-			"status": evidence["status"], "due": evidence["due"],
-			"assigned_to": intake.get("assigned_to") or "", "assigned_to_name": intake.get("assigned_to_name") or "",
-		})
+		rows.append(
+			{
+				"deal": deal,
+				"label": _deal_label(deal),
+				"landed": po_landed,
+				"po_count": po_count,
+				"risk": dl["risk"],
+				"delivery": delivery,
+				"result": intake.get("result") or "",
+				"event_date": evidence["event_date"],
+				"event_dates": evidence["event_dates"],
+				"lifecycle": evidence["lifecycle"],
+				"status": evidence["status"],
+				"due": evidence["due"],
+				"assigned_to": intake.get("assigned_to") or "",
+				"assigned_to_name": intake.get("assigned_to_name") or "",
+			}
+		)
 	rows.sort(key=lambda r: (_RISK_ORDER.get(r["risk"], 3), r["delivery"] or "9999-99-99"))
 	return {"currency": base_ccy, "rows": rows, "oversight": oversight}
 
@@ -1838,7 +2116,7 @@ def _in_dashboard_period(value, start, end) -> bool:
 		return False
 	try:
 		day = getdate(value)
-	except (TypeError, ValueError):
+	except TypeError, ValueError:
 		return False
 	return start <= day <= end
 
@@ -1895,11 +2173,16 @@ def _intake_attention(deal: str, intake: dict, today_d) -> list[dict]:
 		try:
 			days_left = (getdate(deadline) - today_d).days
 			if days_left <= 7:
-				items.append({
-					"deal": deal, "kind": "bid_deadline", "date": str(getdate(deadline)),
-					"days_left": days_left, "severity": "risk" if days_left < 0 else "warn",
-				})
-		except (TypeError, ValueError):
+				items.append(
+					{
+						"deal": deal,
+						"kind": "bid_deadline",
+						"date": str(getdate(deadline)),
+						"days_left": days_left,
+						"severity": "risk" if days_left < 0 else "warn",
+					}
+				)
+		except TypeError, ValueError:
 			pass
 	missing = _docs_summary(intake)["missing"]
 	if intake.get("go_no_go") == "go" and missing:
@@ -1913,10 +2196,7 @@ def _weighted_progress(rows, field: str) -> float:
 	total = sum(flt(row.get("base_grand_total")) for row in rows)
 	if not total:
 		return 0.0
-	done = sum(
-		flt(row.get("base_grand_total")) * flt(row.get(field)) / 100
-		for row in rows
-	)
+	done = sum(flt(row.get("base_grand_total")) * flt(row.get(field)) / 100 for row in rows)
 	return round(done / total * 100, 1)
 
 
@@ -1944,9 +2224,27 @@ def _portfolio_deadlines(intake: dict, pos, sos, today_d) -> dict:
 	so_delivered = bool(sos) and all(flt(row.per_delivered) >= 100 for row in sos)
 	so_delivery = min((row.get("delivery_date") for row in sos if row.get("delivery_date")), default=None)
 	milestones = [
-		_milestone("bid", _("Bid deadline"), intake.get("bid_deadline"), bool(intake.get("result") or intake.get("go_no_go") == "no_go"), today_d),
-		_milestone("po_eta", _("PO ETA"), min((row.get("schedule_date") for row in pos if row.get("schedule_date")), default=None), po_received, today_d),
-		_milestone("delivery", _("Delivery deadline"), intake.get("delivery_deadline") or so_delivery, so_delivered, today_d),
+		_milestone(
+			"bid",
+			_("Bid deadline"),
+			intake.get("bid_deadline"),
+			bool(intake.get("result") or intake.get("go_no_go") == "no_go"),
+			today_d,
+		),
+		_milestone(
+			"po_eta",
+			_("PO ETA"),
+			min((row.get("schedule_date") for row in pos if row.get("schedule_date")), default=None),
+			po_received,
+			today_d,
+		),
+		_milestone(
+			"delivery",
+			_("Delivery deadline"),
+			intake.get("delivery_deadline") or so_delivery,
+			so_delivered,
+			today_d,
+		),
 	]
 	if any(milestone["status"] == "risk" for milestone in milestones):
 		return {"risk": "risk"}
@@ -1956,7 +2254,9 @@ def _portfolio_deadlines(intake: dict, pos, sos, today_d) -> dict:
 
 
 @frappe.whitelist()
-def tender_dashboard(company: str, from_date=None, to_date=None, trend_from_date=None, trend_to_date=None) -> dict:
+def tender_dashboard(
+	company: str, from_date=None, to_date=None, trend_from_date=None, trend_to_date=None
+) -> dict:
 	"""Tender lifecycle and execution KPIs for the active company and role.
 
 	Only records the caller can read are considered.  In particular, an old deal
@@ -1980,8 +2280,14 @@ def tender_dashboard(company: str, from_date=None, to_date=None, trend_from_date
 	execution_scope = "portfolio" if oversight or is_operations else "assigned"
 	today_d = getdate(today())
 	acquisition = {
-		"identified": 0, "go": 0, "no_go": 0, "ready": 0,
-		"submitted": 0, "won": 0, "lost": 0, "pending": 0,
+		"identified": 0,
+		"go": 0,
+		"no_go": 0,
+		"ready": 0,
+		"submitted": 0,
+		"won": 0,
+		"lost": 0,
+		"pending": 0,
 		"unverified_history": 0,
 	}
 	attention: list[dict] = []
@@ -2003,12 +2309,14 @@ def tender_dashboard(company: str, from_date=None, to_date=None, trend_from_date
 		event_dates = _tender_event_dates(intake, creation)
 		verified = _has_submission_evidence(intake)
 		if verified:
-			trend_events.append({
-				"submitted_at": event_dates["submitted"],
-				"result": intake.get("result"),
-				"result_at": event_dates["won"],
-				"value": intake.get("won_price"),
-			})
+			trend_events.append(
+				{
+					"submitted_at": event_dates["submitted"],
+					"result": intake.get("result"),
+					"result_at": event_dates["won"],
+					"value": intake.get("won_price"),
+				}
+			)
 		if acquisition_scope == "none":
 			continue
 		identified_in_period = _in_dashboard_period(event_dates["identified"], start, end)
@@ -2022,18 +2330,33 @@ def tender_dashboard(company: str, from_date=None, to_date=None, trend_from_date
 		result = intake.get("result")
 		if verified and _in_dashboard_period(event_dates["submitted"], start, end):
 			acquisition["submitted"] += 1
-		if verified and result in ("won", "lost", "pending") and _in_dashboard_period(event_dates[result], start, end):
+		if (
+			verified
+			and result in ("won", "lost", "pending")
+			and _in_dashboard_period(event_dates[result], start, end)
+		):
 			acquisition[result] += 1
 		elif result and not verified and _in_dashboard_period(event_dates["unverified_history"], start, end):
 			acquisition["unverified_history"] += 1
-		if (intake.get("assigned_to") or "") == user and _in_dashboard_period(event_dates["assigned"], start, end):
+		if (intake.get("assigned_to") or "") == user and _in_dashboard_period(
+			event_dates["assigned"], start, end
+		):
 			my_assigned += 1
 		if any(_in_dashboard_period(value, start, end) for value in event_dates.values()):
 			for item in _intake_attention(deal, intake, today_d):
 				item["label"] = _deal_label(deal)
 				attention.append(item)
 
-	po_fields = ["name", "custom_crm_deal", "transaction_date", "schedule_date", "per_received", "per_billed", "status", "base_grand_total"]
+	po_fields = [
+		"name",
+		"custom_crm_deal",
+		"transaction_date",
+		"schedule_date",
+		"per_received",
+		"per_billed",
+		"status",
+		"base_grand_total",
+	]
 	has_landed = frappe.db.has_column("Purchase Order", "custom_landed_charges")
 	if has_landed:
 		po_fields.append("custom_landed_charges")
@@ -2050,12 +2373,26 @@ def tender_dashboard(company: str, from_date=None, to_date=None, trend_from_date
 		so_rows = frappe.get_list(
 			"Sales Order",
 			filters={"company": company, "custom_crm_deal": ["is", "set"], "docstatus": ["<", 2]},
-			fields=["name", "custom_crm_deal", "transaction_date", "delivery_date", "per_delivered", "per_billed", "status", "base_grand_total"],
+			fields=[
+				"name",
+				"custom_crm_deal",
+				"transaction_date",
+				"delivery_date",
+				"per_delivered",
+				"per_billed",
+				"status",
+				"base_grand_total",
+			],
 			limit_page_length=5000,
 		)
 	execution = {
-		"purchase_orders": 0, "received": 0, "receiving": 0, "customs_workload_open": 0,
-		"sales_orders": 0, "delivered": 0, "delivery_pending": 0,
+		"purchase_orders": 0,
+		"received": 0,
+		"receiving": 0,
+		"customs_workload_open": 0,
+		"sales_orders": 0,
+		"delivered": 0,
+		"delivery_pending": 0,
 		# No native PO-level customs clearance field exists in this install. This
 		# is workload evidence from planned landed customs charges, not clearance.
 		"customs_proxy": {
@@ -2073,20 +2410,26 @@ def tender_dashboard(company: str, from_date=None, to_date=None, trend_from_date
 	procurement_total = 0.0
 	contract_total = 0.0
 	for po in po_rows:
-		if (execution_scope == "assigned" and po.custom_crm_deal not in execution_deals) or not _in_dashboard_period(po.transaction_date, start, end):
+		if (
+			execution_scope == "assigned" and po.custom_crm_deal not in execution_deals
+		) or not _in_dashboard_period(po.transaction_date, start, end):
 			continue
 		if not frappe.has_permission("Purchase Order", "read", doc=po.name):
 			continue
 		execution["purchase_orders"] += 1
 		procurement_total += flt(po.base_grand_total)
 		logistics_status = str(po.status or "unknown")
-		execution["logistics_status"][logistics_status] = execution["logistics_status"].get(logistics_status, 0) + 1
+		execution["logistics_status"][logistics_status] = (
+			execution["logistics_status"].get(logistics_status, 0) + 1
+		)
 		charges = _parse_landed(po.get("custom_landed_charges") if has_landed else None)
 		has_customs = any(charge["type"] == "customs" for charge in charges)
 		received = flt(po.per_received) >= 100
 		if received:
 			execution["received"] += 1
-			execution["customs_proxy"]["po_received_with_customs_charge" if has_customs else "po_without_customs_charge"] += 1
+			execution["customs_proxy"][
+				"po_received_with_customs_charge" if has_customs else "po_without_customs_charge"
+			] += 1
 		else:
 			execution["receiving"] += 1
 			if has_customs:
@@ -2095,7 +2438,9 @@ def tender_dashboard(company: str, from_date=None, to_date=None, trend_from_date
 			else:
 				execution["customs_proxy"]["po_without_customs_charge"] += 1
 	for so in so_rows:
-		if (execution_scope == "assigned" and so.custom_crm_deal not in execution_deals) or not _in_dashboard_period(so.transaction_date, start, end):
+		if (
+			execution_scope == "assigned" and so.custom_crm_deal not in execution_deals
+		) or not _in_dashboard_period(so.transaction_date, start, end):
 			continue
 		if so.status in ("Closed", "Cancelled"):
 			continue
@@ -2127,28 +2472,33 @@ def tender_dashboard(company: str, from_date=None, to_date=None, trend_from_date
 		portfolio_procurement_total = sum(flt(row.base_grand_total) for row in deal_pos)
 		portfolio_contract_total = sum(flt(row.base_grand_total) for row in deal_sos)
 		deadlines = _portfolio_deadlines(intake, deal_pos, deal_sos, today_d)
-		portfolio_preview.append({
-			"deal": deal,
-			"label": _deal_label(deal),
-			"lot_no": intake.get("lot_no") or "",
-			"status": intake.get("result") if _has_submission_evidence(intake) else "",
-			"risk": deadlines["risk"],
-			"po_received_pct": _weighted_progress(deal_pos, "per_received"),
-			"po_billed_pct": _weighted_progress(deal_pos, "per_billed"),
-			"so_delivered_pct": _weighted_progress(deal_sos, "per_delivered"),
-			"so_billed_pct": _weighted_progress(deal_sos, "per_billed"),
-			"procurement_total": portfolio_procurement_total,
-			"contract_total": portfolio_contract_total,
-			"spread": portfolio_contract_total - portfolio_procurement_total,
-		})
+		portfolio_preview.append(
+			{
+				"deal": deal,
+				"label": _deal_label(deal),
+				"lot_no": intake.get("lot_no") or "",
+				"status": intake.get("result") if _has_submission_evidence(intake) else "",
+				"risk": deadlines["risk"],
+				"po_received_pct": _weighted_progress(deal_pos, "per_received"),
+				"po_billed_pct": _weighted_progress(deal_pos, "per_billed"),
+				"so_delivered_pct": _weighted_progress(deal_sos, "per_delivered"),
+				"so_billed_pct": _weighted_progress(deal_sos, "per_billed"),
+				"procurement_total": portfolio_procurement_total,
+				"contract_total": portfolio_contract_total,
+				"spread": portfolio_contract_total - portfolio_procurement_total,
+			}
+		)
 
 	invoice_deals = execution_deals if execution_scope == "assigned" else set(portfolio_intakes)
 	purchase_order_names = [
-		po.name for po in po_rows
-		if po.custom_crm_deal in invoice_deals and frappe.has_permission("Purchase Order", "read", doc=po.name)
+		po.name
+		for po in po_rows
+		if po.custom_crm_deal in invoice_deals
+		and frappe.has_permission("Purchase Order", "read", doc=po.name)
 	]
 	sales_order_names = [
-		so.name for so in so_rows
+		so.name
+		for so in so_rows
 		if so.custom_crm_deal in invoice_deals and frappe.has_permission("Sales Order", "read", doc=so.name)
 	]
 	execution["invoice_status"]["purchase_invoices"] = _invoice_status_counts(
@@ -2175,8 +2525,10 @@ def tender_dashboard(company: str, from_date=None, to_date=None, trend_from_date
 		"period": {"from_date": str(start), "to_date": str(end)},
 		"trend_period": {"from_date": str(trend_start), "to_date": str(trend_end)},
 		"role_scope": {
-			"views": views, "oversight": oversight,
-			"acquisition_scope": acquisition_scope, "execution_scope": execution_scope,
+			"views": views,
+			"oversight": oversight,
+			"acquisition_scope": acquisition_scope,
+			"execution_scope": execution_scope,
 			"can_view_finance": can_view_finance,
 		},
 		"acquisition": acquisition,

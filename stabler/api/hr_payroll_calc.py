@@ -45,18 +45,19 @@ _STABLER_MARKER = "stabler-payroll-generated"
 # Doctype field → component_map quantity key (mirrors _payroll_components.QUANTITY_KEYS).
 _MAP_FIELDS = [
 	# (quantity_key, link_fieldname, type_fieldname)
-	("late_deduction",  "late_deduction_component",   "late_deduction_type"),
-	("overtime",        "overtime_component",          "overtime_type"),
-	("night_premium",   "night_premium_component",     "night_premium_type"),
-	("duty_supplement", "duty_supplement_component",   "duty_supplement_type"),
-	("kpi",             "kpi_component",               "kpi_type"),
-	("region_rate",     "region_rate_component",       "region_rate_type"),
+	("late_deduction", "late_deduction_component", "late_deduction_type"),
+	("overtime", "overtime_component", "overtime_type"),
+	("night_premium", "night_premium_component", "night_premium_type"),
+	("duty_supplement", "duty_supplement_component", "duty_supplement_type"),
+	("kpi", "kpi_component", "kpi_type"),
+	("region_rate", "region_rate_component", "region_rate_type"),
 ]
 
 
 # ---------------------------------------------------------------------------
 # Internal helpers
 # ---------------------------------------------------------------------------
+
 
 def _require_auth() -> None:
 	if frappe.session.user == "Guest":
@@ -87,15 +88,17 @@ def _component_map_for(company: str) -> dict:
 	)
 	if not maps:
 		frappe.throw(
-			_("No enabled Stabler Payroll Component Map found for company {0}. "
-			  "Create and enable one before generating payroll components.").format(company),
+			_(
+				"No enabled Stabler Payroll Component Map found for company {0}. "
+				"Create and enable one before generating payroll components."
+			).format(company),
 			frappe.ValidationError,
 		)
 
 	map_name = maps[0]["name"]
 	# Fetch all the component link + type fields in one call.
 	field_list = ["name"]
-	for (_key, link_field, type_field) in _MAP_FIELDS:
+	for _key, link_field, type_field in _MAP_FIELDS:
 		field_list.append(link_field)
 		field_list.append(type_field)
 
@@ -113,7 +116,7 @@ def _component_map_for(company: str) -> dict:
 
 	row = map_doc[0]
 	component_map: dict = {}
-	for (key, link_field, type_field) in _MAP_FIELDS:
+	for key, link_field, type_field in _MAP_FIELDS:
 		salary_component = (row.get(link_field) or "").strip()
 		component_type = (row.get(type_field) or "").strip()
 		if salary_component:
@@ -207,6 +210,7 @@ def _delete_stabler_additional_salaries(employee: str, payroll_period: str, comp
 # preview_payroll_components
 # ---------------------------------------------------------------------------
 
+
 @frappe.whitelist()
 def preview_payroll_components(summary_name: str) -> dict:
 	"""Preview how a summary will translate to salary components.
@@ -249,6 +253,7 @@ def preview_payroll_components(summary_name: str) -> dict:
 # generate_additional_salary
 # ---------------------------------------------------------------------------
 
+
 @frappe.whitelist()
 def generate_additional_salary(summary_name: str) -> dict:
 	"""Generate ERPNext Additional Salary rows from a Locked payroll summary.
@@ -271,10 +276,10 @@ def generate_additional_salary(summary_name: str) -> dict:
 
 	Returns::
 
-		{
-		    "created": int,    # number of Additional Salary rows created
-		    "lines":   [...],  # the component lines that were created
-		}
+	        {
+	            "created": int,  # number of Additional Salary rows created
+	            "lines": [...],  # the component lines that were created
+	        }
 	"""
 	_require_auth()
 	_assert_can_write(_SUMMARY, summary_name)
@@ -285,8 +290,9 @@ def generate_additional_salary(summary_name: str) -> dict:
 	# Gate 1: must be Locked.
 	if summary["status"] != "Locked":
 		frappe.throw(
-			_("Lock the payroll period before generating salary components. "
-			  "Summary {0} is currently '{1}'.").format(summary_name, summary["status"]),
+			_(
+				"Lock the payroll period before generating salary components. Summary {0} is currently '{1}'."
+			).format(summary_name, summary["status"]),
 			frappe.ValidationError,
 		)
 
@@ -296,11 +302,11 @@ def generate_additional_salary(summary_name: str) -> dict:
 	unmapped = mapping_complete(summary, component_map)
 	if unmapped:
 		frappe.throw(
-			_("Component mapping is incomplete. The following quantities have no salary "
-			  "component assigned: {0}. Update the Stabler Payroll Component Map for "
-			  "company {1} before generating.").format(
-				", ".join(unmapped), summary["company"]
-			),
+			_(
+				"Component mapping is incomplete. The following quantities have no salary "
+				"component assigned: {0}. Update the Stabler Payroll Component Map for "
+				"company {1} before generating."
+			).format(", ".join(unmapped), summary["company"]),
 			frappe.ValidationError,
 		)
 
@@ -324,17 +330,19 @@ def generate_additional_salary(summary_name: str) -> dict:
 		if not line.get("salary_component"):
 			continue
 
-		new_doc = frappe.get_doc({
-			"doctype": _ADDITIONAL_SALARY,
-			"employee": employee,
-			"company": company,
-			"salary_component": line["salary_component"],
-			"type": line["component_type"],
-			"amount": line["abs_amount"],
-			"payroll_date": payroll_date,
-			"overwrite_salary_structure_amount": 1,
-			"remarks": _STABLER_MARKER,
-		})
+		new_doc = frappe.get_doc(
+			{
+				"doctype": _ADDITIONAL_SALARY,
+				"employee": employee,
+				"company": company,
+				"salary_component": line["salary_component"],
+				"type": line["component_type"],
+				"amount": line["abs_amount"],
+				"payroll_date": payroll_date,
+				"overwrite_salary_structure_amount": 1,
+				"remarks": _STABLER_MARKER,
+			}
+		)
 		new_doc.insert(ignore_permissions=False)
 		created += 1
 
@@ -454,6 +462,7 @@ def emit_payroll_net_period(company: str, payroll_period: str) -> dict:
 # validate_against_slip
 # ---------------------------------------------------------------------------
 
+
 @frappe.whitelist()
 def validate_against_slip(summary_name: str, salary_slip: str) -> dict:
 	"""Compare a summary-derived net against a Salary Slip net.
@@ -470,12 +479,12 @@ def validate_against_slip(summary_name: str, salary_slip: str) -> dict:
 
 	Returns::
 
-		{
-		    "summary_net":      float,
-		    "slip_net":         float,
-		    "variance":         float,   # slip_net − summary_net
-		    "within_tolerance": bool,    # abs(variance) <= 1000 UZS
-		}
+	        {
+	            "summary_net": float,
+	            "slip_net": float,
+	            "variance": float,  # slip_net − summary_net
+	            "within_tolerance": bool,  # abs(variance) <= 1000 UZS
+	        }
 	"""
 	_require_auth()
 	_assert_can_read(_SUMMARY, summary_name)

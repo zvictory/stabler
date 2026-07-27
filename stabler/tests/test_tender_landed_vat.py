@@ -27,7 +27,7 @@ def _read() -> str:
 def _func_body(src: str, name: str) -> str:
 	m = re.search(rf"^def {name}\(", src, re.M)
 	assert m, f"function {name} not found"
-	tail = src[m.start():]
+	tail = src[m.start() :]
 	nxt = re.search(r"\n(?:@frappe\.whitelist\(\)|def )", tail[1:])
 	return tail[: nxt.start() + 1] if nxt else tail
 
@@ -39,13 +39,15 @@ class TestTenderLandedVat(unittest.TestCase):
 	def test_parse_landed_preserves_recoverable_flag(self):
 		body = _func_body(self.src, "_parse_landed")
 		self.assertIn(
-			"vat_recoverable", body,
+			"vat_recoverable",
+			body,
 			"_parse_landed must round-trip the vat_recoverable flag so the "
 			"capitalize/exclude decision survives save+reload",
 		)
 		# Default True: new customs lines exclude VAT from landed cost.
 		self.assertRegex(
-			body, r'vat_recoverable["\']?\s*,?\s*True',
+			body,
+			r'vat_recoverable["\']?\s*,?\s*True',
 			"vat_recoverable must default True (VAT-registered = recoverable)",
 		)
 
@@ -55,7 +57,8 @@ class TestTenderLandedVat(unittest.TestCase):
 		# The tally must be gated on the flag — never sum VAT for lines that are
 		# genuinely capitalizing it (non-registered scenario).
 		self.assertIn(
-			'vat_recoverable', body,
+			"vat_recoverable",
+			body,
 			"recoverable_vat must be gated on the vat_recoverable flag",
 		)
 

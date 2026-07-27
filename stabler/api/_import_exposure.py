@@ -34,7 +34,7 @@ def classify_method(account_type: str | None) -> str:
 def _amt(v) -> float:
 	try:
 		return float(v or 0)
-	except (TypeError, ValueError):
+	except TypeError, ValueError:
 		return 0.0
 
 
@@ -73,11 +73,7 @@ def _ci_closed(row) -> bool:
 def _open_sum(ci_rows, field: str) -> float:
 	"""Σ of ``field`` over Commercial Invoices still open (not delivered/cancelled
 	and not yet converted to a Purchase Invoice)."""
-	return sum(
-		_amt((r or {}).get(field))
-		for r in (ci_rows or [])
-		if not _ci_closed(r)
-	)
+	return sum(_amt((r or {}).get(field)) for r in (ci_rows or []) if not _ci_closed(r))
 
 
 def open_commitment(ci_rows) -> float:

@@ -86,7 +86,9 @@ def resolve_bulk(rows, by_name: dict, by_code: dict, by_oname: dict):
 			errors.append({"row": idx, "identifier": ident, "reason": "outlet not found in company"})
 			continue
 		try:
-			lat, lng = parse_coord_pair(row.get("lat", row.get("latitude")), row.get("lng", row.get("longitude")))
+			lat, lng = parse_coord_pair(
+				row.get("lat", row.get("latitude")), row.get("lng", row.get("longitude"))
+			)
 		except GeoError as exc:
 			errors.append({"row": idx, "identifier": ident, "reason": str(exc)})
 			continue

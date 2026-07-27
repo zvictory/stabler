@@ -25,6 +25,7 @@ def hourly_sync() -> None:
 	"""Run inbound file-drop scan, and REST poll if mode=rest."""
 	try:
 		from stabler.integrations.one_c.file_drop import scan
+
 		scan()
 	except Exception as exc:
 		frappe.log_error(frappe.get_traceback(), f"1C file_drop scan: {exc}")
@@ -37,6 +38,7 @@ def hourly_sync() -> None:
 	if mode == "rest":
 		try:
 			from stabler.integrations.one_c.rest import poll
+
 			poll()
 		except Exception as exc:
 			frappe.log_error(frappe.get_traceback(), f"1C rest poll: {exc}")

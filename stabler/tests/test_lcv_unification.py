@@ -1,5 +1,4 @@
-"""Integration tests for the unified Landed Cost Voucher (LCV) engine.
-"""
+"""Integration tests for the unified Landed Cost Voucher (LCV) engine."""
 
 from __future__ import annotations
 
@@ -49,16 +48,21 @@ class TestLcvUnification(FrappeTestCase):
 		po.supplier = self.supplier
 		po.transaction_date = today()
 		po.schedule_date = today()
-		po.append("items", {
-			"item_code": self.item,
-			"qty": 10,
-			"rate": 100,
-			"warehouse": warehouse,
-		})
-		po.custom_landed_charges = json.dumps([
-			{"type": "transport", "label": "PO Freight Charge", "amount": 150.0},
-			{"type": "insurance", "label": "PO Insurance Charge", "amount": 50.0},
-		])
+		po.append(
+			"items",
+			{
+				"item_code": self.item,
+				"qty": 10,
+				"rate": 100,
+				"warehouse": warehouse,
+			},
+		)
+		po.custom_landed_charges = json.dumps(
+			[
+				{"type": "transport", "label": "PO Freight Charge", "amount": 150.0},
+				{"type": "insurance", "label": "PO Insurance Charge", "amount": 50.0},
+			]
+		)
 		po.insert(ignore_permissions=True)
 		po.submit()
 		self.po = po
@@ -68,14 +72,17 @@ class TestLcvUnification(FrappeTestCase):
 		pr.company = self.company
 		pr.supplier = self.supplier
 		pr.posting_date = today()
-		pr.append("items", {
-			"item_code": self.item,
-			"qty": 10,
-			"rate": 100,
-			"purchase_order": self.po.name,
-			"purchase_order_item": self.po.items[0].name,
-			"warehouse": warehouse,
-		})
+		pr.append(
+			"items",
+			{
+				"item_code": self.item,
+				"qty": 10,
+				"rate": 100,
+				"purchase_order": self.po.name,
+				"purchase_order_item": self.po.items[0].name,
+				"warehouse": warehouse,
+			},
+		)
 		pr.insert(ignore_permissions=True)
 		pr.submit()
 		self.pr = pr
@@ -110,7 +117,9 @@ class TestLcvUnification(FrappeTestCase):
 	def test_create_additional_lcv_purchase_receipt(self):
 		# Configure the expense account first
 		settings = frappe.get_single("Stabler Settings")
-		expense_account = frappe.db.get_value("Account", {"company": self.company, "is_group": 0, "root_type": "Expense"}, "name")
+		expense_account = frappe.db.get_value(
+			"Account", {"company": self.company, "is_group": 0, "root_type": "Expense"}, "name"
+		)
 		if not expense_account:
 			expense_account = frappe.db.get_value("Account", {"company": self.company, "is_group": 0}, "name")
 

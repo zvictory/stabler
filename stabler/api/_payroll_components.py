@@ -32,28 +32,29 @@ QUANTITY_KEYS: list[str] = [
 #: Default component_type for each key.
 #: "kpi" is sign-dependent — the helper overrides it at runtime.
 DEFAULT_SIGN_MAP: dict[str, str] = {
-	"late_deduction":  "Deduction",
-	"overtime":        "Earning",
-	"night_premium":   "Earning",
+	"late_deduction": "Deduction",
+	"overtime": "Earning",
+	"night_premium": "Earning",
 	"duty_supplement": "Earning",
-	"kpi":             "Earning",   # overridden when kpi_adjustment < 0
-	"region_rate":     "Earning",
+	"kpi": "Earning",  # overridden when kpi_adjustment < 0
+	"region_rate": "Earning",
 }
 
 # Maps each QUANTITY_KEY → the PAS field that carries its currency amount.
 _AMOUNT_FIELD: dict[str, str] = {
-	"late_deduction":  "late_deduction_amount",
-	"overtime":        "overtime_amount",
-	"night_premium":   "night_premium_amount",
+	"late_deduction": "late_deduction_amount",
+	"overtime": "overtime_amount",
+	"night_premium": "night_premium_amount",
 	"duty_supplement": "duty_supplement",
-	"kpi":             "kpi_adjustment",
-	"region_rate":     "region_rate",
+	"kpi": "kpi_adjustment",
+	"region_rate": "region_rate",
 }
 
 
 # ---------------------------------------------------------------------------
 # 2. summary_to_components
 # ---------------------------------------------------------------------------
+
 
 def summary_to_components(
 	summary: dict,
@@ -77,14 +78,14 @@ def summary_to_components(
 		A list of dicts, one per non-zero quantity, deterministically ordered
 		by ``QUANTITY_KEYS``::
 
-			{
-			    "quantity":         str,          # e.g. "overtime"
-			    "salary_component": str | None,   # None when unmapped
-			    "amount":           float,         # signed (Deduction is negative)
-			    "abs_amount":       float,         # always positive, whole UZS
-			    "component_type":   str | None,    # "Earning" | "Deduction" | None
-			    "warning":          str | None,    # set when salary_component is None
-			}
+	                {
+	                    "quantity": str,  # e.g. "overtime"
+	                    "salary_component": str | None,  # None when unmapped
+	                    "amount": float,  # signed (Deduction is negative)
+	                    "abs_amount": float,  # always positive, whole UZS
+	                    "component_type": str | None,  # "Earning" | "Deduction" | None
+	                    "warning": str | None,  # set when salary_component is None
+	                }
 
 	KPI sign rule:
 		If ``kpi_adjustment`` < 0 → component_type = "Deduction", abs_amount is
@@ -135,14 +136,16 @@ def summary_to_components(
 				"Add an entry to the component map before generating Additional Salaries."
 			)
 
-		lines.append({
-			"quantity":         key,
-			"salary_component": salary_component,
-			"amount":           raw_float,
-			"abs_amount":       abs_amount,
-			"component_type":   component_type_resolved if salary_component is not None else None,
-			"warning":          warning,
-		})
+		lines.append(
+			{
+				"quantity": key,
+				"salary_component": salary_component,
+				"amount": raw_float,
+				"abs_amount": abs_amount,
+				"component_type": component_type_resolved if salary_component is not None else None,
+				"warning": warning,
+			}
+		)
 
 	return lines
 
@@ -150,6 +153,7 @@ def summary_to_components(
 # ---------------------------------------------------------------------------
 # 3. components_total
 # ---------------------------------------------------------------------------
+
 
 def components_total(lines: list[dict]) -> dict:
 	"""Aggregate a list of component lines into earnings / deductions / net.
@@ -159,7 +163,7 @@ def components_total(lines: list[dict]) -> dict:
 
 	Returns::
 
-		{"earnings": float, "deductions": float, "net": float}
+	        {"earnings": float, "deductions": float, "net": float}
 
 	All values are whole UZS.  Net = earnings − deductions.
 	Warning-only lines (``salary_component`` is None) are still counted so the
@@ -183,9 +187,9 @@ def components_total(lines: list[dict]) -> dict:
 	earnings_uzs = round_uzs(earnings)
 	deductions_uzs = round_uzs(deductions)
 	return {
-		"earnings":   float(earnings_uzs),
+		"earnings": float(earnings_uzs),
 		"deductions": float(deductions_uzs),
-		"net":        float(earnings_uzs - deductions_uzs),
+		"net": float(earnings_uzs - deductions_uzs),
 	}
 
 
@@ -205,16 +209,16 @@ def slip_variance(summary_net: float, slip_net: float) -> dict:
 
 	Returns::
 
-		{
-		    "variance":         float,  # slip_net − summary_net
-		    "within_tolerance": bool,   # abs(variance) <= 1000 UZS
-		}
+	        {
+	            "variance": float,  # slip_net − summary_net
+	            "within_tolerance": bool,  # abs(variance) <= 1000 UZS
+	        }
 
 	Tolerance is ±1 000 UZS per decision D12.
 	"""
 	variance = float(slip_net) - float(summary_net)
 	return {
-		"variance":         variance,
+		"variance": variance,
 		"within_tolerance": abs(variance) <= _VARIANCE_TOLERANCE_UZS,
 	}
 
@@ -222,6 +226,7 @@ def slip_variance(summary_net: float, slip_net: float) -> dict:
 # ---------------------------------------------------------------------------
 # 5. mapping_complete
 # ---------------------------------------------------------------------------
+
 
 def mapping_complete(summary: dict, component_map: dict) -> list[str]:
 	"""Return quantity keys that are non-zero on the summary but have no mapping.

@@ -99,13 +99,24 @@ def employee_financials(company: str, employee: str) -> dict:
 	if not frappe.db.exists("Employee", employee):
 		frappe.throw(_("Unknown employee: {0}").format(employee))
 
-	emp = frappe.db.get_value(
-		"Employee",
-		employee,
-		["employee_name", "department", "designation", "status", "image",
-		 "cell_number", "date_of_joining", "custom_base_salary"],
-		as_dict=True,
-	) or {}
+	emp = (
+		frappe.db.get_value(
+			"Employee",
+			employee,
+			[
+				"employee_name",
+				"department",
+				"designation",
+				"status",
+				"image",
+				"cell_number",
+				"date_of_joining",
+				"custom_base_salary",
+			],
+			as_dict=True,
+		)
+		or {}
+	)
 	base_ccy = frappe.get_cached_value("Company", company, "default_currency") or ""
 
 	# ── All party=Employee GL across EVERY account (why erpnext-ui shows them) ─
@@ -129,18 +140,23 @@ def employee_financials(company: str, employee: str) -> dict:
 	# entries with ZERO account-currency movement. They don't change the account-
 	# currency balance (net_owed is summed separately over all GL), so here they
 	# would only add empty rows to the ledger.
-	transactions = [{
-		"posting_date": str(m["posting_date"]) if m.get("posting_date") else None,
-		"_creation": str(m.get("creation") or ""),
-		"account": m.get("account"),
-		"label": (m.get("account") or "").split(" - ")[0],
-		"currency": m.get("account_currency") or base_ccy,
-		"voucher_type": m.get("voucher_type"),
-		"voucher_no": m.get("voucher_no"),
-		"debit": flt(m.get("debit")),
-		"credit": flt(m.get("credit")),
-		"docstatus": 1,
-	} for m in gl if abs(flt(m.get("debit"))) > money_epsilon(m.get("account_currency") or base_ccy) or abs(flt(m.get("credit"))) > money_epsilon(m.get("account_currency") or base_ccy)]
+	transactions = [
+		{
+			"posting_date": str(m["posting_date"]) if m.get("posting_date") else None,
+			"_creation": str(m.get("creation") or ""),
+			"account": m.get("account"),
+			"label": (m.get("account") or "").split(" - ")[0],
+			"currency": m.get("account_currency") or base_ccy,
+			"voucher_type": m.get("voucher_type"),
+			"voucher_no": m.get("voucher_no"),
+			"debit": flt(m.get("debit")),
+			"credit": flt(m.get("credit")),
+			"docstatus": 1,
+		}
+		for m in gl
+		if abs(flt(m.get("debit"))) > money_epsilon(m.get("account_currency") or base_ccy)
+		or abs(flt(m.get("credit"))) > money_epsilon(m.get("account_currency") or base_ccy)
+	]
 
 	# Draft Journal Entries aren't in the GL yet — surface them so they can be
 	# reviewed, submitted or deleted from the ledger (transactions CRUD).
@@ -159,20 +175,26 @@ def employee_financials(company: str, employee: str) -> dict:
 		{"c": company, "e": employee},
 		as_dict=True,
 	)
-	draft_txns = [{
-		"posting_date": str(d["posting_date"]) if d.get("posting_date") else None,
-		"_creation": str(d.get("creation") or ""),
-		"account": d.get("account"),
-		"label": (d.get("account") or "").split(" - ")[0],
-		"currency": d.get("account_currency") or base_ccy,
-		"voucher_type": "Journal Entry",
-		"voucher_no": d.get("voucher_no"),
-		"debit": flt(d.get("debit")),
-		"credit": flt(d.get("credit")),
-		"docstatus": 0,
-	} for d in drafts]
-	transactions = sorted(draft_txns + transactions,
-	                      key=lambda r: (r.get("posting_date") or "", r.get("_creation") or ""), reverse=True)
+	draft_txns = [
+		{
+			"posting_date": str(d["posting_date"]) if d.get("posting_date") else None,
+			"_creation": str(d.get("creation") or ""),
+			"account": d.get("account"),
+			"label": (d.get("account") or "").split(" - ")[0],
+			"currency": d.get("account_currency") or base_ccy,
+			"voucher_type": "Journal Entry",
+			"voucher_no": d.get("voucher_no"),
+			"debit": flt(d.get("debit")),
+			"credit": flt(d.get("credit")),
+			"docstatus": 0,
+		}
+		for d in drafts
+	]
+	transactions = sorted(
+		draft_txns + transactions,
+		key=lambda r: (r.get("posting_date") or "", r.get("_creation") or ""),
+		reverse=True,
+	)
 
 	net = frappe.db.sql(
 		"""
@@ -201,8 +223,12 @@ def employee_financials(company: str, employee: str) -> dict:
 		as_dict=True,
 	)
 	breakdown = [
-		{"account": b["account"], "label": (b["account"] or "").split(" - ")[0],
-		 "currency": b.get("account_currency") or base_ccy, "balance": flt(b["bal"])}
+		{
+			"account": b["account"],
+			"label": (b["account"] or "").split(" - ")[0],
+			"currency": b.get("account_currency") or base_ccy,
+			"balance": flt(b["bal"]),
+		}
 		for b in brk
 	]
 	display_currency = (breakdown[0]["currency"] if breakdown else None) or base_ccy

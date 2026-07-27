@@ -23,9 +23,9 @@ def check_upcoming_deadlines():
 		filters={
 			"company": ["in", import_companies],
 			"status": ["not in", ["Cancelled", "DELIVERED_TO_UZBEKISTAN"]],
-			"eta_transit_port": ["is", "set"]
+			"eta_transit_port": ["is", "set"],
 		},
-		fields=["name", "eta_transit_port", "company", "supplier", "agreed_total"]
+		fields=["name", "eta_transit_port", "company", "supplier", "agreed_total"],
 	)
 
 	for ci in invoices:
@@ -56,17 +56,14 @@ def check_upcoming_deadlines():
 			if token and chat_id:
 				import json
 				from urllib.request import Request, urlopen
-				payload = {
-					"chat_id": chat_id,
-					"text": msg,
-					"parse_mode": "HTML"
-				}
+
+				payload = {"chat_id": chat_id, "text": msg, "parse_mode": "HTML"}
 				body = json.dumps(payload).encode("utf-8")
 				req = Request(
 					f"https://api.telegram.org/bot{token}/sendMessage",
 					data=body,
 					headers={"Content-Type": "application/json"},
-					method="POST"
+					method="POST",
 				)
 				try:
 					with urlopen(req, timeout=10):

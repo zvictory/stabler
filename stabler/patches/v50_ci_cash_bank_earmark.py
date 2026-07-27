@@ -20,9 +20,7 @@ from frappe.custom.doctype.custom_field.custom_field import create_custom_fields
 def execute():
 	if not frappe.db.exists("DocType", "Commercial Invoice"):
 		return
-	if frappe.db.exists(
-		"Custom Field", {"dt": "Commercial Invoice", "fieldname": "custom_bank_agreed"}
-	):
+	if frappe.db.exists("Custom Field", {"dt": "Commercial Invoice", "fieldname": "custom_bank_agreed"}):
 		return
 
 	after = "agreed_total" if frappe.db.has_column("Commercial Invoice", "agreed_total") else "supplier"

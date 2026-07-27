@@ -35,4 +35,4 @@ def money_epsilon(currency: str | None = None) -> float:
 	if precision <= 0:
 		# Whole-unit currency (UZS, JPY, ...): half of one unit.
 		return 0.5
-	return 0.5 * (10.0 ** -precision)
+	return 0.5 * (10.0**-precision)

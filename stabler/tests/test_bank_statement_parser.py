@@ -1,4 +1,5 @@
 """Unit tests for the 1C ClientBank Exchange parser (pure, no Frappe)."""
+
 from __future__ import annotations
 
 import unittest

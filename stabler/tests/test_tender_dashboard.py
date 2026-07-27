@@ -29,32 +29,31 @@ def _func_body(src: str, name: str) -> str:
 
 	m = re.search(rf"^def {name}\(", src, re.M)
 	assert m, f"function {name} not found"
-	tail = src[m.start():]
+	tail = src[m.start() :]
 	nxt = re.search(r"\n(?:@frappe\.whitelist\(\)|def )", tail[1:])
 	return tail[: nxt.start() + 1] if nxt else tail
 
 
 class TestTenderLifecycleContract(unittest.TestCase):
-
 	def setUp(self):
 		self.src = _read(_TENDER)
 
 	def test_submission_is_whitelisted_and_server_audited(self):
 		body = _func_body(self.src, "mark_tender_submitted")
-		self.assertIn("@frappe.whitelist()", self.src[self.src.index(body) - 24:self.src.index(body)])
+		self.assertIn("@frappe.whitelist()", self.src[self.src.index(body) - 24 : self.src.index(body)])
 		self.assertIn("_deal_scope(deal, write=True)", body)
 		self.assertIn("submitted_at", body)
 		self.assertIn("submitted_by", body)
 		self.assertIn("frappe.session.user", body)
-		self.assertNotIn("data.get(\"submitted_at\")", body)
+		self.assertNotIn('data.get("submitted_at")', body)
 
 	def test_intake_transition_audit_cannot_be_client_supplied(self):
 		body = _func_body(self.src, "_clean_intake")
 		for key in ("go_no_go_at", "go_no_go_by", "result_at", "result_by"):
 			self.assertIn(key, body)
 		self.assertIn("frappe.session.user", body)
-		self.assertNotIn("data.get(\"go_no_go_at\")", body)
-		self.assertNotIn("data.get(\"result_at\")", body)
+		self.assertNotIn('data.get("go_no_go_at")', body)
+		self.assertNotIn('data.get("result_at")', body)
 
 	def test_intake_save_preserves_existing_server_submission_audit(self):
 		body = _func_body(self.src, "_clean_intake")
@@ -64,16 +63,19 @@ class TestTenderLifecycleContract(unittest.TestCase):
 
 
 class TestTenderDashboardContract(unittest.TestCase):
-
 	def setUp(self):
 		self.src = _read(_TENDER)
 		self.body = _func_body(self.src, "tender_dashboard")
 
 	def test_dashboard_enforces_scope_module_permissions_and_role_window(self):
-		for guard in ("_require_company(company)", "_require_tender(company)", "_assert_company_scope(company)"):
+		for guard in (
+			"_require_company(company)",
+			"_require_tender(company)",
+			"_assert_company_scope(company)",
+		):
 			self.assertIn(guard, self.body)
 		self.assertIn("_tender_views()", self.body)
-		self.assertIn("frappe.has_permission(\"CRM Deal\", \"read\"", self.body)
+		self.assertIn('frappe.has_permission("CRM Deal", "read"', self.body)
 
 	def test_candidate_queries_apply_frappe_list_permissions_before_field_reads(self):
 		candidates = _func_body(self.src, "_tender_deal_names")
@@ -83,7 +85,16 @@ class TestTenderDashboardContract(unittest.TestCase):
 		self.assertNotIn("frappe.get_all(", self.body)
 
 	def test_dashboard_returns_role_adaptive_sections(self):
-		for section in ("period", "role_scope", "acquisition", "execution", "attention", "my_work", "trend", "portfolio_preview"):
+		for section in (
+			"period",
+			"role_scope",
+			"acquisition",
+			"execution",
+			"attention",
+			"my_work",
+			"trend",
+			"portfolio_preview",
+		):
 			self.assertIn(f'"{section}"', self.body)
 
 	def test_dashboard_execution_includes_aggregate_invoice_status_only(self):
@@ -110,7 +121,9 @@ class TestTenderDashboardContract(unittest.TestCase):
 
 	def test_declarant_and_logist_have_tender_module_access(self):
 		roles = _read(_ORGANIZATION)
-		self.assertIn('"tender": ["Sales User", "Sales Manager", "Stabler Declarant", "Stabler Logist"]', roles)
+		self.assertIn(
+			'"tender": ["Sales User", "Sales Manager", "Stabler Declarant", "Stabler Logist"]', roles
+		)
 
 
 class TestTenderBoardFilterPayloadContract(unittest.TestCase):

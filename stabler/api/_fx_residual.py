@@ -18,10 +18,29 @@ from __future__ import annotations
 
 # Currencies ERPNext stores with zero decimal places (smallest unit = 1).
 # A "penny" residual in these currencies is a whole unit, not 0.01.
-ZERO_DECIMAL_CURRENCIES = frozenset({
-	"UZS", "JPY", "KRW", "VND", "IDR", "CLP", "PYG", "RWF", "XOF", "XAF",
-	"BIF", "DJF", "GNF", "KMF", "MGA", "VUV", "XPF", "ISK", "HUF",
-})
+ZERO_DECIMAL_CURRENCIES = frozenset(
+	{
+		"UZS",
+		"JPY",
+		"KRW",
+		"VND",
+		"IDR",
+		"CLP",
+		"PYG",
+		"RWF",
+		"XOF",
+		"XAF",
+		"BIF",
+		"DJF",
+		"GNF",
+		"KMF",
+		"MGA",
+		"VUV",
+		"XPF",
+		"ISK",
+		"HUF",
+	}
+)
 
 
 def base_precision_for(currency: str | None) -> int:
@@ -47,6 +66,6 @@ def within_tolerance(difference_amount, tolerance) -> bool:
 	try:
 		d = abs(float(difference_amount))
 		tol = float(tolerance)
-	except (TypeError, ValueError):
+	except TypeError, ValueError:
 		return False
 	return 0.0 < d <= tol + 1e-9

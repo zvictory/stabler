@@ -27,7 +27,7 @@ class TestAgreementReceivablesContract(unittest.TestCase):
 		report = _read("api", "reports.py")
 		for contract in (
 			"def agreement_receivables(",
-			"module_map_for(company).get(\"agreements\")",
+			'module_map_for(company).get("agreements")',
 			"si.custom_agreement",
 			"SUM(si.outstanding_amount)",
 			"Unlinked",
@@ -48,7 +48,7 @@ class TestAgreementReceivablesContract(unittest.TestCase):
 		start = report.index("def agreement_receivables(")
 		body = report[start : report.index("\n@frappe.whitelist()", start)]
 		self.assertNotIn("base_balance", body)
-		self.assertNotIn("base_currency\"", body)
+		self.assertNotIn('base_currency"', body)
 		conversion = "SUM(si.outstanding_amount * si.conversion_rate)"
 		if conversion in body:
 			self.assertGreater(
@@ -61,7 +61,7 @@ class TestAgreementReceivablesContract(unittest.TestCase):
 		router = _read("public", "js", "router.js")
 		page = _read("public", "js", "pages", "reports", "AgreementReceivables.vue")
 		self.assertIn("report-agreement-receivables", router)
-		self.assertIn("module: \"agreements\"", router)
+		self.assertIn('module: "agreements"', router)
 		self.assertIn("agreement_receivables", page)
 
 	def test_opening_preview_is_non_mutating_and_fixed_to_uzs_date(self):
@@ -78,7 +78,7 @@ class TestAgreementReceivablesContract(unittest.TestCase):
 		self.assertIn("def _validate_agreement(", sales)
 		self.assertIn("def list_agreements(", sales)
 		self.assertIn("doc.custom_agreement = agreement", sales)
-		self.assertIn("doc.custom_agreement = getattr(so, \"custom_agreement\", None)", sales)
+		self.assertIn('doc.custom_agreement = getattr(so, "custom_agreement", None)', sales)
 
 	def test_excel_normalizer_is_read_only_and_pins_dts_defaults(self):
 		normalizer = _read("maintenance", "normalize_dts_agreement_xlsx.py")

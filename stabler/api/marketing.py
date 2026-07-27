@@ -330,9 +330,7 @@ def _default_payment_account(company: str) -> str:
 			"name",
 		)
 	if not account:
-		frappe.throw(
-			_("No default Bank or Cash account configured for company {0}.").format(company)
-		)
+		frappe.throw(_("No default Bank or Cash account configured for company {0}.").format(company))
 	return account
 
 
@@ -359,12 +357,8 @@ def settle_claim(name: str) -> dict:
 
 	# Look up real account currencies — never assume both legs match
 	# company_currency (ANJAN runs USD base but most party accounts are UZS).
-	paid_from_ccy = (
-		frappe.db.get_value("Account", paid_from, "account_currency") or company_currency
-	)
-	paid_to_ccy = (
-		frappe.db.get_value("Account", party_account, "account_currency") or company_currency
-	)
+	paid_from_ccy = frappe.db.get_value("Account", paid_from, "account_currency") or company_currency
+	paid_to_ccy = frappe.db.get_value("Account", party_account, "account_currency") or company_currency
 	posting_date = nowdate()
 
 	from erpnext.setup.utils import get_exchange_rate  # local import: optional dep

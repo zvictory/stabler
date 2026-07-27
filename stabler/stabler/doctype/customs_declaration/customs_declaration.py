@@ -39,9 +39,7 @@ class CustomsDeclaration(Document):
 		if self.is_new():
 			return
 		previous_status = frappe.db.get_value("Customs Declaration", self.name, "status")
-		assert_transition(
-			"Customs Declaration", previous_status, self.status, _ALLOWED_TRANSITIONS, self
-		)
+		assert_transition("Customs Declaration", previous_status, self.status, _ALLOWED_TRANSITIONS, self)
 
 	def _validate_gtd_number(self) -> None:
 		if self.gtd_number and not _GTD_NUMBER_RE.match(self.gtd_number.strip()):

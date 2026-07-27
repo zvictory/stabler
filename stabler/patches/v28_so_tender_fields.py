@@ -22,21 +22,25 @@ def execute():
 		if not frappe.db.exists("Custom Field", {"dt": "Sales Order", "fieldname": spec["fieldname"]}):
 			fields.append(spec)
 
-	add({
-		"fieldname": "custom_crm_deal",
-		"label": "CRM Deal",
-		"fieldtype": "Link",
-		"options": "CRM Deal",
-		"insert_after": "customer",
-		"read_only": 1,
-	})
-	add({
-		"fieldname": "custom_board_stage",
-		"label": "Board Stage",
-		"fieldtype": "Link",
-		"options": "Stabler SO Stage",
-		"insert_after": "custom_crm_deal",
-	})
+	add(
+		{
+			"fieldname": "custom_crm_deal",
+			"label": "CRM Deal",
+			"fieldtype": "Link",
+			"options": "CRM Deal",
+			"insert_after": "customer",
+			"read_only": 1,
+		}
+	)
+	add(
+		{
+			"fieldname": "custom_board_stage",
+			"label": "Board Stage",
+			"fieldtype": "Link",
+			"options": "Stabler SO Stage",
+			"insert_after": "custom_crm_deal",
+		}
+	)
 
 	if fields:
 		create_custom_fields({"Sales Order": fields}, ignore_validate=True)

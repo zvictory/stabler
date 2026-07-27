@@ -54,13 +54,15 @@ def plan_timepay_import(stabler_emps, anjan_rows) -> dict:
 		emp = by_id.get(tid) if tid else None
 		if emp:
 			if str(emp.get("custom_timepay_name") or "").strip() != fio:
-				id_updates.append({
-					"employee": emp["name"],
-					"employee_name": emp.get("employee_name"),
-					"timepay_id": tid,
-					"old_name": str(emp.get("custom_timepay_name") or ""),
-					"new_name": fio,
-				})
+				id_updates.append(
+					{
+						"employee": emp["name"],
+						"employee_name": emp.get("employee_name"),
+						"timepay_id": tid,
+						"old_name": str(emp.get("custom_timepay_name") or ""),
+						"new_name": fio,
+					}
+				)
 			continue
 		# Fallback: unique name match among employees that still lack an id.
 		# Also try reversed token order to handle "Familiya Ism" ↔ "Ism Familiya" differences.
@@ -73,12 +75,14 @@ def plan_timepay_import(stabler_emps, anjan_rows) -> dict:
 		uniq = [c for c in cands if not str(c.get("custom_timepay_id") or "").strip()]
 		if len(uniq) == 1:
 			c = uniq[0]
-			name_suggestions.append({
-				"employee": c["name"],
-				"employee_name": c.get("employee_name"),
-				"timepay_id": tid,
-				"fio": fio,
-			})
+			name_suggestions.append(
+				{
+					"employee": c["name"],
+					"employee_name": c.get("employee_name"),
+					"timepay_id": tid,
+					"fio": fio,
+				}
+			)
 		else:
 			unmatched.append({"timepay_id": tid, "fio": fio, "candidates": len(cands)})
 	return {

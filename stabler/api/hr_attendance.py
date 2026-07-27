@@ -147,8 +147,9 @@ def _resolve_ruleset(rule_set: str | None, company: str | None) -> dict:
 	if rule_set and frappe.db.exists(_RULESET, rule_set):
 		return frappe.get_doc(_RULESET, rule_set).as_dict()
 	if company:
-		default = frappe.get_all(_RULESET, filters={"company": company, "is_default": 1},
-			fields=["name"], limit=1)
+		default = frappe.get_all(
+			_RULESET, filters={"company": company, "is_default": 1}, fields=["name"], limit=1
+		)
 		if default:
 			return frappe.get_doc(_RULESET, default[0]["name"]).as_dict()
 	return {}
@@ -188,7 +189,7 @@ def simulate_day(
 	if device_late_min not in (None, ""):
 		try:
 			dlm = int(device_late_min)
-		except (TypeError, ValueError):
+		except TypeError, ValueError:
 			dlm = None
 
 	return summarize_day(
@@ -199,7 +200,9 @@ def simulate_day(
 		date_str=date_str,
 		hire_date=hire_date,
 		termination_date=termination_date or None,
-		late=late, half=half, night=night,
+		late=late,
+		half=half,
+		night=night,
 		min_worked_present=mwp,
 		device_late_min=dlm,
 	)

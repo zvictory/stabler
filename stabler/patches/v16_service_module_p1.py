@@ -183,9 +183,7 @@ def execute() -> None:
 
 	# Fail loud if any expected column is still missing after the patch.
 	missing = [
-		f"{doctype}.{col}"
-		for doctype, col in _REQUIRED_COLUMNS
-		if not frappe.db.has_column(doctype, col)
+		f"{doctype}.{col}" for doctype, col in _REQUIRED_COLUMNS if not frappe.db.has_column(doctype, col)
 	]
 	if missing:
 		frappe.throw(f"v16 patch: expected columns not found after execute: {missing}")

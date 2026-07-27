@@ -30,18 +30,19 @@ _TIMEOUT = 20
 
 def build_new_lot_text(norm: dict) -> str:
 	"""HTML-formatted (escaped) message body for a new lot."""
+
 	def esc(v) -> str:
 		return html.escape(str(v))
 
-	parts = ["\U0001F195 <b>Yangi UZEX loti</b>"]
+	parts = ["\U0001f195 <b>Yangi UZEX loti</b>"]
 	if norm.get("name"):
 		parts.append(esc(norm["name"]))
 	parts.append(f"№ <code>{esc(norm.get('lot_no') or '-')}</code>")
 	if norm.get("customer_org"):
-		parts.append("\U0001F464 " + esc(norm["customer_org"]))
+		parts.append("\U0001f464 " + esc(norm["customer_org"]))
 	if norm.get("start_price") is not None:
 		price = f"{norm['start_price']:,.0f}".replace(",", " ")
-		parts.append(("\U0001F4B0 " + price + " " + esc(norm.get("currency") or "")).strip())
+		parts.append(("\U0001f4b0 " + price + " " + esc(norm.get("currency") or "")).strip())
 	if norm.get("deadline"):
 		parts.append("⏰ " + esc(norm["deadline"]))
 	return "\n".join(parts)
@@ -52,7 +53,7 @@ def build_keyboard(norm: dict, deal_name: str | None) -> dict | None:
 	rows: list[list[dict]] = []
 	lot_id = norm.get("lot_id")
 	if lot_id:
-		rows.append([{"text": "\U0001F517 UZEX", "url": f"https://etender.uzex.uz/lot/{lot_id}"}])
+		rows.append([{"text": "\U0001f517 UZEX", "url": f"https://etender.uzex.uz/lot/{lot_id}"}])
 	if deal_name:
 		rows.append(
 			[

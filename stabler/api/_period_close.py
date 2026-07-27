@@ -24,6 +24,7 @@ import datetime
 # Helpers
 # ---------------------------------------------------------------------------
 
+
 def _to_date(value) -> datetime.date | None:
 	"""Coerce *value* to a ``datetime.date``.
 
@@ -54,6 +55,7 @@ def _to_date(value) -> datetime.date | None:
 # Public API
 # ---------------------------------------------------------------------------
 
+
 def is_closed(posting_date, close_date) -> bool:
 	"""Return ``True`` when *posting_date* falls inside the closed period.
 
@@ -69,10 +71,10 @@ def is_closed(posting_date, close_date) -> bool:
 	"""
 	cd = _to_date(close_date)
 	if cd is None:
-		return False		# no close date configured → always open
+		return False  # no close date configured → always open
 	pd = _to_date(posting_date)
 	if pd is None:
-		return False		# unparseable posting date → don't block
+		return False  # unparseable posting date → don't block
 	return pd <= cd
 
 

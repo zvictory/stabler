@@ -61,10 +61,12 @@ class TestResolveBulk(unittest.TestCase):
 		return resolve_bulk(rows, self.by_name, self.by_code, self.by_oname)
 
 	def test_match_by_code_and_name(self):
-		updates, errors = self._resolve([
-			{"outlet_code": "PB01", "lat": 41.31, "lng": 69.27},
-			{"outlet_name": "Lola Cafe", "lat": "41,33", "lng": "69,29"},
-		])
+		updates, errors = self._resolve(
+			[
+				{"outlet_code": "PB01", "lat": 41.31, "lng": 69.27},
+				{"outlet_name": "Lola Cafe", "lat": "41,33", "lng": "69,29"},
+			]
+		)
 		self.assertEqual(errors, [])
 		self.assertEqual(len(updates), 2)
 		got = {u["outlet"]: (u["lat"], u["lng"]) for u in updates}
@@ -78,10 +80,12 @@ class TestResolveBulk(unittest.TestCase):
 		self.assertIn("not found", errors[0]["reason"])
 
 	def test_bad_coord_errors_but_keeps_others(self):
-		updates, errors = self._resolve([
-			{"outlet": "OUT-001", "lat": 999, "lng": 69},
-			{"outlet": "OUT-002", "lat": 41.33, "lng": 69.29},
-		])
+		updates, errors = self._resolve(
+			[
+				{"outlet": "OUT-001", "lat": 999, "lng": 69},
+				{"outlet": "OUT-002", "lat": 41.33, "lng": 69.29},
+			]
+		)
 		self.assertEqual(len(updates), 1)
 		self.assertEqual(updates[0]["outlet"], "OUT-002")
 		self.assertEqual(len(errors), 1)
@@ -93,10 +97,12 @@ class TestResolveBulk(unittest.TestCase):
 		self.assertIn("identifier", errors[0]["reason"])
 
 	def test_duplicate_identifier_last_wins(self):
-		updates, errors = self._resolve([
-			{"outlet": "OUT-001", "lat": 41.10, "lng": 69.10},
-			{"outlet": "OUT-001", "lat": 41.20, "lng": 69.20},
-		])
+		updates, errors = self._resolve(
+			[
+				{"outlet": "OUT-001", "lat": 41.10, "lng": 69.10},
+				{"outlet": "OUT-001", "lat": 41.20, "lng": 69.20},
+			]
+		)
 		self.assertEqual(errors, [])
 		self.assertEqual(len(updates), 1)
 		self.assertEqual((updates[0]["lat"], updates[0]["lng"]), (41.20, 69.20))

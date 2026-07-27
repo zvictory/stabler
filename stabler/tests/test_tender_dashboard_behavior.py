@@ -91,7 +91,9 @@ def _load_tender(db: _FakeDB, roles: list[str], user: str = "source@example.com"
 	frappe.get_roles = lambda _user=None: roles
 	frappe.has_permission = lambda *_args, **_kwargs: True
 	frappe.get_list = lambda *_args, **_kwargs: []
-	frappe.get_all = lambda *_args, **_kwargs: (_ for _ in ()).throw(AssertionError("get_all must not fetch dashboard candidates"))
+	frappe.get_all = lambda *_args, **_kwargs: (_ for _ in ()).throw(
+		AssertionError("get_all must not fetch dashboard candidates")
+	)
 	frappe.throw = lambda message, exception=Exception: (_ for _ in ()).throw(exception(message))
 	utils = types.ModuleType("frappe.utils")
 	utils.flt = lambda value: float(value or 0)
@@ -138,8 +140,14 @@ class TestTenderDashboardBehaviour(unittest.TestCase):
 
 		with (
 			patch.object(tender, "deal_intake", return_value={}),
-			patch.object(tender, "_purchase_document_chain", return_value={"orders": [], "receipts": [], "invoices": []}),
-			patch.object(tender, "_sales_document_chain", return_value={"orders": [], "deliveries": [], "invoices": []}),
+			patch.object(
+				tender,
+				"_purchase_document_chain",
+				return_value={"orders": [], "receipts": [], "invoices": []},
+			),
+			patch.object(
+				tender, "_sales_document_chain", return_value={"orders": [], "deliveries": [], "invoices": []}
+			),
 		):
 			result = tender.tender_workspace("DEAL-1")
 
@@ -153,13 +161,38 @@ class TestTenderDashboardBehaviour(unittest.TestCase):
 
 		def get_list(doctype, **_kwargs):
 			rows = {
-				"Purchase Order": [_Row(name="PO-1", transaction_date="2026-07-01", status="To Receive", grand_total=100)],
+				"Purchase Order": [
+					_Row(name="PO-1", transaction_date="2026-07-01", status="To Receive", grand_total=100)
+				],
 				"Purchase Receipt": [],
-				"Purchase Invoice": [_Row(name="PINV-1", posting_date="2026-07-03", status="Unpaid", grand_total=100, outstanding_amount=100)],
+				"Purchase Invoice": [
+					_Row(
+						name="PINV-1",
+						posting_date="2026-07-03",
+						status="Unpaid",
+						grand_total=100,
+						outstanding_amount=100,
+					)
+				],
 				"Purchase Invoice Item": [_Row(parent="PINV-1", purchase_order="PO-1")],
-				"Sales Order": [_Row(name="SO-1", transaction_date="2026-07-01", status="To Deliver and Bill", grand_total=160)],
+				"Sales Order": [
+					_Row(
+						name="SO-1",
+						transaction_date="2026-07-01",
+						status="To Deliver and Bill",
+						grand_total=160,
+					)
+				],
 				"Delivery Note": [],
-				"Sales Invoice": [_Row(name="SINV-1", posting_date="2026-07-04", status="Unpaid", grand_total=160, outstanding_amount=160)],
+				"Sales Invoice": [
+					_Row(
+						name="SINV-1",
+						posting_date="2026-07-04",
+						status="Unpaid",
+						grand_total=160,
+						outstanding_amount=160,
+					)
+				],
 				"Sales Invoice Item": [_Row(parent="SINV-1", sales_order="SO-1")],
 			}
 			return rows.get(doctype, [])
@@ -190,15 +223,50 @@ class TestTenderDashboardBehaviour(unittest.TestCase):
 		finance = tender._tender_finance_chain(
 			{
 				"invoices": [
-					{"name": "PINV-USD", "grand_total": 100, "outstanding_amount": 20, "base_grand_total": 1_300_000, "base_outstanding_amount": 260_000, "purchase_order": "PO-1"},
-					{"name": "PINV-USD", "grand_total": 100, "outstanding_amount": 20, "base_grand_total": 1_300_000, "base_outstanding_amount": 260_000, "purchase_order": "PO-2"},
-					{"name": "PINV-EUR", "grand_total": 200, "outstanding_amount": 0, "base_grand_total": 2_800_000, "base_outstanding_amount": 0, "purchase_order": "PO-3"},
+					{
+						"name": "PINV-USD",
+						"grand_total": 100,
+						"outstanding_amount": 20,
+						"base_grand_total": 1_300_000,
+						"base_outstanding_amount": 260_000,
+						"purchase_order": "PO-1",
+					},
+					{
+						"name": "PINV-USD",
+						"grand_total": 100,
+						"outstanding_amount": 20,
+						"base_grand_total": 1_300_000,
+						"base_outstanding_amount": 260_000,
+						"purchase_order": "PO-2",
+					},
+					{
+						"name": "PINV-EUR",
+						"grand_total": 200,
+						"outstanding_amount": 0,
+						"base_grand_total": 2_800_000,
+						"base_outstanding_amount": 0,
+						"purchase_order": "PO-3",
+					},
 				],
 			},
 			{
 				"invoices": [
-					{"name": "SINV-USD", "grand_total": 500, "outstanding_amount": 50, "base_grand_total": 6_500_000, "base_outstanding_amount": 650_000, "sales_order": "SO-1"},
-					{"name": "SINV-USD", "grand_total": 500, "outstanding_amount": 50, "base_grand_total": 6_500_000, "base_outstanding_amount": 650_000, "sales_order": "SO-2"},
+					{
+						"name": "SINV-USD",
+						"grand_total": 500,
+						"outstanding_amount": 50,
+						"base_grand_total": 6_500_000,
+						"base_outstanding_amount": 650_000,
+						"sales_order": "SO-1",
+					},
+					{
+						"name": "SINV-USD",
+						"grand_total": 500,
+						"outstanding_amount": 50,
+						"base_grand_total": 6_500_000,
+						"base_outstanding_amount": 650_000,
+						"sales_order": "SO-2",
+					},
 				],
 			},
 			currency="UZS",
@@ -217,8 +285,14 @@ class TestTenderDashboardBehaviour(unittest.TestCase):
 
 		with (
 			patch.object(tender, "deal_intake", return_value={"currency": "UZS"}),
-			patch.object(tender, "_purchase_document_chain", return_value={"orders": [], "receipts": [], "invoices": []}),
-			patch.object(tender, "_sales_document_chain", return_value={"orders": [], "deliveries": [], "invoices": []}),
+			patch.object(
+				tender,
+				"_purchase_document_chain",
+				return_value={"orders": [], "receipts": [], "invoices": []},
+			),
+			patch.object(
+				tender, "_sales_document_chain", return_value={"orders": [], "deliveries": [], "invoices": []}
+			),
 			patch.object(tender, "_bid_inputs", return_value=({}, {})),
 			patch.object(tender, "_compute_bid_pnl", return_value={"profit": 425_000}),
 		):
@@ -226,6 +300,7 @@ class TestTenderDashboardBehaviour(unittest.TestCase):
 
 		self.assertEqual(result["finance"]["planned_margin"], 425_000)
 		self.assertEqual(result["finance"]["currency"], "UZS")
+
 	def test_portfolio_progress_is_value_weighted(self):
 		db = _FakeDB()
 		tender = _load_tender(db, ["Sales Manager"])
@@ -257,15 +332,27 @@ class TestTenderDashboardBehaviour(unittest.TestCase):
 	def test_dashboard_can_request_three_month_trend_without_widening_kpis(self):
 		db = _FakeDB(
 			{
-				"DEAL-MAY": {"assigned_to": "source@example.com", "submitted_at": "2026-05-08", "submitted_by": "source@example.com"},
-				"DEAL-JULY": {"assigned_to": "source@example.com", "submitted_at": "2026-07-08", "submitted_by": "source@example.com"},
+				"DEAL-MAY": {
+					"assigned_to": "source@example.com",
+					"submitted_at": "2026-05-08",
+					"submitted_by": "source@example.com",
+				},
+				"DEAL-JULY": {
+					"assigned_to": "source@example.com",
+					"submitted_at": "2026-07-08",
+					"submitted_by": "source@example.com",
+				},
 			},
 		)
 		tender = _load_tender(db, ["Sales User"])
 
 		with patch.object(tender, "_tender_deal_names", return_value={"DEAL-MAY", "DEAL-JULY"}):
 			payload = tender.tender_dashboard(
-				"Test Company", "2026-07-01", "2026-07-31", "2026-05-01", "2026-07-31",
+				"Test Company",
+				"2026-07-01",
+				"2026-07-31",
+				"2026-05-01",
+				"2026-07-31",
 			)
 
 		self.assertEqual(payload["period"], {"from_date": "2026-07-01", "to_date": "2026-07-31"})
@@ -296,7 +383,9 @@ class TestTenderDashboardBehaviour(unittest.TestCase):
 		self.assertFalse(payload["role_scope"]["can_view_finance"])
 
 	def test_legacy_result_without_submission_is_unverified_not_participation(self):
-		db = _FakeDB({"DEAL-1": {"assigned_to": "source@example.com", "result": "won", "result_at": "2026-07-10"}})
+		db = _FakeDB(
+			{"DEAL-1": {"assigned_to": "source@example.com", "result": "won", "result_at": "2026-07-10"}}
+		)
 		tender = _load_tender(db, ["Sales User"])
 
 		with patch.object(tender, "_tender_deal_names", return_value={"DEAL-1"}):
@@ -319,7 +408,15 @@ class TestTenderDashboardBehaviour(unittest.TestCase):
 		self.assertEqual(db.intakes["DEAL-1"]["submitted_by"], "submitter@example.com")
 
 	def test_submission_preserves_the_first_server_fact(self):
-		db = _FakeDB({"DEAL-1": {"submitted_at": "2026-07-01 08:00:00", "submitted_by": "first@example.com", "submission_reference": "FIRST"}})
+		db = _FakeDB(
+			{
+				"DEAL-1": {
+					"submitted_at": "2026-07-01 08:00:00",
+					"submitted_by": "first@example.com",
+					"submission_reference": "FIRST",
+				}
+			}
+		)
 		tender = _load_tender(db, ["Sales User"])
 
 		payload = tender.mark_tender_submitted("DEAL-1", "RETRY")
@@ -351,15 +448,17 @@ class TestTenderDashboardBehaviour(unittest.TestCase):
 		self.assertIn("FOR UPDATE", db.lock_reads[0][0].upper())
 
 	def test_intake_save_cannot_spoof_or_clear_server_managed_assignment(self):
-		db = _FakeDB({
-			"DEAL-1": {
-				"assigned_to": "owner@example.com",
-				"assigned_to_name": "Original Owner",
-				"assigned_at": "2026-07-01 08:00:00",
-				"assigned_by": "director@example.com",
-				"notes": "before",
-			},
-		})
+		db = _FakeDB(
+			{
+				"DEAL-1": {
+					"assigned_to": "owner@example.com",
+					"assigned_to_name": "Original Owner",
+					"assigned_at": "2026-07-01 08:00:00",
+					"assigned_by": "director@example.com",
+					"notes": "before",
+				},
+			}
+		)
 		tender = _load_tender(db, ["Sales User"])
 
 		payload = tender.save_deal_intake(
@@ -445,15 +544,17 @@ class TestTenderDashboardBehaviour(unittest.TestCase):
 		self.assertEqual(evidence["event_dates"]["assigned"], "2026-07-22 09:00:00")
 
 	def test_sourcing_dashboard_excludes_unassigned_deals(self):
-		db = _FakeDB({
-			"DEAL-MINE": {
-				"assigned_to": "source@example.com",
-				"assigned_at": "2026-07-03 09:00:00",
-				"assigned_by": "director@example.com",
-				"go_no_go": "go",
-			},
-			"DEAL-OTHER": {"assigned_to": "other@example.com", "go_no_go": "go"},
-		})
+		db = _FakeDB(
+			{
+				"DEAL-MINE": {
+					"assigned_to": "source@example.com",
+					"assigned_at": "2026-07-03 09:00:00",
+					"assigned_by": "director@example.com",
+					"go_no_go": "go",
+				},
+				"DEAL-OTHER": {"assigned_to": "other@example.com", "go_no_go": "go"},
+			}
+		)
 		tender = _load_tender(db, ["Sales User"])
 		with patch.object(tender, "_tender_deal_names", return_value={"DEAL-MINE", "DEAL-OTHER"}):
 			payload = tender.tender_dashboard("Test Company", "2026-07-01", "2026-07-31")
@@ -478,16 +579,33 @@ class TestTenderDashboardBehaviour(unittest.TestCase):
 			creations={"DEAL-MINE": "2026-06-01"},
 		)
 		tender = _load_tender(db, ["Sales User"])
+
 		def has_column(doctype, field):
 			return (doctype, field) in {
 				("CRM Deal", "custom_tender_intake"),
 				("Purchase Order", "custom_crm_deal"),
 			}
+
 		def get_list(doctype, **_kwargs):
 			if doctype == "Purchase Order":
-				return [_Row(name="PO-1", custom_crm_deal="DEAL-MINE", transaction_date="2026-07-05", schedule_date=None, per_received=0, status="To Receive", base_grand_total=100)]
+				return [
+					_Row(
+						name="PO-1",
+						custom_crm_deal="DEAL-MINE",
+						transaction_date="2026-07-05",
+						schedule_date=None,
+						per_received=0,
+						status="To Receive",
+						base_grand_total=100,
+					)
+				]
 			return []
-		with patch.object(tender, "_tender_deal_names", return_value={"DEAL-MINE"}), patch.object(tender.frappe.db, "has_column", has_column), patch.object(tender.frappe, "get_list", get_list):
+
+		with (
+			patch.object(tender, "_tender_deal_names", return_value={"DEAL-MINE"}),
+			patch.object(tender.frappe.db, "has_column", has_column),
+			patch.object(tender.frappe, "get_list", get_list),
+		):
 			payload = tender.tender_dashboard("Test Company", "2026-07-01", "2026-07-31")
 
 		self.assertEqual(payload["acquisition"]["identified"], 0)
@@ -506,8 +624,28 @@ class TestTenderDashboardBehaviour(unittest.TestCase):
 
 		def get_list(doctype, **_kwargs):
 			rows = {
-				"Purchase Order": [_Row(name="PO-MINE", custom_crm_deal="DEAL-MINE", transaction_date="2026-06-05", schedule_date=None, per_received=0, status="To Receive", base_grand_total=100)],
-				"Sales Order": [_Row(name="SO-MINE", custom_crm_deal="DEAL-MINE", transaction_date="2026-06-05", delivery_date=None, per_delivered=0, status="To Deliver and Bill", base_grand_total=100)],
+				"Purchase Order": [
+					_Row(
+						name="PO-MINE",
+						custom_crm_deal="DEAL-MINE",
+						transaction_date="2026-06-05",
+						schedule_date=None,
+						per_received=0,
+						status="To Receive",
+						base_grand_total=100,
+					)
+				],
+				"Sales Order": [
+					_Row(
+						name="SO-MINE",
+						custom_crm_deal="DEAL-MINE",
+						transaction_date="2026-06-05",
+						delivery_date=None,
+						per_delivered=0,
+						status="To Deliver and Bill",
+						base_grand_total=100,
+					)
+				],
 				"Purchase Invoice": [
 					_Row(name="PINV-DRAFT", posting_date="2026-07-02", docstatus=0, status="Draft"),
 					_Row(name="PINV-UNPAID", posting_date="2026-07-03", docstatus=1, status="Unpaid"),
@@ -522,7 +660,9 @@ class TestTenderDashboardBehaviour(unittest.TestCase):
 					_Row(parent="PINV-OUTSIDE", purchase_order="PO-MINE"),
 					_Row(parent="PINV-OTHER", purchase_order="PO-OTHER"),
 				],
-				"Sales Invoice": [_Row(name="SINV-UNPAID", posting_date="2026-07-05", docstatus=1, status="Partly Paid")],
+				"Sales Invoice": [
+					_Row(name="SINV-UNPAID", posting_date="2026-07-05", docstatus=1, status="Partly Paid")
+				],
 				"Sales Invoice Item": [_Row(parent="SINV-UNPAID", sales_order="SO-MINE")],
 			}
 			result = rows.get(doctype, [])
@@ -583,21 +723,26 @@ class TestTenderDashboardBehaviour(unittest.TestCase):
 		self.assertEqual((august["identified"], august["go"], august["submitted"]), (0, 0, 0))
 
 	def test_ready_transition_occurs_when_required_documents_complete(self):
-		db = _FakeDB({
-			"DEAL-READY": {
-				"go_no_go": "go",
-				"go_no_go_at": "2026-06-04 10:00:00",
-				"go_no_go_by": "source@example.com",
-				"assigned_to": "source@example.com",
-				"documents": [{"label": "Bid security", "required": 1, "done": 0, "date": ""}],
-			},
-		})
+		db = _FakeDB(
+			{
+				"DEAL-READY": {
+					"go_no_go": "go",
+					"go_no_go_at": "2026-06-04 10:00:00",
+					"go_no_go_by": "source@example.com",
+					"assigned_to": "source@example.com",
+					"documents": [{"label": "Bid security", "required": 1, "done": 0, "date": ""}],
+				},
+			}
+		)
 		tender = _load_tender(db, ["Sales User"])
 
-		completed = tender.save_deal_intake("DEAL-READY", {
-			"go_no_go": "go",
-			"documents": [{"label": "Bid security", "required": 1, "done": 1, "date": "2026-07-22"}],
-		})
+		completed = tender.save_deal_intake(
+			"DEAL-READY",
+			{
+				"go_no_go": "go",
+				"documents": [{"label": "Bid security", "required": 1, "done": 1, "date": "2026-07-22"}],
+			},
+		)
 
 		self.assertEqual(completed["intake"]["go_no_go_at"], "2026-06-04 10:00:00")
 		self.assertEqual(completed["intake"]["ready_at"], "2026-07-22 09:00:00")
@@ -609,27 +754,35 @@ class TestTenderDashboardBehaviour(unittest.TestCase):
 		self.assertEqual((july["go"], july["ready"]), (0, 1))
 
 	def test_ready_regression_clears_audit_and_recompletion_records_a_new_transition(self):
-		db = _FakeDB({
-			"DEAL-READY": {
-				"go_no_go": "go",
-				"go_no_go_at": "2026-06-04 10:00:00",
-				"ready_at": "2026-07-01 08:00:00",
-				"ready_by": "first@example.com",
-				"documents": [{"label": "Bid security", "required": 1, "done": 1, "date": ""}],
-			},
-		})
+		db = _FakeDB(
+			{
+				"DEAL-READY": {
+					"go_no_go": "go",
+					"go_no_go_at": "2026-06-04 10:00:00",
+					"ready_at": "2026-07-01 08:00:00",
+					"ready_by": "first@example.com",
+					"documents": [{"label": "Bid security", "required": 1, "done": 1, "date": ""}],
+				},
+			}
+		)
 		tender = _load_tender(db, ["Sales User"], user="second@example.com")
 
-		regressed = tender.save_deal_intake("DEAL-READY", {
-			"go_no_go": "go",
-			"documents": [{"label": "Bid security", "required": 1, "done": 0, "date": ""}],
-		})
+		regressed = tender.save_deal_intake(
+			"DEAL-READY",
+			{
+				"go_no_go": "go",
+				"documents": [{"label": "Bid security", "required": 1, "done": 0, "date": ""}],
+			},
+		)
 		self.assertEqual((regressed["intake"]["ready_at"], regressed["intake"]["ready_by"]), ("", ""))
 
-		recompleted = tender.save_deal_intake("DEAL-READY", {
-			"go_no_go": "go",
-			"documents": [{"label": "Bid security", "required": 1, "done": 1, "date": ""}],
-		})
+		recompleted = tender.save_deal_intake(
+			"DEAL-READY",
+			{
+				"go_no_go": "go",
+				"documents": [{"label": "Bid security", "required": 1, "done": 1, "date": ""}],
+			},
+		)
 		self.assertEqual(recompleted["intake"]["ready_at"], "2026-07-22 09:00:00")
 		self.assertEqual(recompleted["intake"]["ready_by"], "second@example.com")
 
@@ -661,13 +814,38 @@ class TestTenderDashboardBehaviour(unittest.TestCase):
 		def get_list(doctype, **_kwargs):
 			if doctype == "Sales Order":
 				return [
-					_Row(name="SO-OPEN", custom_crm_deal="DEAL-MINE", transaction_date="2026-07-05", per_delivered=100, status="To Deliver and Bill", base_grand_total=100),
-					_Row(name="SO-CLOSED", custom_crm_deal="DEAL-MINE", transaction_date="2026-07-06", per_delivered=100, status="Closed", base_grand_total=100),
-					_Row(name="SO-CANCELLED", custom_crm_deal="DEAL-MINE", transaction_date="2026-07-07", per_delivered=0, status="Cancelled", base_grand_total=100),
+					_Row(
+						name="SO-OPEN",
+						custom_crm_deal="DEAL-MINE",
+						transaction_date="2026-07-05",
+						per_delivered=100,
+						status="To Deliver and Bill",
+						base_grand_total=100,
+					),
+					_Row(
+						name="SO-CLOSED",
+						custom_crm_deal="DEAL-MINE",
+						transaction_date="2026-07-06",
+						per_delivered=100,
+						status="Closed",
+						base_grand_total=100,
+					),
+					_Row(
+						name="SO-CANCELLED",
+						custom_crm_deal="DEAL-MINE",
+						transaction_date="2026-07-07",
+						per_delivered=0,
+						status="Cancelled",
+						base_grand_total=100,
+					),
 				]
 			return []
 
-		with patch.object(tender, "_tender_deal_names", return_value={"DEAL-MINE"}), patch.object(tender.frappe.db, "has_column", has_column), patch.object(tender.frappe, "get_list", get_list):
+		with (
+			patch.object(tender, "_tender_deal_names", return_value={"DEAL-MINE"}),
+			patch.object(tender.frappe.db, "has_column", has_column),
+			patch.object(tender.frappe, "get_list", get_list),
+		):
 			payload = tender.tender_dashboard("Test Company", "2026-07-01", "2026-07-31")
 
 		self.assertEqual(payload["execution"]["sales_orders"], 1)
@@ -678,12 +856,62 @@ class TestTenderDashboardBehaviour(unittest.TestCase):
 		db = _FakeDB({"DEAL-MINE": {"assigned_to": "source@example.com"}})
 		tender = _load_tender(db, ["Sales User"])
 		so_rows = [
-			_Row(name="SO-ALLOWED", customer="Customer", customer_name="Customer", transaction_date="2026-07-05", delivery_date="2026-07-20", currency="UZS", rounded_total=100, grand_total=100, base_grand_total=100, per_delivered=0, per_billed=0, status="To Deliver and Bill", custom_board_stage=None, custom_crm_deal="DEAL-MINE"),
-			_Row(name="SO-DENIED", customer="Customer", customer_name="Customer", transaction_date="2026-07-05", delivery_date="2026-07-20", currency="UZS", rounded_total=200, grand_total=200, base_grand_total=200, per_delivered=0, per_billed=0, status="To Deliver and Bill", custom_board_stage=None, custom_crm_deal="DEAL-MINE"),
+			_Row(
+				name="SO-ALLOWED",
+				customer="Customer",
+				customer_name="Customer",
+				transaction_date="2026-07-05",
+				delivery_date="2026-07-20",
+				currency="UZS",
+				rounded_total=100,
+				grand_total=100,
+				base_grand_total=100,
+				per_delivered=0,
+				per_billed=0,
+				status="To Deliver and Bill",
+				custom_board_stage=None,
+				custom_crm_deal="DEAL-MINE",
+			),
+			_Row(
+				name="SO-DENIED",
+				customer="Customer",
+				customer_name="Customer",
+				transaction_date="2026-07-05",
+				delivery_date="2026-07-20",
+				currency="UZS",
+				rounded_total=200,
+				grand_total=200,
+				base_grand_total=200,
+				per_delivered=0,
+				per_billed=0,
+				status="To Deliver and Bill",
+				custom_board_stage=None,
+				custom_crm_deal="DEAL-MINE",
+			),
 		]
 		po_rows = [
-			_Row(name="PO-ALLOWED", supplier="Supplier", supplier_name="Supplier", transaction_date="2026-07-05", schedule_date="2026-07-20", per_received=0, status="To Receive", base_grand_total=100, custom_crm_deal="DEAL-MINE"),
-			_Row(name="PO-DENIED", supplier="Supplier", supplier_name="Supplier", transaction_date="2026-07-05", schedule_date="2026-07-20", per_received=0, status="To Receive", base_grand_total=200, custom_crm_deal="DEAL-MINE"),
+			_Row(
+				name="PO-ALLOWED",
+				supplier="Supplier",
+				supplier_name="Supplier",
+				transaction_date="2026-07-05",
+				schedule_date="2026-07-20",
+				per_received=0,
+				status="To Receive",
+				base_grand_total=100,
+				custom_crm_deal="DEAL-MINE",
+			),
+			_Row(
+				name="PO-DENIED",
+				supplier="Supplier",
+				supplier_name="Supplier",
+				transaction_date="2026-07-05",
+				schedule_date="2026-07-20",
+				per_received=0,
+				status="To Receive",
+				base_grand_total=200,
+				custom_crm_deal="DEAL-MINE",
+			),
 		]
 
 		def has_column(doctype, field):
@@ -703,7 +931,16 @@ class TestTenderDashboardBehaviour(unittest.TestCase):
 		def has_permission(_doctype, _ptype, doc=None):
 			return doc not in {"SO-DENIED", "PO-DENIED"}
 
-		with patch.object(tender, "_tender_deal_names", return_value={"DEAL-MINE"}), patch.object(tender, "_ensure_default_stages"), patch.object(tender, "_stages", return_value=[]), patch.object(tender, "_require_tender_view"), patch.object(tender.frappe.db, "has_column", has_column), patch.object(tender.frappe, "get_all", document_rows), patch.object(tender.frappe, "get_list", document_rows), patch.object(tender.frappe, "has_permission", has_permission):
+		with (
+			patch.object(tender, "_tender_deal_names", return_value={"DEAL-MINE"}),
+			patch.object(tender, "_ensure_default_stages"),
+			patch.object(tender, "_stages", return_value=[]),
+			patch.object(tender, "_require_tender_view"),
+			patch.object(tender.frappe.db, "has_column", has_column),
+			patch.object(tender.frappe, "get_all", document_rows),
+			patch.object(tender.frappe, "get_list", document_rows),
+			patch.object(tender.frappe, "has_permission", has_permission),
+		):
 			dashboard = tender.tender_dashboard("Test Company", "2026-07-01", "2026-07-31")
 			sales_board = tender.so_board("Test Company", tender_only=1)
 			logistics = tender.logist_board("Test Company")
@@ -714,16 +951,25 @@ class TestTenderDashboardBehaviour(unittest.TestCase):
 		self.assertEqual([row["po"] for row in logistics["rows"]], ["PO-ALLOWED"])
 
 	def test_sourcing_target_excludes_deals_without_read_permission(self):
-		db = _FakeDB({
-			"DEAL-ALLOWED": {"assigned_to": "source@example.com"},
-			"DEAL-DENIED": {"assigned_to": "source@example.com"},
-		})
+		db = _FakeDB(
+			{
+				"DEAL-ALLOWED": {"assigned_to": "source@example.com"},
+				"DEAL-DENIED": {"assigned_to": "source@example.com"},
+			}
+		)
 		tender = _load_tender(db, ["Sales User"])
 
 		def has_permission(doctype, _ptype, doc=None):
 			return not (doctype == "CRM Deal" and doc == "DEAL-DENIED")
 
-		with patch.object(tender, "_tender_deal_names", return_value={"DEAL-ALLOWED", "DEAL-DENIED"}), patch.object(tender, "_require_tender_view"), patch.object(tender, "_deal_deadlines", return_value={"risk": "good", "milestones": []}), patch.object(tender, "_deal_landed", return_value=(0.0, 0)), patch.object(tender, "_deal_label", side_effect=lambda deal: deal), patch.object(tender.frappe, "has_permission", has_permission):
+		with (
+			patch.object(tender, "_tender_deal_names", return_value={"DEAL-ALLOWED", "DEAL-DENIED"}),
+			patch.object(tender, "_require_tender_view"),
+			patch.object(tender, "_deal_deadlines", return_value={"risk": "good", "milestones": []}),
+			patch.object(tender, "_deal_landed", return_value=(0.0, 0)),
+			patch.object(tender, "_deal_label", side_effect=lambda deal: deal),
+			patch.object(tender.frappe, "has_permission", has_permission),
+		):
 			payload = tender.sourcing_my_tenders("Test Company")
 
 		self.assertEqual([row["deal"] for row in payload["rows"]], ["DEAL-ALLOWED"])
@@ -738,8 +984,16 @@ class TestTenderDashboardBehaviour(unittest.TestCase):
 		with (
 			patch.object(tender, "_tender_deal_names", return_value={"DEAL-ALLOWED", "DEAL-DENIED"}),
 			patch.object(tender, "_deal_deadlines", return_value={"risk": "good", "milestones": []}),
-			patch.object(tender, "_bid_inputs", return_value=({}, {"so_revenue": 0, "po_landed": 0, "po_count": 0, "so_count": 0})),
-			patch.object(tender, "_compute_bid_pnl", return_value={"bid_price": 0, "ostatok": 0, "margin_on_revenue_pct": 0}),
+			patch.object(
+				tender,
+				"_bid_inputs",
+				return_value=({}, {"so_revenue": 0, "po_landed": 0, "po_count": 0, "so_count": 0}),
+			),
+			patch.object(
+				tender,
+				"_compute_bid_pnl",
+				return_value={"bid_price": 0, "ostatok": 0, "margin_on_revenue_pct": 0},
+			),
 			patch.object(tender, "_deal_label", side_effect=lambda deal: deal),
 			patch.object(tender.frappe, "has_permission", has_permission),
 		):
@@ -778,22 +1032,32 @@ class TestTenderDashboardBehaviour(unittest.TestCase):
 		self.assertIsNone(logistics["rows"][0]["delivery"])
 
 	def test_director_legacy_result_is_unverified_not_a_verified_win(self):
-		db = _FakeDB({
-			"DEAL-LEGACY": {"result": "won", "result_at": "2026-06-01"},
-			"DEAL-VERIFIED": {
-				"result": "lost",
-				"result_at": "2026-07-01",
-				"submitted_at": "2026-06-20",
-				"submitted_by": "source@example.com",
-			},
-		})
+		db = _FakeDB(
+			{
+				"DEAL-LEGACY": {"result": "won", "result_at": "2026-06-01"},
+				"DEAL-VERIFIED": {
+					"result": "lost",
+					"result_at": "2026-07-01",
+					"submitted_at": "2026-06-20",
+					"submitted_by": "source@example.com",
+				},
+			}
+		)
 		tender = _load_tender(db, ["Stabler Tender Director"])
 
 		with (
 			patch.object(tender, "_tender_deal_names", return_value={"DEAL-LEGACY", "DEAL-VERIFIED"}),
 			patch.object(tender, "_deal_deadlines", return_value={"risk": "good", "milestones": []}),
-			patch.object(tender, "_bid_inputs", return_value=({}, {"so_revenue": 0, "po_landed": 0, "po_count": 0, "so_count": 0})),
-			patch.object(tender, "_compute_bid_pnl", return_value={"bid_price": 0, "ostatok": 0, "margin_on_revenue_pct": 0}),
+			patch.object(
+				tender,
+				"_bid_inputs",
+				return_value=({}, {"so_revenue": 0, "po_landed": 0, "po_count": 0, "so_count": 0}),
+			),
+			patch.object(
+				tender,
+				"_compute_bid_pnl",
+				return_value={"bid_price": 0, "ostatok": 0, "margin_on_revenue_pct": 0},
+			),
 			patch.object(tender, "_deal_label", side_effect=lambda deal: deal),
 		):
 			payload = tender.tender_director_board("Test Company")

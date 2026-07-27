@@ -78,9 +78,7 @@ class ImportTruck(Document):
 				_assert_override_role()
 				self.add_comment(
 					"Comment",
-					frappe._("Departure released by override: {0}").format(
-						self.departure_override_reason
-					),
+					frappe._("Departure released by override: {0}").format(self.departure_override_reason),
 				)
 			return
 
@@ -92,27 +90,19 @@ def _blocker_message(blockers) -> str:
 	lines = []
 	for b in blockers:
 		if b["code"] == "declaration_not_cleared":
-			lines.append(
-				frappe._("Customs declaration {0} is not cleared.").format(b["gtd_number"])
-			)
+			lines.append(frappe._("Customs declaration {0} is not cleared.").format(b["gtd_number"]))
 		elif b["code"] == "no_required_declaration":
 			lines.append(
 				frappe._("No customs declaration on this invoice is marked as required for departure.")
 			)
 		elif b["code"] == "vet_certificate_missing":
 			lines.append(frappe._("A valid veterinary certificate is required."))
-	return (
-		frappe._("This truck cannot leave Iran yet:")
-		+ "\n- "
-		+ "\n- ".join(lines)
-	)
+	return frappe._("This truck cannot leave Iran yet:") + "\n- " + "\n- ".join(lines)
 
 
 def _assert_override_role() -> None:
 	if not set(frappe.get_roles()).intersection(("Imports Manager", "System Manager")):
-		frappe.throw(
-			frappe._("Only an Imports Manager can release a truck without customs clearance.")
-		)
+		frappe.throw(frappe._("Only an Imports Manager can release a truck without customs clearance."))
 
 
 def _has_required_flag() -> bool:

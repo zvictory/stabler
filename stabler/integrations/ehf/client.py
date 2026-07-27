@@ -77,12 +77,8 @@ def _normalize_status(value: Any) -> str:
 	return "Submitted"
 
 
-def _post(
-	endpoint: str, payload: dict[str, Any], signature: str, token: str | None
-) -> dict[str, Any]:
-	body = json.dumps({"payload": payload, "signature": signature}, ensure_ascii=False).encode(
-		"utf-8"
-	)
+def _post(endpoint: str, payload: dict[str, Any], signature: str, token: str | None) -> dict[str, Any]:
+	body = json.dumps({"payload": payload, "signature": signature}, ensure_ascii=False).encode("utf-8")
 	headers = {"Content-Type": "application/json", "Accept": "application/json"}
 	if token:
 		headers["Authorization"] = f"Bearer {token}"

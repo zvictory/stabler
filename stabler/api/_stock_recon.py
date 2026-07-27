@@ -8,6 +8,7 @@ only the lines that differ and can show the operator a clear before/after.
 
 Nothing here writes stock; it only shapes input. Unit tested with no bench.
 """
+
 from __future__ import annotations
 
 _EPS = 1e-6
@@ -16,7 +17,7 @@ _EPS = 1e-6
 def _f(v) -> float:
 	try:
 		return float(v)
-	except (TypeError, ValueError):
+	except TypeError, ValueError:
 		return 0.0
 
 

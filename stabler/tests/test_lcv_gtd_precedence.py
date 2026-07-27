@@ -57,7 +57,9 @@ class TestApplyGtdPrecedence(unittest.TestCase):
 	def test_no_warning_when_only_gtd(self):
 		out, warnings = lcv_math.apply_gtd_customs_precedence(
 			{"Freight": 100.0, "Iran Customs Duty": 50.0},
-			gtd_duty=1_000_000, gtd_excise=0, gtd_present=True,
+			gtd_duty=1_000_000,
+			gtd_excise=0,
+			gtd_present=True,
 		)
 		self.assertEqual(warnings, [])
 		self.assertEqual(out["Iran Customs Duty"], 50.0)  # Iran duty untouched

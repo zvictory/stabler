@@ -32,6 +32,4 @@ class FreightBooking(Document):
 		has_ci = bool(self.commercial_invoice)
 		has_container = bool(self.container)
 		if has_ci == has_container:
-			frappe.throw(
-				frappe._("Set exactly one of Commercial Invoice or Container on a Freight Booking.")
-			)
+			frappe.throw(frappe._("Set exactly one of Commercial Invoice or Container on a Freight Booking."))

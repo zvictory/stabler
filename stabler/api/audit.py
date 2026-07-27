@@ -351,6 +351,7 @@ def audit_meta() -> dict:
 # Gap-42: Tamper-evidence — seal_audit_log / verify_audit_integrity           #
 # =========================================================================== #
 
+
 def _require_admin() -> None:
 	"""Require System Manager or Stabler Admin role."""
 	if not {"System Manager", "Stabler Admin"} & set(frappe.get_roles()):
@@ -381,9 +382,9 @@ def seal_audit_log() -> dict:
 
 	    {
 	        "seal_name": "SEAL-2026-000001",
-	        "seq":        1,
-	        "hash":       "<64-char hex>",
-	        "sealed_at":  "2026-06-16 12:00:00",
+	        "seq": 1,
+	        "hash": "<64-char hex>",
+	        "sealed_at": "2026-06-16 12:00:00",
 	        "version_count": 42,
 	        "period": "2026-01-01 00:00:00 / 2026-06-16 12:00:00",
 	    }

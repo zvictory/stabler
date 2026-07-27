@@ -98,7 +98,9 @@ class TestConcurrency(unittest.TestCase):
 
 		# Test update
 		with self.assertRaises(TimestampMismatchError):
-			update_purchase_invoice("PI-00001", supplier="Test Supplier", items=[], modified="2026-06-13 11:00:00")
+			update_purchase_invoice(
+				"PI-00001", supplier="Test Supplier", items=[], modified="2026-06-13 11:00:00"
+			)
 		with self.assertRaises(ValidationError):
 			update_purchase_invoice("PI-00001", supplier="Test Supplier", items=[], modified=None)
 

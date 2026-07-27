@@ -60,7 +60,7 @@ _NUMERIC_TYPES = {"int", "number", "money", "percent"}
 def safe_sheet_name(name: str) -> str:
 	"""Excel sheet names: ≤31 chars, none of []:*?/\\, not blank."""
 	s = re.sub(r"[\[\]:*?/\\]", " ", str(name or "Report")).strip()
-	return (s[:31] or "Report")
+	return s[:31] or "Report"
 
 
 def report_filename(prefix: str, date_from=None, date_to=None, suffix=None) -> str:
@@ -100,7 +100,7 @@ def _coerce(value, col_type: str):
 	if col_type in _NUMERIC_TYPES:
 		try:
 			return float(value)
-		except (TypeError, ValueError):
+		except TypeError, ValueError:
 			return value
 	if col_type == "date":
 		if isinstance(value, (datetime.date, datetime.datetime)):
@@ -136,7 +136,7 @@ def build_report_workbook(
 	r += 1
 
 	# ── Metadata block ──
-	for label, value in (header_meta or []):
+	for label, value in header_meta or []:
 		if value in (None, ""):
 			continue
 		lc = ws.cell(row=r, column=1, value=f"{label}:")
@@ -244,7 +244,7 @@ def _row_get(row, key, idx):
 		return row.get(key)
 	try:
 		return row[idx]
-	except (IndexError, TypeError):
+	except IndexError, TypeError:
 		return None
 
 
@@ -275,7 +275,7 @@ def build_financial_statement_workbook(
 	if ncols > 1:
 		ws.merge_cells(start_row=r, start_column=1, end_row=r, end_column=ncols)
 	r += 1
-	for label, value in (header_meta or []):
+	for label, value in header_meta or []:
 		if value in (None, ""):
 			continue
 		ws.cell(row=r, column=1, value=f"{label}:").font = _META_LABEL_FONT
@@ -299,7 +299,7 @@ def build_financial_statement_workbook(
 		if isinstance(row, dict):
 			try:
 				indent = int(row.get(indent_key) or 0)
-			except (TypeError, ValueError):
+			except TypeError, ValueError:
 				indent = 0
 		is_bold = bool(bold_predicate(row)) if bold_predicate else False
 		for c, col in enumerate(columns, start=1):
@@ -333,7 +333,7 @@ def _write_title_meta(ws, title, header_meta, ncols) -> int:
 	if ncols > 1:
 		ws.merge_cells(start_row=r, start_column=1, end_row=r, end_column=ncols)
 	r += 1
-	for label, value in (header_meta or []):
+	for label, value in header_meta or []:
 		if value in (None, ""):
 			continue
 		ws.cell(row=r, column=1, value=f"{label}:").font = _META_LABEL_FONT
@@ -383,7 +383,8 @@ def build_ledger_workbook(
 	def _row(date_v, voucher_v, debit_v, credit_v, balance_v, *, bold=False):
 		nonlocal r
 		vals = [
-			_coerce(date_v, "date"), str(voucher_v or ""),
+			_coerce(date_v, "date"),
+			str(voucher_v or ""),
 			_coerce(debit_v, "money") if debit_v is not None else None,
 			_coerce(credit_v, "money") if credit_v is not None else None,
 			_coerce(balance_v, "money") if balance_v is not None else None,

@@ -1,4 +1,5 @@
 """Unit tests for the pure stock-reconciliation prep logic (no Frappe)."""
+
 from __future__ import annotations
 
 import unittest
@@ -20,8 +21,20 @@ class IsChangedTest(unittest.TestCase):
 class PrepareTest(unittest.TestCase):
 	def test_only_changed_lines_returned(self):
 		rows = [
-			{"item_code": "A", "warehouse": "W", "current_qty": 10, "counted_qty": 10, "valuation_rate": 5},  # unchanged
-			{"item_code": "B", "warehouse": "W", "current_qty": 10, "counted_qty": 7, "valuation_rate": 5},   # -3
+			{
+				"item_code": "A",
+				"warehouse": "W",
+				"current_qty": 10,
+				"counted_qty": 10,
+				"valuation_rate": 5,
+			},  # unchanged
+			{
+				"item_code": "B",
+				"warehouse": "W",
+				"current_qty": 10,
+				"counted_qty": 7,
+				"valuation_rate": 5,
+			},  # -3
 		]
 		res = prepare_reconciliation(rows)
 		self.assertEqual(res["summary"]["changed_count"], 1)
@@ -32,8 +45,20 @@ class PrepareTest(unittest.TestCase):
 
 	def test_summary_totals(self):
 		rows = [
-			{"item_code": "A", "warehouse": "W", "current_qty": 0, "counted_qty": 5, "valuation_rate": 2},   # +5, +10
-			{"item_code": "B", "warehouse": "W", "current_qty": 10, "counted_qty": 8, "valuation_rate": 3},  # -2, -6
+			{
+				"item_code": "A",
+				"warehouse": "W",
+				"current_qty": 0,
+				"counted_qty": 5,
+				"valuation_rate": 2,
+			},  # +5, +10
+			{
+				"item_code": "B",
+				"warehouse": "W",
+				"current_qty": 10,
+				"counted_qty": 8,
+				"valuation_rate": 3,
+			},  # -2, -6
 		]
 		s = prepare_reconciliation(rows)["summary"]
 		self.assertEqual(s["changed_count"], 2)

@@ -40,7 +40,7 @@ def fmt_money(value) -> str:
 	"""Whole-number amount with space thousands (e.g. 162 975 654)."""
 	try:
 		n = float(value or 0)
-	except (TypeError, ValueError):
+	except TypeError, ValueError:
 		return "—"
 	return f"{n:,.0f}".replace(",", " ")
 
@@ -155,7 +155,10 @@ def build_bid_docx(package: dict, path: str, today=None) -> str:
 		("Tovar tannarxi (landed)", f"{fmt_money(pricing.get('landed_goods'))} {ccy}".strip()),
 		("Foyda", f"{fmt_money(pricing.get('profit'))} {ccy}".strip()),
 		("Остаток", f"{fmt_money(pricing.get('ostatok'))} {ccy}".strip()),
-		("Marja (daromadga, %)", f"{pricing.get('margin_on_revenue_pct') if pricing.get('margin_on_revenue_pct') is not None else '—'}"),
+		(
+			"Marja (daromadga, %)",
+			f"{pricing.get('margin_on_revenue_pct') if pricing.get('margin_on_revenue_pct') is not None else '—'}",
+		),
 	]
 	_two_col_table(doc, price_rows)
 

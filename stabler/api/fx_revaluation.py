@@ -13,6 +13,7 @@ its doctype; we never hand-roll revaluation journal entries ourselves.
 Guest is rejected at the whitelist level (no_guest_login decorator pattern used
 here via explicit frappe.session.user check — consistent with other api modules).
 """
+
 from __future__ import annotations
 
 import frappe
@@ -36,6 +37,7 @@ def _base_currency(company: str) -> str:
 # ---------------------------------------------------------------------------
 # list_fx_accounts — accounts with a non-base-currency balance
 # ---------------------------------------------------------------------------
+
 
 @frappe.whitelist()
 def list_fx_accounts(company: str, posting_date: str = "") -> dict:
@@ -110,17 +112,19 @@ def list_fx_accounts(company: str, posting_date: str = "") -> dict:
 			book_rate=book_rate,
 		)
 
-		accounts.append({
-			"account": r.account,
-			"account_currency": r.account_currency,
-			"balance_in_account_ccy": float(result["balance_in_account_ccy"]),
-			"balance_base": bal_base,
-			"book_rate": float(result["book_rate"]),
-			"new_rate": float(result["new_rate"]),
-			"rate_diff": float(result["rate_diff"]),
-			"delta": float(result["delta"]),
-			"gain_loss": result["gain_loss"],
-		})
+		accounts.append(
+			{
+				"account": r.account,
+				"account_currency": r.account_currency,
+				"balance_in_account_ccy": float(result["balance_in_account_ccy"]),
+				"balance_base": bal_base,
+				"book_rate": float(result["book_rate"]),
+				"new_rate": float(result["new_rate"]),
+				"rate_diff": float(result["rate_diff"]),
+				"delta": float(result["delta"]),
+				"gain_loss": result["gain_loss"],
+			}
+		)
 
 	return {
 		"accounts": accounts,
@@ -132,6 +136,7 @@ def list_fx_accounts(company: str, posting_date: str = "") -> dict:
 # ---------------------------------------------------------------------------
 # list_fx_revaluations — browse existing docs
 # ---------------------------------------------------------------------------
+
 
 @frappe.whitelist()
 def list_fx_revaluations(
@@ -172,6 +177,7 @@ def list_fx_revaluations(
 # get_fx_revaluation — fetch one doc
 # ---------------------------------------------------------------------------
 
+
 @frappe.whitelist()
 def get_fx_revaluation(name: str) -> dict:
 	"""Fetch one Exchange Rate Revaluation doc by name."""
@@ -186,6 +192,7 @@ def get_fx_revaluation(name: str) -> dict:
 # ---------------------------------------------------------------------------
 # create_fx_revaluation — delegate fully to ERPNext
 # ---------------------------------------------------------------------------
+
 
 @frappe.whitelist()
 def create_fx_revaluation(

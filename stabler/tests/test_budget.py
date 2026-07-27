@@ -1,4 +1,5 @@
 """Unit tests for the pure budget-variance helpers (no Frappe, no DB)."""
+
 from __future__ import annotations
 
 import unittest
@@ -138,9 +139,27 @@ class ReportTest(unittest.TestCase):
 		# Rent: Expense, actual 12k > 10k -> unfavorable
 		# Wages: Expense, actual 50k == 50k -> on_budget
 		rows = [
-			{"account": "4100 - Sales", "period": "2026-01", "budget": 100000, "actual": 120000, "account_type": "Income"},
-			{"account": "5100 - Rent",  "period": "2026-01", "budget":  10000, "actual":  12000, "account_type": "Expense"},
-			{"account": "5200 - Wages", "period": "2026-01", "budget":  50000, "actual":  50000, "account_type": "Expense"},
+			{
+				"account": "4100 - Sales",
+				"period": "2026-01",
+				"budget": 100000,
+				"actual": 120000,
+				"account_type": "Income",
+			},
+			{
+				"account": "5100 - Rent",
+				"period": "2026-01",
+				"budget": 10000,
+				"actual": 12000,
+				"account_type": "Expense",
+			},
+			{
+				"account": "5200 - Wages",
+				"period": "2026-01",
+				"budget": 50000,
+				"actual": 50000,
+				"account_type": "Expense",
+			},
 		]
 		result = compute_variance_report(rows)
 		self.assertEqual(result["favorable_count"], 1)
@@ -159,8 +178,14 @@ class ReportTest(unittest.TestCase):
 
 	def test_passthrough_fields_preserved(self):
 		rows = [
-			{"account": "5100 - Rent", "cost_center": "HQ", "period": "Q1",
-			 "budget": 10000, "actual": 9000, "account_type": "Expense"},
+			{
+				"account": "5100 - Rent",
+				"cost_center": "HQ",
+				"period": "Q1",
+				"budget": 10000,
+				"actual": 9000,
+				"account_type": "Expense",
+			},
 		]
 		result = compute_variance_report(rows)
 		row = result["rows"][0]
@@ -194,8 +219,13 @@ class ReportTest(unittest.TestCase):
 
 	def test_large_uzs_amounts_precision_zero(self):
 		rows = [
-			{"account": "5100", "budget": 100_000_000, "actual": 98_500_000,
-			 "account_type": "Expense", "precision": 0},
+			{
+				"account": "5100",
+				"budget": 100_000_000,
+				"actual": 98_500_000,
+				"account_type": "Expense",
+				"precision": 0,
+			},
 		]
 		# precision must come through compute_variance_report's precision param
 		result = compute_variance_report(rows, precision=0)

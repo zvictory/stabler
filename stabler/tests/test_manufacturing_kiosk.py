@@ -17,7 +17,16 @@ class TestManufacturingKiosk(unittest.TestCase):
 	@patch("stabler.api.manufacturing._is_mfg_manager")
 	@patch("stabler.api.manufacturing._is_warehouse_role")
 	@patch("stabler.api.manufacturing.frappe.session")
-	def test_operator_a_viewing_own_work_order(self, mock_session, mock_is_wh, mock_is_mgr, mock_get_doc, mock_exists, mock_assert_can_read, mock_require_mfg):
+	def test_operator_a_viewing_own_work_order(
+		self,
+		mock_session,
+		mock_is_wh,
+		mock_is_mgr,
+		mock_get_doc,
+		mock_exists,
+		mock_assert_can_read,
+		mock_require_mfg,
+	):
 		# Setup
 		mock_exists.return_value = True
 		mock_is_mgr.return_value = False
@@ -52,7 +61,7 @@ class TestManufacturingKiosk(unittest.TestCase):
 		mock_doc.company = "Test Company"
 		mock_doc.bom_no = "BOM-001"
 		mock_doc.required_items = [mock_req_item]
-		mock_doc.get.return_value = "operator_a@example.com" # for doc.get("operator")
+		mock_doc.get.return_value = "operator_a@example.com"  # for doc.get("operator")
 
 		mock_get_doc.return_value = mock_doc
 
@@ -84,15 +93,24 @@ class TestManufacturingKiosk(unittest.TestCase):
 	@patch("stabler.api.manufacturing._is_mfg_manager")
 	@patch("stabler.api.manufacturing._is_warehouse_role")
 	@patch("stabler.api.manufacturing.frappe.session")
-	def test_operator_a_viewing_operator_b_work_order_fails(self, mock_session, mock_is_wh, mock_is_mgr, mock_get_doc, mock_exists, mock_assert_can_read, mock_require_mfg):
+	def test_operator_a_viewing_operator_b_work_order_fails(
+		self,
+		mock_session,
+		mock_is_wh,
+		mock_is_mgr,
+		mock_get_doc,
+		mock_exists,
+		mock_assert_can_read,
+		mock_require_mfg,
+	):
 		# Setup
 		mock_exists.return_value = True
 		mock_is_mgr.return_value = False
 		mock_is_wh.return_value = False
-		mock_session.user = "operator_a@example.com" # current user is Operator A
+		mock_session.user = "operator_a@example.com"  # current user is Operator A
 
 		mock_doc = MagicMock()
-		mock_doc.get.return_value = "operator_b@example.com" # operator assigned is Operator B
+		mock_doc.get.return_value = "operator_b@example.com"  # operator assigned is Operator B
 		mock_get_doc.return_value = mock_doc
 
 		# Expect PermissionError (IDOR Guard)
@@ -106,11 +124,20 @@ class TestManufacturingKiosk(unittest.TestCase):
 	@patch("stabler.api.manufacturing._is_mfg_manager")
 	@patch("stabler.api.manufacturing._is_warehouse_role")
 	@patch("stabler.api.manufacturing.frappe.session")
-	def test_warehouse_user_viewing_work_order(self, mock_session, mock_is_wh, mock_is_mgr, mock_get_doc, mock_exists, mock_assert_can_read, mock_require_mfg):
+	def test_warehouse_user_viewing_work_order(
+		self,
+		mock_session,
+		mock_is_wh,
+		mock_is_mgr,
+		mock_get_doc,
+		mock_exists,
+		mock_assert_can_read,
+		mock_require_mfg,
+	):
 		# Setup
 		mock_exists.return_value = True
 		mock_is_mgr.return_value = False
-		mock_is_wh.return_value = True # User is in warehouse role
+		mock_is_wh.return_value = True  # User is in warehouse role
 		mock_session.user = "warehouse@example.com"
 
 		# Mock required item
@@ -153,16 +180,31 @@ class TestManufacturingKiosk(unittest.TestCase):
 	@patch("stabler.api.manufacturing._is_warehouse_role")
 	@patch("stabler.api.manufacturing.frappe.session")
 	@patch("stabler.api.manufacturing.frappe.get_all")
-	def test_manager_viewing_work_order(self, mock_get_all, mock_session, mock_is_wh, mock_is_mgr, mock_get_doc, mock_exists, mock_assert_can_read, mock_require_mfg):
+	def test_manager_viewing_work_order(
+		self,
+		mock_get_all,
+		mock_session,
+		mock_is_wh,
+		mock_is_mgr,
+		mock_get_doc,
+		mock_exists,
+		mock_assert_can_read,
+		mock_require_mfg,
+	):
 		# Setup
 		mock_exists.return_value = True
-		mock_is_mgr.return_value = True # User is manager
+		mock_is_mgr.return_value = True  # User is manager
 		mock_is_wh.return_value = False
 		mock_session.user = "manager@example.com"
 
 		# Mock timeline comments
 		mock_get_all.return_value = [
-			{"name": "COMM-001", "content": "Started Work Order", "creation": "2026-06-12 10:00:00", "comment_by": "operator_a@example.com"}
+			{
+				"name": "COMM-001",
+				"content": "Started Work Order",
+				"creation": "2026-06-12 10:00:00",
+				"comment_by": "operator_a@example.com",
+			}
 		]
 
 		# Mock required item
@@ -223,10 +265,15 @@ class TestManufacturingKiosk(unittest.TestCase):
 		mock_item = MagicMock()
 		mock_se.items = [mock_item]
 
-		with patch("erpnext.manufacturing.doctype.work_order.work_order.make_stock_entry", return_value=mock_se), \
-		     patch("stabler.api.manufacturing.frappe.get_doc", return_value=mock_se), \
-		     patch("stabler.api.manufacturing._require_mfg"):
+		with (
+			patch(
+				"erpnext.manufacturing.doctype.work_order.work_order.make_stock_entry", return_value=mock_se
+			),
+			patch("stabler.api.manufacturing.frappe.get_doc", return_value=mock_se),
+			patch("stabler.api.manufacturing._require_mfg"),
+		):
 			from stabler.api.manufacturing import make_work_order_stock_entry
+
 			make_work_order_stock_entry("WO-00001", "Manufacture", qty=5.0)
 
 		self.assertEqual(mock_item.allow_zero_valuation_rate, 1)
@@ -238,7 +285,8 @@ class TestManufacturingKiosk(unittest.TestCase):
 	def test_tomorrow_wo_material_request_creation(self, mock_new_doc, mock_exists):
 		# Setup
 		from frappe.utils import add_days, getdate, today
-		mock_exists.return_value = False # no existing MR
+
+		mock_exists.return_value = False  # no existing MR
 
 		# Mock Work Order doc
 		mock_wo = MagicMock()
@@ -258,6 +306,7 @@ class TestManufacturingKiosk(unittest.TestCase):
 		mock_new_doc.return_value = mock_mr
 
 		orig_get_value = frappe.db.get_value
+
 		def get_value_side_effect(*args, **kwargs):
 			# Mock actual stock in WIP Wh as 40.0 (shortage = 60.0)
 			if args and args[0] == "Bin":
@@ -275,12 +324,15 @@ class TestManufacturingKiosk(unittest.TestCase):
 		self.assertEqual(mock_mr.work_order, "WO-TOMORROW")
 		self.assertTrue(mock_mr.append.called)
 		# Assert shortage quantity (100.0 - 40.0 = 60.0) is appended
-		mock_mr.append.assert_called_with("items", {
-			"item_code": "RAW-01",
-			"qty": 60.0,
-			"warehouse": "WIP Wh",
-			"schedule_date": mock_wo.planned_start_date
-		})
+		mock_mr.append.assert_called_with(
+			"items",
+			{
+				"item_code": "RAW-01",
+				"qty": 60.0,
+				"warehouse": "WIP Wh",
+				"schedule_date": mock_wo.planned_start_date,
+			},
+		)
 		self.assertTrue(mock_mr.insert.called)
 		self.assertTrue(mock_mr.submit.called)
 
@@ -291,7 +343,16 @@ class TestManufacturingKiosk(unittest.TestCase):
 	@patch("stabler.api.inventory.frappe.db.exists")
 	@patch("stabler.api.inventory.frappe.db.get_value")
 	@patch("frappe.permissions.get_user_permissions")
-	def test_restricted_operator_warehouse_filters(self, mock_get_user_perms, mock_get_value, mock_exists, mock_get_all, mock_sql, mock_get_roles, mock_session):
+	def test_restricted_operator_warehouse_filters(
+		self,
+		mock_get_user_perms,
+		mock_get_value,
+		mock_exists,
+		mock_get_all,
+		mock_sql,
+		mock_get_roles,
+		mock_session,
+	):
 		# Setup
 		mock_session.user = "operator@example.com"
 		mock_get_roles.return_value = ["Manufacturing User"]
@@ -302,6 +363,7 @@ class TestManufacturingKiosk(unittest.TestCase):
 			if dt == "Warehouse" and name == "WIP-4":
 				return "All Warehouses"
 			return None
+
 		mock_get_value.side_effect = get_value_side_effect
 
 		# Mock Operator Work Order WIP Warehouse (only allowed to see "WIP-4")
@@ -311,21 +373,56 @@ class TestManufacturingKiosk(unittest.TestCase):
 		def sql_side_effect(query, *args, **kwargs):
 			if "tabWarehouse" in query:
 				return [
-					{"name": "WIP-4", "warehouse_name": "WIP-4", "parent_warehouse": "All Warehouses", "is_group": 0, "warehouse_type": "WIP", "disabled": 0, "lft": 2, "rgt": 3},
-					{"name": "WIP-5", "warehouse_name": "WIP-5", "parent_warehouse": "All Warehouses", "is_group": 0, "warehouse_type": "WIP", "disabled": 0, "lft": 4, "rgt": 5},
-					{"name": "All Warehouses", "warehouse_name": "All Warehouses", "parent_warehouse": None, "is_group": 1, "warehouse_type": None, "disabled": 0, "lft": 1, "rgt": 6}
+					{
+						"name": "WIP-4",
+						"warehouse_name": "WIP-4",
+						"parent_warehouse": "All Warehouses",
+						"is_group": 0,
+						"warehouse_type": "WIP",
+						"disabled": 0,
+						"lft": 2,
+						"rgt": 3,
+					},
+					{
+						"name": "WIP-5",
+						"warehouse_name": "WIP-5",
+						"parent_warehouse": "All Warehouses",
+						"is_group": 0,
+						"warehouse_type": "WIP",
+						"disabled": 0,
+						"lft": 4,
+						"rgt": 5,
+					},
+					{
+						"name": "All Warehouses",
+						"warehouse_name": "All Warehouses",
+						"parent_warehouse": None,
+						"is_group": 1,
+						"warehouse_type": None,
+						"disabled": 0,
+						"lft": 1,
+						"rgt": 6,
+					},
 				]
 			if "tabBin" in query:
 				if "item_code" in query:
 					return [
-						{"item_code": "ITEM-1", "item_name": "Item 1", "item_group": "Group 1", "stock_uom": "Nos", "actual_qty": 10.0, "reserved_qty": 2.0, "ordered_qty": 0.0, "projected_qty": 8.0, "valuation_rate": 10.0}
+						{
+							"item_code": "ITEM-1",
+							"item_name": "Item 1",
+							"item_group": "Group 1",
+							"stock_uom": "Nos",
+							"actual_qty": 10.0,
+							"reserved_qty": 2.0,
+							"ordered_qty": 0.0,
+							"projected_qty": 8.0,
+							"valuation_rate": 10.0,
+						}
 					]
 				else:
-					return [
-						("WIP-4", 100.0),
-						("WIP-5", 200.0)
-					]
+					return [("WIP-4", 100.0), ("WIP-5", 200.0)]
 			return []
+
 		mock_sql.side_effect = sql_side_effect
 
 		from stabler.api.inventory import list_warehouses, warehouse_stock
@@ -346,6 +443,7 @@ class TestManufacturingKiosk(unittest.TestCase):
 		# Accessing WIP-5 stock should raise PermissionError
 		with self.assertRaises(PermissionError):
 			warehouse_stock("Test Company", "WIP-5")
+
 
 if __name__ == "__main__":
 	unittest.main()

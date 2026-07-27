@@ -191,7 +191,7 @@ def _load_state(chat_id) -> dict:
 		return {"step": _flow.STEP_MAIN, "kassa": None, "posting_date": None}
 	try:
 		state = json.loads(raw)
-	except (TypeError, ValueError):
+	except TypeError, ValueError:
 		return {"step": _flow.STEP_MAIN, "kassa": None, "posting_date": None}
 	if not isinstance(state, dict):
 		return {"step": _flow.STEP_MAIN, "kassa": None, "posting_date": None}
@@ -319,7 +319,7 @@ def _cbu_line(cbu: dict, base_currency: str) -> str | None:
 	if not rate:
 		return None
 	date_str = (cbu or {}).get("date") or ""
-	return f"\U0001F4B1 1 USD = {_flow.format_amount(rate, base_currency)} (CBU {date_str})"
+	return f"\U0001f4b1 1 USD = {_flow.format_amount(rate, base_currency)} (CBU {date_str})"
 
 
 def _leaf_balance_strings(company: str, leaves: list[dict]) -> dict[str, str]:
@@ -402,9 +402,7 @@ def build_ctx(kassir, candidate_kassa: str | None = None) -> dict:
 			order_by="modified desc",
 			limit_page_length=8,
 		)
-		deals = [
-			{"name": r.name, "label": r.organization or r.lead_name or r.name} for r in rows
-		]
+		deals = [{"name": r.name, "label": r.organization or r.lead_name or r.name} for r in rows]
 
 	targets = [
 		{
@@ -517,13 +515,9 @@ def execute_action(action: dict, state: dict, kassir, ctx: dict) -> dict:
 			# get_exchange_rate_for_currencies(base_currency, pay_currency), then
 			# submits the INVERSE (leaf->base) — submit_expense_entry's
 			# `exchange_rate` param is payment-from -> base, not base -> payment-from.
-			base_to_leaf = money.get_exchange_rate_for_currencies(
-				base_currency, leaf_currency, posting_date
-			)
+			base_to_leaf = money.get_exchange_rate_for_currencies(base_currency, leaf_currency, posting_date)
 			exchange_rate = (1 / base_to_leaf) if base_to_leaf else None
-		lines = [
-			{"account": action["category"], "amount": action["amount"], "memo": action.get("memo")}
-		]
+		lines = [{"account": action["category"], "amount": action["amount"], "memo": action.get("memo")}]
 		return money.submit_expense_entry(
 			company=company,
 			posting_date=posting_date,
@@ -580,15 +574,14 @@ def _build_statement_text(kassir, state: dict, ctx: dict) -> str:
 	if not leaves:
 		return "Kassa tanlanmagan."
 
-	parts = [f"\U0001F4CB {kassa} — jadval"]
+	parts = [f"\U0001f4cb {kassa} — jadval"]
 	for leaf in leaves:
 		bal = money.account_balance(kassir.company, leaf["account"])
 		balance_acc = bal.get("balance_acc")
 		if balance_acc is None:
 			balance_acc = bal.get("balance_base", 0)
 		parts.append(
-			f"\n{leaf['label']} ({leaf['currency']}): "
-			f"{_flow.format_amount(balance_acc, leaf['currency'])}"
+			f"\n{leaf['label']} ({leaf['currency']}): {_flow.format_amount(balance_acc, leaf['currency'])}"
 		)
 		txns = money.account_transactions(kassir.company, leaf["account"], limit=50)
 		recent = (txns.get("entries") or [])[-_STATEMENT_LOOKBACK:]
@@ -626,8 +619,7 @@ def _append_backdate_warning(reply: str, iso_date: str) -> str:
 	earliest = status.get("acc_earliest_date") or status.get("stock_earliest_date")
 	if earliest and iso_date < earliest:
 		reply = (
-			f"{reply}\n\n⚠️ Diqqat: {earliest} sanasidan oldingi amallar "
-			"tizim tomonidan rad etilishi mumkin."
+			f"{reply}\n\n⚠️ Diqqat: {earliest} sanasidan oldingi amallar tizim tomonidan rad etilishi mumkin."
 		)
 	return reply
 
@@ -638,9 +630,7 @@ def _append_backdate_warning(reply: str, iso_date: str) -> str:
 def _resolve_kassir(telegram_user_id: str):
 	import frappe
 
-	name = frappe.db.get_value(
-		"Stabler Kassir", {"telegram_user_id": telegram_user_id, "enabled": 1}, "name"
-	)
+	name = frappe.db.get_value("Stabler Kassir", {"telegram_user_id": telegram_user_id, "enabled": 1}, "name")
 	if not name:
 		return None
 	return frappe.get_doc("Stabler Kassir", name)
@@ -710,14 +700,22 @@ def handle_update(update: dict) -> None:
 			if action and action.get("type") == "record":
 				try:
 					shadow.record(
-						company=kassir.company, kassir=kassir.name, op=action["op"],
-						deltas=action["deltas"], counterparty=action.get("counterparty"),
-						purpose=action.get("purpose"), rate=action.get("rate"),
-						raw_text=action.get("raw_text"), parsed=action.get("parsed"), date=sdate,
+						company=kassir.company,
+						kassir=kassir.name,
+						op=action["op"],
+						deltas=action["deltas"],
+						counterparty=action.get("counterparty"),
+						purpose=action.get("purpose"),
+						rate=action.get("rate"),
+						raw_text=action.get("raw_text"),
+						parsed=action.get("parsed"),
+						date=sdate,
 					)
-					reply = ("✅ Saqlandi.\nQoldiq:\n"
-					         + shadow_flow.format_balance_block(shadow.balances(kassir.company, sdate))
-					         + "\n\nkeyingi amalni tanlang:")
+					reply = (
+						"✅ Saqlandi.\nQoldiq:\n"
+						+ shadow_flow.format_balance_block(shadow.balances(kassir.company, sdate))
+						+ "\n\nkeyingi amalni tanlang:"
+					)
 					keyboard = shadow_flow.MENU_KEYBOARD
 				except Exception as e:  # surfaced to the kassir
 					frappe.log_error(
@@ -730,9 +728,11 @@ def handle_update(update: dict) -> None:
 				try:
 					for o in action.get("openings") or []:
 						shadow.set_opening(kassir.company, sdate, o["kassa"], o["amount"])
-					reply = ("✅ Ochilish balansi saqlandi.\nQoldiq:\n"
-					         + shadow_flow.format_balance_block(shadow.balances(kassir.company, sdate))
-					         + "\n\nkeyingi amalni tanlang:")
+					reply = (
+						"✅ Ochilish balansi saqlandi.\nQoldiq:\n"
+						+ shadow_flow.format_balance_block(shadow.balances(kassir.company, sdate))
+						+ "\n\nkeyingi amalni tanlang:"
+					)
 					keyboard = shadow_flow.MENU_KEYBOARD
 				except Exception as e:
 					frappe.log_error(
@@ -747,9 +747,13 @@ def handle_update(update: dict) -> None:
 				else:
 					# The block below makes this an HTML message, so escape the echoed
 					# raw text (user input may contain < > &).
-					reply = ("↩️ Bekor qilindi: «" + shadow_flow._esc(undone.get("raw_text") or "") + "»\nQoldiq:\n"
-					         + shadow_flow.format_balance_block(shadow.balances(kassir.company, sdate))
-					         + "\n\nkeyingi amalni tanlang:")
+					reply = (
+						"↩️ Bekor qilindi: «"
+						+ shadow_flow._esc(undone.get("raw_text") or "")
+						+ "»\nQoldiq:\n"
+						+ shadow_flow.format_balance_block(shadow.balances(kassir.company, sdate))
+						+ "\n\nkeyingi amalni tanlang:"
+					)
 					keyboard = shadow_flow.MENU_KEYBOARD
 			_save_state(chat_id, new_state)
 		else:

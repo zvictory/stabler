@@ -190,8 +190,9 @@ class POApprovalGateIntegrationTest(FrappeTestCase):
 		if not self.company:
 			self.skipTest("no Company fixture available")
 		self.supplier = frappe.db.get_value("Supplier", {}, "name")
-		self.item = frappe.db.get_value("Item", {"is_purchase_item": 1, "disabled": 0}, "name") or \
-			frappe.db.get_value("Item", {"disabled": 0}, "name")
+		self.item = frappe.db.get_value(
+			"Item", {"is_purchase_item": 1, "disabled": 0}, "name"
+		) or frappe.db.get_value("Item", {"disabled": 0}, "name")
 		self.warehouse = frappe.db.get_value("Warehouse", {"company": self.company, "is_group": 0}, "name")
 		if not (self.supplier and self.item):
 			self.skipTest("no Supplier / Item fixtures available")

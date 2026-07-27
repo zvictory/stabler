@@ -149,6 +149,7 @@ def item_detail(name: str, company: str | None = None):
 		"total_value": total_value,
 	}
 
+
 def _get_restricted_warehouses(company: str) -> set[str] | None:
 	user = frappe.session.user
 	if not user or user == "Guest":
@@ -164,6 +165,7 @@ def _get_restricted_warehouses(company: str) -> set[str] | None:
 
 	# 1. User Permissions
 	from frappe.permissions import get_allowed_docs_for_doctype, get_user_permissions
+
 	user_permissions = get_user_permissions(user)
 	allowed = get_allowed_docs_for_doctype(user_permissions, "Warehouse")
 	if allowed and "*" not in allowed:
@@ -171,9 +173,7 @@ def _get_restricted_warehouses(company: str) -> set[str] | None:
 
 	# 2. Operator Work Orders
 	operator_wips = frappe.db.get_all(
-		"Work Order",
-		filters={"operator": user, "company": company},
-		pluck="wip_warehouse"
+		"Work Order", filters={"operator": user, "company": company}, pluck="wip_warehouse"
 	)
 	operator_wips = {w for w in operator_wips if w}
 	if operator_wips:
@@ -254,6 +254,7 @@ def _format_warehouse_stock_row(row: dict) -> dict:
 
 def _get_stock_anomalies(items, company):
 	from frappe.utils import flt
+
 	# Get company currency
 	if company == "Test Company" or (frappe.flags.in_test and str(company).startswith("Test")):
 		base_currency = "USD"
@@ -263,21 +264,40 @@ def _get_stock_anomalies(items, company):
 
 	# Thresholds
 	if base_currency == "UZS":
-		high_rate_threshold = 40000.0   # ~$3.00
-		high_val_threshold = 1300000000.0 # ~$100,000
+		high_rate_threshold = 40000.0  # ~$3.00
+		high_val_threshold = 1300000000.0  # ~$100,000
 	else:
 		high_rate_threshold = 3.0
 		high_val_threshold = 100000.0
 
 	# Keywords for low-cost items
 	low_cost_keywords = [
-		"etiketka", "korobka", "chopak", "upakovka", "box", "label",
-		"stick", "folga", "zarlik", "qop", "plombir", "paket", "meshok",
-		"stakan", "tara", "probka", "krishka", "butylka", "lenta", "skotch", "skoch"
+		"etiketka",
+		"korobka",
+		"chopak",
+		"upakovka",
+		"box",
+		"label",
+		"stick",
+		"folga",
+		"zarlik",
+		"qop",
+		"plombir",
+		"paket",
+		"meshok",
+		"stakan",
+		"tara",
+		"probka",
+		"krishka",
+		"butylka",
+		"lenta",
+		"skotch",
+		"skoch",
 	]
 
 	# Group median calculation
 	from collections import defaultdict
+
 	group_rates = defaultdict(list)
 	for it in items:
 		rate = flt(it.get("valuation_rate"))
@@ -290,7 +310,11 @@ def _get_stock_anomalies(items, company):
 		if len(rates) >= 3:
 			sorted_rates = sorted(rates)
 			n = len(sorted_rates)
-			median = sorted_rates[n // 2] if n % 2 == 1 else (sorted_rates[n // 2 - 1] + sorted_rates[n // 2]) / 2.0
+			median = (
+				sorted_rates[n // 2]
+				if n % 2 == 1
+				else (sorted_rates[n // 2 - 1] + sorted_rates[n // 2]) / 2.0
+			)
 			group_medians[group] = median
 
 	anomalies = []
@@ -304,45 +328,53 @@ def _get_stock_anomalies(items, company):
 
 		# Check 1: Zero or negative rate on positive stock
 		if qty > 0 and rate <= 0:
-			anomalies.append({
-				"item_code": item_code,
-				"item_name": item_name,
-				"type": "zero_rate",
-				"message": f"Valuation rate is missing or negative (current rate: {rate:,.2f})"
-			})
+			anomalies.append(
+				{
+					"item_code": item_code,
+					"item_name": item_name,
+					"type": "zero_rate",
+					"message": f"Valuation rate is missing or negative (current rate: {rate:,.2f})",
+				}
+			)
 			continue
 
 		# Check 2: Unusually high rate for packaging/low-cost raw materials
 		name_lower = item_name.lower()
 		is_low_cost = any(k in name_lower for k in low_cost_keywords)
 		if qty > 0 and is_low_cost and rate > high_rate_threshold:
-			anomalies.append({
-				"item_code": item_code,
-				"item_name": item_name,
-				"type": "high_rate",
-				"message": f"Suspiciously high rate for low-cost item: {base_currency} {rate:,.2f}"
-			})
+			anomalies.append(
+				{
+					"item_code": item_code,
+					"item_name": item_name,
+					"type": "high_rate",
+					"message": f"Suspiciously high rate for low-cost item: {base_currency} {rate:,.2f}",
+				}
+			)
 			continue
 
 		# Check 3: Statistically high rate compared to group median
 		median = group_medians.get(group)
 		if qty > 0 and median and rate > 10 * median:
-			anomalies.append({
-				"item_code": item_code,
-				"item_name": item_name,
-				"type": "high_rate",
-				"message": f"Abnormally high rate: {base_currency} {rate:,.2f} (>10x group median of {base_currency} {median:,.2f})"
-			})
+			anomalies.append(
+				{
+					"item_code": item_code,
+					"item_name": item_name,
+					"type": "high_rate",
+					"message": f"Abnormally high rate: {base_currency} {rate:,.2f} (>10x group median of {base_currency} {median:,.2f})",
+				}
+			)
 			continue
 
 		# Check 4: Unusually high total stock value for packaging
 		if qty > 0 and is_low_cost and val > high_val_threshold:
-			anomalies.append({
-				"item_code": item_code,
-				"item_name": item_name,
-				"type": "high_value",
-				"message": f"Unusually high total value: {base_currency} {val:,.2f} (verify qty/rate)"
-			})
+			anomalies.append(
+				{
+					"item_code": item_code,
+					"item_name": item_name,
+					"type": "high_value",
+					"message": f"Unusually high total value: {base_currency} {val:,.2f} (verify qty/rate)",
+				}
+			)
 			continue
 
 	return anomalies
@@ -458,6 +490,7 @@ def item_availability(item_code: str, warehouse: str):
 def get_items_stock(warehouse: str, item_codes: str):
 	"""Return the actual_qty in warehouse for a list of item_codes (JSON list)."""
 	import json
+
 	if not warehouse or not item_codes:
 		return {}
 	try:
@@ -470,7 +503,7 @@ def get_items_stock(warehouse: str, item_codes: str):
 	bins = frappe.db.get_all(
 		"Bin",
 		filters={"warehouse": warehouse, "item_code": ["in", codes]},
-		fields=["item_code", "actual_qty"]
+		fields=["item_code", "actual_qty"],
 	)
 	return {b.item_code: flt(b.actual_qty) for b in bins}
 
@@ -603,9 +636,7 @@ def create_item(
 		frappe.throw(f"Item '{item_code}' already exists.")
 
 	if not item_group:
-		item_group = (
-			frappe.db.get_single_value("Stock Settings", "item_group") or "All Item Groups"
-		)
+		item_group = frappe.db.get_single_value("Stock Settings", "item_group") or "All Item Groups"
 	if not frappe.db.exists("Item Group", item_group):
 		frappe.throw(f"Unknown item group: {item_group}")
 
@@ -674,7 +705,12 @@ def update_item(
 	if weight_uom is not None:
 		doc.weight_uom = weight_uom.strip() if weight_uom else None
 	doc.save(ignore_permissions=False)
-	return {"name": doc.name, "item_code": doc.item_code, "item_name": doc.item_name, "disabled": doc.disabled}
+	return {
+		"name": doc.name,
+		"item_code": doc.item_code,
+		"item_name": doc.item_name,
+		"disabled": doc.disabled,
+	}
 
 
 # --------------------------------------------------------------------------- #
@@ -781,7 +817,13 @@ def save_item_price(
 	if uom:
 		doc.uom = uom
 	doc.save(ignore_permissions=False)
-	return {"name": doc.name, "item_code": doc.item_code, "price_list": doc.price_list, "price_list_rate": doc.price_list_rate, "currency": doc.currency}
+	return {
+		"name": doc.name,
+		"item_code": doc.item_code,
+		"price_list": doc.price_list,
+		"price_list_rate": doc.price_list_rate,
+		"currency": doc.currency,
+	}
 
 
 @frappe.whitelist()
@@ -794,7 +836,9 @@ def delete_item_price(name: str):
 
 
 @frappe.whitelist()
-def get_price_list_matrix(price_list: str, item_group: str | None = None, search: str | None = None, limit: int = 200):
+def get_price_list_matrix(
+	price_list: str, item_group: str | None = None, search: str | None = None, limit: int = 200
+):
 	"""Get all items along with their rate in the specified `price_list` for bulk editing."""
 	if not price_list or not frappe.db.exists("Price List", price_list):
 		frappe.throw(_("Price List '{0}' not found.").format(price_list))
@@ -986,20 +1030,22 @@ def stock_entry_detail(name: str):
 	doc = frappe.get_doc("Stock Entry", name)
 	items = []
 	for it in doc.items or []:
-		items.append({
-			"idx": it.idx,
-			"item_code": it.item_code,
-			"item_name": it.item_name,
-			"custom_line_note": getattr(it, "custom_line_note", None) or None,
-			"qty": flt(it.qty),
-			"transfer_qty": flt(it.transfer_qty),
-			"uom": it.uom,
-			"stock_uom": it.stock_uom,
-			"basic_rate": flt(it.basic_rate),
-			"amount": flt(it.amount),
-			"s_warehouse": it.s_warehouse,
-			"t_warehouse": it.t_warehouse,
-		})
+		items.append(
+			{
+				"idx": it.idx,
+				"item_code": it.item_code,
+				"item_name": it.item_name,
+				"custom_line_note": getattr(it, "custom_line_note", None) or None,
+				"qty": flt(it.qty),
+				"transfer_qty": flt(it.transfer_qty),
+				"uom": it.uom,
+				"stock_uom": it.stock_uom,
+				"basic_rate": flt(it.basic_rate),
+				"amount": flt(it.amount),
+				"s_warehouse": it.s_warehouse,
+				"t_warehouse": it.t_warehouse,
+			}
+		)
 	return {
 		"name": doc.name,
 		"posting_date": str(doc.posting_date) if doc.posting_date else None,
@@ -1084,8 +1130,12 @@ def create_stock_entry(
 		row.conversion_factor = get_conversion_factor(it["item_code"], uom).get("conversion_factor") or 1.0
 		if it.get("basic_rate") not in (None, ""):
 			row.basic_rate = flt(it["basic_rate"])
-		s_wh = it.get("s_warehouse") or (from_warehouse if purpose in ("Material Issue", "Material Transfer") else None)
-		t_wh = it.get("t_warehouse") or (to_warehouse if purpose in ("Material Receipt", "Material Transfer") else None)
+		s_wh = it.get("s_warehouse") or (
+			from_warehouse if purpose in ("Material Issue", "Material Transfer") else None
+		)
+		t_wh = it.get("t_warehouse") or (
+			to_warehouse if purpose in ("Material Receipt", "Material Transfer") else None
+		)
 		if s_wh:
 			row.s_warehouse = s_wh
 		if t_wh:
@@ -1103,7 +1153,7 @@ def submit_stock_entry(name: str):
 	_assert_can_write("Stock Entry", name, "submit")
 	doc = frappe.get_doc("Stock Entry", name)
 	if doc.docstatus != 0:
-		frappe.throw(f"Stock Entry is already {['Draft','Submitted','Cancelled'][doc.docstatus]}.")
+		frappe.throw(f"Stock Entry is already {['Draft', 'Submitted', 'Cancelled'][doc.docstatus]}.")
 	doc.submit()
 	return {"name": doc.name, "docstatus": doc.docstatus}
 
@@ -1289,7 +1339,11 @@ def _batch_rows(company: str, item_code: str | None, warehouse: str | None):
 
 	Supports both ERPNext v15 direct `sle.batch_no` and v16 `serial_and_batch_bundle`.
 	"""
-	conds = ["sle.company = %(company)s", "sle.is_cancelled = 0", "(sle.batch_no IS NOT NULL OR sbe.batch_no IS NOT NULL)"]
+	conds = [
+		"sle.company = %(company)s",
+		"sle.is_cancelled = 0",
+		"(sle.batch_no IS NOT NULL OR sbe.batch_no IS NOT NULL)",
+	]
 	params = {"company": company, "item_code": item_code, "warehouse": warehouse}
 	if item_code:
 		conds.append("sle.item_code = %(item_code)s")

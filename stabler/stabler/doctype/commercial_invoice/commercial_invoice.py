@@ -36,6 +36,4 @@ class CommercialInvoice(Document):
 		if self.is_new():
 			return
 		previous_status = frappe.db.get_value("Commercial Invoice", self.name, "status")
-		assert_transition(
-			"Commercial Invoice", previous_status, self.status, _ALLOWED_TRANSITIONS, self
-		)
+		assert_transition("Commercial Invoice", previous_status, self.status, _ALLOWED_TRANSITIONS, self)

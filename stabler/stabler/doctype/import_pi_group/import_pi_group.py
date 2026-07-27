@@ -24,6 +24,4 @@ class ImportPIGroup(Document):
 			},
 		)
 		if dup:
-			frappe.throw(
-				_("PI Group code {0} is already used in this company.").format(code)
-			)
+			frappe.throw(_("PI Group code {0} is already used in this company.").format(code))

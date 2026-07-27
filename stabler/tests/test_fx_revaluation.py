@@ -1,4 +1,5 @@
 """Unit tests for the pure FX-revaluation helpers (no Frappe, no DB)."""
+
 from __future__ import annotations
 
 import unittest
@@ -212,8 +213,20 @@ class SummarizeTest(unittest.TestCase):
 
 	def test_all_gains(self):
 		rows = [
-			{"account": "A", "currency": "USD", "balance_in_account_ccy": 100, "new_rate": 12500, "book_rate": 12000},
-			{"account": "B", "currency": "EUR", "balance_in_account_ccy": 200, "new_rate": 13000, "book_rate": 12800},
+			{
+				"account": "A",
+				"currency": "USD",
+				"balance_in_account_ccy": 100,
+				"new_rate": 12500,
+				"book_rate": 12000,
+			},
+			{
+				"account": "B",
+				"currency": "EUR",
+				"balance_in_account_ccy": 200,
+				"new_rate": 13000,
+				"book_rate": 12800,
+			},
 		]
 		s = summarize_revaluation(rows, base_precision=0)
 		self.assertGreater(s["total_gain"], 0)
@@ -222,7 +235,13 @@ class SummarizeTest(unittest.TestCase):
 
 	def test_all_losses(self):
 		rows = [
-			{"account": "A", "currency": "USD", "balance_in_account_ccy": 100, "new_rate": 11000, "book_rate": 12000},
+			{
+				"account": "A",
+				"currency": "USD",
+				"balance_in_account_ccy": 100,
+				"new_rate": 11000,
+				"book_rate": 12000,
+			},
 		]
 		s = summarize_revaluation(rows, base_precision=0)
 		self.assertEqual(s["total_gain"], Decimal("0"))
@@ -231,8 +250,13 @@ class SummarizeTest(unittest.TestCase):
 
 	def test_per_row_account_passthrough(self):
 		rows = [
-			{"account": "1210 - Cash USD", "currency": "USD",
-			 "balance_in_account_ccy": 500, "new_rate": 12500, "book_rate": 12000},
+			{
+				"account": "1210 - Cash USD",
+				"currency": "USD",
+				"balance_in_account_ccy": 500,
+				"new_rate": 12500,
+				"book_rate": 12000,
+			},
 		]
 		s = summarize_revaluation(rows, base_precision=0)
 		self.assertEqual(s["rows"][0]["account"], "1210 - Cash USD")
@@ -240,8 +264,13 @@ class SummarizeTest(unittest.TestCase):
 
 	def test_garbage_row_does_not_crash(self):
 		rows = [
-			{"account": "", "currency": None, "balance_in_account_ccy": None,
-			 "new_rate": None, "book_rate": "bad"},
+			{
+				"account": "",
+				"currency": None,
+				"balance_in_account_ccy": None,
+				"new_rate": None,
+				"book_rate": "bad",
+			},
 		]
 		s = summarize_revaluation(rows, base_precision=0)
 		self.assertEqual(s["net_delta"], Decimal("0"))

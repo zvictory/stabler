@@ -9,6 +9,7 @@ just supplies the users + roles and shapes the response for the Access Review
 admin page. It is read-only except for the role-change check used to warn at
 assignment time.
 """
+
 from __future__ import annotations
 
 import frappe
@@ -169,13 +170,13 @@ def assert_role_change_allowed(user: str, target_roles: list[str]) -> list[dict]
 		existing_roles = [r.role for r in existing]
 		# Only block violations that are genuinely new for this user.
 		before = {c["id"] for c in evaluate_user(existing_roles)}
-		blocking = [
-			v for v in violations if v["id"] not in before and v["severity"] in ("critical", "high")
-		]
+		blocking = [v for v in violations if v["id"] not in before and v["severity"] in ("critical", "high")]
 		if blocking:
 			labels = ", ".join(v["label"] for v in blocking)
 			frappe.throw(
-				_("Segregation of duties: this role combination is not allowed ({0}). Disable 'Enforce SoD' to override.").format(labels),
+				_(
+					"Segregation of duties: this role combination is not allowed ({0}). Disable 'Enforce SoD' to override."
+				).format(labels),
 				title=_("Role change blocked"),
 			)
 	return violations

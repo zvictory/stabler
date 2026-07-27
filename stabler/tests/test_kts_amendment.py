@@ -1,6 +1,6 @@
 """Unit tests for stabler.api._kts_amendment (WP-I15, Frappe-free).
 
-    PYTHONPATH=$PWD python3 -m unittest stabler.tests.test_kts_amendment -v
+PYTHONPATH=$PWD python3 -m unittest stabler.tests.test_kts_amendment -v
 """
 
 from __future__ import annotations
@@ -20,9 +20,9 @@ class TestDelta(unittest.TestCase):
 		)
 		self.assertEqual(d["duty_delta"], 2000.0)
 		self.assertEqual(d["vat_delta"], 2640.0)
-		self.assertEqual(d["capitalized_delta"], 2000.0)   # boj+aksiz → stok
-		self.assertEqual(d["input_vat_delta"], 2640.0)     # KDV → varlık
-		self.assertEqual(d["pl_expense"], 500.0)           # ceza → P&L
+		self.assertEqual(d["capitalized_delta"], 2000.0)  # boj+aksiz → stok
+		self.assertEqual(d["input_vat_delta"], 2640.0)  # KDV → varlık
+		self.assertEqual(d["pl_expense"], 500.0)  # ceza → P&L
 		self.assertEqual(d["total_extra_payable"], 5140.0)
 
 	def test_excise_capitalizes_with_duty(self):

@@ -55,9 +55,7 @@ class VerticalPack(Document):
 			frappe.throw(f"Invalid required_fields_json for pack '{self.pack_key}': {e}")
 
 		if not isinstance(entries, list):
-			frappe.throw(
-				f"required_fields_json for pack '{self.pack_key}' must be a JSON array"
-			)
+			frappe.throw(f"required_fields_json for pack '{self.pack_key}' must be a JSON array")
 
 		for entry in entries:
 			if not isinstance(entry, dict):

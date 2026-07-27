@@ -1,6 +1,6 @@
 """Unit tests for stabler.api._ci_to_pinv (WP-I5, Frappe-free).
 
-    cd /path/to/stabler && PYTHONPATH=$PWD python3 -m unittest stabler.tests.test_ci_to_pinv -v
+cd /path/to/stabler && PYTHONPATH=$PWD python3 -m unittest stabler.tests.test_ci_to_pinv -v
 """
 
 from __future__ import annotations

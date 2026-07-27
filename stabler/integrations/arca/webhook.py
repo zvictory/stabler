@@ -145,9 +145,7 @@ def _create_payment_entry(invoice: str, amount: float, reference: str) -> str:
 	# tiny tolerance for rounding drift between gateway and ledger
 	if amount > outstanding + 0.01:
 		frappe.throw(
-			_("Payment amount {0} exceeds outstanding {1} on {2}").format(
-				amount, outstanding, invoice
-			)
+			_("Payment amount {0} exceeds outstanding {1} on {2}").format(amount, outstanding, invoice)
 		)
 
 	pe = get_payment_entry("Sales Invoice", invoice)

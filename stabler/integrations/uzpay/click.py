@@ -112,7 +112,9 @@ def _prepare(f: dict) -> dict:
 
 	# We use click_trans_id as the merchant_prepare_id and echo it on Complete.
 	return _err(
-		f, OK, "Success",
+		f,
+		OK,
+		"Success",
 		merchant_prepare_id=doc.provider_trans_id,
 	)
 

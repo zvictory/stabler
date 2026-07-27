@@ -130,9 +130,7 @@ def aggregate_components(cost_lines, usd_rate, company_currency) -> dict:
 	return {k: v for k, v in agg.items() if v > 0}
 
 
-def build_lcv_payload(
-	*, company, purchase_receipts, components, expense_account, distribute_based_on="Qty"
-):
+def build_lcv_payload(*, company, purchase_receipts, components, expense_account, distribute_based_on="Qty"):
 	"""Build the DRAFT Landed Cost Voucher dict.
 
 	``purchase_receipts`` is a list of submitted PR names; ``components`` is the
@@ -147,8 +145,7 @@ def build_lcv_payload(
 		"company": company,
 		"distribute_charges_based_on": distribute_based_on,
 		"purchase_receipts": [
-			{"receipt_document_type": "Purchase Receipt", "receipt_document": pr}
-			for pr in purchase_receipts
+			{"receipt_document_type": "Purchase Receipt", "receipt_document": pr} for pr in purchase_receipts
 		],
 		"taxes": [
 			{"expense_account": expense_account, "description": comp, "amount": amt}

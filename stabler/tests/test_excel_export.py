@@ -33,8 +33,20 @@ COLUMNS = [
 	{"key": "posting_date", "label": "Date", "type": "date"},
 ]
 ROWS = [
-	{"customer_name": "АО Растворобетон", "invoice_count": 3, "total": 1250000.5, "margin_pct": 40.0, "posting_date": "2026-06-12"},
-	{"customer_name": "URALSK", "invoice_count": 1, "total": -5000.0, "margin_pct": -12.5, "posting_date": "2026-06-18"},
+	{
+		"customer_name": "АО Растворобетон",
+		"invoice_count": 3,
+		"total": 1250000.5,
+		"margin_pct": 40.0,
+		"posting_date": "2026-06-12",
+	},
+	{
+		"customer_name": "URALSK",
+		"invoice_count": 1,
+		"total": -5000.0,
+		"margin_pct": -12.5,
+		"posting_date": "2026-06-18",
+	},
 ]
 TOTALS = {"invoice_count": 4, "total": 1245000.5}
 META = [("Company", "Anjan"), ("Date range", "2026-06-01 → 2026-06-30"), ("Currency", "UZS")]
@@ -118,11 +130,13 @@ class TestHelpers(unittest.TestCase):
 
 class TestFrappeColumns(unittest.TestCase):
 	def test_dict_columns(self):
-		cols = normalize_frappe_columns([
-			{"label": "Account", "fieldname": "account", "fieldtype": "Link"},
-			{"label": "Balance", "fieldname": "balance", "fieldtype": "Currency"},
-			{"label": "Qty", "fieldname": "qty", "fieldtype": "Int"},
-		])
+		cols = normalize_frappe_columns(
+			[
+				{"label": "Account", "fieldname": "account", "fieldtype": "Link"},
+				{"label": "Balance", "fieldname": "balance", "fieldtype": "Currency"},
+				{"label": "Qty", "fieldname": "qty", "fieldtype": "Int"},
+			]
+		)
 		self.assertEqual(cols[0], {"key": "account", "label": "Account", "type": "text"})
 		self.assertEqual(cols[1]["type"], "money")
 		self.assertEqual(cols[2]["type"], "int")
@@ -151,7 +165,9 @@ class TestFinancialStatement(unittest.TestCase):
 			rows=rows,
 			header_meta=[("Company", "Anjan")],
 			sheet_name="P&L",
-			bold_predicate=lambda r: int(r.get("indent") or 0) == 0 or str(r.get("account", "")).lower().startswith("total"),
+			bold_predicate=lambda r: (
+				int(r.get("indent") or 0) == 0 or str(r.get("account", "")).lower().startswith("total")
+			),
 		)
 		self.ws = load_workbook(io.BytesIO(workbook_to_bytes(wb))).active
 
@@ -173,8 +189,18 @@ class TestFinancialStatement(unittest.TestCase):
 class TestLedger(unittest.TestCase):
 	def setUp(self):
 		entries = [
-			{"posting_date": "2026-06-02", "voucher_no": "ACC-SINV-001", "debit_in_account_currency": 1000000, "credit_in_account_currency": 0},
-			{"posting_date": "2026-06-10", "voucher_no": "ACC-PAY-001", "debit_in_account_currency": 0, "credit_in_account_currency": 400000},
+			{
+				"posting_date": "2026-06-02",
+				"voucher_no": "ACC-SINV-001",
+				"debit_in_account_currency": 1000000,
+				"credit_in_account_currency": 0,
+			},
+			{
+				"posting_date": "2026-06-10",
+				"voucher_no": "ACC-PAY-001",
+				"debit_in_account_currency": 0,
+				"credit_in_account_currency": 400000,
+			},
 		]
 		wb = build_ledger_workbook(
 			title="Customer Ledger — ACME",
@@ -202,7 +228,14 @@ class TestLedger(unittest.TestCase):
 	def test_payable_sign(self):
 		wb = build_ledger_workbook(
 			title="Supplier Ledger",
-			entries=[{"posting_date": "2026-06-01", "voucher_no": "PINV-1", "debit_in_account_currency": 0, "credit_in_account_currency": 500000}],
+			entries=[
+				{
+					"posting_date": "2026-06-01",
+					"voucher_no": "PINV-1",
+					"debit_in_account_currency": 0,
+					"credit_in_account_currency": 500000,
+				}
+			],
 			opening=0,
 			sign="cr",
 		)

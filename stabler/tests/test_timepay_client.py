@@ -16,30 +16,16 @@ from stabler.integrations.timepay.client import (
 )
 
 ACCESS_FRESH = (
-	"eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9."
-	"eyJ0b2tlbl90eXBlIjoiYWNjZXNzIiwiZXhwIjoyMDAwMDAwMDAwfQ."
-	"sig"
+	"eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJ0b2tlbl90eXBlIjoiYWNjZXNzIiwiZXhwIjoyMDAwMDAwMDAwfQ.sig"
 )
-ACCESS_EXPIRED = (
-	"eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9."
-	"eyJ0b2tlbl90eXBlIjoiYWNjZXNzIiwiZXhwIjoxMDB9."
-	"sig"
-)
+ACCESS_EXPIRED = "eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJ0b2tlbl90eXBlIjoiYWNjZXNzIiwiZXhwIjoxMDB9.sig"
 REFRESH_OLD = (
-	"eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9."
-	"eyJ0b2tlbl90eXBlIjoicmVmcmVzaCIsImV4cCI6MjAwMDAwMDAwMH0."
-	"sig"
+	"eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJ0b2tlbl90eXBlIjoicmVmcmVzaCIsImV4cCI6MjAwMDAwMDAwMH0.sig"
 )
 REFRESH_NEW = (
-	"eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9."
-	"eyJ0b2tlbl90eXBlIjoicmVmcmVzaCIsImV4cCI6MjAwMDAwMTAwMH0."
-	"sig"
+	"eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJ0b2tlbl90eXBlIjoicmVmcmVzaCIsImV4cCI6MjAwMDAwMTAwMH0.sig"
 )
-ACCESS_NEW = (
-	"eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9."
-	"eyJ0b2tlbl90eXBlIjoiYWNjZXNzIiwiZXhwIjoyMDAwMDAwNTAwfQ."
-	"sig"
-)
+ACCESS_NEW = "eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJ0b2tlbl90eXBlIjoiYWNjZXNzIiwiZXhwIjoyMDAwMDAwNTAwfQ.sig"
 
 
 class MemoryTokenStore:
@@ -92,10 +78,12 @@ class DecodeJwtExpTest(unittest.TestCase):
 class TimepayClientRefreshTest(unittest.TestCase):
 	def test_refresh_persists_rotated_refresh_token(self):
 		store = MemoryTokenStore(access=ACCESS_EXPIRED)
-		transport = FakeTransport([
-			FakeResponse(200, {"access": ACCESS_NEW, "refresh": REFRESH_NEW}),
-			FakeResponse(200, {"count": 0, "next": None, "previous": None, "results": []}),
-		])
+		transport = FakeTransport(
+			[
+				FakeResponse(200, {"access": ACCESS_NEW, "refresh": REFRESH_NEW}),
+				FakeResponse(200, {"count": 0, "next": None, "previous": None, "results": []}),
+			]
+		)
 		client = TimepayClient(store, transport=transport, now_epoch=1000)
 
 		out = client.list_employees(limit=1)
@@ -109,11 +97,13 @@ class TimepayClientRefreshTest(unittest.TestCase):
 
 	def test_unauthorized_call_refreshes_once_and_retries(self):
 		store = MemoryTokenStore(access=ACCESS_FRESH)
-		transport = FakeTransport([
-			FakeResponse(401, {"detail": "expired"}),
-			FakeResponse(200, {"access": ACCESS_NEW, "refresh": REFRESH_NEW}),
-			FakeResponse(200, {"count": 0, "next": None, "previous": None, "results": []}),
-		])
+		transport = FakeTransport(
+			[
+				FakeResponse(401, {"detail": "expired"}),
+				FakeResponse(200, {"access": ACCESS_NEW, "refresh": REFRESH_NEW}),
+				FakeResponse(200, {"count": 0, "next": None, "previous": None, "results": []}),
+			]
+		)
 		client = TimepayClient(store, transport=transport, now_epoch=1000)
 
 		client.list_employees(limit=1)

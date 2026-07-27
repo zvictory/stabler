@@ -38,6 +38,7 @@ def _financial_bold(row) -> bool:
 	first = next((v for v in row.values() if isinstance(v, str)), "")
 	return first.strip().lower().startswith("total")
 
+
 #: Roles that may export everything (admins).
 _ADMIN_ROLES = {"System Manager", "Stabler Admin"}
 #: Roles allowed to see cost/margin/profit.
@@ -251,7 +252,8 @@ REPORT_EXPORTS: dict[str, dict] = {
 			{"key": "total", "label": "Total", "type": "money", "align": "end"},
 		],
 		"total_keys": ["invoice_count"],
-		"roles": None, "sensitive": False,
+		"roles": None,
+		"sensitive": False,
 	},
 	"ap_aging": {
 		"title": "AP Aging (Payables)",
@@ -270,7 +272,8 @@ REPORT_EXPORTS: dict[str, dict] = {
 			{"key": "total", "label": "Total", "type": "money", "align": "end"},
 		],
 		"total_keys": ["invoice_count"],
-		"roles": None, "sensitive": False,
+		"roles": None,
+		"sensitive": False,
 	},
 	# Ledgers — opening/movements/running/closing via the ledger template.
 	"customer_ledger": {
@@ -280,7 +283,8 @@ REPORT_EXPORTS: dict[str, dict] = {
 		"template": "ledger",
 		"ledger_sign": "dr",
 		"party_filter": "customer",
-		"roles": None, "sensitive": False,
+		"roles": None,
+		"sensitive": False,
 	},
 	"supplier_ledger": {
 		"title": "Supplier Ledger",
@@ -289,7 +293,8 @@ REPORT_EXPORTS: dict[str, dict] = {
 		"template": "ledger",
 		"ledger_sign": "cr",
 		"party_filter": "supplier",
-		"roles": None, "sensitive": False,
+		"roles": None,
+		"sensitive": False,
 	},
 }
 
@@ -335,7 +340,8 @@ def _header_meta(spec: dict, filters: dict, shaped_meta: dict) -> list:
 	date_range = f"{d_from} → {d_to}" if (d_from and d_to) else (d_from or d_to or "")
 	# Filters echoed (minus the always-present ones and sort, which isn't a filter).
 	extra = {
-		k: v for k, v in (filters or {}).items()
+		k: v
+		for k, v in (filters or {}).items()
 		if k not in ("company", "from_date", "to_date", "sort_by", "sort_dir") and not _is_empty(v)
 	}
 	meta = [
@@ -388,7 +394,8 @@ def export_report_xlsx(report_key: str, filters: dict | str | None = None):
 		# ledger. Opening/closing come from the source unchanged.
 		eps = money_epsilon(data.get("account_currency"))
 		rows = [
-			r for r in rows
+			r
+			for r in rows
 			if abs(flt(r.get("debit_in_account_currency"))) > eps
 			or abs(flt(r.get("credit_in_account_currency"))) > eps
 		]
@@ -436,17 +443,24 @@ def export_report_xlsx(report_key: str, filters: dict | str | None = None):
 			row_ccys = [r.get("currency") for r in rows if r.get("currency")]
 			if row_ccys:
 				from collections import Counter
+
 				shaped_meta["currency"] = Counter(row_ccys).most_common(1)[0][0]
 
 		if spec.get("template") == "financial":
 			wb = build_financial_statement_workbook(
-				title=spec["title"], columns=columns, rows=rows,
+				title=spec["title"],
+				columns=columns,
+				rows=rows,
 				header_meta=_header_meta(spec, filters, shaped_meta),
-				sheet_name=spec["title"], bold_predicate=_financial_bold,
+				sheet_name=spec["title"],
+				bold_predicate=_financial_bold,
 			)
 		else:
 			wb = build_report_workbook(
-				title=spec["title"], columns=columns, rows=rows, totals=totals,
+				title=spec["title"],
+				columns=columns,
+				rows=rows,
+				totals=totals,
 				header_meta=_header_meta(spec, filters, shaped_meta),
 				sheet_name=spec["title"],
 			)
@@ -454,19 +468,24 @@ def export_report_xlsx(report_key: str, filters: dict | str | None = None):
 	# Audit sensitive exports.
 	if spec.get("sensitive"):
 		try:
-			frappe.get_doc({
-				"doctype": "Activity Log",
-				"subject": f"Exported sensitive report: {spec['title']}",
-				"operation": "Export",
-				"status": "Success",
-				"remark": json.dumps({
-					"report_key": report_key,
-					"filters": filters,
-					"company": filters.get("company"),
-					"row_count": len(rows),
-					"format": "xlsx",
-				}, default=str)[:1000],
-			}).insert(ignore_permissions=True)
+			frappe.get_doc(
+				{
+					"doctype": "Activity Log",
+					"subject": f"Exported sensitive report: {spec['title']}",
+					"operation": "Export",
+					"status": "Success",
+					"remark": json.dumps(
+						{
+							"report_key": report_key,
+							"filters": filters,
+							"company": filters.get("company"),
+							"row_count": len(rows),
+							"format": "xlsx",
+						},
+						default=str,
+					)[:1000],
+				}
+			).insert(ignore_permissions=True)
 		except Exception:
 			pass  # auditing must never block the export
 

@@ -61,7 +61,7 @@ def _check_auth() -> None:
 		raise UzumError(E_AUTH, "Unauthorized")
 	try:
 		decoded = base64.b64decode(header[6:]).decode("utf-8")
-	except (binascii.Error, UnicodeDecodeError):
+	except binascii.Error, UnicodeDecodeError:
 		raise UzumError(E_AUTH, "Unauthorized")
 	user, _, pwd = decoded.partition(":")
 	user_ok = hmac.compare_digest(user, C.require_conf("uzum_merchant_username"))
@@ -135,9 +135,7 @@ def _create(body: dict) -> dict:
 
 def _find_by_tx(body: dict, *, for_update: bool = False):
 	tx = _trans_id(body)
-	name = frappe.db.get_value(
-		C.SESSION_DT, {"provider_trans_id": tx, "provider": "Uzum Bank"}, "name"
-	)
+	name = frappe.db.get_value(C.SESSION_DT, {"provider_trans_id": tx, "provider": "Uzum Bank"}, "name")
 	if not name:
 		raise UzumError(E_NO_TX, "Transaction not found")
 	if for_update:

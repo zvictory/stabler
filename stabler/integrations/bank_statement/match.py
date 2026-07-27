@@ -25,6 +25,7 @@ Phase 2 additions:
     (or one voucher across multiple lines) with exact integer/decimal precision
     so allocations sum to the source amount with no residual drift.
 """
+
 from __future__ import annotations
 
 from decimal import ROUND_DOWN, Decimal, InvalidOperation
@@ -37,7 +38,7 @@ LOW = "low"
 def _f(v) -> float:
 	try:
 		return float(v)
-	except (TypeError, ValueError):
+	except TypeError, ValueError:
 		return 0.0
 
 
@@ -144,6 +145,7 @@ def rank_candidates(bank_line: dict, candidates: list[dict]) -> list[dict]:
 # ---------------------------------------------------------------------------
 # Partial allocation helper
 # ---------------------------------------------------------------------------
+
 
 def allocate_partial(
 	total: str | int | float,

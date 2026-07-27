@@ -2,10 +2,10 @@
 
 Frappe writes backup files named like::
 
-    20260615_120000-anjan_erpstable_com-database.sql.gz
-    20260615_120000-anjan_erpstable_com-files.tar
-    20260615_120000-anjan_erpstable_com-private-files.tar
-    20260615_120000-anjan_erpstable_com-site_config_backup.json
+    20260615_120000 - anjan_erpstable_com - database.sql.gz
+    20260615_120000 - anjan_erpstable_com - files.tar
+    20260615_120000 - anjan_erpstable_com - private - files.tar
+    20260615_120000 - anjan_erpstable_com - site_config_backup.json
 
 This module turns lists of such names + sizes into the decisions the backup
 API needs (group into sets, pick which to delete for retention, decide whether
@@ -20,6 +20,7 @@ Phase 2 additions:
     return the next due date (yyyy-mm-dd) and whether it is overdue.
   - ``verify_checksum``: pure pass/fail given expected vs actual hash strings.
 """
+
 from __future__ import annotations
 
 import re
@@ -59,7 +60,7 @@ def human_size(num_bytes) -> str:
 	"""Bytes → human string (e.g. '12.3 MB'). Pure, locale-free."""
 	try:
 		n = float(num_bytes)
-	except (TypeError, ValueError):
+	except TypeError, ValueError:
 		return "—"
 	for unit in ("B", "KB", "MB", "GB", "TB"):
 		if abs(n) < 1024.0:
@@ -103,9 +104,7 @@ def group_backup_sets(files: list[dict]) -> list[dict]:
 	return sorted(sets.values(), key=lambda s: s["key"], reverse=True)
 
 
-def select_for_retention(
-	set_keys: list[str], *, keep_days: int, keep_min: int, now_ts: str
-) -> list[str]:
+def select_for_retention(set_keys: list[str], *, keep_days: int, keep_min: int, now_ts: str) -> list[str]:
 	"""Which backup-set keys to DELETE.
 
 	Always keep the newest ``keep_min`` sets, whatever their age (so you are
@@ -144,6 +143,7 @@ def restore_test_overdue(last_test_date: str | None, *, interval_days: int, toda
 # ---------------------------------------------------------------------------
 # Phase 2: prune_by_policy
 # ---------------------------------------------------------------------------
+
 
 def prune_by_policy(
 	set_keys: list[str],
@@ -197,7 +197,7 @@ def prune_by_policy(
 				if yw not in seen_weeks:
 					seen_weeks[yw] = k
 				# Keep only the newest (first encountered in newest-first order).
-			except (ValueError, AttributeError):
+			except ValueError, AttributeError:
 				continue
 
 		# Take the keep_weekly most-recent ISO weeks.
@@ -213,6 +213,7 @@ def prune_by_policy(
 # Phase 2: restore_test_schedule
 # ---------------------------------------------------------------------------
 
+
 def restore_test_schedule(
 	last_test_date: str | None,
 	*,
@@ -224,9 +225,9 @@ def restore_test_schedule(
 	Returns a dict::
 
 	    {
-	        "next_due": "YYYY-MM-DD",   # date when a restore test is due
-	        "overdue": bool,            # True if today >= next_due
-	        "days_until_due": int,      # negative when overdue
+	        "next_due": "YYYY-MM-DD",  # date when a restore test is due
+	        "overdue": bool,  # True if today >= next_due
+	        "days_until_due": int,  # negative when overdue
 	        "interval_days": int,
 	        "last_test_date": str | None,
 	    }
@@ -273,6 +274,7 @@ def restore_test_schedule(
 # Phase 2: verify_checksum
 # ---------------------------------------------------------------------------
 
+
 def verify_checksum(
 	expected: str | None,
 	actual: str | None,
@@ -288,7 +290,7 @@ def verify_checksum(
 	        "algorithm": str,
 	        "expected": str | None,
 	        "actual": str | None,
-	        "reason": str,       # human-readable, e.g. "match", "mismatch", "missing expected"
+	        "reason": str,  # human-readable, e.g. "match", "mismatch", "missing expected"
 	    }
 
 	Both values are normalised to lower-case before comparison so hex digests
@@ -309,9 +311,21 @@ def verify_checksum(
 	act = _norm(actual)
 
 	if not exp:
-		return {"ok": False, "algorithm": algo, "expected": expected, "actual": actual, "reason": "missing expected"}
+		return {
+			"ok": False,
+			"algorithm": algo,
+			"expected": expected,
+			"actual": actual,
+			"reason": "missing expected",
+		}
 	if not act:
-		return {"ok": False, "algorithm": algo, "expected": expected, "actual": actual, "reason": "missing actual"}
+		return {
+			"ok": False,
+			"algorithm": algo,
+			"expected": expected,
+			"actual": actual,
+			"reason": "missing actual",
+		}
 	if exp == act:
 		return {"ok": True, "algorithm": algo, "expected": expected, "actual": actual, "reason": "match"}
 	return {"ok": False, "algorithm": algo, "expected": expected, "actual": actual, "reason": "mismatch"}
@@ -339,4 +353,5 @@ def _days_between(start_ymd: str, end_ymd: str) -> int:
 def _key_to_date(key: str):
 	"""Parse a YYYYMMDD_HHMMSS key to a datetime.date."""
 	import datetime as _dt
+
 	return _dt.datetime.strptime(key, "%Y%m%d_%H%M%S").date()

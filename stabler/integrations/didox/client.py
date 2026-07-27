@@ -153,12 +153,8 @@ def _normalize_status(value: Any) -> str:
 	return "Sent"
 
 
-def _post(
-	endpoint: str, payload: dict[str, Any], signed_pkcs7: str, token: str | None
-) -> dict[str, Any]:
-	body = json.dumps(
-		{"payload": payload, "signature": signed_pkcs7}, ensure_ascii=False
-	).encode("utf-8")
+def _post(endpoint: str, payload: dict[str, Any], signed_pkcs7: str, token: str | None) -> dict[str, Any]:
+	body = json.dumps({"payload": payload, "signature": signed_pkcs7}, ensure_ascii=False).encode("utf-8")
 	headers = {"Content-Type": "application/json", "Accept": "application/json"}
 	if token:
 		headers["Authorization"] = f"Bearer {token}"

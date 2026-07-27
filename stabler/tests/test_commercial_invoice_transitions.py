@@ -16,9 +16,7 @@ import os
 import unittest
 
 _APP_ROOT = os.path.dirname(os.path.dirname(os.path.abspath(__file__)))  # .../stabler
-_SOURCE_PATH = os.path.join(
-	_APP_ROOT, "stabler", "doctype", "commercial_invoice", "commercial_invoice.py"
-)
+_SOURCE_PATH = os.path.join(_APP_ROOT, "stabler", "doctype", "commercial_invoice", "commercial_invoice.py")
 
 _ALL_STATUSES = {
 	"BOOKED",

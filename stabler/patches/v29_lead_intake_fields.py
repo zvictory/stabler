@@ -24,27 +24,33 @@ def execute():
 		if not frappe.db.exists("Custom Field", {"dt": "CRM Lead", "fieldname": spec["fieldname"]}):
 			fields.append(spec)
 
-	add({
-		"fieldname": "custom_intake_channel",
-		"label": "Intake Channel",
-		"fieldtype": "Data",
-		"insert_after": "source",
-		"read_only": 1,
-	})
-	add({
-		"fieldname": "custom_intake_message",
-		"label": "Intake Message",
-		"fieldtype": "Small Text",
-		"insert_after": "custom_intake_channel",
-		"read_only": 1,
-	})
-	add({
-		"fieldname": "custom_intake_tender_no",
-		"label": "Intake Tender No",
-		"fieldtype": "Data",
-		"insert_after": "custom_intake_message",
-		"read_only": 1,
-	})
+	add(
+		{
+			"fieldname": "custom_intake_channel",
+			"label": "Intake Channel",
+			"fieldtype": "Data",
+			"insert_after": "source",
+			"read_only": 1,
+		}
+	)
+	add(
+		{
+			"fieldname": "custom_intake_message",
+			"label": "Intake Message",
+			"fieldtype": "Small Text",
+			"insert_after": "custom_intake_channel",
+			"read_only": 1,
+		}
+	)
+	add(
+		{
+			"fieldname": "custom_intake_tender_no",
+			"label": "Intake Tender No",
+			"fieldtype": "Data",
+			"insert_after": "custom_intake_message",
+			"read_only": 1,
+		}
+	)
 
 	if fields:
 		create_custom_fields({"CRM Lead": fields}, ignore_validate=True)

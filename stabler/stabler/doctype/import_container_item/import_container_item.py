@@ -10,6 +10,4 @@ class ImportContainerItem(Document):
 		self._reject_direct_mutation()
 
 	def _reject_direct_mutation(self) -> None:
-		frappe.throw(
-			frappe._("Packing-list rows must be changed through Import Container.")
-		)
+		frappe.throw(frappe._("Packing-list rows must be changed through Import Container."))

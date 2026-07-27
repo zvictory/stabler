@@ -42,7 +42,9 @@ def preview_agreement_opening(
 	_require_company(company)
 	_assert_company_scope(company)
 	if not module_map_for(company).get("agreements"):
-		frappe.throw(_("Agreement management is not enabled for {0}.").format(company), frappe.PermissionError)
+		frappe.throw(
+			_("Agreement management is not enabled for {0}.").format(company), frappe.PermissionError
+		)
 	if currency.upper() != "UZS":
 		frappe.throw(_("Opening balance preview currently requires UZS."), frappe.ValidationError)
 	if str(getdate(as_of_date)) != OPENING_DATE:
@@ -64,10 +66,15 @@ def preview_agreement_opening(
 		if not organization:
 			frappe.throw(_("Row {0} requires organization.").format(index), frappe.ValidationError)
 		customer = frappe.db.get_value(
-			"Customer", {"customer_name": organization, "disabled": 0}, ["name", "customer_name"], as_dict=True
+			"Customer",
+			{"customer_name": organization, "disabled": 0},
+			["name", "customer_name"],
+			as_dict=True,
 		)
 		if not customer:
-			customer = frappe.db.get_value("Customer", {"name": organization, "disabled": 0}, ["name", "customer_name"], as_dict=True)
+			customer = frappe.db.get_value(
+				"Customer", {"name": organization, "disabled": 0}, ["name", "customer_name"], as_dict=True
+			)
 		if not customer:
 			missing_customers.add(organization)
 
@@ -84,17 +91,19 @@ def preview_agreement_opening(
 			missing_agreements.add(agreement)
 
 		status = "ready" if customer and contract and agreement not in missing_agreements else "needs_mapping"
-		items.append({
-			"row": index,
-			"organization": organization,
-			"agreement": agreement,
-			"amount": amount,
-			"currency": "UZS",
-			"as_of_date": OPENING_DATE,
-			"customer": customer.name if customer else None,
-			"contract": contract.name if contract else None,
-			"status": status,
-		})
+		items.append(
+			{
+				"row": index,
+				"organization": organization,
+				"agreement": agreement,
+				"amount": amount,
+				"currency": "UZS",
+				"as_of_date": OPENING_DATE,
+				"customer": customer.name if customer else None,
+				"contract": contract.name if contract else None,
+				"status": status,
+			}
+		)
 		total += amount
 
 	return {

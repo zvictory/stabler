@@ -142,8 +142,13 @@ class TestBuildImportExpensePiPayload(unittest.TestCase):
 	def test_none_when_zero_amount(self):
 		self.assertIsNone(
 			pm.build_import_expense_pi_payload(
-				company="MSA", supplier="SUP", currency="USD", amount=0,
-				category="Customs", description="", expense_name="X",
+				company="MSA",
+				supplier="SUP",
+				currency="USD",
+				amount=0,
+				category="Customs",
+				description="",
+				expense_name="X",
 			)
 		)
 

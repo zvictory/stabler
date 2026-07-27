@@ -42,10 +42,10 @@ class TestVendorExposureIsolation(unittest.TestCase):
 	def test_exposure_endpoint_is_module_gated(self):
 		seg = _func_src("supplier_import_exposure")
 		self.assertTrue(seg, "supplier_import_exposure not found")
-		self.assertIn('module_map_for(company).get("imports")', seg,
-		              "exposure endpoint must gate on enable_imports")
-		self.assertIn('"enabled": False', seg,
-		              "exposure endpoint must return an inert payload when disabled")
+		self.assertIn(
+			'module_map_for(company).get("imports")', seg, "exposure endpoint must gate on enable_imports"
+		)
+		self.assertIn('"enabled": False', seg, "exposure endpoint must return an inert payload when disabled")
 
 
 if __name__ == "__main__":

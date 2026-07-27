@@ -11,9 +11,7 @@ import os
 import unittest
 
 _HERE = os.path.dirname(os.path.abspath(__file__))
-_SIDEBAR = os.path.normpath(
-	os.path.join(_HERE, "..", "public", "js", "components", "Sidebar.vue")
-)
+_SIDEBAR = os.path.normpath(os.path.join(_HERE, "..", "public", "js", "components", "Sidebar.vue"))
 
 
 class TestSidebarProfileMenu(unittest.TestCase):
@@ -25,7 +23,7 @@ class TestSidebarProfileMenu(unittest.TestCase):
 	def test_menu_escapes_sidebar_scroll_and_opens_above_trigger(self):
 		self.assertIn('<Teleport to="body">', self.sidebar)
 		self.assertIn('position: "fixed"', self.sidebar)
-		self.assertIn('bottom: `${window.innerHeight - rect.top + 4}px`', self.sidebar)
+		self.assertIn("bottom: `${window.innerHeight - rect.top + 4}px`", self.sidebar)
 		self.assertIn("Math.max(0, rect.top - gap - viewportPadding)", self.sidebar)
 		self.assertIn("maxHeight:", self.sidebar)
 		self.assertNotIn("Math.max(96", self.sidebar)

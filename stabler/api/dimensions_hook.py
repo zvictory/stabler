@@ -18,7 +18,7 @@ def apply_dimensional_qty(doc, method=None):
 	# Pre-patch safety: the custom column may not exist yet.
 	if not frappe.db.has_column("Item", "custom_dimension_mode"):
 		return
-	for it in (doc.get("items") or []):
+	for it in doc.get("items") or []:
 		if not getattr(it, "item_code", None):
 			continue
 		mode = frappe.get_cached_value("Item", it.item_code, "custom_dimension_mode")

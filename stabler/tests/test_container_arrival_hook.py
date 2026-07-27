@@ -111,9 +111,7 @@ class TestAdvancePEPayload(unittest.TestCase):
 		self.assertTrue(all(r["reference_doctype"] == "Purchase Order" for r in refs))
 		self.assertEqual(refs[0]["allocated_amount"], 420.0)
 		self.assertEqual(refs[1]["allocated_amount"], 280.0)
-		self.assertAlmostEqual(
-			sum(r["allocated_amount"] for r in refs), payload["paid_amount"], places=2
-		)
+		self.assertAlmostEqual(sum(r["allocated_amount"] for r in refs), payload["paid_amount"], places=2)
 
 	def test_no_pos_means_no_references(self):
 		payload = self._payload([])

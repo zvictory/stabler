@@ -30,7 +30,9 @@ def execute():
 					"fieldname": "custom_bid_pricing",
 					"label": "Bid Pricing (plan)",
 					"fieldtype": "Long Text",
-					"insert_after": "custom_board_stage" if frappe.db.has_column("CRM Deal", "custom_board_stage") else "status",
+					"insert_after": "custom_board_stage"
+					if frappe.db.has_column("CRM Deal", "custom_board_stage")
+					else "status",
 					"read_only": 1,
 					"hidden": 1,
 					"description": (

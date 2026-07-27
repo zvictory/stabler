@@ -18,6 +18,7 @@ ITEM_CODE_REMAP = {
 	"61": "61-62",
 }
 
+
 def parse_number(value) -> float:
 	if value is None:
 		return 0.0
@@ -30,6 +31,7 @@ def parse_number(value) -> float:
 		return float(cleaned)
 	except ValueError:
 		return 0.0
+
 
 def parse_date(value) -> str:
 	if isinstance(value, datetime):
@@ -44,6 +46,7 @@ def parse_date(value) -> str:
 		except ValueError:
 			continue
 	raise ValueError(f"Unrecognized date value: {value!r}")
+
 
 def read_excel(file_content) -> list[dict]:
 	wb = openpyxl.load_workbook(io.BytesIO(file_content), read_only=True, data_only=True)
@@ -74,18 +77,22 @@ def read_excel(file_content) -> list[dict]:
 			"rate": parse_number(row[col["rate"]]),
 			"amount": parse_number(row[col.get("amount", col.get("rate"))]),
 			"customer": str(row[col["customer"]]).strip() if row[col.get("customer")] else "",
-			"parent": str(row[col["parent"]]).strip() if "parent" in col and row[col["parent"]] is not None else "",
+			"parent": str(row[col["parent"]]).strip()
+			if "parent" in col and row[col["parent"]] is not None
+			else "",
 		}
 		rows.append(row_dict)
 
 	wb.close()
 	return rows
 
+
 def _effective_customer(row: dict) -> str:
 	whom = (row.get("whom") or "").strip()
 	if whom:
 		return whom
 	return (row.get("customer") or "").strip()
+
 
 def auto_correct_total_kg(rows: list[dict]) -> None:
 	for r in rows:
@@ -97,6 +104,7 @@ def auto_correct_total_kg(rows: list[dict]) -> None:
 			r["total_kg"] = round(amount / rate, 3)
 			r["total_kg_corrected"] = True
 
+
 def auto_correct_boxes(rows: list[dict]) -> None:
 	for r in rows:
 		box_kg = r.get("box_kg") or 0.0
@@ -106,6 +114,7 @@ def auto_correct_boxes(rows: list[dict]) -> None:
 			r["original_boxes"] = boxes
 			r["boxes"] = round(total_kg / box_kg, 2)
 			r["boxes_corrected"] = True
+
 
 def resolve_customers(rows: list[dict]) -> tuple[dict[str, str], list[str]]:
 	names = sorted({_effective_customer(r) for r in rows if _effective_customer(r)})
@@ -121,6 +130,7 @@ def resolve_customers(rows: list[dict]) -> tuple[dict[str, str], list[str]]:
 			missing.append(name)
 	return resolved, missing
 
+
 def resolve_items(rows: list[dict]) -> tuple[set[str], list[str]]:
 	codes = sorted({r["item_code"] for r in rows if r["item_code"]})
 	known = set()
@@ -132,18 +142,24 @@ def resolve_items(rows: list[dict]) -> tuple[set[str], list[str]]:
 			missing.append(code)
 	return known, missing
 
+
 def _import_ref(payload: dict) -> str:
 	items_canon = sorted((i["item_code"], i["qty"], i["rate"]) for i in payload.get("items", []))
-	canonical = json.dumps({
-		"customer": payload["customer"],
-		"posting_date": payload["posting_date"],
-		"is_return": payload.get("is_return", 0),
-		"items": items_canon,
-	}, sort_keys=True)
+	canonical = json.dumps(
+		{
+			"customer": payload["customer"],
+			"posting_date": payload["posting_date"],
+			"is_return": payload.get("is_return", 0),
+			"items": items_canon,
+		},
+		sort_keys=True,
+	)
 	return "IMPORT-" + hashlib.sha1(canonical.encode()).hexdigest()[:12]
+
 
 def build_payloads(rows: list[dict], customer_map: dict[str, str], company: str) -> list[dict]:
 	from collections import defaultdict
+
 	groups = defaultdict(list)
 	for r in rows:
 		key = (r["date"], _effective_customer(r))
@@ -225,6 +241,7 @@ def build_payloads(rows: list[dict], customer_map: dict[str, str], company: str)
 
 	return payloads
 
+
 def _get_file_content(file_url=None):
 	if "file" in frappe.request.files:
 		return frappe.request.files["file"].stream.read()
@@ -233,9 +250,11 @@ def _get_file_content(file_url=None):
 		if not file_name or not frappe.has_permission("File", "read", file_name):
 			frappe.throw(_("Not permitted to access this file."), frappe.PermissionError)
 		from frappe.utils.file_manager import get_file
+
 		_file_name, content = get_file(file_url)
 		return content
 	frappe.throw(_("No file uploaded or file URL provided."))
+
 
 @frappe.whitelist()
 def preview_sales_import(file_url=None, corrections=None):
@@ -264,42 +283,52 @@ def preview_sales_import(file_url=None, corrections=None):
 
 	issues = []
 	for c in missing_customers:
-		issues.append({
-			"severity": "blocker",
-			"code": "customer_missing",
-			"message": f"Customer not found in accounting system: '{c}'",
-			"customer": c,
-		})
+		issues.append(
+			{
+				"severity": "blocker",
+				"code": "customer_missing",
+				"message": f"Customer not found in accounting system: '{c}'",
+				"customer": c,
+			}
+		)
 	for code in missing_items:
-		issues.append({
-			"severity": "blocker",
-			"code": "item_missing",
-			"message": f"Item code not found in accounting system: '{code}'",
-			"item": code,
-		})
+		issues.append(
+			{
+				"severity": "blocker",
+				"code": "item_missing",
+				"message": f"Item code not found in accounting system: '{code}'",
+				"item": code,
+			}
+		)
 
 	for idx, r in enumerate(rows, start=2):
 		if not r.get("customer") and not r.get("parent"):
-			issues.append({
-				"severity": "blocker",
-				"code": "customer_blank",
-				"message": "Customer/buyer name is empty",
-				"row": idx,
-			})
+			issues.append(
+				{
+					"severity": "blocker",
+					"code": "customer_blank",
+					"message": "Customer/buyer name is empty",
+					"row": idx,
+				}
+			)
 		if r["rate"] < 0:
-			issues.append({
-				"severity": "blocker",
-				"code": "rate_invalid",
-				"message": "Rate cannot be negative",
-				"row": idx,
-			})
+			issues.append(
+				{
+					"severity": "blocker",
+					"code": "rate_invalid",
+					"message": "Rate cannot be negative",
+					"row": idx,
+				}
+			)
 		if r["total_kg"] == 0 and r.get("amount", 0) == 0:
-			issues.append({
-				"severity": "blocker",
-				"code": "qty_zero",
-				"message": "Quantity and amount are zero",
-				"row": idx,
-			})
+			issues.append(
+				{
+					"severity": "blocker",
+					"code": "qty_zero",
+					"message": "Quantity and amount are zero",
+					"row": idx,
+				}
+			)
 
 	blocker_count = sum(1 for i in issues if i["severity"] == "blocker")
 	return {
@@ -309,13 +338,16 @@ def preview_sales_import(file_url=None, corrections=None):
 		"can_import": blocker_count == 0,
 	}
 
+
 @frappe.whitelist()
 def execute_sales_import(file_url=None, corrections=None, selected_indices=None, company=None):
 	if not frappe.has_permission("Sales Invoice", "create"):
 		frappe.throw(_("You are not permitted to import sales invoices."), frappe.PermissionError)
 
 	if not company:
-		company = frappe.defaults.get_user_default("Company") or frappe.get_all("Company", pluck="name", limit=1)[0]
+		company = (
+			frappe.defaults.get_user_default("Company") or frappe.get_all("Company", pluck="name", limit=1)[0]
+		)
 	_require_company(company)
 	_assert_company_scope(company)
 

@@ -22,103 +22,103 @@ BATCH_ENDPOINTS = ["batch_availability", "suggest_fefo", "expiring_batches"]
 
 
 def _read(name: str) -> str:
-    with open(os.path.join(_API, name), encoding="utf-8") as f:
-        return f.read()
+	with open(os.path.join(_API, name), encoding="utf-8") as f:
+		return f.read()
 
 
 def _func_body(src: str, name: str) -> str:
-    m = re.search(rf"^def {name}\(", src, re.M)
-    assert m, f"function {name} not found"
-    tail = src[m.start():]
-    nxt = re.search(r"\n(?:@frappe\.whitelist\(\)|def )", tail[1:])
-    return tail[: nxt.start() + 1] if nxt else tail
+	m = re.search(rf"^def {name}\(", src, re.M)
+	assert m, f"function {name} not found"
+	tail = src[m.start() :]
+	nxt = re.search(r"\n(?:@frappe\.whitelist\(\)|def )", tail[1:])
+	return tail[: nxt.start() + 1] if nxt else tail
 
 
 class TenantIsolationTest(unittest.TestCase):
-    def setUp(self):
-        self.src = _read("inventory.py")
+	def setUp(self):
+		self.src = _read("inventory.py")
 
-    def test_every_batch_endpoint_scopes_the_company(self):
-        for name in BATCH_ENDPOINTS:
-            with self.subTest(endpoint=name):
-                body = _func_body(self.src, name)
-                self.assertIn("_require_company(company)", body)
-                self.assertIn("_assert_company_scope(company)", body)
+	def test_every_batch_endpoint_scopes_the_company(self):
+		for name in BATCH_ENDPOINTS:
+			with self.subTest(endpoint=name):
+				body = _func_body(self.src, name)
+				self.assertIn("_require_company(company)", body)
+				self.assertIn("_assert_company_scope(company)", body)
 
-    def test_every_batch_endpoint_is_whitelisted(self):
-        for name in BATCH_ENDPOINTS:
-            with self.subTest(endpoint=name):
-                self.assertRegex(
-                    self.src,
-                    rf"@frappe\.whitelist\(\)\ndef {name}\(",
-                    f"{name} must be decorated with @frappe.whitelist()",
-                )
+	def test_every_batch_endpoint_is_whitelisted(self):
+		for name in BATCH_ENDPOINTS:
+			with self.subTest(endpoint=name):
+				self.assertRegex(
+					self.src,
+					rf"@frappe\.whitelist\(\)\ndef {name}\(",
+					f"{name} must be decorated with @frappe.whitelist()",
+				)
 
 
 class ReadOnlyTest(unittest.TestCase):
-    """Visibility endpoints. Writing a batch onto a document is a separate,
-    riskier change and must not sneak in here."""
+	"""Visibility endpoints. Writing a batch onto a document is a separate,
+	riskier change and must not sneak in here."""
 
-    def test_batch_endpoints_never_write(self):
-        src = _read("inventory.py")
-        forbidden = ("db_set(", ".insert(", ".save(", ".submit(", "db.set_value(", "db.commit(")
-        for name in BATCH_ENDPOINTS:
-            body = _func_body(src, name)
-            for token in forbidden:
-                with self.subTest(endpoint=name, token=token):
-                    self.assertNotIn(token, body)
+	def test_batch_endpoints_never_write(self):
+		src = _read("inventory.py")
+		forbidden = ("db_set(", ".insert(", ".save(", ".submit(", "db.set_value(", "db.commit(")
+		for name in BATCH_ENDPOINTS:
+			body = _func_body(src, name)
+			for token in forbidden:
+				with self.subTest(endpoint=name, token=token):
+					self.assertNotIn(token, body)
 
 
 class BalanceSourceTest(unittest.TestCase):
-    def setUp(self):
-        self.body = _func_body(_read("inventory.py"), "_batch_rows")
+	def setUp(self):
+		self.body = _func_body(_read("inventory.py"), "_batch_rows")
 
-    def test_quantities_come_from_the_ledger_not_batch_qty(self):
-        # tabBatch.batch_qty is a company-wide figure — using it would report
-        # stock sitting in another warehouse as available here. Assert the
-        # property, not the exact SQL: the query legitimately changed shape
-        # when the v16 Serial and Batch Bundle path was added.
-        self.assertIn("tabStock Ledger Entry", self.body)
-        self.assertIn("sle.actual_qty", self.body)
-        self.assertNotIn("b.batch_qty", self.body)
+	def test_quantities_come_from_the_ledger_not_batch_qty(self):
+		# tabBatch.batch_qty is a company-wide figure — using it would report
+		# stock sitting in another warehouse as available here. Assert the
+		# property, not the exact SQL: the query legitimately changed shape
+		# when the v16 Serial and Batch Bundle path was added.
+		self.assertIn("tabStock Ledger Entry", self.body)
+		self.assertIn("sle.actual_qty", self.body)
+		self.assertNotIn("b.batch_qty", self.body)
 
-    def test_v16_bundle_path_is_read_too(self):
-        # ERPNext 16 records the batch on a Serial and Batch Bundle rather than
-        # on the ledger row. Reading only sle.batch_no returns nothing on a v16
-        # site — the end-to-end run on msa proved it.
-        self.assertIn("tabSerial and Batch Entry", self.body)
-        self.assertIn("serial_and_batch_bundle", self.body)
+	def test_v16_bundle_path_is_read_too(self):
+		# ERPNext 16 records the batch on a Serial and Batch Bundle rather than
+		# on the ledger row. Reading only sle.batch_no returns nothing on a v16
+		# site — the end-to-end run on msa proved it.
+		self.assertIn("tabSerial and Batch Entry", self.body)
+		self.assertIn("serial_and_batch_bundle", self.body)
 
-    def test_cancelled_ledger_entries_are_excluded(self):
-        self.assertIn("is_cancelled = 0", self.body)
+	def test_cancelled_ledger_entries_are_excluded(self):
+		self.assertIn("is_cancelled = 0", self.body)
 
-    def test_zero_and_negative_balances_are_filtered_out(self):
-        self.assertRegex(self.body, r"HAVING SUM\(.*?\) > 0")
+	def test_zero_and_negative_balances_are_filtered_out(self):
+		self.assertRegex(self.body, r"HAVING SUM\(.*?\) > 0")
 
-    def test_no_caller_value_reaches_the_sql_string(self):
-        # The only interpolation is the joined condition list, built from
-        # literals; every caller value goes through %(name)s parameters.
-        interpolations = set(re.findall(r"\{(\w+)\}", self.body))
-        self.assertTrue(
-            interpolations <= {"conds"},
-            f"unexpected f-string interpolation into SQL: {interpolations}",
-        )
+	def test_no_caller_value_reaches_the_sql_string(self):
+		# The only interpolation is the joined condition list, built from
+		# literals; every caller value goes through %(name)s parameters.
+		interpolations = set(re.findall(r"\{(\w+)\}", self.body))
+		self.assertTrue(
+			interpolations <= {"conds"},
+			f"unexpected f-string interpolation into SQL: {interpolations}",
+		)
 
 
 class FefoPolicyTest(unittest.TestCase):
-    def test_expired_stock_is_not_allocated_by_default(self):
-        res = _fefo.allocate_fefo(10, [{"batch_no": "X", "qty": 100, "days_left": -1}])
-        self.assertEqual(res["lines"], [])
-        self.assertEqual(res["shortfall"], 10)
-        self.assertEqual(res["skipped_expired"], ["X"])
+	def test_expired_stock_is_not_allocated_by_default(self):
+		res = _fefo.allocate_fefo(10, [{"batch_no": "X", "qty": 100, "days_left": -1}])
+		self.assertEqual(res["lines"], [])
+		self.assertEqual(res["shortfall"], 10)
+		self.assertEqual(res["skipped_expired"], ["X"])
 
-    def test_undated_batch_is_not_ranked_as_freshest(self):
-        rows = [
-            {"batch_no": "NO_DATE", "qty": 100, "expiry_date": None},
-            {"batch_no": "DATED", "qty": 100, "expiry_date": "2030-01-01"},
-        ]
-        self.assertEqual([r["batch_no"] for r in _fefo.sort_fefo(rows)], ["DATED", "NO_DATE"])
+	def test_undated_batch_is_not_ranked_as_freshest(self):
+		rows = [
+			{"batch_no": "NO_DATE", "qty": 100, "expiry_date": None},
+			{"batch_no": "DATED", "qty": 100, "expiry_date": "2030-01-01"},
+		]
+		self.assertEqual([r["batch_no"] for r in _fefo.sort_fefo(rows)], ["DATED", "NO_DATE"])
 
 
 if __name__ == "__main__":
-    unittest.main()
+	unittest.main()

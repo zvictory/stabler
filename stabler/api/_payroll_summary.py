@@ -103,6 +103,7 @@ def rollup_month(daily_summaries) -> dict:
 # 2. Period-lock blockers
 # ---------------------------------------------------------------------------
 
+
 def period_blockers(ctx) -> list[dict]:
 	"""Return a list of reasons a payroll period MUST NOT be locked.
 
@@ -124,55 +125,64 @@ def period_blockers(ctx) -> list[dict]:
 
 	open_punch_days = int(ctx.get("open_punch_days") or 0)
 	if open_punch_days > 0:
-		blockers.append({
-			"code": "open_punches",
-			"message": (
-				f"{open_punch_days} day(s) have a punch but are missing a check-out. "
-				"Resolve before locking."
-			),
-			"count": open_punch_days,
-		})
+		blockers.append(
+			{
+				"code": "open_punches",
+				"message": (
+					f"{open_punch_days} day(s) have a punch but are missing a check-out. "
+					"Resolve before locking."
+				),
+				"count": open_punch_days,
+			}
+		)
 
 	unresolved = int(ctx.get("unresolved_exceptions") or 0)
 	if unresolved > 0:
-		blockers.append({
-			"code": "unresolved_exceptions",
-			"message": (
-				f"{unresolved} attendance exception(s) are still open. "
-				"Approve or dismiss before locking."
-			),
-			"count": unresolved,
-		})
+		blockers.append(
+			{
+				"code": "unresolved_exceptions",
+				"message": (
+					f"{unresolved} attendance exception(s) are still open. Approve or dismiss before locking."
+				),
+				"count": unresolved,
+			}
+		)
 
 	pending_corr = int(ctx.get("pending_corrections") or 0)
 	if pending_corr > 0:
-		blockers.append({
-			"code": "unapproved_corrections",
-			"message": (
-				f"{pending_corr} attendance correction(s) are pending approval. "
-				"Approve or reject before locking."
-			),
-			"count": pending_corr,
-		})
+		blockers.append(
+			{
+				"code": "unapproved_corrections",
+				"message": (
+					f"{pending_corr} attendance correction(s) are pending approval. "
+					"Approve or reject before locking."
+				),
+				"count": pending_corr,
+			}
+		)
 
 	missing = int(ctx.get("employees_without_summary") or 0)
 	if missing > 0:
-		blockers.append({
-			"code": "missing_summaries",
-			"message": (
-				f"{missing} employee(s) have no attendance summary for this period. "
-				"Generate summaries before locking."
-			),
-			"count": missing,
-		})
+		blockers.append(
+			{
+				"code": "missing_summaries",
+				"message": (
+					f"{missing} employee(s) have no attendance summary for this period. "
+					"Generate summaries before locking."
+				),
+				"count": missing,
+			}
+		)
 
 	already_locked = bool(ctx.get("already_locked"))
 	if already_locked:
-		blockers.append({
-			"code": "already_locked",
-			"message": "This period is already locked. Unlock it before re-locking.",
-			"count": 1,
-		})
+		blockers.append(
+			{
+				"code": "already_locked",
+				"message": "This period is already locked. Unlock it before re-locking.",
+				"count": 1,
+			}
+		)
 
 	return blockers
 
@@ -180,6 +190,7 @@ def period_blockers(ctx) -> list[dict]:
 # ---------------------------------------------------------------------------
 # 3. Lock gate
 # ---------------------------------------------------------------------------
+
 
 def can_lock(ctx) -> bool:
 	"""Return ``True`` only when ``period_blockers(ctx)`` is empty."""
@@ -190,15 +201,17 @@ def can_lock(ctx) -> bool:
 # 4. Correction payroll-impact classifier
 # ---------------------------------------------------------------------------
 
-_PAYROLL_IMPACTING_TYPES = frozenset({
-	"check_in",
-	"check_out",
-	"status",
-	"add_attendance",
-	"remove_attendance",
-	"late_excuse",
-	"overtime_adjust",
-})
+_PAYROLL_IMPACTING_TYPES = frozenset(
+	{
+		"check_in",
+		"check_out",
+		"status",
+		"add_attendance",
+		"remove_attendance",
+		"late_excuse",
+		"overtime_adjust",
+	}
+)
 
 
 def is_correction_payroll_impacting(
@@ -224,6 +237,7 @@ def is_correction_payroll_impacting(
 # ---------------------------------------------------------------------------
 # 5. Salary-component amount helpers
 # ---------------------------------------------------------------------------
+
 
 def night_premium_amount(
 	night_minutes: float,

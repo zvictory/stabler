@@ -37,9 +37,7 @@ class ImportContainer(Document):
 		before = self.get_doc_before_save()
 		if not self.is_new():
 			previous_status = frappe.db.get_value("Import Container", self.name, "status")
-			assert_transition(
-				"Import Container", previous_status, self.status, _ALLOWED_TRANSITIONS, self
-			)
+			assert_transition("Import Container", previous_status, self.status, _ALLOWED_TRANSITIONS, self)
 		self._lock_packing_source(before)
 		self._validate_commercial_invoice_company()
 		self._check_packing_snapshot_lock(before)
@@ -61,13 +59,9 @@ class ImportContainer(Document):
 	def _validate_commercial_invoice_company(self) -> None:
 		if not self.commercial_invoice:
 			return
-		ci_company = frappe.db.get_value(
-			"Commercial Invoice", self.commercial_invoice, "company"
-		)
+		ci_company = frappe.db.get_value("Commercial Invoice", self.commercial_invoice, "company")
 		if ci_company and self.company != ci_company:
-			frappe.throw(
-				frappe._("Import Container company must match Commercial Invoice company.")
-			)
+			frappe.throw(frappe._("Import Container company must match Commercial Invoice company."))
 
 	def _packing_signature(self, rows) -> tuple:
 		# Container-row order is non-semantic: packing aggregation groups by item.
@@ -112,9 +106,7 @@ class ImportContainer(Document):
 	def _reject_locked_packing_source(self, commercial_invoice) -> None:
 		grn_name = self._immutable_grn_for_ci(commercial_invoice)
 		if grn_name:
-			frappe.throw(
-				frappe._("Packing source is locked by GRN {0}.").format(grn_name)
-			)
+			frappe.throw(frappe._("Packing source is locked by GRN {0}.").format(grn_name))
 
 	def _check_packing_snapshot_lock(self, before) -> None:
 		if not before:
@@ -130,8 +122,7 @@ class ImportContainer(Document):
 		if grn_name:
 			frappe.throw(
 				frappe._(
-					"Packing-list quantities are locked by GRN {0} after the first submitted "
-					"Truck Receipt."
+					"Packing-list quantities are locked by GRN {0} after the first submitted Truck Receipt."
 				).format(grn_name)
 			)
 

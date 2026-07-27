@@ -76,12 +76,14 @@ def late_minutes(entry, shift_start_hm, grace_already_applied=False) -> int:
 	reports late_min, pass it straight to summarize_day instead."""
 	if not entry or not shift_start_hm:
 		return 0
+
 	def m(s):
 		h, mm = s.split(":")[:2]
 		return int(h) * 60 + int(mm)
+
 	try:
 		return max(0, m(entry) - m(shift_start_hm))
-	except (TypeError, ValueError):
+	except TypeError, ValueError:
 		return 0
 
 
@@ -112,8 +114,18 @@ def summarize_day(
 	record = {"entry": daily["entry"], "exit": daily["exit"], "late_min": lm, "early_leave_min": 0}
 
 	worked = record_worked_min(record)
-	status = classify_day(record, shift, is_holiday, late, half, night,
-		date_str, hire_date, termination_date, min_worked_present)
+	status = classify_day(
+		record,
+		shift,
+		is_holiday,
+		late,
+		half,
+		night,
+		date_str,
+		hire_date,
+		termination_date,
+		min_worked_present,
+	)
 	overtime = compute_overtime_minutes(record, shift, night)
 	fee = compute_late_fee(lm, late) if status in ("late_flat", "late_step") else 0.0
 	exceptions = detect_exceptions(daily, punches)
@@ -122,10 +134,15 @@ def summarize_day(
 
 	return {
 		"date": date_str,
-		"entry": daily["entry"], "exit": daily["exit"], "punch_count": daily["punch_count"],
-		"worked_min": worked, "status": status,
-		"late_min": lm, "late_fee_uzs": fee,
-		"overtime_min": overtime, "is_night": is_overnight(record),
+		"entry": daily["entry"],
+		"exit": daily["exit"],
+		"punch_count": daily["punch_count"],
+		"worked_min": worked,
+		"status": status,
+		"late_min": lm,
+		"late_fee_uzs": fee,
+		"overtime_min": overtime,
+		"is_night": is_overnight(record),
 		"exceptions": exceptions,
 		"payroll_impacting": status in ("late_flat", "late_step", "half_day", "absent") or overtime > 0,
 	}

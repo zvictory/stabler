@@ -149,9 +149,7 @@ class CIPackingGrnIntegrationTest(FrappeTestCase):
 			},
 		)
 		foreign.insert(ignore_permissions=True)
-		frappe.db.set_value(
-			"Import Container", foreign.name, "company", self.other_company.name
-		)
+		frappe.db.set_value("Import Container", foreign.name, "company", self.other_company.name)
 
 		payload = imports.get_commercial_invoice(self.ci.name)
 
@@ -187,10 +185,7 @@ class CIPackingGrnIntegrationTest(FrappeTestCase):
 			packing_service.summary_for_ci(self.ci.name, self.company)
 
 		self.assertFalse(
-			any(
-				call.args and call.args[0] == "Import Container Item"
-				for call in get_all.call_args_list
-			)
+			any(call.args and call.args[0] == "Import Container Item" for call in get_all.call_args_list)
 		)
 
 	def test_create_grn_uses_packing_aggregate_not_ci_lines(self):
@@ -238,8 +233,7 @@ class CIPackingGrnIntegrationTest(FrappeTestCase):
 		self.assertEqual(summary_for_ci.call_count, 1)
 		self.assertFalse(
 			any(
-				call.args[:3]
-				== ("GRN Checklist", result["name"], "expected_snapshot_locked")
+				call.args[:3] == ("GRN Checklist", result["name"], "expected_snapshot_locked")
 				for call in get_value.call_args_list
 			)
 		)
@@ -261,8 +255,7 @@ class CIPackingGrnIntegrationTest(FrappeTestCase):
 		self.assertEqual(summary_for_ci.call_count, 1)
 		self.assertTrue(
 			any(
-				call.args[:3]
-				== ("GRN Checklist", created["name"], "expected_snapshot_locked")
+				call.args[:3] == ("GRN Checklist", created["name"], "expected_snapshot_locked")
 				for call in get_value.call_args_list
 			)
 		)
@@ -293,9 +286,7 @@ class CIPackingGrnIntegrationTest(FrappeTestCase):
 		self.ci.status = "STUFFED"
 		self.ci.save(ignore_permissions=True)
 
-		grn_name = frappe.db.get_value(
-			"GRN Checklist", {"commercial_invoice": self.ci.name}
-		)
+		grn_name = frappe.db.get_value("GRN Checklist", {"commercial_invoice": self.ci.name})
 		grn = frappe.get_doc("GRN Checklist", grn_name)
 
 		self.assertEqual(grn.grn_items[0].expected_total_kg, 300.0)
@@ -336,9 +327,7 @@ class CIPackingGrnIntegrationTest(FrappeTestCase):
 			}
 		)
 		receipt.insert(ignore_permissions=True)
-		frappe.db.set_value(
-			"Truck Receipt", receipt.name, "docstatus", 1
-		)
+		frappe.db.set_value("Truck Receipt", receipt.name, "docstatus", 1)
 
 		with self.assertRaisesRegex(frappe.ValidationError, "Expected quantities are locked"):
 			imports.refresh_grn_expected_quantities(created["name"])
@@ -430,9 +419,7 @@ class CIPackingGrnIntegrationTest(FrappeTestCase):
 
 		def assert_snapshot_is_locked(_receipt):
 			self.assertEqual(
-				frappe.db.get_value(
-					"GRN Checklist", grn_name, "expected_snapshot_locked"
-				),
+				frappe.db.get_value("GRN Checklist", grn_name, "expected_snapshot_locked"),
 				1,
 			)
 
@@ -446,16 +433,14 @@ class CIPackingGrnIntegrationTest(FrappeTestCase):
 		create_pr.assert_called_once_with(receipt)
 
 	def test_truck_receipt_freeze_is_registered_before_submit(self):
-		hooks_source = (
-			frappe.get_app_path("stabler", "hooks.py")
-		)
+		hooks_source = frappe.get_app_path("stabler", "hooks.py")
 		with open(hooks_source, encoding="utf-8") as source_file:
 			source = source_file.read()
-		truck_block = source[source.index('"Truck Receipt": {'):]
-		truck_block = truck_block[:truck_block.index("},")]
+		truck_block = source[source.index('"Truck Receipt": {') :]
+		truck_block = truck_block[: truck_block.index("},")]
 		self.assertIn('"before_submit"', truck_block)
 		self.assertIn("truck_receipt_before_submit", truck_block)
-		self.assertNotIn("truck_receipt_on_submit\"", truck_block.split('"before_submit"')[1].split("]")[0])
+		self.assertNotIn('truck_receipt_on_submit"', truck_block.split('"before_submit"')[1].split("]")[0])
 
 	def test_receipt_company_must_match_grn_before_insert(self):
 		grn_name = imports.create_grn_for_ci(self.ci.name)["name"]
@@ -468,9 +453,7 @@ class CIPackingGrnIntegrationTest(FrappeTestCase):
 		with self.assertRaisesRegex(frappe.ValidationError, "company must match"):
 			receipt.insert(ignore_permissions=True)
 
-		self.assertFalse(
-			frappe.db.get_value("GRN Checklist", grn_name, "expected_snapshot_locked")
-		)
+		self.assertFalse(frappe.db.get_value("GRN Checklist", grn_name, "expected_snapshot_locked"))
 
 	def test_receipt_truck_must_match_grn_company_and_ci(self):
 		grn_name = imports.create_grn_for_ci(self.ci.name)["name"]
@@ -583,17 +566,13 @@ class CIPackingGrnIntegrationTest(FrappeTestCase):
 			new_row.insert(ignore_permissions=True)
 
 		with self.assertRaisesRegex(frappe.ValidationError, "through Import Container"):
-			frappe.delete_doc(
-				"Import Container Item", row_name, ignore_permissions=True
-			)
+			frappe.delete_doc("Import Container Item", row_name, ignore_permissions=True)
 
 		parent = frappe.get_doc("Import Container", self.container_1.name)
 		parent.items[0].box_qty = 9
 		parent.items[0].total_kg = 180
 		parent.save(ignore_permissions=True)
-		self.assertEqual(
-			frappe.db.get_value("Import Container Item", row_name, "total_kg"), 180
-		)
+		self.assertEqual(frappe.db.get_value("Import Container Item", row_name, "total_kg"), 180)
 
 	def test_locked_grn_rejects_parent_and_direct_child_snapshot_mutations(self):
 		from stabler.stabler.imports_module import hooks
@@ -602,16 +581,12 @@ class CIPackingGrnIntegrationTest(FrappeTestCase):
 		hooks._lock_grn_expected_snapshot(grn_name)
 		grn = frappe.get_doc("GRN Checklist", grn_name)
 		row_name = grn.grn_items[0].name
-		other_item = frappe.db.get_value(
-			"Item", {"name": ["!=", self.item], "disabled": 0}, "name"
-		)
+		other_item = frappe.db.get_value("Item", {"name": ["!=", self.item], "disabled": 0}, "name")
 		self.assertIsNotNone(other_item)
 
 		mutations = {
 			"company": lambda doc: setattr(doc, "company", self.other_company.name),
-			"commercial invoice": lambda doc: setattr(
-				doc, "commercial_invoice", self._new_ci().name
-			),
+			"commercial invoice": lambda doc: setattr(doc, "commercial_invoice", self._new_ci().name),
 			"lock reset": lambda doc: setattr(doc, "expected_snapshot_locked", 0),
 			"expected item": lambda doc: setattr(doc.grn_items[0], "item_code", other_item),
 			"expected boxes": lambda doc: setattr(doc.grn_items[0], "expected_boxes", 99),
@@ -685,9 +660,8 @@ class CIPackingGrnIntegrationTest(FrappeTestCase):
 
 	def test_locked_packing_signature_is_order_independent_and_complete(self):
 		from stabler.stabler.imports_module import hooks
-		other_item = frappe.db.get_value(
-			"Item", {"name": ["!=", self.item], "disabled": 0}, "name"
-		)
+
+		other_item = frappe.db.get_value("Item", {"name": ["!=", self.item], "disabled": 0}, "name")
 		self.assertIsNotNone(other_item)
 
 		first = self.container_1.items[0]
@@ -721,9 +695,7 @@ class CIPackingGrnIntegrationTest(FrappeTestCase):
 			with self.subTest(change=label):
 				doc = frappe.get_doc("Import Container", self.container_1.name)
 				mutate(doc)
-				with self.assertRaisesRegex(
-					frappe.ValidationError, "Packing-list quantities are locked"
-				):
+				with self.assertRaisesRegex(frappe.ValidationError, "Packing-list quantities are locked"):
 					doc.save(ignore_permissions=True)
 
 	def test_purchase_receipt_failure_rolls_back_submit_and_snapshot_lock(self):
@@ -761,9 +733,7 @@ class CIPackingGrnIntegrationTest(FrappeTestCase):
 
 		grn_name = imports.create_grn_for_ci(self.ci.name)["name"]
 		hooks._lock_grn_expected_snapshot(grn_name)
-		locked_expected = frappe.db.get_value(
-			"GRN Checklist Item", {"parent": grn_name}, "expected_total_kg"
-		)
+		locked_expected = frappe.db.get_value("GRN Checklist Item", {"parent": grn_name}, "expected_total_kg")
 		frappe.db.set_value(
 			"Import Container Item",
 			self.container_1.items[0].name,
@@ -777,9 +747,7 @@ class CIPackingGrnIntegrationTest(FrappeTestCase):
 			receipt.submit()
 
 		self.assertEqual(
-			frappe.db.get_value(
-				"GRN Checklist Item", {"parent": grn_name}, "expected_total_kg"
-			),
+			frappe.db.get_value("GRN Checklist Item", {"parent": grn_name}, "expected_total_kg"),
 			locked_expected,
 		)
 
@@ -880,9 +848,7 @@ class CIPackingGrnConcurrencyTest(FrappeTestCase):
 			frappe.db.rollback()
 			hooks._lock_grn_expected_snapshot(grn_name)
 			self.assertEqual(
-				frappe.db.get_value(
-					"GRN Checklist Item", {"parent": grn_name}, "expected_boxes"
-				),
+				frappe.db.get_value("GRN Checklist Item", {"parent": grn_name}, "expected_boxes"),
 				14,
 			)
 		finally:
@@ -932,9 +898,7 @@ class CIPackingGrnConcurrencyTest(FrappeTestCase):
 				"container_number": f"RECEIPT-RACE-{frappe.generate_hash(length=6)}",
 			}
 		)
-		container.append(
-			"items", {"item_code": item, "box_qty": 5, "box_kg": 20, "total_kg": 100}
-		)
+		container.append("items", {"item_code": item, "box_qty": 5, "box_kg": 20, "total_kg": 100})
 		container.insert(ignore_permissions=True)
 		grn_name = packing_service.create_or_get_grn(ci, ignore_permissions=True)["name"]
 		truck = frappe.new_doc("Import Truck")

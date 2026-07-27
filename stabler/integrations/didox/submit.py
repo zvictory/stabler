@@ -55,9 +55,7 @@ def send_signed(submission_name: str, signed_pkcs7: str) -> dict[str, Any]:
 	# A sent/accepted ЭСФ is a legally-binding tax document — never re-post it,
 	# or Didox ends up with a duplicate for the same invoice.
 	if submission.status in ("Sent", "Accepted"):
-		frappe.throw(
-			f"This document was already sent to Didox (status: {submission.status})."
-		)
+		frappe.throw(f"This document was already sent to Didox (status: {submission.status}).")
 	payload = (
 		json.loads(submission.payload_json)
 		if submission.payload_json

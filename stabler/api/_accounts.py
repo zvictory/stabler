@@ -40,9 +40,10 @@ def resolve_party_account(party_type: str, party: str, company: str, currency: s
 	)
 	if not matching:
 		frappe.throw(
-			_("No {0} {1} account exists for company {2}. "
-			  "Create one before using this currency.").format(currency, account_type.lower(), company),
-			frappe.ValidationError
+			_("No {0} {1} account exists for company {2}. Create one before using this currency.").format(
+				currency, account_type.lower(), company
+			),
+			frappe.ValidationError,
 		)
 	return matching[0]
 
@@ -52,6 +53,7 @@ def _cbu_rate_on_or_before(doc_currency: str, company_currency: str, posting_dat
 	CBU stores each pair one-way, so if the direct pair is missing we fall back to
 	the inverse pair and return its reciprocal. Returns (rate, date) or (None, None).
 	"""
+
 	def _latest(frm, to):
 		rows = frappe.get_all(
 			"Currency Exchange",
@@ -81,7 +83,7 @@ def validate_exchange_rate(company: str, doc_currency: str, conversion_rate: flo
 	if doc_currency == "USD" and company_currency == "UZS" and flt(conversion_rate) <= 1000.0:
 		frappe.throw(
 			_("Conversion rate for USD to UZS cannot be less than 1000 (got {0}).").format(conversion_rate),
-			frappe.ValidationError
+			frappe.ValidationError,
 		)
 
 	# Fetch CBU rate from Currency Exchange (CBU task stores daily rates there).
@@ -92,8 +94,10 @@ def validate_exchange_rate(company: str, doc_currency: str, conversion_rate: flo
 	cbu_rate, cbu_date = _cbu_rate_on_or_before(doc_currency, company_currency, posting_date)
 	if cbu_rate is None:
 		frappe.throw(
-			_("No CBU exchange rate found for {0} to {1} on or before {2}.").format(doc_currency, company_currency, posting_date),
-			frappe.ValidationError
+			_("No CBU exchange rate found for {0} to {1} on or before {2}.").format(
+				doc_currency, company_currency, posting_date
+			),
+			frappe.ValidationError,
 		)
 
 	# Staleness window is admin-configurable (Accounts Settings, set via the
@@ -115,11 +119,12 @@ def validate_exchange_rate(company: str, doc_currency: str, conversion_rate: flo
 	days_diff = (getdate(posting_date) - getdate(cbu_date)).days
 	if not allow_stale and days_diff > stale_days:
 		frappe.throw(
-			_("Stale exchange rate: the nearest CBU rate for {0} to {1} is from {2} ({3} days old). "
-			  "Must be within {4} days (raise the window or enable 'allow stale' in "
-			  "Admin → Posting Window).").format(
-				doc_currency, company_currency, cbu_date, days_diff, stale_days),
-			frappe.ValidationError
+			_(
+				"Stale exchange rate: the nearest CBU rate for {0} to {1} is from {2} ({3} days old). "
+				"Must be within {4} days (raise the window or enable 'allow stale' in "
+				"Admin → Posting Window)."
+			).format(doc_currency, company_currency, cbu_date, days_diff, stale_days),
+			frappe.ValidationError,
 		)
 
 	# Check +/-20% tolerance band
@@ -127,11 +132,19 @@ def validate_exchange_rate(company: str, doc_currency: str, conversion_rate: flo
 	upper_limit = cbu_rate * 1.2
 	if not (lower_limit <= flt(conversion_rate) <= upper_limit):
 		frappe.throw(
-			_("Conversion rate {0} is outside the allowed CBU tolerance band (+/-20%) for {1} to {2}. "
-			  "CBU rate on {3} is {4} (Allowed band: {5} - {6}).").format(
-				  conversion_rate, doc_currency, company_currency, cbu_date, cbu_rate, round(lower_limit, 2), round(upper_limit, 2)
-			  ),
-			frappe.ValidationError
+			_(
+				"Conversion rate {0} is outside the allowed CBU tolerance band (+/-20%) for {1} to {2}. "
+				"CBU rate on {3} is {4} (Allowed band: {5} - {6})."
+			).format(
+				conversion_rate,
+				doc_currency,
+				company_currency,
+				cbu_date,
+				cbu_rate,
+				round(lower_limit, 2),
+				round(upper_limit, 2),
+			),
+			frappe.ValidationError,
 		)
 
 
@@ -142,11 +155,12 @@ def validate_sales_invoice(doc, method=None):
 
 	if frappe.db.get_single_value("Stabler Settings", "require_delivery_note") and doc.update_stock:
 		frappe.throw(
-			frappe._("Direct stock updates via Sales Invoice are disabled by company policy. "
-					 "Please create a Delivery Note first and link it to this Sales Invoice (with Update Stock unchecked)."),
-			frappe.ValidationError
+			frappe._(
+				"Direct stock updates via Sales Invoice are disabled by company policy. "
+				"Please create a Delivery Note first and link it to this Sales Invoice (with Update Stock unchecked)."
+			),
+			frappe.ValidationError,
 		)
-
 
 
 def validate_purchase_invoice(doc, method=None):
@@ -219,9 +233,7 @@ def _rows_by_name(child_doctype: str, names: set, fields: list[str]) -> dict:
 	out: dict = {}
 	if not names:
 		return out
-	for row in frappe.get_all(
-		child_doctype, filters={"name": ["in", list(names)]}, fields=["name", *fields]
-	):
+	for row in frappe.get_all(child_doctype, filters={"name": ["in", list(names)]}, fields=["name", *fields]):
 		out[row["name"]] = row
 	return out
 
@@ -233,7 +245,9 @@ def validate_payment_entry(doc, method=None):
 	if getattr(doc, "party_type", None) == "Employee":
 		return
 	if doc.party_type and doc.party and doc.party_account and doc.party_account_currency:
-		doc.party_account = resolve_party_account(doc.party_type, doc.party, doc.company, doc.party_account_currency)
+		doc.party_account = resolve_party_account(
+			doc.party_type, doc.party, doc.company, doc.party_account_currency
+		)
 
 		company_currency = frappe.get_cached_value("Company", doc.company, "default_currency") or "UZS"
 
@@ -241,10 +255,16 @@ def validate_payment_entry(doc, method=None):
 		paid_to_ccy = getattr(doc, "paid_to_currency", None)
 
 		# Check conversion rate for foreign payment
-		if paid_from_ccy and paid_from_ccy != company_currency and paid_from_ccy == doc.party_account_currency:
+		if (
+			paid_from_ccy
+			and paid_from_ccy != company_currency
+			and paid_from_ccy == doc.party_account_currency
+		):
 			rate = flt(doc.source_exchange_rate)
 			if rate > 0:
-				validate_exchange_rate(doc.company, paid_from_ccy, rate, doc.clearance_date or doc.posting_date)
+				validate_exchange_rate(
+					doc.company, paid_from_ccy, rate, doc.clearance_date or doc.posting_date
+				)
 		elif paid_to_ccy and paid_to_ccy != company_currency and paid_to_ccy == doc.party_account_currency:
 			rate = flt(doc.target_exchange_rate)
 			if rate > 0:
@@ -252,7 +272,9 @@ def validate_payment_entry(doc, method=None):
 
 
 def validate_journal_entry(doc, method=None):
-	if (doc.voucher_type or "").lower() == "exchange gain or loss" or getattr(doc, "is_system_generated", False):
+	if (doc.voucher_type or "").lower() == "exchange gain or loss" or getattr(
+		doc, "is_system_generated", False
+	):
 		return
 
 	company_currency = frappe.get_cached_value("Company", doc.company, "default_currency") or "UZS"
@@ -266,8 +288,10 @@ def validate_journal_entry(doc, method=None):
 			acc_type = frappe.get_cached_value("Account", row.account, "account_type")
 			if acc_type != expected_type:
 				frappe.throw(
-					_("Account {0} is not a {1} account for party {2}.").format(row.account, expected_type.lower(), row.party),
-					frappe.ValidationError
+					_("Account {0} is not a {1} account for party {2}.").format(
+						row.account, expected_type.lower(), row.party
+					),
+					frappe.ValidationError,
 				)
 
 		account_currency = frappe.get_cached_value("Account", row.account, "account_currency")
@@ -283,16 +307,20 @@ def validate_journal_entry(doc, method=None):
 		if debit > 0:
 			if abs(debit - debit_in_acc) < 0.01:
 				frappe.throw(
-					_("Cannot post UZS 1:1 into non-base currency account {0}. "
-					  "Please provide a valid exchange rate and debit amount in {1}.").format(row.account, account_currency),
-					frappe.ValidationError
+					_(
+						"Cannot post UZS 1:1 into non-base currency account {0}. "
+						"Please provide a valid exchange rate and debit amount in {1}."
+					).format(row.account, account_currency),
+					frappe.ValidationError,
 				)
 			validate_exchange_rate(doc.company, account_currency, row.exchange_rate, doc.posting_date)
 		elif credit > 0:
 			if abs(credit - credit_in_acc) < 0.01:
 				frappe.throw(
-					_("Cannot post UZS 1:1 into non-base currency account {0}. "
-					  "Please provide a valid exchange rate and credit amount in {1}.").format(row.account, account_currency),
-					frappe.ValidationError
+					_(
+						"Cannot post UZS 1:1 into non-base currency account {0}. "
+						"Please provide a valid exchange rate and credit amount in {1}."
+					).format(row.account, account_currency),
+					frappe.ValidationError,
 				)
 			validate_exchange_rate(doc.company, account_currency, row.exchange_rate, doc.posting_date)

@@ -14,9 +14,7 @@ import os
 import unittest
 
 _APP_ROOT = os.path.dirname(os.path.dirname(os.path.abspath(__file__)))  # .../stabler
-_SOURCE_PATH = os.path.join(
-	_APP_ROOT, "stabler", "doctype", "import_container", "import_container.py"
-)
+_SOURCE_PATH = os.path.join(_APP_ROOT, "stabler", "doctype", "import_container", "import_container.py")
 
 _ALL_STATUSES = {
 	"BOOKED",

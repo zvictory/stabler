@@ -22,10 +22,30 @@ from frappe.custom.doctype.custom_field.custom_field import create_custom_fields
 
 def _line_fields(insert_anchor: str) -> list:
 	return [
-		{"fieldname": "custom_length", "label": "Length", "fieldtype": "Float", "insert_after": insert_anchor},
-		{"fieldname": "custom_width", "label": "Width", "fieldtype": "Float", "insert_after": "custom_length"},
-		{"fieldname": "custom_height", "label": "Height", "fieldtype": "Float", "insert_after": "custom_width"},
-		{"fieldname": "custom_pieces", "label": "Pieces", "fieldtype": "Float", "insert_after": "custom_height"},
+		{
+			"fieldname": "custom_length",
+			"label": "Length",
+			"fieldtype": "Float",
+			"insert_after": insert_anchor,
+		},
+		{
+			"fieldname": "custom_width",
+			"label": "Width",
+			"fieldtype": "Float",
+			"insert_after": "custom_length",
+		},
+		{
+			"fieldname": "custom_height",
+			"label": "Height",
+			"fieldtype": "Float",
+			"insert_after": "custom_width",
+		},
+		{
+			"fieldname": "custom_pieces",
+			"label": "Pieces",
+			"fieldtype": "Float",
+			"insert_after": "custom_height",
+		},
 	]
 
 

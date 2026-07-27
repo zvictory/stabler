@@ -21,22 +21,26 @@ def execute():
 		if not frappe.db.exists("Custom Field", {"dt": "Accounts Settings", "fieldname": spec["fieldname"]}):
 			fields.append(spec)
 
-	add({
-		"fieldname": "allow_stale",
-		"label": "Allow Stale Exchange Rate",
-		"fieldtype": "Check",
-		"default": "0",
-		"insert_after": "frozen_accounts_modifier",
-		"description": "Bypass the CBU staleness check for back-dated multi-currency entries.",
-	})
-	add({
-		"fieldname": "stale_days",
-		"label": "Exchange Rate Staleness Window (days)",
-		"fieldtype": "Int",
-		"default": "3",
-		"insert_after": "allow_stale",
-		"description": "Max age (days) of the nearest CBU rate before an entry is blocked. 0 = use default (3).",
-	})
+	add(
+		{
+			"fieldname": "allow_stale",
+			"label": "Allow Stale Exchange Rate",
+			"fieldtype": "Check",
+			"default": "0",
+			"insert_after": "frozen_accounts_modifier",
+			"description": "Bypass the CBU staleness check for back-dated multi-currency entries.",
+		}
+	)
+	add(
+		{
+			"fieldname": "stale_days",
+			"label": "Exchange Rate Staleness Window (days)",
+			"fieldtype": "Int",
+			"default": "3",
+			"insert_after": "allow_stale",
+			"description": "Max age (days) of the nearest CBU rate before an entry is blocked. 0 = use default (3).",
+		}
+	)
 
 	if fields:
 		create_custom_fields({"Accounts Settings": fields}, ignore_validate=True)

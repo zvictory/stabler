@@ -67,14 +67,22 @@ class ServiceHelperTest(unittest.TestCase):
 			_visit_billing_filter_condition("unbilled"),
 			"mv.docstatus = 1 AND (mv.custom_sales_invoice IS NULL OR mv.custom_sales_invoice = '') AND (mv.custom_stock_entry IS NULL OR mv.custom_stock_entry = '')",
 		)
-		self.assertEqual(_visit_billing_filter_condition("invoiced"), "mv.custom_sales_invoice IS NOT NULL AND mv.custom_sales_invoice != ''")
-		self.assertEqual(_visit_billing_filter_condition("stock_issued"), "mv.custom_stock_entry IS NOT NULL AND mv.custom_stock_entry != ''")
+		self.assertEqual(
+			_visit_billing_filter_condition("invoiced"),
+			"mv.custom_sales_invoice IS NOT NULL AND mv.custom_sales_invoice != ''",
+		)
+		self.assertEqual(
+			_visit_billing_filter_condition("stock_issued"),
+			"mv.custom_stock_entry IS NOT NULL AND mv.custom_stock_entry != ''",
+		)
 		self.assertEqual(_visit_billing_filter_condition("all"), "")
 		self.assertEqual(_visit_billing_filter_condition("unexpected"), "")
 
 	def test_service_calendar_state_maps_completion_and_due_date(self):
 		self.assertEqual(_service_calendar_state("Fully Completed", "2026-06-01", "2026-06-12"), "paid")
-		self.assertEqual(_service_calendar_state("Partially Completed", "2026-06-01", "2026-06-12"), "partial")
+		self.assertEqual(
+			_service_calendar_state("Partially Completed", "2026-06-01", "2026-06-12"), "partial"
+		)
 		self.assertEqual(_service_calendar_state("Pending", "2026-06-01", "2026-06-12"), "overdue")
 		self.assertEqual(_service_calendar_state("Pending", "2026-06-20", "2026-06-12"), "upcoming")
 

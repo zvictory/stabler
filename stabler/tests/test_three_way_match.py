@@ -1,4 +1,5 @@
 """Unit tests for the pure three-way-match logic (no Frappe, no I/O)."""
+
 from __future__ import annotations
 
 import unittest
@@ -15,11 +16,27 @@ TOL = {"qty_tol_pct": 5, "rate_tol_pct": 2}
 
 class RateVarianceTest(unittest.TestCase):
 	def test_within_tolerance_ok(self):
-		line = {"idx": 1, "item_code": "X", "bill_qty": 10, "bill_rate": 101, "po_qty": 10, "po_rate": 100, "received_qty": 10}
+		line = {
+			"idx": 1,
+			"item_code": "X",
+			"bill_qty": 10,
+			"bill_rate": 101,
+			"po_qty": 10,
+			"po_rate": 100,
+			"received_qty": 10,
+		}
 		self.assertEqual(evaluate_line(line, **TOL), [])  # 1% < 2%
 
 	def test_over_tolerance_blocks(self):
-		line = {"idx": 1, "item_code": "X", "bill_qty": 10, "bill_rate": 110, "po_qty": 10, "po_rate": 100, "received_qty": 10}
+		line = {
+			"idx": 1,
+			"item_code": "X",
+			"bill_qty": 10,
+			"bill_rate": 110,
+			"po_qty": 10,
+			"po_rate": 100,
+			"received_qty": 10,
+		}
 		exc = evaluate_line(line, **TOL)
 		self.assertTrue(any(e["type"] == "rate_variance" and e["severity"] == BLOCK for e in exc))
 
@@ -30,7 +47,15 @@ class RateVarianceTest(unittest.TestCase):
 
 class OverReceivedTest(unittest.TestCase):
 	def test_billing_more_than_received_blocks(self):
-		line = {"idx": 1, "item_code": "X", "bill_qty": 12, "bill_rate": 100, "po_qty": 20, "po_rate": 100, "received_qty": 10}
+		line = {
+			"idx": 1,
+			"item_code": "X",
+			"bill_qty": 12,
+			"bill_rate": 100,
+			"po_qty": 20,
+			"po_rate": 100,
+			"received_qty": 10,
+		}
 		exc = evaluate_line(line, **TOL)
 		self.assertTrue(any(e["type"] == "over_received" and e["severity"] == BLOCK for e in exc))
 
@@ -66,7 +91,14 @@ class InvoiceTest(unittest.TestCase):
 	def test_mixed_invoice_flags_blocking(self):
 		lines = [
 			{"idx": 1, "bill_qty": 10, "bill_rate": 100, "po_qty": 10, "po_rate": 100, "received_qty": 10},
-			{"idx": 2, "bill_qty": 12, "bill_rate": 100, "po_qty": 20, "po_rate": 100, "received_qty": 10},  # over-received
+			{
+				"idx": 2,
+				"bill_qty": 12,
+				"bill_rate": 100,
+				"po_qty": 20,
+				"po_rate": 100,
+				"received_qty": 10,
+			},  # over-received
 		]
 		res = evaluate_invoice(lines, **TOL)
 		self.assertTrue(res["has_block"])

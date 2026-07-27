@@ -55,7 +55,9 @@ class TestTenderDashboardTranslations(unittest.TestCase):
 	def test_control_tower_keys_have_a_nonempty_translation_in_every_locale(self):
 		for language in ("en", "ru", "uz", "uzc", "tr"):
 			with self.subTest(language=language):
-				with (_ROOT / "translations" / f"{language}.csv").open(encoding="utf-8", newline="") as source:
+				with (_ROOT / "translations" / f"{language}.csv").open(
+					encoding="utf-8", newline=""
+				) as source:
 					translations = {row[0]: row[1] for row in csv.reader(source) if len(row) >= 2}
 				missing = sorted(key for key in REQUIRED_KEYS if not translations.get(key, "").strip())
 				self.assertEqual(missing, [], f"{language} has untranslated Control Tower copy")
@@ -68,7 +70,9 @@ class TestTenderDashboardTranslations(unittest.TestCase):
 		}
 		for language in ("en", "ru", "uz", "uzc", "tr"):
 			with self.subTest(language=language):
-				with (_ROOT / "translations" / f"{language}.csv").open(encoding="utf-8", newline="") as source:
+				with (_ROOT / "translations" / f"{language}.csv").open(
+					encoding="utf-8", newline=""
+				) as source:
 					translations = {row[0]: row[1] for row in csv.reader(source) if len(row) >= 2}
 				missing = sorted(key for key in keys if not translations.get(key, "").strip())
 				self.assertEqual(missing, [], f"{language} has untranslated tender dashboard copy")

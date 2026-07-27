@@ -9,8 +9,14 @@ from frappe.model.document import Document
 # and must never change — only the processing-status fields may be updated by the
 # processor. System Manager is exempt for genuine data-fix emergencies (audited).
 _IMMUTABLE = (
-	"external_event_id", "device", "device_user_id", "device_user_name",
-	"timestamp", "direction", "raw_payload", "source",
+	"external_event_id",
+	"device",
+	"device_user_id",
+	"device_user_name",
+	"timestamp",
+	"direction",
+	"raw_payload",
+	"source",
 )
 
 

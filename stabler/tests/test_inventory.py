@@ -10,17 +10,19 @@ from stabler.api.inventory import _format_warehouse_stock_row, _get_stock_anomal
 
 class WarehouseStockRowTest(unittest.TestCase):
 	def test_formats_quantities_and_stock_value_for_drilldown(self):
-		row = _format_warehouse_stock_row({
-			"item_code": "ITEM-001",
-			"item_name": "Cotton Thread",
-			"item_group": "Raw Material",
-			"stock_uom": "Kg",
-			"actual_qty": "12.5",
-			"reserved_qty": "2.5",
-			"ordered_qty": "4",
-			"projected_qty": "14",
-			"valuation_rate": "8000",
-		})
+		row = _format_warehouse_stock_row(
+			{
+				"item_code": "ITEM-001",
+				"item_name": "Cotton Thread",
+				"item_group": "Raw Material",
+				"stock_uom": "Kg",
+				"actual_qty": "12.5",
+				"reserved_qty": "2.5",
+				"ordered_qty": "4",
+				"projected_qty": "14",
+				"valuation_rate": "8000",
+			}
+		)
 
 		self.assertEqual(row["item_code"], "ITEM-001")
 		self.assertEqual(row["free_qty"], 10)
@@ -79,10 +81,38 @@ class WarehouseStockRowTest(unittest.TestCase):
 		# Group median is calculated from active rates. Items: rate 0.5, 0.6, 0.7 (median 0.6)
 		# ITEM-005 has rate 10.0 (> 10 * 0.6)
 		items = [
-			{"item_code": "I1", "item_name": "Normal Item 1", "item_group": "Group A", "actual_qty": 10, "valuation_rate": 0.5, "stock_value": 5.0},
-			{"item_code": "I2", "item_name": "Normal Item 2", "item_group": "Group A", "actual_qty": 10, "valuation_rate": 0.6, "stock_value": 6.0},
-			{"item_code": "I3", "item_name": "Normal Item 3", "item_group": "Group A", "actual_qty": 10, "valuation_rate": 0.7, "stock_value": 7.0},
-			{"item_code": "ITEM-005", "item_name": "Outlier Item", "item_group": "Group A", "actual_qty": 10, "valuation_rate": 10.0, "stock_value": 100.0},
+			{
+				"item_code": "I1",
+				"item_name": "Normal Item 1",
+				"item_group": "Group A",
+				"actual_qty": 10,
+				"valuation_rate": 0.5,
+				"stock_value": 5.0,
+			},
+			{
+				"item_code": "I2",
+				"item_name": "Normal Item 2",
+				"item_group": "Group A",
+				"actual_qty": 10,
+				"valuation_rate": 0.6,
+				"stock_value": 6.0,
+			},
+			{
+				"item_code": "I3",
+				"item_name": "Normal Item 3",
+				"item_group": "Group A",
+				"actual_qty": 10,
+				"valuation_rate": 0.7,
+				"stock_value": 7.0,
+			},
+			{
+				"item_code": "ITEM-005",
+				"item_name": "Outlier Item",
+				"item_group": "Group A",
+				"actual_qty": 10,
+				"valuation_rate": 10.0,
+				"stock_value": 100.0,
+			},
 		]
 		anomalies = _get_stock_anomalies(items, "MockCompany")
 		# Only outlier item should trigger median-deviation anomaly

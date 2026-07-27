@@ -19,8 +19,12 @@ from stabler.api._attendance_ingest import (
 
 
 def ev(**kw):
-	base = {"device_id": "DEV1", "device_user_id": "10783",
-		"timestamp": "2026-05-10T09:01:00", "direction": "IN"}
+	base = {
+		"device_id": "DEV1",
+		"device_user_id": "10783",
+		"timestamp": "2026-05-10T09:01:00",
+		"direction": "IN",
+	}
 	base.update(kw)
 	return base
 
@@ -69,7 +73,12 @@ class MappingActiveTest(unittest.TestCase):
 class ResolveEmployeeTest(unittest.TestCase):
 	MAP: ClassVar[list[dict]] = [
 		{"device_user_id": "10783", "employee": "HR-EMP-0001", "active_from": "2026-01-01"},
-		{"device_user_id": "10784", "employee": "HR-EMP-0002", "device_id": "DEV2", "active_from": "2026-01-01"},
+		{
+			"device_user_id": "10784",
+			"employee": "HR-EMP-0002",
+			"device_id": "DEV2",
+			"active_from": "2026-01-01",
+		},
 	]
 
 	def test_resolves_active_mapping(self):
@@ -83,7 +92,9 @@ class ResolveEmployeeTest(unittest.TestCase):
 		self.assertIsNone(resolve_employee(ev(device_user_id="10784", device_id="DEV1"), self.MAP))
 
 	def test_device_scoped_mapping_correct_device_matches(self):
-		self.assertEqual(resolve_employee(ev(device_user_id="10784", device_id="DEV2"), self.MAP), "HR-EMP-0002")
+		self.assertEqual(
+			resolve_employee(ev(device_user_id="10784", device_id="DEV2"), self.MAP), "HR-EMP-0002"
+		)
 
 	def test_ambiguous_mapping_unresolved(self):
 		dupmap = [
@@ -109,8 +120,10 @@ class ReconciliationSeedTest(unittest.TestCase):
 		self.assertEqual(out[0]["status"], "Active")
 
 	def test_skips_incomplete_rows(self):
-		rows = [{"timepay_id": "", "erpnext_employee": "HR-EMP-0001"},
-			{"timepay_id": "10785", "erpnext_employee": ""}]
+		rows = [
+			{"timepay_id": "", "erpnext_employee": "HR-EMP-0001"},
+			{"timepay_id": "10785", "erpnext_employee": ""},
+		]
 		self.assertEqual(mapping_rows_from_reconciliation(rows), [])
 
 

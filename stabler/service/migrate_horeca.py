@@ -42,6 +42,7 @@ from frappe.utils import flt
 # Helpers
 # ---------------------------------------------------------------------------
 
+
 def _log(dry_run: bool, msg: str) -> None:
 	prefix = "[DRY RUN] " if dry_run else ""
 	print(f"{prefix}{msg}")
@@ -63,7 +64,9 @@ def _leaf_or_throw(doctype: str, group_field: str = "is_group") -> str:
 	"""Return the name of the first non-group record in a tree doctype."""
 	name = frappe.db.get_value(doctype, {group_field: 0}, "name")
 	if not name:
-		frappe.throw(f"No non-group {doctype} found — please create one in ERPNext before running the migration.")
+		frappe.throw(
+			f"No non-group {doctype} found — please create one in ERPNext before running the migration."
+		)
 	return name
 
 
@@ -95,6 +98,7 @@ def _ensure_customer(customer_name: str, dry_run: bool) -> None:
 # ---------------------------------------------------------------------------
 # Phase 1: Equipment → Serial No
 # ---------------------------------------------------------------------------
+
 
 def _migrate_equipment(equip: dict[str, Any], company: str, dry_run: bool) -> str | None:
 	"""Create a Serial No for one horeca Equipment record. Returns ERPNext name."""
@@ -155,7 +159,10 @@ def _migrate_ticket(ticket: dict[str, Any], dry_run: bool) -> str | None:
 		return existing
 
 	status = _STATUS_MAP.get(ticket["status"], "Open")
-	_log(dry_run, f"  [create] Issue: {ticket['code']} — {ticket['customerName']} ({ticket['type']}) → {status}")
+	_log(
+		dry_run,
+		f"  [create] Issue: {ticket['code']} — {ticket['customerName']} ({ticket['type']}) → {status}",
+	)
 	if dry_run:
 		return None
 
@@ -177,6 +184,7 @@ def _migrate_ticket(ticket: dict[str, Any], dry_run: bool) -> str | None:
 # ---------------------------------------------------------------------------
 # Phase 3: Reports → Stock Entry + Maintenance Visit
 # ---------------------------------------------------------------------------
+
 
 def _migrate_stock_entry(report: dict[str, Any], company: str, dry_run: bool) -> str | None:
 	"""
@@ -294,6 +302,7 @@ def _migrate_maintenance_visit(
 # Entry point
 # ---------------------------------------------------------------------------
 
+
 def run(
 	json_path: str,
 	dry_run: bool = True,
@@ -316,7 +325,10 @@ def run(
 
 	_log(dry_run, f"=== HoReCa Migration  company={company}  dry_run={dry_run} ===")
 	_log(dry_run, f"    exported_at: {data.get('exported_at', 'unknown')}")
-	_log(dry_run, f"    equipment: {len(equipment_list)}, tickets: {len(ticket_list)}, reports: {len(report_list)}")
+	_log(
+		dry_run,
+		f"    equipment: {len(equipment_list)}, tickets: {len(ticket_list)}, reports: {len(report_list)}",
+	)
 
 	# --- Phase 1: Equipment --------------------------------------------------
 	_log(dry_run, "\n--- Phase 1: Equipment → Serial No ---")
@@ -377,7 +389,10 @@ def run(
 			)
 			report_ok += 1
 		except Exception as exc:
-			_log(dry_run, f"  [error] report {report.get('id', '?')[:8]} ({report.get('ticketCode', '?')}): {exc}")
+			_log(
+				dry_run,
+				f"  [error] report {report.get('id', '?')[:8]} ({report.get('ticketCode', '?')}): {exc}",
+			)
 			results.append(
 				{
 					"reportId": report.get("id", ""),

@@ -21,6 +21,7 @@ from stabler.api._payroll_summary import (
 # Helpers to build realistic per-day dicts (mirrors summarize_day output)
 # ---------------------------------------------------------------------------
 
+
 def _day(
 	status,
 	late_min=0,
@@ -47,6 +48,7 @@ def _day(
 # rollup_month
 # ---------------------------------------------------------------------------
 
+
 class TestRollupMonthEmpty(unittest.TestCase):
 	def test_empty_list_returns_zeros(self):
 		r = rollup_month([])
@@ -66,9 +68,17 @@ class TestRollupMonthEmpty(unittest.TestCase):
 	def test_all_expected_keys_present(self):
 		r = rollup_month([])
 		expected_keys = {
-			"present_days", "half_days", "absent_days", "holiday_days",
-			"night_days", "late_count", "late_minutes", "late_deduction_amount",
-			"early_leave_minutes", "overtime_minutes", "night_minutes",
+			"present_days",
+			"half_days",
+			"absent_days",
+			"holiday_days",
+			"night_days",
+			"late_count",
+			"late_minutes",
+			"late_deduction_amount",
+			"early_leave_minutes",
+			"overtime_minutes",
+			"night_minutes",
 			"exceptions_count",
 		}
 		self.assertEqual(set(r.keys()), expected_keys)
@@ -205,6 +215,7 @@ class TestRollupNightHalfDayNotCountedTwice(unittest.TestCase):
 # period_blockers
 # ---------------------------------------------------------------------------
 
+
 class TestPeriodBlockersClean(unittest.TestCase):
 	def test_clean_ctx_returns_empty(self):
 		ctx = {
@@ -298,6 +309,7 @@ class TestPeriodBlockersEachBlocker(unittest.TestCase):
 # can_lock
 # ---------------------------------------------------------------------------
 
+
 class TestCanLock(unittest.TestCase):
 	def test_clean_ctx_can_lock(self):
 		self.assertTrue(can_lock({}))
@@ -334,8 +346,8 @@ class TestCanLock(unittest.TestCase):
 # is_correction_payroll_impacting
 # ---------------------------------------------------------------------------
 
-class TestIsCorrectionPayrollImpacting(unittest.TestCase):
 
+class TestIsCorrectionPayrollImpacting(unittest.TestCase):
 	# Impacting types with real changes
 	def test_check_in_change_is_impacting(self):
 		self.assertTrue(is_correction_payroll_impacting("check_in", "09:05", "08:55"))
@@ -393,6 +405,7 @@ class TestIsCorrectionPayrollImpacting(unittest.TestCase):
 # night_premium_amount
 # ---------------------------------------------------------------------------
 
+
 class TestNightPremiumAmount(unittest.TestCase):
 	def test_basic_calculation(self):
 		# 120 min night * 60000 UZS/hr * 10% = 120/60 * 60000 * 0.10 = 12000
@@ -439,6 +452,7 @@ class TestNightPremiumAmount(unittest.TestCase):
 # ---------------------------------------------------------------------------
 # overtime_amount
 # ---------------------------------------------------------------------------
+
 
 class TestOvertimeAmount(unittest.TestCase):
 	def test_basic_no_multiplier(self):

@@ -20,23 +20,24 @@ from stabler.api._payroll_components import (
 # Fixtures
 # ---------------------------------------------------------------------------
 
+
 def _full_summary(**overrides) -> dict:
 	"""A PAS dict with all six quantities non-zero."""
 	base = {
-		"present_days":          20,
-		"absent_days":           2,
-		"late_count":            3,
-		"late_minutes":          75,
-		"late_deduction_amount": 45000.0,   # Deduction
-		"overtime_minutes":      240,
-		"overtime_amount":       120000.0,  # Earning
-		"night_minutes":         960,
-		"night_premium_amount":  18000.0,   # Earning
-		"duty_supplement":       50000.0,   # Earning
-		"kpi_adjustment":        30000.0,   # Earning (positive)
-		"region_rate":           25000.0,   # Earning
-		"unpaid_leave_days":     0,
-		"paid_leave_days":       1,
+		"present_days": 20,
+		"absent_days": 2,
+		"late_count": 3,
+		"late_minutes": 75,
+		"late_deduction_amount": 45000.0,  # Deduction
+		"overtime_minutes": 240,
+		"overtime_amount": 120000.0,  # Earning
+		"night_minutes": 960,
+		"night_premium_amount": 18000.0,  # Earning
+		"duty_supplement": 50000.0,  # Earning
+		"kpi_adjustment": 30000.0,  # Earning (positive)
+		"region_rate": 25000.0,  # Earning
+		"unpaid_leave_days": 0,
+		"paid_leave_days": 1,
 	}
 	base.update(overrides)
 	return base
@@ -45,12 +46,12 @@ def _full_summary(**overrides) -> dict:
 def _full_map() -> dict:
 	"""A complete component_map covering all six quantity keys."""
 	return {
-		"late_deduction":  {"salary_component": "Late Deduction",    "component_type": "Deduction"},
-		"overtime":        {"salary_component": "Overtime Pay",       "component_type": "Earning"},
-		"night_premium":   {"salary_component": "Night Shift Premium","component_type": "Earning"},
-		"duty_supplement": {"salary_component": "Duty Supplement",    "component_type": "Earning"},
-		"kpi":             {"salary_component": "KPI Bonus",          "component_type": "Earning"},
-		"region_rate":     {"salary_component": "Region Allowance",   "component_type": "Earning"},
+		"late_deduction": {"salary_component": "Late Deduction", "component_type": "Deduction"},
+		"overtime": {"salary_component": "Overtime Pay", "component_type": "Earning"},
+		"night_premium": {"salary_component": "Night Shift Premium", "component_type": "Earning"},
+		"duty_supplement": {"salary_component": "Duty Supplement", "component_type": "Earning"},
+		"kpi": {"salary_component": "KPI Bonus", "component_type": "Earning"},
+		"region_rate": {"salary_component": "Region Allowance", "component_type": "Earning"},
 	}
 
 
@@ -63,10 +64,10 @@ def _lines_by_key(lines: list[dict]) -> dict:
 # QUANTITY_KEYS contract
 # ---------------------------------------------------------------------------
 
+
 class TestQuantityKeys(unittest.TestCase):
 	def test_expected_keys_present(self):
-		expected = {"late_deduction", "overtime", "night_premium",
-		            "duty_supplement", "kpi", "region_rate"}
+		expected = {"late_deduction", "overtime", "night_premium", "duty_supplement", "kpi", "region_rate"}
 		self.assertEqual(set(QUANTITY_KEYS), expected)
 
 	def test_is_list(self):
@@ -79,6 +80,7 @@ class TestQuantityKeys(unittest.TestCase):
 # ---------------------------------------------------------------------------
 # summary_to_components — full summary, all six mapped
 # ---------------------------------------------------------------------------
+
 
 class TestSummaryToComponentsFull(unittest.TestCase):
 	"""All six quantities non-zero, fully mapped — canonical happy-path."""
@@ -148,6 +150,7 @@ class TestSummaryToComponentsFull(unittest.TestCase):
 # Negative KPI → Deduction
 # ---------------------------------------------------------------------------
 
+
 class TestKPISign(unittest.TestCase):
 	def test_negative_kpi_becomes_deduction(self):
 		summary = _full_summary(kpi_adjustment=-15000.0)
@@ -189,6 +192,7 @@ class TestKPISign(unittest.TestCase):
 # Zero / None amounts are skipped
 # ---------------------------------------------------------------------------
 
+
 class TestZeroAmountsSkipped(unittest.TestCase):
 	def test_zero_overtime_not_in_output(self):
 		summary = _full_summary(overtime_amount=0.0)
@@ -224,6 +228,7 @@ class TestZeroAmountsSkipped(unittest.TestCase):
 # ---------------------------------------------------------------------------
 # Unmapped non-zero quantity → warning line; also in mapping_complete
 # ---------------------------------------------------------------------------
+
 
 class TestUnmappedQuantity(unittest.TestCase):
 	@classmethod
@@ -277,6 +282,7 @@ class TestUnmappedQuantity(unittest.TestCase):
 # mapping_complete — zero amounts not flagged as missing
 # ---------------------------------------------------------------------------
 
+
 class TestMappingCompleteZeros(unittest.TestCase):
 	def test_zero_amount_not_in_missing(self):
 		summary = _full_summary(overtime_amount=0.0)
@@ -297,6 +303,7 @@ class TestMappingCompleteZeros(unittest.TestCase):
 # ---------------------------------------------------------------------------
 # components_total net math
 # ---------------------------------------------------------------------------
+
 
 class TestComponentsTotal(unittest.TestCase):
 	@classmethod
@@ -355,6 +362,7 @@ class TestComponentsTotal(unittest.TestCase):
 # slip_variance boundaries (D12: ±1000 UZS tolerance)
 # ---------------------------------------------------------------------------
 
+
 class TestSlipVariance(unittest.TestCase):
 	def test_zero_variance_within_tolerance(self):
 		r = slip_variance(198000.0, 198000.0)
@@ -407,6 +415,7 @@ class TestSlipVariance(unittest.TestCase):
 # Rounding: whole UZS, round-half-up
 # ---------------------------------------------------------------------------
 
+
 class TestRoundingWholeUZS(unittest.TestCase):
 	def test_fractional_amount_rounded_whole(self):
 		"""A non-integer raw amount on the PAS must be rounded to whole UZS."""
@@ -439,13 +448,13 @@ class TestRoundingWholeUZS(unittest.TestCase):
 		lines = summary_to_components(summary, _full_map())
 		totals = components_total(lines)
 		for key in ("earnings", "deductions", "net"):
-			self.assertEqual(totals[key], int(totals[key]),
-			                 msg=f"{key} must be a whole UZS amount")
+			self.assertEqual(totals[key], int(totals[key]), msg=f"{key} must be a whole UZS amount")
 
 
 # ---------------------------------------------------------------------------
 # Edge cases: bad inputs, missing summary fields
 # ---------------------------------------------------------------------------
+
 
 class TestEdgeCases(unittest.TestCase):
 	def test_none_summary_returns_empty(self):

@@ -1,4 +1,5 @@
 """Unit tests for the pure bank-reconciliation match scorer (no Frappe)."""
+
 from __future__ import annotations
 
 import unittest
@@ -25,8 +26,14 @@ BANK = {
 
 class ScoreTest(unittest.TestCase):
 	def test_perfect_match_is_high(self):
-		cand = {"amount": 5000000, "date": "2026-01-15", "reference": "123",
-			"party_inn": "301654321", "party_name": "Postavshchik", "voucher_no": "PE-1"}
+		cand = {
+			"amount": 5000000,
+			"date": "2026-01-15",
+			"reference": "123",
+			"party_inn": "301654321",
+			"party_name": "Postavshchik",
+			"voucher_no": "PE-1",
+		}
 		r = score_match(BANK, cand)
 		self.assertEqual(r["band"], HIGH)
 		self.assertGreaterEqual(r["score"], 80)
@@ -63,10 +70,15 @@ class ScoreTest(unittest.TestCase):
 class RankTest(unittest.TestCase):
 	def test_best_first(self):
 		cands = [
-			{"amount": 5000000, "date": "2026-02-20", "voucher_no": "far"},      # exact amt, far date
-			{"amount": 5000000, "date": "2026-01-15", "reference": "123",
-			 "party_inn": "301654321", "voucher_no": "perfect"},
-			{"amount": 4000000, "date": "2026-01-15", "voucher_no": "wrongamt"}, # amount mismatch
+			{"amount": 5000000, "date": "2026-02-20", "voucher_no": "far"},  # exact amt, far date
+			{
+				"amount": 5000000,
+				"date": "2026-01-15",
+				"reference": "123",
+				"party_inn": "301654321",
+				"voucher_no": "perfect",
+			},
+			{"amount": 4000000, "date": "2026-01-15", "voucher_no": "wrongamt"},  # amount mismatch
 		]
 		ranked = rank_candidates(BANK, cands)
 		self.assertEqual(ranked[0]["voucher_no"], "perfect")
@@ -81,6 +93,7 @@ class RankTest(unittest.TestCase):
 # Journal Entry candidates
 # ---------------------------------------------------------------------------
 
+
 class JECandidateTest(unittest.TestCase):
 	"""The scorer must work identically for JE candidates — voucher_type is
 	just metadata; scoring uses amount/date/reference/INN."""
@@ -90,7 +103,7 @@ class JECandidateTest(unittest.TestCase):
 		"voucher_no": "JV-2026-00001",
 		"amount": 5000000,
 		"date": "2026-01-15",
-		"reference": "123",      # cheque_no
+		"reference": "123",  # cheque_no
 		"party_type": "Supplier",
 		"party": "SUP-001",
 		"party_name": "Postavshchik",
@@ -117,9 +130,15 @@ class JECandidateTest(unittest.TestCase):
 	def test_rank_candidates_mixes_pe_and_je(self):
 		"""JE and PE candidates are scored on the same scale; best floats to top."""
 		cands = [
-			{"voucher_type": "Payment Entry", "voucher_no": "PE-1",
-			 "amount": 5000000, "date": "2026-01-15", "reference": "999",
-			 "party_inn": "", "party_name": ""},
+			{
+				"voucher_type": "Payment Entry",
+				"voucher_no": "PE-1",
+				"amount": 5000000,
+				"date": "2026-01-15",
+				"reference": "999",
+				"party_inn": "",
+				"party_name": "",
+			},
 			dict(self.JE_CAND),  # perfect
 		]
 		ranked = rank_candidates(BANK, cands)
@@ -135,6 +154,7 @@ class JECandidateTest(unittest.TestCase):
 # INN enrichment
 # ---------------------------------------------------------------------------
 
+
 class INNEnrichmentTest(unittest.TestCase):
 	"""Bank line carries an INN; candidates with matching INN score higher
 	than ones with only name similarity."""
@@ -148,12 +168,22 @@ class INNEnrichmentTest(unittest.TestCase):
 	}
 
 	def test_inn_match_beats_name_match(self):
-		inn_cand = {"voucher_type": "Payment Entry", "voucher_no": "PE-A",
-		            "amount": 1000000, "date": "2026-03-10",
-		            "party_inn": "302112233", "party_name": "Moloko"}
-		name_cand = {"voucher_type": "Payment Entry", "voucher_no": "PE-B",
-		             "amount": 1000000, "date": "2026-03-10",
-		             "party_inn": "", "party_name": "Moloko"}
+		inn_cand = {
+			"voucher_type": "Payment Entry",
+			"voucher_no": "PE-A",
+			"amount": 1000000,
+			"date": "2026-03-10",
+			"party_inn": "302112233",
+			"party_name": "Moloko",
+		}
+		name_cand = {
+			"voucher_type": "Payment Entry",
+			"voucher_no": "PE-B",
+			"amount": 1000000,
+			"date": "2026-03-10",
+			"party_inn": "",
+			"party_name": "Moloko",
+		}
 		r_inn = score_match(self.BANK_INN, inn_cand)
 		r_name = score_match(self.BANK_INN, name_cand)
 		self.assertIn("INN match", r_inn["reasons"])
@@ -161,16 +191,20 @@ class INNEnrichmentTest(unittest.TestCase):
 		self.assertGreater(r_inn["score"], r_name["score"])
 
 	def test_wrong_inn_does_not_get_inn_points(self):
-		wrong_inn = {"voucher_type": "Payment Entry", "voucher_no": "PE-C",
-		             "amount": 1000000, "date": "2026-03-10",
-		             "party_inn": "999999999", "party_name": "SomeCo"}
+		wrong_inn = {
+			"voucher_type": "Payment Entry",
+			"voucher_no": "PE-C",
+			"amount": 1000000,
+			"date": "2026-03-10",
+			"party_inn": "999999999",
+			"party_name": "SomeCo",
+		}
 		r = score_match(self.BANK_INN, wrong_inn)
 		self.assertNotIn("INN match", r["reasons"])
 
 	def test_bank_line_without_inn_uses_name_fallback(self):
 		bank_no_inn = dict(self.BANK_INN, counterparty_inn="")
-		cand = {"amount": 1000000, "date": "2026-03-10",
-		        "party_inn": "302112233", "party_name": "Moloko"}
+		cand = {"amount": 1000000, "date": "2026-03-10", "party_inn": "302112233", "party_name": "Moloko"}
 		r = score_match(bank_no_inn, cand)
 		# INN can't match because bank line has no INN.
 		self.assertNotIn("INN match", r["reasons"])
@@ -181,6 +215,7 @@ class INNEnrichmentTest(unittest.TestCase):
 # ---------------------------------------------------------------------------
 # Partial allocation
 # ---------------------------------------------------------------------------
+
 
 class AllocatePartialTest(unittest.TestCase):
 	"""allocate_partial must sum exactly to total with no residual."""

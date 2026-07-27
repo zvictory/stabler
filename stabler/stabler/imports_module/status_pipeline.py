@@ -62,11 +62,9 @@ def assert_transition(doctype, old, new, transitions, doc) -> None:
 			)
 		if not (getattr(doc, "status_correction_reason", None) or "").strip():
 			frappe.throw(
-				frappe._(
-					"A status correction reason is required to move {0} back from {1} to {2}."
-				).format(frappe._(doctype), old, new)
+				frappe._("A status correction reason is required to move {0} back from {1} to {2}.").format(
+					frappe._(doctype), old, new
+				)
 			)
 		return
-	frappe.throw(
-		frappe._("Cannot change {0} status from {1} to {2}.").format(frappe._(doctype), old, new)
-	)
+	frappe.throw(frappe._("Cannot change {0} status from {1} to {2}.").format(frappe._(doctype), old, new))

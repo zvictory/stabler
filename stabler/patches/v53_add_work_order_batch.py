@@ -14,32 +14,32 @@ from frappe.custom.doctype.custom_field.custom_field import create_custom_fields
 
 
 def execute() -> None:
-    create_custom_fields(
-        {
-            "Work Order": [
-                {
-                    "fieldname": "custom_batch_no",
-                    "label": "Batch / lot",
-                    "fieldtype": "Data",
-                    "insert_after": "operator",
-                    "allow_on_submit": 1,
-                    "description": "Production batch/lot number for this Work Order",
-                },
-                {
-                    "fieldname": "custom_batch_mfg_date",
-                    "label": "Batch manufacture date",
-                    "fieldtype": "Date",
-                    "insert_after": "custom_batch_no",
-                    "allow_on_submit": 1,
-                },
-                {
-                    "fieldname": "custom_batch_expiry",
-                    "label": "Batch expiry",
-                    "fieldtype": "Date",
-                    "insert_after": "custom_batch_mfg_date",
-                    "allow_on_submit": 1,
-                },
-            ],
-        },
-        update=True,
-    )
+	create_custom_fields(
+		{
+			"Work Order": [
+				{
+					"fieldname": "custom_batch_no",
+					"label": "Batch / lot",
+					"fieldtype": "Data",
+					"insert_after": "operator",
+					"allow_on_submit": 1,
+					"description": "Production batch/lot number for this Work Order",
+				},
+				{
+					"fieldname": "custom_batch_mfg_date",
+					"label": "Batch manufacture date",
+					"fieldtype": "Date",
+					"insert_after": "custom_batch_no",
+					"allow_on_submit": 1,
+				},
+				{
+					"fieldname": "custom_batch_expiry",
+					"label": "Batch expiry",
+					"fieldtype": "Date",
+					"insert_after": "custom_batch_mfg_date",
+					"allow_on_submit": 1,
+				},
+			],
+		},
+		update=True,
+	)

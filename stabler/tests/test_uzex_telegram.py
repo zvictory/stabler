@@ -1,6 +1,6 @@
 """Unit tests for stabler.integrations.uzex.telegram builders (WP-307, Frappe-free).
 
-    cd /path/to/stabler && PYTHONPATH=$PWD python3 -m unittest stabler.tests.test_uzex_telegram -v
+cd /path/to/stabler && PYTHONPATH=$PWD python3 -m unittest stabler.tests.test_uzex_telegram -v
 """
 
 from __future__ import annotations

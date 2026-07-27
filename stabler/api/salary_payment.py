@@ -60,8 +60,10 @@ def _salary_payable_account(company: str, override: str = "") -> str:
 	) or _leaf_account(company, "account_type = 'Payable'", {})
 	if not acc:
 		frappe.throw(
-			_("No Salary Payable account found for {0}. Create a Payable account "
-			  "(e.g. 'Salary Payable') or pass one explicitly.").format(company)
+			_(
+				"No Salary Payable account found for {0}. Create a Payable account "
+				"(e.g. 'Salary Payable') or pass one explicitly."
+			).format(company)
 		)
 	return acc
 
@@ -76,8 +78,10 @@ def _salary_expense_account(company: str, override: str = "") -> str:
 	)
 	if not acc:
 		frappe.throw(
-			_("No Salary Expense account found for {0}. Create an Expense account "
-			  "(e.g. 'Salaries') or pass one explicitly.").format(company)
+			_(
+				"No Salary Expense account found for {0}. Create an Expense account "
+				"(e.g. 'Salaries') or pass one explicitly."
+			).format(company)
 		)
 	return acc
 
@@ -119,7 +123,11 @@ def _locked_nets(company: str, payroll_period: str) -> list[dict]:
 # ── Accrual ──────────────────────────────────────────────────────────────────
 @frappe.whitelist()
 def accrue_payroll_period(
-	company: str, payroll_period: str, expense_account: str = "", payable_account: str = "", posting_date: str = ""
+	company: str,
+	payroll_period: str,
+	expense_account: str = "",
+	payable_account: str = "",
+	posting_date: str = "",
 ) -> dict:
 	"""Book the locked period's nets as a payable (Dr expense / Cr payable per employee).
 
@@ -303,11 +311,17 @@ def pay_salaries(
 	for item in employees:
 		emp = item if isinstance(item, str) else item.get("employee")
 		outstanding = flt(balances.get(emp, 0.0))
-		amount = outstanding if isinstance(item, str) or item.get("amount") in (None, "") else flt(item.get("amount"))
+		amount = (
+			outstanding
+			if isinstance(item, str) or item.get("amount") in (None, "")
+			else flt(item.get("amount"))
+		)
 		amount = min(round(amount), round(outstanding))  # never overpay the payable
 		if amount <= 0:
 			continue
-		rows.append({"account": account, "party_type": "Employee", "party": emp, "debit": amount, "credit": 0})
+		rows.append(
+			{"account": account, "party_type": "Employee", "party": emp, "debit": amount, "credit": 0}
+		)
 		total += amount
 		paid.append({"employee": emp, "amount": amount})
 	if not rows:

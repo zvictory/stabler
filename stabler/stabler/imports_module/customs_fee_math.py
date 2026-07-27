@@ -41,7 +41,9 @@ def effective_brv(settings_rows, on_date) -> Decimal:
 	(``datetime.date`` objects, or ISO ``yyyy-mm-dd`` strings — both sort
 	correctly).
 	"""
-	eligible = [r for r in settings_rows if r.get("effective_date") is not None and r["effective_date"] <= on_date]
+	eligible = [
+		r for r in settings_rows if r.get("effective_date") is not None and r["effective_date"] <= on_date
+	]
 	if not eligible:
 		raise ValueError(f"No BRV setting is effective on {on_date}")
 	row = max(eligible, key=lambda r: r["effective_date"])

@@ -22,12 +22,9 @@ def repost_status() -> dict:
 	"""Queue health: counts by status, oldest queued, stuck + errored reposts."""
 	_require_admin()
 	counts = {
-		row[0]: row[1]
-		for row in frappe.db.sql("select status, count(*) from `tab%s` group by status" % _RIV)
+		row[0]: row[1] for row in frappe.db.sql("select status, count(*) from `tab%s` group by status" % _RIV)
 	}
-	oldest_queued = frappe.db.get_value(
-		_RIV, {"status": "Queued"}, "creation", order_by="creation asc"
-	)
+	oldest_queued = frappe.db.get_value(_RIV, {"status": "Queued"}, "creation", order_by="creation asc")
 	in_progress = frappe.get_all(
 		_RIV,
 		filters={"status": "In Progress"},
@@ -77,6 +74,8 @@ def repost_reset_stuck(minutes: int = 30) -> dict:
 	reset = []
 	for r in frappe.get_all(_RIV, filters={"status": "In Progress"}, fields=["name", "modified"]):
 		if time_diff_in_seconds(now, r["modified"]) / 60 >= minutes:
-			frappe.db.set_value(_RIV, r["name"], {"status": "Queued", "current_index": 0}, update_modified=False)
+			frappe.db.set_value(
+				_RIV, r["name"], {"status": "Queued", "current_index": 0}, update_modified=False
+			)
 			reset.append(r["name"])
 	return {"reset": reset, "count": len(reset)}

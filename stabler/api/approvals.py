@@ -41,6 +41,7 @@ from stabler.api.organization import _ADMIN_ROLES, _user_allowed_companies
 def _is_admin() -> bool:
 	return any(r in frappe.get_roles() for r in _ADMIN_ROLES)
 
+
 # Doctypes governed by maker-checker.
 CONTROLLED_DOCTYPES = ("Payment Entry", "Journal Entry", "Purchase Order", "Purchase Invoice")
 
@@ -100,8 +101,9 @@ def _config_for(doctype: str) -> dict:
 			if raw:
 				try:
 					import json
+
 					tiers = json.loads(raw)
-				except (ValueError, TypeError):
+				except ValueError, TypeError:
 					tiers = None
 	return {"enabled": enabled, "threshold": threshold, "tiers": tiers}
 

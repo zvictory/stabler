@@ -16,9 +16,7 @@ from frappe.custom.doctype.custom_field.custom_field import create_custom_fields
 def execute():
 	if not frappe.db.exists("DocType", "Commercial Invoice"):
 		return
-	if frappe.db.exists(
-		"Custom Field", {"dt": "Commercial Invoice", "fieldname": "custom_proforma_invoice"}
-	):
+	if frappe.db.exists("Custom Field", {"dt": "Commercial Invoice", "fieldname": "custom_proforma_invoice"}):
 		return
 
 	options = "Proforma Invoice" if frappe.db.exists("DocType", "Proforma Invoice") else "Data"

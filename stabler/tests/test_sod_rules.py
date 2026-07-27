@@ -1,4 +1,5 @@
 """Unit tests for the pure segregation-of-duties logic (no Frappe, no I/O)."""
+
 from __future__ import annotations
 
 import unittest
@@ -360,7 +361,9 @@ class ConflictingActorTest(unittest.TestCase):
 		self.assertEqual(hits[0]["rule_id"], "test_only_rule")
 
 		# Built-in rules must NOT fire when custom rules supplied.
-		hits2 = conflicting_actor("approve", "Payment Entry", "alice@x", {"create": ["alice@x"]}, rules=custom)
+		hits2 = conflicting_actor(
+			"approve", "Payment Entry", "alice@x", {"create": ["alice@x"]}, rules=custom
+		)
 		self.assertEqual(hits2, [])
 
 	def test_multiple_rules_can_fire_simultaneously(self):

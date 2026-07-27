@@ -127,20 +127,14 @@ class TestValidateBulkAllocations(unittest.TestCase):
 
 	def test_valid_allocation(self):
 		allocs = [{"invoice": "SI-1", "amount": 100}, {"invoice": "SI-3", "amount": 150}]
-		self.assertIsNone(
-			validate_bulk_allocations(allocs, self.party_map, self.outstanding)
-		)
+		self.assertIsNone(validate_bulk_allocations(allocs, self.party_map, self.outstanding))
 
 	def test_empty_is_rejected(self):
-		self.assertEqual(
-			validate_bulk_allocations([], self.party_map, self.outstanding), ERR_ALLOC_EMPTY
-		)
+		self.assertEqual(validate_bulk_allocations([], self.party_map, self.outstanding), ERR_ALLOC_EMPTY)
 
 	def test_all_zero_rows_is_empty(self):
 		allocs = [{"invoice": "SI-1", "amount": 0}, {"invoice": "SI-3", "amount": 0}]
-		self.assertEqual(
-			validate_bulk_allocations(allocs, self.party_map, self.outstanding), ERR_ALLOC_EMPTY
-		)
+		self.assertEqual(validate_bulk_allocations(allocs, self.party_map, self.outstanding), ERR_ALLOC_EMPTY)
 
 	def test_unknown_invoice_rejected(self):
 		allocs = [{"invoice": "SI-99", "amount": 10}]
@@ -165,9 +159,7 @@ class TestValidateBulkAllocations(unittest.TestCase):
 
 	def test_exactly_outstanding_passes(self):
 		allocs = [{"invoice": "SI-2", "amount": 50}]
-		self.assertIsNone(
-			validate_bulk_allocations(allocs, self.party_map, self.outstanding)
-		)
+		self.assertIsNone(validate_bulk_allocations(allocs, self.party_map, self.outstanding))
 
 	def test_two_partial_rows_summed_against_outstanding(self):
 		# 30 + 30 = 60 > 50 → exceeds even though each row alone is under.
@@ -252,21 +244,15 @@ class TestValidateTransfers(unittest.TestCase):
 
 	def test_unknown_child_rejected(self):
 		xfers = [{"child": "Stranger", "amount": 10}]
-		self.assertEqual(
-			validate_transfers(xfers, 500, self.children), ERR_XFER_UNKNOWN_CHILD
-		)
+		self.assertEqual(validate_transfers(xfers, 500, self.children), ERR_XFER_UNKNOWN_CHILD)
 
 	def test_nonpositive_rejected(self):
 		xfers = [{"child": "ChildA", "amount": -1}]
-		self.assertEqual(
-			validate_transfers(xfers, 500, self.children), ERR_XFER_NONPOSITIVE
-		)
+		self.assertEqual(validate_transfers(xfers, 500, self.children), ERR_XFER_NONPOSITIVE)
 
 	def test_exceeds_unallocated_rejected(self):
 		xfers = [{"child": "ChildA", "amount": 300}, {"child": "ChildB", "amount": 300}]
-		self.assertEqual(
-			validate_transfers(xfers, 500, self.children), ERR_XFER_EXCEEDS
-		)
+		self.assertEqual(validate_transfers(xfers, 500, self.children), ERR_XFER_EXCEEDS)
 
 	def test_exactly_unallocated_passes(self):
 		xfers = [{"child": "ChildA", "amount": 500}]

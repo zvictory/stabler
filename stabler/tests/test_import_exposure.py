@@ -1,6 +1,6 @@
 """Unit tests for stabler.api._import_exposure (WP-I4, Frappe-free).
 
-    cd /path/to/stabler && PYTHONPATH=$PWD python3 -m unittest stabler.tests.test_import_exposure -v
+cd /path/to/stabler && PYTHONPATH=$PWD python3 -m unittest stabler.tests.test_import_exposure -v
 """
 
 from __future__ import annotations

@@ -24,7 +24,14 @@ class TestNormalizeName(unittest.TestCase):
 
 class TestPlan(unittest.TestCase):
 	def test_id_match_sets_name(self):
-		stabler = [{"name": "HR-EMP-001", "employee_name": "Aziz K", "custom_timepay_id": "555", "custom_timepay_name": ""}]
+		stabler = [
+			{
+				"name": "HR-EMP-001",
+				"employee_name": "Aziz K",
+				"custom_timepay_id": "555",
+				"custom_timepay_name": "",
+			}
+		]
 		anjan = [{"timepay_id": "555", "fio": "AZIZ KARIMOV"}]
 		plan = plan_timepay_import(stabler, anjan)
 		self.assertEqual(len(plan["id_updates"]), 1)
@@ -33,14 +40,23 @@ class TestPlan(unittest.TestCase):
 		self.assertEqual(plan["unmatched"], [])
 
 	def test_id_match_no_change_when_same(self):
-		stabler = [{"name": "E1", "employee_name": "Aziz", "custom_timepay_id": "5", "custom_timepay_name": "AZIZ"}]
+		stabler = [
+			{"name": "E1", "employee_name": "Aziz", "custom_timepay_id": "5", "custom_timepay_name": "AZIZ"}
+		]
 		anjan = [{"timepay_id": "5", "fio": "AZIZ"}]
 		plan = plan_timepay_import(stabler, anjan)
 		self.assertEqual(plan["id_updates"], [])
 
 	def test_name_fallback_suggestion(self):
 		# id 999 not present on any stabler emp → fall back to a unique name match.
-		stabler = [{"name": "E2", "employee_name": "Bobur Aliyev", "custom_timepay_id": "", "custom_timepay_name": ""}]
+		stabler = [
+			{
+				"name": "E2",
+				"employee_name": "Bobur Aliyev",
+				"custom_timepay_id": "",
+				"custom_timepay_name": "",
+			}
+		]
 		anjan = [{"timepay_id": "999", "fio": "bobur  aliyev"}]
 		plan = plan_timepay_import(stabler, anjan)
 		self.assertEqual(plan["id_updates"], [])
@@ -61,7 +77,14 @@ class TestPlan(unittest.TestCase):
 		self.assertEqual(plan["unmatched"][0]["candidates"], 2)
 
 	def test_name_match_skips_emps_that_already_have_id(self):
-		stabler = [{"name": "E5", "employee_name": "Sardor", "custom_timepay_id": "111", "custom_timepay_name": "Sardor"}]
+		stabler = [
+			{
+				"name": "E5",
+				"employee_name": "Sardor",
+				"custom_timepay_id": "111",
+				"custom_timepay_name": "Sardor",
+			}
+		]
 		anjan = [{"timepay_id": "222", "fio": "Sardor"}]
 		plan = plan_timepay_import(stabler, anjan)
 		# id 222 doesn't match; the only same-name emp already has an id → unmatched.
@@ -71,7 +94,14 @@ class TestPlan(unittest.TestCase):
 	def test_reversed_name_fallback(self):
 		# anjan-hr stores "Familiya Ism"; Stabler stores "Ism Familiya".
 		# The reversed-token fallback should bridge this format difference.
-		stabler = [{"name": "E6", "employee_name": "Alisher Maqsudov", "custom_timepay_id": "", "custom_timepay_name": ""}]
+		stabler = [
+			{
+				"name": "E6",
+				"employee_name": "Alisher Maqsudov",
+				"custom_timepay_id": "",
+				"custom_timepay_name": "",
+			}
+		]
 		anjan = [{"timepay_id": "777", "fio": "Maqsudov Alisher"}]
 		plan = plan_timepay_import(stabler, anjan)
 		self.assertEqual(plan["unmatched"], [])
@@ -84,8 +114,18 @@ class TestPlan(unittest.TestCase):
 		# Both E7 and E9 normalize to "alisher maqsudov", so reversed "maqsudov alisher"
 		# yields two candidates → unmatched.
 		stabler = [
-			{"name": "E7", "employee_name": "Alisher Maqsudov", "custom_timepay_id": "", "custom_timepay_name": ""},
-			{"name": "E9", "employee_name": "Alisher Maqsudov", "custom_timepay_id": "", "custom_timepay_name": ""},
+			{
+				"name": "E7",
+				"employee_name": "Alisher Maqsudov",
+				"custom_timepay_id": "",
+				"custom_timepay_name": "",
+			},
+			{
+				"name": "E9",
+				"employee_name": "Alisher Maqsudov",
+				"custom_timepay_id": "",
+				"custom_timepay_name": "",
+			},
 		]
 		anjan = [{"timepay_id": "888", "fio": "Maqsudov Alisher"}]
 		plan = plan_timepay_import(stabler, anjan)
@@ -96,8 +136,18 @@ class TestPlan(unittest.TestCase):
 		# When Stabler has both "Alisher Maqsudov" (E7) and "Maqsudov Alisher" (E8),
 		# anjan-hr "Maqsudov Alisher" direct-matches E8 exactly — suggest E8, not ambiguous.
 		stabler = [
-			{"name": "E7", "employee_name": "Alisher Maqsudov", "custom_timepay_id": "", "custom_timepay_name": ""},
-			{"name": "E8", "employee_name": "Maqsudov Alisher", "custom_timepay_id": "", "custom_timepay_name": ""},
+			{
+				"name": "E7",
+				"employee_name": "Alisher Maqsudov",
+				"custom_timepay_id": "",
+				"custom_timepay_name": "",
+			},
+			{
+				"name": "E8",
+				"employee_name": "Maqsudov Alisher",
+				"custom_timepay_id": "",
+				"custom_timepay_name": "",
+			},
 		]
 		anjan = [{"timepay_id": "888", "fio": "Maqsudov Alisher"}]
 		plan = plan_timepay_import(stabler, anjan)

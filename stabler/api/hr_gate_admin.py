@@ -26,6 +26,7 @@ _RAW_EVENT = "Stabler Raw Attendance Event"
 
 # ── per-doctype permission guards ─────────────────────────────────────────────
 
+
 def _guard_device(ptype: str = "read") -> None:
 	if frappe.session.user == "Guest":
 		frappe.throw(_("Authentication required."), frappe.PermissionError)
@@ -168,7 +169,7 @@ def list_device_mappings(
 
 	try:
 		limit = int(limit)
-	except (TypeError, ValueError):
+	except TypeError, ValueError:
 		limit = 200
 
 	filters: list = []
@@ -326,11 +327,11 @@ def list_raw_events(
 
 	try:
 		limit = int(limit)
-	except (TypeError, ValueError):
+	except TypeError, ValueError:
 		limit = 200
 	try:
 		start = int(start)
-	except (TypeError, ValueError):
+	except TypeError, ValueError:
 		start = 0
 
 	filters: dict = {}

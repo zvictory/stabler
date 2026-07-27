@@ -21,8 +21,8 @@ EXPORT_FORMATS = {"Excel", "CSV"}
 
 # FX-rate plausibility band (same threshold as the Phase D audit).
 # A per-row booked-USD / expected-USD ratio outside [_FX_LO, _FX_HI] is flagged.
-_FX_LO = 0.2   # 5× too low
-_FX_HI = 5.0   # 5× too high
+_FX_LO = 0.2  # 5× too low
+_FX_HI = 5.0  # 5× too high
 
 
 def _invoice_payment_can_allocate(docstatus) -> bool:
@@ -142,9 +142,9 @@ def _resolve_temporary_opening_account(company: str) -> str:
 	)
 	if not rows:
 		frappe.throw(
-			_("No Temporary Opening account found for {0}; add one before posting an opening balance.").format(
-				company
-			)
+			_(
+				"No Temporary Opening account found for {0}; add one before posting an opening balance."
+			).format(company)
 		)
 	return rows[0]["name"]
 
@@ -171,9 +171,7 @@ def create_account(
 		frappe.throw(_("Account name is required."))
 	if not parent_account:
 		frappe.throw(_("Parent account is required."))
-	parent = frappe.db.get_value(
-		"Account", parent_account, ["company", "is_group"], as_dict=True
-	)
+	parent = frappe.db.get_value("Account", parent_account, ["company", "is_group"], as_dict=True)
 	if not parent:
 		frappe.throw(_("Parent account {0} not found.").format(parent_account))
 	if parent.company != company:
@@ -183,9 +181,7 @@ def create_account(
 
 	is_group = cint(is_group)
 	account_number = (account_number or "").strip() or None
-	if account_number and frappe.db.exists(
-		"Account", {"company": company, "account_number": account_number}
-	):
+	if account_number and frappe.db.exists("Account", {"company": company, "account_number": account_number}):
 		frappe.throw(_("Account number {0} is already used in {1}.").format(account_number, company))
 
 	doc = frappe.new_doc("Account")
@@ -254,15 +250,15 @@ def update_account(
 	if not account_name:
 		frappe.throw(_("Account name is required."))
 	account_number = (account_number or "").strip() or None
-	if account_number and account_number != doc.account_number and frappe.db.exists(
-		"Account", {"company": doc.company, "account_number": account_number}
+	if (
+		account_number
+		and account_number != doc.account_number
+		and frappe.db.exists("Account", {"company": doc.company, "account_number": account_number})
 	):
 		frappe.throw(_("Account number {0} is already used in {1}.").format(account_number, doc.company))
 
 	if parent_account and parent_account != doc.parent_account:
-		parent = frappe.db.get_value(
-			"Account", parent_account, ["company", "is_group"], as_dict=True
-		)
+		parent = frappe.db.get_value("Account", parent_account, ["company", "is_group"], as_dict=True)
 		if not parent:
 			frappe.throw(_("Parent account {0} not found.").format(parent_account))
 		if parent.company != doc.company:
@@ -388,8 +384,10 @@ def _overlay_source_remarks(rows):
 		if not frappe.get_meta(vt).has_field(field):
 			continue
 		for name, val in frappe.get_all(
-			vt, filters={"name": ["in", list(names)]},
-			fields=["name", field], as_list=True,
+			vt,
+			filters={"name": ["in", list(names)]},
+			fields=["name", field],
+			as_list=True,
 		):
 			if (val or "").strip().lower() in _AUTO_PLACEHOLDER_REMARKS:
 				val = ""
@@ -543,7 +541,7 @@ def gl_entries(
 	row_acct_ccy = rows[0]["account_currency"] if rows else base_currency
 	is_usd_base = base_currency == "USD"
 	case_a = not is_usd_base and row_acct_ccy == base_currency  # e.g. UZS acct in UZS co.
-	case_b = is_usd_base and row_acct_ccy not in ("USD", "")   # e.g. UZS acct in USD co.
+	case_b = is_usd_base and row_acct_ccy not in ("USD", "")  # e.g. UZS acct in USD co.
 	usd_applicable = bool(rows) and (case_a or case_b)
 	usd_mode = "revalued" if case_a else ("book" if case_b else None)
 
@@ -579,9 +577,7 @@ def gl_entries(
 			for r in rows:
 				rate = rate_for.get(r["posting_date"], 0.0)
 				r["usd_rate"] = rate if rate > 0 else None
-				r["running_balance_usd"] = (
-					flt(r["running_balance_base"]) / rate if rate > 0 else None
-				)
+				r["running_balance_usd"] = flt(r["running_balance_base"]) / rate if rate > 0 else None
 		else:
 			# Case B: running_balance_base is already USD (GL historical cost).
 			# Do NOT set usd_rate — its absence hides the misleading spot-rate line.
@@ -618,9 +614,7 @@ def gl_entries(
 				if rate_b > 0 and movement_acc:
 					expected = movement_acc / rate_b
 					ratio = abs(booked_usd / expected) if expected else None
-					r["fx_check"] = (
-						"ok" if (ratio is not None and _FX_LO <= ratio <= _FX_HI) else "warn"
-					)
+					r["fx_check"] = "ok" if (ratio is not None and _FX_LO <= ratio <= _FX_HI) else "warn"
 					r["fx_expected_usd"] = expected
 				else:
 					# Can't verify: zero rate, no CBU data, or $0-movement row.
@@ -792,14 +786,18 @@ def list_journal_entries(
 	params["limit"] = int(limit)
 	qualified_clauses = [c.replace("posting_date", "je.posting_date") for c in clauses]
 	# Status filter: Draft (0), Submitted (1), Cancelled (2); default hides cancelled.
-	status_clause = {"Draft": "je.docstatus = 0", "Submitted": "je.docstatus = 1", "Cancelled": "je.docstatus = 2"}.get(
-		status or "", "je.docstatus < 2"
+	status_clause = {
+		"Draft": "je.docstatus = 0",
+		"Submitted": "je.docstatus = 1",
+		"Cancelled": "je.docstatus = 2",
+	}.get(status or "", "je.docstatus < 2")
+	where = " AND ".join(
+		[
+			"je.company = %(company)s",
+			status_clause,
+			*qualified_clauses,
+		]
 	)
-	where = " AND ".join([
-		"je.company = %(company)s",
-		status_clause,
-		*qualified_clauses,
-	])
 	# JE.total_debit/total_credit are base-currency totals. Surface them as
 	# *_base + base_currency so the UI can never confuse them with a row's
 	# native account-currency amount.
@@ -1090,7 +1088,9 @@ def update_journal_entry(
 	doc = frappe.get_doc("Journal Entry", name)
 	if doc.docstatus != 0:
 		frappe.throw(
-			_("Only draft journal entries can be edited here. Submitted entries must be cancelled and amended.")
+			_(
+				"Only draft journal entries can be edited here. Submitted entries must be cancelled and amended."
+			)
 		)
 	_require_company(doc.company)
 	_assert_company_scope(doc.company)  # tenant isolation: reject a foreign company arg
@@ -1243,7 +1243,6 @@ def payment_entry_detail(name: str):
 		"name": doc.name,
 		"modified": str(doc.modified),
 		"posting_date": str(doc.posting_date) if doc.posting_date else None,
-
 		"payment_type": doc.payment_type,
 		"party_type": doc.party_type,
 		"party": doc.party,
@@ -1270,7 +1269,8 @@ def payment_entry_detail(name: str):
 				"allocated_amount": flt(r.allocated_amount),
 				"reference_date": (
 					str(frappe.db.get_value(r.reference_doctype, r.reference_name, "posting_date") or "")
-					if r.reference_doctype and r.reference_name else ""
+					if r.reference_doctype and r.reference_name
+					else ""
 				),
 			}
 			for r in (doc.references or [])
@@ -1318,9 +1318,7 @@ def update_payment_entry(
 	total_allocated = sum(flt(r.allocated_amount) for r in (doc.references or []))
 	eps = money_epsilon(getattr(doc, "party_account_currency", None))
 	if total_allocated > party_amount + eps:
-		frappe.throw(
-			f"Total allocated ({total_allocated:.2f}) exceeds payment amount ({party_amount:.2f})."
-		)
+		frappe.throw(f"Total allocated ({total_allocated:.2f}) exceeds payment amount ({party_amount:.2f}).")
 
 	doc.save(ignore_permissions=False)
 	return payment_entry_detail(doc.name)
@@ -1340,9 +1338,7 @@ def party_payment_defaults(company: str, party_type: str, party: str) -> dict:
 	from erpnext.accounts.utils import get_outstanding_invoices
 
 	party_account = get_party_account(party_type, party=party, company=company)
-	party_account_currency = (
-		frappe.db.get_value("Account", party_account, "account_currency") or ""
-	)
+	party_account_currency = frappe.db.get_value("Account", party_account, "account_currency") or ""
 
 	raw = get_outstanding_invoices(party_type, party, [party_account]) or []
 	# Only include actual submitted invoices (docstatus=1, status!='Cancelled'); advance Payment Entries
@@ -1357,14 +1353,16 @@ def party_payment_defaults(company: str, party_type: str, party: str) -> dict:
 			continue
 		st, ds = frappe.db.get_value(invoice_dt, v_no, ["status", "docstatus"]) or (None, None)
 		if ds == 1 and st != "Cancelled":
-			valid_invoices.append({
-				"voucher_type": v_type,
-				"voucher_no": v_no,
-				"posting_date": str(r.get("posting_date") or ""),
-				"due_date": str(r.get("due_date") or ""),
-				"invoice_amount": flt(r.get("invoice_amount", 0)),
-				"outstanding_amount": out_amt,
-			})
+			valid_invoices.append(
+				{
+					"voucher_type": v_type,
+					"voucher_no": v_no,
+					"posting_date": str(r.get("posting_date") or ""),
+					"due_date": str(r.get("due_date") or ""),
+					"invoice_amount": flt(r.get("invoice_amount", 0)),
+					"outstanding_amount": out_amt,
+				}
+			)
 	invoices = sorted(valid_invoices, key=lambda x: x["posting_date"])
 
 	cash_bank = list_cash_bank_accounts(company)
@@ -1373,7 +1371,9 @@ def party_payment_defaults(company: str, party_type: str, party: str) -> dict:
 	company_currency = frappe.get_cached_value("Company", company, "default_currency") or "UZS"
 	paying_account_currency = company_currency
 	if suggested:
-		paying_account_currency = frappe.db.get_value("Account", suggested, "account_currency") or company_currency
+		paying_account_currency = (
+			frappe.db.get_value("Account", suggested, "account_currency") or company_currency
+		)
 
 	needs_exchange = party_account_currency != paying_account_currency
 
@@ -1392,7 +1392,7 @@ def party_payment_defaults(company: str, party_type: str, party: str) -> dict:
 			filters={"from_currency": foreign, "to_currency": local, "date": ("<=", today())},
 			fields=["exchange_rate", "date"],
 			order_by="date desc",
-			limit=1
+			limit=1,
 		)
 		if cbu:
 			effective_rate = flt(cbu[0].exchange_rate)
@@ -1422,9 +1422,11 @@ def setup_payment_entry_exchange_rates(doc, exchange_rate: float | str | None = 
 		gain_loss_account = frappe.db.get_value("Company", doc.company, "exchange_gain_loss_account")
 		if not gain_loss_account:
 			frappe.throw(
-				_("Default Exchange Gain/Loss Account is missing for company {0}. "
-				  "Please configure it in Company settings before posting cross-currency transactions.").format(doc.company),
-				frappe.ValidationError
+				_(
+					"Default Exchange Gain/Loss Account is missing for company {0}. "
+					"Please configure it in Company settings before posting cross-currency transactions."
+				).format(doc.company),
+				frappe.ValidationError,
 			)
 
 		# Apply exchange rate to source/target exchange rate fields
@@ -1442,7 +1444,9 @@ def setup_payment_entry_exchange_rates(doc, exchange_rate: float | str | None = 
 				else:
 					doc.source_exchange_rate = flt(exchange_rate)
 			else:
-				doc.source_exchange_rate = flt(get_exchange_rate_for_currencies(paid_from_currency, company_currency, doc.posting_date))
+				doc.source_exchange_rate = flt(
+					get_exchange_rate_for_currencies(paid_from_currency, company_currency, doc.posting_date)
+				)
 
 		if paid_to_currency != company_currency:
 			if exchange_rate and flt(exchange_rate) > 0:
@@ -1453,7 +1457,9 @@ def setup_payment_entry_exchange_rates(doc, exchange_rate: float | str | None = 
 				else:
 					doc.target_exchange_rate = flt(exchange_rate)
 			else:
-				doc.target_exchange_rate = flt(get_exchange_rate_for_currencies(paid_to_currency, company_currency, doc.posting_date))
+				doc.target_exchange_rate = flt(
+					get_exchange_rate_for_currencies(paid_to_currency, company_currency, doc.posting_date)
+				)
 
 
 def _log_payment(stage: str, data: dict) -> None:
@@ -1506,7 +1512,11 @@ def _payment_gl_snapshot(doc) -> dict:
 			for d in (doc.get("deductions") or [])
 		],
 		"references": [
-			{"ref": f"{r.reference_doctype}:{r.reference_name}", "alloc": flt(r.allocated_amount), "outstanding": flt(r.outstanding_amount)}
+			{
+				"ref": f"{r.reference_doctype}:{r.reference_name}",
+				"alloc": flt(r.allocated_amount),
+				"outstanding": flt(r.outstanding_amount),
+			}
 			for r in (doc.get("references") or [])
 		],
 	}
@@ -1550,9 +1560,7 @@ def create_payment_entry(
 		frappe.throw(f"{party_type} '{party}' does not exist.")
 
 	for acct_field, acct in (("paid_from", paid_from), ("paid_to", paid_to)):
-		row = frappe.db.get_value(
-			"Account", acct, ["company", "is_group"], as_dict=True
-		)
+		row = frappe.db.get_value("Account", acct, ["company", "is_group"], as_dict=True)
 		if not row:
 			frappe.throw(f"{acct_field}: account '{acct}' does not exist.")
 		if row.company != company:
@@ -1567,16 +1575,25 @@ def create_payment_entry(
 	# Capture exactly what the user typed BEFORE any validation can reject it —
 	# this is the row that explains "Paid amount must be greater than zero" and the
 	# multi-currency 'UZS in, USD GL off by a cent' cases.
-	_log_payment("input", {
-		"fn": "create_payment_entry",
-		"company": company, "company_currency": company_currency,
-		"posting_date": str(posting_date), "payment_type": payment_type,
-		"party": f"{party_type}:{party}",
-		"paid_from": paid_from, "paid_from_ccy": paid_from_currency,
-		"paid_to": paid_to, "paid_to_ccy": paid_to_currency,
-		"paid_amount_in": paid_amount, "received_amount_in": received_amount,
-		"exchange_rate_in": exchange_rate, "submit": int(submit or 0),
-	})
+	_log_payment(
+		"input",
+		{
+			"fn": "create_payment_entry",
+			"company": company,
+			"company_currency": company_currency,
+			"posting_date": str(posting_date),
+			"payment_type": payment_type,
+			"party": f"{party_type}:{party}",
+			"paid_from": paid_from,
+			"paid_from_ccy": paid_from_currency,
+			"paid_to": paid_to,
+			"paid_to_ccy": paid_to_currency,
+			"paid_amount_in": paid_amount,
+			"received_amount_in": received_amount,
+			"exchange_rate_in": exchange_rate,
+			"submit": int(submit or 0),
+		},
+	)
 
 	paid = flt(paid_amount)
 	if paid <= 0:
@@ -1642,12 +1659,14 @@ def create_payment_entry(
 	if references:
 		refs = json.loads(references) if isinstance(references, str) else references
 		party_amt = paid if payment_type == "Receive" else recv
-		eps = money_epsilon(frappe.db.get_value("Account", paid_from if payment_type == "Receive" else paid_to, "account_currency"))
+		eps = money_epsilon(
+			frappe.db.get_value(
+				"Account", paid_from if payment_type == "Receive" else paid_to, "account_currency"
+			)
+		)
 		total_alloc = sum(flt(r.get("allocated_amount", 0)) for r in refs)
 		if total_alloc > party_amt + eps:
-			frappe.throw(
-				f"Total allocated ({total_alloc:.2f}) exceeds payment amount ({party_amt:.2f})."
-			)
+			frappe.throw(f"Total allocated ({total_alloc:.2f}) exceeds payment amount ({party_amt:.2f}).")
 		for r in refs:
 			ref_dt = r.get("reference_doctype")
 			ref_no = r.get("reference_name")
@@ -1688,8 +1707,15 @@ def create_payment_entry(
 				# Maker-checker: leave it as a Draft and route to the approvals
 				# queue instead of self-submitting. A different user must approve.
 				req = ensure_request_for_doc(doc)
-				_log_payment("ok", {"fn": "create_payment_entry", "name": doc.name,
-					"docstatus": doc.docstatus, "pending_approval": True})
+				_log_payment(
+					"ok",
+					{
+						"fn": "create_payment_entry",
+						"name": doc.name,
+						"docstatus": doc.docstatus,
+						"pending_approval": True,
+					},
+				)
 				return {
 					"name": doc.name,
 					"docstatus": doc.docstatus,
@@ -1775,7 +1801,11 @@ def get_backdating_status() -> dict:
 	roles = set(frappe.get_roles())
 	exempt = (
 		"System Manager" in roles
-		or (stk.get("role_allowed_to_create_edit_back_dated_transactions") in roles if stk.get("role_allowed_to_create_edit_back_dated_transactions") else False)
+		or (
+			stk.get("role_allowed_to_create_edit_back_dated_transactions") in roles
+			if stk.get("role_allowed_to_create_edit_back_dated_transactions")
+			else False
+		)
 		or (acc.get("frozen_accounts_modifier") in roles if acc.get("frozen_accounts_modifier") else False)
 	)
 
@@ -1892,7 +1922,9 @@ def payment_defaults_for_invoice(company: str, invoice_type: str, invoice_name: 
 	company_currency = frappe.get_cached_value("Company", company, "default_currency") or "UZS"
 	paying_account_currency = company_currency
 	if suggested:
-		paying_account_currency = frappe.db.get_value("Account", suggested, "account_currency") or company_currency
+		paying_account_currency = (
+			frappe.db.get_value("Account", suggested, "account_currency") or company_currency
+		)
 
 	needs_exchange = party_account_currency != paying_account_currency
 
@@ -1911,7 +1943,7 @@ def payment_defaults_for_invoice(company: str, invoice_type: str, invoice_name: 
 			filters={"from_currency": foreign, "to_currency": local, "date": ("<=", today())},
 			fields=["exchange_rate", "date"],
 			order_by="date desc",
-			limit=1
+			limit=1,
 		)
 		if cbu:
 			effective_rate = flt(cbu[0].exchange_rate)
@@ -1979,17 +2011,26 @@ def create_payment_for_invoice(
 	paid_from_currency = frappe.db.get_value("Account", paid_from, "account_currency") or company_currency
 	paid_to_currency = frappe.db.get_value("Account", paid_to, "account_currency") or company_currency
 
-	_log_payment("input", {
-		"fn": "create_payment_for_invoice",
-		"company": company, "company_currency": company_currency,
-		"posting_date": str(posting_date), "payment_type": defaults["payment_type"],
-		"invoice": f"{invoice_type}:{invoice_name}",
-		"paid_from": paid_from, "paid_from_ccy": paid_from_currency,
-		"paid_to": paid_to, "paid_to_ccy": paid_to_currency,
-		"paid_amount_in": paid_amount, "received_amount_in": received_amount,
-		"allocated_amount_in": allocated_amount, "exchange_rate_in": exchange_rate,
-		"submit": int(submit or 0),
-	})
+	_log_payment(
+		"input",
+		{
+			"fn": "create_payment_for_invoice",
+			"company": company,
+			"company_currency": company_currency,
+			"posting_date": str(posting_date),
+			"payment_type": defaults["payment_type"],
+			"invoice": f"{invoice_type}:{invoice_name}",
+			"paid_from": paid_from,
+			"paid_from_ccy": paid_from_currency,
+			"paid_to": paid_to,
+			"paid_to_ccy": paid_to_currency,
+			"paid_amount_in": paid_amount,
+			"received_amount_in": received_amount,
+			"allocated_amount_in": allocated_amount,
+			"exchange_rate_in": exchange_rate,
+			"submit": int(submit or 0),
+		},
+	)
 
 	paid = flt(paid_amount)
 	if paid <= 0:
@@ -2104,8 +2145,15 @@ def create_payment_for_invoice(
 				_log_payment("error", snap)
 				frappe.db.rollback()
 				raise
-	_log_payment("ok", {"fn": "create_payment_for_invoice", "name": doc.name,
-		"docstatus": doc.docstatus, "pending_approval": pending_approval})
+	_log_payment(
+		"ok",
+		{
+			"fn": "create_payment_for_invoice",
+			"name": doc.name,
+			"docstatus": doc.docstatus,
+			"pending_approval": pending_approval,
+		},
+	)
 	return {
 		"name": doc.name,
 		"docstatus": doc.docstatus,
@@ -2464,12 +2512,14 @@ def list_bank_entries(
 		type_clause = "AND je.user_remark LIKE '[Asset Purchase]%%'"
 
 	qualified_clauses = [c.replace("posting_date", "je.posting_date") for c in clauses]
-	where = " AND ".join([
-		"je.company = %(company)s",
-		"je.voucher_type = %(voucher_type)s",
-		"je.docstatus < 2",
-		*qualified_clauses,
-	])
+	where = " AND ".join(
+		[
+			"je.company = %(company)s",
+			"je.voucher_type = %(voucher_type)s",
+			"je.docstatus < 2",
+			*qualified_clauses,
+		]
+	)
 	# Tender tag (WP-K2): surface custom_crm_deal when the v52 field exists so
 	# the Expenses list can show which tender an entry belongs to.
 	deal_col = (
@@ -2585,10 +2635,15 @@ def submit_expense_entry(
 			if frappe.db.get_value("Asset", asset, "company") != company:
 				frappe.throw(f"Row {idx}: asset belongs to another company.")
 		total_pay_amount += amount
-		cleaned.append({
-			"account": acc_name, "amount": amount, "memo": memo, "asset": asset,
-			"account_currency": exp_acc.account_currency,
-		})
+		cleaned.append(
+			{
+				"account": acc_name,
+				"amount": amount,
+				"memo": memo,
+				"asset": asset,
+				"account_currency": exp_acc.account_currency,
+			}
+		)
 
 	total_pay_amount = _round2(total_pay_amount)
 	if total_pay_amount <= 0:
@@ -2600,9 +2655,7 @@ def submit_expense_entry(
 	else:
 		rate = float(flt(exchange_rate)) if exchange_rate else 0.0
 		if rate <= 0:
-			frappe.throw(
-				f"Exchange rate ({pay_acc.account_currency} → {base_currency}) is required."
-			)
+			frappe.throw(f"Exchange rate ({pay_acc.account_currency} → {base_currency}) is required.")
 	base_total = _round2(total_pay_amount * rate)
 	if base_total <= 0:
 		frappe.throw("Computed base-currency total is zero.")
@@ -2646,12 +2699,15 @@ def submit_expense_entry(
 	# ERPNext does `round(amount * rate, 2)` itself, so any pre-rounding of
 	# the rate would compound into 1-cent JE-imbalance errors.
 	pay_rate = (base_total / total_pay_amount) if total_pay_amount else 1.0
-	doc.append("accounts", {
-		"account": payment_from,
-		"credit_in_account_currency": total_pay_amount,
-		"exchange_rate": pay_rate,
-		"account_currency": pay_acc.account_currency,
-	})
+	doc.append(
+		"accounts",
+		{
+			"account": payment_from,
+			"credit_in_account_currency": total_pay_amount,
+			"exchange_rate": pay_rate,
+			"account_currency": pay_acc.account_currency,
+		},
+	)
 
 	# Debit legs: split base_total across lines so per-leg shares sum exactly
 	# to base_total (last line absorbs the rounding residual). Per-leg rate is
@@ -2841,9 +2897,10 @@ def submit_transfer_entry(
 		# the JE would silently mis-post the foreign amount as if it were
 		# base currency.
 		from erpnext.setup.utils import get_exchange_rate
-		from_to_base_rate = flt(get_exchange_rate(
-			from_acc.account_currency, base_currency, getdate(posting_date)
-		))
+
+		from_to_base_rate = flt(
+			get_exchange_rate(from_acc.account_currency, base_currency, getdate(posting_date))
+		)
 		if from_to_base_rate <= 0:
 			frappe.throw(
 				f"Triple-foreign transfer ({from_acc.account_currency} → "
@@ -2865,22 +2922,30 @@ def submit_transfer_entry(
 	doc.voucher_type = "Bank Entry"
 	doc.cheque_no = f"Trf-{posting_date}"
 	doc.cheque_date = getdate(posting_date)
-	doc.multi_currency = 1 if (from_acc.account_currency != base_currency or to_acc.account_currency != base_currency) else 0
+	doc.multi_currency = (
+		1 if (from_acc.account_currency != base_currency or to_acc.account_currency != base_currency) else 0
+	)
 	if memo:
 		doc.user_remark = memo
 
-	doc.append("accounts", {
-		"account": from_account,
-		"credit_in_account_currency": from_amt,
-		"exchange_rate": from_rate,
-		"account_currency": from_acc.account_currency,
-	})
-	doc.append("accounts", {
-		"account": to_account,
-		"debit_in_account_currency": to_amt,
-		"exchange_rate": to_rate,
-		"account_currency": to_acc.account_currency,
-	})
+	doc.append(
+		"accounts",
+		{
+			"account": from_account,
+			"credit_in_account_currency": from_amt,
+			"exchange_rate": from_rate,
+			"account_currency": from_acc.account_currency,
+		},
+	)
+	doc.append(
+		"accounts",
+		{
+			"account": to_account,
+			"debit_in_account_currency": to_amt,
+			"exchange_rate": to_rate,
+			"account_currency": to_acc.account_currency,
+		},
+	)
 
 	doc.insert(ignore_permissions=False)
 	if int(submit or 0):
@@ -2901,13 +2966,15 @@ def get_exchange_rate_for_currencies(from_currency: str, to_currency: str, posti
 		if not rate or flt(rate) <= 0.0:
 			frappe.throw(
 				_("No exchange rate found for {0} to {1} on {2}").format(from_currency, to_currency, date),
-				frappe.ValidationError
+				frappe.ValidationError,
 			)
 		return flt(rate)
 	except Exception as e:
 		if frappe.message_log and "No exchange rate found" in str(frappe.message_log[-1]):
 			raise
 		frappe.throw(
-			_("No exchange rate found for {0} to {1} on {2}: {3}").format(from_currency, to_currency, date, str(e)),
-			frappe.ValidationError
+			_("No exchange rate found for {0} to {1} on {2}: {3}").format(
+				from_currency, to_currency, date, str(e)
+			),
+			frappe.ValidationError,
 		)

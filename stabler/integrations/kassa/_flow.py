@@ -79,11 +79,11 @@ STEP_BACKDATE = "backdate"
 # --------------------------------------------------------------------------- #
 # Fixed labels (Uzbek latin, exactly as drawn in the Whimsical flow)
 # --------------------------------------------------------------------------- #
-BTN_KIRIM = "\U0001F7E2 Kirim"
-BTN_CHIQIM = "\U0001F534 Chiqim"
-BTN_KONV = "\U0001F504 Konvertatsiya"
-BTN_K2K = "\U0001F4B1 Kassadan kassaga"
-BTN_BACKDATE = "\U0001F4DD Qolib ketgan amal"
+BTN_KIRIM = "\U0001f7e2 Kirim"
+BTN_CHIQIM = "\U0001f534 Chiqim"
+BTN_KONV = "\U0001f504 Konvertatsiya"
+BTN_K2K = "\U0001f4b1 Kassadan kassaga"
+BTN_BACKDATE = "\U0001f4dd Qolib ketgan amal"
 BTN_STATEMENT = "ℹ️ Mening jadvalim"
 BTN_CANCEL = "❌ Bekor qilish"
 BTN_CONFIRM = "✅ Tasdiqlash"
@@ -632,7 +632,7 @@ def _kirim_confirm_text(state: dict) -> str:
 	leaf = state["sub_kassa"]
 	src = state["src"]
 	lines = [
-		"\U0001F7E2 Kirim",
+		"\U0001f7e2 Kirim",
 		f"Kassa: {leaf['label']} ({leaf['currency']})",
 		f"Manba: {src['label']}",
 		f"Summa: {format_amount(state['amount'], leaf['currency'])}",
@@ -658,7 +658,7 @@ def _chiqim_confirm_text(state: dict, ctx: dict) -> str:
 		deal = _find_by_label(ctx.get("deals", []) or [], state["deal"], key="name")
 		deal_label = deal.get("label") if deal else state["deal"]
 	lines = [
-		"\U0001F534 Chiqim",
+		"\U0001f534 Chiqim",
 		f"Kassa: {leaf['label']} ({leaf['currency']})",
 		f"Kategoriya: {cat_label}",
 	]
@@ -782,7 +782,7 @@ def _handle_menu(state: dict, text: str, ctx: dict):
 		new_state = {**state, "step": STEP_BACKDATE}
 		return ("Sana (kk.oo.yyyy):", None, new_state, None)
 	if text == BTN_STATEMENT:
-		return ("\U0001F4CB Jadval tayyorlanmoqda...", MENU_KEYBOARD, dict(state), {"type": "statement"})
+		return ("\U0001f4cb Jadval tayyorlanmoqda...", MENU_KEYBOARD, dict(state), {"type": "statement"})
 	return ("Iltimos, menyudan tanlang.", MENU_KEYBOARD, state, None)
 
 
@@ -1033,7 +1033,13 @@ def _handle_konv_given(state: dict, text: str, ctx: dict):
 	if rate and pair_ok:
 		computed = amt * rate if src["currency"] == "USD" else (amt / rate if rate else None)
 		if computed and computed > 0:
-			new_state = {**state, "step": STEP_KONV_CBU_CHOICE, "given": amt, "given_raw": text.strip(), "_cbu_computed": computed}
+			new_state = {
+				**state,
+				"step": STEP_KONV_CBU_CHOICE,
+				"given": amt,
+				"given_raw": text.strip(),
+				"_cbu_computed": computed,
+			}
 			accept_label = _konv_cbu_accept_label(computed, tgt["currency"])
 			keyboard = [[accept_label], [BTN_KONV_MANUAL]]
 			reply = (

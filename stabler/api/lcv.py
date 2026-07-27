@@ -11,6 +11,7 @@ from stabler.api.imports import _assert_cost_visible, _latest_exchange_rate
 def _company_of(doctype: str, name: str) -> str:
 	return frappe.get_cached_value(doctype, name, "company")
 
+
 @frappe.whitelist()
 def get_landed_cost_review(document_type: str, document_name: str, rate=None):
 	"""Unified whitelisted endpoint for LCV review.
@@ -24,6 +25,7 @@ def get_landed_cost_review(document_type: str, document_name: str, rate=None):
 
 	if document_type == "GRN Checklist":
 		from stabler.api.imports import get_landed_cost_review as imports_review
+
 		return imports_review(document_name, rate)
 
 	elif document_type == "Purchase Receipt":
@@ -37,10 +39,15 @@ def get_landed_cost_review(document_type: str, document_name: str, rate=None):
 		company_currency = frappe.get_cached_value("Company", pr.company, "default_currency") or "UZS"
 
 		# Get distinct linked Purchase Orders
-		po_names = list(set([
-			d.purchase_order for d in pr.items
-			if d.purchase_order and frappe.db.exists("Purchase Order", d.purchase_order)
-		]))
+		po_names = list(
+			set(
+				[
+					d.purchase_order
+					for d in pr.items
+					if d.purchase_order and frappe.db.exists("Purchase Order", d.purchase_order)
+				]
+			)
+		)
 
 		# Read customized setting includes from the PR
 		custom_settings = {}
@@ -52,11 +59,15 @@ def get_landed_cost_review(document_type: str, document_name: str, rate=None):
 		includes = custom_settings.get("includes", {})
 
 		# Find existing LCVs referencing this Purchase Receipt to mark consumed/vouchered components
-		lcvs = frappe.db.sql("""
+		lcvs = frappe.db.sql(
+			"""
 			SELECT parent
 			FROM `tabLanded Cost Purchase Receipt`
 			WHERE receipt_document = %s
-		""", (document_name,), as_dict=True)
+		""",
+			(document_name,),
+			as_dict=True,
+		)
 
 		consumed_descriptions = set()
 		existing_lcvs = []
@@ -64,20 +75,23 @@ def get_landed_cost_review(document_type: str, document_name: str, rate=None):
 			lcv_name = item.parent
 			lcv_doc = frappe.get_doc("Landed Cost Voucher", lcv_name)
 
-			existing_lcvs.append({
-				"lcv": lcv_name,
-				"note": lcv_doc.get("note") or "",
-				"posted_on": str(lcv_doc.creation) if lcv_doc.creation else None,
-				"docstatus": cint(lcv_doc.docstatus),
-				"total": flt(lcv_doc.total_taxes_and_charges),
-				"posting_date": str(lcv_doc.posting_date) if lcv_doc.posting_date else None,
-			})
+			existing_lcvs.append(
+				{
+					"lcv": lcv_name,
+					"note": lcv_doc.get("note") or "",
+					"posted_on": str(lcv_doc.creation) if lcv_doc.creation else None,
+					"docstatus": cint(lcv_doc.docstatus),
+					"total": flt(lcv_doc.total_taxes_and_charges),
+					"posting_date": str(lcv_doc.posting_date) if lcv_doc.posting_date else None,
+				}
+			)
 
 			if lcv_doc.docstatus == 1:
 				for tax in lcv_doc.taxes or []:
 					consumed_descriptions.add(tax.description)
 
 		from stabler.api.tender import _parse_landed
+
 		raw_lines = []
 		idx = 1
 		for po_name in po_names:
@@ -94,17 +108,19 @@ def get_landed_cost_review(document_type: str, document_name: str, rate=None):
 				if label in includes:
 					include_in_landed_cost = 1 if includes[label] else 0
 
-				raw_lines.append({
-					"row_name": label, # Use label as the identifier
-					"cost_component": label,
-					"description": f"PO: {po_name} - {label}",
-					"currency": company_currency,
-					"amount": amount,
-					"amount_uzs": amount,
-					"include_in_landed_cost": include_in_landed_cost,
-					"lcv_ref": "vouchered" if consumed else "",
-					"consumed": consumed,
-				})
+				raw_lines.append(
+					{
+						"row_name": label,  # Use label as the identifier
+						"cost_component": label,
+						"description": f"PO: {po_name} - {label}",
+						"currency": company_currency,
+						"amount": amount,
+						"amount_uzs": amount,
+						"include_in_landed_cost": include_in_landed_cost,
+						"lcv_ref": "vouchered" if consumed else "",
+						"consumed": consumed,
+					}
+				)
 				idx += 1
 
 		# Rate preview conversions
@@ -119,6 +135,7 @@ def get_landed_cost_review(document_type: str, document_name: str, rate=None):
 				pass
 
 		from stabler.stabler.imports_module import lcv_math
+
 		components = lcv_math.aggregate_components(raw_lines, usd_rate, company_currency)
 		preview_components = [{"component": k, "amount": round(v, 2)} for k, v in sorted(components.items())]
 		preview_total = round(sum(components.values()), 2)
@@ -131,11 +148,13 @@ def get_landed_cost_review(document_type: str, document_name: str, rate=None):
 
 		containers = []
 		if raw_lines:
-			containers.append({
-				"container": "po_charges",
-				"container_number": _("Purchase Order Landed Charges"),
-				"cost_lines": raw_lines
-			})
+			containers.append(
+				{
+					"container": "po_charges",
+					"container_number": _("Purchase Order Landed Charges"),
+					"cost_lines": raw_lines,
+				}
+			)
 
 		return {
 			"grn": {
@@ -160,7 +179,9 @@ def get_landed_cost_review(document_type: str, document_name: str, rate=None):
 					"currency": pr.currency,
 					"docstatus": cint(pr.docstatus),
 				}
-			] if pr.docstatus == 1 else [],
+			]
+			if pr.docstatus == 1
+			else [],
 			"existing_lcvs": existing_lcvs,
 			"containers": containers,
 			"gtd": None,
@@ -172,16 +193,20 @@ def get_landed_cost_review(document_type: str, document_name: str, rate=None):
 				"total": preview_total,
 				"warnings": warnings,
 				"can_create": bool(preview_components and pr.docstatus == 1),
-			}
+			},
 		}
 
+
 @frappe.whitelist()
-def toggle_cost_line_include(document_type: str, document_name: str, container: str, row_name: str, include: int = 1):
+def toggle_cost_line_include(
+	document_type: str, document_name: str, container: str, row_name: str, include: int = 1
+):
 	if not document_type or not document_name:
 		frappe.throw(_("Missing document type or name"))
 
 	if document_type == "GRN Checklist":
 		from stabler.api.imports import toggle_cost_line_include as imports_toggle
+
 		return imports_toggle(container, row_name, include)
 
 	elif document_type == "Purchase Receipt":
@@ -204,6 +229,7 @@ def toggle_cost_line_include(document_type: str, document_name: str, container: 
 		pr.db_set("custom_landed_cost_settings", json.dumps(custom_settings))
 		return {"status": "ok"}
 
+
 @frappe.whitelist()
 def create_additional_lcv(document_type: str, document_name: str):
 	if not document_type or not document_name:
@@ -211,6 +237,7 @@ def create_additional_lcv(document_type: str, document_name: str):
 
 	if document_type == "GRN Checklist":
 		from stabler.api.imports import create_additional_lcv as imports_create
+
 		return imports_create(document_name)
 
 	elif document_type == "Purchase Receipt":
@@ -234,6 +261,7 @@ def create_additional_lcv(document_type: str, document_name: str):
 		components = {c["component"]: c["amount"] for c in components_list}
 
 		from stabler.stabler.imports_module import lcv_math
+
 		lcv_dict = lcv_math.build_lcv_payload(
 			company=review["grn"]["company"],
 			purchase_receipts=[document_name],

@@ -37,28 +37,16 @@ class StablerAttendanceCorrectionRequest(Document):
 			self.requested_by = frappe.session.user
 
 		# Stamp reviewed_at when the approver acts.
-		if (
-			self.status in ("Approved", "Rejected")
-			and not self.reviewed_at
-		):
+		if self.status in ("Approved", "Rejected") and not self.reviewed_at:
 			self.reviewed_at = frappe.utils.now_datetime()
 			if not self.approver:
 				self.approver = frappe.session.user
 
 		# Immutability: once Applied, lock request-body fields for non-System-Managers.
-		if (
-			before
-			and before.get("status") == "Applied"
-			and "System Manager" not in frappe.get_roles()
-		):
-			changed = [
-				f for f in _LOCKED_WHEN_APPLIED
-				if (before.get(f) or "") != (self.get(f) or "")
-			]
+		if before and before.get("status") == "Applied" and "System Manager" not in frappe.get_roles():
+			changed = [f for f in _LOCKED_WHEN_APPLIED if (before.get(f) or "") != (self.get(f) or "")]
 			if changed:
 				frappe.throw(
-					_("Applied corrections are locked. Cannot change: {0}").format(
-						", ".join(changed)
-					),
+					_("Applied corrections are locked. Cannot change: {0}").format(", ".join(changed)),
 					title=_("Correction locked"),
 				)

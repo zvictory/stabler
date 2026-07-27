@@ -42,9 +42,7 @@ def get_context(context):
 	except Exception:
 		pass
 
-	context.default_company = (
-		frappe.db.get_single_value("Global Defaults", "default_company") or ""
-	)
+	context.default_company = frappe.db.get_single_value("Global Defaults", "default_company") or ""
 	context.companies = _list_companies()
 
 	context.app_path = frappe.local.request.path or "/stabler"

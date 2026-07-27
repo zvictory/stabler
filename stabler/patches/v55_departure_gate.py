@@ -18,46 +18,45 @@ as required must not silently open the gate.
 import frappe
 
 CUSTOM_FIELDS = [
-    {
-        "dt": "Customs Declaration",
-        "fieldname": "required_for_departure",
-        "label": "Required for departure",
-        "fieldtype": "Check",
-        "default": "1",
-        "insert_after": "status",
-        "description": (
-            "Trucks on this commercial invoice cannot leave Iran until this "
-            "declaration is cleared."
-        ),
-    },
-    {
-        "dt": "Import Truck",
-        "fieldname": "departure_override",
-        "label": "Departure override",
-        "fieldtype": "Check",
-        "default": "0",
-        "insert_after": "status_correction_reason",
-        "description": (
-            "Release this truck despite unmet customs or veterinary "
-            "requirements. Imports Manager only, and a reason is mandatory."
-        ),
-    },
-    {
-        "dt": "Import Truck",
-        "fieldname": "departure_override_reason",
-        "label": "Departure override reason",
-        "fieldtype": "Small Text",
-        "insert_after": "departure_override",
-        "depends_on": "eval:doc.departure_override",
-    },
+	{
+		"dt": "Customs Declaration",
+		"fieldname": "required_for_departure",
+		"label": "Required for departure",
+		"fieldtype": "Check",
+		"default": "1",
+		"insert_after": "status",
+		"description": (
+			"Trucks on this commercial invoice cannot leave Iran until this declaration is cleared."
+		),
+	},
+	{
+		"dt": "Import Truck",
+		"fieldname": "departure_override",
+		"label": "Departure override",
+		"fieldtype": "Check",
+		"default": "0",
+		"insert_after": "status_correction_reason",
+		"description": (
+			"Release this truck despite unmet customs or veterinary "
+			"requirements. Imports Manager only, and a reason is mandatory."
+		),
+	},
+	{
+		"dt": "Import Truck",
+		"fieldname": "departure_override_reason",
+		"label": "Departure override reason",
+		"fieldtype": "Small Text",
+		"insert_after": "departure_override",
+		"depends_on": "eval:doc.departure_override",
+	},
 ]
 
 
 def execute():
-    for spec in CUSTOM_FIELDS:
-        if frappe.db.exists("Custom Field", {"dt": spec["dt"], "fieldname": spec["fieldname"]}):
-            continue
-        doc = frappe.new_doc("Custom Field")
-        doc.update(spec)
-        doc.insert(ignore_permissions=True)
-    frappe.db.commit()
+	for spec in CUSTOM_FIELDS:
+		if frappe.db.exists("Custom Field", {"dt": spec["dt"], "fieldname": spec["fieldname"]}):
+			continue
+		doc = frappe.new_doc("Custom Field")
+		doc.update(spec)
+		doc.insert(ignore_permissions=True)
+	frappe.db.commit()

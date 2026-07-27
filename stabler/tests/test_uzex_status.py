@@ -1,6 +1,6 @@
 """Unit tests for stabler.integrations.uzex._status (WP-303, Frappe-free).
 
-    cd /path/to/stabler && PYTHONPATH=$PWD python3 -m unittest stabler.tests.test_uzex_status -v
+cd /path/to/stabler && PYTHONPATH=$PWD python3 -m unittest stabler.tests.test_uzex_status -v
 """
 
 from __future__ import annotations

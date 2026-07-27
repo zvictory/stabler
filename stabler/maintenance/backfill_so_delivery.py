@@ -45,6 +45,7 @@ _logger = frappe.logger("stabler.backfill_so_delivery")
 # Helpers
 # ---------------------------------------------------------------------------
 
+
 def _coerce_dry_run(value) -> bool:
 	"""bench execute passes all kwargs as strings; normalise to bool."""
 	if isinstance(value, bool):
@@ -57,7 +58,7 @@ def _coerce_limit(value) -> int | None:
 		return None
 	try:
 		return int(value)
-	except (TypeError, ValueError):
+	except TypeError, ValueError:
 		return None
 
 
@@ -112,6 +113,7 @@ def _invoiced_qty_by_so_detail(so_name: str) -> tuple[dict[str, float], bool]:
 # Candidate selection
 # ---------------------------------------------------------------------------
 
+
 def _find_candidates(company: str | None, limit: int | None) -> list[str]:
 	"""Return a deterministic list of SO names that need a backfill Delivery Note.
 
@@ -154,6 +156,7 @@ def _find_candidates(company: str | None, limit: int | None) -> list[str]:
 # Main entry point
 # ---------------------------------------------------------------------------
 
+
 def run(dry_run=True, limit=None, company=None):
 	"""
 	Idempotent backfill: one Delivery Note per stuck Sales Order.
@@ -171,9 +174,7 @@ def run(dry_run=True, limit=None, company=None):
 	limit = _coerce_limit(limit)
 	company = company or None  # normalise empty string → None
 
-	print(
-		f"[backfill_so_delivery] Starting — dry_run={dry_run}, limit={limit}, company={company or 'ALL'}"
-	)
+	print(f"[backfill_so_delivery] Starting — dry_run={dry_run}, limit={limit}, company={company or 'ALL'}")
 
 	candidates = _find_candidates(company, limit)
 	print(f"[backfill_so_delivery] Found {len(candidates)} candidate SO(s) with active reservations.")

@@ -1,4 +1,5 @@
 """Unit tests for the pure backup/DR decision logic (no Frappe, no I/O)."""
+
 from __future__ import annotations
 
 import unittest
@@ -59,8 +60,11 @@ class GroupSetsTest(unittest.TestCase):
 			{"name": DB, "size": 1000, "modified": "2026-06-15 12:00:00"},
 			{"name": FILES, "size": 2000, "modified": "2026-06-15 12:00:01"},
 			{"name": PRIV, "size": 500, "modified": "2026-06-15 12:00:02"},
-			{"name": "20260614_120000-anjan_erpstable_com-database.sql.gz", "size": 900,
-			 "modified": "2026-06-14 12:00:00"},
+			{
+				"name": "20260614_120000-anjan_erpstable_com-database.sql.gz",
+				"size": 900,
+				"modified": "2026-06-14 12:00:00",
+			},
 		]
 		sets = group_backup_sets(files)
 		self.assertEqual(len(sets), 2)
@@ -79,6 +83,7 @@ class RetentionTest(unittest.TestCase):
 	def _keys(self, n):
 		# n daily sets ending 2026-06-15
 		import datetime as dt
+
 		base = dt.datetime(2026, 6, 15, 12, 0, 0)
 		return [(base - dt.timedelta(days=i)).strftime("%Y%m%d_%H%M%S") for i in range(n)]
 
@@ -119,10 +124,12 @@ class RestoreOverdueTest(unittest.TestCase):
 # Phase 2: prune_by_policy
 # ---------------------------------------------------------------------------
 
+
 class PruneByPolicyTest(unittest.TestCase):
 	def _daily_keys(self, n_days: int, base: str = "20260615") -> list[str]:
 		"""Generate n_days consecutive daily backup keys ending on base date."""
 		import datetime as dt
+
 		b = dt.datetime.strptime(base, "%Y%m%d")
 		return [(b - dt.timedelta(days=i)).strftime("%Y%m%d_120000") for i in range(n_days)]
 
@@ -176,6 +183,7 @@ class PruneByPolicyTest(unittest.TestCase):
 # Phase 2: restore_test_schedule
 # ---------------------------------------------------------------------------
 
+
 class RestoreTestScheduleTest(unittest.TestCase):
 	def test_never_tested_is_overdue_immediately(self):
 		r = restore_test_schedule(None, interval_days=90, today="2026-06-15")
@@ -218,6 +226,7 @@ class RestoreTestScheduleTest(unittest.TestCase):
 
 GOOD_SHA256 = "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855"
 OTHER_SHA256 = "abc123def456abc123def456abc123def456abc123def456abc123def456abc1"
+
 
 class VerifyChecksumTest(unittest.TestCase):
 	def test_matching_checksums_pass(self):

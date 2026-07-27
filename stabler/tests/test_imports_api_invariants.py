@@ -25,7 +25,7 @@ def _func_body(src: str, name: str) -> str:
 	"""Extract a top-level function body (up to the next top-level def/decorator)."""
 	m = re.search(rf"^def {name}\(", src, re.M)
 	assert m, f"function {name} not found"
-	tail = src[m.start():]
+	tail = src[m.start() :]
 	nxt = re.search(r"\n(?:@frappe\.whitelist\(\)|def )", tail[1:])
 	return tail[: nxt.start() + 1] if nxt else tail
 
@@ -108,9 +108,7 @@ class TestDocsPriceNeverInGL(unittest.TestCase):
 			r"doc\.[a-z_]+\s*=\s*.*docs_total",
 			r"amount.*=.*docs_total",
 		):
-			self.assertIsNone(
-				re.search(pat, body), f"docs_total leaks into the invoice via /{pat}/"
-			)
+			self.assertIsNone(re.search(pat, body), f"docs_total leaks into the invoice via /{pat}/")
 
 
 class TestProformaLinkFailsLoud(unittest.TestCase):
@@ -140,9 +138,7 @@ class TestProformaLinkFailsLoud(unittest.TestCase):
 		# A PI that already points at this CI is skipped. `save_proforma` accepts
 		# a `status`, so a linked PI can later become CANCELLED; without the skip
 		# can_supersede() would reject every subsequent CI edit forever.
-		self.assertIn(
-			'frappe.db.get_value("Proforma Invoice", proforma, "commercial_invoice")', body
-		)
+		self.assertIn('frappe.db.get_value("Proforma Invoice", proforma, "commercial_invoice")', body)
 
 
 if __name__ == "__main__":

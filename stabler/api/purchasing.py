@@ -174,8 +174,12 @@ def supplier_ledger(
 	to_d = getdate(to_date) if to_date else None
 
 	from stabler.api.sales import _fetch_party_ledger_rows
+
 	rows = _fetch_party_ledger_rows(
-		company=company, party_type="Supplier", party=supplier, to_date=to_d,
+		company=company,
+		party_type="Supplier",
+		party=supplier,
+		to_date=to_d,
 	)
 
 	def _before_from(r):
@@ -184,14 +188,10 @@ def supplier_ledger(
 	# Payable sign: positive = we owe (credit − debit).
 	opening_base = sum(r["credit"] - r["debit"] for r in rows if _before_from(r))
 	opening_acc = sum(
-		r["credit_in_account_currency"] - r["debit_in_account_currency"]
-		for r in rows if _before_from(r)
+		r["credit_in_account_currency"] - r["debit_in_account_currency"] for r in rows if _before_from(r)
 	)
 	closing_base = sum(r["credit"] - r["debit"] for r in rows)
-	closing_acc = sum(
-		r["credit_in_account_currency"] - r["debit_in_account_currency"]
-		for r in rows
-	)
+	closing_acc = sum(r["credit_in_account_currency"] - r["debit_in_account_currency"] for r in rows)
 
 	window = [r for r in rows if not _before_from(r)][:limit]
 	for r in window:
@@ -227,8 +227,9 @@ def supplier_detail(name: str, company: str):
 	doc = frappe.get_doc("Supplier", name)
 
 	# AP per transaction currency. Lifetime stays in base currency.
-	ap_by_currency = frappe.db.sql(
-		"""
+	ap_by_currency = (
+		frappe.db.sql(
+			"""
 		SELECT
 		  currency,
 		  COALESCE(SUM(outstanding_amount), 0) AS outstanding
@@ -238,9 +239,11 @@ def supplier_detail(name: str, company: str):
 		GROUP BY currency
 		HAVING SUM(outstanding_amount) <> 0
 		""",
-		{"name": name, "company": company},
-		as_dict=True,
-	) or []
+			{"name": name, "company": company},
+			as_dict=True,
+		)
+		or []
+	)
 	lifetime_row = frappe.db.sql(
 		"""
 		SELECT COALESCE(SUM(base_grand_total), 0) AS lifetime
@@ -305,8 +308,7 @@ def supplier_detail(name: str, company: str):
 		"website": doc.website,
 		"supplier_details": doc.supplier_details,
 		"outstanding_by_currency": [
-			{"currency": r["currency"], "amount": flt(r["outstanding"])}
-			for r in ap_by_currency
+			{"currency": r["currency"], "amount": flt(r["outstanding"])} for r in ap_by_currency
 		],
 		"lifetime_base": lifetime_base,
 		"overdue_amount": overdue_amount,
@@ -462,7 +464,6 @@ def purchase_invoice_detail(name: str):
 		"name": doc.name,
 		"modified": str(doc.modified),
 		"posting_date": str(doc.posting_date) if doc.posting_date else None,
-
 		"due_date": str(doc.due_date) if doc.due_date else None,
 		"supplier": doc.supplier,
 		"supplier_name": doc.supplier_name,
@@ -593,10 +594,17 @@ def ap_aging(company: str, as_of: str | None = None):
 	totals_by_ccy: dict[str, dict] = {}
 	for r in rows:
 		ccy = r["currency"]
-		bucket = totals_by_ccy.setdefault(ccy, {
-			"currency": ccy, "total": 0.0,
-			"b_0_30": 0.0, "b_31_60": 0.0, "b_61_90": 0.0, "b_90_plus": 0.0,
-		})
+		bucket = totals_by_ccy.setdefault(
+			ccy,
+			{
+				"currency": ccy,
+				"total": 0.0,
+				"b_0_30": 0.0,
+				"b_31_60": 0.0,
+				"b_61_90": 0.0,
+				"b_90_plus": 0.0,
+			},
+		)
 		bucket["total"] += flt(r["total"])
 		bucket["b_0_30"] += flt(r["b_0_30"])
 		bucket["b_31_60"] += flt(r["b_31_60"])
@@ -907,8 +915,19 @@ def create_purchase_invoice(
 	doc.company = company
 	doc.supplier = supplier
 	_apply_invoice_payload(
-		doc, cleaned, posting_date, due_date, bill_no, bill_date, remarks,
-		update_stock, set_warehouse, currency, rate, price_list, taxes_template,
+		doc,
+		cleaned,
+		posting_date,
+		due_date,
+		bill_no,
+		bill_date,
+		remarks,
+		update_stock,
+		set_warehouse,
+		currency,
+		rate,
+		price_list,
+		taxes_template,
 	)
 	doc.insert(ignore_permissions=False)
 	return {
@@ -963,8 +982,19 @@ def update_purchase_invoice(
 		# new supplier (a stale credit_to can carry the wrong account currency).
 		doc.credit_to = None
 	_apply_invoice_payload(
-		doc, cleaned, posting_date, due_date, bill_no, bill_date, remarks,
-		update_stock, set_warehouse, currency, rate, price_list, taxes_template,
+		doc,
+		cleaned,
+		posting_date,
+		due_date,
+		bill_no,
+		bill_date,
+		remarks,
+		update_stock,
+		set_warehouse,
+		currency,
+		rate,
+		price_list,
+		taxes_template,
 	)
 	doc.save(ignore_permissions=False)
 	return {
@@ -1300,7 +1330,6 @@ def purchase_order_detail(name: str):
 		"name": doc.name,
 		"modified": str(doc.modified),
 		"transaction_date": str(doc.transaction_date) if doc.transaction_date else None,
-
 		"schedule_date": str(doc.schedule_date) if doc.schedule_date else None,
 		"supplier": doc.supplier,
 		"supplier_name": doc.supplier_name,
@@ -1430,7 +1459,11 @@ def create_purchase_order(
 	doc.schedule_date = sched_date
 	# Tag the PO to a tender so it appears on the Tender PO control board. Guarded
 	# on the custom field (patch v34) so it's a no-op before migrate runs.
-	if deal and frappe.db.exists("CRM Deal", deal) and frappe.db.has_column("Purchase Order", "custom_crm_deal"):
+	if (
+		deal
+		and frappe.db.exists("CRM Deal", deal)
+		and frappe.db.has_column("Purchase Order", "custom_crm_deal")
+	):
 		doc.custom_crm_deal = deal
 	if set_warehouse:
 		doc.set_warehouse = set_warehouse
@@ -1618,7 +1651,6 @@ def update_purchase_order(
 	}
 
 
-
 @frappe.whitelist()
 def submit_purchase_order(name: str, modified: str | None = None):
 	"""Submit a draft Purchase Order (docstatus 0 → 1)."""
@@ -1700,6 +1732,7 @@ def create_purchase_invoice_from_po(name: str):
 	from erpnext.buying.doctype.purchase_order.purchase_order import (
 		make_purchase_invoice as _make_pi,
 	)
+
 	doc = _make_pi(name)
 	doc.insert(ignore_permissions=False)
 	return {
@@ -1873,10 +1906,7 @@ def create_purchase_receipt_from_po(name: str, items=None):
 		mapped = {r.purchase_order_item: r for r in doc.items}
 		unknown = [d for d in requested if d not in mapped]
 		if unknown:
-			frappe.throw(
-				"These order rows have nothing pending to receive: "
-				+ ", ".join(unknown)
-			)
+			frappe.throw("These order rows have nothing pending to receive: " + ", ".join(unknown))
 
 		kept = []
 		for po_detail, qty in requested.items():
@@ -2047,14 +2077,16 @@ def payables_cockpit(company: str):
 	_assert_company_scope(company)  # tenant isolation: reject a foreign company arg
 
 	# Current total payables balance (credit - debit)
-	current_total = flt(frappe.db.sql(
-		"""
+	current_total = flt(
+		frappe.db.sql(
+			"""
 		SELECT COALESCE(SUM(credit - debit), 0)
 		FROM `tabGL Entry`
 		WHERE company = %(company)s AND party_type = 'Supplier' AND is_cancelled = 0
 		""",
-		{"company": company},
-	)[0][0])
+			{"company": company},
+		)[0][0]
+	)
 
 	# 8-week trend (running balance at the end of each of the last 8 weeks)
 	from datetime import datetime, timedelta
@@ -2064,36 +2096,41 @@ def payables_cockpit(company: str):
 	current_date = getdate(today())
 	weeks = []
 	for i in range(8):
-		date_at_end = current_date - timedelta(days=i*7)
+		date_at_end = current_date - timedelta(days=i * 7)
 		weeks.append(date_at_end)
 	weeks.reverse()
 
 	trend = []
 	for w_end in weeks:
-		change_since = flt(frappe.db.sql(
-			"""
+		change_since = flt(
+			frappe.db.sql(
+				"""
 			SELECT COALESCE(SUM(credit - debit), 0)
 			FROM `tabGL Entry`
 			WHERE company = %(company)s AND party_type = 'Supplier' AND posting_date > %(w_end)s AND is_cancelled = 0
 			""",
-			{"company": company, "w_end": w_end},
-		)[0][0])
+				{"company": company, "w_end": w_end},
+			)[0][0]
+		)
 		trend.append(round(current_total - change_since, 2))
 
 	# Payments paid today (debit side for Supplier)
-	paid_today = flt(frappe.db.sql(
-		"""
+	paid_today = flt(
+		frappe.db.sql(
+			"""
 		SELECT COALESCE(SUM(debit), 0)
 		FROM `tabGL Entry`
 		WHERE company = %(company)s AND party_type = 'Supplier' AND posting_date = %(today)s AND is_cancelled = 0
 		""",
-		{"company": company, "today": today()},
-	)[0][0])
+			{"company": company, "today": today()},
+		)[0][0]
+	)
 
 	# Top 10 creditors
 	eps = money_epsilon(frappe.get_cached_value("Company", company, "default_currency"))
-	top_creditors_raw = frappe.db.sql(
-		"""
+	top_creditors_raw = (
+		frappe.db.sql(
+			"""
 		SELECT party AS name, COALESCE(SUM(credit - debit), 0) AS balance
 		FROM `tabGL Entry`
 		WHERE company = %(company)s AND party_type = 'Supplier' AND is_cancelled = 0
@@ -2102,12 +2139,16 @@ def payables_cockpit(company: str):
 		ORDER BY balance DESC
 		LIMIT 10
 		""",
-		{"company": company, "eps": eps},
-		as_dict=True,
-	) or []
+			{"company": company, "eps": eps},
+			as_dict=True,
+		)
+		or []
+	)
 
 	for creditor in top_creditors_raw:
-		creditor["supplier_name"] = frappe.db.get_value("Supplier", creditor["name"], "supplier_name") or creditor["name"]
+		creditor["supplier_name"] = (
+			frappe.db.get_value("Supplier", creditor["name"], "supplier_name") or creditor["name"]
+		)
 		creditor["balance"] = flt(creditor["balance"])
 
 	return {
@@ -2132,28 +2173,46 @@ def tender_quotations(deal: str) -> dict:
 	"""
 	if not frappe.db.exists("CRM Deal", deal):
 		frappe.throw(frappe._("Unknown deal: {0}").format(deal))
-	company = frappe.db.get_value("CRM Deal", deal, "company") or frappe.defaults.get_user_default("Company") or (
-		frappe.get_all("Company", pluck="name", limit=1) or [None]
-	)[0]
+	company = (
+		frappe.db.get_value("CRM Deal", deal, "company")
+		or frappe.defaults.get_user_default("Company")
+		or (frappe.get_all("Company", pluck="name", limit=1) or [None])[0]
+	)
 	_require_company(company)
 	_assert_company_scope(company)  # tenant isolation: reject a foreign company arg
 
 	from stabler.stabler.doctype.stabler_settings.stabler_settings import module_map_for
 
 	if not module_map_for(company).get("tender"):
-		frappe.throw(frappe._("Tender module is not enabled for {0}.").format(company), frappe.PermissionError)
+		frappe.throw(
+			frappe._("Tender module is not enabled for {0}.").format(company), frappe.PermissionError
+		)
 
 	base_ccy = frappe.get_cached_value("Company", company, "default_currency")
 	if not frappe.db.has_column("Supplier Quotation", "custom_crm_deal"):
-		return {"rows": [], "base_currency": base_ccy, "count": 0, "countries": 0,
-		        "has_min_5": False, "has_2_countries": False}
+		return {
+			"rows": [],
+			"base_currency": base_ccy,
+			"count": 0,
+			"countries": 0,
+			"has_min_5": False,
+			"has_2_countries": False,
+		}
 
 	sqs = frappe.get_all(
 		"Supplier Quotation",
 		filters={"custom_crm_deal": deal, "docstatus": ["<", 2]},
 		fields=[
-			"name", "supplier", "supplier_name", "currency", "grand_total",
-			"base_grand_total", "valid_till", "status", "transaction_date", "total_qty",
+			"name",
+			"supplier",
+			"supplier_name",
+			"currency",
+			"grand_total",
+			"base_grand_total",
+			"valid_till",
+			"status",
+			"transaction_date",
+			"total_qty",
 		],
 		order_by="base_grand_total asc",
 		limit_page_length=0,
@@ -2162,9 +2221,7 @@ def tender_quotations(deal: str) -> dict:
 	suppliers = list({s["supplier"] for s in sqs if s.get("supplier")})
 	country_map = {}
 	if suppliers:
-		for s in frappe.get_all(
-			"Supplier", filters={"name": ["in", suppliers]}, fields=["name", "country"]
-		):
+		for s in frappe.get_all("Supplier", filters={"name": ["in", suppliers]}, fields=["name", "country"]):
 			country_map[s["name"]] = s.get("country") or ""
 
 	rows = []
@@ -2173,21 +2230,25 @@ def tender_quotations(deal: str) -> dict:
 		base_total = flt(s.get("base_grand_total")) or flt(s.get("grand_total"))
 		if base_total and (cheapest_base is None or base_total < cheapest_base):
 			cheapest_base = base_total
-		rows.append({
-			"name": s["name"],
-			"supplier": s["supplier"],
-			"supplier_name": s.get("supplier_name") or s["supplier"],
-			"country": country_map.get(s["supplier"], ""),
-			"currency": s.get("currency"),
-			"grand_total": flt(s.get("grand_total")),
-			"base_total": base_total,
-			"valid_till": str(s.get("valid_till") or ""),
-			"status": s.get("status"),
-			"transaction_date": str(s.get("transaction_date") or ""),
-			"qty": flt(s.get("total_qty")),
-		})
+		rows.append(
+			{
+				"name": s["name"],
+				"supplier": s["supplier"],
+				"supplier_name": s.get("supplier_name") or s["supplier"],
+				"country": country_map.get(s["supplier"], ""),
+				"currency": s.get("currency"),
+				"grand_total": flt(s.get("grand_total")),
+				"base_total": base_total,
+				"valid_till": str(s.get("valid_till") or ""),
+				"status": s.get("status"),
+				"transaction_date": str(s.get("transaction_date") or ""),
+				"qty": flt(s.get("total_qty")),
+			}
+		)
 	for r in rows:
-		r["cheapest"] = bool(cheapest_base is not None and r["base_total"] == cheapest_base and r["base_total"] > 0)
+		r["cheapest"] = bool(
+			cheapest_base is not None and r["base_total"] == cheapest_base and r["base_total"] > 0
+		)
 
 	countries = {r["country"] for r in rows if r["country"]}
 	return {

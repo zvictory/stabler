@@ -52,8 +52,13 @@ def _languages() -> list[dict]:
 
 def _industries() -> list[str]:
 	return [
-		_("Retail"), _("Wholesale / Distribution"), _("Manufacturing"),
-		_("Services"), _("Food & Beverage"), _("Construction"), _("Other"),
+		_("Retail"),
+		_("Wholesale / Distribution"),
+		_("Manufacturing"),
+		_("Services"),
+		_("Food & Beverage"),
+		_("Construction"),
+		_("Other"),
 	]
 
 
@@ -74,21 +79,62 @@ def wizard_schema() -> dict:
 	"""
 	if frappe.session.user == "Guest":
 		frappe.throw(_("Login required."), frappe.PermissionError)
-	currencies = (
-		frappe.get_all("Currency", filters={"enabled": 1}, pluck="name", limit_page_length=500)
-		or ["UZS", "USD", "EUR"]
-	)
+	currencies = frappe.get_all("Currency", filters={"enabled": 1}, pluck="name", limit_page_length=500) or [
+		"UZS",
+		"USD",
+		"EUR",
+	]
 	countries = frappe.get_all("Country", pluck="name", limit_page_length=500)
 	return {
 		"v": SCHEMA_VERSION,
 		"questions": [
 			{"key": "business_name", "label": _("Business name"), "type": "text", "required": 1},
-			{"key": "industry", "label": _("Industry"), "type": "select", "options": _industries(), "required": 1},
-			{"key": "country", "label": _("Country"), "type": "select", "options": countries, "required": 1, "default": "Uzbekistan"},
-			{"key": "currency", "label": _("Base currency"), "type": "select", "options": currencies, "required": 1, "default": "UZS"},
-			{"key": "language", "label": _("Language"), "type": "select", "options": _languages(), "required": 1, "default": "uz"},
-			{"key": "tax_type", "label": _("Tax type"), "type": "select", "options": _tax_types(), "required": 1, "default": "vat"},
-			{"key": "abbr", "label": _("Short code"), "type": "text", "required": 0, "hint": _("e.g. ANJ — leave blank to auto-generate")},
+			{
+				"key": "industry",
+				"label": _("Industry"),
+				"type": "select",
+				"options": _industries(),
+				"required": 1,
+			},
+			{
+				"key": "country",
+				"label": _("Country"),
+				"type": "select",
+				"options": countries,
+				"required": 1,
+				"default": "Uzbekistan",
+			},
+			{
+				"key": "currency",
+				"label": _("Base currency"),
+				"type": "select",
+				"options": currencies,
+				"required": 1,
+				"default": "UZS",
+			},
+			{
+				"key": "language",
+				"label": _("Language"),
+				"type": "select",
+				"options": _languages(),
+				"required": 1,
+				"default": "uz",
+			},
+			{
+				"key": "tax_type",
+				"label": _("Tax type"),
+				"type": "select",
+				"options": _tax_types(),
+				"required": 1,
+				"default": "vat",
+			},
+			{
+				"key": "abbr",
+				"label": _("Short code"),
+				"type": "text",
+				"required": 0,
+				"hint": _("e.g. ANJ — leave blank to auto-generate"),
+			},
 		],
 	}
 
@@ -121,11 +167,11 @@ def save_wizard_state(state: dict | str) -> dict:
 	if not isinstance(state, dict):
 		state = {}
 	safe = {
-		str(k): v
-		for k, v in list(state.items())[:20]
-		if isinstance(v, (str, int, float, bool)) or v is None
+		str(k): v for k, v in list(state.items())[:20] if isinstance(v, (str, int, float, bool)) or v is None
 	}
-	frappe.defaults.set_user_default(_WIZARD_STATE_KEY, json.dumps(safe, ensure_ascii=False), frappe.session.user)
+	frappe.defaults.set_user_default(
+		_WIZARD_STATE_KEY, json.dumps(safe, ensure_ascii=False), frappe.session.user
+	)
 	return {"ok": True}
 
 
@@ -172,9 +218,7 @@ def _ensure_pos_profile(company: str, currency: str) -> None:
 	try:
 		if frappe.db.exists("POS Profile", {"company": company}):
 			return
-		mode_of_payment = frappe.db.get_value(
-			"Mode of Payment Account", {"company": company}, "parent"
-		)
+		mode_of_payment = frappe.db.get_value("Mode of Payment Account", {"company": company}, "parent")
 		warehouse = frappe.db.get_value(
 			"Warehouse", {"company": company, "is_group": 0}, "name", order_by="name"
 		)
@@ -183,17 +227,19 @@ def _ensure_pos_profile(company: str, currency: str) -> None:
 		)
 		if not (mode_of_payment and warehouse and write_off_account and write_off_cost_center):
 			return
-		frappe.get_doc({
-			"doctype": "POS Profile",
-			"name": f"{company} POS",
-			"company": company,
-			"currency": currency,
-			"disabled": 0,
-			"warehouse": warehouse,
-			"write_off_account": write_off_account,
-			"write_off_cost_center": write_off_cost_center,
-			"payments": [{"mode_of_payment": mode_of_payment, "default": 1}],
-		}).insert(ignore_permissions=True)
+		frappe.get_doc(
+			{
+				"doctype": "POS Profile",
+				"name": f"{company} POS",
+				"company": company,
+				"currency": currency,
+				"disabled": 0,
+				"warehouse": warehouse,
+				"write_off_account": write_off_account,
+				"write_off_cost_center": write_off_cost_center,
+				"payments": [{"mode_of_payment": mode_of_payment, "default": 1}],
+			}
+		).insert(ignore_permissions=True)
 	except Exception:
 		# POS Profile is a convenience, not a gate — the user still reaches POS and
 		# can finish it there. Never fail provisioning on it.
@@ -245,6 +291,7 @@ def provision(payload: dict | str) -> dict:
 	# ignore_permissions, so it must run as Administrator (same as the real Setup
 	# Wizard always does) rather than as the onboarding user.
 	from erpnext.setup.setup_wizard.operations.install_fixtures import install as _install_fixtures
+
 	_actor = frappe.session.user
 	frappe.set_user("Administrator")
 	try:
@@ -254,14 +301,16 @@ def provision(payload: dict | str) -> dict:
 
 	# Create the company. ERPNext's Company controller auto-creates the CoA from
 	# `chart_of_accounts`, plus default warehouses and cost centers, on insert.
-	company = frappe.get_doc({
-		"doctype": "Company",
-		"company_name": business_name,
-		"abbr": abbr,
-		"default_currency": currency,
-		"country": country,
-		"chart_of_accounts": "Standard",
-	})
+	company = frappe.get_doc(
+		{
+			"doctype": "Company",
+			"company_name": business_name,
+			"abbr": abbr,
+			"default_currency": currency,
+			"country": country,
+			"chart_of_accounts": "Standard",
+		}
+	)
 	company.insert(ignore_permissions=True)
 
 	_grant_and_default(frappe.session.user, company.name)

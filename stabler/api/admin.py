@@ -348,6 +348,7 @@ def list_role_templates():
 # the SPA instead of the Desk. These are the settings behind "can't create/edit
 # transactions older than N days".
 
+
 def _read_posting_window() -> dict:
 	stk = frappe.get_single("Stock Settings")
 	acc = frappe.get_single("Accounts Settings")
@@ -398,7 +399,9 @@ def set_posting_window_settings(payload=None) -> dict:
 			frappe.throw(_("Frozen days cannot be negative."))
 		stk.stock_frozen_upto_days = days
 	if "stock_frozen_upto" in payload:
-		stk.stock_frozen_upto = frappe.utils.getdate(payload["stock_frozen_upto"]) if payload["stock_frozen_upto"] else None
+		stk.stock_frozen_upto = (
+			frappe.utils.getdate(payload["stock_frozen_upto"]) if payload["stock_frozen_upto"] else None
+		)
 	if "stock_backdated_role" in payload:
 		role = payload["stock_backdated_role"] or None
 		if role and not frappe.db.exists("Role", role):
@@ -406,7 +409,9 @@ def set_posting_window_settings(payload=None) -> dict:
 		stk.role_allowed_to_create_edit_back_dated_transactions = role
 
 	if "acc_frozen_upto" in payload:
-		acc.acc_frozen_upto = frappe.utils.getdate(payload["acc_frozen_upto"]) if payload["acc_frozen_upto"] else None
+		acc.acc_frozen_upto = (
+			frappe.utils.getdate(payload["acc_frozen_upto"]) if payload["acc_frozen_upto"] else None
+		)
 	if "frozen_accounts_modifier" in payload:
 		role = payload["frozen_accounts_modifier"] or None
 		if role and not frappe.db.exists("Role", role):

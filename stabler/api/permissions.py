@@ -50,6 +50,7 @@ are available as a fallback for custom endpoints that bypass standard permission
 levels.
 ---------------------------------------------------------------------------
 """
+
 from __future__ import annotations
 
 import frappe
@@ -167,6 +168,7 @@ def bank_transaction_query(user=None):
 # Gap #46 — owner / territory scoping for masters (Customer, Supplier)
 # ---------------------------------------------------------------------------
 
+
 def _is_admin(user: str) -> bool:
 	"""True for Administrator / Guest special accounts and Stabler admin roles."""
 	if not user or user in ("Administrator", "Guest"):
@@ -232,9 +234,7 @@ def _master_condition(user: str | None, doctype: str) -> str:
 	if needs_owner_restriction(allowed_owners):
 		escaped = ", ".join(frappe.db.escape(o) for o in allowed_owners)
 		# Blank owner rows are never hidden.
-		clauses.append(
-			f"({table}.owner in ({escaped}) or {table}.owner is null or {table}.owner = '')"
-		)
+		clauses.append(f"({table}.owner in ({escaped}) or {table}.owner is null or {table}.owner = '')")
 
 	if needs_territory_restriction(allowed_territories):
 		escaped = ", ".join(frappe.db.escape(t) for t in allowed_territories)
@@ -311,23 +311,23 @@ _DEFAULT_COST_ROLES = ("Imports Manager", "Director")
 
 
 def cost_visible_roles() -> list[str]:
-    """The role names granted cost visibility (Stabler Settings comma list + defaults).
+	"""The role names granted cost visibility (Stabler Settings comma list + defaults).
 
-    Single source of truth shared by the imports SPA API (``stabler.api.imports``)
-    and the SPA boot payload (``stabler.api.organization.boot``) so the frontend's
-    ``cost_visible`` flag and the backend masking gate can never drift apart.
-    """
-    raw = frappe.db.get_single_value("Stabler Settings", "cost_visible_roles") or ""
-    roles = [r.strip() for r in raw.replace("\n", ",").split(",") if r.strip()]
-    for default_role in _DEFAULT_COST_ROLES:
-        if default_role not in roles:
-            roles.append(default_role)
-    return roles
+	Single source of truth shared by the imports SPA API (``stabler.api.imports``)
+	and the SPA boot payload (``stabler.api.organization.boot``) so the frontend's
+	``cost_visible`` flag and the backend masking gate can never drift apart.
+	"""
+	raw = frappe.db.get_single_value("Stabler Settings", "cost_visible_roles") or ""
+	roles = [r.strip() for r in raw.replace("\n", ",").split(",") if r.strip()]
+	for default_role in _DEFAULT_COST_ROLES:
+		if default_role not in roles:
+			roles.append(default_role)
+	return roles
 
 
 def cost_visible_for(user: str | None = None) -> bool:
-    """True when *user* (default: the session user) may see landed-cost figures."""
-    return _user_has_cost_visibility(user or frappe.session.user, cost_visible_roles())
+	"""True when *user* (default: the session user) may see landed-cost figures."""
+	return _user_has_cost_visibility(user or frappe.session.user, cost_visible_roles())
 
 
 def apply_cost_mask(payload, user=None, cost_visible_roles=None):

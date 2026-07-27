@@ -39,16 +39,18 @@ _EXCEPTION = "Stabler Attendance Exception"
 _SUMMARY = "Stabler Payroll Attendance Summary"
 
 # Correction types accepted by the API.
-_VALID_CORRECTION_TYPES = frozenset({
-	"check_in",
-	"check_out",
-	"status",
-	"late_excuse",
-	"add_attendance",
-	"remove_attendance",
-	"overtime_adjust",
-	"note",
-})
+_VALID_CORRECTION_TYPES = frozenset(
+	{
+		"check_in",
+		"check_out",
+		"status",
+		"late_excuse",
+		"add_attendance",
+		"remove_attendance",
+		"overtime_adjust",
+		"note",
+	}
+)
 
 # Roles that may approve corrections.
 _APPROVER_ROLES = ("HR Manager", "System Manager", "Stabler Admin")
@@ -57,6 +59,7 @@ _APPROVER_ROLES = ("HR Manager", "System Manager", "Stabler Admin")
 # ---------------------------------------------------------------------------
 # Shared guards
 # ---------------------------------------------------------------------------
+
 
 def _require_auth() -> None:
 	if frappe.session.user == "Guest":
@@ -88,6 +91,7 @@ def _require_correction_approver() -> None:
 # ---------------------------------------------------------------------------
 # request_correction
 # ---------------------------------------------------------------------------
+
 
 @frappe.whitelist()
 def request_correction(payload) -> dict:
@@ -191,6 +195,7 @@ def request_correction(payload) -> dict:
 	if payroll_impact:
 		try:
 			from stabler.api.approvals import ensure_request_for_doc
+
 			# ensure_request_for_doc expects a doc with .doctype, .name, .company,
 			# and attribute access. Stabler Attendance Correction Request may not be
 			# in CONTROLLED_DOCTYPES; we call it only if the doctype is registered
@@ -215,6 +220,7 @@ def request_correction(payload) -> dict:
 # list_corrections
 # ---------------------------------------------------------------------------
 
+
 @frappe.whitelist()
 def list_corrections(
 	status: str = "",
@@ -233,7 +239,7 @@ def list_corrections(
 
 	try:
 		limit = min(int(limit), 500)
-	except (TypeError, ValueError):
+	except TypeError, ValueError:
 		limit = 200
 
 	filters: dict = {}
@@ -277,6 +283,7 @@ def list_corrections(
 # approve_correction
 # ---------------------------------------------------------------------------
 
+
 @frappe.whitelist()
 def approve_correction(name: str, note: str | None = None) -> dict:
 	"""Approve a Correction Request.
@@ -313,15 +320,15 @@ def approve_correction(name: str, note: str | None = None) -> dict:
 	_assert_company_scope(doc.company)
 
 	if doc.status != "Pending":
-		frappe.throw(
-			_("This correction is already {0} and cannot be approved.").format(_(doc.status))
-		)
+		frappe.throw(_("This correction is already {0} and cannot be approved.").format(_(doc.status)))
 
 	# Segregation of duties: the approver must differ from the requester.
 	# Reuse is_self_approval from approvals.py (same semantics as maker-checker).
 	if is_self_approval(doc.requested_by, frappe.session.user):
 		frappe.throw(
-			_("Segregation of duties: you raised this correction request — it must be approved by someone else."),
+			_(
+				"Segregation of duties: you raised this correction request — it must be approved by someone else."
+			),
 			title=_("Self-approval blocked"),
 		)
 
@@ -340,6 +347,7 @@ def approve_correction(name: str, note: str | None = None) -> dict:
 # ---------------------------------------------------------------------------
 # reject_correction
 # ---------------------------------------------------------------------------
+
 
 @frappe.whitelist()
 def reject_correction(name: str, note: str | None = None) -> dict:
@@ -366,13 +374,13 @@ def reject_correction(name: str, note: str | None = None) -> dict:
 	_assert_company_scope(doc.company)
 
 	if doc.status != "Pending":
-		frappe.throw(
-			_("This correction is already {0} and cannot be rejected.").format(_(doc.status))
-		)
+		frappe.throw(_("This correction is already {0} and cannot be rejected.").format(_(doc.status)))
 
 	if is_self_approval(doc.requested_by, frappe.session.user):
 		frappe.throw(
-			_("Segregation of duties: you raised this correction request — it must be reviewed by someone else."),
+			_(
+				"Segregation of duties: you raised this correction request — it must be reviewed by someone else."
+			),
 			title=_("Self-review blocked"),
 		)
 
@@ -391,6 +399,7 @@ def reject_correction(name: str, note: str | None = None) -> dict:
 # ---------------------------------------------------------------------------
 # list_exceptions
 # ---------------------------------------------------------------------------
+
 
 @frappe.whitelist()
 def list_exceptions(
@@ -411,7 +420,7 @@ def list_exceptions(
 
 	try:
 		limit = min(int(limit), 500)
-	except (TypeError, ValueError):
+	except TypeError, ValueError:
 		limit = 200
 
 	filters: dict = {}
@@ -452,6 +461,7 @@ def list_exceptions(
 # resolve_exception
 # ---------------------------------------------------------------------------
 
+
 @frappe.whitelist()
 def resolve_exception(name: str, resolution: str = "Resolved") -> dict:
 	"""Resolve or ignore a Stabler Attendance Exception.
@@ -484,9 +494,7 @@ def resolve_exception(name: str, resolution: str = "Resolved") -> dict:
 	_assert_company_scope(doc.company)
 
 	if doc.status != "Open":
-		frappe.throw(
-			_("This exception is already {0}.").format(_(doc.status))
-		)
+		frappe.throw(_("This exception is already {0}.").format(_(doc.status)))
 
 	doc.status = resolution
 	doc.resolved_by = frappe.session.user
@@ -500,6 +508,7 @@ def resolve_exception(name: str, resolution: str = "Resolved") -> dict:
 # ---------------------------------------------------------------------------
 # period_lock_readiness
 # ---------------------------------------------------------------------------
+
 
 @frappe.whitelist()
 def period_lock_readiness(company: str, payroll_period: str) -> dict:
@@ -547,6 +556,7 @@ def period_lock_readiness(company: str, payroll_period: str) -> dict:
 		try:
 			y, m = payroll_period.split("-")
 			import calendar
+
 			period_start = f"{y}-{m}-01"
 			last_day = calendar.monthrange(int(y), int(m))[1]
 			period_end = f"{y}-{m}-{last_day:02d}"

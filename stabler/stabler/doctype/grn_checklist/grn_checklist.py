@@ -40,12 +40,9 @@ class GRNChecklist(Document):
 			self.company != before.company
 			or self.commercial_invoice != before.commercial_invoice
 			or not cint(self.expected_snapshot_locked)
-			or self._expected_signature(self.grn_items)
-			!= self._expected_signature(before.grn_items)
+			or self._expected_signature(self.grn_items) != self._expected_signature(before.grn_items)
 		):
-			frappe.throw(
-				frappe._("The GRN identity and expected snapshot is locked after first receipt.")
-			)
+			frappe.throw(frappe._("The GRN identity and expected snapshot is locked after first receipt."))
 
 	@staticmethod
 	def _expected_signature(rows) -> tuple:

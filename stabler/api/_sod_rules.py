@@ -14,6 +14,7 @@ often wears several hats. The point is to *surface* the concentration so it can
 be accepted with eyes open or mitigated by a compensating control (e.g. the
 payment maker-checker already blocks self-approval at transaction time).
 """
+
 from __future__ import annotations
 
 SEVERITY_ORDER = {"critical": 3, "high": 2, "medium": 1, "info": 0}
@@ -67,7 +68,10 @@ SOD_CONFLICTS: list[dict] = [
 		"id": "vendor_and_pay",
 		"label": "Creates suppliers AND makes payments",
 		"severity": "high",
-		"group_a": {"label": "Manage suppliers", "roles": ["Purchase User", "Purchase Manager", "Purchase Master Manager"]},
+		"group_a": {
+			"label": "Manage suppliers",
+			"roles": ["Purchase User", "Purchase Manager", "Purchase Master Manager"],
+		},
 		"group_b": {"label": "Make payments", "roles": ["Accounts User", "Accounts Manager"]},
 		"rationale": "Could set up a fictitious supplier and pay it.",
 		"mitigation": "Payment maker-checker blocks self-approval, partially mitigating the pay side.",
@@ -86,7 +90,10 @@ SOD_CONFLICTS: list[dict] = [
 		"label": "Holds System Manager AND operates a finance/stock module",
 		"severity": "critical",
 		"group_a": {"label": "User administration", "roles": ["System Manager"]},
-		"group_b": {"label": "Operates finance/stock", "roles": ["Accounts User", "Accounts Manager", "Stock User", "Stock Manager", "Purchase User"]},
+		"group_b": {
+			"label": "Operates finance/stock",
+			"roles": ["Accounts User", "Accounts Manager", "Stock User", "Stock Manager", "Purchase User"],
+		},
 		"rationale": "A super-admin who also transacts can grant themselves rights and erase the evidence. Violates least privilege.",
 		"mitigation": "Give day-to-day operators scoped roles; reserve System Manager for a separate break-glass account.",
 	},
@@ -306,8 +313,8 @@ def conflicting_actor(
 
 	    {
 	        "rule_id": str,
-	        "action_a": str,        # prior action that was performed
-	        "action_b": str,        # blocked action being attempted
+	        "action_a": str,  # prior action that was performed
+	        "action_b": str,  # blocked action being attempted
 	        "conflict_actor": str,  # the user who did action_a (== actor)
 	        "severity": str,
 	        "message": str,

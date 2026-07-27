@@ -98,6 +98,7 @@ ADJ_ADVANCE = "ADVANCE"
 # Helpers
 # ---------------------------------------------------------------------------
 
+
 def _d(value: Any) -> Decimal:
 	"""Convert value to Decimal. Accepts str, int, float, Decimal, None."""
 	if value is None:
@@ -128,16 +129,17 @@ def _js_str(value: Decimal) -> str:
 	s = str(value)
 	# Python Decimal may produce scientific notation (e.g. '0E-29', '1E+7').
 	# Convert to fixed-point first, then strip trailing zeros.
-	if 'E' in s or 'e' in s:
-		s = format(value, 'f')
-	if '.' in s:
-		s = s.rstrip('0').rstrip('.')
+	if "E" in s or "e" in s:
+		s = format(value, "f")
+	if "." in s:
+		s = s.rstrip("0").rstrip(".")
 	return s
 
 
 # ---------------------------------------------------------------------------
 # round_money — mirrors round.ts: ROUND_HALF_UP to 0 decimal places
 # ---------------------------------------------------------------------------
+
 
 def round_money(value: Decimal) -> Decimal:
 	"""Round to nearest whole UZS using ROUND_HALF_UP (arithmetic rounding).
@@ -161,6 +163,7 @@ def round_money(value: Decimal) -> Decimal:
 # parse_allowance_config — mirrors allowance-config.ts parseAllowanceConfig
 # ---------------------------------------------------------------------------
 
+
 def parse_allowance_config(json_val: Any) -> dict:
 	"""Parse allowance config JSON into a normalised dict.
 
@@ -181,7 +184,7 @@ def parse_allowance_config(json_val: Any) -> dict:
 	if isinstance(json_val, str):
 		try:
 			json_val = json.loads(json_val)
-		except (json.JSONDecodeError, TypeError):
+		except json.JSONDecodeError, TypeError:
 			return _empty
 
 	if not isinstance(json_val, dict):
@@ -240,6 +243,7 @@ def parse_allowance_config(json_val: Any) -> dict:
 # years_of_service — mirrors getYearsOfService in calculate.ts
 # ---------------------------------------------------------------------------
 
+
 def years_of_service(hire_date_iso: str | None, period: str) -> int:
 	"""Return completed years of service as of the last day of *period*.
 
@@ -257,17 +261,18 @@ def years_of_service(hire_date_iso: str | None, period: str) -> int:
 
 	try:
 		hire = date.fromisoformat(str(hire_date_iso)[:10])
-	except (ValueError, TypeError):
+	except ValueError, TypeError:
 		return 0
 
 	try:
 		period_year, period_month = (int(x) for x in period.split("-"))
-	except (ValueError, AttributeError):
+	except ValueError, AttributeError:
 		return 0
 
 	# Last day of period month (mirrors new Date(UTC(periodYear, periodMonth, 0)).getUTCDate())
 	# In JS: new Date(UTC(year, month, 0)) where month is 1-indexed → last day of that month.
 	import calendar
+
 	last_day = calendar.monthrange(period_year, period_month)[1]
 
 	hire_year = hire.year
@@ -289,6 +294,7 @@ def years_of_service(hire_date_iso: str | None, period: str) -> int:
 # ---------------------------------------------------------------------------
 # seniority_percent — mirrors getSeniorityPercent in calculate.ts
 # ---------------------------------------------------------------------------
+
 
 def seniority_percent(years: int) -> Decimal:
 	"""Return the seniority rate as a Decimal fraction.
@@ -314,6 +320,7 @@ def seniority_percent(years: int) -> Decimal:
 # ---------------------------------------------------------------------------
 # resolve_schedule — mirrors resolveSchedule in schedule.ts
 # ---------------------------------------------------------------------------
+
 
 def resolve_schedule(work_mode: str, stake_coefficient: Decimal) -> dict:
 	"""Map work_mode + stake_coefficient to schedule parameters.
@@ -377,6 +384,7 @@ def resolve_schedule(work_mode: str, stake_coefficient: Decimal) -> dict:
 # calculate_payroll — mirrors calculatePayroll in calculate.ts
 # ---------------------------------------------------------------------------
 
+
 def calculate_payroll(inp: dict) -> dict:
 	"""Calculate payroll for one employee in one period.
 
@@ -438,7 +446,7 @@ def calculate_payroll(inp: dict) -> dict:
 	if sched["proration"] == "full":
 		is_zero_attended = False
 	else:
-		is_zero_attended = (attended_days == 0)
+		is_zero_attended = attended_days == 0
 
 	# ------------------------------------------------------------------ #
 	# 2. Prorated Effective Base
@@ -662,8 +670,7 @@ def calculate_payroll(inp: dict) -> dict:
 		"night_allowance": _js_str(night_allowance),
 		"transport": _js_str(transport),
 		"custom_allowances": [
-			{"name": c["name"], "amount": _js_str(_d(c["amount"]))}
-			for c in custom_allowances_list
+			{"name": c["name"], "amount": _js_str(_d(c["amount"]))} for c in custom_allowances_list
 		],
 		"custom_allowances_sum": _js_str(custom_allowances_sum),
 		"manual_seniority": _js_str(manual_seniority) if has_manual_seniority else None,

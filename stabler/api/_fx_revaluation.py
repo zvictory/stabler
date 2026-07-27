@@ -21,6 +21,7 @@ Garbage-safety:
   * Any non-numeric input is treated as 0.
   * Zero book_rate and zero new_rate both yield delta = 0 (no crash).
 """
+
 from __future__ import annotations
 
 from decimal import ROUND_HALF_UP, Decimal, InvalidOperation
@@ -29,13 +30,14 @@ from decimal import ROUND_HALF_UP, Decimal, InvalidOperation
 # Internal helpers
 # ---------------------------------------------------------------------------
 
+
 def _d(v) -> Decimal:
 	"""Coerce any value to Decimal; return 0 on garbage."""
 	if isinstance(v, Decimal):
 		return v
 	try:
 		return Decimal(str(v))
-	except (InvalidOperation, TypeError, ValueError):
+	except InvalidOperation, TypeError, ValueError:
 		return Decimal("0")
 
 
@@ -49,6 +51,7 @@ def _quantize(value: Decimal, precision: int) -> Decimal:
 # ---------------------------------------------------------------------------
 # Public API
 # ---------------------------------------------------------------------------
+
 
 def compute_fx_delta(
 	*,
@@ -89,8 +92,8 @@ def compute_fx_delta(
 	"""
 	rp = max(6, int(rate_precision))
 	bal = _quantize(_d(balance_in_account_ccy), rp)
-	nr  = _quantize(_d(new_rate), rp)
-	br  = _quantize(_d(book_rate), rp)
+	nr = _quantize(_d(new_rate), rp)
+	br = _quantize(_d(book_rate), rp)
 
 	rate_diff = nr - br
 	raw_delta = bal * rate_diff

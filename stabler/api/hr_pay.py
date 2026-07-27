@@ -35,9 +35,16 @@ def _employee_pay_fields(emp_name: str) -> dict:
 			"Employee",
 			emp_name,
 			[
-				"employee_name", "date_of_joining", "custom_base_salary", "custom_allowance_config",
-				"custom_work_mode", "custom_stake_coefficient", "custom_region",
-				"custom_heavy_conditions", "custom_additional_duties", "custom_duty_supplement_pct",
+				"employee_name",
+				"date_of_joining",
+				"custom_base_salary",
+				"custom_allowance_config",
+				"custom_work_mode",
+				"custom_stake_coefficient",
+				"custom_region",
+				"custom_heavy_conditions",
+				"custom_additional_duties",
+				"custom_duty_supplement_pct",
 			],
 			as_dict=True,
 		)
@@ -88,7 +95,7 @@ def _duty_supplements(emp: dict) -> list:
 	"""Map the per-employee duty-supplement % onto the engine's list input."""
 	try:
 		pct = float(emp.get("duty_supplement_pct") or 0)
-	except (TypeError, ValueError):
+	except TypeError, ValueError:
 		pct = 0.0
 	return [{"pct": pct}] if pct else []
 
@@ -162,7 +169,7 @@ def set_kpi_performance(summary_name: str, pct) -> dict:
 	_assert_company_scope(company)  # tenant isolation: reject a foreign company arg
 	try:
 		value = float(pct)
-	except (TypeError, ValueError):
+	except TypeError, ValueError:
 		frappe.throw(_("KPI performance must be a number."))
 	if value < 0 or value > 100:
 		frappe.throw(_("KPI performance must be between 0 and 100."))
@@ -189,7 +196,7 @@ def set_advance_deduction(summary_name: str, amount) -> dict:
 	_assert_company_scope(company)  # tenant isolation: reject a foreign company arg
 	try:
 		value = flt(amount)
-	except (TypeError, ValueError):
+	except TypeError, ValueError:
 		frappe.throw(_("Advance deduction must be a number."))
 	if value < 0:
 		frappe.throw(_("Advance deduction cannot be negative."))
@@ -200,7 +207,9 @@ def set_advance_deduction(summary_name: str, amount) -> dict:
 	eps = money_epsilon(frappe.get_cached_value("Company", company, "default_currency"))
 	if value > outstanding + eps:
 		frappe.throw(
-			_("Deduction {0} exceeds the outstanding advance balance {1}.").format(value, round(outstanding, 2))
+			_("Deduction {0} exceeds the outstanding advance balance {1}.").format(
+				value, round(outstanding, 2)
+			)
 		)
 	s.db_set("advance_deduction", value)
 	s.reload()
@@ -322,7 +331,9 @@ def payroll_xlsx(company: str, payroll_period: str):
 		c = ws.cell(row=r, column=ci, value=round(totals.get(key, 0.0)))
 		c.number_format = "#,##0"
 		c.font = Font(bold=True)
-	ws.cell(row=r + 1, column=1, value=f"{_('Amounts in')} {base_ccy}").font = Font(italic=True, size=9, color="888888")
+	ws.cell(row=r + 1, column=1, value=f"{_('Amounts in')} {base_ccy}").font = Font(
+		italic=True, size=9, color="888888"
+	)
 	ws.freeze_panes = "A3"
 
 	buf = io.BytesIO()

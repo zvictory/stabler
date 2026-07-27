@@ -30,6 +30,7 @@ Design decisions
 * The guard must be **idempotent** — calling it twice on the same doc state
   must yield the same result.
 """
+
 from __future__ import annotations
 
 import json
@@ -46,6 +47,7 @@ _SETTINGS = "Stabler Settings"
 # Config
 # ---------------------------------------------------------------------------
 
+
 def _enforcement_enabled() -> bool:
 	"""Fast check: is SoD enforcement switched on in Stabler Settings?"""
 	if not frappe.db.exists("DocType", _SETTINGS):
@@ -57,6 +59,7 @@ def _enforcement_enabled() -> bool:
 # ---------------------------------------------------------------------------
 # Prior-actors derivation helpers
 # ---------------------------------------------------------------------------
+
 
 def _safe_owner(doctype: str, name: str) -> str | None:
 	"""Fetch the owner of any named document; return None on any error."""
@@ -171,14 +174,14 @@ def _amended_from_owner(doc) -> str | None:
 # ``method`` is the string Frappe passes as the second arg to doc_events hooks.
 _ACTION_MAP: dict[tuple[str, str], str] = {
 	# Approval flow
-	("Payment Entry",    "before_submit"):  "pay",
-	("Journal Entry",    "before_submit"):  "pay",
-	("Purchase Invoice", "before_submit"):  "pay",
-	("Purchase Order",   "before_submit"):  "approve",
-	("Purchase Receipt", "before_submit"):  "receive",
-	("Material Request", "before_submit"):  "approve",
-	("Sales Invoice",    "before_submit"):  "approve",
-	("Expense Claim",    "before_submit"):  "approve",
+	("Payment Entry", "before_submit"): "pay",
+	("Journal Entry", "before_submit"): "pay",
+	("Purchase Invoice", "before_submit"): "pay",
+	("Purchase Order", "before_submit"): "approve",
+	("Purchase Receipt", "before_submit"): "receive",
+	("Material Request", "before_submit"): "approve",
+	("Sales Invoice", "before_submit"): "approve",
+	("Expense Claim", "before_submit"): "approve",
 }
 # Universal fallback: any before_submit = "approve" unless overridden above.
 _UNIVERSAL_SUBMIT_ACTION = "approve"
@@ -193,12 +196,14 @@ def _action_for(doctype: str, method: str) -> str:
 # Prior-actors map builder
 # ---------------------------------------------------------------------------
 
+
 def _build_prior_actors(doc, action: str) -> dict[str, list[str]]:
 	"""Collect all prior actors for this document into a map keyed by action.
 
 	Only actors that are non-empty strings are included. The result feeds
 	directly into ``conflicting_actor()``.
 	"""
+
 	def _add(mapping: dict, key: str, user: str | None) -> None:
 		if user:
 			mapping.setdefault(key, [])
@@ -235,6 +240,7 @@ def _build_prior_actors(doc, action: str) -> dict[str, list[str]]:
 # ---------------------------------------------------------------------------
 # Public guard
 # ---------------------------------------------------------------------------
+
 
 def assert_no_sod_conflict(doc, method: str) -> None:
 	"""Frappe doc_events hook: block conflicting lifecycle actions.

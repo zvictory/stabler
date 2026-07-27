@@ -75,7 +75,11 @@ def add_holiday(holiday_list: str, holiday_date: str, description: str = "", wee
 		return {"added": False, "reason": "exists"}
 	doc.append(
 		"holidays",
-		{"holiday_date": holiday_date, "description": description or _("Holiday"), "weekly_off": int(weekly_off or 0)},
+		{
+			"holiday_date": holiday_date,
+			"description": description or _("Holiday"),
+			"weekly_off": int(weekly_off or 0),
+		},
 	)
 	doc.total_holidays = len(doc.holidays)
 	doc.save(ignore_permissions=False)

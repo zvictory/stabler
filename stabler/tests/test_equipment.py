@@ -42,7 +42,9 @@ class TestSummarise(unittest.TestCase):
 		self.assertEqual(got, {"total": 4, "covered": 2, "expired": 1, "none": 1})
 
 	def test_empty(self):
-		self.assertEqual(summarise_coverage([], "2026-06-23"), {"total": 0, "covered": 0, "expired": 0, "none": 0})
+		self.assertEqual(
+			summarise_coverage([], "2026-06-23"), {"total": 0, "covered": 0, "expired": 0, "none": 0}
+		)
 
 
 if __name__ == "__main__":

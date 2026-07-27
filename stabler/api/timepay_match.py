@@ -117,9 +117,7 @@ def link_timepay_user(device_user_id: str, employee: str) -> dict:
 		limit=1,
 	)
 	if clash:
-		frappe.throw(
-			_("TimePay id {0} is already linked to {1}.").format(device_user_id, clash[0])
-		)
+		frappe.throw(_("TimePay id {0} is already linked to {1}.").format(device_user_id, clash[0]))
 
 	parked = frappe.get_all(
 		_RAW_EVENT,

@@ -27,9 +27,7 @@ def _assert_can_read(doctype: str, name: str) -> None:
 	and User-Permission (company) row filters — call this before any
 	get_doc/sql that fetches a single named record."""
 	if not frappe.has_permission(doctype, "read", doc=name):
-		raise frappe.PermissionError(
-			_("Not permitted to read {0} {1}").format(doctype, name)
-		)
+		raise frappe.PermissionError(_("Not permitted to read {0} {1}").format(doctype, name))
 
 
 def _assert_can_write(doctype: str, name: str, ptype: str = "write") -> None:
@@ -39,9 +37,7 @@ def _assert_can_write(doctype: str, name: str, ptype: str = "write") -> None:
 	with get_doc and then mutating — or using ignore_permissions — can bypass
 	that. Call this explicitly. `ptype` may be write / submit / cancel / delete."""
 	if not frappe.has_permission(doctype, ptype, doc=name):
-		raise frappe.PermissionError(
-			_("Not permitted to {0} {1} {2}").format(ptype, doctype, name)
-		)
+		raise frappe.PermissionError(_("Not permitted to {0} {1} {2}").format(ptype, doctype, name))
 
 
 def _validate_money_overrides(patch: dict, *, row_label: str) -> None:
@@ -61,16 +57,11 @@ def check_concurrency(doctype: str, name: str, modified: str | None = None) -> N
 	if not db_modified:
 		return
 	if not modified:
-		frappe.throw(
-			_("Stale request: reload the document.")
-		)
+		frappe.throw(_("Stale request: reload the document."))
 	from frappe.utils import get_datetime_str
+
 	if get_datetime_str(db_modified) != get_datetime_str(modified):
 		frappe.local.response["doctype"] = doctype
 		frappe.local.response["name"] = name
 		exc = getattr(frappe, "TimestampMismatchError", frappe.ValidationError)
-		frappe.throw(
-			_("This document was changed by someone else. Reload to see the latest."),
-			exc=exc
-		)
-
+		frappe.throw(_("This document was changed by someone else. Reload to see the latest."), exc=exc)

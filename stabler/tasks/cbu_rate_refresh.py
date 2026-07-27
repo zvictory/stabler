@@ -81,9 +81,7 @@ def _upsert_rate(from_currency: str, rate: float, on_date: datetime.date) -> boo
 		# Reciprocal computed in Decimal (not float) so weak-currency inverses
 		# (1 UZS -> 0.0000773 USD) keep full significance before the 10-dp
 		# quantize; float 1.0/rate drops sub-unit precision on large divisors.
-		inverse = (Decimal(1) / Decimal(str(rate))).quantize(
-			Decimal("1E-10"), rounding=ROUND_HALF_UP
-		)
+		inverse = (Decimal(1) / Decimal(str(rate))).quantize(Decimal("1E-10"), rounding=ROUND_HALF_UP)
 		_upsert_pair(_BASE_CURRENCY, from_currency, float(inverse), on_date)
 	return primary
 
@@ -109,7 +107,7 @@ def fetch_and_store() -> dict[str, Any]:
 			continue
 		try:
 			rate = float(row.get("Rate"))
-		except (TypeError, ValueError):
+		except TypeError, ValueError:
 			missing.append(code)
 			continue
 
@@ -147,7 +145,7 @@ def _fetch_cbu_for(on_date: datetime.date) -> dict[str, float]:
 		try:
 			if code in _TRACKED:
 				out[code] = float(row.get("Rate"))
-		except (TypeError, ValueError):
+		except TypeError, ValueError:
 			continue
 	return out
 
@@ -231,7 +229,11 @@ def fill_gap(start_date: str | None = None, end_date: str | None = None) -> dict
 		last_date = latest["date"]
 		if not isinstance(last_date, datetime.date):
 			last_date = datetime.date.fromisoformat(str(last_date)[:10])
-		start = datetime.date.fromisoformat(start_date) if start_date else (last_date + datetime.timedelta(days=1))
+		start = (
+			datetime.date.fromisoformat(start_date)
+			if start_date
+			else (last_date + datetime.timedelta(days=1))
+		)
 		rate = float(latest["exchange_rate"])
 		filled = 0
 		cur = start

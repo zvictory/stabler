@@ -25,31 +25,39 @@ def execute():
 		if not frappe.db.exists("Custom Field", {"dt": "CRM Deal", "fieldname": spec["fieldname"]}):
 			fields.append(spec)
 
-	add({
-		"fieldname": "tender_no",
-		"label": "Tender No",
-		"fieldtype": "Data",
-		"insert_after": "deal_value",
-	})
-	add({
-		"fieldname": "tender_deadline",
-		"label": "Tender Deadline",
-		"fieldtype": "Date",
-		"insert_after": "tender_no",
-	})
-	add({
-		"fieldname": "bid_value",
-		"label": "Bid Value",
-		"fieldtype": "Currency",
-		"insert_after": "tender_deadline",
-	})
-	add({
-		"fieldname": "tender_source",
-		"label": "Tender Source",
-		"fieldtype": "Select",
-		"options": "\nTelegram\nWeb\nPortal\nDirect",
-		"insert_after": "bid_value",
-	})
+	add(
+		{
+			"fieldname": "tender_no",
+			"label": "Tender No",
+			"fieldtype": "Data",
+			"insert_after": "deal_value",
+		}
+	)
+	add(
+		{
+			"fieldname": "tender_deadline",
+			"label": "Tender Deadline",
+			"fieldtype": "Date",
+			"insert_after": "tender_no",
+		}
+	)
+	add(
+		{
+			"fieldname": "bid_value",
+			"label": "Bid Value",
+			"fieldtype": "Currency",
+			"insert_after": "tender_deadline",
+		}
+	)
+	add(
+		{
+			"fieldname": "tender_source",
+			"label": "Tender Source",
+			"fieldtype": "Select",
+			"options": "\nTelegram\nWeb\nPortal\nDirect",
+			"insert_after": "bid_value",
+		}
+	)
 
 	if fields:
 		create_custom_fields({"CRM Deal": fields}, ignore_validate=True)

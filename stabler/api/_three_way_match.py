@@ -17,6 +17,7 @@ Everything here is a deterministic function of its inputs, so it is unit tested
 with no bench. The Frappe layer (``_accounts.validate_purchase_invoice``) fetches
 the PO/PR rows and feeds normalized dicts in.
 """
+
 from __future__ import annotations
 
 # Exception severities. "block" stops submission when enforcement is on;
@@ -28,7 +29,7 @@ WARN = "warn"
 def _f(v) -> float:
 	try:
 		return float(v)
-	except (TypeError, ValueError):
+	except TypeError, ValueError:
 		return 0.0
 
 

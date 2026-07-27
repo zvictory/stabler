@@ -21,7 +21,7 @@ from __future__ import annotations
 def _amt(v) -> float:
 	try:
 		return float(v or 0)
-	except (TypeError, ValueError):
+	except TypeError, ValueError:
 		return 0.0
 
 
@@ -44,9 +44,9 @@ def amendment_delta(original: dict, amended: dict, penalty=0) -> dict:
 		"vat_delta": vat_delta,
 		"penalty": pen,
 		# GL routing:
-		"capitalized_delta": capitalized,        # → delta LCV → Stock In Hand
-		"input_vat_delta": vat_delta,            # → Input VAT (asset)
-		"pl_expense": pen,                        # → P&L (penalty only)
+		"capitalized_delta": capitalized,  # → delta LCV → Stock In Hand
+		"input_vat_delta": vat_delta,  # → Input VAT (asset)
+		"pl_expense": pen,  # → P&L (penalty only)
 		"total_extra_payable": round(capitalized + vat_delta + pen, 2),
 	}
 
@@ -56,21 +56,27 @@ def gl_routing(delta: dict) -> list[dict]:
 	d = delta or {}
 	lines = []
 	if _amt(d.get("capitalized_delta")):
-		lines.append({
-			"bucket": "capitalized",
-			"amount": _amt(d.get("capitalized_delta")),
-			"account_hint": "Expenses Included In Valuation → Stock (delta LCV)",
-		})
+		lines.append(
+			{
+				"bucket": "capitalized",
+				"amount": _amt(d.get("capitalized_delta")),
+				"account_hint": "Expenses Included In Valuation → Stock (delta LCV)",
+			}
+		)
 	if _amt(d.get("input_vat_delta")):
-		lines.append({
-			"bucket": "input_vat",
-			"amount": _amt(d.get("input_vat_delta")),
-			"account_hint": "Input VAT / recoverable (asset — never stock)",
-		})
+		lines.append(
+			{
+				"bucket": "input_vat",
+				"amount": _amt(d.get("input_vat_delta")),
+				"account_hint": "Input VAT / recoverable (asset — never stock)",
+			}
+		)
 	if _amt(d.get("pl_expense")):
-		lines.append({
-			"bucket": "penalty",
-			"amount": _amt(d.get("pl_expense")),
-			"account_hint": "Customs penalty (P&L expense — never stock)",
-		})
+		lines.append(
+			{
+				"bucket": "penalty",
+				"amount": _amt(d.get("pl_expense")),
+				"account_hint": "Customs penalty (P&L expense — never stock)",
+			}
+		)
 	return lines

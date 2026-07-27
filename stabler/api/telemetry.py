@@ -41,12 +41,36 @@ _ALLOWED_EVENTS = frozenset(FUNNEL_EVENTS) | {CTA_EVENT}
 _MAX_PROPS = 20
 _MAX_STR = 200
 # Prop keys that could carry PII are dropped defensively even if a caller sends them.
-_PII_KEYS = frozenset({
-	"email", "phone", "mobile", "tel", "name", "full_name", "fio", "first_name",
-	"last_name", "address", "tax_id", "tin", "inn", "password", "pwd", "token",
-	"secret", "user", "user_id", "customer", "customer_name", "supplier",
-	"supplier_name", "party", "party_name", "ip",
-})
+_PII_KEYS = frozenset(
+	{
+		"email",
+		"phone",
+		"mobile",
+		"tel",
+		"name",
+		"full_name",
+		"fio",
+		"first_name",
+		"last_name",
+		"address",
+		"tax_id",
+		"tin",
+		"inn",
+		"password",
+		"pwd",
+		"token",
+		"secret",
+		"user",
+		"user_id",
+		"customer",
+		"customer_name",
+		"supplier",
+		"supplier_name",
+		"party",
+		"party_name",
+		"ip",
+	}
+)
 
 
 def _anon_company(company: str) -> str:

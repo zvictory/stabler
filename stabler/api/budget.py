@@ -12,6 +12,7 @@ the read side for the Stabler SPA.
 
 Guest is rejected at the whitelist level.
 """
+
 from __future__ import annotations
 
 import frappe
@@ -36,7 +37,7 @@ def _validate_dates(from_date: str, to_date: str):
 	"""Return (start, end) as date strings; throw on bad input."""
 	try:
 		start = getdate(from_date) if from_date else getdate(today())
-		end   = getdate(to_date)   if to_date   else getdate(today())
+		end = getdate(to_date) if to_date else getdate(today())
 	except Exception:
 		frappe.throw(_("Invalid date value."), frappe.ValidationError)
 	if end < start:
@@ -47,6 +48,7 @@ def _validate_dates(from_date: str, to_date: str):
 # ---------------------------------------------------------------------------
 # list_budgets
 # ---------------------------------------------------------------------------
+
 
 @frappe.whitelist()
 def list_budgets(
@@ -76,7 +78,10 @@ def list_budgets(
 		"Budget",
 		filters=filters,
 		fields=[
-			"name", "company", "fiscal_year", "cost_center",
+			"name",
+			"company",
+			"fiscal_year",
+			"cost_center",
 			"action_if_annual_budget_exceeded",
 			"action_if_accumulated_monthly_budget_exceeded",
 			"docstatus",
@@ -90,6 +95,7 @@ def list_budgets(
 # ---------------------------------------------------------------------------
 # get_budget
 # ---------------------------------------------------------------------------
+
 
 @frappe.whitelist()
 def get_budget(name: str) -> dict:
@@ -105,6 +111,7 @@ def get_budget(name: str) -> dict:
 # ---------------------------------------------------------------------------
 # budget_vs_actual — main report
 # ---------------------------------------------------------------------------
+
 
 @frappe.whitelist()
 def budget_vs_actual(
@@ -156,8 +163,8 @@ def budget_vs_actual(
 	)
 
 	# Map (account, cost_center) → budgeted amount (sum across matching docs)
-	budget_map: dict = {}		# key: (account, cost_center)
-	account_type_map: dict = {}	# key: account → account_type
+	budget_map: dict = {}  # key: (account, cost_center)
+	account_type_map: dict = {}  # key: account → account_type
 
 	for bdoc in budget_docs:
 		ba_rows = frappe.get_all(
@@ -203,7 +210,7 @@ def budget_vs_actual(
 		as_dict=True,
 	)
 
-	actuals_map: dict = {}	# key: (account, cost_center) → net_movement
+	actuals_map: dict = {}  # key: (account, cost_center) → net_movement
 	for row in actuals_rows:
 		key = (row.account, row.cost_center or "")
 		actuals_map[key] = flt(row.net_movement)
@@ -219,15 +226,17 @@ def budget_vs_actual(
 		if not acc_type:
 			acc_type = frappe.get_cached_value("Account", account, "account_type") or "Expense"
 			account_type_map[account] = acc_type
-		input_rows.append({
-			"account": account,
-			"cost_center": cc,
-			"period": f"{start} – {end}",
-			"budget": budget_map.get((account, cc), 0.0),
-			"actual": actuals_map.get((account, cc), 0.0),
-			"account_type": acc_type,
-			"currency": base_ccy,
-		})
+		input_rows.append(
+			{
+				"account": account,
+				"cost_center": cc,
+				"period": f"{start} – {end}",
+				"budget": budget_map.get((account, cc), 0.0),
+				"actual": actuals_map.get((account, cc), 0.0),
+				"account_type": acc_type,
+				"currency": base_ccy,
+			}
+		)
 
 	# -------------------------------------------------------------------
 	# 4. Pure variance calc
@@ -238,14 +247,14 @@ def budget_vs_actual(
 	# 5. Shape response (mirrors reports.py _shape convention)
 	# -------------------------------------------------------------------
 	columns = [
-		{"key": "account",      "label": _("Account"),      "type": "text"},
-		{"key": "cost_center",  "label": _("Cost Centre"),  "type": "text"},
-		{"key": "period",       "label": _("Period"),       "type": "text"},
-		{"key": "budget",       "label": _("Budget"),       "type": "money",   "align": "end"},
-		{"key": "actual",       "label": _("Actual"),       "type": "money",   "align": "end"},
-		{"key": "variance",     "label": _("Variance"),     "type": "money",   "align": "end"},
-		{"key": "variance_pct", "label": _("Var %"),        "type": "percent", "align": "end"},
-		{"key": "status",       "label": _("Status"),       "type": "badge"},
+		{"key": "account", "label": _("Account"), "type": "text"},
+		{"key": "cost_center", "label": _("Cost Centre"), "type": "text"},
+		{"key": "period", "label": _("Period"), "type": "text"},
+		{"key": "budget", "label": _("Budget"), "type": "money", "align": "end"},
+		{"key": "actual", "label": _("Actual"), "type": "money", "align": "end"},
+		{"key": "variance", "label": _("Variance"), "type": "money", "align": "end"},
+		{"key": "variance_pct", "label": _("Var %"), "type": "percent", "align": "end"},
+		{"key": "status", "label": _("Status"), "type": "badge"},
 	]
 
 	# Convert Decimal → float for JSON serialisation
@@ -266,10 +275,12 @@ def budget_vs_actual(
 		"to": end,
 		"fiscal_year": fiscal_year or "",
 		"cost_center": cost_center or "",
-		"favorable_count":   report["favorable_count"],
+		"favorable_count": report["favorable_count"],
 		"unfavorable_count": report["unfavorable_count"],
-		"on_budget_count":   report["on_budget_count"],
-		"note": _("Submitted budgets vs GL actuals (debit − credit). Income favorable = actual > budget; cost favorable = actual < budget."),
+		"on_budget_count": report["on_budget_count"],
+		"note": _(
+			"Submitted budgets vs GL actuals (debit − credit). Income favorable = actual > budget; cost favorable = actual < budget."
+		),
 	}
 
 	return {

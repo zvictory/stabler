@@ -127,9 +127,18 @@ def resolve_transport_source(
 
 
 def build_import_expense_pi_payload(
-	*, company, supplier, currency, amount, category, description, expense_name,
-	commercial_invoice=None, container=None, truck=None,
-	item_code=IMPORT_SERVICE_ITEM_CODE
+	*,
+	company,
+	supplier,
+	currency,
+	amount,
+	category,
+	description,
+	expense_name,
+	commercial_invoice=None,
+	container=None,
+	truck=None,
+	item_code=IMPORT_SERVICE_ITEM_CODE,
 ):
 	"""Build the DRAFT service Purchase Invoice dict for a non-transport Import Expense.
 
@@ -193,9 +202,7 @@ def allocate_amount(total, weights) -> list[float]:
 	return out
 
 
-def build_advance_pe_payload(
-	*, company, supplier, currency, total_amount, po_rows, container_name
-) -> dict:
+def build_advance_pe_payload(*, company, supplier, currency, total_amount, po_rows, container_name) -> dict:
 	"""Build the DRAFT Payment Entry dict for the 70% advance on Iran arrival.
 
 	``po_rows`` is a list of ``{"purchase_order": name, "grand_total": number}``.
@@ -234,8 +241,15 @@ def build_advance_pe_payload(
 
 
 def build_transport_pi_payload(
-	*, company, supplier, currency, transport_cost, truck_name,
-	commercial_invoice=None, import_expense=None, item_code=XBORDER_ITEM_CODE
+	*,
+	company,
+	supplier,
+	currency,
+	transport_cost,
+	truck_name,
+	commercial_invoice=None,
+	import_expense=None,
+	item_code=XBORDER_ITEM_CODE,
 ):
 	"""Build the DRAFT service Purchase Invoice dict for cross-border transport.
 

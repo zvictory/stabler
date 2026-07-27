@@ -82,7 +82,7 @@ def verify_init_data(init_data: str, bot_token: str, max_age_seconds: int = 8640
 		return None
 	try:
 		auth_date = int(auth_date_raw)
-	except (TypeError, ValueError):
+	except TypeError, ValueError:
 		return None
 	if time.time() - auth_date > max_age_seconds:
 		return None
@@ -92,7 +92,7 @@ def verify_init_data(init_data: str, bot_token: str, max_age_seconds: int = 8640
 		return None
 	try:
 		user = json.loads(user_raw)
-	except (TypeError, ValueError):
+	except TypeError, ValueError:
 		return None
 	if not isinstance(user, dict):
 		return None
@@ -124,9 +124,7 @@ def _resolve_kassir(telegram_user_id: str):
 
 	if not telegram_user_id:
 		return None
-	name = frappe.db.get_value(
-		"Stabler Kassir", {"telegram_user_id": telegram_user_id, "enabled": 1}, "name"
-	)
+	name = frappe.db.get_value("Stabler Kassir", {"telegram_user_id": telegram_user_id, "enabled": 1}, "name")
 	if not name:
 		return None
 	return frappe.get_doc("Stabler Kassir", name)
@@ -200,8 +198,7 @@ def _build_rows(company: str, accounts: list[str], from_date: str, to_date: str)
 	all_rows: list[dict] = []
 	for account in accounts:
 		info = (
-			frappe.db.get_value("Account", account, ["account_name", "account_currency"], as_dict=True)
-			or {}
+			frappe.db.get_value("Account", account, ["account_name", "account_currency"], as_dict=True) or {}
 		)
 		label = info.get("account_name") or account
 		txns = money.account_transactions(company, account, from_date=from_date, to_date=to_date, limit=500)

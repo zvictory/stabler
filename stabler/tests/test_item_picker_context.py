@@ -48,8 +48,7 @@ class TestItemPickerContext(unittest.TestCase):
 			has_ctx_literal = f'context: "{ctx}"' in src
 			self.assertTrue(
 				has_searcher or has_ctx_literal,
-				f"{rel} must pick items with context '{ctx}' "
-				f"(itemSearcher(\"{ctx}\") or context: \"{ctx}\").",
+				f'{rel} must pick items with context \'{ctx}\' (itemSearcher("{ctx}") or context: "{ctx}").',
 			)
 
 			# Must NOT contain a context-less list_items call (the regression).

@@ -19,11 +19,13 @@ margin fields from a payload dict (or list of dicts) when the caller's role set
 lacks cost visibility. The set of masked field names is a module-level constant
 so callers can also use it for SQL projection.
 """
+
 from __future__ import annotations
 
 # ---------------------------------------------------------------------------
 # Gap #1 (existing) — company scoping
 # ---------------------------------------------------------------------------
+
 
 def needs_company_restriction(allowed) -> bool:
 	"""True only when there is a non-empty explicit allow-list to enforce."""
@@ -43,6 +45,7 @@ def is_company_allowed(company, allowed) -> bool:
 # ---------------------------------------------------------------------------
 # Gap #46 — owner / territory scoping for masters (Customer, Supplier)
 # ---------------------------------------------------------------------------
+
 
 def needs_owner_restriction(allowed_owners) -> bool:
 	"""True only when a non-empty owner allow-list is present."""
@@ -104,10 +107,7 @@ def master_allowed(owner, territory, allowed_owners, allowed_territories) -> boo
 	independently. When a restriction list is empty/None that axis is not
 	applied (safe-by-default on each axis).
 	"""
-	return (
-		owner_allowed(owner, allowed_owners)
-		and territory_allowed(territory, allowed_territories)
-	)
+	return owner_allowed(owner, allowed_owners) and territory_allowed(territory, allowed_territories)
 
 
 # ---------------------------------------------------------------------------

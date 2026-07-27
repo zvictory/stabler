@@ -10,19 +10,19 @@ from frappe.custom.doctype.custom_field.custom_field import create_custom_fields
 
 
 def execute() -> None:
-    create_custom_fields(
-        {
-            "Work Order": [
-                {
-                    "fieldname": "operator",
-                    "label": "Operator",
-                    "fieldtype": "Link",
-                    "options": "User",
-                    "insert_after": "wip_warehouse",
-                    "allow_on_submit": 1,
-                    "description": "Shop-floor operator (line) responsible for this Work Order",
-                }
-            ],
-        },
-        update=True,
-    )
+	create_custom_fields(
+		{
+			"Work Order": [
+				{
+					"fieldname": "operator",
+					"label": "Operator",
+					"fieldtype": "Link",
+					"options": "User",
+					"insert_after": "wip_warehouse",
+					"allow_on_submit": 1,
+					"description": "Shop-floor operator (line) responsible for this Work Order",
+				}
+			],
+		},
+		update=True,
+	)

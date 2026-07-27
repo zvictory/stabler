@@ -19,6 +19,7 @@ Phase 2 additions:
     vouchers (or allocate a partial amount to a single voucher) using the pure
     ``allocate_partial`` helper so allocations sum exactly to the bank line.
 """
+
 from __future__ import annotations
 
 import frappe
@@ -134,17 +135,19 @@ def _fetch_pe_candidates(
 	)
 	candidates = []
 	for r in rows:
-		candidates.append({
-			"voucher_type": "Payment Entry",
-			"voucher_no": r.name,
-			"amount": flt(r.amount),
-			"date": str(r.posting_date),
-			"reference": r.reference_no,
-			"party_type": r.party_type,
-			"party": r.party,
-			"party_name": r.party_name or r.party,
-			"party_inn": _fetch_party_inn(r.party_type, r.party),
-		})
+		candidates.append(
+			{
+				"voucher_type": "Payment Entry",
+				"voucher_no": r.name,
+				"amount": flt(r.amount),
+				"date": str(r.posting_date),
+				"reference": r.reference_no,
+				"party_type": r.party_type,
+				"party": r.party,
+				"party_name": r.party_name or r.party,
+				"party_inn": _fetch_party_inn(r.party_type, r.party),
+			}
+		)
 	return candidates
 
 
@@ -190,25 +193,30 @@ def _fetch_je_candidates(
 		party_name = ""
 		if r.party_type and r.party:
 			try:
-				party_name = frappe.db.get_value(
-					"Supplier" if r.party_type == "Supplier" else "Customer",
-					r.party,
-					"supplier_name" if r.party_type == "Supplier" else "customer_name",
-				) or r.party
+				party_name = (
+					frappe.db.get_value(
+						"Supplier" if r.party_type == "Supplier" else "Customer",
+						r.party,
+						"supplier_name" if r.party_type == "Supplier" else "customer_name",
+					)
+					or r.party
+				)
 			except Exception:
 				party_name = r.party or ""
-		candidates.append({
-			"voucher_type": "Journal Entry",
-			"voucher_no": r.name,
-			"amount": flt(r.amount),
-			"date": str(r.posting_date),
-			# Use cheque_no as the reference identifier for JEs (matches bank ref fields)
-			"reference": r.cheque_no or "",
-			"party_type": r.party_type or "",
-			"party": r.party or "",
-			"party_name": party_name,
-			"party_inn": _fetch_party_inn(r.party_type, r.party),
-		})
+		candidates.append(
+			{
+				"voucher_type": "Journal Entry",
+				"voucher_no": r.name,
+				"amount": flt(r.amount),
+				"date": str(r.posting_date),
+				# Use cheque_no as the reference identifier for JEs (matches bank ref fields)
+				"reference": r.cheque_no or "",
+				"party_type": r.party_type or "",
+				"party": r.party or "",
+				"party_name": party_name,
+				"party_inn": _fetch_party_inn(r.party_type, r.party),
+			}
+		)
 	return candidates
 
 
@@ -327,7 +335,7 @@ def reconcile_partial(
 
 	    [
 	        {"doctype": "Payment Entry", "name": "PE-001", "amount": 500000},
-	        {"doctype": "Journal Entry",  "name": "JV-002", "amount": 250000},
+	        {"doctype": "Journal Entry", "name": "JV-002", "amount": 250000},
 	    ]
 
 	Each ``amount`` is the *requested* allocation for that voucher.  The helper
@@ -426,4 +434,8 @@ def unreconcile(bank_transaction: str, payment_name: str, modified: str | None =
 	bt.save()
 	frappe.db.commit()
 	bt.reload()
-	return {"bank_transaction": bt.name, "status": bt.status, "unallocated_amount": flt(bt.unallocated_amount)}
+	return {
+		"bank_transaction": bt.name,
+		"status": bt.status,
+		"unallocated_amount": flt(bt.unallocated_amount),
+	}

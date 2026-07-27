@@ -30,7 +30,11 @@ def stabler_login(usr: str, pwd: str):
 		frappe.throw(_("Invalid username or password. Please check your credentials."))
 
 	user_doc = frappe.get_doc("User", frappe.session.user)
-	company = frappe.db.get_single_value("Stabler Settings", "default_company") or frappe.db.get_value("Company", {"is_group": 0}, "name") or "MSA"
+	company = (
+		frappe.db.get_single_value("Stabler Settings", "default_company")
+		or frappe.db.get_value("Company", {"is_group": 0}, "name")
+		or "MSA"
+	)
 
 	return {
 		"message": "Logged In",
@@ -42,7 +46,7 @@ def stabler_login(usr: str, pwd: str):
 			"language": user_doc.language or "en",
 		},
 		"company": company,
-		"redirect_to": "/stabler#/dashboard"
+		"redirect_to": "/stabler#/dashboard",
 	}
 
 
@@ -209,8 +213,7 @@ def boot():
 	else:
 		override = _user_allowed_modules(user)
 		allowed_modules = override or [
-			mod for mod, allow in _MODULE_ROLES.items()
-			if "All" in allow or any(r in roles for r in allow)
+			mod for mod, allow in _MODULE_ROLES.items() if "All" in allow or any(r in roles for r in allow)
 		]
 
 	return {

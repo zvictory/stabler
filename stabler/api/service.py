@@ -152,11 +152,15 @@ def _latest_visit_state(visits: list[dict], current_date=None) -> dict:
 def _serial_under_coverage(serial_no: str | None) -> bool:
 	if not serial_no or not frappe.db.exists("Serial No", serial_no):
 		return False
-	serial = frappe.db.get_value("Serial No", serial_no, ["warranty_expiry_date", "amc_expiry_date"], as_dict=True)
+	serial = frappe.db.get_value(
+		"Serial No", serial_no, ["warranty_expiry_date", "amc_expiry_date"], as_dict=True
+	)
 	if not serial:
 		return False
 	current = getdate(today())
-	return any(getdate(value) >= current for value in (serial.warranty_expiry_date, serial.amc_expiry_date) if value)
+	return any(
+		getdate(value) >= current for value in (serial.warranty_expiry_date, serial.amc_expiry_date) if value
+	)
 
 
 def _company_for_visit(doc) -> str | None:
@@ -256,7 +260,9 @@ def list_tickets(
 		conds.append("i.opening_date <= %(to_date)s")
 		params["to_date"] = getdate(to_date)
 
-	customer_name_expr = "c.customer_name" if frappe.db.has_column("Customer", "customer_name") else "i.customer"
+	customer_name_expr = (
+		"c.customer_name" if frappe.db.has_column("Customer", "customer_name") else "i.customer"
+	)
 	resolution_expr = "i.resolution_by" if _has_field("Issue", "resolution_by") else "NULL"
 	serial_expr = "i.custom_serial_no" if _has_field("Issue", "custom_serial_no") else "NULL"
 	tech_expr = "i.custom_tech_state" if _has_field("Issue", "custom_tech_state") else "NULL"
@@ -699,7 +705,7 @@ def map_feed(company: str, month: str | None = None, service_person: str | None 
 	if month:
 		try:
 			year, mon = (int(x) for x in str(month).split("-")[:2])
-		except (ValueError, TypeError):
+		except ValueError, TypeError:
 			frappe.throw(_("Invalid month: {0}").format(month))
 	else:
 		d = getdate(today())
@@ -883,7 +889,9 @@ def create_material_issue_from_visit(
 		if row["uom"]:
 			item.uom = row["uom"]
 		# set_missing_values() does NOT populate conversion_factor, only validates it.
-		item.conversion_factor = get_conversion_factor(row["item_code"], row["uom"] or None).get("conversion_factor") or 1.0
+		item.conversion_factor = (
+			get_conversion_factor(row["item_code"], row["uom"] or None).get("conversion_factor") or 1.0
+		)
 		if row["basic_rate"] is not None:
 			item.basic_rate = row["basic_rate"]
 
@@ -937,6 +945,7 @@ def unbilled_visits(company: str, from_date: str | None = None, to_date: str | N
 # Equipment (ERPNext Serial No — fridges/freezers placed at customers)
 # ---------------------------------------------------------------------------
 
+
 def _serial_company_clause(company: str) -> tuple[str, dict]:
 	"""Serial No has a company field on standard ERPNext; guard for older schemas."""
 	if _has_field("Serial No", "company"):
@@ -965,7 +974,9 @@ def list_equipment(
 		conds.append("sn.customer = %(customer)s")
 		params["customer"] = customer
 	if search:
-		conds.append("(sn.name LIKE %(needle)s OR sn.item_code LIKE %(needle)s OR sn.item_name LIKE %(needle)s)")
+		conds.append(
+			"(sn.name LIKE %(needle)s OR sn.item_code LIKE %(needle)s OR sn.item_name LIKE %(needle)s)"
+		)
 		params["needle"] = f"%{search}%"
 	params["limit"] = limit
 
@@ -1006,10 +1017,21 @@ def equipment_detail(serial_no: str):
 	sn = frappe.db.get_value(
 		"Serial No",
 		serial_no,
-		["name", "item_code", "item_name", "customer", "warranty_expiry_date", "amc_expiry_date", "status", "warehouse"],
+		[
+			"name",
+			"item_code",
+			"item_name",
+			"customer",
+			"warranty_expiry_date",
+			"amc_expiry_date",
+			"status",
+			"warehouse",
+		],
 		as_dict=True,
 	)
-	serial_company = frappe.db.get_value("Serial No", serial_no, "company") if _has_field("Serial No", "company") else None
+	serial_company = (
+		frappe.db.get_value("Serial No", serial_no, "company") if _has_field("Serial No", "company") else None
+	)
 	_require_service(serial_company or _current_company())
 
 	tickets = []
@@ -1029,7 +1051,9 @@ def equipment_detail(serial_no: str):
 		"item_code": sn.item_code,
 		"item_name": sn.item_name,
 		"customer": sn.customer,
-		"customer_name": frappe.db.get_value("Customer", sn.customer, "customer_name") if sn.customer else None,
+		"customer_name": frappe.db.get_value("Customer", sn.customer, "customer_name")
+		if sn.customer
+		else None,
 		"warranty_expiry_date": str(sn.warranty_expiry_date) if sn.warranty_expiry_date else None,
 		"amc_expiry_date": str(sn.amc_expiry_date) if sn.amc_expiry_date else None,
 		"status": sn.status,
@@ -1043,6 +1067,7 @@ def equipment_detail(serial_no: str):
 # Dashboard
 # ---------------------------------------------------------------------------
 
+
 @frappe.whitelist()
 def dashboard_summary(company: str, month: str | None = None):
 	"""KPI roll-up for the Service dashboard: tickets by status, this month's
@@ -1052,7 +1077,7 @@ def dashboard_summary(company: str, month: str | None = None):
 	if month:
 		try:
 			year, mon = (int(x) for x in str(month).split("-")[:2])
-		except (ValueError, TypeError):
+		except ValueError, TypeError:
 			frappe.throw(_("Invalid month: {0}").format(month))
 	else:
 		d = getdate(today())
@@ -1098,7 +1123,9 @@ def dashboard_summary(company: str, month: str | None = None):
 			visits["partial"] += 1
 		else:
 			visits["open"] += 1
-	visits["completion_rate"] = round(100.0 * visits["completed"] / visits["total"], 1) if visits["total"] else 0.0
+	visits["completion_rate"] = (
+		round(100.0 * visits["completed"] / visits["total"], 1) if visits["total"] else 0.0
+	)
 
 	# Unbilled (billing queue) — Refill/Repair visits not yet invoiced/issued.
 	unbilled = frappe.db.sql(

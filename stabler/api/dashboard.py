@@ -66,11 +66,7 @@ def _dominant_currency(company: str) -> str:
 		""",
 		{"company": company},
 	)
-	result = (
-		rows[0][0]
-		if rows
-		else (frappe.db.get_value("Company", company, "default_currency") or "USD")
-	)
+	result = rows[0][0] if rows else (frappe.db.get_value("Company", company, "default_currency") or "USD")
 	frappe.cache().set_value(cache_key, result, expires_in_sec=300)
 	return result
 

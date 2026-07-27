@@ -18,6 +18,7 @@ Secrets: the Google service-account JSON is NEVER stored in a doctype field.
 It is read from ``site_config.json`` key ``stabler_gdrive_service_account``
 (an absolute path to the JSON, or the JSON object inline).
 """
+
 from __future__ import annotations
 
 import datetime
@@ -142,9 +143,7 @@ def apply_retention() -> dict:
 	sets = group_backup_sets(files)
 	keys = [s["key"] for s in sets]
 	now_ts = now_datetime().strftime("%Y%m%d_%H%M%S")
-	to_delete = set(
-		select_for_retention(keys, keep_days=cfg["retention_days"], keep_min=3, now_ts=now_ts)
-	)
+	to_delete = set(select_for_retention(keys, keep_days=cfg["retention_days"], keep_min=3, now_ts=now_ts))
 	path = _backups_path()
 	deleted = []
 	for f in files:
@@ -248,9 +247,7 @@ def _upload_file_to_drive(service, folder_id: str, path: str) -> str:
 		meta["parents"] = [folder_id]
 	media = MediaFileUpload(path, resumable=True)
 	created = (
-		service.files()
-		.create(body=meta, media_body=media, fields="id", supportsAllDrives=True)
-		.execute()
+		service.files().create(body=meta, media_body=media, fields="id", supportsAllDrives=True).execute()
 	)
 	return created.get("id")
 
@@ -264,9 +261,7 @@ def upload_latest_to_drive() -> dict:
 		frappe.throw(_("Set a Google Drive folder ID first."))
 	sa = _gdrive_service_account()
 	if not sa:
-		frappe.throw(
-			_("No Google service account configured (site_config: stabler_gdrive_service_account).")
-		)
+		frappe.throw(_("No Google service account configured (site_config: stabler_gdrive_service_account)."))
 	sets = group_backup_sets(_list_backup_files())
 	if not sets:
 		frappe.throw(_("No local backups to upload. Create one first."))
@@ -310,7 +305,6 @@ def backup_status() -> dict:
 		"restore_test_overdue": overdue,
 		"last_restore_test": str(cfg["last_restore_test"]) if cfg["last_restore_test"] else None,
 	}
-
 
 
 # --------------------------------------------------------------------------- #

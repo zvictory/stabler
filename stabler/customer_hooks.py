@@ -25,8 +25,7 @@ from stabler.stabler.customer_hierarchy import (
 _MESSAGES = {
 	ERR_SELF: lambda: _("A customer cannot be its own parent."),
 	ERR_PARENT_HAS_PARENT: lambda: _(
-		"The selected parent already belongs to another parent. "
-		"Only one level of hierarchy is allowed."
+		"The selected parent already belongs to another parent. Only one level of hierarchy is allowed."
 	),
 	ERR_HAS_CHILDREN: lambda: _(
 		"This customer already has child locations, so it cannot become a child itself."
@@ -45,9 +44,7 @@ def validate_hierarchy(doc, method=None):
 
 	# Reaching here means the field exists (the doc carried a value), so reading
 	# custom_parent_customer on the parent row is safe.
-	parent_has_own_parent = bool(
-		frappe.db.get_value("Customer", parent, "custom_parent_customer")
-	)
+	parent_has_own_parent = bool(frappe.db.get_value("Customer", parent, "custom_parent_customer"))
 	customer_has_children = bool(
 		doc.name and frappe.db.exists("Customer", {"custom_parent_customer": doc.name})
 	)
@@ -96,9 +93,10 @@ def check_sales_invoice_credit_limit(doc, method=None):
 
 	parent = frappe.db.get_value("Customer", customer, "custom_parent_customer")
 	root = parent or customer
-	chain = [root, *frappe.db.get_all(
-		"Customer", filters={"custom_parent_customer": root, "disabled": 0}, pluck="name"
-	)]
+	chain = [
+		root,
+		*frappe.db.get_all("Customer", filters={"custom_parent_customer": root, "disabled": 0}, pluck="name"),
+	]
 	# Standalone customer (no parent and no children of its own) → not a chain.
 	if not parent and len(chain) == 1:
 		return
@@ -106,9 +104,7 @@ def check_sales_invoice_credit_limit(doc, method=None):
 	# Root's group credit limit from ERPNext's native per-company child table.
 	if not frappe.db.exists("DocType", "Customer Credit Limit"):
 		return
-	limit = frappe.db.get_value(
-		"Customer Credit Limit", {"parent": root, "company": company}, "credit_limit"
-	)
+	limit = frappe.db.get_value("Customer Credit Limit", {"parent": root, "company": company}, "credit_limit")
 	if not flt(limit):
 		return  # 0 / absent → unlimited
 
@@ -145,8 +141,7 @@ def check_sales_invoice_credit_limit(doc, method=None):
 	if {"Accounts Manager", "System Manager"} & roles:
 		frappe.logger("stabler").warning(
 			"Parent-chain credit limit bypassed by %s for chain root %s: "
-			"projected %.2f > limit %.2f"
-			% (frappe.session.user, root, decision.projected, decision.limit)
+			"projected %.2f > limit %.2f" % (frappe.session.user, root, decision.projected, decision.limit)
 		)
 		return
 	frappe.throw(
@@ -167,7 +162,9 @@ def get_parent_credit_limit_status(customer: str, company: str | None = None) ->
 		frappe.throw(frappe._("Not permitted to read Customer: {0}").format(customer), frappe.PermissionError)
 
 	if not company:
-		company = frappe.defaults.get_user_default("Company") or frappe.get_all("Company", pluck="name", limit=1)[0]
+		company = (
+			frappe.defaults.get_user_default("Company") or frappe.get_all("Company", pluck="name", limit=1)[0]
+		)
 
 	parent = frappe.db.get_value("Customer", customer, "custom_parent_customer")
 	root = parent or customer
@@ -176,15 +173,17 @@ def get_parent_credit_limit_status(customer: str, company: str | None = None) ->
 	# Get the chain (active, non-disabled children)
 	chain = [root]
 	if frappe.db.has_column("Customer", "custom_parent_customer"):
-		chain.extend(frappe.db.get_all(
-			"Customer", filters={"custom_parent_customer": root, "disabled": 0}, pluck="name"
-		))
+		chain.extend(
+			frappe.db.get_all(
+				"Customer", filters={"custom_parent_customer": root, "disabled": 0}, pluck="name"
+			)
+		)
 
 	limit = 0.0
 	if frappe.db.exists("DocType", "Customer Credit Limit"):
-		limit = flt(frappe.db.get_value(
-			"Customer Credit Limit", {"parent": root, "company": company}, "credit_limit"
-		))
+		limit = flt(
+			frappe.db.get_value("Customer Credit Limit", {"parent": root, "company": company}, "credit_limit")
+		)
 
 	chain_outstanding = 0.0
 	if chain:
@@ -218,4 +217,3 @@ def get_parent_credit_limit_status(customer: str, company: str | None = None) ->
 		"remaining_limit": remaining,
 		"exceeded": exceeded,
 	}
-

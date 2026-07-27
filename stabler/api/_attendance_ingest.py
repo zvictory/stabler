@@ -96,12 +96,14 @@ def mapping_rows_from_reconciliation(matched_rows):
 		emp = str(r.get("erpnext_employee") or r.get("employee") or "").strip()
 		if not duid or not emp:
 			continue
-		out.append({
-			"device_user_id": duid,
-			"employee": emp,
-			"phone": (r.get("phone") or "").strip(),
-			"status": "Active",
-			"active_from": (r.get("active_from") or "").strip(),
-			"active_to": "",
-		})
+		out.append(
+			{
+				"device_user_id": duid,
+				"employee": emp,
+				"phone": (r.get("phone") or "").strip(),
+				"status": "Active",
+				"active_from": (r.get("active_from") or "").strip(),
+				"active_to": "",
+			}
+		)
 	return out

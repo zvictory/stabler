@@ -28,7 +28,9 @@ def execute():
 					"fieldname": "custom_tender_intake",
 					"label": "Tender Intake (plan)",
 					"fieldtype": "Long Text",
-					"insert_after": "custom_bid_pricing" if frappe.db.has_column("CRM Deal", "custom_bid_pricing") else "status",
+					"insert_after": "custom_bid_pricing"
+					if frappe.db.has_column("CRM Deal", "custom_bid_pricing")
+					else "status",
 					"read_only": 1,
 					"hidden": 1,
 					"description": (

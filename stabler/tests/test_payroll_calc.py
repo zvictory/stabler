@@ -93,6 +93,7 @@ KPI_V2_POLICIES = {
 # Fixture helpers (mirrors fixtures.ts named exports)
 # ---------------------------------------------------------------------------
 
+
 def _perfect_attendance_fixture():
 	return {
 		"employee": MOCK_EMPLOYEE,
@@ -121,10 +122,10 @@ def _heavy_adjustments_fixture():
 		"summary": MOCK_SUMMARY_PERFECT,
 		"adjustments": [
 			{"type": "BONUS", "amount": "1200000.00"},
-			{"type": "KPI",   "amount": "800000.00"},
-			{"type": "FINE",  "amount": "300000.00"},
-			{"type": "FINE",  "amount": "150000.00"},
-			{"type": "FINE",  "amount": "50000.00"},
+			{"type": "KPI", "amount": "800000.00"},
+			{"type": "FINE", "amount": "300000.00"},
+			{"type": "FINE", "amount": "150000.00"},
+			{"type": "FINE", "amount": "50000.00"},
 		],
 	}
 
@@ -151,8 +152,8 @@ def _zero_attended_fixture():
 		},
 		"adjustments": [
 			{"type": "BONUS", "amount": "1500000.00"},
-			{"type": "KPI",   "amount": "500000.00"},
-			{"type": "FINE",  "amount": "200000.00"},
+			{"type": "KPI", "amount": "500000.00"},
+			{"type": "FINE", "amount": "200000.00"},
 		],
 	}
 
@@ -190,6 +191,7 @@ def _negative_net_fixture():
 # Helper: run calculate_payroll and return (result_dict, breakdown_dict)
 # ---------------------------------------------------------------------------
 
+
 def _run(inp: dict):
 	res = calculate_payroll(inp)
 	return res, res["breakdown"]
@@ -198,6 +200,7 @@ def _run(inp: dict):
 # ===========================================================================
 # Case 1: Full month perfect attendance — base + standard allowances
 # ===========================================================================
+
 
 class TestCase01PerfectAttendance(unittest.TestCase):
 	"""Mirrors TS: 'computes full month perfect attendance with standard config'"""
@@ -247,6 +250,7 @@ class TestCase01PerfectAttendance(unittest.TestCase):
 # Case 2: Partial month (15/22) — prorated base
 # ===========================================================================
 
+
 class TestCase02PartialMonth(unittest.TestCase):
 	"""Mirrors TS: 'prorates base salary for a partial month attendance'"""
 
@@ -275,6 +279,7 @@ class TestCase02PartialMonth(unittest.TestCase):
 # Case 3: Heavy adjustments — bonus + KPI + 3 fines
 # ===========================================================================
 
+
 class TestCase03HeavyAdjustments(unittest.TestCase):
 	"""Mirrors TS: 'calcules heavy adjustments correctly'"""
 
@@ -300,6 +305,7 @@ class TestCase03HeavyAdjustments(unittest.TestCase):
 # Case 4: Manual seniority override beats config
 # ===========================================================================
 
+
 class TestCase04ManualSeniorityOverride(unittest.TestCase):
 	"""Mirrors TS: 'prefers manual seniority allowance override over standard config seniority'"""
 
@@ -321,6 +327,7 @@ class TestCase04ManualSeniorityOverride(unittest.TestCase):
 # ===========================================================================
 # Case 5: Zero attended — net from manual entries only
 # ===========================================================================
+
 
 class TestCase05ZeroAttended(unittest.TestCase):
 	"""Mirrors TS: 'calculates zero attended days to be derived from manual entries only'"""
@@ -352,6 +359,7 @@ class TestCase05ZeroAttended(unittest.TestCase):
 # Case 6: Night allowance with night hours worked
 # ===========================================================================
 
+
 class TestCase06NightShift(unittest.TestCase):
 	"""Mirrors TS: 'incorporates night hours allowance from config'"""
 
@@ -360,9 +368,7 @@ class TestCase06NightShift(unittest.TestCase):
 		cls.res, cls.bd = _run(_night_shift_fixture())
 		# nightRatePerHour = 6,000,000 / 176 * 0.10
 		# nightAllowance = 16 * nightRatePerHour
-		cls.expected_night = (
-			Decimal("6000000") / Decimal("176") * Decimal("0.10") * Decimal("16")
-		)
+		cls.expected_night = Decimal("6000000") / Decimal("176") * Decimal("0.10") * Decimal("16")
 
 	def test_breakdown_night_allowance(self):
 		# Compare as Decimal (Python has more precision than Decimal.js 20-digit repr)
@@ -382,6 +388,7 @@ class TestCase06NightShift(unittest.TestCase):
 # Case 7: Empty allowance config
 # ===========================================================================
 
+
 class TestCase07EmptyAllowanceConfig(unittest.TestCase):
 	"""Mirrors TS: 'handles empty allowance configurations gracefully'"""
 
@@ -400,6 +407,7 @@ class TestCase07EmptyAllowanceConfig(unittest.TestCase):
 # Case 8: Net would be negative
 # ===========================================================================
 
+
 class TestCase08NegativeNet(unittest.TestCase):
 	"""Mirrors TS: 'allows negative net and records it in breakdown'"""
 
@@ -417,6 +425,7 @@ class TestCase08NegativeNet(unittest.TestCase):
 # ===========================================================================
 # Case 9: round_money utility (ROUND_HALF_UP)
 # ===========================================================================
+
 
 class TestCase09RoundMoney(unittest.TestCase):
 	"""Mirrors TS roundingMoney utility tests."""
@@ -442,22 +451,25 @@ class TestCase09RoundMoney(unittest.TestCase):
 # Case 11-NEW: Half-day proration (10 full + 4 half, expected 22)
 # ===========================================================================
 
+
 class TestCase11HalfDayProration(unittest.TestCase):
 	"""Mirrors TS: 'prorates base using half-day weight: (10 + 4*0.5)/22'"""
 
 	@classmethod
 	def setUpClass(cls):
-		cls.res, cls.bd = _run({
-			"employee": MOCK_EMPLOYEE,
-			"summary": {
-				**MOCK_SUMMARY_PERFECT,
-				"attended_days": 14,
-				"full_days": 10,
-				"half_days": 4,
-				"expected_days": 22,
-			},
-			"adjustments": [],
-		})
+		cls.res, cls.bd = _run(
+			{
+				"employee": MOCK_EMPLOYEE,
+				"summary": {
+					**MOCK_SUMMARY_PERFECT,
+					"attended_days": 14,
+					"full_days": 10,
+					"half_days": 4,
+					"expected_days": 22,
+				},
+				"adjustments": [],
+			}
+		)
 
 	def test_prorated_base(self):
 		# effectiveDays = 10 + 4*0.5 = 12; ratio = 12/22
@@ -480,17 +492,20 @@ class TestCase11HalfDayProration(unittest.TestCase):
 # Case 12-NEW: Region transport CITY with policies (5000/day × effectiveDays)
 # ===========================================================================
 
+
 class TestCase12CityTransport(unittest.TestCase):
 	"""Mirrors TS: 'adds region transport allowance for CITY at 5000/day × effectiveDays'"""
 
 	@classmethod
 	def setUpClass(cls):
-		cls.res, cls.bd = _run({
-			"employee": {**MOCK_EMPLOYEE, "region": "CITY"},
-			"summary": MOCK_SUMMARY_PERFECT,
-			"adjustments": [],
-			"policies": MOCK_POLICIES,
-		})
+		cls.res, cls.bd = _run(
+			{
+				"employee": {**MOCK_EMPLOYEE, "region": "CITY"},
+				"summary": MOCK_SUMMARY_PERFECT,
+				"adjustments": [],
+				"policies": MOCK_POLICIES,
+			}
+		)
 
 	def test_breakdown_transport(self):
 		# transport = 5000 * 22 = 110,000
@@ -508,21 +523,24 @@ class TestCase12CityTransport(unittest.TestCase):
 # Case 13-NEW: feeUZS summed into fines + breakdown.lateFeeUZS
 # ===========================================================================
 
+
 class TestCase13LateFeeUZS(unittest.TestCase):
 	"""Mirrors TS: 'includes feeUZS in fines and surfaces lateFeeUZS in breakdown'"""
 
 	@classmethod
 	def setUpClass(cls):
-		cls.res, cls.bd = _run({
-			"employee": MOCK_EMPLOYEE,
-			"summary": {
-				**MOCK_SUMMARY_PERFECT,
-				"fee_uzs": "30000",
-			},
-			"adjustments": [
-				{"type": "FINE", "amount": "50000"},
-			],
-		})
+		cls.res, cls.bd = _run(
+			{
+				"employee": MOCK_EMPLOYEE,
+				"summary": {
+					**MOCK_SUMMARY_PERFECT,
+					"fee_uzs": "30000",
+				},
+				"adjustments": [
+					{"type": "FINE", "amount": "50000"},
+				],
+			}
+		)
 
 	def test_breakdown_late_fee_uzs(self):
 		self.assertEqual(self.bd["late_fee_uzs"], "30000")
@@ -538,15 +556,18 @@ class TestCase13LateFeeUZS(unittest.TestCase):
 # Case 14: Dynamic seniority brackets from hireDate
 # ===========================================================================
 
+
 class TestCase14SeniorityBrackets(unittest.TestCase):
 	"""Mirrors TS: 'calculates dynamic seniority allowance brackets correctly'"""
 
 	def _run_hire(self, hire_date_str):
-		return _run({
-			"employee": {**MOCK_EMPLOYEE, "hire_date": hire_date_str},
-			"summary": MOCK_SUMMARY_PERFECT,
-			"adjustments": [],
-		})
+		return _run(
+			{
+				"employee": {**MOCK_EMPLOYEE, "hire_date": hire_date_str},
+				"summary": MOCK_SUMMARY_PERFECT,
+				"adjustments": [],
+			}
+		)
 
 	def test_bracket1_2_years_10pct(self):
 		# Hired 2024-05-15, period 2026-05 → 2 years → 10%
@@ -594,21 +615,23 @@ class TestCase14SeniorityBrackets(unittest.TestCase):
 # Case 15: Auto OT = baseSalary/expectedHours/60 × otMinutes × otMultiplier
 # ===========================================================================
 
+
 class TestCase15AutoOvertime(unittest.TestCase):
 	"""Mirrors TS: 'auto overtime = baseSalary/expectedHours/60 × otMinutes × otMultiplier'"""
 
 	@classmethod
 	def setUpClass(cls):
-		cls.res, cls.bd = _run({
-			"employee": MOCK_EMPLOYEE,
-			"summary": {**MOCK_SUMMARY_PERFECT, "ot_minutes_worked": "120"},
-			"adjustments": [],
-			"policies": MOCK_POLICIES,
-		})
+		cls.res, cls.bd = _run(
+			{
+				"employee": MOCK_EMPLOYEE,
+				"summary": {**MOCK_SUMMARY_PERFECT, "ot_minutes_worked": "120"},
+				"adjustments": [],
+				"policies": MOCK_POLICIES,
+			}
+		)
 		# expected = 6,000,000 / 176 / 60 * 120 * 1.50
 		cls.expected_ot = (
-			Decimal("6000000") / Decimal("176") / Decimal("60")
-			* Decimal("120") * Decimal("1.50")
+			Decimal("6000000") / Decimal("176") / Decimal("60") * Decimal("120") * Decimal("1.50")
 		)
 
 	def test_overtime_value(self):
@@ -625,17 +648,20 @@ class TestCase15AutoOvertime(unittest.TestCase):
 # Case 16: Manual OVERTIME overrides auto OT — no double-count
 # ===========================================================================
 
+
 class TestCase16ManualOvertimeOverride(unittest.TestCase):
 	"""Mirrors TS: 'manual OVERTIME adjustment overrides auto OT — no double-count'"""
 
 	@classmethod
 	def setUpClass(cls):
-		cls.res, cls.bd = _run({
-			"employee": MOCK_EMPLOYEE,
-			"summary": {**MOCK_SUMMARY_PERFECT, "ot_minutes_worked": "120"},
-			"adjustments": [{"type": "OVERTIME", "amount": "500000"}],
-			"policies": MOCK_POLICIES,
-		})
+		cls.res, cls.bd = _run(
+			{
+				"employee": MOCK_EMPLOYEE,
+				"summary": {**MOCK_SUMMARY_PERFECT, "ot_minutes_worked": "120"},
+				"adjustments": [{"type": "OVERTIME", "amount": "500000"}],
+				"policies": MOCK_POLICIES,
+			}
+		)
 
 	def test_overtime_is_manual(self):
 		self.assertEqual(self.res["overtime"], Decimal("500000"))
@@ -653,6 +679,7 @@ class TestCase16ManualOvertimeOverride(unittest.TestCase):
 # Case 17: nightPremiumPct drives night allowance (not hardcoded 10%)
 # ===========================================================================
 
+
 class TestCase17NightPremiumPct15(unittest.TestCase):
 	"""Mirrors TS: 'nightPremiumPct=15 yields 15% night premium, not hardcoded 10%'"""
 
@@ -662,16 +689,16 @@ class TestCase17NightPremiumPct15(unittest.TestCase):
 			**MOCK_POLICIES,
 			"night": {**MOCK_POLICIES["night"], "night_premium_pct": "15.00"},
 		}
-		cls.res, cls.bd = _run({
-			"employee": MOCK_EMPLOYEE,
-			"summary": {**MOCK_SUMMARY_PERFECT, "night_hours_worked": "16"},
-			"adjustments": [],
-			"policies": policies_15,
-		})
-		# nightAllowance = 6,000,000 / 176 * 0.15 * 16
-		cls.expected_night = (
-			Decimal("6000000") / Decimal("176") * Decimal("0.15") * Decimal("16")
+		cls.res, cls.bd = _run(
+			{
+				"employee": MOCK_EMPLOYEE,
+				"summary": {**MOCK_SUMMARY_PERFECT, "night_hours_worked": "16"},
+				"adjustments": [],
+				"policies": policies_15,
+			}
 		)
+		# nightAllowance = 6,000,000 / 176 * 0.15 * 16
+		cls.expected_night = Decimal("6000000") / Decimal("176") * Decimal("0.15") * Decimal("16")
 
 	def test_breakdown_night_allowance(self):
 		actual = Decimal(self.bd["night_allowance"])
@@ -686,17 +713,20 @@ class TestCase17NightPremiumPct15(unittest.TestCase):
 # Case 18: otMinutesWorked=0 → overtime=0 in breakdown
 # ===========================================================================
 
+
 class TestCase18OtMinutesZero(unittest.TestCase):
 	"""Mirrors TS: 'otMinutesWorked=0 produces overtime=0 in breakdown'"""
 
 	@classmethod
 	def setUpClass(cls):
-		cls.res, cls.bd = _run({
-			"employee": MOCK_EMPLOYEE,
-			"summary": {**MOCK_SUMMARY_PERFECT, "ot_minutes_worked": "0"},
-			"adjustments": [],
-			"policies": MOCK_POLICIES,
-		})
+		cls.res, cls.bd = _run(
+			{
+				"employee": MOCK_EMPLOYEE,
+				"summary": {**MOCK_SUMMARY_PERFECT, "ot_minutes_worked": "0"},
+				"adjustments": [],
+				"policies": MOCK_POLICIES,
+			}
+		)
 
 	def test_overtime_zero(self):
 		self.assertEqual(self.res["overtime"], Decimal("0"))
@@ -715,16 +745,19 @@ class TestCase18OtMinutesZero(unittest.TestCase):
 # Case 19: TRAVEL_ALLOWANCE adjustment is additive to allowancesSum
 # ===========================================================================
 
+
 class TestCase19TravelAllowance(unittest.TestCase):
 	"""Mirrors TS: 'includes TRAVEL_ALLOWANCE adjustment in allowancesSum'"""
 
 	@classmethod
 	def setUpClass(cls):
-		cls.res, cls.bd = _run({
-			"employee": MOCK_EMPLOYEE,
-			"summary": MOCK_SUMMARY_PERFECT,
-			"adjustments": [{"type": "TRAVEL_ALLOWANCE", "amount": "300000"}],
-		})
+		cls.res, cls.bd = _run(
+			{
+				"employee": MOCK_EMPLOYEE,
+				"summary": MOCK_SUMMARY_PERFECT,
+				"adjustments": [{"type": "TRAVEL_ALLOWANCE", "amount": "300000"}],
+			}
+		)
 
 	def test_breakdown_manual_travel(self):
 		self.assertEqual(self.bd["manual_travel"], "300000")
@@ -741,18 +774,21 @@ class TestCase19TravelAllowance(unittest.TestCase):
 # Case 20-NEW (v2): 100% attendance + 40% share + 100% perf → invariant
 # ===========================================================================
 
+
 class TestCase20KpiV2Perfect(unittest.TestCase):
 	"""Mirrors TS: 'v2: 100% attendance + 40% share + 100% perf → fixedBase + autoKpi = baseSalary'"""
 
 	@classmethod
 	def setUpClass(cls):
-		cls.res, cls.bd = _run({
-			"employee": MOCK_EMPLOYEE,
-			"summary": MOCK_SUMMARY_PERFECT,
-			"adjustments": [],
-			"policies": KPI_V2_POLICIES,
-			"kpi_performance_pct": "100",
-		})
+		cls.res, cls.bd = _run(
+			{
+				"employee": MOCK_EMPLOYEE,
+				"summary": MOCK_SUMMARY_PERFECT,
+				"adjustments": [],
+				"policies": KPI_V2_POLICIES,
+				"kpi_performance_pct": "100",
+			}
+		)
 
 	def test_fixed_base(self):
 		self.assertEqual(self.bd["fixed_base"], "3600000")
@@ -781,18 +817,21 @@ class TestCase20KpiV2Perfect(unittest.TestCase):
 # Case 21-NEW (v2): partial performance — share 40%, perf 80%
 # ===========================================================================
 
+
 class TestCase21KpiV2PartialPerf(unittest.TestCase):
 	"""Mirrors TS: 'v2: share 40% + perf 80% → correct fixedBase and autoKpi'"""
 
 	@classmethod
 	def setUpClass(cls):
-		cls.res, cls.bd = _run({
-			"employee": MOCK_EMPLOYEE,
-			"summary": MOCK_SUMMARY_PERFECT,
-			"adjustments": [],
-			"policies": KPI_V2_POLICIES,
-			"kpi_performance_pct": "80",
-		})
+		cls.res, cls.bd = _run(
+			{
+				"employee": MOCK_EMPLOYEE,
+				"summary": MOCK_SUMMARY_PERFECT,
+				"adjustments": [],
+				"policies": KPI_V2_POLICIES,
+				"kpi_performance_pct": "80",
+			}
+		)
 
 	def test_fixed_base(self):
 		self.assertEqual(self.bd["fixed_base"], "3600000")
@@ -813,23 +852,26 @@ class TestCase21KpiV2PartialPerf(unittest.TestCase):
 # Case 22-NEW (v2): partial attendance prorates fixed but not KPI pool
 # ===========================================================================
 
+
 class TestCase22KpiV2PartialAttendance(unittest.TestCase):
 	"""Mirrors TS: 'v2: partial attendance prorates fixed but not the KPI pool'"""
 
 	@classmethod
 	def setUpClass(cls):
-		cls.res, cls.bd = _run({
-			"employee": MOCK_EMPLOYEE,
-			"summary": {
-				**MOCK_SUMMARY_PERFECT,
-				"attended_days": 11,
-				"full_days": 11,
-				"half_days": 0,
-			},
-			"adjustments": [],
-			"policies": KPI_V2_POLICIES,
-			"kpi_performance_pct": "80",
-		})
+		cls.res, cls.bd = _run(
+			{
+				"employee": MOCK_EMPLOYEE,
+				"summary": {
+					**MOCK_SUMMARY_PERFECT,
+					"attended_days": 11,
+					"full_days": 11,
+					"half_days": 0,
+				},
+				"adjustments": [],
+				"policies": KPI_V2_POLICIES,
+				"kpi_performance_pct": "80",
+			}
+		)
 
 	def test_prorated_base(self):
 		self.assertEqual(self.res["prorated_base"], Decimal("3000000"))
@@ -851,23 +893,26 @@ class TestCase22KpiV2PartialAttendance(unittest.TestCase):
 # Case 23-NEW (v2): isZeroAttended blocks autoKpi
 # ===========================================================================
 
+
 class TestCase23KpiV2ZeroAttended(unittest.TestCase):
 	"""Mirrors TS: 'v2: isZeroAttended blocks autoKpi even with share 40 + perf 100'"""
 
 	@classmethod
 	def setUpClass(cls):
-		cls.res, cls.bd = _run({
-			"employee": MOCK_EMPLOYEE,
-			"summary": {
-				**MOCK_SUMMARY_PERFECT,
-				"attended_days": 0,
-				"full_days": 0,
-				"half_days": 0,
-			},
-			"adjustments": [],
-			"policies": KPI_V2_POLICIES,
-			"kpi_performance_pct": "100",
-		})
+		cls.res, cls.bd = _run(
+			{
+				"employee": MOCK_EMPLOYEE,
+				"summary": {
+					**MOCK_SUMMARY_PERFECT,
+					"attended_days": 0,
+					"full_days": 0,
+					"half_days": 0,
+				},
+				"adjustments": [],
+				"policies": KPI_V2_POLICIES,
+				"kpi_performance_pct": "100",
+			}
+		)
 
 	def test_kpi_zero(self):
 		self.assertEqual(self.res["kpi"], Decimal("0"))
@@ -883,18 +928,21 @@ class TestCase23KpiV2ZeroAttended(unittest.TestCase):
 # Case 24-NEW (v2): absent kpiPerformancePct → autoKpi = 0
 # ===========================================================================
 
+
 class TestCase24KpiV2AbsentPerf(unittest.TestCase):
 	"""Mirrors TS: 'v2: absent kpiPerformancePct → autoKpi = 0, only fixedBase flows to gross'"""
 
 	@classmethod
 	def setUpClass(cls):
-		cls.res, cls.bd = _run({
-			"employee": MOCK_EMPLOYEE,
-			"summary": MOCK_SUMMARY_PERFECT,
-			"adjustments": [],
-			"policies": KPI_V2_POLICIES,
-			# kpi_performance_pct omitted
-		})
+		cls.res, cls.bd = _run(
+			{
+				"employee": MOCK_EMPLOYEE,
+				"summary": MOCK_SUMMARY_PERFECT,
+				"adjustments": [],
+				"policies": KPI_V2_POLICIES,
+				# kpi_performance_pct omitted
+			}
+		)
 
 	def test_kpi_auto_zero(self):
 		self.assertEqual(self.bd["kpi_auto"], "0")
@@ -913,18 +961,21 @@ class TestCase24KpiV2AbsentPerf(unittest.TestCase):
 # Case 25-NEW (v2): manual KPI adjustment adds on top of autoKpi
 # ===========================================================================
 
+
 class TestCase25KpiV2ManualAdditive(unittest.TestCase):
 	"""Mirrors TS: 'v2: manual KPI adjustment adds on top of performance-based autoKpi'"""
 
 	@classmethod
 	def setUpClass(cls):
-		cls.res, cls.bd = _run({
-			"employee": MOCK_EMPLOYEE,
-			"summary": MOCK_SUMMARY_PERFECT,
-			"adjustments": [{"type": "KPI", "amount": "300000"}],
-			"policies": KPI_V2_POLICIES,
-			"kpi_performance_pct": "80",
-		})
+		cls.res, cls.bd = _run(
+			{
+				"employee": MOCK_EMPLOYEE,
+				"summary": MOCK_SUMMARY_PERFECT,
+				"adjustments": [{"type": "KPI", "amount": "300000"}],
+				"policies": KPI_V2_POLICIES,
+				"kpi_performance_pct": "80",
+			}
+		)
 
 	def test_kpi_auto(self):
 		# 2400000 * 0.80 = 1,920,000
@@ -941,17 +992,20 @@ class TestCase25KpiV2ManualAdditive(unittest.TestCase):
 # Case 26-NEW (v2): absent policies → kpiShareFactor=0 → back-compat
 # ===========================================================================
 
+
 class TestCase26NoPolicesBackCompat(unittest.TestCase):
 	"""Mirrors TS: 'v2: absent policies → kpiShareFactor=0 → fixedBase=proratedBase'"""
 
 	@classmethod
 	def setUpClass(cls):
-		cls.res, cls.bd = _run({
-			"employee": MOCK_EMPLOYEE,
-			"summary": MOCK_SUMMARY_PERFECT,
-			"adjustments": [{"type": "KPI", "amount": "400000"}],
-			# policies omitted
-		})
+		cls.res, cls.bd = _run(
+			{
+				"employee": MOCK_EMPLOYEE,
+				"summary": MOCK_SUMMARY_PERFECT,
+				"adjustments": [{"type": "KPI", "amount": "400000"}],
+				# policies omitted
+			}
+		)
 
 	def test_kpi_share_factor_zero(self):
 		self.assertEqual(self.bd["kpi_share_factor"], "0")
@@ -973,42 +1027,49 @@ class TestCase26NoPolicesBackCompat(unittest.TestCase):
 # Work mode tests
 # ===========================================================================
 
+
 class TestWorkModes(unittest.TestCase):
 	"""Mirrors TS describe('work modes') block."""
 
 	# WM1: SHIFT_8H regression
 	def test_wm1_shift_8h_same_as_baseline(self):
 		"""SHIFT_8H: same result as baseline (no workMode set)."""
-		baseline = calculate_payroll({
-			"employee": MOCK_EMPLOYEE,
-			"summary": MOCK_SUMMARY_PERFECT,
-			"adjustments": [],
-		})
-		with_mode = calculate_payroll({
-			"employee": {
-				**MOCK_EMPLOYEE,
-				"work_mode": "SHIFT_8H",
-				"stake_coefficient": "1",
-			},
-			"summary": MOCK_SUMMARY_PERFECT,
-			"adjustments": [],
-		})
+		baseline = calculate_payroll(
+			{
+				"employee": MOCK_EMPLOYEE,
+				"summary": MOCK_SUMMARY_PERFECT,
+				"adjustments": [],
+			}
+		)
+		with_mode = calculate_payroll(
+			{
+				"employee": {
+					**MOCK_EMPLOYEE,
+					"work_mode": "SHIFT_8H",
+					"stake_coefficient": "1",
+				},
+				"summary": MOCK_SUMMARY_PERFECT,
+				"adjustments": [],
+			}
+		)
 		self.assertEqual(with_mode["net"], baseline["net"])
 		self.assertEqual(with_mode["prorated_base"], baseline["prorated_base"])
 
 	# WM2: HALF_RATE stake=0.5
 	def test_wm2_half_rate_stake_05(self):
 		"""HALF_RATE stake=0.5: effectiveBase and proratedBase are halved."""
-		res, bd = _run({
-			"employee": {
-				**MOCK_EMPLOYEE,
-				"base_salary": "6000000",
-				"work_mode": "HALF_RATE",
-				"stake_coefficient": "0.5",
-			},
-			"summary": MOCK_SUMMARY_PERFECT,
-			"adjustments": [],
-		})
+		res, bd = _run(
+			{
+				"employee": {
+					**MOCK_EMPLOYEE,
+					"base_salary": "6000000",
+					"work_mode": "HALF_RATE",
+					"stake_coefficient": "0.5",
+				},
+				"summary": MOCK_SUMMARY_PERFECT,
+				"adjustments": [],
+			}
+		)
 		# effectiveBase = 6,000,000 × 0.5 = 3,000,000
 		self.assertEqual(bd["effective_base"], "3000000")
 		self.assertEqual(bd["prorated_base"], "3000000")
@@ -1017,23 +1078,25 @@ class TestWorkModes(unittest.TestCase):
 	# WM3: REMOTE zero attendance → full base, lateFeeUZS = 0
 	def test_wm3_remote_zero_attendance(self):
 		"""REMOTE: zero attendance → proratedBase = full base, lateFeeUZS = 0."""
-		_res, bd = _run({
-			"employee": {
-				**MOCK_EMPLOYEE,
-				"base_salary": "4000000",
-				"allowance_config": {"custom": []},
-				"work_mode": "REMOTE",
-				"stake_coefficient": "1",
-			},
-			"summary": {
-				**MOCK_SUMMARY_PERFECT,
-				"attended_days": 0,
-				"full_days": 0,
-				"half_days": 0,
-				"fee_uzs": "30000",
-			},
-			"adjustments": [],
-		})
+		_res, bd = _run(
+			{
+				"employee": {
+					**MOCK_EMPLOYEE,
+					"base_salary": "4000000",
+					"allowance_config": {"custom": []},
+					"work_mode": "REMOTE",
+					"stake_coefficient": "1",
+				},
+				"summary": {
+					**MOCK_SUMMARY_PERFECT,
+					"attended_days": 0,
+					"full_days": 0,
+					"half_days": 0,
+					"fee_uzs": "30000",
+				},
+				"adjustments": [],
+			}
+		)
 		# REMOTE forces attendanceRatio = 1 and isZeroAttended = False
 		self.assertEqual(bd["proration_mode"], "full")
 		self.assertEqual(bd["prorated_base"], "4000000")
@@ -1042,18 +1105,20 @@ class TestWorkModes(unittest.TestCase):
 	# WM4: FLEXIBLE with late fee suppressed, manual FINE still applies
 	def test_wm4_flexible_late_fee_suppressed(self):
 		"""FLEXIBLE: auto lateFeeUZS suppressed, manual FINE still deducted."""
-		res, bd = _run({
-			"employee": {
-				**MOCK_EMPLOYEE,
-				"work_mode": "FLEXIBLE",
-				"stake_coefficient": "1",
-			},
-			"summary": {
-				**MOCK_SUMMARY_PERFECT,
-				"fee_uzs": "50000",
-			},
-			"adjustments": [{"type": "FINE", "amount": "100000"}],
-		})
+		res, bd = _run(
+			{
+				"employee": {
+					**MOCK_EMPLOYEE,
+					"work_mode": "FLEXIBLE",
+					"stake_coefficient": "1",
+				},
+				"summary": {
+					**MOCK_SUMMARY_PERFECT,
+					"fee_uzs": "50000",
+				},
+				"adjustments": [{"type": "FINE", "amount": "100000"}],
+			}
+		)
 		# Auto late fee suppressed for FLEXIBLE
 		self.assertEqual(bd["late_fee_uzs"], "0")
 		self.assertEqual(bd["fines"], "100000")
@@ -1062,16 +1127,18 @@ class TestWorkModes(unittest.TestCase):
 	# WM5: SHIFT_12H uses 22*12=264 as personalExpectedHours for nightRatePerHour
 	def test_wm5_shift_12h_night_rate_basis(self):
 		"""SHIFT_12H: nightRatePerHour uses 264h basis (22 days × 12h)."""
-		_res, bd = _run({
-			"employee": {
-				**MOCK_EMPLOYEE,
-				"base_salary": "6000000",
-				"work_mode": "SHIFT_12H",
-				"stake_coefficient": "1",
-			},
-			"summary": MOCK_SUMMARY_PERFECT,
-			"adjustments": [],
-		})
+		_res, bd = _run(
+			{
+				"employee": {
+					**MOCK_EMPLOYEE,
+					"base_salary": "6000000",
+					"work_mode": "SHIFT_12H",
+					"stake_coefficient": "1",
+				},
+				"summary": MOCK_SUMMARY_PERFECT,
+				"adjustments": [],
+			}
+		)
 		# personalExpectedHours = 22 × 12 = 264
 		# nightRatePerHour = 6,000,000 / 264 × 0.10
 		expected_nrph = Decimal("6000000") / Decimal("264") * Decimal("0.10")
@@ -1087,6 +1154,7 @@ class TestWorkModes(unittest.TestCase):
 # Duty supplement tests
 # ===========================================================================
 
+
 class TestDutySupplements(unittest.TestCase):
 	"""Mirrors TS describe('dutySupplement') block."""
 
@@ -1094,13 +1162,15 @@ class TestDutySupplements(unittest.TestCase):
 		"""25% of effectiveBase added to gross."""
 		# effectiveBase = 6,000,000 × 1 = 6,000,000
 		# dutySupplement = 6,000,000 × 0.25 = 1,500,000
-		res, bd = _run({
-			"employee": MOCK_EMPLOYEE,
-			"summary": MOCK_SUMMARY_PERFECT,
-			"adjustments": [],
-			"policies": MOCK_POLICIES,
-			"duty_supplements": [{"id": "ds-1", "pct": "25", "note": "Acting head"}],
-		})
+		res, bd = _run(
+			{
+				"employee": MOCK_EMPLOYEE,
+				"summary": MOCK_SUMMARY_PERFECT,
+				"adjustments": [],
+				"policies": MOCK_POLICIES,
+				"duty_supplements": [{"id": "ds-1", "pct": "25", "note": "Acting head"}],
+			}
+		)
 		self.assertEqual(bd["duty_supplement"], "1500000")
 		# baseline net = 6M + 1.11M (seniority 500k+custom 500k+transport 5k×22=110k) = 7.11M
 		# + 1.5M duty = 8,610,000
@@ -1109,38 +1179,44 @@ class TestDutySupplements(unittest.TestCase):
 	def test_ds2_multiple_supplements_summed(self):
 		"""Multiple duty supplements are summed."""
 		# duty1 = 6M × 0.25 = 1.5M; duty2 = 6M × 0.10 = 600k; total = 2.1M
-		_res, bd = _run({
-			"employee": MOCK_EMPLOYEE,
-			"summary": MOCK_SUMMARY_PERFECT,
-			"adjustments": [],
-			"policies": MOCK_POLICIES,
-			"duty_supplements": [
-				{"id": "ds-1", "pct": "25", "note": None},
-				{"id": "ds-2", "pct": "10", "note": None},
-			],
-		})
+		_res, bd = _run(
+			{
+				"employee": MOCK_EMPLOYEE,
+				"summary": MOCK_SUMMARY_PERFECT,
+				"adjustments": [],
+				"policies": MOCK_POLICIES,
+				"duty_supplements": [
+					{"id": "ds-1", "pct": "25", "note": None},
+					{"id": "ds-2", "pct": "10", "note": None},
+				],
+			}
+		)
 		self.assertEqual(bd["duty_supplement"], "2100000")
 
 	def test_ds3_empty_list_returns_zero(self):
 		"""No supplements → dutySupplement = 0."""
-		_res, bd = _run({
-			"employee": MOCK_EMPLOYEE,
-			"summary": MOCK_SUMMARY_PERFECT,
-			"adjustments": [],
-			"policies": MOCK_POLICIES,
-			"duty_supplements": [],
-		})
+		_res, bd = _run(
+			{
+				"employee": MOCK_EMPLOYEE,
+				"summary": MOCK_SUMMARY_PERFECT,
+				"adjustments": [],
+				"policies": MOCK_POLICIES,
+				"duty_supplements": [],
+			}
+		)
 		self.assertEqual(bd["duty_supplement"], "0")
 
 	def test_ds4_omitted_backward_compat(self):
 		"""Omitting duty_supplements (pre-F5 callers) equals empty array."""
-		_res, bd = _run({
-			"employee": MOCK_EMPLOYEE,
-			"summary": MOCK_SUMMARY_PERFECT,
-			"adjustments": [],
-			"policies": MOCK_POLICIES,
-			# duty_supplements omitted
-		})
+		_res, bd = _run(
+			{
+				"employee": MOCK_EMPLOYEE,
+				"summary": MOCK_SUMMARY_PERFECT,
+				"adjustments": [],
+				"policies": MOCK_POLICIES,
+				# duty_supplements omitted
+			}
+		)
 		self.assertEqual(bd["duty_supplement"], "0")
 
 
@@ -1148,17 +1224,20 @@ class TestDutySupplements(unittest.TestCase):
 # NO_TRAVEL region test
 # ===========================================================================
 
+
 class TestNoTravelRegion(unittest.TestCase):
 	"""Mirrors TS: 'sets transport to 0 for NO_TRAVEL region regardless of policies'"""
 
 	@classmethod
 	def setUpClass(cls):
-		cls.res, cls.bd = _run({
-			"employee": {**MOCK_EMPLOYEE, "region": "NO_TRAVEL"},
-			"summary": MOCK_SUMMARY_PERFECT,
-			"adjustments": [],
-			"policies": MOCK_POLICIES,
-		})
+		cls.res, cls.bd = _run(
+			{
+				"employee": {**MOCK_EMPLOYEE, "region": "NO_TRAVEL"},
+				"summary": MOCK_SUMMARY_PERFECT,
+				"adjustments": [],
+				"policies": MOCK_POLICIES,
+			}
+		)
 
 	def test_transport_zero(self):
 		self.assertEqual(self.bd["transport"], "0")
@@ -1174,6 +1253,7 @@ class TestNoTravelRegion(unittest.TestCase):
 # ===========================================================================
 # Unit tests for years_of_service, seniority_percent, resolve_schedule
 # ===========================================================================
+
 
 class TestYearsOfService(unittest.TestCase):
 	"""Direct unit tests for years_of_service() helper."""

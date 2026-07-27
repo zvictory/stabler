@@ -5,7 +5,9 @@ from frappe.custom.doctype.custom_field.custom_field import create_custom_fields
 def execute():
 	if not frappe.db.exists("DocType", "Purchase Receipt"):
 		return
-	if frappe.db.exists("Custom Field", {"dt": "Purchase Receipt", "fieldname": "custom_landed_cost_vouchered"}):
+	if frappe.db.exists(
+		"Custom Field", {"dt": "Purchase Receipt", "fieldname": "custom_landed_cost_vouchered"}
+	):
 		return
 
 	create_custom_fields(

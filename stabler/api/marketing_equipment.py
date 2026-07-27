@@ -42,10 +42,7 @@ def _outlets_for_company_filter() -> list[str] | None:
 	cf = _company_filter(None)
 	if not cf:
 		return None
-	return [
-		row["name"]
-		for row in frappe.get_all("Outlet", filters=cf, fields=["name"], limit=0)
-	]
+	return [row["name"] for row in frappe.get_all("Outlet", filters=cf, fields=["name"], limit=0)]
 
 
 # ---------------------------------------------------------------------------

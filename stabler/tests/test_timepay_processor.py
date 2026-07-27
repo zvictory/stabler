@@ -97,7 +97,9 @@ class PlanRawEventGroupsTest(unittest.TestCase):
 		self.assertEqual(plan["groups"][0]["employee"], "HR-EMP-0002")
 
 	def test_ambiguous_employee_custom_timepay_id_stays_unmatched(self):
-		plan = plan_raw_event_groups([raw(device_user_id="TP-42")], [], {"TP-42": ["HR-EMP-0002", "HR-EMP-0003"]})
+		plan = plan_raw_event_groups(
+			[raw(device_user_id="TP-42")], [], {"TP-42": ["HR-EMP-0002", "HR-EMP-0003"]}
+		)
 
 		self.assertEqual(plan["groups"], [])
 		self.assertEqual(plan["unmatched"][0]["name"], "RAW-1")

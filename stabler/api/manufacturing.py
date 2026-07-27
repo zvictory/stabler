@@ -190,18 +190,21 @@ def wo_transfer_preview(work_order: str):
 	stub = se if isinstance(se, dict) else se.as_dict()
 	from_wh = to_wh = None
 	items = []
-	for r in (stub.get("items") or []):
+	for r in stub.get("items") or []:
 		s_wh, t_wh = r.get("s_warehouse"), r.get("t_warehouse")
 		from_wh = from_wh or s_wh
 		to_wh = to_wh or t_wh
-		items.append({
-			"item_code": r.get("item_code"),
-			"item_name": r.get("item_name") or frappe.db.get_value("Item", r.get("item_code"), "item_name"),
-			"qty": flt(r.get("qty")),
-			"uom": r.get("uom") or r.get("stock_uom"),
-			"s_warehouse": s_wh,
-			"t_warehouse": t_wh,
-		})
+		items.append(
+			{
+				"item_code": r.get("item_code"),
+				"item_name": r.get("item_name")
+				or frappe.db.get_value("Item", r.get("item_code"), "item_name"),
+				"qty": flt(r.get("qty")),
+				"uom": r.get("uom") or r.get("stock_uom"),
+				"s_warehouse": s_wh,
+				"t_warehouse": t_wh,
+			}
+		)
 	return {"items": items, "from_warehouse": from_wh, "to_warehouse": to_wh}
 
 
@@ -384,7 +387,7 @@ def work_order_detail(name: str):
 			"Comment",
 			filters={"reference_doctype": "Work Order", "reference_name": name},
 			fields=["name", "content", "owner", "creation", "comment_by"],
-			order_by="creation desc"
+			order_by="creation desc",
 		)
 	# required_items visible to managers and warehouse users (for staging transfers).
 	if is_manager or is_warehouse:
@@ -559,7 +562,9 @@ def make_work_order_stock_entry(
 			if uom:
 				row.uom = uom
 			# set_missing_values() does NOT populate conversion_factor, only validates it.
-			row.conversion_factor = get_conversion_factor(it["item_code"], uom or None).get("conversion_factor") or 1.0
+			row.conversion_factor = (
+				get_conversion_factor(it["item_code"], uom or None).get("conversion_factor") or 1.0
+			)
 			row.allow_zero_valuation_rate = 1
 		se.set_missing_values()
 	else:
@@ -583,7 +588,9 @@ def make_work_order_stock_entry(
 		if (batch_no or "").strip():
 			_stamp_wo_batch(work_order, batch_no, mfg_date, expiry_date)
 		batch_note = f", Batch: {batch_no}" if (batch_no or "").strip() else ""
-		_log_wo_event(work_order, f"Work Order finished. Produced: {flt(qty)}, Rejects: {flt(scrap_qty)}{batch_note}")
+		_log_wo_event(
+			work_order, f"Work Order finished. Produced: {flt(qty)}, Rejects: {flt(scrap_qty)}{batch_note}"
+		)
 
 	return {"name": se.name, "purpose": purpose, "docstatus": se.docstatus}
 
@@ -757,15 +764,17 @@ def manufacturable_items(company: str, search: str = "", limit: int = 50):
 
 def _log_wo_event(work_order: str, text: str):
 	"""Log a timestamped event comment on the Work Order."""
-	frappe.get_doc({
-		"doctype": "Comment",
-		"comment_type": "Comment",
-		"reference_doctype": "Work Order",
-		"reference_name": work_order,
-		"content": text,
-		"comment_email": frappe.session.user,
-		"comment_by": frappe.session.user
-	}).insert(ignore_permissions=True)
+	frappe.get_doc(
+		{
+			"doctype": "Comment",
+			"comment_type": "Comment",
+			"reference_doctype": "Work Order",
+			"reference_name": work_order,
+			"content": text,
+			"comment_email": frappe.session.user,
+			"comment_by": frappe.session.user,
+		}
+	).insert(ignore_permissions=True)
 
 
 # ------------------ RFID & PIN Authentication ------------------
@@ -810,6 +819,7 @@ def _verify_kiosk_token() -> None:
 def get_hashes(val: str) -> list[str]:
 	"""Return plain value and its salted/unsalted SHA256 hashes."""
 	import hashlib
+
 	if not val:
 		return []
 	res = [val]
@@ -825,9 +835,7 @@ def match_employee_badge(uid: str):
 	if not uid:
 		return None
 	employees = frappe.get_all(
-		"Employee",
-		fields=["name", "user_id", "attendance_device_id"],
-		filters={"status": "Active"}
+		"Employee", fields=["name", "user_id", "attendance_device_id"], filters={"status": "Active"}
 	)
 	uid_options = get_hashes(uid)
 	for emp in employees:
@@ -876,6 +884,7 @@ def match_employee_pin(employee_id: str, pin: str):
 @frappe.whitelist(allow_guest=True)
 def badge_login(uid: str):
 	import hashlib
+
 	_verify_kiosk_token()
 	if not uid:
 		frappe.throw(_("Badge UID is required."), frappe.ValidationError)
@@ -885,8 +894,8 @@ def badge_login(uid: str):
 	# so also throttle attempts against a specific (low-entropy) card UID.
 	uid_key = f"badge_login_fail:uid:{hashlib.sha256(uid.encode('utf-8')).hexdigest()}"
 	fail_key = f"badge_login_fail:{ip}"
-	fails = (frappe.cache().get_value(fail_key) or 0)
-	uid_fails = (frappe.cache().get_value(uid_key) or 0)
+	fails = frappe.cache().get_value(fail_key) or 0
+	uid_fails = frappe.cache().get_value(uid_key) or 0
 	if fails >= 5 or uid_fails >= 5:
 		frappe.throw(_("Too many failed attempts. Please try again in 5 minutes."), frappe.PermissionError)
 
@@ -894,13 +903,15 @@ def badge_login(uid: str):
 	if not emp:
 		frappe.cache().set_value(fail_key, fails + 1, expires_in_sec=300)
 		frappe.cache().set_value(uid_key, uid_fails + 1, expires_in_sec=300)
-		frappe.get_doc({
-			"doctype": "Activity Log",
-			"subject": "Failed Badge Login",
-			"status": "Failure",
-			"operation": "Badge Login",
-			"remark": f"IP: {ip}, Scan UID: {uid[:4]}***"
-		}).insert(ignore_permissions=True)
+		frappe.get_doc(
+			{
+				"doctype": "Activity Log",
+				"subject": "Failed Badge Login",
+				"status": "Failure",
+				"operation": "Badge Login",
+				"remark": f"IP: {ip}, Scan UID: {uid[:4]}***",
+			}
+		).insert(ignore_permissions=True)
 		frappe.throw(_("Card not recognized"), frappe.PermissionError)
 
 	if not emp.user_id:
@@ -910,28 +921,32 @@ def badge_login(uid: str):
 	frappe.cache().delete_key(uid_key)
 
 	from frappe.auth import LoginManager
+
 	login_manager = LoginManager()
 	login_manager.login_as(emp.user_id)
 
-	frappe.get_doc({
-		"doctype": "Activity Log",
-		"subject": f"Successful Badge Login: {emp.user_id}",
-		"status": "Success",
-		"operation": "Badge Login",
-		"user": emp.user_id
-	}).insert(ignore_permissions=True)
+	frappe.get_doc(
+		{
+			"doctype": "Activity Log",
+			"subject": f"Successful Badge Login: {emp.user_id}",
+			"status": "Success",
+			"operation": "Badge Login",
+			"user": emp.user_id,
+		}
+	).insert(ignore_permissions=True)
 
 	return {
 		"message": "Logged in",
 		"user": emp.user_id,
 		"employee": emp.name,
-		"full_name": frappe.db.get_value("User", emp.user_id, "full_name")
+		"full_name": frappe.db.get_value("User", emp.user_id, "full_name"),
 	}
 
 
 @frappe.whitelist(allow_guest=True)
 def pin_login(employee: str, pin: str):
 	import hashlib
+
 	_verify_kiosk_token()
 	if not employee or not pin:
 		frappe.throw(_("Employee ID and PIN are required."), frappe.ValidationError)
@@ -941,8 +956,8 @@ def pin_login(employee: str, pin: str):
 	# short, so a per-IP-only throttle is trivially bypassed by rotating IPs.
 	emp_key = f"pin_login_fail:emp:{hashlib.sha256(employee.encode('utf-8')).hexdigest()}"
 	fail_key = f"pin_login_fail:{ip}"
-	fails = (frappe.cache().get_value(fail_key) or 0)
-	emp_fails = (frappe.cache().get_value(emp_key) or 0)
+	fails = frappe.cache().get_value(fail_key) or 0
+	emp_fails = frappe.cache().get_value(emp_key) or 0
 	if fails >= 5 or emp_fails >= 5:
 		frappe.throw(_("Too many failed attempts. Please try again in 5 minutes."), frappe.PermissionError)
 
@@ -950,13 +965,15 @@ def pin_login(employee: str, pin: str):
 	if not emp:
 		frappe.cache().set_value(fail_key, fails + 1, expires_in_sec=300)
 		frappe.cache().set_value(emp_key, emp_fails + 1, expires_in_sec=300)
-		frappe.get_doc({
-			"doctype": "Activity Log",
-			"subject": "Failed PIN Login",
-			"status": "Failure",
-			"operation": "PIN Login",
-			"remark": f"IP: {ip}, Employee: {employee}"
-		}).insert(ignore_permissions=True)
+		frappe.get_doc(
+			{
+				"doctype": "Activity Log",
+				"subject": "Failed PIN Login",
+				"status": "Failure",
+				"operation": "PIN Login",
+				"remark": f"IP: {ip}, Employee: {employee}",
+			}
+		).insert(ignore_permissions=True)
 		frappe.throw(_("Card not recognized"), frappe.PermissionError)
 
 	if not emp.user_id:
@@ -966,28 +983,32 @@ def pin_login(employee: str, pin: str):
 	frappe.cache().delete_key(emp_key)
 
 	from frappe.auth import LoginManager
+
 	login_manager = LoginManager()
 	login_manager.login_as(emp.user_id)
 
-	frappe.get_doc({
-		"doctype": "Activity Log",
-		"subject": f"Successful PIN Login: {emp.user_id}",
-		"status": "Success",
-		"operation": "PIN Login",
-		"user": emp.user_id
-	}).insert(ignore_permissions=True)
+	frappe.get_doc(
+		{
+			"doctype": "Activity Log",
+			"subject": f"Successful PIN Login: {emp.user_id}",
+			"status": "Success",
+			"operation": "PIN Login",
+			"user": emp.user_id,
+		}
+	).insert(ignore_permissions=True)
 
 	return {
 		"message": "Logged in",
 		"user": emp.user_id,
 		"employee": emp.name,
-		"full_name": frappe.db.get_value("User", emp.user_id, "full_name")
+		"full_name": frappe.db.get_value("User", emp.user_id, "full_name"),
 	}
 
 
 @frappe.whitelist(allow_guest=True)
 def badge_logout():
 	from frappe.auth import LoginManager
+
 	LoginManager().logout()
 	return {"message": "Success"}
 
@@ -1017,16 +1038,24 @@ def create_material_request_for_tomorrow_wo(doc, method=None):
 	mr.work_order = doc.name
 
 	for item in doc.required_items:
-		actual = frappe.db.get_value("Bin", {"item_code": item.item_code, "warehouse": doc.wip_warehouse}, "actual_qty") or 0.0
+		actual = (
+			frappe.db.get_value(
+				"Bin", {"item_code": item.item_code, "warehouse": doc.wip_warehouse}, "actual_qty"
+			)
+			or 0.0
+		)
 		needed = flt(item.required_qty)
 		if actual < needed:
 			shortage = needed - actual
-			mr.append("items", {
-				"item_code": item.item_code,
-				"qty": shortage,
-				"warehouse": doc.wip_warehouse,
-				"schedule_date": doc.planned_start_date
-			})
+			mr.append(
+				"items",
+				{
+					"item_code": item.item_code,
+					"qty": shortage,
+					"warehouse": doc.wip_warehouse,
+					"schedule_date": doc.planned_start_date,
+				},
+			)
 
 	if mr.items:
 		mr.insert(ignore_permissions=True)
@@ -1041,6 +1070,7 @@ def update_work_order_materials(work_order: str, materials: str):
 	Also triggers/re-runs Material Request creation for any updated shortages if the WO is scheduled for tomorrow/future.
 	"""
 	import json
+
 	_require_mfg()
 
 	doc = frappe.get_doc("Work Order", work_order)
@@ -1068,7 +1098,7 @@ def update_work_order_materials(work_order: str, materials: str):
 			SET required_qty = %s
 			WHERE parent = %s AND item_code = %s
 			""",
-			(new_qty, work_order, item_code)
+			(new_qty, work_order, item_code),
 		)
 
 	# Log the event
@@ -1079,10 +1109,13 @@ def update_work_order_materials(work_order: str, materials: str):
 
 	# If it's a tomorrow or future WO, create/update Material Request for any new shortages
 	from frappe.utils import add_days, getdate, today
+
 	tomorrow = getdate(add_days(today(), 1))
 	if doc.wip_warehouse and getdate(doc.planned_start_date) >= tomorrow:
 		# Cancel existing draft/submitted Material Request for this WO and create a fresh one with updated shortages
-		existing_mrs = frappe.get_all("Material Request", filters={"work_order": doc.name, "docstatus": ["!=", 2]}, pluck="name")
+		existing_mrs = frappe.get_all(
+			"Material Request", filters={"work_order": doc.name, "docstatus": ["!=", 2]}, pluck="name"
+		)
 		for mr_name in existing_mrs:
 			try:
 				mr_doc = frappe.get_doc("Material Request", mr_name)
@@ -1102,16 +1135,24 @@ def update_work_order_materials(work_order: str, materials: str):
 		mr.work_order = doc.name
 
 		for item in doc.required_items:
-			actual = frappe.db.get_value("Bin", {"item_code": item.item_code, "warehouse": doc.wip_warehouse}, "actual_qty") or 0.0
+			actual = (
+				frappe.db.get_value(
+					"Bin", {"item_code": item.item_code, "warehouse": doc.wip_warehouse}, "actual_qty"
+				)
+				or 0.0
+			)
 			needed = flt(item.required_qty)
 			if actual < needed:
 				shortage = needed - actual
-				mr.append("items", {
-					"item_code": item.item_code,
-					"qty": shortage,
-					"warehouse": doc.wip_warehouse,
-					"schedule_date": doc.planned_start_date
-				})
+				mr.append(
+					"items",
+					{
+						"item_code": item.item_code,
+						"qty": shortage,
+						"warehouse": doc.wip_warehouse,
+						"schedule_date": doc.planned_start_date,
+					},
+				)
 
 		if mr.items:
 			mr.insert(ignore_permissions=True)

@@ -41,6 +41,7 @@ _ADMIN_ROLES = ("System Manager", "Stabler Admin")
 # Internal helpers
 # ---------------------------------------------------------------------------
 
+
 def _require_admin() -> None:
 	"""Raise PermissionError unless the current user holds an admin role."""
 	if not any(r in frappe.get_roles() for r in _ADMIN_ROLES):
@@ -59,19 +60,11 @@ def _read_config() -> dict:
 	if not _settings_exist():
 		return {"enabled": False, "close_date": None, "override_roles": []}
 
-	enabled = bool(
-		int(frappe.db.get_single_value(_SETTINGS, "enable_period_close") or 0)
-	)
+	enabled = bool(int(frappe.db.get_single_value(_SETTINGS, "enable_period_close") or 0))
 	close_date = frappe.db.get_single_value(_SETTINGS, "period_close_date") or None
-	raw_roles = (
-		frappe.db.get_single_value(_SETTINGS, "period_close_override_roles") or ""
-	)
+	raw_roles = frappe.db.get_single_value(_SETTINGS, "period_close_override_roles") or ""
 	# Support both comma and newline as delimiters; strip whitespace.
-	override_roles = [
-		r.strip()
-		for r in raw_roles.replace("\n", ",").split(",")
-		if r.strip()
-	]
+	override_roles = [r.strip() for r in raw_roles.replace("\n", ",").split(",") if r.strip()]
 	return {
 		"enabled": enabled,
 		"close_date": close_date,
@@ -97,6 +90,7 @@ def _user_has_override(override_roles: list[str]) -> bool:
 # Public whitelisted endpoints
 # ---------------------------------------------------------------------------
 
+
 @frappe.whitelist()
 def get_period_status() -> dict:
 	"""Return the current period-close status visible to all authenticated users.
@@ -108,11 +102,12 @@ def get_period_status() -> dict:
 	        "close_date": "2025-03-31",
 	        "is_closed": true,
 	        "has_override": false,
-	        "today": "2025-04-10"
+	        "today": "2025-04-10",
 	    }
 	"""
 	cfg = _read_config()
 	from stabler.api._period_close import is_closed
+
 	today = frappe.utils.today()
 	return {
 		"enabled": cfg["enabled"],
@@ -163,15 +158,14 @@ def set_close_date(date: str | None = None) -> dict:
 
 	return {
 		"close_date": clean_date,
-		"enabled": bool(
-			int(frappe.db.get_single_value(_SETTINGS, "enable_period_close") or 0)
-		),
+		"enabled": bool(int(frappe.db.get_single_value(_SETTINGS, "enable_period_close") or 0)),
 	}
 
 
 # ---------------------------------------------------------------------------
 # Hook: wired via hooks.py doc_events
 # ---------------------------------------------------------------------------
+
 
 def enforce_on_validate(doc, method=None) -> None:
 	"""Doc-event hook — block saves/submits into a closed period.

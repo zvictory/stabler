@@ -36,9 +36,9 @@ class LateFeePolicy:
 
 @dataclass(frozen=True)
 class NightPolicy:
-	start_hour: int = 20          # OT clock-cutoff for day shifts
-	end_hour: int = 8             # OT clock-cutoff for night shifts (next day)
-	ot_method: str = "CLOCK_CUTOFF"   # or "DAILY_HOURS"
+	start_hour: int = 20  # OT clock-cutoff for day shifts
+	end_hour: int = 8  # OT clock-cutoff for night shifts (next day)
+	ot_method: str = "CLOCK_CUTOFF"  # or "DAILY_HOURS"
 	ot_threshold_min: int = 0
 	night_premium_pct: float = 10.0
 
@@ -64,7 +64,7 @@ def parse_hm(s):
 		return None
 	try:
 		h, m = int(parts[0]), int(parts[1])
-	except (TypeError, ValueError):
+	except TypeError, ValueError:
 		return None
 	return h * 60 + m
 
@@ -128,7 +128,7 @@ def compute_late_fee(late_min: int, policy: LateFeePolicy) -> float:
 	"""UZS late fee for one day. Mirrors totals.ts:computeLateFeeNumber."""
 	try:
 		late_min = int(late_min)
-	except (TypeError, ValueError):
+	except TypeError, ValueError:
 		return 0.0
 	if late_min <= policy.grace_min:
 		return 0.0
@@ -141,8 +141,10 @@ def compute_late_fee(late_min: int, policy: LateFeePolicy) -> float:
 
 def _anchor_hour(shift: str, half: HalfDayPolicy) -> int:
 	return {
-		"DAY": half.anchor_day_h, "NIGHT": half.anchor_night_h,
-		"OFFICE": half.anchor_office_h, "LIGHT": half.anchor_light_h,
+		"DAY": half.anchor_day_h,
+		"NIGHT": half.anchor_night_h,
+		"OFFICE": half.anchor_office_h,
+		"LIGHT": half.anchor_light_h,
 	}.get(shift, half.anchor_day_h)
 
 
@@ -212,7 +214,7 @@ def _num(d, key, default):
 		return default
 	try:
 		return type(default)(v)
-	except (TypeError, ValueError):
+	except TypeError, ValueError:
 		return default
 
 
@@ -271,11 +273,18 @@ def compute_row_totals(records, statuses, night_flags, overtime_minutes, calenda
 	worked_hours = round((total_minutes / 60) * 10) / 10
 	overtime_min = sum(overtime_minutes)
 	if late:
-		fee = sum(0.0 if r.get("late_excused") else compute_late_fee(int(r.get("late_min") or 0), late) for r in records)
+		fee = sum(
+			0.0 if r.get("late_excused") else compute_late_fee(int(r.get("late_min") or 0), late)
+			for r in records
+		)
 	else:
 		fee = 0.0
 	return {
-		"days_worked": days_worked, "night_days": night_days, "absent_days": absent_days,
-		"late_count": late_count, "worked_hours": worked_hours,
-		"overtime_min": overtime_min, "fee_uzs": fee,
+		"days_worked": days_worked,
+		"night_days": night_days,
+		"absent_days": absent_days,
+		"late_count": late_count,
+		"worked_hours": worked_hours,
+		"overtime_min": overtime_min,
+		"fee_uzs": fee,
 	}

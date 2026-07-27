@@ -88,13 +88,14 @@ def _haversine_m(lat1: float, lng1: float, lat2: float, lng2: float) -> float:
 def _to_float(value: Any, label: str) -> float:
 	try:
 		return float(value)
-	except (TypeError, ValueError):
+	except TypeError, ValueError:
 		frappe.throw(_("{0} must be a number").format(label))
 
 
 # ---------------------------------------------------------------------------
 # Outlets
 # ---------------------------------------------------------------------------
+
 
 @frappe.whitelist()
 def list_outlets(
@@ -240,6 +241,7 @@ def bulk_set_outlet_gps(company: str, rows) -> dict:
 # Routes
 # ---------------------------------------------------------------------------
 
+
 @frappe.whitelist()
 def list_routes(
 	company: str | None = None,
@@ -312,6 +314,7 @@ def update_route(name: str, payload: dict | str) -> dict:
 # Visits
 # ---------------------------------------------------------------------------
 
+
 def _attach_link_names(rows, link_field, doctype, name_field, out_field=None):
 	"""Attach a human-readable name for a link column via one batched query."""
 	out_field = out_field or f"{link_field}_name"
@@ -370,7 +373,9 @@ def list_visits(
 			order_by="planned_date desc, creation desc",
 			limit=max(1, min(int(limit or 200), 1000)),
 		),
-		"outlet", "Outlet", "outlet_name",
+		"outlet",
+		"Outlet",
+		"outlet_name",
 	)
 
 
@@ -464,6 +469,7 @@ def check_out(visit: str, lat: float, lng: float) -> dict:
 # Field Users
 # ---------------------------------------------------------------------------
 
+
 @frappe.whitelist()
 def list_field_users(
 	company: str | None = None,
@@ -525,6 +531,7 @@ def update_field_user(name: str, payload: dict | str) -> dict:
 # ---------------------------------------------------------------------------
 # Van stock
 # ---------------------------------------------------------------------------
+
 
 @frappe.whitelist()
 def list_van_stock(
@@ -592,6 +599,7 @@ def update_van_stock(name: str, payload: dict | str) -> dict:
 # ---------------------------------------------------------------------------
 # Promo schemes
 # ---------------------------------------------------------------------------
+
 
 @frappe.whitelist()
 def list_promo_schemes(
@@ -662,6 +670,7 @@ def update_promo_scheme(name: str, payload: dict | str) -> dict:
 # Photo reports
 # ---------------------------------------------------------------------------
 
+
 @frappe.whitelist()
 def list_photo_reports(
 	company: str | None = None,
@@ -702,7 +711,9 @@ def list_photo_reports(
 			order_by="captured_at desc, creation desc",
 			limit=max(1, min(int(limit or 200), 1000)),
 		),
-		"outlet", "Outlet", "outlet_name",
+		"outlet",
+		"Outlet",
+		"outlet_name",
 	)
 
 
@@ -743,6 +754,7 @@ def update_photo_report(name: str, payload: dict | str) -> dict:
 # Planograms
 # ---------------------------------------------------------------------------
 
+
 @frappe.whitelist()
 def list_planograms(
 	company: str | None = None,
@@ -774,7 +786,9 @@ def list_planograms(
 			order_by="creation desc",
 			limit=max(1, min(int(limit or 200), 1000)),
 		),
-		"outlet", "Outlet", "outlet_name",
+		"outlet",
+		"Outlet",
+		"outlet_name",
 	)
 
 
@@ -813,6 +827,7 @@ def update_planogram(name: str, payload: dict | str) -> dict:
 # OSA audits
 # ---------------------------------------------------------------------------
 
+
 @frappe.whitelist()
 def list_osa_audits(
 	company: str | None = None,
@@ -843,7 +858,9 @@ def list_osa_audits(
 			order_by="audited_at desc, creation desc",
 			limit=max(1, min(int(limit or 200), 1000)),
 		),
-		"outlet", "Outlet", "outlet_name",
+		"outlet",
+		"Outlet",
+		"outlet_name",
 	)
 
 
@@ -882,6 +899,7 @@ def update_osa_audit(name: str, payload: dict | str) -> dict:
 # ---------------------------------------------------------------------------
 # Receivables (read-only view over Sales Invoice)
 # ---------------------------------------------------------------------------
+
 
 @frappe.whitelist()
 def list_receivables(
@@ -933,6 +951,7 @@ def list_receivables(
 # Visit steps
 # ---------------------------------------------------------------------------
 
+
 @frappe.whitelist()
 def update_step(
 	visit: str,
@@ -953,7 +972,7 @@ def update_step(
 
 	try:
 		idx_i = int(step_idx)
-	except (TypeError, ValueError):
+	except TypeError, ValueError:
 		frappe.throw(_("step_idx must be an integer."))
 
 	steps = list(doc.steps or [])

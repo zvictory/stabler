@@ -66,8 +66,7 @@ class CustomerHierarchyIntegrationTest(FrappeTestCase):
 
 		self.parent_cust = self._create_customer("Parent_Cust_" + frappe.generate_hash(length=6))
 		self.child_cust = self._create_customer(
-			"Child_Cust_" + frappe.generate_hash(length=6),
-			parent=self.parent_cust.name
+			"Child_Cust_" + frappe.generate_hash(length=6), parent=self.parent_cust.name
 		)
 
 	def tearDown(self):
@@ -112,10 +111,7 @@ class CustomerHierarchyIntegrationTest(FrappeTestCase):
 	def test_credit_limit_validation(self):
 		# Set group credit limit on the parent customer
 		parent_doc = frappe.get_doc("Customer", self.parent_cust.name)
-		parent_doc.append("credit_limits", {
-			"company": self.company,
-			"credit_limit": 5000.0
-		})
+		parent_doc.append("credit_limits", {"company": self.company, "credit_limit": 5000.0})
 		parent_doc.save(ignore_permissions=True)
 
 		# Create a Sales Invoice for child customer within the limit
@@ -129,17 +125,21 @@ class CustomerHierarchyIntegrationTest(FrappeTestCase):
 		)
 		si1.currency = frappe.db.get_value("Account", si1.debit_to, "account_currency") or company_currency
 		si1.update_stock = 0
-		si1.append("items", {
-			"item_code": self.item,
-			"qty": 1,
-			"rate": 3000.0,
-			"income_account": company_doc.default_income_account or frappe.db.get_value(
-				"Account", {"account_type": "Income Account", "company": self.company}
-			),
-			"warehouse": frappe.db.get_value("Warehouse", {"company": self.company})
-		})
+		si1.append(
+			"items",
+			{
+				"item_code": self.item,
+				"qty": 1,
+				"rate": 3000.0,
+				"income_account": company_doc.default_income_account
+				or frappe.db.get_value(
+					"Account", {"account_type": "Income Account", "company": self.company}
+				),
+				"warehouse": frappe.db.get_value("Warehouse", {"company": self.company}),
+			},
+		)
 		si1.insert(ignore_permissions=True)
-		si1.submit() # Should succeed (3000 <= 5000)
+		si1.submit()  # Should succeed (3000 <= 5000)
 
 		# Create a second Sales Invoice that would push the total past the limit (3000 + 3000 = 6000 > 5000)
 		si2 = frappe.new_doc("Sales Invoice")
@@ -148,18 +148,21 @@ class CustomerHierarchyIntegrationTest(FrappeTestCase):
 		si2.debit_to = si1.debit_to
 		si2.currency = si1.currency
 		si2.update_stock = 0
-		si2.append("items", {
-			"item_code": self.item,
-			"qty": 1,
-			"rate": 3000.0,
-			"income_account": si1.items[0].income_account,
-			"warehouse": si1.items[0].warehouse
-		})
+		si2.append(
+			"items",
+			{
+				"item_code": self.item,
+				"qty": 1,
+				"rate": 3000.0,
+				"income_account": si1.items[0].income_account,
+				"warehouse": si1.items[0].warehouse,
+			},
+		)
 		si2.insert(ignore_permissions=True)
 
 		# Temporarily switch user to a standard user to trigger the credit validation block
 		original_user = frappe.session.user
-		frappe.set_user("Guest") # Or any non-Accounts/System Manager user
+		frappe.set_user("Guest")  # Or any non-Accounts/System Manager user
 		try:
 			with self.assertRaises(frappe.ValidationError):
 				si2.submit()
@@ -169,7 +172,7 @@ class CustomerHierarchyIntegrationTest(FrappeTestCase):
 
 		# Administrator has System Manager role, so submitting as Administrator should bypass the limit
 		si2.reload()
-		si2.submit() # Should succeed due to bypass role
+		si2.submit()  # Should succeed due to bypass role
 
 	def test_auto_grn_checklist_on_ci_stuffed_status(self):
 		# Create a Commercial Invoice in BOOKED status
@@ -179,11 +182,7 @@ class CustomerHierarchyIntegrationTest(FrappeTestCase):
 		ci.ci_number = frappe.generate_hash(length=8)
 		ci.ci_date = today()
 		ci.status = "BOOKED"
-		ci.append("items", {
-			"item": self.item,
-			"qty": 100,
-			"rate": 10.0
-		})
+		ci.append("items", {"item": self.item, "qty": 100, "rate": 10.0})
 		ci.insert(ignore_permissions=True)
 
 		# Verify no GRN checklist exists yet

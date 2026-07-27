@@ -29,9 +29,7 @@ def execute():
 	if not frappe.db.exists("DocType", "Sales Order Item"):
 		return
 	# Sentinel guard: if the first table already has the field, the set was added.
-	if frappe.db.exists(
-		"Custom Field", {"dt": "Sales Order Item", "fieldname": "custom_line_note"}
-	):
+	if frappe.db.exists("Custom Field", {"dt": "Sales Order Item", "fieldname": "custom_line_note"}):
 		return
 
 	fields = {}

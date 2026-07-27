@@ -51,13 +51,11 @@ def auto_balance_fx_residual(doc, method=None):
 
 
 def _gl_and_cost_center(company: str):
-	gl = (
-		frappe.get_cached_value("Company", company, "exchange_gain_loss_account")
-		or frappe.get_cached_value("Company", company, "round_off_account")
+	gl = frappe.get_cached_value("Company", company, "exchange_gain_loss_account") or frappe.get_cached_value(
+		"Company", company, "round_off_account"
 	)
-	cc = (
-		frappe.get_cached_value("Company", company, "round_off_cost_center")
-		or frappe.get_cached_value("Company", company, "cost_center")
+	cc = frappe.get_cached_value("Company", company, "round_off_cost_center") or frappe.get_cached_value(
+		"Company", company, "cost_center"
 	)
 	return gl, cc
 
@@ -92,12 +90,15 @@ def _balance_payment_entry(doc) -> None:
 	if not gl:
 		return  # no account to book to — ERPNext will raise its standard error
 
-	doc.append("deductions", {
-		"account": gl,
-		"cost_center": cc,
-		"amount": diff,
-		"description": _PE_MARKER,
-	})
+	doc.append(
+		"deductions",
+		{
+			"account": gl,
+			"cost_center": cc,
+			"amount": diff,
+			"description": _PE_MARKER,
+		},
+	)
 	if hasattr(doc, "set_difference_amount"):
 		doc.set_difference_amount()
 

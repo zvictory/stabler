@@ -122,8 +122,7 @@ def execute():
 				"fieldtype": "Long Text",
 				"insert_after": "custom_additional_duties",
 				"description": (
-					"JSON: {seniority?, night?:{perHour}, custom?:[{label,amount,type}]}. "
-					"Salary-sensitive."
+					"JSON: {seniority?, night?:{perHour}, custom?:[{label,amount,type}]}. Salary-sensitive."
 				),
 			}
 		)

@@ -11,6 +11,7 @@ it is sent to the browser unsigned, signed there via the user's own E-IMZO
 key (PKCS#7), and only the signed envelope + signature travel back through
 ``stabler.api.edo.didox_send``.
 """
+
 from __future__ import annotations
 
 from typing import Any

@@ -15,21 +15,21 @@ from frappe.custom.doctype.custom_field.custom_field import create_custom_fields
 
 
 def execute() -> None:
-    if not frappe.db.exists("DocType", "Asset"):
-        return
-    create_custom_fields(
-        {
-            "Journal Entry Account": [
-                {
-                    "fieldname": "custom_asset",
-                    "label": "Asset",
-                    "fieldtype": "Link",
-                    "options": "Asset",
-                    "insert_after": "reference_name",
-                    "allow_on_submit": 1,
-                    "description": "Asset this purchase line is capitalised against",
-                }
-            ],
-        },
-        update=True,
-    )
+	if not frappe.db.exists("DocType", "Asset"):
+		return
+	create_custom_fields(
+		{
+			"Journal Entry Account": [
+				{
+					"fieldname": "custom_asset",
+					"label": "Asset",
+					"fieldtype": "Link",
+					"options": "Asset",
+					"insert_after": "reference_name",
+					"allow_on_submit": 1,
+					"description": "Asset this purchase line is capitalised against",
+				}
+			],
+		},
+		update=True,
+	)

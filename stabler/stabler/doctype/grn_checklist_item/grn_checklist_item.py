@@ -10,6 +10,4 @@ class GRNChecklistItem(Document):
 		self._reject_direct_mutation()
 
 	def _reject_direct_mutation(self) -> None:
-		frappe.throw(
-			frappe._("GRN rows must be changed through GRN Checklist.")
-		)
+		frappe.throw(frappe._("GRN rows must be changed through GRN Checklist."))

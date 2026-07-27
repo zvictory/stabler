@@ -42,8 +42,7 @@ class TestNoInlineDropdowns(unittest.TestCase):
 			offenders,
 			[],
 			"Hand-rolled absolute dropdowns get clipped by overflow containers. "
-			"Use the shared Typeahead (teleported to <body>) instead: "
-			+ ", ".join(offenders),
+			"Use the shared Typeahead (teleported to <body>) instead: " + ", ".join(offenders),
 		)
 
 

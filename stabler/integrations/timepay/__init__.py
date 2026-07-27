@@ -1,2 +1,1 @@
 """Timepay attendance integration."""
-

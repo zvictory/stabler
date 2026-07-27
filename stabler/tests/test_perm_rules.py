@@ -1,4 +1,5 @@
 """Unit tests for the pure permission-scoping rules (no Frappe)."""
+
 from __future__ import annotations
 
 import unittest
@@ -19,6 +20,7 @@ from stabler.api._perm_rules import (
 # ---------------------------------------------------------------------------
 # Existing tests — company scoping (must not regress)
 # ---------------------------------------------------------------------------
+
 
 class NeedsRestrictionTest(unittest.TestCase):
 	def test_empty_means_no_restriction(self):
@@ -49,6 +51,7 @@ class IsAllowedTest(unittest.TestCase):
 # ---------------------------------------------------------------------------
 # Gap #46 — owner scoping
 # ---------------------------------------------------------------------------
+
 
 class NeedsOwnerRestrictionTest(unittest.TestCase):
 	def test_empty_no_restriction(self):
@@ -85,6 +88,7 @@ class OwnerAllowedTest(unittest.TestCase):
 # Gap #46 — territory scoping
 # ---------------------------------------------------------------------------
 
+
 class NeedsTerritoryRestrictionTest(unittest.TestCase):
 	def test_empty_no_restriction(self):
 		self.assertFalse(needs_territory_restriction([]))
@@ -118,6 +122,7 @@ class TerritoryAllowedTest(unittest.TestCase):
 # Gap #46 — combined master_allowed gate
 # ---------------------------------------------------------------------------
 
+
 class MasterAllowedTest(unittest.TestCase):
 	"""master_allowed must pass BOTH active restrictions independently."""
 
@@ -126,29 +131,22 @@ class MasterAllowedTest(unittest.TestCase):
 		self.assertTrue(master_allowed("alice@example.com", "North", [], []))
 
 	def test_owner_restriction_only_allow(self):
-		self.assertTrue(
-			master_allowed("alice@example.com", "North", ["alice@example.com"], None)
-		)
+		self.assertTrue(master_allowed("alice@example.com", "North", ["alice@example.com"], None))
 
 	def test_owner_restriction_only_deny(self):
-		self.assertFalse(
-			master_allowed("carol@example.com", "North", ["alice@example.com"], None)
-		)
+		self.assertFalse(master_allowed("carol@example.com", "North", ["alice@example.com"], None))
 
 	def test_territory_restriction_only_allow(self):
-		self.assertTrue(
-			master_allowed("alice@example.com", "North", None, ["North", "South"])
-		)
+		self.assertTrue(master_allowed("alice@example.com", "North", None, ["North", "South"]))
 
 	def test_territory_restriction_only_deny(self):
-		self.assertFalse(
-			master_allowed("alice@example.com", "East", None, ["North", "South"])
-		)
+		self.assertFalse(master_allowed("alice@example.com", "East", None, ["North", "South"]))
 
 	def test_both_restrictions_both_pass(self):
 		self.assertTrue(
 			master_allowed(
-				"alice@example.com", "North",
+				"alice@example.com",
+				"North",
 				["alice@example.com", "bob@example.com"],
 				["North", "South"],
 			)
@@ -157,7 +155,8 @@ class MasterAllowedTest(unittest.TestCase):
 	def test_both_restrictions_owner_fails(self):
 		self.assertFalse(
 			master_allowed(
-				"carol@example.com", "North",
+				"carol@example.com",
+				"North",
 				["alice@example.com"],
 				["North"],
 			)
@@ -166,7 +165,8 @@ class MasterAllowedTest(unittest.TestCase):
 	def test_both_restrictions_territory_fails(self):
 		self.assertFalse(
 			master_allowed(
-				"alice@example.com", "East",
+				"alice@example.com",
+				"East",
 				["alice@example.com"],
 				["North"],
 			)
@@ -175,7 +175,8 @@ class MasterAllowedTest(unittest.TestCase):
 	def test_both_restrictions_both_fail(self):
 		self.assertFalse(
 			master_allowed(
-				"carol@example.com", "East",
+				"carol@example.com",
+				"East",
 				["alice@example.com"],
 				["North"],
 			)
@@ -183,25 +184,20 @@ class MasterAllowedTest(unittest.TestCase):
 
 	def test_blank_owner_passes_owner_restriction(self):
 		# Records with no owner are never hidden even under owner restriction.
-		self.assertTrue(
-			master_allowed(None, "North", ["alice@example.com"], ["North"])
-		)
+		self.assertTrue(master_allowed(None, "North", ["alice@example.com"], ["North"]))
 
 	def test_blank_territory_passes_territory_restriction(self):
 		# Records with no territory are never hidden even under territory restriction.
-		self.assertTrue(
-			master_allowed("alice@example.com", None, ["alice@example.com"], ["North"])
-		)
+		self.assertTrue(master_allowed("alice@example.com", None, ["alice@example.com"], ["North"]))
 
 	def test_both_blank_passes_both_restrictions(self):
-		self.assertTrue(
-			master_allowed(None, None, ["alice@example.com"], ["North"])
-		)
+		self.assertTrue(master_allowed(None, None, ["alice@example.com"], ["North"]))
 
 
 # ---------------------------------------------------------------------------
 # Gap #45 — cost / margin field masking
 # ---------------------------------------------------------------------------
+
 
 class CostFieldsConstantTest(unittest.TestCase):
 	def test_key_fields_present(self):

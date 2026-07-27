@@ -45,6 +45,7 @@ _LOCK_ROLES = ("HR Manager", "System Manager", "Stabler Admin")
 # Shared guards
 # ---------------------------------------------------------------------------
 
+
 def _require_auth() -> None:
 	if frappe.session.user == "Guest":
 		frappe.throw(_("Authentication required."), frappe.PermissionError)
@@ -73,7 +74,7 @@ def _require_lock_role() -> None:
 def _parse_limit(raw, default: int = 200, cap: int = 500) -> int:
 	try:
 		return min(int(raw), cap)
-	except (TypeError, ValueError):
+	except TypeError, ValueError:
 		return default
 
 
@@ -87,10 +88,7 @@ def _period_date_range(payroll_period: str):
 	period_start = None
 	period_end = None
 
-	if (
-		frappe.db.exists("DocType", "Payroll Period")
-		and frappe.db.exists("Payroll Period", payroll_period)
-	):
+	if frappe.db.exists("DocType", "Payroll Period") and frappe.db.exists("Payroll Period", payroll_period):
 		period_start, period_end = frappe.db.get_value(
 			"Payroll Period", payroll_period, ["start_date", "end_date"]
 		)
@@ -128,7 +126,14 @@ def _active_employees(company: str, period_start: str, period_end: str) -> list[
 	rows = frappe.get_all(
 		"Employee",
 		filters={"company": company, "status": "Active"},
-		fields=["name", "employee_name", "date_of_joining", "relieving_date", "default_shift", "holiday_list"],
+		fields=[
+			"name",
+			"employee_name",
+			"date_of_joining",
+			"relieving_date",
+			"default_shift",
+			"holiday_list",
+		],
 		order_by="employee_name asc",
 		limit_page_length=10000,
 	)
@@ -193,7 +198,9 @@ def _checkin_punches(employee: str, date: str) -> list[dict]:
 	]
 
 
-def _attendance_status_summary(status: str | None, date: str, late_min=0, early_min=0, overtime_min=0) -> dict:
+def _attendance_status_summary(
+	status: str | None, date: str, late_min=0, early_min=0, overtime_min=0
+) -> dict:
 	normalized = (status or "").lower()
 	if normalized in ("present", "work from home"):
 		mapped = "present"
@@ -228,12 +235,21 @@ def _daily_summaries(employee: dict, company: str, days: list[str]) -> list[dict
 	shift = _shift_context(employee)
 	hire_date = str(employee.get("date_of_joining") or days[0])
 	termination_date = str(employee.get("relieving_date")) if employee.get("relieving_date") else None
-	att_min_cols = [c for c in ("custom_late_minutes", "custom_early_minutes", "custom_overtime_minutes") if frappe.db.has_column(_ATTENDANCE, c)]
+	att_min_cols = [
+		c
+		for c in ("custom_late_minutes", "custom_early_minutes", "custom_overtime_minutes")
+		if frappe.db.has_column(_ATTENDANCE, c)
+	]
 	summaries = []
 	for date in days:
 		attendance = frappe.db.get_value(
 			_ATTENDANCE,
-			{"employee": employee["name"], "attendance_date": date, "company": company, "docstatus": ["<", 2]},
+			{
+				"employee": employee["name"],
+				"attendance_date": date,
+				"company": company,
+				"docstatus": ["<", 2],
+			},
 			["status", *att_min_cols],
 			as_dict=True,
 		)
@@ -279,7 +295,9 @@ def _employee_period_count(
 	return frappe.db.count(doctype, filters)
 
 
-def _upsert_summary(employee: dict, company: str, payroll_period: str, period_start: str, period_end: str, rollup: dict) -> str | None:
+def _upsert_summary(
+	employee: dict, company: str, payroll_period: str, period_start: str, period_end: str, rollup: dict
+) -> str | None:
 	existing = frappe.db.get_value(
 		_SUMMARY,
 		{"employee": employee["name"], "payroll_period": payroll_period},
@@ -366,6 +384,7 @@ def generate_period_summaries(company: str, payroll_period: str) -> dict:
 # ---------------------------------------------------------------------------
 # attendance_dashboard
 # ---------------------------------------------------------------------------
+
 
 @frappe.whitelist()
 def attendance_dashboard(company: str, date: str | None = None) -> dict:
@@ -479,6 +498,7 @@ def attendance_dashboard(company: str, date: str | None = None) -> dict:
 # list_payroll_summaries
 # ---------------------------------------------------------------------------
 
+
 @frappe.whitelist()
 def list_payroll_summaries(
 	company: str,
@@ -568,6 +588,7 @@ def list_payroll_summaries(
 # period_readiness
 # ---------------------------------------------------------------------------
 
+
 @frappe.whitelist()
 def period_readiness(company: str, payroll_period: str) -> dict:
 	"""Read-only pre-lock check — delegates to hr_corrections.period_lock_readiness.
@@ -624,6 +645,7 @@ def period_readiness(company: str, payroll_period: str) -> dict:
 # lock_period
 # ---------------------------------------------------------------------------
 
+
 @frappe.whitelist()
 def lock_period(company: str, payroll_period: str) -> dict:
 	"""Lock all Draft/Ready summaries for a payroll period.
@@ -669,13 +691,9 @@ def lock_period(company: str, payroll_period: str) -> dict:
 	readiness = _plr(company=company, payroll_period=payroll_period)
 
 	if not readiness["can_lock"]:
-		blocker_lines = "; ".join(
-			b["message"] for b in readiness["blockers"]
-		)
+		blocker_lines = "; ".join(b["message"] for b in readiness["blockers"])
 		frappe.throw(
-			_("Cannot lock period — resolve the following blockers first: {0}").format(
-				blocker_lines
-			),
+			_("Cannot lock period — resolve the following blockers first: {0}").format(blocker_lines),
 			frappe.ValidationError,
 		)
 

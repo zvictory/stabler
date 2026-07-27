@@ -1,6 +1,6 @@
 """Unit tests for stabler.api._advance_aging (WP-I10, Frappe-free).
 
-    cd /path/to/stabler && PYTHONPATH=$PWD python3 -m unittest stabler.tests.test_advance_aging -v
+cd /path/to/stabler && PYTHONPATH=$PWD python3 -m unittest stabler.tests.test_advance_aging -v
 """
 
 from __future__ import annotations
@@ -31,17 +31,17 @@ class TestClassify(unittest.TestCase):
 	def test_buckets(self):
 		self.assertEqual(classify(0), "OK")
 		self.assertEqual(classify(149), "OK")
-		self.assertEqual(classify(150), "WARN")   # uyarı eşiği dahil
+		self.assertEqual(classify(150), "WARN")  # uyarı eşiği dahil
 		self.assertEqual(classify(179), "WARN")
-		self.assertEqual(classify(180), "BREACH") # 180. gün = ihlal
+		self.assertEqual(classify(180), "BREACH")  # 180. gün = ihlal
 		self.assertEqual(classify(365), "BREACH")
 
 
 class TestRowsAndSummary(unittest.TestCase):
 	def _rows(self):
 		return [
-			{"name": "PE-A", "posting_date": "2026-07-01", "unallocated_amount": 1000},   # 16g OK
-			{"name": "PE-B", "posting_date": "2026-02-10", "unallocated_amount": 5000},   # 157g WARN
+			{"name": "PE-A", "posting_date": "2026-07-01", "unallocated_amount": 1000},  # 16g OK
+			{"name": "PE-B", "posting_date": "2026-02-10", "unallocated_amount": 5000},  # 157g WARN
 			{"name": "PE-C", "posting_date": "2025-12-01", "unallocated_amount": 20000},  # 228g BREACH
 		]
 

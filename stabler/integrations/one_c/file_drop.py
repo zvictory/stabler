@@ -139,9 +139,7 @@ def _upsert_customer(element: ET.Element) -> str | None:
 		doc.customer_group = (
 			frappe.db.get_value("Customer Group", {"is_group": 0}, "name") or "All Customer Groups"
 		)
-		doc.territory = (
-			frappe.db.get_value("Territory", {"is_group": 0}, "name") or "All Territories"
-		)
+		doc.territory = frappe.db.get_value("Territory", {"is_group": 0}, "name") or "All Territories"
 		if tax_id:
 			doc.tax_id = tax_id
 		doc.insert(ignore_permissions=True)
@@ -165,9 +163,7 @@ def _upsert_item(element: ET.Element) -> str | None:
 		doc = frappe.new_doc("Item")
 		doc.item_code = item_code
 		doc.item_name = item_name
-		doc.item_group = (
-			frappe.db.get_value("Item Group", {"is_group": 0}, "name") or "All Item Groups"
-		)
+		doc.item_group = frappe.db.get_value("Item Group", {"is_group": 0}, "name") or "All Item Groups"
 		doc.stock_uom = frappe.db.get_value("UOM", {"name": "Nos"}, "name") or "Nos"
 		doc.insert(ignore_permissions=True)
 	upsert_external_ref("Item", doc.name, guid)

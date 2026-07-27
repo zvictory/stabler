@@ -70,9 +70,7 @@ def _pos_profile_doc(company: str, pos_profile: str):
 			frappe.throw(_("Not permitted for company {0}").format(company), frappe.PermissionError)
 		# If the profile has an explicit user list, the caller must be on it.
 		has_user_list = frappe.db.exists("POS Profile User", {"parent": pos_profile})
-		if has_user_list and not frappe.db.exists(
-			"POS Profile User", {"parent": pos_profile, "user": user}
-		):
+		if has_user_list and not frappe.db.exists("POS Profile User", {"parent": pos_profile, "user": user}):
 			frappe.throw(_("You are not assigned to this POS Profile."), frappe.PermissionError)
 	if doc.disabled:
 		frappe.throw(_("POS Profile is disabled."), frappe.ValidationError)
@@ -135,7 +133,9 @@ def _profile_payload(doc) -> dict:
 	}
 
 
-def _rate_for_item(item_code: str, price_list: str | None, stock_uom: str | None) -> tuple[float, str | None, bool]:
+def _rate_for_item(
+	item_code: str, price_list: str | None, stock_uom: str | None
+) -> tuple[float, str | None, bool]:
 	if price_list:
 		hit = _lookup_item_price(item_code, price_list, uom=stock_uom)
 		if hit:

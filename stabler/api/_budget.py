@@ -15,6 +15,7 @@ Terminology (standard management-accounting convention):
 Divide-by-zero safety: variance_pct is None when budget is 0.
 Garbage-safety: non-numeric inputs are treated as 0.
 """
+
 from __future__ import annotations
 
 from decimal import ROUND_HALF_UP, Decimal, InvalidOperation
@@ -23,7 +24,7 @@ from decimal import ROUND_HALF_UP, Decimal, InvalidOperation
 # Internal helpers
 # ---------------------------------------------------------------------------
 
-_INCOME_TYPES = {"income", "revenue"}	# lower-cased
+_INCOME_TYPES = {"income", "revenue"}  # lower-cased
 
 
 def _d(v) -> Decimal:
@@ -32,7 +33,7 @@ def _d(v) -> Decimal:
 		return v
 	try:
 		return Decimal(str(v))
-	except (InvalidOperation, TypeError, ValueError):
+	except InvalidOperation, TypeError, ValueError:
 		return Decimal("0")
 
 
@@ -49,6 +50,7 @@ def _is_income(account_type: str) -> bool:
 # ---------------------------------------------------------------------------
 # Public API
 # ---------------------------------------------------------------------------
+
 
 def compute_variance(
 	*,
@@ -131,8 +133,8 @@ def compute_variance_report(rows: list[dict], precision: int = 2) -> dict:
 	  }
 	"""
 	out_rows = []
-	total_budget  = Decimal("0")
-	total_actual  = Decimal("0")
+	total_budget = Decimal("0")
+	total_actual = Decimal("0")
 	total_variance = Decimal("0")
 	counts = {"favorable": 0, "unfavorable": 0, "on_budget": 0}
 
@@ -146,19 +148,19 @@ def compute_variance_report(rows: list[dict], precision: int = 2) -> dict:
 		merged = dict(r)
 		merged.update(result)
 		out_rows.append(merged)
-		total_budget   += result["budget"]
-		total_actual   += result["actual"]
+		total_budget += result["budget"]
+		total_actual += result["actual"]
 		total_variance += result["variance"]
 		counts[result["status"]] = counts.get(result["status"], 0) + 1
 
 	return {
 		"rows": out_rows,
 		"totals": {
-			"budget":   _quantize(total_budget, precision),
-			"actual":   _quantize(total_actual, precision),
+			"budget": _quantize(total_budget, precision),
+			"actual": _quantize(total_actual, precision),
 			"variance": _quantize(total_variance, precision),
 		},
-		"favorable_count":   counts.get("favorable", 0),
+		"favorable_count": counts.get("favorable", 0),
 		"unfavorable_count": counts.get("unfavorable", 0),
-		"on_budget_count":   counts.get("on_budget", 0),
+		"on_budget_count": counts.get("on_budget", 0),
 	}

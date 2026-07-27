@@ -92,7 +92,9 @@ class TimepayClient:
 				raise TimepayApiError(401, None, "Refresh succeeded but tokens missing")
 			response = call(fresh["access"])
 		if response.status_code < 200 or response.status_code >= 300:
-			raise TimepayApiError(response.status_code, getattr(response, "text", ""), f"Timepay {response.status_code}")
+			raise TimepayApiError(
+				response.status_code, getattr(response, "text", ""), f"Timepay {response.status_code}"
+			)
 		body = response.json()
 		if not isinstance(body, dict):
 			raise TimepayApiError(response.status_code, None, "Invalid Timepay response")
@@ -128,7 +130,14 @@ class TimepayClient:
 			next_tokens["refresh_expires_at"] = decode_jwt_exp(refresh)
 		self.store.save_refreshed(next_tokens)
 
-	def list_employees(self, *, date: str | None = None, role: str | None = None, offset: int | None = None, limit: int | None = None) -> dict[str, Any]:
+	def list_employees(
+		self,
+		*,
+		date: str | None = None,
+		role: str | None = None,
+		offset: int | None = None,
+		limit: int | None = None,
+	) -> dict[str, Any]:
 		qs = _query({"date": date, "role": role, "offset": offset, "limit": limit})
 		return self._with_auth(
 			lambda access: self.transport.request(

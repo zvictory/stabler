@@ -51,7 +51,7 @@ def list_exchange_rates(days: int = 30) -> list[dict]:
 
 	try:
 		days = max(1, min(int(days), 365))
-	except (TypeError, ValueError):
+	except TypeError, ValueError:
 		days = 30
 
 	since = datetime.date.today() - datetime.timedelta(days=days)
@@ -93,7 +93,7 @@ def list_ehf_submissions(
 	_require_admin()
 	try:
 		limit = max(1, min(int(limit), 500))
-	except (TypeError, ValueError):
+	except TypeError, ValueError:
 		limit = 50
 
 	filters: dict = {}
@@ -177,7 +177,7 @@ def list_onec_logs(
 	_require_admin()
 	try:
 		limit = max(1, min(int(limit), 500))
-	except (TypeError, ValueError):
+	except TypeError, ValueError:
 		limit = 100
 
 	filters: dict = {}
@@ -320,7 +320,7 @@ def list_asl_stock_entries(limit: int = 50) -> list[dict]:
 	_require_admin_or_warehouse()
 	try:
 		limit = max(1, min(int(limit), 200))
-	except (TypeError, ValueError):
+	except TypeError, ValueError:
 		limit = 50
 
 	if not frappe.db.has_column("Item", "asl_belgisi_enabled"):
@@ -359,7 +359,7 @@ def list_arca_events(processed: str | None = None, limit: int = 100) -> list[dic
 	_require_admin()
 	try:
 		limit = max(1, min(int(limit), 500))
-	except (TypeError, ValueError):
+	except TypeError, ValueError:
 		limit = 100
 
 	filters: dict = {}
@@ -412,8 +412,9 @@ def get_asl_stock_entry_rows(stock_entry: str) -> list[dict]:
 	_require_admin_or_warehouse()
 	if not frappe.db.has_column("Stock Entry Detail", "asl_belgisi_code"):
 		return []
-	return frappe.db.sql(
-		"""
+	return (
+		frappe.db.sql(
+			"""
 		SELECT
 			sed.name              AS row_name,
 			sed.item_code         AS item_code,
@@ -426,9 +427,11 @@ def get_asl_stock_entry_rows(stock_entry: str) -> list[dict]:
 		  AND item.asl_belgisi_enabled = 1
 		ORDER BY sed.idx
 		""",
-		(stock_entry,),
-		as_dict=True,
-	) or []
+			(stock_entry,),
+			as_dict=True,
+		)
+		or []
+	)
 
 
 class CBUExchangeCache:
@@ -436,7 +439,7 @@ class CBUExchangeCache:
 		records = frappe.get_all(
 			"Currency Exchange",
 			fields=["from_currency", "to_currency", "date", "exchange_rate"],
-			order_by="date asc"
+			order_by="date asc",
 		)
 		self.rates: dict[tuple[str, str], list[tuple[datetime.date, float]]] = {}
 		for r in records:
@@ -531,7 +534,7 @@ def gl_integrity_scan(company: str) -> dict[str, int]:
 	invoices = frappe.get_all(
 		"Sales Invoice",
 		filters={"company": company, "docstatus": 1},
-		fields=["name", "currency", "conversion_rate", "posting_date"]
+		fields=["name", "currency", "conversion_rate", "posting_date"],
 	)
 	for inv in invoices:
 		if inv.currency != company_currency:
@@ -545,7 +548,7 @@ def gl_integrity_scan(company: str) -> dict[str, int]:
 	pinvoices = frappe.get_all(
 		"Purchase Invoice",
 		filters={"company": company, "docstatus": 1},
-		fields=["name", "currency", "conversion_rate", "posting_date"]
+		fields=["name", "currency", "conversion_rate", "posting_date"],
 	)
 	for pinv in pinvoices:
 		if pinv.currency != company_currency:
@@ -559,7 +562,15 @@ def gl_integrity_scan(company: str) -> dict[str, int]:
 	payments = frappe.get_all(
 		"Payment Entry",
 		filters={"company": company, "docstatus": 1},
-		fields=["name", "paid_from_account_currency", "paid_to_account_currency", "source_exchange_rate", "target_exchange_rate", "posting_date", "clearance_date"]
+		fields=[
+			"name",
+			"paid_from_account_currency",
+			"paid_to_account_currency",
+			"source_exchange_rate",
+			"target_exchange_rate",
+			"posting_date",
+			"clearance_date",
+		],
 	)
 	for pe in payments:
 		date = pe.clearance_date or pe.posting_date

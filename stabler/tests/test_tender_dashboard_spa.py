@@ -17,6 +17,8 @@ _SALES_BOARD = os.path.join(_ROOT, "public", "js", "pages", "sales", "SalesOrder
 _TREND_CHART = os.path.join(_ROOT, "public", "js", "pages", "tender", "TenderTrendChart.vue")
 _EXECUTION_FLOW = os.path.join(_ROOT, "public", "js", "pages", "tender", "TenderExecutionFlow.vue")
 _PORTFOLIO_PREVIEW = os.path.join(_ROOT, "public", "js", "pages", "tender", "TenderPortfolioPreview.vue")
+
+
 def _read(path: str) -> str:
 	with open(path, encoding="utf-8") as source:
 		return source.read()
@@ -26,9 +28,9 @@ class TestTenderDashboardSpaContract(unittest.TestCase):
 	def test_dashboard_uses_capability_gate_and_aggregate_endpoint(self):
 		source = _read(_DASHBOARD)
 		self.assertIn('session.canAccessModule("tender")', source)
-		self.assertIn('stabler.api.tender.tender_dashboard', source)
+		self.assertIn("stabler.api.tender.tender_dashboard", source)
 		self.assertIn('v-if="tenderEnabled"', source)
-		self.assertIn('v-else', source)
+		self.assertIn("v-else", source)
 
 	def test_company_disabled_tender_keeps_financial_fallback(self):
 		source = _read(_DASHBOARD)
@@ -37,10 +39,10 @@ class TestTenderDashboardSpaContract(unittest.TestCase):
 
 	def test_dashboard_has_accessible_spa_drilldowns_without_desk_links(self):
 		source = _read(_DASHBOARD)
-		self.assertIn('router.push({ name, query })', source)
+		self.assertIn("router.push({ name, query })", source)
 		self.assertIn('type="button" class="tender-metric-card"', source)
-		self.assertIn('.tender-metric-card:focus-visible', source)
-		self.assertIn('.tender-metric-card:active', source)
+		self.assertIn(".tender-metric-card:focus-visible", source)
+		self.assertIn(".tender-metric-card:active", source)
 		self.assertNotIn('"/app/', source)
 		self.assertNotIn("'/app/", source)
 
@@ -65,12 +67,18 @@ class TestTenderDashboardSpaContract(unittest.TestCase):
 
 	def test_dashboard_error_is_announced_and_focuses_retry(self):
 		source = _read(_DASHBOARD)
-		for text in ('role="alert"', 'aria-live="assertive"', 'ref="retryButton"', 'await nextTick()', 'retryButton.value?.focus()'):
+		for text in (
+			'role="alert"',
+			'aria-live="assertive"',
+			'ref="retryButton"',
+			"await nextTick()",
+			"retryButton.value?.focus()",
+		):
 			self.assertIn(text, source)
 
 	def test_dashboard_gates_role_specific_destinations(self):
 		source = _read(_DASHBOARD)
-		self.assertIn('role_scope.views', source)
+		self.assertIn("role_scope.views", source)
 		for view in ("director", "sourcing", "declarant", "logist"):
 			self.assertIn(view, source)
 
@@ -106,8 +114,8 @@ class TestTenderDashboardSpaContract(unittest.TestCase):
 		self.assertIn("@media (max-width", execution_source)
 
 		portfolio_source = _read(_PORTFOLIO_PREVIEW)
-		self.assertIn(':data-label="t(\'Tender\')"', portfolio_source)
-		self.assertIn(':data-label="t(\'Progress\')"', portfolio_source)
+		self.assertIn(":data-label=\"t('Tender')\"", portfolio_source)
+		self.assertIn(":data-label=\"t('Progress')\"", portfolio_source)
 		self.assertIn('tabindex="0"', portfolio_source)
 		self.assertIn("@keydown.enter", portfolio_source)
 		self.assertIn("@keydown.space.prevent", portfolio_source)
@@ -122,7 +130,7 @@ class TestTenderDashboardSpaContract(unittest.TestCase):
 			("warn", "Needs attention", "bg-yellow-lt text-yellow"),
 			("risk", "At risk", "bg-red-lt text-red"),
 		):
-			self.assertIn(f"{key}: {{ label: t(\"{label}\"), class: \"{color}\" }}", source)
+			self.assertIn(f'{key}: {{ label: t("{label}"), class: "{color}" }}', source)
 		self.assertIn("riskMeta[row.risk] || riskMeta.good", source)
 
 	def test_sales_order_board_reads_dashboard_period_and_status(self):
@@ -130,6 +138,7 @@ class TestTenderDashboardSpaContract(unittest.TestCase):
 		self.assertIn("useRoute", source)
 		self.assertIn("tenderRouteFilters", source)
 		self.assertIn("delivery_pending", source)
+
 
 if __name__ == "__main__":
 	unittest.main()

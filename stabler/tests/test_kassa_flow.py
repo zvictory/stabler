@@ -1,6 +1,6 @@
 """Unit tests for stabler.integrations.kassa._flow (WP-K3 + WP-K6 smart-bot, Frappe-free).
 
-    cd /path/to/stabler && PYTHONPATH=$PWD python3 -m unittest stabler.tests.test_kassa_flow -v
+cd /path/to/stabler && PYTHONPATH=$PWD python3 -m unittest stabler.tests.test_kassa_flow -v
 """
 
 from __future__ import annotations
@@ -41,9 +41,7 @@ CTX = {
 			{"account": "PK Naqd UZS - M", "label": "PK", "currency": "UZS"},
 		]
 	},
-	"categories": [
-		{"account": f"Expense {i} - M", "label": f"Xarajat {i}"} for i in range(1, 4)
-	],
+	"categories": [{"account": f"Expense {i} - M", "label": f"Xarajat {i}"} for i in range(1, 4)],
 	"deals": [
 		{"name": "CRM-DEAL-0001", "label": "Tender A"},
 		{"name": "CRM-DEAL-0002", "label": "Tender B"},
@@ -336,7 +334,7 @@ class TestCancel(unittest.TestCase):
 
 	def test_cancel_preserves_posting_date(self):
 		state = _pick_kassa()
-		_, _, state, _ = handle(state, "\U0001F4DD Qolib ketgan amal", CTX)
+		_, _, state, _ = handle(state, "\U0001f4dd Qolib ketgan amal", CTX)
 		_, _, state, _ = handle(state, "05.07.2026", CTX)
 		self.assertEqual(state["posting_date"], "2026-07-05")
 		_, _, state, _ = handle(state, BTN_KIRIM, CTX)
@@ -348,7 +346,7 @@ class TestCancel(unittest.TestCase):
 class TestBackdate(unittest.TestCase):
 	def test_sets_date_and_returns_to_menu(self):
 		state = _pick_kassa()
-		_, _, state, _ = handle(state, "\U0001F4DD Qolib ketgan amal", CTX)
+		_, _, state, _ = handle(state, "\U0001f4dd Qolib ketgan amal", CTX)
 		_reply, _kb, state, action = handle(state, "05.07.2026", CTX)
 		self.assertEqual(state["step"], STEP_MENU)
 		self.assertEqual(state["posting_date"], "2026-07-05")
@@ -356,13 +354,13 @@ class TestBackdate(unittest.TestCase):
 
 	def test_invalid_date_reprompts(self):
 		state = _pick_kassa()
-		_, _, state, _ = handle(state, "\U0001F4DD Qolib ketgan amal", CTX)
+		_, _, state, _ = handle(state, "\U0001f4dd Qolib ketgan amal", CTX)
 		_reply, _kb, new_state, _action = handle(state, "not-a-date", CTX)
 		self.assertEqual(new_state, state)
 
 	def test_date_resets_after_one_completed_op(self):
 		state = _pick_kassa()
-		_, _, state, _ = handle(state, "\U0001F4DD Qolib ketgan amal", CTX)
+		_, _, state, _ = handle(state, "\U0001f4dd Qolib ketgan amal", CTX)
 		_, _, state, _ = handle(state, "05.07.2026", CTX)
 		self.assertEqual(state["posting_date"], "2026-07-05")
 
@@ -900,7 +898,7 @@ class TestMenuHeaderBalances(unittest.TestCase):
 			**CTX,
 			"cbu": {"rate": 12950.0, "date": "17.07"},
 			"balances_by_kassa": {
-				"Kassa 1": "\U0001F4B1 1 USD = 12 950 UZS (CBU 17.07)\nNaqd UZS: 26 991 567 UZS · Naqd USD: 5 244 USD"
+				"Kassa 1": "\U0001f4b1 1 USD = 12 950 UZS (CBU 17.07)\nNaqd UZS: 26 991 567 UZS · Naqd USD: 5 244 USD"
 			},
 		}
 		state = _init_state()
@@ -948,11 +946,13 @@ class TestTypedEcho(unittest.TestCase):
 
 	def test_word_amount_echoed(self):
 		from stabler.integrations.kassa._flow import _typed_echo
+
 		self.assertEqual(_typed_echo("400ming", 400000, "UZS"), "Yozganingiz: 400ming")
 		self.assertEqual(_typed_echo("besh yuz ming", 500000, "UZS"), "Yozganingiz: besh yuz ming")
 
 	def test_plain_digits_not_echoed(self):
 		from stabler.integrations.kassa._flow import _typed_echo
+
 		self.assertIsNone(_typed_echo("400 000", 400000, "UZS"))
 		self.assertIsNone(_typed_echo("400000", 400000, "UZS"))
 		self.assertIsNone(_typed_echo("", 400000, "UZS"))

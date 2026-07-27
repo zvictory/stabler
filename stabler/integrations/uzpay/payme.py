@@ -71,7 +71,7 @@ def _check_auth() -> None:
 		raise PaymeError(ERR_AUTH, "Insufficient privilege to perform this method.")
 	try:
 		decoded = base64.b64decode(header[6:]).decode("utf-8")
-	except (binascii.Error, UnicodeDecodeError):
+	except binascii.Error, UnicodeDecodeError:
 		raise PaymeError(ERR_AUTH, "Insufficient privilege to perform this method.")
 	_, _, password = decoded.partition(":")
 	if not password or not hmac.compare_digest(password, _merchant_key()):
@@ -143,9 +143,7 @@ def _create_transaction(params: dict) -> dict:
 
 
 def _find_by_tx(tx_id: str, *, for_update: bool = False):
-	name = frappe.db.get_value(
-		C.SESSION_DT, {"provider_trans_id": tx_id, "provider": "Payme"}, "name"
-	)
+	name = frappe.db.get_value(C.SESSION_DT, {"provider_trans_id": tx_id, "provider": "Payme"}, "name")
 	if not name:
 		raise PaymeError(ERR_TX_NOT_FOUND, "Transaction not found.")
 	if for_update:
@@ -241,8 +239,15 @@ def _get_statement(params: dict) -> dict:
 		C.SESSION_DT,
 		filters=filters,
 		fields=[
-			"name", "order_id", "amount", "provider_trans_id", "provider_state",
-			"create_time_ms", "perform_time_ms", "cancel_time_ms", "cancel_reason",
+			"name",
+			"order_id",
+			"amount",
+			"provider_trans_id",
+			"provider_state",
+			"create_time_ms",
+			"perform_time_ms",
+			"cancel_time_ms",
+			"cancel_reason",
 		],
 	)
 	transactions = []

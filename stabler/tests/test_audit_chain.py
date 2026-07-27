@@ -38,10 +38,16 @@ from stabler.api._audit_chain import (
 # Helpers
 # --------------------------------------------------------------------------- #
 
+
 def _rows(n: int = 5) -> list[dict]:
 	"""Return n distinct plain dicts simulating audit rows."""
 	return [
-		{"name": f"VER-{i:04d}", "owner": "admin@x.uz", "creation": f"2026-01-{i:02d} 12:00:00", "data": f"payload-{i}"}
+		{
+			"name": f"VER-{i:04d}",
+			"owner": "admin@x.uz",
+			"creation": f"2026-01-{i:02d} 12:00:00",
+			"data": f"payload-{i}",
+		}
 		for i in range(1, n + 1)
 	]
 
@@ -49,6 +55,7 @@ def _rows(n: int = 5) -> list[dict]:
 # --------------------------------------------------------------------------- #
 # row_hash
 # --------------------------------------------------------------------------- #
+
 
 class RowHashStabilityTest(unittest.TestCase):
 	"""row_hash must be deterministic and change when inputs change."""
@@ -96,8 +103,8 @@ class RowHashStabilityTest(unittest.TestCase):
 # build_chain
 # --------------------------------------------------------------------------- #
 
-class BuildChainTest(unittest.TestCase):
 
+class BuildChainTest(unittest.TestCase):
 	def test_empty_input_returns_empty_list(self):
 		self.assertEqual(build_chain([]), [])
 
@@ -150,8 +157,8 @@ class BuildChainTest(unittest.TestCase):
 # verify_chain
 # --------------------------------------------------------------------------- #
 
-class VerifyChainTest(unittest.TestCase):
 
+class VerifyChainTest(unittest.TestCase):
 	def _make(self, n: int = 5) -> list[dict]:
 		return build_chain(_rows(n))
 
@@ -262,12 +269,14 @@ class VerifyChainTest(unittest.TestCase):
 # Hash value regression — locks down the exact algorithm
 # --------------------------------------------------------------------------- #
 
+
 class HashRegressionTest(unittest.TestCase):
 	"""Guard against accidental algorithm changes by pinning a known digest."""
 
 	def test_genesis_hash_is_stable(self):
 		import hashlib
 		import json
+
 		payload = {"name": "VER-0001"}
 		canonical = json.dumps(payload, sort_keys=True, separators=(",", ":"), ensure_ascii=True)
 		material = (_GENESIS_PREV + ":" + canonical).encode("utf-8")

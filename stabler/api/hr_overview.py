@@ -87,7 +87,9 @@ def _advances(company: str, can_see_money: bool) -> dict:
 	top_names = sorted(owing, key=lambda e: owing[e], reverse=True)[:3]
 	name_map = {
 		r["name"]: r.get("employee_name") or r["name"]
-		for r in frappe.get_all("Employee", filters={"name": ["in", top_names or [""]]}, fields=["name", "employee_name"])
+		for r in frappe.get_all(
+			"Employee", filters={"name": ["in", top_names or [""]]}, fields=["name", "employee_name"]
+		)
 	}
 	return {
 		"visible": True,
@@ -174,8 +176,14 @@ def data_health(company: str) -> dict:
 		"Employee",
 		filters={"company": company, "status": "Active"},
 		fields=[
-			"name", "employee_name", "department", "designation",
-			"custom_base_salary", "custom_work_mode", "custom_region", "date_of_joining",
+			"name",
+			"employee_name",
+			"department",
+			"designation",
+			"custom_base_salary",
+			"custom_work_mode",
+			"custom_region",
+			"date_of_joining",
 		],
 		order_by="employee_name asc",
 		limit=0,
@@ -191,11 +199,30 @@ def data_health(company: str) -> dict:
 				miss.append("department")
 			if desg_missing:
 				miss.append("designation")
-			profile_gaps.append({"employee": e["name"], "employee_name": e.get("employee_name") or e["name"], "department": e.get("department"), "missing": miss})
+			profile_gaps.append(
+				{
+					"employee": e["name"],
+					"employee_name": e.get("employee_name") or e["name"],
+					"department": e.get("department"),
+					"missing": miss,
+				}
+			)
 		if can_money and not flt(e.get("custom_base_salary")):
-			base_zero.append({"employee": e["name"], "employee_name": e.get("employee_name") or e["name"], "department": e.get("department")})
+			base_zero.append(
+				{
+					"employee": e["name"],
+					"employee_name": e.get("employee_name") or e["name"],
+					"department": e.get("department"),
+				}
+			)
 		if not e.get("custom_work_mode") or not e.get("custom_region"):
-			comp_gaps.append({"employee": e["name"], "employee_name": e.get("employee_name") or e["name"], "department": e.get("department")})
+			comp_gaps.append(
+				{
+					"employee": e["name"],
+					"employee_name": e.get("employee_name") or e["name"],
+					"department": e.get("department"),
+				}
+			)
 
 	return {
 		"company": company,

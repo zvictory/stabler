@@ -7,9 +7,11 @@ import openpyxl
 DEPOSIT = "deposit"
 WITHDRAWAL = "withdrawal"
 
+
 def is_msaerp_xlsx(raw: bytes) -> bool:
 	# Excel signature
 	return raw.startswith(b"PK\x03\x04")
+
 
 def parse_statement_bytes(raw: bytes, our_account: str | None = None) -> dict:
 	wb = openpyxl.load_workbook(io.BytesIO(raw), read_only=True, data_only=True)
@@ -90,26 +92,22 @@ def parse_statement_bytes(raw: bytes, our_account: str | None = None) -> dict:
 		ref = str(pick(row, "reference") or "").strip()
 		desc = str(pick(row, "description") or "").strip()
 
-		raw_key = "|".join([
-			parsed_date.isoformat(),
-			f"{round(amount, 2)}",
-			direction,
-			ref,
-			desc[:30]
-		])
+		raw_key = "|".join([parsed_date.isoformat(), f"{round(amount, 2)}", direction, ref, desc[:30]])
 		dedupe_key = "MSA-EXC-" + hashlib.sha256(raw_key.encode("utf-8")).hexdigest()[:12]
 
-		rows.append({
-			"date": parsed_date.isoformat(),
-			"amount": amount,
-			"direction": direction,
-			"deposit": amount if direction == DEPOSIT else 0.0,
-			"withdrawal": amount if direction == WITHDRAWAL else 0.0,
-			"reference_number": ref,
-			"description": desc,
-			"dedupe_key": dedupe_key,
-			"doc_type": "Excel Import"
-		})
+		rows.append(
+			{
+				"date": parsed_date.isoformat(),
+				"amount": amount,
+				"direction": direction,
+				"deposit": amount if direction == DEPOSIT else 0.0,
+				"withdrawal": amount if direction == WITHDRAWAL else 0.0,
+				"reference_number": ref,
+				"description": desc,
+				"dedupe_key": dedupe_key,
+				"doc_type": "Excel Import",
+			}
+		)
 
 	dates.sort()
 	period_from = dates[0].isoformat() if dates else None

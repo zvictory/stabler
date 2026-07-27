@@ -69,9 +69,7 @@ class StablerPayrollAttendanceSummary(Document):
 		}
 		if not self.is_new():
 			filters["name"] = ("!=", self.name)
-		existing = frappe.db.get_value(
-			"Stabler Payroll Attendance Summary", filters, "name"
-		)
+		existing = frappe.db.get_value("Stabler Payroll Attendance Summary", filters, "name")
 		if existing:
 			frappe.throw(
 				_("A Payroll Attendance Summary for employee {0} and period {1} already exists: {2}").format(
@@ -83,6 +81,7 @@ class StablerPayrollAttendanceSummary(Document):
 	def _enforce_period_format(self):
 		"""Reject payroll_period values that are not YYYY-MM."""
 		import re
+
 		if self.payroll_period and not re.fullmatch(r"\d{4}-\d{2}", self.payroll_period):
 			frappe.throw(
 				_("Payroll Period must be in YYYY-MM format (e.g. 2026-05), got: {0}").format(
@@ -110,14 +109,9 @@ class StablerPayrollAttendanceSummary(Document):
 			return
 		if "System Manager" in frappe.get_roles():
 			return
-		changed = [
-			f for f in _LOCKED_FIELDS
-			if str(before.get(f) or "") != str(self.get(f) or "")
-		]
+		changed = [f for f in _LOCKED_FIELDS if str(before.get(f) or "") != str(self.get(f) or "")]
 		if changed:
 			frappe.throw(
-				_("Payroll Attendance Summary is Locked. Cannot change: {0}").format(
-					", ".join(changed)
-				),
+				_("Payroll Attendance Summary is Locked. Cannot change: {0}").format(", ".join(changed)),
 				title=_("Summary locked"),
 			)

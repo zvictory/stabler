@@ -11,6 +11,7 @@ class StablerSOStage(Document):
 		in_use = frappe.db.count("Sales Order", {"custom_board_stage": self.name})
 		if in_use:
 			frappe.throw(
-				frappe._("Cannot delete stage '{0}' — {1} Sales Order(s) are still in it. "
-				         "Move them first.").format(self.name, in_use)
+				frappe._(
+					"Cannot delete stage '{0}' — {1} Sales Order(s) are still in it. Move them first."
+				).format(self.name, in_use)
 			)

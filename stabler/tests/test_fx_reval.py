@@ -1,6 +1,6 @@
 """Unit tests for stabler.api._fx_reval (WP-I11, Frappe-free).
 
-    cd /path/to/stabler && PYTHONPATH=$PWD python3 -m unittest stabler.tests.test_fx_reval -v
+cd /path/to/stabler && PYTHONPATH=$PWD python3 -m unittest stabler.tests.test_fx_reval -v
 """
 
 from __future__ import annotations
@@ -69,11 +69,12 @@ class TestAdvancesExcludedAtSource(unittest.TestCase):
 	def test_endpoint_reads_only_purchase_invoices(self):
 		import os
 		import re
+
 		api = os.path.join(os.path.dirname(os.path.abspath(__file__)), "..", "api", "imports.py")
 		src = open(api, encoding="utf-8").read()
 		m = re.search(r"^def fx_revaluation_preview\(", src, re.M)
 		self.assertIsNotNone(m, "fx_revaluation_preview not found")
-		tail = src[m.start():]
+		tail = src[m.start() :]
 		nxt = re.search(r"\n(?:@frappe\.whitelist\(\)|def )", tail[1:])
 		body = tail[: nxt.start() + 1] if nxt else tail
 		self.assertIn("tabPurchase Invoice", body)

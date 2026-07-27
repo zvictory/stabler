@@ -17,9 +17,7 @@ from frappe.custom.doctype.custom_field.custom_field import create_custom_fields
 def execute():
 	fields_to_add = []
 
-	if not frappe.db.exists(
-		"Custom Field", {"dt": "Employee", "fieldname": "custom_duty_supplement_pct"}
-	):
+	if not frappe.db.exists("Custom Field", {"dt": "Employee", "fieldname": "custom_duty_supplement_pct"}):
 		fields_to_add.append(
 			{
 				"fieldname": "custom_duty_supplement_pct",
