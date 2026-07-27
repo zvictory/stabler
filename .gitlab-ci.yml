@@ -149,6 +149,33 @@ eslint-debt:
         echo "NOTE: debt is down to $n — lower CEILING in .gitlab-ci.yml to lock it in."
       fi
 
+# Vitest over the SPA's pure-logic layer (composables/). Its own job for the same
+# reason eslint-debt has one: `make check` runs `make test-js`, but the `gate` job
+# is on a python image, so that step prints "node_modules missing" and passes.
+# Without this job the JS tests would exist and never run in CI.
+#
+# Separate from eslint-debt rather than folded into it: a red pipeline should say
+# which contract broke — a failed money-format assertion is not lint debt. The
+# second `npm ci` is nearly free, both jobs share the package-lock.json cache key.
+#
+# No ceiling, no allow_failure: unlike the lint sweeps, this suite is green from
+# day one, so anything less than blocking would be pointless.
+js-tests:
+  image: node:20-bookworm-slim
+  interruptible: true
+  stage: gate
+  needs: []
+  cache:
+    key:
+      files:
+        - package-lock.json
+    paths:
+      - .npm
+  before_script:
+    - npm ci --cache .npm --prefer-offline --no-audit --no-fund
+  script:
+    - npx vitest run
+
 # ------------------------------------------------------------------- deep ---
 
 bench-tests:

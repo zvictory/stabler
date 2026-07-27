@@ -48,6 +48,7 @@ __pycache__
 eslint.config.mjs
 .prettierrc.json
 .prettierignore
+vitest.config.mjs
 
 # Agent / dev tooling, never part of the running app.
 # .claude was already excluded everywhere; .superpowers (46 files) and

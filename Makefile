@@ -45,8 +45,9 @@ CHANGED_JS := $(shell { \
 
 ESLINT := node_modules/.bin/eslint
 PRETTIER := node_modules/.bin/prettier
+VITEST := node_modules/.bin/vitest
 
-.PHONY: help check lint lint-changed lint-js lint-js-changed fmt fix fix-js compile test guards prod-drift ruff-install hook-install
+.PHONY: help check lint lint-changed lint-js lint-js-changed fmt fix fix-js compile test test-bench test-js guards prod-drift ruff-install hook-install
 
 help:
 	@echo "make check         — pre-push gate: changed-file lint (py+js) + compile + guards + unit tests"
@@ -56,6 +57,7 @@ help:
 	@echo "make lint-js       — FULL tree ESLint sweep (same, for the SPA)"
 	@echo "make test          — the frappe-free unit modules only (no bench, no DB)"
 	@echo "make test-bench    — the other 15 modules, on a throwaway site (slow, needs a bench)"
+	@echo "make test-js       — Vitest over the SPA's pure-logic layer (composables/)"
 	@echo "make guards        — CLAUDE.md hard rules (dates / Desk links / striping / tenant / money)"
 	@echo "make prod-drift    — list .py files on prod that are not in git (read-only)"
 	@echo "make ruff-install  — pin ruff $(RUFF_VERSION) into the bench venv"
@@ -63,7 +65,7 @@ help:
 
 # ---------------------------------------------------------------- the gate ---
 
-check: lint-changed lint-js-changed compile guards test
+check: lint-changed lint-js-changed compile guards test test-js
 	@echo "OK — pre-push gate passed."
 
 # `ruff format --check` is ADVISORY here, not a gate. Nothing in the tree was ever
@@ -168,6 +170,23 @@ test-bench:
 	if [ "$$fail" != "0" ]; then \
 	  echo "FAIL: at least one bench module is red -- see the --- markers above."; fi; \
 	exit $$fail
+
+# Vitest over the SPA's pure-logic layer. Scope is deliberately narrow: the
+# composables (money, date, status, i18n) plus the api/ wrapper -- no component
+# mounting, no jsdom. Those four modules are where the CLAUDE.md hard rules
+# actually live (money grouping, dd.mm.yyyy, central status badges), and they are
+# the only part of 80k lines of Vue that can be asserted without a browser.
+#
+# Same graceful skip as lint-js-changed: the GitLab `gate` job runs on a python
+# image with no node. THAT is why the `js-tests` job exists on the node image --
+# without it this step would silently pass in CI and the gate would be a lie.
+test-js:
+	@if [ ! -x $(VITEST) ]; then \
+	  echo "vitest: node_modules missing — run 'npm install'."; \
+	  echo "  (the GitLab 'js-tests' job covers this meanwhile)"; \
+	else \
+	  $(VITEST) run; \
+	fi
 
 # CLAUDE.md states these as "reviewers must reject". Prose does not enforce.
 #
