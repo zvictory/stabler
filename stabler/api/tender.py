@@ -2129,6 +2129,7 @@ def tender_funnel(company: str, days: int = 90):
 
 	has_pricing_col = frappe.db.has_column("CRM Deal", "custom_bid_pricing")
 	rows = []
+	policy_gap = submitted_urgent = 0
 	for deal in _tender_deal_names(company):
 		if not frappe.has_permission("CRM Deal", "read", doc=deal):
 			continue
@@ -2158,9 +2159,14 @@ def tender_funnel(company: str, days: int = 90):
 		urgent = False
 		if stage in ("go", "sourcing", "priced", "submitted"):
 			urgent = _deal_deadlines(deal, company, intake)["risk"] == "risk"
+		if stage == "sourcing" and sq_counts.get(deal, 0) < 5:
+			policy_gap += 1
+		if stage == "submitted" and urgent:
+			submitted_urgent += 1
 		rows.append({"stage": stage, "urgent": urgent, "in_window": in_window})
 
 	out = _funnel.summarise(rows)
+	out["meta"] = {"sourcing_policy_gap": policy_gap, "submitted_urgent": submitted_urgent}
 
 	# Execution buckets from the contract board (submitted SOs tagged to a deal).
 	so_stages = []

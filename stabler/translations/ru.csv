@@ -4761,3 +4761,23 @@ Lots seen,Лотов увидено
 GO decision,Решение GO
 Sourcing started,Закуп цен начат
 Each tender is counted in exactly one stage. Click a stage to open its list.,"Каждый тендер учитывается ровно в одном этапе. Нажмите на этап, чтобы открыть список."
+Open pipeline (seen → awaiting result),Открытая воронка (увидено → ждём итог)
+Win-rate — {won}W / {lost}L in {days} days,Победы — {won}П / {lost}Пр за {days} дней
+Active contracts — serving,Активные контракты — исполняем
+Deadline risk — act now,Риск срока — действуйте сейчас
+Sourcing — cost first,Закуп цен — сначала себестоимость
+Bidding,Подача заявки
+Contract & execution,Контракт и исполнение
+Result?,Итог?
+Won ({days} days),Выиграно ({days} дн.)
+Contract (SO opened),Контракт (SO открыт)
+Procurement (PO),Закупка (PO)
+Delivery / service,Поставка / услуга
+Completed (paid),Завершено (оплачено)
+{count} below policy,{count} ниже политики
+{count} deadline <48h,{count} срок <48ч
+Conversion funnel — last {days} days,Воронка конверсии — последние {days} дней
+start,начало
+{pct}% conversion,{pct}% переход
+{won} wins of {resolved} resolved,{won} побед из {resolved} завершённых
+Win-rate,Процент побед

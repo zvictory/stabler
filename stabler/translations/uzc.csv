@@ -4755,3 +4755,23 @@ Lots seen,Кўрилган лотлар
 GO decision,GO қарори
 Sourcing started,Нарх сўрови бошланди
 Each tender is counted in exactly one stage. Click a stage to open its list.,Ҳар бир тендер фақат битта босқичда ҳисобланади. Рўйхатни очиш учун босқични босинг.
+Open pipeline (seen → awaiting result),Очиқ қувур (кўрилди → натижа кутилмоқда)
+Win-rate — {won}W / {lost}L in {days} days,Ютуқ — {days} кунда {won}Й / {lost}М
+Active contracts — serving,Фаол шартномалар — хизмат кўрсатмоқдамиз
+Deadline risk — act now,Муддат хавфи — ҳозир ҳаракат қилинг
+Sourcing — cost first,Нарх сўрови — аввал таннарх
+Bidding,Таклиф топшириш
+Contract & execution,Шартнома ва ижро
+Result?,Натижа?
+Won ({days} days),Ютилган ({days} кун)
+Contract (SO opened),Шартнома (SO очилди)
+Procurement (PO),Харид (PO)
+Delivery / service,Етказиш / хизмат
+Completed (paid),Якунланган (тўланган)
+{count} below policy,{count} та сиёсатдан паст
+{count} deadline <48h,{count} та муддат <48с
+Conversion funnel — last {days} days,Конверсия воронкаси — охирги {days} кун
+start,бошланиш
+{pct}% conversion,{pct}% ўтиш
+{won} wins of {resolved} resolved,{resolved} якунлангандан {won} ютуқ
+Win-rate,Ютуқ улуши

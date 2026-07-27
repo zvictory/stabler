@@ -4755,3 +4755,23 @@ Lots seen,Ko'rilgan lotlar
 GO decision,GO qarori
 Sourcing started,Narx so'rovi boshlandi
 Each tender is counted in exactly one stage. Click a stage to open its list.,Har bir tender faqat bitta bosqichda hisoblanadi. Ro'yxatni ochish uchun bosqichni bosing.
+Open pipeline (seen → awaiting result),Ochiq quvur (ko'rildi → natija kutilmoqda)
+Win-rate — {won}W / {lost}L in {days} days,Yutuq — {days} kunda {won}Y / {lost}M
+Active contracts — serving,Faol shartnomalar — xizmat ko'rsatmoqdamiz
+Deadline risk — act now,Muddat xavfi — hozir harakat qiling
+Sourcing — cost first,Narx so'rovi — avval tannarx
+Bidding,Taklif topshirish
+Contract & execution,Shartnoma va ijro
+Result?,Natija?
+Won ({days} days),Yutilgan ({days} kun)
+Contract (SO opened),Shartnoma (SO ochildi)
+Procurement (PO),Xarid (PO)
+Delivery / service,Yetkazish / xizmat
+Completed (paid),Yakunlangan (to'langan)
+{count} below policy,{count} ta siyosatdan past
+{count} deadline <48h,{count} ta muddat <48s
+Conversion funnel — last {days} days,Konversiya voronkasi — oxirgi {days} kun
+start,boshlanish
+{pct}% conversion,{pct}% o'tish
+{won} wins of {resolved} resolved,{resolved} yakunlangandan {won} yutuq
+Win-rate,Yutuq ulushi

@@ -4751,3 +4751,23 @@ Lots seen,Lots seen
 GO decision,GO decision
 Sourcing started,Sourcing started
 Each tender is counted in exactly one stage. Click a stage to open its list.,Each tender is counted in exactly one stage. Click a stage to open its list.
+Open pipeline (seen → awaiting result),Open pipeline (seen → awaiting result)
+Win-rate — {won}W / {lost}L in {days} days,Win-rate — {won}W / {lost}L in {days} days
+Active contracts — serving,Active contracts — serving
+Deadline risk — act now,Deadline risk — act now
+Sourcing — cost first,Sourcing — cost first
+Bidding,Bidding
+Contract & execution,Contract & execution
+Result?,Result?
+Won ({days} days),Won ({days} days)
+Contract (SO opened),Contract (SO opened)
+Procurement (PO),Procurement (PO)
+Delivery / service,Delivery / service
+Completed (paid),Completed (paid)
+{count} below policy,{count} below policy
+{count} deadline <48h,{count} deadline <48h
+Conversion funnel — last {days} days,Conversion funnel — last {days} days
+start,start
+{pct}% conversion,{pct}% conversion
+{won} wins of {resolved} resolved,{won} wins of {resolved} resolved
+Win-rate,Win-rate

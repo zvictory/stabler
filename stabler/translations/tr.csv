@@ -4750,3 +4750,23 @@ Lots seen,Görülen lot
 GO decision,GO kararı
 Sourcing started,Sourcing başladı
 Each tender is counted in exactly one stage. Click a stage to open its list.,Her ihale tam bir aşamada sayılır. Listeyi açmak için aşamaya tıkla.
+Open pipeline (seen → awaiting result),Açık hat (görüldü → sonuç bekleniyor)
+Win-rate — {won}W / {lost}L in {days} days,Kazanma — {days} günde {won}K / {lost}M
+Active contracts — serving,Aktif sözleşme — hizmet veriyoruz
+Deadline risk — act now,Süre riski — hemen bak
+Sourcing — cost first,Sourcing — önce maliyet
+Bidding,İhale
+Contract & execution,Sözleşme & yürütme
+Result?,Sonuç?
+Won ({days} days),Kazanıldı ({days} gün)
+Contract (SO opened),Sözleşme (SO açıldı)
+Procurement (PO),Tedarik (PO)
+Delivery / service,Teslimat / hizmet
+Completed (paid),Tamamlandı (ödendi)
+{count} below policy,{count} politika altında
+{count} deadline <48h,{count} süre <48s
+Conversion funnel — last {days} days,Dönüşüm hunisi — son {days} gün
+start,başlangıç
+{pct}% conversion,{pct}% geçiş
+{won} wins of {resolved} resolved,{resolved} sonuçlanandan {won} kazanç
+Win-rate,Kazanma oranı
