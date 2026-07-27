@@ -61,3 +61,4 @@ stabler.patches.v55_departure_gate
 stabler.patches.v56_crm_deal_company_scope
 stabler.patches.v57_agreement_management_fields
 stabler.patches.v58_ci_item_proforma_backfill
+stabler.patches.v59_crm_deal_company_default_fix

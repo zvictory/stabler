@@ -6,6 +6,13 @@ must exist rather than bypassing Frappe's query permission validation.
 
 Existing blank deals are backfilled only when the site has exactly one
 non-group company. Multi-company sites require an explicit ownership decision.
+
+The field carries **no** ``default``. Frappe reads a default starting with ``:``
+as "fetch this fieldname from that doctype", so ``:Company`` on a field named
+``company`` runs ``get_value("Company", …, "company")`` — a column that does not
+exist — and every ``frappe.new_doc("CRM Deal")`` dies with error 1054. Standard
+ERPNext company fields also ship with no default; the value comes from
+``frappe.defaults``. See ``v59_crm_deal_company_default_fix`` for the repair.
 """
 
 import frappe
@@ -25,7 +32,6 @@ def execute():
 						"label": "Company",
 						"fieldtype": "Link",
 						"options": "Company",
-						"default": ":Company",
 						"insert_after": "organization",
 						"description": "Company scope used by Stabler tender operations.",
 					}
