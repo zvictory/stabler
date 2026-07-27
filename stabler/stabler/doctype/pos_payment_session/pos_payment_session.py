@@ -12,13 +12,15 @@ plus a guarded lookup on `provider_trans_id` inside the webhook handlers.
 
 from __future__ import annotations
 
+from typing import ClassVar
+
 import frappe
 from frappe.model.document import Document
 
 
 class POSPaymentSession(Document):
 	# states the SPA poller treats as terminal
-	TERMINAL = {"Paid", "Cancelled", "Failed", "Expired"}
+	TERMINAL: ClassVar[set[str]] = {"Paid", "Cancelled", "Failed", "Expired"}
 
 	def is_terminal(self) -> bool:
 		return self.status in self.TERMINAL

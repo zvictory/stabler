@@ -6,6 +6,7 @@
 from __future__ import annotations
 
 import unittest
+from typing import ClassVar
 
 from stabler.integrations.kassa._flow import (
 	BTN_CANCEL,
@@ -844,7 +845,7 @@ class TestQoldiqHeaders(unittest.TestCase):
 	"""WP-K9: Konvertatsiya-direction and K2K-source entry prompts, plus the
 	K2K 'Yuboruvchi' prompt, surface a Qoldiq balance header when ctx has it."""
 
-	_CTX_WITH_BALANCES = {
+	_CTX_WITH_BALANCES: ClassVar[dict] = {
 		**CTX,
 		"balances_by_kassa": {
 			"Kassa 1": "Naqd UZS: 50 000.00 UZS · Naqd USD: 500.00 USD",

@@ -7,6 +7,7 @@ guarantees: idempotent dedupe and explicit (no-fuzzy) employee resolution.
 from __future__ import annotations
 
 import unittest
+from typing import ClassVar
 
 from stabler.api._attendance_ingest import (
 	decide_event_action,
@@ -66,7 +67,7 @@ class MappingActiveTest(unittest.TestCase):
 
 
 class ResolveEmployeeTest(unittest.TestCase):
-	MAP = [
+	MAP: ClassVar[list[dict]] = [
 		{"device_user_id": "10783", "employee": "HR-EMP-0001", "active_from": "2026-01-01"},
 		{"device_user_id": "10784", "employee": "HR-EMP-0002", "device_id": "DEV2", "active_from": "2026-01-01"},
 	]

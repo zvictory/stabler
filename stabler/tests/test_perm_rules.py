@@ -2,6 +2,7 @@
 from __future__ import annotations
 
 import unittest
+from typing import ClassVar
 
 from stabler.api._perm_rules import (
 	COST_FIELDS,
@@ -214,7 +215,7 @@ class CostFieldsConstantTest(unittest.TestCase):
 class MaskFieldsTest(unittest.TestCase):
 	"""mask_fields strips cost keys when user lacks visibility, no-ops otherwise."""
 
-	_SAMPLE: dict = {
+	_SAMPLE: ClassVar[dict] = {
 		"name": "ITEM-001",
 		"item_name": "Widget",
 		"valuation_rate": 100.0,
@@ -224,7 +225,7 @@ class MaskFieldsTest(unittest.TestCase):
 		"gross_profit": 5.0,
 		"description": "A nice widget",
 	}
-	_NON_COST_KEYS = {"name", "item_name", "description"}
+	_NON_COST_KEYS: ClassVar[set[str]] = {"name", "item_name", "description"}
 
 	def _sample(self):
 		"""Fresh copy of the sample dict for each test."""

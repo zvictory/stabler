@@ -135,7 +135,8 @@ def compute_deltas(p):
         sign = 1 if op == "kirim" else -1
         return [{"kassa": l["kassa"], "delta": sign * float(l["amount"])} for l in p.get("legs", [])]
     if op == "konversiya":
-        a = float(p["amount"]); r = float(p["rate"])
+        a = float(p["amount"])
+        r = float(p["rate"])
         if p.get("dir", "buy") == "buy":
             return [{"kassa": p["source"], "delta": -a * r}, {"kassa": "usd", "delta": a}]
         return [{"kassa": "usd", "delta": -a}, {"kassa": p["target"], "delta": a * r}]

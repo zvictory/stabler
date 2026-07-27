@@ -492,7 +492,7 @@ def sales_by_customer_detail(company: str, from_date: str, to_date: str, custome
 
 
 @frappe.whitelist()
-def customer_balance_detail(company: str, customer: str, from_date: str = None, to_date: str = None) -> dict:
+def customer_balance_detail(company: str, customer: str, from_date: str | None = None, to_date: str | None = None) -> dict:
     """Drill from the summary Balance → the full ledger that PRODUCES it.
 
     Every voucher behind the receivable (invoices, payments, journal entries),

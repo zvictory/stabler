@@ -3,6 +3,7 @@ from __future__ import annotations
 
 import unittest
 from decimal import Decimal
+from typing import ClassVar
 
 from stabler.integrations.bank_statement.match import (
 	HIGH,
@@ -84,7 +85,7 @@ class JECandidateTest(unittest.TestCase):
 	"""The scorer must work identically for JE candidates — voucher_type is
 	just metadata; scoring uses amount/date/reference/INN."""
 
-	JE_CAND = {
+	JE_CAND: ClassVar[dict] = {
 		"voucher_type": "Journal Entry",
 		"voucher_no": "JV-2026-00001",
 		"amount": 5000000,
@@ -138,7 +139,7 @@ class INNEnrichmentTest(unittest.TestCase):
 	"""Bank line carries an INN; candidates with matching INN score higher
 	than ones with only name similarity."""
 
-	BANK_INN = {
+	BANK_INN: ClassVar[dict] = {
 		"amount": 1000000,
 		"date": "2026-03-10",
 		"reference": "",
