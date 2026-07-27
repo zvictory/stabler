@@ -8,6 +8,11 @@ export const STATUS_MAP = {
 		CANCELLED: "bg-red-lt",
 	},
 	"Advance Aging": { OK: "bg-green-lt", WARN: "bg-yellow-lt", BREACH: "bg-red-lt" },
+	// How far a Commercial Invoice line drifts from the Proforma it ships
+	// against. `error` = the line's key is on no PI at all; `warn` = a column
+	// (price, quantity arithmetic) disagrees; `info` = a compensated bundle was
+	// split into sub-cuts, which is expected.
+	"PI Compliance": { error: "bg-red-lt", warn: "bg-yellow-lt", info: "bg-azure-lt" },
 	"Budget Variance": {
 		favorable: "bg-green-lt",
 		unfavorable: "bg-red-lt",

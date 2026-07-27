@@ -8,6 +8,7 @@ import { call } from "../../api/client.js";
 import { t } from "../../composables/i18n.js";
 import { formatDate } from "../../composables/date.js";
 import { formatMoney } from "../../composables/money.js";
+import { getStatusBadgeClass } from "../../composables/status.js";
 import { useToast } from "../../composables/useToast.js";
 import { useConfirm } from "../../composables/useConfirm.js";
 import { useEscapeBack } from "../../composables/useEscapeBack.js";
@@ -16,6 +17,7 @@ import Select from "../../components/Select.vue";
 import Typeahead from "../../components/Typeahead.vue";
 import MoneyInput from "../../components/MoneyInput.vue";
 import StatusBadge from "../../components/StatusBadge.vue";
+import SkeletonRows from "../../components/SkeletonRows.vue";
 import CiLogisticsOverview from "./CiLogisticsOverview.vue";
 
 const session = useSession();
@@ -152,18 +154,97 @@ function rowDocsAmount(row) {
 	return (Number(row.qty) || 0) * (Number(row.docs_price) || 0);
 }
 
+// Same normalisation the backend uses (`_imports_rules.norm_key`): collapse
+// runs of whitespace, trim, upper-case. "Whole leg" and "WHOLE  LEG" are the
+// same contract line; comparing the raw text invents 40 phantom mismatches.
+const normKey = (v) => String(v ?? "").replace(/\s+/g, " ").trim().toUpperCase();
+const round4 = (n) => Math.round((Number(n) || 0) * 1e4) / 1e4;
+const QTY_TOLERANCE_KG = 0.5;
+
 function getTrackingRow(row) {
 	if (!form.value.pi_tracking) return null;
 	const pi = row.custom_proforma_invoice || form.value.custom_proforma_invoice || "";
-	const cat = row.category || "";
-	const item = row.item || "";
-	return (
-		form.value.pi_tracking.find((tr) => tr.proforma_invoice === pi && tr.item === item && (tr.category || "") === cat) ||
-		form.value.pi_tracking.find((tr) => tr.proforma_invoice === pi && tr.item === item) ||
-		form.value.pi_tracking.find((tr) => tr.item === item) ||
-		null
+	if (!pi) return null;
+	const cat = normKey(row.category);
+	// Match on (PI, category) and never on `item`: a PI line such as
+	// BUFFALO COMPENSATED is a bundle the CI breaks into sub-cuts, so the item
+	// codes legitimately differ. The old `tr.item === item` fallback ignored the
+	// PI entirely and bound the row to another proforma's balance.
+	const exact = form.value.pi_tracking.find(
+		(tr) => tr.proforma_invoice === pi && normKey(tr.category) === cat
 	);
+	if (exact) return exact;
+	// A category-less match is only safe on a single-line contract; otherwise
+	// "first line of that PI" would display a foreign remaining balance.
+	const ofPi = form.value.pi_tracking.filter((tr) => tr.proforma_invoice === pi);
+	return ofPi.length === 1 ? ofPi[0] : null;
 }
+
+// Mirrors `_imports_rules.diff_ci_line` — same codes, same 4-decimal rounding,
+// same 0.5 kg tolerance. Client-side so the badge is live while the user edits,
+// before anything is saved; the server-side report is the authoritative one.
+function rowDiffs(row) {
+	const pi = row.custom_proforma_invoice || form.value.custom_proforma_invoice || "";
+	if (!pi) {
+		return [{ code: "unattributable", level: "error", label: t("Not linked to any PI") }];
+	}
+	const tr = getTrackingRow(row);
+	if (!tr) {
+		return [{ code: "unattributable", level: "error", label: t("Not on any PI line") }];
+	}
+
+	const out = [];
+	const agreed = (tr.agreed_prices || []).map(round4);
+	if (agreed.length && !agreed.includes(round4(row.rate))) {
+		out.push({
+			code: "price_agreed",
+			level: "warn",
+			label: t("Agreed price differs from PI ({prices})", { prices: agreed.join(" / ") }),
+		});
+	}
+	const docs = (tr.docs_prices || []).map(round4);
+	if (docs.length && !docs.includes(round4(row.docs_price))) {
+		out.push({
+			code: "price_docs",
+			level: "warn",
+			label: t("Docs price differs from PI ({prices})", { prices: docs.join(" / ") }),
+		});
+	}
+
+	const boxes = Number(row.boxes) || 0;
+	const bw = Number(row.box_weight_kg) || 0;
+	const qty = Number(row.qty) || 0;
+	if (boxes && bw && qty && Math.abs(boxes * bw - qty) > QTY_TOLERANCE_KG) {
+		out.push({ code: "qty_arithmetic", level: "warn", label: t("Boxes × box weight ≠ quantity") });
+	}
+
+	const piItems = (tr.items || []).map(normKey);
+	if (row.item && piItems.length && !piItems.includes(normKey(row.item))) {
+		out.push({ code: "sub_cut", level: "info", label: t("Sub-cut of the PI line") });
+	}
+	return out;
+}
+
+function rowDiffLevel(row) {
+	const diffs = rowDiffs(row);
+	for (const level of ["error", "warn", "info"]) {
+		if (diffs.some((d) => d.level === level)) return level;
+	}
+	return null;
+}
+function rowDiffTitle(row) {
+	return rowDiffs(row)
+		.map((d) => d.label)
+		.join("\n");
+}
+function rowPiTitle(row) {
+	const pi = row.custom_proforma_invoice || form.value.custom_proforma_invoice || "";
+	if (!pi) return t("Not linked to any PI");
+	return row.custom_proforma_invoice ? pi : `${pi} — ${t("Inherited from the invoice header")}`;
+}
+const nonCompliantCount = computed(
+	() => (form.value.items || []).filter((r) => ["error", "warn"].includes(rowDiffLevel(r))).length
+);
 
 const itemsAgreedTotal = computed(() => (form.value.items || []).reduce((s, r) => s + rowAmount(r), 0));
 const itemsDocsTotal = computed(() => (form.value.items || []).reduce((s, r) => s + rowDocsAmount(r), 0));
@@ -286,31 +367,36 @@ async function applyFillCategory() {
 	if (!fillCategory.value) return;
 	fillApplying.value = true;
 	try {
-		const catItems = await call("stabler.api.imports.get_vendor_category_items", {
-			category: fillCategory.value,
+		// `vendor_category_detail` already returns the category's item rows with
+		// boxes-per-container — the old call named an endpoint that never existed,
+		// so Apply threw every time.
+		const detail = await call("stabler.api.imports.vendor_category_detail", {
+			name: fillCategory.value,
 		});
+		const catItems = detail?.items || [];
 		const cnts = Number(fillContainers.value) || 1;
 		const bw = Number(fillBoxWeight.value) || 0;
 		const ap = Number(fillAgreedPrice.value) || 0;
 		const dp = Number(fillDocsPrice.value) || 0;
-		for (const ci of catItems || []) {
+		for (const ci of catItems) {
 			const boxes = (Number(ci.boxes_per_container) || 0) * cnts;
 			const qty = round2(boxes * bw);
 			form.value.items.push({
-				category: ci.category_display_name || fillCategory.value,
-				item: ci.item_code || ci.item,
+				category: detail.display_name || detail.category_name || fillCategory.value,
+				item: ci.item_code,
 				description: ci.item_name || "",
 				boxes,
 				box_weight_kg: bw,
 				qty,
-				uom: "Kg",
+				uom: ci.stock_uom || "Kg",
 				rate: ap,
 				docs_price: dp,
 			});
 		}
 		fillModalOpen.value = false;
-		toast.success(t("Added {count} items from category.", { count: (catItems || []).length }));
+		toast.success(t("Added {count} items from category.", { count: catItems.length }));
 	} catch (err) {
+		// Leave the modal open — the user's picks survive a retry.
 		toast.error(err?.message || t("Could not load category items."));
 	} finally {
 		fillApplying.value = false;
@@ -323,6 +409,26 @@ const multiPiLoading = ref(false);
 const multiPiProformas = ref([]);
 const multiPiLines = ref([]);
 const multiPiAllocations = ref({});
+// Which sub-cut to book a bundle line against, keyed like the allocations.
+const multiPiItems = ref({});
+
+// The allocation key mirrors the backend match key: (proforma, category). It
+// used to include `item`, which is now empty on every compensated bundle — the
+// whole modal would have collapsed onto one colliding key.
+const multiPiKey = (line) => `${line.pi_name}::${normKey(line.category)}`;
+
+// Contract items first, then sub-cuts earlier invoices actually used — the
+// second group is where a bundle's real cuts live, since they are on no PI.
+function multiPiItemOptions(line) {
+	const seen = new Set();
+	const out = [];
+	for (const code of [...(line.items || []), ...(line.sub_cuts || []).map((s) => s.item)]) {
+		if (!code || seen.has(code)) continue;
+		seen.add(code);
+		out.push(code);
+	}
+	return out;
+}
 
 async function openMultiPiSmartFill() {
 	if (!form.value.supplier) {
@@ -332,6 +438,7 @@ async function openMultiPiSmartFill() {
 	multiPiModalOpen.value = true;
 	multiPiLoading.value = true;
 	multiPiAllocations.value = {};
+	multiPiItems.value = {};
 	try {
 		const res = await call("stabler.api.imports.get_vendor_available_pi_lines", {
 			company: activeCompany.value,
@@ -342,8 +449,11 @@ async function openMultiPiSmartFill() {
 		multiPiLines.value = res.lines || [];
 
 		for (const line of multiPiLines.value) {
-			const key = `${line.pi_name}::${line.item}::${line.category}`;
+			const key = multiPiKey(line);
+			// Over-shipped keys default to 0 — the contract is already exceeded,
+			// so pre-filling more boxes would only deepen the breach.
 			multiPiAllocations.value[key] = line.remaining_boxes > 0 ? line.remaining_boxes : 0;
+			multiPiItems.value[key] = multiPiItemOptions(line)[0] || "";
 		}
 	} catch (err) {
 		toast.error(err?.message || t("Could not fetch available PI lines."));
@@ -355,15 +465,15 @@ async function openMultiPiSmartFill() {
 function applyMultiPiAllocation() {
 	let addedCount = 0;
 	for (const line of multiPiLines.value) {
-		const key = `${line.pi_name}::${line.item}::${line.category}`;
+		const key = multiPiKey(line);
 		const boxes = Math.max(0, parseInt(multiPiAllocations.value[key] || 0));
 		if (boxes > 0) {
-			const bw = line.box_weight_kg || 20;
+			const bw = line.box_weight_kg || DEFAULT_BOX_WEIGHT_KG;
 			const qty = round2(boxes * bw);
 			form.value.items.push({
 				custom_proforma_invoice: line.pi_name,
 				category: line.category,
-				item: line.item,
+				item: multiPiItems.value[key] || line.item || "",
 				description: line.description || "",
 				hs_code: line.hs_code || "",
 				boxes: boxes,
@@ -464,24 +574,38 @@ async function refreshPiTracking() {
 		const trackingList = [];
 		for (const line of res?.lines || []) {
 			const boxWeight = line.box_weight_kg || DEFAULT_BOX_WEIGHT_KG;
-			const contractKg = (line.contract_boxes || 0) * boxWeight;
-			const shippedKg = (line.shipped_boxes || 0) * boxWeight;
-			const remainingKg = (line.remaining_boxes || 0) * boxWeight;
-			const pct = contractKg > 0 ? Math.round((shippedKg / contractKg) * 100) : 0;
+			// The PI's own kg figures are authoritative; boxes × box weight is
+			// only the fallback for contracts that never filled the qty column.
+			const contractKg = line.contract_qty || (line.contract_boxes || 0) * boxWeight;
+			const shippedKg = line.shipped_qty || (line.shipped_boxes || 0) * boxWeight;
+			const remainingKg = contractKg - shippedKg;
 
 			trackingList.push({
 				proforma_invoice: line.pi_name,
+				pi_ref: line.pi_ref || line.pi_name,
 				item: line.item,
+				// A compensated bundle has no single item — `items` carries all of
+				// the contract's item codes for the sub-cut check.
+				items: line.items || (line.item ? [line.item] : []),
 				category: line.category || "",
+				description: line.description || "",
 				contract_boxes: line.contract_boxes,
 				shipped_boxes: line.shipped_boxes,
 				remaining_boxes: line.remaining_boxes,
 				contract_qty: contractKg,
 				total_invoiced_qty: shippedKg,
 				remaining_qty: remainingKg,
-				pct: pct,
+				pct: line.pct,
+				over_shipped: !!line.over_shipped,
+				over_boxes: line.over_boxes || 0,
+				ci_count: line.ci_count || 0,
+				sub_cuts: line.sub_cuts || [],
 				agreed_rate: line.agreed_rate,
 				docs_price: line.docs_price,
+				// One key can legitimately carry several contract prices; the row
+				// is compliant when it equals ANY of them.
+				agreed_prices: line.agreed_prices || [],
+				docs_prices: line.docs_prices || [],
 				box_weight_kg: line.box_weight_kg,
 			});
 		}
@@ -531,11 +655,15 @@ async function loadProformaIntoCi(piName) {
 				const bw = line.box_weight_kg || DEFAULT_BOX_WEIGHT_KG;
 				const boxes = line.remaining_boxes;
 				const qty = round2(boxes * bw);
+				// `item` is required on the child row, but a compensated bundle has
+				// no single one — seed the contract's first item and let the user
+				// pick the actual sub-cut.
+				const item = line.item || (line.items || [])[0] || "";
 				return {
 					custom_proforma_invoice: detail.name,
 					category: line.category || "",
-					item: line.item,
-					item_name: line.item,
+					item: item,
+					item_name: item,
 					description: line.description || "",
 					hs_code: "",
 					boxes: boxes,
@@ -1036,7 +1164,19 @@ watch(activeCompany, loadRefData);
 		<!-- Items — colour-banded grid with Vendor Category dropdown -->
 		<div class="card mb-3">
 			<div class="card-header">
-				<h3 class="card-title">{{ t("Items") }}</h3>
+				<h3 class="card-title">
+					{{ t("Items") }}
+					<!-- Silent when every line agrees with its PI; the badge is the
+					     summary of the per-row flags below. -->
+					<span
+						v-if="nonCompliantCount"
+						class="badge ms-2"
+						:class="getStatusBadgeClass('PI Compliance', 'warn')"
+						:title="t('Lines that disagree with the Proforma Invoice')"
+					>
+						<i class="ti ti-alert-circle me-1"></i>{{ t("{count} line(s) differ from PI", { count: nonCompliantCount }) }}
+					</span>
+				</h3>
 				<div class="card-actions d-flex gap-2">
 					<button
 						type="button"
@@ -1101,8 +1241,20 @@ watch(activeCompany, loadRefData);
 								<input v-else v-model="row.category" type="text" class="form-control form-control-sm" :placeholder="t('Vendor Category')">
 							</td>
 							<td>
-								<span class="badge bg-blue-lt font-monospace text-truncate d-inline-block" style="max-width: 130px; font-size: 0.75rem" :title="row.custom_proforma_invoice || form.custom_proforma_invoice || ''">
+								<span class="badge bg-blue-lt font-monospace text-truncate d-inline-block" style="max-width: 130px; font-size: 0.75rem" :title="rowPiTitle(row)">
 									{{ row.custom_proforma_invoice || form.custom_proforma_invoice || "—" }}
+								</span>
+								<!-- The row carries no PI of its own; it inherits the invoice header's. -->
+								<i v-if="!row.custom_proforma_invoice && form.custom_proforma_invoice" class="ti ti-link ms-1 text-secondary" :title="t('Inherited from the invoice header')"></i>
+								<span
+									v-if="rowDiffLevel(row)"
+									class="badge ms-1"
+									:class="getStatusBadgeClass('PI Compliance', rowDiffLevel(row))"
+									style="font-size: 0.7rem"
+									:title="rowDiffTitle(row)"
+								>
+									<i class="ti" :class="rowDiffLevel(row) === 'error' ? 'ti-alert-triangle' : 'ti-alert-circle'"></i>
+									{{ rowDiffLevel(row) === "error" ? t("Off PI") : rowDiffLevel(row) === "warn" ? t("Differs") : t("Sub-cut") }}
 								</span>
 							</td>
 							<td>
@@ -1276,6 +1428,90 @@ watch(activeCompany, loadRefData);
 						<button type="button" class="btn btn-outline-secondary" @click="closeFillModal">{{ t("Cancel") }}</button>
 						<button type="button" class="btn btn-primary" :disabled="fillApplying || !fillCategory" @click="applyFillCategory">
 							<span v-if="fillApplying" class="spinner-border spinner-border-sm me-1"></span>{{ t("Apply") }}
+						</button>
+					</div>
+				</div>
+			</div>
+		</div>
+
+		<!-- Smart Fill from PIs — allocate boxes across every open proforma of this supplier -->
+		<div v-if="multiPiModalOpen" class="modal d-block" tabindex="-1" style="background: rgba(0,0,0,0.4)">
+			<div class="modal-dialog modal-xl modal-dialog-centered modal-dialog-scrollable">
+				<div class="modal-content">
+					<div class="modal-header">
+						<h5 class="modal-title"><i class="ti ti-wand me-2"></i>{{ t("Smart Fill from PIs") }}</h5>
+						<button type="button" class="btn-close" @click="multiPiModalOpen = false"></button>
+					</div>
+					<div class="modal-body">
+						<table class="table table-sm table-vcenter align-middle mb-0">
+							<thead>
+								<tr>
+									<th style="min-width: 130px">{{ t("Ref PI") }}</th>
+									<th style="min-width: 180px">{{ t("PI product") }}</th>
+									<th style="min-width: 150px">{{ t("Product Code/Name") }}</th>
+									<th class="text-end" style="width: 100px">{{ t("Contract") }}</th>
+									<th class="text-end" style="width: 100px">{{ t("Shipped") }}</th>
+									<th class="text-end" style="width: 110px">{{ t("Remaining") }}</th>
+									<th class="text-end" style="width: 130px">{{ t("Allocate boxes") }}</th>
+								</tr>
+							</thead>
+							<SkeletonRows v-if="multiPiLoading" :rows="6" :cols="7" />
+							<tbody v-else>
+								<tr v-if="!multiPiLines.length">
+									<td colspan="7" class="text-secondary text-center py-3">{{ t("No open proforma lines for this supplier.") }}</td>
+								</tr>
+								<template v-for="line in multiPiLines" :key="multiPiKey(line)">
+									<tr>
+										<td>
+											<span class="badge bg-blue-lt font-monospace" style="font-size: 0.75rem">{{ line.pi_ref || line.pi_name }}</span>
+										</td>
+										<td>
+											<div class="fw-semibold">{{ line.category || "—" }}</div>
+											<div v-if="line.description" class="small text-secondary">{{ line.description }}</div>
+										</td>
+										<td>
+											<select v-model="multiPiItems[multiPiKey(line)]" class="form-select form-select-sm">
+												<option v-for="code in multiPiItemOptions(line)" :key="code" :value="code">{{ code }}</option>
+											</select>
+										</td>
+										<td class="text-end font-monospace">{{ fn(line.contract_boxes) }}</td>
+										<td class="text-end font-monospace">
+											{{ fn(line.shipped_boxes) }}
+											<span v-if="line.ci_count" class="text-secondary small">/ {{ line.ci_count }} CI</span>
+										</td>
+										<td class="text-end font-monospace">
+											<span v-if="line.over_shipped" class="badge bg-red-lt" :title="t('Shipped more than the contract allows')">
+												−{{ fn(line.over_boxes) }} · {{ t("Over-shipped") }}
+											</span>
+											<span v-else class="fw-semibold">{{ fn(line.remaining_boxes) }}</span>
+										</td>
+										<td class="text-end">
+											<input
+												v-model.number="multiPiAllocations[multiPiKey(line)]"
+												type="number"
+												min="0"
+												step="1"
+												inputmode="decimal"
+												class="form-control form-control-sm text-end font-monospace"
+											>
+										</td>
+									</tr>
+									<tr v-if="line.sub_cuts && line.sub_cuts.length">
+										<td colspan="7" class="py-1 bg-light">
+											<span class="small text-secondary me-2">{{ t("Already shipped as") }}:</span>
+											<span v-for="sc in line.sub_cuts" :key="sc.item" class="badge bg-secondary-lt me-1 font-monospace" style="font-size: 0.7rem">
+												{{ sc.item || "—" }} · {{ fn(sc.boxes) }}
+											</span>
+										</td>
+									</tr>
+								</template>
+							</tbody>
+						</table>
+					</div>
+					<div class="modal-footer">
+						<button type="button" class="btn btn-outline-secondary" @click="multiPiModalOpen = false">{{ t("Cancel") }}</button>
+						<button type="button" class="btn btn-primary" :disabled="multiPiLoading || !multiPiLines.length" @click="applyMultiPiAllocation">
+							{{ t("Apply") }}
 						</button>
 					</div>
 				</div>

@@ -32,6 +32,7 @@ const search = ref(
 const status = ref(route.query.status ? String(route.query.status) : "");
 const supplier = ref("");
 const groupFilter = ref("");
+const piMatch = ref("");
 const loading = ref(false);
 const error = ref("");
 const rows = ref([]);
@@ -78,6 +79,16 @@ const groupOptions = computed(() => [
 	{ value: "__none__", label: t("No PI group") },
 	...piGroups.value.map((g) => ({ value: g.name, label: g.title || g.name })),
 ]);
+// PI link filter. "Not linked" means at least ONE line traces to no proforma —
+// a partly-linked invoice is exactly the case worth finding, so it is not
+// counted as linked. Price/quantity compliance is a per-line matter and lives
+// on the invoice form, not here.
+const piMatchOptions = computed(() => [
+	{ value: "", label: t("All PI links") },
+	{ value: "linked", label: t("Linked to PI") },
+	{ value: "unlinked", label: t("Not linked to PI") },
+]);
+
 const groupsByName = computed(() => {
 	const m = {};
 	for (const g of piGroups.value) m[g.name] = g.title || g.name;
@@ -114,6 +125,7 @@ async function loadStats() {
 			supplier: supplier.value || undefined,
 			search: search.value || undefined,
 			group: groupFilter.value || undefined,
+			pi_match: piMatch.value || undefined,
 		});
 	} catch (_err) {
 		stats.value = null;
@@ -212,6 +224,7 @@ async function load() {
 			status: status.value || undefined,
 			supplier: supplier.value || undefined,
 			group: groupFilter.value || undefined,
+			pi_match: piMatch.value || undefined,
 			limit_start: limitStart.value,
 			limit_page_length: pageLength.value,
 			sort_by: sortBy.value,
@@ -289,7 +302,7 @@ onMounted(() => {
 	loadPiGroups();
 	load();
 });
-watch([status, supplier, groupFilter], reload);
+watch([status, supplier, groupFilter, piMatch], reload);
 watch(limitStart, load);
 watch(pageLength, reload);
 watch(
@@ -380,6 +393,7 @@ watch(activeCompany, () => {
 						<Select v-model="status" size="sm" :options="statusOptions" style="width: 180px" />
 						<Select v-model="supplier" size="sm" :options="supplierOptions" style="width: 200px" />
 						<Select v-model="groupFilter" size="sm" :options="groupOptions" style="width: 180px" />
+						<Select v-model="piMatch" size="sm" :options="piMatchOptions" style="width: 170px" />
 					</div>
 				</template>
 			</ListToolbar>
