@@ -163,7 +163,7 @@ def is_due_soon(eta, today, window_days: int = 7) -> bool:
 # ---------------------------------------------------------------------------
 
 
-def ci_filter_clauses(search=None, status=None, supplier=None):
+def ci_filter_clauses(search=None, status=None, supplier=None, group=None):
 	"""WHERE fragments + params for ``list_commercial_invoices`` (alias ``ci``)."""
 	clauses: list[str] = []
 	params: dict = {}
@@ -180,6 +180,12 @@ def ci_filter_clauses(search=None, status=None, supplier=None):
 	if supplier:
 		clauses.append("ci.supplier = %(supplier)s")
 		params["supplier"] = supplier
+	if group:
+		# The CI carries its own PI Group link, and it is authoritative: a CI may
+		# sit in a different group than the proforma it was raised from. Filtering
+		# through the PI would disagree with the badge the list renders.
+		clauses.append("ci.import_pi_group = %(group)s")
+		params["group"] = group
 	return clauses, params
 
 

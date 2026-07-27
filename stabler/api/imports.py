@@ -302,6 +302,7 @@ def list_commercial_invoices(
 	search: str | None = None,
 	status: str | None = None,
 	supplier: str | None = None,
+	group: str | None = None,
 	limit_start: int = 0,
 	limit_page_length: int = 50,
 	sort_by: str | None = None,
@@ -314,7 +315,7 @@ def list_commercial_invoices(
 	full ordering.
 	"""
 	_assert_imports_access(company)
-	clauses, params = rules.ci_filter_clauses(search, status, supplier)
+	clauses, params = rules.ci_filter_clauses(search, status, supplier, group)
 	params["company"] = company
 	params["limit_start"] = max(0, cint(limit_start))
 	params["limit_page_length"] = rules.clamp_page_length(limit_page_length)
@@ -353,6 +354,9 @@ def list_commercial_invoices(
             0
           ) AS cash_difference,
           ci.currency,
+          ci.import_pi_group,
+          pig.code AS pi_group_code,
+          pig.title AS pi_group_title,
           {pi_select}
           (SELECT COUNT(*) FROM `tabImport Container` c
              WHERE c.commercial_invoice = ci.name) AS container_count,
@@ -362,6 +366,7 @@ def list_commercial_invoices(
              WHERE g.commercial_invoice = ci.name) AS has_grn
         FROM `tabCommercial Invoice` ci
         LEFT JOIN `tabSupplier` s ON s.name = ci.supplier
+        LEFT JOIN `tabImport PI Group` pig ON pig.name = ci.import_pi_group
         {pi_join}
         WHERE {where}
         ORDER BY {order_by}
@@ -4376,7 +4381,11 @@ def proforma_list_stats(
 
 @frappe.whitelist()
 def commercial_invoice_list_stats(
-	company: str, status: str | None = None, supplier: str | None = None, search: str | None = None
+	company: str,
+	status: str | None = None,
+	supplier: str | None = None,
+	search: str | None = None,
+	group: str | None = None,
 ) -> dict:
 	"""Aggregate totals over the same filter set as list_commercial_invoices for top metric strip."""
 	_assert_imports_access(company)
@@ -4388,6 +4397,9 @@ def commercial_invoice_list_stats(
 	if supplier:
 		clauses.append("ci.supplier = %(supplier)s")
 		params["supplier"] = supplier
+	if group:
+		clauses.append("ci.import_pi_group = %(group)s")
+		params["group"] = group
 	if search:
 		clauses.append("(ci.name LIKE %(q)s OR ci.ci_number LIKE %(q)s OR s.supplier_name LIKE %(q)s)")
 		params["q"] = f"%{search}%"

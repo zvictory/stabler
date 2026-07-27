@@ -31,6 +31,7 @@ const search = ref(
 );
 const status = ref(route.query.status ? String(route.query.status) : "");
 const supplier = ref("");
+const groupFilter = ref("");
 const loading = ref(false);
 const error = ref("");
 const rows = ref([]);
@@ -65,6 +66,31 @@ const supplierOptions = computed(() => [
 	...suppliers.value.map((s) => ({ value: s.name, label: s.supplier_name || s.name })),
 ]);
 
+// ---- PI Groups (filter + per-row badge) — mirrors ProformaInvoices.vue ----
+// The CI carries its own import_pi_group link and it is authoritative: a CI may
+// sit in a different group than the proforma it was raised from, so neither the
+// badge nor the filter derives the group through the PI.
+const piGroups = ref([]);
+const groupOptions = computed(() => [
+	{ value: "", label: t("All PI groups") },
+	...piGroups.value.map((g) => ({ value: g.name, label: g.title || g.name })),
+]);
+const groupsByName = computed(() => {
+	const m = {};
+	for (const g of piGroups.value) m[g.name] = g.title || g.name;
+	return m;
+});
+function groupLabel(row) {
+	if (!row) return "";
+	return (
+		row.pi_group_code ||
+		row.pi_group_title ||
+		groupsByName.value[row.import_pi_group] ||
+		row.import_pi_group ||
+		""
+	);
+}
+
 const statsCurrencies = computed(() => [...new Set(rows.value.map((r) => r.currency).filter(Boolean))]);
 const statsCurrency = computed(() => (statsCurrencies.value.length === 1 ? statsCurrencies.value[0] : "USD"));
 
@@ -77,6 +103,7 @@ async function loadStats() {
 			status: status.value || undefined,
 			supplier: supplier.value || undefined,
 			search: search.value || undefined,
+			group: groupFilter.value || undefined,
 		});
 	} catch (_err) {
 		stats.value = null;
@@ -174,6 +201,7 @@ async function load() {
 			search: search.value || undefined,
 			status: status.value || undefined,
 			supplier: supplier.value || undefined,
+			group: groupFilter.value || undefined,
 			limit_start: limitStart.value,
 			limit_page_length: pageLength.value,
 			sort_by: sortBy.value,
@@ -203,6 +231,17 @@ async function loadSuppliers() {
 		});
 	} catch (_) {
 		suppliers.value = [];
+	}
+}
+
+async function loadPiGroups() {
+	if (!activeCompany.value) return;
+	try {
+		piGroups.value = await call("stabler.api.imports.list_pi_groups", {
+			company: activeCompany.value,
+		});
+	} catch (_) {
+		piGroups.value = [];
 	}
 }
 
@@ -237,9 +276,10 @@ const fn = (v) => Math.round(Number(v) || 0).toLocaleString(user.value?.language
 
 onMounted(() => {
 	loadSuppliers();
+	loadPiGroups();
 	load();
 });
-watch([status, supplier], reload);
+watch([status, supplier, groupFilter], reload);
 watch(limitStart, load);
 watch(pageLength, reload);
 watch(
@@ -256,6 +296,7 @@ watch(
 );
 watch(activeCompany, () => {
 	loadSuppliers();
+	loadPiGroups();
 	reload();
 });
 </script>
@@ -328,6 +369,7 @@ watch(activeCompany, () => {
 					<div class="d-flex align-items-center gap-2">
 						<Select v-model="status" size="sm" :options="statusOptions" style="width: 180px" />
 						<Select v-model="supplier" size="sm" :options="supplierOptions" style="width: 200px" />
+						<Select v-model="groupFilter" size="sm" :options="groupOptions" style="width: 180px" />
 					</div>
 				</template>
 			</ListToolbar>
@@ -350,7 +392,7 @@ watch(activeCompany, () => {
 							<th class="ci-sort" @click="toggleSort('ci_number')">
 								{{ t("CI № / vendor") }} <i v-if="sortIcon('ci_number')" class="ti" :class="sortIcon('ci_number')"></i>
 							</th>
-							<th>{{ t("PI ref") }}</th>
+							<th>{{ t("PI Group / PI ref") }}</th>
 							<th class="text-nowrap ci-sort" @click="toggleSort('ci_date')">
 								{{ t("Date / ETA") }} <i v-if="sortIcon('ci_date')" class="ti" :class="sortIcon('ci_date')"></i>
 							</th>
@@ -389,6 +431,15 @@ watch(activeCompany, () => {
 								</span>
 							</td>
 							<td class="font-monospace small">
+								<div v-if="groupLabel(r)" class="mb-1">
+									<span
+										class="badge bg-purple-lt text-purple font-monospace fw-bold"
+										style="font-size: 0.75rem"
+										:title="t('PI Group: ') + groupLabel(r)"
+									>
+										<i class="ti ti-folders me-1"></i>{{ groupLabel(r) }}
+									</span>
+								</div>
 								<span
 									v-if="r.proforma_invoice || r.proforma_ref"
 									class="badge bg-purple-lt text-purple font-monospace"

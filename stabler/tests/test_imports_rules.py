@@ -99,15 +99,28 @@ class TestFilterClauses(unittest.TestCase):
 		self.assertEqual(params, {})
 
 	def test_ci_all_filters(self):
-		clauses, params = rules.ci_filter_clauses(search="ABC", status="BOOKED", supplier="SUP-1")
-		self.assertEqual(len(clauses), 3)
+		clauses, params = rules.ci_filter_clauses(
+			search="ABC", status="BOOKED", supplier="SUP-1", group="IPG-2026-00016"
+		)
+		self.assertEqual(len(clauses), 4)
 		self.assertEqual(params["search"], "%ABC%")
 		self.assertEqual(params["status"], "BOOKED")
 		self.assertEqual(params["supplier"], "SUP-1")
+		self.assertEqual(params["group"], "IPG-2026-00016")
 		# parametrised — no raw user value interpolated into the SQL fragment
 		joined = " ".join(clauses)
 		self.assertIn("%(search)s", joined)
 		self.assertNotIn("ABC", joined)
+		self.assertNotIn("IPG-2026-00016", joined)
+
+	def test_ci_group_filters_on_the_invoice_own_link(self):
+		# A CI may sit in a different PI Group than the proforma it was raised
+		# from (20 of msa's 360 do). Filtering through `pi.import_pi_group` would
+		# return a different set than the badge the list renders, so the clause
+		# must read the CI's own column.
+		clauses, params = rules.ci_filter_clauses(group="IPG-2026-00016")
+		self.assertEqual(clauses, ["ci.import_pi_group = %(group)s"])
+		self.assertEqual(params, {"group": "IPG-2026-00016"})
 
 	def test_container_filters(self):
 		clauses, params = rules.container_filter_clauses(
