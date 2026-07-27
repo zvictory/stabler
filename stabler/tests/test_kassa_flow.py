@@ -86,7 +86,7 @@ def _init_state():
 
 def _pick_kassa(ctx=CTX):
 	state = _init_state()
-	reply, kb, state, action = handle(state, "Kassa 1", ctx)
+	_reply, _kb, state, _action = handle(state, "Kassa 1", ctx)
 	return state
 
 
@@ -269,7 +269,7 @@ class TestParseQuickTransfer(unittest.TestCase):
 class TestMainAndMenu(unittest.TestCase):
 	def test_pick_kassa_enters_menu(self):
 		state = _init_state()
-		reply, kb, state, action = handle(state, "Kassa 1", CTX)
+		_reply, kb, state, action = handle(state, "Kassa 1", CTX)
 		self.assertEqual(state["step"], STEP_MENU)
 		self.assertEqual(state["kassa"], "Kassa 1")
 		self.assertEqual(kb, MENU_KEYBOARD)
@@ -277,20 +277,20 @@ class TestMainAndMenu(unittest.TestCase):
 
 	def test_unknown_kassa_reprompts(self):
 		state = _init_state()
-		reply, kb, new_state, action = handle(state, "garbage", CTX)
+		_reply, _kb, new_state, action = handle(state, "garbage", CTX)
 		self.assertEqual(new_state, state)
 		self.assertIsNone(action)
 
 	def test_unknown_menu_text_reprompts_unchanged(self):
 		state = _pick_kassa()
-		reply, kb, new_state, action = handle(state, "???", CTX)
+		_reply, kb, new_state, action = handle(state, "???", CTX)
 		self.assertEqual(new_state, state)
 		self.assertEqual(kb, MENU_KEYBOARD)
 		self.assertIsNone(action)
 
 	def test_quick_transfer_at_main_jumps_to_memo_prompt(self):
 		state = _init_state()
-		reply, kb, new_state, action = handle(state, "somdan pkga 500 ming", CTX)
+		reply, _kb, new_state, action = handle(state, "somdan pkga 500 ming", CTX)
 		self.assertIsNone(action)
 		self.assertEqual(new_state["step"], "k2k_memo")
 		self.assertEqual(new_state["amount"], 500000.0)
@@ -300,7 +300,7 @@ class TestMainAndMenu(unittest.TestCase):
 
 	def test_quick_transfer_with_izoh_jumps_straight_to_confirm(self):
 		state = _pick_kassa()
-		reply, kb, new_state, action = handle(state, "somdan pkga 500 ming ijara uchun", CTX)
+		reply, _kb, new_state, action = handle(state, "somdan pkga 500 ming ijara uchun", CTX)
 		self.assertIsNone(action)
 		self.assertEqual(new_state["step"], "k2k_confirm")
 		self.assertEqual(new_state["memo"], "ijara")
@@ -309,8 +309,8 @@ class TestMainAndMenu(unittest.TestCase):
 
 	def test_quick_transfer_completes_with_confirm_button(self):
 		state = _pick_kassa()
-		reply, kb, state, action = handle(state, "somdan pkga 500 ming ijara uchun", CTX)
-		reply, kb, state, action = handle(state, BTN_CONFIRM, CTX)
+		_reply, _kb, state, action = handle(state, "somdan pkga 500 ming ijara uchun", CTX)
+		_reply, _kb, state, action = handle(state, BTN_CONFIRM, CTX)
 		self.assertEqual(
 			action,
 			{
@@ -328,7 +328,7 @@ class TestCancel(unittest.TestCase):
 		state = _pick_kassa()
 		_, _, state, _ = handle(state, BTN_KIRIM, CTX)
 		_, _, state, _ = handle(state, "Naqd UZS", CTX)
-		reply, kb, state, action = handle(state, BTN_CANCEL, CTX)
+		_reply, _kb, state, action = handle(state, BTN_CANCEL, CTX)
 		self.assertEqual(state["step"], STEP_MAIN)
 		self.assertIsNone(state["kassa"])
 		self.assertIsNone(action)
@@ -339,7 +339,7 @@ class TestCancel(unittest.TestCase):
 		_, _, state, _ = handle(state, "05.07.2026", CTX)
 		self.assertEqual(state["posting_date"], "2026-07-05")
 		_, _, state, _ = handle(state, BTN_KIRIM, CTX)
-		_, _, state, action = handle(state, BTN_CANCEL, CTX)
+		_, _, state, _action = handle(state, BTN_CANCEL, CTX)
 		self.assertEqual(state["step"], STEP_MAIN)
 		self.assertEqual(state["posting_date"], "2026-07-05")
 
@@ -348,7 +348,7 @@ class TestBackdate(unittest.TestCase):
 	def test_sets_date_and_returns_to_menu(self):
 		state = _pick_kassa()
 		_, _, state, _ = handle(state, "\U0001F4DD Qolib ketgan amal", CTX)
-		reply, kb, state, action = handle(state, "05.07.2026", CTX)
+		_reply, _kb, state, action = handle(state, "05.07.2026", CTX)
 		self.assertEqual(state["step"], STEP_MENU)
 		self.assertEqual(state["posting_date"], "2026-07-05")
 		self.assertIsNone(action)
@@ -356,7 +356,7 @@ class TestBackdate(unittest.TestCase):
 	def test_invalid_date_reprompts(self):
 		state = _pick_kassa()
 		_, _, state, _ = handle(state, "\U0001F4DD Qolib ketgan amal", CTX)
-		reply, kb, new_state, action = handle(state, "not-a-date", CTX)
+		_reply, _kb, new_state, _action = handle(state, "not-a-date", CTX)
 		self.assertEqual(new_state, state)
 
 	def test_date_resets_after_one_completed_op(self):
@@ -371,7 +371,7 @@ class TestBackdate(unittest.TestCase):
 		_, _, state, _ = handle(state, "Bank UZS", CTX)
 		_, _, state, _ = handle(state, "10000", CTX)
 		_, _, state, _ = handle(state, "-", CTX)
-		reply, kb, state, action = handle(state, BTN_CONFIRM, CTX)
+		_reply, _kb, state, action = handle(state, BTN_CONFIRM, CTX)
 
 		self.assertIsNotNone(action)
 		self.assertEqual(state["step"], STEP_MENU)
@@ -430,7 +430,7 @@ class TestKirimFlow(unittest.TestCase):
 		_, _, state, _ = handle(state, BTN_KIRIM, CTX)
 		_, _, state, _ = handle(state, "Naqd UZS", CTX)
 		_, _, state, _ = handle(state, "Bank UZS", CTX)
-		reply, kb, state, action = handle(state, "besh yuz ming", CTX)
+		reply, _kb, state, _action = handle(state, "besh yuz ming", CTX)
 		self.assertEqual(state["amount"], 500000.0)
 		self.assertIn("500 000 UZS", reply)
 
@@ -439,7 +439,7 @@ class TestKirimFlow(unittest.TestCase):
 		_, _, state, _ = handle(state, BTN_KIRIM, CTX)
 		_, _, state, _ = handle(state, "Naqd UZS", CTX)
 		_, _, state, _ = handle(state, "Bank UZS", CTX)
-		reply, kb, new_state, action = handle(state, "not a number", CTX)
+		_reply, _kb, new_state, action = handle(state, "not a number", CTX)
 		self.assertEqual(new_state, state)
 		self.assertIsNone(action)
 
@@ -483,7 +483,7 @@ class TestChiqimFlow(unittest.TestCase):
 		state = _pick_kassa(CTX_NO_DEALS)
 		_, _, state, _ = handle(state, BTN_CHIQIM, CTX_NO_DEALS)
 		_, _, state, _ = handle(state, "Naqd UZS", CTX_NO_DEALS)
-		reply, kb, state, action = handle(state, "Xarajat 1", CTX_NO_DEALS)
+		reply, _kb, state, action = handle(state, "Xarajat 1", CTX_NO_DEALS)
 		# Should skip straight to amount, not the deal step.
 		self.assertIn("Summani kiriting", reply)
 		_, _, state, _ = handle(state, "20000", CTX_NO_DEALS)
@@ -510,9 +510,9 @@ class TestChiqimFlow(unittest.TestCase):
 		_, _, state, _ = handle(state, BTN_CHIQIM, CTX)
 		_, _, state, _ = handle(state, "Naqd UZS", CTX)
 		_, _, state, _ = handle(state, BTN_OTHER, CTX)
-		reply, kb, state, action = handle(state, "3", CTX)
+		reply, kb, state, _action = handle(state, "3", CTX)
 		self.assertIn(["Xarajat 3"], kb)
-		reply, kb, state, action = handle(state, "Xarajat 3", CTX)
+		reply, kb, state, _action = handle(state, "Xarajat 3", CTX)
 		# CTX has deals configured, so it should now prompt for the deal, not amount.
 		self.assertIn("Tender", reply)
 
@@ -521,7 +521,7 @@ class TestChiqimFlow(unittest.TestCase):
 		_, _, state, _ = handle(state, BTN_CHIQIM, CTX)
 		_, _, state, _ = handle(state, "Naqd UZS", CTX)
 		_, _, state, _ = handle(state, BTN_OTHER, CTX)
-		reply, kb, new_state, action = handle(state, "zzz-no-match", CTX)
+		reply, _kb, _new_state, _action = handle(state, "zzz-no-match", CTX)
 		self.assertIn("Topilmadi", reply)
 
 	# --- mandatory izoh (WP-K6 #3) --- #
@@ -532,7 +532,7 @@ class TestChiqimFlow(unittest.TestCase):
 		_, _, state, _ = handle(state, "Xarajat 1", CTX)
 		_, _, state, _ = handle(state, BTN_SKIP_DEAL, CTX)
 		_, _, state, _ = handle(state, "10000", CTX)
-		reply, kb, new_state, action = handle(state, "-", CTX)
+		reply, _kb, new_state, action = handle(state, "-", CTX)
 		self.assertEqual(new_state["step"], "chiqim_memo")
 		self.assertIn("majburiy", reply)
 		self.assertIsNone(action)
@@ -544,7 +544,7 @@ class TestChiqimFlow(unittest.TestCase):
 		_, _, state, _ = handle(state, "Xarajat 1", CTX)
 		_, _, state, _ = handle(state, BTN_SKIP_DEAL, CTX)
 		_, _, state, _ = handle(state, "10000", CTX)
-		reply, kb, new_state, action = handle(state, "   ", CTX)
+		_reply, _kb, new_state, action = handle(state, "   ", CTX)
 		self.assertEqual(new_state["step"], "chiqim_memo")
 		self.assertIsNone(action)
 
@@ -555,9 +555,9 @@ class TestChiqimFlow(unittest.TestCase):
 		_, _, state, _ = handle(state, "Xarajat 1", CTX)
 		_, _, state, _ = handle(state, BTN_SKIP_DEAL, CTX)
 		_, _, state, _ = handle(state, "10000", CTX)
-		reply, kb, state, action = handle(state, BTN_OTHER, CTX)
+		reply, _kb, state, _action = handle(state, BTN_OTHER, CTX)
 		self.assertTrue(state.get("_memo_await_free"))
-		reply, kb, state, action = handle(state, "elektr energiyasi", CTX)
+		reply, _kb, state, _action = handle(state, "elektr energiyasi", CTX)
 		self.assertEqual(state["step"], "chiqim_confirm")
 		self.assertIn("elektr energiyasi", reply)
 
@@ -598,7 +598,7 @@ class TestKonvertatsiyaFlow(unittest.TestCase):
 	def test_invalid_direction_reprompts(self):
 		state = _pick_kassa()
 		_, _, state, _ = handle(state, BTN_KONV, CTX)
-		reply, kb, new_state, action = handle(state, "garbage", CTX)
+		_reply, _kb, new_state, action = handle(state, "garbage", CTX)
 		self.assertEqual(new_state, state)
 		self.assertIsNone(action)
 
@@ -609,23 +609,23 @@ class TestKonvertatsiyaFlow(unittest.TestCase):
 		state = _pick_kassa()
 		_, _, state, _ = handle(state, BTN_KONV, CTX)
 
-		reply, kb, state, action = handle(state, "Naqd USD → Naqd UZS", CTX)
+		reply, _kb, state, action = handle(state, "Naqd USD → Naqd UZS", CTX)
 		self.assertEqual(reply, "Qancha berdingiz? (USD)")
 
-		reply, kb, state, action = handle(state, "100", CTX)
+		reply, _kb, state, action = handle(state, "100", CTX)
 		self.assertIn("100 USD", reply)
 		self.assertIn("Qancha oldingiz? (UZS)", reply)
 
-		reply, kb, state, action = handle(state, "1250000", CTX)
+		reply, _kb, state, action = handle(state, "1250000", CTX)
 		self.assertIn("1 250 000 UZS", reply)
 		self.assertIn("majburiy", reply)
 
-		reply, kb, state, action = handle(state, "valyuta almashtirish", CTX)
+		reply, _kb, state, action = handle(state, "valyuta almashtirish", CTX)
 		self.assertIn("100 USD", reply)
 		self.assertIn("1 250 000 UZS", reply)
 		self.assertIn("Kurs:", reply)
 
-		reply, kb, state, action = handle(state, BTN_CONFIRM, CTX)
+		reply, _kb, state, action = handle(state, BTN_CONFIRM, CTX)
 		self.assertEqual(
 			action,
 			{
@@ -644,17 +644,17 @@ class TestKonvertatsiyaFlow(unittest.TestCase):
 		state = _pick_kassa()
 		_, _, state, _ = handle(state, BTN_KONV, CTX)
 
-		reply, kb, state, action = handle(state, "Naqd UZS → PK", CTX)
+		reply, _kb, state, action = handle(state, "Naqd UZS → PK", CTX)
 		self.assertEqual(reply, "Qancha o'tkazasiz? (UZS)")
 
-		reply, kb, state, action = handle(state, "500000", CTX)
+		reply, _kb, state, action = handle(state, "500000", CTX)
 		self.assertIn("500 000 UZS", reply)
 		self.assertIn("majburiy", reply)
 		self.assertEqual(state["step"], "konv_memo")
 		self.assertEqual(state["given"], 500000.0)
 		self.assertEqual(state["received"], 500000.0)
 
-		reply, kb, state, action = handle(state, "ichki ko'chirish", CTX)
+		reply, _kb, state, action = handle(state, "ichki ko'chirish", CTX)
 		self.assertEqual(state["step"], "konv_confirm")
 		self.assertIn("Manba: Naqd UZS", reply)
 		self.assertIn("Manzil: PK", reply)
@@ -663,7 +663,7 @@ class TestKonvertatsiyaFlow(unittest.TestCase):
 		self.assertNotIn("Berdingiz:", reply)
 		self.assertNotIn("Oldingiz:", reply)
 
-		reply, kb, state, action = handle(state, BTN_CONFIRM, CTX)
+		reply, _kb, state, action = handle(state, BTN_CONFIRM, CTX)
 		self.assertEqual(
 			action,
 			{
@@ -682,7 +682,7 @@ class TestKonvertatsiyaFlow(unittest.TestCase):
 		_, _, state, _ = handle(state, "Naqd USD → Naqd UZS", CTX)
 		_, _, state, _ = handle(state, "100", CTX)
 		_, _, state, _ = handle(state, "1250000", CTX)
-		reply, kb, new_state, action = handle(state, "-", CTX)
+		_reply, _kb, new_state, action = handle(state, "-", CTX)
 		self.assertEqual(new_state["step"], "konv_memo")
 		self.assertIsNone(action)
 
@@ -723,14 +723,14 @@ class TestKonvertatsiyaFlow(unittest.TestCase):
 		state = _pick_kassa(CTX_WITH_CBU)
 		_, _, state, _ = handle(state, BTN_KONV, CTX_WITH_CBU)
 		_, _, state, _ = handle(state, "Naqd USD → Naqd UZS", CTX_WITH_CBU)
-		reply, kb, state, action = handle(state, "100", CTX_WITH_CBU)
+		reply, _kb, state, _action = handle(state, "100", CTX_WITH_CBU)
 		self.assertEqual(state["step"], "konv_cbu_choice")
 
-		reply, kb, state, action = handle(state, BTN_KONV_MANUAL, CTX_WITH_CBU)
+		reply, _kb, state, _action = handle(state, BTN_KONV_MANUAL, CTX_WITH_CBU)
 		self.assertEqual(state["step"], "konv_received")
 		self.assertIn("Qancha oldingiz?", reply)
 
-		reply, kb, state, action = handle(state, "1300000", CTX_WITH_CBU)
+		reply, _kb, state, _action = handle(state, "1300000", CTX_WITH_CBU)
 		self.assertEqual(state["received"], 1300000.0)
 		self.assertEqual(state["step"], "konv_memo")
 
@@ -748,9 +748,9 @@ class TestKonvertatsiyaFlow(unittest.TestCase):
 		}
 		state = _pick_kassa(ctx)
 		_, _, state, _ = handle(state, BTN_KONV, ctx)
-		reply, kb, state, action = handle(state, "Naqd EUR → Naqd UZS", ctx)
+		reply, _kb, state, _action = handle(state, "Naqd EUR → Naqd UZS", ctx)
 		self.assertEqual(reply, "Qancha berdingiz? (EUR)")
-		reply, kb, state, action = handle(state, "100", ctx)
+		reply, _kb, state, _action = handle(state, "100", ctx)
 		self.assertEqual(state["step"], "konv_received")
 
 
@@ -795,7 +795,7 @@ class TestKassadanKassagaFlow(unittest.TestCase):
 		_, _, state, _ = handle(state, "Naqd UZS", CTX)
 		_, _, state, _ = handle(state, "Bank UZS", CTX)
 		_, _, state, _ = handle(state, "300000", CTX)
-		reply, kb, new_state, action = handle(state, "-", CTX)
+		_reply, _kb, new_state, action = handle(state, "-", CTX)
 		self.assertEqual(new_state["step"], "k2k_memo")
 		self.assertIsNone(action)
 
@@ -805,7 +805,7 @@ class TestKassadanKassagaFlow(unittest.TestCase):
 		_, _, state, _ = handle(state, BTN_K2K, ctx)
 		_, _, state, _ = handle(state, "Naqd UZS", ctx)
 		_, _, state, _ = handle(state, "Bank UZS", ctx)
-		reply, kb, state, action = handle(state, "300000", ctx)
+		_reply, kb, state, _action = handle(state, "300000", ctx)
 		flat = [label for row in kb for label in row]
 		self.assertIn("Ijara to'lovi", flat)
 		self.assertIn("Yoqilg'i", flat)
@@ -820,7 +820,7 @@ class TestKassadanKassagaSeparation(unittest.TestCase):
 	def test_target_list_excludes_current_kassas_own_leaves(self):
 		state = _pick_kassa()
 		_, _, state, _ = handle(state, BTN_K2K, CTX)
-		reply, kb, state, action = handle(state, "Naqd UZS", CTX)
+		_reply, kb, state, _action = handle(state, "Naqd UZS", CTX)
 		labels = [row[0] for row in kb]
 		self.assertIn("Bank UZS", labels)
 		self.assertNotIn("Naqd UZS", labels)
@@ -856,37 +856,37 @@ class TestQoldiqHeaders(unittest.TestCase):
 
 	def test_konv_direction_prompt_includes_qoldiq(self):
 		state = _pick_kassa(self._CTX_WITH_BALANCES)
-		reply, kb, state, action = handle(state, BTN_KONV, self._CTX_WITH_BALANCES)
+		reply, _kb, state, _action = handle(state, BTN_KONV, self._CTX_WITH_BALANCES)
 		self.assertTrue(reply.startswith("Qoldiq: "))
 		self.assertIn("Naqd UZS: 50 000.00 UZS", reply)
 		self.assertIn("Yo'nalishni tanlang:", reply)
 
 	def test_k2k_source_prompt_includes_qoldiq(self):
 		state = _pick_kassa(self._CTX_WITH_BALANCES)
-		reply, kb, state, action = handle(state, BTN_K2K, self._CTX_WITH_BALANCES)
+		reply, _kb, state, _action = handle(state, BTN_K2K, self._CTX_WITH_BALANCES)
 		self.assertTrue(reply.startswith("Qoldiq: "))
 		self.assertIn("Qaysi hisobdan yuborasiz?", reply)
 
 	def test_k2k_target_prompt_includes_leaf_balance(self):
 		state = _pick_kassa(self._CTX_WITH_BALANCES)
 		_, _, state, _ = handle(state, BTN_K2K, self._CTX_WITH_BALANCES)
-		reply, kb, state, action = handle(state, "Naqd UZS", self._CTX_WITH_BALANCES)
+		reply, _kb, state, _action = handle(state, "Naqd UZS", self._CTX_WITH_BALANCES)
 		self.assertIn("Yuboruvchi: Kassa 1 / UZS", reply)
 		self.assertIn("Qoldiq: 50 000.00 UZS", reply)
 
 	def test_no_balances_omits_header(self):
 		state = _pick_kassa(CTX)
-		reply, kb, state, action = handle(state, BTN_KONV, CTX)
+		reply, _kb, state, _action = handle(state, BTN_KONV, CTX)
 		self.assertEqual(reply, "Yo'nalishni tanlang:")
 		state = _pick_kassa(CTX)
-		reply, kb, state, action = handle(state, BTN_K2K, CTX)
+		reply, _kb, state, _action = handle(state, BTN_K2K, CTX)
 		self.assertEqual(reply, "Qaysi hisobdan yuborasiz?")
 
 
 class TestStatement(unittest.TestCase):
 	def test_statement_action_returns_to_menu_unchanged(self):
 		state = _pick_kassa()
-		reply, kb, new_state, action = handle(state, "ℹ️ Mening jadvalim", CTX)
+		_reply, _kb, new_state, action = handle(state, "ℹ️ Mening jadvalim", CTX)
 		self.assertEqual(action, {"type": "statement"})
 		self.assertEqual(new_state["step"], STEP_MENU)
 		self.assertEqual(new_state["kassa"], state["kassa"])
@@ -903,13 +903,13 @@ class TestMenuHeaderBalances(unittest.TestCase):
 			},
 		}
 		state = _init_state()
-		reply, kb, state, action = handle(state, "Kassa 1", ctx)
+		reply, _kb, state, _action = handle(state, "Kassa 1", ctx)
 		self.assertIn("CBU 17.07", reply)
 		self.assertIn("26 991 567 UZS", reply)
 
 	def test_menu_header_unaffected_when_no_extra(self):
 		state = _init_state()
-		reply, kb, state, action = handle(state, "Kassa 1", CTX)
+		reply, _kb, state, _action = handle(state, "Kassa 1", CTX)
 		self.assertEqual(reply, "Kassa: Kassa 1\nSana: bugun\n\nAmalni tanlang:")
 
 

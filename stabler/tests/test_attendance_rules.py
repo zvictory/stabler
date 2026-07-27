@@ -159,7 +159,7 @@ class RowTotalsTest(unittest.TestCase):
 
 class PoliciesFromRuleSetTest(unittest.TestCase):
 	def test_maps_fields(self):
-		late, night, half, mwp = policies_from_ruleset({
+		late, night, _half, mwp = policies_from_ruleset({
 			"grace_min": 15, "flat_fee_uzs": 20000, "night_start_hour": 21,
 			"ot_method": "DAILY_HOURS", "min_worked_for_present_min": 200,
 		})

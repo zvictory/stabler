@@ -564,26 +564,26 @@ class TestCase14SeniorityBrackets(unittest.TestCase):
 	def test_bracket2_4_years_20pct(self):
 		# Hired 2022-05-15, period 2026-05 → 4 years → 20%
 		# seniorityAllowance = 6,000,000 * 0.20 = 1,200,000
-		res, bd = self._run_hire("2022-05-15")
+		_res, bd = self._run_hire("2022-05-15")
 		self.assertEqual(bd["seniority_allowance"], "1200000")
 
 	def test_bracket3_8_years_30pct(self):
 		# Hired 2018-05-15, period 2026-05 → 8 years → 30%
 		# seniorityAllowance = 6,000,000 * 0.30 = 1,800,000
-		res, bd = self._run_hire("2018-05-15")
+		_res, bd = self._run_hire("2018-05-15")
 		self.assertEqual(bd["seniority_allowance"], "1800000")
 
 	def test_bracket4_14_years_50pct(self):
 		# Hired 2012-05-15, period 2026-05 → 14 years → 50%
 		# seniorityAllowance = 6,000,000 * 0.50 = 3,000,000
-		res, bd = self._run_hire("2012-05-15")
+		_res, bd = self._run_hire("2012-05-15")
 		self.assertEqual(bd["seniority_allowance"], "3000000")
 		self.assertEqual(bd["seniority_years"], 14)
 		self.assertEqual(bd["seniority_percent"], "0.5")
 
 	def test_bracket5_less_than_1_year_0pct(self):
 		# Hired 2025-06-15, period 2026-05 → 0 years → 0%
-		res, bd = self._run_hire("2025-06-15")
+		_res, bd = self._run_hire("2025-06-15")
 		self.assertEqual(bd["seniority_allowance"], "0")
 		# hireDate provided → years=0 (not null), percent='0' (not null)
 		self.assertEqual(bd["seniority_years"], 0)
@@ -1017,7 +1017,7 @@ class TestWorkModes(unittest.TestCase):
 	# WM3: REMOTE zero attendance → full base, lateFeeUZS = 0
 	def test_wm3_remote_zero_attendance(self):
 		"""REMOTE: zero attendance → proratedBase = full base, lateFeeUZS = 0."""
-		res, bd = _run({
+		_res, bd = _run({
 			"employee": {
 				**MOCK_EMPLOYEE,
 				"base_salary": "4000000",
@@ -1062,7 +1062,7 @@ class TestWorkModes(unittest.TestCase):
 	# WM5: SHIFT_12H uses 22*12=264 as personalExpectedHours for nightRatePerHour
 	def test_wm5_shift_12h_night_rate_basis(self):
 		"""SHIFT_12H: nightRatePerHour uses 264h basis (22 days × 12h)."""
-		res, bd = _run({
+		_res, bd = _run({
 			"employee": {
 				**MOCK_EMPLOYEE,
 				"base_salary": "6000000",
@@ -1109,7 +1109,7 @@ class TestDutySupplements(unittest.TestCase):
 	def test_ds2_multiple_supplements_summed(self):
 		"""Multiple duty supplements are summed."""
 		# duty1 = 6M × 0.25 = 1.5M; duty2 = 6M × 0.10 = 600k; total = 2.1M
-		res, bd = _run({
+		_res, bd = _run({
 			"employee": MOCK_EMPLOYEE,
 			"summary": MOCK_SUMMARY_PERFECT,
 			"adjustments": [],
@@ -1123,7 +1123,7 @@ class TestDutySupplements(unittest.TestCase):
 
 	def test_ds3_empty_list_returns_zero(self):
 		"""No supplements → dutySupplement = 0."""
-		res, bd = _run({
+		_res, bd = _run({
 			"employee": MOCK_EMPLOYEE,
 			"summary": MOCK_SUMMARY_PERFECT,
 			"adjustments": [],
@@ -1134,7 +1134,7 @@ class TestDutySupplements(unittest.TestCase):
 
 	def test_ds4_omitted_backward_compat(self):
 		"""Omitting duty_supplements (pre-F5 callers) equals empty array."""
-		res, bd = _run({
+		_res, bd = _run({
 			"employee": MOCK_EMPLOYEE,
 			"summary": MOCK_SUMMARY_PERFECT,
 			"adjustments": [],

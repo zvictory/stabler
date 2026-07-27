@@ -204,7 +204,7 @@ class VerifyChainTest(unittest.TestCase):
 	def test_row_deleted_from_start_detected(self):
 		chain = self._make(4)
 		del chain[0]
-		ok, broken = verify_chain(chain)
+		ok, _broken = verify_chain(chain)
 		self.assertFalse(ok)
 		# seq 2 now has _GENESIS_PREV as its stored prev_hash but we compare
 		# against _GENESIS_PREV for the first element — actually seq 2's
@@ -254,7 +254,7 @@ class VerifyChainTest(unittest.TestCase):
 			"hash": "ff" * 32,
 		}
 		chain.insert(2, intruder)
-		ok, broken = verify_chain(chain)
+		ok, _broken = verify_chain(chain)
 		self.assertFalse(ok)
 
 

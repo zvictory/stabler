@@ -259,7 +259,7 @@ def preview_sales_import(file_url=None, corrections=None):
 	auto_correct_total_kg(rows)
 	auto_correct_boxes(rows)
 
-	customer_map, missing_customers = resolve_customers(rows)
+	_customer_map, missing_customers = resolve_customers(rows)
 	_, missing_items = resolve_items(rows)
 
 	issues = []
