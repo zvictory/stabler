@@ -6,6 +6,8 @@ from a stabler.api.* call, so these docs are mutable only via the Stabler SPA.
 
 Exempt (allowed through):
   - System Manager / Administrator.
+  - Sites with Stabler Settings.allow_desk_access on — a tenant that opens the
+    Desk to everyone opts out of this lock too.
   - Headless contexts with no HTTP request (background jobs, scheduler,
     console, bench migrate, tests).
 
@@ -17,6 +19,8 @@ from __future__ import annotations
 
 import frappe
 from frappe import _
+
+from stabler.stabler.doctype.stabler_settings.stabler_settings import desk_access_enabled
 
 # Matches the admin set in middleware/desk_gate.py and api/organization.py.
 _ADMIN_ROLES = ("System Manager", "Administrator")
@@ -50,6 +54,8 @@ def _from_stabler_or_headless() -> bool:
 def assert_write_via_stabler(doc, method=None) -> None:
 	"""Doc-event hook: raise PermissionError unless caller is Stabler or an admin."""
 	if _is_admin():
+		return
+	if desk_access_enabled():
 		return
 	if _from_stabler_or_headless():
 		return

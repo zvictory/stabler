@@ -7,6 +7,8 @@ Behavior:
   - Guest users: not handled here. Frappe's own auth flow will redirect
     them to /login when they hit a desk page.
   - Authenticated user with System Manager / Administrator: pass through.
+  - Any site with Stabler Settings.allow_desk_access on: everyone passes
+    through — that tenant wants the raw Desk next to Stabler.
   - Anyone else: bounced to the SPA with a 302.
 
 Why a werkzeug abort and not frappe.Redirect: handle_exception() has no
@@ -20,6 +22,8 @@ response attached — so this produces a real 302 with a Location header.
 import frappe
 from werkzeug.exceptions import abort
 from werkzeug.utils import redirect
+
+from stabler.stabler.doctype.stabler_settings.stabler_settings import desk_access_enabled
 
 GATED_PREFIXES = ("/app", "/desk")
 STABLER_HOME = "/stabler"
@@ -40,6 +44,12 @@ def gate_desk():
 
 	roles = frappe.get_roles(user)
 	if "System Manager" in roles or "Administrator" in roles:
+		return
+
+	# Per-site opt-out. The DB read sits here, after _is_gated and the role
+	# check, so it only costs a query on actual /app|/desk hits — not on every
+	# request that passes through before_request.
+	if desk_access_enabled():
 		return
 
 	# 302, not 301: the browser must not cache this permanently — the day this

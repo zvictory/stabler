@@ -68,6 +68,25 @@ To widen the allowlist (e.g. grant `Accounts Manager` desk access without
 making them System Managers), edit the role check in
 `stabler/middleware/desk_gate.py` and restart bench.
 
+**Opening the Desk to everyone on one site:**
+`Stabler Settings.allow_desk_access` (Check, default off) is a per-site switch.
+When it is on, the gate lets every logged-in user through to `/app` — **and the
+Sales Order / Sales Invoice desk-write lock in `stabler/api/desk_write_guard.py`
+is lifted too**, so those users can also save from the Desk, bypassing the
+Stabler-side validations. Off on every other site, so the code ships to all
+tenants unchanged. Flip it per site:
+
+```bash
+bench --site <site> execute frappe.db.set_single_value \
+  --kwargs "{'doctype':'Stabler Settings','fieldname':'allow_desk_access','value':1}"
+```
+
+Note: Frappe blocks the Desk independently for users whose `user_type` is
+`Website User`, which it sets automatically when none of a user's roles has
+`desk_access`. SPA-only roles (`Imports User`, the tender and service roles)
+are created with `desk_access = 0`, so a user holding only those still cannot
+reach `/app` even with this switch on.
+
 ## Project layout
 
 ```

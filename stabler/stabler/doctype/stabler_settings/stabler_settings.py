@@ -35,6 +35,20 @@ DEFAULT_MODULE_ENABLED = {
 }
 
 
+def desk_access_enabled() -> bool:
+	"""True when this site lets non-admins into the classic Frappe Desk.
+
+	Per-site switch, read by middleware/desk_gate.py and api/desk_write_guard.py.
+	Tenant variance lives in config, never in code constants — see
+	docs/plans/2026-07-18-multitenant-governance.md.
+	"""
+	try:
+		return bool(frappe.db.get_single_value("Stabler Settings", "allow_desk_access"))
+	except Exception:
+		# Fresh install / mid-migrate: doctype or column not there yet — stay closed.
+		return False
+
+
 def _default_enable_row(company: str) -> dict:
 	"""Child-row seed ({company, enable_*}) derived from DEFAULT_MODULE_ENABLED."""
 	row = {"company": company}

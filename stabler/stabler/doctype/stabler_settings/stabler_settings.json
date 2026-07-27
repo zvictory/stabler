@@ -38,6 +38,7 @@
   "last_restore_test_date",
   "access_section",
   "enforce_sod",
+  "allow_desk_access",
   "period_close_section",
   "enable_period_close",
   "period_close_date",
@@ -268,6 +269,13 @@
    "fieldname": "enforce_sod",
    "fieldtype": "Check",
    "label": "Enforce segregation of duties"
+  },
+  {
+   "default": "0",
+   "description": "When on, every logged-in user can open the classic Frappe Desk (/app, /desk) alongside Stabler, and the Sales Order / Sales Invoice desk-write lock is lifted. Off (default) = Desk is admin-only. Per-site switch: enable it only on tenants that want the raw Desk.",
+   "fieldname": "allow_desk_access",
+   "fieldtype": "Check",
+   "label": "Allow Frappe Desk access for all users"
   },
   {
    "fieldname": "period_close_section",
