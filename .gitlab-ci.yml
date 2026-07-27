@@ -101,12 +101,19 @@ ruff-debt:
       # at. Lower CEILING whenever a sweep drops the number — that is the ratchet
       # clicking.
       #
-      # 386 (2026-07-26) -> 151 (2026-07-27), in four commits: W291/W293, I001,
-      # RUF100, and the E401s that isort cleared on the way. What is left is
-      # deliberately NOT auto-fixable — RUF059 (98) needs a human to decide which
-      # unpacked name is genuinely unwanted, and the ~50 after it (B905, RUF012,
-      # RUF013, F823) are each a real code decision.
-      CEILING=151
+      # 386 (2026-07-26) -> 0 (2026-07-27), rule by rule, one commit each:
+      # W291/W293, I001, RUF100, RUF059, then the ~50 that needed a human —
+      # B905 (zip strict), F841, RUF012 (ClassVar), RUF013, RUF005, B007,
+      # RUF046, E702. The sweep also turned up one real bug: sales_import
+      # shadowed frappe's `_`, so its permission check raised UnboundLocalError
+      # (F823, fixed in 0d567c6).
+      #
+      # At zero the ratchet has become a gate: this job now fails on ANY
+      # violation anywhere in the tree, which is stricter than the changed-file
+      # lint in `gate`. The CEILING mechanism stays rather than being replaced
+      # by `-gt 0`, so that a deliberate future exception is one number away
+      # instead of a rewrite.
+      CEILING=0
       n=$(ruff check --output-format=concise stabler | grep -c ':' || true)
       echo "ruff debt: $n  (ceiling $CEILING)"
       if [ "$n" -gt "$CEILING" ]; then
