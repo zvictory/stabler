@@ -14,11 +14,14 @@
 # they are the same target.
 #
 # WHY THE GATE LINTS ONLY CHANGED FILES: measured 2026-07-26, `ruff check
-# stabler` reports 386 errors and `ruff format --check` would rewrite 273 files.
-# A whole-tree lint would be red on its first commit and stay red — which is
-# almost certainly why the one GitHub run failed. The Makefile's ratchet is the
-# answer: new code is clean, old code gets cleaned when next edited. `ruff-debt`
-# below keeps the total from growing back.
+# stabler` reported 386 errors and `ruff format --check` would have rewritten
+# 273 files. A whole-tree lint would have been red on its first commit and
+# stayed red — almost certainly why the one GitHub run failed. The Makefile's
+# ratchet was the answer: new code clean, old code cleaned when next edited.
+#
+# Both numbers are now 0 (2026-07-27), and `ruff-debt` below enforces that on
+# the whole tree, so for Python the changed-file scope in `gate` is just the
+# fast path. `eslint-debt` is where the ratchet still does real work: 104.
 
 stages:
   - gate
@@ -123,6 +126,14 @@ ruff-debt:
       if [ "$n" -lt "$CEILING" ]; then
         echo "NOTE: debt is down to $n — lower CEILING in .gitlab-ci.yml to lock it in."
       fi
+    - |
+      # Formatting, whole tree, BLOCKING — no ceiling, because unlike the rule
+      # violations this one has no partial state worth tolerating: either the
+      # tree is formatted or the next person's one-line fix arrives buried in
+      # 200 lines of reflow. The sweep landed in 517facd (268 files, proven
+      # AST-neutral outside docstrings) and .git-blame-ignore-revs keeps it out
+      # of `git blame`. `make fix` is what a contributor runs when this fails.
+      ruff format --check stabler
 
 # The `gate` job runs on a python image with no node, so its `lint-js-changed`
 # step prints a skip and moves on. THIS job is what actually keeps the JS side

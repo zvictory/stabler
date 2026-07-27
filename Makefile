@@ -5,12 +5,16 @@
 # The GitHub workflow that used to mirror this was retired on 2026-07-27 — see
 # .github/README.md. GitLab is the only pipeline.
 #
-# RATCHET, NOT BIG-BANG: the tree carries ~390 pre-existing ruff violations and
-# 273 files that `ruff format` would rewrite. Linting all of it in the hook
-# would make the hook permanently red, and a permanently red hook is a hook
-# everybody bypasses with --no-verify. So `check` lints only the files you
-# touched: new code is clean, old code gets cleaned when it is next edited.
-# `make lint` still runs the full CI-equivalent sweep when you want the number.
+# RATCHET, NOT BIG-BANG: the tree used to carry ~390 ruff violations and 273
+# unformatted files. Linting all of it in the hook would have made the hook
+# permanently red, and a permanently red hook is one everybody bypasses with
+# --no-verify. So `check` lints only the files you touched: new code clean, old
+# code cleaned when next edited.
+#
+# The Python debt reached ZERO on 2026-07-27 (rule by rule, then one formatting
+# sweep), so for .py the changed-file scope is now a speed optimisation rather
+# than a concession — `make lint` sweeps the whole tree and is expected green.
+# The ratchet still earns its keep on the JS side, which is at 104 and falling.
 
 RUFF_VERSION := $(shell cat .ruff-version)
 # ?= so a different bench layout (or CI, which has no venv at this path) can
@@ -53,7 +57,7 @@ help:
 	@echo "make check         — pre-push gate: changed-file lint (py+js) + compile + guards + unit tests"
 	@echo "make fix           — auto-fix + format the .py files you changed"
 	@echo "make fix-js        — auto-fix + format the .js/.vue files you changed"
-	@echo "make lint          — FULL tree lint (CI-equivalent; currently red, that is the debt)"
+	@echo "make lint          — FULL tree lint (CI-equivalent; green as of 2026-07-27)"
 	@echo "make lint-js       — FULL tree ESLint sweep (same, for the SPA)"
 	@echo "make test          — the frappe-free unit modules only (no bench, no DB)"
 	@echo "make test-bench    — the other 15 modules, on a throwaway site (slow, needs a bench)"
@@ -68,19 +72,19 @@ help:
 check: lint-changed lint-js-changed compile guards test test-js
 	@echo "OK — pre-push gate passed."
 
-# `ruff format --check` is ADVISORY here, not a gate. Nothing in the tree was ever
-# formatted, so the first touch of a big module rewrites ~200 lines (purchasing.py:
-# 215). Blocking on that buries every one-line bugfix in formatting noise and makes
-# a production rollback harder to read. Run `make fmt` plus a .git-blame-ignore-revs
-# entry as one deliberate sweep instead.
+# `ruff format --check` BLOCKS as of 2026-07-27. It was advisory for one reason:
+# nothing in the tree had ever been formatted, so touching a big module rewrote
+# ~200 lines and buried the one-line bugfix inside it. That sweep has now been
+# done (517facd, 268 files, in .git-blame-ignore-revs), so the first touch of a
+# module no longer reformats anything and the reason to look away is gone.
+# `make fix` formats whatever this reports.
 lint-changed:
 ifeq ($(strip $(CHANGED_PY)),)
 	@echo "ruff: no changed .py files, skipping."
 else
 	@echo "ruff: $(words $(CHANGED_PY)) changed file(s)"
 	@$(RUFF) check $(CHANGED_PY)
-	@$(RUFF) format --check $(CHANGED_PY) || \
-	  echo "  (advisory only -- 'make fix' formats these; not blocking the push)"
+	@$(RUFF) format --check $(CHANGED_PY)
 endif
 
 # Same ratchet, other language. 80k lines of Vue/JS had no static checking at
@@ -267,9 +271,13 @@ prod-drift:
 
 # ------------------------------------------------------- whole-tree sweeps ---
 
+# No leading `-`: both of these are at zero as of 2026-07-27 (345 violations and
+# 268 unformatted files, paid off rule by rule), so a failure here is a real
+# regression rather than the standing debt it used to be. `lint-js` keeps its
+# `-` because the JS side still carries a ceiling of 104.
 lint:
-	-$(RUFF) check stabler
-	-$(RUFF) format --check stabler
+	$(RUFF) check stabler
+	$(RUFF) format --check stabler
 
 lint-js:
 	-$(ESLINT) stabler/public/js
