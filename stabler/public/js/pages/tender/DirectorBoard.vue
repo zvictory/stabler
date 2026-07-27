@@ -15,6 +15,7 @@ import { useEscapeBack } from "../../composables/useEscapeBack.js";
 import { activeTenderFilters, filterTenderRows, tenderRouteFilters } from "../../composables/tenderBoardFilters.js";
 import EmptyState from "../../components/EmptyState.vue";
 import SkeletonRows from "../../components/SkeletonRows.vue";
+import TenderFunnel from "./TenderFunnel.vue";
 import TenderNav from "./TenderNav.vue";
 
 const session = useSession();
@@ -79,6 +80,8 @@ function clearFilters() { router.replace({ query: {} }); }
 			<div v-if="filterSummary.length" class="ms-auto d-flex align-items-center gap-2"><span class="text-secondary small">{{ filterSummary.join(" · ") }}</span><button type="button" class="btn btn-sm btn-ghost-secondary" @click="clearFilters">{{ t("Clear filters") }}</button></div>
 		</div>
 		<TenderNav />
+
+		<TenderFunnel />
 
 		<!-- KPI -->
 		<div class="row g-2 mb-3">

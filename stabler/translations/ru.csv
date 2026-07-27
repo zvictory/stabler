@@ -4745,3 +4745,19 @@ Smart Fill from PIs,Умное заполнение из ПИ
 Sub-cut,Подотруб
 Sub-cut of the PI line,Подотруб строки ПИ
 {count} line(s) differ from PI,{count} строк(и) расходятся с ПИ
+Tender pipeline,Тендерная воронка
+last {days} days,последние {days} дней
+win-rate,процент побед
+deadline risk,риск срока
+Loading tender funnel…,Загрузка воронки…
+Could not load the tender funnel.,Не удалось загрузить воронку.
+Under review,На рассмотрении
+GO — awaiting sourcing,GO — ждёт закупа цен
+Collecting quotations,Сбор предложений
+Priced — ready to bid,Цена готова — к подаче
+Bid submitted,Заявка подана
+In execution,В исполнении
+Lots seen,Лотов увидено
+GO decision,Решение GO
+Sourcing started,Закуп цен начат
+Each tender is counted in exactly one stage. Click a stage to open its list.,"Каждый тендер учитывается ровно в одном этапе. Нажмите на этап, чтобы открыть список."

@@ -4735,3 +4735,19 @@ Smart Fill from PIs,Smart Fill from PIs
 Sub-cut,Sub-cut
 Sub-cut of the PI line,Sub-cut of the PI line
 {count} line(s) differ from PI,{count} line(s) differ from PI
+Tender pipeline,Tender pipeline
+last {days} days,last {days} days
+win-rate,win-rate
+deadline risk,deadline risk
+Loading tender funnel…,Loading tender funnel…
+Could not load the tender funnel.,Could not load the tender funnel.
+Under review,Under review
+GO — awaiting sourcing,GO — awaiting sourcing
+Collecting quotations,Collecting quotations
+Priced — ready to bid,Priced — ready to bid
+Bid submitted,Bid submitted
+In execution,In execution
+Lots seen,Lots seen
+GO decision,GO decision
+Sourcing started,Sourcing started
+Each tender is counted in exactly one stage. Click a stage to open its list.,Each tender is counted in exactly one stage. Click a stage to open its list.

@@ -103,6 +103,7 @@ def _load_tender(db: _FakeDB, roles: list[str], user: str = "source@example.com"
 		(value.month - 1 + months) % 12 + 1,
 		min(value.day, 28),
 	)
+	utils.cint = lambda value=0: int(float(value or 0))
 	utils.today = lambda: "2026-07-22"
 	utils.now = lambda: "2026-07-22 09:00:00"
 	frappe.utils = utils

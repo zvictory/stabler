@@ -4734,3 +4734,19 @@ Smart Fill from PIs,PI'lardan akıllı doldurma
 Sub-cut,Alt kesim
 Sub-cut of the PI line,PI satırının alt kesimi
 {count} line(s) differ from PI,{count} satır PI'dan farklı
+Tender pipeline,İhale hattı
+last {days} days,son {days} gün
+win-rate,kazanma oranı
+deadline risk,süre riski
+Loading tender funnel…,Huni yükleniyor…
+Could not load the tender funnel.,Huni yüklenemedi.
+Under review,İncelemede
+GO — awaiting sourcing,GO — sourcing bekliyor
+Collecting quotations,Teklif toplanıyor
+Priced — ready to bid,Fiyat hazır — sunuma
+Bid submitted,Teklif sunuldu
+In execution,Yürütmede
+Lots seen,Görülen lot
+GO decision,GO kararı
+Sourcing started,Sourcing başladı
+Each tender is counted in exactly one stage. Click a stage to open its list.,Her ihale tam bir aşamada sayılır. Listeyi açmak için aşamaya tıkla.

@@ -4739,3 +4739,19 @@ Smart Fill from PIs,ПИ лардан ақлли тўлдириш
 Sub-cut,Ички кесим
 Sub-cut of the PI line,ПИ қаторининг ички кесими
 {count} line(s) differ from PI,{count} та қатор ПИ дан фарқ қилади
+Tender pipeline,Тендер қувури
+last {days} days,охирги {days} кун
+win-rate,ютуқ улуши
+deadline risk,муддат хавфи
+Loading tender funnel…,Воронка юкланмоқда…
+Could not load the tender funnel.,Воронкани юклаб бўлмади.
+Under review,Кўриб чиқилмоқда
+GO — awaiting sourcing,GO — нарх сўрови кутилмоқда
+Collecting quotations,Таклифлар йиғилмоқда
+Priced — ready to bid,Нарх тайёр — топширишга
+Bid submitted,Таклиф топширилди
+In execution,Ижрода
+Lots seen,Кўрилган лотлар
+GO decision,GO қарори
+Sourcing started,Нарх сўрови бошланди
+Each tender is counted in exactly one stage. Click a stage to open its list.,Ҳар бир тендер фақат битта босқичда ҳисобланади. Рўйхатни очиш учун босқични босинг.

@@ -4739,3 +4739,19 @@ Smart Fill from PIs,PI lardan aqlli to'ldirish
 Sub-cut,Ichki kesim
 Sub-cut of the PI line,PI qatorining ichki kesimi
 {count} line(s) differ from PI,{count} ta qator PI dan farq qiladi
+Tender pipeline,Tender quvuri
+last {days} days,oxirgi {days} kun
+win-rate,yutuq ulushi
+deadline risk,muddat xavfi
+Loading tender funnel…,Voronka yuklanmoqda…
+Could not load the tender funnel.,Voronkani yuklab bo'lmadi.
+Under review,Ko'rib chiqilmoqda
+GO — awaiting sourcing,GO — narx so'rovi kutilmoqda
+Collecting quotations,Takliflar yig'ilmoqda
+Priced — ready to bid,Narx tayyor — topshirishga
+Bid submitted,Taklif topshirildi
+In execution,Ijroda
+Lots seen,Ko'rilgan lotlar
+GO decision,GO qarori
+Sourcing started,Narx so'rovi boshlandi
+Each tender is counted in exactly one stage. Click a stage to open its list.,Har bir tender faqat bitta bosqichda hisoblanadi. Ro'yxatni ochish uchun bosqichni bosing.

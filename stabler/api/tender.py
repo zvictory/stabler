@@ -15,7 +15,7 @@ import json
 
 import frappe
 from frappe import _
-from frappe.utils import add_months, flt, getdate, now, today
+from frappe.utils import add_months, cint, flt, getdate, now, today
 
 from stabler.api._bid_package import assemble_bid_package, build_bid_docx
 from stabler.api._common import _require_company
@@ -2095,6 +2095,89 @@ def sourcing_my_tenders(company: str) -> dict:
 		)
 	rows.sort(key=lambda r: (_RISK_ORDER.get(r["risk"], 3), r["delivery"] or "9999-99-99"))
 	return {"currency": base_ccy, "rows": rows, "oversight": oversight}
+
+
+@frappe.whitelist()
+def tender_funnel(company: str, days: int = 90):
+	"""Pipeline funnel: every tender counted in exactly ONE stage, plus the
+	conversion funnel and execution buckets. Stage boxes show the current state
+	of open tenders; won/lost and the funnel respect the reporting window so the
+	win-rate is a period statement.
+
+	Classification lives in _funnel.py (pure) — precedence result > submitted >
+	priced > sourcing > go > seen keeps a deal from appearing in two boxes.
+	"""
+	from datetime import timedelta
+
+	from stabler.api import _funnel
+
+	_require_tender(company)
+	_assert_company_scope(company)  # tenant isolation: reject a foreign company arg
+	days = max(7, min(cint(days) or 90, 366))
+	cutoff = getdate(today()) - timedelta(days=days)
+
+	# One grouped pass for quotation counts — not one query per deal.
+	sq_counts: dict[str, int] = {}
+	if frappe.db.has_column("Supplier Quotation", "custom_crm_deal"):
+		for r in frappe.get_all(
+			"Supplier Quotation",
+			filters={"company": company, "custom_crm_deal": ["is", "set"], "docstatus": ["<", 2]},
+			fields=["custom_crm_deal"],
+			limit_page_length=0,
+		):
+			sq_counts[r.custom_crm_deal] = sq_counts.get(r.custom_crm_deal, 0) + 1
+
+	has_pricing_col = frappe.db.has_column("CRM Deal", "custom_bid_pricing")
+	rows = []
+	for deal in _tender_deal_names(company):
+		if not frappe.has_permission("CRM Deal", "read", doc=deal):
+			continue
+		intake = _read_intake(deal)
+		has_pricing = bool(
+			has_pricing_col and frappe.db.get_value("CRM Deal", deal, "custom_bid_pricing")
+		)
+		stage = _funnel.classify(
+			{
+				"go_no_go": intake.get("go_no_go"),
+				"result": intake.get("result"),
+				"submitted": _has_submission_evidence(intake),
+				"has_pricing": has_pricing,
+				"sq_count": sq_counts.get(deal, 0),
+			}
+		)
+		# Window: terminal stages date from the result stamp; open ones from creation.
+		if stage in ("won", "lost"):
+			ref_date = intake.get("result_at") or frappe.db.get_value("CRM Deal", deal, "creation")
+		else:
+			ref_date = frappe.db.get_value("CRM Deal", deal, "creation")
+		try:
+			in_window = getdate(ref_date) >= cutoff
+		except (TypeError, ValueError):
+			in_window = True
+		# Deadline urgency only matters (and only costs a computation) while open.
+		urgent = False
+		if stage in ("go", "sourcing", "priced", "submitted"):
+			urgent = _deal_deadlines(deal, company, intake)["risk"] == "risk"
+		rows.append({"stage": stage, "urgent": urgent, "in_window": in_window})
+
+	out = _funnel.summarise(rows)
+
+	# Execution buckets from the contract board (submitted SOs tagged to a deal).
+	so_stages = []
+	if frappe.db.has_column("Sales Order", "custom_crm_deal"):
+		so_stages = [
+			r.custom_board_stage
+			for r in frappe.get_all(
+				"Sales Order",
+				filters={"company": company, "custom_crm_deal": ["is", "set"], "docstatus": 1},
+				fields=["custom_board_stage"],
+				limit_page_length=0,
+			)
+		]
+	out["so"] = _funnel.summarise_so(so_stages)
+	out["days"] = days
+	out["currency"] = frappe.db.get_value("Company", company, "default_currency") or ""
+	return out
 
 
 # --------------------------------------------------------------------------- #
