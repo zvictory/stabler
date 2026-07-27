@@ -110,6 +110,18 @@
 			<td class="num">273 sahte fiyat farkı</td>
 			<td class="num">0 fark</td>
 		</tr>
+		<tr>
+			<td>Fiyat karşılaştırmasında <strong>yarım sent tolerans</strong>: PI 3 haneden
+				(<span class="mono">4.865</span>), CI 2 haneden (<span class="mono">4.86</span>) kaydediyor</td>
+			<td class="num">1 067 sahte fiyat farkı</td>
+			<td class="num">0 fark</td>
+		</tr>
+		<tr>
+			<td><strong>Boş kategori anahtar değildir</strong>: <span class="mono">(PI, &quot;&quot;)</span> aynı
+				PI'daki diğer kategorisiz satırla eşleşiyordu</td>
+			<td class="num">27 yanlış eşleşme</td>
+			<td class="num">0 (ayrı kodla raporlanır)</td>
+		</tr>
 	</tbody>
 </table></div>
 <div class="note">
@@ -117,6 +129,15 @@
 	deniyordu. Gerçek veriyle çalışınca bu rakam üretilemedi: doğru anahtar ve 4 hane
 	yuvarlama ile <strong>fiyat uyuşmazlığı sayısı 0 + 0</strong>. Yani MSA'nın
 	fiyatları sözleşmeye uyuyor; sorun raporlamadaydı.
+</div>
+<div class="note">
+	<strong>Canlı veride bulunan iki kusur (27.07.2026, dağıtım sonrası).</strong>
+	Son iki satır sandbox'ta hiç görünmedi, çünkü kaynak tablo bu sütunları her zaman
+	dolduruyor ve tek precision kullanıyor. Canlı msa defterinde ise 818 “anlaşılan
+	fiyat farkı” uyarısının 816'sı ile 255 “docs fiyat farkı” uyarısının 251'i sadece
+	saklama hassasiyetiydi; kalan 4+2 “gerçek” fark da boş-kategori çakışmasının
+	ürünüydü. Her iki düzeltmeden sonra canlı rapor <strong>0 + 0</strong> fiyat farkı
+	veriyor — sandbox'la aynı.
 </div>
 
 <h2>2. Uçtan uca gerçek örnek: <span class="mono">HMA/PI/2677/202425</span></h2>
@@ -324,7 +345,7 @@
 
 <div class="foot">
 	Üretim: <span class="mono">stabler/api/_imports_rules.py</span> (frappe'siz saf modül) +
-	<span class="mono">stabler/tests/test_imports_rules.py</span> (118 test, tamamı yeşil).
+	<span class="mono">stabler/tests/test_imports_rules.py</span> (121 test, tamamı yeşil).
 	Veri: <span class="mono">MSA tegma obshiy.xlsx</span> → 59 PI belgesi / 229 sözleşme kalemi,
 	353 CI / 6 223 sevk satırı. Sayfadaki tüm sayılar bu modülün çıktısıdır.
 </div>
