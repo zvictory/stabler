@@ -11,7 +11,9 @@
  *   status     — ERPNext status string (e.g. "To Deliver and Bill")
  *   docstatus  — numeric docstatus (0 draft, 1 submitted, 2 cancelled)
  *   loading    — show full-card spinner
- *   error      — show full-card error alert
+ *   error      — fatal load error; replaces the whole card
+ *   actionError — recoverable save/validation error; renders inline above the
+ *                 form body so the user keeps what they typed
  *
  * Slots:
  *   default   — the field grid / form body
@@ -29,6 +31,7 @@ const props = defineProps({
 	docstatus: { type: Number, default: null },
 	loading: { type: Boolean, default: false },
 	error: { type: String, default: "" },
+	actionError: { type: String, default: "" },
 	backPath: { type: String, default: null },
 });
 
@@ -112,6 +115,7 @@ const badgeClass = computed(() => {
 			</div>
 
 			<div class="card-body">
+				<div v-if="actionError" class="alert alert-danger">{{ actionError }}</div>
 				<slot />
 			</div>
 

@@ -171,6 +171,7 @@ const {
 	model: form,
 	loading,
 	saving: actionRunning,
+	loadError,
 	error: actionError,
 	isDirty,
 	isCreate,
@@ -380,7 +381,8 @@ function handleValidityChange(valid) {
 		:status="status"
 		:docstatus="docstatus"
 		:loading="loading"
-		:error="actionError"
+		:error="loadError"
+		:action-error="actionError"
 		back-path="/purchasing/orders"
 	>
 		<!-- Linked Invoices/Receipts Alert -->

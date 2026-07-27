@@ -295,7 +295,7 @@ async function saveInvoice(submitNow = false) {
 		:title="t('New Direct Sales Invoice')"
 		doc-name="new"
 		:loading="false"
-		:error="error"
+		:action-error="error"
 		back-path="/sales/invoices"
 	>
 		<template #actions>

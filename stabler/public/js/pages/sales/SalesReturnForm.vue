@@ -71,6 +71,7 @@ const {
 	model: form,
 	loading,
 	saving: actionRunning,
+	loadError,
 	error: actionError,
 	isFormValid,
 	save,
@@ -200,7 +201,8 @@ onMounted(async () => {
 		:title="t('New Sales Return')"
 		:doc-name="t('Direct credit note')"
 		:loading="loading"
-		:error="actionError"
+		:error="loadError"
+		:action-error="actionError"
 		back-path="/sales/invoices"
 	>
 		<div class="alert alert-info">

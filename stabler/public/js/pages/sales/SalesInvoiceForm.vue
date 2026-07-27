@@ -28,6 +28,7 @@ const {
 	model: form,
 	loading,
 	saving: actionRunning,
+	loadError,
 	error: actionError,
 	load,
 	submit,
@@ -196,7 +197,8 @@ onMounted(loadDoc);
 		:status="form?.status"
 		:docstatus="form?.docstatus"
 		:loading="loading"
-		:error="actionError"
+		:error="loadError"
+		:action-error="actionError"
 		back-path="/sales/invoices"
 	>
 		<template v-if="form && form.name">

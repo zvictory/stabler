@@ -267,6 +267,7 @@ const {
 	model: form,
 	loading,
 	saving: actionRunning,
+	loadError,
 	error: actionError,
 	isDirty,
 	isCreate,
@@ -519,7 +520,8 @@ async function submitDoc() {
 		:status="status"
 		:docstatus="docstatus"
 		:loading="loading"
-		:error="actionError"
+		:error="loadError"
+		:action-error="actionError"
 		back-path="/purchasing/invoices"
 	>
 		<!-- Supplier subtitle + return badge -->

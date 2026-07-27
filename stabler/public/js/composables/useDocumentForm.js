@@ -27,6 +27,10 @@ export function useDocumentForm({
 	const model = ref(blankModel());
 	const loading = ref(false);
 	const saving = ref(false);
+	// Fatal: the document could not be loaded — the page has nothing to show.
+	const loadError = ref("");
+	// Recoverable: a save/submit/validation failure — the form must stay on
+	// screen so the user does not lose what they typed.
 	const error = ref("");
 
 	const docName = ref(null);
@@ -50,6 +54,7 @@ export function useDocumentForm({
 	async function load(name) {
 		docName.value = name;
 		loading.value = true;
+		loadError.value = "";
 		error.value = "";
 		try {
 			const detail = await call(detailApi, { name });
@@ -65,7 +70,7 @@ export function useDocumentForm({
 			// Reset dirty snapshot to this loaded state
 			reset(model.value);
 		} catch (err) {
-			error.value = err?.message || t("Failed to load document.");
+			loadError.value = err?.message || t("Failed to load document.");
 		} finally {
 			loading.value = false;
 		}
@@ -303,6 +308,7 @@ export function useDocumentForm({
 		model,
 		loading,
 		saving,
+		loadError,
 		error,
 		isDirty,
 		isCreate,

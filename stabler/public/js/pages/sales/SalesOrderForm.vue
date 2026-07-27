@@ -221,6 +221,7 @@ const {
 	model: form,
 	loading,
 	saving: actionRunning,
+	loadError,
 	error: actionError,
 	isDirty,
 	isCreate,
@@ -789,7 +790,8 @@ async function closeSalesOrder() {
 		:status="status"
 		:docstatus="docstatus"
 		:loading="loading"
-		:error="error"
+		:error="loadError"
+		:action-error="actionError"
 		back-path="/sales/orders"
 	>
 		<div v-if="actionError" class="alert alert-danger">{{ actionError }}</div>
