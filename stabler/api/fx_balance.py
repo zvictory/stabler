@@ -38,6 +38,12 @@ def auto_balance_fx_residual(doc, method=None):
 			_balance_payment_entry(doc)
 		elif doc.doctype == "Journal Entry":
 			_balance_journal_entry(doc)
+	except frappe.ValidationError:
+		# A genuine document error raised by ERPNext while we were recomputing
+		# totals (e.g. the same account debited and credited). Its own validate()
+		# raises it again a moment later, so the user still sees it — logging it
+		# here would only file the same complaint twice.
+		pass
 	except Exception:
 		# Never let auto-balancing break a legitimate save/submit; ERPNext's own
 		# balance validation remains the backstop.
@@ -61,6 +67,15 @@ def _balance_payment_entry(doc) -> None:
 	deductions = doc.get("deductions") or []
 	if any((d.description or "") == _PE_MARKER for d in deductions):
 		doc.set("deductions", [d for d in deductions if (d.description or "") != _PE_MARKER])
+
+	# We run at before_validate, so on a brand-new document ERPNext has not filled
+	# the company-currency amounts yet (set_amounts_in_company_currency() does that
+	# during validate). set_difference_amount() subtracts them without flt(), so
+	# calling it now would raise TypeError on None. Nothing to balance on that pass
+	# anyway — the residual only has to be gone by submit, and before_validate runs
+	# again then, with the amounts populated.
+	if doc.get("base_paid_amount") is None or doc.get("base_received_amount") is None:
+		return
 
 	if hasattr(doc, "set_difference_amount"):
 		doc.set_difference_amount()
