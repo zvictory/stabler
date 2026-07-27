@@ -63,7 +63,7 @@ help:
 	@echo "make test-bench    — the other 15 modules, on a throwaway site (slow, needs a bench)"
 	@echo "make test-js       — Vitest over the SPA's pure-logic layer (composables/)"
 	@echo "make guards        — CLAUDE.md hard rules (dates / Desk links / striping / tenant / money)"
-	@echo "make prod-drift    — list .py files on prod that are not in git (read-only)"
+	@echo "make prod-drift    — list .py/.json files on prod that are not in git (read-only)"
 	@echo "make ruff-install  — pin ruff $(RUFF_VERSION) into the bench venv"
 	@echo "make hook-install  — install .git/hooks/pre-push"
 
@@ -251,23 +251,41 @@ guards:
 	  echo "NOTE: money-input debt is down to $$n -- lower the ceiling in the Makefile."; fi; \
 	exit $$fail
 
-# Lists .py files that exist in prod's package but not in git. Run after every
-# deploy. Exit 1 on drift so it can be scripted; it never touches the server.
+# Lists .py and .json files that exist in prod's package but not in git. Run
+# after every deploy. Exit 1 on drift so it can be scripted; it never touches
+# the server.
+#
+# .json is in scope as of 2026-07-27, and it was added because the .py-only
+# version missed something real. Clearing the five stray scripts turned up a
+# sixth orphan the report had never mentioned:
+# stabler/doctype/stabler_company_modules/stabler_company_modules.json — a
+# doctype definition sitting outside the module directory, invisible purely
+# because of its extension. A doctype is a .json file; a drift check that only
+# reads .py cannot see a stale doctype, which is the more dangerous of the two.
+#
+# Measured before widening: 83 .json on prod, exactly one not in git — the
+# orphan above. So the extra scope costs no noise, given the dist/ exclusion
+# (build output, gitignored by design).
+#
+# Both sides are scoped to stabler/ so the comparison is symmetric: package.json
+# and .prettierrc.json live at the repo root, outside the tree `find` walks.
 prod-drift:
 	@tmp=$$(mktemp -d); \
-	git ls-files -- '*.py' | sort > $$tmp/local; \
-	ssh $(PROD_HOST) "cd $(PROD_APP) && find stabler -type f -name '*.py' \
-	    -not -path '*/node_modules/*' -not -path '*/__pycache__/*'" \
+	git ls-files -- 'stabler/*.py' 'stabler/*.json' | sort > $$tmp/local; \
+	ssh $(PROD_HOST) "cd $(PROD_APP) && find stabler -type f \
+	    \( -name '*.py' -o -name '*.json' \) \
+	    -not -path '*/node_modules/*' -not -path '*/__pycache__/*' \
+	    -not -path 'stabler/public/dist/*'" \
 	  | sort > $$tmp/prod; \
 	extra=$$(comm -13 $$tmp/local $$tmp/prod); \
 	rm -rf $$tmp; \
 	if [ -n "$$extra" ]; then \
-	  echo "DRIFT: $$(echo "$$extra" | wc -l | tr -d ' ') .py file(s) on prod are not in git:"; \
+	  echo "DRIFT: $$(echo "$$extra" | wc -l | tr -d ' ') file(s) on prod are not in git:"; \
 	  echo "$$extra" | sed 's/^/  /'; \
 	  echo "Review before deleting: back up, list with ls, then remove."; \
 	  exit 1; \
 	fi; \
-	echo "prod-drift: clean — no untracked .py under $(PROD_APP)/stabler"
+	echo "prod-drift: clean — no untracked .py/.json under $(PROD_APP)/stabler"
 
 # ------------------------------------------------------- whole-tree sweeps ---
 
