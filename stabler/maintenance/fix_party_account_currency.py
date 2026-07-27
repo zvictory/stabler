@@ -76,7 +76,6 @@ def get_or_create_party_account(company: str, party_type: str, currency: str) ->
 
 def execute(dry_run: bool = True, company: str = "ANJAN") -> None:
 	print(f"Starting Historical Data Repair for company: {company} (dry_run={dry_run})")
-	company_currency = frappe.get_cached_value("Company", company, "default_currency") or "UZS"
 
 	results = []
 

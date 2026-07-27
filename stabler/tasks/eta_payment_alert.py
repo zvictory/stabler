@@ -69,7 +69,7 @@ def check_upcoming_deadlines():
 					method="POST"
 				)
 				try:
-					with urlopen(req, timeout=10) as resp:
+					with urlopen(req, timeout=10):
 						pass
 				except Exception:
 					pass

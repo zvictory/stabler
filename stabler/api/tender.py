@@ -402,7 +402,7 @@ def save_po_landed_charges(po: str, charges) -> dict:
 	the plan can also be maintained on an already-submitted PO (the field is a
 	read-only, allow_on_submit overlay — it never touches the accounting doc).
 	"""
-	company = _po_scope(po, write=True)
+	_po_scope(po, write=True)
 	if not frappe.db.has_column("Purchase Order", "custom_landed_charges"):
 		frappe.throw(_("Run migrate to enable landed-cost planning."))
 	cleaned = _parse_landed(charges)
@@ -1367,7 +1367,6 @@ def _deal_deadlines(deal: str, company: str, intake: dict) -> dict:
 			limit_page_length=1000,
 		)
 		po_rows = [row for row in po_rows if frappe.has_permission("Purchase Order", "read", doc=row.name)]
-	po_exists = bool(po_rows)
 	po_received = bool(po_rows) and all(flt(p.per_received) >= 100 for p in po_rows)
 	po_eta = min((p.schedule_date for p in po_rows if p.schedule_date), default=None)
 
@@ -1558,7 +1557,7 @@ def tender_managers(company: str) -> dict:
 @frappe.whitelist()
 def assign_tender(deal: str, user: str = "") -> dict:
 	"""Assign a tender to a manager (director / dep-head only). Empty = unassign."""
-	company = _deal_scope(deal, write=True)
+	_deal_scope(deal, write=True)
 	if not _is_tender_oversight():
 		frappe.throw(_("Not permitted"), frappe.PermissionError)
 	if not frappe.db.has_column("CRM Deal", "custom_tender_intake"):
@@ -1752,7 +1751,6 @@ def logist_board(company: str) -> dict:
 	_require_tender_view("logist", company)
 	base_ccy = frappe.db.get_value("Company", company, "default_currency") or ""
 	pos, has_landed = _po_rows_for_views(company)
-	today_d = getdate(today())
 	deliv_cache: dict[str, object] = {}
 	out = []
 	for p in pos:

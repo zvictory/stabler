@@ -2255,7 +2255,6 @@ def get_payments_register_report(
     for pe in pes:
         pe_name = pe["name"]
         uzs = flt(pe["uzs_amount"])
-        fx = flt(pe["fx_rate"]) or 1.0
         cbu_rate = flt(frappe.db.get_value("Currency Exchange", {"from_currency": "USD", "to_currency": "UZS"}, "exchange_rate")) or 12800.0
         usd = uzs / cbu_rate if cbu_rate > 0 else 0.0
 
