@@ -84,7 +84,10 @@ recon
 deploy_*.sh
 Makefile
 
-# CI config: the forge's, not the app's. .gitlab-ci.yml is the live one
-# (origin = gitlab.com); .github is the stale mirror's. Neither runs on prod.
+# CI config: the forge's, not the app's. .gitlab-ci.yml is the live pipeline
+# (origin = gitlab.com); .github now holds only a pointer at it plus the shared
+# test-module list. Neither runs on prod. .ruff-version is the lint pin both the
+# Makefile and the pipeline read — dev tooling, same category as Makefile above.
 .github
 .gitlab-ci.yml
+.ruff-version

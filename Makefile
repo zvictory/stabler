@@ -1,11 +1,9 @@
-# Stabler — local gate. Mirrors .github/workflows/ci.yml job `lint-and-unit`.
+# Stabler — the gate. `make check` is what .git/hooks/pre-push runs locally AND
+# what the GitLab `lint`/`unit-tests` jobs shell out to, so there is exactly one
+# definition of "green" and it cannot drift between laptop and CI.
 #
-# WHY THIS EXISTS: GitHub Actions has run exactly once (2026-07-09, failed).
-# `main` is ~194 commits ahead of `github/main`, so that workflow has not
-# inspected a single line of the last three weeks' work. Until CI is wired to
-# the remote we actually push to, this Makefile IS the gate.
-#
-# `make check` is what .git/hooks/pre-push runs.
+# The GitHub workflow that used to mirror this was retired on 2026-07-27 — see
+# .github/README.md. GitLab is the only pipeline.
 #
 # RATCHET, NOT BIG-BANG: the tree carries ~390 pre-existing ruff violations and
 # 273 files that `ruff format` would rewrite. Linting all of it in the hook
@@ -14,10 +12,20 @@
 # touched: new code is clean, old code gets cleaned when it is next edited.
 # `make lint` still runs the full CI-equivalent sweep when you want the number.
 
-RUFF_VERSION := 0.16.0
-VENV := /Users/zafar/frappe-bench-local/env/bin
-RUFF := $(VENV)/ruff
-PY   := $(VENV)/python
+RUFF_VERSION := $(shell cat .ruff-version)
+# ?= so a different bench layout (or CI, which has no venv at this path) can
+# override without editing the file. GitLab passes PY=python RUFF=ruff.
+VENV ?= /Users/zafar/frappe-bench-local/env/bin
+RUFF ?= $(VENV)/ruff
+PY   ?= $(VENV)/python
+
+# Read-only drift check. Deploy is rsync WITHOUT --delete, so a file that ever
+# reached prod stays there forever — including one-shot migration scripts that
+# sit inside the importable package and can still be `bench execute`d. Nothing
+# else notices them: .rsync-exclude governs what we SEND, not what is already
+# THERE. This target only reports; deletion stays a deliberate, backed-up act.
+PROD_HOST ?= ice-production
+PROD_APP  ?= /home/frappe/frappe-bench/apps/stabler
 
 # Files this push would introduce: everything since the last commit `origin`
 # already has, plus anything uncommitted. --diff-filter=d drops deletions, which
@@ -29,7 +37,7 @@ CHANGED_PY := $(shell { \
 	git diff --cached --name-only --diff-filter=d -- '*.py'; \
 	} 2>/dev/null | sort -u)
 
-.PHONY: help check lint lint-changed fmt fix compile test guards ruff-install hook-install
+.PHONY: help check lint lint-changed fmt fix compile test guards prod-drift ruff-install hook-install
 
 help:
 	@echo "make check         — pre-push gate: changed-file lint + compile + guards + unit tests"
@@ -37,6 +45,7 @@ help:
 	@echo "make lint          — FULL tree lint (CI-equivalent; currently red, that is the debt)"
 	@echo "make test          — the frappe-free unit modules only (no bench, no DB)"
 	@echo "make guards        — CLAUDE.md hard rules (date input / Desk links / table-striped)"
+	@echo "make prod-drift    — list .py files on prod that are not in git (read-only)"
 	@echo "make ruff-install  — pin ruff $(RUFF_VERSION) into the bench venv"
 	@echo "make hook-install  — install .git/hooks/pre-push"
 
@@ -101,6 +110,24 @@ guards:
 	  echo "$$hits"; fail=1; fi; \
 	exit $$fail
 
+# Lists .py files that exist in prod's package but not in git. Run after every
+# deploy. Exit 1 on drift so it can be scripted; it never touches the server.
+prod-drift:
+	@tmp=$$(mktemp -d); \
+	git ls-files -- '*.py' | sort > $$tmp/local; \
+	ssh $(PROD_HOST) "cd $(PROD_APP) && find stabler -type f -name '*.py' \
+	    -not -path '*/node_modules/*' -not -path '*/__pycache__/*'" \
+	  | sort > $$tmp/prod; \
+	extra=$$(comm -13 $$tmp/local $$tmp/prod); \
+	rm -rf $$tmp; \
+	if [ -n "$$extra" ]; then \
+	  echo "DRIFT: $$(echo "$$extra" | wc -l | tr -d ' ') .py file(s) on prod are not in git:"; \
+	  echo "$$extra" | sed 's/^/  /'; \
+	  echo "Review before deleting: back up, list with ls, then remove."; \
+	  exit 1; \
+	fi; \
+	echo "prod-drift: clean — no untracked .py under $(PROD_APP)/stabler"
+
 # ------------------------------------------------------- whole-tree sweeps ---
 
 lint:
@@ -114,7 +141,8 @@ fmt:
 
 # Unpinned `pip install ruff` is how a green gate turns red overnight: a new
 # ruff release adds rules (RUF059 alone is 98 hits here) and nothing changed in
-# our code. Pin here and in ci.yml; bump both together, deliberately.
+# our code. The pin lives in .ruff-version — ONE file, read by both this Makefile
+# and .gitlab-ci.yml, so the two can no longer drift apart silently.
 ruff-install:
 	$(VENV)/pip install -q 'ruff==$(RUFF_VERSION)'
 	@$(RUFF) --version

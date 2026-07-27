@@ -1,32 +1,30 @@
 # Stabler continuous integration — GitLab.
 #
 # WHY HERE AND NOT GITHUB: `origin` is gitlab.com:zvictory2001/stabler.git and
-# that is the remote every push actually reaches. The GitHub workflow
-# (.github/workflows/ci.yml) has run exactly once — 2026-07-09, failed — and
-# `main` is ~200 commits ahead of `github/main`, so it has never inspected a
-# line of the last three weeks' work. ci.yml is left in place (it still works if
-# the mirror is ever resynced), but THIS file is the gate.
+# that is the remote every push actually reaches. The GitHub workflow ran exactly
+# once — 2026-07-09, failed — while `main` ran 200 commits ahead of the mirror,
+# so it never inspected a line of that work. It was retired on 2026-07-27
+# (.github/README.md); THIS file is the only pipeline.
 #
-# WHY THE JOBS CALL `make` INSTEAD OF RESTATING THE STEPS: ci.yml and the
-# Makefile already carry the same lint/compile/guard/test logic twice, in two
-# dialects. A third copy here would drift the same way the rsync exclude list
-# drifted across three deploy scripts (see .rsync-exclude). So CI runs literally
-# `make check` — the identical command .git/hooks/pre-push runs. Local green and
-# CI green cannot diverge, because they are the same target.
+# WHY THE JOBS CALL `make` INSTEAD OF RESTATING THE STEPS: the Makefile already
+# carries the lint/compile/guard/test logic. A second copy here would drift the
+# same way the rsync exclude list drifted across three deploy scripts (see
+# .rsync-exclude). So CI runs literally `make check` — the identical command
+# .git/hooks/pre-push runs. Local green and CI green cannot diverge, because
+# they are the same target.
 #
 # WHY THE GATE LINTS ONLY CHANGED FILES: measured 2026-07-26, `ruff check
 # stabler` reports 386 errors and `ruff format --check` would rewrite 273 files.
-# ci.yml lints the WHOLE tree, so a verbatim port would be red on its first
-# commit and stay red — which is almost certainly why the one GitHub run failed.
-# The Makefile's ratchet is the answer: new code is clean, old code gets cleaned
-# when next edited. `ruff-debt` below keeps the total from growing back.
+# A whole-tree lint would be red on its first commit and stay red — which is
+# almost certainly why the one GitHub run failed. The Makefile's ratchet is the
+# answer: new code is clean, old code gets cleaned when next edited. `ruff-debt`
+# below keeps the total from growing back.
 
 stages:
   - gate
   - deep
 
 variables:
-  RUFF_VERSION: "0.16.0"
   # Full clone. The gate diffs against a merge base; GitLab's default shallow
   # clone (depth 20) makes that resolve to nothing on any older branch point.
   # Cheap here — .git is 14M after the 2026-07-26 gc.
@@ -59,14 +57,19 @@ gate:
   variables:
     PIP_CACHE_DIR: "$CI_PROJECT_DIR/.cache/pip"
   cache:
-    key: "pip-ruff-$RUFF_VERSION"
+    # Keyed on the pin file itself, so bumping the version invalidates the cache
+    # automatically — no second place to remember to edit.
+    key:
+      files:
+        - .ruff-version
     paths:
       - .cache/pip
   before_script:
     # PINNED. Unpinned, a new ruff release adds rules and turns the gate red
-    # with zero code changes (0.16.0's RUF059 alone is 98 hits here). Bump this
-    # together with RUFF_VERSION in the Makefile — they must stay equal.
-    - pip install --quiet "ruff==$RUFF_VERSION"
+    # with zero code changes (0.16.0's RUF059 alone is 98 hits here). The pin
+    # lives in .ruff-version, read by both this file and the Makefile — it used
+    # to be duplicated in both and could drift apart without anyone noticing.
+    - pip install --quiet "ruff==$(cat .ruff-version)"
     - ruff --version
   script:
     - |
@@ -88,7 +91,7 @@ ruff-debt:
   stage: gate
   needs: []
   before_script:
-    - pip install --quiet "ruff==$RUFF_VERSION"
+    - pip install --quiet "ruff==$(cat .ruff-version)"
   script:
     - |
       # A ceiling, not a gate: the tree's 386 pre-existing violations are debt we

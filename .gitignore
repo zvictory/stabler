@@ -33,6 +33,17 @@ deploy_hr_employee_crud.sh
 graphify-out/
 scratch/
 
+# Tool caches. Every one of these was showing up in `git status`, which is how a
+# wrong `git add` swallows them.
+.pytest_cache/
+.ruff_cache/
+.smoke/
+
+# Per-machine Claude Code state. NOT the whole .claude/ -- .claude/workflows/ is
+# tracked and shared on purpose; only these two are machine-local.
+.claude/settings.local.json
+.claude/scheduled_tasks.lock
+
 # Sibling projects that live INSIDE apps/stabler but are not part of the app.
 # None of them was ever tracked; without these lines `git status` buries the
 # real changes under their untracked files, and one bad `git add -A` would
