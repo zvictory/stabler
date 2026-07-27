@@ -216,9 +216,10 @@ watch(() => props.deal, load, { immediate: true });
 					<div class="small text-secondary fw-semibold mb-2">{{ t("Currency risk (foreign purchase)") }}</div>
 					<div class="row g-2 align-items-end">
 						<div class="col-6 col-md-2"><label class="form-label small mb-1">{{ t("Currency") }}</label><input v-model="intake.fx_currency" type="text" class="form-control form-control-sm text-uppercase" placeholder="USD"></div>
-						<div class="col-6 col-md-3"><label class="form-label small mb-1">{{ t("Exposure amount") }}</label><input v-model.number="intake.fx_amount" type="number" step="any" class="form-control form-control-sm" :placeholder="intake.fx_currency || ''"></div>
-						<div class="col-6 col-md-2"><label class="form-label small mb-1">{{ t("Bid rate") }}</label><input v-model.number="intake.fx_bid_rate" type="number" step="any" class="form-control form-control-sm"></div>
-						<div class="col-6 col-md-2"><label class="form-label small mb-1">{{ t("Payment rate") }}</label><input v-model.number="intake.fx_pay_rate" type="number" step="any" class="form-control form-control-sm"></div>
+						<div class="col-6 col-md-3"><label class="form-label small mb-1">{{ t("Exposure amount") }}</label><MoneyInput v-model="intake.fx_amount" :currency="intake.fx_currency" :language="user.language" size="sm" /></div>
+						<!-- Rates carry no currency prop: a UZS badge would force integer display on a quote like 12 750,25. -->
+						<div class="col-6 col-md-2"><label class="form-label small mb-1">{{ t("Bid rate") }}</label><MoneyInput v-model="intake.fx_bid_rate" :language="user.language" size="sm" /></div>
+						<div class="col-6 col-md-2"><label class="form-label small mb-1">{{ t("Payment rate") }}</label><MoneyInput v-model="intake.fx_pay_rate" :language="user.language" size="sm" /></div>
 						<div class="col-12 col-md-3">
 							<div v-if="fxCalc.status !== 'none'" class="small">
 								<span class="text-secondary">{{ t("Planned") }}:</span> <span class="font-monospace">{{ formatMoney(fxCalc.planned, currency, user.language) }}</span>

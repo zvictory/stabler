@@ -10,7 +10,6 @@ import { useToast } from "../../composables/useToast.js";
 import { useConfirm } from "../../composables/useConfirm.js";
 import { useEscapeBack } from "../../composables/useEscapeBack.js";
 import DateInput from "../../components/DateInput.vue";
-import Typeahead from "../../components/Typeahead.vue";
 import MoneyInput from "../../components/MoneyInput.vue";
 import StatusBadge from "../../components/StatusBadge.vue";
 
@@ -80,12 +79,6 @@ function addLine() {
 function removeLine(i) {
 	form.value.lines.splice(i, 1);
 }
-function pickItem(row, item) {
-	row.item_code = item.name;
-	row.item_name = item.item_name || item.name;
-	if (!row.description) row.description = item.item_name || "";
-}
-
 async function loadDoc() {
 	if (isCreate.value) {
 		form.value = blankForm();
@@ -348,7 +341,7 @@ watch(docName, loadDoc);
 							<td><input v-model="row.hs_code" type="text" class="form-control form-control-sm" /></td>
 							<td><input v-model="row.country_of_origin" type="text" class="form-control form-control-sm" /></td>
 							<td><input v-model.number="row.net_weight_kg" type="number" class="form-control form-control-sm text-end" /></td>
-							<td><input v-model.number="row.statistical_value_usd" type="number" class="form-control form-control-sm text-end" /></td>
+							<td><MoneyInput v-model="row.statistical_value_usd" currency="USD" :language="user.language" size="sm" hide-currency /></td>
 							<td><input v-model.number="row.duty_rate_pct" type="number" class="form-control form-control-sm text-end" /></td>
 							<td><input v-model.number="row.excise_rate_pct" type="number" class="form-control form-control-sm text-end" /></td>
 							<td><input v-model.number="row.vat_rate_pct" type="number" class="form-control form-control-sm text-end" /></td>

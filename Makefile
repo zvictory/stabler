@@ -204,12 +204,15 @@ test-js:
 #    Company Modules, never a hardcoded site name. At zero today; this keeps it there.
 #  * meta.module: a parent route with children[] and no meta.module is invisible to
 #    the router guard, so a disabled module stays reachable by direct URL. Zero today.
-#  * MONEY INPUTS: a CEILING, not a gate -- same mechanic as ruff-debt. The 9
-#    survivors are real, but each needs a precision decision MoneyInput cannot
-#    express yet (LandedCostReview's USD->UZS override is step=0.0001, while UZS
-#    mode forces 0 decimals), and they sit in landed-cost and tender money math
-#    with no test coverage. Converting them belongs after Faz 3. What this blocks
-#    is the number GROWING -- a new form shipping a bare number input for money.
+#  * MONEY INPUTS: a hard ZERO as of 2026-07-27, no longer a ceiling. The last 9
+#    were cleared once the precision worry turned out to be unfounded: MoneyInput
+#    rounds only the BLURRED DISPLAY (format()), while the model keeps the value
+#    the user typed, and focus re-shows it in full via rawText(). So a step=0.0001
+#    rate loses nothing. The UZS-forces-0-decimals trap is real but avoidable --
+#    rate fields simply pass no `currency` prop, so integer mode never engages.
+#    The -v filter below drops percentage fields (duty_rate_pct, vat_rate_pct):
+#    they matched only because "rate" is a substring. A percent is not money, and
+#    MoneyInput would render a 12% rate as "12,00" in money styling.
 guards:
 	@fail=0; \
 	hits=$$(grep -rn 'type="date"' stabler/public/js --include='*.vue' \
@@ -242,13 +245,12 @@ guards:
 	if [ -n "$$miss" ]; then \
 	  echo "ERROR: parent route with children[] and no meta.module (router guard is blind to it)"; \
 	  echo "$$miss"; fail=1; fi; \
-	n=$$(grep -rn --include='*.vue' -B3 'type="number"' stabler/public/js \
-	     | grep -cE 'v-model[^"]*"[^"]*(rate|amount|price|paid|balance|salary|advance)[^"]*"' || true); \
-	if [ "$$n" -gt 9 ]; then \
-	  echo "ERROR: bare <input type=\"number\"> for money grew to $$n (ceiling 9) -- use MoneyInput"; \
-	  fail=1; fi; \
-	if [ "$$n" -lt 9 ]; then \
-	  echo "NOTE: money-input debt is down to $$n -- lower the ceiling in the Makefile."; fi; \
+	hits=$$(grep -rn --include='*.vue' -B3 'type="number"' stabler/public/js \
+	     | grep -E 'v-model[^"]*"[^"]*(rate|amount|price|paid|balance|salary|advance)[^"]*"' \
+	     | grep -vE 'v-model[^"]*"[^"]*(_pct|_percent|percentage)[^"]*"' || true); \
+	if [ -n "$$hits" ]; then \
+	  echo "ERROR: bare <input type=\"number\"> for money -- use MoneyInput"; \
+	  echo "$$hits"; fail=1; fi; \
 	exit $$fail
 
 # Lists .py and .json files that exist in prod's package but not in git. Run

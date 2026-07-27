@@ -12,6 +12,7 @@ import { useConfirm } from "../../composables/useConfirm.js";
 import { useEscapeBack } from "../../composables/useEscapeBack.js";
 import StatusBadge from "../../components/StatusBadge.vue";
 import EmptyState from "../../components/EmptyState.vue";
+import MoneyInput from "../../components/MoneyInput.vue";
 import { getDocstatusLabel } from "../../composables/status.js";
 
 const session = useSession();
@@ -246,7 +247,7 @@ watch(grnName, () => load());
 							<div class="d-flex align-items-end gap-2 mb-3">
 								<div class="flex-grow-1">
 									<label class="form-label small">{{ t("USD → {cur} rate", { cur: currency }) }}</label>
-									<input v-model="rateOverride" type="number" step="0.0001" class="form-control form-control-sm font-monospace" />
+									<MoneyInput v-model="rateOverride" :language="user.language" size="sm" />
 									<div class="form-hint">
 										<span v-if="data.preview.rate_overridden">{{ t("Override (preview only)") }}</span>
 										<span v-else-if="data.preview.rate_as_of">{{ t("Currency Exchange as of {date}", { date: formatDate(data.preview.rate_as_of) }) }}</span>

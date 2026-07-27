@@ -594,7 +594,7 @@ watch(statusFilter, load);
 								</td>
 								<td v-if="isMultiCurrency" class="text-end">
 									<template v-if="isForeign(row) && rateQuote(row)">
-										<input :value="rateQuote(row).value" @input="(e) => setRateQuote(row, e.target.value)" type="number" min="0" step="any" class="form-control form-control-sm text-end font-monospace" />
+										<MoneyInput :model-value="rateQuote(row).value" :language="user.language" :min="0" size="sm" @update:model-value="(v) => setRateQuote(row, v)" />
 										<div class="text-secondary" style="font-size: .7rem">1 {{ rateQuote(row).strong }} = {{ fmtRate(rateQuote(row).value) }} {{ rateQuote(row).weak }}</div>
 										<div v-if="baseLine(row)" class="text-secondary" style="font-size: .7rem">= {{ formatMoney(baseLine(row), currencyCode, user.language) }}</div>
 									</template>
