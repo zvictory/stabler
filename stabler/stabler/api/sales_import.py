@@ -260,7 +260,7 @@ def preview_sales_import(file_url=None, corrections=None):
 	auto_correct_boxes(rows)
 
 	_customer_map, missing_customers = resolve_customers(rows)
-	_, missing_items = resolve_items(rows)
+	_item_codes, missing_items = resolve_items(rows)
 
 	issues = []
 	for c in missing_customers:
@@ -340,7 +340,7 @@ def execute_sales_import(file_url=None, corrections=None, selected_indices=None,
 	auto_correct_boxes(rows)
 
 	customer_map, missing_customers = resolve_customers(rows)
-	_, missing_items = resolve_items(rows)
+	_item_codes, missing_items = resolve_items(rows)
 
 	if missing_customers or missing_items:
 		frappe.throw("Cannot import: please fix missing items/customers first.")
