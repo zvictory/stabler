@@ -25,7 +25,7 @@ def stabler_login(usr: str, pwd: str):
 		login_manager = frappe.auth.LoginManager()
 		login_manager.authenticate(user=usr, pwd=pwd)
 		login_manager.post_login()
-	except Exception as e:
+	except Exception:
 		frappe.clear_messages()
 		frappe.throw(_("Invalid username or password. Please check your credentials."))
 

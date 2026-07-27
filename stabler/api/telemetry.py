@@ -58,7 +58,7 @@ def _anon_company(company: str) -> str:
 	salt = (frappe.local.conf.get("stabler_telemetry_salt") if frappe.local.conf else None) or (
 		getattr(frappe.local, "site", "") or ""
 	)
-	return hashlib.sha256(f"{salt}:{company}".encode("utf-8")).hexdigest()[:16]
+	return hashlib.sha256(f"{salt}:{company}".encode()).hexdigest()[:16]
 
 
 def _scrub_props(props) -> dict:

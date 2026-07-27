@@ -331,7 +331,7 @@ def update_employee(name: str, payload=None):
 		payload["custom_stake_coefficient"] = 1.0
 
 	# Validate custom_allowance_config JSON
-	if "custom_allowance_config" in payload and payload["custom_allowance_config"]:
+	if payload.get("custom_allowance_config"):
 		try:
 			json.loads(payload["custom_allowance_config"])
 		except Exception:

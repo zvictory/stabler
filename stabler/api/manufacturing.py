@@ -635,7 +635,7 @@ def suggest_wo_batch(work_order: str):
 	expiry = frappe.utils.add_days(mfg, int(shelf)) if shelf and int(shelf) > 0 else None
 	return {
 		"batch_no": doc.get("custom_batch_no") or _suggest_batch_no(doc),
-		"mfg_date": doc.get("custom_batch_mfg_date") and str(doc.custom_batch_mfg_date) or mfg,
+		"mfg_date": (doc.get("custom_batch_mfg_date") and str(doc.custom_batch_mfg_date)) or mfg,
 		"expiry_date": (doc.get("custom_batch_expiry") and str(doc.custom_batch_expiry)) or expiry,
 	}
 
