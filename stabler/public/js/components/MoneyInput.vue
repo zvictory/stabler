@@ -50,6 +50,10 @@ function parse(text) {
 	const raw = String(text).trim();
 	if (raw === "") return null;
 	// Strip grouping separators (space, NBSP, comma when not the decimal sep, apostrophe).
+	// The two invisible characters in the class below are U+00A0 and U+202F -- exactly
+	// what Intl.NumberFormat emits as the thousands separator for ru/uz/uzc, so they
+	// are load-bearing, not a stray paste. Delete them and "20 820,00" parses as null.
+	// eslint-disable-next-line no-irregular-whitespace
 	let cleaned = raw.replace(/[\s  ']/g, "");
 	if (decimalSep.value === ",") {
 		// ru/uz/uzc: comma is decimal, drop stray dots used as thousand grouping

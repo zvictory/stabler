@@ -111,6 +111,44 @@ ruff-debt:
         echo "NOTE: debt is down to $n — lower CEILING in .gitlab-ci.yml to lock it in."
       fi
 
+# The `gate` job runs on a python image with no node, so its `lint-js-changed`
+# step prints a skip and moves on. THIS job is what actually keeps the JS side
+# honest in CI — same ceiling mechanic as ruff-debt above, different toolchain.
+eslint-debt:
+  image: node:20-bookworm-slim
+  interruptible: true
+  stage: gate
+  needs: []
+  cache:
+    key:
+      files:
+        - package-lock.json
+    paths:
+      - .npm
+  before_script:
+    # `npm ci` (not install): installs exactly the lockfile, and fails loudly if
+    # package.json and package-lock.json disagree — which is the whole point of
+    # having a lockfile in CI.
+    - npm ci --cache .npm --prefer-offline --no-audit --no-fund
+  script:
+    - |
+      # Measured 2026-07-27, after fixing the two ReferenceErrors ESLint found on
+      # its first run (PiGroups.vue: no `useRouter` import; OneCSyncLog.vue: no
+      # `computed` import — both routed, both would throw on open). The rest is
+      # mostly unused imports: real dead bytes, but not user-visible, so the same
+      # ratchet applies — freeze the number, pay it down when editing.
+      CEILING=104
+      n=$(npx eslint stabler/public/js -f json \
+          | node -e 'let s="";process.stdin.on("data",d=>s+=d).on("end",()=>console.log(JSON.parse(s).reduce((a,f)=>a+f.errorCount+f.warningCount,0)))')
+      echo "eslint debt: $n  (ceiling $CEILING)"
+      if [ "$n" -gt "$CEILING" ]; then
+        echo "ERROR: JS lint debt grew ($n > $CEILING). Run 'make fix-js' on your files."
+        exit 1
+      fi
+      if [ "$n" -lt "$CEILING" ]; then
+        echo "NOTE: debt is down to $n — lower CEILING in .gitlab-ci.yml to lock it in."
+      fi
+
 # ------------------------------------------------------------------- deep ---
 
 bench-tests:

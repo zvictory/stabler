@@ -4,7 +4,9 @@
   "private": true,
   "description": "Stabler SPA (Vue 3 + Tabler)",
   "scripts": {
-    "preinstall": "npx only-allow npm"
+    "preinstall": "npx only-allow npm",
+    "lint:js": "eslint stabler/public/js",
+    "fmt:js": "prettier --write stabler/public/js"
   },
   "dependencies": {
     "@vue-flow/background": "1.3.2",
@@ -14,5 +16,11 @@
     "pinia": "2.1.7",
     "vue": "3.3.9",
     "vue-router": "4.2.5"
+  },
+  "devDependencies": {
+    "eslint": "^9.39.5",
+    "eslint-plugin-vue": "^10.10.0",
+    "globals": "^17.8.0",
+    "prettier": "^3.9.6"
   }
 }

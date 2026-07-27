@@ -1,6 +1,7 @@
 <script setup>
 import { computed, onMounted, ref } from "vue";
 import { storeToRefs } from "pinia";
+import { useRouter } from "vue-router";
 import { useSession } from "../../stores/session.js";
 import { importsApi } from "../../api/imports.js";
 import { call } from "../../api/client.js";
@@ -17,6 +18,7 @@ import SkeletonRows from "../../components/SkeletonRows.vue";
 
 const session = useSession();
 const { activeCompany, user } = storeToRefs(session);
+const router = useRouter();
 const toast = useToast();
 const { confirm } = useConfirm();
 
@@ -304,10 +306,6 @@ function openCi(name) {
 function openContainer(name) {
 	if (!name) return;
 	router.push("/imports/containers/" + name);
-}
-function openTruck(name) {
-	if (!name) return;
-	router.push("/imports/trucks/" + name);
 }
 function openProformasBySupplier(sup) {
 	if (!sup) return;

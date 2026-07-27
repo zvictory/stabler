@@ -1,0 +1,7 @@
+# Third-party bundles shipped verbatim; not ours to format.
+stabler/public/js/vendor/
+stabler/public/dist/
+node_modules/
+# Data, not source.
+stabler/translations/
+package-lock.json

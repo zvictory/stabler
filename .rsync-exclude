@@ -42,6 +42,13 @@ __pycache__
 .ruff_cache
 .pytest_cache
 
+# JS linter/formatter config. Same category as the Makefile below: dev tooling
+# that never runs on prod. package.json is NOT here -- Frappe's esbuild reads it
+# during `bench build --app stabler` on the server.
+eslint.config.mjs
+.prettierrc.json
+.prettierignore
+
 # Agent / dev tooling, never part of the running app.
 # .claude was already excluded everywhere; .superpowers (46 files) and
 # agent-os (58) are the same category and were shipping in all three scripts.

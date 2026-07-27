@@ -36,13 +36,23 @@ CHANGED_PY := $(shell { \
 	git diff --name-only --diff-filter=d -- '*.py'; \
 	git diff --cached --name-only --diff-filter=d -- '*.py'; \
 	} 2>/dev/null | sort -u)
+CHANGED_JS := $(shell { \
+	git diff --name-only --diff-filter=d $(BASE) HEAD -- '*.js' '*.vue'; \
+	git diff --name-only --diff-filter=d -- '*.js' '*.vue'; \
+	git diff --cached --name-only --diff-filter=d -- '*.js' '*.vue'; \
+	} 2>/dev/null | grep -v -e '^stabler/public/js/vendor/' -e '^stabler/public/dist/' | sort -u)
 
-.PHONY: help check lint lint-changed fmt fix compile test guards prod-drift ruff-install hook-install
+ESLINT := node_modules/.bin/eslint
+PRETTIER := node_modules/.bin/prettier
+
+.PHONY: help check lint lint-changed lint-js lint-js-changed fmt fix fix-js compile test guards prod-drift ruff-install hook-install
 
 help:
-	@echo "make check         — pre-push gate: changed-file lint + compile + guards + unit tests"
-	@echo "make fix           — auto-fix + format the files you changed"
+	@echo "make check         — pre-push gate: changed-file lint (py+js) + compile + guards + unit tests"
+	@echo "make fix           — auto-fix + format the .py files you changed"
+	@echo "make fix-js        — auto-fix + format the .js/.vue files you changed"
 	@echo "make lint          — FULL tree lint (CI-equivalent; currently red, that is the debt)"
+	@echo "make lint-js       — FULL tree ESLint sweep (same, for the SPA)"
 	@echo "make test          — the frappe-free unit modules only (no bench, no DB)"
 	@echo "make guards        — CLAUDE.md hard rules (date input / Desk links / table-striped)"
 	@echo "make prod-drift    — list .py files on prod that are not in git (read-only)"
@@ -51,7 +61,7 @@ help:
 
 # ---------------------------------------------------------------- the gate ---
 
-check: lint-changed compile guards test
+check: lint-changed lint-js-changed compile guards test
 	@echo "OK — pre-push gate passed."
 
 lint-changed:
@@ -69,12 +79,39 @@ else
 	  echo "  (advisory only -- 'make fix' formats these; not blocking the push)"
 endif
 
+# Same ratchet, other language. 80k lines of Vue/JS had no static checking at
+# all until 2026-07-27, so a typo in a <script setup> block only surfaced when a
+# user opened the page — that is exactly how the missing `useRouter` import in
+# PiGroups.vue and the missing `computed` import in OneCSyncLog.vue survived.
+lint-js-changed:
+ifeq ($(strip $(CHANGED_JS)),)
+	@echo "eslint: no changed .js/.vue files, skipping."
+else
+	@if [ ! -x $(ESLINT) ]; then \
+	  echo "eslint: node_modules missing — run 'npm install'."; \
+	  echo "  (the GitLab 'eslint-debt' job covers the tree meanwhile)"; \
+	else \
+	  echo "eslint: $(words $(CHANGED_JS)) changed file(s)"; \
+	  $(ESLINT) $(CHANGED_JS) || exit 1; \
+	  $(PRETTIER) --check $(CHANGED_JS) >/dev/null 2>&1 || \
+	    echo "  (prettier advisory -- 'make fix-js' formats these; not blocking)"; \
+	fi
+endif
+
 fix:
 ifeq ($(strip $(CHANGED_PY)),)
 	@echo "no changed .py files."
 else
 	$(RUFF) check --fix $(CHANGED_PY)
 	$(RUFF) format $(CHANGED_PY)
+endif
+
+fix-js:
+ifeq ($(strip $(CHANGED_JS)),)
+	@echo "no changed .js/.vue files."
+else
+	$(ESLINT) --fix $(CHANGED_JS)
+	$(PRETTIER) --write $(CHANGED_JS)
 endif
 
 compile:
@@ -133,6 +170,10 @@ prod-drift:
 lint:
 	-$(RUFF) check stabler
 	-$(RUFF) format --check stabler
+
+lint-js:
+	-$(ESLINT) stabler/public/js
+	-$(PRETTIER) --check stabler/public/js
 
 fmt:
 	$(RUFF) format stabler
