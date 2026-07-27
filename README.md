@@ -50,7 +50,10 @@ hook in `stabler/middleware/desk_gate.py`.
 **Default behavior:**
 - Users with the **System Manager** role can still access `/app/*` and
   `/desk/*` to administer the underlying ERPNext install.
-- All other users see a 403 if they try to load those URLs directly.
+- All other users are silently redirected (302) to `/stabler` if they try to
+  load those URLs directly — a stale bookmark or a Frappe-generated
+  `/desk/<doctype>/<name>` link lands them in the SPA, not on an error page.
+- Guests are not touched here; Frappe's own auth flow sends them to `/login`.
 
 **Opting power users back into `/desk`:**
 The gate checks for `System Manager`. To grant a non-admin user access to the

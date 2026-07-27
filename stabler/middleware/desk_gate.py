@@ -7,17 +7,22 @@ Behavior:
   - Guest users: not handled here. Frappe's own auth flow will redirect
     them to /login when they hit a desk page.
   - Authenticated user with System Manager / Administrator: pass through.
-  - Anyone else: raise frappe.PermissionError, which the top-level
-    exception handler (app.py:386) renders as a 403 Not Permitted page.
+  - Anyone else: bounced to the SPA with a 302.
 
-Why PermissionError and not Redirect: handle_exception() doesn't special-
-case frappe.Redirect, so raising it from a before_request hook would
-render an error page with a 301 status and no Location header.
+Why a werkzeug abort and not frappe.Redirect: handle_exception() has no
+branch for frappe.Redirect, so raising it from a before_request hook
+renders an error page with a 301 status and no Location header. But
+application() (app.py:145) hands any *werkzeug* HTTPException straight to
+e.get_response(), and abort(<Response>) raises exactly that with the
+response attached — so this produces a real 302 with a Location header.
 """
 
 import frappe
+from werkzeug.exceptions import abort
+from werkzeug.utils import redirect
 
 GATED_PREFIXES = ("/app", "/desk")
+STABLER_HOME = "/stabler"
 
 
 def gate_desk():
@@ -37,7 +42,9 @@ def gate_desk():
 	if "System Manager" in roles or "Administrator" in roles:
 		return
 
-	raise frappe.PermissionError("Desk access is restricted. Use /stabler instead.")
+	# 302, not 301: the browser must not cache this permanently — the day this
+	# user is granted System Manager, /app has to open again immediately.
+	abort(redirect(STABLER_HOME, 302))
 
 
 def _is_gated(path: str) -> bool:
