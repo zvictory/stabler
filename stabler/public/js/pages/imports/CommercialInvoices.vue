@@ -80,15 +80,22 @@ const groupsByName = computed(() => {
 	for (const g of piGroups.value) m[g.name] = g.title || g.name;
 	return m;
 });
+// effective_pi_group is the CI's own group when it has one, otherwise the group
+// derived from its proforma — so the badge shows up on invoices nobody ever
+// explicitly assigned. The raw import_pi_group is kept only to tell the two
+// apart in the tooltip.
 function groupLabel(row) {
 	if (!row) return "";
 	return (
 		row.pi_group_code ||
 		row.pi_group_title ||
-		groupsByName.value[row.import_pi_group] ||
-		row.import_pi_group ||
+		groupsByName.value[row.effective_pi_group] ||
+		row.effective_pi_group ||
 		""
 	);
+}
+function groupIsDerived(row) {
+	return !!(row && !row.import_pi_group && row.effective_pi_group);
 }
 
 const statsCurrencies = computed(() => [...new Set(rows.value.map((r) => r.currency).filter(Boolean))]);
@@ -435,7 +442,7 @@ watch(activeCompany, () => {
 									<span
 										class="badge bg-purple-lt text-purple font-monospace fw-bold"
 										style="font-size: 0.75rem"
-										:title="t('PI Group: ') + groupLabel(r)"
+										:title="(groupIsDerived(r) ? t('PI Group (via proforma): ') : t('PI Group: ')) + groupLabel(r)"
 									>
 										<i class="ti ti-folders me-1"></i>{{ groupLabel(r) }}
 									</span>

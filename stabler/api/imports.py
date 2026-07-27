@@ -315,7 +315,11 @@ def list_commercial_invoices(
 	full ordering.
 	"""
 	_assert_imports_access(company)
-	clauses, params = rules.ci_filter_clauses(search, status, supplier, group)
+	# The proforma link is a custom field, so it may be absent on a site that
+	# has not carried the imports work — fall back to NULL rather than failing
+	# the whole list. Resolved up here because the filter clauses need it too.
+	has_pi_link = frappe.db.has_column("Commercial Invoice", "custom_proforma_invoice")
+	clauses, params = rules.ci_filter_clauses(search, status, supplier, group, has_pi_link)
 	params["company"] = company
 	params["limit_start"] = max(0, cint(limit_start))
 	params["limit_page_length"] = rules.clamp_page_length(limit_page_length)
@@ -325,10 +329,7 @@ def list_commercial_invoices(
 	order_dir = "ASC" if str(sort_dir or "").lower() == "asc" else "DESC"
 	order_by = f"{order_col} {order_dir}, ci.name DESC"
 
-	# The proforma link is a custom field, so it may be absent on a site that
-	# has not carried the imports work — fall back to NULL rather than failing
-	# the whole list.
-	has_pi_link = frappe.db.has_column("Commercial Invoice", "custom_proforma_invoice")
+	eff_group = rules.ci_effective_group_expr(has_pi_link)
 	pi_select = (
 		"""ci.custom_proforma_invoice AS proforma_invoice,
           COALESCE(pi.supplier_pi_ref, ci.custom_proforma_invoice) AS proforma_ref,"""
@@ -355,6 +356,7 @@ def list_commercial_invoices(
           ) AS cash_difference,
           ci.currency,
           ci.import_pi_group,
+          {eff_group} AS effective_pi_group,
           pig.code AS pi_group_code,
           pig.title AS pi_group_title,
           {pi_select}
@@ -366,7 +368,7 @@ def list_commercial_invoices(
              WHERE g.commercial_invoice = ci.name) AS has_grn
         FROM `tabCommercial Invoice` ci
         LEFT JOIN `tabSupplier` s ON s.name = ci.supplier
-        LEFT JOIN `tabImport PI Group` pig ON pig.name = ci.import_pi_group
+        LEFT JOIN `tabImport PI Group` pig ON pig.name = {eff_group}
         {pi_join}
         WHERE {where}
         ORDER BY {order_by}
@@ -4398,7 +4400,10 @@ def commercial_invoice_list_stats(
 		clauses.append("ci.supplier = %(supplier)s")
 		params["supplier"] = supplier
 	if group:
-		clauses.append("ci.import_pi_group = %(group)s")
+		# Same derived expression the list rows and their badge use, so the
+		# metric strip never counts a different set than the table shows.
+		has_pi_link = frappe.db.has_column("Commercial Invoice", "custom_proforma_invoice")
+		clauses.append(f"({rules.ci_effective_group_expr(has_pi_link)}) = %(group)s")
 		params["group"] = group
 	if search:
 		clauses.append("(ci.name LIKE %(q)s OR ci.ci_number LIKE %(q)s OR s.supplier_name LIKE %(q)s)")

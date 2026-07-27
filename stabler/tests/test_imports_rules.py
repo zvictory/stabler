@@ -113,14 +113,39 @@ class TestFilterClauses(unittest.TestCase):
 		self.assertNotIn("ABC", joined)
 		self.assertNotIn("IPG-2026-00016", joined)
 
-	def test_ci_group_filters_on_the_invoice_own_link(self):
-		# A CI may sit in a different PI Group than the proforma it was raised
-		# from (20 of msa's 360 do). Filtering through `pi.import_pi_group` would
-		# return a different set than the badge the list renders, so the clause
-		# must read the CI's own column.
+	def test_ci_group_filter_matches_the_badge_expression(self):
+		# The list badge renders the *effective* group (own link, else derived
+		# from the proforma). If the filter read only `ci.import_pi_group` it
+		# would hide rows that visibly carry a badge, so both must read the very
+		# same expression.
 		clauses, params = rules.ci_filter_clauses(group="IPG-2026-00016")
-		self.assertEqual(clauses, ["ci.import_pi_group = %(group)s"])
+		self.assertEqual(clauses, [f"({rules.ci_effective_group_expr(True)}) = %(group)s"])
 		self.assertEqual(params, {"group": "IPG-2026-00016"})
+
+	def test_ci_effective_group_expr_is_self_contained(self):
+		# `count_query` mirrors the list's FROM *without* its joins, so the
+		# expression may only touch `ci` and correlated subqueries. Referencing a
+		# join alias would raise "Unknown column" on the count query alone —
+		# after the rows had already rendered fine.
+		for has_pi_link in (True, False):
+			expr = rules.ci_effective_group_expr(has_pi_link)
+			for alias in ("pi.", "s.", "pig."):
+				self.assertNotIn(alias, expr)
+			self.assertIn("ci.import_pi_group", expr)
+
+	def test_ci_effective_group_expr_without_pi_link(self):
+		# `custom_proforma_invoice` on the CI header is a Custom Field: on a site
+		# that never carried the imports work the column is absent and naming it
+		# would break the whole list.
+		expr = rules.ci_effective_group_expr(False)
+		self.assertNotIn("ci.custom_proforma_invoice", expr)
+		# the item-level derivation survives — that column ships in the doctype
+		self.assertIn("tabCommercial Invoice Item", expr)
+
+	def test_ci_effective_group_expr_ignores_multi_group_invoices(self):
+		# A CI whose items point at proformas in *different* groups must show
+		# nothing rather than an arbitrary one of them.
+		self.assertIn("HAVING COUNT(DISTINCT pi3.import_pi_group) = 1", rules.ci_effective_group_expr())
 
 	def test_container_filters(self):
 		clauses, params = rules.container_filter_clauses(

@@ -163,7 +163,43 @@ def is_due_soon(eta, today, window_days: int = 7) -> bool:
 # ---------------------------------------------------------------------------
 
 
-def ci_filter_clauses(search=None, status=None, supplier=None, group=None):
+def ci_effective_group_expr(has_pi_link: bool = True) -> str:
+	"""SQL for a CI's *effective* PI Group (alias ``ci``).
+
+	A CI only carries its own ``import_pi_group`` when someone picked it — either
+	a proforma was selected on the form (which copies the group down) or the CI
+	was created after its PI had already been grouped. Grouping a PI later never
+	reaches the CIs raised from it, so the badge stayed blank for invoices that
+	plainly belong to a group. This derives it instead of storing it: group the
+	proforma and its CIs light up on the next read, with no write and nothing to
+	backfill.
+
+	Precedence: the CI's own link wins (20 msa CIs deliberately sit in a
+	different group than their proforma), then the header PI, then the items —
+	and only when every item's PI agrees on one group, so a multi-PI invoice
+	spanning groups shows nothing rather than an arbitrary pick.
+
+	``count_query`` builds a FROM with **no joins**, so every reference here must
+	be on ``ci`` or inside a correlated subquery — never a join alias.
+	``ci.custom_proforma_invoice`` is a Custom Field, hence the ``has_pi_link``
+	guard; the child table's column ships in the doctype and needs none.
+	"""
+	branches = ["NULLIF(ci.import_pi_group, '')"]
+	if has_pi_link:
+		branches.append(
+			"NULLIF((SELECT pi2.import_pi_group FROM `tabProforma Invoice` pi2 "
+			"WHERE pi2.name = ci.custom_proforma_invoice), '')"
+		)
+	branches.append(
+		"(SELECT MIN(pi3.import_pi_group) FROM `tabCommercial Invoice Item` cii3 "
+		"JOIN `tabProforma Invoice` pi3 ON pi3.name = cii3.custom_proforma_invoice "
+		"WHERE cii3.parent = ci.name AND IFNULL(pi3.import_pi_group, '') <> '' "
+		"HAVING COUNT(DISTINCT pi3.import_pi_group) = 1)"
+	)
+	return "COALESCE(" + ", ".join(branches) + ")"
+
+
+def ci_filter_clauses(search=None, status=None, supplier=None, group=None, has_pi_link: bool = True):
 	"""WHERE fragments + params for ``list_commercial_invoices`` (alias ``ci``)."""
 	clauses: list[str] = []
 	params: dict = {}
@@ -181,10 +217,9 @@ def ci_filter_clauses(search=None, status=None, supplier=None, group=None):
 		clauses.append("ci.supplier = %(supplier)s")
 		params["supplier"] = supplier
 	if group:
-		# The CI carries its own PI Group link, and it is authoritative: a CI may
-		# sit in a different group than the proforma it was raised from. Filtering
-		# through the PI would disagree with the badge the list renders.
-		clauses.append("ci.import_pi_group = %(group)s")
+		# Filter on the same expression the badge renders, so the two can never
+		# disagree — a CI showing a group must be reachable by filtering on it.
+		clauses.append(f"({ci_effective_group_expr(has_pi_link)}) = %(group)s")
 		params["group"] = group
 	return clauses, params
 

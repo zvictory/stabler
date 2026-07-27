@@ -50,6 +50,13 @@ const currencies = ref([]);
 const currencyOptions = computed(() =>
 	currencies.value.map((c) => ({ value: c.name, label: c.name }))
 );
+// Selecting a proforma copies its group down, but a CI raised without one had
+// no way to be grouped at all — hence the explicit selector.
+const piGroups = ref([]);
+const groupOptions = computed(() => [
+	{ value: "", label: t("No PI group") },
+	...piGroups.value.map((g) => ({ value: g.name, label: g.title || g.name })),
+]);
 const companyPOs = ref([]);
 const poOptions = computed(() => [
 	{ value: "", label: t("Select purchase order…") },
@@ -594,6 +601,13 @@ async function loadRefData() {
 	} catch (_) {
 		companyPOs.value = [];
 	}
+	try {
+		piGroups.value = await call("stabler.api.imports.list_pi_groups", {
+			company: activeCompany.value,
+		});
+	} catch (_) {
+		piGroups.value = [];
+	}
 }
 
 function buildValues() {
@@ -941,6 +955,10 @@ watch(activeCompany, loadRefData);
 							<div class="fw-semibold small">{{ item.supplier_pi_ref || item.name }}</div>
 							<div class="text-secondary" style="font-size:0.75rem">{{ item.supplier_name || item.supplier }} · {{ item.agreed_total ? fm(item.agreed_total, item.currency) : "" }}</div>
 						</Typeahead>
+					</div>
+					<div class="col-md-3">
+						<label class="form-label">{{ t("PI Group") }}</label>
+						<Select v-model="form.import_pi_group" :options="groupOptions" />
 					</div>
 					<div class="col-md-3">
 						<label class="form-label required">{{ t("CI number") }}</label>
