@@ -5,14 +5,12 @@ from __future__ import annotations
 import json
 
 import frappe
-from stabler.api.approvals import _assert_company_scope
 from frappe import _
 from frappe.utils import flt, getdate, today
 
-
-from stabler.api._common import _require_company, _assert_can_read, _assert_can_write
+from stabler.api._common import _assert_can_read, _assert_can_write, _require_company
+from stabler.api.approvals import _assert_company_scope
 from stabler.api.organization import _can_access_module
-
 
 # ----- Role helpers ---------------------------------------------------------
 
@@ -522,6 +520,7 @@ def make_work_order_stock_entry(
 	`batch_no` (+ mfg/expiry) is stamped on the Work Order for lot traceability
 	(Faz 4a) — informational only, does not touch the stock batch engine."""
 	import json
+
 	from erpnext.manufacturing.doctype.work_order.work_order import make_stock_entry
 	from erpnext.stock.get_item_details import get_conversion_factor
 
@@ -997,7 +996,7 @@ def create_material_request_for_tomorrow_wo(doc, method=None):
 	"""Hook function triggered on Work Order submit (doc_events).
 	If planned_start_date is tomorrow or later, creates a Material Request for any shortages in wip_warehouse.
 	"""
-	from frappe.utils import add_days, today, getdate
+	from frappe.utils import add_days, getdate, today
 
 	if not doc.wip_warehouse:
 		return
@@ -1079,7 +1078,7 @@ def update_work_order_materials(work_order: str, materials: str):
 	doc.reload()
 
 	# If it's a tomorrow or future WO, create/update Material Request for any new shortages
-	from frappe.utils import add_days, today, getdate
+	from frappe.utils import add_days, getdate, today
 	tomorrow = getdate(add_days(today(), 1))
 	if doc.wip_warehouse and getdate(doc.planned_start_date) >= tomorrow:
 		# Cancel existing draft/submitted Material Request for this WO and create a fresh one with updated shortages

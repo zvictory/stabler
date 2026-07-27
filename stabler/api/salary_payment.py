@@ -19,11 +19,11 @@ from __future__ import annotations
 import json
 
 import frappe
-from stabler.api._money import money_epsilon
 from frappe import _
 from frappe.utils import flt, getdate, today
 
 from stabler.api._common import _require_company
+from stabler.api._money import money_epsilon
 from stabler.api.approvals import _assert_company_scope
 from stabler.api.money import create_journal_entry, list_cash_bank_accounts, submit_journal_entry
 

@@ -15,7 +15,6 @@ from stabler.api._perm_rules import (
 	territory_allowed,
 )
 
-
 # ---------------------------------------------------------------------------
 # Existing tests — company scoping (must not regress)
 # ---------------------------------------------------------------------------

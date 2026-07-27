@@ -5,7 +5,6 @@ from __future__ import annotations
 import os
 import unittest
 
-
 _ROOT = os.path.normpath(os.path.join(os.path.dirname(os.path.abspath(__file__)), ".."))
 
 

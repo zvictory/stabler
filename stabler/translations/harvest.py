@@ -28,7 +28,6 @@ from typing import Iterable
 
 import frappe
 
-
 _APP_ROOT = Path(frappe.get_app_path("stabler"))
 _TRANSLATIONS_DIR = _APP_ROOT / "translations"
 

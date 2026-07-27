@@ -1,5 +1,6 @@
 import frappe
 
+
 def execute():
 	"""Bootstrap Fiscal Years for 2024, 2025, 2026, and 2027 if missing."""
 	years = [2024, 2025, 2026, 2027]

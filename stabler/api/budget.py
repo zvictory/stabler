@@ -15,12 +15,12 @@ Guest is rejected at the whitelist level.
 from __future__ import annotations
 
 import frappe
-from stabler.api.approvals import _assert_company_scope
 from frappe import _
 from frappe.utils import flt, getdate, today
 
-from stabler.api._common import _assert_can_read, _require_company
 from stabler.api._budget import compute_variance_report
+from stabler.api._common import _assert_can_read, _require_company
+from stabler.api.approvals import _assert_company_scope
 
 
 def _reject_guest() -> None:

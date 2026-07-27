@@ -8,14 +8,14 @@ in hr_payroll_calc. Salary is sensitive → gated to payroll-visible roles.
 from __future__ import annotations
 
 import frappe
-from stabler.api._money import money_epsilon
-from stabler.api.approvals import _assert_company_scope
 from frappe import _
 from frappe.utils import flt
 
 from stabler.api._common import _require_company
+from stabler.api._money import money_epsilon
 from stabler.api._payroll_adapter import build_calc_input
 from stabler.api._payroll_calc import calculate_payroll
+from stabler.api.approvals import _assert_company_scope
 
 _SUMMARY = "Stabler Payroll Attendance Summary"
 _RULESET = "Stabler Attendance Rule Set"

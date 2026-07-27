@@ -9,12 +9,12 @@ from __future__ import annotations
 from datetime import date, timedelta
 
 import frappe
-from stabler.api._money import money_epsilon
-from stabler.api.approvals import _assert_company_scope
 from frappe import _
 from frappe.utils import flt, getdate
 
 from stabler.api._common import _require_company
+from stabler.api._money import money_epsilon
+from stabler.api.approvals import _assert_company_scope
 from stabler.api.organization import _can_access_module
 
 # ---------------------------------------------------------------------------

@@ -1,7 +1,6 @@
 import unittest
 from pathlib import Path
 
-
 ROOT = Path(__file__).resolve().parents[2]
 COMPONENT_PATH = ROOT / "stabler/public/js/pages/imports/CiLogisticsOverview.vue"
 CI_FORM_PATH = ROOT / "stabler/public/js/pages/imports/CommercialInvoiceForm.vue"

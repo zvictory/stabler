@@ -38,19 +38,18 @@ import secrets
 
 import frappe
 from frappe.model.naming import make_autoname
-from stabler.api.approvals import _assert_company_scope
 from frappe.utils import flt, getdate
 
-from stabler.api._common import _require_company, _assert_can_read
+from stabler.api._common import _assert_can_read, _require_company
+from stabler.api.approvals import _assert_company_scope
 from stabler.api.money import (
+    _date_filters,
     _round2,
     _validate_account,
     bank_cash_accounts,
-    _date_filters,
-    journal_entry_detail,
     get_exchange_rate_for_currencies,
+    journal_entry_detail,
 )
-
 
 CORRIDORS = [
     {"from_city": "Tashkent", "to_city": "Istanbul", "label": "Tashkent → Istanbul"},

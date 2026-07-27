@@ -22,7 +22,7 @@ Key translation notes
 from __future__ import annotations
 
 import unittest
-from decimal import Decimal, ROUND_HALF_UP
+from decimal import ROUND_HALF_UP, Decimal
 
 from stabler.api._payroll_calc import (
 	calculate_payroll,
@@ -32,7 +32,6 @@ from stabler.api._payroll_calc import (
 	seniority_percent,
 	years_of_service,
 )
-
 
 # ---------------------------------------------------------------------------
 # Shared fixtures (mirrors fixtures.ts)

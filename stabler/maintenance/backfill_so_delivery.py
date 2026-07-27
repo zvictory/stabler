@@ -34,10 +34,9 @@ Full live run for one company:
 from __future__ import annotations
 
 import frappe
-from frappe.utils import flt
-
 from erpnext.selling.doctype.sales_order.sales_order import make_delivery_note
 from erpnext.stock.doctype.stock_reservation_entry.stock_reservation_entry import has_reserved_stock
+from frappe.utils import flt
 
 _logger = frappe.logger("stabler.backfill_so_delivery")
 

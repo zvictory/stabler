@@ -10,12 +10,11 @@ from erpnext.stock.get_item_details import get_conversion_factor
 from frappe import _
 from frappe.utils import cint, flt, get_datetime, getdate, now_datetime, today
 
-from stabler.api._common import _assert_can_read, _require_company, _assert_can_write
-from stabler.api.approvals import _assert_company_scope
+from stabler.api._common import _assert_can_read, _assert_can_write, _require_company
 from stabler.api._equipment import coverage_state, summarise_coverage
+from stabler.api.approvals import _assert_company_scope
 from stabler.api.organization import _can_access_module
 from stabler.stabler.doctype.stabler_settings.stabler_settings import module_map_for
-
 
 ISSUE_STATUSES = ("Open", "Assigned", "In Progress", "On Hold", "Resolved", "Closed", "Cancelled")
 TECH_STATES = ("Accepted", "En Route", "Started")

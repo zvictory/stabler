@@ -12,12 +12,11 @@ from __future__ import annotations
 from typing import Any
 
 import frappe
-from stabler.api._common import _assert_can_read, _assert_can_write
 from frappe import _
 from frappe.utils import flt, getdate, nowdate
 
+from stabler.api._common import _assert_can_read, _assert_can_write
 from stabler.api.sfa import _company_filter, _is_admin
-
 
 _WRITE_ROLES = {"System Manager", "Marketing User"}
 _CLAIM_DECISIONS = {"UnderReview", "Approved", "Rejected"}

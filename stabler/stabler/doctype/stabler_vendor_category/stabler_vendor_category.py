@@ -1,6 +1,7 @@
 import frappe
 from frappe.model.document import Document
 
+
 class StablerVendorCategory(Document):
 	def validate(self):
 		# Validate unique categories per vendor

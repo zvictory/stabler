@@ -17,12 +17,11 @@ import math
 from typing import Any
 
 import frappe
-from stabler.api._common import _assert_can_read, _assert_can_write
 from frappe import _
 
+from stabler.api._common import _assert_can_read, _assert_can_write
 from stabler.api._geo import GeoError, norm_key, parse_coord_pair, resolve_bulk
 from stabler.api.organization import _user_allowed_companies
-
 
 _EARTH_RADIUS_M = 6_371_000.0
 _WRITE_ROLES = {"System Manager", "Sales User"}

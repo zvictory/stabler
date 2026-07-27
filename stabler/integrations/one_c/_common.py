@@ -10,7 +10,6 @@ from typing import Any, Iterator
 
 import frappe
 
-
 _VALID_TYPES = {
 	"Customer",
 	"Item",

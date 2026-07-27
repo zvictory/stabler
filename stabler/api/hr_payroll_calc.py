@@ -26,13 +26,13 @@ import frappe
 from frappe import _
 
 from stabler.api._common import _assert_can_read, _assert_can_write
-from stabler.api.approvals import _assert_company_scope
 from stabler.api._payroll_components import (
-	summary_to_components,
 	components_total,
-	slip_variance,
 	mapping_complete,
+	slip_variance,
+	summary_to_components,
 )
+from stabler.api.approvals import _assert_company_scope
 
 _SUMMARY = "Stabler Payroll Attendance Summary"
 _COMPONENT_MAP = "Stabler Payroll Component Map"
@@ -161,6 +161,7 @@ def _payroll_date_from_period(payroll_period: str) -> str:
 	insert.  ERPNext Additional Salary requires payroll_date to be set.
 	"""
 	import calendar
+
 	from frappe.utils import nowdate
 
 	try:

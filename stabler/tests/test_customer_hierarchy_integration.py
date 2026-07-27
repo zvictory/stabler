@@ -6,15 +6,16 @@ Wired against a live test database under `bench run-tests --app stabler`.
 from __future__ import annotations
 
 import unittest
+
 import frappe
 from frappe.tests.utils import FrappeTestCase
 from frappe.utils import flt, today
 
+from stabler.api.imports import create_grn_for_ci
 from stabler.api.sales import (
 	create_parent_bulk_payment,
 	reallocate_parent_payment,
 )
-from stabler.api.imports import create_grn_for_ci
 
 
 def _first_company():

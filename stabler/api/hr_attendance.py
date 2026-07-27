@@ -14,12 +14,12 @@ from __future__ import annotations
 import json
 
 import frappe
-from stabler.api.approvals import _assert_company_scope
 from frappe import _
 
 from stabler.api._attendance_processor import summarize_day
 from stabler.api._attendance_rules import policies_from_ruleset
 from stabler.api._common import _assert_can_write
+from stabler.api.approvals import _assert_company_scope
 
 _RULESET = "Stabler Attendance Rule Set"
 

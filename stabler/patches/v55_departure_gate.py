@@ -17,7 +17,6 @@ as required must not silently open the gate.
 
 import frappe
 
-
 CUSTOM_FIELDS = [
     {
         "dt": "Customs Declaration",

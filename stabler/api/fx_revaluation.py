@@ -16,12 +16,12 @@ here via explicit frappe.session.user check — consistent with other api module
 from __future__ import annotations
 
 import frappe
-from stabler.api.approvals import _assert_company_scope
 from frappe import _
 from frappe.utils import flt, getdate, today
 
 from stabler.api._common import _assert_can_read, _require_company
 from stabler.api._fx_revaluation import compute_fx_delta, summarize_revaluation
+from stabler.api.approvals import _assert_company_scope
 
 
 def _reject_guest() -> None:

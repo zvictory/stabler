@@ -24,7 +24,6 @@ import frappe
 from frappe import _
 from frappe.rate_limiter import rate_limit
 
-
 _SIGNATURE_HEADER = "X-ARCA-Signature"
 
 

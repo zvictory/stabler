@@ -21,14 +21,14 @@ Conventions (the Critic's non-negotiables):
 from __future__ import annotations
 
 import frappe
-from stabler.api._money import money_epsilon
-from stabler.api.approvals import _assert_company_scope
 from frappe import _
 from frappe.utils import flt
 
 from stabler.api._common import _require_company
-from stabler.api.sales import _sales_report_dates, _sales_report_period_expr
+from stabler.api._money import money_epsilon
+from stabler.api.approvals import _assert_company_scope
 from stabler.api.organization import module_map_for
+from stabler.api.sales import _sales_report_dates, _sales_report_period_expr
 
 
 def _base_currency(company: str) -> str:

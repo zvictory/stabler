@@ -34,7 +34,6 @@ from stabler.api._audit_chain import (
 	verify_chain,
 )
 
-
 # --------------------------------------------------------------------------- #
 # Helpers
 # --------------------------------------------------------------------------- #
@@ -267,7 +266,8 @@ class HashRegressionTest(unittest.TestCase):
 	"""Guard against accidental algorithm changes by pinning a known digest."""
 
 	def test_genesis_hash_is_stable(self):
-		import hashlib, json
+		import hashlib
+		import json
 		payload = {"name": "VER-0001"}
 		canonical = json.dumps(payload, sort_keys=True, separators=(",", ":"), ensure_ascii=True)
 		material = (_GENESIS_PREV + ":" + canonical).encode("utf-8")

@@ -11,7 +11,6 @@ from __future__ import annotations
 import os
 import unittest
 
-
 _ROOT = os.path.normpath(os.path.join(os.path.dirname(os.path.abspath(__file__)), ".."))
 _DASHBOARD = os.path.join(_ROOT, "public", "js", "pages", "Dashboard.vue")
 _SALES_BOARD = os.path.join(_ROOT, "public", "js", "pages", "sales", "SalesOrderBoard.vue")

@@ -10,12 +10,12 @@ GL Entry — the same source the advance and salary-payment modules use.
 from __future__ import annotations
 
 import frappe
-from stabler.api._money import money_epsilon
-from stabler.api.approvals import _assert_company_scope
 from frappe import _
 from frappe.utils import flt
 
 from stabler.api._common import _require_company
+from stabler.api._money import money_epsilon
+from stabler.api.approvals import _assert_company_scope
 
 _PAY_ROLES = {"HR Manager", "Payroll Manager", "Accounts Manager", "System Manager", "Stabler Admin"}
 _NET_COMPONENT = "Stabler Net Pay"

@@ -11,7 +11,6 @@ from __future__ import annotations
 import os
 import unittest
 
-
 _ROOT = os.path.normpath(os.path.join(os.path.dirname(os.path.abspath(__file__)), ".."))
 _PATCH = os.path.join(_ROOT, "patches", "v56_crm_deal_company_scope.py")
 _PATCHES_TXT = os.path.join(_ROOT, "patches.txt")

@@ -23,7 +23,7 @@ from datetime import timedelta
 
 import frappe
 from frappe import _
-from frappe.utils import getdate, nowdate, now_datetime
+from frappe.utils import getdate, now_datetime, nowdate
 
 from stabler.api._attendance_processor import summarize_day
 from stabler.api._attendance_rules import policies_from_ruleset
@@ -663,8 +663,8 @@ def lock_period(company: str, payroll_period: str) -> dict:
 
 	# --- Pre-lock readiness gate ---
 	# Re-use the canonical readiness logic from hr_corrections.
+	from stabler.api._payroll_summary import can_lock, period_blockers
 	from stabler.api.hr_corrections import period_lock_readiness as _plr
-	from stabler.api._payroll_summary import period_blockers, can_lock
 
 	readiness = _plr(company=company, payroll_period=payroll_period)
 

@@ -5,7 +5,6 @@ import re
 import unittest
 from pathlib import Path
 
-
 _ROOT = Path(__file__).resolve().parents[1]
 _SOURCES = (
 	_ROOT / "public/js/pages/Dashboard.vue",

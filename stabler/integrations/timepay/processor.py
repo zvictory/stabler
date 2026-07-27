@@ -8,8 +8,8 @@ import frappe
 from frappe import _
 from frappe.utils import add_days, getdate, nowdate, today
 
-from stabler.api._attendance_rules import policies_from_ruleset
 from stabler.api._attendance_processor import summarize_day
+from stabler.api._attendance_rules import policies_from_ruleset
 from stabler.api._timepay_processor import (
 	attendance_status_from_summary,
 	plan_raw_event_groups,

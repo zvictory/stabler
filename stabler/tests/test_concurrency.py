@@ -2,17 +2,19 @@ from __future__ import annotations
 
 import unittest
 from unittest.mock import patch
+
 import frappe
 from frappe import ValidationError
+
 try:
 	from frappe import TimestampMismatchError
 except ImportError:
 	TimestampMismatchError = ValidationError
 
 from stabler.api._common import check_concurrency
-from stabler.api.sales import update_sales_order, delete_sales_order, delete_sales_invoice, submit_quotation
-from stabler.api.purchasing import update_purchase_order, update_purchase_invoice, delete_purchase_invoice
-from stabler.api.money import update_payment_entry, delete_payment_entry
+from stabler.api.money import delete_payment_entry, update_payment_entry
+from stabler.api.purchasing import delete_purchase_invoice, update_purchase_invoice, update_purchase_order
+from stabler.api.sales import delete_sales_invoice, delete_sales_order, submit_quotation, update_sales_order
 
 
 class TestConcurrency(unittest.TestCase):

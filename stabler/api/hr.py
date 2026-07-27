@@ -5,12 +5,10 @@ from __future__ import annotations
 import json
 
 import frappe
+from frappe.utils import add_days, date_diff, flt, getdate, today
+
+from stabler.api._common import _assert_can_read, _assert_can_write, _require_company
 from stabler.api.approvals import _assert_company_scope
-from frappe.utils import flt, getdate, today, add_days, date_diff
-
-
-from stabler.api._common import _require_company, _assert_can_read, _assert_can_write
-
 
 # ---------------------------------------------------------------------------
 # Salary-visibility helper
@@ -1238,8 +1236,8 @@ def import_timepay_names(rows, apply=0, apply_name_matches=0):
 
 	Admin / HR Manager only.
 	"""
-	from stabler.api.organization import _ADMIN_ROLES
 	from stabler.api._timepay_import import plan_timepay_import
+	from stabler.api.organization import _ADMIN_ROLES
 
 	if not (set(frappe.get_roles()) & ({"HR Manager"} | set(_ADMIN_ROLES))):
 		frappe.throw("Not permitted — admin or HR Manager only.", frappe.PermissionError)

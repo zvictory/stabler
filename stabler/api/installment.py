@@ -19,10 +19,10 @@ import json
 
 import frappe
 from frappe import _
-from stabler.api.approvals import _assert_company_scope
-from frappe.utils import flt, getdate, add_months, today
+from frappe.utils import add_months, flt, getdate, today
 
-from stabler.api._common import _require_company, _assert_can_read, _assert_can_write, check_concurrency
+from stabler.api._common import _assert_can_read, _assert_can_write, _require_company, check_concurrency
+from stabler.api.approvals import _assert_company_scope
 from stabler.api.money import payment_defaults_for_invoice
 
 

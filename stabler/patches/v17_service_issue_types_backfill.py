@@ -2,7 +2,6 @@
 
 import frappe
 
-
 ISSUE_TYPES = ("Install", "Inspection", "Maintenance", "Refill", "Repair", "Complaint")
 SERVICE_ROLES = ("Support Team", "Maintenance User", "Maintenance Manager")
 

@@ -7,6 +7,7 @@ if any anomalies are found.
 from __future__ import annotations
 
 import frappe
+
 from stabler.api.compliance import gl_integrity_scan
 
 

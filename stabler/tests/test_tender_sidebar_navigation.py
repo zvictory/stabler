@@ -5,7 +5,6 @@ from __future__ import annotations
 import os
 import unittest
 
-
 _HERE = os.path.dirname(os.path.abspath(__file__))
 _SIDEBAR = os.path.normpath(
 	os.path.join(_HERE, "..", "public", "js", "components", "Sidebar.vue")

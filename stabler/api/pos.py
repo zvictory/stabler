@@ -3,11 +3,11 @@
 from __future__ import annotations
 
 import frappe
-from stabler.api.approvals import _assert_company_scope
 from frappe import _
 from frappe.utils import flt, getdate, today
 
 from stabler.api._common import _require_company
+from stabler.api.approvals import _assert_company_scope
 from stabler.api.sales import _lookup_item_price, _resolve_price_list
 
 

@@ -17,7 +17,6 @@ from stabler.api._common import _require_company
 from stabler.api.approvals import _assert_company_scope
 from stabler.api.organization import module_map_for
 
-
 OPENING_DATE = "2026-07-20"
 
 

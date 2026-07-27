@@ -1,6 +1,8 @@
 import frappe
 from frappe.utils import add_days, getdate, today
+
 from stabler.api._imports_rules import get_7day_payment_deadline
+
 
 def check_upcoming_deadlines():
 	"""Daily scan for Commercial Invoices whose payment deadline (ETA - 7 days) is approaching.
@@ -52,8 +54,8 @@ def check_upcoming_deadlines():
 			token = getattr(frappe.conf, "uzex_telegram_token", None)
 			chat_id = getattr(frappe.conf, "uzex_telegram_chat_id", None)
 			if token and chat_id:
-				from urllib.request import Request, urlopen
 				import json
+				from urllib.request import Request, urlopen
 				payload = {
 					"chat_id": chat_id,
 					"text": msg,

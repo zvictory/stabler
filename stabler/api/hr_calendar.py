@@ -8,9 +8,10 @@ CRUD so HR can edit them in the SPA. All writes are role-gated and idempotent.
 from __future__ import annotations
 
 import frappe
-from stabler.api.approvals import _assert_company_scope
 from frappe import _
 from frappe.utils import getdate
+
+from stabler.api.approvals import _assert_company_scope
 
 _HR_ROLES = frozenset(
 	("Accounts Manager", "Payroll Manager", "HR Manager", "System Manager", "Stabler Admin")

@@ -21,7 +21,6 @@ import frappe
 
 from stabler.integrations.one_c._common import timed, upsert_external_ref, write_log
 
-
 _OBJECT_TYPE_MAP = {
 	"Sales Invoice": "SalesInvoice",
 	"Payment Entry": "PaymentEntry",

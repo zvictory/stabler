@@ -14,7 +14,6 @@ import os
 import re
 import unittest
 
-
 _HERE = os.path.dirname(os.path.abspath(__file__))
 _TENDER = os.path.normpath(os.path.join(_HERE, "..", "api", "tender.py"))
 _ORGANIZATION = os.path.normpath(os.path.join(_HERE, "..", "api", "organization.py"))

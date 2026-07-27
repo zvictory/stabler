@@ -16,9 +16,8 @@ Live:
 from __future__ import annotations
 
 import frappe
-from frappe.utils import flt
-
 from erpnext.selling.doctype.sales_order.sales_order import make_delivery_note
+from frappe.utils import flt
 
 from stabler.maintenance.backfill_so_delivery import (
     _coerce_dry_run,

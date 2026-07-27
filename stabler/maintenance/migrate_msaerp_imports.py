@@ -5,8 +5,9 @@ Reads directly from /Users/zafar/Downloads/msaerp/db_production.sqlite3 and inse
 
 import os
 import sqlite3
+
 import frappe
-from frappe.utils import flt, cint, getdate
+from frappe.utils import cint, flt, getdate
 
 SQLITE_DB_PATH = "/Users/zafar/Downloads/msaerp/db_production.sqlite3"
 # Fallback path if running directly on production server

@@ -1,7 +1,9 @@
 from __future__ import annotations
 
 import unittest
+
 import frappe
+
 from stabler.api.compliance import gl_integrity_scan
 
 

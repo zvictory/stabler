@@ -14,10 +14,10 @@ from __future__ import annotations
 import base64
 
 import frappe
-from stabler.api.approvals import _assert_company_scope
 from frappe import _
 
 from stabler.api._common import _require_company
+from stabler.api.approvals import _assert_company_scope
 from stabler.api.organization import _can_access_module
 from stabler.integrations.bank_statement.parser_1c import (
 	is_1c_exchange,
@@ -77,7 +77,10 @@ def preview_statement(content_base64: str, bank_account: str | None = None) -> d
 	_require_recon()
 	raw = _decode_content(content_base64)
 
-	from stabler.integrations.bank_statement.parser_msaerp_xlsx import is_msaerp_xlsx, parse_statement_bytes as parse_xlsx_bytes
+	from stabler.integrations.bank_statement.parser_msaerp_xlsx import is_msaerp_xlsx
+	from stabler.integrations.bank_statement.parser_msaerp_xlsx import (
+		parse_statement_bytes as parse_xlsx_bytes,
+	)
 
 	if is_msaerp_xlsx(raw):
 		parsed = parse_xlsx_bytes(raw, our_account=bank_account)
@@ -119,7 +122,10 @@ def import_statement(
 
 	raw = _decode_content(content_base64)
 
-	from stabler.integrations.bank_statement.parser_msaerp_xlsx import is_msaerp_xlsx, parse_statement_bytes as parse_xlsx_bytes
+	from stabler.integrations.bank_statement.parser_msaerp_xlsx import is_msaerp_xlsx
+	from stabler.integrations.bank_statement.parser_msaerp_xlsx import (
+		parse_statement_bytes as parse_xlsx_bytes,
+	)
 
 	if is_msaerp_xlsx(raw):
 		parsed = parse_xlsx_bytes(raw, our_account=meta.get("bank_account_no") or None)

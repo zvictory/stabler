@@ -22,11 +22,11 @@ Phase 2 additions:
 from __future__ import annotations
 
 import frappe
-from stabler.api.approvals import _assert_company_scope
 from frappe import _
 from frappe.utils import add_days, flt, getdate
 
 from stabler.api._common import _require_company, check_concurrency
+from stabler.api.approvals import _assert_company_scope
 from stabler.api.organization import _can_access_module
 from stabler.integrations.bank_statement.match import allocate_partial, rank_candidates
 

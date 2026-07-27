@@ -10,11 +10,12 @@ import json
 import logging
 
 import frappe
-from stabler.api._money import money_epsilon
-from stabler.api.approvals import _assert_company_scope
 from frappe import _
 from frappe.rate_limiter import rate_limit
 from frappe.utils import cint, flt, getdate, today
+
+from stabler.api._money import money_epsilon
+from stabler.api.approvals import _assert_company_scope
 
 EXPORT_FORMATS = {"Excel", "CSV"}
 
@@ -2192,7 +2193,8 @@ def export_report(
 		else:
 			filters.pop("fiscal_year", None)
 
-	from frappe.desk.query_report import export_query, run as _run
+	from frappe.desk.query_report import export_query
+	from frappe.desk.query_report import run as _run
 
 	# Run once to compute visible_idx (all rows) — export_query needs it explicitly.
 	report_data = _run(report_name=report_name, filters=filters)

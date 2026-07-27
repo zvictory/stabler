@@ -164,6 +164,7 @@ def _build_cards(company: str, accounts: list[str], to_date: str, base_currency:
 	"""Balances grouped by currency (only currencies the kassir actually
 	holds), UZS first — feeds the two mockup cards (plus any extra currency)."""
 	import frappe
+
 	from stabler.api import money
 
 	totals: dict[str, float] = {}
@@ -187,6 +188,7 @@ def _build_rows(company: str, accounts: list[str], from_date: str, to_date: str)
 	"""Statement rows across all of the kassir's accounts, sorted date asc,
 	capped at the most recent _ROW_CAP."""
 	import frappe
+
 	from stabler.api import money
 
 	# account_transactions returns BASE-currency GL amounts (debit/credit/balance),

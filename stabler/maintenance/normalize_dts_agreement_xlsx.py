@@ -14,7 +14,6 @@ from pathlib import Path
 
 from openpyxl import load_workbook
 
-
 HEADERS = {
     "organization": {"организация", "organization", "customer"},
     "agreement": {"договор", "agreement", "contract"},

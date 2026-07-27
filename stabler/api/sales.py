@@ -6,13 +6,19 @@ import json
 import re
 
 import frappe
-from stabler.api._money import money_epsilon
-from stabler.api.approvals import _assert_company_scope
 from frappe import _
 from frappe.utils import cint, flt, getdate, today
 
-from stabler.api._common import _assert_can_read, _assert_can_write, _require_company, _validate_money_overrides, check_concurrency
+from stabler.api._common import (
+	_assert_can_read,
+	_assert_can_write,
+	_require_company,
+	_validate_money_overrides,
+	check_concurrency,
+)
+from stabler.api._money import money_epsilon
 from stabler.api._sales_margin import attach_margins
+from stabler.api.approvals import _assert_company_scope
 from stabler.api.organization import module_map_for
 from stabler.stabler.customer_hierarchy import (
 	ERR_ALLOC_EMPTY,
@@ -327,8 +333,8 @@ def get_currency_exchange_rate(from_currency: str, to_currency: str, date: str |
 
 	# Fallback: ERPNext Currency Exchange doctype
 	try:
-		from frappe.utils import nowdate
 		from erpnext.setup.utils import get_exchange_rate  # type: ignore[import]
+		from frappe.utils import nowdate
 		rate = get_exchange_rate(from_currency, to_currency, date or nowdate()) or 1.0
 		return {"exchange_rate": float(rate)}
 	except Exception:
@@ -3668,6 +3674,7 @@ def receivables_cockpit(company: str):
 
 	# 8-week trend (running balance at the end of each of the last 8 weeks)
 	from datetime import datetime, timedelta
+
 	from frappe.utils import getdate
 
 	current_date = getdate(today())

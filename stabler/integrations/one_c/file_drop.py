@@ -23,7 +23,6 @@ import frappe
 
 from stabler.integrations.one_c._common import lookup_by_guid, timed, upsert_external_ref, write_log
 
-
 # Permissive: CommerceML uses several namespace variants depending on the 1C
 # config version. We strip namespaces at parse time rather than enumerate.
 _OBJECT_TAGS = {

@@ -15,7 +15,6 @@ from __future__ import annotations
 
 from stabler.api._payroll_residual import round_uzs
 
-
 # ---------------------------------------------------------------------------
 # 1. Canonical quantity keys + default sign map
 # ---------------------------------------------------------------------------

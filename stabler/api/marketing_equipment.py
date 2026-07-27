@@ -13,11 +13,10 @@ from __future__ import annotations
 from typing import Any
 
 import frappe
-from stabler.api._common import _assert_can_read, _assert_can_write
 from frappe import _
 
+from stabler.api._common import _assert_can_read, _assert_can_write
 from stabler.api.sfa import _company_filter, _is_admin
-
 
 _WRITE_ROLES = {"System Manager", "Marketing User", "Warehouse User"}
 _REPAIR_WRITE_ROLES = {"System Manager", "Marketing User", "Warehouse User", "Sales User"}

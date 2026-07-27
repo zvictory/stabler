@@ -14,12 +14,12 @@ from __future__ import annotations
 import json
 
 import frappe
-from stabler.api.approvals import _assert_company_scope
 from frappe import _
 from frappe.utils import add_months, flt, getdate, now, today
 
-from stabler.api._common import _require_company
 from stabler.api._bid_package import assemble_bid_package, build_bid_docx
+from stabler.api._common import _require_company
+from stabler.api.approvals import _assert_company_scope
 from stabler.api.organization import _can_access_module
 
 _STAGE = "Stabler SO Stage"

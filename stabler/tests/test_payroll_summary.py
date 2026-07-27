@@ -17,7 +17,6 @@ from stabler.api._payroll_summary import (
 	rollup_month,
 )
 
-
 # ---------------------------------------------------------------------------
 # Helpers to build realistic per-day dicts (mirrors summarize_day output)
 # ---------------------------------------------------------------------------

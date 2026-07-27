@@ -67,7 +67,8 @@ class TestAdvancesExcludedAtSource(unittest.TestCase):
 	Invoice bakiyelerini beslemeli, avans PE'lerini asla."""
 
 	def test_endpoint_reads_only_purchase_invoices(self):
-		import os, re
+		import os
+		import re
 		api = os.path.join(os.path.dirname(os.path.abspath(__file__)), "..", "api", "imports.py")
 		src = open(api, encoding="utf-8").read()
 		m = re.search(r"^def fx_revaluation_preview\(", src, re.M)

@@ -1,7 +1,7 @@
 import ast
 import inspect
-import threading
 import textwrap
+import threading
 from unittest.mock import patch
 
 import frappe
