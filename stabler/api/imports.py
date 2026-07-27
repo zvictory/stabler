@@ -303,6 +303,7 @@ def list_commercial_invoices(
 	status: str | None = None,
 	supplier: str | None = None,
 	group: str | None = None,
+	pi_match: str | None = None,
 	limit_start: int = 0,
 	limit_page_length: int = 50,
 	sort_by: str | None = None,
@@ -319,7 +320,7 @@ def list_commercial_invoices(
 	# has not carried the imports work — fall back to NULL rather than failing
 	# the whole list. Resolved up here because the filter clauses need it too.
 	has_pi_link = frappe.db.has_column("Commercial Invoice", "custom_proforma_invoice")
-	clauses, params = rules.ci_filter_clauses(search, status, supplier, group, has_pi_link)
+	clauses, params = rules.ci_filter_clauses(search, status, supplier, group, has_pi_link, pi_match)
 	params["company"] = company
 	params["limit_start"] = max(0, cint(limit_start))
 	params["limit_page_length"] = rules.clamp_page_length(limit_page_length)
@@ -4389,11 +4390,21 @@ def commercial_invoice_list_stats(
 	supplier: str | None = None,
 	search: str | None = None,
 	group: str | None = None,
+	pi_match: str | None = None,
 ) -> dict:
 	"""Aggregate totals over the same filter set as list_commercial_invoices for top metric strip."""
 	_assert_imports_access(company)
 	clauses = ["ci.company = %(company)s"]
 	params = {"company": company}
+	if pi_match:
+		# The strip must count exactly the set the table shows, so the PI-link
+		# filter is applied here too — a total that ignored it would read as the
+		# unfiltered book while the rows below showed a subset.
+		match_clause = rules.ci_pi_match_clause(
+			pi_match, frappe.db.has_column("Commercial Invoice", "custom_proforma_invoice")
+		)
+		if match_clause:
+			clauses.append(match_clause)
 	if status:
 		clauses.append("ci.status = %(status)s")
 		params["status"] = status
@@ -4683,10 +4694,52 @@ def get_pi_invoiced_summary(name: str) -> dict:
 	}
 
 
+def _ci_item_effective_pi_expr() -> str:
+	"""SQL for the PI a CI **row** belongs to: its own link, else the header's.
+
+	``custom_proforma_invoice`` on the Commercial Invoice header is a Custom Field,
+	so a site that never carried the imports work has no such column and naming it
+	would break the query — there we fall back to the row link alone.
+	"""
+	if frappe.db.has_column("Commercial Invoice", "custom_proforma_invoice"):
+		return "COALESCE(NULLIF(cii.custom_proforma_invoice, ''), ci.custom_proforma_invoice)"
+	return "cii.custom_proforma_invoice"
+
+
+def _sub_cut_breakdown(shipped_entry) -> list[dict]:
+	"""Per-item split of what shipped against one contract key, heaviest first.
+
+	This is what makes a compensated bundle legible: one PI line of 16 800 boxes
+	shows up as ``41 TOPSIDE`` / ``44 SILVER SIDE`` / ``45 RUMP STEAK``.
+	"""
+	if not shipped_entry:
+		return []
+	agg: dict = {}
+	for line in shipped_entry["lines"]:
+		code = line.get("item") or ""
+		row = agg.setdefault(code, {"item": code, "boxes": 0.0, "qty": 0.0})
+		row["boxes"] += flt(line.get("boxes"))
+		row["qty"] += flt(line.get("qty"))
+	return sorted(agg.values(), key=lambda r: -r["boxes"])
+
+
 @frappe.whitelist()
 def get_vendor_available_pi_lines(company: str, supplier: str, exclude_ci: str | None = None) -> dict:
-	"""Fetch all open Proforma Invoices for a supplier with remaining unshipped line items.
-	Calculates remaining_boxes = PI_item.boxes - sum(shipped_boxes) across active CIs."""
+	"""Open Proforma Invoices for a supplier with their unshipped balance.
+
+	The balance is keyed by ``(PI, category)`` — deliberately **not** by ``item``.
+	A PI line is usually a compensated bundle (``CM60/40 = BUFFALO COMPENSATED``,
+	16 800 boxes) that the CI ships broken into sub-cuts (``41 TOPSIDE``,
+	``44 SILVER SIDE``…). Keying on the item made those shipments invisible, so
+	every bundle looked 100% unshipped: on the msa data set item-keying matched
+	19.5% of CI lines against 98.3% for category-keying.
+
+	Shipments are attributed two ways — the row's own PI, else the CI header's —
+	because ~2 127 CI rows carry the link only on the header. ``remaining_boxes``
+	may be **negative**: over-shipment is real (21 keys / 25 959 boxes) and is
+	reported through ``over_shipped``, never clamped away. See the invariants at
+	the bottom of ``_imports_rules``.
+	"""
 	_assert_imports_access(company)
 	if not supplier:
 		return {"proformas": [], "lines": []}
@@ -4713,10 +4766,10 @@ def get_vendor_available_pi_lines(company: str, supplier: str, exclude_ci: str |
 	pi_items = frappe.db.sql(
 		"""
         SELECT name, parent, item, description, category, '' AS hs_code, boxes, box_weight_kg,
-               qty, rate AS agreed_rate, docs_price, amount AS agreed_amount, docs_amount
+               qty, rate, docs_price, amount, docs_amount
         FROM `tabProforma Invoice Item`
         WHERE parent IN %(pi_names)s
-        ORDER BY idx ASC
+        ORDER BY parent ASC, idx ASC
         """,
 		{"pi_names": tuple(pi_names)},
 		as_dict=True,
@@ -4725,10 +4778,11 @@ def get_vendor_available_pi_lines(company: str, supplier: str, exclude_ci: str |
 	if not pi_items:
 		return {"proformas": pis, "lines": []}
 
+	eff_pi = _ci_item_effective_pi_expr()
 	ci_conds = [
 		"ci.company = %(company)s",
 		"ci.status != 'Cancelled'",
-		"cii.custom_proforma_invoice IN %(pi_names)s",
+		f"{eff_pi} IN %(pi_names)s",
 	]
 	params = {"company": company, "pi_names": tuple(pi_names)}
 	if exclude_ci:
@@ -4738,49 +4792,61 @@ def get_vendor_available_pi_lines(company: str, supplier: str, exclude_ci: str |
 	ci_where = " AND ".join(ci_conds)
 	shipped_rows = frappe.db.sql(
 		f"""
-        SELECT cii.custom_proforma_invoice AS pi_name, cii.item, cii.category,
-               SUM(cii.boxes) AS shipped_boxes, SUM(cii.qty) AS shipped_qty
+        SELECT {eff_pi} AS pi_name, cii.category, cii.item, cii.parent AS ci_name,
+               SUM(cii.boxes) AS boxes, SUM(cii.qty) AS qty
         FROM `tabCommercial Invoice Item` cii
         JOIN `tabCommercial Invoice` ci ON ci.name = cii.parent
         WHERE {ci_where}
-        GROUP BY cii.custom_proforma_invoice, cii.item, cii.category
+        GROUP BY {eff_pi}, cii.category, cii.item, cii.parent
         """,
 		params,
 		as_dict=True,
 	)
 
-	shipped_map = {}
-	for r in shipped_rows:
-		key = (r["pi_name"], r["item"], r["category"] or "")
-		shipped_map[key] = {
-			"shipped_boxes": cint(r["shipped_boxes"]),
-			"shipped_qty": flt(r["shipped_qty"]),
-		}
+	shipped = rules.shipped_index(shipped_rows)
+	# K4 — the PI list already carries supplier_pi_ref; querying it per line was
+	# one round-trip per contract row.
+	pi_ref_by_name = {p.name: (p.supplier_pi_ref or p.name) for p in pis}
 
 	available_lines = []
-	for it in pi_items:
-		key = (it["parent"], it["item"], it["category"] or "")
-		shipped = shipped_map.get(key, {"shipped_boxes": 0, "shipped_qty": 0.0})
+	for entry in rules.contract_index(pi_items).values():
+		ship = shipped.get(entry["key"])
+		bal = rules.remaining_for(entry, ship)
+		first = entry["lines"][0]
 
-		pi_boxes = cint(it["boxes"])
-		shipped_boxes = shipped["shipped_boxes"]
-		remaining_boxes = max(0, pi_boxes - shipped_boxes)
+		# Raw item codes, in contract order — contract_index upper-cases them for
+		# the key, and an item code must round-trip verbatim into the CI row.
+		items = []
+		for ln in entry["lines"]:
+			if ln.get("item") and ln["item"] not in items:
+				items.append(ln["item"])
 
 		available_lines.append(
 			{
-				"pi_name": it["parent"],
-				"pi_ref": frappe.db.get_value("Proforma Invoice", it["parent"], "supplier_pi_ref")
-				or it["parent"],
-				"item": it["item"],
-				"description": it["description"] or "",
-				"category": it["category"] or "",
-				"hs_code": it["hs_code"] or "",
-				"contract_boxes": pi_boxes,
-				"shipped_boxes": shipped_boxes,
-				"remaining_boxes": remaining_boxes,
-				"box_weight_kg": flt(it["box_weight_kg"]),
-				"agreed_rate": flt(it["agreed_rate"]),
-				"docs_price": flt(it["docs_price"]),
+				"pi_name": entry["pi_name"],
+				"pi_ref": pi_ref_by_name.get(entry["pi_name"], entry["pi_name"]),
+				# A bundle has no single item; the modal offers `items` instead.
+				"item": items[0] if len(items) == 1 else "",
+				"items": items,
+				"description": first.get("description") or "",
+				"category": first.get("category") or "",
+				"hs_code": first.get("hs_code") or "",
+				"contract_boxes": bal["contract_boxes"],
+				"contract_qty": bal["contract_qty"],
+				"shipped_boxes": bal["shipped_boxes"],
+				"shipped_qty": bal["shipped_qty"],
+				"remaining_boxes": bal["remaining_boxes"],
+				"remaining_qty": bal["remaining_qty"],
+				"pct": bal["pct"],
+				"over_shipped": bal["over_shipped"],
+				"over_boxes": bal["over_boxes"],
+				"ci_count": bal["ci_count"],
+				"box_weight_kg": flt(first.get("box_weight_kg")),
+				"agreed_rate": flt(first.get("rate")),
+				"docs_price": flt(first.get("docs_price")),
+				"agreed_prices": sorted(entry["agreed_prices"]),
+				"docs_prices": sorted(entry["docs_prices"]),
+				"sub_cuts": _sub_cut_breakdown(ship),
 			}
 		)
 
@@ -4791,7 +4857,14 @@ def get_vendor_available_pi_lines(company: str, supplier: str, exclude_ci: str |
 
 
 def get_pi_tracking_for_ci(ci_doc) -> list[dict]:
-	"""Returns row-level PI tracking for a Commercial Invoice."""
+	"""PI tracking for a Commercial Invoice, one row per ``(PI, category)``.
+
+	Same key as ``get_vendor_available_pi_lines``: the item is a sub-cut of a
+	compensated bundle, so it may never be part of the key. The old code fell back
+	to matching on the bare item code (``prior_by_code`` / ``this_by_code``), which
+	attributed a sub-cut to whichever contract line happened to share its code —
+	across categories, and even across PIs.
+	"""
 	ref_pis = set()
 	if ci_doc.get("custom_proforma_invoice"):
 		ref_pis.add(ci_doc.custom_proforma_invoice)
@@ -4805,9 +4878,27 @@ def get_pi_tracking_for_ci(ci_doc) -> list[dict]:
 			continue
 		pi_doc = frappe.get_doc("Proforma Invoice", pi_name)
 
-		other_ci_rows = frappe.db.sql(
+		contract = rules.contract_index(
+			[
+				{
+					"pi_name": pi_name,
+					"category": it.category,
+					"item": it.item,
+					"description": it.description,
+					"boxes": it.boxes,
+					"qty": it.qty,
+					"amount": it.amount,
+					"rate": it.rate,
+					"docs_price": it.docs_price,
+					"box_weight_kg": it.box_weight_kg,
+				}
+				for it in pi_doc.items or []
+			]
+		)
+
+		prior_rows = frappe.db.sql(
 			"""
-            SELECT cii.category, cii.item, cii.boxes, cii.qty
+            SELECT cii.category, cii.item, cii.boxes, cii.qty, cii.parent AS ci_name
             FROM `tabCommercial Invoice Item` cii
             JOIN `tabCommercial Invoice` ci ON ci.name = cii.parent
             WHERE (cii.custom_proforma_invoice = %(pi)s OR (COALESCE(cii.custom_proforma_invoice, '') = '' AND ci.custom_proforma_invoice = %(pi)s))
@@ -4817,81 +4908,207 @@ def get_pi_tracking_for_ci(ci_doc) -> list[dict]:
 			{"pi": pi_name, "this_ci": ci_doc.name},
 			as_dict=True,
 		)
+		for r in prior_rows:
+			r["pi_name"] = pi_name
 
-		prior_map = {}
-		prior_by_code = {}
-		for r in other_ci_rows:
-			key = (r["category"] or "", r["item"])
-			if key not in prior_map:
-				prior_map[key] = {"boxes": 0, "qty": 0.0}
-			prior_map[key]["boxes"] += cint(r["boxes"])
-			prior_map[key]["qty"] += flt(r["qty"])
+		this_rows = [
+			{
+				"pi_name": pi_name,
+				"category": r.category,
+				"item": r.item,
+				"boxes": r.boxes,
+				"qty": r.qty,
+				"ci_name": ci_doc.name,
+			}
+			for r in ci_doc.items or []
+			if (r.get("custom_proforma_invoice") or ci_doc.get("custom_proforma_invoice")) == pi_name
+		]
 
-			code = r["item"]
-			if code not in prior_by_code:
-				prior_by_code[code] = {"boxes": 0, "qty": 0.0}
-			prior_by_code[code]["boxes"] += cint(r["boxes"])
-			prior_by_code[code]["qty"] += flt(r["qty"])
+		prior = rules.shipped_index(prior_rows)
+		this_ci = rules.shipped_index(this_rows)
+		combined = rules.shipped_index(prior_rows + this_rows)
 
-		this_ci_map = {}
-		this_by_code = {}
-		for r in ci_doc.items or []:
-			r_pi = r.get("custom_proforma_invoice") or ci_doc.get("custom_proforma_invoice")
-			if r_pi == pi_name:
-				key = (r.category or "", r.item)
-				if key not in this_ci_map:
-					this_ci_map[key] = {"boxes": 0, "qty": 0.0}
-				this_ci_map[key]["boxes"] += cint(r.boxes)
-				this_ci_map[key]["qty"] += flt(r.qty)
-
-				code = r.item
-				if code not in this_by_code:
-					this_by_code[code] = {"boxes": 0, "qty": 0.0}
-				this_by_code[code]["boxes"] += cint(r.boxes)
-				this_by_code[code]["qty"] += flt(r.qty)
-
-		for it in pi_doc.items:
-			cat = it.category or ""
-			code = it.item
-			pi_b = cint(it.boxes)
-			pi_q = flt(it.qty)
-
-			pr_data = prior_map.get((cat, code)) or prior_by_code.get(code, {"boxes": 0, "qty": 0.0})
-			pr_b = pr_data["boxes"]
-			pr_q = pr_data["qty"]
-
-			tc_data = this_ci_map.get((cat, code)) or this_by_code.get(code, {"boxes": 0, "qty": 0.0})
-			tc_b = tc_data["boxes"]
-			tc_q = tc_data["qty"]
-
-			tot_inv_b = pr_b + tc_b
-			tot_inv_q = pr_q + tc_q
-			rem_b = max(0, pi_b - tot_inv_b)
-			rem_q = max(0.0, flt(pi_q - tot_inv_q, 2))
-			pct = flt((tot_inv_q / pi_q) * 100, 1) if pi_q > 0 else (100.0 if tot_inv_q > 0 else 0.0)
+		for key, entry in contract.items():
+			bal = rules.remaining_for(entry, combined.get(key))
+			pr = prior.get(key)
+			tc = this_ci.get(key)
+			first = entry["lines"][0]
+			items = []
+			for ln in entry["lines"]:
+				if ln.get("item") and ln["item"] not in items:
+					items.append(ln["item"])
 
 			tracking_results.append(
 				{
 					"proforma_invoice": pi_name,
 					"supplier_pi_ref": pi_doc.supplier_pi_ref or pi_name,
-					"category": cat,
-					"item": code,
-					"description": it.description or code,
-					"pi_boxes": pi_b,
-					"pi_qty": pi_q,
-					"prior_invoiced_boxes": pr_b,
-					"prior_invoiced_qty": pr_q,
-					"this_ci_boxes": tc_b,
-					"this_ci_qty": tc_q,
-					"total_invoiced_boxes": tot_inv_b,
-					"total_invoiced_qty": tot_inv_q,
-					"remaining_boxes": rem_b,
-					"remaining_qty": rem_q,
-					"pct": pct,
+					"category": first.get("category") or "",
+					# A compensated bundle has no single item — `items` carries all of them.
+					"item": items[0] if len(items) == 1 else "",
+					"items": items,
+					"description": first.get("description") or first.get("category") or "",
+					"pi_boxes": bal["contract_boxes"],
+					"pi_qty": bal["contract_qty"],
+					"prior_invoiced_boxes": (pr or {}).get("boxes", 0.0),
+					"prior_invoiced_qty": (pr or {}).get("qty", 0.0),
+					"this_ci_boxes": (tc or {}).get("boxes", 0.0),
+					"this_ci_qty": (tc or {}).get("qty", 0.0),
+					"total_invoiced_boxes": bal["shipped_boxes"],
+					"total_invoiced_qty": bal["shipped_qty"],
+					"remaining_boxes": bal["remaining_boxes"],
+					"remaining_qty": bal["remaining_qty"],
+					"pct": bal["pct"],
+					"over_shipped": bal["over_shipped"],
+					"over_boxes": bal["over_boxes"],
+					"sub_cuts": _sub_cut_breakdown(combined.get(key)),
 				}
 			)
 
 	return tracking_results
+
+
+@frappe.whitelist()
+def get_ci_pi_discrepancies(
+	company: str, ci: str | None = None, pi: str | None = None, limit: int = 500
+) -> dict:
+	"""Report every CI line that disagrees with the PI it was shipped against.
+
+	The scope directive is "each CI line must trace to a PI line, and any column
+	that disagrees must be flagged" — this is the read side of that. Comparison
+	is keyed on ``(proforma, category)``, never on ``item``: a PI line such as
+	``BUFFALO COMPENSATED`` is a *bundle* that a CI breaks into sub-cuts
+	(``41 TOPSIDE``, ``44 SILVER SIDE``…), so an item-keyed comparison declares
+	98% of the book unmatched. See ``_imports_rules`` for the rules themselves.
+
+	``rows`` carries only ``error``/``warn`` lines. ``info``-level ``sub_cut``
+	rows are the normal case (5 695 of them across msa) and would drown the
+	payload; they are still counted in ``summary``.
+
+	Balances (``remaining_boxes``, over-shipment) always span **every** CI booked
+	against the PIs in scope, even when ``ci`` narrows the row list to one
+	invoice — a remaining figure computed from a single CI would be a fiction.
+
+	No new cost exposure: ``rate``/``docs_price`` on a CI line are already
+	returned unmasked by ``get_commercial_invoice``; this endpoint reads the same
+	child rows behind the same ``_assert_imports_access`` gate.
+	"""
+	_assert_imports_access(company)
+	limit = min(cint(limit) or 500, 2000)
+
+	eff_pi = _ci_item_effective_pi_expr()
+	# No "has a PI" filter on purpose: a CI line with no proforma at all is the
+	# worst case the report exists to surface, and it reaches `unattributable`
+	# through the empty match key.
+	conds = ["ci.company = %(company)s", "ci.status != 'Cancelled'"]
+	params: dict = {"company": company}
+	if ci:
+		conds.append("cii.parent = %(ci)s")
+		params["ci"] = ci
+	if pi:
+		conds.append(f"{eff_pi} = %(pi)s")
+		params["pi"] = pi
+
+	scope_rows = frappe.db.sql(
+		f"""
+        SELECT cii.name AS row_name, cii.idx, cii.parent AS ci_name, ci.ci_number, ci.ci_date,
+               {eff_pi} AS pi_name, cii.custom_proforma_invoice AS row_pi,
+               cii.category, cii.item, cii.description,
+               cii.boxes, cii.box_weight_kg, cii.qty, cii.rate, cii.docs_price, cii.amount
+        FROM `tabCommercial Invoice Item` cii
+        JOIN `tabCommercial Invoice` ci ON ci.name = cii.parent
+        WHERE {" AND ".join(conds)}
+        ORDER BY ci.ci_date DESC, cii.parent DESC, cii.idx ASC
+        """,
+		params,
+		as_dict=True,
+	)
+
+	if not scope_rows:
+		return {"rows": [], "summary": rules.reconcile([], []), "truncated": False}
+
+	pi_names = sorted({r.pi_name for r in scope_rows if r.pi_name})
+	pi_items = (
+		frappe.db.sql(
+			"""
+            SELECT parent AS pi_name, item, category, description,
+                   boxes, box_weight_kg, qty, rate, docs_price, amount
+            FROM `tabProforma Invoice Item`
+            WHERE parent IN %(pi_names)s
+            """,
+			{"pi_names": tuple(pi_names)},
+			as_dict=True,
+		)
+		if pi_names
+		else []
+	)
+
+	summary = rules.reconcile(pi_items, scope_rows)
+
+	# Balances must see every shipment against these PIs, not just the scoped CI.
+	balance_rows = scope_rows
+	if ci and pi_names:
+		balance_rows = frappe.db.sql(
+			f"""
+            SELECT {eff_pi} AS pi_name, cii.category, cii.item, cii.parent AS ci_name,
+                   cii.boxes, cii.qty
+            FROM `tabCommercial Invoice Item` cii
+            JOIN `tabCommercial Invoice` ci ON ci.name = cii.parent
+            WHERE ci.company = %(company)s AND ci.status != 'Cancelled'
+              AND {eff_pi} IN %(pi_names)s
+            """,
+			{"company": company, "pi_names": tuple(pi_names)},
+			as_dict=True,
+		)
+
+	contract = rules.contract_index(pi_items)
+	shipped = rules.shipped_index(balance_rows)
+	over_keys, over_boxes, remaining = 0, 0.0, 0.0
+	for key, entry in contract.items():
+		bal = rules.remaining_for(entry, shipped.get(key))
+		if bal["over_shipped"]:
+			over_keys += 1
+			over_boxes += bal["over_boxes"]
+		else:
+			remaining += bal["remaining_boxes"]
+	summary["over_keys"] = over_keys
+	summary["over_boxes"] = over_boxes
+	summary["remaining_boxes"] = remaining
+
+	flagged = []
+	for row in scope_rows:
+		entry = contract.get(rules.match_key(row.pi_name, row.category))
+		diffs = rules.diff_ci_line(row, entry)
+		level = rules.worst_level(diffs)
+		if level not in ("error", "warn"):
+			continue
+		flagged.append(
+			{
+				"row_name": row.row_name,
+				"idx": row.idx,
+				"ci_name": row.ci_name,
+				"ci_number": row.ci_number or row.ci_name,
+				"ci_date": row.ci_date,
+				"proforma_invoice": row.pi_name,
+				# Empty ``row_pi`` means the line inherits the header's PI — the
+				# form shows that as "via invoice" rather than as a row link.
+				"pi_inherited": not (row.row_pi or ""),
+				"category": row.category or "",
+				"item": row.item or "",
+				"description": row.description or "",
+				"boxes": flt(row.boxes),
+				"qty": flt(row.qty),
+				"rate": flt(row.rate),
+				"docs_price": flt(row.docs_price),
+				"level": level,
+				"diffs": [d for d in diffs if d["level"] in ("error", "warn")],
+			}
+		)
+
+	return {
+		"rows": flagged[:limit],
+		"summary": summary,
+		"truncated": len(flagged) > limit,
+	}
 
 
 @frappe.whitelist()
