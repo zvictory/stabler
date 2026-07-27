@@ -122,6 +122,32 @@ class TestFilterClauses(unittest.TestCase):
 		self.assertEqual(clauses, [f"({rules.ci_effective_group_expr(True)}) = %(group)s"])
 		self.assertEqual(params, {"group": "IPG-2026-00016"})
 
+	def test_group_clause_named_group(self):
+		# A real group stays parametrised — the value must never be interpolated
+		# into the SQL text.
+		clause, params = rules.group_clause("pi.import_pi_group", "IPG-2026-00016")
+		self.assertEqual(clause, "pi.import_pi_group = %(group)s")
+		self.assertEqual(params, {"group": "IPG-2026-00016"})
+		self.assertNotIn("IPG-2026-00016", clause)
+
+	def test_group_clause_ungrouped_sentinel(self):
+		# The sentinel is a *filter mode*, not a group name. If it ever reached
+		# SQL as a bound value the query would read `= '__none__'` and silently
+		# return zero rows instead of the ungrouped ones — hence: NULL test, and
+		# no params at all.
+		clause, params = rules.group_clause("pi.import_pi_group", rules.UNGROUPED)
+		self.assertEqual(clause, "NULLIF(pi.import_pi_group, '') IS NULL")
+		self.assertEqual(params, {})
+		self.assertNotIn(rules.UNGROUPED, clause)
+
+	def test_ci_group_filter_ungrouped_wraps_the_effective_expr(self):
+		# "No group" on the CI list means no group by *any* route. Testing only
+		# `ci.import_pi_group` would list invoices that visibly carry a purple
+		# badge derived from their proforma.
+		clauses, params = rules.ci_filter_clauses(group=rules.UNGROUPED)
+		self.assertEqual(clauses, [f"NULLIF(({rules.ci_effective_group_expr(True)}), '') IS NULL"])
+		self.assertEqual(params, {})
+
 	def test_ci_effective_group_expr_is_self_contained(self):
 		# `count_query` mirrors the list's FROM *without* its joins, so the
 		# expression may only touch `ci` and correlated subqueries. Referencing a

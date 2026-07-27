@@ -73,6 +73,9 @@ const supplierOptions = computed(() => [
 const piGroups = ref([]);
 const groupOptions = computed(() => [
 	{ value: "", label: t("All PI groups") },
+	// Sentinel understood by the backend as "no group by any route" — neither its
+	// own link nor a group derived through the proforma.
+	{ value: "__none__", label: t("No PI group") },
 	...piGroups.value.map((g) => ({ value: g.name, label: g.title || g.name })),
 ]);
 const groupsByName = computed(() => {
@@ -438,13 +441,24 @@ watch(activeCompany, () => {
 								</span>
 							</td>
 							<td class="font-monospace small">
-								<div v-if="groupLabel(r)" class="mb-1">
+								<div class="mb-1">
 									<span
+										v-if="groupLabel(r)"
 										class="badge bg-purple-lt text-purple font-monospace fw-bold"
 										style="font-size: 0.75rem"
 										:title="(groupIsDerived(r) ? t('PI Group (via proforma): ') : t('PI Group: ')) + groupLabel(r)"
 									>
 										<i class="ti ti-folders me-1"></i>{{ groupLabel(r) }}
+									</span>
+									<!-- Outline, not a filled grey: the proforma badge right below is
+									     already filled bg-purple-lt. -->
+									<span
+										v-else
+										class="badge badge-outline text-secondary"
+										style="font-size: 0.75rem"
+										:title="t('Not assigned to a PI group')"
+									>
+										<i class="ti ti-folder-off me-1"></i>{{ t("No group") }}
 									</span>
 								</div>
 								<span

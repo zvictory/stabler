@@ -57,6 +57,9 @@ const STATUSES = [
 const piGroups = ref([]);
 const groupOptions = computed(() => [
 	{ value: "", label: t("All PI groups") },
+	// Sentinel understood by the backend as "belongs to no group at all" — the
+	// ungrouped rows are the newest ones, so they own the first screen.
+	{ value: "__none__", label: t("No PI group") },
 	...piGroups.value.map((g) => ({ value: g.name, label: g.title || g.name })),
 ]);
 const groupsByName = computed(() => {
@@ -417,13 +420,24 @@ const canSupersede = (row) => ["DRAFT", "CONFIRMED"].includes(row.status);
 					<SkeletonRows v-if="loading" :cols="9" :rows="6" />
 					<tr v-for="r in sortedRows" :key="r.name" class="pi-row" style="cursor: pointer" @click="router.push({ name: 'imports-proforma', params: { name: r.name } })">
 						<td>
-							<div v-if="groupLabel(r)" class="mb-1">
+							<div class="mb-1">
 								<span
+									v-if="groupLabel(r)"
 									class="badge bg-purple-lt text-purple font-monospace fw-bold"
 									style="font-size: 0.75rem"
 									:title="t('PI Group: ') + groupLabel(r)"
 								>
 									<i class="ti ti-folders me-1"></i>{{ groupLabel(r) }}
+								</span>
+								<!-- Outline, not a filled grey: the vendor badge below is already
+								     filled bg-secondary-lt and the two would read as one block. -->
+								<span
+									v-else
+									class="badge badge-outline text-secondary"
+									style="font-size: 0.75rem"
+									:title="t('Not assigned to a PI group')"
+								>
+									<i class="ti ti-folder-off me-1"></i>{{ t("No group") }}
 								</span>
 							</div>
 							<div class="fw-bold text-primary font-monospace" style="font-size: 0.9rem">{{ refMain(r) }}</div>

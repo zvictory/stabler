@@ -4201,8 +4201,9 @@ def _proforma_list_filters(
 		clauses.append("pi.supplier = %(supplier)s")
 		params["supplier"] = supplier
 	if group:
-		clauses.append("pi.import_pi_group = %(group)s")
-		params["group"] = group
+		clause, gparams = rules.group_clause("pi.import_pi_group", group)
+		clauses.append(clause)
+		params.update(gparams)
 	if search:
 		clauses.append("(pi.name LIKE %(q)s OR s.supplier_name LIKE %(q)s OR pi.supplier_pi_ref LIKE %(q)s)")
 		params["q"] = f"%{search}%"
@@ -4403,8 +4404,9 @@ def commercial_invoice_list_stats(
 		# Same derived expression the list rows and their badge use, so the
 		# metric strip never counts a different set than the table shows.
 		has_pi_link = frappe.db.has_column("Commercial Invoice", "custom_proforma_invoice")
-		clauses.append(f"({rules.ci_effective_group_expr(has_pi_link)}) = %(group)s")
-		params["group"] = group
+		clause, gparams = rules.group_clause(f"({rules.ci_effective_group_expr(has_pi_link)})", group)
+		clauses.append(clause)
+		params.update(gparams)
 	if search:
 		clauses.append("(ci.name LIKE %(q)s OR ci.ci_number LIKE %(q)s OR s.supplier_name LIKE %(q)s)")
 		params["q"] = f"%{search}%"

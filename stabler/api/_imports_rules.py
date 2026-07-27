@@ -163,6 +163,24 @@ def is_due_soon(eta, today, window_days: int = 7) -> bool:
 # ---------------------------------------------------------------------------
 
 
+#: Filter value meaning "rows that belong to no PI Group at all". Cannot collide
+#: with a real group — ``Import PI Group`` autonames as ``IPG-{YYYY}-{#####}``.
+UNGROUPED = "__none__"
+
+
+def group_clause(column_expr: str, group: str, param: str = "group") -> tuple[str, dict]:
+	"""WHERE fragment for a named PI Group *or* for "has no group".
+
+	The sentinel never reaches SQL as a **value** — picking "ungrouped" turns into
+	a NULL test instead. ``NULLIF`` folds the empty string in with NULL because the
+	two lists disagree on how "no group" is stored: the PI column can hold an empty
+	string, while the CI's derived expression yields NULL.
+	"""
+	if group == UNGROUPED:
+		return f"NULLIF({column_expr}, '') IS NULL", {}
+	return f"{column_expr} = %({param})s", {param: group}
+
+
 def ci_effective_group_expr(has_pi_link: bool = True) -> str:
 	"""SQL for a CI's *effective* PI Group (alias ``ci``).
 
@@ -218,9 +236,11 @@ def ci_filter_clauses(search=None, status=None, supplier=None, group=None, has_p
 		params["supplier"] = supplier
 	if group:
 		# Filter on the same expression the badge renders, so the two can never
-		# disagree — a CI showing a group must be reachable by filtering on it.
-		clauses.append(f"({ci_effective_group_expr(has_pi_link)}) = %(group)s")
-		params["group"] = group
+		# disagree — a CI showing a group must be reachable by filtering on it,
+		# and one showing the "no group" badge must land under the same filter.
+		clause, gparams = group_clause(f"({ci_effective_group_expr(has_pi_link)})", group)
+		clauses.append(clause)
+		params.update(gparams)
 	return clauses, params
 
 
