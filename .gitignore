@@ -31,6 +31,10 @@ secrets.json
 deploy_once_*.sh
 
 graphify-out/
+# Unanchored on purpose: this catches docs/scratch/ too, which is where the
+# non-operational docs live (customer decks, brainstorm output, .xlsx/.pptx) --
+# 1.3M of them, versioned nowhere and deliberately so. Anchoring this to
+# /scratch/ would silently expose all of it to the next `git add docs/`.
 scratch/
 
 # Tool caches. Every one of these was showing up in `git status`, which is how a
