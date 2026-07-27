@@ -3217,7 +3217,6 @@ Sales Order is not closed or on hold.,
 Sales Order {0} must be submitted before invoicing,Заказ продажи {0} должен быть отправлен перед выставлением счёта
 Sales Orders,Заказы продажи
 Sales Orders (Booked),Заказы на продажу (забронировано)
-Sales Orders and Sales Invoices can only be created or changed through the Stabler app.,
 Sales Performance,
 Sales Reports,
 Sales Trend,Динамика продаж
@@ -4261,6 +4260,7 @@ vs. last month,в сравнении с прошлым месяцем
 without location,без геолокации
 yr,г.
 {0} ({1}),
+{0} can only be created or changed through the Stabler app.,{0} можно создавать и изменять только через приложение Stabler.
 {0} has invoices in more than one currency — record those payments separately.,У «{0}» есть счета в нескольких валютах — регистрируйте эти платежи отдельно.
 {0} is required.,{0} обязателен.
 {0} line item change(s),

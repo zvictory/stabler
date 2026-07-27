@@ -96,6 +96,9 @@ doc_events = {
 		"before_submit": [
 			"stabler.api.sod_enforce.assert_no_sod_conflict",
 		],
+		"before_update_after_submit": [
+			"stabler.api.desk_write_guard.assert_write_via_stabler",
+		],
 		"before_cancel": [
 			"stabler.api.desk_write_guard.assert_write_via_stabler",
 		],
@@ -140,6 +143,9 @@ doc_events = {
 			"stabler.api.dimensions_hook.apply_dimensional_qty",
 			"stabler.api._diag.on_txn_validate",
 		],
+		"before_update_after_submit": [
+			"stabler.api.desk_write_guard.assert_write_via_stabler",
+		],
 		"before_cancel": [
 			"stabler.api.desk_write_guard.assert_write_via_stabler",
 		],
@@ -149,7 +155,18 @@ doc_events = {
 	},
 	"Delivery Note": {
 		"before_validate": [
+			# Guard first — fail fast before diag/validation runs.
+			"stabler.api.desk_write_guard.assert_write_via_stabler",
 			"stabler.api._diag.on_txn_validate",
+		],
+		"before_update_after_submit": [
+			"stabler.api.desk_write_guard.assert_write_via_stabler",
+		],
+		"before_cancel": [
+			"stabler.api.desk_write_guard.assert_write_via_stabler",
+		],
+		"on_trash": [
+			"stabler.api.desk_write_guard.assert_write_via_stabler",
 		],
 	},
 	"Purchase Receipt": {
@@ -162,6 +179,8 @@ doc_events = {
 	},
 	"Payment Entry": {
 		"before_validate": [
+			# Guard first — fail fast before diag/validation runs.
+			"stabler.api.desk_write_guard.assert_write_via_stabler",
 			"stabler.api.fx_balance.auto_balance_fx_residual",
 			"stabler.api._diag.on_txn_validate",
 		],
@@ -173,12 +192,23 @@ doc_events = {
 			"stabler.api.approvals.before_submit_gate",
 			"stabler.api.sod_enforce.assert_no_sod_conflict",
 		],
+		"before_update_after_submit": [
+			"stabler.api.desk_write_guard.assert_write_via_stabler",
+		],
+		"before_cancel": [
+			"stabler.api.desk_write_guard.assert_write_via_stabler",
+		],
+		"on_trash": [
+			"stabler.api.desk_write_guard.assert_write_via_stabler",
+		],
 		"on_submit": [
 			"stabler.integrations.one_c.hooks.enqueue_push",
 		],
 	},
 	"Journal Entry": {
 		"before_validate": [
+			# Guard first — fail fast before diag/validation runs.
+			"stabler.api.desk_write_guard.assert_write_via_stabler",
 			"stabler.api.fx_balance.auto_balance_fx_residual",
 			"stabler.api._diag.on_txn_validate",
 		],
@@ -189,6 +219,53 @@ doc_events = {
 		"before_submit": [
 			"stabler.api.approvals.before_submit_gate",
 			"stabler.api.sod_enforce.assert_no_sod_conflict",
+		],
+		"before_update_after_submit": [
+			"stabler.api.desk_write_guard.assert_write_via_stabler",
+		],
+		"before_cancel": [
+			"stabler.api.desk_write_guard.assert_write_via_stabler",
+		],
+		"on_trash": [
+			"stabler.api.desk_write_guard.assert_write_via_stabler",
+		],
+	},
+	# Stock Reconciliation / Bank Transaction / Supplier have no other Stabler
+	# doc_events — these blocks exist only to carry the desk-write guard.
+	"Stock Reconciliation": {
+		"before_validate": [
+			"stabler.api.desk_write_guard.assert_write_via_stabler",
+		],
+		"before_update_after_submit": [
+			"stabler.api.desk_write_guard.assert_write_via_stabler",
+		],
+		"before_cancel": [
+			"stabler.api.desk_write_guard.assert_write_via_stabler",
+		],
+		"on_trash": [
+			"stabler.api.desk_write_guard.assert_write_via_stabler",
+		],
+	},
+	"Bank Transaction": {
+		"before_validate": [
+			"stabler.api.desk_write_guard.assert_write_via_stabler",
+		],
+		"before_update_after_submit": [
+			"stabler.api.desk_write_guard.assert_write_via_stabler",
+		],
+		"before_cancel": [
+			"stabler.api.desk_write_guard.assert_write_via_stabler",
+		],
+		"on_trash": [
+			"stabler.api.desk_write_guard.assert_write_via_stabler",
+		],
+	},
+	"Supplier": {
+		"before_validate": [
+			"stabler.api.desk_write_guard.assert_write_via_stabler",
+		],
+		"on_trash": [
+			"stabler.api.desk_write_guard.assert_write_via_stabler",
 		],
 	},
 	"Stock Entry": {
@@ -258,8 +335,14 @@ doc_events = {
 	# custom_parent_customer field being present + set, so it is inert on tenants
 	# without the Custom Field.
 	"Customer": {
+		"before_validate": [
+			"stabler.api.desk_write_guard.assert_write_via_stabler",
+		],
 		"validate": [
 			"stabler.customer_hooks.validate_hierarchy",
+		],
+		"on_trash": [
+			"stabler.api.desk_write_guard.assert_write_via_stabler",
 		],
 	},
 	"Work Order": {

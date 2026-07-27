@@ -3208,7 +3208,6 @@ Sales Order is not closed or on hold.,Sales Order is not closed or on hold.
 Sales Order {0} must be submitted before invoicing,Sales Order {0} must be submitted before invoicing
 Sales Orders,Sales Orders
 Sales Orders (Booked),Sales Orders (Booked)
-Sales Orders and Sales Invoices can only be created or changed through the Stabler app.,Sales Orders and Sales Invoices can only be created or changed through the Stabler app.
 Sales Performance,Sales Performance
 Sales Reports,Sales Reports
 Sales Trend,Sales Trend
@@ -4250,6 +4249,7 @@ vs. last month,vs. last month
 without location,without location
 yr,yr
 {0} ({1}),{0} ({1})
+{0} can only be created or changed through the Stabler app.,{0} can only be created or changed through the Stabler app.
 {0} has invoices in more than one currency — record those payments separately.,{0} has invoices in more than one currency — record those payments separately.
 {0} is required.,{0} is required.
 {0} line item change(s),{0} line item change(s)

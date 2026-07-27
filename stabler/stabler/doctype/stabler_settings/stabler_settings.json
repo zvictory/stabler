@@ -272,7 +272,7 @@
   },
   {
    "default": "0",
-   "description": "When on, every logged-in user can open the classic Frappe Desk (/app, /desk) alongside Stabler, and the Sales Order / Sales Invoice desk-write lock is lifted. Off (default) = Desk is admin-only. Per-site switch: enable it only on tenants that want the raw Desk.",
+   "description": "When on, every logged-in user can open the classic Frappe Desk (/app, /desk) alongside Stabler, and write the purchasing and manufacturing forms there (Purchase Order/Invoice/Receipt, Work Order, BOM, Job Card, Stock Entry). Stabler-owned documents stay Stabler-only: Sales Order, Sales Invoice, Delivery Note, Payment Entry, Journal Entry, Stock Reconciliation, Bank Transaction, Customer, Supplier remain visible in the Desk but cannot be saved there. Off (default) = Desk is admin-only. Per-site switch: enable it only on tenants that want the raw Desk.",
    "fieldname": "allow_desk_access",
    "fieldtype": "Check",
    "label": "Allow Frappe Desk access for all users"

@@ -70,16 +70,29 @@ making them System Managers), edit the role check in
 
 **Opening the Desk to everyone on one site:**
 `Stabler Settings.allow_desk_access` (Check, default off) is a per-site switch.
-When it is on, the gate lets every logged-in user through to `/app` — **and the
-Sales Order / Sales Invoice desk-write lock in `stabler/api/desk_write_guard.py`
-is lifted too**, so those users can also save from the Desk, bypassing the
-Stabler-side validations. Off on every other site, so the code ships to all
-tenants unchanged. Flip it per site:
+When it is on, the gate lets every logged-in user through to `/app`. Off on every
+other site, so the code ships to all tenants unchanged. Flip it per site:
 
 ```bash
 bench --site <site> execute frappe.db.set_single_value \
   --kwargs "{'doctype':'Stabler Settings','fieldname':'allow_desk_access','value':1}"
 ```
+
+**Opening the Desk does not open every form.** `stabler/api/desk_write_guard.py`
+still blocks Desk/REST writes to the documents Stabler owns — they stay visible
+in the Desk, they just cannot be saved there:
+
+| Writable in the Desk | Stabler-only (view, don't save) |
+|---|---|
+| Purchase Order, Purchase Invoice, Purchase Receipt, Work Order, BOM, Job Card, Stock Entry | Sales Order, Sales Invoice, Delivery Note, Payment Entry, Journal Entry, Stock Reconciliation, Bank Transaction, Customer, Supplier |
+
+The split follows where the business rules live. The purchasing and manufacturing
+forms carry their Stabler rules as `doc_events` in `hooks.py`, so they run on any
+write channel. The Stabler-only list is orchestrated in the API layer instead —
+the stock-reservation chain in `stabler/api/sales.py`, for instance — which a Desk
+save would silently skip. Sales Order and Sales Invoice are locked on *every*
+site; the rest of that column locks only where this switch is on (sites with it
+off keep their previous, narrower scope).
 
 Note: Frappe blocks the Desk independently for users whose `user_type` is
 `Website User`, which it sets automatically when none of a user's roles has

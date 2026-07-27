@@ -3199,7 +3199,6 @@ Sales Order is not closed or on hold.,
 Sales Order {0} must be submitted before invoicing,Fatura düzenlenmeden önce {0} Satış Siparişi onaylanmalıdır
 Sales Orders,Satış Siparişleri
 Sales Orders (Booked),Satış Siparişleri (Rezerve Edilen)
-Sales Orders and Sales Invoices can only be created or changed through the Stabler app.,
 Sales Performance,
 Sales Reports,
 Sales Trend,Satış Trendi
@@ -4240,6 +4239,7 @@ vs. last month,geçen aya kıyasla
 without location,konumsuz
 yr,yıl
 {0} ({1}),
+{0} can only be created or changed through the Stabler app.,{0} yalnızca Stabler uygulaması üzerinden oluşturulabilir veya değiştirilebilir.
 {0} has invoices in more than one currency — record those payments separately.,«{0}» birden fazla para biriminde faturalara sahip — bu ödemeleri ayrı ayrı kaydedin.
 {0} is required.,{0} zorunludur.
 {0} line item change(s),
