@@ -24,11 +24,11 @@ stabler/public/dist/
 *.pem
 credentials.json
 secrets.json
-# One-shot deploy script: it contains `git add` + `git commit` for a specific
-# 2026 batch, so re-running it would re-commit that batch. Kept out of the repo
-# so nobody runs it by accident. The repeatable deploys (deploy_stabler.sh,
-# deploy_full.sh) ARE tracked -- they only rsync/build/migrate.
-deploy_hr_employee_crud.sh
+# Deploy scripts: deploy_stabler.sh is THE tracked, repeatable one. One-shot
+# scripts (the kind that carry a `git add`/`git commit` for one specific batch,
+# so re-running them re-commits it) must not be tracked -- name them
+# deploy_once_*.sh so they land here instead of in a commit.
+deploy_once_*.sh
 
 graphify-out/
 scratch/

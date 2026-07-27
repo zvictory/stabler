@@ -11,15 +11,19 @@
 # All bench calls go through `sudo -u frappe`: SSH lands as root and Frappe's
 # bench CLI refuses to run as root (exits 1 with only a WARN), which under
 # `set -e` would abort this script at step 0. See docs/runbooks/
-# install-stabler-on-msa.md and the same pattern in deploy_full.sh.
+# install-stabler-on-msa.md.
 #
-# This deploy includes the whole accumulated session: dimensional pricing (commit
-# 57b8ab1) + service map/outlet-GPS/dashboard/equipment + xlsx export backend
-# (commit 065f675). v23 patch adds custom fields → migrate IS required. Many .py
-# changed → bench restart IS required (brief blip for ALL ~22 tenants).
+# THE canonical deploy script. deploy_full.sh described the same 7 steps in its
+# own words until 2026-07-27; two descriptions of one pipeline drift apart, which
+# is exactly how the rsync exclude lists ended up disagreeing (see .rsync-exclude).
+# Its one unique part -- the post-migrate get_count probe -- lives in step 7 here.
 #
-# Safe by design: stops on any error, backs up first, NO --delete, asks before
-# the bench restart. Review it, then: bash deploy_stabler.sh
+# Migrate is unconditional below because it is cheap and idempotent; the restart
+# is the expensive one and it ASKS first. Rule of thumb: patches.txt or a doctype
+# changed -> migrate matters; any .py changed -> restart matters.
+#
+# Safe by design: stops on any error, backs up first, dry-runs the rsync, NO
+# --delete, asks before the bench restart. Review it, then: bash deploy_stabler.sh
 
 set -euo pipefail
 
@@ -51,6 +55,29 @@ ssh "$PROD" "tar czf /root/stabler-app-\$(date +%F-%H%M).tgz -C $PROD_APPS stabl
 #    used to keep their own, disagreed on anchoring, and silently shipped
 #    different file sets (this one leaked .github/, every top-level *.md
 #    including DEPLOY-SECURITY.md, and all three deploy_*.sh to prod).
+#
+#    Source sanity first. CLAUDE.md's cwd trap: run from inside apps/stabler/ and
+#    a relative `stabler/` resolves to the INNER python package, which rsync then
+#    ships as if it were the whole app. $APP_DIR is absolute so it cannot happen
+#    here, but the assertion is one line and it is what makes that guarantee
+#    checkable rather than assumed. hooks.py only exists at the app root.
+[ -f "$APP_DIR/stabler/hooks.py" ] \
+  || { echo "    ABORT: $APP_DIR is not the stabler app root"; exit 1; }
+
+#    Dry run BEFORE the real one. -v is not optional: `rsync -n` without it
+#    prints nothing, so an empty dry run reads as "clean" while having verified
+#    nothing (that cost us a bogus 2026-07-24 verification).
+say "3/7  rsync DRY RUN -> $PROD:$PROD_APPS/stabler/"
+DRY="$(rsync -rltzvn --no-owner --no-group \
+  --exclude-from="$APP_DIR/.rsync-exclude" \
+  "$APP_DIR/" "$PROD:$PROD_APPS/stabler/")"
+echo "$DRY"
+if echo "$DRY" | grep -qE '^(deleting |stable-erp-website/|professional-excel-export/|recon/)'; then
+  echo "    ABORT: dry run deletes files or touches a sibling project."
+  exit 1
+fi
+confirm "Ship exactly the file list above?" || { echo "    Aborted."; exit 1; }
+
 say "3/7  rsync source -> $PROD:$PROD_APPS/stabler/"
 rsync -rltz --no-owner --no-group \
   --exclude-from="$APP_DIR/.rsync-exclude" \
@@ -89,21 +116,26 @@ else
   echo "    Skipped. Run later:  ssh $PROD 'cd /home/frappe/frappe-bench && sudo -u frappe bench restart'"
 fi
 
-# 7) Post-deploy smoke checks (manual — see below).
-say "7/7  Done. Now run the smoke checks:"
+# 7) Automated probe, then the manual smoke checks.
+#    The probe is the one piece deploy_full.sh had and this script did not: a
+#    round trip that only succeeds if the new code imports AND the site's DB
+#    answers. It counts rows in a doctype stabler itself owns, so a failed
+#    migrate or a broken import surfaces here instead of under the first user.
+say "7/7  Post-deploy probe (stabler code + DB reachable on $SITE)"
+ssh "$PROD" "cd /home/frappe/frappe-bench && sudo -u frappe bench --site $SITE \
+  execute frappe.client.get_count --args '[\"Stabler Company Modules\", {}]'" \
+  && echo "    ^ >=1 means stabler's own doctypes are live on $SITE"
+
+say "Done. Now run the smoke checks:"
 cat <<'SMOKE'
     - Direct-URL/refresh load of an existing record (NOT a blank New form):
         .../stabler#/purchasing/invoices/<existing PINV>   (refresh)
         repeat for one Sales Invoice, Purchase Order, Quotation, Payment Entry.
-    - New feature spot-checks:
-        #/service/map         pins render (outlets need gps_lat/lng)
-        #/sfa/locations       list + map + paste/CSV import
-        #/service/dashboard   KPI cards populate
-        #/service/equipment   Serial No fleet + coverage badges
-        Sales Order: pick a dimensional item -> Boy/En/Adet -> qty computes (m2);
-                     ice-cream line stays Qty | Korobka/adet (unchanged).
-        Any report -> "Excel — professional" downloads a styled .xlsx.
     - Money/GL log flowing: after one payment, a line lands in
         sites/anjan.erpstable.com/logs/stabler.payments.log
+    - Release-specific checks live in that release's plan doc, not here: this
+      script is repeatable, so a hardcoded feature list goes stale by the next
+      deploy (it used to carry the 2026-07 service-map/dimensional-pricing list).
+    - Then:  make prod-drift    # files running on prod that are not in git
     Rollback if needed: restore the step-2 tar, chown, bench build, bench restart.
 SMOKE
