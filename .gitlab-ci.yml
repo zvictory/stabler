@@ -94,13 +94,19 @@ ruff-debt:
     - pip install --quiet "ruff==$(cat .ruff-version)"
   script:
     - |
-      # A ceiling, not a gate: the tree's 386 pre-existing violations are debt we
-      # pay down by editing, and blocking on them would just teach everyone to
-      # push with --no-verify. What this DOES block is the count going up, i.e.
-      # new code sneaking violations in through a file the changed-file gate did
-      # not look at. Lower CEILING whenever a sweep drops the number — that is
-      # the ratchet clicking.
-      CEILING=386
+      # A ceiling, not a gate: the pre-existing violations are debt we pay down
+      # by editing, and blocking on them would just teach everyone to push with
+      # --no-verify. What this DOES block is the count going up, i.e. new code
+      # sneaking violations in through a file the changed-file gate did not look
+      # at. Lower CEILING whenever a sweep drops the number — that is the ratchet
+      # clicking.
+      #
+      # 386 (2026-07-26) -> 151 (2026-07-27), in four commits: W291/W293, I001,
+      # RUF100, and the E401s that isort cleared on the way. What is left is
+      # deliberately NOT auto-fixable — RUF059 (98) needs a human to decide which
+      # unpacked name is genuinely unwanted, and the ~50 after it (B905, RUF012,
+      # RUF013, F823) are each a real code decision.
+      CEILING=151
       n=$(ruff check --output-format=concise stabler | grep -c ':' || true)
       echo "ruff debt: $n  (ceiling $CEILING)"
       if [ "$n" -gt "$CEILING" ]; then
