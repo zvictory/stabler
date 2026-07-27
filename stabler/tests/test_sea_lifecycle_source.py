@@ -59,7 +59,12 @@ class SyncEndpointTest(unittest.TestCase):
 
     def test_dry_run_is_the_default(self):
         self.assertIn("dry_run: int = 1", self.src)
-        self.assertIn("if dry_run:\n            continue", self.body)
+        # Indentation is deliberately not pinned. What this guards is that a dry
+        # run short-circuits before the write — not how imports.py happens to be
+        # indented. Pinned to 12 spaces, it broke on the `ruff format` sweep,
+        # which normalised that file's mixed indentation without touching a line
+        # of logic: a green-to-red flip with no behaviour change behind it.
+        self.assertRegex(self.body, r"if dry_run:\s*\n\s+continue")
 
     def test_only_lagging_containers_move(self):
         self.assertIn("sea_lifecycle.syncable(ci_status, c.status)", self.body)
