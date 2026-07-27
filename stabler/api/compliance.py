@@ -445,7 +445,7 @@ class CBUExchangeCache:
 
 	def get_rate(self, from_ccy: str, to_ccy: str, date: datetime.date | str) -> float | None:
 		d = getdate(date)
-		
+
 		# 1. Direct rate search
 		key = (from_ccy, to_ccy)
 		if key in self.rates:
@@ -453,7 +453,7 @@ class CBUExchangeCache:
 			idx = bisect_right(list_rates, (d, float("inf"))) - 1
 			if idx >= 0:
 				return list_rates[idx][1]
-		
+
 		# 2. Inverse rate search
 		key_inv = (to_ccy, from_ccy)
 		if key_inv in self.rates:
@@ -461,7 +461,7 @@ class CBUExchangeCache:
 			idx = bisect_right(list_rates, (d, float("inf"))) - 1
 			if idx >= 0 and list_rates[idx][1] > 0:
 				return 1.0 / list_rates[idx][1]
-		
+
 		return None
 
 

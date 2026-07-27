@@ -76,7 +76,7 @@ def preview_statement(content_base64: str, bank_account: str | None = None) -> d
 	"""Parse a statement WITHOUT saving — returns rows + period for review."""
 	_require_recon()
 	raw = _decode_content(content_base64)
-	
+
 	from stabler.integrations.bank_statement.parser_msaerp_xlsx import is_msaerp_xlsx, parse_statement_bytes as parse_xlsx_bytes
 
 	if is_msaerp_xlsx(raw):
@@ -118,7 +118,7 @@ def import_statement(
 		frappe.throw(_("Bank account does not belong to company '{0}'.").format(company))
 
 	raw = _decode_content(content_base64)
-	
+
 	from stabler.integrations.bank_statement.parser_msaerp_xlsx import is_msaerp_xlsx, parse_statement_bytes as parse_xlsx_bytes
 
 	if is_msaerp_xlsx(raw):

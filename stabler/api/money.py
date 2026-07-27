@@ -2440,7 +2440,7 @@ def list_bank_entries(
 	params["company"] = company
 	params["voucher_type"] = voucher_type
 	params["limit"] = max(1, min(500, int(limit)))
-	
+
 	type_clause = ""
 	if entry_type == "Expense":
 		type_clause = """AND (

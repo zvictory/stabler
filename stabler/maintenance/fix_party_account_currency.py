@@ -98,7 +98,7 @@ def execute(dry_run: bool = True, company: str = "ANJAN") -> None:
 		if debit_to_currency != si.currency:
 			# Needs correction!
 			correct_account = get_or_create_party_account(company, "Customer", si.currency)
-			
+
 			# Outstanding in base (USD) and foreign (UZS)
 			outstanding_base = flt(si.outstanding_amount) * flt(si.conversion_rate)
 			outstanding_foreign = flt(si.outstanding_amount)
@@ -132,7 +132,7 @@ def execute(dry_run: bool = True, company: str = "ANJAN") -> None:
 		credit_to_currency = frappe.db.get_value("Account", pi.credit_to, "account_currency")
 		if credit_to_currency != pi.currency:
 			correct_account = get_or_create_party_account(company, "Supplier", pi.currency)
-			
+
 			outstanding_base = flt(pi.outstanding_amount) * flt(pi.conversion_rate)
 			outstanding_foreign = flt(pi.outstanding_amount)
 
@@ -189,7 +189,7 @@ def execute(dry_run: bool = True, company: str = "ANJAN") -> None:
 			"against_voucher_type": item["voucher_type"],
 			"against_voucher": item["voucher_no"],
 		}
-		
+
 		# New account line (re-posting correctly)
 		row_new = {
 			"account": item["new_account"],

@@ -192,7 +192,7 @@ def get_parent_credit_limit_status(customer: str, company: str | None = None) ->
 		params = {"company": company}
 		for i, name in enumerate(chain):
 			params[f"c{i}"] = name
-		
+
 		row = frappe.db.sql(
 			f"""
 			SELECT COALESCE(SUM(debit - credit), 0)

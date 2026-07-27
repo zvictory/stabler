@@ -64,7 +64,7 @@ def parse_xlsx(file_content) -> list[dict]:
 		return []
 
 	normalized = [(str(c).strip().lower() if c is not None else "") for c in header]
-	
+
 	header_synonyms = {
 		"date": ("date",),
 		"amount": ("amount",),
@@ -223,7 +223,7 @@ def preview_payment_import(file_url=None):
 	)
 	if not uzs_accounts:
 		uzs_accounts = frappe.get_all("Account", filters={"is_group": 0}, pluck="name")
-	
+
 	valid_accounts = set(uzs_accounts)
 	valid_customers = set(frappe.get_all("Customer", pluck="name"))
 
@@ -288,7 +288,7 @@ def execute_payment_import(file_url=None, company=None):
 	uzs_accounts = frappe.get_all("Account", filters={"account_currency": "UZS", "is_group": 0}, pluck="name")
 	if not uzs_accounts:
 		uzs_accounts = frappe.get_all("Account", filters={"is_group": 0}, pluck="name")
-	
+
 	valid_accounts = set(uzs_accounts)
 	valid_customers = set(frappe.get_all("Customer", pluck="name"))
 
@@ -311,7 +311,7 @@ def execute_payment_import(file_url=None, company=None):
 	for s in sims:
 		r = s["parsed"]
 		ref = _deterministic_ref(r["posting_date"], r["amount"], r["remark"], r["deposit"])
-		
+
 		# Idempotency check
 		if frappe.db.exists("Payment Entry", {"reference_no": ref, "docstatus": 1}):
 			skipped.append({"row_num": r["row_num"], "reason": "Already imported"})
@@ -324,7 +324,7 @@ def execute_payment_import(file_url=None, company=None):
 			pe.party = r["child_customer"] if (s["refund"] and r["child_customer"]) else r["customer"]
 			pe.company = company
 			pe.posting_date = r["posting_date"]
-			
+
 			if pe.payment_type == "Receive":
 				pe.paid_from = ar_account
 				pe.paid_to = r["deposit"]

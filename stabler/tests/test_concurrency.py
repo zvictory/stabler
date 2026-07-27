@@ -40,7 +40,7 @@ class TestConcurrency(unittest.TestCase):
 		# A missing token on an existing doc should be rejected (T2 policy)
 		with self.assertRaises(ValidationError) as ctx:
 			check_concurrency("Sales Order", "SO-00001", modified=None)
-		
+
 		self.assertIn("Stale request: reload the document.", str(ctx.exception))
 
 	@patch("frappe.db.get_value")

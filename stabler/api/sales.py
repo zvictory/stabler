@@ -3655,7 +3655,7 @@ def reserved_stock_analysis(company: str, warehouse: str | None = None):
 def receivables_cockpit(company: str):
 	_require_company(company)
 	_assert_company_scope(company)  # tenant isolation: reject a foreign company arg
-	
+
 	# Current total receivables balance
 	current_total = flt(frappe.db.sql(
 		"""

@@ -13,14 +13,14 @@ def is_msaerp_xlsx(raw: bytes) -> bool:
 def parse_statement_bytes(raw: bytes, our_account: str | None = None) -> dict:
 	wb = openpyxl.load_workbook(io.BytesIO(raw), read_only=True, data_only=True)
 	ws = wb.active
-	
+
 	rows_iter = ws.iter_rows(values_only=True)
 	header = next(rows_iter, None)
 	if not header:
 		raise ValueError("Excel file is empty")
 
 	normalized = [(str(c).strip().lower() if c is not None else "") for c in header]
-	
+
 	col = {}
 	for key, synonyms in {
 		"date": ("date", "tarih", "gün"),

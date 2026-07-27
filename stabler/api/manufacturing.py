@@ -840,7 +840,7 @@ def match_employee_badge(uid: str):
 			card_part = device_id.split(":", 1)[0].strip()
 		else:
 			card_part = device_id
-		
+
 		if card_part in uid_options:
 			return emp
 		for h in get_hashes(card_part):
@@ -858,14 +858,14 @@ def match_employee_pin(employee_id: str, pin: str):
 	emp = frappe.get_doc("Employee", employee_id)
 	if emp.status != "Active":
 		return None
-	
+
 	device_id = (emp.attendance_device_id or "").strip()
 	if not device_id or ":" not in device_id:
 		return None
-		
+
 	pin_part = device_id.split(":", 1)[1].strip()
 	pin_options = get_hashes(pin)
-	
+
 	if pin_part in pin_options:
 		return emp
 	for h in get_hashes(pin_part):
@@ -903,7 +903,7 @@ def badge_login(uid: str):
 			"remark": f"IP: {ip}, Scan UID: {uid[:4]}***"
 		}).insert(ignore_permissions=True)
 		frappe.throw(_("Card not recognized"), frappe.PermissionError)
-		
+
 	if not emp.user_id:
 		frappe.throw(_("Employee has no linked user account."), frappe.PermissionError)
 
@@ -921,7 +921,7 @@ def badge_login(uid: str):
 		"operation": "Badge Login",
 		"user": emp.user_id
 	}).insert(ignore_permissions=True)
-	
+
 	return {
 		"message": "Logged in",
 		"user": emp.user_id,
@@ -959,7 +959,7 @@ def pin_login(employee: str, pin: str):
 			"remark": f"IP: {ip}, Employee: {employee}"
 		}).insert(ignore_permissions=True)
 		frappe.throw(_("Card not recognized"), frappe.PermissionError)
-		
+
 	if not emp.user_id:
 		frappe.throw(_("Employee has no linked user account."), frappe.PermissionError)
 
@@ -977,7 +977,7 @@ def pin_login(employee: str, pin: str):
 		"operation": "PIN Login",
 		"user": emp.user_id
 	}).insert(ignore_permissions=True)
-	
+
 	return {
 		"message": "Logged in",
 		"user": emp.user_id,

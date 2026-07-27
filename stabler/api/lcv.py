@@ -27,7 +27,7 @@ def get_landed_cost_review(document_type: str, document_name: str, rate=None):
 	elif document_type == "Purchase Receipt":
 		if not frappe.db.exists("Purchase Receipt", document_name):
 			frappe.throw(_("Unknown Purchase Receipt: {0}").format(document_name))
-		
+
 		_assert_can_read("Purchase Receipt", document_name)
 		_assert_cost_visible()
 
@@ -36,7 +36,7 @@ def get_landed_cost_review(document_type: str, document_name: str, rate=None):
 
 		# Get distinct linked Purchase Orders
 		po_names = list(set([
-			d.purchase_order for d in pr.items 
+			d.purchase_order for d in pr.items
 			if d.purchase_order and frappe.db.exists("Purchase Order", d.purchase_order)
 		]))
 
@@ -51,7 +51,7 @@ def get_landed_cost_review(document_type: str, document_name: str, rate=None):
 
 		# Find existing LCVs referencing this Purchase Receipt to mark consumed/vouchered components
 		lcvs = frappe.db.sql("""
-			SELECT parent 
+			SELECT parent
 			FROM `tabLanded Cost Purchase Receipt`
 			WHERE receipt_document = %s
 		""", (document_name,), as_dict=True)
@@ -61,7 +61,7 @@ def get_landed_cost_review(document_type: str, document_name: str, rate=None):
 		for item in lcvs:
 			lcv_name = item.parent
 			lcv_doc = frappe.get_doc("Landed Cost Voucher", lcv_name)
-			
+
 			existing_lcvs.append({
 				"lcv": lcv_name,
 				"note": lcv_doc.get("note") or "",
@@ -70,7 +70,7 @@ def get_landed_cost_review(document_type: str, document_name: str, rate=None):
 				"total": flt(lcv_doc.total_taxes_and_charges),
 				"posting_date": str(lcv_doc.posting_date) if lcv_doc.posting_date else None,
 			})
-			
+
 			if lcv_doc.docstatus == 1:
 				for tax in lcv_doc.taxes or []:
 					consumed_descriptions.add(tax.description)

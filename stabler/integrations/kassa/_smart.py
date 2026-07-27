@@ -188,7 +188,7 @@ def extract_counterparty(text: str, op: str | None) -> str | None:
         if (cand not in _CP_STOP and cand not in _KONV and cand not in _CHIQIM
                 and detect_kassa(cand) is None):
             return cand.capitalize()
-    
+
     # Advanced Contextual Fallback for Kirim:
     # If op is Kirim and no explicit "-dan" suffix was used, check for a remaining
     # word token that looks like a name (e.g. "650d ismoil")
@@ -197,11 +197,11 @@ def extract_counterparty(text: str, op: str | None) -> str | None:
         clean = _DIGIT_AMT_RE.sub(" ", clean)
         for tok in clean.split():
             tok_clean = re.sub(r"[^a-zA-Zʼ'Ѐ-ӿ]", "", tok)
-            if (len(tok_clean) >= 3 and tok_clean not in _CP_STOP 
-                    and tok_clean not in _KONV and tok_clean not in _CHIQIM 
+            if (len(tok_clean) >= 3 and tok_clean not in _CP_STOP
+                    and tok_clean not in _KONV and tok_clean not in _CHIQIM
                     and tok_clean not in _KIRIM and detect_kassa(tok_clean) is None):
                 return tok_clean.capitalize()
-                
+
     return None
 
 
@@ -226,8 +226,8 @@ def extract_purpose(text: str, op: str | None = None) -> str | None:
         clean = _DIGIT_AMT_RE.sub(" ", clean)
         for tok in clean.split():
             tok_clean = re.sub(r"[^a-zA-Zʼ'Ѐ-ӿ]", "", tok)
-            if (len(tok_clean) >= 3 and tok_clean not in _CP_STOP 
-                    and tok_clean not in _KONV and tok_clean not in _CHIQIM 
+            if (len(tok_clean) >= 3 and tok_clean not in _CP_STOP
+                    and tok_clean not in _KONV and tok_clean not in _CHIQIM
                     and tok_clean not in _KIRIM and detect_kassa(tok_clean) is None):
                 return tok_clean
 

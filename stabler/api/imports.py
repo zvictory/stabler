@@ -4301,7 +4301,7 @@ def _attach_proforma_rollups(rows: list[dict]) -> None:
     ci_rollups = {}
     ci_data = frappe.db.sql(
         """
-        SELECT 
+        SELECT
             COALESCE(NULLIF(cii.custom_proforma_invoice, ''), ci.custom_proforma_invoice) AS pi_name,
             COUNT(DISTINCT ci.name) AS ci_count,
             COALESCE(SUM(cii.qty), 0) AS invoiced_kg,

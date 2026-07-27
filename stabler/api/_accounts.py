@@ -139,7 +139,7 @@ def validate_sales_invoice(doc, method=None):
 	if doc.customer:
 		doc.debit_to = resolve_party_account("Customer", doc.customer, doc.company, doc.currency)
 		validate_exchange_rate(doc.company, doc.currency, doc.conversion_rate, doc.posting_date)
-	
+
 	if frappe.db.get_single_value("Stabler Settings", "require_delivery_note") and doc.update_stock:
 		frappe.throw(
 			frappe._("Direct stock updates via Sales Invoice are disabled by company policy. "
