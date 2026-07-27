@@ -388,7 +388,7 @@ def build_ledger_workbook(
 			_coerce(credit_v, "money") if credit_v is not None else None,
 			_coerce(balance_v, "money") if balance_v is not None else None,
 		]
-		for c, (col, v) in enumerate(zip(cols, vals), start=1):
+		for c, (col, v) in enumerate(zip(cols, vals, strict=True), start=1):
 			cell = ws.cell(row=r, column=c, value=v)
 			fmt = _fmt_for(col["type"])
 			if fmt:
@@ -413,7 +413,7 @@ def build_ledger_workbook(
 	_row(None, "Total", tot_dr, tot_cr, None, bold=True)
 
 	ws.freeze_panes = ws.cell(row=header_row + 1, column=1)
-	for i, w in zip(range(1, ncols + 1), (14, 38, 16, 16, 18)):
+	for i, w in zip(range(1, ncols + 1), (14, 38, 16, 16, 18), strict=True):
 		ws.column_dimensions[get_column_letter(i)].width = w
 	return wb
 

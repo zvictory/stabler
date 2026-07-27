@@ -69,7 +69,7 @@ def largest_remainder_round(values, target_total=None) -> list[int]:
 
 	# Base = truncate toward zero; remainder = signed fractional part.
 	bases = [int(v.to_integral_value(rounding="ROUND_DOWN")) for v in vals]
-	remainders = [v - _d(b) for v, b in zip(vals, bases)]
+	remainders = [v - _d(b) for v, b in zip(vals, bases, strict=True)]
 
 	residual = target - sum(bases)
 	# Hand out (or reclaim) whole units by remainder magnitude.

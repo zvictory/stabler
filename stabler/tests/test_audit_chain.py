@@ -124,7 +124,7 @@ class BuildChainTest(unittest.TestCase):
 		rows = _rows(3)
 		originals = [dict(r) for r in rows]
 		build_chain(rows)
-		for original, after in zip(originals, rows):
+		for original, after in zip(originals, rows, strict=True):
 			self.assertEqual(original, after)
 
 	def test_rebuild_over_stored_rows_gives_same_hashes(self):

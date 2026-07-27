@@ -2678,7 +2678,7 @@ def submit_expense_entry(
 			if donor != i:
 				base_shares[donor] = _round2(base_shares[donor] - 0.01)
 
-	for row, base_share in zip(cleaned, base_shares):
+	for row, base_share in zip(cleaned, base_shares, strict=True):
 		acc_ccy = row["account_currency"]
 		if acc_ccy == base_currency:
 			# Debit account is in base currency (e.g. a USD asset account on a

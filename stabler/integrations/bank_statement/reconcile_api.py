@@ -381,7 +381,7 @@ def reconcile_partial(
 
 	# Append all entries in one pass so ERPNext reconciles cleanly.
 	appended = []
-	for v, alloc_str in zip(vouchers, alloc_strings):
+	for v, alloc_str in zip(vouchers, alloc_strings, strict=True):
 		alloc = flt(alloc_str)
 		if alloc <= 0:
 			continue
