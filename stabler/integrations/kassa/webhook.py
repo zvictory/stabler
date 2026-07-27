@@ -32,7 +32,7 @@ def _reply_generic_error(update: dict) -> None:
 		chat_id = (message.get("chat") or {}).get("id")
 		if chat_id is not None:
 			bot._send_message(chat_id, _GENERIC_ERROR_TEXT)
-	except Exception:  # noqa: BLE001 — this IS the error handler; it must not itself throw
+	except Exception:  # this IS the error handler; it must not itself throw
 		pass
 
 
@@ -55,12 +55,12 @@ def telegram_webhook() -> dict:
 
 	try:
 		update = frappe.request.get_json(force=True, silent=True) or {}
-	except Exception:  # noqa: BLE001 — a malformed body is simply ignored
+	except Exception:  # a malformed body is simply ignored
 		update = {}
 
 	try:
 		bot.handle_update(update)
-	except Exception as e:  # noqa: BLE001 — never let one bad update retry-storm Telegram
+	except Exception as e:  # never let one bad update retry-storm Telegram
 		frappe.log_error(
 			title="Kassa telegram webhook: update processing failed",
 			message=f"error={e}",

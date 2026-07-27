@@ -156,7 +156,7 @@ def _format_row_date(value) -> str:
 		return ""
 	try:
 		return formatdate(value, "dd.mm.yyyy")
-	except Exception:  # noqa: BLE001 — a bad date must never blow up the statement
+	except Exception:  # a bad date must never blow up the statement
 		return str(value)
 
 

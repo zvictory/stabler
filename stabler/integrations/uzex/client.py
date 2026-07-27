@@ -24,7 +24,7 @@ from urllib.request import Request, urlopen
 
 import frappe
 
-from stabler.integrations.uzex._parse import (  # noqa: F401 — re-export for callers
+from stabler.integrations.uzex._parse import (  # re-export for callers
 	matches_keywords,
 	parse_trade_row,
 	status_from_detail,

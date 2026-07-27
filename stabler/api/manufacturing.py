@@ -184,7 +184,7 @@ def wo_transfer_preview(work_order: str):
 		_require_own_work_order(work_order)
 	try:
 		se = make_stock_entry(work_order, "Material Transfer for Manufacture")
-	except Exception as e:  # noqa: BLE001 — preview must never hard-fail the kiosk
+	except Exception as e:  # preview must never hard-fail the kiosk
 		frappe.log_error(title="Kassa/mfg: wo_transfer_preview failed", message=f"wo={work_order} err={e}")
 		return {"items": [], "from_warehouse": None, "to_warehouse": None}
 	stub = se if isinstance(se, dict) else se.as_dict()

@@ -103,7 +103,7 @@ def _post(url: str, payload: dict) -> Any:
 	if sess:
 		try:
 			resp = sess.post(url, json=payload, timeout=_TIMEOUT)
-		except Exception as e:  # noqa: BLE001 — network layer
+		except Exception as e:  # network layer
 			raise frappe.ValidationError(f"Telegram unreachable: {e}") from e
 		if resp.status_code >= 400:
 			raise frappe.ValidationError(f"Telegram HTTP {resp.status_code}: {resp.reason}")
@@ -212,7 +212,7 @@ def _tender_enabled(company: str) -> bool:
 
 	try:
 		return bool(module_map_for(company).get("tender"))
-	except Exception:  # noqa: BLE001 — a misconfigured company must never crash the bot
+	except Exception:  # a misconfigured company must never crash the bot
 		return False
 
 
@@ -307,7 +307,7 @@ def _cbu_ctx(company: str, base_currency: str) -> dict:
 
 	try:
 		rate = money.get_exchange_rate_for_currencies("USD", base_currency, today())
-	except Exception:  # noqa: BLE001 — a missing/broken FX rate must never crash the bot
+	except Exception:  # a missing/broken FX rate must never crash the bot
 		rate = None
 	if not rate:
 		return {"rate": None, "date": None}
@@ -561,7 +561,7 @@ def _append_new_balance(follow_up: str, company: str, account: str | None) -> st
 
 	try:
 		bal = money.account_balance(company, account)
-	except Exception:  # noqa: BLE001 — a balance-echo failure must never hide the result text
+	except Exception:  # a balance-echo failure must never hide the result text
 		return follow_up
 	balance_acc = bal.get("balance_acc")
 	if balance_acc is None:
@@ -619,7 +619,7 @@ def _append_backdate_warning(reply: str, iso_date: str) -> str:
 
 	try:
 		status = money.get_backdating_status()
-	except Exception:  # noqa: BLE001 — a status-check failure must never block the flow
+	except Exception:  # a status-check failure must never block the flow
 		return reply
 	if not status.get("active"):
 		return reply
@@ -719,7 +719,7 @@ def handle_update(update: dict) -> None:
 					         + shadow_flow.format_balance_block(shadow.balances(kassir.company, sdate))
 					         + "\n\nkeyingi amalni tanlang:")
 					keyboard = shadow_flow.MENU_KEYBOARD
-				except Exception as e:  # noqa: BLE001 — surfaced to the kassir
+				except Exception as e:  # surfaced to the kassir
 					frappe.log_error(
 						title="Kassa shadow: record failed",
 						message=f"kassir={kassir.name} error={e}",
@@ -734,7 +734,7 @@ def handle_update(update: dict) -> None:
 					         + shadow_flow.format_balance_block(shadow.balances(kassir.company, sdate))
 					         + "\n\nkeyingi amalni tanlang:")
 					keyboard = shadow_flow.MENU_KEYBOARD
-				except Exception as e:  # noqa: BLE001
+				except Exception as e:
 					frappe.log_error(
 						title="Kassa shadow: opening failed",
 						message=f"kassir={kassir.name} error={e}",
@@ -771,7 +771,7 @@ def handle_update(update: dict) -> None:
 						result = execute_action(action, old_state, kassir, ctx)
 						follow_up = _format_result_text(result)
 						follow_up = _append_new_balance(follow_up, kassir.company, _affected_account(action))
-					except Exception as e:  # noqa: BLE001 — surfaced to the kassir, not swallowed
+					except Exception as e:  # surfaced to the kassir, not swallowed
 						frappe.log_error(
 							title="Kassa bot: action failed",
 							message=f"kassir={kassir.name} action_type={action.get('type')} error={e}",

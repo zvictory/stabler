@@ -70,7 +70,7 @@ class TestAssemble(unittest.TestCase):
 
 
 try:
-	import docx  # noqa: F401
+	import docx
 
 	_HAS_DOCX = True
 except ImportError:

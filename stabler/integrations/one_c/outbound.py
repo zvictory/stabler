@@ -39,7 +39,7 @@ def push(doctype: str, name: str) -> dict[str, Any]:
 
 	try:
 		payload = _serialize(doctype, name)
-	except Exception as exc:  # noqa: BLE001
+	except Exception as exc:
 		write_log("Out", object_type, name, "Error", f"serialize failed: {exc}")
 		return {"status": "error", "reason": str(exc)}
 

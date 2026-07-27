@@ -280,7 +280,7 @@ def supplier_query(user=None):
 # Gap #45 — cost / margin field masking (thin wrapper for custom endpoints)
 # ---------------------------------------------------------------------------
 
-from stabler.api._perm_rules import COST_FIELDS, mask_fields  # noqa: E402
+from stabler.api._perm_rules import COST_FIELDS, mask_fields
 
 
 def _user_has_cost_visibility(user: str | None, cost_visible_roles) -> bool:

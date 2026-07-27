@@ -48,7 +48,7 @@ def telegram_webhook() -> dict:
 
 	try:
 		update = frappe.request.get_json(force=True, silent=True) or {}
-	except Exception:  # noqa: BLE001 — a malformed body is simply ignored
+	except Exception:  # a malformed body is simply ignored
 		update = {}
 
 	cq = update.get("callback_query") if isinstance(update, dict) else None

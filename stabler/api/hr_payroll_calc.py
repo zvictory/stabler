@@ -445,7 +445,7 @@ def emit_payroll_net_period(company: str, payroll_period: str) -> dict:
 			r = emit_payroll_net(name)
 			pushed += 1
 			total += float(r.get("net") or 0)
-		except Exception as e:  # noqa: BLE001 — collect per-row failures, keep going
+		except Exception as e:  # collect per-row failures, keep going
 			errors.append({"summary": name, "error": str(e)})
 	return {"pushed": pushed, "skipped_unlocked": 0, "net_total": round(total), "errors": errors}
 

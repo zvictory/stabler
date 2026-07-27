@@ -80,7 +80,7 @@ def poll() -> dict[str, Any]:
 		try:
 			_apply_change(change)
 			applied += 1
-		except Exception as exc:  # noqa: BLE001
+		except Exception as exc:
 			write_log(
 				"In",
 				change.get("object_type") or "Customer",

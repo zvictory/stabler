@@ -16,7 +16,7 @@ from __future__ import annotations
 import frappe
 
 
-def enqueue_didox_submit(doc, method=None):  # noqa: ARG001 — Frappe signature
+def enqueue_didox_submit(doc, method=None):  # Frappe signature
     if not doc or doc.docstatus != 1:
         return
     frappe.enqueue(
@@ -60,7 +60,7 @@ def sync_pending_statuses():
     for name in pending:
         try:
             client.poll_status(name)
-        except Exception:  # noqa: BLE001 — isolate one bad row from the batch
+        except Exception:  # isolate one bad row from the batch
             frappe.log_error(
                 title="Didox status sync failed",
                 message=f"submission={name}\n{frappe.get_traceback()}",

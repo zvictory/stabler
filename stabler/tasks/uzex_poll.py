@@ -138,7 +138,7 @@ def fetch_and_store() -> dict[str, Any]:
 	for type_id in type_ids:
 		try:
 			rows = client.list_trades(int(type_id), 1, cap)
-		except Exception as exc:  # noqa: BLE001 — isolate one lot type's failure
+		except Exception as exc:  # isolate one lot type's failure
 			errors.append(f"type {type_id}: {exc}")
 			frappe.log_error(
 				title="UZEX poll: list_trades failed",
@@ -163,7 +163,7 @@ def fetch_and_store() -> dict[str, Any]:
 				status_raw = client.status_from_detail(detail)
 				status_id = detail.get("status_id")
 				status_name = detail.get("status_name")
-			except Exception:  # noqa: BLE001 — detail is best-effort; list data still upserts
+			except Exception:  # detail is best-effort; list data still upserts
 				pass
 
 			try:
@@ -175,7 +175,7 @@ def fetch_and_store() -> dict[str, Any]:
 					try:
 						if telegram.send_new_lot(norm, res["deal"]):
 							notified += 1
-					except Exception:  # noqa: BLE001 — Telegram is best-effort
+					except Exception:  # Telegram is best-effort
 						frappe.log_error(
 							title="UZEX poll: telegram send failed",
 							message=f"lot_no={norm['lot_no']}\n{frappe.get_traceback()}",
@@ -190,7 +190,7 @@ def fetch_and_store() -> dict[str, Any]:
 					subj = f"UZEX {norm['lot_no']}: deadline {norm['deadline']}"
 					if _notify(res["owner"], subj, res["deal"]):
 						notified += 1
-			except Exception as exc:  # noqa: BLE001 — one bad row must not abort the batch
+			except Exception as exc:  # one bad row must not abort the batch
 				errors.append(f"lot {norm['lot_no']}: {exc}")
 				frappe.log_error(
 					title="UZEX poll: deal upsert failed",

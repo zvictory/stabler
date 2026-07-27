@@ -163,7 +163,7 @@ def merchant_endpoint() -> dict:
 			result = _err(f, ERR_ACTION, "Action not found")
 		frappe.db.commit()
 		return result
-	except Exception as e:  # noqa: BLE001
+	except Exception as e:
 		frappe.db.rollback()
 		frappe.log_error(frappe.get_traceback(), "uzpay.click: unhandled")
 		return _err(f, ERR_NO_TX, f"Internal error: {e}")

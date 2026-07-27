@@ -207,7 +207,7 @@ def _reverse_invoice(doc) -> None:
 		inv = frappe.get_doc("Sales Invoice", doc.sales_invoice)
 		if inv.docstatus == 1:
 			inv.cancel()
-	except Exception:  # noqa: BLE001
+	except Exception:
 		frappe.log_error(frappe.get_traceback(), "uzpay.payme: invoice reversal failed")
 
 
@@ -299,7 +299,7 @@ def merchant_endpoint() -> dict:
 		if e.data is not None:
 			err["data"] = e.data
 		return {"jsonrpc": "2.0", "id": req_id, "error": err}
-	except Exception as e:  # noqa: BLE001
+	except Exception as e:
 		frappe.db.rollback()
 		frappe.log_error(frappe.get_traceback(), "uzpay.payme: unhandled")
 		return {

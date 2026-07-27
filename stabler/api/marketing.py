@@ -302,7 +302,7 @@ def _resolve_party_account(company: str, customer: str) -> str:
 
 	try:
 		account = get_party_account("Customer", customer, company)
-	except Exception as exc:  # noqa: BLE001
+	except Exception as exc:
 		frappe.throw(
 			_("No receivable account configured for distributor {0} in company {1}: {2}").format(
 				customer, company, exc

@@ -163,7 +163,7 @@ def daily() -> dict[str, Any]:
 			metrics = _compute_snapshot(plan, today)
 			snap_name = _upsert_snapshot(plan["name"], today, metrics)
 			updated.append(snap_name)
-		except Exception as exc:  # noqa: BLE001
+		except Exception as exc:
 			frappe.log_error(frappe.get_traceback(), f"roi_refresh:{plan['name']}")
 			errors.append({"plan": plan["name"], "error": str(exc)})
 

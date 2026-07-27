@@ -56,7 +56,7 @@ def send(submission_name: str, payload: dict[str, Any], signed_pkcs7: str) -> di
 		doc.didox_doc_id = result.get("doc_id") or result.get("id") or doc.didox_doc_id
 		if doc.status == "Rejected":
 			doc.error_message = result.get("reason") or json.dumps(result)
-	except Exception as exc:  # noqa: BLE001 — funnel into Didox Submission for ops visibility
+	except Exception as exc:  # funnel into Didox Submission for ops visibility
 		doc.status = "Error"
 		doc.error_message = str(exc)
 	finally:
@@ -120,7 +120,7 @@ def poll_status(submission_name: str) -> dict[str, Any]:
 			doc.error_message = result.get("reason") or json.dumps(result)
 		elif doc.status in ("Accepted", "Sent"):
 			doc.error_message = None
-	except Exception as exc:  # noqa: BLE001 — surface poll failure on the row
+	except Exception as exc:  # surface poll failure on the row
 		doc.status = "Error"
 		doc.error_message = str(exc)
 

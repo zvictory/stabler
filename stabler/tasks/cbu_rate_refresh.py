@@ -139,7 +139,7 @@ def _fetch_cbu_for(on_date: datetime.date) -> dict[str, float]:
 		req = Request(url, headers={"User-Agent": "stabler/1.0"})
 		with urlopen(req, timeout=_TIMEOUT) as resp:
 			data = json.loads(resp.read().decode("utf-8"))
-	except Exception:  # noqa: BLE001 — treat as a non-publishing day; carry forward
+	except Exception:  # treat as a non-publishing day; carry forward
 		return {}
 	out: dict[str, float] = {}
 	for row in data if isinstance(data, list) else []:

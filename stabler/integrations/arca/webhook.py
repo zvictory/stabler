@@ -112,7 +112,7 @@ def handle_payment_webhook() -> dict[str, Any]:
 		event.save(ignore_permissions=True)
 		frappe.db.commit()
 		return {"ok": True, "event": event.name, "payment_entry": pe_name, "processed": True}
-	except Exception as exc:  # noqa: BLE001
+	except Exception as exc:
 		frappe.db.rollback()
 		# preserve the event row; mark as un-processed so a Retry can re-link
 		event.payload = (event.payload or "") + f"\n\n# error: {exc}"

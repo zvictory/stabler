@@ -135,5 +135,5 @@ def answer_callback(callback_query_id: str, text: str = "") -> None:
 			f"{_API}/bot{token}/answerCallbackQuery",
 			{"callback_query_id": callback_query_id, "text": text},
 		)
-	except Exception:  # noqa: BLE001 — answering is cosmetic
+	except Exception:  # answering is cosmetic
 		pass

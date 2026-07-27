@@ -11,7 +11,7 @@ from __future__ import annotations
 import frappe
 
 
-def enqueue_ehf_submit(doc, method=None):  # noqa: ARG001 — Frappe signature
+def enqueue_ehf_submit(doc, method=None):  # Frappe signature
 	if not doc or doc.docstatus != 1:
 		return
 	frappe.enqueue(

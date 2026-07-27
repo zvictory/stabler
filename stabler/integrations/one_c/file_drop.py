@@ -56,7 +56,7 @@ def scan() -> dict[str, Any]:
 			process_file(path)
 			shutil.move(str(path), str(processed_dir / path.name))
 			processed += 1
-		except Exception as exc:  # noqa: BLE001
+		except Exception as exc:
 			errors.append({"file": path.name, "error": str(exc)})
 			write_log(
 				direction="In",
@@ -91,7 +91,7 @@ def process_file(path: Path) -> None:
 					message=f"from {path.name}",
 					duration_ms=box["ms"],
 				)
-			except Exception as exc:  # noqa: BLE001
+			except Exception as exc:
 				write_log(
 					direction="In",
 					object_type=object_type,

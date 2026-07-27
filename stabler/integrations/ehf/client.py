@@ -50,7 +50,7 @@ def send(submission_name: str, payload: dict[str, Any], signature: str) -> dict[
 		doc.soliq_uuid = result.get("uuid") or result.get("id") or doc.soliq_uuid
 		if doc.soliq_status == "Rejected":
 			doc.error_message = result.get("reason") or json.dumps(result)
-	except Exception as exc:  # noqa: BLE001 — funnel into EHFSubmission for ops visibility
+	except Exception as exc:  # funnel into EHFSubmission for ops visibility
 		doc.soliq_status = "Error"
 		doc.error_message = str(exc)
 	finally:

@@ -234,7 +234,7 @@ def qr_svg_data_uri(text: str) -> str | None:
 		svg = buf.getvalue()
 		b64 = base64.b64encode(svg).decode("ascii")
 		return f"data:image/svg+xml;base64,{b64}"
-	except Exception:  # noqa: BLE001 — QR is a convenience; never break checkout
+	except Exception:  # QR is a convenience; never break checkout
 		frappe.log_error(frappe.get_traceback(), "uzpay: QR render failed")
 		return None
 

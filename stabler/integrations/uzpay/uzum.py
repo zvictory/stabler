@@ -165,7 +165,7 @@ def _reverse(body: dict) -> dict:
 			inv = frappe.get_doc("Sales Invoice", doc.sales_invoice)
 			if inv.docstatus == 1:
 				inv.cancel()
-		except Exception:  # noqa: BLE001
+		except Exception:
 			frappe.log_error(frappe.get_traceback(), "uzpay.uzum: reversal failed")
 	C.log_to_session(doc, "Uzum.reverse", body)
 	C.mark_cancelled(doc, state=-2)
@@ -225,7 +225,7 @@ def merchant_endpoint() -> dict:
 	except UzumError as e:
 		frappe.db.rollback()
 		return {**envelope, "status": FAILED, "errorCode": e.code, "errorMessage": e.message}
-	except Exception as e:  # noqa: BLE001
+	except Exception as e:
 		frappe.db.rollback()
 		frappe.log_error(frappe.get_traceback(), "uzpay.uzum: unhandled")
 		return {**envelope, "status": FAILED, "errorCode": -1, "errorMessage": str(e)}

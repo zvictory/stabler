@@ -42,7 +42,7 @@ def submit_for_invoice(name: str) -> dict[str, Any]:
 		submission.signature = signature
 		submission.save(ignore_permissions=True)
 		frappe.db.commit()
-	except Exception as exc:  # noqa: BLE001
+	except Exception as exc:
 		submission.soliq_status = "Error"
 		submission.error_message = f"build/sign failed: {exc}"
 		submission.save(ignore_permissions=True)
