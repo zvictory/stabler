@@ -181,14 +181,14 @@ def list_device_mappings(
 		# we stay on the safe whitelist-only path (no raw SQL / f-strings).
 		by_name = frappe.get_all(
 			_MAPPING,
-			filters=filters + [[_MAPPING, "employee_name", "like", search_like]],
+			filters=[*filters, [_MAPPING, "employee_name", "like", search_like]],
 			fields=_MAPPING_LIST_FIELDS,
 			order_by="employee_name asc",
 			limit_page_length=limit,
 		)
 		by_uid = frappe.get_all(
 			_MAPPING,
-			filters=filters + [[_MAPPING, "device_user_id", "like", search_like]],
+			filters=[*filters, [_MAPPING, "device_user_id", "like", search_like]],
 			fields=_MAPPING_LIST_FIELDS,
 			order_by="employee_name asc",
 			limit_page_length=limit,

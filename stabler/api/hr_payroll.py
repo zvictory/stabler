@@ -234,7 +234,7 @@ def _daily_summaries(employee: dict, company: str, days: list[str]) -> list[dict
 		attendance = frappe.db.get_value(
 			_ATTENDANCE,
 			{"employee": employee["name"], "attendance_date": date, "company": company, "docstatus": ["<", 2]},
-			["status"] + att_min_cols,
+			["status", *att_min_cols],
 			as_dict=True,
 		)
 		punches = _checkin_punches(employee["name"], date)

@@ -198,7 +198,7 @@ def allocate_partial(
 
 	if total_v == 0:
 		# All vouchers are zero — give everything to the last one.
-		for i in range(len(vamts) - 1):
+		for _i in range(len(vamts) - 1):
 			result.append(Decimal("0"))
 		result.append(T.quantize(_q, rounding=ROUND_DOWN))
 	else:

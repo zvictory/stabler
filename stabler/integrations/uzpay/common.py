@@ -93,7 +93,7 @@ def gateways_for_company(company: str) -> dict[str, str]:
 # ---------------------------------------------------------------------------
 def to_tiyin(amount_uzs: float) -> int:
 	"""Payme/Uzum settle in tiyin (1 UZS = 100 tiyin)."""
-	return int(round(flt(amount_uzs) * 100))
+	return round(flt(amount_uzs) * 100)
 
 
 def from_tiyin(amount_tiyin: float) -> float:

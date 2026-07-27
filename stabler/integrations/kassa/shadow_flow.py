@@ -369,7 +369,7 @@ def _after_parse(p, ctx):
         if last_cp:
             kb = [[last_cp]]
     if kb is not None:
-        kb = kb + [[BTN_CANCEL]]
+        kb = [*kb, [BTN_CANCEL]]
     return _Q[slot], kb, {"step": "await_slot", "op": p.get("op"), "slot": slot, "p": p}, None
 
 

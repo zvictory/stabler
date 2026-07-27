@@ -104,8 +104,8 @@ def _compute_snapshot(plan: dict, today: datetime.date) -> dict[str, Any]:
 		net_roi_pct = 0.0
 
 	return {
-		"units_sold": int(round(units_sold)),
-		"incremental_units": int(round(incremental_units)),
+		"units_sold": round(units_sold),
+		"incremental_units": round(incremental_units),
 		"uplift_value": uplift_value,
 		"cost_to_serve": cost_to_serve,
 		"gross_roi_pct": gross_roi_pct,

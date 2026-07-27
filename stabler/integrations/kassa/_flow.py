@@ -849,7 +849,7 @@ def _handle_chiqim_subkassa(state: dict, text: str, ctx: dict):
 
 def _category_prompt(state: dict, ctx: dict):
 	categories = (ctx.get("categories") or [])[:_CATEGORY_PAGE]
-	keyboard = _rows([c["label"] for c in categories]) + [[BTN_OTHER]]
+	keyboard = [*_rows([c["label"] for c in categories]), [BTN_OTHER]]
 	new_state = {**state, "step": STEP_CHIQIM_CATEGORY}
 	return ("Kategoriyani tanlang:", keyboard, new_state, None)
 
@@ -861,7 +861,7 @@ def _handle_chiqim_category(state: dict, text: str, ctx: dict):
 		return ("Hisob nomining bir qismini yozing:", None, new_state, None)
 	cat = _find_by_label(categories, text)
 	if not cat:
-		keyboard = _rows([c["label"] for c in categories]) + [[BTN_OTHER]]
+		keyboard = [*_rows([c["label"] for c in categories]), [BTN_OTHER]]
 		return ("Noto'g'ri tanlov. Ro'yxatdan tanlang:", keyboard, state, None)
 	new_state = {**state, "category": cat["account"]}
 	return _after_category_chosen(new_state, ctx)
@@ -894,7 +894,7 @@ def _after_category_chosen(state: dict, ctx: dict):
 	deals = ctx.get("deals") or []
 	if deals:
 		new_state = {**state, "step": STEP_CHIQIM_DEAL}
-		keyboard = _rows([d["label"] for d in deals]) + [[BTN_SKIP_DEAL]]
+		keyboard = [*_rows([d["label"] for d in deals]), [BTN_SKIP_DEAL]]
 		return ("Tenderni tanlang (ixtiyoriy):", keyboard, new_state, None)
 	leaf = state["sub_kassa"]
 	new_state = {**state, "step": STEP_CHIQIM_AMOUNT}
@@ -908,7 +908,7 @@ def _handle_chiqim_deal(state: dict, text: str, ctx: dict):
 	else:
 		deal = _find_by_label(deals, text)
 		if not deal:
-			keyboard = _rows([d["label"] for d in deals]) + [[BTN_SKIP_DEAL]]
+			keyboard = [*_rows([d["label"] for d in deals]), [BTN_SKIP_DEAL]]
 			return ("Noto'g'ri tanlov. Ro'yxatdan tanlang:", keyboard, state, None)
 		new_state = {**state, "deal": deal["name"]}
 	leaf = new_state["sub_kassa"]

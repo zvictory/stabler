@@ -2161,7 +2161,7 @@ def get_sales_detail_report(
         kg = flt(r["total_kg"])
         rate = flt(r["rate"])
         amt = flt(r["amount"])
-        boxes = int(round(kg / 20.0)) if kg > 0 else 0
+        boxes = round(kg / 20.0) if kg > 0 else 0
         box_kg = 20.0 if boxes > 0 else 0.0
 
         total_sales += amt

@@ -48,7 +48,7 @@ def parse_statement_bytes(raw: bytes, our_account: str | None = None) -> dict:
 	rows = []
 	dates = []
 
-	for row_num, row in enumerate(rows_iter, start=2):
+	for _row_num, row in enumerate(rows_iter, start=2):
 		if not row or all(c is None or c == "" for c in row):
 			continue
 

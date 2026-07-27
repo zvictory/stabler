@@ -293,7 +293,7 @@ def payroll_xlsx(company: str, payroll_period: str):
 	ws.cell(row=1, column=1).font = Font(bold=True, size=12)
 
 	hr = 2
-	for ci, (label, key, width) in enumerate(cols, start=1):
+	for ci, (label, _key, width) in enumerate(cols, start=1):
 		c = ws.cell(row=hr, column=ci, value=label)
 		c.fill = header_fill
 		c.font = white
@@ -304,7 +304,7 @@ def payroll_xlsx(company: str, payroll_period: str):
 	totals = {key: 0.0 for (label, key, width) in cols if key != "employee_name"}
 	for row in rows:
 		ws.cell(row=r, column=1, value=row.get("employee_name") or row.get("employee"))
-		for ci, (label, key, width) in enumerate(cols[1:], start=2):
+		for ci, (_label, key, _width) in enumerate(cols[1:], start=2):
 			val = flt(row.get(key))
 			totals[key] = totals.get(key, 0.0) + val
 			cell = ws.cell(row=r, column=ci, value=round(val))
@@ -318,7 +318,7 @@ def payroll_xlsx(company: str, payroll_period: str):
 	# Totals row.
 	tcell = ws.cell(row=r, column=1, value=_("Total"))
 	tcell.font = Font(bold=True)
-	for ci, (label, key, width) in enumerate(cols[1:], start=2):
+	for ci, (_label, key, _width) in enumerate(cols[1:], start=2):
 		c = ws.cell(row=r, column=ci, value=round(totals.get(key, 0.0)))
 		c.number_format = "#,##0"
 		c.font = Font(bold=True)

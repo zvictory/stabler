@@ -28,14 +28,14 @@ try:
 
 	def patched_get_doc(*args, **kwargs):
 		if len(args) >= 2 and args[0] == "Language" and args[1] == "uzc":
-			args = ("Language", "uz") + args[2:]
+			args = ("Language", "uz", *args[2:])
 		elif kwargs.get("doctype") == "Language" and kwargs.get("name") == "uzc":
 			kwargs["name"] = "uz"
 		return _orig_get_doc(*args, **kwargs)
 
 	def patched_get_cached_doc(*args, **kwargs):
 		if len(args) >= 2 and args[0] == "Language" and args[1] == "uzc":
-			args = ("Language", "uz") + args[2:]
+			args = ("Language", "uz", *args[2:])
 		elif kwargs.get("doctype") == "Language" and kwargs.get("name") == "uzc":
 			kwargs["name"] = "uz"
 		return _orig_get_cached_doc(*args, **kwargs)
