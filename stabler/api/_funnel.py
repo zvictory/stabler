@@ -69,7 +69,7 @@ def summarise(rows: list[dict]) -> dict:
     and the funnel respect the reporting window, so the win-rate is a period
     statement, not an all-time blur.
     """
-    stages = {k: 0 for k in ORDER + ["lost"]}
+    stages = {k: 0 for k in [*ORDER, "lost"]}
     reached = {k: 0 for k in FUNNEL_STEPS}
     urgent = won = lost = 0
 
