@@ -18,7 +18,7 @@ import { storeToRefs } from "pinia";
 import { useSession } from "../stores/session.js";
 import { call } from "../api/client.js";
 import { formatMoney } from "../composables/money.js";
-import { todayIso } from "../composables/date.js";
+import { formatDate, todayIso } from "../composables/date.js";
 import { t } from "../composables/i18n.js";
 import { useToast } from "../composables/useToast.js";
 import { useTelemetry } from "../composables/useTelemetry.js";
@@ -369,7 +369,7 @@ async function submit() {
 									<tbody>
 										<tr v-for="inv in defaults.outstanding_invoices" :key="inv.voucher_no">
 											<td class="font-monospace">{{ inv.voucher_no }}</td>
-											<td>{{ inv.posting_date }}</td>
+											<td>{{ formatDate(inv.posting_date) }}</td>
 											<td class="text-end font-monospace">{{ formatMoney(inv.outstanding_amount, currency, user.language) }}</td>
 										</tr>
 									</tbody>

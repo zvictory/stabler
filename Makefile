@@ -54,7 +54,7 @@ help:
 	@echo "make lint          — FULL tree lint (CI-equivalent; currently red, that is the debt)"
 	@echo "make lint-js       — FULL tree ESLint sweep (same, for the SPA)"
 	@echo "make test          — the frappe-free unit modules only (no bench, no DB)"
-	@echo "make guards        — CLAUDE.md hard rules (date input / Desk links / table-striped)"
+	@echo "make guards        — CLAUDE.md hard rules (dates / Desk links / striping / tenant / money)"
 	@echo "make prod-drift    — list .py files on prod that are not in git (read-only)"
 	@echo "make ruff-install  — pin ruff $(RUFF_VERSION) into the bench venv"
 	@echo "make hook-install  — install .git/hooks/pre-push"
@@ -64,17 +64,17 @@ help:
 check: lint-changed lint-js-changed compile guards test
 	@echo "OK — pre-push gate passed."
 
+# `ruff format --check` is ADVISORY here, not a gate. Nothing in the tree was ever
+# formatted, so the first touch of a big module rewrites ~200 lines (purchasing.py:
+# 215). Blocking on that buries every one-line bugfix in formatting noise and makes
+# a production rollback harder to read. Run `make fmt` plus a .git-blame-ignore-revs
+# entry as one deliberate sweep instead.
 lint-changed:
 ifeq ($(strip $(CHANGED_PY)),)
 	@echo "ruff: no changed .py files, skipping."
 else
 	@echo "ruff: $(words $(CHANGED_PY)) changed file(s)"
 	@$(RUFF) check $(CHANGED_PY)
-	@# Format is ADVISORY, not a gate. Nothing here was ever `ruff format`ed, so
-	@# the first touch of a big module rewrites ~200 lines (purchasing.py: 215).
-	@# Blocking on that buries every one-line bugfix in formatting noise and makes
-	@# a production rollback harder to read. Run `make fmt` + a
-	@# .git-blame-ignore-revs entry as one deliberate sweep instead.
 	@$(RUFF) format --check $(CHANGED_PY) || \
 	  echo "  (advisory only -- 'make fix' formats these; not blocking the push)"
 endif
@@ -130,6 +130,23 @@ test:
 	@grep -v -e '^#' -e '^$$' .github/frappe-free-tests.txt | xargs -P8 -n1 $(PY) -m unittest
 
 # CLAUDE.md states these as "reviewers must reject". Prose does not enforce.
+#
+# Notes on the four rules added 2026-07-27 (the recipe below is one joined shell
+# command, so these cannot live inline -- a `#` there would comment out the rest):
+#
+#  * RAW DATES: the `\.` in the pattern is load-bearing. Without it the regex also
+#    matches the word "creation" inside translated prose -- KassaBot.vue:336 was
+#    the false positive that taught us this. Property access only.
+#  * TENANT NAMES: 7 tenants share this code, so behaviour must come from Stabler
+#    Company Modules, never a hardcoded site name. At zero today; this keeps it there.
+#  * meta.module: a parent route with children[] and no meta.module is invisible to
+#    the router guard, so a disabled module stays reachable by direct URL. Zero today.
+#  * MONEY INPUTS: a CEILING, not a gate -- same mechanic as ruff-debt. The 9
+#    survivors are real, but each needs a precision decision MoneyInput cannot
+#    express yet (LandedCostReview's USD->UZS override is step=0.0001, while UZS
+#    mode forces 0 decimals), and they sit in landed-cost and tender money math
+#    with no test coverage. Converting them belongs after Faz 3. What this blocks
+#    is the number GROWING -- a new form shipping a bare number input for money.
 guards:
 	@fail=0; \
 	hits=$$(grep -rn 'type="date"' stabler/public/js --include='*.vue' \
@@ -145,6 +162,30 @@ guards:
 	if [ -n "$$hits" ]; then \
 	  echo "ERROR: manual table-striped is redundant -- striping is global in stabler.css"; \
 	  echo "$$hits"; fail=1; fi; \
+	hits=$$(grep -rnE '\{\{[^}]*\.(posting_date|transaction_date|due_date|creation|modified|schedule_date|valid_till|start_date|end_date)\b[^}]*\}\}' \
+	         stabler/public/js --include='*.vue' | grep -v 'formatDate' || true); \
+	if [ -n "$$hits" ]; then \
+	  echo "ERROR: raw date interpolation -- wrap in formatDate()/formatDateTime()"; \
+	  echo "$$hits"; fail=1; fi; \
+	hits=$$(grep -rnE '(==|!=|===|!==)[[:space:]]*["'"'"'](anjan|msa|mikas|dts|horeca|laminor|smartbox)' \
+	         stabler --include='*.py' --include='*.vue' --include='*.js' \
+	         | grep -v node_modules || true); \
+	if [ -n "$$hits" ]; then \
+	  echo "ERROR: branching on tenant name -- gate on a module/company setting instead"; \
+	  echo "$$hits"; fail=1; fi; \
+	miss=$$(awk '/children:[[:space:]]*\[/ {w=""; for(i=NR-6;i<=NR;i++) w=w " " L[i]; \
+	          if (w !~ /module:/) print NR": "L[NR-3]} {L[NR]=$$0}' \
+	          stabler/public/js/router.js || true); \
+	if [ -n "$$miss" ]; then \
+	  echo "ERROR: parent route with children[] and no meta.module (router guard is blind to it)"; \
+	  echo "$$miss"; fail=1; fi; \
+	n=$$(grep -rn --include='*.vue' -B3 'type="number"' stabler/public/js \
+	     | grep -cE 'v-model[^"]*"[^"]*(rate|amount|price|paid|balance|salary|advance)[^"]*"' || true); \
+	if [ "$$n" -gt 9 ]; then \
+	  echo "ERROR: bare <input type=\"number\"> for money grew to $$n (ceiling 9) -- use MoneyInput"; \
+	  fail=1; fi; \
+	if [ "$$n" -lt 9 ]; then \
+	  echo "NOTE: money-input debt is down to $$n -- lower the ceiling in the Makefile."; fi; \
 	exit $$fail
 
 # Lists .py files that exist in prod's package but not in git. Run after every
