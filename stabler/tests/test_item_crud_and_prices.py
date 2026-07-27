@@ -6,6 +6,49 @@ import sys
 import unittest
 from unittest.mock import MagicMock
 
+
+# This module replaces `frappe` (and erpnext, and three stabler.api modules) with
+# MagicMocks so `stabler.api.inventory` can be imported without a bench. That is
+# fine on its own -- but it used to install the fakes unconditionally at module
+# level and never take them back out.
+#
+# `bench run-tests --module X` still IMPORTS every test_*.py during discovery, so
+# the fake `frappe` was left in sys.modules for the whole bench run. Modules that
+# had already bound the real frappe kept working, which is why this went unnoticed;
+# what broke was any FRESH submodule import at runtime. frappe.get_doc({"doctype":
+# "User"}) imports frappe/core/doctype/user/user.py, which does
+# `from frappe.auth import ...` -- the import machinery consults
+# sys.modules['frappe'], finds a MagicMock with no __path__, and raises
+# "No module named 'frappe.auth'; 'frappe' is not a package", which frappe then
+# re-wraps as the very misleading "Module import failed for User, the DocType
+# you're trying to open might be deleted." That was the whole of
+# test_approvals_integration's 2 errors.
+#
+# Two guards below. First: under a live bench this module has nothing to prove --
+# it is in .github/frappe-free-tests.txt and runs in its own process via
+# `make test` -- so it installs nothing and its tests are skipped. The
+# discriminator is frappe.local.site (None outside a bench, the site name inside
+# one); `frappe.db` does NOT work, outside a bench it is a LocalProxy instance,
+# not None. Nor does `"frappe" in sys.modules`: stabler/__init__.py imports the
+# real frappe to patch get_doc for the `uzc` language, so frappe is always
+# present. Second: in the frappe-free path the fakes are removed again as soon as
+# the import that needs them is done.
+#
+# The skip is a class decorator, not a module-level `raise SkipTest`: frappe's
+# runner imports test modules through frappe.get_module() rather than
+# unittest's loader, so a SkipTest raised at import time is not caught as a skip
+# -- it aborts the whole run with a traceback.
+def _under_bench() -> bool:
+	try:
+		import frappe
+
+		return frappe.local.site is not None
+	except Exception:
+		return False
+
+
+_UNDER_BENCH = _under_bench()
+
 mock_frappe = MagicMock()
 mock_frappe._ = lambda s: s
 def _passthrough_whitelist(*args, **kwargs):
@@ -13,26 +56,43 @@ def _passthrough_whitelist(*args, **kwargs):
 		return args[0]
 	return lambda fn: fn
 mock_frappe.whitelist = _passthrough_whitelist
-sys.modules['frappe'] = mock_frappe
 mock_utils = MagicMock()
 mock_utils.flt = lambda v, p=None: float(v or 0)
 mock_utils.cint = lambda v, p=None: int(v or 0)
-sys.modules['frappe.utils'] = mock_utils
 mock_common = MagicMock()
-sys.modules['stabler.api._common'] = mock_common
 mock_appr = MagicMock()
-sys.modules['stabler.api.approvals'] = mock_appr
 mock_recon = MagicMock()
-sys.modules['stabler.api._stock_recon'] = mock_recon
-
 mock_erpnext = MagicMock()
-sys.modules['erpnext'] = mock_erpnext
-sys.modules['erpnext.stock'] = mock_erpnext
-sys.modules['erpnext.stock.get_item_details'] = mock_erpnext
 
-from stabler.api import inventory
+_FAKES = {
+	'frappe': mock_frappe,
+	'frappe.utils': mock_utils,
+	'stabler.api._common': mock_common,
+	'stabler.api.approvals': mock_appr,
+	'stabler.api._stock_recon': mock_recon,
+	'erpnext': mock_erpnext,
+	'erpnext.stock': mock_erpnext,
+	'erpnext.stock.get_item_details': mock_erpnext,
+}
+inventory = None
+if not _UNDER_BENCH:
+	_SAVED = {name: sys.modules.get(name) for name in _FAKES}
+	sys.modules.update(_FAKES)
+
+	# inventory binds these names into its own globals here; the fakes only have
+	# to survive this one import, which is why putting sys.modules back below is
+	# safe. Under a bench we must not do even that: the import would cache a
+	# MagicMock-bound stabler.api.inventory in sys.modules for every later test.
+	from stabler.api import inventory
+
+	for _name, _saved in _SAVED.items():
+		if _saved is None:
+			sys.modules.pop(_name, None)
+		else:
+			sys.modules[_name] = _saved
 
 
+@unittest.skipIf(_UNDER_BENCH, "frappe-free module: runs in its own process via `make test`")
 class TestItemCrudAndPrices(unittest.TestCase):
 	def test_update_item_modifies_doc_and_saves(self):
 		mock_frappe.db.exists.return_value = True

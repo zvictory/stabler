@@ -15,7 +15,8 @@
 RUFF_VERSION := $(shell cat .ruff-version)
 # ?= so a different bench layout (or CI, which has no venv at this path) can
 # override without editing the file. GitLab passes PY=python RUFF=ruff.
-VENV ?= /Users/zafar/frappe-bench-local/env/bin
+LOCAL_BENCH ?= /Users/zafar/frappe-bench-local
+VENV ?= $(LOCAL_BENCH)/env/bin
 RUFF ?= $(VENV)/ruff
 PY   ?= $(VENV)/python
 
@@ -54,6 +55,7 @@ help:
 	@echo "make lint          — FULL tree lint (CI-equivalent; currently red, that is the debt)"
 	@echo "make lint-js       — FULL tree ESLint sweep (same, for the SPA)"
 	@echo "make test          — the frappe-free unit modules only (no bench, no DB)"
+	@echo "make test-bench    — the other 15 modules, on a throwaway site (slow, needs a bench)"
 	@echo "make guards        — CLAUDE.md hard rules (dates / Desk links / striping / tenant / money)"
 	@echo "make prod-drift    — list .py files on prod that are not in git (read-only)"
 	@echo "make ruff-install  — pin ruff $(RUFF_VERSION) into the bench venv"
@@ -128,6 +130,44 @@ compile:
 test:
 	@echo "frappe-free modules: $$(grep -cv -e '^#' -e '^$$' .github/frappe-free-tests.txt)"
 	@grep -v -e '^#' -e '^$$' .github/frappe-free-tests.txt | xargs -P8 -n1 $(PY) -m unittest
+
+# The OTHER 15. stabler/tests/ has 99 modules; the 84 above run without a bench,
+# and these 15 need a real site (they hit the DB, submit documents, check GL).
+# The GitLab `bench-tests` job is supposed to cover them but is `when: manual` +
+# `allow_failure: true` and has never once run, so its bootstrap is unproven.
+# Proving them locally first is what earns that job the right to block.
+#
+# Not part of `check`: a bench run is ~minutes and needs a live MariaDB/Redis,
+# which the pre-push hook must not depend on. Run it before a deploy instead.
+#
+# TEST_SITE defaults to the throwaway site, NOT the working `stabler` dev site:
+# the runner creates and submits real documents. Override only if you mean it.
+TEST_SITE ?= genesis-test.local
+#
+# Derived, not hardcoded: "every test module that is NOT in the frappe-free
+# list". A hardcoded list of 15 goes stale the first time someone adds a test.
+# awk rather than `comm <(...)`: process substitution is bash-only and make
+# runs recipes under /bin/sh.
+# (sed uses | as its delimiter, not #: this is a variable assignment, and make
+# would treat a bare # as the start of a comment and eat the rest of the line.)
+BENCH_TESTS := $(shell ls stabler/tests/test_*.py | sed 's|.*/||; s|\.py$$||' | sort \
+	| awk 'NR==FNR{sub(/^stabler\.tests\./,"");free[$$0]=1;next} !($$0 in free)' \
+	    .github/frappe-free-tests.txt -)
+
+test-bench:
+	@$(PY) -c "import json,sys; c=json.load(open('$(LOCAL_BENCH)/sites/$(TEST_SITE)/site_config.json')); \
+	 sys.exit(0 if c.get('allow_tests') else 1)" \
+	 || { echo "ERROR: $(TEST_SITE) has allow_tests off (or does not exist)."; \
+	      echo "  bench --site $(TEST_SITE) set-config allow_tests true"; exit 1; }
+	@echo "bench modules: $(words $(BENCH_TESTS))  site: $(TEST_SITE)"
+	@fail=0; for m in $(BENCH_TESTS); do \
+	  echo "--- $$m"; \
+	  ( cd $(LOCAL_BENCH) && bench --site $(TEST_SITE) run-tests \
+	      --module stabler.tests.$$m ) || fail=1; \
+	done; \
+	if [ "$$fail" != "0" ]; then \
+	  echo "FAIL: at least one bench module is red -- see the --- markers above."; fi; \
+	exit $$fail
 
 # CLAUDE.md states these as "reviewers must reject". Prose does not enforce.
 #

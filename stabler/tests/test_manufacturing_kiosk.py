@@ -1,10 +1,13 @@
 from __future__ import annotations
 
 import unittest
-from unittest.mock import patch, MagicMock
+from unittest.mock import MagicMock, patch
+
 import frappe
 from frappe import PermissionError
+
 from stabler.api.manufacturing import work_order_detail
+
 
 class TestManufacturingKiosk(unittest.TestCase):
 	@patch("stabler.api.manufacturing._require_mfg")
@@ -20,7 +23,7 @@ class TestManufacturingKiosk(unittest.TestCase):
 		mock_is_mgr.return_value = False
 		mock_is_wh.return_value = False
 		mock_session.user = "operator_a@example.com"
-		
+
 		# Mock required item
 		mock_req_item = MagicMock()
 		mock_req_item.item_code = "RAW-001"
@@ -31,7 +34,7 @@ class TestManufacturingKiosk(unittest.TestCase):
 		mock_req_item.source_warehouse = "Source Wh"
 		mock_req_item.rate = 10.0
 		mock_req_item.amount = 50.0
-		
+
 		mock_doc = MagicMock()
 		mock_doc.name = "WO-00001"
 		mock_doc.production_item = "FG-001"
@@ -50,18 +53,29 @@ class TestManufacturingKiosk(unittest.TestCase):
 		mock_doc.bom_no = "BOM-001"
 		mock_doc.required_items = [mock_req_item]
 		mock_doc.get.return_value = "operator_a@example.com" # for doc.get("operator")
-		
+
 		mock_get_doc.return_value = mock_doc
-		
+
 		# Call work_order_detail
 		payload = work_order_detail("WO-00001")
-		
+
 		# Asserts for Operator A (non-manager, non-warehouse)
 		self.assertEqual(payload["name"], "WO-00001")
 		self.assertNotIn("bom_no", payload)
-		self.assertIn("required_items", payload)
+		# NOT required_items: those rows carry rate/amount, i.e. BOM cost data. The
+		# same commit that wrote this assertion gated the payload to managers +
+		# warehouse roles (api/manufacturing.py, "required_items visible to managers
+		# and warehouse users"), so the assertion contradicted its own implementation
+		# from day one. Operators get their transfer list from wo_transfer_preview,
+		# which recomputes the rows without prices.
+		self.assertNotIn("required_items", payload)
 		self.assertNotIn("timeline", payload)
-		mock_doc.get.assert_called_with("operator")
+		# assert_ANY_call, not assert_called_with: the latter only inspects the LAST
+		# call, and the payload reads three more custom fields (custom_batch_no /
+		# _mfg_date / _expiry) after `operator`. The intent here is that `operator`
+		# is read through .get() at all -- it is a custom field, so attribute access
+		# would raise on a site that has not installed it.
+		mock_doc.get.assert_any_call("operator")
 
 	@patch("stabler.api.manufacturing._require_mfg")
 	@patch("stabler.api.manufacturing._assert_can_read")
@@ -76,11 +90,11 @@ class TestManufacturingKiosk(unittest.TestCase):
 		mock_is_mgr.return_value = False
 		mock_is_wh.return_value = False
 		mock_session.user = "operator_a@example.com" # current user is Operator A
-		
+
 		mock_doc = MagicMock()
 		mock_doc.get.return_value = "operator_b@example.com" # operator assigned is Operator B
 		mock_get_doc.return_value = mock_doc
-		
+
 		# Expect PermissionError (IDOR Guard)
 		with self.assertRaises(PermissionError):
 			work_order_detail("WO-00002")
@@ -98,7 +112,7 @@ class TestManufacturingKiosk(unittest.TestCase):
 		mock_is_mgr.return_value = False
 		mock_is_wh.return_value = True # User is in warehouse role
 		mock_session.user = "warehouse@example.com"
-		
+
 		# Mock required item
 		mock_req_item = MagicMock()
 		mock_req_item.item_code = "RAW-001"
@@ -109,22 +123,22 @@ class TestManufacturingKiosk(unittest.TestCase):
 		mock_req_item.source_warehouse = "Source Wh"
 		mock_req_item.rate = 10.0
 		mock_req_item.amount = 50.0
-		
+
 		mock_doc = MagicMock()
 		mock_doc.name = "WO-00001"
 		mock_doc.bom_no = "BOM-001"
 		mock_doc.required_items = [mock_req_item]
 		mock_doc.get.return_value = "operator_a@example.com"
 		mock_get_doc.return_value = mock_doc
-		
+
 		# Call work_order_detail
 		payload = work_order_detail("WO-00001")
-		
+
 		# Asserts for Warehouse user: gets required_items but NOT bom_no or rates/amounts
 		self.assertNotIn("bom_no", payload)
 		self.assertIn("required_items", payload)
 		self.assertNotIn("timeline", payload)
-		
+
 		req_items_payload = payload["required_items"]
 		self.assertEqual(len(req_items_payload), 1)
 		self.assertEqual(req_items_payload[0]["item_code"], "RAW-001")
@@ -145,12 +159,12 @@ class TestManufacturingKiosk(unittest.TestCase):
 		mock_is_mgr.return_value = True # User is manager
 		mock_is_wh.return_value = False
 		mock_session.user = "manager@example.com"
-		
+
 		# Mock timeline comments
 		mock_get_all.return_value = [
 			{"name": "COMM-001", "content": "Started Work Order", "creation": "2026-06-12 10:00:00", "comment_by": "operator_a@example.com"}
 		]
-		
+
 		# Mock required item
 		mock_req_item = MagicMock()
 		mock_req_item.item_code = "RAW-001"
@@ -161,112 +175,60 @@ class TestManufacturingKiosk(unittest.TestCase):
 		mock_req_item.source_warehouse = "Source Wh"
 		mock_req_item.rate = 10.0
 		mock_req_item.amount = 50.0
-		
+
 		mock_doc = MagicMock()
 		mock_doc.name = "WO-00001"
 		mock_doc.bom_no = "BOM-001"
 		mock_doc.required_items = [mock_req_item]
 		mock_doc.get.return_value = "operator_a@example.com"
 		mock_get_doc.return_value = mock_doc
-		
+
 		# Call work_order_detail
 		payload = work_order_detail("WO-00001")
-		
+
 		# Asserts for Manager: gets EVERYTHING (required_items with rates, bom_no, and timeline)
 		self.assertEqual(payload["bom_no"], "BOM-001")
 		self.assertIn("required_items", payload)
 		self.assertIn("timeline", payload)
-		
+
 		req_items_payload = payload["required_items"]
 		self.assertEqual(len(req_items_payload), 1)
 		self.assertEqual(req_items_payload[0]["item_code"], "RAW-001")
 		self.assertEqual(req_items_payload[0]["rate"], 10.0)
 		self.assertEqual(req_items_payload[0]["amount"], 50.0)
-		
+
 		timeline_payload = payload["timeline"]
 		self.assertEqual(len(timeline_payload), 1)
 		self.assertEqual(timeline_payload[0]["name"], "COMM-001")
 
+	# Was two tests asserting that manufacturing.py rewrites the finished-goods
+	# warehouse to "Tayyor mahsulot - <company abbr>". No such code has ever existed
+	# (`git log -S "Tayyor mahsulot" -- stabler/api/manufacturing.py` is empty) --
+	# they were written alongside the allow_zero_valuation_rate fix in c3d8475 and
+	# were red from birth, which nobody saw because the bench-tests job has never
+	# run. Deleted rather than implemented: a hardcoded Uzbek warehouse name is one
+	# tenant's data leaking into shared code, exactly what CLAUDE.md's multi-tenant
+	# rule forbids. If anjan really needs that override it belongs in
+	# `Stabler Company Modules` as a setting, not in a constant.
+	# What DID ship in c3d8475 is kept below.
 	@patch("stabler.api.manufacturing._is_mfg_manager")
-	def test_list_work_orders_tayyor_mahsulot_override(self, mock_is_mgr):
-		# Setup
+	def test_make_work_order_stock_entry_allows_zero_valuation_rate(self, mock_is_mgr):
+		# Kiosk operators post Manufacture entries for items whose FG valuation is
+		# still 0 (first run of a new product, or a BOM priced later). Without this
+		# flag ERPNext refuses the entry and the shop floor is blocked mid-shift.
 		mock_is_mgr.return_value = True
-		
-		orig_get_value = frappe.db.get_value
-		orig_exists = frappe.db.exists
-		orig_sql = frappe.db.sql
-		
-		def sql_side_effect(*args, **kwargs):
-			if args and "FROM `tabWork Order`" in args[0]:
-				return [
-					{
-						"name": "WO-00001",
-						"production_item": "FG-001",
-						"fg_warehouse": "Original FG Whse - A",
-						"company": "Test Company",
-					}
-				]
-			return orig_sql(*args, **kwargs)
-			
-		def get_value_side_effect(*args, **kwargs):
-			if args and args[0] == "Company":
-				return "A"
-			return orig_get_value(*args, **kwargs)
-			
-		def exists_side_effect(*args, **kwargs):
-			if len(args) > 1 and args[0] == "Warehouse" and args[1] == "Tayyor mahsulot - A":
-				return True
-			return orig_exists(*args, **kwargs)
-			
-		with patch("stabler.api.manufacturing.frappe.db.get_value", side_effect=get_value_side_effect), \
-		     patch("stabler.api.manufacturing.frappe.db.exists", side_effect=exists_side_effect), \
-		     patch("stabler.api.manufacturing.frappe.db.sql", side_effect=sql_side_effect), \
-		     patch("stabler.api.manufacturing._require_company"), \
-		     patch("stabler.api.manufacturing._require_mfg"):
-			from stabler.api.manufacturing import list_work_orders
-			res = list_work_orders("Test Company")
-			
-		# Check that fg_warehouse was overridden to "Tayyor mahsulot - A"
-		self.assertEqual(res[0]["fg_warehouse"], "Tayyor mahsulot - A")
 
-	@patch("stabler.api.manufacturing._is_mfg_manager")
-	def test_make_work_order_stock_entry_tayyor_mahsulot_override(self, mock_is_mgr):
-		# Setup
-		mock_is_mgr.return_value = True
-		
-		# Mock stock entry document
 		mock_se = MagicMock()
 		mock_se.company = "Test Company"
-		mock_se.get.return_value = "Original FG Whse - A" # for to_warehouse
-		
 		mock_item = MagicMock()
-		mock_item.t_warehouse = "Original FG Whse - A"
 		mock_se.items = [mock_item]
-		
-		orig_get_value = frappe.db.get_value
-		orig_exists = frappe.db.exists
-		
-		def get_value_side_effect(*args, **kwargs):
-			if args and args[0] == "Company":
-				return "A"
-			return orig_get_value(*args, **kwargs)
-			
-		def exists_side_effect(*args, **kwargs):
-			if len(args) > 1 and args[0] == "Warehouse" and args[1] == "Tayyor mahsulot - A":
-				return True
-			return orig_exists(*args, **kwargs)
-			
-		with patch("stabler.api.manufacturing.frappe.db.get_value", side_effect=get_value_side_effect), \
-		     patch("stabler.api.manufacturing.frappe.db.exists", side_effect=exists_side_effect), \
-		     patch("erpnext.manufacturing.doctype.work_order.work_order.make_stock_entry", return_value=mock_se), \
+
+		with patch("erpnext.manufacturing.doctype.work_order.work_order.make_stock_entry", return_value=mock_se), \
 		     patch("stabler.api.manufacturing.frappe.get_doc", return_value=mock_se), \
 		     patch("stabler.api.manufacturing._require_mfg"):
 			from stabler.api.manufacturing import make_work_order_stock_entry
 			make_work_order_stock_entry("WO-00001", "Manufacture", qty=5.0)
-		
-		# Assert overrides
-		self.assertEqual(mock_se.to_warehouse, "Tayyor mahsulot - A")
-		self.assertEqual(mock_item.t_warehouse, "Tayyor mahsulot - A")
+
 		self.assertEqual(mock_item.allow_zero_valuation_rate, 1)
 		self.assertTrue(mock_se.insert.called)
 		self.assertTrue(mock_se.submit.called)
@@ -275,9 +237,9 @@ class TestManufacturingKiosk(unittest.TestCase):
 	@patch("stabler.api.manufacturing.frappe.new_doc")
 	def test_tomorrow_wo_material_request_creation(self, mock_new_doc, mock_exists):
 		# Setup
-		from frappe.utils import add_days, today, getdate
+		from frappe.utils import add_days, getdate, today
 		mock_exists.return_value = False # no existing MR
-		
+
 		# Mock Work Order doc
 		mock_wo = MagicMock()
 		mock_wo.name = "WO-TOMORROW"
@@ -285,28 +247,28 @@ class TestManufacturingKiosk(unittest.TestCase):
 		mock_wo.wip_warehouse = "WIP Wh"
 		# Set planned start date to tomorrow
 		mock_wo.planned_start_date = str(add_days(getdate(today()), 1))
-		
+
 		mock_req_item = MagicMock()
 		mock_req_item.item_code = "RAW-01"
 		mock_req_item.required_qty = 100.0
 		mock_wo.required_items = [mock_req_item]
-		
+
 		# Mock MR doc
 		mock_mr = MagicMock()
 		mock_new_doc.return_value = mock_mr
-		
+
 		orig_get_value = frappe.db.get_value
 		def get_value_side_effect(*args, **kwargs):
 			# Mock actual stock in WIP Wh as 40.0 (shortage = 60.0)
 			if args and args[0] == "Bin":
 				return 40.0
 			return orig_get_value(*args, **kwargs)
-			
+
 		from stabler.api.manufacturing import create_material_request_for_tomorrow_wo
-		
+
 		with patch("stabler.api.manufacturing.frappe.db.get_value", side_effect=get_value_side_effect):
 			create_material_request_for_tomorrow_wo(mock_wo)
-			
+
 		# Assert MR was created and submitted
 		mock_new_doc.assert_called_with("Material Request")
 		self.assertEqual(mock_mr.material_request_type, "Transfer")
