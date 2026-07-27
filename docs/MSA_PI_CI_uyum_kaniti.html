@@ -1,0 +1,334 @@
+<!doctype html>
+<html lang="tr">
+<head>
+<meta charset="utf-8" />
+<meta name="viewport" content="width=device-width, initial-scale=1" />
+<title>MSA — PI ↔ CI uyum kanıtı</title>
+<style>
+	:root {
+		--bg: #f6f7f9; --card: #fff; --ink: #1b2434; --muted: #667085; --line: #e3e6ea;
+		--red: #d63939; --red-bg: #fdeaea; --yellow: #b58105; --yellow-bg: #fff6e0;
+		--green: #2fb344; --green-bg: #e8f7ec; --blue: #206bc4; --blue-bg: #e8f0fb;
+	}
+	@media (prefers-color-scheme: dark) {
+		:root {
+			--bg: #16181d; --card: #1d2026; --ink: #e6e8ec; --muted: #98a2b3; --line: #2c3038;
+			--red-bg: #3a1f21; --yellow-bg: #3a3117; --green-bg: #1c3324; --blue-bg: #1b2b42;
+		}
+	}
+	* { box-sizing: border-box; }
+	body {
+		margin: 0; background: var(--bg); color: var(--ink);
+		font: 15px/1.55 -apple-system, "Segoe UI", Roboto, "Helvetica Neue", Arial, sans-serif;
+	}
+	.wrap { max-width: 1080px; margin: 0 auto; padding: 32px 20px 80px; }
+	h1 { font-size: 26px; margin: 0 0 4px; letter-spacing: -0.2px; }
+	h2 { font-size: 19px; margin: 40px 0 12px; padding-top: 18px; border-top: 1px solid var(--line); }
+	h3 { font-size: 15px; margin: 22px 0 8px; color: var(--muted); text-transform: uppercase; letter-spacing: .04em; }
+	p { margin: 10px 0; }
+	.sub { color: var(--muted); margin: 0 0 22px; }
+	.card { background: var(--card); border: 1px solid var(--line); border-radius: 10px; padding: 16px 18px; margin: 14px 0; }
+	.grid { display: grid; gap: 12px; grid-template-columns: repeat(auto-fit, minmax(170px, 1fr)); }
+	.kpi { background: var(--card); border: 1px solid var(--line); border-radius: 10px; padding: 12px 14px; }
+	.kpi .n { font-size: 22px; font-weight: 600; font-variant-numeric: tabular-nums; }
+	.kpi .l { color: var(--muted); font-size: 12.5px; margin-top: 2px; }
+	.scroll { overflow-x: auto; }
+	table { border-collapse: collapse; width: 100%; font-size: 13.5px; }
+	th, td { padding: 7px 10px; border-bottom: 1px solid var(--line); text-align: left; vertical-align: top; }
+	th { font-weight: 600; color: var(--muted); font-size: 12px; text-transform: uppercase; letter-spacing: .03em; white-space: nowrap; }
+	tbody tr:nth-child(odd) td { background: rgba(128, 140, 160, .06); }
+	td.num, th.num { text-align: right; font-variant-numeric: tabular-nums; font-family: ui-monospace, SFMono-Regular, Menlo, monospace; white-space: nowrap; }
+	code, .mono { font-family: ui-monospace, SFMono-Regular, Menlo, monospace; font-size: 12.5px; }
+	.tag { display: inline-block; padding: 1px 7px; border-radius: 999px; font-size: 11.5px; font-weight: 600; white-space: nowrap; }
+	.t-red { background: var(--red-bg); color: var(--red); }
+	.t-yellow { background: var(--yellow-bg); color: var(--yellow); }
+	.t-green { background: var(--green-bg); color: var(--green); }
+	.t-blue { background: var(--blue-bg); color: var(--blue); }
+	.note { border-left: 3px solid var(--blue); background: var(--blue-bg); padding: 10px 14px; border-radius: 0 8px 8px 0; margin: 14px 0; }
+	.warnbox { border-left: 3px solid var(--yellow); background: var(--yellow-bg); padding: 10px 14px; border-radius: 0 8px 8px 0; margin: 14px 0; }
+	ul { margin: 8px 0 8px 18px; padding: 0; }
+	li { margin: 4px 0; }
+	.foot { color: var(--muted); font-size: 12.5px; margin-top: 36px; border-top: 1px solid var(--line); padding-top: 14px; }
+</style>
+</head>
+<body>
+<div class="wrap">
+
+<h1>MSA — her CI gerçekten PI'ına bağlı mı?</h1>
+<p class="sub">
+	Kaynak doğruluk: <span class="mono">MSA tegma obshiy.xlsx</span> (TEGMA sayfası) —
+	salt-okunur okundu, dosyaya asla yazılmadı. Bu sayfadaki <strong>her rakam</strong>
+	Stabler'ın <span class="mono">stabler/api/_imports_rules.py</span> modülü o tabloya
+	uygulanarak üretildi; elle yazılmış tek sayı yok.
+</p>
+
+<div class="grid">
+	<div class="kpi"><div class="n">59</div><div class="l">PI belgesi / 229 sözleşme kalemi</div></div>
+	<div class="kpi"><div class="n">353</div><div class="l">CI belgesi / 6 223 sevk satırı</div></div>
+	<div class="kpi"><div class="n">6 119</div><div class="l">PI'a bağlanan satır (%98,3)</div></div>
+	<div class="kpi"><div class="n">104</div><div class="l">hiçbir PI kalemine oturmayan satır</div></div>
+	<div class="kpi"><div class="n">83</div><div class="l">birden çok PI taşıyan CI</div></div>
+	<div class="kpi"><div class="n">21</div><div class="l">fazla sevk edilen anahtar (25 959 koli)</div></div>
+</div>
+
+<h2>1. Sorunun kendisi: eşleşme anahtarı yanlıştı</h2>
+<p>
+	Kapsam direktifi net: <em>“her CI bir PI'a bağlı olmalı; ürün, kategori ve fiyat
+	PI'dan gelmeli; PI her kalemde görünmeli; uymayan sütun işaretlenmeli.”</em>
+	Bunun yapılamamasının sebebi verinin bozuk olması değil, kodun <strong>yanlış
+	sütunla</strong> eşleştirmesiydi.
+</p>
+<p>
+	Stabler'daki eski hesap <span class="mono">(PI, item)</span> ikilisini kullanıyordu.
+	Tablodaki karşılığı <span class="mono">Article</span> sütunu — yani <em>alt kesim
+	kodu</em>. Oysa PI bir <strong>bileşik paket</strong> satar
+	(<span class="mono">CM60/40 = BUFFALO COMPENSATED</span>), CI ise onu alt kesimlere
+	bölerek sevk eder. Doğru anahtar tablonun
+	<span class="mono">наименование по инвойс</span> sütunudur — Stabler'da her iki
+	tarafta da <span class="mono">category</span>.
+</p>
+
+<div class="scroll"><table>
+	<thead><tr><th>Anahtar denemesi</th><th class="num">PI'a oturan satır</th><th class="num">Oran</th><th>Sonuç</th></tr></thead>
+	<tbody>
+		<tr><td><span class="mono">(PI, category)</span> — <em>наименование по инвойс</em></td><td class="num">6 119 / 6 223</td><td class="num">%98,3</td><td><span class="tag t-green">doğru anahtar</span></td></tr>
+		<tr><td><span class="mono">(PI, item)</span> — <em>Article</em> (eski kod)</td><td class="num">1 216 / 6 223</td><td class="num">%19,5</td><td><span class="tag t-red">satırların %80'i sahte “PI'da yok”</span></td></tr>
+	</tbody>
+</table></div>
+
+<h3>İki küçük ama zorunlu düzeltme</h3>
+<div class="scroll"><table>
+	<thead><tr><th>Kural</th><th>Uygulanmazsa</th><th>Uygulanınca</th></tr></thead>
+	<tbody>
+		<tr>
+			<td>Anahtarın <strong>iki tarafı da</strong> normalize edilir: boşluklar tek boşluğa iner, metin büyük harfe çevrilir (<span class="mono">Whole leg</span> ↔ <span class="mono">WHOLE LEG</span>)</td>
+			<td class="num">144 sahte “PI'da yok”</td>
+			<td class="num">104 gerçek</td>
+		</tr>
+		<tr>
+			<td>Fiyat karşılaştırması <strong>4 haneye yuvarlanır</strong> (<span class="mono">4.0999999999 ≠ 4.1</span> tuzağı)</td>
+			<td class="num">273 sahte fiyat farkı</td>
+			<td class="num">0 fark</td>
+		</tr>
+	</tbody>
+</table></div>
+<div class="note">
+	<strong>Önemli düzeltme.</strong> İlk planda “132 + 132 fiyat uyuşmazlığı var”
+	deniyordu. Gerçek veriyle çalışınca bu rakam üretilemedi: doğru anahtar ve 4 hane
+	yuvarlama ile <strong>fiyat uyuşmazlığı sayısı 0 + 0</strong>. Yani MSA'nın
+	fiyatları sözleşmeye uyuyor; sorun raporlamadaydı.
+</div>
+
+<h2>2. Uçtan uca gerçek örnek: <span class="mono">HMA/PI/2677/202425</span></h2>
+<p>Bu PI 11 kalem, 71 712 koli. Sistemin her kalem için ürettiği tablo:</p>
+
+<div class="scroll"><table>
+	<thead><tr>
+		<th>PI kalemi (<span class="mono">item</span>)</th><th>Kategori = eşleşme anahtarı</th>
+		<th class="num">Sözleşme koli</th><th class="num">Sevk</th><th class="num">Kalan</th>
+		<th class="num">CI adedi</th><th class="num">Anlaşılan fiyat</th><th>Durum</th>
+	</tr></thead>
+	<tbody>
+		<tr><td class="mono">CM60/40</td><td>BUFFALO COMPENSATED</td><td class="num">16 800</td><td class="num">16 800</td><td class="num">0</td><td class="num">4</td><td class="num">3,85</td><td><span class="tag t-blue">bileşik paket</span></td></tr>
+		<tr><td class="mono">152</td><td>HEAD MEAT</td><td class="num">4 200</td><td class="num">4 162</td><td class="num">38</td><td class="num">4</td><td class="num">2,50</td><td><span class="tag t-green">açık bakiye</span></td></tr>
+		<tr><td class="mono">46</td><td>STRIPLOIN</td><td class="num">2 089</td><td class="num">2 089</td><td class="num">0</td><td class="num">2</td><td class="num">4,20</td><td><span class="tag t-green">kapandı</span></td></tr>
+		<tr><td class="mono">31</td><td>TENDERLOIN</td><td class="num">3 112</td><td class="num">3 112</td><td class="num">0</td><td class="num">3</td><td class="num">5,15</td><td><span class="tag t-green">kapandı</span></td></tr>
+		<tr><td class="mono">66</td><td>TRIMING</td><td class="num">4 200</td><td class="num">4 238</td><td class="num">−38</td><td class="num">4</td><td class="num">2,85</td><td><span class="tag t-red">fazla sevk</span></td></tr>
+		<tr><td class="mono">15-17</td><td>NECK</td><td class="num">2 800</td><td class="num">2 800</td><td class="num">0</td><td class="num">2</td><td class="num">3,90</td><td><span class="tag t-green">kapandı</span></td></tr>
+		<tr><td class="mono">65</td><td>BLADE</td><td class="num">4 911</td><td class="num">4 911</td><td class="num">0</td><td class="num">2</td><td class="num">3,90</td><td><span class="tag t-green">kapandı</span></td></tr>
+		<tr><td class="mono">25</td><td>TONGUE</td><td class="num">2 800</td><td class="num">2 800</td><td class="num">0</td><td class="num">3</td><td class="num">2,55</td><td><span class="tag t-green">kapandı</span></td></tr>
+		<tr><td class="mono">105/106</td><td>FOREQUARTER / FQ ROLL</td><td class="num">1 400</td><td class="num">1 400</td><td class="num">0</td><td class="num">1</td><td class="num">3,80</td><td><span class="tag t-green">kapandı</span></td></tr>
+		<tr><td class="mono">4HQ</td><td>HQ CUTS</td><td class="num">28 000</td><td class="num">28 000</td><td class="num">0</td><td class="num">9</td><td class="num">3,95</td><td><span class="tag t-green">kapandı</span></td></tr>
+		<tr><td class="mono">60/60A</td><td>SHIN SHANK</td><td class="num">1 400</td><td class="num">1 400</td><td class="num">0</td><td class="num">1</td><td class="num">4,00</td><td><span class="tag t-green">kapandı</span></td></tr>
+	</tbody>
+</table></div>
+
+<h3>2a. Bileşik paket neden <span class="mono">item</span> ile eşleşmez</h3>
+<p>
+	PI'da tek satır: <span class="mono">CM60/40 — BUFFALO COMPENSATED — 16 800 koli</span>.
+	CI tarafında bu satır <strong>96 sevk satırına</strong>, 8 farklı alt kesime ve
+	4 farklı CI belgesine dağılmış durumda. Hiçbirinin <span class="mono">Article</span>
+	kodu <span class="mono">CM60/40</span> değil — eski kod bu yüzden 16 800 kolinin
+	tamamını “PI'da yok” sayıyordu.
+</p>
+<div class="scroll"><table>
+	<thead><tr><th>Alt kesim (<span class="mono">Article</span>)</th><th>Adı</th><th class="num">Koli</th><th class="num">kg</th></tr></thead>
+	<tbody>
+		<tr><td class="mono">105/106</td><td>FOREQUARTER / FQ ROLL</td><td class="num">3 864</td><td class="num">77 280</td></tr>
+		<tr><td class="mono">15-17</td><td>NECK</td><td class="num">2 400</td><td class="num">48 000</td></tr>
+		<tr><td class="mono">65</td><td>BLADE</td><td class="num">2 400</td><td class="num">48 000</td></tr>
+		<tr><td class="mono">44</td><td>SILVER SIDE</td><td class="num">2 352</td><td class="num">47 040</td></tr>
+		<tr><td class="mono">41</td><td>TOPSIDE</td><td class="num">1 680</td><td class="num">33 600</td></tr>
+		<tr><td class="mono">63</td><td>CHUCK</td><td class="num">1 416</td><td class="num">28 320</td></tr>
+		<tr><td class="mono">42</td><td>THICK FLANK / knuckle</td><td class="num">1 344</td><td class="num">26 880</td></tr>
+		<tr><td class="mono">45</td><td>RUMP STEAK</td><td class="num">1 344</td><td class="num">26 880</td></tr>
+		<tr><td><strong>toplam</strong></td><td>4 CI: MH/085, MH/104, MH/144, MH/151 (202526)</td><td class="num"><strong>16 800</strong></td><td class="num"><strong>336 000</strong></td></tr>
+	</tbody>
+</table></div>
+<p>
+	Sözleşme 16 800 koli, sevk 16 800 koli — <strong>kuruşu kuruşuna kapanıyor.</strong>
+	Yeni kod bunu böyle görüyor; alt kesime bölünme bir hata değil, beklenen davranış
+	olduğu için satır <span class="tag t-blue">alt kesim</span> bilgi rozetiyle
+	işaretleniyor, uyarı üretmiyor.
+</p>
+
+<h3>2b. Gerçek bir fazla sevk: TRIMING</h3>
+<div class="scroll"><table>
+	<thead><tr><th>CI</th><th>Tarih</th><th>Konteyner</th><th class="num">Koli</th><th class="num">kg</th><th class="num">Fiyat</th></tr></thead>
+	<tbody>
+		<tr><td class="mono">MH/037/202526</td><td>07.04.2025</td><td class="mono">EMCU5260420</td><td class="num">856</td><td class="num">17 120</td><td class="num">2,85</td></tr>
+		<tr><td class="mono">MH/129/202526</td><td>24.04.2025</td><td class="mono">CCLU8593727</td><td class="num">960</td><td class="num">19 200</td><td class="num">2,85</td></tr>
+		<tr><td class="mono">MH/145/202526</td><td>26.04.2025</td><td class="mono">EGHU5009153</td><td class="num">1 400</td><td class="num">28 000</td><td class="num">2,85</td></tr>
+		<tr><td class="mono">MH/154/202526</td><td>28.04.2025</td><td class="mono">CGMU4983409</td><td class="num">1 022</td><td class="num">20 440</td><td class="num">2,85</td></tr>
+		<tr><td><strong>toplam sevk</strong></td><td colspan="2">sözleşme 4 200 koli</td><td class="num"><strong>4 238</strong></td><td class="num">84 760</td><td class="num">—</td></tr>
+	</tbody>
+</table></div>
+<div class="warnbox">
+	Kalan = <strong>−38 koli</strong>. Eski kodda bu satır <span class="mono">max(0, …)</span>
+	ile sıfırlanıyordu; yani <strong>fazla sevk hiç görünmüyordu</strong>. Tüm veri
+	setinde bu şekilde yutulan miktar: <strong>21 anahtar, 25 959 koli</strong>.
+</div>
+
+<h2>3. Bir anahtar birden çok sözleşme fiyatı taşıyabilir</h2>
+<p>
+	“CI fiyatı PI fiyatından farklı” demek her zaman hata değil: aynı PI aynı kategoriyi
+	<strong>birden çok fiyattan</strong> sözleşmiş olabilir. Kural: CI fiyatı bunlardan
+	<strong>herhangi birine</strong> eşitse uyumludur. Veri setinde böyle 4 anahtar var.
+</p>
+<div class="scroll"><table>
+	<thead><tr><th>PI</th><th>Kategori</th><th class="num">Anlaşılan fiyatlar</th><th class="num">Belge fiyatları</th><th class="num">Koli</th></tr></thead>
+	<tbody>
+		<tr><td class="mono">HMA/PI/1351/2025-26</td><td>BUFFALO COMPENSATED_2</td><td class="num">4,175 / 4,23</td><td class="num">4,05</td><td class="num">32 200</td></tr>
+		<tr><td class="mono">HMA/PI/1351/2025-26</td><td>STRIPLOIN</td><td class="num">4,55 / 4,61</td><td class="num">4,05</td><td class="num">2 800</td></tr>
+		<tr><td class="mono">HMA/PI/1351/2025-26</td><td>TENDERLOIN</td><td class="num">6,00 / 6,06</td><td class="num">4,05</td><td class="num">3 112</td></tr>
+		<tr><td class="mono">PRO/MEPL/0291/2526</td><td>BUFFALO COMPENSATED_3</td><td class="num">4,05 / 4,10 / 4,15</td><td class="num">4,05 / 4,10 / 4,15</td><td class="num">25 200</td></tr>
+	</tbody>
+</table></div>
+<div class="note">
+	İlk planın <span class="mono">MEPL/P0648/2526</span> için iddia ettiği fiyat
+	uyuşmazlığı <strong>yok</strong>: o anahtar meşru olarak üç anlaşılan fiyat taşıyor.
+</div>
+
+<h2>4. Sistemin işaret ettiği gerçek bulgular</h2>
+
+<h3>4a. Fazla sevk — 21 anahtar, 25 959 koli (ilk 8)</h3>
+<div class="scroll"><table>
+	<thead><tr><th>PI</th><th>Kategori</th><th class="num">Sözleşme</th><th class="num">Sevk</th><th class="num">Fazla</th></tr></thead>
+	<tbody>
+		<tr><td class="mono">IFF/EXP/25/247</td><td>BUFFALO COMPENSATED</td><td class="num">10 094</td><td class="num">19 600</td><td class="num">9 506</td></tr>
+		<tr><td class="mono">PRO/MEPL/0291/2526</td><td>BUFFALO COMPENSATED_4</td><td class="num">4 200</td><td class="num">8 400</td><td class="num">4 200</td></tr>
+		<tr><td class="mono">HMA/PI/190/2026-27</td><td>LIVER</td><td class="num">2 800</td><td class="num">5 600</td><td class="num">2 800</td></tr>
+		<tr><td class="mono">HMA/PI/2230/2025-26</td><td>LIVER</td><td class="num">1 400</td><td class="num">2 800</td><td class="num">1 400</td></tr>
+		<tr><td class="mono">PRO/MEPL/0108/26-27</td><td>BLADE</td><td class="num">1 400</td><td class="num">2 800</td><td class="num">1 400</td></tr>
+		<tr><td class="mono">HMA/PI/2230/2025-26</td><td>FOREQUARTER / FQ ROLL</td><td class="num">7 000</td><td class="num">8 394</td><td class="num">1 394</td></tr>
+		<tr><td class="mono">HMA/PI/1843/2025-26</td><td>HQ CUTS</td><td class="num">11 200</td><td class="num">12 578</td><td class="num">1 378</td></tr>
+		<tr><td class="mono">HMA/PI/2230/2025-26</td><td>HEAD MEAT</td><td class="num">2 800</td><td class="num">3 995</td><td class="num">1 195</td></tr>
+	</tbody>
+</table></div>
+<p class="sub" style="margin-top:6px">
+	Bunlar “sistem hatası” değil <strong>ticari bulgu</strong>: ya PI'a ek yapılmalı ya da
+	sevk fazlası açıklanmalı. Sistem yalnız raporluyor, veriyi düzeltmiyor.
+</p>
+
+<h3>4b. Hiçbir PI kalemine oturmayan 104 satır (ilk 8 anahtar)</h3>
+<div class="scroll"><table>
+	<thead><tr><th>PI</th><th>Kategori</th><th class="num">Satır</th><th class="num">Koli</th><th>Yorum</th></tr></thead>
+	<tbody>
+		<tr><td class="mono">HMA/PI/189/2026-27</td><td>FREIGHT AND WAR RISK</td><td class="num">15</td><td class="num">0</td><td>navlun/sigorta satırı — mal değil</td></tr>
+		<tr><td class="mono">СПЕЦИФКАЦИЯ №1</td><td>СОМ</td><td class="num">9</td><td class="num">23 400</td><td>PI numarası yerine spesifikasyon</td></tr>
+		<tr><td class="mono">HMA/PI/240/2026-27</td><td>FREIGHT AND WAR RISK</td><td class="num">9</td><td class="num">0</td><td>navlun</td></tr>
+		<tr><td class="mono">PRO/ALS/2026-27/006</td><td>FREIGHT AND WAR RISK</td><td class="num">7</td><td class="num">0</td><td>navlun</td></tr>
+		<tr><td class="mono">HMA/PI/053/2026-27</td><td>FREIGHT AND WAR RISK</td><td class="num">6</td><td class="num">0</td><td>navlun</td></tr>
+		<tr><td class="mono">СПЕЦИФКАЦИЯ №10</td><td>СОМ</td><td class="num">5</td><td class="num">13 000</td><td>spesifikasyon</td></tr>
+		<tr><td class="mono">PRO/ALS/2026-27/025</td><td>FREIGHT AND WAR RISK</td><td class="num">5</td><td class="num">0</td><td>navlun</td></tr>
+		<tr><td class="mono">PRO/MEPL/0024/26-27</td><td>FREIGHT AND WAR RISK</td><td class="num">4</td><td class="num">0</td><td>navlun</td></tr>
+	</tbody>
+</table></div>
+<p>
+	Kalan 104 satırın büyük kısmı <strong>navlun/harp riski</strong> gibi mal olmayan
+	kalemler (0 koli) ile <strong>PI numarası girilmemiş</strong> süt tozu (СОМ)
+	sevkleri. Bunlar kalan bakiyeden <strong>düşülmez</strong>; kırmızı
+	<span class="tag t-red">PI'da yok</span> rozetiyle ayrıca listelenir — çünkü
+	sessizce netleştirmek, bulunması istenen şeyi gizlemek olurdu.
+</p>
+
+<h3>4c. Koli × koli ağırlığı ≠ kg — 8 satır</h3>
+<div class="scroll"><table>
+	<thead><tr><th>CI</th><th>Kategori</th><th class="num">Koli</th><th class="num">Koli ağırlığı</th><th class="num">Beklenen kg</th><th class="num">Yazan kg</th></tr></thead>
+	<tbody>
+		<tr><td class="mono">MH/681/2026-27</td><td>Whole leg</td><td class="num">1 466</td><td class="num">20,0</td><td class="num">29 320</td><td class="num">28 000</td></tr>
+		<tr><td class="mono">MH/681/2026-27</td><td>Whole leg</td><td class="num">1 475</td><td class="num">20,0</td><td class="num">29 500</td><td class="num">28 000</td></tr>
+		<tr><td class="mono">MH/692/2026-27</td><td>Whole leg</td><td class="num">1 411</td><td class="num">20,0</td><td class="num">28 220</td><td class="num">28 000</td></tr>
+		<tr><td class="mono">MH/692/2026-27</td><td>Whole leg</td><td class="num">1 457</td><td class="num">20,0</td><td class="num">29 140</td><td class="num">28 000</td></tr>
+		<tr><td class="mono">MH/692/2026-27</td><td>Whole leg</td><td class="num">1 472</td><td class="num">20,0</td><td class="num">29 440</td><td class="num">28 000</td></tr>
+		<tr><td class="mono">MH/710/2026-27</td><td>Whole leg</td><td class="num">1 471</td><td class="num">19,0088</td><td class="num">27 962</td><td class="num">28 000</td></tr>
+		<tr><td class="mono">MH/710/2026-27</td><td>Whole leg</td><td class="num">1 328</td><td class="num">19,0088</td><td class="num">25 244</td><td class="num">28 000</td></tr>
+		<tr><td class="mono">MH/756/2026-27</td><td>Whole leg</td><td class="num">1 482</td><td class="num">19,0088</td><td class="num">28 171</td><td class="num">28 000</td></tr>
+	</tbody>
+</table></div>
+<p class="sub" style="margin-top:6px">Tolerans 0,5 kg. Hepsi aynı ürün ailesinde (<span class="mono">Whole leg</span>) — muhtemelen konteyner başına yuvarlanmış kg girişi.</p>
+
+<h3>4d. Bir CI birden çok PI taşıyabilir — 353 CI'ın 83'ü</h3>
+<div class="scroll"><table>
+	<thead><tr><th>CI</th><th class="num">PI adedi</th><th>PI'lar</th></tr></thead>
+	<tbody>
+		<tr><td class="mono">MH/1244/2025-26</td><td class="num">5</td><td class="mono">HMA/PI/405, 1167, 1168, 1209, 1240 /2025-26</td></tr>
+		<tr><td class="mono">MH/2107/2025-26</td><td class="num">5</td><td class="mono">HMA/PI/1796, 1843, 1844, 2229, 2230 /2025-26</td></tr>
+		<tr><td class="mono">MH/1172/2025-26</td><td class="num">4</td><td class="mono">HMA/PI/405, 694, 1167, 1168 /2025-26</td></tr>
+	</tbody>
+</table></div>
+<p>
+	Bu yüzden PI bağlantısı <strong>satır seviyesinde</strong> tutulmak zorunda; sadece
+	başlıkta tutulursa bu 83 CI'ın kalemleri hiçbir PI'a atfedilemez. Veri tarafında
+	<span class="mono">v58</span> yaması, başlığı dolu ama satırı boş olan CI kalemlerine
+	başlıktaki PI'ı damgalıyor (satırında zaten PI yazan satıra <strong>dokunmuyor</strong> —
+	çok PI'lı faturada asıl doğru bilgi satırdakidir).
+</p>
+
+<h2>5. Koddaki 8 kusur ve düzeltmeleri</h2>
+<div class="scroll"><table>
+	<thead><tr><th>#</th><th>Yer</th><th>Kusur</th><th>Etki</th><th>Düzeltme</th></tr></thead>
+	<tbody>
+		<tr><td class="mono">K1</td><td class="mono">imports.py</td><td>Sevk sorgusu yalnız satır PI'ına bakıyordu</td><td>Satır PI'ı boş ~2 127 kalem hiç sayılmıyordu</td><td>İki seviyeli bağlantı: satır → yoksa başlık</td></tr>
+		<tr><td class="mono">K2</td><td class="mono">imports.py</td><td>Anahtar <span class="mono">(pi, item, category)</span></td><td>Bileşik paketler asla eşleşmiyordu</td><td>Anahtar <span class="mono">(pi, category)</span>, iki taraf normalize</td></tr>
+		<tr><td class="mono">K3</td><td class="mono">imports.py</td><td><span class="mono">max(0, …)</span></td><td>25 959 kolilik fazla sevk sessizce yutuluyordu</td><td>Kalan negatif olabilir; <span class="mono">over_shipped</span> bayrağı</td></tr>
+		<tr><td class="mono">K4</td><td class="mono">imports.py</td><td>Döngü içinde <span class="mono">get_value</span> (N+1)</td><td>PI kalemi başına 1 sorgu</td><td>Tek sözlükten okuma</td></tr>
+		<tr><td class="mono">K5</td><td class="mono">imports.py</td><td>Alt kesim koduyla fallback eşleşme</td><td>Yanlış PI satırının bakiyesi gösteriliyordu</td><td>Tek anahtar; kod fallback'i kaldırıldı</td></tr>
+		<tr><td class="mono">K6</td><td class="mono">CommercialInvoiceForm.vue</td><td>“Smart Fill from PIs” modalı şablonda yoktu</td><td>Düğme hiçbir şey açmıyordu</td><td>Çoklu PI modalı eklendi</td></tr>
+		<tr><td class="mono">K7</td><td class="mono">CommercialInvoiceForm.vue</td><td>Var olmayan endpoint çağrılıyordu</td><td>“Fill from category” → Apply hata veriyordu</td><td>Mevcut <span class="mono">vendor_category_detail</span>'a yönlendirildi</td></tr>
+		<tr><td class="mono">K8</td><td class="mono">CommercialInvoiceForm.vue</td><td><span class="mono">tr.item === item</span> fallback'i</td><td>PI'ı yok sayıp yanlış satırı eşliyordu</td><td>Fallback (PI, kategori) ile sınırlandı</td></tr>
+	</tbody>
+</table></div>
+
+<h2>6. Öncesi / sonrası</h2>
+<div class="scroll"><table>
+	<thead><tr><th>Ölçüt</th><th class="num">Eski kod</th><th class="num">Yeni kod</th></tr></thead>
+	<tbody>
+		<tr><td>PI'a bağlanan CI satırı</td><td class="num">1 216 (%19,5)</td><td class="num">6 119 (%98,3)</td></tr>
+		<tr><td>Sahte “PI'da yok” uyarısı</td><td class="num">5 007</td><td class="num">0</td></tr>
+		<tr><td>Görülen fazla sevk</td><td class="num">0 (yutuluyordu)</td><td class="num">21 anahtar / 25 959 koli</td></tr>
+		<tr><td>Sahte fiyat farkı</td><td class="num">273</td><td class="num">0</td></tr>
+		<tr><td>Satır PI'ı boş kalem</td><td class="num">~2 127</td><td class="num">0 <span class="tag t-blue">v58 yaması</span></td></tr>
+		<tr><td>Kalan bakiye toplamı</td><td class="num">güvenilmez</td><td class="num">419 491 koli</td></tr>
+		<tr><td>Sözleşme büyüklüğü</td><td class="num">—</td><td class="num">1 736 230 koli / 137 413 881,17</td></tr>
+	</tbody>
+</table></div>
+
+<h2>7. Bilinçli olarak yapılmayanlar</h2>
+<ul>
+	<li><strong>kg × anlaşılan fiyat = сумма AP</strong> kontrolü yazılmadı: kaynak sütun sık sık 0 olduğu için 4 840 sahte uyarı üretiyordu.</li>
+	<li><strong>Var olan veri düzeltilmiyor.</strong> Fazla sevk, eksik PI numarası, kg tutarsızlığı — hepsi <em>raporlanıyor</em>, hiçbiri sessizce değiştirilmiyor.</li>
+	<li><strong>Fiyat/miktar uyumu liste filtresine konmadı.</strong> Liste filtresi yalnız <em>bağlantı durumu</em> (bağlı / bağlı değil) üzerinden çalışır; sütun bazlı uyum satır seviyesinde bir konudur ve fatura formunda gösterilir.</li>
+	<li><strong>Çok modüllü etki yok.</strong> Tüm değişiklikler <span class="mono">imports</span> modülüne bağlı; modül kapalı tenantlarda davranış değişmez.</li>
+</ul>
+
+<div class="foot">
+	Üretim: <span class="mono">stabler/api/_imports_rules.py</span> (frappe'siz saf modül) +
+	<span class="mono">stabler/tests/test_imports_rules.py</span> (118 test, tamamı yeşil).
+	Veri: <span class="mono">MSA tegma obshiy.xlsx</span> → 59 PI belgesi / 229 sözleşme kalemi,
+	353 CI / 6 223 sevk satırı. Sayfadaki tüm sayılar bu modülün çıktısıdır.
+</div>
+
+</div>
+</body>
+</html>
