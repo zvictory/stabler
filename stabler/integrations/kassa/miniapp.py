@@ -82,7 +82,7 @@ def verify_init_data(init_data: str, bot_token: str, max_age_seconds: int = 8640
 		return None
 	try:
 		auth_date = int(auth_date_raw)
-	except TypeError, ValueError:
+	except (TypeError, ValueError):
 		return None
 	if time.time() - auth_date > max_age_seconds:
 		return None
@@ -92,7 +92,7 @@ def verify_init_data(init_data: str, bot_token: str, max_age_seconds: int = 8640
 		return None
 	try:
 		user = json.loads(user_raw)
-	except TypeError, ValueError:
+	except (TypeError, ValueError):
 		return None
 	if not isinstance(user, dict):
 		return None

@@ -46,7 +46,7 @@ def to_float(value) -> float | None:
 		return None
 	try:
 		return float(value)
-	except TypeError, ValueError:
+	except (TypeError, ValueError):
 		return None
 
 

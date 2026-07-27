@@ -28,7 +28,7 @@ def _f(v, default=0.0) -> float:
 		return default
 	try:
 		return float(v)
-	except TypeError, ValueError:
+	except (TypeError, ValueError):
 		return default
 
 

@@ -83,7 +83,7 @@ def late_minutes(entry, shift_start_hm, grace_already_applied=False) -> int:
 
 	try:
 		return max(0, m(entry) - m(shift_start_hm))
-	except TypeError, ValueError:
+	except (TypeError, ValueError):
 		return 0
 
 

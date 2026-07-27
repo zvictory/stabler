@@ -67,7 +67,7 @@ def decode_statement(raw: bytes) -> str:
 	enc = detect_encoding(raw)
 	try:
 		return raw.decode(enc)
-	except UnicodeDecodeError, LookupError:
+	except (UnicodeDecodeError, LookupError):
 		return raw.decode("cp1251", errors="replace")
 
 
@@ -268,7 +268,7 @@ def dedupe_key(row: dict) -> str:
 def _round2(n) -> float:
 	try:
 		return round(float(n), 2)
-	except TypeError, ValueError:
+	except (TypeError, ValueError):
 		return 0.0
 
 

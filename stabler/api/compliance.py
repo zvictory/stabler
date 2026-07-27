@@ -51,7 +51,7 @@ def list_exchange_rates(days: int = 30) -> list[dict]:
 
 	try:
 		days = max(1, min(int(days), 365))
-	except TypeError, ValueError:
+	except (TypeError, ValueError):
 		days = 30
 
 	since = datetime.date.today() - datetime.timedelta(days=days)
@@ -93,7 +93,7 @@ def list_ehf_submissions(
 	_require_admin()
 	try:
 		limit = max(1, min(int(limit), 500))
-	except TypeError, ValueError:
+	except (TypeError, ValueError):
 		limit = 50
 
 	filters: dict = {}
@@ -177,7 +177,7 @@ def list_onec_logs(
 	_require_admin()
 	try:
 		limit = max(1, min(int(limit), 500))
-	except TypeError, ValueError:
+	except (TypeError, ValueError):
 		limit = 100
 
 	filters: dict = {}
@@ -320,7 +320,7 @@ def list_asl_stock_entries(limit: int = 50) -> list[dict]:
 	_require_admin_or_warehouse()
 	try:
 		limit = max(1, min(int(limit), 200))
-	except TypeError, ValueError:
+	except (TypeError, ValueError):
 		limit = 50
 
 	if not frappe.db.has_column("Item", "asl_belgisi_enabled"):
@@ -359,7 +359,7 @@ def list_arca_events(processed: str | None = None, limit: int = 100) -> list[dic
 	_require_admin()
 	try:
 		limit = max(1, min(int(limit), 500))
-	except TypeError, ValueError:
+	except (TypeError, ValueError):
 		limit = 100
 
 	filters: dict = {}

@@ -141,7 +141,7 @@ def list_didox_submissions(
 	"""
 	try:
 		limit = max(1, min(int(limit), 500))
-	except TypeError, ValueError:
+	except (TypeError, ValueError):
 		limit = 50
 
 	filters: dict = {}

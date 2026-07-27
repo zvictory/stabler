@@ -33,7 +33,7 @@ def map_result(status_id=None, status_name: str | None = None) -> str:
 	"""Return 'won' | 'lost' | 'pending' for a portal status."""
 	try:
 		sid = int(status_id) if status_id is not None and str(status_id).strip() != "" else None
-	except TypeError, ValueError:
+	except (TypeError, ValueError):
 		sid = None
 	if sid is not None and sid in _ID_MAP:
 		return _ID_MAP[sid]
