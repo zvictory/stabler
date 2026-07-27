@@ -36,6 +36,10 @@ const fn = (v) => {
 
 const fm = (v, ccy) => formatMoney(v, ccy || "UZS", user.value?.language || "en");
 
+// Kuru olmayan ödemeler USD toplamına girmiyor. Bunu söylemezsek toplam,
+// satır sayısıyla uyuşmadığı halde tam görünür.
+const unratedCount = computed(() => rows.value.filter((r) => r.usd_amount == null).length);
+
 async function loadReport() {
 	if (!activeCompany.value) return;
 	loading.value = true;
@@ -169,6 +173,9 @@ watch(activeCompany, loadReport);
 					<div class="card-body">
 						<div class="font-weight-medium text-secondary small">{{ t("Total USD Equivalent") }}</div>
 						<div class="h3 mb-0 font-monospace text-azure fw-bold">{{ fm(totals.usd_total, 'USD') }}</div>
+						<div v-if="unratedCount" class="small text-secondary mt-1">
+							{{ t("{n} payments excluded — no published rate", { n: unratedCount }) }}
+						</div>
 					</div>
 				</div>
 			</div>
@@ -212,8 +219,8 @@ watch(activeCompany, loadReport);
 								</div>
 								<span v-else class="text-secondary small italic">—</span>
 							</td>
-							<td class="text-end font-monospace small text-secondary">{{ fn(r.fx_rate) }}</td>
-							<td class="text-end font-monospace text-azure bg-azure-lt fw-bold">{{ fm(r.usd_amount, 'USD') }}</td>
+							<td class="text-end font-monospace small text-secondary">{{ r.fx_rate == null ? "—" : fn(r.fx_rate) }}</td>
+							<td class="text-end font-monospace text-azure bg-azure-lt fw-bold">{{ r.usd_amount == null ? "—" : fm(r.usd_amount, 'USD') }}</td>
 						</tr>
 						<tr v-if="!rows.length && !loading">
 							<td colspan="11" class="text-center text-secondary py-4">{{ t("No payment register entries found.") }}</td>

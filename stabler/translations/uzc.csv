@@ -4713,3 +4713,28 @@ Could not fetch available PI lines.,Мавжуд проформа қаторла
 Commerce & imports,Савдо ва импорт
 Imports control center,Импорт бошқарув маркази
 Not assigned to a PI group,Ҳеч қандай PI гуруҳига бириктирилмаган
+{n} payments excluded — no published rate,{n} та тўлов ҳисобга олинмади — курс эълон қилинмаган
+Agreed price differs from PI ({prices}),Келишилган нарх ПИ дан фарқ қилади ({prices})
+All PI links,Барча ПИ боғланишлари
+Allocate boxes,Қутиларни тақсимлаш
+Already shipped as,Аллақачон қуйидагича жўнатилган
+Boxes × box weight ≠ quantity,Қутилар × қути вазни ≠ миқдор
+Differs,Фарқ қилади
+Docs price differs from PI ({prices}),Ҳужжат нархи ПИ дан фарқ қилади ({prices})
+Inherited from the invoice header,Инвойс сарлавҳасидан олинган
+Lines that disagree with the Proforma Invoice,Проформа инвойсга мос келмайдиган қаторлар
+Linked to PI,ПИ га боғланган
+No open proforma lines for this supplier.,Бу етказиб берувчида очиқ проформа қаторлари йўқ.
+Not linked to PI,ПИ га боғланмаган
+Not linked to any PI,Ҳеч бир ПИ га боғланмаган
+Not on any PI line,Ҳеч бир ПИ қаторида йўқ
+Off PI,ПИ дан ташқарида
+Over-shipped,Ортиқча жўнатилган
+PI product,ПИ маҳсулоти
+Ref PI,Реф. ПИ
+Shipped,Жўнатилган
+Shipped more than the contract allows,Шартномада рухсат этилганидан кўпроқ жўнатилган
+Smart Fill from PIs,ПИ лардан ақлли тўлдириш
+Sub-cut,Ички кесим
+Sub-cut of the PI line,ПИ қаторининг ички кесими
+{count} line(s) differ from PI,{count} та қатор ПИ дан фарқ қилади

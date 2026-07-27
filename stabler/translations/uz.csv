@@ -4713,3 +4713,28 @@ Could not fetch available PI lines.,Mavjud proforma qatorlarini yuklab bo‘lmad
 Commerce & imports,Savdo va import
 Imports control center,Import boshqaruv markazi
 Not assigned to a PI group,Hech qanday PI guruhiga biriktirilmagan
+{n} payments excluded — no published rate,{n} ta to'lov hisobga olinmadi — kurs e'lon qilinmagan
+Agreed price differs from PI ({prices}),Kelishilgan narx PI dan farq qiladi ({prices})
+All PI links,Barcha PI bog'lanishlari
+Allocate boxes,Qutilarni taqsimlash
+Already shipped as,Allaqachon quyidagicha jo'natilgan
+Boxes × box weight ≠ quantity,Qutilar × quti vazni ≠ miqdor
+Differs,Farq qiladi
+Docs price differs from PI ({prices}),Hujjat narxi PI dan farq qiladi ({prices})
+Inherited from the invoice header,Invoys sarlavhasidan olingan
+Lines that disagree with the Proforma Invoice,Proforma invoysga mos kelmaydigan qatorlar
+Linked to PI,PI ga bog'langan
+No open proforma lines for this supplier.,Bu yetkazib beruvchida ochiq proforma qatorlari yo'q.
+Not linked to PI,PI ga bog'lanmagan
+Not linked to any PI,Hech bir PI ga bog'lanmagan
+Not on any PI line,Hech bir PI qatorida yo'q
+Off PI,PI dan tashqarida
+Over-shipped,Ortiqcha jo'natilgan
+PI product,PI mahsuloti
+Ref PI,Ref. PI
+Shipped,Jo'natilgan
+Shipped more than the contract allows,Shartnomada ruxsat etilganidan ko'proq jo'natilgan
+Smart Fill from PIs,PI lardan aqlli to'ldirish
+Sub-cut,Ichki kesim
+Sub-cut of the PI line,PI qatorining ichki kesimi
+{count} line(s) differ from PI,{count} ta qator PI dan farq qiladi

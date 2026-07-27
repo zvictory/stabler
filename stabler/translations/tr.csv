@@ -4708,3 +4708,28 @@ Could not fetch available PI lines.,Mevcut proforma satırları alınamadı.
 Commerce & imports,Ticaret ve ithalat
 Imports control center,İthalat kontrol merkezi
 Not assigned to a PI group,Hiçbir PI grubuna atanmamış
+{n} payments excluded — no published rate,{n} ödeme hariç — yayımlanmış kur yok
+Agreed price differs from PI ({prices}),Anlaşılan fiyat PI'dan farklı ({prices})
+All PI links,Tüm PI bağlantıları
+Allocate boxes,Koli tahsis et
+Already shipped as,Şu şekilde sevk edilmiş
+Boxes × box weight ≠ quantity,Koli × koli ağırlığı ≠ miktar
+Differs,Farklı
+Docs price differs from PI ({prices}),Belge fiyatı PI'dan farklı ({prices})
+Inherited from the invoice header,Fatura başlığından devralındı
+Lines that disagree with the Proforma Invoice,Proforma fatura ile uyuşmayan satırlar
+Linked to PI,PI'a bağlı
+No open proforma lines for this supplier.,Bu tedarikçide açık proforma satırı yok.
+Not linked to PI,PI'a bağlı değil
+Not linked to any PI,Hiçbir PI'a bağlı değil
+Not on any PI line,Hiçbir PI satırında yok
+Off PI,PI dışı
+Over-shipped,Fazla sevk
+PI product,PI ürünü
+Ref PI,Ref. PI
+Shipped,Sevk edilen
+Shipped more than the contract allows,Sözleşmenin izin verdiğinden fazla sevk edildi
+Smart Fill from PIs,PI'lardan akıllı doldurma
+Sub-cut,Alt kesim
+Sub-cut of the PI line,PI satırının alt kesimi
+{count} line(s) differ from PI,{count} satır PI'dan farklı

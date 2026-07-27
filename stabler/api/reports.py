@@ -24,6 +24,7 @@ import frappe
 from frappe import _
 from frappe.utils import flt
 
+from stabler.api._accounts import _cbu_rate_on_or_before
 from stabler.api._common import _require_company
 from stabler.api._money import money_epsilon
 from stabler.api.approvals import _assert_company_scope
@@ -2336,7 +2337,11 @@ def get_payments_register_report(
         SELECT pe.name, pe.posting_date, pe.reference_no, pe.party, cust.customer_name,
                cust.custom_parent_customer, pe.mode_of_payment, pe.paid_to, pe.remarks,
                IFNULL(pe.paid_amount, 0) paid_amount,
-               IFNULL(pe.paid_amount_in_company_currency, pe.paid_amount) uzs_amount,
+               -- `paid_amount_in_company_currency` diye bir kolon hiç olmadı;
+               -- ERPNext'te şirket para birimindeki tutar `base_paid_amount`.
+               -- Bu haliyle sorgu her çağrıda "Unknown column" ile düşüyordu,
+               -- yani rapor bugüne kadar hiç açılmamış.
+               IFNULL(pe.base_paid_amount, pe.paid_amount) uzs_amount,
                IFNULL(pe.source_exchange_rate, 1.0) fx_rate, pe.paid_from_account_currency
         FROM `tabPayment Entry` pe
         LEFT JOIN `tabCustomer` cust ON cust.name = pe.party
@@ -2347,6 +2352,21 @@ def get_payments_register_report(
 		as_dict=True,
 	)
 
+	# Her satır KENDİ ödeme tarihinin kuruyla değerlenir, bugünün kuruyla değil:
+	# aksi halde aynı rapor her gün başka bir USD toplamı verir ve deftere
+	# oturmaz. Kur `_cbu_rate_on_or_before` ile çekilir (ters çifti de çevirir).
+	# Tarih başına tek sorgu: bir registerdaki ödemeler birkaç güne yığılır.
+	company_currency = frappe.get_cached_value("Company", company, "default_currency") or "UZS"
+	rate_by_date: dict = {}
+
+	def _rate_on(posting_date):
+		if company_currency == "USD":
+			return 1.0
+		if posting_date not in rate_by_date:
+			rate, _rate_date = _cbu_rate_on_or_before("USD", company_currency, posting_date)
+			rate_by_date[posting_date] = rate
+		return rate_by_date[posting_date]
+
 	rows = []
 	uzs_total = 0.0
 	usd_total = 0.0
@@ -2354,15 +2374,17 @@ def get_payments_register_report(
 	for pe in pes:
 		pe_name = pe["name"]
 		uzs = flt(pe["uzs_amount"])
-		cbu_rate = (
-			flt(
-				frappe.db.get_value(
-					"Currency Exchange", {"from_currency": "USD", "to_currency": "UZS"}, "exchange_rate"
-				)
-			)
-			or 12800.0
-		)
-		usd = uzs / cbu_rate if cbu_rate > 0 else 0.0
+
+		if (pe["paid_from_account_currency"] or "") == "USD":
+			# Ödeme zaten USD cinsinden yapılmış — çevirmek yuvarlama hatası
+			# ekler. Gösterilen kur da ödemenin kendi kaydedilmiş kuru olur.
+			usd = flt(pe["paid_amount"])
+			cbu_rate = flt(pe["fx_rate"]) or None
+		else:
+			cbu_rate = _rate_on(pe["posting_date"])
+			# Kur yoksa uydurmuyoruz: eski kod burada 12800 sabitini basıyordu
+			# ve tahmini gerçek bir tutar gibi gösteriyordu. None → arayüz "—".
+			usd = uzs / cbu_rate if cbu_rate else None
 
 		refs = frappe.db.get_all(
 			"Payment Entry Reference",
@@ -2372,7 +2394,8 @@ def get_payments_register_report(
 		allocated_invoices = [r["reference_name"] for r in refs if r.get("reference_name")]
 
 		uzs_total += uzs
-		usd_total += usd
+		if usd is not None:
+			usd_total += usd
 
 		rows.append(
 			{
@@ -2388,7 +2411,7 @@ def get_payments_register_report(
 				"category": "Customer Payment",
 				"allocated_invoices": allocated_invoices,
 				"fx_rate": cbu_rate,
-				"usd_amount": round(usd, 2),
+				"usd_amount": round(usd, 2) if usd is not None else None,
 			}
 		)
 

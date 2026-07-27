@@ -4709,3 +4709,28 @@ Could not fetch available PI lines.,Could not fetch available PI lines.
 Commerce & imports,Commerce & imports
 Imports control center,Imports control center
 Not assigned to a PI group,Not assigned to a PI group
+{n} payments excluded — no published rate,{n} payments excluded — no published rate
+Agreed price differs from PI ({prices}),Agreed price differs from PI ({prices})
+All PI links,All PI links
+Allocate boxes,Allocate boxes
+Already shipped as,Already shipped as
+Boxes × box weight ≠ quantity,Boxes × box weight ≠ quantity
+Differs,Differs
+Docs price differs from PI ({prices}),Docs price differs from PI ({prices})
+Inherited from the invoice header,Inherited from the invoice header
+Lines that disagree with the Proforma Invoice,Lines that disagree with the Proforma Invoice
+Linked to PI,Linked to PI
+No open proforma lines for this supplier.,No open proforma lines for this supplier.
+Not linked to PI,Not linked to PI
+Not linked to any PI,Not linked to any PI
+Not on any PI line,Not on any PI line
+Off PI,Off PI
+Over-shipped,Over-shipped
+PI product,PI product
+Ref PI,Ref PI
+Shipped,Shipped
+Shipped more than the contract allows,Shipped more than the contract allows
+Smart Fill from PIs,Smart Fill from PIs
+Sub-cut,Sub-cut
+Sub-cut of the PI line,Sub-cut of the PI line
+{count} line(s) differ from PI,{count} line(s) differ from PI

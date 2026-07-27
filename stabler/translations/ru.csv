@@ -4719,3 +4719,28 @@ Could not fetch available PI lines.,Не удалось загрузить до�
 Commerce & imports,Коммерция и импорт
 Imports control center,Центр управления импортом
 Not assigned to a PI group,Не отнесён ни к одной группе PI
+{n} payments excluded — no published rate,{n} платежей исключено — курс не опубликован
+Agreed price differs from PI ({prices}),Согласованная цена отличается от ПИ ({prices})
+All PI links,Все связи с ПИ
+Allocate boxes,Распределить коробки
+Already shipped as,Уже отгружено как
+Boxes × box weight ≠ quantity,Коробки × вес коробки ≠ количество
+Differs,Отличается
+Docs price differs from PI ({prices}),Цена по документам отличается от ПИ ({prices})
+Inherited from the invoice header,Унаследовано из шапки инвойса
+Lines that disagree with the Proforma Invoice,"Строки, расходящиеся с проформа-инвойсом"
+Linked to PI,Связано с ПИ
+No open proforma lines for this supplier.,У этого поставщика нет открытых строк проформы.
+Not linked to PI,Не связано с ПИ
+Not linked to any PI,Не связано ни с одним ПИ
+Not on any PI line,Нет ни в одной строке ПИ
+Off PI,Вне ПИ
+Over-shipped,Сверх контракта
+PI product,Товар по ПИ
+Ref PI,Реф. ПИ
+Shipped,Отгружено
+Shipped more than the contract allows,"Отгружено больше, чем предусмотрено контрактом"
+Smart Fill from PIs,Умное заполнение из ПИ
+Sub-cut,Подотруб
+Sub-cut of the PI line,Подотруб строки ПИ
+{count} line(s) differ from PI,{count} строк(и) расходятся с ПИ
