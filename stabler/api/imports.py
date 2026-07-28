@@ -6077,15 +6077,25 @@ def recalculate_all_ci_totals():
 
 
 def _status_counts(doctype: str, company: str, docstatus_lt: int = 2) -> dict:
-	"""One grouped query per doctype — never one query per status."""
+	"""One query per doctype — never one query per status.
+
+	Counted in Python, not with a SQL COUNT: Frappe v16 rejects a function in a
+	string SELECT ("SQL functions are not allowed as strings in SELECT"), and the
+	dict form's result alias is version-dependent. The chain's four doctypes are
+	~1.4k rows of a single column, so the trade is free — and the count still
+	comes from the SAME filter the list page uses, which is the point.
+	"""
 	rows = frappe.get_all(
 		doctype,
 		filters={"company": company, "docstatus": ["<", docstatus_lt]},
-		fields=["status", "count(name) as n"],
-		group_by="status",
+		fields=["status"],
 		limit_page_length=0,
 	)
-	return {str(r.status or ""): cint(r.n) for r in rows}
+	counts: dict[str, int] = {}
+	for row in rows:
+		key = str(row.status or "")
+		counts[key] = counts.get(key, 0) + 1
+	return counts
 
 
 @frappe.whitelist()

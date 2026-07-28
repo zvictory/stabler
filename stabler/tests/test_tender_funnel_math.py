@@ -36,7 +36,7 @@ class ClassifyTest(unittest.TestCase):
                             s = f.classify({"result": result, "submitted": submitted,
                                             "has_pricing": pricing, "sq_count": sq,
                                             "go_no_go": go})
-                            self.assertIn(s, f.ORDER + ["lost"])
+                            self.assertIn(s, [*f.ORDER, "lost"])
                             stages.add(s)
         self.assertEqual(stages, set(f.ORDER) | {"lost"})  # every stage reachable
 

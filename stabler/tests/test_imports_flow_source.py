@@ -40,13 +40,24 @@ class EndpointTest(unittest.TestCase):
             with self.subTest(token=token):
                 self.assertNotIn(token, self.body)
 
-    def test_one_grouped_query_per_doctype(self):
-        # Counts come from GROUP BY, never a query per status.
+    def test_one_query_per_doctype(self):
+        # The rule is N+1 avoidance: ONE query per doctype, never one per status.
+        # How the rows are tallied (SQL GROUP BY vs. Python) is an implementation
+        # detail — pinning the "how" is what let a query Frappe rejects at runtime
+        # ship green once already.
         helper = body(self.src, "_status_counts")
-        self.assertIn('group_by="status"', helper)
+        self.assertEqual(helper.count("frappe.get_all("), 1)
+        self.assertEqual(helper.count("frappe.db.count("), 0)
         for doctype in ("Proforma Invoice", "Commercial Invoice", "Import Container", "Import Truck"):
             with self.subTest(doctype=doctype):
                 self.assertIn(f'_status_counts("{doctype}", company)', self.body)
+
+    def test_no_sql_function_in_a_string_select(self):
+        # Frappe v16 throws "SQL functions are not allowed as strings in SELECT"
+        # — a fields=["count(name) as n"] parses fine and passes every source
+        # check, then 500s on the live site. Caught in prod on msa, 2026-07-28.
+        offenders = re.findall(r'"\s*(?:count|sum|avg|min|max)\s*\([^"]*"', self.src, re.I)
+        self.assertEqual(offenders, [], f"SQL function in a string SELECT: {offenders}")
 
     def test_drift_reuses_the_sea_lifecycle_rule(self):
         # One drift rule in the whole app: the CI panel's. No re-derivation.
