@@ -9,6 +9,7 @@ import { formatDate } from "../../composables/date.js";
 import { formatMoney } from "../../composables/money.js";
 import { getStatusBadgeClass } from "../../composables/status.js";
 import KpiCard from "../../components/KpiCard.vue";
+import ImportsFlow from "./ImportsFlow.vue";
 import SkeletonRows from "../../components/SkeletonRows.vue";
 import EmptyState from "../../components/EmptyState.vue";
 
@@ -128,6 +129,8 @@ watch(activeCompany, load);
 
 <template>
 	<div>
+		<ImportsFlow />
+
 		<div v-if="error" class="alert alert-danger">{{ error }}</div>
 
 		<!-- KPI cards -->

@@ -23,7 +23,7 @@ const toast = useToast();
 const rows = ref([]);
 const loading = ref(false);
 const search = ref("");
-const statusFilter = ref("");
+const statusFilter = ref(String(route.query.status || "").trim());
 const groupFilter = ref("");
 const supplierFilter = ref("");
 

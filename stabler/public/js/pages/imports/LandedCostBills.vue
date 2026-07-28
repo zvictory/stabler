@@ -20,7 +20,7 @@ const router = useRouter();
 
 const search = ref("");
 const supplierFilter = ref("");
-const status = ref("");
+const status = ref(String(route.query.status || "").trim());
 const ciFilter = ref("");
 const loading = ref(false);
 const error = ref("");

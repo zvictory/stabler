@@ -4775,3 +4775,21 @@ Contract value,Contract value
 No records in this stage.,No records in this stage.
 Result date,Result date
 Stage,Stage
+Imports workflow,Imports workflow
+Click a status to open exactly those records.,Click a status to open exactly those records.
+Loading imports flow…,Loading imports flow…
+Could not load the imports flow.,Could not load the imports flow.
+Open proformas (draft + confirmed),Open proformas (draft + confirmed)
+Invoices at sea (on board / in transit),Invoices at sea (on board / in transit)
+Trucks blocked at the departure gate,Trucks blocked at the departure gate
+{count} blocked at the departure gate,{count} blocked at the departure gate
+{count} container(s) behind the invoice,{count} container(s) behind the invoice
+{count} container(s) ahead of the invoice,{count} container(s) ahead of the invoice
+GRN open,GRN open
+GRN submitted,GRN submitted
+Draft landed cost vouchers,Draft landed cost vouchers
+Customs declarations,Customs declarations
+No records yet.,No records yet.
+DRAFT,DRAFT
+CONFIRMED,CONFIRMED
+SUPERSEDED_BY_CI,SUPERSEDED_BY_CI

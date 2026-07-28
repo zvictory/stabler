@@ -6066,3 +6066,117 @@ def recalculate_all_ci_totals():
 
 	frappe.db.commit()
 	return {"updated": updated_count}
+
+
+# --------------------------------------------------------------------------- #
+# Imports workflow flow-board: every document of the chain, counted by status,
+# in ONE read-only pass per doctype. Each count deep-links to the document's
+# own list page filtered to exactly that status — the number and the list
+# share the same GROUP BY, so they cannot disagree.
+# --------------------------------------------------------------------------- #
+
+
+def _status_counts(doctype: str, company: str, docstatus_lt: int = 2) -> dict:
+	"""One grouped query per doctype — never one query per status."""
+	rows = frappe.get_all(
+		doctype,
+		filters={"company": company, "docstatus": ["<", docstatus_lt]},
+		fields=["status", "count(name) as n"],
+		group_by="status",
+		limit_page_length=0,
+	)
+	return {str(r.status or ""): cint(r.n) for r in rows}
+
+
+@frappe.whitelist()
+def imports_flow(company: str):
+	"""Status counters for the whole import chain: PI, CI, containers (with sea
+	drift), the departure gate, trucks, GRN and draft LCVs. Read-only."""
+	_assert_imports_access(company)
+
+	from stabler.stabler.doctype.vet_certificate.vet_certificate import has_valid_vet_cert
+	from stabler.stabler.imports_module import departure_math, sea_lifecycle
+
+	pi = _status_counts("Proforma Invoice", company)
+	ci = _status_counts("Commercial Invoice", company)
+	containers = _status_counts("Import Container", company)
+	trucks = _status_counts("Import Truck", company)
+
+	# Sea drift: CI owns the voyage, containers follow. Same rule as the CI
+	# panel (sea_lifecycle), aggregated over the fleet.
+	drift = {"behind": 0, "ahead": 0, "cis_out_of_sync": 0}
+	ci_status_map = {
+		r.name: r.status
+		for r in frappe.get_all(
+			"Commercial Invoice", filters={"company": company},
+			fields=["name", "status"], limit_page_length=0,
+		)
+	}
+	fleet: dict[str, list] = {}
+	for r in frappe.get_all(
+		"Import Container",
+		filters={"company": company, "commercial_invoice": ["is", "set"]},
+		fields=["name", "container_number", "status", "commercial_invoice"],
+		limit_page_length=0,
+	):
+		fleet.setdefault(r.commercial_invoice, []).append(r)
+	for ci_name, cnts in fleet.items():
+		s = sea_lifecycle.summarise(ci_status_map.get(ci_name), cnts)
+		drift["behind"] += s["behind"]
+		drift["ahead"] += s["ahead"]
+		if not s["in_sync"]:
+			drift["cis_out_of_sync"] += 1
+
+	# Departure gate: PENDING trucks whose CI is not cleared to leave Iran.
+	# Blockers are per-CI (all-or-nothing), so evaluate each CI once.
+	has_required_flag = frappe.db.has_column("Customs Declaration", "required_for_departure")
+	pending_by_ci: dict[str, int] = {}
+	for r in frappe.get_all(
+		"Import Truck",
+		filters={"company": company, "status": "PENDING"},
+		fields=["commercial_invoice"],
+		limit_page_length=0,
+	):
+		if r.commercial_invoice:
+			pending_by_ci[r.commercial_invoice] = pending_by_ci.get(r.commercial_invoice, 0) + 1
+	gate = {"pending": sum(pending_by_ci.values()), "blocked": 0}
+	for ci_name, n in pending_by_ci.items():
+		declarations = frappe.get_all(
+			"Customs Declaration",
+			filters={"commercial_invoice": ci_name},
+			fields=["gtd_number", "status", "cleared_date"]
+			+ (["required_for_departure"] if has_required_flag else []),
+		)
+		if not has_required_flag:
+			for d in declarations:
+				d["required_for_departure"] = 1
+		verdict = departure_math.may_depart(
+			declarations, vet_valid=has_valid_vet_cert(ci_name)
+		)
+		if not verdict["allowed"]:
+			gate["blocked"] += n
+
+	grn = {
+		"open": cint(frappe.db.count("GRN Checklist", {"company": company, "docstatus": 0})),
+		"submitted": cint(frappe.db.count("GRN Checklist", {"company": company, "docstatus": 1})),
+	}
+	lcv_draft = cint(frappe.db.count("Landed Cost Voucher", {"company": company, "docstatus": 0}))
+
+	at_sea = sum(ci.get(k, 0) for k in ("ON_BOARD", "IN_TRANSIT"))
+	on_road = sum(trucks.get(k, 0) for k in ("DEPARTED_IRAN", "AT_BORDER", "CROSSED_BORDER", "IN_TRANSIT"))
+	return {
+		"pi": pi,
+		"ci": ci,
+		"containers": containers,
+		"trucks": trucks,
+		"drift": drift,
+		"gate": gate,
+		"grn": grn,
+		"lcv": {"draft": lcv_draft},
+		"kpi": {
+			"open_pi": pi.get("DRAFT", 0) + pi.get("CONFIRMED", 0),
+			"at_sea": at_sea,
+			"on_road": on_road,
+			"gate_blocked": gate["blocked"],
+		},
+	}

@@ -4774,3 +4774,21 @@ Contract value,Sözleşme değeri
 No records in this stage.,Bu aşamada kayıt yok.
 Result date,Sonuç tarihi
 Stage,Aşama
+Imports workflow,İthalat iş akışı
+Click a status to open exactly those records.,Tam o kayıtları açmak için duruma tıkla.
+Loading imports flow…,İthalat akışı yükleniyor…
+Could not load the imports flow.,İthalat akışı yüklenemedi.
+Open proformas (draft + confirmed),Açık proformalar (taslak + onaylı)
+Invoices at sea (on board / in transit),Denizdeki faturalar (gemide / yolda)
+Trucks blocked at the departure gate,Çıkış kapısında bloklu TIR'lar
+{count} blocked at the departure gate,{count} çıkışta bloklu
+{count} container(s) behind the invoice,{count} konteyner faturadan geride
+{count} container(s) ahead of the invoice,{count} konteyner faturadan ileride
+GRN open,GRN açık
+GRN submitted,GRN kesinleşmiş
+Draft landed cost vouchers,Taslak LCV (landed maliyet)
+Customs declarations,Gümrük beyannameleri
+No records yet.,Henüz kayıt yok.
+DRAFT,Taslak
+CONFIRMED,Onaylı
+SUPERSEDED_BY_CI,CI ile değiştirildi

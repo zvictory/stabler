@@ -94,3 +94,4 @@ stabler.tests.test_uzex_telegram
 stabler.tests.test_vendor_exposure_isolation
 stabler.tests.test_tender_funnel_math
 stabler.tests.test_tender_funnel_source
+stabler.tests.test_imports_flow_source

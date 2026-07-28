@@ -4779,3 +4779,21 @@ Contract value,Шартнома суммаси
 No records in this stage.,Бу босқичда ёзувлар йўқ.
 Result date,Натижа санаси
 Stage,Босқич
+Imports workflow,Импорт иш жараёни
+Click a status to open exactly those records.,Айнан шу ёзувларни очиш учун ҳолатни босинг.
+Loading imports flow…,Импорт жараёни юкланмоқда…
+Could not load the imports flow.,Импорт жараёнини юклаб бўлмади.
+Open proformas (draft + confirmed),Очиқ проформалар (қоралама + тасдиқланган)
+Invoices at sea (on board / in transit),Денгиздаги инвойслар (бортда / йўлда)
+Trucks blocked at the departure gate,Чиқиш назоратида блокланган машиналар
+{count} blocked at the departure gate,{count} та чиқишда блокланган
+{count} container(s) behind the invoice,{count} та контейнер инвойсдан орқада
+{count} container(s) ahead of the invoice,{count} та контейнер инвойсдан олдинда
+GRN open,GRN очиқ
+GRN submitted,GRN топширилган
+Draft landed cost vouchers,LCV қораламалари (landed cost)
+Customs declarations,Божхона декларациялари
+No records yet.,Ҳозирча ёзувлар йўқ.
+DRAFT,Қоралама
+CONFIRMED,Тасдиқланган
+SUPERSEDED_BY_CI,CI билан алмаштирилган

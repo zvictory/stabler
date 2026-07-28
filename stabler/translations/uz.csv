@@ -4779,3 +4779,21 @@ Contract value,Shartnoma summasi
 No records in this stage.,Bu bosqichda yozuvlar yo'q.
 Result date,Natija sanasi
 Stage,Bosqich
+Imports workflow,Import ish jarayoni
+Click a status to open exactly those records.,Aynan shu yozuvlarni ochish uchun holatni bosing.
+Loading imports flow…,Import jarayoni yuklanmoqda…
+Could not load the imports flow.,Import jarayonini yuklab bo'lmadi.
+Open proformas (draft + confirmed),Ochiq proformalar (qoralama + tasdiqlangan)
+Invoices at sea (on board / in transit),Dengizdagi invoyslar (bortda / yo'lda)
+Trucks blocked at the departure gate,Chiqish nazoratida bloklangan mashinalar
+{count} blocked at the departure gate,{count} ta chiqishda bloklangan
+{count} container(s) behind the invoice,{count} ta konteyner invoysdan orqada
+{count} container(s) ahead of the invoice,{count} ta konteyner invoysdan oldinda
+GRN open,GRN ochiq
+GRN submitted,GRN topshirilgan
+Draft landed cost vouchers,LCV qoralamalari (landed cost)
+Customs declarations,Bojxona deklaratsiyalari
+No records yet.,Hozircha yozuvlar yo'q.
+DRAFT,Qoralama
+CONFIRMED,Tasdiqlangan
+SUPERSEDED_BY_CI,CI bilan almashtirilgan

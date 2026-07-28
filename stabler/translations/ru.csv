@@ -4785,3 +4785,21 @@ Contract value,Сумма контракта
 No records in this stage.,В этом этапе нет записей.
 Result date,Дата итога
 Stage,Этап
+Imports workflow,Рабочий процесс импорта
+Click a status to open exactly those records.,"Нажмите на статус, чтобы открыть именно эти записи."
+Loading imports flow…,Загрузка процесса импорта…
+Could not load the imports flow.,Не удалось загрузить процесс импорта.
+Open proformas (draft + confirmed),Открытые проформы (черновик + подтверждено)
+Invoices at sea (on board / in transit),Инвойсы в море (на борту / в пути)
+Trucks blocked at the departure gate,"Фуры, заблокированные на выездном контроле"
+{count} blocked at the departure gate,{count} заблокировано на выезде
+{count} container(s) behind the invoice,{count} контейнер(ов) отстаёт от инвойса
+{count} container(s) ahead of the invoice,{count} контейнер(ов) опережает инвойс
+GRN open,GRN открытые
+GRN submitted,GRN проведённые
+Draft landed cost vouchers,Черновики LCV (landed cost)
+Customs declarations,Таможенные декларации
+No records yet.,Записей пока нет.
+DRAFT,Черновик
+CONFIRMED,Подтверждено
+SUPERSEDED_BY_CI,Заменена CI

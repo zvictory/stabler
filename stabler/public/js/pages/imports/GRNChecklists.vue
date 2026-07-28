@@ -18,7 +18,7 @@ const route = useRoute();
 const router = useRouter();
 
 const search = ref("");
-const status = ref("");
+const status = ref(String(route.query.status || "").trim());
 const variance = ref(route.query.variance ? String(route.query.variance) : "");
 const loading = ref(false);
 const error = ref("");
