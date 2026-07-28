@@ -1,5 +1,5 @@
 <script setup>
-import { computed, onMounted, ref, watch } from "vue";
+import { onMounted, ref, watch } from "vue";
 import { storeToRefs } from "pinia";
 import { useRouter } from "vue-router";
 import { useSession } from "../../stores/session.js";
@@ -28,16 +28,6 @@ const piGroups = ref([]);
 // name — the only value guaranteed unique.
 const expanded = ref({});
 const toggle = (k) => { expanded.value[k] = !expanded.value[k]; };
-
-const fn = (v) => {
-	if (v === null || v === undefined || isNaN(v)) return "0.00";
-	const localeCode = user.value?.language === "en" ? "en-US" : "ru-RU";
-	return new Intl.NumberFormat(localeCode, {
-		minimumFractionDigits: 2,
-		maximumFractionDigits: 2,
-		useGrouping: true,
-	}).format(Number(v) || 0);
-};
 
 const fm = (v, ccy) => formatMoney(v, ccy || "USD", user.value?.language || "en");
 
@@ -268,7 +258,7 @@ watch(activeCompany, loadReport);
 							<!-- Row 1: container counts -->
 							<tr>
 								<td rowspan="2" class="font-monospace fw-bold text-primary align-top" :title="r.group_name">
-									<router-link to="/imports/pi-groups" class="text-primary text-decoration-none">{{ r.group_code }}</router-link>
+									<router-link :to="{ path: '/imports/pi-groups', query: { group: r.group_name } }" class="text-primary text-decoration-none">{{ r.group_code }}</router-link>
 									<div v-if="r.group_title && r.group_title !== r.group_code" class="small text-secondary fw-normal">{{ r.group_title }}</div>
 								</td>
 								<td rowspan="2" class="fw-semibold text-dark align-top">{{ r.vendor_name }}</td>

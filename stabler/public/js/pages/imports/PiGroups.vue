@@ -1,7 +1,7 @@
 <script setup>
 import { computed, onMounted, ref } from "vue";
 import { storeToRefs } from "pinia";
-import { useRouter } from "vue-router";
+import { useRoute, useRouter } from "vue-router";
 import { useSession } from "../../stores/session.js";
 import { importsApi } from "../../api/imports.js";
 import { call } from "../../api/client.js";
@@ -19,6 +19,7 @@ import SkeletonRows from "../../components/SkeletonRows.vue";
 const session = useSession();
 const { activeCompany, user } = storeToRefs(session);
 const router = useRouter();
+const route = useRoute();
 const toast = useToast();
 const { confirm } = useConfirm();
 
@@ -44,7 +45,14 @@ async function load() {
 		loading.value = false;
 	}
 }
-onMounted(load);
+onMounted(() => {
+	load();
+	// Drill-down from the PI Group Container Status report. openDetail fetches
+	// by name, so it does not wait on the list — the drawer opens even if the
+	// group sits outside the default page of rows.
+	const g = String(route.query.group || "").trim();
+	if (g) openDetail(g);
+});
 
 const filteredRows = computed(() => {
 	let list = rows.value || [];
