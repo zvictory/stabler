@@ -4792,3 +4792,21 @@ No records yet.,Henüz kayıt yok.
 DRAFT,Taslak
 CONFIRMED,Onaylı
 SUPERSEDED_BY_CI,CI ile değiştirildi
+PI Group Container Status Report,PI Grubu Konteyner Durum Raporu
+Per-PIGroup planned FCL and container shipment lifecycle tracking,PI grubu başına planlı FCL ve konteyner yaşam döngüsü takibi
+All PI Groups,Tüm PI grupları
+Filter,Filtrele
+Total Groups,Toplam grup
+Planned FCL,Planlı FCL
+At Destination,Varış noktasında
+Group Code / Title,Grup kodu / adı
+PIs,PI
+CIs,CI
+Date Range,Tarih aralığı
+Pending Cont.,Bekleyen kont.
+Destination,Varış
+Total Cont.,Toplam kont.
+Grand Totals,Genel toplam
+Amounts,Tutarlar
+No PI group container records found.,PI grubu konteyner kaydı bulunamadı.
+Failed to load PI group container status report.,Rapor yüklenemedi.

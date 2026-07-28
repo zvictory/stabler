@@ -4797,3 +4797,21 @@ No records yet.,Hozircha yozuvlar yo'q.
 DRAFT,Qoralama
 CONFIRMED,Tasdiqlangan
 SUPERSEDED_BY_CI,CI bilan almashtirilgan
+PI Group Container Status Report,PI guruh konteyner holati hisoboti
+Per-PIGroup planned FCL and container shipment lifecycle tracking,PI guruh bo'yicha rejalashtirilgan FCL va konteyner hayot sikli
+All PI Groups,Barcha PI guruhlar
+Filter,Filtr
+Total Groups,Jami guruhlar
+Planned FCL,Rejalashtirilgan FCL
+At Destination,Manzilda
+Group Code / Title,Guruh kodi / nomi
+PIs,PI
+CIs,CI
+Date Range,Sana oralig'i
+Pending Cont.,Kutilmoqda kont.
+Destination,Manzil
+Total Cont.,Jami kont.
+Grand Totals,Umumiy jami
+Amounts,Summalar
+No PI group container records found.,PI guruh konteyner yozuvlari topilmadi.
+Failed to load PI group container status report.,Hisobotni yuklab bo'lmadi.

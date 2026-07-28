@@ -4793,3 +4793,21 @@ No records yet.,No records yet.
 DRAFT,DRAFT
 CONFIRMED,CONFIRMED
 SUPERSEDED_BY_CI,SUPERSEDED_BY_CI
+PI Group Container Status Report,PI Group Container Status Report
+Per-PIGroup planned FCL and container shipment lifecycle tracking,Per-PIGroup planned FCL and container shipment lifecycle tracking
+All PI Groups,All PI Groups
+Filter,Filter
+Total Groups,Total Groups
+Planned FCL,Planned FCL
+At Destination,At Destination
+Group Code / Title,Group Code / Title
+PIs,PIs
+CIs,CIs
+Date Range,Date Range
+Pending Cont.,Pending Cont.
+Destination,Destination
+Total Cont.,Total Cont.
+Grand Totals,Grand Totals
+Amounts,Amounts
+No PI group container records found.,No PI group container records found.
+Failed to load PI group container status report.,Failed to load PI group container status report.

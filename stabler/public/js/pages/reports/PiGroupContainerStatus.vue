@@ -78,6 +78,9 @@ function exportCsv() {
 	const csvRows = [headers.join(",")];
 	for (const r of rows.value) {
 		const b = r.buckets || {};
+		const a = r.amounts || {};
+		// Row 1: container counts. Row 2: the money in those exact columns —
+		// the spec's dual-row grid, mirrored into the export.
 		csvRows.push([
 			`"${r.group_code}"`,
 			`"${r.group_title}"`,
@@ -95,6 +98,19 @@ function exportCsv() {
 			r.container_total,
 			r.agreed_total,
 			r.pending_amount,
+		].join(","));
+		csvRows.push([
+			`"${r.group_code}"`,
+			`"${t("Amounts")} (${r.currency || "USD"})"`,
+			"", "", "", "", "",
+			r.agreed_total,
+			r.pending_amount,
+			a.ORIGIN || 0,
+			a.TRANSIT || 0,
+			a.DESTINATION || 0,
+			a.DELIVERED || 0,
+			r.ci_agreed_total || 0,
+			"", "",
 		].join(","));
 	}
 	const blob = new Blob([csvRows.join("\n")], { type: "text/csv;charset=utf-8;" });
@@ -199,16 +215,16 @@ watch(activeCompany, loadReport);
 			<div class="col-sm-6 col-lg-2">
 				<div class="card card-sm">
 					<div class="card-body">
-						<div class="font-weight-medium text-secondary small">{{ t("Total Containers") }}</div>
-						<div class="h3 mb-0 font-monospace text-dark fw-bold">{{ totals.grand_containers || 0 }}</div>
+						<div class="font-weight-medium text-secondary small">{{ t("Origin") }}</div>
+						<div class="h3 mb-0 font-monospace text-orange fw-bold">{{ (totals.grand_buckets || {}).ORIGIN || 0 }}</div>
 					</div>
 				</div>
 			</div>
 			<div class="col-sm-6 col-lg-2">
 				<div class="card card-sm">
 					<div class="card-body">
-						<div class="font-weight-medium text-secondary small">{{ t("Grand Agreed") }}</div>
-						<div class="h3 mb-0 font-monospace text-primary fw-bold">{{ fm(totals.grand_agreed_total) }}</div>
+						<div class="font-weight-medium text-secondary small">{{ t("At Destination") }}</div>
+						<div class="h3 mb-0 font-monospace text-purple fw-bold">{{ (totals.grand_buckets || {}).DESTINATION || 0 }}</div>
 					</div>
 				</div>
 			</div>
@@ -232,43 +248,63 @@ watch(activeCompany, loadReport);
 							<th class="text-center bg-purple-lt text-purple">{{ t("Destination") }}</th>
 							<th class="text-center bg-green-lt text-green">{{ t("Delivered") }}</th>
 							<th class="text-end fw-bold">{{ t("Total Cont.") }}</th>
-							<th class="text-end bg-blue-lt text-blue">{{ t("Agreed Amount") }}</th>
 						</tr>
 					</thead>
 					<tbody>
-						<tr v-for="r in rows" :key="r.group_code">
-							<td class="font-monospace fw-bold text-primary">
-								{{ r.group_code }}
-								<div class="small text-secondary fw-normal">{{ r.group_title }}</div>
-							</td>
-							<td class="fw-semibold text-dark">{{ r.vendor_name }}</td>
-							<td class="text-center font-monospace"><span class="badge bg-secondary-lt">{{ r.pi_count }}</span></td>
-							<td class="text-center font-monospace"><span class="badge bg-azure-lt">{{ r.ci_count }}</span></td>
-							<td class="small font-monospace">{{ formatDate(r.date_min) }} … {{ formatDate(r.date_max) }}</td>
-							<td class="text-end font-monospace text-azure bg-azure-lt fw-semibold">{{ r.planned_fcl }}</td>
-							<td class="text-end font-monospace text-warning bg-warning-lt fw-semibold">{{ r.pending_containers }}</td>
-							<td class="text-center font-monospace text-orange bg-orange-lt">{{ (r.buckets || {}).ORIGIN || 0 }}</td>
-							<td class="text-center font-monospace text-info bg-info-lt">{{ (r.buckets || {}).TRANSIT || 0 }}</td>
-							<td class="text-center font-monospace text-purple bg-purple-lt">{{ (r.buckets || {}).DESTINATION || 0 }}</td>
-							<td class="text-center font-monospace text-green bg-green-lt fw-bold">{{ (r.buckets || {}).DELIVERED || 0 }}</td>
-							<td class="text-end font-monospace fw-bold">{{ r.container_total }}</td>
-							<td class="text-end font-monospace text-blue bg-blue-lt fw-semibold">{{ fm(r.agreed_total) }}</td>
-						</tr>
+						<template v-for="r in rows" :key="r.group_code">
+							<!-- Row 1: container counts -->
+							<tr>
+								<td rowspan="2" class="font-monospace fw-bold text-primary align-top">
+									<router-link to="/imports/pi-groups" class="text-primary text-decoration-none">{{ r.group_code }}</router-link>
+									<div class="small text-secondary fw-normal">{{ r.group_title }}</div>
+								</td>
+								<td rowspan="2" class="fw-semibold text-dark align-top">{{ r.vendor_name }}</td>
+								<td rowspan="2" class="text-center font-monospace align-top"><span class="badge bg-secondary-lt">{{ r.pi_count }}</span></td>
+								<td rowspan="2" class="text-center font-monospace align-top"><span class="badge bg-azure-lt">{{ r.ci_count }}</span></td>
+								<td rowspan="2" class="small font-monospace align-top">{{ formatDate(r.date_min) }} … {{ formatDate(r.date_max) }}</td>
+								<td class="text-end font-monospace text-azure bg-azure-lt fw-semibold">{{ r.planned_fcl }}</td>
+								<td class="text-end font-monospace fw-semibold" :class="r.pending_containers < 0 ? 'text-danger bg-red-lt' : 'text-warning bg-warning-lt'">{{ r.pending_containers }}</td>
+								<td class="text-center font-monospace text-orange bg-orange-lt">{{ (r.buckets || {}).ORIGIN || 0 }}</td>
+								<td class="text-center font-monospace text-info bg-info-lt">{{ (r.buckets || {}).TRANSIT || 0 }}</td>
+								<td class="text-center font-monospace text-purple bg-purple-lt">{{ (r.buckets || {}).DESTINATION || 0 }}</td>
+								<td class="text-center font-monospace text-green bg-green-lt fw-bold">{{ (r.buckets || {}).DELIVERED || 0 }}</td>
+								<td class="text-end font-monospace fw-bold">{{ r.container_total }}</td>
+							</tr>
+							<!-- Row 2: the money in those exact columns (spec's dual-row grid) -->
+							<tr class="pgr-amounts">
+								<td class="text-end font-monospace small">{{ fm(r.agreed_total, r.currency) }}</td>
+								<td class="text-end font-monospace small" :class="{ 'text-danger': r.pending_amount < 0 }">{{ fm(r.pending_amount, r.currency) }}</td>
+								<td class="text-end font-monospace small">{{ fm((r.amounts || {}).ORIGIN, r.currency) }}</td>
+								<td class="text-end font-monospace small">{{ fm((r.amounts || {}).TRANSIT, r.currency) }}</td>
+								<td class="text-end font-monospace small">{{ fm((r.amounts || {}).DESTINATION, r.currency) }}</td>
+								<td class="text-end font-monospace small">{{ fm((r.amounts || {}).DELIVERED, r.currency) }}</td>
+								<td class="text-end font-monospace small fw-semibold">{{ fm(r.ci_agreed_total, r.currency) }}</td>
+							</tr>
+						</template>
 						<tr v-if="!rows.length && !loading">
-							<td colspan="13" class="text-center text-secondary py-4">{{ t("No PI group container records found.") }}</td>
+							<td colspan="12" class="text-center text-secondary py-4">{{ t("No PI group container records found.") }}</td>
 						</tr>
 					</tbody>
 					<tfoot v-if="rows.length">
 						<tr class="fw-bold bg-light">
-							<td colspan="5" class="text-end">{{ t("Grand Totals") }} ({{ totals.group_count }} Groups)</td>
+							<td colspan="5" class="text-end">{{ t("Grand Totals") }} · {{ totals.group_count }}</td>
 							<td class="text-end font-monospace text-azure bg-azure-lt">{{ totals.grand_fcl }}</td>
-							<td class="text-end font-monospace text-warning bg-warning-lt">{{ totals.grand_pending }}</td>
+							<td class="text-end font-monospace" :class="totals.grand_pending < 0 ? 'text-danger bg-red-lt' : 'text-warning bg-warning-lt'">{{ totals.grand_pending }}</td>
 							<td class="text-center font-monospace text-orange bg-orange-lt">{{ (totals.grand_buckets || {}).ORIGIN || 0 }}</td>
 							<td class="text-center font-monospace text-info bg-info-lt">{{ (totals.grand_buckets || {}).TRANSIT || 0 }}</td>
 							<td class="text-center font-monospace text-purple bg-purple-lt">{{ (totals.grand_buckets || {}).DESTINATION || 0 }}</td>
 							<td class="text-center font-monospace text-green bg-green-lt">{{ (totals.grand_buckets || {}).DELIVERED || 0 }}</td>
 							<td class="text-end font-monospace fw-bold">{{ totals.grand_containers }}</td>
-							<td class="text-end font-monospace text-blue bg-blue-lt">{{ fm(totals.grand_agreed_total) }}</td>
+						</tr>
+						<tr class="pgr-amounts fw-semibold">
+							<td colspan="5" class="text-end small text-secondary">{{ t("Amounts") }}</td>
+							<td class="text-end font-monospace small">{{ fm(totals.grand_agreed_total) }}</td>
+							<td class="text-end font-monospace small" :class="{ 'text-danger': totals.grand_pending_amount < 0 }">{{ fm(totals.grand_pending_amount) }}</td>
+							<td class="text-end font-monospace small">{{ fm((totals.grand_amounts || {}).ORIGIN) }}</td>
+							<td class="text-end font-monospace small">{{ fm((totals.grand_amounts || {}).TRANSIT) }}</td>
+							<td class="text-end font-monospace small">{{ fm((totals.grand_amounts || {}).DESTINATION) }}</td>
+							<td class="text-end font-monospace small">{{ fm((totals.grand_amounts || {}).DELIVERED) }}</td>
+							<td class="text-end font-monospace small">{{ fm(totals.grand_ci_agreed_total) }}</td>
 						</tr>
 					</tfoot>
 				</table>
@@ -276,3 +312,7 @@ watch(activeCompany, loadReport);
 		</div>
 	</div>
 </template>
+
+<style scoped>
+.pgr-amounts td { background: var(--tblr-bg-surface-secondary, #f6f8fb); border-top: 0; }
+</style>

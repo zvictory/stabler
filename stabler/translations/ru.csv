@@ -4803,3 +4803,21 @@ No records yet.,Записей пока нет.
 DRAFT,Черновик
 CONFIRMED,Подтверждено
 SUPERSEDED_BY_CI,Заменена CI
+PI Group Container Status Report,Отчёт: статус контейнеров по PI-группам
+Per-PIGroup planned FCL and container shipment lifecycle tracking,Плановые FCL и жизненный цикл контейнеров по PI-группам
+All PI Groups,Все PI-группы
+Filter,Фильтр
+Total Groups,Всего групп
+Planned FCL,Плановые FCL
+At Destination,В пункте назначения
+Group Code / Title,Код / название группы
+PIs,PI
+CIs,CI
+Date Range,Период
+Pending Cont.,Ожидает конт.
+Destination,Пункт назначения
+Total Cont.,Всего конт.
+Grand Totals,Итого
+Amounts,Суммы
+No PI group container records found.,Записи контейнеров по PI-группам не найдены.
+Failed to load PI group container status report.,Не удалось загрузить отчёт.

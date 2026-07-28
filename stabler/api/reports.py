@@ -28,6 +28,7 @@ from stabler.api._accounts import _cbu_rate_on_or_before
 from stabler.api._common import _require_company
 from stabler.api._money import money_epsilon
 from stabler.api.approvals import _assert_company_scope
+from stabler.stabler.doctype.stabler_settings.stabler_settings import module_map_for
 from stabler.api.organization import module_map_for
 from stabler.api.sales import _sales_report_dates, _sales_report_period_expr
 
@@ -2056,136 +2057,161 @@ def get_pi_group_container_status_report(
 	date_to: str | None = None,
 	status: str | None = None,
 ) -> dict:
-	"""PI Group Container Status Report — per-PIGroup planned FCL and container lifecycle counts."""
+	"""PI Group Container Status — msaerp parity report.
+
+	Per PI Group: planned FCL (sum of PI line `fcl` — real data, never a
+	heuristic), container lifecycle buckets by parent-CI status, and the
+	matching money row (CI agreed totals per bucket). Bucketing lives in
+	_pi_group_report (pure); counts and amounts come from the same map, so
+	the two rows of the grid cannot disagree. Pendings are raw subtractions —
+	negative means over-shipment and is shown, not clamped.
+	"""
+	from stabler.api import _pi_group_report as pgr
+
 	_require_company(company)
 	_assert_company_scope(company)
+	if not module_map_for(company).get("imports"):
+		frappe.throw(_("Imports module is not enabled for {0}.").format(company), frappe.PermissionError)
 
 	conditions = ["pg.company = %(company)s"]
-	params = {"company": company}
-
+	params: dict = {"company": company}
 	if pi_group and pi_group.strip():
 		params["pi_group"] = pi_group.strip()
 		conditions.append("pg.name = %(pi_group)s")
 	if vendor and vendor.strip():
 		params["vendor"] = vendor.strip()
-		conditions.append("pg.vendor = %(vendor)s")
+		conditions.append("pg.pi_vendor = %(vendor)s")
 
-	where_clause = " AND ".join(conditions)
 	groups = frappe.db.sql(
 		f"""
-        SELECT pg.name, pg.group_title, pg.vendor, supp.supplier_name, pg.creation
-        FROM `tabImport PI Group` pg
-        LEFT JOIN `tabSupplier` supp ON supp.name = pg.vendor
-        WHERE {where_clause}
-        ORDER BY pg.creation DESC
-        """,
+		SELECT pg.name, pg.title, pg.pi_vendor, supp.supplier_name, pg.creation
+		FROM `tabImport PI Group` pg
+		LEFT JOIN `tabSupplier` supp ON supp.name = pg.pi_vendor
+		WHERE {" AND ".join(conditions)}
+		ORDER BY pg.creation DESC
+		""",
 		params,
 		as_dict=True,
 	)
 
+	# The signature's filters MUST narrow the data (a filter bar that lies is
+	# worse than none): date range and PI status apply to the member PIs.
+	pi_filters: dict = {}
+	if date_from:
+		pi_filters["pi_date"] = [">=", date_from]
+	if date_to:
+		pi_filters["pi_date"] = (
+			["between", [date_from, date_to]] if date_from else ["<=", date_to]
+		)
+	if status and status.strip():
+		pi_filters["status"] = status.strip()
+
+	filters_active = bool(pi_filters)
 	rows = []
-	grand_buckets = {"ORIGIN": 0, "TRANSIT": 0, "DESTINATION": 0, "DELIVERED": 0}
-	grand_fcl = 0.0
-	grand_pending = 0.0
-	grand_containers = 0
-	grand_ci_count = 0
-	grand_agreed_total = 0.0
+	grand_buckets = {k: 0 for k in pgr.BUCKET_ORDER}
+	grand_amounts = {k: 0.0 for k in pgr.BUCKET_ORDER}
+	grand = {"fcl": 0.0, "pending": 0.0, "containers": 0, "ci_count": 0,
+		"agreed_total": 0.0, "ci_agreed_total": 0.0, "pending_amount": 0.0}
 
 	for g in groups:
 		gid = g["name"]
 		member_pis = frappe.db.get_all(
 			"Proforma Invoice",
-			filters={"import_pi_group": gid},
-			fields=["name", "supplier_pi_ref", "pi_date", "status", "agreed_total"],
+			filters={"import_pi_group": gid, **pi_filters},
+			fields=["name", "supplier_pi_ref", "pi_date", "status", "agreed_total", "currency"],
 		)
-
-		if not member_pis and pi_group:
+		if not member_pis and (filters_active or not pi_group):
+			# Filters excluded every PI (or the group is simply empty in a
+			# full listing) — the group has nothing to report.
 			continue
 
-		date_list = [p["pi_date"] for p in member_pis if p.get("pi_date")]
-		date_min = str(min(date_list)) if date_list else None
-		date_max = str(max(date_list)) if date_list else None
-
-		planned_fcl = sum(
-			flt(it.boxes / 1400.0) if (it.boxes and it.boxes > 500) else 1.0
-			for p in member_pis
-			for it in frappe.db.get_all(
-				"Proforma Invoice Item", filters={"parent": p["name"]}, fields=["boxes"]
+		pi_names = [p["name"] for p in member_pis]
+		# Planned FCL = the fcl the lines actually carry. One query, no N+1,
+		# and no fabrication: a group whose lines carry no fcl reports 0.
+		planned_fcl = 0.0
+		if pi_names:
+			# Plain field fetch + Python sum: Frappe v16 rejects SQL functions
+			# as strings in SELECT (the imports_flow lesson, 2026-07-28).
+			planned_fcl = sum(
+				flt(r.fcl)
+				for r in frappe.db.get_all(
+					"Proforma Invoice Item",
+					filters={"parent": ["in", pi_names]},
+					fields=["fcl"],
+					limit_page_length=0,
+				)
 			)
-		) or len(member_pis)
 
 		cis = frappe.db.get_all(
 			"Commercial Invoice",
 			filters={"import_pi_group": gid},
 			fields=["name", "status", "agreed_total"],
 		)
-		ci_count = len(cis)
+		container_rows = frappe.db.get_all(
+			"Import Container",
+			filters={"commercial_invoice": ["in", [c["name"] for c in cis] or [""]]},
+			fields=["name", "commercial_invoice"],
+		)
+		ci_status_by_name = {c["name"]: c["status"] for c in cis}
 
-		containers = frappe.db.sql(
-			"""
-            SELECT cnt.name, cnt.status, ci.status as ci_status
-            FROM `tabImport Container` cnt
-            JOIN `tabCommercial Invoice` ci ON ci.name = cnt.commercial_invoice
-            WHERE ci.import_pi_group = %(gid)s
-            """,
-			{"gid": gid},
-			as_dict=True,
+		# Counts (per container, by parent-CI status) and amounts (per CI) fold
+		# through the SAME bucket map — the grid's two rows cannot diverge.
+		count_tally = pgr.tally(
+			ci_status_by_name.get(r["commercial_invoice"]) for r in container_rows
+		)
+		amount_tally = pgr.tally(
+			[c["status"] for c in cis], [flt(c["agreed_total"]) for c in cis]
 		)
 
-		buckets = {"ORIGIN": 0, "TRANSIT": 0, "DESTINATION": 0, "DELIVERED": 0}
-		for cnt in containers:
-			st = (cnt.get("ci_status") or cnt.get("status") or "").upper()
-			if st in ("DRAFT", "BOOKED", "STUFFED", "GATE_IN", "ON_BOARD"):
-				buckets["ORIGIN"] += 1
-			elif st in ("IN_TRANSIT", "DISCHARGED", "AVAILABLE", "ARRIVED_AT_IRAN"):
-				buckets["TRANSIT"] += 1
-			elif st in ("CUSTOMS_CLEARANCE", "RELEASED"):
-				buckets["DESTINATION"] += 1
-			elif st in ("DELIVERED_TO_UZBEKISTAN", "DELIVERED", "CLOSED"):
-				buckets["DELIVERED"] += 1
-
-		container_total = len(containers)
-		pending_containers = max(0.0, planned_fcl - container_total)
 		agreed_total = sum(flt(p["agreed_total"]) for p in member_pis)
-		pending_amount = max(0.0, agreed_total - sum(flt(c["agreed_total"]) for c in cis))
+		pending_cont = pgr.pending_containers(planned_fcl, count_tally["total"])
+		pending_amt = pgr.pending_amount(agreed_total, amount_tally["amount_total"])
 
-		for k in grand_buckets:
-			grand_buckets[k] += buckets[k]
-		grand_fcl += planned_fcl
-		grand_pending += pending_containers
-		grand_containers += container_total
-		grand_ci_count += ci_count
-		grand_agreed_total += agreed_total
+		date_list = [p["pi_date"] for p in member_pis if p.get("pi_date")]
+		for k in pgr.BUCKET_ORDER:
+			grand_buckets[k] += count_tally["counts"][k]
+			grand_amounts[k] += amount_tally["amounts"][k]
+		grand["fcl"] += planned_fcl
+		grand["pending"] += pending_cont
+		grand["containers"] += count_tally["total"]
+		grand["ci_count"] += len(cis)
+		grand["agreed_total"] += agreed_total
+		grand["ci_agreed_total"] += amount_tally["amount_total"]
+		grand["pending_amount"] += pending_amt
 
-		rows.append(
-			{
-				"group_code": gid,
-				"group_title": g["group_title"] or gid,
-				"vendor_name": g["supplier_name"] or g["vendor"] or "—",
-				"pi_count": len(member_pis),
-				"ci_count": ci_count,
-				"pis": [p["supplier_pi_ref"] or p["name"] for p in member_pis],
-				"date_min": date_min,
-				"date_max": date_max,
-				"planned_fcl": round(planned_fcl, 1),
-				"pending_containers": round(pending_containers, 1),
-				"buckets": buckets,
-				"container_total": container_total,
-				"agreed_total": agreed_total,
-				"pending_amount": pending_amount,
-			}
-		)
+		rows.append({
+			"group_code": gid,
+			"group_title": g["title"] or gid,
+			"vendor_name": g["supplier_name"] or g["pi_vendor"] or "—",
+			"currency": (member_pis[0].get("currency") if member_pis else None) or "USD",
+			"pi_count": len(member_pis),
+			"ci_count": len(cis),
+			"pis": [p["supplier_pi_ref"] or p["name"] for p in member_pis],
+			"date_min": str(min(date_list)) if date_list else None,
+			"date_max": str(max(date_list)) if date_list else None,
+			"planned_fcl": round(planned_fcl, 1),
+			"pending_containers": round(pending_cont, 1),
+			"buckets": count_tally["counts"],
+			"container_total": count_tally["total"],
+			"amounts": amount_tally["amounts"],
+			"ci_agreed_total": amount_tally["amount_total"],
+			"agreed_total": agreed_total,
+			"pending_amount": pending_amt,
+		})
 
 	return {
 		"rows": rows,
 		"totals": {
 			"group_count": len(rows),
-			"grand_ci_count": grand_ci_count,
-			"grand_fcl": round(grand_fcl, 1),
-			"grand_pending": round(grand_pending, 1),
+			"grand_ci_count": grand["ci_count"],
+			"grand_fcl": round(grand["fcl"], 1),
+			"grand_pending": round(grand["pending"], 1),
 			"grand_buckets": grand_buckets,
-			"grand_containers": grand_containers,
-			"grand_agreed_total": grand_agreed_total,
+			"grand_amounts": grand_amounts,
+			"grand_containers": grand["containers"],
+			"grand_agreed_total": grand["agreed_total"],
+			"grand_ci_agreed_total": grand["ci_agreed_total"],
+			"grand_pending_amount": grand["pending_amount"],
 		},
 	}
 
