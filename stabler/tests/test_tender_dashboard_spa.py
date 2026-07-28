@@ -73,6 +73,22 @@ class TestTenderDashboardSpaContract(unittest.TestCase):
 		):
 			self.assertNotIn(removed, source)
 
+	def test_tender_dashboard_renders_executive_content_without_legacy_empty_gate(self):
+		source = _read(_DASHBOARD)
+
+		self.assertNotIn("const tenderEmpty", source)
+		self.assertNotIn('v-else-if="tenderEmpty"', source)
+		for legacy_state in ("acquisition = {}", "attention = {}", "execution = {}"):
+			self.assertNotIn(legacy_state, source)
+
+	def test_tender_dashboard_serializes_selected_dates_in_local_time(self):
+		source = _read(_DASHBOARD)
+
+		self.assertIn("function localDate(date)", source)
+		self.assertNotIn("toISOString()", source)
+		for getter in ("getFullYear()", "getMonth() + 1", "getDate()"):
+			self.assertIn(getter, source)
+
 	def test_dashboard_composes_executive_kpis_and_conversion_only_funnel(self):
 		kpis = _read(_EXECUTIVE_KPIS)
 		funnel = _read(_FUNNEL)

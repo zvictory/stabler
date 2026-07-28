@@ -50,17 +50,6 @@ const executiveKpi = computed(() => tenderData.value.executive_kpi || null);
 const executiveCurrency = computed(
 	() => tenderData.value.executive_currency || currency.value || ""
 );
-const tenderEmpty = computed(() => {
-	const { acquisition = {}, attention = {}, execution = {} } = tenderData.value;
-	return (
-		!tenderLoading.value &&
-		!tenderError.value &&
-		!acquisition.identified &&
-		!execution.purchase_orders &&
-		!execution.sales_orders &&
-		!attention.items?.length
-	);
-});
 
 const money = (v, ccy) => formatMoney(v, ccy || currency.value, user.value.language);
 // Chart currency: dominant transaction currency once trend data loads, base currency until then.
@@ -105,13 +94,19 @@ async function loadFinancial() {
 	}
 }
 
+function localDate(date) {
+	const month = String(date.getMonth() + 1).padStart(2, "0");
+	const day = String(date.getDate()).padStart(2, "0");
+	return `${date.getFullYear()}-${month}-${day}`;
+}
+
 function tenderDates(days) {
 	const end = new Date();
 	const start = new Date(end);
 	start.setDate(end.getDate() - days + 1);
 	return {
-		from_date: start.toISOString().slice(0, 10),
-		to_date: end.toISOString().slice(0, 10),
+		from_date: localDate(start),
+		to_date: localDate(end),
 	};
 }
 
@@ -333,19 +328,6 @@ const activityIcon = (type) => {
 							</button>
 						</div>
 					</div>
-
-					<EmptyState
-						v-else-if="tenderEmpty"
-						icon="ti-gavel"
-						accentIcon="ti-circle-check"
-						tone="primary"
-						:title="t('Tender activity is empty for this period')"
-						:subtitle="
-							t(
-								'Choose another period or start a tender intake to see lifecycle and execution work here.'
-							)
-						"
-					/>
 
 					<div v-else class="tender-dashboard">
 						<TenderNav overview />
