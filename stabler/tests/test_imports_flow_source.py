@@ -117,5 +117,33 @@ class ListDeepLinkTest(unittest.TestCase):
                 self.assertIn("route.query.status", src, f"{page} ignores ?status=")
 
 
+class RouteIsDeclaredTest(unittest.TestCase):
+    """No .vue may read `route.` without calling useRoute().
+
+    Reading ?status= was shipped into two list pages that imported only
+    useRouter — `route` was never bound, so setup() threw
+    "ReferenceError: route is not defined" and the whole page went blank.
+    Every source check passed: the string "route.query.status" was right
+    there. Caught in the browser on msa, 2026-07-28. Pin the binding, not
+    the token.
+    """
+
+    USES = re.compile(r"(?<![\w.$])route\s*\.\s*(?:query|params|path|name|fullPath|hash|meta)\b")
+    DECLARES = re.compile(r"(?:const|let)\s+route\s*=|(?:const|let)\s*\{[^}]*\broute\b[^}]*\}\s*=")
+
+    def test_every_vue_that_reads_route_binds_it(self):
+        root = os.path.join(_ROOT, "public", "js")
+        offenders = []
+        for base, _dirs, files in os.walk(root):
+            for fn in files:
+                if not fn.endswith(".vue"):
+                    continue
+                path = os.path.join(base, fn)
+                src = read(path)
+                if self.USES.search(src) and not self.DECLARES.search(src):
+                    offenders.append(os.path.relpath(path, root))
+        self.assertEqual(sorted(offenders), [], f"`route` used but never bound: {sorted(offenders)}")
+
+
 if __name__ == "__main__":
     unittest.main()

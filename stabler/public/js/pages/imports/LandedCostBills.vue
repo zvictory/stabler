@@ -1,7 +1,7 @@
 <script setup>
 import { computed, onMounted, ref, watch } from "vue";
 import { storeToRefs } from "pinia";
-import { useRouter } from "vue-router";
+import { useRoute, useRouter } from "vue-router";
 import { useSession } from "../../stores/session.js";
 import { importsApi } from "../../api/imports.js";
 import { t } from "../../composables/i18n.js";
@@ -16,6 +16,7 @@ import Pagination from "../../components/Pagination.vue";
 
 const session = useSession();
 const { activeCompany, user } = storeToRefs(session);
+const route = useRoute();
 const router = useRouter();
 
 const search = ref("");
