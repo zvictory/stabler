@@ -39,33 +39,10 @@ class TestTenderDashboardSpaContract(unittest.TestCase):
 		self.assertIn("if (tenderEnabled.value) return loadTender();", source)
 		self.assertIn("return loadFinancial();", source)
 
-	def test_dashboard_has_accessible_spa_drilldowns_without_desk_links(self):
+	def test_dashboard_has_no_desk_links(self):
 		source = _read(_DASHBOARD)
-		self.assertIn("router.push({ name, query })", source)
-		self.assertIn('type="button" class="tender-metric-card"', source)
-		self.assertIn(".tender-metric-card:focus-visible", source)
-		self.assertIn(".tender-metric-card:active", source)
 		self.assertNotIn('"/app/', source)
 		self.assertNotIn("'/app/", source)
-
-	def test_dashboard_presents_explicit_lifecycle_and_execution_counts(self):
-		source = _read(_DASHBOARD)
-		for text in (
-			"Tayyor",
-			"Yuborilgan",
-			"Sales orders",
-			"Qabul qilingan PO",
-			"Tekshirilmagan tarix",
-			"Missing required checks",
-		):
-			self.assertIn(text, source)
-		self.assertIn("execution.received || 0 }} / {{ execution.purchase_orders || 0", source)
-		self.assertIn("execution.delivered || 0 }} / {{ execution.sales_orders || 0", source)
-
-	def test_dashboard_execution_cards_stack_on_phone(self):
-		source = _read(_DASHBOARD)
-		self.assertIn('class="col-12 col-md-6 col-lg-3"', source)
-		self.assertIn("TenderExecutionFlow", source)
 
 	def test_dashboard_error_is_announced_and_focuses_retry(self):
 		source = _read(_DASHBOARD)
@@ -78,11 +55,23 @@ class TestTenderDashboardSpaContract(unittest.TestCase):
 		):
 			self.assertIn(text, source)
 
-	def test_dashboard_gates_role_specific_destinations(self):
+	def test_tender_dashboard_is_executive_ribbon_without_tables(self):
 		source = _read(_DASHBOARD)
-		self.assertIn("role_scope.views", source)
-		for view in ("director", "sourcing", "declarant", "logist"):
-			self.assertIn(view, source)
+
+		self.assertIn("tenderData.value.executive_kpi", source)
+		self.assertIn("<TenderExecutiveKpis", source)
+		self.assertIn('<TenderFunnel mode="conversion"', source)
+		self.assertIn(':days="tenderDays"', source)
+		self.assertIn('t("Tender operations")', source)
+		self.assertIn('t("Dashboard")', source)
+		for removed in (
+			"TenderTrendChart",
+			"TenderExecutionFlow",
+			"TenderPortfolioPreview",
+			"portfolio_preview",
+			"attention.value",
+		):
+			self.assertNotIn(removed, source)
 
 	def test_dashboard_composes_executive_kpis_and_conversion_only_funnel(self):
 		kpis = _read(_EXECUTIVE_KPIS)
@@ -111,11 +100,13 @@ class TestTenderDashboardSpaContract(unittest.TestCase):
 		self.assertIn("days: props.days", funnel)
 		self.assertIn("watch([activeCompany, () => props.days], load);", funnel)
 
-	def test_dashboard_requests_a_three_month_trend_without_widening_kpis(self):
+	def test_dashboard_requests_the_selected_day_range(self):
 		source = _read(_DASHBOARD)
-		self.assertIn("function trendDates(period)", source)
-		self.assertIn("trend_from_date: trendRange.from_date", source)
-		self.assertIn("trend_to_date: trendRange.to_date", source)
+		self.assertIn("const tenderDays = ref(Number(route.query.days) || 90);", source)
+		self.assertIn("function tenderDates(days)", source)
+		self.assertIn("const dateRange = tenderDates(tenderDays.value);", source)
+		self.assertIn("...dateRange", source)
+		self.assertIn("days: tenderDays.value", source)
 
 	def test_p1_components_preserve_visual_and_keyboard_accessibility(self):
 		trend_source = _read(_TREND_CHART)
