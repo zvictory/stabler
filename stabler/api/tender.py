@@ -1841,12 +1841,10 @@ def _tender_filter_evidence(intake: dict, creation, risk: str) -> dict:
 	}
 
 
-@frappe.whitelist()
-def tender_director_board(company: str) -> dict:
-	"""Director portfolio: every tender with value, margin, Остаток, deadline risk."""
-	_require_tender_view("director", company)
+def _tender_director_payload(company: str, *, include_rows: bool) -> dict:
 	base_ccy = frappe.db.get_value("Company", company, "default_currency") or ""
 	rows = []
+	visible_count = 0
 	total_value = 0.0
 	total_ost = 0.0
 	at_risk = 0
@@ -1856,6 +1854,7 @@ def tender_director_board(company: str) -> dict:
 	for deal in _tender_deal_names(company):
 		if not frappe.has_permission("CRM Deal", "read", doc=deal):
 			continue
+		visible_count += 1
 		intake = _read_intake(deal)
 		verified = _has_submission_evidence(intake)
 		_res = intake.get("result") if verified else ""
@@ -1883,31 +1882,31 @@ def tender_director_board(company: str) -> dict:
 		if dl["risk"] == "risk":
 			at_risk += 1
 		delivery = next((m["date"] for m in dl["milestones"] if m["key"] == "delivery"), None)
-		rows.append(
-			{
-				"deal": deal,
-				"label": _deal_label(deal),
-				"value": value,
-				"landed": refs["po_landed"],
-				"ostatok": pnl["ostatok"],
-				"margin_pct": pnl["margin_on_revenue_pct"],
-				"po_count": refs["po_count"],
-				"so_count": refs["so_count"],
-				"risk": dl["risk"],
-				"delivery": delivery,
-				"result": _res,
-				"event_date": evidence["event_date"],
-				"event_dates": evidence["event_dates"],
-				"lifecycle": evidence["lifecycle"],
-				"status": evidence["status"],
-				"due": evidence["due"],
-				"assigned_to": intake.get("assigned_to") or "",
-				"assigned_to_name": intake.get("assigned_to_name") or "",
-			}
-		)
-	rows.sort(key=lambda r: (_RISK_ORDER.get(r["risk"], 3), r["delivery"] or "9999-99-99"))
+		if include_rows:
+			rows.append(
+				{
+					"deal": deal,
+					"label": _deal_label(deal),
+					"value": value,
+					"landed": refs["po_landed"],
+					"ostatok": pnl["ostatok"],
+					"margin_pct": pnl["margin_on_revenue_pct"],
+					"po_count": refs["po_count"],
+					"so_count": refs["so_count"],
+					"risk": dl["risk"],
+					"delivery": delivery,
+					"result": _res,
+					"event_date": evidence["event_date"],
+					"event_dates": evidence["event_dates"],
+					"lifecycle": evidence["lifecycle"],
+					"status": evidence["status"],
+					"due": evidence["due"],
+					"assigned_to": intake.get("assigned_to") or "",
+					"assigned_to_name": intake.get("assigned_to_name") or "",
+				}
+			)
 	kpi = {
-		"count": len(rows),
+		"count": visible_count,
 		"total_value": total_value,
 		"avg_margin": round(sum(margins) / len(margins), 1) if margins else 0,
 		"at_risk": at_risk,
@@ -1918,7 +1917,31 @@ def tender_director_board(company: str) -> dict:
 		"unverified_history": unverified_history,
 		"win_rate": round(won / (won + lost) * 100, 1) if (won + lost) else 0,
 	}
-	return {"currency": base_ccy, "rows": rows, "kpi": kpi}
+	payload = {"currency": base_ccy, "kpi": kpi}
+	if include_rows:
+		rows.sort(key=lambda r: (_RISK_ORDER.get(r["risk"], 3), r["delivery"] or "9999-99-99"))
+		payload["rows"] = rows
+	return payload
+
+
+def _dashboard_executive_payload(company: str, views: set[str]) -> dict:
+	if "director" not in views:
+		return {"executive_kpi": None, "executive_currency": ""}
+	executive = _tender_director_payload(company, include_rows=False)
+	return {
+		"executive_kpi": executive["kpi"],
+		"executive_currency": executive["currency"],
+	}
+
+
+@frappe.whitelist()
+def tender_director_board(company: str) -> dict:
+	"""Director portfolio: every tender with value, margin, Остаток, deadline risk.
+
+	Rows retain the "event_date", "lifecycle", "status", and "due" filter evidence.
+	"""
+	_require_tender_view("director", company)
+	return _tender_director_payload(company, include_rows=True)
 
 
 def _po_rows_for_views(company: str) -> tuple[list, bool]:
@@ -2661,6 +2684,12 @@ def tender_dashboard(
 			"delivery_pending": execution["delivery_pending"] if "logist" in views else 0,
 		},
 	}
+	out.update(_dashboard_executive_payload(company, set(views)))
+	if out["executive_kpi"] is not None:
+		period_decisions = acquisition["won"] + acquisition["lost"]
+		out["executive_kpi"]["win_rate"] = (
+			round(acquisition["won"] / period_decisions * 100, 1) if period_decisions else 0
+		)
 	if can_view_finance:
 		out["finance"] = {
 			"currency": frappe.db.get_value("Company", company, "default_currency") or "",

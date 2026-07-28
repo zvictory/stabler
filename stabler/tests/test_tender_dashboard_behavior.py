@@ -1002,6 +1002,61 @@ class TestTenderDashboardBehaviour(unittest.TestCase):
 
 		self.assertEqual([row["deal"] for row in payload["rows"]], ["DEAL-ALLOWED"])
 
+	def test_director_payload_can_omit_rows_without_changing_kpis(self):
+		db = _FakeDB({"DEAL-1": {}})
+		tender = _load_tender(db, ["Stabler Tender Director"])
+
+		with (
+			patch.object(tender, "_tender_deal_names", return_value={"DEAL-1"}),
+			patch.object(tender, "_deal_deadlines", return_value={"risk": "good", "milestones": []}),
+			patch.object(
+				tender,
+				"_bid_inputs",
+				return_value=({}, {"so_revenue": 0, "po_landed": 0, "po_count": 0, "so_count": 0}),
+			),
+			patch.object(
+				tender,
+				"_compute_bid_pnl",
+				return_value={"bid_price": 0, "ostatok": 0, "margin_on_revenue_pct": 0},
+			),
+			patch.object(tender, "_deal_label", return_value="Deal 1"),
+		):
+			payload_with_rows = tender._tender_director_payload("Test Company", include_rows=True)
+			payload_without_rows = tender._tender_director_payload("Test Company", include_rows=False)
+
+		self.assertEqual(payload_without_rows["kpi"], payload_with_rows["kpi"])
+		self.assertEqual(payload_without_rows["currency"], payload_with_rows["currency"])
+		self.assertNotIn("rows", payload_without_rows)
+
+	def test_dashboard_exposes_executive_kpis_only_to_director_view(self):
+		db = _FakeDB()
+		tender = _load_tender(db, ["Stabler Tender Director"])
+
+		with patch.object(
+			tender,
+			"_tender_director_payload",
+			return_value={
+				"currency": "UZS",
+				"kpi": {"count": 35, "total_value": 3041273130},
+			},
+		) as director_payload:
+			payload = tender._dashboard_executive_payload("Test Company", {"director"})
+
+		self.assertEqual(payload["executive_kpi"]["count"], 35)
+		self.assertEqual(payload["executive_currency"], "UZS")
+		director_payload.assert_called_once_with("Test Company", include_rows=False)
+
+	def test_dashboard_hides_executive_kpis_without_director_view(self):
+		db = _FakeDB()
+		tender = _load_tender(db, ["Sales User"])
+
+		with patch.object(tender, "_tender_director_payload") as director_payload:
+			payload = tender._dashboard_executive_payload("Test Company", {"sourcing"})
+
+		self.assertIsNone(payload["executive_kpi"])
+		self.assertEqual(payload["executive_currency"], "")
+		director_payload.assert_not_called()
+
 	def test_operational_boards_redact_denied_deal_data_but_keep_permitted_po(self):
 		db = _FakeDB({"DEAL-DENIED": {"delivery_deadline": "2026-07-01"}})
 		tender = _load_tender(db, ["Stabler Declarant", "Stabler Logist"])
