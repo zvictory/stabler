@@ -17,6 +17,11 @@ const { activeCompany } = storeToRefs(session);
 const router = useRouter();
 const toast = useToast();
 
+const props = defineProps({
+	mode: { type: String, default: "full" },
+	days: { type: Number, default: 90 },
+});
+
 const loading = ref(false);
 const data = ref(null);
 
@@ -24,7 +29,7 @@ async function load() {
 	if (!activeCompany.value) return;
 	loading.value = true;
 	try {
-		data.value = await call("stabler.api.tender.tender_funnel", { company: activeCompany.value });
+		data.value = await call("stabler.api.tender.tender_funnel", { company: activeCompany.value, days: props.days });
 	} catch (err) {
 		toast.error(err?.message || t("Could not load the tender funnel."));
 	} finally {
@@ -32,7 +37,7 @@ async function load() {
 	}
 }
 onMounted(load);
-watch(activeCompany, load);
+watch([activeCompany, () => props.days], load);
 
 const kpi = computed(() => data.value?.kpi || {});
 const so = computed(() => data.value?.so || {});
@@ -146,6 +151,7 @@ function go(st) {
 
 <template>
 	<div>
+		<template v-if="props.mode === 'full'">
 		<!-- KPI cards -->
 		<div class="row g-2 mb-3">
 			<div v-for="k in KPIS" :key="k.key" class="col-6 col-xl-3">
@@ -225,6 +231,7 @@ function go(st) {
 			</div>
 		</div>
 
+		</template>
 		<!-- Conversion funnel -->
 		<div v-if="data" class="card mb-3">
 			<div class="card-header">

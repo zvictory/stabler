@@ -17,6 +17,8 @@ _SALES_BOARD = os.path.join(_ROOT, "public", "js", "pages", "sales", "SalesOrder
 _TREND_CHART = os.path.join(_ROOT, "public", "js", "pages", "tender", "TenderTrendChart.vue")
 _EXECUTION_FLOW = os.path.join(_ROOT, "public", "js", "pages", "tender", "TenderExecutionFlow.vue")
 _PORTFOLIO_PREVIEW = os.path.join(_ROOT, "public", "js", "pages", "tender", "TenderPortfolioPreview.vue")
+_EXECUTIVE_KPIS = os.path.join(_ROOT, "public", "js", "pages", "tender", "TenderExecutiveKpis.vue")
+_FUNNEL = os.path.join(_ROOT, "public", "js", "pages", "tender", "TenderFunnel.vue")
 
 
 def _read(path: str) -> str:
@@ -82,17 +84,32 @@ class TestTenderDashboardSpaContract(unittest.TestCase):
 		for view in ("director", "sourcing", "declarant", "logist"):
 			self.assertIn(view, source)
 
-	def test_p1_dashboard_composes_accessible_visuals(self):
-		source = _read(_DASHBOARD)
-		for component in (
-			"TenderTrendChart",
-			"TenderExecutionFlow",
-			"TenderPortfolioPreview",
+	def test_dashboard_composes_executive_kpis_and_conversion_only_funnel(self):
+		kpis = _read(_EXECUTIVE_KPIS)
+		funnel = _read(_FUNNEL)
+
+		for label in (
+			"Active tenders",
+			"Portfolio value",
+			"Avg margin",
+			"At risk",
+			"Win rate",
+			"Net remaining",
 		):
-			self.assertIn(component, source)
-		self.assertIn("portfolio_preview", source)
-		self.assertIn("prefers-reduced-motion", source)
-		self.assertNotIn("/app/", source)
+			self.assertIn(f't("{label}")', kpis)
+		for text in (
+			"formatCompactMoney",
+			"formatMoney",
+			"font-monospace",
+			':title="item.exact"',
+			":aria-label=\"item.exact",
+		):
+			self.assertIn(text, kpis)
+		self.assertIn('mode: { type: String, default: "full" }', funnel)
+		self.assertIn('days: { type: Number, default: 90 }', funnel)
+		self.assertIn('v-if="props.mode === \'full\'"', funnel)
+		self.assertIn("days: props.days", funnel)
+		self.assertIn("watch([activeCompany, () => props.days], load);", funnel)
 
 	def test_dashboard_requests_a_three_month_trend_without_widening_kpis(self):
 		source = _read(_DASHBOARD)
