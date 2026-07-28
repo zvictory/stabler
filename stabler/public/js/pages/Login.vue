@@ -1,13 +1,12 @@
 <script setup>
-import { ref, computed } from "vue";
-import { useRouter, useRoute } from "vue-router";
-import { useSession } from "../stores/session.js";
-import { call } from "../api/client.js";
+import { nextTick, ref } from "vue";
+import { useRoute } from "vue-router";
+import { login } from "../api/auth.js";
+import { sanitizeStablerRedirect } from "../composables/authRedirect.js";
 import { t } from "../composables/i18n.js";
+import AuthTransitionOverlay from "../components/AuthTransitionOverlay.vue";
 
-const router = useRouter();
 const route = useRoute();
-const session = useSession();
 
 const username = ref("");
 const password = ref("");
@@ -15,11 +14,15 @@ const showPassword = ref(false);
 const rememberMe = ref(true);
 
 const loading = ref(false);
+const transitioning = ref(false);
 const error = ref("");
+const errorSummary = ref(null);
 
 async function handleLogin() {
 	if (!username.value.trim() || !password.value) {
 		error.value = t("Please enter both username/email and password.");
+		await nextTick();
+		errorSummary.value?.focus();
 		return;
 	}
 
@@ -27,50 +30,29 @@ async function handleLogin() {
 	error.value = "";
 
 	try {
-		const params = new URLSearchParams();
-		params.append("usr", username.value.trim());
-		params.append("pwd", password.value);
-
-		const response = await fetch("/api/method/login", {
-			method: "POST",
-			credentials: "same-origin",
-			headers: {
-				Accept: "application/json",
-				"Content-Type": "application/x-www-form-urlencoded",
-			},
-			body: params.toString(),
-		});
-
-		const res = await response.json();
-
-		if (response.ok && res.message === "Logged In") {
-			const redirectTo = route.query["redirect-to"] || "/dashboard";
-			const targetHash = redirectTo.startsWith("/") ? redirectTo : "/" + redirectTo;
-			window.location.href = `/stabler#${targetHash}`;
-			window.location.reload();
-		} else {
-			let msg = res.message || t("Invalid username or password.");
-			if (res._server_messages) {
-				try {
-					const parsed = JSON.parse(res._server_messages);
-					if (Array.isArray(parsed) && parsed.length > 0) {
-						const item = typeof parsed[0] === "string" ? JSON.parse(parsed[0]) : parsed[0];
-						msg = item.message || msg;
-					}
-				} catch (_) {}
-			}
-			error.value = msg;
-		}
+		await login(username.value.trim(), password.value);
+		transitioning.value = true;
+		const target = sanitizeStablerRedirect(route.query["redirect-to"]);
+		window.location.replace(`/stabler#${target}`);
 	} catch (err) {
+		transitioning.value = false;
 		error.value = err?.message || t("Invalid username or password.");
+		await nextTick();
+		errorSummary.value?.focus();
 	} finally {
-		loading.value = false;
+		if (!transitioning.value) loading.value = false;
 	}
 }
 </script>
 
 <template>
 	<div class="login-wrapper">
+		<AuthTransitionOverlay
+			v-if="transitioning"
+			:title='t("Session opened")'
+			:message='t("Preparing your Dashboard…")'
+		/>
+
 		<!-- Dynamic Dark Slate Gradient Background Overlay -->
 		<div class="bg-glow bg-glow-1"></div>
 		<div class="bg-glow bg-glow-2"></div>
@@ -88,7 +70,13 @@ async function handleLogin() {
 				</div>
 
 				<!-- Alert Error Message -->
-				<div v-if="error" class="alert alert-danger shadow-sm border-0 d-flex align-items-center gap-2 mb-4" role="alert">
+				<div
+					v-if="error"
+					ref="errorSummary"
+					tabindex="-1"
+					class="alert alert-danger shadow-sm border-0 d-flex align-items-center gap-2 mb-4"
+					role="alert"
+				>
 					<i class="ti ti-alert-circle fs-3 text-danger flex-shrink-0"></i>
 					<div class="small fw-medium">{{ error }}</div>
 				</div>
@@ -106,7 +94,7 @@ async function handleLogin() {
 								:placeholder="t('enter username or email…')"
 								autocomplete="username"
 								required
-								:disabled="loading"
+								:disabled="loading || transitioning"
 							/>
 						</div>
 					</div>
@@ -124,7 +112,7 @@ async function handleLogin() {
 								:placeholder="t('••••••••')"
 								autocomplete="current-password"
 								required
-								:disabled="loading"
+								:disabled="loading || transitioning"
 							/>
 							<button
 								type="button"
@@ -139,12 +127,12 @@ async function handleLogin() {
 
 					<div class="d-flex align-items-center justify-content-between mb-4">
 						<label class="form-check custom-checkbox m-0">
-							<input v-model="rememberMe" type="checkbox" class="form-check-input" />
+							<input v-model="rememberMe" type="checkbox" class="form-check-input" :disabled="loading || transitioning" />
 							<span class="form-check-label text-secondary small fw-medium">{{ t("Remember me") }}</span>
 						</label>
 					</div>
 
-					<button type="submit" class="btn btn-primary btn-submit w-100" :disabled="loading">
+					<button type="submit" class="btn btn-primary btn-submit w-100" :disabled="loading || transitioning">
 						<span v-if="loading" class="spinner-border spinner-border-sm me-2" role="status"></span>
 						<span v-else><i class="ti ti-login me-1"></i></span>
 						{{ loading ? t("Signing in…") : t("Sign In to Stabler") }}
@@ -158,6 +146,7 @@ async function handleLogin() {
 		</div>
 	</div>
 </template>
+
 
 <style scoped>
 .login-wrapper {
