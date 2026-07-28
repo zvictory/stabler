@@ -37,9 +37,15 @@ class TestCrmDealCompanyScopePatch(unittest.TestCase):
 			'"fieldname": "company"',
 			'"fieldtype": "Link"',
 			'"options": "Company"',
-			'"default": ":Company"',
 		):
 			self.assertIn(contract, self.patch)
+
+	def test_patch_carries_no_default(self):
+		# ":Company" as a default makes Frappe fetch Company.company — a column
+		# that does not exist — so every frappe.new_doc("CRM Deal") died with
+		# error 1054. The field must ship WITHOUT a default (v59 repairs sites
+		# that already received the bad one).
+		self.assertNotIn('"default"', self.patch)
 
 	def test_backfill_only_infers_scope_for_a_single_company(self):
 		for contract in (

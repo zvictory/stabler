@@ -4775,3 +4775,7 @@ start,boshlanish
 {pct}% conversion,{pct}% o'tish
 {won} wins of {resolved} resolved,{resolved} yakunlangandan {won} yutuq
 Win-rate,Yutuq ulushi
+Contract value,Shartnoma summasi
+No records in this stage.,Bu bosqichda yozuvlar yo'q.
+Result date,Natija sanasi
+Stage,Bosqich

@@ -4781,3 +4781,7 @@ start,начало
 {pct}% conversion,{pct}% переход
 {won} wins of {resolved} resolved,{won} побед из {resolved} завершённых
 Win-rate,Процент побед
+Contract value,Сумма контракта
+No records in this stage.,В этом этапе нет записей.
+Result date,Дата итога
+Stage,Этап

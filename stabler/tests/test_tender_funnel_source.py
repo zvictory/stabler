@@ -59,6 +59,18 @@ class EndpointTest(unittest.TestCase):
     def test_days_window_is_clamped(self):
         self.assertIn("max(7, min(cint(days) or 90, 366))", self.body)
 
+
+    def test_drill_rows_come_from_the_same_classification_pass(self):
+        # The list behind a number must be built in the SAME loop that counted
+        # it — a second query could disagree with the box.
+        loop = self.body[self.body.index("for deal in _tender_deal_names"):]
+        self.assertIn('stage_rows.setdefault(stage', loop)
+        self.assertIn('out["rows"] = stage_rows', self.body)
+        self.assertIn('out["so_rows"] = so_rows', self.body)
+
+    def test_terminal_drill_lists_match_the_window_rule(self):
+        self.assertIn('if stage not in ("won", "lost") or in_window:', self.body)
+
     def test_guarded_on_missing_columns(self):
         for col in ("custom_crm_deal", "custom_bid_pricing", "custom_board_stage"):
             with self.subTest(col=col):
@@ -73,13 +85,27 @@ class PanelTest(unittest.TestCase):
     def test_calls_the_endpoint(self):
         self.assertIn('call("stabler.api.tender.tender_funnel"', self.vue)
 
-    def test_every_stage_navigates_to_an_spa_route(self):
-        # Dead-end numbers are banned; and no Desk /app links, ever.
+    def test_every_stage_navigates_to_its_original_list(self):
+        # Dead-end numbers are banned; and no Desk /app links, ever. Deal stages
+        # open My Tenders filtered by funnel_stage; execution buckets open the
+        # contract board, whose columns are the native list.
         self.assertNotIn('"/app', self.vue)
         self.assertNotIn("'/app", self.vue)
-        for route in ("/tender/my-tenders", "/tender/sourcing", "/tender/po-control", "/tender/board"):
-            with self.subTest(route=route):
-                self.assertIn(route, self.vue)
+        self.assertIn('query: { funnel_stage: st.key }', self.vue)
+        self.assertIn('"/tender/my-tenders"', self.vue)
+        self.assertIn('"/tender/board"', self.vue)
+
+    def test_dashboard_is_graphics_only(self):
+        # The records live on their original list pages, not under the charts.
+        self.assertNotIn("<table", self.vue)
+
+    def test_my_tenders_filters_from_the_same_classification(self):
+        # The number and the list must share one source: My Tenders builds its
+        # funnel_stage filter from tender_funnel.rows, not from a re-derivation.
+        mt = read(os.path.join(_ROOT, "public", "js", "pages", "tender", "MyTenders.vue"))
+        self.assertIn("funnel_stage", mt)
+        self.assertIn('call("stabler.api.tender.tender_funnel"', mt)
+        self.assertIn("funnelDeals.value.has(r.deal)", mt)
 
     def test_all_user_facing_strings_are_translated(self):
         # Template text nodes must go through t(); catch bare Turkish/English words.

@@ -4770,3 +4770,7 @@ start,başlangıç
 {pct}% conversion,{pct}% geçiş
 {won} wins of {resolved} resolved,{resolved} sonuçlanandan {won} kazanç
 Win-rate,Kazanma oranı
+Contract value,Sözleşme değeri
+No records in this stage.,Bu aşamada kayıt yok.
+Result date,Sonuç tarihi
+Stage,Aşama

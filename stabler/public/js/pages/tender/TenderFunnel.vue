@@ -58,17 +58,17 @@ const FLOW = computed(() => {
 	const s = stagesN.value;
 	return [
 		{ key: "seen", n: s.seen || 0, color: "#d97706", icon: "ti-zoom-scan",
-			label: t("Under review"), src: 'intake · go_no_go=""', to: "/tender/my-tenders" },
+			label: t("Under review"), src: 'intake · go_no_go=""' },
 		{ key: "go", n: s.go || 0, color: "#d97706", icon: "ti-circle-check",
-			label: t("GO — awaiting sourcing"), src: "go_no_go=go · SQ=0", to: "/tender/my-tenders" },
+			label: t("GO — awaiting sourcing"), src: "go_no_go=go · SQ=0" },
 		{ key: "sourcing", n: s.sourcing || 0, color: "#7c3aed", icon: "ti-affiliate",
-			label: t("Collecting quotations"), src: "SQ>0 · pricing yo'q", to: "/tender/sourcing",
+			label: t("Collecting quotations"), src: "SQ>0 · pricing yo'q",
 			warn: meta.value.sourcing_policy_gap
 				? t("{count} below policy", { count: meta.value.sourcing_policy_gap }) : "" },
 		{ key: "priced", n: s.priced || 0, color: "#7c3aed", icon: "ti-scale",
-			label: t("Priced — ready to bid"), src: "bid_pricing ✓", to: "/tender/po-control" },
+			label: t("Priced — ready to bid"), src: "bid_pricing ✓" },
 		{ key: "submitted", n: s.submitted || 0, color: "#4f46e5", icon: "ti-send",
-			label: t("Bid submitted"), src: "submitted_at ✓ · result=?", to: "/tender/my-tenders",
+			label: t("Bid submitted"), src: "submitted_at ✓ · result=?",
 			warn: meta.value.submitted_urgent
 				? t("{count} deadline <48h", { count: meta.value.submitted_urgent }) : "" },
 	];
@@ -77,20 +77,20 @@ const FLOW = computed(() => {
 // After the diamond: won continues the line, lost hangs below it.
 const WON = computed(() => ({
 	key: "won", n: stagesN.value.won || 0, color: "#16a34a", icon: "ti-trophy",
-	label: t("Won ({days} days)", { days: data.value?.days || 90 }), src: "result=won", to: "/tender/board" }));
+	label: t("Won ({days} days)", { days: data.value?.days || 90 }), src: "result=won" }));
 const LOST = computed(() => ({
 	key: "lost", n: stagesN.value.lost || 0, color: "#94a3b8", icon: "ti-x",
-	label: t("Lost"), src: "result=lost", to: "/tender/director" }));
+	label: t("Lost"), src: "result=lost" }));
 
 const EXEC = computed(() => [
-	{ key: "contract", n: so.value.contract || 0, color: "#0891b2", icon: "ti-file-text",
-		label: t("Contract (SO opened)"), src: "stage=New", to: "/tender/board" },
-	{ key: "procurement", n: so.value.procurement || 0, color: "#0891b2", icon: "ti-shopping-cart",
-		label: t("Procurement (PO)"), src: "stage=Procurement", to: "/tender/po-control" },
-	{ key: "delivery", n: so.value.delivery || 0, color: "#0891b2", icon: "ti-truck-delivery",
-		label: t("Delivery / service"), src: "Delivery|Accept|Invoice", to: "/tender/logistics" },
-	{ key: "done", n: so.value.done || 0, color: "#16a34a", icon: "ti-check",
-		label: t("Completed (paid)"), src: "stage=Paid|Closed", to: "/tender/board" },
+	{ key: "contract", kind: "so", n: so.value.contract || 0, color: "#0891b2", icon: "ti-file-text",
+		label: t("Contract (SO opened)"), src: "stage=New" },
+	{ key: "procurement", kind: "so", n: so.value.procurement || 0, color: "#0891b2", icon: "ti-shopping-cart",
+		label: t("Procurement (PO)"), src: "stage=Procurement" },
+	{ key: "delivery", kind: "so", n: so.value.delivery || 0, color: "#0891b2", icon: "ti-truck-delivery",
+		label: t("Delivery / service"), src: "Delivery|Accept|Invoice" },
+	{ key: "done", kind: "so", n: so.value.done || 0, color: "#16a34a", icon: "ti-check",
+		label: t("Completed (paid)"), src: "stage=Paid|Closed" },
 ]);
 
 // Funnel — real trapezoid segments + a legend with conversions and drops.
@@ -100,8 +100,6 @@ const FUNNEL_LABELS = {
 	won: () => t("Won"),
 };
 const FUNNEL_COLORS = { seen: "#d97706", go: "#b45309", sourcing: "#7c3aed", submitted: "#4f46e5", won: "#16a34a" };
-const FUNNEL_TO = { seen: "/tender/my-tenders", go: "/tender/my-tenders", sourcing: "/tender/sourcing",
-	submitted: "/tender/my-tenders", won: "/tender/board" };
 
 const funnelSvg = computed(() => {
 	const rows = data.value?.funnel || [];
@@ -133,9 +131,17 @@ const legend = computed(() => {
 	}));
 });
 
-function go(to) {
-	router.push(to);
+function go(st) {
+	// Graphics stay here; records live on their ORIGINAL list page. Deal stages
+	// open My Tenders filtered to the exact classified set (funnel_stage);
+	// execution buckets open the contract board, whose columns ARE that list.
+	if (st.kind === "so") {
+		router.push("/tender/board");
+		return;
+	}
+	router.push({ path: "/tender/my-tenders", query: { funnel_stage: st.key } });
 }
+
 </script>
 
 <template>
@@ -177,7 +183,7 @@ function go(to) {
 					<!-- flow -->
 					<div class="tf-flow">
 						<template v-for="(st, i) in FLOW" :key="st.key">
-							<button type="button" class="tf-stage" :style="{ '--sc': st.color }" @click="go(st.to)">
+							<button type="button" class="tf-stage" :style="{ '--sc': st.color }" @click="go(st)">
 								<span class="tf-icw"><i class="ti" :class="st.icon"></i></span>
 								<span class="tf-count font-monospace">{{ st.n }}</span>
 								<span class="tf-label">{{ st.label }}</span>
@@ -191,13 +197,13 @@ function go(to) {
 							<div class="tf-dia"><span>{{ t("Result?") }}</span></div>
 						</div>
 						<div class="tf-branch">
-							<button type="button" class="tf-stage" :style="{ '--sc': WON.color }" @click="go(WON.to)">
+							<button type="button" class="tf-stage" :style="{ '--sc': WON.color }" @click="go(WON)">
 								<span class="tf-icw"><i class="ti" :class="WON.icon"></i></span>
 								<span class="tf-count font-monospace">{{ WON.n }}</span>
 								<span class="tf-label">{{ WON.label }}</span>
 								<span class="tf-src font-monospace">{{ WON.src }}</span>
 							</button>
-							<button type="button" class="tf-stage tf-dim" :style="{ '--sc': LOST.color }" @click="go(LOST.to)">
+							<button type="button" class="tf-stage tf-dim" :style="{ '--sc': LOST.color }" @click="go(LOST)">
 								<span class="tf-icw"><i class="ti" :class="LOST.icon"></i></span>
 								<span class="tf-count font-monospace">{{ LOST.n }}</span>
 								<span class="tf-label">{{ LOST.label }}</span>
@@ -206,7 +212,7 @@ function go(to) {
 						</div>
 						<template v-for="ex in EXEC" :key="ex.key">
 							<span class="tf-arr" aria-hidden="true">{{ "›" }}</span>
-							<button type="button" class="tf-stage" :style="{ '--sc': ex.color }" @click="go(ex.to)">
+							<button type="button" class="tf-stage" :style="{ '--sc': ex.color }" @click="go(ex)">
 								<span class="tf-icw"><i class="ti" :class="ex.icon"></i></span>
 								<span class="tf-count font-monospace">{{ ex.n }}</span>
 								<span class="tf-label">{{ ex.label }}</span>
@@ -214,6 +220,7 @@ function go(to) {
 							</button>
 						</template>
 					</div>
+
 				</template>
 			</div>
 		</div>
@@ -227,7 +234,7 @@ function go(to) {
 				<div class="row g-4 align-items-center">
 					<div class="col-12 col-lg-5">
 						<svg v-if="funnelSvg.segs.length" :viewBox="`0 0 ${funnelSvg.w} ${funnelSvg.h}`" class="tf-funnel">
-							<g v-for="s in funnelSvg.segs" :key="s.key" class="tf-seg" @click="go(FUNNEL_TO[s.key] || '/tender/my-tenders')">
+							<g v-for="s in funnelSvg.segs" :key="s.key" class="tf-seg" @click="go({ key: s.key })">
 								<polygon :points="s.points" :fill="s.color" />
 								<text :x="funnelSvg.w / 2" :y="s.y + funnelSvg.sh / 2 - 2" text-anchor="middle" class="tf-n">{{ s.n }}</text>
 								<text :x="funnelSvg.w / 2" :y="s.y + funnelSvg.sh / 2 + 13" text-anchor="middle" class="tf-t">{{ s.label }}</text>

@@ -1,7 +1,7 @@
 <script setup>
 // Sourcing window — "my tenders": the tender pipeline with landed cost, PO count
 // and deadline risk. Entry point into the per-tender sourcing/PO tools.
-import { computed, onMounted, ref } from "vue";
+import { computed, onMounted, ref, watch } from "vue";
 import { storeToRefs } from "pinia";
 import { useRoute, useRouter } from "vue-router";
 import { useSession } from "../../stores/session.js";
@@ -44,8 +44,48 @@ useAutoRefresh(load);
 const ccy = computed(() => data.value?.currency || "");
 const rows = computed(() => data.value?.rows || []);
 const filters = computed(() => tenderRouteFilters(route.query));
-const filterSummary = computed(() => activeTenderFilters(filters.value).map(([key, value]) => `${key}: ${value}`));
-const filteredRows = computed(() => filterTenderRows(rows.value, filters.value));
+
+// Funnel stage filter: the dashboard number and this list come from the SAME
+// server classification (tender_funnel.rows), so they can never disagree.
+// Note for non-oversight users: my-tenders shows only assigned tenders, so
+// they may see a subset of the director's number — by design.
+const funnelStage = computed(() => String(route.query.funnel_stage || ""));
+const funnelDeals = ref(null); // Set of deal names for the active stage
+const FUNNEL_STAGE_LABELS = computed(() => ({
+	seen: t("Under review"), go: t("GO — awaiting sourcing"),
+	sourcing: t("Collecting quotations"), priced: t("Priced — ready to bid"),
+	submitted: t("Bid submitted"), won: t("Won"), lost: t("Lost"),
+}));
+
+async function loadFunnelStage() {
+	if (!funnelStage.value || !activeCompany.value) {
+		funnelDeals.value = null;
+		return;
+	}
+	try {
+		const r = await call("stabler.api.tender.tender_funnel", { company: activeCompany.value });
+		funnelDeals.value = new Set((r?.rows?.[funnelStage.value] || []).map((x) => x.deal));
+	} catch {
+		funnelDeals.value = null; // filter degrades to "show all" rather than hiding everything
+	}
+}
+watch([funnelStage, activeCompany], loadFunnelStage, { immediate: true });
+
+const filterSummary = computed(() => {
+	const parts = activeTenderFilters(filters.value).map(([key, value]) => `${key}: ${value}`);
+	if (funnelStage.value) {
+		const label = FUNNEL_STAGE_LABELS.value[funnelStage.value] || funnelStage.value;
+		parts.unshift(`${t("Stage")}: ${label}`);
+	}
+	return parts;
+});
+const filteredRows = computed(() => {
+	let out = filterTenderRows(rows.value, filters.value);
+	if (funnelStage.value && funnelDeals.value) {
+		out = out.filter((r) => funnelDeals.value.has(r.deal));
+	}
+	return out;
+});
 const fm = (v) => formatMoney(v, ccy.value, user.value.language);
 const riskBadge = (r) => ({ good: "bg-green-lt text-green", warn: "bg-yellow-lt text-yellow", risk: "bg-red-lt text-red" }[r] || "bg-secondary-lt");
 const riskLabel = (r) => ({ good: t("On track"), warn: t("Deadline near"), risk: t("At risk"), none: "—" }[r] || "—");

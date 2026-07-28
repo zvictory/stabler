@@ -2129,6 +2129,7 @@ def tender_funnel(company: str, days: int = 90):
 
 	has_pricing_col = frappe.db.has_column("CRM Deal", "custom_bid_pricing")
 	rows = []
+	stage_rows: dict[str, list] = {}
 	policy_gap = submitted_urgent = 0
 	for deal in _tender_deal_names(company):
 		if not frappe.has_permission("CRM Deal", "read", doc=deal):
@@ -2164,23 +2165,52 @@ def tender_funnel(company: str, days: int = 90):
 		if stage == "submitted" and urgent:
 			submitted_urgent += 1
 		rows.append({"stage": stage, "urgent": urgent, "in_window": in_window})
+		# The drill list is built in the SAME pass as the count, so a stage's
+		# number and its list can never disagree. Terminal stages only list
+		# in-window deals — exactly what the box counted.
+		if stage not in ("won", "lost") or in_window:
+			stage_rows.setdefault(stage, []).append({
+				"deal": deal,
+				"label": _deal_label(deal),
+				"lot_no": intake.get("lot_no") or "",
+				"buyer": intake.get("buyer") or "",
+				"bid_deadline": intake.get("bid_deadline") or "",
+				"delivery_deadline": intake.get("delivery_deadline") or "",
+				"sq_count": sq_counts.get(deal, 0),
+				"urgent": urgent,
+				"won_price": flt(intake.get("won_price")) or 0,
+				"result_at": str(intake.get("result_at") or "")[:10],
+			})
 
+	for lst in stage_rows.values():
+		lst.sort(key=lambda r: (not r["urgent"], r["bid_deadline"] or "9999-99-99"))
 	out = _funnel.summarise(rows)
 	out["meta"] = {"sourcing_policy_gap": policy_gap, "submitted_urgent": submitted_urgent}
+	out["rows"] = stage_rows
 
 	# Execution buckets from the contract board (submitted SOs tagged to a deal).
 	so_stages = []
+	so_rows: dict[str, list] = {}
 	if frappe.db.has_column("Sales Order", "custom_crm_deal"):
-		so_stages = [
-			r.custom_board_stage
-			for r in frappe.get_all(
-				"Sales Order",
-				filters={"company": company, "custom_crm_deal": ["is", "set"], "docstatus": 1},
-				fields=["custom_board_stage"],
-				limit_page_length=0,
-			)
-		]
+		for r in frappe.get_all(
+			"Sales Order",
+			filters={"company": company, "custom_crm_deal": ["is", "set"], "docstatus": 1},
+			fields=["name", "custom_crm_deal", "custom_board_stage", "customer",
+				"rounded_total", "grand_total", "delivery_date", "currency"],
+			limit_page_length=0,
+		):
+			so_stages.append(r.custom_board_stage)
+			so_rows.setdefault(_funnel.bucket_so(r.custom_board_stage), []).append({
+				"so": r.name,
+				"deal": r.custom_crm_deal,
+				"stage": r.custom_board_stage or "New",
+				"customer": r.customer,
+				"total": flt(r.rounded_total or r.grand_total),
+				"currency": r.currency or "",
+				"delivery_date": str(r.delivery_date) if r.delivery_date else "",
+			})
 	out["so"] = _funnel.summarise_so(so_stages)
+	out["so_rows"] = so_rows
 	out["days"] = days
 	out["currency"] = frappe.db.get_value("Company", company, "default_currency") or ""
 	return out
