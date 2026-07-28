@@ -89,11 +89,11 @@ doc_events = {
 		"before_validate": [
 			# Guard first — fail fast before diag/validation runs.
 			"stabler.api.desk_write_guard.assert_write_via_stabler",
+			"stabler.api._accounts.validate_sales_invoice",
 			"stabler.api.dimensions_hook.apply_dimensional_qty",
 			"stabler.api._diag.on_txn_validate",
 		],
 		"validate": [
-			"stabler.api._accounts.validate_sales_invoice",
 			"stabler.api.period_close.enforce_on_validate",
 			"stabler.customer_hooks.check_sales_invoice_credit_limit",
 		],
@@ -118,11 +118,11 @@ doc_events = {
 	},
 	"Purchase Invoice": {
 		"before_validate": [
+			"stabler.api._accounts.validate_purchase_invoice",
 			"stabler.api.dimensions_hook.apply_dimensional_qty",
 			"stabler.api._diag.on_txn_validate",
 		],
 		"validate": [
-			"stabler.api._accounts.validate_purchase_invoice",
 			"stabler.api.period_close.enforce_on_validate",
 		],
 		"before_submit": [
