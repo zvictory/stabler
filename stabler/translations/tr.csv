@@ -4810,3 +4810,43 @@ Grand Totals,Genel toplam
 Amounts,Tutarlar
 No PI group container records found.,PI grubu konteyner kaydı bulunamadı.
 Failed to load PI group container status report.,Rapor yüklenemedi.
+Shipped %,Sevk %
+Remaining bx,Kalan kt.
+Compare selected,Seçilenleri karşılaştır
+Compare proformas,Proforma karşılaştırma
+normalised to the match key — same index as the reconciliation,eşleme anahtarına normalize — mutabakatla aynı indeks
+Differences only,Sadece farklar
+Back to list,Listeye dön
+Comparing…,Karşılaştırılıyor…
+Could not compare the proformas.,Proformalar karşılaştırılamadı.
+not on all,hepsinde yok
+boxes differ,kutular farklı
+price differs,fiyat farklı
+bx,kt.
+Nothing to compare.,Karşılaştırılacak bir şey yok.
+No differences between the selected proformas.,Seçilen proformalar arasında fark yok.
+Select at least two proformas from the list.,Listeden en az iki proforma seç.
+Shipment match,Sevkiyat eşleşmesi
+matched,eşleşti
+not on any PI,hiçbir PI'da yok
+over-shipped keys,fazla sevkli anahtar
+Checking shipments…,Sevkiyatlar denetleniyor…
+Every shipped line agrees with this proforma.,Sevk edilen her satır bu proformayla uyumlu.
+Sub-cut breakdown,Alt-kesim dökümü
+CI Number,CI No
+CI Date,CI tarihi
+ETD / ETA,ETD / ETA
+Linked Commercial Invoices & Containers,Bağlı CI'lar ve konteynerler
+Commercial Invoices — Fulfillment Summary,CI — yerine getirme özeti
+Overall Invoiced Progress,Genel faturalama ilerlemesi
+Total Ordered,Toplam sipariş
+Total Invoiced (drawn to CIs),Toplam faturalanan (CI'lara)
+Invoiced (KG),Faturalanan (KG)
+Remaining Bal (KG),Kalan (KG)
+Remaining Balance,Kalan bakiye
+Advance Payments,Avans ödemeleri
+Paid Amount,Ödenen tutar
+Mode of Payment,Ödeme şekli
+Cash portion,Nakit kısmı
+Docs portion,Belge kısmı
+Create CI,CI oluştur

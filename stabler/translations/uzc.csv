@@ -4815,3 +4815,43 @@ Grand Totals,Умумий жами
 Amounts,Суммалар
 No PI group container records found.,PI гуруҳ контейнер ёзувлари топилмади.
 Failed to load PI group container status report.,Ҳисоботни юклаб бўлмади.
+Shipped %,Жўнатилди %
+Remaining bx,Қолдиқ қут.
+Compare selected,Танланганларни солиштириш
+Compare proformas,Проформаларни солиштириш
+normalised to the match key — same index as the reconciliation,мослик калити бўйича — солиштириш билан бир хил индекс
+Differences only,Фақат фарқлар
+Back to list,Рўйхатга қайтиш
+Comparing…,Солиштирилмоқда…
+Could not compare the proformas.,Проформаларни солиштириб бўлмади.
+not on all,ҳаммасида эмас
+boxes differ,қутилар фарқ қилади
+price differs,нарх фарқ қилади
+bx,қут.
+Nothing to compare.,Солиштириш учун ҳеч нарса йўқ.
+No differences between the selected proformas.,Танланган проформалар орасида фарқ йўқ.
+Select at least two proformas from the list.,Рўйхатдан камида иккита проформа танланг.
+Shipment match,Жўнатма мослиги
+matched,мос келди
+not on any PI,ҳеч бир PIда йўқ
+over-shipped keys,ортиқча калитлар
+Checking shipments…,Жўнатмалар текширилмоқда…
+Every shipped line agrees with this proforma.,Ҳар бир жўнатилган қатор ушбу проформага мос.
+Sub-cut breakdown,Суб-кесим тақсимоти
+CI Number,CI рақами
+CI Date,CI санаси
+ETD / ETA,ETD / ETA
+Linked Commercial Invoices & Containers,Боғланган CI ва контейнерлар
+Commercial Invoices — Fulfillment Summary,CI — бажарилиш хулосаси
+Overall Invoiced Progress,Умумий ҳисоб-фактура жараёни
+Total Ordered,Жами буюртма
+Total Invoiced (drawn to CIs),Жами ҳисоб-фактура (CIларга)
+Invoiced (KG),Ҳисоб-фактура (кг)
+Remaining Bal (KG),Қолдиқ (кг)
+Remaining Balance,Қолдиқ
+Advance Payments,Аванс тўловлари
+Paid Amount,Тўланган сумма
+Mode of Payment,Тўлов усули
+Cash portion,Нақд қисми
+Docs portion,Ҳужжат қисми
+Create CI,CI яратиш

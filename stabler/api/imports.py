@@ -4273,6 +4273,7 @@ def list_proformas(
 		as_dict=True,
 	)
 	_attach_proforma_rollups(rows)
+	_attach_proforma_match_rollups(rows)
 	return rows
 
 
@@ -4339,6 +4340,76 @@ def _attach_proforma_rollups(rows: list[dict]) -> None:
 			r["invoiced_pct"] = round(min(100.0, (r["invoiced_total"] / agreed) * 100.0), 1)
 		else:
 			r["invoiced_pct"] = 0.0
+
+
+def _attach_proforma_match_rollups(rows: list[dict]) -> None:
+	"""Sandbox-proven shipment math per PI: shipped/remaining boxes and
+	over-shipment through the (proforma, category) match key.
+
+	The existing ``invoiced_pct`` is an AMOUNT ratio; these columns are the
+	BOX balance the sandbox settled: over-shipment is its own figure, never
+	folded into the remainder, and a CI line on no PI never nets a balance.
+	All math delegates to _imports_rules — no re-derivation.
+	"""
+	if not rows:
+		return
+	names = [r["name"] for r in rows]
+	# Column aliases matter: _imports_rules reads ``pi_name`` (contract side)
+	# and ``pi_name``/``custom_proforma_invoice`` (shipped side). Any other
+	# alias silently yields an empty key and every balance reads zero.
+	pi_items = frappe.db.sql(
+		"""SELECT parent AS pi_name, category, boxes, qty, amount, rate
+           FROM `tabProforma Invoice Item`
+           WHERE parenttype='Proforma Invoice' AND parent IN %(names)s""",
+		{"names": names},
+		as_dict=True,
+	)
+	eff_pi = _ci_item_effective_pi_expr()
+	ci_items = frappe.db.sql(
+		f"""SELECT {eff_pi} AS pi_name, cii.category, cii.boxes,
+                   cii.qty, cii.parent AS ci_name
+            FROM `tabCommercial Invoice Item` cii
+            JOIN `tabCommercial Invoice` ci ON ci.name = cii.parent
+            WHERE ci.status != 'Cancelled' AND ci.docstatus < 2
+              AND {eff_pi} IN %(names)s""",
+		{"names": names},
+		as_dict=True,
+	)
+	pi_rows_by_name: dict[str, list] = {}
+	for it in pi_items:
+		pi_rows_by_name.setdefault(it["pi_name"], []).append(it)
+	ci_rows_by_name: dict[str, list] = {}
+	for it in ci_items:
+		ci_rows_by_name.setdefault(it["pi_name"], []).append(it)
+
+	for r in rows:
+		contract = rules.contract_index(pi_rows_by_name.get(r["name"], []))
+		shipped = rules.shipped_index(ci_rows_by_name.get(r["name"], []))
+		remaining = over = shipped_boxes = 0.0
+		over_keys = 0
+		for key, entry in contract.items():
+			rem = rules.remaining_for(entry, shipped.get(key))
+			if rem["over_shipped"]:
+				over_keys += 1
+				over += rem["over_boxes"]
+			else:
+				remaining += rem["remaining_boxes"]
+		for key, entry in shipped.items():
+			shipped_boxes += entry.get("boxes", 0)
+		# CI lines whose key is on no PI line: reported, never netted.
+		unattributable = sum(
+			1
+			for it in ci_rows_by_name.get(r["name"], [])
+			if not rules.is_keyed(rules.match_key(it["pi_name"], it.get("category")))
+			or rules.match_key(it["pi_name"], it.get("category")) not in contract
+		)
+		planned = flt(r.get("total_boxes"))
+		r["shipped_boxes"] = shipped_boxes
+		r["remaining_boxes"] = remaining
+		r["over_boxes"] = over
+		r["over_keys"] = over_keys
+		r["unattributable_lines"] = unattributable
+		r["shipped_pct"] = round(min(999.0, (shipped_boxes / planned) * 100.0), 1) if planned > 0 else 0.0
 
 
 @frappe.whitelist()
@@ -5080,7 +5151,10 @@ def get_ci_pi_discrepancies(
 		entry = contract.get(key) if rules.is_keyed(key) else None
 		diffs = rules.diff_ci_line(row, entry)
 		level = rules.worst_level(diffs)
-		if level not in ("error", "warn"):
+		# Whole-book calls keep the payload to error/warn (info sub_cut rows are
+		# the normal case and would drown it). A single-PI call IS the sub-cut
+		# breakdown view, so info rows ride along there.
+		if level not in ("error", "warn") and not (pi and level == "info"):
 			continue
 		flagged.append(
 			{
@@ -6189,4 +6263,79 @@ def imports_flow(company: str):
 			"on_road": on_road,
 			"gate_blocked": gate["blocked"],
 		},
+	}
+
+
+@frappe.whitelist()
+def compare_proformas(company: str, pis):
+	"""Side-by-side comparison of selected PIs, normalised to the match key.
+
+	The sandbox's `#/pis/compare` ported: one row per normalised category,
+	one column per PI, carrying boxes / kg / agreed & docs price candidates
+	from contract_index — the same index every other match view uses, so the
+	comparison cannot disagree with the reconciliation.
+	"""
+	_assert_imports_access(company)
+	if isinstance(pis, str):
+		pis = [p for p in json.loads(pis) if p]
+	pis = list(dict.fromkeys(pis))[:10]  # de-dup, sane cap
+	if len(pis) < 2:
+		frappe.throw(_("Select at least two proformas to compare."))
+	for name in pis:
+		if not frappe.db.exists("Proforma Invoice", {"name": name, "company": company}):
+			frappe.throw(_("Unknown Proforma Invoice: {0}").format(name))
+		_assert_can_read("Proforma Invoice", name)
+
+	item_rows = frappe.db.sql(
+		"""SELECT parent AS pi_name, category, boxes, qty, amount, rate,
+                  docs_price
+           FROM `tabProforma Invoice Item`
+           WHERE parenttype='Proforma Invoice' AND parent IN %(names)s""",
+		{"names": tuple(pis)},
+		as_dict=True,
+	)
+	headers = {
+		r["name"]: r
+		for r in frappe.get_all(
+			"Proforma Invoice",
+			filters={"name": ["in", pis]},
+			fields=["name", "supplier_pi_ref", "supplier", "pi_date", "currency",
+				"agreed_total", "docs_total", "status"],
+		)
+	}
+
+	# One contract index per PI; category cell = that PI's entry for the key.
+	per_pi = {}
+	categories: dict[str, str] = {}  # norm -> display label (first raw seen)
+	for name in pis:
+		idx = rules.contract_index([r for r in item_rows if r["pi_name"] == name])
+		cells = {}
+		for (_pi_key, cat_key), entry in idx.items():
+			cells[cat_key] = {
+				"boxes": entry.get("boxes", 0),
+				"qty": entry.get("qty", 0),
+				"amount": entry.get("amount", 0),
+				"agreed_prices": sorted(entry.get("agreed_prices") or []),
+				"docs_prices": sorted(entry.get("docs_prices") or []),
+			}
+			categories.setdefault(cat_key, entry.get("label") or cat_key)
+		per_pi[name] = cells
+
+	rows = []
+	for cat_key in sorted(categories):
+		cells = {name: per_pi[name].get(cat_key) for name in pis}
+		present = [c for c in cells.values() if c]
+		boxes_vals = {round(flt(c["boxes"]), 1) for c in present}
+		agreed_sets = [tuple(c["agreed_prices"]) for c in present if c["agreed_prices"]]
+		rows.append({
+			"category": categories[cat_key],
+			"cells": cells,
+			"on_all": len(present) == len(pis),
+			"boxes_differ": len(boxes_vals) > 1,
+			"agreed_differ": len(set(agreed_sets)) > 1 if agreed_sets else False,
+		})
+
+	return {
+		"pis": [dict(headers.get(name) or {"name": name}, name=name) for name in pis],
+		"rows": rows,
 	}

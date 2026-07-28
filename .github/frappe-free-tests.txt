@@ -97,3 +97,4 @@ stabler.tests.test_tender_funnel_source
 stabler.tests.test_imports_flow_source
 stabler.tests.test_pi_group_report_math
 stabler.tests.test_pi_group_report_source
+stabler.tests.test_pi_shipment_ux_source

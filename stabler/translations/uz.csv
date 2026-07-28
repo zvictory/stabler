@@ -4815,3 +4815,43 @@ Grand Totals,Umumiy jami
 Amounts,Summalar
 No PI group container records found.,PI guruh konteyner yozuvlari topilmadi.
 Failed to load PI group container status report.,Hisobotni yuklab bo'lmadi.
+Shipped %,Jo'natildi %
+Remaining bx,Qoldiq qut.
+Compare selected,Tanlanganlarni solishtirish
+Compare proformas,Proformalarni solishtirish
+normalised to the match key — same index as the reconciliation,moslik kaliti bo'yicha — solishtirish bilan bir xil indeks
+Differences only,Faqat farqlar
+Back to list,Ro'yxatga qaytish
+Comparing…,Solishtirilmoqda…
+Could not compare the proformas.,Proformalarni solishtirib bo'lmadi.
+not on all,hammasida emas
+boxes differ,qutilar farq qiladi
+price differs,narx farq qiladi
+bx,qut.
+Nothing to compare.,Solishtirish uchun hech narsa yo'q.
+No differences between the selected proformas.,Tanlangan proformalar orasida farq yo'q.
+Select at least two proformas from the list.,Ro'yxatdan kamida ikkita proforma tanlang.
+Shipment match,Jo'natma mosligi
+matched,mos keldi
+not on any PI,hech bir PIda yo'q
+over-shipped keys,ortiqcha kalitlar
+Checking shipments…,Jo'natmalar tekshirilmoqda…
+Every shipped line agrees with this proforma.,Har bir jo'natilgan qator ushbu proformaga mos.
+Sub-cut breakdown,Sub-kesim taqsimoti
+CI Number,CI raqami
+CI Date,CI sanasi
+ETD / ETA,ETD / ETA
+Linked Commercial Invoices & Containers,Bog'langan CI va konteynerlar
+Commercial Invoices — Fulfillment Summary,CI — bajarilish xulosasi
+Overall Invoiced Progress,Umumiy hisob-faktura jarayoni
+Total Ordered,Jami buyurtma
+Total Invoiced (drawn to CIs),Jami hisob-faktura (CIlarga)
+Invoiced (KG),Hisob-faktura (kg)
+Remaining Bal (KG),Qoldiq (kg)
+Remaining Balance,Qoldiq
+Advance Payments,Avans to'lovlari
+Paid Amount,To'langan summa
+Mode of Payment,To'lov usuli
+Cash portion,Naqd qismi
+Docs portion,Hujjat qismi
+Create CI,CI yaratish

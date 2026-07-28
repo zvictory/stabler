@@ -434,6 +434,54 @@ onMounted(() => {
 	loadDoc();
 });
 watch(docName, loadDoc);
+
+// ---- PI <-> CI match panel (sandbox port) ---------------------------------
+// One source of truth: get_ci_pi_discrepancies(pi=...) — the same rules module
+// as the whole-book report, scoped to this PI. Includes info-level sub_cut
+// rows, which ARE the sub-cut breakdown.
+const matchData = ref(null);
+const matchLoading = ref(false);
+
+async function loadMatch() {
+	if (!docName.value || !activeCompany.value) {
+		matchData.value = null;
+		return;
+	}
+	matchLoading.value = true;
+	try {
+		matchData.value = await call("stabler.api.imports.get_ci_pi_discrepancies", {
+			company: activeCompany.value,
+			pi: docName.value,
+		});
+	} catch {
+		matchData.value = null; // panel degrades to hidden; the form still works
+	} finally {
+		matchLoading.value = false;
+	}
+}
+onMounted(loadMatch);
+watch(docName, loadMatch);
+
+const matchSummary = computed(() => matchData.value?.summary || null);
+const flaggedRows = computed(() =>
+	(matchData.value?.rows || []).filter((r) => r.level === "error" || r.level === "warn")
+);
+const subCuts = computed(() => {
+	const groups = new Map();
+	for (const r of matchData.value?.rows || []) {
+		if (r.level !== "info") continue;
+		const key = r.category || "—";
+		let g = groups.get(key);
+		if (!g) {
+			g = { category: key, lines: [], boxes: 0, qty: 0 };
+			groups.set(key, g);
+		}
+		g.lines.push(r);
+		g.boxes += r.boxes || 0;
+		g.qty += r.qty || 0;
+	}
+	return [...groups.values()];
+});
 watch(activeCompany, loadPiGroups);
 </script>
 
@@ -768,6 +816,68 @@ watch(activeCompany, loadPiGroups);
 					</div>
 				</div>
 			</div>
+		</div>
+
+		<!-- PI <-> CI match: discrepancies + sub-cut breakdown (sandbox port) -->
+		<div v-if="docName && matchSummary" class="card mb-3">
+			<div class="card-header d-flex align-items-center flex-wrap gap-2">
+				<h3 class="card-title mb-0"><i class="ti ti-scale me-2"></i>{{ t("Shipment match") }}</h3>
+				<span class="badge bg-secondary-lt font-monospace">{{ matchSummary.matched_lines || 0 }} {{ t("matched") }}</span>
+				<span v-if="matchSummary.orphan_lines" class="badge bg-yellow-lt text-yellow font-monospace">{{ matchSummary.orphan_lines }} {{ t("not on any PI") }}</span>
+				<span v-if="matchSummary.over_keys" class="badge bg-red-lt text-red font-monospace">{{ matchSummary.over_keys }} {{ t("over-shipped keys") }} · +{{ matchSummary.over_boxes }}</span>
+				<span class="badge bg-azure-lt text-azure font-monospace ms-auto">{{ t("Remaining") }}: {{ matchSummary.remaining_boxes }} {{ t("bx") }}</span>
+			</div>
+			<div v-if="matchLoading" class="card-body text-secondary">
+				<span class="spinner-border spinner-border-sm me-2"></span>{{ t("Checking shipments…") }}
+			</div>
+			<template v-else>
+				<div v-if="flaggedRows.length" class="table-responsive">
+					<table class="table table-vcenter table-sm">
+						<thead>
+							<tr>
+								<th>{{ t("CI Number") }}</th>
+								<th>{{ t("Category") }}</th>
+								<th>{{ t("Item") }}</th>
+								<th class="text-end">{{ t("Boxes") }}</th>
+								<th>{{ t("Issues") }}</th>
+							</tr>
+						</thead>
+						<tbody>
+							<tr v-for="r in flaggedRows" :key="r.row_name">
+								<td class="font-monospace">
+									<router-link :to="{ name: 'imports-commercial-invoice', params: { name: r.ci_name } }">{{ r.ci_number }}</router-link>
+								</td>
+								<td>{{ r.category || "—" }}</td>
+								<td class="text-secondary">{{ r.item || "—" }}</td>
+								<td class="text-end font-monospace">{{ r.boxes }}</td>
+								<td>
+									<span v-for="d in r.diffs" :key="d.code" class="badge me-1"
+										:class="d.level === 'error' ? 'bg-red-lt text-red' : 'bg-yellow-lt text-yellow'">{{ d.code }}</span>
+								</td>
+							</tr>
+						</tbody>
+					</table>
+				</div>
+				<div v-else class="card-body text-secondary small">
+					{{ t("Every shipped line agrees with this proforma.") }}
+				</div>
+				<div v-if="subCuts.length" class="card-body border-top">
+					<div class="text-secondary small text-uppercase fw-bold mb-2">{{ t("Sub-cut breakdown") }}</div>
+					<div class="row g-2">
+						<div v-for="g in subCuts" :key="g.category" class="col-12 col-md-6 col-xl-4">
+							<div class="border rounded p-2">
+								<div class="d-flex align-items-baseline">
+									<span class="fw-semibold">{{ g.category }}</span>
+									<span class="ms-auto font-monospace small">{{ g.boxes }} {{ t("bx") }} · {{ g.qty }} {{ t("kg") }}</span>
+								</div>
+								<div class="text-secondary small mt-1">
+									<span v-for="l in g.lines" :key="l.row_name" class="me-2 font-monospace">{{ l.item || l.description || "—" }}</span>
+								</div>
+							</div>
+						</div>
+					</div>
+				</div>
+			</template>
 		</div>
 
 		<!-- Linked Commercial Invoices & Containers -->

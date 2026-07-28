@@ -4811,3 +4811,43 @@ Grand Totals,Grand Totals
 Amounts,Amounts
 No PI group container records found.,No PI group container records found.
 Failed to load PI group container status report.,Failed to load PI group container status report.
+Shipped %,Shipped %
+Remaining bx,Remaining bx
+Compare selected,Compare selected
+Compare proformas,Compare proformas
+normalised to the match key — same index as the reconciliation,normalised to the match key — same index as the reconciliation
+Differences only,Differences only
+Back to list,Back to list
+Comparing…,Comparing…
+Could not compare the proformas.,Could not compare the proformas.
+not on all,not on all
+boxes differ,boxes differ
+price differs,price differs
+bx,bx
+Nothing to compare.,Nothing to compare.
+No differences between the selected proformas.,No differences between the selected proformas.
+Select at least two proformas from the list.,Select at least two proformas from the list.
+Shipment match,Shipment match
+matched,matched
+not on any PI,not on any PI
+over-shipped keys,over-shipped keys
+Checking shipments…,Checking shipments…
+Every shipped line agrees with this proforma.,Every shipped line agrees with this proforma.
+Sub-cut breakdown,Sub-cut breakdown
+CI Number,CI Number
+CI Date,CI Date
+ETD / ETA,ETD / ETA
+Linked Commercial Invoices & Containers,Linked Commercial Invoices & Containers
+Commercial Invoices — Fulfillment Summary,Commercial Invoices — Fulfillment Summary
+Overall Invoiced Progress,Overall Invoiced Progress
+Total Ordered,Total Ordered
+Total Invoiced (drawn to CIs),Total Invoiced (drawn to CIs)
+Invoiced (KG),Invoiced (KG)
+Remaining Bal (KG),Remaining Bal (KG)
+Remaining Balance,Remaining Balance
+Advance Payments,Advance Payments
+Paid Amount,Paid Amount
+Mode of Payment,Mode of Payment
+Cash portion,Cash portion
+Docs portion,Docs portion
+Create CI,Create CI

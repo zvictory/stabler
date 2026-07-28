@@ -4821,3 +4821,43 @@ Grand Totals,Итого
 Amounts,Суммы
 No PI group container records found.,Записи контейнеров по PI-группам не найдены.
 Failed to load PI group container status report.,Не удалось загрузить отчёт.
+Shipped %,Отгружено %
+Remaining bx,Остаток кор.
+Compare selected,Сравнить выбранные
+Compare proformas,Сравнение проформ
+normalised to the match key — same index as the reconciliation,"нормализовано по ключу — тот же индекс, что и сверка"
+Differences only,Только различия
+Back to list,К списку
+Comparing…,Сравнение…
+Could not compare the proformas.,Не удалось сравнить проформы.
+not on all,не во всех
+boxes differ,коробки отличаются
+price differs,цена отличается
+bx,кор.
+Nothing to compare.,Нечего сравнивать.
+No differences between the selected proformas.,Различий между выбранными проформами нет.
+Select at least two proformas from the list.,Выберите минимум две проформы из списка.
+Shipment match,Сверка отгрузок
+matched,совпало
+not on any PI,нет ни в одной PI
+over-shipped keys,ключей с перегрузом
+Checking shipments…,Проверка отгрузок…
+Every shipped line agrees with this proforma.,Каждая отгруженная строка согласуется с этой проформой.
+Sub-cut breakdown,Разбивка по отрубам
+CI Number,Номер CI
+CI Date,Дата CI
+ETD / ETA,ETD / ETA
+Linked Commercial Invoices & Containers,Связанные CI и контейнеры
+Commercial Invoices — Fulfillment Summary,CI — сводка исполнения
+Overall Invoiced Progress,Общий прогресс фактурирования
+Total Ordered,Всего заказано
+Total Invoiced (drawn to CIs),Всего фактурировано (в CI)
+Invoiced (KG),Фактурировано (кг)
+Remaining Bal (KG),Остаток (кг)
+Remaining Balance,Остаток
+Advance Payments,Авансовые платежи
+Paid Amount,Оплачено
+Mode of Payment,Способ оплаты
+Cash portion,Наличная часть
+Docs portion,Документарная часть
+Create CI,Создать CI
