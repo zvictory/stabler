@@ -25,7 +25,18 @@ describe("sanitizeStablerRedirect", () => {
 		["%2Fdesk%2Fuser%2Ftest%2540example.com"],
 		["/%2F%2Fevil.example"],
 		["/unknown-route"],
+		["/dashboard/../app"],
+		["/tender/../desk"],
+		["/dashboard/.."],
+		["/dashboard/./profile"],
+		["/dashboard%2f..%2fapp"],
+		["/dashboard?redirect=/app"],
+		["/dashboard?redirect_to=https://evil.example"],
+		["/tender/my-tenders?next=%2Fdesk%2Fuser"],
+		["/%00/dashboard"],
+		["/dashboard%5c..%5capp"],
 	])("falls back for unsafe or unknown input %#", (input) => {
 		expect(sanitizeStablerRedirect(input)).toBe("/dashboard");
 	});
 });
+
