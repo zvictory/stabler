@@ -2084,7 +2084,7 @@ def get_pi_group_container_status_report(
 
 	groups = frappe.db.sql(
 		f"""
-		SELECT pg.name, pg.title, pg.pi_vendor, supp.supplier_name, pg.creation
+		SELECT pg.name, pg.code, pg.title, pg.pi_vendor, supp.supplier_name, pg.creation
 		FROM `tabImport PI Group` pg
 		LEFT JOIN `tabSupplier` supp ON supp.name = pg.pi_vendor
 		WHERE {" AND ".join(conditions)}
@@ -2145,7 +2145,7 @@ def get_pi_group_container_status_report(
 		cis = frappe.db.get_all(
 			"Commercial Invoice",
 			filters={"import_pi_group": gid},
-			fields=["name", "status", "agreed_total"],
+			fields=["name", "ci_number", "status", "agreed_total"],
 		)
 		container_rows = frappe.db.get_all(
 			"Import Container",
@@ -2180,13 +2180,20 @@ def get_pi_group_container_status_report(
 		grand["pending_amount"] += pending_amt
 
 		rows.append({
-			"group_code": gid,
-			"group_title": g["title"] or gid,
+			# What the business types on paper, not the autoname. The ERPNext
+			# id travels as group_name — needed for a stable render key and for
+			# support to find the record — but it is not the report's identity.
+			"group_code": g["code"] or g["title"] or gid,
+			"group_name": gid,
+			"group_title": g["title"] or "",
 			"vendor_name": g["supplier_name"] or g["pi_vendor"] or "—",
 			"currency": (member_pis[0].get("currency") if member_pis else None) or "USD",
 			"pi_count": len(member_pis),
 			"ci_count": len(cis),
 			"pis": [p["supplier_pi_ref"] or p["name"] for p in member_pis],
+			# Sorted on the way out only: `cis` itself stays in fetch order
+			# because amount_tally walks it paired with agreed_total.
+			"cis": sorted((c["ci_number"] or c["name"]) for c in cis),
 			"date_min": str(min(date_list)) if date_list else None,
 			"date_max": str(max(date_list)) if date_list else None,
 			"planned_fcl": round(planned_fcl, 1),

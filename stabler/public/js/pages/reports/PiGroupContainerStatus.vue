@@ -24,6 +24,10 @@ const status = ref("");
 const rows = ref([]);
 const totals = ref({ grand_buckets: {} });
 const piGroups = ref([]);
+// Which groups have their real PI/CI numbers unfolded. Keyed by the ERPNext
+// name — the only value guaranteed unique.
+const expanded = ref({});
+const toggle = (k) => { expanded.value[k] = !expanded.value[k]; };
 
 const fn = (v) => {
 	if (v === null || v === undefined || isNaN(v)) return "0.00";
@@ -73,7 +77,10 @@ function exportCsv() {
 	const headers = [
 		"Group Code", "Group Title", "Vendor", "PI Count", "CI Count",
 		"Date From", "Date To", "Planned FCL", "Pending Containers",
-		"Origin", "Transit", "Destination", "Delivered", "Total Containers", "Agreed Total", "Pending Amount"
+		"Origin", "Transit", "Destination", "Delivered", "Total Containers", "Agreed Total", "Pending Amount",
+		// Appended, never inserted: the amounts row below carries a run of five
+		// blanks whose alignment a mid-list column would silently shift.
+		"PI Numbers", "CI Numbers"
 	];
 	const csvRows = [headers.join(",")];
 	for (const r of rows.value) {
@@ -98,6 +105,8 @@ function exportCsv() {
 			r.container_total,
 			r.agreed_total,
 			r.pending_amount,
+			`"${(r.pis || []).join('; ')}"`,
+			`"${(r.cis || []).join('; ')}"`,
 		].join(","));
 		csvRows.push([
 			`"${r.group_code}"`,
@@ -110,6 +119,7 @@ function exportCsv() {
 			a.DESTINATION || 0,
 			a.DELIVERED || 0,
 			r.ci_agreed_total || 0,
+			"", "",
 			"", "",
 		].join(","));
 	}
@@ -158,7 +168,10 @@ watch(activeCompany, loadReport);
 					<div class="col-md-3">
 						<select v-model="piGroup" class="form-select form-select-sm" @change="loadReport">
 							<option value="">— {{ t("All PI Groups") }} —</option>
-							<option v-for="g in piGroups" :key="g.name" :value="g.name">{{ g.group_title || g.name }}</option>
+							<!-- list_pi_groups returns code/title (imports.py); the old
+							     `group_title` was never a field, so every option fell
+							     through to the IPG- autoname. -->
+							<option v-for="g in piGroups" :key="g.name" :value="g.name">{{ g.code || g.title || g.name }}</option>
 						</select>
 					</div>
 					<div class="col-md-3">
@@ -251,16 +264,24 @@ watch(activeCompany, loadReport);
 						</tr>
 					</thead>
 					<tbody>
-						<template v-for="r in rows" :key="r.group_code">
+						<template v-for="r in rows" :key="r.group_name">
 							<!-- Row 1: container counts -->
 							<tr>
-								<td rowspan="2" class="font-monospace fw-bold text-primary align-top">
+								<td rowspan="2" class="font-monospace fw-bold text-primary align-top" :title="r.group_name">
 									<router-link to="/imports/pi-groups" class="text-primary text-decoration-none">{{ r.group_code }}</router-link>
-									<div class="small text-secondary fw-normal">{{ r.group_title }}</div>
+									<div v-if="r.group_title && r.group_title !== r.group_code" class="small text-secondary fw-normal">{{ r.group_title }}</div>
 								</td>
 								<td rowspan="2" class="fw-semibold text-dark align-top">{{ r.vendor_name }}</td>
-								<td rowspan="2" class="text-center font-monospace align-top"><span class="badge bg-secondary-lt">{{ r.pi_count }}</span></td>
-								<td rowspan="2" class="text-center font-monospace align-top"><span class="badge bg-azure-lt">{{ r.ci_count }}</span></td>
+								<td rowspan="2" class="text-center font-monospace align-top">
+									<button type="button" class="badge bg-secondary-lt border-0" :disabled="!r.pi_count" @click="toggle(r.group_name)">
+										{{ r.pi_count }}<i v-if="r.pi_count" class="ti ms-1" :class="expanded[r.group_name] ? 'ti-chevron-up' : 'ti-chevron-down'"></i>
+									</button>
+								</td>
+								<td rowspan="2" class="text-center font-monospace align-top">
+									<button type="button" class="badge bg-azure-lt border-0" :disabled="!r.ci_count" @click="toggle(r.group_name)">
+										{{ r.ci_count }}<i v-if="r.ci_count" class="ti ms-1" :class="expanded[r.group_name] ? 'ti-chevron-up' : 'ti-chevron-down'"></i>
+									</button>
+								</td>
 								<td rowspan="2" class="small font-monospace align-top">{{ formatDate(r.date_min) }} … {{ formatDate(r.date_max) }}</td>
 								<td class="text-end font-monospace text-azure bg-azure-lt fw-semibold">{{ r.planned_fcl }}</td>
 								<td class="text-end font-monospace fw-semibold" :class="r.pending_containers < 0 ? 'text-danger bg-red-lt' : 'text-warning bg-warning-lt'">{{ r.pending_containers }}</td>
@@ -279,6 +300,22 @@ watch(activeCompany, loadReport);
 								<td class="text-end font-monospace small">{{ fm((r.amounts || {}).DESTINATION, r.currency) }}</td>
 								<td class="text-end font-monospace small">{{ fm((r.amounts || {}).DELIVERED, r.currency) }}</td>
 								<td class="text-end font-monospace small fw-semibold">{{ fm(r.ci_agreed_total, r.currency) }}</td>
+							</tr>
+							<!-- Row 3 (on demand): the numbers the business actually
+							     quotes — supplier PI refs and CI numbers, never autonames. -->
+							<tr v-if="expanded[r.group_name]" class="pgr-numbers">
+								<td colspan="12">
+									<div class="mb-1">
+										<span class="text-secondary small me-2">{{ t("PIs") }}:</span>
+										<span v-for="p in (r.pis || [])" :key="p" class="badge bg-secondary-lt font-monospace me-1 mb-1">{{ p }}</span>
+										<span v-if="!(r.pis || []).length" class="text-secondary">—</span>
+									</div>
+									<div>
+										<span class="text-secondary small me-2">{{ t("CIs") }}:</span>
+										<span v-for="c in (r.cis || [])" :key="c" class="badge bg-azure-lt font-monospace me-1 mb-1">{{ c }}</span>
+										<span v-if="!(r.cis || []).length" class="text-secondary">—</span>
+									</div>
+								</td>
 							</tr>
 						</template>
 						<tr v-if="!rows.length && !loading">
@@ -315,4 +352,5 @@ watch(activeCompany, loadReport);
 
 <style scoped>
 .pgr-amounts td { background: var(--tblr-bg-surface-secondary, #f6f8fb); border-top: 0; }
+.pgr-numbers td { background: var(--tblr-bg-surface-secondary, #f6f8fb); border-top: 0; }
 </style>
