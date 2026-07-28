@@ -380,7 +380,9 @@ def list_customers_with_balances(
 		conds.append("(c.customer_name LIKE %(s)s OR c.name LIKE %(s)s)")
 		params["s"] = f"%{search}%"
 	where = " AND ".join(conds)
-	rows = frappe.db.sql(
+
+	# 1. Fetch matching customer metadata first
+	customer_rows = frappe.db.sql(
 		f"""
 		SELECT
 		  c.name,
@@ -391,25 +393,8 @@ def list_customers_with_balances(
 		  c.default_currency,
 		  c.mobile_no,
 		  c.email_id,
-		  {parent_select} AS parent_customer,
-		  COALESCE(g.balance_base, 0) AS balance_base,
-		  COALESCE(g.balance_acc, 0) AS balance_acc,
-		  g.account_currency,
-		  COALESCE(g.currency_count, 0) AS acc_currency_count
+		  {parent_select} AS parent_customer
 		FROM `tabCustomer` c
-		LEFT JOIN (
-		  SELECT
-		    party,
-		    SUM(debit - credit) AS balance_base,
-		    SUM(debit_in_account_currency - credit_in_account_currency) AS balance_acc,
-		    MAX(account_currency) AS account_currency,
-		    COUNT(DISTINCT account_currency) AS currency_count
-		  FROM `tabGL Entry`
-		  WHERE company = %(company)s
-		    AND party_type = 'Customer'
-		    AND is_cancelled = 0
-		  GROUP BY party
-		) g ON g.party = c.name
 		WHERE {where}
 		ORDER BY c.customer_name ASC
 		LIMIT %(limit)s
@@ -417,9 +402,42 @@ def list_customers_with_balances(
 		params,
 		as_dict=True,
 	)
-	# Correct PE party-leg drift: GL stores credit_in_account_currency = base÷rate
-	# which can differ from the user-entered PE.paid_amount by a few centavos.
-	# Adjust balance_acc by the per-customer drift so the list ties to the ledger.
+
+	has_hierarchy = bool(
+		has_parent_field and frappe.db.exists("Customer", {"custom_parent_customer": ["!=", ""]})
+	)
+
+	if not customer_rows:
+		return {
+			"rows": [],
+			"company_currency": company_currency,
+			"has_hierarchy": has_hierarchy,
+		}
+
+	parties = tuple(r["name"] for r in customer_rows)
+
+	# 2. GL Entry balances for matching parties ONLY
+	gl_rows = frappe.db.sql(
+		"""
+		SELECT
+		  party,
+		  SUM(debit - credit) AS balance_base,
+		  SUM(debit_in_account_currency - credit_in_account_currency) AS balance_acc,
+		  MAX(account_currency) AS account_currency,
+		  COUNT(DISTINCT account_currency) AS currency_count
+		FROM `tabGL Entry`
+		WHERE company = %(company)s
+		  AND party_type = 'Customer'
+		  AND party IN %(parties)s
+		  AND is_cancelled = 0
+		GROUP BY party
+		""",
+		{"company": company, "parties": parties},
+		as_dict=True,
+	)
+	gl_map = {r["party"]: r for r in gl_rows}
+
+	# 3. Correct PE party-leg drift for matching parties ONLY
 	drift_rows = frappe.db.sql(
 		"""
 		SELECT g.party AS party,
@@ -436,45 +454,40 @@ def list_customers_with_balances(
 		       ) AS drift
 		FROM `tabGL Entry` g
 		JOIN `tabPayment Entry` pe ON pe.name = g.voucher_no
-		JOIN (
-		  SELECT voucher_no
-		  FROM `tabGL Entry`
-		  WHERE voucher_type = 'Payment Entry'
-		    AND company = %(company)s
-		    AND party_type = 'Customer'
-		    AND is_cancelled = 0
-		  GROUP BY voucher_no
-		  HAVING COUNT(*) = 1
-		) single ON single.voucher_no = g.voucher_no
 		WHERE g.voucher_type = 'Payment Entry'
 		  AND g.company = %(company)s
 		  AND g.party_type = 'Customer'
+		  AND g.party IN %(parties)s
 		  AND g.is_cancelled = 0
 		GROUP BY g.party
 		""",
-		{"company": company},
+		{"company": company, "parties": parties},
 		as_dict=True,
 	)
 	drift_map = {r["party"]: flt(r["drift"]) for r in drift_rows}
 
-	for r in rows:
-		r["balance_base"] = flt(r["balance_base"])
-		r["balance_acc"] = flt(r["balance_acc"]) + drift_map.get(r["name"], 0.0)
+	rows = []
+	for r in customer_rows:
+		g = gl_map.get(r["name"]) or {}
+		bal_base = flt(g.get("balance_base"))
+		bal_acc = flt(g.get("balance_acc")) + drift_map.get(r["name"], 0.0)
+		r["balance_base"] = bal_base
+		r["balance_acc"] = bal_acc
+		r["account_currency"] = g.get("account_currency") or None
+		r["acc_currency_count"] = cint(g.get("currency_count") or 0)
 		r["company_currency"] = company_currency
 		r["parent_customer"] = r.get("parent_customer") or None
+		rows.append(r)
+
 	if cint(only_with_balance):
 		rows = [r for r in rows if flt(r["balance_base"]) != 0]
-	# has_hierarchy drives the frontend tree/flat auto-detect. True when ANY
-	# customer on this site carries a parent (independent of search/pagination),
-	# so the toggle appears even while a filtered page shows no parents.
-	has_hierarchy = bool(
-		has_parent_field and frappe.db.exists("Customer", {"custom_parent_customer": ["!=", ""]})
-	)
+
 	return {
 		"rows": rows,
 		"company_currency": company_currency,
 		"has_hierarchy": has_hierarchy,
 	}
+
 
 
 @frappe.whitelist()
