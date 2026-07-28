@@ -4873,3 +4873,9 @@ PI inherited from the invoice header,PI inherited from the invoice header
 No deviations — every shipped line agrees with its PI.,No deviations — every shipped line agrees with its PI.
 The list is truncated; narrow it with a PI or CI filter.,The list is truncated; narrow it with a PI or CI filter.
 Open in report,Open in report
+Current portfolio,Current portfolio
+Last 30 days,Last 30 days
+Last 90 days,Last 90 days
+Last 180 days,Last 180 days
+Net remaining,Net remaining
+Sales funnel,Sales funnel

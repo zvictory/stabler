@@ -4877,3 +4877,9 @@ PI inherited from the invoice header,PI инвойс сарлавҳасидан 
 No deviations — every shipped line agrees with its PI.,Оғиш йўқ — ҳар бир жўнатилган қатор ўз PIсига мос.
 The list is truncated; narrow it with a PI or CI filter.,Рўйхат қисқартирилди; PI ёки CI фильтри билан торайтиринг.
 Open in report,Ҳисоботда очиш
+Current portfolio,Жорий портфел
+Last 30 days,Сўнгги 30 кун
+Last 90 days,Сўнгги 90 кун
+Last 180 days,Сўнгги 180 кун
+Net remaining,Соф қолдиқ
+Sales funnel,Савдо воронкаси

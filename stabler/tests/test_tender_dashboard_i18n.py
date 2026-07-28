@@ -8,6 +8,8 @@ from pathlib import Path
 _ROOT = Path(__file__).resolve().parents[1]
 _SOURCES = (
 	_ROOT / "public/js/pages/Dashboard.vue",
+	_ROOT / "public/js/pages/tender/TenderExecutiveKpis.vue",
+	_ROOT / "public/js/pages/tender/TenderFunnel.vue",
 	_ROOT / "public/js/pages/sales/SalesOrderBoard.vue",
 	_ROOT / "public/js/pages/tender/DirectorBoard.vue",
 	_ROOT / "public/js/pages/tender/MyTenders.vue",
@@ -24,6 +26,16 @@ _SOURCES = (
 )
 _LITERAL_T = re.compile(r"\bt\(\s*(['\"])(?P<source>(?:\\.|(?!\1).)*?)\1")
 REQUIRED_KEYS = (
+	"Overview",
+	"Current portfolio",
+	"Last 90 days",
+	"Active tenders",
+	"Portfolio value",
+	"Avg margin",
+	"At risk",
+	"Win rate",
+	"Net remaining",
+	"Sales funnel",
 	"Control Tower",
 	"Vendor & PO",
 	"Three-month tender conversion",

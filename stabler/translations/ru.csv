@@ -4883,3 +4883,9 @@ PI inherited from the invoice header,PI взят из шапки инвойса
 No deviations — every shipped line agrees with its PI.,Отклонений нет — каждая отгруженная строка соответствует своей PI.
 The list is truncated; narrow it with a PI or CI filter.,Список усечён; сузьте фильтром PI или CI.
 Open in report,Открыть в отчёте
+Current portfolio,Текущий портфель
+Last 30 days,Последние 30 дней
+Last 90 days,Последние 90 дней
+Last 180 days,Последние 180 дней
+Net remaining,Чистый остаток
+Sales funnel,Воронка продаж

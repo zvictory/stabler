@@ -4872,3 +4872,9 @@ PI inherited from the invoice header,PI fatura başlığından alındı
 No deviations — every shipped line agrees with its PI.,Sapma yok — sevk edilen her satır PI'sıyla uyumlu.
 The list is truncated; narrow it with a PI or CI filter.,Liste kırpıldı; PI veya CI filtresiyle daralt.
 Open in report,Raporda aç
+Current portfolio,Mevcut portföy
+Last 30 days,Son 30 gün
+Last 90 days,Son 90 gün
+Last 180 days,Son 180 gün
+Net remaining,Net kalan
+Sales funnel,Satış hunisi
