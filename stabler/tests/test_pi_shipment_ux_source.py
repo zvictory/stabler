@@ -57,24 +57,32 @@ class RollupTest(unittest.TestCase):
         self.assertIn("_attach_proforma_match_rollups(rows)", lst)
 
 
-class CompareEndpointTest(unittest.TestCase):
+class DeviationsPageTest(unittest.TestCase):
+    """The user's actual goal: the PI is the agreement, the CI is what shipped —
+    and the places they disagree must be REALLY visible, with the metrics."""
+
     def setUp(self):
-        self.src = read(API)
-        self.body = body(self.src, "compare_proformas")
+        self.vue = read(os.path.join(PAGES, "PiCiDiscrepancies.vue"))
 
-    def test_whitelisted_gated_and_read_only(self):
-        self.assertRegex(self.src, r"@frappe\.whitelist\(\)\ndef compare_proformas\(")
-        self.assertIn("_assert_imports_access(company)", self.body)
-        for token in (".save(", ".insert(", "db_set(", "db.set_value(", "db.commit("):
-            with self.subTest(token=token):
-                self.assertNotIn(token, self.body)
+    def test_reads_the_shared_endpoint_not_a_rederivation(self):
+        self.assertIn('call("stabler.api.imports.get_ci_pi_discrepancies"', self.vue)
 
-    def test_uses_the_same_contract_index(self):
-        self.assertIn("rules.contract_index(", self.body)
+    def test_shows_the_agreement_vs_shipment_metrics(self):
+        for metric in ("matched_lines", "orphan_lines", "over_keys",
+                       "remaining_boxes", "price_docs", "price_agreed"):
+            with self.subTest(metric=metric):
+                self.assertIn(metric, self.vue)
 
-    def test_requires_at_least_two_and_caps(self):
-        self.assertIn("len(pis) < 2", self.body)
-        self.assertIn("[:10]", self.body)
+    def test_rows_link_back_to_both_documents(self):
+        self.assertIn("imports-commercial-invoice", self.vue)
+        self.assertIn("imports-proforma", self.vue)
+        self.assertNotIn('"/app', self.vue)
+
+    def test_route_registered_and_reachable_from_the_flow_board(self):
+        router = read(os.path.join(_ROOT, "public", "js", "router.js"))
+        self.assertIn('"imports-discrepancies"', router)
+        flow = read(os.path.join(PAGES, "ImportsFlow.vue"))
+        self.assertIn("/imports/discrepancies", flow)
 
 
 class PiScopedInfoTest(unittest.TestCase):
@@ -95,27 +103,18 @@ class PagesTest(unittest.TestCase):
         # Over-shipment is a red badge, not folded into the remainder.
         self.assertIn("bg-red-lt", lst)
 
-    def test_list_selection_feeds_compare(self):
-        lst = read(os.path.join(PAGES, "ProformaInvoices.vue"))
-        self.assertIn("selectedPis", lst)
-        self.assertIn('"/imports/proformas/compare"', lst)
-
-    def test_compare_page_exists_and_flags_differences(self):
-        cmp_src = read(os.path.join(PAGES, "ProformaCompare.vue"))
-        self.assertIn('call("stabler.api.imports.compare_proformas"', cmp_src)
-        for flag in ("on_all", "boxes_differ", "agreed_differ"):
-            with self.subTest(flag=flag):
-                self.assertIn(flag, cmp_src)
-        self.assertNotIn('"/app', cmp_src)
-
     def test_form_match_panel_uses_the_shared_endpoint(self):
         form = read(os.path.join(PAGES, "ProformaForm.vue"))
         self.assertIn('call("stabler.api.imports.get_ci_pi_discrepancies"', form)
         self.assertIn("subCuts", form)
 
-    def test_routes_registered(self):
+    def test_compare_stays_removed(self):
+        # The user rejected PI-vs-PI comparison; the goal is agreement-vs-
+        # shipment (the deviations page). Keep the dead feature dead.
         router = read(os.path.join(_ROOT, "public", "js", "router.js"))
-        self.assertIn('"imports-proformas-compare"', router)
+        self.assertNotIn("imports-proformas-compare", router)
+        self.assertNotIn("compare_proformas", read(API))
+        self.assertFalse(os.path.exists(os.path.join(PAGES, "ProformaCompare.vue")))
 
 
 if __name__ == "__main__":

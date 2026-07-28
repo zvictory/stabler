@@ -4855,3 +4855,25 @@ Mode of Payment,To'lov usuli
 Cash portion,Naqd qismi
 Docs portion,Hujjat qismi
 Create CI,CI yaratish
+PI ↔ CI deviations,PI ↔ CI og'ishlar
+the agreement versus what actually shipped,kelishuv va amaldagi jo'natma
+Could not load the deviation report.,Og'ishlar hisobotini yuklab bo'lmadi.
+Lines matched to the agreement,Kelishuvga mos qatorlar
+Shipped lines on no PI,PIsiz jo'natilgan qatorlar
+Over-shipped products,Ortiqcha jo'natilgan mahsulotlar
+Boxes still due under the agreements,Kelishuvlar bo'yicha qolgan qutilar
+Docs-price mismatches,Hujjat narxi mos kelmasligi
+Agreed-price mismatches,Kelishilgan narx mos kelmasligi
+Lines without a product key,Mahsulot kalitisiz qatorlar
+Deviating lines,Og'ishli qatorlar
+All levels,Barcha darajalar
+Errors only,Faqat xatolar
+Warnings only,Faqat ogohlantirishlar
+Agreement (PI),Kelishuv (PI)
+What disagrees,Nima mos emas
+none,yo'q
+inherited,meros
+PI inherited from the invoice header,PI invoys sarlavhasidan olindi
+No deviations — every shipped line agrees with its PI.,Og'ish yo'q — har bir jo'natilgan qator o'z PIsiga mos.
+The list is truncated; narrow it with a PI or CI filter.,Ro'yxat qisqartirildi; PI yoki CI filtri bilan toraytiring.
+Open in report,Hisobotda ochish

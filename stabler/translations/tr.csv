@@ -4850,3 +4850,25 @@ Mode of Payment,Ödeme şekli
 Cash portion,Nakit kısmı
 Docs portion,Belge kısmı
 Create CI,CI oluştur
+PI ↔ CI deviations,PI ↔ CI sapmaları
+the agreement versus what actually shipped,anlaşma ile fiilen sevk edilenin kıyası
+Could not load the deviation report.,Sapma raporu yüklenemedi.
+Lines matched to the agreement,Anlaşmayla eşleşen satırlar
+Shipped lines on no PI,PI'sız sevk edilen satırlar
+Over-shipped products,Fazla sevk edilen ürünler
+Boxes still due under the agreements,Anlaşmalara göre kalan kutular
+Docs-price mismatches,Belge fiyatı uyuşmazlıkları
+Agreed-price mismatches,Mutabık fiyat uyuşmazlıkları
+Lines without a product key,Ürün anahtarı olmayan satırlar
+Deviating lines,Sapan satırlar
+All levels,Tüm seviyeler
+Errors only,Sadece hatalar
+Warnings only,Sadece uyarılar
+Agreement (PI),Anlaşma (PI)
+What disagrees,Ne uyuşmuyor
+none,yok
+inherited,başlıktan
+PI inherited from the invoice header,PI fatura başlığından alındı
+No deviations — every shipped line agrees with its PI.,Sapma yok — sevk edilen her satır PI'sıyla uyumlu.
+The list is truncated; narrow it with a PI or CI filter.,Liste kırpıldı; PI veya CI filtresiyle daralt.
+Open in report,Raporda aç

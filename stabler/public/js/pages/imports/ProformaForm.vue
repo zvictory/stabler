@@ -826,6 +826,9 @@ watch(activeCompany, loadPiGroups);
 				<span v-if="matchSummary.orphan_lines" class="badge bg-yellow-lt text-yellow font-monospace">{{ matchSummary.orphan_lines }} {{ t("not on any PI") }}</span>
 				<span v-if="matchSummary.over_keys" class="badge bg-red-lt text-red font-monospace">{{ matchSummary.over_keys }} {{ t("over-shipped keys") }} · +{{ matchSummary.over_boxes }}</span>
 				<span class="badge bg-azure-lt text-azure font-monospace ms-auto">{{ t("Remaining") }}: {{ matchSummary.remaining_boxes }} {{ t("bx") }}</span>
+				<router-link :to="{ path: '/imports/discrepancies', query: { pi: docName } }" class="btn btn-ghost-secondary btn-sm">
+					{{ t("Open in report") }}
+				</router-link>
 			</div>
 			<div v-if="matchLoading" class="card-body text-secondary">
 				<span class="spinner-border spinner-border-sm me-2"></span>{{ t("Checking shipments…") }}

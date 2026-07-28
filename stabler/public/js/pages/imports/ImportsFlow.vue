@@ -94,6 +94,8 @@ const TAIL = computed(() => {
 			label: t("Draft landed cost vouchers"), to: "/imports/landed-cost-bills" },
 		{ key: "customs", icon: "ti-building-bank", n: null,
 			label: t("Customs declarations"), to: "/imports/customs" },
+		{ key: "deviations", icon: "ti-scale", n: null,
+			label: t("PI ↔ CI deviations"), to: "/imports/discrepancies" },
 	];
 });
 

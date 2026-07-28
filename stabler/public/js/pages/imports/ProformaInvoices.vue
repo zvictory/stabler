@@ -19,18 +19,6 @@ const session = useSession();
 const { activeCompany, user } = storeToRefs(session);
 const route = useRoute();
 const router = useRouter();
-
-// Sandbox-proven selection: pick PIs, compare them on their own screen.
-const selectedPis = ref(new Set());
-function toggleSelect(name) {
-	const next = new Set(selectedPis.value);
-	if (next.has(name)) next.delete(name);
-	else next.add(name);
-	selectedPis.value = next;
-}
-function openCompare() {
-	router.push({ path: "/imports/proformas/compare", query: { pis: [...selectedPis.value].join(",") } });
-}
 const toast = useToast();
 
 const rows = ref([]);
@@ -385,10 +373,7 @@ const canSupersede = (row) => ["DRAFT", "CONFIRMED"].includes(row.status);
 	<div class="card">
 		<div class="card-header d-flex align-items-center gap-2">
 			<div class="card-title m-0">{{ t("Proforma Invoices") }}</div>
-			<button type="button" class="btn btn-outline-secondary btn-sm ms-auto" :disabled="selectedPis.size < 2" @click="openCompare">
-				<i class="ti ti-git-compare me-1"></i>{{ t("Compare selected") }} ({{ selectedPis.size }})
-			</button>
-			<button type="button" class="btn btn-primary btn-sm" @click="router.push('/imports/proformas/new')">
+			<button type="button" class="btn btn-primary btn-sm ms-auto" @click="router.push('/imports/proformas/new')">
 				<i class="ti ti-plus me-1"></i>{{ t("New Proforma") }}
 			</button>
 		</div>
@@ -406,7 +391,6 @@ const canSupersede = (row) => ["DRAFT", "CONFIRMED"].includes(row.status);
 			<table class="table table-vcenter">
 				<thead>
 					<tr>
-						<th class="w-1"><span class="visually-hidden">{{ t("Select") }}</span></th>
 						<th style="min-width: 170px" class="pi-sort" @click="toggleSort('ref')">
 							{{ t("PI Group / Ref / Vendor") }} <i v-if="sortIcon('ref')" class="ti" :class="sortIcon('ref')"></i>
 						</th>
@@ -446,9 +430,6 @@ const canSupersede = (row) => ["DRAFT", "CONFIRMED"].includes(row.status);
 				<tbody>
 					<SkeletonRows v-if="loading" :cols="9" :rows="6" />
 					<tr v-for="r in sortedRows" :key="r.name" class="pi-row" style="cursor: pointer" @click="router.push({ name: 'imports-proforma', params: { name: r.name } })">
-						<td @click.stop>
-							<input type="checkbox" class="form-check-input" :checked="selectedPis.has(r.name)" @change="toggleSelect(r.name)" />
-						</td>
 						<td>
 							<div class="mb-1">
 								<span
@@ -557,7 +538,7 @@ const canSupersede = (row) => ["DRAFT", "CONFIRMED"].includes(row.status);
 								{{ totals.gap ? "−" + fm(totals.gap, totalsCurrency) : fm(0, totalsCurrency) }}
 							</div>
 						</td>
-						<td colspan="7"></td>
+						<td colspan="6"></td>
 					</tr>
 				</tfoot>
 			</table>

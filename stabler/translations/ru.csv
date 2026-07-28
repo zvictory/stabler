@@ -4861,3 +4861,25 @@ Mode of Payment,Способ оплаты
 Cash portion,Наличная часть
 Docs portion,Документарная часть
 Create CI,Создать CI
+PI ↔ CI deviations,Отклонения PI ↔ CI
+the agreement versus what actually shipped,договорённость против фактической отгрузки
+Could not load the deviation report.,Не удалось загрузить отчёт об отклонениях.
+Lines matched to the agreement,Строк совпало с договорённостью
+Shipped lines on no PI,Отгружено вне PI
+Over-shipped products,Товаров с перегрузом
+Boxes still due under the agreements,Коробок к отгрузке по договорённостям
+Docs-price mismatches,Расхождения документарной цены
+Agreed-price mismatches,Расхождения согласованной цены
+Lines without a product key,Строки без ключа товара
+Deviating lines,Строки с отклонениями
+All levels,Все уровни
+Errors only,Только ошибки
+Warnings only,Только предупреждения
+Agreement (PI),Договорённость (PI)
+What disagrees,Что расходится
+none,нет
+inherited,унаследовано
+PI inherited from the invoice header,PI взят из шапки инвойса
+No deviations — every shipped line agrees with its PI.,Отклонений нет — каждая отгруженная строка соответствует своей PI.
+The list is truncated; narrow it with a PI or CI filter.,Список усечён; сузьте фильтром PI или CI.
+Open in report,Открыть в отчёте

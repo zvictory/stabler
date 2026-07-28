@@ -4851,3 +4851,25 @@ Mode of Payment,Mode of Payment
 Cash portion,Cash portion
 Docs portion,Docs portion
 Create CI,Create CI
+PI ↔ CI deviations,PI ↔ CI deviations
+the agreement versus what actually shipped,the agreement versus what actually shipped
+Could not load the deviation report.,Could not load the deviation report.
+Lines matched to the agreement,Lines matched to the agreement
+Shipped lines on no PI,Shipped lines on no PI
+Over-shipped products,Over-shipped products
+Boxes still due under the agreements,Boxes still due under the agreements
+Docs-price mismatches,Docs-price mismatches
+Agreed-price mismatches,Agreed-price mismatches
+Lines without a product key,Lines without a product key
+Deviating lines,Deviating lines
+All levels,All levels
+Errors only,Errors only
+Warnings only,Warnings only
+Agreement (PI),Agreement (PI)
+What disagrees,What disagrees
+none,none
+inherited,inherited
+PI inherited from the invoice header,PI inherited from the invoice header
+No deviations — every shipped line agrees with its PI.,No deviations — every shipped line agrees with its PI.
+The list is truncated; narrow it with a PI or CI filter.,The list is truncated; narrow it with a PI or CI filter.
+Open in report,Open in report
