@@ -6,14 +6,27 @@ import { orgApi } from "../api/organization.js";
 import { call } from "../api/client.js";
 import { t } from "../composables/i18n.js";
 import { useToast } from "../composables/useToast.js";
+import { logout as logoutSession } from "../api/auth.js";
+import AuthTransitionOverlay from "./AuthTransitionOverlay.vue";
 import Select from "./Select.vue";
 
 const toast = useToast();
 
+const logoutPending = ref(false);
+
 async function logout() {
-	await call("logout");
-	window.location.href = "/login";
+	if (logoutPending.value) return;
+	closeUserMenu();
+	logoutPending.value = true;
+	try {
+		await logoutSession();
+		window.location.replace("/stabler#/login");
+	} catch (err) {
+		logoutPending.value = false;
+		toast.error(err?.message || t("Could not sign out. Please try again."));
+	}
 }
+
 
 const LANGUAGES = [
 	{ code: "en", label: "English" },
@@ -361,10 +374,19 @@ async function downloadCbuRates() {
 				type="button"
 				class="dropdown-item stbl-menu-item text-danger"
 				role="menuitem"
+				:disabled="logoutPending"
+				:aria-busy="logoutPending"
 				@click="logout"
 			>
 				<i class="ti ti-logout me-2"></i>{{ t("Log out") }}
 			</button>
 		</div>
 	</Teleport>
+
+	<AuthTransitionOverlay
+		v-if="logoutPending"
+		:title='t("Signing out")'
+		:message='t("Signing out securely…")'
+	/>
 </template>
+
