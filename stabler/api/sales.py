@@ -2096,32 +2096,10 @@ def create_sales_invoice(
 		doc.remarks = remarks.strip()
 
 	# ERPNext's make_sales_invoice picks the customer's default receivable account
-	# without considering the SO currency. If the account currency doesn't match
-	# the document currency, swap to the matching receivable account for this company.
-	if doc.debit_to and doc.currency:
-		debit_to_currency = frappe.get_cached_value("Account", doc.debit_to, "account_currency")
-		if debit_to_currency and debit_to_currency != doc.currency:
-			matching = frappe.get_all(
-				"Account",
-				filters={
-					"account_type": "Receivable",
-					"company": doc.company,
-					"account_currency": doc.currency,
-					"is_group": 0,
-					"disabled": 0,
-				},
-				pluck="name",
-				order_by="lft asc",  # deterministic — lowest in CoA tree wins
-				limit=1,
-			)
-			if not matching:
-				frappe.throw(
-					_(
-						"No {0} receivable account exists for company {1}. "
-						"Create one before invoicing in {0}."
-					).format(doc.currency, doc.company)
-				)
-			doc.debit_to = matching[0]
+	# without considering the SO currency. Ensure debit_to matches the document currency.
+	if doc.customer and doc.currency:
+		from stabler.api._accounts import resolve_party_account
+		doc.debit_to = resolve_party_account("Customer", doc.customer, doc.company, doc.currency)
 
 	if isinstance(item_overrides, str):
 		try:

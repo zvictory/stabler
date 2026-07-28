@@ -19,9 +19,10 @@ def resolve_party_account(party_type: str, party: str, company: str, currency: s
 
 	if account:
 		account_currency = frappe.get_cached_value("Account", account, "account_currency")
-		company_currency = frappe.get_cached_value("Company", company, "default_currency")
-		# If currency matches, or is unassigned/base currency, return immediately
-		if not account_currency or account_currency == currency or account_currency == company_currency:
+		# If account_currency is unassigned/blank, or matches document currency, return immediately.
+		# If account_currency is explicitly assigned (e.g. USD) and differs from document currency (e.g. UZS),
+		# it CANNOT be used even if USD is the company base currency.
+		if not account_currency or account_currency == currency:
 			return account
 
 	# Mismatch or no account resolved! Swap/resolve to the matching receivable/payable account
@@ -38,6 +39,21 @@ def resolve_party_account(party_type: str, party: str, company: str, currency: s
 		order_by="lft asc",
 		limit=1,
 	)
+	if not matching:
+		# Fallback: unassigned currency account
+		matching = frappe.get_all(
+			"Account",
+			filters={
+				"account_type": account_type,
+				"company": company,
+				"account_currency": ["in", ["", None]],
+				"is_group": 0,
+				"disabled": 0,
+			},
+			pluck="name",
+			order_by="lft asc",
+			limit=1,
+		)
 	if not matching:
 		frappe.throw(
 			_("No {0} {1} account exists for company {2}. Create one before using this currency.").format(
