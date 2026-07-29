@@ -132,12 +132,21 @@ def fetch_and_store() -> dict[str, Any]:
 def _fetch_cbu_for(on_date: datetime.date) -> dict[str, float]:
 	"""Fetch the CBU archive for a specific date → {code: rate}. Empty dict if
 	CBU has no publication for that day (weekend/holiday)."""
-	url = f"https://cbu.uz/uz/arkhiv-kursov-valyut/json/{on_date.isoformat()}/"
+	# The date form of the archive endpoint needs the `all/` segment; without it
+	# cbu.uz answers 404 for every date and the caller silently sees "no
+	# publication that day" for the whole range.
+	url = f"{_CBU_URL}all/{on_date.isoformat()}/"
 	try:
 		req = Request(url, headers={"User-Agent": "stabler/1.0"})
 		with urlopen(req, timeout=_TIMEOUT) as resp:
 			data = json.loads(resp.read().decode("utf-8"))
-	except Exception:  # treat as a non-publishing day; carry forward
+	except Exception as e:  # treat as a non-publishing day; carry forward
+		# Log it: a systematic failure (bad URL, DNS, TLS) is indistinguishable
+		# from a weekend once we return {}, and that hid this very bug.
+		frappe.log_error(
+			f"cbu.uz fetch failed for {on_date.isoformat()}: {type(e).__name__}: {e}",
+			"cbu_rate_refresh",
+		)
 		return {}
 	out: dict[str, float] = {}
 	for row in data if isinstance(data, list) else []:
