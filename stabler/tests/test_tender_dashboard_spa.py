@@ -122,7 +122,7 @@ class TestTenderDashboardSpaContract(unittest.TestCase):
 		control_tower = _read(_CONTROL_TOWER)
 		self.assertIn("from_date", control_tower)
 		self.assertIn("to_date", control_tower)
-		self.assertIn("tender-portfolio", control_tower)
+		self.assertIn("tender-crm", control_tower)
 		self.assertIn(':period="data.period"', control_tower)
 
 	def test_tender_dashboard_renders_executive_content_without_legacy_empty_gate(self):
@@ -159,12 +159,12 @@ class TestTenderDashboardSpaContract(unittest.TestCase):
 			"formatMoney",
 			"font-monospace",
 			':title="item.exact"',
-			":aria-label=\"item.exact",
+			':aria-label="item.exact',
 		):
 			self.assertIn(text, kpis)
 		self.assertIn('mode: { type: String, default: "full" }', funnel)
-		self.assertIn('days: { type: Number, default: 90 }', funnel)
-		self.assertIn('v-if="props.mode === \'full\'"', funnel)
+		self.assertIn("days: { type: Number, default: 90 }", funnel)
+		self.assertIn("v-if=\"props.mode === 'full'\"", funnel)
 		self.assertIn("days: props.days", funnel)
 		self.assertIn("watch([activeCompany, () => props.days], load);", funnel)
 

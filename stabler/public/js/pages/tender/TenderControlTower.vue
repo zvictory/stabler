@@ -27,7 +27,9 @@ const myWork = computed(() => props.data.my_work || {});
 const finance = computed(() => props.data.finance || null);
 const views = computed(() => props.data.role_scope?.views || []);
 const hasView = (view) => views.value.includes(view);
-const acquisitionRoute = computed(() => (hasView("director") || hasView("sourcing") ? "tender-crm" : ""));
+const acquisitionRoute = computed(() =>
+	hasView("director") || hasView("sourcing") ? "tender-crm" : ""
+);
 const periodQuery = computed(() => ({
 	from_date: props.data.period?.from_date,
 	to_date: props.data.period?.to_date,
@@ -86,7 +88,7 @@ function openAttention(item) {
 	if (!item.deal) return;
 	router.push({
 		name: "tender-crm",
-		query: { days: props.days, deal: item.deal, tab: item.tab || "overview" },
+		query: { days: props.days, ...periodQuery.value, deal: item.deal, tab: item.tab || "overview" },
 	});
 }
 

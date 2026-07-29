@@ -1,6 +1,16 @@
 const CRM_STAGES = ["New", "Sourcing", "Bid Preparation", "Submitted", "Closed"];
 
 const CLOSED_STATUSES = new Set(["Won", "Lost", "Cancelled", "Closed"]);
+const LIST_QUERY_KEYS = ["status", "stage", "risk", "deal", "from_date", "to_date"];
+
+export function tenderMasterListParams(query = {}) {
+	return Object.fromEntries(
+		LIST_QUERY_KEYS.flatMap((key) => {
+			const value = query[key];
+			return typeof value === "string" && value ? [[key, value]] : [];
+		})
+	);
+}
 
 export function createLatestRequestGuard() {
 	let latestRequest = 0;

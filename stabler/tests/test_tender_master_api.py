@@ -34,14 +34,23 @@ class _FakeFrappe:
 				name="TND-2026-00001", company="ACME", title="Network tender", currency="USD", status="New"
 			),
 			("CRM Deal", "LOT-ALLOWED"): _Doc(
-				name="LOT-ALLOWED", company="ACME", custom_parent_tender="TND-2026-00001", status="Open", custom_estimated_value=125
+				name="LOT-ALLOWED",
+				company="ACME",
+				custom_parent_tender="TND-2026-00001",
+				status="Open",
+				custom_estimated_value=125,
 			),
 			("CRM Deal", "LOT-DENIED"): _Doc(
-				name="LOT-DENIED", company="ACME", custom_parent_tender="TND-2026-00001", status="Won", custom_estimated_value=500
+				name="LOT-DENIED",
+				company="ACME",
+				custom_parent_tender="TND-2026-00001",
+				status="Won",
+				custom_estimated_value=500,
 			),
 		}
 		self.created: list[_Doc] = []
 		self.last_filters: dict | None = None
+		self.last_list_kwargs: dict | None = None
 
 	def get_doc(self, doctype, name):
 		return self.docs[(doctype, name)]
@@ -54,8 +63,18 @@ class _FakeFrappe:
 	def get_list(self, doctype, **kwargs):
 		filters = kwargs.get("filters", {})
 		self.last_filters = filters
+		self.last_list_kwargs = kwargs
 		rows = [doc for (kind, _name), doc in self.docs.items() if kind == doctype]
-		rows = [row for row in rows if all(row.get(field) == value for field, value in filters.items())]
+		if isinstance(filters, dict):
+			rows = [row for row in rows if all(row.get(field) == value for field, value in filters.items())]
+		else:
+			for field, operator, value in filters:
+				if operator == "=":
+					rows = [row for row in rows if row.get(field) == value]
+				elif operator == "in":
+					rows = [row for row in rows if row.get(field) in value]
+				elif operator == "not in":
+					rows = [row for row in rows if row.get(field) not in value]
 		if kwargs.get("fields") == ["count(name) as total"]:
 			return [{"total": len(rows)}]
 		return rows
@@ -81,16 +100,24 @@ def _load_api(fake: _FakeFrappe, *, tender_allowed=True):
 	frappe.parse_json = lambda value: value
 	frappe.whitelist = lambda *args, **_kwargs: (lambda fn: fn) if not args else args[0]
 	frappe.throw = lambda message, exception=Exception: (_ for _ in ()).throw(exception(message))
-	frappe.has_permission = lambda doctype, ptype="read", doc=None: not (doctype == "CRM Deal" and doc == "LOT-DENIED")
+	frappe.has_permission = lambda doctype, ptype="read", doc=None: (
+		not (doctype == "CRM Deal" and getattr(doc, "name", doc) == "LOT-DENIED")
+	)
 	utils = types.ModuleType("frappe.utils")
 	utils.flt = lambda value: float(value or 0)
+	utils.now_datetime = lambda: "2026-07-01"
+	utils.add_days = lambda value, days: f"{value}+{days}"
 	common = types.ModuleType("stabler.api._common")
-	common._require_company = lambda company: company or (_ for _ in ()).throw(ValueError("Company is required."))
+	common._require_company = lambda company: (
+		company or (_ for _ in ()).throw(ValueError("Company is required."))
+	)
 	organization = types.ModuleType("stabler.api.organization")
 	organization._ADMIN_ROLES = ("System Manager", "Stabler Admin")
 	organization._user_allowed_companies = lambda _user: ["ACME"]
 	tender = types.ModuleType("stabler.api.tender")
-	tender._require_tender = lambda _company=None: None if tender_allowed else (_ for _ in ()).throw(PermissionError("Not permitted"))
+	tender._require_tender = lambda _company=None: (
+		None if tender_allowed else (_ for _ in ()).throw(PermissionError("Not permitted"))
+	)
 	frappe.get_roles = lambda _user=None: ["Sales User"]
 	sys.modules.update(
 		{
@@ -108,7 +135,9 @@ class TestTenderMasterApi(unittest.TestCase):
 	def setUp(self):
 		self.fake = _FakeFrappe()
 		self.api = _load_api(self.fake)
-		self.cross_company_deal = _Doc(name="DEAL-OTHER", company="Other Co", custom_parent_tender="TND-2026-00001")
+		self.cross_company_deal = _Doc(
+			name="DEAL-OTHER", company="Other Co", custom_parent_tender="TND-2026-00001"
+		)
 
 	def test_get_tender_master_rejects_cross_company_name(self):
 		"""Removing the selected-company check would expose a named foreign tender."""
@@ -131,7 +160,10 @@ class TestTenderMasterApi(unittest.TestCase):
 		"""Removing per-lot permission filtering would disclose an unreadable CRM Deal."""
 		result = self.api.get_tender_master("TND-2026-00001", company="ACME")
 		self.assertEqual([row["name"] for row in result["lots"]], ["LOT-ALLOWED"])
-		self.assertEqual(result["summary"], {"lot_count": 1, "open_lot_count": 1, "estimated_total": 125.0, "currency": "USD"})
+		self.assertEqual(
+			result["summary"],
+			{"lot_count": 1, "open_lot_count": 1, "estimated_total": 125.0, "currency": "USD"},
+		)
 
 	def test_save_tender_master_uses_allowlisted_fields(self):
 		"""Allowing arbitrary payload keys would let callers overwrite audit ownership."""
@@ -145,6 +177,34 @@ class TestTenderMasterApi(unittest.TestCase):
 		"""Removing this validation would link a CRM Deal to another company's tender."""
 		with self.assertRaises(ValueError):
 			self.api.validate_deal_parent_tender(self.cross_company_deal)
+
+	def test_list_filters_use_canonical_status_stage_risk_deadline_and_deal(self):
+		"""Removing any filter would make dashboard drill-downs show a broader portfolio."""
+		self.api.list_tender_masters(
+			company="ACME",
+			status="won",
+			stage="submitted",
+			risk="risk",
+			deal="LOT-ALLOWED",
+			from_date="2026-07-01",
+			to_date="2026-07-31",
+		)
+		filters = self.fake.last_filters
+		self.assertIn(["status", "in", ["Won"]], filters)
+		self.assertIn(["status", "in", ["Submitted", "Won", "Lost"]], filters)
+		self.assertIn(["status", "not in", ["Won", "Lost", "Cancelled"]], filters)
+		self.assertIn(["submission_deadline", "<=", "2026-07-01+7"], filters)
+		self.assertIn(["submission_deadline", ">=", "2026-07-01"], filters)
+		self.assertIn(["submission_deadline", "<=", "2026-07-31"], filters)
+		self.assertIn(["name", "=", "TND-2026-00001"], filters)
+
+	def test_list_deal_filter_rejects_unreadable_or_foreign_deals_before_resolving_parent(self):
+		"""Checking a deal's parent before permission/company scope would leak Tender Master existence."""
+		with self.assertRaises(PermissionError):
+			self.api.list_tender_masters(company="ACME", deal="LOT-DENIED")
+		self.fake.docs[("CRM Deal", "LOT-OTHER")] = self.cross_company_deal
+		with self.assertRaises(PermissionError):
+			self.api.list_tender_masters(company="ACME", deal="LOT-OTHER")
 
 
 if __name__ == "__main__":
