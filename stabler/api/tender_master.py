@@ -8,6 +8,7 @@ from frappe.utils import flt
 
 from stabler.api._common import _require_company
 from stabler.api.organization import _ADMIN_ROLES, _user_allowed_companies
+from stabler.api.tender import _require_tender
 
 
 _TENDER_FIELDS = (
@@ -58,6 +59,7 @@ def _list_options(start: int, limit: int) -> tuple[int, int]:
 
 @frappe.whitelist()
 def list_tender_masters(company=None, status=None, search=None, start=0, limit=50):
+	_require_tender(company)
 	selected_company = _assert_company_scope(company)
 	if not frappe.has_permission("Tender Master", "read"):
 		frappe.throw(_("Not permitted."), frappe.PermissionError)
@@ -85,6 +87,7 @@ def list_tender_masters(company=None, status=None, search=None, start=0, limit=5
 
 @frappe.whitelist()
 def get_tender_master(name, company=None):
+	_require_tender(company)
 	_assert_company_scope(company)
 	master, selected_company = _master_scope(name, company)
 	lots = frappe.get_list(
@@ -106,6 +109,7 @@ def get_tender_master(name, company=None):
 
 @frappe.whitelist()
 def save_tender_master(data, company=None):
+	_require_tender(company)
 	selected_company = _assert_company_scope(company)
 	payload = frappe.parse_json(data)
 	name = payload.get("name")

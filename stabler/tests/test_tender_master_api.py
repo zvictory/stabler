@@ -61,8 +61,15 @@ class _FakeFrappe:
 		return rows
 
 
-def _load_api(fake: _FakeFrappe):
-	for name in ("stabler.api.tender_master", "frappe", "frappe.utils", "stabler.api._common", "stabler.api.organization"):
+def _load_api(fake: _FakeFrappe, *, tender_allowed=True):
+	for name in (
+		"stabler.api.tender_master",
+		"stabler.api.tender",
+		"frappe",
+		"frappe.utils",
+		"stabler.api._common",
+		"stabler.api.organization",
+	):
 		sys.modules.pop(name, None)
 	frappe = types.ModuleType("frappe")
 	frappe._ = lambda value: value
@@ -82,9 +89,17 @@ def _load_api(fake: _FakeFrappe):
 	organization = types.ModuleType("stabler.api.organization")
 	organization._ADMIN_ROLES = ("System Manager", "Stabler Admin")
 	organization._user_allowed_companies = lambda _user: ["ACME"]
+	tender = types.ModuleType("stabler.api.tender")
+	tender._require_tender = lambda _company=None: None if tender_allowed else (_ for _ in ()).throw(PermissionError("Not permitted"))
 	frappe.get_roles = lambda _user=None: ["Sales User"]
 	sys.modules.update(
-		{"frappe": frappe, "frappe.utils": utils, "stabler.api._common": common, "stabler.api.organization": organization}
+		{
+			"frappe": frappe,
+			"frappe.utils": utils,
+			"stabler.api._common": common,
+			"stabler.api.organization": organization,
+			"stabler.api.tender": tender,
+		}
 	)
 	return importlib.import_module("stabler.api.tender_master")
 
@@ -99,6 +114,18 @@ class TestTenderMasterApi(unittest.TestCase):
 		"""Removing the selected-company check would expose a named foreign tender."""
 		with self.assertRaises(PermissionError):
 			self.api.get_tender_master("TND-2026-00001", company="Other Co")
+
+	def test_public_endpoints_reject_when_tender_module_is_unavailable(self):
+		"""Removing the Tender module gate would expose its APIs to unavailable tenants."""
+		api = _load_api(self.fake, tender_allowed=False)
+		calls = (
+			lambda: api.list_tender_masters(company="ACME"),
+			lambda: api.get_tender_master("TND-2026-00001", company="ACME"),
+			lambda: api.save_tender_master({"title": "Network tender"}, company="ACME"),
+		)
+		for call in calls:
+			with self.assertRaises(PermissionError):
+				call()
 
 	def test_get_tender_master_returns_only_permitted_child_lots(self):
 		"""Removing per-lot permission filtering would disclose an unreadable CRM Deal."""
