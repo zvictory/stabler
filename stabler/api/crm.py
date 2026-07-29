@@ -8,7 +8,7 @@ import frappe
 from frappe import _
 from frappe.utils import flt
 
-from stabler.api._common import _assert_can_read, _assert_can_write
+from stabler.api._common import _assert_can_read, _assert_can_write, _require_company
 from stabler.api.organization import (
 	_ADMIN_ROLES,
 	_can_access_module,
@@ -21,17 +21,118 @@ def _require_crm():
 		frappe.throw(_("Not permitted"), frappe.PermissionError)
 
 
-def _scope_companies() -> list | None:
-	"""Companies the current user may see in aggregate CRM reports, or None for
-	"no company filter". Admins and users with an empty allowed-companies list
-	(the "all companies" sentinel) return None. Otherwise the explicit list is
-	returned so callers can add a parametrized `company IN %(companies)s` filter.
+def _require_crm_company(company: str | None) -> str:
+	"""Validate the caller's explicitly selected CRM company.
+
+	CRM must never infer a company from user defaults or widen a query across a
+	user's allowed companies.  The selected company is therefore both mandatory
+	and checked against a non-admin user's explicit company allow-list.
 	"""
-	user = frappe.session.user
-	if any(r in frappe.get_roles(user) for r in _ADMIN_ROLES):
-		return None
-	allowed = _user_allowed_companies(user)
-	return allowed or None
+	company = _require_company(company)
+	if any(role in frappe.get_roles(frappe.session.user) for role in _ADMIN_ROLES):
+		return company
+	allowed = _user_allowed_companies(frappe.session.user)
+	if allowed and company not in allowed:
+		frappe.throw(_("Not permitted for company {0}").format(company), frappe.PermissionError)
+	return company
+
+
+def _assert_crm_record_company(doctype: str, name: str, company: str, ptype: str) -> None:
+	"""Prevent named CRM reads/writes from crossing the selected company."""
+	if not frappe.has_permission(doctype, ptype, name):
+		frappe.throw(_("Not permitted"), frappe.PermissionError)
+	if frappe.db.get_value(doctype, name, "company") != company:
+		frappe.throw(_("Not permitted for company {0}").format(company), frappe.PermissionError)
+
+
+_LEAD_MUTABLE_FIELDS = frozenset(
+	(
+		"first_name",
+		"last_name",
+		"email",
+		"mobile_no",
+		"organization",
+		"status",
+		"lead_owner",
+		"source",
+		"job_title",
+		"custom_manzil",
+		"custom_sana",
+		"custom_izoh",
+	)
+)
+
+_DEAL_MUTABLE_FIELDS = frozenset(
+	(
+		"organization",
+		"status",
+		"deal_owner",
+		"deal_value",
+		"currency",
+		"probability",
+		"expected_closure_date",
+		"email",
+		"mobile_no",
+		"source",
+		"outlet_type",
+		"region",
+		"expected_monthly_volume",
+		"expected_cases_week",
+		"price_tier",
+		"needs_freezer",
+		"credit_terms_days",
+		"win_loss_reason",
+		"tender_no",
+		"tender_deadline",
+		"bid_value",
+		"tender_source",
+	)
+)
+
+
+def _mutable_payload(data: str | dict, fields: frozenset[str]) -> dict:
+	"""Return only client-editable CRM fields; names, links, company and audit
+	fields are always owned by the server."""
+	payload = frappe.parse_json(data)
+	return {field: payload[field] for field in fields if field in payload}
+
+
+def _crm_list(
+	doctype: str,
+	*,
+	company: str,
+	fields: list[str],
+	search: str,
+	search_fields: list[str],
+	status: str,
+	owner: str,
+	owner_field: str,
+	page_length: int,
+	start: int,
+) -> tuple[list, int]:
+	"""Fetch one company through Frappe's permission-aware list API."""
+	filters: dict = {"company": company}
+	if status:
+		filters["status"] = status
+	if owner:
+		filters[owner_field] = owner
+	or_filters = [[field, "like", f"%{search}%"] for field in search_fields] if search else None
+	kwargs = {
+		"filters": filters,
+		"fields": fields,
+		"order_by": "modified desc",
+		"limit_page_length": min(max(int(page_length or 50), 1), 500),
+		"start": max(int(start or 0), 0),
+	}
+	if or_filters:
+		kwargs["or_filters"] = or_filters
+	rows = frappe.get_list(doctype, **kwargs)
+	count_kwargs = {"filters": filters, "fields": ["count(name) as total"], "limit_page_length": 1}
+	if or_filters:
+		count_kwargs["or_filters"] = or_filters
+	count_rows = frappe.get_list(doctype, **count_kwargs)
+	total = int((count_rows[0].get("total") if count_rows else 0) or 0)
+	return rows, total
 
 
 _CRM_MANAGER_ROLES = {"Sales Manager", "System Manager", "Stabler Admin"}
@@ -50,71 +151,69 @@ def _require_crm_manager():
 
 
 @frappe.whitelist()
-def list_leads(search="", status="", lead_owner="", page_length=50, start=0):
+def list_leads(company="", search="", status="", lead_owner="", page_length=50, start=0):
 	_require_crm()
+	company = _require_crm_company(company)
 	if not frappe.has_permission("CRM Lead", "read"):
 		frappe.throw(_("Not permitted"), frappe.PermissionError)
-	where_parts = []
-	values: dict = {"limit": int(page_length), "start": int(start)}
-
-	if search:
-		where_parts.append(
-			"(lead_name LIKE %(search)s OR email LIKE %(search)s OR organization LIKE %(search)s)"
-		)
-		values["search"] = f"%{search}%"
-	if status:
-		where_parts.append("status = %(status)s")
-		values["status"] = status
-	if lead_owner:
-		where_parts.append("lead_owner = %(lead_owner)s")
-		values["lead_owner"] = lead_owner
-
-	where = ("WHERE " + " AND ".join(where_parts)) if where_parts else ""
-	count_vals = {k: v for k, v in values.items() if k not in ("limit", "start")}
-
-	rows = frappe.db.sql(
-		f"""SELECT name, lead_name, first_name, last_name, email, mobile_no,
-                   organization, status, lead_owner, source, modified
-            FROM `tabCRM Lead`
-            {where}
-            ORDER BY modified DESC
-            LIMIT %(limit)s OFFSET %(start)s""",
-		values,
-		as_dict=True,
+	rows, total = _crm_list(
+		"CRM Lead",
+		company=company,
+		fields=[
+			"name",
+			"lead_name",
+			"first_name",
+			"last_name",
+			"email",
+			"mobile_no",
+			"organization",
+			"status",
+			"lead_owner",
+			"source",
+			"modified",
+		],
+		search=search,
+		search_fields=["lead_name", "email", "organization"],
+		status=status,
+		owner=lead_owner,
+		owner_field="lead_owner",
+		page_length=page_length,
+		start=start,
 	)
-	total = (frappe.db.sql(f"SELECT COUNT(*) FROM `tabCRM Lead` {where}", count_vals) or [[0]])[0][0]
 	return {"leads": rows, "total": total}
 
 
 @frappe.whitelist()
-def get_lead(name: str):
+def get_lead(name: str, company=""):
 	_require_crm()
-	if not frappe.has_permission("CRM Lead", "read", name):
-		frappe.throw(_("Not permitted"), frappe.PermissionError)
+	company = _require_crm_company(company)
+	_assert_crm_record_company("CRM Lead", name, company, "read")
 	return frappe.get_doc("CRM Lead", name).as_dict()
 
 
 @frappe.whitelist()
-def save_lead(data: str | dict):
+def save_lead(data: str | dict, company=""):
 	_require_crm()
-	data = frappe.parse_json(data)
-	if data.get("name"):
-		if not frappe.has_permission("CRM Lead", "write", data["name"]):
-			frappe.throw(_("Not permitted"), frappe.PermissionError)
-		doc = frappe.get_doc("CRM Lead", data["name"])
-		doc.update(data)
+	company = _require_crm_company(company)
+	payload = frappe.parse_json(data)
+	if payload.get("name"):
+		_assert_crm_record_company("CRM Lead", payload["name"], company, "write")
+		doc = frappe.get_doc("CRM Lead", payload["name"])
 	else:
+		if not frappe.has_permission("CRM Lead", "create"):
+			frappe.throw(_("Not permitted"), frappe.PermissionError)
 		doc = frappe.new_doc("CRM Lead")
-		doc.update(data)
+	doc.update(_mutable_payload(payload, _LEAD_MUTABLE_FIELDS))
+	doc.company = company
 	doc.save()
 	return doc.as_dict()
 
 
 @frappe.whitelist()
-def delete_lead(name: str):
+def delete_lead(name: str, company=""):
 	_require_crm()
-	if not frappe.has_permission("CRM Lead", "delete", name):
-		frappe.throw(_("Not permitted"), frappe.PermissionError)
+	company = _require_crm_company(company)
+	_assert_crm_record_company("CRM Lead", name, company, "delete")
 	frappe.delete_doc("CRM Lead", name)
 	return "ok"
 
@@ -125,43 +224,45 @@ def delete_lead(name: str):
 
 
 @frappe.whitelist()
-def list_deals(search="", status="", deal_owner="", page_length=50, start=0):
+def list_deals(company="", search="", status="", deal_owner="", page_length=50, start=0):
 	_require_crm()
+	company = _require_crm_company(company)
 	if not frappe.has_permission("CRM Deal", "read"):
 		frappe.throw(_("Not permitted"), frappe.PermissionError)
-	where_parts = []
-	values: dict = {"limit": int(page_length), "start": int(start)}
-
-	if search:
-		where_parts.append(
-			"(organization LIKE %(search)s OR email LIKE %(search)s OR lead_name LIKE %(search)s)"
-		)
-		values["search"] = f"%{search}%"
-	if status:
-		where_parts.append("status = %(status)s")
-		values["status"] = status
-	if deal_owner:
-		where_parts.append("deal_owner = %(deal_owner)s")
-		values["deal_owner"] = deal_owner
-
-	where = ("WHERE " + " AND ".join(where_parts)) if where_parts else ""
-	count_vals = {k: v for k, v in values.items() if k not in ("limit", "start")}
-
-	rows = frappe.db.sql(
-		f"""SELECT name, organization, lead_name, email, mobile_no, status,
-                   deal_owner, deal_value, currency, probability,
-                   expected_closure_date, modified,
-                   outlet_type, region, expected_monthly_volume, expected_cases_week,
-                   price_tier, needs_freezer, credit_terms_days, win_loss_reason,
-                   linked_customer
-            FROM `tabCRM Deal`
-            {where}
-            ORDER BY modified DESC
-            LIMIT %(limit)s OFFSET %(start)s""",
-		values,
-		as_dict=True,
+	rows, total = _crm_list(
+		"CRM Deal",
+		company=company,
+		fields=[
+			"name",
+			"organization",
+			"lead_name",
+			"email",
+			"mobile_no",
+			"status",
+			"deal_owner",
+			"deal_value",
+			"currency",
+			"probability",
+			"expected_closure_date",
+			"modified",
+			"outlet_type",
+			"region",
+			"expected_monthly_volume",
+			"expected_cases_week",
+			"price_tier",
+			"needs_freezer",
+			"credit_terms_days",
+			"win_loss_reason",
+			"linked_customer",
+		],
+		search=search,
+		search_fields=["organization", "email", "lead_name"],
+		status=status,
+		owner=deal_owner,
+		owner_field="deal_owner",
+		page_length=page_length,
+		start=start,
 	)
-	total = (frappe.db.sql(f"SELECT COUNT(*) FROM `tabCRM Deal` {where}", count_vals) or [[0]])[0][0]
 
 	# Attach the linked customer's open AR so reps see exposure on the board.
 	cust = list({r["linked_customer"] for r in rows if r.get("linked_customer")})
@@ -170,9 +271,10 @@ def list_deals(search="", status="", deal_owner="", page_length=50, start=0):
 		for c, bal in frappe.db.sql(
 			"""SELECT customer, SUM(outstanding_amount)
                FROM `tabSales Invoice`
-               WHERE docstatus = 1 AND outstanding_amount > 0 AND customer IN %(cs)s
+               WHERE docstatus = 1 AND outstanding_amount > 0
+                 AND company = %(company)s AND customer IN %(cs)s
                GROUP BY customer""",
-			{"cs": tuple(cust)},
+			{"company": company, "cs": tuple(cust)},
 		):
 			ar[c] = flt(bal)
 	for r in rows:
@@ -182,31 +284,33 @@ def list_deals(search="", status="", deal_owner="", page_length=50, start=0):
 
 
 @frappe.whitelist()
-def get_deal(name: str):
+def get_deal(name: str, company=""):
 	_require_crm()
-	if not frappe.has_permission("CRM Deal", "read", name):
-		frappe.throw(_("Not permitted"), frappe.PermissionError)
+	company = _require_crm_company(company)
+	_assert_crm_record_company("CRM Deal", name, company, "read")
 	return frappe.get_doc("CRM Deal", name).as_dict()
 
 
 @frappe.whitelist()
-def save_deal(data: str | dict):
+def save_deal(data: str | dict, company=""):
 	_require_crm()
-	data = frappe.parse_json(data)
-	if data.get("name"):
-		if not frappe.has_permission("CRM Deal", "write", data["name"]):
-			frappe.throw(_("Not permitted"), frappe.PermissionError)
-		doc = frappe.get_doc("CRM Deal", data["name"])
-		doc.update(data)
+	company = _require_crm_company(company)
+	payload = frappe.parse_json(data)
+	if payload.get("name"):
+		_assert_crm_record_company("CRM Deal", payload["name"], company, "write")
+		doc = frappe.get_doc("CRM Deal", payload["name"])
 	else:
+		if not frappe.has_permission("CRM Deal", "create"):
+			frappe.throw(_("Not permitted"), frappe.PermissionError)
 		doc = frappe.new_doc("CRM Deal")
-		doc.update(data)
+	doc.update(_mutable_payload(payload, _DEAL_MUTABLE_FIELDS))
+	doc.company = company
 	doc.save()
 	# Won-deal hand-off: create/link the Customer (and outlet/freezer) when the
 	# deal lands in a Won stage. Best-effort — never blocks the save.
 	try:
 		if _is_won_status(doc.get("status")) and not doc.get("linked_customer"):
-			convert_deal_to_customer(doc.name)
+			convert_deal_to_customer(doc.name, company)
 			doc.reload()
 	except Exception:
 		frappe.clear_last_message()
@@ -214,10 +318,10 @@ def save_deal(data: str | dict):
 
 
 @frappe.whitelist()
-def delete_deal(name: str):
+def delete_deal(name: str, company=""):
 	_require_crm()
-	if not frappe.has_permission("CRM Deal", "delete", name):
-		frappe.throw(_("Not permitted"), frappe.PermissionError)
+	company = _require_crm_company(company)
+	_assert_crm_record_company("CRM Deal", name, company, "delete")
 	frappe.delete_doc("CRM Deal", name)
 	return "ok"
 
@@ -233,13 +337,6 @@ def _is_won_status(status: str | None) -> bool:
 	if str(status).strip().lower() == "won":
 		return True
 	return (frappe.db.get_value("CRM Deal Status", status, "type") or "").strip().lower() == "won"
-
-
-def _default_company() -> str | None:
-	return (
-		frappe.defaults.get_user_default("Company")
-		or (frappe.get_all("Company", pluck="name", limit=1) or [None])[0]
-	)
 
 
 # Deal outlet_type -> SFA Outlet channel.
@@ -273,7 +370,7 @@ def _ensure_outlet(deal, customer: str) -> str | None:
 				frappe.clear_last_message()
 		return existing
 
-	company = _default_company()
+	company = deal.get("company")
 	if not company:
 		return None
 
@@ -329,12 +426,12 @@ def _freezer_todo(deal, customer: str) -> None:
 
 
 @frappe.whitelist()
-def convert_deal_to_customer(name: str) -> dict:
+def convert_deal_to_customer(name: str, company="") -> dict:
 	"""Create (or link) a Customer from a Won deal and wire up the outlet/freezer.
 	Idempotent: re-running returns the already-linked customer."""
 	_require_crm()
-	if not frappe.has_permission("CRM Deal", "write", name):
-		frappe.throw(_("Not permitted"), frappe.PermissionError)
+	company = _require_crm_company(company)
+	_assert_crm_record_company("CRM Deal", name, company, "write")
 	deal = frappe.get_doc("CRM Deal", name)
 
 	if deal.get("linked_customer") and frappe.db.exists("Customer", deal.linked_customer):
@@ -412,22 +509,20 @@ def crm_meta():
 
 
 @frappe.whitelist()
-def crm_metrics() -> dict:
+def crm_metrics(company="") -> dict:
 	"""Pipeline KPIs for the ice-cream board: monthly run-rate of open deals,
 	wins this month, freezer-pending outlets, reactivation count, activation rate."""
 	_require_crm()
+	company = _require_crm_company(company)
 	from frappe.utils import get_first_day, getdate, nowdate
 
 	statuses = frappe.get_all("CRM Deal Status", fields=["name", "type"])
 	won = {s.name for s in statuses if (s.type or "").lower() == "won"} | {"Won"}
 	lost = {s.name for s in statuses if (s.type or "").lower() == "lost"} | {"Lost"}
 
-	deal_filters: dict = {}
-	companies = _scope_companies()
-	if companies is not None:
-		deal_filters["company"] = ["in", companies]
+	deal_filters: dict = {"company": company}
 
-	deals = frappe.get_all(
+	deals = frappe.get_list(
 		"CRM Deal",
 		filters=deal_filters,
 		fields=["status", "expected_monthly_volume", "deal_value", "needs_freezer", "modified"],
@@ -464,19 +559,17 @@ def crm_metrics() -> dict:
 
 
 @frappe.whitelist()
-def crm_analytics() -> dict:
+def crm_analytics(company="") -> dict:
 	"""Deeper acquisition KPIs from won deals × their sales: time-to-first-order,
 	reorder rate, avg orders, lifetime sales, new outlets this month, freezer ROI.
 	Built in ~4 batched queries."""
 	_require_crm()
+	company = _require_crm_company(company)
 	from frappe.utils import get_first_day, getdate, nowdate
 
-	deal_filters: dict = {"linked_customer": ["is", "set"]}
-	companies = _scope_companies()
-	if companies is not None:
-		deal_filters["company"] = ["in", companies]
+	deal_filters: dict = {"linked_customer": ["is", "set"], "company": company}
 
-	deals = frappe.get_all(
+	deals = frappe.get_list(
 		"CRM Deal",
 		filters=deal_filters,
 		fields=["linked_customer", "freezer_asset"],
@@ -498,11 +591,8 @@ def crm_analytics() -> dict:
 		return empty
 
 	inv: dict = {}
-	inv_where = "docstatus = 1 AND customer IN %(cs)s"
-	inv_vals: dict = {"cs": tuple(customers)}
-	if companies is not None:
-		inv_where += " AND company IN %(companies)s"
-		inv_vals["companies"] = tuple(companies)
+	inv_where = "docstatus = 1 AND company = %(company)s AND customer IN %(cs)s"
+	inv_vals: dict = {"company": company, "cs": tuple(customers)}
 	for c, cnt, first, total in frappe.db.sql(
 		f"""SELECT customer, COUNT(*), MIN(posting_date), SUM(base_grand_total)
            FROM `tabSales Invoice`
@@ -513,12 +603,12 @@ def crm_analytics() -> dict:
 
 	created = {
 		r.name: r.creation
-		for r in frappe.get_all("Customer", filters={"name": ["in", customers]}, fields=["name", "creation"])
+		for r in frappe.get_list("Customer", filters={"name": ["in", customers]}, fields=["name", "creation"])
 	}
 	asset_ids = [d.freezer_asset for d in deals if d.freezer_asset]
 	asset_cost = {}
 	if asset_ids and frappe.db.exists("DocType", "Asset"):
-		for r in frappe.get_all(
+		for r in frappe.get_list(
 			"Asset", filters={"name": ["in", asset_ids]}, fields=["name", "gross_purchase_amount"]
 		):
 			asset_cost[r.name] = flt(r.gross_purchase_amount)
@@ -567,11 +657,12 @@ def crm_analytics() -> dict:
 
 
 @frappe.whitelist()
-def crm_report(from_date: str, to_date: str) -> dict:
+def crm_report(from_date: str, to_date: str, company="") -> dict:
 	"""Cohort acquisition report: outlets won (customer created) in [from,to],
 	broken down by rep (deal owner) and region, each with new outlets, monthly
 	run-rate, cohort sales, reorder rate, avg time-to-first-order, freezer ROI."""
 	_require_crm()
+	company = _require_crm_company(company)
 	from collections import defaultdict
 
 	from frappe.utils import getdate
@@ -587,12 +678,9 @@ def crm_report(from_date: str, to_date: str) -> dict:
 		"new_outlets": 0,
 	}
 
-	deal_filters: dict = {"linked_customer": ["is", "set"]}
-	companies = _scope_companies()
-	if companies is not None:
-		deal_filters["company"] = ["in", companies]
+	deal_filters: dict = {"linked_customer": ["is", "set"], "company": company}
 
-	deals = frappe.get_all(
+	deals = frappe.get_list(
 		"CRM Deal",
 		filters=deal_filters,
 		fields=[
@@ -610,7 +698,7 @@ def crm_report(from_date: str, to_date: str) -> dict:
 
 	created = {
 		r.name: r.creation
-		for r in frappe.get_all("Customer", filters={"name": ["in", cust_all]}, fields=["name", "creation"])
+		for r in frappe.get_list("Customer", filters={"name": ["in", cust_all]}, fields=["name", "creation"])
 	}
 	cohort = {c for c in cust_all if created.get(c) and fd <= getdate(created[c]) <= td}
 	cohort_deals = [d for d in deals if d.linked_customer in cohort]
@@ -618,11 +706,8 @@ def crm_report(from_date: str, to_date: str) -> dict:
 		return {"summary": empty, "by_rep": [], "by_region": []}
 
 	inv: dict = {}
-	inv_where = "docstatus = 1 AND customer IN %(cs)s"
-	inv_vals: dict = {"cs": tuple(cohort)}
-	if companies is not None:
-		inv_where += " AND company IN %(companies)s"
-		inv_vals["companies"] = tuple(companies)
+	inv_where = "docstatus = 1 AND company = %(company)s AND customer IN %(cs)s"
+	inv_vals: dict = {"company": company, "cs": tuple(cohort)}
 	for c, cnt, first, total in frappe.db.sql(
 		f"""SELECT customer, COUNT(*), MIN(posting_date), SUM(base_grand_total)
            FROM `tabSales Invoice`
@@ -634,7 +719,7 @@ def crm_report(from_date: str, to_date: str) -> dict:
 	asset_ids = [d.freezer_asset for d in cohort_deals if d.freezer_asset]
 	asset_cost = {}
 	if asset_ids and frappe.db.exists("DocType", "Asset"):
-		for r in frappe.get_all(
+		for r in frappe.get_list(
 			"Asset", filters={"name": ["in", asset_ids]}, fields=["name", "gross_purchase_amount"]
 		):
 			asset_cost[r.name] = flt(r.gross_purchase_amount)
