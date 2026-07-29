@@ -72,6 +72,7 @@ class _FakeDB:
 		self.enforce_crm_next_action = False
 		self.status_on_lock: str | None = None
 		self.rename_calls: list[tuple[str, str, str]] = []
+		self.require_locked_deal_reads = False
 
 	def exists(self, doctype, name):
 		if doctype == "Company":
@@ -127,7 +128,7 @@ def _load_crm(db: _FakeDB):
 	frappe.has_permission = lambda *_args, **_kwargs: True
 	frappe.throw = lambda message, exception=Exception: (_ for _ in ()).throw(exception(message))
 	frappe.parse_json = lambda value: value
-	frappe.get_doc = lambda doctype, name: db.docs[(doctype, name)]
+	frappe.get_doc = lambda doctype, name, **kwargs: _get_doc(db, doctype, name, **kwargs)
 	frappe.new_doc = lambda doctype: _new_doc(db, doctype)
 	frappe.get_all = lambda *_args, **_kwargs: []
 	frappe.get_list = lambda doctype, **kwargs: _get_list(db, doctype, **kwargs)
@@ -194,6 +195,17 @@ def _new_doc(db: _FakeDB, doctype: str):
 	db.created.append(doc)
 	if doctype == "CRM Deal":
 		db.docs[(doctype, doc.name)] = doc
+	return doc
+
+
+def _get_doc(db: _FakeDB, doctype: str, name: str, *, for_update=False):
+	if doctype == "CRM Deal" and db.require_locked_deal_reads and not for_update:
+		raise AssertionError("CRM Deal transition read was not locked")
+	doc = db.docs[(doctype, name)]
+	if doctype == "CRM Deal" and for_update:
+		if db.status_on_lock:
+			doc["status"] = db.status_on_lock
+		doc["_locked"] = True
 	return doc
 
 
@@ -443,7 +455,7 @@ class TestCrmCompanyScope(unittest.TestCase):
 		_Doc.save = lambda doc, **_kwargs: self.crm.validate_crm_deal_hygiene(doc)
 		try:
 			result = self.crm.save_deal(
-				{"organization": "Already Won", "status": "Won"},
+				{"organization": "Already Won", "status": "Won", "loss_reason": "Must be ignored"},
 				"Mikas",
 			)
 		finally:
@@ -452,6 +464,7 @@ class TestCrmCompanyScope(unittest.TestCase):
 
 		self.assertEqual(result["status"], "Won")
 		self.assertEqual([(event["from_stage"], event["to_stage"]) for event in events], [("", "Won")])
+		self.assertEqual(events[0]["loss_reason"], "")
 
 	def test_kanban_won_transition_preserves_customer_handoff(self):
 		"""Routing status through transition history must retain the existing Won side effect."""
@@ -474,6 +487,27 @@ class TestCrmCompanyScope(unittest.TestCase):
 
 		self.assertEqual(events[0]["from_stage"], "Qualified")
 
+	def test_compatibility_transition_uses_one_locked_document_and_keeps_updates(self):
+		"""A concurrent same-stage move must save accompanying edits on the locked row."""
+		self.db.require_locked_deal_reads = True
+		self.db.status_on_lock = "Qualified"
+		self.crm.frappe.has_permission = lambda _doctype, _ptype, doc=None, **_kwargs: isinstance(
+			doc, _Doc
+		) and bool(doc.get("_locked"))
+
+		result = self.crm.save_deal(
+			{
+				"name": "DEAL-MIKAS",
+				"status": "Qualified",
+				"organization": "Current Locked Shop",
+			},
+			"Mikas",
+		)
+
+		self.assertEqual(result["status"], "Qualified")
+		self.assertEqual(result["organization"], "Current Locked Shop")
+		self.assertTrue(self.db.docs[("CRM Deal", "DEAL-MIKAS")].saved)
+
 	def test_terminal_fields_describe_only_the_current_outcome(self):
 		"""Lost→Won→Open must not retain stale loss or terminal timestamps."""
 		deal = self.db.docs[("CRM Deal", "DEAL-MIKAS")]
@@ -491,6 +525,12 @@ class TestCrmCompanyScope(unittest.TestCase):
 		self.assertIsNone(deal["won_at"])
 		self.assertIsNone(deal["lost_at"])
 		self.assertIsNone(deal["loss_reason"])
+		lost_event = next(
+			event
+			for event in self.db.created
+			if event.get("doctype") == "CRM Stage Event" and event.get("to_stage") == "Lost"
+		)
+		self.assertEqual(lost_event["loss_reason"], "Price")
 
 	def test_generic_deal_save_cannot_mutate_loss_reason(self):
 		"""Loss explanations belong to Lost transitions and their history."""

@@ -3,7 +3,7 @@
  "autoname": "format:STAGE-EVT-{YYYY}-{######}",
  "doctype": "DocType",
  "engine": "InnoDB",
- "field_order": ["company", "reference_doctype", "reference_name", "deal", "from_stage", "to_stage", "changed_at", "changed_by", "reason"],
+ "field_order": ["company", "reference_doctype", "reference_name", "deal", "from_stage", "to_stage", "changed_at", "changed_by", "reason", "loss_reason"],
  "fields": [
   {"fieldname": "company", "fieldtype": "Link", "label": "Company", "options": "Company", "reqd": 1, "in_standard_filter": 1},
   {"default": "CRM Deal", "fieldname": "reference_doctype", "fieldtype": "Link", "label": "Reference Document Type", "options": "DocType", "reqd": 1},
@@ -13,7 +13,8 @@
   {"fieldname": "to_stage", "fieldtype": "Link", "label": "To Stage", "options": "CRM Deal Status", "reqd": 1},
   {"fieldname": "changed_at", "fieldtype": "Datetime", "label": "Changed At", "reqd": 1, "read_only": 1},
   {"fieldname": "changed_by", "fieldtype": "Link", "label": "Changed By", "options": "User", "reqd": 1, "read_only": 1},
-  {"fieldname": "reason", "fieldtype": "Small Text", "label": "Reason"}
+  {"fieldname": "reason", "fieldtype": "Small Text", "label": "Reason"},
+  {"fieldname": "loss_reason", "fieldtype": "Small Text", "label": "Loss Reason", "read_only": 1}
  ],
  "module": "Stabler",
  "name": "CRM Stage Event",

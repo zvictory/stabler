@@ -38,6 +38,8 @@ class TestCrmDailyWorkSchema(unittest.TestCase):
 			self.assertTrue(fields["company"]["reqd"])
 			self.assertIn("reference_doctype", fields)
 			self.assertIn("reference_name", fields)
+			if doctype == "crm_stage_event":
+				self.assertIn("loss_reason", fields)
 
 	def test_framework_permissions_scope_both_audit_doctypes_by_company(self):
 		with open(os.path.join(_ROOT, "hooks.py"), encoding="utf-8") as source:

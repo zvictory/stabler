@@ -329,6 +329,15 @@ def save_deal(data: str | dict, company=""):
 	payload = frappe.parse_json(data)
 	requested_status = str(payload.get("status") or "").strip()
 	is_existing = bool(payload.get("name"))
+	updates = _mutable_payload(payload, _DEAL_MUTABLE_FIELDS)
+	if is_existing and requested_status:
+		return _transition_deal(
+			payload["name"],
+			requested_status,
+			company,
+			loss_reason=payload.get("loss_reason") or "",
+			updates=updates,
+		)
 	if is_existing:
 		_assert_crm_record_company("CRM Deal", payload["name"], company, "write")
 		doc = frappe.get_doc("CRM Deal", payload["name"])
@@ -336,33 +345,33 @@ def save_deal(data: str | dict, company=""):
 		if not frappe.has_permission("CRM Deal", "create"):
 			frappe.throw(_("Not permitted"), frappe.PermissionError)
 		doc = frappe.new_doc("CRM Deal")
-	updates = _mutable_payload(payload, _DEAL_MUTABLE_FIELDS)
-	if is_existing and requested_status and requested_status != doc.get("status"):
-		return _transition_deal(
-			doc.name,
-			requested_status,
-			company,
-			loss_reason=payload.get("loss_reason") or "",
-			updates=updates,
-		)
 	doc.update(updates)
 	doc.company = company
 	initial_transition_at = None
+	initial_status_type = ""
 	if not is_existing and requested_status:
 		if not frappe.db.exists("CRM Deal Status", requested_status):
 			frappe.throw(_("Please select a valid deal status."))
 		initial_transition_at = now_datetime()
+		initial_status_type = _deal_status_type(requested_status)
 		_set_deal_outcome_fields(
 			doc,
 			requested_status,
-			_deal_status_type(requested_status),
+			initial_status_type,
 			initial_transition_at,
 			payload.get("loss_reason") or "",
 		)
 	_assert_open_deal_hygiene(doc, requested_status or doc.get("status"))
 	doc.save()
 	if initial_transition_at:
-		_insert_stage_event(doc.name, company, "", requested_status, initial_transition_at)
+		_insert_stage_event(
+			doc.name,
+			company,
+			"",
+			requested_status,
+			initial_transition_at,
+			loss_reason=(payload.get("loss_reason") or "") if initial_status_type == "lost" else "",
+		)
 	if requested_status and requested_status != doc.get("status"):
 		return _transition_deal(
 			doc.name,
@@ -418,6 +427,7 @@ def _insert_stage_event(
 	to_stage: str,
 	changed_at,
 	reason="",
+	loss_reason="",
 ) -> None:
 	event = frappe.new_doc("CRM Stage Event")
 	event.update(
@@ -431,6 +441,7 @@ def _insert_stage_event(
 			"changed_at": changed_at,
 			"changed_by": frappe.session.user,
 			"reason": reason,
+			"loss_reason": loss_reason,
 		}
 	)
 	event.insert(ignore_permissions=True)
@@ -584,24 +595,23 @@ def _transition_deal(
 	next_action_owner="",
 	updates=None,
 ):
-	_assert_crm_record_company("CRM Deal", name, company, "write")
-	locked = frappe.db.sql(
-		"SELECT status FROM `tabCRM Deal` WHERE name = %s FOR UPDATE",
-		(name,),
-		as_dict=True,
-	)
-	if not locked:
-		frappe.throw(_("Deal not found."))
-	deal = frappe.get_doc("CRM Deal", name)
+	deal = frappe.get_doc("CRM Deal", name, for_update=True)
+	if not frappe.has_permission("CRM Deal", "write", doc=deal):
+		frappe.throw(_("Not permitted"), frappe.PermissionError)
+	if deal.get("company") != company:
+		frappe.throw(_("Not permitted for company {0}").format(company), frappe.PermissionError)
 	if updates:
 		deal.update(updates)
-	old_status = locked[0].get("status") or ""
+	old_status = deal.get("status") or ""
 	status = str(status or "").strip()
 	if not status:
 		frappe.throw(_("Deal status is required."))
 	if not frappe.db.exists("CRM Deal Status", status):
 		frappe.throw(_("Please select a valid deal status."))
 	if status == old_status:
+		_assert_open_deal_hygiene(deal, status)
+		if updates:
+			deal.save()
 		return deal.as_dict()
 
 	status_type = _deal_status_type(status)
@@ -616,7 +626,15 @@ def _transition_deal(
 	_assert_open_deal_hygiene(deal, status)
 	deal.save()
 
-	_insert_stage_event(name, company, old_status, status, changed_at, reason)
+	_insert_stage_event(
+		name,
+		company,
+		old_status,
+		status,
+		changed_at,
+		reason,
+		loss_reason if status_type == "lost" else "",
+	)
 	_maybe_convert_won_deal(deal, company)
 	return deal.as_dict()
 
