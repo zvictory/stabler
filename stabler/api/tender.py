@@ -1945,7 +1945,13 @@ def _tender_director_payload(company: str, *, include_rows: bool) -> dict:
 	}
 	payload = {"currency": base_ccy, "kpi": kpi}
 	if include_rows:
-		rows.sort(key=lambda r: (_RISK_ORDER.get(r["risk"], 3), r["delivery"] or "9999-99-99"))
+		rows.sort(
+			key=lambda r: (
+				_RISK_ORDER.get(r["risk"], 3),
+				r["delivery"] or "9999-99-99",
+				r["deal"],
+			)
+		)
 		payload["rows"] = rows
 	return payload
 
