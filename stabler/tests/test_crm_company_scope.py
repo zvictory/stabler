@@ -44,6 +44,9 @@ class _Doc(dict):
 	def db_set(self, field, value):
 		self[field] = value
 
+	def reload(self):
+		return self
+
 
 class _FakeDB:
 	def __init__(self):
@@ -66,6 +69,9 @@ class _FakeDB:
 		self.deleted: list[tuple[str, str]] = []
 		self.created: list[_Doc] = []
 		self.get_list_calls: list[tuple[str, dict]] = []
+		self.enforce_crm_next_action = False
+		self.status_on_lock: str | None = None
+		self.rename_calls: list[tuple[str, str, str]] = []
 
 	def exists(self, doctype, name):
 		if doctype == "Company":
@@ -77,10 +83,22 @@ class _FakeDB:
 		return (doctype, name) in self.docs
 
 	def get_value(self, doctype, name, field):
+		if doctype == "CRM Deal Status" and field == "type":
+			return {"Won": "Won", "Lost": "Lost"}.get(name, "Open")
 		doc = self.docs.get((doctype, name))
 		return doc.get(field) if doc else None
 
+	def get_single_value(self, doctype, field):
+		if doctype == "Stabler Settings" and field == "enforce_crm_next_action":
+			return self.enforce_crm_next_action
+		return None
+
 	def sql(self, query, values=None, as_dict=False):
+		if "tabCRM Deal" in query and "FOR UPDATE" in query:
+			deal = self.docs[("CRM Deal", values[0])]
+			if self.status_on_lock:
+				deal["status"] = self.status_on_lock
+			return [{"status": deal.get("status")}] if as_dict else [(deal.get("status"),)]
 		if "tabSales Invoice" in query:
 			if "SUM(outstanding_amount)" in query:
 				return [("CUST-MIKAS", 100)]
@@ -114,6 +132,7 @@ def _load_crm(db: _FakeDB):
 	frappe.get_all = lambda *_args, **_kwargs: []
 	frappe.get_list = lambda doctype, **kwargs: _get_list(db, doctype, **kwargs)
 	frappe.delete_doc = lambda doctype, name: db.deleted.append((doctype, name))
+	frappe.rename_doc = lambda doctype, old, new, **_kwargs: _rename_doc(db, doctype, old, new)
 	frappe.clear_last_message = lambda: None
 
 	utils = types.ModuleType("frappe.utils")
@@ -171,9 +190,20 @@ def _require_company(db: _FakeDB, company: str):
 
 
 def _new_doc(db: _FakeDB, doctype: str):
-	doc = _Doc(doctype=doctype)
+	doc = _Doc(doctype=doctype, name="DEAL-NEW" if doctype == "CRM Deal" else None)
 	db.created.append(doc)
+	if doctype == "CRM Deal":
+		db.docs[(doctype, doc.name)] = doc
 	return doc
+
+
+def _rename_doc(db: _FakeDB, doctype: str, old: str, new: str):
+	db.rename_calls.append((doctype, old, new))
+	for doc in db.docs.values():
+		for field in ("status", "from_stage", "to_stage"):
+			if doc.get(field) == old:
+				doc[field] = new
+	return new
 
 
 class TestCrmCompanyScope(unittest.TestCase):
@@ -315,20 +345,16 @@ class TestCrmCompanyScope(unittest.TestCase):
 		self.assertEqual(events[0]["to_stage"], "Qualified")
 		self.assertEqual(events[0]["company"], "Mikas")
 
-	def test_transition_enforcement_requires_owner_and_dated_next_action(self):
-		"""Enabling migration enforcement must reject incomplete open-deal hygiene."""
+	def test_server_setting_enforces_open_deal_hygiene_on_transition(self):
+		"""A caller must not be able to opt out after the server enables enforcement."""
+		self.db.enforce_crm_next_action = True
 		deal = self.db.docs[("CRM Deal", "DEAL-MIKAS")]
 		deal["deal_owner"] = ""
 
 		with self.assertRaisesRegex(Exception, "owner"):
-			self.crm.transition_deal(
-				"DEAL-MIKAS",
-				"Qualified",
-				"Mikas",
-				enforce_next_action=1,
-			)
+			self.crm.transition_deal("DEAL-MIKAS", "Qualified", "Mikas")
 
-	def test_transition_enforcement_defaults_off_for_existing_deals(self):
+	def test_server_enforcement_defaults_off_for_existing_deals(self):
 		"""Migration-safe defaults must not instantly break incomplete legacy deals."""
 		deal = self.db.docs[("CRM Deal", "DEAL-MIKAS")]
 		deal["deal_owner"] = ""
@@ -337,6 +363,159 @@ class TestCrmCompanyScope(unittest.TestCase):
 		result = self.crm.transition_deal("DEAL-MIKAS", "Qualified", "Mikas")
 
 		self.assertEqual(result["status"], "Qualified")
+
+	def test_serialized_zero_setting_remains_disabled(self):
+		"""A database value of '0' must not accidentally end the migration grace."""
+		self.db.enforce_crm_next_action = "0"
+		deal = self.db.docs[("CRM Deal", "DEAL-MIKAS")]
+		deal["deal_owner"] = ""
+		deal["next_action_at"] = None
+
+		result = self.crm.transition_deal("DEAL-MIKAS", "Qualified", "Mikas")
+
+		self.assertEqual(result["status"], "Qualified")
+
+	def test_client_cannot_disable_server_hygiene_enforcement(self):
+		"""Restoring a caller flag would make the invariant optional again."""
+		self.db.enforce_crm_next_action = True
+		deal = self.db.docs[("CRM Deal", "DEAL-MIKAS")]
+		deal["deal_owner"] = ""
+
+		with self.assertRaises(TypeError):
+			self.crm.transition_deal("DEAL-MIKAS", "Qualified", "Mikas", enforce_next_action=0)
+
+	def test_server_setting_enforces_hygiene_on_generic_open_deal_update(self):
+		"""Generic edits must not clear owner or next action after grace ends."""
+		self.db.enforce_crm_next_action = True
+		deal = self.db.docs[("CRM Deal", "DEAL-MIKAS")]
+		deal["next_action_at"] = "2026-07-30 09:00:00"
+
+		with self.assertRaisesRegex(Exception, "owner"):
+			self.crm.save_deal({"name": "DEAL-MIKAS", "deal_owner": ""}, "Mikas")
+
+	def test_server_setting_enforces_hygiene_on_new_open_deals(self):
+		"""New open deals cannot bypass the enabled invariant."""
+		self.db.enforce_crm_next_action = True
+
+		with self.assertRaisesRegex(Exception, "owner"):
+			self.crm.save_deal({"organization": "New Shop"}, "Mikas")
+
+	def test_document_hook_enforces_hygiene_outside_whitelisted_api(self):
+		"""Direct Frappe writes must not bypass the server-owned invariant."""
+		self.db.enforce_crm_next_action = True
+		deal = self.db.docs[("CRM Deal", "DEAL-MIKAS")]
+		deal["deal_owner"] = ""
+
+		with self.assertRaisesRegex(Exception, "owner"):
+			self.crm.validate_crm_deal_hygiene(deal)
+
+	def test_save_deal_routes_kanban_status_through_transition_history(self):
+		"""Kanban's existing save_deal payload must not silently discard status."""
+		result = self.crm.save_deal({"name": "DEAL-MIKAS", "status": "Qualified"}, "Mikas")
+		events = [doc for doc in self.db.created if doc.get("doctype") == "CRM Stage Event"]
+
+		self.assertEqual(result["status"], "Qualified")
+		self.assertEqual([(event["from_stage"], event["to_stage"]) for event in events], [("Open", "Qualified")])
+
+	def test_terminal_kanban_move_is_not_blocked_by_old_open_stage_hygiene(self):
+		"""The compatibility path must validate the target outcome, not pre-transition state."""
+		self.db.enforce_crm_next_action = True
+		deal = self.db.docs[("CRM Deal", "DEAL-MIKAS")]
+		deal["deal_owner"] = ""
+		deal["next_action_at"] = None
+		original_save = _Doc.save
+		_Doc.save = lambda doc, **_kwargs: self.crm.validate_crm_deal_hygiene(doc)
+		try:
+			result = self.crm.save_deal(
+				{"name": "DEAL-MIKAS", "status": "Won", "organization": "Won Shop"},
+				"Mikas",
+			)
+		finally:
+			_Doc.save = original_save
+
+		self.assertEqual(result["status"], "Won")
+		self.assertEqual(result["organization"], "Won Shop")
+
+	def test_new_terminal_deal_uses_target_outcome_and_records_initial_history(self):
+		"""Creating a terminal deal must not be validated as an incomplete open deal."""
+		self.db.enforce_crm_next_action = True
+		original_save = _Doc.save
+		_Doc.save = lambda doc, **_kwargs: self.crm.validate_crm_deal_hygiene(doc)
+		try:
+			result = self.crm.save_deal(
+				{"organization": "Already Won", "status": "Won"},
+				"Mikas",
+			)
+		finally:
+			_Doc.save = original_save
+		events = [doc for doc in self.db.created if doc.get("doctype") == "CRM Stage Event"]
+
+		self.assertEqual(result["status"], "Won")
+		self.assertEqual([(event["from_stage"], event["to_stage"]) for event in events], [("", "Won")])
+
+	def test_kanban_won_transition_preserves_customer_handoff(self):
+		"""Routing status through transition history must retain the existing Won side effect."""
+		deal = self.db.docs[("CRM Deal", "DEAL-MIKAS")]
+		deal["linked_customer"] = None
+		self.crm.convert_deal_to_customer = lambda _name, _company: deal.update(
+			{"linked_customer": "CUST-NEW"}
+		)
+
+		result = self.crm.save_deal({"name": "DEAL-MIKAS", "status": "Won"}, "Mikas")
+
+		self.assertEqual(result["linked_customer"], "CUST-NEW")
+
+	def test_transition_uses_status_observed_after_row_lock(self):
+		"""A concurrent stage change must become the next event's from-stage."""
+		self.db.status_on_lock = "Qualified"
+
+		self.crm.transition_deal("DEAL-MIKAS", "Won", "Mikas")
+		events = [doc for doc in self.db.created if doc.get("doctype") == "CRM Stage Event"]
+
+		self.assertEqual(events[0]["from_stage"], "Qualified")
+
+	def test_terminal_fields_describe_only_the_current_outcome(self):
+		"""Lost→Won→Open must not retain stale loss or terminal timestamps."""
+		deal = self.db.docs[("CRM Deal", "DEAL-MIKAS")]
+		self.crm.transition_deal("DEAL-MIKAS", "Lost", "Mikas", loss_reason="Price")
+		self.assertIsNotNone(deal["lost_at"])
+		self.assertEqual(deal["loss_reason"], "Price")
+		self.assertIsNone(deal.get("won_at"))
+
+		self.crm.transition_deal("DEAL-MIKAS", "Won", "Mikas")
+		self.assertIsNotNone(deal["won_at"])
+		self.assertIsNone(deal["lost_at"])
+		self.assertIsNone(deal["loss_reason"])
+
+		self.crm.transition_deal("DEAL-MIKAS", "Open", "Mikas")
+		self.assertIsNone(deal["won_at"])
+		self.assertIsNone(deal["lost_at"])
+		self.assertIsNone(deal["loss_reason"])
+
+	def test_generic_deal_save_cannot_mutate_loss_reason(self):
+		"""Loss explanations belong to Lost transitions and their history."""
+		deal = self.db.docs[("CRM Deal", "DEAL-MIKAS")]
+		deal["loss_reason"] = "Original"
+
+		result = self.crm.save_deal({"name": "DEAL-MIKAS", "loss_reason": "Rewritten"}, "Mikas")
+
+		self.assertEqual(result["loss_reason"], "Original")
+
+	def test_status_rename_repoints_deals_and_immutable_history(self):
+		"""Renaming a pipeline stage must not leave dangling history links."""
+		self.crm.frappe.get_roles = lambda _user=None: ["Sales Manager"]
+		event = _Doc(
+			name="EVENT-1",
+			company="Mikas",
+			from_stage="Open",
+			to_stage="Qualified",
+		)
+		self.db.docs[("CRM Stage Event", "EVENT-1")] = event
+
+		self.crm.rename_deal_status("Open", "New",)
+
+		self.assertEqual(self.db.docs[("CRM Deal", "DEAL-MIKAS")]["status"], "New")
+		self.assertEqual(event["from_stage"], "New")
 
 	def test_transition_rejects_an_unknown_stage(self):
 		"""Accepting arbitrary labels would detach deals from the configured pipeline."""

@@ -45,6 +45,21 @@ class TestCrmDailyWorkSchema(unittest.TestCase):
 		for doctype in ("CRM Activity", "CRM Stage Event"):
 			self.assertGreaterEqual(hooks.count(f'"{doctype}"'), 2)
 
+	def test_crm_hygiene_enforcement_setting_is_server_owned_and_defaults_off(self):
+		path = os.path.join(_ROOT, "stabler", "doctype", "stabler_settings", "stabler_settings.json")
+		with open(path, encoding="utf-8") as source:
+			meta = json.load(source)
+		fields = {field["fieldname"]: field for field in meta["fields"]}
+
+		self.assertEqual(fields["enforce_crm_next_action"]["fieldtype"], "Check")
+		self.assertEqual(fields["enforce_crm_next_action"]["default"], "0")
+
+	def test_crm_deal_lifecycle_wires_server_hygiene_validation(self):
+		with open(os.path.join(_ROOT, "hooks.py"), encoding="utf-8") as source:
+			hooks = source.read()
+		self.assertIn('"CRM Deal": {', hooks)
+		self.assertIn('"stabler.api.crm.validate_crm_deal_hygiene"', hooks)
+
 
 if __name__ == "__main__":
 	unittest.main()

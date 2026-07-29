@@ -7,6 +7,8 @@
  "field_order": [
   "company_modules_section",
   "company_modules",
+  "crm_section",
+  "enforce_crm_next_action",
   "compliance_section",
   "onec_mode",
   "onec_last_pulled_at",
@@ -75,6 +77,18 @@
    "fieldtype": "Table",
    "label": "Company Modules",
    "options": "Stabler Company Modules"
+  },
+  {
+   "fieldname": "crm_section",
+   "fieldtype": "Section Break",
+   "label": "CRM"
+  },
+  {
+   "default": "0",
+   "description": "When enabled, every open deal must have an owner and a dated next action. Off by default to provide a migration grace period for existing deals.",
+   "fieldname": "enforce_crm_next_action",
+   "fieldtype": "Check",
+   "label": "Require CRM Owner and Next Action"
   },
   {
    "fieldname": "compliance_section",

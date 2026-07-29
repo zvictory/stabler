@@ -89,7 +89,6 @@ _DEAL_MUTABLE_FIELDS = frozenset(
 		"next_action_type",
 		"next_action_at",
 		"next_action_owner",
-		"loss_reason",
 		"forecast_category",
 	)
 )
@@ -328,24 +327,50 @@ def save_deal(data: str | dict, company=""):
 	_require_crm()
 	company = _require_crm_company(company)
 	payload = frappe.parse_json(data)
-	if payload.get("name"):
+	requested_status = str(payload.get("status") or "").strip()
+	is_existing = bool(payload.get("name"))
+	if is_existing:
 		_assert_crm_record_company("CRM Deal", payload["name"], company, "write")
 		doc = frappe.get_doc("CRM Deal", payload["name"])
 	else:
 		if not frappe.has_permission("CRM Deal", "create"):
 			frappe.throw(_("Not permitted"), frappe.PermissionError)
 		doc = frappe.new_doc("CRM Deal")
-	doc.update(_mutable_payload(payload, _DEAL_MUTABLE_FIELDS))
+	updates = _mutable_payload(payload, _DEAL_MUTABLE_FIELDS)
+	if is_existing and requested_status and requested_status != doc.get("status"):
+		return _transition_deal(
+			doc.name,
+			requested_status,
+			company,
+			loss_reason=payload.get("loss_reason") or "",
+			updates=updates,
+		)
+	doc.update(updates)
 	doc.company = company
+	initial_transition_at = None
+	if not is_existing and requested_status:
+		if not frappe.db.exists("CRM Deal Status", requested_status):
+			frappe.throw(_("Please select a valid deal status."))
+		initial_transition_at = now_datetime()
+		_set_deal_outcome_fields(
+			doc,
+			requested_status,
+			_deal_status_type(requested_status),
+			initial_transition_at,
+			payload.get("loss_reason") or "",
+		)
+	_assert_open_deal_hygiene(doc, requested_status or doc.get("status"))
 	doc.save()
-	# Won-deal hand-off: create/link the Customer (and outlet/freezer) when the
-	# deal lands in a Won stage. Best-effort — never blocks the save.
-	try:
-		if _is_won_status(doc.get("status")) and not doc.get("linked_customer"):
-			convert_deal_to_customer(doc.name, company)
-			doc.reload()
-	except Exception:
-		frappe.clear_last_message()
+	if initial_transition_at:
+		_insert_stage_event(doc.name, company, "", requested_status, initial_transition_at)
+	if requested_status and requested_status != doc.get("status"):
+		return _transition_deal(
+			doc.name,
+			requested_status,
+			company,
+			loss_reason=payload.get("loss_reason") or "",
+		)
+	_maybe_convert_won_deal(doc, company)
 	return doc.as_dict()
 
 
@@ -364,13 +389,80 @@ _ACTIVITY_MUTABLE_FIELDS = frozenset(
 _ACTIVITY_REFERENCE_DOCTYPES = {"CRM Deal", "CRM Lead"}
 
 
-def _truthy(value) -> bool:
-	return str(value).strip().lower() in {"1", "true", "yes", "on"}
-
-
 def _deal_status_type(status: str) -> str:
 	status_type = frappe.db.get_value("CRM Deal Status", status, "type")
 	return str(status_type or status or "").strip().lower()
+
+
+def _set_deal_outcome_fields(deal, status: str, status_type: str, changed_at, loss_reason: str) -> None:
+	deal.status = status
+	deal.stage_entered_at = changed_at
+	if status_type == "won":
+		deal.won_at = changed_at
+		deal.lost_at = None
+		deal.loss_reason = None
+	elif status_type == "lost":
+		deal.won_at = None
+		deal.lost_at = changed_at
+		deal.loss_reason = loss_reason
+	else:
+		deal.won_at = None
+		deal.lost_at = None
+		deal.loss_reason = None
+
+
+def _insert_stage_event(
+	name: str,
+	company: str,
+	from_stage: str,
+	to_stage: str,
+	changed_at,
+	reason="",
+) -> None:
+	event = frappe.new_doc("CRM Stage Event")
+	event.update(
+		{
+			"company": company,
+			"reference_doctype": "CRM Deal",
+			"reference_name": name,
+			"deal": name,
+			"from_stage": from_stage,
+			"to_stage": to_stage,
+			"changed_at": changed_at,
+			"changed_by": frappe.session.user,
+			"reason": reason,
+		}
+	)
+	event.insert(ignore_permissions=True)
+
+
+def _crm_hygiene_enforced() -> bool:
+	value = frappe.db.get_single_value("Stabler Settings", "enforce_crm_next_action")
+	return str(value).strip().lower() in {"1", "true", "yes", "on"}
+
+
+def _assert_open_deal_hygiene(deal, status: str | None) -> None:
+	if not _crm_hygiene_enforced() or _deal_status_type(status or "") in {"won", "lost"}:
+		return
+	if not deal.get("deal_owner"):
+		frappe.throw(_("An owner is required for an open deal."))
+	if not deal.get("next_action_at"):
+		frappe.throw(_("A dated next action is required for an open deal."))
+
+
+def _maybe_convert_won_deal(deal, company: str) -> None:
+	"""Preserve the existing best-effort Won handoff on every transition path."""
+	try:
+		if _is_won_status(deal.get("status")) and not deal.get("linked_customer"):
+			convert_deal_to_customer(deal.name, company)
+			deal.reload()
+	except Exception:
+		frappe.clear_last_message()
+
+
+def validate_crm_deal_hygiene(doc, _method=None) -> None:
+	"""Framework hook so REST, imports, and other direct writes share the invariant."""
+	_assert_open_deal_hygiene(doc, doc.get("status"))
 
 
 @frappe.whitelist()
@@ -465,13 +557,45 @@ def transition_deal(
 	next_action_type="",
 	next_action_at=None,
 	next_action_owner="",
-	enforce_next_action=0,
 ):
 	_require_crm()
 	company = _require_crm_company(company)
+	return _transition_deal(
+		name,
+		status,
+		company,
+		reason=reason,
+		loss_reason=loss_reason,
+		next_action_type=next_action_type,
+		next_action_at=next_action_at,
+		next_action_owner=next_action_owner,
+	)
+
+
+def _transition_deal(
+	name: str,
+	status: str,
+	company: str,
+	*,
+	reason="",
+	loss_reason="",
+	next_action_type="",
+	next_action_at=None,
+	next_action_owner="",
+	updates=None,
+):
 	_assert_crm_record_company("CRM Deal", name, company, "write")
+	locked = frappe.db.sql(
+		"SELECT status FROM `tabCRM Deal` WHERE name = %s FOR UPDATE",
+		(name,),
+		as_dict=True,
+	)
+	if not locked:
+		frappe.throw(_("Deal not found."))
 	deal = frappe.get_doc("CRM Deal", name)
-	old_status = deal.get("status") or ""
+	if updates:
+		deal.update(updates)
+	old_status = locked[0].get("status") or ""
 	status = str(status or "").strip()
 	if not status:
 		frappe.throw(_("Deal status is required."))
@@ -481,45 +605,19 @@ def transition_deal(
 		return deal.as_dict()
 
 	status_type = _deal_status_type(status)
-	is_open = status_type not in {"won", "lost"}
-	if is_open and _truthy(enforce_next_action):
-		if not deal.get("deal_owner"):
-			frappe.throw(_("An owner is required for an open deal."))
-		effective_next_action_at = next_action_at or deal.get("next_action_at")
-		if not effective_next_action_at:
-			frappe.throw(_("A dated next action is required for an open deal."))
-
 	changed_at = now_datetime()
-	deal.status = status
-	deal.stage_entered_at = changed_at
 	if next_action_type:
 		deal.next_action_type = next_action_type
 	if next_action_at:
 		deal.next_action_at = next_action_at
 	if next_action_owner:
 		deal.next_action_owner = next_action_owner
-	if status_type == "won":
-		deal.won_at = changed_at
-	elif status_type == "lost":
-		deal.lost_at = changed_at
-		deal.loss_reason = loss_reason
+	_set_deal_outcome_fields(deal, status, status_type, changed_at, loss_reason)
+	_assert_open_deal_hygiene(deal, status)
 	deal.save()
 
-	event = frappe.new_doc("CRM Stage Event")
-	event.update(
-		{
-			"company": company,
-			"reference_doctype": "CRM Deal",
-			"reference_name": name,
-			"deal": name,
-			"from_stage": old_status,
-			"to_stage": status,
-			"changed_at": changed_at,
-			"changed_by": frappe.session.user,
-			"reason": reason,
-		}
-	)
-	event.insert(ignore_permissions=True)
+	_insert_stage_event(name, company, old_status, status, changed_at, reason)
+	_maybe_convert_won_deal(deal, company)
 	return deal.as_dict()
 
 
@@ -1052,8 +1150,7 @@ def save_deal_status(data):
 
 @frappe.whitelist()
 def rename_deal_status(old_name: str, new_name: str):
-	"""Rename a kanban column: create the new status, repoint every deal from the
-	old status to the new one, then delete the old. Avoids orphaning deals."""
+	"""Rename a kanban column and let Frappe rewrite every Link value."""
 	_assert_can_write("CRM Deal Status", old_name, "delete")
 	_require_crm_manager()
 	old_name = (old_name or "").strip()
@@ -1067,10 +1164,14 @@ def rename_deal_status(old_name: str, new_name: str):
 	if frappe.db.exists("CRM Deal Status", new_name):
 		frappe.throw(_("A status with that name already exists."))
 
-	old = frappe.get_doc("CRM Deal Status", old_name)
-	_insert_deal_status(new_name, old.get("color"), old.get("position"), old.get("type"))
-	frappe.db.sql("UPDATE `tabCRM Deal` SET status = %s WHERE status = %s", (new_name, old_name))
-	frappe.delete_doc("CRM Deal Status", old_name, ignore_permissions=True, force=True)
+	frappe.rename_doc(
+		"CRM Deal Status",
+		old_name,
+		new_name,
+		force=True,
+		show_alert=False,
+		rebuild_search=False,
+	)
 	return {"name": new_name}
 
 

@@ -89,6 +89,11 @@ scheduler_events = {
 }
 
 doc_events = {
+	"CRM Deal": {
+		"validate": [
+			"stabler.api.crm.validate_crm_deal_hygiene",
+		],
+	},
 	"Sales Invoice": {
 		"before_validate": [
 			# Guard first — fail fast before diag/validation runs.
