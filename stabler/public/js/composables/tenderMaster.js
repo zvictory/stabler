@@ -2,6 +2,19 @@ const CRM_STAGES = ["New", "Sourcing", "Bid Preparation", "Submitted", "Closed"]
 
 const CLOSED_STATUSES = new Set(["Won", "Lost", "Cancelled", "Closed"]);
 
+export function createLatestRequestGuard() {
+	let latestRequest = 0;
+	return {
+		start() {
+			latestRequest += 1;
+			return latestRequest;
+		},
+		isLatest(request) {
+			return request === latestRequest;
+		},
+	};
+}
+
 export function normalizeTenderMaster(record = {}) {
 	const status = record.status || "New";
 	return {

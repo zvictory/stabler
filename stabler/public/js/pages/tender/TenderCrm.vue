@@ -5,7 +5,7 @@ import { useRouter } from "vue-router";
 import { call } from "../../api/client.js";
 import { formatDate } from "../../composables/date.js";
 import { formatMoney } from "../../composables/money.js";
-import { groupTenderMasters, normalizeTenderMaster } from "../../composables/tenderMaster.js";
+import { createLatestRequestGuard, groupTenderMasters, normalizeTenderMaster } from "../../composables/tenderMaster.js";
 import { t } from "../../composables/i18n.js";
 import { useToast } from "../../composables/useToast.js";
 import { useSession } from "../../stores/session.js";
@@ -24,6 +24,8 @@ const depth = ref("tender");
 const records = ref([]);
 const selected = ref(null);
 const lots = ref([]);
+const listRequestGuard = createLatestRequestGuard();
+const detailRequestGuard = createLatestRequestGuard();
 
 const groups = computed(() => groupTenderMasters(records.value));
 const hasDocumentReadiness = computed(() => records.value.some((record) => record.documentReadiness !== undefined));
@@ -36,6 +38,7 @@ function isTenderMasterCompanyCurrent(requestCompany, currentCompany) {
 
 async function load() {
 	const requestCompany = activeCompany.value;
+	const request = listRequestGuard.start();
 	if (!requestCompany) {
 		records.value = [];
 		return;
@@ -43,19 +46,20 @@ async function load() {
 	loading.value = true;
 	try {
 		const response = await call("stabler.api.tender_master.list_tender_masters", { company: requestCompany });
-		if (!isTenderMasterCompanyCurrent(requestCompany, activeCompany.value)) return;
+		if (!listRequestGuard.isLatest(request) || !isTenderMasterCompanyCurrent(requestCompany, activeCompany.value)) return;
 		records.value = (response?.records || []).map(normalizeTenderMaster);
 	} catch (error) {
-		if (!isTenderMasterCompanyCurrent(requestCompany, activeCompany.value)) return;
+		if (!listRequestGuard.isLatest(request) || !isTenderMasterCompanyCurrent(requestCompany, activeCompany.value)) return;
 		records.value = [];
 		toast.error(error?.message || t("Could not load tenders."));
 	} finally {
-		if (isTenderMasterCompanyCurrent(requestCompany, activeCompany.value)) loading.value = false;
+		if (listRequestGuard.isLatest(request) && isTenderMasterCompanyCurrent(requestCompany, activeCompany.value)) loading.value = false;
 	}
 }
 
 async function openTender(record) {
 	const requestCompany = activeCompany.value;
+	const request = detailRequestGuard.start();
 	if (!requestCompany) return;
 	detailLoading.value = true;
 	selected.value = normalizeTenderMaster(record);
@@ -65,16 +69,16 @@ async function openTender(record) {
 			name: record.name,
 			company: requestCompany,
 		});
-		if (!isTenderMasterCompanyCurrent(requestCompany, activeCompany.value)) return;
+		if (!detailRequestGuard.isLatest(request) || !isTenderMasterCompanyCurrent(requestCompany, activeCompany.value)) return;
 		selected.value = normalizeTenderMaster(response?.tender || record);
 		lots.value = response?.lots || [];
 		depth.value = "lots";
 	} catch (error) {
-		if (!isTenderMasterCompanyCurrent(requestCompany, activeCompany.value)) return;
+		if (!detailRequestGuard.isLatest(request) || !isTenderMasterCompanyCurrent(requestCompany, activeCompany.value)) return;
 		selected.value = null;
 		toast.error(error?.message || t("Could not load tender lots."));
 	} finally {
-		if (isTenderMasterCompanyCurrent(requestCompany, activeCompany.value)) detailLoading.value = false;
+		if (detailRequestGuard.isLatest(request) && isTenderMasterCompanyCurrent(requestCompany, activeCompany.value)) detailLoading.value = false;
 	}
 }
 
