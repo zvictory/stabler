@@ -15,3 +15,14 @@ class TestTenderMasterSpaContract(unittest.TestCase):
 		self.assertIn("/tender/po-control", source)
 		self.assertNotIn("/app/", source)
 		self.assertNotIn("table-striped", source)
+
+	def test_tender_crm_guards_stale_company_responses_and_keeps_optional_columns_absent(self):
+		source = TENDER_CRM.read_text()
+		self.assertGreaterEqual(source.count("isTenderMasterCompanyCurrent(requestCompany, activeCompany.value)"), 2)
+		self.assertIn('v-if="hasDocumentReadiness"', source)
+		self.assertNotIn('<span v-else>—</span>', source)
+
+	def test_tender_crm_uses_table_body_skeletons_and_shows_terminal_statuses_on_kanban_cards(self):
+		source = TENDER_CRM.read_text()
+		self.assertNotIn('<tbody>\n\t\t\t\t\t\t<SkeletonRows', source)
+		self.assertIn('<div class="small text-secondary mt-1">{{ record.status }}</div>', source)
