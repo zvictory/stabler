@@ -4897,4 +4897,12 @@ Agreed now,Hozirgi kelishuv
 Accounting must cancel and re-book the invoice to correct the ledger.,"Hisobni tuzatish uchun buxgalteriya hisob-fakturani bekor qilib, qayta kitobga olishi kerak."
 Open the booked invoice,Kitobga olingan hisob-fakturani ochish
 Invoices changed after booking,Kitobga olingandan keyin o‘zgargan hisob-fakturalar
+Cancel and re-book,"Bekor qilib, qayta kitobga olish"
+Re-book the invoice?,Hisob-faktura qayta kitobga olinsinmi?
+Cancel {invoice} ({old}) and re-book at {new}.,"{invoice} ({old}) bekor qilinib, {new} bilan qayta kitobga olinadi."
+{count} payment(s) totalling {amount} will be re-allocated.,"{count} ta to‘lov, jami {amount}, qayta taqsimlanadi."
+No payments are allocated to it.,Unga hech qanday to‘lov biriktirilmagan.
+The booked invoice already matches this document.,Kitobga olingan hisob-faktura bu hujjatga allaqachon mos.
+Re-booked as {invoice}.,{invoice} sifatida qayta kitobga olindi.
+Could not re-book the invoice.,Hisob-fakturani qayta kitobga olib bo‘lmadi.
 

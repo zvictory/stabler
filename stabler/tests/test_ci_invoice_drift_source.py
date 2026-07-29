@@ -98,6 +98,78 @@ class DriftEndpointTest(unittest.TestCase):
         self.assertIn("_ci_invoice_drift(company)", flow)
 
 
+class RebookTest(unittest.TestCase):
+    """Cancelling a GL voucher and re-booking it is the most destructive thing
+    the imports module can do. Every guard around it is pinned here."""
+
+    def setUp(self):
+        self.src = read(API)
+        self.body = body(self.src, "rebook_ci_invoice")
+
+    def test_whitelisted_and_gated(self):
+        self.assertRegex(self.src, r"@frappe\.whitelist\(\)\ndef rebook_ci_invoice\(")
+        self.assertIn("_assert_imports_access(company)", self.body)
+        self.assertIn("_assert_cost_visible()", self.body)
+        self.assertIn('_assert_can_write("Purchase Invoice", old_name, "cancel")', self.body)
+
+    def test_defaults_to_dry_run(self):
+        self.assertRegex(self.src, r"def rebook_ci_invoice\([^)]*dry_run: int = 1")
+
+    def test_dry_run_returns_before_any_write(self):
+        plan_return = self.body.index("if cint(dry_run):")
+        first_write = min(
+            (self.body.index(tok) for tok in ("old.cancel()", "doc.insert(", "doc.submit()") if tok in self.body),
+            default=len(self.body),
+        )
+        self.assertLess(plan_return, first_write, "dry_run must short-circuit before any mutation")
+
+    def test_refuses_instead_of_guessing(self):
+        # Each blocker is a named reason, not a silent best-effort.
+        self.assertIn("blockers", self.body)
+        self.assertIn("does not match agreed_total", self.body)
+        self.assertIn("has no date", self.body)
+        self.assertIn("unlink_payment_on_cancellation_of_invoice", self.body)
+        self.assertIn("if blockers:", self.body)
+
+    def test_the_replacement_is_anchored_on_agreed_and_rolled_back_otherwise(self):
+        self.assertIn("_ci_to_pinv.reconciles(flt(doc.grand_total), agreed)", self.body)
+        self.assertIn("frappe.db.rollback()", self.body)
+
+    def test_replacement_keeps_the_audit_trail_and_the_real_date(self):
+        self.assertIn("doc.amended_from = old_name", self.body)
+        self.assertIn("doc.posting_date = getdate(ci.ci_date)", self.body)
+
+    def test_loosened_payments_are_carried_over(self):
+        # Cancelling frees the payments that were allocated; they must land on
+        # the replacement or the supplier balance jumps.
+        self.assertIn("_allocated_payments(old_name)", self.body)
+        self.assertIn("payments_to_reallocate", self.body)
+        self.assertIn("_restrict_advances_to_import(doc, wanted)", self.body)
+
+    def test_never_leaves_the_ledger_without_the_payable_it_had(self):
+        self.assertIn('if plan["old_submitted"]:', self.body)
+        self.assertIn("doc.submit()", self.body)
+
+    def test_serialises_against_a_concurrent_convert(self):
+        self.assertIn("for_update=True", self.body)
+
+    def test_in_sync_is_a_no_op(self):
+        self.assertIn('"reason": "in_sync"', self.body)
+
+    def test_ui_asks_before_it_acts(self):
+        vue = read(FORM)
+        # Scope to the re-book handler: the form has other confirms (status
+        # changes), and a global index() would compare unrelated call sites.
+        start = vue.index("async function rebookInvoice(")
+        fn = vue[start: vue.index("\nonMounted(", start)]
+        self.assertIn("dry_run: 1", fn)
+        self.assertIn("dry_run: 0", fn)
+        # The plan must be fetched and confirmed BEFORE the acting call.
+        self.assertLess(fn.index("dry_run: 1"), fn.index("await confirm("))
+        self.assertLess(fn.index("await confirm("), fn.index("dry_run: 0"))
+        self.assertIn("danger: true", fn)
+
+
 class SurfaceTest(unittest.TestCase):
     def test_ci_form_warns_and_links_to_the_booked_invoice(self):
         vue = read(FORM)

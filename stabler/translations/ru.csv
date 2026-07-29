@@ -4903,4 +4903,12 @@ Agreed now,Согласовано сейчас
 Accounting must cancel and re-book the invoice to correct the ledger.,"Чтобы исправить учёт, бухгалтерия должна отменить и заново провести инвойс."
 Open the booked invoice,Открыть проведённый инвойс
 Invoices changed after booking,"Инвойсы, изменённые после проводки"
+Cancel and re-book,Отменить и провести заново
+Re-book the invoice?,Провести инвойс заново?
+Cancel {invoice} ({old}) and re-book at {new}.,Отменить {invoice} ({old}) и провести заново на {new}.
+{count} payment(s) totalling {amount} will be re-allocated.,Будет перераспределено платежей: {count} на сумму {amount}.
+No payments are allocated to it.,К нему не привязано ни одного платежа.
+The booked invoice already matches this document.,Проведённый инвойс уже совпадает с этим документом.
+Re-booked as {invoice}.,Проведено заново как {invoice}.
+Could not re-book the invoice.,Не удалось провести инвойс заново.
 

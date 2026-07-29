@@ -4897,4 +4897,12 @@ Agreed now,Ҳозирги келишув
 Accounting must cancel and re-book the invoice to correct the ledger.,"Ҳисобни тузатиш учун бухгалтерия ҳисоб-фактурани бекор қилиб, қайта китобга олиши керак."
 Open the booked invoice,Китобга олинган ҳисоб-фактурани очиш
 Invoices changed after booking,Китобга олингандан кейин ўзгарган ҳисоб-фактуралар
+Cancel and re-book,"Бекор қилиб, қайта китобга олиш"
+Re-book the invoice?,Ҳисоб-фактура қайта китобга олинсинми?
+Cancel {invoice} ({old}) and re-book at {new}.,"{invoice} ({old}) бекор қилиниб, {new} билан қайта китобга олинади."
+{count} payment(s) totalling {amount} will be re-allocated.,"{count} та тўлов, жами {amount}, қайта тақсимланади."
+No payments are allocated to it.,Унга ҳеч қандай тўлов бириктирилмаган.
+The booked invoice already matches this document.,Китобга олинган ҳисоб-фактура бу ҳужжатга аллақачон мос.
+Re-booked as {invoice}.,{invoice} сифатида қайта китобга олинди.
+Could not re-book the invoice.,Ҳисоб-фактурани қайта китобга олиб бўлмади.
 

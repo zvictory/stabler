@@ -931,6 +931,62 @@ async function loadDrift() {
 	}
 }
 
+// Re-booking cancels a GL voucher and knocks its payments loose, so it never
+// runs on a single click: fetch the plan, show exactly what will happen, and
+// only act on an explicit confirmation.
+const rebooking = ref(false);
+async function rebookInvoice() {
+	if (rebooking.value) return;
+	rebooking.value = true;
+	try {
+		const plan = await call("stabler.api.imports.rebook_ci_invoice", {
+			company: activeCompany.value,
+			commercial_invoice: docName.value,
+			dry_run: 1,
+		});
+		if (plan?.reason === "in_sync") {
+			toast.success(t("The booked invoice already matches this document."));
+			await loadDrift();
+			return;
+		}
+		if (plan?.blockers?.length) {
+			toast.error(plan.blockers[0]);
+			return;
+		}
+		const lines = [
+			t("Cancel {invoice} ({old}) and re-book at {new}.", {
+				invoice: plan.old_invoice,
+				old: fm(plan.old_total, form.value.currency),
+				new: fm(plan.new_total, form.value.currency),
+			}),
+			plan.payments_to_reallocate.length
+				? t("{count} payment(s) totalling {amount} will be re-allocated.", {
+					count: plan.payments_to_reallocate.length,
+					amount: fm(plan.payments_total, form.value.currency),
+				})
+				: t("No payments are allocated to it."),
+		];
+		const ok = await confirm({
+			title: t("Re-book the invoice?"),
+			body: lines.join(" "),
+			confirmLabel: t("Cancel and re-book"),
+			danger: true,
+		});
+		if (!ok) return;
+		const res = await call("stabler.api.imports.rebook_ci_invoice", {
+			company: activeCompany.value,
+			commercial_invoice: docName.value,
+			dry_run: 0,
+		});
+		toast.success(t("Re-booked as {invoice}.", { invoice: res.new_invoice }));
+		await loadDrift();
+	} catch (err) {
+		toast.error(err?.message || t("Could not re-book the invoice."));
+	} finally {
+		rebooking.value = false;
+	}
+}
+
 onMounted(async () => {
 	loadItemsList();
 	loadRefData();
@@ -1009,12 +1065,18 @@ watch(activeCompany, loadRefData);
 					{{ t("Accounting must cancel and re-book the invoice to correct the ledger.") }}
 				</div>
 			</div>
-			<router-link
-				:to="{ name: 'purchasing-invoice', params: { name: drift.purchase_invoice } }"
-				class="btn btn-outline-secondary btn-sm ms-auto"
-			>
-				{{ t("Open the booked invoice") }}
-			</router-link>
+			<div class="ms-auto d-flex gap-2">
+				<router-link
+					:to="{ name: 'purchasing-invoice', params: { name: drift.purchase_invoice } }"
+					class="btn btn-outline-secondary btn-sm"
+				>
+					{{ t("Open the booked invoice") }}
+				</router-link>
+				<button type="button" class="btn btn-outline-danger btn-sm" :disabled="rebooking" @click="rebookInvoice">
+					<span v-if="rebooking" class="spinner-border spinner-border-sm me-1"></span>
+					{{ t("Cancel and re-book") }}
+				</button>
+			</div>
 		</div>
 
 		<!-- Status action bar -->

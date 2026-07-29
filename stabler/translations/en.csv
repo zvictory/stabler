@@ -4893,4 +4893,12 @@ Agreed now,Agreed now
 Accounting must cancel and re-book the invoice to correct the ledger.,Accounting must cancel and re-book the invoice to correct the ledger.
 Open the booked invoice,Open the booked invoice
 Invoices changed after booking,Invoices changed after booking
+Cancel and re-book,Cancel and re-book
+Re-book the invoice?,Re-book the invoice?
+Cancel {invoice} ({old}) and re-book at {new}.,Cancel {invoice} ({old}) and re-book at {new}.
+{count} payment(s) totalling {amount} will be re-allocated.,{count} payment(s) totalling {amount} will be re-allocated.
+No payments are allocated to it.,No payments are allocated to it.
+The booked invoice already matches this document.,The booked invoice already matches this document.
+Re-booked as {invoice}.,Re-booked as {invoice}.
+Could not re-book the invoice.,Could not re-book the invoice.
 

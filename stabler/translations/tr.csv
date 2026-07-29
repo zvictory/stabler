@@ -4892,4 +4892,12 @@ Agreed now,Şu anki anlaşma
 Accounting must cancel and re-book the invoice to correct the ledger.,"Muhasebe, defteri düzeltmek için faturayı iptal edip yeniden kaydetmeli."
 Open the booked invoice,Kayda alınan faturayı aç
 Invoices changed after booking,Kayıttan sonra değişen faturalar
+Cancel and re-book,İptal et ve yeniden kaydet
+Re-book the invoice?,Fatura yeniden kaydedilsin mi?
+Cancel {invoice} ({old}) and re-book at {new}.,{invoice} ({old}) iptal edilip {new} tutarıyla yeniden kaydedilecek.
+{count} payment(s) totalling {amount} will be re-allocated.,"{count} ödeme, toplam {amount}, yeniden dağıtılacak."
+No payments are allocated to it.,Buna bağlı hiçbir ödeme yok.
+The booked invoice already matches this document.,Kayda alınan fatura bu belgeyle zaten örtüşüyor.
+Re-booked as {invoice}.,{invoice} olarak yeniden kaydedildi.
+Could not re-book the invoice.,Fatura yeniden kaydedilemedi.
 

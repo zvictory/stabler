@@ -5683,6 +5683,164 @@ def _ci_invoice_drift(company: str, commercial_invoice: str | None = None) -> di
 	}
 
 
+def _allocated_payments(purchase_invoice: str) -> list[dict]:
+	"""Submitted Payment Entries currently allocated to an invoice.
+
+	These are the payments a re-booking would knock loose; they must land on
+	the replacement invoice or the supplier's balance jumps.
+	"""
+	return frappe.db.sql(
+		"""
+		SELECT per.parent AS name, per.allocated_amount
+		FROM `tabPayment Entry Reference` per
+		JOIN `tabPayment Entry` pe ON pe.name = per.parent
+		WHERE per.reference_doctype = 'Purchase Invoice'
+		  AND per.reference_name = %(inv)s
+		  AND pe.docstatus = 1
+		ORDER BY pe.posting_date ASC, pe.name ASC
+		""",
+		{"inv": purchase_invoice},
+		as_dict=True,
+	)
+
+
+@frappe.whitelist()
+def rebook_ci_invoice(commercial_invoice: str, company: str, dry_run: int = 1) -> dict:
+	"""Cancel a drifted Purchase Invoice and re-book it from the CI as it is now.
+
+	``dry_run`` (default 1) returns the plan and writes NOTHING: what will be
+	cancelled, which payments come loose, the new total and lines, and how those
+	payments re-allocate. Only ``dry_run=0`` acts.
+
+	The sequence, in one transaction:
+	  1. re-check the drift (someone may have fixed it meanwhile)
+	  2. cancel the old invoice — its GL reverses, its payments go unallocated
+	  3. create the replacement from the CI's CURRENT lines, dated ci_date,
+	     ``amended_from`` the cancelled one so the audit trail survives
+	  4. guard: the new A/P must equal agreed_total, else roll the whole thing
+	     back — a hole in the ledger is worse than a stale invoice
+	  5. re-allocate exactly the payments that were on the old invoice
+	  6. submit only if the old one was submitted (never leave the supplier
+	     with no payable where one existed)
+
+	Refuses rather than guesses: lines that don't reconcile to agreed_total, a
+	CI without ci_date, or ERPNext configured to block payment unlinking all
+	stop the operation with a named reason.
+	"""
+	_assert_imports_access(company)
+	_assert_cost_visible()
+	if not frappe.db.exists("Commercial Invoice", commercial_invoice):
+		frappe.throw(_("Unknown Commercial Invoice: {0}").format(commercial_invoice))
+	ci = frappe.get_doc("Commercial Invoice", commercial_invoice)
+	if ci.company != company:
+		frappe.throw(_("Commercial Invoice belongs to a different company."))
+
+	report = _ci_invoice_drift(company, commercial_invoice)
+	row = (report.get("rows") or [None])[0]
+	if not row:
+		return {"changed": False, "reason": "in_sync", "commercial_invoice": commercial_invoice}
+
+	old_name = row["purchase_invoice"]
+	old = frappe.get_doc("Purchase Invoice", old_name)
+	agreed = flt(ci.agreed_total)
+	lines = _ci_to_pinv.pinv_lines_from_ci_items(
+		[
+			{"item": it.item, "qty": flt(it.qty), "rate": flt(it.rate), "amount": flt(it.amount)}
+			for it in (ci.items or [])
+		]
+	)
+	blockers = []
+	if not lines:
+		blockers.append(_("The Commercial Invoice has no invoiceable item lines."))
+	if not _ci_to_pinv.reconciles(_ci_to_pinv.lines_total(lines), agreed):
+		blockers.append(
+			_("CI line total {0} does not match agreed_total {1}; fix the invoice first.").format(
+				_ci_to_pinv.lines_total(lines), agreed
+			)
+		)
+	if not ci.ci_date:
+		blockers.append(_("The Commercial Invoice has no date; the replacement cannot be dated."))
+	payments = _allocated_payments(old_name)
+	if payments and not cint(
+		frappe.db.get_single_value("Accounts Settings", "unlink_payment_on_cancellation_of_invoice")
+	):
+		blockers.append(
+			_("Accounts Settings blocks unlinking payments on cancellation; enable it or unallocate first.")
+		)
+
+	plan = {
+		"commercial_invoice": commercial_invoice,
+		"old_invoice": old_name,
+		"old_total": flt(old.grand_total),
+		"old_submitted": cint(old.docstatus) == 1,
+		"new_total": agreed,
+		"delta_total": row["delta_total"],
+		"lines": lines,
+		"payments_to_reallocate": payments,
+		"payments_total": round(sum(flt(p["allocated_amount"]) for p in payments), 2),
+		"posting_date": str(ci.ci_date) if ci.ci_date else None,
+		"blockers": blockers,
+	}
+	if cint(dry_run):
+		plan["changed"] = False
+		plan["dry_run"] = True
+		return plan
+	if blockers:
+		frappe.throw(blockers[0])
+
+	_assert_can_write("Purchase Invoice", old_name, "cancel")
+	# Serialize against a concurrent convert/rebook on the same CI.
+	frappe.db.get_value("Commercial Invoice", commercial_invoice, "name", for_update=True)
+
+	old.cancel()
+	doc = frappe.new_doc("Purchase Invoice")
+	doc.company = company
+	doc.supplier = ci.supplier
+	if ci.currency:
+		doc.currency = ci.currency
+	doc.set_posting_time = 1
+	doc.posting_date = getdate(ci.ci_date)
+	doc.bill_date = getdate(ci.ci_date)
+	doc.bill_no = old.bill_no or commercial_invoice
+	doc.amended_from = old_name
+	if frappe.db.has_column("Purchase Invoice", "custom_commercial_invoice"):
+		doc.custom_commercial_invoice = commercial_invoice
+	container = _single_container_of(commercial_invoice)
+	if container and frappe.db.has_column("Purchase Invoice", "custom_import_container"):
+		doc.custom_import_container = container
+	for ln in lines:
+		doc.append("items", {"item_code": ln["item_code"], "qty": ln["qty"] or 1, "rate": ln["rate"]})
+	doc.insert(ignore_permissions=False)
+
+	if not _ci_to_pinv.reconciles(flt(doc.grand_total), agreed):
+		frappe.db.rollback()
+		frappe.throw(
+			_("Replacement invoice total {0} drifted from agreed_total {1}; nothing was changed.").format(
+				flt(doc.grand_total), agreed
+			)
+		)
+
+	# The payments that were on the old invoice come first; whatever import
+	# advances remain may top up the rest.
+	wanted = {p["name"] for p in payments} | {a["name"] for a in _ci_import_advances(company, ci)}
+	allocated = _restrict_advances_to_import(doc, wanted)
+	doc.save(ignore_permissions=False)
+	if plan["old_submitted"]:
+		doc.submit()  # the ledger must not be left without the payable it had
+
+	plan.update(
+		{
+			"changed": True,
+			"dry_run": False,
+			"new_invoice": doc.name,
+			"new_grand_total": flt(doc.grand_total),
+			"reallocated": allocated,
+			"submitted": plan["old_submitted"],
+		}
+	)
+	return plan
+
+
 @frappe.whitelist()
 def import_advance_aging(company: str) -> dict:
 	"""Unallocated supplier advances aged against the repatriation horizon (WP-I10).
