@@ -28,6 +28,10 @@ const finance = computed(() => props.data.finance || null);
 const views = computed(() => props.data.role_scope?.views || []);
 const hasView = (view) => views.value.includes(view);
 const acquisitionRoute = computed(() => (hasView("sourcing") ? "tender-my-tenders" : ""));
+const periodQuery = computed(() => ({
+	from_date: props.data.period?.from_date,
+	to_date: props.data.period?.to_date,
+}));
 
 const roleKpis = computed(() => [
 	{
@@ -70,7 +74,12 @@ const roleKpis = computed(() => [
 
 function navigate(name, query = {}) {
 	if (!name) return;
-	router.push({ name, query: { days: props.days, ...query } });
+	router.push({ name, query: { days: props.days, ...periodQuery.value, ...query } });
+}
+
+function openExecutiveKpi(key) {
+	const filters = key === "risk" ? { risk: "risk" } : key === "win" ? { status: "won" } : {};
+	navigate("tender-portfolio", filters);
 }
 
 function openAttention(item) {
@@ -100,6 +109,7 @@ const financeMoney = (value) =>
 			:kpi="data.executive_kpi"
 			:currency="data.executive_currency || currency"
 			:language="language"
+			@select="openExecutiveKpi"
 		/>
 		<ul v-else class="role-kpis" :aria-label="t('Tender operations')">
 			<li v-for="item in roleKpis" :key="item.label" class="card card-sm role-kpi">
@@ -176,7 +186,11 @@ const financeMoney = (value) =>
 						<h3 class="card-title"><i class="ti ti-route me-1"></i>{{ t("Execution flow") }}</h3>
 					</div>
 					<div class="card-body">
-						<TenderExecutionFlow :acquisition="acquisition" :execution="execution" />
+						<TenderExecutionFlow
+							:acquisition="acquisition"
+							:execution="execution"
+							:period="data.period"
+						/>
 					</div>
 				</div>
 			</div>
@@ -223,18 +237,18 @@ const financeMoney = (value) =>
 						<h3 class="card-title"><i class="ti ti-cash me-1"></i>{{ t("Finance") }}</h3>
 					</div>
 					<div class="card-body finance-summary">
-						<div>
+						<button type="button" @click="navigate('tender-portfolio')">
 							<span>{{ t("Contract total") }}</span
 							><strong>{{ financeMoney(finance.contract_total) }}</strong>
-						</div>
-						<div>
+						</button>
+						<button type="button" @click="navigate('tender-portfolio')">
 							<span>{{ t("Procurement total") }}</span
 							><strong>{{ financeMoney(finance.procurement_total) }}</strong>
-						</div>
-						<div>
+						</button>
+						<button type="button" @click="navigate('tender-portfolio')">
 							<span>{{ t("Execution spread") }}</span
 							><strong>{{ financeMoney(finance.execution_spread) }}</strong>
-						</div>
+						</button>
 					</div>
 				</div>
 			</div>
@@ -272,10 +286,16 @@ const financeMoney = (value) =>
 	display: grid;
 	gap: 0.75rem;
 }
-.finance-summary div {
+.finance-summary button {
+	background: transparent;
+	border: 0;
+	color: inherit;
 	display: flex;
 	justify-content: space-between;
 	gap: 1rem;
+	padding: 0;
+	text-align: start;
+	width: 100%;
 }
 .finance-summary span {
 	color: var(--tblr-secondary);

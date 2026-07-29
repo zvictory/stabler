@@ -32,8 +32,9 @@ const toast = useToast();
 
 const today = todayIso();
 const monthAgo = daysAgoIso(90);
-const fromDate = ref(monthAgo);
-const toDate = ref(today);
+const fromDate = ref(String(route.query.from_date || monthAgo));
+const toDate = ref(String(route.query.to_date || today));
+const tenderOnly = computed(() => route.query.tender_only === "1");
 const status = ref("");
 const supplier = ref("");
 const supplierName = ref("");
@@ -97,7 +98,8 @@ async function load() {
 			to_date: toDate.value,
 			supplier: supplier.value || undefined,
 			status: status.value || undefined,
-			limit: limit.value,
+			limit: tenderOnly.value ? 5000 : limit.value,
+			tender_only: tenderOnly.value ? 1 : undefined,
 		});
 	} catch (err) {
 		error.value = err?.message || "Failed to load purchase receipts.";
@@ -402,6 +404,7 @@ watch(activeCompany, async () => {
 						</Typeahead>
 					</div>
 					<Select v-model="status" size="sm" :options="statusOptions" style="width: 160px" />
+					<span v-if="tenderOnly" class="badge bg-blue-lt text-blue">{{ t("Tender records") }}</span>
 				</div>
 			</template>
 

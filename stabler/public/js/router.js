@@ -45,7 +45,9 @@ import PoControlBoard from "./pages/tender/PoControlBoard.vue";
 import DeclarantQueue from "./pages/tender/DeclarantQueue.vue";
 import LogistBoard from "./pages/tender/LogistBoard.vue";
 import MyTenders from "./pages/tender/MyTenders.vue";
+import DirectorBoard from "./pages/tender/DirectorBoard.vue";
 import SalesInvoices from "./pages/sales/SalesInvoices.vue";
+import DeliveryNotes from "./pages/sales/DeliveryNotes.vue";
 import SalesInvoiceForm from "./pages/sales/SalesInvoiceForm.vue";
 import NewDirectInvoicePage from "./pages/sales/NewDirectInvoicePage.vue";
 import SalesReturnForm from "./pages/sales/SalesReturnForm.vue";
@@ -259,6 +261,7 @@ const routes = [
 	{ path: "/tender/sourcing", name: "tender-sourcing", component: SourcingCompare, meta: { title: t("Sourcing comparison"), module: "tender" } },
 	{ path: "/tender/po-control", name: "tender-po-control", component: PoControlBoard, meta: { title: t("Tender PO control"), module: "tender" } },
 	{ path: "/tender/director", redirect: "/dashboard", meta: { module: "tender" } },
+	{ path: "/tender/portfolio", name: "tender-portfolio", component: DirectorBoard, meta: { title: t("Director board"), module: "tender" } },
 	{ path: "/tender/my-tenders", name: "tender-my-tenders", component: MyTenders, meta: { title: t("My tenders"), module: "tender" } },
 	{ path: "/tender/customs", name: "tender-customs", component: DeclarantQueue, meta: { title: t("Customs queue"), module: "tender" } },
 	{ path: "/tender/logistics", name: "tender-logistics", component: LogistBoard, meta: { title: t("Logistics"), module: "tender" } },
@@ -298,6 +301,7 @@ const routes = [
 			{ path: "orders/new", name: "sales-order-new", component: SalesOrderForm, meta: { title: t("New Sales Order") } },
 			{ path: "orders/:name", name: "sales-order", component: SalesOrderForm, meta: { title: t("Sales Order") } },
 			{ path: "invoices", name: "sales-invoices", component: SalesInvoices, meta: { title: t("Sales Invoices") } },
+			{ path: "delivery-notes", name: "sales-delivery-notes", component: DeliveryNotes, meta: { title: t("Delivery Notes") } },
 			{ path: "invoices/new", name: "sales-invoice-new", component: NewDirectInvoicePage, meta: { title: t("New Direct Sales Invoice") } },
 			{ path: "returns/new", name: "sales-return-new", component: SalesReturnForm, meta: { title: t("New Sales Return") } },
 			{ path: "returns/:name", redirect: to => `/sales/invoices/${to.params.name}` },
@@ -597,7 +601,21 @@ router.beforeEach(async (to) => {
 	}
 	const moduleRoute = to.matched.find((r) => r.meta.module);
 	if (moduleRoute && !session.canAccessModule(moduleRoute.meta.module)) {
-		if (to.path === "/inventory/stock-status" && session.canAccessModule("manufacturing")) {
+		const tenderDrilldownRoutes = new Set([
+			"sales-orders",
+			"sales-invoices",
+			"sales-delivery-notes",
+			"purchasing-orders",
+			"purchasing-receipts",
+			"purchasing-invoices",
+		]);
+		const isTenderDrilldown =
+			to.query.tender_only === "1" &&
+			tenderDrilldownRoutes.has(String(to.name || "")) &&
+			session.canAccessModule("tender");
+		if (isTenderDrilldown) {
+			// Dashboard drill-downs stay available to tender-only roles.
+		} else if (to.path === "/inventory/stock-status" && session.canAccessModule("manufacturing")) {
 			// Allow line operators to view their assigned stock status page
 		} else {
 			const dest = landingPath(session);

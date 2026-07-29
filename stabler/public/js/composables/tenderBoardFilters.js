@@ -1,4 +1,4 @@
-const FILTER_KEYS = ["stage", "period", "risk", "due", "status"];
+const FILTER_KEYS = ["stage", "period", "risk", "due", "status", "from_date", "to_date"];
 
 export function tenderRouteFilters(query = {}) {
 	return Object.fromEntries(
@@ -34,11 +34,14 @@ function matchesStage(row, stage) {
 }
 
 export function filterTenderRows(rows, filters) {
-	return (rows || []).filter((row) =>
-		matchesPeriod(lifecycleEventDate(row, filters), filters.period) &&
+	return (rows || []).filter((row) => {
+		const eventDate = String(lifecycleEventDate(row, filters) || "").slice(0, 10);
+		return matchesPeriod(eventDate, filters.period) &&
+		(!filters.from_date || eventDate >= filters.from_date) &&
+		(!filters.to_date || eventDate <= filters.to_date) &&
 		matchesStage(row, filters.stage) &&
 		(!filters.risk || row.risk === filters.risk) &&
 		(!filters.due || row.due === filters.due) &&
-		(!filters.status || filters.status === "all" || row.status === filters.status),
-	);
+		(!filters.status || filters.status === "all" || row.status === filters.status);
+	});
 }

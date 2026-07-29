@@ -8,6 +8,7 @@ const props = defineProps({
 	currency: { type: String, default: "" },
 	language: { type: String, default: "en" },
 });
+const emit = defineEmits(["select"]);
 
 const items = computed(() => [
 	{ key: "count", label: t("Active tenders"), value: props.kpi.count || 0, tone: "" },
@@ -44,7 +45,7 @@ const items = computed(() => [
 <template>
 	<ul class="executive-kpis" :aria-label="t('Tender operations')">
 		<li v-for="item in items" :key="item.key" class="card card-sm executive-kpi">
-			<div class="card-body">
+			<button type="button" class="card-body executive-kpi-action" @click="emit('select', item.key)">
 				<div class="text-secondary small">{{ item.label }}</div>
 				<div
 					class="h2 mb-0 font-monospace"
@@ -54,7 +55,7 @@ const items = computed(() => [
 				>
 					{{ item.value }}
 				</div>
-			</div>
+			</button>
 		</li>
 	</ul>
 </template>
@@ -72,6 +73,8 @@ const items = computed(() => [
 .executive-kpi {
 	min-width: 0;
 }
+.executive-kpi-action { background: transparent; border: 0; color: inherit; text-align: start; width: 100%; }
+.executive-kpi-action:hover { background: var(--tblr-bg-surface-secondary); }
 
 @media (max-width: 1199px) {
 	.executive-kpis {

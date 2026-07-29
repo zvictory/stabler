@@ -866,6 +866,32 @@ def _invoice_status_counts(
 	return counts
 
 
+def _linked_document_count(
+	order_names: list[str],
+	*,
+	parent_doctype: str,
+	item_doctype: str,
+	order_link_field: str,
+	company: str,
+	start,
+	end,
+) -> int:
+	"""Count unique readable tender documents posted in the dashboard period."""
+	rows = _unique_invoice_rows(
+		_linked_document_rows(
+			parent_doctype,
+			item_doctype,
+			order_names,
+			company,
+			order_link_field,
+			"posting_date",
+		)
+	)
+	return sum(
+		1 for row in rows if _in_dashboard_period(row.get("posting_date"), start, end)
+	)
+
+
 def _tender_finance_chain(
 	purchase: dict,
 	sales: dict,
@@ -2529,10 +2555,14 @@ def tender_dashboard(
 		)
 	execution = {
 		"purchase_orders": 0,
+		"purchase_receipts": 0,
+		"purchase_invoices": 0,
 		"received": 0,
 		"receiving": 0,
 		"customs_workload_open": 0,
 		"sales_orders": 0,
+		"sales_invoices": 0,
+		"delivery_notes": 0,
 		"delivered": 0,
 		"delivery_pending": 0,
 		# No native PO-level customs clearance field exists in this install. This
@@ -2660,6 +2690,30 @@ def tender_dashboard(
 		company=company,
 		start=start,
 		end=end,
+	)
+	execution["purchase_receipts"] = _linked_document_count(
+		purchase_order_names,
+		parent_doctype="Purchase Receipt",
+		item_doctype="Purchase Receipt Item",
+		order_link_field="purchase_order",
+		company=company,
+		start=start,
+		end=end,
+	)
+	execution["delivery_notes"] = _linked_document_count(
+		sales_order_names,
+		parent_doctype="Delivery Note",
+		item_doctype="Delivery Note Item",
+		order_link_field="against_sales_order",
+		company=company,
+		start=start,
+		end=end,
+	)
+	execution["purchase_invoices"] = sum(
+		execution["invoice_status"]["purchase_invoices"].values()
+	)
+	execution["sales_invoices"] = sum(
+		execution["invoice_status"]["sales_invoices"].values()
 	)
 
 	attention.sort(key=lambda item: (0 if item["severity"] == "risk" else 1, item.get("days_left", 9999)))

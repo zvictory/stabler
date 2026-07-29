@@ -20,6 +20,8 @@ _PORTFOLIO_PREVIEW = os.path.join(_ROOT, "public", "js", "pages", "tender", "Ten
 _EXECUTIVE_KPIS = os.path.join(_ROOT, "public", "js", "pages", "tender", "TenderExecutiveKpis.vue")
 _FUNNEL = os.path.join(_ROOT, "public", "js", "pages", "tender", "TenderFunnel.vue")
 _CONTROL_TOWER = os.path.join(_ROOT, "public", "js", "pages", "tender", "TenderControlTower.vue")
+_ROUTER = os.path.join(_ROOT, "public", "js", "router.js")
+_DELIVERY_NOTES = os.path.join(_ROOT, "public", "js", "pages", "sales", "DeliveryNotes.vue")
 
 
 def _read(path: str) -> str:
@@ -80,6 +82,48 @@ class TestTenderDashboardSpaContract(unittest.TestCase):
 		self.assertIn("remainingAttentionCount", control_tower)
 		self.assertIn('t("Show more")', control_tower)
 		self.assertIn('t("Show less")', control_tower)
+
+	def test_execution_flow_has_seven_clickable_filtered_stages(self):
+		execution_flow = _read(_EXECUTION_FLOW)
+		for field in (
+			"sales_orders",
+			"purchase_orders",
+			"purchase_receipts",
+			"purchase_invoices",
+			"sales_invoices",
+			"delivery_notes",
+		):
+			self.assertIn(field, execution_flow)
+		for route in (
+			"sales-orders",
+			"purchasing-orders",
+			"purchasing-receipts",
+			"purchasing-invoices",
+			"sales-invoices",
+			"sales-delivery-notes",
+		):
+			self.assertIn(route, execution_flow)
+		self.assertIn("<button", execution_flow)
+		self.assertIn("tender_only", execution_flow)
+		self.assertNotIn('`${t("PI")}/${t("SI")}`', execution_flow)
+
+	def test_portfolio_and_delivery_notes_are_spa_routes(self):
+		router = _read(_ROUTER)
+		self.assertIn('path: "/tender/portfolio"', router)
+		self.assertIn('name: "tender-portfolio"', router)
+		self.assertIn('name: "sales-delivery-notes"', router)
+		self.assertIn("DeliveryNotes", router)
+		delivery_notes = _read(_DELIVERY_NOTES)
+		self.assertIn("stabler.api.sales.list_delivery_notes", delivery_notes)
+		self.assertIn("stabler.api.sales.get_delivery_note", delivery_notes)
+		self.assertNotIn("/app/", delivery_notes)
+
+	def test_control_tower_preserves_dashboard_period_in_drilldowns(self):
+		control_tower = _read(_CONTROL_TOWER)
+		self.assertIn("from_date", control_tower)
+		self.assertIn("to_date", control_tower)
+		self.assertIn("tender-portfolio", control_tower)
+		self.assertIn(':period="data.period"', control_tower)
 
 	def test_tender_dashboard_renders_executive_content_without_legacy_empty_gate(self):
 		source = _read(_DASHBOARD)

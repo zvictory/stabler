@@ -49,12 +49,13 @@ class TestTenderSidebarNavigation(unittest.TestCase):
 			router,
 		)
 
-	def test_tender_subnav_is_overview_first_without_director_button(self):
+	def test_tender_subnav_keeps_overview_first_and_restores_director_portfolio(self):
 		with open(_TENDER_NAV, encoding="utf-8") as source:
 			nav = source.read()
 		self.assertIn('to="/dashboard"', nav)
 		self.assertIn('t("Overview")', nav)
-		self.assertNotIn('t("Director board")', nav)
+		self.assertIn('t("Director board")', nav)
+		self.assertIn('to="/tender/portfolio"', nav)
 		self.assertNotIn('to="/tender/director"', nav)
 
 

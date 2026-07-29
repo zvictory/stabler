@@ -1416,6 +1416,7 @@ def list_sales_invoices(
 	status: str | None = None,
 	search: str | None = None,
 	limit: int = 100,
+	tender_only: bool | str = False,
 ):
 	_require_company(company)
 	_assert_company_scope(company)  # tenant isolation: reject a foreign company arg
@@ -1436,6 +1437,17 @@ def list_sales_invoices(
 	if status:
 		conds.append("status = %(status)s")
 		params["status"] = status
+	if cint(tender_only):
+		conds.append(
+			"""EXISTS (
+				SELECT 1 FROM `tabSales Invoice Item` sii
+				JOIN `tabSales Order` so ON so.name = sii.sales_order
+				WHERE sii.parent = `tabSales Invoice`.name
+				  AND so.company = %(company)s
+				  AND so.custom_crm_deal IS NOT NULL
+				  AND so.custom_crm_deal != ''
+			)"""
+		)
 	where = " AND ".join(conds)
 	return frappe.db.sql(
 		f"""
@@ -2749,6 +2761,97 @@ def cancel_quotation(name: str, modified: str | None = None):
 	return {"name": doc.name, "docstatus": doc.docstatus, "status": doc.status}
 
 
+# ─────────────────────────── Delivery Notes ───────────────────────────
+
+
+@frappe.whitelist()
+def list_delivery_notes(
+	company: str,
+	from_date: str | None = None,
+	to_date: str | None = None,
+	customer: str | None = None,
+	status: str | None = None,
+	search: str | None = None,
+	limit: int = 100,
+	tender_only: bool | str = False,
+):
+	"""List readable Delivery Notes, optionally restricted to tender Sales Orders."""
+	_require_company(company)
+	_assert_company_scope(company)
+	conds = ["dn.company = %(company)s", "dn.docstatus < 2"]
+	params: dict = {"company": company, "limit": int(limit)}
+	if from_date:
+		conds.append("dn.posting_date >= %(from_date)s")
+		params["from_date"] = getdate(from_date)
+	if to_date:
+		conds.append("dn.posting_date <= %(to_date)s")
+		params["to_date"] = getdate(to_date)
+	if customer:
+		conds.append("dn.customer = %(customer)s")
+		params["customer"] = customer
+	if status:
+		conds.append("dn.status = %(status)s")
+		params["status"] = status
+	if search:
+		conds.append("(dn.name LIKE %(s)s OR dn.customer LIKE %(s)s OR dn.customer_name LIKE %(s)s)")
+		params["s"] = f"%{search}%"
+	if cint(tender_only):
+		conds.append(
+			"""EXISTS (
+				SELECT 1 FROM `tabDelivery Note Item` dni
+				JOIN `tabSales Order` so ON so.name = dni.against_sales_order
+				WHERE dni.parent = dn.name
+				  AND so.company = %(company)s
+				  AND so.custom_crm_deal IS NOT NULL
+				  AND so.custom_crm_deal != ''
+			)"""
+		)
+	rows = frappe.db.sql(
+		f"""
+		SELECT dn.name, dn.posting_date, dn.customer, dn.customer_name,
+		       dn.grand_total, dn.currency, dn.status, dn.docstatus
+		FROM `tabDelivery Note` dn
+		WHERE {" AND ".join(conds)}
+		ORDER BY dn.posting_date DESC, dn.name DESC
+		LIMIT %(limit)s
+		""",
+		params,
+		as_dict=True,
+	)
+	return [row for row in rows if frappe.has_permission("Delivery Note", "read", doc=row.name)]
+
+
+@frappe.whitelist()
+def get_delivery_note(name: str, company: str):
+	"""Return a permission- and company-scoped read-only Delivery Note detail."""
+	_require_company(company)
+	_assert_company_scope(company)
+	_assert_can_read("Delivery Note", name)
+	doc = frappe.get_doc("Delivery Note", name)
+	if doc.company != company:
+		frappe.throw(_("Not permitted"), frappe.PermissionError)
+	return {
+		"name": doc.name,
+		"posting_date": str(doc.posting_date) if doc.posting_date else None,
+		"customer": doc.customer,
+		"customer_name": doc.customer_name,
+		"status": doc.status,
+		"currency": doc.currency,
+		"grand_total": flt(doc.grand_total),
+		"items": [
+			{
+				"item_code": item.item_code,
+				"item_name": item.item_name,
+				"qty": flt(item.qty),
+				"uom": item.uom,
+				"warehouse": item.warehouse,
+				"against_sales_order": item.against_sales_order,
+			}
+			for item in doc.items
+		],
+	}
+
+
 # ─────────────────────────── Sales Orders ───────────────────────────
 
 
@@ -2763,6 +2866,7 @@ def list_sales_orders(
 	search: str | None = None,
 	limit: int = 100,
 	include_children: bool | str = False,
+	tender_only: bool | str = False,
 ):
 	_require_company(company)
 	_assert_company_scope(company)  # tenant isolation: reject a foreign company arg
@@ -2794,6 +2898,9 @@ def list_sales_orders(
 	if search:
 		conds.append("(name LIKE %(s)s OR customer LIKE %(s)s OR customer_name LIKE %(s)s)")
 		params["s"] = f"%{search}%"
+	if cint(tender_only):
+		conds.append("custom_crm_deal IS NOT NULL AND custom_crm_deal != ''")
+		conds.append("status NOT IN ('Closed', 'Cancelled')")
 	if status:
 		conds.append("status = %(status)s")
 		params["status"] = status

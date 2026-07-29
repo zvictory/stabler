@@ -102,6 +102,18 @@ class TestTenderDashboardContract(unittest.TestCase):
 		self.assertIn('"purchase_invoices"', self.body)
 		self.assertIn('"sales_invoices"', self.body)
 
+	def test_execution_uses_real_linked_receipt_and_delivery_documents(self):
+		for field in (
+			'"purchase_receipts"',
+			'"purchase_invoices"',
+			'"sales_invoices"',
+			'"delivery_notes"',
+		):
+			self.assertIn(field, self.body)
+		self.assertIn('parent_doctype="Purchase Receipt"', self.body)
+		self.assertIn('parent_doctype="Delivery Note"', self.body)
+		self.assertIn("_linked_document_count(", self.body)
+
 	def test_legacy_results_are_unverified_not_submitted(self):
 		self.assertIn("unverified_history", self.body)
 		evidence = _func_body(self.src, "_has_submission_evidence")

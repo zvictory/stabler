@@ -24,8 +24,9 @@ useEscapeBack(null, "/sales"); // ESC → back (general app rule)
 
 const today = todayIso();
 const monthAgo = daysAgoIso(90);
-const fromDate = ref(monthAgo);
-const toDate = ref(today);
+const fromDate = ref(String(route.query.from_date || monthAgo));
+const toDate = ref(String(route.query.to_date || today));
+const tenderOnly = computed(() => route.query.tender_only === "1");
 const status = ref("");
 const search = ref("");
 const limit = ref(100);
@@ -60,7 +61,8 @@ async function load() {
 			to_date: toDate.value,
 			status: status.value || undefined,
 			search: search.value || undefined,
-			limit: limit.value,
+			limit: tenderOnly.value ? 5000 : limit.value,
+			tender_only: tenderOnly.value ? 1 : undefined,
 		});
 	} catch (err) {
 		error.value = err?.message || t("Failed to load invoices.");
@@ -118,6 +120,7 @@ watch(activeCompany, load);
 					<span class="text-secondary small">—</span>
 					<DateInput v-model="toDate" size="sm" style="width: 110px" />
 					<Select v-model="status" size="sm" :options="statusOptions" style="width: 160px" />
+					<span v-if="tenderOnly" class="badge bg-blue-lt text-blue">{{ t("Tender records") }}</span>
 					<router-link to="/sales/returns/new" class="btn btn-sm btn-outline-secondary">
 						<i class="ti ti-receipt-refund me-1"></i>{{ t("New Return") }}
 					</router-link>

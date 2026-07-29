@@ -412,6 +412,7 @@ def list_purchase_invoices(
 	supplier: str | None = None,
 	status: str | None = None,
 	limit: int = 100,
+	tender_only: bool | str = False,
 ):
 	_require_company(company)
 	_assert_company_scope(company)  # tenant isolation: reject a foreign company arg
@@ -429,6 +430,17 @@ def list_purchase_invoices(
 	if status:
 		conds.append("status = %(status)s")
 		params["status"] = status
+	if cint(tender_only):
+		conds.append(
+			"""EXISTS (
+				SELECT 1 FROM `tabPurchase Invoice Item` pii
+				JOIN `tabPurchase Order` po ON po.name = pii.purchase_order
+				WHERE pii.parent = `tabPurchase Invoice`.name
+				  AND po.company = %(company)s
+				  AND po.custom_crm_deal IS NOT NULL
+				  AND po.custom_crm_deal != ''
+			)"""
+		)
 	where = " AND ".join(conds)
 	return frappe.db.sql(
 		f"""
@@ -1258,6 +1270,7 @@ def list_purchase_orders(
 	supplier: str | None = None,
 	status: str | None = None,
 	limit: int = 100,
+	tender_only: bool | str = False,
 ):
 	_require_company(company)
 	_assert_company_scope(company)  # tenant isolation: reject a foreign company arg
@@ -1275,6 +1288,8 @@ def list_purchase_orders(
 	if status:
 		conds.append("status = %(status)s")
 		params["status"] = status
+	if cint(tender_only):
+		conds.append("custom_crm_deal IS NOT NULL AND custom_crm_deal != ''")
 	where = " AND ".join(conds)
 	return frappe.db.sql(
 		f"""
@@ -1754,6 +1769,7 @@ def list_purchase_receipts(
 	supplier: str | None = None,
 	status: str | None = None,
 	limit: int = 100,
+	tender_only: bool | str = False,
 ):
 	_require_company(company)
 	_assert_company_scope(company)  # tenant isolation: reject a foreign company arg
@@ -1771,6 +1787,17 @@ def list_purchase_receipts(
 	if status:
 		conds.append("status = %(status)s")
 		params["status"] = status
+	if cint(tender_only):
+		conds.append(
+			"""EXISTS (
+				SELECT 1 FROM `tabPurchase Receipt Item` pri
+				JOIN `tabPurchase Order` po ON po.name = pri.purchase_order
+				WHERE pri.parent = `tabPurchase Receipt`.name
+				  AND po.company = %(company)s
+				  AND po.custom_crm_deal IS NOT NULL
+				  AND po.custom_crm_deal != ''
+			)"""
+		)
 	where = " AND ".join(conds)
 	return frappe.db.sql(
 		f"""
