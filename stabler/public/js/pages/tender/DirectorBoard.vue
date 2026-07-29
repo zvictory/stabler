@@ -106,6 +106,7 @@ function clearFilters() { router.replace({ query: {} }); }
 			<div class="card-body p-0">
 				<table class="table card-table">
 					<thead><tr>
+						<th class="d-none d-md-table-cell text-end text-secondary" style="width: 52px">{{ t("Row") }}</th>
 						<th>{{ t("Tender") }}</th>
 						<th class="text-end">{{ t("Value") }}</th>
 						<th class="text-end">{{ t("Margin on revenue") }}</th>
@@ -116,8 +117,9 @@ function clearFilters() { router.replace({ query: {} }); }
 						<th style="width:170px">{{ t("Manager") }}</th>
 					</tr></thead>
 					<tbody>
-						<SkeletonRows v-if="loading" :cols="8" :rows="6" />
-						<tr v-for="r in filteredRows" :key="r.deal" style="cursor:pointer" @click="openDeal(r.deal)">
+						<SkeletonRows v-if="loading" :cols="9" :rows="6" hide-first-on-mobile />
+						<tr v-for="(r, index) in filteredRows" :key="r.deal" style="cursor:pointer" @click="openDeal(r.deal)">
+							<td class="d-none d-md-table-cell text-end font-monospace text-secondary">{{ index + 1 }}</td>
 							<td>
 								<span class="fw-semibold">{{ r.label }}</span>
 								<span v-if="r.result" class="badge ms-1" :class="resultBadge(r.result)">{{ t(r.result.charAt(0).toUpperCase() + r.result.slice(1)) }}</span>

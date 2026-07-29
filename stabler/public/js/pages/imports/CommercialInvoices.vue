@@ -413,6 +413,7 @@ watch(activeCompany, () => {
 				<table class="table table-vcenter card-table table-hover">
 					<thead>
 						<tr>
+							<th class="d-none d-md-table-cell text-end text-secondary" style="width: 52px">{{ t("Row") }}</th>
 							<th class="ci-sort" @click="toggleSort('ci_number')">
 								{{ t("CI № / vendor") }} <i v-if="sortIcon('ci_number')" class="ti" :class="sortIcon('ci_number')"></i>
 							</th>
@@ -438,9 +439,10 @@ watch(activeCompany, () => {
 							</th>
 						</tr>
 					</thead>
-					<SkeletonRows v-if="loading" :rows="6" :cols="9" />
+					<SkeletonRows v-if="loading" :rows="6" :cols="10" hide-first-on-mobile />
 					<tbody v-else>
-						<tr v-for="r in rows" :key="r.name" style="cursor: pointer" @click="openDetail(r.name)">
+						<tr v-for="(r, index) in rows" :key="r.name" style="cursor: pointer" @click="openDetail(r.name)">
+							<td class="d-none d-md-table-cell text-end font-monospace text-secondary">{{ limitStart + index + 1 }}</td>
 							<td>
 								<div class="fw-bold text-primary font-monospace" style="font-size: 0.9rem">
 									{{ r.ci_number || r.name }}
@@ -540,6 +542,7 @@ watch(activeCompany, () => {
 					</tbody>
 					<tfoot v-if="!loading && rows.length">
 						<tr class="ci-totals">
+							<td class="d-none d-md-table-cell"></td>
 							<td class="text-secondary">
 								{{ rows.length }} CI · {{ totals.vendors.size }} {{ t("vendors") }}
 								<div class="text-muted small">{{ t("this page only") }}</div>

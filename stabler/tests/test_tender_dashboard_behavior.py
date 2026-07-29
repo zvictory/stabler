@@ -1002,6 +1002,29 @@ class TestTenderDashboardBehaviour(unittest.TestCase):
 
 		self.assertEqual([row["deal"] for row in payload["rows"]], ["DEAL-ALLOWED"])
 
+	def test_director_board_uses_deal_name_as_the_stable_final_sort_key(self):
+		db = _FakeDB({"DEAL-B": {}, "DEAL-A": {}})
+		tender = _load_tender(db, ["Stabler Tender Director"])
+
+		with (
+			patch.object(tender, "_tender_deal_names", return_value=("DEAL-B", "DEAL-A")),
+			patch.object(tender, "_deal_deadlines", return_value={"risk": "good", "milestones": []}),
+			patch.object(
+				tender,
+				"_bid_inputs",
+				return_value=({}, {"so_revenue": 0, "po_landed": 0, "po_count": 0, "so_count": 0}),
+			),
+			patch.object(
+				tender,
+				"_compute_bid_pnl",
+				return_value={"bid_price": 0, "ostatok": 0, "margin_on_revenue_pct": 0},
+			),
+			patch.object(tender, "_deal_label", side_effect=lambda deal: deal),
+		):
+			payload = tender.tender_director_board("Test Company")
+
+		self.assertEqual([row["deal"] for row in payload["rows"]], ["DEAL-A", "DEAL-B"])
+
 	def test_director_payload_can_omit_rows_without_changing_kpis(self):
 		db = _FakeDB({"DEAL-1": {}})
 		tender = _load_tender(db, ["Stabler Tender Director"])
