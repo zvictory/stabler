@@ -86,6 +86,7 @@ stabler.tests.test_tender_dashboard_i18n
 stabler.tests.test_tender_dashboard_spa
 stabler.tests.test_tender_landed_vat
 stabler.tests.test_tender_master_schema
+stabler.tests.test_tender_master_api
 stabler.tests.test_tender_sidebar_navigation
 stabler.tests.test_tender_workspace_spa
 stabler.tests.test_three_way_match

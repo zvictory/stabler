@@ -94,6 +94,7 @@ doc_events = {
 	"CRM Deal": {
 		"validate": [
 			"stabler.api.crm.validate_crm_deal_hygiene",
+			"stabler.api.tender_master.validate_deal_parent_tender",
 		],
 	},
 	"Sales Invoice": {
