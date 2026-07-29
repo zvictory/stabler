@@ -4889,4 +4889,12 @@ Signing out,Тизимдан чиқиш
 "Signing out securely…","Хавфсиз чиқиш бажарилмоқда…"
 "Could not sign out. Please try again.","Тизимдан чиқиб бўлмади. Қайта уриниб кўринг."
 Accounting voucher,Бухгалтерия ҳужжати
+This invoice no longer matches the booked payable.,Бу ҳисоб-фактура китобга олинган қарздорликка мос келмайди.
+Agreed now,Ҳозирги келишув
+{count} line(s) changed,{count} қатор ўзгарди
+{count} line(s) added,{count} қатор қўшилди
+{count} line(s) removed,{count} қатор ўчирилди
+Accounting must cancel and re-book the invoice to correct the ledger.,"Ҳисобни тузатиш учун бухгалтерия ҳисоб-фактурани бекор қилиб, қайта китобга олиши керак."
+Open the booked invoice,Китобга олинган ҳисоб-фактурани очиш
+Invoices changed after booking,Китобга олингандан кейин ўзгарган ҳисоб-фактуралар
 

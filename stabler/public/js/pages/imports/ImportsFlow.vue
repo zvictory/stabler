@@ -96,6 +96,8 @@ const TAIL = computed(() => {
 			label: t("Customs declarations"), to: "/imports/customs" },
 		{ key: "deviations", icon: "ti-scale", n: null,
 			label: t("PI ↔ CI deviations"), to: "/imports/discrepancies" },
+		{ key: "invoice-drift", icon: "ti-file-alert", n: d.invoice_drift?.count ?? 0,
+			label: t("Invoices changed after booking"), to: "/imports/commercial-invoices" },
 	];
 });
 

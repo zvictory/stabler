@@ -911,6 +911,26 @@ const fn = (v) => {
 	}).format(Number(v) || 0);
 };
 
+// --- Booked-invoice drift -------------------------------------------------
+// A submitted Purchase Invoice can never follow the CI's later corrections, so
+// the A/P silently stops describing the deal. We only ever REPORT the gap here;
+// re-booking cancels GL vouchers and un-allocates payments, which is an
+// explicit, approved action — never a side effect of opening this form.
+const drift = ref(null);
+async function loadDrift() {
+	drift.value = null;
+	if (isCreate.value || !docName.value || !activeCompany.value) return;
+	try {
+		const res = await call("stabler.api.imports.ci_invoice_drift", {
+			company: activeCompany.value,
+			commercial_invoice: docName.value,
+		});
+		drift.value = (res?.rows || [])[0] || null;
+	} catch {
+		drift.value = null; // never block the form on a diagnostic
+	}
+}
+
 onMounted(async () => {
 	loadItemsList();
 	loadRefData();
@@ -918,8 +938,12 @@ onMounted(async () => {
 	if (isCreate.value && route.query.proforma) {
 		await loadProformaIntoCi(String(route.query.proforma));
 	}
+	loadDrift();
 });
-watch(docName, loadDoc);
+watch(docName, async () => {
+	await loadDoc();
+	loadDrift();
+});
 watch(activeCompany, loadRefData);
 </script>
 
@@ -958,6 +982,40 @@ watch(activeCompany, loadRefData);
 		</div>
 
 		<div v-if="error" class="alert alert-danger">{{ error }}</div>
+
+		<!-- Booked A/P no longer matches this invoice -->
+		<div v-if="drift" class="alert alert-warning d-flex flex-wrap align-items-center gap-2">
+			<i class="ti ti-alert-triangle"></i>
+			<div>
+				<div class="fw-semibold">{{ t("This invoice no longer matches the booked payable.") }}</div>
+				<div class="small">
+					{{ t("Agreed now") }}: <span class="font-monospace">{{ fm(drift.agreed_total, form.currency) }}</span>
+					· {{ t("Booked") }}: <span class="font-monospace">{{ fm(drift.invoiced_total, form.currency) }}</span>
+					· {{ t("Difference") }}:
+					<span class="font-monospace fw-bold" :class="drift.delta_total > 0 ? 'text-red' : 'text-orange'">
+						{{ fm(drift.delta_total, form.currency) }}
+					</span>
+					<span v-if="drift.lines_changed.length" class="ms-1">
+						· {{ t("{count} line(s) changed", { count: drift.lines_changed.length }) }}
+					</span>
+					<span v-if="drift.lines_added.length" class="ms-1">
+						· {{ t("{count} line(s) added", { count: drift.lines_added.length }) }}
+					</span>
+					<span v-if="drift.lines_removed.length" class="ms-1">
+						· {{ t("{count} line(s) removed", { count: drift.lines_removed.length }) }}
+					</span>
+				</div>
+				<div class="small text-secondary">
+					{{ t("Accounting must cancel and re-book the invoice to correct the ledger.") }}
+				</div>
+			</div>
+			<router-link
+				:to="{ name: 'purchasing-invoice', params: { name: drift.purchase_invoice } }"
+				class="btn btn-outline-secondary btn-sm ms-auto"
+			>
+				{{ t("Open the booked invoice") }}
+			</router-link>
+		</div>
 
 		<!-- Status action bar -->
 		<div v-if="!isCreate" class="card mb-3">

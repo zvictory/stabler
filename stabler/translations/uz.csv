@@ -4889,4 +4889,12 @@ Signing out,Tizimdan chiqish
 "Signing out securely…","Xavfsiz chiqish bajarilmoqda…"
 "Could not sign out. Please try again.","Tizimdan chiqib bo‘lmadi. Qayta urinib ko‘ring."
 Accounting voucher,Buxgalteriya hujjati
+This invoice no longer matches the booked payable.,Bu hisob-faktura kitobga olingan qarzdorlikka mos kelmaydi.
+Agreed now,Hozirgi kelishuv
+{count} line(s) changed,{count} qator o‘zgardi
+{count} line(s) added,{count} qator qo‘shildi
+{count} line(s) removed,{count} qator o‘chirildi
+Accounting must cancel and re-book the invoice to correct the ledger.,"Hisobni tuzatish uchun buxgalteriya hisob-fakturani bekor qilib, qayta kitobga olishi kerak."
+Open the booked invoice,Kitobga olingan hisob-fakturani ochish
+Invoices changed after booking,Kitobga olingandan keyin o‘zgargan hisob-fakturalar
 

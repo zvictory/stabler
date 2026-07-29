@@ -4895,4 +4895,12 @@ Signing out,Выход из системы
 "Signing out securely…","Безопасный выход из системы…"
 "Could not sign out. Please try again.","Не удалось выйти из системы. Попробуйте еще раз."
 Accounting voucher,Бухгалтерский документ
+This invoice no longer matches the booked payable.,Этот инвойс больше не совпадает с проведённой задолженностью.
+Agreed now,Согласовано сейчас
+{count} line(s) changed,изменено строк: {count}
+{count} line(s) added,добавлено строк: {count}
+{count} line(s) removed,удалено строк: {count}
+Accounting must cancel and re-book the invoice to correct the ledger.,"Чтобы исправить учёт, бухгалтерия должна отменить и заново провести инвойс."
+Open the booked invoice,Открыть проведённый инвойс
+Invoices changed after booking,"Инвойсы, изменённые после проводки"
 

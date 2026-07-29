@@ -5577,6 +5577,113 @@ def convert_ci_to_purchase_invoice(commercial_invoice: str, company: str, dry_ru
 
 
 @frappe.whitelist()
+def ci_invoice_drift(company: str, commercial_invoice: str | None = None) -> dict:
+	"""Where a Commercial Invoice and its booked Purchase Invoice disagree.
+
+	A submitted Purchase Invoice is immutable, but the CI behind it keeps being
+	corrected — a rate is fixed, a line is added, quantities are re-counted.
+	The A/P then describes a deal nobody agreed to any more. This reports every
+	such divergence; it repairs nothing (re-booking cancels GL vouchers and
+	un-allocates payments — that is an explicit, approved action, never a
+	side effect of opening a screen).
+
+	The Purchase Invoice IS the snapshot of what was booked, so nothing is
+	fingerprinted or cached: the comparison is always against live GL truth,
+	which also makes historically imported invoices comparable.
+
+	``commercial_invoice`` narrows to one CI; otherwise the whole book.
+	Read-only, imports-gated, cost-visible (agreed figures are K3).
+	"""
+	_assert_imports_access(company)
+	_assert_cost_visible()
+	if not frappe.db.has_column("Purchase Invoice", "custom_commercial_invoice"):
+		return {"rows": [], "summary": {"checked": 0, "drifting": 0, "delta_total": 0.0}, "available": False}
+	return _ci_invoice_drift(company, commercial_invoice)
+
+
+def _ci_invoice_drift(company: str, commercial_invoice: str | None = None) -> dict:
+	"""Unwhitelisted core of ci_invoice_drift (callers have already gated)."""
+
+	filters = {"company": company, "docstatus": ["<", 2], "custom_commercial_invoice": ["!=", ""]}
+	if commercial_invoice:
+		filters["custom_commercial_invoice"] = commercial_invoice
+	invoices = frappe.get_all(
+		"Purchase Invoice",
+		filters=filters,
+		fields=["name", "custom_commercial_invoice", "grand_total", "docstatus", "posting_date", "supplier"],
+		limit_page_length=0,
+	)
+	if not invoices:
+		return {"rows": [], "summary": {"checked": 0, "drifting": 0, "delta_total": 0.0}, "available": True}
+
+	ci_names = [inv["custom_commercial_invoice"] for inv in invoices]
+	agreed_of = {
+		row["name"]: (flt(row["agreed_total"]), row.get("ci_number"), row.get("ci_date"))
+		for row in frappe.get_all(
+			"Commercial Invoice",
+			filters={"name": ["in", ci_names]},
+			fields=["name", "agreed_total", "ci_number", "ci_date"],
+			limit_page_length=0,
+		)
+	}
+	# Line rows for both sides, one query each — never per invoice.
+	ci_lines: dict[str, list] = {}
+	for row in frappe.get_all(
+		"Commercial Invoice Item",
+		filters={"parent": ["in", ci_names]},
+		fields=["parent", "item", "qty", "amount"],
+		limit_page_length=0,
+	):
+		ci_lines.setdefault(row["parent"], []).append(
+			{"item_code": row.get("item"), "qty": flt(row.get("qty")), "amount": flt(row.get("amount"))}
+		)
+	pinv_lines: dict[str, list] = {}
+	for row in frappe.get_all(
+		"Purchase Invoice Item",
+		filters={"parent": ["in", [inv["name"] for inv in invoices]]},
+		fields=["parent", "item_code", "qty", "amount"],
+		limit_page_length=0,
+	):
+		pinv_lines.setdefault(row["parent"], []).append(
+			{"item_code": row.get("item_code"), "qty": flt(row.get("qty")), "amount": flt(row.get("amount"))}
+		)
+
+	rows = []
+	delta_sum = 0.0
+	for inv in invoices:
+		ci = inv["custom_commercial_invoice"]
+		agreed, ci_number, ci_date = agreed_of.get(ci, (0.0, None, None))
+		drift = _ci_to_pinv.invoice_drift(
+			agreed, ci_lines.get(ci, []), flt(inv["grand_total"]), pinv_lines.get(inv["name"], [])
+		)
+		if drift["in_sync"]:
+			continue
+		delta_sum += drift["delta_total"]
+		rows.append(
+			{
+				"commercial_invoice": ci,
+				"ci_number": ci_number or ci,
+				"ci_date": str(ci_date) if ci_date else None,
+				"purchase_invoice": inv["name"],
+				"supplier": inv.get("supplier"),
+				"posting_date": str(inv["posting_date"]) if inv.get("posting_date") else None,
+				"submitted": cint(inv["docstatus"]) == 1,
+				**drift,
+			}
+		)
+	rows.sort(key=lambda r: abs(r["delta_total"]), reverse=True)
+	return {
+		"rows": rows,
+		"summary": {
+			"checked": len(invoices),
+			"drifting": len(rows),
+			"delta_total": round(delta_sum, 2),
+		},
+		"available": True,
+	}
+
+
+@frappe.whitelist()
 def import_advance_aging(company: str) -> dict:
 	"""Unallocated supplier advances aged against the repatriation horizon (WP-I10).
 
@@ -6248,6 +6355,12 @@ def imports_flow(company: str):
 
 	at_sea = sum(ci.get(k, 0) for k in ("ON_BOARD", "IN_TRANSIT"))
 	on_road = sum(trucks.get(k, 0) for k in ("DEPARTED_IRAN", "AT_BORDER", "CROSSED_BORDER", "IN_TRANSIT"))
+	# Invoices whose CI was corrected after the payable was booked. Same rule
+	# module as the CI form's banner — the board never re-derives it.
+	try:
+		book = _ci_invoice_drift(company)["summary"]
+	except Exception:
+		book = {"drifting": 0}  # a diagnostic must never take the board down
 	return {
 		"pi": pi,
 		"ci": ci,
@@ -6256,6 +6369,7 @@ def imports_flow(company: str):
 		"drift": drift,
 		"gate": gate,
 		"grn": grn,
+		"invoice_drift": {"count": cint(book.get("drifting"))},
 		"lcv": {"draft": lcv_draft},
 		"kpi": {
 			"open_pi": pi.get("DRAFT", 0) + pi.get("CONFIRMED", 0),

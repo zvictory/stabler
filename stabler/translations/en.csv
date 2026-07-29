@@ -4885,4 +4885,12 @@ Signing out,Signing out
 "Signing out securely…","Signing out securely…"
 "Could not sign out. Please try again.","Could not sign out. Please try again."
 Accounting voucher,Accounting voucher
+This invoice no longer matches the booked payable.,This invoice no longer matches the booked payable.
+Agreed now,Agreed now
+{count} line(s) changed,{count} line(s) changed
+{count} line(s) added,{count} line(s) added
+{count} line(s) removed,{count} line(s) removed
+Accounting must cancel and re-book the invoice to correct the ledger.,Accounting must cancel and re-book the invoice to correct the ledger.
+Open the booked invoice,Open the booked invoice
+Invoices changed after booking,Invoices changed after booking
 
