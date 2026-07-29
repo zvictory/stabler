@@ -87,6 +87,8 @@ function openLot(lot) {
 }
 
 function closeDetail() {
+	detailRequestGuard.start();
+	detailLoading.value = false;
 	depth.value = "tender";
 	selected.value = null;
 	lots.value = [];

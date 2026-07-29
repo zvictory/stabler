@@ -26,3 +26,9 @@ class TestTenderMasterSpaContract(unittest.TestCase):
 		source = TENDER_CRM.read_text()
 		self.assertNotIn('<tbody>\n\t\t\t\t\t\t<SkeletonRows', source)
 		self.assertIn('<div class="small text-secondary mt-1">{{ record.status }}</div>', source)
+
+	def test_closing_tender_detail_invalidates_pending_detail_requests(self):
+		source = TENDER_CRM.read_text()
+		close_detail = source.split("function closeDetail() {", 1)[1].split("}\n\nwatch", 1)[0]
+		self.assertIn("detailRequestGuard.start();", close_detail)
+		self.assertIn("detailLoading.value = false;", close_detail)
