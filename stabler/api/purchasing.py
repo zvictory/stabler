@@ -196,6 +196,7 @@ def supplier_ledger(
 	window = [r for r in rows if not _before_from(r)][:limit]
 	for r in window:
 		r["posting_date"] = str(r["posting_date"]) if r["posting_date"] else ""
+	_attach_ledger_sources(company, window)
 
 	account_currency = next(
 		(r["account_currency"] for r in reversed(window) if r["account_currency"]),
@@ -215,6 +216,90 @@ def supplier_ledger(
 		"from_date": str(from_d) if from_d else None,
 		"to_date": str(to_d) if to_d else None,
 	}
+
+
+def _attach_ledger_sources(company: str, rows: list[dict]) -> None:
+	"""Name every ledger line by the document the business actually recognises.
+
+	The GL only knows accounting vouchers (Purchase Invoice, Payment Entry). The
+	buyer knows Commercial Invoices. A Purchase Invoice born from a CI is
+	plumbing — so each row gets, in place, the SOURCE document behind the
+	voucher plus the SPA route that opens its own form:
+
+	    source_doctype / source_name / source_label / source_route
+	    voucher_route   – the accounting document's own form (fallback)
+	    channel         – Bank / Cash for payments (MSA dual-channel)
+
+	Batched: ONE query per doctype over the whole window (never per row — a
+	1000-line ledger would otherwise fire 1000 round-trips). Degrades safely:
+	a site without the imports columns simply keeps the voucher as its own
+	source, and CI links are only emitted where the imports module is on.
+	"""
+	if not rows:
+		return
+
+	pinv_names = {r["voucher_no"] for r in rows if r.get("voucher_type") == "Purchase Invoice" and r.get("voucher_no")}
+	pe_names = {r["voucher_no"] for r in rows if r.get("voucher_type") == "Payment Entry" and r.get("voucher_no")}
+
+	# Purchase Invoice → Commercial Invoice (imports-gated; the route itself is
+	# module-guarded, so a link there would dead-end for a non-imports tenant).
+	ci_of: dict[str, str] = {}
+	bill_of: dict[str, str] = {}
+	has_ci_col = frappe.db.has_column("Purchase Invoice", "custom_commercial_invoice")
+	imports_on = bool(module_map_for(company).get("imports"))
+	if pinv_names:
+		fields = ["name", "bill_no"]
+		if has_ci_col and imports_on:
+			fields.append("custom_commercial_invoice")
+		for row in frappe.get_all(
+			"Purchase Invoice",
+			filters={"name": ["in", list(pinv_names)]},
+			fields=fields,
+			limit_page_length=0,
+		):
+			if row.get("custom_commercial_invoice"):
+				ci_of[row["name"]] = row["custom_commercial_invoice"]
+			if row.get("bill_no"):
+				bill_of[row["name"]] = row["bill_no"]
+
+	# Payment Entry → which channel the money left through (K3 label only).
+	stream_of: dict[str, str] = {}
+	if pe_names and frappe.db.has_column("Payment Entry", "custom_payment_stream"):
+		for row in frappe.get_all(
+			"Payment Entry",
+			filters={"name": ["in", list(pe_names)]},
+			fields=["name", "custom_payment_stream"],
+			limit_page_length=0,
+		):
+			if row.get("custom_payment_stream"):
+				stream_of[row["name"]] = row["custom_payment_stream"]
+
+	# Voucher type → SPA form route. Journal Entry has a list page but no
+	# per-record form, so it stays None and the drawer remains its detail view.
+	routes = {
+		"Purchase Invoice": "/purchasing/invoices/",
+		"Payment Entry": "/money/payments/",
+		"Purchase Order": "/purchasing/orders/",
+	}
+
+	for r in rows:
+		vtype = r.get("voucher_type") or ""
+		vno = r.get("voucher_no") or ""
+		base = routes.get(vtype)
+		r["voucher_route"] = f"{base}{vno}" if base and vno else None
+		r["channel"] = stream_of.get(vno)
+		ci = ci_of.get(vno)
+		if ci:
+			r["source_doctype"] = "Commercial Invoice"
+			r["source_name"] = ci
+			r["source_label"] = ci
+			r["source_route"] = f"/imports/commercial-invoices/{ci}"
+		else:
+			r["source_doctype"] = vtype or None
+			r["source_name"] = vno or None
+			# A hand-entered supplier bill shows its own number, not our PINV id.
+			r["source_label"] = bill_of.get(vno) or vno or None
+			r["source_route"] = r["voucher_route"]
 
 
 @frappe.whitelist()

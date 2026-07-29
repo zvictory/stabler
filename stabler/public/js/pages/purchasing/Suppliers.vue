@@ -4,7 +4,7 @@ import { storeToRefs } from "pinia";
 import { useSession } from "../../stores/session.js";
 import { call } from "../../api/client.js";
 import { formatMoney, balanceState } from "../../composables/money.js";
-import { formatDate, formatDateTime } from "../../composables/date.js";
+import { formatDate, formatDateTime, formatTime } from "../../composables/date.js";
 import { t } from "../../composables/i18n.js";
 import { useConfirm } from "../../composables/useConfirm.js";
 import { useToast } from "../../composables/useToast.js";
@@ -177,6 +177,13 @@ const ledgerRows = computed(() => {
 		return { ...row, _seq: idx, running_base: runBase, running_acc: runAcc };
 	});
 });
+
+// What the row IS in business terms. A Purchase Invoice that came from a
+// Commercial Invoice is shown as the CI — the PInv is plumbing, not the deal.
+function sourceKind(e) {
+	if (e.source_doctype === "Commercial Invoice") return t("Commercial Invoice");
+	return e.voucher_type || "—";
+}
 
 const voucherTypes = computed(() => [
 	{ value: "", label: t("All vouchers") },
@@ -1159,18 +1166,38 @@ watch(activeCompany, () => {
 														</td>
 													</tr>
 													<tr v-for="e in filteredLedgerRows" :key="e.name">
-														<td class="text-nowrap small py-2">{{ formatDateTime(e.posting_date) }}</td>
+														<td class="text-nowrap small py-2">
+															<div>{{ formatDate(e.posting_date) }}</div>
+															<div v-if="e.creation && formatTime(e.creation)" class="text-secondary font-monospace" style="font-size: 0.72rem;">
+																{{ formatTime(e.creation) }}
+															</div>
+														</td>
 														<td class="py-2">
-															<div class="small text-secondary fw-semibold">{{ e.voucher_type }}</div>
+															<div class="small text-secondary fw-semibold d-flex align-items-center gap-1">
+																<span>{{ sourceKind(e) }}</span>
+																<span v-if="e.channel" class="badge bg-secondary-lt" style="font-size: 0.62rem;">{{ t(e.channel) }}</span>
+															</div>
+															<!-- The document the business recognises (a Commercial Invoice for
+															     imports), opening its OWN form. The accounting voucher behind it
+															     stays one click away, in muted type. -->
+															<router-link
+																v-if="e.source_route"
+																:to="e.source_route"
+																class="font-monospace small text-primary fw-semibold text-decoration-none"
+															>
+																{{ e.source_label || e.voucher_no }}
+															</router-link>
+															<span v-else class="font-monospace small">{{ e.source_label || e.voucher_no || "—" }}</span>
 															<button
-																v-if="e.voucher_no"
+																v-if="e.voucher_no && e.source_name !== e.voucher_no"
 																type="button"
-																class="btn btn-link p-0 font-monospace small text-primary fw-semibold"
+																class="btn btn-link p-0 ms-2 font-monospace text-secondary text-decoration-none"
+																style="font-size: 0.68rem;"
+																:title="t('Accounting voucher')"
 																@click="openVoucher(e)"
 															>
 																{{ e.voucher_no }}
 															</button>
-															<div v-else class="font-monospace small">—</div>
 															<div class="small text-muted font-monospace mt-0.5 text-truncate" style="max-width:280px" :title="e.display_remark">{{ e.display_remark || "—" }}</div>
 														</td>
 														<td class="text-end font-monospace small py-2 align-middle">
