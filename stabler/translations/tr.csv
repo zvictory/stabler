@@ -4883,4 +4883,12 @@ Session opened,Oturum açıldı
 Signing out,Çıkış yapılıyor
 "Signing out securely…","Güvenli bir şekilde çıkış yapılıyor…"
 "Could not sign out. Please try again.","Çıkış yapılamadı. Lütfen tekrar deneyin."
-
+Tender CRM,İhale CRM'i
+All tenders,Tüm ihaleler
+Lots,Kalemler
+Parent tender,Ana ihale
+Bid Preparation,Teklif hazırlığı
+Submission deadline,Teslim son tarihi
+No tenders found,İhale bulunamadı
+Back to all tenders,Tüm ihalelere dön
+Open lot workspace,Kalem çalışma alanını aç

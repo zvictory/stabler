@@ -1,13 +1,24 @@
 """Source-level guardrails for the Tender CRM SPA boundary."""
 
-from pathlib import Path
 import unittest
-
+from pathlib import Path
 
 TENDER_CRM = Path(__file__).parents[1] / "public/js/pages/tender/TenderCrm.vue"
+ROUTER = Path(__file__).parents[1] / "public/js/router.js"
+SIDEBAR = Path(__file__).parents[1] / "public/js/components/Sidebar.vue"
+TENDER_NAV = Path(__file__).parents[1] / "public/js/pages/tender/TenderNav.vue"
 
 
 class TestTenderMasterSpaContract(unittest.TestCase):
+	def test_tender_crm_route_and_navigation_are_wired(self):
+		router = ROUTER.read_text()
+		sidebar = SIDEBAR.read_text()
+		nav = TENDER_NAV.read_text()
+		self.assertIn('path: "/tender/crm"', router)
+		self.assertIn('name: "tender-crm"', router)
+		self.assertIn('path: "/tender/crm"', sidebar)
+		self.assertIn('to="/tender/crm"', nav)
+
 	def test_tender_crm_stays_inside_spa_and_uses_parent_api(self):
 		source = TENDER_CRM.read_text()
 		self.assertIn("stabler.api.tender_master.list_tender_masters", source)
@@ -18,13 +29,15 @@ class TestTenderMasterSpaContract(unittest.TestCase):
 
 	def test_tender_crm_guards_stale_company_responses_and_keeps_optional_columns_absent(self):
 		source = TENDER_CRM.read_text()
-		self.assertGreaterEqual(source.count("isTenderMasterCompanyCurrent(requestCompany, activeCompany.value)"), 2)
+		self.assertGreaterEqual(
+			source.count("isTenderMasterCompanyCurrent(requestCompany, activeCompany.value)"), 2
+		)
 		self.assertIn('v-if="hasDocumentReadiness"', source)
-		self.assertNotIn('<span v-else>—</span>', source)
+		self.assertNotIn("<span v-else>—</span>", source)
 
 	def test_tender_crm_uses_table_body_skeletons_and_shows_terminal_statuses_on_kanban_cards(self):
 		source = TENDER_CRM.read_text()
-		self.assertNotIn('<tbody>\n\t\t\t\t\t\t<SkeletonRows', source)
+		self.assertNotIn("<tbody>\n\t\t\t\t\t\t<SkeletonRows", source)
 		self.assertIn('<div class="small text-secondary mt-1">{{ record.status }}</div>', source)
 
 	def test_closing_tender_detail_invalidates_pending_detail_requests(self):

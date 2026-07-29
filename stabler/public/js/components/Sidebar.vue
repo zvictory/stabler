@@ -43,6 +43,8 @@ const isActive = (path) => computed(() => route.path === path || route.path.star
 
 const tenderChildren = computed(() => [
 	{ view: "director", path: "/tender/director", label: t("Control Tower") },
+	{ view: "director", path: "/tender/crm", label: t("Tender CRM") },
+	{ view: "sourcing", path: "/tender/crm", label: t("Tender CRM") },
 	{ view: "sourcing", path: "/tender/my-tenders", label: t("My tenders") },
 	{ view: "sourcing", path: "/tender/po-control", label: t("Vendor & PO") },
 	{ view: "declarant", path: "/tender/customs", label: t("Customs queue") },
@@ -389,4 +391,3 @@ async function downloadCbuRates() {
 		:message='t("Signing out securely…")'
 	/>
 </template>
-

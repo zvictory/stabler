@@ -39,6 +39,15 @@ Price Lists (Item Prices),Нарх рўйхатлари (Товар нархла
 A GRN checklist is created from a commercial invoice once cargo is ready to receive.,Қабул варақаси тижорат инвойсидан юк қабулга тайёр бўлганда яратилади.
 A Payroll Attendance Summary for employee {0} and period {1} already exists: {2},
 A category is required.,Туркум талаб қилинади.
+Tender CRM,Tender CRM
+All tenders,Барча тендерлар
+Lots,Лотлар
+Parent tender,Асосий тендер
+Bid Preparation,Ариза тайёрлаш
+Submission deadline,Топшириш муддати
+No tenders found,Тендерлар топилмади
+Back to all tenders,Барча тендерларга қайтиш
+Open lot workspace,Лот иш майдонини очиш
 A certificate number is required.,Сертификат рақами талаб қилинади.
 A cleared customs declaration is active: its duty and excise replace any ,
 A cleared customs declaration is active: its duty and excise replace any Uzbekistan Customs Duty cost line in the next voucher (VAT is never capitalized).,Расмийлаштирилган божхона декларацияси фаол: унинг божи ва акцизи кейинги ваучердаги «Ўзбекистон божхона божи» қаторини алмаштиради (ҚҚС ҳеч қачон капиталлаштирилмайди).
@@ -4888,4 +4897,3 @@ Session opened,Сеанс очилди
 Signing out,Тизимдан чиқиш
 "Signing out securely…","Хавфсиз чиқиш бажарилмоқда…"
 "Could not sign out. Please try again.","Тизимдан чиқиб бўлмади. Қайта уриниб кўринг."
-

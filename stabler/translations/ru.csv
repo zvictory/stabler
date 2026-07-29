@@ -40,6 +40,15 @@ Price Lists (Item Prices),Прайс-листы (Цены товаров)
 A GRN checklist is created from a commercial invoice once cargo is ready to receive.,"Лист приёмки создаётся из коммерческого инвойса, когда груз готов к приёмке."
 A Payroll Attendance Summary for employee {0} and period {1} already exists: {2},
 A category is required.,Требуется категория.
+Tender CRM,CRM тендеров
+All tenders,Все тендеры
+Lots,Лоты
+Parent tender,Основной тендер
+Bid Preparation,Подготовка заявки
+Submission deadline,Крайний срок подачи
+No tenders found,Тендеры не найдены
+Back to all tenders,Ко всем тендерам
+Open lot workspace,Открыть рабочее пространство лота
 A certificate number is required.,Требуется номер сертификата.
 A cleared customs declaration is active: its duty and excise replace any ,
 A cleared customs declaration is active: its duty and excise replace any Uzbekistan Customs Duty cost line in the next voucher (VAT is never capitalized).,Действует оформленная таможенная декларация: её пошлина и акциз заменяют строку «Таможенная пошлина Узбекистана» в следующем ваучере (НДС не капитализируется).
@@ -4894,4 +4903,3 @@ Session opened,Сессия открыта
 Signing out,Выход из системы
 "Signing out securely…","Безопасный выход из системы…"
 "Could not sign out. Please try again.","Не удалось выйти из системы. Попробуйте еще раз."
-

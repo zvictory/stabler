@@ -22,6 +22,9 @@ onMounted(() => session.ensureTenderViews());
 		<router-link v-if="can('director')" to="/tender/portfolio" class="btn btn-outline-secondary btn-sm" active-class="btn-primary">
 			<i class="ti ti-briefcase me-1"></i>{{ t("Director board") }}
 		</router-link>
+		<router-link v-if="can('director') || can('sourcing')" to="/tender/crm" class="btn btn-outline-secondary btn-sm" active-class="btn-primary">
+			<i class="ti ti-address-book me-1"></i>{{ t("Tender CRM") }}
+		</router-link>
 		<router-link v-if="can('sourcing')" to="/tender/my-tenders" class="btn btn-outline-secondary btn-sm" active-class="btn-primary">
 			<i class="ti ti-list-check me-1"></i>{{ t("My tenders") }}
 		</router-link>
