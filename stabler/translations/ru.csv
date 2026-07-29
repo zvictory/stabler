@@ -4911,4 +4911,47 @@ No payments are allocated to it.,К нему не привязано ни одн
 The booked invoice already matches this document.,Проведённый инвойс уже совпадает с этим документом.
 Re-booked as {invoice}.,Проведено заново как {invoice}.
 Could not re-book the invoice.,Не удалось провести инвойс заново.
+Commercial invoice,Коммерческий инвойс
+Commercial invoice line,Строка коммерческого инвойса
+Freight booking,Бронирование перевозки
+Import expense,Импортный расход
+Landed cost voucher,Ваучер стоимости доставки
+Proforma,Проформа
+Purchase invoice,Счёт-фактура покупки
+Purchase order link,Связь с заказом на закупку
+Customs declaration {name} exists — an official declaration is never deleted from here.,Существует таможенная декларация {name} — официальная декларация отсюда никогда не удаляется.
+GRN checklist {name} is submitted — stock was received. Cancel it first.,Лист приёмки {name} проведён — товар оприходован. Сначала отмените его.
+Landed cost voucher {name} is not cancelled — landed cost is spread over stock. Cancel it first.,Ваучер стоимости доставки {name} не отменён — расходы распределены по запасам. Сначала отмените его.
+Payment {name} is not cancelled — money is already booked against this document. Cancel the payment first.,Платёж {name} не отменён — деньги уже проведены по этому документу. Сначала отмените платёж.
+Proforma {name} is still superseded by this invoice — remove the link first.,Проформа {name} всё ещё замещена этим инвойсом — сначала снимите связь.
+Purchase invoice {name} is not cancelled — a live payable sits on the ledger. Cancel the invoice first.,Счёт закупки {name} не отменён — по нему на балансе висит кредиторская задолженность. Сначала отмените счёт.
+{doctype} {name} is linked and has no deletion rule — resolve it manually first.,{doctype} {name} связан и не имеет правила удаления — сначала разберите связь вручную.
+Also delete the linked records,Также удалить связанные записи
+Commercial invoice {name} deleted.,Коммерческий инвойс {name} удалён.
+Could not check what depends on this invoice.,"Не удалось проверить, что зависит от этого инвойса."
+Could not delete the commercial invoice.,Не удалось удалить коммерческий инвойс.
+Could not unlink the proforma.,Не удалось снять связь с проформой.
+Delete commercial invoice,Удалить коммерческий инвойс
+Delete permanently,Удалить безвозвратно
+Delete this commercial invoice?,Удалить этот коммерческий инвойс?
+Deleting shows everything that depends on this invoice before anything is removed.,"Удаление сначала покажет всё, что зависит от этого инвойса."
+Nothing else points at this invoice.,На этот инвойс больше ничто не ссылается.
+Proforma unlinked.,Связь с проформой снята.
+The proforma was already unlinked.,Связь с проформой уже была снята.
+These linked records go with it:,Вместе с ним пойдут эти связанные записи:
+This cannot be deleted yet:,Это пока нельзя удалить:
+Unlink proforma,Снять связь с проформой
+Unlink the proforma?,Снять связь с проформой?
+deleted,удаляется
+"link removed, record kept","связь снимается, запись сохраняется"
+{name} and {count} linked record(s) will be removed. This cannot be undone.,{name} и связанные записи ({count}) будут удалены. Это нельзя отменить.
+{name} will be removed. This cannot be undone.,{name} будет удалён. Это нельзя отменить.
+{proforma} goes back to open and this invoice loses its agreement link.,"{proforma} вернётся в открытый статус, а этот инвойс потеряет связь с договорённостью."
+Could not check what depends on this proforma.,"Не удалось проверить, что зависит от этой проформы."
+Could not delete the proforma.,Не удалось удалить проформу.
+Delete proforma,Удалить проформу
+Delete this proforma?,Удалить эту проформу?
+Deleting shows everything that depends on this proforma before anything is removed.,"Удаление сначала покажет всё, что зависит от этой проформы."
+Nothing else points at this proforma.,На эту проформу больше ничто не ссылается.
+Proforma {name} deleted.,Проформа {name} удалена.
 

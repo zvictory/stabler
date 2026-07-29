@@ -9,6 +9,7 @@ import { t } from "../../composables/i18n.js";
 import { formatDate } from "../../composables/date.js";
 import { formatMoney } from "../../composables/money.js";
 import { getStatusBadgeClass } from "../../composables/status.js";
+import { blockerText, cascadeRows, recordRoute } from "../../composables/deleteImpact.js";
 import { useToast } from "../../composables/useToast.js";
 import { useConfirm } from "../../composables/useConfirm.js";
 import { useEscapeBack } from "../../composables/useEscapeBack.js";
@@ -987,6 +988,106 @@ async function rebookInvoice() {
 	}
 }
 
+// Deleting a CI reaches into containers, trucks and — where an invoice was
+// booked — the ledger. So the button never deletes: it asks the endpoint what
+// would happen (dry run, writes nothing), puts that report on screen, and only
+// an explicit red confirmation acts on it.
+const deleteModalOpen = ref(false);
+const deletePlan = ref(null);
+const deletePlanning = ref(false);
+const deleteCascade = ref(false);
+const deleting = ref(false);
+
+const deleteBlockers = computed(() => deletePlan.value?.blockers || []);
+const deleteCascadeRows = computed(() => cascadeRows(deletePlan.value));
+const deleteCascadeCount = computed(() => deletePlan.value?.cascade_count || 0);
+// A blocker is the owner's job to clear; a cascade is theirs to accept.
+const canDelete = computed(() => {
+	if (!deletePlan.value?.deletable) return false;
+	return !deleteCascadeCount.value || deleteCascade.value;
+});
+
+async function openDeletePlan() {
+	if (deletePlanning.value || !docName.value) return;
+	deletePlanning.value = true;
+	deletePlan.value = null;
+	deleteCascade.value = false;
+	try {
+		deletePlan.value = await call("stabler.api.imports.delete_commercial_invoice", {
+			company: activeCompany.value,
+			name: docName.value,
+			dry_run: 1,
+		});
+		deleteModalOpen.value = true;
+	} catch (err) {
+		toast.error(err?.message || t("Could not check what depends on this invoice."));
+	} finally {
+		deletePlanning.value = false;
+	}
+}
+
+async function confirmDelete() {
+	if (deleting.value || !canDelete.value) return;
+	const label = form.value.ci_number || docName.value;
+	const ok = await confirm({
+		title: t("Delete this commercial invoice?"),
+		body: deleteCascadeCount.value
+			? t("{name} and {count} linked record(s) will be removed. This cannot be undone.", {
+				name: label,
+				count: deleteCascadeCount.value,
+			})
+			: t("{name} will be removed. This cannot be undone.", { name: label }),
+		confirmLabel: t("Delete permanently"),
+		danger: true,
+	});
+	if (!ok) return;
+	deleting.value = true;
+	try {
+		await call("stabler.api.imports.delete_commercial_invoice", {
+			company: activeCompany.value,
+			name: docName.value,
+			cascade: deleteCascade.value ? 1 : 0,
+			dry_run: 0,
+		});
+		deleteModalOpen.value = false;
+		toast.success(t("Commercial invoice {name} deleted.", { name: label }));
+		router.push("/imports/commercial-invoices");
+	} catch (err) {
+		toast.error(err?.message || t("Could not delete the commercial invoice."));
+	} finally {
+		deleting.value = false;
+	}
+}
+
+// Linking a proforma to a CI used to be one-way, so a mis-match stayed wrong
+// forever. Unlinking hands the proforma back its open balance.
+const unlinking = ref(false);
+async function unlinkProforma() {
+	const proforma = form.value.custom_proforma_invoice;
+	if (unlinking.value || !proforma || !docName.value) return;
+	const ok = await confirm({
+		title: t("Unlink the proforma?"),
+		body: t("{proforma} goes back to open and this invoice loses its agreement link.", { proforma }),
+		confirmLabel: t("Unlink"),
+		danger: true,
+	});
+	if (!ok) return;
+	unlinking.value = true;
+	try {
+		const res = await call("stabler.api.imports.unlink_proforma_from_ci", {
+			company: activeCompany.value,
+			proforma,
+			commercial_invoice: docName.value,
+		});
+		toast.success(res?.changed ? t("Proforma unlinked.") : t("The proforma was already unlinked."));
+		await loadDoc();
+	} catch (err) {
+		toast.error(err?.message || t("Could not unlink the proforma."));
+	} finally {
+		unlinking.value = false;
+	}
+}
+
 onMounted(async () => {
 	loadItemsList();
 	loadRefData();
@@ -1519,6 +1620,101 @@ watch(activeCompany, loadRefData);
 					</button>
 				</div>
 				<div v-if="!form.po_links.length" class="text-secondary small">{{ t("No purchase orders linked.") }}</div>
+			</div>
+		</div>
+
+		<!-- Destructive actions sit at the bottom, away from Save -->
+		<div v-if="!isCreate" class="card mb-3">
+			<div class="card-body d-flex flex-wrap align-items-center gap-2">
+				<div class="text-secondary small flex-grow-1">
+					{{ t("Deleting shows everything that depends on this invoice before anything is removed.") }}
+				</div>
+				<button
+					v-if="form.custom_proforma_invoice"
+					type="button"
+					class="btn btn-outline-secondary"
+					:disabled="unlinking"
+					@click="unlinkProforma"
+				>
+					<span v-if="unlinking" class="spinner-border spinner-border-sm me-1"></span>
+					<i v-else class="ti ti-unlink me-1"></i>{{ t("Unlink proforma") }}
+				</button>
+				<button type="button" class="btn btn-outline-danger" :disabled="deletePlanning" @click="openDeletePlan">
+					<span v-if="deletePlanning" class="spinner-border spinner-border-sm me-1"></span>
+					<i v-else class="ti ti-trash me-1"></i>{{ t("Delete") }}
+				</button>
+			</div>
+		</div>
+
+		<!-- What deleting this invoice would touch — shown before anything happens -->
+		<div v-if="deleteModalOpen" class="modal d-block" tabindex="-1" style="background: rgba(0,0,0,0.4)">
+			<div class="modal-dialog modal-dialog-centered modal-dialog-scrollable">
+				<div class="modal-content">
+					<div class="modal-header">
+						<h5 class="modal-title">{{ t("Delete commercial invoice") }}</h5>
+						<button type="button" class="btn-close" @click="deleteModalOpen = false"></button>
+					</div>
+					<div class="modal-body">
+						<div v-if="deleteBlockers.length" class="mb-3">
+							<div class="fw-semibold text-danger mb-2">
+								<i class="ti ti-alert-triangle me-1"></i>{{ t("This cannot be deleted yet:") }}
+							</div>
+							<ul class="list-unstyled mb-0">
+								<li v-for="(b, i) in deleteBlockers" :key="i" class="mb-2">
+									<router-link
+										v-if="recordRoute(b.doctype, b.name)"
+										:to="recordRoute(b.doctype, b.name)"
+										class="font-monospace fw-semibold"
+									>{{ b.name }}</router-link>
+									<span v-else class="font-monospace fw-semibold">{{ b.name }}</span>
+									<div class="small text-danger">{{ blockerText(b) }}</div>
+								</li>
+							</ul>
+						</div>
+
+						<div v-if="deleteCascadeRows.length" class="mb-3">
+							<div class="fw-semibold mb-2">{{ t("These linked records go with it:") }}</div>
+							<ul class="list-unstyled mb-0">
+								<li v-for="row in deleteCascadeRows" :key="row.doctype" class="mb-2">
+									<div class="small text-secondary">
+										{{ row.label }} · {{ row.detach ? t("link removed, record kept") : t("deleted") }}
+									</div>
+									<div>
+										<template v-for="(n, i) in row.names" :key="n">
+											<router-link
+												v-if="recordRoute(row.doctype, n)"
+												:to="recordRoute(row.doctype, n)"
+												class="font-monospace"
+											>{{ n }}</router-link>
+											<span v-else class="font-monospace">{{ n }}</span>
+											<span v-if="i < row.names.length - 1">, </span>
+										</template>
+									</div>
+								</li>
+							</ul>
+							<label class="form-check mt-2">
+								<input v-model="deleteCascade" class="form-check-input" type="checkbox">
+								<span class="form-check-label">{{ t("Also delete the linked records") }}</span>
+							</label>
+						</div>
+
+						<div v-if="!deleteBlockers.length && !deleteCascadeRows.length" class="text-secondary">
+							{{ t("Nothing else points at this invoice.") }}
+						</div>
+					</div>
+					<div class="modal-footer">
+						<button type="button" class="btn btn-outline-secondary" @click="deleteModalOpen = false">{{ t("Cancel") }}</button>
+						<button
+							type="button"
+							class="btn btn-danger"
+							:disabled="!canDelete || deleting"
+							:title="deleteBlockers.length ? blockerText(deleteBlockers[0]) : ''"
+							@click="confirmDelete"
+						>
+							<span v-if="deleting" class="spinner-border spinner-border-sm me-1"></span>{{ t("Delete") }}
+						</button>
+					</div>
+				</div>
 			</div>
 		</div>
 

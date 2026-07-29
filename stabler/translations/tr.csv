@@ -4900,4 +4900,47 @@ No payments are allocated to it.,Buna bağlı hiçbir ödeme yok.
 The booked invoice already matches this document.,Kayda alınan fatura bu belgeyle zaten örtüşüyor.
 Re-booked as {invoice}.,{invoice} olarak yeniden kaydedildi.
 Could not re-book the invoice.,Fatura yeniden kaydedilemedi.
+Commercial invoice,Ticari fatura
+Commercial invoice line,Ticari fatura satırı
+Freight booking,Nakliye rezervasyonu
+Import expense,İthalat gideri
+Landed cost voucher,Varış maliyeti fişi
+Proforma,Proforma
+Purchase invoice,Satın alma faturası
+Purchase order link,Satın alma siparişi bağlantısı
+Customs declaration {name} exists — an official declaration is never deleted from here.,{name} gümrük beyannamesi mevcut — resmî bir beyanname buradan asla silinmez.
+GRN checklist {name} is submitted — stock was received. Cancel it first.,{name} GRN kontrol listesi onaylanmış — stok teslim alınmış. Önce onu iptal edin.
+Landed cost voucher {name} is not cancelled — landed cost is spread over stock. Cancel it first.,{name} varış maliyeti fişi iptal edilmemiş — maliyet stoka dağıtılmış. Önce onu iptal edin.
+Payment {name} is not cancelled — money is already booked against this document. Cancel the payment first.,{name} ödemesi iptal edilmemiş — para bu belge üzerinden zaten kaydedilmiş. Önce ödemeyi iptal edin.
+Proforma {name} is still superseded by this invoice — remove the link first.,{name} proforması hâlâ bu fatura ile değiştirilmiş durumda — önce bağlantıyı kaldırın.
+Purchase invoice {name} is not cancelled — a live payable sits on the ledger. Cancel the invoice first.,{name} alış faturası iptal edilmemiş — defterde canlı bir borç duruyor. Önce faturayı iptal edin.
+{doctype} {name} is linked and has no deletion rule — resolve it manually first.,{doctype} {name} bağlı ve bir silme kuralı yok — önce elle çözün.
+Also delete the linked records,Bağlı kayıtları da sil
+Commercial invoice {name} deleted.,{name} ticari faturası silindi.
+Could not check what depends on this invoice.,Bu faturaya neyin bağlı olduğu kontrol edilemedi.
+Could not delete the commercial invoice.,Ticari fatura silinemedi.
+Could not unlink the proforma.,Proforma bağlantısı kaldırılamadı.
+Delete commercial invoice,Ticari faturayı sil
+Delete permanently,Kalıcı olarak sil
+Delete this commercial invoice?,Bu ticari fatura silinsin mi?
+Deleting shows everything that depends on this invoice before anything is removed.,"Silme, hiçbir şey kaldırılmadan önce bu faturaya bağlı her şeyi gösterir."
+Nothing else points at this invoice.,Bu faturaya başka hiçbir şey işaret etmiyor.
+Proforma unlinked.,Proforma bağlantısı kaldırıldı.
+The proforma was already unlinked.,Proforma bağlantısı zaten kaldırılmıştı.
+These linked records go with it:,Şu bağlı kayıtlar da onunla birlikte gider:
+This cannot be deleted yet:,Bu henüz silinemez:
+Unlink proforma,Proforma bağını kaldır
+Unlink the proforma?,Proforma bağı kaldırılsın mı?
+deleted,silinir
+"link removed, record kept","bağlantı kaldırılır, kayıt korunur"
+{name} and {count} linked record(s) will be removed. This cannot be undone.,{name} ve {count} bağlı kayıt kaldırılacak. Bu geri alınamaz.
+{name} will be removed. This cannot be undone.,{name} kaldırılacak. Bu geri alınamaz.
+{proforma} goes back to open and this invoice loses its agreement link.,{proforma} yeniden açık duruma döner ve bu fatura anlaşma bağını kaybeder.
+Could not check what depends on this proforma.,Bu proformaya neyin bağlı olduğu kontrol edilemedi.
+Could not delete the proforma.,Proforma silinemedi.
+Delete proforma,Proformayı sil
+Delete this proforma?,Bu proforma silinsin mi?
+Deleting shows everything that depends on this proforma before anything is removed.,"Silme, hiçbir şey kaldırılmadan önce bu proformaya bağlı her şeyi gösterir."
+Nothing else points at this proforma.,Bu proformaya başka hiçbir şey işaret etmiyor.
+Proforma {name} deleted.,{name} proforması silindi.
 
