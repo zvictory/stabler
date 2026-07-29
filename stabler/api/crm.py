@@ -612,6 +612,7 @@ def _transition_deal(
 		_assert_open_deal_hygiene(deal, status)
 		if updates:
 			deal.save()
+		_maybe_convert_won_deal(deal, company)
 		return deal.as_dict()
 
 	status_type = _deal_status_type(status)

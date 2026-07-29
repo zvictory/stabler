@@ -478,6 +478,29 @@ class TestCrmCompanyScope(unittest.TestCase):
 
 		self.assertEqual(result["linked_customer"], "CUST-NEW")
 
+	def test_same_target_won_save_retries_handoff_without_duplicate_event(self):
+		"""Editing an already-Won deal must retry handoff without inventing a transition."""
+		deal = self.db.docs[("CRM Deal", "DEAL-MIKAS")]
+		deal["status"] = "Won"
+		deal["linked_customer"] = None
+		self.crm.convert_deal_to_customer = lambda _name, _company: deal.update(
+			{"linked_customer": "CUST-RETRIED"}
+		)
+
+		result = self.crm.save_deal(
+			{
+				"name": "DEAL-MIKAS",
+				"status": "Won",
+				"organization": "Updated Won Shop",
+			},
+			"Mikas",
+		)
+		events = [doc for doc in self.db.created if doc.get("doctype") == "CRM Stage Event"]
+
+		self.assertEqual(result["linked_customer"], "CUST-RETRIED")
+		self.assertEqual(result["organization"], "Updated Won Shop")
+		self.assertEqual(events, [])
+
 	def test_transition_uses_status_observed_after_row_lock(self):
 		"""A concurrent stage change must become the next event's from-stage."""
 		self.db.status_on_lock = "Qualified"
