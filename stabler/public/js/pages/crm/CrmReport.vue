@@ -34,6 +34,7 @@ async function load() {
 	error.value = "";
 	try {
 		report.value = await call("stabler.api.crm.crm_report", {
+			company: activeCompany.value,
 			from_date: fromDate.value,
 			to_date: toDate.value,
 		});

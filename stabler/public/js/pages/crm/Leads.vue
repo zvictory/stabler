@@ -41,7 +41,7 @@ const meta = ref({ lead_statuses: [], sources: [], industries: [] });
 
 async function loadMeta() {
 	try {
-		const res = await call("stabler.api.crm.crm_meta");
+		const res = await call("stabler.api.crm.crm_meta", { company: activeCompany.value });
 		meta.value = res;
 	} catch (_) {
 		// Non-fatal: list still usable, just without filter options.
@@ -72,6 +72,7 @@ async function fetchLeads() {
 	error.value = "";
 	try {
 		const res = await call("stabler.api.crm.list_leads", {
+			company: activeCompany.value,
 			search: search.value,
 			status: filterStatus.value,
 			page_length: PAGE_SIZE,
@@ -126,7 +127,7 @@ async function openEdit(lead) {
 	drawerOpen.value = true;
 	// Load full doc to get all fields.
 	try {
-		const doc = await call("stabler.api.crm.get_lead", { name: lead.name });
+		const doc = await call("stabler.api.crm.get_lead", { name: lead.name, company: activeCompany.value });
 		form.value = {
 			name: doc.name,
 			first_name: doc.first_name || "",
@@ -156,7 +157,7 @@ async function submitForm() {
 	submitting.value = true;
 	submitError.value = "";
 	try {
-		await call("stabler.api.crm.save_lead", { data: JSON.stringify(form.value) });
+		await call("stabler.api.crm.save_lead", { data: JSON.stringify(form.value), company: activeCompany.value });
 		closeDrawer();
 		fetchLeads();
 	} catch (err) {
@@ -176,7 +177,7 @@ async function deleteLead() {
 	if (!ok) return;
 	deleting.value = true;
 	try {
-		await call("stabler.api.crm.delete_lead", { name: editingLead.value.name });
+		await call("stabler.api.crm.delete_lead", { name: editingLead.value.name, company: activeCompany.value });
 		closeDrawer();
 		fetchLeads();
 	} catch (err) {

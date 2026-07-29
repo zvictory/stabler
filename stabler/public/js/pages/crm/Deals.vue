@@ -88,7 +88,7 @@ const meta = ref({
 
 async function loadMeta() {
 	try {
-		const res = await call("stabler.api.crm.crm_meta");
+		const res = await call("stabler.api.crm.crm_meta", { company: activeCompany.value });
 		meta.value = res;
 	} catch (_) {
 		// Non-fatal
@@ -119,6 +119,7 @@ async function fetchDeals() {
 	error.value = "";
 	try {
 		const res = await call("stabler.api.crm.list_deals", {
+			company: activeCompany.value,
 			search: search.value,
 			status: filterStatus.value,
 			// Fetch more in board mode so all columns are populated.
@@ -169,7 +170,7 @@ const metrics = ref({
 });
 async function loadMetrics() {
 	try {
-		metrics.value = await call("stabler.api.crm.crm_metrics");
+		metrics.value = await call("stabler.api.crm.crm_metrics", { company: activeCompany.value });
 	} catch {
 		/* non-fatal — tiles just stay at zero */
 	}
@@ -198,7 +199,7 @@ async function toggleAnalytics() {
 	if (analyticsOpen.value && !analytics.value) {
 		analyticsLoading.value = true;
 		try {
-			analytics.value = await call("stabler.api.crm.crm_analytics");
+			analytics.value = await call("stabler.api.crm.crm_analytics", { company: activeCompany.value });
 		} catch {
 			/* non-fatal */
 		} finally {
@@ -255,6 +256,7 @@ async function onDrop(targetStatus) {
 	try {
 		await call("stabler.api.crm.save_deal", {
 			data: JSON.stringify({ name, status: targetStatus }),
+			company: activeCompany.value,
 		});
 		// Re-fetch so server-assigned fields (modified, etc.) stay in sync.
 		fetchDeals();
@@ -461,7 +463,7 @@ async function openEdit(deal) {
 	submitError.value = "";
 	drawerOpen.value = true;
 	try {
-		const doc = await call("stabler.api.crm.get_deal", { name: deal.name });
+		const doc = await call("stabler.api.crm.get_deal", { name: deal.name, company: activeCompany.value });
 		form.value = {
 			name: doc.name,
 			organization: doc.organization || "",
@@ -520,7 +522,7 @@ async function submitForm() {
 	submitting.value = true;
 	submitError.value = "";
 	try {
-		await call("stabler.api.crm.save_deal", { data: JSON.stringify(form.value) });
+		await call("stabler.api.crm.save_deal", { data: JSON.stringify(form.value), company: activeCompany.value });
 		closeDrawer();
 		fetchDeals();
 	} catch (err) {
@@ -543,7 +545,7 @@ async function convertToCustomer() {
 	converting.value = true;
 	submitError.value = "";
 	try {
-		const res = await call("stabler.api.crm.convert_deal_to_customer", { name: form.value.name });
+		const res = await call("stabler.api.crm.convert_deal_to_customer", { name: form.value.name, company: activeCompany.value });
 		form.value.linked_customer = res.customer;
 		await fetchDeals();
 	} catch (err) {
@@ -563,7 +565,7 @@ async function deleteDeal() {
 	if (!ok) return;
 	deleting.value = true;
 	try {
-		await call("stabler.api.crm.delete_deal", { name: editingDeal.value.name });
+		await call("stabler.api.crm.delete_deal", { name: editingDeal.value.name, company: activeCompany.value });
 		closeDrawer();
 		fetchDeals();
 	} catch (err) {
