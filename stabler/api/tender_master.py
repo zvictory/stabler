@@ -4,11 +4,19 @@ from __future__ import annotations
 
 import frappe
 from frappe import _
-from frappe.utils import add_days, flt, now_datetime
+from frappe.utils import flt
 
 from stabler.api._common import _require_company
 from stabler.api.organization import _ADMIN_ROLES, _user_allowed_companies
-from stabler.api.tender import _require_tender
+from stabler.api.tender import (
+	_dashboard_period,
+	_deal_deadlines,
+	_has_submission_evidence,
+	_in_dashboard_period,
+	_read_intake,
+	_require_tender,
+	_tender_event_dates,
+)
 
 _TENDER_FIELDS = (
 	"naming_series",
@@ -24,36 +32,13 @@ _TENDER_FIELDS = (
 	"status",
 	"owner_user",
 )
-_STATUS_CHOICES = ("New", "Sourcing", "Bid Preparation", "Submitted", "Won", "Lost", "Cancelled")
-_TERMINAL_STATUSES = ("Won", "Lost", "Cancelled")
-
-
-def _canonical_status(status: str | None) -> str | None:
-	if not status:
-		return None
-	return next((choice for choice in _STATUS_CHOICES if choice.casefold() == str(status).casefold()), None)
 
 
 def _list_filters(company, status=None, stage=None, risk=None, deal=None, from_date=None, to_date=None):
 	filters = [["company", "=", company]]
-	canonical_status = _canonical_status(status)
-	if canonical_status:
-		filters.append(["status", "in", [canonical_status]])
-	if stage == "identified":
-		filters.append(["status", "not in", ["Submitted", *_TERMINAL_STATUSES]])
-	elif stage == "submitted":
-		filters.append(["status", "in", ["Submitted", "Won", "Lost"]])
-	if risk == "risk":
-		filters.extend(
-			[
-				["status", "not in", list(_TERMINAL_STATUSES)],
-				["submission_deadline", "<=", add_days(now_datetime(), 7)],
-			]
-		)
-	if from_date:
-		filters.append(["submission_deadline", ">=", from_date])
-	if to_date:
-		filters.append(["submission_deadline", "<=", to_date])
+	parent_names = _qualifying_parent_names(company, status, stage, risk, from_date, to_date)
+	if parent_names is not None:
+		filters.append(["name", "in", sorted(parent_names) or ["__no_permitted_tender_master__"]])
 	if deal:
 		deal_doc = frappe.get_doc("CRM Deal", deal)
 		if not frappe.has_permission("CRM Deal", "read", doc=deal_doc):
@@ -62,6 +47,41 @@ def _list_filters(company, status=None, stage=None, risk=None, deal=None, from_d
 			frappe.throw(_("Not permitted."), frappe.PermissionError)
 		filters.append(["name", "=", deal_doc.custom_parent_tender])
 	return filters
+
+
+def _qualifying_parent_names(company, status=None, stage=None, risk=None, from_date=None, to_date=None):
+	if not any((stage in {"identified", "submitted"}, str(status).casefold() == "won", risk == "risk")):
+		return None
+	start, end = _dashboard_period(from_date, to_date)
+	rows = frappe.get_list(
+		"CRM Deal",
+		filters={"company": company, "custom_parent_tender": ["is", "set"]},
+		fields=["name", "custom_parent_tender", "creation"],
+		limit_page_length=0,
+	)
+	parents = set()
+	for row in rows:
+		if not frappe.has_permission("CRM Deal", "read", doc=row.name):
+			continue
+		intake = _read_intake(row.name)
+		events = _tender_event_dates(intake, row.creation)
+		matches = (
+			(stage == "identified" and _in_dashboard_period(events["identified"], start, end))
+			or (
+				stage == "submitted"
+				and _has_submission_evidence(intake)
+				and _in_dashboard_period(events["submitted"], start, end)
+			)
+			or (
+				str(status).casefold() == "won"
+				and _has_submission_evidence(intake)
+				and _in_dashboard_period(events["won"], start, end)
+			)
+			or (risk == "risk" and _deal_deadlines(row.name, company, intake)["risk"] == "risk")
+		)
+		if matches:
+			parents.add(row.custom_parent_tender)
+	return parents
 
 
 def require_selected_company(company: str | None) -> str:

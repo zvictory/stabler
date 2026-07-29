@@ -66,7 +66,11 @@ class _FakeFrappe:
 		self.last_list_kwargs = kwargs
 		rows = [doc for (kind, _name), doc in self.docs.items() if kind == doctype]
 		if isinstance(filters, dict):
-			rows = [row for row in rows if all(row.get(field) == value for field, value in filters.items())]
+			for field, value in filters.items():
+				if value == ["is", "set"]:
+					rows = [row for row in rows if row.get(field)]
+				else:
+					rows = [row for row in rows if row.get(field) == value]
 		else:
 			for field, operator, value in filters:
 				if operator == "=":
@@ -118,6 +122,23 @@ def _load_api(fake: _FakeFrappe, *, tender_allowed=True):
 	tender._require_tender = lambda _company=None: (
 		None if tender_allowed else (_ for _ in ()).throw(PermissionError("Not permitted"))
 	)
+	tender._dashboard_period = lambda _from_date=None, _to_date=None: ("2026-07-01", "2026-07-31")
+	tender._read_intake = lambda _deal: {
+		"submitted_at": "2026-07-10",
+		"submitted_by": "user",
+		"result": "won",
+		"result_at": "2026-07-11",
+	}
+	tender._tender_event_dates = lambda _intake, _creation: {
+		"identified": "2026-07-01",
+		"submitted": "2026-07-10",
+		"won": "2026-07-11",
+	}
+	tender._in_dashboard_period = lambda value, _start, _end: bool(value)
+	tender._has_submission_evidence = lambda intake: bool(
+		intake.get("submitted_at") and intake.get("submitted_by")
+	)
+	tender._deal_deadlines = lambda _deal, _company, _intake: {"risk": "risk"}
 	frappe.get_roles = lambda _user=None: ["Sales User"]
 	sys.modules.update(
 		{
@@ -190,12 +211,7 @@ class TestTenderMasterApi(unittest.TestCase):
 			to_date="2026-07-31",
 		)
 		filters = self.fake.last_filters
-		self.assertIn(["status", "in", ["Won"]], filters)
-		self.assertIn(["status", "in", ["Submitted", "Won", "Lost"]], filters)
-		self.assertIn(["status", "not in", ["Won", "Lost", "Cancelled"]], filters)
-		self.assertIn(["submission_deadline", "<=", "2026-07-01+7"], filters)
-		self.assertIn(["submission_deadline", ">=", "2026-07-01"], filters)
-		self.assertIn(["submission_deadline", "<=", "2026-07-31"], filters)
+		self.assertIn(["name", "in", ["TND-2026-00001"]], filters)
 		self.assertIn(["name", "=", "TND-2026-00001"], filters)
 
 	def test_list_deal_filter_rejects_unreadable_or_foreign_deals_before_resolving_parent(self):
