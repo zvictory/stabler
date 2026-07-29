@@ -1,5 +1,5 @@
 <script setup>
-import { computed } from "vue";
+import { computed, ref } from "vue";
 import { useRouter } from "vue-router";
 import { formatMoney } from "../../composables/money.js";
 import { t } from "../../composables/i18n.js";
@@ -15,9 +15,14 @@ const props = defineProps({
 });
 
 const router = useRouter();
+const showAllAttention = ref(false);
 const acquisition = computed(() => props.data.acquisition || {});
 const execution = computed(() => props.data.execution || {});
 const attention = computed(() => props.data.attention?.items || []);
+const visibleAttention = computed(() =>
+	showAllAttention.value ? attention.value : attention.value.slice(0, 3)
+);
+const remainingAttentionCount = computed(() => Math.max(0, attention.value.length - 3));
 const myWork = computed(() => props.data.my_work || {});
 const finance = computed(() => props.data.finance || null);
 const views = computed(() => props.data.role_scope?.views || []);
@@ -139,7 +144,7 @@ const financeMoney = (value) =>
 					</div>
 					<div v-else class="list-group list-group-flush">
 						<button
-							v-for="item in attention"
+							v-for="item in visibleAttention"
 							:key="`${item.deal}-${item.kind}`"
 							type="button"
 							class="list-group-item list-group-item-action text-start"
@@ -149,6 +154,17 @@ const financeMoney = (value) =>
 							<div class="small" :class="item.severity === 'risk' ? 'text-red' : 'text-yellow'">
 								{{ attentionLabel(item) }}
 							</div>
+						</button>
+						<button
+							v-if="attention.length > 3"
+							type="button"
+							class="list-group-item list-group-item-action text-center text-primary"
+							:aria-expanded="showAllAttention"
+							@click="showAllAttention = !showAllAttention"
+						>
+							{{
+								showAllAttention ? t("Show less") : `${t("Show more")} (${remainingAttentionCount})`
+							}}
 						</button>
 					</div>
 				</div>

@@ -72,6 +72,15 @@ class TestTenderDashboardSpaContract(unittest.TestCase):
 			self.assertIn(field, control_tower)
 		self.assertNotIn("portfolio_preview", control_tower)
 
+	def test_attention_panel_shows_three_items_before_expansion(self):
+		control_tower = _read(_CONTROL_TOWER)
+
+		self.assertIn("attention.value.slice(0, 3)", control_tower)
+		self.assertIn("visibleAttention", control_tower)
+		self.assertIn("remainingAttentionCount", control_tower)
+		self.assertIn('t("Show more")', control_tower)
+		self.assertIn('t("Show less")', control_tower)
+
 	def test_tender_dashboard_renders_executive_content_without_legacy_empty_gate(self):
 		source = _read(_DASHBOARD)
 
