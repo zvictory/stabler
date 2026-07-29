@@ -18,12 +18,17 @@ Design decisions (approved by the owner, 2026-07-29):
 Usage (bench console on msa, run phases IN ORDER, each dry-run first):
 
     exec(open("/tmp/IMPORT_msa_vendor_history.py").read())
-    audit()                      # read-only; fill SUPPLIER_MAP + ACCOUNTS after
+    audit()                      # read-only; fill SUPPLIER_MAP after
     ensure_fiscal_years()        # writes only if FY missing
+    ensure_accounts(dry_run=1)   # CoA scan → plan → approval → dry_run=0
     import_payments(dry_run=1)   # plan → approval → dry_run=0
     convert_cis(dry_run=1)       # plan → approval → dry_run=0
     reconcile(dry_run=1)         # plan → approval → dry_run=0
     compare()                    # ledger vs Excel targets — the honest table
+
+NOTE: each new console session resets the resolved ACCOUNTS globals — any
+session that runs import_payments must call ensure_accounts(dry_run=0)
+first (idempotent: it only re-finds, creates nothing the second time).
 
 Idempotent: PEs are keyed by reference_no (XLS-…); re-running skips existing.
 CI→PInv reuses the WP-I5 endpoint (already idempotent per CI).
@@ -51,10 +56,21 @@ SUPPLIER_MAP = {
 	"AL-DUA": None,
 }
 
-# paid_from account per channel (USD accounts). audit() lists candidates.
-# Optional per-bank override by the CSV's bank_label (NBU BANK / ALOQA BANK).
+# paid_from account per channel. DO NOT hand-fill: ensure_accounts() resolves
+# these from the company's existing CoA (and creates USD accounts only when
+# nothing suitable exists), then prints the resolution for approval.
 ACCOUNTS = {"Bank": None, "Cash": None}
-BANK_OVERRIDES = {}  # e.g. {"NBU BANK": "NBU USD - MSA", "ALOQA BANK": "..."}
+BANK_OVERRIDES = {}  # bank_label → account, resolved by ensure_accounts()
+
+# What ensure_accounts() looks for / creates. Matching is by token in the
+# existing account name (case-insensitive), USD accounts preferred.
+ACCOUNT_RULES = [
+	# (slot, token, account_type, create_name if nothing matches)
+	("BANK_OVERRIDES:NBU BANK", "NBU", "Bank", "NBU USD"),
+	("BANK_OVERRIDES:ALOQA BANK", "ALOQA", "Bank", "Aloqa USD"),
+	("ACCOUNTS:Bank", "BANK", "Bank", "Bank USD"),
+	("ACCOUNTS:Cash", "KASSA", "Cash", "Kassa USD"),
+]
 
 # Vendor summary blocks from the workbook — compare() prints ledger vs these.
 # paid_* are the itemized sums (ground truth we import); summary_* are the
@@ -108,7 +124,7 @@ def _require_map():
 	if bad:
 		raise SystemExit(f"Suppliers not found on this site: {bad}")
 	if not ACCOUNTS.get("Bank") or not ACCOUNTS.get("Cash"):
-		raise SystemExit("ACCOUNTS Bank/Cash unfilled — run audit() and fill.")
+		raise SystemExit("ACCOUNTS Bank/Cash unresolved — run ensure_accounts() first.")
 
 
 # ---------------------------------------------------------------- PHASE A ----
@@ -207,6 +223,87 @@ def ensure_fiscal_years():
 		fy.insert(ignore_permissions=True)
 		print(f"created Fiscal Year {y}")
 	frappe.db.commit()
+
+
+def ensure_accounts(dry_run=1):
+	"""Resolve paid_from accounts from the EXISTING CoA; create only what's missing.
+
+	Resolution per ACCOUNT_RULES, in order, against non-group Bank/Cash accounts
+	of the company:
+	1. name contains the token AND account_currency == USD  → use it
+	2. name contains the token (any currency)               → use it (warns if not USD)
+	3. nothing matches → CREATE a USD account (create_name) under the parent
+	   group of the existing accounts of that type (or the first group account
+	   of that type). dry_run=1 only prints the plan.
+
+	Writes the winners into ACCOUNTS / BANK_OVERRIDES (module globals) and
+	prints the full resolution table — approve it before import_payments().
+	"""
+	frappe.set_user("Administrator")
+	accs = frappe.get_all(
+		"Account",
+		filters={"company": COMPANY, "is_group": 0, "account_type": ["in", ["Bank", "Cash"]]},
+		fields=["name", "account_type", "account_currency", "parent_account"],
+	)
+
+	def find(token, acc_type):
+		pool = [a for a in accs if a.account_type == acc_type and token in a.name.upper()]
+		usd = [a for a in pool if (a.account_currency or "") == "USD"]
+		return (usd or pool or [None])[0]
+
+	def parent_for(acc_type):
+		siblings = [a for a in accs if a.account_type == acc_type and a.parent_account]
+		if siblings:
+			return siblings[0].parent_account
+		grp = frappe.get_all(
+			"Account",
+			filters={"company": COMPANY, "is_group": 1, "account_type": acc_type},
+			pluck="name", limit=1,
+		)
+		return grp[0] if grp else None
+
+	print(f"{'slot':28} {'resolution':44} note")
+	for slot, token, acc_type, create_name in ACCOUNT_RULES:
+		kind, key = slot.split(":")
+		hit = find(token, acc_type)
+		note = ""
+		if hit:
+			chosen = hit.name
+			if (hit.account_currency or "") != "USD":
+				note = f"!! currency={hit.account_currency or '?'} (not USD) — payments are USD, check"
+		else:
+			parent = parent_for(acc_type)
+			if not parent:
+				print(f"{slot:28} {'—':44} !! no {acc_type} group in CoA — STOP, decide manually")
+				continue
+			chosen = f"{create_name} - {frappe.db.get_value('Company', COMPANY, 'abbr')}"
+			note = f"CREATE under {parent}" + (" (dry-run)" if dry_run else "")
+			if not dry_run:
+				doc = frappe.get_doc(
+					{
+						"doctype": "Account",
+						"company": COMPANY,
+						"account_name": create_name,
+						"parent_account": parent,
+						"account_type": acc_type,
+						"account_currency": "USD",
+						"is_group": 0,
+					}
+				)
+				doc.insert(ignore_permissions=True)
+				chosen = doc.name
+				note = f"CREATED under {parent}"
+		if kind == "ACCOUNTS":
+			ACCOUNTS[key] = chosen
+		else:
+			BANK_OVERRIDES[key] = chosen
+		print(f"{slot:28} {chosen:44} {note}")
+	if not dry_run:
+		frappe.db.commit()
+	print("\nACCOUNTS =", ACCOUNTS)
+	print("BANK_OVERRIDES =", BANK_OVERRIDES)
+	print("Rule: paid_from = BANK_OVERRIDES[bank_label] or ACCOUNTS[channel]; "
+		"paid_to (payable) always comes from the CoA defaults via _apply_pay_accounts.")
 
 
 # ---------------------------------------------------------------- PHASE B ----

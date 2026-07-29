@@ -27,14 +27,27 @@ PY
 Çıktıyı bana GÖSTER. Birlikte dolduracağız:
 - `SUPPLIER_MAP` — audit'in bulduğu adaylardan; eşleşmeyen vendor varsa DUR,
   Supplier'ı ben onaylayınca oluştur (Stabler SPA verisiyle uyumlu şekilde).
-- `ACCOUNTS` (Bank/Cash USD hesapları) + istenirse `BANK_OVERRIDES`
-  (NBU BANK / ALOQA BANK ayrı hesap istenirse). Uygun USD hesabı yoksa DUR —
-  hangi hesabın açılacağını bana sor (CoA'da kanal ayrımı onaylı karar).
 - "Other PEs already on these suppliers" listesi boş değilse bana göster —
   mükerrer riskini birlikte değerlendirelim.
 
-Doldurma işlemini `/tmp/IMPORT_msa_vendor_history.py` içinde yap (sed/edit),
-sonra dosyanın CONFIG bloğunu bana göster. **ONAY almadan 2'ye geçme.**
+Doldurmayı `/tmp/IMPORT_msa_vendor_history.py` içinde yap (sed/edit), CONFIG
+bloğunu bana göster. **ONAY almadan devam etme.**
+
+Hesaplar elle doldurulmaz — `ensure_accounts()` mevcut CoA'yı tarayıp çözer
+(onaylı karar: mevcut hesaba göre ayarla, yoksa oluştur):
+
+```bash
+ssh ice-production 'cd /home/frappe/frappe-bench && bench --site msa.erpstable.com console' <<'PY'
+exec(open("/tmp/IMPORT_msa_vendor_history.py").read())
+ensure_accounts(dry_run=1)
+PY
+```
+
+Çözümleme tablosunu bana göster: hangi slot hangi mevcut hesaba bağlandı,
+ne CREATE edilecek (NBU USD / Aloqa USD / Bank USD / Kassa USD, USD para
+birimli, kendi tipinin grubu altında). `!! currency` uyarısı ya da
+`no group in CoA — STOP` görürsen dur, bana getir. **ONAY** →
+`ensure_accounts(dry_run=0)` koş (eksik hesaplar yaratılır).
 
 ## 2 · Mali yıl
 
@@ -54,6 +67,7 @@ ALS 29 / 8,5M; AL-DUA 1 / 242K). **ONAY** → `dry_run=0`.
 ```bash
 ssh ice-production 'cd /home/frappe/frappe-bench && bench --site msa.erpstable.com console' <<'PY'
 exec(open("/tmp/IMPORT_msa_vendor_history.py").read())
+ensure_accounts(dry_run=0)  # her yeni oturumda şart: ACCOUNTS'u yeniden çözer (idempotent)
 import_payments(dry_run=1)
 PY
 ```
