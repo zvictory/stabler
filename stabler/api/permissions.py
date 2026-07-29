@@ -77,6 +77,8 @@ SCOPED_DOCTYPES = (
 	"Stock Entry",
 	"Stock Reconciliation",
 	"Bank Transaction",
+	"CRM Activity",
+	"CRM Stage Event",
 )
 
 
@@ -162,6 +164,14 @@ def stock_reconciliation_query(user=None):
 
 def bank_transaction_query(user=None):
 	return _company_condition(user, "Bank Transaction")
+
+
+def crm_activity_query(user=None):
+	return _company_condition(user, "CRM Activity")
+
+
+def crm_stage_event_query(user=None):
+	return _company_condition(user, "CRM Stage Event")
 
 
 # ---------------------------------------------------------------------------

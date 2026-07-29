@@ -11,7 +11,7 @@ import importlib
 import sys
 import types
 import unittest
-from datetime import date
+from datetime import date, datetime
 
 
 class _Doc(dict):
@@ -31,8 +31,12 @@ class _Doc(dict):
 	def update(self, values):
 		super().update(values)
 
-	def save(self):
+	def save(self, **_kwargs):
 		self.saved = True
+
+	def insert(self, ignore_permissions=False):
+		self.saved = True
+		return self
 
 	def as_dict(self):
 		return dict(self)
@@ -54,6 +58,8 @@ class _FakeDB:
 				company="Mikas",
 				organization="Mikas Shop",
 				linked_customer="CUST-MIKAS",
+				status="Open",
+				deal_owner="rep@mikas.example",
 			),
 			("CRM Deal", "DEAL-OTHER"): _Doc(name="DEAL-OTHER", company="Other", organization="Other Shop"),
 		}
@@ -66,6 +72,8 @@ class _FakeDB:
 			return name in {"Mikas", "Other"}
 		if doctype == "Customer":
 			return name == "CUST-MIKAS"
+		if doctype == "CRM Deal Status":
+			return name in {"Open", "Qualified", "Won", "Lost"}
 		return (doctype, name) in self.docs
 
 	def get_value(self, doctype, name, field):
@@ -94,6 +102,7 @@ def _load_crm(db: _FakeDB):
 	frappe._ = lambda value: value
 	frappe.PermissionError = PermissionError
 	frappe.session = types.SimpleNamespace(user="rep@mikas.example")
+	frappe.flags = types.SimpleNamespace()
 	frappe.db = db
 	frappe.whitelist = lambda *args, **_kwargs: (lambda fn: fn) if not args else args[0]
 	frappe.get_roles = lambda _user=None: ["Sales User"]
@@ -112,6 +121,7 @@ def _load_crm(db: _FakeDB):
 	utils.get_first_day = lambda _value: "2026-07-01"
 	utils.getdate = lambda value: date.fromisoformat(str(value)[:10])
 	utils.nowdate = lambda: "2026-07-29"
+	utils.now_datetime = lambda: datetime(2026, 7, 29, 10, 30)
 	frappe.utils = utils
 
 	common = types.ModuleType("stabler.api._common")
@@ -187,6 +197,10 @@ class TestCrmCompanyScope(unittest.TestCase):
 			lambda: self.crm.crm_metrics(),
 			lambda: self.crm.crm_analytics(),
 			lambda: self.crm.crm_report("2026-07-01", "2026-07-31"),
+			lambda: self.crm.create_crm_activity({"reference_name": "DEAL-MIKAS"}),
+			lambda: self.crm.complete_crm_activity("ACT-1"),
+			lambda: self.crm.list_crm_activities("CRM Deal", "DEAL-MIKAS"),
+			lambda: self.crm.transition_deal("DEAL-MIKAS", "Qualified"),
 		)
 		for call in calls:
 			with self.assertRaisesRegex(ValueError, "Company is required"):
@@ -238,6 +252,96 @@ class TestCrmCompanyScope(unittest.TestCase):
 		self.assertEqual(board["deals"][0]["ar_outstanding"], 0.0)
 		self.assertEqual(analytics["lifetime_sales"], 0.0)
 		self.assertEqual(report["summary"]["sales"], 0.0)
+
+	def test_activity_creation_is_company_scoped_and_server_owned(self):
+		"""Allowing client company/audit fields would corrupt the activity audit trail."""
+		activity = self.crm.create_crm_activity(
+			{
+				"reference_doctype": "CRM Deal",
+				"reference_name": "DEAL-MIKAS",
+				"activity_type": "Call",
+				"subject": "Confirm quantities",
+				"due_at": "2026-07-30 09:00:00",
+				"company": "Other",
+				"created_by": "attacker@example.com",
+			},
+			"Mikas",
+		)
+
+		self.assertEqual(activity["company"], "Mikas")
+		self.assertEqual(activity["created_by"], "rep@mikas.example")
+		self.assertEqual(activity["reference_name"], "DEAL-MIKAS")
+
+	def test_activity_completion_is_audited_and_reference_permission_aware(self):
+		"""Completing an activity must stamp the current user through the controlled API."""
+		self.db.docs[("CRM Activity", "ACT-1")] = _Doc(
+			name="ACT-1",
+			company="Mikas",
+			reference_doctype="CRM Deal",
+			reference_name="DEAL-MIKAS",
+			status="Planned",
+		)
+
+		activity = self.crm.complete_crm_activity("ACT-1", "Mikas")
+
+		self.assertEqual(activity["status"], "Completed")
+		self.assertEqual(activity["completed_by"], "rep@mikas.example")
+		self.assertEqual(activity["completed_at"], datetime(2026, 7, 29, 10, 30))
+
+	def test_activity_timeline_filters_by_company_and_reference(self):
+		"""Dropping any timeline scope key could leak another tenant or deal."""
+		self.crm.list_crm_activities("CRM Deal", "DEAL-MIKAS", "Mikas")
+		_, kwargs = self.db.get_list_calls[-1]
+
+		self.assertEqual(
+			kwargs["filters"],
+			{
+				"company": "Mikas",
+				"reference_doctype": "CRM Deal",
+				"reference_name": "DEAL-MIKAS",
+			},
+		)
+
+	def test_transition_owns_stage_timestamps_and_history(self):
+		"""Direct status-only saves must not replace transition history."""
+		result = self.crm.transition_deal("DEAL-MIKAS", "Qualified", "Mikas")
+		deal = self.db.docs[("CRM Deal", "DEAL-MIKAS")]
+		events = [doc for doc in self.db.created if doc.get("doctype") == "CRM Stage Event"]
+
+		self.assertEqual(result["status"], "Qualified")
+		self.assertEqual(deal["stage_entered_at"], datetime(2026, 7, 29, 10, 30))
+		self.assertEqual(len(events), 1)
+		self.assertEqual(events[0]["from_stage"], "Open")
+		self.assertEqual(events[0]["to_stage"], "Qualified")
+		self.assertEqual(events[0]["company"], "Mikas")
+
+	def test_transition_enforcement_requires_owner_and_dated_next_action(self):
+		"""Enabling migration enforcement must reject incomplete open-deal hygiene."""
+		deal = self.db.docs[("CRM Deal", "DEAL-MIKAS")]
+		deal["deal_owner"] = ""
+
+		with self.assertRaisesRegex(Exception, "owner"):
+			self.crm.transition_deal(
+				"DEAL-MIKAS",
+				"Qualified",
+				"Mikas",
+				enforce_next_action=1,
+			)
+
+	def test_transition_enforcement_defaults_off_for_existing_deals(self):
+		"""Migration-safe defaults must not instantly break incomplete legacy deals."""
+		deal = self.db.docs[("CRM Deal", "DEAL-MIKAS")]
+		deal["deal_owner"] = ""
+		deal["next_action_at"] = None
+
+		result = self.crm.transition_deal("DEAL-MIKAS", "Qualified", "Mikas")
+
+		self.assertEqual(result["status"], "Qualified")
+
+	def test_transition_rejects_an_unknown_stage(self):
+		"""Accepting arbitrary labels would detach deals from the configured pipeline."""
+		with self.assertRaisesRegex(Exception, "valid deal status"):
+			self.crm.transition_deal("DEAL-MIKAS", "Invented", "Mikas")
 
 	def test_metrics_fetches_every_visible_deal(self):
 		"""Removing the unbounded permission-aware fetch truncates the 25-deal KPI."""

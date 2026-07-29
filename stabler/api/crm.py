@@ -6,7 +6,7 @@ import json
 
 import frappe
 from frappe import _
-from frappe.utils import flt
+from frappe.utils import flt, now_datetime
 
 from stabler.api._common import _assert_can_read, _assert_can_write, _require_company
 from stabler.api.organization import (
@@ -65,7 +65,6 @@ _LEAD_MUTABLE_FIELDS = frozenset(
 _DEAL_MUTABLE_FIELDS = frozenset(
 	(
 		"organization",
-		"status",
 		"deal_owner",
 		"deal_value",
 		"currency",
@@ -86,6 +85,12 @@ _DEAL_MUTABLE_FIELDS = frozenset(
 		"tender_deadline",
 		"bid_value",
 		"tender_source",
+		"deal_type",
+		"next_action_type",
+		"next_action_at",
+		"next_action_owner",
+		"loss_reason",
+		"forecast_category",
 	)
 )
 
@@ -274,6 +279,15 @@ def list_deals(company="", search="", status="", deal_owner="", page_length=50, 
 			"credit_terms_days",
 			"win_loss_reason",
 			"linked_customer",
+			"deal_type",
+			"next_action_type",
+			"next_action_at",
+			"next_action_owner",
+			"stage_entered_at",
+			"won_at",
+			"lost_at",
+			"loss_reason",
+			"forecast_category",
 		],
 		search=search,
 		search_fields=["organization", "email", "lead_name"],
@@ -342,6 +356,171 @@ def delete_deal(name: str, company=""):
 	_assert_crm_record_company("CRM Deal", name, company, "delete")
 	frappe.delete_doc("CRM Deal", name)
 	return "ok"
+
+
+_ACTIVITY_MUTABLE_FIELDS = frozenset(
+	("reference_doctype", "reference_name", "activity_type", "subject", "description", "due_at", "assigned_to")
+)
+_ACTIVITY_REFERENCE_DOCTYPES = {"CRM Deal", "CRM Lead"}
+
+
+def _truthy(value) -> bool:
+	return str(value).strip().lower() in {"1", "true", "yes", "on"}
+
+
+def _deal_status_type(status: str) -> str:
+	status_type = frappe.db.get_value("CRM Deal Status", status, "type")
+	return str(status_type or status or "").strip().lower()
+
+
+@frappe.whitelist()
+def create_crm_activity(data: str | dict, company=""):
+	_require_crm()
+	company = _require_crm_company(company)
+	payload = _mutable_payload(data, _ACTIVITY_MUTABLE_FIELDS)
+	reference_doctype = payload.get("reference_doctype") or "CRM Deal"
+	reference_name = payload.get("reference_name")
+	if reference_doctype not in _ACTIVITY_REFERENCE_DOCTYPES or not reference_name:
+		frappe.throw(_("A valid CRM reference is required."))
+	_assert_crm_record_company(reference_doctype, reference_name, company, "read")
+	if not frappe.has_permission("CRM Activity", "create"):
+		frappe.throw(_("Not permitted"), frappe.PermissionError)
+	activity = frappe.new_doc("CRM Activity")
+	activity.update(payload)
+	activity.reference_doctype = reference_doctype
+	activity.company = company
+	activity.created_by = frappe.session.user
+	activity.status = "Planned"
+	activity.insert()
+	return activity.as_dict()
+
+
+@frappe.whitelist()
+def complete_crm_activity(name: str, company=""):
+	_require_crm()
+	company = _require_crm_company(company)
+	_assert_crm_record_company("CRM Activity", name, company, "read")
+	activity = frappe.get_doc("CRM Activity", name)
+	_assert_crm_record_company(
+		activity.reference_doctype,
+		activity.reference_name,
+		company,
+		"write",
+	)
+	if activity.status == "Completed":
+		return activity.as_dict()
+	activity.status = "Completed"
+	activity.completed_at = now_datetime()
+	activity.completed_by = frappe.session.user
+	previous_flag = getattr(frappe.flags, "crm_activity_completion", False)
+	try:
+		frappe.flags.crm_activity_completion = True
+		activity.save(ignore_permissions=True)
+	finally:
+		frappe.flags.crm_activity_completion = previous_flag
+	return activity.as_dict()
+
+
+@frappe.whitelist()
+def list_crm_activities(reference_doctype: str, reference_name: str, company=""):
+	_require_crm()
+	company = _require_crm_company(company)
+	if reference_doctype not in _ACTIVITY_REFERENCE_DOCTYPES:
+		frappe.throw(_("A valid CRM reference is required."))
+	_assert_crm_record_company(reference_doctype, reference_name, company, "read")
+	if not frappe.has_permission("CRM Activity", "read"):
+		frappe.throw(_("Not permitted"), frappe.PermissionError)
+	return frappe.get_list(
+		"CRM Activity",
+		filters={
+			"company": company,
+			"reference_doctype": reference_doctype,
+			"reference_name": reference_name,
+		},
+		fields=[
+			"name",
+			"activity_type",
+			"subject",
+			"description",
+			"due_at",
+			"assigned_to",
+			"status",
+			"completed_at",
+			"completed_by",
+			"created_by",
+			"creation",
+		],
+		order_by="creation desc",
+		limit_page_length=500,
+	)
+
+
+@frappe.whitelist()
+def transition_deal(
+	name: str,
+	status: str,
+	company="",
+	reason="",
+	loss_reason="",
+	next_action_type="",
+	next_action_at=None,
+	next_action_owner="",
+	enforce_next_action=0,
+):
+	_require_crm()
+	company = _require_crm_company(company)
+	_assert_crm_record_company("CRM Deal", name, company, "write")
+	deal = frappe.get_doc("CRM Deal", name)
+	old_status = deal.get("status") or ""
+	status = str(status or "").strip()
+	if not status:
+		frappe.throw(_("Deal status is required."))
+	if not frappe.db.exists("CRM Deal Status", status):
+		frappe.throw(_("Please select a valid deal status."))
+	if status == old_status:
+		return deal.as_dict()
+
+	status_type = _deal_status_type(status)
+	is_open = status_type not in {"won", "lost"}
+	if is_open and _truthy(enforce_next_action):
+		if not deal.get("deal_owner"):
+			frappe.throw(_("An owner is required for an open deal."))
+		effective_next_action_at = next_action_at or deal.get("next_action_at")
+		if not effective_next_action_at:
+			frappe.throw(_("A dated next action is required for an open deal."))
+
+	changed_at = now_datetime()
+	deal.status = status
+	deal.stage_entered_at = changed_at
+	if next_action_type:
+		deal.next_action_type = next_action_type
+	if next_action_at:
+		deal.next_action_at = next_action_at
+	if next_action_owner:
+		deal.next_action_owner = next_action_owner
+	if status_type == "won":
+		deal.won_at = changed_at
+	elif status_type == "lost":
+		deal.lost_at = changed_at
+		deal.loss_reason = loss_reason
+	deal.save()
+
+	event = frappe.new_doc("CRM Stage Event")
+	event.update(
+		{
+			"company": company,
+			"reference_doctype": "CRM Deal",
+			"reference_name": name,
+			"deal": name,
+			"from_stage": old_status,
+			"to_stage": status,
+			"changed_at": changed_at,
+			"changed_by": frappe.session.user,
+			"reason": reason,
+		}
+	)
+	event.insert(ignore_permissions=True)
+	return deal.as_dict()
 
 
 # ---------------------------------------------------------------------------

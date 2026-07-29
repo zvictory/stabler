@@ -1,0 +1,30 @@
+{
+ "actions": [],
+ "autoname": "format:ACT-{YYYY}-{######}",
+ "doctype": "DocType",
+ "engine": "InnoDB",
+ "field_order": ["company", "reference_doctype", "reference_name", "activity_type", "subject", "description", "due_at", "assigned_to", "status", "completed_at", "completed_by", "created_by"],
+ "fields": [
+  {"fieldname": "company", "fieldtype": "Link", "label": "Company", "options": "Company", "reqd": 1, "in_standard_filter": 1},
+  {"fieldname": "reference_doctype", "fieldtype": "Link", "label": "Reference Document Type", "options": "DocType", "reqd": 1},
+  {"fieldname": "reference_name", "fieldtype": "Dynamic Link", "label": "Reference Name", "options": "reference_doctype", "reqd": 1},
+  {"fieldname": "activity_type", "fieldtype": "Select", "label": "Activity Type", "options": "Call\nEmail\nMeeting\nTask\nNote\nOther", "reqd": 1},
+  {"fieldname": "subject", "fieldtype": "Data", "label": "Subject", "reqd": 1},
+  {"fieldname": "description", "fieldtype": "Text", "label": "Description"},
+  {"fieldname": "due_at", "fieldtype": "Datetime", "label": "Due At"},
+  {"fieldname": "assigned_to", "fieldtype": "Link", "label": "Assigned To", "options": "User"},
+  {"default": "Planned", "fieldname": "status", "fieldtype": "Select", "label": "Status", "options": "Planned\nCompleted", "reqd": 1},
+  {"fieldname": "completed_at", "fieldtype": "Datetime", "label": "Completed At", "read_only": 1},
+  {"fieldname": "completed_by", "fieldtype": "Link", "label": "Completed By", "options": "User", "read_only": 1},
+  {"fieldname": "created_by", "fieldtype": "Link", "label": "Created By", "options": "User", "read_only": 1, "reqd": 1}
+ ],
+ "module": "Stabler",
+ "name": "CRM Activity",
+ "permissions": [
+  {"role": "Sales User", "create": 1, "read": 1},
+  {"role": "Sales Manager", "create": 1, "read": 1},
+  {"role": "System Manager", "create": 1, "read": 1}
+ ],
+ "sort_field": "creation",
+ "sort_order": "DESC"
+}
