@@ -174,6 +174,10 @@ def crm_stage_event_query(user=None):
 	return _company_condition(user, "CRM Stage Event")
 
 
+def tender_master_query(user=None):
+	return _company_condition(user, "Tender Master")
+
+
 # ---------------------------------------------------------------------------
 # Gap #46 — owner / territory scoping for masters (Customer, Supplier)
 # ---------------------------------------------------------------------------
