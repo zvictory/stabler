@@ -135,6 +135,24 @@ def _crm_list(
 	return rows, total
 
 
+def _sales_invoice_aggregate_rows(
+	company: str, customers: list[str], fields: list[str], extra_filters: dict | None = None
+) -> list:
+	"""Return only Sales Invoice aggregates visible to the current user."""
+	if not customers:
+		return []
+	filters = {"docstatus": 1, "company": company, "customer": ["in", customers]}
+	if extra_filters:
+		filters.update(extra_filters)
+	return frappe.get_list(
+		"Sales Invoice",
+		filters=filters,
+		fields=["customer", *fields],
+		group_by="customer",
+		limit_page_length=0,
+	)
+
+
 _CRM_MANAGER_ROLES = {"Sales Manager", "System Manager", "Stabler Admin"}
 
 
@@ -268,15 +286,13 @@ def list_deals(company="", search="", status="", deal_owner="", page_length=50, 
 	cust = list({r["linked_customer"] for r in rows if r.get("linked_customer")})
 	ar: dict = {}
 	if cust:
-		for c, bal in frappe.db.sql(
-			"""SELECT customer, SUM(outstanding_amount)
-               FROM `tabSales Invoice`
-               WHERE docstatus = 1 AND outstanding_amount > 0
-                 AND company = %(company)s AND customer IN %(cs)s
-               GROUP BY customer""",
-			{"company": company, "cs": tuple(cust)},
+		for row in _sales_invoice_aggregate_rows(
+			company,
+			cust,
+			["sum(outstanding_amount) as outstanding"],
+			{"outstanding_amount": [">", 0]},
 		):
-			ar[c] = flt(bal)
+			ar[row["customer"]] = flt(row.get("outstanding"))
 	for r in rows:
 		r["ar_outstanding"] = ar.get(r.get("linked_customer"), 0.0)
 
@@ -479,8 +495,9 @@ def convert_deal_to_customer(name: str, company="") -> dict:
 
 
 @frappe.whitelist()
-def crm_meta():
+def crm_meta(company=""):
 	_require_crm()
+	_require_crm_company(company)
 	return {
 		"lead_statuses": frappe.get_all(
 			"CRM Lead Status",
@@ -526,6 +543,7 @@ def crm_metrics(company="") -> dict:
 		"CRM Deal",
 		filters=deal_filters,
 		fields=["status", "expected_monthly_volume", "deal_value", "needs_freezer", "modified"],
+		limit_page_length=0,
 	)
 	month_start = getdate(get_first_day(nowdate()))
 	open_rr = won_rr = 0.0
@@ -573,6 +591,7 @@ def crm_analytics(company="") -> dict:
 		"CRM Deal",
 		filters=deal_filters,
 		fields=["linked_customer", "freezer_asset"],
+		limit_page_length=0,
 	)
 	customers = list({d.linked_customer for d in deals if d.linked_customer})
 	empty = {
@@ -590,26 +609,37 @@ def crm_analytics(company="") -> dict:
 	if not customers:
 		return empty
 
-	inv: dict = {}
-	inv_where = "docstatus = 1 AND company = %(company)s AND customer IN %(cs)s"
-	inv_vals: dict = {"company": company, "cs": tuple(customers)}
-	for c, cnt, first, total in frappe.db.sql(
-		f"""SELECT customer, COUNT(*), MIN(posting_date), SUM(base_grand_total)
-           FROM `tabSales Invoice`
-           WHERE {inv_where} GROUP BY customer""",
-		inv_vals,
-	):
-		inv[c] = {"count": int(cnt or 0), "first": first, "total": flt(total)}
+	inv = {
+		row["customer"]: {
+			"count": int(row.get("invoice_count") or 0),
+			"first": row.get("first_invoice_date"),
+			"total": flt(row.get("lifetime_sales")),
+		}
+		for row in _sales_invoice_aggregate_rows(
+			company,
+			customers,
+			[
+				"count(name) as invoice_count",
+				"min(posting_date) as first_invoice_date",
+				"sum(base_grand_total) as lifetime_sales",
+			],
+		)
+	}
 
 	created = {
 		r.name: r.creation
-		for r in frappe.get_list("Customer", filters={"name": ["in", customers]}, fields=["name", "creation"])
+		for r in frappe.get_list(
+			"Customer", filters={"name": ["in", customers]}, fields=["name", "creation"], limit_page_length=0
+		)
 	}
 	asset_ids = [d.freezer_asset for d in deals if d.freezer_asset]
 	asset_cost = {}
 	if asset_ids and frappe.db.exists("DocType", "Asset"):
 		for r in frappe.get_list(
-			"Asset", filters={"name": ["in", asset_ids]}, fields=["name", "gross_purchase_amount"]
+			"Asset",
+			filters={"name": ["in", asset_ids]},
+			fields=["name", "gross_purchase_amount"],
+			limit_page_length=0,
 		):
 			asset_cost[r.name] = flt(r.gross_purchase_amount)
 
@@ -691,6 +721,7 @@ def crm_report(from_date: str, to_date: str, company="") -> dict:
 			"deal_value",
 			"freezer_asset",
 		],
+		limit_page_length=0,
 	)
 	cust_all = list({d.linked_customer for d in deals if d.linked_customer})
 	if not cust_all:
@@ -698,29 +729,40 @@ def crm_report(from_date: str, to_date: str, company="") -> dict:
 
 	created = {
 		r.name: r.creation
-		for r in frappe.get_list("Customer", filters={"name": ["in", cust_all]}, fields=["name", "creation"])
+		for r in frappe.get_list(
+			"Customer", filters={"name": ["in", cust_all]}, fields=["name", "creation"], limit_page_length=0
+		)
 	}
 	cohort = {c for c in cust_all if created.get(c) and fd <= getdate(created[c]) <= td}
 	cohort_deals = [d for d in deals if d.linked_customer in cohort]
 	if not cohort:
 		return {"summary": empty, "by_rep": [], "by_region": []}
 
-	inv: dict = {}
-	inv_where = "docstatus = 1 AND company = %(company)s AND customer IN %(cs)s"
-	inv_vals: dict = {"company": company, "cs": tuple(cohort)}
-	for c, cnt, first, total in frappe.db.sql(
-		f"""SELECT customer, COUNT(*), MIN(posting_date), SUM(base_grand_total)
-           FROM `tabSales Invoice`
-           WHERE {inv_where} GROUP BY customer""",
-		inv_vals,
-	):
-		inv[c] = {"count": int(cnt or 0), "first": first, "total": flt(total)}
+	inv = {
+		row["customer"]: {
+			"count": int(row.get("invoice_count") or 0),
+			"first": row.get("first_invoice_date"),
+			"total": flt(row.get("lifetime_sales")),
+		}
+		for row in _sales_invoice_aggregate_rows(
+			company,
+			list(cohort),
+			[
+				"count(name) as invoice_count",
+				"min(posting_date) as first_invoice_date",
+				"sum(base_grand_total) as lifetime_sales",
+			],
+		)
+	}
 
 	asset_ids = [d.freezer_asset for d in cohort_deals if d.freezer_asset]
 	asset_cost = {}
 	if asset_ids and frappe.db.exists("DocType", "Asset"):
 		for r in frappe.get_list(
-			"Asset", filters={"name": ["in", asset_ids]}, fields=["name", "gross_purchase_amount"]
+			"Asset",
+			filters={"name": ["in", asset_ids]},
+			fields=["name", "gross_purchase_amount"],
+			limit_page_length=0,
 		):
 			asset_cost[r.name] = flt(r.gross_purchase_amount)
 
