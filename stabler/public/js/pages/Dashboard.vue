@@ -11,8 +11,7 @@ import { t } from "../composables/i18n.js";
 import KpiCard from "../components/KpiCard.vue";
 import ApexChart from "../components/ApexChart.vue";
 import EmptyState from "../components/EmptyState.vue";
-import TenderExecutiveKpis from "./tender/TenderExecutiveKpis.vue";
-import TenderFunnel from "./tender/TenderFunnel.vue";
+import TenderControlTower from "./tender/TenderControlTower.vue";
 import TenderNav from "./tender/TenderNav.vue";
 import ImportsDashboard from "./imports/ImportsDashboard.vue";
 
@@ -46,7 +45,6 @@ const tenderData = ref({
 });
 
 const tenderEnabled = computed(() => session.canAccessModule("tender"));
-const executiveKpi = computed(() => tenderData.value.executive_kpi || null);
 const executiveCurrency = computed(
 	() => tenderData.value.executive_currency || currency.value || ""
 );
@@ -331,13 +329,12 @@ const activityIcon = (type) => {
 
 					<div v-else class="tender-dashboard">
 						<TenderNav overview />
-						<TenderExecutiveKpis
-							v-if="executiveKpi"
-							:kpi="executiveKpi"
+						<TenderControlTower
+							:data="tenderData"
 							:currency="executiveCurrency"
 							:language="user.language"
+							:days="tenderDays"
 						/>
-						<TenderFunnel mode="conversion" :days="tenderDays" />
 					</div>
 				</template>
 

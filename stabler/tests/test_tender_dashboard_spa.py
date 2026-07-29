@@ -19,6 +19,7 @@ _EXECUTION_FLOW = os.path.join(_ROOT, "public", "js", "pages", "tender", "Tender
 _PORTFOLIO_PREVIEW = os.path.join(_ROOT, "public", "js", "pages", "tender", "TenderPortfolioPreview.vue")
 _EXECUTIVE_KPIS = os.path.join(_ROOT, "public", "js", "pages", "tender", "TenderExecutiveKpis.vue")
 _FUNNEL = os.path.join(_ROOT, "public", "js", "pages", "tender", "TenderFunnel.vue")
+_CONTROL_TOWER = os.path.join(_ROOT, "public", "js", "pages", "tender", "TenderControlTower.vue")
 
 
 def _read(path: str) -> str:
@@ -55,23 +56,21 @@ class TestTenderDashboardSpaContract(unittest.TestCase):
 		):
 			self.assertIn(text, source)
 
-	def test_tender_dashboard_is_executive_ribbon_without_tables(self):
+	def test_tender_dashboard_composes_the_role_adaptive_control_tower(self):
 		source = _read(_DASHBOARD)
 
-		self.assertIn("tenderData.value.executive_kpi", source)
-		self.assertIn("<TenderExecutiveKpis", source)
-		self.assertIn('<TenderFunnel mode="conversion"', source)
-		self.assertIn(':days="tenderDays"', source)
+		self.assertIn("executive_kpi", source)
+		self.assertIn("<TenderControlTower", source)
+		self.assertIn(':data="tenderData"', source)
 		self.assertIn('t("Tender operations")', source)
-		self.assertIn('t("Dashboard")', source)
-		for removed in (
-			"TenderTrendChart",
-			"TenderExecutionFlow",
-			"TenderPortfolioPreview",
-			"portfolio_preview",
-			"attention.value",
-		):
-			self.assertNotIn(removed, source)
+		self.assertNotIn('<TenderFunnel mode="conversion"', source)
+
+		control_tower = _read(_CONTROL_TOWER)
+		for component in ("TenderExecutiveKpis", "TenderTrendChart", "TenderExecutionFlow"):
+			self.assertIn(component, control_tower)
+		for field in ("role_scope", "acquisition", "attention", "execution", "my_work", "finance"):
+			self.assertIn(field, control_tower)
+		self.assertNotIn("portfolio_preview", control_tower)
 
 	def test_tender_dashboard_renders_executive_content_without_legacy_empty_gate(self):
 		source = _read(_DASHBOARD)
