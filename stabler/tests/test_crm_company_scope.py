@@ -218,6 +218,27 @@ class TestCrmCompanyScope(unittest.TestCase):
 		self.assertEqual(report["summary"]["sales"], 0.0)
 		self.assertGreaterEqual(sum(doctype == "Sales Invoice" for doctype, _ in self.db.get_list_calls), 3)
 
+	def test_missing_invoice_doctype_read_returns_empty_aggregates(self):
+		"""Propagating invoice read denial must not make CRM boards unusable."""
+		original_get_list = self.crm.frappe.get_list
+		self.crm.frappe.has_permission = lambda doctype, ptype, name=None: not (
+			doctype == "Sales Invoice" and ptype == "read"
+		)
+
+		def get_list(doctype, **kwargs):
+			if doctype == "Sales Invoice":
+				raise PermissionError("Sales Invoice read denied")
+			return original_get_list(doctype, **kwargs)
+
+		self.crm.frappe.get_list = get_list
+		board = self.crm.list_deals("Mikas")
+		analytics = self.crm.crm_analytics("Mikas")
+		report = self.crm.crm_report("2026-07-01", "2026-07-31", "Mikas")
+
+		self.assertEqual(board["deals"][0]["ar_outstanding"], 0.0)
+		self.assertEqual(analytics["lifetime_sales"], 0.0)
+		self.assertEqual(report["summary"]["sales"], 0.0)
+
 	def test_metrics_fetches_every_visible_deal(self):
 		"""Removing the unbounded permission-aware fetch truncates the 25-deal KPI."""
 		deals = [_Doc(status="Open", expected_monthly_volume=1, deal_value=0, needs_freezer=0, modified="2026-07-01")]
@@ -248,6 +269,33 @@ class TestCrmCompanyScope(unittest.TestCase):
 			with self.assertRaises(PermissionError):
 				call()
 
+	def test_record_permissions_protect_named_lead_endpoints(self):
+		"""Removing Lead permission checks would allow get/save/delete on LEAD-MIKAS."""
+		self.crm.frappe.has_permission = lambda doctype, ptype, name=None: not (
+			doctype == "CRM Lead" and name == "LEAD-MIKAS" and ptype in {"read", "write", "delete"}
+		)
+		for call in (
+			lambda: self.crm.get_lead("LEAD-MIKAS", "Mikas"),
+			lambda: self.crm.save_lead({"name": "LEAD-MIKAS", "first_name": "Changed"}, "Mikas"),
+			lambda: self.crm.delete_lead("LEAD-MIKAS", "Mikas"),
+		):
+			with self.assertRaises(PermissionError):
+				call()
+
+	def test_stored_company_mismatch_denies_named_lead_and_deal_endpoints(self):
+		"""Removing selected-company equality would operate on Other tenant records."""
+		for call in (
+			lambda: self.crm.get_lead("LEAD-OTHER", "Mikas"),
+			lambda: self.crm.save_lead({"name": "LEAD-OTHER", "first_name": "Changed"}, "Mikas"),
+			lambda: self.crm.delete_lead("LEAD-OTHER", "Mikas"),
+			lambda: self.crm.get_deal("DEAL-OTHER", "Mikas"),
+			lambda: self.crm.save_deal({"name": "DEAL-OTHER", "organization": "Changed"}, "Mikas"),
+			lambda: self.crm.delete_deal("DEAL-OTHER", "Mikas"),
+			lambda: self.crm.convert_deal_to_customer("DEAL-OTHER", "Mikas"),
+		):
+			with self.assertRaises(PermissionError):
+				call()
+
 	def test_update_keeps_server_owned_company_link_and_audit_fields(self):
 		"""Allowing payload company/link/audit fields would overwrite stored state."""
 		result = self.crm.save_deal(
@@ -264,6 +312,22 @@ class TestCrmCompanyScope(unittest.TestCase):
 		self.assertEqual(result["organization"], "Updated Mikas Shop")
 		self.assertEqual(result["company"], "Mikas")
 		self.assertEqual(result["linked_customer"], "CUST-MIKAS")
+		self.assertNotIn("owner", result)
+
+	def test_lead_update_keeps_server_owned_company_and_audit_fields(self):
+		"""Allowing Lead company or owner updates would overwrite stored state."""
+		result = self.crm.save_lead(
+			{
+				"name": "LEAD-MIKAS",
+				"first_name": "Updated Amina",
+				"company": "Other",
+				"owner": "attacker@example.com",
+			},
+			"Mikas",
+		)
+
+		self.assertEqual(result["first_name"], "Updated Amina")
+		self.assertEqual(result["company"], "Mikas")
 		self.assertNotIn("owner", result)
 
 

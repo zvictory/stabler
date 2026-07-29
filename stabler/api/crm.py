@@ -141,6 +141,8 @@ def _sales_invoice_aggregate_rows(
 	"""Return only Sales Invoice aggregates visible to the current user."""
 	if not customers:
 		return []
+	if not frappe.has_permission("Sales Invoice", "read"):
+		return []
 	filters = {"docstatus": 1, "company": company, "customer": ["in", customers]}
 	if extra_filters:
 		filters.update(extra_filters)
