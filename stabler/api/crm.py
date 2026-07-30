@@ -131,18 +131,39 @@ def _crm_list(
 	if or_filters:
 		kwargs["or_filters"] = or_filters
 	rows = frappe.get_list(doctype, **kwargs)
-	count_kwargs = {"filters": filters, "fields": ["count(name) as total"], "limit_page_length": 1}
+	# Counted by pulling names, not with `count(name) as total`: Frappe v16
+	# rejects a SQL function in a string SELECT, so the aggregate form reads fine
+	# locally and throws on the live site — it took the imports board down on msa
+	# (0682569). Same filters as the page above, so the total stays truthful.
+	count_kwargs: dict = {"filters": filters, "fields": ["name"], "limit_page_length": 0}
 	if or_filters:
 		count_kwargs["or_filters"] = or_filters
-	count_rows = frappe.get_list(doctype, **count_kwargs)
-	total = int((count_rows[0].get("total") if count_rows else 0) or 0)
+	total = len(frappe.get_list(doctype, **count_kwargs))
 	return rows, total
 
 
+_SI_AGGREGATORS = {
+	"count": lambda rows, column: len(rows),
+	"sum": lambda rows, column: sum(flt(r.get(column)) for r in rows),
+	"min": lambda rows, column: min((r.get(column) for r in rows if r.get(column) is not None), default=None),
+}
+
+
 def _sales_invoice_aggregate_rows(
-	company: str, customers: list[str], fields: list[str], extra_filters: dict | None = None
+	company: str,
+	customers: list[str],
+	aggregates: list[tuple[str, str, str]],
+	extra_filters: dict | None = None,
 ) -> list:
-	"""Return only Sales Invoice aggregates visible to the current user."""
+	"""Per-customer Sales Invoice aggregates, only over rows the caller may read.
+
+	`aggregates` is a list of `(alias, op, column)` triples, not SQL strings:
+	Frappe v16 rejects a SQL function inside a string SELECT, so
+	`fields=["sum(outstanding_amount) as outstanding"]` reads fine locally and
+	throws on the live site — that is what took the imports flow board down on msa
+	(0682569). The columns are fetched plain and folded per customer here. Still
+	ONE query for the whole cohort; never one per customer.
+	"""
 	if not customers:
 		return []
 	if not frappe.has_permission("Sales Invoice", "read"):
@@ -150,13 +171,22 @@ def _sales_invoice_aggregate_rows(
 	filters = {"docstatus": 1, "company": company, "customer": ["in", customers]}
 	if extra_filters:
 		filters.update(extra_filters)
-	return frappe.get_list(
+	columns = sorted({column for _alias, _op, column in aggregates})
+	grouped: dict[str, list] = {}
+	for row in frappe.get_list(
 		"Sales Invoice",
 		filters=filters,
-		fields=["customer", *fields],
-		group_by="customer",
+		fields=["customer", *columns],
 		limit_page_length=0,
-	)
+	):
+		grouped.setdefault(row["customer"], []).append(row)
+	return [
+		{
+			"customer": customer,
+			**{alias: _SI_AGGREGATORS[op](rows, column) for alias, op, column in aggregates},
+		}
+		for customer, rows in grouped.items()
+	]
 
 
 _CRM_MANAGER_ROLES = {"Sales Manager", "System Manager", "Stabler Admin"}
@@ -304,7 +334,7 @@ def list_deals(company="", search="", status="", deal_owner="", page_length=50, 
 		for row in _sales_invoice_aggregate_rows(
 			company,
 			cust,
-			["sum(outstanding_amount) as outstanding"],
+			[("outstanding", "sum", "outstanding_amount")],
 			{"outstanding_amount": [">", 0]},
 		):
 			ar[row["customer"]] = flt(row.get("outstanding"))
@@ -393,7 +423,15 @@ def delete_deal(name: str, company=""):
 
 
 _ACTIVITY_MUTABLE_FIELDS = frozenset(
-	("reference_doctype", "reference_name", "activity_type", "subject", "description", "due_at", "assigned_to")
+	(
+		"reference_doctype",
+		"reference_name",
+		"activity_type",
+		"subject",
+		"description",
+		"due_at",
+		"assigned_to",
+	)
 )
 _ACTIVITY_REFERENCE_DOCTYPES = {"CRM Deal", "CRM Lead"}
 
@@ -917,9 +955,9 @@ def crm_analytics(company="") -> dict:
 			company,
 			customers,
 			[
-				"count(name) as invoice_count",
-				"min(posting_date) as first_invoice_date",
-				"sum(base_grand_total) as lifetime_sales",
+				("invoice_count", "count", "name"),
+				("first_invoice_date", "min", "posting_date"),
+				("lifetime_sales", "sum", "base_grand_total"),
 			],
 		)
 	}
@@ -1046,9 +1084,9 @@ def crm_report(from_date: str, to_date: str, company="") -> dict:
 			company,
 			list(cohort),
 			[
-				"count(name) as invoice_count",
-				"min(posting_date) as first_invoice_date",
-				"sum(base_grand_total) as lifetime_sales",
+				("invoice_count", "count", "name"),
+				("first_invoice_date", "min", "posting_date"),
+				("lifetime_sales", "sum", "base_grand_total"),
 			],
 		)
 	}

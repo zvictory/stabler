@@ -167,10 +167,10 @@ def _load_crm(db: _FakeDB):
 
 def _get_list(db: _FakeDB, doctype: str, **kwargs):
 	db.get_list_calls.append((doctype, kwargs))
-	fields = kwargs.get("fields", [])
 	filters = kwargs.get("filters", {})
-	if fields == ["count(name) as total"]:
-		return [{"total": 1}]
+	# No special case for `count(name) as total`: answering an aggregate field
+	# list here is exactly what hid a v16-illegal SELECT behind a green suite.
+	# The count query asks for plain names now and takes this same path.
 	if doctype == "CRM Lead":
 		return [db.docs[("CRM Lead", "LEAD-MIKAS")]] if filters.get("company") == "Mikas" else []
 	if doctype == "CRM Deal":
@@ -277,8 +277,8 @@ class TestCrmCompanyScope(unittest.TestCase):
 	def test_missing_invoice_doctype_read_returns_empty_aggregates(self):
 		"""Propagating invoice read denial must not make CRM boards unusable."""
 		original_get_list = self.crm.frappe.get_list
-		self.crm.frappe.has_permission = lambda doctype, ptype, name=None: not (
-			doctype == "Sales Invoice" and ptype == "read"
+		self.crm.frappe.has_permission = lambda doctype, ptype, name=None: (
+			not (doctype == "Sales Invoice" and ptype == "read")
 		)
 
 		def get_list(doctype, **kwargs):
@@ -294,6 +294,57 @@ class TestCrmCompanyScope(unittest.TestCase):
 		self.assertEqual(board["deals"][0]["ar_outstanding"], 0.0)
 		self.assertEqual(analytics["lifetime_sales"], 0.0)
 		self.assertEqual(report["summary"]["sales"], 0.0)
+
+	def test_invoice_aggregates_are_folded_in_python_not_in_the_select(self):
+		"""Frappe v16 rejects a SQL function inside a string SELECT, so the
+		per-customer count/sum/min are folded here from plain columns.
+
+		Two things must hold at once, and each hides the other's failure: the
+		numbers have to be identical to what `count()/sum()/min()` produced (the
+		board's AR and the acquisition KPIs are money and days, read by reps), and
+		no field list may carry a function call — a `fields=["sum(x) as y"]`
+		passes every fake DB and then 500s the live board (0682569, msa).
+		"""
+		invoices = [
+			_Doc(
+				customer="CUST-MIKAS",
+				name="SI-1",
+				posting_date=date(2026, 7, 5),
+				base_grand_total=60,
+				outstanding_amount=25,
+			),
+			_Doc(
+				customer="CUST-MIKAS",
+				name="SI-2",
+				posting_date=date(2026, 7, 3),
+				base_grand_total=40,
+				outstanding_amount=0,
+			),
+		]
+		original_get_list = self.crm.frappe.get_list
+
+		def get_list(doctype, **kwargs):
+			if doctype != "Sales Invoice":
+				return original_get_list(doctype, **kwargs)
+			self.db.get_list_calls.append((doctype, kwargs))
+			rows = invoices
+			if kwargs.get("filters", {}).get("outstanding_amount"):
+				rows = [row for row in rows if row["outstanding_amount"] > 0]
+			return [_Doc(**{field: row[field] for field in kwargs["fields"]}) for row in rows]
+
+		self.crm.frappe.get_list = get_list
+		board = self.crm.list_deals("Mikas")
+		analytics = self.crm.crm_analytics("Mikas")
+
+		self.assertEqual(board["deals"][0]["ar_outstanding"], 25.0)
+		self.assertEqual(analytics["lifetime_sales"], 100.0)
+		self.assertEqual(analytics["avg_orders_per_customer"], 2.0)
+		self.assertEqual(analytics["reorder_rate"], 100.0)
+		# Earliest posting_date (07-03), not the first row (07-05), against the
+		# customer's 07-01 creation — a broken min() would report 4 days.
+		self.assertEqual(analytics["avg_time_to_first_order_days"], 2.0)
+		selects = [field for _doctype, kwargs in self.db.get_list_calls for field in kwargs.get("fields", [])]
+		self.assertEqual([field for field in selects if "(" in field], [])
 
 	def test_activity_creation_is_company_scoped_and_server_owned(self):
 		"""Allowing client company/audit fields would corrupt the activity audit trail."""
@@ -427,7 +478,9 @@ class TestCrmCompanyScope(unittest.TestCase):
 		events = [doc for doc in self.db.created if doc.get("doctype") == "CRM Stage Event"]
 
 		self.assertEqual(result["status"], "Qualified")
-		self.assertEqual([(event["from_stage"], event["to_stage"]) for event in events], [("Open", "Qualified")])
+		self.assertEqual(
+			[(event["from_stage"], event["to_stage"]) for event in events], [("Open", "Qualified")]
+		)
 
 	def test_terminal_kanban_move_is_not_blocked_by_old_open_stage_hygiene(self):
 		"""The compatibility path must validate the target outcome, not pre-transition state."""
@@ -514,9 +567,9 @@ class TestCrmCompanyScope(unittest.TestCase):
 		"""A concurrent same-stage move must save accompanying edits on the locked row."""
 		self.db.require_locked_deal_reads = True
 		self.db.status_on_lock = "Qualified"
-		self.crm.frappe.has_permission = lambda _doctype, _ptype, doc=None, **_kwargs: isinstance(
-			doc, _Doc
-		) and bool(doc.get("_locked"))
+		self.crm.frappe.has_permission = lambda _doctype, _ptype, doc=None, **_kwargs: (
+			isinstance(doc, _Doc) and bool(doc.get("_locked"))
+		)
 
 		result = self.crm.save_deal(
 			{
@@ -575,7 +628,10 @@ class TestCrmCompanyScope(unittest.TestCase):
 		)
 		self.db.docs[("CRM Stage Event", "EVENT-1")] = event
 
-		self.crm.rename_deal_status("Open", "New",)
+		self.crm.rename_deal_status(
+			"Open",
+			"New",
+		)
 
 		self.assertEqual(self.db.docs[("CRM Deal", "DEAL-MIKAS")]["status"], "New")
 		self.assertEqual(event["from_stage"], "New")
@@ -587,7 +643,11 @@ class TestCrmCompanyScope(unittest.TestCase):
 
 	def test_metrics_fetches_every_visible_deal(self):
 		"""Removing the unbounded permission-aware fetch truncates the 25-deal KPI."""
-		deals = [_Doc(status="Open", expected_monthly_volume=1, deal_value=0, needs_freezer=0, modified="2026-07-01")]
+		deals = [
+			_Doc(
+				status="Open", expected_monthly_volume=1, deal_value=0, needs_freezer=0, modified="2026-07-01"
+			)
+		]
 		deals *= 25
 
 		def get_list(doctype, **kwargs):
@@ -603,8 +663,8 @@ class TestCrmCompanyScope(unittest.TestCase):
 
 	def test_record_permissions_and_selected_company_protect_named_deal_endpoints(self):
 		"""Removing record checks would allow get/save/delete/convert on DEAL-MIKAS."""
-		self.crm.frappe.has_permission = lambda doctype, ptype, name=None: not (
-			doctype == "CRM Deal" and name == "DEAL-MIKAS" and ptype in {"read", "write", "delete"}
+		self.crm.frappe.has_permission = lambda doctype, ptype, name=None: (
+			not (doctype == "CRM Deal" and name == "DEAL-MIKAS" and ptype in {"read", "write", "delete"})
 		)
 		for call in (
 			lambda: self.crm.get_deal("DEAL-MIKAS", "Mikas"),
@@ -617,8 +677,8 @@ class TestCrmCompanyScope(unittest.TestCase):
 
 	def test_record_permissions_protect_named_lead_endpoints(self):
 		"""Removing Lead permission checks would allow get/save/delete on LEAD-MIKAS."""
-		self.crm.frappe.has_permission = lambda doctype, ptype, name=None: not (
-			doctype == "CRM Lead" and name == "LEAD-MIKAS" and ptype in {"read", "write", "delete"}
+		self.crm.frappe.has_permission = lambda doctype, ptype, name=None: (
+			not (doctype == "CRM Lead" and name == "LEAD-MIKAS" and ptype in {"read", "write", "delete"})
 		)
 		for call in (
 			lambda: self.crm.get_lead("LEAD-MIKAS", "Mikas"),

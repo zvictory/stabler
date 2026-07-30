@@ -134,8 +134,10 @@ class _FakeFrappe:
 					rows = [row for row in rows if row.get(field) in value]
 				elif operator == "not in":
 					rows = [row for row in rows if row.get(field) not in value]
-		if kwargs.get("fields") == ["count(name) as total"]:
-			return [{"total": len(rows)}]
+		# No special case for an aggregate field list on purpose: answering
+		# `count(name) as total` here is what let the v16-illegal SELECT through
+		# a green suite. The count query now asks for plain names and is counted
+		# by the caller, so it goes through the same path as any other read.
 		return rows
 
 
@@ -793,26 +795,31 @@ class TestTenderMasterDerivationSource(unittest.TestCase):
 			hits.extend(_per_record_reads_inside_loops(functions[name]))
 		self.assertEqual(hits, [])
 
-	def test_aggregate_counts_are_not_pushed_into_a_field_list(self):
-		"""`count(<column>) as n` in a SELECT string fails on the live Frappe
-		version even though it reads fine locally, so the derived counts are
-		summed in Python. The one pre-existing `count(name) as total` is the
-		app-wide row-count idiom (see api/crm.py) and is left as it is.
+	def test_no_sql_function_is_pushed_into_a_field_list(self):
+		"""Frappe v16 throws "SQL functions are not allowed as strings in SELECT".
 
-		Only string literals inside a list are checked — a `fields=[...]` list is
-		one, a docstring is not. Scanning the raw text instead would flag the
-		docstring that warns against this very idiom, which is the opposite of
+		`fields=["count(name) as total"]` parses fine, passes review and every
+		local check — the fake DB below even answers it — and then 500s the live
+		board (that is how the imports flow board went down on msa, 0682569). So
+		the aggregate has to be folded in Python and the source checked for the
+		string form. NOT just `count`: `sum`/`min`/`max`/`avg` fail identically.
+
+		Only string literals inside a list or tuple are checked — a `fields=[...]`
+		list is one, a docstring is not. Scanning the raw text instead would flag
+		the comments that warn against this very idiom, which is the opposite of
 		what this guard is for.
 		"""
-		tree = ast.parse(API_SOURCE.read_text())
-		aggregates: set[tuple[str, str]] = set()
-		for node in ast.walk(tree):
-			if not isinstance(node, ast.List):
-				continue
-			for element in node.elts:
-				if isinstance(element, ast.Constant) and isinstance(element.value, str):
-					aggregates.update(re.findall(r"count\((\w+)\) as (\w+)", element.value))
-		self.assertEqual(aggregates, {("name", "total")})
+		offenders: list[str] = []
+		for source in (API_SOURCE, _ROOT / "api" / "crm.py"):
+			for node in ast.walk(ast.parse(source.read_text())):
+				if not isinstance(node, (ast.List, ast.Tuple)):
+					continue
+				for element in node.elts:
+					if not (isinstance(element, ast.Constant) and isinstance(element.value, str)):
+						continue
+					if re.match(r"\s*(count|sum|avg|min|max)\s*\(", element.value, re.I):
+						offenders.append(f"{source.name}:{element.lineno} {element.value!r}")
+		self.assertEqual(offenders, [])
 
 	def test_spa_and_backend_board_lanes_cannot_drift(self):
 		"""The SPA groups cards by the backend's derived lane string.

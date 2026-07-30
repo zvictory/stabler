@@ -94,7 +94,7 @@ def _bid_at_risk(intake: dict, today_d) -> bool:
 		return False
 	try:
 		return getdate(deadline) < today_d
-	except (TypeError, ValueError):
+	except TypeError, ValueError:
 		return False
 
 
@@ -226,7 +226,9 @@ def _list_filters(company, status=None, stage=None, risk=None, deal=None, from_d
 	return filters
 
 
-def _qualifying_parent_names(company, status=None, stage=None, risk=None, from_date=None, to_date=None, deal=None):
+def _qualifying_parent_names(
+	company, status=None, stage=None, risk=None, from_date=None, to_date=None, deal=None
+):
 	if not any((stage in {"identified", "submitted"}, str(status).casefold() == "won", risk == "risk")):
 		return None
 	start, end = _dashboard_period(from_date, to_date)
@@ -324,11 +326,14 @@ def list_tender_masters(
 			[field, "like", f"%{search}%"] for field in ("title", "tender_number", "buyer_name")
 		]
 	records = frappe.get_list("Tender Master", **kwargs)
-	count_kwargs = {"filters": filters, "fields": ["count(name) as total"], "limit_page_length": 1}
+	# Counted by pulling names, not with `count(name) as total`: Frappe v16 refuses
+	# a SQL function inside a string SELECT, so the aggregate form passes every
+	# local check and then 500s the board on the live site (0682569, msa). Same
+	# filters as the page above, so the total matches what the filter selects.
+	count_kwargs: dict = {"filters": filters, "fields": ["name"], "limit_page_length": 0}
 	if search:
 		count_kwargs["or_filters"] = kwargs["or_filters"]
-	count_rows = frappe.get_list("Tender Master", **count_kwargs)
-	total = int((count_rows[0].get("total") if count_rows else 0) or 0)
+	total = len(frappe.get_list("Tender Master", **count_kwargs))
 	# One derivation pass for the whole page — the board's lane is a projection
 	# of the child lots, so it is computed here, not read from `status`.
 	cards, _lots_by_parent = _tender_lot_cards(selected_company, [row["name"] for row in records])
@@ -447,4 +452,3 @@ def orphan_tender_lots(company=None):
 		limit_page_length=0,
 	)
 	return {"count": len(lots), "lots": lots}
-
