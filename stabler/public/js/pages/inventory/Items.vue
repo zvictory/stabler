@@ -8,6 +8,8 @@ import { t } from "../../composables/i18n.js";
 import MoneyInput from "../../components/MoneyInput.vue";
 import EmptyState from "../../components/EmptyState.vue";
 import Select from "../../components/Select.vue";
+import ListToolbar from "../../components/ListToolbar.vue";
+import SkeletonRows from "../../components/SkeletonRows.vue";
 import { useTelemetry } from "../../composables/useTelemetry.js";
 import { useEscapeBack } from "../../composables/useEscapeBack.js";
 
@@ -101,12 +103,6 @@ async function openDetail(name) {
 function closeDetail() {
 	detailOpen.value = false;
 	detail.value = null;
-}
-
-let searchTimer = null;
-function onSearchInput() {
-	clearTimeout(searchTimer);
-	searchTimer = setTimeout(load, 250);
 }
 
 // Create Item
@@ -340,27 +336,16 @@ watch(activeCompany, load);
 	<div class="card">
 		<div class="card-header d-flex align-items-center gap-2">
 			<div class="card-title m-0">{{ t("Items") }}</div>
-			<div class="ms-auto d-flex align-items-center gap-2" style="max-width: 480px; width: 100%">
-				<input
-					v-model="search"
-					type="search"
-					class="form-control form-control-sm"
-					:placeholder="t('Search item code or name…')"
-					@input="onSearchInput"
-				/>
-				<button type="button" class="btn btn-success btn-sm flex-shrink-0" @click="openCreate">
-					<i class="ti ti-plus me-1"></i>{{ t("New item") }}
-				</button>
-			</div>
+			<button type="button" class="btn btn-primary btn-sm ms-auto" @click="openCreate">
+				<i class="ti ti-plus me-1"></i>{{ t("New item") }}
+			</button>
 		</div>
-		<div v-if="loading" class="card-body text-center py-5">
-			<div class="spinner-border text-primary"></div>
-		</div>
-		<div v-else-if="error" class="card-body">
+		<ListToolbar v-model="search" :placeholder="t('Search item code or name…')" :count="rows.length" @search="load" />
+		<div v-if="error && !loading" class="card-body">
 			<div class="alert alert-danger m-0">{{ error }}</div>
 		</div>
 		<EmptyState
-			v-else-if="!rows.length"
+			v-else-if="!loading && !rows.length"
 			icon="ti-box"
 			accentIcon="ti-plus"
 			tone="primary"
@@ -368,7 +353,7 @@ watch(activeCompany, load);
 			:subtitle="search ? t('Try a different search term or clear the filter.') : t('Create your first item to start tracking stock and price lists.')"
 		>
 			<template #actions>
-				<button v-if="search" type="button" class="btn btn-outline-secondary" @click="search = ''">
+				<button v-if="search" type="button" class="btn btn-outline-secondary" @click="search = ''; load()">
 					<i class="ti ti-x me-1"></i>{{ t("Clear search") }}
 				</button>
 				<button type="button" class="btn btn-primary" @click="trackCta('add_first_item'); openCreate()">
@@ -389,7 +374,8 @@ watch(activeCompany, load);
 						<th class="text-end" style="width: 130px">{{ t("Actions") }}</th>
 					</tr>
 				</thead>
-				<tbody>
+				<SkeletonRows v-if="loading" :rows="6" :cols="7" />
+				<tbody v-else>
 					<tr v-for="r in rows" :key="r.name" style="cursor: pointer" @click="openDetail(r.name)">
 						<td class="font-monospace text-primary fw-bold">
 							{{ r.item_code }}
