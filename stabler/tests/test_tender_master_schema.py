@@ -4,6 +4,7 @@ from __future__ import annotations
 
 import importlib
 import json
+import re
 import sys
 import types
 import unittest
@@ -72,6 +73,29 @@ class TestTenderMasterSchema(unittest.TestCase):
 		hooks = (_ROOT / "hooks.py").read_text()
 		self.assertIn('"Tender Master": "stabler.api.permissions.tender_master_query"', hooks)
 		self.assertIn('"Tender Master": "stabler.api.permissions.company_has_permission"', hooks)
+
+	def test_lot_link_patch_only_references_fields_that_actually_exist(self):
+		"""Every fieldname v61 points at must be one v60 really creates.
+
+		`create_custom_fields(..., ignore_validate=True)` skips
+		`validate_insert_after`, so a misspelled reference does NOT abort migrate —
+		it installs quietly. A wrong `insert_after` lands the field at an arbitrary
+		idx, and a wrong `depends_on` yields `undefined == "Tender"`, hiding Parent
+		Tender in the Desk form forever. Since the SPA has no editor for it, that is
+		the only place a human can group an orphan lot — so the typo would silently
+		disable the K2 migration queue's one repair path. Frappe only auto-prefixes
+		`custom_` when `fieldname` is left empty, so v60's fields are unprefixed and
+		must be referenced verbatim.
+		"""
+		v60 = (_ROOT / "patches" / "v60_crm_daily_work.py").read_text()
+		created = set(re.findall(r'"fieldname": "([a-z0-9_]+)"', v60))
+		self.assertIn("deal_type", created)
+
+		v61 = PATCH.read_text()
+		referenced = set(re.findall(r'"insert_after": "([a-z0-9_]+)"', v61))
+		referenced |= set(re.findall(r"eval:doc\.([a-z0-9_]+)", v61))
+		self.assertTrue(referenced, "the patch must anchor the field, not float")
+		self.assertEqual(referenced - created, set())
 
 	def test_parent_status_is_a_read_only_note_and_never_required(self):
 		"""`status` must stay read-only and optional.

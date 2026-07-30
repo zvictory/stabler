@@ -16,8 +16,12 @@ def execute():
 					"label": "Parent Tender",
 					"fieldtype": "Link",
 					"options": "Tender Master",
-					"insert_after": "custom_deal_type",
-					"depends_on": 'eval:doc.custom_deal_type=="Tender"',
+					# v60 creates this field as plain `deal_type` (no custom_ prefix —
+					# frappe only auto-prefixes when fieldname is left empty), so the
+					# field must be referenced by that exact name or the Desk form
+					# hides Parent Tender forever on an eval that can't be true.
+					"insert_after": "deal_type",
+					"depends_on": 'eval:doc.deal_type=="Tender"',
 					"no_copy": 1,
 				}
 			]
