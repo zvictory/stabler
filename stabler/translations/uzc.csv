@@ -4949,3 +4949,32 @@ Deleting shows everything that depends on this proforma before anything is remov
 Nothing else points at this proforma.,Бу проформага бошқа ҳеч нарса ишора қилмайди.
 Proforma {name} deleted.,{name} проформаси ўчирилди.
 
+Tender CRM,Tender CRM
+All tenders,Барча тендерлар
+Lots,Лотлар
+Parent tender,Асосий тендер
+Bid Preparation,Ариза тайёрлаш
+Submission deadline,Топшириш муддати
+No tenders found,Тендерлар топилмади
+Back to all tenders,Барча тендерларга қайтиш
+Open lot workspace,Лот иш майдонини очиш
+Preparation,Тайёргарлик
+Awaiting Result,Натижа кутилмоқда
+Partial Result,Қисмий натижа
+awaiting result,натижа кутилмоқда
+Next lot deadline,Энг яқин лот муддати
+Policy gap,Таклиф етишмовчилиги
+Overdue bids,Муддати ўтган таклифлар
+A tender lot must belong to a Parent Tender.,Тендер лоти Асосий тендерга тегишли бўлиши керак.
+{0} tender lots are not linked to a tender.,{0} та тендер лоти тендерга боғланмаган.
+Show unlinked lots,Боғланмаган лотларни кўрсатиш
+Updated,Янгиланган
+Could not load tender lots.,Тендер лотларини юклаб бўлмади.
+Could not load tenders.,Тендерларни юклаб бўлмади.
+Deadline,Муддат
+Estimated total,Тахминий жами
+Kanban,Канбан
+List,Рўйхат
+No permitted lots for this tender.,Бу тендер учун рухсат этилган лот йўқ.
+No tenders found for this company.,Бу компания учун тендер топилмади.
+Tenders and their permitted lots,Тендерлар ва рухсат этилган лотлар

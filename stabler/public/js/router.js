@@ -46,6 +46,7 @@ import DeclarantQueue from "./pages/tender/DeclarantQueue.vue";
 import LogistBoard from "./pages/tender/LogistBoard.vue";
 import MyTenders from "./pages/tender/MyTenders.vue";
 import DirectorBoard from "./pages/tender/DirectorBoard.vue";
+import TenderCrm from "./pages/tender/TenderCrm.vue";
 import SalesInvoices from "./pages/sales/SalesInvoices.vue";
 import DeliveryNotes from "./pages/sales/DeliveryNotes.vue";
 import SalesInvoiceForm from "./pages/sales/SalesInvoiceForm.vue";
@@ -258,6 +259,7 @@ const routes = [
 	{ path: "/pos", name: "pos", component: POS, meta: { title: t("POS"), module: "sales" } },
 	{ path: "/manufacturing/line", name: "manufacturing-line", component: ManufacturingOperatorBoard, meta: { title: t("Operator Kiosk") } },
 	{ path: "/tender/board", name: "tender-board", component: SalesOrderBoard, meta: { title: t("Contract board"), module: "tender" } },
+	{ path: "/tender/crm", name: "tender-crm", component: TenderCrm, meta: { title: t("Tender CRM"), module: "tender" } },
 	{ path: "/tender/sourcing", name: "tender-sourcing", component: SourcingCompare, meta: { title: t("Sourcing comparison"), module: "tender" } },
 	{ path: "/tender/po-control", name: "tender-po-control", component: PoControlBoard, meta: { title: t("Tender PO control"), module: "tender" } },
 	{ path: "/tender/director", redirect: "/dashboard", meta: { module: "tender" } },

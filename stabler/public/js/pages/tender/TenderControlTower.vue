@@ -27,7 +27,9 @@ const myWork = computed(() => props.data.my_work || {});
 const finance = computed(() => props.data.finance || null);
 const views = computed(() => props.data.role_scope?.views || []);
 const hasView = (view) => views.value.includes(view);
-const acquisitionRoute = computed(() => (hasView("sourcing") ? "tender-my-tenders" : ""));
+const acquisitionRoute = computed(() =>
+	hasView("director") || hasView("sourcing") ? "tender-crm" : ""
+);
 const periodQuery = computed(() => ({
 	from_date: props.data.period?.from_date,
 	to_date: props.data.period?.to_date,
@@ -79,14 +81,14 @@ function navigate(name, query = {}) {
 
 function openExecutiveKpi(key) {
 	const filters = key === "risk" ? { risk: "risk" } : key === "win" ? { status: "won" } : {};
-	navigate("tender-portfolio", filters);
+	navigate("tender-crm", filters);
 }
 
 function openAttention(item) {
 	if (!item.deal) return;
 	router.push({
-		name: "tender-po-control",
-		query: { days: props.days, deal: item.deal, tab: item.tab || "overview" },
+		name: "tender-crm",
+		query: { days: props.days, ...periodQuery.value, deal: item.deal, tab: item.tab || "overview" },
 	});
 }
 
@@ -237,15 +239,15 @@ const financeMoney = (value) =>
 						<h3 class="card-title"><i class="ti ti-cash me-1"></i>{{ t("Finance") }}</h3>
 					</div>
 					<div class="card-body finance-summary">
-						<button type="button" @click="navigate('tender-portfolio')">
+						<button type="button" @click="navigate('tender-crm')">
 							<span>{{ t("Contract total") }}</span
 							><strong>{{ financeMoney(finance.contract_total) }}</strong>
 						</button>
-						<button type="button" @click="navigate('tender-portfolio')">
+						<button type="button" @click="navigate('tender-crm')">
 							<span>{{ t("Procurement total") }}</span
 							><strong>{{ financeMoney(finance.procurement_total) }}</strong>
 						</button>
-						<button type="button" @click="navigate('tender-portfolio')">
+						<button type="button" @click="navigate('tender-crm')">
 							<span>{{ t("Execution spread") }}</span
 							><strong>{{ financeMoney(finance.execution_spread) }}</strong>
 						</button>

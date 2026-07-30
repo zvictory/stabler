@@ -4945,3 +4945,32 @@ Deleting shows everything that depends on this proforma before anything is remov
 Nothing else points at this proforma.,Nothing else points at this proforma.
 Proforma {name} deleted.,Proforma {name} deleted.
 
+Tender CRM,Tender CRM
+All tenders,All tenders
+Lots,Lots
+Parent tender,Parent tender
+Bid Preparation,Bid Preparation
+Submission deadline,Submission deadline
+No tenders found,No tenders found
+Back to all tenders,Back to all tenders
+Open lot workspace,Open lot workspace
+Preparation,Preparation
+Awaiting Result,Awaiting Result
+Partial Result,Partial Result
+awaiting result,awaiting result
+Next lot deadline,Next lot deadline
+Policy gap,Policy gap
+Overdue bids,Overdue bids
+A tender lot must belong to a Parent Tender.,A tender lot must belong to a Parent Tender.
+{0} tender lots are not linked to a tender.,{0} tender lots are not linked to a tender.
+Show unlinked lots,Show unlinked lots
+Updated,Updated
+Could not load tender lots.,Could not load tender lots.
+Could not load tenders.,Could not load tenders.
+Deadline,Deadline
+Estimated total,Estimated total
+Kanban,Kanban
+List,List
+No permitted lots for this tender.,No permitted lots for this tender.
+No tenders found for this company.,No tenders found for this company.
+Tenders and their permitted lots,Tenders and their permitted lots

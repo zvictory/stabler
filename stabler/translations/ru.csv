@@ -4955,3 +4955,32 @@ Deleting shows everything that depends on this proforma before anything is remov
 Nothing else points at this proforma.,На эту проформу больше ничто не ссылается.
 Proforma {name} deleted.,Проформа {name} удалена.
 
+Tender CRM,CRM тендеров
+All tenders,Все тендеры
+Lots,Лоты
+Parent tender,Основной тендер
+Bid Preparation,Подготовка заявки
+Submission deadline,Крайний срок подачи
+No tenders found,Тендеры не найдены
+Back to all tenders,Ко всем тендерам
+Open lot workspace,Открыть рабочее пространство лота
+Preparation,Подготовка
+Awaiting Result,Ожидание результата
+Partial Result,Частичный результат
+awaiting result,ожидают результата
+Next lot deadline,Ближайший срок подачи по лоту
+Policy gap,Недобор предложений
+Overdue bids,Просроченные подачи
+A tender lot must belong to a Parent Tender.,Лот тендера должен принадлежать основному тендеру.
+{0} tender lots are not linked to a tender.,{0} лотов тендера не привязаны к тендеру.
+Show unlinked lots,Показать непривязанные лоты
+Updated,Обновлено
+Could not load tender lots.,Не удалось загрузить лоты тендера.
+Could not load tenders.,Не удалось загрузить тендеры.
+Deadline,Срок
+Estimated total,Расчётная сумма
+Kanban,Канбан
+List,Список
+No permitted lots for this tender.,Нет доступных лотов для этого тендера.
+No tenders found for this company.,Для этой компании тендеры не найдены.
+Tenders and their permitted lots,Тендеры и доступные лоты

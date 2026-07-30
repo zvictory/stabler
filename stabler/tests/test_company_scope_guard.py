@@ -32,6 +32,7 @@ import unittest
 #   _assert_vendor_category_read — tries inventory, falls back to imports; both scope
 #   _user_allowed_companies — manual scoping against the allowed-companies list
 #   _company_filter         — SFA's per-company filter helper
+#   _require_crm_company    — CRM wrapper that calls _require_company and checks entitlement
 #   _require_admin          — admin-only endpoint; company boundary is moot
 _SCOPE_TOKENS = (
 	"_assert_company_scope",
@@ -42,6 +43,7 @@ _SCOPE_TOKENS = (
 	"_assert_vendor_category_read",
 	"_user_allowed_companies",
 	"_company_filter",
+	"_require_crm_company",
 	"_require_admin",
 )
 

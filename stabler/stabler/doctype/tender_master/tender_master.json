@@ -1,0 +1,31 @@
+{
+ "actions": [],
+ "autoname": "naming_series:",
+ "doctype": "DocType",
+ "engine": "InnoDB",
+ "field_order": ["naming_series", "company", "title", "tender_number", "buyer_name", "source", "publication_date", "submission_deadline", "currency", "estimated_total", "status", "owner_user"],
+ "fields": [
+  {"fieldname": "naming_series", "fieldtype": "Select", "options": "TND-.YYYY.-.#####", "default": "TND-.YYYY.-.#####", "reqd": 1},
+  {"fieldname": "company", "fieldtype": "Link", "options": "Company", "reqd": 1, "in_standard_filter": 1},
+  {"fieldname": "title", "fieldtype": "Data", "reqd": 1, "in_list_view": 1},
+  {"fieldname": "tender_number", "fieldtype": "Data", "in_list_view": 1},
+  {"fieldname": "buyer_name", "fieldtype": "Data", "reqd": 1, "in_list_view": 1},
+  {"fieldname": "source", "fieldtype": "Select", "options": "\nUZEX\nDirect\nPortal\nOther"},
+  {"fieldname": "publication_date", "fieldtype": "Date"},
+  {"fieldname": "submission_deadline", "fieldtype": "Datetime", "in_list_view": 1},
+  {"fieldname": "currency", "fieldtype": "Link", "options": "Currency"},
+  {"fieldname": "estimated_total", "fieldtype": "Currency", "options": "currency"},
+  {"fieldname": "status", "fieldtype": "Select", "options": "New\nSourcing\nBid Preparation\nSubmitted\nWon\nLost\nCancelled", "default": "New", "read_only": 1, "in_list_view": 1},
+  {"fieldname": "owner_user", "fieldtype": "Link", "options": "User"}
+ ],
+ "module": "Stabler",
+ "name": "Tender Master",
+ "permissions": [
+  {"create": 1, "delete": 1, "read": 1, "write": 1, "role": "Sales User"},
+  {"create": 1, "delete": 1, "read": 1, "write": 1, "role": "Sales Manager"},
+  {"create": 1, "delete": 1, "read": 1, "write": 1, "role": "System Manager"}
+ ],
+ "sort_field": "modified",
+ "sort_order": "DESC",
+ "track_changes": 1
+}

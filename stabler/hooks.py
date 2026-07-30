@@ -32,6 +32,9 @@ permission_query_conditions = {
 	"Stock Entry": "stabler.api.permissions.stock_entry_query",
 	"Stock Reconciliation": "stabler.api.permissions.stock_reconciliation_query",
 	"Bank Transaction": "stabler.api.permissions.bank_transaction_query",
+	"CRM Activity": "stabler.api.permissions.crm_activity_query",
+	"CRM Stage Event": "stabler.api.permissions.crm_stage_event_query",
+	"Tender Master": "stabler.api.permissions.tender_master_query",
 	# Master scoping by owner/territory (gap #46) — safe-by-default: only restricts
 	# users with an explicit Allowed Owner/Territory list; admins unaffected.
 	"Customer": "stabler.api.permissions.customer_query",
@@ -50,6 +53,9 @@ has_permission = {
 	"Stock Entry": "stabler.api.permissions.company_has_permission",
 	"Stock Reconciliation": "stabler.api.permissions.company_has_permission",
 	"Bank Transaction": "stabler.api.permissions.company_has_permission",
+	"CRM Activity": "stabler.api.permissions.company_has_permission",
+	"CRM Stage Event": "stabler.api.permissions.company_has_permission",
+	"Tender Master": "stabler.api.permissions.company_has_permission",
 	"Customer": "stabler.api.permissions.master_has_permission",
 	"Supplier": "stabler.api.permissions.master_has_permission",
 }
@@ -85,6 +91,12 @@ scheduler_events = {
 }
 
 doc_events = {
+	"CRM Deal": {
+		"validate": [
+			"stabler.api.crm.validate_crm_deal_hygiene",
+			"stabler.api.tender_master.validate_deal_parent_tender",
+		],
+	},
 	"Sales Invoice": {
 		"before_validate": [
 			# Guard first — fail fast before diag/validation runs.
