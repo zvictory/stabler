@@ -700,12 +700,18 @@ def _linked_document_rows(
 	link_field: str,
 	date_field: str,
 	include_outstanding: bool = False,
+	item_link_field: str | None = None,
 ) -> list[dict]:
 	"""Return permitted parent rows linked through one document-item query.
 
 	The parent query establishes company and document-state scope.  The item query
 	then supplies the PO/SO links in one batch, avoiding a query per order.
+
+	`link_field` is the key the SPA reads back; `item_link_field` overrides the
+	column actually queried when the child table names it differently (Delivery
+	Note Item stores the order as `against_sales_order`).
 	"""
+	column = item_link_field or link_field
 	if not order_names:
 		return []
 	fields = ["name", date_field, "docstatus", "status", "grand_total", "base_grand_total", "currency"]
@@ -724,8 +730,8 @@ def _linked_document_rows(
 		return []
 	links = frappe.get_list(
 		item_doctype,
-		filters={"parent": ["in", parent_names], link_field: ["in", order_names]},
-		fields=["parent", link_field],
+		filters={"parent": ["in", parent_names], column: ["in", order_names]},
+		fields=["parent", column],
 		limit_page_length=10000,
 		# Child rows are link evidence only. Parent documents were already
 		# company-scoped and permission-checked above; applying the child
@@ -734,7 +740,7 @@ def _linked_document_rows(
 	)
 	linked_by_parent: dict[str, list[str]] = {}
 	for link in links:
-		linked_name = link.get(link_field)
+		linked_name = link.get(column)
 		if linked_name:
 			linked_by_parent.setdefault(link.parent, []).append(linked_name)
 	rows: list[dict] = []
@@ -805,6 +811,7 @@ def _sales_document_chain(deal: str, company: str) -> dict:
 			company,
 			"sales_order",
 			"posting_date",
+			item_link_field="against_sales_order",
 		),
 		"invoices": _linked_document_rows(
 			"Sales Invoice",
