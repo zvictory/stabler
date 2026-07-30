@@ -1,0 +1,715 @@
+<!doctype html>
+<html lang="tr">
+<head>
+<meta charset="utf-8" />
+<meta name="viewport" content="width=device-width, initial-scale=1" />
+<title>Stabler · Virtual Operations Desk — durum denetimi</title>
+<style>
+  :root{
+    --bg:#0b0d10; --panel:#12151a; --panel2:#171b21; --line:#242a33; --line2:#2f3742;
+    --fg:#e7ebf0; --dim:#8b95a3; --dim2:#5f6a78;
+    --blue:#5b8def; --green:#3fb950; --amber:#d29922; --red:#f0666b; --violet:#a371f7; --cyan:#39b3c7;
+    --mono:ui-monospace,SFMono-Regular,"SF Mono",Menlo,Consolas,monospace;
+  }
+  *{box-sizing:border-box}
+  body{margin:0;background:var(--bg);color:var(--fg);
+    font:15px/1.55 -apple-system,BlinkMacSystemFont,"Segoe UI",Inter,Roboto,sans-serif;
+    -webkit-font-smoothing:antialiased}
+  .wrap{max-width:1180px;margin:0 auto;padding:0 20px 80px}
+  .mono{font-family:var(--mono)}
+  .up{text-transform:uppercase;letter-spacing:.12em;font-size:11px;color:var(--dim2);font-family:var(--mono)}
+  h1{font-size:32px;line-height:1.15;margin:.2em 0 .3em;font-weight:650;letter-spacing:-.02em}
+  h2{font-size:22px;margin:0 0 .2em;font-weight:600;letter-spacing:-.01em}
+  h3{font-size:15px;margin:0 0 .4em;font-weight:600}
+  p{color:var(--dim);margin:.3em 0 1em}
+
+  /* header */
+  header{border-bottom:1px solid var(--line);background:
+    radial-gradient(900px 300px at 8% -30%,rgba(91,141,239,.16),transparent 70%),var(--panel)}
+  .hgrid{display:flex;gap:24px;justify-content:space-between;align-items:flex-start;flex-wrap:wrap;padding:34px 0 28px}
+  .ctl{background:var(--panel2);border:1px solid var(--line2);border-radius:12px;padding:14px 16px;min-width:290px}
+  .ctl label{display:block;font-size:12px;color:var(--dim);margin:0 0 6px}
+  select{width:100%;background:#0d1014;color:var(--fg);border:1px solid var(--line2);
+    border-radius:8px;padding:9px 11px;font-size:14px;font-family:inherit}
+  .toggle{display:flex;gap:6px;margin-top:12px;background:#0d1014;border:1px solid var(--line2);border-radius:8px;padding:3px}
+  .toggle button{flex:1;background:none;border:0;color:var(--dim);padding:7px 8px;border-radius:6px;
+    font:inherit;font-size:12.5px;cursor:pointer}
+  .toggle button[aria-pressed=true]{background:var(--blue);color:#fff;font-weight:600}
+
+  /* nav */
+  nav{position:sticky;top:0;z-index:20;background:rgba(11,13,16,.93);
+    backdrop-filter:blur(10px);border-bottom:1px solid var(--line)}
+  .navgrid{display:grid;grid-template-columns:repeat(auto-fit,minmax(132px,1fr));gap:0}
+  .navgrid button{background:none;border:0;border-right:1px solid var(--line);border-bottom:2px solid transparent;
+    color:var(--dim);text-align:left;padding:13px 14px;cursor:pointer;font:inherit;font-size:13.5px}
+  .navgrid button:hover{color:var(--fg);background:rgba(255,255,255,.03)}
+  .navgrid button[aria-current=true]{color:var(--fg);border-bottom-color:var(--blue)}
+  .navgrid .n{display:block;font-family:var(--mono);font-size:10.5px;color:var(--dim2);margin-bottom:3px}
+
+  section{padding:40px 0;border-bottom:1px solid var(--line)}
+  section[hidden]{display:none}
+  .shead{display:flex;gap:16px;justify-content:space-between;align-items:flex-end;flex-wrap:wrap;margin-bottom:26px}
+
+  .cards{display:grid;grid-template-columns:repeat(auto-fit,minmax(215px,1fr));gap:12px}
+  .card{background:var(--panel);border:1px solid var(--line);border-radius:12px;padding:15px 16px}
+  .card .k{font-size:27px;font-weight:650;font-family:var(--mono);letter-spacing:-.02em}
+  .card .l{font-size:12.5px;color:var(--dim);margin-top:3px}
+  .card .s{font-size:11px;color:var(--dim2);margin-top:7px;font-family:var(--mono)}
+  .g{color:var(--green)}.a{color:var(--amber)}.r{color:var(--red)}.b{color:var(--blue)}.v{color:var(--violet)}.c{color:var(--cyan)}
+
+  .lanes{display:grid;grid-template-columns:repeat(auto-fit,minmax(190px,1fr));gap:10px}
+  .lane{background:var(--panel);border:1px solid var(--line);border-top:2px solid var(--line2);border-radius:0 0 10px 10px;padding:11px}
+  .lane[data-t=active]{border-top-color:var(--blue)}
+  .lane[data-t=warn]{border-top-color:var(--amber)}
+  .lane[data-t=done]{border-top-color:var(--green)}
+  .lane[data-t=lost]{border-top-color:var(--dim2)}
+  .lhead{display:flex;justify-content:space-between;align-items:center;margin-bottom:9px;font-size:12.5px;font-weight:600}
+  .lhead .cnt{font-family:var(--mono);color:var(--dim);background:#0d1014;border:1px solid var(--line2);
+    border-radius:999px;padding:1px 8px;font-size:11px}
+  .rec{width:100%;text-align:left;background:var(--panel2);border:1px solid var(--line2);border-radius:9px;
+    padding:10px;margin-bottom:7px;cursor:pointer;color:inherit;font:inherit;transition:.13s}
+  .rec:hover{border-color:var(--blue);transform:translateY(-1px)}
+  .rec[aria-pressed=true]{border-color:var(--blue);box-shadow:0 0 0 1px var(--blue) inset}
+  .rec .id{font-family:var(--mono);font-size:11px;color:var(--dim2)}
+  .rec .ti{font-size:13px;font-weight:600;margin:2px 0 5px;line-height:1.3}
+  .rec .mt{display:flex;gap:8px;flex-wrap:wrap;font-size:11px;color:var(--dim);font-family:var(--mono)}
+  .empty{color:var(--dim2);font-size:12px;padding:6px 2px}
+
+  .chip{display:inline-flex;align-items:center;gap:5px;border-radius:999px;padding:2px 9px;
+    font-size:11px;font-family:var(--mono);border:1px solid}
+  .chip-ok{color:var(--green);border-color:rgba(63,185,80,.4);background:rgba(63,185,80,.10)}
+  .chip-gap{color:var(--amber);border-color:rgba(210,153,34,.4);background:rgba(210,153,34,.10)}
+  .chip-no{color:var(--red);border-color:rgba(240,102,107,.4);background:rgba(240,102,107,.10)}
+  .chip-n{color:var(--dim);border-color:var(--line2);background:#0d1014}
+
+  table{width:100%;border-collapse:collapse;font-size:13.5px}
+  th,td{text-align:left;padding:9px 11px;border-bottom:1px solid var(--line)}
+  th{font-size:11px;text-transform:uppercase;letter-spacing:.08em;color:var(--dim2);font-family:var(--mono);font-weight:600}
+  tbody tr:nth-child(odd){background:rgba(255,255,255,.017)}
+  td.num{text-align:right;font-family:var(--mono)}
+  .tw{background:var(--panel);border:1px solid var(--line);border-radius:12px;overflow:hidden}
+
+  .split{display:grid;grid-template-columns:1.25fr 1fr;gap:14px}
+  @media(max-width:900px){.split{grid-template-columns:1fr}}
+
+  .flow{display:flex;align-items:stretch;gap:8px;flex-wrap:wrap}
+  .node{flex:1 1 130px;min-width:130px;background:var(--panel);border:1px solid var(--line);
+    border-left:3px solid var(--line2);border-radius:9px;padding:11px 12px}
+  .node.built{border-left-color:var(--green)}
+  .node.partial{border-left-color:var(--amber)}
+  .node.missing{border-left-color:var(--red);opacity:.82}
+  .node .nn{font-size:12.5px;font-weight:600;line-height:1.25}
+  .node .ns{font-size:10.5px;color:var(--dim2);font-family:var(--mono);margin-top:5px}
+
+  .list{list-style:none;padding:0;margin:0}
+  .list li{display:flex;gap:10px;align-items:flex-start;padding:10px 0;border-bottom:1px solid var(--line);font-size:13.5px}
+  .list li:last-child{border-bottom:0}
+  .dot{flex:none;width:7px;height:7px;border-radius:50%;margin-top:7px;background:var(--dim2)}
+  .dot.g{background:var(--green)}.dot.a{background:var(--amber)}.dot.r{background:var(--red)}.dot.b{background:var(--blue)}
+  .li-s{color:var(--dim2);font-size:11.5px;font-family:var(--mono);margin-left:auto;flex:none;padding-left:10px}
+
+  .tabs{display:flex;gap:6px;flex-wrap:wrap;margin-bottom:14px}
+  .tabs button{background:var(--panel);border:1px solid var(--line2);color:var(--dim);border-radius:8px;
+    padding:7px 11px;font:inherit;font-size:12.5px;cursor:pointer}
+  .tabs button[aria-pressed=true]{background:var(--blue);border-color:var(--blue);color:#fff;font-weight:600}
+  .tabs button.miss{border-style:dashed}
+
+  .note{background:var(--panel2);border:1px solid var(--line2);border-left:3px solid var(--blue);
+    border-radius:0 10px 10px 0;padding:13px 15px;font-size:13.5px;color:var(--dim)}
+  .note.warn{border-left-color:var(--amber)}
+  .note.bad{border-left-color:var(--red)}
+  .note b{color:var(--fg);font-weight:600}
+  .crumb{font-family:var(--mono);font-size:11.5px;color:var(--dim2);margin-bottom:12px}
+  .crumb b{color:var(--blue);font-weight:500}
+  .bar{height:5px;border-radius:3px;background:#0d1014;overflow:hidden;margin-top:8px}
+  .bar i{display:block;height:100%;background:var(--blue)}
+  .gap{height:14px}
+  .foot{color:var(--dim2);font-size:12px;padding:26px 0 0}
+</style>
+</head>
+<body>
+
+<header>
+  <div class="wrap hgrid">
+    <div style="max-width:620px">
+      <div class="up">Stabler · Virtual Operations Desk</div>
+      <h1>İhale operasyonunun tek yönetim masası</h1>
+      <p style="margin-bottom:0">Tender, lot, sourcing, evrak, görev ve finans zinciri aynı kayıtların rol
+      bazlı görünümleridir. Bu sayfa <b style="color:var(--fg)">30.07.2026 kod denetimine</b> göre
+      hazırlanmıştır: her madde ya commit'lidir ya eksiktir — arada "yapılıyor" yoktur.</p>
+    </div>
+    <div class="ctl">
+      <label for="role">Sunumu rol olarak izle</label>
+      <select id="role">
+        <option value="director">Genel Müdür / Yönetici</option>
+        <option value="crm">CRM / Satış</option>
+        <option value="sourcing">Sourcing</option>
+        <option value="customs">Gümrük / Deklarant</option>
+        <option value="logist">Lojistik</option>
+        <option value="finance">Finans</option>
+      </select>
+      <div class="toggle" role="group" aria-label="Görünüm">
+        <button data-mode="today" aria-pressed="false">Bugün kodda olan</button>
+        <button data-mode="target" aria-pressed="true">Onaylanan hedef</button>
+      </div>
+      <div style="margin-top:11px;font-size:11.5px;color:var(--dim2)" class="mono" id="modeNote"></div>
+    </div>
+  </div>
+</header>
+
+<nav><div class="wrap"><div class="navgrid" id="nav"></div></div></nav>
+
+<div class="wrap">
+
+<!-- 00 DURUM -->
+<section id="s-status">
+  <div class="shead">
+    <div>
+      <div class="up">00 · Durum denetimi</div>
+      <h2>Bu gece ne yapıldı, ne elde kaldı</h2>
+      <p>Plandaki 42 kontrol kutusu boş — kod gerçeği söylüyor. Aşağıdakiler dosya dosya doğrulandı.</p>
+    </div>
+    <span class="chip chip-gap">1 dosya commit'lenmemiş</span>
+  </div>
+
+  <div class="cards" style="margin-bottom:18px">
+    <div class="card"><div class="k g">12</div><div class="l">Tender Master commit'i</div>
+      <div class="s">codex/tender-ops-foundation</div></div>
+    <div class="card"><div class="k b">1810</div><div class="l">Test yeşil (worktree)</div>
+      <div class="s">17'si Tender Master</div></div>
+    <div class="card"><div class="k a">9</div><div class="l">main'den geride commit</div>
+      <div class="s">merge-base 5f5e5d7</div></div>
+    <div class="card"><div class="k r">0</div><div class="l">Prod'a çıkan</div>
+      <div class="s">dal birleştirilmedi</div></div>
+  </div>
+
+  <div class="split">
+    <div class="tw">
+      <table>
+        <thead><tr><th>Plan görevi</th><th>Durum</th><th>Commit</th></tr></thead>
+        <tbody>
+          <tr><td>1 · Tender Master şeması + lot link + izinler</td><td><span class="chip chip-ok">bitti · incelendi</span></td><td class="mono">3825da0 · 462e7b4</td></tr>
+          <tr><td>2 · Company-safe Tender Master API</td><td><span class="chip chip-ok">bitti · incelendi</span></td><td class="mono">634eb11 · 8798c91</td></tr>
+          <tr><td>3 · Tender CRM liste/Kanban + lot drill-down</td><td><span class="chip chip-ok">bitti · 3 tur</span></td><td class="mono">52ced81 … ebda960</td></tr>
+          <tr><td>4 · Route + rol menüsü + i18n + doğrulama</td><td><span class="chip chip-gap">kod bitti · inceleme yarım</span></td><td class="mono">ce9c129 · b326494 · 16f26d9</td></tr>
+          <tr><td>— · <b>deal filtresi tek lota daraltma</b></td><td><span class="chip chip-no">commit'lenmemiş</span></td><td class="mono">working tree</td></tr>
+        </tbody>
+      </table>
+    </div>
+    <div>
+      <div class="note bad" style="margin-bottom:12px">
+        <b>Elde kalan iş:</b> <span class="mono">api/tender_master.py</span> commit'lenmemiş duruyor.
+        Reviewer'ın 3. turda istediği düzeltme bu: <i>deal</i> filtresi başka filtrelerle geldiğinde
+        aynı parent'taki <b>başka bir lot</b> eşleşiyordu. Kod yazılmış, mantığı doğru, <b>testi yok</b>.
+      </div>
+      <div class="note warn">
+        <b>Plan yanlış yol veriyor:</b> Task 4 çevirileri
+        <span class="mono">public/js/locales/</span> altında arıyor — öyle bir dizin yok.
+        Doğrusu <span class="mono">stabler/translations/</span> ve dosyalar CRLF. Codex doğrusunu kullandı.
+      </div>
+    </div>
+  </div>
+</section>
+
+<!-- 01 OMURGA -->
+<section id="s-spine" hidden>
+  <div class="shead"><div>
+    <div class="up">01 · Kayıt omurgası</div>
+    <h2>Tek veri, iki CRM seviyesi</h2>
+    <p>Ayrı CRM sistemi kurulmuyor. Üst kayıt portföy başlığı, lot ise gerçek ticari karar birimi.</p>
+  </div></div>
+
+  <div class="flow" style="margin-bottom:10px" id="spine"></div>
+  <div class="gap"></div>
+
+  <div class="split">
+    <div>
+      <h3>Değişmeyen kural</h3>
+      <ul class="list">
+        <li><span class="dot g"></span><div><b>Bir lot = bir CRM Deal.</b> Sourcing, teklif, fiyat, sonuç, PO — hepsi lotta kalır.</div></li>
+        <li><span class="dot g"></span><div><b>Üst kayıt belge üretmez.</b> Teklif, fiyatlandırma, PO ve muhasebe kaydı asla parent'a bağlanmaz.</div></li>
+        <li><span class="dot g"></span><div><b>Parent toplamı çocukları bir kez toplar</b> — kopya sayaç tablosu yok.</div></li>
+        <li><span class="dot b"></span><div>Evraklar açıkça <span class="mono">tender</span> ya da <span class="mono">lot</span> kapsamlı; tender kapsamlı olan bütün lotlarda görünür.</div></li>
+      </ul>
+    </div>
+    <div>
+      <h3>Denetimde çıkan iki sapma</h3>
+      <div class="note warn" style="margin-bottom:10px">
+        <b>Parent şeridi türetilmiyor.</b> Spec üst şeritleri çocuk lotlardan hesaplıyordu
+        (Hazırlık → Aktif → Sonuç Bekliyor → Kısmi Sonuç → Tamamlandı). Kodda parent'ın
+        <b>kendi elle girilen <span class="mono">status</span> alanı</b> kullanılıyor
+        (New / Sourcing / Bid Preparation / Submitted / Won-Lost-Cancelled → Closed).
+        Karar gerekiyor: türetilmiş şerit mi, elle statü mü?
+      </div>
+      <div class="note warn">
+        <b><span class="mono">custom_parent_tender</span> zorunlu değil.</b> Spec "required" diyordu;
+        patch alanı opsiyonel + <span class="mono">depends_on</span> ile ekledi. Zorunlu olmadan
+        "parent'sız lot" sessizce oluşabilir — spec §8 bunun için migrasyon kuyruğu istiyordu.
+      </div>
+    </div>
+  </div>
+</section>
+
+<!-- 02 ROL MASASI -->
+<section id="s-desk" hidden>
+  <div class="shead"><div>
+    <div class="up">02 · Operasyon masası</div>
+    <h2 id="deskTitle">Yönetici masası</h2>
+    <p id="deskSub">Rol seçicisini değiştir — KPI'lar ve günlük iş kuyruğu değişir, ihalenin ana aşaması değişmez.</p>
+  </div></div>
+
+  <div class="cards" id="kpis" style="margin-bottom:20px"></div>
+
+  <div class="split">
+    <div>
+      <h3>Bugünkü iş planı</h3>
+      <div class="tw"><table><thead><tr><th>Saat</th><th>İş</th><th>Kaynak</th></tr></thead>
+      <tbody id="plan"></tbody></table></div>
+      <div class="note warn" style="margin-top:12px">
+        <b>Bu tablo henüz kodda yok.</b> Görevleri üretecek <span class="mono">Tender Work Item</span>
+        kaydı hedef sistemde: belge durumundan deterministik üretilir (yeni tender → inceleme,
+        GO → sourcing ataması, 5 teklif/2 ülke eksik → risk görevi, vade yaklaştı → ödeme görevi).
+      </div>
+    </div>
+    <div>
+      <h3 id="queueTitle">Rol iş kuyruğu</h3>
+      <div class="lanes" id="queue" style="grid-template-columns:1fr"></div>
+    </div>
+  </div>
+</section>
+
+<!-- 03 TENDER CRM -->
+<section id="s-crm" hidden>
+  <div class="shead"><div>
+    <div class="up">03 · Seviye 1 — Tender CRM</div>
+    <h2>Her kart bir ihale</h2>
+    <p>Karta tıkla → o ihalenin lotları açılır. Aynı kayıt, ikinci seviye.</p>
+  </div></div>
+  <div class="lanes" id="tenderLanes"></div>
+  <div class="gap"></div>
+  <div class="note" id="crmNote"></div>
+</section>
+
+<!-- 04 LOT CRM -->
+<section id="s-lots" hidden>
+  <div class="shead"><div>
+    <div class="up">04 · Seviye 2 — Lot CRM</div>
+    <h2 id="lotTitle">Lot hattı</h2>
+    <div class="crumb" id="lotCrumb"></div>
+  </div></div>
+  <div class="lanes" id="lotLanes"></div>
+  <div class="gap"></div>
+  <div class="tw"><table>
+    <thead><tr><th>Lot</th><th>Ürün</th><th class="num">Miktar</th><th>Teklif / Ülke</th>
+      <th class="num">En düşük maliyet</th><th class="num">Teklif fiyatı</th><th>Son tarih</th><th>Sorumlu</th></tr></thead>
+    <tbody id="lotRows"></tbody>
+  </table></div>
+</section>
+
+<!-- 05 LOT ÇALIŞMA ALANI -->
+<section id="s-ws" hidden>
+  <div class="shead"><div>
+    <div class="up">05 · Seviye 3 — Lot çalışma alanı</div>
+    <h2>On sekme, dördü çalışıyor</h2>
+    <div class="crumb" id="wsCrumb"></div>
+  </div></div>
+  <div class="tabs" id="wsTabs"></div>
+  <div class="split">
+    <div id="wsBody"></div>
+    <div>
+      <h3>Belge zinciri</h3>
+      <div class="flow" style="flex-direction:column" id="chain"></div>
+    </div>
+  </div>
+</section>
+
+<!-- 06 SOURCING -->
+<section id="s-sourcing" hidden>
+  <div class="shead"><div>
+    <div class="up">06 · Sourcing</div>
+    <h2>Teklif karşılaştırma — rakam nereden geliyor</h2>
+    <p>Sourcing önce gelir: kaça alabileceğimizi bilmeden teklif veremeyiz. Aşağıdaki her hücrenin kaynağı belirtilmiştir.</p>
+  </div></div>
+
+  <div style="display:flex;gap:8px;flex-wrap:wrap;margin-bottom:14px">
+    <span class="chip chip-ok">Teklif: 5 / 5</span>
+    <span class="chip chip-ok">Ülke: 2 / 2</span>
+    <span class="chip chip-n">Kaynak: Supplier Quotation · custom_crm_deal</span>
+  </div>
+
+  <div class="tw" style="margin-bottom:14px"><table>
+    <thead><tr><th>Tedarikçi</th><th>Ülke</th><th class="num">Teklif (kendi PB)</th>
+      <th class="num">Şirket PB</th><th>Geçerlilik</th><th>Değerlendirme</th></tr></thead>
+    <tbody>
+      <tr><td>Ningbo Rail Parts</td><td>Çin</td><td class="num">104,00</td><td class="num b">1 300 000</td><td class="mono">28.08.2026</td><td><span class="chip chip-ok">en ucuz</span></td></tr>
+      <tr><td>Orion Podshipnik</td><td>Rusya</td><td class="num">112,50</td><td class="num">1 406 250</td><td class="mono">22.08.2026</td><td><span class="chip chip-n">+8,2 %</span></td></tr>
+      <tr><td>UralBearing</td><td>Rusya</td><td class="num">118,00</td><td class="num">1 475 000</td><td class="mono">19.08.2026</td><td><span class="chip chip-n">+13,5 %</span></td></tr>
+      <tr><td>Dalian Heavy</td><td>Çin</td><td class="num">121,40</td><td class="num">1 517 500</td><td class="mono">30.08.2026</td><td><span class="chip chip-n">+16,7 %</span></td></tr>
+      <tr><td>Samara Detal</td><td>Rusya</td><td class="num">129,90</td><td class="num">1 623 750</td><td class="mono">15.08.2026</td><td><span class="chip chip-gap">süresi kısa</span></td></tr>
+    </tbody>
+  </table></div>
+
+  <div class="split">
+    <div>
+      <h3>Bugün çalışan</h3>
+      <ul class="list">
+        <li><span class="dot g"></span><div>Deal'e bağlı teklifleri yan yana okuma <span class="mono">tender_quotations</span></div><span class="li-s">salt okuma</span></li>
+        <li><span class="dot g"></span><div>Şirket para biriminde <b>en ucuz</b> işaretleme</div><span class="li-s">base_grand_total</span></li>
+        <li><span class="dot g"></span><div>≥5 teklif / ≥2 ülke politika rozetleri</div><span class="li-s">purchasing.py</span></li>
+        <li><span class="dot g"></span><div>PO ↔ teklif farkı, landed cost sıralaması</div><span class="li-s">po_control_board</span></li>
+      </ul>
+    </div>
+    <div>
+      <h3>Eksik olan</h3>
+      <ul class="list">
+        <li><span class="dot r"></span><div><b>RFQ yok</b> — fiyat talebi oluşturma, gönderme, takip</div><span class="li-s">hedef</span></li>
+        <li><span class="dot r"></span><div>Teklifi SPA'dan <b>girme/düzenleme</b> ekranı yok</div><span class="li-s">hedef</span></li>
+        <li><span class="dot r"></span><div><b>Tender Sourcing Decision</b> yok — kazanan, gerekçe, onaylayan, zaman damgası</div><span class="li-s">hedef</span></li>
+        <li><span class="dot r"></span><div>Tedarikçi panelinde <b>teklif geçmişi sekmesi</b> yok</div><span class="li-s">hedef</span></li>
+        <li><span class="dot a"></span><div>Taslak teklifler politika sayımına giriyor (<span class="mono">docstatus &lt; 2</span>)</div><span class="li-s">düzeltilecek</span></li>
+        <li><span class="dot a"></span><div>Değerlendirme yalnız fiyat — teslim, ödeme, garanti, teknik uygunluk puanı yok</div><span class="li-s">düzeltilecek</span></li>
+      </ul>
+    </div>
+  </div>
+  <div class="gap"></div>
+  <div class="note bad"><b>"En ucuz teklif" ile "seçilen teklif" aynı şey değildir.</b>
+  Hedef sistemde ikisi ayrı iki gerçek olarak saklanır; seçim gerekçesi ve onaylayan kayda geçer.</div>
+</section>
+
+<!-- 07 EVRAK -->
+<section id="s-docs" hidden>
+  <div class="shead"><div>
+    <div class="up">07 · Evrak merkezi</div>
+    <h2>Klasör değil, bağlantı merkezli havuz</h2>
+    <p>Tek ana belge; çok sayıda tender, lot, tedarikçi ve görev bağlantısı. Aynı dosyanın çelişkili kopyaları oluşmaz.</p>
+  </div></div>
+
+  <div class="cards" style="margin-bottom:18px">
+    <div class="card"><div class="k">—</div><div class="l">Merkezi belge kaydı</div><div class="s r">yok · hedef</div></div>
+    <div class="card"><div class="k">—</div><div class="l">Versiyon + onay zinciri</div><div class="s r">yok · hedef</div></div>
+    <div class="card"><div class="k">✓</div><div class="l">Frappe File + is_private</div><div class="s g">var · dağınık</div></div>
+    <div class="card"><div class="k">—</div><div class="l">Süreli dış paylaşım</div><div class="s r">yok · hedef</div></div>
+  </div>
+
+  <div class="split">
+    <div>
+      <h3>Evrak hazırlık kontrolü <span class="chip chip-gap">hedef</span></h3>
+      <div class="tw"><table>
+        <thead><tr><th>Evrak grubu</th><th class="num">Hazır</th><th class="num">Eksik</th><th class="num">Süresi geçecek</th><th class="num">Onayda</th></tr></thead>
+        <tbody>
+          <tr><td>İdari belgeler</td><td class="num g">8</td><td class="num a">1</td><td class="num a">2</td><td class="num">0</td></tr>
+          <tr><td>Teknik teklif</td><td class="num g">12</td><td class="num r">3</td><td class="num">0</td><td class="num a">2</td></tr>
+          <tr><td>Finansal teklif</td><td class="num g">4</td><td class="num">0</td><td class="num">0</td><td class="num a">1</td></tr>
+        </tbody>
+      </table></div>
+      <div class="note" style="margin-top:12px">Bu sayılar dashboard'a, CRM kartına, lot Kanban kartına
+      ve <b>günlük iş planına</b> otomatik yansır — evrak eksiği kendiliğinden göreve dönüşür.</div>
+    </div>
+    <div>
+      <h3>Yetki dokuz kademeli</h3>
+      <ul class="list">
+        <li><span class="dot"></span><div>Görüntüleme</div><span class="li-s">önizleme</span></li>
+        <li><span class="dot"></span><div>İndirme</div><span class="li-s">ayrı yetki</span></li>
+        <li><span class="dot"></span><div>Düzenleme · Yeni versiyon</div><span class="li-s">ayrı ayrı</span></li>
+        <li><span class="dot"></span><div>Yorumlama · Onaylama</div><span class="li-s">ayrı ayrı</span></li>
+        <li><span class="dot"></span><div>Paylaşma · Yetki yönetimi</div><span class="li-s">ayrı ayrı</span></li>
+        <li><span class="dot"></span><div>Arşivleme</div><span class="li-s">kalıcı silme değil</span></li>
+      </ul>
+      <div class="note bad" style="margin-top:12px"><b>Frontend'de sekme gizlemek yetki kontrolü değildir.</b>
+      Yetkisiz finans verisi payload'a hiç girmez; her önizleme ve indirmede sunucu yeniden kontrol eder.</div>
+    </div>
+  </div>
+</section>
+
+<!-- 08 YOL HARİTASI -->
+<section id="s-road" hidden>
+  <div class="shead"><div>
+    <div class="up">08 · Teslim sırası</div>
+    <h2>Kontrollü uygulama yol haritası</h2>
+    <p>Temel kayıt ve güvenlik kurulmadan üst ekranlara kopya iş mantığı taşınmaz.</p>
+  </div></div>
+
+  <div class="lanes" style="grid-template-columns:1fr">
+    <div class="lane" data-t="done">
+      <div class="lhead"><span>FAZ 1 · Veri omurgası</span><span class="chip chip-ok">bitti</span></div>
+      <ul class="list">
+        <li><span class="dot g"></span><div>Tender Master doctype (12 alan) + <span class="mono">TND-.YYYY.-.#####</span></div><span class="li-s">3825da0</span></li>
+        <li><span class="dot g"></span><div>Lot bağlantısı patch'i <span class="mono">v61</span> + patches.txt</div><span class="li-s">3825da0</span></li>
+        <li><span class="dot g"></span><div>Şirket kapsamı: permission_query + has_permission + CRM Deal validate</div><span class="li-s">462e7b4</span></li>
+        <li><span class="dot g"></span><div>Company-safe API: liste / detay / kayıt + modül kapısı</div><span class="li-s">634eb11 · 8798c91</span></li>
+        <li><span class="dot g"></span><div>Tender CRM Kanban + liste + lot drill-down + yarış koruması</div><span class="li-s">52ced81 … ebda960</span></li>
+        <li><span class="dot g"></span><div>Route <span class="mono">/tender/crm</span> + rol menüsü + 9 anahtar × 5 dil</div><span class="li-s">ce9c129</span></li>
+        <li><span class="dot a"></span><div><b>Dashboard filtresi lot yaşam döngüsünden türetiliyor</b> — son tur bitmedi</div><span class="li-s">16f26d9 + WIP</span></li>
+      </ul>
+    </div>
+    <div class="lane" data-t="active">
+      <div class="lhead"><span>FAZ 2 · Sourcing zinciri</span><span class="chip chip-gap">sıradaki</span></div>
+      <ul class="list">
+        <li><span class="dot b"></span><div>RFQ kaydı: oluştur, gönder, cevap yakala</div></li>
+        <li><span class="dot b"></span><div>Supplier Quotation SPA CRUD + dosya eki + revizyon</div></li>
+        <li><span class="dot b"></span><div>Normalize değerlendirme (miktar/şart eşitleme) + puanlama</div></li>
+        <li><span class="dot b"></span><div><b>Tender Sourcing Decision</b> — denetlenebilir kazanan kaydı</div></li>
+        <li><span class="dot b"></span><div>Tedarikçi panelinde teklif geçmişi sekmesi</div></li>
+      </ul>
+    </div>
+    <div class="lane" data-t="warn">
+      <div class="lhead"><span>FAZ 3 · Görev ve günlük plan</span><span class="chip chip-n">planlı</span></div>
+      <ul class="list">
+        <li><span class="dot a"></span><div><span class="mono">Tender Work Item</span> — belge durumundan deterministik görev üretimi</div></li>
+        <li><span class="dot a"></span><div>Rol türevi Kanban kuyrukları (gümrük / lojistik / finans)</div></li>
+        <li><span class="dot a"></span><div>Kişisel ajanda, onay kutusu, eskalasyon, SLA</div></li>
+      </ul>
+    </div>
+    <div class="lane" data-t="warn">
+      <div class="lhead"><span>FAZ 4 · Evrak merkezi</span><span class="chip chip-n">planlı</span></div>
+      <ul class="list">
+        <li><span class="dot a"></span><div>Merkezi belge kaydı + versiyon + 9 kademeli yetki + audit trail</div></li>
+        <li><span class="dot a"></span><div>Zorunlu evrak listeleri, eksik/süre takibi, hazırlık skoru</div></li>
+        <li><span class="dot a"></span><div>Süreli güvenli dış paylaşım: OTP, filigran, indirme limiti, okundu bilgisi</div></li>
+      </ul>
+    </div>
+    <div class="lane" data-t="lost">
+      <div class="lhead"><span>FAZ 5 · Optimizasyon</span><span class="chip chip-n">sonra</span></div>
+      <ul class="list">
+        <li><span class="dot"></span><div>OCR + belge içi tam metin arama</div></li>
+        <li><span class="dot"></span><div>E-imza (E-IMZO) entegrasyonu</div></li>
+        <li><span class="dot"></span><div>SharePoint / Drive köprüsü</div></li>
+      </ul>
+    </div>
+  </div>
+
+  <div class="gap"></div>
+  <div class="note warn"><b>Onaya sunulan üç karar:</b>
+  (1) Parent şerit türetilmiş mi olsun, elle statü mü kalsın?
+  (2) <span class="mono">custom_parent_tender</span> zorunlu olsun mu, migrasyon kuyruğu mu kurulsun?
+  (3) Dal main'e rebase mi merge mi edilsin — main'de 9 commit var, çeviri CSV'leri CRLF.</div>
+</section>
+
+<div class="foot">Stabler · 30.07.2026 kod denetimi · rakamlar tasarım senaryosudur,
+canlı sistemde kaynak kayıtlardan yetki kontrollü hesaplanır.</div>
+</div>
+
+<script>
+const SECTIONS=[
+ ["s-status","00","Durum"],["s-spine","01","Omurga"],["s-desk","02","Rol masası"],
+ ["s-crm","03","Tender CRM"],["s-lots","04","Lot CRM"],["s-ws","05","Çalışma alanı"],
+ ["s-sourcing","06","Sourcing"],["s-docs","07","Evrak merkezi"],["s-road","08","Yol haritası"]];
+
+const nav=document.getElementById("nav");
+SECTIONS.forEach(([id,n,label],i)=>{
+  const b=document.createElement("button");
+  b.innerHTML=`<span class="n">${n}</span>${label}`;
+  b.setAttribute("aria-current",String(i===0));
+  b.onclick=()=>{
+    SECTIONS.forEach(([sid],j)=>{document.getElementById(sid).hidden=(j!==i);
+      nav.children[j].setAttribute("aria-current",String(j===i));});
+    window.scrollTo({top:0,behavior:"smooth"});
+  };
+  nav.appendChild(b);
+});
+
+/* ---------------- state ---------------- */
+let mode="target", role="director", tender="TND-2026-4417", lot="LOT-02", wsTab="overview";
+
+document.querySelectorAll("[data-mode]").forEach(b=>b.onclick=()=>{
+  mode=b.dataset.mode;
+  document.querySelectorAll("[data-mode]").forEach(x=>x.setAttribute("aria-pressed",String(x===b)));
+  render();
+});
+document.getElementById("role").onchange=e=>{role=e.target.value;render();};
+
+/* ---------------- data ---------------- */
+const ROLE={
+ director:{title:"Yönetici masası",sub:"Her şey değil — müdahale etmem gerekenler.",
+  kpi:[["Portföy değeri","18,4 M","b","27 aktif lot"],["Kazanma oranı","41 %","g","9K / 13L · 90 gün"],
+       ["Riskli lot","6","r","teslim/süre riski"],["Onayımda","3","a","tedarikçi seçimi"]],
+  queue:["Kararlar","Riskli lotlar","Politika açığı","Marj sapması"],
+  plan:[["09:00","Yeni lot incelemesi — UTY 2026-4419","intake"],["10:30","Ningbo seçimini onayla","sourcing decision"],
+        ["14:00","Marj hedefi altındaki iki teklif","bid pricing"],["16:00","Teminat iade takibi","intake · guarantee"]]},
+ crm:{title:"CRM / Satış masası",sub:"Yeni ihaleler, GO kararı, teklif ve sonuç.",
+  kpi:[["Yeni ihale","4","b","bu hafta"],["GO bekleyen","5","a","karar gerekli"],
+       ["48 saat içinde son tarih","3","r","teklif verilmeli"],["Sonucu bekleyen","7","c","submitted"]],
+  queue:["Yeni","İnceleme","GO","Fiyatlandırma","Teklif verildi"],
+  plan:[["09:00","UZEX yeni lot taraması","uzex poller"],["11:00","Lot 03 GO kararı","intake · go_no_go"],
+        ["15:00","Teklif dosyası submission kontrolü","bid package"],["17:00","Sonuç girişi — 2 lot","intake · result"]]},
+ sourcing:{title:"Sourcing masası",sub:"Kaça alabiliriz? Teklif toplama ve değerlendirme.",
+  kpi:[["Atanan lot","9","b","bana atanmış"],["RFQ cevabı bekleniyor","11","a","hedef sistem"],
+       ["Teklif açığı","4","r","5/2 politikası"],["Onaya hazır","2","g","değerlendirme bitti"]],
+  queue:["Atandı","RFQ hazırlanıyor","Teklif bekleniyor","Değerlendirme","Onay","PO devri"],
+  plan:[["09:30","Ningbo + Orion teklif karşılaştırması","supplier quotation"],["11:00","3 tedarikçiye RFQ gönder","RFQ · hedef"],
+        ["14:00","UralBearing teslim süresi teyidi","quotation"],["16:30","Lot 02 kazanan gerekçesi","decision · hedef"]]},
+ customs:{title:"Gümrük / Deklarant masası",sub:"Kazanılmış lotların evrak ve beyan işleri.",
+  kpi:[["Evrak eksik","3","r","beyan bloklu"],["Beyana hazır","5","g","GTD çekilebilir"],
+       ["Kontrolde","2","a","gümrükte"],["Serbest","14","c","bu ay"]],
+  queue:["Evrak eksik","Hazır","Beyan edildi","Kontrol","Serbest"],
+  plan:[["09:00","Lot 02 vet sertifikası eksik","vet certificate"],["11:30","GTD 4417 kontrol yanıtı","customs declaration"],
+        ["14:00","TN VED kodu teyidi — 2 kalem","HS duty rate"],["16:00","Serbest bırakılan 3 konteyner","container"]]},
+ logist:{title:"Lojistik masası",sub:"Alım, transit, sınır, teslimat, kabul.",
+  kpi:[["Alım bekleyen","4","b","PO onaylı"],["Transitte","7","c","yolda"],
+       ["Sınırda","2","a","gecikme riski"],["Teslim/kabul","9","g","bu ay"]],
+  queue:["Planlama","Alım bekliyor","Transit","Sınır","Teslimat","Kabul"],
+  plan:[["08:30","Sınırda bekleyen 2 tır","import truck"],["11:00","Lot 02 teslim randevusu","delivery note"],
+        ["14:30","Kabul tutanağı — 3 teslim","purchase receipt"],["16:00","Gecikme bildirimi","deadline risk"]]},
+ finance:{title:"Finans masası",sub:"AP/AR, ödeme, tahsilat, marj sapması.",
+  kpi:[["Vadesi gelen AP","2,1 M","a","7 gün içinde"],["Açık AR","3,4 M","b","tahsilat"],
+       ["Vadesi geçen","410 K","r","gecikmiş"],["Marj sapması","−2,3 p","r","plan vs gerçek"]],
+  queue:["Belge bekliyor","Kaydedildi","Vadesi geldi","Ödendi/Tahsil","Marj sapması"],
+  plan:[["09:00","Vadesi gelen 4 tedarikçi faturası","purchase invoice"],["11:00","UTY tahsilat takibi","sales invoice"],
+        ["14:00","Lot 02 gerçekleşen landed maliyet","GL voucher"],["16:00","Marj sapması raporu","plan vs actual"]]}};
+
+const TENDERS=[
+ {lane:"Aktif",tone:"active",items:[
+   {id:"TND-2026-4417",ti:"UTY · Vagon buksa podshipnigi",mt:["4 lot","2 açık","1,52 M","28.08"],gap:1},
+   {id:"TND-2026-4419",ti:"UTY · Fren kolodkası",mt:["2 lot","2 açık","640 K","02.09"],gap:2}]},
+ {lane:"Sonuç bekliyor",tone:"warn",items:[
+   {id:"TND-2026-4402",ti:"UTY · Yağlama sistemi",mt:["3 lot","0 açık","980 K","teklif verildi"],gap:0}]},
+ {lane:"Kısmi sonuç",tone:"warn",items:[
+   {id:"TND-2026-4388",ti:"UTY · Tekerlek çifti",mt:["5 lot","2K / 1L / 2 açık","2,3 M","—"],gap:0}]},
+ {lane:"Tamamlandı",tone:"done",items:[
+   {id:"TND-2026-4351",ti:"UTY · Aks yatağı",mt:["3 lot","3 kazanıldı","1,1 M","kapandı"],gap:0}]}];
+
+const LOTS={
+ "TND-2026-4417":[
+  {id:"LOT-01",lane:"Kazanıldı",tone:"done",item:"Podshipnik 6-306",qty:"480 dona",q:"5 / 2",cost:"1 300 000",bid:"1 495 000",dl:"28.08",who:"A. Rahimov"},
+  {id:"LOT-02",lane:"Sourcing",tone:"active",item:"Podshipnik 6-308",qty:"240 dona",q:"5 / 2",cost:"1 300 000",bid:"—",dl:"28.08",who:"A. Rahimov"},
+  {id:"LOT-03",lane:"GO",tone:"active",item:"Buksa gövdesi",qty:"120 dona",q:"2 / 1",cost:"—",bid:"—",dl:"28.08",who:"S. Yusupova"},
+  {id:"LOT-04",lane:"Kaybedildi",tone:"lost",item:"Salmastra takımı",qty:"40 dona",q:"5 / 3",cost:"210 000",bid:"245 000",dl:"—",who:"S. Yusupova"}],
+ "TND-2026-4419":[
+  {id:"LOT-01",lane:"Sourcing",tone:"active",item:"Fren kolodkası tip A",qty:"600 dona",q:"3 / 2",cost:"—",bid:"—",dl:"02.09",who:"A. Rahimov"},
+  {id:"LOT-02",lane:"Yeni",tone:"active",item:"Fren kolodkası tip B",qty:"300 dona",q:"0 / 0",cost:"—",bid:"—",dl:"02.09",who:"—"}],
+ "TND-2026-4402":[{id:"LOT-01",lane:"Teklif verildi",tone:"warn",item:"Yağ pompası",qty:"80 dona",q:"5 / 2",cost:"620 000",bid:"713 000",dl:"—",who:"A. Rahimov"},
+  {id:"LOT-02",lane:"Teklif verildi",tone:"warn",item:"Filtre seti",qty:"400 dona",q:"5 / 2",cost:"190 000",bid:"221 000",dl:"—",who:"S. Yusupova"},
+  {id:"LOT-03",lane:"Teklif verildi",tone:"warn",item:"Hortum grubu",qty:"150 dona",q:"5 / 2",cost:"88 000",bid:"104 000",dl:"—",who:"S. Yusupova"}],
+ "TND-2026-4388":[{id:"LOT-01",lane:"Kazanıldı",tone:"done",item:"Tekerlek çifti 957",qty:"24 çift",q:"5 / 3",cost:"860 000",bid:"1 000 000",dl:"—",who:"A. Rahimov"},
+  {id:"LOT-02",lane:"Kazanıldı",tone:"done",item:"Tekerlek çifti 950",qty:"18 çift",q:"5 / 2",cost:"640 000",bid:"742 000",dl:"—",who:"A. Rahimov"},
+  {id:"LOT-03",lane:"Kaybedildi",tone:"lost",item:"Aks 205",qty:"30 dona",q:"5 / 2",cost:"310 000",bid:"368 000",dl:"—",who:"S. Yusupova"},
+  {id:"LOT-04",lane:"Sourcing",tone:"active",item:"Yatak kapağı",qty:"60 dona",q:"4 / 2",cost:"—",bid:"—",dl:"12.09",who:"S. Yusupova"},
+  {id:"LOT-05",lane:"GO",tone:"active",item:"Conta seti",qty:"200 dona",q:"1 / 1",cost:"—",bid:"—",dl:"12.09",who:"—"}],
+ "TND-2026-4351":[{id:"LOT-01",lane:"Kazanıldı",tone:"done",item:"Aks yatağı A",qty:"40 dona",q:"5 / 2",cost:"420 000",bid:"483 000",dl:"—",who:"A. Rahimov"},
+  {id:"LOT-02",lane:"Kazanıldı",tone:"done",item:"Aks yatağı B",qty:"35 dona",q:"5 / 2",cost:"380 000",bid:"437 000",dl:"—",who:"A. Rahimov"},
+  {id:"LOT-03",lane:"Kazanıldı",tone:"done",item:"Montaj kiti",qty:"35 set",q:"5 / 2",cost:"110 000",bid:"128 000",dl:"—",who:"S. Yusupova"}]};
+
+const WS=[
+ ["overview","Genel bakış","built"],["rfq","RFQ ve teklifler","missing"],["award","Değerlendirme ve seçim","missing"],
+ ["pricing","İhale fiyatlandırması","built"],["purchase","Satınalma","built"],["customs","Gümrük","partial"],
+ ["logistics","Lojistik","partial"],["finance","Finans","built"],["documents","Belgeler","missing"],
+ ["activity","Aktivite ve onay","partial"]];
+
+const WSBODY={
+ overview:["Lot künyesi, alıcı, son tarihler, sorumlu, GO kararı, sonuç ve yaşam döngüsü zaman çizgisi.",
+   [["Intake + deadline risk motoru","g","tender.py · _deal_deadlines"],["Evrak hazırlık skoru","r","hedef"],["Sözleşme/tedarik özeti","g","tender_workspace"]]],
+ rfq:["Fiyat talebi oluşturma, tedarikçi seçimi, gönderim, cevap yakalama ve revizyon takibi.",
+   [["RFQ kaydı","r","yok"],["Teklif girişi","r","yok"],["Dosya eki / revizyon","r","yok"],["Deal'e bağlı teklifleri okuma","g","tender_quotations"]]],
+ award:["Normalize karşılaştırma, teknik uygunluk, seçim gerekçesi, onaylayan ve zaman damgası.",
+   [["Tender Sourcing Decision","r","yok"],["Puanlama (fiyat dışı kriterler)","r","yok"],["En ucuz işaretleme","g","base_grand_total"]]],
+ pricing:["Sourcing maliyetinden ihale fiyatına: НДС, biржа komisyonu, vergiler → Остаток.",
+   [["Bid P&L motoru (margin ↔ price)","g","save_deal_bid_pricing"],["Plan vs gerçek marj","g","GL voucher'dan"],["Kur riski şeridi","a","kısmi"]]],
+ purchase:["Kazanan tedarikçiye PO, landed cost planı, teslim alma ve faturalama ilerlemesi.",
+   [["PO kontrol panosu + landed editör","g","po_control_board"],["Vendor karşılaştırma (landed)","g","compare[]"],["Teklif→PO tek tıkla dönüşüm","r","yok"]]],
+ customs:["Beyan hazırlığı, GTD, TN VED, boj + QQS hesabı, serbest bırakma.",
+   [["Deklarant kuyruğu","g","declarant_queue"],["HS Duty Rate motoru","g","customs estimate"],["Rol türevi Kanban kuyruğu","r","hedef"]]],
+ logistics:["Alım planı, transit, sınır geçişi, teslimat ve kabul.",
+   [["Lojistik panosu","g","logist_board"],["Kalkış kapısı (departure gate)","g","departure_math"],["Rol türevi Kanban kuyruğu","r","hedef"]]],
+ finance:["AP/AR, ödeme/tahsilat, açık bakiye, planlanan vs gerçekleşen marj.",
+   [["Finans sekmesi (yetkiliye)","g","tender_workspace.finance"],["Yetkisiz veri payload'a girmez","g","_can_view_tender_finance"],["Marj sapması uyarısı","a","kısmi"]]],
+ documents:["Tender ve lot kapsamlı belgeler, versiyon, yetki, paylaşım ve audit trail.",
+   [["Merkezi belge kaydı","r","yok"],["9 kademeli yetki","r","yok"],["Süreli dış paylaşım","r","yok"],["Frappe File eki","g","dağınık"]]],
+ activity:["Kim ne zaman ne yaptı: statü geçişleri, onaylar, atamalar, sunum damgaları.",
+   [["Submission audit (at/by/ref)","g","mark_tender_submitted"],["Aşama geçmişi","g","crm activity"],["Belge onay zinciri","r","hedef"]]]};
+
+const CHAIN=[["CRM Deal / Lot","built","custom_crm_deal"],["Tender Intake","built","custom_tender_intake"],
+ ["RFQ","missing","hedef"],["Supplier Quotation","partial","salt okuma"],["Sourcing Decision","missing","hedef"],
+ ["Bid Pricing + Submission","built","custom_bid_pricing"],["Purchase Order","built","custom_crm_deal"],
+ ["Receipt → PInv → Ödeme","built","tender_workspace"],["Gümrük belgeleri","built","imports"],
+ ["SO → DN → SI → Tahsilat","built","so_board"]];
+
+const SPINE=[["Tender Master","built","12 alan · TND-.YYYY."],["CRM Deal / Lot","built","custom_parent_tender"],
+ ["Belgeler (tender/lot)","missing","kapsam alanı yok"],["Rol projeksiyonları","partial","4/6 rol"],
+ ["Günlük görev","missing","Tender Work Item"]];
+
+/* ---------------- render ---------------- */
+function esc(s){return String(s).replace(/[&<>]/g,c=>({"&":"&amp;","<":"&lt;",">":"&gt;"}[c]));}
+
+function render(){
+  document.getElementById("modeNote").textContent =
+    mode==="today" ? "● commit'li özellikler vurgulanır" : "● onaylı hedef sistem gösterilir";
+
+  const r=ROLE[role];
+  document.getElementById("deskTitle").textContent=r.title;
+  document.getElementById("deskSub").textContent=r.sub;
+  document.getElementById("kpis").innerHTML=r.kpi.map(([l,k,c,s])=>
+    `<div class="card"><div class="k ${c}">${esc(k)}</div><div class="l">${esc(l)}</div><div class="s">${esc(s)}</div></div>`).join("");
+  document.getElementById("plan").innerHTML=r.plan.map(([h,w,src])=>
+    `<tr><td class="mono">${esc(h)}</td><td>${esc(w)}</td><td class="mono" style="color:var(--dim2);font-size:11.5px">${esc(src)}</td></tr>`).join("");
+  document.getElementById("queueTitle").textContent=`Rol iş kuyruğu · ${r.queue.length} kolon`;
+  document.getElementById("queue").innerHTML=
+    `<div class="lane" data-t="active"><div class="lhead"><span>${esc(r.title.split(" ")[0])}</span>
+     <span class="chip ${role==="director"||role==="crm"||role==="sourcing"?"chip-gap":"chip-no"}">${
+       role==="director"||role==="crm"||role==="sourcing"?"kısmen var":"hedef"}</span></div>
+     ${r.queue.map((q,i)=>`<div class="rec" style="cursor:default"><span class="id">${String(i+1).padStart(2,"0")}</span>
+        <div class="ti">${esc(q)}</div><div class="mt"><span>belge durumundan türetilir</span></div></div>`).join("")}</div>`;
+
+  document.getElementById("spine").innerHTML=SPINE.map(([n,st,s])=>
+    `<div class="node ${st}"><div class="nn">${esc(n)}</div><div class="ns">${esc(s)}</div></div>`).join("");
+
+  document.getElementById("tenderLanes").innerHTML=TENDERS.map(L=>
+    `<div class="lane" data-t="${L.tone}"><div class="lhead"><span>${esc(L.lane)}</span>
+      <span class="cnt">${L.items.length}</span></div>
+     ${L.items.map(it=>`<button class="rec" aria-pressed="${it.id===tender}" data-tender="${it.id}">
+        <span class="id">${esc(it.id)}</span><div class="ti">${esc(it.ti)}</div>
+        <div class="mt">${it.mt.map(m=>`<span>${esc(m)}</span>`).join("")}</div>
+        ${it.gap?`<div style="margin-top:6px"><span class="chip chip-gap">${it.gap} lotta teklif açığı</span></div>`:""}
+      </button>`).join("")}</div>`).join("");
+  document.querySelectorAll("[data-tender]").forEach(b=>b.onclick=()=>{
+    tender=b.dataset.tender; lot=LOTS[tender][0].id; render();
+    document.getElementById("nav").children[4].click();
+  });
+
+  document.getElementById("crmNote").innerHTML = mode==="today"
+    ? `<b>Bugün:</b> Tender CRM Kanban + liste + lot drill-down <b>kodda var</b> (<span class="mono">/tender/crm</span>,
+       director + sourcing menüsünde). Ancak şeritler parent'ın <b>elle girilen status alanından</b> geliyor —
+       yukarıdaki türetilmiş şeritler (Aktif / Sonuç bekliyor / Kısmi sonuç) <b>henüz hesaplanmıyor</b>.`
+    : `<b>Hedef:</b> şeritler çocuk lotlardan türetilir; kart üstünde toplam/açık/verilmiş/kazanılan/kaybedilen lot,
+       toplam değer, en yakın son tarih, politika açığı ve risk sayısı görünür. Bugün kart yalnızca
+       lot sayısı + tahmini toplam taşıyor.`;
+
+  const lots=LOTS[tender]||[];
+  document.getElementById("lotTitle").textContent=`${tender} · ${lots.length} lot`;
+  document.getElementById("lotCrumb").innerHTML=`Tender CRM › <b>${esc(tender)}</b> › lotlar`;
+  const byLane={};
+  lots.forEach(l=>{(byLane[l.lane]=byLane[l.lane]||{tone:l.tone,items:[]}).items.push(l);});
+  document.getElementById("lotLanes").innerHTML=Object.entries(byLane).map(([lane,g])=>
+    `<div class="lane" data-t="${g.tone}"><div class="lhead"><span>${esc(lane)}</span>
+      <span class="cnt">${g.items.length}</span></div>
+     ${g.items.map(l=>`<button class="rec" aria-pressed="${l.id===lot}" data-lot="${l.id}">
+        <span class="id">${esc(l.id)}</span><div class="ti">${esc(l.item)}</div>
+        <div class="mt"><span>${esc(l.qty)}</span><span>teklif ${esc(l.q)}</span></div></button>`).join("")}</div>`).join("");
+  document.getElementById("lotRows").innerHTML=lots.map(l=>
+    `<tr><td class="mono">${esc(l.id)}</td><td>${esc(l.item)}</td><td class="num">${esc(l.qty)}</td>
+      <td><span class="chip ${l.q.startsWith("5")?"chip-ok":"chip-gap"}">${esc(l.q)}</span></td>
+      <td class="num">${esc(l.cost)}</td><td class="num">${esc(l.bid)}</td>
+      <td class="mono">${esc(l.dl)}</td><td>${esc(l.who)}</td></tr>`).join("");
+  document.querySelectorAll("[data-lot]").forEach(b=>b.onclick=()=>{
+    lot=b.dataset.lot; render(); document.getElementById("nav").children[5].click();
+  });
+
+  document.getElementById("wsCrumb").innerHTML=
+    `Tender CRM › <b>${esc(tender)}</b> › <b>${esc(lot)}</b> › ${esc((WS.find(w=>w[0]===wsTab)||[])[1]||"")}`;
+  document.getElementById("wsTabs").innerHTML=WS.map(([k,label,st])=>
+    `<button data-ws="${k}" aria-pressed="${k===wsTab}" class="${st==="missing"?"miss":""}">
+      ${esc(label)} ${st==="built"?'<span class="chip chip-ok" style="margin-left:5px">var</span>':
+        st==="partial"?'<span class="chip chip-gap" style="margin-left:5px">kısmi</span>':
+        '<span class="chip chip-no" style="margin-left:5px">yok</span>'}</button>`).join("");
+  document.querySelectorAll("[data-ws]").forEach(b=>b.onclick=()=>{wsTab=b.dataset.ws;render();});
+  const [desc,rows]=WSBODY[wsTab];
+  document.getElementById("wsBody").innerHTML=`<h3>${esc((WS.find(w=>w[0]===wsTab)||[])[1])}</h3>
+    <p>${esc(desc)}</p><ul class="list">${rows.map(([n,c,s])=>
+      `<li><span class="dot ${c}"></span><div>${esc(n)}</div><span class="li-s">${esc(s)}</span></li>`).join("")}</ul>`;
+
+  document.getElementById("chain").innerHTML=CHAIN.map(([n,st,s])=>
+    `<div class="node ${st}"><div class="nn">${esc(n)}</div><div class="ns">${esc(s)}</div></div>`).join("");
+}
+render();
+</script>
+</body>
+</html>
