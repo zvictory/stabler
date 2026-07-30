@@ -1,12 +1,14 @@
 from __future__ import annotations
 
+from typing import ClassVar
+
 import frappe
 from frappe import _
 from frappe.model.document import Document
 
 
 class CRMActivity(Document):
-	_ALLOWED_REFERENCE_DOCTYPES = {"CRM Deal", "CRM Lead"}
+	_ALLOWED_REFERENCE_DOCTYPES: ClassVar[set[str]] = {"CRM Deal", "CRM Lead"}
 
 	def before_insert(self):
 		self.created_by = frappe.session.user

@@ -11,6 +11,7 @@ import types
 import unittest
 from datetime import date
 from pathlib import Path
+from typing import ClassVar
 
 _ROOT = Path(__file__).resolve().parents[1]
 API_SOURCE = _ROOT / "api" / "tender_master.py"
@@ -53,7 +54,7 @@ class _FakeFrappe:
 	#: anywhere else would make the fake reward an API that re-reads every row by
 	#: hand and punish one that simply trusts `get_list`, i.e. it would grade the
 	#: implementation on the fake's shortcut instead of on Frappe's behaviour.
-	unreadable = {("CRM Deal", "LOT-DENIED")}
+	unreadable: ClassVar[set[tuple[str, str]]] = {("CRM Deal", "LOT-DENIED")}
 
 	def __init__(self):
 		self.docs = {
@@ -160,9 +161,7 @@ def _load_api(fake: _FakeFrappe, *, tender_allowed=True, missing_columns=(), ten
 	frappe.new_doc = fake.new_doc
 	frappe.get_list = fake.get_list
 	frappe.get_all = fake.get_all
-	frappe.db = types.SimpleNamespace(
-		has_column=lambda _doctype, column: column not in missing_columns
-	)
+	frappe.db = types.SimpleNamespace(has_column=lambda _doctype, column: column not in missing_columns)
 	frappe.parse_json = lambda value: value
 	frappe.whitelist = lambda *args, **_kwargs: (lambda fn: fn) if not args else args[0]
 	frappe.throw = lambda message, exception=Exception: (_ for _ in ()).throw(exception(message))
@@ -200,11 +199,11 @@ def _load_api(fake: _FakeFrappe, *, tender_allowed=True, missing_columns=(), ten
 	}
 	# LOT-A is the one deal-scoped test case that must NOT match the lifecycle
 	# filters, so a per-deal override is needed instead of the shared constant.
-	_intake_overrides = {"LOT-A": {"submitted_at": None, "submitted_by": None, "result": None, "result_at": None}}
+	_intake_overrides = {
+		"LOT-A": {"submitted_at": None, "submitted_by": None, "result": None, "result_at": None}
+	}
 	tender._read_intake = lambda deal: _intake_overrides.get(deal, _default_intake)
-	tender._parse_intake = lambda raw: (
-		raw if isinstance(raw, dict) else (json.loads(raw) if raw else {})
-	)
+	tender._parse_intake = lambda raw: raw if isinstance(raw, dict) else (json.loads(raw) if raw else {})
 	tender._tender_event_dates = lambda _intake, _creation: {
 		"identified": "2026-07-01",
 		"submitted": "2026-07-10",
@@ -457,7 +456,7 @@ class TestTenderMasterDerivedBoard(unittest.TestCase):
 		self.assertEqual(detail["summary"]["estimated_total"], record["lot_estimated_total"])
 
 	def test_policy_gap_counts_only_lots_still_collecting_bids(self):
-		""""Policy gap" must mean the same thing here as on the funnel screen.
+		""" "Policy gap" must mean the same thing here as on the funnel screen.
 
 		The threshold (five supplier bids) is only actionable while the bid round
 		is open. Counting an already-submitted or decided lot would put "Policy
@@ -560,6 +559,7 @@ _CARD_KEYS = (
 	"lot_estimated_total",
 	"earliest_deadline",
 )
+
 
 class TestTenderMasterParentRequirement(unittest.TestCase):
 	"""K2: the field stays optional; the requirement lives in the validate hook.
@@ -785,9 +785,7 @@ class TestTenderMasterDerivationSource(unittest.TestCase):
 		obvious way to write it. So the source is checked directly.
 		"""
 		tree = ast.parse(API_SOURCE.read_text())
-		functions = {
-			node.name: node for node in ast.walk(tree) if isinstance(node, ast.FunctionDef)
-		}
+		functions = {node.name: node for node in ast.walk(tree) if isinstance(node, ast.FunctionDef)}
 		missing = [name for name in _DERIVATION_FUNCTIONS if name not in functions]
 		self.assertEqual(missing, [], "renamed derivation function — this guard stopped checking")
 		hits: list[str] = []

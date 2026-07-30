@@ -2,14 +2,13 @@
 
 from __future__ import annotations
 
-import json
 import importlib
+import json
 import sys
 import types
 import unittest
 from datetime import date
 from pathlib import Path
-
 
 _ROOT = Path(__file__).resolve().parent.parent
 TENDER_MASTER_JSON = _ROOT / "stabler" / "doctype" / "tender_master" / "tender_master.json"
@@ -63,7 +62,9 @@ class TestTenderMasterSchema(unittest.TestCase):
 		self.assertEqual(fields["title"]["reqd"], 1)
 		self.assertEqual(fields["buyer_name"]["reqd"], 1)
 		self.assertEqual(fields["estimated_total"]["options"], "currency")
-		self.assertEqual(fields["status"]["options"], "New\nSourcing\nBid Preparation\nSubmitted\nWon\nLost\nCancelled")
+		self.assertEqual(
+			fields["status"]["options"], "New\nSourcing\nBid Preparation\nSubmitted\nWon\nLost\nCancelled"
+		)
 		patch_source = PATCH.read_text()
 		self.assertIn('"custom_parent_tender"', patch_source)
 		self.assertIn('"options": "Tender Master"', patch_source)
