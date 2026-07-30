@@ -97,6 +97,34 @@ class TestTenderMasterSchema(unittest.TestCase):
 		self.assertTrue(referenced, "the patch must anchor the field, not float")
 		self.assertEqual(referenced - created, set())
 
+	def test_api_reads_no_custom_field_that_no_patch_ever_creates(self):
+		"""Every `custom_*` field the tender API reads must be one a patch installs.
+
+		`frappe.get_list` silently DROPS a fieldname the doctype does not have —
+		no error, no warning, just a missing key — so an invented custom field
+		costs nothing at import or query time and everything at read time: it
+		reads as 0.00 / blank forever. That is not a hypothetical. The board's
+		money column shipped pointing at a `custom_…estimated_value` that no
+		patch creates and no site has, so the card, the drill-down and
+		`summary.estimated_total` were structurally zero on mikas — the only
+		tenant with the tender module on (found in the 2026-07-30 post-deploy
+		smoke run). The unit tests could not catch it: they build their lot rows
+		by keyword argument, so the fake carried the same wrong name and agreed
+		with the code. A schema-side check is the only kind that can disagree.
+
+		Core CRM Deal columns (`deal_value`, `status`, `currency`) are out of
+		scope here — they belong to the crm app, whose doctype JSON is not in
+		this repo. This guards the half we own, which is also the half that has
+		no schema to fall back on.
+		"""
+		api = (_ROOT / "api" / "tender_master.py").read_text()
+		referenced = set(re.findall(r"custom_[a-z0-9_]+", api))
+		created = set()
+		for patch in sorted((_ROOT / "patches").glob("*.py")):
+			created |= set(re.findall(r'"fieldname": "(custom_[a-z0-9_]+)"', patch.read_text()))
+		self.assertTrue(referenced, "the tender API must still read its custom lot fields")
+		self.assertEqual(sorted(referenced - created), [])
+
 	def test_patch_entries_are_module_paths_never_dotted_execute_calls(self):
 		"""A `patches.txt` entry names the module; frappe appends `.execute` itself.
 

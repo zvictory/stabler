@@ -287,7 +287,7 @@ onMounted(() => {
 								>
 								<span v-else>—</span>
 							</td>
-							<td class="text-end font-monospace">{{ money(lot.custom_estimated_value, lot) }}</td>
+							<td class="text-end font-monospace">{{ money(lot.deal_value, lot) }}</td>
 							<td>{{ lot.modified ? formatDate(lot.modified) : "—" }}</td>
 						</tr>
 					</tbody>

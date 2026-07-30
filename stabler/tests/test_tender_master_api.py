@@ -66,14 +66,14 @@ class _FakeFrappe:
 				company="ACME",
 				custom_parent_tender="TND-2026-00001",
 				status="Open",
-				custom_estimated_value=125,
+				deal_value=125,
 			),
 			("CRM Deal", "LOT-DENIED"): _Doc(
 				name="LOT-DENIED",
 				company="ACME",
 				custom_parent_tender="TND-2026-00001",
 				status="Won",
-				custom_estimated_value=500,
+				deal_value=500,
 			),
 		}
 		self.created: list[_Doc] = []
@@ -317,14 +317,14 @@ class TestTenderMasterApi(unittest.TestCase):
 			company="ACME",
 			custom_parent_tender="TND-2026-00001",
 			status="Open",
-			custom_estimated_value=10,
+			deal_value=10,
 		)
 		self.fake.docs[("CRM Deal", "LOT-B")] = _Doc(
 			name="LOT-B",
 			company="ACME",
 			custom_parent_tender="TND-2026-00001",
 			status="Open",
-			custom_estimated_value=20,
+			deal_value=20,
 		)
 		result = self.api.list_tender_masters(company="ACME", deal="LOT-A", stage="submitted")
 		filters = self.fake.last_filters
@@ -347,7 +347,7 @@ class TestTenderMasterApi(unittest.TestCase):
 			company="ACME",
 			custom_parent_tender="TND-2026-00002",
 			status="Open",
-			custom_estimated_value=30,
+			deal_value=30,
 		)
 		self.api.list_tender_masters(company="ACME", stage="submitted")
 		filters = self.fake.last_filters
@@ -360,7 +360,7 @@ def _lot(name, parent, value, intake=None):
 		company="ACME",
 		custom_parent_tender=parent,
 		status="Open",
-		custom_estimated_value=value,
+		deal_value=value,
 		custom_tender_intake=json.dumps(intake) if intake else None,
 	)
 

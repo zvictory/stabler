@@ -50,7 +50,14 @@ _POLICY_GAP_STAGES = ("sourcing",)
 #: Lot columns the drill-down renders. The intake / pricing columns are read for
 #: the derivation but deliberately NOT returned — the SPA has no use for raw
 #: intake JSON, and shipping it would put a whole bid history in every payload.
-_LOT_LIST_FIELDS = ("name", "status", "custom_estimated_value", "currency", "modified")
+#:
+#: The money column is CRM Deal's own `deal_value`. It must be a field that
+#: really exists: `get_list` silently DROPS a fieldname the doctype does not
+#: have, so an invented one costs no error at all — it just makes the card, the
+#: drill-down and `summary.estimated_total` read 0.00 forever. An invented
+#: estimated-value field did exactly that here — no patch created it and no site
+#: had the column; `test_tender_master_schema` now guards the class.
+_LOT_LIST_FIELDS = ("name", "status", "deal_value", "currency", "modified")
 
 #: Derived card counts. Every one counts lots the caller may actually READ, so a
 #: card can always be reconciled against the drill-down the same user can open.
@@ -94,7 +101,7 @@ def _bid_at_risk(intake: dict, today_d) -> bool:
 		return False
 	try:
 		return getdate(deadline) < today_d
-	except TypeError, ValueError:
+	except (TypeError, ValueError):
 		return False
 
 
@@ -195,7 +202,7 @@ def _tender_lot_cards(company: str, parent_names: list[str]) -> tuple[dict[str, 
 			card["open_lot_count"] += 1
 		if stage == "submitted":
 			card["submitted_lot_count"] += 1
-		card["lot_estimated_total"] += flt(row.get("custom_estimated_value"))
+		card["lot_estimated_total"] += flt(row.get("deal_value"))
 		if stage in _POLICY_GAP_STAGES and sq_count < _MIN_SUPPLIER_BIDS:
 			card["policy_gap_count"] += 1
 		if _bid_at_risk(intake, today_d):
