@@ -69,7 +69,7 @@ class TestTenderMasterSchema(unittest.TestCase):
 		patch_source = PATCH.read_text()
 		self.assertIn('"custom_parent_tender"', patch_source)
 		self.assertIn('"options": "Tender Master"', patch_source)
-		self.assertIn("stabler.patches.v61_tender_master_link.execute", PATCHES.read_text())
+		self.assertIn("stabler.patches.v61_tender_master_link", PATCHES.read_text().split())
 		hooks = (_ROOT / "hooks.py").read_text()
 		self.assertIn('"Tender Master": "stabler.api.permissions.tender_master_query"', hooks)
 		self.assertIn('"Tender Master": "stabler.api.permissions.company_has_permission"', hooks)
@@ -96,6 +96,28 @@ class TestTenderMasterSchema(unittest.TestCase):
 		referenced |= set(re.findall(r"eval:doc\.([a-z0-9_]+)", v61))
 		self.assertTrue(referenced, "the patch must anchor the field, not float")
 		self.assertEqual(referenced - created, set())
+
+	def test_patch_entries_are_module_paths_never_dotted_execute_calls(self):
+		"""A `patches.txt` entry names the module; frappe appends `.execute` itself.
+
+		`patch_handler.execute_patch` builds `f"{entry.split()[0]}.execute"` before
+		importing, so an entry that already ends in `.execute` resolves to
+		`module.execute.execute` and raises ModuleNotFoundError. That aborts
+		`bench migrate` — and it aborts it in the post_model_sync phase, i.e. AFTER
+		the doctype DDL has been applied, so the site is left half-migrated: new
+		tables present, patch unrun, and every remaining site in the deploy loop
+		unmigrated. This cost a prod deploy (2026-07-30); the one entry with the
+		suffix was the only one of 66 that had it, which is why nothing but a
+		migrate caught it.
+		"""
+		offenders = []
+		for line in PATCHES.read_text().splitlines():
+			entry = line.strip()
+			if not entry or entry.startswith(("#", "[", "execute:")):
+				continue
+			if entry.split()[0].endswith(".execute"):
+				offenders.append(entry)
+		self.assertEqual(offenders, [])
 
 	def test_parent_status_is_a_read_only_note_and_never_required(self):
 		"""`status` must stay read-only and optional.
