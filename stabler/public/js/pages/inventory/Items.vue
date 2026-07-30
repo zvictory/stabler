@@ -12,6 +12,7 @@ import ListToolbar from "../../components/ListToolbar.vue";
 import SkeletonRows from "../../components/SkeletonRows.vue";
 import { useTelemetry } from "../../composables/useTelemetry.js";
 import { useEscapeBack } from "../../composables/useEscapeBack.js";
+import { itemGroupOptions } from "../../composables/itemGroupTree.js";
 
 const session = useSession();
 useEscapeBack(() => {
@@ -29,6 +30,25 @@ const loading = ref(false);
 const error = ref("");
 const rows = ref([]);
 const search = ref("");
+
+const itemGroupRows = ref([]);
+const selectedItemGroup = ref("");
+const includeDescendants = ref(true);
+const categoryOptions = computed(() => itemGroupOptions(itemGroupRows.value));
+const selectedGroupIsGroup = computed(
+	() => !!itemGroupRows.value.find((r) => r.name === selectedItemGroup.value)?.is_group
+);
+
+async function loadItemGroups() {
+	try {
+		const data = await call("stabler.api.inventory.list_item_group_tree", {
+			company: activeCompany.value,
+		});
+		itemGroupRows.value = data?.rows || [];
+	} catch (err) {
+		console.error("Failed to load categories:", err);
+	}
+}
 
 const detailOpen = ref(false);
 const detailLoading = ref(false);
@@ -57,6 +77,8 @@ async function load() {
 			search: search.value,
 			limit: 100,
 			context: "all",
+			item_group: selectedItemGroup.value || undefined,
+			include_descendants: selectedItemGroup.value && selectedGroupIsGroup.value && includeDescendants.value ? 1 : 0,
 		});
 	} catch (err) {
 		error.value = err?.message || t("Failed to load items.");
@@ -328,8 +350,18 @@ async function deletePrice(priceName) {
 	}
 }
 
-onMounted(load);
-watch(activeCompany, load);
+onMounted(() => {
+	load();
+	loadItemGroups();
+});
+watch(activeCompany, () => {
+	load();
+	loadItemGroups();
+});
+watch(selectedItemGroup, load);
+watch(includeDescendants, () => {
+	if (selectedGroupIsGroup.value) load();
+});
 </script>
 
 <template>
@@ -340,7 +372,29 @@ watch(activeCompany, load);
 				<i class="ti ti-plus me-1"></i>{{ t("New item") }}
 			</button>
 		</div>
-		<ListToolbar v-model="search" :placeholder="t('Search item code or name…')" :count="rows.length" @search="load" />
+		<ListToolbar v-model="search" :placeholder="t('Search item code or name…')" :count="rows.length" @search="load">
+			<template #filters>
+				<Select
+					v-model="selectedItemGroup"
+					:options="categoryOptions"
+					clearable
+					:placeholder="t('All categories')"
+					style="min-width: 200px"
+				>
+					<template #option="{ option }">
+						<span :style="{ paddingLeft: `${option.depth * 0.75}rem` }">{{ option.label }}</span>
+					</template>
+					<template #selected="{ option }">{{ option.label }}</template>
+				</Select>
+				<div v-if="selectedItemGroup && selectedGroupIsGroup" class="form-check m-0">
+					<input v-model="includeDescendants" class="form-check-input" type="checkbox" id="include_descendants" />
+					<label class="form-check-label" for="include_descendants">{{ t("Include subcategories") }}</label>
+				</div>
+				<router-link to="/inventory/categories" class="btn btn-sm btn-ghost-secondary">
+					<i class="ti ti-category-2 me-1"></i>{{ t("Manage categories") }}
+				</router-link>
+			</template>
+		</ListToolbar>
 		<div v-if="error && !loading" class="card-body">
 			<div class="alert alert-danger m-0">{{ error }}</div>
 		</div>

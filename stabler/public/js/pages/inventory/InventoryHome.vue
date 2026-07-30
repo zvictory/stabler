@@ -7,6 +7,7 @@ import ModuleHeader from "../../components/ModuleHeader.vue";
 const route = useRoute();
 const tabs = [
 	{ name: "inventory-items", path: "/inventory/items", label: t("Items"), icon: "ti-box" },
+	{ name: "inventory-item-groups", path: "/inventory/categories", label: t("Categories"), icon: "ti-category-2" },
 	{ name: "inventory-prices", path: "/inventory/prices", label: t("Price Lists"), icon: "ti-tags" },
 	{ name: "inventory-warehouses", path: "/inventory/warehouses", label: t("Warehouses"), icon: "ti-building-warehouse" },
 	{ name: "inventory-stock-status", path: "/inventory/stock-status", label: t("Stock Status"), icon: "ti-packages" },
