@@ -37,6 +37,18 @@ class TestTenderSidebarNavigation(unittest.TestCase):
 		self.assertIn("ensureTenderViews", self.sidebar)
 		self.assertNotIn("/app/", self.sidebar)
 
+	def test_tender_children_are_deduped_by_path_after_the_role_filter(self):
+		"""`/tender/crm` is listed once per view, so a director+sourcing user would
+		otherwise see it twice. Dedupe must run AFTER the role filter — deduping the
+		raw list first would drop the row for a sourcing-only user."""
+		self.assertIn("seen.has(item.path)", self.sidebar)
+		self.assertIn("const seen = new Set()", self.sidebar)
+		self.assertLess(
+			self.sidebar.index("session.tenderViews.includes(item.view)"),
+			self.sidebar.index("seen.has(item.path)"),
+			"path dedupe must come after the role filter",
+		)
+
 	def test_tender_director_bookmark_redirects_to_dashboard(self):
 		with open(_ROUTER, encoding="utf-8") as source:
 			router = source.read()

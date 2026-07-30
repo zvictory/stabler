@@ -604,15 +604,20 @@ def po_control_board(deal: str) -> dict:
 		for q in frappe.get_all(
 			"Supplier Quotation",
 			filters={"custom_crm_deal": deal, "docstatus": ["<", 2]},
-			fields=["supplier", "grand_total"],
+			fields=["supplier", "grand_total", "base_grand_total"],
 			limit_page_length=1000,
 		):
-			q_by_supplier[q.supplier] = q_by_supplier.get(q.supplier, 0.0) + flt(q.grand_total)
+			# Base (company-currency) amounts only — summing each quotation's own
+			# currency would add a USD SQ to a UZS one. A single-currency site
+			# stores the same number in both, hence the fallback.
+			q_by_supplier[q.supplier] = q_by_supplier.get(q.supplier, 0.0) + (
+				flt(q.base_grand_total) or flt(q.grand_total)
+			)
 
 	compare = []
 	for s in suppliers.values():
 		qt = q_by_supplier.get(s["supplier"], 0.0)
-		delta = ((s["po_total"] - qt) / qt * 100) if qt else None
+		delta = ((s["base_po_total"] - qt) / qt * 100) if qt else None
 		landed_total = flt(s["base_po_total"] + s["charges_total"])
 		compare.append(
 			{

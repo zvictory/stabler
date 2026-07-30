@@ -42,15 +42,23 @@ const session = useSession();
 
 const isActive = (path) => computed(() => route.path === path || route.path.startsWith(path + "/"));
 
-const tenderChildren = computed(() => [
-	{ view: "director", path: "/tender/director", label: t("Control Tower") },
-	{ view: "director", path: "/tender/crm", label: t("Tender CRM") },
-	{ view: "sourcing", path: "/tender/crm", label: t("Tender CRM") },
-	{ view: "sourcing", path: "/tender/my-tenders", label: t("My tenders") },
-	{ view: "sourcing", path: "/tender/po-control", label: t("Vendor & PO") },
-	{ view: "declarant", path: "/tender/customs", label: t("Customs queue") },
-	{ view: "logist", path: "/tender/logistics", label: t("Logistics") },
-].filter((item) => session.tenderViews.includes(item.view)));
+const tenderChildren = computed(() => {
+	// `/tender/crm` is listed once per view that may reach it, so a user holding
+	// both roles would otherwise see it twice. Dedupe AFTER the role filter —
+	// deduping the raw list would drop the row for a sourcing-only user.
+	const seen = new Set();
+	return [
+		{ view: "director", path: "/tender/director", label: t("Control Tower") },
+		{ view: "director", path: "/tender/crm", label: t("Tender CRM") },
+		{ view: "sourcing", path: "/tender/crm", label: t("Tender CRM") },
+		{ view: "sourcing", path: "/tender/my-tenders", label: t("My tenders") },
+		{ view: "sourcing", path: "/tender/po-control", label: t("Vendor & PO") },
+		{ view: "declarant", path: "/tender/customs", label: t("Customs queue") },
+		{ view: "logist", path: "/tender/logistics", label: t("Logistics") },
+	]
+		.filter((item) => session.tenderViews.includes(item.view))
+		.filter((item) => (seen.has(item.path) ? false : (seen.add(item.path), true)));
+});
 const tenderExpanded = ref(false);
 const tenderActive = computed(() => route.path === "/tender" || route.path.startsWith("/tender/"));
 const isTenderExpanded = computed(() => tenderActive.value || tenderExpanded.value);
