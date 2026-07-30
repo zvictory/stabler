@@ -4969,3 +4969,12 @@ A tender lot must belong to a Parent Tender.,Тендер лоти Асосий 
 {0} tender lots are not linked to a tender.,{0} та тендер лоти тендерга боғланмаган.
 Show unlinked lots,Боғланмаган лотларни кўрсатиш
 Updated,Янгиланган
+Could not load tender lots.,Тендер лотларини юклаб бўлмади.
+Could not load tenders.,Тендерларни юклаб бўлмади.
+Deadline,Муддат
+Estimated total,Тахминий жами
+Kanban,Канбан
+List,Рўйхат
+No permitted lots for this tender.,Бу тендер учун рухсат этилган лот йўқ.
+No tenders found for this company.,Бу компания учун тендер топилмади.
+Tenders and their permitted lots,Тендерлар ва рухсат этилган лотлар

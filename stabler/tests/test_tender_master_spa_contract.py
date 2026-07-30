@@ -21,7 +21,17 @@ REQUIRED_KEYS = (
 	"No tenders found",
 	"Back to all tenders",
 	"Open lot workspace",
+	"Could not load tender lots.",
+	"Could not load tenders.",
+	"Deadline",
+	"Estimated total",
+	"Kanban",
+	"List",
+	"No permitted lots for this tender.",
+	"No tenders found for this company.",
+	"Tenders and their permitted lots",
 )
+LANGUAGES = ("en", "ru", "uz", "uzc", "tr")
 
 
 class TestTenderMasterSpaContract(unittest.TestCase):
@@ -51,11 +61,40 @@ class TestTenderMasterSpaContract(unittest.TestCase):
 		self.assertIn("...periodQuery.value", attention)
 		self.assertIn("...periodQuery.value", control_tower)
 
-	def test_tender_crm_required_localizations_exist_in_every_catalog(self):
-		for language in ("en", "ru", "uz", "uzc", "tr"):
-			with (TRANSLATIONS / f"{language}.csv").open(newline="") as handle:
-				sources = {row[0] for row in csv.reader(handle) if row}
-			self.assertTrue(set(REQUIRED_KEYS).issubset(sources), language)
+	@staticmethod
+	def _catalog(language):
+		with (TRANSLATIONS / f"{language}.csv").open(newline="", encoding="utf-8") as handle:
+			return {row[0]: row[1] for row in csv.reader(handle) if len(row) >= 2}
+
+	def test_tender_crm_required_localizations_are_translated_in_every_catalog(self):
+		"""A key that exists with an empty target is still an untranslated string.
+
+		The previous version of this only checked that the row existed, which a
+		`Key,` row satisfies while the user still reads English.
+		"""
+		for language in LANGUAGES:
+			catalog = self._catalog(language)
+			for key in REQUIRED_KEYS:
+				self.assertIn(key, catalog, f"{language}: {key!r} has no row")
+				self.assertTrue(catalog[key].strip(), f"{language}: {key!r} is untranslated")
+
+	def test_every_string_the_board_renders_has_a_row_in_every_catalog(self):
+		"""`REQUIRED_KEYS` is hand-maintained, so it cannot catch a string nobody
+		remembered to add to it — nine of them shipped that way.
+
+		This derives the keys from the page instead, which is the failure mode that
+		actually happens: a new `t("…")` lands with no catalogue row at all and
+		every language silently falls through to the English source. Emptiness is
+		checked above rather than here on purpose — a few rows this page renders
+		(`Owner`) arrived empty from outside this feature, and a guard that fails
+		for someone else's debt gets deleted instead of fixed.
+		"""
+		source = TENDER_CRM.read_text()
+		rendered = set(re.findall(r"""\bt\(\s*["']([^"']+)["']""", source))
+		self.assertIn("Tender CRM", rendered, "the extraction itself must still find keys")
+		for language in LANGUAGES:
+			missing = sorted(rendered - set(self._catalog(language)))
+			self.assertEqual(missing, [], f"{language}: no catalogue row for {missing}")
 
 	def test_tender_crm_stays_inside_spa_and_uses_parent_api(self):
 		source = TENDER_CRM.read_text()

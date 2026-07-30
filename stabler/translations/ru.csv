@@ -4975,3 +4975,12 @@ A tender lot must belong to a Parent Tender.,Лот тендера должен 
 {0} tender lots are not linked to a tender.,{0} лотов тендера не привязаны к тендеру.
 Show unlinked lots,Показать непривязанные лоты
 Updated,Обновлено
+Could not load tender lots.,Не удалось загрузить лоты тендера.
+Could not load tenders.,Не удалось загрузить тендеры.
+Deadline,Срок
+Estimated total,Расчётная сумма
+Kanban,Канбан
+List,Список
+No permitted lots for this tender.,Нет доступных лотов для этого тендера.
+No tenders found for this company.,Для этой компании тендеры не найдены.
+Tenders and their permitted lots,Тендеры и доступные лоты
