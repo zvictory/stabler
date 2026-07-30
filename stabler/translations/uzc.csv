@@ -4980,3 +4980,34 @@ No tenders found for this company.,Бу компания учун тендер �
 Tenders and their permitted lots,Тендерлар ва рухсат этилган лотлар
 Remember me,Мени эслаб қол
 Your session has expired. Please sign in again.,"Сессия муддати тугади. Илтимос, қайтадан киринг."
+Can contain subcategories,Қуйи турғунларни ўз ичига олиши мумкин
+Category created.,Турғун яратилди.
+Category deleted.,Турғун ўчирилди.
+Category name,Турғун номи
+Category updated.,Турғун янгиланди.
+Could not delete category.,Турғунни ўчириб бўлмади.
+Could not load categories.,Турғунларни юклаб бўлмади.
+Could not save category.,Турғунни сақлаб бўлмади.
+Delete category?,Турғун ўчирилсинми?
+Edit category,Турғунни таҳрирлаш
+Item categories,Товар турғунлари
+Leaf,Барг
+New category,Янги турғун
+Parent category,Бош турғун
+Renaming a category updates it on every item that uses it.,"Турғунни қайта номлаш, ундан фойдаланадиган барча товарларда янгиланади."
+Total items,Жами товарлар
+{0} will be permanently deleted. This cannot be undone.,{0} бутунлай ўчирилади. Буни қайтариб бўлмайди.
+Add subcategory,Қуйи турғун қўшиш
+Categories group your items the way QuickBooks categories do.,Турғунлар товарларингизни худди QuickBooks турғунлари каби гуруҳлайди.
+Category or parent,Турғун ёки бош турғун
+No categories found,Турғунлар топилмади
+— top level —,— юқори даража —
+Include subcategories,Қуйи турғунларни ҳам қўшиш
+Manage categories,Турғунларни бошқариш
+All Groups,Барча гуруҳлар
+A category named {0} already exists.,{0} номли турғун аллақачон мавжуд.
+Unknown item group: {0},Номаълум товар турғуни: {0}
+{0} is not a group.,{0} гуруҳ эмас.
+The top-level category cannot be deleted.,Юқори даражадаги турғунни ўчириб бўлмайди.
+Cannot delete {0}: it has {1} subcategories.,{0} ни ўчириб бўлмайди: унда {1} та қуйи турғун бор.
+Cannot delete {0}: {1} items still use it.,{0} ни ўчириб бўлмайди: уни ҳали ҳам {1} та товар ишлатмоқда.

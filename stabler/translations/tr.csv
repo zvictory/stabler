@@ -4975,3 +4975,34 @@ No tenders found for this company.,Bu şirket için ihale bulunamadı.
 Tenders and their permitted lots,İhaleler ve erişilebilir kalemler
 Remember me,Beni hatırla
 Your session has expired. Please sign in again.,Oturumunuzun süresi doldu. Lütfen tekrar giriş yapın.
+Can contain subcategories,Alt kategori içerebilir
+Category created.,Kategori oluşturuldu.
+Category deleted.,Kategori silindi.
+Category name,Kategori adı
+Category updated.,Kategori güncellendi.
+Could not delete category.,Kategori silinemedi.
+Could not load categories.,Kategoriler yüklenemedi.
+Could not save category.,Kategori kaydedilemedi.
+Delete category?,Kategori silinsin mi?
+Edit category,Kategoriyi düzenle
+Item categories,Ürün kategorileri
+Leaf,Yaprak
+New category,Yeni kategori
+Parent category,Üst kategori
+Renaming a category updates it on every item that uses it.,"Bir kategoriyi yeniden adlandırmak, onu kullanan tüm ürünlerde günceller."
+Total items,Toplam ürün
+{0} will be permanently deleted. This cannot be undone.,{0} kalıcı olarak silinecek. Bu geri alınamaz.
+Add subcategory,Alt kategori ekle
+Categories group your items the way QuickBooks categories do.,Kategoriler ürünlerinizi QuickBooks kategorileri gibi gruplar.
+Category or parent,Kategori veya üst kategori
+No categories found,Kategori bulunamadı
+— top level —,— üst düzey —
+Include subcategories,Alt kategorileri dahil et
+Manage categories,Kategorileri yönet
+All Groups,Tüm gruplar
+A category named {0} already exists.,{0} adında bir kategori zaten var.
+Unknown item group: {0},Bilinmeyen ürün kategorisi: {0}
+{0} is not a group.,{0} bir grup değil.
+The top-level category cannot be deleted.,Üst düzey kategori silinemez.
+Cannot delete {0}: it has {1} subcategories.,{0} silinemez: {1} alt kategorisi var.
+Cannot delete {0}: {1} items still use it.,{0} silinemez: hâlâ {1} ürün onu kullanıyor.

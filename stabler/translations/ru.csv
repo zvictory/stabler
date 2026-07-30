@@ -4986,3 +4986,34 @@ No tenders found for this company.,Для этой компании тендер
 Tenders and their permitted lots,Тендеры и доступные лоты
 Remember me,Запомнить меня
 Your session has expired. Please sign in again.,"Ваша сессия истекла. Пожалуйста, войдите снова."
+Can contain subcategories,Может содержать подкатегории
+Category created.,Категория создана.
+Category deleted.,Категория удалена.
+Category name,Название категории
+Category updated.,Категория обновлена.
+Could not delete category.,Не удалось удалить категорию.
+Could not load categories.,Не удалось загрузить категории.
+Could not save category.,Не удалось сохранить категорию.
+Delete category?,Удалить категорию?
+Edit category,Редактировать категорию
+Item categories,Категории товаров
+Leaf,Лист
+New category,Новая категория
+Parent category,Родительская категория
+Renaming a category updates it on every item that uses it.,"Переименование категории обновит её на всех товарах, где она используется."
+Total items,Всего товаров
+{0} will be permanently deleted. This cannot be undone.,{0} будет удалён навсегда. Это нельзя отменить.
+Add subcategory,Добавить подкатегорию
+Categories group your items the way QuickBooks categories do.,"Категории группируют товары так же, как категории в QuickBooks."
+Category or parent,Категория или родитель
+No categories found,Категории не найдены
+— top level —,— верхний уровень —
+Include subcategories,Включать подкатегории
+Manage categories,Управление категориями
+All Groups,Все группы
+A category named {0} already exists.,Категория с именем {0} уже существует.
+Unknown item group: {0},Неизвестная категория товара: {0}
+{0} is not a group.,{0} не является группой.
+The top-level category cannot be deleted.,Категорию верхнего уровня нельзя удалить.
+Cannot delete {0}: it has {1} subcategories.,Нельзя удалить {0}: у неё {1} подкатегорий.
+Cannot delete {0}: {1} items still use it.,Нельзя удалить {0}: её всё ещё используют {1} товаров.

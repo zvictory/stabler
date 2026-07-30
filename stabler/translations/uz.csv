@@ -4980,3 +4980,34 @@ No tenders found for this company.,Bu kompaniya uchun tender topilmadi.
 Tenders and their permitted lots,Tenderlar va ruxsat etilgan lotlar
 Remember me,Meni eslab qol
 Your session has expired. Please sign in again.,"Sessiya muddati tugadi. Iltimos, qaytadan kiring."
+Can contain subcategories,Quyi toifalarni o'z ichiga olishi mumkin
+Category created.,Toifa yaratildi.
+Category deleted.,Toifa o'chirildi.
+Category name,Toifa nomi
+Category updated.,Toifa yangilandi.
+Could not delete category.,Toifani o'chirib bo'lmadi.
+Could not load categories.,Toifalarni yuklab bo'lmadi.
+Could not save category.,Toifani saqlab bo'lmadi.
+Delete category?,Toifa o'chirilsinmi?
+Edit category,Toifani tahrirlash
+Item categories,Tovar toifalari
+Leaf,Barg
+New category,Yangi toifa
+Parent category,Bosh toifa
+Renaming a category updates it on every item that uses it.,"Toifani qayta nomlash, undan foydalanadigan barcha tovarlarda yangilanadi."
+Total items,Jami tovarlar
+{0} will be permanently deleted. This cannot be undone.,{0} butunlay o'chiriladi. Buni qaytarib bo'lmaydi.
+Add subcategory,Quyi toifa qo'shish
+Categories group your items the way QuickBooks categories do.,Toifalar tovarlaringizni xuddi QuickBooks toifalari kabi guruhlaydi.
+Category or parent,Toifa yoki bosh toifa
+No categories found,Toifalar topilmadi
+— top level —,— yuqori daraja —
+Include subcategories,Quyi toifalarni ham qo'shish
+Manage categories,Toifalarni boshqarish
+All Groups,Barcha guruhlar
+A category named {0} already exists.,{0} nomli toifa allaqachon mavjud.
+Unknown item group: {0},Noma'lum tovar toifasi: {0}
+{0} is not a group.,{0} guruh emas.
+The top-level category cannot be deleted.,Yuqori darajadagi toifani o'chirib bo'lmaydi.
+Cannot delete {0}: it has {1} subcategories.,{0} ni o'chirib bo'lmaydi: unda {1} ta quyi toifa bor.
+Cannot delete {0}: {1} items still use it.,{0} ni o'chirib bo'lmaydi: uni hali ham {1} ta tovar ishlatmoqda.

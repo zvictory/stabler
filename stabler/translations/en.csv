@@ -4976,3 +4976,34 @@ No tenders found for this company.,No tenders found for this company.
 Tenders and their permitted lots,Tenders and their permitted lots
 Remember me,Remember me
 Your session has expired. Please sign in again.,Your session has expired. Please sign in again.
+Can contain subcategories,Can contain subcategories
+Category created.,Category created.
+Category deleted.,Category deleted.
+Category name,Category name
+Category updated.,Category updated.
+Could not delete category.,Could not delete category.
+Could not load categories.,Could not load categories.
+Could not save category.,Could not save category.
+Delete category?,Delete category?
+Edit category,Edit category
+Item categories,Item categories
+Leaf,Leaf
+New category,New category
+Parent category,Parent category
+Renaming a category updates it on every item that uses it.,Renaming a category updates it on every item that uses it.
+Total items,Total items
+{0} will be permanently deleted. This cannot be undone.,{0} will be permanently deleted. This cannot be undone.
+Add subcategory,Add subcategory
+Categories group your items the way QuickBooks categories do.,Categories group your items the way QuickBooks categories do.
+Category or parent,Category or parent
+No categories found,No categories found
+— top level —,— top level —
+Include subcategories,Include subcategories
+Manage categories,Manage categories
+All Groups,All Groups
+A category named {0} already exists.,A category named {0} already exists.
+Unknown item group: {0},Unknown item group: {0}
+{0} is not a group.,{0} is not a group.
+The top-level category cannot be deleted.,The top-level category cannot be deleted.
+Cannot delete {0}: it has {1} subcategories.,Cannot delete {0}: it has {1} subcategories.
+Cannot delete {0}: {1} items still use it.,Cannot delete {0}: {1} items still use it.
