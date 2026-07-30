@@ -34,6 +34,22 @@ describe("Tender Master projections", () => {
 		});
 	});
 
+	it("shows the derived total, not the typed one, when permissions hide every lot", () => {
+		// `lot_count` counts only the lots the caller may read, so 0 does not mean
+		// "this tender has no lots" — it also means "you may see none of them". The
+		// detail summary always reports the derived total, so any fallback to the
+		// parent's typed `estimated_total` makes the card and the drill-down state
+		// different figures for the same record, which is the drift the derived
+		// board exists to remove.
+		expect(
+			normalizeTenderMaster({
+				lot_count: 0,
+				lot_estimated_total: 0,
+				estimated_total: 1000000,
+			})
+		).toMatchObject({ lotCount: 0, estimatedTotal: 0 });
+	});
+
 	it("surfaces the lot breakdown the card reconciles against its drill-down", () => {
 		expect(
 			normalizeTenderMaster({

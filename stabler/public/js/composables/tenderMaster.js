@@ -38,11 +38,15 @@ export function normalizeTenderMaster(record = {}) {
 		// submission_deadline says nothing about which lot is due next.
 		earliestDeadline: record.earliest_deadline || "",
 		// DERIVED from the child lots, so the number on the card is always the one
-		// the drill-down adds up to. The parent's own typed `estimated_total` is
-		// the fallback only while there are no lots to contradict it — and it is
-		// left untouched in the payload, because that field is what a tender edit
-		// form has to write back.
-		estimatedTotal: (record.lot_count ? record.lot_estimated_total : record.estimated_total) ?? 0,
+		// the drill-down adds up to — including when the drill-down is empty.
+		// Falling back to the parent's typed `estimated_total` while `lot_count` is
+		// 0 read as safe ("no lots to contradict it"), but `lot_count` counts only
+		// the lots this user may READ: someone whose permissions hide every lot got
+		// the typed figure on the card and 0.00 in the detail summary, which takes
+		// `lot_estimated_total` unconditionally. `lot_count` cannot tell "no lots"
+		// from "no permitted lots", so it cannot gate this. The typed field stays in
+		// the payload untouched — that is what a tender edit form writes back.
+		estimatedTotal: record.lot_estimated_total ?? 0,
 		lostLotCount: record.lost_lot_count ?? 0,
 		lotCount: record.lot_count ?? 0,
 		// Open = not won and not lost, so open + won + lost = lotCount. Lots
