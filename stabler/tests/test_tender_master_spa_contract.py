@@ -1,6 +1,7 @@
 """Source-level guardrails for the Tender CRM SPA boundary."""
 
 import csv
+import re
 import unittest
 from pathlib import Path
 
@@ -65,12 +66,27 @@ class TestTenderMasterSpaContract(unittest.TestCase):
 		self.assertNotIn("table-striped", source)
 
 	def test_tender_crm_guards_stale_company_responses_and_keeps_optional_columns_absent(self):
+		"""Document readiness is optional, so its cell must say nothing when it is absent.
+
+		The whole column is hidden when no record carries readiness; printing an
+		em-dash inside it would report "no documents" for a column that is not on
+		screen. The check is anchored on `documentReadiness` rather than searching
+		the file for an em-dash: the dash is this app's placeholder for any empty
+		table cell, and the two lot-status cells legitimately use it.
+		"""
 		source = TENDER_CRM.read_text()
 		self.assertGreaterEqual(
 			source.count("isTenderMasterCompanyCurrent(requestCompany, activeCompany.value)"), 2
 		)
 		self.assertIn('v-if="hasDocumentReadiness"', source)
-		self.assertNotIn("<span v-else>—</span>", source)
+		compact = re.sub(r"\s+", " ", source)
+		readiness_cells = [
+			compact[match.end() :].split("</tr>")[0].split("</button>")[0]
+			for match in re.finditer(r"record\.documentReadiness !== undefined\"", compact)
+		]
+		self.assertEqual(len(readiness_cells), 2, "readiness is rendered in the list and the card")
+		for cell in readiness_cells:
+			self.assertNotIn("—", cell)
 
 	def test_tender_crm_uses_table_body_skeletons_and_shows_the_derived_lot_breakdown(self):
 		"""A Kanban card must report the LOT-DERIVED breakdown, not the parent's

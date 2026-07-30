@@ -4904,3 +4904,7 @@ awaiting result,natija kutilmoqda
 Next lot deadline,Eng yaqin lot muddati
 Policy gap,Taklif yetishmovchiligi
 Overdue bids,Muddati o'tgan takliflar
+A tender lot must belong to a Parent Tender.,Tender loti Asosiy tenderga tegishli bo'lishi kerak.
+{0} tender lots are not linked to a tender.,{0} ta tender loti tenderga bog'lanmagan.
+Show unlinked lots,Bog'lanmagan lotlarni ko'rsatish
+Updated,Yangilangan

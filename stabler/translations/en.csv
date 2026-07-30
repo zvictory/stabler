@@ -4900,3 +4900,7 @@ awaiting result,awaiting result
 Next lot deadline,Next lot deadline
 Policy gap,Policy gap
 Overdue bids,Overdue bids
+A tender lot must belong to a Parent Tender.,A tender lot must belong to a Parent Tender.
+{0} tender lots are not linked to a tender.,{0} tender lots are not linked to a tender.
+Show unlinked lots,Show unlinked lots
+Updated,Updated

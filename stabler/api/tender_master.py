@@ -379,11 +379,72 @@ def save_tender_master(data, company=None):
 	return doc.as_dict()
 
 
+def _tender_module_enabled(company: str | None) -> bool:
+	"""Company-level tender switch as a boolean, without the throwing wrapper."""
+	if not company:
+		return False
+	from stabler.stabler.doctype.stabler_settings.stabler_settings import module_map_for
+
+	return bool(module_map_for(company).get("tender"))
+
+
 def validate_deal_parent_tender(doc, method=None):
-	"""Keep CRM Deal lots and their Tender Master in the same company."""
-	if not doc.custom_parent_tender:
+	"""Keep a CRM Deal lot and its Tender Master in the same company, and keep a
+	NEW tender lot from starting life outside every tender.
+
+	`custom_parent_tender` deliberately stays an optional field. CRM Deal is
+	carried by all seven tenants and six of them use it for ordinary sales, so a
+	`reqd` flag — or any doctype-level default — would land on their records too;
+	that is exactly the shape that broke `new_doc("CRM Deal")` with error 1054 in
+	v59. The requirement is enforced here instead, and only where it belongs: a
+	tender-type deal, in a company whose tender module is on. Every other tenant
+	reaches the early return before anything is read.
+
+	An ALREADY SAVED parentless lot is never blocked. Blocking it would make the
+	record unsavable for whoever opens it next, for a gap they did not create;
+	those lots surface through `orphan_tender_lots` instead, so the backlog is
+	visible work rather than a save nobody can complete.
+	"""
+	if doc.custom_parent_tender:
+		master = frappe.get_doc("Tender Master", doc.custom_parent_tender)
+		if master.company != doc.company:
+			frappe.throw(_("Parent Tender must belong to the same company as the CRM Deal."), ValueError)
 		return
-	master = frappe.get_doc("Tender Master", doc.custom_parent_tender)
-	if master.company != doc.company:
-		frappe.throw(_("Parent Tender must belong to the same company as the CRM Deal."), ValueError)
+	# Cheapest discriminator first: a non-tender deal costs no query at all.
+	if str(doc.get("deal_type") or "") != "Tender":
+		return
+	if not doc.is_new():
+		return
+	if not _tender_module_enabled(doc.company):
+		return
+	frappe.throw(_("A tender lot must belong to a Parent Tender."), ValueError)
+
+
+@frappe.whitelist()
+def orphan_tender_lots(company=None):
+	"""Tender lots with no parent tender — the migration queue for K2.
+
+	The board derives its lanes from the lots it can see, so a parentless lot is
+	invisible there: the portfolio silently under-reports instead of showing a
+	tender with a missing piece. Rather than guess a parent for it, the count is
+	published and the lots are named.
+
+	`get_list` (not `get_all`) applies role and user permissions inside the
+	query, so this stays ONE query — a per-row `has_permission` pass would be one
+	document read per lot, which is the cost this module exists to avoid.
+	"""
+	_require_tender(company)
+	selected_company = _assert_company_scope(company)
+	lots = frappe.get_list(
+		"CRM Deal",
+		filters={
+			"company": selected_company,
+			"deal_type": "Tender",
+			"custom_parent_tender": ["is", "not set"],
+		},
+		fields=["name", "organization", "status", "modified"],
+		order_by="modified desc",
+		limit_page_length=0,
+	)
+	return {"count": len(lots), "lots": lots}
 

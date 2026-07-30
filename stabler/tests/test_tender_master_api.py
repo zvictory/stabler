@@ -28,6 +28,15 @@ class _Doc(dict):
 	def as_dict(self):
 		return dict(self)
 
+	def is_new(self):
+		"""Frappe's own rule: a document is new until it carries a `creation` stamp.
+
+		Modelling it on a real field rather than a test-only flag matters here —
+		the requirement being tested turns on exactly this distinction, so the
+		double must not be able to disagree with the framework about it.
+		"""
+		return not self.get("creation")
+
 	def insert(self):
 		self["inserted"] = True
 		return self
@@ -70,6 +79,10 @@ class _FakeFrappe:
 		self.last_filters: dict | None = None
 		self.last_list_kwargs: dict | None = None
 		self.list_calls: list[str] = []
+		#: Companies whose module map was read. Empty means the validation hook
+		#: returned before it cost anything — which is the contract for the six
+		#: tenants that use CRM Deal for ordinary sales.
+		self.module_map_calls: list[str] = []
 
 	def get_doc(self, doctype, name):
 		return self.docs[(doctype, name)]
@@ -125,7 +138,10 @@ class _FakeFrappe:
 		return rows
 
 
-def _load_api(fake: _FakeFrappe, *, tender_allowed=True, missing_columns=()):
+_SETTINGS_MODULE = "stabler.stabler.doctype.stabler_settings.stabler_settings"
+
+
+def _load_api(fake: _FakeFrappe, *, tender_allowed=True, missing_columns=(), tender_module=True):
 	for name in (
 		"stabler.api.tender_master",
 		"stabler.api.tender",
@@ -133,6 +149,7 @@ def _load_api(fake: _FakeFrappe, *, tender_allowed=True, missing_columns=()):
 		"frappe.utils",
 		"stabler.api._common",
 		"stabler.api.organization",
+		_SETTINGS_MODULE,
 	):
 		sys.modules.pop(name, None)
 	frappe = types.ModuleType("frappe")
@@ -199,6 +216,15 @@ def _load_api(fake: _FakeFrappe, *, tender_allowed=True, missing_columns=()):
 	)
 	tender._deal_deadlines = lambda _deal, _company, _intake: {"risk": "risk"}
 	frappe.get_roles = lambda _user=None: ["Sales User"]
+	# The company-level tender switch, injected rather than imported: the real
+	# module is a Frappe Document controller, and this suite is registered as
+	# Frappe-free. `tender_module` is a separate knob from `tender_allowed` on
+	# purpose — one is the company setting, the other the role gate, and the
+	# validation hook must consult the setting, not the gate.
+	settings = types.ModuleType(_SETTINGS_MODULE)
+	settings.module_map_for = lambda company: (
+		fake.module_map_calls.append(company) or ({"tender": 1} if tender_module else {})
+	)
 	sys.modules.update(
 		{
 			"frappe": frappe,
@@ -206,6 +232,7 @@ def _load_api(fake: _FakeFrappe, *, tender_allowed=True, missing_columns=()):
 			"stabler.api._common": common,
 			"stabler.api.organization": organization,
 			"stabler.api.tender": tender,
+			_SETTINGS_MODULE: settings,
 		}
 	)
 	return importlib.import_module("stabler.api.tender_master")
@@ -231,6 +258,7 @@ class TestTenderMasterApi(unittest.TestCase):
 			lambda: api.list_tender_masters(company="ACME"),
 			lambda: api.get_tender_master("TND-2026-00001", company="ACME"),
 			lambda: api.save_tender_master({"title": "Network tender"}, company="ACME"),
+			lambda: api.orphan_tender_lots(company="ACME"),
 		)
 		for call in calls:
 			with self.assertRaises(PermissionError):
@@ -533,6 +561,154 @@ _CARD_KEYS = (
 	"earliest_deadline",
 )
 
+class TestTenderMasterParentRequirement(unittest.TestCase):
+	"""K2: the field stays optional; the requirement lives in the validate hook.
+
+	`custom_parent_tender` deliberately carries no `reqd` flag. CRM Deal is used by
+	all seven tenants and only one of them runs tenders, so a doctype-level
+	requirement would land on six tenants' ordinary sales deals — including their
+	pre-existing rows, which nobody can retro-fill. These four cases are the whole
+	behaviour that replaces the flag.
+	"""
+
+	def setUp(self):
+		self.fake = _FakeFrappe()
+		self.api = _load_api(self.fake)
+
+	def _new_lot(self, **overrides):
+		"""A CRM Deal being created: no `creation` stamp, so `is_new()` is true."""
+		fields = {"name": "LOT-NEW", "company": "ACME", "deal_type": "Tender"}
+		fields.update(overrides)
+		return _Doc(**fields)
+
+	def test_new_tender_lot_without_a_parent_is_refused(self):
+		"""The single case the requirement exists for.
+
+		A lot that starts life orphaned is real work no tender counts: the derived
+		board projects the lots it can reach through a parent, so an orphan does
+		not show up as a problem anywhere — the portfolio just reads low.
+		"""
+		with self.assertRaises(ValueError):
+			self.api.validate_deal_parent_tender(self._new_lot())
+
+	def test_ordinary_sales_deal_is_never_asked_for_a_parent(self):
+		"""Six tenants save CRM Deals that have nothing to do with tenders.
+
+		The assertion is on the module-map reads, not just on the absence of a
+		throw: this hook runs on every CRM Deal save on every tenant, so the
+		non-tender path has to cost nothing at all, not merely end up permissive.
+		"""
+		self.api.validate_deal_parent_tender(self._new_lot(deal_type="Standard"))
+		self.api.validate_deal_parent_tender(self._new_lot(deal_type=None))
+		self.assertEqual(self.fake.module_map_calls, [])
+
+	def test_tender_lot_passes_where_the_company_has_no_tender_module(self):
+		"""Deal type alone must not be enough — the company switch decides too.
+
+		`deal_type` is a plain Select on a shared doctype; a tenant that never
+		turned tenders on can still hold rows with that value (imported, seeded,
+		or typed by hand) and must not be blocked from saving them.
+		"""
+		api = _load_api(self.fake, tender_module=False)
+		api.validate_deal_parent_tender(self._new_lot())
+		self.assertEqual(self.fake.module_map_calls, ["ACME"])
+
+	def test_already_saved_parentless_lot_stays_savable(self):
+		"""A gap the current editor did not create must not make the record unsavable.
+
+		Throwing here would strand every pre-existing orphan: whoever opens one
+		next cannot save any edit until they invent a parent. Those lots are
+		surfaced by `orphan_tender_lots` instead — visible work, not a dead form.
+		"""
+		self.api.validate_deal_parent_tender(self._new_lot(creation="2026-01-04 09:00:00"))
+
+
+class TestTenderMasterMigrationQueue(unittest.TestCase):
+	"""The parentless lots the validate hook deliberately lets through.
+
+	Because they are allowed to exist, something has to name them — otherwise K2
+	trades a blocked save for a silent one.
+	"""
+
+	def setUp(self):
+		self.fake = _FakeFrappe()
+		self.api = _load_api(self.fake)
+		# Each decoy fails exactly one of the queue's three filters, so dropping any
+		# single filter changes the answer below. LOT-ALLOWED cannot stand in for
+		# the parented case: it carries no `deal_type`, so it is already excluded
+		# by a different filter and would mask a missing parent condition.
+		self.fake.docs[("CRM Deal", "LOT-ORPHAN")] = _Doc(
+			name="LOT-ORPHAN", company="ACME", deal_type="Tender", status="Open", modified="2026-07-02"
+		)
+		self.fake.docs[("CRM Deal", "LOT-ORPHAN-PARENTED")] = _Doc(
+			name="LOT-ORPHAN-PARENTED",
+			company="ACME",
+			deal_type="Tender",
+			custom_parent_tender="TND-2026-00001",
+			status="Open",
+			modified="2026-07-02",
+		)
+		self.fake.docs[("CRM Deal", "LOT-ORPHAN-FOREIGN")] = _Doc(
+			name="LOT-ORPHAN-FOREIGN",
+			company="Other Co",
+			deal_type="Tender",
+			status="Open",
+			modified="2026-07-02",
+		)
+		self.fake.docs[("CRM Deal", "LOT-ORPHAN-SALES")] = _Doc(
+			name="LOT-ORPHAN-SALES",
+			company="ACME",
+			deal_type="Standard",
+			status="Open",
+			modified="2026-07-02",
+		)
+		self.fake.docs[("CRM Deal", "LOT-ORPHAN-DENIED")] = _Doc(
+			name="LOT-ORPHAN-DENIED",
+			company="ACME",
+			deal_type="Tender",
+			status="Open",
+			modified="2026-07-02",
+		)
+		self.fake.unreadable = self.fake.unreadable | {("CRM Deal", "LOT-ORPHAN-DENIED")}
+
+	def _names(self, company="ACME"):
+		return [row["name"] for row in self.api.orphan_tender_lots(company=company)["lots"]]
+
+	def test_queue_holds_only_this_company_s_parentless_tender_lots(self):
+		"""LOT-ORPHAN-PARENTED already has a parent, LOT-ORPHAN-FOREIGN belongs to
+		another company, LOT-ORPHAN-SALES is not a tender deal. A queue that shows
+		any of them turns a migration backlog into noise nobody works through.
+		"""
+		self.assertEqual(self._names(), ["LOT-ORPHAN"])
+
+	def test_queue_count_matches_the_lots_it_names(self):
+		"""The warning strip shows the count and the list shows the rows.
+
+		Taking the count from its own broader query is how a strip ends up
+		promising more rows than the list can display.
+		"""
+		result = self.api.orphan_tender_lots(company="ACME")
+		self.assertEqual(result["count"], len(result["lots"]))
+
+	def test_queue_hides_lots_the_user_may_not_read(self):
+		"""`get_all` would list every orphan regardless of user permissions, and
+		the count alone already discloses that the record exists.
+		"""
+		self.assertNotIn("LOT-ORPHAN-DENIED", self._names())
+
+	def test_queue_rejects_a_company_the_user_is_not_allowed(self):
+		with self.assertRaises(PermissionError):
+			self._names(company="Other Co")
+
+	def test_queue_costs_one_query(self):
+		"""A per-lot permission pass would be one document read per orphan — and a
+		migration backlog is at its largest exactly when it is first looked at.
+		"""
+		self.fake.list_calls.clear()
+		self.api.orphan_tender_lots(company="ACME")
+		self.assertEqual(self.fake.list_calls, ["CRM Deal"])
+
+
 #: Reads that must never appear inside a loop body in the functions below. Each
 #: is a per-record round trip; `has_column` is included because re-asking the
 #: schema per lot is the same mistake wearing a cheaper hat, and `has_permission`
@@ -561,6 +737,7 @@ _DERIVATION_FUNCTIONS = (
 	"_tender_lot_cards",
 	"list_tender_masters",
 	"get_tender_master",
+	"orphan_tender_lots",
 )
 
 

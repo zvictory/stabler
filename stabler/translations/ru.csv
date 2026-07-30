@@ -4910,3 +4910,7 @@ awaiting result,ожидают результата
 Next lot deadline,Ближайший срок подачи по лоту
 Policy gap,Недобор предложений
 Overdue bids,Просроченные подачи
+A tender lot must belong to a Parent Tender.,Лот тендера должен принадлежать основному тендеру.
+{0} tender lots are not linked to a tender.,{0} лотов тендера не привязаны к тендеру.
+Show unlinked lots,Показать непривязанные лоты
+Updated,Обновлено

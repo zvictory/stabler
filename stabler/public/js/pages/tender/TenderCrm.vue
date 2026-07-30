@@ -31,8 +31,12 @@ const depth = ref("tender");
 const records = ref([]);
 const selected = ref(null);
 const lots = ref([]);
+const orphanLots = ref([]);
+const orphanCount = ref(0);
+const showOrphanLots = ref(false);
 const listRequestGuard = createLatestRequestGuard();
 const detailRequestGuard = createLatestRequestGuard();
+const orphanRequestGuard = createLatestRequestGuard();
 
 const groups = computed(() => groupTenderMasters(records.value));
 const hasDocumentReadiness = computed(() =>
@@ -79,6 +83,39 @@ async function load() {
 			isTenderMasterCompanyCurrent(requestCompany, activeCompany.value)
 		)
 			loading.value = false;
+	}
+}
+
+/**
+ * The lots no tender on this board can account for.
+ *
+ * The lanes are derived from the lots reachable through a parent, so a parentless
+ * lot is not "somewhere else" on the board — it is nowhere, and the portfolio just
+ * reads low. Guessing a parent for it would be worse than showing the gap, so the
+ * gap is what gets shown.
+ */
+async function loadOrphanLots() {
+	const requestCompany = activeCompany.value;
+	const request = orphanRequestGuard.start();
+	orphanCount.value = 0;
+	orphanLots.value = [];
+	showOrphanLots.value = false;
+	if (!requestCompany) return;
+	try {
+		const response = await call("stabler.api.tender_master.orphan_tender_lots", {
+			company: requestCompany,
+		});
+		if (
+			!orphanRequestGuard.isLatest(request) ||
+			!isTenderMasterCompanyCurrent(requestCompany, activeCompany.value)
+		)
+			return;
+		orphanCount.value = response?.count || 0;
+		orphanLots.value = response?.lots || [];
+	} catch {
+		// No toast: `load()` already reports whatever made this company unreadable,
+		// and a second one would double every failure on the same page. An unknown
+		// count leaves the strip hidden rather than claiming zero orphans.
 	}
 }
 
@@ -135,7 +172,13 @@ watch([activeCompany, () => JSON.stringify(tenderMasterListParams(route.query))]
 	closeDetail();
 	load();
 });
-onMounted(load);
+// Company-scoped only: the queue is the whole company's backlog, so re-fetching it
+// for every drill-down filter change would be a query that cannot change its answer.
+watch(activeCompany, loadOrphanLots);
+onMounted(() => {
+	load();
+	loadOrphanLots();
+});
 </script>
 
 <template>
@@ -165,6 +208,50 @@ onMounted(load);
 			</div>
 		</div>
 
+		<!-- Parentless tender lots. Shown at portfolio depth only: inside one
+		tender's drill-down it is somebody else's backlog. -->
+		<div v-if="depth === 'tender' && orphanCount" class="mb-3">
+			<div class="alert alert-warning d-flex align-items-center gap-2 flex-wrap mb-0" role="alert">
+				<i class="ti ti-unlink"></i>
+				<span>{{ t("{0} tender lots are not linked to a tender.", { 0: orphanCount }) }}</span>
+				<button
+					type="button"
+					class="btn btn-sm btn-outline-secondary ms-auto"
+					@click="showOrphanLots = !showOrphanLots"
+				>
+					{{ t("Show unlinked lots") }}
+				</button>
+			</div>
+			<div v-if="showOrphanLots" class="card mt-2">
+				<table class="table card-table">
+					<thead>
+						<tr>
+							<th>{{ t("Lot") }}</th>
+							<th>{{ t("Customer") }}</th>
+							<th>{{ t("Status") }}</th>
+							<th>{{ t("Updated") }}</th>
+						</tr>
+					</thead>
+					<tbody>
+						<tr v-for="lot in orphanLots" :key="lot.name">
+							<td class="fw-semibold">{{ lot.name }}</td>
+							<td>{{ lot.organization || "—" }}</td>
+							<td>
+								<span
+									v-if="lot.status"
+									class="badge"
+									:class="getStatusBadgeClass('CRM Deal', lot.status)"
+									>{{ t(lot.status) }}</span
+								>
+								<span v-else>—</span>
+							</td>
+							<td>{{ lot.modified ? formatDate(lot.modified) : "—" }}</td>
+						</tr>
+					</tbody>
+				</table>
+			</div>
+		</div>
+
 		<div v-if="depth === 'lots'" class="card mb-3">
 			<div class="card-header d-flex align-items-center gap-2">
 				<button type="button" class="btn btn-sm btn-ghost-secondary" @click="closeDetail">
@@ -191,7 +278,15 @@ onMounted(load);
 					<tbody v-else>
 						<tr v-for="lot in lots" :key="lot.name" role="button" @click="openLot(lot)">
 							<td class="fw-semibold">{{ lot.name }}</td>
-							<td>{{ lot.status || "—" }}</td>
+							<td>
+								<span
+									v-if="lot.status"
+									class="badge"
+									:class="getStatusBadgeClass('CRM Deal', lot.status)"
+									>{{ t(lot.status) }}</span
+								>
+								<span v-else>—</span>
+							</td>
 							<td class="text-end font-monospace">{{ money(lot.custom_estimated_value, lot) }}</td>
 							<td>{{ lot.modified ? formatDate(lot.modified) : "—" }}</td>
 						</tr>

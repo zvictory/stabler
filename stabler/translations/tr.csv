@@ -4899,3 +4899,7 @@ awaiting result,sonuç bekliyor
 Next lot deadline,En yakın kalem süresi
 Policy gap,Teklif eksiği
 Overdue bids,Gecikmiş teklifler
+A tender lot must belong to a Parent Tender.,İhale kalemi bir Ana ihaleye ait olmalıdır.
+{0} tender lots are not linked to a tender.,{0} ihale kalemi bir ihaleye bağlı değil.
+Show unlinked lots,Bağlı olmayan kalemleri göster
+Updated,Güncellendi
