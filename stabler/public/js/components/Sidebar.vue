@@ -7,6 +7,7 @@ import { call } from "../api/client.js";
 import { t } from "../composables/i18n.js";
 import { useToast } from "../composables/useToast.js";
 import { logout as logoutSession } from "../api/auth.js";
+import { hardRedirect } from "../composables/authRedirect.js";
 import AuthTransitionOverlay from "./AuthTransitionOverlay.vue";
 import Select from "./Select.vue";
 
@@ -20,7 +21,7 @@ async function logout() {
 	logoutPending.value = true;
 	try {
 		await logoutSession();
-		window.location.replace("/stabler#/login");
+		hardRedirect("/login");
 	} catch (err) {
 		logoutPending.value = false;
 		toast.error(err?.message || t("Could not sign out. Please try again."));

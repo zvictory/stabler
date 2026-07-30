@@ -2,7 +2,7 @@
 import { nextTick, ref } from "vue";
 import { useRoute } from "vue-router";
 import { login } from "../api/auth.js";
-import { sanitizeStablerRedirect } from "../composables/authRedirect.js";
+import { hardRedirect, sanitizeStablerRedirect } from "../composables/authRedirect.js";
 import { t } from "../composables/i18n.js";
 import AuthTransitionOverlay from "../components/AuthTransitionOverlay.vue";
 
@@ -18,6 +18,8 @@ const transitioning = ref(false);
 const error = ref("");
 const errorSummary = ref(null);
 
+const sessionExpired = route.query["session-expired"] === "1";
+
 async function handleLogin() {
 	if (!username.value.trim() || !password.value) {
 		error.value = t("Please enter both username/email and password.");
@@ -30,10 +32,10 @@ async function handleLogin() {
 	error.value = "";
 
 	try {
-		await login(username.value.trim(), password.value);
+		await login(username.value.trim(), password.value, rememberMe.value);
 		transitioning.value = true;
 		const target = sanitizeStablerRedirect(route.query["redirect-to"]);
-		window.location.replace(`/stabler#${target}`);
+		hardRedirect(target);
 	} catch (err) {
 		transitioning.value = false;
 		error.value = err?.message || t("Invalid username or password.");
@@ -67,6 +69,16 @@ async function handleLogin() {
 					</div>
 					<h1 class="brand-title">Stabler</h1>
 					<p class="brand-subtitle">{{ t("Financial operations, simplified") }}</p>
+				</div>
+
+				<!-- Session Expired Notice -->
+				<div
+					v-if="sessionExpired && !error"
+					class="alert alert-warning shadow-sm border-0 d-flex align-items-center gap-2 mb-4"
+					role="status"
+				>
+					<i class="ti ti-clock-off fs-3 text-warning flex-shrink-0"></i>
+					<div class="small fw-medium">{{ t("Your session has expired. Please sign in again.") }}</div>
 				</div>
 
 				<!-- Alert Error Message -->

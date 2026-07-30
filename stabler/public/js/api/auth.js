@@ -1,12 +1,13 @@
-function credentialsBody(usr, pwd) {
+function credentialsBody(usr, pwd, remember) {
 	const body = new URLSearchParams();
 	body.append("usr", usr);
 	body.append("pwd", pwd);
+	body.append("remember", remember ? "1" : "0");
 	return body;
 }
 
 function extractServerMessage(payload) {
-	let msg = payload.message || "Invalid username or password.";
+	let msg = typeof payload.message === "string" ? payload.message : "Invalid username or password.";
 	if (payload._server_messages) {
 		try {
 			const parsed = JSON.parse(payload._server_messages);
@@ -21,24 +22,24 @@ function extractServerMessage(payload) {
 	return msg;
 }
 
-export async function login(usr, pwd) {
-	const response = await fetch("/api/method/login", {
+export async function login(usr, pwd, remember = true) {
+	const response = await fetch("/api/method/stabler.api.organization.stabler_login", {
 		method: "POST",
 		credentials: "same-origin",
 		headers: {
 			Accept: "application/json",
 			"Content-Type": "application/x-www-form-urlencoded",
 		},
-		body: credentialsBody(usr, pwd),
+		body: credentialsBody(usr, pwd, remember),
 	});
 	const payload = await response.json().catch(() => ({}));
-	if (!response.ok || payload.message !== "Logged In") {
+	if (!response.ok || payload.message?.message !== "Logged In") {
 		const msg = extractServerMessage(payload);
 		const error = new Error(msg);
 		error.response = payload;
 		throw error;
 	}
-	return payload;
+	return payload.message;
 }
 
 export async function logout() {

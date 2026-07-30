@@ -30,15 +30,15 @@ export async function call(name, args = {}) {
 		body: encodeForm(args),
 	});
 
-	if (res.status === 403) {
-		window.dispatchEvent(new CustomEvent("stabler:forbidden", { detail: res }));
-	}
-
 	let data = null;
 	try {
 		data = await res.json();
 	} catch {
 		/* non-JSON error body */
+	}
+
+	if (res.status === 403) {
+		window.dispatchEvent(new CustomEvent("stabler:forbidden", { detail: { status: 403, data } }));
 	}
 
 	if (!res.ok) {
@@ -94,17 +94,17 @@ export async function download(name, args = {}, fallbackFilename = "download") {
 		body: encodeForm(args),
 	});
 
-	if (res.status === 403) {
-		window.dispatchEvent(new CustomEvent("stabler:forbidden", { detail: res }));
-	}
-
 	if (!res.ok) {
 		let msg = `Request failed: ${res.status}`;
+		let data = null;
 		try {
-			const data = await res.json();
+			data = await res.json();
 			msg = data?.exception || data?._error_message || data?.message || msg;
 		} catch {
 			/* non-JSON */
+		}
+		if (res.status === 403) {
+			window.dispatchEvent(new CustomEvent("stabler:forbidden", { detail: { status: 403, data } }));
 		}
 		const err = new Error(msg);
 		err.status = res.status;

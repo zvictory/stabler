@@ -6,6 +6,7 @@ import { useSession } from "./stores/session.js";
 
 import { useToast } from "./composables/useToast.js";
 import { startVersionCheck } from "./composables/version-check.js";
+import { hardRedirect } from "./composables/authRedirect.js";
 
 const mountEl = document.getElementById("app");
 if (mountEl) {
@@ -51,6 +52,31 @@ if (mountEl) {
 		console.error("[stabler] unhandled rejection:", err);
 		const toast = useToast();
 		toast.error(err.message || String(err));
+	});
+
+	// A 403 can mean two very different things: the server session died (expired
+	// sid, logout in another tab) or a genuine permission error on one endpoint.
+	// Probe the session before redirecting so real PermissionErrors keep their
+	// normal in-page handling.
+	let sessionProbeInFlight = false;
+	window.addEventListener("stabler:forbidden", async () => {
+		if (sessionProbeInFlight || window.location.hash.startsWith("#/login")) return;
+		sessionProbeInFlight = true;
+		try {
+			const res = await fetch("/api/method/frappe.auth.get_logged_user", {
+				credentials: "same-origin",
+				headers: { Accept: "application/json" },
+			});
+			const data = await res.json().catch(() => ({}));
+			const user = data && data.message;
+			if (res.ok && user && user !== "Guest") return;
+			const current = window.location.hash.replace(/^#/, "") || "/dashboard";
+			hardRedirect(`/login?redirect-to=${encodeURIComponent(current)}&session-expired=1`);
+		} catch {
+			/* network failure — can't tell, leave the page alone */
+		} finally {
+			sessionProbeInFlight = false;
+		}
 	});
 
 	app.mount(mountEl);

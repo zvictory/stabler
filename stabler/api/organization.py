@@ -4,6 +4,7 @@ from __future__ import annotations
 
 import frappe
 from frappe import _
+from frappe.utils import cint
 
 from stabler.stabler.doctype.stabler_settings.stabler_settings import (
 	_default_enable_row,
@@ -13,7 +14,7 @@ from stabler.stabler.doctype.stabler_settings.stabler_settings import (
 
 
 @frappe.whitelist(allow_guest=True)
-def stabler_login(usr: str, pwd: str):
+def stabler_login(usr: str, pwd: str, remember: int = 1):
 	"""Authenticate user and initialize session for Stabler SPA."""
 	if not usr or not pwd:
 		frappe.throw(_("Username/Email and Password are required."))
@@ -29,12 +30,17 @@ def stabler_login(usr: str, pwd: str):
 		frappe.clear_messages()
 		frappe.throw(_("Invalid username or password. Please check your credentials."))
 
+	if not cint(remember):
+		# Frappe always sets sid with max_age (CookieManager.init_cookies), so a
+		# login normally survives ~10 days. Re-setting it without max_age turns it
+		# into a browser-session cookie: closing the browser forgets the login.
+		frappe.local.cookie_manager.set_cookie("sid", frappe.session.sid, httponly=True)
+
 	user_doc = frappe.get_doc("User", frappe.session.user)
-	company = (
-		frappe.db.get_single_value("Stabler Settings", "default_company")
-		or frappe.db.get_value("Company", {"is_group": 0}, "name")
-		or "MSA"
-	)
+	# NOTE: Stabler Settings has no default_company field — querying it via
+	# get_single_value raises ValidationError after the session is already
+	# open, which made the SPA treat a successful login as a failure.
+	company = frappe.db.get_value("Company", {"is_group": 0}, "name")
 
 	return {
 		"message": "Logged In",

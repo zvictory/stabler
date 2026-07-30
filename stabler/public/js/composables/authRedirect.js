@@ -78,3 +78,11 @@ export function sanitizeStablerRedirect(value) {
 	return ALLOWED_ROOTS.has(root) ? value : FALLBACK;
 }
 
+export function hardRedirect(hashTarget) {
+	// A hash-only location change never reloads the document, so
+	// window.__STABLER__ (user, csrf token) would stay stale after an auth
+	// transition. Force a real reload so www/stabler.py re-renders the boot.
+	window.location.replace(`/stabler#${hashTarget}`);
+	window.location.reload();
+}
+

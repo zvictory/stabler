@@ -1,5 +1,5 @@
-import { describe, expect, it } from "vitest";
-import { sanitizeStablerRedirect } from "../composables/authRedirect.js";
+import { afterEach, describe, expect, it, vi } from "vitest";
+import { hardRedirect, sanitizeStablerRedirect } from "../composables/authRedirect.js";
 
 describe("sanitizeStablerRedirect", () => {
 	it.each([
@@ -37,6 +37,32 @@ describe("sanitizeStablerRedirect", () => {
 		["/dashboard%5c..%5capp"],
 	])("falls back for unsafe or unknown input %#", (input) => {
 		expect(sanitizeStablerRedirect(input)).toBe("/dashboard");
+	});
+});
+
+describe("hardRedirect", () => {
+	const realLocation = window.location;
+
+	afterEach(() => {
+		Object.defineProperty(window, "location", { value: realLocation, configurable: true, writable: true });
+	});
+
+	it("replaces the hash AND forces a document reload", () => {
+		// A hash-only replace never reloads the document, which leaves
+		// window.__STABLER__ (user, csrf) stale after login/logout — the exact
+		// regression that broke both flows. Both calls are load-bearing.
+		const replace = vi.fn();
+		const reload = vi.fn();
+		Object.defineProperty(window, "location", {
+			value: { replace, reload },
+			configurable: true,
+			writable: true,
+		});
+
+		hardRedirect("/dashboard");
+
+		expect(replace).toHaveBeenCalledWith("/stabler#/dashboard");
+		expect(reload).toHaveBeenCalledTimes(1);
 	});
 });
 
