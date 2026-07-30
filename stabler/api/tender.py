@@ -577,8 +577,10 @@ def po_control_board(deal: str) -> dict:
 				"badges": badges,
 			}
 		)
-		total += gt
-		recv_weighted += gt * pr
+		# Base amounts: the KPI and lane roll-ups are labelled with the company
+		# currency, and `received_pct` weights by the same basis it divides by.
+		total += base_gt
+		recv_weighted += base_gt * pr
 		s = suppliers.setdefault(
 			r.supplier,
 			{
@@ -648,11 +650,11 @@ def po_control_board(deal: str) -> dict:
 	lanes = []
 	for key, label in lanes_def:
 		lc = [c for c in cards if c["lane"] == key]
-		lanes.append({"key": key, "label": label, "count": len(lc), "total": sum(c["amount"] for c in lc)})
+		lanes.append({"key": key, "label": label, "count": len(lc), "total": sum(c["base_amount"] for c in lc)})
 
 	return {
 		"deal": deal,
-		"currency": (rows[0].currency if rows else base_ccy) or base_ccy,
+		"currency": base_ccy,
 		"lanes": lanes,
 		"cards": cards,
 		"compare": compare,
