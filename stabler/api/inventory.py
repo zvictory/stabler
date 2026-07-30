@@ -710,8 +710,17 @@ def update_item_group(
 	doc = frappe.get_doc("Item Group", name)
 	if parent_item_group and parent_item_group != doc.parent_item_group:
 		# parent_item_group + save() is the whole move: nestedset.update_nsm
-		# handles the lft/rgt rebalance, and the framework's own validate_loop
-		# rejects moving a node under its own descendant.
+		# handles the lft/rgt rebalance. The framework's own validate_loop
+		# rejects moving a node under its own descendant too, but it runs
+		# inside on_update — AFTER save() has already written the (cyclic)
+		# parent_item_group column — so a rejected move still leaves that
+		# column corrupted (lft/rgt stay untouched). Check first so we never
+		# attempt the write at all.
+		new_parent_range = frappe.db.get_value("Item Group", parent_item_group, ["lft", "rgt"], as_dict=True)
+		if not new_parent_range:
+			frappe.throw(_("Unknown item group: {0}").format(parent_item_group))
+		if doc.lft <= new_parent_range.lft and doc.rgt >= new_parent_range.rgt:
+			frappe.throw(_("Item cannot be added to its own descendants"))
 		doc.parent_item_group = parent_item_group
 	if is_group is not None:
 		doc.is_group = cint(is_group)
@@ -723,7 +732,7 @@ def update_item_group(
 		# doc.item_group_name alone doesn't rename the document (name ==
 		# item_group_name via autoname); it takes an explicit rename_doc so every
 		# Link field (~29 doctypes) gets rewritten in one bulk UPDATE each.
-		doc.name = frappe.rename_doc("Item Group", doc.name, new_name, merge=False, ignore_permissions=False)
+		doc.name = frappe.rename_doc("Item Group", doc.name, new_name, merge=False)
 		renamed = True
 	return {"name": doc.name, "renamed": renamed}
 
