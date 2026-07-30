@@ -36,20 +36,20 @@ _TENDER_FIELDS = (
 
 def _list_filters(company, status=None, stage=None, risk=None, deal=None, from_date=None, to_date=None):
 	filters = [["company", "=", company]]
-	parent_names = _qualifying_parent_names(company, status, stage, risk, from_date, to_date)
-	if parent_names is not None:
-		filters.append(["name", "in", sorted(parent_names) or ["__no_permitted_tender_master__"]])
+	deal_doc = None
 	if deal:
 		deal_doc = frappe.get_doc("CRM Deal", deal)
-		if not frappe.has_permission("CRM Deal", "read", doc=deal_doc):
+		if not frappe.has_permission("CRM Deal", "read", doc=deal_doc) or deal_doc.company != company:
 			frappe.throw(_("Not permitted."), frappe.PermissionError)
-		if deal_doc.company != company:
-			frappe.throw(_("Not permitted."), frappe.PermissionError)
+	parent_names = _qualifying_parent_names(company, status, stage, risk, from_date, to_date, deal)
+	if parent_names is not None:
+		filters.append(["name", "in", sorted(parent_names) or ["__no_permitted_tender_master__"]])
+	if deal_doc:
 		filters.append(["name", "=", deal_doc.custom_parent_tender])
 	return filters
 
 
-def _qualifying_parent_names(company, status=None, stage=None, risk=None, from_date=None, to_date=None):
+def _qualifying_parent_names(company, status=None, stage=None, risk=None, from_date=None, to_date=None, deal=None):
 	if not any((stage in {"identified", "submitted"}, str(status).casefold() == "won", risk == "risk")):
 		return None
 	start, end = _dashboard_period(from_date, to_date)
@@ -61,6 +61,8 @@ def _qualifying_parent_names(company, status=None, stage=None, risk=None, from_d
 	)
 	parents = set()
 	for row in rows:
+		if deal and row.name != deal:
+			continue
 		if not frappe.has_permission("CRM Deal", "read", doc=row.name):
 			continue
 		intake = _read_intake(row.name)

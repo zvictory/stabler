@@ -123,12 +123,16 @@ def _load_api(fake: _FakeFrappe, *, tender_allowed=True):
 		None if tender_allowed else (_ for _ in ()).throw(PermissionError("Not permitted"))
 	)
 	tender._dashboard_period = lambda _from_date=None, _to_date=None: ("2026-07-01", "2026-07-31")
-	tender._read_intake = lambda _deal: {
+	_default_intake = {
 		"submitted_at": "2026-07-10",
 		"submitted_by": "user",
 		"result": "won",
 		"result_at": "2026-07-11",
 	}
+	# LOT-A is the one deal-scoped test case that must NOT match the lifecycle
+	# filters, so a per-deal override is needed instead of the shared constant.
+	_intake_overrides = {"LOT-A": {"submitted_at": None, "submitted_by": None, "result": None, "result_at": None}}
+	tender._read_intake = lambda deal: _intake_overrides.get(deal, _default_intake)
 	tender._tender_event_dates = lambda _intake, _creation: {
 		"identified": "2026-07-01",
 		"submitted": "2026-07-10",
@@ -221,6 +225,49 @@ class TestTenderMasterApi(unittest.TestCase):
 		self.fake.docs[("CRM Deal", "LOT-OTHER")] = self.cross_company_deal
 		with self.assertRaises(PermissionError):
 			self.api.list_tender_masters(company="ACME", deal="LOT-OTHER")
+
+	def test_list_deal_filter_does_not_leak_sibling_lot_under_shared_parent(self):
+		"""Skipping the deal-narrowing loop guard would let a sibling lot's lifecycle match leak the shared parent tender into a lot that does not itself qualify."""
+		self.fake.docs[("CRM Deal", "LOT-A")] = _Doc(
+			name="LOT-A",
+			company="ACME",
+			custom_parent_tender="TND-2026-00001",
+			status="Open",
+			custom_estimated_value=10,
+		)
+		self.fake.docs[("CRM Deal", "LOT-B")] = _Doc(
+			name="LOT-B",
+			company="ACME",
+			custom_parent_tender="TND-2026-00001",
+			status="Open",
+			custom_estimated_value=20,
+		)
+		result = self.api.list_tender_masters(company="ACME", deal="LOT-A", stage="submitted")
+		filters = self.fake.last_filters
+		self.assertIn(["name", "in", ["__no_permitted_tender_master__"]], filters)
+		self.assertEqual(result["records"], [])
+
+	def test_list_deal_filter_checks_permission_before_scanning_deal_candidates(self):
+		"""Scanning all qualifying CRM Deals before checking the requested deal's permission would run an unnecessary — and leaky — full-portfolio scan for a lot the caller cannot read."""
+		with self.assertRaises(PermissionError):
+			self.api.list_tender_masters(company="ACME", deal="LOT-DENIED", stage="submitted")
+		self.assertIsNone(self.fake.last_filters)
+
+	def test_list_filters_without_deal_preserve_all_qualifying_parents(self):
+		"""Applying the deal-narrowing loop guard when no deal is selected would drop qualifying lots from the portfolio view."""
+		self.fake.docs[("Tender Master", "TND-2026-00002")] = _Doc(
+			name="TND-2026-00002", company="ACME", title="Second tender", currency="USD", status="New"
+		)
+		self.fake.docs[("CRM Deal", "LOT-C")] = _Doc(
+			name="LOT-C",
+			company="ACME",
+			custom_parent_tender="TND-2026-00002",
+			status="Open",
+			custom_estimated_value=30,
+		)
+		self.api.list_tender_masters(company="ACME", stage="submitted")
+		filters = self.fake.last_filters
+		self.assertIn(["name", "in", ["TND-2026-00001", "TND-2026-00002"]], filters)
 
 
 if __name__ == "__main__":
