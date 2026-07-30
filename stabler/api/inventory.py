@@ -10,7 +10,7 @@ from frappe import _
 from frappe.utils import cint, flt, getdate, today
 
 from stabler.api import _fefo
-from stabler.api._common import _assert_can_read, _assert_can_write, _require_company
+from stabler.api._common import _assert_can_read, _assert_can_write, _require_company, check_concurrency
 from stabler.api._stock_recon import prepare_reconciliation
 from stabler.api.approvals import _assert_company_scope
 
@@ -26,6 +26,24 @@ _ITEM_CONTEXT_FILTER = {
 }
 
 
+def _item_group_condition(item_group: str, include_descendants: int, params: dict, col: str = "item_group") -> str:
+	"""WHERE fragment for an item_group filter.
+
+	When ``include_descendants`` is set and *item_group* is a group node, matches
+	the whole subtree via the nested-set lft/rgt range (same shape as ERPNext's own
+	``item_group.get_child_item_groups``). Otherwise falls back to the historical
+	exact-match — including when *item_group* is a leaf, which has no subtree.
+	"""
+	if cint(include_descendants):
+		bounds = frappe.db.get_value("Item Group", item_group, ["lft", "rgt", "is_group"], as_dict=True)
+		if bounds and cint(bounds.is_group):
+			params["ig_lft"] = bounds.lft
+			params["ig_rgt"] = bounds.rgt
+			return f"{col} IN (SELECT g.name FROM `tabItem Group` g WHERE g.lft >= %(ig_lft)s AND g.rgt <= %(ig_rgt)s)"
+	params["item_group"] = item_group
+	return f"{col} = %(item_group)s"
+
+
 @frappe.whitelist()
 def list_items(
 	search: str = "",
@@ -34,6 +52,7 @@ def list_items(
 	limit: int = 100,
 	stock_only: int = 0,
 	context: str | None = None,
+	include_descendants: int = 0,
 ):
 	"""Return items matching *search* (code or name), optionally scoped to a warehouse.
 
@@ -50,6 +69,10 @@ def list_items(
 
 	stock_only — legacy flag (is_stock_item). Kept for back-compat; ``context``
 	supersedes it. Callers that omit both keep the historical is_sales_item default.
+
+	include_descendants — when ``item_group`` is a category (group) node, also
+	match items filed under its subcategories. Defaults off: existing pickers that
+	pass an exact item_group keep their historical exact-match behaviour.
 	"""
 	if context:
 		item_filter = _ITEM_CONTEXT_FILTER.get(context, _ITEM_CONTEXT_FILTER["sales"])
@@ -63,8 +86,7 @@ def list_items(
 		conds.append("(item_name LIKE %(s)s OR item_code LIKE %(s)s)")
 		params["s"] = f"%{search}%"
 	if item_group:
-		conds.append("item_group = %(item_group)s")
-		params["item_group"] = item_group
+		conds.append(_item_group_condition(item_group, include_descendants, params))
 	if warehouse:
 		# Only items that actually have stock in the target warehouse.
 		# actual_qty > 0 prevents 0-qty Bin rows (e.g. raw materials ever staged there) from leaking in.
@@ -602,6 +624,156 @@ def list_item_groups(limit: int = 200):
 
 
 @frappe.whitelist()
+def list_item_group_tree(company: str, with_counts: int = 1):
+	"""Return the full Item Group tree (QuickBooks-style categories) as flat,
+	lft-ordered rows plus per-group item counts; the client builds the tree and
+	rolls up subtree totals (composables/itemGroupTree.js). Two queries, no N+1.
+	"""
+	from stabler.api.imports import _assert_inventory_access
+
+	_assert_inventory_access(company)
+	from frappe.utils.nestedset import get_root_of
+
+	rows = frappe.db.sql(
+		"""
+		SELECT name, item_group_name, parent_item_group, is_group, lft, rgt, modified
+		FROM `tabItem Group`
+		ORDER BY lft ASC
+		""",
+		as_dict=True,
+	)
+	counts = {}
+	if cint(with_counts):
+		for row in frappe.db.sql(
+			"SELECT item_group, COUNT(*) AS item_count FROM `tabItem` GROUP BY item_group",
+			as_dict=True,
+		):
+			counts[row.item_group] = row.item_count
+	for row in rows:
+		row["item_count"] = counts.get(row.name, 0)
+
+	return {
+		"root": get_root_of("Item Group"),
+		"can_manage": bool(frappe.has_permission("Item Group", "create")),
+		"rows": rows,
+	}
+
+
+@frappe.whitelist()
+def create_item_group(item_group_name: str, company: str, parent_item_group: str | None = None, is_group: int = 0):
+	from stabler.api.imports import _assert_inventory_access
+
+	_assert_inventory_access(company)
+	frappe.has_permission("Item Group", "create", throw=True)
+
+	item_group_name = (item_group_name or "").strip()
+	if not item_group_name:
+		frappe.throw(_("Category name is required."))
+	if frappe.db.exists("Item Group", item_group_name):
+		frappe.throw(_("A category named {0} already exists.").format(item_group_name))
+
+	from frappe.utils.nestedset import get_root_of
+
+	# Never trust the controller's own translated-msgid lookup for the default
+	# parent (ItemGroup.validate() looks up _("All Item Groups"), which misses
+	# under ru/uz/uzc/tr and throws "Multiple root nodes not allowed").
+	parent_item_group = (parent_item_group or "").strip() or get_root_of("Item Group")
+	parent = frappe.db.get_value("Item Group", parent_item_group, "is_group")
+	if parent is None:
+		frappe.throw(_("Unknown item group: {0}").format(parent_item_group))
+	if not cint(parent):
+		frappe.throw(_("{0} is not a group.").format(parent_item_group))
+
+	doc = frappe.new_doc("Item Group")
+	doc.item_group_name = item_group_name
+	doc.parent_item_group = parent_item_group
+	doc.is_group = cint(is_group)
+	doc.insert(ignore_permissions=False)
+	return {"name": doc.name}
+
+
+@frappe.whitelist()
+def update_item_group(
+	name: str,
+	company: str,
+	item_group_name: str | None = None,
+	parent_item_group: str | None = None,
+	is_group: int | None = None,
+	modified: str | None = None,
+):
+	from stabler.api.imports import _assert_inventory_access
+
+	_assert_inventory_access(company)
+	_assert_can_write("Item Group", name)
+	check_concurrency("Item Group", name, modified)
+
+	doc = frappe.get_doc("Item Group", name)
+	if parent_item_group and parent_item_group != doc.parent_item_group:
+		# parent_item_group + save() is the whole move: nestedset.update_nsm
+		# handles the lft/rgt rebalance, and the framework's own validate_loop
+		# rejects moving a node under its own descendant.
+		doc.parent_item_group = parent_item_group
+	if is_group is not None:
+		doc.is_group = cint(is_group)
+	doc.save(ignore_permissions=False)
+
+	renamed = False
+	new_name = (item_group_name or "").strip()
+	if new_name and new_name != doc.name:
+		# doc.item_group_name alone doesn't rename the document (name ==
+		# item_group_name via autoname); it takes an explicit rename_doc so every
+		# Link field (~29 doctypes) gets rewritten in one bulk UPDATE each.
+		doc.name = frappe.rename_doc("Item Group", doc.name, new_name, merge=False, ignore_permissions=False)
+		renamed = True
+	return {"name": doc.name, "renamed": renamed}
+
+
+def _item_group_impact(name: str) -> dict:
+	row = frappe.db.get_value("Item Group", name, ["parent_item_group"], as_dict=True)
+	if not row:
+		frappe.throw(_("Unknown item group: {0}").format(name))
+	child_count = frappe.db.count("Item Group", {"parent_item_group": name})
+	item_count = frappe.db.count("Item", {"item_group": name})
+	is_root = not row.parent_item_group
+
+	blockers = []
+	if is_root:
+		blockers.append(_("The top-level category cannot be deleted."))
+	if child_count:
+		blockers.append(_("Cannot delete {0}: it has {1} subcategories.").format(name, child_count))
+	if item_count:
+		blockers.append(_("Cannot delete {0}: {1} items still use it.").format(name, item_count))
+	return {"child_count": child_count, "item_count": item_count, "is_root": is_root, "blockers": blockers}
+
+
+@frappe.whitelist()
+def item_group_delete_impact(name: str, company: str):
+	from stabler.api.imports import _assert_inventory_access
+
+	_assert_inventory_access(company)
+	_assert_can_read("Item Group", name)
+	return _item_group_impact(name)
+
+
+@frappe.whitelist()
+def delete_item_group(name: str, company: str):
+	from stabler.api.imports import _assert_inventory_access
+
+	_assert_inventory_access(company)
+	_assert_can_write("Item Group", name, "delete")
+
+	impact = _item_group_impact(name)
+	if impact["blockers"]:
+		# Explain, don't just deny — frappe.delete_doc would reject the same
+		# cases (NestedSetChildExistsError / LinkExistsError) but with a stack
+		# trace instead of a category name the user recognizes.
+		frappe.throw(impact["blockers"][0])
+
+	frappe.delete_doc("Item Group", name, ignore_permissions=False)
+	return {"deleted": name}
+
+
+@frappe.whitelist()
 def list_uoms(limit: int = 200):
 	return frappe.db.sql(
 		"""
@@ -837,7 +1009,11 @@ def delete_item_price(name: str):
 
 @frappe.whitelist()
 def get_price_list_matrix(
-	price_list: str, item_group: str | None = None, search: str | None = None, limit: int = 200
+	price_list: str,
+	item_group: str | None = None,
+	search: str | None = None,
+	limit: int = 200,
+	include_descendants: int = 0,
 ):
 	"""Get all items along with their rate in the specified `price_list` for bulk editing."""
 	if not price_list or not frappe.db.exists("Price List", price_list):
@@ -851,8 +1027,7 @@ def get_price_list_matrix(
 		conds.append("(i.item_name LIKE %(s)s OR i.item_code LIKE %(s)s)")
 		params["s"] = f"%{search}%"
 	if item_group:
-		conds.append("i.item_group = %(item_group)s")
-		params["item_group"] = item_group
+		conds.append(_item_group_condition(item_group, include_descendants, params, col="i.item_group"))
 
 	where = " AND ".join(conds)
 	rows = frappe.db.sql(
