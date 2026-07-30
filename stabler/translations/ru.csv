@@ -4954,6 +4954,7 @@ Delete this proforma?,Удалить эту проформу?
 Deleting shows everything that depends on this proforma before anything is removed.,"Удаление сначала покажет всё, что зависит от этой проформы."
 Nothing else points at this proforma.,На эту проформу больше ничто не ссылается.
 Proforma {name} deleted.,Проформа {name} удалена.
+
 Tender CRM,CRM тендеров
 All tenders,Все тендеры
 Lots,Лоты

@@ -4948,6 +4948,7 @@ Delete this proforma?,Бу проформа ўчирилсинми?
 Deleting shows everything that depends on this proforma before anything is removed.,Ўчириш аввал бу проформага боғлиқ ҳамма нарсани кўрсатади.
 Nothing else points at this proforma.,Бу проформага бошқа ҳеч нарса ишора қилмайди.
 Proforma {name} deleted.,{name} проформаси ўчирилди.
+
 Tender CRM,Tender CRM
 All tenders,Барча тендерлар
 Lots,Лотлар

@@ -4943,6 +4943,7 @@ Delete this proforma?,Bu proforma silinsin mi?
 Deleting shows everything that depends on this proforma before anything is removed.,"Silme, hiçbir şey kaldırılmadan önce bu proformaya bağlı her şeyi gösterir."
 Nothing else points at this proforma.,Bu proformaya başka hiçbir şey işaret etmiyor.
 Proforma {name} deleted.,{name} proforması silindi.
+
 Tender CRM,İhale CRM'i
 All tenders,Tüm ihaleler
 Lots,Kalemler

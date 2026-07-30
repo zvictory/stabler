@@ -4944,6 +4944,7 @@ Delete this proforma?,Delete this proforma?
 Deleting shows everything that depends on this proforma before anything is removed.,Deleting shows everything that depends on this proforma before anything is removed.
 Nothing else points at this proforma.,Nothing else points at this proforma.
 Proforma {name} deleted.,Proforma {name} deleted.
+
 Tender CRM,Tender CRM
 All tenders,All tenders
 Lots,Lots

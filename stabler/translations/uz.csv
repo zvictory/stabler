@@ -4948,6 +4948,7 @@ Delete this proforma?,Bu proforma o‘chirilsinmi?
 Deleting shows everything that depends on this proforma before anything is removed.,O‘chirish avval bu proformaga bog‘liq hamma narsani ko‘rsatadi.
 Nothing else points at this proforma.,Bu proformaga boshqa hech narsa ishora qilmaydi.
 Proforma {name} deleted.,{name} proformasi o‘chirildi.
+
 Tender CRM,Tender CRM
 All tenders,Barcha tenderlar
 Lots,Lotlar
