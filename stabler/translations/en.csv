@@ -4884,6 +4884,66 @@ Session opened,Session opened
 Signing out,Signing out
 "Signing out securely…","Signing out securely…"
 "Could not sign out. Please try again.","Could not sign out. Please try again."
+Accounting voucher,Accounting voucher
+This invoice no longer matches the booked payable.,This invoice no longer matches the booked payable.
+Agreed now,Agreed now
+{count} line(s) changed,{count} line(s) changed
+{count} line(s) added,{count} line(s) added
+{count} line(s) removed,{count} line(s) removed
+Accounting must cancel and re-book the invoice to correct the ledger.,Accounting must cancel and re-book the invoice to correct the ledger.
+Open the booked invoice,Open the booked invoice
+Invoices changed after booking,Invoices changed after booking
+Cancel and re-book,Cancel and re-book
+Re-book the invoice?,Re-book the invoice?
+Cancel {invoice} ({old}) and re-book at {new}.,Cancel {invoice} ({old}) and re-book at {new}.
+{count} payment(s) totalling {amount} will be re-allocated.,{count} payment(s) totalling {amount} will be re-allocated.
+No payments are allocated to it.,No payments are allocated to it.
+The booked invoice already matches this document.,The booked invoice already matches this document.
+Re-booked as {invoice}.,Re-booked as {invoice}.
+Could not re-book the invoice.,Could not re-book the invoice.
+Commercial invoice,Commercial invoice
+Commercial invoice line,Commercial invoice line
+Freight booking,Freight booking
+Import expense,Import expense
+Landed cost voucher,Landed cost voucher
+Proforma,Proforma
+Purchase invoice,Purchase invoice
+Purchase order link,Purchase order link
+Customs declaration {name} exists — an official declaration is never deleted from here.,Customs declaration {name} exists — an official declaration is never deleted from here.
+GRN checklist {name} is submitted — stock was received. Cancel it first.,GRN checklist {name} is submitted — stock was received. Cancel it first.
+Landed cost voucher {name} is not cancelled — landed cost is spread over stock. Cancel it first.,Landed cost voucher {name} is not cancelled — landed cost is spread over stock. Cancel it first.
+Payment {name} is not cancelled — money is already booked against this document. Cancel the payment first.,Payment {name} is not cancelled — money is already booked against this document. Cancel the payment first.
+Proforma {name} is still superseded by this invoice — remove the link first.,Proforma {name} is still superseded by this invoice — remove the link first.
+Purchase invoice {name} is not cancelled — a live payable sits on the ledger. Cancel the invoice first.,Purchase invoice {name} is not cancelled — a live payable sits on the ledger. Cancel the invoice first.
+{doctype} {name} is linked and has no deletion rule — resolve it manually first.,{doctype} {name} is linked and has no deletion rule — resolve it manually first.
+Also delete the linked records,Also delete the linked records
+Commercial invoice {name} deleted.,Commercial invoice {name} deleted.
+Could not check what depends on this invoice.,Could not check what depends on this invoice.
+Could not delete the commercial invoice.,Could not delete the commercial invoice.
+Could not unlink the proforma.,Could not unlink the proforma.
+Delete commercial invoice,Delete commercial invoice
+Delete permanently,Delete permanently
+Delete this commercial invoice?,Delete this commercial invoice?
+Deleting shows everything that depends on this invoice before anything is removed.,Deleting shows everything that depends on this invoice before anything is removed.
+Nothing else points at this invoice.,Nothing else points at this invoice.
+Proforma unlinked.,Proforma unlinked.
+The proforma was already unlinked.,The proforma was already unlinked.
+These linked records go with it:,These linked records go with it:
+This cannot be deleted yet:,This cannot be deleted yet:
+Unlink proforma,Unlink proforma
+Unlink the proforma?,Unlink the proforma?
+deleted,deleted
+"link removed, record kept","link removed, record kept"
+{name} and {count} linked record(s) will be removed. This cannot be undone.,{name} and {count} linked record(s) will be removed. This cannot be undone.
+{name} will be removed. This cannot be undone.,{name} will be removed. This cannot be undone.
+{proforma} goes back to open and this invoice loses its agreement link.,{proforma} goes back to open and this invoice loses its agreement link.
+Could not check what depends on this proforma.,Could not check what depends on this proforma.
+Could not delete the proforma.,Could not delete the proforma.
+Delete proforma,Delete proforma
+Delete this proforma?,Delete this proforma?
+Deleting shows everything that depends on this proforma before anything is removed.,Deleting shows everything that depends on this proforma before anything is removed.
+Nothing else points at this proforma.,Nothing else points at this proforma.
+Proforma {name} deleted.,Proforma {name} deleted.
 Tender CRM,Tender CRM
 All tenders,All tenders
 Lots,Lots

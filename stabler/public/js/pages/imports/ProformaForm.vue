@@ -8,7 +8,9 @@ import { formatMoney } from "../../composables/money.js";
 import { formatDate, todayIso } from "../../composables/date.js";
 import { t } from "../../composables/i18n.js";
 import { getStatusBadgeClass } from "../../composables/status.js";
+import { blockerText, cascadeRows, recordRoute } from "../../composables/deleteImpact.js";
 import { useToast } from "../../composables/useToast.js";
+import { useConfirm } from "../../composables/useConfirm.js";
 import { useEscapeBack } from "../../composables/useEscapeBack.js";
 import { itemSearcher } from "../../composables/items.js";
 import Typeahead from "../../components/Typeahead.vue";
@@ -21,6 +23,7 @@ const { activeCompany, user } = storeToRefs(session);
 const route = useRoute();
 const router = useRouter();
 const toast = useToast();
+const { confirm } = useConfirm();
 useEscapeBack(null, "/imports/proformas");
 
 const docName = computed(() => (route.params.name ? String(route.params.name) : null));
@@ -427,6 +430,77 @@ const statusColor = computed(() => {
 	const m = /^bg-([a-z]+)-lt$/.exec(cls);
 	return m ? m[1] : "secondary";
 });
+
+// Deleting a proforma must not take the shipment with it: the commercial
+// invoice keeps its rows and only loses the agreement link. The button never
+// deletes directly — it asks the endpoint what would happen (dry run, writes
+// nothing), shows that report, and only a red confirmation acts on it.
+const deleteModalOpen = ref(false);
+const deletePlan = ref(null);
+const deletePlanning = ref(false);
+const deleteCascade = ref(false);
+const deleting = ref(false);
+
+const deleteBlockers = computed(() => deletePlan.value?.blockers || []);
+const deleteCascadeRows = computed(() => cascadeRows(deletePlan.value));
+const deleteCascadeCount = computed(() => deletePlan.value?.cascade_count || 0);
+// A blocker is the owner's job to clear; a cascade is theirs to accept.
+const canDelete = computed(() => {
+	if (!deletePlan.value?.deletable) return false;
+	return !deleteCascadeCount.value || deleteCascade.value;
+});
+
+async function openDeletePlan() {
+	if (deletePlanning.value || !docName.value) return;
+	deletePlanning.value = true;
+	deletePlan.value = null;
+	deleteCascade.value = false;
+	try {
+		deletePlan.value = await call("stabler.api.imports.delete_proforma_invoice", {
+			company: activeCompany.value,
+			name: docName.value,
+			dry_run: 1,
+		});
+		deleteModalOpen.value = true;
+	} catch (err) {
+		toast.error(err?.message || t("Could not check what depends on this proforma."));
+	} finally {
+		deletePlanning.value = false;
+	}
+}
+
+async function confirmDelete() {
+	if (deleting.value || !canDelete.value) return;
+	const label = form.value.supplier_pi_ref || docName.value;
+	const ok = await confirm({
+		title: t("Delete this proforma?"),
+		body: deleteCascadeCount.value
+			? t("{name} and {count} linked record(s) will be removed. This cannot be undone.", {
+				name: label,
+				count: deleteCascadeCount.value,
+			})
+			: t("{name} will be removed. This cannot be undone.", { name: label }),
+		confirmLabel: t("Delete permanently"),
+		danger: true,
+	});
+	if (!ok) return;
+	deleting.value = true;
+	try {
+		await call("stabler.api.imports.delete_proforma_invoice", {
+			company: activeCompany.value,
+			name: docName.value,
+			cascade: deleteCascade.value ? 1 : 0,
+			dry_run: 0,
+		});
+		deleteModalOpen.value = false;
+		toast.success(t("Proforma {name} deleted.", { name: label }));
+		router.push("/imports/proformas");
+	} catch (err) {
+		toast.error(err?.message || t("Could not delete the proforma."));
+	} finally {
+		deleting.value = false;
+	}
+}
 
 onMounted(() => {
 	loadItemsList();
@@ -945,6 +1019,91 @@ watch(activeCompany, loadPiGroups);
 						</tr>
 					</tbody>
 				</table>
+			</div>
+		</div>
+
+		<!-- Destructive actions sit at the bottom, away from Save -->
+		<div v-if="!isCreate" class="card mb-3">
+			<div class="card-body d-flex flex-wrap align-items-center gap-2">
+				<div class="text-secondary small flex-grow-1">
+					{{ t("Deleting shows everything that depends on this proforma before anything is removed.") }}
+				</div>
+				<button type="button" class="btn btn-outline-danger" :disabled="deletePlanning" @click="openDeletePlan">
+					<span v-if="deletePlanning" class="spinner-border spinner-border-sm me-1"></span>
+					<i v-else class="ti ti-trash me-1"></i>{{ t("Delete") }}
+				</button>
+			</div>
+		</div>
+
+		<!-- What deleting this proforma would touch — shown before anything happens -->
+		<div v-if="deleteModalOpen" class="modal d-block" tabindex="-1" style="background: rgba(0,0,0,0.4)">
+			<div class="modal-dialog modal-dialog-centered modal-dialog-scrollable">
+				<div class="modal-content">
+					<div class="modal-header">
+						<h5 class="modal-title">{{ t("Delete proforma") }}</h5>
+						<button type="button" class="btn-close" @click="deleteModalOpen = false"></button>
+					</div>
+					<div class="modal-body">
+						<div v-if="deleteBlockers.length" class="mb-3">
+							<div class="fw-semibold text-danger mb-2">
+								<i class="ti ti-alert-triangle me-1"></i>{{ t("This cannot be deleted yet:") }}
+							</div>
+							<ul class="list-unstyled mb-0">
+								<li v-for="(b, i) in deleteBlockers" :key="i" class="mb-2">
+									<router-link
+										v-if="recordRoute(b.doctype, b.name)"
+										:to="recordRoute(b.doctype, b.name)"
+										class="font-monospace fw-semibold"
+									>{{ b.name }}</router-link>
+									<span v-else class="font-monospace fw-semibold">{{ b.name }}</span>
+									<div class="small text-danger">{{ blockerText(b) }}</div>
+								</li>
+							</ul>
+						</div>
+
+						<div v-if="deleteCascadeRows.length" class="mb-3">
+							<div class="fw-semibold mb-2">{{ t("These linked records go with it:") }}</div>
+							<ul class="list-unstyled mb-0">
+								<li v-for="row in deleteCascadeRows" :key="row.doctype" class="mb-2">
+									<div class="small text-secondary">
+										{{ row.label }} · {{ row.detach ? t("link removed, record kept") : t("deleted") }}
+									</div>
+									<div>
+										<template v-for="(n, i) in row.names" :key="n">
+											<router-link
+												v-if="recordRoute(row.doctype, n)"
+												:to="recordRoute(row.doctype, n)"
+												class="font-monospace"
+											>{{ n }}</router-link>
+											<span v-else class="font-monospace">{{ n }}</span>
+											<span v-if="i < row.names.length - 1">, </span>
+										</template>
+									</div>
+								</li>
+							</ul>
+							<label class="form-check mt-2">
+								<input v-model="deleteCascade" class="form-check-input" type="checkbox">
+								<span class="form-check-label">{{ t("Also delete the linked records") }}</span>
+							</label>
+						</div>
+
+						<div v-if="!deleteBlockers.length && !deleteCascadeRows.length" class="text-secondary">
+							{{ t("Nothing else points at this proforma.") }}
+						</div>
+					</div>
+					<div class="modal-footer">
+						<button type="button" class="btn btn-outline-secondary" @click="deleteModalOpen = false">{{ t("Cancel") }}</button>
+						<button
+							type="button"
+							class="btn btn-danger"
+							:disabled="!canDelete || deleting"
+							:title="deleteBlockers.length ? blockerText(deleteBlockers[0]) : ''"
+							@click="confirmDelete"
+						>
+							<span v-if="deleting" class="spinner-border spinner-border-sm me-1"></span>{{ t("Delete") }}
+						</button>
+					</div>
+				</div>
 			</div>
 		</div>
 

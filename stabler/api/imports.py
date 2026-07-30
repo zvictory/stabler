@@ -25,7 +25,15 @@ import frappe
 from frappe import _
 from frappe.utils import add_days, cint, flt, getdate, today
 
-from stabler.api import _advance_aging, _ci_to_pinv, _customs_estimate, _fx_reval, _kts_amendment, _proforma
+from stabler.api import (
+	_advance_aging,
+	_ci_to_pinv,
+	_customs_estimate,
+	_fx_reval,
+	_imports_delete,
+	_kts_amendment,
+	_proforma,
+)
 from stabler.api import _imports_rules as rules
 from stabler.api._common import _assert_can_read, _assert_can_write, _require_company
 from stabler.api.organization import _ADMIN_ROLES, _MODULE_ROLES
@@ -5577,6 +5585,271 @@ def convert_ci_to_purchase_invoice(commercial_invoice: str, company: str, dry_ru
 
 
 @frappe.whitelist()
+def ci_invoice_drift(company: str, commercial_invoice: str | None = None) -> dict:
+	"""Where a Commercial Invoice and its booked Purchase Invoice disagree.
+
+	A submitted Purchase Invoice is immutable, but the CI behind it keeps being
+	corrected — a rate is fixed, a line is added, quantities are re-counted.
+	The A/P then describes a deal nobody agreed to any more. This reports every
+	such divergence; it repairs nothing (re-booking cancels GL vouchers and
+	un-allocates payments — that is an explicit, approved action, never a
+	side effect of opening a screen).
+
+	The Purchase Invoice IS the snapshot of what was booked, so nothing is
+	fingerprinted or cached: the comparison is always against live GL truth,
+	which also makes historically imported invoices comparable.
+
+	``commercial_invoice`` narrows to one CI; otherwise the whole book.
+	Read-only, imports-gated, cost-visible (agreed figures are K3).
+	"""
+	_assert_imports_access(company)
+	_assert_cost_visible()
+	if not frappe.db.has_column("Purchase Invoice", "custom_commercial_invoice"):
+		return {"rows": [], "summary": {"checked": 0, "drifting": 0, "delta_total": 0.0}, "available": False}
+	return _ci_invoice_drift(company, commercial_invoice)
+
+
+def _ci_invoice_drift(company: str, commercial_invoice: str | None = None) -> dict:
+	"""Unwhitelisted core of ci_invoice_drift (callers have already gated)."""
+
+	filters = {"company": company, "docstatus": ["<", 2], "custom_commercial_invoice": ["!=", ""]}
+	if commercial_invoice:
+		filters["custom_commercial_invoice"] = commercial_invoice
+	invoices = frappe.get_all(
+		"Purchase Invoice",
+		filters=filters,
+		fields=["name", "custom_commercial_invoice", "grand_total", "docstatus", "posting_date", "supplier"],
+		limit_page_length=0,
+	)
+	if not invoices:
+		return {"rows": [], "summary": {"checked": 0, "drifting": 0, "delta_total": 0.0}, "available": True}
+
+	ci_names = [inv["custom_commercial_invoice"] for inv in invoices]
+	agreed_of = {
+		row["name"]: (flt(row["agreed_total"]), row.get("ci_number"), row.get("ci_date"))
+		for row in frappe.get_all(
+			"Commercial Invoice",
+			filters={"name": ["in", ci_names]},
+			fields=["name", "agreed_total", "ci_number", "ci_date"],
+			limit_page_length=0,
+		)
+	}
+	# Line rows for both sides, one query each — never per invoice.
+	ci_lines: dict[str, list] = {}
+	for row in frappe.get_all(
+		"Commercial Invoice Item",
+		filters={"parent": ["in", ci_names]},
+		fields=["parent", "item", "qty", "amount"],
+		limit_page_length=0,
+	):
+		ci_lines.setdefault(row["parent"], []).append(
+			{"item_code": row.get("item"), "qty": flt(row.get("qty")), "amount": flt(row.get("amount"))}
+		)
+	pinv_lines: dict[str, list] = {}
+	for row in frappe.get_all(
+		"Purchase Invoice Item",
+		filters={"parent": ["in", [inv["name"] for inv in invoices]]},
+		fields=["parent", "item_code", "qty", "amount"],
+		limit_page_length=0,
+	):
+		pinv_lines.setdefault(row["parent"], []).append(
+			{"item_code": row.get("item_code"), "qty": flt(row.get("qty")), "amount": flt(row.get("amount"))}
+		)
+
+	rows = []
+	delta_sum = 0.0
+	for inv in invoices:
+		ci = inv["custom_commercial_invoice"]
+		agreed, ci_number, ci_date = agreed_of.get(ci, (0.0, None, None))
+		drift = _ci_to_pinv.invoice_drift(
+			agreed, ci_lines.get(ci, []), flt(inv["grand_total"]), pinv_lines.get(inv["name"], [])
+		)
+		if drift["in_sync"]:
+			continue
+		delta_sum += drift["delta_total"]
+		rows.append(
+			{
+				"commercial_invoice": ci,
+				"ci_number": ci_number or ci,
+				"ci_date": str(ci_date) if ci_date else None,
+				"purchase_invoice": inv["name"],
+				"supplier": inv.get("supplier"),
+				"posting_date": str(inv["posting_date"]) if inv.get("posting_date") else None,
+				"submitted": cint(inv["docstatus"]) == 1,
+				**drift,
+			}
+		)
+	rows.sort(key=lambda r: abs(r["delta_total"]), reverse=True)
+	return {
+		"rows": rows,
+		"summary": {
+			"checked": len(invoices),
+			"drifting": len(rows),
+			"delta_total": round(delta_sum, 2),
+		},
+		"available": True,
+	}
+
+
+def _allocated_payments(purchase_invoice: str) -> list[dict]:
+	"""Submitted Payment Entries currently allocated to an invoice.
+
+	These are the payments a re-booking would knock loose; they must land on
+	the replacement invoice or the supplier's balance jumps.
+	"""
+	return frappe.db.sql(
+		"""
+		SELECT per.parent AS name, per.allocated_amount
+		FROM `tabPayment Entry Reference` per
+		JOIN `tabPayment Entry` pe ON pe.name = per.parent
+		WHERE per.reference_doctype = 'Purchase Invoice'
+		  AND per.reference_name = %(inv)s
+		  AND pe.docstatus = 1
+		ORDER BY pe.posting_date ASC, pe.name ASC
+		""",
+		{"inv": purchase_invoice},
+		as_dict=True,
+	)
+
+
+@frappe.whitelist()
+def rebook_ci_invoice(commercial_invoice: str, company: str, dry_run: int = 1) -> dict:
+	"""Cancel a drifted Purchase Invoice and re-book it from the CI as it is now.
+
+	``dry_run`` (default 1) returns the plan and writes NOTHING: what will be
+	cancelled, which payments come loose, the new total and lines, and how those
+	payments re-allocate. Only ``dry_run=0`` acts.
+
+	The sequence, in one transaction:
+	  1. re-check the drift (someone may have fixed it meanwhile)
+	  2. cancel the old invoice — its GL reverses, its payments go unallocated
+	  3. create the replacement from the CI's CURRENT lines, dated ci_date,
+	     ``amended_from`` the cancelled one so the audit trail survives
+	  4. guard: the new A/P must equal agreed_total, else roll the whole thing
+	     back — a hole in the ledger is worse than a stale invoice
+	  5. re-allocate exactly the payments that were on the old invoice
+	  6. submit only if the old one was submitted (never leave the supplier
+	     with no payable where one existed)
+
+	Refuses rather than guesses: lines that don't reconcile to agreed_total, a
+	CI without ci_date, or ERPNext configured to block payment unlinking all
+	stop the operation with a named reason.
+	"""
+	_assert_imports_access(company)
+	_assert_cost_visible()
+	if not frappe.db.exists("Commercial Invoice", commercial_invoice):
+		frappe.throw(_("Unknown Commercial Invoice: {0}").format(commercial_invoice))
+	ci = frappe.get_doc("Commercial Invoice", commercial_invoice)
+	if ci.company != company:
+		frappe.throw(_("Commercial Invoice belongs to a different company."))
+
+	report = _ci_invoice_drift(company, commercial_invoice)
+	row = (report.get("rows") or [None])[0]
+	if not row:
+		return {"changed": False, "reason": "in_sync", "commercial_invoice": commercial_invoice}
+
+	old_name = row["purchase_invoice"]
+	old = frappe.get_doc("Purchase Invoice", old_name)
+	agreed = flt(ci.agreed_total)
+	lines = _ci_to_pinv.pinv_lines_from_ci_items(
+		[
+			{"item": it.item, "qty": flt(it.qty), "rate": flt(it.rate), "amount": flt(it.amount)}
+			for it in (ci.items or [])
+		]
+	)
+	blockers = []
+	if not lines:
+		blockers.append(_("The Commercial Invoice has no invoiceable item lines."))
+	if not _ci_to_pinv.reconciles(_ci_to_pinv.lines_total(lines), agreed):
+		blockers.append(
+			_("CI line total {0} does not match agreed_total {1}; fix the invoice first.").format(
+				_ci_to_pinv.lines_total(lines), agreed
+			)
+		)
+	if not ci.ci_date:
+		blockers.append(_("The Commercial Invoice has no date; the replacement cannot be dated."))
+	payments = _allocated_payments(old_name)
+	if payments and not cint(
+		frappe.db.get_single_value("Accounts Settings", "unlink_payment_on_cancellation_of_invoice")
+	):
+		blockers.append(
+			_("Accounts Settings blocks unlinking payments on cancellation; enable it or unallocate first.")
+		)
+
+	plan = {
+		"commercial_invoice": commercial_invoice,
+		"old_invoice": old_name,
+		"old_total": flt(old.grand_total),
+		"old_submitted": cint(old.docstatus) == 1,
+		"new_total": agreed,
+		"delta_total": row["delta_total"],
+		"lines": lines,
+		"payments_to_reallocate": payments,
+		"payments_total": round(sum(flt(p["allocated_amount"]) for p in payments), 2),
+		"posting_date": str(ci.ci_date) if ci.ci_date else None,
+		"blockers": blockers,
+	}
+	if cint(dry_run):
+		plan["changed"] = False
+		plan["dry_run"] = True
+		return plan
+	if blockers:
+		frappe.throw(blockers[0])
+
+	_assert_can_write("Purchase Invoice", old_name, "cancel")
+	# Serialize against a concurrent convert/rebook on the same CI.
+	frappe.db.get_value("Commercial Invoice", commercial_invoice, "name", for_update=True)
+
+	old.cancel()
+	doc = frappe.new_doc("Purchase Invoice")
+	doc.company = company
+	doc.supplier = ci.supplier
+	if ci.currency:
+		doc.currency = ci.currency
+	doc.set_posting_time = 1
+	doc.posting_date = getdate(ci.ci_date)
+	doc.bill_date = getdate(ci.ci_date)
+	doc.bill_no = old.bill_no or commercial_invoice
+	doc.amended_from = old_name
+	if frappe.db.has_column("Purchase Invoice", "custom_commercial_invoice"):
+		doc.custom_commercial_invoice = commercial_invoice
+	container = _single_container_of(commercial_invoice)
+	if container and frappe.db.has_column("Purchase Invoice", "custom_import_container"):
+		doc.custom_import_container = container
+	for ln in lines:
+		doc.append("items", {"item_code": ln["item_code"], "qty": ln["qty"] or 1, "rate": ln["rate"]})
+	doc.insert(ignore_permissions=False)
+
+	if not _ci_to_pinv.reconciles(flt(doc.grand_total), agreed):
+		frappe.db.rollback()
+		frappe.throw(
+			_("Replacement invoice total {0} drifted from agreed_total {1}; nothing was changed.").format(
+				flt(doc.grand_total), agreed
+			)
+		)
+
+	# The payments that were on the old invoice come first; whatever import
+	# advances remain may top up the rest.
+	wanted = {p["name"] for p in payments} | {a["name"] for a in _ci_import_advances(company, ci)}
+	allocated = _restrict_advances_to_import(doc, wanted)
+	doc.save(ignore_permissions=False)
+	if plan["old_submitted"]:
+		doc.submit()  # the ledger must not be left without the payable it had
+
+	plan.update(
+		{
+			"changed": True,
+			"dry_run": False,
+			"new_invoice": doc.name,
+			"new_grand_total": flt(doc.grand_total),
+			"reallocated": allocated,
+			"submitted": plan["old_submitted"],
+		}
+	)
+	return plan
+
+
+@frappe.whitelist()
 def import_advance_aging(company: str) -> dict:
 	"""Unallocated supplier advances aged against the repatriation horizon (WP-I10).
 
@@ -6248,6 +6521,12 @@ def imports_flow(company: str):
 
 	at_sea = sum(ci.get(k, 0) for k in ("ON_BOARD", "IN_TRANSIT"))
 	on_road = sum(trucks.get(k, 0) for k in ("DEPARTED_IRAN", "AT_BORDER", "CROSSED_BORDER", "IN_TRANSIT"))
+	# Invoices whose CI was corrected after the payable was booked. Same rule
+	# module as the CI form's banner — the board never re-derives it.
+	try:
+		book = _ci_invoice_drift(company)["summary"]
+	except Exception:
+		book = {"drifting": 0}  # a diagnostic must never take the board down
 	return {
 		"pi": pi,
 		"ci": ci,
@@ -6256,6 +6535,7 @@ def imports_flow(company: str):
 		"drift": drift,
 		"gate": gate,
 		"grn": grn,
+		"invoice_drift": {"count": cint(book.get("drifting"))},
 		"lcv": {"draft": lcv_draft},
 		"kpi": {
 			"open_pi": pi.get("DRAFT", 0) + pi.get("CONFIRMED", 0),
@@ -6264,3 +6544,326 @@ def imports_flow(company: str):
 			"gate_blocked": gate["blocked"],
 		},
 	}
+
+
+# ---------------------------------------------------------------------------
+# Delete + unlink — PI/CI full CRUD (plan first, then act)
+#
+# Nothing here deletes silently: every endpoint defaults to ``dry_run=1`` and
+# returns the impact report from ``_imports_delete.classify_impact`` — blockers
+# the owner must resolve (live payable, payment, landed cost, received stock,
+# customs declaration) and the operational children that ride along only with
+# an explicit ``cascade=1``. See docs/plans/2026-07-29-pi-ci-full-crud.md.
+# ---------------------------------------------------------------------------
+
+# Doctypes reaching a Commercial Invoice through a plain ``commercial_invoice``
+# Link field. One query each — the reference scan never queries inside a loop.
+_CI_LINK_DOCTYPES = (
+	"Import Container",
+	"Import Truck",
+	"Freight Booking",
+	"Vet Certificate",
+	"Commercial Invoice PO Link",
+	"GRN Checklist",
+	"Customs Declaration",
+	"Import Expense",
+	"Proforma Invoice",
+)
+
+# Children before parents: a container cannot go before the truck that carries it.
+_CI_CASCADE_ORDER = (
+	"GRN Checklist",
+	"Commercial Invoice PO Link",
+	"Vet Certificate",
+	"Freight Booking",
+	"Import Truck",
+	"Import Container",
+)
+
+# "detach" rows keep the record and lose the reference (deleting a Proforma must
+# not destroy shipment history — the CI line just loses its agreement link).
+_DETACH_FIELD = {
+	"Commercial Invoice": "custom_proforma_invoice",
+	"Commercial Invoice Item": "custom_proforma_invoice",
+}
+
+
+def _add_refs(refs: dict, doctype: str, rows) -> None:
+	"""Collect reference rows, de-duplicated by name."""
+	seen = {r["name"] for r in refs.get(doctype) or []}
+	for row in rows or []:
+		if row.get("name") and row["name"] not in seen:
+			seen.add(row["name"])
+			refs.setdefault(doctype, []).append({"name": row["name"], "docstatus": cint(row.get("docstatus"))})
+
+
+def _ci_reference_rows(company: str, ci: str) -> dict:
+	"""Everything pointing at this Commercial Invoice, one query per doctype."""
+	refs: dict = {}
+	for doctype in _CI_LINK_DOCTYPES:
+		_add_refs(
+			refs,
+			doctype,
+			frappe.get_all(doctype, filters={"commercial_invoice": ci}, fields=["name", "docstatus"]),
+		)
+
+	# The live payable. ``custom_commercial_invoice`` does not exist on every
+	# site, and ``convert_ci_to_purchase_invoice`` also writes the CI name into
+	# ``bill_no`` — matching both is what makes the blocker fire everywhere.
+	where = ["pi.bill_no = %(ci)s"]
+	if frappe.db.has_column("Purchase Invoice", "custom_commercial_invoice"):
+		where.append("pi.custom_commercial_invoice = %(ci)s")
+	_add_refs(
+		refs,
+		"Purchase Invoice",
+		frappe.db.sql(
+			"""SELECT pi.name, pi.docstatus FROM `tabPurchase Invoice` pi
+			   WHERE pi.company = %(company)s AND pi.docstatus < 2 AND ({0})""".format(" OR ".join(where)),
+			{"ci": ci, "company": company},
+			as_dict=True,
+		),
+	)
+
+	# Container advances sit on the Payment Entry, not on the CI.
+	containers = [r["name"] for r in refs.get("Import Container") or []]
+	if containers and frappe.db.has_column("Payment Entry", "custom_import_container"):
+		_add_refs(
+			refs,
+			"Payment Entry",
+			frappe.get_all(
+				"Payment Entry",
+				filters={
+					"company": company,
+					"docstatus": ["<", 2],
+					"custom_import_container": ["in", containers],
+				},
+				fields=["name", "docstatus"],
+			),
+		)
+
+	# Landed cost hangs off the GRN checklist (GRN → GRN LCV Ref → LCV).
+	grns = [r["name"] for r in refs.get("GRN Checklist") or []]
+	if grns:
+		lcvs = [
+			r["lcv"]
+			for r in frappe.get_all("GRN LCV Ref", filters={"parent": ["in", grns]}, fields=["lcv"])
+			if r.get("lcv")
+		]
+		if lcvs:
+			_add_refs(
+				refs,
+				"Landed Cost Voucher",
+				frappe.get_all(
+					"Landed Cost Voucher",
+					filters={"name": ["in", lcvs], "docstatus": ["<", 2]},
+					fields=["name", "docstatus"],
+				),
+			)
+	return refs
+
+
+def _proforma_reference_rows(company: str, proforma: str, linked_ci: str | None) -> dict:
+	"""Everything pointing at this Proforma Invoice — CI header + CI lines."""
+	refs: dict = {}
+	if frappe.db.has_column("Commercial Invoice Item", "custom_proforma_invoice"):
+		_add_refs(
+			refs,
+			"Commercial Invoice Item",
+			frappe.get_all(
+				"Commercial Invoice Item",
+				filters={"custom_proforma_invoice": proforma},
+				fields=["name", "docstatus"],
+			),
+		)
+	if frappe.db.has_column("Commercial Invoice", "custom_proforma_invoice"):
+		_add_refs(
+			refs,
+			"Commercial Invoice",
+			frappe.get_all(
+				"Commercial Invoice",
+				filters={"company": company, "custom_proforma_invoice": proforma},
+				fields=["name", "docstatus"],
+			),
+		)
+	# The supersede link lives on the Proforma too — on a site without the
+	# custom column that is the only trace of it.
+	if linked_ci and frappe.db.exists("Commercial Invoice", linked_ci):
+		_add_refs(refs, "Commercial Invoice", [{"name": linked_ci, "docstatus": 0}])
+	return refs
+
+
+def _cascade_order(cascade: dict) -> list[str]:
+	known = [dt for dt in _CI_CASCADE_ORDER if dt in cascade]
+	return known + [dt for dt in sorted(cascade) if dt not in _CI_CASCADE_ORDER]
+
+
+def _apply_cascade(cascade: dict) -> list[dict]:
+	"""Remove (or detach) the operational children. Caller owns the transaction."""
+	applied = []
+	for doctype in _cascade_order(cascade):
+		mode = _imports_delete.cascade_mode(doctype)
+		if mode == "ignore":
+			continue
+		for name in cascade[doctype] or []:
+			if mode == "detach":
+				field = _DETACH_FIELD.get(doctype)
+				if not field or not frappe.db.has_column(doctype, field):
+					continue
+				frappe.db.set_value(doctype, name, field, None, update_modified=False)
+			else:
+				frappe.delete_doc(doctype, name, ignore_permissions=True)
+			applied.append({"doctype": doctype, "name": name, "mode": mode})
+	return applied
+
+
+def _cascade_count(cascade: dict) -> int:
+	return sum(len(v or []) for v in (cascade or {}).values())
+
+
+def _cascade_modes(cascade: dict) -> dict:
+	"""How each cascade doctype is applied, so the impact report can say it.
+
+	A screen that promises "this will be deleted" where the row is only
+	detached would be lying to the owner at the exact moment they decide.
+	"""
+	return {dt: _imports_delete.cascade_mode(dt) for dt in (cascade or {})}
+
+
+def _assert_cascade_allowed(plan: dict, cascade: int) -> None:
+	if plan["cascade"] and not cint(cascade):
+		frappe.throw(
+			_("{0} linked record(s) still hang off this document — confirm “delete linked records” first.").format(
+				_cascade_count(plan["cascade"])
+			)
+		)
+
+
+@frappe.whitelist()
+def delete_commercial_invoice(company: str, name: str, cascade: int = 0, dry_run: int = 1) -> dict:
+	"""Delete a Commercial Invoice — impact report first, deletion only on demand.
+
+	``dry_run`` (default 1) writes NOTHING and returns
+	``{blockers, cascade, deletable, dry_run: True}``: the accounting documents
+	that stop the deletion (each with a named reason) and the operational
+	children that would be removed. Only ``dry_run=0`` acts, and only with
+	``cascade=1`` when children exist. Children go first, then the invoice, in
+	one transaction — any failure rolls the whole thing back.
+	"""
+	_assert_imports_access(company)
+	_assert_cost_visible()
+	if not frappe.db.exists("Commercial Invoice", name):
+		frappe.throw(_("Unknown Commercial Invoice: {0}").format(name))
+	if frappe.db.get_value("Commercial Invoice", name, "company") != company:
+		frappe.throw(_("Commercial Invoice belongs to a different company."))
+	_assert_can_write("Commercial Invoice", name, "delete")
+
+	plan = _imports_delete.classify_impact(_ci_reference_rows(company, name))
+	plan["commercial_invoice"] = name
+	plan["cascade_count"] = _cascade_count(plan["cascade"])
+	plan["cascade_modes"] = _cascade_modes(plan["cascade"])
+	if cint(dry_run):
+		plan["dry_run"] = True
+		plan["changed"] = False
+		return plan
+
+	if plan["blockers"]:
+		frappe.throw(plan["blockers"][0]["reason"])
+	_assert_cascade_allowed(plan, cascade)
+
+	try:
+		frappe.db.get_value("Commercial Invoice", name, "name", for_update=True)
+		applied = _apply_cascade(plan["cascade"])
+		frappe.delete_doc("Commercial Invoice", name, ignore_permissions=True)
+	except Exception as exc:
+		frappe.db.rollback()
+		frappe.throw(_("Deletion was rolled back: {0}").format(str(exc)))
+
+	plan.update({"dry_run": False, "changed": True, "deleted": name, "applied": applied})
+	return plan
+
+
+@frappe.whitelist()
+def delete_proforma_invoice(company: str, name: str, cascade: int = 0, dry_run: int = 1) -> dict:
+	"""Delete a Proforma Invoice — impact report first, deletion only on demand.
+
+	Same contract as :func:`delete_commercial_invoice`, with one difference that
+	matters: a Commercial Invoice that quotes this proforma is **detached, not
+	deleted** — the shipment stays, it simply loses its agreement link (the
+	discrepancies screen already reports those as shipped-without-a-PI).
+	"""
+	_assert_imports_access(company)
+	_assert_cost_visible()
+	if not frappe.db.exists("Proforma Invoice", name):
+		frappe.throw(_("Unknown Proforma Invoice: {0}").format(name))
+	row = frappe.db.get_value("Proforma Invoice", name, ["company", "commercial_invoice"], as_dict=True)
+	if (row or {}).get("company") != company:
+		frappe.throw(_("Proforma Invoice belongs to a different company."))
+	_assert_can_write("Proforma Invoice", name, "delete")
+
+	plan = _imports_delete.classify_impact(
+		_proforma_reference_rows(company, name, (row or {}).get("commercial_invoice"))
+	)
+	plan["proforma"] = name
+	plan["cascade_count"] = _cascade_count(plan["cascade"])
+	plan["cascade_modes"] = _cascade_modes(plan["cascade"])
+	if cint(dry_run):
+		plan["dry_run"] = True
+		plan["changed"] = False
+		return plan
+
+	if plan["blockers"]:
+		frappe.throw(plan["blockers"][0]["reason"])
+	_assert_cascade_allowed(plan, cascade)
+
+	try:
+		frappe.db.get_value("Proforma Invoice", name, "name", for_update=True)
+		applied = _apply_cascade(plan["cascade"])
+		frappe.delete_doc("Proforma Invoice", name, ignore_permissions=True)
+	except Exception as exc:
+		frappe.db.rollback()
+		frappe.throw(_("Deletion was rolled back: {0}").format(str(exc)))
+
+	plan.update({"dry_run": False, "changed": True, "deleted": name, "applied": applied})
+	return plan
+
+
+@frappe.whitelist()
+def unlink_proforma_from_ci(company: str, proforma: str, commercial_invoice: str) -> dict:
+	"""Undo a supersede link — the exact inverse of :func:`link_proforma_to_ci`.
+
+	Clears ``PI.commercial_invoice``, rolls ``SUPERSEDED_BY_CI`` back to
+	``CONFIRMED`` and blanks ``CI.custom_proforma_invoice``. Idempotent: an
+	already-unlinked proforma returns ``changed: False`` instead of throwing.
+	Unlike the CI, the Proforma has no transition guard in ``validate`` — so
+	this sets the status the same way the link endpoint does, and invents no
+	new bypass.
+	"""
+	_assert_imports_access(company)
+	if not frappe.db.exists("Proforma Invoice", proforma):
+		frappe.throw(_("Unknown Proforma Invoice: {0}").format(proforma))
+	pi = frappe.get_doc("Proforma Invoice", proforma)
+	if pi.company != company:
+		frappe.throw(_("Proforma Invoice belongs to a different company."))
+	_assert_can_write("Proforma Invoice", proforma, "write")
+
+	linked = pi.get("commercial_invoice") or ""
+	if linked and commercial_invoice and linked != commercial_invoice:
+		frappe.throw(
+			_("Proforma {0} is linked to {1}, not to {2}.").format(proforma, linked, commercial_invoice)
+		)
+	if not linked and pi.status != _proforma.SUPERSEDED:
+		return {"proforma": proforma, "status": pi.status, "commercial_invoice": None, "changed": False}
+
+	target = linked or commercial_invoice
+	pi.commercial_invoice = None
+	if pi.status == _proforma.SUPERSEDED:
+		pi.status = _proforma.CONFIRMED
+	pi.save(ignore_permissions=True)
+	if (
+		target
+		and frappe.db.has_column("Commercial Invoice", "custom_proforma_invoice")
+		and frappe.db.get_value("Commercial Invoice", target, "custom_proforma_invoice") == proforma
+	):
+		frappe.db.set_value("Commercial Invoice", target, "custom_proforma_invoice", None, update_modified=False)
+
+	return {"proforma": proforma, "status": pi.status, "commercial_invoice": None, "changed": True}

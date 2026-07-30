@@ -39,15 +39,6 @@ Price Lists (Item Prices),Narx ro'yxatlari (Tovar narxlari)
 A GRN checklist is created from a commercial invoice once cargo is ready to receive.,Qabul varaqasi tijorat invoysidan yuk qabulga tayyor boʻlganda yaratiladi.
 A Payroll Attendance Summary for employee {0} and period {1} already exists: {2},
 A category is required.,Turkum talab qilinadi.
-Tender CRM,Tender CRM
-All tenders,Barcha tenderlar
-Lots,Lotlar
-Parent tender,Asosiy tender
-Bid Preparation,Ariza tayyorlash
-Submission deadline,Topshirish muddati
-No tenders found,Tenderlar topilmadi
-Back to all tenders,Barcha tenderlarga qaytish
-Open lot workspace,Lot ish maydonini ochish
 A certificate number is required.,Sertifikat raqami talab qilinadi.
 A cleared customs declaration is active: its duty and excise replace any ,
 A cleared customs declaration is active: its duty and excise replace any Uzbekistan Customs Duty cost line in the next voucher (VAT is never capitalized).,Rasmiylashtirilgan bojxona deklaratsiyasi faol: uning boji va aktsizi keyingi vaucherdagi «O‘zbekiston bojxona boji» qatorini almashtiradi (QQS hech qachon kapitallashtirilmaydi).
@@ -4897,6 +4888,75 @@ Session opened,Seans ochildi
 Signing out,Tizimdan chiqish
 "Signing out securely…","Xavfsiz chiqish bajarilmoqda…"
 "Could not sign out. Please try again.","Tizimdan chiqib bo‘lmadi. Qayta urinib ko‘ring."
+Accounting voucher,Buxgalteriya hujjati
+This invoice no longer matches the booked payable.,Bu hisob-faktura kitobga olingan qarzdorlikka mos kelmaydi.
+Agreed now,Hozirgi kelishuv
+{count} line(s) changed,{count} qator o‘zgardi
+{count} line(s) added,{count} qator qo‘shildi
+{count} line(s) removed,{count} qator o‘chirildi
+Accounting must cancel and re-book the invoice to correct the ledger.,"Hisobni tuzatish uchun buxgalteriya hisob-fakturani bekor qilib, qayta kitobga olishi kerak."
+Open the booked invoice,Kitobga olingan hisob-fakturani ochish
+Invoices changed after booking,Kitobga olingandan keyin o‘zgargan hisob-fakturalar
+Cancel and re-book,"Bekor qilib, qayta kitobga olish"
+Re-book the invoice?,Hisob-faktura qayta kitobga olinsinmi?
+Cancel {invoice} ({old}) and re-book at {new}.,"{invoice} ({old}) bekor qilinib, {new} bilan qayta kitobga olinadi."
+{count} payment(s) totalling {amount} will be re-allocated.,"{count} ta to‘lov, jami {amount}, qayta taqsimlanadi."
+No payments are allocated to it.,Unga hech qanday to‘lov biriktirilmagan.
+The booked invoice already matches this document.,Kitobga olingan hisob-faktura bu hujjatga allaqachon mos.
+Re-booked as {invoice}.,{invoice} sifatida qayta kitobga olindi.
+Could not re-book the invoice.,Hisob-fakturani qayta kitobga olib bo‘lmadi.
+Commercial invoice,Tijorat invoysi
+Commercial invoice line,Tijorat invoysi qatori
+Freight booking,Yuk tashish bronlashi
+Import expense,Import xarajati
+Landed cost voucher,Yetkazib berish qiymati vaucheri
+Proforma,Proforma
+Purchase invoice,Xarid qilish hisob-fakturasi
+Purchase order link,Xarid buyurtmasi bog‘lanishi
+Customs declaration {name} exists — an official declaration is never deleted from here.,{name} bojxona deklaratsiyasi mavjud — rasmiy deklaratsiya bu yerdan hech qachon o‘chirilmaydi.
+GRN checklist {name} is submitted — stock was received. Cancel it first.,{name} qabul varaqasi tasdiqlangan — tovar qabul qilingan. Avval uni bekor qiling.
+Landed cost voucher {name} is not cancelled — landed cost is spread over stock. Cancel it first.,{name} yetkazib berish qiymati vaucheri bekor qilinmagan — xarajat zaxiraga taqsimlangan. Avval uni bekor qiling.
+Payment {name} is not cancelled — money is already booked against this document. Cancel the payment first.,{name} to‘lovi bekor qilinmagan — pul bu hujjat bo‘yicha allaqachon kitobga olingan. Avval to‘lovni bekor qiling.
+Proforma {name} is still superseded by this invoice — remove the link first.,{name} proformasi hali ham shu invoys bilan almashtirilgan — avval bog‘lanishni olib tashlang.
+Purchase invoice {name} is not cancelled — a live payable sits on the ledger. Cancel the invoice first.,{name} xarid hisob-fakturasi bekor qilinmagan — hisobda ochiq qarz turibdi. Avval hisob-fakturani bekor qiling.
+{doctype} {name} is linked and has no deletion rule — resolve it manually first.,{doctype} {name} bog‘langan va o‘chirish qoidasi yo‘q — avval uni qo‘lda hal qiling.
+Also delete the linked records,Bog‘langan yozuvlarni ham o‘chirish
+Commercial invoice {name} deleted.,{name} tijorat invoysi o‘chirildi.
+Could not check what depends on this invoice.,Bu invoysga nima bog‘liqligini tekshirib bo‘lmadi.
+Could not delete the commercial invoice.,Tijorat invoysini o‘chirib bo‘lmadi.
+Could not unlink the proforma.,Proforma bog‘lanishini olib tashlab bo‘lmadi.
+Delete commercial invoice,Tijorat invoysini o‘chirish
+Delete permanently,Butunlay o‘chirish
+Delete this commercial invoice?,Bu tijorat invoysi o‘chirilsinmi?
+Deleting shows everything that depends on this invoice before anything is removed.,O‘chirish avval bu invoysga bog‘liq hamma narsani ko‘rsatadi.
+Nothing else points at this invoice.,Bu invoysga boshqa hech narsa ishora qilmaydi.
+Proforma unlinked.,Proforma bog‘lanishi olib tashlandi.
+The proforma was already unlinked.,Proforma bog‘lanishi allaqachon olib tashlangan edi.
+These linked records go with it:,U bilan birga quyidagi bog‘langan yozuvlar ketadi:
+This cannot be deleted yet:,Buni hozircha o‘chirib bo‘lmaydi:
+Unlink proforma,Proforma bog‘lanishini olib tashlash
+Unlink the proforma?,Proforma bog‘lanishi olib tashlansinmi?
+deleted,o‘chiriladi
+"link removed, record kept","bog‘lanish olib tashlanadi, yozuv saqlanadi"
+{name} and {count} linked record(s) will be removed. This cannot be undone.,{name} va {count} ta bog‘langan yozuv o‘chiriladi. Buni qaytarib bo‘lmaydi.
+{name} will be removed. This cannot be undone.,{name} o‘chiriladi. Buni qaytarib bo‘lmaydi.
+{proforma} goes back to open and this invoice loses its agreement link.,{proforma} yana ochiq holatga qaytadi va bu invoys kelishuv bog‘lanishini yo‘qotadi.
+Could not check what depends on this proforma.,Bu proformaga nima bog‘liqligini tekshirib bo‘lmadi.
+Could not delete the proforma.,Proformani o‘chirib bo‘lmadi.
+Delete proforma,Proformani o‘chirish
+Delete this proforma?,Bu proforma o‘chirilsinmi?
+Deleting shows everything that depends on this proforma before anything is removed.,O‘chirish avval bu proformaga bog‘liq hamma narsani ko‘rsatadi.
+Nothing else points at this proforma.,Bu proformaga boshqa hech narsa ishora qilmaydi.
+Proforma {name} deleted.,{name} proformasi o‘chirildi.
+Tender CRM,Tender CRM
+All tenders,Barcha tenderlar
+Lots,Lotlar
+Parent tender,Asosiy tender
+Bid Preparation,Ariza tayyorlash
+Submission deadline,Topshirish muddati
+No tenders found,Tenderlar topilmadi
+Back to all tenders,Barcha tenderlarga qaytish
+Open lot workspace,Lot ish maydonini ochish
 Preparation,Tayyorgarlik
 Awaiting Result,Natija kutilmoqda
 Partial Result,Qismiy natija

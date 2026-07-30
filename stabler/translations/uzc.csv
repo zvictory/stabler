@@ -39,15 +39,6 @@ Price Lists (Item Prices),Нарх рўйхатлари (Товар нархла
 A GRN checklist is created from a commercial invoice once cargo is ready to receive.,Қабул варақаси тижорат инвойсидан юк қабулга тайёр бўлганда яратилади.
 A Payroll Attendance Summary for employee {0} and period {1} already exists: {2},
 A category is required.,Туркум талаб қилинади.
-Tender CRM,Tender CRM
-All tenders,Барча тендерлар
-Lots,Лотлар
-Parent tender,Асосий тендер
-Bid Preparation,Ариза тайёрлаш
-Submission deadline,Топшириш муддати
-No tenders found,Тендерлар топилмади
-Back to all tenders,Барча тендерларга қайтиш
-Open lot workspace,Лот иш майдонини очиш
 A certificate number is required.,Сертификат рақами талаб қилинади.
 A cleared customs declaration is active: its duty and excise replace any ,
 A cleared customs declaration is active: its duty and excise replace any Uzbekistan Customs Duty cost line in the next voucher (VAT is never capitalized).,Расмийлаштирилган божхона декларацияси фаол: унинг божи ва акцизи кейинги ваучердаги «Ўзбекистон божхона божи» қаторини алмаштиради (ҚҚС ҳеч қачон капиталлаштирилмайди).
@@ -4897,6 +4888,75 @@ Session opened,Сеанс очилди
 Signing out,Тизимдан чиқиш
 "Signing out securely…","Хавфсиз чиқиш бажарилмоқда…"
 "Could not sign out. Please try again.","Тизимдан чиқиб бўлмади. Қайта уриниб кўринг."
+Accounting voucher,Бухгалтерия ҳужжати
+This invoice no longer matches the booked payable.,Бу ҳисоб-фактура китобга олинган қарздорликка мос келмайди.
+Agreed now,Ҳозирги келишув
+{count} line(s) changed,{count} қатор ўзгарди
+{count} line(s) added,{count} қатор қўшилди
+{count} line(s) removed,{count} қатор ўчирилди
+Accounting must cancel and re-book the invoice to correct the ledger.,"Ҳисобни тузатиш учун бухгалтерия ҳисоб-фактурани бекор қилиб, қайта китобга олиши керак."
+Open the booked invoice,Китобга олинган ҳисоб-фактурани очиш
+Invoices changed after booking,Китобга олингандан кейин ўзгарган ҳисоб-фактуралар
+Cancel and re-book,"Бекор қилиб, қайта китобга олиш"
+Re-book the invoice?,Ҳисоб-фактура қайта китобга олинсинми?
+Cancel {invoice} ({old}) and re-book at {new}.,"{invoice} ({old}) бекор қилиниб, {new} билан қайта китобга олинади."
+{count} payment(s) totalling {amount} will be re-allocated.,"{count} та тўлов, жами {amount}, қайта тақсимланади."
+No payments are allocated to it.,Унга ҳеч қандай тўлов бириктирилмаган.
+The booked invoice already matches this document.,Китобга олинган ҳисоб-фактура бу ҳужжатга аллақачон мос.
+Re-booked as {invoice}.,{invoice} сифатида қайта китобга олинди.
+Could not re-book the invoice.,Ҳисоб-фактурани қайта китобга олиб бўлмади.
+Commercial invoice,Тижорат инвойси
+Commercial invoice line,Тижорат инвойси қатори
+Freight booking,Юк ташиш бронлаши
+Import expense,Импорт харажати
+Landed cost voucher,Етказиб бериш қиймати ваучери
+Proforma,Проформа
+Purchase invoice,Сотиб олиш ҳисоб-фактураси
+Purchase order link,Харид буюртмаси боғланиши
+Customs declaration {name} exists — an official declaration is never deleted from here.,{name} божхона декларацияси мавжуд — расмий декларация бу ердан ҳеч қачон ўчирилмайди.
+GRN checklist {name} is submitted — stock was received. Cancel it first.,{name} қабул варақаси тасдиқланган — товар қабул қилинган. Аввал уни бекор қилинг.
+Landed cost voucher {name} is not cancelled — landed cost is spread over stock. Cancel it first.,{name} етказиб бериш қиймати ваучери бекор қилинмаган — харажат захирага тақсимланган. Аввал уни бекор қилинг.
+Payment {name} is not cancelled — money is already booked against this document. Cancel the payment first.,{name} тўлови бекор қилинмаган — пул бу ҳужжат бўйича аллақачон китобга олинган. Аввал тўловни бекор қилинг.
+Proforma {name} is still superseded by this invoice — remove the link first.,{name} проформаси ҳали ҳам шу инвойс билан алмаштирилган — аввал боғланишни олиб ташланг.
+Purchase invoice {name} is not cancelled — a live payable sits on the ledger. Cancel the invoice first.,{name} харид ҳисоб-фактураси бекор қилинмаган — ҳисобда очиқ қарз турибди. Аввал ҳисоб-фактурани бекор қилинг.
+{doctype} {name} is linked and has no deletion rule — resolve it manually first.,{doctype} {name} боғланган ва ўчириш қоидаси йўқ — аввал уни қўлда ҳал қилинг.
+Also delete the linked records,Боғланган ёзувларни ҳам ўчириш
+Commercial invoice {name} deleted.,{name} тижорат инвойси ўчирилди.
+Could not check what depends on this invoice.,Бу инвойсга нима боғлиқлигини текшириб бўлмади.
+Could not delete the commercial invoice.,Тижорат инвойсини ўчириб бўлмади.
+Could not unlink the proforma.,Проформа боғланишини олиб ташлаб бўлмади.
+Delete commercial invoice,Тижорат инвойсини ўчириш
+Delete permanently,Бутунлай ўчириш
+Delete this commercial invoice?,Бу тижорат инвойси ўчирилсинми?
+Deleting shows everything that depends on this invoice before anything is removed.,Ўчириш аввал бу инвойсга боғлиқ ҳамма нарсани кўрсатади.
+Nothing else points at this invoice.,Бу инвойсга бошқа ҳеч нарса ишора қилмайди.
+Proforma unlinked.,Проформа боғланиши олиб ташланди.
+The proforma was already unlinked.,Проформа боғланиши аллақачон олиб ташланган эди.
+These linked records go with it:,У билан бирга қуйидаги боғланган ёзувлар кетади:
+This cannot be deleted yet:,Буни ҳозирча ўчириб бўлмайди:
+Unlink proforma,Проформа боғланишини олиб ташлаш
+Unlink the proforma?,Проформа боғланиши олиб ташлансинми?
+deleted,ўчирилади
+"link removed, record kept","боғланиш олиб ташланади, ёзув сақланади"
+{name} and {count} linked record(s) will be removed. This cannot be undone.,{name} ва {count} та боғланган ёзув ўчирилади. Буни қайтариб бўлмайди.
+{name} will be removed. This cannot be undone.,{name} ўчирилади. Буни қайтариб бўлмайди.
+{proforma} goes back to open and this invoice loses its agreement link.,{proforma} яна очиқ ҳолатга қайтади ва бу инвойс келишув боғланишини йўқотади.
+Could not check what depends on this proforma.,Бу проформага нима боғлиқлигини текшириб бўлмади.
+Could not delete the proforma.,Проформани ўчириб бўлмади.
+Delete proforma,Проформани ўчириш
+Delete this proforma?,Бу проформа ўчирилсинми?
+Deleting shows everything that depends on this proforma before anything is removed.,Ўчириш аввал бу проформага боғлиқ ҳамма нарсани кўрсатади.
+Nothing else points at this proforma.,Бу проформага бошқа ҳеч нарса ишора қилмайди.
+Proforma {name} deleted.,{name} проформаси ўчирилди.
+Tender CRM,Tender CRM
+All tenders,Барча тендерлар
+Lots,Лотлар
+Parent tender,Асосий тендер
+Bid Preparation,Ариза тайёрлаш
+Submission deadline,Топшириш муддати
+No tenders found,Тендерлар топилмади
+Back to all tenders,Барча тендерларга қайтиш
+Open lot workspace,Лот иш майдонини очиш
 Preparation,Тайёргарлик
 Awaiting Result,Натижа кутилмоқда
 Partial Result,Қисмий натижа

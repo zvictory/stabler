@@ -9,6 +9,7 @@ import { t } from "../../composables/i18n.js";
 import { formatDate } from "../../composables/date.js";
 import { formatMoney } from "../../composables/money.js";
 import { getStatusBadgeClass } from "../../composables/status.js";
+import { blockerText, cascadeRows, recordRoute } from "../../composables/deleteImpact.js";
 import { useToast } from "../../composables/useToast.js";
 import { useConfirm } from "../../composables/useConfirm.js";
 import { useEscapeBack } from "../../composables/useEscapeBack.js";
@@ -911,6 +912,182 @@ const fn = (v) => {
 	}).format(Number(v) || 0);
 };
 
+// --- Booked-invoice drift -------------------------------------------------
+// A submitted Purchase Invoice can never follow the CI's later corrections, so
+// the A/P silently stops describing the deal. We only ever REPORT the gap here;
+// re-booking cancels GL vouchers and un-allocates payments, which is an
+// explicit, approved action — never a side effect of opening this form.
+const drift = ref(null);
+async function loadDrift() {
+	drift.value = null;
+	if (isCreate.value || !docName.value || !activeCompany.value) return;
+	try {
+		const res = await call("stabler.api.imports.ci_invoice_drift", {
+			company: activeCompany.value,
+			commercial_invoice: docName.value,
+		});
+		drift.value = (res?.rows || [])[0] || null;
+	} catch {
+		drift.value = null; // never block the form on a diagnostic
+	}
+}
+
+// Re-booking cancels a GL voucher and knocks its payments loose, so it never
+// runs on a single click: fetch the plan, show exactly what will happen, and
+// only act on an explicit confirmation.
+const rebooking = ref(false);
+async function rebookInvoice() {
+	if (rebooking.value) return;
+	rebooking.value = true;
+	try {
+		const plan = await call("stabler.api.imports.rebook_ci_invoice", {
+			company: activeCompany.value,
+			commercial_invoice: docName.value,
+			dry_run: 1,
+		});
+		if (plan?.reason === "in_sync") {
+			toast.success(t("The booked invoice already matches this document."));
+			await loadDrift();
+			return;
+		}
+		if (plan?.blockers?.length) {
+			toast.error(plan.blockers[0]);
+			return;
+		}
+		const lines = [
+			t("Cancel {invoice} ({old}) and re-book at {new}.", {
+				invoice: plan.old_invoice,
+				old: fm(plan.old_total, form.value.currency),
+				new: fm(plan.new_total, form.value.currency),
+			}),
+			plan.payments_to_reallocate.length
+				? t("{count} payment(s) totalling {amount} will be re-allocated.", {
+					count: plan.payments_to_reallocate.length,
+					amount: fm(plan.payments_total, form.value.currency),
+				})
+				: t("No payments are allocated to it."),
+		];
+		const ok = await confirm({
+			title: t("Re-book the invoice?"),
+			body: lines.join(" "),
+			confirmLabel: t("Cancel and re-book"),
+			danger: true,
+		});
+		if (!ok) return;
+		const res = await call("stabler.api.imports.rebook_ci_invoice", {
+			company: activeCompany.value,
+			commercial_invoice: docName.value,
+			dry_run: 0,
+		});
+		toast.success(t("Re-booked as {invoice}.", { invoice: res.new_invoice }));
+		await loadDrift();
+	} catch (err) {
+		toast.error(err?.message || t("Could not re-book the invoice."));
+	} finally {
+		rebooking.value = false;
+	}
+}
+
+// Deleting a CI reaches into containers, trucks and — where an invoice was
+// booked — the ledger. So the button never deletes: it asks the endpoint what
+// would happen (dry run, writes nothing), puts that report on screen, and only
+// an explicit red confirmation acts on it.
+const deleteModalOpen = ref(false);
+const deletePlan = ref(null);
+const deletePlanning = ref(false);
+const deleteCascade = ref(false);
+const deleting = ref(false);
+
+const deleteBlockers = computed(() => deletePlan.value?.blockers || []);
+const deleteCascadeRows = computed(() => cascadeRows(deletePlan.value));
+const deleteCascadeCount = computed(() => deletePlan.value?.cascade_count || 0);
+// A blocker is the owner's job to clear; a cascade is theirs to accept.
+const canDelete = computed(() => {
+	if (!deletePlan.value?.deletable) return false;
+	return !deleteCascadeCount.value || deleteCascade.value;
+});
+
+async function openDeletePlan() {
+	if (deletePlanning.value || !docName.value) return;
+	deletePlanning.value = true;
+	deletePlan.value = null;
+	deleteCascade.value = false;
+	try {
+		deletePlan.value = await call("stabler.api.imports.delete_commercial_invoice", {
+			company: activeCompany.value,
+			name: docName.value,
+			dry_run: 1,
+		});
+		deleteModalOpen.value = true;
+	} catch (err) {
+		toast.error(err?.message || t("Could not check what depends on this invoice."));
+	} finally {
+		deletePlanning.value = false;
+	}
+}
+
+async function confirmDelete() {
+	if (deleting.value || !canDelete.value) return;
+	const label = form.value.ci_number || docName.value;
+	const ok = await confirm({
+		title: t("Delete this commercial invoice?"),
+		body: deleteCascadeCount.value
+			? t("{name} and {count} linked record(s) will be removed. This cannot be undone.", {
+				name: label,
+				count: deleteCascadeCount.value,
+			})
+			: t("{name} will be removed. This cannot be undone.", { name: label }),
+		confirmLabel: t("Delete permanently"),
+		danger: true,
+	});
+	if (!ok) return;
+	deleting.value = true;
+	try {
+		await call("stabler.api.imports.delete_commercial_invoice", {
+			company: activeCompany.value,
+			name: docName.value,
+			cascade: deleteCascade.value ? 1 : 0,
+			dry_run: 0,
+		});
+		deleteModalOpen.value = false;
+		toast.success(t("Commercial invoice {name} deleted.", { name: label }));
+		router.push("/imports/commercial-invoices");
+	} catch (err) {
+		toast.error(err?.message || t("Could not delete the commercial invoice."));
+	} finally {
+		deleting.value = false;
+	}
+}
+
+// Linking a proforma to a CI used to be one-way, so a mis-match stayed wrong
+// forever. Unlinking hands the proforma back its open balance.
+const unlinking = ref(false);
+async function unlinkProforma() {
+	const proforma = form.value.custom_proforma_invoice;
+	if (unlinking.value || !proforma || !docName.value) return;
+	const ok = await confirm({
+		title: t("Unlink the proforma?"),
+		body: t("{proforma} goes back to open and this invoice loses its agreement link.", { proforma }),
+		confirmLabel: t("Unlink"),
+		danger: true,
+	});
+	if (!ok) return;
+	unlinking.value = true;
+	try {
+		const res = await call("stabler.api.imports.unlink_proforma_from_ci", {
+			company: activeCompany.value,
+			proforma,
+			commercial_invoice: docName.value,
+		});
+		toast.success(res?.changed ? t("Proforma unlinked.") : t("The proforma was already unlinked."));
+		await loadDoc();
+	} catch (err) {
+		toast.error(err?.message || t("Could not unlink the proforma."));
+	} finally {
+		unlinking.value = false;
+	}
+}
+
 onMounted(async () => {
 	loadItemsList();
 	loadRefData();
@@ -918,8 +1095,12 @@ onMounted(async () => {
 	if (isCreate.value && route.query.proforma) {
 		await loadProformaIntoCi(String(route.query.proforma));
 	}
+	loadDrift();
 });
-watch(docName, loadDoc);
+watch(docName, async () => {
+	await loadDoc();
+	loadDrift();
+});
 watch(activeCompany, loadRefData);
 </script>
 
@@ -958,6 +1139,46 @@ watch(activeCompany, loadRefData);
 		</div>
 
 		<div v-if="error" class="alert alert-danger">{{ error }}</div>
+
+		<!-- Booked A/P no longer matches this invoice -->
+		<div v-if="drift" class="alert alert-warning d-flex flex-wrap align-items-center gap-2">
+			<i class="ti ti-alert-triangle"></i>
+			<div>
+				<div class="fw-semibold">{{ t("This invoice no longer matches the booked payable.") }}</div>
+				<div class="small">
+					{{ t("Agreed now") }}: <span class="font-monospace">{{ fm(drift.agreed_total, form.currency) }}</span>
+					· {{ t("Booked") }}: <span class="font-monospace">{{ fm(drift.invoiced_total, form.currency) }}</span>
+					· {{ t("Difference") }}:
+					<span class="font-monospace fw-bold" :class="drift.delta_total > 0 ? 'text-red' : 'text-orange'">
+						{{ fm(drift.delta_total, form.currency) }}
+					</span>
+					<span v-if="drift.lines_changed.length" class="ms-1">
+						· {{ t("{count} line(s) changed", { count: drift.lines_changed.length }) }}
+					</span>
+					<span v-if="drift.lines_added.length" class="ms-1">
+						· {{ t("{count} line(s) added", { count: drift.lines_added.length }) }}
+					</span>
+					<span v-if="drift.lines_removed.length" class="ms-1">
+						· {{ t("{count} line(s) removed", { count: drift.lines_removed.length }) }}
+					</span>
+				</div>
+				<div class="small text-secondary">
+					{{ t("Accounting must cancel and re-book the invoice to correct the ledger.") }}
+				</div>
+			</div>
+			<div class="ms-auto d-flex gap-2">
+				<router-link
+					:to="{ name: 'purchasing-invoice', params: { name: drift.purchase_invoice } }"
+					class="btn btn-outline-secondary btn-sm"
+				>
+					{{ t("Open the booked invoice") }}
+				</router-link>
+				<button type="button" class="btn btn-outline-danger btn-sm" :disabled="rebooking" @click="rebookInvoice">
+					<span v-if="rebooking" class="spinner-border spinner-border-sm me-1"></span>
+					{{ t("Cancel and re-book") }}
+				</button>
+			</div>
+		</div>
 
 		<!-- Status action bar -->
 		<div v-if="!isCreate" class="card mb-3">
@@ -1399,6 +1620,101 @@ watch(activeCompany, loadRefData);
 					</button>
 				</div>
 				<div v-if="!form.po_links.length" class="text-secondary small">{{ t("No purchase orders linked.") }}</div>
+			</div>
+		</div>
+
+		<!-- Destructive actions sit at the bottom, away from Save -->
+		<div v-if="!isCreate" class="card mb-3">
+			<div class="card-body d-flex flex-wrap align-items-center gap-2">
+				<div class="text-secondary small flex-grow-1">
+					{{ t("Deleting shows everything that depends on this invoice before anything is removed.") }}
+				</div>
+				<button
+					v-if="form.custom_proforma_invoice"
+					type="button"
+					class="btn btn-outline-secondary"
+					:disabled="unlinking"
+					@click="unlinkProforma"
+				>
+					<span v-if="unlinking" class="spinner-border spinner-border-sm me-1"></span>
+					<i v-else class="ti ti-unlink me-1"></i>{{ t("Unlink proforma") }}
+				</button>
+				<button type="button" class="btn btn-outline-danger" :disabled="deletePlanning" @click="openDeletePlan">
+					<span v-if="deletePlanning" class="spinner-border spinner-border-sm me-1"></span>
+					<i v-else class="ti ti-trash me-1"></i>{{ t("Delete") }}
+				</button>
+			</div>
+		</div>
+
+		<!-- What deleting this invoice would touch — shown before anything happens -->
+		<div v-if="deleteModalOpen" class="modal d-block" tabindex="-1" style="background: rgba(0,0,0,0.4)">
+			<div class="modal-dialog modal-dialog-centered modal-dialog-scrollable">
+				<div class="modal-content">
+					<div class="modal-header">
+						<h5 class="modal-title">{{ t("Delete commercial invoice") }}</h5>
+						<button type="button" class="btn-close" @click="deleteModalOpen = false"></button>
+					</div>
+					<div class="modal-body">
+						<div v-if="deleteBlockers.length" class="mb-3">
+							<div class="fw-semibold text-danger mb-2">
+								<i class="ti ti-alert-triangle me-1"></i>{{ t("This cannot be deleted yet:") }}
+							</div>
+							<ul class="list-unstyled mb-0">
+								<li v-for="(b, i) in deleteBlockers" :key="i" class="mb-2">
+									<router-link
+										v-if="recordRoute(b.doctype, b.name)"
+										:to="recordRoute(b.doctype, b.name)"
+										class="font-monospace fw-semibold"
+									>{{ b.name }}</router-link>
+									<span v-else class="font-monospace fw-semibold">{{ b.name }}</span>
+									<div class="small text-danger">{{ blockerText(b) }}</div>
+								</li>
+							</ul>
+						</div>
+
+						<div v-if="deleteCascadeRows.length" class="mb-3">
+							<div class="fw-semibold mb-2">{{ t("These linked records go with it:") }}</div>
+							<ul class="list-unstyled mb-0">
+								<li v-for="row in deleteCascadeRows" :key="row.doctype" class="mb-2">
+									<div class="small text-secondary">
+										{{ row.label }} · {{ row.detach ? t("link removed, record kept") : t("deleted") }}
+									</div>
+									<div>
+										<template v-for="(n, i) in row.names" :key="n">
+											<router-link
+												v-if="recordRoute(row.doctype, n)"
+												:to="recordRoute(row.doctype, n)"
+												class="font-monospace"
+											>{{ n }}</router-link>
+											<span v-else class="font-monospace">{{ n }}</span>
+											<span v-if="i < row.names.length - 1">, </span>
+										</template>
+									</div>
+								</li>
+							</ul>
+							<label class="form-check mt-2">
+								<input v-model="deleteCascade" class="form-check-input" type="checkbox">
+								<span class="form-check-label">{{ t("Also delete the linked records") }}</span>
+							</label>
+						</div>
+
+						<div v-if="!deleteBlockers.length && !deleteCascadeRows.length" class="text-secondary">
+							{{ t("Nothing else points at this invoice.") }}
+						</div>
+					</div>
+					<div class="modal-footer">
+						<button type="button" class="btn btn-outline-secondary" @click="deleteModalOpen = false">{{ t("Cancel") }}</button>
+						<button
+							type="button"
+							class="btn btn-danger"
+							:disabled="!canDelete || deleting"
+							:title="deleteBlockers.length ? blockerText(deleteBlockers[0]) : ''"
+							@click="confirmDelete"
+						>
+							<span v-if="deleting" class="spinner-border spinner-border-sm me-1"></span>{{ t("Delete") }}
+						</button>
+					</div>
+				</div>
 			</div>
 		</div>
 
