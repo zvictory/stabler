@@ -1,6 +1,9 @@
-const CRM_STAGES = ["New", "Sourcing", "Bid Preparation", "Submitted", "Closed"];
+// Board lanes, in business order. MUST stay identical to LANES in
+// stabler/api/_tender_master_state.py — the backend derives a record's lane from
+// its child lots and sends it as `stage`; a lane the SPA doesn't know would drop
+// its tenders into the first column and silently understate the pipeline.
+export const LANES = ["Preparation", "Active", "Awaiting Result", "Partial Result", "Completed"];
 
-const CLOSED_STATUSES = new Set(["Won", "Lost", "Cancelled", "Closed"]);
 const LIST_QUERY_KEYS = ["status", "stage", "risk", "deal", "from_date", "to_date"];
 
 export function tenderMasterListParams(query = {}) {
@@ -26,28 +29,47 @@ export function createLatestRequestGuard() {
 }
 
 export function normalizeTenderMaster(record = {}) {
-	const status = record.status || "New";
 	return {
 		...record,
 		buyer: record.buyer_name || "",
 		deadline: record.submission_deadline || "",
 		documentReadiness: record.document_readiness,
-		estimatedTotal: record.estimated_total ?? 0,
+		// Earliest bid deadline among the still-open lots — the parent's own
+		// submission_deadline says nothing about which lot is due next.
+		earliestDeadline: record.earliest_deadline || "",
+		// DERIVED from the child lots, so the number on the card is always the one
+		// the drill-down adds up to. The parent's own typed `estimated_total` is
+		// the fallback only while there are no lots to contradict it — and it is
+		// left untouched in the payload, because that field is what a tender edit
+		// form has to write back.
+		estimatedTotal: (record.lot_count ? record.lot_estimated_total : record.estimated_total) ?? 0,
+		lostLotCount: record.lost_lot_count ?? 0,
 		lotCount: record.lot_count ?? 0,
+		// Open = not won and not lost, so open + won + lost = lotCount. Lots
+		// awaiting a result are a SUBSET of open, never a fourth bucket.
+		openLotCount: record.open_lot_count ?? 0,
 		owner: record.owner_user || "",
-		stage: CLOSED_STATUSES.has(status) ? "Closed" : status,
+		policyGapCount: record.policy_gap_count ?? 0,
+		riskCount: record.risk_count ?? 0,
+		// The lane is DERIVED by the backend from the child lots
+		// (_tender_master_state.derive). The parent's hand-typed `status` must
+		// never decide it: nobody reliably re-types the parent when a lot moves,
+		// so a status-driven board shows "New" next to two won lots.
+		stage: LANES.includes(record.stage) ? record.stage : LANES[0],
+		submittedLotCount: record.submitted_lot_count ?? 0,
 		tenderNumber: record.tender_number || record.name || "",
 		title: record.title || "",
+		wonLotCount: record.won_lot_count ?? 0,
 	};
 }
 
 export function groupTenderMasters(records = []) {
-	const groups = CRM_STAGES.map((key) => ({ key, records: [] }));
+	const groups = LANES.map((key) => ({ key, records: [] }));
 	const byKey = new Map(groups.map((group) => [group.key, group]));
 
 	for (const record of records) {
 		const normalized = normalizeTenderMaster(record);
-		const group = byKey.get(normalized.stage) || byKey.get("New");
+		const group = byKey.get(normalized.stage) || byKey.get(LANES[0]);
 		group.records.push(normalized);
 	}
 

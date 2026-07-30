@@ -1,6 +1,7 @@
 import { describe, expect, it } from "vitest";
 
 import {
+	LANES,
 	createLatestRequestGuard,
 	groupTenderMasters,
 	normalizeTenderMaster,
@@ -8,20 +9,19 @@ import {
 } from "../composables/tenderMaster.js";
 
 describe("Tender Master projections", () => {
-	it("groups records by approved CRM stage order without duplicating them", () => {
+	it("groups records by the backend-derived lane, never by the typed status", () => {
+		// TND-3 carries a typed status of "Submitted" and no derived lane: the
+		// board must NOT promote it on the strength of a hand-typed field, or the
+		// lane stops being a projection of the lots and starts drifting again.
 		const grouped = groupTenderMasters([
-			{ name: "TND-1", status: "Sourcing" },
-			{ name: "TND-2", status: "Submitted" },
+			{ name: "TND-1", stage: "Active", status: "New" },
+			{ name: "TND-2", stage: "Awaiting Result", status: "Won" },
+			{ name: "TND-3", status: "Submitted" },
 		]);
 
-		expect(grouped.map((lane) => lane.key)).toEqual([
-			"New",
-			"Sourcing",
-			"Bid Preparation",
-			"Submitted",
-			"Closed",
-		]);
+		expect(grouped.map((lane) => lane.key)).toEqual(LANES);
 		expect(grouped.flatMap((lane) => lane.records).map((row) => row.name)).toEqual([
+			"TND-3",
 			"TND-1",
 			"TND-2",
 		]);
@@ -31,6 +31,30 @@ describe("Tender Master projections", () => {
 		expect(normalizeTenderMaster({ lot_count: 0, estimated_total: 0 })).toMatchObject({
 			lotCount: 0,
 			estimatedTotal: 0,
+		});
+	});
+
+	it("surfaces the lot breakdown the card reconciles against its drill-down", () => {
+		expect(
+			normalizeTenderMaster({
+				lot_count: 5,
+				open_lot_count: 3,
+				submitted_lot_count: 1,
+				won_lot_count: 2,
+				lost_lot_count: 0,
+				policy_gap_count: 4,
+				risk_count: 1,
+				earliest_deadline: "2026-08-01",
+			})
+		).toMatchObject({
+			lotCount: 5,
+			openLotCount: 3,
+			submittedLotCount: 1,
+			wonLotCount: 2,
+			lostLotCount: 0,
+			policyGapCount: 4,
+			riskCount: 1,
+			earliestDeadline: "2026-08-01",
 		});
 	});
 });

@@ -72,6 +72,23 @@ class TestTenderMasterSchema(unittest.TestCase):
 		self.assertIn('"Tender Master": "stabler.api.permissions.tender_master_query"', hooks)
 		self.assertIn('"Tender Master": "stabler.api.permissions.company_has_permission"', hooks)
 
+	def test_parent_status_is_a_read_only_note_and_never_required(self):
+		"""`status` must stay read-only and optional.
+
+		The board lane is derived from the child CRM Deal lots
+		(`api/_tender_master_state.derive`). A REQUIRED, WRITABLE status field
+		re-creates exactly the drift that decision removed: it forces whoever
+		creates a tender to assert a lifecycle position before any lot exists,
+		and then nobody re-types it when a lot is submitted or won — so the
+		stored value contradicts the lots it is supposed to summarise. The field
+		survives only as a manual note and as the audit trail `track_changes`
+		keeps, which is why the options list stays intact.
+		"""
+		schema = json.loads(TENDER_MASTER_JSON.read_text())
+		status = {field["fieldname"]: field for field in schema["fields"]}["status"]
+		self.assertEqual(status["read_only"], 1)
+		self.assertNotIn("reqd", status)
+
 	def test_validate_rejects_deadline_before_publication(self):
 		tender = _load_tender_master_controller()(
 			publication_date="2026-07-31",

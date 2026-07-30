@@ -269,6 +269,16 @@ export const STATUS_MAP = {
 		overdue: "bg-red-lt",
 		upcoming: "bg-blue-lt",
 	},
+	// Tender Master board lanes. These are DERIVED from the child lots
+	// (api/_tender_master_state.py), not typed by anyone — the keys must stay in
+	// step with LANES there and in composables/tenderMaster.js.
+	"Tender Lane": {
+		Preparation: "bg-secondary-lt",
+		Active: "bg-blue-lt",
+		"Awaiting Result": "bg-yellow-lt",
+		"Partial Result": "bg-orange-lt",
+		Completed: "bg-green-lt",
+	},
 	"docstatus": {
 		0: "bg-yellow-lt", // Draft
 		1: "bg-green-lt",  // Submitted / Active

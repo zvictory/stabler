@@ -15,7 +15,7 @@
   {"fieldname": "submission_deadline", "fieldtype": "Datetime", "in_list_view": 1},
   {"fieldname": "currency", "fieldtype": "Link", "options": "Currency"},
   {"fieldname": "estimated_total", "fieldtype": "Currency", "options": "currency"},
-  {"fieldname": "status", "fieldtype": "Select", "options": "New\nSourcing\nBid Preparation\nSubmitted\nWon\nLost\nCancelled", "default": "New", "reqd": 1, "in_list_view": 1},
+  {"fieldname": "status", "fieldtype": "Select", "options": "New\nSourcing\nBid Preparation\nSubmitted\nWon\nLost\nCancelled", "default": "New", "read_only": 1, "in_list_view": 1},
   {"fieldname": "owner_user", "fieldtype": "Link", "options": "User"}
  ],
  "module": "Stabler",

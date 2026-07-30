@@ -72,10 +72,29 @@ class TestTenderMasterSpaContract(unittest.TestCase):
 		self.assertIn('v-if="hasDocumentReadiness"', source)
 		self.assertNotIn("<span v-else>—</span>", source)
 
-	def test_tender_crm_uses_table_body_skeletons_and_shows_terminal_statuses_on_kanban_cards(self):
+	def test_tender_crm_uses_table_body_skeletons_and_shows_the_derived_lot_breakdown(self):
+		"""A Kanban card must report the LOT-DERIVED breakdown, not the parent's
+		hand-typed `status`.
+
+		The card is what a manager acts on, and the parent status is the one field
+		nobody re-types when a lot moves: printing it on a card whose lane was
+		derived from the lots puts two contradictory claims side by side ("New"
+		under a lane that says Partial Result). The counts, the next lot deadline
+		and the policy gap all come from the same permitted-lot pass the
+		drill-down uses, so the card and the lot list can be reconciled.
+		"""
 		source = TENDER_CRM.read_text()
 		self.assertNotIn("<tbody>\n\t\t\t\t\t\t<SkeletonRows", source)
-		self.assertIn('<div class="small text-secondary mt-1">{{ record.status }}</div>', source)
+		self.assertNotIn('<div class="small text-secondary mt-1">{{ record.status }}</div>', source)
+		for expression in (
+			"record.openLotCount",
+			"record.submittedLotCount",
+			"record.wonLotCount",
+			"record.lostLotCount",
+			"formatDate(record.earliestDeadline)",
+			"record.policyGapCount",
+		):
+			self.assertIn(expression, source)
 
 	def test_closing_tender_detail_invalidates_pending_detail_requests(self):
 		source = TENDER_CRM.read_text()

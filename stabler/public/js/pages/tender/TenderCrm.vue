@@ -11,6 +11,7 @@ import {
 	normalizeTenderMaster,
 	tenderMasterListParams,
 } from "../../composables/tenderMaster.js";
+import { getStatusBadgeClass } from "../../composables/status.js";
 import { t } from "../../composables/i18n.js";
 import { useToast } from "../../composables/useToast.js";
 import { useSession } from "../../stores/session.js";
@@ -215,7 +216,7 @@ onMounted(load);
 							<th>{{ t("Deadline") }}</th>
 							<th class="text-end">{{ t("Lots") }}</th>
 							<th class="text-end">{{ t("Estimated total") }}</th>
-							<th>{{ t("Status") }}</th>
+							<th>{{ t("Stage") }}</th>
 							<th>{{ t("Owner") }}</th>
 							<th v-if="hasDocumentReadiness">{{ t("Documents") }}</th>
 						</tr>
@@ -237,7 +238,12 @@ onMounted(load);
 							<td class="text-end">{{ record.lotCount }}</td>
 							<td class="text-end font-monospace">{{ money(record.estimatedTotal, record) }}</td>
 							<td>
-								<span class="badge bg-secondary-lt">{{ record.status }}</span>
+								<!-- The DERIVED lane, same value the Kanban groups by. Showing the
+								parent's hand-typed `status` here would put "New" next to a tender
+								whose every lot is won — the drift K1 removed, relocated to a column. -->
+								<span class="badge" :class="getStatusBadgeClass('Tender Lane', record.stage)">{{
+									t(record.stage)
+								}}</span>
 							</td>
 							<td>{{ record.owner || "—" }}</td>
 							<td v-if="hasDocumentReadiness">
@@ -252,7 +258,7 @@ onMounted(load);
 					<div class="d-flex gap-3 tender-lanes">
 						<section v-for="lane in groups" :key="lane.key" class="card bg-light tender-lane">
 							<div class="card-header py-2 fw-semibold">
-								{{ lane.key }}
+								{{ t(lane.key) }}
 								<span class="badge bg-secondary-lt ms-1">{{ lane.records.length }}</span>
 							</div>
 							<div class="card-body p-2">
@@ -277,7 +283,23 @@ onMounted(load);
 											{{ t("Lots") }}: {{ record.lotCount
 											}}<span v-if="record.owner"> · {{ record.owner }}</span>
 										</div>
-										<div class="small text-secondary mt-1">{{ record.status }}</div>
+										<div v-if="record.lotCount" class="small text-secondary mt-1">
+											{{ t("Open") }}: {{ record.openLotCount
+											}}<span v-if="record.submittedLotCount">
+												({{ t("awaiting result") }}: {{ record.submittedLotCount }})</span
+											>
+											· {{ t("Won") }}: {{ record.wonLotCount }} · {{ t("Lost") }}:
+											{{ record.lostLotCount }}
+										</div>
+										<div v-if="record.earliestDeadline" class="small text-secondary mt-1">
+											{{ t("Next lot deadline") }}: {{ formatDate(record.earliestDeadline) }}
+										</div>
+										<div v-if="record.policyGapCount" class="small text-warning mt-1">
+											{{ t("Policy gap") }}: {{ record.policyGapCount }}
+										</div>
+										<div v-if="record.riskCount" class="small text-danger mt-1">
+											{{ t("Overdue bids") }}: {{ record.riskCount }}
+										</div>
 										<div
 											v-if="record.documentReadiness !== undefined"
 											class="small text-secondary mt-1"
