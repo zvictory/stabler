@@ -126,3 +126,4 @@ stabler.tests.test_ci_invoice_drift_source
 stabler.tests.test_imports_delete_math
 stabler.tests.test_imports_delete_source
 stabler.tests.test_item_groups_spa_contract
+stabler.tests.test_spa_named_exports

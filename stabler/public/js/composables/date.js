@@ -67,6 +67,33 @@ export function formatDateTime(value) {
 	return `${dd}.${mm}.${yyyy} ${HH.padStart(2, "0")}:${min.padStart(2, "0")}`;
 }
 
+/**
+ * Format an ISO datetime string or time string as HH:mm.
+ * @param {string|null|undefined} value - ISO datetime "yyyy-mm-dd HH:mm:ss" or time "HH:mm:ss"
+ * @returns {string} "HH:mm" or "" if empty/invalid
+ */
+export function formatTime(value) {
+	if (value === null || value === undefined || value === "") return "";
+	const s = String(value).trim();
+	if (s.includes(" ") || s.includes("T")) {
+		const parts = s.split(/[ T]/);
+		if (parts[1]) {
+			const timeParts = parts[1].split(":");
+			if (timeParts.length >= 2) {
+				const [HH, min] = timeParts;
+				return `${HH.padStart(2, "0")}:${min.padStart(2, "0")}`;
+			}
+		}
+	} else if (s.includes(":")) {
+		const timeParts = s.split(":");
+		if (timeParts.length >= 2) {
+			const [HH, min] = timeParts;
+			return `${HH.padStart(2, "0")}:${min.padStart(2, "0")}`;
+		}
+	}
+	return "";
+}
+
 // ---------------------------------------------------------------------------
 // Date-range helpers for period presets (Month-to-date, Last month, etc.)
 //
