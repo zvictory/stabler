@@ -230,7 +230,21 @@ class TestTransporterScreenConventions(unittest.TestCase):
 		"""3. sayfadayken süzgeç değiştirmek, kısalmış sonucun boş bir
 		sayfasına düşürüyordu."""
 		self.assertIn("function reload() {", self.screen)
-		self.assertIn("if (page.value !== 1) page.value = 1;", self.screen)
+		self.assertIn("if (limitStart.value !== 0) limitStart.value = 0;", self.screen)
+
+	def test_the_pagination_footer_binds_the_model_the_component_declares(self):
+		"""`Pagination` `limitStart`/`pageLength` tanımlar ve `update:limitStart`
+		yayar. `v-model:page` / `:total-rows` ile bağlamak sessizce çalışır gibi
+		görünür — bildirilmemiş öznitelik prop değil, fallthrough HTML özniteliği
+		olur; bileşen `total=0` görüp ileri düğmesini hep kapalı tutardı."""
+		self.assertIn('v-model:limit-start="limitStart"', self.screen)
+		self.assertIn(':total="totalCount"', self.screen)
+		self.assertNotIn("total-rows", self.screen)
+
+	def test_a_page_size_change_rewinds_to_the_first_page(self):
+		"""Sayfa boyutunu 3. sayfadayken büyütmek, kısalan sayfalamada artık var
+		olmayan bir ofset ister — boş tablo."""
+		self.assertIn("watch(pageLength, () => reload());", self.screen)
 
 	def test_the_edit_action_is_hidden_when_costs_are_masked(self):
 		"""Uç, maliyet kapısı olmadan bu yazmayı reddediyor. Her zaman görünen

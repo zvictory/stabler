@@ -26,7 +26,9 @@ const rows = ref([]);
 // One entry per currency — the endpoint groups by it rather than summing across.
 const summary = ref([]);
 const transporters = ref([]);
-const page = ref(1);
+// 0-based offset, like every other imports list — that is the model `Pagination`
+// binds. The endpoint counts in pages, so `load()` converts at the call.
+const limitStart = ref(0);
 const pageLength = ref(25);
 const totalCount = ref(0);
 
@@ -78,7 +80,7 @@ async function load() {
 			company: activeCompany.value,
 			search: search.value || undefined,
 			transporter: selectedTransporter.value || undefined,
-			page: page.value,
+			page: Math.floor(limitStart.value / pageLength.value) + 1,
 			page_length: pageLength.value,
 		});
 		if (token !== reqToken) return;
@@ -96,7 +98,7 @@ async function load() {
 }
 
 function reload() {
-	if (page.value !== 1) page.value = 1;
+	if (limitStart.value !== 0) limitStart.value = 0;
 	else load();
 }
 
@@ -144,7 +146,10 @@ async function saveEdit() {
 // one request per character. The template binds that event to reload() instead.
 // Filters reset to page 1 — changing a filter while on page 3 would otherwise
 // land on an empty page of a shorter result set.
-watch(page, () => load());
+watch(limitStart, () => load());
+// A page-size change while on page 3 would ask for an offset the shorter paging
+// no longer has; reload() rewinds to the first page.
+watch(pageLength, () => reload());
 watch([activeCompany, selectedTransporter], () => reload());
 onMounted(() => load());
 </script>
@@ -341,16 +346,13 @@ onMounted(() => load());
 					</table>
 				</div>
 
-				<div v-if="totalCount > pageLength" class="card-footer d-flex align-items-center justify-content-between border-0 py-2">
-					<div class="small text-secondary">
-						{{ t("Showing {0} to {1} of {2} entries", [(page - 1) * pageLength + 1, Math.min(page * pageLength, totalCount), totalCount]) }}
-					</div>
-					<Pagination
-						v-model:page="page"
-						:total-rows="totalCount"
-						:page-length="pageLength"
-					/>
-				</div>
+				<Pagination
+					v-if="!error && totalCount > 0"
+					v-model:limit-start="limitStart"
+					v-model:page-length="pageLength"
+					:total="totalCount"
+					:page-count="rows.length"
+				/>
 			</div>
 		</div>
 
