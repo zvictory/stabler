@@ -244,23 +244,53 @@ def _attach_ledger_sources(company: str, rows: list[dict]) -> None:
 	# Purchase Invoice → Commercial Invoice (imports-gated; the route itself is
 	# module-guarded, so a link there would dead-end for a non-imports tenant).
 	ci_of: dict[str, str] = {}
+	ci_label_of: dict[str, str] = {}
 	bill_of: dict[str, str] = {}
 	has_ci_col = frappe.db.has_column("Purchase Invoice", "custom_commercial_invoice")
+	has_cinum_col = frappe.db.has_column("Purchase Invoice", "custom_ci_number")
 	imports_on = bool(module_map_for(company).get("imports"))
+
+	ci_doc_map: dict[str, tuple[str, str]] = {}
+
 	if pinv_names:
 		fields = ["name", "bill_no"]
 		if has_ci_col and imports_on:
 			fields.append("custom_commercial_invoice")
-		for row in frappe.get_all(
+		if has_cinum_col and imports_on:
+			fields.append("custom_ci_number")
+
+		pi_rows = frappe.get_all(
 			"Purchase Invoice",
 			filters={"name": ["in", list(pinv_names)]},
 			fields=fields,
 			limit_page_length=0,
-		):
-			if row.get("custom_commercial_invoice"):
-				ci_of[row["name"]] = row["custom_commercial_invoice"]
-			if row.get("bill_no"):
-				bill_of[row["name"]] = row["bill_no"]
+		)
+
+		# The CI map is a company-wide fetch, so it is built only once there is
+		# something to resolve against. A payments-only window (the common case
+		# when the ledger is filtered to Payment Entry) never pays for it.
+		if imports_on and pi_rows:
+			for c in frappe.get_all(
+				"Commercial Invoice",
+				filters={"company": company},
+				fields=["name", "ci_number"],
+				limit_page_length=0,
+			):
+				c_name = c["name"]
+				c_num = c.get("ci_number") or c_name
+				ci_doc_map[c_name] = (c_name, c_num)
+				if c.get("ci_number"):
+					ci_doc_map[c["ci_number"]] = (c_name, c_num)
+
+		for row in pi_rows:
+			p_name = row["name"]
+			ref = row.get("custom_commercial_invoice") or row.get("bill_no") or row.get("custom_ci_number")
+			if ref and ref in ci_doc_map:
+				ci_name, ci_num = ci_doc_map[ref]
+				ci_of[p_name] = ci_name
+				ci_label_of[p_name] = ci_num
+			elif row.get("bill_no"):
+				bill_of[p_name] = row["bill_no"]
 
 	# Payment Entry → which channel the money left through (K3 label only).
 	stream_of: dict[str, str] = {}
@@ -292,7 +322,7 @@ def _attach_ledger_sources(company: str, rows: list[dict]) -> None:
 		if ci:
 			r["source_doctype"] = "Commercial Invoice"
 			r["source_name"] = ci
-			r["source_label"] = ci
+			r["source_label"] = ci_label_of.get(vno) or ci
 			r["source_route"] = f"/imports/commercial-invoices/{ci}"
 		else:
 			r["source_doctype"] = vtype or None
@@ -340,6 +370,32 @@ def supplier_detail(name: str, company: str):
 		as_dict=True,
 	)
 	lifetime_base = flt(lifetime_row[0]["lifetime"]) if lifetime_row else 0.0
+	# Lifetime in the currency actually invoiced. Grouping is what makes the
+	# figure legal: SUM(grand_total) over a supplier billing in both USD and UZS
+	# is a number true in neither. A supplier who bills in one currency gets it
+	# shown; a mixed one falls back to base, labelled as base.
+	lifetime_by_currency = (
+		frappe.db.sql(
+			"""
+		SELECT currency,
+		       COALESCE(SUM(grand_total), 0) AS lifetime
+		FROM `tabPurchase Invoice`
+		WHERE supplier = %(name)s AND company = %(company)s
+		  AND docstatus = 1
+		GROUP BY currency
+		HAVING SUM(grand_total) <> 0
+		""",
+			{"name": name, "company": company},
+			as_dict=True,
+		)
+		or []
+	)
+	if len(lifetime_by_currency) == 1:
+		lifetime_amount = flt(lifetime_by_currency[0]["lifetime"])
+		lifetime_currency = lifetime_by_currency[0]["currency"]
+	else:
+		lifetime_amount = lifetime_base
+		lifetime_currency = frappe.db.get_value("Company", company, "default_currency") or ""
 
 	overdue_row = frappe.db.sql(
 		"""
@@ -396,6 +452,8 @@ def supplier_detail(name: str, company: str):
 			{"currency": r["currency"], "amount": flt(r["outstanding"])} for r in ap_by_currency
 		],
 		"lifetime_base": lifetime_base,
+		"lifetime_amount": lifetime_amount,
+		"lifetime_currency": lifetime_currency,
 		"overdue_amount": overdue_amount,
 		"last_payment_date": last_payment_date,
 		"recent_invoices": recent,
@@ -2404,3 +2462,64 @@ def get_vendor_category_items(vendor: str, category: str) -> list[dict]:
 		r["item_name"] = frappe.db.get_value("Item", r["item_code"], "item_name") or r["item_code"]
 		r["stock_uom"] = frappe.db.get_value("Item", r["item_code"], "stock_uom") or ""
 	return rows
+
+
+@frappe.whitelist()
+def list_supplier_quotations(supplier: str, company: str) -> list[dict]:
+	"""List all Supplier Quotations for a supplier, including custom_crm_deal title and amounts.
+
+	Used by the Supplier detail panel ('Quotations' tab) in Suppliers.vue.
+
+	Company is mandatory: a site carries several companies, and an optional
+	filter would have listed every one of them the moment the caller left the
+	argument out.
+	"""
+	_require_company(company)
+	_assert_company_scope(company)  # tenant isolation: reject a foreign company arg
+	if not supplier or not frappe.db.exists("Supplier", supplier):
+		return []
+
+	filters = {"supplier": supplier, "company": company, "docstatus": ["<", 2]}
+
+	fields = [
+		"name",
+		"supplier",
+		"supplier_name",
+		"currency",
+		"grand_total",
+		"base_grand_total",
+		"valid_till",
+		"status",
+		"transaction_date",
+	]
+	if frappe.db.has_column("Supplier Quotation", "custom_crm_deal"):
+		fields.append("custom_crm_deal")
+
+	sqs = frappe.get_all(
+		"Supplier Quotation",
+		filters=filters,
+		fields=fields,
+		order_by="transaction_date desc, creation desc",
+		limit_page_length=100,
+	)
+
+	deal_ids = list({s["custom_crm_deal"] for s in sqs if s.get("custom_crm_deal")})
+	deal_map = {}
+	if deal_ids and frappe.db.exists("DocType", "CRM Deal"):
+		fields_deal = ["name"]
+		if frappe.db.has_column("CRM Deal", "organization"):
+			fields_deal.append("organization")
+		if frappe.db.has_column("CRM Deal", "lead_name"):
+			fields_deal.append("lead_name")
+		for d in frappe.get_all("CRM Deal", filters={"name": ["in", deal_ids]}, fields=fields_deal):
+			deal_map[d["name"]] = d.get("organization") or d.get("lead_name") or d["name"]
+
+	for s in sqs:
+		s["grand_total"] = flt(s.get("grand_total"))
+		s["base_grand_total"] = flt(s.get("base_grand_total")) or s["grand_total"]
+		deal_id = s.get("custom_crm_deal")
+		if deal_id:
+			s["deal_label"] = deal_map.get(deal_id, deal_id)
+
+	return sqs
+

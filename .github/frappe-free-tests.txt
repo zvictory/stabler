@@ -130,3 +130,4 @@ stabler.tests.test_spa_named_exports
 stabler.tests.test_spa_component_props
 stabler.tests.test_customer_balance_rounding_source
 stabler.tests.test_money_input_source
+stabler.tests.test_lifetime_currency_source

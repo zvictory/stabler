@@ -48,12 +48,30 @@ class ResolverTest(unittest.TestCase):
 
     def test_batched_never_per_row(self):
         # A 1000-line ledger must not fire 1000 lookups: one get_all per
-        # doctype, both inside `if <names>` guards, never in the row loop.
-        self.assertEqual(self.body.count("frappe.get_all("), 2)
+        # doctype, each inside a guard, never in the row loop.
+        self.assertEqual(self.body.count("frappe.get_all("), 3)
         self.assertEqual(self.body.count("frappe.db.get_value("), 0)
         loop = self.body[self.body.index("for r in rows:"):]
         self.assertNotIn("frappe.get_all(", loop)
         self.assertNotIn("frappe.db.", loop)
+
+    def test_the_ci_map_is_built_only_when_there_are_invoices_to_name(self):
+        # That fetch reads EVERY Commercial Invoice in the company -- on msa
+        # that is the biggest table in the module. A window filtered to Payment
+        # Entry has no Purchase Invoice to name, so the map buys nothing there;
+        # unguarded, opening the payments tab paid for it anyway.
+        guard = self.body.index("if pinv_names:")
+        self.assertGreater(
+            self.body.index('"Commercial Invoice",'), guard,
+            "the company-wide CI fetch runs before the pinv_names guard",
+        )
+        self.assertIn("if imports_on and pi_rows:", self.body)
+
+    def test_the_line_is_named_by_the_ci_number_not_our_docname(self):
+        # `CI-2026-00042` is our id; the buyer's paperwork says `HMA-1187`.
+        # Falling back to the docname is fine -- silently printing it when the
+        # number exists is what the owner asked us to stop doing.
+        self.assertIn('r["source_label"] = ci_label_of.get(vno) or ci', self.body)
 
     def test_ci_link_is_imports_gated_and_column_guarded(self):
         # The CI route is module-guarded in the router; emitting the link on a

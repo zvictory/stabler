@@ -309,6 +309,7 @@ async function selectSupplier(s) {
 	selected.value = s;
 	selectedName.value = s.name; // composable syncs → URL + localStorage
 	suppOrders.value = [];
+	suppQuotations.value = [];
 	recentInvoices.value = [];
 	ledgerTypeFilter.value = "";
 	ledgerSearch.value = "";
@@ -321,6 +322,7 @@ async function selectSupplier(s) {
 	}
 	loadLedger(s);
 	loadSuppOrders(s);
+	loadSuppQuotations(s);
 
 	try {
 		const detail = await call("stabler.api.purchasing.supplier_detail", {
@@ -426,6 +428,24 @@ async function loadSuppOrders(supplier) {
 		suppOrders.value = [];
 	} finally {
 		suppOrdersLoading.value = false;
+	}
+}
+
+const suppQuotations = ref([]);
+const suppQuotationsLoading = ref(false);
+
+async function loadSuppQuotations(supplier) {
+	if (!supplier?.name || !activeCompany.value) return;
+	suppQuotationsLoading.value = true;
+	try {
+		suppQuotations.value = await call("stabler.api.purchasing.list_supplier_quotations", {
+			supplier: supplier.name,
+			company: activeCompany.value,
+		});
+	} catch {
+		suppQuotations.value = [];
+	} finally {
+		suppQuotationsLoading.value = false;
 	}
 }
 
@@ -926,7 +946,7 @@ watch(activeCompany, () => {
 										<div class="card border bg-white py-2 px-3 text-center shadow-none rounded-2">
 											<div class="text-secondary small text-uppercase fw-semibold mb-1">{{ t("Lifetime Purchases") }}</div>
 											<div class="h3 mb-0 font-monospace stbl-amount text-body">
-												{{ formatMoney(selectedDetail?.lifetime_base || 0, currency, user.language) }}
+												{{ formatMoney(selectedDetail?.lifetime_amount ?? selectedDetail?.lifetime_base ?? 0, selectedDetail?.lifetime_currency || currency, user.language) }}
 											</div>
 										</div>
 									</div>
@@ -1082,6 +1102,17 @@ watch(activeCompany, () => {
 										>
 											{{ t("Invoices") }}
 											<span class="badge bg-secondary-subtle text-secondary ms-1">{{ recentInvoices.length }}</span>
+										</a>
+									</li>
+									<li class="nav-item">
+										<a
+											href="#"
+											class="nav-link border-0 border-bottom-2 py-3"
+											:class="{ active: currentTab === 'quotations', 'border-primary': currentTab === 'quotations' }"
+											@click.prevent="currentTab = 'quotations'"
+										>
+											{{ t("Quotations") }}
+											<span class="badge bg-secondary-subtle text-secondary ms-1">{{ suppQuotations.length }}</span>
 										</a>
 									</li>
 								</ul>
@@ -1317,6 +1348,60 @@ watch(activeCompany, () => {
 												<tr v-if="!recentInvoices.length">
 													<td colspan="5" class="text-center py-4 text-secondary">
 														{{ t("No invoices found.") }}
+													</td>
+												</tr>
+											</tbody>
+										</table>
+									</div>
+								</div>
+
+								<!-- QUOTATIONS TAB -->
+								<div v-if="currentTab === 'quotations'" class="p-3">
+									<div v-if="suppQuotationsLoading" class="text-center py-5">
+										<div class="spinner-border text-primary"></div>
+									</div>
+									<EmptyState
+										v-else-if="!suppQuotations.length"
+										icon="ti-file-dollar"
+										:title="t('No quotations yet')"
+										:subtitle="t('No supplier quotations registered for this supplier.')"
+										class="py-4 bg-transparent border-0"
+									/>
+									<div v-else class="table-responsive">
+										<table class="table table-vcenter table-hover card-table m-0">
+											<thead>
+												<tr>
+													<th>{{ t("Quotation #") }}</th>
+													<th>{{ t("Date") }}</th>
+													<th>{{ t("Tender / deal") }}</th>
+													<th class="text-end">{{ t("Total") }}</th>
+													<th>{{ t("Valid till") }}</th>
+													<th>{{ t("Status") }}</th>
+												</tr>
+											</thead>
+											<tbody>
+												<tr v-for="q in suppQuotations" :key="q.name">
+													<td>
+														<span class="fw-semibold font-monospace">{{ q.name }}</span>
+													</td>
+													<td>{{ q.transaction_date ? formatDate(q.transaction_date) : "—" }}</td>
+													<td>
+														<router-link
+															v-if="q.custom_crm_deal"
+															:to="{ path: '/tender/sourcing', query: { deal: q.custom_crm_deal } }"
+															class="text-body fw-medium"
+														>
+															<i class="ti ti-target me-1 text-primary"></i>
+															{{ q.deal_label || q.custom_crm_deal }}
+														</router-link>
+														<span v-else class="text-secondary">—</span>
+													</td>
+													<td class="text-end font-monospace">
+														{{ formatMoney(q.grand_total, q.currency, user.language) }}
+													</td>
+													<td>{{ q.valid_till ? formatDate(q.valid_till) : "—" }}</td>
+													<td>
+														<span class="badge bg-secondary-lt">{{ q.status }}</span>
 													</td>
 												</tr>
 											</tbody>
