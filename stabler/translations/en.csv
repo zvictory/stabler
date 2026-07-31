@@ -5007,3 +5007,175 @@ Unknown item group: {0},Unknown item group: {0}
 The top-level category cannot be deleted.,The top-level category cannot be deleted.
 Cannot delete {0}: it has {1} subcategories.,Cannot delete {0}: it has {1} subcategories.
 Cannot delete {0}: {1} items still use it.,Cannot delete {0}: {1} items still use it.
+What should I do today?,What should I do today?
+Last read,Last read
+Role view,Role view
+Failed to load operations desk.,Failed to load operations desk.
+Access denied to tender module.,Access denied to tender module.
+Please select an active company.,Please select an active company.
+All items in this view are up to date.,All items in this view are up to date.
+must close today,must close today
+due date is today,due date is today
+past due,past due
+"due date passed, still open","due date passed, still open"
+decision is yours,decision is yours
+approval assigned to you,approval assigned to you
+no action from you,no action from you
+"you requested, someone else answers","you requested, someone else answers"
+Soon,Soon
+Watching,Watching
+Next up,Next up
+due date passed — act today,due date passed — act today
+within this week,within this week
+"no action, awaiting outcome","no action, awaiting outcome"
+OVD,OVD
+TDY,TDY
+SOON,SOON
+WCH,WCH
+APR,APR
+PAST DUE,PAST DUE
+TODAY,TODAY
+DUE,DUE
+unassigned,unassigned
+Waiting for your signature,Waiting for your signature
+Decisions are waiting on you,Decisions are waiting on you
+Nothing moves forward until these are answered.,Nothing moves forward until these are answered.
+Open lots,Open lots
+Bar is relative to the busiest queue,Bar is relative to the busiest queue
+red = has overdue,red = has overdue
+Next 7 days,Next 7 days
+Bid · delivery · due,Bid · delivery · due
+Every lot is counted in exactly one stage,Every lot is counted in exactly one stage
+Numbers are read from ERP records — the rule under each says what it counted,Numbers are read from ERP records — the rule under each says what it counted
+lots in the pipeline,lots in the pipeline
+seen through to awaiting result,seen through to awaiting result
+win rate,win rate
+won,won
+lost,lost
+needs action today — lands on the desk,needs action today — lands on the desk
+contracted,contracted
+sum of every open tender's value,sum of every open tender's value
+on revenue,on revenue
+average across tenders that have pricing,average across tenders that have pricing
+net remaining,net remaining
+what is still to be collected after landed cost,what is still to be collected after landed cost
+tenders carry unverified history — the number is there but the record behind it is incomplete.,tenders carry unverified history — the number is there but the record behind it is incomplete.
+Linked ERP documents,Linked ERP documents
+Linked directly to ERP records,Linked directly to ERP records
+tenders,tenders
+Execution,Execution
+active contracts,active contracts
+delivery or collection still running,delivery or collection still running
+lots,lots
+Conversion funnel,Conversion funnel
+conversion,conversion
+resolved,resolved
+Where we lose them,Where we lose them
+Reading the funnel,Reading the funnel
+No stage lost a lot in this window.,No stage lost a lot in this window.
+Seen but never decided — the GO/NO-GO queue is where they stalled.,Seen but never decided — the GO/NO-GO queue is where they stalled.
+Decided but sourcing never started — not one quotation was collected.,Decided but sourcing never started — not one quotation was collected.
+Priced but never submitted — the bid window closed on a finished price.,Priced but never submitted — the bid window closed on a finished price.
+"Submitted and lost — the bid was in, the result went the other way.","Submitted and lost — the bid was in, the result went the other way."
+Sign in,Sign in
+Sign in to your account,Sign in to your account
+Signing in…,Signing in…
+No account? Ask your system administrator for an invite.,No account? Ask your system administrator for an invite.
+Username or Email,Username or Email
+Password,Password
+name.surname or name@company.uz,name.surname or name@company.uz
+enter password,enter password
+password entered,password entered
+Show password,Show password
+Hide password,Hide password
+Remember me on this device,Remember me on this device
+Please enter both username/email and password.,Please enter both username/email and password.
+Invalid username or password.,Invalid username or password.
+ERP Platform,ERP Platform
+Sales · Purchasing · Warehouse · Production · Finance,Sales · Purchasing · Warehouse · Production · Finance
+"One business,","One business,"
+one record.,one record.
+"Orders, stock, purchasing, production and accounting run on one data model. Every number on screen has a document behind it.","Orders, stock, purchasing, production and accounting run on one data model. Every number on screen has a document behind it."
+One data model,One data model
+tied to a document,tied to a document
+Role-based access,Role-based access
+permission checked,permission checked
+every action recorded,every action recorded
+Measurements,Measurements
+computed,computed
+measure unit · fixed,measure unit · fixed
+Product · stock,Product · stock
+Unit price,Unit price
+"Search a product — code, name or barcode · Enter to add","Search a product — code, name or barcode · Enter to add"
+No products match that search,No products match that search
+pick a product above,pick a product above
+checking stock…,checking stock…
+needs,needs
+price,price
+Remove line,Remove line
+REMOVE,REMOVE
+Decrease,Decrease
+Increase,Increase
+Discount column,Discount column
+Measurement columns,Measurement columns
+"A line on this order is priced by size, so the measurement columns cannot be hidden.","A line on this order is priced by size, so the measurement columns cannot be hidden."
+Dimensional Sales Lines,Dimensional Sales Lines
+Direct Invoicing,Direct Invoicing
+Deal pipeline,Deal pipeline
+Every card is an ERP deal record,Every card is an ERP deal record
+Columns are stages; drag a card to move it,Columns are stages; drag a card to move it
+"Deal no, buyer, lot…","Deal no, buyer, lot…"
+open deals,open deals
+Sourcing policy,Sourcing policy
+quote set complete,quote set complete
+at least 5 quotations from 2 countries,at least 5 quotations from 2 countries
+at risk or expired,at risk or expired
+bid deadline within 48 hours or already passed,bid deadline within 48 hours or already passed
+document set complete,document set complete
+every required document attached,every required document attached
+quotes,quotes
+no value yet,no value yet
+empty,empty
+Quote set,Quote set
+policy met,policy met
+below policy,below policy
+Stage progress,Stage progress
+Close panel,Close panel
+Operations desk,Operations desk
+Daily work plan,Daily work plan
+Decision box,Decision box
+Awaiting my approval,Awaiting my approval
+Waiting others,Waiting others
+Team load,Team load
+No tasks scheduled for today,No tasks scheduled for today
+Due today,Due today
+7-day schedule,7-day schedule
+No pending decisions,No pending decisions
+Could not load Tender CRM.,Could not load Tender CRM.
+No tender deals found.,No tender deals found.
+No active tenders found for {0}.,No active tenders found for {0}.
+Moved to {0},Moved to {0}
+Tender / Deal,Tender / Deal
+Buyer / Organization,Buyer / Organization
+Buyer / Customer,Buyer / Customer
+Contract Value,Contract Value
+Deadline Risk,Deadline Risk
+Risk (<=48h),Risk (<=48h)
+Warning,Warning
+Sourcing,Sourcing
+Sourcing Summary,Sourcing Summary
+No lots registered for this tender.,No lots registered for this tender.
+No supplier quotations tagged to this deal yet.,No supplier quotations tagged to this deal yet.
+Parties and terms,Parties and terms
+Delivery and notes,Delivery and notes
+Stock reservation,Stock reservation
+On approval these quantities are reserved in the warehouse and cannot be given to another order.,On approval these quantities are reserved in the warehouse and cannot be given to another order.
+will be reserved,will be reserved
+all reservable,all reservable
+not enough,not enough
+check lines,check lines
+checking…,checking…
+complete,complete
+needed,needed
+rate,rate
+sum of every open tender,sum of every open tender

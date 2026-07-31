@@ -2572,7 +2572,7 @@ Overtime multiplier,Qo'shimcha ish koeffitsiyenti
 Overview,Umumiy ko'rinish
 Owes us,Bizga qarzdor
 Own,Oʻzi
-Owner,
+Owner,Mas'ul
 P,Ku
 PENDING,Kutilmoqda
 PI & Exporter,PI va eksportyor
@@ -2941,7 +2941,7 @@ Read,O'qish
 Read-only,Faqat o'qish
 Read-only view. Edit permissions in Frappe's Role Permission Manager.,Faqat o'qish uchun ko'rinish. Ruxsatlarni Frappe'ning Rol Ruxsatlari Menejeridagi ruxsatlari tahrirlang.
 Read-only — from TimePay system.,
-Readiness,
+Readiness,Tayyorlik
 Ready,Tayyor
 Ready to lock,
 Reallocate,Qayta taqsimlash
@@ -3732,7 +3732,7 @@ To date,
 To deliver,Yetkazishga
 To receive,Qabul kutilmoqda
 To warehouse,Gacha omborga
-Today,
+Today,Bugun
 Toggle date sort,
 Token status,
 Too many failed attempts. Please try again in 5 minutes.,
@@ -4134,7 +4134,7 @@ additional,qoʻshimcha
 against,
 ambiguous,noaniq
 avail,mavj.
-available,
+available,mavjud
 blocker(s),
 boxes,qutilar
 check,
@@ -5011,3 +5011,175 @@ Unknown item group: {0},Noma'lum tovar toifasi: {0}
 The top-level category cannot be deleted.,Yuqori darajadagi toifani o'chirib bo'lmaydi.
 Cannot delete {0}: it has {1} subcategories.,{0} ni o'chirib bo'lmaydi: unda {1} ta quyi toifa bor.
 Cannot delete {0}: {1} items still use it.,{0} ni o'chirib bo'lmaydi: uni hali ham {1} ta tovar ishlatmoqda.
+What should I do today?,Bugun nima qilishim kerak?
+Last read,Oxirgi o'qish
+Role view,Rol ko'rinishi
+Failed to load operations desk.,Operatsion stol yuklanmadi.
+Access denied to tender module.,Tender moduliga ruxsat yo'q.
+Please select an active company.,Faol kompaniyani tanlang.
+All items in this view are up to date.,Bu ko'rinishdagi hamma narsa dolzarb.
+must close today,bugun yopilishi kerak
+due date is today,muddati bugun
+past due,kechikkan
+"due date passed, still open","muddat o'tdi, hali ochiq"
+decision is yours,qaror sizda
+approval assigned to you,tasdiqlash sizga biriktirilgan
+no action from you,sizdan harakat talab qilinmaydi
+"you requested, someone else answers","siz so'radingiz, boshqasi javob beradi"
+Soon,Yaqinlashayotgan
+Watching,Kuzatuvda
+Next up,Navbatdagi ish
+due date passed — act today,muddat o'tdi — bugun harakat
+within this week,shu hafta ichida
+"no action, awaiting outcome","harakat yo'q, natija kutilmoqda"
+OVD,KCH
+TDY,BGN
+SOON,YQN
+WCH,KZT
+APR,TSD
+PAST DUE,MUDDAT O'TDI
+TODAY,BUGUN
+DUE,MUDDAT
+unassigned,biriktirilmagan
+Waiting for your signature,Imzoyingizni kutmoqda
+Decisions are waiting on you,Qarorlar sizni kutmoqda
+Nothing moves forward until these are answered.,Bularga javob berilmaguncha hech narsa oldinga siljimaydi.
+Open lots,Ochiq lotlar
+Bar is relative to the busiest queue,Chiziq eng band navbatga nisbatan
+red = has overdue,qizil = kechikkani bor
+Next 7 days,Keyingi 7 kun
+Bid · delivery · due,Taklif · yetkazib berish · muddat
+Every lot is counted in exactly one stage,Har lot faqat bitta bosqichda sanaladi
+Numbers are read from ERP records — the rule under each says what it counted,Raqamlar ERP yozuvlaridan o'qiladi — ostidagi qoida nimani sanaganini aytadi
+lots in the pipeline,lot ishlanmoqda
+seen through to awaiting result,ko'rildi → natija kutilmoqda oralig'idagi lotlar
+win rate,yutuq ulushi
+won,yutildi
+lost,yo'qotildi
+needs action today — lands on the desk,bugun harakat kerak — stolga tushadi
+contracted,shartnomaviy
+sum of every open tender's value,barcha ochiq tenderlar qiymati yig'indisi
+on revenue,tushumdan
+average across tenders that have pricing,narxi hisoblangan tenderlar o'rtachasi
+net remaining,sof qoldiq
+what is still to be collected after landed cost,landed xarajatdan keyin yig'iladigan summa
+tenders carry unverified history — the number is there but the record behind it is incomplete.,"tenderning tarixi tasdiqlanmagan — raqam bor, lekin ortidagi yozuv to'liq emas."
+Linked ERP documents,Bog'langan ERP hujjatlari
+Linked directly to ERP records,To'g'ridan-to'g'ri ERP yozuvlariga bog'langan
+tenders,tender
+Execution,Ijro
+active contracts,faol shartnoma
+delivery or collection still running,yetkazib berish yoki yig'ish davom etmoqda
+lots,lot
+Conversion funnel,Konversiya voronkasi
+conversion,konversiya
+resolved,yakunlangan
+Where we lose them,Ularni qayerda yo'qotamiz
+Reading the funnel,Voronkaning o'qilishi
+No stage lost a lot in this window.,Bu oynada hech bir bosqich lot yo'qotmadi.
+Seen but never decided — the GO/NO-GO queue is where they stalled.,"Ko'rildi, lekin qaror qilinmadi — GO/NO-GO navbatida qoldi."
+Decided but sourcing never started — not one quotation was collected.,"Qaror qabul qilindi, lekin sourcing boshlanmadi — bitta ham taklif yo'q."
+Priced but never submitted — the bid window closed on a finished price.,"Narx hisoblandi, lekin taklif yuborilmadi — oyna tayyor narx ustida yopildi."
+"Submitted and lost — the bid was in, the result went the other way.","Yuborildi va yutqazildi — taklif berilgan edi, natija boshqacha chiqdi."
+Sign in,Kirish
+Sign in to your account,Hisobingizga kiring
+Signing in…,Kirilmoqda…
+No account? Ask your system administrator for an invite.,"Hisobingiz yo'q bo'lsa, tizim administratoridan taklif so'rang."
+Username or Email,Foydalanuvchi nomi yoki e-pochta
+Password,Parol
+name.surname or name@company.uz,ism.familiya yoki ism@kompaniya.uz
+enter password,parolni kiriting
+password entered,parol kiritildi
+Show password,Parolni ko'rsatish
+Hide password,Parolni yashirish
+Remember me on this device,Bu qurilmada eslab qol
+Please enter both username/email and password.,Foydalanuvchi nomi/e-pochta va parolni kiriting.
+Invalid username or password.,Foydalanuvchi nomi yoki parol noto'g'ri.
+ERP Platform,ERP Platforma
+Sales · Purchasing · Warehouse · Production · Finance,Sotuv · Xarid · Ombor · Ishlab chiqarish · Moliya
+"One business,","Butun biznes,"
+one record.,bitta yozuv.
+"Orders, stock, purchasing, production and accounting run on one data model. Every number on screen has a document behind it.","Buyurtma, ombor, xarid, ishlab chiqarish va hisob bitta ma'lumot modelida ishlaydi. Ekrandagi har bir raqam ortida hujjat bor."
+One data model,Bitta ma'lumot modeli
+tied to a document,hujjatga bog'langan
+Role-based access,Rol asosidagi kirish
+permission checked,ruxsat tekshiruvi
+every action recorded,har amal qayd etilgan
+Measurements,O'lchamlar
+computed,hisoblandi
+measure unit · fixed,o'lchov birligi · qat'iy
+Product · stock,Mahsulot · ombor
+Unit price,Birlik narxi
+"Search a product — code, name or barcode · Enter to add","Mahsulot qidirish — kod, nom yoki shtrix-kod · qo'shish uchun Enter"
+No products match that search,Bu qidiruvga mos mahsulot yo'q
+pick a product above,yuqoridan mahsulot tanlang
+checking stock…,ombor tekshirilmoqda…
+needs,kerak
+price,narx
+Remove line,Qatorni o'chirish
+REMOVE,O'CHIRISH
+Decrease,Kamaytirish
+Increase,Ko'paytirish
+Discount column,Chegirma ustuni
+Measurement columns,O'lcham ustunlari
+"A line on this order is priced by size, so the measurement columns cannot be hidden.","Bu buyurtmadagi bir qator o'lchamga qarab narxlanadi, o'lcham ustunlarini yashirib bo'lmaydi."
+Dimensional Sales Lines,O'lchamli sotuv qatorlari
+Direct Invoicing,To'g'ridan-to'g'ri hisob-faktura
+Deal pipeline,Bitim quvuri
+Every card is an ERP deal record,Har karta — ERPdagi bitim yozuvi
+Columns are stages; drag a card to move it,Ustunlar — bosqichlar; kartani sudrab ko'chiring
+"Deal no, buyer, lot…","Bitim raqami, xaridor, lot…"
+open deals,ochiq bitim
+Sourcing policy,Xarid siyosati
+quote set complete,taklif to'plami to'liq
+at least 5 quotations from 2 countries,kamida 2 mamlakatdan 5 taklif
+at risk or expired,xavf ostida yoki muddati o'tgan
+bid deadline within 48 hours or already passed,taklif muddati 48 soat ichida yoki o'tib ketgan
+document set complete,hujjatlar to'plami to'liq
+every required document attached,barcha zarur hujjatlar biriktirilgan
+quotes,taklif
+no value yet,summa hali yo'q
+empty,bo'sh
+Quote set,Taklif to'plami
+policy met,siyosat bajarildi
+below policy,siyosatdan past
+Stage progress,Bosqich jarayoni
+Close panel,Panelni yopish
+Operations desk,Operatsion stol
+Daily work plan,Bugungi ish rejasi
+Decision box,Qaror va tasdiqlash qutisi
+Awaiting my approval,Mening tasdiqlashimda
+Waiting others,Javob kutilmoqda
+Team load,Jamoa yuklamasi
+No tasks scheduled for today,Bugun uchun rejalashtirilgan vazifa yo'q
+Due today,Bugun tugashi kerak
+7-day schedule,7 kunlik jadval
+No pending decisions,Kutilayotgan qarorlar yo'q
+Could not load Tender CRM.,Tender CRM yuklanmadi.
+No tender deals found.,Tender bitimlari topilmadi.
+No active tenders found for {0}.,{0} uchun faol tenderlar topilmadi.
+Moved to {0},{0} bosqichiga ko'chirildi
+Tender / Deal,Tender / Bitim
+Buyer / Organization,Xaridor / Tashkilot
+Buyer / Customer,Xaridor / Mijoz
+Contract Value,Shartnoma qiymati
+Deadline Risk,Muddat xavfi
+Risk (<=48h),Xavf (<=48 soat)
+Warning,Ogohlantirish
+Sourcing,Ta'minot
+Sourcing Summary,Ta'minot xulosasi
+No lots registered for this tender.,Ushbu tender uchun lotlar ro'yxatdan o'tmagan.
+No supplier quotations tagged to this deal yet.,Ushbu bitimga yetkazib beruvchi takliflari hali biriktirilmagan.
+Parties and terms,Tomonlar va shartlar
+Delivery and notes,Yetkazib berish va izohlar
+Stock reservation,Ombor rezervi
+On approval these quantities are reserved in the warehouse and cannot be given to another order.,Tasdiqlangach bu miqdorlar omborda rezerv qilinadi va boshqa buyurtmaga berilmaydi.
+will be reserved,rezerv qilinadi
+all reservable,hammasi rezerv qilinadi
+not enough,yetarli emas
+check lines,qatorlarni tekshiring
+checking…,tekshirilmoqda…
+complete,tayyor
+needed,kerak
+rate,narx
+sum of every open tender,barcha ochiq tenderlar yig'indisi

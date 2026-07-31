@@ -2572,7 +2572,7 @@ Overtime multiplier,Қўшимча иш коэффициенти
 Overview,Умумий кўриниш
 Owes us,Бизга қарздор
 Own,Ўзи
-Owner,
+Owner,Масъул
 P,Ку
 PENDING,Кутилмоқда
 PI & Exporter,PI ва экспортёр
@@ -2941,7 +2941,7 @@ Read,Ўқиш
 Read-only,Фақат ўқиш
 Read-only view. Edit permissions in Frappe's Role Permission Manager.,Ўқишга ихтисос қилинган кўринди. Frappe-нинг ролик рухсатнома бошқармасида рухсатномаларни таҳрир қилинг.
 Read-only — from TimePay system.,
-Readiness,
+Readiness,Тайёрлик
 Ready,Тайёр
 Ready to lock,
 Reallocate,Қайта тақсимлаш
@@ -3732,7 +3732,7 @@ To date,
 To deliver,Етказишга
 To receive,Қабул кутилмоқда
 To warehouse,Гача омборга
-Today,
+Today,Бугун
 Toggle date sort,
 Token status,
 Too many failed attempts. Please try again in 5 minutes.,
@@ -4134,7 +4134,7 @@ additional,қўшимча
 against,
 ambiguous,ноаниқ
 avail,мавж.
-available,
+available,мавжуд
 blocker(s),
 boxes,қутилар
 check,
@@ -5011,3 +5011,175 @@ Unknown item group: {0},Номаълум товар турғуни: {0}
 The top-level category cannot be deleted.,Юқори даражадаги турғунни ўчириб бўлмайди.
 Cannot delete {0}: it has {1} subcategories.,{0} ни ўчириб бўлмайди: унда {1} та қуйи турғун бор.
 Cannot delete {0}: {1} items still use it.,{0} ни ўчириб бўлмайди: уни ҳали ҳам {1} та товар ишлатмоқда.
+What should I do today?,Бугун нима қилишим керак?
+Last read,Охирги ўқиш
+Role view,Рол кўриниши
+Failed to load operations desk.,Операцион стол юкланмади.
+Access denied to tender module.,Тендер модулига рухсат йўқ.
+Please select an active company.,Фаол компанияни танланг.
+All items in this view are up to date.,Бу кўринишдаги ҳамма нарса долзарб.
+must close today,бугун ёпилиши керак
+due date is today,муддати бугун
+past due,кечиккан
+"due date passed, still open","муддат ўтди, ҳали очиқ"
+decision is yours,қарор сизда
+approval assigned to you,тасдиқлаш сизга бириктирилган
+no action from you,сиздан ҳаракат талаб қилинмайди
+"you requested, someone else answers","сиз сўрадингиз, бошқаси жавоб беради"
+Soon,Яқинлашаётган
+Watching,Кузатувда
+Next up,Навбатдаги иш
+due date passed — act today,муддат ўтди — бугун ҳаракат
+within this week,шу ҳафта ичида
+"no action, awaiting outcome","ҳаракат йўқ, натижа кутилмоқда"
+OVD,КЧК
+TDY,БГН
+SOON,ЯҚН
+WCH,КЗТ
+APR,ТСД
+PAST DUE,МУДДАТ ЎТДИ
+TODAY,БУГУН
+DUE,МУДДАТ
+unassigned,бириктирилмаган
+Waiting for your signature,Имзоингизни кутмоқда
+Decisions are waiting on you,Қарорлар сизни кутмоқда
+Nothing moves forward until these are answered.,Буларга жавоб берилмагунча ҳеч нарса олдинга силжимайди.
+Open lots,Очиқ лотлар
+Bar is relative to the busiest queue,Чизиқ энг банд навбатга нисбатан
+red = has overdue,қизил = кечиккани бор
+Next 7 days,Кейинги 7 кун
+Bid · delivery · due,Таклиф · етказиб бериш · муддат
+Every lot is counted in exactly one stage,Ҳар лот фақат битта босқичда саналади
+Numbers are read from ERP records — the rule under each says what it counted,Рақамлар ERP ёзувларидан ўқилади — остидаги қоида нимани санаганини айтади
+lots in the pipeline,лот ишланмоқда
+seen through to awaiting result,кўрилди → натижа кутилмоқда оралиғидаги лотлар
+win rate,ютуқ улуши
+won,ютилди
+lost,йўқотилди
+needs action today — lands on the desk,бугун ҳаракат керак — столга тушади
+contracted,шартномавий
+sum of every open tender's value,барча очиқ тендерлар қиймати йиғиндиси
+on revenue,тушумдан
+average across tenders that have pricing,нархи ҳисобланган тендерлар ўртачаси
+net remaining,соф қолдиқ
+what is still to be collected after landed cost,landed харажатдан кейин йиғиладиган сумма
+tenders carry unverified history — the number is there but the record behind it is incomplete.,"тендернинг тарихи тасдиқланмаган — рақам бор, лекин ортидаги ёзув тўлиқ эмас."
+Linked ERP documents,Боғланган ERP ҳужжатлари
+Linked directly to ERP records,Тўғридан-тўғри ERP ёзувларига боғланган
+tenders,тендер
+Execution,Ижро
+active contracts,фаол шартнома
+delivery or collection still running,етказиб бериш ёки йиғиш давом этмоқда
+lots,лот
+Conversion funnel,Конверсия воронкаси
+conversion,конверсия
+resolved,якунланган
+Where we lose them,Уларни қаерда йўқотамиз
+Reading the funnel,Воронканинг ўқилиши
+No stage lost a lot in this window.,Бу ойнада ҳеч бир босқич лот йўқотмади.
+Seen but never decided — the GO/NO-GO queue is where they stalled.,"Кўрилди, лекин қарор қилинмади — GO/NO-GO навбатида қолди."
+Decided but sourcing never started — not one quotation was collected.,"Қарор қабул қилинди, лекин sourcing бошланмади — битта ҳам таклиф йўқ."
+Priced but never submitted — the bid window closed on a finished price.,"Нарх ҳисобланди, лекин таклиф юборилмади — ойна тайёр нарх устида ёпилди."
+"Submitted and lost — the bid was in, the result went the other way.","Юборилди ва ютқазилди — таклиф берилган эди, натижа бошқача чиқди."
+Sign in,Кириш
+Sign in to your account,Ҳисобингизга киринг
+Signing in…,Кирилмоқда…
+No account? Ask your system administrator for an invite.,"Ҳисобингиз йўқ бўлса, тизим администраторидан таклиф сўранг."
+Username or Email,Фойдаланувчи номи ёки е-почта
+Password,Парол
+name.surname or name@company.uz,исм.фамилия ёки исм@компания.uz
+enter password,паролни киритинг
+password entered,парол киритилди
+Show password,Паролни кўрсатиш
+Hide password,Паролни яшириш
+Remember me on this device,Бу қурилмада эслаб қол
+Please enter both username/email and password.,Фойдаланувчи номи/е-почта ва паролни киритинг.
+Invalid username or password.,Фойдаланувчи номи ёки парол нотўғри.
+ERP Platform,ERP Платформа
+Sales · Purchasing · Warehouse · Production · Finance,Сотув · Харид · Омбор · Ишлаб чиқариш · Молия
+"One business,","Бутун бизнес,"
+one record.,битта ёзув.
+"Orders, stock, purchasing, production and accounting run on one data model. Every number on screen has a document behind it.","Буюртма, омбор, харид, ишлаб чиқариш ва ҳисоб битта маълумот моделида ишлайди. Экрандаги ҳар бир рақам ортида ҳужжат бор."
+One data model,Битта маълумот модели
+tied to a document,ҳужжатга боғланган
+Role-based access,Рол асосидаги кириш
+permission checked,рухсат текшируви
+every action recorded,ҳар амал қайд этилган
+Measurements,Ўлчамлар
+computed,ҳисобланди
+measure unit · fixed,ўлчов бирлиги · қатъий
+Product · stock,Маҳсулот · омбор
+Unit price,Бирлик нархи
+"Search a product — code, name or barcode · Enter to add","Маҳсулот қидириш — код, ном ёки штрих-код · қўшиш учун Enter"
+No products match that search,Бу қидирувга мос маҳсулот йўқ
+pick a product above,юқоридан маҳсулот танланг
+checking stock…,омбор текширилмоқда…
+needs,керак
+price,нарх
+Remove line,Қаторни ўчириш
+REMOVE,ЎЧИРИШ
+Decrease,Камайтириш
+Increase,Кўпайтириш
+Discount column,Чегирма устуни
+Measurement columns,Ўлчам устунлари
+"A line on this order is priced by size, so the measurement columns cannot be hidden.","Бу буюртмадаги бир қатор ўлчамга қараб нархланади, ўлчам устунларини яшириб бўлмайди."
+Dimensional Sales Lines,Ўлчамли сотув қаторлари
+Direct Invoicing,Тўғридан-тўғри ҳисоб-фактура
+Deal pipeline,Битим қувури
+Every card is an ERP deal record,Ҳар карта — ERPдаги битим ёзуви
+Columns are stages; drag a card to move it,Устунлар — босқичлар; картани судраб кўчиринг
+"Deal no, buyer, lot…","Битим рақами, харидор, лот…"
+open deals,очиқ битим
+Sourcing policy,Харид сиёсати
+quote set complete,таклиф тўплами тўлиқ
+at least 5 quotations from 2 countries,камида 2 мамлакатдан 5 таклиф
+at risk or expired,хавф остида ёки муддати ўтган
+bid deadline within 48 hours or already passed,таклиф муддати 48 соат ичида ёки ўтиб кетган
+document set complete,ҳужжатлар тўплами тўлиқ
+every required document attached,барча зарур ҳужжатлар бириктирилган
+quotes,таклиф
+no value yet,сумма ҳали йўқ
+empty,бўш
+Quote set,Таклиф тўплами
+policy met,сиёсат бажарилди
+below policy,сиёсатдан паст
+Stage progress,Босқич жараёни
+Close panel,Панелни ёпиш
+Operations desk,Операцион стол
+Daily work plan,Бугунги иш режаси
+Decision box,Қарор ва тасдиқлаш қутиси
+Awaiting my approval,Менинг тасдиқлашимда
+Waiting others,Жавоб кутилмоқда
+Team load,Жамоа юкламаси
+No tasks scheduled for today,Бугун учун режалаштирилган вазифа йўқ
+Due today,Бугун тугаши керак
+7-day schedule,7 кунлик жадвал
+No pending decisions,Кутилаётган қарорлар йўқ
+Could not load Tender CRM.,Тендер CRM юкланмади.
+No tender deals found.,Тендер битимлари топилмади.
+No active tenders found for {0}.,{0} учун фаол тендерлар топилмади.
+Moved to {0},{0} босқичига кўчирилди
+Tender / Deal,Тендер / Битим
+Buyer / Organization,Харидор / Ташкилот
+Buyer / Customer,Харидор / Мижоз
+Contract Value,Шартнома қиймати
+Deadline Risk,Муддат хавфи
+Risk (<=48h),Хавф (<=48 соат)
+Warning,Огоҳлантириш
+Sourcing,Таъминот
+Sourcing Summary,Таъминот хулосаси
+No lots registered for this tender.,Ушбу тендер учун лотлар рўйхатдан ўтмаган.
+No supplier quotations tagged to this deal yet.,Ушбу битимга етказиб берувчи таклифлари ҳали бириктирилмаган.
+Parties and terms,Томонлар ва шартлар
+Delivery and notes,Етказиб бериш ва изоҳлар
+Stock reservation,Омбор резерви
+On approval these quantities are reserved in the warehouse and cannot be given to another order.,Тасдиқлангач бу миқдорлар омборда резерв қилинади ва бошқа буюртмага берилмайди.
+will be reserved,резерв қилинади
+all reservable,ҳаммаси резерв қилинади
+not enough,етарли эмас
+check lines,қаторларни текширинг
+checking…,текширилмоқда…
+complete,тайёр
+needed,керак
+rate,нарх
+sum of every open tender,барча очиқ тендерлар йиғиндиси

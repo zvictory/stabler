@@ -2578,7 +2578,7 @@ Overtime multiplier,Множитель сверхурочных
 Overview,Обзор
 Owes us,Должен нам
 Own,Собственный
-Owner,
+Owner,Ответственный
 P,Ож
 PENDING,Ожидает
 PI & Exporter,PI и экспортёр
@@ -2947,7 +2947,7 @@ Read,Читать
 Read-only,Только чтение
 Read-only view. Edit permissions in Frappe's Role Permission Manager.,Представление только для чтения. Отредактируйте разрешения в менеджере разрешений ролей Frappe.
 Read-only — from TimePay system.,
-Readiness,
+Readiness,Готовность
 Ready,Готово
 Ready to lock,
 Reallocate,Перераспределить
@@ -3738,7 +3738,7 @@ To date,
 To deliver,К отгрузке
 To receive,К получению
 To warehouse,На склад
-Today,
+Today,Сегодня
 Toggle date sort,
 Token status,
 Too many failed attempts. Please try again in 5 minutes.,
@@ -4140,7 +4140,7 @@ additional,дополнительный
 against,
 ambiguous,не определено
 avail,дост.
-available,
+available,доступно
 blocker(s),
 boxes,коробки
 check,
@@ -5017,3 +5017,175 @@ Unknown item group: {0},Неизвестная категория товара: 
 The top-level category cannot be deleted.,Категорию верхнего уровня нельзя удалить.
 Cannot delete {0}: it has {1} subcategories.,Нельзя удалить {0}: у неё {1} подкатегорий.
 Cannot delete {0}: {1} items still use it.,Нельзя удалить {0}: её всё ещё используют {1} товаров.
+What should I do today?,Что мне делать сегодня?
+Last read,Последнее чтение
+Role view,Представление роли
+Failed to load operations desk.,Не удалось загрузить операционный стол.
+Access denied to tender module.,Нет доступа к модулю тендеров.
+Please select an active company.,Выберите активную компанию.
+All items in this view are up to date.,Всё в этом представлении актуально.
+must close today,должно закрыться сегодня
+due date is today,срок — сегодня
+past due,просрочено
+"due date passed, still open","срок прошёл, всё ещё открыто"
+decision is yours,решение за вами
+approval assigned to you,утверждение назначено вам
+no action from you,от вас действий не требуется
+"you requested, someone else answers","вы запросили, отвечает другой"
+Soon,Скоро
+Watching,Наблюдение
+Next up,Следующее
+due date passed — act today,срок прошёл — действовать сегодня
+within this week,в течение этой недели
+"no action, awaiting outcome","действий нет, ожидается результат"
+OVD,ПРС
+TDY,СЕГ
+SOON,СКР
+WCH,НБЛ
+APR,УТВ
+PAST DUE,ПРОСРОЧЕНО
+TODAY,СЕГОДНЯ
+DUE,СРОК
+unassigned,не назначено
+Waiting for your signature,Ждёт вашей подписи
+Decisions are waiting on you,Решения ждут вас
+Nothing moves forward until these are answered.,"Пока на них не ответят, ничего не движется."
+Open lots,Открытые лоты
+Bar is relative to the busiest queue,Полоса — относительно самой загруженной очереди
+red = has overdue,красный = есть просроченные
+Next 7 days,Следующие 7 дней
+Bid · delivery · due,Заявка · поставка · срок
+Every lot is counted in exactly one stage,Каждый лот считается ровно в одном этапе
+Numbers are read from ERP records — the rule under each says what it counted,"Числа читаются из записей ERP — правило под каждым говорит, что оно посчитало"
+lots in the pipeline,лотов в работе
+seen through to awaiting result,от «увидели» до «ждём результат»
+win rate,доля побед
+won,выиграно
+lost,проиграно
+needs action today — lands on the desk,нужно действие сегодня — попадает на стол
+contracted,законтрактовано
+sum of every open tender's value,сумма стоимости всех открытых тендеров
+on revenue,от выручки
+average across tenders that have pricing,среднее по тендерам с расчётом цены
+net remaining,чистый остаток
+what is still to be collected after landed cost,сколько ещё предстоит собрать после landed-затрат
+tenders carry unverified history — the number is there but the record behind it is incomplete.,"тендеров с непроверенной историей — число есть, но запись за ним неполная."
+Linked ERP documents,Связанные документы ERP
+Linked directly to ERP records,Напрямую связано с записями ERP
+tenders,тендеров
+Execution,Исполнение
+active contracts,активных контрактов
+delivery or collection still running,поставка или сбор ещё идут
+lots,лотов
+Conversion funnel,Воронка конверсии
+conversion,конверсия
+resolved,завершено
+Where we lose them,Где мы их теряем
+Reading the funnel,Чтение воронки
+No stage lost a lot in this window.,В этом окне ни один этап не потерял лот.
+Seen but never decided — the GO/NO-GO queue is where they stalled.,"Увидели, но не решили — застряли в очереди GO/NO-GO."
+Decided but sourcing never started — not one quotation was collected.,"Решение принято, но сорсинг не начался — ни одного предложения."
+Priced but never submitted — the bid window closed on a finished price.,"Цена рассчитана, но заявку не подали — окно закрылось на готовой цене."
+"Submitted and lost — the bid was in, the result went the other way.","Подали и проиграли — заявка была, результат оказался другим."
+Sign in,Вход
+Sign in to your account,Войдите в аккаунт
+Signing in…,Выполняется вход…
+No account? Ask your system administrator for an invite.,Нет аккаунта? Запросите приглашение у системного администратора.
+Username or Email,Имя пользователя или e-mail
+Password,Пароль
+name.surname or name@company.uz,имя.фамилия или имя@company.uz
+enter password,введите пароль
+password entered,пароль введён
+Show password,Показать пароль
+Hide password,Скрыть пароль
+Remember me on this device,Запомнить на этом устройстве
+Please enter both username/email and password.,Введите имя пользователя/e-mail и пароль.
+Invalid username or password.,Неверное имя пользователя или пароль.
+ERP Platform,ERP-платформа
+Sales · Purchasing · Warehouse · Production · Finance,Продажи · Закупки · Склад · Производство · Финансы
+"One business,",Весь бизнес —
+one record.,одна запись.
+"Orders, stock, purchasing, production and accounting run on one data model. Every number on screen has a document behind it.","Заказы, склад, закупки, производство и учёт работают на одной модели данных. За каждым числом на экране стоит документ."
+One data model,Одна модель данных
+tied to a document,привязано к документу
+Role-based access,Доступ по ролям
+permission checked,проверка прав
+every action recorded,каждое действие записано
+Measurements,Размеры
+computed,рассчитано
+measure unit · fixed,единица измерения · фиксирована
+Product · stock,Товар · склад
+Unit price,Цена за единицу
+"Search a product — code, name or barcode · Enter to add","Поиск товара — код, название или штрихкод · Enter для добавления"
+No products match that search,Нет товаров по этому запросу
+pick a product above,выберите товар выше
+checking stock…,проверка остатка…
+needs,нужно
+price,цена
+Remove line,Удалить строку
+REMOVE,УДАЛИТЬ
+Decrease,Уменьшить
+Increase,Увеличить
+Discount column,Колонка скидки
+Measurement columns,Колонки размеров
+"A line on this order is priced by size, so the measurement columns cannot be hidden.",Одна из позиций заказа считается по размеру — колонки размеров скрыть нельзя.
+Dimensional Sales Lines,Позиции продаж по размеру
+Direct Invoicing,Прямое выставление счетов
+Deal pipeline,Воронка сделок
+Every card is an ERP deal record,Каждая карточка — запись сделки в ERP
+Columns are stages; drag a card to move it,"Колонки — этапы; перетащите карточку, чтобы переместить"
+"Deal no, buyer, lot…","Номер сделки, покупатель, лот…"
+open deals,открытых сделок
+Sourcing policy,Политика закупок
+quote set complete,комплект предложений собран
+at least 5 quotations from 2 countries,минимум 5 предложений из 2 стран
+at risk or expired,под риском или просрочено
+bid deadline within 48 hours or already passed,срок подачи в пределах 48 часов или уже прошёл
+document set complete,комплект документов собран
+every required document attached,все требуемые документы приложены
+quotes,предложений
+no value yet,суммы пока нет
+empty,пусто
+Quote set,Комплект предложений
+policy met,политика соблюдена
+below policy,ниже политики
+Stage progress,Прогресс по этапам
+Close panel,Закрыть панель
+Operations desk,Операционная панель
+Daily work plan,План работы на сегодня
+Decision box,Блок решений и утверждений
+Awaiting my approval,На моем утверждении
+Waiting others,Ожидает ответа
+Team load,Нагрузка команды
+No tasks scheduled for today,На сегодня задач нет
+Due today,Срок сегодня
+7-day schedule,График на 7 дней
+No pending decisions,"Нет решений, ожидающих ответа"
+Could not load Tender CRM.,Не удалось загрузить Тендер CRM.
+No tender deals found.,Тендерные сделки не найдены.
+No active tenders found for {0}.,Активные тендеры не найдены для {0}.
+Moved to {0},Перемещено в {0}
+Tender / Deal,Тендер / Сделка
+Buyer / Organization,Покупатель / Организация
+Buyer / Customer,Покупатель / Клиент
+Contract Value,Сумма контракта
+Deadline Risk,Срок
+Risk (<=48h),Риск (<=48 ч)
+Warning,Предупреждение
+Sourcing,Закупки
+Sourcing Summary,Итоги закупок
+No lots registered for this tender.,Лоты для этого тендера не зарегистрированы.
+No supplier quotations tagged to this deal yet.,Предложения поставщиков ещё не привязаны.
+Parties and terms,Стороны и условия
+Delivery and notes,Доставка и примечания
+Stock reservation,Резервирование склада
+On approval these quantities are reserved in the warehouse and cannot be given to another order.,После утверждения эти количества резервируются на складе и не могут быть отданы другому заказу.
+will be reserved,будет зарезервировано
+all reservable,всё резервируется
+not enough,не хватает
+check lines,проверьте позиции
+checking…,проверка…
+complete,готово
+needed,требуется
+rate,цена
+sum of every open tender,сумма всех открытых тендеров

@@ -36,6 +36,7 @@ stabler.tests.test_departure_gate_source
 stabler.tests.test_departure_math
 stabler.tests.test_design_layer_contract
 stabler.tests.test_desk_gate_setting
+stabler.tests.test_desk_rules
 stabler.tests.test_dimensions
 stabler.tests.test_dimensional_lines_flag
 stabler.tests.test_direct_invoicing_gate
@@ -92,6 +93,8 @@ stabler.tests.test_tender_dashboard
 stabler.tests.test_tender_dashboard_behavior
 stabler.tests.test_tender_dashboard_i18n
 stabler.tests.test_tender_dashboard_spa
+stabler.tests.test_tender_desk_api
+stabler.tests.test_tender_desk_i18n
 stabler.tests.test_tender_desk_spa
 stabler.tests.test_tender_document_chain_source
 stabler.tests.test_tender_landed_vat

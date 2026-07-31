@@ -458,6 +458,81 @@ ROWS = {
 	"below policy": ("politika altı", "ниже политики", "siyosatdan past", "сиёсатдан паст"),
 	"Stage progress": ("Aşama ilerlemesi", "Прогресс по этапам", "Bosqich jarayoni", "Босқич жараёни"),
 	"Close panel": ("Paneli kapat", "Закрыть панель", "Panelni yopish", "Панелни ёпиш"),
+	# ══ Ekranlarda RENDER EDİLEN ama bu betikte olmayan anahtarlar ═════
+	# Taşıdığım yedi ekranın kullandığı ama betiğin taşımadığı anahtarlar.
+	# Yirmi üçü csv'lerde vardı (başka bir oturumun harvest'i), on üçü HİÇBİR
+	# yerde yoktu — yani ru/uz/uzc kullanıcısı onları bugün İngilizce görüyor.
+	# İkisi de aynı sorunun iki yüzü: betik ekranların tek kaynağı değildi.
+	#
+	# Mevcut çeviriler olduğu gibi alındı; yalnız Kiril alanında kalmış Latin
+	# harfler düzeltildi ("Xavf (<=48soat)", "lotlar roʻyxatdan oʻtmagan" gibi
+	# yarım çevrilmiş dizgeler uzc'de okunmuyordu.)
+	"Operations desk": ("Operasyon masası", "Операционная панель", "Operatsion stol", "Операцион стол"),
+	"Daily work plan": ("Bugünkü iş planı", "План работы на сегодня", "Bugungi ish rejasi", "Бугунги иш режаси"),
+	"Decision box": ("Karar / onay kutusu", "Блок решений и утверждений", "Qaror va tasdiqlash qutisi", "Қарор ва тасдиқлаш қутиси"),
+	"Awaiting my approval": ("Onayımda", "На моем утверждении", "Mening tasdiqlashimda", "Менинг тасдиқлашимда"),
+	"Waiting others": ("Cevap bekliyor", "Ожидает ответа", "Javob kutilmoqda", "Жавоб кутилмоқда"),
+	"Team load": ("Ekip yükü", "Нагрузка команды", "Jamoa yuklamasi", "Жамоа юкламаси"),
+	"No tasks scheduled for today": (
+		"Bugün için planlanmış iş yok", "На сегодня задач нет",
+		"Bugun uchun rejalashtirilgan vazifa yo'q", "Бугун учун режалаштирилган вазифа йўқ",
+	),
+	"Due today": ("Bugün bitmeli", "Срок сегодня", "Bugun tugashi kerak", "Бугун тугаши керак"),
+	"7-day schedule": ("7 günlük takvim", "График на 7 дней", "7 kunlik jadval", "7 кунлик жадвал"),
+	"No pending decisions": ("Bekleyen karar yok", "Нет решений, ожидающих ответа", "Kutilayotgan qarorlar yo'q", "Кутилаётган қарорлар йўқ"),
+	"Could not load Tender CRM.": ("İhale CRM yüklenemedi.", "Не удалось загрузить Тендер CRM.", "Tender CRM yuklanmadi.", "Тендер CRM юкланмади."),
+	"No tender deals found.": ("İhale anlaşması bulunamadı.", "Тендерные сделки не найдены.", "Tender bitimlari topilmadi.", "Тендер битимлари топилмади."),
+	"No active tenders found for {0}.": (
+		"{0} için aktif ihale bulunamadı.", "Активные тендеры не найдены для {0}.",
+		"{0} uchun faol tenderlar topilmadi.", "{0} учун фаол тендерлар топилмади.",
+	),
+	"Moved to {0}": ("{0} aşamasına taşındı", "Перемещено в {0}", "{0} bosqichiga ko'chirildi", "{0} босқичига кўчирилди"),
+	"Tender / Deal": ("İhale / Anlaşma", "Тендер / Сделка", "Tender / Bitim", "Тендер / Битим"),
+	"Buyer / Organization": ("Alıcı / Kurum", "Покупатель / Организация", "Xaridor / Tashkilot", "Харидор / Ташкилот"),
+	"Buyer / Customer": ("Alıcı / Müşteri", "Покупатель / Клиент", "Xaridor / Mijoz", "Харидор / Мижоз"),
+	"Contract Value": ("Sözleşme Değeri", "Сумма контракта", "Shartnoma qiymati", "Шартнома қиймати"),
+	"Deadline Risk": ("Son Tarih Riski", "Срок", "Muddat xavfi", "Муддат хавфи"),
+	"Risk (<=48h)": ("Risk (<=48 saat)", "Риск (<=48 ч)", "Xavf (<=48 soat)", "Хавф (<=48 соат)"),
+	"Warning": ("Uyarı", "Предупреждение", "Ogohlantirish", "Огоҳлантириш"),
+	"Sourcing": ("Tedarik", "Закупки", "Ta'minot", "Таъминот"),
+	"Sourcing Summary": ("Tedarik özeti", "Итоги закупок", "Ta'minot xulosasi", "Таъминот хулосаси"),
+	# Üçüncü bir durum: satır HEAD'de VAR ama hedefi boş ("Owner,"). Yani
+	# ru/uz/uzc/tr kullanıcısı kanban kartında ve çekmecede bu iki başlığı
+	# İngilizce okuyor. Betiğin boş-hedef doldurma yolu bunları yerinde
+	# tamamlıyor; dolu bir hedefe dokunmadığı için en.csv etkilenmiyor.
+	"Owner": ("Sorumlu", "Ответственный", "Mas'ul", "Масъул"),
+	"Readiness": ("Hazırlık", "Готовность", "Tayyorlik", "Тайёрлик"),
+	"No lots registered for this tender.": (
+		"Bu ihale için tanımlı lot bulunamadı.", "Лоты для этого тендера не зарегистрированы.",
+		"Ushbu tender uchun lotlar ro'yxatdan o'tmagan.", "Ушбу тендер учун лотлар рўйхатдан ўтмаган.",
+	),
+	"No supplier quotations tagged to this deal yet.": (
+		"Bu ihaleye henüz tedarikçi teklifi eklenmedi.", "Предложения поставщиков ещё не привязаны.",
+		"Ushbu bitimga yetkazib beruvchi takliflari hali biriktirilmagan.",
+		"Ушбу битимга етказиб берувчи таклифлари ҳали бириктирилмаган.",
+	),
+	# ── Hiçbir yerde çevirisi olmayanlar (bugün İngilizce görünüyorlar) ──
+	"Parties and terms": ("Taraflar ve koşullar", "Стороны и условия", "Tomonlar va shartlar", "Томонлар ва шартлар"),
+	"Delivery and notes": ("Teslim ve notlar", "Доставка и примечания", "Yetkazib berish va izohlar", "Етказиб бериш ва изоҳлар"),
+	"Stock reservation": ("Stok rezervasyonu", "Резервирование склада", "Ombor rezervi", "Омбор резерви"),
+	"On approval these quantities are reserved in the warehouse and cannot be given to another order.": (
+		"Onaylandığında bu miktarlar depoda rezerve edilir ve başka bir siparişe verilemez.",
+		"После утверждения эти количества резервируются на складе и не могут быть отданы другому заказу.",
+		"Tasdiqlangach bu miqdorlar omborda rezerv qilinadi va boshqa buyurtmaga berilmaydi.",
+		"Тасдиқлангач бу миқдорлар омборда резерв қилинади ва бошқа буюртмага берилмайди.",
+	),
+	"will be reserved": ("rezerve edilecek", "будет зарезервировано", "rezerv qilinadi", "резерв қилинади"),
+	"all reservable": ("hepsi rezerve edilebilir", "всё резервируется", "hammasi rezerv qilinadi", "ҳаммаси резерв қилинади"),
+	"not enough": ("yetersiz", "не хватает", "yetarli emas", "етарли эмас"),
+	"check lines": ("satırları kontrol et", "проверьте позиции", "qatorlarni tekshiring", "қаторларни текширинг"),
+	"checking…": ("kontrol ediliyor…", "проверка…", "tekshirilmoqda…", "текширилмоқда…"),
+	"complete": ("tamam", "готово", "tayyor", "тайёр"),
+	"needed": ("gereken", "требуется", "kerak", "керак"),
+	"rate": ("fiyat", "цена", "narx", "нарх"),
+	"sum of every open tender": (
+		"tüm açık ihalelerin toplamı", "сумма всех открытых тендеров",
+		"barcha ochiq tenderlar yig'indisi", "барча очиқ тендерлар йиғиндиси",
+	),
 }
 
 LANGS = {"en": None, "tr": 0, "ru": 1, "uz": 2, "uzc": 3}

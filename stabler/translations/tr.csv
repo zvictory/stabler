@@ -2563,7 +2563,7 @@ Overtime multiplier,Fazla mesai çarpanı
 Overview,Genel Bakış
 Owes us,Bize borçlu
 Own,Kendi
-Owner,
+Owner,Sorumlu
 P,Bk
 PENDING,Beklemede
 PI & Exporter,PI ve İhracatçı
@@ -2931,7 +2931,7 @@ Read,Oku
 Read-only,Salt okunur
 Read-only view. Edit permissions in Frappe's Role Permission Manager.,Salt okunur görünüm. İzinleri Frappe'nin Rol İzin Yöneticisi'nden düzenleyin.
 Read-only — from TimePay system.,
-Readiness,
+Readiness,Hazırlık
 Ready,Hazır
 Ready to lock,
 Reallocate,Yeniden tahsis et
@@ -3718,7 +3718,7 @@ To date,
 To deliver,Teslim edilecek
 To receive,Teslim bekliyor
 To warehouse,Hedef depo
-Today,
+Today,Bugün
 Toggle date sort,
 Token status,
 Too many failed attempts. Please try again in 5 minutes.,
@@ -4119,7 +4119,7 @@ additional,ek
 against,
 ambiguous,belirsiz
 avail,mev.
-available,
+available,uygun
 blocker(s),
 boxes,kutu
 check,
@@ -5006,3 +5006,175 @@ Unknown item group: {0},Bilinmeyen ürün kategorisi: {0}
 The top-level category cannot be deleted.,Üst düzey kategori silinemez.
 Cannot delete {0}: it has {1} subcategories.,{0} silinemez: {1} alt kategorisi var.
 Cannot delete {0}: {1} items still use it.,{0} silinemez: hâlâ {1} ürün onu kullanıyor.
+What should I do today?,Bugün ne yapmalıyım?
+Last read,Son okuma
+Role view,Rol görünümü
+Failed to load operations desk.,Operasyon masası yüklenemedi.
+Access denied to tender module.,Tender modülüne erişim yok.
+Please select an active company.,Lütfen aktif bir şirket seçin.
+All items in this view are up to date.,Bu görünümdeki her şey güncel.
+must close today,bugün kapanmalı
+due date is today,son tarihi bugün olan işler
+past due,geciken
+"due date passed, still open","son tarih geçti, hâlâ açık"
+decision is yours,karar sende
+approval assigned to you,onay sana atanmış
+no action from you,senden aksiyon yok
+"you requested, someone else answers","sen istedin, başkası cevaplıyor"
+Soon,Yaklaşan
+Watching,İzlemede
+Next up,Sıradaki iş
+due date passed — act today,son tarih geçti — bugün müdahale
+within this week,bu hafta içinde
+"no action, awaiting outcome","aksiyon yok, sonuç bekleniyor"
+OVD,GEC
+TDY,BUG
+SOON,YAK
+WCH,İZL
+APR,ONY
+PAST DUE,GEÇTİ
+TODAY,BUGÜN
+DUE,VADE
+unassigned,atanmadı
+Waiting for your signature,İmzanı bekliyor
+Decisions are waiting on you,Karar sende bekliyor
+Nothing moves forward until these are answered.,Bunlar cevaplanmadan hiçbir şey ilerlemiyor.
+Open lots,Açık lotlar
+Bar is relative to the busiest queue,Çubuk en yoğun kuyruğa göre
+red = has overdue,kırmızı = gecikeni var
+Next 7 days,Önümüzdeki 7 gün
+Bid · delivery · due,Teklif · teslim · vade
+Every lot is counted in exactly one stage,Her lot tek bir aşamada sayılır
+Numbers are read from ERP records — the rule under each says what it counted,Sayılar ERP kayıtlarından okunur — altındaki kural ne saydığını söyler
+lots in the pipeline,lot işlemde
+seen through to awaiting result,görüldü → sonuç bekleniyor arası tüm lotlar
+win rate,kazanma oranı
+won,kazanıldı
+lost,kaybedildi
+needs action today — lands on the desk,bugün müdahale gerekiyor — masaya düşer
+contracted,sözleşmeli
+sum of every open tender's value,açık tüm tenderlerin değer toplamı
+on revenue,ciro üzerinden
+average across tenders that have pricing,fiyatlaması olan tenderlerin ortalaması
+net remaining,net kalan
+what is still to be collected after landed cost,landed maliyetten sonra tahsil edilecek tutar
+tenders carry unverified history — the number is there but the record behind it is incomplete.,tenderin geçmişi doğrulanmamış — rakam var ama arkasındaki kayıt eksik.
+Linked ERP documents,Bağlı ERP belgeleri
+Linked directly to ERP records,Doğrudan ERP kayıtlarına bağlı
+tenders,tender
+Execution,İcra
+active contracts,aktif sözleşme
+delivery or collection still running,teslim veya tahsilat devam ediyor
+lots,lot
+Conversion funnel,Dönüşüm hunisi
+conversion,geçiş
+resolved,sonuçlanan
+Where we lose them,Nerede kaybediyoruz
+Reading the funnel,Huninin okuması
+No stage lost a lot in this window.,Bu pencerede hiçbir aşama lot kaybetmedi.
+Seen but never decided — the GO/NO-GO queue is where they stalled.,Görüldü ama karar verilmedi — GO/NO-GO kuyruğunda takıldılar.
+Decided but sourcing never started — not one quotation was collected.,Karar alındı ama sourcing başlamadı — tek teklif bile toplanmadı.
+Priced but never submitted — the bid window closed on a finished price.,Fiyatlandı ama gönderilmedi — teklif penceresi bitmiş fiyatın üstüne kapandı.
+"Submitted and lost — the bid was in, the result went the other way.","Gönderildi ve kaybedildi — teklif verilmişti, sonuç ters çıktı."
+Sign in,Oturum aç
+Sign in to your account,Hesabınıza girin
+Signing in…,Giriş yapılıyor…
+No account? Ask your system administrator for an invite.,Hesabınız yoksa sistem yöneticinizden davet isteyin.
+Username or Email,Kullanıcı adı veya e-posta
+Password,Şifre
+name.surname or name@company.uz,ad.soyad ya da ad@sirket.uz
+enter password,şifre girin
+password entered,şifre girildi
+Show password,Şifreyi göster
+Hide password,Şifreyi gizle
+Remember me on this device,Bu cihazda hatırla
+Please enter both username/email and password.,Lütfen kullanıcı adı/e-posta ve şifreyi girin.
+Invalid username or password.,Kullanıcı adı veya şifre hatalı.
+ERP Platform,ERP Platformu
+Sales · Purchasing · Warehouse · Production · Finance,Satış · Satınalma · Depo · Üretim · Finans
+"One business,","Tüm işletme,"
+one record.,tek kayıt.
+"Orders, stock, purchasing, production and accounting run on one data model. Every number on screen has a document behind it.","Sipariş, stok, satınalma, üretim ve muhasebe tek veri modelinde çalışır. Ekranda gördüğünüz her sayının arkasında bir belge kaydı vardır."
+One data model,Tek veri modeli
+tied to a document,belgeye bağlı
+Role-based access,Rol bazlı erişim
+permission checked,yetki denetimi
+every action recorded,her işlem kayıtlı
+Measurements,Ölçüler
+computed,hesaplandı
+measure unit · fixed,ölçü birimi · sabit
+Product · stock,Ürün · stok
+Unit price,Birim fiyat
+"Search a product — code, name or barcode · Enter to add","Ürün ara — kod, ad veya barkod · eklemek için Enter"
+No products match that search,Bu aramaya uyan ürün yok
+pick a product above,yukarıdan bir ürün seçin
+checking stock…,stok kontrol ediliyor…
+needs,gereken
+price,fiyat
+Remove line,Satırı kaldır
+REMOVE,KALDIR
+Decrease,Azalt
+Increase,Artır
+Discount column,İskonto sütunu
+Measurement columns,Ölçü sütunları
+"A line on this order is priced by size, so the measurement columns cannot be hidden.","Bu siparişteki bir kalem ölçüye göre fiyatlanıyor, ölçü sütunları gizlenemez."
+Dimensional Sales Lines,Ölçülü satış satırları
+Direct Invoicing,Doğrudan faturalama
+Deal pipeline,Anlaşma hattı
+Every card is an ERP deal record,Her kart bir ERP anlaşma kaydı
+Columns are stages; drag a card to move it,Kolonlar aşamalar; kartı sürükleyerek taşıyın
+"Deal no, buyer, lot…","Anlaşma no, müşteri, lot…"
+open deals,açık anlaşma
+Sourcing policy,Tedarik politikası
+quote set complete,teklif seti tam
+at least 5 quotations from 2 countries,en az 2 ülkeden 5 teklif
+at risk or expired,riskli veya süresi geçmiş
+bid deadline within 48 hours or already passed,teklif son tarihi 48 saat içinde veya geçmiş
+document set complete,belge seti tam
+every required document attached,gereken her belge eklenmiş
+quotes,teklif
+no value yet,tutar yok
+empty,boş
+Quote set,Teklif seti
+policy met,politika sağlandı
+below policy,politika altı
+Stage progress,Aşama ilerlemesi
+Close panel,Paneli kapat
+Operations desk,Operasyon masası
+Daily work plan,Bugünkü iş planı
+Decision box,Karar / onay kutusu
+Awaiting my approval,Onayımda
+Waiting others,Cevap bekliyor
+Team load,Ekip yükü
+No tasks scheduled for today,Bugün için planlanmış iş yok
+Due today,Bugün bitmeli
+7-day schedule,7 günlük takvim
+No pending decisions,Bekleyen karar yok
+Could not load Tender CRM.,İhale CRM yüklenemedi.
+No tender deals found.,İhale anlaşması bulunamadı.
+No active tenders found for {0}.,{0} için aktif ihale bulunamadı.
+Moved to {0},{0} aşamasına taşındı
+Tender / Deal,İhale / Anlaşma
+Buyer / Organization,Alıcı / Kurum
+Buyer / Customer,Alıcı / Müşteri
+Contract Value,Sözleşme Değeri
+Deadline Risk,Son Tarih Riski
+Risk (<=48h),Risk (<=48 saat)
+Warning,Uyarı
+Sourcing,Tedarik
+Sourcing Summary,Tedarik özeti
+No lots registered for this tender.,Bu ihale için tanımlı lot bulunamadı.
+No supplier quotations tagged to this deal yet.,Bu ihaleye henüz tedarikçi teklifi eklenmedi.
+Parties and terms,Taraflar ve koşullar
+Delivery and notes,Teslim ve notlar
+Stock reservation,Stok rezervasyonu
+On approval these quantities are reserved in the warehouse and cannot be given to another order.,Onaylandığında bu miktarlar depoda rezerve edilir ve başka bir siparişe verilemez.
+will be reserved,rezerve edilecek
+all reservable,hepsi rezerve edilebilir
+not enough,yetersiz
+check lines,satırları kontrol et
+checking…,kontrol ediliyor…
+complete,tamam
+needed,gereken
+rate,fiyat
+sum of every open tender,tüm açık ihalelerin toplamı
