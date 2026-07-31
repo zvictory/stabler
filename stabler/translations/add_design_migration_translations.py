@@ -406,6 +406,58 @@ ROWS = {
 		"Doğrudan faturalama", "Прямое выставление счетов",
 		"To'g'ridan-to'g'ri hisob-faktura", "Тўғридан-тўғри ҳисоб-фактура",
 	),
+	# ══ Tender CRM · kanban + çekmece ══════════════════════════════════
+	"Deal pipeline": ("Anlaşma hattı", "Воронка сделок", "Bitim quvuri", "Битим қувури"),
+	"Every card is an ERP deal record": (
+		"Her kart bir ERP anlaşma kaydı",
+		"Каждая карточка — запись сделки в ERP",
+		"Har karta — ERPdagi bitim yozuvi",
+		"Ҳар карта — ERPдаги битим ёзуви",
+	),
+	"Columns are stages; drag a card to move it": (
+		"Kolonlar aşamalar; kartı sürükleyerek taşıyın",
+		"Колонки — этапы; перетащите карточку, чтобы переместить",
+		"Ustunlar — bosqichlar; kartani sudrab ko'chiring",
+		"Устунлар — босқичлар; картани судраб кўчиринг",
+	),
+	"Deal no, buyer, lot…": (
+		"Anlaşma no, müşteri, lot…",
+		"Номер сделки, покупатель, лот…",
+		"Bitim raqami, xaridor, lot…",
+		"Битим рақами, харидор, лот…",
+	),
+	"Pipeline": ("Hat", "Воронка", "Quvur", "Қувур"),
+	"open deals": ("açık anlaşma", "открытых сделок", "ochiq bitim", "очиқ битим"),
+	"Sourcing policy": ("Tedarik politikası", "Политика закупок", "Xarid siyosati", "Харид сиёсати"),
+	"quote set complete": ("teklif seti tam", "комплект предложений собран", "taklif to'plami to'liq", "таклиф тўплами тўлиқ"),
+	"at least 5 quotations from 2 countries": (
+		"en az 2 ülkeden 5 teklif",
+		"минимум 5 предложений из 2 стран",
+		"kamida 2 mamlakatdan 5 taklif",
+		"камида 2 мамлакатдан 5 таклиф",
+	),
+	"at risk or expired": ("riskli veya süresi geçmiş", "под риском или просрочено", "xavf ostida yoki muddati o'tgan", "хавф остида ёки муддати ўтган"),
+	"bid deadline within 48 hours or already passed": (
+		"teklif son tarihi 48 saat içinde veya geçmiş",
+		"срок подачи в пределах 48 часов или уже прошёл",
+		"taklif muddati 48 soat ichida yoki o'tib ketgan",
+		"таклиф муддати 48 соат ичида ёки ўтиб кетган",
+	),
+	"document set complete": ("belge seti tam", "комплект документов собран", "hujjatlar to'plami to'liq", "ҳужжатлар тўплами тўлиқ"),
+	"every required document attached": (
+		"gereken her belge eklenmiş",
+		"все требуемые документы приложены",
+		"barcha zarur hujjatlar biriktirilgan",
+		"барча зарур ҳужжатлар бириктирилган",
+	),
+	"quotes": ("teklif", "предложений", "taklif", "таклиф"),
+	"no value yet": ("tutar yok", "суммы пока нет", "summa hali yo'q", "сумма ҳали йўқ"),
+	"empty": ("boş", "пусто", "bo'sh", "бўш"),
+	"Quote set": ("Teklif seti", "Комплект предложений", "Taklif to'plami", "Таклиф тўплами"),
+	"policy met": ("politika sağlandı", "политика соблюдена", "siyosat bajarildi", "сиёсат бажарилди"),
+	"below policy": ("politika altı", "ниже политики", "siyosatdan past", "сиёсатдан паст"),
+	"Stage progress": ("Aşama ilerlemesi", "Прогресс по этапам", "Bosqich jarayoni", "Босқич жараёни"),
+	"Close panel": ("Paneli kapat", "Закрыть панель", "Panelni yopish", "Панелни ёпиш"),
 }
 
 LANGS = {"en": None, "tr": 0, "ru": 1, "uz": 2, "uzc": 3}

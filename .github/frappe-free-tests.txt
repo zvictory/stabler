@@ -88,6 +88,7 @@ stabler.tests.test_sea_lifecycle_source
 stabler.tests.test_sidebar_profile_menu
 stabler.tests.test_sod_rules
 stabler.tests.test_stock_recon
+stabler.tests.test_tender_crm_source
 stabler.tests.test_tender_dashboard
 stabler.tests.test_tender_dashboard_behavior
 stabler.tests.test_tender_dashboard_i18n

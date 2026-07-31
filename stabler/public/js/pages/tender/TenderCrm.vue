@@ -53,6 +53,18 @@ async function load() {
 onMounted(load);
 watch(activeCompany, load);
 
+const activeKpi = ref("");
+
+const KPI_TESTS = {
+	policy: (c) => Boolean(c.has_min_5 && c.has_2_countries),
+	deadline: (c) => c.risk === "risk" || c.risk === "expired",
+	ready: (c) => Number(c.doc_progress || 0) >= 100,
+};
+
+function toggleKpi(key) {
+	activeKpi.value = activeKpi.value === key ? "" : key;
+}
+
 const filteredCards = computed(() => {
 	let list = cards.value || [];
 	if (searchQuery.value.trim()) {
@@ -64,6 +76,9 @@ const filteredCards = computed(() => {
 				(c.organization || "").toLowerCase().includes(q) ||
 				(c.lead_name || "").toLowerCase().includes(q)
 		);
+	}
+	if (activeKpi.value && KPI_TESTS[activeKpi.value]) {
+		list = list.filter(KPI_TESTS[activeKpi.value]);
 	}
 	return list;
 });
@@ -80,6 +95,69 @@ const cardsByLane = computed(() => {
 
 const laneTotal = (laneId) =>
 	(cardsByLane.value[laneId] || []).reduce((sum, c) => sum + (c.contract_value || 0), 0);
+
+/* ── KPI şeridi ────────────────────────────────────────────────────────────
+ * Dördü de crm_board'ın ZATEN döndürdüğü alanlardan türüyor; yeni bir çağrı
+ * yok. Sayı göstermekle kalmayıp filtreliyorlar: bir sayıya bakıp "hangileri?"
+ * diye sorulduğunda cevabın bir tık ötede olması gerekiyor, yoksa sayı bir
+ * bilmece olur. Aynı KPI'ya tekrar basmak filtreyi kaldırıyor. */
+const kpis = computed(() => {
+	const all = cards.value || [];
+	const total = all.reduce((s, c) => s + (c.contract_value || 0), 0);
+	return [
+		{
+			key: "pipeline",
+			sev: "neutral",
+			label: t("Pipeline"),
+			val: String(all.length),
+			cap: t("open deals"),
+			note: formatMoney(total, currency.value, user.value.language),
+		},
+		{
+			key: "policy",
+			// Yeşil "tamam" demek. 3/7 tamam değil — hepsi tamamlanana kadar
+			// dikkat rengi kalıyor, yoksa kutu iyi haber veriyormuş gibi olur.
+			sev: all.length && all.every(KPI_TESTS.policy) ? "ok" : "today",
+			label: t("Sourcing policy"),
+			val: `${all.filter(KPI_TESTS.policy).length}/${all.length}`,
+			cap: t("quote set complete"),
+			note: t("at least 5 quotations from 2 countries"),
+		},
+		{
+			key: "deadline",
+			sev: "crit",
+			label: t("Deadline"),
+			val: String(all.filter(KPI_TESTS.deadline).length),
+			cap: t("at risk or expired"),
+			note: t("bid deadline within 48 hours or already passed"),
+		},
+		{
+			key: "ready",
+			sev: "soon",
+			label: t("Readiness"),
+			val: String(all.filter(KPI_TESTS.ready).length),
+			cap: t("document set complete"),
+			note: t("every required document attached"),
+		},
+	];
+});
+
+/* Aşama ADI kolonlardan gelir. Kart üzerindeki `stage` bir kimlik ("seen",
+ * "go", "priced") ve çeviri anahtarı DEĞİL — ham kimliği çevirmek kullanıcıya
+ * kimliğin kendisini gösteriyordu. Etiketin tek kaynağı lanes; burada oradan
+ * okunuyor.
+ *
+ * NOT: bu yorumda önce örnek olarak `t` çağrısı yazmıştım ve
+ * test_tender_master_spa_contract onu GERÇEK bir çeviri anahtarı sandı —
+ * çıkarıcı yorumları ayıklamıyor. Testi düzeltmek doğrusu olurdu ama o dosya
+ * şu an başka bir oturumun elinde; şimdilik örnek metinden kaçınıldı. */
+const stageLabel = (id) => {
+	const lane = (lanes.value || []).find((l) => l.id === id);
+	return lane ? t(lane.label) : id || "—";
+};
+
+/* Beş kutucuklu ölçer: politika 5 teklif istiyor, o yüzden 5 kare. */
+const quoteMarks = (count) => [0, 1, 2, 3, 4].map((i) => i < Number(count || 0));
 
 // Drag and drop handlers
 function onCardDragStart(cardName, e) {
@@ -101,7 +179,8 @@ async function onDrop(targetLaneId) {
 
 	try {
 		await call("stabler.api.tender.move_deal_stage", { name, stage: targetLaneId });
-		toast.success(t("Moved to {0}").replace("{0}", t(targetLaneId)));
+		// Aynı kusur burada da vardı: aşama kimliğini gösteriyordu.
+		toast.success(t("Moved to {0}").replace("{0}", stageLabel(targetLaneId)));
 	} catch (err) {
 		card.stage = prevStage; // Rollback
 		toast.error(err?.message || t("Move failed."));
@@ -140,16 +219,20 @@ function closeDrawer() {
 	selectedDeal.value = null;
 }
 
-function riskBadgeClass(risk) {
+/* Tasarım dilinde önem RENKLE değil, renk + kare + üç harfli etiketle
+ * gösteriliyor; Tabler'ın bg-*-lt rozet sınıflarının burada karşılığı yok.
+ * Bu yüzden fonksiyon sınıf değil SEVIYE döndürüyor ve şablon onu data-sev /
+ * data-tone olarak veriyor — renk tek başına bilgi taşımıyor. */
+function riskSev(risk) {
 	switch (risk) {
 		case "risk":
-			return "bg-red-lt text-red";
+			return "crit";
 		case "warn":
-			return "bg-yellow-lt text-yellow";
+			return "today";
 		case "expired":
-			return "bg-secondary-lt text-secondary";
+			return "info";
 		default:
-			return "bg-green-lt text-green";
+			return "ok";
 	}
 }
 
@@ -168,65 +251,64 @@ function riskLabel(risk) {
 </script>
 
 <template>
-	<div class="container-fluid py-3">
+	<div class="tender-crm-page stbl-ds">
 		<TenderNav />
 
-		<!-- Header & Controls -->
-		<div class="d-flex align-items-center justify-content-between mb-3 gap-2 flex-wrap">
-			<div>
-				<h2 class="h3 mb-0 fw-bold d-flex align-items-center gap-2">
-					<i class="ti ti-address-book text-primary"></i>
-					{{ t("Tender CRM") }}
-				</h2>
-				<span class="text-secondary small">
-					{{ t("Manage and track all tender deals across pipeline stages") }}
-				</span>
+		<header class="ds-page-head">
+			<div class="ds-label">{{ t("Tender") }} · {{ t("Deal pipeline") }} · {{ activeCompany }}</div>
+			<h1>{{ t("Tender CRM") }}</h1>
+			<div class="ds-meta">
+				<span>{{ t("Every card is an ERP deal record") }}</span>
+				<span>{{ t("Columns are stages; drag a card to move it") }}</span>
 			</div>
-			<div class="d-flex align-items-center gap-2 flex-wrap">
-				<!-- Search -->
-				<div class="input-icon" style="width: 220px">
-					<span class="input-icon-addon"><i class="ti ti-search"></i></span>
+
+			<div class="crm-controls">
+				<label class="ds-field crm-search">
+					<span class="ds-field-label">{{ t("Search") }}</span>
 					<input
 						v-model="searchQuery"
 						type="search"
-						class="form-control form-control-sm"
-						:placeholder="t('Search tenders…')"
+						class="ds-input"
+						:placeholder="t('Deal no, buyer, lot…')"
 					/>
-				</div>
-
-				<!-- View Mode Switcher -->
-				<div class="btn-group btn-group-sm">
-					<button
-						type="button"
-						class="btn"
-						:class="viewMode === 'kanban' ? 'btn-primary' : 'btn-outline-secondary'"
-						@click="viewMode = 'kanban'"
-					>
-						<i class="ti ti-layout-kanban me-1"></i>{{ t("Kanban") }}
+				</label>
+				<span class="ds-seg">
+					<button type="button" :aria-pressed="String(viewMode === 'kanban')" @click="viewMode = 'kanban'">
+						{{ t("Kanban") }}
 					</button>
-					<button
-						type="button"
-						class="btn"
-						:class="viewMode === 'list' ? 'btn-primary' : 'btn-outline-secondary'"
-						@click="viewMode = 'list'"
-					>
-						<i class="ti ti-list me-1"></i>{{ t("List") }}
+					<button type="button" :aria-pressed="String(viewMode === 'list')" @click="viewMode = 'list'">
+						{{ t("List") }}
 					</button>
-				</div>
-
-				<!-- Refresh -->
-				<button type="button" class="btn btn-outline-secondary btn-sm" :disabled="loading" @click="load">
-					<i class="ti ti-refresh" :class="{ 'spin': loading }"></i>
+				</span>
+				<button type="button" class="ds-btn" :disabled="loading" @click="load">
+					{{ loading ? t("Loading…") : t("Refresh") }}
 				</button>
 			</div>
+		</header>
+
+		<!-- KPI şeridi · her biri aynı zamanda filtre.
+		     "Hat" filtrelenebilir bir alt küme değil, tümü demek — ona basmak
+		     filtreyi temizliyor. -->
+		<div class="ds-kpis" data-cols="4">
+			<button
+				v-for="k in kpis"
+				:key="k.key"
+				type="button"
+				class="ds-kpi"
+				:data-sev="k.sev"
+				:aria-pressed="String(activeKpi === k.key)"
+				@click="k.key === 'pipeline' ? (activeKpi = '') : toggleKpi(k.key)"
+			>
+				<div class="ds-label">{{ k.label }}</div>
+				<div><span class="ds-kpi-val">{{ k.val }}</span><span class="ds-kpi-cap">{{ k.cap }}</span></div>
+				<div class="ds-kpi-note">{{ k.note }}</div>
+			</button>
 		</div>
 
-		<!-- Loading State -->
-		<div v-if="loading" class="text-center py-5">
-			<div class="spinner-border text-primary"></div>
+		<div v-if="loading" class="crm-state">
+			<SkeletonRows :rows="4" />
 		</div>
 
-		<!-- Empty State -->
 		<EmptyState
 			v-else-if="!cards.length"
 			icon="ti-address-book"
@@ -235,319 +317,440 @@ function riskLabel(risk) {
 		/>
 
 		<template v-else>
-			<!-- KANBAN VIEW -->
-			<div
-				v-if="viewMode === 'kanban'"
-				class="d-flex gap-3 align-items-start overflow-auto pb-3"
-				style="min-height: 70vh"
-			>
-				<div
+			<!-- ══ KANBAN ══════════════════════════════════════════════════ -->
+			<div v-if="viewMode === 'kanban'" class="ds-kanban">
+				<section
 					v-for="l in lanes"
 					:key="l.id"
-					class="flex-shrink-0"
-					style="width: 300px"
+					class="ds-col"
+					:data-drop="dragOverLane === l.id ? '1' : null"
 					@dragover.prevent="dragOverLane = l.id"
 					@dragleave="dragOverLane = ''"
 					@drop="onDrop(l.id)"
 				>
-					<!-- Lane Header Card -->
-					<div class="card mb-2 shadow-sm border-0" :style="{ borderTop: `4px solid ${l.color}` }">
-						<div class="card-header py-2 px-3 d-flex align-items-center gap-2 bg-white rounded-2">
-							<span
-								class="badge font-monospace"
-								:style="{ background: l.color + '22', color: l.color, border: `1px solid ${l.color}55` }"
-							>
-								{{ (cardsByLane[l.id] || []).length }}
-							</span>
-							<span class="fw-bold flex-grow-1 text-truncate">{{ t(l.label) }}</span>
-							<span class="text-secondary small font-monospace fw-semibold">
-								{{ formatMoney(laneTotal(l.id), currency, user.language) }}
-							</span>
-						</div>
+					<div class="ds-col-head" :style="{ borderTopColor: l.color }">
+						<span class="ds-col-n">{{ (cardsByLane[l.id] || []).length }}</span>
+						<span class="ds-col-t">{{ t(l.label) }}</span>
+					</div>
+					<div class="ds-col-rule">
+						<span class="ds-mono crm-col-sum">
+							{{ formatMoney(laneTotal(l.id), currency, user.language) }}
+						</span>
 					</div>
 
-					<!-- Lane Cards Container -->
+					<!-- Kart bir <div>; sürüklenebilirlik butonla çatışıyor
+					     (Firefox draggable button'ı sürüklemiyor). Klavye için
+					     role/tabindex ve Enter var. -->
 					<div
-						class="vstack gap-2 px-1"
-						:class="{ 'bg-primary-lt rounded-3 p-2': dragOverLane === l.id }"
-						style="min-height: 80px"
+						v-for="c in cardsByLane[l.id]"
+						:key="c.name"
+						class="ds-card"
+						role="button"
+						tabindex="0"
+						draggable="true"
+						@dragstart="onCardDragStart(c.name, $event)"
+						@click="openDealDrawer(c)"
+						@keydown.enter.prevent="openDealDrawer(c)"
+						@keydown.space.prevent="openDealDrawer(c)"
 					>
-						<div
-							v-for="c in cardsByLane[l.id]"
-							:key="c.name"
-							class="card card-hover shadow-sm border-0 cursor-pointer rounded-3"
-							draggable="true"
-							style="cursor: grab"
-							@dragstart="onCardDragStart(c.name, $event)"
-							@click="openDealDrawer(c)"
-						>
-							<div class="card-body p-3">
-								<!-- Title & ID -->
-								<div class="d-flex align-items-start justify-content-between gap-1 mb-1">
-									<div>
-										<span class="fw-bold text-body text-truncate d-block" style="max-width: 210px">
-											{{ c.label || c.name }}
-										</span>
-										<span class="small font-monospace text-secondary">{{ c.name }}</span>
-									</div>
-									<span
-										v-if="c.owner_initials"
-										class="avatar avatar-xs rounded-circle bg-blue-lt fw-bold"
-										:title="c.owner_name || c.owner"
-									>
-										{{ c.owner_initials }}
-									</span>
-								</div>
+						<div class="ds-card-t">{{ c.label || c.name }}</div>
+						<div class="ds-card-id">{{ c.name }}</div>
+						<div v-if="c.organization || c.lead_name" class="ds-card-org">
+							{{ c.organization || c.lead_name }}
+						</div>
 
-								<!-- Organization / Buyer -->
-								<div v-if="c.organization || c.lead_name" class="text-secondary small text-truncate mb-2">
-									<i class="ti ti-building me-1"></i>{{ c.organization || c.lead_name }}
-								</div>
+						<div class="ds-card-foot">
+							<span class="ds-mono crm-card-val">
+								{{ c.contract_value
+									? formatMoney(c.contract_value, c.currency || currency, user.language)
+									: t("no value yet") }}
+							</span>
+							<span v-if="c.deadline" class="ds-mono crm-card-due" :data-sev="riskSev(c.risk)">
+								{{ formatDate(c.deadline, user.language) }}
+							</span>
+						</div>
 
-								<!-- Contract Value -->
-								<div class="h3 mb-2 font-monospace fw-bold text-primary">
-									{{ formatMoney(c.contract_value, c.currency || currency, user.language) }}
-								</div>
+						<div class="ds-meter" :data-full="c.has_min_5 && c.has_2_countries ? '1' : null">
+							<span class="ds-meter-seg">
+								<i v-for="(on, i) in quoteMarks(c.sq_count)" :key="i" :data-on="on ? '1' : null"></i>
+							</span>
+							<span class="ds-meter-txt">{{ c.sq_count }}/5 {{ t("quotes") }}</span>
+						</div>
 
-								<!-- Badges Row: Deadline Risk & Sourcing -->
-								<div class="d-flex align-items-center gap-1 flex-wrap mb-2">
-									<!-- Risk Badge -->
-									<span v-if="c.deadline" class="badge" :class="riskBadgeClass(c.risk)">
-										<i class="ti ti-clock me-1"></i>{{ riskLabel(c.risk) }}
-									</span>
+						<div class="crm-ready">
+							<span class="ds-label">{{ t("Readiness") }}</span>
+							<span class="ds-mono">{{ c.doc_progress }}%</span>
+						</div>
+						<div class="ds-progress"><i :style="{ width: c.doc_progress + '%' }"></i></div>
 
-									<!-- Sourcing Badge -->
-									<span
-										class="badge"
-										:class="c.has_min_5 && c.has_2_countries ? 'bg-green-lt text-green' : c.sq_count > 0 ? 'bg-yellow-lt text-yellow' : 'bg-secondary-lt text-secondary'"
-									>
-										<i class="ti ti-file-dollar me-1"></i>
-										{{ c.sq_count }}/5 {{ t("Quotes") }}
-									</span>
-								</div>
-
-								<!-- Document Readiness Progress Bar -->
-								<div>
-									<div class="d-flex justify-content-between small text-secondary mb-1">
-										<span>{{ t("Readiness") }}</span>
-										<span class="fw-semibold">{{ c.doc_progress }}%</span>
-									</div>
-									<div class="progress progress-sm" style="height: 5px">
-										<div
-											class="progress-bar"
-											:class="c.doc_progress >= 100 ? 'bg-green' : c.doc_progress >= 50 ? 'bg-blue' : 'bg-yellow'"
-											:style="{ width: c.doc_progress + '%' }"
-										></div>
-									</div>
-								</div>
-							</div>
+						<div v-if="c.owner_initials" class="crm-card-owner ds-mono" :title="c.owner_name || c.owner">
+							{{ c.owner_name || c.owner_initials }}
 						</div>
 					</div>
-				</div>
+
+					<div v-if="!(cardsByLane[l.id] || []).length" class="crm-col-empty ds-mono">
+						{{ t("empty") }}
+					</div>
+				</section>
 			</div>
 
-			<!-- LIST VIEW -->
-			<div v-else-if="viewMode === 'list'" class="card shadow-sm border-0">
-				<div class="table-responsive">
-					<table class="table table-vcenter table-hover card-table m-0">
-						<thead>
-							<tr>
-								<th>{{ t("Tender / Deal") }}</th>
-								<th>{{ t("Buyer / Organization") }}</th>
-								<th>{{ t("Stage") }}</th>
-								<th class="text-end">{{ t("Value") }}</th>
-								<th>{{ t("Sourcing") }}</th>
-								<th>{{ t("Deadline Risk") }}</th>
-								<th>{{ t("Readiness") }}</th>
-								<th>{{ t("Owner") }}</th>
-							</tr>
-						</thead>
+			<!-- ══ LISTE ═══════════════════════════════════════════════════ -->
+			<table v-else class="ds-table crm-list">
+				<thead>
+					<tr>
+						<th>{{ t("Tender / Deal") }}</th>
+						<th>{{ t("Buyer / Organization") }}</th>
+						<th>{{ t("Stage") }}</th>
+						<th class="ds-td-num">{{ t("Value") }}</th>
+						<th>{{ t("Sourcing") }}</th>
+						<th>{{ t("Deadline Risk") }}</th>
+						<th>{{ t("Readiness") }}</th>
+						<th>{{ t("Owner") }}</th>
+					</tr>
+				</thead>
+				<tbody>
+					<tr
+						v-for="c in filteredCards"
+						:key="c.name"
+						class="crm-list-row"
+						role="button"
+						tabindex="0"
+						@click="openDealDrawer(c)"
+						@keydown.enter.prevent="openDealDrawer(c)"
+					>
+						<td>
+							<div class="crm-list-t">{{ c.label || c.name }}</div>
+							<div class="ds-mono crm-list-id">{{ c.name }}</div>
+						</td>
+						<td class="crm-list-org">{{ c.organization || c.lead_name || "—" }}</td>
+						<td><span class="ds-mono crm-list-stage">{{ stageLabel(c.stage) }}</span></td>
+						<td class="ds-td-num">
+							{{ formatMoney(c.contract_value, c.currency || currency, user.language) }}
+						</td>
+						<td>
+							<span class="ds-chip" :data-tone="c.has_min_5 && c.has_2_countries ? 'ok' : c.sq_count > 0 ? 'today' : 'crit'">
+								{{ c.sq_count }}/5
+							</span>
+						</td>
+						<td>
+							<span v-if="c.deadline" class="ds-chip" :data-tone="riskSev(c.risk)">
+								{{ riskLabel(c.risk) }}
+							</span>
+							<span v-else class="ds-mono crm-dash">—</span>
+						</td>
+						<td>
+							<span class="ds-mono">{{ c.doc_progress }}%</span>
+							<div class="ds-progress"><i :style="{ width: c.doc_progress + '%' }"></i></div>
+						</td>
+						<td class="crm-list-org">{{ c.owner_name || "—" }}</td>
+					</tr>
+				</tbody>
+			</table>
+		</template>
+
+		<!-- ══ ÇEKMECE ═════════════════════════════════════════════════════
+		     Kart tıklanınca sayfa DEĞIŞMIYOR: kullanıcı hattın neresinde
+		     olduğunu kaybetmesin diye detay sağdan geliyor. -->
+		<template v-if="drawerOpen && selectedDeal">
+			<button class="ds-drawer-backdrop" :aria-label="t('Close panel')" tabindex="-1" @click="closeDrawer"></button>
+			<aside class="ds-drawer" role="dialog" aria-modal="true" aria-labelledby="crm-dw-title">
+				<header class="ds-drawer-head">
+					<div class="crm-dw-head">
+						<div class="ds-drawer-kicker">{{ selectedDeal.name }} · {{ stageLabel(selectedDeal.stage) }}</div>
+						<div id="crm-dw-title" class="ds-drawer-title">
+							{{ selectedDeal.label || selectedDeal.name }}
+						</div>
+					</div>
+					<button type="button" class="ds-drawer-close" :aria-label="t('Close')" @click="closeDrawer">✕</button>
+				</header>
+
+				<div class="ds-drawer-body">
+					<table class="ds-deflist">
 						<tbody>
-							<tr
-								v-for="c in filteredCards"
-								:key="c.name"
-								class="cursor-pointer"
-								@click="openDealDrawer(c)"
-							>
+							<tr>
+								<th>{{ t("Buyer / Customer") }}</th>
+								<td>{{ selectedDeal.organization || selectedDeal.lead_name || "—" }}</td>
+							</tr>
+							<tr>
+								<th>{{ t("Contract Value") }}</th>
 								<td>
-									<div class="fw-bold text-body">{{ c.label || c.name }}</div>
-									<div class="small font-monospace text-secondary">{{ c.name }}</div>
-								</td>
-								<td class="text-secondary">{{ c.organization || c.lead_name || "—" }}</td>
-								<td>
-									<span class="badge bg-primary-lt">{{ t(c.stage) }}</span>
-								</td>
-								<td class="text-end font-monospace fw-bold">
-									{{ formatMoney(c.contract_value, c.currency || currency, user.language) }}
-								</td>
-								<td>
-									<span
-										class="badge"
-										:class="c.has_min_5 && c.has_2_countries ? 'bg-green-lt text-green' : c.sq_count > 0 ? 'bg-yellow-lt text-yellow' : 'bg-secondary-lt text-secondary'"
-									>
-										{{ c.sq_count }}/5 {{ t("Quotes") }}
+									<span v-if="selectedDeal.contract_value" class="ds-mono">
+										{{ formatMoney(selectedDeal.contract_value, selectedDeal.currency || currency, user.language) }}
 									</span>
+									<span v-else class="ds-mono crm-dash">{{ t("no value yet") }}</span>
 								</td>
+							</tr>
+							<tr>
+								<th>{{ t("Quote set") }}</th>
 								<td>
-									<span v-if="c.deadline" class="badge" :class="riskBadgeClass(c.risk)">
-										{{ riskLabel(c.risk) }}
-									</span>
-									<span v-else class="text-secondary">—</span>
-								</td>
-								<td>
-									<div class="d-flex align-items-center gap-2" style="min-width: 100px">
-										<div class="progress flex-grow-1" style="height: 5px">
-											<div
-												class="progress-bar"
-												:class="c.doc_progress >= 100 ? 'bg-green' : c.doc_progress >= 50 ? 'bg-blue' : 'bg-yellow'"
-												:style="{ width: c.doc_progress + '%' }"
-											></div>
-										</div>
-										<span class="small font-monospace text-secondary">{{ c.doc_progress }}%</span>
+									<div class="ds-meter crm-dw-meter" :data-full="dealQuotations?.has_min_5 && dealQuotations?.has_2_countries ? '1' : null">
+										<span class="ds-meter-seg">
+											<i v-for="(on, i) in quoteMarks(dealQuotations?.count ?? selectedDeal.sq_count)" :key="i" :data-on="on ? '1' : null"></i>
+										</span>
+										<span class="ds-meter-txt">
+											{{ dealQuotations?.count ?? selectedDeal.sq_count }}/5
+											· {{ dealQuotations?.has_min_5 && dealQuotations?.has_2_countries ? t("policy met") : t("below policy") }}
+										</span>
 									</div>
 								</td>
+							</tr>
+							<tr>
+								<th>{{ t("Readiness") }}</th>
 								<td>
-									<span v-if="c.owner_name" class="avatar avatar-xs rounded-circle bg-blue-lt fw-bold me-1" :title="c.owner_name">
-										{{ c.owner_initials }}
-									</span>
-									<span class="small text-secondary">{{ c.owner_name || "—" }}</span>
+									<span class="ds-mono">{{ selectedDeal.doc_progress }}%</span>
+									<div class="ds-progress"><i :style="{ width: selectedDeal.doc_progress + '%' }"></i></div>
 								</td>
+							</tr>
+							<tr v-if="selectedDeal.deadline">
+								<th>{{ t("Deadline") }}</th>
+								<td>
+									<span class="ds-mono">{{ formatDate(selectedDeal.deadline, user.language) }}</span>
+									<span class="ds-chip crm-dw-chip" :data-tone="riskSev(selectedDeal.risk)">
+										{{ riskLabel(selectedDeal.risk) }}
+									</span>
+								</td>
+							</tr>
+							<tr>
+								<th>{{ t("Owner") }}</th>
+								<td>{{ selectedDeal.owner_name || selectedDeal.owner || "—" }}</td>
 							</tr>
 						</tbody>
 					</table>
-				</div>
-			</div>
-		</template>
 
-		<!-- SIDE DRAWER DETAIL VIEW -->
-		<template v-if="drawerOpen && selectedDeal">
-			<div class="offcanvas-backdrop fade show" @click="closeDrawer"></div>
-			<div class="offcanvas offcanvas-end show shadow-lg" tabindex="-1" style="width: min(540px, 100vw)">
-				<!-- Drawer Header -->
-				<div class="offcanvas-header border-bottom bg-light">
-					<div>
-						<h4 class="offcanvas-title fw-bold text-body m-0">
-							{{ selectedDeal.label || selectedDeal.name }}
-						</h4>
-						<div class="small font-monospace text-secondary d-flex align-items-center gap-2 mt-1">
-							<span>{{ selectedDeal.name }}</span>
-							<span>·</span>
-							<span class="badge bg-primary-lt">{{ t(selectedDeal.stage) }}</span>
+					<div class="crm-dw-block">
+						<div class="ds-label crm-dw-label">{{ t("Stage progress") }}</div>
+						<div class="ds-steps">
+							<span
+								v-for="l in lanes"
+								:key="l.id"
+								class="ds-step"
+								:aria-current="l.id === selectedDeal.stage ? 'step' : null"
+							>{{ t(l.label) }}</span>
 						</div>
 					</div>
-					<button type="button" class="btn-close text-reset" @click="closeDrawer"></button>
-				</div>
 
-				<!-- Drawer Body -->
-				<div class="offcanvas-body p-4">
-					<div v-if="dealDetailLoading" class="text-center py-5">
-						<div class="spinner-border text-primary"></div>
+					<div v-if="dealDetailLoading" class="crm-dw-block">
+						<SkeletonRows :rows="3" />
 					</div>
 
 					<template v-else>
-						<!-- Summary Grid -->
-						<div class="row g-3 mb-4">
-							<div class="col-6">
-								<div class="card p-3 border bg-light shadow-none rounded-2">
-									<div class="text-secondary small text-uppercase fw-semibold mb-1">{{ t("Contract Value") }}</div>
-									<div class="h3 mb-0 font-monospace text-primary fw-bold">
-										{{ formatMoney(selectedDeal.contract_value, selectedDeal.currency || currency, user.language) }}
-									</div>
-								</div>
-							</div>
-							<div class="col-6">
-								<div class="card p-3 border bg-light shadow-none rounded-2">
-									<div class="text-secondary small text-uppercase fw-semibold mb-1">{{ t("Buyer / Customer") }}</div>
-									<div class="fw-semibold text-truncate text-body">
-										{{ selectedDeal.organization || selectedDeal.lead_name || "—" }}
-									</div>
-								</div>
-							</div>
+						<div class="crm-dw-block">
+							<div class="ds-label crm-dw-label">{{ t("Sourcing Summary") }}</div>
+							<table v-if="dealQuotations?.rows?.length" class="ds-table">
+								<thead>
+									<tr>
+										<th>{{ t("Supplier") }}</th>
+										<th>{{ t("Country") }}</th>
+										<th class="ds-td-num">{{ t("Total") }}</th>
+									</tr>
+								</thead>
+								<tbody>
+									<tr v-for="q in dealQuotations.rows" :key="q.name">
+										<td>
+											{{ q.supplier_name }}
+											<span v-if="q.cheapest" class="ds-chip crm-dw-chip" data-tone="ok">{{ t("Cheapest") }}</span>
+										</td>
+										<td class="crm-list-org">{{ q.country || "—" }}</td>
+										<td class="ds-td-num">{{ formatMoney(q.grand_total, q.currency, user.language) }}</td>
+									</tr>
+								</tbody>
+							</table>
+							<p v-else class="crm-dw-empty">{{ t("No supplier quotations tagged to this deal yet.") }}</p>
 						</div>
 
-						<!-- Quick Actions -->
-						<div class="d-flex gap-2 flex-wrap mb-4">
-							<router-link
-								:to="{ path: '/tender/sourcing', query: { deal: selectedDeal.name } }"
-								class="btn btn-outline-primary btn-sm flex-fill"
-								@click="closeDrawer"
-							>
-								<i class="ti ti-versions me-1"></i>{{ t("Sourcing comparison") }}
-							</router-link>
-							<router-link
-								to="/tender/board"
-								class="btn btn-outline-secondary btn-sm flex-fill"
-								@click="closeDrawer"
-							>
-								<i class="ti ti-layout-kanban me-1"></i>{{ t("Contract board") }}
-							</router-link>
-						</div>
-
-						<!-- Sourcing Quotations Summary -->
-						<div class="card mb-4 border shadow-none rounded-2">
-							<div class="card-header py-2 bg-light fw-bold text-body d-flex align-items-center justify-content-between">
-								<span><i class="ti ti-file-dollar me-1 text-primary"></i>{{ t("Sourcing Summary") }}</span>
-								<span
-									class="badge"
-									:class="dealQuotations?.has_min_5 && dealQuotations?.has_2_countries ? 'bg-green-lt text-green' : 'bg-yellow-lt text-yellow'"
-								>
-									{{ dealQuotations?.count || 0 }} / 5 {{ t("Quotes") }}
-								</span>
-							</div>
-							<div class="card-body p-0">
-								<table v-if="dealQuotations?.rows?.length" class="table table-sm card-table m-0">
-									<thead>
-										<tr>
-											<th>{{ t("Supplier") }}</th>
-											<th>{{ t("Country") }}</th>
-											<th class="text-end">{{ t("Total") }}</th>
-										</tr>
-									</thead>
-									<tbody>
-										<tr v-for="q in dealQuotations.rows" :key="q.name" :class="{ 'table-success': q.cheapest }">
-											<td>
-												<span class="fw-semibold">{{ q.supplier_name }}</span>
-												<span v-if="q.cheapest" class="badge bg-green ms-1">{{ t("Cheapest") }}</span>
-											</td>
-											<td class="text-secondary small">{{ q.country || "—" }}</td>
-											<td class="text-end font-monospace">{{ formatMoney(q.grand_total, q.currency, user.language) }}</td>
-										</tr>
-									</tbody>
-								</table>
-								<div v-else class="p-3 text-center text-secondary small">
-									{{ t("No supplier quotations tagged to this deal yet.") }}
-								</div>
-							</div>
-						</div>
-
-						<!-- Lots List -->
-						<div class="card border shadow-none rounded-2">
-							<div class="card-header py-2 bg-light fw-bold text-body d-flex align-items-center justify-content-between">
-								<span><i class="ti ti-layers-subtract me-1 text-primary"></i>{{ t("Lots") }}</span>
-								<span class="badge bg-secondary-subtle text-secondary">{{ dealLots.length }}</span>
-							</div>
-							<div class="card-body p-0">
-								<div v-if="dealLots.length" class="list-group list-group-flush">
-									<div v-for="lot in dealLots" :key="lot.name" class="list-group-item p-3">
-										<div class="d-flex justify-content-between align-items-start">
-											<div>
-												<div class="fw-bold text-body">{{ lot.label || lot.name }}</div>
-												<div class="small text-secondary">{{ lot.description || "" }}</div>
-											</div>
-											<div class="text-end font-monospace fw-bold">
-												{{ formatMoney(lot.contract_value, lot.currency || currency, user.language) }}
-											</div>
-										</div>
-									</div>
-								</div>
-								<div v-else class="p-3 text-center text-secondary small">
-									{{ t("No lots registered for this tender.") }}
-								</div>
-							</div>
+						<div class="crm-dw-block">
+							<div class="ds-label crm-dw-label">{{ t("Lots") }} · {{ dealLots.length }}</div>
+							<table v-if="dealLots.length" class="ds-table">
+								<tbody>
+									<tr v-for="lot in dealLots" :key="lot.name">
+										<td>
+											<div class="crm-list-t">{{ lot.label || lot.name }}</div>
+											<div v-if="lot.description" class="crm-list-org">{{ lot.description }}</div>
+										</td>
+										<td class="ds-td-num">
+											{{ formatMoney(lot.contract_value, lot.currency || currency, user.language) }}
+										</td>
+									</tr>
+								</tbody>
+							</table>
+							<p v-else class="crm-dw-empty">{{ t("No lots registered for this tender.") }}</p>
 						</div>
 					</template>
 				</div>
-			</div>
+
+				<footer class="ds-drawer-foot">
+					<router-link
+						class="ds-btn ds-btn--primary"
+						:to="{ path: '/tender/sourcing', query: { deal: selectedDeal.name } }"
+						@click="closeDrawer"
+					>{{ t("Sourcing comparison") }}</router-link>
+					<router-link class="ds-btn" to="/tender/board" @click="closeDrawer">
+						{{ t("Contract board") }}
+					</router-link>
+					<button type="button" class="ds-btn" @click="closeDrawer">{{ t("Close") }}</button>
+					<span class="ds-mono crm-dw-src">crm_deal · {{ selectedDeal.name }}</span>
+				</footer>
+			</aside>
 		</template>
 	</div>
 </template>
+
+<style scoped>
+/* Yalnız yerleşim. Renk, kenar, tipografi katmandan (.ds-*) geliyor. */
+.tender-crm-page {
+	max-width: 1240px;
+	margin: 0 auto;
+	padding: 0 20px 48px;
+}
+
+.crm-controls {
+	display: flex;
+	gap: 10px;
+	align-items: flex-end;
+	margin-top: 16px;
+	flex-wrap: wrap;
+}
+
+.crm-search {
+	min-width: 300px;
+	flex: 1 1 300px;
+	max-width: 420px;
+}
+
+.crm-state {
+	padding: 24px 0;
+}
+
+.ds-kanban {
+	margin-top: 14px;
+}
+
+/* Sürükleme hedefi: kolon kenarı vurgulanıyor, kart yerinden oynamıyor —
+ * bırakma noktasının KOLON olduğu belli olsun. */
+.ds-col[data-drop="1"] {
+	outline: 2px solid var(--ds-acc);
+	outline-offset: -1px;
+}
+
+.crm-col-sum {
+	font-size: 11.5px;
+	color: var(--ds-tx2);
+}
+
+.crm-col-empty {
+	padding: 16px 14px;
+	font-size: 11px;
+	color: var(--ds-tx3);
+}
+
+.crm-card-val {
+	font-size: 12.5px;
+}
+
+.crm-card-due {
+	font-size: 11.5px;
+	color: var(--ds-tx2);
+}
+
+.crm-card-due[data-sev="crit"] { color: var(--ds-crit-tx); font-weight: 600; }
+.crm-card-due[data-sev="today"] { color: var(--ds-today-tx); font-weight: 600; }
+
+.crm-ready {
+	display: flex;
+	justify-content: space-between;
+	align-items: baseline;
+	margin-top: 9px;
+	font-size: 11.5px;
+}
+
+.crm-card-owner {
+	font-size: 11px;
+	color: var(--ds-tx3);
+	margin-top: 8px;
+}
+
+.crm-list {
+	margin-top: 14px;
+}
+
+.crm-list-row {
+	cursor: pointer;
+}
+
+.crm-list-t {
+	font-family: var(--ds-font-head);
+	font-weight: 800;
+	font-size: 14.5px;
+}
+
+.crm-list-id {
+	font-size: 11px;
+	color: var(--ds-acc);
+	margin-top: 4px;
+}
+
+.crm-list-org {
+	color: var(--ds-tx2);
+	font-size: 12.5px;
+}
+
+.crm-list-stage {
+	font-size: 11px;
+	color: var(--ds-tx2);
+}
+
+.crm-dash {
+	color: var(--ds-tx3);
+}
+
+.crm-dw-head {
+	flex: 1;
+	min-width: 0;
+}
+
+.crm-dw-block {
+	padding: 16px;
+	border-top: 1px solid var(--ds-ln);
+}
+
+.crm-dw-label {
+	margin-bottom: 8px;
+}
+
+.crm-dw-meter {
+	margin: 0;
+}
+
+/* Katmandaki adım şeridi 5 adıma göre ölçüldü; buradaki hat 7 aşamalı ve
+ * 542px'lik çekmecede yedisi tek satıra sığmayıp "GO DECİ…" gibi kırpılıyor.
+ * Kırpılmış bir aşama adı hiçbir şey anlatmıyor, o yüzden sarıyor. */
+.crm-dw-block :deep(.ds-steps) {
+	flex-wrap: wrap;
+}
+
+.crm-dw-block :deep(.ds-step) {
+	flex: 1 1 25%;
+	border-top: 1px solid var(--ds-ln);
+}
+
+.crm-dw-block :deep(.ds-step):nth-child(-n + 4) {
+	border-top: 0;
+}
+
+.crm-dw-chip {
+	margin-left: 8px;
+}
+
+.crm-dw-empty {
+	font-family: var(--ds-mono);
+	font-size: 11.5px;
+	color: var(--ds-tx3);
+	margin: 0;
+}
+
+.crm-dw-src {
+	font-size: 10.5px;
+	color: var(--ds-tx3);
+	flex-basis: 100%;
+}
+</style>
