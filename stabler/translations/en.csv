@@ -5179,3 +5179,28 @@ complete,complete
 needed,needed
 rate,rate
 sum of every open tender,sum of every open tender
+Add delivery notes or remarks…,Add delivery notes or remarks…
+Agreed Transport Cost,Agreed Transport Cost
+All Transporters,All Transporters
+Balance Due,Balance Due
+CI No,CI No
+"CI, transporter, container or vehicle… ⌘K","CI, transporter, container or vehicle… ⌘K"
+"CI, transporter, truck/container, freight cost and cash/bank payments","CI, transporter, truck/container, freight cost and cash/bank payments"
+Container / Truck #,Container / Truck #
+Edit Transport & Payment Details,Edit Transport & Payment Details
+Failed to load transporter dashboard.,Failed to load transporter dashboard.
+Failed to save transport cost.,Failed to save transport cost.
+Freight Booking {0} belongs to another company.,Freight Booking {0} belongs to another company.
+No containers or freight bookings match your filter criteria.,No containers or freight bookings match your filter criteria.
+No transport records found,No transport records found
+Outstanding Balance,Outstanding Balance
+Paid Bank,Paid Bank
+Paid Bank (Transfer),Paid Bank (Transfer)
+Paid Cash,Paid Cash
+Paid Cash (Kassa),Paid Cash (Kassa)
+Save Details,Save Details
+Showing {0} to {1} of {2} entries,Showing {0} to {1} of {2} entries
+Total Freight Cost,Total Freight Cost
+Transport details updated successfully.,Transport details updated successfully.
+Transport operations desk,Transport operations desk
+Transporter Vendor,Transporter Vendor

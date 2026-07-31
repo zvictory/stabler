@@ -6867,3 +6867,231 @@ def unlink_proforma_from_ci(company: str, proforma: str, commercial_invoice: str
 		frappe.db.set_value("Commercial Invoice", target, "custom_proforma_invoice", None, update_modified=False)
 
 	return {"proforma": proforma, "status": pi.status, "commercial_invoice": None, "changed": True}
+
+
+# ---------------------------------------------------------------------------
+# Transporter & Land Freight Management Center (WP-I7)
+# ---------------------------------------------------------------------------
+
+
+@frappe.whitelist()
+def transporter_dashboard(
+	company: str,
+	search: str | None = None,
+	transporter: str | None = None,
+	page: int = 1,
+	page_length: int = 25,
+) -> dict:
+	"""Operational dashboard for Transporters, Land Freight, Containers and Payments.
+
+	Groups Freight Bookings / Containers by Commercial Invoice, Transporter,
+	Container/Truck number, Agreed Transport Cost, Cash/Bank Payments, and
+	Outstanding Balance per transporter.
+	"""
+	_assert_imports_access(company)
+	page = max(1, cint(page or 1))
+	page_length = min(100, max(1, cint(page_length or 25)))
+	offset = (page - 1) * page_length
+
+	# 1. Fetch available Transporters for dropdown filter
+	transporters_raw = frappe.get_all(
+		"Supplier",
+		filters=[["disabled", "=", 0]],
+		fields=["name", "supplier_name"],
+		order_by="supplier_name asc",
+	)
+	transporters = [{"name": s.name, "supplier_name": s.supplier_name or s.name} for s in transporters_raw]
+
+	# 2. Build SQL query filters. `fb.company` is NOT optional: _assert_imports_access
+	#    only proves the caller may read *this* company's imports, so an unscoped
+	#    WHERE hands back every other company's freight cost and payment split on the
+	#    same site. Every other query in this module scopes the same way.
+	where_clauses = ["fb.docstatus < 2", "fb.company = %(company)s"]
+	query_params: dict = {"company": company}
+
+	if transporter:
+		where_clauses.append("(fb.transporter = %(transporter)s OR s.supplier_name LIKE %(transporter_like)s)")
+		query_params["transporter"] = transporter
+		query_params["transporter_like"] = f"%{transporter}%"
+
+	if search:
+		where_clauses.append(
+			"(fb.name LIKE %(search)s OR fb.commercial_invoice LIKE %(search)s OR ci.ci_number LIKE %(search)s OR fb.container LIKE %(search)s OR fb.vehicle_number LIKE %(search)s OR s.supplier_name LIKE %(search)s OR fb.transporter LIKE %(search)s)"
+		)
+		query_params["search"] = f"%{search}%"
+	where_sql = " AND ".join(where_clauses)
+
+	# 3. Count total matching rows
+	count_sql = f"""
+		SELECT COUNT(*)
+		FROM `tabFreight Booking` fb
+		LEFT JOIN `tabCommercial Invoice` ci ON ci.name = fb.commercial_invoice
+		LEFT JOIN `tabSupplier` s ON s.name = fb.transporter
+		WHERE {where_sql}
+	"""
+	count_res = frappe.db.sql(count_sql, query_params)
+	total_count = cint(count_res[0][0] if count_res else 0)
+
+	# 4. Query paginated rows
+	rows_sql = f"""
+		SELECT
+
+			fb.name,
+			fb.commercial_invoice,
+			COALESCE(ci.ci_number, fb.commercial_invoice) AS ci_number,
+			fb.container,
+			fb.vehicle_number,
+			fb.transporter,
+			COALESCE(s.supplier_name, fb.transporter) AS transporter_name,
+			COALESCE(fb.amount, 0.0) AS transport_cost,
+			COALESCE(fb.currency, 'USD') AS currency,
+			COALESCE(fb.cash_payment, 0.0) AS paid_cash,
+			COALESCE(fb.bank_payment, 0.0) AS paid_bank,
+			fb.status,
+			fb.booking_date,
+			fb.route AS notes
+		FROM `tabFreight Booking` fb
+		LEFT JOIN `tabCommercial Invoice` ci ON ci.name = fb.commercial_invoice
+		LEFT JOIN `tabSupplier` s ON s.name = fb.transporter
+		WHERE {where_sql}
+		ORDER BY fb.creation DESC
+		LIMIT {page_length} OFFSET {offset}
+	"""
+	db_rows = frappe.db.sql(rows_sql, query_params, as_dict=True)
+
+	formatted_rows = []
+	for r in db_rows:
+		cost = flt(r.transport_cost)
+		p_cash = flt(r.paid_cash)
+		p_bank = flt(r.paid_bank)
+		tot_paid = p_cash + p_bank
+		bal = round(max(0.0, cost - tot_paid), 2)
+		formatted_rows.append({
+			"name": r.name,
+			"commercial_invoice": r.commercial_invoice or "",
+			"ci_number": r.ci_number or r.commercial_invoice or "",
+			"container": r.container or "",
+			"vehicle_number": r.vehicle_number or "",
+			"transporter": r.transporter or "",
+			"transporter_name": r.transporter_name or r.transporter or "—",
+			"transport_cost": cost,
+			"paid_cash": p_cash,
+			"paid_bank": p_bank,
+			"total_paid": tot_paid,
+			"balance": bal,
+			"currency": r.currency or "USD",
+			"status": r.status or "Confirmed",
+			"booking_date": str(r.booking_date or ""),
+			"notes": r.notes or "",
+		})
+
+	# 5. Aggregate summary stats, GROUPED BY currency. `fb.currency` is a Link that
+	#    merely defaults to USD, so a single SUM adds UZS to USD and prints the
+	#    result as USD in the largest text on the page. CLAUDE.md forbids exactly
+	#    that: amounts render in their own currency, totals are never converted.
+	summary_sql = f"""
+		SELECT
+			COALESCE(fb.currency, 'USD') AS currency,
+			SUM(COALESCE(fb.amount, 0.0)) AS total_cost,
+			SUM(COALESCE(fb.cash_payment, 0.0)) AS total_cash,
+			SUM(COALESCE(fb.bank_payment, 0.0)) AS total_bank,
+			COUNT(*) AS bookings_count
+		FROM `tabFreight Booking` fb
+		LEFT JOIN `tabCommercial Invoice` ci ON ci.name = fb.commercial_invoice
+		LEFT JOIN `tabSupplier` s ON s.name = fb.transporter
+		WHERE {where_sql}
+		GROUP BY COALESCE(fb.currency, 'USD')
+		ORDER BY SUM(COALESCE(fb.amount, 0.0)) DESC
+	"""
+	summary = []
+	for s in frappe.db.sql(summary_sql, query_params, as_dict=True):
+		s_cost = flt(s.total_cost)
+		s_cash = flt(s.total_cash)
+		s_bank = flt(s.total_bank)
+		s_paid = s_cash + s_bank
+		summary.append({
+			"currency": s.currency or "USD",
+			"total_freight_cost": s_cost,
+			"total_paid_cash": s_cash,
+			"total_paid_bank": s_bank,
+			"total_paid": s_paid,
+			"total_outstanding": round(max(0.0, s_cost - s_paid), 2),
+			"bookings_count": cint(s.bookings_count),
+		})
+
+	# 6. Cost gate. `amount`, `cash_payment` and `bank_payment` are permlevel 1 on
+	#    Freight Booking and every other reader of this doctype masks them
+	#    (FREIGHT_MASK_FIELDS, ~line 2430). This endpoint projects them under new
+	#    aliases, which is precisely how they escaped the gate: the columns are the
+	#    same permlevel-1 figures, only renamed. Summary too — masking rows alone
+	#    would hand back every hidden number as a total.
+	visible = _cost_visible()
+	rules.mask_named(formatted_rows, rules.TRANSPORTER_ROW_MASK_FIELDS, visible)
+	rules.mask_named(summary, rules.TRANSPORTER_SUMMARY_MASK_FIELDS, visible)
+
+	return {
+		"summary": summary,
+		"rows": formatted_rows,
+		"transporters": transporters,
+		"total_count": total_count,
+		"cost_visible": visible,
+		"page": page,
+		"page_length": page_length,
+	}
+
+
+@frappe.whitelist()
+def save_container_transport_cost(
+	company: str,
+	name: str,
+	transporter: str | None = None,
+	transport_cost: float = 0.0,
+	currency: str = "USD",
+	paid_cash: float = 0.0,
+	paid_bank: float = 0.0,
+	notes: str | None = None,
+) -> dict:
+	"""Update transport cost, assigned transporter vendor, and payments for a freight booking."""
+	_assert_imports_access(company)
+	if not frappe.db.exists("Freight Booking", name):
+		frappe.throw(_("Freight Booking {0} not found.").format(name))
+
+	# `company` is the caller's claim, `name` is what actually gets written — pass a
+	# company you may access plus another company's booking name and the access
+	# check passes while the write lands elsewhere. Bind the two together.
+	if frappe.db.get_value("Freight Booking", name, "company") != company:
+		frappe.throw(_("Freight Booking {0} belongs to another company.").format(name))
+
+	_assert_can_write("Freight Booking", name, "write")
+	# Every field this writes is permlevel 1. Writing costs the caller is not
+	# allowed to read would otherwise be a way to probe them.
+	_assert_cost_visible()
+
+	cost = round(flt(transport_cost), 2)
+	cash = round(flt(paid_cash), 2)
+	bank = round(flt(paid_bank), 2)
+
+	updates = {
+		"amount": cost,
+		"currency": currency or "USD",
+		"cash_payment": cash,
+		"bank_payment": bank,
+	}
+
+	if transporter is not None:
+		updates["transporter"] = transporter
+	if notes is not None:
+		updates["route"] = notes
+
+	frappe.db.set_value("Freight Booking", name, updates, update_modified=True)
+
+	return {
+		"name": name,
+		"transporter": transporter,
+		"transport_cost": cost,
+		"paid_cash": cash,
+		"paid_bank": bank,
+		"changed": True,
+	}
+
+

@@ -5183,3 +5183,28 @@ complete,tayyor
 needed,kerak
 rate,narx
 sum of every open tender,barcha ochiq tenderlar yig'indisi
+Add delivery notes or remarks…,Yetkazib berish eslatmalari yoki izohlarini qo'shing…
+Agreed Transport Cost,Kelishilgan Tashish Narxi
+All Transporters,Barcha Tashuvchilar
+Balance Due,To'lanishi Kerak
+CI No,CI raqami
+"CI, transporter, container or vehicle… ⌘K","CI, tashuvchi, konteyner yoki transport… ⌘K"
+"CI, transporter, truck/container, freight cost and cash/bank payments","CI, tashuvchi, yuk mashinasi/konteyner, fraxt qiymati va naqd/bank to'lovlari"
+Container / Truck #,Konteyner / Yuk mashinasi №
+Edit Transport & Payment Details,Tashish va To'lov Tafsilotlarini Tahrirlash
+Failed to load transporter dashboard.,Tashuvchilar paneli yuklanmadi.
+Failed to save transport cost.,Tashish narxini saqlab bo'lmadi.
+Freight Booking {0} belongs to another company.,{0} yuk tashish bronlashi boshqa kompaniyaga tegishli.
+No containers or freight bookings match your filter criteria.,Filtr shartlariga mos konteyner yoki yuk tashish bronlashi topilmadi.
+No transport records found,Tashish yozuvlari topilmadi
+Outstanding Balance,Qolgan Qarz Balansi
+Paid Bank,Bank To'langan
+Paid Bank (Transfer),Bank To'langan (O'tkazma)
+Paid Cash,Naqd To'langan
+Paid Cash (Kassa),Naqd To'langan (Kassa)
+Save Details,Tafsilotlarni Saqlash
+Showing {0} to {1} of {2} entries,{2} tadan {0}–{1} koʼrsatilmoqda
+Total Freight Cost,Jami Fraxt Qiymati
+Transport details updated successfully.,Tashish tafsilotlari muvaffaqiyatli yangilandi.
+Transport operations desk,Tashish operatsion stoli
+Transporter Vendor,Tashuvchi Kompaniya

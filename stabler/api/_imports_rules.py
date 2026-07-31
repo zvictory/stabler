@@ -61,6 +61,29 @@ EXPENSE_MASK_FIELDS: tuple[str, ...] = ("bank_payment", "cash_payment")
 #: Freight Booking amount + payment split (permlevel 1).
 FREIGHT_MASK_FIELDS: tuple[str, ...] = ("amount", "bank_payment", "cash_payment")
 
+#: Transporter-desk row money. The SAME permlevel-1 Freight Booking columns as
+#: FREIGHT_MASK_FIELDS, under the aliases the dashboard projects them to, plus
+#: the two figures it derives from them. A separate tuple because an alias makes
+#: the mask silently miss: `mask_named` matches keys literally, so reusing
+#: FREIGHT_MASK_FIELDS here would null nothing and read as masked.
+TRANSPORTER_ROW_MASK_FIELDS: tuple[str, ...] = (
+	"transport_cost",
+	"paid_cash",
+	"paid_bank",
+	"total_paid",
+	"balance",
+)
+
+#: Transporter-desk per-currency summary money — the same block, aggregated.
+#: Masking rows but not the totals would hand back every hidden figure summed.
+TRANSPORTER_SUMMARY_MASK_FIELDS: tuple[str, ...] = (
+	"total_freight_cost",
+	"total_paid_cash",
+	"total_paid_bank",
+	"total_paid",
+	"total_outstanding",
+)
+
 
 def mask_named(payload, fields, visible: bool):
 	"""Null-out every key in *fields* on *payload* unless *visible*.

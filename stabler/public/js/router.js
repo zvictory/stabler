@@ -183,6 +183,7 @@ import FreightBookings from "./pages/imports/FreightBookings.vue";
 import LandedCostReview from "./pages/purchasing/LandedCostReview.vue";
 import ContainerCostLedger from "./pages/imports/ContainerCostLedger.vue";
 import LandedCostBills from "./pages/imports/LandedCostBills.vue";
+import TransporterCenter from "./pages/imports/TransporterCenter.vue";
 import NotFound from "./pages/NotFound.vue";
 import ServerError from "./pages/ServerError.vue";
 import Login from "./pages/Login.vue";
@@ -232,6 +233,7 @@ const routes = [
 			{ path: "expenses", name: "imports-expenses", component: ImportExpenses, meta: { title: t("Import Expenses"), module: "imports" } },
 			{ path: "landed-cost/:grn", name: "imports-landed-cost", component: LandedCostReview, meta: { title: t("Landed Cost Review"), module: "imports" } },
 			{ path: "bills", name: "imports-bills", component: LandedCostBills, meta: { title: t("Landed Cost Bills"), module: "imports" } },
+			{ path: "transporters", name: "imports-transporters", component: TransporterCenter, meta: { title: t("Transport operations desk"), module: "imports" } },
 		],
 	},
 	{ path: "/reports", name: "reports", component: ReportsHub, meta: { title: t("Reports") } },

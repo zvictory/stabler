@@ -5178,3 +5178,28 @@ complete,tamam
 needed,gereken
 rate,fiyat
 sum of every open tender,tüm açık ihalelerin toplamı
+Add delivery notes or remarks…,Teslimat notu veya açıklama ekleyin…
+Agreed Transport Cost,Anlaşılan Navlun Bedeli
+All Transporters,Tüm Nakliyeciler
+Balance Due,Kalan Bakiye
+CI No,CI No
+"CI, transporter, container or vehicle… ⌘K","CI, nakliyeci, konteyner veya araç… ⌘K"
+"CI, transporter, truck/container, freight cost and cash/bank payments","CI, nakliyeci, tır/konteyner, navlun maliyeti ve nakit/banka ödemeleri"
+Container / Truck #,Konteyner / Tır No
+Edit Transport & Payment Details,Nakliye ve Ödeme Detaylarını Düzenle
+Failed to load transporter dashboard.,Nakliyeci paneli yüklenemedi.
+Failed to save transport cost.,Nakliye maliyeti kaydedilemedi.
+Freight Booking {0} belongs to another company.,{0} nakliye rezervasyonu başka bir şirkete ait.
+No containers or freight bookings match your filter criteria.,Filtre kriterlerinize uyan konteyner veya nakliye rezervasyonu yok.
+No transport records found,Nakliye kaydı bulunamadı
+Outstanding Balance,Kalan Nakliyeci Borcu
+Paid Bank,Banka Ödenen
+Paid Bank (Transfer),Banka Ödenen (Havale)
+Paid Cash,Nakit Ödenen
+Paid Cash (Kassa),Nakit Ödenen (Kasa)
+Save Details,Detayları Kaydet
+Showing {0} to {1} of {2} entries,{2} kayıttan {0}–{1} arası gösteriliyor
+Total Freight Cost,Toplam Navlun Maliyeti
+Transport details updated successfully.,Nakliye detayları başarıyla güncellendi.
+Transport operations desk,Nakliye operasyon masası
+Transporter Vendor,Nakliyeci Firma

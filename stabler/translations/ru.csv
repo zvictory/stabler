@@ -5189,3 +5189,28 @@ complete,готово
 needed,требуется
 rate,цена
 sum of every open tender,сумма всех открытых тендеров
+Add delivery notes or remarks…,Добавьте примечания или замечания по доставке…
+Agreed Transport Cost,Согласованная стоимость перевозки
+All Transporters,Все перевозчики
+Balance Due,Остаток к оплате
+CI No,Номер CI
+"CI, transporter, container or vehicle… ⌘K","CI, перевозчик, контейнер или транспорт… ⌘K"
+"CI, transporter, truck/container, freight cost and cash/bank payments","CI, перевозчик, грузовик/контейнер, стоимость фрахта и оплаты наличными/банком"
+Container / Truck #,Контейнер / Грузовик №
+Edit Transport & Payment Details,Редактировать данные перевозки и оплаты
+Failed to load transporter dashboard.,Не удалось загрузить панель перевозчиков.
+Failed to save transport cost.,Не удалось сохранить стоимость перевозки.
+Freight Booking {0} belongs to another company.,Бронирование перевозки {0} принадлежит другой компании.
+No containers or freight bookings match your filter criteria.,Ни один контейнер или бронирование перевозки не соответствует заданным фильтрам.
+No transport records found,Записи о перевозках не найдены
+Outstanding Balance,Остаток задолженности
+Paid Bank,Оплата банком
+Paid Bank (Transfer),Оплачено банком (Перевод)
+Paid Cash,Оплата наличными
+Paid Cash (Kassa),Оплачено наличными (Касса)
+Save Details,Сохранить данные
+Showing {0} to {1} of {2} entries,Показано с {0} по {1} из {2} записей
+Total Freight Cost,Общая стоимость фрахта
+Transport details updated successfully.,Данные перевозки успешно обновлены.
+Transport operations desk,Операционная панель перевозок
+Transporter Vendor,Перевозчик

@@ -5183,3 +5183,28 @@ complete,тайёр
 needed,керак
 rate,нарх
 sum of every open tender,барча очиқ тендерлар йиғиндиси
+Add delivery notes or remarks…,Етказиб бериш эслатмалари ёки изоҳларини қўшинг…
+Agreed Transport Cost,Келишилган Ташиш Нархи
+All Transporters,Барча Ташувчилар
+Balance Due,Тўланиши Керак
+CI No,CI рақами
+"CI, transporter, container or vehicle… ⌘K","CI, ташувчи, контейнер ёки транспорт… ⌘K"
+"CI, transporter, truck/container, freight cost and cash/bank payments","CI, ташувчи, юк машинаси/контейнер, фрахт қиймати ва нақд/банк тўловлари"
+Container / Truck #,Контейнер / Юк машинаси №
+Edit Transport & Payment Details,Ташиш ва Тўлов Тафсилотларини Таҳрирлаш
+Failed to load transporter dashboard.,Ташувчилар панели юкланмади.
+Failed to save transport cost.,Ташиш нархини сақлаб бўлмади.
+Freight Booking {0} belongs to another company.,{0} юк ташиш бронлаши бошқа компанияга тегишли.
+No containers or freight bookings match your filter criteria.,Филтр шартларига мос контейнер ёки юк ташиш бронлаши топилмади.
+No transport records found,Ташиш ёзувлари топилмади
+Outstanding Balance,Қолган Қарз Баланси
+Paid Bank,Банк Тўланган
+Paid Bank (Transfer),Банк Тўланган (Ўтказма)
+Paid Cash,Нақд Тўланган
+Paid Cash (Kassa),Нақд Тўланган (Касса)
+Save Details,Тафсилотларни Сақлаш
+Showing {0} to {1} of {2} entries,{2} тадан {0}–{1} көрсатилмоқда
+Total Freight Cost,Жами Фрахт Қиймати
+Transport details updated successfully.,Ташиш тафсилотлари муваффақиятли янгиланди.
+Transport operations desk,Ташиш операцион столи
+Transporter Vendor,Ташувчи Компания
