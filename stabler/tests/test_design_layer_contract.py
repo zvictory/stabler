@@ -91,17 +91,41 @@ class TestUserAgentBorderReset(unittest.TestCase):
 	BUTTON_COMPONENTS = ("ds-kpi", "ds-stage", "ds-row", "ds-band")
 
 	def test_button_components_reset_the_default_border(self):
+		"""Sınıfa DOKUNAN her bloğu tara, ilkini değil: bir bileşen birden çok
+		kuralda görünebiliyor (ör. hizalama reseti ayrı bir blokta) ve ilk
+		eşleşmeye bakan bir test yanlış bloğu okuyup sahte hata veriyor."""
 		for cls in self.BUTTON_COMPONENTS:
 			with self.subTest(component=cls):
-				block = re.search(
-					r"\.stbl-ds \.%s\s*\{([^}]*)\}" % cls, CSS_NO_COMMENTS
+				blocks = [
+					body
+					for head, body in re.findall(r"([^{}]+)\{([^{}]*)\}", CSS_NO_COMMENTS)
+					if any(sel.strip().endswith(f".{cls}") for sel in head.split(","))
+				]
+				self.assertTrue(blocks, f".{cls} için hiç kural yok")
+				self.assertTrue(
+					any(re.search(r"border:\s*0", body) for body in blocks),
+					f".{cls} hiçbir kuralında `border: 0` reset'i taşımıyor",
 				)
-				self.assertIsNotNone(block, f".{cls} temel kuralı yok")
-				self.assertRegex(
-					block.group(1),
-					r"border:\s*0",
-					f".{cls} kuralı `border: 0` reset'i taşımıyor",
+
+	def test_grid_box_components_do_not_inherit_button_centring(self):
+		"""Aynı kökten ikinci tuzak: <button>'ın UA stili içeriği dikeyde
+		ortalıyor. Izgarada kısa olan kutu komşusu kadar uzayınca yazısı
+		aşağı kayıyor ve iki kutu farklı hizada duruyor.
+
+		`align-items: flex-start` YETMİYOR — ölçüldü, hesaplanan değer doğru
+		gelmesine rağmen Chrome ortalamayı sürdürüyor. Tek güvenilir yol
+		kutuyu açıkça dikey flex yapmak, o yüzden test onu arıyor."""
+		for cls in ("ds-kpi", "ds-stage"):
+			with self.subTest(component=cls):
+				rule = re.search(
+					r"\.stbl-ds \.ds-kpi,\s*\.stbl-ds \.ds-stage\s*\{([^}]*)\}",
+					CSS_NO_COMMENTS,
 				)
+				self.assertIsNotNone(rule, "kutu hizalama kuralı yok")
+				body = rule.group(1)
+				self.assertRegex(body, r"display:\s*flex")
+				self.assertRegex(body, r"flex-direction:\s*column")
+				self.assertRegex(body, r"justify-content:\s*flex-start")
 
 	def test_border_style_is_declared_where_borders_are_drawn(self):
 		"""`border: 0` sonrası yalnız genişlik/renk vermek yetmez — stil de

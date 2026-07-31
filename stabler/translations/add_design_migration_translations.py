@@ -228,6 +228,58 @@ ROWS = {
 		"Тўғридан-тўғри ERP ёзувларига боғланган",
 	),
 	"tenders": ("tender", "тендеров", "tender", "тендер"),
+
+	# ══ Tender hattı ve dönüşüm hunisi (TenderFunnel) ══════════════════
+	"Execution": ("İcra", "Исполнение", "Ijro", "Ижро"),
+	"active contracts": ("aktif sözleşme", "активных контрактов", "faol shartnoma", "фаол шартнома"),
+	"delivery or collection still running": (
+		"teslim veya tahsilat devam ediyor",
+		"поставка или сбор ещё идут",
+		"yetkazib berish yoki yig'ish davom etmoqda",
+		"етказиб бериш ёки йиғиш давом этмоқда",
+	),
+	"lots": ("lot", "лотов", "lot", "лот"),
+	"Conversion funnel": ("Dönüşüm hunisi", "Воронка конверсии", "Konversiya voronkasi", "Конверсия воронкаси"),
+	"conversion": ("geçiş", "конверсия", "konversiya", "конверсия"),
+	"resolved": ("sonuçlanan", "завершено", "yakunlangan", "якунланган"),
+	"Where we lose them": (
+		"Nerede kaybediyoruz", "Где мы их теряем",
+		"Ularni qayerda yo'qotamiz", "Уларни қаерда йўқотамиз",
+	),
+	"Reading the funnel": (
+		"Huninin okuması", "Чтение воронки",
+		"Voronkaning o'qilishi", "Воронканинг ўқилиши",
+	),
+	"No stage lost a lot in this window.": (
+		"Bu pencerede hiçbir aşama lot kaybetmedi.",
+		"В этом окне ни один этап не потерял лот.",
+		"Bu oynada hech bir bosqich lot yo'qotmadi.",
+		"Бу ойнада ҳеч бир босқич лот йўқотмади.",
+	),
+	"Seen but never decided — the GO/NO-GO queue is where they stalled.": (
+		"Görüldü ama karar verilmedi — GO/NO-GO kuyruğunda takıldılar.",
+		"Увидели, но не решили — застряли в очереди GO/NO-GO.",
+		"Ko'rildi, lekin qaror qilinmadi — GO/NO-GO navbatida qoldi.",
+		"Кўрилди, лекин қарор қилинмади — GO/NO-GO навбатида қолди.",
+	),
+	"Decided but sourcing never started — not one quotation was collected.": (
+		"Karar alındı ama sourcing başlamadı — tek teklif bile toplanmadı.",
+		"Решение принято, но сорсинг не начался — ни одного предложения.",
+		"Qaror qabul qilindi, lekin sourcing boshlanmadi — bitta ham taklif yo'q.",
+		"Қарор қабул қилинди, лекин sourcing бошланмади — битта ҳам таклиф йўқ.",
+	),
+	"Priced but never submitted — the bid window closed on a finished price.": (
+		"Fiyatlandı ama gönderilmedi — teklif penceresi bitmiş fiyatın üstüne kapandı.",
+		"Цена рассчитана, но заявку не подали — окно закрылось на готовой цене.",
+		"Narx hisoblandi, lekin taklif yuborilmadi — oyna tayyor narx ustida yopildi.",
+		"Нарх ҳисобланди, лекин таклиф юборилмади — ойна тайёр нарх устида ёпилди.",
+	),
+	"Submitted and lost — the bid was in, the result went the other way.": (
+		"Gönderildi ve kaybedildi — teklif verilmişti, sonuç ters çıktı.",
+		"Подали и проиграли — заявка была, результат оказался другим.",
+		"Yuborildi va yutqazildi — taklif berilgan edi, natija boshqacha chiqdi.",
+		"Юборилди ва ютқазилди — таклиф берилган эди, натижа бошқача чиқди.",
+	),
 }
 
 LANGS = {"en": None, "tr": 0, "ru": 1, "uz": 2, "uzc": 3}

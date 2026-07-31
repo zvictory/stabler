@@ -1,9 +1,21 @@
 <script setup>
 // Pipeline funnel panel — the tender lifecycle as one honest picture.
-// Full-page design (approved prototype): KPI cards, phase-banded stage flow
-// with a RESULT? diamond and a won/lost branch, then the conversion funnel.
 // Every deal is counted in exactly one stage (precedence enforced server-side
 // in _funnel.py); every number navigates to the screen that owns the stage.
+//
+// Migrated to the Modernist Tabler layer. Two things changed beyond styling:
+//
+//  * The funnel is drawn with bars instead of a hand-computed SVG trapezoid.
+//    The trapezoid needed ~30 lines of geometry to say "this rung is smaller
+//    than the one above", which a bar says with one width.
+//  * The drop between two rungs is now surfaced as its own panel. The number
+//    was already computed for the legend but sat as a small "· −7"; the
+//    biggest drop IS the finding, so it gets the space.
+//
+// `mode` stays: "full" draws the counter strip and the stage pipeline as well;
+// anything else draws the conversion funnel and its losses only, which is how
+// the dashboard is meant to embed it. No call site passes it today, but the
+// contract is specified in test_tender_dashboard_spa -- a test is a caller.
 import { computed, onMounted, ref, watch } from "vue";
 import { storeToRefs } from "pinia";
 import { useRouter } from "vue-router";
@@ -43,98 +55,139 @@ const kpi = computed(() => data.value?.kpi || {});
 const so = computed(() => data.value?.so || {});
 const meta = computed(() => data.value?.meta || {});
 const stagesN = computed(() => data.value?.stages || {});
+const days = computed(() => data.value?.days || props.days);
 
-// KPI cards — the four numbers a director asks first.
+/* Bu dört sayı PENCEREYE bağlı (son N gün). Direktör panosunun altı sayacı
+ * portföyün tamamını sayıyor — aynı isimli olanlar bile aynı sayı DEĞİL.
+ * Bu yüzden ayrı bir şerit ve kapsamı başlıkta yazılı. */
 const KPIS = computed(() => [
-	{ key: "open", icon: "ti-activity", cls: "bg-indigo", n: kpi.value.open_pipeline ?? "—",
-		label: t("Open pipeline (seen → awaiting result)") },
-	{ key: "win", icon: "ti-trophy", cls: "bg-green",
-		n: kpi.value.win_rate != null ? kpi.value.win_rate + "%" : "—",
-		label: t("Win-rate — {won}W / {lost}L in {days} days",
-			{ won: kpi.value.won ?? 0, lost: kpi.value.lost ?? 0, days: data.value?.days || 90 }) },
-	{ key: "active", icon: "ti-building-warehouse", cls: "bg-cyan", n: so.value.active ?? "—",
-		label: t("Active contracts — serving") },
-	{ key: "urgent", icon: "ti-clock-exclamation", cls: "bg-orange", n: kpi.value.urgent ?? 0,
-		label: t("Deadline risk — act now") },
+	{
+		key: "open", sev: "neutral", label: t("Open pipeline"),
+		n: kpi.value.open_pipeline ?? "—", cap: t("lots in the pipeline"),
+		note: t("seen through to awaiting result"), rule: "stage ∉ (won, lost)",
+	},
+	{
+		key: "win", sev: "ok", label: t("Result"),
+		n: kpi.value.win_rate != null ? kpi.value.win_rate + "%" : "—", cap: t("win rate"),
+		note: `${kpi.value.won ?? 0} ${t("won")} / ${kpi.value.lost ?? 0} ${t("lost")}`,
+		rule: "result in (won, lost)",
+	},
+	{
+		key: "active", sev: "soon", label: t("Execution"),
+		n: so.value.active ?? "—", cap: t("active contracts"),
+		note: t("delivery or collection still running"), rule: "sales_order · stage ≠ Closed",
+	},
+	{
+		key: "urgent", sev: "crit", label: t("Risk"),
+		n: kpi.value.urgent ?? 0, cap: t("deadline risk"),
+		note: t("needs action today — lands on the desk"), rule: "deadline < 48h · act_now",
+	},
 ]);
 
-// Main flow (before the diamond). Colors: decide amber, sourcing violet, bid indigo.
-const FLOW = computed(() => {
+/* Aşama kutuları. Grup başlıkları hattın fazlarını ayırır; her kutu tek bir
+ * aşamayı sayar ve o aşamanın sahibi olan ekrana gider. */
+const GROUPS = computed(() => {
 	const s = stagesN.value;
+	const x = so.value;
 	return [
-		{ key: "seen", n: s.seen || 0, color: "#d97706", icon: "ti-zoom-scan",
-			label: t("Under review"), src: 'intake · go_no_go=""' },
-		{ key: "go", n: s.go || 0, color: "#d97706", icon: "ti-circle-check",
-			label: t("GO — awaiting sourcing"), src: "go_no_go=go · SQ=0" },
-		{ key: "sourcing", n: s.sourcing || 0, color: "#7c3aed", icon: "ti-affiliate",
-			label: t("Collecting quotations"), src: "SQ>0 · pricing yo'q",
-			warn: meta.value.sourcing_policy_gap
-				? t("{count} below policy", { count: meta.value.sourcing_policy_gap }) : "" },
-		{ key: "priced", n: s.priced || 0, color: "#7c3aed", icon: "ti-scale",
-			label: t("Priced — ready to bid"), src: "bid_pricing ✓" },
-		{ key: "submitted", n: s.submitted || 0, color: "#4f46e5", icon: "ti-send",
-			label: t("Bid submitted"), src: "submitted_at ✓ · result=?",
-			warn: meta.value.submitted_urgent
-				? t("{count} deadline <48h", { count: meta.value.submitted_urgent }) : "" },
+		{
+			key: "decide", label: t("Decision"), cols: 2,
+			stages: [
+				{ key: "seen", n: s.seen || 0, label: t("Under review"), rule: 'intake ✓ · go_no_go = ""' },
+				{ key: "go", n: s.go || 0, label: t("GO — awaiting sourcing"), rule: "go_no_go = go · SQ = 0" },
+			],
+		},
+		{
+			key: "sourcing", label: t("Sourcing — cost first"), cols: 2,
+			stages: [
+				{
+					key: "sourcing", n: s.sourcing || 0, label: t("Collecting quotations"),
+					rule: "SQ > 0 · no pricing",
+					chip: meta.value.sourcing_policy_gap
+						? { text: t("{count} below policy", { count: meta.value.sourcing_policy_gap }), tone: "today" }
+						: null,
+				},
+				{ key: "priced", n: s.priced || 0, label: t("Priced — ready to bid"), rule: "bid_pricing ✓" },
+			],
+		},
+		{
+			key: "bid", label: t("Bidding"), cols: 3,
+			stages: [
+				{
+					key: "submitted", n: s.submitted || 0, label: t("Bid submitted"),
+					rule: "submitted_at ✓ · result = ?",
+					chip: meta.value.submitted_urgent
+						? { text: t("{count} deadline <48h", { count: meta.value.submitted_urgent }), tone: "crit" }
+						: null,
+				},
+				{ key: "won", n: s.won || 0, label: t("Won"), rule: "result = won", tone: "ok" },
+				{ key: "lost", n: s.lost || 0, label: t("Lost"), rule: "result = lost", tone: "mute" },
+			],
+		},
+		{
+			key: "exec", label: t("Contract & execution"), cols: 4,
+			stages: [
+				{ key: "contract", kind: "so", n: x.contract || 0, label: t("Contract (SO opened)"), rule: "stage = New" },
+				{ key: "procurement", kind: "so", n: x.procurement || 0, label: t("Procurement (PO)"), rule: "stage = Procurement" },
+				{ key: "delivery", kind: "so", n: x.delivery || 0, label: t("Delivery / service"), rule: "Delivery | Acceptance | Invoicing" },
+				{ key: "done", kind: "so", n: x.done || 0, label: t("Completed (paid)"), rule: "stage = Paid | Closed", tone: "mute" },
+			],
+		},
 	];
 });
 
-// After the diamond: won continues the line, lost hangs below it.
-const WON = computed(() => ({
-	key: "won", n: stagesN.value.won || 0, color: "#16a34a", icon: "ti-trophy",
-	label: t("Won ({days} days)", { days: data.value?.days || 90 }), src: "result=won" }));
-const LOST = computed(() => ({
-	key: "lost", n: stagesN.value.lost || 0, color: "#94a3b8", icon: "ti-x",
-	label: t("Lost"), src: "result=lost" }));
+const groupTotal = (g) => g.stages.reduce((sum, st) => sum + (st.n || 0), 0);
 
-const EXEC = computed(() => [
-	{ key: "contract", kind: "so", n: so.value.contract || 0, color: "#0891b2", icon: "ti-file-text",
-		label: t("Contract (SO opened)"), src: "stage=New" },
-	{ key: "procurement", kind: "so", n: so.value.procurement || 0, color: "#0891b2", icon: "ti-shopping-cart",
-		label: t("Procurement (PO)"), src: "stage=Procurement" },
-	{ key: "delivery", kind: "so", n: so.value.delivery || 0, color: "#0891b2", icon: "ti-truck-delivery",
-		label: t("Delivery / service"), src: "Delivery|Accept|Invoice" },
-	{ key: "done", kind: "so", n: so.value.done || 0, color: "#16a34a", icon: "ti-check",
-		label: t("Completed (paid)"), src: "stage=Paid|Closed" },
-]);
-
-// Funnel — real trapezoid segments + a legend with conversions and drops.
 const FUNNEL_LABELS = {
-	seen: () => t("Lots seen"), go: () => t("GO decision"),
-	sourcing: () => t("Sourcing started"), submitted: () => t("Bid submitted"),
+	seen: () => t("Lots seen"),
+	go: () => t("GO decision"),
+	sourcing: () => t("Sourcing started"),
+	submitted: () => t("Bid submitted"),
 	won: () => t("Won"),
 };
-const FUNNEL_COLORS = { seen: "#d97706", go: "#b45309", sourcing: "#7c3aed", submitted: "#4f46e5", won: "#16a34a" };
 
-const funnelSvg = computed(() => {
+/* Çubuk genişliği İLK basamağa oranlı — huninin anlamı bu. Yüzde ise bir
+ * ÖNCEKİ basamağa göre geçiş oranı; ikisi farklı sorunun cevabı. */
+const funnel = computed(() => {
 	const rows = data.value?.funnel || [];
-	if (!rows.length) return { w: 0, h: 0, sh: 0, segs: [] };
-	const W = 440, SH = 58, GAP = 7, PAD = 5;
-	const max = Math.max(rows[0]?.n || 1, 1);
-	const wOf = (n) => Math.max(76, (n / max) * (W - 2 * PAD));
-	const segs = rows.map((r, i) => {
-		const y = i * (SH + GAP);
-		const wt = wOf(r.n);
-		const wb = wOf(rows[i + 1] ? rows[i + 1].n : r.n * 0.82);
-		return {
-			key: r.key, n: r.n, y,
-			points: `${(W - wt) / 2},${y} ${(W + wt) / 2},${y} ${(W + wb) / 2},${y + SH} ${(W - wb) / 2},${y + SH}`,
-			color: FUNNEL_COLORS[r.key] || "#64748b",
-			label: FUNNEL_LABELS[r.key] ? FUNNEL_LABELS[r.key]() : r.key,
-		};
-	});
-	return { w: W, h: rows.length * SH + (rows.length - 1) * GAP, sh: SH, segs };
-});
-const legend = computed(() => {
-	const rows = data.value?.funnel || [];
+	const top = Math.max(rows[0]?.n || 1, 1);
 	return rows.map((r, i) => ({
-		key: r.key, n: r.n,
-		color: FUNNEL_COLORS[r.key] || "#64748b",
+		key: r.key,
+		n: r.n,
 		label: FUNNEL_LABELS[r.key] ? FUNNEL_LABELS[r.key]() : r.key,
+		width: Math.round((r.n / top) * 100),
 		conv: i ? Math.round((r.n / Math.max(rows[i - 1].n, 1)) * 100) : null,
 		drop: i ? rows[i - 1].n - r.n : 0,
+		tone: r.key === "won" ? "ok" : null,
 	}));
 });
+
+/* En büyük düşüş EN ÖNEMLİ bulgu. Sayı zaten hesaplanıyordu ama lejantta
+ * küçük bir "· −7" olarak duruyordu; burada kendi paneline çıkıyor.
+ * Düşüşü olmayan basamak listelenmez — sıfırı göstermek gürültü. */
+const LOSS_WHY = {
+	go: () => t("Seen but never decided — the GO/NO-GO queue is where they stalled."),
+	sourcing: () => t("Decided but sourcing never started — not one quotation was collected."),
+	submitted: () => t("Priced but never submitted — the bid window closed on a finished price."),
+	won: () => t("Submitted and lost — the bid was in, the result went the other way."),
+};
+
+const losses = computed(() =>
+	funnel.value
+		.filter((r) => r.drop > 0)
+		.sort((a, b) => b.drop - a.drop)
+		.map((r, i) => ({
+			key: r.key,
+			drop: r.drop,
+			title: r.label,
+			why: LOSS_WHY[r.key] ? LOSS_WHY[r.key]() : "",
+			rule: `${r.conv}% ${t("conversion")}`,
+			tone: i === 0 ? null : "today",
+		}))
+);
+
+const winRate = computed(() => kpi.value.win_rate);
+const resolved = computed(() => (kpi.value.won ?? 0) + (kpi.value.lost ?? 0));
 
 function go(st) {
 	// Graphics stay here; records live on their ORIGINAL list page. Deal stages
@@ -146,183 +199,157 @@ function go(st) {
 	}
 	router.push({ path: "/tender/my-tenders", query: { funnel_stage: st.key } });
 }
-
 </script>
 
 <template>
-	<div>
-		<template v-if="props.mode === 'full'">
-		<!-- KPI cards -->
-		<div class="row g-2 mb-3">
-			<div v-for="k in KPIS" :key="k.key" class="col-6 col-xl-3">
-				<div class="card card-sm">
-					<div class="card-body d-flex align-items-center gap-3">
-						<span class="avatar" :class="k.cls"><i class="ti" :class="k.icon"></i></span>
-						<div>
-							<div class="h2 mb-0 font-monospace">{{ k.n }}</div>
-							<div class="text-secondary small">{{ k.label }}</div>
-						</div>
-					</div>
-				</div>
-			</div>
+	<div class="tender-funnel">
+		<div v-if="loading && !data" class="ds-panel funnel-loading">
+			<div class="ds-panel-foot">{{ t("Loading tender funnel…") }}</div>
 		</div>
 
-		<!-- Stage flow -->
-		<div class="card mb-3">
-			<div class="card-header d-flex align-items-center flex-wrap gap-2">
-				<span class="fw-semibold"><i class="ti ti-filter-search me-2"></i>{{ t("Tender pipeline") }}</span>
-				<span class="text-secondary small">{{ t("last {days} days", { days: data?.days || 90 }) }}</span>
-				<span class="text-secondary small ms-auto">{{ t("Each tender is counted in exactly one stage. Click a stage to open its list.") }}</span>
-			</div>
-			<div class="card-body tf-scroll">
-				<div v-if="loading && !data" class="text-secondary py-3">
-					<span class="spinner-border spinner-border-sm me-2"></span>{{ t("Loading tender funnel…") }}
+		<template v-else-if="data">
+			<template v-if="props.mode === 'full'">
+			<div class="ds-kpis" data-cols="4">
+				<div v-for="k in KPIS" :key="k.key" class="ds-kpi" :data-sev="k.sev">
+					<div class="ds-label">{{ k.label }}</div>
+					<div><span class="ds-kpi-val">{{ k.n }}</span><span class="ds-kpi-cap">{{ k.cap }}</span></div>
+					<div class="ds-kpi-note">{{ k.note }}</div>
+					<div class="ds-kpi-q">{{ k.rule }}</div>
 				</div>
-				<template v-else-if="data">
-					<!-- phase bands -->
-					<div class="tf-bands">
-						<div class="tf-band" style="--bc:#d97706;flex:0 0 252px">{{ t("Decision") }}</div>
-						<div class="tf-band" style="--bc:#7c3aed;flex:0 0 252px">{{ t("Sourcing — cost first") }}</div>
-						<div class="tf-band" style="--bc:#4f46e5;flex:0 0 218px">{{ t("Bidding") }}</div>
-						<div class="tf-band" style="--bc:#0891b2;flex:1 1 auto">{{ t("Contract & execution") }}</div>
-					</div>
-					<!-- flow -->
-					<div class="tf-flow">
-						<template v-for="(st, i) in FLOW" :key="st.key">
-							<button type="button" class="tf-stage" :style="{ '--sc': st.color }" @click="go(st)">
-								<span class="tf-icw"><i class="ti" :class="st.icon"></i></span>
-								<span class="tf-count font-monospace">{{ st.n }}</span>
-								<span class="tf-label">{{ st.label }}</span>
-								<span class="tf-src font-monospace">{{ st.src }}</span>
-								<span v-if="st.warn" class="tf-warn">{{ st.warn }}</span>
-							</button>
-							<span class="tf-arr" aria-hidden="true">{{ "›" }}</span>
-						</template>
-						<!-- RESULT? diamond + won/lost branch -->
-						<div class="tf-dec" :title="t('Result?')">
-							<div class="tf-dia"><span>{{ t("Result?") }}</span></div>
-						</div>
-						<div class="tf-branch">
-							<button type="button" class="tf-stage" :style="{ '--sc': WON.color }" @click="go(WON)">
-								<span class="tf-icw"><i class="ti" :class="WON.icon"></i></span>
-								<span class="tf-count font-monospace">{{ WON.n }}</span>
-								<span class="tf-label">{{ WON.label }}</span>
-								<span class="tf-src font-monospace">{{ WON.src }}</span>
-							</button>
-							<button type="button" class="tf-stage tf-dim" :style="{ '--sc': LOST.color }" @click="go(LOST)">
-								<span class="tf-icw"><i class="ti" :class="LOST.icon"></i></span>
-								<span class="tf-count font-monospace">{{ LOST.n }}</span>
-								<span class="tf-label">{{ LOST.label }}</span>
-								<span class="tf-src font-monospace">{{ LOST.src }}</span>
-							</button>
-						</div>
-						<template v-for="ex in EXEC" :key="ex.key">
-							<span class="tf-arr" aria-hidden="true">{{ "›" }}</span>
-							<button type="button" class="tf-stage" :style="{ '--sc': ex.color }" @click="go(ex)">
-								<span class="tf-icw"><i class="ti" :class="ex.icon"></i></span>
-								<span class="tf-count font-monospace">{{ ex.n }}</span>
-								<span class="tf-label">{{ ex.label }}</span>
-								<span class="tf-src font-monospace">{{ ex.src }}</span>
-							</button>
-						</template>
-					</div>
+			</div>
 
+			<section class="ds-panel funnel-block">
+				<div class="ds-panel-head">
+					<h2>{{ t("Tender pipeline") }}</h2>
+					<span class="ds-label">
+						{{ t("Each tender is counted in exactly one stage. Click a stage to open its list.") }}
+					</span>
+				</div>
+
+				<template v-for="g in GROUPS" :key="g.key">
+					<div class="ds-stage-group">
+						<span class="ds-label">{{ g.label }}</span>
+						<span class="ds-stage-count">{{ groupTotal(g) }} {{ t("lots") }}</span>
+					</div>
+					<div class="ds-stage-grid" :data-cols="String(g.cols)">
+						<button
+							v-for="st in g.stages"
+							:key="st.key"
+							type="button"
+							class="ds-stage"
+							:data-tone="st.tone"
+							@click="go(st)"
+						>
+							<div><span class="ds-stage-n">{{ st.n }}</span><span class="ds-stage-t">{{ st.label }}</span></div>
+							<div class="ds-stage-rule">{{ st.rule }}</div>
+							<div v-if="st.chip" class="funnel-chip">
+								<span class="ds-chip" :data-tone="st.chip.tone">{{ st.chip.text }}</span>
+							</div>
+						</button>
+					</div>
 				</template>
-			</div>
-		</div>
 
-		</template>
-		<!-- Conversion funnel -->
-		<div v-if="data" class="card mb-3">
-			<div class="card-header">
-				<span class="fw-semibold text-uppercase small">{{ t("Conversion funnel — last {days} days", { days: data?.days || 90 }) }}</span>
-			</div>
-			<div class="card-body">
-				<div class="row g-4 align-items-center">
-					<div class="col-12 col-lg-5">
-						<svg v-if="funnelSvg.segs.length" :viewBox="`0 0 ${funnelSvg.w} ${funnelSvg.h}`" class="tf-funnel">
-							<g v-for="s in funnelSvg.segs" :key="s.key" class="tf-seg" @click="go({ key: s.key })">
-								<polygon :points="s.points" :fill="s.color" />
-								<text :x="funnelSvg.w / 2" :y="s.y + funnelSvg.sh / 2 - 2" text-anchor="middle" class="tf-n">{{ s.n }}</text>
-								<text :x="funnelSvg.w / 2" :y="s.y + funnelSvg.sh / 2 + 13" text-anchor="middle" class="tf-t">{{ s.label }}</text>
-							</g>
-						</svg>
-					</div>
-					<div class="col-12 col-lg-7">
-						<div v-for="l in legend" :key="l.key" class="tf-leg">
-							<span class="tf-sw" :style="{ background: l.color }"></span>
-							<span class="tf-ln font-monospace">{{ l.n }}</span>
-							<span class="tf-lt">{{ l.label }}</span>
-							<span class="tf-lc font-monospace">
-								<template v-if="l.conv == null">{{ t("start") }}</template>
-								<template v-else>{{ t("{pct}% conversion", { pct: l.conv }) }}<span v-if="l.drop" class="tf-drop"> · −{{ l.drop }}</span></template>
-							</span>
-						</div>
-						<div class="tf-leg tf-leg-total">
-							<span class="tf-sw" style="background:#16a34a"></span>
-							<span class="tf-ln font-monospace">{{ kpi.win_rate != null ? kpi.win_rate + "%" : "—" }}</span>
-							<span class="tf-lt">{{ t("Win-rate") }}</span>
-							<span class="tf-lc font-monospace">{{ t("{won} wins of {resolved} resolved", { won: kpi.won ?? 0, resolved: kpi.resolved ?? 0 }) }}</span>
-						</div>
-					</div>
+				<div class="ds-panel-foot">
+					<span class="ds-mono">tender_lot · quotation · sales_order · purchase_order</span>
+					<span>{{ t("last {days} days", { days }) }}</span>
 				</div>
+			</section>
+			</template>
+
+			<div class="funnel-2col">
+				<section class="ds-panel">
+					<div class="ds-panel-head">
+						<h2>{{ t("Conversion funnel") }}</h2>
+						<span class="ds-label">{{ t("last {days} days", { days }) }}</span>
+					</div>
+					<div
+						v-for="r in funnel"
+						:key="r.key"
+						class="ds-funnel-row"
+						:data-tone="r.tone"
+						role="button"
+						tabindex="0"
+						@click="go(r)"
+						@keydown.enter="go(r)"
+					>
+						<span class="ds-funnel-n">{{ r.n }}</span>
+						<div>
+							<div class="ds-funnel-t">{{ r.label }}</div>
+							<div class="ds-funnel-bar"><i :style="{ width: r.width + '%' }"></i></div>
+						</div>
+						<span class="ds-funnel-meta">
+							<template v-if="r.conv == null">{{ t("start") }}</template>
+							<template v-else>
+								{{ r.conv }}% {{ t("conversion") }}
+								<span v-if="r.drop" class="ds-funnel-drop">−{{ r.drop }}</span>
+							</template>
+						</span>
+					</div>
+					<div v-if="winRate != null" class="ds-funnel-foot">
+						<span class="ds-funnel-n">{{ winRate }}%</span>
+						<span class="ds-funnel-t funnel-grow">{{ t("Win rate") }}</span>
+						<span class="ds-label">
+							{{ resolved }} {{ t("resolved") }} · {{ kpi.won ?? 0 }} {{ t("won") }}
+						</span>
+					</div>
+				</section>
+
+				<section class="ds-panel">
+					<div class="ds-panel-head">
+						<h2>{{ t("Where we lose them") }}</h2>
+						<span class="ds-label">{{ t("Reading the funnel") }}</span>
+					</div>
+					<div v-if="!losses.length" class="ds-panel-foot funnel-empty">
+						{{ t("No stage lost a lot in this window.") }}
+					</div>
+					<div v-for="l in losses" :key="l.key" class="ds-loss" :data-tone="l.tone">
+						<span class="ds-loss-n">−{{ l.drop }}</span>
+						<div>
+							<div class="ds-loss-t">{{ l.title }}</div>
+							<div class="ds-loss-why">{{ l.why }}</div>
+							<div class="ds-loss-ev">{{ l.rule }}</div>
+						</div>
+					</div>
+				</section>
 			</div>
-		</div>
+		</template>
 	</div>
 </template>
 
 <style scoped>
-.tf-scroll { overflow-x: auto; }
-/* phase bands */
-.tf-bands { display: flex; gap: 10px; min-width: 1150px; margin-bottom: 12px; }
-.tf-band {
-	background: var(--bc); color: #fff; border-radius: 8px; padding: 5px 12px;
-	font-size: 11px; font-weight: 800; letter-spacing: 0.07em; text-transform: uppercase;
+/* Yalnız yerleşim. Görsel dil stabler-modernist.css'ten geliyor. */
+.funnel-block {
+	margin-top: 14px;
 }
-/* flow */
-.tf-flow { display: flex; align-items: flex-start; min-width: 1150px; }
-.tf-stage {
-	flex: 0 0 116px; background: var(--tblr-bg-surface, #fff);
-	border: 1.5px solid var(--tblr-border-color, #dfe4ea); border-top: 3px solid var(--sc);
-	border-radius: 12px; padding: 9px 7px 8px; text-align: center; cursor: pointer;
-	transition: transform 0.13s, box-shadow 0.13s; display: block;
+
+.funnel-2col {
+	display: grid;
+	grid-template-columns: 1.25fr 1fr;
+	gap: 14px;
+	align-items: start;
+	margin-top: 14px;
 }
-.tf-stage:hover { transform: translateY(-3px); border-color: var(--sc); box-shadow: 0 8px 20px rgba(16, 24, 40, 0.10); }
-.tf-icw {
-	width: 32px; height: 32px; margin: 0 auto 4px; border-radius: 9px;
-	display: grid; place-items: center;
-	background: color-mix(in srgb, var(--sc) 12%, transparent); color: var(--sc); font-size: 17px;
+
+@media (max-width: 992px) {
+	.funnel-2col {
+		grid-template-columns: 1fr;
+	}
 }
-.tf-count { display: block; font-size: 23px; font-weight: 800; line-height: 1.05; }
-.tf-label { display: block; font-size: 10.5px; font-weight: 700; line-height: 1.25; margin-top: 2px; }
-.tf-src { display: block; font-size: 8.5px; color: var(--tblr-secondary, #8b95a3); margin-top: 4px; word-break: break-all; line-height: 1.3; }
-.tf-warn {
-	display: inline-block; margin-top: 4px; font-size: 9px; font-weight: 700;
-	color: #92400e; background: #fef3c7; border: 1px solid #fde68a; border-radius: 999px; padding: 1px 7px;
+
+.funnel-chip {
+	margin-top: 8px;
 }
-.tf-dim { opacity: 0.7; }
-.tf-arr { flex: 0 0 20px; align-self: center; margin-top: -12px; color: #b6c0cc; font-size: 19px; text-align: center; font-weight: 600; }
-/* diamond + branch */
-.tf-dec { flex: 0 0 80px; align-self: center; margin-top: -12px; text-align: center; }
-.tf-dia {
-	width: 50px; height: 50px; margin: 0 auto; background: var(--tblr-bg-surface, #fff);
-	border: 2px solid #16a34a; transform: rotate(45deg); border-radius: 9px; display: grid; place-items: center;
+
+.funnel-grow {
+	flex: 1;
 }
-.tf-dia span { transform: rotate(-45deg); font-size: 8.5px; font-weight: 800; color: #16a34a; text-transform: uppercase; }
-.tf-branch { flex: 0 0 124px; display: flex; flex-direction: column; gap: 8px; }
-.tf-branch .tf-stage { flex: none; }
-/* funnel */
-.tf-funnel { width: 100%; max-width: 460px; display: block; margin: 0 auto; }
-.tf-seg { cursor: pointer; }
-.tf-seg:hover polygon { filter: brightness(1.08); }
-.tf-n { fill: #fff; font-size: 17px; font-weight: 800; font-family: var(--tblr-font-monospace, ui-monospace, monospace); }
-.tf-t { fill: #fff; opacity: 0.85; font-size: 9.5px; font-weight: 600; }
-/* legend */
-.tf-leg { display: flex; align-items: center; gap: 11px; padding: 8px 0; border-bottom: 1px solid var(--tblr-border-color-light, #eef1f5); font-size: 13px; }
-.tf-leg-total { border-bottom: none; border-top: 2px solid var(--tblr-border-color, #dfe4ea); margin-top: 3px; padding-top: 11px; }
-.tf-sw { width: 12px; height: 12px; border-radius: 4px; flex: none; }
-.tf-ln { font-weight: 800; font-size: 14.5px; min-width: 42px; text-align: right; }
-.tf-lt { font-weight: 600; }
-.tf-lc { margin-left: auto; font-size: 11px; color: var(--tblr-secondary, #8b95a3); }
-.tf-drop { color: #b91c1c; }
+
+.funnel-loading,
+.funnel-empty {
+	padding: 6px 0;
+}
+
+.ds-funnel-row[role="button"] {
+	cursor: pointer;
+}
 </style>

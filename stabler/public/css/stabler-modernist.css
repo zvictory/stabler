@@ -146,6 +146,22 @@
 .stbl-ds .ds-kpi, .stbl-ds .ds-stage, .stbl-ds .ds-row,
 .stbl-ds .ds-band, .stbl-ds .ds-card { border-style: solid; border-color: var(--ds-ln); }
 
+/* İkinci tarayıcı-varsayılanı tuzağı, kenarla aynı kökten: <button>'ın UA
+ * stili `align-items: center` veriyor. Izgarada kısa olan kutu komşusu kadar
+ * uzayınca içeriği dikeyde ortalanıyor ve iki kutu farklı hizada duruyor.
+ *
+ * `align-items: flex-start` YETMİYOR — ölçüldü: hesaplanan değer doğru
+ * geliyor ama Chrome butonun içeriğini kendi anonim kutusunda ortalamayı
+ * sürdürüyor; bu davranış standart bir özellikle kontrol edilmiyor. Tek
+ * güvenilir yol kutuyu açıkça dikey flex yapmak.
+ *
+ * Yalnız bu ikisi: .ds-row ve .ds-band aşağıda kendi yerleşimlerini açıkça
+ * veriyor (satır grid, bant yatay flex). Onları da buraya katmak, doğruluğu
+ * kural SIRASINA bağlayan örtük bir bağımlılık olurdu. */
+.stbl-ds .ds-kpi, .stbl-ds .ds-stage {
+  display: flex; flex-direction: column; align-items: stretch; justify-content: flex-start;
+}
+
 /* ── Başlıklar ───────────────────────────────────────────────────────────── */
 .stbl-ds h1, .stbl-ds h2, .stbl-ds h3, .stbl-ds .ds-h {
   font-family: var(--ds-font-head);
