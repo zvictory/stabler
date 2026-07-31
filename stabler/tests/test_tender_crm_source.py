@@ -167,5 +167,36 @@ class TestTheKpiStripIsHonest(unittest.TestCase):
 		self.assertRegex(SCRIPT, r'sev: all\.length && all\.every\(KPI_TESTS\.policy\) \? "ok" : "today"')
 
 
+class TestTheEndpointsExistOnTheServer(unittest.TestCase):
+	"""Bu iddia paralel oturumun test_tender_crm_board_api.py'sinden alındı.
+
+	Dosyanın kendisi kaldırıldı — iki modülün geri kalanı buradaki testlerin
+	daha zayıf bir kopyasıydı. Ama BU iddia kopya değildi ve kaybedilemezdi:
+	yukarıdaki testlerin hepsi ekranın hangi uç noktayı ÇAĞIRDIĞINA bakıyor.
+	Biri Python tarafındaki fonksiyonu yeniden adlandırsa hepsi yeşil kalır,
+	ekran ise çalışma anında 404 alır. Sözleşmenin iki ucu da tutulmalı."""
+
+	def test_the_api_defines_both_whitelisted_functions(self):
+		import ast
+
+		tree = ast.parse((ROOT / "api/tender.py").read_text(encoding="utf-8"))
+		funcs = {n.name for n in ast.walk(tree) if isinstance(n, ast.FunctionDef)}
+		for name in ("crm_board", "move_deal_stage"):
+			with self.subTest(function=name):
+				self.assertIn(name, funcs, f"api/tender.py {name} tanımlamıyor")
+
+	def test_the_names_the_screen_calls_match_the_names_the_api_defines(self):
+		"""Adı iki yerde ayrı ayrı yazmak yerine, ekranın çağırdığı dotted path'in
+		son parçasını alıp sunucudakiyle karşılaştır — böylece test, adı elle
+		güncellemeyi unutan bir yeniden adlandırmayı da yakalar."""
+		import ast
+
+		called = set(re.findall(r'"stabler\.api\.tender\.(\w+)"', CRM))
+		self.assertTrue(called, "ekran hiç tender uç noktası çağırmıyor")
+		tree = ast.parse((ROOT / "api/tender.py").read_text(encoding="utf-8"))
+		defined = {n.name for n in ast.walk(tree) if isinstance(n, ast.FunctionDef)}
+		self.assertEqual(called - defined, set(), f"sunucuda karşılığı olmayan çağrı: {called - defined}")
+
+
 if __name__ == "__main__":
 	unittest.main()
