@@ -784,6 +784,11 @@ async function closeSalesOrder() {
 </script>
 
 <template>
+	<!-- Tasarım katmanını açan sarmalayıcı. FormPage çok köklü olduğu için
+	     öznitelik geçişi güvenilir değil; sınıf burada veriliyor. Paylaşılan
+	     bileşenlerin hiçbirine dokunulmuyor — katmandaki köprü bölümü
+	     Tabler sınıflarını YALNIZCA .stbl-ds altında yeniden giydiriyor. -->
+	<div class="stbl-ds">
 	<FormPage
 		:title="isCreate ? t('New Sales Order') : t('Sales Order')"
 		:doc-name="docName"
@@ -1325,4 +1330,5 @@ async function closeSalesOrder() {
 			</template>
 		</template>
 	</FormPage>
+	</div>
 </template>

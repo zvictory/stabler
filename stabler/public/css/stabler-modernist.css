@@ -877,3 +877,135 @@
 @media (max-width: 992px) {
   .stbl-ds .ds-flow-svg { min-width: 900px; }
 }
+
+/* ==========================================================================
+ * KÖPRÜ — Tabler bileşenleri, taşınmış ekranların İÇİNDE
+ *
+ * Paylaşılan form bileşenleri (Select, DateInput, MoneyInput, Typeahead,
+ * LineItemsEditor, FormPage) 93'e varan ekranda kullanılıyor. Onları
+ * değiştirmek her formu aynı anda değiştirirdi ve göçün kademeli olma
+ * garantisini yok ederdi.
+ *
+ * Bu yüzden bileşenlere HİÇ dokunulmuyor. Hepsi Tabler'ın .form-control /
+ * .form-select tabanı üzerine kurulu; burada o sınıflar YALNIZCA .stbl-ds
+ * altında yeniden giydiriliyor. Taşınmamış ekran tek bir kuralı bile
+ * görmüyor — yayılma yarıçapı hâlâ sıfır.
+ *
+ * Bir form ekranını taşımak = kök elemana class="stbl-ds" eklemek.
+ * ========================================================================== */
+
+.stbl-ds .form-label {
+  font-family: var(--ds-mono); font-size: 10px; letter-spacing: .14em;
+  text-transform: uppercase; color: var(--ds-tx2); margin-bottom: 6px; font-weight: 400;
+}
+.stbl-ds .form-label.required::after,
+.stbl-ds .form-label .required { color: var(--ds-crit-tx); }
+
+.stbl-ds .form-control,
+.stbl-ds .form-select {
+  min-height: 44px; border: 1px solid var(--ds-ln2); border-radius: 0;
+  background: var(--ds-surface); color: var(--ds-tx);
+  font-family: var(--ds-font-body); font-size: 14px; padding: 10px 12px;
+  box-shadow: none;
+}
+.stbl-ds .form-control:focus,
+.stbl-ds .form-select:focus {
+  border-color: var(--ds-acc); box-shadow: none;
+  outline: 2px solid var(--ds-acc); outline-offset: -2px;
+}
+.stbl-ds .form-control::placeholder { color: var(--ds-tx3); }
+.stbl-ds .form-control:disabled,
+.stbl-ds .form-select:disabled { background: var(--ds-bg); color: var(--ds-tx3); }
+.stbl-ds .form-control-sm,
+.stbl-ds .form-select-sm { min-height: 34px; padding: 5px 9px; font-size: 12.5px; }
+
+/* Tutar alanları hizalı okunmalı — MoneyInput zaten mono/sağa yaslı sınıf
+ * veriyor, burada yalnız tablo rakamı gibi davranmasını sağlıyoruz. */
+.stbl-ds .form-control.font-monospace {
+  font-family: var(--ds-mono); font-variant-numeric: tabular-nums;
+}
+
+/* Girdi grubu: yuvarlak köşe yok, ek parça kenarı girdiyle aynı. */
+.stbl-ds .input-group { border-radius: 0; }
+.stbl-ds .input-group > .form-control,
+.stbl-ds .input-group > .form-select { border-radius: 0; }
+.stbl-ds .input-group-text {
+  border: 1px solid var(--ds-ln2); border-radius: 0; background: var(--ds-bg);
+  font-family: var(--ds-mono); font-size: 11.5px; color: var(--ds-tx2);
+}
+
+.stbl-ds .btn {
+  border-radius: 0; font-family: var(--ds-font-body); font-weight: 600;
+  font-size: 13.5px; min-height: 44px; padding: 10px 16px; box-shadow: none;
+  border: 1px solid var(--ds-ln2); background: var(--ds-surface); color: var(--ds-tx);
+}
+.stbl-ds .btn:hover { background: #f4f6f9; }
+.stbl-ds .btn-sm { min-height: 34px; padding: 6px 12px; font-size: 12.5px; }
+.stbl-ds .btn-primary {
+  background: var(--ds-acc); border-color: var(--ds-acc); color: #fff;
+}
+.stbl-ds .btn-primary:hover { background: #1b5aa6; border-color: #1b5aa6; }
+.stbl-ds .btn-icon { padding: 6px; min-height: 34px; }
+
+/* Kart = panel. Gölge yok, köşe yok — katmanın tamamı böyle. */
+.stbl-ds .card {
+  border: 1px solid var(--ds-ln); border-radius: 0; box-shadow: none;
+  background: var(--ds-surface);
+}
+.stbl-ds .card-header {
+  border-bottom: 1px solid var(--ds-ln); background: var(--ds-surface);
+  padding: 13px var(--ds-pad); min-height: 0;
+}
+.stbl-ds .card-title {
+  font-family: var(--ds-font-head); font-weight: 800; font-size: 16px;
+  color: var(--ds-tx); margin: 0;
+}
+.stbl-ds .card-body { padding: var(--ds-pad); }
+.stbl-ds .card-footer {
+  border-top: 1px solid var(--ds-ln); background: var(--ds-surface); padding: 12px var(--ds-pad);
+}
+
+.stbl-ds .table { font-size: 13.5px; margin-bottom: 0; }
+.stbl-ds .table > thead > tr > th {
+  font-family: var(--ds-mono); font-size: 10px; letter-spacing: .14em;
+  text-transform: uppercase; color: var(--ds-tx2); font-weight: 400;
+  border-bottom: 1px solid var(--ds-ln); background: var(--ds-surface);
+  padding: 10px var(--ds-pad);
+}
+.stbl-ds .table > tbody > tr > td {
+  padding: 11px var(--ds-pad); border-bottom: 1px solid var(--ds-ln); color: var(--ds-tx);
+}
+.stbl-ds .table > tbody > tr:hover > td { background: #fafbfc; }
+
+/* Rozet = çip. Tabler'ın renk yardımcıları (bg-*-lt) korunuyor, yalnız
+ * biçim ve tipografi katmana çekiliyor. */
+.stbl-ds .badge {
+  border-radius: 0; font-family: var(--ds-mono); font-size: 10.5px;
+  letter-spacing: .06em; padding: 3px 7px; font-weight: 400;
+}
+
+.stbl-ds .alert {
+  border-radius: 0; border: 1px solid; border-left-width: 3px;
+  box-shadow: none; font-size: 13px; padding: 11px 14px;
+}
+
+/* Ölçüden miktar üreten kalem (Item.custom_dimension_mode = Linear/Area/Volume).
+ * Motor zaten üretimde: _dimensions.py hesaplar, dimensions_hook.py kayıtta
+ * yeniden hesaplar, LineItemsEditor girişleri çizer. Buradaki tek iş o
+ * girişleri tasarımın diline getirmek — hesap kuralına dokunulmuyor.
+ *
+ * Dikey yığın yerine yatay: boy/en/adet yan yana okununca "2760 × 1000 × 6"
+ * tek bir ölçü ifadesi gibi görünüyor, alt alta dizilince üç ayrı alan gibi. */
+.stbl-ds .ds-dims { flex-direction: row !important; flex-wrap: wrap; gap: 6px !important; }
+.stbl-ds .ds-dims > .form-control {
+  flex: 1 1 62px; min-width: 62px; min-height: 34px;
+  padding: 5px 8px; font-size: 12.5px; text-align: right;
+}
+/* Sonuç satırı tam genişlikte, altta: girdiler DEĞİŞKEN, bu ÇIKTI. */
+.stbl-ds .ds-dims > .ds-calc {
+  flex: 1 0 100%; font-family: var(--ds-mono); font-size: 11.5px;
+  color: var(--ds-tx2); padding-top: 2px;
+}
+.stbl-ds .ds-dims > .ds-calc .font-monospace {
+  font-family: var(--ds-mono); font-size: 13px; color: var(--ds-tx);
+}

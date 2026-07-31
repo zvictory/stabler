@@ -403,7 +403,11 @@ const grandTotal = computed(() => {
 					<td class="align-top">
 						<div v-if="editable">
 							<!-- Dimensional item: enter measurements → qty computed -->
-							<div v-if="isDim(line)" class="d-flex flex-column gap-1">
+							<!-- ds-dims/ds-calc KATKI niteliğinde: bu sınıflar yalnızca
+							     .stbl-ds taşıyan bir sayfanın içinde bir şey yapar. Bu
+							     bileşen 5 ekranda kullanılıyor; taşınmamış olanlar
+							     hiçbir değişiklik görmez. -->
+							<div v-if="isDim(line)" class="d-flex flex-column gap-1 ds-dims">
 								<input
 									v-model.number="line.custom_length"
 									type="number" step="any" inputmode="decimal"
@@ -430,7 +434,7 @@ const grandTotal = computed(() => {
 									class="form-control form-control-sm font-monospace text-end"
 									:placeholder="t('Pieces')" @input="recalcDim(line)"
 								/>
-								<div class="small text-secondary text-end">
+								<div class="small text-secondary text-end ds-calc">
 									= <span class="fw-semibold font-monospace">{{ Number(line.qty || 0).toLocaleString() }}</span>
 									{{ line.stock_uom }}
 								</div>
