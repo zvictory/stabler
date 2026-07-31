@@ -35,16 +35,27 @@ CI_MASK_FIELDS: tuple[str, ...] = ("docs_total", "cash_difference")
 #: Commercial Invoice list-endpoint derived cost columns.
 CI_LIST_MASK_FIELDS: tuple[str, ...] = ("docs_total", "cash_difference")
 
+#: Freight Booking money joined onto a container. `amount`, `cash_payment` and
+#: `bank_payment` are permlevel 1 on their own doctype, and the container
+#: endpoints read them through raw SQL, which does not honour permlevel -- so
+#: the same figures must be masked by name here or the join is a way around it.
+FREIGHT_MASK_FIELDS: tuple[str, ...] = ("transport_cost", "paid_cash", "paid_bank")
+
 #: Import Container header cost fields (all permlevel 1 in the doctype).
 CONTAINER_MASK_FIELDS: tuple[str, ...] = (
 	"total_amount",
 	"allocated_deposit_amount",
 	"balance_due_amount",
 	"payment_70_amount",
+	*FREIGHT_MASK_FIELDS,
 )
 
 #: Import Container list-endpoint derived cost column.
-CONTAINER_LIST_MASK_FIELDS: tuple[str, ...] = ("total_amount", "cost_lines_total")
+CONTAINER_LIST_MASK_FIELDS: tuple[str, ...] = (
+	"total_amount",
+	"cost_lines_total",
+	*FREIGHT_MASK_FIELDS,
+)
 
 #: Import Container Item cost fields (permlevel 1).
 CONTAINER_ITEM_MASK_FIELDS: tuple[str, ...] = ("rate", "amount")

@@ -131,12 +131,6 @@ function vendorCode(r) {
 	return (s.split(/\s+/)[0] || "").toUpperCase();
 }
 
-function transporterCode(r) {
-	const t = (r && r.transporter) || "";
-	if (!t) return "";
-	return (t.split(/\s+/)[0] || t).toUpperCase();
-}
-
 function reload() {
 	if (limitStart.value !== 0) limitStart.value = 0;
 	else load();
@@ -324,6 +318,7 @@ watch(activeCompany, reload);
 						<tr>
 							<th class="text-nowrap" style="min-width: 140px">{{ t("Container & Specs") }}</th>
 							<th style="min-width: 170px">{{ t("CI / Vendor & PI") }}</th>
+							<th style="min-width: 200px">{{ t("Transporter & Freight Cost") }}</th>
 							<th style="min-width: 140px">{{ t("BL / Type") }}</th>
 							<th style="min-width: 180px">{{ t("Vessel & Schedule") }}</th>
 							<th style="min-width: 130px">{{ t("Status") }}</th>
@@ -332,7 +327,7 @@ watch(activeCompany, reload);
 							<th class="text-end" style="width: 100px">{{ t("Actions") }}</th>
 						</tr>
 					</thead>
-					<SkeletonRows v-if="loading" :rows="6" :cols="8" />
+					<SkeletonRows v-if="loading" :rows="6" :cols="9" />
 					<tbody v-else>
 						<tr v-for="r in rows" :key="r.name" style="cursor: pointer" @click="openForm(r.name)">
 							<td>
@@ -343,16 +338,6 @@ watch(activeCompany, reload);
 									@click.stop="openForm(r.name)"
 								>
 									{{ r.container_number || r.name }}
-								</div>
-								<div
-									class="small font-monospace text-muted mt-1"
-									:style="{ cursor: r.transporter ? 'pointer' : 'default' }"
-									:title="r.transporter ? t('Filter by transporter: ') + r.transporter : t('Transporter Vendor')"
-									@click.stop="r.transporter && filterByTransporter(r.transporter)"
-								>
-									<i class="ti ti-truck me-1"></i>
-									<span v-if="r.transporter" class="fw-semibold text-dark text-decoration-underline-hover">{{ transporterCode(r) }}</span>
-									<span v-else class="text-secondary opacity-50">— {{ t("Transporter") }}</span>
 								</div>
 								<div class="mt-1 d-flex align-items-center gap-1">
 									<span v-if="r.container_size" class="small text-secondary font-monospace badge bg-light text-dark">{{ r.container_size }}</span>
@@ -391,6 +376,35 @@ watch(activeCompany, reload);
 										{{ vendorCode(r) }}
 									</span>
 									<span v-else class="text-secondary small">—</span>
+								</div>
+							</td>
+							<td>
+								<div
+									class="d-flex align-items-center gap-1 font-monospace fw-bold text-dark"
+									:style="{ cursor: r.transporter ? 'pointer' : 'default' }"
+									:title="r.transporter ? t('Filter by transporter: ') + r.transporter : ''"
+									@click.stop="r.transporter && filterByTransporter(r.transporter)"
+								>
+									<i class="ti ti-truck text-primary me-1"></i>
+									<span v-if="r.transporter" class="text-decoration-underline-hover">{{ r.transporter }}</span>
+									<span v-else class="text-muted fw-normal opacity-50">— {{ t("No Transporter") }}</span>
+								</div>
+								<div class="mt-1 d-flex align-items-center gap-2 text-nowrap">
+									<span v-if="r.transport_cost > 0" class="font-monospace fw-bold text-success fs-3">
+										{{ fm(r.transport_cost, r.transport_currency) }}
+									</span>
+									<span v-else class="text-muted small opacity-50">—</span>
+									<span v-if="r.vehicle_number" class="badge bg-light text-muted font-monospace small" :title="t('Vehicle / Truck')">
+										<i class="ti ti-steering-wheel me-1"></i>{{ r.vehicle_number }}
+									</span>
+								</div>
+								<div v-if="r.transport_cost > 0" class="mt-1 font-monospace small">
+									<span v-if="(r.paid_cash + r.paid_bank) >= r.transport_cost" class="badge bg-success-lt text-success">
+										<i class="ti ti-check me-1"></i>{{ t("Paid") }}
+									</span>
+									<span v-else class="badge bg-warning-lt text-warning">
+										{{ t("Paid") }}: {{ fm(r.paid_cash + r.paid_bank, r.transport_currency) }}
+									</span>
 								</div>
 							</td>
 							<td>

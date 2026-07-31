@@ -820,6 +820,42 @@ def set_ci_status(name: str, status: str, reason: str | None = None):
 # Import Containers
 # ---------------------------------------------------------------------------
 
+# Which Freight Booking belongs to a container. Written once because the list
+# and the detail view both ask it, and a container whose row says $4,200 must
+# not open on a form that says $3,100.
+#
+# The third leg is the one that carries risk: a booking may be filed against
+# the Commercial Invoice rather than a container. Left open it also matched
+# bookings that name a DIFFERENT container of the same CI -- with the freight
+# amount now on the row, the newest such booking's cost was charged to every
+# sibling container. So the CI leg is restricted to bookings that name no
+# container at all, which is what "filed against the CI" actually means.
+_FREIGHT_MATCH = (
+	"fb.container = {name}"
+	" OR fb.container = {number}"
+	" OR (COALESCE(fb.container, '') = ''"
+	" AND fb.commercial_invoice = {ci} AND {ci} IS NOT NULL)"
+)
+#: Correlated form, for a subquery sitting inside the container list query.
+_FREIGHT_FOR_CONTAINER = _FREIGHT_MATCH.format(
+	name="c.name", number="c.container_number", ci="c.commercial_invoice"
+)
+#: Parameterised form: name, container_number, commercial_invoice, again.
+_FREIGHT_FOR_ONE = _FREIGHT_MATCH.format(name="%s", number="%s", ci="%s")
+
+#: The booking columns both endpoints read. `amount`, `cash_payment` and
+#: `bank_payment` are permlevel 1 on Freight Booking; raw SQL does not honour
+#: permlevel, so they are masked by name on the way out.
+_FREIGHT_FIELDS = """
+		SELECT fb.name, fb.transporter, s_tr.supplier_name AS transporter_name,
+		       COALESCE(fb.amount, 0) AS transport_cost,
+		       COALESCE(fb.cash_payment, 0) AS paid_cash,
+		       COALESCE(fb.bank_payment, 0) AS paid_bank,
+		       fb.currency AS transport_currency, fb.vehicle_number
+		FROM `tabFreight Booking` fb
+		LEFT JOIN `tabSupplier` s_tr ON s_tr.name = fb.transporter
+"""
+
 
 @frappe.whitelist()
 def list_import_containers(
@@ -847,11 +883,10 @@ def list_import_containers(
           c.cut_off, c.gate_open, c.gate_close, c.gate_in_date,
           ci.ci_number, ci.vessel, ci.voyage, ci.bl_number, ci.port_of_loading, ci.port_of_discharge,
           ci.etd, ci.eta, ci.eta_transit_port, ci.custom_proforma_invoice AS proforma_invoice,
-          (SELECT COALESCE(s_tr.supplier_name, fb.transporter)
+          (SELECT fb.name
            FROM `tabFreight Booking` fb
-           LEFT JOIN `tabSupplier` s_tr ON s_tr.name = fb.transporter
-           WHERE fb.container = c.name OR (fb.commercial_invoice = c.commercial_invoice AND c.commercial_invoice IS NOT NULL)
-           ORDER BY fb.creation DESC LIMIT 1) AS transporter,
+           WHERE {_FREIGHT_FOR_CONTAINER}
+           ORDER BY fb.creation DESC LIMIT 1) AS freight_booking_name,
           (SELECT COALESCE(SUM(cl.amount), 0) FROM `tabContainer Cost Line` cl
              WHERE cl.parent = c.name) AS cost_lines_total
         FROM `tabImport Container` c
@@ -864,8 +899,21 @@ def list_import_containers(
 		params,
 		as_dict=True,
 	)
+	# One subquery names the booking; its columns come from a single batched
+	# fetch. Asking each column with its own `ORDER BY creation DESC LIMIT 1`
+	# let two bookings created in the same second answer different columns, so
+	# a row could show one transporter beside another one's cash figure.
+	booking_of = _freight_bookings({r["freight_booking_name"] for r in rows if r.get("freight_booking_name")})
 	for r in rows:
 		r["cost_lines_total"] = flt(r["cost_lines_total"])
+		fb = booking_of.get(r.pop("freight_booking_name", None)) or {}
+		r["transporter"] = fb.get("transporter_name") or fb.get("transporter") or ""
+		r["vehicle_number"] = fb.get("vehicle_number") or ""
+		r["transport_cost"] = flt(fb.get("transport_cost"))
+		r["paid_cash"] = flt(fb.get("paid_cash"))
+		r["paid_bank"] = flt(fb.get("paid_bank"))
+		r["transport_currency"] = fb.get("transport_currency") or ""
+
 	rules.mask_named(rows, rules.CONTAINER_LIST_MASK_FIELDS, _cost_visible())
 	total = _count(
 		rules.count_query(
@@ -949,8 +997,41 @@ def get_import_container(name: str):
 		"items": items,
 		"cost_lines": cost_lines,
 	}
+
+	fb_res = frappe.db.sql(
+		f"""{_FREIGHT_FIELDS}
+		WHERE {_FREIGHT_FOR_ONE}
+		ORDER BY fb.creation DESC LIMIT 1
+		""",
+		(doc.name, doc.container_number, doc.commercial_invoice, doc.commercial_invoice),
+		as_dict=True,
+	)
+	fb_data = fb_res[0] if fb_res else {}
+	payload["transporter"] = fb_data.get("transporter") or ""
+	payload["transporter_name"] = fb_data.get("transporter_name") or fb_data.get("transporter") or ""
+	payload["transport_cost"] = flt(fb_data.get("transport_cost"))
+	payload["paid_cash"] = flt(fb_data.get("paid_cash"))
+	payload["paid_bank"] = flt(fb_data.get("paid_bank"))
+	payload["transport_currency"] = fb_data.get("transport_currency") or ""
+	payload["vehicle_number"] = fb_data.get("vehicle_number") or ""
+	payload["freight_booking"] = fb_data.get("name") or ""
+
 	rules.mask_named(payload, rules.CONTAINER_MASK_FIELDS, visible)
 	return payload
+
+
+def _freight_bookings(names: set[str]) -> dict[str, dict]:
+	"""Freight Booking rows keyed by name, for a page of containers."""
+	if not names:
+		return {}
+	rows = frappe.db.sql(
+		f"""{_FREIGHT_FIELDS}
+		WHERE fb.name IN %(names)s
+		""",
+		{"names": tuple(names)},
+		as_dict=True,
+	)
+	return {r["name"]: r for r in rows}
 
 
 def _container_next_statuses(status: str) -> list[str]:
