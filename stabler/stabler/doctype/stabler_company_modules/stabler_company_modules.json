@@ -23,7 +23,8 @@
   "enable_remittance",
   "enable_installment",
   "enable_imports",
-  "enable_agreements"
+  "enable_agreements",
+  "enable_direct_invoicing"
  ],
  "fields": [
   {
@@ -163,6 +164,13 @@
    "fieldtype": "Check",
    "in_list_view": 1,
    "label": "Agreements"
+  },
+  {
+   "default": "0",
+   "fieldname": "enable_direct_invoicing",
+   "fieldtype": "Check",
+   "in_list_view": 1,
+   "label": "Direct Sales Invoicing (no Sales Order)"
   }
  ],
  "index_web_pages_for_search": 1,

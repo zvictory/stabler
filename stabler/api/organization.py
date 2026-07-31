@@ -73,6 +73,7 @@ _MODULE_FIELDS = {
 	"tender": "enable_tender",
 	"imports": "enable_imports",
 	"agreements": "enable_agreements",
+	"direct_invoicing": "enable_direct_invoicing",
 	# Admin-only modules — toggled via company enable_* field but absent from
 	# _MODULE_ROLES so only System Manager / Stabler Admin can reach them via
 	# the SPA's canAccessModule() check.

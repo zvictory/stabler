@@ -32,6 +32,9 @@ DEFAULT_MODULE_ENABLED = {
 	"installment": False,
 	"imports": False,
 	"agreements": False,
+	# Satış Siparişi olmadan fatura. Varsayılan KAPALI: fatura normalde
+	# gönderilmiş bir SO'dan çıkar; bu istisnayı kiracı başına açmak gerekir.
+	"direct_invoicing": False,
 }
 
 

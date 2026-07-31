@@ -2205,10 +2205,15 @@ def create_direct_sales_invoice(
 	"""Create a direct Sales Invoice without requiring a prior Sales Order."""
 	_require_company(company)
 	_assert_company_scope(company)
-	if "MSA" not in str(company or "").upper():
+	# Gated by the Stabler Company Modules flag, like every other capability.
+	# This used to test whether "MSA" appeared in the company NAME, which is
+	# silent in both directions: a new company whose name happens to contain
+	# "MSA" would gain direct invoicing, and renaming MSA would remove it with
+	# no trace but a string buried in this function.
+	if not module_map_for(company).get("direct_invoicing"):
 		frappe.throw(
 			_(
-				"Direct Sales Invoicing is only enabled for MSA. For company {0}, Sales Invoices must be created from a submitted Sales Order."
+				"Direct Sales Invoicing is not enabled for company {0}. Sales Invoices must be created from a submitted Sales Order."
 			).format(company),
 			frappe.ValidationError,
 		)
