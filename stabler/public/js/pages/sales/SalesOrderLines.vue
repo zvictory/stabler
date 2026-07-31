@@ -19,6 +19,7 @@ const props = defineProps({
 	language: { type: String, default: "en" },
 	searchItems: { type: Function, required: true },
 	showDiscounts: { type: Boolean, default: false },
+	showDims: { type: Boolean, default: false },
 });
 const emit = defineEmits(["pick-item", "remove"]);
 
@@ -73,10 +74,18 @@ const isDim = (l) => DIM_MODES.includes(l?.dimension_mode);
 const dimNeedsWidth = (l) => l?.dimension_mode === "Area" || l?.dimension_mode === "Volume";
 const dimNeedsHeight = (l) => l?.dimension_mode === "Volume";
 
-/* Sütun yalnız siparişte ölçülü kalem VARSA açılıyor. Dondurma siparişinde
- * tablo bugünkü hâlinde kalsın — boş bir "Ölçü" sütunu her satırda tire
- * göstermekten başka bir iş yapmaz. */
-const hasDims = computed(() => props.items.some(isDim));
+/* Sütun iki nedenden açılır ve ikisi eşit değil:
+ *
+ *   showDims — kiracı tercihi (Stabler Company Modules → dimensional_lines),
+ *              formdan da geçici olarak açılıp kapanabiliyor. "Ölçüyle satan
+ *              bir kiracıyım, alanlar baştan hazır dursun" demek.
+ *   satırda ölçülü kalem VAR — bu bir tercih değil, zorunluluk: o satırın
+ *              miktarı ölçüden türüyor. Sütunu gizlemek, kullanıcıya
+ *              açıklamasız bir sayı bırakmak olurdu, o yüzden tercih bunu
+ *              ezemiyor.
+ *
+ * Dondurma siparişinde ikisi de yoksa tablo bugünkü hâlinde kalıyor. */
+const hasDims = computed(() => props.showDims || props.items.some(isDim));
 
 const round6 = (n) => Math.round((Number(n) || 0) * 1e6) / 1e6;
 

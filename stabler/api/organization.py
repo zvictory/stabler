@@ -74,6 +74,7 @@ _MODULE_FIELDS = {
 	"imports": "enable_imports",
 	"agreements": "enable_agreements",
 	"direct_invoicing": "enable_direct_invoicing",
+	"dimensional_lines": "enable_dimensional_lines",
 	# Admin-only modules — toggled via company enable_* field but absent from
 	# _MODULE_ROLES so only System Manager / Stabler Admin can reach them via
 	# the SPA's canAccessModule() check.
@@ -333,6 +334,10 @@ def update_company_modules(
 	tender=None,
 	imports=None,
 	agreements=None,
+	# Bu ikisi okuma eşlemesinde vardı ama yazma yolunda yoktu: yönetici
+	# ekranından açılıp kapatılamıyorlardı, yalnız yama ile set ediliyorlardı.
+	direct_invoicing=None,
+	dimensional_lines=None,
 ):
 	"""Admin-only: toggle per-module flags for a company. Pass 0/1 to update; omit to leave."""
 	_require_admin()
@@ -369,6 +374,8 @@ def update_company_modules(
 		"enable_tender": tender,
 		"enable_imports": imports,
 		"enable_agreements": agreements,
+		"enable_direct_invoicing": direct_invoicing,
+		"enable_dimensional_lines": dimensional_lines,
 	}
 	for field, val in updates.items():
 		if val is None or val == "":

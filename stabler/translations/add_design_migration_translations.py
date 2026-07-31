@@ -388,6 +388,24 @@ ROWS = {
 	"Decrease": ("Azalt", "Уменьшить", "Kamaytirish", "Камайтириш"),
 	"Increase": ("Artır", "Увеличить", "Ko'paytirish", "Кўпайтириш"),
 	"Discount column": ("İskonto sütunu", "Колонка скидки", "Chegirma ustuni", "Чегирма устуни"),
+	# ══ Ölçü sütunu tercihi (kiracı bayrağı + form toggle) ═════════════
+	"Measurement columns": (
+		"Ölçü sütunları", "Колонки размеров", "O'lcham ustunlari", "Ўлчам устунлари",
+	),
+	"A line on this order is priced by size, so the measurement columns cannot be hidden.": (
+		"Bu siparişteki bir kalem ölçüye göre fiyatlanıyor, ölçü sütunları gizlenemez.",
+		"Одна из позиций заказа считается по размеру — колонки размеров скрыть нельзя.",
+		"Bu buyurtmadagi bir qator o'lchamga qarab narxlanadi, o'lcham ustunlarini yashirib bo'lmaydi.",
+		"Бу буюртмадаги бир қатор ўлчамга қараб нархланади, ўлчам устунларини яшириб бўлмайди.",
+	),
+	"Dimensional Sales Lines": (
+		"Ölçülü satış satırları", "Позиции продаж по размеру",
+		"O'lchamli sotuv qatorlari", "Ўлчамли сотув қаторлари",
+	),
+	"Direct Invoicing": (
+		"Doğrudan faturalama", "Прямое выставление счетов",
+		"To'g'ridan-to'g'ri hisob-faktura", "Тўғридан-тўғри ҳисоб-фактура",
+	),
 }
 
 LANGS = {"en": None, "tr": 0, "ru": 1, "uz": 2, "uzc": 3}

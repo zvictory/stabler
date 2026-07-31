@@ -24,7 +24,8 @@
   "enable_installment",
   "enable_imports",
   "enable_agreements",
-  "enable_direct_invoicing"
+  "enable_direct_invoicing",
+  "enable_dimensional_lines"
  ],
  "fields": [
   {
@@ -171,6 +172,14 @@
    "fieldtype": "Check",
    "in_list_view": 1,
    "label": "Direct Sales Invoicing (no Sales Order)"
+  },
+  {
+   "default": "0",
+   "description": "Show the measurement columns (length/width/height/pieces) on sales order lines by default. This is a DISPLAY preference only — the quantity of a dimensional item is always computed from its measurements regardless, and the column appears anyway whenever a line's item is dimensional.",
+   "fieldname": "enable_dimensional_lines",
+   "fieldtype": "Check",
+   "in_list_view": 1,
+   "label": "Dimensional Sales Lines (measure columns by default)"
   }
  ],
  "index_web_pages_for_search": 1,

@@ -39,6 +39,11 @@ const moduleOptions = computed(() => [
 	{ key: "imports", label: t("Imports") },
 	{ key: "remittance", label: t("Remittance") },
 	{ key: "installment", label: t("Installment") },
+	// Bu ikisi eşlemede vardı ama yönetici ekranında yoktu — yani yalnız yama
+	// ile set edilebiliyorlardı. Kiracı ayarı olup arayüzü olmayan bir bayrak,
+	// pratikte kod sabitidir.
+	{ key: "direct_invoicing", label: t("Direct Invoicing") },
+	{ key: "dimensional_lines", label: t("Dimensional Sales Lines") },
 ]);
 
 async function load() {

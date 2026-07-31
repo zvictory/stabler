@@ -35,6 +35,13 @@ DEFAULT_MODULE_ENABLED = {
 	# Satış Siparişi olmadan fatura. Varsayılan KAPALI: fatura normalde
 	# gönderilmiş bir SO'dan çıkar; bu istisnayı kiracı başına açmak gerekir.
 	"direct_invoicing": False,
+	# Satış siparişi satırlarında ölçü sütunları (boy/en/yükseklik/adet)
+	# varsayılan olarak görünsün mü. YALNIZ GÖRÜNÜM tercihi: ölçülü bir kalemin
+	# miktarı bu bayraktan bağımsız olarak hep ölçüden hesaplanır ve satırdaki
+	# kalem ölçülüyse sütun bayrak kapalıyken de açılır — aksi hâlde kullanıcı
+	# türetilmiş bir miktarı açıklamasız görürdü. Varsayılan kapalı: kiracıların
+	# çoğu (horeca, smartbox, msa) hiç ölçülü ürün satmıyor.
+	"dimensional_lines": False,
 }
 
 

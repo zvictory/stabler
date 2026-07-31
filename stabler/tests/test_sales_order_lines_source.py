@@ -80,11 +80,16 @@ class TestDimensionalEntryExists(unittest.TestCase):
 		self.assertRegex(LINES_FLAT, r'dimNeedsWidth = \(l\) => l\?\.dimension_mode === "Area" \|\| l\?\.dimension_mode === "Volume"')
 		self.assertRegex(LINES_FLAT, r'dimNeedsHeight = \(l\) => l\?\.dimension_mode === "Volume"')
 
-	def test_the_column_only_appears_when_a_line_needs_it(self):
-		"""Dondurma siparişinde her satırda boş bir ölçü sütunu istemiyoruz."""
+	def test_the_column_appears_whenever_a_line_needs_it(self):
+		"""Dondurma siparişinde her satırda boş bir ölçü sütunu istemiyoruz —
+		ama ölçülü kalem varsa sütun HER hâlükârda açılmalı.
+
+		Kiracı tercihi (showDims) bu ikinciyi ezemez: o satırın miktarı ölçüden
+		türüyor, sütunu gizlemek kullanıcıya açıklamasız bir sayı bırakırdı.
+		Tercih tarafı test_dimensional_lines_flag'de ayrıca kilitli."""
 		self.assertRegex(LINES_FLAT, r'<th v-if="hasDims"')
 		self.assertRegex(LINES_FLAT, r'<td v-if="hasDims">')
-		self.assertRegex(LINES_FLAT, r'hasDims = computed\(\(\) => props\.items\.some\(isDim\)\)')
+		self.assertRegex(LINES_FLAT, r'hasDims = computed\(\(\) => [^)]*props\.items\.some\(isDim\)\)')
 
 
 class TestDerivedQuantityIsNotTypeable(unittest.TestCase):

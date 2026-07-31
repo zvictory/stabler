@@ -33,6 +33,12 @@ const warehousesLoading = ref(false);
 const priceLists = ref([]);
 const currencies = ref([]);
 const showDiscounts = ref(false);
+/* Ölçü sütunlarının VARSAYILAN görünürlüğü kiracıdan geliyor
+ * (Stabler Company Modules → dimensional_lines). Bir tercih, bir yetki değil:
+ * hesabı hiç etkilemiyor, yalnız alanları baştan açık getiriyor. Ölçüyle satan
+ * kiracıda (anjan, laminor, mikas) satıcı ürünü seçmeden önce de ölçü
+ * girebilsin diye. Formdan bu sipariş için geçici olarak değiştirilebiliyor. */
+const showDims = ref(Boolean(session.modules?.dimensional_lines));
 const lastReservationErrors = ref([]);
 const autoSubmit = ref(1);
 const exchangeRate = ref(1);
@@ -296,6 +302,14 @@ const {
 });
 
 // All computeds that close over 'form' must live here, AFTER useDocumentForm
+/* Satırda ölçülü kalem varsa sütun tercihten bağımsız açık kalır — miktarı o
+ * ölçüden türüyor, gizlemek kullanıcıya açıklamasız bir sayı bırakmak olurdu.
+ * Bu durumda düğme de kapatılıyor: basıldığında hiçbir şey olmayan bir düğme,
+ * bozuk bir düğmedir. */
+const dimsForced = computed(() =>
+	(form.value?.items || []).some((l) => ["Linear", "Area", "Volume"].includes(l.dimension_mode))
+);
+
 const currencySymbol = computed(() => {
 	const code = form.value?.currency || currency.value;
 	return (currencies.value.find((c) => c.name === code) || {}).symbol || "";
@@ -1090,6 +1104,16 @@ async function closeSalesOrder() {
 				<span class="ds-label">2 · {{ t("Items") }}</span>
 				<span class="so-head-right">
 					<span class="ds-label">{{ itemsSummaryLabel }}</span>
+					<button
+						type="button"
+						class="ds-btn so-disc-btn"
+						:aria-pressed="String(showDims || dimsForced)"
+						:disabled="dimsForced"
+						:title="dimsForced ? t('A line on this order is priced by size, so the measurement columns cannot be hidden.') : ''"
+						@click="showDims = !showDims"
+					>
+						{{ t("Measurement columns") }}
+					</button>
 					<button type="button" class="ds-btn so-disc-btn" @click="showDiscounts = !showDiscounts">
 						{{ t("Discount column") }}
 					</button>
@@ -1104,6 +1128,7 @@ async function closeSalesOrder() {
 				:language="user.language"
 				:search-items="searchItems"
 				:show-discounts="showDiscounts"
+				:show-dims="showDims"
 				@pick-item="handlePickItem"
 				@remove="removeLine"
 			/>
