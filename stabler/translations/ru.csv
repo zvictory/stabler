@@ -4890,10 +4890,10 @@ Last 180 days,Последние 180 дней
 Net remaining,Чистый остаток
 Sales funnel,Воронка продаж
 Session opened,Сессия открыта
-"Preparing your Dashboard…","Подготовка панели управления…"
+Preparing your Dashboard…,Подготовка панели управления…
 Signing out,Выход из системы
-"Signing out securely…","Безопасный выход из системы…"
-"Could not sign out. Please try again.","Не удалось выйти из системы. Попробуйте еще раз."
+Signing out securely…,Безопасный выход из системы…
+Could not sign out. Please try again.,Не удалось выйти из системы. Попробуйте еще раз.
 Accounting voucher,Бухгалтерский документ
 This invoice no longer matches the booked payable.,Этот инвойс больше не совпадает с проведённой задолженностью.
 Agreed now,Согласовано сейчас
@@ -4954,7 +4954,6 @@ Delete this proforma?,Удалить эту проформу?
 Deleting shows everything that depends on this proforma before anything is removed.,"Удаление сначала покажет всё, что зависит от этой проформы."
 Nothing else points at this proforma.,На эту проформу больше ничто не ссылается.
 Proforma {name} deleted.,Проформа {name} удалена.
-
 Tender CRM,CRM тендеров
 All tenders,Все тендеры
 Lots,Лоты
@@ -5017,6 +5016,40 @@ Unknown item group: {0},Неизвестная категория товара: 
 The top-level category cannot be deleted.,Категорию верхнего уровня нельзя удалить.
 Cannot delete {0}: it has {1} subcategories.,Нельзя удалить {0}: у неё {1} подкатегорий.
 Cannot delete {0}: {1} items still use it.,Нельзя удалить {0}: её всё ещё используют {1} товаров.
+Operations desk,Операционная панель
+Daily work plan,План работы на сегодня
+Decision box,Блок решений и утверждений
+Due today,Срок сегодня
+Overdue,Просрочено
+Awaiting my approval,На моем утверждении
+Waiting others,Ожидает ответа
+7-day schedule,График на 7 дней
+Team load,Нагрузка команды
+No tasks scheduled for today,На сегодня задач нет
+No pending decisions,"Нет решений, ожидающих ответа"
+Virtual Operations Desk,Виртуальная операционная панель
+Full screen,Полный экран
+Manage and track all tender deals across pipeline stages,Управление и отслеживание тендерных сделок
+Search tenders…,Поиск тендеров…
+Could not load Tender CRM.,Не удалось загрузить Тендер CRM.
+No tender deals found.,Тендерные сделки не найдены.
+No active tenders found for {0}.,Активные тендеры не найдены для {0}.
+Moved to {0},Перемещено в {0}
+Risk (<=48h),Риск (<=48 ч)
+Warning,Предупреждение
+Quotes,Предложения
+Tender / Deal,Тендер / Сделка
+Buyer / Organization,Покупатель / Организация
+Sourcing,Закупки
+Deadline Risk,Срок
+Contract Value,Сумма контракта
+Buyer / Customer,Покупатель / Клиент
+Sourcing Summary,Итоги закупок
+No supplier quotations tagged to this deal yet.,Предложения поставщиков ещё не привязаны.
+No lots registered for this tender.,Лоты для этого тендера не зарегистрированы.
+Intake,Прием
+GO Decision,GO Решение
+Bid Pricing,Расчет цены
 What should I do today?,Что мне делать сегодня?
 Last read,Последнее чтение
 Role view,Представление роли
@@ -5064,7 +5097,6 @@ won,выиграно
 lost,проиграно
 needs action today — lands on the desk,нужно действие сегодня — попадает на стол
 contracted,законтрактовано
-sum of every open tender's value,сумма стоимости всех открытых тендеров
 on revenue,от выручки
 average across tenders that have pricing,среднее по тендерам с расчётом цены
 net remaining,чистый остаток
@@ -5073,6 +5105,7 @@ tenders carry unverified history — the number is there but the record behind i
 Linked ERP documents,Связанные документы ERP
 Linked directly to ERP records,Напрямую связано с записями ERP
 tenders,тендеров
+sum of every open tender's value,сумма стоимости всех открытых тендеров
 Execution,Исполнение
 active contracts,активных контрактов
 delivery or collection still running,поставка или сбор ещё идут
@@ -5111,6 +5144,19 @@ tied to a document,привязано к документу
 Role-based access,Доступ по ролям
 permission checked,проверка прав
 every action recorded,каждое действие записано
+Total Freight Cost,Общая стоимость фрахта
+Paid Cash (Kassa),Оплачено наличными (Касса)
+Paid Bank (Transfer),Оплачено банком (Перевод)
+Outstanding Balance,Остаток задолженности
+All Transporters,Все перевозчики
+Transporter Vendor,Перевозчик
+Container / Truck #,Контейнер / Грузовик №
+Paid Cash,Оплата наличными
+Paid Bank,Оплата банком
+Balance Due,Остаток к оплате
+Edit Transport & Payment Details,Редактировать данные перевозки и оплаты
+Agreed Transport Cost,Согласованная стоимость перевозки
+Save Details,Сохранить данные
 Measurements,Размеры
 computed,рассчитано
 measure unit · fixed,единица измерения · фиксирована
@@ -5151,31 +5197,6 @@ policy met,политика соблюдена
 below policy,ниже политики
 Stage progress,Прогресс по этапам
 Close panel,Закрыть панель
-Operations desk,Операционная панель
-Daily work plan,План работы на сегодня
-Decision box,Блок решений и утверждений
-Awaiting my approval,На моем утверждении
-Waiting others,Ожидает ответа
-Team load,Нагрузка команды
-No tasks scheduled for today,На сегодня задач нет
-Due today,Срок сегодня
-7-day schedule,График на 7 дней
-No pending decisions,"Нет решений, ожидающих ответа"
-Could not load Tender CRM.,Не удалось загрузить Тендер CRM.
-No tender deals found.,Тендерные сделки не найдены.
-No active tenders found for {0}.,Активные тендеры не найдены для {0}.
-Moved to {0},Перемещено в {0}
-Tender / Deal,Тендер / Сделка
-Buyer / Organization,Покупатель / Организация
-Buyer / Customer,Покупатель / Клиент
-Contract Value,Сумма контракта
-Deadline Risk,Срок
-Risk (<=48h),Риск (<=48 ч)
-Warning,Предупреждение
-Sourcing,Закупки
-Sourcing Summary,Итоги закупок
-No lots registered for this tender.,Лоты для этого тендера не зарегистрированы.
-No supplier quotations tagged to this deal yet.,Предложения поставщиков ещё не привязаны.
 Parties and terms,Стороны и условия
 Delivery and notes,Доставка и примечания
 Stock reservation,Резервирование склада
@@ -5190,27 +5211,17 @@ needed,требуется
 rate,цена
 sum of every open tender,сумма всех открытых тендеров
 Add delivery notes or remarks…,Добавьте примечания или замечания по доставке…
-Agreed Transport Cost,Согласованная стоимость перевозки
-All Transporters,Все перевозчики
-Balance Due,Остаток к оплате
 CI No,Номер CI
 "CI, transporter, container or vehicle… ⌘K","CI, перевозчик, контейнер или транспорт… ⌘K"
 "CI, transporter, truck/container, freight cost and cash/bank payments","CI, перевозчик, грузовик/контейнер, стоимость фрахта и оплаты наличными/банком"
-Container / Truck #,Контейнер / Грузовик №
-Edit Transport & Payment Details,Редактировать данные перевозки и оплаты
 Failed to load transporter dashboard.,Не удалось загрузить панель перевозчиков.
 Failed to save transport cost.,Не удалось сохранить стоимость перевозки.
-Freight Booking {0} belongs to another company.,Бронирование перевозки {0} принадлежит другой компании.
 No containers or freight bookings match your filter criteria.,Ни один контейнер или бронирование перевозки не соответствует заданным фильтрам.
 No transport records found,Записи о перевозках не найдены
-Outstanding Balance,Остаток задолженности
-Paid Bank,Оплата банком
-Paid Bank (Transfer),Оплачено банком (Перевод)
-Paid Cash,Оплата наличными
-Paid Cash (Kassa),Оплачено наличными (Касса)
-Save Details,Сохранить данные
 Showing {0} to {1} of {2} entries,Показано с {0} по {1} из {2} записей
-Total Freight Cost,Общая стоимость фрахта
 Transport details updated successfully.,Данные перевозки успешно обновлены.
 Transport operations desk,Операционная панель перевозок
-Transporter Vendor,Перевозчик
+Freight Booking {0} belongs to another company.,Бронирование перевозки {0} принадлежит другой компании.
+Transporter & Freight Cost,Перевозчик и стоимость доставки
+No Transporter,Без перевозчика
+Vehicle / Truck,Транспорт / машина

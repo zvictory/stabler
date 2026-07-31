@@ -4880,10 +4880,10 @@ Last 180 days,Last 180 days
 Net remaining,Net remaining
 Sales funnel,Sales funnel
 Session opened,Session opened
-"Preparing your Dashboard…","Preparing your Dashboard…"
+Preparing your Dashboard…,Preparing your Dashboard…
 Signing out,Signing out
-"Signing out securely…","Signing out securely…"
-"Could not sign out. Please try again.","Could not sign out. Please try again."
+Signing out securely…,Signing out securely…
+Could not sign out. Please try again.,Could not sign out. Please try again.
 Accounting voucher,Accounting voucher
 This invoice no longer matches the booked payable.,This invoice no longer matches the booked payable.
 Agreed now,Agreed now
@@ -4944,7 +4944,6 @@ Delete this proforma?,Delete this proforma?
 Deleting shows everything that depends on this proforma before anything is removed.,Deleting shows everything that depends on this proforma before anything is removed.
 Nothing else points at this proforma.,Nothing else points at this proforma.
 Proforma {name} deleted.,Proforma {name} deleted.
-
 Tender CRM,Tender CRM
 All tenders,All tenders
 Lots,Lots
@@ -5007,6 +5006,40 @@ Unknown item group: {0},Unknown item group: {0}
 The top-level category cannot be deleted.,The top-level category cannot be deleted.
 Cannot delete {0}: it has {1} subcategories.,Cannot delete {0}: it has {1} subcategories.
 Cannot delete {0}: {1} items still use it.,Cannot delete {0}: {1} items still use it.
+Operations desk,Operations desk
+Daily work plan,Daily work plan
+Decision box,Decision box
+Due today,Due today
+Overdue,Overdue
+Awaiting my approval,Awaiting my approval
+Waiting others,Waiting others
+7-day schedule,7-day schedule
+Team load,Team load
+No tasks scheduled for today,No tasks scheduled for today
+No pending decisions,No pending decisions
+Virtual Operations Desk,Virtual Operations Desk
+Full screen,Full screen
+Manage and track all tender deals across pipeline stages,Manage and track all tender deals across pipeline stages
+Search tenders…,Search tenders…
+Could not load Tender CRM.,Could not load Tender CRM.
+No tender deals found.,No tender deals found.
+No active tenders found for {0}.,No active tenders found for {0}.
+Moved to {0},Moved to {0}
+Risk (<=48h),Risk (<=48h)
+Warning,Warning
+Quotes,Quotes
+Tender / Deal,Tender / Deal
+Buyer / Organization,Buyer / Organization
+Sourcing,Sourcing
+Deadline Risk,Deadline Risk
+Contract Value,Contract Value
+Buyer / Customer,Buyer / Customer
+Sourcing Summary,Sourcing Summary
+No supplier quotations tagged to this deal yet.,No supplier quotations tagged to this deal yet.
+No lots registered for this tender.,No lots registered for this tender.
+Intake,Intake
+GO Decision,GO Decision
+Bid Pricing,Bid Pricing
 What should I do today?,What should I do today?
 Last read,Last read
 Role view,Role view
@@ -5054,7 +5087,6 @@ won,won
 lost,lost
 needs action today — lands on the desk,needs action today — lands on the desk
 contracted,contracted
-sum of every open tender's value,sum of every open tender's value
 on revenue,on revenue
 average across tenders that have pricing,average across tenders that have pricing
 net remaining,net remaining
@@ -5063,6 +5095,7 @@ tenders carry unverified history — the number is there but the record behind i
 Linked ERP documents,Linked ERP documents
 Linked directly to ERP records,Linked directly to ERP records
 tenders,tenders
+sum of every open tender's value,sum of every open tender's value
 Execution,Execution
 active contracts,active contracts
 delivery or collection still running,delivery or collection still running
@@ -5101,6 +5134,19 @@ tied to a document,tied to a document
 Role-based access,Role-based access
 permission checked,permission checked
 every action recorded,every action recorded
+Total Freight Cost,Total Freight Cost
+Paid Cash (Kassa),Paid Cash (Kassa)
+Paid Bank (Transfer),Paid Bank (Transfer)
+Outstanding Balance,Outstanding Balance
+All Transporters,All Transporters
+Transporter Vendor,Transporter Vendor
+Container / Truck #,Container / Truck #
+Paid Cash,Paid Cash
+Paid Bank,Paid Bank
+Balance Due,Balance Due
+Edit Transport & Payment Details,Edit Transport & Payment Details
+Agreed Transport Cost,Agreed Transport Cost
+Save Details,Save Details
 Measurements,Measurements
 computed,computed
 measure unit · fixed,measure unit · fixed
@@ -5141,31 +5187,6 @@ policy met,policy met
 below policy,below policy
 Stage progress,Stage progress
 Close panel,Close panel
-Operations desk,Operations desk
-Daily work plan,Daily work plan
-Decision box,Decision box
-Awaiting my approval,Awaiting my approval
-Waiting others,Waiting others
-Team load,Team load
-No tasks scheduled for today,No tasks scheduled for today
-Due today,Due today
-7-day schedule,7-day schedule
-No pending decisions,No pending decisions
-Could not load Tender CRM.,Could not load Tender CRM.
-No tender deals found.,No tender deals found.
-No active tenders found for {0}.,No active tenders found for {0}.
-Moved to {0},Moved to {0}
-Tender / Deal,Tender / Deal
-Buyer / Organization,Buyer / Organization
-Buyer / Customer,Buyer / Customer
-Contract Value,Contract Value
-Deadline Risk,Deadline Risk
-Risk (<=48h),Risk (<=48h)
-Warning,Warning
-Sourcing,Sourcing
-Sourcing Summary,Sourcing Summary
-No lots registered for this tender.,No lots registered for this tender.
-No supplier quotations tagged to this deal yet.,No supplier quotations tagged to this deal yet.
 Parties and terms,Parties and terms
 Delivery and notes,Delivery and notes
 Stock reservation,Stock reservation
@@ -5180,27 +5201,17 @@ needed,needed
 rate,rate
 sum of every open tender,sum of every open tender
 Add delivery notes or remarks…,Add delivery notes or remarks…
-Agreed Transport Cost,Agreed Transport Cost
-All Transporters,All Transporters
-Balance Due,Balance Due
 CI No,CI No
 "CI, transporter, container or vehicle… ⌘K","CI, transporter, container or vehicle… ⌘K"
 "CI, transporter, truck/container, freight cost and cash/bank payments","CI, transporter, truck/container, freight cost and cash/bank payments"
-Container / Truck #,Container / Truck #
-Edit Transport & Payment Details,Edit Transport & Payment Details
 Failed to load transporter dashboard.,Failed to load transporter dashboard.
 Failed to save transport cost.,Failed to save transport cost.
-Freight Booking {0} belongs to another company.,Freight Booking {0} belongs to another company.
 No containers or freight bookings match your filter criteria.,No containers or freight bookings match your filter criteria.
 No transport records found,No transport records found
-Outstanding Balance,Outstanding Balance
-Paid Bank,Paid Bank
-Paid Bank (Transfer),Paid Bank (Transfer)
-Paid Cash,Paid Cash
-Paid Cash (Kassa),Paid Cash (Kassa)
-Save Details,Save Details
 Showing {0} to {1} of {2} entries,Showing {0} to {1} of {2} entries
-Total Freight Cost,Total Freight Cost
 Transport details updated successfully.,Transport details updated successfully.
 Transport operations desk,Transport operations desk
-Transporter Vendor,Transporter Vendor
+Freight Booking {0} belongs to another company.,Freight Booking {0} belongs to another company.
+Transporter & Freight Cost,Transporter & Freight Cost
+No Transporter,No Transporter
+Vehicle / Truck,Vehicle / Truck

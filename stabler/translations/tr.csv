@@ -4879,10 +4879,10 @@ Last 180 days,Son 180 gün
 Net remaining,Net kalan
 Sales funnel,Satış hunisi
 Session opened,Oturum açıldı
-"Preparing your Dashboard…","Kontrol paneliniz hazırlanıyor…"
+Preparing your Dashboard…,Kontrol paneliniz hazırlanıyor…
 Signing out,Çıkış yapılıyor
-"Signing out securely…","Güvenli bir şekilde çıkış yapılıyor…"
-"Could not sign out. Please try again.","Çıkış yapılamadı. Lütfen tekrar deneyin."
+Signing out securely…,Güvenli bir şekilde çıkış yapılıyor…
+Could not sign out. Please try again.,Çıkış yapılamadı. Lütfen tekrar deneyin.
 Accounting voucher,Muhasebe belgesi
 This invoice no longer matches the booked payable.,"Bu fatura, kayda alınan borçla artık örtüşmüyor."
 Agreed now,Şu anki anlaşma
@@ -4943,7 +4943,6 @@ Delete this proforma?,Bu proforma silinsin mi?
 Deleting shows everything that depends on this proforma before anything is removed.,"Silme, hiçbir şey kaldırılmadan önce bu proformaya bağlı her şeyi gösterir."
 Nothing else points at this proforma.,Bu proformaya başka hiçbir şey işaret etmiyor.
 Proforma {name} deleted.,{name} proforması silindi.
-
 Tender CRM,İhale CRM'i
 All tenders,Tüm ihaleler
 Lots,Kalemler
@@ -5006,6 +5005,40 @@ Unknown item group: {0},Bilinmeyen ürün kategorisi: {0}
 The top-level category cannot be deleted.,Üst düzey kategori silinemez.
 Cannot delete {0}: it has {1} subcategories.,{0} silinemez: {1} alt kategorisi var.
 Cannot delete {0}: {1} items still use it.,{0} silinemez: hâlâ {1} ürün onu kullanıyor.
+Operations desk,Operasyon masası
+Daily work plan,Bugünkü iş planı
+Decision box,Karar / onay kutusu
+Due today,Bugün bitmeli
+Overdue,Geciken
+Awaiting my approval,Onayımda
+Waiting others,Cevap bekliyor
+7-day schedule,7 günlük takvim
+Team load,Ekip yükü
+No tasks scheduled for today,Bugün için planlanmış iş yok
+No pending decisions,Bekleyen karar yok
+Virtual Operations Desk,Sanal Operasyon Masası
+Full screen,Tam ekran
+Manage and track all tender deals across pipeline stages,Tüm ihale süreçlerini aşamalar halinde yönetin
+Search tenders…,İhale ara…
+Could not load Tender CRM.,İhale CRM yüklenemedi.
+No tender deals found.,İhale anlaşması bulunamadı.
+No active tenders found for {0}.,{0} için aktif ihale bulunamadı.
+Moved to {0},{0} aşamasına taşındı
+Risk (<=48h),Risk (<=48 saat)
+Warning,Uyarı
+Quotes,Teklifler
+Tender / Deal,İhale / Anlaşma
+Buyer / Organization,Alıcı / Kurum
+Sourcing,Tedarik
+Deadline Risk,Son Tarih Riski
+Contract Value,Sözleşme Değeri
+Buyer / Customer,Alıcı / Müşteri
+Sourcing Summary,Tedarik özeti
+No supplier quotations tagged to this deal yet.,Bu ihaleye henüz tedarikçi teklifi eklenmedi.
+No lots registered for this tender.,Bu ihale için tanımlı lot bulunamadı.
+Intake,Yeni Giriş
+GO Decision,GO Kararı
+Bid Pricing,Fiyatlandırma
 What should I do today?,Bugün ne yapmalıyım?
 Last read,Son okuma
 Role view,Rol görünümü
@@ -5053,7 +5086,6 @@ won,kazanıldı
 lost,kaybedildi
 needs action today — lands on the desk,bugün müdahale gerekiyor — masaya düşer
 contracted,sözleşmeli
-sum of every open tender's value,açık tüm tenderlerin değer toplamı
 on revenue,ciro üzerinden
 average across tenders that have pricing,fiyatlaması olan tenderlerin ortalaması
 net remaining,net kalan
@@ -5062,6 +5094,7 @@ tenders carry unverified history — the number is there but the record behind i
 Linked ERP documents,Bağlı ERP belgeleri
 Linked directly to ERP records,Doğrudan ERP kayıtlarına bağlı
 tenders,tender
+sum of every open tender's value,açık tüm tenderlerin değer toplamı
 Execution,İcra
 active contracts,aktif sözleşme
 delivery or collection still running,teslim veya tahsilat devam ediyor
@@ -5100,6 +5133,19 @@ tied to a document,belgeye bağlı
 Role-based access,Rol bazlı erişim
 permission checked,yetki denetimi
 every action recorded,her işlem kayıtlı
+Total Freight Cost,Toplam Navlun Maliyeti
+Paid Cash (Kassa),Nakit Ödenen (Kasa)
+Paid Bank (Transfer),Banka Ödenen (Havale)
+Outstanding Balance,Kalan Nakliyeci Borcu
+All Transporters,Tüm Nakliyeciler
+Transporter Vendor,Nakliyeci Firma
+Container / Truck #,Konteyner / Tır No
+Paid Cash,Nakit Ödenen
+Paid Bank,Banka Ödenen
+Balance Due,Kalan Bakiye
+Edit Transport & Payment Details,Nakliye ve Ödeme Detaylarını Düzenle
+Agreed Transport Cost,Anlaşılan Navlun Bedeli
+Save Details,Detayları Kaydet
 Measurements,Ölçüler
 computed,hesaplandı
 measure unit · fixed,ölçü birimi · sabit
@@ -5140,31 +5186,6 @@ policy met,politika sağlandı
 below policy,politika altı
 Stage progress,Aşama ilerlemesi
 Close panel,Paneli kapat
-Operations desk,Operasyon masası
-Daily work plan,Bugünkü iş planı
-Decision box,Karar / onay kutusu
-Awaiting my approval,Onayımda
-Waiting others,Cevap bekliyor
-Team load,Ekip yükü
-No tasks scheduled for today,Bugün için planlanmış iş yok
-Due today,Bugün bitmeli
-7-day schedule,7 günlük takvim
-No pending decisions,Bekleyen karar yok
-Could not load Tender CRM.,İhale CRM yüklenemedi.
-No tender deals found.,İhale anlaşması bulunamadı.
-No active tenders found for {0}.,{0} için aktif ihale bulunamadı.
-Moved to {0},{0} aşamasına taşındı
-Tender / Deal,İhale / Anlaşma
-Buyer / Organization,Alıcı / Kurum
-Buyer / Customer,Alıcı / Müşteri
-Contract Value,Sözleşme Değeri
-Deadline Risk,Son Tarih Riski
-Risk (<=48h),Risk (<=48 saat)
-Warning,Uyarı
-Sourcing,Tedarik
-Sourcing Summary,Tedarik özeti
-No lots registered for this tender.,Bu ihale için tanımlı lot bulunamadı.
-No supplier quotations tagged to this deal yet.,Bu ihaleye henüz tedarikçi teklifi eklenmedi.
 Parties and terms,Taraflar ve koşullar
 Delivery and notes,Teslim ve notlar
 Stock reservation,Stok rezervasyonu
@@ -5179,27 +5200,17 @@ needed,gereken
 rate,fiyat
 sum of every open tender,tüm açık ihalelerin toplamı
 Add delivery notes or remarks…,Teslimat notu veya açıklama ekleyin…
-Agreed Transport Cost,Anlaşılan Navlun Bedeli
-All Transporters,Tüm Nakliyeciler
-Balance Due,Kalan Bakiye
 CI No,CI No
 "CI, transporter, container or vehicle… ⌘K","CI, nakliyeci, konteyner veya araç… ⌘K"
 "CI, transporter, truck/container, freight cost and cash/bank payments","CI, nakliyeci, tır/konteyner, navlun maliyeti ve nakit/banka ödemeleri"
-Container / Truck #,Konteyner / Tır No
-Edit Transport & Payment Details,Nakliye ve Ödeme Detaylarını Düzenle
 Failed to load transporter dashboard.,Nakliyeci paneli yüklenemedi.
 Failed to save transport cost.,Nakliye maliyeti kaydedilemedi.
-Freight Booking {0} belongs to another company.,{0} nakliye rezervasyonu başka bir şirkete ait.
 No containers or freight bookings match your filter criteria.,Filtre kriterlerinize uyan konteyner veya nakliye rezervasyonu yok.
 No transport records found,Nakliye kaydı bulunamadı
-Outstanding Balance,Kalan Nakliyeci Borcu
-Paid Bank,Banka Ödenen
-Paid Bank (Transfer),Banka Ödenen (Havale)
-Paid Cash,Nakit Ödenen
-Paid Cash (Kassa),Nakit Ödenen (Kasa)
-Save Details,Detayları Kaydet
 Showing {0} to {1} of {2} entries,{2} kayıttan {0}–{1} arası gösteriliyor
-Total Freight Cost,Toplam Navlun Maliyeti
 Transport details updated successfully.,Nakliye detayları başarıyla güncellendi.
 Transport operations desk,Nakliye operasyon masası
-Transporter Vendor,Nakliyeci Firma
+Freight Booking {0} belongs to another company.,{0} nakliye rezervasyonu başka bir şirkete ait.
+Transporter & Freight Cost,Nakliyeci ve Navlun Bedeli
+No Transporter,Nakliyeci yok
+Vehicle / Truck,Araç / Kamyon

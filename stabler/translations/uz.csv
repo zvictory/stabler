@@ -2572,7 +2572,7 @@ Overtime multiplier,Qo'shimcha ish koeffitsiyenti
 Overview,Umumiy ko'rinish
 Owes us,Bizga qarzdor
 Own,Oʻzi
-Owner,Mas'ul
+Owner,Masʼul
 P,Ku
 PENDING,Kutilmoqda
 PI & Exporter,PI va eksportyor
@@ -4884,10 +4884,10 @@ Last 180 days,So‘nggi 180 kun
 Net remaining,Sof qoldiq
 Sales funnel,Savdo voronkasi
 Session opened,Seans ochildi
-"Preparing your Dashboard…","Boshqaruv paneli tayyorlanmoqda…"
+Preparing your Dashboard…,Boshqaruv paneli tayyorlanmoqda…
 Signing out,Tizimdan chiqish
-"Signing out securely…","Xavfsiz chiqish bajarilmoqda…"
-"Could not sign out. Please try again.","Tizimdan chiqib bo‘lmadi. Qayta urinib ko‘ring."
+Signing out securely…,Xavfsiz chiqish bajarilmoqda…
+Could not sign out. Please try again.,Tizimdan chiqib bo‘lmadi. Qayta urinib ko‘ring.
 Accounting voucher,Buxgalteriya hujjati
 This invoice no longer matches the booked payable.,Bu hisob-faktura kitobga olingan qarzdorlikka mos kelmaydi.
 Agreed now,Hozirgi kelishuv
@@ -4948,7 +4948,6 @@ Delete this proforma?,Bu proforma o‘chirilsinmi?
 Deleting shows everything that depends on this proforma before anything is removed.,O‘chirish avval bu proformaga bog‘liq hamma narsani ko‘rsatadi.
 Nothing else points at this proforma.,Bu proformaga boshqa hech narsa ishora qilmaydi.
 Proforma {name} deleted.,{name} proformasi o‘chirildi.
-
 Tender CRM,Tender CRM
 All tenders,Barcha tenderlar
 Lots,Lotlar
@@ -5011,6 +5010,40 @@ Unknown item group: {0},Noma'lum tovar toifasi: {0}
 The top-level category cannot be deleted.,Yuqori darajadagi toifani o'chirib bo'lmaydi.
 Cannot delete {0}: it has {1} subcategories.,{0} ni o'chirib bo'lmaydi: unda {1} ta quyi toifa bor.
 Cannot delete {0}: {1} items still use it.,{0} ni o'chirib bo'lmaydi: uni hali ham {1} ta tovar ishlatmoqda.
+Operations desk,Operatsion stol
+Daily work plan,Bugungi ish rejasi
+Decision box,Qaror va tasdiqlash qutisi
+Due today,Bugun tugashi kerak
+Overdue,Muddati o'tgan
+Awaiting my approval,Mening tasdiqlashimda
+Waiting others,Javob kutilmoqda
+7-day schedule,7 kunlik jadval
+Team load,Jamoa yuklamasi
+No tasks scheduled for today,Bugun uchun rejalashtirilgan vazifa yo'q
+No pending decisions,Kutilayotgan qarorlar yo'q
+Virtual Operations Desk,Virtual operatsion stol
+Full screen,Toʻliq ekran
+Manage and track all tender deals across pipeline stages,Barcha tender bitimlarini bosqichma-bosqich boshqaring
+Search tenders…,Tender qidirish…
+Could not load Tender CRM.,Tender CRM yuklanmadi.
+No tender deals found.,Tender bitimlari topilmadi.
+No active tenders found for {0}.,{0} uchun faol tenderlar topilmadi.
+Moved to {0},{0} bosqichiga koʻchirildi
+Risk (<=48h),Xavf (<=48 soat)
+Warning,Ogohlantirish
+Quotes,Takliflar
+Tender / Deal,Tender / Bitim
+Buyer / Organization,Xaridor / Tashkilot
+Sourcing,Ta'minot
+Deadline Risk,Muddati xavfi
+Contract Value,Shartnoma qiymati
+Buyer / Customer,Xaridor / Mijoz
+Sourcing Summary,Ta'minot xulosasi
+No supplier quotations tagged to this deal yet.,Ushbu bitimga yetkazib beruvchi takliflari hali biriktirilmagan.
+No lots registered for this tender.,Ushbu tender uchun lotlar roʻyxatdan oʻtmagan.
+Intake,Qabul
+GO Decision,GO Qaror
+Bid Pricing,Narx hisoblash
 What should I do today?,Bugun nima qilishim kerak?
 Last read,Oxirgi o'qish
 Role view,Rol ko'rinishi
@@ -5058,7 +5091,6 @@ won,yutildi
 lost,yo'qotildi
 needs action today — lands on the desk,bugun harakat kerak — stolga tushadi
 contracted,shartnomaviy
-sum of every open tender's value,barcha ochiq tenderlar qiymati yig'indisi
 on revenue,tushumdan
 average across tenders that have pricing,narxi hisoblangan tenderlar o'rtachasi
 net remaining,sof qoldiq
@@ -5067,6 +5099,7 @@ tenders carry unverified history — the number is there but the record behind i
 Linked ERP documents,Bog'langan ERP hujjatlari
 Linked directly to ERP records,To'g'ridan-to'g'ri ERP yozuvlariga bog'langan
 tenders,tender
+sum of every open tender's value,barcha ochiq tenderlar qiymati yig'indisi
 Execution,Ijro
 active contracts,faol shartnoma
 delivery or collection still running,yetkazib berish yoki yig'ish davom etmoqda
@@ -5105,6 +5138,19 @@ tied to a document,hujjatga bog'langan
 Role-based access,Rol asosidagi kirish
 permission checked,ruxsat tekshiruvi
 every action recorded,har amal qayd etilgan
+Total Freight Cost,Jami Fraxt Qiymati
+Paid Cash (Kassa),Naqd To'langan (Kassa)
+Paid Bank (Transfer),Bank To'langan (O'tkazma)
+Outstanding Balance,Qolgan Qarz Balansi
+All Transporters,Barcha Tashuvchilar
+Transporter Vendor,Tashuvchi Kompaniya
+Container / Truck #,Konteyner / Yuk mashinasi №
+Paid Cash,Naqd To'langan
+Paid Bank,Bank To'langan
+Balance Due,To'lanishi Kerak
+Edit Transport & Payment Details,Tashish va To'lov Tafsilotlarini Tahrirlash
+Agreed Transport Cost,Kelishilgan Tashish Narxi
+Save Details,Tafsilotlarni Saqlash
 Measurements,O'lchamlar
 computed,hisoblandi
 measure unit · fixed,o'lchov birligi · qat'iy
@@ -5145,31 +5191,6 @@ policy met,siyosat bajarildi
 below policy,siyosatdan past
 Stage progress,Bosqich jarayoni
 Close panel,Panelni yopish
-Operations desk,Operatsion stol
-Daily work plan,Bugungi ish rejasi
-Decision box,Qaror va tasdiqlash qutisi
-Awaiting my approval,Mening tasdiqlashimda
-Waiting others,Javob kutilmoqda
-Team load,Jamoa yuklamasi
-No tasks scheduled for today,Bugun uchun rejalashtirilgan vazifa yo'q
-Due today,Bugun tugashi kerak
-7-day schedule,7 kunlik jadval
-No pending decisions,Kutilayotgan qarorlar yo'q
-Could not load Tender CRM.,Tender CRM yuklanmadi.
-No tender deals found.,Tender bitimlari topilmadi.
-No active tenders found for {0}.,{0} uchun faol tenderlar topilmadi.
-Moved to {0},{0} bosqichiga ko'chirildi
-Tender / Deal,Tender / Bitim
-Buyer / Organization,Xaridor / Tashkilot
-Buyer / Customer,Xaridor / Mijoz
-Contract Value,Shartnoma qiymati
-Deadline Risk,Muddat xavfi
-Risk (<=48h),Xavf (<=48 soat)
-Warning,Ogohlantirish
-Sourcing,Ta'minot
-Sourcing Summary,Ta'minot xulosasi
-No lots registered for this tender.,Ushbu tender uchun lotlar ro'yxatdan o'tmagan.
-No supplier quotations tagged to this deal yet.,Ushbu bitimga yetkazib beruvchi takliflari hali biriktirilmagan.
 Parties and terms,Tomonlar va shartlar
 Delivery and notes,Yetkazib berish va izohlar
 Stock reservation,Ombor rezervi
@@ -5184,27 +5205,17 @@ needed,kerak
 rate,narx
 sum of every open tender,barcha ochiq tenderlar yig'indisi
 Add delivery notes or remarks…,Yetkazib berish eslatmalari yoki izohlarini qo'shing…
-Agreed Transport Cost,Kelishilgan Tashish Narxi
-All Transporters,Barcha Tashuvchilar
-Balance Due,To'lanishi Kerak
 CI No,CI raqami
 "CI, transporter, container or vehicle… ⌘K","CI, tashuvchi, konteyner yoki transport… ⌘K"
 "CI, transporter, truck/container, freight cost and cash/bank payments","CI, tashuvchi, yuk mashinasi/konteyner, fraxt qiymati va naqd/bank to'lovlari"
-Container / Truck #,Konteyner / Yuk mashinasi №
-Edit Transport & Payment Details,Tashish va To'lov Tafsilotlarini Tahrirlash
 Failed to load transporter dashboard.,Tashuvchilar paneli yuklanmadi.
 Failed to save transport cost.,Tashish narxini saqlab bo'lmadi.
-Freight Booking {0} belongs to another company.,{0} yuk tashish bronlashi boshqa kompaniyaga tegishli.
 No containers or freight bookings match your filter criteria.,Filtr shartlariga mos konteyner yoki yuk tashish bronlashi topilmadi.
 No transport records found,Tashish yozuvlari topilmadi
-Outstanding Balance,Qolgan Qarz Balansi
-Paid Bank,Bank To'langan
-Paid Bank (Transfer),Bank To'langan (O'tkazma)
-Paid Cash,Naqd To'langan
-Paid Cash (Kassa),Naqd To'langan (Kassa)
-Save Details,Tafsilotlarni Saqlash
 Showing {0} to {1} of {2} entries,{2} tadan {0}–{1} koʼrsatilmoqda
-Total Freight Cost,Jami Fraxt Qiymati
 Transport details updated successfully.,Tashish tafsilotlari muvaffaqiyatli yangilandi.
 Transport operations desk,Tashish operatsion stoli
-Transporter Vendor,Tashuvchi Kompaniya
+Freight Booking {0} belongs to another company.,{0} yuk tashish bronlashi boshqa kompaniyaga tegishli.
+Transporter & Freight Cost,Tashuvchi va yuk narxi
+No Transporter,Tashuvchi yoʻq
+Vehicle / Truck,Transport / yuk mashinasi

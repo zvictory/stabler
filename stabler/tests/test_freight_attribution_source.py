@@ -20,6 +20,7 @@ Frappe önyüklemesi yok: (3) gerçek davranış testi, diğerleri kaynak okur.
 
 from __future__ import annotations
 
+import csv
 import os
 import re
 import unittest
@@ -149,6 +150,39 @@ class FreightCellTest(unittest.TestCase):
 		"""Maskelenmiş satırda tutar `null`; şablon onu `$0.00` diye basarsa
 		kullanıcı navlunun bedava olduğunu sanır."""
 		self.assertNotIn("$0.00", self.vue)
+
+
+class FreightCellTranslationTest(unittest.TestCase):
+	"""Hücrenin bastığı üç dize beş dilde de dolu olmalı.
+
+	Liste `t()` çağrılarıyla birlikte doğrulanıyor: proje kuralı çevrilmemiş
+	dize bırakmayı yasaklıyor, ama tersi de bir arıza — bu oturumda CSV'lere
+	hiçbir çağrı yeri olmayan dokuz anahtar eklenmişti. Çağrısı kalmayan
+	anahtar burada da düşsün."""
+
+	KEYS = ("Transporter & Freight Cost", "No Transporter", "Vehicle / Truck")
+	LANGS = ("en", "ru", "uz", "uzc", "tr")
+
+	@classmethod
+	def setUpClass(cls):
+		cls.vue = read(VUE)
+
+	def test_every_listed_key_is_really_rendered_by_the_cell(self):
+		for key in self.KEYS:
+			with self.subTest(key):
+				self.assertTrue(
+					f't("{key}")' in self.vue or f"t('{key}')" in self.vue,
+					f"{key!r} artık ekranda yok; çeviri satırları da düşürülmeli",
+				)
+
+	def test_the_cell_strings_are_translated_in_every_language(self):
+		for lang in self.LANGS:
+			path = os.path.join(_ROOT, "translations", f"{lang}.csv")
+			with open(path, encoding="utf-8", newline="") as fh:
+				table = {r[0]: r[1] for r in csv.reader(fh) if len(r) >= 2}
+			missing = sorted(k for k in self.KEYS if not table.get(k, "").strip())
+			with self.subTest(lang):
+				self.assertEqual(missing, [], f"{lang}.csv eksik: {missing}")
 
 
 if __name__ == "__main__":

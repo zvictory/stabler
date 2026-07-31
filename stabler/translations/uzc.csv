@@ -4884,10 +4884,10 @@ Last 180 days,Сўнгги 180 кун
 Net remaining,Соф қолдиқ
 Sales funnel,Савдо воронкаси
 Session opened,Сеанс очилди
-"Preparing your Dashboard…","Бошқарув панели тайёрланмоқда…"
+Preparing your Dashboard…,Бошқарув панели тайёрланмоқда…
 Signing out,Тизимдан чиқиш
-"Signing out securely…","Хавфсиз чиқиш бажарилмоқда…"
-"Could not sign out. Please try again.","Тизимдан чиқиб бўлмади. Қайта уриниб кўринг."
+Signing out securely…,Хавфсиз чиқиш бажарилмоқда…
+Could not sign out. Please try again.,Тизимдан чиқиб бўлмади. Қайта уриниб кўринг.
 Accounting voucher,Бухгалтерия ҳужжати
 This invoice no longer matches the booked payable.,Бу ҳисоб-фактура китобга олинган қарздорликка мос келмайди.
 Agreed now,Ҳозирги келишув
@@ -4948,7 +4948,6 @@ Delete this proforma?,Бу проформа ўчирилсинми?
 Deleting shows everything that depends on this proforma before anything is removed.,Ўчириш аввал бу проформага боғлиқ ҳамма нарсани кўрсатади.
 Nothing else points at this proforma.,Бу проформага бошқа ҳеч нарса ишора қилмайди.
 Proforma {name} deleted.,{name} проформаси ўчирилди.
-
 Tender CRM,Tender CRM
 All tenders,Барча тендерлар
 Lots,Лотлар
@@ -5011,6 +5010,40 @@ Unknown item group: {0},Номаълум товар турғуни: {0}
 The top-level category cannot be deleted.,Юқори даражадаги турғунни ўчириб бўлмайди.
 Cannot delete {0}: it has {1} subcategories.,{0} ни ўчириб бўлмайди: унда {1} та қуйи турғун бор.
 Cannot delete {0}: {1} items still use it.,{0} ни ўчириб бўлмайди: уни ҳали ҳам {1} та товар ишлатмоқда.
+Operations desk,Операцион стол
+Daily work plan,Бугунги иш режаси
+Decision box,Қарор ва тасдиқлаш қутиси
+Due today,Бугун тугаши керак
+Overdue,Муддати ўтган
+Awaiting my approval,Менинг тасдиқлашимда
+Waiting others,Жавоб кутилмоқда
+7-day schedule,7 кунлик жадвал
+Team load,Жамоа юкламаси
+No tasks scheduled for today,Бугун учун режалаштирилган вазифа йўқ
+No pending decisions,Кутилаётган қарорлар йўқ
+Virtual Operations Desk,Виртуал операцион стол
+Full screen,Тўлиқ экран
+Manage and track all tender deals across pipeline stages,Барча тендер битимларини босқичма-босқич бошқаринг
+Search tenders…,Тендер қидириш…
+Could not load Tender CRM.,Тендер CRM юкланмади.
+No tender deals found.,Тендер битимлари топилмади.
+No active tenders found for {0}.,{0} учун фаол тендерлар топилмади.
+Moved to {0},{0} босқичига кўчирилди
+Risk (<=48h),Хавф (<=48 соат)
+Warning,Огоҳлантириш
+Quotes,Таклифлар
+Tender / Deal,Тендер / Битим
+Buyer / Organization,Харидор / Ташкилот
+Sourcing,Таъминот
+Deadline Risk,Муддат хавфи
+Contract Value,Шартнома қиймати
+Buyer / Customer,Харидор / Мижоз
+Sourcing Summary,Таъминот хулосаси
+No supplier quotations tagged to this deal yet.,Ушбу битимга етказиб берувчи таклифлари ҳали бириктирилмаган.
+No lots registered for this tender.,Ушбу тендер учун лотлар рўйхатдан ўтмаган.
+Intake,Қабул
+GO Decision,GO Қарор
+Bid Pricing,Нарх ҳисоблаш
 What should I do today?,Бугун нима қилишим керак?
 Last read,Охирги ўқиш
 Role view,Рол кўриниши
@@ -5058,7 +5091,6 @@ won,ютилди
 lost,йўқотилди
 needs action today — lands on the desk,бугун ҳаракат керак — столга тушади
 contracted,шартномавий
-sum of every open tender's value,барча очиқ тендерлар қиймати йиғиндиси
 on revenue,тушумдан
 average across tenders that have pricing,нархи ҳисобланган тендерлар ўртачаси
 net remaining,соф қолдиқ
@@ -5067,6 +5099,7 @@ tenders carry unverified history — the number is there but the record behind i
 Linked ERP documents,Боғланган ERP ҳужжатлари
 Linked directly to ERP records,Тўғридан-тўғри ERP ёзувларига боғланган
 tenders,тендер
+sum of every open tender's value,барча очиқ тендерлар қиймати йиғиндиси
 Execution,Ижро
 active contracts,фаол шартнома
 delivery or collection still running,етказиб бериш ёки йиғиш давом этмоқда
@@ -5105,6 +5138,19 @@ tied to a document,ҳужжатга боғланган
 Role-based access,Рол асосидаги кириш
 permission checked,рухсат текшируви
 every action recorded,ҳар амал қайд этилган
+Total Freight Cost,Жами Фрахт Қиймати
+Paid Cash (Kassa),Нақд Тўланган (Касса)
+Paid Bank (Transfer),Банк Тўланган (Ўтказма)
+Outstanding Balance,Қолган Қарз Баланси
+All Transporters,Барча Ташувчилар
+Transporter Vendor,Ташувчи Компания
+Container / Truck #,Контейнер / Юк машинаси №
+Paid Cash,Нақд Тўланган
+Paid Bank,Банк Тўланган
+Balance Due,Тўланиши Керак
+Edit Transport & Payment Details,Ташиш ва Тўлов Тафсилотларини Таҳрирлаш
+Agreed Transport Cost,Келишилган Ташиш Нархи
+Save Details,Тафсилотларни Сақлаш
 Measurements,Ўлчамлар
 computed,ҳисобланди
 measure unit · fixed,ўлчов бирлиги · қатъий
@@ -5145,31 +5191,6 @@ policy met,сиёсат бажарилди
 below policy,сиёсатдан паст
 Stage progress,Босқич жараёни
 Close panel,Панелни ёпиш
-Operations desk,Операцион стол
-Daily work plan,Бугунги иш режаси
-Decision box,Қарор ва тасдиқлаш қутиси
-Awaiting my approval,Менинг тасдиқлашимда
-Waiting others,Жавоб кутилмоқда
-Team load,Жамоа юкламаси
-No tasks scheduled for today,Бугун учун режалаштирилган вазифа йўқ
-Due today,Бугун тугаши керак
-7-day schedule,7 кунлик жадвал
-No pending decisions,Кутилаётган қарорлар йўқ
-Could not load Tender CRM.,Тендер CRM юкланмади.
-No tender deals found.,Тендер битимлари топилмади.
-No active tenders found for {0}.,{0} учун фаол тендерлар топилмади.
-Moved to {0},{0} босқичига кўчирилди
-Tender / Deal,Тендер / Битим
-Buyer / Organization,Харидор / Ташкилот
-Buyer / Customer,Харидор / Мижоз
-Contract Value,Шартнома қиймати
-Deadline Risk,Муддат хавфи
-Risk (<=48h),Хавф (<=48 соат)
-Warning,Огоҳлантириш
-Sourcing,Таъминот
-Sourcing Summary,Таъминот хулосаси
-No lots registered for this tender.,Ушбу тендер учун лотлар рўйхатдан ўтмаган.
-No supplier quotations tagged to this deal yet.,Ушбу битимга етказиб берувчи таклифлари ҳали бириктирилмаган.
 Parties and terms,Томонлар ва шартлар
 Delivery and notes,Етказиб бериш ва изоҳлар
 Stock reservation,Омбор резерви
@@ -5184,27 +5205,17 @@ needed,керак
 rate,нарх
 sum of every open tender,барча очиқ тендерлар йиғиндиси
 Add delivery notes or remarks…,Етказиб бериш эслатмалари ёки изоҳларини қўшинг…
-Agreed Transport Cost,Келишилган Ташиш Нархи
-All Transporters,Барча Ташувчилар
-Balance Due,Тўланиши Керак
 CI No,CI рақами
 "CI, transporter, container or vehicle… ⌘K","CI, ташувчи, контейнер ёки транспорт… ⌘K"
 "CI, transporter, truck/container, freight cost and cash/bank payments","CI, ташувчи, юк машинаси/контейнер, фрахт қиймати ва нақд/банк тўловлари"
-Container / Truck #,Контейнер / Юк машинаси №
-Edit Transport & Payment Details,Ташиш ва Тўлов Тафсилотларини Таҳрирлаш
 Failed to load transporter dashboard.,Ташувчилар панели юкланмади.
 Failed to save transport cost.,Ташиш нархини сақлаб бўлмади.
-Freight Booking {0} belongs to another company.,{0} юк ташиш бронлаши бошқа компанияга тегишли.
 No containers or freight bookings match your filter criteria.,Филтр шартларига мос контейнер ёки юк ташиш бронлаши топилмади.
 No transport records found,Ташиш ёзувлари топилмади
-Outstanding Balance,Қолган Қарз Баланси
-Paid Bank,Банк Тўланган
-Paid Bank (Transfer),Банк Тўланган (Ўтказма)
-Paid Cash,Нақд Тўланган
-Paid Cash (Kassa),Нақд Тўланган (Касса)
-Save Details,Тафсилотларни Сақлаш
 Showing {0} to {1} of {2} entries,{2} тадан {0}–{1} көрсатилмоқда
-Total Freight Cost,Жами Фрахт Қиймати
 Transport details updated successfully.,Ташиш тафсилотлари муваффақиятли янгиланди.
 Transport operations desk,Ташиш операцион столи
-Transporter Vendor,Ташувчи Компания
+Freight Booking {0} belongs to another company.,{0} юк ташиш бронлаши бошқа компанияга тегишли.
+Transporter & Freight Cost,Ташувчи ва юк нархи
+No Transporter,Ташувчи йўқ
+Vehicle / Truck,Транспорт / юк машинаси
