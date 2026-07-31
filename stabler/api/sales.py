@@ -3700,15 +3700,41 @@ def amend_sales_invoice(name: str):
 	return {"name": new.name, "docstatus": new.docstatus, "amended_from": name}
 
 
+# The doctypes RelatedDocuments.vue is mounted on, and therefore the only ones
+# get_linked_documents accepts as a subject or returns as a result. Keep in step
+# with the component's mount sites.
+_LINKED_DOCTYPES = frozenset(
+	{
+		"Quotation",
+		"Sales Order",
+		"Sales Invoice",
+		"Delivery Note",
+		"Purchase Order",
+		"Purchase Receipt",
+		"Purchase Invoice",
+		"Payment Entry",
+	}
+)
+
+
 @frappe.whitelist()
 def get_linked_documents(doctype: str, name: str):
-	"""Server-side wrapper over Frappe's linked-docs query, filtered to
-	sales-relevant doctypes. Returns {doctype: [{name, docstatus}]} — keeps the
-	SPA self-contained with no Desk calls from the browser."""
+	"""Server-side wrapper over Frappe's linked-docs query, filtered to the
+	transaction doctypes the SPA renders. Returns {doctype: [{name, docstatus}]}
+	— keeps the SPA self-contained with no Desk calls from the browser.
+
+	Subject set and result set are ONE set on purpose. They used to be two: the
+	result filter listed Payment Entry while the subject guard accepted only
+	Sales Order / Sales Invoice, so RelatedDocuments.vue — mounted on seven
+	doctypes — got a 417 on five of them and rendered a permanently empty panel.
+	Two lists that must agree will drift; one cannot.
+	"""
 	_assert_can_read(doctype, name)
-	allowed_doctypes = {"Sales Order", "Sales Invoice", "Delivery Note", "Payment Entry"}
-	if doctype not in {"Sales Order", "Sales Invoice"}:
-		frappe.throw("doctype must be Sales Order or Sales Invoice")
+	if doctype not in _LINKED_DOCTYPES:
+		frappe.throw(
+			_("Related documents are not available for {0}").format(doctype),
+			frappe.ValidationError,
+		)
 	if not name or not frappe.db.exists(doctype, name):
 		frappe.throw(f"Unknown {doctype}: {name}")
 
@@ -3718,7 +3744,7 @@ def get_linked_documents(doctype: str, name: str):
 	raw = get_linked_docs(doctype, name, linkinfo) or {}
 	out: dict = {}
 	for dt, payload in raw.items():
-		if dt not in allowed_doctypes:
+		if dt not in _LINKED_DOCTYPES:
 			continue
 		# get_linked_docs returns {doctype: {"docs": [...], "hidden_count": N}} —
 		# the row list lives under "docs", NOT the payload itself (iterating the

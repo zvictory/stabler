@@ -15,16 +15,24 @@ const linked = ref({});
 
 // Route map: doctype → in-SPA base path for ?open= navigation.
 const ROUTE_MAP = {
+	Quotation: "/sales/quotations",
 	"Sales Order": "/sales/orders",
 	"Sales Invoice": "/sales/invoices",
 	"Delivery Note": null, // not yet in SPA — show name only
+	"Purchase Order": "/purchasing/orders",
+	"Purchase Receipt": "/purchasing/receipts",
+	"Purchase Invoice": "/purchasing/invoices",
 	"Payment Entry": "/money/payments",
 };
 
 const DOCTYPE_LABELS = {
+	Quotation: "Quotations",
 	"Sales Order": "Sales Orders",
 	"Sales Invoice": "Sales Invoices",
 	"Delivery Note": "Delivery Notes",
+	"Purchase Order": "Purchase Orders",
+	"Purchase Receipt": "Purchase Receipts",
+	"Purchase Invoice": "Purchase Invoices",
 	"Payment Entry": "Payment Entries",
 };
 
@@ -53,7 +61,17 @@ async function load() {
 
 // Doctypes converted to full-page routed forms navigate to `${base}/${name}`.
 // The rest still open via the list's `?open=` drawer until their own pass.
-const PATH_DETAIL = new Set(["Sales Order", "Sales Invoice"]);
+// Payment Entry belongs here: it got its routed form but was left on the drawer
+// branch, and Payments.vue never read `?open=` — so the badge navigated to the
+// list and silently did nothing. Purchase Receipt is the only real drawer left.
+const PATH_DETAIL = new Set([
+	"Quotation",
+	"Sales Order",
+	"Sales Invoice",
+	"Purchase Order",
+	"Purchase Invoice",
+	"Payment Entry",
+]);
 
 function navigate(doctype, name) {
 	const base = ROUTE_MAP[doctype];

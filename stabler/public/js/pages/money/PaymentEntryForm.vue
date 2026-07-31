@@ -76,41 +76,6 @@ const enteredQuote = computed(() => readableRate(enteredRate.value, partyAccount
 const cbuQuote = computed(() => readableRate(cbuRate.value, partyAccountCurrency.value, bankCurrency.value));
 const hasWarning = computed(() => showBankAmount.value && rateDeviation.value > 0.05);
 
-watch(
-	[() => form.value.bank_account, () => form.value.posting_date, partyAccountCurrency],
-	async ([newBank, newDate, partyCcy]) => {
-		if (!newBank || !partyCcy) return;
-		const bankAcc = bankAccounts.value.find((a) => a.name === newBank);
-		if (!bankAcc) return;
-		const bankCcy = bankAcc.account_currency;
-
-		if (bankCcy === partyCcy) {
-			cbuRate.value = 1.0;
-			rateDate.value = "";
-			return;
-		}
-
-		try {
-			let foreign = partyCcy;
-			let local = bankCcy;
-			if (partyCcy === "UZS" || bankCcy === "UZS") {
-				foreign = partyCcy !== "UZS" ? partyCcy : bankCcy;
-				local = "UZS";
-			}
-			const rate = await call("stabler.api.money.get_exchange_rate_for_currencies", {
-				from_currency: foreign,
-				to_currency: local,
-				posting_date: newDate || today,
-			});
-			cbuRate.value = Number(rate || 1.0);
-			rateDate.value = newDate || today;
-		} catch (err) {
-			cbuRate.value = 1.0;
-			rateDate.value = "";
-		}
-	}
-);
-
 function blankForm() {
 	return {
 		posting_date: today,
@@ -225,6 +190,46 @@ const {
 	fromDetail,
 	backPath: "/money/payments",
 });
+
+// MUST stay below the useDocumentForm destructure above: watch() evaluates its
+// source getters eagerly at creation, so a getter that reads `form` from higher
+// up in the file throws "Cannot access 'form' before initialization" — the
+// watcher then never registers and the CBU deviation warning silently never
+// fires. Computeds (enteredRate, rateDeviation) are lazy and safe where they are.
+watch(
+	[() => form.value.bank_account, () => form.value.posting_date, partyAccountCurrency],
+	async ([newBank, newDate, partyCcy]) => {
+		if (!newBank || !partyCcy) return;
+		const bankAcc = bankAccounts.value.find((a) => a.name === newBank);
+		if (!bankAcc) return;
+		const bankCcy = bankAcc.account_currency;
+
+		if (bankCcy === partyCcy) {
+			cbuRate.value = 1.0;
+			rateDate.value = "";
+			return;
+		}
+
+		try {
+			let foreign = partyCcy;
+			let local = bankCcy;
+			if (partyCcy === "UZS" || bankCcy === "UZS") {
+				foreign = partyCcy !== "UZS" ? partyCcy : bankCcy;
+				local = "UZS";
+			}
+			const rate = await call("stabler.api.money.get_exchange_rate_for_currencies", {
+				from_currency: foreign,
+				to_currency: local,
+				posting_date: newDate || today,
+			});
+			cbuRate.value = Number(rate || 1.0);
+			rateDate.value = newDate || today;
+		} catch (err) {
+			cbuRate.value = 1.0;
+			rateDate.value = "";
+		}
+	}
+);
 
 const docName = computed(() => (route.params.name ? String(route.params.name) : null));
 
