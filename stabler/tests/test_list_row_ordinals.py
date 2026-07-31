@@ -2,6 +2,7 @@
 
 from __future__ import annotations
 
+import re
 import unittest
 from pathlib import Path
 
@@ -16,8 +17,27 @@ class TestTenderPortfolioOrdinal(unittest.TestCase):
 	def test_ordinal_tracks_the_filtered_view_and_stays_off_mobile(self):
 		self.assertIn('v-for="(r, index) in filteredRows"', self.source)
 		self.assertIn("{{ index + 1 }}", self.source)
-		self.assertGreaterEqual(self.source.count("d-none d-md-table-cell"), 2)
 		self.assertIn('{{ t("Row") }}', self.source)
+		self._assert_ordinal_column_is_hidden_on_mobile()
+
+	def _assert_ordinal_column_is_hidden_on_mobile(self):
+		"""Sıra numarası dar ekranda gizlenmeli — dokuz sütunlu tabloda en az
+		değerli sütun o.
+
+		Bu iddia GEREKLİLİĞİ arar, mekanizmayı değil. Ekran Tabler'ın
+		`d-none d-md-table-cell` yardımcı sınıfıyla yazılmıştı; tasarım
+		katmanına taşındıktan sonra aynı davranış scoped bir sınıf + medya
+		sorgusuyla sağlanıyor. İkisi de kabul; kabul edilmeyen tek şey
+		sütunun mobilde görünür kalması."""
+		tabler_utility = self.source.count("d-none d-md-table-cell") >= 2
+		scoped_rule = re.search(
+			r"@media[^{]*max-width[^{]*\{[^}]*\.board-ord\s*\{[^}]*display:\s*none",
+			self.source, re.S,
+		) and self.source.count("board-ord") >= 2
+		self.assertTrue(
+			tabler_utility or bool(scoped_rule),
+			"sıra numarası sütunu mobilde gizlenmiyor",
+		)
 
 	def test_skeleton_matches_the_extra_column(self):
 		self.assertIn(':cols="9"', self.source)

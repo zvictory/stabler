@@ -206,6 +206,10 @@
  * ------------------------------------------------------------------------- */
 .stbl-ds .ds-kpis { display: grid; gap: 1px; background: var(--ds-ln); border: 1px solid var(--ds-ln); }
 .stbl-ds .ds-kpis[data-cols="4"] { grid-template-columns: repeat(4, minmax(0, 1fr)); }
+/* Üç sütun: altı sayaç taşıyan ekranlar (Direktör panosu) için 3×2.
+ * Altısını tek sıraya dizmek kart başına ~200px bırakıyor; .ds-kpi-val
+ * o genişlikte okunmuyor. */
+.stbl-ds .ds-kpis[data-cols="3"] { grid-template-columns: repeat(3, minmax(0, 1fr)); }
 .stbl-ds .ds-kpi {
   background: var(--ds-surface); padding: 14px 16px 15px;
   border: 0; border-top: 3px solid var(--ds-ln2); text-align: left;
@@ -367,7 +371,12 @@
 }
 .stbl-ds .ds-table td { padding: 11px var(--ds-pad); border-bottom: 1px solid var(--ds-ln); }
 .stbl-ds .ds-table tbody tr:hover { background: #fafbfc; }
-.stbl-ds .ds-table .ds-td-num { text-align: right; font-family: var(--ds-mono); font-variant-numeric: tabular-nums; }
+/* Sayılar asla sarmaz: "316 800 000 / UZS" diye ikiye bölünen bir tutar
+ * okunmuyor. Tablo dar ekranda kendi içinde yatay kayar. */
+.stbl-ds .ds-table .ds-td-num {
+  text-align: right; font-family: var(--ds-mono);
+  font-variant-numeric: tabular-nums; white-space: nowrap;
+}
 .stbl-ds .ds-table a { color: var(--ds-acc); font-family: var(--ds-mono); font-size: 12px; text-decoration: none; }
 
 /* ── Çip / rozet — mono, kare, sessiz ────────────────────────────────────── */
@@ -375,6 +384,9 @@
   display: inline-flex; align-items: center; gap: 5px;
   font-family: var(--ds-mono); font-size: 10.5px; letter-spacing: .06em;
   padding: 3px 7px; border: 1px solid var(--ds-ln2); color: var(--ds-tx2); background: #fff;
+  /* Çip asla sarmaz — "Deadline / near" diye ikiye bölünen bir etiket
+   * satır yüksekliğini bozuyor ve okunmuyor. */
+  white-space: nowrap;
 }
 .stbl-ds .ds-chip::before { content: ""; width: 7px; height: 7px; flex: none; background: currentColor; }
 .stbl-ds .ds-chip[data-tone="crit"]  { color: var(--ds-crit-tx);  border-color: var(--ds-crit);  background: var(--ds-crit-t); }
@@ -415,7 +427,8 @@
 
 /* ── Dar ekran ───────────────────────────────────────────────────────────── */
 @media (max-width: 992px) {
-  .stbl-ds .ds-kpis[data-cols="4"] { grid-template-columns: repeat(2, minmax(0,1fr)); }
+  .stbl-ds .ds-kpis[data-cols="4"],
+  .stbl-ds .ds-kpis[data-cols="3"] { grid-template-columns: repeat(2, minmax(0,1fr)); }
   .stbl-ds h1 { font-size: 28px; }
   .stbl-ds .ds-row { grid-template-columns: 54px 1fr 22px; }
   .stbl-ds .ds-row-right { grid-column: 2; text-align: left; margin-top: 8px; white-space: normal; }

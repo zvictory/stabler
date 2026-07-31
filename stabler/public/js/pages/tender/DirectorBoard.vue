@@ -1,6 +1,10 @@
 <script setup>
 // Director window — full tender portfolio: every tender with value, margin,
 // Остаток, deadline risk. Read-only overview across all tenders of the company.
+//
+// Migrated to the Modernist Tabler layer: the root carries `stbl-ds`, so every
+// class below resolves against stabler-modernist.css. Behaviour is unchanged --
+// same endpoint, same filters, same assignment, same auto-refresh.
 import { computed, onMounted, ref } from "vue";
 import { storeToRefs } from "pinia";
 import { useRoute, useRouter } from "vue-router";
@@ -13,7 +17,6 @@ import { useAutoRefresh } from "../../composables/useAutoRefresh.js";
 import { useToast } from "../../composables/useToast.js";
 import { useEscapeBack } from "../../composables/useEscapeBack.js";
 import { activeTenderFilters, filterTenderRows, tenderRouteFilters } from "../../composables/tenderBoardFilters.js";
-import EmptyState from "../../components/EmptyState.vue";
 import SkeletonRows from "../../components/SkeletonRows.vue";
 import TenderFunnel from "./TenderFunnel.vue";
 import TenderNav from "./TenderNav.vue";
@@ -28,12 +31,14 @@ useEscapeBack(null, "/tender/board");
 const loading = ref(false);
 const data = ref({ rows: [], kpi: {}, currency: "" });
 const managers = ref([]);
+const lastReadAt = ref("");
 
 async function load() {
 	if (!activeCompany.value) return;
 	loading.value = true;
 	try {
 		data.value = await call("stabler.api.tender.tender_director_board", { company: activeCompany.value });
+		lastReadAt.value = new Date().toTimeString().slice(0, 5);
 	} catch (err) {
 		toast.error(err?.message || t("Could not load the director board."));
 	} finally {
@@ -66,74 +71,152 @@ const filters = computed(() => tenderRouteFilters(route.query));
 const filterSummary = computed(() => activeTenderFilters(filters.value).map(([key, value]) => `${key}: ${value}`));
 const filteredRows = computed(() => filterTenderRows(rows.value, filters.value));
 const fm = (v) => formatMoney(v, ccy.value, user.value.language);
-const riskBadge = (r) => ({ good: "bg-green-lt text-green", warn: "bg-yellow-lt text-yellow", risk: "bg-red-lt text-red" }[r] || "bg-secondary-lt");
+
+/* Altı sayaç da API'den gelir; taşımada hiçbiri düşmedi. Alt satır sayının
+ * KURALINI yazar — tasarımın imzası bu: her rakam kendi sorgusunu taşır. */
+const kpis = computed(() => {
+	const k = kpi.value;
+	return [
+		{
+			key: "count", sev: "neutral", label: t("Active tenders"),
+			value: String(k.count || 0), caption: t("lots in the pipeline"),
+			note: t("seen through to awaiting result"), rule: "tender_lot · result = null",
+		},
+		{
+			key: "win_rate", sev: "ok", label: t("Result"),
+			value: `${k.win_rate || 0}%`, caption: t("win rate"),
+			note: `${k.won || 0} ${t("won")} / ${k.lost || 0} ${t("lost")} · ${k.pending || 0} ${t("pending")}`,
+			rule: "result in (won, lost)",
+		},
+		{
+			key: "at_risk", sev: "crit", label: t("Risk"),
+			value: String(k.at_risk || 0), caption: t("deadline risk"),
+			note: t("needs action today — lands on the desk"), rule: "deadline < 48h · act_now",
+		},
+		{
+			key: "total_value", sev: "neutral", label: t("Portfolio value"),
+			value: fm(k.total_value || 0), caption: t("contracted"),
+			note: t("sum of every open tender's value"), rule: "sum(sales_order.grand_total)",
+		},
+		{
+			key: "avg_margin", sev: "ok", label: t("Avg margin"),
+			value: `${k.avg_margin || 0}%`, caption: t("on revenue"),
+			note: t("average across tenders that have pricing"), rule: "avg(margin_on_revenue_pct)",
+		},
+		{
+			key: "ostatok", sev: "neutral", label: t("Остаток (net remaining)"),
+			value: fm(k.total_ostatok || 0), caption: t("net remaining"),
+			note: t("what is still to be collected after landed cost"), rule: "value − landed − collected",
+		},
+	];
+});
+
+/* Doğrulanmamış geçmiş sessiz bir uyarıdır: sayı var ama arkasındaki kayıt
+ * eksik. Sıfırsa hiç gösterilmiyor — sıfırı göstermek gürültü. */
+const unverified = computed(() => kpi.value.unverified_history || 0);
+
+const RISK_TONE = { good: "ok", warn: "today", risk: "crit" };
+const riskTone = (r) => RISK_TONE[r] || null;
 const riskLabel = (r) => ({ good: t("On track"), warn: t("Deadline near"), risk: t("At risk"), none: "—" }[r] || "—");
-const resultBadge = (x) => ({ won: "bg-green-lt text-green", lost: "bg-red-lt text-red", pending: "bg-yellow-lt text-yellow" }[x] || "");
+const RESULT_TONE = { won: "ok", lost: "crit", pending: "today" };
+const resultTone = (x) => RESULT_TONE[x] || null;
+const resultLabel = (x) => t(x.charAt(0).toUpperCase() + x.slice(1));
+
 function openDeal(deal) { router.push({ name: "tender-po-control", query: { ...route.query, deal } }); }
 function clearFilters() { router.replace({ query: {} }); }
 </script>
 
 <template>
-	<div class="container-xl py-3">
-		<div class="d-flex align-items-center mb-2 gap-2 flex-wrap">
-			<h2 class="mb-0">{{ t("Director board") }}</h2>
-			<div v-if="filterSummary.length" class="ms-auto d-flex align-items-center gap-2"><span class="text-secondary small">{{ filterSummary.join(" · ") }}</span><button type="button" class="btn btn-sm btn-ghost-secondary" @click="clearFilters">{{ t("Clear filters") }}</button></div>
-		</div>
+	<!-- class="stbl-ds" tasarım katmanını açan anahtar; taşınmamış ekranlar
+	     bu sınıfı taşımadığı için katmandan hiç etkilenmiyor. -->
+	<div class="director-board-page stbl-ds">
 		<TenderNav />
 
-		<TenderFunnel />
+		<header class="ds-page-head">
+			<div class="ds-label">{{ t("Tender") }} · {{ activeCompany || "—" }}</div>
+			<h1>{{ t("Director board") }}</h1>
+			<div class="ds-meta">
+				<span>{{ t("Every lot is counted in exactly one stage") }}</span>
+				<span>{{ t("Numbers are read from ERP records — the rule under each says what it counted") }}</span>
+				<span v-if="lastReadAt">{{ t("Last read") }} <span class="ds-mono">{{ lastReadAt }}</span></span>
+			</div>
 
-		<!-- KPI -->
-		<div class="row g-2 mb-3">
-			<div class="col-6 col-md"><div class="card"><div class="card-body py-2 px-3">
-				<div class="text-secondary small text-uppercase">{{ t("Active tenders") }}</div><div class="h3 m-0">{{ kpi.count || 0 }}</div></div></div></div>
-			<div class="col-6 col-md"><div class="card"><div class="card-body py-2 px-3">
-				<div class="text-secondary small text-uppercase">{{ t("Portfolio value") }}</div><div class="h3 m-0 font-monospace">{{ fm(kpi.total_value || 0) }}</div></div></div></div>
-			<div class="col-6 col-md"><div class="card"><div class="card-body py-2 px-3">
-				<div class="text-secondary small text-uppercase">{{ t("Avg margin") }}</div><div class="h3 m-0 text-green">{{ kpi.avg_margin || 0 }}%</div></div></div></div>
-			<div class="col-6 col-md"><div class="card"><div class="card-body py-2 px-3">
-				<div class="text-secondary small text-uppercase">{{ t("At risk") }}</div><div class="h3 m-0" :class="kpi.at_risk ? 'text-red' : ''">{{ kpi.at_risk || 0 }}</div></div></div></div>
-			<div class="col-6 col-md"><div class="card"><div class="card-body py-2 px-3">
-				<div class="text-secondary small text-uppercase">{{ t("Win rate") }}</div>
-				<div class="h3 m-0 text-green">{{ kpi.win_rate || 0 }}%</div>
-				<div class="text-secondary" style="font-size:11px">{{ kpi.won || 0 }}{{ t("W") }} · {{ kpi.lost || 0 }}{{ t("L") }} · {{ kpi.pending || 0 }}{{ t("P") }} · {{ kpi.unverified_history || 0 }} {{ t("Unverified") }}</div>
-			</div></div></div>
-			<div class="col-6 col-md"><div class="card"><div class="card-body py-2 px-3">
-				<div class="text-secondary small text-uppercase">{{ t("Остаток (net remaining)") }}</div><div class="h3 m-0 font-monospace">{{ fm(kpi.total_ostatok || 0) }}</div></div></div></div>
+			<div v-if="filterSummary.length" class="board-actions">
+				<span class="ds-chip" data-tone="soon">{{ filterSummary.join(" · ") }}</span>
+				<button type="button" class="ds-btn" @click="clearFilters">{{ t("Clear filters") }}</button>
+			</div>
+		</header>
+
+		<div class="ds-kpis" data-cols="3">
+			<div v-for="k in kpis" :key="k.key" class="ds-kpi" :data-sev="k.sev">
+				<div class="ds-label">{{ k.label }}</div>
+				<div><span class="ds-kpi-val">{{ k.value }}</span><span class="ds-kpi-cap">{{ k.caption }}</span></div>
+				<div class="ds-kpi-note">{{ k.note }}</div>
+				<div class="ds-kpi-q">{{ k.rule }}</div>
+			</div>
 		</div>
 
-		<div class="card">
-			<div class="card-body p-0">
-				<table class="table card-table">
-					<thead><tr>
-						<th class="d-none d-md-table-cell text-end text-secondary" style="width: 52px">{{ t("Row") }}</th>
-						<th>{{ t("Tender") }}</th>
-						<th class="text-end">{{ t("Value") }}</th>
-						<th class="text-end">{{ t("Margin on revenue") }}</th>
-						<th class="text-end">{{ t("Landed") }}</th>
-						<th class="text-end">{{ t("Остаток (net remaining)") }}</th>
-						<th class="text-nowrap">{{ t("Delivery deadline") }}</th>
-						<th>{{ t("Risk") }}</th>
-						<th style="width:170px">{{ t("Manager") }}</th>
-					</tr></thead>
+		<p v-if="unverified" class="board-warn">
+			{{ unverified }} {{ t("tenders carry unverified history — the number is there but the record behind it is incomplete.") }}
+		</p>
+
+		<!-- Aşama ızgarası ve huni kendi bileşeninde; o da aynı katmana taşındı. -->
+		<TenderFunnel />
+
+		<section class="ds-panel board-portfolio">
+			<div class="ds-panel-head">
+				<h2>{{ t("Linked ERP documents") }}</h2>
+				<span class="ds-label">
+					{{ filteredRows.length }} / {{ rows.length }} {{ t("tenders") }}
+				</span>
+			</div>
+
+			<div class="board-scroll">
+				<table class="ds-table">
+					<thead>
+						<tr>
+							<th class="ds-td-num board-ord">{{ t("Row") }}</th>
+							<th>{{ t("Tender") }}</th>
+							<th class="ds-td-num">{{ t("Value") }}</th>
+							<th class="ds-td-num">{{ t("Margin on revenue") }}</th>
+							<th class="ds-td-num">{{ t("Landed") }}</th>
+							<th class="ds-td-num">{{ t("Остаток (net remaining)") }}</th>
+							<th>{{ t("Delivery deadline") }}</th>
+							<th>{{ t("Risk") }}</th>
+							<th class="board-mgr">{{ t("Manager") }}</th>
+						</tr>
+					</thead>
 					<tbody>
 						<SkeletonRows v-if="loading" :cols="9" :rows="6" hide-first-on-mobile />
-						<tr v-for="(r, index) in filteredRows" :key="r.deal" style="cursor:pointer" @click="openDeal(r.deal)">
-							<td class="d-none d-md-table-cell text-end font-monospace text-secondary">{{ index + 1 }}</td>
+						<tr v-for="(r, index) in filteredRows" :key="r.deal" class="board-row" @click="openDeal(r.deal)">
+							<td class="ds-td-num board-ord">{{ index + 1 }}</td>
 							<td>
-								<span class="fw-semibold">{{ r.label }}</span>
-								<span v-if="r.result" class="badge ms-1" :class="resultBadge(r.result)">{{ t(r.result.charAt(0).toUpperCase() + r.result.slice(1)) }}</span>
-								<span v-else-if="r.lifecycle?.unverified_history" class="badge bg-yellow-lt text-yellow ms-1">{{ t("Unverified") }}</span>
-								<div class="text-secondary small">{{ r.po_count }} PO · {{ r.so_count }} SO</div>
+								<div class="board-tender">
+									<span class="ds-row-title board-label">{{ r.label }}</span>
+									<span v-if="r.result" class="ds-chip" :data-tone="resultTone(r.result)">
+										{{ resultLabel(r.result) }}
+									</span>
+									<span v-else-if="r.lifecycle?.unverified_history" class="ds-chip" data-tone="today">
+										{{ t("Unverified") }}
+									</span>
+								</div>
+								<div class="ds-row-ev">{{ r.po_count }} PO · {{ r.so_count }} SO · {{ r.deal }}</div>
 							</td>
-							<td class="text-end font-monospace">{{ fm(r.value) }}</td>
-							<td class="text-end font-monospace">{{ r.margin_pct }}%</td>
-							<td class="text-end font-monospace text-secondary">{{ fm(r.landed) }}</td>
-							<td class="text-end font-monospace fw-semibold">{{ fm(r.ostatok) }}</td>
-							<td class="text-nowrap">{{ r.delivery ? formatDate(r.delivery) : "—" }}</td>
-							<td><span class="badge" :class="riskBadge(r.risk)">{{ riskLabel(r.risk) }}</span></td>
+							<td class="ds-td-num">{{ fm(r.value) }}</td>
+							<td class="ds-td-num">{{ r.margin_pct }}%</td>
+							<td class="ds-td-num board-muted">{{ fm(r.landed) }}</td>
+							<td class="ds-td-num board-strong">{{ fm(r.ostatok) }}</td>
+							<td class="ds-mono board-nowrap">{{ r.delivery ? formatDate(r.delivery) : "—" }}</td>
+							<td>
+								<span class="ds-chip" :data-tone="riskTone(r.risk)">{{ riskLabel(r.risk) }}</span>
+							</td>
 							<td @click.stop>
-								<select class="form-select form-select-sm" :value="r.assigned_to" @change="assign(r, $event.target.value)">
+								<select
+									class="ds-input board-select"
+									:value="r.assigned_to"
+									:aria-label="t('Manager')"
+									@change="assign(r, $event.target.value)"
+								>
 									<option value="">— {{ t("Unassigned") }} —</option>
 									<option v-for="m in managers" :key="m.name" :value="m.name">{{ m.full_name }}</option>
 								</select>
@@ -141,8 +224,106 @@ function clearFilters() { router.replace({ query: {} }); }
 						</tr>
 					</tbody>
 				</table>
-				<EmptyState v-if="!loading && !filteredRows.length" icon="ti-gavel" :title="t('No tenders match these filters.')" :subtitle="t('Clear filters or select another dashboard period.')" />
 			</div>
-		</div>
+
+			<div v-if="!loading && !filteredRows.length" class="ds-panel-foot board-empty">
+				<span>{{ t("No tenders match these filters.") }}</span>
+				<span>{{ t("Clear filters or select another dashboard period.") }}</span>
+			</div>
+			<div v-else class="ds-panel-foot">
+				<span>{{ t("Linked directly to ERP records") }}</span>
+				<span class="ds-mono">tender_lot · quotation · sales_order · purchase_order</span>
+			</div>
+		</section>
 	</div>
 </template>
+
+<style scoped>
+/* Yalnız yerleşim. Renk, tipografi, kenar ve boşluk katmandan geliyor. */
+.director-board-page {
+	padding: 1rem;
+}
+
+.board-actions {
+	display: flex;
+	align-items: center;
+	gap: 10px;
+	margin-top: 16px;
+	flex-wrap: wrap;
+}
+
+.board-warn {
+	margin: 14px 0 0;
+	padding: 12px 16px;
+	background: var(--ds-today-t);
+	border: 1px solid var(--ds-today);
+	border-left-width: 3px;
+	font-size: 13px;
+	color: var(--ds-today-tx);
+}
+
+.board-portfolio {
+	margin-top: 14px;
+}
+
+/* Dokuz sütunlu tablo dar ekrana sığmıyor; sayfayı değil TABLOYU kaydır. */
+.board-scroll {
+	overflow-x: auto;
+}
+
+.board-row {
+	cursor: pointer;
+}
+
+.board-tender {
+	display: flex;
+	align-items: center;
+	gap: 7px;
+	flex-wrap: wrap;
+}
+
+.board-label {
+	font-size: 14px;
+}
+
+.board-muted {
+	color: var(--ds-tx3);
+}
+
+.board-strong {
+	font-weight: 600;
+}
+
+.board-nowrap {
+	white-space: nowrap;
+	font-size: 12px;
+}
+
+.board-ord {
+	width: 52px;
+}
+
+.board-mgr {
+	width: 190px;
+}
+
+.board-select {
+	min-height: 34px;
+	padding: 5px 9px;
+	font-size: 12.5px;
+}
+
+.board-empty {
+	flex-direction: column;
+	align-items: flex-start;
+	gap: 4px;
+	padding-top: 22px;
+	padding-bottom: 22px;
+}
+
+@media (max-width: 768px) {
+	.board-ord {
+		display: none;
+	}
+}
+</style>

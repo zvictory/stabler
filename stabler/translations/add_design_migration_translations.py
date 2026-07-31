@@ -1,4 +1,4 @@
-"""Operasyon Masası'nın yeni dizgelerini beş çeviri dosyasına ekler.
+"""Tasarım göçünün getirdiği yeni dizgeleri beş çeviri dosyasına ekler.
 
 Neden ayrı bir betik: bu csv'ler şu anda BAŞKA bir oturum tarafından
 değiştirilmiş durumda (harvest yeniden çalışmış, satır sonları LF'e dönmüş,
@@ -14,7 +14,9 @@ import pathlib
 import sys
 
 # source -> (tr, ru, uz, uzc).  en hedefi = kaynağın kendisi.
+# Ekran ekran büyüyor: her taşınan sayfa kendi bloğunu ekliyor.
 ROWS = {
+	# ══ Operasyon Masası ══════════════════════════════════════════════
 	"What should I do today?": (
 		"Bugün ne yapmalıyım?",
 		"Что мне делать сегодня?",
@@ -158,6 +160,74 @@ ROWS = {
 		"Taklif · yetkazib berish · muddat",
 		"Таклиф · етказиб бериш · муддат",
 	),
+
+	# ══ Direktör panosu ═══════════════════════════════════════════════
+	"Every lot is counted in exactly one stage": (
+		"Her lot tek bir aşamada sayılır",
+		"Каждый лот считается ровно в одном этапе",
+		"Har lot faqat bitta bosqichda sanaladi",
+		"Ҳар лот фақат битта босқичда саналади",
+	),
+	"Numbers are read from ERP records — the rule under each says what it counted": (
+		"Sayılar ERP kayıtlarından okunur — altındaki kural ne saydığını söyler",
+		"Числа читаются из записей ERP — правило под каждым говорит, что оно посчитало",
+		"Raqamlar ERP yozuvlaridan o'qiladi — ostidagi qoida nimani sanaganini aytadi",
+		"Рақамлар ERP ёзувларидан ўқилади — остидаги қоида нимани санаганини айтади",
+	),
+	"lots in the pipeline": ("lot işlemde", "лотов в работе", "lot ishlanmoqda", "лот ишланмоқда"),
+	"seen through to awaiting result": (
+		"görüldü → sonuç bekleniyor arası tüm lotlar",
+		"от «увидели» до «ждём результат»",
+		"ko'rildi → natija kutilmoqda oralig'idagi lotlar",
+		"кўрилди → натижа кутилмоқда оралиғидаги лотлар",
+	),
+	"win rate": ("kazanma oranı", "доля побед", "yutuq ulushi", "ютуқ улуши"),
+	"won": ("kazanıldı", "выиграно", "yutildi", "ютилди"),
+	"lost": ("kaybedildi", "проиграно", "yo'qotildi", "йўқотилди"),
+	"needs action today — lands on the desk": (
+		"bugün müdahale gerekiyor — masaya düşer",
+		"нужно действие сегодня — попадает на стол",
+		"bugun harakat kerak — stolga tushadi",
+		"бугун ҳаракат керак — столга тушади",
+	),
+	"contracted": ("sözleşmeli", "законтрактовано", "shartnomaviy", "шартномавий"),
+	"sum of every open tender's value": (
+		"açık tüm tenderlerin değer toplamı",
+		"сумма стоимости всех открытых тендеров",
+		"barcha ochiq tenderlar qiymati yig'indisi",
+		"барча очиқ тендерлар қиймати йиғиндиси",
+	),
+	"on revenue": ("ciro üzerinden", "от выручки", "tushumdan", "тушумдан"),
+	"average across tenders that have pricing": (
+		"fiyatlaması olan tenderlerin ortalaması",
+		"среднее по тендерам с расчётом цены",
+		"narxi hisoblangan tenderlar o'rtachasi",
+		"нархи ҳисобланган тендерлар ўртачаси",
+	),
+	"net remaining": ("net kalan", "чистый остаток", "sof qoldiq", "соф қолдиқ"),
+	"what is still to be collected after landed cost": (
+		"landed maliyetten sonra tahsil edilecek tutar",
+		"сколько ещё предстоит собрать после landed-затрат",
+		"landed xarajatdan keyin yig'iladigan summa",
+		"landed харажатдан кейин йиғиладиган сумма",
+	),
+	"tenders carry unverified history — the number is there but the record behind it is incomplete.": (
+		"tenderin geçmişi doğrulanmamış — rakam var ama arkasındaki kayıt eksik.",
+		"тендеров с непроверенной историей — число есть, но запись за ним неполная.",
+		"tenderning tarixi tasdiqlanmagan — raqam bor, lekin ortidagi yozuv to'liq emas.",
+		"тендернинг тарихи тасдиқланмаган — рақам бор, лекин ортидаги ёзув тўлиқ эмас.",
+	),
+	"Linked ERP documents": (
+		"Bağlı ERP belgeleri", "Связанные документы ERP",
+		"Bog'langan ERP hujjatlari", "Боғланган ERP ҳужжатлари",
+	),
+	"Linked directly to ERP records": (
+		"Doğrudan ERP kayıtlarına bağlı",
+		"Напрямую связано с записями ERP",
+		"To'g'ridan-to'g'ri ERP yozuvlariga bog'langan",
+		"Тўғридан-тўғри ERP ёзувларига боғланган",
+	),
+	"tenders": ("tender", "тендеров", "tender", "тендер"),
 }
 
 LANGS = {"en": None, "tr": 0, "ru": 1, "uz": 2, "uzc": 3}
