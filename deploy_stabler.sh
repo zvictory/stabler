@@ -22,8 +22,9 @@
 # is the expensive one and it ASKS first. Rule of thumb: patches.txt or a doctype
 # changed -> migrate matters; any .py changed -> restart matters.
 #
-# Safe by design: stops on any error, backs up first, dry-runs the rsync, NO
-# --delete, asks before the bench restart. Review it, then: bash deploy_stabler.sh
+# Safe by design: ships HEAD rather than the working tree (step 3), stops on any
+# error, backs up first, dry-runs the rsync, NO --delete, asks before the bench
+# restart. Review it, then: bash deploy_stabler.sh
 
 set -euo pipefail
 
@@ -42,7 +43,10 @@ ssh "$PROD" "cd /home/frappe/frappe-bench && sudo -u frappe bench --site $SITE l
   && echo "    OK: stabler is installed on $SITE" \
   || { echo "    ABORT: stabler not found on $SITE"; exit 1; }
 
-# 1) Prove it compiles locally (esbuild bundle).
+# 1) Prove it compiles locally (esbuild bundle). NOTE: bench builds the app in
+#    place, i.e. the WORKING TREE -- so on a dirty tree this proves the working
+#    copy compiles, not HEAD. It is a fast local canary, not the gate; step 4
+#    rebuilds the exported HEAD on prod and that build is the authoritative one.
 say "1/7  Local build (bench build --app stabler)"
 ( cd "$LOCAL_BENCH" && bench build --app stabler )
 
@@ -50,19 +54,48 @@ say "1/7  Local build (bench build --app stabler)"
 say "2/7  Backup current prod app -> /root/stabler-app-<ts>.tgz"
 ssh "$PROD" "tar czf /root/stabler-app-\$(date +%F-%H%M).tgz -C $PROD_APPS stabler && ls -lh /root/stabler-app-*.tgz | tail -1"
 
-# 3) rsync working tree -> prod (NO --delete). The exclude list lives ENTIRELY
+# 3) rsync the COMMITTED tree -> prod (NO --delete). The exclude list lives ENTIRELY
 #    in .rsync-exclude -- no inline flags here. This script and deploy_full.sh
 #    used to keep their own, disagreed on anchoring, and silently shipped
 #    different file sets (this one leaked .github/, every top-level *.md
 #    including DEPLOY-SECURITY.md, and all three deploy_*.sh to prod).
 #
+#    The SOURCE is `git archive HEAD`, not the working tree. It used to be the
+#    working tree, which meant "what is committed" and "what is running on prod"
+#    were two different things that nobody reconciled. Measured 2026-07-31 on
+#    design/modernist-operations-desk: a working-tree deploy would have pushed 19
+#    half-finished edits to live code (api/sales.py, router.js, MoneyInput.vue,
+#    all five translation CSVs mid-harvest) plus 36 files that exist in no commit
+#    at all (_to_delete/ git-lock debris, an entire uncommitted msa_migrate/
+#    script set, TransporterCenter.vue) onto all 7 tenants at once. None of it was
+#    visible in the dry run's file list as *uncommitted* -- rsync only reports
+#    paths, and a half-done file looks exactly like a finished one.
+#
+#    Exporting from HEAD makes the deployed set equal to the reviewed set by
+#    construction, so a dirty tree can no longer leak. It also means: commit
+#    first, or your change does not ship.
+say "3/7  Exporting HEAD ($(git -C "$APP_DIR" rev-parse --short HEAD)) to a clean staging dir"
+EXPORT_DIR="$(mktemp -d)"
+trap 'rm -rf "$EXPORT_DIR"' EXIT
+git -C "$APP_DIR" archive HEAD | tar -x -C "$EXPORT_DIR"
+
+#    Say out loud what is being withheld. Silence here would read as "the tree is
+#    clean" when it is merely being ignored -- the same failure mode as the -v
+#    flag below.
+WITHHELD="$(git -C "$APP_DIR" status --porcelain | wc -l | tr -d ' ')"
+if [ "$WITHHELD" != "0" ]; then
+  echo "    NOTE: $WITHHELD working-tree entries are dirty/untracked and will NOT ship."
+  echo "          Anything you need on prod must be committed first."
+fi
+
 #    Source sanity first. CLAUDE.md's cwd trap: run from inside apps/stabler/ and
 #    a relative `stabler/` resolves to the INNER python package, which rsync then
-#    ships as if it were the whole app. $APP_DIR is absolute so it cannot happen
-#    here, but the assertion is one line and it is what makes that guarantee
-#    checkable rather than assumed. hooks.py only exists at the app root.
-[ -f "$APP_DIR/stabler/hooks.py" ] \
-  || { echo "    ABORT: $APP_DIR is not the stabler app root"; exit 1; }
+#    ships as if it were the whole app. $EXPORT_DIR is absolute so it cannot
+#    happen here, but the assertion is one line and it is what makes that
+#    guarantee checkable rather than assumed. hooks.py only exists at the app
+#    root -- so this also catches an archive that came out empty or truncated.
+[ -f "$EXPORT_DIR/stabler/hooks.py" ] \
+  || { echo "    ABORT: HEAD export is not a stabler app root"; exit 1; }
 
 #    Dry run BEFORE the real one. -v is not optional: `rsync -n` without it
 #    prints nothing, so an empty dry run reads as "clean" while having verified
@@ -70,7 +103,7 @@ ssh "$PROD" "tar czf /root/stabler-app-\$(date +%F-%H%M).tgz -C $PROD_APPS stabl
 say "3/7  rsync DRY RUN -> $PROD:$PROD_APPS/stabler/"
 DRY="$(rsync -rltzvn --no-owner --no-group \
   --exclude-from="$APP_DIR/.rsync-exclude" \
-  "$APP_DIR/" "$PROD:$PROD_APPS/stabler/")"
+  "$EXPORT_DIR/" "$PROD:$PROD_APPS/stabler/")"
 echo "$DRY"
 if echo "$DRY" | grep -qE '^(deleting |stable-erp-website/|professional-excel-export/|recon/)'; then
   echo "    ABORT: dry run deletes files or touches a sibling project."
@@ -81,7 +114,7 @@ confirm "Ship exactly the file list above?" || { echo "    Aborted."; exit 1; }
 say "3/7  rsync source -> $PROD:$PROD_APPS/stabler/"
 rsync -rltz --no-owner --no-group \
   --exclude-from="$APP_DIR/.rsync-exclude" \
-  "$APP_DIR/" "$PROD:$PROD_APPS/stabler/"
+  "$EXPORT_DIR/" "$PROD:$PROD_APPS/stabler/"
 ssh "$PROD" "chown -R frappe:frappe $PROD_APPS/stabler"
 
 # 4) Build on prod, then drop the sourcemaps.
