@@ -29,7 +29,10 @@ const props = defineProps({
 	// When true, keeps grouped display while focused and reformats on every keystroke.
 	// Cursor jumps to end on each input — acceptable for right-aligned money fields.
 	groupWhileTyping: { type: Boolean, default: false },
-	// When true, omits the input-group-text currency badge addon (ideal for dense table cells where currency is stated in header).
+	// Optional override for unit prices (e.g. 4 for $4.4150 or $6.1250)
+	maxFractionDigits: { type: Number, default: null },
+	// When true, omits the input-group-text currency badge addon (ideal for dense
+	// table cells where the currency is stated in the column header).
 	hideCurrency: { type: Boolean, default: false },
 });
 
@@ -43,7 +46,14 @@ const decimalSep = computed(() => (props.language === "en" ? "." : ","));
 // UZS uses integer-only formatting and the native "сўм" suffix
 // (tiyin/coins out of circulation since 1994).
 const isUZS = computed(() => (props.currency || "").toUpperCase() === "UZS");
-const fractionDigits = computed(() => (isUZS.value ? 0 : 2));
+const minFractionDigits = computed(() => (isUZS.value ? 0 : 2));
+const maxFractionDigits = computed(() => {
+	if (isUZS.value) return 0;
+	if (props.maxFractionDigits !== null && props.maxFractionDigits !== undefined) {
+		return props.maxFractionDigits;
+	}
+	return 2;
+});
 
 function parse(text) {
 	if (text === null || text === undefined) return null;
@@ -71,8 +81,8 @@ function format(n) {
 	if (!Number.isFinite(num)) return "";
 	const localeCode = props.language === "en" ? "en-US" : "ru-RU";
 	return new Intl.NumberFormat(localeCode, {
-		minimumFractionDigits: fractionDigits.value,
-		maximumFractionDigits: fractionDigits.value,
+		minimumFractionDigits: minFractionDigits.value,
+		maximumFractionDigits: maxFractionDigits.value,
 		useGrouping: true,
 	}).format(num);
 }
@@ -89,8 +99,8 @@ function liveGroup(text) {
 	const parts = s.split(ds);
 	const intp = (parts[0] || "").replace(/^0+(?=\d)/, "");
 	const grouped = intp.replace(/\B(?=(\d{3})+(?!\d))/g, gs);
-	if (fractionDigits.value === 0) return grouped; // UZS: integer only
-	if (parts.length > 1) return grouped + ds + parts.slice(1).join("").slice(0, fractionDigits.value);
+	if (maxFractionDigits.value === 0) return grouped; // UZS: integer only
+	if (parts.length > 1) return grouped + ds + parts.slice(1).join("").slice(0, maxFractionDigits.value);
 	return grouped;
 }
 
