@@ -386,6 +386,16 @@ async function loadDoc() {
 		);
 		// Load UOM lists for draft items so the UOM toggle works in edit mode.
 		if (docstatus.value === 0) await loadDraftUoms();
+		/* Uygunluk her YÜKLEME yolunda çekilmeli, yalnız ilk mount'ta değil.
+		 * Bunu onMounted'a koymuştum; oysa belge üç ayrı yoldan yükleniyor:
+		 * mount, `watch(docName, loadDoc)` (uygulama içinde sipariş A'dan
+		 * B'ye geçiş) ve kaydetme sonrası yeniden okuma. Yalnız ilkini
+		 * kapatınca diğer ikisinde sağdaki rezerv paneli sonsuza kadar
+		 * "kontrol ediliyor" diyordu. Yükleme fonksiyonunun kendisine
+		 * taşındı — hangi yoldan gelinirse gelinsin aynı davranış. */
+		if (editable.value) {
+			for (const line of form.value.items || []) scheduleAvailability(line);
+		}
 	}
 }
 
@@ -482,7 +492,43 @@ function preferredSalesUom(meta) {
 }
 
 // Line Item Editor pick handler
-async function handlePickItem({ line, item, index, field }) {
+/* Kalem değişince ölçüler ESKI kaleme aitti — taşınmamalı. 3 m'lik bir profilden
+ * sonra seçilen sandviç panele o 3 kalırsa miktar sessizce yanlış çıkar, üstelik
+ * sunucu kancası onu kayıtta doğru kabul edip qty'ye yazar. */
+function setDimensionMode(line, mode) {
+	line.dimension_mode = mode || "";
+	if (["Linear", "Area", "Volume"].includes(line.dimension_mode)) {
+		line.custom_length = null;
+		line.custom_width = null;
+		line.custom_height = null;
+		line.custom_pieces = null;
+		line.qty = 0;
+		// Ölçülü kalemde fiyat da miktar da stok biriminde — katsayı devre dışı.
+		line.uom = line.stock_uom || line.uom || "";
+		line.conversion_factor = 1;
+	}
+}
+
+async function handlePickItem(payload) {
+	let { line, index } = payload;
+	const { item } = payload;
+	let field = payload.field;
+
+	// Arama çubuğu hangi satıra yazacağını bilmiyor — bilmesi de gerekmiyor,
+	// `items` ona prop olarak geçiyor ve listenin sahibi burası. Hazırda boş
+	// satır varsa onu doldur: form açılışta bir boş satırla geliyor, yoksa ilk
+	// seçimden sonra ekranda kullanılmayan bir boş satır kalırdı.
+	if (field === "search") {
+		let slot = form.value.items.findIndex((l) => !l.item_code);
+		if (slot === -1) {
+			form.value.items.push(blankLine(form.value.set_warehouse));
+			slot = form.value.items.length - 1;
+		}
+		line = form.value.items[slot];
+		index = slot;
+		field = "item";
+	}
+
 	if (field === "item") {
 		line.item_code = item.item_code || item.name;
 		line.item_name = item.item_name;
@@ -496,6 +542,12 @@ async function handlePickItem({ line, item, index, field }) {
 			});
 			line.stock_uom = meta.stock_uom || "";
 			line.uoms = meta.uoms || [];
+			// Ölçü modu satırın kendi kalemine ait: aynı siparişte panel (m²) ile
+			// dondurma (koli) yan yana durabiliyor. Paylaşılan düzenleyici bunu
+			// kendi içinde yazıyordu; SO formu kendi düzenleyicisine geçince o
+			// atama düştü ve ölçü girişi sessizce kayboldu. Artık burada, yani
+			// hangi düzenleyici çizerse çizsin aynı yerden geliyor.
+			setDimensionMode(line, meta.dimension_mode || item?.custom_dimension_mode || "");
 			const preferredUom = preferredSalesUom(meta);
 			line.uom = preferredUom ? preferredUom.uom : (meta.default_uom || meta.stock_uom || "");
 			line.conversion_factor = preferredUom ? Number(preferredUom.conversion_factor) : 1;
@@ -511,6 +563,8 @@ async function handlePickItem({ line, item, index, field }) {
 			line.stock_uom = item.stock_uom || "";
 			line.uoms = [];
 			line.conversion_factor = 1;
+			// Sunucu çağrısı düştüyse arama satırındaki mod son çare.
+			setDimensionMode(line, item?.custom_dimension_mode || "");
 			const { rate } = await resolveRate(line.item_code, item.standard_rate);
 			line.rate = rate;
 		}
@@ -521,7 +575,11 @@ async function handlePickItem({ line, item, index, field }) {
 		// pick the Typeahead input becomes readonly and drops out of :not([readonly]),
 		// which would shift positional index 1 from qty to rate (the corruption cause).
 		await nextTick();
-		const tbody = document.querySelector(".stbl-items-table tbody");
+		// İki düzenleyici var: düzenlenebilir yolda SalesOrderLines (.so-lines),
+		// salt-okunur yolda paylaşılan LineItemsEditor (.stbl-items-table).
+		// Yalnız ikincisini aramak, formun asıl kullanıldığı yolda odağı ölü
+		// bırakıyordu — kalem seçtikten sonra imleç hiçbir yere gitmiyordu.
+		const tbody = document.querySelector(".so-lines tbody, .stbl-items-table tbody");
 		if (tbody) {
 			const rows = Array.from(tbody.querySelectorAll("tr"));
 			const row = rows[index];
@@ -660,14 +718,6 @@ onMounted(async () => {
 		if (route.query?.agreement) form.value.agreement = String(route.query.agreement);
 	} else {
 		await loadDoc();
-		/* Uygunluk şimdiye kadar YALNIZCA yeni siparişte çekiliyordu; kayıtlı
-		 * bir taslak açıldığında hiç yüklenmiyordu. Sağdaki rezerv paneli
-		 * "rezerve edilecek" diyebilmek için bu veriye muhtaç — olmadan
-		 * sonsuza kadar "kontrol ediliyor" derdi ve stok yetmediği hâlde
-		 * sessiz kalırdı. Düzenlenebilir taslakta satır başına yükleniyor. */
-		if (editable.value) {
-			for (const line of form.value?.items || []) scheduleAvailability(line);
-		}
 	}
 });
 
@@ -1053,7 +1103,6 @@ async function closeSalesOrder() {
 				:currency="form.currency || currency"
 				:language="user.language"
 				:search-items="searchItems"
-				:blank-line="() => blankLine(form.set_warehouse)"
 				:show-discounts="showDiscounts"
 				@pick-item="handlePickItem"
 				@remove="removeLine"

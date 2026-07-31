@@ -81,6 +81,7 @@ stabler.tests.test_proforma_invoice_doctype
 stabler.tests.test_proforma_transition
 stabler.tests.test_receipt_math
 stabler.tests.test_sales_margin
+stabler.tests.test_sales_order_lines_source
 stabler.tests.test_sea_lifecycle
 stabler.tests.test_sea_lifecycle_source
 stabler.tests.test_sidebar_profile_menu

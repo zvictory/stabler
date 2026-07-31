@@ -345,6 +345,49 @@ ROWS = {
 	"Audit trail": ("Denetim izi", "Журнал аудита", "Audit izi", "Аудит изи"),
 	"every action recorded": ("her işlem kayıtlı", "каждое действие записано", "har amal qayd etilgan", "ҳар амал қайд этилган"),
 	"Language": ("Dil", "Язык", "Til", "Тил"),
+	# ══ Satış siparişi · satır düzenleyici ═════════════════════════════
+	"Measurements": ("Ölçüler", "Размеры", "O'lchamlar", "Ўлчамлар"),
+	"computed": ("hesaplandı", "рассчитано", "hisoblandi", "ҳисобланди"),
+	"measure unit · fixed": (
+		"ölçü birimi · sabit",
+		"единица измерения · фиксирована",
+		"o'lchov birligi · qat'iy",
+		"ўлчов бирлиги · қатъий",
+	),
+	"Product · stock": ("Ürün · stok", "Товар · склад", "Mahsulot · ombor", "Маҳсулот · омбор"),
+	"Unit price": ("Birim fiyat", "Цена за единицу", "Birlik narxi", "Бирлик нархи"),
+	"Search a product — code, name or barcode · Enter to add": (
+		"Ürün ara — kod, ad veya barkod · eklemek için Enter",
+		"Поиск товара — код, название или штрихкод · Enter для добавления",
+		"Mahsulot qidirish — kod, nom yoki shtrix-kod · qo'shish uchun Enter",
+		"Маҳсулот қидириш — код, ном ёки штрих-код · қўшиш учун Enter",
+	),
+	"No products match that search": (
+		"Bu aramaya uyan ürün yok",
+		"Нет товаров по этому запросу",
+		"Bu qidiruvga mos mahsulot yo'q",
+		"Бу қидирувга мос маҳсулот йўқ",
+	),
+	"pick a product above": (
+		"yukarıdan bir ürün seçin",
+		"выберите товар выше",
+		"yuqoridan mahsulot tanlang",
+		"юқоридан маҳсулот танланг",
+	),
+	"checking stock…": (
+		"stok kontrol ediliyor…",
+		"проверка остатка…",
+		"ombor tekshirilmoqda…",
+		"омбор текширилмоқда…",
+	),
+	"available": ("uygun", "доступно", "mavjud", "мавжуд"),
+	"needs": ("gereken", "нужно", "kerak", "керак"),
+	"price": ("fiyat", "цена", "narx", "нарх"),
+	"Remove line": ("Satırı kaldır", "Удалить строку", "Qatorni o'chirish", "Қаторни ўчириш"),
+	"REMOVE": ("KALDIR", "УДАЛИТЬ", "O'CHIRISH", "ЎЧИРИШ"),
+	"Decrease": ("Azalt", "Уменьшить", "Kamaytirish", "Камайтириш"),
+	"Increase": ("Artır", "Увеличить", "Ko'paytirish", "Кўпайтириш"),
+	"Discount column": ("İskonto sütunu", "Колонка скидки", "Chegirma ustuni", "Чегирма устуни"),
 }
 
 LANGS = {"en": None, "tr": 0, "ru": 1, "uz": 2, "uzc": 3}

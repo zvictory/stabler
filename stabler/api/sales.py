@@ -2481,6 +2481,13 @@ def item_sales_meta(item_code: str, company: str, customer: str | None = None, p
 		"sales_uom": getattr(doc, "sales_uom", None),
 		"default_uom": default_uom,
 		"uoms": uoms,
+		# Ölçüden miktar üreten kalem mi (Linear/Area/Volume)? Satır düzenleyici
+		# buna göre ölçü girişini çiziyor. Arama satırından okumak yetmiyor:
+		# kalem her zaman aramadan gelmiyor ve arama sonucu bayatlayabiliyor —
+		# oysa bu çağrı Item dokümanını okuyor, yani kaynağın kendisi.
+		# Sütun yamadan önce yoksa boş döner; kayıt kancası da aynı guard'ı
+		# taşıyor, dolayısıyla iki taraf da "ölçüsüz" davranır.
+		"dimension_mode": getattr(doc, "custom_dimension_mode", None) or "",
 		"standard_rate": flt(doc.standard_rate),
 		"price_list": price.get("price_list"),
 		"price_list_rate": flt(price.get("price_list_rate")),
