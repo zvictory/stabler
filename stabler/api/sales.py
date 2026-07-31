@@ -3757,7 +3757,45 @@ def get_linked_documents(doctype: str, name: str):
 		]
 		if rows:
 			out[dt] = rows
+
+	if doctype == "Payment Entry":
+		_add_payment_entry_references(name, out)
 	return out
+
+
+def _add_payment_entry_references(name: str, out: dict) -> None:
+	"""Fold a Payment Entry's own references into the linked-docs result.
+
+	Frappe's walker cannot invert a Dynamic Link. It finds the Payment Entry
+	FROM an invoice (Sales Invoice's linkinfo lists Payment Entry), but not the
+	invoice from the Payment Entry — get_linked_doctypes("Payment Entry")
+	returns no invoice doctype at all. Measured on prod: a Payment Entry with
+	two Sales Invoice references still came back {}. So widening the guard
+	turned the panel's 417 into a 200 that was just as empty.
+
+	The child table IS the link, so read it directly. Permission is rechecked
+	per referenced document: the caller proved read access to the Payment
+	Entry, which says nothing about the invoice behind it.
+	"""
+	refs = frappe.get_all(
+		"Payment Entry Reference",
+		filters={"parent": name, "parenttype": "Payment Entry"},
+		fields=["reference_doctype", "reference_name"],
+	)
+	for ref in refs:
+		dt, ref_name = ref.reference_doctype, ref.reference_name
+		if not dt or not ref_name or dt not in _LINKED_DOCTYPES:
+			continue
+		rows = out.setdefault(dt, [])
+		if any(r["name"] == ref_name for r in rows):
+			continue
+		if not frappe.has_permission(dt, "read", doc=ref_name):
+			continue
+		rows.append({"name": ref_name, "docstatus": frappe.db.get_value(dt, ref_name, "docstatus")})
+	# setdefault may have parked an empty list for a reference the user cannot
+	# read; the SPA renders a header per key, so drop those.
+	for dt in [k for k, v in out.items() if not v]:
+		del out[dt]
 
 
 @frappe.whitelist()

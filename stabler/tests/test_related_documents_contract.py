@@ -62,6 +62,19 @@ def _route_map() -> dict[str, str | None]:
 	return out
 
 
+def _endpoint_region() -> str:
+	"""get_linked_documents ve yardımcıları — bir sonraki whitelist'e kadar.
+
+	Sabit bir karakter penceresi ("ilk 2000") KULLANMA: yardımcı eklenince
+	pencere bir docstring'in ortasında kesildi, aranan üçüncü geçiş dışarıda
+	kaldı ve test kazara yeşil kaldı. Sınır metnin yapısından gelmeli.
+	"""
+	start = SALES.index("def get_linked_documents")
+	end = SALES.find("@frappe.whitelist()", start)
+	assert end > start, "endpoint'ten sonra whitelist sınırı bulunamadı"
+	return SALES[start:end]
+
+
 def _linked_doctypes() -> set[str]:
 	m = re.search(r"_LINKED_DOCTYPES\s*=\s*frozenset\(\s*\{(.*?)\}\s*\)", SALES, re.S)
 	assert m, "_LINKED_DOCTYPES api/sales.py'de bulunamadı"
@@ -95,13 +108,14 @@ class RelatedDocumentsContract(unittest.TestCase):
 
 	def test_subject_and_result_filters_are_one_set(self):
 		"""İki ayrı liste kaçınılmaz olarak birbirinden ayrılır — asıl hata buydu."""
-		body = SALES[SALES.index("def get_linked_documents") :][:2000]
-		self.assertNotIn(
-			"allowed_doctypes",
+		body = _endpoint_region()
+		self.assertNotRegex(
 			body,
-			"sonuç süzgeci için ayrı bir küme geri gelmiş; konu guard'ı ile aynı kümeyi kullanmalı",
+			r'[\{\[]\s*\n?\s*"(?:Quotation|Sales|Purchase|Delivery|Payment) ?\w*"',
+			"endpoint gövdesinde satır içi bir doctype kümesi var; tek kaynak "
+			"_LINKED_DOCTYPES olmalı — ikinci liste eninde sonunda ayrışır",
 		)
-		self.assertEqual(
+		self.assertGreaterEqual(
 			body.count("_LINKED_DOCTYPES"),
 			2,
 			"tek küme hem konu guard'ında hem sonuç süzgecinde kullanılmalı",
