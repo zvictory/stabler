@@ -1459,8 +1459,6 @@ watch(activeCompany, loadRefData);
 							<th class="text-end bg-green-lt text-green" style="width: 130px">{{ t("Docs Price") }} ({{ form.currency || 'USD' }})</th>
 							<th class="text-end bg-blue-lt text-blue" style="width: 140px">{{ t("Agreed Total") }} ({{ form.currency || 'USD' }})</th>
 							<th class="text-end bg-green-lt text-green" style="width: 140px">{{ t("Docs Total") }} ({{ form.currency || 'USD' }})</th>
-							<th class="text-end bg-purple-lt text-purple" style="width: 140px">{{ t("Invoiced (KG)") }}</th>
-							<th class="text-end bg-warning-lt text-warning" style="width: 140px">{{ t("Remaining Bal (KG)") }}</th>
 							<th style="width: 36px"></th>
 						</tr>
 					</thead>
@@ -1502,25 +1500,10 @@ watch(activeCompany, loadRefData);
 							<td><input v-model.number="row.boxes" type="number" step="1" class="form-control form-control-sm text-end font-monospace" @input="onBoxesOrWeightInput(row)"></td>
 							<td><input v-model.number="row.box_weight_kg" type="number" step="0.01" class="form-control form-control-sm text-end font-monospace" @input="onBoxesOrWeightInput(row)"></td>
 							<td><input v-model.number="row.qty" type="number" step="0.01" class="form-control form-control-sm text-end font-monospace text-warning fw-semibold" @input="onQtyInput(row)"></td>
-							<td><MoneyInput v-model="row.rate" :currency="form.currency" :language="user.language" hide-currency size="sm" /></td>
-							<td><MoneyInput v-model="row.docs_price" :currency="form.currency" :language="user.language" hide-currency size="sm" /></td>
+							<td><MoneyInput v-model="row.rate" :currency="form.currency" :language="user.language" :max-fraction-digits="4" hide-currency size="sm" /></td>
+							<td><MoneyInput v-model="row.docs_price" :currency="form.currency" :language="user.language" :max-fraction-digits="4" hide-currency size="sm" /></td>
 							<td class="text-end font-monospace text-blue bg-blue-lt fw-semibold">{{ fn(rowAmount(row)) }}</td>
 							<td class="text-end font-monospace text-green bg-green-lt fw-semibold">{{ fn(rowDocsAmount(row)) }}</td>
-							<td class="text-end font-monospace text-nowrap bg-purple-lt">
-								<span v-if="getTrackingRow(row)">
-									<span class="fw-bold text-purple">{{ fn(getTrackingRow(row).total_invoiced_qty) }}</span>
-									<span class="badge ms-1 font-monospace" :class="getTrackingRow(row).pct >= 100 ? 'bg-success-lt text-success' : 'bg-purple-lt text-purple'" style="font-size: 0.7rem">
-										{{ getTrackingRow(row).pct }}%
-									</span>
-								</span>
-								<span v-else class="text-secondary">—</span>
-							</td>
-							<td class="text-end font-monospace text-nowrap bg-warning-lt">
-								<span v-if="getTrackingRow(row)">
-									<span class="fw-bold text-warning">{{ fn(getTrackingRow(row).remaining_qty) }}</span>
-								</span>
-								<span v-else class="text-secondary">—</span>
-							</td>
 							<td>
 								<button type="button" class="btn btn-icon btn-sm btn-ghost-secondary" :title="t('Remove')" @click="removeItem(idx)">
 									<i class="ti ti-trash"></i>
@@ -1528,7 +1511,7 @@ watch(activeCompany, loadRefData);
 							</td>
 						</tr>
 						<tr v-if="!form.items.length">
-							<td colspan="14" class="text-secondary text-center py-3">{{ t("No items yet.") }}</td>
+							<td colspan="11" class="text-secondary text-center py-3">{{ t("No items yet.") }}</td>
 						</tr>
 					</tbody>
 					<tfoot v-if="form.items.length">
@@ -1536,7 +1519,7 @@ watch(activeCompany, loadRefData);
 							<td colspan="8" class="text-end fw-semibold small">{{ t("Totals") }}</td>
 							<td class="text-end font-monospace fw-semibold text-blue bg-blue-lt">{{ fm(itemsAgreedTotal, form.currency) }}</td>
 							<td class="text-end font-monospace fw-semibold text-green bg-green-lt">{{ fm(itemsDocsTotal, form.currency) }}</td>
-							<td colspan="4"></td>
+							<td></td>
 						</tr>
 					</tfoot>
 				</table>

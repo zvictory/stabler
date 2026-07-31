@@ -62,10 +62,8 @@ class TestTenderDashboardSpaContract(unittest.TestCase):
 		source = _read(_DASHBOARD)
 
 		self.assertIn("executive_kpi", source)
-		self.assertIn("<TenderControlTower", source)
-		self.assertIn(':data="tenderData"', source)
+		self.assertIn("<OperationsDesk", source)
 		self.assertIn('t("Tender operations")', source)
-		self.assertNotIn('<TenderFunnel mode="conversion"', source)
 
 		control_tower = _read(_CONTROL_TOWER)
 		for component in ("TenderExecutiveKpis", "TenderTrendChart", "TenderExecutionFlow"):

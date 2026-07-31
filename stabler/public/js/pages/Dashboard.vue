@@ -11,7 +11,7 @@ import { t } from "../composables/i18n.js";
 import KpiCard from "../components/KpiCard.vue";
 import ApexChart from "../components/ApexChart.vue";
 import EmptyState from "../components/EmptyState.vue";
-import TenderControlTower from "./tender/TenderControlTower.vue";
+import OperationsDesk from "./tender/OperationsDesk.vue";
 import TenderNav from "./tender/TenderNav.vue";
 import ImportsDashboard from "./imports/ImportsDashboard.vue";
 
@@ -45,9 +45,6 @@ const tenderData = ref({
 });
 
 const tenderEnabled = computed(() => session.canAccessModule("tender"));
-const executiveCurrency = computed(
-	() => tenderData.value.executive_currency || currency.value || ""
-);
 
 const money = (v, ccy) => formatMoney(v, ccy || currency.value, user.value.language);
 // Chart currency: dominant transaction currency once trend data loads, base currency until then.
@@ -329,12 +326,7 @@ const activityIcon = (type) => {
 
 					<div v-else class="tender-dashboard">
 						<TenderNav overview />
-						<TenderControlTower
-							:data="tenderData"
-							:currency="executiveCurrency"
-							:language="user.language"
-							:days="tenderDays"
-						/>
+						<OperationsDesk />
 					</div>
 				</template>
 

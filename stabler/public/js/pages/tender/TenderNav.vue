@@ -13,8 +13,11 @@ onMounted(() => session.ensureTenderViews());
 
 <template>
 	<div class="d-flex gap-2 flex-wrap mb-3">
+		<router-link v-if="session.tenderViews.length > 0" to="/tender/desk" class="btn btn-outline-secondary btn-sm" active-class="btn-primary">
+			<i class="ti ti-layout-dashboard me-1"></i>{{ t("Operations desk") }}
+		</router-link>
 		<router-link to="/dashboard" class="btn btn-outline-secondary btn-sm" active-class="btn-primary">
-			<i class="ti ti-layout-dashboard me-1"></i>{{ t("Overview") }}
+			<i class="ti ti-home me-1"></i>{{ t("Overview") }}
 		</router-link>
 		<router-link to="/tender/board" class="btn btn-outline-secondary btn-sm" active-class="btn-primary">
 			<i class="ti ti-layout-kanban me-1"></i>{{ t("Contract board") }}
