@@ -1,5 +1,15 @@
 <script setup>
-import { nextTick, ref } from "vue";
+// Login — the one screen every user meets before anything else.
+//
+// Migrated to the Modernist Tabler layer. The design measured out to the same
+// tokens the rest of the layer already uses (Archivo + mono, #1d273b / #667382
+// / #9099a6, the dark panel is --ds-ink), so no new colour system was needed.
+//
+// Two elements from the design are deliberately NOT here: "sign in with company
+// SSO" and "forgot my password". Stabler has neither -- `reset_password` is an
+// admin action that takes a username, not a self-service flow -- and a control
+// that does nothing is worse than an absent one.
+import { computed, nextTick, ref } from "vue";
 import { useRoute } from "vue-router";
 import { login } from "../api/auth.js";
 import { hardRedirect, sanitizeStablerRedirect } from "../composables/authRedirect.js";
@@ -19,6 +29,43 @@ const error = ref("");
 const errorSummary = ref(null);
 
 const sessionExpired = route.query["session-expired"] === "1";
+
+/* Dil seçimi. Sunucu tarafı `?lang=` parametresini beyaz listeyle okuyor
+ * (www/stabler.py) ve YALNIZ giriş yapmamış kullanıcıya uyguluyor — oturum
+ * açan kişinin dili kendi User kaydından gelir.
+ *
+ * Seçim tam sayfa yeniden yükleme gerektiriyor: çeviriler sunucuda shell'e
+ * gömülüyor, istemcide bir sözlük yok. Router ile değiştirmek metni
+ * değiştirmez, o yüzden bilerek hardRedirect. */
+const LANGUAGES = [
+	{ id: "tr", label: "TR" },
+	{ id: "uz", label: "UZ" },
+	{ id: "ru", label: "RU" },
+	{ id: "en", label: "EN" },
+];
+
+const currentLanguage = computed(() => {
+	const shell = window.__STABLER__?.user?.language || "en";
+	return LANGUAGES.some((l) => l.id === shell) ? shell : "en";
+});
+
+function switchLanguage(event) {
+	const next = event.target.value;
+	if (next === currentLanguage.value) return;
+	const url = new URL(window.location.href);
+	url.searchParams.set("lang", next);
+	// Hash rotayı koru: kullanıcı login'de kalsın, redirect-to kaybolmasın.
+	window.location.replace(url.toString());
+}
+
+/* Parola alanının altındaki gösterge KUVVET ÖLÇMÜYOR. Bu bir giriş formu:
+ * kullanıcı zaten var olan bir parolayı yazıyor, ona "zayıf" demek anlamsız.
+ * Gösterge yalnızca "yazmaya başladın" geri bildirimi veriyor. */
+const typedSegments = computed(() => {
+	const n = password.value.length;
+	if (!n) return 0;
+	return Math.min(4, Math.ceil(n / 3));
+});
 
 async function handleLogin() {
 	if (!username.value.trim() || !password.value) {
@@ -45,297 +92,542 @@ async function handleLogin() {
 		if (!transitioning.value) loading.value = false;
 	}
 }
+
+const busy = computed(() => loading.value || transitioning.value);
 </script>
 
 <template>
-	<div class="login-wrapper">
+	<div class="login stbl-ds">
 		<AuthTransitionOverlay
 			v-if="transitioning"
-			:title='t("Session opened")'
-			:message='t("Preparing your Dashboard…")'
+			:title="t('Session opened')"
+			:message="t('Preparing your Dashboard…')"
 		/>
 
-		<!-- Dynamic Dark Slate Gradient Background Overlay -->
-		<div class="bg-glow bg-glow-1"></div>
-		<div class="bg-glow bg-glow-2"></div>
+		<!-- Sol panel: marka ve vaat. Izgara çizgileri dekoratif, aria-hidden. -->
+		<aside class="login-brand">
+			<div class="login-grid" aria-hidden="true"></div>
 
-		<div class="login-container">
-			<!-- Glassmorphism Main Card -->
-			<div class="login-card">
-				<!-- Brand Header -->
-				<div class="brand-section">
-					<div class="brand-badge">
-						<i class="ti ti-scale text-primary fs-1"></i>
+			<header class="login-brand-head">
+				<span class="login-mark" aria-hidden="true"></span>
+				<span class="login-wordmark">Stabler</span>
+				<span class="login-brand-sep" aria-hidden="true"></span>
+				<span class="ds-label">{{ t("ERP Platform") }}</span>
+			</header>
+
+			<div class="login-pitch">
+				<div class="ds-label login-modules">
+					{{ t("Sales · Purchasing · Warehouse · Production · Finance") }}
+				</div>
+				<h1>{{ t("One business,") }}<br />{{ t("one record.") }}</h1>
+				<p>
+					{{ t("Orders, stock, purchasing, production and accounting run on one data model. Every number on screen has a document behind it.") }}
+				</p>
+
+				<div class="login-features">
+					<div class="login-feature">
+						<div class="login-feature-t">{{ t("One data model") }}</div>
+						<div class="ds-label">{{ t("tied to a document") }}</div>
 					</div>
-					<h1 class="brand-title">Stabler</h1>
-					<p class="brand-subtitle">{{ t("Financial operations, simplified") }}</p>
+					<div class="login-feature">
+						<div class="login-feature-t">{{ t("Role-based access") }}</div>
+						<div class="ds-label">{{ t("permission checked") }}</div>
+					</div>
+					<div class="login-feature">
+						<div class="login-feature-t">{{ t("Audit trail") }}</div>
+						<div class="ds-label">{{ t("every action recorded") }}</div>
+					</div>
+				</div>
+			</div>
+
+			<footer class="login-brand-foot ds-label">
+				<span>Stabler ERP</span><span class="login-brand-sep" aria-hidden="true"></span><span>v0.1</span>
+			</footer>
+		</aside>
+
+		<!-- Sağ panel: form -->
+		<main class="login-form-col">
+			<div class="login-form">
+				<div class="login-eyebrow">
+					<span class="ds-label">{{ t("Sign in") }}</span>
+					<span class="login-rule" aria-hidden="true"></span>
 				</div>
 
-				<!-- Session Expired Notice -->
-				<div
-					v-if="sessionExpired && !error"
-					class="alert alert-warning shadow-sm border-0 d-flex align-items-center gap-2 mb-4"
-					role="status"
-				>
-					<i class="ti ti-clock-off fs-3 text-warning flex-shrink-0"></i>
-					<div class="small fw-medium">{{ t("Your session has expired. Please sign in again.") }}</div>
+				<h2>{{ t("Sign in to your account") }}</h2>
+				<p class="login-lede">{{ t("No account? Ask your system administrator for an invite.") }}</p>
+
+				<div v-if="sessionExpired && !error" class="login-notice" data-tone="today" role="status">
+					{{ t("Your session has expired. Please sign in again.") }}
 				</div>
 
-				<!-- Alert Error Message -->
 				<div
 					v-if="error"
 					ref="errorSummary"
 					tabindex="-1"
-					class="alert alert-danger shadow-sm border-0 d-flex align-items-center gap-2 mb-4"
+					class="login-notice"
+					data-tone="crit"
 					role="alert"
 				>
-					<i class="ti ti-alert-circle fs-3 text-danger flex-shrink-0"></i>
-					<div class="small fw-medium">{{ error }}</div>
+					{{ error }}
 				</div>
 
-				<!-- Login Form -->
-				<form @submit.prevent="handleLogin">
-					<div class="form-group mb-3">
-						<label class="form-label required">{{ t("Username or Email") }}</label>
-						<div class="input-icon-wrapper">
-							<i class="ti ti-user input-icon"></i>
+				<form novalidate @submit.prevent="handleLogin">
+					<div class="ds-field login-field">
+						<label for="login-user">
+							{{ t("Username or Email") }} <span class="ds-field-req">*</span>
+						</label>
+						<div class="login-input">
+							<svg class="login-icon" viewBox="0 0 24 24" fill="none" stroke="currentColor"
+								stroke-width="1.7" aria-hidden="true">
+								<circle cx="12" cy="8" r="3.4" /><path d="M5 20c0-3.4 3.1-5.6 7-5.6s7 2.2 7 5.6" />
+							</svg>
 							<input
+								id="login-user"
 								v-model="username"
 								type="text"
-								class="form-control custom-input"
-								:placeholder="t('enter username or email…')"
+								:placeholder="t('name.surname or name@company.uz')"
 								autocomplete="username"
-								required
-								:disabled="loading || transitioning"
+								:disabled="busy"
 							/>
 						</div>
 					</div>
 
-					<div class="form-group mb-4">
-						<div class="d-flex justify-content-between align-items-center mb-1">
-							<label class="form-label required m-0">{{ t("Password") }}</label>
-						</div>
-						<div class="input-icon-wrapper">
-							<i class="ti ti-lock input-icon"></i>
+					<div class="ds-field login-field">
+						<label for="login-pass">
+							{{ t("Password") }} <span class="ds-field-req">*</span>
+						</label>
+						<div class="login-input">
+							<svg class="login-icon" viewBox="0 0 24 24" fill="none" stroke="currentColor"
+								stroke-width="1.7" aria-hidden="true">
+								<rect x="5" y="10.5" width="14" height="9.5" /><path d="M8.2 10.5V7.8a3.8 3.8 0 0 1 7.6 0v2.7" />
+							</svg>
 							<input
+								id="login-pass"
 								v-model="password"
 								:type="showPassword ? 'text' : 'password'"
-								class="form-control custom-input pe-5"
-								:placeholder="t('••••••••')"
+								:placeholder="t('enter password')"
 								autocomplete="current-password"
-								required
-								:disabled="loading || transitioning"
+								:disabled="busy"
 							/>
 							<button
 								type="button"
-								class="btn-toggle-eye"
-								tabindex="-1"
+								class="login-eye"
+								:aria-label="showPassword ? t('Hide password') : t('Show password')"
+								:aria-pressed="String(showPassword)"
+								:disabled="busy"
 								@click="showPassword = !showPassword"
 							>
-								<i :class="showPassword ? 'ti ti-eye-off' : 'ti ti-eye'"></i>
+								<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.7" aria-hidden="true">
+									<path d="M2.5 12S6 5.8 12 5.8 21.5 12 21.5 12 18 18.2 12 18.2 2.5 12 2.5 12Z" />
+									<circle cx="12" cy="12" r="2.9" />
+									<path v-if="showPassword" d="M4 20 20 4" />
+								</svg>
 							</button>
+						</div>
+						<div class="login-typed" aria-hidden="true">
+							<span class="login-typed-bars">
+								<i v-for="i in 4" :key="i" :data-on="i <= typedSegments ? '1' : null"></i>
+							</span>
+							<span class="ds-mono login-typed-txt">
+								{{ password.length ? t("password entered") : t("enter password") }}
+							</span>
 						</div>
 					</div>
 
-					<div class="d-flex align-items-center justify-content-between mb-4">
-						<label class="form-check custom-checkbox m-0">
-							<input v-model="rememberMe" type="checkbox" class="form-check-input" :disabled="loading || transitioning" />
-							<span class="form-check-label text-secondary small fw-medium">{{ t("Remember me") }}</span>
+					<div class="login-row">
+						<label class="login-remember">
+							<input v-model="rememberMe" type="checkbox" :disabled="busy" />
+							<span>{{ t("Remember me on this device") }}</span>
 						</label>
+
+						<span class="login-lang">
+							<label class="ds-label" for="login-lang">{{ t("Language") }}</label>
+							<select
+								id="login-lang"
+								class="ds-input login-lang-select"
+								:value="currentLanguage"
+								:disabled="busy"
+								@change="switchLanguage"
+							>
+								<option v-for="l in LANGUAGES" :key="l.id" :value="l.id">{{ l.label }}</option>
+							</select>
+						</span>
 					</div>
 
-					<button type="submit" class="btn btn-primary btn-submit w-100" :disabled="loading || transitioning">
-						<span v-if="loading" class="spinner-border spinner-border-sm me-2" role="status"></span>
-						<span v-else><i class="ti ti-login me-1"></i></span>
-						{{ loading ? t("Signing in…") : t("Sign In to Stabler") }}
+					<button type="submit" class="ds-btn ds-btn--primary login-submit" :disabled="busy">
+						{{ busy ? t("Signing in…") : t("Sign in") }}
 					</button>
 				</form>
 
-				<div class="login-footer text-center mt-4 pt-3 border-top border-slate">
-					<span class="small text-muted font-monospace">Stabler Platform · v0.1</span>
-				</div>
+				<footer class="login-foot">
+					<span class="ds-mono">Stabler Platform · v0.1</span>
+				</footer>
 			</div>
-		</div>
+		</main>
 	</div>
 </template>
 
-
 <style scoped>
-.login-wrapper {
+/* Görsel dil stabler-modernist.css'ten. Buradakiler bu ekrana özgü
+ * yerleşim ve tek kullanımlık parçalar (ızgara dokusu, göz butonu). */
+.login {
+	display: grid;
+	grid-template-columns: 1fr 560px;
 	min-height: 100vh;
-	width: 100%;
-	background: #0f172a; /* Deep Slate Background */
-	display: flex;
-	align-items: center;
-	justify-content: center;
-	padding: 20px;
-	position: relative;
-	overflow: hidden;
-	font-family: 'Inter', system-ui, -apple-system, sans-serif;
+	background: var(--ds-surface);
 }
 
-/* Ambient Background Glows */
-.bg-glow {
+/* ── Sol panel ─────────────────────────────────────────────────────────── */
+.login-brand {
+	position: relative;
+	display: flex;
+	flex-direction: column;
+	justify-content: space-between;
+	background: var(--ds-ink);
+	color: #fff;
+	padding: 48px 56px;
+	overflow: hidden;
+}
+
+/* Izgara dokusu tek bir tekrarlayan degrade — DOM'a yüzlerce çizgi
+ * eklemekten hem ucuz hem de ekran okuyucuya görünmez. */
+.login-grid {
 	position: absolute;
-	border-radius: 50%;
-	filter: blur(100px);
-	opacity: 0.25;
+	inset: 0;
+	background-image:
+		linear-gradient(to right, rgba(255, 255, 255, 0.05) 1px, transparent 1px),
+		linear-gradient(to bottom, rgba(255, 255, 255, 0.05) 1px, transparent 1px);
+	background-size: 56px 56px;
+	background-position: 56px 0;
 	pointer-events: none;
 }
-.bg-glow-1 {
-	top: -10%;
-	left: -10%;
-	width: 500px;
-	height: 500px;
-	background: radial-gradient(circle, #2563eb 0%, transparent 70%);
-}
-.bg-glow-2 {
-	bottom: -10%;
-	right: -10%;
-	width: 600px;
-	height: 600px;
-	background: radial-gradient(circle, #10b981 0%, transparent 70%);
+
+.login-brand-head,
+.login-pitch,
+.login-brand-foot {
+	position: relative;
 }
 
-.login-container {
-	width: 100%;
-	max-width: 440px;
-	z-index: 10;
-}
-
-/* Glassmorphism Card Styling */
-.login-card {
-	background: rgba(30, 41, 59, 0.75);
-	backdrop-filter: blur(16px);
-	-webkit-backdrop-filter: blur(16px);
-	border: 1px solid rgba(255, 255, 255, 0.1);
-	border-radius: 24px;
-	padding: 40px 36px;
-	box-shadow: 0 25px 50px -12px rgba(0, 0, 0, 0.5);
-}
-
-/* Brand Section */
-.brand-section {
-	text-align: center;
-	margin-bottom: 28px;
-}
-.brand-badge {
-	width: 64px;
-	height: 64px;
-	background: linear-gradient(135deg, rgba(37, 99, 235, 0.2), rgba(16, 185, 129, 0.2));
-	border: 1px solid rgba(147, 197, 253, 0.3);
-	border-radius: 18px;
+.login-brand-head {
 	display: flex;
 	align-items: center;
-	justify-content: center;
-	margin: 0 auto 16px;
-	box-shadow: 0 8px 16px rgba(0, 0, 0, 0.2);
-}
-.brand-title {
-	font-size: 28px;
-	font-weight: 800;
-	color: #ffffff;
-	letter-spacing: -0.02em;
-	margin-bottom: 4px;
-}
-.brand-subtitle {
-	font-size: 13px;
-	color: #94a3b8;
-	font-weight: 500;
+	gap: 14px;
 }
 
-/* Input Fields & Icons */
-.form-label {
-	font-size: 12px;
-	font-weight: 700;
-	text-transform: uppercase;
-	color: #cbd5e1;
-	letter-spacing: 0.04em;
+.login-mark {
+	width: 26px;
+	height: 26px;
+	background: var(--ds-acc);
+	display: block;
+	flex: none;
+}
+
+.login-wordmark {
+	font-family: var(--ds-font-head);
+	font-weight: 800;
+	font-size: 23px;
+	letter-spacing: -0.02em;
+}
+
+.login-brand-sep {
+	width: 1px;
+	height: 15px;
+	background: rgba(255, 255, 255, 0.25);
+	display: inline-block;
+}
+
+.login-brand .ds-label {
+	color: rgba(255, 255, 255, 0.55);
+}
+
+.login-modules {
+	color: #7aa9e0;
+}
+
+.login-pitch h1 {
+	font-family: var(--ds-font-head);
+	font-weight: 800;
+	font-size: 60px;
+	line-height: 1.0;
+	letter-spacing: -0.03em;
+	margin: 18px 0 0;
+	color: #fff;
+}
+
+.login-pitch p {
+	font-size: 16.5px;
+	line-height: 1.55;
+	color: rgba(255, 255, 255, 0.72);
+	margin: 22px 0 0;
+	max-width: 34em;
+}
+
+.login-features {
+	display: grid;
+	grid-template-columns: repeat(3, minmax(0, 1fr));
+	gap: 1px;
+	background: rgba(255, 255, 255, 0.16);
+	border: 1px solid rgba(255, 255, 255, 0.16);
+	margin-top: 40px;
+	max-width: 540px;
+}
+
+.login-feature {
+	background: var(--ds-ink);
+	padding: 16px 17px 17px;
+}
+
+.login-feature-t {
+	font-family: var(--ds-font-head);
+	font-weight: 800;
+	font-size: 15px;
 	margin-bottom: 6px;
 }
 
-.input-icon-wrapper {
-	position: relative;
+.login-brand-foot {
 	display: flex;
 	align-items: center;
+	gap: 12px;
+	color: rgba(255, 255, 255, 0.45);
 }
 
-.input-icon {
-	position: absolute;
-	left: 14px;
-	color: #64748b;
-	font-size: 18px;
-	pointer-events: none;
-}
-
-.custom-input {
-	background: rgba(15, 23, 42, 0.6) !important;
-	border: 1px solid rgba(255, 255, 255, 0.12) !important;
-	border-radius: 12px !important;
-	color: #ffffff !important;
-	padding: 12px 14px 12px 42px !important;
-	font-size: 14px !important;
-	transition: all 0.2s ease !important;
-}
-
-.custom-input:focus {
-	border-color: #3b82f6 !important;
-	box-shadow: 0 0 0 4px rgba(59, 130, 246, 0.2) !important;
-	background: rgba(15, 23, 42, 0.85) !important;
-}
-
-.custom-input::placeholder {
-	color: #64748b;
-}
-
-.btn-toggle-eye {
-	position: absolute;
-	right: 12px;
-	background: transparent;
-	border: none;
-	color: #94a3b8;
-	font-size: 18px;
-	cursor: pointer;
-	padding: 4px;
+/* ── Sağ panel ─────────────────────────────────────────────────────────── */
+.login-form-col {
 	display: flex;
 	align-items: center;
 	justify-content: center;
-	transition: color 0.2s;
-}
-.btn-toggle-eye:hover {
-	color: #ffffff;
+	padding: 40px 48px;
 }
 
-.custom-checkbox .form-check-input {
-	background-color: rgba(15, 23, 42, 0.6);
-	border-color: rgba(255, 255, 255, 0.2);
-	border-radius: 4px;
-}
-.custom-checkbox .form-check-input:checked {
-	background-color: #2563eb;
-	border-color: #2563eb;
+.login-form {
+	width: 100%;
+	max-width: 404px;
 }
 
-/* Submit Button */
-.btn-submit {
-	background: linear-gradient(135deg, #2563eb 0%, #1d4ed8 100%);
-	border: none;
-	border-radius: 12px;
-	padding: 14px;
+.login-eyebrow {
+	display: flex;
+	align-items: center;
+	gap: 14px;
+}
+
+.login-rule {
+	flex: 1;
+	height: 1px;
+	background: var(--ds-ln);
+}
+
+.login-form h2 {
+	font-family: var(--ds-font-head);
+	font-weight: 800;
+	font-size: 31px;
+	letter-spacing: -0.025em;
+	margin: 24px 0 0;
+	color: var(--ds-tx);
+}
+
+.login-lede {
+	font-size: 14px;
+	color: var(--ds-tx2);
+	margin: 10px 0 0;
+}
+
+.login-notice {
+	margin-top: 20px;
+	padding: 11px 14px;
+	font-size: 13px;
+	border: 1px solid;
+	border-left-width: 3px;
+}
+
+.login-notice[data-tone="crit"] {
+	color: var(--ds-crit-tx);
+	border-color: var(--ds-crit);
+	background: var(--ds-crit-t);
+}
+
+.login-notice[data-tone="today"] {
+	color: var(--ds-today-tx);
+	border-color: var(--ds-today);
+	background: var(--ds-today-t);
+}
+
+.login-field {
+	margin-top: 22px;
+}
+
+/* İkon ve göz butonu alanın İÇİNDE; kenarlık sarmalayıcıda, girdide değil.
+ * Böylece odak halkası tüm kutuyu çeviriyor. */
+.login-input {
+	display: flex;
+	align-items: center;
+	border: 1px solid var(--ds-ln2);
+	background: var(--ds-surface);
+}
+
+.login-input:focus-within {
+	outline: 2px solid var(--ds-acc);
+	outline-offset: -2px;
+}
+
+.login-icon {
+	width: 18px;
+	height: 18px;
+	flex: none;
+	margin: 0 10px 0 13px;
+	color: var(--ds-tx3);
+}
+
+.login-input input {
+	flex: 1;
+	min-width: 0;
+	height: 44px;
+	border: 0;
+	background: none;
+	font: inherit;
 	font-size: 15px;
-	font-weight: 700;
-	color: #ffffff;
-	letter-spacing: 0.02em;
-	box-shadow: 0 4px 14px rgba(37, 99, 235, 0.4);
-	transition: all 0.2s ease;
-}
-.btn-submit:hover:not(:disabled) {
-	background: linear-gradient(135deg, #1d4ed8 0%, #1e40af 100%);
-	box-shadow: 0 6px 20px rgba(37, 99, 235, 0.6);
-	transform: translateY(-1px);
+	color: var(--ds-tx);
+	padding: 0 4px 0 0;
 }
 
-.border-slate {
-	border-color: rgba(255, 255, 255, 0.08) !important;
+.login-input input:focus {
+	outline: none;
+}
+
+.login-input input::placeholder {
+	color: var(--ds-tx3);
+}
+
+.login-eye {
+	flex: none;
+	width: 40px;
+	height: 40px;
+	display: flex;
+	align-items: center;
+	justify-content: center;
+	border: 0;
+	background: none;
+	color: var(--ds-tx3);
+	cursor: pointer;
+}
+
+.login-eye svg {
+	width: 18px;
+	height: 18px;
+}
+
+.login-eye:hover {
+	color: var(--ds-tx2);
+}
+
+.login-typed {
+	display: flex;
+	align-items: center;
+	gap: 10px;
+	margin-top: 9px;
+}
+
+.login-typed-bars {
+	display: flex;
+	gap: 4px;
+}
+
+.login-typed-bars i {
+	width: 26px;
+	height: 3px;
+	display: block;
+	background: var(--ds-ln);
+}
+
+.login-typed-bars i[data-on="1"] {
+	background: var(--ds-acc);
+}
+
+.login-typed-txt {
+	font-size: 10.5px;
+	color: var(--ds-tx3);
+}
+
+.login-row {
+	display: flex;
+	align-items: center;
+	justify-content: space-between;
+	gap: 16px;
+	margin-top: 26px;
+}
+
+.login-remember {
+	display: flex;
+	align-items: center;
+	gap: 9px;
+	font-size: 14px;
+	color: var(--ds-tx);
+	cursor: pointer;
+}
+
+.login-remember input {
+	width: 17px;
+	height: 17px;
+	accent-color: var(--ds-acc);
+	flex: none;
+}
+
+.login-lang {
+	display: flex;
+	align-items: center;
+	gap: 9px;
+}
+
+.login-lang-select {
+	width: auto;
+	min-height: 34px;
+	padding: 5px 8px;
+	font-size: 12px;
+}
+
+.login-submit {
+	width: 100%;
+	justify-content: center;
+	min-height: 50px;
+	font-size: 16px;
+	margin-top: 24px;
+}
+
+.login-foot {
+	display: flex;
+	align-items: center;
+	justify-content: space-between;
+	margin-top: 28px;
+	padding-top: 18px;
+	border-top: 1px solid var(--ds-ln);
+	font-size: 10.5px;
+	color: var(--ds-tx3);
+}
+
+/* ── Dar ekran: marka paneli kısalır, form altına iner ─────────────────── */
+@media (max-width: 992px) {
+	.login {
+		grid-template-columns: 1fr;
+	}
+
+	.login-brand {
+		padding: 32px 28px 36px;
+	}
+
+	.login-pitch h1 {
+		font-size: 38px;
+	}
+
+	.login-features {
+		grid-template-columns: 1fr;
+		margin-top: 26px;
+	}
+
+	.login-brand-foot {
+		display: none;
+	}
+
+	.login-form-col {
+		padding: 32px 28px 44px;
+	}
 }
 </style>

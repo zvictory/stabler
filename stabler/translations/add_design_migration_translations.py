@@ -280,6 +280,71 @@ ROWS = {
 		"Yuborildi va yutqazildi — taklif berilgan edi, natija boshqacha chiqdi.",
 		"Юборилди ва ютқазилди — таклиф берилган эди, натижа бошқача чиқди.",
 	),
+	# ══ Login ekranı ══════════════════════════════════════════════════
+	"Sign in": ("Oturum aç", "Вход", "Kirish", "Кириш"),
+	"Sign in to your account": (
+		"Hesabınıza girin", "Войдите в аккаунт",
+		"Hisobingizga kiring", "Ҳисобингизга киринг",
+	),
+	"Signing in…": ("Giriş yapılıyor…", "Выполняется вход…", "Kirilmoqda…", "Кирилмоқда…"),
+	"No account? Ask your system administrator for an invite.": (
+		"Hesabınız yoksa sistem yöneticinizden davet isteyin.",
+		"Нет аккаунта? Запросите приглашение у системного администратора.",
+		"Hisobingiz yo'q bo'lsa, tizim administratoridan taklif so'rang.",
+		"Ҳисобингиз йўқ бўлса, тизим администраторидан таклиф сўранг.",
+	),
+	"Username or Email": (
+		"Kullanıcı adı veya e-posta", "Имя пользователя или e-mail",
+		"Foydalanuvchi nomi yoki e-pochta", "Фойдаланувчи номи ёки е-почта",
+	),
+	"Password": ("Şifre", "Пароль", "Parol", "Парол"),
+	"name.surname or name@company.uz": (
+		"ad.soyad ya da ad@sirket.uz", "имя.фамилия или имя@company.uz",
+		"ism.familiya yoki ism@kompaniya.uz", "исм.фамилия ёки исм@компания.uz",
+	),
+	"enter password": ("şifre girin", "введите пароль", "parolni kiriting", "паролни киритинг"),
+	"password entered": ("şifre girildi", "пароль введён", "parol kiritildi", "парол киритилди"),
+	"Show password": ("Şifreyi göster", "Показать пароль", "Parolni ko'rsatish", "Паролни кўрсатиш"),
+	"Hide password": ("Şifreyi gizle", "Скрыть пароль", "Parolni yashirish", "Паролни яшириш"),
+	"Remember me on this device": (
+		"Bu cihazda hatırla", "Запомнить на этом устройстве",
+		"Bu qurilmada eslab qol", "Бу қурилмада эслаб қол",
+	),
+	"Please enter both username/email and password.": (
+		"Lütfen kullanıcı adı/e-posta ve şifreyi girin.",
+		"Введите имя пользователя/e-mail и пароль.",
+		"Foydalanuvchi nomi/e-pochta va parolni kiriting.",
+		"Фойдаланувчи номи/е-почта ва паролни киритинг.",
+	),
+	"Invalid username or password.": (
+		"Kullanıcı adı veya şifre hatalı.",
+		"Неверное имя пользователя или пароль.",
+		"Foydalanuvchi nomi yoki parol noto'g'ri.",
+		"Фойдаланувчи номи ёки парол нотўғри.",
+	),
+	# Sol panel — marka metni
+	"ERP Platform": ("ERP Platformu", "ERP-платформа", "ERP Platforma", "ERP Платформа"),
+	"Sales · Purchasing · Warehouse · Production · Finance": (
+		"Satış · Satınalma · Depo · Üretim · Finans",
+		"Продажи · Закупки · Склад · Производство · Финансы",
+		"Sotuv · Xarid · Ombor · Ishlab chiqarish · Moliya",
+		"Сотув · Харид · Омбор · Ишлаб чиқариш · Молия",
+	),
+	"One business,": ("Tüm işletme,", "Весь бизнес —", "Butun biznes,", "Бутун бизнес,"),
+	"one record.": ("tek kayıt.", "одна запись.", "bitta yozuv.", "битта ёзув."),
+	"Orders, stock, purchasing, production and accounting run on one data model. Every number on screen has a document behind it.": (
+		"Sipariş, stok, satınalma, üretim ve muhasebe tek veri modelinde çalışır. Ekranda gördüğünüz her sayının arkasında bir belge kaydı vardır.",
+		"Заказы, склад, закупки, производство и учёт работают на одной модели данных. За каждым числом на экране стоит документ.",
+		"Buyurtma, ombor, xarid, ishlab chiqarish va hisob bitta ma'lumot modelida ishlaydi. Ekrandagi har bir raqam ortida hujjat bor.",
+		"Буюртма, омбор, харид, ишлаб чиқариш ва ҳисоб битта маълумот моделида ишлайди. Экрандаги ҳар бир рақам ортида ҳужжат бор.",
+	),
+	"One data model": ("Tek veri modeli", "Одна модель данных", "Bitta ma'lumot modeli", "Битта маълумот модели"),
+	"tied to a document": ("belgeye bağlı", "привязано к документу", "hujjatga bog'langan", "ҳужжатга боғланган"),
+	"Role-based access": ("Rol bazlı erişim", "Доступ по ролям", "Rol asosidagi kirish", "Рол асосидаги кириш"),
+	"permission checked": ("yetki denetimi", "проверка прав", "ruxsat tekshiruvi", "рухсат текшируви"),
+	"Audit trail": ("Denetim izi", "Журнал аудита", "Audit izi", "Аудит изи"),
+	"every action recorded": ("her işlem kayıtlı", "каждое действие записано", "har amal qayd etilgan", "ҳар амал қайд этилган"),
+	"Language": ("Dil", "Язык", "Til", "Тил"),
 }
 
 LANGS = {"en": None, "tr": 0, "ru": 1, "uz": 2, "uzc": 3}

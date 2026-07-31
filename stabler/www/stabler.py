@@ -11,6 +11,11 @@ from urllib.parse import quote_plus
 import frappe
 import frappe.sessions
 
+#: Login ekranında seçilebilen diller. translations/ altındaki csv'lerle
+#: birebir aynı olmalı; buraya olmayan bir dil eklemek sessizce İngilizce'ye
+#: düşen bir seçenek üretir.
+SUPPORTED_LANGUAGES = ("en", "ru", "tr", "uz", "uzc")
+
 no_cache = 1
 no_sitemap = 1
 
@@ -41,6 +46,16 @@ def get_context(context):
 		context.user_language = user_doc.language or context.user_language
 	except Exception:
 		pass
+
+	# Login ekranı için dil seçimi. Frappe'nin kendi çerezine güvenmek yerine
+	# açık bir ?lang= parametresi: adı ve davranışı bizim kontrolümüzde,
+	# beyaz liste dışına çıkamaz. YALNIZCA giriş yapmamış kullanıcıya uygulanır
+	# — oturum açan kişinin dili kendi User kaydından gelir ve URL'deki bir
+	# parametre onu ezmemeli.
+	if user == "Guest":
+		requested = (frappe.form_dict.get("lang") or "").strip()
+		if requested in SUPPORTED_LANGUAGES:
+			context.user_language = requested
 
 	context.default_company = frappe.db.get_single_value("Global Defaults", "default_company") or ""
 	context.companies = _list_companies()
