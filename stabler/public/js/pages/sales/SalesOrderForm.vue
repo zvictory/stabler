@@ -16,6 +16,7 @@ import Select from "../../components/Select.vue";
 import RelatedDocuments from "../../components/RelatedDocuments.vue";
 import FormPage from "../../components/form/FormPage.vue";
 import LineItemsEditor from "../../components/LineItemsEditor.vue";
+import SalesOrderLines from "./SalesOrderLines.vue";
 import MoneyInput from "../../components/MoneyInput.vue";
 import { useDocumentForm } from "../../composables/useDocumentForm.js";
 
@@ -108,6 +109,46 @@ const sectionsDone = computed(() => {
 	];
 });
 const stepsDone = computed(() => sectionsDone.value.filter(Boolean).length);
+
+const itemsSummaryLabel = computed(() => {
+	const lines = (form.value?.items || []).filter((l) => l.item_code);
+	const byUom = new Map();
+	for (const l of lines) {
+		const u = l.stock_uom || l.uom || "";
+		byUom.set(u, (byUom.get(u) || 0) + (Number(l.qty) || 0) * (Number(l.conversion_factor) || 1));
+	}
+	const qty = [...byUom].map(([u, q]) => `${Number(q.toFixed(2))} ${u}`).join(" · ");
+	const n = `${lines.length} ${lines.length === 1 ? t("item") : t("items")}`;
+	return qty ? `${n} · ${qty}` : n;
+});
+
+function removeLine(index) {
+	form.value.items.splice(index, 1);
+	if (!form.value.items.length) form.value.items.push(blankLine(form.value.set_warehouse));
+}
+
+/* Sağ raydaki rezerv listesi: satır verisinden TÜRETİLİR, ayrı bir çağrı yok.
+ * availability zaten satır başına yükleniyor; burada sadece okunuyor. */
+const reserveRows = computed(() =>
+	(form.value?.items || [])
+		.filter((l) => l.item_code)
+		.map((l) => {
+			const need = (Number(l.qty) || 0) * (Number(l.conversion_factor) || 1);
+			const free = Number(l.availability?.free ?? 0);
+			return {
+				code: l.item_code,
+				name: l.item_name || l.item_code,
+				uom: l.stock_uom || l.uom || "",
+				need: Number(need.toFixed(2)),
+				free,
+				known: Boolean(l.availability),
+				short: Boolean(l.availability) && need > free,
+			};
+		})
+);
+const allReservable = computed(
+	() => reserveRows.value.length > 0 && reserveRows.value.every((r) => r.known && !r.short)
+);
 
 function blankLine(defaultWh = null) {
 	return {
@@ -865,6 +906,8 @@ async function closeSalesOrder() {
 			<span>{{ t("From tender deal") }}: <strong>{{ form.crm_deal }}</strong></span>
 		</div>
 
+		<div class="so-grid">
+		<div class="so-main">
 		<!-- 1 · Taraflar ve koşullar -->
 		<section class="ds-form-section">
 			<div class="ds-form-section-head">
@@ -1033,16 +1076,31 @@ async function closeSalesOrder() {
 
 		<!-- 2 · Kalemler -->
 		<section class="ds-form-section">
-		<div class="ds-form-section-head">
-			<span class="ds-label">2 · {{ t("Items") }}</span>
-			<div class="form-check form-switch mb-0">
-				<input class="form-check-input" type="checkbox" id="soShowDisc" v-model="showDiscounts" />
-				<label class="form-check-label small text-secondary" for="soShowDisc">{{ t("Show discounts") }}</label>
+			<div class="ds-form-section-head">
+				<span class="ds-label">2 · {{ t("Items") }}</span>
+				<span class="so-head-right">
+					<span class="ds-label">{{ itemsSummaryLabel }}</span>
+					<button type="button" class="ds-btn so-disc-btn" @click="showDiscounts = !showDiscounts">
+						{{ t("Discount column") }}
+					</button>
+				</span>
 			</div>
-		</div>
+
+			<SalesOrderLines
+				v-if="editable"
+				:items="form.items"
+				:editable="editable"
+				:currency="form.currency || currency"
+				:language="user.language"
+				:search-items="searchItems"
+				:blank-line="() => blankLine(form.set_warehouse)"
+				:show-discounts="showDiscounts"
+				@pick-item="handlePickItem"
+				@remove="removeLine"
+			/>
 
 		<LineItemsEditor
-			v-if="form"
+			v-if="form && !editable"
 			:items="form.items"
 			:editable="editable"
 			:currency="form.currency || currency"
@@ -1130,9 +1188,25 @@ async function closeSalesOrder() {
 
 		</section>
 
-		<!-- Özet: tasarımda sağ sütunda duruyor, kalemlerin yanında. -->
-		<div v-if="editable" class="so-summary-wrap">
-			<section class="ds-panel so-summary">
+
+		<!-- 3 · Teslim ve not -->
+		<section class="ds-form-section">
+			<div class="ds-form-section-head">
+				<span class="ds-label">3 · {{ t("Delivery and notes") }}</span>
+				<span class="ds-label">{{ sectionsDone[2] ? t("complete") : t("optional") }}</span>
+			</div>
+		<div class="ds-form-body">
+			<label class="form-label">{{ t("Terms / remarks") }}</label>
+			<textarea v-if="editable" v-model="form.remarks" class="form-control" rows="2"></textarea>
+			<div v-else class="form-control-plaintext py-1">{{ form.remarks || "—" }}</div>
+		</div>
+		</section>
+		</div>
+
+		<!-- Sağ ray: özet, stok rezervi ve aksiyonlar. Tasarımda bunlar
+		     kalemlerin YANINDA duruyor — toplam ve "onayla" aynı bakışta. -->
+		<aside v-if="editable" class="so-rail">
+			<section class="ds-panel">
 				<div class="ds-panel-head"><h3>{{ t("Summary") }}</h3></div>
 				<div class="ds-summary-row">
 					<span>{{ t("Subtotal") }}</span>
@@ -1147,24 +1221,35 @@ async function closeSalesOrder() {
 					<span class="ds-num">{{ formatMoney(grandTotal, form.currency || currency, user.language) }}</span>
 				</div>
 				<div v-if="isForeignCurrency" class="ds-panel-foot">
-					<span>{{ t("in company currency") }}</span>
-					<span class="ds-mono">≈ {{ formatMoney(grandTotalBase, currency, user.language) }}</span>
+					<span class="ds-mono">{{ t("rate") }} {{ displayExchangeRate }}</span>
+					<span>≈ {{ formatMoney(grandTotalBase, currency, user.language) }}</span>
 				</div>
 			</section>
+
+			<!-- Stok rezervi: satır verisinden türetiliyor, ek çağrı yok. -->
+			<section v-if="reserveRows.length" class="ds-panel">
+				<div class="ds-panel-head">
+					<h3>{{ t("Stock reservation") }}</h3>
+					<span class="ds-label">{{ allReservable ? t("all reservable") : t("check lines") }}</span>
+				</div>
+				<div v-for="r in reserveRows" :key="r.code" class="so-res">
+					<div class="so-res-head">
+						<span><strong class="ds-mono so-res-code">{{ r.code }}</strong> — {{ r.name }}</span>
+						<span class="ds-mono so-res-state" :data-short="r.short ? '1' : null">
+							{{ !r.known ? t("checking…") : r.short ? t("not enough") : t("will be reserved") }}
+						</span>
+					</div>
+					<div class="ds-mono so-res-meta">
+						{{ r.need }} {{ r.uom }} {{ t("needed") }} · {{ Number(r.free).toLocaleString() }} {{ r.uom }} {{ t("available") }}
+					</div>
+				</div>
+				<p class="so-res-note">
+					{{ t("On approval these quantities are reserved in the warehouse and cannot be given to another order.") }}
+				</p>
+			</section>
+		</aside>
 		</div>
 
-		<!-- 3 · Teslim ve not -->
-		<section class="ds-form-section">
-			<div class="ds-form-section-head">
-				<span class="ds-label">3 · {{ t("Delivery and notes") }}</span>
-				<span class="ds-label">{{ sectionsDone[2] ? t("complete") : t("optional") }}</span>
-			</div>
-		<div class="ds-form-body">
-			<label class="form-label">{{ t("Terms / remarks") }}</label>
-			<textarea v-if="editable" v-model="form.remarks" class="form-control" rows="2"></textarea>
-			<div v-else class="form-control-plaintext py-1">{{ form.remarks || "—" }}</div>
-		</div>
-		</section>
 
 		<RelatedDocuments v-if="!isCreate && form" doctype="Sales Order" :name="docName" />
 
@@ -1399,20 +1484,89 @@ async function closeSalesOrder() {
 }
 
 /* Özet tasarımda sağda; dar ekranda kalemlerin altına iner. */
-.so-summary-wrap {
-	display: flex;
-	justify-content: flex-end;
-	margin-top: 14px;
+
+/* ── İki sütun: bölümler solda, özet+rezerv+aksiyon sağ rayda ─────────── */
+.so-grid {
+	display: grid;
+	grid-template-columns: minmax(0, 1fr) 344px;
+	gap: 14px;
+	align-items: start;
 }
 
-.so-summary {
-	width: 330px;
-	max-width: 100%;
+.so-main {
+	display: grid;
+	gap: 14px;
+	min-width: 0;
 }
 
-@media (max-width: 768px) {
-	.so-summary {
-		width: 100%;
+.so-rail {
+	display: grid;
+	gap: 14px;
+	position: sticky;
+	top: 14px;
+}
+
+@media (max-width: 1200px) {
+	.so-grid {
+		grid-template-columns: 1fr;
 	}
+
+	.so-rail {
+		position: static;
+	}
+}
+
+.so-head-right {
+	display: inline-flex;
+	align-items: center;
+	gap: 12px;
+}
+
+.so-disc-btn {
+	min-height: 34px;
+	padding: 6px 12px;
+	font-size: 13px;
+}
+
+/* ── Stok rezervi satırı ──────────────────────────────────────────────── */
+.so-res {
+	padding: 11px var(--ds-pad);
+	border-bottom: 1px solid var(--ds-ln);
+}
+
+.so-res-head {
+	display: flex;
+	align-items: baseline;
+	justify-content: space-between;
+	gap: 10px;
+	font-size: 13px;
+}
+
+.so-res-code {
+	font-size: 12.5px;
+}
+
+/* Yeşil "rezerve edilecek" bir SÖZ. Stok yetmiyorsa o sözü vermemeli. */
+.so-res-state {
+	font-size: 11px;
+	color: var(--ds-ok);
+	white-space: nowrap;
+}
+
+.so-res-state[data-short="1"] {
+	color: var(--ds-crit-tx);
+}
+
+.so-res-meta {
+	font-size: 11px;
+	color: var(--ds-tx3);
+	margin-top: 3px;
+}
+
+.so-res-note {
+	padding: 12px var(--ds-pad) 16px;
+	margin: 0;
+	font-size: 13px;
+	color: var(--ds-tx2);
 }
 </style>
