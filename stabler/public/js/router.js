@@ -46,6 +46,7 @@ import DeclarantQueue from "./pages/tender/DeclarantQueue.vue";
 import LogistBoard from "./pages/tender/LogistBoard.vue";
 import MyTenders from "./pages/tender/MyTenders.vue";
 import DirectorBoard from "./pages/tender/DirectorBoard.vue";
+import OperationsDesk from "./pages/tender/OperationsDesk.vue";
 import TenderCrm from "./pages/tender/TenderCrm.vue";
 import SalesInvoices from "./pages/sales/SalesInvoices.vue";
 import DeliveryNotes from "./pages/sales/DeliveryNotes.vue";
@@ -258,6 +259,7 @@ const routes = [
 	{ path: "/reports/payments-register", name: "report-payments-register", component: ReportPaymentsRegister, meta: { title: t("Payments Register"), module: "money" } },
 	{ path: "/profile", name: "profile", component: Profile, meta: { title: t("Profile") } },
 	{ path: "/pos", name: "pos", component: POS, meta: { title: t("POS"), module: "sales" } },
+	{ path: "/tender/desk", name: "tender-desk", component: OperationsDesk, meta: { title: t("Operations desk"), module: "tender" } },
 	{ path: "/manufacturing/line", name: "manufacturing-line", component: ManufacturingOperatorBoard, meta: { title: t("Operator Kiosk") } },
 	{ path: "/tender/board", name: "tender-board", component: SalesOrderBoard, meta: { title: t("Contract board"), module: "tender" } },
 	{ path: "/tender/crm", name: "tender-crm", component: TenderCrm, meta: { title: t("Tender CRM"), module: "tender" } },

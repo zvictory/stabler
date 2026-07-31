@@ -61,6 +61,46 @@ class TestTenderSidebarNavigation(unittest.TestCase):
 			router,
 		)
 
+	def test_operations_desk_route_is_registered_module_gated_and_resolvable(self):
+		"""Rota kaydı olmadan ekran ölü kod: `api/tender_desk.py` prod'da canlıydı
+		ama ona giden `/tender/desk` rotası hiçbir commit'te yoktu — yalnız bir
+		oturumun commit'lenmemiş `router.js`'inde duruyordu, yani ilk temiz
+		deploy'da sessizce kaybolurdu.
+
+		`module: "tender"` ayrı bir iddia: onsuz rota koruyucusu doğrudan URL
+		erişimini engelleyemez (CLAUDE.md, modül erişim kuralı).
+
+		Bileşen dosyasının varlığı üçüncüsü. Temiz klonda yalnız takip edilen
+		dosyalar bulunur, dolayısıyla bu satır "rota, hiçbir commit'te olmayan
+		bir bileşene bağlanmış" durumunu yakalar — aynı `router.js` içinde
+		untracked `TransporterCenter.vue`'ye giden ikinci bir rota tam olarak
+		bu hâldeydi."""
+		with open(_ROUTER, encoding="utf-8") as source:
+			router = source.read()
+		self.assertIn('import OperationsDesk from "./pages/tender/OperationsDesk.vue";', router)
+		route = next((line for line in router.splitlines() if '"/tender/desk"' in line), "")
+		self.assertIn('name: "tender-desk"', route)
+		self.assertIn("component: OperationsDesk", route)
+		self.assertIn('module: "tender"', route)
+		self.assertTrue(
+			os.path.exists(
+				os.path.normpath(
+					os.path.join(_HERE, "..", "public", "js", "pages", "tender", "OperationsDesk.vue")
+				)
+			),
+			"rota OperationsDesk.vue'ye bağlanıyor ama dosya depoda yok",
+		)
+
+	def test_operations_desk_is_listed_for_every_tender_view(self):
+		"""Dört görünümün dördü de ayrı satır: kenar çubuğu rol filtresi
+		`item.view`e bakıyor, tek satır yalnız o rolde görünürdü. Yol dedupe'u
+		filtreden sonra çalıştığı için dört satır kullanıcıya tek girdi olur."""
+		for view in ("director", "sourcing", "declarant", "logist"):
+			self.assertIn(
+				f'{{ view: "{view}", path: "/tender/desk", label: t("Operations desk") }}',
+				self.sidebar,
+			)
+
 	def test_tender_subnav_keeps_overview_first_and_restores_director_portfolio(self):
 		with open(_TENDER_NAV, encoding="utf-8") as source:
 			nav = source.read()

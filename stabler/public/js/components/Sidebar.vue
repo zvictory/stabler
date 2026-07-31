@@ -48,6 +48,10 @@ const tenderChildren = computed(() => {
 	// deduping the raw list would drop the row for a sourcing-only user.
 	const seen = new Set();
 	return [
+		{ view: "director", path: "/tender/desk", label: t("Operations desk") },
+		{ view: "sourcing", path: "/tender/desk", label: t("Operations desk") },
+		{ view: "declarant", path: "/tender/desk", label: t("Operations desk") },
+		{ view: "logist", path: "/tender/desk", label: t("Operations desk") },
 		{ view: "director", path: "/tender/director", label: t("Control Tower") },
 		{ view: "director", path: "/tender/crm", label: t("Tender CRM") },
 		{ view: "sourcing", path: "/tender/crm", label: t("Tender CRM") },
