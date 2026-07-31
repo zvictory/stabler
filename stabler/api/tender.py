@@ -2285,6 +2285,161 @@ def tender_funnel(company: str, days: int = 90):
 	return out
 
 
+@frappe.whitelist()
+def crm_board(company: str) -> dict:
+	"""Fetch all CRM deals (tenders) for a company structured into 6 Kanban lanes.
+
+	Lanes:
+	- seen: Intake / New
+	- go: GO Decision
+	- sourcing: Sourcing / Quotations
+	- priced: Bid Pricing
+	- submitted: Bid Submitted
+	- won: Won
+	- lost: Lost
+
+	Returns: {"lanes": [...], "cards": [...]}
+	"""
+	from stabler.api import _funnel
+
+	_require_tender(company)
+	_assert_company_scope(company)
+	_require_company(company)
+
+	lanes = [
+		{"id": "seen", "label": _("Intake"), "color": "#6c757d"},
+		{"id": "go", "label": _("GO Decision"), "color": "#206bc4"},
+		{"id": "sourcing", "label": _("Sourcing"), "color": "#f59f00"},
+		{"id": "priced", "label": _("Bid Pricing"), "color": "#4299e1"},
+		{"id": "submitted", "label": _("Submitted"), "color": "#ae3ec9"},
+		{"id": "won", "label": _("Won"), "color": "#2fb344"},
+		{"id": "lost", "label": _("Lost"), "color": "#d63939"},
+	]
+
+	deal_names = _tender_deal_names(company)
+	if not deal_names and frappe.db.exists("DocType", "CRM Deal"):
+		for r in frappe.get_list("CRM Deal", filters={"company": company}, fields=["name"], limit_page_length=5000):
+			deal_names.add(r["name"])
+
+	if not deal_names:
+		return {"lanes": lanes, "cards": []}
+
+	# Quotation counts per deal
+	sq_counts: dict[str, int] = {}
+	country_counts: dict[str, int] = {}
+	if frappe.db.has_column("Supplier Quotation", "custom_crm_deal"):
+		sqs = frappe.get_all(
+			"Supplier Quotation",
+			filters={"company": company, "custom_crm_deal": ["is", "set"], "docstatus": ["<", 2]},
+			fields=["custom_crm_deal", "supplier"],
+			limit_page_length=0,
+		)
+		suppliers_by_deal: dict[str, set[str]] = {}
+		for r in sqs:
+			d = r["custom_crm_deal"]
+			sq_counts[d] = sq_counts.get(d, 0) + 1
+			if r.get("supplier"):
+				suppliers_by_deal.setdefault(d, set()).add(r["supplier"])
+
+		all_suppliers = list({s for supps in suppliers_by_deal.values() for s in supps})
+		supp_country = {}
+		if all_suppliers:
+			for s in frappe.get_all("Supplier", filters={"name": ["in", all_suppliers]}, fields=["name", "country"]):
+				supp_country[s["name"]] = s.get("country") or ""
+		for d, supps in suppliers_by_deal.items():
+			c_set = {supp_country[s] for s in supps if supp_country.get(s)}
+			country_counts[d] = len(c_set)
+
+	has_pricing_col = frappe.db.has_column("CRM Deal", "custom_bid_pricing")
+	has_stage_col = frappe.db.has_column("CRM Deal", "custom_tender_stage")
+	base_ccy = frappe.get_cached_value("Company", company, "default_currency")
+
+	cards = []
+	for deal in sorted(deal_names):
+		if not frappe.has_permission("CRM Deal", "read", doc=deal):
+			continue
+
+		intake = _read_intake(deal)
+		has_pricing = bool(has_pricing_col and frappe.db.get_value("CRM Deal", deal, "custom_bid_pricing"))
+
+		custom_stage = frappe.db.get_value("CRM Deal", deal, "custom_tender_stage") if has_stage_col else None
+		classified = _funnel.classify({
+			"go_no_go": intake.get("go_no_go"),
+			"result": intake.get("result"),
+			"submitted": _has_submission_evidence(intake),
+			"has_pricing": has_pricing,
+			"sq_count": sq_counts.get(deal, 0),
+		})
+		eff_stage = custom_stage or classified
+
+		owner = frappe.db.get_value("CRM Deal", deal, "owner") or ""
+		owner_name = frappe.db.get_value("User", owner, "full_name") or owner if owner else ""
+		owner_initials = "".join([p[0].upper() for p in owner_name.split()[:2]]) if owner_name else "?"
+
+		deadline_info = _deal_deadlines(deal, company, intake)
+		deadline = deadline_info.get("deadline")
+		risk = deadline_info.get("risk", "good")
+
+		value = flt(intake.get("contract_value") or intake.get("budget"))
+		if not value and frappe.db.has_column("CRM Deal", "annual_revenue"):
+			value = flt(frappe.db.get_value("CRM Deal", deal, "annual_revenue"))
+
+		docs = intake.get("documents") or []
+		doc_progress = round((len([d for d in docs if d.get("status") == "ready"]) / max(1, len(docs))) * 100) if docs else 50
+
+		cards.append({
+			"name": deal,
+			"label": _deal_label(deal),
+			"organization": frappe.db.get_value("CRM Deal", deal, "organization") or "",
+			"lead_name": frappe.db.get_value("CRM Deal", deal, "lead_name") or "",
+			"stage": eff_stage,
+			"contract_value": value,
+			"currency": base_ccy,
+			"sq_count": sq_counts.get(deal, 0),
+			"country_count": country_counts.get(deal, 0),
+			"has_min_5": sq_counts.get(deal, 0) >= 5,
+			"has_2_countries": country_counts.get(deal, 0) >= 2,
+			"deadline": str(deadline) if deadline else "",
+			"risk": risk,
+			"doc_progress": doc_progress,
+			"owner": owner,
+			"owner_name": owner_name,
+			"owner_initials": owner_initials,
+		})
+
+	return {"lanes": lanes, "cards": cards}
+
+
+@frappe.whitelist()
+def move_deal_stage(name: str, stage: str) -> dict:
+	"""Persist a stage move on a CRM Deal (drag-and-drop)."""
+	if not name or not frappe.db.exists("CRM Deal", name):
+		frappe.throw(_("Unknown deal: {0}").format(name))
+	company = frappe.db.get_value("CRM Deal", name, "company")
+	if company:
+		_assert_company_scope(company)
+		_require_tender(company)
+	if not frappe.has_permission("CRM Deal", "write", doc=name):
+		frappe.throw(_("Not permitted"), frappe.PermissionError)
+
+	if frappe.db.has_column("CRM Deal", "custom_tender_stage"):
+		frappe.db.set_value("CRM Deal", name, "custom_tender_stage", stage)
+
+	if frappe.db.has_column("CRM Deal", "custom_tender_intake"):
+		raw = frappe.db.get_value("CRM Deal", name, "custom_tender_intake")
+		intake = _parse_intake(raw) if raw else {}
+		if stage in ("won", "lost"):
+			intake["result"] = stage
+		elif stage == "go":
+			intake["go_no_go"] = "go"
+		elif stage == "submitted":
+			intake["submitted_at"] = str(frappe.utils.now())
+		frappe.db.set_value("CRM Deal", name, "custom_tender_intake", json.dumps(intake, ensure_ascii=False), update_modified=False)
+
+	frappe.db.commit()
+	return {"name": name, "stage": stage}
+
+
 # --------------------------------------------------------------------------- #
 # Tender operations centre — compact, role-adaptive aggregate feed for the SPA
 # dashboard. Detail pages remain the source of record; this endpoint only

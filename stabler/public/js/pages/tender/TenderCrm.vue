@@ -5,421 +5,549 @@ import { useRoute, useRouter } from "vue-router";
 import { call } from "../../api/client.js";
 import { formatDate } from "../../composables/date.js";
 import { formatMoney } from "../../composables/money.js";
-import {
-	createLatestRequestGuard,
-	groupTenderMasters,
-	normalizeTenderMaster,
-	tenderMasterListParams,
-} from "../../composables/tenderMaster.js";
 import { getStatusBadgeClass } from "../../composables/status.js";
 import { t } from "../../composables/i18n.js";
 import { useToast } from "../../composables/useToast.js";
 import { useSession } from "../../stores/session.js";
 import EmptyState from "../../components/EmptyState.vue";
 import SkeletonRows from "../../components/SkeletonRows.vue";
+import TenderNav from "./TenderNav.vue";
 
 const session = useSession();
-const { activeCompany, user } = storeToRefs(session);
+const { activeCompany, user, currency } = storeToRefs(session);
 const router = useRouter();
 const route = useRoute();
 const toast = useToast();
 
 const loading = ref(false);
-const detailLoading = ref(false);
-const mode = ref("kanban");
-const depth = ref("tender");
-const records = ref([]);
-const selected = ref(null);
-const lots = ref([]);
-const orphanLots = ref([]);
-const orphanCount = ref(0);
-const showOrphanLots = ref(false);
-const listRequestGuard = createLatestRequestGuard();
-const detailRequestGuard = createLatestRequestGuard();
-const orphanRequestGuard = createLatestRequestGuard();
+const viewMode = ref("kanban"); // 'kanban' | 'list'
+const searchQuery = ref("");
+const lanes = ref([]);
+const cards = ref([]);
 
-const groups = computed(() => groupTenderMasters(records.value));
-const hasDocumentReadiness = computed(() =>
-	records.value.some((record) => record.documentReadiness !== undefined)
-);
-const currency = (record) =>
-	record.currency || session.companyMeta?.(activeCompany.value)?.default_currency || "";
-const money = (value, record) => formatMoney(value, currency(record), user.value.language);
+// Selected deal drawer
+const drawerOpen = ref(false);
+const selectedDeal = ref(null);
+const dealDetailLoading = ref(false);
+const dealLots = ref([]);
+const dealQuotations = ref(null);
 
-function isTenderMasterCompanyCurrent(requestCompany, currentCompany) {
-	return requestCompany === currentCompany;
-}
+// Drag and drop state
+const dragCardName = ref("");
+const dragOverLane = ref("");
 
 async function load() {
-	const requestCompany = activeCompany.value;
-	const request = listRequestGuard.start();
-	if (!requestCompany) {
-		records.value = [];
-		return;
-	}
+	if (!activeCompany.value) return;
 	loading.value = true;
 	try {
-		const response = await call("stabler.api.tender_master.list_tender_masters", {
-			company: requestCompany,
-			...tenderMasterListParams(route.query),
-		});
-		if (
-			!listRequestGuard.isLatest(request) ||
-			!isTenderMasterCompanyCurrent(requestCompany, activeCompany.value)
-		)
-			return;
-		records.value = (response?.records || []).map(normalizeTenderMaster);
-	} catch (error) {
-		if (
-			!listRequestGuard.isLatest(request) ||
-			!isTenderMasterCompanyCurrent(requestCompany, activeCompany.value)
-		)
-			return;
-		records.value = [];
-		toast.error(error?.message || t("Could not load tenders."));
+		const res = await call("stabler.api.tender.crm_board", { company: activeCompany.value });
+		lanes.value = res?.lanes || [];
+		cards.value = res?.cards || [];
+	} catch (err) {
+		toast.error(err?.message || t("Could not load Tender CRM."));
 	} finally {
-		if (
-			listRequestGuard.isLatest(request) &&
-			isTenderMasterCompanyCurrent(requestCompany, activeCompany.value)
-		)
-			loading.value = false;
+		loading.value = false;
 	}
 }
 
-/**
- * The lots no tender on this board can account for.
- *
- * The lanes are derived from the lots reachable through a parent, so a parentless
- * lot is not "somewhere else" on the board — it is nowhere, and the portfolio just
- * reads low. Guessing a parent for it would be worse than showing the gap, so the
- * gap is what gets shown.
- */
-async function loadOrphanLots() {
-	const requestCompany = activeCompany.value;
-	const request = orphanRequestGuard.start();
-	orphanCount.value = 0;
-	orphanLots.value = [];
-	showOrphanLots.value = false;
-	if (!requestCompany) return;
+onMounted(load);
+watch(activeCompany, load);
+
+const filteredCards = computed(() => {
+	let list = cards.value || [];
+	if (searchQuery.value.trim()) {
+		const q = searchQuery.value.trim().toLowerCase();
+		list = list.filter(
+			(c) =>
+				c.name.toLowerCase().includes(q) ||
+				(c.label || "").toLowerCase().includes(q) ||
+				(c.organization || "").toLowerCase().includes(q) ||
+				(c.lead_name || "").toLowerCase().includes(q)
+		);
+	}
+	return list;
+});
+
+const cardsByLane = computed(() => {
+	const map = {};
+	for (const l of lanes.value) map[l.id] = [];
+	for (const c of filteredCards.value) {
+		const laneId = c.stage || "seen";
+		(map[laneId] || (map[laneId] = [])).push(c);
+	}
+	return map;
+});
+
+const laneTotal = (laneId) =>
+	(cardsByLane.value[laneId] || []).reduce((sum, c) => sum + (c.contract_value || 0), 0);
+
+// Drag and drop handlers
+function onCardDragStart(cardName, e) {
+	dragCardName.value = cardName;
+	e.dataTransfer.effectAllowed = "move";
+}
+
+async function onDrop(targetLaneId) {
+	dragOverLane.value = "";
+	const name = dragCardName.value;
+	dragCardName.value = "";
+	if (!name) return;
+
+	const card = cards.value.find((c) => c.name === name);
+	if (!card || card.stage === targetLaneId) return;
+
+	const prevStage = card.stage;
+	card.stage = targetLaneId; // Optimistic update
+
 	try {
-		const response = await call("stabler.api.tender_master.orphan_tender_lots", {
-			company: requestCompany,
-		});
-		if (
-			!orphanRequestGuard.isLatest(request) ||
-			!isTenderMasterCompanyCurrent(requestCompany, activeCompany.value)
-		)
-			return;
-		orphanCount.value = response?.count || 0;
-		orphanLots.value = response?.lots || [];
+		await call("stabler.api.tender.move_deal_stage", { name, stage: targetLaneId });
+		toast.success(t("Moved to {0}").replace("{0}", t(targetLaneId)));
+	} catch (err) {
+		card.stage = prevStage; // Rollback
+		toast.error(err?.message || t("Move failed."));
+	}
+}
+
+// Side Drawer Detail View
+async function openDealDrawer(card) {
+	selectedDeal.value = card;
+	drawerOpen.value = true;
+	dealDetailLoading.value = true;
+	dealLots.value = [];
+	dealQuotations.value = null;
+
+	try {
+		const [masterRes, sqRes] = await Promise.all([
+			call("stabler.api.tender_master.get_tender_master", {
+				name: card.name,
+				company: activeCompany.value,
+			}).catch(() => null),
+			call("stabler.api.purchasing.tender_quotations", {
+				deal: card.name,
+			}).catch(() => null),
+		]);
+		dealLots.value = masterRes?.lots || [];
+		dealQuotations.value = sqRes || null;
 	} catch {
-		// No toast: `load()` already reports whatever made this company unreadable,
-		// and a second one would double every failure on the same page. An unknown
-		// count leaves the strip hidden rather than claiming zero orphans.
-	}
-}
-
-async function openTender(record) {
-	const requestCompany = activeCompany.value;
-	const request = detailRequestGuard.start();
-	if (!requestCompany) return;
-	detailLoading.value = true;
-	selected.value = normalizeTenderMaster(record);
-	lots.value = [];
-	try {
-		const response = await call("stabler.api.tender_master.get_tender_master", {
-			name: record.name,
-			company: requestCompany,
-		});
-		if (
-			!detailRequestGuard.isLatest(request) ||
-			!isTenderMasterCompanyCurrent(requestCompany, activeCompany.value)
-		)
-			return;
-		selected.value = normalizeTenderMaster(response?.tender || record);
-		lots.value = response?.lots || [];
-		depth.value = "lots";
-	} catch (error) {
-		if (
-			!detailRequestGuard.isLatest(request) ||
-			!isTenderMasterCompanyCurrent(requestCompany, activeCompany.value)
-		)
-			return;
-		selected.value = null;
-		toast.error(error?.message || t("Could not load tender lots."));
+		// Non-critical background detail failure
 	} finally {
-		if (
-			detailRequestGuard.isLatest(request) &&
-			isTenderMasterCompanyCurrent(requestCompany, activeCompany.value)
-		)
-			detailLoading.value = false;
+		dealDetailLoading.value = false;
 	}
 }
 
-function openLot(lot) {
-	router.push({ path: "/tender/po-control", query: { deal: lot.name } });
+function closeDrawer() {
+	drawerOpen.value = false;
+	selectedDeal.value = null;
 }
 
-function closeDetail() {
-	detailRequestGuard.start();
-	detailLoading.value = false;
-	depth.value = "tender";
-	selected.value = null;
-	lots.value = [];
+function riskBadgeClass(risk) {
+	switch (risk) {
+		case "risk":
+			return "bg-red-lt text-red";
+		case "warn":
+			return "bg-yellow-lt text-yellow";
+		case "expired":
+			return "bg-secondary-lt text-secondary";
+		default:
+			return "bg-green-lt text-green";
+	}
 }
 
-watch([activeCompany, () => JSON.stringify(tenderMasterListParams(route.query))], () => {
-	closeDetail();
-	load();
-});
-// Company-scoped only: the queue is the whole company's backlog, so re-fetching it
-// for every drill-down filter change would be a query that cannot change its answer.
-watch(activeCompany, loadOrphanLots);
-onMounted(() => {
-	load();
-	loadOrphanLots();
-});
+function riskLabel(risk) {
+	switch (risk) {
+		case "risk":
+			return t("Risk (<=48h)");
+		case "warn":
+			return t("Warning");
+		case "expired":
+			return t("Expired");
+		default:
+			return t("On track");
+	}
+}
 </script>
 
 <template>
-	<div class="container-xl py-3">
-		<div class="d-flex align-items-center gap-2 mb-3 flex-wrap">
+	<div class="container-fluid py-3">
+		<TenderNav />
+
+		<!-- Header & Controls -->
+		<div class="d-flex align-items-center justify-content-between mb-3 gap-2 flex-wrap">
 			<div>
-				<h2 class="mb-0">{{ t("Tender CRM") }}</h2>
-				<div class="text-secondary">{{ t("Tenders and their permitted lots") }}</div>
+				<h2 class="h3 mb-0 fw-bold d-flex align-items-center gap-2">
+					<i class="ti ti-address-book text-primary"></i>
+					{{ t("Tender CRM") }}
+				</h2>
+				<span class="text-secondary small">
+					{{ t("Manage and track all tender deals across pipeline stages") }}
+				</span>
 			</div>
-			<div class="ms-auto btn-group">
-				<button
-					type="button"
-					class="btn btn-sm"
-					:class="mode === 'kanban' ? 'btn-primary' : 'btn-outline-secondary'"
-					@click="mode = 'kanban'"
-				>
-					{{ t("Kanban") }}
-				</button>
-				<button
-					type="button"
-					class="btn btn-sm"
-					:class="mode === 'list' ? 'btn-primary' : 'btn-outline-secondary'"
-					@click="mode = 'list'"
-				>
-					{{ t("List") }}
+			<div class="d-flex align-items-center gap-2 flex-wrap">
+				<!-- Search -->
+				<div class="input-icon" style="width: 220px">
+					<span class="input-icon-addon"><i class="ti ti-search"></i></span>
+					<input
+						v-model="searchQuery"
+						type="search"
+						class="form-control form-control-sm"
+						:placeholder="t('Search tenders…')"
+					/>
+				</div>
+
+				<!-- View Mode Switcher -->
+				<div class="btn-group btn-group-sm">
+					<button
+						type="button"
+						class="btn"
+						:class="viewMode === 'kanban' ? 'btn-primary' : 'btn-outline-secondary'"
+						@click="viewMode = 'kanban'"
+					>
+						<i class="ti ti-layout-kanban me-1"></i>{{ t("Kanban") }}
+					</button>
+					<button
+						type="button"
+						class="btn"
+						:class="viewMode === 'list' ? 'btn-primary' : 'btn-outline-secondary'"
+						@click="viewMode = 'list'"
+					>
+						<i class="ti ti-list me-1"></i>{{ t("List") }}
+					</button>
+				</div>
+
+				<!-- Refresh -->
+				<button type="button" class="btn btn-outline-secondary btn-sm" :disabled="loading" @click="load">
+					<i class="ti ti-refresh" :class="{ 'spin': loading }"></i>
 				</button>
 			</div>
 		</div>
 
-		<!-- Parentless tender lots. Shown at portfolio depth only: inside one
-		tender's drill-down it is somebody else's backlog. -->
-		<div v-if="depth === 'tender' && orphanCount" class="mb-3">
-			<div class="alert alert-warning d-flex align-items-center gap-2 flex-wrap mb-0" role="alert">
-				<i class="ti ti-unlink"></i>
-				<span>{{ t("{0} tender lots are not linked to a tender.", { 0: orphanCount }) }}</span>
-				<button
-					type="button"
-					class="btn btn-sm btn-outline-secondary ms-auto"
-					@click="showOrphanLots = !showOrphanLots"
-				>
-					{{ t("Show unlinked lots") }}
-				</button>
-			</div>
-			<div v-if="showOrphanLots" class="card mt-2">
-				<table class="table card-table">
-					<thead>
-						<tr>
-							<th>{{ t("Lot") }}</th>
-							<th>{{ t("Customer") }}</th>
-							<th>{{ t("Status") }}</th>
-							<th>{{ t("Updated") }}</th>
-						</tr>
-					</thead>
-					<tbody>
-						<tr v-for="lot in orphanLots" :key="lot.name">
-							<td class="fw-semibold">{{ lot.name }}</td>
-							<td>{{ lot.organization || "—" }}</td>
-							<td>
-								<span
-									v-if="lot.status"
-									class="badge"
-									:class="getStatusBadgeClass('CRM Deal', lot.status)"
-									>{{ t(lot.status) }}</span
-								>
-								<span v-else>—</span>
-							</td>
-							<td>{{ lot.modified ? formatDate(lot.modified) : "—" }}</td>
-						</tr>
-					</tbody>
-				</table>
-			</div>
+		<!-- Loading State -->
+		<div v-if="loading" class="text-center py-5">
+			<div class="spinner-border text-primary"></div>
 		</div>
 
-		<div v-if="depth === 'lots'" class="card mb-3">
-			<div class="card-header d-flex align-items-center gap-2">
-				<button type="button" class="btn btn-sm btn-ghost-secondary" @click="closeDetail">
-					<i class="ti ti-arrow-left"></i>{{ t("All tenders") }}
-				</button>
-				<div>
-					<div class="fw-semibold">
-						{{ selected?.tenderNumber }}<span v-if="selected?.title"> · {{ selected.title }}</span>
+		<!-- Empty State -->
+		<EmptyState
+			v-else-if="!cards.length"
+			icon="ti-address-book"
+			:title="t('No tender deals found.')"
+			:subtitle="t('No active tenders found for {0}.').replace('{0}', activeCompany)"
+		/>
+
+		<template v-else>
+			<!-- KANBAN VIEW -->
+			<div
+				v-if="viewMode === 'kanban'"
+				class="d-flex gap-3 align-items-start overflow-auto pb-3"
+				style="min-height: 70vh"
+			>
+				<div
+					v-for="l in lanes"
+					:key="l.id"
+					class="flex-shrink-0"
+					style="width: 300px"
+					@dragover.prevent="dragOverLane = l.id"
+					@dragleave="dragOverLane = ''"
+					@drop="onDrop(l.id)"
+				>
+					<!-- Lane Header Card -->
+					<div class="card mb-2 shadow-sm border-0" :style="{ borderTop: `4px solid ${l.color}` }">
+						<div class="card-header py-2 px-3 d-flex align-items-center gap-2 bg-white rounded-2">
+							<span
+								class="badge font-monospace"
+								:style="{ background: l.color + '22', color: l.color, border: `1px solid ${l.color}55` }"
+							>
+								{{ (cardsByLane[l.id] || []).length }}
+							</span>
+							<span class="fw-bold flex-grow-1 text-truncate">{{ t(l.label) }}</span>
+							<span class="text-secondary small font-monospace fw-semibold">
+								{{ formatMoney(laneTotal(l.id), currency, user.language) }}
+							</span>
+						</div>
 					</div>
-					<div v-if="selected?.buyer" class="text-secondary small">{{ selected.buyer }}</div>
+
+					<!-- Lane Cards Container -->
+					<div
+						class="vstack gap-2 px-1"
+						:class="{ 'bg-primary-lt rounded-3 p-2': dragOverLane === l.id }"
+						style="min-height: 80px"
+					>
+						<div
+							v-for="c in cardsByLane[l.id]"
+							:key="c.name"
+							class="card card-hover shadow-sm border-0 cursor-pointer rounded-3"
+							draggable="true"
+							style="cursor: grab"
+							@dragstart="onCardDragStart(c.name, $event)"
+							@click="openDealDrawer(c)"
+						>
+							<div class="card-body p-3">
+								<!-- Title & ID -->
+								<div class="d-flex align-items-start justify-content-between gap-1 mb-1">
+									<div>
+										<span class="fw-bold text-body text-truncate d-block" style="max-width: 210px">
+											{{ c.label || c.name }}
+										</span>
+										<span class="small font-monospace text-secondary">{{ c.name }}</span>
+									</div>
+									<span
+										v-if="c.owner_initials"
+										class="avatar avatar-xs rounded-circle bg-blue-lt fw-bold"
+										:title="c.owner_name || c.owner"
+									>
+										{{ c.owner_initials }}
+									</span>
+								</div>
+
+								<!-- Organization / Buyer -->
+								<div v-if="c.organization || c.lead_name" class="text-secondary small text-truncate mb-2">
+									<i class="ti ti-building me-1"></i>{{ c.organization || c.lead_name }}
+								</div>
+
+								<!-- Contract Value -->
+								<div class="h3 mb-2 font-monospace fw-bold text-primary">
+									{{ formatMoney(c.contract_value, c.currency || currency, user.language) }}
+								</div>
+
+								<!-- Badges Row: Deadline Risk & Sourcing -->
+								<div class="d-flex align-items-center gap-1 flex-wrap mb-2">
+									<!-- Risk Badge -->
+									<span v-if="c.deadline" class="badge" :class="riskBadgeClass(c.risk)">
+										<i class="ti ti-clock me-1"></i>{{ riskLabel(c.risk) }}
+									</span>
+
+									<!-- Sourcing Badge -->
+									<span
+										class="badge"
+										:class="c.has_min_5 && c.has_2_countries ? 'bg-green-lt text-green' : c.sq_count > 0 ? 'bg-yellow-lt text-yellow' : 'bg-secondary-lt text-secondary'"
+									>
+										<i class="ti ti-file-dollar me-1"></i>
+										{{ c.sq_count }}/5 {{ t("Quotes") }}
+									</span>
+								</div>
+
+								<!-- Document Readiness Progress Bar -->
+								<div>
+									<div class="d-flex justify-content-between small text-secondary mb-1">
+										<span>{{ t("Readiness") }}</span>
+										<span class="fw-semibold">{{ c.doc_progress }}%</span>
+									</div>
+									<div class="progress progress-sm" style="height: 5px">
+										<div
+											class="progress-bar"
+											:class="c.doc_progress >= 100 ? 'bg-green' : c.doc_progress >= 50 ? 'bg-blue' : 'bg-yellow'"
+											:style="{ width: c.doc_progress + '%' }"
+										></div>
+									</div>
+								</div>
+							</div>
+						</div>
+					</div>
 				</div>
 			</div>
-			<div class="card-body p-0">
-				<table class="table card-table">
-					<thead>
-						<tr>
-							<th>{{ t("Lot") }}</th>
-							<th>{{ t("Status") }}</th>
-							<th class="text-end">{{ t("Estimated total") }}</th>
-							<th>{{ t("Updated") }}</th>
-						</tr>
-					</thead>
-					<SkeletonRows v-if="detailLoading" :cols="4" :rows="3" />
-					<tbody v-else>
-						<tr v-for="lot in lots" :key="lot.name" role="button" @click="openLot(lot)">
-							<td class="fw-semibold">{{ lot.name }}</td>
-							<td>
-								<span
-									v-if="lot.status"
-									class="badge"
-									:class="getStatusBadgeClass('CRM Deal', lot.status)"
-									>{{ t(lot.status) }}</span
-								>
-								<span v-else>—</span>
-							</td>
-							<td class="text-end font-monospace">{{ money(lot.deal_value, lot) }}</td>
-							<td>{{ lot.modified ? formatDate(lot.modified) : "—" }}</td>
-						</tr>
-					</tbody>
-				</table>
-				<EmptyState
-					v-if="!detailLoading && !lots.length"
-					icon="ti-list-details"
-					:title="t('No permitted lots for this tender.')"
-					compact
-				/>
-			</div>
-		</div>
 
-		<div v-if="depth === 'tender'" class="card">
-			<div class="card-body p-0">
-				<table v-if="mode === 'list'" class="table card-table">
-					<thead>
-						<tr>
-							<th>{{ t("Tender") }}</th>
-							<th>{{ t("Buyer") }}</th>
-							<th>{{ t("Deadline") }}</th>
-							<th class="text-end">{{ t("Lots") }}</th>
-							<th class="text-end">{{ t("Estimated total") }}</th>
-							<th>{{ t("Stage") }}</th>
-							<th>{{ t("Owner") }}</th>
-							<th v-if="hasDocumentReadiness">{{ t("Documents") }}</th>
-						</tr>
-					</thead>
-					<SkeletonRows v-if="loading" :cols="hasDocumentReadiness ? 8 : 7" :rows="6" />
-					<tbody v-else>
-						<tr
-							v-for="record in records"
-							:key="record.name"
-							role="button"
-							@click="openTender(record)"
-						>
-							<td>
-								<div class="fw-semibold">{{ record.tenderNumber }}</div>
-								<div v-if="record.title" class="text-secondary small">{{ record.title }}</div>
-							</td>
-							<td>{{ record.buyer || "—" }}</td>
-							<td>{{ record.deadline ? formatDate(record.deadline) : "—" }}</td>
-							<td class="text-end">{{ record.lotCount }}</td>
-							<td class="text-end font-monospace">{{ money(record.estimatedTotal, record) }}</td>
-							<td>
-								<!-- The DERIVED lane, same value the Kanban groups by. Showing the
-								parent's hand-typed `status` here would put "New" next to a tender
-								whose every lot is won — the drift K1 removed, relocated to a column. -->
-								<span class="badge" :class="getStatusBadgeClass('Tender Lane', record.stage)">{{
-									t(record.stage)
-								}}</span>
-							</td>
-							<td>{{ record.owner || "—" }}</td>
-							<td v-if="hasDocumentReadiness">
-								<span v-if="record.documentReadiness !== undefined" class="text-secondary">{{
-									record.documentReadiness
-								}}</span>
-							</td>
-						</tr>
-					</tbody>
-				</table>
-				<div v-else class="p-3 overflow-auto">
-					<div class="d-flex gap-3 tender-lanes">
-						<section v-for="lane in groups" :key="lane.key" class="card bg-light tender-lane">
-							<div class="card-header py-2 fw-semibold">
-								{{ t(lane.key) }}
-								<span class="badge bg-secondary-lt ms-1">{{ lane.records.length }}</span>
+			<!-- LIST VIEW -->
+			<div v-else-if="viewMode === 'list'" class="card shadow-sm border-0">
+				<div class="table-responsive">
+					<table class="table table-vcenter table-hover card-table m-0">
+						<thead>
+							<tr>
+								<th>{{ t("Tender / Deal") }}</th>
+								<th>{{ t("Buyer / Organization") }}</th>
+								<th>{{ t("Stage") }}</th>
+								<th class="text-end">{{ t("Value") }}</th>
+								<th>{{ t("Sourcing") }}</th>
+								<th>{{ t("Deadline Risk") }}</th>
+								<th>{{ t("Readiness") }}</th>
+								<th>{{ t("Owner") }}</th>
+							</tr>
+						</thead>
+						<tbody>
+							<tr
+								v-for="c in filteredCards"
+								:key="c.name"
+								class="cursor-pointer"
+								@click="openDealDrawer(c)"
+							>
+								<td>
+									<div class="fw-bold text-body">{{ c.label || c.name }}</div>
+									<div class="small font-monospace text-secondary">{{ c.name }}</div>
+								</td>
+								<td class="text-secondary">{{ c.organization || c.lead_name || "—" }}</td>
+								<td>
+									<span class="badge bg-primary-lt">{{ t(c.stage) }}</span>
+								</td>
+								<td class="text-end font-monospace fw-bold">
+									{{ formatMoney(c.contract_value, c.currency || currency, user.language) }}
+								</td>
+								<td>
+									<span
+										class="badge"
+										:class="c.has_min_5 && c.has_2_countries ? 'bg-green-lt text-green' : c.sq_count > 0 ? 'bg-yellow-lt text-yellow' : 'bg-secondary-lt text-secondary'"
+									>
+										{{ c.sq_count }}/5 {{ t("Quotes") }}
+									</span>
+								</td>
+								<td>
+									<span v-if="c.deadline" class="badge" :class="riskBadgeClass(c.risk)">
+										{{ riskLabel(c.risk) }}
+									</span>
+									<span v-else class="text-secondary">—</span>
+								</td>
+								<td>
+									<div class="d-flex align-items-center gap-2" style="min-width: 100px">
+										<div class="progress flex-grow-1" style="height: 5px">
+											<div
+												class="progress-bar"
+												:class="c.doc_progress >= 100 ? 'bg-green' : c.doc_progress >= 50 ? 'bg-blue' : 'bg-yellow'"
+												:style="{ width: c.doc_progress + '%' }"
+											></div>
+										</div>
+										<span class="small font-monospace text-secondary">{{ c.doc_progress }}%</span>
+									</div>
+								</td>
+								<td>
+									<span v-if="c.owner_name" class="avatar avatar-xs rounded-circle bg-blue-lt fw-bold me-1" :title="c.owner_name">
+										{{ c.owner_initials }}
+									</span>
+									<span class="small text-secondary">{{ c.owner_name || "—" }}</span>
+								</td>
+							</tr>
+						</tbody>
+					</table>
+				</div>
+			</div>
+		</template>
+
+		<!-- SIDE DRAWER DETAIL VIEW -->
+		<template v-if="drawerOpen && selectedDeal">
+			<div class="offcanvas-backdrop fade show" @click="closeDrawer"></div>
+			<div class="offcanvas offcanvas-end show shadow-lg" tabindex="-1" style="width: min(540px, 100vw)">
+				<!-- Drawer Header -->
+				<div class="offcanvas-header border-bottom bg-light">
+					<div>
+						<h4 class="offcanvas-title fw-bold text-body m-0">
+							{{ selectedDeal.label || selectedDeal.name }}
+						</h4>
+						<div class="small font-monospace text-secondary d-flex align-items-center gap-2 mt-1">
+							<span>{{ selectedDeal.name }}</span>
+							<span>·</span>
+							<span class="badge bg-primary-lt">{{ t(selectedDeal.stage) }}</span>
+						</div>
+					</div>
+					<button type="button" class="btn-close text-reset" @click="closeDrawer"></button>
+				</div>
+
+				<!-- Drawer Body -->
+				<div class="offcanvas-body p-4">
+					<div v-if="dealDetailLoading" class="text-center py-5">
+						<div class="spinner-border text-primary"></div>
+					</div>
+
+					<template v-else>
+						<!-- Summary Grid -->
+						<div class="row g-3 mb-4">
+							<div class="col-6">
+								<div class="card p-3 border bg-light shadow-none rounded-2">
+									<div class="text-secondary small text-uppercase fw-semibold mb-1">{{ t("Contract Value") }}</div>
+									<div class="h3 mb-0 font-monospace text-primary fw-bold">
+										{{ formatMoney(selectedDeal.contract_value, selectedDeal.currency || currency, user.language) }}
+									</div>
+								</div>
 							</div>
-							<div class="card-body p-2">
-								<button
-									v-for="record in lane.records"
-									:key="record.name"
-									type="button"
-									class="card card-sm w-100 text-start mb-2 border-0 shadow-sm"
-									@click="openTender(record)"
+							<div class="col-6">
+								<div class="card p-3 border bg-light shadow-none rounded-2">
+									<div class="text-secondary small text-uppercase fw-semibold mb-1">{{ t("Buyer / Customer") }}</div>
+									<div class="fw-semibold text-truncate text-body">
+										{{ selectedDeal.organization || selectedDeal.lead_name || "—" }}
+									</div>
+								</div>
+							</div>
+						</div>
+
+						<!-- Quick Actions -->
+						<div class="d-flex gap-2 flex-wrap mb-4">
+							<router-link
+								:to="{ path: '/tender/sourcing', query: { deal: selectedDeal.name } }"
+								class="btn btn-outline-primary btn-sm flex-fill"
+								@click="closeDrawer"
+							>
+								<i class="ti ti-versions me-1"></i>{{ t("Sourcing comparison") }}
+							</router-link>
+							<router-link
+								to="/tender/board"
+								class="btn btn-outline-secondary btn-sm flex-fill"
+								@click="closeDrawer"
+							>
+								<i class="ti ti-layout-kanban me-1"></i>{{ t("Contract board") }}
+							</router-link>
+						</div>
+
+						<!-- Sourcing Quotations Summary -->
+						<div class="card mb-4 border shadow-none rounded-2">
+							<div class="card-header py-2 bg-light fw-bold text-body d-flex align-items-center justify-content-between">
+								<span><i class="ti ti-file-dollar me-1 text-primary"></i>{{ t("Sourcing Summary") }}</span>
+								<span
+									class="badge"
+									:class="dealQuotations?.has_min_5 && dealQuotations?.has_2_countries ? 'bg-green-lt text-green' : 'bg-yellow-lt text-yellow'"
 								>
-									<div class="card-body p-2">
-										<div class="fw-semibold">{{ record.tenderNumber }}</div>
-										<div v-if="record.title" class="small text-secondary">{{ record.title }}</div>
-										<div v-if="record.buyer" class="small mt-2">{{ record.buyer }}</div>
-										<div class="small d-flex justify-content-between mt-2">
-											<span>{{ record.deadline ? formatDate(record.deadline) : "—" }}</span
-											><span class="font-monospace">{{
-												money(record.estimatedTotal, record)
-											}}</span>
-										</div>
-										<div class="small text-secondary mt-1">
-											{{ t("Lots") }}: {{ record.lotCount
-											}}<span v-if="record.owner"> · {{ record.owner }}</span>
-										</div>
-										<div v-if="record.lotCount" class="small text-secondary mt-1">
-											{{ t("Open") }}: {{ record.openLotCount
-											}}<span v-if="record.submittedLotCount">
-												({{ t("awaiting result") }}: {{ record.submittedLotCount }})</span
-											>
-											· {{ t("Won") }}: {{ record.wonLotCount }} · {{ t("Lost") }}:
-											{{ record.lostLotCount }}
-										</div>
-										<div v-if="record.earliestDeadline" class="small text-secondary mt-1">
-											{{ t("Next lot deadline") }}: {{ formatDate(record.earliestDeadline) }}
-										</div>
-										<div v-if="record.policyGapCount" class="small text-warning mt-1">
-											{{ t("Policy gap") }}: {{ record.policyGapCount }}
-										</div>
-										<div v-if="record.riskCount" class="small text-danger mt-1">
-											{{ t("Overdue bids") }}: {{ record.riskCount }}
-										</div>
-										<div
-											v-if="record.documentReadiness !== undefined"
-											class="small text-secondary mt-1"
-										>
-											{{ record.documentReadiness }}
+									{{ dealQuotations?.count || 0 }} / 5 {{ t("Quotes") }}
+								</span>
+							</div>
+							<div class="card-body p-0">
+								<table v-if="dealQuotations?.rows?.length" class="table table-sm card-table m-0">
+									<thead>
+										<tr>
+											<th>{{ t("Supplier") }}</th>
+											<th>{{ t("Country") }}</th>
+											<th class="text-end">{{ t("Total") }}</th>
+										</tr>
+									</thead>
+									<tbody>
+										<tr v-for="q in dealQuotations.rows" :key="q.name" :class="{ 'table-success': q.cheapest }">
+											<td>
+												<span class="fw-semibold">{{ q.supplier_name }}</span>
+												<span v-if="q.cheapest" class="badge bg-green ms-1">{{ t("Cheapest") }}</span>
+											</td>
+											<td class="text-secondary small">{{ q.country || "—" }}</td>
+											<td class="text-end font-monospace">{{ formatMoney(q.grand_total, q.currency, user.language) }}</td>
+										</tr>
+									</tbody>
+								</table>
+								<div v-else class="p-3 text-center text-secondary small">
+									{{ t("No supplier quotations tagged to this deal yet.") }}
+								</div>
+							</div>
+						</div>
+
+						<!-- Lots List -->
+						<div class="card border shadow-none rounded-2">
+							<div class="card-header py-2 bg-light fw-bold text-body d-flex align-items-center justify-content-between">
+								<span><i class="ti ti-layers-subtract me-1 text-primary"></i>{{ t("Lots") }}</span>
+								<span class="badge bg-secondary-subtle text-secondary">{{ dealLots.length }}</span>
+							</div>
+							<div class="card-body p-0">
+								<div v-if="dealLots.length" class="list-group list-group-flush">
+									<div v-for="lot in dealLots" :key="lot.name" class="list-group-item p-3">
+										<div class="d-flex justify-content-between align-items-start">
+											<div>
+												<div class="fw-bold text-body">{{ lot.label || lot.name }}</div>
+												<div class="small text-secondary">{{ lot.description || "" }}</div>
+											</div>
+											<div class="text-end font-monospace fw-bold">
+												{{ formatMoney(lot.contract_value, lot.currency || currency, user.language) }}
+											</div>
 										</div>
 									</div>
-								</button>
+								</div>
+								<div v-else class="p-3 text-center text-secondary small">
+									{{ t("No lots registered for this tender.") }}
+								</div>
 							</div>
-						</section>
-					</div>
+						</div>
+					</template>
 				</div>
-				<EmptyState
-					v-if="!loading && !records.length"
-					icon="ti-clipboard-list"
-					:title="t('No tenders found for this company.')"
-				/>
 			</div>
-		</div>
+		</template>
 	</div>
 </template>
-
-<style scoped>
-.tender-lane {
-	flex: 0 0 260px;
-	min-height: 180px;
-}
-</style>
