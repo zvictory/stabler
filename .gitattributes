@@ -3,3 +3,9 @@
 # reads as a trailing-whitespace error and drowns out real findings in
 # `git diff --check`.
 stabler/translations/*.csv whitespace=-trailing-space,-cr-at-eol
+
+# Kendi barındırdığımız yazı tipleri. Google Fonts'a link vermek yasak
+# (kiracı ağları dış CDN'e çıkamıyor), bu yüzden woff2 repoda duruyor.
+# binary işareti olmadan git bunları metin sanıp diff/whitespace denetimine
+# sokuyor ve `git diff --check` çıktısını çöple dolduruyor.
+*.woff2 binary

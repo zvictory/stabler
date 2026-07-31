@@ -69,14 +69,23 @@ def _cost_visible_for_shell(user: str) -> bool:
 
 
 def _asset_version() -> str:
-	"""Cache-busting token for raw /assets links (e.g. stabler.css). Unlike the
-	hashed JS bundle from include_script(), the CSS is linked by a static path, so
-	without this it serves stale after every edit/deploy (forcing a hard refresh).
-	Keyed on the file's mtime: changes only when the file changes — fresh on edit/
-	deploy, fully cacheable in between."""
+	"""Cache-busting token for raw /assets links (stabler.css + stabler-modernist.css).
+	Unlike the hashed JS bundle from include_script(), the CSS is linked by a static
+	path, so without this it serves stale after every edit/deploy (forcing a hard
+	refresh). Keyed on the NEWEST mtime across every linked stylesheet — one token
+	is shared by both <link> tags, so keying it on only one of them would serve the
+	other stale whenever that one alone changed."""
 	try:
-		css = frappe.get_app_path("stabler", "public", "css", "stabler.css")
-		return str(int(os.path.getmtime(css)))
+		stamps = []
+		for fname in ("stabler.css", "stabler-modernist.css"):
+			path = frappe.get_app_path("stabler", "public", "css", fname)
+			try:
+				stamps.append(int(os.path.getmtime(path)))
+			except OSError:
+				# Dosya henüz yoksa atla — tek bir eksik dosya yüzünden
+				# diğerinin cache-bust'ı kaybolmasın.
+				continue
+		return str(max(stamps)) if stamps else "0"
 	except Exception:
 		return "0"
 

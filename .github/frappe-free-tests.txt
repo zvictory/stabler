@@ -34,7 +34,9 @@ stabler.tests.test_customs_estimate
 stabler.tests.test_customs_fee_math
 stabler.tests.test_departure_gate_source
 stabler.tests.test_departure_math
+stabler.tests.test_design_layer_contract
 stabler.tests.test_desk_gate_setting
+stabler.tests.test_desk_rules
 stabler.tests.test_dimensions
 stabler.tests.test_equipment
 stabler.tests.test_excel_export
@@ -62,6 +64,7 @@ stabler.tests.test_lcv_math
 stabler.tests.test_list_row_ordinals
 stabler.tests.test_master_read_permission
 stabler.tests.test_no_inline_dropdowns
+stabler.tests.test_operations_desk_source
 stabler.tests.test_packing_math
 stabler.tests.test_payroll_adapter
 stabler.tests.test_payroll_calc
@@ -85,6 +88,12 @@ stabler.tests.test_tender_dashboard
 stabler.tests.test_tender_dashboard_behavior
 stabler.tests.test_tender_dashboard_i18n
 stabler.tests.test_tender_dashboard_spa
+stabler.tests.test_tender_desk_api
+stabler.tests.test_tender_desk_spa
+stabler.tests.test_supplier_quotations_api
+stabler.tests.test_tender_crm_board_api
+stabler.tests.test_tender_crm_spa
+stabler.tests.test_tender_desk_i18n
 stabler.tests.test_tender_document_chain_source
 stabler.tests.test_tender_landed_vat
 stabler.tests.test_tender_master_schema

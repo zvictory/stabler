@@ -21,6 +21,11 @@
 		crossorigin="anonymous"
 	/>
 	<link rel="stylesheet" href="/assets/stabler/css/stabler.css?v={{ asset_version }}" />
+	<!-- Modernist Tabler tasarım katmanı. Tamamı .stbl-ds sarmalayıcısına
+	     scope'lu: sınıfı taşımayan hiçbir ekran tek bir kural bile görmez.
+	     Bir ekranı yeni dile taşımak = kök elemana class="stbl-ds" eklemek.
+	     stabler.css'ten SONRA geliyor; token'ları --tblr-* üzerinden okur. -->
+	<link rel="stylesheet" href="/assets/stabler/css/stabler-modernist.css?v={{ asset_version }}" />
 
 	<script>
 		window.__STABLER__ = {
