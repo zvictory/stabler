@@ -946,6 +946,19 @@
 }
 .stbl-ds .btn-primary:hover { background: #1b5aa6; border-color: #1b5aa6; }
 .stbl-ds .btn-icon { padding: 6px; min-height: 34px; }
+/* Hayalet ve bağlantı varyantları KENARSIZ kalır. Genel .btn kuralına kenar
+ * verince satır içi ikon butonları (sil, taşı) boş kutulara dönüyordu —
+ * ikonun etrafında çerçeve, tıklanacak şeyi gizliyor. */
+.stbl-ds .btn-ghost-secondary,
+.stbl-ds .btn-ghost-primary,
+.stbl-ds .btn-ghost-danger,
+.stbl-ds .btn-link {
+  border-color: transparent; background: transparent;
+}
+.stbl-ds .btn-ghost-secondary:hover,
+.stbl-ds .btn-ghost-primary:hover,
+.stbl-ds .btn-ghost-danger:hover { background: #f4f6f9; border-color: transparent; }
+.stbl-ds .btn-ghost-danger { color: var(--ds-crit-tx); }
 
 /* Kart = panel. Gölge yok, köşe yok — katmanın tamamı böyle. */
 .stbl-ds .card {
