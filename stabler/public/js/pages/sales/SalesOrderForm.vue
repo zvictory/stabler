@@ -660,6 +660,14 @@ onMounted(async () => {
 		if (route.query?.agreement) form.value.agreement = String(route.query.agreement);
 	} else {
 		await loadDoc();
+		/* Uygunluk şimdiye kadar YALNIZCA yeni siparişte çekiliyordu; kayıtlı
+		 * bir taslak açıldığında hiç yüklenmiyordu. Sağdaki rezerv paneli
+		 * "rezerve edilecek" diyebilmek için bu veriye muhtaç — olmadan
+		 * sonsuza kadar "kontrol ediliyor" derdi ve stok yetmediği hâlde
+		 * sessiz kalırdı. Düzenlenebilir taslakta satır başına yükleniyor. */
+		if (editable.value) {
+			for (const line of form.value?.items || []) scheduleAvailability(line);
+		}
 	}
 });
 
