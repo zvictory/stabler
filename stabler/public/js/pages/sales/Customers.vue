@@ -5,7 +5,7 @@ import { useRoute, useRouter } from "vue-router";
 import { useSession } from "../../stores/session.js";
 import { call } from "../../api/client.js";
 import { formatMoney, balanceState } from "../../composables/money.js";
-import { formatDate, formatDateTime } from "../../composables/date.js";
+import { formatDate, formatDateTime, formatTime } from "../../composables/date.js";
 import { t } from "../../composables/i18n.js";
 import { useConfirm } from "../../composables/useConfirm.js";
 import { useToast } from "../../composables/useToast.js";
@@ -423,7 +423,7 @@ async function loadCustomers() {
 			company: activeCompany.value,
 			search: search.value || "",
 			only_with_balance: onlyWithBalance.value ? 1 : 0,
-			limit: 500,
+			limit: 2500,
 		});
 		customers.value = res.rows || [];
 		companyCurrency.value = res.company_currency || "";
@@ -1321,7 +1321,12 @@ watch(activeCompany, () => {
 														</td>
 													</tr>
 													<tr v-for="e in filteredLedgerRows" :key="e.name">
-														<td class="text-nowrap small py-2">{{ formatDateTime(e.posting_date) }}</td>
+														<td class="text-nowrap small py-2">
+															<div>{{ formatDate(e.posting_date) }}</div>
+															<div v-if="e.creation && formatTime(e.creation)" class="text-secondary font-monospace" style="font-size: 0.72rem;">
+																{{ formatTime(e.creation) }}
+															</div>
+														</td>
 														<td class="py-2">
 															<div class="d-flex align-items-center gap-1">
 																<span class="small text-secondary fw-semibold">{{ e.voucher_type }}</span>

@@ -355,7 +355,7 @@ def get_currency_exchange_rate(from_currency: str, to_currency: str, date: str |
 def list_customers_with_balances(
 	company: str,
 	search: str = "",
-	limit: int = 200,
+	limit: int = 2500,
 	only_with_balance: int = 0,
 ):
 	"""Customers + live receivables balance (base + account currency)
@@ -375,7 +375,8 @@ def list_customers_with_balances(
 	# Column is optional across tenants — select it only when it exists, else NULL.
 	parent_select = "c.custom_parent_customer" if has_parent_field else "NULL"
 	conds = ["c.disabled = 0"]
-	params: dict = {"company": company, "limit": int(limit)}
+	parsed_limit = max(1, min(10000, int(limit or 2500)))
+	params: dict = {"company": company, "limit": parsed_limit}
 	if search:
 		conds.append("(c.customer_name LIKE %(s)s OR c.name LIKE %(s)s)")
 		params["s"] = f"%{search}%"
@@ -422,7 +423,12 @@ def list_customers_with_balances(
 		SELECT
 		  party,
 		  SUM(debit - credit) AS balance_base,
-		  SUM(debit_in_account_currency - credit_in_account_currency) AS balance_acc,
+		  SUM(
+		    CASE WHEN voucher_type = 'Payment Entry' AND against_voucher IS NULL AND debit <= 0.05 AND credit <= 0.05
+		         THEN 0.0
+		         ELSE (debit_in_account_currency - credit_in_account_currency)
+		    END
+		  ) AS balance_acc,
 		  MAX(account_currency) AS account_currency,
 		  COUNT(DISTINCT account_currency) AS currency_count
 		FROM `tabGL Entry`
@@ -1068,7 +1074,7 @@ def _fetch_party_ledger_rows(
 
 	rows = frappe.db.sql(
 		f"""
-		SELECT name, posting_date, voucher_type, voucher_no, against, remarks,
+		SELECT name, posting_date, creation, voucher_type, voucher_no, against, remarks,
 		       against_voucher, against_voucher_type, party,
 		       account, account_currency,
 		       debit, credit,
@@ -1130,20 +1136,27 @@ def _fetch_party_ledger_rows(
 		# but ONLY when the PE has a single party-leg GL row. Multi-reference PEs
 		# (one row per paid invoice) already carry correct partial allocations in
 		# *_in_account_currency — overriding would inflate the total N-fold.
-		if r["voucher_type"] == "Payment Entry" and pe_leg_counts.get(r["voucher_no"]) == 1:
-			pe = pe_map.get(r["voucher_no"])
-			if pe:
-				if r["account"] == pe["paid_from"]:
-					source_amt = flt(pe["paid_amount"])
-				elif r["account"] == pe["paid_to"]:
-					source_amt = flt(pe["received_amount"])
-				else:
-					source_amt = None
-				if source_amt is not None:
-					if dac > 0:
-						dac = source_amt
-					elif cac > 0:
-						cac = source_amt
+		if r["voucher_type"] == "Payment Entry":
+			if not r.get("against_voucher") and flt(r["debit"]) <= 0.05 and flt(r["credit"]) <= 0.05:
+				# Zero out pure base-currency rounding adjustment lines on Payment Entries
+				# (e.g. $0.01 USD rounding rows created by ERPNext to balance USD debits/credits).
+				# They carry sub-cent base amounts converted to UZS that contaminate UZS ledgers.
+				dac = 0.0
+				cac = 0.0
+			elif pe_leg_counts.get(r["voucher_no"]) == 1:
+				pe = pe_map.get(r["voucher_no"])
+				if pe:
+					if r["account"] == pe["paid_from"]:
+						source_amt = flt(pe["paid_amount"])
+					elif r["account"] == pe["paid_to"]:
+						source_amt = flt(pe["received_amount"])
+					else:
+						source_amt = None
+					if source_amt is not None:
+						if dac > 0:
+							dac = source_amt
+						elif cac > 0:
+							cac = source_amt
 		r["debit_in_account_currency"] = dac
 		r["credit_in_account_currency"] = cac
 
@@ -1157,6 +1170,7 @@ def _fetch_party_ledger_rows(
 			groups[key] = {
 				"name": r["name"],
 				"posting_date": r["posting_date"],
+				"creation": str(r["creation"]) if r.get("creation") else "",
 				"voucher_type": r["voucher_type"],
 				"voucher_no": r["voucher_no"],
 				"party": r.get("party") or "",
