@@ -213,7 +213,7 @@ class TestDiscountsAreVisibleWhereTheyApply(unittest.TestCase):
 	def test_the_discount_columns_are_rendered(self):
 		self.assertRegex(LINES_FLAT, r'<th v-if="showDiscounts"')
 		self.assertRegex(LINES_FLAT, r'v-model\.number="line\.discount_percentage"')
-		self.assertRegex(LINES_FLAT, r'v-model\.number="line\.discount_amount"')
+		self.assertRegex(LINES_FLAT, r'v-model="line\.discount_amount"')
 
 	def test_the_line_amount_matches_the_forms_own_formula(self):
 		"""İki formül ayrışırsa tabloda bir sayı, özet rayında başka bir sayı
@@ -229,6 +229,59 @@ class TestDiscountsAreVisibleWhereTheyApply(unittest.TestCase):
 	def test_the_child_does_not_subtract_the_amount_from_the_line_total(self):
 		child = _squash(re.search(r"const lineAmount = \(l\) => \{.*?\n\};", LINES, flags=re.S).group(0))
 		self.assertNotIn("gross", child)
+
+
+class TestMoneyFieldsUseTheGroupedInput(unittest.TestCase):
+	"""Birim fiyat ve iskonto tutarı MoneyInput'tan geçmeli.
+
+	Bu ekran paylaşılan LineItemsEditor'ı bırakırken iki para alanı ham
+	`<input type="number">` oldu. Ham sayı girişi yalnız nokta ondalıklı,
+	gruplamasız metni geçerli sayar: ru/uz/uzc'de kullanıcının EKRANDA GÖRDÜĞÜ
+	ve yeniden yazdığı `20 820,00` tarayıcı için geçersizdir — `input.value`
+	boş string döner, `v-model.number` alana null yazar. Yazılı fiyat
+	kaydedilen belgede yok olur ve hiçbir yerde hata çıkmaz.
+
+	Yüzde alanı bilerek DIŞARIDA: 0–100 arası bir oran, para değil
+	(~/.claude/rules/money-input.md qty ve oranları muaf tutuyor).
+	"""
+
+	MONEY_FIELDS = ("rate", "discount_amount")
+
+	def test_the_component_is_imported(self):
+		self.assertIn('import MoneyInput from "../../components/MoneyInput.vue"', LINES)
+
+	def test_no_money_field_is_bound_to_a_raw_number_input(self):
+		for block in re.findall(r"<input\b[^>]*?/>", LINES_FLAT):
+			if 'type="number"' not in block:
+				continue
+			for field in self.MONEY_FIELDS:
+				with self.subTest(field=field, block=block[:70]):
+					self.assertNotRegex(block, rf'v-model(?:\.number)?="line\.{field}"')
+
+	def test_each_money_cell_renders_a_money_input(self):
+		self.assertRegex(LINES_FLAT, r'<MoneyInput v-if="editable" :model-value="line\.rate"')
+		self.assertRegex(LINES_FLAT, r'<MoneyInput v-if="editable" v-model="line\.discount_amount"')
+
+	def test_every_money_input_is_told_the_currency_and_the_language(self):
+		"""İkisi de biçimlendirmeyi belirliyor: UZS'de MoneyInput tam sayıya
+		iner (tiyin 1994'te tedavülden kalktı), dil ise ondalık ayıracını
+		seçer. Geçilmezse alan en-US kuralına düşer ve so'm fiyatına kuruş
+		takıp `,` yazan kullanıcının değerini yutar."""
+		blocks = re.findall(r"<MoneyInput\b.*?/>", LINES_FLAT)
+		self.assertEqual(len(blocks), len(self.MONEY_FIELDS), f"beklenmeyen MoneyInput sayısı: {len(blocks)}")
+		for block in blocks:
+			with self.subTest(block=block[:60]):
+				self.assertIn(':currency="currency"', block)
+				self.assertIn(':language="language"', block)
+
+	def test_the_rate_edit_still_marks_the_line_as_touched(self):
+		"""`rateTouched`, üst bileşenin birim/ürün değişiminde fiyatı yeniden
+		çekmesini engelleyen bayrak. MoneyInput'a geçerken düşerse elle girilen
+		fiyat bir sonraki birim seçiminde sessizce ezilir."""
+		self.assertRegex(
+			LINES_FLAT,
+			r'@update:model-value="\(v\) => \{ line\.rate = v; line\.rateTouched = true; \}"',
+		)
 
 
 class TestAvailabilityLoadsOnEveryPath(unittest.TestCase):

@@ -11,6 +11,7 @@ import { computed } from "vue";
 import { formatMoney } from "../../composables/money.js";
 import { t } from "../../composables/i18n.js";
 import Typeahead from "../../components/Typeahead.vue";
+import MoneyInput from "../../components/MoneyInput.vue";
 
 const props = defineProps({
 	items: { type: Array, required: true },
@@ -344,14 +345,14 @@ const filledCount = computed(() => props.items.filter((l) => l.item_code).length
 
 					<!-- Birim fiyat -->
 					<td class="ds-td-num">
-						<input
+						<MoneyInput
 							v-if="editable"
-							v-model.number="line.rate"
-							type="number"
-							step="any"
-							inputmode="decimal"
+							:model-value="line.rate"
+							:currency="currency"
+							:language="language"
+							hide-currency
 							class="ds-input so-rate"
-							@input="line.rateTouched = true"
+							@update:model-value="(v) => { line.rate = v; line.rateTouched = true; }"
 						/>
 						<span v-else>{{ fm(line.rate) }}</span>
 						<div v-if="line.uom" class="ds-uom-note so-rate-note">{{ line.uom }} {{ t("price") }}</div>
@@ -377,13 +378,13 @@ const filledCount = computed(() => props.items.filter((l) => l.item_code).length
 						<span v-else>{{ line.discount_percentage > 0 ? line.discount_percentage + "%" : "—" }}</span>
 					</td>
 					<td v-if="showDiscounts" class="ds-td-num">
-						<input
+						<MoneyInput
 							v-if="editable"
-							v-model.number="line.discount_amount"
-							type="number"
-							step="any"
-							min="0"
-							inputmode="decimal"
+							v-model="line.discount_amount"
+							:currency="currency"
+							:language="language"
+							hide-currency
+							:min="0"
 							data-field="disc-amt"
 							class="ds-input so-rate"
 							placeholder="0"
