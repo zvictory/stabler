@@ -95,6 +95,20 @@ async function loadAgreements() {
 	}
 }
 
+/* Tasarımdaki "Adım 3/3" göstergesi. Tasarım dosyasında üç çubuk da SABİT
+ * dolu çizilmiş; öyle bırakmak boş bir siparişte de "3/3" yazmak olurdu.
+ * Burada her bölüm KENDİ zorunlu alanları dolunca doluyor — gösterge
+ * bölüm başlıklarındaki 1/2/3 numaralarıyla birebir aynı şeyi sayıyor. */
+const sectionsDone = computed(() => {
+	const f = form.value || {};
+	return [
+		Boolean(f.customer && f.set_warehouse),
+		Array.isArray(f.items) && f.items.some((l) => l.item_code && Number(l.qty) > 0),
+		Boolean(f.delivery_date),
+	];
+});
+const stepsDone = computed(() => sectionsDone.value.filter(Boolean).length);
+
 function blankLine(defaultWh = null) {
 	return {
 		item_code: "",
@@ -851,8 +865,20 @@ async function closeSalesOrder() {
 			<span>{{ t("From tender deal") }}: <strong>{{ form.crm_deal }}</strong></span>
 		</div>
 
-		<!-- Header fields -->
-		<div class="row g-3 mb-3">
+		<!-- 1 · Taraflar ve koşullar -->
+		<section class="ds-form-section">
+			<div class="ds-form-section-head">
+				<span class="ds-label">1 · {{ t("Parties and terms") }}</span>
+				<!-- Adım göstergesi bölüm bandının içinde: saydığı şeyin yanında
+				     durunca "neyin 1/3'ü" sorusu kendiliğinden cevaplanıyor. -->
+				<span class="so-steps">
+					<span class="ds-label">{{ t("Step") }} {{ stepsDone }}/3</span>
+					<span class="so-steps-bars">
+						<i v-for="(done, n) in sectionsDone" :key="n" :data-on="done ? '1' : null"></i>
+					</span>
+				</span>
+			</div>
+		<div class="ds-form-body row g-3">
 			<div class="col-md-6">
 				<label class="form-label" :class="{ required: editable }">{{ t("Customer") }}</label>
 				<Typeahead
@@ -957,6 +983,8 @@ async function closeSalesOrder() {
 			</div>
 		</div>
 
+		</section>
+
 		<!-- Exchange rate row — only when transaction currency ≠ company base currency -->
 		<div v-if="isForeignCurrency" class="row g-2 mb-3">
 			<div class="col-md-3">
@@ -1003,10 +1031,11 @@ async function closeSalesOrder() {
 			</div>
 		</div>
 
-		<!-- Items -->
-		<div class="d-flex align-items-center mb-2">
-			<h6 class="text-uppercase text-secondary small mb-0">{{ t("Items") }}</h6>
-			<div class="form-check form-switch ms-auto mb-0">
+		<!-- 2 · Kalemler -->
+		<section class="ds-form-section">
+		<div class="ds-form-section-head">
+			<span class="ds-label">2 · {{ t("Items") }}</span>
+			<div class="form-check form-switch mb-0">
 				<input class="form-check-input" type="checkbox" id="soShowDisc" v-model="showDiscounts" />
 				<label class="form-check-label small text-secondary" for="soShowDisc">{{ t("Show discounts") }}</label>
 			</div>
@@ -1099,32 +1128,43 @@ async function closeSalesOrder() {
 			</template>
 		</LineItemsEditor>
 
-		<!-- Running total summary block (QuickBooks-style) -->
-		<div v-if="editable" class="d-flex justify-content-end mt-2 mb-1">
-			<div class="total-summary-block border rounded p-3" style="min-width: 260px;">
-				<div class="d-flex justify-content-between mb-1">
-					<span class="text-secondary">{{ t("Subtotal") }}</span>
-					<span class="font-monospace">{{ formatMoney(subtotal, form.currency || currency, user.language) }}</span>
+		</section>
+
+		<!-- Özet: tasarımda sağ sütunda duruyor, kalemlerin yanında. -->
+		<div v-if="editable" class="so-summary-wrap">
+			<section class="ds-panel so-summary">
+				<div class="ds-panel-head"><h3>{{ t("Summary") }}</h3></div>
+				<div class="ds-summary-row">
+					<span>{{ t("Subtotal") }}</span>
+					<span class="ds-num">{{ formatMoney(subtotal, form.currency || currency, user.language) }}</span>
 				</div>
-				<div v-if="totalDiscount > 0" class="d-flex justify-content-between mb-1 text-success small">
+				<div v-if="totalDiscount > 0" class="ds-summary-row">
 					<span>{{ t("Discount") }}</span>
-					<span class="font-monospace">− {{ formatMoney(totalDiscount, form.currency || currency, user.language) }}</span>
+					<span class="ds-num">− {{ formatMoney(totalDiscount, form.currency || currency, user.language) }}</span>
 				</div>
-				<div class="d-flex justify-content-between border-top pt-2 mt-1">
-					<span class="fw-bold">{{ t("Grand total") }}</span>
-					<span class="font-monospace fw-bold fs-4">{{ formatMoney(grandTotal, form.currency || currency, user.language) }}</span>
+				<div class="ds-summary-row" data-total="1">
+					<span>{{ t("Grand total") }}</span>
+					<span class="ds-num">{{ formatMoney(grandTotal, form.currency || currency, user.language) }}</span>
 				</div>
-				<div v-if="isForeignCurrency" class="text-secondary small mt-1 text-end">
-					≈ {{ formatMoney(grandTotalBase, currency, user.language) }}
+				<div v-if="isForeignCurrency" class="ds-panel-foot">
+					<span>{{ t("in company currency") }}</span>
+					<span class="ds-mono">≈ {{ formatMoney(grandTotalBase, currency, user.language) }}</span>
 				</div>
-			</div>
+			</section>
 		</div>
 
-		<div class="mt-3">
+		<!-- 3 · Teslim ve not -->
+		<section class="ds-form-section">
+			<div class="ds-form-section-head">
+				<span class="ds-label">3 · {{ t("Delivery and notes") }}</span>
+				<span class="ds-label">{{ sectionsDone[2] ? t("complete") : t("optional") }}</span>
+			</div>
+		<div class="ds-form-body">
 			<label class="form-label">{{ t("Terms / remarks") }}</label>
 			<textarea v-if="editable" v-model="form.remarks" class="form-control" rows="2"></textarea>
 			<div v-else class="form-control-plaintext py-1">{{ form.remarks || "—" }}</div>
 		</div>
+		</section>
 
 		<RelatedDocuments v-if="!isCreate && form" doctype="Sales Order" :name="docName" />
 
@@ -1332,3 +1372,47 @@ async function closeSalesOrder() {
 	</FormPage>
 	</div>
 </template>
+
+<style scoped>
+/* ── Tasarım yerleşimi (yalnız bu ekran) ──────────────────────────────── */
+.so-steps {
+	display: inline-flex;
+	align-items: center;
+	gap: 8px;
+}
+
+.so-steps-bars {
+	display: flex;
+	gap: 4px;
+}
+
+/* Dolmamış adım soluk kalır: gösterge "kaç bölüm bitti" diyor, süs değil. */
+.so-steps-bars i {
+	width: 26px;
+	height: 5px;
+	display: block;
+	background: var(--ds-ln2);
+}
+
+.so-steps-bars i[data-on="1"] {
+	background: var(--ds-ink);
+}
+
+/* Özet tasarımda sağda; dar ekranda kalemlerin altına iner. */
+.so-summary-wrap {
+	display: flex;
+	justify-content: flex-end;
+	margin-top: 14px;
+}
+
+.so-summary {
+	width: 330px;
+	max-width: 100%;
+}
+
+@media (max-width: 768px) {
+	.so-summary {
+		width: 100%;
+	}
+}
+</style>
