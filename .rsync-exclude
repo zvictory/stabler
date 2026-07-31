@@ -60,6 +60,11 @@ graphify-out
 .smoke
 scratch
 
+# Local staging area for files on their way out: stale git lock files, tests
+# superseded by a rewrite, an eslint baseline. Caught 2026-07-31 in a deploy
+# dry-run, which was about to ship a leftover HEAD.lock to all seven tenants.
+_to_delete
+
 # Test suite: CI runs it, prod does not
 tests
 
