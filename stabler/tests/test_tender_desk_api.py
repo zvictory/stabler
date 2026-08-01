@@ -42,6 +42,51 @@ class TestTenderDeskApiSource(unittest.TestCase):
         self.assertIn('intake.get("bid_deadline")', chain.group(1),
                       "intake must be one of the bid_deadline sources, not just fetched")
 
+    def test_every_missing_column_falls_back_to_the_intake_json(self):
+        # The deadline was not alone. Four more facts this desk reasons with are
+        # read from CRM Deal columns that no patch in stabler/patches/ creates:
+        # custom_lot_no, custom_delivery_deadline, custom_tender_result and
+        # assigned_to. Each lookup was unconditionally None, so each rule built on
+        # it was dead code that still looked implemented -- the orphan-lot rule
+        # never fired, no delivery row was ever emitted, team load counted won and
+        # lost lots as open, and assignment collapsed onto the document owner.
+        #
+        # Pinned per field rather than as one blanket "intake appears somewhere",
+        # because that weaker form passes as soon as ANY single fallback exists --
+        # which is exactly the state this test was written to end.
+        for column, intake_key in (
+            ("custom_lot_no", "lot_no"),
+            ("custom_delivery_deadline", "delivery_deadline"),
+            ("custom_tender_result", "result"),
+            ("assigned_to", "assigned_to"),
+        ):
+            with self.subTest(column=column):
+                self.assertIn(
+                    f'intake.get("{intake_key}")', self.source,
+                    f"{column} has no column on a real site; intake['{intake_key}'] "
+                    "must be in its fallback chain")
+
+    def test_the_lot_is_named_the_way_its_owner_would_name_it(self):
+        # The board labelled every row with the deal id. On the demo pipeline four
+        # lots share one buyer, so four rows read identically and none of them says
+        # which tender it is. The lot number is the tender's own name; the buyer is
+        # the fallback; the id says nothing to the person reading it.
+        self.assertIn('"label": lot_no or d.get("organization") or d["name"]', self.source,
+                      "the label chain must prefer the lot number, then the buyer")
+        self.assertNotIn('"label": d.get("name")', self.source,
+                         "a row labelled by deal id is unreadable on a real board")
+
+    def test_orphan_lots_need_a_parent_to_exist_somewhere(self):
+        # Reading the lot number out of intake woke this rule up. On a company that
+        # files tenders flat -- no Tender Master anywhere -- it would then fire for
+        # every single lot and bury the desk's real work. A rule that flags all
+        # thirteen tells you nothing about any of them.
+        self.assertIn("company_uses_parents", self.source,
+                      "the orphan rule must require at least one linked lot in the company")
+        self.assertIn(
+            "if company_uses_parents and d.get(\"custom_lot_no\")", self.source,
+            "the guard must be part of the orphan filter, not merely computed")
+
     def test_intake_is_parsed_once_per_deal_not_per_lookup(self):
         # _parse_intake() runs json.loads. Calling it inside the fact-mapping
         # comprehension instead of once per deal would re-parse the same JSON for

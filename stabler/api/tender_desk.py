@@ -84,21 +84,45 @@ def operations_desk(company: str, view: str | None = None, days: int = 7) -> dic
         # while the CRM board, tender.py and tender_master.py read the same
         # deadline out of intake and showed it fine. A real column still wins
         # where a site has one; intake is what actually holds the data today.
+        # The same measurement holds for the other four facts this desk reasons
+        # with. custom_lot_no, custom_delivery_deadline, custom_tender_result and
+        # assigned_to are all absent from CRM Deal too -- no patch in
+        # stabler/patches/ creates any of them -- so each lookup below was
+        # unconditionally None and the rules built on them could not fire:
+        #   lot_no      -> the orphan-lot rule never triggered, and every card
+        #                  fell back to the deal id, so four lots of the same
+        #                  buyer were indistinguishable on the board
+        #   delivery    -> no delivery_due / delivery_soon row, ever
+        #   result      -> team load counted won and lost lots as still open,
+        #                  and "won without PO" found nothing to chase
+        #   assigned_to -> assignment was invisible: the sourcing filter and the
+        #                  team-load split both collapsed onto the document owner
+        # A real column still wins where a site has one; intake is what holds the
+        # data today (24 write sites in api/tender.py, none of them a column).
         intake = _parse_intake(d.get("custom_tender_intake")) if has_intake else {}
+        lot_no = d.get("custom_lot_no") or d.get("lot_no") or intake.get("lot_no")
         deals.append({
             "name": d["name"],
             "organization": d.get("organization"),
             "owner": d.get("owner"),
-            "assigned_to": d.get("assigned_to") or d.get("owner"),
+            "assigned_to": d.get("assigned_to") or intake.get("assigned_to") or d.get("owner"),
             "custom_tender_master": d.get("custom_tender_master"),
-            "custom_lot_no": d.get("custom_lot_no") or d.get("lot_no"),
+            "custom_lot_no": lot_no,
+            # What a human calls this row. The lot number is the tender's own
+            # name; the buyer organisation is how it is discussed; the deal id is
+            # the last resort because it says nothing to the person reading it.
+            "label": lot_no or d.get("organization") or d["name"],
             "custom_tender_stage": d.get("custom_tender_stage") or d.get("stage"),
             "custom_bid_deadline": (
                 d.get("custom_bid_deadline") or d.get("bid_deadline")
                 or intake.get("bid_deadline") or d.get("expected_closing")
             ),
-            "custom_delivery_deadline": d.get("custom_delivery_deadline"),
-            "custom_tender_result": d.get("custom_tender_result") or d.get("status"),
+            "custom_delivery_deadline": (
+                d.get("custom_delivery_deadline") or intake.get("delivery_deadline")
+            ),
+            "custom_tender_result": (
+                d.get("custom_tender_result") or intake.get("result") or d.get("status")
+            ),
             "custom_tender_risk": d.get("custom_tender_risk")
         })
 
@@ -123,14 +147,27 @@ def operations_desk(company: str, view: str | None = None, days: int = 7) -> dic
                 sq_counts[ref] = sq_counts.get(ref, 0) + 1
 
     # 3. Batched Orphan Lots
+    #
+    # "Orphan" only means something where parents exist. Reading the lot number
+    # out of intake (above) woke this rule up for the first time -- and on a
+    # company that does not use Tender Master at all it would have fired for
+    # EVERY lot, burying the desk's real work under an info row per deal. A
+    # board that cries about all thirteen says nothing about any of them.
+    #
+    # So the rule needs one linked lot somewhere in the company before it will
+    # call the others orphans. That is also the honest reading: with no parent
+    # anywhere, a lot is not orphaned, it is simply a site that files tenders
+    # flat.
+    company_uses_parents = any(d.get("custom_tender_master") for d in deals)
     orphan_lots = [
         {
             "name": d["name"],
+            "label": d.get("label") or d["name"],
             "organization": d.get("organization"),
             "assigned_to": d.get("assigned_to") or d.get("owner")
         }
         for d in deals
-        if d.get("custom_lot_no") and not d.get("custom_tender_master")
+        if company_uses_parents and d.get("custom_lot_no") and not d.get("custom_tender_master")
     ]
 
     # 4. Batched Won without PO
@@ -151,7 +188,7 @@ def operations_desk(company: str, view: str | None = None, days: int = 7) -> dic
     won_without_po = [
         {
             "name": d["name"],
-            "label": d.get("name"),
+            "label": d.get("label") or d["name"],
             "assigned_to": d.get("assigned_to") or d.get("owner")
         }
         for d in won_deals
@@ -211,7 +248,7 @@ def operations_desk(company: str, view: str | None = None, days: int = 7) -> dic
     lots_fact = [
         {
             "deal": d["name"],
-            "label": d.get("name"),
+            "label": d.get("label") or d["name"],
             "parent_tender": d.get("custom_tender_master"),
             "lot_no": d.get("custom_lot_no"),
             "stage": d.get("custom_tender_stage"),

@@ -116,10 +116,13 @@ def build_plan(facts: dict | None, today: str) -> dict:
     # 2. Orphan Lots (no_parent)
     for o in facts.get("orphan_lots") or []:
         name = o.get("name") or o.get("deal")
+        # The row has to name the lot the way its owner would. `name` is the deal
+        # id; four lots of the same buyer look identical under it.
+        label = o.get("label") or name
         org = o.get("organization") or "—"
         items.append({
             "kind": "no_parent",
-            "title": f"Orphan lot without parent tender: {name}",
+            "title": f"Orphan lot without parent tender: {label}",
             "why": f"Organization {org} has no parent tender master",
             "owner": o.get("assigned_to"),
             "due": today_str,
