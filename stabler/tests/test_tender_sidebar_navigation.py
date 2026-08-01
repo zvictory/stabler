@@ -1,8 +1,27 @@
-"""Regression guards for role-aware Tender navigation in the SPA sidebar."""
+"""Tender gezinmesi: kenar çubuğu modülü, modül çubuğu ekranları gösterir.
+
+Stabler'da gezinme iki katmanlı ve on beş modülün on dördü buna uyuyor: her
+modülün `/modul` kökünde bir hub'ı var, kenar çubuğunda tek maddesi, ekranları
+sayfanın kendi üst çubuğunda.
+
+Tender istisnaydı ve bedelini üç kusurla ödedi:
+
+  1. Direktör panosu (`/tender/portfolio`) kenar çubuğunda HİÇ yoktu. Ona giden
+     tek yol modül çubuğuydu, o da yalnız başka bir tender sayfasındayken
+     görünüyordu. Ekran taşındı, test edildi, çevrildi — ve kimse bulamadı.
+  2. Kenar çubuğundaki "Kontrol Kulesi" maddesi `/tender/director`'a gidiyordu;
+     o rota `/dashboard`'a redirect. Menüden tıklayan sessizce panoya düşüyordu.
+  3. Aynı ekranlar iki yerde listeleniyordu ve listeler birbirini tutmuyordu.
+
+Bu dosya artık mimariyi kilitliyor, tek tek satırları değil: kenar çubuğu modül
+kökü taşır, alt yol taşımaz; modülün her ekranı modül çubuğundan erişilebilir;
+modül çubuğundaki her yol gerçek bir rotaya çözülür.
+"""
 
 from __future__ import annotations
 
 import os
+import re
 import unittest
 
 _HERE = os.path.dirname(os.path.abspath(__file__))
@@ -13,70 +32,148 @@ _TENDER_NAV = os.path.normpath(
 )
 
 
-class TestTenderSidebarNavigation(unittest.TestCase):
-	@classmethod
-	def setUpClass(cls):
-		with open(_SIDEBAR, encoding="utf-8") as source:
-			cls.sidebar = source.read()
+def _read(path: str) -> str:
+	with open(path, encoding="utf-8") as source:
+		return source.read()
+
+
+class TestTheSidebarCarriesModulesNotScreens(unittest.TestCase):
+	"""Asıl mimari kural. Bir modül ekranlarını kenar çubuğuna dökerse iki
+	gezinme yeri olur ve ikisi kaçınılmaz olarak ayrışır."""
+
+	def setUp(self):
+		self.sidebar = _read(_SIDEBAR)
 
 	def test_tender_is_in_operations_group(self):
-		self.assertIn(
-			'names: ["purchasing", "imports", "tender", "inventory"',
-			self.sidebar,
+		self.assertIn('names: ["purchasing", "imports", "tender", "inventory"', self.sidebar)
+
+	def test_no_tender_sub_path_is_listed_in_the_sidebar(self):
+		"""`/tender/board` modülün giriş kapısı — kalan her `/tender/...` yolu
+		bir EKRAN ve modül çubuğuna aittir."""
+		paths = set(re.findall(r'"(/tender/[a-z-]+)"', self.sidebar))
+		self.assertEqual(
+			paths - {"/tender/board"},
+			set(),
+			"kenar çubuğu modül ekranı listeliyor — bunlar TenderNav'a ait",
 		)
 
-	def test_sidebar_uses_role_filtered_tender_children(self):
-		for route in (
-			"/tender/director",
-			"/tender/my-tenders",
-			"/tender/po-control",
-			"/tender/customs",
-			"/tender/logistics",
-		):
-			self.assertIn(route, self.sidebar)
+	def test_the_sidebar_no_longer_carries_a_second_navigation(self):
+		"""Alt menü, aç/kapa düğmesi ve rol filtresi modül çubuğuna taşındı;
+		burada kalan kalıntı ikinci bir gezinme yeri demek olurdu."""
+		for leftover in ("tenderChildren", "toggleTender", "nav-submenu", "sidebar-tender-children"):
+			with self.subTest(leftover=leftover):
+				self.assertNotIn(leftover, self.sidebar)
+
+	def test_the_sidebar_still_primes_the_view_list(self):
+		"""Modül çubuğu yalnız tender sayfalarında render ediliyor, kenar çubuğu
+		her sayfada. Görünüm listesi ilk açılışta hazır olmalı, yoksa çubuk bir
+		an eksik çiziliyor."""
 		self.assertIn("ensureTenderViews", self.sidebar)
-		self.assertNotIn("/app/", self.sidebar)
 
-	def test_tender_children_are_deduped_by_path_after_the_role_filter(self):
-		"""`/tender/crm` is listed once per view, so a director+sourcing user would
-		otherwise see it twice. Dedupe must run AFTER the role filter — deduping the
-		raw list first would drop the row for a sourcing-only user."""
-		self.assertIn("seen.has(item.path)", self.sidebar)
-		self.assertIn("const seen = new Set()", self.sidebar)
-		self.assertLess(
-			self.sidebar.index("session.tenderViews.includes(item.view)"),
-			self.sidebar.index("seen.has(item.path)"),
-			"path dedupe must come after the role filter",
+	def test_no_sidebar_entry_leads_to_a_bare_redirect(self):
+		"""Menüden tıklayıp başka bir yere düşmek, kırık bir menü maddesidir —
+		"Kontrol Kulesi" tam olarak buydu."""
+		router = _read(_ROUTER)
+		redirects = set(re.findall(r'\{\s*path:\s*"([^"]+)",\s*redirect:', router))
+		listed = set(re.findall(r'path: "(/[a-z0-9/-]+)"', self.sidebar))
+		self.assertEqual(listed & redirects, set(), "kenar çubuğu bir redirect rotasına bağlanmış")
+
+
+class TestTheModuleBarCarriesEveryScreen(unittest.TestCase):
+	def setUp(self):
+		self.nav = _read(_TENDER_NAV)
+		self.router = _read(_ROUTER)
+
+	def test_the_bar_uses_the_design_layer(self):
+		"""Tasarımın modül navı; altı referans sayfasının hepsinde bu çubuk var."""
+		self.assertIn('class="ds-modnav"', self.nav)
+		self.assertIn("stbl-ds", self.nav)
+		self.assertIn("ds-modnav-brand", self.nav)
+
+	# Modül çubuğuna GİRMEYEN rotalar. Buraya bir yol eklemek bilinçli bir
+	# karardır: "bu ekran modülün bir sayfası değil, bir kaydın detayı".
+	DRILL_DOWNS = {
+		# Bir anlaşmanın teklif karşılaştırması. `?deal=` ile geliyor ve beş
+		# ayrı ekrandan linkli (Sözleşme panosu, CRM çekmecesi, PO kontrol,
+		# Tedarikçiler, CRM Anlaşmalar). Çubuğa koymak dokuzuncu maddeyi
+		# eklerdi ve kullanıcı oraya bağlamsız gitmez.
+		"/tender/sourcing",
+	}
+
+	def test_every_tender_screen_is_reachable_from_the_bar(self):
+		"""Rotası olup hiçbir yerden linklenmeyen ekran ölü koddur. Direktör
+		panosu neredeyse öyle oldu — ve `TenderControlTower.vue` gerçekten öyle
+		(319 satır, hiçbir rota, hiçbir import)."""
+		routed = set(re.findall(r'path: "(/tender/[a-z-]+)"[^}]*component:', self.router))
+		linked = set(re.findall(r'to="(/tender/[a-z-]+)"', self.nav))
+		self.assertEqual(
+			routed - linked - self.DRILL_DOWNS,
+			set(),
+			"rotası var, modül çubuğunda yok ve drill-down olarak da işaretlenmemiş",
 		)
 
-	def test_tender_director_bookmark_redirects_to_dashboard(self):
-		with open(_ROUTER, encoding="utf-8") as source:
-			router = source.read()
-		self.assertIn(
-			'{ path: "/tender/director", redirect: "/dashboard"',
-			router,
+	def test_every_drill_down_is_linked_from_a_real_screen(self):
+		"""Muafiyet bir kaçış kapısı olmamalı: çubuğa girmeyen ekran EN AZ bir
+		yerden linklenmeli, yoksa muafiyet listesi ölü kodun saklandığı yer
+		olur."""
+		pages = os.path.normpath(os.path.join(_HERE, "..", "public", "js"))
+		sources = []
+		for root, _dirs, files in os.walk(pages):
+			for name in files:
+				if name.endswith(".vue"):
+					sources.append(_read(os.path.join(root, name)))
+		blob = "\n".join(sources)
+		for path in sorted(self.DRILL_DOWNS):
+			with self.subTest(path=path):
+				self.assertIn(path, blob, f"{path} hiçbir ekrandan linklenmiyor — öksüz")
+
+	def test_every_link_in_the_bar_resolves_to_a_route(self):
+		for path in sorted(set(re.findall(r'to="(/[a-z0-9/-]+)"', self.nav))):
+			with self.subTest(path=path):
+				self.assertRegex(
+					self.router,
+					rf'path: "{re.escape(path)}"',
+					f"{path} modül çubuğunda var ama router'da yok",
+				)
+
+	def test_the_director_board_is_linked_and_role_gated(self):
+		self.assertIn('to="/tender/portfolio"', self.nav)
+		self.assertRegex(self.nav, r"v-if=\"can\('director'\)\"\s+to=\"/tender/portfolio\"")
+
+	def test_role_gating_survived_the_move(self):
+		"""Kapılar kenar çubuğundan buraya taşındı; taşınırken gevşemiş olamaz."""
+		self.assertIn("session.tenderViews.includes(view)", self.nav)
+		for view, path in (
+			("sourcing", "/tender/my-tenders"),
+			("sourcing", "/tender/po-control"),
+			("declarant", "/tender/customs"),
+			("logist", "/tender/logistics"),
+		):
+			with self.subTest(view=view, path=path):
+				self.assertRegex(self.nav, rf"v-if=\"can\('{view}'\)\"\s+to=\"{re.escape(path)}\"")
+
+	def test_the_crm_is_open_to_both_director_and_sourcing(self):
+		self.assertRegex(
+			self.nav, r"v-if=\"can\('director'\) \|\| can\('sourcing'\)\"\s+to=\"/tender/crm\""
 		)
-		self.assertNotIn(
-			'{ path: "/tender/director", name: "tender-director", component: DirectorBoard',
-			router,
-		)
 
-	def test_operations_desk_route_is_registered_module_gated_and_resolvable(self):
-		"""Rota kaydı olmadan ekran ölü kod: `api/tender_desk.py` prod'da canlıydı
-		ama ona giden `/tender/desk` rotası hiçbir commit'te yoktu — yalnız bir
-		oturumun commit'lenmemiş `router.js`'inde duruyordu, yani ilk temiz
-		deploy'da sessizce kaybolurdu.
+	def test_there_is_a_way_back_to_the_dashboard(self):
+		"""Konum değil VARLIK garanti: modüller arası geçiş artık kenar
+		çubuğunun işi, ama pano tender'ın da özeti (Masa oraya gömülü)."""
+		self.assertIn('to="/dashboard"', self.nav)
+		self.assertIn('t("Overview")', self.nav)
 
-		`module: "tender"` ayrı bir iddia: onsuz rota koruyucusu doğrudan URL
-		erişimini engelleyemez (CLAUDE.md, modül erişim kuralı).
+	def test_the_dead_bookmark_is_not_linked(self):
+		self.assertNotIn('to="/tender/director"', self.nav)
 
-		Bileşen dosyasının varlığı üçüncüsü. Temiz klonda yalnız takip edilen
-		dosyalar bulunur, dolayısıyla bu satır "rota, hiçbir commit'te olmayan
-		bir bileşene bağlanmış" durumunu yakalar — aynı `router.js` içinde
-		untracked `TransporterCenter.vue`'ye giden ikinci bir rota tam olarak
-		bu hâldeydi."""
-		with open(_ROUTER, encoding="utf-8") as source:
-			router = source.read()
+
+class TestTheOperationsDeskRouteIsWhole(unittest.TestCase):
+	"""Rota kaydı olmadan ekran ölü kod: `api/tender_desk.py` prod'da canlıydı
+	ama ona giden `/tender/desk` rotası hiçbir commit'te yoktu — yalnız bir
+	oturumun commit'lenmemiş `router.js`'inde duruyordu."""
+
+	def test_route_is_registered_module_gated_and_resolvable(self):
+		router = _read(_ROUTER)
 		self.assertIn('import OperationsDesk from "./pages/tender/OperationsDesk.vue";', router)
 		route = next((line for line in router.splitlines() if '"/tender/desk"' in line), "")
 		self.assertIn('name: "tender-desk"', route)
@@ -91,24 +188,11 @@ class TestTenderSidebarNavigation(unittest.TestCase):
 			"rota OperationsDesk.vue'ye bağlanıyor ama dosya depoda yok",
 		)
 
-	def test_operations_desk_is_listed_for_every_tender_view(self):
-		"""Dört görünümün dördü de ayrı satır: kenar çubuğu rol filtresi
-		`item.view`e bakıyor, tek satır yalnız o rolde görünürdü. Yol dedupe'u
-		filtreden sonra çalıştığı için dört satır kullanıcıya tek girdi olur."""
-		for view in ("director", "sourcing", "declarant", "logist"):
-			self.assertIn(
-				f'{{ view: "{view}", path: "/tender/desk", label: t("Operations desk") }}',
-				self.sidebar,
-			)
-
-	def test_tender_subnav_keeps_overview_first_and_restores_director_portfolio(self):
-		with open(_TENDER_NAV, encoding="utf-8") as source:
-			nav = source.read()
-		self.assertIn('to="/dashboard"', nav)
-		self.assertIn('t("Overview")', nav)
-		self.assertIn('t("Director board")', nav)
-		self.assertIn('to="/tender/portfolio"', nav)
-		self.assertNotIn('to="/tender/director"', nav)
+	def test_the_old_director_bookmark_still_lands_somewhere(self):
+		"""Redirect'in kendisi doğru: `/tender/director` eski bir yer imi ve
+		404 vermemeli. Kusur onu bir MENÜ MADDESİ olarak sunmaktı."""
+		router = _read(_ROUTER)
+		self.assertIn('{ path: "/tender/director", redirect: "/dashboard"', router)
 
 
 if __name__ == "__main__":

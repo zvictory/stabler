@@ -42,34 +42,23 @@ const session = useSession();
 
 const isActive = (path) => computed(() => route.path === path || route.path.startsWith(path + "/"));
 
-const tenderChildren = computed(() => {
-	// `/tender/crm` is listed once per view that may reach it, so a user holding
-	// both roles would otherwise see it twice. Dedupe AFTER the role filter —
-	// deduping the raw list would drop the row for a sourcing-only user.
-	const seen = new Set();
-	return [
-		{ view: "director", path: "/tender/desk", label: t("Operations desk") },
-		{ view: "sourcing", path: "/tender/desk", label: t("Operations desk") },
-		{ view: "declarant", path: "/tender/desk", label: t("Operations desk") },
-		{ view: "logist", path: "/tender/desk", label: t("Operations desk") },
-		{ view: "director", path: "/tender/director", label: t("Control Tower") },
-		{ view: "director", path: "/tender/crm", label: t("Tender CRM") },
-		{ view: "sourcing", path: "/tender/crm", label: t("Tender CRM") },
-		{ view: "sourcing", path: "/tender/my-tenders", label: t("My tenders") },
-		{ view: "sourcing", path: "/tender/po-control", label: t("Vendor & PO") },
-		{ view: "declarant", path: "/tender/customs", label: t("Customs queue") },
-		{ view: "logist", path: "/tender/logistics", label: t("Logistics") },
-	]
-		.filter((item) => session.tenderViews.includes(item.view))
-		.filter((item) => (seen.has(item.path) ? false : (seen.add(item.path), true)));
-});
-const tenderExpanded = ref(false);
+/* Kenar çubuğu MODÜLÜ gösterir, modülün ekranlarını değil.
+ *
+ * Burada tender'ın sekiz alt yolu listeleniyordu ve Stabler'daki on beş
+ * modülün on dördü öyle çalışmıyor: her birinin `/modul` kökünde bir hub'ı
+ * var, kenar çubuğunda tek maddesi. Tender'ın iki gezinme yeri olması ikisini
+ * de eksik bıraktı — Direktör panosu kenar çubuğunda HİÇ yoktu (yalnız üst
+ * çubukta), buna karşılık "Kontrol Kulesi" maddesi `/tender/director`'a
+ * gidiyordu ve o rota panoya redirect: menüden tıklayan kullanıcı sessizce
+ * panoya düşüyordu.
+ *
+ * Alt ekranlar artık modülün kendi üst çubuğunda (`TenderNav.vue`), rol
+ * kapıları oraya taşındı. Burada kalan tek şey modülün kendisi.
+ *
+ * `ensureTenderViews()` yine burada çağrılıyor: üst çubuk yalnız tender
+ * sayfalarında render ediliyor, oysa kenar çubuğu her sayfada var — görünüm
+ * listesi ilk açılışta hazır olsun. */
 const tenderActive = computed(() => route.path === "/tender" || route.path.startsWith("/tender/"));
-const isTenderExpanded = computed(() => tenderActive.value || tenderExpanded.value);
-
-function toggleTender() {
-	tenderExpanded.value = !tenderExpanded.value;
-}
 
 onMounted(() => session.ensureTenderViews());
 
@@ -273,26 +262,6 @@ async function downloadCbuRates() {
 								<span class="nav-link-icon"><i class="ti" :class="item.icon"></i></span>
 								<span class="nav-link-title">{{ item.label }}</span>
 							</router-link>
-							<button
-								v-if="item.name === 'tender'"
-								type="button"
-								class="btn btn-sm btn-ghost-secondary ms-auto"
-								:aria-label="isTenderExpanded ? t('Collapse Tender navigation') : t('Expand Tender navigation')"
-								:aria-expanded="isTenderExpanded"
-								aria-controls="sidebar-tender-children"
-								@click="toggleTender"
-							>
-								<i class="ti" :class="isTenderExpanded ? 'ti-chevron-down' : 'ti-chevron-right'"></i>
-							</button>
-							<ul
-								v-if="item.name === 'tender' && isTenderExpanded"
-								id="sidebar-tender-children"
-								class="nav nav-submenu"
-							>
-								<li v-for="child in tenderChildren" :key="child.path" class="nav-item">
-									<router-link :to="child.path" class="nav-link">{{ child.label }}</router-link>
-								</li>
-							</ul>
 						</li>
 					</template>
 				</ul>

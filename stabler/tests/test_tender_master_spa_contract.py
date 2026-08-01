@@ -34,11 +34,14 @@ class TestTenderCrmRouteIsReachable(unittest.TestCase):
 		nav = TENDER_NAV.read_text()
 		self.assertIn('path: "/tender/crm"', router)
 		self.assertIn('name: "tender-crm"', router)
-		self.assertIn('path: "/tender/crm"', sidebar)
 		self.assertIn('to="/tender/crm"', nav)
 		self.assertIn("v-if=\"can('director') || can('sourcing')\"", nav)
-		self.assertIn('{ view: "director", path: "/tender/crm"', sidebar)
-		self.assertIn('{ view: "sourcing", path: "/tender/crm"', sidebar)
+		# Kenar çubuğu artık modül ekranı listelemiyor — Stabler'daki diğer on
+		# dört modül gibi tek bir "Tender" maddesi taşıyor ve ekranlar modülün
+		# kendi üst çubuğunda. Buradaki garanti "CRM'e giden bir yol var" idi;
+		# o yol değişti, garanti değil. Kenar çubuğunun modül kökünü taşıdığını
+		# ve alt yol DÖKMEDİĞİNİ test_tender_sidebar_navigation kilitliyor.
+		self.assertIn('path: "/tender/board"', sidebar)
 
 
 class TestTenderCrmStaysInsideTheSpa(unittest.TestCase):
