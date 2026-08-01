@@ -162,6 +162,7 @@ const busy = computed(() => loading.value || transitioning.value);
 
 				<div
 					v-if="error"
+					id="login-error"
 					ref="errorSummary"
 					tabindex="-1"
 					class="login-notice"
@@ -176,7 +177,7 @@ const busy = computed(() => loading.value || transitioning.value);
 						<label for="login-user">
 							{{ t("Username or Email") }} <span class="ds-field-req">*</span>
 						</label>
-						<div class="login-input">
+						<div class="login-input" :data-invalid="error ? 'true' : null">
 							<svg class="login-icon" viewBox="0 0 24 24" fill="none" stroke="currentColor"
 								stroke-width="1.7" aria-hidden="true">
 								<circle cx="12" cy="8" r="3.4" /><path d="M5 20c0-3.4 3.1-5.6 7-5.6s7 2.2 7 5.6" />
@@ -187,6 +188,8 @@ const busy = computed(() => loading.value || transitioning.value);
 								type="text"
 								:placeholder="t('name.surname or name@company.uz')"
 								autocomplete="username"
+								:aria-invalid="error ? 'true' : null"
+								:aria-describedby="error ? 'login-error' : null"
 								:disabled="busy"
 							/>
 						</div>
@@ -196,7 +199,7 @@ const busy = computed(() => loading.value || transitioning.value);
 						<label for="login-pass">
 							{{ t("Password") }} <span class="ds-field-req">*</span>
 						</label>
-						<div class="login-input">
+						<div class="login-input" :data-invalid="error ? 'true' : null">
 							<svg class="login-icon" viewBox="0 0 24 24" fill="none" stroke="currentColor"
 								stroke-width="1.7" aria-hidden="true">
 								<rect x="5" y="10.5" width="14" height="9.5" /><path d="M8.2 10.5V7.8a3.8 3.8 0 0 1 7.6 0v2.7" />
@@ -207,6 +210,8 @@ const busy = computed(() => loading.value || transitioning.value);
 								:type="showPassword ? 'text' : 'password'"
 								:placeholder="t('enter password')"
 								autocomplete="current-password"
+								:aria-invalid="error ? 'true' : null"
+								:aria-describedby="error ? 'login-error' : null"
 								:disabled="busy"
 							/>
 							<button
@@ -467,6 +472,20 @@ const busy = computed(() => loading.value || transitioning.value);
 .login-input:focus-within {
 	outline: 2px solid var(--ds-acc);
 	outline-offset: -2px;
+}
+
+/* A rejected login only spoke through the summary above the form. The fields it
+ * refers to stayed visually untouched, so anyone not reading the summary — or
+ * scrolled past it — saw nothing wrong. Mark the fields themselves too.
+ * Colour is not the only channel: the inputs also carry aria-invalid and point
+ * at the summary through aria-describedby, per the layer's severity rule
+ * (colour + form + label, never colour alone). */
+.login-input[data-invalid] {
+	border-color: var(--ds-crit);
+}
+
+.login-input[data-invalid]:focus-within {
+	outline-color: var(--ds-crit);
 }
 
 .login-icon {

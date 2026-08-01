@@ -3510,7 +3510,7 @@ Stock Entry,Zaxira kiritish
 Stock Ledger,Ombor kitobi
 Stock Reconciliation,Qoldiqlarni solishtirish
 Stock Reservation,Ombor rezervi
-Stock Status,
+Stock Status,Ombor holati
 Stock UOM,Zaxira o'lchov birligi
 Stock entries,Zaxira kiritishlari
 Stock entry,Zaxira kiritish
@@ -3758,7 +3758,6 @@ Total credit value,
 Total credits,
 Total debits,
 Total duties,Jami bojlar
-Total in {0},Jami {0} da
 Total kg,Jami kg
 Total net owed,
 Total outstanding,Jami qoldiq
@@ -4213,6 +4212,7 @@ one-off,bir martalik
 open,
 optional,Ixtiyoriy
 orders,
+out of stock,omborda yo'q
 overdue,kechikdi
 pack_key is required,pack_key majburiy
 payload must be a JSON object.,
@@ -5219,3 +5219,6 @@ Freight Booking {0} belongs to another company.,{0} yuk tashish bronlashi boshqa
 Transporter & Freight Cost,Tashuvchi va yuk narxi
 No Transporter,Tashuvchi yoʻq
 Vehicle / Truck,Transport / yuk mashinasi
+open debt,ochiq qarz
+No open debt,ochiq qarz yoʻq
+Type a product code in the search above — stock status shows in the list, picking adds it as a line.,Yuqoridagi qidiruvga mahsulot kodini yozing — ombor holati roʻyxatda koʻrinadi, tanlasangiz qator boʻlib qoʻshiladi.

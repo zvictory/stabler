@@ -3754,7 +3754,6 @@ Total credit value,Total credit value
 Total credits,Total credits
 Total debits,Total debits
 Total duties,Total duties
-Total in {0},Total in {0}
 Total kg,Total kg
 Total net owed,Total net owed
 Total outstanding,Total outstanding
@@ -4208,6 +4207,7 @@ one-off,one-off
 open,open
 optional,optional
 orders,orders
+out of stock,out of stock
 overdue,overdue
 pack_key is required,pack_key is required
 payload must be a JSON object.,payload must be a JSON object.
@@ -5215,3 +5215,6 @@ Freight Booking {0} belongs to another company.,Freight Booking {0} belongs to a
 Transporter & Freight Cost,Transporter & Freight Cost
 No Transporter,No Transporter
 Vehicle / Truck,Vehicle / Truck
+open debt,open debt
+No open debt,No open debt
+Type a product code in the search above — stock status shows in the list, picking adds it as a line.,Type a product code in the search above — stock status shows in the list, picking adds it as a line.

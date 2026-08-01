@@ -190,7 +190,7 @@ import Login from "./pages/Login.vue";
 
 const routes = [
 	{ path: "/", redirect: "/dashboard" },
-	{ path: "/login", name: "login", component: Login, meta: { title: t("Login — Stabler"), standalone: true, public: true, "public-after-login": true } },
+	{ path: "/login", name: "login", component: Login, meta: { title: t("Sign in"), standalone: true, public: true, "public-after-login": true } },
 	// Onboarding — reachable by any authenticated user while onboarding is not yet
 	// complete (module: null = no module gating; the guard below confines
 	// un-provisioned users here).

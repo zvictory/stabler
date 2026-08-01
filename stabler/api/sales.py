@@ -258,11 +258,20 @@ def get_customer_defaults(company: str, customer: str):
 	company_currency = frappe.db.get_value("Company", company, "default_currency") or ""
 	resolved_pl = _resolve_price_list(customer)
 	pl_currency = frappe.db.get_value("Price List", resolved_pl, "currency") if resolved_pl else None
+	# Müşterinin açık borcu (ödenmemiş alacak) — tek bir sayı olarak, temel para
+	# biriminde. GL tabanlı (ödeme/hareket ne zaman girilirse girilsin tutar burada
+	# anlık görünür). Kredi limiti/vade bilerek yok: karar, yalnızca outstanding.
+	gl = _gl_balances_for_parties(company, [customer]).get(customer) or {}
+	outstanding_base = flt(gl.get("balance_base") or 0)
 	return {
 		"default_currency": doc.default_currency or company_currency,
 		"default_price_list": doc.default_price_list or "",
 		"resolved_price_list": resolved_pl or "",
 		"price_list_currency": pl_currency or "",
+		# Açık borç — satış formunda müşteri seçimi altındaki bilgilendirme
+		# satırını besler. Pozitif = bize borçlu.
+		"outstanding_base": outstanding_base,
+		"outstanding_currency": gl.get("account_currency") or company_currency,
 	}
 
 

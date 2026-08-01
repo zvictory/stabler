@@ -171,6 +171,70 @@ const totalQtyLabel = computed(() => {
 });
 
 const filledCount = computed(() => props.items.filter((l) => l.item_code).length);
+
+/* ---- Ürün seçme kutusu (arama sonuçları) --------------------------------
+ *
+ * Prototipin kuralı birebir: satılabilir miktar = eldeki − başka siparişlere
+ * rezerve edilen. Brüt stoku göstermek, tamamı başka bir siparişe bağlanmış
+ * bir ürünü "bol miktarda var" gibi okutuyordu.
+ *
+ * Renk tek başına bilgi taşımaz: her durum renk + biçim (dolu çubuğun boyu) +
+ * metin etiketiyle birlikte veriliyor. */
+function stockView(it) {
+	const onHand = it.actual_qty;
+	// Depo seçilmemişse bildirilecek tek bir miktar yok — sıfır yazmak her ürünü
+	// "stokta yok" göstermek olurdu.
+	if (onHand == null) return null;
+	const av = Number(onHand) - Number(it.reserved_qty || 0);
+	const box = Number(it.sales_conversion_factor || 0) || 1;
+	return {
+		tone: av <= 0 ? "out" : av < box * 3 ? "low" : "ok",
+		label: av <= 0 ? t("out of stock") : `${Number(av).toLocaleString()} ${t("available")}`,
+		// Eldekinin ne kadarının hâlâ satılabilir olduğu. En az %4, yoksa dolu
+		// olan bir çubuk hiç çizilmemiş gibi görünüyor.
+		pct: onHand > 0 ? Math.max(4, Math.round((Math.max(av, 0) / onHand) * 100)) : 0,
+	};
+}
+
+/** "1 Korobka = 24 Dona" — satış birimi stok biriminden farklıysa. */
+function uomLabel(it) {
+	const f = Number(it.sales_conversion_factor || 0);
+	if (!it.sales_uom || !f || f === 1) return it.stock_uom || "";
+	return `1 ${it.sales_uom} = ${Number(f.toFixed(3))} ${it.stock_uom}`;
+}
+
+/* Fiyat, satılan birimin fiyatıdır. Fiyat listesi ürünü fiyatlandırmıyorsa "—":
+ * standard_rate stok birimi başınadır, onu buraya koymak aynı sütunda kutu
+ * fiyatıyla adet fiyatını karıştırırdı. Satırın gerçek fiyatı seçim anında
+ * zaten get_item_price ile çözülüyor. */
+function priceLabel(it) {
+	if (it.price_list_rate == null) return "—";
+	return formatMoney(it.price_list_rate, it.price_list_currency || props.currency, props.language);
+}
+
+/** Akıllı UOM dönüşüm notu: Koli seçiliyse "×24 = 24 dona" veya "3 × 24 = 72 dona", Adet seçiliyse "1 Koli = 24 dona" */
+function uomSubtext(line) {
+	const factor = Number(line.conversion_factor) || 1;
+	const qty = Number(line.qty) || 0;
+	const stockUom = line.stock_uom || "";
+
+	if (factor > 1) {
+		const totalStock = Number((qty * factor).toFixed(2));
+		if (qty > 1) {
+			return `${qty} × ${factor} = ${totalStock} ${stockUom}`;
+		}
+		return `×${factor} = ${totalStock} ${stockUom}`;
+	}
+
+	const options = uomOptions(line);
+	const altUom = options.find((u) => u !== line.stock_uom);
+	const altFactor = Number(line.sales_conversion_factor) || 1;
+	if (altUom && altFactor > 1) {
+		return `1 ${altUom} = ${altFactor} ${stockUom}`;
+	}
+
+	return "";
+}
 </script>
 
 <template>
@@ -188,14 +252,39 @@ const filledCount = computed(() => props.items.filter((l) => l.item_code).length
 				:placeholder="t('Search a product — code, name or barcode · Enter to add')"
 				:no-results-text="t('No products match that search')"
 				open-on-focus
+				menu-class="stbl-ds so-pick-menu"
+				menu-min-width="620px"
 				@pick="onSearchPick"
 			>
-				<template #option="{ item }">
-					<div class="so-opt">
-						<span class="ds-mono so-opt-code">{{ item.item_code || item.name }}</span>
-						<span class="so-opt-name">{{ item.item_name || item.name }}</span>
-						<span class="ds-mono so-opt-stock">{{ Number(item.actual_qty || 0).toLocaleString() }} {{ item.stock_uom }}</span>
+				<!-- Sonuçlar düz bir liste değil, dört sütunlu bir tablo: hangi ürün,
+				     satılabilir mi, hangi birimle ve kaça. Başlık satırı olmadan
+				     "24" ile "130 800" aynı görünüyordu. -->
+				<template #menu-header>
+					<div class="so-pick-head">
+						<span>{{ t("Product") }}</span>
+						<span>{{ t("Stock Status") }}</span>
+						<span>{{ t("Unit") }}</span>
+						<span class="so-pick-num">{{ t("Unit price") }}</span>
 					</div>
+				</template>
+				<template #option="{ item }">
+					<span class="so-pick-prod">
+						<span class="so-pick-name">{{ item.item_name || item.name }}</span>
+						<span class="ds-mono so-pick-code">{{ item.item_code || item.name }}</span>
+					</span>
+					<span class="so-pick-stock" :data-tone="stockView(item)?.tone">
+						<template v-if="stockView(item)">
+							<span class="so-pick-stock-row">
+								<i class="so-pick-dot" aria-hidden="true"></i>
+								<span class="ds-mono so-pick-stock-label">{{ stockView(item).label }}</span>
+							</span>
+							<span class="so-pick-bar" aria-hidden="true">
+								<i :style="{ width: stockView(item).pct + '%' }"></i>
+							</span>
+						</template>
+					</span>
+					<span class="ds-mono so-pick-uom">{{ uomLabel(item) }}</span>
+					<span class="ds-mono so-pick-price">{{ priceLabel(item) }}</span>
 				</template>
 			</Typeahead>
 			<span class="ds-mono so-search-kbd" aria-hidden="true">⌘K</span>
@@ -319,7 +408,7 @@ const filledCount = computed(() => props.items.filter((l) => l.item_code).length
 					</td>
 
 					<!-- Birim: ölçülüyse sabit, değilse segment + dönüşüm notu -->
-					<td>
+					<td class="so-uom-cell">
 						<template v-if="isDim(line)">
 							<span class="ds-mono so-uom-flat">{{ line.stock_uom || line.uom || "—" }}</span>
 							<div class="ds-uom-note">{{ t("measure unit · fixed") }}</div>
@@ -335,9 +424,8 @@ const filledCount = computed(() => props.items.filter((l) => l.item_code).length
 									@click="pickUom(line, u)"
 								>{{ u }}</button>
 							</span>
-							<div v-if="line.conversion_factor > 1" class="ds-uom-note">
-								1 {{ line.uom }} = {{ line.conversion_factor }} {{ line.stock_uom }}
-								· {{ Number(stockQty(line).toFixed(2)) }} {{ line.stock_uom }}
+							<div v-if="uomSubtext(line)" class="ds-uom-note">
+								{{ uomSubtext(line) }}
 							</div>
 						</template>
 						<span v-else class="ds-mono so-uom-flat">{{ line.uom || line.stock_uom || "—" }}</span>
@@ -402,7 +490,15 @@ const filledCount = computed(() => props.items.filter((l) => l.item_code).length
 					</td>
 				</tr>
 			</tbody>
-		</table>
+			</table>
+
+		<!-- Boş durum: henüz seçili kalem yok. Prototipteki "Henüz kalem yok"
+		     bloğu. Arama çubuğu yukarıda duruyor, bu sadece tabloyu dolduracak
+		     bir yönlendirme. -->
+		<div v-if="!filledCount" class="so-empty-state">
+			<div class="so-empty-title">{{ t("No items yet") }}</div>
+			<div class="so-empty-hint">{{ t("Type a product code in the search above — stock status shows in the list, picking adds it as a line.") }}</div>
+		</div>
 
 		<div class="ds-panel-foot">
 			<span>{{ filledCount }} {{ filledCount === 1 ? t("item") : t("items") }}</span>
@@ -420,6 +516,15 @@ const filledCount = computed(() => props.items.filter((l) => l.item_code).length
 	border: 1px solid var(--ds-ln2);
 	padding: 0 13px;
 	margin: 0 var(--ds-pad) 14px;
+}
+
+/* Typeahead sizes its fixed-position menu to this root's bounding rect, so the
+   root must span the bar. Without an explicit flex it falls back to `0 1 auto`
+   and collapses to the input's intrinsic width — the menu then renders about a
+   third of the bar wide and the placeholder truncates mid-word. */
+.so-search :deep(.typeahead) {
+	flex: 1 1 auto;
+	min-width: 0;
 }
 
 .so-search :deep(.form-control) {
@@ -446,39 +551,51 @@ const filledCount = computed(() => props.items.filter((l) => l.item_code).length
 	color: var(--ds-tx3);
 }
 
-.so-opt {
-	display: flex;
-	align-items: baseline;
-	gap: 9px;
+/* The table is `table-layout: fixed`, and a fixed cell does not clip: a segmented
+   control wider than its column spills over UNIT PRICE. Two buttons already exceed
+   the 150px column. Widening the column is the wrong fix — UOM names are tenant
+   data ("Dona"/"Koli" here, longer elsewhere), so any pixel guess breaks somewhere.
+   Let the control wrap inside its cell instead. */
+.so-uom-cell .ds-uom {
+	display: inline-flex;
+	flex-wrap: nowrap;
+	border: 1px solid var(--ds-ln2, #c7ccd4);
+	border-radius: 0;
+	overflow: hidden;
 }
 
-.so-opt-code {
-	font-size: 11px;
-	color: var(--ds-acc);
-	flex: none;
+.so-uom-cell .ds-uom button {
+	min-height: 38px;
+	padding: 6px 12px;
+	border: 0;
+	background: #ffffff;
+	color: var(--ds-tx2, #667382);
+	font-family: var(--ds-font-head, "Archivo", system-ui, sans-serif);
+	font-weight: 800;
+	font-size: 13px;
+	cursor: pointer;
+	white-space: nowrap;
+	line-height: 1.2;
 }
 
-.so-opt-name {
-	flex: 1;
-	font-weight: 600;
+.so-uom-cell .ds-uom button + button {
+	border-left: 1px solid var(--ds-ln2, #c7ccd4);
 }
 
-.so-opt-stock {
-	font-size: 11px;
-	color: var(--ds-tx3);
+.so-uom-cell .ds-uom button[aria-pressed="true"] {
+	background: var(--ds-ink, #1d273b);
+	color: #ffffff;
 }
 
 .so-table {
 	table-layout: fixed;
 }
 
-/* Sütun genişlikleri bu ekrana özel: tablo sağdaki 344px'lik rayla yer
- * paylaşıyor, referans sayfadaki tam genişlik burada yok. Ürün sütunu
- * (isim + stok çubuğu) en çok yeri hak eden, o yüzden geri kalanı sıkı. */
+/* Sütun genişlikleri */
 .so-c-dims { width: 252px; }
-.so-c-qty { width: 128px; }
-.so-c-uom { width: 150px; }
-.so-c-rate { width: 132px; }
+.so-c-qty { width: 135px; }
+.so-c-uom { width: 170px; }
+.so-c-rate { width: 135px; }
 .so-c-disc { width: 104px; }
 .so-c-amt { width: 140px; }
 .so-c-del { width: 62px; }
@@ -535,8 +652,17 @@ const filledCount = computed(() => props.items.filter((l) => l.item_code).length
 }
 
 .so-uom-flat {
-	font-size: 12px;
-	color: var(--ds-tx2);
+	display: inline-flex;
+	align-items: center;
+	min-height: 38px;
+	padding: 6px 12px;
+	font-family: var(--ds-font-head, "Archivo", system-ui, sans-serif);
+	font-weight: 800;
+	font-size: 13px;
+	color: var(--ds-tx2, #667382);
+	background: #ffffff;
+	border: 1px solid var(--ds-ln2, #c7ccd4);
+	box-sizing: border-box;
 }
 
 .so-rate {
@@ -570,5 +696,181 @@ const filledCount = computed(() => props.items.filter((l) => l.item_code).length
 
 .so-del:hover {
 	color: var(--ds-crit-tx);
+}
+
+/* Boş durum: kalemler seçilmeden önce yönlendirme. Tablonun altında, footer'ın
+ * üstünde; tablo kendisi boş satır tuttuğu için burası ek bir bilgi katmanı. */
+.so-empty-state {
+	border: 1px dashed var(--ds-ln2);
+	padding: 22px var(--ds-pad);
+	margin: 0 var(--ds-pad) 14px;
+}
+
+.so-empty-title {
+	font-family: var(--ds-font-head);
+	font-weight: 800;
+	font-size: 18px;
+	margin-bottom: 4px;
+}
+
+.so-empty-hint {
+	font-size: 13.5px;
+	color: var(--ds-tx2);
+	max-width: 60ch;
+}
+</style>
+
+<!-- Ürün seçme kutusu <body>'ye teleport ediliyor: scoped CSS oradaki satır
+     düğmesine ulaşamaz. Bu blok bilerek scoped değil, `.so-pick-menu`
+     (Typeahead'in menu-class prop'u) ile sınırlanıyor. -->
+<style>
+.so-pick-menu {
+	padding: 0;
+	overflow-x: hidden;
+}
+
+/* Menü <body>'ye teleport edildiği için `.stbl-ds` atasının dışında kalıyor;
+   --ds-* değişkenleri ve `.stbl-ds .ds-mono` gibi kurallar orada tanımsız.
+   Bu yüzden menünün kendisi `stbl-ds` sınıfını taşıyor. Karşılığında
+   `.stbl-ds`'in gövde arkaplanı/tipografisi de geliyor — ikisi de tek sınıf
+   özgüllüğünde olduğu için dosya sırasına bağlı kalmasın diye burada iki
+   sınıfla sabitliyoruz. */
+.so-pick-menu.stbl-ds {
+	background: var(--ds-surface);
+	font-size: var(--stbl-dropdown-font-size);
+}
+
+/* Dört sütun: ürün / stok durumu / birim / birim fiyatı. Başlık ile satırlar
+   AYNI şablonu paylaşmalı, yoksa hizalama kayar. */
+.so-pick-menu .so-pick-head,
+.so-pick-menu .stbl-menu-item {
+	display: grid;
+	grid-template-columns: minmax(0, 1fr) 150px 130px 150px;
+	align-items: start;
+	gap: 0;
+	width: 100%;
+}
+
+.so-pick-menu .so-pick-head {
+	position: sticky;
+	top: 0;
+	z-index: 1;
+	background: var(--ds-bg, #f6f8fb);
+	border-bottom: 1px solid var(--ds-ln, #e3e5e8);
+}
+
+.so-pick-menu .so-pick-head > span {
+	padding: 8px 14px;
+	font-family: var(--ds-mono);
+	font-size: 10px;
+	letter-spacing: 0.14em;
+	text-transform: uppercase;
+	color: var(--ds-tx2, #667382);
+}
+
+.so-pick-menu .stbl-menu-item {
+	padding: 0;
+	border-top: 1px solid var(--ds-ln, #e3e5e8);
+	text-align: left;
+}
+
+.so-pick-menu .stbl-menu-item > span {
+	padding: 10px 14px;
+	min-width: 0;
+}
+
+/* Sütunlar arası ince çizgiler — prototipteki 1px'lik ızgara. */
+.so-pick-menu .so-pick-head > span + span,
+.so-pick-menu .stbl-menu-item > span + span {
+	border-left: 1px solid var(--ds-ln, #e3e5e8);
+}
+
+.so-pick-name {
+	display: block;
+	font-size: 14px;
+	font-weight: 600;
+	overflow: hidden;
+	text-overflow: ellipsis;
+	white-space: nowrap;
+}
+
+.so-pick-code {
+	display: block;
+	font-size: 10.5px;
+	color: var(--ds-tx3, #9099a6);
+}
+
+.so-pick-stock-row {
+	display: flex;
+	align-items: center;
+	gap: 7px;
+}
+
+.so-pick-dot {
+	width: 9px;
+	height: 9px;
+	display: block;
+	flex: none;
+	background: var(--ds-ok);
+}
+
+.so-pick-stock-label {
+	font-size: 11.5px;
+	color: var(--ds-ok);
+}
+
+.so-pick-bar {
+	display: block;
+	height: 5px;
+	background: var(--ds-bg, #eef2f7);
+	margin-top: 6px;
+}
+
+.so-pick-bar > i {
+	display: block;
+	height: 5px;
+	background: var(--ds-ok);
+}
+
+/* Renk tek başına taşımaz: durum ayrıca çubuğun boyu ve metin etiketiyle de
+   veriliyor ("stokta yok" / "4 056 uygun"). */
+.so-pick-stock[data-tone="low"] .so-pick-dot,
+.so-pick-stock[data-tone="low"] .so-pick-bar > i {
+	background: var(--ds-today);
+}
+
+.so-pick-stock[data-tone="low"] .so-pick-stock-label {
+	color: var(--ds-today-tx);
+}
+
+.so-pick-stock[data-tone="out"] .so-pick-dot,
+.so-pick-stock[data-tone="out"] .so-pick-bar > i {
+	background: var(--ds-crit);
+}
+
+.so-pick-stock[data-tone="out"] .so-pick-stock-label {
+	color: var(--ds-crit-tx);
+}
+
+/* Satılabilir stoğu kalmamış ürün soluk. Yine de seçilebilir: ön sipariş
+   almak meşru bir iş, tasarımın tıklamayı engellemesi bir görünüm kararı
+   değil davranış kısıtıydı. */
+.so-pick-menu .stbl-menu-item:has(.so-pick-stock[data-tone="out"]) {
+	opacity: 0.55;
+}
+
+.so-pick-uom {
+	font-size: 11.5px;
+	color: var(--ds-tx2, #667382);
+}
+
+.so-pick-price,
+.so-pick-menu .so-pick-num {
+	text-align: right;
+}
+
+.so-pick-price {
+	font-size: 13px;
+	font-weight: 600;
 }
 </style>

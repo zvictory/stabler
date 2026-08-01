@@ -33,6 +33,7 @@ const props = defineProps({
 	error: { type: String, default: "" },
 	actionError: { type: String, default: "" },
 	backPath: { type: String, default: null },
+	frameless: { type: Boolean, default: false },
 });
 
 const router = useRouter();
@@ -90,7 +91,14 @@ const badgeClass = computed(() => {
 	</div>
 	<div v-else-if="error" class="alert alert-danger">{{ error }}</div>
 	<template v-else>
-		<div class="card">
+		<div v-if="frameless" class="form-page-frameless">
+			<div v-if="actionError" class="alert alert-danger mb-3">{{ actionError }}</div>
+			<slot />
+			<div v-if="$slots.actions" class="form-page-actions mt-3">
+				<slot name="actions" />
+			</div>
+		</div>
+		<div v-else class="card">
 			<div class="card-header">
 				<div class="d-flex align-items-center gap-3 flex-wrap">
 					<button
@@ -129,4 +137,3 @@ const badgeClass = computed(() => {
 		</div>
 	</template>
 </template>
-

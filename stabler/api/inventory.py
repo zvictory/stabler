@@ -53,6 +53,7 @@ def list_items(
 	stock_only: int = 0,
 	context: str | None = None,
 	include_descendants: int = 0,
+	price_list: str | None = None,
 ):
 	"""Return items matching *search* (code or name), optionally scoped to a warehouse.
 
@@ -73,6 +74,10 @@ def list_items(
 	include_descendants — when ``item_group`` is a category (group) node, also
 	match items filed under its subcategories. Defaults off: existing pickers that
 	pass an exact item_group keep their historical exact-match behaviour.
+
+	price_list — opt-in. When given, every row also carries ``price_list_rate`` (and
+	``price_list_currency``) resolved in ONE extra statement. Pickers that don't ask
+	for it pay nothing, so the purchase/transfer/stock pickers are untouched.
 	"""
 	if context:
 		item_filter = _ITEM_CONTEXT_FILTER.get(context, _ITEM_CONTEXT_FILTER["sales"])
@@ -83,40 +88,128 @@ def list_items(
 	conds = ["disabled = 0", item_filter]
 	params: dict = {"limit": int(limit)}
 	if search:
-		conds.append("(item_name LIKE %(s)s OR item_code LIKE %(s)s)")
+		# item_code must be qualified: `tabBin` carries a column of the same name.
+		conds.append("(`tabItem`.item_name LIKE %(s)s OR `tabItem`.item_code LIKE %(s)s)")
 		params["s"] = f"%{search}%"
 	if item_group:
 		conds.append(_item_group_condition(item_group, include_descendants, params))
+	# Bin is unique per (item_code, warehouse), so the join cannot duplicate rows.
+	# It replaces the older EXISTS filter: the picker needs the quantity itself, not
+	# just the fact that one exists — rendering `actual_qty` as 0 for every row while
+	# the line below reads "32 available" is worse than showing nothing.
 	if warehouse:
 		# Only items that actually have stock in the target warehouse.
 		# actual_qty > 0 prevents 0-qty Bin rows (e.g. raw materials ever staged there) from leaking in.
-		conds.append(
-			"EXISTS (SELECT 1 FROM `tabBin` b"
-			" WHERE b.item_code = `tabItem`.name AND b.warehouse = %(warehouse)s AND b.actual_qty > 0)"
-		)
+		join = "JOIN `tabBin` b ON b.item_code = `tabItem`.name AND b.warehouse = %(warehouse)s"
+		qty_sel = "b.actual_qty"
+		# Same Bin row, so reserved costs nothing extra — and without it a picker can
+		# only show gross stock, which reads as "plenty" for an item that is fully
+		# committed to other orders. Free-to-promise is actual − reserved.
+		res_sel = "b.reserved_qty"
+		conds.append("b.actual_qty > 0")
 		params["warehouse"] = warehouse
+	else:
+		# No warehouse scope — there is no single quantity to report. NULL (not 0) so
+		# the caller can tell "unknown" apart from "none in stock" and hide the column.
+		join = ""
+		qty_sel = "NULL"
+		res_sel = "NULL"
+	# The selling unit ("1 box = 24 pcs") is meaningful only to a sales picker; the
+	# other contexts don't pay for the child-table join. parentfield pins it to the
+	# Item.uoms table so no sibling child row can duplicate the item.
+	if context == "sales":
+		uom_join = (
+			"LEFT JOIN `tabUOM Conversion Detail` ucd"
+			" ON ucd.parent = `tabItem`.name AND ucd.parenttype = 'Item'"
+			" AND ucd.parentfield = 'uoms' AND ucd.uom = `tabItem`.sales_uom"
+		)
+		uom_sel = "`tabItem`.sales_uom, ucd.conversion_factor AS sales_conversion_factor"
+	else:
+		uom_join = ""
+		uom_sel = "NULL AS sales_uom, NULL AS sales_conversion_factor"
 	where = " AND ".join(conds)
 	# custom_dimension_mode drives dimensional pricing (m / m² / m³). Guard the
 	# column so item search keeps working before the v23 patch has run.
 	dim_sel = (
-		"custom_dimension_mode"
+		"`tabItem`.custom_dimension_mode"
 		if frappe.db.has_column("Item", "custom_dimension_mode")
 		else "NULL AS custom_dimension_mode"
 	)
-	return frappe.db.sql(
+	rows = frappe.db.sql(
 		f"""
-		SELECT name, item_code, item_name, item_group, stock_uom,
-		       is_stock_item, is_purchase_item, is_sales_item,
-		       has_variants, image, standard_rate, valuation_rate,
+		SELECT `tabItem`.name, `tabItem`.item_code, `tabItem`.item_name,
+		       `tabItem`.item_group, `tabItem`.stock_uom,
+		       `tabItem`.is_stock_item, `tabItem`.is_purchase_item, `tabItem`.is_sales_item,
+		       `tabItem`.has_variants, `tabItem`.image,
+		       `tabItem`.standard_rate, `tabItem`.valuation_rate,
+		       {qty_sel} AS actual_qty,
+		       {res_sel} AS reserved_qty,
+		       {uom_sel},
 		       {dim_sel}
 		FROM `tabItem`
+		{join}
+		{uom_join}
 		WHERE {where}
-		ORDER BY item_name ASC
+		ORDER BY `tabItem`.item_name ASC
 		LIMIT %(limit)s
 		""",
 		params,
 		as_dict=True,
 	)
+	if price_list:
+		_attach_price_list_rates(rows, price_list)
+	return rows
+
+
+def _attach_price_list_rates(rows: list[dict], price_list: str) -> None:
+	"""Fill ``price_list_rate`` / ``price_list_currency`` on picker rows, in place.
+
+	``sales.get_item_price`` is the right resolver for a single pick, but calling it
+	per row would fire one statement per result behind a keystroke-debounced picker.
+	The selection rule is the same as ``sales._lookup_item_price`` — active validity
+	window, UOM-specific row preferred over the generic one, newest first — only
+	applied once to the whole result set instead of once per item.
+	"""
+	if not rows:
+		return
+	codes = [r["name"] for r in rows]
+	prices = frappe.db.sql(
+		"""
+		SELECT item_code, uom, price_list_rate, currency
+		FROM `tabItem Price`
+		WHERE price_list = %(price_list)s AND selling = 1
+		  AND item_code IN %(codes)s
+		  AND (valid_from IS NULL OR valid_from <= %(today)s)
+		  AND (valid_upto IS NULL OR valid_upto >= %(today)s)
+		ORDER BY valid_from DESC
+		""",
+		{"price_list": price_list, "codes": codes, "today": today()},
+		as_dict=True,
+	)
+	_apply_item_prices(rows, prices)
+
+
+def _apply_item_prices(rows: list[dict], prices: list[dict]) -> None:
+	"""Match an already-fetched Item Price set onto picker rows, in place.
+
+	Split out from the query so the selection rule — the part that can actually be
+	wrong — is testable without a bound site.
+	"""
+	by_item: dict[str, list[dict]] = {}
+	for p in prices:
+		by_item.setdefault(p["item_code"], []).append(p)
+	for r in rows:
+		# The picker prices the unit it sells in, so the UOM-specific row wins; a
+		# generic row (no uom) is the fallback, exactly as on a single pick.
+		want = r.get("sales_uom") or r.get("stock_uom")
+		hits = by_item.get(r["name"], [])
+		hit = next((p for p in hits if p["uom"] == want), None) or next(
+			(p for p in hits if not p["uom"]), None
+		)
+		# None, not 0.0: zero is a price ("free"), while "this list doesn't price it"
+		# has to stay tellable apart so the caller can fall back to standard_rate.
+		r["price_list_rate"] = flt(hit["price_list_rate"]) if hit else None
+		r["price_list_currency"] = hit["currency"] if hit else None
 
 
 @frappe.whitelist()

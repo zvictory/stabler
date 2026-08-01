@@ -14,20 +14,28 @@ import { call } from "../api/client.js";
  * materials, etc. Every form calls this instead of hand-rolling its own
  * list_items call.
  *
- * `warehouse` may be a value OR a getter (`() => form.value.set_warehouse`) so a
- * reactive warehouse is resolved at call time, not frozen when the searcher is built.
+ * `warehouse` and `priceList` may each be a value OR a getter
+ * (`() => form.value.set_warehouse`) so a reactive value is resolved at call time,
+ * not frozen when the searcher is built.
+ *
+ * `priceList` is opt-in: pass it and every row also carries `price_list_rate`, so a
+ * picker can quote a price without a second round trip per item. Pickers that don't
+ * ask for it pay nothing.
  *
  * @param {"sales"|"purchase"|"stock"|"all"} context
- * @param {{ warehouse?: string|(() => string), limit?: number, itemGroup?: string }} [opts]
+ * @param {{ warehouse?: string|(() => string), priceList?: string|(() => string), limit?: number, itemGroup?: string }} [opts]
  * @returns {(q: string) => Promise<Array>}
  */
 export function itemSearcher(context, opts = {}) {
-	const resolveWarehouse = typeof opts.warehouse === "function" ? opts.warehouse : () => opts.warehouse;
+	const getter = (v) => (typeof v === "function" ? v : () => v);
+	const resolveWarehouse = getter(opts.warehouse);
+	const resolvePriceList = getter(opts.priceList);
 	return (q) =>
 		call("stabler.api.inventory.list_items", {
 			search: q,
 			context,
 			warehouse: resolveWarehouse() || undefined,
+			price_list: resolvePriceList() || undefined,
 			item_group: opts.itemGroup || undefined,
 			limit: opts.limit || 30,
 		});

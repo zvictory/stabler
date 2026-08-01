@@ -3516,7 +3516,7 @@ Stock Entry,Складское движение
 Stock Ledger,Складская книга
 Stock Reconciliation,Сверка остатков
 Stock Reservation,Резервирование склада
-Stock Status,
+Stock Status,Наличие
 Stock UOM,Ед. изм. складского учёта
 Stock entries,Приходно-расходные накладные
 Stock entry,Приходно-расходная накладная
@@ -3764,7 +3764,6 @@ Total credit value,
 Total credits,
 Total debits,
 Total duties,Итого пошлины
-Total in {0},Итого в {0}
 Total kg,Всего кг
 Total net owed,
 Total outstanding,Всего задолженности
@@ -4219,6 +4218,7 @@ one-off,разовый
 open,
 optional,необязательно
 orders,
+out of stock,нет в наличии
 overdue,просрочено
 pack_key is required,pack_key обязателен
 payload must be a JSON object.,
@@ -5225,3 +5225,6 @@ Freight Booking {0} belongs to another company.,Бронирование пер�
 Transporter & Freight Cost,Перевозчик и стоимость доставки
 No Transporter,Без перевозчика
 Vehicle / Truck,Транспорт / машина
+open debt,открытый долг
+No open debt,нет открытого долга
+Type a product code in the search above — stock status shows in the list, picking adds it as a line.,Введите код товара в поиске выше — статус склада будет в списке, выбор добавит его как строку.

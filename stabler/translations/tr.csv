@@ -3497,7 +3497,7 @@ Stock Entry,Stok Girişi
 Stock Ledger,Stok Defteri
 Stock Reconciliation,Stok sayımı
 Stock Reservation,Stok Rezervasyonu
-Stock Status,
+Stock Status,Stok durumu
 Stock UOM,Stok Birimi
 Stock entries,Stok girişleri
 Stock entry,Stok girişi
@@ -3744,7 +3744,6 @@ Total credit value,
 Total credits,
 Total debits,
 Total duties,Toplam vergiler
-Total in {0},{0} cinsinden toplam
 Total kg,Toplam kg
 Total net owed,
 Total outstanding,Toplam bakiye
@@ -4198,6 +4197,7 @@ one-off,tek seferlik
 open,
 optional,isteğe bağlı
 orders,
+out of stock,stok yok
 overdue,gecikmiş
 pack_key is required,pack_key zorunludur
 payload must be a JSON object.,
@@ -5214,3 +5214,6 @@ Freight Booking {0} belongs to another company.,{0} nakliye rezervasyonu başka 
 Transporter & Freight Cost,Nakliyeci ve Navlun Bedeli
 No Transporter,Nakliyeci yok
 Vehicle / Truck,Araç / Kamyon
+open debt,açık borç
+No open debt,açık borç yok
+Type a product code in the search above — stock status shows in the list, picking adds it as a line.,Yukarıdaki aramaya ürün kodu yazın — stok durumu listede görünür, seçince satır olarak eklenir.

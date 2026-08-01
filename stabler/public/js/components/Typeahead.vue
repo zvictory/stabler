@@ -12,6 +12,10 @@ const props = defineProps({
 	debounce: { type: Number, default: 200 },
 	noResultsText: { type: String, default: "No matches found" },
 	menuMinWidth: { type: String, default: "100%" },
+	// Namespace for a caller that needs to restyle the popover (e.g. lay the rows out
+	// as a table). The menu is teleported to <body>, so the parent's scoped CSS can't
+	// reach the row element the component itself renders — this class can.
+	menuClass: { type: String, default: "" },
 	// When true, clicking/focusing the field immediately loads a browse list
 	// without requiring any typing first. Safe to leave false (default) on
 	// fields where the dataset is small enough — e.g. Customers.
@@ -279,6 +283,7 @@ function onKeydown(e) {
 				v-if="showOptions && !hasSelection"
 				ref="menuEl"
 				class="stbl-menu stbl-menu--nocheck typeahead-menu"
+				:class="menuClass"
 				:style="menuStyle"
 				role="listbox"
 			>
@@ -289,6 +294,9 @@ function onKeydown(e) {
 				<div v-else-if="!options.length" class="stbl-menu-empty small">
 					<i class="ti ti-search-off me-1"></i>{{ noResultsText }}
 				</div>
+				<!-- Column headings for a caller that renders its options as table rows.
+				     Only when there is something to head. -->
+				<slot v-if="options.length" name="menu-header" />
 				<template v-for="(item, i) in options" :key="item.name || item.__group || i">
 					<div
 						v-if="item.__group"

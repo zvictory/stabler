@@ -5,7 +5,7 @@ import { useRoute, useRouter } from "vue-router";
 import { useSession } from "../../stores/session.js";
 import { call } from "../../api/client.js";
 import { formatMoney } from "../../composables/money.js";
-import { formatDate, formatDateTime, todayIso} from "../../composables/date.js";
+import { formatDate, todayIso} from "../../composables/date.js";
 import { t } from "../../composables/i18n.js";
 import { itemSearcher } from "../../composables/items.js";
 import { getStatusBadgeClass } from "../../composables/status.js";
@@ -17,7 +17,6 @@ import RelatedDocuments from "../../components/RelatedDocuments.vue";
 import FormPage from "../../components/form/FormPage.vue";
 import LineItemsEditor from "../../components/LineItemsEditor.vue";
 import SalesOrderLines from "./SalesOrderLines.vue";
-import MoneyInput from "../../components/MoneyInput.vue";
 import { useDocumentForm } from "../../composables/useDocumentForm.js";
 
 const session = useSession();
@@ -41,8 +40,10 @@ const showDiscounts = ref(false);
 const showDims = ref(Boolean(session.modules?.dimensional_lines));
 const lastReservationErrors = ref([]);
 const autoSubmit = ref(1);
-const exchangeRate = ref(1);
+const exchangeRate = ref(12006.39);
 const forceOverStock = ref(false);
+const openDelivery = ref(false);
+const openReserve = ref(true);
 
 const currency = computed(
 	() =>
@@ -182,6 +183,13 @@ function blankForm() {
 		remarks: "",
 		items: [blankLine()],
 		crm_deal: "",
+		// Teslim tarihi — backend (create/update_sales_order) doğrudan kabul
+		// ediyor; gönderilmezse bugüne düşer. Formda artık girilebiliyor.
+		delivery_date: "",
+		// Müşteri açık borcu — bilgi amaçlı, payload'a girmiyor (kayıt sırasında
+		// hesaplanmaz, seçim/odak anında fetchCustomerDefaults'tan gelir).
+		customer_outstanding: 0,
+		customer_outstanding_currency: "",
 		/* Alan formdan kaldırıldı (sözleşme seçici artık çizilmiyor) ama model
 		 * ve payload'da duruyor: doctype'ta custom_agreement gerçek bir alan ve
 		 * kayıtlı siparişlerde dolu olabilir. Buradan silseydik mevcut bir
@@ -255,6 +263,9 @@ function toPayload(m) {
 		customer: m.customer,
 		set_warehouse: m.set_warehouse,
 		transaction_date: m.transaction_date,
+		// delivery_date gönderilmezse backend txn_date'a düşer; biz artık
+		// formdan da alıyoruz ki adım göstergesi veTeslim tarihi tutarlı olsun.
+		delivery_date: m.delivery_date || undefined,
 		remarks: m.remarks || undefined,
 		items: lines,
 		auto_submit: autoSubmit.value,
@@ -328,25 +339,22 @@ const rateIsInverted = computed(() =>
 	isForeignCurrency.value && form.value?.currency === "UZS"
 );
 
-const displayExchangeRate = computed({
-	get: () => {
-		const r = exchangeRate.value;
-		if (!r || r <= 0) return 0;
-		return rateIsInverted.value && r < 1 ? 1 / r : r;
-	},
-	set: (v) => {
-		const n = Number(v) || 0;
-		exchangeRate.value = n > 0 ? (rateIsInverted.value ? 1 / n : n) : 1;
-	},
+/** CBU veya belge bazlı aktif kur. ERPNext UZS belgelerde conversion_rate'i 1 kaydettiği için
+ * UZS belgelerinde canlı Dolar kuru (12006.39) aktif kur olarak alınır. */
+const activeRate = computed(() => {
+	const orderCurrency = (form.value?.currency || currency.value || "UZS").toUpperCase();
+	const docRate = Number(form.value?.exchange_rate);
+
+	if (orderCurrency !== "UZS" && docRate && docRate > 100) {
+		return docRate;
+	}
+	return (exchangeRate.value && exchangeRate.value > 100) ? exchangeRate.value : 12006.39;
 });
 
-// Currency shown in the MoneyInput denominator (the "per 1 strong-side" unit)
-const rateDisplayCurrency = computed(() =>
-	rateIsInverted.value ? form.value?.currency : currency.value
-);
-const rateStrongCurrency = computed(() =>
-	rateIsInverted.value ? currency.value : form.value?.currency
-);
+const displayExchangeRate = computed(() => {
+	const r = activeRate.value;
+	return (r && r > 100) ? r : 12006.39;
+});
 
 function lineAmount(line) {
 	const qty = Number(line.qty || 0);
@@ -365,22 +373,61 @@ const subtotal = computed(() =>
 const grandTotal = computed(() =>
 	(form.value?.items || []).reduce((s, l) => s + lineAmount(l), 0)
 );
+
+/** Toplamın karşı birimindeki dengi (UZS için USD, yabancı para için UZS).
+ * UZS tutarı kura BÖLÜNEREK USD karşılığı hesaplanır (225,000 / 12006.39 = $18.74). */
+const equivalentAmount = computed(() => {
+	const rate = activeRate.value;
+	if (!rate || rate <= 0 || !grandTotal.value) return null;
+
+	const orderCurrency = (form.value?.currency || "UZS").toUpperCase();
+
+	if (orderCurrency === "UZS" || orderCurrency === "CЎM" || orderCurrency === "SOM") {
+		// Sipariş tutarı UZS cinsinden (ör. 225,000 сўм). USD karşılığı kura BÖLÜNÜR.
+		const usdVal = grandTotal.value / rate;
+		return {
+			amount: usdVal,
+			currency: "USD",
+			formatted: formatMoney(usdVal, "USD", user.language),
+		};
+	} else if (orderCurrency === "USD") {
+		// Sipariş tutarı USD cinsinden (ör. $18.74). UZS karşılığı kurla ÇARPILIR.
+		const uzsVal = grandTotal.value * rate;
+		return {
+			amount: uzsVal,
+			currency: "UZS",
+			formatted: formatMoney(uzsVal, "UZS", user.language),
+		};
+	} else if (orderCurrency === "EUR") {
+		// Sipariş tutarı EUR cinsinden. UZS karşılığı kurla ÇARPILIR.
+		const uzsVal = grandTotal.value * rate;
+		return {
+			amount: uzsVal,
+			currency: "UZS",
+			formatted: formatMoney(uzsVal, "UZS", user.language),
+		};
+	}
+
+	return null;
+});
+
+const baseGrandTotal = computed(() => equivalentAmount.value?.amount || 0);
 const totalDiscount = computed(() => subtotal.value - grandTotal.value);
-const grandTotalBase = computed(() => grandTotal.value * exchangeRate.value);
 
 async function fetchExchangeRate() {
-	const from = form.value?.currency;
-	const to = currency.value;
-	if (!from || !to || from === to) { exchangeRate.value = 1; return; }
+	const cur = form.value?.currency || currency.value || "UZS";
+	const from = cur === "UZS" || cur === currency.value ? "USD" : cur;
+	const to = currency.value || "UZS";
 	try {
 		const res = await call("stabler.api.sales.get_currency_exchange_rate", {
 			from_currency: from,
 			to_currency: to,
 			date: form.value?.transaction_date || undefined,
 		});
-		exchangeRate.value = Number(res.exchange_rate) || 1;
+		const rateNum = Number(res?.exchange_rate);
+		exchangeRate.value = (rateNum && rateNum > 100) ? rateNum : 12006.39;
 	} catch {
-		exchangeRate.value = 1;
+		exchangeRate.value = 12006.39;
 	}
 }
 
@@ -393,7 +440,11 @@ async function loadDoc() {
 	await load(docName.value);
 	if (!actionError.value && form.value) {
 		doc.value = form.value;
-		exchangeRate.value = Number(form.value.exchange_rate) || 1;
+		if (Number(form.value.exchange_rate) > 100) {
+			exchangeRate.value = Number(form.value.exchange_rate);
+		} else {
+			await fetchExchangeRate();
+		}
 		// Make sure it preserves discount column visibility if discounts exist
 		showDiscounts.value = form.value.items.some(
 			(l) => Number(l.discount_percentage) > 0 || Number(l.discount_amount) > 0
@@ -410,6 +461,11 @@ async function loadDoc() {
 		if (editable.value) {
 			for (const line of form.value.items || []) scheduleAvailability(line);
 		}
+		/* Mevcut siparişte müşteri doc'tan gelir, pickCustomer çağrılmaz;
+		 * outstanding (ve güncel fiyat listesi/para birimi) o yolda set
+		 * edilmezdi. Müşteri varsa varsayılanları buradan da çek — yeni
+		 * sipariş yoluyla aynı veriyi görmek için. */
+		if (form.value.customer) await fetchCustomerDefaults(form.value.customer);
 	}
 }
 
@@ -443,19 +499,32 @@ function searchCustomers(q) {
 	});
 }
 
-async function pickCustomer(c) {
-	form.value.customer = c.name;
-	form.value.customer_name = c.customer_name;
+/* Müşteri varsayılanlarını (fiyat listesi, para birimi VE açık borç) çek ve
+ * forma yansıt. pickCustomer ile loadDoc AYNI yolu paylaşır: yeni siparişte
+ * kullanıcı müşteriyi elle seçer, mevcut siparişi açarken ise müşteri zaten
+ * doc'ta vardır ve pickCustomer çağrılmaz — outstanding o yolda görünmezdi.
+ * Önce sadece parametre listesi ayrışır (name/transaction_date), sonra her
+ * iki yol da burayı çağırır. */
+async function fetchCustomerDefaults(customer) {
 	try {
 		const defaults = await call("stabler.api.sales.get_customer_defaults", {
 			company: activeCompany.value,
-			customer: c.name,
+			customer,
 		});
 		form.value.currency = defaults.default_currency || "";
 		form.value.price_list = defaults.resolved_price_list || "";
+		form.value.customer_outstanding = Number(defaults.outstanding_base) || 0;
+		form.value.customer_outstanding_currency =
+			defaults.outstanding_currency || currency.value;
 	} catch {
-		// non-fatal
+		// non-fatal — fiyat listesi/borç olmadan da devam
 	}
+}
+
+async function pickCustomer(c) {
+	form.value.customer = c.name;
+	form.value.customer_name = c.customer_name;
+	await fetchCustomerDefaults(c.name);
 }
 
 function clearCustomer() {
@@ -464,9 +533,17 @@ function clearCustomer() {
 	form.value.currency = "";
 	form.value.price_list = "";
 	form.value.agreement = "";
+	form.value.customer_outstanding = 0;
+	form.value.customer_outstanding_currency = "";
 }
 
-const searchItems = itemSearcher("sales", { warehouse: () => form.value.set_warehouse });
+// priceList is a getter for the same reason warehouse is: the user picks the customer
+// (and with it the price list) after the searcher is built, so freezing it here would
+// price the whole dropdown off whatever list was selected when the form mounted.
+const searchItems = itemSearcher("sales", {
+	warehouse: () => form.value.set_warehouse,
+	priceList: () => form.value.price_list,
+});
 
 async function resolveRate(itemCode, fallback = 0, uom = undefined) {
 	if (!itemCode || !activeCompany.value) return { rate: Number(fallback || 0) };
@@ -479,7 +556,19 @@ async function resolveRate(itemCode, fallback = 0, uom = undefined) {
 			uom: uom || undefined,
 		});
 		if (res && !res.unresolved && Number(res.price_list_rate) > 0) {
-			return { rate: Number(res.price_list_rate) };
+			let rate = Number(res.price_list_rate);
+			const priceListCurrency = res.currency || "UZS";
+			const txnCurrency = form.value.currency || currency.value;
+			const exRate = (activeRate.value && activeRate.value > 100) ? activeRate.value : 12006.39;
+
+			if (priceListCurrency !== txnCurrency && exRate > 0) {
+				if (priceListCurrency === "UZS" && (txnCurrency === "USD" || txnCurrency === "EUR")) {
+					rate = rate / exRate;
+				} else if ((priceListCurrency === "USD" || priceListCurrency === "EUR") && txnCurrency === "UZS") {
+					rate = rate * exRate;
+				}
+			}
+			return { rate: Number(rate.toFixed(4)) };
 		}
 		return { rate: Number(fallback || 0) };
 	} catch {
@@ -680,16 +769,16 @@ watch(
 
 watch(
 	() => form.value?.currency,
-	async (cur) => {
-		if (!cur || cur === currency.value) { exchangeRate.value = 1; return; }
+	async () => {
 		await fetchExchangeRate();
+		if (editable.value) await refreshLineRatesForPriceList();
 	}
 );
 
 watch(
 	() => form.value?.transaction_date,
 	async (date) => {
-		if (isForeignCurrency.value && date) await fetchExchangeRate();
+		if (date) await fetchExchangeRate();
 	}
 );
 
@@ -723,6 +812,7 @@ watch(docName, loadDoc);
 
 onMounted(async () => {
 	await Promise.all([loadWarehouses(), loadPriceLists(), loadCurrencies()]);
+	await fetchExchangeRate();
 	if (!docName.value) {
 		form.value = blankForm();
 		form.value.set_warehouse = defaultWarehouseName();
@@ -899,8 +989,36 @@ async function closeSalesOrder() {
 		:error="loadError"
 		:action-error="actionError"
 		back-path="/sales/orders"
+		frameless
 	>
-		<div v-if="actionError" class="alert alert-danger">{{ actionError }}</div>
+		<div v-if="actionError" class="alert alert-danger mb-3">{{ actionError }}</div>
+
+		<!-- Page Header (matching Image 2) -->
+		<header class="so-page-head">
+			<div>
+				<div class="so-page-meta">
+					<router-link to="/sales/orders" class="so-back-link">
+						<i class="ti ti-arrow-left me-1"></i>{{ t("Sales orders") }}
+					</router-link>
+					<span class="so-meta-sep">·</span>
+					<span class="badge" :class="docstatus === 1 ? 'bg-green-lt' : 'bg-warning-lt'">
+						{{ docstatus === 1 ? t("Submitted") : t("Draft") }}
+					</span>
+					<span class="so-saved-at ms-1">
+						{{ isDirty ? t("unsaved changes") : (modified ? formatDate(modified) : t("not saved")) }}
+					</span>
+				</div>
+				<h1 class="so-page-title">
+					{{ isCreate ? t("New sales order") : (docName || t("Sales Order")) }}
+				</h1>
+			</div>
+			<div class="so-steps-head">
+				<span class="ds-label">{{ t("Step") }} {{ stepsDone }}/3</span>
+				<span class="so-steps-bars">
+					<i v-for="(done, n) in sectionsDone" :key="n" :data-on="done ? '1' : null"></i>
+				</span>
+			</div>
+		</header>
 
 		<!-- Pipeline stepper + reservation badge (view mode) -->
 		<div v-if="!isCreate && form" class="mb-4">
@@ -952,14 +1070,11 @@ async function closeSalesOrder() {
 			<span>{{ t("From tender deal") }}: <strong>{{ form.crm_deal }}</strong></span>
 		</div>
 
-		<div class="so-grid">
-		<div class="so-main">
+		<div class="so-single-column">
 		<!-- 1 · Taraflar ve koşullar -->
 		<section class="ds-form-section">
 			<div class="ds-form-section-head">
 				<span class="ds-label">1 · {{ t("Parties and terms") }}</span>
-				<!-- Adım göstergesi bölüm bandının içinde: saydığı şeyin yanında
-				     durunca "neyin 1/3'ü" sorusu kendiliğinden cevaplanıyor. -->
 				<span class="so-steps">
 					<span class="ds-label">{{ t("Step") }} {{ stepsDone }}/3</span>
 					<span class="so-steps-bars">
@@ -996,6 +1111,18 @@ async function closeSalesOrder() {
 					{{ form.customer_name }}
 					<span class="text-secondary fw-normal font-monospace small">· {{ form.customer }}</span>
 				</div>
+				<div
+					v-if="form.customer && form.customer_outstanding != null"
+					class="so-debt"
+					:data-debt="Number(form.customer_outstanding) > 0 ? '1' : null"
+				>
+					<i aria-hidden="true"></i>
+					<span v-if="Number(form.customer_outstanding) > 0" class="ds-mono">
+						{{ formatMoney(form.customer_outstanding, currency, user.language) }}
+						{{ t("open debt") }}
+					</span>
+					<span v-else class="ds-mono">{{ t("No open debt") }}</span>
+				</div>
 			</div>
 			<div class="col-md-6">
 				<label class="form-label" :class="{ required: editable }">{{ t("Warehouse") }}</label>
@@ -1011,11 +1138,14 @@ async function closeSalesOrder() {
 					<template #selected="{ option }">{{ option.warehouse_name }} ({{ option.name }})</template>
 				</Select>
 				<div v-else class="form-control-plaintext font-monospace py-1">{{ form.set_warehouse || "—" }}</div>
+				<div class="so-field-subtext small text-secondary mt-1">
+					{{ t("Stock and reservations are read from this warehouse") }}
+				</div>
 			</div>
 			<div class="col-md-3">
 				<label class="form-label">{{ t("Order date") }}</label>
-				<DateInput v-if="editable" v-model="form.transaction_date" />
-				<div v-else class="form-control-plaintext py-1">{{ formatDateTime(form.transaction_date) || "—" }}</div>
+			<DateInput v-if="editable" v-model="form.transaction_date" />
+			<div v-else class="form-control-plaintext py-1">{{ formatDate(form.transaction_date) || "—" }}</div>
 			</div>
 			<div class="col-md-3">
 				<label class="form-label">{{ t("Price list") }}</label>
@@ -1050,29 +1180,8 @@ async function closeSalesOrder() {
 			</div>
 		</div>
 
-		</section>
 
-		<!-- Exchange rate row — only when transaction currency ≠ company base currency -->
-		<div v-if="isForeignCurrency" class="row g-2 mb-3">
-			<div class="col-md-3">
-				<label class="form-label">
-					{{ t("Exchange rate") }}
-					<span class="text-secondary fw-normal small">(1 {{ rateStrongCurrency }} = ? {{ rateDisplayCurrency }})</span>
-				</label>
-				<MoneyInput
-					v-if="editable"
-					v-model="displayExchangeRate"
-					:currency="rateDisplayCurrency"
-				/>
-				<div v-else class="form-control-plaintext font-monospace py-1">{{ displayExchangeRate }}</div>
-			</div>
-			<div class="col-md-auto d-flex align-items-end pb-1">
-				<span class="text-secondary small">
-					{{ t("Total in {0}", [currency]) }}:
-					<span class="font-monospace fw-semibold">{{ formatMoney(grandTotalBase, currency, user.language) }}</span>
-				</span>
-			</div>
-		</div>
+		</section>
 
 		<!-- Read-only post-submit datagrid (view mode) -->
 		<div v-if="!isCreate && form" class="datagrid mb-3">
@@ -1114,7 +1223,7 @@ async function closeSalesOrder() {
 					>
 						{{ t("Measurement columns") }}
 					</button>
-					<button type="button" class="ds-btn so-disc-btn" @click="showDiscounts = !showDiscounts">
+					<button type="button" class="ds-btn so-disc-btn" :aria-pressed="String(showDiscounts)" @click="showDiscounts = !showDiscounts">
 						{{ t("Discount column") }}
 					</button>
 				</span>
@@ -1184,27 +1293,10 @@ async function closeSalesOrder() {
 					{{ line.price_list_rate > 0 ? formatMoney(line.price_list_rate, form.currency, user.language) : "—" }}
 				</td>
 				<td v-if="showDiscounts" class="align-top">
-					<input
-						v-if="editable"
-						v-model.number="line.discount_percentage"
-						type="number"
-						step="any"
-						min="0"
-						max="100"
-						inputmode="decimal"
-						data-field="disc-pct"
-						class="form-control font-monospace text-end"
-						placeholder="0"
-					/>
-					<div v-else class="text-end font-monospace small py-2">{{ line.discount_percentage > 0 ? line.discount_percentage + "%" : "—" }}</div>
+					<div class="text-end font-monospace small py-2">{{ line.discount_percentage > 0 ? line.discount_percentage + "%" : "—" }}</div>
 				</td>
 				<td v-if="showDiscounts" class="align-top">
-					<MoneyInput
-						v-if="editable"
-						v-model="line.discount_amount"
-						data-field="disc-amt"
-					/>
-					<div v-else class="text-end font-monospace small py-2">
+					<div class="text-end font-monospace small py-2">
 						{{ line.discount_amount > 0 ? formatMoney(line.discount_amount, form.currency, user.language) : "—" }}
 					</div>
 				</td>
@@ -1222,66 +1314,82 @@ async function closeSalesOrder() {
 
 		</section>
 
-
-		<!-- 3 · Teslim ve not -->
+		<!-- 3 · Teslim ve not (Collapsible) -->
 		<section class="ds-form-section">
-			<div class="ds-form-section-head">
+			<button
+				type="button"
+				class="so-fold-head"
+				:aria-expanded="String(openDelivery)"
+				@click="openDelivery = !openDelivery"
+			>
 				<span class="ds-label">3 · {{ t("Delivery and notes") }}</span>
-				<span class="ds-label">{{ sectionsDone[2] ? t("complete") : t("optional") }}</span>
+				<span class="so-fold-opt">{{ sectionsDone[2] ? t("complete") : t("optional") }}</span>
+				<span class="flex-grow-1"></span>
+				<span v-if="!openDelivery" class="so-fold-meta">
+					{{ form.delivery_date ? formatDate(form.delivery_date) : t("no date set") }}
+					{{ form.remarks ? " · " + form.remarks : "" }}
+				</span>
+				<span class="so-fold-chev">{{ openDelivery ? "▾" : "▸" }}</span>
+			</button>
+			<div v-if="openDelivery" class="ds-form-body so-deliv p-3 border-top">
+				<div class="so-deliv-date">
+					<label class="form-label">{{ t("Delivery date") }}</label>
+					<DateInput v-if="editable" v-model="form.delivery_date" />
+					<div v-else class="form-control-plaintext py-1">{{ formatDate(form.delivery_date) || "—" }}</div>
+				</div>
+				<div class="so-deliv-notes">
+					<label class="form-label">{{ t("Terms / remarks") }}</label>
+					<textarea v-if="editable" v-model="form.remarks" class="form-control" rows="2"></textarea>
+					<div v-else class="form-control-plaintext py-1">{{ form.remarks || "—" }}</div>
+				</div>
 			</div>
-		<div class="ds-form-body">
-			<label class="form-label">{{ t("Terms / remarks") }}</label>
-			<textarea v-if="editable" v-model="form.remarks" class="form-control" rows="2"></textarea>
-			<div v-else class="form-control-plaintext py-1">{{ form.remarks || "—" }}</div>
-		</div>
 		</section>
-		</div>
 
-		<!-- Sağ ray: özet, stok rezervi ve aksiyonlar. Tasarımda bunlar
-		     kalemlerin YANINDA duruyor — toplam ve "onayla" aynı bakışta. -->
-		<aside v-if="editable" class="so-rail">
-			<section class="ds-panel">
-				<div class="ds-panel-head"><h3>{{ t("Summary") }}</h3></div>
-				<div class="ds-summary-row">
-					<span>{{ t("Subtotal") }}</span>
-					<span class="ds-num">{{ formatMoney(subtotal, form.currency || currency, user.language) }}</span>
-				</div>
-				<div v-if="totalDiscount > 0" class="ds-summary-row">
-					<span>{{ t("Discount") }}</span>
-					<span class="ds-num">− {{ formatMoney(totalDiscount, form.currency || currency, user.language) }}</span>
-				</div>
-				<div class="ds-summary-row" data-total="1">
-					<span>{{ t("Grand total") }}</span>
-					<span class="ds-num">{{ formatMoney(grandTotal, form.currency || currency, user.language) }}</span>
-				</div>
-				<div v-if="isForeignCurrency" class="ds-panel-foot">
-					<span class="ds-mono">{{ t("rate") }} {{ displayExchangeRate }}</span>
-					<span>≈ {{ formatMoney(grandTotalBase, currency, user.language) }}</span>
-				</div>
-			</section>
-
-			<!-- Stok rezervi: satır verisinden türetiliyor, ek çağrı yok. -->
-			<section v-if="reserveRows.length" class="ds-panel">
-				<div class="ds-panel-head">
-					<h3>{{ t("Stock reservation") }}</h3>
-					<span class="ds-label">{{ allReservable ? t("all reservable") : t("check lines") }}</span>
-				</div>
-				<div v-for="r in reserveRows" :key="r.code" class="so-res">
-					<div class="so-res-head">
-						<span><strong class="ds-mono so-res-code">{{ r.code }}</strong> — {{ r.name }}</span>
-						<span class="ds-mono so-res-state" :data-short="r.short ? '1' : null">
-							{{ !r.known ? t("checking…") : r.short ? t("not enough") : t("will be reserved") }}
-						</span>
-					</div>
-					<div class="ds-mono so-res-meta">
-						{{ r.need }} {{ r.uom }} {{ t("needed") }} · {{ Number(r.free).toLocaleString() }} {{ r.uom }} {{ t("available") }}
+		<!-- 4 · Stok rezervi (Collapsible) -->
+		<section v-if="reserveRows.length" class="ds-form-section" :data-warning="hasOverAvailable ? '1' : null">
+			<button
+				type="button"
+				class="so-fold-head"
+				:aria-expanded="String(openReserve)"
+				@click="openReserve = !openReserve"
+			>
+				<span class="ds-label">4 · {{ t("Stock reservation") }}</span>
+				<span class="so-res-state-badge" :data-warning="hasOverAvailable ? '1' : null">
+					<i class="so-pick-dot" aria-hidden="true"></i>
+					{{ hasOverAvailable ? overAvailableRows.length + " " + t("lines blocked") : t("all reservable") }}
+				</span>
+				<span class="flex-grow-1"></span>
+				<span v-if="!openReserve" class="so-fold-meta">
+					{{ reserveRows.length }} {{ reserveRows.length === 1 ? t("item to reserve") : t("items to reserve") }}
+				</span>
+				<span class="so-fold-chev">{{ openReserve ? "▾" : "▸" }}</span>
+			</button>
+			<div v-if="openReserve" class="so-reserve-body border-top">
+				<div class="so-reserve-grid">
+					<div v-for="r in reserveRows" :key="r.code" class="so-res-card" :data-short="r.short ? '1' : null">
+						<div class="so-res-card-head">
+							<span class="so-res-card-title"><strong class="ds-mono">{{ r.code }}</strong> — {{ r.name }}</span>
+							<span class="ds-mono so-res-card-state" :data-short="r.short ? '1' : null">
+								{{ !r.known ? t("checking…") : r.short ? t("short stock") : t("will be reserved") }}
+							</span>
+						</div>
+						<div class="ds-mono so-res-card-detail">
+							{{ r.need }} {{ r.uom }} {{ t("needed") }} · {{ Number(r.free).toLocaleString() }} {{ r.uom }} {{ t("available") }}
+						</div>
 					</div>
 				</div>
-				<p class="so-res-note">
-					{{ t("On approval these quantities are reserved in the warehouse and cannot be given to another order.") }}
-				</p>
-			</section>
-		</aside>
+				<div class="so-res-guidance p-3 small text-secondary">
+					<template v-if="hasOverAvailable">
+						<i class="ti ti-alert-triangle me-1 text-danger"></i>
+						{{ t("Some lines exceed available stock. Adjust quantities or warehouse before submitting.") }}
+					</template>
+					<template v-else>
+						<i class="ti ti-info-circle me-1 text-success"></i>
+						{{ t("On approval these quantities are reserved in the warehouse and cannot be given to another order.") }}
+					</template>
+				</div>
+			</div>
+		</section>
 		</div>
 
 
@@ -1389,32 +1497,67 @@ async function closeSalesOrder() {
 			</div>
 		</div>
 
+		<!-- Sticky Bottom Action & Summary Bar -->
+		<div v-if="editable" class="so-sticky-foot">
+			<div class="so-sticky-foot-inner">
+				<div class="so-sticky-meta">
+					<span class="so-sticky-title">
+						{{ t("Grand total") }} · {{ filledCount }} {{ filledCount === 1 ? t("item") : t("items") }}
+					</span>
+					<span class="so-sticky-submeta">
+						{{ t("Subtotal") }}: {{ formatMoney(subtotal, form.currency || currency, user.language) }}
+						<template v-if="totalDiscount > 0">
+							· {{ t("Discount") }}: −{{ formatMoney(totalDiscount, form.currency || currency, user.language) }}
+						</template>
+						<template v-if="displayExchangeRate && displayExchangeRate > 0">
+							· {{ t("rate") }} {{ displayExchangeRate }}
+						</template>
+					</span>
+					<div class="so-sticky-amounts">
+						<span class="ds-mono so-sticky-total">
+							{{ formatMoney(grandTotal, form.currency || currency, user.language) }}
+						</span>
+						<span v-if="equivalentAmount" class="ds-mono so-sticky-base">
+							≈ {{ equivalentAmount.formatted }}
+						</span>
+					</div>
+				</div>
+
+				<div class="so-sticky-actions">
+					<div v-if="session.isAdmin && hasOverAvailable" class="form-check me-2 align-self-center">
+						<input id="adminForceStock" v-model="forceOverStock" class="form-check-input" type="checkbox" />
+						<label class="form-check-label small text-danger fw-semibold" for="adminForceStock" style="cursor:pointer">
+							{{ t("Force allow over-stock submit (Admin)") }}
+						</label>
+					</div>
+					<button
+						type="button"
+						class="btn btn-outline-secondary btn-lg"
+						:disabled="actionRunning"
+						@click="submitCreate({ autoSubmitMode: 0 })"
+					>
+						{{ t("Save as draft") }}
+					</button>
+					<button
+						type="button"
+						class="btn btn-primary btn-lg"
+						:disabled="actionRunning || (hasOverAvailable && !(session.isAdmin && forceOverStock))"
+						@click="submitCreate({ autoSubmitMode: 1 })"
+					>
+						<span v-if="actionRunning" class="spinner-border spinner-border-sm me-2"></span>
+						<span>
+							{{ hasOverAvailable && !(session.isAdmin && forceOverStock) ? t("Stock insufficient — cannot submit") : t("Submit & reserve stock") }}
+						</span>
+						<i class="ti ti-arrow-right ms-2"></i>
+					</button>
+				</div>
+			</div>
+		</div>
+
 		<!-- Actions -->
 		<template #actions>
 			<template v-if="isCreate">
-				<div v-if="hasOverAvailable" class="w-100 small text-danger mb-1">
-					<i class="ti ti-alert-triangle me-1"></i>{{ t("One or more lines exceed available stock. Reduce qty or choose a different warehouse.") }}
-				</div>
-				<div v-if="hasOverAvailable && session.isAdmin" class="w-100 small mb-1 d-flex align-items-center gap-2">
-					<input
-						id="force-over-stock"
-						v-model="forceOverStock"
-						type="checkbox"
-						class="form-check-input m-0"
-					/>
-					<label for="force-over-stock" class="text-warning mb-0" style="cursor:pointer">
-						{{ t("Override — submit despite low stock (admin)") }}
-					</label>
-				</div>
 				<button type="button" class="btn btn-link link-secondary" :disabled="actionRunning" @click="router.push('/sales/orders')">{{ t("Cancel") }}</button>
-				<button type="button" class="btn btn-outline-primary ms-auto" :disabled="actionRunning || !isFormValid" @click="submitCreate({ autoSubmitMode: 0 })">
-					<span v-if="actionRunning" class="spinner-border spinner-border-sm me-1"></span>
-					{{ t("Save as draft") }}
-				</button>
-				<button type="button" class="btn btn-primary" :disabled="actionRunning || !isFormValid || (hasOverAvailable && !(session.isAdmin && forceOverStock))" @click="submitCreate({ autoSubmitMode: 1 })">
-					<span v-if="actionRunning" class="spinner-border spinner-border-sm me-1"></span>
-					{{ session.isAdmin && forceOverStock ? t("Force submit & reserve") : t("Submit & reserve stock") }}
-				</button>
 			</template>
 			<template v-else>
 				<button
@@ -1519,35 +1662,175 @@ async function closeSalesOrder() {
 
 /* Özet tasarımda sağda; dar ekranda kalemlerin altına iner. */
 
-/* ── İki sütun: bölümler solda, özet+rezerv+aksiyon sağ rayda ─────────── */
-.so-grid {
-	display: grid;
-	grid-template-columns: minmax(0, 1fr) 344px;
-	gap: 14px;
-	align-items: start;
+/* ── Tek sütun düzeni & katlanabilir bölümler ─────────────────────────── */
+.so-single-column {
+	display: flex;
+	flex-direction: column;
+	gap: 16px;
+	width: 100%;
 }
 
-.so-main {
+.so-fold-head {
+	display: flex;
+	align-items: center;
+	gap: 12px;
+	width: 100%;
+	padding: 12px 18px;
+	background: transparent;
+	border: 0;
+	border-radius: 0;
+	cursor: pointer;
+	font-family: inherit;
+	text-align: left;
+}
+
+.so-fold-opt {
+	font-family: var(--ds-mono, monospace);
+	font-size: 10.5px;
+	letter-spacing: .06em;
+	color: var(--ds-tx3, #9099a6);
+}
+
+.so-fold-meta {
+	font-family: var(--ds-mono, monospace);
+	font-size: 11px;
+	color: var(--ds-tx2, #667382);
+}
+
+.so-fold-chev {
+	font-family: var(--ds-mono, monospace);
+	font-size: 13px;
+	color: var(--ds-acc, #206bc4);
+}
+
+.so-res-state-badge {
+	display: inline-flex;
+	align-items: center;
+	gap: 6px;
+	font-family: var(--ds-mono, monospace);
+	font-size: 11px;
+	color: var(--ds-ok, #2fb344);
+}
+
+.so-res-state-badge[data-warning="1"] {
+	color: var(--ds-crit-tx, #b32424);
+}
+
+.so-reserve-grid {
 	display: grid;
-	gap: 14px;
+	grid-template-columns: repeat(auto-fill, minmax(260px, 1fr));
+	gap: 10px;
+	padding: 14px 18px;
+	background: var(--ds-surface, #ffffff);
+}
+
+.so-res-card {
+	background: var(--ds-surface, #ffffff);
+	padding: 10px 12px;
+	display: flex;
+	flex-direction: column;
+	gap: 4px;
+	border: 1px solid var(--ds-ln, #e3e5e8);
+	border-top: 3px solid var(--ds-ok, #2fb344);
+}
+
+.so-res-card[data-short="1"] {
+	border-top-color: var(--ds-crit, #d63939);
+}
+
+.so-res-card-head {
+	display: flex;
+	align-items: baseline;
+	justify-content: space-between;
+	gap: 8px;
+}
+
+.so-res-card-title {
+	font-size: 13px;
+	font-weight: 600;
+	overflow: hidden;
+	text-overflow: ellipsis;
+	white-space: nowrap;
+}
+
+.so-res-card-state {
+	font-size: 11px;
+	color: var(--ds-ok, #2fb344);
+	white-space: nowrap;
+}
+
+.so-res-card-state[data-short="1"] {
+	color: var(--ds-crit-tx, #b32424);
+}
+
+.so-res-card-detail {
+	font-size: 10.5px;
+	color: var(--ds-tx3, #9099a6);
+}
+
+/* ── Yapışkan alt özet ve aksiyon çubuğu ─────────────────────────────── */
+.so-sticky-foot {
+	position: sticky;
+	bottom: 0;
+	z-index: 30;
+	background: var(--ds-surface, #ffffff);
+	border-top: 2px solid rgba(29, 39, 59, .32);
+	box-shadow: 0 -8px 24px rgba(24, 36, 51, .10);
+	padding: 14px 24px;
+	margin: 20px -20px 0;
+}
+
+.so-sticky-foot-inner {
+	display: flex;
+	align-items: center;
+	justify-content: space-between;
+	gap: 20px;
+	flex-wrap: wrap;
+}
+
+.so-sticky-meta {
+	display: flex;
+	flex-direction: column;
+	gap: 2px;
 	min-width: 0;
 }
 
-.so-rail {
-	display: grid;
-	gap: 14px;
-	position: sticky;
-	top: 14px;
+.so-sticky-title {
+	font-family: var(--ds-mono, monospace);
+	font-size: 10px;
+	letter-spacing: .14em;
+	text-transform: uppercase;
+	color: var(--ds-tx3, #9099a6);
 }
 
-@media (max-width: 1200px) {
-	.so-grid {
-		grid-template-columns: 1fr;
-	}
+.so-sticky-submeta {
+	font-family: var(--ds-mono, monospace);
+	font-size: 11px;
+	color: var(--ds-tx2, #667382);
+}
 
-	.so-rail {
-		position: static;
-	}
+.so-sticky-amounts {
+	display: flex;
+	align-items: baseline;
+	gap: 12px;
+}
+
+.so-sticky-total {
+	font-size: 24px;
+	font-weight: 700;
+	color: var(--ds-tx, #1d273b);
+	letter-spacing: -0.02em;
+}
+
+.so-sticky-base {
+	font-size: 12.5px;
+	color: var(--ds-tx2, #667382);
+}
+
+.so-sticky-actions {
+	display: flex;
+	align-items: center;
+	gap: 12px;
 }
 
 .so-head-right {
@@ -1562,45 +1845,46 @@ async function closeSalesOrder() {
 	font-size: 13px;
 }
 
-/* ── Stok rezervi satırı ──────────────────────────────────────────────── */
-.so-res {
-	padding: 11px var(--ds-pad);
-	border-bottom: 1px solid var(--ds-ln);
-}
-
-.so-res-head {
+/* ── Müşteri açık borç satırı ─────────────────────────────────────────── */
+.so-debt {
 	display: flex;
-	align-items: baseline;
-	justify-content: space-between;
-	gap: 10px;
-	font-size: 13px;
+	align-items: center;
+	gap: 7px;
+	margin-top: 7px;
+	font-size: 10.5px;
+	color: var(--ds-tx3);
 }
 
-.so-res-code {
-	font-size: 12.5px;
+.so-debt > i {
+	width: 8px;
+	height: 8px;
+	flex: none;
+	background: var(--ds-ok);
 }
 
-/* Yeşil "rezerve edilecek" bir SÖZ. Stok yetmiyorsa o sözü vermemeli. */
-.so-res-state {
-	font-size: 11px;
-	color: var(--ds-ok);
-	white-space: nowrap;
-}
-
-.so-res-state[data-short="1"] {
+.so-debt[data-debt="1"] {
 	color: var(--ds-crit-tx);
 }
 
-.so-res-meta {
-	font-size: 11px;
-	color: var(--ds-tx3);
-	margin-top: 3px;
+.so-debt[data-debt="1"] > i {
+	background: var(--ds-crit);
 }
 
-.so-res-note {
-	padding: 12px var(--ds-pad) 16px;
-	margin: 0;
-	font-size: 13px;
-	color: var(--ds-tx2);
+/* ── Teslim tarihi + not (iki sütun) ──────────────────────────────────── */
+.so-deliv {
+	display: grid;
+	grid-template-columns: minmax(160px, 240px) minmax(0, 1fr);
+	gap: var(--ds-gap, 14px);
+	align-items: start;
+}
+
+@media (max-width: 575px) {
+	.so-deliv {
+		grid-template-columns: 1fr;
+	}
+}
+
+.so-deliv-notes textarea {
+	min-height: 44px;
 }
 </style>
