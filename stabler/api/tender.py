@@ -1601,7 +1601,20 @@ def _deal_deadlines(deal: str, company: str, intake: dict) -> dict:
 			break
 		if m["status"] == "warn":
 			worst = "warn"
-	return {"milestones": milestones, "risk": worst, "today": str(today_d)}
+	# One date for the callers that show a single badge: the nearest milestone
+	# still open. It comes from the SAME list that produced `risk` above, so the
+	# date and the risk chip can never tell different stories -- a card cannot
+	# show a comfortable future date next to a red chip. Ordering on days_left
+	# rather than the ISO string puts an overdue milestone ahead of an upcoming
+	# one, which is the order a desk reads in.
+	#
+	# Until 2026-08-01 this key was never returned, so crm_board's
+	# `deadline_info.get("deadline")` was always None -- and TenderCrm.vue gates
+	# BOTH the date badge and the risk chip on `v-if="c.deadline"`, so every card
+	# on the board silently lost its deadline AND its risk colour.
+	open_dated = [m for m in milestones if m["date"] and not m["done"]]
+	nearest = min(open_dated, key=lambda m: m["days_left"])["date"] if open_dated else None
+	return {"milestones": milestones, "risk": worst, "deadline": nearest, "today": str(today_d)}
 
 
 @frappe.whitelist()

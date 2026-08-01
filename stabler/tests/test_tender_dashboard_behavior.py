@@ -1168,5 +1168,60 @@ class TestTenderDashboardBehaviour(unittest.TestCase):
 			tender.tender_dashboard("Test Company", "2026-07-01", "2026-07-31")
 
 
+class TestDeadlineSummaryMatchesItsOwnRiskChip(unittest.TestCase):
+	"""Bir CRM kartı iki şey gösteriyor: tarih rozeti ve risk çipi. TenderCrm.vue
+	İKİSİNİ birden `v-if="c.deadline"` ile kapıyor. `_deal_deadlines` 2026-08-01'e
+	kadar hiç `deadline` anahtarı DÖNDÜRMÜYORDU; crm_board'un
+	`deadline_info.get("deadline")` çağrısı her seferinde None veriyor, böylece
+	panodaki her kart hem tarihini hem de risk rengini sessizce kaybediyordu —
+	hata yok, boş liste yok, yalnız eksik bilgi. Buradaki testler o anahtarın
+	varlığını ve ondan daha önemlisi ANLAMINI çiviliyor: rozetteki tarih, çipi
+	kırmızıya boyayan kilometre taşının ta kendisi olmalı."""
+
+	def _deadlines(self, intake: dict) -> dict:
+		tender = _load_tender(_FakeDB({"DEAL-1": intake}), ["Stabler Tender Manager"])
+		# has_column yalnız CRM Deal/custom_tender_intake için True: Sales/Purchase
+		# Order kolonları yok sayılır, kilometre taşları sadece intake'ten doğar.
+		return tender._deal_deadlines("DEAL-1", "Test Company", intake)
+
+	def test_the_badge_date_is_the_milestone_that_set_the_risk(self):
+		# Bugün 2026-07-22 (stub). Teklif iki gün geçmiş, teslim 41 gün uzakta.
+		res = self._deadlines({"bid_deadline": "2026-07-20", "delivery_deadline": "2026-09-01"})
+
+		self.assertIn("deadline", res, "crm_board bu anahtarı okuyor; yokluğu kartı boşaltır")
+		self.assertEqual(res["risk"], "risk")
+		self.assertEqual(
+			res["deadline"], "2026-07-20",
+			"kırmızı çipin yanında rahat bir gelecek tarih göstermek, kartı yalancı yapar",
+		)
+
+	def test_a_finished_milestone_never_becomes_the_badge(self):
+		# Teklif verilmiş (result var → bid_done), teslim hâlâ açık. Rozet, biten
+		# işi değil kalan işi göstermeli — yoksa kapanmış bir tarih paneli meşgul eder.
+		res = self._deadlines(
+			{"bid_deadline": "2026-07-20", "result": "won", "delivery_deadline": "2026-09-01"}
+		)
+
+		self.assertEqual(res["deadline"], "2026-09-01")
+		self.assertEqual(res["risk"], "good")
+
+	def test_no_dates_yields_no_badge_instead_of_an_exception(self):
+		# Yeni açılmış bir anlaşmada hiçbir tarih yok. Boş liste üzerinde min()
+		# ValueError atsaydı, tek tarihsiz anlaşma tüm panoyu 500'e düşürürdü.
+		res = self._deadlines({})
+
+		self.assertIsNone(res["deadline"])
+		self.assertEqual(res["risk"], "good")
+
+	def test_the_badge_and_the_chip_are_read_from_one_list(self):
+		# Aynı doğruyu iki kez hesaplamak, iki farklı cevabın kapısını açar.
+		# `deadline`, `risk`'i üreten milestones listesinden seçilmiş olmalı.
+		res = self._deadlines({"bid_deadline": "2026-07-25", "delivery_deadline": "2026-07-24"})
+
+		dates = {m["date"] for m in res["milestones"] if m["date"]}
+		self.assertIn(res["deadline"], dates)
+		self.assertEqual(res["deadline"], "2026-07-24", "en yakın açık kilometre taşı")
+
+
 if __name__ == "__main__":
 	unittest.main()
