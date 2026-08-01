@@ -17,7 +17,6 @@ import Select from "../../components/Select.vue";
 import RelatedDocuments from "../../components/RelatedDocuments.vue";
 import FormPage from "../../components/form/FormPage.vue";
 import LineItemsEditor from "../../components/LineItemsEditor.vue";
-import SalesOrderLines from "./SalesOrderLines.vue";
 import MoneyInput from "../../components/MoneyInput.vue";
 import { useDocumentForm } from "../../composables/useDocumentForm.js";
 
@@ -34,20 +33,15 @@ const warehousesLoading = ref(false);
 const priceLists = ref([]);
 const currencies = ref([]);
 const showDiscounts = ref(false);
-/* Ölçü sütunlarının VARSAYILAN görünürlüğü kiracıdan geliyor
- * (Stabler Company Modules → dimensional_lines). Bir tercih, bir yetki değil:
- * hesabı hiç etkilemiyor, yalnız alanları baştan açık getiriyor. Ölçüyle satan
- * kiracıda (anjan, laminor, mikas) satıcı ürünü seçmeden önce de ölçü
- * girebilsin diye. Formdan bu sipariş için geçici olarak değiştirilebiliyor. */
-const showDims = ref(Boolean(session.modules?.dimensional_lines));
 const lastReservationErrors = ref([]);
 const autoSubmit = ref(1);
-/* Kur BİLİNMİYORSA `null` — asla 1. USD-defterli bir kiracıda (anjan) 1'e
- * düşmek 945 000 UZS'lik bir siparişi 945 000 USD olarak defterlemek demek;
- * sessiz para hatası. Bilinmiyorsa payload'a hiç gönderilmez, ERPNext kendi
- * kurunu bulur. */
+/* Kur BİLİNMİYOR ile 1 aynı şey değil. `1` başlangıcı, CBU çağrısı düşerse
+ * USD defterine 945 000 UZS'lik bir siparişi 945 000 USD olarak yazdırıyordu —
+ * sessiz para hatası. Bilinmeyen kur `null` kalır ve payload'a hiç girmez. */
 const exchangeRate = ref(null);
 const forceOverStock = ref(false);
+const agreements = ref([]);
+const agreementsEnabled = computed(() => session.canAccessModule("agreements"));
 
 const currency = computed(
 	() =>
@@ -92,59 +86,18 @@ async function loadCurrencies() {
 	}
 }
 
-/* Tasarımdaki "Adım 3/3" göstergesi. Tasarım dosyasında üç çubuk da SABİT
- * dolu çizilmiş; öyle bırakmak boş bir siparişte de "3/3" yazmak olurdu.
- * Burada her bölüm KENDİ zorunlu alanları dolunca doluyor — gösterge
- * bölüm başlıklarındaki 1/2/3 numaralarıyla birebir aynı şeyi sayıyor. */
-const sectionsDone = computed(() => {
-	const f = form.value || {};
-	return [
-		Boolean(f.customer && f.set_warehouse),
-		Array.isArray(f.items) && f.items.some((l) => l.item_code && Number(l.qty) > 0),
-		Boolean(f.delivery_date),
-	];
-});
-const stepsDone = computed(() => sectionsDone.value.filter(Boolean).length);
-
-const itemsSummaryLabel = computed(() => {
-	const lines = (form.value?.items || []).filter((l) => l.item_code);
-	const byUom = new Map();
-	for (const l of lines) {
-		const u = l.stock_uom || l.uom || "";
-		byUom.set(u, (byUom.get(u) || 0) + (Number(l.qty) || 0) * (Number(l.conversion_factor) || 1));
+async function loadAgreements() {
+	if (!agreementsEnabled.value || !activeCompany.value) return;
+	try {
+		agreements.value = await call("stabler.api.sales.list_agreements", {
+			company: activeCompany.value,
+			customer: form.value?.customer || undefined,
+			limit: 100,
+		});
+	} catch {
+		agreements.value = [];
 	}
-	const qty = [...byUom].map(([u, q]) => `${Number(q.toFixed(2))} ${u}`).join(" · ");
-	const n = `${lines.length} ${lines.length === 1 ? t("item") : t("items")}`;
-	return qty ? `${n} · ${qty}` : n;
-});
-
-function removeLine(index) {
-	form.value.items.splice(index, 1);
-	if (!form.value.items.length) form.value.items.push(blankLine(form.value.set_warehouse));
 }
-
-/* Sağ raydaki rezerv listesi: satır verisinden TÜRETİLİR, ayrı bir çağrı yok.
- * availability zaten satır başına yükleniyor; burada sadece okunuyor. */
-const reserveRows = computed(() =>
-	(form.value?.items || [])
-		.filter((l) => l.item_code)
-		.map((l) => {
-			const need = (Number(l.qty) || 0) * (Number(l.conversion_factor) || 1);
-			const free = Number(l.availability?.free ?? 0);
-			return {
-				code: l.item_code,
-				name: l.item_name || l.item_code,
-				uom: l.stock_uom || l.uom || "",
-				need: Number(need.toFixed(2)),
-				free,
-				known: Boolean(l.availability),
-				short: Boolean(l.availability) && need > free,
-			};
-		})
-);
-const allReservable = computed(
-	() => reserveRows.value.length > 0 && reserveRows.value.every((r) => r.known && !r.short)
-);
 
 function blankLine(defaultWh = null) {
 	return {
@@ -187,10 +140,6 @@ function blankForm() {
 		remarks: "",
 		items: [blankLine()],
 		crm_deal: "",
-		/* Alan formdan kaldırıldı (sözleşme seçici artık çizilmiyor) ama model
-		 * ve payload'da duruyor: doctype'ta custom_agreement gerçek bir alan ve
-		 * kayıtlı siparişlerde dolu olabilir. Buradan silseydik mevcut bir
-		 * siparişi açıp kaydetmek onun sözleşme bağını sessizce koparırdı. */
 		agreement: "",
 	};
 }
@@ -265,7 +214,7 @@ function toPayload(m) {
 		auto_submit: autoSubmit.value,
 		currency: m.currency || undefined,
 		// Kur bilinmiyorsa anahtar hiç gönderilmez (bkz. exchangeRate). Bilinen
-		// bir kur ERPNext yönünde (1 işlem parası = N taban parası) gider.
+		// tek meşru `1`, işlem parasının taban parayla aynı olduğu durumdur.
 		conversion_rate: !m.currency || !currency.value || m.currency === currency.value
 			? 1
 			: (exchangeRate.value > 0 ? exchangeRate.value : undefined),
@@ -311,14 +260,6 @@ const {
 });
 
 // All computeds that close over 'form' must live here, AFTER useDocumentForm
-/* Satırda ölçülü kalem varsa sütun tercihten bağımsız açık kalır — miktarı o
- * ölçüden türüyor, gizlemek kullanıcıya açıklamasız bir sayı bırakmak olurdu.
- * Bu durumda düğme de kapatılıyor: basıldığında hiçbir şey olmayan bir düğme,
- * bozuk bir düğmedir. */
-const dimsForced = computed(() =>
-	(form.value?.items || []).some((l) => ["Linear", "Area", "Volume"].includes(l.dimension_mode))
-);
-
 const currencySymbol = computed(() => {
 	const code = form.value?.currency || currency.value;
 	return (currencies.value.find((c) => c.name === code) || {}).symbol || "";
@@ -349,8 +290,7 @@ const rateStrongCurrency = computed(() => rateQuote.value?.strong || form.value?
 /* MoneyInput'un iki yönlü bağı. Kullanıcı etiketteki yönde, yani ≥ 1 olan
  * güçlü-yön sayısını girer (12 060) ve `toLineRate` bunu ERPNext'in saklama
  * yönüne geri çevirir (1/12060). Etiket de setter de aynı `rateQuote.strong`'u
- * okuduğu için giriş yönü hiçbir zaman belirsiz kalmaz: kutuya ne yazılacağını
- * yanındaki "(1 X = ? Y)" etiketi söyler. */
+ * okuduğu için giriş yönü hiçbir zaman belirsiz kalmaz. */
 const displayExchangeRate = computed({
 	get: () => rateQuote.value?.value || 0,
 	set: (v) => {
@@ -411,10 +351,9 @@ const docName = computed(() => (route.params.name ? String(route.params.name) : 
 
 /* Belge yüklenirken kur izleyicileri susturulur. `load()` `form.currency`'yi
  * doldurduğu anda aşağıdaki izleyici tetikleniyor ve BUGÜNKÜ canlı CBU kurunu
- * çekip belgenin kendi kurunu eziyordu: 2026-05-890 no'lu sipariş 11 973,9 ile
+ * çekip belgenin kendi kurunu eziyordu: 2026-05890 no'lu sipariş 11 973,9 ile
  * defterlenmişken ekranda 12 006,39 görünüyordu. Onaylanmış bir siparişte
- * gösterilen kur, o siparişin defterlendiği kur olmak zorunda. (Modern varyant
- * bundan muaf: `activeRate` belgenin kurunu zaten önceliyor.) */
+ * gösterilen kur, o siparişin defterlendiği kur olmak zorunda. */
 const loadingDoc = ref(false);
 
 async function loadDoc() {
@@ -445,16 +384,6 @@ async function loadDocInner() {
 		);
 		// Load UOM lists for draft items so the UOM toggle works in edit mode.
 		if (docstatus.value === 0) await loadDraftUoms();
-		/* Uygunluk her YÜKLEME yolunda çekilmeli, yalnız ilk mount'ta değil.
-		 * Bunu onMounted'a koymuştum; oysa belge üç ayrı yoldan yükleniyor:
-		 * mount, `watch(docName, loadDoc)` (uygulama içinde sipariş A'dan
-		 * B'ye geçiş) ve kaydetme sonrası yeniden okuma. Yalnız ilkini
-		 * kapatınca diğer ikisinde sağdaki rezerv paneli sonsuza kadar
-		 * "kontrol ediliyor" diyordu. Yükleme fonksiyonunun kendisine
-		 * taşındı — hangi yoldan gelinirse gelinsin aynı davranış. */
-		if (editable.value) {
-			for (const line of form.value.items || []) scheduleAvailability(line);
-		}
 	}
 }
 
@@ -488,6 +417,19 @@ function searchCustomers(q) {
 	});
 }
 
+function searchAgreements(q) {
+	return call("stabler.api.sales.list_agreements", {
+		company: activeCompany.value,
+		customer: form.value?.customer || undefined,
+		search: q,
+		limit: 20,
+	});
+}
+
+function pickAgreement(agreement) {
+	form.value.agreement = agreement.name;
+}
+
 async function pickCustomer(c) {
 	form.value.customer = c.name;
 	form.value.customer_name = c.customer_name;
@@ -498,6 +440,7 @@ async function pickCustomer(c) {
 		});
 		form.value.currency = defaults.default_currency || "";
 		form.value.price_list = defaults.resolved_price_list || "";
+		await loadAgreements();
 	} catch {
 		// non-fatal
 	}
@@ -509,6 +452,7 @@ function clearCustomer() {
 	form.value.currency = "";
 	form.value.price_list = "";
 	form.value.agreement = "";
+	agreements.value = [];
 }
 
 const searchItems = itemSearcher("sales", { warehouse: () => form.value.set_warehouse });
@@ -542,7 +486,8 @@ async function refreshLineRatesForPriceList() {
 
 /* Koli/kutu birimi tercihi kiracıya özgü (Stabler Company Modules →
  * sales_box_uom). Kayış (dts) ya da hizmet (horeca) satan kiracıda stok
- * birimi doğru varsayılandır; bayrak kapalıyken sessizce koliye geçmemeli. */
+ * birimi doğru varsayılandır; bayrak kapalıyken sessizce koliye geçmemeli.
+ * Eski birim-adı literali bu kapıyı yedi kiracıda birden açık tutuyordu. */
 function preferredSalesUom(meta) {
 	const uoms = meta.uoms || [];
 	if (!session.modules?.sales_box_uom) {
@@ -555,43 +500,7 @@ function preferredSalesUom(meta) {
 }
 
 // Line Item Editor pick handler
-/* Kalem değişince ölçüler ESKI kaleme aitti — taşınmamalı. 3 m'lik bir profilden
- * sonra seçilen sandviç panele o 3 kalırsa miktar sessizce yanlış çıkar, üstelik
- * sunucu kancası onu kayıtta doğru kabul edip qty'ye yazar. */
-function setDimensionMode(line, mode) {
-	line.dimension_mode = mode || "";
-	if (["Linear", "Area", "Volume"].includes(line.dimension_mode)) {
-		line.custom_length = null;
-		line.custom_width = null;
-		line.custom_height = null;
-		line.custom_pieces = null;
-		line.qty = 0;
-		// Ölçülü kalemde fiyat da miktar da stok biriminde — katsayı devre dışı.
-		line.uom = line.stock_uom || line.uom || "";
-		line.conversion_factor = 1;
-	}
-}
-
-async function handlePickItem(payload) {
-	let { line, index } = payload;
-	const { item } = payload;
-	let field = payload.field;
-
-	// Arama çubuğu hangi satıra yazacağını bilmiyor — bilmesi de gerekmiyor,
-	// `items` ona prop olarak geçiyor ve listenin sahibi burası. Hazırda boş
-	// satır varsa onu doldur: form açılışta bir boş satırla geliyor, yoksa ilk
-	// seçimden sonra ekranda kullanılmayan bir boş satır kalırdı.
-	if (field === "search") {
-		let slot = form.value.items.findIndex((l) => !l.item_code);
-		if (slot === -1) {
-			form.value.items.push(blankLine(form.value.set_warehouse));
-			slot = form.value.items.length - 1;
-		}
-		line = form.value.items[slot];
-		index = slot;
-		field = "item";
-	}
-
+async function handlePickItem({ line, item, index, field }) {
 	if (field === "item") {
 		line.item_code = item.item_code || item.name;
 		line.item_name = item.item_name;
@@ -605,12 +514,6 @@ async function handlePickItem(payload) {
 			});
 			line.stock_uom = meta.stock_uom || "";
 			line.uoms = meta.uoms || [];
-			// Ölçü modu satırın kendi kalemine ait: aynı siparişte panel (m²) ile
-			// dondurma (koli) yan yana durabiliyor. Paylaşılan düzenleyici bunu
-			// kendi içinde yazıyordu; SO formu kendi düzenleyicisine geçince o
-			// atama düştü ve ölçü girişi sessizce kayboldu. Artık burada, yani
-			// hangi düzenleyici çizerse çizsin aynı yerden geliyor.
-			setDimensionMode(line, meta.dimension_mode || item?.custom_dimension_mode || "");
 			const preferredUom = preferredSalesUom(meta);
 			line.uom = preferredUom ? preferredUom.uom : (meta.default_uom || meta.stock_uom || "");
 			line.conversion_factor = preferredUom ? Number(preferredUom.conversion_factor) : 1;
@@ -626,8 +529,6 @@ async function handlePickItem(payload) {
 			line.stock_uom = item.stock_uom || "";
 			line.uoms = [];
 			line.conversion_factor = 1;
-			// Sunucu çağrısı düştüyse arama satırındaki mod son çare.
-			setDimensionMode(line, item?.custom_dimension_mode || "");
 			const { rate } = await resolveRate(line.item_code, item.standard_rate);
 			line.rate = rate;
 		}
@@ -638,11 +539,7 @@ async function handlePickItem(payload) {
 		// pick the Typeahead input becomes readonly and drops out of :not([readonly]),
 		// which would shift positional index 1 from qty to rate (the corruption cause).
 		await nextTick();
-		// İki düzenleyici var: düzenlenebilir yolda SalesOrderLines (.so-lines),
-		// salt-okunur yolda paylaşılan LineItemsEditor (.stbl-items-table).
-		// Yalnız ikincisini aramak, formun asıl kullanıldığı yolda odağı ölü
-		// bırakıyordu — kalem seçtikten sonra imleç hiçbir yere gitmiyordu.
-		const tbody = document.querySelector(".so-lines tbody, .stbl-items-table tbody");
+		const tbody = document.querySelector(".stbl-items-table tbody");
 		if (tbody) {
 			const rows = Array.from(tbody.querySelectorAll("tr"));
 			const row = rows[index];
@@ -773,7 +670,7 @@ async function prefillNewForCustomer(customerName) {
 watch(docName, loadDoc);
 
 onMounted(async () => {
-	await Promise.all([loadWarehouses(), loadPriceLists(), loadCurrencies()]);
+	await Promise.all([loadWarehouses(), loadPriceLists(), loadCurrencies(), loadAgreements()]);
 	if (!docName.value) {
 		form.value = blankForm();
 		form.value.set_warehouse = defaultWarehouseName();
@@ -936,11 +833,6 @@ async function closeSalesOrder() {
 </script>
 
 <template>
-	<!-- Tasarım katmanını açan sarmalayıcı. FormPage çok köklü olduğu için
-	     öznitelik geçişi güvenilir değil; sınıf burada veriliyor. Paylaşılan
-	     bileşenlerin hiçbirine dokunulmuyor — katmandaki köprü bölümü
-	     Tabler sınıflarını YALNIZCA .stbl-ds altında yeniden giydiriyor. -->
-	<div class="stbl-ds">
 	<FormPage
 		:title="isCreate ? t('New Sales Order') : t('Sales Order')"
 		:doc-name="docName"
@@ -1003,22 +895,8 @@ async function closeSalesOrder() {
 			<span>{{ t("From tender deal") }}: <strong>{{ form.crm_deal }}</strong></span>
 		</div>
 
-		<div class="so-grid">
-		<div class="so-main">
-		<!-- 1 · Taraflar ve koşullar -->
-		<section class="ds-form-section">
-			<div class="ds-form-section-head">
-				<span class="ds-label">1 · {{ t("Parties and terms") }}</span>
-				<!-- Adım göstergesi bölüm bandının içinde: saydığı şeyin yanında
-				     durunca "neyin 1/3'ü" sorusu kendiliğinden cevaplanıyor. -->
-				<span class="so-steps">
-					<span class="ds-label">{{ t("Step") }} {{ stepsDone }}/3</span>
-					<span class="so-steps-bars">
-						<i v-for="(done, n) in sectionsDone" :key="n" :data-on="done ? '1' : null"></i>
-					</span>
-				</span>
-			</div>
-		<div class="ds-form-body row g-3">
+		<!-- Header fields -->
+		<div class="row g-3 mb-3">
 			<div class="col-md-6">
 				<label class="form-label" :class="{ required: editable }">{{ t("Customer") }}</label>
 				<Typeahead
@@ -1063,6 +941,28 @@ async function closeSalesOrder() {
 				</Select>
 				<div v-else class="form-control-plaintext font-monospace py-1">{{ form.set_warehouse || "—" }}</div>
 			</div>
+			<div v-if="agreementsEnabled" class="col-md-6">
+				<label class="form-label">{{ t("Agreement") }}</label>
+				<Typeahead
+					v-if="editable"
+					v-model="form.agreement"
+					:search="searchAgreements"
+					:display="form.agreement || ''"
+					:placeholder="t('Search agreement…')"
+					:no-results-text="t('No agreements match that search')"
+					open-on-focus
+					@pick="pickAgreement"
+					@clear="form.agreement = ''"
+				>
+					<template #option="{ item }">
+						<div>
+							<div class="fw-semibold">{{ item.agreement_no || item.name }}</div>
+							<div class="small text-secondary">{{ item.name }} · {{ item.status || "—" }}</div>
+						</div>
+					</template>
+				</Typeahead>
+				<div v-else class="form-control-plaintext font-monospace py-1">{{ form.agreement || "—" }}</div>
+			</div>
 			<div class="col-md-3">
 				<label class="form-label">{{ t("Order date") }}</label>
 				<DateInput v-if="editable" v-model="form.transaction_date" />
@@ -1101,8 +1001,6 @@ async function closeSalesOrder() {
 			</div>
 		</div>
 
-		</section>
-
 		<!-- Exchange rate row — only when transaction currency ≠ company base currency -->
 		<div v-if="isForeignCurrency" class="row g-2 mb-3">
 			<div class="col-md-3">
@@ -1116,18 +1014,13 @@ async function closeSalesOrder() {
 					:currency="rateDisplayCurrency"
 				/>
 				<div v-else class="form-control-plaintext font-monospace py-1">
-					{{ formatRate(displayExchangeRate, user.language) }}
+					1 {{ rateStrongCurrency }} = {{ formatRate(displayExchangeRate, user.language) }} {{ rateDisplayCurrency }}
 				</div>
 			</div>
 			<div v-if="grandTotalBase !== null" class="col-md-auto d-flex align-items-end pb-1">
 				<span class="text-secondary small">
 					{{ t("Total in {0}", [currency]) }}:
 					<span class="font-monospace fw-semibold">{{ formatMoney(grandTotalBase, currency, user.language) }}</span>
-				</span>
-			</div>
-			<div v-else class="col-md-auto d-flex align-items-end pb-1">
-				<span class="text-danger small fw-semibold">
-					<i class="ti ti-alert-triangle me-1"></i>{{ t("Exchange rate unavailable — enter it manually.") }}
 				</span>
 			</div>
 		</div>
@@ -1156,43 +1049,17 @@ async function closeSalesOrder() {
 			</div>
 		</div>
 
-		<!-- 2 · Kalemler -->
-		<section class="ds-form-section">
-			<div class="ds-form-section-head">
-				<span class="ds-label">2 · {{ t("Items") }}</span>
-				<span class="so-head-right">
-					<span class="ds-label">{{ itemsSummaryLabel }}</span>
-					<button
-						type="button"
-						class="ds-btn so-disc-btn"
-						:aria-pressed="String(showDims || dimsForced)"
-						:disabled="dimsForced"
-						:title="dimsForced ? t('A line on this order is priced by size, so the measurement columns cannot be hidden.') : ''"
-						@click="showDims = !showDims"
-					>
-						{{ t("Measurement columns") }}
-					</button>
-					<button type="button" class="ds-btn so-disc-btn" @click="showDiscounts = !showDiscounts">
-						{{ t("Discount column") }}
-					</button>
-				</span>
+		<!-- Items -->
+		<div class="d-flex align-items-center mb-2">
+			<h6 class="text-uppercase text-secondary small mb-0">{{ t("Items") }}</h6>
+			<div class="form-check form-switch ms-auto mb-0">
+				<input class="form-check-input" type="checkbox" id="soShowDisc" v-model="showDiscounts" />
+				<label class="form-check-label small text-secondary" for="soShowDisc">{{ t("Show discounts") }}</label>
 			</div>
-
-			<SalesOrderLines
-				v-if="editable"
-				:items="form.items"
-				:editable="editable"
-				:currency="form.currency || currency"
-				:language="user.language"
-				:search-items="searchItems"
-				:show-discounts="showDiscounts"
-				:show-dims="showDims"
-				@pick-item="handlePickItem"
-				@remove="removeLine"
-			/>
+		</div>
 
 		<LineItemsEditor
-			v-if="form && !editable"
+			v-if="form"
 			:items="form.items"
 			:editable="editable"
 			:currency="form.currency || currency"
@@ -1278,70 +1145,32 @@ async function closeSalesOrder() {
 			</template>
 		</LineItemsEditor>
 
-		</section>
-
-
-		<!-- 3 · Teslim ve not -->
-		<section class="ds-form-section">
-			<div class="ds-form-section-head">
-				<span class="ds-label">3 · {{ t("Delivery and notes") }}</span>
-				<span class="ds-label">{{ sectionsDone[2] ? t("complete") : t("optional") }}</span>
+		<!-- Running total summary block (QuickBooks-style) -->
+		<div v-if="editable" class="d-flex justify-content-end mt-2 mb-1">
+			<div class="total-summary-block border rounded p-3" style="min-width: 260px;">
+				<div class="d-flex justify-content-between mb-1">
+					<span class="text-secondary">{{ t("Subtotal") }}</span>
+					<span class="font-monospace">{{ formatMoney(subtotal, form.currency || currency, user.language) }}</span>
+				</div>
+				<div v-if="totalDiscount > 0" class="d-flex justify-content-between mb-1 text-success small">
+					<span>{{ t("Discount") }}</span>
+					<span class="font-monospace">− {{ formatMoney(totalDiscount, form.currency || currency, user.language) }}</span>
+				</div>
+				<div class="d-flex justify-content-between border-top pt-2 mt-1">
+					<span class="fw-bold">{{ t("Grand total") }}</span>
+					<span class="font-monospace fw-bold fs-4">{{ formatMoney(grandTotal, form.currency || currency, user.language) }}</span>
+				</div>
+				<div v-if="isForeignCurrency && grandTotalBase !== null" class="text-secondary small mt-1 text-end">
+					≈ {{ formatMoney(grandTotalBase, currency, user.language) }}
+				</div>
 			</div>
-		<div class="ds-form-body">
+		</div>
+
+		<div class="mt-3">
 			<label class="form-label">{{ t("Terms / remarks") }}</label>
 			<textarea v-if="editable" v-model="form.remarks" class="form-control" rows="2"></textarea>
 			<div v-else class="form-control-plaintext py-1">{{ form.remarks || "—" }}</div>
 		</div>
-		</section>
-		</div>
-
-		<!-- Sağ ray: özet, stok rezervi ve aksiyonlar. Tasarımda bunlar
-		     kalemlerin YANINDA duruyor — toplam ve "onayla" aynı bakışta. -->
-		<aside v-if="editable" class="so-rail">
-			<section class="ds-panel">
-				<div class="ds-panel-head"><h3>{{ t("Summary") }}</h3></div>
-				<div class="ds-summary-row">
-					<span>{{ t("Subtotal") }}</span>
-					<span class="ds-num">{{ formatMoney(subtotal, form.currency || currency, user.language) }}</span>
-				</div>
-				<div v-if="totalDiscount > 0" class="ds-summary-row">
-					<span>{{ t("Discount") }}</span>
-					<span class="ds-num">− {{ formatMoney(totalDiscount, form.currency || currency, user.language) }}</span>
-				</div>
-				<div class="ds-summary-row" data-total="1">
-					<span>{{ t("Grand total") }}</span>
-					<span class="ds-num">{{ formatMoney(grandTotal, form.currency || currency, user.language) }}</span>
-				</div>
-				<div v-if="isForeignCurrency && grandTotalBase !== null" class="ds-panel-foot">
-					<span class="ds-mono">1 {{ rateStrongCurrency }} = {{ formatRate(displayExchangeRate, user.language) }} {{ rateDisplayCurrency }}</span>
-					<span>≈ {{ formatMoney(grandTotalBase, currency, user.language) }}</span>
-				</div>
-			</section>
-
-			<!-- Stok rezervi: satır verisinden türetiliyor, ek çağrı yok. -->
-			<section v-if="reserveRows.length" class="ds-panel">
-				<div class="ds-panel-head">
-					<h3>{{ t("Stock reservation") }}</h3>
-					<span class="ds-label">{{ allReservable ? t("all reservable") : t("check lines") }}</span>
-				</div>
-				<div v-for="r in reserveRows" :key="r.code" class="so-res">
-					<div class="so-res-head">
-						<span><strong class="ds-mono so-res-code">{{ r.code }}</strong> — {{ r.name }}</span>
-						<span class="ds-mono so-res-state" :data-short="r.short ? '1' : null">
-							{{ !r.known ? t("checking…") : r.short ? t("not enough") : t("will be reserved") }}
-						</span>
-					</div>
-					<div class="ds-mono so-res-meta">
-						{{ r.need }} {{ r.uom }} {{ t("needed") }} · {{ Number(r.free).toLocaleString() }} {{ r.uom }} {{ t("available") }}
-					</div>
-				</div>
-				<p class="so-res-note">
-					{{ t("On approval these quantities are reserved in the warehouse and cannot be given to another order.") }}
-				</p>
-			</section>
-		</aside>
-		</div>
-
 
 		<RelatedDocuments v-if="!isCreate && form" doctype="Sales Order" :name="docName" />
 
@@ -1547,118 +1376,4 @@ async function closeSalesOrder() {
 			</template>
 		</template>
 	</FormPage>
-	</div>
 </template>
-
-<style scoped>
-/* ── Tasarım yerleşimi (yalnız bu ekran) ──────────────────────────────── */
-.so-steps {
-	display: inline-flex;
-	align-items: center;
-	gap: 8px;
-}
-
-.so-steps-bars {
-	display: flex;
-	gap: 4px;
-}
-
-/* Dolmamış adım soluk kalır: gösterge "kaç bölüm bitti" diyor, süs değil. */
-.so-steps-bars i {
-	width: 26px;
-	height: 5px;
-	display: block;
-	background: var(--ds-ln2);
-}
-
-.so-steps-bars i[data-on="1"] {
-	background: var(--ds-ink);
-}
-
-/* Özet tasarımda sağda; dar ekranda kalemlerin altına iner. */
-
-/* ── İki sütun: bölümler solda, özet+rezerv+aksiyon sağ rayda ─────────── */
-.so-grid {
-	display: grid;
-	grid-template-columns: minmax(0, 1fr) 344px;
-	gap: 14px;
-	align-items: start;
-}
-
-.so-main {
-	display: grid;
-	gap: 14px;
-	min-width: 0;
-}
-
-.so-rail {
-	display: grid;
-	gap: 14px;
-	position: sticky;
-	top: 14px;
-}
-
-@media (max-width: 1200px) {
-	.so-grid {
-		grid-template-columns: 1fr;
-	}
-
-	.so-rail {
-		position: static;
-	}
-}
-
-.so-head-right {
-	display: inline-flex;
-	align-items: center;
-	gap: 12px;
-}
-
-.so-disc-btn {
-	min-height: 34px;
-	padding: 6px 12px;
-	font-size: 13px;
-}
-
-/* ── Stok rezervi satırı ──────────────────────────────────────────────── */
-.so-res {
-	padding: 11px var(--ds-pad);
-	border-bottom: 1px solid var(--ds-ln);
-}
-
-.so-res-head {
-	display: flex;
-	align-items: baseline;
-	justify-content: space-between;
-	gap: 10px;
-	font-size: 13px;
-}
-
-.so-res-code {
-	font-size: 12.5px;
-}
-
-/* Yeşil "rezerve edilecek" bir SÖZ. Stok yetmiyorsa o sözü vermemeli. */
-.so-res-state {
-	font-size: 11px;
-	color: var(--ds-ok);
-	white-space: nowrap;
-}
-
-.so-res-state[data-short="1"] {
-	color: var(--ds-crit-tx);
-}
-
-.so-res-meta {
-	font-size: 11px;
-	color: var(--ds-tx3);
-	margin-top: 3px;
-}
-
-.so-res-note {
-	padding: 12px var(--ds-pad) 16px;
-	margin: 0;
-	font-size: 13px;
-	color: var(--ds-tx2);
-}
-</style>
