@@ -472,6 +472,10 @@ def _insert_stage_event(
 		{
 			"company": company,
 			"reference_doctype": "CRM Deal",
+			# Bu fonksiyon STATÜ hattını kaydediyor. Tender kulvarı ayrı bir
+			# eksen ve `api/tender.py:move_deal_stage` onu kendi sütunlarına
+			# yazıyor — ikisi aynı logda ama aynı alanlarda değil.
+			"axis": "status",
 			"reference_name": name,
 			"deal": name,
 			"from_stage": from_stage,

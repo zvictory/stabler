@@ -109,7 +109,10 @@ class TestTheClockOnlyRestartsOnARealMove(unittest.TestCase):
 
 	def test_the_timestamp_write_is_guarded_on_its_own_column(self):
 		"""Yama uygulanmamış bir sitede bu yazma hata verirdi."""
-		self.assertIn('has_column(\n\t\t\t"CRM Deal", "custom_tender_stage_entered_at"\n\t\t)', MOVE)
+		# Biçime değil İFADEYE bak: bu iddia bir satır sonu yüzünden düşerse,
+		# test kodun ne yaptığını değil nasıl sarıldığını ölçüyor demektir.
+		flat = re.sub(r"\s+", " ", MOVE)
+		self.assertIn('has_column( "CRM Deal", "custom_tender_stage_entered_at" )'.replace("( ", "(").replace(" )", ")"), flat.replace("( ", "(").replace(" )", ")"))
 
 	def test_the_timestamp_does_not_touch_the_modified_stamp(self):
 		"""`modified` eşzamanlılık kontrolü için kullanılıyor; damgayı yazarken

@@ -2410,6 +2410,43 @@ def crm_board(company: str) -> dict:
 	return {"lanes": lanes, "cards": cards}
 
 
+def _record_tender_stage_event(name, company, from_stage, to_stage, moved_at) -> None:
+	"""Aşama hareketini değişmez olay kaydına yaz.
+
+	Damga "şu an neredeyiz, ne zamandır" sorusuna cevap veriyor; süreç akışı
+	ekranının sorduğu asıl soru ise "nereden geldik ve nerede oyalandık".
+	Onun tek kaynağı geçmiştir ve damga geçmiş tutmuyor — her hareket bir
+	öncekinin üzerine yazıyor.
+
+	Kayıt YUTULABILIR bir hata: log yazılamadığı için aşama hareketinin geri
+	alınması, kullanıcının yaptığı işi tarihçe uğruna iptal etmek olurdu.
+	Sessiz de değil — hata günlüğe düşüyor.
+	"""
+	if not company:
+		return
+	try:
+		event = frappe.new_doc("CRM Stage Event")
+		event.update(
+			{
+				"company": company,
+				"reference_doctype": "CRM Deal",
+				"reference_name": name,
+				"deal": name,
+				"axis": "tender_stage",
+				"from_tender_stage": from_stage or "",
+				"to_tender_stage": to_stage,
+				"changed_at": moved_at,
+				"changed_by": frappe.session.user,
+			}
+		)
+		event.insert(ignore_permissions=True)
+	except Exception:
+		frappe.log_error(
+			title="Tender stage event not recorded",
+			message=f"{name}: {from_stage or '-'} -> {to_stage}\n{frappe.get_traceback()}",
+		)
+
+
 @frappe.whitelist()
 def move_deal_stage(name: str, stage: str) -> dict:
 	"""Persist a stage move on a CRM Deal (drag-and-drop)."""
@@ -2430,6 +2467,12 @@ def move_deal_stage(name: str, stage: str) -> dict:
 	if stage not in _funnel.STAGES:
 		frappe.throw(_("Unknown stage: {0}").format(stage))
 
+	# Bu çağrının ürettiği her kayıt aynı anı göstersin: damga, olay kaydı ve
+	# intake'in `submitted_at`i tek bir harekete ait. Ayrı `now()` çağrıları
+	# onları milisaniyelerle ayrıştırır ve "aşamaya girdiği an" hangi belgeye
+	# baktığına göre değişen bir değer olur.
+	moved_at = frappe.utils.now()
+
 	if frappe.db.has_column("CRM Deal", "custom_tender_stage"):
 		previous = frappe.db.get_value("CRM Deal", name, "custom_tender_stage")
 		frappe.db.set_value("CRM Deal", name, "custom_tender_stage", stage)
@@ -2438,16 +2481,16 @@ def move_deal_stage(name: str, stage: str) -> dict:
 		# geri bırakmak ya da belgeyi tekrar kaydetmek "bu aşamada kaç gündür"
 		# sayacını sıfırlarsa, süreç akışı ekranı bekleyen işi genç gösterir —
 		# yani en çok bakılması gereken anlaşma en az dikkat çeker.
-		if previous != stage and frappe.db.has_column(
-			"CRM Deal", "custom_tender_stage_entered_at"
-		):
-			frappe.db.set_value(
-				"CRM Deal",
-				name,
-				"custom_tender_stage_entered_at",
-				frappe.utils.now(),
-				update_modified=False,
-			)
+		if previous != stage:
+			if frappe.db.has_column("CRM Deal", "custom_tender_stage_entered_at"):
+				frappe.db.set_value(
+					"CRM Deal",
+					name,
+					"custom_tender_stage_entered_at",
+					moved_at,
+					update_modified=False,
+				)
+			_record_tender_stage_event(name, company, previous, stage, moved_at)
 
 	if frappe.db.has_column("CRM Deal", "custom_tender_intake"):
 		raw = frappe.db.get_value("CRM Deal", name, "custom_tender_intake")
@@ -2457,7 +2500,7 @@ def move_deal_stage(name: str, stage: str) -> dict:
 		elif stage == "go":
 			intake["go_no_go"] = "go"
 		elif stage == "submitted":
-			intake["submitted_at"] = str(frappe.utils.now())
+			intake["submitted_at"] = str(moved_at)
 		frappe.db.set_value("CRM Deal", name, "custom_tender_intake", json.dumps(intake, ensure_ascii=False), update_modified=False)
 
 	frappe.db.commit()
