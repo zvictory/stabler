@@ -269,6 +269,49 @@ class TestTheQuotationsMakeTheBoardsTellTheTruth(unittest.TestCase):
 		self.assertNotIn(".submit()", quotations)
 		self.assertIn(".insert(", quotations)
 
+	def _make_supplier(self, known_countries):
+		"""`_supplier`'ı, yalnız ülke kararını görecek kadar sahte yüzeyle çalıştır."""
+		import types as _types
+
+		created = _types.SimpleNamespace(country=None, insert=lambda **kw: None, name="SUP-1")
+		fr = self.seed.frappe
+		fr.db = _types.SimpleNamespace(
+			exists=lambda doctype, filt=None: (
+				filt in known_countries if doctype == "Country" else None
+			),
+			get_value=lambda *a, **kw: "Demo Group",
+		)
+		fr.new_doc = lambda doctype: created
+		return created
+
+	def test_a_country_the_site_does_not_know_stops_the_seed(self):
+		"""Ülke adı yazılamazsa pano ülke sayısını SESSİZCE eksik gösterir.
+
+		`country_count` doğrudan `Supplier.country`'den türüyor. Eski kod
+		`if frappe.db.exists("Country", country)` deyip yoksa atlıyordu; atlamak
+		alanı boş bırakmıyor, Supplier'ı sistem varsayılanına düşürüyor. Ölçüldü
+		2026-08-01, canlı mikas: Country listesinde "Russia" yok ("Russian
+		Federation" var), UralVagonSnab ve SibTransDetal Uzbekistan'a düştü, üç
+		ülkelik demo panoda iki ülke olarak göründü — hatasız, sorunsuz, yanlış."""
+		created = self._make_supplier({"Uzbekistan"})
+		with self.assertRaises(Exception):
+			self.seed._supplier("UralVagonSnab", "Russia")
+		self.assertIsNone(created.country, "yanlış ülke yazılmamalı — ne varsayılan ne boş")
+
+	def test_a_known_country_is_actually_written_to_the_supplier(self):
+		"""Patlamak tek başına yetmez: alan gerçekten yazılmazsa sayı yine düşer."""
+		created = self._make_supplier({"Russian Federation"})
+		self.seed._supplier("UralVagonSnab", "Russian Federation")
+		self.assertEqual(created.country, "Russian Federation")
+
+	def test_the_demo_pool_uses_names_the_country_doctype_actually_has(self):
+		"""Frappe'nin Country kayıtları ISO adlarıdır. "Russia" tam da bu yüzden
+		düştü; kısaltmayı geri getiren bir düzenleme burada yakalanır."""
+		countries = re.findall(r'^\t\("([^"]+)", \[', SEED, re.M)
+		self.assertTrue(countries, "DEMO_SUPPLIERS deseni artık tutmuyor")
+		for bad in ("Russia", "USA", "UK", "South Korea"):
+			self.assertNotIn(bad, countries, f"{bad!r} Country doctype'ında yok — ISO adını kullan")
+
 
 if __name__ == "__main__":
 	unittest.main()

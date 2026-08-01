@@ -96,7 +96,9 @@ DEADLINE_OFFSETS = {
 DEMO_SUPPLIERS = [
 	("Uzbekistan", ["Temiryo'l ta'minot", "Sanoat kompleks", "Toshkent metall"]),
 	("China", ["Hebei Rail Parts", "Shandong Heavy", "Ningbo Import"]),
-	("Russia", ["UralVagonSnab", "SibTransDetal", "Rostov Metiz"]),
+	# "Russian Federation", "Russia" değil: Country doctype'ının kayıt adı budur.
+	# Yanlış ad sessizce düşerdi — bkz. _supplier'daki throw.
+	("Russian Federation", ["UralVagonSnab", "SibTransDetal", "Rostov Metiz"]),
 ]
 
 #: Tekliflerin üzerine yazıldığı kalem. Stok kalemi DEĞİL: demo'nun ambar,
@@ -179,8 +181,17 @@ def _supplier(name: str, country: str) -> str:
 		return existing
 	doc = frappe.new_doc("Supplier")
 	doc.supplier_name = title
-	if frappe.db.exists("Country", country):
-		doc.country = country
+	# Sessizce atlamak yok. Panonun "kaç ülkeden teklif geldi" sayısı DOĞRUDAN bu
+	# alandan türüyor; yazılamayan ülke, Supplier'ı sistem varsayılanına düşürür ve
+	# sayı hiçbir hata vermeden küçülür. Ölçüldü 2026-08-01, mikas: "Russia" Country
+	# listesinde yok ("Russian Federation" var), iki tedarikçi Uzbekistan'a düştü ve
+	# üç ülkelik demo panoda iki ülke olarak göründü.
+	if not frappe.db.exists("Country", country):
+		frappe.throw(
+			f"Country '{country}' bu sitede yok — demo tedarikçisi yanlış ülkeye "
+			f"düşerdi ve pano ülke sayısını sessizce eksik gösterirdi."
+		)
+	doc.country = country
 	group = frappe.db.get_value("Supplier Group", {"is_group": 0}, "name")
 	if group:
 		doc.supplier_group = group
