@@ -8,7 +8,7 @@ Temizlik:
 
 NE ÜRETİYOR VE NEDEN
 --------------------
-Amaç ekranları "dolu göstermek" değil; ALTI panonun ALTISININ da kendi sorusuna
+Amaç ekranları "dolu göstermek" değil; YEDİ panonun YEDİSİNİN de kendi sorusuna
 gerçek bir cevap verebilmesi. O yüzden veri, her ekranın gösterdiği ayrımı
 içerecek şekilde kuruluyor:
 
@@ -19,11 +19,13 @@ içerecek şekilde kuruluyor:
                        ve BİRİ ölçülemez
   Gümrük kuyruğu     — beklemede / işlemde / çekilmiş, ve ETA'sı geçmiş bir satır
   Lojistik panosu    — geciken, yolda ve teslim edilmiş sevkiyat bir arada
+  Sözleşme panosu    — kazanılan iki lotun siparişi, iki ayrı kulvarda
 
-Son iki satır bu betiğe sonradan eklendi. İlk hâli yalnız CRM Deal üretiyordu;
-gümrük ve lojistik panolarının okuduğu tek kayıt tipi Purchase Order olduğu
-için ikisi de seed'den sonra BOŞ açılıyordu — ve betiğin kendi çıktı satırı
-dört pano sayıp iki tanesini hiç anmayarak bunu itiraf ediyordu.
+Son üç satır bu betiğe sonradan eklendi. İlk hâli yalnız CRM Deal üretiyordu;
+gümrük ve lojistik panolarının okuduğu tek kayıt tipi Purchase Order, sözleşme
+panosununki ise Sales Order olduğu için üçü de seed'den sonra BOŞ açılıyordu —
+ve betiğin kendi çıktı satırı dört pano sayıp diğerlerini hiç anmayarak bunu
+itiraf ediyordu.
 
 Son madde bilinçli: damgası olmayan anlaşmalar demo'da da var, çünkü gerçek
 sitede de olacaklar (v66 öncesi taşınmış her kayıt). "Ölçülemiyor" satırını
@@ -35,10 +37,10 @@ GÜVENLİK
 Tek işaret: her demo kaydının adında/başlığında ` [DEMO]` geçiyor. `unseed()`
 YALNIZ o işareti taşıyanları siliyor; işaretsiz hiçbir kayda dokunmuyor.
 
-Tek istisna teklif belgeleri: Supplier Quotation'ın taşıyabileceği bir başlık
-yok, demo olduğu `custom_crm_deal` ile bağlı olduğu demo anlaşmadan biliniyor.
-O yüzden `unseed()` teklifleri anlaşmalardan ÖNCE, yalnız demo anlaşmalara
-bağlı olanları seçerek siliyor.
+İstisna işlem belgeleri: Supplier Quotation, Purchase Order ve Sales Order'ın
+taşıyabileceği bir başlık yok, demo oldukları `custom_crm_deal` ile bağlı
+oldukları demo anlaşmadan biliniyor. O yüzden `unseed()` üçünü de
+anlaşmalardan ÖNCE, yalnız demo anlaşmalara bağlı olanları seçerek siliyor.
 Gerçek tender verisi olan bir sitede seed() çalıştırmak da güvenli — yeni
 kayıtlar ekliyor, var olanı değiştirmiyor.
 
@@ -50,7 +52,7 @@ from __future__ import annotations
 import json
 
 import frappe
-from frappe.utils import add_days, now, nowdate
+from frappe.utils import add_days, flt, now, nowdate
 
 DEMO_SUFFIX = " [DEMO]"
 
@@ -106,10 +108,40 @@ DELIVERY_OFFSETS = {
 	"UTY-2026-4315": 60,
 }
 
+#: Teklifin maliyet tabanı (mal bedeli), lot başına.
+#:
+#: Direktör panosundaki marj HESAPLANAN bir sayı: `_compute_bid_pnl` net
+#: hasılattan bu tabanı, borsa komisyonunu ve vergileri düşüyor. Taban yoksa
+#: marj her satırda %100 çıkar — pano dolu görünür, tek bir şey söylemez.
+#:
+#: KAZANILMIŞ lotlar bilerek burada YOK. Onların tabanı gerçek siparişlerden
+#: geliyor (`_bid_inputs`, saklanan `landed_goods` boşsa `po_landed`'a
+#: düşüyor); elle bir sayı yazmak o bağı koparır ve plan/gerçek ayrımı demo'da
+#: hiç görülmez.
+#:
+#: Sayılar tek bir orandan türetilmedi: her lot farklı bir marj göstersin diye
+#: seçildi (4310 ≈ %18, 4311 ≈ %8, 4312 ≈ %25, 4313 ≈ %15). 4316 kaybedilen
+#: lot ve tabanı en düşük olan — yani en yüksek marjla teklif verilmiş,
+#: kaybedilme nedeni panodan okunabiliyor.
+LANDED_BASIS = {
+	"UTY-2026-4310": 2_300_000_000,
+	"UTY-2026-4311": 640_000_000,
+	"UTY-2026-4312": 320_000_000,
+	"UTY-2026-4313": 850_000_000,
+	"UTY-2026-4316": 540_000_000,
+}
+
 #: Kazanılan lotların sipariş hattı — gümrük kuyruğunu ve lojistik panosunu
 #: besleyen tek kayıt tipi Purchase Order.
 #:
-#: (lot_no, tedarikçi, ülke, eta_gün_farkı, alınan_yüzde, tnved, gümrük_masrafı)
+#: (lot_no, tedarikçi, ülke, eta_gün_farkı, alınan_yüzde, tnved, gümrük_masrafı,
+#:  mal_bedeli)
+#:
+#: `mal_bedeli` sipariş kaleminin fiyatı. Sıfır bırakılamaz: kazanılmış lotun
+#: maliyet tabanı bu siparişlerden okunuyor (`_deal_landed` = base_grand_total
+#: + masraflar), bedelsiz siparişle "sıfır değerli malın gümrüğü" gibi bir
+#: maliyet çıkıyordu. İki lotun toplamları farklı marj üretecek şekilde seçildi
+#: (4314 ≈ %12,5 · 4315 ≈ %19,6), ki pano tek renk göstermesin.
 #:
 #: Beş satır, iki panonun BÜTÜN durumlarını üretecek şekilde seçildi:
 #:
@@ -124,11 +156,35 @@ DELIVERY_OFFSETS = {
 #: diyor (kuralı `days < 0`). Demo bu ayrımı GİZLEMEMELİ — iki ekranın aynı
 #: sevkiyat için farklı şey söylemesi, düzeltilmesi gereken şeyin kendisi.
 DEMO_PURCHASE_ORDERS = [
-	("UTY-2026-4314", "Hebei Rail Parts", "China", -6, 0, "7302 10 900 0", 41_000_000),
-	("UTY-2026-4314", "Temiryo'l ta'minot", "Uzbekistan", 4, 100, "", 0),
-	("UTY-2026-4314", "UralVagonSnab", "Russian Federation", 45, 0, "7302 40 000 0", 88_000_000),
-	("UTY-2026-4315", "Shandong Heavy", "China", 3, 40, "8607 19 100 0", 62_000_000),
-	("UTY-2026-4315", "Sanoat kompleks", "Uzbekistan", 75, 0, "", 0),
+	("UTY-2026-4314", "Hebei Rail Parts", "China", -6, 0, "7302 10 900 0", 41_000_000, 620_000_000),
+	("UTY-2026-4314", "Temiryo'l ta'minot", "Uzbekistan", 4, 100, "", 0, 430_000_000),
+	("UTY-2026-4314", "UralVagonSnab", "Russian Federation", 45, 0, "7302 40 000 0", 88_000_000, 590_000_000),
+	("UTY-2026-4315", "Shandong Heavy", "China", 3, 40, "8607 19 100 0", 62_000_000, 780_000_000),
+	("UTY-2026-4315", "Sanoat kompleks", "Uzbekistan", 75, 0, "", 0, 340_000_000),
+]
+
+#: Kazanılan lotların sözleşme hattı — sözleşme panosunun (`/tender/board`)
+#: okuduğu tek kayıt tipi Sales Order.
+#:
+#: (lot_no, pano_kulvarı, faturalanan_yüzde)
+#:
+#: Tutar burada BİLEREK yok: sipariş bedeli DEMO_LOTS'taki lot değerinden
+#: okunuyor. Direktör panosunun satır değeri `so_revenue or bid_price`
+#: (tender.py:1951) — yani bir Sales Order doğduğu anda o satırın değeri
+#: saklanan teklif fiyatından siparişin toplamına GEÇİYOR. İki sayıyı ayrı ayrı
+#: yazmak, portföy toplamını sessizce kaydırmanın en kolay yolu olurdu. Tek
+#: kaynak lot değeri: miktar 1, fiyat = değer, vergi yok — ve `_contracts()`
+#: eşitliği insert'ten sonra kontrol edip tutmuyorsa duruyor.
+#:
+#: `faturalanan_yüzde` plan/gerçek ayrımını görünür kılıyor: teklif P&L'inin
+#: gerçek tarafı hasılatı `base_grand_total × per_billed` ile okuyor
+#: (`_deal_revenue_actual`). İkisi de 0 kalırsa o panel "faturalanmadı" der ve
+#: hiç ölçülmez; ikisi de 100 olursa plan ile gerçek birebir aynı çıkar ve
+#: ayrım yine görünmez. O yüzden 4314 kısmen faturalanmış (kulvarı da bu yüzden
+#: Invoicing), 4315 hiç faturalanmamış.
+DEMO_SALES_ORDERS = [
+	("UTY-2026-4314", "Invoicing", 60),
+	("UTY-2026-4315", "Procurement", 0),
 ]
 
 #: Demo tedarikçileri, ülke başına üç isim. Ülke veriyle geliyor, isimden
@@ -210,6 +266,13 @@ def _guard(company: str) -> None:
 		frappe.throw(
 			"Purchase Order.custom_crm_deal is missing — run `bench --site <site> migrate` "
 			"first, or the customs and logistics boards would have nothing to read."
+		)
+	# Sözleşme panosu ile direktör panosunun hasılat sütunu aynı kolonu okuyor;
+	# yoksa biri boş açılır, diğeri değeri sessizce teklif fiyatına düşürür.
+	if not frappe.db.has_column("Sales Order", "custom_crm_deal"):
+		frappe.throw(
+			"Sales Order.custom_crm_deal is missing — run `bench --site <site> migrate` "
+			"first, or the contract board would have nothing to read."
 		)
 
 
@@ -335,7 +398,7 @@ def _orders(deal_by_lot: dict[str, str], company: str) -> int:
 	has_landed = frappe.db.has_column("Purchase Order", "custom_landed_charges")
 	item = _demo_item()
 	made = 0
-	for lot_no, supplier_name, country, eta_days, received_pct, tnved, customs in DEMO_PURCHASE_ORDERS:
+	for lot_no, supplier_name, country, eta_days, received_pct, tnved, customs, goods in DEMO_PURCHASE_ORDERS:
 		deal = deal_by_lot.get(lot_no)
 		if not deal:
 			continue
@@ -367,7 +430,7 @@ def _orders(deal_by_lot: dict[str, str], company: str) -> int:
 				"item_name": f"{lot_no}{DEMO_SUFFIX}",
 				"description": f"{lot_no}{DEMO_SUFFIX}",
 				"qty": 1,
-				"rate": 0,
+				"rate": goods,
 				"schedule_date": eta,
 			},
 		)
@@ -375,6 +438,107 @@ def _orders(deal_by_lot: dict[str, str], company: str) -> int:
 		if received_pct:
 			frappe.db.set_value(
 				"Purchase Order", order.name, "per_received", received_pct, update_modified=False
+			)
+		made += 1
+	return made
+
+
+def _customer(name: str) -> str:
+	"""Sözleşmenin alıcısı; varsa yeniden kullan.
+
+	CRM Organization ile Customer ayrı doctype'lar — pano CRM tarafını, Sales
+	Order muhasebe tarafını okuyor. Demo ikisini aynı isimle yaratıyor ki
+	sözleşme panosundaki alıcı adı, CRM kartındaki kurumla göz kararı eşleşsin.
+	"""
+	title = f"{name}{DEMO_SUFFIX}"
+	existing = frappe.db.exists("Customer", {"customer_name": title})
+	if existing:
+		return existing
+	doc = frappe.new_doc("Customer")
+	doc.customer_name = title
+	doc.customer_group = frappe.db.get_value("Customer Group", {"is_group": 0}, "name")
+	doc.territory = frappe.db.get_value("Territory", {"is_group": 0}, "name")
+	doc.insert(ignore_permissions=True)
+	return doc.name
+
+
+def _contracts(deal_by_lot: dict[str, str], company: str) -> int:
+	"""Kazanılan lotların sözleşmelerini yarat — sözleşme panosunun beslendiği
+	tek kayıt tipi Sales Order.
+
+	Bu tohumun tek ONAYLANMIŞ belgesi, ve bu bir istisna değil zorunluluk:
+	`so_board` `docstatus: 1` süzüyor (tender.py:99), yani taslak bırakılan bir
+	sipariş panoda hiç görünmez. Teklif ve satın alma siparişlerini taslak
+	bırakma gerekçesi ("onaylamak muhasebeye bir şey eklemez, geri almayı
+	zorlaştırır") burada tersine dönüyor. Onay yine de güvenli: Sales Order
+	submit'i GL kaydı yazmıyor, demo kalemi de stok kalemi değil
+	(`is_stock_item = 0`), dolayısıyla ambar hareketi de doğmuyor.
+
+	`per_billed` normalde faturadan hesaplanır; `_orders()`'daki `per_received`
+	gibi doğrudan kolona yazılıyor — demo'nun Sales Invoice üretmesi gerçek
+	muhasebe hareketi demek olurdu. Yani "faturalanan" yüzdesi demo'da bir
+	gösterge, arkasında fatura yok — bilerek.
+	"""
+	value_by_lot = {lot[0]: lot[6] for lot in DEMO_LOTS}
+	buyer_by_lot = {lot[0]: lot[1] for lot in DEMO_LOTS}
+	item = _demo_item()
+	made = 0
+	for lot_no, stage, billed_pct in DEMO_SALES_ORDERS:
+		deal = deal_by_lot.get(lot_no)
+		if not deal:
+			continue
+		value = value_by_lot[lot_no]
+		delivery = add_days(nowdate(), DELIVERY_OFFSETS.get(lot_no, 90))
+		order = frappe.new_doc("Sales Order")
+		order.company = company
+		order.customer = _customer(buyer_by_lot[lot_no])
+		order.transaction_date = nowdate()
+		order.delivery_date = delivery
+		order.custom_crm_deal = deal
+		# Ambar bu demo için anlamsız (kalem stok kalemi değil), ama boş
+		# bırakılamıyor: ERPNext satırın ambarını oturumun kullanıcı
+		# varsayılanından dolduruyor ve o varsayılan BAŞKA bir şirkete ait
+		# olabiliyor. Ölçüldü 2026-08-02, yerel `stabler`: Administrator'ın
+		# varsayılanı anjan'ın "Tayyor mahsulot - A" ambarıydı, insert
+		# InvalidWarehouseCompany ile düştü. Şirketin kendi ambarı yazılıyor.
+		warehouse = frappe.db.get_value(
+			"Warehouse", {"company": company, "is_group": 0}, "name", order_by="name asc"
+		)
+		if warehouse:
+			order.set_warehouse = warehouse
+		# Kulvar yoksa alan boş kalsın: `so_board` boş kulvarı ilk açık kulvara
+		# yerleştiriyor (lazy placement), var olmayan bir kulvara Link yazmak ise
+		# insert'i düşürürdü.
+		if frappe.db.exists("Stabler SO Stage", stage):
+			order.custom_board_stage = stage
+		order.append(
+			"items",
+			{
+				"item_code": item,
+				"item_name": f"{lot_no}{DEMO_SUFFIX}",
+				"description": f"{lot_no}{DEMO_SUFFIX}",
+				"qty": 1,
+				"rate": value,
+				"delivery_date": delivery,
+			},
+		)
+		order.insert(ignore_permissions=True)
+		# Sessiz kayma buradan olurdu: sitede varsayılan bir satış vergisi
+		# şablonu ya da lot değerinden farklı bir kur varsa toplam lot değerini
+		# tutmaz, direktör panosunun DOĞRULANMIŞ portföy rakamı da o anda
+		# değişir — çünkü satır değeri Sales Order doğar doğmaz teklif fiyatını
+		# bırakıp bu toplamı okumaya başlıyor. Eşitlik tutmuyorsa yarım demo
+		# bırakmak yerine duruyoruz.
+		if flt(order.grand_total) != flt(value) or flt(order.base_grand_total) != flt(value):
+			frappe.throw(
+				f"{lot_no}: sales order total {order.grand_total} (base {order.base_grand_total}) "
+				f"!= lot value {value}. A default sales tax template or a non-1 exchange rate is "
+				f"in play; the director board's portfolio figure would shift silently."
+			)
+		order.submit()
+		if billed_pct:
+			frappe.db.set_value(
+				"Sales Order", order.name, "per_billed", billed_pct, update_modified=False
 			)
 		made += 1
 	return made
@@ -483,7 +647,21 @@ def seed(company: str = "Mikas"):
 		deal.organization = _org(buyer)
 		deal.custom_tender_intake = json.dumps(intake, ensure_ascii=False)
 		if has_pricing and stage in ("priced", "submitted", "won", "lost"):
-			deal.custom_bid_pricing = json.dumps({"unit_price": value, "margin_pct": 12}, ensure_ascii=False)
+			# Anahtarlar `_compute_bid_pnl`'in OKUDUĞU adlar olmak zorunda.
+			# Ölçüldü 2026-08-02, yerel Mikas: burada `unit_price` yazıyordu ve
+			# motorda öyle bir anahtar yok — yedi fiyatlanmış lotun beşi direktör
+			# panosunda değer=0 göründü, marj ise saklanan `margin_pct` neyse o
+			# çıktı (%12, on üç satırın hepsinde aynı). Yani pano bir hesap değil
+			# bir sabit gösteriyordu ve fiyat motoru demo'da hiç çalışmıyordu.
+			#
+			# mode="price": sözleşme bedeli GİRDİ, marj sonuç. Direktörün portföy
+			# değeri böylece lot değerlerinin toplamına eşit oluyor, arada sihirli
+			# bir katsayı kalmıyor. `landed_goods` yalnız siparişsiz lotlara
+			# yazılıyor; kazanılmışlarda motor gerçek siparişlere düşsün diye.
+			pricing = {"mode": "price", "bid_price": value}
+			if lot_no in LANDED_BASIS:
+				pricing["landed_goods"] = LANDED_BASIS[lot_no]
+			deal.custom_bid_pricing = json.dumps(pricing, ensure_ascii=False)
 		deal.insert(ignore_permissions=True)
 		created.append((deal.name, lot_no, stage, moved_days))
 		deal_by_lot[lot_no] = deal.name
@@ -506,11 +684,12 @@ def seed(company: str = "Mikas"):
 			_stage_history(deal.name, company, stage, moved_days)
 
 	po_total = _orders(deal_by_lot, company)
+	so_total = _contracts(deal_by_lot, company)
 
 	frappe.db.commit()
 	print(
-		f"Seeded {len(created)} demo tender deals, {sq_total} supplier quotations and "
-		f"{po_total} purchase orders on {company}:"
+		f"Seeded {len(created)} demo tender deals, {sq_total} supplier quotations, "
+		f"{po_total} purchase orders and {so_total} sales orders on {company}:"
 	)
 	for name, lot_no, stage, moved in created:
 		print(f"  {name}  {lot_no}  stage={stage}  moved={moved if moved is not None else 'no stamp'}")
@@ -519,7 +698,7 @@ def seed(company: str = "Mikas"):
 		print("        so team load and /tender/my-tenders will still read empty.")
 	print(
 		"\nVisible on: /tender/desk · /tender/crm · /tender/portfolio · /tender/flow"
-		" · /tender/customs · /tender/logistics"
+		" · /tender/customs · /tender/logistics · /tender/board"
 	)
 
 
@@ -575,12 +754,13 @@ def unseed(company: str = "Mikas"):
 	# kuruluyor, anlaşma gidince demo teklifleri hangi kaydın olduğu artık
 	# bilinemez ve sitede sahipsiz kalırlar.
 	deal_names = [row["name"] for row in deals]
-	sq_removed = 0
-	po_removed = 0
 	# Siparişler de tekliflerle aynı durumda: kendi başlıklarında ` [DEMO]`
 	# taşımıyorlar, demo oldukları yalnız bağlı oldukları anlaşmadan biliniyor.
-	# O yüzden ikisi de anlaşmalardan ÖNCE gidiyor.
-	for doctype in ("Supplier Quotation", "Purchase Order"):
+	# O yüzden üçü de anlaşmalardan ÖNCE gidiyor. Sales Order onaylanmış
+	# durumda; `force=True` onaylanmış belgeyi de siliyor (GL kaydı yok, iptal
+	# edilecek bir muhasebe hareketi de yok).
+	removed = {"Supplier Quotation": 0, "Purchase Order": 0, "Sales Order": 0}
+	for doctype in removed:
 		if not deal_names or not frappe.db.has_column(doctype, "custom_crm_deal"):
 			continue
 		for row in frappe.get_all(
@@ -590,10 +770,7 @@ def unseed(company: str = "Mikas"):
 			limit_page_length=0,
 		):
 			frappe.delete_doc(doctype, row["name"], force=True, ignore_permissions=True)
-			if doctype == "Supplier Quotation":
-				sq_removed += 1
-			else:
-				po_removed += 1
+			removed[doctype] += 1
 
 	for row in deals:
 		# Olay kayıtları değişmez (on_trash engelliyor); anlaşmayı silmeden
@@ -615,7 +792,11 @@ def unseed(company: str = "Mikas"):
 	# demo dışı bir belge bağlanmışsa Frappe LinkExistsError atar ve kayıt
 	# yerinde kalır. Temizlik, sildiğinden emin olmadığı şeyi zorlamamalı.
 	extras_removed = 0
-	for doctype, field in (("Supplier", "supplier_name"), ("Item", "item_name")):
+	for doctype, field in (
+		("Supplier", "supplier_name"),
+		("Customer", "customer_name"),
+		("Item", "item_name"),
+	):
 		for row in frappe.get_all(
 			doctype,
 			filters={field: ["like", f"%{DEMO_SUFFIX}"]},
@@ -630,7 +811,8 @@ def unseed(company: str = "Mikas"):
 
 	frappe.db.commit()
 	print(
-		f"Removed {len(deals)} demo tender deals, {sq_removed} supplier quotations, "
-		f"{po_removed} purchase orders, {extras_removed} demo suppliers/items and up to "
+		f"Removed {len(deals)} demo tender deals, {removed['Supplier Quotation']} supplier "
+		f"quotations, {removed['Purchase Order']} purchase orders, {removed['Sales Order']} "
+		f"sales orders, {extras_removed} demo suppliers/customers/items and up to "
 		f"{len(orgs)} demo organizations."
 	)

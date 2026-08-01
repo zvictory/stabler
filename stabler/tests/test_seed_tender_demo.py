@@ -179,11 +179,18 @@ def _load_seed():
 	import sys
 	import types
 
+	# Gerçek modülleri sakla ve GERİ KOY. Silmek yetmiyor: `frappe` zaten
+	# yüklüyken sys.modules'tan atılırsa sonraki `import frappe` dosyayı
+	# baştan çalıştırır ve dairesel import'a düşer ("partially initialized
+	# module ... has no attribute '_optimizations'"). Aşağıdaki testler
+	# `stabler.api.tender`'ı içe aktarıyor; sızıntı orada patlıyordu.
+	saved = {k: sys.modules.get(k) for k in ("frappe", "frappe.utils", "stabler.maintenance.seed_tender_demo")}
 	sys.modules.pop("stabler.maintenance.seed_tender_demo", None)
 	frappe = types.ModuleType("frappe")
 	frappe.throw = lambda message, exception=Exception: (_ for _ in ()).throw(exception(message))
 	utils = types.ModuleType("frappe.utils")
 	utils.add_days = lambda value, days: value
+	utils.flt = float
 	utils.now = lambda: "2026-08-01 09:00:00"
 	utils.nowdate = lambda: "2026-08-01"
 	frappe.utils = utils
@@ -194,8 +201,11 @@ def _load_seed():
 	finally:
 		# Sahte frappe'yi bırakma: aynı dosyadaki diğer testler `_funnel` gibi
 		# gerçek modülleri içe aktarıyor, sızan bir stub onları sessizce bozar.
-		sys.modules.pop("frappe", None)
-		sys.modules.pop("frappe.utils", None)
+		for key, mod in saved.items():
+			if mod is None:
+				sys.modules.pop(key, None)
+			else:
+				sys.modules[key] = mod
 
 
 class TestTheQuotationsMakeTheBoardsTellTheTruth(unittest.TestCase):
@@ -273,12 +283,12 @@ class TestTheQuotationsMakeTheBoardsTellTheTruth(unittest.TestCase):
 		` [DEMO]` taşımıyorlar. Anlaşma önce silinirse hangi belgelerin demo
 		olduğu bir daha bilinemez ve sitede sahipsiz kalırlar.
 
-		İddia iki belge tipini de kapsıyor: sipariş sonradan eklendi ve aynı
-		tuzağa aynı şekilde düşebilirdi.
+		İddia üç belge tipini de kapsıyor: satınalma siparişi ve sözleşme
+		sonradan eklendi, ikisi de aynı tuzağa aynı şekilde düşebilirdi.
 		"""
 		unseed = _fn("unseed")
 		deals_gone = unseed.index('frappe.delete_doc("CRM Deal"')
-		for doctype in ("Supplier Quotation", "Purchase Order"):
+		for doctype in ("Supplier Quotation", "Purchase Order", "Sales Order"):
 			with self.subTest(doctype=doctype):
 				self.assertIn(f'"{doctype}"', unseed, f"{doctype} unseed'de hiç geçmiyor")
 				self.assertLess(
@@ -296,7 +306,13 @@ class TestTheQuotationsMakeTheBoardsTellTheTruth(unittest.TestCase):
 		var, kazanılmış lotlara bağlı, ve çıktı satırı artık altı panoyu sayıyor.
 		"""
 		self.assertIn("DEMO_PURCHASE_ORDERS = [", SEED)
-		block = SEED[SEED.index("DEMO_PURCHASE_ORDERS = [") : SEED.index("#: Demo tedarikçileri")]
+		# Dilimin SONU sözleşme hattının başı. Eskiden `#: Demo tedarikçileri`ne
+		# kadar uzanıyordu; araya `DEMO_SALES_ORDERS` girince dilim onun
+		# lotlarını da yutmaya başladı ve iddia sessizce başka bir şeyi ölçer
+		# oldu — ikisi de kazanılmış lot olduğu için test yine yeşil kalıyordu.
+		block = SEED[
+			SEED.index("DEMO_PURCHASE_ORDERS = [") : SEED.index("#: Kazanılan lotların sözleşme hattı")
+		]
 		lots = set(re.findall(r'\("(UTY-\d{4}-\d{4})"', block))
 		self.assertTrue(lots, "sipariş hattı boş")
 		won = {lot for lot, *_rest in self.seed.DEMO_LOTS if _rest[1] == "won"}
@@ -322,10 +338,12 @@ class TestTheQuotationsMakeTheBoardsTellTheTruth(unittest.TestCase):
 		Komşu iddialar bunu yakalayamadı çünkü hepsi niyeti sınıyordu: veri
 		tablosu dolu mu, lotlar kazanılmış mı, çıktı satırı altı panoyu sayıyor
 		mu. Üçü de yeşilken bağ kopuk olabiliyordu. Sorulması gereken tek şey
-		atamanın kendisiydi. Teklif tarafı da aynı tuzağa açık, o yüzden iki
-		yazıcı birlikte kilitleniyor.
+		atamanın kendisiydi. Teklif ve sözleşme tarafı da aynı tuzağa açık, o
+		yüzden üç yazıcı birlikte kilitleniyor. Sözleşmede bedeli daha ağır:
+		direktör panosunun hasılat sütunu `so_revenue`'yu bu bağdan topluyor,
+		bağ kopuksa portföy rakamı teklif fiyatına düşer ve fark edilmez.
 		"""
-		for fn, var in (("_orders", "order"), ("_quotations", "quotation")):
+		for fn, var in (("_orders", "order"), ("_quotations", "quotation"), ("_contracts", "order")):
 			with self.subTest(fn=fn):
 				self.assertIn(
 					f"{var}.custom_crm_deal = deal",
@@ -440,6 +458,207 @@ class TestTheQuotationsMakeTheBoardsTellTheTruth(unittest.TestCase):
 		self.assertTrue(countries, "DEMO_SUPPLIERS deseni artık tutmuyor")
 		for bad in ("Russia", "USA", "UK", "South Korea"):
 			self.assertNotIn(bad, countries, f"{bad!r} Country doctype'ında yok — ISO adını kullan")
+
+
+class TestTheContractBoardHasSomethingToShow(unittest.TestCase):
+	"""`/tender/board`'ın okuduğu tek kayıt tipi Sales Order.
+
+	Ölçüldü 2026-08-02, yerel Mikas: tohumlayıcıda hiç Sales Order yoktu, o
+	yüzden yedinci pano seed'den sonra BOŞ açılıyordu — üstelik betiğin çıktı
+	satırı altı pano sayıp bu birini hiç anmayarak durumu gizliyordu. Kazanılan
+	iki lot panoda görünmüyordu; "kazandık" ile "sözleşme hangi kulvarda"
+	arasındaki bağ demo'da bir kez bile kurulmamıştı.
+
+	Buradaki iddialar veri satırının varlığını değil, o satırın panoya
+	ULAŞMASININ şartlarını tutuyor: submit edilmiş mi, kazanılmış lota mı
+	bağlı, ve bedeli lot değeriyle bire bir mi.
+	"""
+
+	seed = _load_seed()
+
+	def _rows(self):
+		rows = self.seed.DEMO_SALES_ORDERS
+		self.assertTrue(rows, "sözleşme hattı boş — yedinci pano yine boş açılır")
+		return rows
+
+	def test_the_contracts_hang_only_on_lots_that_were_actually_won(self):
+		"""Kaybedilen ya da hâlâ teklif aşamasındaki bir lotun sözleşmesi,
+		panoyu dolduran ama yalan söyleyen bir satırdır."""
+		won = {lot for lot, _b, stage, *_r in self.seed.DEMO_LOTS if stage == "won"}
+		lots = {row[0] for row in self._rows()}
+		self.assertTrue(lots)
+		self.assertTrue(
+			lots.issubset(won),
+			f"sözleşme yalnız kazanılmış lota bağlanmalı; {sorted(lots - won)} kazanılmamış",
+		)
+
+	def test_a_draft_contract_would_never_reach_the_board(self):
+		"""`so_board` `docstatus: 1` süzüyor (tender.py:99) — teklifin tersine.
+		Taslak bırakılan sözleşme sitede DURUYOR ama panoda YOK; en sinsi hâl,
+		çünkü kayıt aranınca bulunuyor."""
+		contracts = _fn("_contracts")
+		self.assertIn("order.submit()", contracts, "sözleşme submit edilmezse pano boş kalır")
+
+	def test_the_lanes_are_not_all_the_same(self):
+		"""Tek kulvara yığılmış iki kart, panonun kulvar mantığını hiç
+		sınamıyor. Fatura kulvarı ayrıca plan/gerçek ayrımını görünür kılıyor:
+		`_deal_revenue_actual` `per_billed`'i okuyor, biri kısmen faturalı
+		olmazsa gerçekleşen hasılat her satırda sıfır kalır."""
+		rows = self._rows()
+		self.assertGreaterEqual(len({row[1] for row in rows}), 2, "iki sözleşme de aynı kulvarda")
+		self.assertTrue(any(row[2] > 0 for row in rows), "hiçbir sözleşme faturalanmamış")
+		self.assertTrue(any(row[2] == 0 for row in rows), "hepsi faturalı — 'bekleyen' hâl yok")
+		for _lot, _stage, billed in rows:
+			with self.subTest(billed=billed):
+				self.assertLessEqual(billed, 100, "yüzde 100'ü aşamaz")
+
+	def test_the_contract_amount_is_not_allowed_to_drift_from_the_lot(self):
+		"""Bu iddianın konusu panonun değil, DİREKTÖR panosunun rakamı.
+
+		`tender.py:1951` hasılatı `flt(refs["so_revenue"]) or flt(pnl["bid_price"])`
+		diye seçiyor: sözleşme var olduğu anda satırın değeri saklanan teklif
+		fiyatından sözleşmenin `base_grand_total`'ına GEÇİYOR. Varsayılan bir
+		satış vergisi şablonu ya da 1 olmayan bir kur, portföy toplamını
+		kimsenin fark etmeyeceği şekilde kaydırırdı. Bu yüzden `_contracts`
+		eşitliği insert'ten sonra kendi kontrol edip tutmuyorsa duruyor."""
+		contracts = _fn("_contracts")
+		self.assertIn("flt(order.grand_total) != flt(value)", contracts)
+		self.assertIn("flt(order.base_grand_total) != flt(value)", contracts)
+		self.assertIn("frappe.throw(", contracts, "eşitlik tutmazsa yarım demo bırakılıyor")
+		self.assertLess(
+			contracts.index("flt(order.grand_total) != flt(value)"),
+			contracts.index("order.submit()"),
+			"kontrol submit'ten SONRA olursa kaymış belge zaten panoya düşmüş olur",
+		)
+
+	def test_the_warehouse_comes_from_the_company_not_from_whoever_runs_the_seed(self):
+		"""Ölçüldü 2026-08-02, yerel `stabler`: ERPNext satırın ambarını oturum
+		kullanıcısının varsayılanından dolduruyor. Administrator'ın varsayılanı
+		BAŞKA bir şirketin ambarıydı ve insert `InvalidWarehouseCompany` ile
+		düştü. Tohumu kimin çalıştırdığına bağlı bir demo, demo değildir."""
+		contracts = _fn("_contracts")
+		self.assertIn('"Warehouse", {"company": company', contracts, "ambar şirketten seçilmiyor")
+		self.assertIn("order.set_warehouse", contracts)
+
+	def test_the_contract_column_is_checked_before_anything_is_created(self):
+		"""Sipariş kolonuyla aynı gerekçe: eksik kolonda durmak doğru, ON ÜÇ
+		anlaşma yaratıldıktan SONRA durmak yarım demo bırakmak."""
+		self.assertIn(
+			'has_column("Sales Order", "custom_crm_deal")',
+			_fn("_guard"),
+			"sözleşme kolonu kontrolü _guard'da değil",
+		)
+		self.assertNotIn('has_column("Sales Order", "custom_crm_deal")', _fn("_contracts"))
+
+	def test_the_output_line_admits_the_seventh_board(self):
+		"""Çıktı satırı panoları eksik sayarsa, boş açılan panoyu kimse aramaz —
+		altıncı panoyu tam da bu gizlemişti."""
+		self.assertIn("/tender/board", SEED, "çıktı satırı sözleşme panosunu saymıyor")
+
+
+class TestTheBidPricingIsReallyComputed(unittest.TestCase):
+	"""Direktör panosundaki değer ve marj HESAP olmak zorunda, saklanan sabit değil.
+
+	Ölçüldü 2026-08-02, yerel Mikas: tohumlayıcı `{"unit_price": value,
+	"margin_pct": 12}` yazıyordu. `unit_price` motorda hiç okunmayan bir
+	anahtar; sonuç, fiyatlanmış yedi lotun beşinde `value=0` ve on üç satırın
+	hepsinde `margin=12.0`. Pano doluydu, sayılar birbirini tutuyordu, ve fiyat
+	motoru demo'da bir kez bile çalışmamıştı — panoya bakan kimsenin fark
+	edemeyeceği türden bir yalan.
+
+	Bu yüzden buradaki iddialar "alan dolu mu" diye sormuyor. Anahtarların
+	motorda karşılığı var mı, ve o motordan çıkan marj lotlar arasında
+	DEĞİŞİYOR mu — ikincisi olmadan birincisi yine sabit üretebilir.
+	"""
+
+	seed = _load_seed()
+	TENDER = (ROOT / "api/tender.py").read_text(encoding="utf-8")
+
+	def _stored_keys(self) -> set[str]:
+		block = _fn("seed")
+		keys = set(re.findall(r'pricing\["(\w+)"\]\s*=', block))
+		literal = re.search(r"pricing = \{([^}]*)\}", block)
+		self.assertIsNotNone(literal, "seed() artık `pricing = {…}` yazmıyor — desen güncellensin")
+		keys |= set(re.findall(r'"(\w+)":', literal.group(1)))
+		return keys
+
+	def test_every_key_the_seed_stores_is_a_key_the_engine_reads(self):
+		"""Motorun tanımadığı anahtar sessizce düşer: hata yok, log yok, sıfır."""
+		keys = self._stored_keys()
+		self.assertIn("bid_price", keys, "sözleşme bedeli hiç yazılmıyor")
+		for key in keys:
+			with self.subTest(key=key):
+				self.assertRegex(
+					self.TENDER,
+					rf'(?:p|inp)(?:\.get\(|\[)"{key}"',
+					f"{key!r} anahtarını _compute_bid_pnl/_bid_inputs okumuyor — yazmak boşa",
+				)
+
+	def test_the_won_lots_keep_their_cost_basis_in_the_orders(self):
+		"""Kazanılmış lota elle taban yazmak, plan/gerçek bağını koparır:
+		`_bid_inputs` saklanan `landed_goods` doluysa siparişlere HİÇ bakmaz."""
+		won = {lot for lot, _b, stage, *_r in self.seed.DEMO_LOTS if stage == "won"}
+		self.assertTrue(won)
+		overlap = won & set(self.seed.LANDED_BASIS)
+		self.assertEqual(overlap, set(), f"{sorted(overlap)} tabanını siparişlerden almalı")
+
+	def test_every_priced_lot_without_orders_has_a_cost_basis(self):
+		"""Tabansız lotun marjı %100 çıkar — pano dolu, sayı anlamsız."""
+		with_orders = {row[0] for row in self.seed.DEMO_PURCHASE_ORDERS}
+		for lot, _buyer, stage, *_rest in self.seed.DEMO_LOTS:
+			if stage in ("priced", "submitted", "lost") and lot not in with_orders:
+				with self.subTest(lot=lot):
+					self.assertIn(lot, self.seed.LANDED_BASIS, f"{lot} maliyet tabansız")
+
+	def test_an_order_line_is_never_free(self):
+		"""Bedelsiz sipariş, kazanılmış lotun maliyetini "sıfır değerli malın
+		gümrüğü"ne indiriyordu; landed o zaman sadece gümrük vergisiydi."""
+		for row in self.seed.DEMO_PURCHASE_ORDERS:
+			with self.subTest(lot=row[0], supplier=row[1]):
+				self.assertGreater(row[7], 0, "sipariş kaleminin mal bedeli sıfır")
+		self.assertIn('"rate": goods', _fn("_orders"), "bedel kaleme yazılmıyor")
+
+	def _margins(self) -> dict[str, float]:
+		"""Her fiyatlanmış lotun marjını motorun kendisiyle hesapla."""
+		from stabler.api.tender import _BID_DEFAULTS, _compute_bid_pnl
+
+		po_landed: dict[str, float] = {}
+		for lot, _s, _c, _e, _r, _t, customs, goods in self.seed.DEMO_PURCHASE_ORDERS:
+			po_landed[lot] = po_landed.get(lot, 0.0) + goods + customs
+
+		out = {}
+		for lot, _buyer, stage, _moved, _sq, _cn, value in self.seed.DEMO_LOTS:
+			if stage not in ("priced", "submitted", "won", "lost"):
+				continue
+			inp = dict(_BID_DEFAULTS)
+			inp["mode"] = "price"
+			inp["bid_price"] = value
+			# `_bid_inputs`'ın kuralı: saklanan taban boşsa siparişlere düş.
+			inp["landed_goods"] = self.seed.LANDED_BASIS.get(lot) or po_landed.get(lot, 0.0)
+			out[lot] = _compute_bid_pnl(inp)["margin_on_revenue_pct"]
+		return out
+
+	def test_the_portfolio_shows_a_spread_of_margins_not_one_number(self):
+		margins = self._margins()
+		self.assertEqual(len(margins), 7, "fiyatlanmış lot sayısı değişti")
+		self.assertGreaterEqual(
+			len({round(m, 1) for m in margins.values()}),
+			5,
+			f"marjlar birbirine çok yakın, pano tek renk kalır: {margins}",
+		)
+		for lot, m in margins.items():
+			with self.subTest(lot=lot):
+				self.assertGreater(m, 0, f"{lot} zararına — demo'nun anlatmadığı bir hikâye")
+				self.assertLess(m, 40, f"{lot} marjı gerçekçi değil (%{m})")
+
+	def test_the_lost_lot_was_the_most_expensive_bid(self):
+		"""Kaybedilen lot rastgele bir kayıp değil: en yüksek marjla teklif
+		verilmiş olan. Direktör panosuna bakan biri NEDEN kaybedildiğini
+		okuyabilmeli, yoksa 'kayıp' satırı sadece bir renk."""
+		margins = self._margins()
+		lost = [lot for lot, _b, stage, *_r in self.seed.DEMO_LOTS if stage == "lost"]
+		self.assertEqual(len(lost), 1)
+		self.assertEqual(max(margins, key=margins.get), lost[0], f"marjlar: {margins}")
 
 
 if __name__ == "__main__":
