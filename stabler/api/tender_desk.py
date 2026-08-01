@@ -17,6 +17,7 @@ from stabler.api.approvals import list_pending
 from stabler.api.tender import (
     _assert_company_scope,
     _is_tender_oversight,
+    _parse_intake,
     _require_company,
     _require_tender,
     _require_tender_view,
@@ -57,7 +58,7 @@ def operations_desk(company: str, view: str | None = None, days: int = 7) -> dic
         "assigned_to", "custom_tender_master", "custom_lot_no", "lot_no",
         "custom_tender_stage", "stage", "custom_bid_deadline", "bid_deadline",
         "expected_closing", "custom_delivery_deadline", "custom_tender_result",
-        "custom_tender_risk", "status"
+        "custom_tender_risk", "status", "custom_tender_intake"
     ]
     for fld in potential_fields:
         if frappe.db.has_column("CRM Deal", fld):
@@ -70,8 +71,20 @@ def operations_desk(company: str, view: str | None = None, days: int = 7) -> dic
         limit_page_length=0
     )
 
+    has_intake = "custom_tender_intake" in deal_fields
+
     deals = []
     for d in deals_raw:
+        # The bid deadline lives inside the custom_tender_intake JSON, not in a
+        # column. Measured on mikas 2026-08-01: of the three sources tried below,
+        # custom_bid_deadline, bid_deadline AND expected_closing are all absent
+        # from CRM Deal, so every has_column guard above dropped them and the
+        # lookup was unconditionally None. The desk therefore emitted zero
+        # bid_due / bid_soon rows -- the one thing a tender desk exists to say --
+        # while the CRM board, tender.py and tender_master.py read the same
+        # deadline out of intake and showed it fine. A real column still wins
+        # where a site has one; intake is what actually holds the data today.
+        intake = _parse_intake(d.get("custom_tender_intake")) if has_intake else {}
         deals.append({
             "name": d["name"],
             "organization": d.get("organization"),
@@ -80,7 +93,10 @@ def operations_desk(company: str, view: str | None = None, days: int = 7) -> dic
             "custom_tender_master": d.get("custom_tender_master"),
             "custom_lot_no": d.get("custom_lot_no") or d.get("lot_no"),
             "custom_tender_stage": d.get("custom_tender_stage") or d.get("stage"),
-            "custom_bid_deadline": d.get("custom_bid_deadline") or d.get("bid_deadline") or d.get("expected_closing"),
+            "custom_bid_deadline": (
+                d.get("custom_bid_deadline") or d.get("bid_deadline")
+                or intake.get("bid_deadline") or d.get("expected_closing")
+            ),
             "custom_delivery_deadline": d.get("custom_delivery_deadline"),
             "custom_tender_result": d.get("custom_tender_result") or d.get("status"),
             "custom_tender_risk": d.get("custom_tender_risk")

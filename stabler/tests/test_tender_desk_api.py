@@ -1,4 +1,5 @@
 import os
+import re
 import unittest
 
 API_FILE = os.path.join(os.path.dirname(os.path.dirname(__file__)), "api", "tender_desk.py")
@@ -23,6 +24,34 @@ class TestTenderDeskApiSource(unittest.TestCase):
             if "list_pending(" in line and not line.lstrip().startswith(("#", "from ", "import ")):
                 self.assertIn("requests", line,
                               f"Line {idx}: list_pending() returns an envelope; unwrap ['requests']")
+
+    def test_bid_deadline_falls_back_to_the_intake_json(self):
+        # The bid deadline is the one fact a tender desk exists to say, and on a
+        # real site it is NOT a column. Measured 2026-08-01 on mikas: CRM Deal has
+        # no custom_bid_deadline, no bid_deadline and no expected_closing, so every
+        # has_column() guard dropped all three and the lookup was unconditionally
+        # None -- the desk emitted zero bid_due/bid_soon rows while the CRM board
+        # read the same deadline out of custom_tender_intake and showed it fine.
+        # The failure is silent: no error, no empty list, just a work board that
+        # quietly omits every deadline. So both halves are pinned here -- the field
+        # must be requested, and it must actually appear in the fallback chain.
+        self.assertIn("custom_tender_intake", self.source,
+                      "custom_tender_intake must be requested; it is where the deadline lives")
+        chain = re.search(r'"custom_bid_deadline": \(\n(.*?)\n\s*\),\n', self.source, re.S)
+        self.assertIsNotNone(chain, "the bid_deadline fallback chain is gone")
+        self.assertIn('intake.get("bid_deadline")', chain.group(1),
+                      "intake must be one of the bid_deadline sources, not just fetched")
+
+    def test_intake_is_parsed_once_per_deal_not_per_lookup(self):
+        # _parse_intake() runs json.loads. Calling it inside the fact-mapping
+        # comprehension instead of once per deal would re-parse the same JSON for
+        # every field read -- invisible on a demo, quadratic on a real pipeline.
+        self.assertEqual(self.source.count("_parse_intake("), 1,
+                         "_parse_intake must be called exactly once, per deal -- not per field read")
+        self.assertIsNotNone(
+            re.search(r"intake = _parse_intake\(.*?\) if has_intake else \{\}", self.source),
+            "the per-deal parse must stay guarded by has_intake, or sites without "
+            "the column would parse a missing key on every row")
 
     def test_no_sql_aggregation_functions_in_select(self):
         lines = self.source.splitlines()
