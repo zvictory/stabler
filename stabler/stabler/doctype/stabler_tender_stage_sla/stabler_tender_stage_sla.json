@@ -1,0 +1,88 @@
+{
+ "actions": [],
+ "creation": "2026-08-01 12:00:00.000000",
+ "doctype": "DocType",
+ "editable_grid": 1,
+ "engine": "InnoDB",
+ "field_order": [
+  "company",
+  "sla_seen_days",
+  "sla_go_days",
+  "sla_sourcing_days",
+  "sla_priced_days",
+  "sla_submitted_days"
+ ],
+ "fields": [
+  {
+   "columns": 3,
+   "fieldname": "company",
+   "fieldtype": "Link",
+   "in_list_view": 1,
+   "label": "Company",
+   "options": "Company",
+   "reqd": 1
+  },
+  {
+   "columns": 1,
+   "default": "3",
+   "description": "Days a deal may sit in the seen stage before the flow board calls it late. 0 or blank switches the stage off — it is then never reported as overdue.",
+   "fieldname": "sla_seen_days",
+   "fieldtype": "Int",
+   "in_list_view": 1,
+   "label": "Intake (days)",
+   "non_negative": 1
+  },
+  {
+   "columns": 1,
+   "default": "5",
+   "description": "Days a deal may sit in the go stage before the flow board calls it late. 0 or blank switches the stage off — it is then never reported as overdue.",
+   "fieldname": "sla_go_days",
+   "fieldtype": "Int",
+   "in_list_view": 1,
+   "label": "GO decision (days)",
+   "non_negative": 1
+  },
+  {
+   "columns": 1,
+   "default": "14",
+   "description": "Days a deal may sit in the sourcing stage before the flow board calls it late. 0 or blank switches the stage off — it is then never reported as overdue.",
+   "fieldname": "sla_sourcing_days",
+   "fieldtype": "Int",
+   "in_list_view": 1,
+   "label": "Sourcing (days)",
+   "non_negative": 1
+  },
+  {
+   "columns": 1,
+   "default": "3",
+   "description": "Days a deal may sit in the priced stage before the flow board calls it late. 0 or blank switches the stage off — it is then never reported as overdue.",
+   "fieldname": "sla_priced_days",
+   "fieldtype": "Int",
+   "in_list_view": 1,
+   "label": "Bid pricing (days)",
+   "non_negative": 1
+  },
+  {
+   "columns": 1,
+   "default": "30",
+   "description": "Days a deal may sit in the submitted stage before the flow board calls it late. 0 or blank switches the stage off — it is then never reported as overdue.",
+   "fieldname": "sla_submitted_days",
+   "fieldtype": "Int",
+   "in_list_view": 1,
+   "label": "Submitted (days)",
+   "non_negative": 1
+  }
+ ],
+ "index_web_pages_for_search": 1,
+ "istable": 1,
+ "links": [],
+ "modified": "2026-08-01 12:00:00.000000",
+ "modified_by": "Administrator",
+ "module": "Stabler",
+ "name": "Stabler Tender Stage SLA",
+ "owner": "Administrator",
+ "permissions": [],
+ "sort_field": "modified",
+ "sort_order": "DESC",
+ "states": []
+}

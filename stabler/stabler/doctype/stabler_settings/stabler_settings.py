@@ -92,6 +92,41 @@ def get_company_module_row(company: str):
 	return row
 
 
+def stage_sla_for(company: str) -> dict:
+	"""Bu şirketin tender aşama eşikleri, gün. Ayarlanmamışsa varsayılanlar.
+
+	`module_map_for` ile aynı şekil ve aynı sebeple: kiracıya özel olan şey
+	config'de yaşar, kodda değil. Fark, dönen değerin bir bayrak değil bir SAYI
+	olması — o yüzden "satır yok" ile "satırda 0 var" ayrımı burada korunuyor.
+
+	Satır varsa ama bir aşamanın hücresi boşsa (Frappe Int'i 0 olarak saklar)
+	o aşama TAKİPTEN ÇIKMIŞ sayılıyor, varsayılana geri dönmüyor. Yönetici bir
+	alanı bilerek sıfırladığında ekranın onu görmezden gelmesi gerekiyor;
+	varsayılana düşmek, kapatma niyetini sessizce geri alırdı.
+	"""
+	from stabler.api._tender_sla import DEFAULT_STAGE_SLA_DAYS
+
+	row = None
+	if company:
+		try:
+			settings = frappe.get_single("Stabler Settings")
+			for candidate in settings.get("tender_stage_sla") or []:
+				if candidate.company == company:
+					row = candidate
+					break
+		except Exception:
+			# Tablo henüz senkronlanmamış olabilir (yama öncesi migrate).
+			row = None
+
+	if not row:
+		return dict(DEFAULT_STAGE_SLA_DAYS)
+
+	return {
+		stage: int(getattr(row, f"sla_{stage}_days", 0) or 0)
+		for stage in DEFAULT_STAGE_SLA_DAYS
+	}
+
+
 def module_map_for(company: str) -> dict:
 	row = get_company_module_row(company) if company else None
 	if not row:

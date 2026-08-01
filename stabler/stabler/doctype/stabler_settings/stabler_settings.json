@@ -7,6 +7,8 @@
  "field_order": [
   "company_modules_section",
   "company_modules",
+  "tender_stage_sla_section",
+  "tender_stage_sla",
   "crm_section",
   "enforce_crm_next_action",
   "compliance_section",
@@ -77,6 +79,18 @@
    "fieldtype": "Table",
    "label": "Company Modules",
    "options": "Stabler Company Modules"
+  },
+  {
+   "fieldname": "tender_stage_sla_section",
+   "fieldtype": "Section Break",
+   "label": "Per-Company Tender Stage SLA"
+  },
+  {
+   "description": "How long a deal may sit in each tender stage before the flow board calls it late. A company with no row here uses the built-in defaults (stabler.api._tender_sla.DEFAULT_STAGE_SLA_DAYS). Won and lost have no threshold: a finished deal is not waiting.",
+   "fieldname": "tender_stage_sla",
+   "fieldtype": "Table",
+   "label": "Tender Stage SLA",
+   "options": "Stabler Tender Stage SLA"
   },
   {
    "fieldname": "crm_section",
@@ -167,7 +181,7 @@
   },
   {
    "default": "0",
-   "description": "When on, a Purchase Order must be approved by a second user before it can be submitted (procurement spend control). Off by default so enabling Stabler does not suddenly block existing POs \u2014 turn on deliberately, ideally with a threshold below.",
+   "description": "When on, a Purchase Order must be approved by a second user before it can be submitted (procurement spend control). Off by default so enabling Stabler does not suddenly block existing POs — turn on deliberately, ideally with a threshold below.",
    "fieldname": "enable_po_approvals",
    "fieldtype": "Check",
    "label": "Require approval to submit Purchase Orders"
