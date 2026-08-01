@@ -45,6 +45,7 @@ const moduleOptions = computed(() => [
 	{ key: "direct_invoicing", label: t("Direct Invoicing") },
 	{ key: "dimensional_lines", label: t("Dimensional Sales Lines") },
 	{ key: "sales_box_uom", label: t("Sales Box/Case UOM Preference") },
+	{ key: "modern_sales_order", label: t("Modern Sales Order Form") },
 ]);
 
 async function load() {

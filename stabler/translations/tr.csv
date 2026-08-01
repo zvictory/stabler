@@ -5230,3 +5230,6 @@ short stock,stok az
 unsaved changes,kaydedilmemiş değişiklikler
 Exchange rate unavailable — line prices were not converted. Enter the rate manually.,Döviz kuru mevcut değil — satır fiyatları dönüştürülmedi. Kuru manuel girin.
 Sales Box/Case UOM Preference,Satışta Koli/Kutu Birim Tercihi
+Exchange rate unavailable — enter it manually.,Döviz kuru bulunamadı — elle girin.
+Modern Sales Order Form,Modern Satış Siparişi Formu
+Total in {0},{0} cinsinden toplam

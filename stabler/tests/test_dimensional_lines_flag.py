@@ -28,7 +28,7 @@ PATCHES = (ROOT / "patches.txt").read_text(encoding="utf-8")
 PATCH = (ROOT / "patches/v63_enable_dimensional_lines.py").read_text(encoding="utf-8")
 HOOK = (ROOT / "api/dimensions_hook.py").read_text(encoding="utf-8")
 MATH = (ROOT / "api/_dimensions.py").read_text(encoding="utf-8")
-FORM = (ROOT / "public/js/pages/sales/SalesOrderForm.vue").read_text(encoding="utf-8")
+FORM = (ROOT / "public/js/pages/sales/SalesOrderFormModern.vue").read_text(encoding="utf-8")
 LINES = (ROOT / "public/js/pages/sales/SalesOrderLines.vue").read_text(encoding="utf-8")
 ADMIN = (ROOT / "public/js/pages/admin/Companies.vue").read_text(encoding="utf-8")
 

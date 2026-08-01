@@ -23,7 +23,7 @@ from pathlib import Path
 
 ROOT = Path(__file__).resolve().parents[1]
 LINES = (ROOT / "public/js/pages/sales/SalesOrderLines.vue").read_text(encoding="utf-8")
-FORM = (ROOT / "public/js/pages/sales/SalesOrderForm.vue").read_text(encoding="utf-8")
+FORM = (ROOT / "public/js/pages/sales/SalesOrderFormModern.vue").read_text(encoding="utf-8")
 SALES_API = (ROOT / "api/sales.py").read_text(encoding="utf-8")
 DIMENSIONS = (ROOT / "api/_dimensions.py").read_text(encoding="utf-8")
 

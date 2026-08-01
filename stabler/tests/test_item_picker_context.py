@@ -21,7 +21,10 @@ _PAGES = os.path.join(_APP_ROOT, "public", "js", "pages")
 
 # file -> expected context token that must appear.
 _REQUIRED = {
-	"sales/SalesOrderForm.vue": "sales",
+	# SalesOrderForm.vue is a ~25-line variant switcher with no picker of its
+	# own; both variants it selects between must carry the context.
+	"sales/SalesOrderFormClassic.vue": "sales",
+	"sales/SalesOrderFormModern.vue": "sales",
 	"sales/QuotationForm.vue": "sales",
 	"sales/SalesReturnForm.vue": "sales",
 	"purchasing/PurchaseOrderForm.vue": "purchase",

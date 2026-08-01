@@ -139,3 +139,6 @@ stabler.tests.test_sales_order_action_bar
 stabler.tests.test_translation_csv_wellformed
 stabler.tests.test_sales_order_i18n
 stabler.tests.test_sales_box_uom_flag
+stabler.tests.test_sales_order_variant_switch
+stabler.tests.test_sales_order_rate_direction
+stabler.tests.test_modern_sales_order_flag

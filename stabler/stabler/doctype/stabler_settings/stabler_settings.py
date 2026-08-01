@@ -47,6 +47,10 @@ DEFAULT_MODULE_ENABLED = {
 	# hizmet (horeca) satan kiracıda stok birimi doğrudur, koliye sessizce
 	# geçmemeli.
 	"sales_box_uom": False,
+	# Satış Siparişi'nin yeniden tasarlanmış tek sütunlu formu mu çizilsin.
+	# Varsayılan KAPALI: yedi kiracının hepsi tanıdık klasik formda kalır,
+	# yeni tasarımı isteyen kiracı bunu kendi açar. Bir izin değil, bir tercih.
+	"modern_sales_order": False,
 }
 
 

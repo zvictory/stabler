@@ -21,7 +21,12 @@ import unittest
 from pathlib import Path
 
 ROOT = Path(__file__).resolve().parents[1]
-FORM = (ROOT / "public/js/pages/sales/SalesOrderForm.vue").read_text(encoding="utf-8")
+FORM = (ROOT / "public/js/pages/sales/SalesOrderFormModern.vue").read_text(encoding="utf-8")
+# Klasik form `5e214ab`'den geri getirildi ve o dosya `"korobka"` sabitinin
+# söküldüğü commit'ten (`f7e73dbd`) ÖNCEye ait — yani sabit geri gelme riski
+# gerçekten burada. İki varyant da aynı kapıdan geçmek zorunda.
+CLASSIC = (ROOT / "public/js/pages/sales/SalesOrderFormClassic.vue").read_text(encoding="utf-8")
+FORMS = {"SalesOrderFormModern.vue": FORM, "SalesOrderFormClassic.vue": CLASSIC}
 ORG = (ROOT / "api/organization.py").read_text(encoding="utf-8")
 SETTINGS = (ROOT / "stabler/doctype/stabler_settings/stabler_settings.py").read_text(encoding="utf-8")
 MODULES_JSON_TEXT = (
@@ -33,23 +38,29 @@ PATCH = (ROOT / "patches/v64_enable_sales_box_uom.py").read_text(encoding="utf-8
 
 
 class TestTheKorobkaConstantIsGone(unittest.TestCase):
-	def test_the_literal_appears_nowhere_in_the_file(self):
-		self.assertNotIn("korobka", FORM)
+	def test_the_literal_appears_nowhere_in_either_form(self):
+		for name, src in FORMS.items():
+			with self.subTest(form=name):
+				self.assertNotIn("korobka", src)
 
 
 class TestPreferredSalesUomGatesOnTheFlag(unittest.TestCase):
-	def _body(self):
-		fn = FORM[FORM.index("function preferredSalesUom("):]
+	def _body(self, src):
+		fn = src[src.index("function preferredSalesUom("):]
 		return fn[: fn.index("\n}\n")]
 
 	def test_the_flag_is_read_from_session_modules(self):
-		self.assertIn("session.modules?.sales_box_uom", self._body())
+		for name, src in FORMS.items():
+			with self.subTest(form=name):
+				self.assertIn("session.modules?.sales_box_uom", self._body(src))
 
 	def test_when_off_it_returns_the_stock_uom_directly(self):
-		body = self._body()
-		i = body.index("session.modules?.sales_box_uom")
-		guarded = body[i : body.index("\n\t}", i)]
-		self.assertIn("u.uom === meta.stock_uom", guarded)
+		for name, src in FORMS.items():
+			with self.subTest(form=name):
+				body = self._body(src)
+				i = body.index("session.modules?.sales_box_uom")
+				guarded = body[i : body.index("\n\t}", i)]
+				self.assertIn("u.uom === meta.stock_uom", guarded)
 
 
 class TestTheTenantPreferenceIsWired(unittest.TestCase):

@@ -5241,3 +5241,6 @@ short stock,недостаточно
 unsaved changes,несохранённые изменения
 Exchange rate unavailable — line prices were not converted. Enter the rate manually.,Курс обмена недоступен — цены строк не были пересчитаны. Введите курс вручную.
 Sales Box/Case UOM Preference,Предпочтение единицы измерения (коробка/ящик) для продаж
+Exchange rate unavailable — enter it manually.,Обменный курс недоступен — введите его вручную.
+Modern Sales Order Form,Современная форма заказа продажи
+Total in {0},Итого в {0}

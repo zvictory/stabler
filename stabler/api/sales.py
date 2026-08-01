@@ -3221,6 +3221,24 @@ def _submit_and_reserve(doc) -> list[dict]:
 	return []
 
 
+def _apply_conversion_rate(doc, conversion_rate) -> None:
+	"""Honour a caller-supplied exchange rate; otherwise let ERPNext resolve it.
+
+	The SPA quotes the rate in the strong direction ("1 USD = 12 060 UZS") but
+	sends it back in ERPNext's own direction (1 transaction currency = N company
+	currency), so the stored value stays canonical. ERPNext only auto-fetches
+	when `conversion_rate` is falsy (accounts_controller.set_missing_values), so
+	assigning here is enough to override -- and skipping the assignment is what
+	makes a missing rate fall back to the live one rather than to a silent 1.
+	"""
+	rate = flt(conversion_rate)
+	if rate <= 0 or not doc.currency:
+		return
+	base = frappe.get_cached_value("Company", doc.company, "default_currency")
+	if doc.currency != base:
+		doc.conversion_rate = rate
+
+
 @frappe.whitelist()
 def create_sales_order(
 	company: str,
@@ -3232,6 +3250,7 @@ def create_sales_order(
 	remarks: str | None = None,
 	auto_submit: int = 1,
 	currency: str | None = None,
+	conversion_rate: float | None = None,
 	price_list: str | None = None,
 	crm_deal: str | None = None,
 	agreement: str | None = None,
@@ -3316,6 +3335,7 @@ def create_sales_order(
 		doc.terms = remarks.strip()
 	if currency:
 		doc.currency = currency
+	_apply_conversion_rate(doc, conversion_rate)
 	price_list = price_list or _resolve_price_list(customer)
 	if price_list:
 		doc.selling_price_list = price_list
@@ -3458,6 +3478,7 @@ def update_sales_order(
 	delivery_date: str | None = None,
 	remarks: str | None = None,
 	currency: str | None = None,
+	conversion_rate: float | None = None,
 	price_list: str | None = None,
 	modified: str | None = None,
 	agreement: str | None = None,
@@ -3552,6 +3573,7 @@ def update_sales_order(
 		doc.terms = remarks.strip()
 	if currency:
 		doc.currency = currency
+	_apply_conversion_rate(doc, conversion_rate)
 	resolved_pl = price_list or _resolve_price_list(doc.customer)
 	if resolved_pl:
 		doc.selling_price_list = resolved_pl

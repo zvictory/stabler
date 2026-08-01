@@ -5235,3 +5235,6 @@ short stock,yetarli emas
 unsaved changes,saqlanmagan o'zgarishlar
 Exchange rate unavailable — line prices were not converted. Enter the rate manually.,Valyuta kursi mavjud emas — qator narxlari qayta hisoblanmadi. Kursni qo'lda kiriting.
 Sales Box/Case UOM Preference,Sotuvda quti/karobka o'lchov birligi tanlovi
+Exchange rate unavailable — enter it manually.,Valyuta kursi mavjud emas — uni qo‘lda kiriting.
+Modern Sales Order Form,Zamonaviy sotuv buyurtmasi shakli
+Total in {0},{0} da jami

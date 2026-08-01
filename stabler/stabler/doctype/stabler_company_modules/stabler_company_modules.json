@@ -26,7 +26,8 @@
   "enable_agreements",
   "enable_direct_invoicing",
   "enable_dimensional_lines",
-  "enable_sales_box_uom"
+  "enable_sales_box_uom",
+  "enable_modern_sales_order"
  ],
  "fields": [
   {
@@ -189,6 +190,14 @@
    "fieldtype": "Check",
    "in_list_view": 1,
    "label": "Sales Box/Case UOM Preference"
+  },
+  {
+   "default": "0",
+   "description": "Use the redesigned single-column Sales Order form (sticky action bar) instead of the classic two-column form. OFF by default: every tenant keeps the classic form; turn on per tenant to opt into the new design.",
+   "fieldname": "enable_modern_sales_order",
+   "fieldtype": "Check",
+   "in_list_view": 1,
+   "label": "Modern Sales Order Form"
   }
  ],
  "index_web_pages_for_search": 1,
