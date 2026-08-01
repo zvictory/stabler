@@ -8,15 +8,22 @@ Temizlik:
 
 NE ÜRETİYOR VE NEDEN
 --------------------
-Amaç ekranları "dolu göstermek" değil; dört panonun DÖRDÜNÜN de kendi sorusuna
+Amaç ekranları "dolu göstermek" değil; ALTI panonun ALTISININ da kendi sorusuna
 gerçek bir cevap verebilmesi. O yüzden veri, her ekranın gösterdiği ayrımı
 içerecek şekilde kuruluyor:
 
-  Operasyon Masası   — bugün ve geçmiş son tarihler, sahipsiz kalmış lotlar
+  Operasyon Masası   — bugün ve geçmiş son tarihler, atanmış ve atanmamış lotlar
   Tender CRM         — yedi kulvarın hepsinde kart, teklif seti tam/eksik
   Direktör panosu    — kazanılmış, kaybedilmiş ve süren işler bir arada
   Süreç akışı        — bir adım eşiğin içinde, biri sınırda, biri aşmış,
                        ve BİRİ ölçülemez
+  Gümrük kuyruğu     — beklemede / işlemde / çekilmiş, ve ETA'sı geçmiş bir satır
+  Lojistik panosu    — geciken, yolda ve teslim edilmiş sevkiyat bir arada
+
+Son iki satır bu betiğe sonradan eklendi. İlk hâli yalnız CRM Deal üretiyordu;
+gümrük ve lojistik panolarının okuduğu tek kayıt tipi Purchase Order olduğu
+için ikisi de seed'den sonra BOŞ açılıyordu — ve betiğin kendi çıktı satırı
+dört pano sayıp iki tanesini hiç anmayarak bunu itiraf ediyordu.
 
 Son madde bilinçli: damgası olmayan anlaşmalar demo'da da var, çünkü gerçek
 sitede de olacaklar (v66 öncesi taşınmış her kayıt). "Ölçülemiyor" satırını
@@ -90,6 +97,40 @@ DEADLINE_OFFSETS = {
 }
 
 
+#: Teslim son tarihi lot başına. Varsayılan 90 gün; kazanılmış lotlarda
+#: sözleşme tarihi daha yakın, çünkü lojistik panosunun "geciken" tanımı
+#: ETA ile teslim tarihini karşılaştırıyor — hepsi 90 gün olursa hiçbir
+#: sevkiyat gecikmiş çıkmaz ve o kulvar hiç test edilmez.
+DELIVERY_OFFSETS = {
+	"UTY-2026-4314": 30,
+	"UTY-2026-4315": 60,
+}
+
+#: Kazanılan lotların sipariş hattı — gümrük kuyruğunu ve lojistik panosunu
+#: besleyen tek kayıt tipi Purchase Order.
+#:
+#: (lot_no, tedarikçi, ülke, eta_gün_farkı, alınan_yüzde, tnved, gümrük_masrafı)
+#:
+#: Beş satır, iki panonun BÜTÜN durumlarını üretecek şekilde seçildi:
+#:
+#:   lojistik    geciken 2 (ETA sözleşme tarihini aşıyor) · yolda 2 · teslim 1
+#:   gümrük      risk 1 (ETA geçmiş) · uyarı 2 (≤7 gün) · sakin 2
+#:               pending 1 (masrafsız) · in_progress 3 (gümrük masrafı var) ·
+#:               cleared 1 (mal alınmış)
+#:
+#: 4314'ün ilk satırı bilerek çelişkili: ETA altı gün önce geçmiş ama teslim
+#: tarihi hâlâ ileride. Lojistik panosu ona "yolda" diyor (kuralı `eta >
+#: delivery`, bugünü hiç kullanmıyor), gümrük kuyruğu aynı satıra "risk"
+#: diyor (kuralı `days < 0`). Demo bu ayrımı GİZLEMEMELİ — iki ekranın aynı
+#: sevkiyat için farklı şey söylemesi, düzeltilmesi gereken şeyin kendisi.
+DEMO_PURCHASE_ORDERS = [
+	("UTY-2026-4314", "Hebei Rail Parts", "China", -6, 0, "7302 10 900 0", 41_000_000),
+	("UTY-2026-4314", "Temiryo'l ta'minot", "Uzbekistan", 4, 100, "", 0),
+	("UTY-2026-4314", "UralVagonSnab", "Russian Federation", 45, 0, "7302 40 000 0", 88_000_000),
+	("UTY-2026-4315", "Shandong Heavy", "China", 3, 40, "8607 19 100 0", 62_000_000),
+	("UTY-2026-4315", "Sanoat kompleks", "Uzbekistan", 75, 0, "", 0),
+]
+
 #: Demo tedarikçileri, ülke başına üç isim. Ülke veriyle geliyor, isimden
 #: tahmin edilmiyor: CRM panosunun `country_count` rozetini üreten alan
 #: `Supplier.country` — orası boşsa rozet, teklifler dursa bile 0 gösterir.
@@ -152,6 +193,15 @@ def _guard(company: str) -> None:
 		frappe.throw(
 			"Supplier Quotation.custom_crm_deal is missing — run `bench --site <site> "
 			"migrate` first so patch v30 links quotations to deals."
+		)
+	# Aynı gerekçe siparişler için: gümrük kuyruğu ve lojistik panosunun okuduğu
+	# tek bağ bu kolon. Kontrol BAŞTA, `_orders()` içinde değil — orada durmak
+	# on üç anlaşma ve teklif setleri yaratıldıktan SONRA durmak demek, yani
+	# tam olarak kaçınılmak istenen yarım demo.
+	if not frappe.db.has_column("Purchase Order", "custom_crm_deal"):
+		frappe.throw(
+			"Purchase Order.custom_crm_deal is missing — run `bench --site <site> migrate` "
+			"first, or the customs and logistics boards would have nothing to read."
 		)
 
 
@@ -261,7 +311,77 @@ def _quotations(deal: str, company: str, lot_no: str, sq_count: int, countries: 
 	return len(picks)
 
 
-def _intake(lot_no: str, buyer: str, stage: str, value: int, owner: str) -> dict:
+def _orders(deal_by_lot: dict[str, str], company: str) -> int:
+	"""Kazanılan lotların siparişlerini yarat — gümrük ve lojistik panolarının
+	okuduğu TEK kayıt tipi bu.
+
+	İki ekran da `custom_crm_deal` ile bir anlaşmaya bağlı Purchase Order
+	satırlarını gösteriyor (`_po_rows_for_views`). Sipariş yoksa iki pano da
+	boş açılır — demo altı panonun dördünü besleyip ikisini karanlıkta
+	bırakıyordu.
+
+	Belgeler taslak bırakılıyor, teklifler gibi: panolar `docstatus < 2`
+	okuyor, taslak o kümede. `per_received` normalde mal kabulünden hesaplanır;
+	burada doğrudan kolona yazılıyor çünkü demo'nun Purchase Receipt üretmesi
+	stok ve muhasebe hareketi demek olurdu. Yani "alındı" yüzdesi demo'da bir
+	gösterge, arkasında irsaliye yok — bilerek.
+	"""
+	has_landed = frappe.db.has_column("Purchase Order", "custom_landed_charges")
+	item = _demo_item()
+	made = 0
+	for lot_no, supplier_name, country, eta_days, received_pct, tnved, customs in DEMO_PURCHASE_ORDERS:
+		deal = deal_by_lot.get(lot_no)
+		if not deal:
+			continue
+		eta = add_days(nowdate(), eta_days)
+		order = frappe.new_doc("Purchase Order")
+		order.company = company
+		order.supplier = _supplier(supplier_name, country)
+		# Sipariş tarihi ETA'dan önce olmalı; geçmiş ETA'lı satırda bugünü
+		# aşmasın diye bugünle sınırlanıyor.
+		order.transaction_date = min(add_days(eta, -30), nowdate())
+		order.schedule_date = eta
+		if has_landed and customs:
+			order.custom_landed_charges = json.dumps(
+				[{"type": "customs", "label": f"Bojxona to'lovi{DEMO_SUFFIX}",
+				  "amount": customs, "tnved": tnved}],
+				ensure_ascii=False,
+			)
+		order.append(
+			"items",
+			{
+				"item_code": item,
+				"item_name": f"{lot_no}{DEMO_SUFFIX}",
+				"description": f"{lot_no}{DEMO_SUFFIX}",
+				"qty": 1,
+				"rate": 0,
+				"schedule_date": eta,
+			},
+		)
+		order.insert(ignore_permissions=True)
+		if received_pct:
+			frappe.db.set_value(
+				"Purchase Order", order.name, "per_received", received_pct, update_modified=False
+			)
+		made += 1
+	return made
+
+
+def _pick_team(limit: int = 3) -> list[str]:
+	"""Atama için gerçek kullanıcılar; yoksa boş dön."""
+	return [
+		u.name
+		for u in frappe.get_all(
+			"User",
+			filters={"enabled": 1, "user_type": "System User", "name": ["!=", "Administrator"]},
+			fields=["name"],
+			limit=limit,
+			order_by="creation asc",
+		)
+	]
+
+
+def _intake(lot_no: str, buyer: str, stage: str, value: int, owner: str, assignee: str = "") -> dict:
 	"""Aşamanın gerektirdiği KANITI üret, aşamayı yazmakla yetinme.
 
 	`_funnel.classify` olgulardan aşama türetiyor; intake bu olguları taşımazsa
@@ -272,7 +392,7 @@ def _intake(lot_no: str, buyer: str, stage: str, value: int, owner: str) -> dict
 		"buyer": buyer,
 		"contract_value": value,
 		"bid_deadline": add_days(nowdate(), DEADLINE_OFFSETS.get(lot_no, 21)),
-		"delivery_deadline": add_days(nowdate(), 90),
+		"delivery_deadline": add_days(nowdate(), DELIVERY_OFFSETS.get(lot_no, 90)),
 		"documents": [
 			{"name": "Texnik spetsifikatsiya", "status": "ready"},
 			{"name": "Kafolat xati", "status": "ready" if stage in ("priced", "submitted", "won", "lost") else "pending"},
@@ -290,6 +410,17 @@ def _intake(lot_no: str, buyer: str, stage: str, value: int, owner: str) -> dict
 		intake["submitted_by"] = owner
 	if stage in ("won", "lost"):
 		intake["result"] = stage
+	# Atama, tedarik penceresinin görünürlük sınırı: `/tender/my-tenders` ve
+	# masanın sourcing süzgeci bu alandan okuyor, ekip yükü de kırılımını
+	# buradan alıyor. Atamasız demo'da üçü de belge sahibine çöküyordu — yani
+	# tek satır, hep aynı isim. `seen` lotları BİLEREK atamasız kalıyor: yeni
+	# gelen ilan henüz kimsenin değil, ve panonun "sahipsiz" hâlini de birinin
+	# göstermesi lazım.
+	if assignee:
+		intake["assigned_to"] = assignee
+		intake["assigned_to_name"] = frappe.db.get_value("User", assignee, "full_name") or assignee
+		intake["assigned_at"] = now()
+		intake["assigned_by"] = owner
 	return intake
 
 
@@ -312,14 +443,22 @@ def seed(company: str = "Mikas"):
 		return
 
 	owner = _pick_owner()
+	team = _pick_team()
 	has_stage = frappe.db.has_column("CRM Deal", "custom_tender_stage")
 	has_stamp = frappe.db.has_column("CRM Deal", "custom_tender_stage_entered_at")
 	has_pricing = frappe.db.has_column("CRM Deal", "custom_bid_pricing")
 	created = []
+	deal_by_lot: dict[str, str] = {}
 	sq_total = 0
+	assigned_n = 0
 
 	for lot_no, buyer, stage, moved_days, sq_count, countries, value in DEMO_LOTS:
-		intake = _intake(lot_no, buyer, stage, value, owner)
+		# `seen` dışındaki her lot ekipte bir kişiye düşüyor; sırayla, ki ekip
+		# yükü paneli tek çubuk değil gerçek bir dağılım göstersin.
+		assignee = team[assigned_n % len(team)] if team and stage != "seen" else ""
+		if assignee:
+			assigned_n += 1
+		intake = _intake(lot_no, buyer, stage, value, owner, assignee)
 		deal = frappe.new_doc("CRM Deal")
 		deal.company = company
 		deal.organization = _org(buyer)
@@ -328,6 +467,7 @@ def seed(company: str = "Mikas"):
 			deal.custom_bid_pricing = json.dumps({"unit_price": value, "margin_pct": 12}, ensure_ascii=False)
 		deal.insert(ignore_permissions=True)
 		created.append((deal.name, lot_no, stage, moved_days))
+		deal_by_lot[lot_no] = deal.name
 		sq_total += _quotations(
 			deal.name, company, lot_no, sq_count, countries, value, intake["bid_deadline"]
 		)
@@ -346,11 +486,22 @@ def seed(company: str = "Mikas"):
 			)
 			_stage_history(deal.name, company, stage, moved_days)
 
+	po_total = _orders(deal_by_lot, company)
+
 	frappe.db.commit()
-	print(f"Seeded {len(created)} demo tender deals and {sq_total} supplier quotations on {company}:")
+	print(
+		f"Seeded {len(created)} demo tender deals, {sq_total} supplier quotations and "
+		f"{po_total} purchase orders on {company}:"
+	)
 	for name, lot_no, stage, moved in created:
 		print(f"  {name}  {lot_no}  stage={stage}  moved={moved if moved is not None else 'no stamp'}")
-	print("\nVisible on: /tender/desk · /tender/crm · /tender/portfolio · /tender/flow")
+	if not team:
+		print("\n  NOTE: no non-Administrator user on this site — nothing could be assigned,")
+		print("        so team load and /tender/my-tenders will still read empty.")
+	print(
+		"\nVisible on: /tender/desk · /tender/crm · /tender/portfolio · /tender/flow"
+		" · /tender/customs · /tender/logistics"
+	)
 
 
 def _stage_history(deal: str, company: str, stage: str, moved_days: int) -> None:
@@ -406,16 +557,24 @@ def unseed(company: str = "Mikas"):
 	# bilinemez ve sitede sahipsiz kalırlar.
 	deal_names = [row["name"] for row in deals]
 	sq_removed = 0
-	if deal_names and frappe.db.has_column("Supplier Quotation", "custom_crm_deal"):
-		quotations = frappe.get_all(
-			"Supplier Quotation",
+	po_removed = 0
+	# Siparişler de tekliflerle aynı durumda: kendi başlıklarında ` [DEMO]`
+	# taşımıyorlar, demo oldukları yalnız bağlı oldukları anlaşmadan biliniyor.
+	# O yüzden ikisi de anlaşmalardan ÖNCE gidiyor.
+	for doctype in ("Supplier Quotation", "Purchase Order"):
+		if not deal_names or not frappe.db.has_column(doctype, "custom_crm_deal"):
+			continue
+		for row in frappe.get_all(
+			doctype,
 			filters={"custom_crm_deal": ["in", deal_names]},
 			fields=["name"],
 			limit_page_length=0,
-		)
-		for row in quotations:
-			frappe.delete_doc("Supplier Quotation", row["name"], force=True, ignore_permissions=True)
-			sq_removed += 1
+		):
+			frappe.delete_doc(doctype, row["name"], force=True, ignore_permissions=True)
+			if doctype == "Supplier Quotation":
+				sq_removed += 1
+			else:
+				po_removed += 1
 
 	for row in deals:
 		# Olay kayıtları değişmez (on_trash engelliyor); anlaşmayı silmeden
@@ -455,5 +614,6 @@ def unseed(company: str = "Mikas"):
 	frappe.db.commit()
 	print(
 		f"Removed {len(deals)} demo tender deals, {sq_removed} supplier quotations, "
-		f"{extras_removed} demo suppliers/items and up to {len(orgs)} demo organizations."
+		f"{po_removed} purchase orders, {extras_removed} demo suppliers/items and up to "
+		f"{len(orgs)} demo organizations."
 	)

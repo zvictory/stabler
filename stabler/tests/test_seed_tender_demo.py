@@ -252,15 +252,102 @@ class TestTheQuotationsMakeTheBoardsTellTheTruth(unittest.TestCase):
 				if sq_count:
 					self.assertEqual(len({c for _n, c in picked}), max(1, countries))
 
-	def test_quotations_are_created_before_they_could_be_orphaned(self):
-		"""Teklifler `custom_crm_deal` ile bağlı; anlaşma önce silinirse hangi
-		tekliflerin demo olduğu bir daha bilinemez ve sitede sahipsiz kalırlar."""
+	def test_deal_linked_documents_go_before_the_deals(self):
+		"""Teklif ve sipariş `custom_crm_deal` ile bağlı, kendi başlıklarında
+		` [DEMO]` taşımıyorlar. Anlaşma önce silinirse hangi belgelerin demo
+		olduğu bir daha bilinemez ve sitede sahipsiz kalırlar.
+
+		İddia iki belge tipini de kapsıyor: sipariş sonradan eklendi ve aynı
+		tuzağa aynı şekilde düşebilirdi.
+		"""
 		unseed = _fn("unseed")
-		self.assertLess(
-			unseed.index('frappe.delete_doc("Supplier Quotation"'),
-			unseed.index('frappe.delete_doc("CRM Deal"'),
-			"teklifler anlaşmalardan ÖNCE silinmeli",
+		deals_gone = unseed.index('frappe.delete_doc("CRM Deal"')
+		for doctype in ("Supplier Quotation", "Purchase Order"):
+			with self.subTest(doctype=doctype):
+				self.assertIn(f'"{doctype}"', unseed, f"{doctype} unseed'de hiç geçmiyor")
+				self.assertLess(
+					unseed.index(f'"{doctype}"'),
+					deals_gone,
+					f"{doctype} anlaşmalardan ÖNCE silinmeli",
+				)
+
+	def test_the_boards_that_read_orders_actually_get_orders(self):
+		"""Gümrük kuyruğu ve lojistik panosu yalnız Purchase Order okuyor.
+
+		Betiğin ilk hâli hiç sipariş üretmiyordu, o yüzden iki pano da seed'den
+		sonra boş açılıyordu — ve çıktı satırı dört pano sayıp o ikisini hiç
+		anmayarak durumu itiraf ediyordu. Burada üç şey birden tutuluyor: hat
+		var, kazanılmış lotlara bağlı, ve çıktı satırı artık altı panoyu sayıyor.
+		"""
+		self.assertIn("DEMO_PURCHASE_ORDERS = [", SEED)
+		block = SEED[SEED.index("DEMO_PURCHASE_ORDERS = ["):SEED.index("#: Demo tedarikçileri")]
+		lots = set(re.findall(r'\("(UTY-\d{4}-\d{4})"', block))
+		self.assertTrue(lots, "sipariş hattı boş")
+		won = {lot for lot, *_rest in self.seed.DEMO_LOTS if _rest[1] == "won"}
+		self.assertTrue(
+			lots.issubset(won),
+			f"sipariş yalnız kazanılmış lota bağlanmalı; {sorted(lots - won)} kazanılmamış",
 		)
+		for board in ("/tender/customs", "/tender/logistics"):
+			with self.subTest(board=board):
+				self.assertIn(board, SEED, f"çıktı satırı {board} panosunu saymıyor")
+
+	def test_the_order_line_covers_every_state_both_boards_can_show(self):
+		"""Tek durumlu bir hat, iki panoyu da tek satır göstererek 'çalışıyor'
+		izlenimi verir. Kuyruk boşsa fark edilir; hepsi aynıysa fark edilmez.
+
+		Gümrük: ETA'sı geçmiş (risk) · ≤7 gün (uyarı) · uzak (sakin), ve masrafsız
+		(pending) · masraflı (in_progress) · alınmış (cleared).
+		Lojistik: teslim tarihini aşan ETA (geciken) · alınmış (teslim).
+		"""
+		rows = self.seed.DEMO_PURCHASE_ORDERS
+		etas = [r[3] for r in rows]
+		received = [r[4] for r in rows]
+		customs = [r[6] for r in rows]
+		self.assertTrue(any(e < 0 for e in etas), "ETA'sı geçmiş satır yok — gümrük 'risk' üretmez")
+		self.assertTrue(any(0 <= e <= 7 for e in etas), "yakın ETA yok — gümrük 'uyarı' üretmez")
+		self.assertTrue(any(e > 30 for e in etas), "uzak ETA yok")
+		self.assertTrue(any(p >= 100 for p in received), "tam alınmış satır yok — 'cleared'/'teslim' üretmez")
+		self.assertTrue(any(p == 0 for p in received), "hiç alınmamış satır yok")
+		self.assertTrue(any(c > 0 for c in customs), "gümrük masrafı olan satır yok — 'in_progress' üretmez")
+		self.assertTrue(any(c == 0 for c in customs), "masrafsız satır yok — 'pending' üretmez")
+		# Lojistiğin "geciken" kuralı ETA ile TESLİM tarihini karşılaştırıyor,
+		# bugünle değil. Kazanılmış lotların teslim tarihi bu yüzden 90 günden
+		# yakın; hepsi 90 olsaydı hiçbir sevkiyat gecikmiş çıkmazdı.
+		for lot in {r[0] for r in rows}:
+			with self.subTest(lot=lot):
+				self.assertIn(lot, self.seed.DELIVERY_OFFSETS, f"{lot} için teslim tarihi kısaltılmamış")
+		late = [
+			r for r in rows
+			if r[4] < 100 and r[3] > self.seed.DELIVERY_OFFSETS.get(r[0], 90)
+		]
+		self.assertTrue(late, "hiçbir sevkiyat teslim tarihini aşmıyor — lojistik 'geciken' üretmez")
+
+	def test_the_working_lots_are_assigned_and_the_new_ones_are_not(self):
+		"""Atama tedarik penceresinin görünürlük sınırı: `/tender/my-tenders`,
+		masanın sourcing süzgeci ve ekip yükü kırılımı bu alandan okuyor.
+		Atamasız demo'da üçü de belge sahibine çöküyordu — tek satır, hep aynı
+		isim. Yeni gelen ilan (`seen`) ise bilerek atamasız: panonun 'sahipsiz'
+		hâlini de birinin göstermesi lazım.
+		"""
+		seed_fn = _fn("seed")
+		self.assertIn('stage != "seen"', seed_fn, "seen lotları atama dışında tutulmalı")
+		intake = _fn("_intake")
+		for key in ("assigned_to", "assigned_to_name", "assigned_at", "assigned_by"):
+			with self.subTest(key=key):
+				self.assertIn(f'intake["{key}"]', intake, f"{key} intake'e yazılmıyor")
+
+	def test_the_order_column_is_checked_before_anything_is_created(self):
+		"""Eksik kolonda durmak doğru; ON ÜÇ anlaşma ve teklif setleri
+		yaratıldıktan SONRA durmak yarım demo bırakmak demek — betiğin `_guard`
+		docstring'inin baştan uyardığı hâl. Kontrol `_orders()` içinde değil,
+		`_guard()` içinde olmalı."""
+		guard = _fn("_guard")
+		self.assertIn('has_column("Purchase Order", "custom_crm_deal")', guard,
+		              "sipariş kolonu kontrolü _guard'da değil")
+		orders = _fn("_orders")
+		self.assertNotIn('has_column("Purchase Order", "custom_crm_deal")', orders,
+		                 "kontrol _orders'ta kalırsa 13 anlaşma yaratıldıktan sonra durur")
 
 	def test_a_draft_quotation_still_counts_on_the_board(self):
 		"""Pano `docstatus < 2` sayıyor. Teklifleri submit etmek demo'yu
