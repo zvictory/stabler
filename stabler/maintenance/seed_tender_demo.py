@@ -175,9 +175,17 @@ def _pick_suppliers(sq_count: int, countries: int) -> list[tuple[str, str]]:
 
 def _guard(company: str) -> None:
 	"""Eksik bir bağımlılıkta sessizce yarım veri bırakmak yerine yüksek sesle dur."""
-	if not frappe.db.table_exists("CRM Deal"):
+	# DocType kaydını sor, tabloyu DEĞİL. `crm` hiç kurulmamış ya da kaldırılmış bir
+	# sitede `tabCRM Deal` geride kalabiliyor (ölçüldü 2026-08-02, yerel `stabler`
+	# sitesi: tablo var, 55 kolon, 0 satır, DocType kaydı yok). O durumda
+	# table_exists bayat tabloya bakıp True döner, bu kontrol geçer ve betik
+	# aşağıdaki custom_tender_intake dalında ölür — mesajı "migrate çalıştır" der.
+	# Ama DocType'ı olmayan bir yerde migrate o custom field'ı asla yaratamaz:
+	# kullanıcı düzelmeyecek bir komutu tekrar tekrar çalıştırır. Eksik bağımlılığın
+	# adı `crm` uygulaması; kontrol de onu sormalı.
+	if not frappe.db.exists("DocType", "CRM Deal"):
 		frappe.throw(
-			"CRM Deal table not found. The 'crm' app must be installed on this site.\n"
+			"CRM Deal doctype not found. The 'crm' app must be installed on this site.\n"
 			"  bench get-app crm && bench --site <site> install-app crm"
 		)
 	if not frappe.db.exists("Company", company):
