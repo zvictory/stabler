@@ -66,3 +66,4 @@ stabler.patches.v60_crm_daily_work
 stabler.patches.v61_tender_master_link
 stabler.patches.v62_enable_direct_invoicing
 stabler.patches.v63_enable_dimensional_lines
+stabler.patches.v64_enable_sales_box_uom

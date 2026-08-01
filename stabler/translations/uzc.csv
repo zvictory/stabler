@@ -5221,4 +5221,17 @@ No Transporter,Ташувчи йўқ
 Vehicle / Truck,Транспорт / юк машинаси
 open debt,очиқ қарз
 No open debt,очиқ қарз йўқ
-Type a product code in the search above — stock status shows in the list, picking adds it as a line.,Юқоридаги қидирувга маҳсулот кодини ёзинг — омбор ҳолати рўйхатда кўринади, танласангиз қатор бўлиб қўшилади.
+"Type a product code in the search above — stock status shows in the list, picking adds it as a line.","Юқоридаги қидирувга маҳсулот кодини ёзинг — омбор ҳолати рўйхатда кўринади, танласангиз қатор бўлиб қўшилади."
+Force allow over-stock submit (Admin),Омбордаги етишмовчиликка қарамай юборишни мажбуран рухсат бериш (Админ)
+Some lines exceed available stock. Adjust quantities or warehouse before submitting.,Баъзи қаторлар мавжуд омбордаги миқдордан ошиб кетмоқда. Юборишдан олдин миқдорни ёки омборни тўғриланг.
+Stock and reservations are read from this warehouse,Қолдиқ ва резервлар ушбу омбордан олинади
+Stock insufficient — cannot submit,Омбордаги захира етарли эмас — юбориб бўлмайди
+item to reserve,резерв қилинадиган товар
+items to reserve,резерв қилинадиган товарлар
+lines blocked,қатор блокланди
+no date set,сана белгиланмаган
+not saved,сақланмаган
+short stock,етарли эмас
+unsaved changes,сақланмаган ўзгаришлар
+Exchange rate unavailable — line prices were not converted. Enter the rate manually.,Валюта курси мавжуд эмас — қатор нархлари қайта ҳисобланмади. Курсни қўлда киритинг.
+Sales Box/Case UOM Preference,Сотувда қути/қароб ўлчов бирлиги танлови

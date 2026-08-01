@@ -55,6 +55,7 @@ vitest.config.mjs
 # agent-os (58) are the same category and were shipping in all three scripts.
 .claude
 .superpowers
+.zcode
 agent-os
 graphify-out
 .smoke

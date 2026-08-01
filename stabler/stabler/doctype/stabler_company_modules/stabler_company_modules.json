@@ -25,7 +25,8 @@
   "enable_imports",
   "enable_agreements",
   "enable_direct_invoicing",
-  "enable_dimensional_lines"
+  "enable_dimensional_lines",
+  "enable_sales_box_uom"
  ],
  "fields": [
   {
@@ -180,6 +181,14 @@
    "fieldtype": "Check",
    "in_list_view": 1,
    "label": "Dimensional Sales Lines (measure columns by default)"
+  },
+  {
+   "default": "0",
+   "description": "New sales order lines auto-select the largest box/case unit of measure (conversion_factor > 1) instead of the stock unit. OFF by default so tenants that sell by the stock unit (dts, horeca) are unaffected; turn on for tenants that sell by the box (anjan).",
+   "fieldname": "enable_sales_box_uom",
+   "fieldtype": "Check",
+   "in_list_view": 1,
+   "label": "Sales Box/Case UOM Preference"
   }
  ],
  "index_web_pages_for_search": 1,

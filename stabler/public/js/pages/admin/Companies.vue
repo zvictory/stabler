@@ -44,6 +44,7 @@ const moduleOptions = computed(() => [
 	// pratikte kod sabitidir.
 	{ key: "direct_invoicing", label: t("Direct Invoicing") },
 	{ key: "dimensional_lines", label: t("Dimensional Sales Lines") },
+	{ key: "sales_box_uom", label: t("Sales Box/Case UOM Preference") },
 ]);
 
 async function load() {

@@ -5221,4 +5221,17 @@ No Transporter,Tashuvchi yoʻq
 Vehicle / Truck,Transport / yuk mashinasi
 open debt,ochiq qarz
 No open debt,ochiq qarz yoʻq
-Type a product code in the search above — stock status shows in the list, picking adds it as a line.,Yuqoridagi qidiruvga mahsulot kodini yozing — ombor holati roʻyxatda koʻrinadi, tanlasangiz qator boʻlib qoʻshiladi.
+"Type a product code in the search above — stock status shows in the list, picking adds it as a line.","Yuqoridagi qidiruvga mahsulot kodini yozing — ombor holati roʻyxatda koʻrinadi, tanlasangiz qator boʻlib qoʻshiladi."
+Force allow over-stock submit (Admin),Ombordagi yetishmovchilikka qaramay yuborishni majburan ruxsat berish (Admin)
+Some lines exceed available stock. Adjust quantities or warehouse before submitting.,Ba'zi qatorlar mavjud ombordagi miqdordan oshib ketmoqda. Yuborishdan oldin miqdorni yoki omborni to'g'rilang.
+Stock and reservations are read from this warehouse,Qoldiq va rezervlar ushbu ombordan olinadi
+Stock insufficient — cannot submit,Ombordagi zaxira yetarli emas — yuborib bo'lmaydi
+item to reserve,rezerv qilinadigan tovar
+items to reserve,rezerv qilinadigan tovarlar
+lines blocked,qator bloklandi
+no date set,sana belgilanmagan
+not saved,saqlanmagan
+short stock,yetarli emas
+unsaved changes,saqlanmagan o'zgarishlar
+Exchange rate unavailable — line prices were not converted. Enter the rate manually.,Valyuta kursi mavjud emas — qator narxlari qayta hisoblanmadi. Kursni qo'lda kiriting.
+Sales Box/Case UOM Preference,Sotuvda quti/karobka o'lchov birligi tanlovi

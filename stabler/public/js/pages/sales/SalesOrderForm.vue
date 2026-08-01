@@ -40,7 +40,10 @@ const showDiscounts = ref(false);
 const showDims = ref(Boolean(session.modules?.dimensional_lines));
 const lastReservationErrors = ref([]);
 const autoSubmit = ref(1);
-const exchangeRate = ref(12006.39);
+const exchangeRate = ref(null);
+// Set by resolveRate()'s callers when a live rate was needed but unavailable —
+// the line keeps its un-converted fallback price instead of a silently wrong one.
+const rateWarning = ref(false);
 const forceOverStock = ref(false);
 const openDelivery = ref(false);
 const openReserve = ref(true);
@@ -339,22 +342,29 @@ const rateIsInverted = computed(() =>
 	isForeignCurrency.value && form.value?.currency === "UZS"
 );
 
-/** CBU veya belge bazlı aktif kur. ERPNext UZS belgelerde conversion_rate'i 1 kaydettiği için
- * UZS belgelerinde canlı Dolar kuru (12006.39) aktif kur olarak alınır. */
-const activeRate = computed(() => {
-	const orderCurrency = (form.value?.currency || currency.value || "UZS").toUpperCase();
-	const docRate = Number(form.value?.exchange_rate);
+// Which two currencies the live rate is quoted between. UZS always wants a USD
+// reference rate (the CBU-published Dollar rate), regardless of the transaction
+// or company base currency — matches fetchExchangeRate()'s own from/to pick, so
+// both stay in sync from one place instead of duplicating currency literals.
+const exchangeRatePair = computed(() => {
+	const cur = (form.value?.currency || currency.value || "UZS").toUpperCase();
+	const base = (currency.value || "UZS").toUpperCase();
+	const from = (cur === "UZS" || cur === base) ? "USD" : cur;
+	return { from, to: base };
+});
 
-	if (orderCurrency !== "UZS" && docRate && docRate > 100) {
+/** CBU veya belge bazlı aktif kur. Belgenin kendi exchange_rate'i yalnızca işlem
+ * para birimi şirket temel para biriminden farklıyken güvenilir (aynıyken ERPNext
+ * her zaman 1 kaydeder). Kur hiç bilinmiyorsa null döner — sabit bir değere düşülmez. */
+const activeRate = computed(() => {
+	const docRate = Number(form.value?.exchange_rate);
+	if (isForeignCurrency.value && docRate > 0) {
 		return docRate;
 	}
-	return (exchangeRate.value && exchangeRate.value > 100) ? exchangeRate.value : 12006.39;
+	return (exchangeRate.value && exchangeRate.value > 0) ? exchangeRate.value : null;
 });
 
-const displayExchangeRate = computed(() => {
-	const r = activeRate.value;
-	return (r && r > 100) ? r : 12006.39;
-});
+const displayExchangeRate = computed(() => activeRate.value || null);
 
 function lineAmount(line) {
 	const qty = Number(line.qty || 0);
@@ -374,38 +384,26 @@ const grandTotal = computed(() =>
 	(form.value?.items || []).reduce((s, l) => s + lineAmount(l), 0)
 );
 
-/** Toplamın karşı birimindeki dengi (UZS için USD, yabancı para için UZS).
- * UZS tutarı kura BÖLÜNEREK USD karşılığı hesaplanır (225,000 / 12006.39 = $18.74). */
+/** Toplamın karşı birimindeki dengi (baz para birimi ↔ referans para birimi arasında).
+ * Yön exchangeRatePair'den türetilir: işlem parası baz ise (to) kura BÖLÜNÜR,
+ * referans ise (from) kur ile ÇARPILIR — hiçbir para birimi kodu burada sabit gömülmez.
+ *
+ * CLAUDE.md'nin "Currency display" kuralına belgelenmiş istisna (bkz. o bölüm): tek
+ * satırlık `≈` gösterimi yalnız bu ekranda, yalnız canlı kur varken çizilir; işlem
+ * para birimindeki asıl toplamın yerine geçmez. */
 const equivalentAmount = computed(() => {
 	const rate = activeRate.value;
 	if (!rate || rate <= 0 || !grandTotal.value) return null;
 
-	const orderCurrency = (form.value?.currency || "UZS").toUpperCase();
+	const orderCurrency = (form.value?.currency || currency.value || "").toUpperCase();
+	const { from, to } = exchangeRatePair.value;
 
-	if (orderCurrency === "UZS" || orderCurrency === "CЎM" || orderCurrency === "SOM") {
-		// Sipariş tutarı UZS cinsinden (ör. 225,000 сўм). USD karşılığı kura BÖLÜNÜR.
-		const usdVal = grandTotal.value / rate;
-		return {
-			amount: usdVal,
-			currency: "USD",
-			formatted: formatMoney(usdVal, "USD", user.language),
-		};
-	} else if (orderCurrency === "USD") {
-		// Sipariş tutarı USD cinsinden (ör. $18.74). UZS karşılığı kurla ÇARPILIR.
-		const uzsVal = grandTotal.value * rate;
-		return {
-			amount: uzsVal,
-			currency: "UZS",
-			formatted: formatMoney(uzsVal, "UZS", user.language),
-		};
-	} else if (orderCurrency === "EUR") {
-		// Sipariş tutarı EUR cinsinden. UZS karşılığı kurla ÇARPILIR.
-		const uzsVal = grandTotal.value * rate;
-		return {
-			amount: uzsVal,
-			currency: "UZS",
-			formatted: formatMoney(uzsVal, "UZS", user.language),
-		};
+	if (orderCurrency === to) {
+		const val = grandTotal.value / rate;
+		return { amount: val, currency: from, formatted: formatMoney(val, from, user.language) };
+	} else if (orderCurrency === from) {
+		const val = grandTotal.value * rate;
+		return { amount: val, currency: to, formatted: formatMoney(val, to, user.language) };
 	}
 
 	return null;
@@ -415,9 +413,7 @@ const baseGrandTotal = computed(() => equivalentAmount.value?.amount || 0);
 const totalDiscount = computed(() => subtotal.value - grandTotal.value);
 
 async function fetchExchangeRate() {
-	const cur = form.value?.currency || currency.value || "UZS";
-	const from = cur === "UZS" || cur === currency.value ? "USD" : cur;
-	const to = currency.value || "UZS";
+	const { from, to } = exchangeRatePair.value;
 	try {
 		const res = await call("stabler.api.sales.get_currency_exchange_rate", {
 			from_currency: from,
@@ -425,10 +421,11 @@ async function fetchExchangeRate() {
 			date: form.value?.transaction_date || undefined,
 		});
 		const rateNum = Number(res?.exchange_rate);
-		exchangeRate.value = (rateNum && rateNum > 100) ? rateNum : 12006.39;
+		exchangeRate.value = rateNum > 0 ? rateNum : null;
 	} catch {
-		exchangeRate.value = 12006.39;
+		exchangeRate.value = null;
 	}
+	if (exchangeRate.value) rateWarning.value = false;
 }
 
 // Load existing doc
@@ -440,7 +437,7 @@ async function loadDoc() {
 	await load(docName.value);
 	if (!actionError.value && form.value) {
 		doc.value = form.value;
-		if (Number(form.value.exchange_rate) > 100) {
+		if (isForeignCurrency.value && Number(form.value.exchange_rate) > 0) {
 			exchangeRate.value = Number(form.value.exchange_rate);
 		} else {
 			await fetchExchangeRate();
@@ -559,13 +556,21 @@ async function resolveRate(itemCode, fallback = 0, uom = undefined) {
 			let rate = Number(res.price_list_rate);
 			const priceListCurrency = res.currency || "UZS";
 			const txnCurrency = form.value.currency || currency.value;
-			const exRate = (activeRate.value && activeRate.value > 100) ? activeRate.value : 12006.39;
 
-			if (priceListCurrency !== txnCurrency && exRate > 0) {
-				if (priceListCurrency === "UZS" && (txnCurrency === "USD" || txnCurrency === "EUR")) {
+			if (priceListCurrency !== txnCurrency) {
+				const exRate = activeRate.value;
+				const pair = exchangeRatePair.value;
+				if (!exRate) {
+					// Kur bilinmiyor — yanlış çevrilmiş bir fiyatı sessizce kaydetmek yerine
+					// çeviri yapılmaz; çağıran satıra dokunmaz ve kullanıcı uyarılır.
+					return { rate: Number(fallback || 0), unconverted: true };
+				}
+				if (priceListCurrency === pair.to && txnCurrency === pair.from) {
 					rate = rate / exRate;
-				} else if ((priceListCurrency === "USD" || priceListCurrency === "EUR") && txnCurrency === "UZS") {
+				} else if (priceListCurrency === pair.from && txnCurrency === pair.to) {
 					rate = rate * exRate;
+				} else {
+					return { rate: Number(fallback || 0), unconverted: true };
 				}
 			}
 			return { rate: Number(rate.toFixed(4)) };
@@ -579,15 +584,20 @@ async function resolveRate(itemCode, fallback = 0, uom = undefined) {
 async function refreshLineRatesForPriceList() {
 	const lines = form.value.items.filter((line) => line.item_code && !line.rateTouched);
 	for (const line of lines) {
-		const { rate } = await resolveRate(line.item_code, line.rate, line.uom);
-		if (rate) line.rate = rate;
+		const { rate, unconverted } = await resolveRate(line.item_code, line.rate, line.uom);
+		if (unconverted) rateWarning.value = true;
+		else if (rate) line.rate = rate;
 	}
 }
 
+/* Koli/kutu birimi tercihi kiracıya özgü (Stabler Company Modules →
+ * sales_box_uom). Kayış (dts) ya da hizmet (horeca) satan kiracıda stok
+ * birimi doğru varsayılandır; bayrak kapalıyken sessizce koliye geçmemeli. */
 function preferredSalesUom(meta) {
 	const uoms = meta.uoms || [];
-	const korobka = uoms.find((u) => String(u.uom).trim().toLowerCase().includes("korobka"));
-	if (korobka) return korobka;
+	if (!session.modules?.sales_box_uom) {
+		return uoms.find((u) => u.uom === meta.stock_uom) || null;
+	}
 	const boxUom = uoms
 		.filter((u) => u.uom !== meta.stock_uom && Number(u.conversion_factor) > 1)
 		.sort((a, b) => Number(b.conversion_factor) - Number(a.conversion_factor))[0];
@@ -656,8 +666,9 @@ async function handlePickItem(payload) {
 			line.conversion_factor = preferredUom ? Number(preferredUom.conversion_factor) : 1;
 			line.rateTouched = false;
 			if (preferredUom && preferredUom.uom !== meta.default_uom && form.value.price_list) {
-				const { rate } = await resolveRate(line.item_code, meta.price_list_rate || meta.standard_rate || 0, line.uom);
-				line.rate = rate;
+				const { rate, unconverted } = await resolveRate(line.item_code, meta.price_list_rate || meta.standard_rate || 0, line.uom);
+				if (unconverted) rateWarning.value = true;
+				else line.rate = rate;
 			} else {
 				line.rate = Number(meta.price_list_rate || meta.standard_rate || 0);
 			}
@@ -668,8 +679,9 @@ async function handlePickItem(payload) {
 			line.conversion_factor = 1;
 			// Sunucu çağrısı düştüyse arama satırındaki mod son çare.
 			setDimensionMode(line, item?.custom_dimension_mode || "");
-			const { rate } = await resolveRate(line.item_code, item.standard_rate);
-			line.rate = rate;
+			const { rate, unconverted } = await resolveRate(line.item_code, item.standard_rate);
+			if (unconverted) rateWarning.value = true;
+			else line.rate = rate;
 		}
 		scheduleAvailability(line);
 		// Focus qty after all async item data is loaded (nextTick here fires after
@@ -694,8 +706,9 @@ async function handlePickItem(payload) {
 		}
 	} else if (field === "uom") {
 		if (line.item_code && !line.rateTouched) {
-			const { rate } = await resolveRate(line.item_code, line.rate, line.uom);
-			line.rate = rate;
+			const { rate, unconverted } = await resolveRate(line.item_code, line.rate, line.uom);
+			if (unconverted) rateWarning.value = true;
+			else line.rate = rate;
 		}
 	}
 }
@@ -852,14 +865,24 @@ async function submitCreate({ autoSubmitMode = 1 } = {}) {
 	}
 
 	autoSubmit.value = autoSubmitMode;
-	const res = await save();
-	if (res?.reservation_errors) {
-		lastReservationErrors.value = res.reservation_errors;
+	if (isCreate.value) {
+		const res = await save();
+		if (res?.reservation_errors) {
+			lastReservationErrors.value = res.reservation_errors;
+		}
+		return;
 	}
-}
-
-async function submitDoc() {
-	lastReservationErrors.value = [];
+	// update_sales_order (unlike create_sales_order) never submits — it only
+	// persists field edits. So submitting an already-saved draft needs its own
+	// save-then-submit here, same as the pre-redesign submitDoc() did.
+	if (!autoSubmitMode) {
+		await save();
+		return;
+	}
+	if (isDirty.value) {
+		const saveRes = await save();
+		if (!saveRes) return;
+	}
 	const res = await submit();
 	if (res?.reservation_errors) {
 		lastReservationErrors.value = res.reservation_errors;
@@ -991,8 +1014,6 @@ async function closeSalesOrder() {
 		back-path="/sales/orders"
 		frameless
 	>
-		<div v-if="actionError" class="alert alert-danger mb-3">{{ actionError }}</div>
-
 		<!-- Page Header (matching Image 2) -->
 		<header class="so-page-head">
 			<div>
@@ -1075,12 +1096,6 @@ async function closeSalesOrder() {
 		<section class="ds-form-section">
 			<div class="ds-form-section-head">
 				<span class="ds-label">1 · {{ t("Parties and terms") }}</span>
-				<span class="so-steps">
-					<span class="ds-label">{{ t("Step") }} {{ stepsDone }}/3</span>
-					<span class="so-steps-bars">
-						<i v-for="(done, n) in sectionsDone" :key="n" :data-on="done ? '1' : null"></i>
-					</span>
-				</span>
 			</div>
 		<div class="ds-form-body row g-3">
 			<div class="col-md-6">
@@ -1498,11 +1513,11 @@ async function closeSalesOrder() {
 		</div>
 
 		<!-- Sticky Bottom Action & Summary Bar -->
-		<div v-if="editable" class="so-sticky-foot">
+		<div class="so-sticky-foot">
 			<div class="so-sticky-foot-inner">
 				<div class="so-sticky-meta">
 					<span class="so-sticky-title">
-						{{ t("Grand total") }} · {{ filledCount }} {{ filledCount === 1 ? t("item") : t("items") }}
+						{{ t("Grand total") }} · {{ form.items.length }} {{ form.items.length === 1 ? t("item") : t("items") }}
 					</span>
 					<span class="so-sticky-submeta">
 						{{ t("Subtotal") }}: {{ formatMoney(subtotal, form.currency || currency, user.language) }}
@@ -1512,6 +1527,9 @@ async function closeSalesOrder() {
 						<template v-if="displayExchangeRate && displayExchangeRate > 0">
 							· {{ t("rate") }} {{ displayExchangeRate }}
 						</template>
+					</span>
+					<span v-if="rateWarning" class="so-sticky-submeta text-danger fw-semibold">
+						<i class="ti ti-alert-triangle me-1"></i>{{ t("Exchange rate unavailable — line prices were not converted. Enter the rate manually.") }}
 					</span>
 					<div class="so-sticky-amounts">
 						<span class="ds-mono so-sticky-total">
@@ -1524,13 +1542,14 @@ async function closeSalesOrder() {
 				</div>
 
 				<div class="so-sticky-actions">
-					<div v-if="session.isAdmin && hasOverAvailable" class="form-check me-2 align-self-center">
+					<div v-if="editable && session.isAdmin && hasOverAvailable" class="form-check me-2 align-self-center">
 						<input id="adminForceStock" v-model="forceOverStock" class="form-check-input" type="checkbox" />
 						<label class="form-check-label small text-danger fw-semibold" for="adminForceStock" style="cursor:pointer">
 							{{ t("Force allow over-stock submit (Admin)") }}
 						</label>
 					</div>
 					<button
+						v-if="editable"
 						type="button"
 						class="btn btn-outline-secondary btn-lg"
 						:disabled="actionRunning"
@@ -1539,6 +1558,7 @@ async function closeSalesOrder() {
 						{{ t("Save as draft") }}
 					</button>
 					<button
+						v-if="editable"
 						type="button"
 						class="btn btn-primary btn-lg"
 						:disabled="actionRunning || (hasOverAvailable && !(session.isAdmin && forceOverStock))"
@@ -1550,99 +1570,63 @@ async function closeSalesOrder() {
 						</span>
 						<i class="ti ti-arrow-right ms-2"></i>
 					</button>
+					<button
+						v-if="canCreateInvoice"
+						type="button"
+						class="btn btn-success"
+						:disabled="actionRunning"
+						@click="createInvoice"
+					>
+						<span v-if="actionRunning" class="spinner-border spinner-border-sm me-1"></span>
+						<i v-else class="ti ti-file-invoice me-1"></i>{{ t("Create Invoice") }}
+					</button>
+					<button
+						v-if="can.cancel"
+						type="button"
+						class="btn btn-outline-danger"
+						:disabled="actionRunning"
+						@click="cancel"
+					>
+						<i class="ti ti-ban me-1"></i>{{ t("Cancel") }}
+					</button>
+					<button
+						v-if="can.amend"
+						type="button"
+						class="btn btn-outline-secondary"
+						:disabled="actionRunning"
+						@click="amend"
+					>
+						<span v-if="actionRunning" class="spinner-border spinner-border-sm me-1"></span>
+						<i v-else class="ti ti-copy me-1"></i>{{ t("Amend") }}
+					</button>
+					<button
+						v-if="canCloseSo"
+						type="button"
+						class="btn btn-outline-secondary"
+						:disabled="actionRunning || closingSo"
+						@click="closeSalesOrder"
+					>
+						<span v-if="closingSo" class="spinner-border spinner-border-sm me-1"></span>
+						<i v-else class="ti ti-lock me-1"></i>{{ t("Close & release reserved stock") }}
+					</button>
+					<button
+						v-if="can.delete"
+						type="button"
+						class="btn btn-outline-danger"
+						:disabled="actionRunning"
+						@click="remove"
+					>
+						<i class="ti ti-trash me-1"></i>{{ t("Delete") }}
+					</button>
 				</div>
 			</div>
 		</div>
-
-		<!-- Actions -->
-		<template #actions>
-			<template v-if="isCreate">
-				<button type="button" class="btn btn-link link-secondary" :disabled="actionRunning" @click="router.push('/sales/orders')">{{ t("Cancel") }}</button>
-			</template>
-			<template v-else>
-				<button
-					v-if="can.save"
-					type="button"
-					class="btn btn-outline-primary"
-					:disabled="actionRunning || !isFormValid"
-					@click="save"
-				>
-					<span v-if="actionRunning" class="spinner-border spinner-border-sm me-1"></span>
-					<i v-else class="ti ti-device-floppy me-1"></i>{{ t("Save changes") }}
-				</button>
-				<button
-					v-if="can.submit"
-					type="button"
-					class="btn btn-primary"
-					:disabled="actionRunning"
-					@click="submitDoc"
-				>
-					<span v-if="actionRunning" class="spinner-border spinner-border-sm me-1"></span>
-					<i v-else class="ti ti-check me-1"></i>{{ t("Submit") }}
-				</button>
-				<button
-					v-if="canCreateInvoice"
-					type="button"
-					class="btn btn-success"
-					:disabled="actionRunning"
-					@click="createInvoice"
-				>
-					<span v-if="actionRunning" class="spinner-border spinner-border-sm me-1"></span>
-					<i v-else class="ti ti-file-invoice me-1"></i>{{ t("Create Invoice") }}
-				</button>
-				<button
-					v-if="can.cancel"
-					type="button"
-					class="btn btn-outline-danger ms-auto"
-					:disabled="actionRunning"
-					@click="cancel"
-				>
-					<i class="ti ti-ban me-1"></i>{{ t("Cancel") }}
-				</button>
-				<button
-					v-if="can.amend"
-					type="button"
-					class="btn btn-outline-secondary"
-					:disabled="actionRunning"
-					@click="amend"
-				>
-					<span v-if="actionRunning" class="spinner-border spinner-border-sm me-1"></span>
-					<i v-else class="ti ti-copy me-1"></i>{{ t("Amend") }}
-				</button>
-				<button
-					v-if="canCloseSo"
-					type="button"
-					class="btn btn-outline-secondary"
-					:disabled="actionRunning || closingSo"
-					@click="closeSalesOrder"
-				>
-					<span v-if="closingSo" class="spinner-border spinner-border-sm me-1"></span>
-					<i v-else class="ti ti-lock me-1"></i>{{ t("Close & release reserved stock") }}
-				</button>
-				<button
-					v-if="can.delete"
-					type="button"
-					class="btn btn-outline-danger"
-					:class="{ 'ms-auto': !can.cancel }"
-					:disabled="actionRunning"
-					@click="remove"
-				>
-					<i class="ti ti-trash me-1"></i>{{ t("Delete") }}
-				</button>
-			</template>
-		</template>
 	</FormPage>
 	</div>
 </template>
 
 <style scoped>
 /* ── Tasarım yerleşimi (yalnız bu ekran) ──────────────────────────────── */
-.so-steps {
-	display: inline-flex;
-	align-items: center;
-	gap: 8px;
-}
-
 .so-steps-bars {
 	display: flex;
 	gap: 4px;

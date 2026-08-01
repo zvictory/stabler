@@ -86,6 +86,14 @@
 
 ### Currency display
 - Amounts must render in their original transaction/account currency only. Do not convert totals or display base-currency/USD equivalent sub-lines.
+- **Documented exception:** the Sales Order form's sticky footer shows one `≈ {amount}` line —
+  the order total converted to the counter-currency (base ↔ reference), derived live from
+  `exchangeRatePair`/`activeRate` (never a hardcoded rate or currency literal). This exists
+  because Sales Order is the one screen where a user routinely needs to eyeball "what is this in
+  USD/UZS" before submitting. It stays a single line, never replaces the transaction-currency
+  total, and renders nothing when no live rate is available (see the FX guard note above). Do
+  not copy this pattern to other screens without the same justification — see
+  `equivalentAmount` in `SalesOrderForm.vue` for the implementation.
 
 ### Centralized status codes
 - All status badges and labels must be resolved centrally using `getStatusBadgeClass` from `composables/status.js`. No per-page status mappings.

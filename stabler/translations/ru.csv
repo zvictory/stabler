@@ -5227,4 +5227,17 @@ No Transporter,Без перевозчика
 Vehicle / Truck,Транспорт / машина
 open debt,открытый долг
 No open debt,нет открытого долга
-Type a product code in the search above — stock status shows in the list, picking adds it as a line.,Введите код товара в поиске выше — статус склада будет в списке, выбор добавит его как строку.
+"Type a product code in the search above — stock status shows in the list, picking adds it as a line.","Введите код товара в поиске выше — статус склада будет в списке, выбор добавит его как строку."
+Force allow over-stock submit (Admin),Разрешить отправку при нехватке остатка (Админ)
+Some lines exceed available stock. Adjust quantities or warehouse before submitting.,Некоторые строки превышают доступный остаток. Скорректируйте количество или склад перед отправкой.
+Stock and reservations are read from this warehouse,Остаток и резервирования считываются с этого склада
+Stock insufficient — cannot submit,Недостаточно остатка — отправка невозможна
+item to reserve,товар для резервирования
+items to reserve,товаров для резервирования
+lines blocked,строк заблокировано
+no date set,дата не указана
+not saved,не сохранено
+short stock,недостаточно
+unsaved changes,несохранённые изменения
+Exchange rate unavailable — line prices were not converted. Enter the rate manually.,Курс обмена недоступен — цены строк не были пересчитаны. Введите курс вручную.
+Sales Box/Case UOM Preference,Предпочтение единицы измерения (коробка/ящик) для продаж

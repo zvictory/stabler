@@ -5216,4 +5216,17 @@ No Transporter,Nakliyeci yok
 Vehicle / Truck,Araç / Kamyon
 open debt,açık borç
 No open debt,açık borç yok
-Type a product code in the search above — stock status shows in the list, picking adds it as a line.,Yukarıdaki aramaya ürün kodu yazın — stok durumu listede görünür, seçince satır olarak eklenir.
+"Type a product code in the search above — stock status shows in the list, picking adds it as a line.","Yukarıdaki aramaya ürün kodu yazın — stok durumu listede görünür, seçince satır olarak eklenir."
+Force allow over-stock submit (Admin),Stok yetersizliğine rağmen göndermeyi zorla (Admin)
+Some lines exceed available stock. Adjust quantities or warehouse before submitting.,Bazı satırlar mevcut stoku aşıyor. Göndermeden önce miktarları veya depoyu düzenleyin.
+Stock and reservations are read from this warehouse,Stok ve rezervasyonlar bu depodan okunur
+Stock insufficient — cannot submit,Stok yetersiz — gönderilemez
+item to reserve,rezerve edilecek ürün
+items to reserve,rezerve edilecek ürünler
+lines blocked,satır engellendi
+no date set,tarih belirlenmedi
+not saved,kaydedilmedi
+short stock,stok az
+unsaved changes,kaydedilmemiş değişiklikler
+Exchange rate unavailable — line prices were not converted. Enter the rate manually.,Döviz kuru mevcut değil — satır fiyatları dönüştürülmedi. Kuru manuel girin.
+Sales Box/Case UOM Preference,Satışta Koli/Kutu Birim Tercihi

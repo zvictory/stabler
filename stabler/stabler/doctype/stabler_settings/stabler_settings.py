@@ -42,6 +42,11 @@ DEFAULT_MODULE_ENABLED = {
 	# türetilmiş bir miktarı açıklamasız görürdü. Varsayılan kapalı: kiracıların
 	# çoğu (horeca, smartbox, msa) hiç ölçülü ürün satmıyor.
 	"dimensional_lines": False,
+	# Yeni Satış Siparişi satırı stok birimi yerine en büyük koli/kutu birimini
+	# (conversion_factor > 1) mi seçsin. Varsayılan KAPALI: kayış (dts) ya da
+	# hizmet (horeca) satan kiracıda stok birimi doğrudur, koliye sessizce
+	# geçmemeli.
+	"sales_box_uom": False,
 }
 
 

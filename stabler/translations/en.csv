@@ -5217,4 +5217,17 @@ No Transporter,No Transporter
 Vehicle / Truck,Vehicle / Truck
 open debt,open debt
 No open debt,No open debt
-Type a product code in the search above — stock status shows in the list, picking adds it as a line.,Type a product code in the search above — stock status shows in the list, picking adds it as a line.
+"Type a product code in the search above — stock status shows in the list, picking adds it as a line.","Type a product code in the search above — stock status shows in the list, picking adds it as a line."
+Force allow over-stock submit (Admin),Force allow over-stock submit (Admin)
+Some lines exceed available stock. Adjust quantities or warehouse before submitting.,Some lines exceed available stock. Adjust quantities or warehouse before submitting.
+Stock and reservations are read from this warehouse,Stock and reservations are read from this warehouse
+Stock insufficient — cannot submit,Stock insufficient — cannot submit
+item to reserve,item to reserve
+items to reserve,items to reserve
+lines blocked,lines blocked
+no date set,no date set
+not saved,not saved
+short stock,short stock
+unsaved changes,unsaved changes
+Exchange rate unavailable — line prices were not converted. Enter the rate manually.,Exchange rate unavailable — line prices were not converted. Enter the rate manually.
+Sales Box/Case UOM Preference,Sales Box/Case UOM Preference
