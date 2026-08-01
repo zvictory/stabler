@@ -162,6 +162,37 @@ class TestDeskRules(unittest.TestCase):
         self.assertEqual(items[0]["kind"], "approval_pending")
         self.assertEqual(items[0]["severity"], "today")
 
+    def test_approvals_envelope_is_not_a_row_list(self):
+        # approvals.list_pending returns the ENVELOPE {"requests": [...], "total": n,
+        # "can_approve": bool}. Handing that envelope straight to build_plan (as
+        # tender_desk.py did until 2026-08-01) iterates its three KEYS, so the desk
+        # invented three "Approval required: Document <key>" rows, counted them as
+        # due-today work, and dropped every real approval. This test pins the shape
+        # contract: only the rows under "requests" are approvals, and a key name may
+        # never surface as a reference. Caller-side enforcement lives in
+        # test_tender_desk_api.test_list_pending_unwraps_requests.
+        envelope = {
+            "requests": [
+                {
+                    "name": "APP-002",
+                    "reference_doctype": "Purchase Order",
+                    "reference_name": "PUR-ORD-2026-00100",
+                    "requested_by": "john@example.com"
+                }
+            ],
+            "total": 1,
+            "can_approve": True
+        }
+        res = build_plan({"approvals": envelope["requests"]}, "2026-07-30")
+        items = res["items"]
+        self.assertEqual(len(items), 1)
+        self.assertEqual(items[0]["reference_name"], "PUR-ORD-2026-00100")
+
+        phantom = build_plan({"approvals": envelope}, "2026-07-30")["items"]
+        phantom_refs = {i["reference_name"] for i in phantom}
+        self.assertEqual(phantom_refs, set(envelope.keys()),
+                         "iterating the envelope yields its keys -- callers must unwrap ['requests']")
+
     def test_malformed_date_skipped(self):
         facts = {
             "lots": [

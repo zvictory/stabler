@@ -11,6 +11,19 @@ class TestTenderDeskApiSource(unittest.TestCase):
     def test_no_app_routes_in_source(self):
         self.assertNotIn("/app/", self.source, "tender_desk.py must not contain /app/ links")
 
+    def test_list_pending_unwraps_requests(self):
+        # list_pending returns {"requests": [...], "total": n, "can_approve": bool}.
+        # Passing that envelope on as if it were the row list makes _desk_rules
+        # iterate its three KEYS: measured 2026-08-01 on mikas, the desk showed
+        # "Approval required: Document requests / total / can_approve", counted them
+        # in due_today, and every real pending approval vanished. Both halves fail
+        # silently -- no exception, no empty list, just wrong work on a work board --
+        # so the call site is pinned here rather than left to review.
+        for idx, line in enumerate(self.source.splitlines(), 1):
+            if "list_pending(" in line and not line.lstrip().startswith(("#", "from ", "import ")):
+                self.assertIn("requests", line,
+                              f"Line {idx}: list_pending() returns an envelope; unwrap ['requests']")
+
     def test_no_sql_aggregation_functions_in_select(self):
         lines = self.source.splitlines()
         for idx, line in enumerate(lines, 1):

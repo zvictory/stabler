@@ -181,8 +181,13 @@ def operations_desk(company: str, view: str | None = None, days: int = 7) -> dic
     ]
 
     # 7. Approvals Cohort
+    # list_pending returns {"requests": [...], "total": n, "can_approve": bool} --
+    # the rows live under "requests". Passing the envelope itself made _desk_rules
+    # iterate the dict, i.e. its three KEYS, so the desk showed three phantom
+    # "Approval required: Document requests / total / can_approve" rows while every
+    # real pending approval was silently dropped (measured 2026-08-01 on mikas).
     try:
-        all_pending_approvals = list_pending(company=company)
+        all_pending_approvals = list_pending(company=company).get("requests") or []
     except Exception:
         all_pending_approvals = []
 
