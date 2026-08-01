@@ -98,6 +98,37 @@ class TestTenderDeskApiSource(unittest.TestCase):
             "the per-deal parse must stay guarded by has_intake, or sites without "
             "the column would parse a missing key on every row")
 
+    def test_the_two_approval_counters_partition_one_queue(self):
+        # The cards state their own rules: "Awaiting my approval / decision is
+        # yours" and "Waiting others / you requested, someone else answers".
+        # Together they cover the queue exactly once. The old expression tested
+        # an `assigned_to` key that Stabler Approval Request does not have, then
+        # OR'd in `oversight` -- which swept a director's OWN requests into
+        # "yours to decide" (they cannot approve those) and left waiting_others
+        # structurally 0, because nothing can fall outside a set that already
+        # holds everything.
+        self.assertNotIn('a.get("assigned_to")', self.source,
+                         "an approval request has no assigned_to; testing it is always False")
+        decisions = re.search(r"decisions = \[(.*?)\]", self.source, re.S)
+        self.assertIsNotNone(decisions, "the decisions filter is gone")
+        self.assertNotIn("oversight", decisions.group(1),
+                         "oversight must not widen 'mine to decide' -- it swallows my own requests")
+        self.assertIn("not _mine_to_raise(a)", decisions.group(1))
+        waiting = re.search(r"waiting_others = \[(.*?)\]", self.source, re.S)
+        self.assertIsNotNone(waiting, "the waiting_others filter is gone")
+        self.assertIn("_mine_to_raise(a)", waiting.group(1))
+        self.assertNotIn("a not in decisions", waiting.group(1),
+                         "deriving one card from the other is what made it always 0")
+
+    def test_mine_to_raise_reads_the_flag_list_pending_actually_sets(self):
+        # list_pending marks every row with self_made; requested_by is the raw
+        # field behind it. Reading only one of the two would break the moment a
+        # caller hands the desk rows from somewhere else.
+        helper = re.search(r"def _mine_to_raise\(a: dict\) -> bool:\n(.*?)\n\n", self.source, re.S)
+        self.assertIsNotNone(helper, "_mine_to_raise is gone")
+        self.assertIn("self_made", helper.group(1))
+        self.assertIn("requested_by", helper.group(1))
+
     def test_no_sql_aggregation_functions_in_select(self):
         lines = self.source.splitlines()
         for idx, line in enumerate(lines, 1):

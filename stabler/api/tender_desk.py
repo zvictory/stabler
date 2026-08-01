@@ -274,15 +274,33 @@ def operations_desk(company: str, view: str | None = None, days: int = 7) -> dic
     plan_res = _desk_rules.build_plan(facts, today_str)
     plan_items = plan_res["items"]
 
-    # Filter decisions (approvals assigned to user)
+    # The two cards state their own rule: "Awaiting my approval / decision is
+    # yours" and "Waiting others / you requested, someone else answers". They
+    # partition one queue, so every pending request belongs to exactly one.
+    #
+    # There is no `assigned_to` on a Stabler Approval Request -- the queue is
+    # shared among approvers and `list_pending` is already gated by
+    # `_require_approver()`. What it does give each row is `self_made`: did I
+    # raise this. That is the whole distinction, because you cannot approve your
+    # own request.
+    #
+    # The old expression tested a key that does not exist, then OR'd in
+    # `requested_by != user` (right) and `oversight` (wrong). For a director the
+    # `oversight` term swallowed their OWN requests into "yours to decide" --
+    # decisions the card promised were actionable and were not -- and left
+    # `waiting_others` structurally 0, since nothing could fall outside a set
+    # that already held everything.
+    def _mine_to_raise(a: dict) -> bool:
+        return bool(a.get("self_made") or a.get("requested_by") == user)
+
     decisions = [
         a for a in all_pending_approvals
-        if isinstance(a, dict) and (a.get("assigned_to") == user or a.get("requested_by") != user or oversight)
+        if isinstance(a, dict) and not _mine_to_raise(a)
     ]
 
     waiting_others = [
         a for a in all_pending_approvals
-        if isinstance(a, dict) and a.get("requested_by") == user and a not in decisions
+        if isinstance(a, dict) and _mine_to_raise(a)
     ]
 
     due_today_cnt = len([i for i in plan_items if i.get("due") == today_str or i.get("severity") == "today"])

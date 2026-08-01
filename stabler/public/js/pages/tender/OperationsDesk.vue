@@ -3,6 +3,7 @@
 	     sarmalayıcıya scope'lu; sınıfı taşımayan ekranlar (Dashboard, POS, CRM)
 	     tek bir kural bile görmez. Göç böyle ekran ekran ilerliyor. -->
 	<div class="operations-desk-page stbl-ds">
+		<TenderNav />
 		<header class="ds-page-head">
 			<div class="ds-label">
 				{{ t("Operations desk") }} · {{ session.activeCompany || "—" }}
@@ -250,6 +251,7 @@ import { t } from "../../composables/i18n.js";
 import { call } from "../../api/client.js";
 import { formatDate } from "../../composables/date.js";
 import SkeletonRows from "../../components/SkeletonRows.vue";
+import TenderNav from "./TenderNav.vue";
 
 const route = useRoute();
 const router = useRouter();

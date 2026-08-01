@@ -127,6 +127,53 @@ class TestTheModuleBarCarriesEveryScreen(unittest.TestCase):
 			with self.subTest(path=path):
 				self.assertIn(path, blob, f"{path} hiçbir ekrandan linklenmiyor — öksüz")
 
+	def test_every_tender_screen_actually_renders_the_bar(self):
+		"""Çubuğun VAR olması yetmiyor; ekranın onu ÇİZMESİ gerekiyor.
+
+		Ölçüldü 2026-08-01: `/tender/desk`, `/tender/board`, `/tender/sourcing`
+		ve `/tender/po-control` TenderNav'ı hiç import etmiyordu. Kenar
+		çubuğundan tender'a giren kullanıcı menüsüz bir sayfaya düşüyor, oradan
+		başka bir tender ekranına geçemiyordu — Direktör panosunun kaybolma
+		hikâyesinin aynısı, bu sefer giriş kapısında. Üstelik o dört ekranın
+		üçü, çubuğun taşıdığı bağlantıların kendi seçtikleri bir alt kümesini
+		sayfa başlığına düğme olarak serpiştirmişti: kenar çubuğundan
+		kaldırdığımız ikinci navigasyon, dağılmış hâliyle geri gelmişti.
+
+		Bu iddia rotalardan türüyor, elle yazılmış listeden değil: yeni bir
+		tender ekranı eklendiğinde de kendiliğinden kapsanır.
+		"""
+		js_root = os.path.normpath(os.path.join(_HERE, "..", "public", "js"))
+		imports = dict(re.findall(r'import (\w+) from "\.(/[^"]+\.vue)";', self.router))
+		screens = re.findall(r'path: "(/tender/[a-z-]+)"[^}]*component: (\w+)', self.router)
+		self.assertTrue(screens, "router'da hiç tender ekranı bulunamadı — desen bozulmuş")
+		for path, component in sorted(screens):
+			with self.subTest(path=path):
+				rel = imports.get(component)
+				self.assertIsNotNone(rel, f"{component} import satırı bulunamadı")
+				source = _read(os.path.normpath(os.path.join(js_root, rel.lstrip("/"))))
+				self.assertIn(
+					"<TenderNav", source,
+					f"{path} ({component}) modül çubuğunu çizmiyor — menüsüz açılıyor",
+				)
+
+	def test_no_tender_screen_keeps_its_own_link_row(self):
+		"""Çubuk geldikten sonra sayfa başlığındaki tender bağlantıları ikinci
+		bir gezinme yeridir; ikisi kaçınılmaz olarak ayrışır (bu dosyanın
+		docstring'indeki üçüncü kusur). İstisna `?deal=` taşıyan drill-down
+		linkleri: onlar gezinme değil, bir KAYDA gidiş."""
+		js_root = os.path.normpath(os.path.join(_HERE, "..", "public", "js"))
+		imports = dict(re.findall(r'import (\w+) from "\.(/[^"]+\.vue)";', self.router))
+		for path, component in sorted(re.findall(r'path: "(/tender/[a-z-]+)"[^}]*component: (\w+)', self.router)):
+			rel = imports.get(component)
+			if not rel:
+				continue
+			source = _read(os.path.normpath(os.path.join(js_root, rel.lstrip("/"))))
+			bare = re.findall(r'<router-link\s+to="(/tender/[a-z-]+)"', source)
+			with self.subTest(path=path):
+				self.assertEqual(
+					bare, [], f"{path} ({component}) kendi tender bağlantı satırını taşıyor: {bare}"
+				)
+
 	def test_every_link_in_the_bar_resolves_to_a_route(self):
 		for path in sorted(set(re.findall(r'to="(/[a-z0-9/-]+)"', self.nav))):
 			with self.subTest(path=path):
