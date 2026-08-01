@@ -5234,3 +5234,37 @@ Sales Box/Case UOM Preference,Sales Box/Case UOM Preference
 Exchange rate unavailable — enter it manually.,Exchange rate unavailable — enter it manually.
 Modern Sales Order Form,Modern Sales Order Form
 Total in {0},Total in {0}
+Process flow,Process flow
+Process view,Process view
+Tender process flow,Tender process flow
+Could not load the process flow.,Could not load the process flow.
+Every number is read from an ERP record,Every number is read from an ERP record
+A step is late when its average wait passes the threshold set for that step,A step is late when its average wait passes the threshold set for that step
+Intake — file opened,Intake — file opened
+GO / NO-GO decision,GO / NO-GO decision
+Quotation gathering,Quotation gathering
+Bid pricing,Bid pricing
+Within,Within
+At the edge,At the edge
+Over SLA,Over SLA
+Not measurable,Not measurable
+Empty,Empty
+Step performance,Step performance
+Average wait · SLA,Average wait · SLA
+Average wait,Average wait
+Worst,Worst
+SLA,SLA
+threshold,threshold
+not tracked,not tracked
+In process,In process
+across every working step,across every working step
+average wait past the tenant's threshold,average wait past the tenant's threshold
+Bottleneck,Bottleneck
+none today,none today
+"furthest past its own threshold, proportionally","furthest past its own threshold, proportionally"
+moved before the stage clock existed — left out of the averages,moved before the stage clock existed — left out of the averages
+without a stage stamp — not averaged,without a stage stamp — not averaged
+"Thresholds come from Stabler Settings, per company","Thresholds come from Stabler Settings, per company"
+deals,deals
+step,step
+steps,steps

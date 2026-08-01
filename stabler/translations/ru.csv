@@ -5244,3 +5244,37 @@ Sales Box/Case UOM Preference,Предпочтение единицы измер
 Exchange rate unavailable — enter it manually.,Обменный курс недоступен — введите его вручную.
 Modern Sales Order Form,Современная форма заказа продажи
 Total in {0},Итого в {0}
+Process flow,Процесс
+Process view,Процессный вид
+Tender process flow,Процесс тендера
+Could not load the process flow.,Не удалось загрузить процесс.
+Every number is read from an ERP record,Каждое число читается из записи ERP
+A step is late when its average wait passes the threshold set for that step,"Шаг считается просроченным, когда среднее ожидание превышает его порог"
+Intake — file opened,Приём — дело открыто
+GO / NO-GO decision,Решение GO / NO-GO
+Quotation gathering,Сбор предложений
+Bid pricing,Расчёт цены
+Within,В пределах
+At the edge,На грани
+Over SLA,Вне SLA
+Not measurable,Не измеримо
+Empty,Пусто
+Step performance,Производительность шагов
+Average wait · SLA,Среднее ожидание · SLA
+Average wait,Среднее ожидание
+Worst,Худший
+SLA,SLA
+threshold,порог
+not tracked,не отслеживается
+In process,В процессе
+across every working step,по всем рабочим шагам
+average wait past the tenant's threshold,среднее ожидание превысило порог арендатора
+Bottleneck,Узкое место
+none today,сегодня нет
+"furthest past its own threshold, proportionally",наибольшее превышение собственного порога в долях
+moved before the stage clock existed — left out of the averages,перемещены до появления счётчика этапа — в средние не вошли
+without a stage stamp — not averaged,без отметки этапа — не усреднено
+"Thresholds come from Stabler Settings, per company","Пороги берутся из настроек Stabler, по компании"
+deals,сделок
+step,шаг
+steps,шагов

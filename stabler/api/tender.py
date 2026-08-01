@@ -2994,3 +2994,84 @@ def tender_dashboard(
 			"execution_spread": contract_total - procurement_total,
 		}
 	return out
+
+
+# --------------------------------------------------------------------------- #
+# Süreç akışı (BPM görünümü) — hattın nerede tıkandığı.
+# --------------------------------------------------------------------------- #
+@frappe.whitelist()
+def tender_flow(company: str) -> dict:
+	"""Adım başına açık iş, ortalama bekleme ve SLA durumu.
+
+	Aynı anlaşma kümesini `crm_board` ile paylaşıyor — iki ekranın farklı
+	sayılar göstermesi, ikisine de güveni bitirir. Fark yalnız toplama:
+	pano kartları, bu ekran adımları anlatıyor.
+
+	Toplama saf modülde (`_tender_flow`); burada yalnız okuma ve kapılar var.
+	"""
+	from stabler.api import _funnel, _tender_flow
+	from stabler.stabler.doctype.stabler_settings.stabler_settings import stage_sla_for
+
+	_require_tender(company)
+	_assert_company_scope(company)
+	_require_company(company)
+
+	deal_names = _tender_deal_names(company)
+	if not deal_names and frappe.db.exists("DocType", "CRM Deal"):
+		for row in frappe.get_list(
+			"CRM Deal", filters={"company": company}, fields=["name"], limit_page_length=5000
+		):
+			deal_names.add(row["name"])
+
+	has_stage = frappe.db.has_column("CRM Deal", "custom_tender_stage")
+	has_stamp = frappe.db.has_column("CRM Deal", "custom_tender_stage_entered_at")
+	has_pricing_col = frappe.db.has_column("CRM Deal", "custom_bid_pricing")
+
+	sq_counts: dict[str, int] = {}
+	if frappe.db.has_column("Supplier Quotation", "custom_crm_deal"):
+		for row in frappe.get_all(
+			"Supplier Quotation",
+			filters={"company": company, "custom_crm_deal": ["is", "set"], "docstatus": ["<", 2]},
+			fields=["custom_crm_deal"],
+			limit_page_length=0,
+		):
+			key = row["custom_crm_deal"]
+			sq_counts[key] = sq_counts.get(key, 0) + 1
+
+	deals = []
+	for deal in sorted(deal_names):
+		if not frappe.has_permission("CRM Deal", "read", doc=deal):
+			continue
+		intake = _read_intake(deal)
+		stored = frappe.db.get_value("CRM Deal", deal, "custom_tender_stage") if has_stage else None
+		stage = stored or _funnel.classify(
+			{
+				"go_no_go": intake.get("go_no_go"),
+				"result": intake.get("result"),
+				"submitted": _has_submission_evidence(intake),
+				"has_pricing": bool(
+					has_pricing_col and frappe.db.get_value("CRM Deal", deal, "custom_bid_pricing")
+				),
+				"sq_count": sq_counts.get(deal, 0),
+			}
+		)
+		deals.append(
+			{
+				"stage": stage,
+				"entered_at": frappe.db.get_value("CRM Deal", deal, "custom_tender_stage_entered_at")
+				if has_stamp
+				else None,
+			}
+		)
+
+	overrides = stage_sla_for(company)
+	rows = _tender_flow.step_rows(deals, frappe.utils.today(), overrides)
+	return {
+		"steps": rows,
+		"bottleneck": _tender_flow.bottleneck(rows),
+		"in_process": sum(r["open"] for r in rows),
+		# Damgasız kayıt sayısı ekranda AÇIKÇA yazılıyor: ortalamaların neye
+		# dayandığını gizlemek, tıkanmayı olduğundan hafif gösterir.
+		"unmeasured": sum(r["unmeasured"] for r in rows),
+		"stage_sla": overrides,
+	}

@@ -5238,3 +5238,37 @@ Sales Box/Case UOM Preference,Sotuvda quti/karobka o'lchov birligi tanlovi
 Exchange rate unavailable — enter it manually.,Valyuta kursi mavjud emas — uni qo‘lda kiriting.
 Modern Sales Order Form,Zamonaviy sotuv buyurtmasi shakli
 Total in {0},{0} da jami
+Process flow,Jarayon oqimi
+Process view,Jarayon ko'rinishi
+Tender process flow,Tender jarayoni
+Could not load the process flow.,Jarayon oqimi yuklanmadi.
+Every number is read from an ERP record,Har bir raqam ERP yozuvidan o'qiladi
+A step is late when its average wait passes the threshold set for that step,Bosqich o'rtacha kutish o'z chegarasidan oshganda kechikkan hisoblanadi
+Intake — file opened,Qabul — ish ochildi
+GO / NO-GO decision,GO / NO-GO qarori
+Quotation gathering,Takliflarni yig'ish
+Bid pricing,Narx belgilash
+Within,Ichida
+At the edge,Chegarada
+Over SLA,SLA dan tashqari
+Not measurable,O'lchab bo'lmaydi
+Empty,Bo'sh
+Step performance,Bosqich samaradorligi
+Average wait · SLA,O'rtacha kutish · SLA
+Average wait,O'rtacha kutish
+Worst,Eng yomon
+SLA,SLA
+threshold,chegara
+not tracked,kuzatilmaydi
+In process,Jarayonda
+across every working step,barcha ish bosqichlarida
+average wait past the tenant's threshold,o'rtacha kutish ijarachi chegarasidan oshdi
+Bottleneck,Tor joy
+none today,bugun yo'q
+"furthest past its own threshold, proportionally",o'z chegarasidan nisbatan eng ko'p oshgan
+moved before the stage clock existed — left out of the averages,bosqich soati paydo bo'lishidan oldin ko'chirilgan — o'rtachaga kirmadi
+without a stage stamp — not averaged,bosqich muhri yo'q — o'rtachaga kirmadi
+"Thresholds come from Stabler Settings, per company","Chegaralar Stabler sozlamalaridan, kompaniya bo'yicha"
+deals,bitim
+step,bosqich
+steps,bosqich

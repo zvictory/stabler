@@ -5238,3 +5238,37 @@ Sales Box/Case UOM Preference,Сотувда қути/қароб ўлчов би
 Exchange rate unavailable — enter it manually.,Алмашта нарх мавжуд эмас — уни қўлда киритинг.
 Modern Sales Order Form,Замонавий сотув буюртмаси шакли
 Total in {0},{0} да жами
+Process flow,Жараён оқими
+Process view,Жараён кўриниши
+Tender process flow,Тендер жараёни
+Could not load the process flow.,Жараён оқими юкланмади.
+Every number is read from an ERP record,Ҳар бир рақам ERP ёзувидан ўқилади
+A step is late when its average wait passes the threshold set for that step,Босқич ўртача кутиш ўз чегарасидан ошганда кечиккан ҳисобланади
+Intake — file opened,Қабул — иш очилди
+GO / NO-GO decision,GO / NO-GO қарори
+Quotation gathering,Таклифларни йиғиш
+Bid pricing,Нарх белгилаш
+Within,Ичида
+At the edge,Чегарада
+Over SLA,SLA дан ташқари
+Not measurable,Ўлчаб бўлмайди
+Empty,Бўш
+Step performance,Босқич самарадорлиги
+Average wait · SLA,Ўртача кутиш · SLA
+Average wait,Ўртача кутиш
+Worst,Энг ёмон
+SLA,SLA
+threshold,чегара
+not tracked,кузатилмайди
+In process,Жараёнда
+across every working step,барча иш босқичларида
+average wait past the tenant's threshold,ўртача кутиш ижарачи чегарасидан ошди
+Bottleneck,Тор жой
+none today,бугун йўқ
+"furthest past its own threshold, proportionally",ўз чегарасидан нисбатан энг кўп ошган
+moved before the stage clock existed — left out of the averages,босқич соати пайдо бўлишидан олдин кўчирилган — ўртачага кирмади
+without a stage stamp — not averaged,босқич муҳри йўқ — ўртачага кирмади
+"Thresholds come from Stabler Settings, per company","Чегаралар Stabler созламаларидан, компания бўйича"
+deals,битим
+step,босқич
+steps,босқич

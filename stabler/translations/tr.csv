@@ -5233,3 +5233,37 @@ Sales Box/Case UOM Preference,Satışta Koli/Kutu Birim Tercihi
 Exchange rate unavailable — enter it manually.,Döviz kuru bulunamadı — elle girin.
 Modern Sales Order Form,Modern Satış Siparişi Formu
 Total in {0},{0} cinsinden toplam
+Process flow,Süreç akışı
+Process view,Süreç görünümü
+Tender process flow,Tender süreç akışı
+Could not load the process flow.,Süreç akışı yüklenemedi.
+Every number is read from an ERP record,Her sayı bir ERP kaydından okunur
+A step is late when its average wait passes the threshold set for that step,"Bir adım, ortalama beklemesi o adımın eşiğini aştığında gecikmiş sayılır"
+Intake — file opened,Intake — dosya açıldı
+GO / NO-GO decision,GO / NO-GO kararı
+Quotation gathering,Teklif toplama
+Bid pricing,Fiyatlama
+Within,İçinde
+At the edge,Sınırda
+Over SLA,SLA dışı
+Not measurable,Ölçülemiyor
+Empty,Boş
+Step performance,Adım performansı
+Average wait · SLA,Ortalama bekleme · SLA
+Average wait,Ortalama bekleme
+Worst,En kötü
+SLA,SLA
+threshold,eşik
+not tracked,takip edilmiyor
+In process,Süreçte
+across every working step,tüm çalışma adımlarında
+average wait past the tenant's threshold,ortalama bekleme kiracının eşiğini aştı
+Bottleneck,Darboğaz
+none today,bugün yok
+"furthest past its own threshold, proportionally",kendi eşiğini oransal olarak en çok aşan
+moved before the stage clock existed — left out of the averages,aşama saati yokken taşınmış — ortalamalara katılmadı
+without a stage stamp — not averaged,aşama damgası yok — ortalamaya katılmadı
+"Thresholds come from Stabler Settings, per company","Eşikler Stabler Ayarları'ndan, şirket başına gelir"
+deals,anlaşma
+step,adım
+steps,adım

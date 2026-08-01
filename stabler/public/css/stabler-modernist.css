@@ -860,6 +860,12 @@
 .stbl-ds .ds-sla[data-state="in"]     { color: var(--ds-ok); }
 .stbl-ds .ds-sla[data-state="edge"]   { color: var(--ds-today-tx); }
 .stbl-ds .ds-sla[data-state="out"]    { color: var(--ds-crit-tx); }
+/* İki dürüstlük durumu. Renkleri aynı ve sessiz — ayrımı KELIME taşıyor
+ * ("ölçülemiyor" / "boş"), çünkü ikisi de bir uyarı değil, bilginin
+ * sınırını gösteren bir not. Uyarı rengi vermek gözü sorunu olmayan
+ * satıra çekerdi. */
+.stbl-ds .ds-sla[data-state="unknown"] { color: var(--ds-tx3); }
+.stbl-ds .ds-sla[data-state="empty"]   { color: var(--ds-tx3); }
 .stbl-ds .ds-wait { font-family: var(--ds-mono); font-variant-numeric: tabular-nums; }
 .stbl-ds .ds-wait[data-state="edge"] { color: var(--ds-today-tx); }
 .stbl-ds .ds-wait[data-state="out"]  { color: var(--ds-crit-tx); }

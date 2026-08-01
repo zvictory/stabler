@@ -37,6 +37,9 @@ onMounted(() => session.ensureTenderViews());
 			<router-link v-if="session.tenderViews.length > 0" to="/tender/desk" active-class="active">
 				{{ t("Operations desk") }}
 			</router-link>
+			<router-link v-if="can('director')" to="/tender/flow" active-class="active">
+				{{ t("Process flow") }}
+			</router-link>
 			<router-link to="/tender/board" active-class="active">{{ t("Contract board") }}</router-link>
 			<router-link v-if="can('director')" to="/tender/portfolio" active-class="active">
 				{{ t("Director board") }}
