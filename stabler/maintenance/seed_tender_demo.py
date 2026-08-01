@@ -27,6 +27,11 @@ GÜVENLİK
 --------
 Tek işaret: her demo kaydının adında/başlığında ` [DEMO]` geçiyor. `unseed()`
 YALNIZ o işareti taşıyanları siliyor; işaretsiz hiçbir kayda dokunmuyor.
+
+Tek istisna teklif belgeleri: Supplier Quotation'ın taşıyabileceği bir başlık
+yok, demo olduğu `custom_crm_deal` ile bağlı olduğu demo anlaşmadan biliniyor.
+O yüzden `unseed()` teklifleri anlaşmalardan ÖNCE, yalnız demo anlaşmalara
+bağlı olanları seçerek siliyor.
 Gerçek tender verisi olan bir sitede seed() çalıştırmak da güvenli — yeni
 kayıtlar ekliyor, var olanı değiştirmiyor.
 
@@ -85,6 +90,46 @@ DEADLINE_OFFSETS = {
 }
 
 
+#: Demo tedarikçileri, ülke başına üç isim. Ülke veriyle geliyor, isimden
+#: tahmin edilmiyor: CRM panosunun `country_count` rozetini üreten alan
+#: `Supplier.country` — orası boşsa rozet, teklifler dursa bile 0 gösterir.
+DEMO_SUPPLIERS = [
+	("Uzbekistan", ["Temiryo'l ta'minot", "Sanoat kompleks", "Toshkent metall"]),
+	("China", ["Hebei Rail Parts", "Shandong Heavy", "Ningbo Import"]),
+	("Russia", ["UralVagonSnab", "SibTransDetal", "Rostov Metiz"]),
+]
+
+#: Tekliflerin üzerine yazıldığı kalem. Stok kalemi DEĞİL: demo'nun ambar,
+#: parti ya da stok hareketi üretmesi gerekmiyor.
+DEMO_ITEM = "Rels birikmasi"
+
+
+def _pick_suppliers(sq_count: int, countries: int) -> list[tuple[str, str]]:
+	"""`sq_count` teklifi TAM `countries` ülkeye dağıt — (ad, ülke) çiftleri.
+
+	Panoda iki ayrı rozet var: `has_min_5` teklif SAYISINI, `has_2_countries`
+	ülke ÇEŞİDİNİ ölçüyor. İkisi birbirinden bağımsız kırılabilsin diye dağıtım
+	round-robin — yoksa "5 teklif topladım ama hepsi tek ülkeden" hâli hiç
+	üretilemez ve o rozet test edilmemiş kalır.
+
+	Havuz yetmediğinde aynı tedarikçiden ikinci teklif üretmek yerine duruyoruz:
+	sq_count doğru çıkar ama veri yalan söyler.
+	"""
+	if sq_count <= 0:
+		return []
+	countries = max(1, min(countries or 1, len(DEMO_SUPPLIERS)))
+	per_country = -(-sq_count // countries)  # tavana yuvarlayan bölme
+	if per_country > min(len(names) for _, names in DEMO_SUPPLIERS[:countries]):
+		frappe.throw(
+			f"Demo supplier pool too small: {sq_count} quotations across {countries} "
+			f"countries needs {per_country} suppliers per country."
+		)
+	return [
+		(DEMO_SUPPLIERS[i % countries][1][i // countries], DEMO_SUPPLIERS[i % countries][0])
+		for i in range(sq_count)
+	]
+
+
 def _guard(company: str) -> None:
 	"""Eksik bir bağımlılıkta sessizce yarım veri bırakmak yerine yüksek sesle dur."""
 	if not frappe.db.table_exists("CRM Deal"):
@@ -98,6 +143,13 @@ def _guard(company: str) -> None:
 		frappe.throw(
 			"custom_tender_intake is missing — run `bench --site <site> migrate` first "
 			"so patches v37 and v66 create the tender fields."
+		)
+	# Teklif seti olmadan CRM panosunun yarısı (≥5 teklif · ≥2 ülke) ölçülemez.
+	# Sessizce teklifsiz demo bırakmak, düzeltilen hatanın ta kendisiydi.
+	if not frappe.db.has_column("Supplier Quotation", "custom_crm_deal"):
+		frappe.throw(
+			"Supplier Quotation.custom_crm_deal is missing — run `bench --site <site> "
+			"migrate` first so patch v30 links quotations to deals."
 		)
 
 
@@ -119,7 +171,86 @@ def _org(name: str) -> str:
 	return doc.name
 
 
-def _intake(lot_no: str, buyer: str, stage: str, sq_count: int, value: int, owner: str) -> dict:
+def _supplier(name: str, country: str) -> str:
+	"""Demo tedarikçisi; varsa yeniden kullan."""
+	title = f"{name}{DEMO_SUFFIX}"
+	existing = frappe.db.exists("Supplier", {"supplier_name": title})
+	if existing:
+		return existing
+	doc = frappe.new_doc("Supplier")
+	doc.supplier_name = title
+	if frappe.db.exists("Country", country):
+		doc.country = country
+	group = frappe.db.get_value("Supplier Group", {"is_group": 0}, "name")
+	if group:
+		doc.supplier_group = group
+	doc.insert(ignore_permissions=True)
+	return doc.name
+
+
+def _demo_item() -> str:
+	"""Tekliflerin satırında duracak kalem; varsa yeniden kullan."""
+	title = f"{DEMO_ITEM}{DEMO_SUFFIX}"
+	existing = frappe.db.exists("Item", {"item_name": title})
+	if existing:
+		return existing
+	doc = frappe.new_doc("Item")
+	doc.item_code = title
+	doc.item_name = title
+	doc.item_group = (
+		frappe.db.get_value("Item Group", {"is_group": 0}, "name")
+		or frappe.db.get_value("Item Group", {}, "name")
+	)
+	doc.stock_uom = frappe.db.get_value("UOM", {"name": "Nos"}) or frappe.db.get_value("UOM", {}, "name")
+	doc.is_stock_item = 0
+	doc.insert(ignore_permissions=True)
+	return doc.name
+
+
+def _quotations(deal: str, company: str, lot_no: str, sq_count: int, countries: int,
+                value: int, bid_deadline: str) -> int:
+	"""Lotun teklif setini GERÇEKTEN yarat, sayısını intake'e yazmakla yetinme.
+
+	CRM panosu `sq_count`'u kolondan değil, `custom_crm_deal` ile bağlı Supplier
+	Quotation kayıtlarını sayarak buluyor; `country_count` da o tekliflerin
+	tedarikçilerinin ülkesinden. Yani teklif belgesi yoksa demo kartlarda rozet
+	0/0 kalır — ekranın anlatmak istediği tek şey kaybolur.
+
+	Belgeler taslak bırakılıyor: pano `docstatus < 2` sayıyor, taslak da o
+	kümede. Onaylamak muhasebeye hiçbir şey eklemez, geri almayı zorlaştırır.
+	"""
+	picks = _pick_suppliers(sq_count, countries)
+	if not picks:
+		return 0
+	item = _demo_item()
+	# Teklifler son tarihten önce toplanmış olmalı; ileri tarihli bir lotta
+	# "bugün"ü aşmasın diye bugünle sınırlanıyor.
+	txn_date = min(add_days(bid_deadline, -7), nowdate())
+	for i, (supplier_name, country) in enumerate(picks):
+		quotation = frappe.new_doc("Supplier Quotation")
+		quotation.company = company
+		quotation.supplier = _supplier(supplier_name, country)
+		quotation.transaction_date = txn_date
+		quotation.valid_till = add_days(bid_deadline, 30)
+		quotation.custom_crm_deal = deal
+		quotation.append(
+			"items",
+			{
+				"item_code": item,
+				"item_name": f"{lot_no}{DEMO_SUFFIX}",
+				"description": f"{lot_no}{DEMO_SUFFIX}",
+				"qty": 1,
+				# Teklifler birbirinden farklı: tek fiyatlı bir set, fiyat
+				# karşılaştırma ekranını da sınamaz.
+				"rate": round(value * (0.92 + i * 0.03)),
+				"schedule_date": bid_deadline,
+			},
+		)
+		quotation.insert(ignore_permissions=True)
+	return len(picks)
+
+
+def _intake(lot_no: str, buyer: str, stage: str, value: int, owner: str) -> dict:
 	"""Aşamanın gerektirdiği KANITI üret, aşamayı yazmakla yetinme.
 
 	`_funnel.classify` olgulardan aşama türetiyor; intake bu olguları taşımazsa
@@ -174,18 +305,21 @@ def seed(company: str = "Mikas"):
 	has_stamp = frappe.db.has_column("CRM Deal", "custom_tender_stage_entered_at")
 	has_pricing = frappe.db.has_column("CRM Deal", "custom_bid_pricing")
 	created = []
+	sq_total = 0
 
 	for lot_no, buyer, stage, moved_days, sq_count, countries, value in DEMO_LOTS:
+		intake = _intake(lot_no, buyer, stage, value, owner)
 		deal = frappe.new_doc("CRM Deal")
 		deal.company = company
 		deal.organization = _org(buyer)
-		deal.custom_tender_intake = json.dumps(
-			_intake(lot_no, buyer, stage, sq_count, value, owner), ensure_ascii=False
-		)
+		deal.custom_tender_intake = json.dumps(intake, ensure_ascii=False)
 		if has_pricing and stage in ("priced", "submitted", "won", "lost"):
 			deal.custom_bid_pricing = json.dumps({"unit_price": value, "margin_pct": 12}, ensure_ascii=False)
 		deal.insert(ignore_permissions=True)
 		created.append((deal.name, lot_no, stage, moved_days))
+		sq_total += _quotations(
+			deal.name, company, lot_no, sq_count, countries, value, intake["bid_deadline"]
+		)
 
 		if has_stage:
 			frappe.db.set_value("CRM Deal", deal.name, "custom_tender_stage", stage)
@@ -202,7 +336,7 @@ def seed(company: str = "Mikas"):
 			_stage_history(deal.name, company, stage, moved_days)
 
 	frappe.db.commit()
-	print(f"Seeded {len(created)} demo tender deals on {company}:")
+	print(f"Seeded {len(created)} demo tender deals and {sq_total} supplier quotations on {company}:")
 	for name, lot_no, stage, moved in created:
 		print(f"  {name}  {lot_no}  stage={stage}  moved={moved if moved is not None else 'no stamp'}")
 	print("\nVisible on: /tender/desk · /tender/crm · /tender/portfolio · /tender/flow")
@@ -256,6 +390,22 @@ def unseed(company: str = "Mikas"):
 		fields=["name"],
 		limit_page_length=0,
 	)
+	# Teklifler anlaşmalardan ÖNCE siliniyor: bağlantı `custom_crm_deal` üzerinden
+	# kuruluyor, anlaşma gidince demo teklifleri hangi kaydın olduğu artık
+	# bilinemez ve sitede sahipsiz kalırlar.
+	deal_names = [row["name"] for row in deals]
+	sq_removed = 0
+	if deal_names and frappe.db.has_column("Supplier Quotation", "custom_crm_deal"):
+		quotations = frappe.get_all(
+			"Supplier Quotation",
+			filters={"custom_crm_deal": ["in", deal_names]},
+			fields=["name"],
+			limit_page_length=0,
+		)
+		for row in quotations:
+			frappe.delete_doc("Supplier Quotation", row["name"], force=True, ignore_permissions=True)
+			sq_removed += 1
+
 	for row in deals:
 		# Olay kayıtları değişmez (on_trash engelliyor); anlaşmayı silmeden
 		# önce doğrudan tablodan düşürülüyor — demo verisi tarih değil.
@@ -274,5 +424,25 @@ def unseed(company: str = "Mikas"):
 		if not frappe.db.exists("CRM Deal", {"organization": row["name"]}):
 			frappe.delete_doc("CRM Organization", row["name"], force=True, ignore_permissions=True)
 
+	# Tedarikçi ve kalem `force` OLMADAN siliniyor: işaretli olsalar bile
+	# demo dışı bir belge bağlanmışsa Frappe LinkExistsError atar ve kayıt
+	# yerinde kalır. Temizlik, sildiğinden emin olmadığı şeyi zorlamamalı.
+	extras_removed = 0
+	for doctype, field in (("Supplier", "supplier_name"), ("Item", "item_name")):
+		for row in frappe.get_all(
+			doctype,
+			filters={field: ["like", f"%{DEMO_SUFFIX}"]},
+			fields=["name"],
+			limit_page_length=0,
+		):
+			try:
+				frappe.delete_doc(doctype, row["name"], ignore_permissions=True)
+				extras_removed += 1
+			except frappe.LinkExistsError:
+				print(f"  kept {doctype} {row['name']} — still linked by a non-demo document")
+
 	frappe.db.commit()
-	print(f"Removed {len(deals)} demo tender deals and up to {len(orgs)} demo organizations.")
+	print(
+		f"Removed {len(deals)} demo tender deals, {sq_removed} supplier quotations, "
+		f"{extras_removed} demo suppliers/items and up to {len(orgs)} demo organizations."
+	)

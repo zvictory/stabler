@@ -28,13 +28,36 @@ class TestItCannotTouchRealData(unittest.TestCase):
 		self.assertIn('f"{lot_no}{DEMO_SUFFIX}"', SEED)  # lot
 
 	def test_unseed_filters_on_the_marker_everywhere(self):
-		"""İşaretsiz bir kaydı silen tek bir sorgu, geri alınamaz veri kaybı."""
+		"""İşaretsiz bir kaydı silen tek bir sorgu, geri alınamaz veri kaybı.
+
+		Teklif belgeleri işareti TAŞIYAMIYOR: Supplier Quotation'ın demo diye
+		damgalanabilecek bir başlık alanı yok. O yüzden tek meşru ikinci yol,
+		`deal_names` üzerinden daralmak — ve o liste zaten işaretle süzülmüş
+		anlaşmalardan geliyor. Bu gevşetme ancak `deal_names`'in kendisi
+		işarete bağlı kaldığı sürece güvenli; aşağıdaki ikinci iddia tam olarak
+		onu çiviliyor, yoksa "deal_names" adında bir değişken tanımlamak
+		filtresiz silmenin serbest kapısı olurdu."""
 		unseed = _fn("unseed")
-		deletes = re.findall(r"frappe\.get_all\(\s*\"(\w[\w ]*)\",\s*filters=\{([^}]*)\}", unseed)
-		self.assertTrue(deletes, "unseed hiçbir şey listelemiyor")
+		# Doctype'ı değişken olan sorgular da taransın: `for doctype, field in ...`
+		# döngüsündeki get_all yalnız string doctype arayan bir desenden kaçardı.
+		deletes = re.findall(r"frappe\.get_all\(\s*([^,]+),\s*filters=\{([^}]*)\}", unseed)
+		self.assertEqual(
+			len(deletes), unseed.count("frappe.get_all("),
+			"desen bazı get_all çağrılarını kaçırıyor — taranmayan sorgu, sınanmamış silme",
+		)
 		for doctype, filters in deletes:
-			with self.subTest(doctype=doctype):
-				self.assertIn("DEMO_SUFFIX", filters, f"{doctype} filtresi işarete bakmıyor")
+			with self.subTest(doctype=doctype.strip()):
+				self.assertTrue(
+					"DEMO_SUFFIX" in filters or "deal_names" in filters,
+					f"{doctype.strip()} filtresi ne işarete ne de demo anlaşma listesine bakıyor",
+				)
+
+		self.assertRegex(
+			unseed,
+			r'filters=\{[^}]*"custom_tender_intake":\s*\["like",\s*f"%\{DEMO_SUFFIX\}%"\][^}]*\}'
+			r"[\s\S]{0,300}deal_names\s*=\s*\[row\[\"name\"\] for row in deals\]",
+			"deal_names, işaretle süzülmüş anlaşma sorgusundan türemek zorunda",
+		)
 
 	def test_the_raw_delete_is_scoped_to_one_deal(self):
 		"""Olay kayıtları doğrudan SQL ile siliniyor (doctype değişmez);
@@ -135,6 +158,116 @@ class TestTheEvidenceMatchesTheStage(unittest.TestCase):
 		self.assertIn("ORDER[: ORDER.index(stage) + 1]", hist)
 		self.assertIn('"axis": "tender_stage"', hist)
 		self.assertIn('"from_tender_stage": previous', hist)
+
+
+def _load_seed():
+	"""Seed modülünü, yalnız içe aktarma için gereken Frappe yüzeyiyle yükle."""
+	import importlib
+	import sys
+	import types
+
+	sys.modules.pop("stabler.maintenance.seed_tender_demo", None)
+	frappe = types.ModuleType("frappe")
+	frappe.throw = lambda message, exception=Exception: (_ for _ in ()).throw(exception(message))
+	utils = types.ModuleType("frappe.utils")
+	utils.add_days = lambda value, days: value
+	utils.now = lambda: "2026-08-01 09:00:00"
+	utils.nowdate = lambda: "2026-08-01"
+	frappe.utils = utils
+	sys.modules["frappe"] = frappe
+	sys.modules["frappe.utils"] = utils
+	try:
+		return importlib.import_module("stabler.maintenance.seed_tender_demo")
+	finally:
+		# Sahte frappe'yi bırakma: aynı dosyadaki diğer testler `_funnel` gibi
+		# gerçek modülleri içe aktarıyor, sızan bir stub onları sessizce bozar.
+		sys.modules.pop("frappe", None)
+		sys.modules.pop("frappe.utils", None)
+
+
+class TestTheQuotationsMakeTheBoardsTellTheTruth(unittest.TestCase):
+	"""Teklifler demo'nun süsü değil, iki panonun tek veri kaynağı.
+
+	`sq_count` Supplier Quotation satırları SAYILARAK, `country_count` ise o
+	tekliflerin tedarikçilerinin `Supplier.country` alanından türetiliyor —
+	ikisi de anlaşmanın üzerinde yazan bir sayı değil. Tohumlayıcı 2026-08-01'e
+	kadar hiç teklif YARATMIYORDU: `_intake` `sq_count`'u parametre olarak alıp
+	çöpe atıyor, `countries` hiçbir yere gitmiyordu. Sonuç, canlı mikas'ta her
+	demo kartın `sq_count: 0` / `has_min_5: false` göstermesi — yani "5 teklif
+	toplandı mı" politikasının demo üzerinde HİÇ sınanamaması."""
+
+	seed = _load_seed()
+
+	def test_it_produces_exactly_as_many_quotations_as_the_lot_asks_for(self):
+		self.assertEqual(len(self.seed._pick_suppliers(5, 3)), 5)
+		self.assertEqual(len(self.seed._pick_suppliers(1, 1)), 1)
+
+	def test_zero_quotations_is_a_state_the_boards_must_show(self):
+		# Politika boşluğu satırı ("3/5 quotes collected") ancak eksik teklifli
+		# lotlar varsa görünür; sıfır, susturulacak bir uç durum değil.
+		self.assertEqual(self.seed._pick_suppliers(0, 3), [])
+
+	def test_the_quotations_really_span_the_requested_countries(self):
+		"""Hepsi tek ülkeden gelseydi `country_count` yalan söylerdi."""
+		picked = self.seed._pick_suppliers(5, 3)
+		self.assertEqual(len({country for _name, country in picked}), 3)
+
+	def test_no_supplier_is_used_twice(self):
+		"""`_supplier` idempotent: aynı ad iki kez seçilirse iki teklif TEK
+		tedarikçiye bağlanır ve ülke kümesi sessizce daralır."""
+		picked = self.seed._pick_suppliers(6, 3)
+		self.assertEqual(len({name for name, _country in picked}), 6)
+
+	def test_an_impossible_ask_fails_loudly_instead_of_seeding_less(self):
+		"""Havuz yetmediğinde sessizce az teklif üretmek, demo'yu sahte bir
+		"politika boşluğu" ile doldurur — hata sanılacak şey verinin kendisi olur."""
+		with self.assertRaises(Exception) as caught:
+			self.seed._pick_suppliers(10, 3)
+		self.assertIn("pool too small", str(caught.exception))
+
+	def test_the_seeded_counts_can_actually_cross_the_five_quote_threshold(self):
+		"""Demo lotlarının hiçbiri 5'e ulaşmasaydı, `has_min_5` panoda hep
+		kırmızı kalır ve eşiğin doğru tarafı hiç görülmezdi."""
+		counts = [
+			int(m.group(1))
+			for m in re.finditer(r",\s*(\d+),\s*\d+,\s*\d+\)", SEED[SEED.index("DEMO_LOTS = ["):SEED.index("#: Son tarihler")])
+		]
+		self.assertTrue(counts, "DEMO_LOTS'tan teklif sayıları okunamadı")
+		self.assertTrue(any(c >= 5 for c in counts), "hiçbir demo lot 5 teklif eşiğini geçmiyor")
+		self.assertTrue(any(0 < c < 5 for c in counts), "eşiğin altında kalan bir lot yok")
+
+	def test_every_seeded_lot_is_actually_satisfiable(self):
+		"""`_pick_suppliers` havuz yetmezse `frappe.throw` ediyor — doğru davranış,
+		ama o patlama TOHUMLAMA SIRASINDA olursa demo yarım kalır: bir kısım
+		anlaşma yazılmış, teklifleri yazılmamış. DEMO_LOTS ile tedarikçi havuzu
+		arasındaki bu bağ kodun hiçbir yerinde görünmüyor; yeni bir lot eklemek
+		onu sessizce koparabilir. Testin işi, kopmayı canlı siteden önce görmek."""
+		block = SEED[SEED.index("DEMO_LOTS = ["):SEED.index("#: Son tarihler")]
+		lots = re.findall(r",\s*(\d+),\s*(\d+),\s*\d+\)", block)
+		self.assertEqual(len(lots), 13, "DEMO_LOTS satır sayısı değişti — desen güncellensin")
+		for sq_count, countries in ((int(a), int(b)) for a, b in lots):
+			with self.subTest(sq_count=sq_count, countries=countries):
+				picked = self.seed._pick_suppliers(sq_count, countries)
+				self.assertEqual(len(picked), sq_count)
+				if sq_count:
+					self.assertEqual(len({c for _n, c in picked}), max(1, countries))
+
+	def test_quotations_are_created_before_they_could_be_orphaned(self):
+		"""Teklifler `custom_crm_deal` ile bağlı; anlaşma önce silinirse hangi
+		tekliflerin demo olduğu bir daha bilinemez ve sitede sahipsiz kalırlar."""
+		unseed = _fn("unseed")
+		self.assertLess(
+			unseed.index('frappe.delete_doc("Supplier Quotation"'),
+			unseed.index('frappe.delete_doc("CRM Deal"'),
+			"teklifler anlaşmalardan ÖNCE silinmeli",
+		)
+
+	def test_a_draft_quotation_still_counts_on_the_board(self):
+		"""Pano `docstatus < 2` sayıyor. Teklifleri submit etmek demo'yu
+		gerçekte olmadığı kadar ilerlemiş gösterir; taslak doğru durum."""
+		quotations = _fn("_quotations")
+		self.assertNotIn(".submit()", quotations)
+		self.assertIn(".insert(", quotations)
 
 
 if __name__ == "__main__":
