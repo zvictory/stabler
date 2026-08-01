@@ -68,3 +68,4 @@ stabler.patches.v62_enable_direct_invoicing
 stabler.patches.v63_enable_dimensional_lines
 stabler.patches.v64_enable_sales_box_uom
 stabler.patches.v65_enable_modern_sales_order
+stabler.patches.v66_deal_tender_stage

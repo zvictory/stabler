@@ -2422,8 +2422,32 @@ def move_deal_stage(name: str, stage: str) -> dict:
 	if not frappe.has_permission("CRM Deal", "write", doc=name):
 		frappe.throw(_("Not permitted"), frappe.PermissionError)
 
+	from stabler.api import _funnel
+
+	# Aşama adı doğrulanmadan yazılıyordu: istemci ne gönderirse Select alanına
+	# o giriyordu. Yazım hatası taşıyan bir kart hiçbir kulvara düşmez —
+	# ekrandan kaybolur, hata da vermez.
+	if stage not in _funnel.STAGES:
+		frappe.throw(_("Unknown stage: {0}").format(stage))
+
 	if frappe.db.has_column("CRM Deal", "custom_tender_stage"):
+		previous = frappe.db.get_value("CRM Deal", name, "custom_tender_stage")
 		frappe.db.set_value("CRM Deal", name, "custom_tender_stage", stage)
+
+		# Saat YALNIZ aşama gerçekten değiştiğinde sıfırlanıyor. Aynı kulvara
+		# geri bırakmak ya da belgeyi tekrar kaydetmek "bu aşamada kaç gündür"
+		# sayacını sıfırlarsa, süreç akışı ekranı bekleyen işi genç gösterir —
+		# yani en çok bakılması gereken anlaşma en az dikkat çeker.
+		if previous != stage and frappe.db.has_column(
+			"CRM Deal", "custom_tender_stage_entered_at"
+		):
+			frappe.db.set_value(
+				"CRM Deal",
+				name,
+				"custom_tender_stage_entered_at",
+				frappe.utils.now(),
+				update_modified=False,
+			)
 
 	if frappe.db.has_column("CRM Deal", "custom_tender_intake"):
 		raw = frappe.db.get_value("CRM Deal", name, "custom_tender_intake")

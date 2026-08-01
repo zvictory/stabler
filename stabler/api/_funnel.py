@@ -24,6 +24,12 @@ ORDER = ["seen", "go", "sourcing", "priced", "submitted", "won"]
 #: `submitted`, so the funnel never undercounts participation.
 FUNNEL_STEPS = ["seen", "go", "sourcing", "submitted", "won"]
 
+#: Her geçerli aşama. ORDER ilerlemeyi anlatıyor ve `lost`u dışarıda bırakıyor
+#: (kaybetmek ilerleme değil); oysa "bu bir aşama mı" sorusunun cevabı `lost`u
+#: da içeriyor. İki liste ayrı, çünkü iki ayrı soruya cevap veriyorlar —
+#: birleştirmek funnel'ı kayıplarla şişirirdi.
+STAGES = frozenset(ORDER) | {"lost"}
+
 
 def classify(facts: dict) -> str:
     """Map one deal's facts to its single pipeline stage.
