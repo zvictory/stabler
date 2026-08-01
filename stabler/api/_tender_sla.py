@@ -58,11 +58,11 @@ def _as_date(value) -> date | None:
 def days_in_stage(entered_at, today) -> int | None:
 	"""Aşamaya girildiğinden bu yana geçen tam gün.
 
-	`entered_at` yoksa None — "bilmiyoruz" ile "sıfır gündür" aynı şey değil.
-	Sıfır döndürmek, damgası olmayan her eski anlaşmayı bugün taşınmış gibi
-	gösterirdi ve ekran taptaze bir hat uydururdu.
+	    `entered_at` yoksa None — "bilmiyoruz" ile "sıfır gündür" aynı şey değil.
+	    Sıfır döndürmek, damgası olmayan her eski anlaşmayı bugün taşınmış gibi
+	    gösterirdi ve ekran taptaze bir hat uydururdu.
 
-    Gelecek bir damga (saat kayması, elle düzeltme) negatif değil sıfır sayılır.
+	Gelecek bir damga (saat kayması, elle düzeltme) negatif değil sıfır sayılır.
 	"""
 	start = _as_date(entered_at)
 	now = _as_date(today)

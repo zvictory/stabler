@@ -23,13 +23,12 @@ from __future__ import annotations
 import os
 import re
 import unittest
+from typing import ClassVar
 
 _HERE = os.path.dirname(os.path.abspath(__file__))
 _SIDEBAR = os.path.normpath(os.path.join(_HERE, "..", "public", "js", "components", "Sidebar.vue"))
 _ROUTER = os.path.normpath(os.path.join(_HERE, "..", "public", "js", "router.js"))
-_TENDER_NAV = os.path.normpath(
-	os.path.join(_HERE, "..", "public", "js", "pages", "tender", "TenderNav.vue")
-)
+_TENDER_NAV = os.path.normpath(os.path.join(_HERE, "..", "public", "js", "pages", "tender", "TenderNav.vue"))
 
 
 def _read(path: str) -> str:
@@ -92,7 +91,7 @@ class TestTheModuleBarCarriesEveryScreen(unittest.TestCase):
 
 	# Modül çubuğuna GİRMEYEN rotalar. Buraya bir yol eklemek bilinçli bir
 	# karardır: "bu ekran modülün bir sayfası değil, bir kaydın detayı".
-	DRILL_DOWNS = {
+	DRILL_DOWNS: ClassVar[set[str]] = {
 		# Bir anlaşmanın teklif karşılaştırması. `?deal=` ile geliyor ve beş
 		# ayrı ekrandan linkli (Sözleşme panosu, CRM çekmecesi, PO kontrol,
 		# Tedarikçiler, CRM Anlaşmalar). Çubuğa koymak dokuzuncu maddeyi
@@ -152,7 +151,8 @@ class TestTheModuleBarCarriesEveryScreen(unittest.TestCase):
 				self.assertIsNotNone(rel, f"{component} import satırı bulunamadı")
 				source = _read(os.path.normpath(os.path.join(js_root, rel.lstrip("/"))))
 				self.assertIn(
-					"<TenderNav", source,
+					"<TenderNav",
+					source,
 					f"{path} ({component}) modül çubuğunu çizmiyor — menüsüz açılıyor",
 				)
 
@@ -163,7 +163,9 @@ class TestTheModuleBarCarriesEveryScreen(unittest.TestCase):
 		linkleri: onlar gezinme değil, bir KAYDA gidiş."""
 		js_root = os.path.normpath(os.path.join(_HERE, "..", "public", "js"))
 		imports = dict(re.findall(r'import (\w+) from "\.(/[^"]+\.vue)";', self.router))
-		for path, component in sorted(re.findall(r'path: "(/tender/[a-z-]+)"[^}]*component: (\w+)', self.router)):
+		for path, component in sorted(
+			re.findall(r'path: "(/tender/[a-z-]+)"[^}]*component: (\w+)', self.router)
+		):
 			rel = imports.get(component)
 			if not rel:
 				continue
@@ -200,9 +202,7 @@ class TestTheModuleBarCarriesEveryScreen(unittest.TestCase):
 				self.assertRegex(self.nav, rf"v-if=\"can\('{view}'\)\"\s+to=\"{re.escape(path)}\"")
 
 	def test_the_crm_is_open_to_both_director_and_sourcing(self):
-		self.assertRegex(
-			self.nav, r"v-if=\"can\('director'\) \|\| can\('sourcing'\)\"\s+to=\"/tender/crm\""
-		)
+		self.assertRegex(self.nav, r"v-if=\"can\('director'\) \|\| can\('sourcing'\)\"\s+to=\"/tender/crm\"")
 
 	def test_there_is_a_way_back_to_the_dashboard(self):
 		"""Konum değil VARLIK garanti: modüller arası geçiş artık kenar

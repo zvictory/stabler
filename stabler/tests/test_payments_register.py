@@ -171,9 +171,7 @@ class PaymentsRegisterFXTest(FrappeTestCase):
 		customer.append("accounts", {"company": self.company, "account": usd_receivable})
 		customer.save(ignore_permissions=True)
 
-		pe = self._payment(
-			add_days(today(), -5), 250.0, paid_from=usd_receivable, exchange_rate=RATE_ON_DOC
-		)
+		pe = self._payment(add_days(today(), -5), 250.0, paid_from=usd_receivable, exchange_rate=RATE_ON_DOC)
 
 		rows, _ = self._rows_by_name()
 

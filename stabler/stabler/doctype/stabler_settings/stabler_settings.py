@@ -121,10 +121,7 @@ def stage_sla_for(company: str) -> dict:
 	if not row:
 		return dict(DEFAULT_STAGE_SLA_DAYS)
 
-	return {
-		stage: int(getattr(row, f"sla_{stage}_days", 0) or 0)
-		for stage in DEFAULT_STAGE_SLA_DAYS
-	}
+	return {stage: int(getattr(row, f"sla_{stage}_days", 0) or 0) for stage in DEFAULT_STAGE_SLA_DAYS}
 
 
 def module_map_for(company: str) -> dict:

@@ -43,7 +43,7 @@ _DEFINE_PROPS_ARR = re.compile(r"defineProps\s*\(\s*\[([^\]]*)\]")
 _KEY = re.compile(r"^\s*([\w$]+)\s*:", re.M)
 # Öznitelik *adları* — değerler önce sıyrılır, yoksa `class="border-0 py-4"`
 # içindeki `border-0` bir prop sanılır (ölçüldü: 11 yanlış pozitif).
-_ATTR_NAME = re.compile(r'(?:^|\s):?([a-z][\w]*(?:-[\w]+)+)(?==|\s|$)')
+_ATTR_NAME = re.compile(r"(?:^|\s):?([a-z][\w]*(?:-[\w]+)+)(?==|\s|$)")
 _ATTR_VALUE = (re.compile(r'=\s*"[^"]*"'), re.compile(r"=\s*'[^']*'"))
 _VMODEL_ARG = re.compile(r"\sv-model:([a-zA-Z][\w-]*)")
 
@@ -138,16 +138,21 @@ class TestSpaComponentProps(unittest.TestCase):
 		self.assertGreater(self.components, 40, "hiçbir göreli bileşen import'u çözülmedi")
 		self.assertGreater(len(self.seen), 250, "prop kenarı okunamadı — öznitelik ayrıştırıcı bozuk")
 		self.assertIn(
-			_ANCHOR, self.seen,
+			_ANCHOR,
+			self.seen,
 			"çapa kenarı bulunamadı — tarayıcı ya şablonu ya defineProps'u okuyamıyor",
 		)
 
 	def test_every_passed_prop_is_declared_by_the_target_component(self):
 		"""Bildirilmemiş prop hata vermez — fallthrough özniteliğe düşer ve
 		bileşen kendi varsayılanıyla sessizce yanlış çalışır."""
-		lines = [f"{src}: <{tgt.split('/')[-1][:-4]} {sym}> — hedefte tanımlı değil" for src, sym, tgt in self.missing]
+		lines = [
+			f"{src}: <{tgt.split('/')[-1][:-4]} {sym}> — hedefte tanımlı değil"
+			for src, sym, tgt in self.missing
+		]
 		self.assertEqual(
-			self.missing, [],
+			self.missing,
+			[],
 			"çağıran, hedefin tanımlamadığı bir prop geçiriyor:\n  " + "\n  ".join(lines),
 		)
 

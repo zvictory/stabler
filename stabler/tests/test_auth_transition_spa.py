@@ -1,7 +1,7 @@
 import csv
-from pathlib import Path
 import re
 import unittest
+from pathlib import Path
 
 ROOT = Path(__file__).resolve().parents[1]
 OVERLAY = ROOT / "public/js/components/AuthTransitionOverlay.vue"
@@ -103,4 +103,3 @@ class TestAuthTransitionSpa(unittest.TestCase):
 			for key in new_keys:
 				self.assertIn(key, translations, f"Key '{key}' missing in {lang}.csv")
 				self.assertTrue(bool(translations[key]), f"Key '{key}' has empty translation in {lang}.csv")
-

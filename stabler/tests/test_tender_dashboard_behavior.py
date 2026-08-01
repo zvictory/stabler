@@ -1191,7 +1191,8 @@ class TestDeadlineSummaryMatchesItsOwnRiskChip(unittest.TestCase):
 		self.assertIn("deadline", res, "crm_board bu anahtarı okuyor; yokluğu kartı boşaltır")
 		self.assertEqual(res["risk"], "risk")
 		self.assertEqual(
-			res["deadline"], "2026-07-20",
+			res["deadline"],
+			"2026-07-20",
 			"kırmızı çipin yanında rahat bir gelecek tarih göstermek, kartı yalancı yapar",
 		)
 

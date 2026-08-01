@@ -14,7 +14,7 @@ from pathlib import Path
 
 ROOT = Path(__file__).resolve().parents[2]
 SOURCE = (ROOT / "stabler/public/js/pages/tender/DirectorBoard.vue").read_text(encoding="utf-8")
-TEMPLATE = SOURCE[SOURCE.index("<template>"): SOURCE.index("<style scoped>")]
+TEMPLATE = SOURCE[SOURCE.index("<template>") : SOURCE.index("<style scoped>")]
 
 
 class TestDesignLayerIsSwitchedOn(unittest.TestCase):
@@ -22,17 +22,37 @@ class TestDesignLayerIsSwitchedOn(unittest.TestCase):
 		self.assertRegex(TEMPLATE, r'class="director-board-page stbl-ds"')
 
 	def test_counter_strip_and_table_use_the_layer(self):
-		for cls in ("ds-kpis", "ds-kpi", "ds-kpi-val", "ds-kpi-note", "ds-kpi-q",
-		            "ds-panel", "ds-panel-head", "ds-panel-foot", "ds-table", "ds-td-num", "ds-chip"):
+		for cls in (
+			"ds-kpis",
+			"ds-kpi",
+			"ds-kpi-val",
+			"ds-kpi-note",
+			"ds-kpi-q",
+			"ds-panel",
+			"ds-panel-head",
+			"ds-panel-foot",
+			"ds-table",
+			"ds-td-num",
+			"ds-chip",
+		):
 			with self.subTest(cls=cls):
 				self.assertIn(cls, TEMPLATE)
 
 
 class TestOldMarkupIsGone(unittest.TestCase):
 	FORBIDDEN = (
-		"card-table", "card-body", "badge", "bg-green-lt", "bg-red-lt",
-		"bg-yellow-lt", "bg-secondary-lt", "btn-ghost-secondary",
-		"form-select", "container-xl", "text-secondary", "font-monospace",
+		"card-table",
+		"card-body",
+		"badge",
+		"bg-green-lt",
+		"bg-red-lt",
+		"bg-yellow-lt",
+		"bg-secondary-lt",
+		"btn-ghost-secondary",
+		"form-select",
+		"container-xl",
+		"text-secondary",
+		"font-monospace",
 	)
 
 	def test_tabler_component_classes_are_not_reintroduced(self):
@@ -84,14 +104,14 @@ class TestNoCounterWasDropped(unittest.TestCase):
 	KPI_KEYS = ("count", "win_rate", "at_risk", "total_value", "avg_margin", "ostatok")
 
 	def test_all_six_counters_are_present(self):
-		block = SOURCE[SOURCE.index("const kpis = computed"):SOURCE.index("const unverified")]
+		block = SOURCE[SOURCE.index("const kpis = computed") : SOURCE.index("const unverified")]
 		for key in self.KPI_KEYS:
 			with self.subTest(kpi=key):
 				self.assertIn(f'key: "{key}"', block)
 
 	def test_every_counter_states_the_rule_that_produced_it(self):
 		"""Tasarımın imzası: her rakam kendi sorgusunu taşır."""
-		block = SOURCE[SOURCE.index("const kpis = computed"):SOURCE.index("const unverified")]
+		block = SOURCE[SOURCE.index("const kpis = computed") : SOURCE.index("const unverified")]
 		self.assertEqual(block.count("rule:"), len(self.KPI_KEYS))
 		self.assertEqual(block.count("note:"), len(self.KPI_KEYS))
 
@@ -112,7 +132,7 @@ class TestStatusIsNotColourOnly(unittest.TestCase):
 		self.assertIn("resultLabel", SOURCE)
 		for state in ("good", "warn", "risk"):
 			with self.subTest(state=state):
-				self.assertIn(state, SOURCE[SOURCE.index("const riskLabel"):][:220])
+				self.assertIn(state, SOURCE[SOURCE.index("const riskLabel") :][:220])
 
 
 class TestWideTableScrollsItself(unittest.TestCase):

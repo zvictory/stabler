@@ -28,7 +28,6 @@ from stabler.api._accounts import _cbu_rate_on_or_before
 from stabler.api._common import _require_company
 from stabler.api._money import money_epsilon
 from stabler.api.approvals import _assert_company_scope
-from stabler.stabler.doctype.stabler_settings.stabler_settings import module_map_for
 from stabler.api.organization import module_map_for
 from stabler.api.sales import _sales_report_dates, _sales_report_period_expr
 
@@ -2100,9 +2099,7 @@ def get_pi_group_container_status_report(
 	if date_from:
 		pi_filters["pi_date"] = [">=", date_from]
 	if date_to:
-		pi_filters["pi_date"] = (
-			["between", [date_from, date_to]] if date_from else ["<=", date_to]
-		)
+		pi_filters["pi_date"] = ["between", [date_from, date_to]] if date_from else ["<=", date_to]
 	if status and status.strip():
 		pi_filters["status"] = status.strip()
 
@@ -2110,8 +2107,15 @@ def get_pi_group_container_status_report(
 	rows = []
 	grand_buckets = {k: 0 for k in pgr.BUCKET_ORDER}
 	grand_amounts = {k: 0.0 for k in pgr.BUCKET_ORDER}
-	grand = {"fcl": 0.0, "pending": 0.0, "containers": 0, "ci_count": 0,
-		"agreed_total": 0.0, "ci_agreed_total": 0.0, "pending_amount": 0.0}
+	grand = {
+		"fcl": 0.0,
+		"pending": 0.0,
+		"containers": 0,
+		"ci_count": 0,
+		"agreed_total": 0.0,
+		"ci_agreed_total": 0.0,
+		"pending_amount": 0.0,
+	}
 
 	for g in groups:
 		gid = g["name"]
@@ -2156,12 +2160,8 @@ def get_pi_group_container_status_report(
 
 		# Counts (per container, by parent-CI status) and amounts (per CI) fold
 		# through the SAME bucket map — the grid's two rows cannot diverge.
-		count_tally = pgr.tally(
-			ci_status_by_name.get(r["commercial_invoice"]) for r in container_rows
-		)
-		amount_tally = pgr.tally(
-			[c["status"] for c in cis], [flt(c["agreed_total"]) for c in cis]
-		)
+		count_tally = pgr.tally(ci_status_by_name.get(r["commercial_invoice"]) for r in container_rows)
+		amount_tally = pgr.tally([c["status"] for c in cis], [flt(c["agreed_total"]) for c in cis])
 
 		agreed_total = sum(flt(p["agreed_total"]) for p in member_pis)
 		pending_cont = pgr.pending_containers(planned_fcl, count_tally["total"])
@@ -2179,32 +2179,34 @@ def get_pi_group_container_status_report(
 		grand["ci_agreed_total"] += amount_tally["amount_total"]
 		grand["pending_amount"] += pending_amt
 
-		rows.append({
-			# What the business types on paper, not the autoname. The ERPNext
-			# id travels as group_name — needed for a stable render key and for
-			# support to find the record — but it is not the report's identity.
-			"group_code": g["code"] or g["title"] or gid,
-			"group_name": gid,
-			"group_title": g["title"] or "",
-			"vendor_name": g["supplier_name"] or g["pi_vendor"] or "—",
-			"currency": (member_pis[0].get("currency") if member_pis else None) or "USD",
-			"pi_count": len(member_pis),
-			"ci_count": len(cis),
-			"pis": [p["supplier_pi_ref"] or p["name"] for p in member_pis],
-			# Sorted on the way out only: `cis` itself stays in fetch order
-			# because amount_tally walks it paired with agreed_total.
-			"cis": sorted((c["ci_number"] or c["name"]) for c in cis),
-			"date_min": str(min(date_list)) if date_list else None,
-			"date_max": str(max(date_list)) if date_list else None,
-			"planned_fcl": round(planned_fcl, 1),
-			"pending_containers": round(pending_cont, 1),
-			"buckets": count_tally["counts"],
-			"container_total": count_tally["total"],
-			"amounts": amount_tally["amounts"],
-			"ci_agreed_total": amount_tally["amount_total"],
-			"agreed_total": agreed_total,
-			"pending_amount": pending_amt,
-		})
+		rows.append(
+			{
+				# What the business types on paper, not the autoname. The ERPNext
+				# id travels as group_name — needed for a stable render key and for
+				# support to find the record — but it is not the report's identity.
+				"group_code": g["code"] or g["title"] or gid,
+				"group_name": gid,
+				"group_title": g["title"] or "",
+				"vendor_name": g["supplier_name"] or g["pi_vendor"] or "—",
+				"currency": (member_pis[0].get("currency") if member_pis else None) or "USD",
+				"pi_count": len(member_pis),
+				"ci_count": len(cis),
+				"pis": [p["supplier_pi_ref"] or p["name"] for p in member_pis],
+				# Sorted on the way out only: `cis` itself stays in fetch order
+				# because amount_tally walks it paired with agreed_total.
+				"cis": sorted((c["ci_number"] or c["name"]) for c in cis),
+				"date_min": str(min(date_list)) if date_list else None,
+				"date_max": str(max(date_list)) if date_list else None,
+				"planned_fcl": round(planned_fcl, 1),
+				"pending_containers": round(pending_cont, 1),
+				"buckets": count_tally["counts"],
+				"container_total": count_tally["total"],
+				"amounts": amount_tally["amounts"],
+				"ci_agreed_total": amount_tally["amount_total"],
+				"agreed_total": agreed_total,
+				"pending_amount": pending_amt,
+			}
+		)
 
 	return {
 		"rows": rows,

@@ -70,14 +70,17 @@ class TestDimensionalEntryExists(unittest.TestCase):
 		self.assertEqual(len(inputs), 4, f"beklenen 4 ölçü girişi, bulunan {inputs}")
 		for block in re.findall(r'<input v-model\.number="line\.custom_\w+".*?/>', LINES_FLAT):
 			with self.subTest(block=block[:70]):
-				self.assertIn("@input=\"recalcDim(line)\"", block)
+				self.assertIn('@input="recalcDim(line)"', block)
 
 	def test_width_and_height_are_gated_on_the_mode(self):
 		"""Doğrusal bir kalemde (profil, boru) en/yükseklik sorulmamalı —
 		formülde yokturlar, sorulursa kullanıcı anlamsız bir sayı girer."""
 		self.assertRegex(LINES_FLAT, r'v-if="dimNeedsWidth\(line\)"')
 		self.assertRegex(LINES_FLAT, r'v-if="dimNeedsHeight\(line\)"')
-		self.assertRegex(LINES_FLAT, r'dimNeedsWidth = \(l\) => l\?\.dimension_mode === "Area" \|\| l\?\.dimension_mode === "Volume"')
+		self.assertRegex(
+			LINES_FLAT,
+			r'dimNeedsWidth = \(l\) => l\?\.dimension_mode === "Area" \|\| l\?\.dimension_mode === "Volume"',
+		)
 		self.assertRegex(LINES_FLAT, r'dimNeedsHeight = \(l\) => l\?\.dimension_mode === "Volume"')
 
 	def test_the_column_appears_whenever_a_line_needs_it(self):
@@ -89,7 +92,7 @@ class TestDimensionalEntryExists(unittest.TestCase):
 		Tercih tarafı test_dimensional_lines_flag'de ayrıca kilitli."""
 		self.assertRegex(LINES_FLAT, r'<th v-if="hasDims"')
 		self.assertRegex(LINES_FLAT, r'<td v-if="hasDims">')
-		self.assertRegex(LINES_FLAT, r'hasDims = computed\(\(\) => [^)]*props\.items\.some\(isDim\)\)')
+		self.assertRegex(LINES_FLAT, r"hasDims = computed\(\(\) => [^)]*props\.items\.some\(isDim\)\)")
 
 
 class TestDerivedQuantityIsNotTypeable(unittest.TestCase):
@@ -118,11 +121,14 @@ class TestUnitIsFixedForDimensionalLines(unittest.TestCase):
 	def test_uom_options_are_empty_for_a_dimensional_line(self):
 		self.assertRegex(
 			LINES_FLAT,
-			r'function uomOptions\(line\) \{ // [^}]*? if \(isDim\(line\)\) return \[\];',
+			r"function uomOptions\(line\) \{ // [^}]*? if \(isDim\(line\)\) return \[\];",
 		)
 
 	def test_the_unit_cell_states_that_it_is_fixed(self):
-		self.assertRegex(LINES_FLAT, r'<template v-if="isDim\(line\)"> <span class="ds-mono so-uom-flat">\{\{ line\.stock_uom')
+		self.assertRegex(
+			LINES_FLAT,
+			r'<template v-if="isDim\(line\)"> <span class="ds-mono so-uom-flat">\{\{ line\.stock_uom',
+		)
 
 
 class TestTheClientFormulaMatchesTheServer(unittest.TestCase):
@@ -154,12 +160,15 @@ class TestTheModeIsWiredOnItemPick(unittest.TestCase):
 	girişleri eklemek tek başına yetmiyor."""
 
 	def test_the_api_returns_the_mode(self):
-		meta = SALES_API[SALES_API.index("def item_sales_meta"):]
+		meta = SALES_API[SALES_API.index("def item_sales_meta") :]
 		meta = meta[: meta.index("\n@frappe.whitelist()")]
 		self.assertRegex(meta, r'"dimension_mode": getattr\(doc, "custom_dimension_mode", None\) or ""')
 
 	def test_the_form_writes_the_mode_from_the_api_response(self):
-		self.assertRegex(FORM_FLAT, r'setDimensionMode\(line, meta\.dimension_mode \|\| item\?\.custom_dimension_mode \|\| ""\)')
+		self.assertRegex(
+			FORM_FLAT,
+			r'setDimensionMode\(line, meta\.dimension_mode \|\| item\?\.custom_dimension_mode \|\| ""\)',
+		)
 
 	def test_switching_items_clears_the_previous_measurements(self):
 		"""3 m'lik profilden sandviç panele geçince o 3 kalırsa miktar sessizce
@@ -172,7 +181,9 @@ class TestTheModeIsWiredOnItemPick(unittest.TestCase):
 				self.assertIn(f"line.{field} = null;", body)
 
 	def test_a_dimensional_line_is_pinned_to_the_stock_unit(self):
-		fn = _squash(re.search(r"function setDimensionMode\(line, mode\) \{.*?\n\}", FORM, flags=re.S).group(0))
+		fn = _squash(
+			re.search(r"function setDimensionMode\(line, mode\) \{.*?\n\}", FORM, flags=re.S).group(0)
+		)
 		self.assertIn("line.conversion_factor = 1;", fn)
 
 
@@ -187,9 +198,9 @@ class TestTheSearchBarActuallyAddsALine(unittest.TestCase):
 		self.assertRegex(FORM_FLAT, r'if \(field === "search"\) \{')
 
 	def test_the_parent_fills_an_empty_line_before_opening_a_new_one(self):
-		handler = FORM[FORM.index('if (field === "search") {'):]
-		handler = _squash(handler[: handler.index("if (field === \"item\") {")])
-		self.assertIn('findIndex((l) => !l.item_code)', handler)
+		handler = FORM[FORM.index('if (field === "search") {') :]
+		handler = _squash(handler[: handler.index('if (field === "item") {')])
+		self.assertIn("findIndex((l) => !l.item_code)", handler)
 		self.assertIn("form.value.items.push(blankLine(form.value.set_warehouse))", handler)
 
 	def test_the_child_does_not_mutate_the_items_prop(self):
@@ -290,12 +301,12 @@ class TestAvailabilityLoadsOnEveryPath(unittest.TestCase):
 	kapatılmıştı."""
 
 	def test_priming_lives_in_the_load_function(self):
-		load = FORM[FORM.index("async function loadDoc() {"):]
+		load = FORM[FORM.index("async function loadDoc() {") :]
 		load = _squash(load[: load.index("\nasync function loadDraftUoms")])
 		self.assertIn("scheduleAvailability(line)", load)
 
 	def test_the_mounted_hook_no_longer_carries_its_own_copy(self):
-		mounted = FORM[FORM.index("onMounted(async () => {"):]
+		mounted = FORM[FORM.index("onMounted(async () => {") :]
 		mounted = mounted[: mounted.index("\n});")]
 		self.assertNotIn("scheduleAvailability", mounted)
 
@@ -304,7 +315,7 @@ class TestFocusAfterPickReachesTheNewEditor(unittest.TestCase):
 	def test_the_focus_lookup_covers_both_editors(self):
 		"""Seçici yalnız paylaşılan tabloya bakıyordu; yeni düzenleyicide o sınıf
 		yok, yani formun ASIL kullanıldığı yolda odak hiçbir yere gitmiyordu."""
-		self.assertIn('.so-lines tbody, .stbl-items-table tbody', FORM)
+		self.assertIn(".so-lines tbody, .stbl-items-table tbody", FORM)
 		self.assertRegex(LINES_FLAT, r'data-field="qty"')
 
 

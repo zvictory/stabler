@@ -21,8 +21,5 @@ def execute():
 	if not frappe.db.has_column("CRM Stage Event", "axis"):
 		return  # Sütun DDL senkronunda oluşacak; bu satırlar zaten yalnız statü.
 
-	frappe.db.sql(
-		"UPDATE `tabCRM Stage Event` SET axis = 'status' "
-		"WHERE axis IS NULL OR axis = ''"
-	)
+	frappe.db.sql("UPDATE `tabCRM Stage Event` SET axis = 'status' WHERE axis IS NULL OR axis = ''")
 	frappe.db.commit()

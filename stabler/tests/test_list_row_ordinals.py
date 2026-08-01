@@ -30,10 +30,14 @@ class TestTenderPortfolioOrdinal(unittest.TestCase):
 		sorgusuyla sağlanıyor. İkisi de kabul; kabul edilmeyen tek şey
 		sütunun mobilde görünür kalması."""
 		tabler_utility = self.source.count("d-none d-md-table-cell") >= 2
-		scoped_rule = re.search(
-			r"@media[^{]*max-width[^{]*\{[^}]*\.board-ord\s*\{[^}]*display:\s*none",
-			self.source, re.S,
-		) and self.source.count("board-ord") >= 2
+		scoped_rule = (
+			re.search(
+				r"@media[^{]*max-width[^{]*\{[^}]*\.board-ord\s*\{[^}]*display:\s*none",
+				self.source,
+				re.S,
+			)
+			and self.source.count("board-ord") >= 2
+		)
 		self.assertTrue(
 			tabler_utility or bool(scoped_rule),
 			"sıra numarası sütunu mobilde gizlenmiyor",
@@ -64,9 +68,7 @@ class TestCommercialInvoiceOrdinal(unittest.TestCase):
 
 class TestResponsiveSkeletonOrdinal(unittest.TestCase):
 	def test_first_placeholder_cell_can_follow_the_hidden_ordinal_column(self):
-		source = (_ROOT / "public" / "js" / "components" / "SkeletonRows.vue").read_text(
-			encoding="utf-8"
-		)
+		source = (_ROOT / "public" / "js" / "components" / "SkeletonRows.vue").read_text(encoding="utf-8")
 		self.assertIn("hideFirstOnMobile", source)
 		self.assertIn("'d-none d-md-table-cell': hideFirstOnMobile && c === 1", source)
 

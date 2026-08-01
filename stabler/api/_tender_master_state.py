@@ -28,36 +28,36 @@ _ACTIVE = {"sourcing", "priced"}
 
 
 def derive(lot_stages: list[str]) -> str:
-    """Map a parent tender's child-lot funnel stages to one board lane.
+	"""Map a parent tender's child-lot funnel stages to one board lane.
 
-    ``lot_stages``: outputs of `_funnel.classify` for each child lot —
-    seen|go|sourcing|priced|submitted|won|lost.
+	``lot_stages``: outputs of `_funnel.classify` for each child lot —
+	seen|go|sourcing|priced|submitted|won|lost.
 
-    Priority, first match wins:
-      1. no lots at all                          -> Preparation
-      2. every lot terminal (won/lost)            -> Completed
-      3. some terminal, some not                  -> Partial Result
-      4. no terminal but >=1 submitted            -> Awaiting Result
-      5. >=1 lot sourcing or priced                -> Active
-      6. otherwise (seen/go)                       -> Preparation
+	Priority, first match wins:
+	  1. no lots at all                          -> Preparation
+	  2. every lot terminal (won/lost)            -> Completed
+	  3. some terminal, some not                  -> Partial Result
+	  4. no terminal but >=1 submitted            -> Awaiting Result
+	  5. >=1 lot sourcing or priced                -> Active
+	  6. otherwise (seen/go)                       -> Preparation
 
-    An unknown/malformed stage is NOT ignored — it is treated as a
-    non-terminal, non-submitted, non-active lot, i.e. it degrades toward
-    Preparation rather than inventing progress. So ["won", "zzz"] is a
-    Partial Result (one terminal, one not), while ["zzz"] alone is
-    Preparation (nothing terminal, submitted, or active was recognised).
-    This mirrors `_funnel.classify`'s own rule: when in doubt, undercount.
-    """
-    if not lot_stages:
-        return "Preparation"
+	An unknown/malformed stage is NOT ignored — it is treated as a
+	non-terminal, non-submitted, non-active lot, i.e. it degrades toward
+	Preparation rather than inventing progress. So ["won", "zzz"] is a
+	Partial Result (one terminal, one not), while ["zzz"] alone is
+	Preparation (nothing terminal, submitted, or active was recognised).
+	This mirrors `_funnel.classify`'s own rule: when in doubt, undercount.
+	"""
+	if not lot_stages:
+		return "Preparation"
 
-    terminal_count = sum(1 for stage in lot_stages if stage in _TERMINAL)
-    if terminal_count == len(lot_stages):
-        return "Completed"
-    if terminal_count > 0:
-        return "Partial Result"
-    if any(stage == "submitted" for stage in lot_stages):
-        return "Awaiting Result"
-    if any(stage in _ACTIVE for stage in lot_stages):
-        return "Active"
-    return "Preparation"
+	terminal_count = sum(1 for stage in lot_stages if stage in _TERMINAL)
+	if terminal_count == len(lot_stages):
+		return "Completed"
+	if terminal_count > 0:
+		return "Partial Result"
+	if any(stage == "submitted" for stage in lot_stages):
+		return "Awaiting Result"
+	if any(stage in _ACTIVE for stage in lot_stages):
+		return "Active"
+	return "Preparation"

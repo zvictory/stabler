@@ -34,8 +34,7 @@ def execute():
 		return
 
 	sells_by_size = frappe.db.sql(
-		"SELECT 1 FROM `tabItem` "
-		"WHERE custom_dimension_mode IN ('Linear', 'Area', 'Volume') LIMIT 1"
+		"SELECT 1 FROM `tabItem` WHERE custom_dimension_mode IN ('Linear', 'Area', 'Volume') LIMIT 1"
 	)
 	if sells_by_size:
 		# Item is site-scoped (one site per tenant), so a dimensional item

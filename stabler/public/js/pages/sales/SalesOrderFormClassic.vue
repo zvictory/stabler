@@ -231,7 +231,6 @@ const {
 	saving: actionRunning,
 	loadError,
 	error: actionError,
-	isDirty,
 	isCreate,
 	editable,
 	docstatus,
@@ -592,11 +591,6 @@ function lineStockQty(line) {
 function isOverAvailable(line) {
 	if (!line.item_code || !line.availability) return false;
 	return lineStockQty(line) > Number(line.availability.free || 0);
-}
-
-function availabilityTone(line) {
-	if (!line.availability) return "bg-secondary-lt";
-	return isOverAvailable(line) ? "bg-red-lt" : "bg-green-lt";
 }
 
 const overAvailableRows = computed(() =>
@@ -1099,7 +1093,7 @@ async function closeSalesOrder() {
 				>1 {{ line.uom }} = {{ line.conversion_factor }} {{ line.stock_uom }}</div>
 			</template>
 
-			<template #row-extra="{ line, index }">
+			<template #row-extra="{ line }">
 				<td v-if="!editable" class="align-top text-end font-monospace py-2">
 					<span v-if="Number(line.reserved_qty || 0) > 0" class="badge bg-green-lt">{{ Number(line.reserved_qty).toFixed(2) }}</span>
 					<span v-else class="text-secondary">—</span>

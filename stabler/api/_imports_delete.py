@@ -98,31 +98,41 @@ def _classify_row(doctype: str, row: dict):
 	"""Return a blocker dict, or None when the row is safe to cascade."""
 	if doctype == "Purchase Invoice":
 		return _live_doc(
-			doctype, row, LIVE_PAYABLE,
+			doctype,
+			row,
+			LIVE_PAYABLE,
 			"Purchase Invoice {name} is not cancelled — a live payable sits on the ledger. Cancel the invoice first.",
 		)
 	if doctype == "Payment Entry":
 		return _live_doc(
-			doctype, row, LIVE_PAYMENT,
+			doctype,
+			row,
+			LIVE_PAYMENT,
 			"Payment Entry {name} is not cancelled — money is already booked against this document. Cancel the payment first.",
 		)
 	if doctype == "Landed Cost Voucher":
 		return _live_doc(
-			doctype, row, LANDED_COST,
+			doctype,
+			row,
+			LANDED_COST,
 			"Landed Cost Voucher {name} is not cancelled — landed cost is spread over stock. Cancel it first.",
 		)
 	if doctype == "GRN Checklist":
 		return _grn_bucket(row)
 	if doctype == "Customs Declaration":
 		return _blocker(
-			doctype, row.get("name"), CUSTOMS_DECLARED,
+			doctype,
+			row.get("name"),
+			CUSTOMS_DECLARED,
 			"Customs Declaration {name} exists — an official declaration is never deleted from here.".format(
 				name=row.get("name")
 			),
 		)
 	if doctype == "Proforma Invoice":
 		return _blocker(
-			doctype, row.get("name"), LINKED_PROFORMA,
+			doctype,
+			row.get("name"),
+			LINKED_PROFORMA,
 			"Proforma Invoice {name} is still superseded by this invoice — unlink the proforma first.".format(
 				name=row.get("name")
 			),
@@ -130,7 +140,9 @@ def _classify_row(doctype: str, row: dict):
 	if doctype in _CASCADE:
 		return None
 	return _blocker(
-		doctype, row.get("name"), LINKED_DOCUMENT,
+		doctype,
+		row.get("name"),
+		LINKED_DOCUMENT,
 		"{doctype} {name} is linked and has no deletion rule — resolve it manually first.".format(
 			doctype=doctype, name=row.get("name")
 		),

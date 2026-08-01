@@ -118,7 +118,11 @@ class TestTenderViewGates(unittest.TestCase):
 
 	def test_any_view_helper_keeps_the_single_view_guards(self):
 		body = _function_body(self.source, "_require_any_tender_view")
-		for guard in ("_require_company(company)", "_require_tender(company)", "_assert_company_scope(company)"):
+		for guard in (
+			"_require_company(company)",
+			"_require_tender(company)",
+			"_assert_company_scope(company)",
+		):
 			self.assertIn(
 				guard,
 				body,

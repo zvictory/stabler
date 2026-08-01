@@ -23,7 +23,18 @@ packages = []
 
 [tool.ruff]
 line-length = 110
-target-version = "py314"
+# DELIBERATELY one minor BELOW `requires-python`. At py314 the formatter emits
+# PEP 758 unparenthesized excepts -- `except (A, B):` becomes `except A, B:`.
+# 517facd ("ruff format the whole tree") did exactly that in 46 files and
+# 52360a6 had to repair 84 sites by hand; nothing stopped it recurring, so
+# `make check` stayed red on formatting and every `make fix` wanted to mangle
+# them again. Prod and the local bench are both 3.14.3, so that syntax would in
+# fact run -- this pin is not about the current runtime. It is about the emitted
+# syntax staying loadable on any 3.14-earlier interpreter (a tenant bench on an
+# older python, a scratch venv, `python -m compileall` under a system python),
+# which is cheap insurance for zero benefit lost. Raise it only together with a
+# deliberate tree-wide reformat.
+target-version = "py313"
 
 [tool.ruff.lint]
 select = ["F", "E", "W", "I", "UP", "B", "RUF"]

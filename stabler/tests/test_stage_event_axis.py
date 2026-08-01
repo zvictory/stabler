@@ -32,6 +32,19 @@ PATCHES = (ROOT / "patches.txt").read_text(encoding="utf-8")
 FIELDS = {f["fieldname"]: f for f in DOCTYPE["fields"]}
 
 
+def _sql_text(src: str) -> str:
+	"""Kaynaktaki SQL'i satır kırılmasından bağımsız oku.
+
+	Eski hâli `'status' " "WHERE` dikişine, yani SQL'in İKİ satıra bölünmüş
+	olmasına çakılıydı. Biçimlendirici o örtük string birleşimini tek satıra
+	toplayınca (110 karaktere sığıyor) test kırmızıya döndü — oysa yamanın
+	davranışı zerre değişmemişti. Testin sorusu "hangi SQL yazılıyor", "kaç
+	satıra bölünmüş" değil; o yüzden boşlukları ve birleşim dikişlerini eleyip
+	iki biçimi de aynı metne indiriyoruz.
+	"""
+	return re.sub(r'"\s*"', "", re.sub(r"\s+", " ", src))
+
+
 class TestTheAxisIsRecorded(unittest.TestCase):
 	def test_the_field_exists_and_is_required(self):
 		self.assertIn("axis", FIELDS)
@@ -109,11 +122,11 @@ class TestValidationMovedIntoTheController(unittest.TestCase):
 
 
 class TestTheTenderMoveWritesHistory(unittest.TestCase):
-	MOVE = TENDER[TENDER.index("def _record_tender_stage_event"):]
+	MOVE = TENDER[TENDER.index("def _record_tender_stage_event") :]
 	MOVE = MOVE[: MOVE.index("\n# ---")]
 
 	def test_the_event_is_written_on_a_real_move_only(self):
-		block = TENDER[TENDER.index("def move_deal_stage"):]
+		block = TENDER[TENDER.index("def move_deal_stage") :]
 		block = block[: block.index("\n# ---")]
 		self.assertIn("if previous != stage:", block)
 		self.assertIn("_record_tender_stage_event(name, company, previous, stage, moved_at)", block)
@@ -121,7 +134,7 @@ class TestTheTenderMoveWritesHistory(unittest.TestCase):
 	def test_the_stamp_and_the_event_share_one_timestamp(self):
 		"""İki ayrı `now()` çağrısı, damga ile geçmişi milisaniyelerle
 		ayrıştırır ve "aşamaya girdiği an" iki farklı değer olur."""
-		block = TENDER[TENDER.index("def move_deal_stage"):]
+		block = TENDER[TENDER.index("def move_deal_stage") :]
 		block = block[: block.index("\n# ---")]
 		self.assertEqual(block.count("frappe.utils.now()"), 1)
 		self.assertIn("moved_at = frappe.utils.now()", block)
@@ -150,7 +163,7 @@ class TestExistingHistoryIsClaimedByTheStatusAxis(unittest.TestCase):
 		"""Bu yamadan önce o logu yazan tek yer statü hattıydı. NULL bırakmak,
 		eksene göre filtreleyen bir ekranda geçmişin tamamını sessizce
 		kaybettirirdi — hata değil, boş bir zaman çizelgesi."""
-		self.assertRegex(PATCH, r"SET axis = 'status' \"\s*\n\s*\"WHERE axis IS NULL OR axis = ''")
+		self.assertIn("SET axis = 'status' WHERE axis IS NULL OR axis = ''", _sql_text(PATCH))
 
 	def test_it_is_pre_sync_safe(self):
 		self.assertIn('has_column("CRM Stage Event", "axis")', PATCH)

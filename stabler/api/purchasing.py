@@ -238,8 +238,12 @@ def _attach_ledger_sources(company: str, rows: list[dict]) -> None:
 	if not rows:
 		return
 
-	pinv_names = {r["voucher_no"] for r in rows if r.get("voucher_type") == "Purchase Invoice" and r.get("voucher_no")}
-	pe_names = {r["voucher_no"] for r in rows if r.get("voucher_type") == "Payment Entry" and r.get("voucher_no")}
+	pinv_names = {
+		r["voucher_no"] for r in rows if r.get("voucher_type") == "Purchase Invoice" and r.get("voucher_no")
+	}
+	pe_names = {
+		r["voucher_no"] for r in rows if r.get("voucher_type") == "Payment Entry" and r.get("voucher_no")
+	}
 
 	# Purchase Invoice → Commercial Invoice (imports-gated; the route itself is
 	# module-guarded, so a link there would dead-end for a non-imports tenant).
@@ -2522,4 +2526,3 @@ def list_supplier_quotations(supplier: str, company: str) -> list[dict]:
 			s["deal_label"] = deal_map.get(deal_id, deal_id)
 
 	return sqs
-

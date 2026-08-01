@@ -56,18 +56,26 @@ class TestEmptyIsNotUnknown(unittest.TestCase):
 
 class TestTheStateFollowsTheThreshold(unittest.TestCase):
 	def test_well_inside_the_limit(self):
-		self.assertEqual(rows_for([{"stage": "sourcing", "entered_at": "2026-07-29"}])["sourcing"]["state"], "in")
+		self.assertEqual(
+			rows_for([{"stage": "sourcing", "entered_at": "2026-07-29"}])["sourcing"]["state"], "in"
+		)
 
 	def test_the_last_quarter_is_the_edge(self):
-		self.assertEqual(rows_for([{"stage": "sourcing", "entered_at": "2026-07-21"}])["sourcing"]["state"], "edge")
+		self.assertEqual(
+			rows_for([{"stage": "sourcing", "entered_at": "2026-07-21"}])["sourcing"]["state"], "edge"
+		)
 
 	def test_past_the_limit_is_out(self):
-		self.assertEqual(rows_for([{"stage": "sourcing", "entered_at": "2026-07-15"}])["sourcing"]["state"], "out")
+		self.assertEqual(
+			rows_for([{"stage": "sourcing", "entered_at": "2026-07-15"}])["sourcing"]["state"], "out"
+		)
 
 	def test_a_short_threshold_still_gets_an_edge(self):
 		"""3 günlük eşikte tam çeyrek 0 gün eder; taban olmasa kısa adımlar
 		hiç uyarmadan kırmızıya atlardı — `_tender_sla` ile aynı taban."""
-		self.assertEqual(rows_for([{"stage": "priced", "entered_at": "2026-07-30"}])["priced"]["state"], "edge")
+		self.assertEqual(
+			rows_for([{"stage": "priced", "entered_at": "2026-07-30"}])["priced"]["state"], "edge"
+		)
 
 	def test_a_tenant_override_moves_the_line(self):
 		deals = [{"stage": "sourcing", "entered_at": "2026-07-15"}]
@@ -105,9 +113,7 @@ class TestTheBottleneckIsTheWorstRatioNotTheWorstGap(unittest.TestCase):
 		self.assertIsNone(flow.bottleneck(rows))
 
 	def test_a_stage_without_a_threshold_can_never_be_the_bottleneck(self):
-		rows = flow.step_rows(
-			[{"stage": "seen", "entered_at": "2020-01-01"}], "2026-08-01", {"seen": 0}
-		)
+		rows = flow.step_rows([{"stage": "seen", "entered_at": "2020-01-01"}], "2026-08-01", {"seen": 0})
 		self.assertIsNone(flow.bottleneck(rows))
 
 

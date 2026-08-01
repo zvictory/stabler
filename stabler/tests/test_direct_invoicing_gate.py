@@ -18,13 +18,13 @@ ROOT = Path(__file__).resolve().parents[1]
 SALES = (ROOT / "api/sales.py").read_text(encoding="utf-8")
 SETTINGS = (ROOT / "stabler/doctype/stabler_settings/stabler_settings.py").read_text(encoding="utf-8")
 ORG = (ROOT / "api/organization.py").read_text(encoding="utf-8")
-MODULES_JSON = (
-	ROOT / "stabler/doctype/stabler_company_modules/stabler_company_modules.json"
-).read_text(encoding="utf-8")
+MODULES_JSON = (ROOT / "stabler/doctype/stabler_company_modules/stabler_company_modules.json").read_text(
+	encoding="utf-8"
+)
 PATCHES = (ROOT / "patches.txt").read_text(encoding="utf-8")
 PATCH = (ROOT / "patches/v62_enable_direct_invoicing.py").read_text(encoding="utf-8")
 
-_RAW_GATE = SALES[SALES.index("def create_direct_sales_invoice"):][:2600]
+_RAW_GATE = SALES[SALES.index("def create_direct_sales_invoice") :][:2600]
 
 
 def _code_only(src: str) -> str:
@@ -59,7 +59,7 @@ class TestTheNameRuleIsGone(unittest.TestCase):
 		self.assertNotIn('"MSA"', GATE, "kapı hâlâ şirket adına bakıyor")
 		self.assertNotRegex(
 			GATE,
-			r'company[^\n]*\.upper\(\)',
+			r"company[^\n]*\.upper\(\)",
 			"kapı hâlâ şirket adını büyütüp karşılaştırıyor",
 		)
 
@@ -88,14 +88,14 @@ class TestTheGateReadsTheTenantFlag(unittest.TestCase):
 	def test_the_key_exists_in_the_defaults(self):
 		"""Anahtar DEFAULT_MODULE_ENABLED'da yoksa module_map_for onu hiç
 		döndürmez ve kapı herkese kapanır."""
-		block = SETTINGS[SETTINGS.index("DEFAULT_MODULE_ENABLED = {"):]
+		block = SETTINGS[SETTINGS.index("DEFAULT_MODULE_ENABLED = {") :]
 		block = block[: block.index("\n}")]
 		self.assertRegex(block, r'"direct_invoicing":\s*(False|0)\b')
 
 	def test_the_default_is_off(self):
 		"""Fatura normalde SO'dan çıkar. Varsayılan açık olsaydı yeni bir
 		kiracı kuralı hiç istemeden atlardı."""
-		block = SETTINGS[SETTINGS.index("DEFAULT_MODULE_ENABLED = {"):]
+		block = SETTINGS[SETTINGS.index("DEFAULT_MODULE_ENABLED = {") :]
 		block = block[: block.index("\n}")]
 		self.assertIn('"direct_invoicing": False', block)
 

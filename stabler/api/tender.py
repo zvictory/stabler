@@ -650,7 +650,9 @@ def po_control_board(deal: str) -> dict:
 	lanes = []
 	for key, label in lanes_def:
 		lc = [c for c in cards if c["lane"] == key]
-		lanes.append({"key": key, "label": label, "count": len(lc), "total": sum(c["base_amount"] for c in lc)})
+		lanes.append(
+			{"key": key, "label": label, "count": len(lc), "total": sum(c["base_amount"] for c in lc)}
+		)
 
 	return {
 		"deal": deal,
@@ -901,9 +903,7 @@ def _linked_document_count(
 			"posting_date",
 		)
 	)
-	return sum(
-		1 for row in rows if _in_dashboard_period(row.get("posting_date"), start, end)
-	)
+	return sum(1 for row in rows if _in_dashboard_period(row.get("posting_date"), start, end))
 
 
 def _tender_finance_chain(
@@ -2241,9 +2241,7 @@ def tender_funnel(company: str, days: int = 90):
 		if not frappe.has_permission("CRM Deal", "read", doc=deal):
 			continue
 		intake = _read_intake(deal)
-		has_pricing = bool(
-			has_pricing_col and frappe.db.get_value("CRM Deal", deal, "custom_bid_pricing")
-		)
+		has_pricing = bool(has_pricing_col and frappe.db.get_value("CRM Deal", deal, "custom_bid_pricing"))
 		stage = _funnel.classify(
 			{
 				"go_no_go": intake.get("go_no_go"),
@@ -2275,18 +2273,20 @@ def tender_funnel(company: str, days: int = 90):
 		# number and its list can never disagree. Terminal stages only list
 		# in-window deals — exactly what the box counted.
 		if stage not in ("won", "lost") or in_window:
-			stage_rows.setdefault(stage, []).append({
-				"deal": deal,
-				"label": _deal_label(deal),
-				"lot_no": intake.get("lot_no") or "",
-				"buyer": intake.get("buyer") or "",
-				"bid_deadline": intake.get("bid_deadline") or "",
-				"delivery_deadline": intake.get("delivery_deadline") or "",
-				"sq_count": sq_counts.get(deal, 0),
-				"urgent": urgent,
-				"won_price": flt(intake.get("won_price")) or 0,
-				"result_at": str(intake.get("result_at") or "")[:10],
-			})
+			stage_rows.setdefault(stage, []).append(
+				{
+					"deal": deal,
+					"label": _deal_label(deal),
+					"lot_no": intake.get("lot_no") or "",
+					"buyer": intake.get("buyer") or "",
+					"bid_deadline": intake.get("bid_deadline") or "",
+					"delivery_deadline": intake.get("delivery_deadline") or "",
+					"sq_count": sq_counts.get(deal, 0),
+					"urgent": urgent,
+					"won_price": flt(intake.get("won_price")) or 0,
+					"result_at": str(intake.get("result_at") or "")[:10],
+				}
+			)
 
 	for lst in stage_rows.values():
 		lst.sort(key=lambda r: (not r["urgent"], r["bid_deadline"] or "9999-99-99"))
@@ -2301,20 +2301,30 @@ def tender_funnel(company: str, days: int = 90):
 		for r in frappe.get_all(
 			"Sales Order",
 			filters={"company": company, "custom_crm_deal": ["is", "set"], "docstatus": 1},
-			fields=["name", "custom_crm_deal", "custom_board_stage", "customer",
-				"rounded_total", "grand_total", "delivery_date", "currency"],
+			fields=[
+				"name",
+				"custom_crm_deal",
+				"custom_board_stage",
+				"customer",
+				"rounded_total",
+				"grand_total",
+				"delivery_date",
+				"currency",
+			],
 			limit_page_length=0,
 		):
 			so_stages.append(r.custom_board_stage)
-			so_rows.setdefault(_funnel.bucket_so(r.custom_board_stage), []).append({
-				"so": r.name,
-				"deal": r.custom_crm_deal,
-				"stage": r.custom_board_stage or "New",
-				"customer": r.customer,
-				"total": flt(r.rounded_total or r.grand_total),
-				"currency": r.currency or "",
-				"delivery_date": str(r.delivery_date) if r.delivery_date else "",
-			})
+			so_rows.setdefault(_funnel.bucket_so(r.custom_board_stage), []).append(
+				{
+					"so": r.name,
+					"deal": r.custom_crm_deal,
+					"stage": r.custom_board_stage or "New",
+					"customer": r.customer,
+					"total": flt(r.rounded_total or r.grand_total),
+					"currency": r.currency or "",
+					"delivery_date": str(r.delivery_date) if r.delivery_date else "",
+				}
+			)
 	out["so"] = _funnel.summarise_so(so_stages)
 	out["so_rows"] = so_rows
 	out["days"] = days
@@ -2354,7 +2364,9 @@ def crm_board(company: str) -> dict:
 
 	deal_names = _tender_deal_names(company)
 	if not deal_names and frappe.db.exists("DocType", "CRM Deal"):
-		for r in frappe.get_list("CRM Deal", filters={"company": company}, fields=["name"], limit_page_length=5000):
+		for r in frappe.get_list(
+			"CRM Deal", filters={"company": company}, fields=["name"], limit_page_length=5000
+		):
 			deal_names.add(r["name"])
 
 	if not deal_names:
@@ -2380,7 +2392,9 @@ def crm_board(company: str) -> dict:
 		all_suppliers = list({s for supps in suppliers_by_deal.values() for s in supps})
 		supp_country = {}
 		if all_suppliers:
-			for s in frappe.get_all("Supplier", filters={"name": ["in", all_suppliers]}, fields=["name", "country"]):
+			for s in frappe.get_all(
+				"Supplier", filters={"name": ["in", all_suppliers]}, fields=["name", "country"]
+			):
 				supp_country[s["name"]] = s.get("country") or ""
 		for d, supps in suppliers_by_deal.items():
 			c_set = {supp_country[s] for s in supps if supp_country.get(s)}
@@ -2399,13 +2413,15 @@ def crm_board(company: str) -> dict:
 		has_pricing = bool(has_pricing_col and frappe.db.get_value("CRM Deal", deal, "custom_bid_pricing"))
 
 		custom_stage = frappe.db.get_value("CRM Deal", deal, "custom_tender_stage") if has_stage_col else None
-		classified = _funnel.classify({
-			"go_no_go": intake.get("go_no_go"),
-			"result": intake.get("result"),
-			"submitted": _has_submission_evidence(intake),
-			"has_pricing": has_pricing,
-			"sq_count": sq_counts.get(deal, 0),
-		})
+		classified = _funnel.classify(
+			{
+				"go_no_go": intake.get("go_no_go"),
+				"result": intake.get("result"),
+				"submitted": _has_submission_evidence(intake),
+				"has_pricing": has_pricing,
+				"sq_count": sq_counts.get(deal, 0),
+			}
+		)
 		eff_stage = custom_stage or classified
 
 		owner = frappe.db.get_value("CRM Deal", deal, "owner") or ""
@@ -2421,27 +2437,33 @@ def crm_board(company: str) -> dict:
 			value = flt(frappe.db.get_value("CRM Deal", deal, "annual_revenue"))
 
 		docs = intake.get("documents") or []
-		doc_progress = round((len([d for d in docs if d.get("status") == "ready"]) / max(1, len(docs))) * 100) if docs else 50
+		doc_progress = (
+			round((len([d for d in docs if d.get("status") == "ready"]) / max(1, len(docs))) * 100)
+			if docs
+			else 50
+		)
 
-		cards.append({
-			"name": deal,
-			"label": _deal_label(deal),
-			"organization": frappe.db.get_value("CRM Deal", deal, "organization") or "",
-			"lead_name": frappe.db.get_value("CRM Deal", deal, "lead_name") or "",
-			"stage": eff_stage,
-			"contract_value": value,
-			"currency": base_ccy,
-			"sq_count": sq_counts.get(deal, 0),
-			"country_count": country_counts.get(deal, 0),
-			"has_min_5": sq_counts.get(deal, 0) >= 5,
-			"has_2_countries": country_counts.get(deal, 0) >= 2,
-			"deadline": str(deadline) if deadline else "",
-			"risk": risk,
-			"doc_progress": doc_progress,
-			"owner": owner,
-			"owner_name": owner_name,
-			"owner_initials": owner_initials,
-		})
+		cards.append(
+			{
+				"name": deal,
+				"label": _deal_label(deal),
+				"organization": frappe.db.get_value("CRM Deal", deal, "organization") or "",
+				"lead_name": frappe.db.get_value("CRM Deal", deal, "lead_name") or "",
+				"stage": eff_stage,
+				"contract_value": value,
+				"currency": base_ccy,
+				"sq_count": sq_counts.get(deal, 0),
+				"country_count": country_counts.get(deal, 0),
+				"has_min_5": sq_counts.get(deal, 0) >= 5,
+				"has_2_countries": country_counts.get(deal, 0) >= 2,
+				"deadline": str(deadline) if deadline else "",
+				"risk": risk,
+				"doc_progress": doc_progress,
+				"owner": owner,
+				"owner_name": owner_name,
+				"owner_initials": owner_initials,
+			}
+		)
 
 	return {"lanes": lanes, "cards": cards}
 
@@ -2539,7 +2561,13 @@ def move_deal_stage(name: str, stage: str) -> dict:
 			intake["go_no_go"] = "go"
 		elif stage == "submitted":
 			intake["submitted_at"] = str(moved_at)
-		frappe.db.set_value("CRM Deal", name, "custom_tender_intake", json.dumps(intake, ensure_ascii=False), update_modified=False)
+		frappe.db.set_value(
+			"CRM Deal",
+			name,
+			"custom_tender_intake",
+			json.dumps(intake, ensure_ascii=False),
+			update_modified=False,
+		)
 
 	frappe.db.commit()
 	return {"name": name, "stage": stage}
@@ -2989,12 +3017,8 @@ def tender_dashboard(
 		start=start,
 		end=end,
 	)
-	execution["purchase_invoices"] = sum(
-		execution["invoice_status"]["purchase_invoices"].values()
-	)
-	execution["sales_invoices"] = sum(
-		execution["invoice_status"]["sales_invoices"].values()
-	)
+	execution["purchase_invoices"] = sum(execution["invoice_status"]["purchase_invoices"].values())
+	execution["sales_invoices"] = sum(execution["invoice_status"]["sales_invoices"].values())
 
 	attention.sort(key=lambda item: (0 if item["severity"] == "risk" else 1, item.get("days_left", 9999)))
 	out = {

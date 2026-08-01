@@ -142,9 +142,6 @@ const reserveRows = computed(() =>
 			};
 		})
 );
-const allReservable = computed(
-	() => reserveRows.value.length > 0 && reserveRows.value.every((r) => r.known && !r.short)
-);
 
 function blankLine(defaultWh = null) {
 	return {
@@ -421,7 +418,6 @@ const equivalentAmount = computed(() => {
 	return null;
 });
 
-const baseGrandTotal = computed(() => equivalentAmount.value?.amount || 0);
 const totalDiscount = computed(() => subtotal.value - grandTotal.value);
 
 async function fetchExchangeRate() {
@@ -760,11 +756,6 @@ function lineStockQty(line) {
 function isOverAvailable(line) {
 	if (!line.item_code || !line.availability) return false;
 	return lineStockQty(line) > Number(line.availability.free || 0);
-}
-
-function availabilityTone(line) {
-	if (!line.availability) return "bg-secondary-lt";
-	return isOverAvailable(line) ? "bg-red-lt" : "bg-green-lt";
 }
 
 const overAvailableRows = computed(() =>
@@ -1310,7 +1301,7 @@ async function closeSalesOrder() {
 				>1 {{ line.uom }} = {{ line.conversion_factor }} {{ line.stock_uom }}</div>
 			</template>
 
-			<template #row-extra="{ line, index }">
+			<template #row-extra="{ line }">
 				<td v-if="!editable" class="align-top text-end font-monospace py-2">
 					<span v-if="Number(line.reserved_qty || 0) > 0" class="badge bg-green-lt">{{ Number(line.reserved_qty).toFixed(2) }}</span>
 					<span v-else class="text-secondary">—</span>

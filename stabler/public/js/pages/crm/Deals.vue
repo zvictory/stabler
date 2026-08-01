@@ -4,7 +4,7 @@ import { storeToRefs } from "pinia";
 import { useRouter } from "vue-router";
 import { useSession } from "../../stores/session.js";
 import { call } from "../../api/client.js";
-import { formatDate, formatDateTime } from "../../composables/date.js";
+import { formatDate } from "../../composables/date.js";
 import { formatMoney } from "../../composables/money.js";
 import { t } from "../../composables/i18n.js";
 import { useConfirm } from "../../composables/useConfirm.js";

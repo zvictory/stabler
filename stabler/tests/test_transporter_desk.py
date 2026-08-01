@@ -41,9 +41,7 @@ def _function_source(path: str, name: str) -> str:
 	text = _read(path)
 	tree = ast.parse(text)
 	node = next(
-		n
-		for n in tree.body
-		if isinstance(n, (ast.FunctionDef, ast.AsyncFunctionDef)) and n.name == name
+		n for n in tree.body if isinstance(n, (ast.FunctionDef, ast.AsyncFunctionDef)) and n.name == name
 	)
 	lines = text.splitlines()
 	return "\n".join(lines[node.lineno - 1 : node.end_lineno])

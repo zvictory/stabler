@@ -34,7 +34,7 @@ MODERN = FORMS["SalesOrderFormModern.vue"]
 
 
 def _template(src):
-	return src[src.index("<template>"):]
+	return src[src.index("<template>") :]
 
 
 class TestTheRuleLivesInFxJsAndNowhereElse(unittest.TestCase):
@@ -96,15 +96,11 @@ class TestAnUnknownRateIsNeverSilentlyOne(unittest.TestCase):
 		for name, src in FORMS.items():
 			with self.subTest(form=name):
 				self.assertNotIn("exchangeRate.value || 1", src)
-				self.assertRegex(
-					src, r"conversion_rate:[^\n]*\n(?:[^\n]*\n)?[^\n]*exchangeRate\.value > 0"
-				)
+				self.assertRegex(src, r"conversion_rate:[^\n]*\n(?:[^\n]*\n)?[^\n]*exchangeRate\.value > 0")
 
 	def test_a_failed_rate_lookup_leaves_it_unknown(self):
-		body = re.search(
-			r"async function fetchExchangeRate\(\).*?\n}\n", CLASSIC, re.S
-		).group(0)
-		catch = body[body.index("} catch"):]
+		body = re.search(r"async function fetchExchangeRate\(\).*?\n}\n", CLASSIC, re.S).group(0)
+		catch = body[body.index("} catch") :]
 		self.assertIn("exchangeRate.value = null;", catch)
 		self.assertNotIn("= 1", catch)
 
@@ -134,7 +130,7 @@ class TestASavedOrderShowsTheRateItWasBookedAt(unittest.TestCase):
 	def test_the_modern_variant_prefers_the_documents_own_rate(self):
 		"""Modern varyant aynı hatayı başka bir yoldan kapatıyor: canlı kur
 		ayrı bir ref'te durur, `activeRate` belgeninkini önceler."""
-		block = MODERN[MODERN.index("const activeRate = computed("):]
+		block = MODERN[MODERN.index("const activeRate = computed(") :]
 		block = block[: block.index("\n});")]
 		self.assertIn("if (isForeignCurrency.value && docRate > 0)", block)
 

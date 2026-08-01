@@ -16,7 +16,7 @@ from pathlib import Path
 
 ROOT = Path(__file__).resolve().parents[2]
 SOURCE = (ROOT / "stabler/public/js/pages/tender/OperationsDesk.vue").read_text(encoding="utf-8")
-TEMPLATE = SOURCE[SOURCE.index("<template>"): SOURCE.index("<script setup>")]
+TEMPLATE = SOURCE[SOURCE.index("<template>") : SOURCE.index("<script setup>")]
 
 
 class TestDesignLayerIsSwitchedOn(unittest.TestCase):
@@ -132,7 +132,7 @@ class TestSeverityIsNotColourOnly(unittest.TestCase):
 	karşılığı da var."""
 
 	def test_short_codes_exist_for_every_severity(self):
-		block = SOURCE[SOURCE.index("function sevShort"):]
+		block = SOURCE[SOURCE.index("function sevShort") :]
 		block = block[: block.index("}\n\n")]
 		for severity in ("overdue", "today", "soon", "info"):
 			with self.subTest(severity=severity):

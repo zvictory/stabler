@@ -44,7 +44,7 @@ class TestTheSwitcherPicksOnTheFlag(unittest.TestCase):
 		"""Sarmalayıcıya form mantığı sızarsa iki varyant sessizce üçüncü bir
 		davranış paylaşmaya başlar."""
 		self.assertLess(len(SWITCH.splitlines()), 40)
-		code = SWITCH[SWITCH.index("*/"):]  # başlıktaki gerekçe yorumunu say(ma)
+		code = SWITCH[SWITCH.index("*/") :]  # başlıktaki gerekçe yorumunu say(ma)
 		for token in ("useDocumentForm", "call(", "MoneyInput"):
 			with self.subTest(token=token):
 				self.assertNotIn(token, code)

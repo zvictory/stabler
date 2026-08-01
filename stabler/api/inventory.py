@@ -26,7 +26,9 @@ _ITEM_CONTEXT_FILTER = {
 }
 
 
-def _item_group_condition(item_group: str, include_descendants: int, params: dict, col: str = "item_group") -> str:
+def _item_group_condition(
+	item_group: str, include_descendants: int, params: dict, col: str = "item_group"
+) -> str:
 	"""WHERE fragment for an item_group filter.
 
 	When ``include_descendants`` is set and *item_group* is a group node, matches
@@ -753,7 +755,9 @@ def list_item_group_tree(company: str, with_counts: int = 1):
 
 
 @frappe.whitelist()
-def create_item_group(item_group_name: str, company: str, parent_item_group: str | None = None, is_group: int = 0):
+def create_item_group(
+	item_group_name: str, company: str, parent_item_group: str | None = None, is_group: int = 0
+):
 	from stabler.api.imports import _assert_inventory_access
 
 	_assert_inventory_access(company)

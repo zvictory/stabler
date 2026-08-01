@@ -21,9 +21,9 @@ from pathlib import Path
 ROOT = Path(__file__).resolve().parents[1]
 SETTINGS = (ROOT / "stabler/doctype/stabler_settings/stabler_settings.py").read_text(encoding="utf-8")
 ORG = (ROOT / "api/organization.py").read_text(encoding="utf-8")
-MODULES_JSON = (
-	ROOT / "stabler/doctype/stabler_company_modules/stabler_company_modules.json"
-).read_text(encoding="utf-8")
+MODULES_JSON = (ROOT / "stabler/doctype/stabler_company_modules/stabler_company_modules.json").read_text(
+	encoding="utf-8"
+)
 PATCHES = (ROOT / "patches.txt").read_text(encoding="utf-8")
 PATCH = (ROOT / "patches/v63_enable_dimensional_lines.py").read_text(encoding="utf-8")
 HOOK = (ROOT / "api/dimensions_hook.py").read_text(encoding="utf-8")
@@ -67,7 +67,7 @@ class TestTheColumnCannotBeHiddenWhenALineNeedsIt(unittest.TestCase):
 		self.assertRegex(_squash(FORM), r':disabled="dimsForced"')
 		self.assertRegex(
 			_squash(FORM),
-			r'const dimsForced = computed\(\(\) => \(form\.value\?\.items \|\| \[\]\)'
+			r"const dimsForced = computed\(\(\) => \(form\.value\?\.items \|\| \[\]\)"
 			r'\.some\(\(l\) => \["Linear", "Area", "Volume"\]\.includes\(l\.dimension_mode\)\)',
 		)
 
@@ -77,12 +77,14 @@ class TestTheColumnCannotBeHiddenWhenALineNeedsIt(unittest.TestCase):
 
 class TestTheTenantPreferenceIsWired(unittest.TestCase):
 	def test_the_form_seeds_the_toggle_from_the_tenant_flag(self):
-		self.assertRegex(_squash(FORM), r'const showDims = ref\(Boolean\(session\.modules\?\.dimensional_lines\)\)')
+		self.assertRegex(
+			_squash(FORM), r"const showDims = ref\(Boolean\(session\.modules\?\.dimensional_lines\)\)"
+		)
 
 	def test_the_key_exists_in_the_defaults(self):
 		"""Anahtar DEFAULT_MODULE_ENABLED'da yoksa module_map_for onu hiç
 		döndürmez ve tercih her kiracıda kapalı görünür."""
-		block = SETTINGS[SETTINGS.index("DEFAULT_MODULE_ENABLED = {"):]
+		block = SETTINGS[SETTINGS.index("DEFAULT_MODULE_ENABLED = {") :]
 		block = block[: block.index("\n}")]
 		self.assertIn('"dimensional_lines": False', block)
 
@@ -100,9 +102,7 @@ class TestTheTenantPreferenceIsWired(unittest.TestCase):
 		import json
 
 		doc = json.loads(MODULES_JSON)
-		field = next(
-			f for f in doc["fields"] if f["fieldname"] == "enable_dimensional_lines"
-		)
+		field = next(f for f in doc["fields"] if f["fieldname"] == "enable_dimensional_lines")
 		self.assertIn("DISPLAY preference only", field.get("description", ""))
 
 
@@ -113,7 +113,7 @@ class TestTheFlagIsActuallyTogglable(unittest.TestCase):
 	FLAGS = ("dimensional_lines", "direct_invoicing")
 
 	def test_the_update_api_accepts_the_flag(self):
-		fn = ORG[ORG.index("def update_company_modules("):]
+		fn = ORG[ORG.index("def update_company_modules(") :]
 		fn = fn[: fn.index("\n@frappe.whitelist()")]
 		for flag in self.FLAGS:
 			with self.subTest(flag=flag):

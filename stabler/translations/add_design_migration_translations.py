@@ -160,7 +160,6 @@ ROWS = {
 		"Taklif · yetkazib berish · muddat",
 		"Таклиф · етказиб бериш · муддат",
 	),
-
 	# ══ Direktör panosu ═══════════════════════════════════════════════
 	"Every lot is counted in exactly one stage": (
 		"Her lot tek bir aşamada sayılır",
@@ -218,8 +217,10 @@ ROWS = {
 		"тендернинг тарихи тасдиқланмаган — рақам бор, лекин ортидаги ёзув тўлиқ эмас.",
 	),
 	"Linked ERP documents": (
-		"Bağlı ERP belgeleri", "Связанные документы ERP",
-		"Bog'langan ERP hujjatlari", "Боғланган ERP ҳужжатлари",
+		"Bağlı ERP belgeleri",
+		"Связанные документы ERP",
+		"Bog'langan ERP hujjatlari",
+		"Боғланган ERP ҳужжатлари",
 	),
 	"Linked directly to ERP records": (
 		"Doğrudan ERP kayıtlarına bağlı",
@@ -228,7 +229,6 @@ ROWS = {
 		"Тўғридан-тўғри ERP ёзувларига боғланган",
 	),
 	"tenders": ("tender", "тендеров", "tender", "тендер"),
-
 	# ══ Tender hattı ve dönüşüm hunisi (TenderFunnel) ══════════════════
 	"Execution": ("İcra", "Исполнение", "Ijro", "Ижро"),
 	"active contracts": ("aktif sözleşme", "активных контрактов", "faol shartnoma", "фаол шартнома"),
@@ -239,16 +239,25 @@ ROWS = {
 		"етказиб бериш ёки йиғиш давом этмоқда",
 	),
 	"lots": ("lot", "лотов", "lot", "лот"),
-	"Conversion funnel": ("Dönüşüm hunisi", "Воронка конверсии", "Konversiya voronkasi", "Конверсия воронкаси"),
+	"Conversion funnel": (
+		"Dönüşüm hunisi",
+		"Воронка конверсии",
+		"Konversiya voronkasi",
+		"Конверсия воронкаси",
+	),
 	"conversion": ("geçiş", "конверсия", "konversiya", "конверсия"),
 	"resolved": ("sonuçlanan", "завершено", "yakunlangan", "якунланган"),
 	"Where we lose them": (
-		"Nerede kaybediyoruz", "Где мы их теряем",
-		"Ularni qayerda yo'qotamiz", "Уларни қаерда йўқотамиз",
+		"Nerede kaybediyoruz",
+		"Где мы их теряем",
+		"Ularni qayerda yo'qotamiz",
+		"Уларни қаерда йўқотамиз",
 	),
 	"Reading the funnel": (
-		"Huninin okuması", "Чтение воронки",
-		"Voronkaning o'qilishi", "Воронканинг ўқилиши",
+		"Huninin okuması",
+		"Чтение воронки",
+		"Voronkaning o'qilishi",
+		"Воронканинг ўқилиши",
 	),
 	"No stage lost a lot in this window.": (
 		"Bu pencerede hiçbir aşama lot kaybetmedi.",
@@ -283,8 +292,10 @@ ROWS = {
 	# ══ Login ekranı ══════════════════════════════════════════════════
 	"Sign in": ("Oturum aç", "Вход", "Kirish", "Кириш"),
 	"Sign in to your account": (
-		"Hesabınıza girin", "Войдите в аккаунт",
-		"Hisobingizga kiring", "Ҳисобингизга киринг",
+		"Hesabınıza girin",
+		"Войдите в аккаунт",
+		"Hisobingizga kiring",
+		"Ҳисобингизга киринг",
 	),
 	"Signing in…": ("Giriş yapılıyor…", "Выполняется вход…", "Kirilmoqda…", "Кирилмоқда…"),
 	"No account? Ask your system administrator for an invite.": (
@@ -294,21 +305,27 @@ ROWS = {
 		"Ҳисобингиз йўқ бўлса, тизим администраторидан таклиф сўранг.",
 	),
 	"Username or Email": (
-		"Kullanıcı adı veya e-posta", "Имя пользователя или e-mail",
-		"Foydalanuvchi nomi yoki e-pochta", "Фойдаланувчи номи ёки е-почта",
+		"Kullanıcı adı veya e-posta",
+		"Имя пользователя или e-mail",
+		"Foydalanuvchi nomi yoki e-pochta",
+		"Фойдаланувчи номи ёки е-почта",
 	),
 	"Password": ("Şifre", "Пароль", "Parol", "Парол"),
 	"name.surname or name@company.uz": (
-		"ad.soyad ya da ad@sirket.uz", "имя.фамилия или имя@company.uz",
-		"ism.familiya yoki ism@kompaniya.uz", "исм.фамилия ёки исм@компания.uz",
+		"ad.soyad ya da ad@sirket.uz",
+		"имя.фамилия или имя@company.uz",
+		"ism.familiya yoki ism@kompaniya.uz",
+		"исм.фамилия ёки исм@компания.uz",
 	),
 	"enter password": ("şifre girin", "введите пароль", "parolni kiriting", "паролни киритинг"),
 	"password entered": ("şifre girildi", "пароль введён", "parol kiritildi", "парол киритилди"),
 	"Show password": ("Şifreyi göster", "Показать пароль", "Parolni ko'rsatish", "Паролни кўрсатиш"),
 	"Hide password": ("Şifreyi gizle", "Скрыть пароль", "Parolni yashirish", "Паролни яшириш"),
 	"Remember me on this device": (
-		"Bu cihazda hatırla", "Запомнить на этом устройстве",
-		"Bu qurilmada eslab qol", "Бу қурилмада эслаб қол",
+		"Bu cihazda hatırla",
+		"Запомнить на этом устройстве",
+		"Bu qurilmada eslab qol",
+		"Бу қурилмада эслаб қол",
 	),
 	"Please enter both username/email and password.": (
 		"Lütfen kullanıcı adı/e-posta ve şifreyi girin.",
@@ -338,12 +355,32 @@ ROWS = {
 		"Buyurtma, ombor, xarid, ishlab chiqarish va hisob bitta ma'lumot modelida ishlaydi. Ekrandagi har bir raqam ortida hujjat bor.",
 		"Буюртма, омбор, харид, ишлаб чиқариш ва ҳисоб битта маълумот моделида ишлайди. Экрандаги ҳар бир рақам ортида ҳужжат бор.",
 	),
-	"One data model": ("Tek veri modeli", "Одна модель данных", "Bitta ma'lumot modeli", "Битта маълумот модели"),
-	"tied to a document": ("belgeye bağlı", "привязано к документу", "hujjatga bog'langan", "ҳужжатга боғланган"),
-	"Role-based access": ("Rol bazlı erişim", "Доступ по ролям", "Rol asosidagi kirish", "Рол асосидаги кириш"),
+	"One data model": (
+		"Tek veri modeli",
+		"Одна модель данных",
+		"Bitta ma'lumot modeli",
+		"Битта маълумот модели",
+	),
+	"tied to a document": (
+		"belgeye bağlı",
+		"привязано к документу",
+		"hujjatga bog'langan",
+		"ҳужжатга боғланган",
+	),
+	"Role-based access": (
+		"Rol bazlı erişim",
+		"Доступ по ролям",
+		"Rol asosidagi kirish",
+		"Рол асосидаги кириш",
+	),
 	"permission checked": ("yetki denetimi", "проверка прав", "ruxsat tekshiruvi", "рухсат текшируви"),
 	"Audit trail": ("Denetim izi", "Журнал аудита", "Audit izi", "Аудит изи"),
-	"every action recorded": ("her işlem kayıtlı", "каждое действие записано", "har amal qayd etilgan", "ҳар амал қайд этилган"),
+	"every action recorded": (
+		"her işlem kayıtlı",
+		"каждое действие записано",
+		"har amal qayd etilgan",
+		"ҳар амал қайд этилган",
+	),
 	"Language": ("Dil", "Язык", "Til", "Тил"),
 	# ══ Satış siparişi · satır düzenleyici ═════════════════════════════
 	"Measurements": ("Ölçüler", "Размеры", "O'lchamlar", "Ўлчамлар"),
@@ -390,7 +427,10 @@ ROWS = {
 	"Discount column": ("İskonto sütunu", "Колонка скидки", "Chegirma ustuni", "Чегирма устуни"),
 	# ══ Ölçü sütunu tercihi (kiracı bayrağı + form toggle) ═════════════
 	"Measurement columns": (
-		"Ölçü sütunları", "Колонки размеров", "O'lcham ustunlari", "Ўлчам устунлари",
+		"Ölçü sütunları",
+		"Колонки размеров",
+		"O'lcham ustunlari",
+		"Ўлчам устунлари",
 	),
 	"A line on this order is priced by size, so the measurement columns cannot be hidden.": (
 		"Bu siparişteki bir kalem ölçüye göre fiyatlanıyor, ölçü sütunları gizlenemez.",
@@ -399,12 +439,16 @@ ROWS = {
 		"Бу буюртмадаги бир қатор ўлчамга қараб нархланади, ўлчам устунларини яшириб бўлмайди.",
 	),
 	"Dimensional Sales Lines": (
-		"Ölçülü satış satırları", "Позиции продаж по размеру",
-		"O'lchamli sotuv qatorlari", "Ўлчамли сотув қаторлари",
+		"Ölçülü satış satırları",
+		"Позиции продаж по размеру",
+		"O'lchamli sotuv qatorlari",
+		"Ўлчамли сотув қаторлари",
 	),
 	"Direct Invoicing": (
-		"Doğrudan faturalama", "Прямое выставление счетов",
-		"To'g'ridan-to'g'ri hisob-faktura", "Тўғридан-тўғри ҳисоб-фактура",
+		"Doğrudan faturalama",
+		"Прямое выставление счетов",
+		"To'g'ridan-to'g'ri hisob-faktura",
+		"Тўғридан-тўғри ҳисоб-фактура",
 	),
 	# ══ Tender CRM · kanban + çekmece ══════════════════════════════════
 	"Deal pipeline": ("Anlaşma hattı", "Воронка сделок", "Bitim quvuri", "Битим қувури"),
@@ -429,21 +473,36 @@ ROWS = {
 	"Pipeline": ("Hat", "Воронка", "Quvur", "Қувур"),
 	"open deals": ("açık anlaşma", "открытых сделок", "ochiq bitim", "очиқ битим"),
 	"Sourcing policy": ("Tedarik politikası", "Политика закупок", "Xarid siyosati", "Харид сиёсати"),
-	"quote set complete": ("teklif seti tam", "комплект предложений собран", "taklif to'plami to'liq", "таклиф тўплами тўлиқ"),
+	"quote set complete": (
+		"teklif seti tam",
+		"комплект предложений собран",
+		"taklif to'plami to'liq",
+		"таклиф тўплами тўлиқ",
+	),
 	"at least 5 quotations from 2 countries": (
 		"en az 2 ülkeden 5 teklif",
 		"минимум 5 предложений из 2 стран",
 		"kamida 2 mamlakatdan 5 taklif",
 		"камида 2 мамлакатдан 5 таклиф",
 	),
-	"at risk or expired": ("riskli veya süresi geçmiş", "под риском или просрочено", "xavf ostida yoki muddati o'tgan", "хавф остида ёки муддати ўтган"),
+	"at risk or expired": (
+		"riskli veya süresi geçmiş",
+		"под риском или просрочено",
+		"xavf ostida yoki muddati o'tgan",
+		"хавф остида ёки муддати ўтган",
+	),
 	"bid deadline within 48 hours or already passed": (
 		"teklif son tarihi 48 saat içinde veya geçmiş",
 		"срок подачи в пределах 48 часов или уже прошёл",
 		"taklif muddati 48 soat ichida yoki o'tib ketgan",
 		"таклиф муддати 48 соат ичида ёки ўтиб кетган",
 	),
-	"document set complete": ("belge seti tam", "комплект документов собран", "hujjatlar to'plami to'liq", "ҳужжатлар тўплами тўлиқ"),
+	"document set complete": (
+		"belge seti tam",
+		"комплект документов собран",
+		"hujjatlar to'plami to'liq",
+		"ҳужжатлар тўплами тўлиқ",
+	),
 	"every required document attached": (
 		"gereken her belge eklenmiş",
 		"все требуемые документы приложены",
@@ -468,27 +527,71 @@ ROWS = {
 	# harfler düzeltildi ("Xavf (<=48soat)", "lotlar roʻyxatdan oʻtmagan" gibi
 	# yarım çevrilmiş dizgeler uzc'de okunmuyordu.)
 	"Operations desk": ("Operasyon masası", "Операционная панель", "Operatsion stol", "Операцион стол"),
-	"Daily work plan": ("Bugünkü iş planı", "План работы на сегодня", "Bugungi ish rejasi", "Бугунги иш режаси"),
-	"Decision box": ("Karar / onay kutusu", "Блок решений и утверждений", "Qaror va tasdiqlash qutisi", "Қарор ва тасдиқлаш қутиси"),
-	"Awaiting my approval": ("Onayımda", "На моем утверждении", "Mening tasdiqlashimda", "Менинг тасдиқлашимда"),
+	"Daily work plan": (
+		"Bugünkü iş planı",
+		"План работы на сегодня",
+		"Bugungi ish rejasi",
+		"Бугунги иш режаси",
+	),
+	"Decision box": (
+		"Karar / onay kutusu",
+		"Блок решений и утверждений",
+		"Qaror va tasdiqlash qutisi",
+		"Қарор ва тасдиқлаш қутиси",
+	),
+	"Awaiting my approval": (
+		"Onayımda",
+		"На моем утверждении",
+		"Mening tasdiqlashimda",
+		"Менинг тасдиқлашимда",
+	),
 	"Waiting others": ("Cevap bekliyor", "Ожидает ответа", "Javob kutilmoqda", "Жавоб кутилмоқда"),
 	"Team load": ("Ekip yükü", "Нагрузка команды", "Jamoa yuklamasi", "Жамоа юкламаси"),
 	"No tasks scheduled for today": (
-		"Bugün için planlanmış iş yok", "На сегодня задач нет",
-		"Bugun uchun rejalashtirilgan vazifa yo'q", "Бугун учун режалаштирилган вазифа йўқ",
+		"Bugün için planlanmış iş yok",
+		"На сегодня задач нет",
+		"Bugun uchun rejalashtirilgan vazifa yo'q",
+		"Бугун учун режалаштирилган вазифа йўқ",
 	),
 	"Due today": ("Bugün bitmeli", "Срок сегодня", "Bugun tugashi kerak", "Бугун тугаши керак"),
 	"7-day schedule": ("7 günlük takvim", "График на 7 дней", "7 kunlik jadval", "7 кунлик жадвал"),
-	"No pending decisions": ("Bekleyen karar yok", "Нет решений, ожидающих ответа", "Kutilayotgan qarorlar yo'q", "Кутилаётган қарорлар йўқ"),
-	"Could not load Tender CRM.": ("İhale CRM yüklenemedi.", "Не удалось загрузить Тендер CRM.", "Tender CRM yuklanmadi.", "Тендер CRM юкланмади."),
-	"No tender deals found.": ("İhale anlaşması bulunamadı.", "Тендерные сделки не найдены.", "Tender bitimlari topilmadi.", "Тендер битимлари топилмади."),
-	"No active tenders found for {0}.": (
-		"{0} için aktif ihale bulunamadı.", "Активные тендеры не найдены для {0}.",
-		"{0} uchun faol tenderlar topilmadi.", "{0} учун фаол тендерлар топилмади.",
+	"No pending decisions": (
+		"Bekleyen karar yok",
+		"Нет решений, ожидающих ответа",
+		"Kutilayotgan qarorlar yo'q",
+		"Кутилаётган қарорлар йўқ",
 	),
-	"Moved to {0}": ("{0} aşamasına taşındı", "Перемещено в {0}", "{0} bosqichiga ko'chirildi", "{0} босқичига кўчирилди"),
+	"Could not load Tender CRM.": (
+		"İhale CRM yüklenemedi.",
+		"Не удалось загрузить Тендер CRM.",
+		"Tender CRM yuklanmadi.",
+		"Тендер CRM юкланмади.",
+	),
+	"No tender deals found.": (
+		"İhale anlaşması bulunamadı.",
+		"Тендерные сделки не найдены.",
+		"Tender bitimlari topilmadi.",
+		"Тендер битимлари топилмади.",
+	),
+	"No active tenders found for {0}.": (
+		"{0} için aktif ihale bulunamadı.",
+		"Активные тендеры не найдены для {0}.",
+		"{0} uchun faol tenderlar topilmadi.",
+		"{0} учун фаол тендерлар топилмади.",
+	),
+	"Moved to {0}": (
+		"{0} aşamasına taşındı",
+		"Перемещено в {0}",
+		"{0} bosqichiga ko'chirildi",
+		"{0} босқичига кўчирилди",
+	),
 	"Tender / Deal": ("İhale / Anlaşma", "Тендер / Сделка", "Tender / Bitim", "Тендер / Битим"),
-	"Buyer / Organization": ("Alıcı / Kurum", "Покупатель / Организация", "Xaridor / Tashkilot", "Харидор / Ташкилот"),
+	"Buyer / Organization": (
+		"Alıcı / Kurum",
+		"Покупатель / Организация",
+		"Xaridor / Tashkilot",
+		"Харидор / Ташкилот",
+	),
 	"Buyer / Customer": ("Alıcı / Müşteri", "Покупатель / Клиент", "Xaridor / Mijoz", "Харидор / Мижоз"),
 	"Contract Value": ("Sözleşme Değeri", "Сумма контракта", "Shartnoma qiymati", "Шартнома қиймати"),
 	"Deadline Risk": ("Son Tarih Riski", "Срок", "Muddat xavfi", "Муддат хавфи"),
@@ -503,17 +606,30 @@ ROWS = {
 	"Owner": ("Sorumlu", "Ответственный", "Mas'ul", "Масъул"),
 	"Readiness": ("Hazırlık", "Готовность", "Tayyorlik", "Тайёрлик"),
 	"No lots registered for this tender.": (
-		"Bu ihale için tanımlı lot bulunamadı.", "Лоты для этого тендера не зарегистрированы.",
-		"Ushbu tender uchun lotlar ro'yxatdan o'tmagan.", "Ушбу тендер учун лотлар рўйхатдан ўтмаган.",
+		"Bu ihale için tanımlı lot bulunamadı.",
+		"Лоты для этого тендера не зарегистрированы.",
+		"Ushbu tender uchun lotlar ro'yxatdan o'tmagan.",
+		"Ушбу тендер учун лотлар рўйхатдан ўтмаган.",
 	),
 	"No supplier quotations tagged to this deal yet.": (
-		"Bu ihaleye henüz tedarikçi teklifi eklenmedi.", "Предложения поставщиков ещё не привязаны.",
+		"Bu ihaleye henüz tedarikçi teklifi eklenmedi.",
+		"Предложения поставщиков ещё не привязаны.",
 		"Ushbu bitimga yetkazib beruvchi takliflari hali biriktirilmagan.",
 		"Ушбу битимга етказиб берувчи таклифлари ҳали бириктирилмаган.",
 	),
 	# ── Hiçbir yerde çevirisi olmayanlar (bugün İngilizce görünüyorlar) ──
-	"Parties and terms": ("Taraflar ve koşullar", "Стороны и условия", "Tomonlar va shartlar", "Томонлар ва шартлар"),
-	"Delivery and notes": ("Teslim ve notlar", "Доставка и примечания", "Yetkazib berish va izohlar", "Етказиб бериш ва изоҳлар"),
+	"Parties and terms": (
+		"Taraflar ve koşullar",
+		"Стороны и условия",
+		"Tomonlar va shartlar",
+		"Томонлар ва шартлар",
+	),
+	"Delivery and notes": (
+		"Teslim ve notlar",
+		"Доставка и примечания",
+		"Yetkazib berish va izohlar",
+		"Етказиб бериш ва изоҳлар",
+	),
 	"Stock reservation": ("Stok rezervasyonu", "Резервирование склада", "Ombor rezervi", "Омбор резерви"),
 	"On approval these quantities are reserved in the warehouse and cannot be given to another order.": (
 		"Onaylandığında bu miktarlar depoda rezerve edilir ve başka bir siparişe verilemez.",
@@ -522,24 +638,38 @@ ROWS = {
 		"Тасдиқлангач бу миқдорлар омборда резерв қилинади ва бошқа буюртмага берилмайди.",
 	),
 	"will be reserved": ("rezerve edilecek", "будет зарезервировано", "rezerv qilinadi", "резерв қилинади"),
-	"all reservable": ("hepsi rezerve edilebilir", "всё резервируется", "hammasi rezerv qilinadi", "ҳаммаси резерв қилинади"),
+	"all reservable": (
+		"hepsi rezerve edilebilir",
+		"всё резервируется",
+		"hammasi rezerv qilinadi",
+		"ҳаммаси резерв қилинади",
+	),
 	"not enough": ("yetersiz", "не хватает", "yetarli emas", "етарли эмас"),
-	"check lines": ("satırları kontrol et", "проверьте позиции", "qatorlarni tekshiring", "қаторларни текширинг"),
+	"check lines": (
+		"satırları kontrol et",
+		"проверьте позиции",
+		"qatorlarni tekshiring",
+		"қаторларни текширинг",
+	),
 	"checking…": ("kontrol ediliyor…", "проверка…", "tekshirilmoqda…", "текширилмоқда…"),
 	"complete": ("tamam", "готово", "tayyor", "тайёр"),
 	"needed": ("gereken", "требуется", "kerak", "керак"),
 	"rate": ("fiyat", "цена", "narx", "нарх"),
 	"sum of every open tender": (
-		"tüm açık ihalelerin toplamı", "сумма всех открытых тендеров",
-		"barcha ochiq tenderlar yig'indisi", "барча очиқ тендерлар йиғиндиси",
+		"tüm açık ihalelerin toplamı",
+		"сумма всех открытых тендеров",
+		"barcha ochiq tenderlar yig'indisi",
+		"барча очиқ тендерлар йиғиндиси",
 	),
 	# ══ Süreç akışı ekranı (BPM) ═══════════════════════════════════════
 	"Process flow": ("Süreç akışı", "Процесс", "Jarayon oqimi", "Жараён оқими"),
 	"Process view": ("Süreç görünümü", "Процессный вид", "Jarayon ko'rinishi", "Жараён кўриниши"),
 	"Tender process flow": ("Tender süreç akışı", "Процесс тендера", "Tender jarayoni", "Тендер жараёни"),
 	"Could not load the process flow.": (
-		"Süreç akışı yüklenemedi.", "Не удалось загрузить процесс.",
-		"Jarayon oqimi yuklanmadi.", "Жараён оқими юкланмади.",
+		"Süreç akışı yüklenemedi.",
+		"Не удалось загрузить процесс.",
+		"Jarayon oqimi yuklanmadi.",
+		"Жараён оқими юкланмади.",
 	),
 	"Every number is read from an ERP record": (
 		"Her sayı bir ERP kaydından okunur",
@@ -554,8 +684,18 @@ ROWS = {
 		"Босқич ўртача кутиш ўз чегарасидан ошганда кечиккан ҳисобланади",
 	),
 	# ── Adımlar ─────────────────────────────────────────────────────────
-	"Intake — file opened": ("Intake — dosya açıldı", "Приём — дело открыто", "Qabul — ish ochildi", "Қабул — иш очилди"),
-	"GO / NO-GO decision": ("GO / NO-GO kararı", "Решение GO / NO-GO", "GO / NO-GO qarori", "GO / NO-GO қарори"),
+	"Intake — file opened": (
+		"Intake — dosya açıldı",
+		"Приём — дело открыто",
+		"Qabul — ish ochildi",
+		"Қабул — иш очилди",
+	),
+	"GO / NO-GO decision": (
+		"GO / NO-GO kararı",
+		"Решение GO / NO-GO",
+		"GO / NO-GO qarori",
+		"GO / NO-GO қарори",
+	),
 	"Quotation gathering": ("Teklif toplama", "Сбор предложений", "Takliflarni yig'ish", "Таклифларни йиғиш"),
 	"Bid pricing": ("Fiyatlama", "Расчёт цены", "Narx belgilash", "Нарх белгилаш"),
 	"Bid submitted": ("Teklif gönderildi", "Заявка подана", "Taklif yuborildi", "Таклиф юборилди"),
@@ -566,8 +706,18 @@ ROWS = {
 	"Not measurable": ("Ölçülemiyor", "Не измеримо", "O'lchab bo'lmaydi", "Ўлчаб бўлмайди"),
 	"Empty": ("Boş", "Пусто", "Bo'sh", "Бўш"),
 	# ── Tablo ve KPI ────────────────────────────────────────────────────
-	"Step performance": ("Adım performansı", "Производительность шагов", "Bosqich samaradorligi", "Босқич самарадорлиги"),
-	"Average wait · SLA": ("Ortalama bekleme · SLA", "Среднее ожидание · SLA", "O'rtacha kutish · SLA", "Ўртача кутиш · SLA"),
+	"Step performance": (
+		"Adım performansı",
+		"Производительность шагов",
+		"Bosqich samaradorligi",
+		"Босқич самарадорлиги",
+	),
+	"Average wait · SLA": (
+		"Ortalama bekleme · SLA",
+		"Среднее ожидание · SLA",
+		"O'rtacha kutish · SLA",
+		"Ўртача кутиш · SLA",
+	),
 	"Average wait": ("Ortalama bekleme", "Среднее ожидание", "O'rtacha kutish", "Ўртача кутиш"),
 	"Worst": ("En kötü", "Худший", "Eng yomon", "Энг ёмон"),
 	"SLA": ("SLA", "SLA", "SLA", "SLA"),
@@ -575,8 +725,10 @@ ROWS = {
 	"not tracked": ("takip edilmiyor", "не отслеживается", "kuzatilmaydi", "кузатилмайди"),
 	"In process": ("Süreçte", "В процессе", "Jarayonda", "Жараёнда"),
 	"across every working step": (
-		"tüm çalışma adımlarında", "по всем рабочим шагам",
-		"barcha ish bosqichlarida", "барча иш босқичларида",
+		"tüm çalışma adımlarında",
+		"по всем рабочим шагам",
+		"barcha ish bosqichlarida",
+		"барча иш босқичларида",
 	),
 	"average wait past the tenant's threshold": (
 		"ortalama bekleme kiracının eşiğini aştı",
@@ -655,10 +807,8 @@ def main(root: pathlib.Path) -> int:
 				# yalnız "anahtar," ya da "anahtar" biçimindeki BOŞ hedefler
 				if stripped in (src, src + ","):
 					buf = io.StringIO(newline="")
-					csv.writer(buf, lineterminator="").writerow(
-						[src, target(src, ROWS[src])]
-					)
-					lines[i] = buf.getvalue() + line[len(stripped):]
+					csv.writer(buf, lineterminator="").writerow([src, target(src, ROWS[src])])
+					lines[i] = buf.getvalue() + line[len(stripped) :]
 					filled += 1
 					break
 		if filled:
@@ -667,8 +817,7 @@ def main(root: pathlib.Path) -> int:
 				fh.write(raw)
 
 		# 2) Anahtar hiç yok — sona ekle.
-		added = [(src, target(src, vals))
-		         for src, vals in ROWS.items() if src not in have]
+		added = [(src, target(src, vals)) for src, vals in ROWS.items() if src not in have]
 		if added:
 			buf = io.StringIO(newline="")
 			csv.writer(buf, lineterminator=terminator).writerows(added)

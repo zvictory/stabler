@@ -41,7 +41,7 @@ def read(path):
 def body(src, name):
 	m = re.search(rf"^def {name}\(", src, re.M)
 	assert m, f"{name} not found"
-	tail = src[m.start():]
+	tail = src[m.start() :]
 	nxt = re.search(r"\n(?:@frappe\.whitelist\(\)|def |# ---)", tail[1:])
 	return tail[: nxt.start() + 1] if nxt else tail
 
@@ -55,7 +55,8 @@ class FreightMatchTest(unittest.TestCase):
 		"""İki kopya kaçınılmaz olarak ayrışır ve ayrıştığı gün liste ile form
 		aynı konteyner için farklı navlun gösterir."""
 		self.assertEqual(
-			self.src.count("fb.container = "), 2,
+			self.src.count("fb.container = "),
+			2,
 			"eşleşme kuralı _FREIGHT_MATCH dışında da yazılmış",
 		)
 		self.assertIn('"fb.container = {name}"', self.src)
@@ -76,7 +77,8 @@ class FreightMatchTest(unittest.TestCase):
 		başkasının nakit tutarıyla yan yana basılıyordu."""
 		listing = body(self.src, "list_import_containers")
 		self.assertEqual(
-			listing.count("ORDER BY fb.creation DESC LIMIT 1"), 1,
+			listing.count("ORDER BY fb.creation DESC LIMIT 1"),
+			1,
 			"satır alanları birden çok bağımsız alt sorgudan geliyor",
 		)
 		self.assertIn("_freight_bookings(", listing)
@@ -141,7 +143,9 @@ class FreightCellTest(unittest.TestCase):
 
 	def test_the_cell_labels_the_amount_with_the_booking_currency(self):
 		"""Sabit `'USD'`, UZS kesilmiş bir navlunu dolar diye gösteriyordu."""
-		hardcoded = [ln.strip() for ln in self.vue.splitlines() if "transport_cost" in ln and "formatMoney" in ln]
+		hardcoded = [
+			ln.strip() for ln in self.vue.splitlines() if "transport_cost" in ln and "formatMoney" in ln
+		]
 		self.assertEqual(hardcoded, [], "navlun tutarı sabit para birimiyle basılıyor")
 		self.assertIn("fm(r.transport_cost, r.transport_currency)", self.vue)
 		self.assertIn("fm(r.paid_cash + r.paid_bank, r.transport_currency)", self.vue)

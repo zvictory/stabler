@@ -1,6 +1,6 @@
 <script setup>
 import { computed } from "vue";
-import { useRoute, RouterLink, RouterView } from "vue-router";
+import { useRoute, RouterView } from "vue-router";
 import { t } from "../../composables/i18n.js";
 import ModuleHeader from "../../components/ModuleHeader.vue";
 

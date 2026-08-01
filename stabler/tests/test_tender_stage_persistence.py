@@ -26,7 +26,7 @@ PATCHES = (ROOT / "patches.txt").read_text(encoding="utf-8")
 TENDER = (ROOT / "api/tender.py").read_text(encoding="utf-8")
 FUNNEL = (ROOT / "api/_funnel.py").read_text(encoding="utf-8")
 
-MOVE = TENDER[TENDER.index("def move_deal_stage"):]
+MOVE = TENDER[TENDER.index("def move_deal_stage") :]
 MOVE = MOVE[: MOVE.index("\n# ---")]
 
 
@@ -43,9 +43,7 @@ class TestTheStageColumnIsActuallyCreated(unittest.TestCase):
 		"""Tek bir varlık kontrolü ikisini birden korusa, alanlardan biri elle
 		yaratılmış bir sitede diğeri hiç oluşmazdı."""
 		guards = re.findall(r'frappe\.db\.exists\(\s*"Custom Field",\s*\{[^}]*"fieldname": "(\w+)"', PATCH)
-		self.assertEqual(
-			sorted(guards), ["custom_tender_stage", "custom_tender_stage_entered_at"]
-		)
+		self.assertEqual(sorted(guards), ["custom_tender_stage", "custom_tender_stage_entered_at"])
 
 	def test_the_patch_is_pre_sync_safe(self):
 		self.assertRegex(PATCH, r'if not frappe\.db\.exists\("DocType", "CRM Deal"\):\s*\n\s*return')
@@ -71,7 +69,7 @@ class TestTheStageIsValidatedBeforeItIsStored(unittest.TestCase):
 		self.assertRegex(MOVE, r'frappe\.throw\(_\("Unknown stage: \{0\}"\)')
 
 	def test_the_valid_set_lives_in_one_place(self):
-		self.assertIn("STAGES = frozenset(ORDER) | {\"lost\"}", FUNNEL)
+		self.assertIn('STAGES = frozenset(ORDER) | {"lost"}', FUNNEL)
 
 	def test_lost_is_a_stage_but_not_a_step_forward(self):
 		"""ORDER ilerlemeyi anlatıyor ve `lost`u dışarıda bırakıyor; STAGES
@@ -88,7 +86,7 @@ class TestTheStageIsValidatedBeforeItIsStored(unittest.TestCase):
 		sürükleyebildiği bir kulvar sunucuda reddedilir."""
 		from stabler.api import _funnel
 
-		board = TENDER[TENDER.index("def crm_board"):]
+		board = TENDER[TENDER.index("def crm_board") :]
 		board = board[: board.index("deal_names =")]
 		lanes = set(re.findall(r'\{"id": "(\w+)", "label"', board))
 		self.assertTrue(lanes, "kulvar listesi bulunamadı")
@@ -112,13 +110,18 @@ class TestTheClockOnlyRestartsOnARealMove(unittest.TestCase):
 		# Biçime değil İFADEYE bak: bu iddia bir satır sonu yüzünden düşerse,
 		# test kodun ne yaptığını değil nasıl sarıldığını ölçüyor demektir.
 		flat = re.sub(r"\s+", " ", MOVE)
-		self.assertIn('has_column( "CRM Deal", "custom_tender_stage_entered_at" )'.replace("( ", "(").replace(" )", ")"), flat.replace("( ", "(").replace(" )", ")"))
+		self.assertIn(
+			'has_column( "CRM Deal", "custom_tender_stage_entered_at" )'.replace("( ", "(").replace(
+				" )", ")"
+			),
+			flat.replace("( ", "(").replace(" )", ")"),
+		)
 
 	def test_the_timestamp_does_not_touch_the_modified_stamp(self):
 		"""`modified` eşzamanlılık kontrolü için kullanılıyor; damgayı yazarken
 		onu ilerletmek, açık duran bir formu sahte "başkası değiştirdi"
 		çakışmasına düşürür."""
-		block = MOVE[MOVE.index("custom_tender_stage_entered_at"):]
+		block = MOVE[MOVE.index("custom_tender_stage_entered_at") :]
 		self.assertIn("update_modified=False", block[:400])
 
 
@@ -129,7 +132,7 @@ class TestTheTwoTimestampsStayOnSeparateAxes(unittest.TestCase):
 	süre güvenilir olmaz."""
 
 	def test_the_tender_move_does_not_write_the_crm_status_stamp(self):
-		self.assertNotIn("stage_entered_at\"", MOVE.replace("custom_tender_stage_entered_at\"", ""))
+		self.assertNotIn('stage_entered_at"', MOVE.replace('custom_tender_stage_entered_at"', ""))
 
 	def test_the_patch_explains_why_a_second_field_exists(self):
 		self.assertIn("stage_entered_at", PATCH)

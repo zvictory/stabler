@@ -18,7 +18,7 @@ NAV = (ROOT / "public/js/pages/tender/TenderNav.vue").read_text(encoding="utf-8"
 
 TEMPLATE = VUE[VUE.index("<template>") : VUE.rindex("</template>")]
 FLAT = re.sub(r"\s+", " ", TEMPLATE)
-ENDPOINT = API[API.index("def tender_flow(company: str)"):]
+ENDPOINT = API[API.index("def tender_flow(company: str)") :]
 
 
 class TestTheScreenIsWired(unittest.TestCase):
@@ -26,7 +26,12 @@ class TestTheScreenIsWired(unittest.TestCase):
 		self.assertRegex(FLAT, r'<div class="tender-flow-page stbl-ds">')
 
 	def test_every_design_class_it_uses_exists_in_the_layer(self):
-		used = {c for group in re.findall(r'class="([^"]*)"', TEMPLATE) for c in group.split() if c.startswith("ds-")}
+		used = {
+			c
+			for group in re.findall(r'class="([^"]*)"', TEMPLATE)
+			for c in group.split()
+			if c.startswith("ds-")
+		}
 		self.assertTrue(used)
 		for cls in sorted(used):
 			with self.subTest(cls=cls):
@@ -35,7 +40,7 @@ class TestTheScreenIsWired(unittest.TestCase):
 	def test_the_route_and_the_module_bar_agree(self):
 		self.assertIn('path: "/tender/flow"', ROUTER)
 		self.assertIn("component: TenderFlow", ROUTER)
-		self.assertIn('module: "tender"', ROUTER[ROUTER.index('path: "/tender/flow"'):][:200])
+		self.assertIn('module: "tender"', ROUTER[ROUTER.index('path: "/tender/flow"') :][:200])
 		self.assertIn('to="/tender/flow"', NAV)
 
 	def test_it_calls_the_one_endpoint(self):
@@ -62,7 +67,7 @@ class TestTheScreenDoesNotFlatterTheNumbers(unittest.TestCase):
 	def test_empty_and_unknown_are_different_words(self):
 		"""Boş adımda bekleyen iş yok; damgasız adımda var ama süresi
 		bilinmiyor. Aynı kelimeyi kullanmak tıkanmış adımı boş gösterir."""
-		labels = VUE[VUE.index("const STATE_LABEL"):]
+		labels = VUE[VUE.index("const STATE_LABEL") :]
 		labels = labels[: labels.index("};")]
 		self.assertIn('unknown: "Not measurable"', labels)
 		self.assertIn('empty: "Empty"', labels)
@@ -76,7 +81,8 @@ class TestTheScreenDoesNotFlatterTheNumbers(unittest.TestCase):
 		"""Sorunu olmayan bir bekleme süresini vurgulamak gözü yanlış satıra
 		çeker."""
 		self.assertRegex(
-			VUE, r'waitState = \(row\) => \(row\.state === "out" \|\| row\.state === "edge" \? row\.state : null\)'
+			VUE,
+			r'waitState = \(row\) => \(row\.state === "out" \|\| row\.state === "edge" \? row\.state : null\)',
 		)
 
 

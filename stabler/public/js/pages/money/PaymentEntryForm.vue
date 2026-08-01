@@ -5,7 +5,7 @@ import { useRoute, useRouter } from "vue-router";
 import { useSession } from "../../stores/session.js";
 import { call } from "../../api/client.js";
 import { formatMoney } from "../../composables/money.js";
-import { formatDate, formatDateTime, todayIso} from "../../composables/date.js";
+import { formatDate, todayIso } from "../../composables/date.js";
 import { readableRate, formatRate } from "../../composables/fx.js";
 import { t } from "../../composables/i18n.js";
 import MoneyInput from "../../components/MoneyInput.vue";
@@ -166,7 +166,6 @@ const {
 	saving: actionRunning,
 	loadError,
 	error: actionError,
-	isDirty,
 	isCreate,
 	editable,
 	docstatus,
@@ -327,7 +326,12 @@ onMounted(async () => {
 		if (bankAccounts.value.length && !form.value.bank_account) {
 			form.value.bank_account = bankAccounts.value[0].name;
 		}
-	} catch {}
+	} catch {
+		// Non-fatal ve bilinçli sessiz: nakit/banka hesabı tanımlı olmayan bir
+		// şirkette bu çağrı düşer, dropdown boş kalır ve loadDoc() aşağıda
+		// normal çalışır. Buraya log koymak o şirketlerde her form açılışında
+		// konsola hata düşürür — kullanıcıya gösterilecek bir hata yok.
+	}
 
 	// Branch on the route param (present on a hard load), not the composable's
 	// isCreate (null-based, true until load() runs) — else direct URL/refresh of an
@@ -365,13 +369,6 @@ async function submitCreate() {
 async function submitDoc() {
 	await submit();
 }
-
-const statusBadge = (d) => {
-	if (d === 0) return { cls: "bg-yellow-lt", label: t("Draft") };
-	if (d === 1) return { cls: "bg-green-lt", label: t("Submitted") };
-	if (d === 2) return { cls: "bg-red-lt", label: t("Cancelled") };
-	return { cls: "bg-secondary-lt", label: String(d) };
-};
 
 const typeBadge = (t) => {
 	if (t === "Receive") return { cls: "bg-green-lt", icon: "ti-arrow-down-left" };

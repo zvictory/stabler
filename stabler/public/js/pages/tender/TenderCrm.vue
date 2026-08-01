@@ -1,11 +1,9 @@
 <script setup>
 import { computed, onMounted, ref, watch } from "vue";
 import { storeToRefs } from "pinia";
-import { useRoute, useRouter } from "vue-router";
 import { call } from "../../api/client.js";
 import { formatDate } from "../../composables/date.js";
 import { formatMoney } from "../../composables/money.js";
-import { getStatusBadgeClass } from "../../composables/status.js";
 import { t } from "../../composables/i18n.js";
 import { useToast } from "../../composables/useToast.js";
 import { useSession } from "../../stores/session.js";
@@ -15,8 +13,6 @@ import TenderNav from "./TenderNav.vue";
 
 const session = useSession();
 const { activeCompany, user, currency } = storeToRefs(session);
-const router = useRouter();
-const route = useRoute();
 const toast = useToast();
 
 const loading = ref(false);

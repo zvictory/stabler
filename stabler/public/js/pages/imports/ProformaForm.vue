@@ -12,7 +12,6 @@ import { blockerText, cascadeRows, recordRoute } from "../../composables/deleteI
 import { useToast } from "../../composables/useToast.js";
 import { useConfirm } from "../../composables/useConfirm.js";
 import { useEscapeBack } from "../../composables/useEscapeBack.js";
-import { itemSearcher } from "../../composables/items.js";
 import Typeahead from "../../components/Typeahead.vue";
 import MoneyInput from "../../components/MoneyInput.vue";
 import DateInput from "../../components/DateInput.vue";
@@ -234,15 +233,6 @@ function addItemRow() {
 function removeItemRow(idx) {
 	form.value.items.splice(idx, 1);
 }
-function pickItemRow(row, item) {
-	row.item = item.item_code || item.name;
-	if (!row.description) row.description = item.item_name || "";
-	if (!row.uom) row.uom = item.stock_uom || "";
-}
-function clearItemRow(row) {
-	row.item = "";
-}
-
 function onBoxesOrWeightInput(row) {
 	if (!row._qtyManual) {
 		row.qty = round2((Number(row.boxes) || 0) * (Number(row.box_weight_kg) || 0));

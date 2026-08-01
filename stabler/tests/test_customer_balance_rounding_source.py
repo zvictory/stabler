@@ -52,7 +52,8 @@ class TestCustomerBalanceRoundingThreshold(unittest.TestCase):
 	def test_the_list_total_and_the_ledger_drill_down_share_one_threshold(self):
 		thresholds = {float(x) for x in self.sql.groups() + self.py.groups()}
 		self.assertEqual(
-			len(thresholds), 1,
+			len(thresholds),
+			1,
 			f"eşikler ayrıştı: {sorted(thresholds)} — liste ile döküm farklı bakiye gösterir",
 		)
 

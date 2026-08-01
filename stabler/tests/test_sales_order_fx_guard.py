@@ -37,7 +37,7 @@ class TestResolveRateRefusesToGuess(unittest.TestCase):
 	unconverted bayrağıyla çağırana haber veriyor."""
 
 	def _body(self):
-		fn = FORM[FORM.index("async function resolveRate("):]
+		fn = FORM[FORM.index("async function resolveRate(") :]
 		return fn[: fn.index("\nasync function refreshLineRatesForPriceList")]
 
 	def test_the_function_reports_unconverted_when_no_rate_is_known(self):
@@ -53,8 +53,12 @@ class TestEquivalentAmountHasNoCurrencyLiterals(unittest.TestCase):
 	kural bu sınıfın tamamını kapatıyor."""
 
 	def _body(self):
-		fn = FORM[FORM.index("const equivalentAmount = computed("):]
-		return fn[: fn.index("\nconst baseGrandTotal")]
+		# Bitiş çıpası bir sembol ADI değil, "bir sonraki üst seviye const" —
+		# eskiden `\nconst baseGrandTotal`e sabitlenmişti ve o satır (kullanılmayan
+		# bir computed olduğu için) silindiğinde test ValueError ile patladı.
+		# Gövde içindeki const'lar girintili olduğu için "\nconst " onları yakalamaz.
+		fn = FORM[FORM.index("const equivalentAmount = computed(") :]
+		return fn[: fn.index("\nconst ", 1)]
 
 	def test_no_currency_literals_remain(self):
 		body = self._body()
@@ -71,12 +75,12 @@ class TestFetchExchangeRateFailsClosed(unittest.TestCase):
 	ve resolveRate bunu "kur bilinmiyor" olarak okur."""
 
 	def _body(self):
-		fn = FORM[FORM.index("async function fetchExchangeRate("):]
+		fn = FORM[FORM.index("async function fetchExchangeRate(") :]
 		return fn[: fn.index("\n// Load existing doc")]
 
 	def test_the_catch_block_nulls_the_rate(self):
 		body = self._body()
-		catch = body[body.index("} catch {"):]
+		catch = body[body.index("} catch {") :]
 		self.assertIn("exchangeRate.value = null;", catch)
 
 

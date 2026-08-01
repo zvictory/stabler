@@ -118,7 +118,8 @@ class TestSpaNamedExports(unittest.TestCase):
 		self.assertGreater(self.files, 200, "SPA kaynak dosyaları bulunamadı — yol kaymış olabilir")
 		self.assertGreater(len(self.seen), 800, "göreli adlandırılmış import kenarı çözülemedi")
 		self.assertIn(
-			_ANCHOR, self.seen,
+			_ANCHOR,
+			self.seen,
 			"çapa kenarı bulunamadı — tarayıcı ya dosyayı ya export'ları okuyamıyor",
 		)
 
@@ -126,7 +127,8 @@ class TestSpaNamedExports(unittest.TestCase):
 		"""esbuild bunu hard error yapar ve prod'da rsync'ten sonra koşar."""
 		lines = [f"{src} -> {sym} ({tgt})" for src, sym, tgt in self.missing]
 		self.assertEqual(
-			self.missing, [],
+			self.missing,
+			[],
 			"eksik export — prod'da `bench build` bu yüzden patlar:\n  " + "\n  ".join(lines),
 		)
 
@@ -135,7 +137,8 @@ class TestSpaNamedExports(unittest.TestCase):
 		farklı — silinmiş/taşınmış dosya, eksik export değil."""
 		lines = [f"{src} -> {rel}" for src, rel in self.unresolved]
 		self.assertEqual(
-			self.unresolved, [],
+			self.unresolved,
+			[],
 			"göreli import bir dosyaya çözülmüyor:\n  " + "\n  ".join(lines),
 		)
 

@@ -28,15 +28,14 @@ class TestMoneyInputFractionContract(unittest.TestCase):
 		self.assertIn("const maxFractionDigits = computed(", self.body)
 
 	def test_uzs_wins_over_the_unit_price_override(self):
-		block = re.search(
-			r"const maxFractionDigits = computed\(\(\) => \{(.*?)\n\}\);", self.body, re.S
-		)
+		block = re.search(r"const maxFractionDigits = computed\(\(\) => \{(.*?)\n\}\);", self.body, re.S)
 		self.assertIsNotNone(block, "computed bloğu okunamadı — regex kaymış")
 		body = block.group(1)
 		uzs = body.index("isUZS.value")
 		override = body.index("props.maxFractionDigits")
 		self.assertLess(
-			uzs, override,
+			uzs,
+			override,
 			"UZS dalı override'dan sonra geliyor — UZS tutarları kuruşlu görünür",
 		)
 

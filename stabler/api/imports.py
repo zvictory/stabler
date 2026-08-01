@@ -4483,7 +4483,7 @@ def _attach_proforma_match_rollups(rows: list[dict]) -> None:
 				over += rem["over_boxes"]
 			else:
 				remaining += rem["remaining_boxes"]
-		for key, entry in shipped.items():
+		for entry in shipped.values():
 			shipped_boxes += entry.get("boxes", 0)
 		# CI lines whose key is on no PI line: reported, never netted.
 		unattributable = sum(
@@ -6546,8 +6546,10 @@ def imports_flow(company: str):
 	ci_status_map = {
 		r.name: r.status
 		for r in frappe.get_all(
-			"Commercial Invoice", filters={"company": company},
-			fields=["name", "status"], limit_page_length=0,
+			"Commercial Invoice",
+			filters={"company": company},
+			fields=["name", "status"],
+			limit_page_length=0,
 		)
 	}
 	fleet: dict[str, list] = {}
@@ -6588,9 +6590,7 @@ def imports_flow(company: str):
 		if not has_required_flag:
 			for d in declarations:
 				d["required_for_departure"] = 1
-		verdict = departure_math.may_depart(
-			declarations, vet_valid=has_valid_vet_cert(ci_name)
-		)
+		verdict = departure_math.may_depart(declarations, vet_valid=has_valid_vet_cert(ci_name))
 		if not verdict["allowed"]:
 			gate["blocked"] += n
 
@@ -6675,7 +6675,9 @@ def _add_refs(refs: dict, doctype: str, rows) -> None:
 	for row in rows or []:
 		if row.get("name") and row["name"] not in seen:
 			seen.add(row["name"])
-			refs.setdefault(doctype, []).append({"name": row["name"], "docstatus": cint(row.get("docstatus"))})
+			refs.setdefault(doctype, []).append(
+				{"name": row["name"], "docstatus": cint(row.get("docstatus"))}
+			)
 
 
 def _ci_reference_rows(company: str, ci: str) -> dict:
@@ -6813,9 +6815,9 @@ def _cascade_modes(cascade: dict) -> dict:
 def _assert_cascade_allowed(plan: dict, cascade: int) -> None:
 	if plan["cascade"] and not cint(cascade):
 		frappe.throw(
-			_("{0} linked record(s) still hang off this document — confirm “delete linked records” first.").format(
-				_cascade_count(plan["cascade"])
-			)
+			_(
+				"{0} linked record(s) still hang off this document — confirm “delete linked records” first."
+			).format(_cascade_count(plan["cascade"]))
 		)
 
 
@@ -6945,7 +6947,9 @@ def unlink_proforma_from_ci(company: str, proforma: str, commercial_invoice: str
 		and frappe.db.has_column("Commercial Invoice", "custom_proforma_invoice")
 		and frappe.db.get_value("Commercial Invoice", target, "custom_proforma_invoice") == proforma
 	):
-		frappe.db.set_value("Commercial Invoice", target, "custom_proforma_invoice", None, update_modified=False)
+		frappe.db.set_value(
+			"Commercial Invoice", target, "custom_proforma_invoice", None, update_modified=False
+		)
 
 	return {"proforma": proforma, "status": pi.status, "commercial_invoice": None, "changed": True}
 
@@ -6991,7 +6995,9 @@ def transporter_dashboard(
 	query_params: dict = {"company": company}
 
 	if transporter:
-		where_clauses.append("(fb.transporter = %(transporter)s OR s.supplier_name LIKE %(transporter_like)s)")
+		where_clauses.append(
+			"(fb.transporter = %(transporter)s OR s.supplier_name LIKE %(transporter_like)s)"
+		)
 		query_params["transporter"] = transporter
 		query_params["transporter_like"] = f"%{transporter}%"
 
@@ -7047,24 +7053,26 @@ def transporter_dashboard(
 		p_bank = flt(r.paid_bank)
 		tot_paid = p_cash + p_bank
 		bal = round(max(0.0, cost - tot_paid), 2)
-		formatted_rows.append({
-			"name": r.name,
-			"commercial_invoice": r.commercial_invoice or "",
-			"ci_number": r.ci_number or r.commercial_invoice or "",
-			"container": r.container or "",
-			"vehicle_number": r.vehicle_number or "",
-			"transporter": r.transporter or "",
-			"transporter_name": r.transporter_name or r.transporter or "—",
-			"transport_cost": cost,
-			"paid_cash": p_cash,
-			"paid_bank": p_bank,
-			"total_paid": tot_paid,
-			"balance": bal,
-			"currency": r.currency or "USD",
-			"status": r.status or "Confirmed",
-			"booking_date": str(r.booking_date or ""),
-			"notes": r.notes or "",
-		})
+		formatted_rows.append(
+			{
+				"name": r.name,
+				"commercial_invoice": r.commercial_invoice or "",
+				"ci_number": r.ci_number or r.commercial_invoice or "",
+				"container": r.container or "",
+				"vehicle_number": r.vehicle_number or "",
+				"transporter": r.transporter or "",
+				"transporter_name": r.transporter_name or r.transporter or "—",
+				"transport_cost": cost,
+				"paid_cash": p_cash,
+				"paid_bank": p_bank,
+				"total_paid": tot_paid,
+				"balance": bal,
+				"currency": r.currency or "USD",
+				"status": r.status or "Confirmed",
+				"booking_date": str(r.booking_date or ""),
+				"notes": r.notes or "",
+			}
+		)
 
 	# 5. Aggregate summary stats, GROUPED BY currency. `fb.currency` is a Link that
 	#    merely defaults to USD, so a single SUM adds UZS to USD and prints the
@@ -7090,15 +7098,17 @@ def transporter_dashboard(
 		s_cash = flt(s.total_cash)
 		s_bank = flt(s.total_bank)
 		s_paid = s_cash + s_bank
-		summary.append({
-			"currency": s.currency or "USD",
-			"total_freight_cost": s_cost,
-			"total_paid_cash": s_cash,
-			"total_paid_bank": s_bank,
-			"total_paid": s_paid,
-			"total_outstanding": round(max(0.0, s_cost - s_paid), 2),
-			"bookings_count": cint(s.bookings_count),
-		})
+		summary.append(
+			{
+				"currency": s.currency or "USD",
+				"total_freight_cost": s_cost,
+				"total_paid_cash": s_cash,
+				"total_paid_bank": s_bank,
+				"total_paid": s_paid,
+				"total_outstanding": round(max(0.0, s_cost - s_paid), 2),
+				"bookings_count": cint(s.bookings_count),
+			}
+		)
 
 	# 6. Cost gate. `amount`, `cash_payment` and `bank_payment` are permlevel 1 on
 	#    Freight Booking and every other reader of this doctype masks them
@@ -7174,5 +7184,3 @@ def save_container_transport_cost(
 		"paid_bank": bank,
 		"changed": True,
 	}
-
-

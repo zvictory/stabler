@@ -47,11 +47,33 @@ watch(isValid, (newVal) => {
 	emit("validity-change", newVal);
 }, { immediate: true });
 
+// ── Sözleşme: `items` YERİNDE düzenlenir (bilinçli muafiyet, düzeltme değil) ──
+// Bu bileşen, kendisine verilen satır dizisinin sahibi gibi davranır: satır
+// ALANLARINI da yerinde mutate ediyor (şablonda v-model="line.item_code",
+// v-model.number="line.qty"; script'te line.qty / line.uom /
+// line.dimension_mode atamaları) — ESLint bu derin mutasyonları göremez,
+// yalnızca aşağıdaki dört satırın dizi KİMLİĞİNE dokunmasını yakalar.
+// Ölçüm: 6 çağrı yeri var (SalesReturnForm, QuotationForm,
+// SalesOrderFormClassic, SalesOrderFormModern, PurchaseInvoiceForm,
+// PurchaseOrderForm); hepsi :items="form.items" geçiyor, hiçbiri
+// v-model:items kullanmıyor, hiçbiri diziyi yeniden atamıyor. Bunlardan
+// SalesOrderFormModern'deki örnek v-if="form && !editable" ile salt-okunur,
+// yani push/splice yoluna erişen 5 ekran. Dizi Vue reactive olduğu için
+// mutasyonlar ebeveyne aynen yansır: bu bir çalışma-zamanı hatası değil.
+// KARŞI EMSAL (bilerek erteleniyor, gözden kaçmıyor): kardeş grid
+// pages/sales/SalesOrderLines.vue aynı derin-alan sözleşmesini taşımasına
+// rağmen dizi kimliğine hiç dokunmuyor — silmeyi emit("remove", i) ile
+// ebeveyne devrediyor ve ESLint-temiz. Yani kuralı gerçekten uygulamak
+// mümkün; bedeli "dizi boşalırsa bir satır ekle" kuralını 5 ebeveyne
+// taşımak. Bu, sipariş/teklif/fatura formlarına dokunan ayrı bir iş —
+// lint kapısını yeşile çeviren bir değişikliğin içinde yapılmamalı.
 function addRow() {
+	// eslint-disable-next-line vue/no-mutating-props
 	props.items.push(props.blankLine());
 }
 
 function removeRow(index) {
+	// eslint-disable-next-line vue/no-mutating-props
 	props.items.splice(index, 1);
 	if (props.items.length === 0) {
 		addRow();
@@ -63,7 +85,9 @@ function moveRow(index, direction) {
 	const targetIndex = index + direction;
 	if (targetIndex < 0 || targetIndex >= props.items.length) return;
 	const row = props.items[index];
+	// eslint-disable-next-line vue/no-mutating-props
 	props.items.splice(index, 1);
+	// eslint-disable-next-line vue/no-mutating-props
 	props.items.splice(targetIndex, 0, row);
 }
 

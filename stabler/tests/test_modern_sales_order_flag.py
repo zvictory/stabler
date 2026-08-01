@@ -23,9 +23,9 @@ from pathlib import Path
 ROOT = Path(__file__).resolve().parents[1]
 ORG = (ROOT / "api/organization.py").read_text(encoding="utf-8")
 SETTINGS = (ROOT / "stabler/doctype/stabler_settings/stabler_settings.py").read_text(encoding="utf-8")
-MODULES_JSON_TEXT = (
-	ROOT / "stabler/doctype/stabler_company_modules/stabler_company_modules.json"
-).read_text(encoding="utf-8")
+MODULES_JSON_TEXT = (ROOT / "stabler/doctype/stabler_company_modules/stabler_company_modules.json").read_text(
+	encoding="utf-8"
+)
 ADMIN = (ROOT / "public/js/pages/admin/Companies.vue").read_text(encoding="utf-8")
 PATCHES = (ROOT / "patches.txt").read_text(encoding="utf-8")
 PATCH = (ROOT / "patches/v65_enable_modern_sales_order.py").read_text(encoding="utf-8")
@@ -41,7 +41,7 @@ class TestTheDefaultIsOffOnEveryPath(unittest.TestCase):
 		"""`module_map_for` satır yoksa doğrudan DEFAULT_MODULE_ENABLED'ı
 		döndürür — burası `True` olsaydı satırsız her şirket modern forma
 		düşerdi."""
-		block = SETTINGS[SETTINGS.index("DEFAULT_MODULE_ENABLED = {"):]
+		block = SETTINGS[SETTINGS.index("DEFAULT_MODULE_ENABLED = {") :]
 		block = block[: block.index("\n}")]
 		self.assertIn('"modern_sales_order": False', block)
 
@@ -60,7 +60,7 @@ class TestTheFlagIsWiredEndToEnd(unittest.TestCase):
 		self.assertIn("enable_modern_sales_order", doc["field_order"])
 
 	def test_the_update_api_accepts_the_flag(self):
-		fn = ORG[ORG.index("def update_company_modules("):]
+		fn = ORG[ORG.index("def update_company_modules(") :]
 		fn = fn[: fn.index("\n@frappe.whitelist()")]
 		self.assertRegex(fn, r"\n\tmodern_sales_order=None,")
 		self.assertIn('"enable_modern_sales_order": modern_sales_order,', fn)
@@ -78,14 +78,12 @@ class TestThePatchIsRegisteredAndSafe(unittest.TestCase):
 	def test_the_patch_guards_on_the_column(self):
 		"""patches.txt'de `[post_model_sync]` yok — her patch DDL sync'ten ÖNCE
 		koşar, yani yeni sütuna guard'sız dokunan patch migrate'i düşürür."""
-		self.assertIn(
-			'has_column("Stabler Company Modules", "enable_modern_sales_order")', PATCH
-		)
+		self.assertIn('has_column("Stabler Company Modules", "enable_modern_sales_order")', PATCH)
 
 
 class TestItIsAPreferenceNotAPermission(unittest.TestCase):
 	def test_it_is_absent_from_the_role_gate(self):
-		roles = ORG[ORG.index("_MODULE_ROLES"):]
+		roles = ORG[ORG.index("_MODULE_ROLES") :]
 		roles = roles[: roles.index("\n}")]
 		self.assertNotIn("modern_sales_order", roles)
 

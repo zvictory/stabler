@@ -10,13 +10,14 @@ ekranların dürüstlüğü hiç sınanmamış olur.
 import re
 import unittest
 from pathlib import Path
+from typing import ClassVar
 
 ROOT = Path(__file__).resolve().parents[1]
 SEED = (ROOT / "maintenance/seed_tender_demo.py").read_text(encoding="utf-8")
 
 
 def _fn(name: str) -> str:
-	block = SEED[SEED.index(f"def {name}("):]
+	block = SEED[SEED.index(f"def {name}(") :]
 	nxt = re.search(r"\n(?:def |\Z)", block[1:])
 	return block[: nxt.start() + 1] if nxt else block
 
@@ -24,7 +25,7 @@ def _fn(name: str) -> str:
 class TestItCannotTouchRealData(unittest.TestCase):
 	def test_every_record_carries_the_marker(self):
 		self.assertIn('DEMO_SUFFIX = " [DEMO]"', SEED)
-		self.assertIn('f"{name}{DEMO_SUFFIX}"', SEED)   # kurum
+		self.assertIn('f"{name}{DEMO_SUFFIX}"', SEED)  # kurum
 		self.assertIn('f"{lot_no}{DEMO_SUFFIX}"', SEED)  # lot
 
 	def test_unseed_filters_on_the_marker_everywhere(self):
@@ -42,7 +43,8 @@ class TestItCannotTouchRealData(unittest.TestCase):
 		# döngüsündeki get_all yalnız string doctype arayan bir desenden kaçardı.
 		deletes = re.findall(r"frappe\.get_all\(\s*([^,]+),\s*filters=\{([^}]*)\}", unseed)
 		self.assertEqual(
-			len(deletes), unseed.count("frappe.get_all("),
+			len(deletes),
+			unseed.count("frappe.get_all("),
 			"desen bazı get_all çağrılarını kaçırıyor — taranmayan sorgu, sınanmamış silme",
 		)
 		for doctype, filters in deletes:
@@ -82,15 +84,15 @@ class TestTheDataExercisesEveryScreenState(unittest.TestCase):
 	"""Demo'nun işi ekranı doldurmak değil, ekranın gösterdiği AYRIMLARI
 	üretmek. Hepsi yeşil bir demo, hiçbir şeyi kanıtlamaz."""
 
-	LOTS = [
-		line for line in SEED[SEED.index("DEMO_LOTS = ["):SEED.index("#: Son tarihler")].splitlines()
+	LOTS: ClassVar[list[str]] = [
+		line
+		for line in SEED[SEED.index("DEMO_LOTS = [") : SEED.index("#: Son tarihler")].splitlines()
 		if line.strip().startswith("(")
 	]
 
 	def test_every_pipeline_stage_has_a_deal(self):
 		from stabler.api._funnel import STAGES
 
-		staged = {re.search(r'"(\w+)", -?\d|"(\w+)", None', line) for line in self.LOTS}
 		present = set(re.findall(r'",\s*"(\w+)",\s*(?:None|\d+),', "\n".join(self.LOTS)))
 		self.assertEqual(STAGES - present, set(), f"aşamasız kalan: {STAGES - present}")
 
@@ -110,16 +112,27 @@ class TestTheDataExercisesEveryScreenState(unittest.TestCase):
 			m = re.search(r'",\s*"(\w+)",\s*(\d+),', line)
 			if m:
 				ages.setdefault(m.group(1), []).append(int(m.group(2)))
-		over = [s for s, days in ages.items() if s in DEFAULT_STAGE_SLA_DAYS
-		        and sum(days) / len(days) > DEFAULT_STAGE_SLA_DAYS[s]]
-		inside = [s for s, days in ages.items() if s in DEFAULT_STAGE_SLA_DAYS
-		          and sum(days) / len(days) < DEFAULT_STAGE_SLA_DAYS[s]]
+		over = [
+			s
+			for s, days in ages.items()
+			if s in DEFAULT_STAGE_SLA_DAYS and sum(days) / len(days) > DEFAULT_STAGE_SLA_DAYS[s]
+		]
+		inside = [
+			s
+			for s, days in ages.items()
+			if s in DEFAULT_STAGE_SLA_DAYS and sum(days) / len(days) < DEFAULT_STAGE_SLA_DAYS[s]
+		]
 		self.assertTrue(over, "hiçbir adım eşiği aşmıyor — 'SLA dışı' hiç görünmez")
 		self.assertTrue(inside, "hiçbir adım eşiğin içinde değil — 'içinde' hiç görünmez")
 
 	def test_deadlines_cover_past_today_and_soon(self):
 		"""Operasyon masasının severity dili bunlardan çıkıyor."""
-		offsets = set(int(v) for v in re.findall(r':\s*(-?\d+),', SEED[SEED.index("DEADLINE_OFFSETS"):SEED.index("def _guard")]))
+		offsets = set(
+			int(v)
+			for v in re.findall(
+				r":\s*(-?\d+),", SEED[SEED.index("DEADLINE_OFFSETS") : SEED.index("def _guard")]
+			)
+		)
 		self.assertTrue(any(o < 0 for o in offsets), "geçmiş son tarih yok")
 		self.assertIn(0, offsets, "bugün biten yok")
 		self.assertTrue(any(0 < o <= 2 for o in offsets), "48 saat içinde biten yok")
@@ -230,7 +243,10 @@ class TestTheQuotationsMakeTheBoardsTellTheTruth(unittest.TestCase):
 		kırmızı kalır ve eşiğin doğru tarafı hiç görülmezdi."""
 		counts = [
 			int(m.group(1))
-			for m in re.finditer(r",\s*(\d+),\s*\d+,\s*\d+\)", SEED[SEED.index("DEMO_LOTS = ["):SEED.index("#: Son tarihler")])
+			for m in re.finditer(
+				r",\s*(\d+),\s*\d+,\s*\d+\)",
+				SEED[SEED.index("DEMO_LOTS = [") : SEED.index("#: Son tarihler")],
+			)
 		]
 		self.assertTrue(counts, "DEMO_LOTS'tan teklif sayıları okunamadı")
 		self.assertTrue(any(c >= 5 for c in counts), "hiçbir demo lot 5 teklif eşiğini geçmiyor")
@@ -242,7 +258,7 @@ class TestTheQuotationsMakeTheBoardsTellTheTruth(unittest.TestCase):
 		anlaşma yazılmış, teklifleri yazılmamış. DEMO_LOTS ile tedarikçi havuzu
 		arasındaki bu bağ kodun hiçbir yerinde görünmüyor; yeni bir lot eklemek
 		onu sessizce koparabilir. Testin işi, kopmayı canlı siteden önce görmek."""
-		block = SEED[SEED.index("DEMO_LOTS = ["):SEED.index("#: Son tarihler")]
+		block = SEED[SEED.index("DEMO_LOTS = [") : SEED.index("#: Son tarihler")]
 		lots = re.findall(r",\s*(\d+),\s*(\d+),\s*\d+\)", block)
 		self.assertEqual(len(lots), 13, "DEMO_LOTS satır sayısı değişti — desen güncellensin")
 		for sq_count, countries in ((int(a), int(b)) for a, b in lots):
@@ -280,7 +296,7 @@ class TestTheQuotationsMakeTheBoardsTellTheTruth(unittest.TestCase):
 		var, kazanılmış lotlara bağlı, ve çıktı satırı artık altı panoyu sayıyor.
 		"""
 		self.assertIn("DEMO_PURCHASE_ORDERS = [", SEED)
-		block = SEED[SEED.index("DEMO_PURCHASE_ORDERS = ["):SEED.index("#: Demo tedarikçileri")]
+		block = SEED[SEED.index("DEMO_PURCHASE_ORDERS = [") : SEED.index("#: Demo tedarikçileri")]
 		lots = set(re.findall(r'\("(UTY-\d{4}-\d{4})"', block))
 		self.assertTrue(lots, "sipariş hattı boş")
 		won = {lot for lot, *_rest in self.seed.DEMO_LOTS if _rest[1] == "won"}
@@ -317,10 +333,7 @@ class TestTheQuotationsMakeTheBoardsTellTheTruth(unittest.TestCase):
 		for lot in {r[0] for r in rows}:
 			with self.subTest(lot=lot):
 				self.assertIn(lot, self.seed.DELIVERY_OFFSETS, f"{lot} için teslim tarihi kısaltılmamış")
-		late = [
-			r for r in rows
-			if r[4] < 100 and r[3] > self.seed.DELIVERY_OFFSETS.get(r[0], 90)
-		]
+		late = [r for r in rows if r[4] < 100 and r[3] > self.seed.DELIVERY_OFFSETS.get(r[0], 90)]
 		self.assertTrue(late, "hiçbir sevkiyat teslim tarihini aşmıyor — lojistik 'geciken' üretmez")
 
 	def test_the_working_lots_are_assigned_and_the_new_ones_are_not(self):
@@ -343,11 +356,17 @@ class TestTheQuotationsMakeTheBoardsTellTheTruth(unittest.TestCase):
 		docstring'inin baştan uyardığı hâl. Kontrol `_orders()` içinde değil,
 		`_guard()` içinde olmalı."""
 		guard = _fn("_guard")
-		self.assertIn('has_column("Purchase Order", "custom_crm_deal")', guard,
-		              "sipariş kolonu kontrolü _guard'da değil")
+		self.assertIn(
+			'has_column("Purchase Order", "custom_crm_deal")',
+			guard,
+			"sipariş kolonu kontrolü _guard'da değil",
+		)
 		orders = _fn("_orders")
-		self.assertNotIn('has_column("Purchase Order", "custom_crm_deal")', orders,
-		                 "kontrol _orders'ta kalırsa 13 anlaşma yaratıldıktan sonra durur")
+		self.assertNotIn(
+			'has_column("Purchase Order", "custom_crm_deal")',
+			orders,
+			"kontrol _orders'ta kalırsa 13 anlaşma yaratıldıktan sonra durur",
+		)
 
 	def test_a_draft_quotation_still_counts_on_the_board(self):
 		"""Pano `docstatus < 2` sayıyor. Teklifleri submit etmek demo'yu
@@ -363,9 +382,7 @@ class TestTheQuotationsMakeTheBoardsTellTheTruth(unittest.TestCase):
 		created = _types.SimpleNamespace(country=None, insert=lambda **kw: None, name="SUP-1")
 		fr = self.seed.frappe
 		fr.db = _types.SimpleNamespace(
-			exists=lambda doctype, filt=None: (
-				filt in known_countries if doctype == "Country" else None
-			),
+			exists=lambda doctype, filt=None: filt in known_countries if doctype == "Country" else None,
 			get_value=lambda *a, **kw: "Demo Group",
 		)
 		fr.new_doc = lambda doctype: created

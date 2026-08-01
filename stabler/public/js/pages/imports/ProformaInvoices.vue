@@ -9,7 +9,6 @@ import { formatDate } from "../../composables/date.js";
 import { t } from "../../composables/i18n.js";
 import { getStatusBadgeClass } from "../../composables/status.js";
 import { useToast } from "../../composables/useToast.js";
-import Typeahead from "../../components/Typeahead.vue";
 import Select from "../../components/Select.vue";
 import ListToolbar from "../../components/ListToolbar.vue";
 import EmptyState from "../../components/EmptyState.vue";
@@ -85,10 +84,6 @@ function groupLabel(row) {
 // Smart-list cell helpers.
 function refMain(r) {
 	return (r && (r.supplier_pi_ref || r.name)) || "";
-}
-function refSub(r) {
-	// the ERPNext auto name, shown small when the original ref took its place
-	return r && r.supplier_pi_ref && r.supplier_pi_ref !== r.name ? r.name : "";
 }
 function grp(v) {
 	// Follow the user's locale like every other number on the page — a hardcoded
@@ -267,15 +262,6 @@ onMounted(() => {
 
 const fm = (v, ccy) => formatMoney(v, ccy || "", user.value.language);
 
-// ---- Supersede with a Commercial Invoice ----
-const supersedeFor = ref(null); // row being superseded
-const supersedeCi = ref("");
-const superseding = ref(false);
-
-function openSupersede(row) {
-	supersedeFor.value = row;
-	supersedeCi.value = "";
-}
 function openLinkedCis(row) {
 	if (!row || !row.name) return;
 	router.push({ path: "/imports/commercial-invoices", query: { proforma: row.name } });
@@ -284,31 +270,6 @@ function filterBySupplier(sup) {
 	if (!sup) return;
 	search.value = sup;
 	load();
-}
-function searchCIs(q) {
-	return call("stabler.api.imports.list_commercial_invoices", {
-		company: activeCompany.value,
-		search: q,
-		limit: 20,
-	});
-}
-async function doSupersede() {
-	if (!supersedeCi.value) return;
-	superseding.value = true;
-	try {
-		await call("stabler.api.imports.link_proforma_to_ci", {
-			proforma: supersedeFor.value.name,
-			commercial_invoice: supersedeCi.value,
-			company: activeCompany.value,
-		});
-		toast.success(t("Proforma linked to Commercial Invoice"));
-		supersedeFor.value = null;
-		load();
-	} catch (err) {
-		toast.error(err?.message || t("Could not link the proforma."));
-	} finally {
-		superseding.value = false;
-	}
 }
 
 const canSupersede = (row) => ["DRAFT", "CONFIRMED"].includes(row.status);

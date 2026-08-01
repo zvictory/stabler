@@ -22,7 +22,7 @@ class TestDaysInStage(unittest.TestCase):
 		self.assertEqual(sla.days_in_stage("2026-08-01", "2026-08-01"), 0)
 
 	def test_a_missing_stamp_is_unknown_not_zero(self):
-		""""Bilmiyoruz" ile "sıfır gündür" aynı şey değil. Sıfır döndürmek,
+		""" "Bilmiyoruz" ile "sıfır gündür" aynı şey değil. Sıfır döndürmek,
 		damgası olmayan her eski anlaşmayı bugün taşınmış gibi gösterir ve
 		ekran taptaze bir hat uydururdu."""
 		for empty in (None, "", "   "):
@@ -149,10 +149,9 @@ class TestTheTenantReaderMatchesTheDefaults(unittest.TestCase):
 
 		root = Path(__file__).resolve().parents[1]
 		doc = json.loads(
-			(
-				root
-				/ "stabler/doctype/stabler_tender_stage_sla/stabler_tender_stage_sla.json"
-			).read_text(encoding="utf-8")
+			(root / "stabler/doctype/stabler_tender_stage_sla/stabler_tender_stage_sla.json").read_text(
+				encoding="utf-8"
+			)
 		)
 		columns = {
 			f["fieldname"][len("sla_") : -len("_days")]
@@ -167,15 +166,14 @@ class TestTheTenantReaderMatchesTheDefaults(unittest.TestCase):
 
 		root = Path(__file__).resolve().parents[1]
 		doc = json.loads(
-			(
-				root
-				/ "stabler/doctype/stabler_tender_stage_sla/stabler_tender_stage_sla.json"
-			).read_text(encoding="utf-8")
+			(root / "stabler/doctype/stabler_tender_stage_sla/stabler_tender_stage_sla.json").read_text(
+				encoding="utf-8"
+			)
 		)
 		self.assertEqual(doc.get("istable"), 1)
-		settings = (
-			root / "stabler/doctype/stabler_settings/stabler_settings.json"
-		).read_text(encoding="utf-8")
+		settings = (root / "stabler/doctype/stabler_settings/stabler_settings.json").read_text(
+			encoding="utf-8"
+		)
 		self.assertIn('"options": "Stabler Tender Stage SLA"', settings)
 
 	def test_a_blank_cell_switches_the_stage_off_instead_of_reverting(self):
@@ -185,7 +183,7 @@ class TestTheTenantReaderMatchesTheDefaults(unittest.TestCase):
 			__import__("pathlib").Path(__file__).resolve().parents[1]
 			/ "stabler/doctype/stabler_settings/stabler_settings.py"
 		).read_text(encoding="utf-8")
-		block = reader[reader.index("def stage_sla_for"):]
+		block = reader[reader.index("def stage_sla_for") :]
 		block = block[: block.index("\ndef module_map_for")]
 		self.assertIn('int(getattr(row, f"sla_{stage}_days", 0) or 0)', block)
 		self.assertNotIn("DEFAULT_STAGE_SLA_DAYS.get(stage)", block)

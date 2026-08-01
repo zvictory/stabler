@@ -50,9 +50,17 @@ class TestTheMigrationIsComplete(unittest.TestCase):
 	"""Yarı taşınmış ekran, taşınmamış ekrandan kötüdür: aynı sayfada iki dil."""
 
 	LEFTOVERS = (
-		"card-body", "card-header", "card-table", "table-vcenter",
-		"offcanvas", "progress-bar", "spinner-border", "input-icon",
-		"btn-group", "list-group", "avatar",
+		"card-body",
+		"card-header",
+		"card-table",
+		"table-vcenter",
+		"offcanvas",
+		"progress-bar",
+		"spinner-border",
+		"input-icon",
+		"btn-group",
+		"list-group",
+		"avatar",
 	)
 
 	def test_no_tabler_component_markup_survives(self):
@@ -118,7 +126,9 @@ class TestStageNamesComeFromTheLanes(unittest.TestCase):
 		self.assertIn("l.id === id", fn.group(0))
 
 	def test_the_move_toast_names_the_stage_properly(self):
-		self.assertRegex(CRM, r'toast\.success\(t\("Moved to \{0\}"\)\.replace\("\{0\}", stageLabel\(targetLaneId\)\)\)')
+		self.assertRegex(
+			CRM, r'toast\.success\(t\("Moved to \{0\}"\)\.replace\("\{0\}", stageLabel\(targetLaneId\)\)\)'
+		)
 
 
 class TestEverythingClickableIsReachableByKeyboard(unittest.TestCase):
@@ -134,7 +144,9 @@ class TestEverythingClickableIsReachableByKeyboard(unittest.TestCase):
 				self.assertIn("@keydown.enter", block)
 
 	def test_the_drawer_is_a_dialog_and_names_itself(self):
-		self.assertRegex(FLAT, r'<aside class="ds-drawer" role="dialog" aria-modal="true" aria-labelledby="crm-dw-title">')
+		self.assertRegex(
+			FLAT, r'<aside class="ds-drawer" role="dialog" aria-modal="true" aria-labelledby="crm-dw-title">'
+		)
 		self.assertRegex(FLAT, r'id="crm-dw-title"')
 
 	def test_the_backdrop_is_a_real_control_with_a_label(self):
@@ -149,7 +161,7 @@ class TestTheKpiStripIsHonest(unittest.TestCase):
 	def test_kpis_derive_from_the_existing_payload(self):
 		"""Yeni bir uç nokta eklenmedi — dördü de crm_board'ın döndürdüğü
 		alanlardan çıkıyor."""
-		block = SCRIPT[SCRIPT.index("const kpis = computed("):]
+		block = SCRIPT[SCRIPT.index("const kpis = computed(") :]
 		block = block[: block.index("\n});")]
 		for field in ("contract_value", "has_min_5", "has_2_countries", "risk", "doc_progress"):
 			with self.subTest(field=field):

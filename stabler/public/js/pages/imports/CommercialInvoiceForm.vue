@@ -77,9 +77,6 @@ const canRollback = computed(() =>
 	(session.roles || []).some((r) => ["Imports Manager", "System Manager", "Stabler Admin"].includes(r))
 );
 
-const customsFee = ref(null);
-const computingFee = ref(false);
-
 // Vendor categories for the per-line category dropdown
 const lineCategories = ref([]);
 const categoryOptions = computed(() =>
@@ -267,13 +264,6 @@ const itemCategories = computed(() => [
 	...new Set((form.value.items || []).map((r) => r.category).filter(Boolean)),
 ]);
 
-const totalKg = computed(() =>
-	form.value.items.reduce((sum, r) => sum + Number(r.qty || 0), 0)
-);
-const totalBoxesCount = computed(() =>
-	form.value.items.reduce((sum, r) => sum + Number(r.boxes || 0), 0)
-);
-
 async function loadLineCategories() {
 	if (!form.value.supplier) {
 		lineCategories.value = [];
@@ -335,12 +325,6 @@ function addItem() {
 }
 function removeItem(i) {
 	form.value.items.splice(i, 1);
-}
-function pickItem(row, item) {
-	row.item = item.item_code || item.name;
-	row.item_name = item.item_name || item.name;
-	if (!row.description) row.description = item.item_name || "";
-	if (!row.uom) row.uom = item.stock_uom || "Kg";
 }
 
 function onBoxesOrWeightInput(row) {
@@ -510,18 +494,6 @@ function applyMultiPiAllocation() {
 	toast.success(t("Added {count} item lines from selected PIs.", { count: addedCount }));
 }
 
-const bandarAbbasBalance = computed(() => {
-	const agreed = Number(itemsAgreedTotal.value) || 0;
-	const docs = Number(itemsDocsTotal.value) || 0;
-	const cashDiff = Number(itemsCashDiff.value) || 0;
-
-	return {
-		total70Pct: agreed * 0.70,
-		bank70Pct: docs * 0.70,
-		cash70Pct: cashDiff * 0.70,
-	};
-});
-
 async function loadDoc() {
 	if (isCreate.value) {
 		form.value = blankForm();
@@ -553,7 +525,6 @@ async function loadDoc() {
 			containers: d.containers || [],
 			customs_declarations: d.customs_declarations || [],
 		};
-		customsFee.value = d.customs_fee_breakdown || null;
 		loadLineCategories();
 		await refreshPiTracking();
 	} catch (err) {
@@ -881,25 +852,6 @@ const rollbackTarget = computed(() => {
 	const idx = PIPELINE.indexOf(form.value.status);
 	return idx > 0 ? PIPELINE[idx - 1] : null;
 });
-
-async function computeFee(apply) {
-	computingFee.value = true;
-	try {
-		customsFee.value = await importsApi.computeCustomsFee({
-			commercial_invoice: docName.value,
-			off_hours: form.value.customs_fee_off_hours ? 1 : 0,
-			apply: apply ? 1 : 0,
-		});
-		if (apply) {
-			toast.success(t("Customs fee applied."));
-			await loadDoc();
-		}
-	} catch (err) {
-		toast.error(err?.message || t("Could not compute the customs fee."));
-	} finally {
-		computingFee.value = false;
-	}
-}
 
 const fm = (v, ccy) => formatMoney(v, ccy || "USD", user.value?.language || "en");
 const fn = (v) => {

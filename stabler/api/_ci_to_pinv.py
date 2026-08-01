@@ -133,8 +133,10 @@ def invoice_drift(agreed_total, ci_lines, invoiced_total, pinv_lines, eps: float
 			changed.append(
 				{
 					"item_code": code,
-					"amount_now": a["amount"], "amount_booked": b["amount"],
-					"qty_now": a["qty"], "qty_booked": b["qty"],
+					"amount_now": a["amount"],
+					"amount_booked": b["amount"],
+					"qty_now": a["qty"],
+					"qty_booked": b["qty"],
 					"delta": round(a["amount"] - b["amount"], 2),
 				}
 			)

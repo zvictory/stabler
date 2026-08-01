@@ -229,9 +229,9 @@ guards:
 	  echo "ERROR: manual table-striped is redundant -- striping is global in stabler.css"; \
 	  echo "$$hits"; fail=1; fi; \
 	hits=$$(grep -rnE '\{\{[^}]*\.(posting_date|transaction_date|due_date|creation|modified|schedule_date|valid_till|start_date|end_date)\b[^}]*\}\}' \
-	         stabler/public/js --include='*.vue' | grep -v 'formatDate' || true); \
+	         stabler/public/js --include='*.vue' | grep -vE 'formatDate|formatTime' || true); \
 	if [ -n "$$hits" ]; then \
-	  echo "ERROR: raw date interpolation -- wrap in formatDate()/formatDateTime()"; \
+	  echo "ERROR: raw date interpolation -- wrap in formatDate()/formatDateTime()/formatTime()"; \
 	  echo "$$hits"; fail=1; fi; \
 	hits=$$(grep -rnE '(==|!=|===|!==)[[:space:]]*["'"'"'](anjan|msa|mikas|dts|horeca|laminor|smartbox)' \
 	         stabler --include='*.py' --include='*.vue' --include='*.js' \

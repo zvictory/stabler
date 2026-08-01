@@ -47,8 +47,7 @@ class TestTheKnownBrokenLineIsFixed(unittest.TestCase):
 	msgstr'ye çözülüyor, dörde bölünmüyor."""
 
 	MSGID = (
-		"Type a product code in the search above — stock status shows in the "
-		"list, picking adds it as a line."
+		"Type a product code in the search above — stock status shows in the list, picking adds it as a line."
 	)
 
 	def test_the_msgid_resolves_to_exactly_one_row_with_two_fields(self):

@@ -3,8 +3,8 @@ import { computed, onMounted, ref, watch } from "vue";
 import { storeToRefs } from "pinia";
 import { useSession } from "../../stores/session.js";
 import { call } from "../../api/client.js";
-import { formatMoney, balanceState } from "../../composables/money.js";
-import { formatDate, formatDateTime, formatTime } from "../../composables/date.js";
+import { formatMoney } from "../../composables/money.js";
+import { formatDate, formatTime } from "../../composables/date.js";
 import { t } from "../../composables/i18n.js";
 import { useConfirm } from "../../composables/useConfirm.js";
 import { useToast } from "../../composables/useToast.js";
@@ -647,19 +647,6 @@ const trendOptions = computed(() => ({
 		marker: { show: false }
 	}
 }));
-
-function getRowRemark(e) {
-	if (e.remarks && e.remarks.trim()) {
-		return e.remarks;
-	}
-	if (e.against_voucher) {
-		return `${t("against")} ${e.against_voucher}`;
-	}
-	if (e.against && !e.against.includes(e.party || "")) {
-		return e.against;
-	}
-	return "—";
-}
 
 watch(selected, (newVal) => {
 	if (!newVal) {
@@ -1639,7 +1626,7 @@ watch(activeCompany, () => {
 							</div>
 							<div class="col-md-6">
 								<label class="form-label">{{ t("Type") }}</label>
-								<Select v-model="form.supplier_type" :options="supplierTypeOptions" />
+								<Select v-model="form.supplier_type" :options="SUPPLIER_TYPES" />
 							</div>
 							<div class="col-md-6">
 								<label class="form-label">{{ t("Tax ID") }}</label>

@@ -85,9 +85,9 @@ DEMO_LOTS = [
 #: Son tarihler operasyon masasının severity dilini üretiyor: biri geçmiş,
 #: biri bugün, biri 48 saat içinde, kalanı ileride.
 DEADLINE_OFFSETS = {
-	"UTY-2026-4305": -1,   # geçmiş
-	"UTY-2026-4308": 0,    # bugün
-	"UTY-2026-4310": 2,    # 48 saat
+	"UTY-2026-4305": -1,  # geçmiş
+	"UTY-2026-4308": 0,  # bugün
+	"UTY-2026-4310": 2,  # 48 saat
 	"UTY-2026-4302": 11,
 	"UTY-2026-4306": 18,
 	"UTY-2026-4309": 25,
@@ -206,9 +206,7 @@ def _guard(company: str) -> None:
 
 
 def _demo_exists() -> bool:
-	return bool(
-		frappe.db.exists("CRM Deal", {"custom_tender_intake": ["like", f"%{DEMO_SUFFIX}%"]})
-	)
+	return bool(frappe.db.exists("CRM Deal", {"custom_tender_intake": ["like", f"%{DEMO_SUFFIX}%"]}))
 
 
 def _org(name: str) -> str:
@@ -258,9 +256,8 @@ def _demo_item() -> str:
 	doc = frappe.new_doc("Item")
 	doc.item_code = title
 	doc.item_name = title
-	doc.item_group = (
-		frappe.db.get_value("Item Group", {"is_group": 0}, "name")
-		or frappe.db.get_value("Item Group", {}, "name")
+	doc.item_group = frappe.db.get_value("Item Group", {"is_group": 0}, "name") or frappe.db.get_value(
+		"Item Group", {}, "name"
 	)
 	doc.stock_uom = frappe.db.get_value("UOM", {"name": "Nos"}) or frappe.db.get_value("UOM", {}, "name")
 	doc.is_stock_item = 0
@@ -268,8 +265,9 @@ def _demo_item() -> str:
 	return doc.name
 
 
-def _quotations(deal: str, company: str, lot_no: str, sq_count: int, countries: int,
-                value: int, bid_deadline: str) -> int:
+def _quotations(
+	deal: str, company: str, lot_no: str, sq_count: int, countries: int, value: int, bid_deadline: str
+) -> int:
 	"""Lotun teklif setini GERÇEKTEN yarat, sayısını intake'e yazmakla yetinme.
 
 	CRM panosu `sq_count`'u kolondan değil, `custom_crm_deal` ile bağlı Supplier
@@ -343,8 +341,14 @@ def _orders(deal_by_lot: dict[str, str], company: str) -> int:
 		order.schedule_date = eta
 		if has_landed and customs:
 			order.custom_landed_charges = json.dumps(
-				[{"type": "customs", "label": f"Bojxona to'lovi{DEMO_SUFFIX}",
-				  "amount": customs, "tnved": tnved}],
+				[
+					{
+						"type": "customs",
+						"label": f"Bojxona to'lovi{DEMO_SUFFIX}",
+						"amount": customs,
+						"tnved": tnved,
+					}
+				],
 				ensure_ascii=False,
 			)
 		order.append(
@@ -395,9 +399,15 @@ def _intake(lot_no: str, buyer: str, stage: str, value: int, owner: str, assigne
 		"delivery_deadline": add_days(nowdate(), DELIVERY_OFFSETS.get(lot_no, 90)),
 		"documents": [
 			{"name": "Texnik spetsifikatsiya", "status": "ready"},
-			{"name": "Kafolat xati", "status": "ready" if stage in ("priced", "submitted", "won", "lost") else "pending"},
+			{
+				"name": "Kafolat xati",
+				"status": "ready" if stage in ("priced", "submitted", "won", "lost") else "pending",
+			},
 			{"name": "Litsenziya nusxasi", "status": "ready" if stage != "seen" else "pending"},
-			{"name": "Narx taklifi", "status": "ready" if stage in ("submitted", "won", "lost") else "pending"},
+			{
+				"name": "Narx taklifi",
+				"status": "ready" if stage in ("submitted", "won", "lost") else "pending",
+			},
 		],
 	}
 	if stage != "seen":
@@ -579,9 +589,7 @@ def unseed(company: str = "Mikas"):
 	for row in deals:
 		# Olay kayıtları değişmez (on_trash engelliyor); anlaşmayı silmeden
 		# önce doğrudan tablodan düşürülüyor — demo verisi tarih değil.
-		frappe.db.sql(
-			"DELETE FROM `tabCRM Stage Event` WHERE deal = %(deal)s", {"deal": row["name"]}
-		)
+		frappe.db.sql("DELETE FROM `tabCRM Stage Event` WHERE deal = %(deal)s", {"deal": row["name"]})
 		frappe.delete_doc("CRM Deal", row["name"], force=True, ignore_permissions=True)
 
 	orgs = frappe.get_all(

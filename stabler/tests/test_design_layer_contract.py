@@ -174,7 +174,8 @@ class TestCyrillicCoverage(unittest.TestCase):
 		for block in cyrillic:
 			with self.subTest(block=block[:60]):
 				self.assertNotIn(
-					"archivo", block.lower(),
+					"archivo",
+					block.lower(),
 					"Kiril aralığı Archivo'ya bağlanmış — o fontta Kiril yok",
 				)
 
@@ -192,7 +193,8 @@ class TestTextEmphasisTokensAreLiteral(unittest.TestCase):
 				decl = re.search(rf"{token}:\s*([^;]+);", CSS_NO_COMMENTS)
 				self.assertIsNotNone(decl, f"{token} tanımlı değil")
 				self.assertNotIn(
-					"text-emphasis", decl.group(1),
+					"text-emphasis",
+					decl.group(1),
 					f"{token} Tabler emphasis rampasına bağlanmış",
 				)
 

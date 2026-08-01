@@ -29,9 +29,9 @@ CLASSIC = (ROOT / "public/js/pages/sales/SalesOrderFormClassic.vue").read_text(e
 FORMS = {"SalesOrderFormModern.vue": FORM, "SalesOrderFormClassic.vue": CLASSIC}
 ORG = (ROOT / "api/organization.py").read_text(encoding="utf-8")
 SETTINGS = (ROOT / "stabler/doctype/stabler_settings/stabler_settings.py").read_text(encoding="utf-8")
-MODULES_JSON_TEXT = (
-	ROOT / "stabler/doctype/stabler_company_modules/stabler_company_modules.json"
-).read_text(encoding="utf-8")
+MODULES_JSON_TEXT = (ROOT / "stabler/doctype/stabler_company_modules/stabler_company_modules.json").read_text(
+	encoding="utf-8"
+)
 ADMIN = (ROOT / "public/js/pages/admin/Companies.vue").read_text(encoding="utf-8")
 PATCHES = (ROOT / "patches.txt").read_text(encoding="utf-8")
 PATCH = (ROOT / "patches/v64_enable_sales_box_uom.py").read_text(encoding="utf-8")
@@ -46,7 +46,7 @@ class TestTheKorobkaConstantIsGone(unittest.TestCase):
 
 class TestPreferredSalesUomGatesOnTheFlag(unittest.TestCase):
 	def _body(self, src):
-		fn = src[src.index("function preferredSalesUom("):]
+		fn = src[src.index("function preferredSalesUom(") :]
 		return fn[: fn.index("\n}\n")]
 
 	def test_the_flag_is_read_from_session_modules(self):
@@ -70,7 +70,7 @@ class TestTheTenantPreferenceIsWired(unittest.TestCase):
 	def test_the_key_exists_in_the_defaults(self):
 		"""Anahtar DEFAULT_MODULE_ENABLED'da yoksa module_map_for onu hiç
 		döndürmez ve session.modules?.sales_box_uom her zaman undefined kalır."""
-		block = SETTINGS[SETTINGS.index("DEFAULT_MODULE_ENABLED = {"):]
+		block = SETTINGS[SETTINGS.index("DEFAULT_MODULE_ENABLED = {") :]
 		block = block[: block.index("\n}")]
 		self.assertIn('"sales_box_uom": False', block)
 
@@ -89,7 +89,7 @@ class TestTheTenantPreferenceIsWired(unittest.TestCase):
 
 class TestTheFlagIsActuallyTogglable(unittest.TestCase):
 	def test_the_update_api_accepts_the_flag(self):
-		fn = ORG[ORG.index("def update_company_modules("):]
+		fn = ORG[ORG.index("def update_company_modules(") :]
 		fn = fn[: fn.index("\n@frappe.whitelist()")]
 		self.assertRegex(fn, r"\n\tsales_box_uom=None,")
 		self.assertIn('"enable_sales_box_uom": sales_box_uom,', fn)

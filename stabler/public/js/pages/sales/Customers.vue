@@ -1,11 +1,11 @@
 <script setup>
 import { computed, onMounted, ref, watch } from "vue";
 import { storeToRefs } from "pinia";
-import { useRoute, useRouter } from "vue-router";
+import { useRouter } from "vue-router";
 import { useSession } from "../../stores/session.js";
 import { call } from "../../api/client.js";
-import { formatMoney, balanceState } from "../../composables/money.js";
-import { formatDate, formatDateTime, formatTime } from "../../composables/date.js";
+import { formatMoney } from "../../composables/money.js";
+import { formatDate, formatTime } from "../../composables/date.js";
 import { t } from "../../composables/i18n.js";
 import { useConfirm } from "../../composables/useConfirm.js";
 import { useToast } from "../../composables/useToast.js";
@@ -24,7 +24,6 @@ import { useListViewState } from "../../composables/useListViewState.js";
 import { useEscapeBack } from "../../composables/useEscapeBack.js";
 
 const session = useSession();
-const route = useRoute();
 const router = useRouter();
 const { activeCompany, user } = storeToRefs(session);
 // Direct (order-less) sales invoices are an imports-module capability.
@@ -741,19 +740,6 @@ const trendOptions = computed(() => ({
 		marker: { show: false }
 	}
 }));
-
-function getRowRemark(e) {
-	if (e.remarks && e.remarks.trim()) {
-		return e.remarks;
-	}
-	if (e.against_voucher) {
-		return `${t("against")} ${e.against_voucher}`;
-	}
-	if (e.against && !e.against.includes(e.party || "")) {
-		return e.against;
-	}
-	return "—";
-}
 
 watch(selected, (newVal) => {
 	if (!newVal) {
