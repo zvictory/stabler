@@ -342,6 +342,7 @@ def _orders(deal_by_lot: dict[str, str], company: str) -> int:
 		eta = add_days(nowdate(), eta_days)
 		order = frappe.new_doc("Purchase Order")
 		order.company = company
+		order.custom_crm_deal = deal
 		order.supplier = _supplier(supplier_name, country)
 		# Sipariş tarihi ETA'dan önce olmalı; geçmiş ETA'lı satırda bugünü
 		# aşmasın diye bugünle sınırlanıyor.

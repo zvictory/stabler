@@ -308,6 +308,31 @@ class TestTheQuotationsMakeTheBoardsTellTheTruth(unittest.TestCase):
 			with self.subTest(board=board):
 				self.assertIn(board, SEED, f"çıktı satırı {board} panosunu saymıyor")
 
+	def test_each_document_actually_writes_the_link_it_is_selected_by(self):
+		"""Bağ kurulmazsa iki pano yine boş açılır — sipariş üretilmiş olsa bile.
+
+		`_po_rows_for_views` satırları `custom_crm_deal: ["is", "set"]` ile
+		süzüyor; alan boşsa kayıt hiç görünmez. Bu testin var oluş nedeni
+		ölçülmüş bir hata (2026-08-02, yerel Mikas): `_orders()` anlaşmayı
+		`deal_by_lot`'tan okuyor ama yalnızca `if not deal: continue` için
+		kullanıyor, belgeye hiç yazmıyordu. Beş sipariş doğru tedarikçilerle
+		oluştu, beşinin de `custom_crm_deal` alanı NULL kaldı, gümrük ve
+		lojistik panoları boş açıldı.
+
+		Komşu iddialar bunu yakalayamadı çünkü hepsi niyeti sınıyordu: veri
+		tablosu dolu mu, lotlar kazanılmış mı, çıktı satırı altı panoyu sayıyor
+		mu. Üçü de yeşilken bağ kopuk olabiliyordu. Sorulması gereken tek şey
+		atamanın kendisiydi. Teklif tarafı da aynı tuzağa açık, o yüzden iki
+		yazıcı birlikte kilitleniyor.
+		"""
+		for fn, var in (("_orders", "order"), ("_quotations", "quotation")):
+			with self.subTest(fn=fn):
+				self.assertIn(
+					f"{var}.custom_crm_deal = deal",
+					_fn(fn),
+					f"{fn}() anlaşma bağını belgeye yazmıyor; panolar boş açılır",
+				)
+
 	def test_the_order_line_covers_every_state_both_boards_can_show(self):
 		"""Tek durumlu bir hat, iki panoyu da tek satır göstererek 'çalışıyor'
 		izlenimi verir. Kuyruk boşsa fark edilir; hepsi aynıysa fark edilmez.
