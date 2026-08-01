@@ -1,0 +1,614 @@
+<!doctype html>
+<html lang="tr">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Satış Siparişi (Classic) — mevcut hâl prototipi</title>
+<style>
+:root{
+  --blue:#206bc4; --blue-lt:#e8f0fb;
+  --green:#2fb344; --green-lt:#e8f7ec;
+  --red:#d63939;  --red-lt:#fbeaea;
+  --yellow:#f59f00; --yellow-lt:#fdf4e3;
+  --orange:#f76707; --orange-lt:#fdeee4;
+  --purple:#ae3ec9; --purple-lt:#f7e9fb;
+  --gray:#6c7a91; --gray-lt:#f1f3f6;
+  --border:#e3e5e8; --body:#f6f7f9; --card:#fff; --text:#1a2233;
+  --mono:ui-monospace,SFMono-Regular,"SF Mono",Menlo,Consolas,monospace;
+}
+*{box-sizing:border-box}
+body{margin:0;background:var(--body);color:var(--text);
+  font:400 14px/1.45 -apple-system,BlinkMacSystemFont,"Segoe UI",Roboto,Helvetica,Arial,sans-serif;}
+.wrap{max-width:1440px;margin:0 auto;padding:24px 20px 64px}
+h1{font-size:20px;margin:0 0 4px}
+.mono{font-family:var(--mono)}
+.sec{color:var(--gray)}
+.sm{font-size:12.5px}
+.xs{font-size:11.5px}
+.b{font-weight:600}
+.bold{font-weight:700}
+.tr{text-align:right}
+.mt2{margin-top:8px}.mt3{margin-top:16px}.mb1{margin-bottom:4px}.mb2{margin-bottom:8px}.mb3{margin-bottom:16px}
+
+/* meta banner (prototip hakkında — gerçek UI'da yok) */
+.meta{background:#fffbe6;border:1px solid #ffe58f;border-radius:8px;padding:12px 14px;margin-bottom:24px;font-size:13px}
+.meta code{background:#fff;border:1px solid var(--border);border-radius:4px;padding:1px 5px;font-family:var(--mono);font-size:12px}
+.screen-label{display:flex;align-items:baseline;gap:10px;margin:40px 0 10px;padding-top:24px;border-top:2px dashed #c8ccd4}
+.screen-label h2{font-size:16px;margin:0}
+.screen-label span{color:var(--gray);font-size:12.5px}
+
+/* FormPage kabuğu */
+.page{background:var(--card);border:1px solid var(--border);border-radius:8px;overflow:hidden}
+.page-head{display:flex;align-items:center;gap:12px;padding:14px 20px;border-bottom:1px solid var(--border)}
+.page-head .back{color:var(--gray);text-decoration:none;font-size:13px}
+.page-head h3{font-size:17px;margin:0}
+.page-body{padding:20px}
+.actions{display:flex;flex-wrap:wrap;align-items:center;gap:8px;padding:12px 20px;border-top:1px solid var(--border);background:#fbfbfc}
+.ms-auto{margin-left:auto}
+
+/* form */
+.row{display:flex;flex-wrap:wrap;margin:0 -8px}
+.col{padding:0 8px;margin-bottom:16px}
+.c6{width:50%}.c3{width:25%}.cauto{width:auto}
+label.fl{display:block;font-size:12.5px;color:#54637a;margin-bottom:4px}
+label.fl.req::after{content:" *";color:var(--red)}
+.control{border:1px solid var(--border);border-radius:6px;padding:7px 10px;background:#fff;font-size:14px}
+.control.dis{background:#fafbfc;color:#54637a}
+.plain{padding:5px 0}
+.caret::after{content:"⌄";float:right;color:var(--gray);margin-top:-4px}
+
+/* badges / alerts */
+.badge{display:inline-block;border-radius:100px;padding:2px 9px;font-size:11.5px;font-weight:600;line-height:1.5}
+.bg-green-lt{background:var(--green-lt);color:#1a7a2b}
+.bg-blue-lt{background:var(--blue-lt);color:#17549b}
+.bg-red-lt{background:var(--red-lt);color:#a82a2a}
+.bg-yellow-lt{background:var(--yellow-lt);color:#9a6600}
+.bg-orange-lt{background:var(--orange-lt);color:#b34e05}
+.bg-purple-lt{background:var(--purple-lt);color:#8a30a0}
+.bg-secondary-lt{background:var(--gray-lt);color:#4a5568}
+.alert{border-radius:6px;padding:10px 12px;margin-bottom:16px;font-size:13px;border:1px solid transparent}
+.alert-info{background:var(--blue-lt);border-color:#c9ddf6;color:#17549b}
+.alert-warning{background:var(--yellow-lt);border-color:#f6e0b0;color:#8a5c00}
+.alert-purple{background:var(--purple-lt);border-color:#eccdf4;color:#8a30a0}
+
+/* steps */
+.steps{display:flex;counter-reset:s;margin:0;padding:0;list-style:none}
+.steps li{counter-increment:s;flex:1;position:relative;padding-top:24px;text-align:center;font-size:12.5px;color:var(--gray)}
+.steps li::before{content:counter(s);position:absolute;top:0;left:50%;transform:translateX(-50%);
+  width:18px;height:18px;border-radius:50%;background:#dfe3e8;color:#fff;font-size:11px;line-height:18px;font-weight:700}
+.steps li::after{content:"";position:absolute;top:8px;left:-50%;width:100%;height:2px;background:#dfe3e8;z-index:-1}
+.steps li:first-child::after{display:none}
+.steps li.active{color:var(--text);font-weight:600}
+.steps li.active::before{background:var(--blue)}
+
+/* datagrid */
+.datagrid{display:grid;grid-template-columns:repeat(auto-fit,minmax(160px,1fr));gap:14px 20px;
+  border:1px solid var(--border);border-radius:8px;padding:14px 16px;margin-bottom:16px;background:#fcfcfd}
+.datagrid-title{font-size:11px;text-transform:uppercase;letter-spacing:.03em;color:var(--gray);margin-bottom:2px}
+.datagrid-content{font-family:var(--mono);font-size:14px}
+
+/* tables */
+table{width:100%;border-collapse:collapse}
+th{font-size:11px;text-transform:uppercase;letter-spacing:.03em;color:var(--gray);font-weight:600;
+  text-align:left;padding:8px 8px;border-bottom:1px solid var(--border);white-space:nowrap}
+td{padding:8px;border-bottom:1px solid #f0f1f3;vertical-align:top}
+.tbl-wrap{overflow-x:auto;border:1px solid var(--border);border-radius:8px}
+.striped tbody tr:nth-child(odd){background:#fafbfc}
+.rowbtn{display:inline-block;width:20px;height:20px;line-height:18px;text-align:center;border:1px solid var(--border);
+  border-radius:4px;color:var(--gray);font-size:11px;background:#fff}
+.itemname{font-weight:500}
+.avail{font-size:11.5px;color:var(--gray);margin-top:3px}
+.avail.over{color:var(--red);font-weight:600}
+.uomsub{font-size:11px;color:var(--gray);margin-top:3px}
+
+/* switch */
+.switch{display:inline-flex;align-items:center;gap:7px;font-size:12.5px;color:var(--gray)}
+.switch i{width:32px;height:18px;border-radius:100px;background:#d3d8e0;position:relative;display:inline-block}
+.switch i::after{content:"";position:absolute;top:2px;left:2px;width:14px;height:14px;border-radius:50%;background:#fff}
+.switch.on i{background:var(--blue)}
+.switch.on i::after{left:16px}
+
+/* totals block */
+.totals{border:1px solid var(--border);border-radius:8px;padding:14px;min-width:260px}
+.totals .l{display:flex;justify-content:space-between;margin-bottom:4px}
+.totals .grand{display:flex;justify-content:space-between;border-top:1px solid var(--border);padding-top:8px;margin-top:6px}
+.totals .grand span:last-child{font-family:var(--mono);font-weight:700;font-size:22px}
+
+/* progress */
+.progress{height:6px;border-radius:100px;background:var(--gray-lt);overflow:hidden;margin-bottom:10px}
+.progress > div{height:100%}
+.pg-green{background:var(--green)}.pg-blue{background:var(--blue)}
+
+/* card */
+.card{border:1px solid var(--border);border-radius:8px;background:#fff;margin-top:16px}
+.card-head{padding:12px 16px;border-bottom:1px solid var(--border);font-weight:600}
+.card-body{padding:16px}
+h6.subhead{font-size:11px;text-transform:uppercase;letter-spacing:.03em;color:var(--gray);margin:0 0 8px}
+
+/* buttons */
+.btn{border-radius:6px;padding:7px 13px;font-size:13.5px;font-weight:500;border:1px solid transparent;background:#fff;cursor:default;white-space:nowrap}
+.btn-primary{background:var(--blue);border-color:var(--blue);color:#fff}
+.btn-outline-primary{border-color:var(--blue);color:var(--blue)}
+.btn-success{background:var(--green);border-color:var(--green);color:#fff}
+.btn-outline-danger{border-color:var(--red);color:var(--red)}
+.btn-outline-secondary{border-color:var(--border);color:#4a5568}
+.btn-link{border:0;color:var(--gray);background:transparent}
+.btn[disabled]{opacity:.5}
+.warnline{width:100%;color:var(--red);font-size:12.5px;margin-bottom:2px}
+
+@media (max-width:900px){ .c6,.c3{width:100%} }
+</style>
+</head>
+<body>
+<div class="wrap">
+
+<h1>Satış Siparişi (Classic) — mevcut hâlin fotoğrafı</h1>
+<div class="meta">
+  <b>Bu bir tasarım önerisi değildir.</b> <code>SalesOrderFormClassic.vue</code>
+  (commit <code>2e013ef</code>, 1379 satır) ekranının bugünkü hâlinin statik dökümüdür.
+  <b>Yerleşim referansıdır, piksel referansı değil</b> — Tabler CSS'inin tamamı gömülü değil.<br>
+  <b>Veri gerçektir.</b> anjan prod sitesinden salt-okunur çekilmiştir:
+  <code>SAL-ORD-2026-13678</code> (7 satır) ve <code>SAL-ORD-2026-08415</code> (22 satır).
+  Hiçbir rakam uydurulmamıştır. <b>Tek istisna yerleşimdedir:</b> <code>13678</code> prod'da
+  onaylanmış durumdadır (<code>To Deliver and Bill</code>); rakamları burada
+  <b>create yerleşiminde</b> gösteriliyor, çünkü amaç dolu bir giriş ekranını göstermek. Arayüz metinleri kaynak dizeleridir (İngilizce);
+  gerçekte <code>t()</code> üzerinden 5 dile çevrilir.<br>
+  Bu sarı kutu <b>gerçek ekranda yoktur</b>; ekran ayırıcı kesikli çizgiler de yoktur.
+</div>
+
+<!-- ══════════════════════════════════════════════════════════════════ -->
+<div class="screen-label">
+  <h2>Ekran 1 — create (giriş modu)</h2>
+  <span>veri: <span class="mono">SAL-ORD-2026-13678</span> · DOKON KOCHA Muhammadamin · 579 000 UZS · 7 satır</span>
+</div>
+
+<div class="page">
+  <div class="page-head">
+    <a class="back" href="#">← Sales Orders</a>
+    <h3>New Sales Order</h3>
+  </div>
+  <div class="page-body">
+
+    <!-- Header fields (:899-1002) -->
+    <div class="row">
+      <div class="col c6">
+        <label class="fl req">Customer</label>
+        <div class="control caret">DOKON KOCHA Muhammadamin</div>
+      </div>
+      <div class="col c6">
+        <label class="fl req">Warehouse</label>
+        <div class="control caret">Tayyor mahsulot (Tayyor mahsulot - A)</div>
+      </div>
+      <div class="col c6">
+        <label class="fl">Agreement</label>
+        <div class="control caret sec">Search agreement…</div>
+      </div>
+      <div class="col c3">
+        <label class="fl">Order date</label>
+        <div class="control">31.07.2026</div>
+      </div>
+      <div class="col c3">
+        <label class="fl">Price list</label>
+        <div class="control caret">Price Dokon (UZS)</div>
+      </div>
+      <div class="col c3">
+        <label class="fl">Currency</label>
+        <div class="control caret">UZS <span class="sec">(сўм)</span></div>
+      </div>
+    </div>
+
+    <!-- Exchange rate row (:1005-1026) -->
+    <div class="row">
+      <div class="col c3">
+        <label class="fl">Exchange rate <span class="sec xs">(1 USD = ? UZS)</span></label>
+        <div class="control mono tr">12 101,85</div>
+      </div>
+      <div class="col cauto" style="display:flex;align-items:flex-end;padding-bottom:9px">
+        <span class="sec sm">Total in USD: <span class="mono b">47,84 USD</span></span>
+      </div>
+    </div>
+
+    <!-- Items header (:1053-1059) -->
+    <div style="display:flex;align-items:center;margin-bottom:8px">
+      <h6 class="subhead" style="margin:0">Items</h6>
+      <span class="switch ms-auto"><i></i>Show discounts</span>
+    </div>
+
+    <!-- LineItemsEditor (:1061-1146) — edit mode -->
+    <div class="tbl-wrap">
+      <table>
+        <thead>
+          <tr>
+            <th style="width:80px"></th>
+            <th style="min-width:200px">Item</th>
+            <th style="width:110px" class="tr">Qty</th>
+            <th style="width:130px">UOM</th>
+            <th style="width:150px" class="tr">Rate</th>
+            <th style="width:150px" class="tr">Amount</th>
+          </tr>
+        </thead>
+        <tbody>
+          <tr>
+            <td><span class="rowbtn">↑</span> <span class="rowbtn">↓</span> <span class="rowbtn">✕</span></td>
+            <td><div class="itemname">AE663 · ANJAN CHOCOLATE 70 gr (20)</div>
+                <div class="avail">70 615 avail · 71 820 stock / 1 205 reserved</div></td>
+            <td class="tr mono">5</td>
+            <td>Dona</td>
+            <td class="tr mono">4 000,00</td>
+            <td class="tr mono">20 000,00</td>
+          </tr>
+          <tr>
+            <td><span class="rowbtn">↑</span> <span class="rowbtn">↓</span> <span class="rowbtn">✕</span></td>
+            <td><div class="itemname">AE661 · Anjan sgushonka 70gr (20)</div>
+                <div class="avail">64 715 avail · 65 132 stock / 417 reserved</div></td>
+            <td class="tr mono">17</td>
+            <td>Dona</td>
+            <td class="tr mono">4 000,00</td>
+            <td class="tr mono">68 000,00</td>
+          </tr>
+          <tr>
+            <td><span class="rowbtn">↑</span> <span class="rowbtn">↓</span> <span class="rowbtn">✕</span></td>
+            <td><div class="itemname">SE672 · SURPRISE OREO Shokolad (36)</div>
+                <div class="avail">9 481 avail · 11 304 stock / 1 823 reserved</div></td>
+            <td class="tr mono">23</td>
+            <td>Dona</td>
+            <td class="tr mono">6 000,00</td>
+            <td class="tr mono">138 000,00</td>
+          </tr>
+          <tr>
+            <td><span class="rowbtn">↑</span> <span class="rowbtn">↓</span> <span class="rowbtn">✕</span></td>
+            <td><div class="itemname">SE665 · JOLLY ANOR (50)</div>
+                <div class="avail">8 233 avail · 9 026 stock / 793 reserved</div></td>
+            <td class="tr mono">43</td>
+            <td>Dona</td>
+            <td class="tr mono">3 000,00</td>
+            <td class="tr mono">129 000,00</td>
+          </tr>
+          <tr>
+            <td><span class="rowbtn">↑</span> <span class="rowbtn">↓</span> <span class="rowbtn">✕</span></td>
+            <td><div class="itemname">SE658 · SURPRISE VOSTOK (60)</div>
+                <div class="avail">23 722 avail · 24 060 stock / 338 reserved</div></td>
+            <td class="tr mono">38</td>
+            <td>Dona</td>
+            <td class="tr mono">2 000,00</td>
+            <td class="tr mono">76 000,00</td>
+          </tr>
+          <tr>
+            <td><span class="rowbtn">↑</span> <span class="rowbtn">↓</span> <span class="rowbtn">✕</span></td>
+            <td><div class="itemname">SE600 · SURPRISE 15 KOPEYKA Sarq (60)</div>
+                <div class="avail">8 694 avail · 8 786 stock / 92 reserved</div></td>
+            <td class="tr mono">32</td>
+            <td>Dona</td>
+            <td class="tr mono">2 000,00</td>
+            <td class="tr mono">64 000,00</td>
+          </tr>
+          <tr>
+            <td><span class="rowbtn">↑</span> <span class="rowbtn">↓</span> <span class="rowbtn">✕</span></td>
+            <td><div class="itemname">SS111 · SURPRISE SEVEN ICE (22)</div>
+                <div class="avail">13 318 avail · 14 432 stock / 1 114 reserved</div></td>
+            <td class="tr mono">14</td>
+            <td>Dona</td>
+            <td class="tr mono">6 000,00</td>
+            <td class="tr mono">84 000,00</td>
+          </tr>
+          <tr>
+            <td colspan="6" style="border-bottom:0">
+              <span class="badge bg-secondary-lt">7 items</span>
+              <span class="badge bg-blue-lt mono" style="margin-left:4px">172 Dona</span>
+            </td>
+          </tr>
+        </tbody>
+      </table>
+    </div>
+
+    <!-- Running total block (:1149-1167) -->
+    <div style="display:flex;justify-content:flex-end;margin-top:8px">
+      <div class="totals">
+        <div class="l"><span class="sec">Subtotal</span><span class="mono">579 000,00 UZS</span></div>
+        <div class="grand"><span class="bold">Grand total</span><span>579 000,00</span></div>
+        <div class="sec sm tr mt2">≈ 47,84 USD</div>
+      </div>
+    </div>
+
+    <!-- Terms (:1169-1173) -->
+    <div class="mt3">
+      <label class="fl">Terms / remarks</label>
+      <div class="control dis" style="height:56px"></div>
+    </div>
+
+  </div>
+
+  <!-- Action bar (:1281-1305) -->
+  <div class="actions">
+    <button class="btn btn-link">Cancel</button>
+    <button class="btn btn-outline-primary ms-auto">Save as draft</button>
+    <button class="btn btn-primary">Submit &amp; reserve stock</button>
+  </div>
+</div>
+
+<div class="meta mt3">
+  <b>Ekran 1 hakkında not.</b> Bu siparişin 7 satırının hiçbiri stoğu aşmıyor, o yüzden
+  kırmızı müsaitlik metni ve alt çubuktaki uyarı satırı burada görünmüyor.
+  Aşım hâlinde satırdaki <span class="mono">9 481 avail · …</span> yazısı
+  <span style="color:var(--red);font-weight:600">kırmızı ve kalın</span> olur —
+  <b>başka hiçbir işaret eklenmez</b> — ve alt çubuğa şu satır girer:
+  <span style="color:var(--red)">⚠ One or more lines exceed available stock. Reduce qty or choose a different warehouse.</span>
+  Aynı anda <b>Submit &amp; reserve stock</b> kilitlenir.
+  İskonto sütunları da bu siparişte yok (hiçbir satırda iskonto girilmemiş), o yüzden
+  anahtar kapalı; açılınca tabloya <b>%</b> ve <b>Disc</b> sütunları girer — bkz. Ekran 2.
+</div>
+
+<!-- ══════════════════════════════════════════════════════════════════ -->
+<div class="screen-label">
+  <h2>Ekran 2 — submitted (takip modu)</h2>
+  <span>veri: <span class="mono">SAL-ORD-2026-08415</span> · SHAROBIDDIN 1018 · 2 966 990 UZS · 22 satır · %100 teslim / %97 fatura</span>
+</div>
+
+<div class="page">
+  <div class="page-head">
+    <a class="back" href="#">← Sales Orders</a>
+    <h3>Sales Order</h3>
+    <span class="mono sec sm">SAL-ORD-2026-08415</span>
+    <span class="badge bg-yellow-lt ms-auto">To Bill</span>
+  </div>
+  <div class="page-body">
+
+    <!-- Status strip (:849-865) -->
+    <div class="mb3">
+      <div style="display:flex;align-items:center;gap:8px;margin-bottom:14px">
+        <span class="sec">SHAROBIDDIN 1018</span>
+        <span class="badge bg-green-lt">✓ Paid</span>
+      </div>
+      <ul class="steps">
+        <li>Quotation</li>
+        <li>Sales Order</li>
+        <li>Deliver</li>
+        <li class="active">Invoice</li>
+      </ul>
+    </div>
+
+    <!-- Linked invoices alert (:880-890) -->
+    <div class="alert alert-info">
+      <div class="b mb1">🔗 Linked invoices</div>
+      <span class="badge bg-blue-lt mono">ACC-SINV-2026-09928</span>
+    </div>
+
+    <!-- Header fields, read-only -->
+    <div class="row">
+      <div class="col c6">
+        <label class="fl">Customer</label>
+        <div class="plain b">SHAROBIDDIN 1018 <span class="sec mono sm" style="font-weight:400">· CUST10890</span></div>
+      </div>
+      <div class="col c6">
+        <label class="fl">Warehouse</label>
+        <div class="plain mono">Tayyor mahsulot - A</div>
+      </div>
+      <div class="col c6">
+        <label class="fl">Agreement</label>
+        <div class="plain mono">—</div>
+      </div>
+      <div class="col c3">
+        <label class="fl">Order date</label>
+        <div class="plain">09.06.2026 00:00</div>
+      </div>
+      <div class="col c3">
+        <label class="fl">Price list</label>
+        <div class="plain">Price</div>
+      </div>
+      <div class="col c3">
+        <label class="fl">Currency</label>
+        <div class="plain mono b">UZS <span class="sec" style="font-weight:400">(сўм)</span></div>
+      </div>
+    </div>
+
+    <!-- Exchange rate, read-only -->
+    <div class="row">
+      <div class="col c3">
+        <label class="fl">Exchange rate <span class="sec xs">(1 USD = ? UZS)</span></label>
+        <div class="plain mono">1 USD = 11 970,74 UZS</div>
+      </div>
+      <div class="col cauto" style="display:flex;align-items:flex-end;padding-bottom:9px">
+        <span class="sec sm">Total in USD: <span class="mono b">247,85 USD</span></span>
+      </div>
+    </div>
+
+    <!-- Summary datagrid (:1029-1050) -->
+    <div class="datagrid">
+      <div><div class="datagrid-title">Net total</div><div class="datagrid-content">2 966 990,00 UZS</div></div>
+      <div><div class="datagrid-title">Grand total</div><div class="datagrid-content bold">2 966 990,00 UZS</div></div>
+      <div><div class="datagrid-title">Advance paid</div><div class="datagrid-content">0,00 UZS</div></div>
+      <div><div class="datagrid-title">Delivered</div><div class="datagrid-content">100%</div></div>
+      <div><div class="datagrid-title">Billed</div><div class="datagrid-content">97%</div></div>
+    </div>
+
+    <!-- Items header — switch AUTO-ON because lines carry a discount % -->
+    <div style="display:flex;align-items:center;margin-bottom:8px">
+      <h6 class="subhead" style="margin:0">Items</h6>
+      <span class="switch on ms-auto"><i></i>Show discounts</span>
+    </div>
+
+    <!-- LineItemsEditor — view mode: 5 extra columns -->
+    <div class="tbl-wrap">
+      <table>
+        <thead>
+          <tr>
+            <th style="width:60px"></th>
+            <th style="min-width:220px">Item</th>
+            <th style="width:80px" class="tr">Qty</th>
+            <th style="width:130px">UOM</th>
+            <th style="width:130px" class="tr">Rate</th>
+            <th style="width:110px" class="tr">Reserved</th>
+            <th style="width:110px" class="tr">Delivered</th>
+            <th style="width:130px" class="tr">List rate</th>
+            <th style="width:70px">%</th>
+            <th style="width:110px">Disc</th>
+            <th style="width:140px" class="tr">Amount</th>
+          </tr>
+        </thead>
+        <tbody id="so2rows"></tbody>
+      </table>
+    </div>
+
+    <!-- Terms -->
+    <div class="mt3">
+      <label class="fl">Terms / remarks</label>
+      <div class="plain sec">—</div>
+    </div>
+
+    <!-- Fulfilment & Billing card (:1178-1277) -->
+    <div class="card">
+      <div class="card-head">Fulfilment &amp; Billing</div>
+      <div class="card-body">
+
+        <div class="datagrid">
+          <div><div class="datagrid-title">Grand total</div><div class="datagrid-content bold">2 966 990,00 UZS</div></div>
+          <div><div class="datagrid-title">Advance paid</div><div class="datagrid-content">0,00 UZS</div></div>
+        </div>
+
+        <div class="mb3">
+          <div style="display:flex;justify-content:space-between" class="mb1">
+            <span class="sec sm">Billed</span><span class="mono sm b">97%</span>
+          </div>
+          <div class="progress"><div class="pg-green" style="width:97%"></div></div>
+          <div style="display:flex;justify-content:space-between" class="mb1">
+            <span class="sec sm">Delivered</span><span class="mono sm b">100%</span>
+          </div>
+          <div class="progress"><div class="pg-blue" style="width:100%"></div></div>
+        </div>
+
+        <h6 class="subhead">Line details</h6>
+        <div class="tbl-wrap mb3">
+          <table class="striped">
+            <thead>
+              <tr>
+                <th>Item</th><th class="tr">Ordered</th><th class="tr">Delivered</th>
+                <th class="tr">Billed amt</th><th class="tr">Reserved</th>
+              </tr>
+            </thead>
+            <tbody id="so2fulfil"></tbody>
+          </table>
+        </div>
+
+        <h6 class="subhead">Linked invoices</h6>
+        <div class="tbl-wrap mb3">
+          <table class="striped">
+            <thead>
+              <tr><th>Invoice</th><th>Date</th><th>Status</th><th class="tr">Total</th><th>Stock</th></tr>
+            </thead>
+            <tbody>
+              <tr>
+                <td class="mono" style="color:var(--blue)">ACC-SINV-2026-09928</td>
+                <td class="mono sm">09.06.2026</td>
+                <td><span class="badge bg-green-lt">Paid</span></td>
+                <td class="tr mono sm">2 877 980,30 UZS</td>
+                <td><span class="badge bg-green-lt">moves stock</span></td>
+              </tr>
+            </tbody>
+          </table>
+        </div>
+
+        <div class="alert alert-warning" style="margin-bottom:0">
+          ℹ Partially billed — 97% invoiced.
+        </div>
+      </div>
+    </div>
+
+  </div>
+
+  <!-- Action bar, submitted + per_billed < 100 (:1306-1376) -->
+  <div class="actions">
+    <button class="btn btn-success">Create Invoice</button>
+    <button class="btn btn-outline-danger ms-auto">Cancel</button>
+    <button class="btn btn-outline-secondary">Close &amp; release reserved stock</button>
+  </div>
+</div>
+
+<div class="meta mt3">
+  <b>Ekran 2 hakkında üç not — hepsi gerçek veriden gelen davranışlar, hata değil.</b>
+  <ul style="margin:8px 0 0;padding-left:20px">
+    <li><b>Reserved sütunu tamamen boş.</b> <code>Sales Order Item</code> bu sürümde
+      <code>reserved_qty</code> alanını taşımıyor, dolayısıyla şablonun
+      <code>bg-green-lt</code> rozeti hiçbir zaman çizilmiyor — her satır <code>—</code>.
+      İki sütun (satır tablosunda ve Fulfilment tablosunda) yalnız tire gösteriyor.</li>
+    <li><b>İskonto %3 yazıyor ama tutarı değiştirmiyor.</b> Her satırda
+      <code>discount_percentage = 3</code> ama <code>rate = price_list_rate</code>,
+      yani Amount iskontosuz. Sonuç: Rate ile List rate sütunları birbirinin aynısı ve
+      %3 hiçbir yerde para olarak görünmüyor.</li>
+    <li><b>12. ve 13. satır aynı ürün.</b> <code>Q102 AYRON CHOP (50)</code> iki kez
+      girilmiş (2 + 2 Korobka); ekran bunları birleştirmiyor, uyarmıyor.</li>
+  </ul>
+</div>
+
+<div class="meta">
+  <b>Kur notu.</b> Saklanan <code>conversion_rate</code> ERPNext yönündedir:
+  Ekran 1 için <code>0,000082632</code>, Ekran 2 için <code>0,000083537</code>.
+  Ekranda gösterilen <span class="mono">12 101,85</span> ve
+  <span class="mono">11 970,74</span> bunların tersidir (<code>fx.js → readableRate</code>).
+  Ekran 1'in kuru <code>Currency Exchange</code>'teki 25.07.2026 kaydından
+  (<span class="mono">12 101,84</span>) 1 tiyin sapıyor; fark, 9 ondalığa yuvarlanmış
+  ters kurun geri çevrilmesinden gelir.
+</div>
+
+<script>
+/* Satır verisi prod'dan birebir kopyalanmıştır (SAL-ORD-2026-08415, 22 satır).
+   Alanlar: [idx, kod, ad, cf, qty, rate, amount, delivered, billed_amt] */
+const L = [
+ [1,"SE642","SURPRISE NASTAYASHIY ROJOK (20)",20,2,96000,192000,2,186240],
+ [2,"V203","VAZIRA JAZZI (50)",50,2,109250,218500,2,211945],
+ [3,"SE678","SURPRISE GOLD SLIV (36)",36,2,91080,182160,2,176695.2],
+ [4,"SE673","SURPRISE GOLD shokolad (36)",36,1,117000,117000,1,113490],
+ [5,"Y100","B Shokolad (30)",30,1,88050,88050,1,85408.5],
+ [6,"Y101","B Slivichnoe (30)",30,1,65550,65550,1,63583.5],
+ [7,"SE600","SURPRISE 15 KOPEYKA Sarq (60)",60,2,96000,192000,2,186240],
+ [8,"SE689","SURPRISE MANGUST (36)",36,2,144000,288000,2,279360],
+ [9,"AE661","Anjan sgushonka 70gr (20)",20,1,80000,80000,1,77600],
+ [10,"AE663","ANJAN CHOCOLATE 70 gr (20)",20,2,80000,160000,2,155200],
+ [11,"AE664","Anjan ananas 70gr (20)",20,1,80000,80000,1,77600],
+ [12,"Q101","QUVA MOHITO (50)",50,2,37500,75000,2,72750],
+ [13,"Q102","AYRON CHOP (50)",50,2,37500,75000,2,72750],
+ [14,"Q102","AYRON CHOP (50)",50,2,37500,75000,2,72750],
+ [15,"SE646","SURPRISE PLOMBIRO CHOKO (10)",10,1,82000,82000,1,79540],
+ [16,"V207","VAZIRA ZARLI ROSSIYSKIY (50)",50,1,181250,181250,1,175812.5],
+ [17,"V202","VAZIRA IZBUSHKA (14)",14,1,109480,109480,1,106195.6],
+ [18,"V201","VAZIRA CCCP 240gr (16)",16,1,168400,168400,1,163348],
+ [19,"SE626","SURPRISE ESKIMO SGUSHONKA (60)",60,1,96000,96000,1,93120],
+ [20,"AE609","SURPRISE Anjan Pista 40gr (24)",24,1,153600,153600,1,148992],
+ [21,"AE623","SURPRISE ESKIMO Choco (20)",20,1,192000,192000,1,186240],
+ [22,"SS112","SURPRISE STAKAN KARAMEL (24)",24,1,96000,96000,1,93120],
+];
+
+const money = n => n.toLocaleString("ru-RU", {minimumFractionDigits:2, maximumFractionDigits:2}).replace(/ /g," ");
+
+document.getElementById("so2rows").innerHTML = L.map(r => `
+  <tr>
+    <td class="sec mono xs">${r[0]}</td>
+    <td><div class="itemname">${r[1]} · ${r[2]}</div>
+        <div class="uomsub">1 Korobka = ${r[3]} Dona</div></td>
+    <td class="tr mono">${r[4]}</td>
+    <td>Korobka</td>
+    <td class="tr mono">${money(r[5])}</td>
+    <td class="tr sec">—</td>
+    <td class="tr mono">${r[7]}</td>
+    <td class="tr mono sm sec">${money(r[5])}</td>
+    <td class="mono sm">3%</td>
+    <td class="sec sm">—</td>
+    <td class="tr mono">${money(r[6])}</td>
+  </tr>`).join("") + `
+  <tr><td colspan="11" style="border-bottom:0">
+    <span class="badge bg-secondary-lt">22 items</span>
+    <span class="badge bg-blue-lt mono" style="margin-left:4px">31 Korobka</span>
+  </td></tr>`;
+
+document.getElementById("so2fulfil").innerHTML = L.map(r => `
+  <tr>
+    <td class="mono sm">${r[1]}</td>
+    <td class="tr mono sm">${r[4]}</td>
+    <td class="tr mono sm">${r[7]}</td>
+    <td class="tr mono sm">${money(r[8])} UZS</td>
+    <td class="tr sec sm">—</td>
+  </tr>`).join("");
+</script>
+
+</div>
+</body>
+</html>
