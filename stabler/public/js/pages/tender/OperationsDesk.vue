@@ -249,7 +249,7 @@ import { useRoute, useRouter } from "vue-router";
 import { useSession } from "../../stores/session.js";
 import { t } from "../../composables/i18n.js";
 import { call } from "../../api/client.js";
-import { formatDate } from "../../composables/date.js";
+import { formatDate, todayIso } from "../../composables/date.js";
 import SkeletonRows from "../../components/SkeletonRows.vue";
 import TenderNav from "./TenderNav.vue";
 
@@ -265,7 +265,13 @@ const activeFilter = ref(route.query.filter || "all");
 const collapsed = ref({});
 const lastReadAt = ref("");
 
-const todayStr = new Date().toISOString().slice(0, 10);
+// `toISOString()` UTC verir. Taşkent UTC+5: her gece 00:00–05:00 arası masanın
+// "bugün"ü sunucunun bugününden bir gün geriye düşüyordu. Ölçüldü 2026-08-02
+// 03:53 yerel saatte: başlık 01.08.2026 Sat yazarken satırlar 02.08.2026'yı
+// TODAY işaretliyordu. Etkisi yalnız başlık değil — bu değişken TODAY süzgecini
+// (`filteredItems`), takvimin bugün hücresini ve satır rozetini de sürüyor.
+// `todayIso()` tam bu kayma için var (composables/date.js:106).
+const todayStr = todayIso();
 let reqToken = 0;
 
 async function fetchDesk() {
