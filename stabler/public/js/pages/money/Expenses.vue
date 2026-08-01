@@ -416,7 +416,13 @@ function lineCurrencyMismatch(line) {
 // --- Tender (Deal) picker — only rendered when tenderOn is true ------------
 
 async function searchDeals(q) {
-	const r = await call("stabler.api.crm.list_deals", { search: q, page_length: 8 });
+	// Şirket zorunlu: `_require_crm_company` yoksa 417 atıyor ve Typeahead hatayı
+	// yutup boş liste gösteriyor.
+	const r = await call("stabler.api.crm.list_deals", {
+		company: activeCompany.value,
+		search: q,
+		page_length: 8,
+	});
 	return (r?.deals || []).map((d) => ({ name: d.name, label: d.organization || d.lead_name || d.name }));
 }
 

@@ -14,7 +14,7 @@ import SkeletonRows from "../../components/SkeletonRows.vue";
 import TenderNav from "../tender/TenderNav.vue";
 
 const session = useSession();
-const { user } = storeToRefs(session);
+const { activeCompany, user } = storeToRefs(session);
 const route = useRoute();
 const router = useRouter();
 const toast = useToast();
@@ -25,7 +25,14 @@ const loading = ref(false);
 const data = ref(null); // { rows, base_currency, count, countries, has_min_5, has_2_countries }
 
 async function searchDeals(q) {
-	const r = await call("stabler.api.crm.list_deals", { search: q, page_length: 20 });
+	// `list_deals` şirketi zorunlu tutuyor (`_require_crm_company`) ve yoksa 417
+	// atıyor; Typeahead hatayı yutup boş liste gösteriyordu, yani bu seçici hiç
+	// sonuç vermiyordu. Ölçüldü 2026-08-02, yerel Mikas.
+	const r = await call("stabler.api.crm.list_deals", {
+		company: activeCompany.value,
+		search: q,
+		page_length: 20,
+	});
 	return (r?.deals || []).map((d) => ({ name: d.name, label: d.organization || d.lead_name || d.name }));
 }
 function pickDeal(o) {

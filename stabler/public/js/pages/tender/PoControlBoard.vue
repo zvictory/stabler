@@ -65,7 +65,13 @@ function chargeIcon(v) {
 }
 
 async function searchDeals(q) {
-	const r = await call("stabler.api.crm.list_deals", { search: q, page_length: 20 });
+	// Şirket zorunlu: `_require_crm_company` yoksa 417 atıyor ve Typeahead hatayı
+	// yutup boş liste gösteriyor — bir alttaki tedarikçi seçicisi zaten geçiyor.
+	const r = await call("stabler.api.crm.list_deals", {
+		company: activeCompany.value,
+		search: q,
+		page_length: 20,
+	});
 	return (r?.deals || []).map((d) => ({ name: d.name, label: d.organization || d.lead_name || d.name }));
 }
 function searchSuppliers(q) {
