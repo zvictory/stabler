@@ -102,10 +102,17 @@ class TestTheEndpointSharesOneSourceOfTruth(unittest.TestCase):
 		self.assertIn("_tender_flow.bottleneck(rows)", ENDPOINT)
 
 	def test_it_passes_the_gates_before_reading_anything(self):
+		"""Kapı tek çağrıda: `_require_tender_view` şirket sınırını, modül
+		iznini ve rol penceresini birlikte uyguluyor (tanımı `api/tender.py`).
+
+		Burada üç ayrı çağrı aranıyordu; üçü de vardı ama ROL kapısı yoktu, yani
+		menüde ekranı görmeyen kullanıcı URL'yi yazınca şirketin tüm SLA
+		tablosunu okuyabiliyordu. Üçlüyü aramak o boşluğu göremezdi — sarmalayıcı
+		aranınca görünüyor. Sarmalayıcının üç kapıyı gerçekten koruduğu ayrı
+		modülde tutuluyor: `test_tender_view_gates`.
+		"""
 		head = ENDPOINT[: ENDPOINT.index("deal_names =")]
-		for gate in ("_require_tender(company)", "_assert_company_scope(company)", "_require_company(company)"):
-			with self.subTest(gate=gate):
-				self.assertIn(gate, head)
+		self.assertIn('_require_tender_view("director", company)', head)
 
 	def test_it_honours_per_document_read_permission(self):
 		self.assertIn('frappe.has_permission("CRM Deal", "read", doc=deal)', ENDPOINT)

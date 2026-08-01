@@ -27,6 +27,7 @@ import unittest
 #   _assert_company_scope   — the canonical guard (stabler.api.approvals)
 #   _require_service        — wraps _assert_company_scope for the Service module
 #   _require_tender_view    — wraps _assert_company_scope for the Tender module
+#   _require_any_tender_view — same, for screens more than one role window opens
 #   _assert_imports_access  — wraps _assert_company_scope for the Imports module
 #   _assert_inventory_access — wraps _assert_company_scope for the Inventory module
 #   _assert_vendor_category_read — tries inventory, falls back to imports; both scope
@@ -38,6 +39,7 @@ _SCOPE_TOKENS = (
 	"_assert_company_scope",
 	"_require_service",
 	"_require_tender_view",
+	"_require_any_tender_view",
 	"_assert_imports_access",
 	"_assert_inventory_access",
 	"_assert_vendor_category_read",

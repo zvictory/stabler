@@ -33,7 +33,12 @@ class EndpointTest(unittest.TestCase):
 
     def test_whitelisted_and_gated(self):
         self.assertRegex(self.src, r"@frappe\.whitelist\(\)\ndef tender_funnel\(")
-        self.assertIn("_require_tender(company)", self.body)
+        # The funnel states the company win rate. `_require_tender(company)` alone
+        # meant "anyone with the tender module" -- so the director board could 403
+        # while the funnel embedded in it served the same number to a declarant.
+        # The wrapper below carries that guard AND the role window; it is pinned
+        # by name because dropping back to the looser one reopens the leak.
+        self.assertIn('_require_any_tender_view(("director", "sourcing"), company)', self.body)
 
     def test_respects_document_permissions(self):
         self.assertIn('frappe.has_permission("CRM Deal", "read", doc=deal)', self.body)

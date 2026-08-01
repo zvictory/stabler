@@ -1756,6 +1756,27 @@ def _require_tender_view(view: str, company: str) -> None:
 		frappe.throw(_("Not permitted"), frappe.PermissionError)
 
 
+def _require_any_tender_view(views: tuple[str, ...], company: str) -> None:
+	"""Kapı: sayılan rol pencerelerinden EN AZ BİRİ açık olmalı.
+
+	Bazı ekranlar tek bir role ait değil — Tender CRM'i hem direktör hem tedarik
+	açıyor. O ekranların uç noktaları bugüne kadar yalnız `_require_tender` ile
+	korunuyordu, yani "tender modülü açık olan herkes" demekti. Menü ise
+	bağlantıyı role göre gizliyordu (`TenderNav.vue`: `can('director') ||
+	can('sourcing')`). İki yerin farklı şey söylemesi, gizlemeyi güvenlik
+	sanmaya yol açıyor: bağlantıyı görmeyen kullanıcı URL'yi elle yazınca 200 ve
+	dolu veri alıyordu.
+
+	Kapı burada, ön yüzde değil. Menü ne gizlerse gizlesin, izin bu satırdan
+	geçiyor.
+	"""
+	_require_company(company)
+	_require_tender(company)
+	_assert_company_scope(company)
+	if not set(_tender_views()).intersection(views):
+		frappe.throw(_("Not permitted"), frappe.PermissionError)
+
+
 @frappe.whitelist()
 def tender_views() -> dict:
 	"""Which role windows the current user may open (drives SPA nav)."""
@@ -2193,8 +2214,11 @@ def tender_funnel(company: str, days: int = 90):
 
 	from stabler.api import _funnel
 
-	_require_tender(company)
-	_assert_company_scope(company)  # tenant isolation: reject a foreign company arg
+	# Huni şirketin kazanma oranını söylüyor. İki yerde çiziliyor: direktör
+	# panosuna gömülü (`TenderFunnel.vue`) ve `/tender/my-tenders` (menüde
+	# `can('sourcing')`). Kapı o iki pencereyi kapsıyor — daha genişi, direktör
+	# panosu 403 verirken içindeki huninin aynı sayıyı sızdırması demekti.
+	_require_any_tender_view(("director", "sourcing"), company)
 	days = max(7, min(cint(days) or 90, 366))
 	cutoff = getdate(today()) - timedelta(days=days)
 
@@ -2315,9 +2339,8 @@ def crm_board(company: str) -> dict:
 	"""
 	from stabler.api import _funnel
 
-	_require_tender(company)
-	_assert_company_scope(company)
-	_require_company(company)
+	# Panoyu menüde direktör ve tedarik görüyor; kapı da aynısını söylemeli.
+	_require_any_tender_view(("director", "sourcing"), company)
 
 	lanes = [
 		{"id": "seen", "label": _("Intake"), "color": "#6c757d"},
@@ -2467,8 +2490,10 @@ def move_deal_stage(name: str, stage: str) -> dict:
 		frappe.throw(_("Unknown deal: {0}").format(name))
 	company = frappe.db.get_value("CRM Deal", name, "company")
 	if company:
-		_assert_company_scope(company)
-		_require_tender(company)
+		# Bu, kanban'ın YAZMA yolu. Okuma tarafı (`crm_board`) direktör/tedarik
+		# kapısını taşıyor; yazma tarafının daha gevşek olması, panoyu
+		# göremeyen bir kullanıcının kartı uç noktadan taşıyabilmesi demekti.
+		_require_any_tender_view(("director", "sourcing"), company)
 	if not frappe.has_permission("CRM Deal", "write", doc=name):
 		frappe.throw(_("Not permitted"), frappe.PermissionError)
 
@@ -3025,9 +3050,9 @@ def tender_flow(company: str) -> dict:
 	from stabler.api import _funnel, _tender_flow
 	from stabler.stabler.doctype.stabler_settings.stabler_settings import stage_sla_for
 
-	_require_tender(company)
-	_assert_company_scope(company)
-	_require_company(company)
+	# Akış panosu şirketin TÜM hattını ve SLA tablosunu gösteriyor — menüde
+	# yalnız direktörde çizili, kapı da orada.
+	_require_tender_view("director", company)
 
 	deal_names = _tender_deal_names(company)
 	if not deal_names and frappe.db.exists("DocType", "CRM Deal"):
