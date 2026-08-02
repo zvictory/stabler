@@ -1,0 +1,129 @@
+{
+  "admin_session": {
+    "user": "Administrator",
+    "login_status": 200,
+    "session_cookies": {
+      "sid": "<redacted>"
+    },
+    "http_calls": {
+      "email_send_attempt_1": {
+        "status": 500,
+        "response": {
+          "message": {
+            "name": "8u3u3hj6s3",
+            "deal": "CRM-DEAL-2026-00005",
+            "status": "Failed",
+            "attempts": 3,
+            "error": "Email delivery failed. Please check mail server settings."
+          },
+          "_server_messages": "[\"{\\\"message\\\":\\\"Please setup default outgoing Email Account from Tools &gt; Email Account\\\",\\\"as_table\\\":false,\\\"title\\\":\\\"Message\\\",\\\"indicator\\\":\\\"red\\\",\\\"raise_exception\\\":1,\\\"__frappe_exc_id\\\":\\\"13ddf866f252e1d249e2af81dd577d836d98fca039efd80a85c10d50\\\"}\"]"
+        }
+      },
+      "email_send_attempt_2_retry": {
+        "status": 500,
+        "response": {
+          "message": {
+            "name": "8u3u3hj6s3",
+            "deal": "CRM-DEAL-2026-00005",
+            "status": "Failed",
+            "attempts": 4,
+            "error": "Email delivery failed. Please check mail server settings."
+          },
+          "_server_messages": "[\"{\\\"message\\\":\\\"Please setup default outgoing Email Account from Tools &gt; Email Account\\\",\\\"as_table\\\":false,\\\"title\\\":\\\"Message\\\",\\\"indicator\\\":\\\"red\\\",\\\"raise_exception\\\":1,\\\"__frappe_exc_id\\\":\\\"ead543a37c6028baa95feeba2718f63dc293e0bc3d1d15701c9c7fe6\\\"}\"]"
+        }
+      }
+    }
+  },
+  "manager_session": {
+    "user": "hayrulloh@mail.com",
+    "login_status": 200,
+    "session_cookies": {
+      "sid": "<redacted>",
+      "system_user": "<redacted>"
+    },
+    "routes": {
+      "portfolio_url": "http://localhost:8000/stabler#/tender/portfolio",
+      "deal_360_url": "http://localhost:8000/stabler#/crm/deals/CRM-DEAL-2026-00005",
+      "cockpit_url": "http://localhost:8000/stabler#/crm/cockpit"
+    },
+    "http_calls": {
+      "cockpit_metrics": {
+        "status": 200,
+        "response": {
+          "message": {
+            "company": "Mikas",
+            "deal_count": 13,
+            "total_value": 0.0,
+            "weighted_forecast": 0.0,
+            "commit_total": 0.0,
+            "best_case_total": 0.0,
+            "win_rate_pct": 0.0,
+            "stage_counts": {
+              "seen": 13
+            },
+            "stage_aging": {
+              "seen": 0.0
+            },
+            "rep_workload": {
+              "Administrator": 13
+            }
+          }
+        }
+      },
+      "rfq_defaults": {
+        "status": 200,
+        "response": {
+          "message": {
+            "deal": "CRM-DEAL-2026-00005",
+            "company": "Mikas",
+            "items": [],
+            "suppliers": []
+          }
+        }
+      }
+    }
+  },
+  "non_manager_session": {
+    "user": "fayzulloxoshimov61@gmail.com",
+    "login_status": 200,
+    "session_cookies": {
+      "sid": "<redacted>"
+    },
+    "http_calls_negative": {
+      "cockpit_metrics": {
+        "status": 403,
+        "response": {
+          "exception": "frappe.exceptions.PermissionError: Not permitted. CRM Manager role required.",
+          "exc_type": "PermissionError",
+          "_exc_source": "stabler (app)",
+          "exc": "[\"Traceback (most recent call last):\\n  File \\\"apps/frappe/frappe/app.py\\\", line 121, in application\\n    response = frappe.api.handle(request)\\n  File \\\"apps/frappe/frappe/api/__init__.py\\\", line 63, in handle\\n    data = endpoint(**arguments)\\n  File \\\"apps/frappe/frappe/api/v1.py\\\", line 40, in handle_rpc_call\\n    return frappe.handler.handle()\\n           ~~~~~~~~~~~~~~~~~~~~~^^\\n  File \\\"apps/frappe/frappe/handler.py\\\", line 53, in handle\\n    data = execute_cmd(cmd)\\n  File \\\"apps/frappe/frappe/handler.py\\\", line 86, in execute_cmd\\n    return frappe.call(method, **frappe.form_dict)\\n           ~~~~~~~~~~~^^^^^^^^^^^^^^^^^^^^^^^^^^^^\\n  File \\\"apps/frappe/frappe/__init__.py\\\", line 1129, in call\\n    return fn(*args, **newargs)\\n  File \\\"apps/frappe/frappe/utils/typing_validations.py\\\", line 36, in wrapper\\n    return func(*args, **kwargs)\\n  File \\\"apps/stabler/stabler/api/crm_analytics.py\\\", line 35, in get_manager_cockpit_metrics\\n    _require_crm_manager(company)\\n    ~~~~~~~~~~~~~~~~~~~~^^^^^^^^^\\n  File \\\"apps/stabler/stabler/api/crm_analytics.py\\\", line 26, in _require_crm_manager\\n    frappe.throw(\\n    ~~~~~~~~~~~~^\\n    \\t_(\\\"Not permitted. CRM Manager role required.\\\"),\\n     ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^\\n    \\tfrappe.PermissionError,\\n     ^^^^^^^^^^^^^^^^^^^^^^^\\n    )\\n    ^\\n  File \\\"apps/frappe/frappe/utils/messages.py\\\", line 159, in throw\\n    msgprint(\\n    ~~~~~~~~^\\n    \\tmsg,\\n     ^^^^\\n    ...<7 lines>...\\n    \\tallow_dangerous_html=allow_dangerous_html,\\n     ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^\\n    )\\n    ^\\n  File \\\"apps/frappe/frappe/utils/messages.py\\\", line 118, in msgprint\\n    _raise_exception()\\n    ~~~~~~~~~~~~~~~~^^\\n  File \\\"apps/frappe/frappe/utils/messages.py\\\", line 59, in _raise_exception\\n    raise exc\\nfrappe.exceptions.PermissionError: Not permitted. CRM Manager role required.\\n\"]",
+          "_server_messages": "[\"{\\\"message\\\":\\\"Not permitted. CRM Manager role required.\\\",\\\"as_table\\\":false,\\\"title\\\":\\\"Message\\\",\\\"indicator\\\":\\\"red\\\",\\\"raise_exception\\\":1,\\\"__frappe_exc_id\\\":\\\"b4c43fd92471aa0116f9e5f29af1afbcffd6f4042c2c5e163a23815d\\\"}\"]"
+        }
+      },
+      "automation_preview": {
+        "status": 403,
+        "response": {
+          "exception": "frappe.exceptions.PermissionError: Not permitted. CRM Manager role required.",
+          "exc_type": "PermissionError",
+          "_exc_source": "stabler (app)",
+          "exc": "[\"Traceback (most recent call last):\\n  File \\\"apps/frappe/frappe/app.py\\\", line 121, in application\\n    response = frappe.api.handle(request)\\n  File \\\"apps/frappe/frappe/api/__init__.py\\\", line 63, in handle\\n    data = endpoint(**arguments)\\n  File \\\"apps/frappe/frappe/api/v1.py\\\", line 40, in handle_rpc_call\\n    return frappe.handler.handle()\\n           ~~~~~~~~~~~~~~~~~~~~~^^\\n  File \\\"apps/frappe/frappe/handler.py\\\", line 53, in handle\\n    data = execute_cmd(cmd)\\n  File \\\"apps/frappe/frappe/handler.py\\\", line 86, in execute_cmd\\n    return frappe.call(method, **frappe.form_dict)\\n           ~~~~~~~~~~~^^^^^^^^^^^^^^^^^^^^^^^^^^^^\\n  File \\\"apps/frappe/frappe/__init__.py\\\", line 1129, in call\\n    return fn(*args, **newargs)\\n  File \\\"apps/frappe/frappe/utils/typing_validations.py\\\", line 36, in wrapper\\n    return func(*args, **kwargs)\\n  File \\\"apps/stabler/stabler/api/crm_automation.py\\\", line 206, in preview_crm_automation_rules\\n    _require_crm_manager(company)\\n    ~~~~~~~~~~~~~~~~~~~~^^^^^^^^^\\n  File \\\"apps/stabler/stabler/api/crm_automation.py\\\", line 27, in _require_crm_manager\\n    frappe.throw(\\n    ~~~~~~~~~~~~^\\n    \\t_(\\\"Not permitted. CRM Manager role required.\\\"),\\n     ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^\\n    \\tfrappe.PermissionError,\\n     ^^^^^^^^^^^^^^^^^^^^^^^\\n    )\\n    ^\\n  File \\\"apps/frappe/frappe/utils/messages.py\\\", line 159, in throw\\n    msgprint(\\n    ~~~~~~~~^\\n    \\tmsg,\\n     ^^^^\\n    ...<7 lines>...\\n    \\tallow_dangerous_html=allow_dangerous_html,\\n     ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^\\n    )\\n    ^\\n  File \\\"apps/frappe/frappe/utils/messages.py\\\", line 118, in msgprint\\n    _raise_exception()\\n    ~~~~~~~~~~~~~~~~^^\\n  File \\\"apps/frappe/frappe/utils/messages.py\\\", line 59, in _raise_exception\\n    raise exc\\nfrappe.exceptions.PermissionError: Not permitted. CRM Manager role required.\\n\"]",
+          "_server_messages": "[\"{\\\"message\\\":\\\"Not permitted. CRM Manager role required.\\\",\\\"as_table\\\":false,\\\"title\\\":\\\"Message\\\",\\\"indicator\\\":\\\"red\\\",\\\"raise_exception\\\":1,\\\"__frappe_exc_id\\\":\\\"e3a473ea7c954d8737fbc718cbe6c2a5d7dbfbda40078d4e0ca5a41a\\\"}\"]"
+        }
+      }
+    }
+  },
+  "database_audit": {
+    "idempotency_key": "comm:Mikas:HTTP-UAT-KEY-99",
+    "records_found": 1,
+    "rows": [
+      {
+        "name": "8u3u3hj6s3",
+        "custom_idempotency_key": "comm:Mikas:HTTP-UAT-KEY-99",
+        "custom_execution_status": "Failed",
+        "custom_attempts": 4,
+        "custom_last_error": "Please setup default outgoing Email Account from Tools > Email Account"
+      }
+    ],
+    "durable_failed_status_verified": false
+  }
+}
