@@ -122,7 +122,11 @@ class PanelTest(unittest.TestCase):
 	def test_mounted_on_the_director_board(self):
 		board = read(BOARD)
 		self.assertIn("TenderFunnel", board)
-		self.assertIn("<TenderFunnel />", board)
+		# Pano huniyi ŞERİTLE mount ediyor: chevron seçimi buraya geliyor ve
+		# aşağıdaki belge tablosunu süzüyor. Prop düşerse şerit çizilmez ve
+		# filtre sessizce ölü bir tıklamaya döner.
+		self.assertIn("<TenderFunnel pipeline-strip", board)
+		self.assertIn('@select="onPhaseSelect"', board)
 
 
 if __name__ == "__main__":

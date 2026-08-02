@@ -5281,3 +5281,37 @@ Step performance →,Босқич самарадорлиги →
 Your work is on the operations desk,Сизнинг ишингиз операцион столда
 The pipeline overview is built for the director and sourcing roles. Your queue for today is on the desk.,Воронка умумий кўриниши директор ва таъминот роллари учун. Бугунги навбатингиз столда.
 Operations desk →,Операцион стол →
+A quotation needs at least one line.,Таклифда камида битта қатор бўлиши керак.
+Add quotation,Таклиф қўшиш
+Clear filter,Фильтрни тозалаш
+Conversion funnel — old vs new,Конверсия воронкаси — эски ва янги
+Could not save the quotation.,Таклифни сақлаб бўлмади.
+Could not submit the quotation.,Таклифни юбориб бўлмади.
+"Current — bar funnel, Modernist layer","Жорий — устунли воронка, Modernist қатлами"
+"Decided to go, and not one supplier quotation has been collected.","""Борамиз"" қарори қабул қилинган, аммо биронта ҳам етказиб берувчи таклифи йиғилмаган."
+Edit supplier quotation,Етказиб берувчи таклифини таҳрирлаш
+Intake is done and the GO/NO-GO decision is still open.,"Қабул якунланган, GO/NO-GO қарори ҳали очиқ."
+Line total,Қатор жами
+New supplier quotation,Янги етказиб берувчи таклифи
+Old — trapezoid funnel,Эски — трапецияли воронка
+Pick the currency the supplier quoted in.,Етказиб берувчи нарх берган валютани танланг.
+Pick the supplier who quoted.,Таклиф берган етказиб берувчини танланг.
+Priced and not submitted — this is where the funnel loses the most.,"Нарх ҳисобланган, аммо таклиф топширилмаган — воронка энг кўп шу ерда йўқотади."
+Quantity must be greater than zero.,Миқдор нолдан катта бўлиши керак.
+Quotation saved as a draft.,Таклиф қоралама сифатида сақланди.
+Quotation submitted.,Таклиф юборилди.
+Quotations are coming in but the 5-quote / 2-country rule is not met yet.,"Таклифлар келмоқда, аммо ""5 таклиф / 2 мамлакат"" қоидаси ҳали бажарилмаган."
+"Same endpoint, same numbers — only the drawing differs. Pick one and the loser gets deleted.","Бир хил endpoint, бир хил рақамлар — фақат чизма фарқ қилади. Бирини танланг, ютқазгани ўчирилади."
+Save the draft first,Аввал қораламани сақланг
+Search a supplier… ⌘K,Етказиб берувчи қидириш… ⌘K
+Search an item… ⌘K,Маҳсулот қидириш… ⌘K
+Side by side,Ёнма-ён
+Stacked,Устма-уст
+Submit quotation,Таклифни юбориш
+Submitted and waiting on the result. Nothing to do but track it.,"Таклиф топширилди, натижа кутилмоқда. Фақат кузатиб бориш қолди."
+Submitting…,Юборилмоқда…
+Temporary comparison,Вақтинчалик таққослаш
+bar: share of lots that satisfy the 5-quote rule,чизиқ: 5 таклиф қоидасига жавоб берадиган лотлар улуши
+in the pipeline,жараёнда
+new,янги
+{done}/{total} quote sets complete,{done}/{total} таклиф тўплами тўлиқ

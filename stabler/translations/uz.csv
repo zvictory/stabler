@@ -5281,3 +5281,37 @@ Step performance →,Bosqich samaradorligi →
 Your work is on the operations desk,Sizning ishingiz operatsion stolda
 The pipeline overview is built for the director and sourcing roles. Your queue for today is on the desk.,Voronka umumiy ko‘rinishi direktor va ta’minot rollari uchun. Bugungi navbatingiz stolda.
 Operations desk →,Operatsion stol →
+A quotation needs at least one line.,Taklifda kamida bitta qator bo'lishi kerak.
+Add quotation,Taklif qo'shish
+Clear filter,Filtrni tozalash
+Conversion funnel — old vs new,Konversiya voronkasi — eski va yangi
+Could not save the quotation.,Taklifni saqlab bo'lmadi.
+Could not submit the quotation.,Taklifni yuborib bo'lmadi.
+"Current — bar funnel, Modernist layer","Joriy — ustunli voronka, Modernist qatlami"
+"Decided to go, and not one supplier quotation has been collected.","""Boramiz"" qarori qabul qilingan, ammo birorta ham yetkazib beruvchi taklifi yig'ilmagan."
+Edit supplier quotation,Yetkazib beruvchi taklifini tahrirlash
+Intake is done and the GO/NO-GO decision is still open.,"Qabul yakunlangan, GO/NO-GO qarori hali ochiq."
+Line total,Qator jami
+New supplier quotation,Yangi yetkazib beruvchi taklifi
+Old — trapezoid funnel,Eski — trapetsiyali voronka
+Pick the currency the supplier quoted in.,Yetkazib beruvchi narx bergan valyutani tanlang.
+Pick the supplier who quoted.,Taklif bergan yetkazib beruvchini tanlang.
+Priced and not submitted — this is where the funnel loses the most.,"Narx hisoblangan, ammo taklif topshirilmagan — voronka eng ko'p shu yerda yo'qotadi."
+Quantity must be greater than zero.,Miqdor noldan katta bo'lishi kerak.
+Quotation saved as a draft.,Taklif qoralama sifatida saqlandi.
+Quotation submitted.,Taklif yuborildi.
+Quotations are coming in but the 5-quote / 2-country rule is not met yet.,"Takliflar kelmoqda, ammo ""5 taklif / 2 mamlakat"" qoidasi hali bajarilmagan."
+"Same endpoint, same numbers — only the drawing differs. Pick one and the loser gets deleted.","Bir xil endpoint, bir xil raqamlar — faqat chizma farq qiladi. Birini tanlang, yutqazgani o'chiriladi."
+Save the draft first,Avval qoralamani saqlang
+Search a supplier… ⌘K,Yetkazib beruvchi qidirish… ⌘K
+Search an item… ⌘K,Mahsulot qidirish… ⌘K
+Side by side,Yonma-yon
+Stacked,Ustma-ust
+Submit quotation,Taklifni yuborish
+Submitted and waiting on the result. Nothing to do but track it.,"Taklif topshirildi, natija kutilmoqda. Faqat kuzatib borish qoldi."
+Submitting…,Yuborilmoqda…
+Temporary comparison,Vaqtinchalik taqqoslash
+bar: share of lots that satisfy the 5-quote rule,chiziq: 5 taklif qoidasiga javob beradigan lotlar ulushi
+in the pipeline,jarayonda
+new,yangi
+{done}/{total} quote sets complete,{done}/{total} taklif to'plami to'liq

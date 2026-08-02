@@ -24,6 +24,11 @@ ORDER = ["seen", "go", "sourcing", "priced", "submitted", "won"]
 #: `submitted`, so the funnel never undercounts participation.
 FUNNEL_STEPS = ["seen", "go", "sourcing", "submitted", "won"]
 
+#: Direktörün chevron şeridinin yürüdüğü AÇIK fazlar. `won`/`lost` burada yok:
+#: onlar faz değil sonuç, ve soldan sağa "ne kadar ilerledi" diye okunan bir
+#: şeride konulmaları kaybı ilerleme gibi gösterirdi.
+PIPELINE_PHASES = ["seen", "go", "sourcing", "priced", "submitted"]
+
 #: Her geçerli aşama. ORDER ilerlemeyi anlatıyor ve `lost`u dışarıda bırakıyor
 #: (kaybetmek ilerleme değil); oysa "bu bir aşama mı" sorusunun cevabı `lost`u
 #: da içeriyor. İki liste ayrı, çünkü iki ayrı soruya cevap veriyorlar —
@@ -116,6 +121,21 @@ def summarise(rows: list[dict]) -> dict:
 			"win_rate": round(won / resolved * 100, 1) if resolved else None,
 		},
 	}
+
+
+def pipeline(stages: dict, quote_ready: dict) -> list[dict]:
+	"""Bir satır per açık faz: kaç lot orada duruyor, kaçının teklif seti tam.
+
+	`full` sayısı `n`'in ALT KÜMESİ olmak zorunda — şerit "4 lottan 2'sinin
+	teklif seti tam" diye okunuyor ve payda o fazdaki lot sayısı. Çağıranın
+	yanlış kova için hazır-sayısı geçirmesi bu yüzden burada kırpılıyor: 6/4
+	yazan bir çubuk %150 dolar ve sessizce yalan söyler.
+	"""
+	rows = []
+	for key in PIPELINE_PHASES:
+		n = int(stages.get(key) or 0)
+		rows.append({"key": key, "n": n, "full": min(int(quote_ready.get(key) or 0), n)})
+	return rows
 
 
 #: Sales Order board stages folded into three execution buckets + done.

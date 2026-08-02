@@ -32,7 +32,15 @@ const toast = useToast();
 const props = defineProps({
 	mode: { type: String, default: "full" },
 	days: { type: Number, default: 90 },
+	/* Chevron şeridi. Varsayılan kapalı: şerit ALTINDA filtreleyebileceği bir
+	 * belge tablosu olan ekranlar için var, her yerde çizilmesi için değil. */
+	pipelineStrip: { type: Boolean, default: false },
+	/* Seçili faz DIŞARIDAN geliyor. Bileşen kendi seçimini tutsaydı, adresi
+	 * paylaşan/yenileyen kullanıcı filtresiz bir tabloya düşerdi — seçim
+	 * ekranın durumu, huninin değil. */
+	selected: { type: String, default: "" },
 });
+const emit = defineEmits(["select"]);
 
 const loading = ref(false);
 const data = ref(null);
@@ -191,6 +199,83 @@ const losses = computed(() =>
 		}))
 );
 
+/* Chevron şeridi: hattın beş açık fazı, soldan sağa. Sayı ve "teklif seti tam"
+ * oranı aynı sunucu geçişinden geliyor (`tender_funnel.pipeline`), bu yüzden
+ * şeridin rakamı ile altındaki tablonun satır sayısı ayrışamaz.
+ *
+ * Not metinleri BURADA, sunucuda değil: bunlar çeviri gerektiren yorumlar,
+ * veri değil. Uç nokta yalnız sayıyı döndürüyor. */
+const PIPE_META = {
+	seen: { tone: "ink", rule: 'intake ✓ · go_no_go = ""' },
+	go: { tone: "warn", rule: "go_no_go = go · SQ = 0" },
+	sourcing: { tone: "warn", rule: "SQ > 0 · no pricing" },
+	priced: { tone: "blue", rule: "bid_pricing ✓" },
+	submitted: { tone: "ok", rule: "submitted_at ✓ · result = ?" },
+};
+const PIPE_LABELS = {
+	seen: () => t("Intake"),
+	go: () => t("GO decision"),
+	sourcing: () => t("Sourcing"),
+	priced: () => t("Pricing"),
+	submitted: () => t("Bid submitted"),
+};
+const PIPE_NOTES = {
+	seen: () => t("Intake is done and the GO/NO-GO decision is still open."),
+	go: () => t("Decided to go, and not one supplier quotation has been collected."),
+	sourcing: () => t("Quotations are coming in but the 5-quote / 2-country rule is not met yet."),
+	priced: () => t("Priced and not submitted — this is where the funnel loses the most."),
+	submitted: () => t("Submitted and waiting on the result. Nothing to do but track it."),
+};
+
+const pipeline = computed(() =>
+	(data.value?.pipeline || []).map((row) => ({
+		key: row.key,
+		n: row.n,
+		full: row.full,
+		pct: row.n ? Math.round((row.full / row.n) * 100) : 0,
+		label: PIPE_LABELS[row.key] ? PIPE_LABELS[row.key]() : row.key,
+		note: PIPE_NOTES[row.key] ? PIPE_NOTES[row.key]() : "",
+		tone: PIPE_META[row.key]?.tone || "ink",
+		rule: PIPE_META[row.key]?.rule || "",
+		selected: props.selected === row.key,
+	}))
+);
+const pipeTotal = computed(() => pipeline.value.reduce((sum, c) => sum + (c.n || 0), 0));
+
+/* Şeridin okuduğu kayıtlar. Çeviri değil KAYNAK adı — `t()`'den geçirmek onu
+ * çevrilebilir bir cümle gibi gösterirdi; şablonda çıplak metin bırakmak ise
+ * "her metin düğümü t()'den geçer" bekçisine takılıyor. İkisi de yanlış, doğrusu
+ * veri olarak taşımak. */
+const PIPE_SOURCE = "tender_lot · quotation";
+const hovered = ref("");
+
+/* Seçimle birlikte O FAZIN anlaşma listesi de gidiyor. Ev sahibi ekran kendi
+ * tablosunu bu listeyle süzüyor; sayıyı bir uçtan, listeyi başka bir uçtan
+ * okumak ikisinin ayrışabileceği anlamına gelirdi. */
+function dealsOf(key) {
+	return (data.value?.rows?.[key] || []).map((r) => r.deal);
+}
+function metaOf(key) {
+	const row = pipeline.value.find((c) => c.key === key);
+	return row ? { label: row.label, note: row.note, n: row.n } : null;
+}
+
+/* Aynı faza tekrar basmak seçimi KALDIRIYOR. Tek yönlü bir filtre, kullanıcıyı
+ * "hepsini geri nasıl getirdim" diye aratır. */
+function pick(row) {
+	const next = props.selected === row.key ? "" : row.key;
+	emit("select", next, next ? dealsOf(next) : [], next ? metaOf(next) : null);
+}
+
+/* Adres çubuğunda `?phase=` ile gelen (veya sayfa yenilenen) kullanıcı da
+ * filtrelenmiş tabloyu görsün: veri indiğinde seçim yeniden yayınlanıyor.
+ * Yoksa paylaşılan bağlantı şeridi seçili, tabloyu filtresiz açardı. */
+watch([data, () => props.selected], () => {
+	if (props.selected && data.value) {
+		emit("select", props.selected, dealsOf(props.selected), metaOf(props.selected));
+	}
+});
+
 const winRate = computed(() => kpi.value.win_rate);
 const resolved = computed(() => (kpi.value.won ?? 0) + (kpi.value.lost ?? 0));
 
@@ -213,6 +298,51 @@ function go(st) {
 		</div>
 
 		<template v-else-if="data">
+			<!-- Hattın tamamı tek şeritte: hangi fazda kaç lot var, hangisinde
+			     tıkanmış. Üzerine gelince teklif setinin ne kadar tam olduğu ve
+			     o fazın tek cümlelik okuması açılıyor. -->
+			<section v-if="pipelineStrip" class="ds-panel pipe">
+				<div class="pipe-row">
+					<span class="pipe-total">
+						<span class="pipe-total-n">{{ pipeTotal }}</span>
+						<span class="pipe-total-t">{{ t("in the pipeline") }}</span>
+					</span>
+					<span
+						v-for="(c, i) in pipeline"
+						:key="c.key"
+						class="pipe-cell"
+						@mouseenter="hovered = c.key"
+						@mouseleave="hovered = ''"
+					>
+						<button
+							type="button"
+							class="pipe-chev"
+							:data-tone="c.tone"
+							:data-first="i === 0 ? '1' : null"
+							:aria-pressed="c.selected"
+							@click="pick(c)"
+							@focus="hovered = c.key"
+							@blur="hovered = ''"
+						>
+							<span class="pipe-n">{{ c.n }}</span>
+							<span class="pipe-t">{{ c.label }}</span>
+						</button>
+						<span v-if="hovered === c.key" class="pipe-pop">
+							<span class="pipe-bar"><i :style="{ width: c.pct + '%' }" :data-full="c.pct >= 100 ? '1' : null"></i></span>
+							<span class="ds-mono pipe-ready">
+								{{ t("{done}/{total} quote sets complete", { done: c.full, total: c.n }) }}
+							</span>
+							<span class="pipe-note">{{ c.note }}</span>
+							<span class="ds-mono pipe-rule">{{ c.rule }}</span>
+						</span>
+					</span>
+				</div>
+				<div class="ds-panel-foot">
+					<span class="ds-mono">{{ PIPE_SOURCE }}</span>
+					<span>{{ t("bar: share of lots that satisfy the 5-quote rule") }}</span>
+				</div>
+			</section>
+
 			<template v-if="props.mode === 'full'">
 			<div class="ds-kpis" data-cols="4">
 				<div v-for="k in KPIS" :key="k.key" class="ds-kpi" :data-sev="k.sev">
@@ -322,6 +452,163 @@ function go(st) {
 </template>
 
 <style scoped>
+/* ── Chevron şeridi ───────────────────────────────────────────────────────
+ * Ok biçimi `clip-path` ile: kutu kutu bir ızgara "hat" gibi okunmuyor, oysa
+ * anlatılan şey akış. İlk hücrenin sol tarafı düz — akışın başladığı yer. */
+.pipe {
+	margin-bottom: 14px;
+}
+
+.pipe-row {
+	display: flex;
+	align-items: stretch;
+	gap: 4px;
+	padding: 16px;
+}
+
+.pipe-total {
+	flex: none;
+	display: flex;
+	flex-direction: column;
+	justify-content: center;
+	gap: 5px;
+	padding: 12px 20px;
+	margin-right: 6px;
+	background: var(--ds-ink, #1d273b);
+	color: #fff;
+}
+
+.pipe-total-n {
+	font-family: var(--ds-mono);
+	font-size: 28px;
+	font-weight: 600;
+	line-height: 1;
+	letter-spacing: -0.04em;
+}
+
+.pipe-total-t {
+	font-family: var(--ds-font-head);
+	font-weight: 800;
+	font-size: 12.5px;
+	text-transform: uppercase;
+	white-space: nowrap;
+}
+
+.pipe-cell {
+	position: relative;
+	flex: 1 1 0;
+	min-width: 0;
+	display: flex;
+}
+
+.pipe-chev {
+	flex: 1;
+	min-width: 0;
+	display: flex;
+	flex-direction: column;
+	align-items: flex-start;
+	justify-content: center;
+	gap: 5px;
+	border: 0;
+	cursor: pointer;
+	padding: 12px 24px 12px 34px;
+	color: #fff;
+	clip-path: polygon(0 0, calc(100% - 18px) 0, 100% 50%, calc(100% - 18px) 100%, 0 100%, 18px 50%);
+}
+
+.pipe-chev[data-first="1"] {
+	padding-left: 18px;
+	clip-path: polygon(0 0, calc(100% - 18px) 0, 100% 50%, calc(100% - 18px) 100%, 0 100%);
+}
+
+.pipe-chev[data-tone="ink"] { background: #3d4a5f; }
+.pipe-chev[data-tone="warn"] { background: #9a4d06; }
+.pipe-chev[data-tone="blue"] { background: #164a88; }
+.pipe-chev[data-tone="ok"] { background: #206bc4; }
+
+.pipe-chev:hover { filter: brightness(1.12); }
+
+/* Seçili faz: rengini değil KONTURUNU değiştiriyor. Rengi karartmak fazın
+ * kendi tonunu (uyarı / iyi) siler ve seçim bilgi taşımaz hale gelir. */
+.pipe-chev[aria-pressed="true"] {
+	box-shadow: inset 0 0 0 3px var(--ds-ink, #1d273b);
+}
+
+.pipe-n {
+	font-family: var(--ds-mono);
+	font-size: 28px;
+	font-weight: 600;
+	line-height: 1;
+	letter-spacing: -0.04em;
+}
+
+.pipe-t {
+	font-family: var(--ds-font-head);
+	font-weight: 800;
+	font-size: 12.5px;
+	line-height: 1.15;
+	text-transform: uppercase;
+	text-align: left;
+}
+
+.pipe-pop {
+	position: absolute;
+	left: 0;
+	top: calc(100% + 6px);
+	z-index: 20;
+	min-width: 240px;
+	padding: 12px 14px;
+	background: #fff;
+	border: 1px solid var(--ds-ink, #1a2234);
+	box-shadow: 0 10px 26px rgba(24, 36, 51, 0.16);
+	display: flex;
+	flex-direction: column;
+	gap: 7px;
+}
+
+.pipe-bar {
+	display: block;
+	height: 4px;
+	background: var(--ds-ln, #e3e5e8);
+}
+
+.pipe-bar i {
+	display: block;
+	height: 4px;
+	background: var(--ds-acc, #206bc4);
+}
+
+.pipe-bar i[data-full="1"] {
+	background: var(--ds-ok, #2fb344);
+}
+
+.pipe-ready {
+	font-size: 11px;
+	color: var(--ds-tx2);
+}
+
+.pipe-note {
+	font-size: 12.5px;
+	color: var(--ds-tx2);
+	text-wrap: pretty;
+}
+
+.pipe-rule {
+	font-size: 10px;
+	letter-spacing: 0.06em;
+	color: var(--ds-tx3);
+}
+
+@media (max-width: 1100px) {
+	.pipe-row {
+		flex-wrap: wrap;
+	}
+
+	.pipe-cell {
+		flex: 1 1 200px;
+	}
+}
+
 /* Yalnız yerleşim. Görsel dil stabler-modernist.css'ten geliyor. */
 .funnel-block {
 	margin-top: 14px;

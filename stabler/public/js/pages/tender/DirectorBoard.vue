@@ -67,9 +67,34 @@ useAutoRefresh(load);
 const ccy = computed(() => data.value?.currency || "");
 const kpi = computed(() => data.value?.kpi || {});
 const rows = computed(() => data.value?.rows || []);
+/* Chevron şeridinin seçtiği faz. `stage` DEĞİL `phase`: `stage` zaten
+ * `tenderBoardFilters`'ın yaşam-döngüsü anahtarı (identified/decided/…), huni
+ * fazları (seen/go/sourcing/…) başka bir küme. İkisini tek anahtara bindirmek
+ * tabloyu sessizce boşaltırdı. */
+const phase = computed(() => String(route.query.phase || ""));
+const phaseDeals = ref(null);
+const phaseMeta = ref(null);
+
+function onPhaseSelect(key, deals, meta) {
+	phaseDeals.value = key ? new Set(deals) : null;
+	phaseMeta.value = key ? meta : null;
+	if (String(route.query.phase || "") === String(key || "")) return;
+	const query = { ...route.query };
+	if (key) query.phase = key;
+	else delete query.phase;
+	router.replace({ query });
+}
+function clearPhase() {
+	onPhaseSelect("", [], null);
+}
+
 const filters = computed(() => tenderRouteFilters(route.query));
 const filterSummary = computed(() => activeTenderFilters(filters.value).map(([key, value]) => `${key}: ${value}`));
-const filteredRows = computed(() => filterTenderRows(rows.value, filters.value));
+const filteredRows = computed(() => {
+	const base = filterTenderRows(rows.value, filters.value);
+	if (!phaseDeals.value) return base;
+	return base.filter((r) => phaseDeals.value.has(r.deal));
+});
 const fm = (v) => formatMoney(v, ccy.value, user.value.language);
 
 /* Altı sayaç da API'den gelir; taşımada hiçbiri düşmedi. Alt satır sayının
@@ -152,8 +177,19 @@ function clearFilters() { router.replace({ query: {} }); }
 			{{ unverified }} {{ t("tenders carry unverified history — the number is there but the record behind it is incomplete.") }}
 		</p>
 
-		<!-- Aşama ızgarası ve huni kendi bileşeninde; o da aynı katmana taşındı. -->
-		<TenderFunnel />
+		<!-- Aşama ızgarası, huni ve chevron şeridi kendi bileşeninde; şerit
+		     seçimini buraya yollayıp aşağıdaki belge tablosunu süzüyor. -->
+		<TenderFunnel pipeline-strip :selected="phase" @select="onPhaseSelect" />
+
+		<div v-if="phaseMeta" class="board-phase" role="status">
+			<span class="ds-label board-phase-kicker">
+				{{ phaseMeta.label }} · {{ phaseMeta.n }} {{ t("lots") }}
+			</span>
+			<span class="board-phase-note">{{ phaseMeta.note }}</span>
+			<button type="button" class="ds-btn board-phase-clear" @click="clearPhase">
+				{{ t("Clear filter") }}
+			</button>
+		</div>
 
 		<section class="ds-panel board-portfolio">
 			<div class="ds-panel-head">
@@ -231,6 +267,37 @@ function clearFilters() { router.replace({ query: {} }); }
 </template>
 
 <style scoped>
+/* Seçili fazın okuması: şerit neyi süzdüğünü SÖYLEMELİ, yoksa kullanıcı eksik
+ * bir tabloya bakıp veri kaybı sanır. Temizleme düğmesi aynı satırda duruyor —
+ * filtreyi kuran yerin yanında. */
+.board-phase {
+	display: flex;
+	align-items: center;
+	gap: 14px;
+	flex-wrap: wrap;
+	padding: 11px 16px;
+	margin: -6px 0 14px;
+	border: 1px solid var(--ds-ln);
+	border-top: 0;
+	background: var(--ds-acc-bg, #eef4fb);
+}
+
+.board-phase-kicker {
+	white-space: nowrap;
+}
+
+.board-phase-note {
+	flex: 1;
+	min-width: 200px;
+	font-size: 13px;
+	color: var(--ds-tx);
+	text-wrap: pretty;
+}
+
+.board-phase-clear {
+	white-space: nowrap;
+}
+
 /* Yalnız yerleşim. Renk, tipografi, kenar ve boşluk katmandan geliyor. */
 .board-warn {
 	margin: 14px 0 0;

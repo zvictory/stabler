@@ -5287,3 +5287,37 @@ Step performance →,Производительность шагов →
 Your work is on the operations desk,Ваша работа — на операционной панели
 The pipeline overview is built for the director and sourcing roles. Your queue for today is on the desk.,Обзор воронки предназначен для ролей директора и снабжения. Ваша очередь на сегодня — на панели.
 Operations desk →,Операционная панель →
+A quotation needs at least one line.,Предложение должно содержать хотя бы одну строку.
+Add quotation,Добавить предложение
+Clear filter,Снять фильтр
+Conversion funnel — old vs new,Воронка конверсии — старая и новая
+Could not save the quotation.,Не удалось сохранить предложение.
+Could not submit the quotation.,Не удалось отправить предложение.
+"Current — bar funnel, Modernist layer","Текущая — столбчатая воронка, слой Modernist"
+"Decided to go, and not one supplier quotation has been collected.","Решение «идём» принято, но не собрано ни одного предложения поставщика."
+Edit supplier quotation,Изменить предложение поставщика
+Intake is done and the GO/NO-GO decision is still open.,"Приём завершён, решение GO/NO-GO ещё не принято."
+Line total,Итого по строке
+New supplier quotation,Новое предложение поставщика
+Old — trapezoid funnel,Старая — трапециевидная воронка
+Pick the currency the supplier quoted in.,"Выберите валюту, в которой поставщик дал цену."
+Pick the supplier who quoted.,"Выберите поставщика, давшего предложение."
+Priced and not submitted — this is where the funnel loses the most.,"Цена посчитана, но заявка не подана — здесь воронка теряет больше всего."
+Quantity must be greater than zero.,Количество должно быть больше нуля.
+Quotation saved as a draft.,Предложение сохранено как черновик.
+Quotation submitted.,Предложение отправлено.
+Quotations are coming in but the 5-quote / 2-country rule is not met yet.,"Предложения поступают, но правило «5 предложений из 2 стран» ещё не выполнено."
+"Same endpoint, same numbers — only the drawing differs. Pick one and the loser gets deleted.","Один и тот же эндпоинт, те же числа — отличается только рисунок. Выберите один, проигравший будет удалён."
+Save the draft first,Сначала сохраните черновик
+Search a supplier… ⌘K,Поиск поставщика… ⌘K
+Search an item… ⌘K,Поиск товара… ⌘K
+Side by side,Рядом
+Stacked,Друг под другом
+Submit quotation,Отправить предложение
+Submitted and waiting on the result. Nothing to do but track it.,"Заявка подана, ждём результат. Остаётся только следить."
+Submitting…,Отправка…
+Temporary comparison,Временное сравнение
+bar: share of lots that satisfy the 5-quote rule,"полоса: доля лотов, удовлетворяющих правилу 5 предложений"
+in the pipeline,в работе
+new,новое
+{done}/{total} quote sets complete,{done}/{total} комплектов предложений собрано

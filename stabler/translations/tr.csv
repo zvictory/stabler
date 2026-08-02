@@ -5276,3 +5276,37 @@ Step performance →,Adım performansı →
 Your work is on the operations desk,İşiniz operasyon masasında
 The pipeline overview is built for the director and sourcing roles. Your queue for today is on the desk.,Hat genel bakışı direktör ve tedarik rolleri için hazırlandı. Bugünkü kuyruğunuz masada.
 Operations desk →,Operasyon masası →
+A quotation needs at least one line.,Bir teklifte en az bir satır olmalı.
+Add quotation,Teklif ekle
+Clear filter,Filtreyi kaldır
+Conversion funnel — old vs new,Dönüşüm hunisi — eski ve yeni
+Could not save the quotation.,Teklif kaydedilemedi.
+Could not submit the quotation.,Teklif gönderilemedi.
+"Current — bar funnel, Modernist layer","Güncel — bar huni, Modernist katmanı"
+"Decided to go, and not one supplier quotation has been collected.",GO kararı verildi ama tek bir tedarikçi teklifi bile toplanmadı.
+Edit supplier quotation,Tedarikçi teklifini düzenle
+Intake is done and the GO/NO-GO decision is still open.,"Intake tamamlandı, GO/NO-GO kararı hâlâ açık."
+Line total,Satır toplamı
+New supplier quotation,Yeni tedarikçi teklifi
+Old — trapezoid funnel,Eski — yamuk huni
+Pick the currency the supplier quoted in.,Tedarikçinin fiyat verdiği para birimini seçin.
+Pick the supplier who quoted.,Teklifi veren tedarikçiyi seçin.
+Priced and not submitted — this is where the funnel loses the most.,Fiyatlandı ama gönderilmedi — huni en çok burada kaybediyor.
+Quantity must be greater than zero.,Miktar sıfırdan büyük olmalı.
+Quotation saved as a draft.,Teklif taslak olarak kaydedildi.
+Quotation submitted.,Teklif gönderildi.
+Quotations are coming in but the 5-quote / 2-country rule is not met yet.,Teklifler geliyor ama 5 teklif / 2 ülke kuralı henüz sağlanmadı.
+"Same endpoint, same numbers — only the drawing differs. Pick one and the loser gets deleted.","Aynı uç nokta, aynı sayılar — yalnız çizim farklı. Birini seçin, kaybeden silinir."
+Save the draft first,Önce taslağı kaydedin
+Search a supplier… ⌘K,Tedarikçi ara… ⌘K
+Search an item… ⌘K,Kalem ara… ⌘K
+Side by side,Yan yana
+Stacked,Alt alta
+Submit quotation,Teklifi gönder
+Submitted and waiting on the result. Nothing to do but track it.,"Teklif verildi, sonuç bekleniyor. Yapılacak bir şey yok, takip var."
+Submitting…,Gönderiliyor…
+Temporary comparison,Geçici karşılaştırma
+bar: share of lots that satisfy the 5-quote rule,çubuk: 5 teklif kuralını karşılayan lot oranı
+in the pipeline,hatta
+new,yeni
+{done}/{total} quote sets complete,{done}/{total} teklif seti tam

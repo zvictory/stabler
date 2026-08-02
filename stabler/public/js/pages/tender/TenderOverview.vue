@@ -89,6 +89,9 @@ const stepTone = (row) => {
 };
 
 const openFlow = () => router.push("/tender/flow");
+const openPhase = (key) => {
+	if (key) router.push({ path: "/tender/portfolio", query: { phase: key } });
+};
 </script>
 
 <template>
@@ -109,7 +112,17 @@ const openFlow = () => router.push("/tender/flow");
 			</button>
 		</template>
 
-		<TenderFunnel v-if="canFunnel" ref="funnelRef" mode="full" />
+		<!-- Şerit burada da var, ama SEÇMİYOR: bu ekranın altında süzülecek bir
+		     belge tablosu yok. Faza tıklamak kullanıcıyı o fazı gerçekten
+		     filtreleyebilen ekrana, seçim yapılmış olarak götürüyor. Aynı zihinsel
+		     model, tek fark filtrenin nerede uygulandığı. -->
+		<TenderFunnel
+			v-if="canFunnel"
+			ref="funnelRef"
+			mode="full"
+			pipeline-strip
+			@select="openPhase"
+		/>
 
 		<section v-if="canFlow" class="ds-panel ov-flow">
 			<div class="ds-panel-head">

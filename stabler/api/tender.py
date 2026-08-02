@@ -2223,15 +2223,45 @@ def tender_funnel(company: str, days: int = 90):
 	cutoff = getdate(today()) - timedelta(days=days)
 
 	# One grouped pass for quotation counts — not one query per deal.
+	#
+	# The supplier travels with the count now, because the chevron strip reports
+	# how many lots carry a COMPLETE quote set, and "complete" is the same
+	# two-part procurement rule the sourcing badge uses: at least five quotations
+	# from at least two countries. Five bids from one country passing as complete
+	# is the exact failure that rule exists to prevent, so the country half
+	# cannot be dropped for convenience.
 	sq_counts: dict[str, int] = {}
+	sq_suppliers: dict[str, set] = {}
 	if frappe.db.has_column("Supplier Quotation", "custom_crm_deal"):
 		for r in frappe.get_all(
 			"Supplier Quotation",
 			filters={"company": company, "custom_crm_deal": ["is", "set"], "docstatus": ["<", 2]},
-			fields=["custom_crm_deal"],
+			fields=["custom_crm_deal", "supplier"],
 			limit_page_length=0,
 		):
 			sq_counts[r.custom_crm_deal] = sq_counts.get(r.custom_crm_deal, 0) + 1
+			if r.supplier:
+				sq_suppliers.setdefault(r.custom_crm_deal, set()).add(r.supplier)
+
+	# Supplier -> country in ONE query for the whole board, not one per deal.
+	country_by_supplier: dict[str, str] = {}
+	all_suppliers = {s for names in sq_suppliers.values() for s in names}
+	if all_suppliers:
+		for s in frappe.get_all(
+			"Supplier",
+			filters={"name": ["in", list(all_suppliers)]},
+			fields=["name", "country"],
+			limit_page_length=0,
+		):
+			country_by_supplier[s["name"]] = s.get("country") or ""
+
+	def _quote_set_complete(deal_name: str) -> bool:
+		if sq_counts.get(deal_name, 0) < 5:
+			return False
+		countries = {country_by_supplier.get(s, "") for s in sq_suppliers.get(deal_name, set())}
+		return len(countries - {""}) >= 2
+
+	quote_ready: dict[str, int] = {}
 
 	has_pricing_col = frappe.db.has_column("CRM Deal", "custom_bid_pricing")
 	rows = []
@@ -2264,6 +2294,8 @@ def tender_funnel(company: str, days: int = 90):
 		urgent = False
 		if stage in ("go", "sourcing", "priced", "submitted"):
 			urgent = _deal_deadlines(deal, company, intake)["risk"] == "risk"
+		if _quote_set_complete(deal):
+			quote_ready[stage] = quote_ready.get(stage, 0) + 1
 		if stage == "sourcing" and sq_counts.get(deal, 0) < 5:
 			policy_gap += 1
 		if stage == "submitted" and urgent:
@@ -2293,6 +2325,10 @@ def tender_funnel(company: str, days: int = 90):
 	out = _funnel.summarise(rows)
 	out["meta"] = {"sourcing_policy_gap": policy_gap, "submitted_urgent": submitted_urgent}
 	out["rows"] = stage_rows
+	# The chevron strip comes out of the SAME pass as the counts and the drill
+	# rows, so a phase's number, its quote-set bar and the rows the board filters
+	# to can never disagree with one another.
+	out["pipeline"] = _funnel.pipeline(out["stages"], quote_ready)
 
 	# Execution buckets from the contract board (submitted SOs tagged to a deal).
 	so_stages = []
