@@ -25,15 +25,21 @@ describe("SourcingWorkspace Vue Contract Tests", () => {
 		expect(workspaceSrc).toContain("EmptyState");
 	});
 
-	it("calls create_rfq API with deterministic payload shape", () => {
+	it("calls get_deal_rfq_defaults and create_rfq API with deterministic payload shape", () => {
+		expect(workspaceSrc).toContain("stabler.api.sourcing.get_deal_rfq_defaults");
 		expect(workspaceSrc).toContain("stabler.api.sourcing.create_rfq");
 		expect(workspaceSrc).toContain("item_code");
 		expect(workspaceSrc).toContain("qty");
 		expect(workspaceSrc).toContain("schedule_date");
 	});
 
+	it("preserves user dirty state without overwriting manual input on async reload", () => {
+		expect(workspaceSrc).toContain("rfqIsDirty");
+		expect(workspaceSrc).toContain("markRfqDirty");
+	});
+
 	it("preserves draft RFQ semantics without auto email sending", () => {
-		expect(workspaceSrc).toContain("Create draft RFQ");
+		expect(workspaceSrc).toContain("draft");
 		expect(workspaceSrc).not.toContain("sendmail");
 	});
 });

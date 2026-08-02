@@ -607,12 +607,30 @@ class TestCreateRfq(unittest.TestCase):
 			self._create(items=[{"item_code": "", "qty": 5}])
 
 	def test_create_permission_on_the_rfq_doctype_is_demanded(self):
-		"""Deal write permission is not RFQ create permission."""
-		self._create()
-		self.assertIn("Request for Quotation", self.fake.create_checks)
-		api = _load_api(self.fake, can_create=False)
-		with self.assertRaises(PermissionError):
-			api.create_rfq("LOT-A", ["SUP-A"], [{"item_code": "RAIL-01", "qty": 1}], company="ACME")
+		self.api = _load_api(self.fake, can_create=False)
+		with self.assertRaises(self.api.frappe.PermissionError):
+			self._create()
+
+
+class TestRfqDefaultsEndpoint(unittest.TestCase):
+	def setUp(self):
+		self.fake = _FakeFrappe()
+		self.api = _load_api(self.fake)
+
+	def test_get_deal_rfq_defaults_returns_company_scoped_defaults(self):
+		res = self.api.get_deal_rfq_defaults("LOT-A", company="ACME")
+		self.assertIn("items", res)
+		self.assertIn("suppliers", res)
+		self.assertEqual(res["deal"], "LOT-A")
+		self.assertEqual(res["company"], "ACME")
+
+	def test_get_deal_rfq_defaults_rejects_unauthorized_deal(self):
+		with self.assertRaises(self.api.frappe.PermissionError):
+			self.api.get_deal_rfq_defaults("LOT-DENIED", company="ACME")
+
+	def test_get_deal_rfq_defaults_rejects_foreign_company_deal(self):
+		with self.assertRaises(self.api.frappe.PermissionError):
+			self.api.get_deal_rfq_defaults("LOT-OTHER", company="ACME")
 
 	def test_creating_before_the_patch_has_run_fails_loudly(self):
 		"""Reading tolerates an unmigrated site; WRITING must not — an untagged

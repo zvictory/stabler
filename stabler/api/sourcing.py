@@ -428,6 +428,41 @@ def list_rfqs(deal, company=None):
 
 
 @frappe.whitelist()
+def get_deal_rfq_defaults(deal, company=None):
+	"""Return company-scoped default items and suppliers for a tender deal lot."""
+	_require_tender(company)
+	selected_company = _assert_company_scope(company)
+	_deal_scope(deal, selected_company, "read")
+
+	doc = frappe.get_doc("CRM Deal", deal) if frappe.db.exists("CRM Deal", deal) else None
+	items = []
+	suppliers = []
+	if doc and doc.get("items"):
+		for item in doc.get("items"):
+			if isinstance(item, dict):
+				items.append(
+					{
+						"item_code": item.get("item_code"),
+						"qty": flt(item.get("qty") or 1),
+						"uom": item.get("uom") or "",
+						"schedule_date": item.get("schedule_date") or "",
+						"warehouse": item.get("warehouse") or "",
+					}
+				)
+	if doc and doc.get("suppliers"):
+		for s in doc.get("suppliers"):
+			if isinstance(s, dict) and s.get("supplier"):
+				suppliers.append(s.get("supplier"))
+
+	return {
+		"deal": deal,
+		"company": selected_company,
+		"items": items,
+		"suppliers": suppliers,
+	}
+
+
+@frappe.whitelist()
 def create_rfq(deal, suppliers, items, schedule_date=None, company=None, warehouse=None):
 	"""Raise ONE draft Request for Quotation for a lot, tagged to that lot.
 

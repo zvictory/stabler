@@ -254,11 +254,46 @@ async function submitQuotation(qName) {
 	}
 }
 
+const rfqIsDirty = ref(false);
+
+function markRfqDirty() {
+	rfqIsDirty.value = true;
+}
+
+async function openCreateRfqModal() {
+	rfqOpen.value = true;
+	if (!rfqIsDirty.value && deal.value) {
+		try {
+			const defaults = await call("stabler.api.sourcing.get_deal_rfq_defaults", {
+				deal: deal.value,
+				company: activeCompany.value,
+			});
+			if (defaults?.items?.length) {
+				rfqForm.value.items = defaults.items.map((i) => ({
+					item_code: i.item_code || "",
+					itemLabel: i.item_code || "",
+					qty: i.qty || 1,
+					uom: i.uom || "",
+					schedule_date: i.schedule_date || "",
+					warehouse: i.warehouse || "",
+				}));
+			}
+			if (defaults?.suppliers?.length) {
+				rfqForm.value.suppliers = defaults.suppliers;
+			}
+		} catch {
+			// Fall back cleanly if defaults cannot be loaded
+		}
+	}
+}
+
 function addRfqItem() {
+	markRfqDirty();
 	rfqForm.value.items.push({ item_code: "", itemLabel: "", qty: 1 });
 }
 
 function removeRfqItem(idx) {
+	markRfqDirty();
 	rfqForm.value.items.splice(idx, 1);
 	if (!rfqForm.value.items.length) addRfqItem();
 }
@@ -419,7 +454,7 @@ watch(
 				</div>
 
 				<div v-if="deal" class="ms-auto d-flex gap-2">
-					<button type="button" class="btn btn-outline-secondary btn-sm" @click="rfqOpen = true">
+					<button type="button" class="btn btn-outline-secondary btn-sm" @click="openCreateRfqModal">
 						<i class="ti ti-send me-1"></i>{{ t("Request for quotation") }}
 					</button>
 					<button type="button" class="btn btn-primary btn-sm" @click="openAddQuotation">
