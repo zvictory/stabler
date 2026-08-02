@@ -21,8 +21,6 @@ import { buildTenderQuery } from "../../composables/useTenderContext.js";
 import TenderNav from "./TenderNav.vue";
 
 defineProps({
-	// Başlığın üstündeki mono etiket. Şirket adını KABUK ekler — on ekranda
-	// on kez "· {{ activeCompany }}" yazılınca biri eksik kalıyordu.
 	label: { type: String, default: "" },
 	title: { type: String, default: "" },
 });
@@ -40,16 +38,13 @@ const parentCrmQuery = computed(() =>
 	<div class="tender-page stbl-ds">
 		<TenderNav />
 		<header class="ds-page-head">
-			<div class="ds-label">
+			<div v-if="parentTender" class="ds-label">
 				<router-link
-					v-if="parentTender"
 					:to="{ name: 'tender-crm', query: parentCrmQuery }"
 					class="text-decoration-none text-primary fw-semibold me-1 tender-breadcrumb"
 				>
 					<i class="ti ti-arrow-left me-1"></i>{{ parentTender }}
 				</router-link>
-				<span v-if="parentTender" class="me-1">·</span>
-				{{ label }} · {{ activeCompany || "—" }}
 			</div>
 			<h1>{{ title }}</h1>
 			<div v-if="$slots.meta" class="ds-meta"><slot name="meta" /></div>
