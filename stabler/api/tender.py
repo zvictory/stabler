@@ -2094,20 +2094,64 @@ def declarant_queue(company: str) -> dict:
 
 @frappe.whitelist()
 def logist_board(company: str) -> dict:
-	"""Logistician window: shipments (POs) with ETA, delivery deadline and delay risk."""
+	"""Logistician window: shipments (POs) with ETA, delivery deadline and derived lanes (Task C4).
+
+	Lanes (R1):
+	- planning: logistics document requirements missing files/waivers OR no freight booking
+	- booking: Freight Booking booked/pending
+	- transit: Freight Booking / shipment in transit
+	- border: Border crossed / customs cleared at border
+	- delivered: Freight Booking / shipment delivered
+	- accepted: Goods 100% received and accepted (per_received >= 100)
+	"""
 	_require_tender_view("logist", company)
 	base_ccy = frappe.db.get_value("Company", company, "default_currency") or ""
 	pos, has_landed = _po_rows_for_views(company)
+
+	from stabler.api._tender_documents import docs_summary, parse_doc_requirements
+
+	deal_doc_summaries: dict[str, dict] = {}
+	fb_map: dict[str, dict] = {}
+
+	if frappe.db.exists("DocType", "Freight Booking"):
+		try:
+			fb_rows = frappe.get_all(
+				"Freight Booking",
+				filters={"company": company, "docstatus": ["<", 2]},
+				fields=["name", "status", "purchase_order", "custom_crm_deal"],
+			)
+			for fb in fb_rows or []:
+				if not isinstance(fb, dict):
+					fb = fb.as_dict() if hasattr(fb, "as_dict") else dict(fb)
+				po_ref = fb.get("purchase_order")
+				deal_ref = fb.get("custom_crm_deal")
+				if po_ref:
+					fb_map[po_ref] = fb
+				if deal_ref:
+					fb_map[deal_ref] = fb
+		except Exception:
+			pass
+
 	deliv_cache: dict[str, object] = {}
 	out = []
+	lanes = {
+		"planning": {"count": 0, "items": []},
+		"booking": {"count": 0, "items": []},
+		"transit": {"count": 0, "items": []},
+		"border": {"count": 0, "items": []},
+		"delivered": {"count": 0, "items": []},
+		"accepted": {"count": 0, "items": []},
+	}
+
 	for p in pos:
 		charges = _parse_landed(p.get("custom_landed_charges")) if has_landed else []
 		transport = sum(c["amount"] for c in charges if c["type"] in ("transport", "loading"))
 		received = flt(p.per_received) >= 100
 		eta = getdate(p.schedule_date) if p.schedule_date else None
 		deal = p.custom_crm_deal
+		can_read_deal = bool(deal and frappe.has_permission("CRM Deal", "read", doc=deal))
+
 		if deal not in deliv_cache:
-			can_read_deal = bool(deal and frappe.has_permission("CRM Deal", "read", doc=deal))
 			dv = None
 			if can_read_deal:
 				intake = _read_intake(deal)
@@ -2129,27 +2173,61 @@ def logist_board(company: str) -> dict:
 			deliv_cache[deal] = getdate(dv) if dv else None
 		delivery = deliv_cache[deal]
 		late = bool(not received and eta and delivery and eta > delivery)
-		status = "delivered" if received else ("late" if late else "in_transit")
-		out.append(
-			{
-				"po": p.name,
-				"supplier_name": p.supplier_name,
-				"deal": deal,
-				"deal_label": _deal_label(deal)
-				if deal and frappe.has_permission("CRM Deal", "read", doc=deal)
-				else "",
-				"transport": transport,
-				"event_date": str(p.transaction_date or ""),
-				"eta": str(eta) if eta else None,
-				"delivery": str(delivery) if delivery else None,
-				"received": received,
-				"stage": status,
-				"status": status,
-				"risk": "risk" if status == "late" else "good",
-				"due": "late" if status == "late" else "on_time",
-			}
-		)
-	return {"currency": base_ccy, "rows": out}
+
+		summary_logistics = {"total": 0, "required": 0, "done_required": 0, "missing": []}
+		if deal and can_read_deal:
+			if deal not in deal_doc_summaries:
+				intake_str = frappe.db.get_value("CRM Deal", deal, "custom_document_intake")
+				reqs = parse_doc_requirements(intake_str)
+				deal_doc_summaries[deal] = docs_summary(reqs, role="logistics")
+			summary_logistics = deal_doc_summaries[deal]
+
+		missing_logistics_count = len(summary_logistics.get("missing", []))
+
+		fb = fb_map.get(p.name) or (fb_map.get(deal) if deal else None)
+		fb_status = str(fb.get("status") if fb else "").strip()
+
+		if received:
+			lane_key = "accepted"
+		elif fb_status == "Delivered":
+			lane_key = "delivered"
+		elif fb_status in ("Border Crossed", "Crossed Border", "Customs Cleared"):
+			lane_key = "border"
+		elif fb_status == "In Transit":
+			lane_key = "transit"
+		elif fb and fb_status in ("Booked", "Pending"):
+			lane_key = "booking"
+		elif missing_logistics_count > 0:
+			lane_key = "planning"
+		else:
+			lane_key = "booking" if fb else "planning"
+
+		row_item = {
+			"po": p.name,
+			"supplier_name": p.supplier_name,
+			"deal": deal,
+			"deal_label": _deal_label(deal) if can_read_deal else "",
+			"transport": transport,
+			"event_date": str(p.transaction_date or ""),
+			"eta": str(eta) if eta else None,
+			"delivery": str(delivery) if delivery else None,
+			"received": received,
+			"stage": lane_key,
+			"status": lane_key,
+			"lane": lane_key,
+			"risk": "risk" if late else "good",
+			"due": "late" if late else "on_time",
+			"missing_logistics_docs_count": missing_logistics_count,
+			"missing_logistics_docs": summary_logistics.get("missing", []),
+			"freight_booking": fb.get("name") if fb else None,
+			"freight_booking_status": fb_status or None,
+		}
+
+		out.append(row_item)
+		lanes[lane_key]["items"].append(row_item)
+		lanes[lane_key]["count"] += 1
+
+	return {"currency": base_ccy, "rows": out, "lanes": lanes}
 
 
 @frappe.whitelist()
