@@ -27,6 +27,12 @@ def _assert_communication_company(comm_doc: dict | object, company: str) -> None
 		)
 
 
+def _set_http_failure_status(code: int = 500) -> None:
+	"""Set HTTP status code on frappe.local.response if running under web request context."""
+	if hasattr(frappe, "local") and hasattr(frappe.local, "response"):
+		frappe.local.response["http_status_code"] = code
+
+
 @frappe.whitelist()
 def send_deal_email(
 	deal: str,
@@ -39,7 +45,8 @@ def send_deal_email(
 	"""Send email linked to a CRM Deal with durable DB idempotency guard and delivery retry support.
 
 	Creates a Communication record linked to the CRM Deal and sends via frappe.sendmail.
-	Fails loud if permissions are missing or delivery fails, recording audit status and allowing retries.
+	If mail delivery fails, records Failed status & error durably in DB transaction without rollback,
+	returning a non-2xx status response to allow subsequent retries via the same idempotency key.
 	"""
 	_require_crm()
 	_require_crm_company(company)
@@ -68,6 +75,7 @@ def send_deal_email(
 					"name": ext["name"],
 					"deal": deal,
 					"deduped": True,
+					"status": status,
 				}
 			# Retry previous failed email delivery
 			comm_name = ext["name"]
@@ -81,35 +89,51 @@ def send_deal_email(
 						reference_doctype="CRM Deal",
 						reference_name=deal,
 					)
-					frappe.db.set_value(
-						"Communication",
-						comm_name,
-						{
-							"custom_execution_status": "Retried",
-							"custom_attempts": (ext.get("custom_attempts") or 1) + 1,
-							"custom_last_error": None,
-						},
-					)
+					new_attempts = (ext.get("custom_attempts") or 1) + 1
+					if hasattr(frappe, "db") and hasattr(frappe.db, "set_value"):
+						frappe.db.set_value(
+							"Communication",
+							comm_name,
+							{
+								"custom_execution_status": "Retried",
+								"custom_attempts": new_attempts,
+								"custom_last_error": None,
+							},
+						)
+						if hasattr(frappe.db, "commit"):
+							frappe.db.commit()
+					return {
+						"name": comm_name,
+						"deal": deal,
+						"retried": True,
+						"deduped": False,
+						"status": "Retried",
+						"attempts": new_attempts,
+					}
 				except Exception as err:
-					frappe.db.set_value(
-						"Communication",
-						comm_name,
-						{
-							"custom_execution_status": "Failed",
-							"custom_attempts": (ext.get("custom_attempts") or 1) + 1,
-							"custom_last_error": str(err),
-						},
-					)
-					frappe.throw(
-						_("Email delivery failed: {0}").format(err),
-						frappe.ValidationError,
-					)
-			return {
-				"name": comm_name,
-				"deal": deal,
-				"retried": True,
-				"deduped": False,
-			}
+					safe_err = str(err)[:255]
+					new_attempts = (ext.get("custom_attempts") or 1) + 1
+					if hasattr(frappe, "db") and hasattr(frappe.db, "set_value"):
+						frappe.db.set_value(
+							"Communication",
+							comm_name,
+							{
+								"custom_execution_status": "Failed",
+								"custom_attempts": new_attempts,
+								"custom_last_error": safe_err,
+							},
+						)
+						if hasattr(frappe.db, "commit"):
+							frappe.db.commit()
+					_set_http_failure_status(500)
+					user_msg = _("Email delivery failed. Please check mail server settings.")
+					return {
+						"name": comm_name,
+						"deal": deal,
+						"status": "Failed",
+						"attempts": new_attempts,
+						"error": user_msg,
+					}
 
 	to_email = recipients or deal_doc.get("email_id") or deal_doc.get("email")
 	if not to_email:
@@ -158,7 +182,7 @@ def send_deal_email(
 
 	comm_name = getattr(comm, "name", f"COMM-{deal}")
 
-	# Send email with error audit logging
+	# Send email with durable error audit logging
 	if hasattr(frappe, "sendmail"):
 		try:
 			frappe.sendmail(
@@ -169,17 +193,29 @@ def send_deal_email(
 				reference_name=deal,
 			)
 		except Exception as err:
+			safe_err = str(err)[:255]
 			if hasattr(comm, "custom_execution_status"):
 				comm.custom_execution_status = "Failed"
-				comm.custom_last_error = str(err)
+				comm.custom_last_error = safe_err
 				if hasattr(comm, "save"):
 					comm.save()
-			frappe.throw(_("Email delivery failed: {0}").format(err), frappe.ValidationError)
+			if hasattr(frappe, "db") and hasattr(frappe.db, "commit"):
+				frappe.db.commit()
+			_set_http_failure_status(500)
+			user_msg = _("Email delivery failed. Please check mail server settings.")
+			return {
+				"name": comm_name,
+				"deal": deal,
+				"status": "Failed",
+				"attempts": 1,
+				"error": user_msg,
+			}
 
 	return {
 		"name": comm_name,
 		"deal": deal,
 		"deduped": False,
+		"status": "Executed",
 	}
 
 
