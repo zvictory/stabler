@@ -1,5 +1,5 @@
 {
-  "timestamp": "2026-08-02T19:23:51.687Z",
+  "timestamp": "2026-08-02T19:30:23.835Z",
   "assertions": [
     {
       "name": "Manager Session Login API",
@@ -59,12 +59,12 @@
     },
     {
       "name": "Non-Manager Cockpit Access Blocked / Restricted UI",
-      "status": "PASS",
+      "status": "FAIL",
       "details": {
         "url": "http://localhost:8000/stabler#/crm/cockpit"
       }
     }
   ],
-  "passed_count": 9,
-  "failed_count": 0
+  "passed_count": 8,
+  "failed_count": 1
 }

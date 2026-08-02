@@ -43,10 +43,26 @@ export async function login(usr, pwd, remember = true) {
 }
 
 export async function logout() {
-	const response = await fetch("/api/method/logout", {
-		method: "POST",
-		credentials: "same-origin",
-		headers: { Accept: "application/json" },
-	});
-	if (!response.ok) throw new Error("Sign out failed");
+	const boot = window.__STABLER__ || {};
+	const csrfToken = boot.csrfToken || window.csrf_token || "";
+	try {
+		const res = await fetch("/api/method/stabler.api.organization.stabler_logout", {
+			method: "POST",
+			credentials: "same-origin",
+			headers: {
+				Accept: "application/json",
+				"X-Frappe-CSRF-Token": csrfToken,
+			},
+		});
+		if (!res.ok) {
+			// Fallback to stock logout endpoint if custom endpoint is not available
+			await fetch("/api/method/logout", {
+				method: "POST",
+				credentials: "same-origin",
+				headers: { Accept: "application/json" },
+			});
+		}
+	} catch (_) {
+		// Ignore network or session expiry errors during logout to allow clean client redirection
+	}
 }

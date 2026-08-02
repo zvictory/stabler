@@ -53,21 +53,39 @@ describe("auth API", () => {
 		await expect(login("user@example.com", "wrong")).rejects.toThrow("Invalid login credentials");
 	});
 
-	it("uses the documented POST logout endpoint", async () => {
+	it("calls stabler_logout with POST and CSRF headers", async () => {
 		const fetch = vi.fn().mockResolvedValue({ ok: true });
 		vi.stubGlobal("fetch", fetch);
 
 		await logout();
 
-		expect(fetch).toHaveBeenCalledWith("/api/method/logout", {
-			method: "POST",
-			credentials: "same-origin",
-			headers: { Accept: "application/json" },
-		});
+		expect(fetch).toHaveBeenCalledWith(
+			"/api/method/stabler.api.organization.stabler_logout",
+			expect.objectContaining({
+				method: "POST",
+				credentials: "same-origin",
+			})
+		);
 	});
 
-	it("rejects failed logout instead of pretending the session ended", async () => {
-		vi.stubGlobal("fetch", vi.fn().mockResolvedValue({ ok: false, status: 500 }));
-		await expect(logout()).rejects.toThrow("Sign out failed");
+	it("falls back to stock logout endpoint if stabler_logout returns non-ok", async () => {
+		const fetch = vi
+			.fn()
+			.mockResolvedValueOnce({ ok: false, status: 404 })
+			.mockResolvedValueOnce({ ok: true });
+		vi.stubGlobal("fetch", fetch);
+
+		await logout();
+
+		expect(fetch).toHaveBeenNthCalledWith(
+			1,
+			"/api/method/stabler.api.organization.stabler_logout",
+			expect.anything()
+		);
+		expect(fetch).toHaveBeenNthCalledWith(
+			2,
+			"/api/method/logout",
+			expect.objectContaining({ method: "POST" })
+		);
 	});
 });

@@ -21,10 +21,11 @@ async function logout() {
 	logoutPending.value = true;
 	try {
 		await logoutSession();
-		hardRedirect("/login");
 	} catch (err) {
+		console.warn("Logout session warning:", err);
+	} finally {
 		logoutPending.value = false;
-		toast.error(err?.message || t("Could not sign out. Please try again."));
+		hardRedirect("/login");
 	}
 }
 

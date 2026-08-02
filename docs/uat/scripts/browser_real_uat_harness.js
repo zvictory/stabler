@@ -181,7 +181,7 @@ async function runRealBrowserUAT() {
 	const nonManagerContent = await pageNon.content();
 
 	// Verify Non-Manager cannot view Cockpit metrics or UI control is hidden/blocked
-	const nonManagerBlocked = !nonManagerContent.includes('Manager Cockpit') || nonManagerContent.includes('Not permitted') || nonManagerContent.includes('403');
+	const nonManagerBlocked = networkLogs.some(l => l.user === 'fayzulloxoshimov61@gmail.com' && l.url.includes('get_manager_cockpit_metrics') && l.status === 403) || nonManagerContent.includes('Not permitted');
 	recordAssertion('Non-Manager Cockpit Access Blocked / Restricted UI', nonManagerBlocked, { url: pageNon.url() });
 	await pageNon.screenshot({ path: path.join(SCREENSHOT_DIR, '07_non_manager_cockpit_blocked.png') });
 
