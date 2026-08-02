@@ -57,7 +57,7 @@ class _Doc(dict):
 
 	def insert(self):
 		self["inserted"] = True
-		self["name"] = self.get("name") or "RFQ-NEW"
+		self["name"] = self.get("name") or f"{self.get('doctype', 'DOC')[:3].upper()}-{id(self)}"
 		if hasattr(self, "_fake") and self._fake:
 			self._fake.docs[(self.get("doctype", "Communication"), self["name"])] = self
 		return self
@@ -298,6 +298,11 @@ def _load_api(
 		"stabler.api.tender",
 		"stabler.api.tender_master",
 		"stabler.api.purchasing",
+		"stabler.api.crm",
+		"stabler.api.crm_email",
+		"stabler.api.crm_automation",
+		"stabler.api.crm_analytics",
+		"stabler.api.organization",
 		"frappe",
 		"frappe.utils",
 	):
@@ -365,7 +370,10 @@ def _load_api(
 	utils.cint = lambda value, default=0: int(value or default)
 	utils.today = lambda: "2026-08-02"
 	utils.nowdate = lambda: "2026-08-02"
-	utils.getdate = lambda val=None: str(val) if val else "2026-08-02"
+	utils.getdate = lambda val=None: (
+		datetime.strptime(str(val)[:10], "%Y-%m-%d").date() if val else datetime(2026, 8, 2).date()
+	)
+	utils.date_diff = lambda d1, d2: (utils.getdate(d1) - utils.getdate(d2)).days
 
 	utils.now_datetime = lambda: datetime(2026, 8, 2, 10, 0, 0)
 

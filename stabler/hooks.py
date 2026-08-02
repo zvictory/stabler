@@ -79,6 +79,7 @@ scheduler_events = {
 		# Seal the audit hash-chain nightly (gap #42 tamper-evidence).
 		"stabler.api.audit.seal_audit_log",
 		"stabler.tasks.eta_payment_alert.check_upcoming_deadlines",
+		"stabler.api.crm_automation.scheduled_daily_crm_automation",
 	],
 	"weekly": [
 		# Two-tier backup retention pruning (gap #47).

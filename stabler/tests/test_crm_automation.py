@@ -1,4 +1,4 @@
-"""Unit & idempotency tests for Audited CRM Automation Rules (stabler/api/crm_automation.py).
+"""Unit & contract tests for Real Audited CRM Automation Rules (stabler/api/crm_automation.py).
 
 PYTHONPATH=$PWD python3 -m unittest stabler.tests.test_crm_automation -v
 """
@@ -8,6 +8,7 @@ from __future__ import annotations
 import sys
 import unittest
 
+from stabler.api import crm, organization
 from stabler.tests.test_sourcing_api import _Doc, _FakeFrappe, _load_api
 
 
@@ -24,17 +25,28 @@ class TestCrmAutomation(unittest.TestCase):
 	def setUp(self):
 		self.fake.docs.clear()
 		self.fake.created.clear()
-		self.frappe.session.user = "crm_user@acme.com"
+		self.frappe.session.user = "crm_manager@acme.com"
 
-		# Add CRM Deal fixtures
+		# Mock user roles to include Sales Manager / System Manager
+		def _roles_fn(user=None):
+			return ["System Manager", "Sales Manager"]
+
+		sys.modules["frappe"].get_roles = _roles_fn
+		if "stabler.api.crm" in sys.modules:
+			sys.modules["stabler.api.crm"].frappe.get_roles = _roles_fn
+
+		organization._user_allowed_companies = lambda _user: ["ACME"]
+		crm._user_allowed_companies = lambda _user: ["ACME"]
+
+		# Add CRM Deal fixtures with dynamic date attributes
 		self.fake.docs[("CRM Deal", "DEAL-AUTO-1")] = _Doc(
 			name="DEAL-AUTO-1",
 			doctype="CRM Deal",
 			company="ACME",
 			organization="Alfa Corp",
 			stage="priced",
-			deadline="2026-08-03",
-			last_activity_date="2026-07-30",
+			deadline="2026-08-03",  # <= 2 days from today (2026-08-02)
+			last_activity_date="2026-07-28",  # 5 days ago (> 3 days stale)
 			custom_parent_tender="TND-AUTO",
 			docstatus=0,
 		)
@@ -43,26 +55,85 @@ class TestCrmAutomation(unittest.TestCase):
 			doctype="CRM Deal",
 			company="OTHER_CO",
 			stage="go",
+			deadline="2026-08-03",
 			docstatus=0,
 		)
 
-	def test_run_crm_automation_rules_executes_and_dedupes(self):
+	def test_run_crm_automation_rules_creates_real_activities_and_dedupes_in_db(self):
 		from stabler.api import crm_automation
 
-		# Run automation rules for ACME
-		res1 = crm_automation.run_crm_automation_rules(company="ACME")
+		# Run automation rules for ACME (dry_run=False)
+		res1 = crm_automation.run_crm_automation_rules(company="ACME", dry_run=False)
 		self.assertIn("summary", res1)
 		self.assertGreaterEqual(res1["executed_rules"], 1)
 
-		# Second run with same company -> idempotent (no duplicate actions)
-		res2 = crm_automation.run_crm_automation_rules(company="ACME")
+		# Verify persistent audit CRM Activity was created in DB
+		activities = [
+			doc
+			for (kind, name), doc in self.fake.docs.items()
+			if kind == "CRM Activity" and doc.get("company") == "ACME"
+		]
+		self.assertGreaterEqual(len(activities), 1)
+		self.assertIn("custom_idempotency_key", activities[0])
+
+		# Clear in-memory state (simulate worker restart)
+		if hasattr(crm_automation, "_EXECUTED_AUTOMATION_KEYS"):
+			crm_automation._EXECUTED_AUTOMATION_KEYS.clear()
+
+		# Second run with same company -> idempotent via DB record lookup
+		res2 = crm_automation.run_crm_automation_rules(company="ACME", dry_run=False)
 		self.assertEqual(res2["executed_rules"], 0)
+
+	def test_preview_crm_automation_rules_does_not_mutate_db(self):
+		from stabler.api import crm_automation
+
+		initial_count = len(self.fake.docs)
+		preview = crm_automation.preview_crm_automation_rules(company="ACME")
+
+		self.assertIn("actions", preview)
+		self.assertGreaterEqual(len(preview["actions"]), 1)
+		# Assert no new documents created during preview
+		self.assertEqual(len(self.fake.docs), initial_count)
+
+	def test_run_crm_automation_rules_rejects_unauthorized_role(self):
+		from stabler.api import crm_automation
+
+		# Demote user role to plain user (no manager role)
+		def _guest_roles(user=None):
+			return ["Guest"]
+
+		sys.modules["frappe"].get_roles = _guest_roles
+		if "stabler.api.crm" in sys.modules:
+			sys.modules["stabler.api.crm"].frappe.get_roles = _guest_roles
+
+		with self.assertRaises(PermissionError):
+			crm_automation.run_crm_automation_rules(company="ACME")
 
 	def test_run_crm_automation_rules_rejects_unauthorized_company(self):
 		from stabler.api import crm_automation
 
-		with self.assertRaises(self.frappe.PermissionError):
+		# Non-admin sales manager restricted to ACME
+		def _sales_roles(user=None):
+			return ["Sales Manager"]
+
+		sys.modules["frappe"].get_roles = _sales_roles
+		if "stabler.api.crm" in sys.modules:
+			sys.modules["stabler.api.crm"].frappe.get_roles = _sales_roles
+			sys.modules["stabler.api.crm"]._user_allowed_companies = lambda _user: ["ACME"]
+
+		organization._user_allowed_companies = lambda _user: ["ACME"]
+
+		with self.assertRaises(PermissionError):
 			crm_automation.run_crm_automation_rules(company="OTHER_CO")
+
+	def test_cross_company_automation_isolation(self):
+		from stabler.api import crm_automation
+
+		res = crm_automation.run_crm_automation_rules(company="ACME", dry_run=False)
+		actions_deals = [a["deal"] for a in res["actions"]]
+
+		self.assertIn("DEAL-AUTO-1", actions_deals)
+		self.assertNotIn("DEAL-AUTO-FOREIGN", actions_deals)
 
 
 if __name__ == "__main__":
