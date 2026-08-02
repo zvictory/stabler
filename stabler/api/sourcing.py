@@ -238,32 +238,14 @@ def get_supplier_quotation(name, company=None):
 	}
 
 
-@frappe.whitelist()
-def save_supplier_quotation(
-	deal, supplier, currency, items, valid_till=None, name=None, company=None, warehouse=None
-):
-	"""Create or update a DRAFT Supplier Quotation tagged to one tender lot.
-
-	Submitting is a separate call on purpose. The sourcing policy counts drafts
-	and submitted quotations differently; a save that also submitted would make
-	"5 quotations collected" unfalsifiable, because every half-typed draft would
-	count as a firm offer.
+def _resolve_warehouse(selected_company: str, warehouse: str | None, lines: list[dict]) -> str | None:
+	"""Resolve warehouse for purchasing documents (Quotation / RFQ).
+	Precedence:
+	1. Explicitly passed `warehouse` argument (validated to belong to `selected_company`)
+	2. `_company_default_warehouse(selected_company)`
+	If unresolved and lines contain stock items, throws user-facing ValidationError.
+	Assigns resolved warehouse to each dict in `lines`.
 	"""
-	_require_tender(company)
-	selected_company = _assert_company_scope(company)
-	_deal_scope(deal, selected_company, "write")
-	if not _sq_link_ready():
-		frappe.throw(_("Run migrate to enable tender quotations."))
-
-	supplier_name = str(supplier or "").strip()
-	currency_code = str(currency or "").strip()
-	if not currency_code:
-		# The comparison is done in company currency through `base_grand_total`;
-		# a quotation with no currency of its own has no honest conversion.
-		frappe.throw(_("Pick the currency the supplier quoted in."), frappe.ValidationError)
-	_assert_suppliers_permitted([supplier_name])
-	lines = _clean_quotation_items(frappe.parse_json(items))
-
 	target_wh = str(warehouse or "").strip() or _company_default_warehouse(selected_company)
 	if (
 		warehouse
@@ -287,6 +269,39 @@ def save_supplier_quotation(
 	if target_wh:
 		for line in lines:
 			line["warehouse"] = target_wh
+
+	return target_wh or None
+
+
+@frappe.whitelist()
+def save_supplier_quotation(
+	deal, supplier, currency, items, valid_till=None, name=None, company=None, warehouse=None
+):
+	"""Create or update a DRAFT Supplier Quotation tagged to one tender lot.
+
+	Submitting is a separate call on purpose. The sourcing policy counts drafts
+	and submitted quotations differently; a save that also submitted would make
+	"5 quotations collected" unfalsifiable, because every half-typed draft would
+	count as a firm offer.
+	"""
+	_require_tender(company)
+	selected_company = _assert_company_scope(company)
+	_deal_scope(deal, selected_company, "write")
+	if not _sq_link_ready():
+		frappe.throw(_("Run migrate to enable tender supplier quotations."))
+
+	supplier_name = str(supplier or "").strip()
+	currency_code = str(currency or "").strip()
+	if not supplier_name:
+		frappe.throw(_("Pick the supplier who quoted."), frappe.ValidationError)
+	if not currency_code:
+		# The comparison is done in company currency through `base_grand_total`;
+		# a quotation with no currency of its own has no honest conversion.
+		frappe.throw(_("Pick the currency the supplier quoted in."), frappe.ValidationError)
+	_assert_suppliers_permitted([supplier_name])
+	lines = _clean_quotation_items(frappe.parse_json(items))
+
+	target_wh = _resolve_warehouse(selected_company, warehouse, lines)
 
 	if name:
 		doc = _quotation_for_edit(name, deal, selected_company)
@@ -369,7 +384,7 @@ def list_rfqs(deal, company=None):
 
 
 @frappe.whitelist()
-def create_rfq(deal, suppliers, items, schedule_date=None, company=None):
+def create_rfq(deal, suppliers, items, schedule_date=None, company=None, warehouse=None):
 	"""Raise ONE draft Request for Quotation for a lot, tagged to that lot.
 
 	Writing is deliberately stricter than reading about the migration state: an
@@ -391,11 +406,14 @@ def create_rfq(deal, suppliers, items, schedule_date=None, company=None):
 	supplier_names = _clean_suppliers(frappe.parse_json(suppliers))
 	lines = _clean_items(frappe.parse_json(items))
 	_assert_suppliers_permitted(supplier_names)
+	target_wh = _resolve_warehouse(selected_company, warehouse, lines)
 
 	doc = frappe.new_doc("Request for Quotation")
 	doc.company = selected_company
 	doc.transaction_date = today()
 	doc.schedule_date = schedule_date or None
+	if target_wh:
+		doc.set_warehouse = target_wh
 	setattr(doc, _RFQ_DEAL_FIELD, deal)
 	for supplier in supplier_names:
 		doc.append("suppliers", {"supplier": supplier})

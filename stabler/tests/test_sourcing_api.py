@@ -82,6 +82,7 @@ class _FakeFrappe:
 		self.docs = {
 			("Company", "ACME"): _Doc(name="ACME", default_warehouse="Stores - ACME"),
 			("Item", "RAIL-01"): _Doc(name="RAIL-01", is_stock_item=1),
+			("Item", "SERVICE-01"): _Doc(name="SERVICE-01", is_stock_item=0),
 			("CRM Deal", "LOT-A"): _Doc(name="LOT-A", company="ACME", deal_type="Tender"),
 			("CRM Deal", "LOT-DENIED"): _Doc(name="LOT-DENIED", company="ACME", deal_type="Tender"),
 			("CRM Deal", "LOT-OTHER"): _Doc(name="LOT-OTHER", company="Other Co", deal_type="Tender"),
@@ -496,6 +497,28 @@ class TestCreateRfq(unittest.TestCase):
 		self.assertEqual([row["supplier"] for row in doc["suppliers"]], ["SUP-A", "SUP-B"])
 		self.assertEqual(doc["items"][0]["item_code"], "RAIL-01")
 		self.assertEqual(doc["items"][0]["qty"], 10.0)
+
+	def test_stock_item_rfq_resolves_company_default_warehouse(self):
+		self._create(items=[{"item_code": "RAIL-01", "qty": 5}])
+		doc = self.fake.created[-1]
+		self.assertEqual(doc.get("set_warehouse"), "Stores - ACME")
+		self.assertEqual(doc["items"][0].get("warehouse"), "Stores - ACME")
+
+	def test_explicit_warehouse_overrides_company_default(self):
+		self._create(items=[{"item_code": "RAIL-01", "qty": 5}], warehouse="Stores - ACME")
+		doc = self.fake.created[-1]
+		self.assertEqual(doc.get("set_warehouse"), "Stores - ACME")
+
+	def test_missing_company_default_warehouse_with_stock_item_throws_our_error(self):
+		self.fake.docs[("Company", "ACME")]["default_warehouse"] = None
+		with self.assertRaises(ValueError) as ctx:
+			self._create(items=[{"item_code": "RAIL-01", "qty": 5}])
+		self.assertIn("No default warehouse configured for ACME", str(ctx.exception))
+
+	def test_missing_company_default_warehouse_with_service_item_succeeds(self):
+		self.fake.docs[("Company", "ACME")]["default_warehouse"] = None
+		res = self._create(items=[{"item_code": "SERVICE-01", "qty": 1}])
+		self.assertTrue(res.get("name"))
 
 	def test_the_rfq_stays_a_draft_and_sends_no_email(self):
 		"""This slice creates the request; contacting the supplier stays a human
