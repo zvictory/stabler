@@ -15,8 +15,8 @@
 
 | Gereksinim | Kod | Test | Commit | Sonuç |
 |---|---|---|---|:---:|
-| `_apply_rfq_item_defaults` | [stabler/api/sourcing.py:277-310](file:///Users/zafar/frappe-bench-local/apps/stabler/stabler/api/sourcing.py#L277-L310) | `test_rfq_item_defaults_populates_stock_uom_and_uom` | `4800f08` | **PASS** |
-| `stock_uom` -> `uom` | [stabler/api/sourcing.py:291-298](file:///Users/zafar/frappe-bench-local/apps/stabler/stabler/api/sourcing.py#L291-L298) | `test_rfq_item_defaults_populates_stock_uom_and_uom` | `4800f08` | **PASS** |
+| `_apply_rfq_item_defaults` | [stabler/api/sourcing.py:277-310](file:///Users/zafar/frappe-bench-local/apps/stabler/stabler/api/sourcing.py#L277-L310) | `test_rfq_item_uom_and_stock_uom_populated_from_item` | `4800f08` | **PASS** |
+| `stock_uom` -> `uom` | [stabler/api/sourcing.py:291-298](file:///Users/zafar/frappe-bench-local/apps/stabler/stabler/api/sourcing.py#L291-L298) | `test_rfq_item_uom_and_stock_uom_populated_from_item` | `4800f08` | **PASS** |
 | conversion factor | [stabler/api/sourcing.py:299-306](file:///Users/zafar/frappe-bench-local/apps/stabler/stabler/api/sourcing.py#L299-L306) | `test_rfq_item_conversion_factor_is_one_when_uom_matches_stock_uom` | `4800f08` | **PASS** |
 | schedule-date fallback | [stabler/api/sourcing.py:309](file:///Users/zafar/frappe-bench-local/apps/stabler/stabler/api/sourcing.py#L309) | `test_rfq_item_empty_schedule_date_uses_header_or_today`, `test_rfq_item_explicit_schedule_date_is_preserved` | `4800f08` | **PASS** |
 | row warehouse / no `set_warehouse` | [stabler/api/sourcing.py:270-274, 453, 460](file:///Users/zafar/frappe-bench-local/apps/stabler/stabler/api/sourcing.py#L270-L274) | `test_saved_quotation_has_warehouse_from_company_default`, `test_explicit_warehouse_overrides_company_default` | `4800f08` | **PASS** |

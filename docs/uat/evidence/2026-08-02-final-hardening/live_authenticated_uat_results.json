@@ -1,0 +1,148 @@
+{
+  "admin_session": {
+    "user": "Administrator",
+    "roles": [
+      "Imports User",
+      "Imports Manager",
+      "Stabler Logist",
+      "Stabler Declarant",
+      "Stabler Tender Director",
+      "Warehouse User",
+      "Marketing User",
+      "Desk Allowed",
+      "Stable Resolver Bot",
+      "Line A Operator",
+      "Marketing Manager",
+      "Loan Manager",
+      "Employee Self Service",
+      "Expense Approver",
+      "Interviewer",
+      "Leave Approver",
+      "Analytics",
+      "Supplier",
+      "Support Team",
+      "Fulfillment User",
+      "Quality Manager",
+      "Delivery Manager",
+      "Fleet Manager",
+      "Delivery User",
+      "Customer",
+      "Academics User",
+      "Item Manager",
+      "Projects Manager",
+      "HR User",
+      "Manufacturing User",
+      "Projects User",
+      "Manufacturing Manager",
+      "HR Manager",
+      "Employee",
+      "Stock Manager",
+      "Stock User",
+      "Auditor",
+      "Sales Manager",
+      "Maintenance Manager",
+      "Sales Master Manager",
+      "Purchase Manager",
+      "Purchase Master Manager",
+      "Maintenance User",
+      "Accounts Manager",
+      "Sales User",
+      "Accounts User",
+      "Purchase User",
+      "Knowledge Base Contributor",
+      "Knowledge Base Editor",
+      "Blogger",
+      "Newsletter Manager",
+      "Translator",
+      "Inbox User",
+      "Prepared Report User",
+      "Script Manager",
+      "Report Manager",
+      "Workspace Manager",
+      "Dashboard Manager",
+      "Website Manager",
+      "Guest",
+      "Administrator",
+      "System Manager",
+      "All",
+      "Desk User"
+    ],
+    "send_email": {
+      "status": "ERROR",
+      "data": "Email delivery failed: Please setup default outgoing Email Account from Tools > Email Account"
+    }
+  },
+  "manager_session": {
+    "user": "hayrulloh@mail.com",
+    "roles": [
+      "Expense Approver",
+      "Customer",
+      "Accounts User",
+      "Sales Manager",
+      "Sales User",
+      "Sales Master Manager",
+      "All",
+      "Guest",
+      "Desk User"
+    ],
+    "cockpit_metrics": {
+      "status": "200 OK",
+      "data": {
+        "company": "Mikas",
+        "deal_count": 13,
+        "total_value": 0.0,
+        "weighted_forecast": 0.0,
+        "commit_total": 0.0,
+        "best_case_total": 0.0,
+        "win_rate_pct": 0.0,
+        "stage_counts": {
+          "seen": 13
+        },
+        "stage_aging": {
+          "seen": 0.0
+        },
+        "rep_workload": {
+          "Administrator": 13
+        }
+      }
+    },
+    "rfq_defaults": {
+      "status": "200 OK",
+      "data": {
+        "deal": "CRM-DEAL-2026-00005",
+        "company": "Mikas",
+        "items": [],
+        "suppliers": []
+      }
+    },
+    "automation_preview": {
+      "status": "200 OK",
+      "data": {
+        "company": "Mikas",
+        "dry_run": true,
+        "executed_rules": 0,
+        "actions": [],
+        "summary": "Previewed 0 automation rule(s) for Mikas."
+      }
+    }
+  },
+  "non_manager_session": {
+    "user": "fayzulloxoshimov61@gmail.com",
+    "roles": [
+      "Customer",
+      "Sales User",
+      "Accounts User",
+      "All",
+      "Guest",
+      "Desk User"
+    ],
+    "cockpit_metrics_negative": {
+      "status": "403 PermissionError (REJECTED AS EXPECTED)",
+      "error": "Not permitted. CRM Manager role required."
+    },
+    "automation_preview_negative": {
+      "status": "403 PermissionError (REJECTED AS EXPECTED)",
+      "error": "Not permitted. CRM Manager role required."
+    }
+  }
+}

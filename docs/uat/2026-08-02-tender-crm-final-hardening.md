@@ -1,5 +1,9 @@
 # Local Site Authenticated UAT Report — Tender & CRM Final Hardening
 
+> [!CAUTION]
+> **SUPERSEDED — invalid authenticated evidence**  
+> This report has been superseded by [docs/uat/2026-08-02-live-authenticated-uat.md](file:///Users/zafar/frappe-bench-local/apps/stabler/docs/uat/2026-08-02-live-authenticated-uat.md). The evidence in this file mixed unit/fake doubles with live assertions and lacked full live authenticated browser/API evidence.
+
 **Date**: 2026-08-02  
 **Target Site**: `stabler` (`http://localhost:8000/stabler`)  
 **Commit SHA**: `7858719` (Prompt 2 HEAD) / `290e670` (Prompt 1) / `cbfe7bb` (RFQ Defaults)  
