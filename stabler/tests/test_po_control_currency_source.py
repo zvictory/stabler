@@ -93,6 +93,11 @@ class TestPoControlCurrencySource(unittest.TestCase):
 		for key in ('"quotation_total": qt', '"delta_pct"', '"po_total": s["po_total"]'):
 			self.assertIn(key, self.board)
 
+	def test_underscore_is_not_shadowed_by_dummy_variables(self):
+		"""`_` is used for `frappe._()` error translations — assigning to `_` locally causes UnboundLocalError."""
+		self.assertNotIn("_, _ =", self.board)
+		self.assertNotIn(", _ =", self.board)
+
 
 if __name__ == "__main__":
 	unittest.main()

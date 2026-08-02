@@ -530,7 +530,7 @@ def po_control_board(deal: str) -> dict:
 	landed_by_po = {}
 	for r in rows:
 		charges_raw = r.get("custom_landed_charges") if has_landed else None
-		charges_tot, _, _ = parse_landed_charges(charges_raw)
+		charges_tot, _charges_list, _has_est = parse_landed_charges(charges_raw)
 		landed_by_po[r.name] = flt(r.base_grand_total) + charges_tot
 	min_landed = min((landed_by_po[r.name] for r in rows), default=0.0)
 	cards: list[dict] = []

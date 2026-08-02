@@ -376,7 +376,7 @@ def save_tender_master(data, company=None):
 	payload = frappe.parse_json(data)
 	name = payload.get("name")
 	if name:
-		doc, _ = _master_scope(name, selected_company, "write")
+		doc, _company_scope = _master_scope(name, selected_company, "write")
 	else:
 		if not frappe.has_permission("Tender Master", "create"):
 			frappe.throw(_("Not permitted."), frappe.PermissionError)
