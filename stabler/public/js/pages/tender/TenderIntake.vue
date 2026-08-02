@@ -240,7 +240,7 @@ watch(() => props.deal, load, { immediate: true });
 						<thead><tr>
 							<th>{{ t("Document") }}</th>
 							<th style="width:90px" class="text-center">{{ t("Required") }}</th>
-							<th style="width:90px" class="text-center">{{ t("Done") }}</th>
+							<th style="width:110px" class="text-center">{{ t("Status") }}</th>
 							<th style="width:150px">{{ t("Date") }}</th>
 							<th style="width:36px"></th>
 						</tr></thead>
@@ -248,7 +248,16 @@ watch(() => props.deal, load, { immediate: true });
 							<tr v-for="(d, i) in intake.documents" :key="i">
 								<td><input v-model="d.label" type="text" class="form-control form-control-sm"></td>
 								<td class="text-center"><input v-model="d.required" type="checkbox" class="form-check-input" :true-value="1" :false-value="0"></td>
-								<td class="text-center"><input v-model="d.done" type="checkbox" class="form-check-input" :true-value="1" :false-value="0"></td>
+								<td class="text-center">
+									<router-link
+										:to="`/tender/documents?deal=${deal}`"
+										class="badge text-decoration-none"
+										:class="d.done ? 'bg-green text-white' : d.unverified ? 'bg-warning-lt text-warning' : d.required ? 'bg-red-lt text-red' : 'bg-secondary-lt'"
+										:title="t('Manage document files in Document Center')"
+									>
+										{{ d.done ? t("Verified") : d.unverified ? t("Unverified") : d.required ? t("Missing") : t("Pending") }}
+									</router-link>
+								</td>
 								<td><DateInput v-model="d.date" size="sm" /></td>
 								<td class="text-center"><button type="button" class="btn btn-ghost-danger btn-icon btn-sm" @click="rmDoc(i)"><i class="ti ti-x"></i></button></td>
 							</tr>
