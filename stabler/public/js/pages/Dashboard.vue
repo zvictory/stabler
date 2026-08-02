@@ -12,7 +12,6 @@ import KpiCard from "../components/KpiCard.vue";
 import ApexChart from "../components/ApexChart.vue";
 import EmptyState from "../components/EmptyState.vue";
 import OperationsDesk from "./tender/OperationsDesk.vue";
-import TenderNav from "./tender/TenderNav.vue";
 import ImportsDashboard from "./imports/ImportsDashboard.vue";
 
 const session = useSession();
@@ -324,8 +323,14 @@ const activityIcon = (type) => {
 						</div>
 					</div>
 
+					<!-- Çubuk BURADA yok, çünkü `OperationsDesk` kendi çubuğunu
+					     zaten taşıyor (OperationsDesk.vue:6) ve pano onu olduğu
+					     gibi gömüyor: ikisi birlikte çubuğu üst üste iki kez
+					     çiziyordu. Ölçüldü 2026-08-02, `#/dashboard`, Mikas.
+					     `<TenderNav overview />` üstelik yanıltıcıydı — bileşen
+					     `overview` diye bir prop tanımlamıyor, öznitelik `<nav>`'a
+					     düşüyordu, yani ikinci çubuk birincinin birebir aynısıydı. -->
 					<div v-else class="tender-dashboard">
-						<TenderNav overview />
 						<OperationsDesk />
 					</div>
 				</template>

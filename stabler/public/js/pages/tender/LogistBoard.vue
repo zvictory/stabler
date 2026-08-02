@@ -55,8 +55,9 @@ function clearFilters() { router.replace({ query: {} }); }
 
 <template>
 	<div class="container-xl py-3">
-		<div class="d-flex align-items-center mb-2 gap-2 flex-wrap"><h2 class="mb-0">{{ t("Logistics") }}</h2><div v-if="filterSummary.length" class="ms-auto d-flex align-items-center gap-2"><span class="text-secondary small">{{ filterSummary.join(" · ") }}</span><button type="button" class="btn btn-sm btn-ghost-secondary" @click="clearFilters">{{ t("Clear filters") }}</button></div></div>
+		<!-- Çubuk sayfa başlığının ÜSTÜNDE — bkz. /tender/desk. -->
 		<TenderNav />
+		<div class="d-flex align-items-center mb-2 gap-2 flex-wrap"><h2 class="mb-0">{{ t("Logistics") }}</h2><div v-if="filterSummary.length" class="ms-auto d-flex align-items-center gap-2"><span class="text-secondary small">{{ filterSummary.join(" · ") }}</span><button type="button" class="btn btn-sm btn-ghost-secondary" @click="clearFilters">{{ t("Clear filters") }}</button></div></div>
 		<div class="card"><div class="card-body p-0">
 			<table class="table card-table">
 				<thead><tr>
