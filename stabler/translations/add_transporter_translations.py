@@ -100,7 +100,7 @@ def main():
 			continue
 
 		existing = set()
-		with open(filepath, "r", encoding="utf-8") as f:
+		with open(filepath, encoding="utf-8") as f:
 			reader = csv.reader(f)
 			for row in reader:
 				if row:

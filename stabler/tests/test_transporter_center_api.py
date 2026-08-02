@@ -4,10 +4,9 @@ import unittest
 
 
 class TestTransporterCenterApiSource(unittest.TestCase):
-
 	def test_api_defines_transporter_dashboard_and_save_container_cost(self):
 		filepath = os.path.join(os.path.dirname(__file__), "..", "api", "imports.py")
-		with open(filepath, "r", encoding="utf-8") as f:
+		with open(filepath, encoding="utf-8") as f:
 			tree = ast.parse(f.read(), filename=filepath)
 
 		funcs = [node.name for node in ast.walk(tree) if isinstance(node, ast.FunctionDef)]

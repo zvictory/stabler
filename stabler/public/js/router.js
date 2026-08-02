@@ -48,6 +48,7 @@ import DirectorBoard from "./pages/tender/DirectorBoard.vue";
 import OperationsDesk from "./pages/tender/OperationsDesk.vue";
 import TenderFlow from "./pages/tender/TenderFlow.vue";
 import TenderCrm from "./pages/tender/TenderCrm.vue";
+import TenderMasterBoard from "./pages/tender/TenderMasterBoard.vue";
 import TenderOverview from "./pages/tender/TenderOverview.vue";
 import TenderDocuments from "./pages/tender/TenderDocuments.vue";
 import SalesInvoices from "./pages/sales/SalesInvoices.vue";
@@ -267,7 +268,7 @@ const routes = [
 	{ path: "/tender/overview", name: "tender-overview", component: TenderOverview, meta: { title: t("Where the pipeline stands"), module: "tender" } },
 	{ path: "/tender/flow", name: "tender-flow", component: TenderFlow, meta: { title: t("Tender process flow"), module: "tender" } },
 	{ path: "/tender/board", name: "tender-board", component: SalesOrderBoard, meta: { title: t("Contract board"), module: "tender" } },
-	{ path: "/tender/crm", name: "tender-crm", component: TenderCrm, meta: { title: t("Tender CRM"), module: "tender" } },
+	{ path: "/tender/crm", name: "tender-crm", component: (to) => (to.query && to.query.tender ? TenderCrm : TenderMasterBoard), meta: { title: t("Tender CRM"), module: "tender" } },
 	{ path: "/tender/documents", name: "tender-documents", component: TenderDocuments, meta: { title: t("Document center"), module: "tender" } },
 	{ path: "/tender/sourcing", name: "tender-sourcing", component: SourcingWorkspace, meta: { title: t("Sourcing workspace"), module: "tender" } },
 	{ path: "/tender/po-control", name: "tender-po-control", component: PoControlBoard, meta: { title: t("Tender PO control"), module: "tender" } },

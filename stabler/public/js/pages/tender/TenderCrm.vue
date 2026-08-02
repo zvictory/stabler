@@ -1,15 +1,26 @@
 <script setup>
 import { computed, onMounted, ref, watch } from "vue";
 import { storeToRefs } from "pinia";
+import { useRoute, useRouter } from "vue-router";
 import { call } from "../../api/client.js";
 import { formatDate } from "../../composables/date.js";
 import { formatMoney } from "../../composables/money.js";
 import { t } from "../../composables/i18n.js";
 import { useToast } from "../../composables/useToast.js";
 import { useSession } from "../../stores/session.js";
+import { useEscapeBack } from "../../composables/useEscapeBack.js";
 import EmptyState from "../../components/EmptyState.vue";
 import SkeletonRows from "../../components/SkeletonRows.vue";
 import TenderPage from "./TenderPage.vue";
+
+const route = useRoute();
+const router = useRouter();
+
+useEscapeBack(() => {
+	if (route.query?.tender) {
+		router.push("/tender/crm");
+	}
+});
 
 const session = useSession();
 const { activeCompany, user, currency } = storeToRefs(session);
@@ -63,6 +74,10 @@ function toggleKpi(key) {
 
 const filteredCards = computed(() => {
 	let list = cards.value || [];
+	if (route.query?.tender) {
+		const parentTender = String(route.query.tender).trim().toLowerCase();
+		list = list.filter((c) => String(c.custom_parent_tender || "").trim().toLowerCase() === parentTender);
+	}
 	if (searchQuery.value.trim()) {
 		const q = searchQuery.value.trim().toLowerCase();
 		list = list.filter(
@@ -249,6 +264,12 @@ function riskLabel(risk) {
 <template>
 	<TenderPage :label="`${t('Tender')} · ${t('Deal pipeline')}`" :title="t('Tender CRM')">
 		<template #meta>
+			<span v-if="route.query?.tender">
+				<router-link to="/tender/crm" class="ds-mono me-1">
+					<i class="ti ti-arrow-left me-1"></i>{{ t("Tender CRM") }}
+				</router-link>
+				/ <span class="ds-mono ms-1 fw-bold">{{ route.query.tender }}</span>
+			</span>
 			<span>{{ t("Every card is an ERP deal record") }}</span>
 			<span>{{ t("Columns are stages; drag a card to move it") }}</span>
 		</template>
