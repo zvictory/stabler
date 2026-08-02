@@ -43,7 +43,7 @@ class TestTenderMasterBoardSpaContract(unittest.TestCase):
 
 	def test_router_wires_tender_crm_level1(self):
 		source = _read(_ROUTER)
-		self.assertIn("TenderMasterBoard", source)
+		self.assertIn("TenderCrmWrapper", source)
 		self.assertIn('path: "/tender/crm"', source)
 
 	def test_tender_crm_includes_breadcrumb_navigation(self):
