@@ -52,10 +52,10 @@ const currentLanguage = computed(() => {
 function switchLanguage(event) {
 	const next = event.target.value;
 	if (next === currentLanguage.value) return;
-	const url = new URL(window.location.href);
+	const url = new URL(window.location.toString());
 	url.searchParams.set("lang", next);
 	// Hash rotayı koru: kullanıcı login'de kalsın, redirect-to kaybolmasın.
-	window.location.replace(url.toString());
+	window.location.assign(url.toString());
 }
 
 /* Parola alanının altındaki gösterge KUVVET ÖLÇMÜYOR. Bu bir giriş formu:
@@ -259,8 +259,8 @@ const busy = computed(() => loading.value || transitioning.value);
 						</span>
 					</div>
 
-					<button type="submit" class="ds-btn ds-btn--primary login-submit" :disabled="busy">
-						{{ busy ? t("Signing in…") : t("Sign in") }}
+					<button type="submit" class="ds-btn ds-btn--primary login-submit" :disabled="loading || transitioning">
+						{{ (loading || transitioning) ? t("Signing in…") : t("Sign in") }}
 					</button>
 				</form>
 

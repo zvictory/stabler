@@ -8,6 +8,11 @@ import { useToast } from "./composables/useToast.js";
 import { startVersionCheck } from "./composables/version-check.js";
 import { hardRedirect } from "./composables/authRedirect.js";
 
+if (window.location.pathname === "/login" && !window.location.hash.startsWith("#/login")) {
+	const search = window.location.search || "";
+	window.location.replace(`/stabler#/login${search}`);
+}
+
 const mountEl = document.getElementById("app");
 if (mountEl) {
 	const app = createApp(App);

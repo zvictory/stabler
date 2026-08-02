@@ -11,6 +11,7 @@ home_page = "/stabler"
 website_route_rules = [
 	{"from_route": "/stabler", "to_route": "stabler"},
 	{"from_route": "/stabler/<path:app_path>", "to_route": "stabler"},
+	{"from_route": "/login", "to_route": "stabler"},
 ]
 
 before_request = [
