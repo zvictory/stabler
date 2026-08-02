@@ -1978,12 +1978,53 @@ def _po_rows_for_views(company: str) -> tuple[list, bool]:
 
 @frappe.whitelist()
 def declarant_queue(company: str) -> dict:
-	"""Declarant window: POs awaiting customs, with ТН ВЭД + customs charge + ETA."""
+	"""Declarant window: POs / deals awaiting customs, grouped by derived lane (Task C2).
+
+	Lanes (R1):
+	- missing_docs: customs document requirements are missing files or unverified
+	- ready: customs documents are complete, awaiting declaration creation
+	- declared: Customs Declaration exists (Draft/Submitted)
+	- inspection: Customs Declaration is Under Review / Under Inspection / Red or Yellow Channel
+	- released: Customs Declaration is Approved / Released or goods are fully received (per_received >= 100)
+	"""
 	_require_tender_view("declarant", company)
 	base_ccy = frappe.db.get_value("Company", company, "default_currency") or ""
 	pos, has_landed = _po_rows_for_views(company)
 	today_d = getdate(today())
+
+	from stabler.api._tender_documents import docs_summary, parse_doc_requirements
+
+	deal_doc_summaries: dict[str, dict] = {}
+	customs_decls: dict[str, dict] = {}
+
+	if frappe.db.exists("DocType", "Customs Declaration"):
+		try:
+			cd_rows = frappe.get_all(
+				"Customs Declaration",
+				filters={"company": company, "docstatus": ["<", 2]},
+				fields=["name", "status", "purchase_order", "custom_crm_deal"],
+			)
+			for cd in cd_rows or []:
+				if not isinstance(cd, dict):
+					cd = cd.as_dict() if hasattr(cd, "as_dict") else dict(cd)
+				po_ref = cd.get("purchase_order")
+				deal_ref = cd.get("custom_crm_deal")
+				if po_ref:
+					customs_decls[po_ref] = cd
+				if deal_ref:
+					customs_decls[deal_ref] = cd
+		except Exception:
+			pass
+
 	out = []
+	lanes = {
+		"missing_docs": {"count": 0, "items": []},
+		"ready": {"count": 0, "items": []},
+		"declared": {"count": 0, "items": []},
+		"inspection": {"count": 0, "items": []},
+		"released": {"count": 0, "items": []},
+	}
+
 	for p in pos:
 		charges = _parse_landed(p.get("custom_landed_charges")) if has_landed else []
 		customs_total = sum(c["amount"] for c in charges if c["type"] == "customs")
@@ -1991,7 +2032,6 @@ def declarant_queue(company: str) -> dict:
 		cleared = flt(p.per_received) >= 100
 		eta = getdate(p.schedule_date) if p.schedule_date else None
 		days = (eta - today_d).days if eta else None
-		status = "cleared" if cleared else ("in_progress" if customs_total else "pending")
 		risk = (
 			"risk"
 			if days is not None and days < 0
@@ -1999,24 +2039,57 @@ def declarant_queue(company: str) -> dict:
 		)
 		deal = p.custom_crm_deal
 		can_read_deal = bool(deal and frappe.has_permission("CRM Deal", "read", doc=deal))
-		out.append(
-			{
-				"po": p.name,
-				"supplier_name": p.supplier_name,
-				"deal": deal,
-				"deal_label": _deal_label(deal) if can_read_deal else "",
-				"tnved": tnved,
-				"customs_total": customs_total,
-				"event_date": str(p.transaction_date or ""),
-				"eta": str(eta) if eta else None,
-				"days_left": days,
-				"stage": status,
-				"status": status,
-				"risk": risk,
-				"due": "late" if risk == "risk" else ("soon" if risk == "warn" else "on_time"),
-			}
-		)
-	return {"currency": base_ccy, "rows": out}
+
+		summary_customs = {"total": 0, "required": 0, "done_required": 0, "missing": []}
+		if deal and can_read_deal:
+			if deal not in deal_doc_summaries:
+				intake = frappe.db.get_value("CRM Deal", deal, "custom_document_intake")
+				reqs = parse_doc_requirements(intake)
+				deal_doc_summaries[deal] = docs_summary(reqs, role="customs")
+			summary_customs = deal_doc_summaries[deal]
+
+		missing_customs_count = len(summary_customs.get("missing", []))
+
+		cd = customs_decls.get(p.name) or (customs_decls.get(deal) if deal else None)
+		cd_status = str(cd.get("status") if cd else "").strip()
+
+		if cleared or cd_status in ("Approved", "Released", "Green Channel"):
+			lane_key = "released"
+		elif cd_status in ("Under Review", "Under Inspection", "Red Channel", "Yellow Channel"):
+			lane_key = "inspection"
+		elif cd and cd_status in ("Draft", "Submitted"):
+			lane_key = "declared"
+		elif missing_customs_count > 0:
+			lane_key = "missing_docs"
+		else:
+			lane_key = "ready"
+
+		row_item = {
+			"po": p.name,
+			"supplier_name": p.supplier_name,
+			"deal": deal,
+			"deal_label": _deal_label(deal) if can_read_deal else "",
+			"tnved": tnved,
+			"customs_total": customs_total,
+			"event_date": str(p.transaction_date or ""),
+			"eta": str(eta) if eta else None,
+			"days_left": days,
+			"stage": lane_key,
+			"status": lane_key,
+			"lane": lane_key,
+			"risk": risk,
+			"due": "late" if risk == "risk" else ("soon" if risk == "warn" else "on_time"),
+			"missing_customs_docs_count": missing_customs_count,
+			"missing_customs_docs": summary_customs.get("missing", []),
+			"customs_declaration": cd.get("name") if cd else None,
+			"customs_declaration_status": cd_status or None,
+		}
+
+		out.append(row_item)
+		lanes[lane_key]["items"].append(row_item)
+		lanes[lane_key]["count"] += 1
+
+	return {"currency": base_ccy, "rows": out, "lanes": lanes}
 
 
 @frappe.whitelist()
