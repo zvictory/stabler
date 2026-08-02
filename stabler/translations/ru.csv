@@ -5470,3 +5470,4 @@ Pick a tender deal to view its document center.,Выберите тендерн�
 "Detach from this lot","Отвязать от этого лота"
 "No default warehouse configured for {0}. Set a default warehouse in Company settings.","Склад по умолчанию не настроен для {0}. Задайте склад по умолчанию в настройках компании."
 "Search supplier or quotation… ⌘K","Поиск поставщика или предложения… ⌘K"
+"Valid till date cannot be before transaction date.","Срок действия не может быть раньше даты операции."

@@ -5459,3 +5459,4 @@ Pick a tender deal to view its document center.,Belge merkezini görüntülemek 
 "Detach from this lot","Bu lottan bağını kaldır"
 "No default warehouse configured for {0}. Set a default warehouse in Company settings.","{0} için varsayılan depo yapılandırılmamış. Şirket ayarlarında varsayılan bir depo tanımlayın."
 "Search supplier or quotation… ⌘K","Tedarikçi veya teklif ara… ⌘K"
+"Valid till date cannot be before transaction date.","Geçerlilik tarihi işlem tarihinden önce olamaz."

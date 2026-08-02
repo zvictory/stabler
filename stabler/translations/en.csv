@@ -5460,3 +5460,4 @@ Pick a tender deal to view its document center.,Pick a tender deal to view its d
 "Detach from this lot","Detach from this lot"
 "No default warehouse configured for {0}. Set a default warehouse in Company settings.","No default warehouse configured for {0}. Set a default warehouse in Company settings."
 "Search supplier or quotation… ⌘K","Search supplier or quotation… ⌘K"
+"Valid till date cannot be before transaction date.","Valid till date cannot be before transaction date."

@@ -127,6 +127,9 @@ class TestTheDrawerMirrorsTheServerRules(unittest.TestCase):
 		self.drawer = _read(DRAWER)
 		self.api = _read(API)
 
+	def test_valid_till_date_input_binds_min(self):
+		self.assertIn(':min="minValidTill"', self.drawer)
+
 	def test_a_negative_rate_is_refused_on_both_sides(self):
 		self.assertIn("Rate cannot be negative", self.drawer)
 		self.assertIn("Rate cannot be negative", self.api)
@@ -134,6 +137,10 @@ class TestTheDrawerMirrorsTheServerRules(unittest.TestCase):
 	def test_a_missing_currency_is_refused_on_both_sides(self):
 		self.assertIn("Pick the currency the supplier quoted in.", self.drawer)
 		self.assertIn("Pick the currency the supplier quoted in.", self.api)
+
+	def test_valid_till_before_transaction_date_refused_on_both_sides(self):
+		self.assertIn("cannot be before transaction date", self.drawer)
+		self.assertIn("cannot be before transaction date", self.api)
 
 	def test_the_client_never_claims_to_be_the_authorization(self):
 		"""If this comment goes, so does the reason the checks are duplicated."""

@@ -98,6 +98,16 @@ class _FakeFrappe:
 				docstatus=0,
 				items=[{"item_code": "RAIL-01", "qty": 5.0, "rate": 100.0}],
 			),
+			("Supplier Quotation", "SQ-PAST-DRAFT"): _Doc(
+				name="SQ-PAST-DRAFT",
+				company="ACME",
+				supplier="SUP-A",
+				currency="USD",
+				custom_crm_deal="LOT-A",
+				transaction_date="2026-07-01",
+				docstatus=0,
+				items=[{"item_code": "RAIL-01", "qty": 5.0, "rate": 100.0}],
+			),
 			("Supplier Quotation", "SQ-SUBMITTED"): _Doc(
 				name="SQ-SUBMITTED",
 				company="ACME",
@@ -728,6 +738,35 @@ class TestSaveSupplierQuotation(unittest.TestCase):
 		doc = next(d for d in self.fake.created if d.get("name") == res["name"])
 		self.assertEqual(doc.get("set_warehouse"), "Stores - ACME")
 
+	def test_valid_till_before_transaction_date_throws_our_error(self):
+		with self.assertRaises(ValueError) as ctx:
+			self._save(valid_till="2026-01-01")
+		self.assertIn("cannot be before transaction date", str(ctx.exception))
+
+	def test_valid_till_equal_or_after_transaction_date_is_valid(self):
+		res = self._save(valid_till="2026-08-02")
+		self.assertTrue(res.get("name"))
+		res2 = self._save(valid_till="2026-09-01")
+		self.assertTrue(res2.get("name"))
+
+	def test_empty_valid_till_is_valid(self):
+		res = self._save(valid_till=None)
+		self.assertTrue(res.get("name"))
+
+	def test_edit_quotation_compares_against_document_transaction_date_not_today(self):
+		# SQ-PAST-DRAFT has transaction_date 2026-07-01. Setting valid_till to 2026-07-15
+		# (before today 2026-08-02 but after transaction_date) must succeed.
+		res = self.api.save_supplier_quotation(
+			name="SQ-PAST-DRAFT",
+			deal="LOT-A",
+			supplier="SUP-A",
+			currency="USD",
+			valid_till="2026-07-15",
+			company="ACME",
+			items=[{"item_code": "RAIL-01", "qty": 1, "rate": 10}],
+		)
+		self.assertEqual(res["name"], "SQ-PAST-DRAFT")
+
 	def test_saving_before_the_patch_has_run_fails_loudly(self):
 		api = _load_api(self.fake, missing_columns=("custom_crm_deal",))
 		with self.assertRaises(Exception) as ctx:
@@ -992,6 +1031,7 @@ class TestGetSupplierQuotation(unittest.TestCase):
 		self.assertEqual(res["deal"], "LOT-A")
 		self.assertEqual(res["supplier"], "SUP-A")
 		self.assertEqual(res["supplier_name"], "Alfa")
+		self.assertIn("transaction_date", res)
 		self.assertEqual(len(res["items"]), 1)
 		self.assertEqual(res["items"][0]["item_code"], "RAIL-01")
 

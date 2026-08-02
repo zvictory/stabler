@@ -223,6 +223,7 @@ def get_supplier_quotation(name, company=None):
 		"supplier_name": supplier_name,
 		"currency": doc.currency,
 		"valid_till": doc.valid_till or None,
+		"transaction_date": str(doc.transaction_date or ""),
 		"docstatus": int(doc.docstatus or 0),
 		"items": [
 			{
@@ -306,11 +307,21 @@ def save_supplier_quotation(
 	if name:
 		doc = _quotation_for_edit(name, deal, selected_company)
 		doc.set("items", [])
+		effective_tx_date = str(doc.transaction_date or "") or today()
 	else:
 		if not frappe.has_permission("Supplier Quotation", "create"):
 			frappe.throw(_("Not permitted."), frappe.PermissionError)
 		doc = frappe.new_doc("Supplier Quotation")
 		doc.transaction_date = today()
+		effective_tx_date = str(doc.transaction_date)
+
+	if valid_till and str(valid_till) < effective_tx_date:
+		frappe.throw(
+			_("Valid till date ({0}) cannot be before transaction date ({1}).").format(
+				valid_till, effective_tx_date
+			),
+			frappe.ValidationError,
+		)
 
 	doc.company = selected_company
 	doc.supplier = supplier_name

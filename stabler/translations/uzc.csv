@@ -5464,3 +5464,4 @@ Pick a tender deal to view its document center.,Ҳужжатлар марказ�
 "Detach from this lot","Ушбу лотдан ажратиш"
 "No default warehouse configured for {0}. Set a default warehouse in Company settings.","{0} учун сукут бўйича омбор созланмаган. Компания созламаларида омборни белгиланг."
 "Search supplier or quotation… ⌘K","Тказиб берувчи ёки таклифни қидириш… ⌘K"
+"Valid till date cannot be before transaction date.","Амал қилиш муддати операция санасидан олдин бўлиши мумкин эмас."

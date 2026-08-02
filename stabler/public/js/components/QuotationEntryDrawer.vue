@@ -23,6 +23,7 @@ import { storeToRefs } from "pinia";
 import { useSession } from "../stores/session.js";
 import { call } from "../api/client.js";
 import { t } from "../composables/i18n.js";
+import { todayIso } from "../composables/date.js";
 import { useToast } from "../composables/useToast.js";
 import MoneyInput from "./MoneyInput.vue";
 import DateInput from "./DateInput.vue";
@@ -52,6 +53,7 @@ function newForm() {
 		supplierLabel: "",
 		currency: currency.value || "",
 		valid_till: "",
+		transaction_date: "",
 		items: [blankLine()],
 	};
 }
@@ -72,6 +74,7 @@ onMounted(async () => {
 			form.value.supplierLabel = res.supplier_name || res.supplier;
 			form.value.currency = res.currency || currency.value;
 			form.value.valid_till = res.valid_till || "";
+			form.value.transaction_date = res.transaction_date || "";
 			if (res.items && res.items.length) {
 				form.value.items = res.items.map((i) => ({
 					item_code: i.item_code,
@@ -84,6 +87,13 @@ onMounted(async () => {
 	} catch (err) {
 		toast.error(err?.message || t("Could not load quotation details."));
 	}
+});
+
+const minValidTill = computed(() => {
+	if (form.value.transaction_date) {
+		return form.value.transaction_date;
+	}
+	return todayIso();
 });
 
 /* Mevcut bir taslağı DÜZENLEMEK bu dilimde yok: sunucu tarafı destekliyor
@@ -140,6 +150,9 @@ const problems = computed(() => {
 	const list = [];
 	if (!form.value.supplier) list.push(t("Pick the supplier who quoted."));
 	if (!form.value.currency) list.push(t("Pick the currency the supplier quoted in."));
+	if (form.value.valid_till && form.value.valid_till < minValidTill.value) {
+		list.push(t("Valid till date cannot be before transaction date."));
+	}
 	const filled = form.value.items.filter((r) => r.item_code);
 	if (!filled.length) list.push(t("A quotation needs at least one line."));
 	if (filled.some((r) => Number(r.qty || 0) <= 0)) list.push(t("Quantity must be greater than zero."));
@@ -233,7 +246,7 @@ async function submitQuotation() {
 
 				<label class="qed-field qed-field--narrow">
 					<span class="ds-label">{{ t("Valid till") }}</span>
-					<DateInput v-model="form.valid_till" size="sm" />
+					<DateInput v-model="form.valid_till" :min="minValidTill" size="sm" />
 				</label>
 			</div>
 
