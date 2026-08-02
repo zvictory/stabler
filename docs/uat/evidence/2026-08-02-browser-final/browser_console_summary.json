@@ -1,112 +1,12 @@
 [
   {
     "type": "error",
-    "text": "Failed to load resource: the server responded with a status of 417 (EXPECTATION FAILED)",
+    "text": "Failed to load resource: the server responded with a status of 403 (FORBIDDEN)",
     "user": "hayrulloh@mail.com"
   },
   {
     "type": "error",
-    "text": "[stabler] global error: Error: Не удалось получить метод для команды stabler.api.tender.tender_views с cannot import name '_ADMIN_ROLES' from 'stabler.api.organization' (/Users/zafar/frappe-bench-local/apps/stabler/stabler/api/organization.py)\n    at call (http://localhost:8000/assets/stabler/dist/js/stabler.bundle.IDJITNOE.js:12438:19)",
-    "user": "hayrulloh@mail.com"
-  },
-  {
-    "type": "error",
-    "text": "Failed to load resource: the server responded with a status of 417 (EXPECTATION FAILED)",
-    "user": "hayrulloh@mail.com"
-  },
-  {
-    "type": "error",
-    "text": "Failed to load resource: the server responded with a status of 417 (EXPECTATION FAILED)",
-    "user": "hayrulloh@mail.com"
-  },
-  {
-    "type": "error",
-    "text": "Failed to load resource: the server responded with a status of 417 (EXPECTATION FAILED)",
-    "user": "hayrulloh@mail.com"
-  },
-  {
-    "type": "error",
-    "text": "Failed to load resource: the server responded with a status of 417 (EXPECTATION FAILED)",
-    "user": "hayrulloh@mail.com"
-  },
-  {
-    "type": "error",
-    "text": "Failed to load resource: the server responded with a status of 417 (EXPECTATION FAILED)",
-    "user": "hayrulloh@mail.com"
-  },
-  {
-    "type": "error",
-    "text": "Failed to load resource: the server responded with a status of 417 (EXPECTATION FAILED)",
-    "user": "hayrulloh@mail.com"
-  },
-  {
-    "type": "error",
-    "text": "Failed to load resource: the server responded with a status of 417 (EXPECTATION FAILED)",
-    "user": "hayrulloh@mail.com"
-  },
-  {
-    "type": "error",
-    "text": "Failed to load resource: the server responded with a status of 417 (EXPECTATION FAILED)",
-    "user": "hayrulloh@mail.com"
-  },
-  {
-    "type": "error",
-    "text": "Failed to load resource: the server responded with a status of 417 (EXPECTATION FAILED)",
-    "user": "hayrulloh@mail.com"
-  },
-  {
-    "type": "error",
-    "text": "Failed to load resource: the server responded with a status of 417 (EXPECTATION FAILED)",
-    "user": "hayrulloh@mail.com"
-  },
-  {
-    "type": "error",
-    "text": "Failed to load resource: the server responded with a status of 417 (EXPECTATION FAILED)",
-    "user": "hayrulloh@mail.com"
-  },
-  {
-    "type": "error",
-    "text": "Failed to load resource: the server responded with a status of 417 (EXPECTATION FAILED)",
-    "user": "hayrulloh@mail.com"
-  },
-  {
-    "type": "error",
-    "text": "Failed to load resource: the server responded with a status of 417 (EXPECTATION FAILED)",
-    "user": "hayrulloh@mail.com"
-  },
-  {
-    "type": "error",
-    "text": "[stabler] global error: Error: Не удалось получить метод для команды stabler.api.tender.tender_views с cannot import name '_ADMIN_ROLES' from 'stabler.api.organization' (/Users/zafar/frappe-bench-local/apps/stabler/stabler/api/organization.py)\n    at call (http://localhost:8000/assets/stabler/dist/js/stabler.bundle.IDJITNOE.js:12438:19)",
-    "user": "hayrulloh@mail.com"
-  },
-  {
-    "type": "error",
-    "text": "Failed to load resource: the server responded with a status of 417 (EXPECTATION FAILED)",
-    "user": "hayrulloh@mail.com"
-  },
-  {
-    "type": "error",
-    "text": "Failed to load resource: the server responded with a status of 417 (EXPECTATION FAILED)",
-    "user": "hayrulloh@mail.com"
-  },
-  {
-    "type": "error",
-    "text": "Failed to load resource: the server responded with a status of 417 (EXPECTATION FAILED)",
-    "user": "fayzulloxoshimov61@gmail.com"
-  },
-  {
-    "type": "error",
-    "text": "[stabler] global error: Error: Failed to get method for command stabler.api.tender.tender_views with cannot import name '_ADMIN_ROLES' from 'stabler.api.organization' (/Users/zafar/frappe-bench-local/apps/stabler/stabler/api/organization.py)\n    at call (http://localhost:8000/assets/stabler/dist/js/stabler.bundle.IDJITNOE.js:12438:19)",
-    "user": "fayzulloxoshimov61@gmail.com"
-  },
-  {
-    "type": "error",
-    "text": "Failed to load resource: the server responded with a status of 417 (EXPECTATION FAILED)",
-    "user": "fayzulloxoshimov61@gmail.com"
-  },
-  {
-    "type": "error",
-    "text": "Failed to load resource: the server responded with a status of 417 (EXPECTATION FAILED)",
+    "text": "Failed to load resource: the server responded with a status of 403 (FORBIDDEN)",
     "user": "fayzulloxoshimov61@gmail.com"
   }
 ]
