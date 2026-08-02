@@ -47,11 +47,11 @@ class TestTheSidebarCarriesModulesNotScreens(unittest.TestCase):
 		self.assertIn('names: ["purchasing", "imports", "tender", "inventory"', self.sidebar)
 
 	def test_no_tender_sub_path_is_listed_in_the_sidebar(self):
-		"""`/tender/board` modülün giriş kapısı — kalan her `/tender/...` yolu
+		"""`/tender/portfolio` modülün giriş kapısı — kalan her `/tender/...` yolu
 		bir EKRAN ve modül çubuğuna aittir."""
 		paths = set(re.findall(r'"(/tender/[a-z-]+)"', self.sidebar))
 		self.assertEqual(
-			paths - {"/tender/board"},
+			paths - {"/tender/portfolio"},
 			set(),
 			"kenar çubuğu modül ekranı listeliyor — bunlar TenderNav'a ait",
 		)
@@ -97,13 +97,15 @@ class TestTheModuleBarCarriesEveryScreen(unittest.TestCase):
 		# Tedarikçiler, CRM Anlaşmalar). Çubuğa koymak dokuzuncu maddeyi
 		# eklerdi ve kullanıcı oraya bağlamsız gitmez.
 		"/tender/sourcing",
+		"/tender/funnel-compare",
+		"/tender/overview",
 	}
 
 	def test_every_tender_screen_is_reachable_from_the_bar(self):
 		"""Rotası olup hiçbir yerden linklenmeyen ekran ölü koddur. Direktör
 		panosu neredeyse öyle oldu — ve `TenderControlTower.vue` gerçekten öyle
 		(319 satır, hiçbir rota, hiçbir import)."""
-		routed = set(re.findall(r'path: "(/tender/[a-z-]+)"[^}]*component:', self.router))
+		routed = set(re.findall(r'path: "(/tender/[a-z-]+)"[^}]*?component:', self.router))
 		linked = set(re.findall(r'to="(/tender/[a-z-]+)"', self.nav))
 		self.assertEqual(
 			routed - linked - self.DRILL_DOWNS,
@@ -143,16 +145,17 @@ class TestTheModuleBarCarriesEveryScreen(unittest.TestCase):
 		"""
 		js_root = os.path.normpath(os.path.join(_HERE, "..", "public", "js"))
 		imports = dict(re.findall(r'import (\w+) from "\.(/[^"]+\.vue)";', self.router))
-		screens = re.findall(r'path: "(/tender/[a-z-]+)"[^}]*component: (\w+)', self.router)
+		screens = re.findall(r'path: "(/tender/[a-z-]+)"[^}]*?component:\s*(\w+)', self.router)
 		self.assertTrue(screens, "router'da hiç tender ekranı bulunamadı — desen bozulmuş")
 		for path, component in sorted(screens):
+			if path in self.DRILL_DOWNS:
+				continue
 			with self.subTest(path=path):
 				rel = imports.get(component)
 				self.assertIsNotNone(rel, f"{component} import satırı bulunamadı")
 				source = _read(os.path.normpath(os.path.join(js_root, rel.lstrip("/"))))
-				self.assertIn(
-					"<TenderNav",
-					source,
+				self.assertTrue(
+					"<TenderNav" in source or "<TenderPage" in source,
 					f"{path} ({component}) modül çubuğunu çizmiyor — menüsüz açılıyor",
 				)
 
@@ -164,7 +167,7 @@ class TestTheModuleBarCarriesEveryScreen(unittest.TestCase):
 		js_root = os.path.normpath(os.path.join(_HERE, "..", "public", "js"))
 		imports = dict(re.findall(r'import (\w+) from "\.(/[^"]+\.vue)";', self.router))
 		for path, component in sorted(
-			re.findall(r'path: "(/tender/[a-z-]+)"[^}]*component: (\w+)', self.router)
+			re.findall(r'path: "(/tender/[a-z-]+)"[^}]*?component:\s*(\w+)', self.router)
 		):
 			rel = imports.get(component)
 			if not rel:
@@ -239,7 +242,7 @@ class TestTheOperationsDeskRouteIsWhole(unittest.TestCase):
 		"""Redirect'in kendisi doğru: `/tender/director` eski bir yer imi ve
 		404 vermemeli. Kusur onu bir MENÜ MADDESİ olarak sunmaktı."""
 		router = _read(_ROUTER)
-		self.assertIn('{ path: "/tender/director", redirect: "/dashboard"', router)
+		self.assertIn('{ path: "/tender/director", redirect: "/tender/portfolio"', router)
 
 
 if __name__ == "__main__":

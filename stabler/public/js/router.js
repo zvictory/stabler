@@ -48,6 +48,10 @@ import DirectorBoard from "./pages/tender/DirectorBoard.vue";
 import OperationsDesk from "./pages/tender/OperationsDesk.vue";
 import TenderFlow from "./pages/tender/TenderFlow.vue";
 import TenderCrm from "./pages/tender/TenderCrm.vue";
+import TenderOverview from "./pages/tender/TenderOverview.vue";
+// GEÇİCİ: huni eski/yeni karşılaştırması. Karar verilince bu satır, rota,
+// FunnelCompare.vue ve TenderFunnelLegacy.vue birlikte silinir.
+import FunnelCompare from "./pages/tender/FunnelCompare.vue";
 import SalesInvoices from "./pages/sales/SalesInvoices.vue";
 import DeliveryNotes from "./pages/sales/DeliveryNotes.vue";
 import SalesInvoiceForm from "./pages/sales/SalesInvoiceForm.vue";
@@ -262,12 +266,15 @@ const routes = [
 	{ path: "/pos", name: "pos", component: POS, meta: { title: t("POS"), module: "sales" } },
 	{ path: "/tender/desk", name: "tender-desk", component: OperationsDesk, meta: { title: t("Operations desk"), module: "tender" } },
 	{ path: "/manufacturing/line", name: "manufacturing-line", component: ManufacturingOperatorBoard, meta: { title: t("Operator Kiosk") } },
+	{ path: "/tender/funnel-compare", name: "tender-funnel-compare", component: FunnelCompare, meta: { title: t("Funnel — old vs new"), module: "tender" } },
+	{ path: "/tender/overview", name: "tender-overview", component: TenderOverview, meta: { title: t("Where the pipeline stands"), module: "tender" } },
 	{ path: "/tender/flow", name: "tender-flow", component: TenderFlow, meta: { title: t("Tender process flow"), module: "tender" } },
 	{ path: "/tender/board", name: "tender-board", component: SalesOrderBoard, meta: { title: t("Contract board"), module: "tender" } },
 	{ path: "/tender/crm", name: "tender-crm", component: TenderCrm, meta: { title: t("Tender CRM"), module: "tender" } },
 	{ path: "/tender/sourcing", name: "tender-sourcing", component: SourcingCompare, meta: { title: t("Sourcing comparison"), module: "tender" } },
 	{ path: "/tender/po-control", name: "tender-po-control", component: PoControlBoard, meta: { title: t("Tender PO control"), module: "tender" } },
-	{ path: "/tender/director", redirect: "/dashboard", meta: { module: "tender" } },
+	{ path: "/tender", redirect: "/tender/portfolio", meta: { module: "tender" } },
+	{ path: "/tender/director", redirect: "/tender/portfolio", meta: { module: "tender" } },
 	{ path: "/tender/portfolio", name: "tender-portfolio", component: DirectorBoard, meta: { title: t("Director board"), module: "tender" } },
 	{ path: "/tender/my-tenders", name: "tender-my-tenders", component: MyTenders, meta: { title: t("My tenders"), module: "tender" } },
 	{ path: "/tender/customs", name: "tender-customs", component: DeclarantQueue, meta: { title: t("Customs queue"), module: "tender" } },
@@ -587,6 +594,20 @@ router.beforeEach(async (to) => {
 			// A provisioned user shouldn't re-enter the wizard — send them home.
 			return landingPath(session);
 		}
+	}
+
+	/* Tender şirketinde pano = direktör portföyü.
+	 *
+	 * `/dashboard`'daki finans panosu tender'da zaten hiç çizilmiyordu (Dashboard.vue
+	 * onun dört isteğini atlıyordu), yerine hattın genel görünümü duruyordu. İki ekran
+	 * aynı soruya iki yerden cevap veriyordu; portföy artık TEK giriş. Genel bakış
+	 * (huni + süreç şeridi) kendi rotasına taşındı: `/tender/overview`.
+	 *
+	 * Muhafızda, `redirect:` ile değil: karar KULLANICIYA bağlı — tender'ı olmayan
+	 * şirket finans panosunu, ithalat şirketi kontrol merkezini görmeye devam ediyor.
+	 * Statik bir redirect ikisini de yok ederdi. */
+	if (to.path === "/dashboard" && session.canAccessModule("tender")) {
+		return "/tender/portfolio";
 	}
 
 	if (to.matched.some((r) => r.meta.requiresAdmin) && !session.isAdmin) {

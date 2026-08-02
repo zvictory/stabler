@@ -35,33 +35,11 @@ def _read(path: str) -> str:
 
 class TestTenderDashboardSpaContract(unittest.TestCase):
 	def test_dashboard_uses_capability_gate_and_delegates_to_the_overview(self):
-		"""On a tender company the dashboard IS the pipeline overview.
-
-		It used to wrap its tender content in a Bootstrap `page-header` +
-		`container-xl` while the embedded component carried a complete `TenderPage`
-		shell of its own: two headings, two Refresh buttons, and a module bar inset
-		by the container instead of running full width (measured 2026-08-02,
-		`#/dashboard`, Mikas).
-		"""
+		"""On a tender company the dashboard redirects to /tender/portfolio."""
 		source = _read(_DASHBOARD)
-		self.assertIn('session.canAccessModule("tender")', source)
-		# The overview needs a company as much as the module: it fetches nothing without
-		# one (TenderOverview.vue:52, TenderFunnel.vue:41) and would draw an empty shell,
-		# so a company-less tender user falls through to the "pick a company" state below.
-		self.assertIn(
-			"const showDesk = computed(() => tenderEnabled.value && !!activeCompany.value);", source
-		)
-		self.assertIn('<TenderOverview v-if="showDesk" />', source)
-		self.assertIn('v-if="!showDesk"', source)
-
-		desk_at = source.index("<TenderOverview v-if=")
-		header_at = source.index('class="page-header')
-		self.assertLess(
-			desk_at,
-			header_at,
-			"the overview must render outside the Bootstrap page shell — nesting it back "
-			"inside `page-header`/`container-xl` restores the double header",
-		)
+		router = _read(_ROUTER)
+		self.assertIn('if (to.path === "/dashboard" && session.canAccessModule("tender"))', router)
+		self.assertIn('return "/tender/portfolio";', router)
 
 		# The dashboard no longer fetches tender data itself. It called
 		# `stabler.api.tender.tender_dashboard` into a `tenderData` ref the template
@@ -124,8 +102,7 @@ class TestTenderDashboardSpaContract(unittest.TestCase):
 
 	def test_company_disabled_tender_keeps_financial_fallback(self):
 		source = _read(_DASHBOARD)
-		self.assertIn("if (tenderEnabled.value) return;", source)
-		self.assertIn("return loadFinancial();", source)
+		self.assertIn("loadFinancial()", source)
 
 	def test_dashboard_has_no_desk_links(self):
 		source = _read(_DASHBOARD)

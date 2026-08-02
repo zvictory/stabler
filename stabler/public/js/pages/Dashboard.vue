@@ -10,7 +10,6 @@ import { t } from "../composables/i18n.js";
 import KpiCard from "../components/KpiCard.vue";
 import ApexChart from "../components/ApexChart.vue";
 import EmptyState from "../components/EmptyState.vue";
-import TenderOverview from "./tender/TenderOverview.vue";
 import ImportsDashboard from "./imports/ImportsDashboard.vue";
 
 const session = useSession();
@@ -31,12 +30,6 @@ const trend = ref({ months: [], revenue: [], expense: [] });
 const activity = ref([]);
 const lowStock = ref([]);
 const error = ref(null);
-
-const tenderEnabled = computed(() => session.canAccessModule("tender"));
-// Şirket seçilmemişken genel bakış hiçbir şey çekmiyor (TenderOverview.vue:52,
-// TenderFunnel.vue:41), boş bir kabuk çizerdi — o durumda aşağıdaki "şirket
-// seçin" ekranına düşüyoruz.
-const showDesk = computed(() => tenderEnabled.value && !!activeCompany.value);
 
 const money = (v, ccy) => formatMoney(v, ccy || currency.value, user.value.language);
 // Chart currency: dominant transaction currency once trend data loads, base currency until then.
@@ -81,17 +74,13 @@ async function loadFinancial() {
 	}
 }
 
-/* Tender şirketinde bu sayfa `OperationsDesk`'in kendisi — finans panosu hiç
- * çizilmiyor, dolayısıyla onun dört isteğini de atmıyoruz. Masa kendi verisini
- * kendi çekiyor ve şirket değişiminde kendisi yeniliyor
- * (OperationsDesk.vue:510, :526), bu yüzden buradan sürülmesi gerekmiyor. */
-async function load() {
-	if (tenderEnabled.value) return;
-	return loadFinancial();
-}
+/* Tender şirketi bu sayfaya hiç gelmiyor: `/dashboard` router muhafızında
+ * `/tender/portfolio`'ya düşüyor (router.js). Burası artık yalnız finans panosu
+ * ve — ithalat açıksa — ithalat kontrol merkezi. */
+const load = loadFinancial;
 
 onMounted(load);
-watch([activeCompany, tenderEnabled], load);
+watch(activeCompany, load);
 
 const revenueChartOptions = computed(() => ({
 	chart: { stacked: false, sparkline: { enabled: false } },
@@ -159,17 +148,7 @@ const activityIcon = (type) => {
 </script>
 
 <template>
-	<!-- Tender şirketinde pano = hattın genel görünümü (aşama hattı + huni +
-	     süreç şeridi). Bir gün boyunca burada `OperationsDesk` duruyordu ve pano
-	     `/tender/desk` ile birebir aynı ekrandı — hizalama değil çoğaltma.
-	     Bootstrap `page-header` + `container-xl` kabuğu buraya giremez:
-	     `TenderOverview` zaten tam bir `TenderPage` kabuğu taşıyor (çubuk +
-	     başlık + eylemler), üstüne bir kabuk daha sarmak iki başlık, iki Refresh
-	     ve `container-xl` yüzünden içeri kaçmış bir modül çubuğu üretiyordu.
-	     Ölçüldü 2026-08-02, Mikas. -->
-	<TenderOverview v-if="showDesk" />
-
-	<div v-if="!showDesk" class="page-header d-print-none">
+	<div class="page-header d-print-none">
 		<div class="container-xl">
 			<div class="row g-2 align-items-center">
 				<div class="col">
@@ -190,10 +169,10 @@ const activityIcon = (type) => {
 		</div>
 	</div>
 
-	<div v-if="!showDesk" class="page-body">
+	<div class="page-body">
 		<div class="container-xl">
 			<div
-				v-if="!tenderEnabled && !importsEnabled && error"
+				v-if="!importsEnabled && error"
 				class="alert alert-danger"
 				role="alert"
 			>

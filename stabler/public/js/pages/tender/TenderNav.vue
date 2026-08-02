@@ -30,6 +30,10 @@ onMounted(() => session.ensureTenderViews());
 		<div class="ds-modnav">
 			<span class="ds-modnav-brand">{{ t("Tender") }}</span>
 
+			<router-link v-if="can('director')" to="/tender/portfolio" active-class="active">
+				{{ t("Director board") }}
+			</router-link>
+
 			<!-- Panoya dönüş burada duruyor çünkü pano tender'ın da özeti:
 			     Operasyon Masası oraya gömülü. Konumu değil VARLIĞI garanti. -->
 			<router-link to="/dashboard" active-class="active">{{ t("Overview") }}</router-link>
@@ -41,9 +45,6 @@ onMounted(() => session.ensureTenderViews());
 				{{ t("Process flow") }}
 			</router-link>
 			<router-link to="/tender/board" active-class="active">{{ t("Contract board") }}</router-link>
-			<router-link v-if="can('director')" to="/tender/portfolio" active-class="active">
-				{{ t("Director board") }}
-			</router-link>
 			<router-link v-if="can('director') || can('sourcing')" to="/tender/crm" active-class="active">
 				{{ t("Tender CRM") }}
 			</router-link>

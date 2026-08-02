@@ -41,7 +41,13 @@ class TestTenderCrmRouteIsReachable(unittest.TestCase):
 		# kendi üst çubuğunda. Buradaki garanti "CRM'e giden bir yol var" idi;
 		# o yol değişti, garanti değil. Kenar çubuğunun modül kökünü taşıdığını
 		# ve alt yol DÖKMEDİĞİNİ test_tender_sidebar_navigation kilitliyor.
-		self.assertIn('path: "/tender/board"', sidebar)
+		#
+		# Kök `/tender/board` değil `/tender/portfolio`: tender şirketinde
+		# `/dashboard` da oraya düşüyor (router muhafızı), yani modülün tek giriş
+		# noktası direktör portföyü. İki farklı "tender'a gir" kapısı olması,
+		# panonun ve kenar çubuğunun aynı kullanıcıyı iki ayrı ekrana bırakması
+		# demekti.
+		self.assertIn('path: "/tender/portfolio"', sidebar)
 
 
 class TestTenderCrmStaysInsideTheSpa(unittest.TestCase):
