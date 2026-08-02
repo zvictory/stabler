@@ -5272,3 +5272,12 @@ without a stage stamp — not averaged,босқич муҳри йўқ — ўрт
 deals,битим
 step,босқич
 steps,босқич
+Where the pipeline stands,Воронканинг ҳолати
+Today's queue lives on the operations desk — this is the whole pipeline,Бугунги навбат операцион столда — бу ерда бутун воронка
+Open work per step · average wait against that step's threshold,Ҳар босқичдаги очиқ ишлар · ўртача кутиш босқич чегарасига нисбатан
+Bottleneck: {step},Тор жой: {step}
+No step is past its own threshold today,Бугун ҳеч бир босқич ўз чегарасидан ошмади
+Step performance →,Босқич самарадорлиги →
+Your work is on the operations desk,Сизнинг ишингиз операцион столда
+The pipeline overview is built for the director and sourcing roles. Your queue for today is on the desk.,Воронка умумий кўриниши директор ва таъминот роллари учун. Бугунги навбатингиз столда.
+Operations desk →,Операцион стол →

@@ -22,6 +22,7 @@ import { useToast } from "../../composables/useToast.js";
 import { useSession } from "../../stores/session.js";
 import SkeletonRows from "../../components/SkeletonRows.vue";
 import TenderPage from "./TenderPage.vue";
+import { stepLabel, stateLabel, waitState } from "./flowLabels.js";
 
 const session = useSession();
 const { activeCompany } = storeToRefs(session);
@@ -45,33 +46,11 @@ async function load() {
 onMounted(load);
 watch(activeCompany, load);
 
-const STEP_LABELS = {
-	seen: "Intake — file opened",
-	go: "GO / NO-GO decision",
-	sourcing: "Quotation gathering",
-	priced: "Bid pricing",
-	submitted: "Bid submitted",
-};
-
 const steps = computed(() => data.value?.steps || []);
 
-/* Tasarımın üç durumu artı iki dürüstlük durumu. `empty` ile `unknown` ayrı
- * kelimeler: boş adımda bekleyen iş yok, damgasız adımda bekleyen iş var ama
- * süresini bilmiyoruz. */
-const STATE_LABEL = {
-	in: "Within",
-	edge: "At the edge",
-	out: "Over SLA",
-	unknown: "Not measurable",
-	empty: "Empty",
-};
-
-const stepLabel = (key) => t(STEP_LABELS[key] || key);
-const stateLabel = (state) => t(STATE_LABEL[state] || state);
-
-/* `ds-wait` yalnız kenar ve aşım için renkleniyor; "içinde" olan bir bekleme
- * süresini vurgulamak, gözü sorunu olmayan satıra çeker. */
-const waitState = (row) => (row.state === "out" || row.state === "edge" ? row.state : null);
+/* Adım ve durum adları `flowLabels.js`'te — panodaki özet şerit aynı adımları
+ * çiziyor ve iki ekranın aynı adıma iki farklı isim vermesi, bu ekranın kendi
+ * başlığındaki uyarının aynısı olurdu. */
 
 const kpis = computed(() => {
 	const d = data.value || {};

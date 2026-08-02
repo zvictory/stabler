@@ -21,6 +21,9 @@ _EXECUTIVE_KPIS = os.path.join(_ROOT, "public", "js", "pages", "tender", "Tender
 _FUNNEL = os.path.join(_ROOT, "public", "js", "pages", "tender", "TenderFunnel.vue")
 _CONTROL_TOWER = os.path.join(_ROOT, "public", "js", "pages", "tender", "TenderControlTower.vue")
 _OPERATIONS_DESK = os.path.join(_ROOT, "public", "js", "pages", "tender", "OperationsDesk.vue")
+_OVERVIEW = os.path.join(_ROOT, "public", "js", "pages", "tender", "TenderOverview.vue")
+_FLOW = os.path.join(_ROOT, "public", "js", "pages", "tender", "TenderFlow.vue")
+_FLOW_LABELS = os.path.join(_ROOT, "public", "js", "pages", "tender", "flowLabels.js")
 _ROUTER = os.path.join(_ROOT, "public", "js", "router.js")
 _DELIVERY_NOTES = os.path.join(_ROOT, "public", "js", "pages", "sales", "DeliveryNotes.vue")
 
@@ -31,31 +34,32 @@ def _read(path: str) -> str:
 
 
 class TestTenderDashboardSpaContract(unittest.TestCase):
-	def test_dashboard_uses_capability_gate_and_delegates_to_the_desk(self):
-		"""On a tender company the dashboard IS the operations desk.
+	def test_dashboard_uses_capability_gate_and_delegates_to_the_overview(self):
+		"""On a tender company the dashboard IS the pipeline overview.
 
-		It used to wrap the desk in a Bootstrap `page-header` + `container-xl` while
-		the desk carried a complete `TenderPage` shell of its own: two headings, two
-		Refresh buttons, and a module bar inset by the container instead of running
-		full width (measured 2026-08-02, `#/dashboard`, Mikas).
+		It used to wrap its tender content in a Bootstrap `page-header` +
+		`container-xl` while the embedded component carried a complete `TenderPage`
+		shell of its own: two headings, two Refresh buttons, and a module bar inset
+		by the container instead of running full width (measured 2026-08-02,
+		`#/dashboard`, Mikas).
 		"""
 		source = _read(_DASHBOARD)
 		self.assertIn('session.canAccessModule("tender")', source)
-		# The desk needs a company as much as the module: it fetches nothing without one
-		# (OperationsDesk.vue:270) and would draw an empty shell, so a company-less tender
-		# user falls through to the "pick a company" state below.
+		# The overview needs a company as much as the module: it fetches nothing without
+		# one (TenderOverview.vue:52, TenderFunnel.vue:41) and would draw an empty shell,
+		# so a company-less tender user falls through to the "pick a company" state below.
 		self.assertIn(
 			"const showDesk = computed(() => tenderEnabled.value && !!activeCompany.value);", source
 		)
-		self.assertIn('<OperationsDesk v-if="showDesk" />', source)
+		self.assertIn('<TenderOverview v-if="showDesk" />', source)
 		self.assertIn('v-if="!showDesk"', source)
 
-		desk_at = source.index("<OperationsDesk v-if=")
+		desk_at = source.index("<TenderOverview v-if=")
 		header_at = source.index('class="page-header')
 		self.assertLess(
 			desk_at,
 			header_at,
-			"the desk must render outside the Bootstrap page shell — nesting it back "
+			"the overview must render outside the Bootstrap page shell — nesting it back "
 			"inside `page-header`/`container-xl` restores the double header",
 		)
 
@@ -66,6 +70,57 @@ class TestTenderDashboardSpaContract(unittest.TestCase):
 		# desk loads itself on mount and reloads on company change
 		# (OperationsDesk.vue:526 and :510).
 		self.assertNotIn("stabler.api.tender.tender_dashboard", source)
+
+	def test_overview_is_not_a_second_copy_of_the_operations_desk(self):
+		"""The dashboard and `/tender/desk` must not be the same screen.
+
+		They were, for a day: the dashboard embedded `OperationsDesk` whole, so two
+		routes rendered byte-identical content and neither had a reason to exist.
+		The overview answers a different question — where the whole pipeline stands
+		— and it must keep answering it from its own two endpoints.
+		"""
+		overview = _read(_OVERVIEW)
+		self.assertNotIn("OperationsDesk", overview)
+		self.assertNotIn("stabler.api.tender_desk.operations_desk", overview)
+
+		# The two blocks the user asked back onto the dashboard: the pipeline/funnel
+		# ("full" mode is what draws the stage bands, not just the conversion rungs)
+		# and the process view.
+		self.assertIn('<TenderFunnel v-if="canFunnel" ref="funnelRef" mode="full" />', overview)
+		self.assertIn("stabler.api.tender.tender_flow", overview)
+
+		# Role gates mirror the endpoints: tender_flow is director-only
+		# (api/tender.py:3065), tender_funnel is director|sourcing (:2204). Calling
+		# them without the view returns 403 and paints an empty panel — worse than
+		# not drawing the block at all.
+		self.assertIn('session.tenderViews.includes("director")', overview)
+		self.assertIn('session.tenderViews.includes("sourcing")', overview)
+		self.assertIn("if (!canFlow.value || !activeCompany.value) return;", overview)
+
+		# One shell, one bar, one heading — same as every other tender screen.
+		root = overview[overview.index("<template>") + len("<template>") :].lstrip()
+		self.assertTrue(root.startswith("<TenderPage"), root[:60])
+
+	def test_process_step_names_are_defined_once_for_both_screens(self):
+		"""`/tender/flow` and the dashboard strip name the same five steps.
+
+		Two screens spelling one step differently is the same trust bug the flow
+		screen warns about in its own header, so the words live in one module and
+		both screens import them.
+		"""
+		labels = _read(_FLOW_LABELS)
+		for step in ("seen", "go", "sourcing", "priced", "submitted"):
+			self.assertIn(f"{step}:", labels)
+		for state in ("in", "edge", "out", "unknown", "empty"):
+			self.assertIn(f"{state}:", labels)
+		for export in ("stepLabel", "stateLabel", "waitState"):
+			self.assertIn(f"export const {export}", labels)
+
+		for consumer in (_FLOW, _OVERVIEW):
+			source = _read(consumer)
+			self.assertIn('from "./flowLabels.js"', source)
+			self.assertNotIn("const STEP_LABELS", source)
+			self.assertNotIn("const STATE_LABEL", source)
 
 	def test_company_disabled_tender_keeps_financial_fallback(self):
 		source = _read(_DASHBOARD)

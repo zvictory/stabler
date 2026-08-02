@@ -5272,3 +5272,12 @@ without a stage stamp — not averaged,bosqich muhri yo'q — o'rtachaga kirmadi
 deals,bitim
 step,bosqich
 steps,bosqich
+Where the pipeline stands,Voronkaning holati
+Today's queue lives on the operations desk — this is the whole pipeline,Bugungi navbat operatsion stolda — bu yerda butun voronka
+Open work per step · average wait against that step's threshold,Har bosqichdagi ochiq ishlar · o‘rtacha kutish bosqich chegarasiga nisbatan
+Bottleneck: {step},Tor joy: {step}
+No step is past its own threshold today,Bugun hech bir bosqich o‘z chegarasidan oshmadi
+Step performance →,Bosqich samaradorligi →
+Your work is on the operations desk,Sizning ishingiz operatsion stolda
+The pipeline overview is built for the director and sourcing roles. Your queue for today is on the desk.,Voronka umumiy ko‘rinishi direktor va ta’minot rollari uchun. Bugungi navbatingiz stolda.
+Operations desk →,Operatsion stol →

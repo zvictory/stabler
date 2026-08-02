@@ -10,7 +10,7 @@ import { t } from "../composables/i18n.js";
 import KpiCard from "../components/KpiCard.vue";
 import ApexChart from "../components/ApexChart.vue";
 import EmptyState from "../components/EmptyState.vue";
-import OperationsDesk from "./tender/OperationsDesk.vue";
+import TenderOverview from "./tender/TenderOverview.vue";
 import ImportsDashboard from "./imports/ImportsDashboard.vue";
 
 const session = useSession();
@@ -33,8 +33,9 @@ const lowStock = ref([]);
 const error = ref(null);
 
 const tenderEnabled = computed(() => session.canAccessModule("tender"));
-// Şirket seçilmemişken masa hiçbir şey çekmiyor (OperationsDesk.vue:270), boş bir
-// kabuk çizerdi — o durumda aşağıdaki "şirket seçin" ekranına düşüyoruz.
+// Şirket seçilmemişken genel bakış hiçbir şey çekmiyor (TenderOverview.vue:52,
+// TenderFunnel.vue:41), boş bir kabuk çizerdi — o durumda aşağıdaki "şirket
+// seçin" ekranına düşüyoruz.
 const showDesk = computed(() => tenderEnabled.value && !!activeCompany.value);
 
 const money = (v, ccy) => formatMoney(v, ccy || currency.value, user.value.language);
@@ -158,12 +159,15 @@ const activityIcon = (type) => {
 </script>
 
 <template>
-	<!-- Tender şirketinde pano = masanın kendisi. Bootstrap `page-header` +
-	     `container-xl` kabuğu buraya giremez: `OperationsDesk` zaten tam bir
-	     `TenderPage` kabuğu taşıyor (çubuk + başlık + eylemler), üstüne bir
-	     kabuk daha sarmak iki başlık, iki Refresh ve `container-xl` yüzünden
-	     içeri kaçmış bir modül çubuğu üretiyordu. Ölçüldü 2026-08-02, Mikas. -->
-	<OperationsDesk v-if="showDesk" />
+	<!-- Tender şirketinde pano = hattın genel görünümü (aşama hattı + huni +
+	     süreç şeridi). Bir gün boyunca burada `OperationsDesk` duruyordu ve pano
+	     `/tender/desk` ile birebir aynı ekrandı — hizalama değil çoğaltma.
+	     Bootstrap `page-header` + `container-xl` kabuğu buraya giremez:
+	     `TenderOverview` zaten tam bir `TenderPage` kabuğu taşıyor (çubuk +
+	     başlık + eylemler), üstüne bir kabuk daha sarmak iki başlık, iki Refresh
+	     ve `container-xl` yüzünden içeri kaçmış bir modül çubuğu üretiyordu.
+	     Ölçüldü 2026-08-02, Mikas. -->
+	<TenderOverview v-if="showDesk" />
 
 	<div v-if="!showDesk" class="page-header d-print-none">
 		<div class="container-xl">

@@ -98,7 +98,8 @@ for (const [name, file] of targets) {
 // nav top = -16, /tender/desk = 0). Same bar, different place, every screen.
 //
 // Dashboard is exempt: it is the tender Overview entry, not a /tender/* screen, and
-// it draws its bar through the embedded OperationsDesk.
+// it draws its bar through the embedded TenderOverview — which does build its own
+// shell from <TenderPage>, so the bar still lands in exactly the same place.
 for (const [name, file] of tenderRouteComponents()) {
 	const root = templateOf(file).replace("<template>", "").trimStart();
 	assert.ok(

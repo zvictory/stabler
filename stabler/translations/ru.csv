@@ -5278,3 +5278,12 @@ without a stage stamp — not averaged,без отметки этапа — не
 deals,сделок
 step,шаг
 steps,шагов
+Where the pipeline stands,Состояние воронки
+Today's queue lives on the operations desk — this is the whole pipeline,Сегодняшняя очередь — на операционной панели; здесь вся воронка
+Open work per step · average wait against that step's threshold,Открытые работы по шагам · среднее ожидание против порога шага
+Bottleneck: {step},Узкое место: {step}
+No step is past its own threshold today,Сегодня ни один шаг не превысил свой порог
+Step performance →,Производительность шагов →
+Your work is on the operations desk,Ваша работа — на операционной панели
+The pipeline overview is built for the director and sourcing roles. Your queue for today is on the desk.,Обзор воронки предназначен для ролей директора и снабжения. Ваша очередь на сегодня — на панели.
+Operations desk →,Операционная панель →

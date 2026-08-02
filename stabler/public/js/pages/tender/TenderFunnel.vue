@@ -13,9 +13,9 @@
 //    biggest drop IS the finding, so it gets the space.
 //
 // `mode` stays: "full" draws the counter strip and the stage pipeline as well;
-// anything else draws the conversion funnel and its losses only, which is how
-// the dashboard is meant to embed it. No call site passes it today, but the
-// contract is specified in test_tender_dashboard_spa -- a test is a caller.
+// anything else draws the conversion funnel and its losses only. Both callers
+// ask for "full" today -- the Director board and the dashboard overview -- and
+// the contract is also specified in test_tender_dashboard_spa.
 import { computed, onMounted, ref, watch } from "vue";
 import { storeToRefs } from "pinia";
 import { useRouter } from "vue-router";
@@ -50,6 +50,11 @@ async function load() {
 }
 onMounted(load);
 watch([activeCompany, () => props.days], load);
+
+/* Huni kendi verisini kendi çekiyor. Onu gömen ekranın (TenderOverview) tek bir
+ * Yenile düğmesi var ve o düğme buradaki isteği de tazelemek zorunda — yoksa
+ * "yenile" ekranın yarısını yeniler. */
+defineExpose({ load });
 
 const kpi = computed(() => data.value?.kpi || {});
 const so = computed(() => data.value?.so || {});

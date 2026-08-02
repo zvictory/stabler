@@ -5267,3 +5267,12 @@ without a stage stamp — not averaged,aşama damgası yok — ortalamaya katıl
 deals,anlaşma
 step,adım
 steps,adım
+Where the pipeline stands,Hat nerede duruyor
+Today's queue lives on the operations desk — this is the whole pipeline,Bugünün kuyruğu operasyon masasında — burada hattın tamamı
+Open work per step · average wait against that step's threshold,Adım başına açık iş · o adımın eşiğine karşı ortalama bekleme
+Bottleneck: {step},Darboğaz: {step}
+No step is past its own threshold today,Bugün hiçbir adım kendi eşiğini aşmadı
+Step performance →,Adım performansı →
+Your work is on the operations desk,İşiniz operasyon masasında
+The pipeline overview is built for the director and sourcing roles. Your queue for today is on the desk.,Hat genel bakışı direktör ve tedarik rolleri için hazırlandı. Bugünkü kuyruğunuz masada.
+Operations desk →,Operasyon masası →
