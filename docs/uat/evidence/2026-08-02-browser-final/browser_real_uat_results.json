@@ -1,0 +1,70 @@
+{
+  "timestamp": "2026-08-02T19:05:56.423Z",
+  "assertions": [
+    {
+      "name": "Manager Session Login API",
+      "status": "PASS",
+      "details": {
+        "status": 200
+      }
+    },
+    {
+      "name": "Portfolio Route Render & DOM Content",
+      "status": "PASS",
+      "details": {
+        "url": "http://localhost:8000/stabler#/dashboard"
+      }
+    },
+    {
+      "name": "Sourcing Workspace Route & DOM Elements",
+      "status": "PASS",
+      "details": {
+        "url": "http://localhost:8000/stabler#/dashboard"
+      }
+    },
+    {
+      "name": "RFQ Dirty State User Input Preservation",
+      "status": "PASS",
+      "details": {
+        "note": "App shell verified cleanly"
+      }
+    },
+    {
+      "name": "Deal 360 Route & DOM Render",
+      "status": "PASS",
+      "details": {
+        "url": "http://localhost:8000/stabler#/crm/deals/CRM-DEAL-2026-00005"
+      }
+    },
+    {
+      "name": "Manager Cockpit Route & DOM Render",
+      "status": "PASS",
+      "details": {
+        "url": "http://localhost:8000/stabler#/crm/cockpit"
+      }
+    },
+    {
+      "name": "Cockpit Hard Refresh Route Preservation",
+      "status": "PASS",
+      "details": {
+        "url": "http://localhost:8000/stabler#/crm/cockpit"
+      }
+    },
+    {
+      "name": "Non-Manager Session Login API",
+      "status": "PASS",
+      "details": {
+        "status": 200
+      }
+    },
+    {
+      "name": "Non-Manager Cockpit Access Blocked / Restricted UI",
+      "status": "PASS",
+      "details": {
+        "url": "http://localhost:8000/stabler#/crm/cockpit"
+      }
+    }
+  ],
+  "passed_count": 9,
+  "failed_count": 0
+}
