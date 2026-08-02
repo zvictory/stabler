@@ -176,10 +176,59 @@ async function loadDecision() {
 	}
 }
 
+const unassigned = ref([]);
+const unassignedLoading = ref(false);
+const unassignedSearch = ref("");
+
+async function loadUnassigned() {
+	if (!canSourcingView.value) return;
+	unassignedLoading.value = true;
+	try {
+		const res = await call("stabler.api.sourcing.list_unassigned_quotations", {
+			company: activeCompany.value,
+			search: unassignedSearch.value,
+			limit: 20,
+		});
+		unassigned.value = res || [];
+	} catch {
+		unassigned.value = [];
+	} finally {
+		unassignedLoading.value = false;
+	}
+}
+
+async function attachQuotation(qName) {
+	if (!deal.value) return;
+	try {
+		await call("stabler.api.sourcing.attach_quotation_to_deal", {
+			quotation: qName,
+			deal: deal.value,
+			company: activeCompany.value,
+		});
+		toast.success(t("Quotation attached to lot."));
+		await loadAll();
+	} catch (err) {
+		toast.error(err?.message || t("Could not attach quotation."));
+	}
+}
+
+async function detachQuotation(qName) {
+	try {
+		await call("stabler.api.sourcing.detach_quotation_from_deal", {
+			quotation: qName,
+			company: activeCompany.value,
+		});
+		toast.success(t("Quotation detached from lot."));
+		await loadAll();
+	} catch (err) {
+		toast.error(err?.message || t("Could not detach quotation."));
+	}
+}
+
 async function loadAll() {
 	if (!deal.value) return;
 	await loadQuotations();
-	await Promise.all([loadRfqs(), loadDecision()]);
+	await Promise.all([loadRfqs(), loadDecision(), loadUnassigned()]);
 }
 
 function openAddQuotation() {
@@ -525,10 +574,18 @@ watch(
 										</button>
 										<button
 											type="button"
-											class="btn btn-outline-success btn-sm"
+											class="btn btn-outline-success btn-sm me-1"
 											@click="submitQuotation(r.name)"
 										>
 											{{ t("Submit") }}
+										</button>
+										<button
+											type="button"
+											class="btn btn-ghost-danger btn-sm"
+											:title="t('Detach from this lot')"
+											@click="detachQuotation(r.name)"
+										>
+											<i class="ti ti-unlink"></i>
 										</button>
 									</template>
 									<span v-else class="text-secondary small"
@@ -544,6 +601,79 @@ watch(
 						:title="t('No supplier quotations for this tender.')"
 						:subtitle="t('Add supplier quotations to compare them and record an award.')"
 					/>
+				</div>
+			</div>
+
+			<!-- Section 2b: Unallocated Quotations Panel -->
+			<div
+				v-if="canSourcingView && (unassigned.length || unassignedSearch)"
+				class="card mb-3 border-dashed"
+			>
+				<div
+					class="card-header py-2 fw-semibold d-flex justify-content-between align-items-center bg-light"
+				>
+					<div class="d-flex align-items-center gap-2">
+						<i class="ti ti-link-plus text-primary"></i>
+						<span>{{ t("Unallocated quotations in Purchasing") }}</span>
+						<span class="badge bg-secondary-lt text-secondary">{{ unassigned.length }}</span>
+					</div>
+					<div class="d-flex align-items-center gap-2">
+						<input
+							v-model="unassignedSearch"
+							type="search"
+							class="form-control form-control-sm"
+							:placeholder="t('Search supplier or quotation… ⌘K')"
+							style="width: 220px"
+							@input="loadUnassigned"
+						/>
+					</div>
+				</div>
+				<div class="card-body p-0">
+					<table class="table card-table">
+						<thead>
+							<tr>
+								<th>{{ t("Quotation") }}</th>
+								<th>{{ t("Supplier") }}</th>
+								<th>{{ t("Country") }}</th>
+								<th class="text-end">{{ t("Total") }}</th>
+								<th>{{ t("Date") }}</th>
+								<th>{{ t("Status") }}</th>
+								<th class="text-end">{{ t("Action") }}</th>
+							</tr>
+						</thead>
+						<tbody>
+							<SkeletonRows v-if="unassignedLoading" :cols="7" :rows="2" />
+							<tr v-for="q in unassigned" :key="q.name">
+								<td class="fw-semibold font-monospace">{{ q.name }}</td>
+								<td>{{ q.supplier_name }}</td>
+								<td class="text-secondary">{{ q.country || "—" }}</td>
+								<td class="text-end font-monospace">
+									{{ formatMoney(q.grand_total, q.currency, user.language) }}
+								</td>
+								<td>{{ q.transaction_date ? formatDate(q.transaction_date) : "—" }}</td>
+								<td>
+									<span
+										:class="
+											q.docstatus === 1
+												? 'badge bg-success-lt text-success'
+												: 'badge bg-secondary-lt text-secondary'
+										"
+									>
+										{{ q.docstatus === 1 ? t("Submitted") : t("Draft") }}
+									</span>
+								</td>
+								<td class="text-end">
+									<button
+										type="button"
+										class="btn btn-outline-primary btn-sm"
+										@click="attachQuotation(q.name)"
+									>
+										<i class="ti ti-link me-1"></i>{{ t("Attach to this lot") }}
+									</button>
+								</td>
+							</tr>
+						</tbody>
+					</table>
 				</div>
 			</div>
 
