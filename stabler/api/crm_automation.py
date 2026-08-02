@@ -12,13 +12,14 @@ from frappe import _
 from frappe.utils import date_diff, getdate, nowdate
 
 from stabler.api.crm import _assert_crm_record_company, _require_crm, _require_crm_company
-from stabler.api.organization import _ADMIN_ROLES
+from stabler.api.organization import _ADMIN_ROLES, _assert_company_scope
 
 _CRM_MANAGER_ROLES = frozenset((*_ADMIN_ROLES, "Sales Manager", "CRM Specialist"))
 
 
 def _require_crm_manager(company: str) -> None:
 	"""Verify caller has CRM module access, company scoping, and CRM Manager/Admin role."""
+	_assert_company_scope(company)
 	_require_crm()
 	_require_crm_company(company)
 
@@ -175,6 +176,7 @@ def run_crm_automation_rules(company: str, dry_run: bool = False) -> dict:
 @frappe.whitelist()
 def preview_crm_automation_rules(company: str) -> dict:
 	"""Read-only preview endpoint for CRM automation rules."""
+	_assert_company_scope(company)
 	return run_crm_automation_rules(company=company, dry_run=True)
 
 
