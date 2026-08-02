@@ -78,10 +78,6 @@ class TestCrmAutomation(unittest.TestCase):
 		self.assertGreaterEqual(len(activities), 1)
 		self.assertIn("custom_idempotency_key", activities[0])
 
-		# Clear in-memory state (simulate worker restart)
-		if hasattr(crm_automation, "_EXECUTED_AUTOMATION_KEYS"):
-			crm_automation._EXECUTED_AUTOMATION_KEYS.clear()
-
 		# Second run with same company -> idempotent via DB record lookup
 		res2 = crm_automation.run_crm_automation_rules(company="ACME", dry_run=False)
 		self.assertEqual(res2["executed_rules"], 0)
@@ -96,6 +92,42 @@ class TestCrmAutomation(unittest.TestCase):
 		self.assertGreaterEqual(len(preview["actions"]), 1)
 		# Assert no new documents created during preview
 		self.assertEqual(len(self.fake.docs), initial_count)
+
+	def test_failed_action_retry_status_transition(self):
+		from stabler.api import crm_automation
+
+		# Add a pre-existing Failed activity in DB
+		failed_key = "crm_sla:ACME:DEAL-AUTO-1:2026-08-03"
+		failed_doc = _Doc(
+			name="ACT-FAILED-1",
+			doctype="CRM Activity",
+			company="ACME",
+			reference_doctype="CRM Deal",
+			reference_name="DEAL-AUTO-1",
+			custom_idempotency_key=failed_key,
+			custom_execution_status="Failed",
+			custom_attempts=1,
+			custom_last_error="Temporary Network Error",
+		)
+		self.fake.docs[("CRM Activity", "ACT-FAILED-1")] = failed_doc
+
+		res = crm_automation.run_crm_automation_rules(company="ACME", dry_run=False)
+		self.assertGreaterEqual(res["executed_rules"], 1)
+
+		# Check status was updated to Retried with attempts = 2
+		self.assertEqual(failed_doc.get("custom_execution_status"), "Retried")
+		self.assertEqual(failed_doc.get("custom_attempts"), 2)
+
+	def test_scheduler_daily_crm_automation_runs_fault_tolerant(self):
+		from stabler.api import crm_automation
+
+		# Mock get_all for Company
+		self.fake.get_all_rows = [{"name": "ACME"}, {"name": "OTHER_CO"}]
+
+		# System administrator context during daily scheduler run
+		self.frappe.session.user = "Administrator"
+
+		crm_automation.scheduled_daily_crm_automation()
 
 	def test_run_crm_automation_rules_rejects_unauthorized_role(self):
 		from stabler.api import crm, crm_automation, organization

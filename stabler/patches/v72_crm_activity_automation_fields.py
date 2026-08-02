@@ -1,4 +1,4 @@
-"""Add automation audit custom fields to CRM Activity doctype."""
+"""Add automation audit custom fields with unique idempotency index to CRM Activity doctype."""
 
 from __future__ import annotations
 
@@ -17,6 +17,7 @@ def execute():
 					"fieldname": "custom_idempotency_key",
 					"label": "Idempotency Key",
 					"fieldtype": "Data",
+					"unique": 1,
 					"insert_after": "status",
 				},
 				{

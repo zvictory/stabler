@@ -7,17 +7,32 @@ stage counts, rep workload, and win/loss conversion rates.
 from __future__ import annotations
 
 import frappe
+from frappe import _
 from frappe.utils import date_diff, flt, getdate, nowdate
 
-from stabler.api.crm import _require_crm
-from stabler.api.sourcing import _assert_company_scope
+from stabler.api.crm import _require_crm, _require_crm_company
+from stabler.api.organization import _ADMIN_ROLES
+
+_CRM_MANAGER_ROLES = frozenset((*_ADMIN_ROLES, "Sales Manager", "CRM Specialist"))
+
+
+def _require_crm_manager(company: str) -> None:
+	"""Verify caller has CRM module access, company scoping, and CRM Manager/Admin role."""
+	_require_crm()
+	_require_crm_company(company)
+
+	user_roles = frappe.get_roles(frappe.session.user)
+	if not any(role in user_roles for role in _CRM_MANAGER_ROLES):
+		frappe.throw(
+			_("Not permitted. CRM Manager role required."),
+			frappe.PermissionError,
+		)
 
 
 @frappe.whitelist()
 def get_manager_cockpit_metrics(company: str, owner: str | None = None) -> dict:
 	"""Compute drillable manager cockpit KPIs for a company."""
-	_assert_company_scope(company)
-	_require_crm()
+	_require_crm_manager(company)
 
 	today = getdate(nowdate())
 	filters = {"company": company}

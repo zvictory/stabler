@@ -1,7 +1,7 @@
 """Two-Way Email and Triage Queue API for CRM Deals.
 
 Enforces CRM module permissions, company scoping, record-level authorization,
-thread matching, ambiguous email triage queue, and durable DB idempotency.
+thread matching, ambiguous email triage queue, durable DB idempotency, and send failure retry.
 """
 
 from __future__ import annotations
@@ -36,10 +36,10 @@ def send_deal_email(
 	recipients: str | None = None,
 	idempotency_key: str | None = None,
 ) -> dict:
-	"""Send email linked to a CRM Deal with durable DB idempotency guard.
+	"""Send email linked to a CRM Deal with durable DB idempotency guard and delivery retry support.
 
 	Creates a Communication record linked to the CRM Deal and sends via frappe.sendmail.
-	Fails loud if permissions are missing or delivery fails.
+	Fails loud if permissions are missing or delivery fails, recording audit status and allowing retries.
 	"""
 	_require_crm()
 	_require_crm_company(company)
@@ -49,28 +49,73 @@ def send_deal_email(
 	_assert_crm_record_company("CRM Deal", deal, company, "write")
 
 	deal_doc = frappe.get_doc("CRM Deal", deal)
-	key = (idempotency_key or "").strip()
+	raw_key = (idempotency_key or "").strip()
+	key = f"comm:{company}:{raw_key}" if raw_key else ""
 
 	# Durable DB Idempotency lookup
 	if key:
 		existing = frappe.get_list(
 			"Communication",
 			filters={"custom_idempotency_key": key, "company": company},
-			fields=["name"],
+			fields=["name", "custom_execution_status", "custom_attempts"],
 			limit_page_length=1,
 		)
 		if existing:
+			ext = existing[0]
+			status = ext.get("custom_execution_status")
+			if status != "Failed":
+				return {
+					"name": ext["name"],
+					"deal": deal,
+					"deduped": True,
+				}
+			# Retry previous failed email delivery
+			comm_name = ext["name"]
+			to_email = recipients or deal_doc.get("email_id") or deal_doc.get("email")
+			if hasattr(frappe, "sendmail"):
+				try:
+					frappe.sendmail(
+						recipients=to_email,
+						subject=subject,
+						message=content,
+						reference_doctype="CRM Deal",
+						reference_name=deal,
+					)
+					frappe.db.set_value(
+						"Communication",
+						comm_name,
+						{
+							"custom_execution_status": "Retried",
+							"custom_attempts": (ext.get("custom_attempts") or 1) + 1,
+							"custom_last_error": None,
+						},
+					)
+				except Exception as err:
+					frappe.db.set_value(
+						"Communication",
+						comm_name,
+						{
+							"custom_execution_status": "Failed",
+							"custom_attempts": (ext.get("custom_attempts") or 1) + 1,
+							"custom_last_error": str(err),
+						},
+					)
+					frappe.throw(
+						_("Email delivery failed: {0}").format(err),
+						frappe.ValidationError,
+					)
 			return {
-				"name": existing[0]["name"],
+				"name": comm_name,
 				"deal": deal,
-				"deduped": True,
+				"retried": True,
+				"deduped": False,
 			}
 
 	to_email = recipients or deal_doc.get("email_id") or deal_doc.get("email")
 	if not to_email:
 		frappe.throw(_("No recipient email address specified."), frappe.ValidationError)
 
-	# Create Communication record without ignore_permissions
+	# Create Communication record
 	comm = frappe.new_doc("Communication")
 	comm.communication_type = "Communication"
 	comm.communication_medium = "Email"
@@ -83,25 +128,48 @@ def send_deal_email(
 	comm.reference_name = deal
 	comm.company = company
 	if hasattr(comm, "custom_idempotency_key"):
-		comm.custom_idempotency_key = key
+		comm.custom_idempotency_key = key or None
+		comm.custom_execution_status = "Executed"
+		comm.custom_attempts = 1
+		comm.custom_last_error = None
 
 	if hasattr(comm, "insert"):
 		try:
 			comm.insert()
-		except TypeError:
-			comm.insert()
+		except Exception:
+			# DB race handling for concurrent workers
+			existing_comm = frappe.get_list(
+				"Communication",
+				filters={"custom_idempotency_key": key, "company": company},
+				fields=["name"],
+				limit_page_length=1,
+			)
+			if existing_comm:
+				return {
+					"name": existing_comm[0]["name"],
+					"deal": deal,
+					"deduped": True,
+				}
 
 	comm_name = getattr(comm, "name", f"COMM-{deal}")
 
-	# Send email without swallowing exceptions
+	# Send email with error audit logging
 	if hasattr(frappe, "sendmail"):
-		frappe.sendmail(
-			recipients=to_email,
-			subject=subject,
-			message=content,
-			reference_doctype="CRM Deal",
-			reference_name=deal,
-		)
+		try:
+			frappe.sendmail(
+				recipients=to_email,
+				subject=subject,
+				message=content,
+				reference_doctype="CRM Deal",
+				reference_name=deal,
+			)
+		except Exception as err:
+			if hasattr(comm, "custom_execution_status"):
+				comm.custom_execution_status = "Failed"
+				comm.custom_last_error = str(err)
+				if hasattr(comm, "save"):
+					comm.save()
+			frappe.throw(_("Email delivery failed: {0}").format(err), frappe.ValidationError)
 
 	return {
 		"name": comm_name,

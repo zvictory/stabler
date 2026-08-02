@@ -1,4 +1,4 @@
-"""Add custom_triage_status and custom_idempotency_key fields to Communication doctype."""
+"""Add custom_triage_status and unique custom_idempotency_key fields to Communication doctype."""
 
 from __future__ import annotations
 
@@ -25,6 +25,7 @@ def execute():
 					"fieldname": "custom_idempotency_key",
 					"label": "Idempotency Key",
 					"fieldtype": "Data",
+					"unique": 1,
 					"insert_after": "custom_triage_status",
 				},
 			]
