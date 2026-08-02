@@ -437,7 +437,14 @@ def _snapshot_rows(rows: list) -> list:
 			"currency": r.get("currency"),
 			"grand_total": flt(r.get("grand_total")),
 			"base_total": flt(r.get("base_total")),
+			"base_landed_total": flt(r.get("base_landed_total")),
+			"landed_charges_total": flt(r.get("landed_charges_total")),
+			"has_landed_estimate": bool(r.get("has_landed_estimate")),
 			"cheapest": bool(r.get("cheapest")),
+			"is_cheapest_price": bool(r.get("is_cheapest_price")),
+			"is_cheapest_landed": bool(r.get("is_cheapest_landed")),
+			"landed_delta": flt(r.get("landed_delta")),
+			"landed_pct": flt(r.get("landed_pct")),
 		}
 		for r in rows
 	]
@@ -497,7 +504,13 @@ def save_sourcing_decision(
 			_("That quotation is not among the bids collected for this lot."),
 			frappe.ValidationError,
 		)
-	cheapest = next((r.get("name") for r in rows if r.get("cheapest")), "")
+	cheapest_price = comparison.get("cheapest_price_quote") or next((r.get("name") for r in rows if r.get("is_cheapest_price")), "")
+	cheapest_landed = comparison.get("cheapest_landed_quote") or next((r.get("name") for r in rows if r.get("is_cheapest_landed")), "")
+	estimate_complete = bool(comparison.get("estimate_complete"))
+
+	cheapest = cheapest_landed if (estimate_complete and cheapest_landed) else cheapest_price
+	if not cheapest:
+		cheapest = next((r.get("name") for r in rows if r.get("cheapest")), "")
 
 	if name:
 		doc = frappe.get_doc(_DECISION, name)
@@ -534,6 +547,10 @@ def save_sourcing_decision(
 		{
 			"taken_at": now_datetime().strftime("%Y-%m-%d %H:%M:%S"),
 			"base_currency": comparison.get("base_currency"),
+			"estimate_complete": estimate_complete,
+			"cheapest_price_quote": cheapest_price,
+			"cheapest_landed_quote": cheapest_landed,
+			"missing_estimates": comparison.get("missing_estimates") or [],
 			"rows": _snapshot_rows(rows),
 		},
 		ensure_ascii=False,
