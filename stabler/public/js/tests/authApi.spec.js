@@ -53,14 +53,14 @@ describe("auth API", () => {
 		await expect(login("user@example.com", "wrong")).rejects.toThrow("Invalid login credentials");
 	});
 
-	it("uses the documented GET logout endpoint", async () => {
+	it("uses the documented POST logout endpoint", async () => {
 		const fetch = vi.fn().mockResolvedValue({ ok: true });
 		vi.stubGlobal("fetch", fetch);
 
 		await logout();
 
 		expect(fetch).toHaveBeenCalledWith("/api/method/logout", {
-			method: "GET",
+			method: "POST",
 			credentials: "same-origin",
 			headers: { Accept: "application/json" },
 		});

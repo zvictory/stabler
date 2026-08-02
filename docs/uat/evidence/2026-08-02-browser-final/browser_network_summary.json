@@ -42,6 +42,12 @@
     "user": "hayrulloh@mail.com"
   },
   {
+    "method": "GET",
+    "url": "http://localhost:8000/stabler",
+    "status": 200,
+    "user": "hayrulloh@mail.com"
+  },
+  {
     "method": "POST",
     "url": "http://localhost:8000/api/method/stabler.api.crm.get_deal",
     "status": 403,
@@ -72,12 +78,6 @@
     "user": "hayrulloh@mail.com"
   },
   {
-    "method": "GET",
-    "url": "http://localhost:8000/stabler",
-    "status": 200,
-    "user": "hayrulloh@mail.com"
-  },
-  {
     "method": "POST",
     "url": "http://localhost:8000/api/method/stabler.api.tender.tender_views",
     "status": 200,
@@ -116,12 +116,6 @@
   {
     "method": "POST",
     "url": "http://localhost:8000/api/method/stabler.api.organization.boot",
-    "status": 200,
-    "user": "fayzulloxoshimov61@gmail.com"
-  },
-  {
-    "method": "POST",
-    "url": "http://localhost:8000/api/method/stabler.api.crm_email.list_email_triage_queue",
     "status": 200,
     "user": "fayzulloxoshimov61@gmail.com"
   },
@@ -129,6 +123,12 @@
     "method": "POST",
     "url": "http://localhost:8000/api/method/stabler.api.crm_analytics.get_manager_cockpit_metrics",
     "status": 403,
+    "user": "fayzulloxoshimov61@gmail.com"
+  },
+  {
+    "method": "POST",
+    "url": "http://localhost:8000/api/method/stabler.api.crm_email.list_email_triage_queue",
+    "status": 200,
     "user": "fayzulloxoshimov61@gmail.com"
   },
   {

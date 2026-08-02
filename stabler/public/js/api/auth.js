@@ -44,7 +44,7 @@ export async function login(usr, pwd, remember = true) {
 
 export async function logout() {
 	const response = await fetch("/api/method/logout", {
-		method: "GET",
+		method: "POST",
 		credentials: "same-origin",
 		headers: { Accept: "application/json" },
 	});
