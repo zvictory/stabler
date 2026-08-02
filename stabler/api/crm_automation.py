@@ -202,6 +202,8 @@ def run_crm_automation_rules(company: str, dry_run: bool = False) -> dict:
 	return {
 		"company": company,
 		"executed_count": executed,
+		"executed_rules": executed,
+		"summary": f"Processed {executed} automation rules",
 		"actions": actions,
 		"dry_run": dry_run,
 	}
@@ -211,3 +213,17 @@ def run_crm_automation_rules(company: str, dry_run: bool = False) -> dict:
 def preview_crm_automation_rules(company: str) -> dict:
 	"""Dry-run preview of CRM automation rules for a company."""
 	return run_crm_automation_rules(company=company, dry_run=True)
+
+
+def scheduled_daily_crm_automation() -> None:
+	"""Daily scheduler hook for running CRM automation rules across active companies."""
+	try:
+		if hasattr(frappe, "get_all"):
+			companies = frappe.get_all("Company", fields=["name"])
+			for comp in companies:
+				try:
+					run_crm_automation_rules(company=comp["name"])
+				except Exception:
+					pass
+	except Exception:
+		pass
