@@ -1,7 +1,7 @@
 """Two-Way Email and Triage Queue API for CRM Deals.
 
-Enforces company scoping, permission gates, thread matching,
-ambiguous email triage queue, and idempotency key deduplication.
+Enforces CRM module permissions, company scoping, record-level authorization,
+thread matching, ambiguous email triage queue, and durable DB idempotency.
 """
 
 from __future__ import annotations
@@ -11,29 +11,20 @@ import re
 import frappe
 from frappe import _
 
-from stabler.api.sourcing import _assert_company_scope
-
-# Cache for sent idempotency keys
-_IDEMPOTENCY_CACHE: dict[str, str] = {}
+from stabler.api._common import _assert_can_write
+from stabler.api.crm import _assert_crm_record_company, _require_crm, _require_crm_company
 
 
-def _assert_deal_company_scope(deal_name: str, company: str) -> dict:
-	"""Verify company scoping and permissions on CRM Deal."""
-	_assert_company_scope(company)
-
-	doc = frappe.get_doc("CRM Deal", deal_name)
-	perm_fn = getattr(doc, "has_permission", None)
-	if callable(perm_fn) and not perm_fn("read"):
-		frappe.throw(_("Not permitted for deal {0}.").format(deal_name), frappe.PermissionError)
-
-	deal_company = getattr(doc, "company", None) or (doc.get("company") if isinstance(doc, dict) else None)
-
-	if deal_company and deal_company != company:
+def _assert_communication_company(comm_doc: dict | object, company: str) -> None:
+	"""Verify Communication record company matches the selected company."""
+	comm_company = getattr(comm_doc, "company", None) or (
+		comm_doc.get("company") if isinstance(comm_doc, dict) else None
+	)
+	if comm_company and comm_company != company:
 		frappe.throw(
 			_("Not permitted for company {0}.").format(company),
 			frappe.PermissionError,
 		)
-	return doc if isinstance(doc, dict) else doc.as_dict()
 
 
 @frappe.whitelist()
@@ -45,26 +36,41 @@ def send_deal_email(
 	recipients: str | None = None,
 	idempotency_key: str | None = None,
 ) -> dict:
-	"""Send email linked to a CRM Deal with idempotency guard.
+	"""Send email linked to a CRM Deal with durable DB idempotency guard.
 
-	Creates a Communication record linked to the CRM Deal and logs a CRM Activity.
+	Creates a Communication record linked to the CRM Deal and sends via frappe.sendmail.
+	Fails loud if permissions are missing or delivery fails.
 	"""
-	_assert_company_scope(company)
-	deal_doc = _assert_deal_company_scope(deal, company)
+	_require_crm()
+	_require_crm_company(company)
+	if not frappe.has_permission("Communication", "create"):
+		frappe.throw(_("Not permitted for Communication"), frappe.PermissionError)
+
+	_assert_crm_record_company("CRM Deal", deal, company, "write")
+
+	deal_doc = frappe.get_doc("CRM Deal", deal)
 	key = (idempotency_key or "").strip()
 
-	if key and key in _IDEMPOTENCY_CACHE:
-		return {
-			"name": _IDEMPOTENCY_CACHE[key],
-			"deal": deal,
-			"deduped": True,
-		}
+	# Durable DB Idempotency lookup
+	if key:
+		existing = frappe.get_list(
+			"Communication",
+			filters={"custom_idempotency_key": key, "company": company},
+			fields=["name"],
+			limit_page_length=1,
+		)
+		if existing:
+			return {
+				"name": existing[0]["name"],
+				"deal": deal,
+				"deduped": True,
+			}
 
 	to_email = recipients or deal_doc.get("email_id") or deal_doc.get("email")
 	if not to_email:
 		frappe.throw(_("No recipient email address specified."), frappe.ValidationError)
 
-	# Create Communication record
+	# Create Communication record without ignore_permissions
 	comm = frappe.new_doc("Communication")
 	comm.communication_type = "Communication"
 	comm.communication_medium = "Email"
@@ -81,27 +87,21 @@ def send_deal_email(
 
 	if hasattr(comm, "insert"):
 		try:
-			comm.insert(ignore_permissions=True)
+			comm.insert()
 		except TypeError:
 			comm.insert()
 
 	comm_name = getattr(comm, "name", f"COMM-{deal}")
 
-	if key:
-		_IDEMPOTENCY_CACHE[key] = comm_name
-
-	# Try to send email via frappe.sendmail if available
+	# Send email without swallowing exceptions
 	if hasattr(frappe, "sendmail"):
-		try:
-			frappe.sendmail(
-				recipients=to_email,
-				subject=subject,
-				message=content,
-				reference_doctype="CRM Deal",
-				reference_name=deal,
-			)
-		except Exception:
-			pass
+		frappe.sendmail(
+			recipients=to_email,
+			subject=subject,
+			message=content,
+			reference_doctype="CRM Deal",
+			reference_name=deal,
+		)
 
 	return {
 		"name": comm_name,
@@ -110,38 +110,49 @@ def send_deal_email(
 	}
 
 
-@frappe.whitelist()
-def match_incoming_email_to_deal(communication_name: str) -> dict:
+def match_incoming_email_to_deal(communication_name: str, company: str | None = None) -> dict:
 	"""Thread-match incoming email to a CRM Deal.
 
 	Matching hierarchy:
 	 1. Explicit [DEAL-<name>] pattern in subject.
 	 2. Matching sender email address to CRM Deal `email_id`.
-	 3. Unambiguous match -> links reference_doctype and reference_name.
-	 4. Ambiguous / no match -> tags custom_triage_status="Unmatched".
+	 3. Unambiguous match with matching company -> links reference_doctype & reference_name.
+	 4. Ambiguous / cross-company / no match -> tags custom_triage_status="Unmatched".
 	"""
 	comm = frappe.get_doc("Communication", communication_name)
 	subject = (getattr(comm, "subject", "") or comm.get("subject") or "").strip()
 	sender = (getattr(comm, "sender", "") or comm.get("sender") or "").strip()
+	comm_company = (
+		company or getattr(comm, "company", None) or (comm.get("company") if isinstance(comm, dict) else None)
+	)
 
 	# Pattern 1: subject tag [DEAL-123]
 	match = re.search(r"\[(DEAL-[^\]]+)\]", subject, re.IGNORECASE)
 	matched_deal = None
 
 	if match:
-		matched_deal = match.group(1).strip()
+		candidate_deal = match.group(1).strip()
+		# Validate candidate deal exists and belongs to same company
+		if frappe.db.exists("CRM Deal", candidate_deal):
+			deal_company = frappe.db.get_value("CRM Deal", candidate_deal, "company")
+			if not comm_company or deal_company == comm_company:
+				matched_deal = candidate_deal
+
 	elif sender:
 		# Pattern 2: sender email match
+		filters = {"email_id": sender}
+		if comm_company:
+			filters["company"] = comm_company
 		deals = frappe.get_list(
 			"CRM Deal",
-			filters={"email_id": sender},
+			filters=filters,
 			fields=["name"],
 			limit_page_length=2,
 		)
 		if len(deals) == 1:
 			matched_deal = deals[0]["name"]
 
-	if matched_deal and frappe.db.exists("CRM Deal", matched_deal):
+	if matched_deal:
 		if isinstance(comm, dict):
 			comm["reference_doctype"] = "CRM Deal"
 			comm["reference_name"] = matched_deal
@@ -170,12 +181,15 @@ def match_incoming_email_to_deal(communication_name: str) -> dict:
 @frappe.whitelist()
 def list_email_triage_queue(company: str) -> dict:
 	"""List incoming unassigned emails requiring triage for a company."""
-	_assert_company_scope(company)
+	_require_crm()
+	_require_crm_company(company)
+	if not frappe.has_permission("Communication", "read"):
+		frappe.throw(_("Not permitted for Communication"), frappe.PermissionError)
 
 	rows = frappe.get_list(
 		"Communication",
-		filters={"custom_triage_status": "Unmatched"},
-		fields=["name", "subject", "sender", "recipients", "creation", "content"],
+		filters={"custom_triage_status": "Unmatched", "company": company},
+		fields=["name", "subject", "sender", "recipients", "creation", "content", "company"],
 		order_by="creation desc",
 		limit_page_length=50,
 	)
@@ -185,9 +199,13 @@ def list_email_triage_queue(company: str) -> dict:
 @frappe.whitelist()
 def link_triage_email(communication_name: str, deal: str, company: str) -> dict:
 	"""Manually link an unassigned triage email to a selected CRM Deal."""
-	_assert_company_scope(company)
-	_assert_deal_company_scope(deal, company)
+	_require_crm()
+	_require_crm_company(company)
+	_assert_can_write("Communication", communication_name)
+	_assert_crm_record_company("CRM Deal", deal, company, "write")
+
 	comm = frappe.get_doc("Communication", communication_name)
+	_assert_communication_company(comm, company)
 
 	if isinstance(comm, dict):
 		comm["reference_doctype"] = "CRM Deal"

@@ -12,14 +12,24 @@ from stabler.tests.test_sourcing_api import _Doc, _FakeFrappe, _load_api
 
 
 class TestCrmAnalytics(unittest.TestCase):
+	fake = None
+	frappe = None
+
+	@classmethod
+	def setUpClass(cls):
+		cls.fake = _FakeFrappe()
+		_load_api(cls.fake)
+		cls.frappe = sys.modules["frappe"]
+
 	def setUp(self):
-		self.fake = _FakeFrappe()
-		self.sourcing_api = _load_api(self.fake)
-		self.frappe = sys.modules["frappe"]
+		self.fake.docs.clear()
+		self.fake.created.clear()
+		self.frappe.session.user = "crm_user@acme.com"
 
 		# Add CRM Deal fixtures
 		self.fake.docs[("CRM Deal", "DEAL-COCKPIT-1")] = _Doc(
 			name="DEAL-COCKPIT-1",
+			doctype="CRM Deal",
 			company="ACME",
 			organization="Alfa Corp",
 			stage="priced",
@@ -30,6 +40,7 @@ class TestCrmAnalytics(unittest.TestCase):
 		)
 		self.fake.docs[("CRM Deal", "DEAL-COCKPIT-2")] = _Doc(
 			name="DEAL-COCKPIT-2",
+			doctype="CRM Deal",
 			company="ACME",
 			organization="Beta Corp",
 			stage="won",

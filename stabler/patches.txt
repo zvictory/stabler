@@ -73,3 +73,4 @@ stabler.patches.v67_stage_event_axis
 stabler.patches.v68_rfq_tender_deal
 stabler.patches.v69_sq_landed_charges
 stabler.patches.v70_tender_master_documents
+stabler.patches.v71_communication_crm_fields

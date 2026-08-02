@@ -58,6 +58,8 @@ class _Doc(dict):
 	def insert(self):
 		self["inserted"] = True
 		self["name"] = self.get("name") or "RFQ-NEW"
+		if hasattr(self, "_fake") and self._fake:
+			self._fake.docs[(self.get("doctype", "Communication"), self["name"])] = self
 		return self
 
 	def save(self):
@@ -245,7 +247,7 @@ class _FakeFrappe:
 			raise Exception(f"{doctype} {name} not found") from None
 
 	def new_doc(self, doctype):
-		doc = _Doc(doctype=doctype)
+		doc = _Doc(doctype=doctype, _fake=self)
 		self.created.append(doc)
 		return doc
 
@@ -341,6 +343,7 @@ def _load_api(
 	frappe.parse_json = lambda value: value
 	frappe.whitelist = lambda *args, **_kwargs: (lambda fn: fn) if not args else args[0]
 	frappe.throw = lambda message, exception=Exception: (_ for _ in ()).throw(exception(message))
+	frappe.get_roles = lambda user=None: ["System Manager"]
 
 	def _has_permission(doctype, ptype="read", doc=None):
 		if ptype == "create":

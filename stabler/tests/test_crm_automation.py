@@ -12,24 +12,35 @@ from stabler.tests.test_sourcing_api import _Doc, _FakeFrappe, _load_api
 
 
 class TestCrmAutomation(unittest.TestCase):
+	fake = None
+	frappe = None
+
+	@classmethod
+	def setUpClass(cls):
+		cls.fake = _FakeFrappe()
+		_load_api(cls.fake)
+		cls.frappe = sys.modules["frappe"]
+
 	def setUp(self):
-		self.fake = _FakeFrappe()
-		self.sourcing_api = _load_api(self.fake)
-		self.frappe = sys.modules["frappe"]
+		self.fake.docs.clear()
+		self.fake.created.clear()
+		self.frappe.session.user = "crm_user@acme.com"
 
 		# Add CRM Deal fixtures
 		self.fake.docs[("CRM Deal", "DEAL-AUTO-1")] = _Doc(
 			name="DEAL-AUTO-1",
+			doctype="CRM Deal",
 			company="ACME",
 			organization="Alfa Corp",
 			stage="priced",
-			deadline="2026-08-03",  # <= 48h from 2026-08-02
+			deadline="2026-08-03",
 			last_activity_date="2026-07-30",
 			custom_parent_tender="TND-AUTO",
 			docstatus=0,
 		)
 		self.fake.docs[("CRM Deal", "DEAL-AUTO-FOREIGN")] = _Doc(
 			name="DEAL-AUTO-FOREIGN",
+			doctype="CRM Deal",
 			company="OTHER_CO",
 			stage="go",
 			docstatus=0,
