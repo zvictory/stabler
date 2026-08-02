@@ -79,10 +79,16 @@ export function sanitizeStablerRedirect(value) {
 }
 
 export function hardRedirect(hashTarget) {
-	// A hash-only location change never reloads the document, so
-	// window.__STABLER__ (user, csrf token) would stay stale after an auth
-	// transition. Force a real reload so www/stabler.py re-renders the boot.
-	window.location.replace(`/stabler#${hashTarget}`);
-	window.location.reload();
+	// A hash-only replace keeps the current Guest/authenticated document boot.
+	// Change the query as well so www/stabler.py re-renders session state in one
+	// navigation; a separate synchronous reload would race this transition.
+	window.location.replace(`/stabler?auth-transition=${Date.now()}#${hashTarget}`);
 }
 
+export function normalizeAuthTransitionUrl(locationObject = window.location, historyObject = window.history) {
+	const url = new URL(locationObject.href);
+	if (!url.searchParams.has("auth-transition")) return;
+
+	url.searchParams.delete("auth-transition");
+	historyObject.replaceState(historyObject.state, "", `${url.pathname}${url.search}${url.hash}`);
+}

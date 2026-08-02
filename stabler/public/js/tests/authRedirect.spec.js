@@ -1,5 +1,5 @@
 import { afterEach, describe, expect, it, vi } from "vitest";
-import { hardRedirect, sanitizeStablerRedirect } from "../composables/authRedirect.js";
+import { hardRedirect, normalizeAuthTransitionUrl, sanitizeStablerRedirect } from "../composables/authRedirect.js";
 
 describe("sanitizeStablerRedirect", () => {
 	it.each([
@@ -44,15 +44,16 @@ describe("hardRedirect", () => {
 	const realLocation = window.location;
 
 	afterEach(() => {
+		vi.restoreAllMocks();
 		Object.defineProperty(window, "location", { value: realLocation, configurable: true, writable: true });
 	});
 
-	it("replaces the hash AND forces a document reload", () => {
-		// A hash-only replace never reloads the document, which leaves
-		// window.__STABLER__ (user, csrf) stale after login/logout — the exact
-		// regression that broke both flows. Both calls are load-bearing.
+	it("uses one document navigation after an auth transition", () => {
+		// The query token changes the document URL rather than only its hash, so
+		// the server re-renders session boot in one deterministic navigation.
 		const replace = vi.fn();
 		const reload = vi.fn();
+		vi.spyOn(Date, "now").mockReturnValue(1722643200000);
 		Object.defineProperty(window, "location", {
 			value: { replace, reload },
 			configurable: true,
@@ -61,8 +62,39 @@ describe("hardRedirect", () => {
 
 		hardRedirect("/dashboard");
 
-		expect(replace).toHaveBeenCalledWith("/stabler#/dashboard");
-		expect(reload).toHaveBeenCalledTimes(1);
+		expect(replace).toHaveBeenCalledWith("/stabler?auth-transition=1722643200000#/dashboard");
+		expect(reload).not.toHaveBeenCalled();
 	});
 });
 
+describe("normalizeAuthTransitionUrl", () => {
+	it("removes the internal transition token while preserving the hash route", () => {
+		const history = { state: { source: "auth" }, replaceState: vi.fn() };
+
+		normalizeAuthTransitionUrl(
+			{ href: "http://localhost:8000/stabler?auth-transition=123#/dashboard" },
+			history
+		);
+
+		expect(history.replaceState).toHaveBeenCalledWith(history.state, "", "/stabler#/dashboard");
+	});
+
+	it("preserves unrelated query parameters", () => {
+		const history = { state: null, replaceState: vi.fn() };
+
+		normalizeAuthTransitionUrl(
+			{ href: "http://localhost:8000/stabler?lang=tr&auth-transition=123#/login" },
+			history
+		);
+
+		expect(history.replaceState).toHaveBeenCalledWith(null, "", "/stabler?lang=tr#/login");
+	});
+
+	it("does nothing when there is no transition token", () => {
+		const history = { state: null, replaceState: vi.fn() };
+
+		normalizeAuthTransitionUrl({ href: "http://localhost:8000/stabler#/dashboard" }, history);
+
+		expect(history.replaceState).not.toHaveBeenCalled();
+	});
+});

@@ -29,8 +29,8 @@ class TestAuthTransitionSpa(unittest.TestCase):
 		`window.location.replace('/stabler#/...')` fires hashchange without
 		reloading, so window.__STABLER__ keeps the Guest boot and the router
 		guard bounces straight back to /login (regression 8e984ee: login only
-		completed after a manual F5). hardRedirect pairs the replace with a
-		document reload so www/stabler.py re-renders the boot.
+		completed after a manual F5). hardRedirect changes the document query so
+		www/stabler.py re-renders the boot in one navigation.
 		"""
 		source = LOGIN.read_text(encoding="utf-8")
 		self.assertIn("sanitizeStablerRedirect", source)
@@ -40,11 +40,18 @@ class TestAuthTransitionSpa(unittest.TestCase):
 		self.assertNotIn("window.location.replace(", source)
 		self.assertNotIn("window.location.href", source)
 
-	def test_hard_redirect_replaces_and_reloads(self):
+	def test_hard_redirect_changes_document_url_once(self):
 		source = AUTH_REDIRECT.read_text(encoding="utf-8")
 		self.assertIn("export function hardRedirect", source)
-		self.assertIn("window.location.replace(`/stabler#${hashTarget}`)", source)
-		self.assertIn("window.location.reload()", source)
+		self.assertIn("auth-transition=${Date.now()}", source)
+		self.assertIn("window.location.replace", source)
+		self.assertNotIn("window.location.reload()", source)
+
+	def test_auth_transition_url_is_normalized_before_vue_mount(self):
+		source = BUNDLE.read_text(encoding="utf-8")
+		self.assertIn("normalizeAuthTransitionUrl", source)
+		self.assertIn("normalizeAuthTransitionUrl();", source)
+		self.assertLess(source.index("normalizeAuthTransitionUrl();"), source.index("const mountEl"))
 
 	def test_bundle_listens_for_forbidden_and_verifies_session_death(self):
 		"""client.js dispatches stabler:forbidden on 403; someone must listen.

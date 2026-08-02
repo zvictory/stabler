@@ -6,7 +6,9 @@ import { useSession } from "./stores/session.js";
 
 import { useToast } from "./composables/useToast.js";
 import { startVersionCheck } from "./composables/version-check.js";
-import { hardRedirect } from "./composables/authRedirect.js";
+import { hardRedirect, normalizeAuthTransitionUrl } from "./composables/authRedirect.js";
+
+normalizeAuthTransitionUrl();
 
 if (window.location.pathname === "/login" && !window.location.hash.startsWith("#/login")) {
 	const search = window.location.search || "";
