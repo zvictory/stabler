@@ -9,12 +9,14 @@ import { t } from "../../composables/i18n.js";
 import { useToast } from "../../composables/useToast.js";
 import { useSession } from "../../stores/session.js";
 import { useEscapeBack } from "../../composables/useEscapeBack.js";
+import { useTenderContext } from "../../composables/useTenderContext.js";
 import EmptyState from "../../components/EmptyState.vue";
 import SkeletonRows from "../../components/SkeletonRows.vue";
 import TenderPage from "./TenderPage.vue";
 
 const route = useRoute();
 const router = useRouter();
+const { sourcingLocation, documentsLocation, poControlLocation } = useTenderContext(route);
 
 useEscapeBack(() => {
 	if (route.query?.tender) {
@@ -592,12 +594,19 @@ function riskLabel(risk) {
 				<footer class="ds-drawer-foot">
 					<router-link
 						class="ds-btn ds-btn--primary"
-						:to="{ path: '/tender/sourcing', query: { deal: selectedDeal.name } }"
+						:to="sourcingLocation(selectedDeal.name)"
 						@click="closeDrawer"
 					>{{ t("Sourcing comparison") }}</router-link>
-					<router-link class="ds-btn" to="/tender/board" @click="closeDrawer">
-						{{ t("Contract board") }}
-					</router-link>
+					<router-link
+						class="ds-btn"
+						:to="documentsLocation(selectedDeal.name)"
+						@click="closeDrawer"
+					>{{ t("Doc Center") }}</router-link>
+					<router-link
+						class="ds-btn"
+						:to="poControlLocation(selectedDeal.name)"
+						@click="closeDrawer"
+					>{{ t("PO Control") }}</router-link>
 					<button type="button" class="ds-btn" @click="closeDrawer">{{ t("Close") }}</button>
 					<span class="ds-mono crm-dw-src">crm_deal · {{ selectedDeal.name }}</span>
 				</footer>

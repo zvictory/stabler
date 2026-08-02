@@ -147,7 +147,17 @@ const RESULT_TONE = { won: "ok", lost: "crit", pending: "today" };
 const resultTone = (x) => RESULT_TONE[x] || null;
 const resultLabel = (x) => t(x.charAt(0).toUpperCase() + x.slice(1));
 
-function openDeal(deal) { router.push({ name: "tender-po-control", query: { ...route.query, deal } }); }
+import { buildTenderQuery } from "../../composables/useTenderContext.js";
+
+function openDeal(item) {
+	const dealId = typeof item === "object" ? (item.deal || item.name) : item;
+	const parentTender = typeof item === "object" ? (item.parent_tender || item.custom_parent_tender || route.query.tender) : route.query.tender;
+	const query = buildTenderQuery(route.query, {
+		deal: dealId,
+		...(parentTender ? { tender: parentTender } : {}),
+	});
+	router.push({ name: "tender-po-control", query });
+}
 function clearFilters() { router.replace({ query: {} }); }
 </script>
 

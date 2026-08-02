@@ -1,8 +1,10 @@
 import { describe, expect, it } from "vitest";
 import { readFileSync } from "fs";
-import { resolve } from "path";
+import { dirname, resolve } from "path";
+import { fileURLToPath } from "url";
 
-const workspacePath = resolve(__dirname, "../pages/tender/SourcingWorkspace.vue");
+const here = dirname(fileURLToPath(import.meta.url));
+const workspacePath = resolve(here, "../pages/tender/SourcingWorkspace.vue");
 const workspaceSrc = readFileSync(workspacePath, "utf8");
 
 describe("SourcingWorkspace Vue Contract Tests", () => {
