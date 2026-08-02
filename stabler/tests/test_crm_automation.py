@@ -8,7 +8,6 @@ from __future__ import annotations
 import sys
 import unittest
 
-from stabler.api import crm, organization
 from stabler.tests.test_sourcing_api import _Doc, _FakeFrappe, _load_api
 
 
@@ -27,6 +26,8 @@ class TestCrmAutomation(unittest.TestCase):
 		self.fake.created.clear()
 		self.frappe.session.user = "crm_manager@acme.com"
 
+		from stabler.api import crm, organization
+
 		# Mock user roles to include Sales Manager / System Manager
 		def _roles_fn(user=None):
 			return ["System Manager", "Sales Manager"]
@@ -34,6 +35,7 @@ class TestCrmAutomation(unittest.TestCase):
 		sys.modules["frappe"].get_roles = _roles_fn
 		if "stabler.api.crm" in sys.modules:
 			sys.modules["stabler.api.crm"].frappe.get_roles = _roles_fn
+			sys.modules["stabler.api.crm"]._user_allowed_companies = lambda _user: ["ACME"]
 
 		organization._user_allowed_companies = lambda _user: ["ACME"]
 		crm._user_allowed_companies = lambda _user: ["ACME"]
@@ -96,7 +98,7 @@ class TestCrmAutomation(unittest.TestCase):
 		self.assertEqual(len(self.fake.docs), initial_count)
 
 	def test_run_crm_automation_rules_rejects_unauthorized_role(self):
-		from stabler.api import crm_automation
+		from stabler.api import crm, crm_automation, organization
 
 		# Demote user role to plain user (no manager role)
 		def _guest_roles(user=None):
@@ -110,7 +112,7 @@ class TestCrmAutomation(unittest.TestCase):
 			crm_automation.run_crm_automation_rules(company="ACME")
 
 	def test_run_crm_automation_rules_rejects_unauthorized_company(self):
-		from stabler.api import crm_automation
+		from stabler.api import crm, crm_automation, organization
 
 		# Non-admin sales manager restricted to ACME
 		def _sales_roles(user=None):
