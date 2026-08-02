@@ -1,0 +1,363 @@
+<!DOCTYPE html>
+<html lang="tr">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Stabler · Operasyon Masası — Mikas</title>
+<style>
+  :root{
+    --bg:#0b0d10; --panel:#14171c; --panel2:#191d23; --line:#242a32; --line2:#2e3641;
+    --txt:#e6e9ee; --mut:#8b939f; --dim:#646c78;
+    --acc:#4c9aff; --acc-dim:#1e3a5f;
+    --red:#ff6b6b; --amber:#ffb454; --green:#4ade80; --violet:#a78bfa;
+    --mono:ui-monospace,SFMono-Regular,"SF Mono",Menlo,Consolas,monospace;
+  }
+  *{box-sizing:border-box}
+  body{margin:0;background:var(--bg);color:var(--txt);
+    font-family:-apple-system,BlinkMacSystemFont,"Segoe UI",Inter,Roboto,sans-serif;
+    font-size:14px;line-height:1.5;-webkit-font-smoothing:antialiased}
+  .wrap{max-width:1240px;margin:0 auto;padding:20px 18px 48px}
+
+  /* header */
+  .head{background:linear-gradient(135deg,#151a21 0%,#10141a 60%);border:1px solid var(--line);
+    border-radius:14px;padding:20px 22px;margin-bottom:16px;
+    display:flex;flex-wrap:wrap;gap:18px;align-items:center;justify-content:space-between}
+  .eyebrow{font-size:10.5px;letter-spacing:.16em;text-transform:uppercase;color:var(--dim);
+    font-family:var(--mono);margin-bottom:7px}
+  .h1{font-size:22px;font-weight:600;letter-spacing:-.02em;margin:0 0 5px}
+  .sub{color:var(--mut);font-size:13px;margin:0}
+  .ctrl{display:flex;gap:10px;align-items:center;flex-wrap:wrap}
+  .ctrl label{font-size:11px;color:var(--dim);display:block;margin-bottom:5px}
+  select{background:var(--panel2);color:var(--txt);border:1px solid var(--line2);
+    border-radius:8px;padding:8px 11px;font-size:13px;font-family:inherit;min-width:190px;cursor:pointer}
+  select:focus{outline:2px solid var(--acc);outline-offset:1px}
+  .live{display:inline-flex;align-items:center;gap:7px;font-size:11.5px;color:var(--mut);
+    background:var(--panel2);border:1px solid var(--line);border-radius:20px;padding:5px 11px}
+  .dot{width:7px;height:7px;border-radius:50%;background:var(--green);flex:none}
+
+  /* counters */
+  .counters{display:grid;grid-template-columns:repeat(4,1fr);gap:12px;margin-bottom:16px}
+  .cnt{background:var(--panel);border:1px solid var(--line);border-radius:12px;padding:15px 16px;
+    cursor:pointer;text-align:left;font:inherit;color:inherit;transition:border-color .15s,background .15s;
+    border-top:2px solid var(--line)}
+  .cnt:hover{border-color:var(--line2);background:var(--panel2)}
+  .cnt[aria-pressed="true"]{border-color:var(--acc);background:#131b26}
+  .cnt .n{font-size:27px;font-weight:600;font-family:var(--mono);letter-spacing:-.02em;line-height:1.1}
+  .cnt .l{font-size:11.5px;color:var(--mut);margin-top:5px}
+  .cnt.overdue{border-top-color:var(--red)} .cnt.overdue .n{color:var(--red)}
+  .cnt.today{border-top-color:var(--amber)} .cnt.today .n{color:var(--amber)}
+  .cnt.approve{border-top-color:var(--violet)} .cnt.approve .n{color:var(--violet)}
+  .cnt.wait{border-top-color:var(--dim)} .cnt.wait .n{color:var(--mut)}
+
+  /* panels */
+  .grid{display:grid;grid-template-columns:1.62fr 1fr;gap:14px;margin-bottom:14px}
+  .grid2{display:grid;grid-template-columns:1.62fr 1fr;gap:14px}
+  .card{background:var(--panel);border:1px solid var(--line);border-radius:12px;overflow:hidden}
+  .card-h{padding:13px 16px;border-bottom:1px solid var(--line);display:flex;
+    align-items:center;justify-content:space-between;gap:10px}
+  .card-t{font-size:13.5px;font-weight:600;margin:0}
+  .card-s{font-size:11px;color:var(--dim)}
+
+  /* task rows */
+  .row{display:flex;gap:12px;padding:12px 16px;border-bottom:1px solid var(--line);
+    cursor:pointer;transition:background .13s;align-items:flex-start}
+  .row:last-child{border-bottom:none}
+  .row:hover{background:var(--panel2)}
+  .bar{width:3px;border-radius:2px;flex:none;align-self:stretch;min-height:34px}
+  .bar.overdue{background:var(--red)} .bar.today{background:var(--amber)}
+  .bar.soon{background:var(--acc)} .bar.info{background:var(--dim)}
+  .rw{flex:1;min-width:0}
+  .rt{font-size:13.5px;font-weight:500;margin-bottom:3px}
+  .why{font-size:12px;color:var(--mut)}
+  .why b{color:#c3cad4;font-weight:500;font-family:var(--mono);font-size:11.5px}
+  .meta{display:flex;gap:8px;flex-wrap:wrap;margin-top:7px;align-items:center}
+  .chip{font-size:10.5px;padding:2.5px 8px;border-radius:5px;border:1px solid var(--line2);
+    color:var(--mut);background:#11151a;white-space:nowrap}
+  .chip.r{color:var(--red);border-color:#4a2626;background:#1c1214}
+  .chip.a{color:var(--amber);border-color:#4a3a1e;background:#1c1710}
+  .chip.g{color:var(--green);border-color:#1e4433;background:#101c16}
+  .chip.v{color:var(--violet);border-color:#3a2f57;background:#15121f}
+  .chip.b{color:var(--acc);border-color:var(--acc-dim);background:#101720}
+  .route{font-family:var(--mono);font-size:10.5px;color:var(--dim)}
+  .arrow{color:var(--dim);font-size:16px;flex:none;align-self:center}
+
+  /* calendar */
+  .cal{display:grid;grid-template-columns:repeat(7,1fr);gap:7px;padding:14px 16px}
+  .day{background:var(--panel2);border:1px solid var(--line);border-radius:9px;padding:9px 8px;text-align:center}
+  .day.hot{border-color:#4a2626;background:#171114}
+  .day .d{font-size:10px;color:var(--dim);text-transform:uppercase;letter-spacing:.05em}
+  .day .dn{font-size:17px;font-weight:600;font-family:var(--mono);margin:3px 0 1px}
+  .day .dc{font-size:10.5px;color:var(--mut)}
+  .day.hot .dn{color:var(--red)}
+
+  /* team */
+  .team{padding:6px 0}
+  .trow{display:flex;align-items:center;gap:11px;padding:9px 16px}
+  .av{width:28px;height:28px;border-radius:8px;background:var(--acc-dim);color:#a9cdff;
+    display:flex;align-items:center;justify-content:center;font-size:11px;font-weight:600;flex:none}
+  .tn{flex:1;font-size:12.5px;min-width:0;overflow:hidden;text-overflow:ellipsis;white-space:nowrap}
+  .tbar{width:74px;height:5px;border-radius:3px;background:#20262e;overflow:hidden;flex:none}
+  .tbar i{display:block;height:100%;border-radius:3px}
+  .tc{font-family:var(--mono);font-size:12px;color:var(--mut);width:22px;text-align:right;flex:none}
+
+  /* legend + footer */
+  .legend{background:var(--panel);border:1px solid var(--line);border-radius:12px;
+    padding:14px 16px;margin-top:14px;font-size:12px;color:var(--mut)}
+  .legend b{color:var(--txt);font-weight:600}
+  .lg{display:flex;gap:20px;flex-wrap:wrap;margin-top:9px}
+  .lg span{display:inline-flex;align-items:center;gap:6px}
+  .pip{width:8px;height:8px;border-radius:50%;flex:none}
+  .empty{padding:26px 16px;text-align:center;color:var(--dim);font-size:12.5px}
+  @media(max-width:900px){
+    .counters{grid-template-columns:repeat(2,1fr)}
+    .grid,.grid2{grid-template-columns:1fr}
+    .cal{grid-template-columns:repeat(4,1fr)}
+  }
+</style>
+</head>
+<body>
+<div class="wrap">
+
+  <div class="head">
+    <div>
+      <div class="eyebrow">Stabler · Operasyon Masası</div>
+      <h1 class="h1">Bugün ne yapmalıyım?</h1>
+      <p class="sub">Mikas · 30 Temmuz 2026 · Perşembe — tüm satırlar kaynak belgelerden türetilir, elle girilmez.</p>
+    </div>
+    <div class="ctrl">
+      <div>
+        <label for="role">Rol</label>
+        <select id="role">
+          <option value="gm">Genel Müdür / Yönetici</option>
+          <option value="sourcing">Sourcing sorumlusu</option>
+          <option value="customs">Gümrük</option>
+          <option value="logistics">Lojistik</option>
+          <option value="finance">Finans</option>
+        </select>
+      </div>
+      <span class="live"><span class="dot"></span>mikas · canlı panodan</span>
+    </div>
+  </div>
+
+  <div class="counters" id="counters"></div>
+
+  <div class="grid">
+    <div class="card">
+      <div class="card-h">
+        <h2 class="card-t">Bugünkü iş planı</h2>
+        <span class="card-s" id="planCount"></span>
+      </div>
+      <div id="plan"></div>
+    </div>
+    <div class="card">
+      <div class="card-h">
+        <h2 class="card-t">Karar / onay kutusu</h2>
+        <span class="card-s">bekleyen</span>
+      </div>
+      <div id="decisions"></div>
+    </div>
+  </div>
+
+  <div class="grid2">
+    <div class="card">
+      <div class="card-h">
+        <h2 class="card-t">Önümüzdeki 7 gün</h2>
+        <span class="card-s">teklif · teslimat · ödeme son tarihleri</span>
+      </div>
+      <div class="cal" id="cal"></div>
+    </div>
+    <div class="card">
+      <div class="card-h">
+        <h2 class="card-t">Ekip yükü</h2>
+        <span class="card-s">açık lot</span>
+      </div>
+      <div class="team" id="team"></div>
+    </div>
+  </div>
+
+  <div class="legend">
+    <b>Bu prototipteki veri nereden geliyor?</b> Sayılar 30 Temmuz 2026'da
+    mikas.erpstable.com panolarından okundu (Dashboard + Director board). Bu ekran henüz
+    uygulamada yok — Paket 3 onu gerçek yapacak; aynı sayılar o zaman API'den gelecek.
+    <div class="lg">
+      <span><i class="pip" style="background:var(--green)"></i> canlı veri — bugün sistemde var</span>
+      <span><i class="pip" style="background:var(--acc)"></i> Paket 3 türetecek — veri hazır, ekran yok</span>
+      <span><i class="pip" style="background:var(--violet)"></i> Faz 2/3 gerekli — RFQ · karar kaydı · evrak</span>
+    </div>
+  </div>
+
+</div>
+
+<script>
+(function(){
+  // Kaynak: mikas canlı panolar, 30.07.2026 — Dashboard + Director board okumaları.
+  var PLAN = [
+    { sev:"overdue", roles:["gm","sourcing"], src:"live",
+      t:"Teklif son tarihi geçmiş — 3 lot",
+      why:'En kötüsü: <b>UTY lot 2026-4325</b> · Depo kran ehtiyot qismlari — <b>336 gün</b> gecikme',
+      owner:"Sourcing", due:"Geçti", route:"/tender/crm?risk=overdue" },
+    { sev:"today", roles:["gm","sourcing"], src:"live",
+      t:"Teklif son tarihine <48 saat — 3 lot",
+      why:'Director board · <b>Bid submitted</b> kutusunda 3 lot deadline &lt;48h rozeti taşıyor',
+      owner:"Sourcing", due:"Bugün", route:"/tender/crm?stage=submitted&urgent=1" },
+    { sev:"today", roles:["gm","sourcing"], src:"live",
+      t:"5 teklif politikası eksik — 3 lot",
+      why:'Collecting quotations kutusunda <b>3 below policy</b>: 5 teklif / 2 ülke kuralı sağlanmadı',
+      owner:"Sourcing", due:"Bugün", route:"/tender/crm?stage=sourcing&policy=gap" },
+    { sev:"today", roles:["gm","sourcing"], src:"live",
+      t:"GO verildi, sourcing başlamadı — 3 lot",
+      why:'<b>go_no_go=go · SQ=0</b> — karar alındı ama tek teklif toplanmamış',
+      owner:"Sourcing", due:"Bugün", route:"/tender/crm?stage=go" },
+    { sev:"overdue", roles:["gm","logistics"], src:"live",
+      t:"Kazanılmış lot var, satınalma yok — 7 lot",
+      why:'Execution flow: <b>9 Won</b> → yalnızca <b>2 PO</b> açılmış; aradaki 7 lotta tedarik başlamadı',
+      owner:"Sourcing / Lojistik", due:"Geçti", route:"/tender/crm?stage=won&po=0" },
+    { sev:"overdue", roles:["gm","logistics"], src:"live",
+      t:"Teslimat riski — 11 lot",
+      why:'Director board KPI: <b>Deadline risk 11 — act now</b>',
+      owner:"Lojistik", due:"Geçti", route:"/tender/portfolio?risk=risk" },
+    { sev:"today", roles:["gm"], src:"live",
+      t:"İnceleme bekleyen yeni lot — 4",
+      why:'<b>Under review</b> · intake var, go_no_go boş — GO/NO-GO kararı bekliyor',
+      owner:"Genel Müdür", due:"Bugün", route:"/tender/crm?stage=seen" },
+    { sev:"soon", roles:["gm","sourcing"], src:"live",
+      t:"Fiyatlandı, teklif verilmedi — 4 lot",
+      why:'<b>Priced — ready to bid</b>: bid_pricing tamam, submission yok',
+      owner:"Sourcing", due:"3 gün", route:"/tender/crm?stage=priced" },
+    { sev:"info", roles:["gm","sourcing"], src:"live",
+      t:"Sonuç bekleyen teklif — 5 lot",
+      why:'<b>Bid submitted</b> · result=? — UZEX sonucu takip edilecek',
+      owner:"Sourcing", due:"—", route:"/tender/crm?stage=submitted" },
+    { sev:"today", roles:["gm","finance"], src:"derive",
+      t:"Açık fatura kontrolü — 3 PI · 3 SI",
+      why:'Execution flow: <b>3 PI</b> ve <b>3 SI</b> zincirde; vade/ödeme durumu finans masasına düşecek',
+      owner:"Finans", due:"Bugün", route:"/purchasing/invoices" },
+    { sev:"info", roles:["gm","customs"], src:"derive",
+      t:"Gümrük kuyruğu boş görünüyor",
+      why:'Kazanılmış lotlarda henüz beyan aşamasına gelen kayıt yok — PO açıldıkça buraya düşecek',
+      owner:"Gümrük", due:"—", route:"/tender/customs" },
+    { sev:"info", roles:["gm","sourcing"], src:"live",
+      t:"Parent tender bağlantısı tamam",
+      why:'Migrasyon sonrası parent&apos;sız lot kalmadı — Tender CRM şeritleri dolu',
+      owner:"—", due:"—", route:"/tender/crm" }
+  ];
+
+  var DEC = [
+    { t:"Tedarikçi seçimi onayı", why:"Seçilen teklif + gerekçe + onay zinciri", src:"phase2", n:"Faz 2" },
+    { t:"Politika istisnası onayı", why:"5 teklif altındaki 3 lot için gerekçeli istisna", src:"phase2", n:"Faz 2" },
+    { t:"Hedef marj altı teklif onayı", why:"Portföy ort. marj %15.1 — lot bazlı eşik kontrolü", src:"phase2", n:"Faz 2" },
+    { t:"Ödeme / yevmiye onayları", why:"approvals modülü sistemde var, masaya bağlanacak", src:"derive", n:"Paket 3" },
+    { t:"Evrak onayı ve paylaşım", why:"Belge versiyonu, yetki, süreli dış paylaşım", src:"phase3", n:"Faz 3" }
+  ];
+
+  var CAL = [
+    {d:"Per",n:30,c:"3 acil",hot:true},{d:"Cum",n:31,c:"2 teslim"},{d:"Cmt",n:1,c:"—"},
+    {d:"Paz",n:2,c:"—"},{d:"Pzt",n:3,c:"4 teklif"},{d:"Sal",n:4,c:"1 vade"},{d:"Çar",n:5,c:"2 teslim"}
+  ];
+
+  var TEAM = [
+    {n:"Sourcing — açık lot",v:14,p:88,c:"var(--red)"},
+    {n:"Lojistik — teslimat",v:8,p:52,c:"var(--amber)"},
+    {n:"Gümrük — beyan",v:0,p:4,c:"var(--green)"},
+    {n:"Finans — fatura/ödeme",v:6,p:40,c:"var(--acc)"},
+    {n:"Atanmamış",v:5,p:32,c:"var(--violet)"}
+  ];
+
+  var SEV_LABEL={overdue:"Geciken",today:"Bugün",soon:"Yaklaşan",info:"Bilgi"};
+  var SRC_CHIP={live:["g","canlı veri"],derive:["b","Paket 3"],phase2:["v","Faz 2"],phase3:["v","Faz 3"]};
+
+  var role="gm", filter=null;
+  var $=function(id){return document.getElementById(id)};
+
+  function visible(){
+    return PLAN.filter(function(p){
+      if(p.roles.indexOf(role)<0) return false;
+      if(filter==="overdue") return p.sev==="overdue";
+      if(filter==="today")   return p.sev==="today";
+      if(filter==="approve"||filter==="wait") return false;
+      return true;
+    });
+  }
+
+  function renderCounters(){
+    var mine=PLAN.filter(function(p){return p.roles.indexOf(role)>=0});
+    var c=[
+      {k:"today",   cls:"today",   n:mine.filter(function(p){return p.sev==="today"}).length, l:"Bugün bitmeli"},
+      {k:"overdue", cls:"overdue", n:mine.filter(function(p){return p.sev==="overdue"}).length, l:"Geciken"},
+      {k:"approve", cls:"approve", n:DEC.length, l:"Onayımda"},
+      {k:"wait",    cls:"wait",    n:mine.filter(function(p){return p.sev==="info"||p.sev==="soon"}).length, l:"Cevap bekliyor"}
+    ];
+    $("counters").innerHTML=c.map(function(x){
+      return '<button class="cnt '+x.cls+'" data-k="'+x.k+'" aria-pressed="'+(filter===x.k)+'">'+
+        '<div class="n">'+x.n+'</div><div class="l">'+x.l+'</div></button>';
+    }).join("");
+    Array.prototype.forEach.call(document.querySelectorAll(".cnt"),function(b){
+      b.onclick=function(){ var k=b.getAttribute("data-k"); filter=(filter===k)?null:k; render(); };
+    });
+  }
+
+  function renderPlan(){
+    var rows=visible();
+    $("planCount").textContent=rows.length+" iş"+(filter?" · filtreli":"");
+    if(!rows.length){
+      $("plan").innerHTML='<div class="empty">Bu rol ve filtre için planlanmış iş yok.</div>';
+      return;
+    }
+    var ord={overdue:0,today:1,soon:2,info:3};
+    rows.sort(function(a,b){return ord[a.sev]-ord[b.sev]});
+    $("plan").innerHTML=rows.map(function(p){
+      var s=SRC_CHIP[p.src];
+      var dueCls = p.sev==="overdue"?"r":(p.sev==="today"?"a":"");
+      return '<div class="row">'+
+        '<span class="bar '+p.sev+'"></span>'+
+        '<div class="rw">'+
+          '<div class="rt">'+p.t+'</div>'+
+          '<div class="why">'+p.why+'</div>'+
+          '<div class="meta">'+
+            '<span class="chip '+dueCls+'">'+(p.due==="—"?SEV_LABEL[p.sev]:p.due)+'</span>'+
+            '<span class="chip">'+p.owner+'</span>'+
+            '<span class="chip '+s[0]+'">'+s[1]+'</span>'+
+            '<span class="route">'+p.route+'</span>'+
+          '</div>'+
+        '</div>'+
+        '<span class="arrow">›</span>'+
+      '</div>';
+    }).join("");
+  }
+
+  function renderDec(){
+    $("decisions").innerHTML=DEC.map(function(d){
+      var s=SRC_CHIP[d.src];
+      return '<div class="row"><span class="bar '+(d.src==="derive"?"today":"info")+'"></span>'+
+        '<div class="rw"><div class="rt">'+d.t+'</div>'+
+        '<div class="why">'+d.why+'</div>'+
+        '<div class="meta"><span class="chip '+s[0]+'">'+d.n+'</span></div></div>'+
+        '<span class="arrow">›</span></div>';
+    }).join("");
+  }
+
+  function renderCal(){
+    $("cal").innerHTML=CAL.map(function(d){
+      return '<div class="day'+(d.hot?" hot":"")+'"><div class="d">'+d.d+'</div>'+
+        '<div class="dn">'+d.n+'</div><div class="dc">'+d.c+'</div></div>';
+    }).join("");
+  }
+
+  function renderTeam(){
+    $("team").innerHTML=TEAM.map(function(t){
+      var ini=t.n.charAt(0);
+      return '<div class="trow"><div class="av">'+ini+'</div>'+
+        '<div class="tn">'+t.n+'</div>'+
+        '<div class="tbar"><i style="width:'+t.p+'%;background:'+t.c+'"></i></div>'+
+        '<div class="tc">'+t.v+'</div></div>';
+    }).join("");
+  }
+
+  function render(){ renderCounters(); renderPlan(); }
+
+  $("role").onchange=function(e){ role=e.target.value; filter=null; render(); };
+  render(); renderDec(); renderCal(); renderTeam();
+})();
+</script>
+</body>
+</html>

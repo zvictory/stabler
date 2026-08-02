@@ -741,7 +741,14 @@ class TestTenderDashboardBehaviour(unittest.TestCase):
 			"DEAL-READY",
 			{
 				"go_no_go": "go",
-				"documents": [{"label": "Bid security", "required": 1, "done": 1, "date": "2026-07-22"}],
+				"documents": [
+					{
+						"label": "Bid security",
+						"required": 1,
+						"date": "2026-07-22",
+						"files": [{"file_name": "bid_security.pdf"}],
+					}
+				],
 			},
 		)
 
@@ -762,7 +769,14 @@ class TestTenderDashboardBehaviour(unittest.TestCase):
 					"go_no_go_at": "2026-06-04 10:00:00",
 					"ready_at": "2026-07-01 08:00:00",
 					"ready_by": "first@example.com",
-					"documents": [{"label": "Bid security", "required": 1, "done": 1, "date": ""}],
+					"documents": [
+						{
+							"label": "Bid security",
+							"required": 1,
+							"date": "",
+							"files": [{"file_name": "bid_security.pdf"}],
+						}
+					],
 				},
 			}
 		)
@@ -781,7 +795,14 @@ class TestTenderDashboardBehaviour(unittest.TestCase):
 			"DEAL-READY",
 			{
 				"go_no_go": "go",
-				"documents": [{"label": "Bid security", "required": 1, "done": 1, "date": ""}],
+				"documents": [
+					{
+						"label": "Bid security",
+						"required": 1,
+						"date": "",
+						"files": [{"file_name": "bid_security.pdf"}],
+					}
+				],
 			},
 		)
 		self.assertEqual(recompleted["intake"]["ready_at"], "2026-07-22 09:00:00")

@@ -1,6 +1,6 @@
 """Contract and behavior tests for quotation landed cost endpoints (G2).
 
-    PYTHONPATH=$PWD python3 -m unittest stabler.tests.test_quotation_landed_api -v
+PYTHONPATH=$PWD python3 -m unittest stabler.tests.test_quotation_landed_api -v
 """
 
 from __future__ import annotations
@@ -25,15 +25,17 @@ class _FakeFrappe:
 	def __init__(self):
 		self.db_set_values = []
 		self.quotations = {
-			"SQ-001": _FakeDoc({
-				"name": "SQ-001",
-				"company": "ACME",
-				"supplier": "SUP-1",
-				"currency": "USD",
-				"grand_total": 10000.0,
-				"base_grand_total": 10000.0,
-				"custom_landed_charges": '[{"charge_type":"Freight","amount":1200.0}]',
-			}),
+			"SQ-001": _FakeDoc(
+				{
+					"name": "SQ-001",
+					"company": "ACME",
+					"supplier": "SUP-1",
+					"currency": "USD",
+					"grand_total": 10000.0,
+					"base_grand_total": 10000.0,
+					"custom_landed_charges": '[{"charge_type":"Freight","amount":1200.0}]',
+				}
+			),
 		}
 
 	def get_doc(self, doctype, name):
@@ -75,7 +77,7 @@ def _load_sourcing(fake: _FakeFrappe):
 	frappe.whitelist = lambda *args, **_kwargs: (lambda fn: fn) if not args else args[0]
 	frappe.throw = lambda message, exception=Exception: (_ for _ in ()).throw(exception(message))
 	frappe.has_permission = lambda doctype, ptype="read", doc=None: True
-	frappe.parse_json = lambda val: (json.loads(val) if isinstance(val, str) else val)
+	frappe.parse_json = lambda val: json.loads(val) if isinstance(val, str) else val
 	frappe.get_doc = fake.get_doc
 	frappe.db = types.SimpleNamespace(set_value=fake.set_value)
 

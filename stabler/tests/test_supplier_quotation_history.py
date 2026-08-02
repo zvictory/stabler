@@ -1,6 +1,6 @@
 """Behavior and contract tests for supplier quotation history (Faz 2 · Task 4).
 
-    PYTHONPATH=$PWD python3 -m unittest stabler.tests.test_supplier_quotation_history -v
+PYTHONPATH=$PWD python3 -m unittest stabler.tests.test_supplier_quotation_history -v
 """
 
 from __future__ import annotations
@@ -67,7 +67,10 @@ def _load_purchasing(fake: _FakeFrappe):
 		sys.modules.pop(name, None)
 
 	frappe_model_doc = types.ModuleType("frappe.model.document")
-	class Document: pass
+
+	class Document:
+		pass
+
 	frappe_model_doc.Document = Document
 	sys.modules["frappe.model.document"] = frappe_model_doc
 
@@ -92,17 +95,21 @@ def _load_purchasing(fake: _FakeFrappe):
 	utils.today = lambda: "2026-08-02"
 
 	approvals = types.ModuleType("stabler.api.approvals")
+
 	def _assert_company_scope(company):
 		if company != "ACME":
 			raise PermissionError("Foreign company")
 		return company
+
 	approvals._assert_company_scope = _assert_company_scope
 
-	sys.modules.update({
-		"frappe": frappe,
-		"frappe.utils": utils,
-		"stabler.api.approvals": approvals,
-	})
+	sys.modules.update(
+		{
+			"frappe": frappe,
+			"frappe.utils": utils,
+			"stabler.api.approvals": approvals,
+		}
+	)
 	return importlib.import_module("stabler.api.purchasing")
 
 

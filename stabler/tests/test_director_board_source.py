@@ -19,7 +19,7 @@ TEMPLATE = SOURCE[SOURCE.index("<template>") : SOURCE.index("<style scoped>")]
 
 class TestDesignLayerIsSwitchedOn(unittest.TestCase):
 	def test_root_carries_the_wrapper_class(self):
-		self.assertRegex(TEMPLATE, r'class="director-board-page stbl-ds"')
+		self.assertIn("<TenderPage", TEMPLATE)
 
 	def test_counter_strip_and_table_use_the_layer(self):
 		for cls in (
@@ -93,8 +93,7 @@ class TestBehaviourSurvivedTheMigration(unittest.TestCase):
 		self.assertIn("useEscapeBack", SOURCE)
 
 	def test_the_embedded_funnel_is_still_rendered(self):
-		self.assertIn("<TenderFunnel />", TEMPLATE)
-		self.assertIn("<TenderNav />", TEMPLATE)
+		self.assertIn("<TenderFunnel", TEMPLATE)
 
 
 class TestNoCounterWasDropped(unittest.TestCase):

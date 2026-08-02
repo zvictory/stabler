@@ -5310,110 +5310,107 @@ bar: share of lots that satisfy the 5-quote rule,çubuk: 5 teklif kuralını kar
 in the pipeline,hatta
 new,yeni
 {done}/{total} quote sets complete,{done}/{total} teklif seti tam
-"Add supplier quotations to compare them and record an award.","Karşılaştırmak ve kazananı kaydetmek için tedarikçi tekliflerini ekleyin."
-"Approval requires Director view","Onay için Direktör görünümü gereklidir"
-"Approve decision","Kararı onayla"
-"Approved at","Onaylanma tarihi"
-"Approved by","Onaylayan"
-"Award winner","Kazanan tedarikçi"
-"Compliant","Uygun"
-"Could not approve sourcing decision.","Tedarik kararı onaylanamadı."
-"Could not create RFQ.","Teklif talebi oluşturulamadı."
-"Could not save sourcing decision.","Tedarik kararı kaydedilemedi."
-"Could not submit quotation.","Teklif gönderilemedi."
-"Create Request for Quotation (RFQ)","Teklif Talebi (RFQ) Oluştur"
-"Create draft RFQ","Taslak RFQ oluştur"
-"Difference","Fark"
-"Exception justification","Istisna gerekçesi"
-"Explain why the 5-quote / 2-country policy could not be fulfilled…","5 teklif / 2 ülke kuralının neden karşılanamadığını açıklayın…"
-"Explain why this supplier was selected over others…","Bu tedarikçinin neden seçildiğini açıklayın…"
-"Loading RFQs…","RFQ'lar yükleniyor…"
-"No RFQs created for this deal yet. Click 'Request for quotation' to raise one.","Bu anlaşma için henüz RFQ oluşturulmadı. Yeni oluşturmak için 'Teklif iste' düğmesine tıklayın."
-"No quotations yet","Henüz teklif yok"
-"No supplier quotations registered for this supplier.","Bu tedarikçi için kayıtlı teklif bulunamadı."
-"Non-compliant","Uygun değil"
-"Partial compliance","Kısmi uygunluk"
-"Pick a quotation","Bir teklif seçin"
-"Pick a tender deal to view its sourcing workspace.","Tedarik çalışma alanını görmek için bir ihale anlaşması seçin."
-"Policy exception approved","Politika istisnası onaylandı"
-"Policy exception required","Politika istisnası gerekli"
-"Policy rule (5 quotes / 2 countries) not satisfied. Check policy exception and specify reason.","Politika kuralı (5 teklif / 2 ülke) karşılanamadı. Istisnayı işaretleyin ve gerekçe belirtin."
-"Quotation #","Teklif #"
-"RFQs","RFQ'lar"
-"Reason for selection","Seçim gerekçesi"
-"Request for quotation","Teklif iste"
-"Request for quotation created as draft.","Teklif talebi taslak olarak oluşturuldu."
-"Requested items","Talep edilen kalemler"
-"Requests for Quotation (RFQ)","Teklif Talepleri (RFQ)"
-"Required response date","Son yanıt tarihi"
-"Save draft decision","Taslak kararı kaydet"
-"Search and add suppliers… ⌘K","Tedarikçi ara ve ekle… ⌘K"
-"Search item… ⌘K","Kalem ara… ⌘K"
-"Select suppliers to ask","Teklif istenilecek tedarikçileri seçin"
-"Select winning quotation","Kazanan teklifi seçin"
-"Selected bid is higher than the cheapest offer","Seçilen teklif en ucuz tekliften daha yüksek"
-"Selected winner","Seçilen kazanan"
-"Sourcing award decision","Tedarik kazananı kararı"
-"Sourcing decision approved.","Tedarik kararı onaylandı."
-"Sourcing decision saved as draft.","Tedarik kararı taslak olarak kaydedildi."
-"Sourcing workspace","Tedarik çalışma alanı"
-"Supplier quotations comparison","Tedarikçi tekliflerinin karşılaştırılması"
-"Technical evaluation result","Teknik değerlendirme sonucu"
-"The selected quotation was NOT the cheapest bid.","Seçilen teklif en ucuz teklif DEĞİLDİ."
-"Update draft decision","Taslak kararı güncelle"
-"Winner","Kazanan"
-"over cheapest bid","en ucuz teklife kıyasla"
-"Bars","Çubuklar"
-"Trapezoid","Yamuk"
-"Landed charges","Varış maliyeti kalemleri"
-"Landed estimate","Tahmini varış maliyeti"
-"Estimate landed charges","Varış maliyetlerini tahmin et"
-"Cheapest Delivered","En Ucuz Teslimat"
-"Sticker Leader","Liste Fiyatı Lideri"
-"Delivered total","Toplam teslim maliyeti"
-"Landed cost estimates incomplete:","Varış maliyeti tahminleri eksik:"
-"Not all quotations have landed cost estimates. Landed ranking is paused until all bids carry estimates.","Tüm tekliflerde varış maliyeti tahmini yok. Tüm teklifler tahmin içerene kadar varış sıralaması durduruldu."
-"Freight & Logistics","Navlun ve Lojistik"
-"Customs Duty & Tariff","Gümrük Vergisi ve Harçlar"
-"Handling & Terminal Fees","Terminal ve Elleçleme Ücretleri"
-"Cargo Insurance","Kargo Sigortası"
-"Import VAT (Recoverable)","İthalat KDVsi (İndirilecek)"
-"Other Charge","Diğer Gider"
-"Recoverable VAT","İndirilecek KDV"
-"Add charge line","Gider satırı ekle"
-"Save estimate","Tahmini kaydet"
-"Landed cost","Varış maliyeti"
-"Estimate landed costs","Varış maliyetlerini tahmin et"
-"Landed estimates incomplete","Varış maliyeti tahminleri eksik"
-"Lowest sticker price excluding landed costs","Varış maliyetleri hariç en düşük liste fiyatı"
-"Lowest total delivered cost including freight and customs","Navlun ve gümrük dahil en düşük toplam teslim maliyeti"
-"Sticker price","Liste fiyatı"
-"Toggle funnel view","Huni görünümünü değiştir"
-"Document Center","Belge Merkezi"
-"Document center","Belge merkezi"
-"Requirements","Gereksinimler"
-"Required & Tender Documents","Gerekli ve İhale Belgeleri"
-"Verified complete","Doğrulanmış ve tamamlanmış"
-"Readiness score","Hazırlık puanı"
-"unverified legacy items","doğrulanmamış eski ögeler"
-"Tender Master","Ana İhale"
-"Lot Specific","Lota Özel"
-"Verified","Doğrulandı"
-"Unverified tick","Doğrulanmamış onay"
-"Missing file","Eksik dosya"
-"Attached files / Waiver","Ekli dosyalar / Muafiyet"
-"Upload file","Dosya yükle"
-"Waive","Muaf tut"
-"Upload document file","Belge dosyası yükle"
-"Save document","Belgeyi kaydet"
-"Waive document requirement","Belge gereksiniminden muaf tut"
-"Waiving a requirement bypasses file verification. A written justification is mandatory.","Muaf tutma dosya doğrulamasını atlar. Yazılı gerekçe zorunludur."
-"Confirm waiver","Muafiyeti onayla"
-"No document requirements set.","Belge gereksinimi belirlenmedi."
-"Failed to load documents","Belgeler yüklenemedi"
-"Document uploaded successfully","Belge başarıyla yüklendi"
-"Requirement waived","Gereksinimden muaf tutuldu"
-"Manage document files in Document Center","Belge dosyalarını Belge Merkezinde yönet"
-"Justification / Reason","Gerekçe / Neden"
-"Enter protocol / authorization reason…","Protokol no veya yetki nedenini girin…"
-"Pick a tender deal to view its document center.","Belge merkezini görüntülemek için bir ihale fırsatı seçin."
+Add supplier quotations to compare them and record an award.,Karşılaştırmak ve kazananı kaydetmek için tedarikçi tekliflerini ekleyin.
+Approval requires Director view,Onay için Direktör görünümü gereklidir
+Approve decision,Kararı onayla
+Approved at,Onaylanma tarihi
+Approved by,Onaylayan
+Award winner,Kazanan tedarikçi
+Compliant,Uygun
+Could not approve sourcing decision.,Tedarik kararı onaylanamadı.
+Could not create RFQ.,Teklif talebi oluşturulamadı.
+Could not save sourcing decision.,Tedarik kararı kaydedilemedi.
+Could not submit quotation.,Teklif gönderilemedi.
+Create Request for Quotation (RFQ),Teklif Talebi (RFQ) Oluştur
+Create draft RFQ,Taslak RFQ oluştur
+Difference,Fark
+Exception justification,Istisna gerekçesi
+Explain why the 5-quote / 2-country policy could not be fulfilled…,5 teklif / 2 ülke kuralının neden karşılanamadığını açıklayın…
+Explain why this supplier was selected over others…,Bu tedarikçinin neden seçildiğini açıklayın…
+Loading RFQs…,RFQ'lar yükleniyor…
+No RFQs created for this deal yet. Click 'Request for quotation' to raise one.,Bu anlaşma için henüz RFQ oluşturulmadı. Yeni oluşturmak için 'Teklif iste' düğmesine tıklayın.
+No quotations yet,Henüz teklif yok
+No supplier quotations registered for this supplier.,Bu tedarikçi için kayıtlı teklif bulunamadı.
+Non-compliant,Uygun değil
+Partial compliance,Kısmi uygunluk
+Pick a quotation,Bir teklif seçin
+Pick a tender deal to view its sourcing workspace.,Tedarik çalışma alanını görmek için bir ihale anlaşması seçin.
+Policy exception approved,Politika istisnası onaylandı
+Policy exception required,Politika istisnası gerekli
+Policy rule (5 quotes / 2 countries) not satisfied. Check policy exception and specify reason.,Politika kuralı (5 teklif / 2 ülke) karşılanamadı. Istisnayı işaretleyin ve gerekçe belirtin.
+Quotation #,Teklif #
+RFQs,RFQ'lar
+Reason for selection,Seçim gerekçesi
+Request for quotation,Teklif iste
+Request for quotation created as draft.,Teklif talebi taslak olarak oluşturuldu.
+Requested items,Talep edilen kalemler
+Requests for Quotation (RFQ),Teklif Talepleri (RFQ)
+Required response date,Son yanıt tarihi
+Save draft decision,Taslak kararı kaydet
+Search and add suppliers… ⌘K,Tedarikçi ara ve ekle… ⌘K
+Search item… ⌘K,Kalem ara… ⌘K
+Select suppliers to ask,Teklif istenilecek tedarikçileri seçin
+Select winning quotation,Kazanan teklifi seçin
+Selected bid is higher than the cheapest offer,Seçilen teklif en ucuz tekliften daha yüksek
+Selected winner,Seçilen kazanan
+Sourcing award decision,Tedarik kazananı kararı
+Sourcing decision approved.,Tedarik kararı onaylandı.
+Sourcing decision saved as draft.,Tedarik kararı taslak olarak kaydedildi.
+Sourcing workspace,Tedarik çalışma alanı
+Supplier quotations comparison,Tedarikçi tekliflerinin karşılaştırılması
+Technical evaluation result,Teknik değerlendirme sonucu
+The selected quotation was NOT the cheapest bid.,Seçilen teklif en ucuz teklif DEĞİLDİ.
+Update draft decision,Taslak kararı güncelle
+Winner,Kazanan
+over cheapest bid,en ucuz teklife kıyasla
+Landed charges,Varış maliyeti kalemleri
+Landed estimate,Tahmini varış maliyeti
+Estimate landed charges,Varış maliyetlerini tahmin et
+Cheapest Delivered,En Ucuz Teslimat
+Sticker Leader,Liste Fiyatı Lideri
+Delivered total,Toplam teslim maliyeti
+Landed cost estimates incomplete:,Varış maliyeti tahminleri eksik:
+Not all quotations have landed cost estimates. Landed ranking is paused until all bids carry estimates.,Tüm tekliflerde varış maliyeti tahmini yok. Tüm teklifler tahmin içerene kadar varış sıralaması durduruldu.
+Freight & Logistics,Navlun ve Lojistik
+Customs Duty & Tariff,Gümrük Vergisi ve Harçlar
+Handling & Terminal Fees,Terminal ve Elleçleme Ücretleri
+Cargo Insurance,Kargo Sigortası
+Import VAT (Recoverable),İthalat KDVsi (İndirilecek)
+Other Charge,Diğer Gider
+Recoverable VAT,İndirilecek KDV
+Add charge line,Gider satırı ekle
+Save estimate,Tahmini kaydet
+Landed cost,Varış maliyeti
+Estimate landed costs,Varış maliyetlerini tahmin et
+Landed estimates incomplete,Varış maliyeti tahminleri eksik
+Lowest sticker price excluding landed costs,Varış maliyetleri hariç en düşük liste fiyatı
+Lowest total delivered cost including freight and customs,Navlun ve gümrük dahil en düşük toplam teslim maliyeti
+Sticker price,Liste fiyatı
+Document Center,Belge Merkezi
+Document center,Belge merkezi
+Requirements,Gereksinimler
+Required & Tender Documents,Gerekli ve İhale Belgeleri
+Verified complete,Doğrulanmış ve tamamlanmış
+Readiness score,Hazırlık puanı
+unverified legacy items,doğrulanmamış eski ögeler
+Tender Master,Ana İhale
+Lot Specific,Lota Özel
+Verified,Doğrulandı
+Unverified tick,Doğrulanmamış onay
+Missing file,Eksik dosya
+Attached files / Waiver,Ekli dosyalar / Muafiyet
+Upload file,Dosya yükle
+Waive,Muaf tut
+Upload document file,Belge dosyası yükle
+Save document,Belgeyi kaydet
+Waive document requirement,Belge gereksiniminden muaf tut
+Waiving a requirement bypasses file verification. A written justification is mandatory.,Muaf tutma dosya doğrulamasını atlar. Yazılı gerekçe zorunludur.
+Confirm waiver,Muafiyeti onayla
+No document requirements set.,Belge gereksinimi belirlenmedi.
+Failed to load documents,Belgeler yüklenemedi
+Document uploaded successfully,Belge başarıyla yüklendi
+Requirement waived,Gereksinimden muaf tutuldu
+Manage document files in Document Center,Belge dosyalarını Belge Merkezinde yönet
+Justification / Reason,Gerekçe / Neden
+Enter protocol / authorization reason…,Protokol no veya yetki nedenini girin…
+Pick a tender deal to view its document center.,Belge merkezini görüntülemek için bir ihale fırsatı seçin.

@@ -98,6 +98,7 @@ class TestTheModuleBarCarriesEveryScreen(unittest.TestCase):
 		# eklerdi ve kullanıcı oraya bağlamsız gitmez.
 		"/tender/sourcing",
 		"/tender/overview",
+		"/tender/documents",
 	}
 
 	def test_every_tender_screen_is_reachable_from_the_bar(self):

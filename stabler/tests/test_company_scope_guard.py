@@ -47,6 +47,7 @@ _SCOPE_TOKENS = (
 	"_company_filter",
 	"_require_crm_company",
 	"_require_admin",
+	"_get_deal_and_master",
 )
 
 # doctype::function -> reason. Keep this empty unless there is a real exemption.

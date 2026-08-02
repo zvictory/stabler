@@ -5311,110 +5311,107 @@ bar: share of lots that satisfy the 5-quote rule,bar: share of lots that satisfy
 in the pipeline,in the pipeline
 new,new
 {done}/{total} quote sets complete,{done}/{total} quote sets complete
-"Add supplier quotations to compare them and record an award.","Add supplier quotations to compare them and record an award."
-"Approval requires Director view","Approval requires Director view"
-"Approve decision","Approve decision"
-"Approved at","Approved at"
-"Approved by","Approved by"
-"Award winner","Award winner"
-"Compliant","Compliant"
-"Could not approve sourcing decision.","Could not approve sourcing decision."
-"Could not create RFQ.","Could not create RFQ."
-"Could not save sourcing decision.","Could not save sourcing decision."
-"Could not submit quotation.","Could not submit quotation."
-"Create Request for Quotation (RFQ)","Create Request for Quotation (RFQ)"
-"Create draft RFQ","Create draft RFQ"
-"Difference","Difference"
-"Exception justification","Exception justification"
-"Explain why the 5-quote / 2-country policy could not be fulfilled…","Explain why the 5-quote / 2-country policy could not be fulfilled…"
-"Explain why this supplier was selected over others…","Explain why this supplier was selected over others…"
-"Loading RFQs…","Loading RFQs…"
-"No RFQs created for this deal yet. Click 'Request for quotation' to raise one.","No RFQs created for this deal yet. Click 'Request for quotation' to raise one."
-"No quotations yet","No quotations yet"
-"No supplier quotations registered for this supplier.","No supplier quotations registered for this supplier."
-"Non-compliant","Non-compliant"
-"Partial compliance","Partial compliance"
-"Pick a quotation","Pick a quotation"
-"Pick a tender deal to view its sourcing workspace.","Pick a tender deal to view its sourcing workspace."
-"Policy exception approved","Policy exception approved"
-"Policy exception required","Policy exception required"
-"Policy rule (5 quotes / 2 countries) not satisfied. Check policy exception and specify reason.","Policy rule (5 quotes / 2 countries) not satisfied. Check policy exception and specify reason."
-"Quotation #","Quotation #"
-"RFQs","RFQs"
-"Reason for selection","Reason for selection"
-"Request for quotation","Request for quotation"
-"Request for quotation created as draft.","Request for quotation created as draft."
-"Requested items","Requested items"
-"Requests for Quotation (RFQ)","Requests for Quotation (RFQ)"
-"Required response date","Required response date"
-"Save draft decision","Save draft decision"
-"Search and add suppliers… ⌘K","Search and add suppliers… ⌘K"
-"Search item… ⌘K","Search item… ⌘K"
-"Select suppliers to ask","Select suppliers to ask"
-"Select winning quotation","Select winning quotation"
-"Selected bid is higher than the cheapest offer","Selected bid is higher than the cheapest offer"
-"Selected winner","Selected winner"
-"Sourcing award decision","Sourcing award decision"
-"Sourcing decision approved.","Sourcing decision approved."
-"Sourcing decision saved as draft.","Sourcing decision saved as draft."
-"Sourcing workspace","Sourcing workspace"
-"Supplier quotations comparison","Supplier quotations comparison"
-"Technical evaluation result","Technical evaluation result"
-"The selected quotation was NOT the cheapest bid.","The selected quotation was NOT the cheapest bid."
-"Update draft decision","Update draft decision"
-"Winner","Winner"
-"over cheapest bid","over cheapest bid"
-"Bars","Bars"
-"Trapezoid","Trapezoid"
-"Landed charges","Landed charges"
-"Landed estimate","Landed estimate"
-"Estimate landed charges","Estimate landed charges"
-"Cheapest Delivered","Cheapest Delivered"
-"Sticker Leader","Sticker Leader"
-"Delivered total","Delivered total"
-"Landed cost estimates incomplete:","Landed cost estimates incomplete:"
-"Not all quotations have landed cost estimates. Landed ranking is paused until all bids carry estimates.","Not all quotations have landed cost estimates. Landed ranking is paused until all bids carry estimates."
-"Freight & Logistics","Freight & Logistics"
-"Customs Duty & Tariff","Customs Duty & Tariff"
-"Handling & Terminal Fees","Handling & Terminal Fees"
-"Cargo Insurance","Cargo Insurance"
-"Import VAT (Recoverable)","Import VAT (Recoverable)"
-"Other Charge","Other Charge"
-"Recoverable VAT","Recoverable VAT"
-"Add charge line","Add charge line"
-"Save estimate","Save estimate"
-"Landed cost","Landed cost"
-"Estimate landed costs","Estimate landed costs"
-"Landed estimates incomplete","Landed estimates incomplete"
-"Lowest sticker price excluding landed costs","Lowest sticker price excluding landed costs"
-"Lowest total delivered cost including freight and customs","Lowest total delivered cost including freight and customs"
-"Sticker price","Sticker price"
-"Toggle funnel view","Toggle funnel view"
-"Document Center","Document Center"
-"Document center","Document center"
-"Requirements","Requirements"
-"Required & Tender Documents","Required & Tender Documents"
-"Verified complete","Verified complete"
-"Readiness score","Readiness score"
-"unverified legacy items","unverified legacy items"
-"Tender Master","Tender Master"
-"Lot Specific","Lot Specific"
-"Verified","Verified"
-"Unverified tick","Unverified tick"
-"Missing file","Missing file"
-"Attached files / Waiver","Attached files / Waiver"
-"Upload file","Upload file"
-"Waive","Waive"
-"Upload document file","Upload document file"
-"Save document","Save document"
-"Waive document requirement","Waive document requirement"
-"Waiving a requirement bypasses file verification. A written justification is mandatory.","Waiving a requirement bypasses file verification. A written justification is mandatory."
-"Confirm waiver","Confirm waiver"
-"No document requirements set.","No document requirements set."
-"Failed to load documents","Failed to load documents"
-"Document uploaded successfully","Document uploaded successfully"
-"Requirement waived","Requirement waived"
-"Manage document files in Document Center","Manage document files in Document Center"
-"Justification / Reason","Justification / Reason"
-"Enter protocol / authorization reason…","Enter protocol / authorization reason…"
-"Pick a tender deal to view its document center.","Pick a tender deal to view its document center."
+Add supplier quotations to compare them and record an award.,Add supplier quotations to compare them and record an award.
+Approval requires Director view,Approval requires Director view
+Approve decision,Approve decision
+Approved at,Approved at
+Approved by,Approved by
+Award winner,Award winner
+Compliant,Compliant
+Could not approve sourcing decision.,Could not approve sourcing decision.
+Could not create RFQ.,Could not create RFQ.
+Could not save sourcing decision.,Could not save sourcing decision.
+Could not submit quotation.,Could not submit quotation.
+Create Request for Quotation (RFQ),Create Request for Quotation (RFQ)
+Create draft RFQ,Create draft RFQ
+Difference,Difference
+Exception justification,Exception justification
+Explain why the 5-quote / 2-country policy could not be fulfilled…,Explain why the 5-quote / 2-country policy could not be fulfilled…
+Explain why this supplier was selected over others…,Explain why this supplier was selected over others…
+Loading RFQs…,Loading RFQs…
+No RFQs created for this deal yet. Click 'Request for quotation' to raise one.,No RFQs created for this deal yet. Click 'Request for quotation' to raise one.
+No quotations yet,No quotations yet
+No supplier quotations registered for this supplier.,No supplier quotations registered for this supplier.
+Non-compliant,Non-compliant
+Partial compliance,Partial compliance
+Pick a quotation,Pick a quotation
+Pick a tender deal to view its sourcing workspace.,Pick a tender deal to view its sourcing workspace.
+Policy exception approved,Policy exception approved
+Policy exception required,Policy exception required
+Policy rule (5 quotes / 2 countries) not satisfied. Check policy exception and specify reason.,Policy rule (5 quotes / 2 countries) not satisfied. Check policy exception and specify reason.
+Quotation #,Quotation #
+RFQs,RFQs
+Reason for selection,Reason for selection
+Request for quotation,Request for quotation
+Request for quotation created as draft.,Request for quotation created as draft.
+Requested items,Requested items
+Requests for Quotation (RFQ),Requests for Quotation (RFQ)
+Required response date,Required response date
+Save draft decision,Save draft decision
+Search and add suppliers… ⌘K,Search and add suppliers… ⌘K
+Search item… ⌘K,Search item… ⌘K
+Select suppliers to ask,Select suppliers to ask
+Select winning quotation,Select winning quotation
+Selected bid is higher than the cheapest offer,Selected bid is higher than the cheapest offer
+Selected winner,Selected winner
+Sourcing award decision,Sourcing award decision
+Sourcing decision approved.,Sourcing decision approved.
+Sourcing decision saved as draft.,Sourcing decision saved as draft.
+Sourcing workspace,Sourcing workspace
+Supplier quotations comparison,Supplier quotations comparison
+Technical evaluation result,Technical evaluation result
+The selected quotation was NOT the cheapest bid.,The selected quotation was NOT the cheapest bid.
+Update draft decision,Update draft decision
+Winner,Winner
+over cheapest bid,over cheapest bid
+Landed charges,Landed charges
+Landed estimate,Landed estimate
+Estimate landed charges,Estimate landed charges
+Cheapest Delivered,Cheapest Delivered
+Sticker Leader,Sticker Leader
+Delivered total,Delivered total
+Landed cost estimates incomplete:,Landed cost estimates incomplete:
+Not all quotations have landed cost estimates. Landed ranking is paused until all bids carry estimates.,Not all quotations have landed cost estimates. Landed ranking is paused until all bids carry estimates.
+Freight & Logistics,Freight & Logistics
+Customs Duty & Tariff,Customs Duty & Tariff
+Handling & Terminal Fees,Handling & Terminal Fees
+Cargo Insurance,Cargo Insurance
+Import VAT (Recoverable),Import VAT (Recoverable)
+Other Charge,Other Charge
+Recoverable VAT,Recoverable VAT
+Add charge line,Add charge line
+Save estimate,Save estimate
+Landed cost,Landed cost
+Estimate landed costs,Estimate landed costs
+Landed estimates incomplete,Landed estimates incomplete
+Lowest sticker price excluding landed costs,Lowest sticker price excluding landed costs
+Lowest total delivered cost including freight and customs,Lowest total delivered cost including freight and customs
+Sticker price,Sticker price
+Document Center,Document Center
+Document center,Document center
+Requirements,Requirements
+Required & Tender Documents,Required & Tender Documents
+Verified complete,Verified complete
+Readiness score,Readiness score
+unverified legacy items,unverified legacy items
+Tender Master,Tender Master
+Lot Specific,Lot Specific
+Verified,Verified
+Unverified tick,Unverified tick
+Missing file,Missing file
+Attached files / Waiver,Attached files / Waiver
+Upload file,Upload file
+Waive,Waive
+Upload document file,Upload document file
+Save document,Save document
+Waive document requirement,Waive document requirement
+Waiving a requirement bypasses file verification. A written justification is mandatory.,Waiving a requirement bypasses file verification. A written justification is mandatory.
+Confirm waiver,Confirm waiver
+No document requirements set.,No document requirements set.
+Failed to load documents,Failed to load documents
+Document uploaded successfully,Document uploaded successfully
+Requirement waived,Requirement waived
+Manage document files in Document Center,Manage document files in Document Center
+Justification / Reason,Justification / Reason
+Enter protocol / authorization reason…,Enter protocol / authorization reason…
+Pick a tender deal to view its document center.,Pick a tender deal to view its document center.

@@ -166,7 +166,7 @@ class TestSourcingWorkspaceContract(unittest.TestCase):
 	def test_approval_button_does_not_call_save_decision(self):
 		"""Approval and save are separate actions and separate endpoints."""
 		approve_start = self.src.index("async function approveDecision()")
-		approve_body = self.src[approve_start:approve_start + 400]
+		approve_body = self.src[approve_start : approve_start + 400]
 		self.assertIn("approve_sourcing_decision", approve_body)
 		self.assertNotIn("save_sourcing_decision", approve_body)
 

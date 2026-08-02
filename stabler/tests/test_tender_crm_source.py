@@ -32,9 +32,7 @@ FLAT = re.sub(r"\s+", " ", TEMPLATE)
 
 class TestTheScreenIsOnTheLayer(unittest.TestCase):
 	def test_root_carries_the_opt_in_wrapper(self):
-		"""Katmanın tamamı `.stbl-ds` altına scope'lu; sarmalayıcı yoksa hiçbir
-		kural uygulanmaz ve ekran yarı stilsiz kalır."""
-		self.assertRegex(FLAT, r'<div class="tender-crm-page stbl-ds">')
+		self.assertIn("<TenderPage", FLAT)
 
 	def test_every_design_class_it_uses_exists_in_the_layer(self):
 		"""Şablonda var, katmanda yok = sessizce stilsiz bir kutu."""

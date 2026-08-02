@@ -1,6 +1,6 @@
 """Behavior and contract tests for tender_quotations API (G3).
 
-    PYTHONPATH=$PWD python3 -m unittest stabler.tests.test_supplier_quotations_api -v
+PYTHONPATH=$PWD python3 -m unittest stabler.tests.test_supplier_quotations_api -v
 """
 
 from __future__ import annotations
@@ -113,7 +113,7 @@ def _load_purchasing(fake: _FakeFrappe):
 class TestSupplierQuotationsApiSource(unittest.TestCase):
 	def test_api_defines_list_supplier_quotations(self):
 		filepath = os.path.join(os.path.dirname(__file__), "..", "api", "purchasing.py")
-		with open(filepath, "r", encoding="utf-8") as f:
+		with open(filepath, encoding="utf-8") as f:
 			tree = ast.parse(f.read(), filename=filepath)
 
 		funcs = [node.name for node in ast.walk(tree) if isinstance(node, ast.FunctionDef)]
@@ -129,8 +129,8 @@ class TestSupplierQuotationsApiSource(unittest.TestCase):
 		self.assertEqual(res["cheapest_landed_quote"], "SQ-B")
 		self.assertEqual(res["missing_estimates"], [])
 
-		sq_a = [r for r in res["rows"] if r["name"] == "SQ-A"][0]
-		sq_b = [r for r in res["rows"] if r["name"] == "SQ-B"][0]
+		sq_a = next(r for r in res["rows"] if r["name"] == "SQ-A")
+		sq_b = next(r for r in res["rows"] if r["name"] == "SQ-B")
 
 		self.assertTrue(sq_a["is_cheapest_price"])
 		self.assertFalse(sq_a["is_cheapest_landed"])

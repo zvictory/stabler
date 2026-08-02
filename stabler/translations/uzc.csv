@@ -998,7 +998,7 @@ Delete this draft entry?,
 Delete this draft transfer?,
 Delete this lead?,Ушбу лидни Ӯчирилсинми?
 Delete this process?,Бу жараённи ўчиришни хоҳлайсизми?
-Deliv,Йетк.
+Deliv,Етк.
 Deliver,Етказиш
 Delivered,Етказилган
 Delivery,Етказиш
@@ -5315,110 +5315,107 @@ bar: share of lots that satisfy the 5-quote rule,чизиқ: 5 таклиф қо
 in the pipeline,жараёнда
 new,янги
 {done}/{total} quote sets complete,{done}/{total} таклиф тўплами тўлиқ
-"Add supplier quotations to compare them and record an award.","Таққослаш ва ғолибни белгилаш учун етказиб берувчи таклифларини қўшинг."
-"Approval requires Director view","Тасдиқлаш учун Директор кўриниши талаб қилинади"
-"Approve decision","Қарорни тасдиқлаш"
-"Approved at","Тасдиқланган вақти"
-"Approved by","Тасдиқлади"
-"Award winner","Ғолиб етказиб берувчи"
-"Compliant","Мос келади"
-"Could not approve sourcing decision.","Харид қарорини тасдиқлаб бўлмади."
-"Could not create RFQ.","Нарх сўровини яратиб бўлмади."
-"Could not save sourcing decision.","Харид қарорини сақлаб бўлмади."
-"Could not submit quotation.","Таклифни юбориб бўлмади."
-"Create Request for Quotation (RFQ)","Нарх сўрови (RFQ) яратиш"
-"Create draft RFQ","Қоралама нарх сўрови яратиш"
-"Difference","Фарқ"
-"Exception justification","Истисно сабаби"
-"Explain why the 5-quote / 2-country policy could not be fulfilled…","Нима учун 5 таклиф / 2 мамлакат қоидаси бажарилмаганини тушунтиринг…"
-"Explain why this supplier was selected over others…","Нима учун ушбу етказиб берувчи танланганини тушунтиринг…"
-"Loading RFQs…","Нарх сўровлари юкланмоқда…"
-"No RFQs created for this deal yet. Click 'Request for quotation' to raise one.","Ушбу битим учун ҳали нарх сўрови яратилмаган. 'Таклиф сўраш' тугмасини босинг."
-"No quotations yet","Ҳали таклифлар йўқ"
-"No supplier quotations registered for this supplier.","Ушбу етказиб берувчи учун рўйхатдан ўтган таклифлар йўқ."
-"Non-compliant","Мос келайди"
-"Partial compliance","Қисман мос келади"
-"Pick a quotation","Таклифни танланг"
-"Pick a tender deal to view its sourcing workspace.","Харид иш жойини кўриш учун тендер битимини танланг."
-"Policy exception approved","Қоидадан истисно тасдиқланди"
-"Policy exception required","Қоидадан истисно сабаби талаб қилинади"
-"Policy rule (5 quotes / 2 countries) not satisfied. Check policy exception and specify reason.","Қоида (5 таклиф / 2 мамлакат) бажарилмади. Истиснони белгиланг ва сабабини кўрсатинг."
-"Quotation #","Таклиф №"
-"RFQs","Нарх сўровлари"
-"Reason for selection","Танлаш сабаби"
-"Request for quotation","Таклиф сўраш"
-"Request for quotation created as draft.","Нарх сўрови қоралама сифатида яратилди."
-"Requested items","Сўралган товарлар"
-"Requests for Quotation (RFQ)","Нарх сўровлари (RFQ)"
-"Required response date","Жавоб бериш муддати"
-"Save draft decision","Қарор қораламасини сақлаш"
-"Search and add suppliers… ⌘K","Етказиб берувчиларни қидириш ва қўшиш… ⌘K"
-"Search item… ⌘K","Товарни қидириш… ⌘K"
-"Select suppliers to ask","Сўров юбориладиган етказиб берувчиларни танланг"
-"Select winning quotation","Ғолиб таклифни танланг"
-"Selected bid is higher than the cheapest offer","Танланган таклиф энг арзон таклифдан қимматроқ"
-"Selected winner","Танланган ғолиб"
-"Sourcing award decision","Ғолибни танлаш қарори"
-"Sourcing decision approved.","Харид қарори тасдиқланди."
-"Sourcing decision saved as draft.","Харид қарори қоралама сифатида сақланди."
-"Sourcing workspace","Харидлар иш жойи"
-"Supplier quotations comparison","Етказиб берувчи таклифларини таққослаш"
-"Technical evaluation result","Техник баҳолаш натижаси"
-"The selected quotation was NOT the cheapest bid.","Танланган таклиф энг арзон таклиф ЭМАС эди."
-"Update draft decision","Қарор қораламасини янгилаш"
-"Winner","Ғолиб"
-"over cheapest bid","энг арзон таклифдан ортиқча"
-"Bars","Устунлар"
-"Trapezoid","Трапеция"
-"Landed charges","Етказиб бериш харажатлари"
-"Landed estimate","Етказиб бериш баҳоси"
-"Estimate landed charges","Етказиб бериш харажатларини баҳолаш"
-"Cheapest Delivered","Етказиш билан энг арзон"
-"Sticker Leader","Каталог нархи етакчиси"
-"Delivered total","Етказиб бериш билан жами"
-"Landed cost estimates incomplete:","Етказиб бериш харажатлари баҳолаш тўлиқ эмас:"
-"Not all quotations have landed cost estimates. Landed ranking is paused until all bids carry estimates.","Барча таклифларда етказиш харажатлари кўрсатилмаган. Етказиш бўйича рейтинг тўхтатилган."
-"Freight & Logistics","Ташиш ва логистика"
-"Customs Duty & Tariff","Божхона тўлови"
-"Handling & Terminal Fees","Терминал ва юклаш харажатлари"
-"Cargo Insurance","Юк суғуртаси"
-"Import VAT (Recoverable)","Импорт ҚҚС (Ҳисобга олинадиган)"
-"Other Charge","Бошқа харажатлар"
-"Recoverable VAT","Ҳисобга олинадиган ҚҚС"
-"Add charge line","Харажат қаторини қўшиш"
-"Save estimate","Баҳони сақлаш"
-"Landed cost","Етказилган таннарх"
-"Estimate landed costs","Етказиб бериш харажатларини баҳолаш"
-"Landed estimates incomplete","Етказиб бериш баҳоси тўлиқ эмас"
-"Lowest sticker price excluding landed costs","Етказиш харажатларисиз энг арзон каталог нархи"
-"Lowest total delivered cost including freight and customs","Ташиш ва божхона билан энг арзон етказилган нарх"
-"Sticker price","Каталог нархи"
-"Toggle funnel view","Воронка кўринишини ўзгартириш"
-"Document Center","Ҳужжатлар маркази"
-"Document center","Ҳужжатлар маркази"
-"Requirements","Талаблар"
-"Required & Tender Documents","Мажбурий ва тендер ҳужжатлари"
-"Verified complete","Текширилган ва якунланган"
-"Readiness score","Тайёрлик баҳоси"
-"unverified legacy items","тасдиқланмаган эски элементлар"
-"Tender Master","Асосий тендер"
-"Lot Specific","Лотга тегишли"
-"Verified","Текширилган"
-"Unverified tick","Тасдиқланмаган белги"
-"Missing file","Файл йетишмайди"
-"Attached files / Waiver","Бириктирилган файллар / Муафият"
-"Upload file","Файлни юклаш"
-"Waive","Муаф қилиш"
-"Upload document file","Ҳужжат файлини юклаш"
-"Save document","Ҳужжатни сақлаш"
-"Waive document requirement","Ҳужжат талабидан муаф қилиш"
-"Waiving a requirement bypasses file verification. A written justification is mandatory.","Муаф қилиш файлни текширишни четлаб ўтади. Ёзма асослаш мажбурий."
-"Confirm waiver","Муафиятни тасдиқлаш"
-"No document requirements set.","Ҳужжат талаблари белгиланмаган."
-"Failed to load documents","Ҳужжатларни юклаб бўлмади"
-"Document uploaded successfully","Ҳужжат муваффақиятли юкланди"
-"Requirement waived","Талабдан муаф қилинди"
-"Manage document files in Document Center","Ҳужжатлар файлларини Ҳужжатлар марказида бошқариш"
-"Justification / Reason","Асослаш / Сабаб"
-"Enter protocol / authorization reason…","Баённома рақами ёки сабабни киритинг…"
-"Pick a tender deal to view its document center.","Ҳужжатлар марказини кўриш учун тендер битимини танланг."
+Add supplier quotations to compare them and record an award.,Таққослаш ва ғолибни белгилаш учун етказиб берувчи таклифларини қўшинг.
+Approval requires Director view,Тасдиқлаш учун Директор кўриниши талаб қилинади
+Approve decision,Қарорни тасдиқлаш
+Approved at,Тасдиқланган вақти
+Approved by,Тасдиқлади
+Award winner,Ғолиб етказиб берувчи
+Compliant,Мос келади
+Could not approve sourcing decision.,Харид қарорини тасдиқлаб бўлмади.
+Could not create RFQ.,Нарх сўровини яратиб бўлмади.
+Could not save sourcing decision.,Харид қарорини сақлаб бўлмади.
+Could not submit quotation.,Таклифни юбориб бўлмади.
+Create Request for Quotation (RFQ),Нарх сўрови (RFQ) яратиш
+Create draft RFQ,Қоралама нарх сўрови яратиш
+Difference,Фарқ
+Exception justification,Истисно сабаби
+Explain why the 5-quote / 2-country policy could not be fulfilled…,Нима учун 5 таклиф / 2 мамлакат қоидаси бажарилмаганини тушунтиринг…
+Explain why this supplier was selected over others…,Нима учун ушбу етказиб берувчи танланганини тушунтиринг…
+Loading RFQs…,Нарх сўровлари юкланмоқда…
+No RFQs created for this deal yet. Click 'Request for quotation' to raise one.,Ушбу битим учун ҳали нарх сўрови яратилмаган. 'Таклиф сўраш' тугмасини босинг.
+No quotations yet,Ҳали таклифлар йўқ
+No supplier quotations registered for this supplier.,Ушбу етказиб берувчи учун рўйхатдан ўтган таклифлар йўқ.
+Non-compliant,Мос келайди
+Partial compliance,Қисман мос келади
+Pick a quotation,Таклифни танланг
+Pick a tender deal to view its sourcing workspace.,Харид иш жойини кўриш учун тендер битимини танланг.
+Policy exception approved,Қоидадан истисно тасдиқланди
+Policy exception required,Қоидадан истисно сабаби талаб қилинади
+Policy rule (5 quotes / 2 countries) not satisfied. Check policy exception and specify reason.,Қоида (5 таклиф / 2 мамлакат) бажарилмади. Истиснони белгиланг ва сабабини кўрсатинг.
+Quotation #,Таклиф №
+RFQs,Нарх сўровлари
+Reason for selection,Танлаш сабаби
+Request for quotation,Таклиф сўраш
+Request for quotation created as draft.,Нарх сўрови қоралама сифатида яратилди.
+Requested items,Сўралган товарлар
+Requests for Quotation (RFQ),Нарх сўровлари (RFQ)
+Required response date,Жавоб бериш муддати
+Save draft decision,Қарор қораламасини сақлаш
+Search and add suppliers… ⌘K,Етказиб берувчиларни қидириш ва қўшиш… ⌘K
+Search item… ⌘K,Товарни қидириш… ⌘K
+Select suppliers to ask,Сўров юбориладиган етказиб берувчиларни танланг
+Select winning quotation,Ғолиб таклифни танланг
+Selected bid is higher than the cheapest offer,Танланган таклиф энг арзон таклифдан қимматроқ
+Selected winner,Танланган ғолиб
+Sourcing award decision,Ғолибни танлаш қарори
+Sourcing decision approved.,Харид қарори тасдиқланди.
+Sourcing decision saved as draft.,Харид қарори қоралама сифатида сақланди.
+Sourcing workspace,Харидлар иш жойи
+Supplier quotations comparison,Етказиб берувчи таклифларини таққослаш
+Technical evaluation result,Техник баҳолаш натижаси
+The selected quotation was NOT the cheapest bid.,Танланган таклиф энг арзон таклиф ЭМАС эди.
+Update draft decision,Қарор қораламасини янгилаш
+Winner,Ғолиб
+over cheapest bid,энг арзон таклифдан ортиқча
+Landed charges,Етказиб бериш харажатлари
+Landed estimate,Етказиб бериш баҳоси
+Estimate landed charges,Етказиб бериш харажатларини баҳолаш
+Cheapest Delivered,Етказиш билан энг арзон
+Sticker Leader,Каталог нархи етакчиси
+Delivered total,Етказиб бериш билан жами
+Landed cost estimates incomplete:,Етказиб бериш харажатлари баҳолаш тўлиқ эмас:
+Not all quotations have landed cost estimates. Landed ranking is paused until all bids carry estimates.,Барча таклифларда етказиш харажатлари кўрсатилмаган. Етказиш бўйича рейтинг тўхтатилган.
+Freight & Logistics,Ташиш ва логистика
+Customs Duty & Tariff,Божхона тўлови
+Handling & Terminal Fees,Терминал ва юклаш харажатлари
+Cargo Insurance,Юк суғуртаси
+Import VAT (Recoverable),Импорт ҚҚС (Ҳисобга олинадиган)
+Other Charge,Бошқа харажатлар
+Recoverable VAT,Ҳисобга олинадиган ҚҚС
+Add charge line,Харажат қаторини қўшиш
+Save estimate,Баҳони сақлаш
+Landed cost,Етказилган таннарх
+Estimate landed costs,Етказиб бериш харажатларини баҳолаш
+Landed estimates incomplete,Етказиб бериш баҳоси тўлиқ эмас
+Lowest sticker price excluding landed costs,Етказиш харажатларисиз энг арзон каталог нархи
+Lowest total delivered cost including freight and customs,Ташиш ва божхона билан энг арзон етказилган нарх
+Sticker price,Каталог нархи
+Document Center,Ҳужжатлар маркази
+Document center,Ҳужжатлар маркази
+Requirements,Талаблар
+Required & Tender Documents,Мажбурий ва тендер ҳужжатлари
+Verified complete,Текширилган ва якунланган
+Readiness score,Тайёрлик баҳоси
+unverified legacy items,тасдиқланмаган эски элементлар
+Tender Master,Асосий тендер
+Lot Specific,Лотга тегишли
+Verified,Текширилган
+Unverified tick,Тасдиқланмаган белги
+Missing file,Файл етишмайди
+Attached files / Waiver,Бириктирилган файллар / Муафият
+Upload file,Файлни юклаш
+Waive,Муаф қилиш
+Upload document file,Ҳужжат файлини юклаш
+Save document,Ҳужжатни сақлаш
+Waive document requirement,Ҳужжат талабидан муаф қилиш
+Waiving a requirement bypasses file verification. A written justification is mandatory.,Муаф қилиш файлни текширишни четлаб ўтади. Ёзма асослаш мажбурий.
+Confirm waiver,Муафиятни тасдиқлаш
+No document requirements set.,Ҳужжат талаблари белгиланмаган.
+Failed to load documents,Ҳужжатларни юклаб бўлмади
+Document uploaded successfully,Ҳужжат муваффақиятли юкланди
+Requirement waived,Талабдан муаф қилинди
+Manage document files in Document Center,Ҳужжатлар файлларини Ҳужжатлар марказида бошқариш
+Justification / Reason,Асослаш / Сабаб
+Enter protocol / authorization reason…,Баённома рақами ёки сабабни киритинг…
+Pick a tender deal to view its document center.,Ҳужжатлар марказини кўриш учун тендер битимини танланг.

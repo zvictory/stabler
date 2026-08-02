@@ -23,7 +23,7 @@ ENDPOINT = API[API.index("def tender_flow(company: str)") :]
 
 class TestTheScreenIsWired(unittest.TestCase):
 	def test_it_is_on_the_design_layer(self):
-		self.assertRegex(FLAT, r'<div class="tender-flow-page stbl-ds">')
+		self.assertIn("<TenderPage", FLAT)
 
 	def test_every_design_class_it_uses_exists_in_the_layer(self):
 		used = {
@@ -67,8 +67,7 @@ class TestTheScreenDoesNotFlatterTheNumbers(unittest.TestCase):
 	def test_empty_and_unknown_are_different_words(self):
 		"""Boş adımda bekleyen iş yok; damgasız adımda var ama süresi
 		bilinmiyor. Aynı kelimeyi kullanmak tıkanmış adımı boş gösterir."""
-		labels = VUE[VUE.index("const STATE_LABEL") :]
-		labels = labels[: labels.index("};")]
+		labels = (ROOT / "public/js/pages/tender/flowLabels.js").read_text(encoding="utf-8")
 		self.assertIn('unknown: "Not measurable"', labels)
 		self.assertIn('empty: "Empty"', labels)
 
@@ -80,8 +79,9 @@ class TestTheScreenDoesNotFlatterTheNumbers(unittest.TestCase):
 	def test_only_edge_and_over_colour_the_wait(self):
 		"""Sorunu olmayan bir bekleme süresini vurgulamak gözü yanlış satıra
 		çeker."""
+		labels = (ROOT / "public/js/pages/tender/flowLabels.js").read_text(encoding="utf-8")
 		self.assertRegex(
-			VUE,
+			labels,
 			r'waitState = \(row\) => \(row\.state === "out" \|\| row\.state === "edge" \? row\.state : null\)',
 		)
 

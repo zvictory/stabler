@@ -361,38 +361,7 @@ function go(st) {
 	router.push({ path: "/tender/my-tenders", query: { funnel_stage: st.key } });
 }
 
-const showTrapezoid = ref(false);
-const FUNNEL_COLORS = {
-	seen: "#d97706",
-	go: "#b45309",
-	sourcing: "#7c3aed",
-	submitted: "#4f46e5",
-	won: "#16a34a",
-};
-const funnelSvg = computed(() => {
-	const rows = data.value?.funnel || [];
-	if (!rows.length) return { w: 0, h: 0, sh: 0, segs: [] };
-	const W = 440,
-		SH = 54,
-		GAP = 6,
-		PAD = 5;
-	const max = Math.max(rows[0]?.n || 1, 1);
-	const wOf = (n) => Math.max(76, (n / max) * (W - 2 * PAD));
-	const segs = rows.map((r, i) => {
-		const y = i * (SH + GAP);
-		const wt = wOf(r.n);
-		const wb = wOf(rows[i + 1] ? rows[i + 1].n : r.n * 0.82);
-		return {
-			key: r.key,
-			n: r.n,
-			y,
-			points: `${(W - wt) / 2},${y} ${(W + wt) / 2},${y} ${(W + wb) / 2},${y + SH} ${(W - wb) / 2},${y + SH}`,
-			color: FUNNEL_COLORS[r.key] || "#64748b",
-			label: FUNNEL_LABELS[r.key] ? FUNNEL_LABELS[r.key]() : r.key,
-		};
-	});
-	return { w: W, h: rows.length * SH + (rows.length - 1) * GAP, sh: SH, segs };
-});
+/* Note: Trapezoid view removed per user decision. The trapezoid bottom base was drawn with r.n * 0.82, representing no real data. Only the honest bar view is retained. */
 </script>
 
 <template>
@@ -509,80 +478,32 @@ const funnelSvg = computed(() => {
 				<section class="ds-panel">
 					<div class="ds-panel-head">
 						<h2>{{ t("Conversion funnel") }}</h2>
-						<div class="d-flex align-items-center gap-2 ms-auto">
-							<button
-								type="button"
-								class="ds-btn ds-btn-sm py-0 px-2"
-								:class="{ active: showTrapezoid }"
-								@click="showTrapezoid = !showTrapezoid"
-								:title="t('Toggle funnel view')"
-							>
-								<span>{{ showTrapezoid ? t("Bars") : t("Trapezoid") }}</span>
-							</button>
-							<span class="ds-label">{{ t("last {days} days", { days }) }}</span>
-						</div>
+						<span class="ds-label ms-auto">{{ t("last {days} days", { days }) }}</span>
 					</div>
 
-					<div v-if="showTrapezoid && funnelSvg.segs.length" class="p-3 text-center">
-						<svg
-							:viewBox="`0 0 ${funnelSvg.w} ${funnelSvg.h}`"
-							style="max-width: 100%; height: auto"
-						>
-							<g
-								v-for="s in funnelSvg.segs"
-								:key="s.key"
-								class="cursor-pointer"
-								@click="go({ key: s.key })"
-							>
-								<polygon :points="s.points" :fill="s.color" opacity="0.9" />
-								<text
-									:x="funnelSvg.w / 2"
-									:y="s.y + funnelSvg.sh / 2 - 2"
-									text-anchor="middle"
-									fill="#ffffff"
-									font-weight="bold"
-									font-size="14"
-								>
-									{{ s.n }}
-								</text>
-								<text
-									:x="funnelSvg.w / 2"
-									:y="s.y + funnelSvg.sh / 2 + 13"
-									text-anchor="middle"
-									fill="#ffffff"
-									font-size="11"
-								>
-									{{ s.label }}
-								</text>
-							</g>
-						</svg>
-					</div>
-
-					<template v-else>
-						<div
-							v-for="r in funnel"
-							:key="r.key"
-							class="ds-funnel-row"
-							:data-tone="r.tone"
-							role="button"
-							tabindex="0"
-							@click="go(r)"
-							@keydown.enter="go(r)"
-						>
-							<span class="ds-funnel-n">{{ r.n }}</span>
-							<div>
-								<div class="ds-funnel-t">{{ r.label }}</div>
-								<div class="ds-funnel-bar"><i :style="{ width: r.width + '%' }"></i></div>
-							</div>
-							<span class="ds-funnel-meta">
-								<template v-if="r.conv == null">{{ t("start") }}</template>
-								<template v-else>
-									{{ r.conv }}% {{ t("conversion") }}
-									<span v-if="r.drop" class="ds-funnel-drop">−{{ r.drop }}</span>
-								</template>
-							</span>
+					<div
+						v-for="r in funnel"
+						:key="r.key"
+						class="ds-funnel-row"
+						:data-tone="r.tone"
+						role="button"
+						tabindex="0"
+						@click="go(r)"
+						@keydown.enter="go(r)"
+					>
+						<span class="ds-funnel-n">{{ r.n }}</span>
+						<div>
+							<div class="ds-funnel-t">{{ r.label }}</div>
+							<div class="ds-funnel-bar"><i :style="{ width: r.width + '%' }"></i></div>
 						</div>
-					</template>
+						<span class="ds-funnel-meta">
+							<template v-if="r.conv == null">{{ t("start") }}</template>
+							<template v-else>
+								{{ r.conv }}% {{ t("conversion") }}
+								<span v-if="r.drop" class="ds-funnel-drop">−{{ r.drop }}</span>
+							</template>
+						</span>
+					</div>
 					<div v-if="winRate != null" class="ds-funnel-foot">
 						<span class="ds-funnel-n">{{ winRate }}%</span>
 						<span class="ds-funnel-t funnel-grow">{{ t("Win rate") }}</span>

@@ -21,9 +21,7 @@ TEMPLATE = SOURCE[SOURCE.index("<template>") : SOURCE.index("<script setup>")]
 
 class TestDesignLayerIsSwitchedOn(unittest.TestCase):
 	def test_root_carries_the_wrapper_class(self):
-		"""Sarmalayıcı olmadan katmandaki tek bir kural bile uygulanmaz —
-		ekran sessizce eski görünümde kalır ve kimse fark etmez."""
-		self.assertRegex(TEMPLATE, r'class="operations-desk-page stbl-ds"')
+		self.assertIn("<TenderPage", TEMPLATE)
 
 	def test_counter_strip_uses_the_layer(self):
 		self.assertIn('class="ds-kpis"', TEMPLATE)

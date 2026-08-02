@@ -1,6 +1,6 @@
 """Pure unit tests for landed cost calculation and ranking logic (_landed.py).
 
-    PYTHONPATH=$PWD python3 -m unittest stabler.tests.test_landed_ranking -v
+PYTHONPATH=$PWD python3 -m unittest stabler.tests.test_landed_ranking -v
 """
 
 from __future__ import annotations
@@ -26,7 +26,7 @@ class TestLandedRanking(unittest.TestCase):
 		self.assertTrue(has_est)
 		self.assertEqual(total, 1500.0, "VAT 300 must be excluded from landed total")
 		self.assertEqual(len(clean), 3)
-		vat_clean = [c for c in clean if c["charge_type"] == "VAT"][0]
+		vat_clean = next(c for c in clean if c["charge_type"] == "VAT")
 		self.assertEqual(vat_clean["capitalized_amount"], 0.0)
 
 	def test_incomplete_estimate_rule_k3(self):
@@ -72,8 +72,8 @@ class TestLandedRanking(unittest.TestCase):
 		self.assertEqual(res["cheapest_price_quote"], "SQ-LOCAL")
 		self.assertEqual(res["cheapest_landed_quote"], "SQ-CHINA")
 
-		sq_china = [q for q in res["quotations"] if q["name"] == "SQ-CHINA"][0]
-		sq_local = [q for q in res["quotations"] if q["name"] == "SQ-LOCAL"][0]
+		sq_china = next(q for q in res["quotations"] if q["name"] == "SQ-CHINA")
+		sq_local = next(q for q in res["quotations"] if q["name"] == "SQ-LOCAL")
 
 		self.assertFalse(sq_china["is_cheapest_price"])
 		self.assertTrue(sq_china["is_cheapest_landed"])

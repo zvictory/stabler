@@ -184,7 +184,9 @@ def _load_seed():
 	# baştan çalıştırır ve dairesel import'a düşer ("partially initialized
 	# module ... has no attribute '_optimizations'"). Aşağıdaki testler
 	# `stabler.api.tender`'ı içe aktarıyor; sızıntı orada patlıyordu.
-	saved = {k: sys.modules.get(k) for k in ("frappe", "frappe.utils", "stabler.maintenance.seed_tender_demo")}
+	saved = {
+		k: sys.modules.get(k) for k in ("frappe", "frappe.utils", "stabler.maintenance.seed_tender_demo")
+	}
 	sys.modules.pop("stabler.maintenance.seed_tender_demo", None)
 	frappe = types.ModuleType("frappe")
 	frappe.throw = lambda message, exception=Exception: (_ for _ in ()).throw(exception(message))
@@ -620,7 +622,8 @@ class TestTheBidPricingIsReallyComputed(unittest.TestCase):
 
 	def _margins(self) -> dict[str, float]:
 		"""Her fiyatlanmış lotun marjını motorun kendisiyle hesapla."""
-		from stabler.api.tender import _BID_DEFAULTS, _compute_bid_pnl
+		from stabler.api._bid_pnl import _BID_DEFAULTS
+		from stabler.api._bid_pnl import compute_bid_pnl as _compute_bid_pnl
 
 		po_landed: dict[str, float] = {}
 		for lot, _s, _c, _e, _r, _t, customs, goods in self.seed.DEMO_PURCHASE_ORDERS:
