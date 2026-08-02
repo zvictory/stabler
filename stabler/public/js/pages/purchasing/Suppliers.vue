@@ -1,6 +1,7 @@
 <script setup>
 import { computed, onMounted, ref, watch } from "vue";
 import { storeToRefs } from "pinia";
+import { useRouter } from "vue-router";
 import { useSession } from "../../stores/session.js";
 import { call } from "../../api/client.js";
 import { formatMoney } from "../../composables/money.js";
@@ -8,6 +9,8 @@ import { formatDate, formatTime } from "../../composables/date.js";
 import { t } from "../../composables/i18n.js";
 import { useConfirm } from "../../composables/useConfirm.js";
 import { useToast } from "../../composables/useToast.js";
+
+const router = useRouter();
 import EmptyState from "../../components/EmptyState.vue";
 import DateInput from "../../components/DateInput.vue";
 import Select from "../../components/Select.vue";
@@ -438,10 +441,11 @@ async function loadSuppQuotations(supplier) {
 	if (!supplier?.name || !activeCompany.value) return;
 	suppQuotationsLoading.value = true;
 	try {
-		suppQuotations.value = await call("stabler.api.purchasing.list_supplier_quotations", {
+		const res = await call("stabler.api.purchasing.supplier_quotation_history", {
 			supplier: supplier.name,
 			company: activeCompany.value,
 		});
+		suppQuotations.value = res?.rows || [];
 	} catch {
 		suppQuotations.value = [];
 	} finally {
@@ -1091,7 +1095,7 @@ watch(activeCompany, () => {
 											<span class="badge bg-secondary-subtle text-secondary ms-1">{{ recentInvoices.length }}</span>
 										</a>
 									</li>
-									<li class="nav-item">
+									<li v-if="session.canAccessModule('tender')" class="nav-item">
 										<a
 											href="#"
 											class="nav-link border-0 border-bottom-2 py-3"
@@ -1343,7 +1347,7 @@ watch(activeCompany, () => {
 								</div>
 
 								<!-- QUOTATIONS TAB -->
-								<div v-if="currentTab === 'quotations'" class="p-3">
+								<div v-if="currentTab === 'quotations' && session.canAccessModule('tender')" class="p-3">
 									<div v-if="suppQuotationsLoading" class="text-center py-5">
 										<div class="spinner-border text-primary"></div>
 									</div>
@@ -1361,34 +1365,41 @@ watch(activeCompany, () => {
 													<th>{{ t("Quotation #") }}</th>
 													<th>{{ t("Date") }}</th>
 													<th>{{ t("Tender / deal") }}</th>
-													<th class="text-end">{{ t("Total") }}</th>
+													<th class="text-end">{{ t("Base total") }}</th>
 													<th>{{ t("Valid till") }}</th>
 													<th>{{ t("Status") }}</th>
+													<th>{{ t("Result") }}</th>
 												</tr>
 											</thead>
 											<tbody>
-												<tr v-for="q in suppQuotations" :key="q.name">
+												<tr
+													v-for="q in suppQuotations"
+													:key="q.name"
+													class="cursor-pointer"
+													@click="q.deal || q.custom_crm_deal ? router.push({ path: '/tender/sourcing', query: { deal: q.deal || q.custom_crm_deal } }) : null"
+												>
 													<td>
 														<span class="fw-semibold font-monospace">{{ q.name }}</span>
 													</td>
 													<td>{{ q.transaction_date ? formatDate(q.transaction_date) : "—" }}</td>
 													<td>
-														<router-link
-															v-if="q.custom_crm_deal"
-															:to="{ path: '/tender/sourcing', query: { deal: q.custom_crm_deal } }"
-															class="text-body fw-medium"
-														>
+														<span v-if="q.deal || q.custom_crm_deal" class="text-body fw-medium">
 															<i class="ti ti-target me-1 text-primary"></i>
-															{{ q.deal_label || q.custom_crm_deal }}
-														</router-link>
+															{{ q.deal_label || q.deal || q.custom_crm_deal }}
+														</span>
 														<span v-else class="text-secondary">—</span>
 													</td>
 													<td class="text-end font-monospace">
-														{{ formatMoney(q.grand_total, q.currency, user.language) }}
+														{{ formatMoney(q.base_grand_total || q.grand_total, q.currency || currency, user.language) }}
 													</td>
 													<td>{{ q.valid_till ? formatDate(q.valid_till) : "—" }}</td>
 													<td>
 														<span class="badge bg-secondary-lt">{{ q.status }}</span>
+													</td>
+													<td>
+														<span v-if="q.result === 'won'" class="badge bg-green text-white"><i class="ti ti-trophy me-1"></i>{{ t("Won") }}</span>
+														<span v-else-if="q.result === 'lost'" class="badge bg-secondary-lt text-secondary">{{ t("Lost") }}</span>
+														<span v-else class="badge bg-blue-lt text-blue">{{ t("Open") }}</span>
 													</td>
 												</tr>
 											</tbody>

@@ -2526,3 +2526,72 @@ def list_supplier_quotations(supplier: str, company: str) -> list[dict]:
 			s["deal_label"] = deal_map.get(deal_id, deal_id)
 
 	return sqs
+
+
+@frappe.whitelist()
+def supplier_quotation_history(supplier, company=None):
+	"""Single-query supplier quotation history with derived award result (won/lost/open)."""
+	if not company:
+		frappe.throw(_("Company is required."), frappe.ValidationError)
+	selected_company = _assert_company_scope(company)
+	if not frappe.has_permission("Supplier", "read"):
+		frappe.throw(_("You are not permitted to view suppliers."), frappe.PermissionError)
+
+	supplier_name = str(supplier or "").strip()
+	if not supplier_name:
+		return {"rows": [], "count": 0}
+
+	has_deal = frappe.db.has_column("Supplier Quotation", "custom_crm_deal")
+	deal_col = "sq.custom_crm_deal" if has_deal else "NULL"
+	has_tsd = frappe.db.exists("DocType", "Tender Sourcing Decision")
+
+	if has_tsd and has_deal:
+		sql = """
+			SELECT
+				sq.name,
+				sq.custom_crm_deal AS deal,
+				sq.grand_total,
+				sq.base_grand_total,
+				sq.currency,
+				sq.status,
+				sq.valid_till,
+				sq.transaction_date,
+				CASE
+					WHEN tsd.name IS NOT NULL AND tsd.status = 'Approved' AND tsd.selected_quotation = sq.name THEN 'won'
+					WHEN tsd.name IS NOT NULL AND tsd.status = 'Approved' AND tsd.selected_quotation != sq.name THEN 'lost'
+					ELSE 'open'
+				END AS result
+			FROM `tabSupplier Quotation` sq
+			LEFT JOIN `tabTender Sourcing Decision` tsd
+				ON tsd.deal = sq.custom_crm_deal
+				AND tsd.company = sq.company
+				AND tsd.status = 'Approved'
+			WHERE sq.supplier = %(supplier)s
+				AND sq.company = %(company)s
+				AND sq.docstatus < 2
+			ORDER BY sq.transaction_date DESC, sq.name DESC
+		"""
+	else:
+		sql = f"""
+			SELECT
+				sq.name,
+				{deal_col} AS deal,
+				sq.grand_total,
+				sq.base_grand_total,
+				sq.currency,
+				sq.status,
+				sq.valid_till,
+				sq.transaction_date,
+				'open' AS result
+			FROM `tabSupplier Quotation` sq
+			WHERE sq.supplier = %(supplier)s
+				AND sq.company = %(company)s
+				AND sq.docstatus < 2
+			ORDER BY sq.transaction_date DESC, sq.name DESC
+		"""
+
+	rows = frappe.db.sql(sql, {"supplier": supplier_name, "company": selected_company}, as_dict=True)
+	for r in rows:
+		r["grand_total"] = flt(r.get("grand_total"))
+		r["base_grand_total"] = flt(r.get("base_grand_total")) or r["grand_total"]
+	return {"rows": rows, "count": len(rows)}
