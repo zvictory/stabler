@@ -5,7 +5,7 @@ import { storeToRefs } from "pinia";
 import { useSession } from "../../stores/session.js";
 import { call } from "../../api/client.js";
 import { formatMoney } from "../../composables/money.js";
-import { formatDate, formatDateTime, todayIso, daysAgoIso} from "../../composables/date.js";
+import { formatDate, formatDateTime, todayIso, daysAgoIso } from "../../composables/date.js";
 import { t } from "../../composables/i18n.js";
 import { useConfirm } from "../../composables/useConfirm.js";
 import { useToast } from "../../composables/useToast.js";
@@ -50,8 +50,14 @@ useFocusTrap(modalEl, createOpen);
 
 // ESC → close the open form/detail first, otherwise go back (general app rule).
 useEscapeBack(() => {
-	if (createOpen.value) { closeCreate(); return true; }
-	if (detailOpen.value) { closeDetail(); return true; }
+	if (createOpen.value) {
+		closeCreate();
+		return true;
+	}
+	if (detailOpen.value) {
+		closeDetail();
+		return true;
+	}
 	return false;
 }, "/money");
 const submitting = ref(false);
@@ -78,8 +84,7 @@ function persistSaveMode(mode) {
 
 const baseCurrency = computed(
 	() =>
-		(session.companies.find((c) => c.name === activeCompany.value) || {}).default_currency ||
-		"USD",
+		(session.companies.find((c) => c.name === activeCompany.value) || {}).default_currency || "USD"
 );
 
 // Exchange rate context
@@ -104,13 +109,19 @@ function fmtAmt(v, cur) {
 function fmtRate(r) {
 	const n = Number(r) || 0;
 	const dp = n >= 100 ? 2 : 6;
-	const s = n.toFixed(dp).replace(/(\.\d*?)0+$/, "$1").replace(/\.$/, "");
+	const s = n
+		.toFixed(dp)
+		.replace(/(\.\d*?)0+$/, "$1")
+		.replace(/\.$/, "");
 	const [i, d] = s.split(".");
 	return i.replace(/\B(?=(\d{3})+(?!\d))/g, " ") + (d ? `.${d}` : "");
 }
 
 function norm(s) {
-	return String(s ?? "").toLowerCase().normalize("NFKD").replace(/[\u0300-\u036f]/g, "");
+	return String(s ?? "")
+		.toLowerCase()
+		.normalize("NFKD")
+		.replace(/[\u0300-\u036f]/g, "");
 }
 
 let lineSeq = 0;
@@ -136,7 +147,7 @@ function markFormPristine() {
 	dirtyPristine.value = JSON.stringify(form.value);
 }
 const formDirty = computed(
-	() => createOpen.value && JSON.stringify(form.value) !== dirtyPristine.value,
+	() => createOpen.value && JSON.stringify(form.value) !== dirtyPristine.value
 );
 onBeforeRouteLeave(async () => {
 	if (!formDirty.value) return true;
@@ -221,25 +232,20 @@ function handleLineKeyDown(e) {
 	}
 }
 
-const entryKindOptions = [
-	{ value: "Expense", label: t("Expense") },
-	{ value: "Asset Purchase", label: t("Asset purchase") },
-];
-
-const paymentFromAccount = computed(() =>
-	payAccounts.value.find((a) => a.name === form.value.payment_from) || null,
+const paymentFromAccount = computed(
+	() => payAccounts.value.find((a) => a.name === form.value.payment_from) || null
 );
 
 const payCurrency = computed(
-	() => paymentFromAccount.value?.account_currency || baseCurrency.value,
+	() => paymentFromAccount.value?.account_currency || baseCurrency.value
 );
 
 const isCrossCurrency = computed(
-	() => payCurrency.value && payCurrency.value !== baseCurrency.value,
+	() => payCurrency.value && payCurrency.value !== baseCurrency.value
 );
 
 const totalAmount = computed(() =>
-	form.value.lines.reduce((sum, l) => sum + (Number(l.amount) || 0), 0),
+	form.value.lines.reduce((sum, l) => sum + (Number(l.amount) || 0), 0)
 );
 
 const lineAccounts = computed(() => {
@@ -252,7 +258,7 @@ const formTitle = computed(() =>
 		? t("Amend expense")
 		: form.value.entry_kind === "Asset Purchase"
 			? t("New asset purchase")
-			: t("New expense"),
+			: t("New expense")
 );
 
 const baseEquivalent = computed(() => {
@@ -273,9 +279,7 @@ const canSubmit = computed(() => {
 	if (!form.value.payment_from) return false;
 	if (!form.value.posting_date) return false;
 	if (isCrossCurrency.value && !(Number(form.value.exchange_rate) > 0)) return false;
-	const validLines = form.value.lines.filter(
-		(l) => l.account && Number(l.amount) > 0,
-	);
+	const validLines = form.value.lines.filter((l) => l.account && Number(l.amount) > 0);
 	if (!validLines.length) return false;
 	return true;
 });
@@ -301,9 +305,13 @@ async function fetchExchangeRate() {
 			// Canonical quote: always >= 1 so UZS↔USD reads "1 USD = 12 950 UZS"
 			let base, counter, R;
 			if (raw >= 1) {
-				base = baseCurrency.value; counter = payCurrency.value; R = raw;
+				base = baseCurrency.value;
+				counter = payCurrency.value;
+				R = raw;
 			} else {
-				base = payCurrency.value; counter = baseCurrency.value; R = 1 / raw;
+				base = payCurrency.value;
+				counter = baseCurrency.value;
+				R = 1 / raw;
 			}
 			fxBaseCur.value = base;
 			fxCounterCur.value = counter;
@@ -326,13 +334,14 @@ watch(
 	() => [form.value.payment_from, form.value.posting_date],
 	async () => {
 		await fetchExchangeRate();
-	},
+	}
 );
 
 function searchLineAccount(q) {
 	const n = norm(q);
 	const baseLabel = form.value.entry_kind === "Asset Purchase" ? t("Assets") : t("Expenses");
-	const baseList = form.value.entry_kind === "Asset Purchase" ? assetAccounts.value : expAccounts.value;
+	const baseList =
+		form.value.entry_kind === "Asset Purchase" ? assetAccounts.value : expAccounts.value;
 
 	function filter(list) {
 		if (!n) return list;
@@ -340,7 +349,7 @@ function searchLineAccount(q) {
 			(a) =>
 				norm(a.account_name || a.name).includes(n) ||
 				norm(a.name).includes(n) ||
-				(a.account_number && norm(a.account_number).includes(n)),
+				(a.account_number && norm(a.account_number).includes(n))
 		);
 	}
 
@@ -370,7 +379,7 @@ function searchAsset(q) {
 	const n = norm(q);
 	if (!n) return assets.value;
 	return assets.value.filter(
-		(a) => norm(a.asset_name || a.name).includes(n) || norm(a.name).includes(n),
+		(a) => norm(a.asset_name || a.name).includes(n) || norm(a.name).includes(n)
 	);
 }
 
@@ -423,7 +432,10 @@ async function searchDeals(q) {
 		search: q,
 		page_length: 8,
 	});
-	return (r?.deals || []).map((d) => ({ name: d.name, label: d.organization || d.lead_name || d.name }));
+	return (r?.deals || []).map((d) => ({
+		name: d.name,
+		label: d.organization || d.lead_name || d.name,
+	}));
 }
 
 function pickDeal(item) {
@@ -487,14 +499,16 @@ async function openCreate() {
 	dealLabel.value = "";
 	detailOpen.value = false;
 	createOpen.value = true;
-	if (!payAccounts.value.length || !expAccounts.value.length || !assetAccounts.value.length) await loadOptions();
+	if (!payAccounts.value.length || !expAccounts.value.length || !assetAccounts.value.length)
+		await loadOptions();
 	await fetchExchangeRate();
 	markFormPristine();
 }
 
 async function openEditFromDetail() {
 	if (!detail.value?.name) return;
-	if (!payAccounts.value.length || !expAccounts.value.length || !assetAccounts.value.length) await loadOptions();
+	if (!payAccounts.value.length || !expAccounts.value.length || !assetAccounts.value.length)
+		await loadOptions();
 	// Exclude the auto exchange-rounding line — it's a base-currency GL detail
 	// (re-derived on save by fx_balance), never a user expense leg.
 	// (Named accRows, not rows, to avoid shadowing the outer `rows` list ref
@@ -593,7 +607,7 @@ async function submitCreate(afterAction) {
 			: "stabler.api.money.submit_expense_entry";
 		const res = await call(
 			method,
-			editingName.value ? { source_name: editingName.value, ...payload } : payload,
+			editingName.value ? { source_name: editingName.value, ...payload } : payload
 		);
 
 		load();
@@ -786,7 +800,12 @@ watch(activeCompany, () => {
 			subtitle="Record an outgoing payment to start tracking spend."
 		>
 			<template #actions>
-				<button type="button" class="btn btn-primary" :disabled="!activeCompany" @click="openCreate">
+				<button
+					type="button"
+					class="btn btn-primary"
+					:disabled="!activeCompany"
+					@click="openCreate"
+				>
 					<i class="ti ti-plus me-1"></i>{{ t("New expense") }}
 				</button>
 			</template>
@@ -804,12 +823,7 @@ watch(activeCompany, () => {
 					</tr>
 				</thead>
 				<tbody>
-					<tr
-						v-for="r in rows"
-						:key="r.name"
-						style="cursor: pointer"
-						@click="openInForm(r.name)"
-					>
+					<tr v-for="r in rows" :key="r.name" style="cursor: pointer" @click="openInForm(r.name)">
 						<td class="font-monospace text-primary">{{ r.name }}</td>
 						<td>{{ formatDateTime(r.posting_date) }}</td>
 						<td>
@@ -828,7 +842,13 @@ watch(activeCompany, () => {
 							</div>
 						</td>
 						<td class="text-end font-monospace">
-							{{ formatMoney(r.total_amount ?? r.total_debit_base, r.currency || r.base_currency || baseCurrency, user.language) }}
+							{{
+								formatMoney(
+									r.total_amount ?? r.total_debit_base,
+									r.currency || r.base_currency || baseCurrency,
+									user.language
+								)
+							}}
 						</td>
 						<td>
 							<span class="badge" :class="statusBadge(r.docstatus).cls">
@@ -847,9 +867,7 @@ watch(activeCompany, () => {
 			<button type="button" class="btn btn-sm btn-outline-secondary me-2" @click="closeDetail">
 				<i class="ti ti-arrow-left me-1"></i>{{ t("Back") }}
 			</button>
-			<div class="card-title m-0">
-				<i class="ti ti-receipt-2 me-1"></i>{{ t("Expense") }}
-			</div>
+			<div class="card-title m-0"><i class="ti ti-receipt-2 me-1"></i>{{ t("Expense") }}</div>
 		</div>
 		<div class="card-body">
 			<div v-if="detailLoading" class="text-center py-5">
@@ -902,23 +920,55 @@ watch(activeCompany, () => {
 							<tr v-for="(a, i) in detail.accounts" :key="i">
 								<td>{{ a.account_name || a.account }}</td>
 								<td class="text-end font-monospace">
-									{{ a.debit_in_account_currency ? formatMoney(a.debit_in_account_currency, a.account_currency || baseCurrency, user.language) : "—" }}
+									{{
+										a.debit_in_account_currency
+											? formatMoney(
+													a.debit_in_account_currency,
+													a.account_currency || baseCurrency,
+													user.language
+												)
+											: "—"
+									}}
 								</td>
 								<td class="text-end font-monospace">
-									{{ a.credit_in_account_currency ? formatMoney(a.credit_in_account_currency, a.account_currency || baseCurrency, user.language) : "—" }}
+									{{
+										a.credit_in_account_currency
+											? formatMoney(
+													a.credit_in_account_currency,
+													a.account_currency || baseCurrency,
+													user.language
+												)
+											: "—"
+									}}
 								</td>
 							</tr>
 						</tbody>
 					</table>
 				</div>
 				<div class="d-flex gap-2 justify-content-end mt-3">
-					<button v-if="detail.docstatus < 2" type="button" class="btn btn-outline-primary" @click="openEditFromDetail">
-						<i class="ti ti-pencil me-1"></i>{{ detail.docstatus === 1 ? t("Amend") : t("Edit draft") }}
+					<button
+						v-if="detail.docstatus < 2"
+						type="button"
+						class="btn btn-outline-primary"
+						@click="openEditFromDetail"
+					>
+						<i class="ti ti-pencil me-1"></i
+						>{{ detail.docstatus === 1 ? t("Amend") : t("Edit draft") }}
 					</button>
-					<button v-if="detail.docstatus === 0" type="button" class="btn btn-outline-danger" @click="deleteEntry">
+					<button
+						v-if="detail.docstatus === 0"
+						type="button"
+						class="btn btn-outline-danger"
+						@click="deleteEntry"
+					>
 						<i class="ti ti-trash me-1"></i>{{ t("Delete draft") }}
 					</button>
-					<button v-if="detail.docstatus === 1" type="button" class="btn btn-outline-danger" @click="cancelEntry">
+					<button
+						v-if="detail.docstatus === 1"
+						type="button"
+						class="btn btn-outline-danger"
+						@click="cancelEntry"
+					>
 						<i class="ti ti-ban me-1"></i>{{ t("Cancel") }}
 					</button>
 				</div>
@@ -929,32 +979,62 @@ watch(activeCompany, () => {
 	<!-- Create / amend page -->
 	<div v-if="createOpen" ref="modalEl" class="card">
 		<div class="card-header">
-			<button type="button" class="btn btn-sm btn-outline-secondary me-2" :disabled="submitting" @click="closeCreate">
+			<button
+				type="button"
+				class="btn btn-sm btn-outline-secondary me-2"
+				:disabled="submitting"
+				@click="closeCreate"
+			>
 				<i class="ti ti-arrow-left me-1"></i>{{ t("Back") }}
 			</button>
-			<div class="card-title m-0">
-				<i class="ti ti-receipt-2 me-1"></i>{{ formTitle }}
-			</div>
+			<div class="card-title m-0"><i class="ti ti-receipt-2 me-1"></i>{{ formTitle }}</div>
 		</div>
 		<div class="card-body p-3 d-flex flex-column gap-3">
-					<div v-if="submitError" class="alert alert-danger mb-0">{{ submitError }}</div>
+			<div v-if="submitError" class="alert alert-danger mb-0">{{ submitError }}</div>
 
-					<!-- Panel A: Details (blue) -->
-					<div class="card card-sm mb-0" style="border: 1.5px solid var(--tblr-blue, #206bc4); border-radius: 6px">
-						<div class="card-header py-2 px-3 d-flex align-items-center gap-2" style="background: var(--tblr-blue-lt, #e9f0fb); border-bottom: 1px solid var(--tblr-blue-lt, #d0e0f7); border-radius: 5px 5px 0 0">
-							<i class="ti ti-adjustments text-blue" style="font-size: 1rem"></i>
-							<span class="fw-semibold text-blue small">{{ t("Details") }}</span>
-						</div>
-						<div class="card-body p-3">
-
+			<!-- Panel A: Details (blue) -->
+			<div
+				class="card card-sm mb-0"
+				style="border: 1.5px solid var(--tblr-blue, #206bc4); border-radius: 6px"
+			>
+				<div
+					class="card-header py-2 px-3 d-flex align-items-center gap-2"
+					style="
+						background: var(--tblr-blue-lt, #e9f0fb);
+						border-bottom: 1px solid var(--tblr-blue-lt, #d0e0f7);
+						border-radius: 5px 5px 0 0;
+					"
+				>
+					<i class="ti ti-adjustments text-blue" style="font-size: 1rem"></i>
+					<span class="fw-semibold text-blue small">{{ t("Details") }}</span>
+				</div>
+				<div class="card-body p-3">
 					<div class="row g-2">
 						<div class="col-md-3">
 							<label class="form-label small">{{ t("Mode") }}</label>
 							<div class="btn-group w-100" role="group">
-								<input type="radio" class="btn-check" name="entry_kind" id="ek_expense" value="Expense" autocomplete="off" v-model="form.entry_kind">
+								<input
+									type="radio"
+									class="btn-check"
+									name="entry_kind"
+									id="ek_expense"
+									value="Expense"
+									autocomplete="off"
+									v-model="form.entry_kind"
+								/>
 								<label class="btn btn-outline-primary" for="ek_expense">{{ t("Expense") }}</label>
-								<input type="radio" class="btn-check" name="entry_kind" id="ek_asset" value="Asset Purchase" autocomplete="off" v-model="form.entry_kind">
-								<label class="btn btn-outline-primary" for="ek_asset">{{ t("Asset purchase") }}</label>
+								<input
+									type="radio"
+									class="btn-check"
+									name="entry_kind"
+									id="ek_asset"
+									value="Asset Purchase"
+									autocomplete="off"
+									v-model="form.entry_kind"
+								/>
+								<label class="btn btn-outline-primary" for="ek_asset">{{
+									t("Asset purchase")
+								}}</label>
 							</div>
 						</div>
 						<div class="col-md-3">
@@ -962,7 +1042,9 @@ watch(activeCompany, () => {
 							<DateInput v-model="form.posting_date" required />
 						</div>
 						<div class="col-md-3">
-							<label class="form-label small mb-1 d-flex justify-content-between align-items-baseline">
+							<label
+								class="form-label small mb-1 d-flex justify-content-between align-items-baseline"
+							>
 								<span>{{ t("Pay from") }}</span>
 								<span
 									v-if="paymentFromAccount && paymentFromAccount.account_balance != null"
@@ -999,7 +1081,8 @@ watch(activeCompany, () => {
 							/>
 							<div v-if="cbuRate" class="text-secondary small mt-1">
 								<i class="ti ti-building-bank" style="font-size: 0.75rem"></i>
-								CBU: {{ fmtRate(cbuRate) }}<span v-if="rateDate"> · {{ formatDate(rateDate) }}</span>
+								CBU: {{ fmtRate(cbuRate)
+								}}<span v-if="rateDate"> · {{ formatDate(rateDate) }}</span>
 							</div>
 							<div v-if="rateError" class="text-danger small mt-1">
 								<i class="ti ti-alert-triangle me-1"></i>{{ rateError }}
@@ -1032,36 +1115,70 @@ watch(activeCompany, () => {
 							</Typeahead>
 						</div>
 					</div>
-						</div><!-- /Panel A body -->
-					</div><!-- /Panel A -->
+				</div>
+				<!-- /Panel A body -->
+			</div>
+			<!-- /Panel A -->
 
-					<!-- Panel B: Expense / Asset lines (amber) -->
-					<div class="card card-sm mb-0" style="border: 1.5px solid var(--tblr-orange, #f76707); border-radius: 6px">
-						<div class="card-header py-2 px-3 d-flex align-items-center gap-2" style="background: var(--tblr-orange-lt, #fff4e6); border-bottom: 1px solid var(--tblr-orange-lt, #ffd8a8); border-radius: 5px 5px 0 0">
-							<i class="ti ti-list-details text-orange" style="font-size: 1rem"></i>
-							<span class="fw-semibold text-orange small">
-								{{ form.entry_kind === "Asset Purchase" ? t("Asset lines") : t("Expense lines") }}
-							</span>
-							<span class="ms-auto fw-bold font-monospace text-orange small">
-								{{ formatMoney(totalAmount, payCurrency, user.language) }}
-							</span>
-						</div>
-						<div class="card-body p-0">
+			<!-- Panel B: Expense / Asset lines (amber) -->
+			<div
+				class="card card-sm mb-0"
+				style="border: 1.5px solid var(--tblr-orange, #f76707); border-radius: 6px"
+			>
+				<div
+					class="card-header py-2 px-3 d-flex align-items-center gap-2"
+					style="
+						background: var(--tblr-orange-lt, #fff4e6);
+						border-bottom: 1px solid var(--tblr-orange-lt, #ffd8a8);
+						border-radius: 5px 5px 0 0;
+					"
+				>
+					<i class="ti ti-list-details text-orange" style="font-size: 1rem"></i>
+					<span class="fw-semibold text-orange small">
+						{{ form.entry_kind === "Asset Purchase" ? t("Asset lines") : t("Expense lines") }}
+					</span>
+					<span class="ms-auto fw-bold font-monospace text-orange small">
+						{{ formatMoney(totalAmount, payCurrency, user.language) }}
+					</span>
+				</div>
+				<div class="card-body p-0">
 					<div class="table-responsive">
-						<table ref="linesTableEl" class="table table-vcenter card-table" @keydown="handleLineKeyDown">
+						<table
+							ref="linesTableEl"
+							class="table table-vcenter card-table"
+							@keydown="handleLineKeyDown"
+						>
 							<thead>
 								<tr>
-									<th v-if="assetMode" style="min-width: 200px" class="text-uppercase text-secondary small">{{ t("Asset") }}</th>
-									<th style="min-width: 240px" class="text-uppercase text-secondary small">{{ t("Account") }}</th>
-									<th style="min-width: 160px" class="text-end text-uppercase text-secondary small">{{ t("Amount") }}</th>
-									<th v-if="isCrossCurrency" class="text-end text-secondary" style="min-width: 120px; font-size: 0.8em">
+									<th
+										v-if="assetMode"
+										style="min-width: 200px"
+										class="text-uppercase text-secondary small"
+									>
+										{{ t("Asset") }}
+									</th>
+									<th style="min-width: 240px" class="text-uppercase text-secondary small">
+										{{ t("Account") }}
+									</th>
+									<th style="min-width: 160px" class="text-end text-uppercase text-secondary small">
+										{{ t("Amount") }}
+									</th>
+									<th
+										v-if="isCrossCurrency"
+										class="text-end text-secondary"
+										style="min-width: 120px; font-size: 0.8em"
+									>
 										{{ baseCurrency }}
 									</th>
 									<th class="text-uppercase text-secondary small">{{ t("Memo") }}</th>
 									<th class="w-1"></th>
 								</tr>
 							</thead>
-							<SkeletonRows v-if="optionsLoading" :rows="3" :cols="(isCrossCurrency ? 5 : 4) + (assetMode ? 1 : 0)" />
+							<SkeletonRows
+								v-if="optionsLoading"
+								:rows="3"
+								:cols="(isCrossCurrency ? 5 : 4) + (assetMode ? 1 : 0)"
+							/>
 							<tbody v-else>
 								<!-- Real lines -->
 								<tr v-for="(line, idx) in form.lines" :key="line.id">
@@ -1077,7 +1194,9 @@ watch(activeCompany, () => {
 										>
 											<template #option="{ item }">
 												<span>{{ item.asset_name || item.name }}</span>
-												<span v-if="item.status" class="ms-auto text-secondary small">{{ item.status }}</span>
+												<span v-if="item.status" class="ms-auto text-secondary small">{{
+													item.status
+												}}</span>
 											</template>
 										</Typeahead>
 									</td>
@@ -1088,17 +1207,29 @@ watch(activeCompany, () => {
 											:display="lineAccountDisplay(line.account)"
 											:placeholder="t('Search account…')"
 											open-on-focus
-											@pick="(item) => { if (!item.__group) line.account = item.name; }"
+											@pick="
+												(item) => {
+													if (!item.__group) line.account = item.name;
+												}
+											"
 											@clear="() => (line.account = '')"
 										>
 											<template #option="{ item }">
 												<template v-if="item.__group">
-													<span class="text-uppercase text-secondary fw-semibold" style="font-size: 0.7em; letter-spacing: .04em">{{ item.__group }}</span>
+													<span
+														class="text-uppercase text-secondary fw-semibold"
+														style="font-size: 0.7em; letter-spacing: 0.04em"
+														>{{ item.__group }}</span
+													>
 												</template>
 												<template v-else>
 													<span>{{ item.account_name || item.name }}</span>
-													<span v-if="item.account_number" class="text-secondary ms-1 small">{{ item.account_number }}</span>
-													<span class="ms-auto text-secondary small font-monospace">{{ item.account_currency }}</span>
+													<span v-if="item.account_number" class="text-secondary ms-1 small">{{
+														item.account_number
+													}}</span>
+													<span class="ms-auto text-secondary small font-monospace">{{
+														item.account_currency
+													}}</span>
 												</template>
 											</template>
 										</Typeahead>
@@ -1115,7 +1246,9 @@ watch(activeCompany, () => {
 										/>
 									</td>
 									<td v-if="isCrossCurrency" class="text-end font-monospace text-secondary small">
-										<template v-if="lineBaseAmount(line) != null">{{ fmtAmt(lineBaseAmount(line), baseCurrency) }}</template>
+										<template v-if="lineBaseAmount(line) != null">{{
+											fmtAmt(lineBaseAmount(line), baseCurrency)
+										}}</template>
 										<template v-else>—</template>
 									</td>
 									<td>
@@ -1150,7 +1283,9 @@ watch(activeCompany, () => {
 										>
 											<template #option="{ item }">
 												<span>{{ item.asset_name || item.name }}</span>
-												<span v-if="item.status" class="ms-auto text-secondary small">{{ item.status }}</span>
+												<span v-if="item.status" class="ms-auto text-secondary small">{{
+													item.status
+												}}</span>
 											</template>
 										</Typeahead>
 									</td>
@@ -1161,16 +1296,28 @@ watch(activeCompany, () => {
 											:display="''"
 											:placeholder="t('Add a line…')"
 											open-on-focus
-											@pick="(item) => { if (!item.__group) materialGhost(item); }"
+											@pick="
+												(item) => {
+													if (!item.__group) materialGhost(item);
+												}
+											"
 										>
 											<template #option="{ item }">
 												<template v-if="item.__group">
-													<span class="text-uppercase text-secondary fw-semibold" style="font-size: 0.7em; letter-spacing: .04em">{{ item.__group }}</span>
+													<span
+														class="text-uppercase text-secondary fw-semibold"
+														style="font-size: 0.7em; letter-spacing: 0.04em"
+														>{{ item.__group }}</span
+													>
 												</template>
 												<template v-else>
 													<span>{{ item.account_name || item.name }}</span>
-													<span v-if="item.account_number" class="text-secondary ms-1 small">{{ item.account_number }}</span>
-													<span class="ms-auto text-secondary small font-monospace">{{ item.account_currency }}</span>
+													<span v-if="item.account_number" class="text-secondary ms-1 small">{{
+														item.account_number
+													}}</span>
+													<span class="ms-auto text-secondary small font-monospace">{{
+														item.account_currency
+													}}</span>
 												</template>
 											</template>
 										</Typeahead>
@@ -1208,64 +1355,68 @@ watch(activeCompany, () => {
 								</tr>
 							</tfoot>
 						</table>
-					</div><!-- /table-responsive -->
-						</div><!-- /Panel B body -->
-					</div><!-- /Panel B -->
-				</div><!-- /outer card-body -->
-				<div class="card-footer d-flex align-items-center gap-2">
-					<button
-						type="button"
-						class="btn btn-outline-secondary"
-						:disabled="submitting"
-						@click="closeCreate"
-					>
-						{{ t("Cancel") }}
-					</button>
-
-					<!-- Amend mode: single Save & close button -->
-					<button
-						v-if="editingName"
-						type="button"
-						class="btn btn-primary ms-auto"
-						:disabled="!canSubmit || submitting"
-						@click="submitCreate('close')"
-					>
-						<span v-if="submitting" class="spinner-border spinner-border-sm me-1"></span>
-						<i v-else class="ti ti-check me-1"></i>
-						{{ t("Save & close") }}
-					</button>
-
-					<!-- Create mode: QuickBooks-style split save group -->
-					<div v-else class="btn-group ms-auto">
-						<button
-							type="button"
-							class="btn btn-primary"
-							:disabled="!canSubmit || submitting"
-							@click="submitCreate(savedMode)"
-						>
-							<span v-if="submitting" class="spinner-border spinner-border-sm me-1"></span>
-							<i v-else class="ti ti-check me-1"></i>
-							{{ saveModeLabel }}
-						</button>
-						<button
-							type="button"
-							class="btn btn-primary dropdown-toggle dropdown-toggle-split"
-							data-bs-toggle="dropdown"
-							:disabled="!canSubmit || submitting"
-							aria-expanded="false"
-						></button>
-						<div class="dropdown-menu dropdown-menu-end stbl-menu stbl-menu--nocheck">
-							<a href="#" class="dropdown-item stbl-menu-item" @click.prevent="submitCreate('close')">
-								<i class="ti ti-x me-2"></i>{{ t("Save & close") }}
-							</a>
-							<a href="#" class="dropdown-item stbl-menu-item" @click.prevent="submitCreate('new')">
-								<i class="ti ti-plus me-2"></i>{{ t("Save & new") }}
-							</a>
-							<a href="#" class="dropdown-item stbl-menu-item" @click.prevent="submitCreate('clear')">
-								<i class="ti ti-eraser me-2"></i>{{ t("Save & clear") }}
-							</a>
-						</div>
 					</div>
+					<!-- /table-responsive -->
 				</div>
+				<!-- /Panel B body -->
+			</div>
+			<!-- /Panel B -->
+		</div>
+		<!-- /outer card-body -->
+		<div class="card-footer d-flex align-items-center gap-2">
+			<button
+				type="button"
+				class="btn btn-outline-secondary"
+				:disabled="submitting"
+				@click="closeCreate"
+			>
+				{{ t("Cancel") }}
+			</button>
+
+			<!-- Amend mode: single Save & close button -->
+			<button
+				v-if="editingName"
+				type="button"
+				class="btn btn-primary ms-auto"
+				:disabled="!canSubmit || submitting"
+				@click="submitCreate('close')"
+			>
+				<span v-if="submitting" class="spinner-border spinner-border-sm me-1"></span>
+				<i v-else class="ti ti-check me-1"></i>
+				{{ t("Save & close") }}
+			</button>
+
+			<!-- Create mode: QuickBooks-style split save group -->
+			<div v-else class="btn-group ms-auto">
+				<button
+					type="button"
+					class="btn btn-primary"
+					:disabled="!canSubmit || submitting"
+					@click="submitCreate(savedMode)"
+				>
+					<span v-if="submitting" class="spinner-border spinner-border-sm me-1"></span>
+					<i v-else class="ti ti-check me-1"></i>
+					{{ saveModeLabel }}
+				</button>
+				<button
+					type="button"
+					class="btn btn-primary dropdown-toggle dropdown-toggle-split"
+					data-bs-toggle="dropdown"
+					:disabled="!canSubmit || submitting"
+					aria-expanded="false"
+				></button>
+				<div class="dropdown-menu dropdown-menu-end stbl-menu stbl-menu--nocheck">
+					<a href="#" class="dropdown-item stbl-menu-item" @click.prevent="submitCreate('close')">
+						<i class="ti ti-x me-2"></i>{{ t("Save & close") }}
+					</a>
+					<a href="#" class="dropdown-item stbl-menu-item" @click.prevent="submitCreate('new')">
+						<i class="ti ti-plus me-2"></i>{{ t("Save & new") }}
+					</a>
+					<a href="#" class="dropdown-item stbl-menu-item" @click.prevent="submitCreate('clear')">
+						<i class="ti ti-eraser me-2"></i>{{ t("Save & clear") }}
+					</a>
+				</div>
+			</div>
+		</div>
 	</div>
 </template>

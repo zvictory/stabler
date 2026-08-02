@@ -24,6 +24,7 @@ import MoneyInput from "../../components/MoneyInput.vue";
 import DateInput from "../../components/DateInput.vue";
 import TenderPage from "./TenderPage.vue";
 import QuotationEntryDrawer from "../../components/QuotationEntryDrawer.vue";
+import LandedChargesEditor from "../../components/LandedChargesEditor.vue";
 
 const session = useSession();
 const { activeCompany, user } = storeToRefs(session);
@@ -45,6 +46,15 @@ const decisionLoading = ref(false);
 // Drawer state for Quotation entry/edit
 const entryOpen = ref(false);
 const entryQuotationName = ref("");
+
+// Landed Charges Editor state
+const landedOpen = ref(false);
+const landedRow = ref(null);
+
+function openLandedEditor(r) {
+	landedRow.value = r;
+	landedOpen.value = true;
+}
 
 // Modal state for RFQ creation
 const rfqOpen = ref(false);
@@ -75,7 +85,10 @@ async function searchDeals(q) {
 		search: q,
 		page_length: 20,
 	});
-	return (r?.deals || []).map((d) => ({ name: d.name, label: d.organization || d.lead_name || d.name }));
+	return (r?.deals || []).map((d) => ({
+		name: d.name,
+		label: d.organization || d.lead_name || d.name,
+	}));
 }
 
 async function searchSuppliers(q) {
@@ -216,7 +229,11 @@ async function createRfq() {
 		});
 		toast.success(t("Request for quotation created as draft."));
 		rfqOpen.value = false;
-		rfqForm.value = { suppliers: [], items: [{ item_code: "", itemLabel: "", qty: 1 }], schedule_date: "" };
+		rfqForm.value = {
+			suppliers: [],
+			items: [{ item_code: "", itemLabel: "", qty: 1 }],
+			schedule_date: "",
+		};
 		await loadRfqs();
 	} catch (err) {
 		toast.error(err?.message || t("Could not create RFQ."));
@@ -229,7 +246,9 @@ async function createRfq() {
 const rows = computed(() => data.value?.rows || []);
 const baseCcy = computed(() => data.value?.base_currency || "");
 const cheapestRow = computed(() => rows.value.find((r) => r.cheapest));
-const selectedRow = computed(() => rows.value.find((r) => r.name === awardForm.value.selected_quotation));
+const selectedRow = computed(() =>
+	rows.value.find((r) => r.name === awardForm.value.selected_quotation)
+);
 
 const isSelectedDifferentFromCheapest = computed(() => {
 	if (!selectedRow.value || !cheapestRow.value) return false;
@@ -318,7 +337,6 @@ watch(
 
 <template>
 	<TenderPage :label="t('Tender')" :title="t('Sourcing workspace')">
-
 		<!-- Deal picker card -->
 		<div class="card mb-3">
 			<div class="card-body d-flex align-items-center gap-2 flex-wrap">
@@ -331,7 +349,13 @@ watch(
 						size="sm"
 						:placeholder="t('Search a tender deal… ⌘K')"
 						@pick="pickDeal"
-						@clear="deal = ''; dealLabel = ''; data = null; decisionData = null; rfqs = []"
+						@clear="
+							deal = '';
+							dealLabel = '';
+							data = null;
+							decisionData = null;
+							rfqs = [];
+						"
 					>
 						<template #option="{ item }">{{ item.label }}</template>
 					</Typeahead>
@@ -353,15 +377,23 @@ watch(
 			<div class="card mb-3">
 				<div class="card-header py-2 d-flex justify-content-between align-items-center">
 					<span class="fw-semibold">{{ t("Requests for Quotation (RFQ)") }}</span>
-					<span class="badge bg-secondary-lt text-secondary">{{ rfqs.length }} {{ t("RFQs") }}</span>
+					<span class="badge bg-secondary-lt text-secondary"
+						>{{ rfqs.length }} {{ t("RFQs") }}</span
+					>
 				</div>
 				<div class="card-body py-2">
 					<div v-if="rfqsLoading" class="text-secondary small py-1">{{ t("Loading RFQs…") }}</div>
 					<div v-else-if="!rfqs.length" class="text-secondary small py-1">
-						{{ t("No RFQs created for this deal yet. Click 'Request for quotation' to raise one.") }}
+						{{
+							t("No RFQs created for this deal yet. Click 'Request for quotation' to raise one.")
+						}}
 					</div>
 					<div v-else class="d-flex flex-wrap gap-2">
-						<div v-for="rfq in rfqs" :key="rfq.name" class="border rounded px-2 py-1 small d-flex align-items-center gap-2">
+						<div
+							v-for="rfq in rfqs"
+							:key="rfq.name"
+							class="border rounded px-2 py-1 small d-flex align-items-center gap-2"
+						>
 							<i class="ti ti-file-text text-secondary"></i>
 							<span class="fw-semibold">{{ rfq.name }}</span>
 							<span class="text-secondary">· {{ formatDate(rfq.transaction_date) }}</span>
@@ -374,13 +406,19 @@ watch(
 			<!-- Policy checks bar -->
 			<div v-if="data" class="row g-2 mb-3">
 				<div class="col-auto">
-					<span class="badge" :class="data.has_min_5 ? 'bg-green-lt text-green' : 'bg-yellow-lt text-yellow'">
+					<span
+						class="badge"
+						:class="data.has_min_5 ? 'bg-green-lt text-green' : 'bg-yellow-lt text-yellow'"
+					>
 						<i class="ti" :class="data.has_min_5 ? 'ti-check' : 'ti-alert-triangle'"></i>
 						{{ t("Quotations") }}: {{ data.count }} / 5
 					</span>
 				</div>
 				<div class="col-auto">
-					<span class="badge" :class="data.has_2_countries ? 'bg-green-lt text-green' : 'bg-yellow-lt text-yellow'">
+					<span
+						class="badge"
+						:class="data.has_2_countries ? 'bg-green-lt text-green' : 'bg-yellow-lt text-yellow'"
+					>
 						<i class="ti" :class="data.has_2_countries ? 'ti-check' : 'ti-alert-triangle'"></i>
 						{{ t("Countries") }}: {{ data.countries }} / 2
 					</span>
@@ -389,7 +427,16 @@ watch(
 
 			<!-- Section 2: Supplier Quotations Table -->
 			<div class="card mb-3">
-				<div class="card-header py-2 fw-semibold">{{ t("Supplier quotations comparison") }}</div>
+				<div class="card-header py-2 fw-semibold d-flex justify-content-between align-items-center">
+					<span>{{ t("Supplier quotations comparison") }}</span>
+					<span
+						v-if="data?.estimate_complete === false && rows.length > 0"
+						class="badge bg-warning-lt text-warning"
+					>
+						<i class="ti ti-alert-triangle me-1"></i>
+						{{ t("Landed estimates incomplete") }}
+					</span>
+				</div>
 				<div class="card-body p-0">
 					<table class="table card-table">
 						<thead>
@@ -397,42 +444,96 @@ watch(
 								<th>{{ t("Supplier") }}</th>
 								<th>{{ t("Country") }}</th>
 								<th class="text-end">{{ t("Total") }}</th>
-								<th class="text-end">{{ t("Base total") }} ({{ baseCcy }})</th>
+								<th class="text-end">{{ t("Sticker price") }} ({{ baseCcy }})</th>
+								<th class="text-end">{{ t("Landed estimate") }}</th>
+								<th class="text-end">{{ t("Delivered total") }} ({{ baseCcy }})</th>
 								<th>{{ t("Valid till") }}</th>
 								<th>{{ t("Status") }}</th>
 								<th class="text-end">{{ t("Actions") }}</th>
 							</tr>
 						</thead>
 						<tbody>
-							<SkeletonRows v-if="loading" :cols="7" :rows="4" />
+							<SkeletonRows v-if="loading" :cols="9" :rows="4" />
 							<tr
 								v-for="r in rows"
 								:key="r.name"
 								:class="{
-									'table-success': r.cheapest && decisionData?.decision?.selected_quotation === r.name,
-									'table-primary': decisionData?.decision?.selected_quotation === r.name && !r.cheapest,
+									'table-success':
+										r.cheapest && decisionData?.decision?.selected_quotation === r.name,
+									'table-primary':
+										decisionData?.decision?.selected_quotation === r.name && !r.cheapest,
 								}"
 							>
 								<td>
 									<span class="fw-semibold" :title="r.name">{{ r.supplier_name }}</span>
-									<span v-if="r.cheapest" class="badge bg-green text-white ms-1">{{ t("Cheapest") }}</span>
-									<span v-if="decisionData?.decision?.selected_quotation === r.name" class="badge bg-blue text-white ms-1">{{ t("Winner") }}</span>
+									<span
+										v-if="r.is_cheapest_landed || (r.cheapest && data?.estimate_complete !== false)"
+										class="badge bg-green text-white ms-1"
+										:title="t('Lowest total delivered cost including freight and customs')"
+									>
+										{{ t("Cheapest Delivered") }}
+									</span>
+									<span
+										v-else-if="r.is_cheapest_price"
+										class="badge bg-warning-lt text-warning ms-1"
+										:title="t('Lowest sticker price excluding landed costs')"
+									>
+										{{ t("Sticker Leader") }}
+									</span>
+									<span
+										v-if="decisionData?.decision?.selected_quotation === r.name"
+										class="badge bg-blue text-white ms-1"
+										>{{ t("Winner") }}</span
+									>
 								</td>
 								<td class="text-secondary">{{ r.country || "—" }}</td>
-								<td class="text-end font-monospace">{{ formatMoney(r.grand_total, r.currency, user.language) }}</td>
-								<td class="text-end font-monospace fw-bold">{{ formatMoney(r.base_total, baseCcy, user.language) }}</td>
+								<td class="text-end font-monospace">
+									{{ formatMoney(r.grand_total, r.currency, user.language) }}
+								</td>
+								<td class="text-end font-monospace">
+									{{ formatMoney(r.base_total, baseCcy, user.language) }}
+								</td>
+								<td class="text-end font-monospace">
+									<template v-if="r.has_landed_estimate">
+										+{{ formatMoney(r.landed_charges_total, baseCcy, user.language) }}
+									</template>
+									<span v-else class="text-secondary small">—</span>
+								</td>
+								<td class="text-end font-monospace fw-bold">
+									{{ formatMoney(r.base_landed_total || r.base_total, baseCcy, user.language) }}
+								</td>
 								<td>{{ r.valid_till ? formatDate(r.valid_till) : "—" }}</td>
-								<td><span class="text-secondary small">{{ r.status }}</span></td>
+								<td>
+									<span class="text-secondary small">{{ r.status }}</span>
+								</td>
 								<td class="text-end">
+									<button
+										type="button"
+										class="btn btn-ghost-secondary btn-sm me-1"
+										@click="openLandedEditor(r)"
+										:title="t('Estimate landed costs')"
+									>
+										<i class="ti ti-truck-delivery"></i> {{ t("Landed cost") }}
+									</button>
 									<template v-if="r.docstatus === 0">
-										<button type="button" class="btn btn-ghost-primary btn-sm me-1" @click="openEditQuotation(r.name)">
+										<button
+											type="button"
+											class="btn btn-ghost-primary btn-sm me-1"
+											@click="openEditQuotation(r.name)"
+										>
 											{{ t("Edit") }}
 										</button>
-										<button type="button" class="btn btn-outline-success btn-sm" @click="submitQuotation(r.name)">
+										<button
+											type="button"
+											class="btn btn-outline-success btn-sm"
+											@click="submitQuotation(r.name)"
+										>
 											{{ t("Submit") }}
 										</button>
 									</template>
-									<span v-else class="text-secondary small"><i class="ti ti-check"></i> {{ t("Submitted") }}</span>
+									<span v-else class="text-secondary small"
+										><i class="ti ti-check"></i> {{ t("Submitted") }}</span
+									>
 								</td>
 							</tr>
 						</tbody>
@@ -448,20 +549,45 @@ watch(
 
 			<!-- Section 3: Winner Selection & Award Panel -->
 			<div v-if="canSourcingView" class="card border-primary mb-3">
-				<div class="card-header bg-primary-lt py-2 d-flex justify-content-between align-items-center">
-					<span class="fw-bold text-primary"><i class="ti ti-trophy me-1"></i>{{ t("Sourcing award decision") }}</span>
+				<div
+					class="card-header bg-primary-lt py-2 d-flex justify-content-between align-items-center"
+				>
+					<span class="fw-bold text-primary"
+						><i class="ti ti-trophy me-1"></i>{{ t("Sourcing award decision") }}</span
+					>
 					<span
 						v-if="decisionData?.decision"
 						class="badge"
-						:class="decisionData.decision.status === 'Approved' ? 'bg-green text-white' : 'bg-yellow text-dark'"
+						:class="
+							decisionData.decision.status === 'Approved'
+								? 'bg-green text-white'
+								: 'bg-yellow text-dark'
+						"
 					>
 						{{ decisionData.decision.status }}
 					</span>
 				</div>
 
 				<div class="card-body">
+					<!-- Incomplete Landed Estimate Warning Banner -->
+					<div
+						v-if="data?.estimate_complete === false && rows.length > 0"
+						class="alert alert-warning py-2 mb-3"
+					>
+						<i class="ti ti-alert-triangle me-1"></i>
+						<b>{{ t("Landed cost estimates incomplete:") }}</b>
+						{{
+							t(
+								"Not all quotations have landed cost estimates. Landed ranking is paused until all bids carry estimates."
+							)
+						}}
+					</div>
+
 					<!-- Case 1: Award is APPROVED (Read-only) -->
-					<div v-if="decisionData?.decision?.status === 'Approved'" class="d-flex flex-column gap-2">
+					<div
+						v-if="decisionData?.decision?.status === 'Approved'"
+						class="d-flex flex-column gap-2"
+					>
 						<div class="row align-items-center">
 							<div class="col-md-6">
 								<div class="text-secondary small text-uppercase">{{ t("Selected winner") }}</div>
@@ -469,29 +595,49 @@ watch(
 									{{ selectedRow?.supplier_name || decisionData.decision.selected_quotation }}
 								</div>
 								<div class="text-secondary small">
-									{{ formatMoney(selectedRow?.base_total, baseCcy, user.language) }}
+									{{
+										formatMoney(
+											selectedRow?.base_landed_total || selectedRow?.base_total,
+											baseCcy,
+											user.language
+										)
+									}}
 								</div>
 							</div>
 							<div class="col-md-6 text-md-end">
-								<div class="text-secondary small">{{ t("Approved by") }}: <b>{{ decisionData.decision.approved_by }}</b></div>
-								<div class="text-secondary small">{{ t("Approved at") }}: {{ formatDate(decisionData.decision.approved_at) }}</div>
+								<div class="text-secondary small">
+									{{ t("Approved by") }}: <b>{{ decisionData.decision.approved_by }}</b>
+								</div>
+								<div class="text-secondary small">
+									{{ t("Approved at") }}: {{ formatDate(decisionData.decision.approved_at) }}
+								</div>
 							</div>
 						</div>
 
 						<hr class="my-2" />
 
-						<div v-if="decisionData.decision.selected_quotation !== decisionData.decision.cheapest_quotation" class="alert alert-warning py-2 mb-2">
+						<div
+							v-if="
+								decisionData.decision.selected_quotation !==
+								decisionData.decision.cheapest_quotation
+							"
+							class="alert alert-warning py-2 mb-2"
+						>
 							<i class="ti ti-info-circle me-1"></i>
 							{{ t("The selected quotation was NOT the cheapest bid.") }}
 						</div>
 
 						<div>
-							<span class="text-secondary small fw-bold d-block">{{ t("Reason for selection") }}:</span>
+							<span class="text-secondary small fw-bold d-block"
+								>{{ t("Reason for selection") }}:</span
+							>
 							<p class="mb-2 text-body">{{ decisionData.decision.selection_reason }}</p>
 						</div>
 
 						<div v-if="decisionData.decision.policy_exception" class="alert alert-danger py-2 mb-0">
-							<div class="fw-bold"><i class="ti ti-shield-alert me-1"></i>{{ t("Policy exception approved") }}</div>
+							<div class="fw-bold">
+								<i class="ti ti-shield-alert me-1"></i>{{ t("Policy exception approved") }}
+							</div>
 							<div class="small">{{ decisionData.decision.exception_reason }}</div>
 						</div>
 					</div>
@@ -504,8 +650,15 @@ watch(
 								<select v-model="awardForm.selected_quotation" class="form-select">
 									<option value="">-- {{ t("Pick a quotation") }} --</option>
 									<option v-for="r in rows" :key="r.name" :value="r.name">
-										{{ r.supplier_name }} — {{ formatMoney(r.base_total, baseCcy, user.language) }}
-										{{ r.cheapest ? `(${t("Cheapest")})` : "" }}
+										{{ r.supplier_name }} —
+										{{ formatMoney(r.base_landed_total || r.base_total, baseCcy, user.language) }}
+										{{
+											r.is_cheapest_landed
+												? `(${t("Cheapest Delivered")})`
+												: r.is_cheapest_price
+													? `(${t("Sticker Leader")})`
+													: ""
+										}}
 									</option>
 								</select>
 							</div>
@@ -524,18 +677,25 @@ watch(
 						</div>
 
 						<!-- Selected vs Cheapest Delta Banner -->
-						<div v-if="isSelectedDifferentFromCheapest" class="alert alert-warning py-2 mb-0 d-flex align-items-center gap-2">
+						<div
+							v-if="isSelectedDifferentFromCheapest"
+							class="alert alert-warning py-2 mb-0 d-flex align-items-center gap-2"
+						>
 							<i class="ti ti-alert-circle fs-3 text-warning"></i>
 							<div>
 								<div class="fw-bold">{{ t("Selected bid is higher than the cheapest offer") }}</div>
 								<div class="small">
-									{{ t("Difference") }}: <b>+{{ formatMoney(diffAmount, baseCcy, user.language) }} (+{{ diffPct }}%)</b> {{ t("over cheapest bid") }}
+									{{ t("Difference") }}:
+									<b>+{{ formatMoney(diffAmount, baseCcy, user.language) }} (+{{ diffPct }}%)</b>
+									{{ t("over cheapest bid") }}
 								</div>
 							</div>
 						</div>
 
 						<div>
-							<label class="form-label fw-semibold">{{ t("Reason for selection") }} <span class="text-danger">*</span></label>
+							<label class="form-label fw-semibold"
+								>{{ t("Reason for selection") }} <span class="text-danger">*</span></label
+							>
 							<textarea
 								v-model="awardForm.selection_reason"
 								class="form-control"
@@ -560,16 +720,24 @@ watch(
 
 							<div v-if="requiresPolicyException" class="text-danger small mb-2">
 								<i class="ti ti-alert-triangle me-1"></i>
-								{{ t("Policy rule (5 quotes / 2 countries) not satisfied. Check policy exception and specify reason.") }}
+								{{
+									t(
+										"Policy rule (5 quotes / 2 countries) not satisfied. Check policy exception and specify reason."
+									)
+								}}
 							</div>
 
 							<div v-if="awardForm.policy_exception">
-								<label class="form-label small fw-semibold">{{ t("Exception justification") }} <span class="text-danger">*</span></label>
+								<label class="form-label small fw-semibold"
+									>{{ t("Exception justification") }} <span class="text-danger">*</span></label
+								>
 								<textarea
 									v-model="awardForm.exception_reason"
 									class="form-control form-control-sm"
 									rows="2"
-									:placeholder="t('Explain why the 5-quote / 2-country policy could not be fulfilled…')"
+									:placeholder="
+										t('Explain why the 5-quote / 2-country policy could not be fulfilled…')
+									"
 								></textarea>
 							</div>
 						</div>
@@ -587,7 +755,11 @@ watch(
 							</button>
 
 							<button
-								v-if="canDirectorView && decisionData?.decision?.name && decisionData?.decision?.status === 'Draft'"
+								v-if="
+									canDirectorView &&
+									decisionData?.decision?.name &&
+									decisionData?.decision?.status === 'Draft'
+								"
 								type="button"
 								class="btn btn-success"
 								:disabled="approvingDecision"
@@ -597,7 +769,10 @@ watch(
 								<i class="ti ti-check me-1"></i>{{ t("Approve decision") }}
 							</button>
 
-							<span v-if="!canDirectorView && decisionData?.decision?.name" class="text-secondary small ms-auto">
+							<span
+								v-if="!canDirectorView && decisionData?.decision?.name"
+								class="text-secondary small ms-auto"
+							>
 								<i class="ti ti-lock me-1"></i>{{ t("Approval requires Director view") }}
 							</span>
 						</div>
@@ -611,32 +786,59 @@ watch(
 				:deal="deal"
 				:deal-label="dealLabel"
 				:quotation-name="entryQuotationName"
-				@close="entryOpen = false; entryQuotationName = ''"
-				@saved="loadAll"
-			/>
+				@close="
+					entryOpen = false;
+					entryQuotationName = '';
+				"
+				@saved="loadAll" />
 
 			<!-- Modal for Creating RFQ -->
-			<div v-if="rfqOpen" class="modal fade show d-block" tabindex="-1" style="background: rgba(0,0,0,.45)">
+			<div
+				v-if="rfqOpen"
+				class="modal fade show d-block"
+				tabindex="-1"
+				style="background: rgba(0, 0, 0, 0.45)"
+			>
 				<div class="modal-dialog modal-lg modal-dialog-centered">
 					<div class="modal-content">
 						<div class="modal-header py-2">
 							<h3 class="modal-title">{{ t("Create Request for Quotation (RFQ)") }}</h3>
-							<button type="button" class="btn-close" :disabled="rfqSaving" @click="rfqOpen = false"></button>
+							<button
+								type="button"
+								class="btn-close"
+								:disabled="rfqSaving"
+								@click="rfqOpen = false"
+							></button>
 						</div>
 						<div class="modal-body">
 							<div class="mb-3">
-								<label class="form-label fw-semibold">{{ t("Select suppliers to ask") }} <span class="text-danger">*</span></label>
+								<label class="form-label fw-semibold"
+									>{{ t("Select suppliers to ask") }} <span class="text-danger">*</span></label
+								>
 								<div class="d-flex flex-wrap gap-1 mb-2" v-if="rfqForm.suppliers.length">
-									<span v-for="(sup, idx) in rfqForm.suppliers" :key="sup" class="badge bg-primary-lt text-primary">
+									<span
+										v-for="(sup, idx) in rfqForm.suppliers"
+										:key="sup"
+										class="badge bg-primary-lt text-primary"
+									>
 										{{ sup }}
-										<button type="button" class="btn-close ms-1" style="font-size: 10px" @click="rfqForm.suppliers.splice(idx, 1)"></button>
+										<button
+											type="button"
+											class="btn-close ms-1"
+											style="font-size: 10px"
+											@click="rfqForm.suppliers.splice(idx, 1)"
+										></button>
 									</span>
 								</div>
 								<Typeahead
 									:search="searchSuppliers"
 									size="sm"
 									:placeholder="t('Search and add suppliers… ⌘K')"
-									@pick="(o) => { if (!rfqForm.suppliers.includes(o.name)) rfqForm.suppliers.push(o.name); }"
+									@pick="
+										(o) => {
+											if (!rfqForm.suppliers.includes(o.name)) rfqForm.suppliers.push(o.name);
+										}
+									"
 								>
 									<template #option="{ item }">{{ item.label }}</template>
 								</Typeahead>
@@ -649,8 +851,14 @@ watch(
 
 							<div class="mb-3">
 								<div class="d-flex justify-content-between align-items-center mb-2">
-									<label class="form-label fw-semibold mb-0">{{ t("Requested items") }} <span class="text-danger">*</span></label>
-									<button type="button" class="btn btn-outline-secondary btn-sm" @click="addRfqItem">
+									<label class="form-label fw-semibold mb-0"
+										>{{ t("Requested items") }} <span class="text-danger">*</span></label
+									>
+									<button
+										type="button"
+										class="btn btn-outline-secondary btn-sm"
+										@click="addRfqItem"
+									>
 										<i class="ti ti-plus me-1"></i>{{ t("Add line") }}
 									</button>
 								</div>
@@ -671,8 +879,16 @@ watch(
 													:search="searchItems"
 													size="sm"
 													:placeholder="t('Search item… ⌘K')"
-													@pick="(o) => { line.item_code = o.name; line.itemLabel = o.label; }"
-													@clear="line.item_code = ''; line.itemLabel = '';"
+													@pick="
+														(o) => {
+															line.item_code = o.name;
+															line.itemLabel = o.label;
+														}
+													"
+													@clear="
+														line.item_code = '';
+														line.itemLabel = '';
+													"
 												>
 													<template #option="{ item }">{{ item.label }}</template>
 												</Typeahead>
@@ -681,7 +897,11 @@ watch(
 												<MoneyInput v-model="line.qty" hide-currency size="sm" :min="1" />
 											</td>
 											<td class="text-center">
-												<button type="button" class="btn btn-ghost-danger btn-icon btn-sm" @click="removeRfqItem(idx)">
+												<button
+													type="button"
+													class="btn btn-ghost-danger btn-icon btn-sm"
+													@click="removeRfqItem(idx)"
+												>
 													<i class="ti ti-trash"></i>
 												</button>
 											</td>
@@ -692,21 +912,45 @@ watch(
 						</div>
 
 						<div class="modal-footer py-2">
-							<button type="button" class="btn btn-outline-secondary" :disabled="rfqSaving" @click="rfqOpen = false">{{ t("Cancel") }}</button>
+							<button
+								type="button"
+								class="btn btn-outline-secondary"
+								:disabled="rfqSaving"
+								@click="rfqOpen = false"
+							>
+								{{ t("Cancel") }}
+							</button>
 							<button
 								type="button"
 								class="btn btn-primary"
-								:disabled="rfqSaving || !rfqForm.suppliers.length || !rfqForm.items.some((i) => i.item_code && i.qty > 0)"
+								:disabled="
+									rfqSaving ||
+									!rfqForm.suppliers.length ||
+									!rfqForm.items.some((i) => i.item_code && i.qty > 0)
+								"
 								@click="createRfq"
 							>
-								<span v-if="rfqSaving" class="spinner-border spinner-border-sm me-1"></span>{{ t("Create draft RFQ") }}
+								<span v-if="rfqSaving" class="spinner-border spinner-border-sm me-1"></span
+								>{{ t("Create draft RFQ") }}
 							</button>
 						</div>
 					</div>
 				</div>
-			</div>
-		</template>
+				<LandedChargesEditor
+					:show="landedOpen"
+					:quotation-name="landedRow?.name || ''"
+					:supplier-name="landedRow?.supplier_name || ''"
+					:currency="landedRow?.currency || 'USD'"
+					:base-grand-total="landedRow?.base_grand_total || landedRow?.base_total || 0"
+					@close="landedOpen = false"
+					@saved="loadAll"
+				/></div
+		></template>
 
-		<EmptyState v-else icon="ti-search" :title="t('Pick a tender deal to view its sourcing workspace.')" />
+		<EmptyState
+			v-else
+			icon="ti-search"
+			:title="t('Pick a tender deal to view its sourcing workspace.')"
+		/>
 	</TenderPage>
 </template>
