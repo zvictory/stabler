@@ -81,8 +81,8 @@ class _FakeFrappe:
 	def __init__(self):
 		self.docs = {
 			("Company", "ACME"): _Doc(name="ACME", default_warehouse="Stores - ACME"),
-			("Item", "RAIL-01"): _Doc(name="RAIL-01", is_stock_item=1),
-			("Item", "SERVICE-01"): _Doc(name="SERVICE-01", is_stock_item=0),
+			("Item", "RAIL-01"): _Doc(name="RAIL-01", is_stock_item=1, stock_uom="Nos"),
+			("Item", "SERVICE-01"): _Doc(name="SERVICE-01", is_stock_item=0, stock_uom="Nos"),
 			("CRM Deal", "LOT-A"): _Doc(name="LOT-A", company="ACME", deal_type="Tender"),
 			("CRM Deal", "LOT-DENIED"): _Doc(name="LOT-DENIED", company="ACME", deal_type="Tender"),
 			("CRM Deal", "LOT-OTHER"): _Doc(name="LOT-OTHER", company="Other Co", deal_type="Tender"),
@@ -360,6 +360,7 @@ def _load_api(
 	utils = types.ModuleType("frappe.utils")
 	utils.flt = lambda value: float(value or 0)
 	utils.today = lambda: "2026-08-02"
+	utils.getdate = lambda val=None: str(val) if val else "2026-08-02"
 
 	utils.now_datetime = lambda: datetime(2026, 8, 2, 10, 0, 0)
 
@@ -511,13 +512,13 @@ class TestCreateRfq(unittest.TestCase):
 	def test_stock_item_rfq_resolves_company_default_warehouse(self):
 		self._create(items=[{"item_code": "RAIL-01", "qty": 5}])
 		doc = self.fake.created[-1]
-		self.assertEqual(doc.get("set_warehouse"), "Stores - ACME")
+		self.assertIsNone(doc.get("set_warehouse"))
 		self.assertEqual(doc["items"][0].get("warehouse"), "Stores - ACME")
 
 	def test_explicit_warehouse_overrides_company_default(self):
 		self._create(items=[{"item_code": "RAIL-01", "qty": 5}], warehouse="Stores - ACME")
 		doc = self.fake.created[-1]
-		self.assertEqual(doc.get("set_warehouse"), "Stores - ACME")
+		self.assertEqual(doc["items"][0].get("warehouse"), "Stores - ACME")
 
 	def test_missing_company_default_warehouse_with_stock_item_throws_our_error(self):
 		self.fake.docs[("Company", "ACME")]["default_warehouse"] = None
@@ -529,6 +530,34 @@ class TestCreateRfq(unittest.TestCase):
 		self.fake.docs[("Company", "ACME")]["default_warehouse"] = None
 		res = self._create(items=[{"item_code": "SERVICE-01", "qty": 1}])
 		self.assertTrue(res.get("name"))
+
+	def test_rfq_item_uom_and_stock_uom_populated_from_item(self):
+		self._create(items=[{"item_code": "RAIL-01", "qty": 5}])
+		item_row = self.fake.created[-1]["items"][0]
+		self.assertEqual(item_row.get("stock_uom"), "Nos")
+		self.assertEqual(item_row.get("uom"), "Nos")
+
+	def test_rfq_item_conversion_factor_is_one_when_uom_matches_stock_uom(self):
+		self._create(items=[{"item_code": "RAIL-01", "qty": 5}])
+		item_row = self.fake.created[-1]["items"][0]
+		self.assertEqual(item_row.get("conversion_factor"), 1.0)
+
+	def test_rfq_item_empty_schedule_date_uses_header_or_today(self):
+		self._create(items=[{"item_code": "RAIL-01", "qty": 5}], schedule_date="2026-08-20")
+		item_row = self.fake.created[-1]["items"][0]
+		self.assertEqual(item_row.get("schedule_date"), "2026-08-20")
+
+		self._create(items=[{"item_code": "RAIL-01", "qty": 5}], schedule_date=None)
+		item_row_today = self.fake.created[-1]["items"][0]
+		self.assertTrue(item_row_today.get("schedule_date"))
+
+	def test_rfq_item_explicit_schedule_date_is_preserved(self):
+		self._create(
+			items=[{"item_code": "RAIL-01", "qty": 5, "schedule_date": "2026-09-01"}],
+			schedule_date="2026-08-20",
+		)
+		item_row = self.fake.created[-1]["items"][0]
+		self.assertEqual(item_row.get("schedule_date"), "2026-09-01")
 
 	def test_the_rfq_stays_a_draft_and_sends_no_email(self):
 		"""This slice creates the request; contacting the supplier stays a human
@@ -721,7 +750,7 @@ class TestSaveSupplierQuotation(unittest.TestCase):
 	def test_saved_quotation_has_warehouse_from_company_default(self):
 		res = self._save(items=[{"item_code": "RAIL-01", "qty": 1, "rate": 10}])
 		doc = next(d for d in self.fake.created if d.get("name") == res["name"])
-		self.assertEqual(doc.get("set_warehouse"), "Stores - ACME")
+		self.assertIsNone(doc.get("set_warehouse"))
 		self.assertEqual(doc["items"][0].get("warehouse"), "Stores - ACME")
 
 	def test_missing_company_default_warehouse_throws_our_error(self):
@@ -736,7 +765,7 @@ class TestSaveSupplierQuotation(unittest.TestCase):
 			warehouse="Stores - ACME",
 		)
 		doc = next(d for d in self.fake.created if d.get("name") == res["name"])
-		self.assertEqual(doc.get("set_warehouse"), "Stores - ACME")
+		self.assertEqual(doc["items"][0].get("warehouse"), "Stores - ACME")
 
 	def test_valid_till_before_transaction_date_throws_our_error(self):
 		with self.assertRaises(ValueError) as ctx:

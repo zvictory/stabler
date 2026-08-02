@@ -29,7 +29,7 @@ import json
 
 import frappe
 from frappe import _
-from frappe.utils import flt, now_datetime, today
+from frappe.utils import flt, getdate, now_datetime, today
 
 from stabler.api._common import _company_default_warehouse
 from stabler.api.tender import _require_tender, _require_tender_view
@@ -274,6 +274,41 @@ def _resolve_warehouse(selected_company: str, warehouse: str | None, lines: list
 	return target_wh or None
 
 
+def _apply_rfq_item_defaults(lines: list[dict], fallback_schedule_date) -> None:
+	"""Fill the item defaults the Desk form fetches client-side.
+
+	`Request for Quotation` is the one buying document whose controller does NOT
+	call `super().validate()` — it cherry-picks four supers instead — so
+	`AccountsController.validate` never runs and `set_missing_values` is never
+	called for it. Supplier Quotation gets uom / stock_uom / conversion_factor
+	filled for free; an RFQ built server-side gets nothing, and ERPNext then
+	rejects the row for a field the user was never shown a box for.
+
+	Verified against erpnext/buying/doctype/request_for_quotation/
+	request_for_quotation.py::validate and controllers/accounts_controller.py:225.
+	"""
+	for line in lines:
+		stock_uom = frappe.db.get_value("Item", line["item_code"], "stock_uom")
+		# RFQ is deliberately ABSENT from get_item_details' purchase_uom branch
+		# (erpnext/stock/get_item_details.py:479-486), so the Desk form lands on
+		# stock_uom for this doctype too. Matching it keeps the unit we ask the
+		# supplier in identical whether the RFQ was raised here or in Desk.
+		uom = line.get("uom") or stock_uom
+		line["stock_uom"] = stock_uom
+		line["uom"] = uom
+		if uom == stock_uom:
+			line["conversion_factor"] = 1.0
+		else:
+			from erpnext.stock.get_item_details import get_conversion_factor
+
+			line["conversion_factor"] = (
+				get_conversion_factor(line["item_code"], uom).get("conversion_factor") or 1.0
+			)
+		# reqd on Request for Quotation Item, and frappe applies no doctype
+		# default to a row created by `append` (base_document._init_child).
+		line["schedule_date"] = line.get("schedule_date") or fallback_schedule_date or today()
+
+
 @frappe.whitelist()
 def save_supplier_quotation(
 	deal, supplier, currency, items, valid_till=None, name=None, company=None, warehouse=None
@@ -302,7 +337,7 @@ def save_supplier_quotation(
 	_assert_suppliers_permitted([supplier_name])
 	lines = _clean_quotation_items(frappe.parse_json(items))
 
-	target_wh = _resolve_warehouse(selected_company, warehouse, lines)
+	_resolve_warehouse(selected_company, warehouse, lines)
 
 	if name:
 		doc = _quotation_for_edit(name, deal, selected_company)
@@ -315,7 +350,7 @@ def save_supplier_quotation(
 		doc.transaction_date = today()
 		effective_tx_date = str(doc.transaction_date)
 
-	if valid_till and str(valid_till) < effective_tx_date:
+	if valid_till and getdate(valid_till) < getdate(effective_tx_date):
 		frappe.throw(
 			_("Valid till date ({0}) cannot be before transaction date ({1}).").format(
 				valid_till, effective_tx_date
@@ -327,8 +362,6 @@ def save_supplier_quotation(
 	doc.supplier = supplier_name
 	doc.currency = currency_code
 	doc.valid_till = valid_till or None
-	if target_wh:
-		doc.set_warehouse = target_wh
 	setattr(doc, _SQ_DEAL_FIELD, deal)
 	for line in lines:
 		doc.append("items", line)
@@ -417,19 +450,19 @@ def create_rfq(deal, suppliers, items, schedule_date=None, company=None, warehou
 	supplier_names = _clean_suppliers(frappe.parse_json(suppliers))
 	lines = _clean_items(frappe.parse_json(items))
 	_assert_suppliers_permitted(supplier_names)
-	target_wh = _resolve_warehouse(selected_company, warehouse, lines)
+	_resolve_warehouse(selected_company, warehouse, lines)
+	_apply_rfq_item_defaults(lines, schedule_date)
 
 	doc = frappe.new_doc("Request for Quotation")
 	doc.company = selected_company
 	doc.transaction_date = today()
 	doc.schedule_date = schedule_date or None
-	if target_wh:
-		doc.set_warehouse = target_wh
+	# RFQ and Supplier Quotation do not have a set_warehouse field in header (unlike PO/PR/PI/SO); warehouse is set per line.
 	setattr(doc, _RFQ_DEAL_FIELD, deal)
 	for supplier in supplier_names:
 		doc.append("suppliers", {"supplier": supplier})
 	for line in lines:
-		doc.append("items", {**line, "schedule_date": line["schedule_date"] or schedule_date})
+		doc.append("items", dict(line))
 	doc.insert()
 	return {
 		"name": doc.name,
