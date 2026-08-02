@@ -31,6 +31,7 @@ import frappe
 from frappe import _
 from frappe.utils import flt, now_datetime, today
 
+from stabler.api._common import _company_default_warehouse
 from stabler.api.tender import _require_tender, _require_tender_view
 from stabler.api.tender_master import require_selected_company
 
@@ -238,7 +239,9 @@ def get_supplier_quotation(name, company=None):
 
 
 @frappe.whitelist()
-def save_supplier_quotation(deal, supplier, currency, items, valid_till=None, name=None, company=None):
+def save_supplier_quotation(
+	deal, supplier, currency, items, valid_till=None, name=None, company=None, warehouse=None
+):
 	"""Create or update a DRAFT Supplier Quotation tagged to one tender lot.
 
 	Submitting is a separate call on purpose. The sourcing policy counts drafts
@@ -261,6 +264,30 @@ def save_supplier_quotation(deal, supplier, currency, items, valid_till=None, na
 	_assert_suppliers_permitted([supplier_name])
 	lines = _clean_quotation_items(frappe.parse_json(items))
 
+	target_wh = str(warehouse or "").strip() or _company_default_warehouse(selected_company)
+	if (
+		warehouse
+		and target_wh
+		and not frappe.db.exists("Warehouse", {"name": target_wh, "company": selected_company})
+	):
+		frappe.throw(
+			_("Unknown warehouse: {0} for company {1}").format(target_wh, selected_company),
+			frappe.ValidationError,
+		)
+	if not target_wh:
+		has_stock = any(frappe.db.get_value("Item", line["item_code"], "is_stock_item") for line in lines)
+		if has_stock:
+			frappe.throw(
+				_(
+					"No default warehouse configured for {0}. Set a default warehouse in Company settings."
+				).format(selected_company),
+				frappe.ValidationError,
+			)
+
+	if target_wh:
+		for line in lines:
+			line["warehouse"] = target_wh
+
 	if name:
 		doc = _quotation_for_edit(name, deal, selected_company)
 		doc.set("items", [])
@@ -274,6 +301,8 @@ def save_supplier_quotation(deal, supplier, currency, items, valid_till=None, na
 	doc.supplier = supplier_name
 	doc.currency = currency_code
 	doc.valid_till = valid_till or None
+	if target_wh:
+		doc.set_warehouse = target_wh
 	setattr(doc, _SQ_DEAL_FIELD, deal)
 	for line in lines:
 		doc.append("items", line)
@@ -504,8 +533,12 @@ def save_sourcing_decision(
 			_("That quotation is not among the bids collected for this lot."),
 			frappe.ValidationError,
 		)
-	cheapest_price = comparison.get("cheapest_price_quote") or next((r.get("name") for r in rows if r.get("is_cheapest_price")), "")
-	cheapest_landed = comparison.get("cheapest_landed_quote") or next((r.get("name") for r in rows if r.get("is_cheapest_landed")), "")
+	cheapest_price = comparison.get("cheapest_price_quote") or next(
+		(r.get("name") for r in rows if r.get("is_cheapest_price")), ""
+	)
+	cheapest_landed = comparison.get("cheapest_landed_quote") or next(
+		(r.get("name") for r in rows if r.get("is_cheapest_landed")), ""
+	)
 	estimate_complete = bool(comparison.get("estimate_complete"))
 
 	cheapest = cheapest_landed if (estimate_complete and cheapest_landed) else cheapest_price
@@ -658,10 +691,9 @@ def update_quotation_landed(quotation, charges, company=None):
 
 	from stabler.api._landed import parse_landed_charges
 
-	_, clean_charges, has_est = parse_landed_charges(parsed)
+	_tot, clean_charges, has_est = parse_landed_charges(parsed)
 	json_str = json.dumps(clean_charges, ensure_ascii=False) if (has_est and clean_charges) else None
 
 	frappe.db.set_value("Supplier Quotation", quotation, "custom_landed_charges", json_str)
 
 	return get_quotation_landed(quotation, company=selected_company)
-

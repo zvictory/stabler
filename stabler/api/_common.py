@@ -65,3 +65,11 @@ def check_concurrency(doctype: str, name: str, modified: str | None = None) -> N
 		frappe.local.response["name"] = name
 		exc = getattr(frappe, "TimestampMismatchError", frappe.ValidationError)
 		frappe.throw(_("This document was changed by someone else. Reload to see the latest."), exc=exc)
+
+
+def _company_default_warehouse(company: str) -> str | None:
+	get_val = getattr(frappe, "get_cached_value", getattr(frappe.db, "get_value", None))
+	wh = get_val("Company", company, "default_warehouse") if get_val else None
+	if wh:
+		return wh
+	return frappe.db.get_value("Warehouse", {"company": company, "is_group": 0}, "name")

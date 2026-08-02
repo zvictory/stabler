@@ -21,7 +21,13 @@ import frappe
 from frappe import _
 from frappe.utils import add_months, flt, getdate, today
 
-from stabler.api._common import _assert_can_read, _assert_can_write, _require_company, check_concurrency
+from stabler.api._common import (
+	_assert_can_read,
+	_assert_can_write,
+	_company_default_warehouse,
+	_require_company,
+	check_concurrency,
+)
 from stabler.api.approvals import _assert_company_scope
 from stabler.api.money import payment_defaults_for_invoice
 
@@ -287,13 +293,6 @@ def list_cars(
 		{"company": company, "search": search or "", "needle": needle, "limit": int(limit)},
 		as_dict=True,
 	)
-
-
-def _company_default_warehouse(company: str) -> str | None:
-	wh = frappe.get_cached_value("Company", company, "default_warehouse")
-	if wh:
-		return wh
-	return frappe.db.get_value("Warehouse", {"company": company, "is_group": 0}, "name")
 
 
 @frappe.whitelist()

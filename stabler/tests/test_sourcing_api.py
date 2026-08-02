@@ -80,6 +80,8 @@ class _FakeFrappe:
 
 	def __init__(self):
 		self.docs = {
+			("Company", "ACME"): _Doc(name="ACME", default_warehouse="Stores - ACME"),
+			("Item", "RAIL-01"): _Doc(name="RAIL-01", is_stock_item=1),
 			("CRM Deal", "LOT-A"): _Doc(name="LOT-A", company="ACME", deal_type="Tender"),
 			("CRM Deal", "LOT-DENIED"): _Doc(name="LOT-DENIED", company="ACME", deal_type="Tender"),
 			("CRM Deal", "LOT-OTHER"): _Doc(name="LOT-OTHER", company="Other Co", deal_type="Tender"),
@@ -279,6 +281,7 @@ def _load_api(
 ):
 	for name in (
 		"stabler.api.sourcing",
+		"stabler.api._common",
 		"stabler.api.tender",
 		"stabler.api.tender_master",
 		"stabler.api.purchasing",
@@ -296,15 +299,24 @@ def _load_api(
 	frappe.new_doc = fake.new_doc
 	frappe.get_list = fake.get_list
 	frappe.get_all = fake.get_all
+
+	def _fake_get_value(doctype, name, field=None):
+		if isinstance(name, dict):
+			for (d_kind, _), doc in fake.docs.items():
+				if d_kind == doctype and all(doc.get(k) == v for k, v in name.items()):
+					return doc.get(field) if field else doc
+			return None
+		doc = fake.docs.get((doctype, name))
+		if isinstance(doc, dict):
+			return doc.get(field) if field else doc
+		return None
+
 	frappe.db = types.SimpleNamespace(
 		has_column=lambda _doctype, column: column not in missing_columns,
 		exists=lambda doctype, name=None: True,
-		get_value=lambda doctype, name, field: (
-			fake.docs.get((doctype, name), {}).get(field)
-			if isinstance(fake.docs.get((doctype, name)), dict)
-			else None
-		),
+		get_value=_fake_get_value,
 	)
+	frappe.get_cached_value = frappe.db.get_value
 	frappe.parse_json = lambda value: value
 	frappe.whitelist = lambda *args, **_kwargs: (lambda fn: fn) if not args else args[0]
 	frappe.throw = lambda message, exception=Exception: (_ for _ in ()).throw(exception(message))
@@ -662,6 +674,26 @@ class TestSaveSupplierQuotation(unittest.TestCase):
 				items=[{"item_code": "RAIL-01", "qty": 1, "rate": 1}],
 				company="ACME",
 			)
+
+	def test_saved_quotation_has_warehouse_from_company_default(self):
+		res = self._save(items=[{"item_code": "RAIL-01", "qty": 1, "rate": 10}])
+		doc = next(d for d in self.fake.created if d.get("name") == res["name"])
+		self.assertEqual(doc.get("set_warehouse"), "Stores - ACME")
+		self.assertEqual(doc["items"][0].get("warehouse"), "Stores - ACME")
+
+	def test_missing_company_default_warehouse_throws_our_error(self):
+		self.fake.docs[("Company", "ACME")]["default_warehouse"] = None
+		with self.assertRaises(ValueError) as ctx:
+			self._save(items=[{"item_code": "RAIL-01", "qty": 1, "rate": 10}])
+		self.assertIn("No default warehouse configured for ACME", str(ctx.exception))
+
+	def test_explicit_warehouse_overrides_company_default(self):
+		res = self._save(
+			items=[{"item_code": "RAIL-01", "qty": 1, "rate": 10}],
+			warehouse="Stores - ACME",
+		)
+		doc = next(d for d in self.fake.created if d.get("name") == res["name"])
+		self.assertEqual(doc.get("set_warehouse"), "Stores - ACME")
 
 	def test_saving_before_the_patch_has_run_fails_loudly(self):
 		api = _load_api(self.fake, missing_columns=("custom_crm_deal",))

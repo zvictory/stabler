@@ -98,10 +98,14 @@ onMounted(async () => {
 
 (async () => {
 	try {
-		currencies.value = await call("stabler.api.sales.list_currencies");
+		const raw = await call("stabler.api.sales.list_currencies");
+		currencies.value = (raw || []).map((c) => (typeof c === "object" && c ? (c.name || c.value) : c));
 	} catch {
 		// Para birimi listesi düşerse alan boş kalmasın: hiç değilse şirketinki.
 		currencies.value = currency.value ? [currency.value] : [];
+	}
+	if (!form.value.currency && currencies.value.length) {
+		form.value.currency = currency.value || currencies.value[0] || "";
 	}
 })();
 
