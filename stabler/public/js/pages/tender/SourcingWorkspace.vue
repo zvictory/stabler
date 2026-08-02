@@ -272,7 +272,15 @@ async function createRfq() {
 		await call("stabler.api.sourcing.create_rfq", {
 			deal: deal.value,
 			suppliers: JSON.stringify(validSuppliers),
-			items: JSON.stringify(validItems.map((i) => ({ item_code: i.item_code, qty: i.qty }))),
+			items: JSON.stringify(
+				validItems.map((i) => ({
+					item_code: i.item_code,
+					qty: i.qty,
+					...(i.uom ? { uom: i.uom } : {}),
+					...(i.schedule_date ? { schedule_date: i.schedule_date } : {}),
+					...(i.warehouse ? { warehouse: i.warehouse } : {}),
+				}))
+			),
 			schedule_date: rfqForm.value.schedule_date || null,
 			company: activeCompany.value,
 		});
