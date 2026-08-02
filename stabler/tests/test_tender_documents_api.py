@@ -110,5 +110,24 @@ class TestTenderDocumentsRules(unittest.TestCase):
 		self.assertEqual(summary["readiness_pct"], 50)
 
 
+class TestTenderDocumentsApiSource(unittest.TestCase):
+	def test_endpoints_are_defined_and_gated(self):
+		import ast
+		import os
+
+		filepath = os.path.join(os.path.dirname(__file__), "..", "api", "tender_documents.py")
+		with open(filepath, encoding="utf-8") as f:
+			tree = ast.parse(f.read(), filename=filepath)
+
+		funcs = [node.name for node in ast.walk(tree) if isinstance(node, ast.FunctionDef)]
+		for name in (
+			"list_tender_documents",
+			"upload_tender_document",
+			"waive_tender_document",
+			"download_tender_document",
+		):
+			self.assertIn(name, funcs, f"Missing endpoint {name}")
+
+
 if __name__ == "__main__":
 	unittest.main()
