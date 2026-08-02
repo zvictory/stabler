@@ -3404,7 +3404,7 @@ Set exactly one of Commercial Invoice or Container on a Freight Booking.,Юк т
 Set exactly one of Commercial Invoice or Container.,Тижорат инвойси ёки контейнердан айнан биттасини белгиланг.
 "Set the Google Drive folder ID in Stabler Settings, and share that Shared-Drive folder with the service account email.",
 Set the imports landed-cost expense account in Stabler Settings ,
-Set the imports landed-cost expense account in Stabler Settings before creating a Landed Cost Voucher.,Йетказиб бериш харажатлари ваучерини яратишдан олдин Stabler созламаларида импорт йетказиб бериш харажатлари ҳисобини белгиланг.
+Set the imports landed-cost expense account in Stabler Settings before creating a Landed Cost Voucher.,Етказиб бериш харажатлари ваучерини яратишдан олдин Stabler созламаларида импорт етказиб бериш харажатлари ҳисобини белгиланг.
 Setting up your business…,Бизнесингиз созланмоқда…
 Settings,
 Settle,Қарзаро қилиш
@@ -3546,7 +3546,7 @@ Submit expense,Харажатни тасдиқлаш
 Submit failed.,Тасдиқлаш бажарилмади.
 Submit journal entry?,Проводкани тасдиқлайсизми?
 Submit receipt,Қабулни тасдиқлаш
-Submit the GRN Checklist before adding a Landed Cost Voucher.,Йетказиб бериш харажатлари ваучерини қўшишдан олдин GRN назорат варағини тасдиқланг.
+Submit the GRN Checklist before adding a Landed Cost Voucher.,Етказиб бериш харажатлари ваучерини қўшишдан олдин GRN назорат варағини тасдиқланг.
 Submit this BOM? You won't be able to edit it after.,Бу спецификацияни тасдиқлайсизми? Кейин таҳрирлаб бўлмайди.
 Submit this GRN checklist? This closes receiving and drafts a landed cost voucher.,Ушбу қабул варақаси тасдиқлансинми? Қабул ёпилади ва таннарх ваучери қораламаси яратилади.
 Submit transfer,Ўтказмани тасдиқлаш
@@ -5370,14 +5370,14 @@ new,янги
 "over cheapest bid","энг арзон таклифдан ортиқча"
 "Bars","Устунлар"
 "Trapezoid","Трапеция"
-"Landed charges","Йетказиб бериш харажатлари"
-"Landed estimate","Йетказиб бериш баҳоси"
-"Estimate landed charges","Йетказиб бериш харажатларини баҳолаш"
-"Cheapest Delivered","Йетказиш билан энг арзон"
+"Landed charges","Етказиб бериш харажатлари"
+"Landed estimate","Етказиб бериш баҳоси"
+"Estimate landed charges","Етказиб бериш харажатларини баҳолаш"
+"Cheapest Delivered","Етказиш билан энг арзон"
 "Sticker Leader","Каталог нархи етакчиси"
-"Delivered total","Йетказиб бериш билан жами"
-"Landed cost estimates incomplete:","Йетказиб бериш харажатлари баҳолаш тўлиқ эмас:"
-"Not all quotations have landed cost estimates. Landed ranking is paused until all bids carry estimates.","Барча таклифларда йетказиш харажатлари кўрсатилмаган. Йетказиш бўйича рейтинг тўхтатилган."
+"Delivered total","Етказиб бериш билан жами"
+"Landed cost estimates incomplete:","Етказиб бериш харажатлари баҳолаш тўлиқ эмас:"
+"Not all quotations have landed cost estimates. Landed ranking is paused until all bids carry estimates.","Барча таклифларда етказиш харажатлари кўрсатилмаган. Етказиш бўйича рейтинг тўхтатилган."
 "Freight & Logistics","Ташиш ва логистика"
 "Customs Duty & Tariff","Божхона тўлови"
 "Handling & Terminal Fees","Терминал ва юклаш харажатлари"
@@ -5387,10 +5387,10 @@ new,янги
 "Recoverable VAT","Ҳисобга олинадиган ҚҚС"
 "Add charge line","Харажат қаторини қўшиш"
 "Save estimate","Баҳони сақлаш"
-"Landed cost","Йетказилган таннарх"
-"Estimate landed costs","Йетказиб бериш харажатларини баҳолаш"
-"Landed estimates incomplete","Йетказиб бериш баҳоси тўлиқ эмас"
-"Lowest sticker price excluding landed costs","Йетказиш харажатларисиз энг арзон каталог нархи"
-"Lowest total delivered cost including freight and customs","Ташиш ва божхона билан энг арзон йетказилган нарх"
+"Landed cost","Етказилган таннарх"
+"Estimate landed costs","Етказиб бериш харажатларини баҳолаш"
+"Landed estimates incomplete","Етказиб бериш баҳоси тўлиқ эмас"
+"Lowest sticker price excluding landed costs","Етказиш харажатларисиз энг арзон каталог нархи"
+"Lowest total delivered cost including freight and customs","Ташиш ва божхона билан энг арзон етказилган нарх"
 "Sticker price","Каталог нархи"
-"Toggle funnel view","Гидронома кўринишини ўзгартириш"
+"Toggle funnel view","Воронка кўринишини ўзгартириш"
