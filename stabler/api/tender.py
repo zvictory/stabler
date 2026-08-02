@@ -1414,16 +1414,9 @@ def _clean_intake(data: dict, prior: dict | None = None, audit_actor: str | None
 	):
 		out[key] = str(prior.get(key) or "")[:limit]
 	# document checklist (ГТД, certificate, acceptance act, contract, invoice …)
-	out["documents"] = [
-		{
-			"label": str(d.get("label") or "").strip()[:140],
-			"required": 1 if d.get("required") else 0,
-			"done": 1 if d.get("done") else 0,
-			"date": str(d.get("date") or "").strip()[:20],
-		}
-		for d in (data.get("documents") or [])
-		if isinstance(d, dict) and str(d.get("label") or "").strip()
-	][:40]
+	from stabler.api._tender_documents import parse_doc_requirements
+
+	out["documents"] = parse_doc_requirements(data.get("documents") or [])[:40]
 	prior_ready = prior.get("go_no_go") == "go" and not any(
 		d.get("required") and not d.get("done") for d in (prior.get("documents") or [])
 	)
@@ -1478,14 +1471,10 @@ def _fx_summary(intake: dict) -> dict:
 
 
 def _docs_summary(intake: dict) -> dict:
-	docs = intake.get("documents") or []
-	req = [d for d in docs if d.get("required")]
-	return {
-		"total": len(docs),
-		"required": len(req),
-		"done_required": sum(1 for d in req if d.get("done")),
-		"missing": [d.get("label") for d in req if not d.get("done")],
-	}
+	from stabler.api._tender_documents import docs_summary, parse_doc_requirements
+
+	reqs = parse_doc_requirements(intake.get("documents") or [])
+	return docs_summary(reqs)
 
 
 def _read_intake(deal: str) -> dict:

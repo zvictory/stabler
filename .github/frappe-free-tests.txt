@@ -98,6 +98,7 @@ stabler.tests.test_tender_dashboard_behavior
 stabler.tests.test_tender_dashboard_i18n
 stabler.tests.test_tender_dashboard_spa
 stabler.tests.test_tender_desk_api
+stabler.tests.test_tender_documents_api
 stabler.tests.test_tender_desk_i18n
 stabler.tests.test_tender_desk_spa
 stabler.tests.test_tender_document_chain_source
