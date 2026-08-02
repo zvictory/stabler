@@ -11,14 +11,15 @@ import re
 import frappe
 from frappe import _
 
+from stabler.api.sourcing import _assert_company_scope
+
 # Cache for sent idempotency keys
 _IDEMPOTENCY_CACHE: dict[str, str] = {}
 
 
 def _assert_deal_company_scope(deal_name: str, company: str) -> dict:
 	"""Verify company scoping and permissions on CRM Deal."""
-	if not company:
-		frappe.throw(_("Company is required."), frappe.ValidationError)
+	_assert_company_scope(company)
 
 	doc = frappe.get_doc("CRM Deal", deal_name)
 	perm_fn = getattr(doc, "has_permission", None)
@@ -48,6 +49,7 @@ def send_deal_email(
 
 	Creates a Communication record linked to the CRM Deal and logs a CRM Activity.
 	"""
+	_assert_company_scope(company)
 	deal_doc = _assert_deal_company_scope(deal, company)
 	key = (idempotency_key or "").strip()
 
@@ -168,8 +170,7 @@ def match_incoming_email_to_deal(communication_name: str) -> dict:
 @frappe.whitelist()
 def list_email_triage_queue(company: str) -> dict:
 	"""List incoming unassigned emails requiring triage for a company."""
-	if not company:
-		frappe.throw(_("Company is required."), frappe.ValidationError)
+	_assert_company_scope(company)
 
 	rows = frappe.get_list(
 		"Communication",
@@ -184,6 +185,7 @@ def list_email_triage_queue(company: str) -> dict:
 @frappe.whitelist()
 def link_triage_email(communication_name: str, deal: str, company: str) -> dict:
 	"""Manually link an unassigned triage email to a selected CRM Deal."""
+	_assert_company_scope(company)
 	_assert_deal_company_scope(deal, company)
 	comm = frappe.get_doc("Communication", communication_name)
 
