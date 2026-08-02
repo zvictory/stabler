@@ -164,29 +164,27 @@ function clearFilters() {
 			<span>{{ filterSummary.join(" · ") }}</span>
 		</template>
 		<template #actions>
-			<div class="d-flex gap-2 align-items-center">
-				<div class="btn-group btn-group-sm" role="group">
-					<button
-						type="button"
-						class="btn"
-						:class="viewMode === 'lanes' ? 'btn-primary' : 'btn-outline-secondary'"
-						@click="viewMode = 'lanes'"
-					>
-						<i class="ti ti-layout-kanban me-1"></i>{{ t("Lanes") }}
-					</button>
-					<button
-						type="button"
-						class="btn"
-						:class="viewMode === 'table' ? 'btn-primary' : 'btn-outline-secondary'"
-						@click="viewMode = 'table'"
-					>
-						<i class="ti ti-list me-1"></i>{{ t("Table") }}
-					</button>
-				</div>
-				<button v-if="filterSummary.length" type="button" class="btn btn-sm btn-secondary" @click="clearFilters">
-					{{ t("Clear filters") }}
+			<span class="btn-group btn-group-sm" role="group">
+				<button
+					type="button"
+					class="btn"
+					:class="viewMode === 'lanes' ? 'btn-primary' : 'btn-outline-secondary'"
+					@click="viewMode = 'lanes'"
+				>
+					<i class="ti ti-layout-kanban me-1"></i>{{ t("Lanes") }}
 				</button>
-			</div>
+				<button
+					type="button"
+					class="btn"
+					:class="viewMode === 'table' ? 'btn-primary' : 'btn-outline-secondary'"
+					@click="viewMode = 'table'"
+				>
+					<i class="ti ti-list me-1"></i>{{ t("Table") }}
+				</button>
+			</span>
+			<button v-if="filterSummary.length" type="button" class="btn btn-sm btn-secondary" @click="clearFilters">
+				{{ t("Clear filters") }}
+			</button>
 		</template>
 
 		<!-- Skeleton Loading -->

@@ -9,12 +9,12 @@ import importlib
 import sys
 import types
 import unittest
-from pathlib import Path
 
 
 class _FakeFrappe:
 	def __init__(self):
 		self.sql_calls = []
+		self.get_list_calls = []
 		self.columns = {"custom_crm_deal"}
 		self.doctypes = {"DocType", "Supplier Quotation", "Tender Sourcing Decision"}
 		self.quotations = [
@@ -30,7 +30,6 @@ class _FakeFrappe:
 				"valid_till": "2026-12-31",
 				"transaction_date": "2026-08-01",
 				"docstatus": 1,
-				"result": "won",
 			},
 			{
 				"name": "SQ-LOST",
@@ -44,9 +43,50 @@ class _FakeFrappe:
 				"valid_till": "2026-12-31",
 				"transaction_date": "2026-07-15",
 				"docstatus": 1,
-				"result": "lost",
+			},
+			{
+				"name": "SQ-OPEN",
+				"supplier": "SUP-A",
+				"company": "ACME",
+				"custom_crm_deal": "LOT-3",
+				"grand_total": 3000.0,
+				"base_grand_total": 3000.0,
+				"currency": "USD",
+				"status": "Submitted",
+				"valid_till": "2026-12-31",
+				"transaction_date": "2026-08-02",
+				"docstatus": 1,
 			},
 		]
+		self.decisions = [
+			{
+				"deal": "LOT-1",
+				"selected_quotation": "SQ-WON",
+				"company": "ACME",
+				"status": "Approved",
+			},
+			{
+				"deal": "LOT-2",
+				"selected_quotation": "SQ-OTHER",
+				"company": "ACME",
+				"status": "Approved",
+			},
+		]
+
+	def get_list(self, doctype, filters=None, fields=None, **kwargs):
+		self.get_list_calls.append({"doctype": doctype, "filters": filters, "fields": fields, **kwargs})
+		if doctype == "Supplier Quotation":
+			supplier = filters.get("supplier")
+			company = filters.get("company")
+			rows = [r for r in self.quotations if r["company"] == company and r["supplier"] == supplier]
+			return [dict(r) for r in rows]
+		elif doctype == "Tender Sourcing Decision":
+			company = filters.get("company")
+			deal_filter = filters.get("deal")
+			deals = deal_filter[1] if isinstance(deal_filter, list) and deal_filter[0] == "in" else []
+			rows = [r for r in self.decisions if r["company"] == company and r["deal"] in deals]
+			return [dict(r) for r in rows]
+		return []
 
 	def sql(self, query, params, as_dict=True):
 		self.sql_calls.append((query, params))
@@ -82,6 +122,7 @@ def _load_purchasing(fake: _FakeFrappe):
 	frappe.whitelist = lambda *args, **_kwargs: (lambda fn: fn) if not args else args[0]
 	frappe.throw = lambda message, exception=Exception: (_ for _ in ()).throw(exception(message))
 	frappe.has_permission = lambda doctype, ptype="read", doc=None: True
+	frappe.get_list = fake.get_list
 	frappe.db = types.SimpleNamespace(
 		has_column=lambda dt, col: col in fake.columns,
 		exists=lambda dt, name=None: dt in fake.doctypes,
@@ -118,16 +159,21 @@ class TestSupplierQuotationHistory(unittest.TestCase):
 		self.fake = _FakeFrappe()
 		self.api = _load_purchasing(self.fake)
 
-	def test_single_sql_query_contract(self):
+	def test_permission_aware_batch_list_queries_contract(self):
 		res = self.api.supplier_quotation_history("SUP-A", company="ACME")
-		self.assertEqual(len(self.fake.sql_calls), 1, "Must execute exactly ONE SQL query (no N+1)")
-		self.assertEqual(res["count"], 2)
+		self.assertLessEqual(
+			len(self.fake.get_list_calls),
+			2,
+			"Must execute at most TWO permission-aware batch list queries (no N+1)",
+		)
+		self.assertEqual(res["count"], 3)
 
 	def test_derived_result_values(self):
 		res = self.api.supplier_quotation_history("SUP-A", company="ACME")
 		results = {r["name"]: r["result"] for r in res["rows"]}
 		self.assertEqual(results.get("SQ-WON"), "won")
 		self.assertEqual(results.get("SQ-LOST"), "lost")
+		self.assertEqual(results.get("SQ-OPEN"), "open")
 
 	def test_rejects_foreign_company(self):
 		with self.assertRaises(PermissionError):

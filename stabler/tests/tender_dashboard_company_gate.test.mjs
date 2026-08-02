@@ -1,7 +1,7 @@
 import assert from "node:assert/strict";
 import { createPinia, setActivePinia } from "pinia";
 
-globalThis.window = { __STABLER__: {} };
+globalThis.window = { __STABLER__: {}, location: { hash: "" } };
 globalThis.localStorage = {
 	getItem() {
 		return null;
@@ -37,6 +37,7 @@ const { useSession } = await import("../public/js/stores/session.js");
 
 setActivePinia(createPinia());
 const session = useSession();
+session.user = { id: "Administrator" };
 session.roles = ["System Manager"];
 session.allowedModules = ["dashboard", "tender"];
 session.modules = { tender: false };
