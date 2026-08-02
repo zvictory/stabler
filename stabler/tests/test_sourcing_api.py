@@ -41,6 +41,13 @@ class _Doc(dict):
 		self.setdefault(field, []).append(dict(row))
 		return row
 
+	def set(self, field, value):
+		"""Frappe's `set`. Editing a quotation must REPLACE its lines, not add a
+		second copy beside them — the bug this models is a silently doubled
+		quotation total, which is exactly the number the award is decided on."""
+		self[field] = value
+		return value
+
 	def insert(self):
 		self["inserted"] = True
 		self["name"] = self.get("name") or "RFQ-NEW"
@@ -72,6 +79,48 @@ class _FakeFrappe:
 			("Supplier", "SUP-A"): _Doc(name="SUP-A", supplier_name="Alfa"),
 			("Supplier", "SUP-B"): _Doc(name="SUP-B", supplier_name="Beta"),
 			("Supplier", "SUP-DENIED"): _Doc(name="SUP-DENIED", supplier_name="Gizli"),
+			("Supplier Quotation", "SQ-DRAFT"): _Doc(
+				name="SQ-DRAFT",
+				company="ACME",
+				supplier="SUP-A",
+				currency="USD",
+				custom_crm_deal="LOT-A",
+				docstatus=0,
+				items=[{"item_code": "RAIL-01", "qty": 5.0, "rate": 100.0}],
+			),
+			("Supplier Quotation", "SQ-SUBMITTED"): _Doc(
+				name="SQ-SUBMITTED",
+				company="ACME",
+				supplier="SUP-A",
+				currency="USD",
+				custom_crm_deal="LOT-A",
+				docstatus=1,
+			),
+			("Supplier Quotation", "SQ-OTHER-COMPANY"): _Doc(
+				name="SQ-OTHER-COMPANY",
+				company="Other Co",
+				supplier="SUP-A",
+				currency="USD",
+				custom_crm_deal="LOT-OTHER",
+				docstatus=0,
+			),
+			("Supplier Quotation", "SQ-UNTAGGED"): _Doc(
+				name="SQ-UNTAGGED",
+				company="ACME",
+				supplier="SUP-A",
+				currency="USD",
+				custom_crm_deal=None,
+				docstatus=0,
+			),
+			("Supplier Quotation", "SQ-OTHER-LOT"): _Doc(
+				name="SQ-OTHER-LOT",
+				company="ACME",
+				supplier="SUP-B",
+				currency="USD",
+				custom_crm_deal="LOT-B",
+				docstatus=0,
+			),
+			("CRM Deal", "LOT-B"): _Doc(name="LOT-B", company="ACME", deal_type="Tender"),
 			("Request for Quotation", "RFQ-1"): _Doc(
 				name="RFQ-1",
 				company="ACME",
@@ -102,6 +151,8 @@ class _FakeFrappe:
 		self.last_filters: dict | None = None
 		#: Every doctype a create-permission was demanded for.
 		self.create_checks: list[str] = []
+		#: Every doctype a submit-permission was demanded for.
+		self.submit_checks: list[str] = []
 		self.emails: list[dict] = []
 
 	def get_doc(self, doctype, name):
@@ -147,7 +198,14 @@ class _FakeFrappe:
 		return [dict(row) for row in rows]
 
 
-def _load_api(fake: _FakeFrappe, *, tender_allowed=True, missing_columns=(), can_create=True):
+def _load_api(
+	fake: _FakeFrappe,
+	*,
+	tender_allowed=True,
+	missing_columns=(),
+	can_create=True,
+	can_submit=True,
+):
 	for name in (
 		"stabler.api.sourcing",
 		"stabler.api.tender",
@@ -178,6 +236,12 @@ def _load_api(fake: _FakeFrappe, *, tender_allowed=True, missing_columns=(), can
 		if ptype == "create":
 			fake.create_checks.append(doctype)
 			return can_create
+		if ptype == "submit":
+			# Submit is its own right in Frappe, not implied by write. A buyer who
+			# may draft a quotation is not automatically allowed to freeze one into
+			# the record the award is decided from.
+			fake.submit_checks.append(doctype)
+			return can_submit and (doctype, getattr(doc, "name", doc)) not in fake.unreadable
 		return (doctype, getattr(doc, "name", doc)) not in fake.unreadable
 
 	frappe.has_permission = _has_permission
@@ -280,7 +344,7 @@ class TestListRfqs(unittest.TestCase):
 		self.api.list_rfqs("LOT-A", company="ACME")
 		self.assertIn("Request for Quotation", self.fake.list_calls)
 		api_source = API_SOURCE.read_text()
-		self.assertNotIn('frappe.get_all(\n\t\t"Request for Quotation"', api_source)
+		self.assertNotIn("frappe.get_all(\n\t\t\"Request for Quotation\"", api_source)
 
 	def test_returns_empty_before_the_patch_has_run(self):
 		"""Pre-migrate the column does not exist. Reading it would 500 the page;
@@ -362,7 +426,9 @@ class TestCreateRfq(unittest.TestCase):
 		self.assertIn("Request for Quotation", self.fake.create_checks)
 		api = _load_api(self.fake, can_create=False)
 		with self.assertRaises(PermissionError):
-			api.create_rfq("LOT-A", ["SUP-A"], [{"item_code": "RAIL-01", "qty": 1}], company="ACME")
+			api.create_rfq(
+				"LOT-A", ["SUP-A"], [{"item_code": "RAIL-01", "qty": 1}], company="ACME"
+			)
 
 	def test_creating_before_the_patch_has_run_fails_loudly(self):
 		"""Reading tolerates an unmigrated site; WRITING must not — an untagged
@@ -399,6 +465,210 @@ class TestRfqPatch(unittest.TestCase):
 		numbers = [m.group(1) for line in registered if (m := re.search(r"\.(v\d+)_", line))]
 		self.assertEqual(len(numbers), len(set(numbers)), "patches.txt carries a duplicate version")
 
+
+class TestSaveSupplierQuotation(unittest.TestCase):
+	"""Entering the answer, in the SPA, without a trip to the Desk.
+
+	Until now a Supplier Quotation had to be created somewhere else and tagged to
+	the lot by hand — and "somewhere else" meant the Frappe Desk, which this
+	project forbids linking to. The gap was not cosmetic: an untagged quotation is
+	invisible to the 5-quotations / 2-countries policy count, so the badge that
+	says a lot is ready to price could be green on an empty quote set.
+	"""
+
+	def setUp(self):
+		self.fake = _FakeFrappe()
+		self.api = _load_api(self.fake)
+
+	def _save(self, **overrides):
+		payload = {
+			"deal": "LOT-A",
+			"supplier": "SUP-A",
+			"currency": "USD",
+			"items": [{"item_code": "RAIL-01", "qty": 10, "rate": 12.5}],
+			"valid_till": "2026-09-01",
+			"company": "ACME",
+		}
+		payload.update(overrides)
+		return self.api.save_supplier_quotation(**payload)
+
+	def test_the_quotation_is_tagged_to_the_lot_and_the_selected_company(self):
+		self._save()
+		doc = self.fake.created[-1]
+		self.assertEqual(doc["doctype"], "Supplier Quotation")
+		self.assertEqual(doc["custom_crm_deal"], "LOT-A")
+		self.assertEqual(doc["company"], "ACME")
+		self.assertEqual(doc["supplier"], "SUP-A")
+		self.assertEqual(doc["currency"], "USD")
+		self.assertEqual(doc["valid_till"], "2026-09-01")
+		self.assertTrue(doc.get("inserted"))
+
+	def test_saving_never_submits(self):
+		"""Draft and submitted are different facts for the policy count, so the
+		two must stay two calls. A save that submitted would make "5 quotations
+		collected" unfalsifiable — every draft would count as a firm offer."""
+		self._save()
+		self.assertNotEqual(self.fake.created[-1].get("docstatus"), 1)
+
+	def test_lines_carry_item_qty_and_rate(self):
+		self._save()
+		line = self.fake.created[-1]["items"][0]
+		self.assertEqual(line["item_code"], "RAIL-01")
+		self.assertEqual(line["qty"], 10.0)
+		self.assertEqual(line["rate"], 12.5)
+
+	def test_a_zero_rate_is_allowed_but_a_negative_one_is_not(self):
+		"""Zero is a real quote — an included line, a sample, freight the vendor
+		absorbs. Negative is data entry damage that would drag the comparison
+		total below every honest bid and win the award."""
+		self._save(items=[{"item_code": "RAIL-01", "qty": 1, "rate": 0}])
+		self.assertEqual(self.fake.created[-1]["items"][0]["rate"], 0.0)
+		with self.assertRaises(ValueError):
+			self._save(items=[{"item_code": "RAIL-01", "qty": 1, "rate": -1}])
+
+	def test_quantity_item_and_line_count_are_validated(self):
+		with self.assertRaises(ValueError):
+			self._save(items=[{"item_code": "RAIL-01", "qty": 0, "rate": 5}])
+		with self.assertRaises(ValueError):
+			self._save(items=[{"item_code": "", "qty": 1, "rate": 5}])
+		with self.assertRaises(ValueError):
+			self._save(items=[])
+
+	def test_a_supplier_the_user_may_not_read_is_refused(self):
+		before = len(self.fake.created)
+		with self.assertRaises(PermissionError):
+			self._save(supplier="SUP-DENIED")
+		self.assertEqual(len(self.fake.created), before)
+
+	def test_a_currency_is_required(self):
+		"""The comparison is done in company currency via `base_grand_total`; a
+		quotation with no currency of its own has no honest conversion."""
+		with self.assertRaises(ValueError):
+			self._save(currency="")
+
+	def test_gates_are_enforced(self):
+		api = _load_api(self.fake, tender_allowed=False)
+		with self.assertRaises(PermissionError):
+			api.save_supplier_quotation(
+				deal="LOT-A",
+				supplier="SUP-A",
+				currency="USD",
+				items=[{"item_code": "RAIL-01", "qty": 1, "rate": 1}],
+				company="ACME",
+			)
+		with self.assertRaises(PermissionError):
+			self._save(deal="LOT-OTHER")
+		with self.assertRaises(PermissionError):
+			self._save(company="Other Co")
+		with self.assertRaises(PermissionError):
+			self._save(deal="LOT-DENIED")
+
+	def test_create_permission_on_the_quotation_doctype_is_demanded(self):
+		self._save()
+		self.assertIn("Supplier Quotation", self.fake.create_checks)
+		api = _load_api(self.fake, can_create=False)
+		with self.assertRaises(PermissionError):
+			api.save_supplier_quotation(
+				deal="LOT-A",
+				supplier="SUP-A",
+				currency="USD",
+				items=[{"item_code": "RAIL-01", "qty": 1, "rate": 1}],
+				company="ACME",
+			)
+
+	def test_saving_before_the_patch_has_run_fails_loudly(self):
+		api = _load_api(self.fake, missing_columns=("custom_crm_deal",))
+		with self.assertRaises(Exception) as ctx:
+			api.save_supplier_quotation(
+				deal="LOT-A",
+				supplier="SUP-A",
+				currency="USD",
+				items=[{"item_code": "RAIL-01", "qty": 1, "rate": 1}],
+				company="ACME",
+			)
+		self.assertIn("migrate", str(ctx.exception).lower())
+
+
+class TestEditSupplierQuotation(unittest.TestCase):
+	def setUp(self):
+		self.fake = _FakeFrappe()
+		self.api = _load_api(self.fake)
+
+	def _edit(self, name, **overrides):
+		payload = {
+			"deal": "LOT-A",
+			"supplier": "SUP-A",
+			"currency": "EUR",
+			"items": [{"item_code": "RAIL-02", "qty": 3, "rate": 7.0}],
+			"company": "ACME",
+			"name": name,
+		}
+		payload.update(overrides)
+		return self.api.save_supplier_quotation(**payload)
+
+	def test_editing_replaces_the_lines_instead_of_appending(self):
+		"""Appending would double the total the award is decided on."""
+		self._edit("SQ-DRAFT")
+		doc = self.fake.docs[("Supplier Quotation", "SQ-DRAFT")]
+		self.assertEqual([line["item_code"] for line in doc["items"]], ["RAIL-02"])
+		self.assertTrue(doc.get("saved"))
+		self.assertNotIn("inserted", doc)
+
+	def test_a_submitted_quotation_cannot_be_edited(self):
+		"""Submitted is the record the comparison already used. Rewriting it in
+		place would change a decided number with no trace."""
+		with self.assertRaises(Exception) as ctx:
+			self._edit("SQ-SUBMITTED")
+		self.assertNotIsInstance(ctx.exception, PermissionError)
+
+	def test_a_quotation_of_another_lot_cannot_be_reassigned(self):
+		"""Passing someone else's SQ name with your own deal would move a rival
+		bid onto your lot."""
+		with self.assertRaises(Exception):
+			self._edit("SQ-OTHER-LOT")
+
+	def test_a_quotation_of_another_company_is_refused(self):
+		with self.assertRaises(PermissionError):
+			self._edit("SQ-OTHER-COMPANY", deal="LOT-A")
+
+
+class TestSubmitSupplierQuotation(unittest.TestCase):
+	def setUp(self):
+		self.fake = _FakeFrappe()
+		self.api = _load_api(self.fake)
+
+	def test_a_draft_is_submitted(self):
+		result = self.api.submit_supplier_quotation("SQ-DRAFT", company="ACME")
+		self.assertEqual(self.fake.docs[("Supplier Quotation", "SQ-DRAFT")]["docstatus"], 1)
+		self.assertEqual(result["docstatus"], 1)
+
+	def test_submit_permission_is_its_own_right(self):
+		self.api.submit_supplier_quotation("SQ-DRAFT", company="ACME")
+		self.assertIn("Supplier Quotation", self.fake.submit_checks)
+		fake = _FakeFrappe()
+		api = _load_api(fake, can_submit=False)
+		with self.assertRaises(PermissionError):
+			api.submit_supplier_quotation("SQ-DRAFT", company="ACME")
+		self.assertEqual(fake.docs[("Supplier Quotation", "SQ-DRAFT")]["docstatus"], 0)
+
+	def test_an_already_submitted_quotation_is_refused(self):
+		with self.assertRaises(Exception):
+			self.api.submit_supplier_quotation("SQ-SUBMITTED", company="ACME")
+
+	def test_a_quotation_with_no_lot_is_not_a_tender_quotation(self):
+		"""The endpoint is module-gated; letting it submit an untagged SQ would
+		make it a general-purpose purchase submit button for tender roles."""
+		with self.assertRaises(Exception):
+			self.api.submit_supplier_quotation("SQ-UNTAGGED", company="ACME")
+
+	def test_gates_are_enforced(self):
+		api = _load_api(self.fake, tender_allowed=False)
+		with self.assertRaises(PermissionError):
+			api.submit_supplier_quotation("SQ-DRAFT", company="ACME")
+		with self.assertRaises(PermissionError):
+			self.api.submit_supplier_quotation("SQ-OTHER-COMPANY", company="ACME")
+		with self.assertRaises(PermissionError):
+			self.api.submit_supplier_quotation("SQ-DRAFT", company="Other Co")
 
 if __name__ == "__main__":
 	unittest.main()

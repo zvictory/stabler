@@ -28,12 +28,18 @@ from __future__ import annotations
 import frappe
 from frappe import _
 from frappe.utils import flt, today
+
 from stabler.api.tender import _require_tender
 from stabler.api.tender_master import require_selected_company
 
 #: The tag patch v68 puts on Request for Quotation, mirroring v30 on Supplier
 #: Quotation. Named once so a rename cannot drift between read and write.
 _RFQ_DEAL_FIELD = "custom_crm_deal"
+
+#: The same tag on the answer side, installed by v30. Named separately from
+#: `_RFQ_DEAL_FIELD` even though the string matches: they are two custom fields
+#: on two doctypes, and one being renamed must not silently rename the other.
+_SQ_DEAL_FIELD = "custom_crm_deal"
 
 #: Columns the sourcing workspace lists. `docstatus` travels with the rows so
 #: the UI can tell a draft request from a sent one without a second call.
@@ -84,20 +90,26 @@ def _clean_suppliers(raw) -> list[str]:
 	return names
 
 
+def _line_basics(entry) -> tuple[str, float]:
+	"""The two facts every line — asked or answered — must carry."""
+	item_code = str((entry or {}).get("item_code") or "").strip()
+	qty = flt((entry or {}).get("qty"))
+	if not item_code:
+		frappe.throw(_("Every line needs an item."), frappe.ValidationError)
+	if qty <= 0:
+		frappe.throw(
+			_("Quantity must be greater than zero for {0}.").format(item_code),
+			frappe.ValidationError,
+		)
+	return item_code, qty
+
+
 def _clean_items(raw) -> list[dict]:
 	"""Normalize the requested lines. A request for nothing is not a request —
 	and it would still satisfy a naive "an RFQ exists" policy count."""
 	lines: list[dict] = []
 	for entry in raw or []:
-		item_code = str((entry or {}).get("item_code") or "").strip()
-		qty = flt((entry or {}).get("qty"))
-		if not item_code:
-			frappe.throw(_("Every requested line needs an item."), frappe.ValidationError)
-		if qty <= 0:
-			frappe.throw(
-				_("Quantity must be greater than zero for {0}.").format(item_code),
-				frappe.ValidationError,
-			)
+		item_code, qty = _line_basics(entry)
 		lines.append(
 			{
 				"item_code": item_code,
@@ -133,6 +145,141 @@ def _assert_suppliers_permitted(names: list[str]) -> None:
 	missing = [name for name in names if name not in permitted]
 	if missing:
 		frappe.throw(_("Not permitted for supplier {0}.").format(", ".join(missing)), frappe.PermissionError)
+
+
+def _clean_quotation_items(raw) -> list[dict]:
+	"""Normalize the answered lines: the asked facts, plus a price.
+
+	Zero is a legitimate quote — an included line, a sample, freight the vendor
+	absorbs. Negative is data-entry damage, and it is not harmless: the vendor
+	comparison ranks on the total, so one negative line drags a bid below every
+	honest one and wins the award.
+	"""
+	lines: list[dict] = []
+	for entry in raw or []:
+		item_code, qty = _line_basics(entry)
+		rate = flt((entry or {}).get("rate"))
+		if rate < 0:
+			frappe.throw(_("Rate cannot be negative for {0}.").format(item_code), frappe.ValidationError)
+		lines.append(
+			{
+				"item_code": item_code,
+				"qty": qty,
+				"rate": rate,
+				"uom": str((entry or {}).get("uom") or "").strip() or None,
+				"description": str((entry or {}).get("description") or "").strip() or None,
+			}
+		)
+	if not lines:
+		frappe.throw(_("A quotation needs at least one line."), frappe.ValidationError)
+	return lines
+
+
+def _sq_link_ready() -> bool:
+	"""v30 put `custom_crm_deal` on Supplier Quotation; same tag, other end."""
+	return bool(frappe.db.has_column("Supplier Quotation", _SQ_DEAL_FIELD))
+
+
+def _quotation_for_edit(name: str, deal: str, selected_company: str):
+	"""Resolve an existing quotation for in-place edit, in this strict order.
+
+	Company first, then lot, then draft state — the order is the answer to three
+	different questions and swapping them changes what an attacker learns. A
+	foreign-company quotation must read as "not permitted" and never as "wrong
+	lot", which would confirm the record exists.
+	"""
+	doc = frappe.get_doc("Supplier Quotation", name)
+	if doc.company != selected_company:
+		frappe.throw(_("Quotation does not belong to the selected company."), frappe.PermissionError)
+	if not frappe.has_permission("Supplier Quotation", ptype="write", doc=doc):
+		frappe.throw(_("Not permitted."), frappe.PermissionError)
+	if (doc.get(_SQ_DEAL_FIELD) or "") != deal:
+		# Retagging is not an edit. Allowing it would move a rival's bid onto
+		# your own lot by passing its name.
+		frappe.throw(_("This quotation belongs to another tender lot."), frappe.ValidationError)
+	if int(doc.docstatus or 0) != 0:
+		frappe.throw(_("A submitted quotation cannot be edited. Amend it instead."), frappe.ValidationError)
+	return doc
+
+
+@frappe.whitelist()
+def save_supplier_quotation(deal, supplier, currency, items, valid_till=None, name=None, company=None):
+	"""Create or update a DRAFT Supplier Quotation tagged to one tender lot.
+
+	Submitting is a separate call on purpose. The sourcing policy counts drafts
+	and submitted quotations differently; a save that also submitted would make
+	"5 quotations collected" unfalsifiable, because every half-typed draft would
+	count as a firm offer.
+	"""
+	_require_tender(company)
+	selected_company = _assert_company_scope(company)
+	_deal_scope(deal, selected_company, "write")
+	if not _sq_link_ready():
+		frappe.throw(_("Run migrate to enable tender quotations."))
+
+	supplier_name = str(supplier or "").strip()
+	currency_code = str(currency or "").strip()
+	if not currency_code:
+		# The comparison is done in company currency through `base_grand_total`;
+		# a quotation with no currency of its own has no honest conversion.
+		frappe.throw(_("Pick the currency the supplier quoted in."), frappe.ValidationError)
+	_assert_suppliers_permitted([supplier_name])
+	lines = _clean_quotation_items(frappe.parse_json(items))
+
+	if name:
+		doc = _quotation_for_edit(name, deal, selected_company)
+		doc.set("items", [])
+	else:
+		if not frappe.has_permission("Supplier Quotation", "create"):
+			frappe.throw(_("Not permitted."), frappe.PermissionError)
+		doc = frappe.new_doc("Supplier Quotation")
+		doc.transaction_date = today()
+
+	doc.company = selected_company
+	doc.supplier = supplier_name
+	doc.currency = currency_code
+	doc.valid_till = valid_till or None
+	setattr(doc, _SQ_DEAL_FIELD, deal)
+	for line in lines:
+		doc.append("items", line)
+
+	if name:
+		doc.save()
+	else:
+		doc.insert()
+	return {
+		"name": doc.name,
+		"deal": deal,
+		"supplier": supplier_name,
+		"currency": currency_code,
+		"docstatus": int(doc.docstatus or 0),
+		"line_count": len(lines),
+	}
+
+
+@frappe.whitelist()
+def submit_supplier_quotation(name, company=None):
+	"""Freeze one draft quotation into the record the award is decided from."""
+	_require_tender(company)
+	selected_company = _assert_company_scope(company)
+	doc = frappe.get_doc("Supplier Quotation", name)
+	if doc.company != selected_company:
+		frappe.throw(_("Quotation does not belong to the selected company."), frappe.PermissionError)
+	deal = doc.get(_SQ_DEAL_FIELD) or ""
+	if not deal:
+		# This endpoint is module-gated. Submitting an untagged quotation through
+		# it would turn it into a general-purpose purchase submit button handed
+		# to every tender role.
+		frappe.throw(_("This quotation is not attached to a tender lot."), frappe.ValidationError)
+	_deal_scope(deal, selected_company, "write")
+	if int(doc.docstatus or 0) != 0:
+		frappe.throw(_("This quotation is not a draft."), frappe.ValidationError)
+	# Submit is its own right in Frappe, not implied by write: a buyer who may
+	# draft a quotation is not automatically allowed to freeze one.
+	if not frappe.has_permission("Supplier Quotation", ptype="submit", doc=doc):
+		frappe.throw(_("Not permitted."), frappe.PermissionError)
+	doc.submit()
+	return {"name": name, "deal": deal, "docstatus": int(doc.docstatus or 0)}
 
 
 @frappe.whitelist()

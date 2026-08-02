@@ -150,3 +150,4 @@ stabler.tests.test_sales_order_variant_switch
 stabler.tests.test_sales_order_rate_direction
 stabler.tests.test_modern_sales_order_flag
 stabler.tests.test_sourcing_api
+stabler.tests.test_sourcing_spa

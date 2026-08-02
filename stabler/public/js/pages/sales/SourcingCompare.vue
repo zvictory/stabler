@@ -12,6 +12,7 @@ import Typeahead from "../../components/Typeahead.vue";
 import EmptyState from "../../components/EmptyState.vue";
 import SkeletonRows from "../../components/SkeletonRows.vue";
 import TenderPage from "../tender/TenderPage.vue";
+import QuotationEntryDrawer from "../../components/QuotationEntryDrawer.vue";
 
 const session = useSession();
 const { activeCompany, user } = storeToRefs(session);
@@ -23,6 +24,12 @@ const deal = ref(route.query.deal ? String(route.query.deal) : "");
 const dealLabel = ref(String(route.query.deal_label || route.query.deal || ""));
 const loading = ref(false);
 const data = ref(null); // { rows, base_currency, count, countries, has_min_5, has_2_countries }
+
+/* Teklif giriş paneli. `v-if` ile monte ediliyor, açık tutulup gizlenmiyor:
+ * bileşen her açılışta sıfırdan kuruluyor ve bir önceki tedarikçi yeni teklife
+ * sızmıyor. Kaydedince `load()` çağrılıyor — kullanıcının az önce girdiği teklif
+ * tam da onun için girdiği tabloda yoksa, politika rozeti hâlâ 4/5 der. */
+const entryOpen = ref(false);
 
 async function searchDeals(q) {
 	// `list_deals` şirketi zorunlu tutuyor (`_require_crm_company`) ve yoksa 417
@@ -91,6 +98,14 @@ watch(() => route.query.deal, (d) => {
 						<template #option="{ item }">{{ item.label }}</template>
 					</Typeahead>
 				</div>
+				<button
+					v-if="deal"
+					type="button"
+					class="btn btn-primary btn-sm ms-auto"
+					@click="entryOpen = true"
+				>
+					<i class="ti ti-plus me-1"></i>{{ t("Add quotation") }}
+				</button>
 			</div>
 		</div>
 
@@ -149,5 +164,13 @@ watch(() => route.query.deal, (d) => {
 			</div>
 		</template>
 		<EmptyState v-else icon="ti-search" :title="t('Pick a tender deal to compare quotations.')" />
+
+		<QuotationEntryDrawer
+			v-if="entryOpen && deal"
+			:deal="deal"
+			:deal-label="dealLabel"
+			@close="entryOpen = false"
+			@saved="load"
+		/>
 	</TenderPage>
 </template>
