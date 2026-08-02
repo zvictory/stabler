@@ -1,8 +1,7 @@
-"""Real Audited CRM Automation Engine & SLA Escalation API.
+"""Automation Rules API & Worker for CRM Deals.
 
-Enforces CRM module permissions, company scoping, CRM manager role gates,
-dynamic date math (date_diff/add_days), deterministic DB idempotency,
-and persistent CRM Activity audit records with dry-run support.
+Enforces CRM Manager role authorization, company scoping, SLA deadline alerts,
+stale deal escalation, durable DB idempotency, and audit logging.
 """
 
 from __future__ import annotations
@@ -12,22 +11,30 @@ from frappe import _
 from frappe.utils import date_diff, getdate, nowdate
 
 from stabler.api.crm import _require_crm, _require_crm_company
-from stabler.api.organization import _ADMIN_ROLES
-
-_CRM_MANAGER_ROLES = frozenset((*_ADMIN_ROLES, "Sales Manager", "CRM Specialist"))
 
 
 def _require_crm_manager(company: str) -> None:
-	"""Verify caller has CRM module access, company scoping, and CRM Manager/Admin role."""
+	"""Verify user has CRM Manager permission or System Manager role."""
 	_require_crm()
 	_require_crm_company(company)
-
-	user_roles = frappe.get_roles(frappe.session.user)
-	if not any(role in user_roles for role in _CRM_MANAGER_ROLES):
+	roles = frappe.get_roles()
+	if "Sales Manager" not in roles and "System Manager" not in roles and "Sales Master Manager" not in roles:
 		frappe.throw(
 			_("Not permitted. CRM Manager role required."),
 			frappe.PermissionError,
 		)
+
+
+def _is_duplicate_err(err: Exception) -> bool:
+	"""Check if exception represents a MariaDB/MySQL duplicate key error."""
+	dup_classes = (
+		getattr(frappe, "UniqueValidationError", type("UniqueValidationError", (Exception,), {})),
+		getattr(frappe, "DuplicateEntryError", type("DuplicateEntryError", (Exception,), {})),
+	)
+	if isinstance(err, dup_classes):
+		return True
+	err_str = str(err)
+	return "1062" in err_str or "Duplicate entry" in err_str
 
 
 def _process_automation_rule_action(
@@ -81,22 +88,23 @@ def _process_automation_rule_action(
 		act.custom_last_error = None
 
 		if hasattr(act, "insert"):
-			dup_errs = (
-				getattr(frappe, "UniqueValidationError", type("UniqueValidationError", (Exception,), {})),
-				getattr(frappe, "DuplicateEntryError", type("DuplicateEntryError", (Exception,), {})),
-			)
 			try:
 				act.insert()
-			except dup_errs:
-				# DB concurrency race: catch ONLY duplicate key exceptions on insertion
-				existing = frappe.get_list(
-					"CRM Activity",
-					filters={"custom_idempotency_key": rule_key, "company": company},
-					fields=["name"],
-					limit_page_length=1,
-				)
-				if existing:
-					return False  # Existing record created in parallel worker takes precedence
+			except Exception as err:
+				if _is_duplicate_err(err):
+					if hasattr(frappe, "db") and hasattr(frappe.db, "rollback"):
+						frappe.db.rollback()
+					existing = (
+						frappe.db.sql(
+							"SELECT name FROM `tabCRM Activity` WHERE custom_idempotency_key = %s AND company = %s",
+							(rule_key, company),
+							as_dict=True,
+						)
+						if hasattr(frappe, "db") and hasattr(frappe.db, "sql")
+						else []
+					)
+					if existing:
+						return False  # Parallel worker created record; return cleanly
 				raise
 
 	return True
@@ -193,33 +201,13 @@ def run_crm_automation_rules(company: str, dry_run: bool = False) -> dict:
 
 	return {
 		"company": company,
-		"dry_run": dry_run,
-		"executed_rules": executed,
+		"executed_count": executed,
 		"actions": actions,
-		"summary": f"{'Previewed' if dry_run else 'Executed'} {executed} automation rule(s) for {company}.",
+		"dry_run": dry_run,
 	}
 
 
 @frappe.whitelist()
 def preview_crm_automation_rules(company: str) -> dict:
-	"""Read-only preview endpoint for CRM automation rules."""
-	_require_crm_manager(company)
+	"""Dry-run preview of CRM automation rules for a company."""
 	return run_crm_automation_rules(company=company, dry_run=True)
-
-
-def scheduled_daily_crm_automation() -> None:
-	"""Daily system scheduler hook executing CRM automation rules across companies.
-
-	Ensures cross-company fault tolerance: failure in one company logs a searchable audit error
-	without halting execution for other companies.
-	"""
-	companies = frappe.get_all("Company", fields=["name"])
-	for comp in companies:
-		comp_name = comp.get("name") if isinstance(comp, dict) else comp
-		try:
-			run_crm_automation_rules(company=comp_name, dry_run=False)
-		except Exception as err:
-			if hasattr(frappe, "logger"):
-				frappe.logger("crm_automation").error(
-					f"Scheduled daily CRM automation failed for company '{comp_name}': {err}"
-				)

@@ -33,6 +33,18 @@ def _set_http_failure_status(code: int = 500) -> None:
 		frappe.local.response["http_status_code"] = code
 
 
+def _is_duplicate_err(err: Exception) -> bool:
+	"""Check if exception represents a MariaDB/MySQL duplicate key error."""
+	dup_classes = (
+		getattr(frappe, "UniqueValidationError", type("UniqueValidationError", (Exception,), {})),
+		getattr(frappe, "DuplicateEntryError", type("DuplicateEntryError", (Exception,), {})),
+	)
+	if isinstance(err, dup_classes):
+		return True
+	err_str = str(err)
+	return "1062" in err_str or "Duplicate entry" in err_str
+
+
 @frappe.whitelist()
 def send_deal_email(
 	deal: str,
@@ -100,8 +112,6 @@ def send_deal_email(
 								"custom_last_error": None,
 							},
 						)
-						if hasattr(frappe.db, "commit"):
-							frappe.db.commit()
 					return {
 						"name": comm_name,
 						"deal": deal,
@@ -123,8 +133,6 @@ def send_deal_email(
 								"custom_last_error": safe_err,
 							},
 						)
-						if hasattr(frappe.db, "commit"):
-							frappe.db.commit()
 					_set_http_failure_status(500)
 					user_msg = _("Email delivery failed. Please check mail server settings.")
 					return {
@@ -158,26 +166,28 @@ def send_deal_email(
 		comm.custom_last_error = None
 
 	if hasattr(comm, "insert"):
-		dup_errs = (
-			getattr(frappe, "UniqueValidationError", type("UniqueValidationError", (Exception,), {})),
-			getattr(frappe, "DuplicateEntryError", type("DuplicateEntryError", (Exception,), {})),
-		)
 		try:
 			comm.insert()
-		except dup_errs:
-			# Catch ONLY duplicate key exceptions on insertion
-			existing_comm = frappe.get_list(
-				"Communication",
-				filters={"custom_idempotency_key": key, "company": company},
-				fields=["name"],
-				limit_page_length=1,
-			)
-			if existing_comm:
-				return {
-					"name": existing_comm[0]["name"],
-					"deal": deal,
-					"deduped": True,
-				}
+		except Exception as err:
+			if _is_duplicate_err(err):
+				if hasattr(frappe, "db") and hasattr(frappe.db, "rollback"):
+					frappe.db.rollback()
+				existing_comm = (
+					frappe.db.sql(
+						"SELECT name, custom_execution_status FROM tabCommunication WHERE custom_idempotency_key = %s AND company = %s",
+						(key, company),
+						as_dict=True,
+					)
+					if hasattr(frappe, "db") and hasattr(frappe.db, "sql")
+					else []
+				)
+				if existing_comm:
+					return {
+						"name": existing_comm[0]["name"],
+						"deal": deal,
+						"deduped": True,
+						"status": existing_comm[0].get("custom_execution_status", "Executed"),
+					}
 			raise
 
 	comm_name = getattr(comm, "name", f"COMM-{deal}")
@@ -199,8 +209,15 @@ def send_deal_email(
 				comm.custom_last_error = safe_err
 				if hasattr(comm, "save"):
 					comm.save()
-			if hasattr(frappe, "db") and hasattr(frappe.db, "commit"):
-				frappe.db.commit()
+				elif hasattr(frappe, "db") and hasattr(frappe.db, "set_value"):
+					frappe.db.set_value(
+						"Communication",
+						comm_name,
+						{
+							"custom_execution_status": "Failed",
+							"custom_last_error": safe_err,
+						},
+					)
 			_set_http_failure_status(500)
 			user_msg = _("Email delivery failed. Please check mail server settings.")
 			return {

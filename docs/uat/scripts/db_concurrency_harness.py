@@ -35,6 +35,7 @@ def worker_send_email(company, deal, idempotency_key, barrier, result_queue):
 			recipients="test@example.com",
 			idempotency_key=idempotency_key,
 		)
+		frappe.db.commit()
 		result_queue.put({"pid": os.getpid(), "res": res, "error": None})
 	except Exception as err:
 		result_queue.put({"pid": os.getpid(), "res": None, "error": str(err)})

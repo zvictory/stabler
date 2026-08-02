@@ -219,7 +219,7 @@ class TestCrmEmail(unittest.TestCase):
 			doc = original_new_doc(doctype)
 
 			def _broken_insert():
-				raise self.frappe.ValidationError("DB Disk Full Error")
+				raise self.frappe.ValidationError("DB Mandatory Field Missing")
 
 			object.__setattr__(doc, "insert", _broken_insert)
 			return doc
@@ -238,6 +238,28 @@ class TestCrmEmail(unittest.TestCase):
 			self.assertEqual(len(sent_emails), 0)
 		finally:
 			sys.modules["frappe"].new_doc = original_new_doc
+
+	def test_send_deal_email_transaction_isolation_does_not_commit_caller_uncommitted_changes(self):
+		from stabler.api import crm_email
+
+		committed_calls = []
+
+		def _track_commit():
+			committed_calls.append(True)
+
+		sys.modules["frappe"].db.commit = _track_commit
+		self.frappe.sendmail = lambda **kwargs: self.fake.emails.append(kwargs)
+
+		crm_email.send_deal_email(
+			deal="DEAL-100",
+			subject="Isolation Test",
+			content="Testing caller transaction isolation",
+			company="ACME",
+			idempotency_key="MSG-ISO-1",
+		)
+
+		# Domain function send_deal_email must not invoke frappe.db.commit() directly
+		self.assertEqual(len(committed_calls), 0)
 
 	def test_permission_failure_has_no_db_audit_side_effects(self):
 		from stabler.api import crm_email

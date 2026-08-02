@@ -2,14 +2,19 @@
   "communication_race": {
     "workers_result": [
       {
-        "pid": 81192,
-        "res": null,
-        "error": "('Communication', '82s5h3iluu', IntegrityError(1062, \"Duplicate entry 'comm:Mikas:CONCURRENCY-RACE-COMM-001' for key 'custom_idempotency_key'\"))"
+        "pid": 93889,
+        "res": {
+          "name": "int9l75sqd",
+          "deal": "CRM-DEAL-2026-00005",
+          "deduped": true,
+          "status": "Failed"
+        },
+        "error": null
       },
       {
-        "pid": 81191,
+        "pid": 93888,
         "res": {
-          "name": "82s8gde3ep",
+          "name": "int9l75sqd",
           "deal": "CRM-DEAL-2026-00005",
           "status": "Failed",
           "attempts": 1,
@@ -21,7 +26,7 @@
     "db_rows_found": 1,
     "db_records": [
       {
-        "name": "82s8gde3ep",
+        "name": "int9l75sqd",
         "custom_idempotency_key": "comm:Mikas:CONCURRENCY-RACE-COMM-001",
         "custom_execution_status": "Failed"
       }
@@ -31,20 +36,20 @@
   "crm_activity_race": {
     "workers_result": [
       {
-        "pid": 81195,
+        "pid": 93906,
         "executed": true,
         "error": null
       },
       {
-        "pid": 81196,
-        "executed": null,
-        "error": "('CRM Activity', 'ACT-2026-001144', IntegrityError(1062, \"Duplicate entry 'CONCURRENCY-RACE-ACT-001' for key 'custom_idempotency_key'\"))"
+        "pid": 93907,
+        "executed": false,
+        "error": null
       }
     ],
     "db_rows_found": 1,
     "db_records": [
       {
-        "name": "ACT-2026-001143",
+        "name": "ACT-2026-001155",
         "custom_idempotency_key": "CONCURRENCY-RACE-ACT-001",
         "custom_execution_status": "Executed"
       }
