@@ -12,10 +12,12 @@ would otherwise walk straight through.
 from __future__ import annotations
 
 import importlib
+import json
 import re
 import sys
 import types
 import unittest
+from datetime import datetime
 from pathlib import Path
 from typing import ClassVar
 
@@ -27,6 +29,11 @@ PATCHES = _ROOT / "patches.txt"
 
 class _Doc(dict):
 	def __getattr__(self, field):
+		# Every real frappe Document carries `flags`; a double that answers None
+		# turns "the controller was told this is the approval path" into an
+		# AttributeError instead of a failed assertion.
+		if field == "flags":
+			return self.setdefault("_flags", types.SimpleNamespace())
 		return self.get(field)
 
 	def __setattr__(self, field, value):
@@ -121,6 +128,29 @@ class _FakeFrappe:
 				docstatus=0,
 			),
 			("CRM Deal", "LOT-B"): _Doc(name="LOT-B", company="ACME", deal_type="Tender"),
+			("CRM Deal", "LOT-C"): _Doc(name="LOT-C", company="ACME", deal_type="Tender"),
+			("Tender Sourcing Decision", "TSD-DRAFT"): _Doc(
+				name="TSD-DRAFT",
+				company="ACME",
+				deal="LOT-C",
+				status="Draft",
+				selected_quotation="SQ-DRAFT",
+				selection_reason="Fits the deadline.",
+			),
+			("Tender Sourcing Decision", "TSD-APPROVED"): _Doc(
+				name="TSD-APPROVED",
+				company="ACME",
+				deal="LOT-B",
+				status="Approved",
+				selected_quotation="SQ-OTHER-LOT",
+				approved_by="dir@example.com",
+			),
+			("Tender Sourcing Decision", "TSD-OTHER-COMPANY"): _Doc(
+				name="TSD-OTHER-COMPANY",
+				company="Other Co",
+				deal="LOT-OTHER",
+				status="Draft",
+			),
 			("Request for Quotation", "RFQ-1"): _Doc(
 				name="RFQ-1",
 				company="ACME",
@@ -154,6 +184,46 @@ class _FakeFrappe:
 		#: Every doctype a submit-permission was demanded for.
 		self.submit_checks: list[str] = []
 		self.emails: list[dict] = []
+		#: What `purchasing.tender_quotations` answers. Two bids from two
+		#: countries — deliberately BELOW the five-quotation policy, so the
+		#: exception rule is exercised by the default fixture rather than by a
+		#: special case nobody remembers to write.
+		self.quotation_rows = [
+			{
+				"name": "SQ-DRAFT",
+				"supplier": "SUP-A",
+				"supplier_name": "Alfa",
+				"country": "Uzbekistan",
+				"currency": "USD",
+				"grand_total": 100.0,
+				"base_total": 1200.0,
+				"cheapest": True,
+			},
+			{
+				"name": "SQ-SUBMITTED",
+				"supplier": "SUP-B",
+				"supplier_name": "Beta",
+				"country": "China",
+				"currency": "USD",
+				"grand_total": 130.0,
+				"base_total": 1560.0,
+				"cheapest": False,
+			},
+		]
+
+	def comparison(self, deal):
+		# LOT-B teklifsiz: "award yok" hâli uydurma bir bayrakla değil, gerçekten
+		# boş bir karşılaştırmayla sınansın.
+		rows = [] if deal == "LOT-B" else list(self.quotation_rows)
+		countries = {r["country"] for r in rows if r["country"]}
+		return {
+			"rows": rows,
+			"base_currency": "UZS",
+			"count": len(rows),
+			"countries": len(countries),
+			"has_min_5": len(rows) >= 5,
+			"has_2_countries": len(countries) >= 2,
+		}
 
 	def get_doc(self, doctype, name):
 		try:
@@ -205,11 +275,13 @@ def _load_api(
 	missing_columns=(),
 	can_create=True,
 	can_submit=True,
+	views=("sourcing", "director"),
 ):
 	for name in (
 		"stabler.api.sourcing",
 		"stabler.api.tender",
 		"stabler.api.tender_master",
+		"stabler.api.purchasing",
 		"frappe",
 		"frappe.utils",
 	):
@@ -251,10 +323,21 @@ def _load_api(
 	utils.flt = lambda value: float(value or 0)
 	utils.today = lambda: "2026-08-02"
 
+	utils.now_datetime = lambda: datetime(2026, 8, 2, 10, 0, 0)
+
 	tender = types.ModuleType("stabler.api.tender")
 	tender._require_tender = lambda _company=None: (
 		None if tender_allowed else (_ for _ in ()).throw(PermissionError("Not permitted"))
 	)
+	# Two separate windows on purpose: sourcing writes the award, a director
+	# approves it. A test double that treats them as one role could not fail the
+	# separation-of-duties rule, which is the only reason the split exists.
+	tender._require_tender_view = lambda view, company: (
+		None if view in views else (_ for _ in ()).throw(PermissionError("Not permitted"))
+	)
+
+	purchasing = types.ModuleType("stabler.api.purchasing")
+	purchasing.tender_quotations = lambda deal: fake.comparison(deal)
 
 	tender_master = types.ModuleType("stabler.api.tender_master")
 
@@ -273,6 +356,7 @@ def _load_api(
 			"frappe.utils": utils,
 			"stabler.api.tender": tender,
 			"stabler.api.tender_master": tender_master,
+			"stabler.api.purchasing": purchasing,
 		}
 	)
 	return importlib.import_module("stabler.api.sourcing")
@@ -344,7 +428,7 @@ class TestListRfqs(unittest.TestCase):
 		self.api.list_rfqs("LOT-A", company="ACME")
 		self.assertIn("Request for Quotation", self.fake.list_calls)
 		api_source = API_SOURCE.read_text()
-		self.assertNotIn("frappe.get_all(\n\t\t\"Request for Quotation\"", api_source)
+		self.assertNotIn('frappe.get_all(\n\t\t"Request for Quotation"', api_source)
 
 	def test_returns_empty_before_the_patch_has_run(self):
 		"""Pre-migrate the column does not exist. Reading it would 500 the page;
@@ -426,9 +510,7 @@ class TestCreateRfq(unittest.TestCase):
 		self.assertIn("Request for Quotation", self.fake.create_checks)
 		api = _load_api(self.fake, can_create=False)
 		with self.assertRaises(PermissionError):
-			api.create_rfq(
-				"LOT-A", ["SUP-A"], [{"item_code": "RAIL-01", "qty": 1}], company="ACME"
-			)
+			api.create_rfq("LOT-A", ["SUP-A"], [{"item_code": "RAIL-01", "qty": 1}], company="ACME")
 
 	def test_creating_before_the_patch_has_run_fails_loudly(self):
 		"""Reading tolerates an unmigrated site; WRITING must not — an untagged
@@ -669,6 +751,165 @@ class TestSubmitSupplierQuotation(unittest.TestCase):
 			self.api.submit_supplier_quotation("SQ-OTHER-COMPANY", company="ACME")
 		with self.assertRaises(PermissionError):
 			self.api.submit_supplier_quotation("SQ-DRAFT", company="Other Co")
+
+
+class TestSavingTheAward(unittest.TestCase):
+	"""Sourcing writes the award; the numbers behind it are taken server-side.
+
+	A payload that carries its own comparison is a payload that can carry a
+	flattering one, and the snapshot is the whole point of the record: it is what
+	the decision was made against, not what the totals happen to be today.
+	"""
+
+	def setUp(self):
+		self.fake = _FakeFrappe()
+		self.api = _load_api(self.fake)
+
+	def _save(self, **overrides):
+		payload = {
+			"deal": "LOT-A",
+			"selected_quotation": "SQ-SUBMITTED",
+			"selection_reason": "Delivery window fits the tender deadline.",
+			"policy_exception": 1,
+			"exception_reason": "Only two suppliers hold the certificate.",
+			"company": "ACME",
+		}
+		payload.update(overrides)
+		return self.api.save_sourcing_decision(**payload)
+
+	def test_cheapest_and_selected_are_recorded_as_two_facts(self):
+		"""The interesting award is the one where they differ; a record that only
+		keeps the choice cannot show that it was a choice."""
+		result = self._save()
+		doc = self.fake.created[-1]
+		self.assertEqual(doc["selected_quotation"], "SQ-SUBMITTED")
+		self.assertEqual(doc["cheapest_quotation"], "SQ-DRAFT")
+		self.assertEqual(result["cheapest_quotation"], "SQ-DRAFT")
+
+	def test_the_snapshot_is_computed_here_not_posted(self):
+		self._save()
+		snapshot = json.loads(self.fake.created[-1]["comparison_snapshot"])
+		self.assertEqual(snapshot["base_currency"], "UZS")
+		self.assertEqual([r["quotation"] for r in snapshot["rows"]], ["SQ-DRAFT", "SQ-SUBMITTED"])
+		self.assertEqual(snapshot["taken_at"], "2026-08-02 10:00:00")
+
+	def test_the_policy_counts_travel_with_the_decision(self):
+		"""The controller enforces the exception rule from these two numbers, so
+		they have to be on the document, not only in the endpoint that wrote it."""
+		self._save()
+		doc = self.fake.created[-1]
+		self.assertEqual(doc["quotation_count"], 2)
+		self.assertEqual(doc["country_count"], 2)
+
+	def test_a_quotation_from_another_lot_cannot_be_awarded(self):
+		with self.assertRaises(ValueError):
+			self._save(selected_quotation="SQ-OTHER-LOT")
+		self.assertEqual(self.fake.created, [])
+
+	def test_a_reason_is_required(self):
+		"""An award with no reason is a click, not a decision."""
+		with self.assertRaises(ValueError):
+			self._save(selection_reason="   ")
+
+	def test_a_lot_gets_one_open_award_at_a_time(self):
+		"""Two drafts are two answers to "who won", and nothing in the record
+		says which one the buyer acted on. LOT-A already carries TSD-DRAFT."""
+		fake = _FakeFrappe()
+		api = _load_api(fake)
+		with self.assertRaises(ValueError):
+			api.save_sourcing_decision(
+				deal="LOT-C",
+				selected_quotation="SQ-SUBMITTED",
+				selection_reason="Second opinion.",
+				policy_exception=1,
+				exception_reason="…",
+				company="ACME",
+			)
+
+	def test_only_the_sourcing_window_may_write_one(self):
+		"""Separation of duties: the same person must not both pick and approve."""
+		api = _load_api(self.fake, views=("director",))
+		with self.assertRaises(PermissionError):
+			api.save_sourcing_decision(
+				deal="LOT-A",
+				selected_quotation="SQ-SUBMITTED",
+				selection_reason="x",
+				policy_exception=1,
+				exception_reason="y",
+				company="ACME",
+			)
+
+	def test_the_usual_three_gates_still_apply(self):
+		api = _load_api(self.fake, tender_allowed=False)
+		with self.assertRaises(PermissionError):
+			api.save_sourcing_decision(
+				deal="LOT-A", selected_quotation="SQ-SUBMITTED", selection_reason="x", company="ACME"
+			)
+		with self.assertRaises(PermissionError):
+			self._save(deal="LOT-OTHER")
+		with self.assertRaises(PermissionError):
+			self._save(company="Other Co")
+
+
+class TestApprovingTheAward(unittest.TestCase):
+	def setUp(self):
+		self.fake = _FakeFrappe()
+		self.api = _load_api(self.fake)
+
+	def test_the_stamp_is_written_by_the_server(self):
+		result = self.api.approve_sourcing_decision("TSD-DRAFT", company="ACME")
+		doc = self.fake.docs[("Tender Sourcing Decision", "TSD-DRAFT")]
+		self.assertEqual(doc["status"], "Approved")
+		self.assertEqual(doc["approved_by"], "sourcing@example.com")
+		self.assertEqual(doc["approved_at"], "2026-08-02 10:00:00")
+		self.assertEqual(result["status"], "Approved")
+
+	def test_the_controller_is_told_this_is_the_approval_path(self):
+		"""Without the flag the controller refuses the transition — which is what
+		stops an ordinary save from approving a decision."""
+		self.api.approve_sourcing_decision("TSD-DRAFT", company="ACME")
+		doc = self.fake.docs[("Tender Sourcing Decision", "TSD-DRAFT")]
+		self.assertTrue(doc.flags.stabler_approving)
+
+	def test_only_a_director_may_approve(self):
+		api = _load_api(self.fake, views=("sourcing",))
+		with self.assertRaises(PermissionError):
+			api.approve_sourcing_decision("TSD-DRAFT", company="ACME")
+
+	def test_an_approved_decision_cannot_be_approved_again(self):
+		with self.assertRaises(ValueError):
+			self.api.approve_sourcing_decision("TSD-APPROVED", company="ACME")
+
+	def test_a_decision_from_another_company_is_refused(self):
+		with self.assertRaises(PermissionError):
+			self.api.approve_sourcing_decision("TSD-OTHER-COMPANY", company="ACME")
+
+	def test_the_module_gate_still_applies(self):
+		api = _load_api(self.fake, tender_allowed=False)
+		with self.assertRaises(PermissionError):
+			api.approve_sourcing_decision("TSD-DRAFT", company="ACME")
+
+
+class TestReadingTheAward(unittest.TestCase):
+	def setUp(self):
+		self.fake = _FakeFrappe()
+		self.api = _load_api(self.fake)
+
+	def test_the_open_decision_comes_back_with_its_comparison(self):
+		"""One call, because the screen shows them together and two calls can
+		disagree about what "now" was."""
+		result = self.api.get_sourcing_decision("LOT-C", company="ACME")
+		self.assertEqual(result["decision"]["name"], "TSD-DRAFT")
+		self.assertEqual(result["comparison"]["count"], 2)
+
+	def test_a_lot_without_an_award_reads_as_none_not_an_error(self):
+		result = self.api.get_sourcing_decision("LOT-B", company="ACME")
+		self.assertIsNone(result["decision"])
+
+	def test_reading_is_gated_like_everything_else(self):
+		with self.assertRaises(PermissionError):
+			self.api.get_sourcing_decision("LOT-DENIED", company="ACME")
+
 
 if __name__ == "__main__":
 	unittest.main()

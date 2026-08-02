@@ -25,11 +25,13 @@ and stops. No `sendmail`, no portal push.
 
 from __future__ import annotations
 
+import json
+
 import frappe
 from frappe import _
-from frappe.utils import flt, today
+from frappe.utils import flt, now_datetime, today
 
-from stabler.api.tender import _require_tender
+from stabler.api.tender import _require_tender, _require_tender_view
 from stabler.api.tender_master import require_selected_company
 
 #: The tag patch v68 puts on Request for Quotation, mirroring v30 on Supplier
@@ -344,4 +346,210 @@ def create_rfq(deal, suppliers, items, schedule_date=None, company=None):
 		"company": selected_company,
 		"supplier_count": len(supplier_names),
 		"item_count": len(lines),
+	}
+
+
+# --- The award -------------------------------------------------------------
+#
+# "Cheapest" and "selected" are two different facts. The comparison screen knew
+# the first and nothing recorded the second, so an award existed only as a
+# highlighted row on a page that recomputes itself on every load.
+#
+# The numbers are taken HERE, never from the caller. A payload that carries its
+# own comparison is a payload that can carry a flattering one, and the snapshot
+# is the whole point of the record: it is what the decision was made against,
+# not what the totals happen to be today.
+
+_DECISION = "Tender Sourcing Decision"
+
+_DECISION_FIELDS = (
+	"name",
+	"company",
+	"deal",
+	"status",
+	"selected_quotation",
+	"cheapest_quotation",
+	"selection_reason",
+	"technical_result",
+	"quotation_count",
+	"country_count",
+	"policy_exception",
+	"exception_reason",
+	"approved_by",
+	"approved_at",
+)
+
+
+def _comparison(deal: str) -> dict:
+	"""The vendor comparison as the server sees it right now.
+
+	Imported inside the call, not at module import: `purchasing` reaches back
+	into the tender module for its gates, and a top-level import here would close
+	that circle at load time.
+	"""
+	from stabler.api.purchasing import tender_quotations
+
+	return tender_quotations(deal)
+
+
+def _snapshot_rows(rows: list) -> list:
+	"""Only the columns a later reader needs to re-check the decision. Freezing
+	the whole payload would preserve fields that mean nothing outside today's UI."""
+	return [
+		{
+			"quotation": r.get("name"),
+			"supplier": r.get("supplier"),
+			"supplier_name": r.get("supplier_name"),
+			"country": r.get("country"),
+			"currency": r.get("currency"),
+			"grand_total": flt(r.get("grand_total")),
+			"base_total": flt(r.get("base_total")),
+			"cheapest": bool(r.get("cheapest")),
+		}
+		for r in rows
+	]
+
+
+def _open_decision(deal: str, company: str):
+	rows = frappe.get_list(
+		_DECISION,
+		filters={"deal": deal, "company": company, "status": "Draft"},
+		fields=list(_DECISION_FIELDS),
+		limit_page_length=0,
+	)
+	return rows[0] if rows else None
+
+
+@frappe.whitelist()
+def get_sourcing_decision(deal, company=None):
+	"""The open award for a lot, plus the comparison it would be made against."""
+	_require_tender(company)
+	selected_company = _assert_company_scope(company)
+	_deal_scope(deal, selected_company)
+	return {"decision": _open_decision(deal, selected_company), "comparison": _comparison(deal)}
+
+
+@frappe.whitelist()
+def save_sourcing_decision(
+	deal,
+	selected_quotation,
+	selection_reason,
+	technical_result="Compliant",
+	policy_exception=0,
+	exception_reason="",
+	name=None,
+	company=None,
+):
+	"""Record (or amend) the DRAFT award for a lot.
+
+	Sourcing writes it; a director approves it. Separating the two is the point
+	of the record — an award nobody but its author ever saw is a note.
+	"""
+	_require_tender(company)
+	selected_company = _assert_company_scope(company)
+	_require_tender_view("sourcing", selected_company)
+	_deal_scope(deal, selected_company, "write")
+
+	reason = str(selection_reason or "").strip()
+	if not reason:
+		frappe.throw(_("Say why this quotation was selected."), frappe.ValidationError)
+
+	comparison = _comparison(deal)
+	rows = comparison.get("rows") or []
+	by_name = {r.get("name") for r in rows}
+	if selected_quotation not in by_name:
+		# Either it belongs to another lot or it is not tagged at all. Both mean
+		# the same thing here: it is not one of the bids this decision compares.
+		frappe.throw(
+			_("That quotation is not among the bids collected for this lot."),
+			frappe.ValidationError,
+		)
+	cheapest = next((r.get("name") for r in rows if r.get("cheapest")), "")
+
+	if name:
+		doc = frappe.get_doc(_DECISION, name)
+		if doc.company != selected_company:
+			frappe.throw(_("Decision does not belong to the selected company."), frappe.PermissionError)
+		if not frappe.has_permission(_DECISION, ptype="write", doc=doc):
+			frappe.throw(_("Not permitted."), frappe.PermissionError)
+		if doc.deal != deal:
+			frappe.throw(_("This decision belongs to another tender lot."), frappe.ValidationError)
+	else:
+		if _open_decision(deal, selected_company):
+			# One open award per lot. Two drafts mean two answers to "who won",
+			# and nothing in the record says which one the buyer acted on.
+			frappe.throw(_("This lot already has an open sourcing decision."), frappe.ValidationError)
+		if not frappe.has_permission(_DECISION, "create"):
+			frappe.throw(_("Not permitted."), frappe.PermissionError)
+		doc = frappe.new_doc(_DECISION)
+		doc.company = selected_company
+		doc.deal = deal
+		doc.status = "Draft"
+
+	doc.selected_quotation = selected_quotation
+	# A snapshot, not a link that follows today's cheapest: the interesting case
+	# is the award where the two differ, and it stops being visible the moment a
+	# new quotation arrives and moves the cheapest link with it.
+	doc.cheapest_quotation = cheapest
+	doc.selection_reason = reason
+	doc.technical_result = technical_result or "Compliant"
+	doc.quotation_count = int(comparison.get("count") or 0)
+	doc.country_count = int(comparison.get("countries") or 0)
+	doc.policy_exception = 1 if int(policy_exception or 0) else 0
+	doc.exception_reason = str(exception_reason or "").strip()
+	doc.comparison_snapshot = json.dumps(
+		{
+			"taken_at": now_datetime().strftime("%Y-%m-%d %H:%M:%S"),
+			"base_currency": comparison.get("base_currency"),
+			"rows": _snapshot_rows(rows),
+		},
+		ensure_ascii=False,
+	)
+
+	if name:
+		doc.save()
+	else:
+		doc.insert()
+	return {
+		"name": doc.name,
+		"deal": deal,
+		"status": doc.status,
+		"selected_quotation": selected_quotation,
+		"cheapest_quotation": cheapest,
+		"policy_exception": doc.policy_exception,
+	}
+
+
+@frappe.whitelist()
+def approve_sourcing_decision(name, company=None):
+	"""Approve one award. Director only, and the stamp is written here.
+
+	The controller refuses a payload that carries its own `approved_by`, so this
+	is the only place a name and a time can enter the record — which is exactly
+	what makes them worth reading later.
+	"""
+	_require_tender(company)
+	selected_company = _assert_company_scope(company)
+	_require_tender_view("director", selected_company)
+
+	doc = frappe.get_doc(_DECISION, name)
+	if doc.company != selected_company:
+		frappe.throw(_("Decision does not belong to the selected company."), frappe.PermissionError)
+	if not frappe.has_permission(_DECISION, ptype="write", doc=doc):
+		frappe.throw(_("Not permitted."), frappe.PermissionError)
+	if (doc.status or "Draft") != "Draft":
+		frappe.throw(_("This decision is not a draft."), frappe.ValidationError)
+	_deal_scope(doc.deal, selected_company)
+
+	doc.flags.stabler_approving = True
+	doc.status = "Approved"
+	doc.approved_by = frappe.session.user
+	doc.approved_at = now_datetime().strftime("%Y-%m-%d %H:%M:%S")
+	doc.save()
+	return {
+		"name": name,
+		"deal": doc.deal,
+		"status": doc.status,
+		"approved_by": doc.approved_by,
+		"approved_at": doc.approved_at,
 	}

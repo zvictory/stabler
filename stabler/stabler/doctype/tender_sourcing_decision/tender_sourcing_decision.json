@@ -1,0 +1,34 @@
+{
+ "actions": [],
+ "autoname": "naming_series:",
+ "doctype": "DocType",
+ "engine": "InnoDB",
+ "field_order": ["naming_series", "company", "deal", "status", "selected_quotation", "cheapest_quotation", "selection_reason", "technical_result", "quotation_count", "country_count", "policy_exception", "exception_reason", "comparison_snapshot", "approved_by", "approved_at"],
+ "fields": [
+  {"fieldname": "naming_series", "fieldtype": "Select", "options": "TSD-.YYYY.-.#####", "default": "TSD-.YYYY.-.#####", "reqd": 1},
+  {"fieldname": "company", "fieldtype": "Link", "options": "Company", "reqd": 1, "in_standard_filter": 1},
+  {"fieldname": "deal", "fieldtype": "Link", "options": "CRM Deal", "reqd": 1, "in_list_view": 1},
+  {"fieldname": "status", "fieldtype": "Select", "options": "Draft\nApproved", "default": "Draft", "read_only": 1, "in_list_view": 1, "in_standard_filter": 1},
+  {"fieldname": "selected_quotation", "fieldtype": "Link", "options": "Supplier Quotation", "reqd": 1, "in_list_view": 1},
+  {"fieldname": "cheapest_quotation", "fieldtype": "Link", "options": "Supplier Quotation", "read_only": 1},
+  {"fieldname": "selection_reason", "fieldtype": "Small Text", "reqd": 1},
+  {"fieldname": "technical_result", "fieldtype": "Select", "options": "Compliant\nDeviations\nNot assessed", "default": "Compliant"},
+  {"fieldname": "quotation_count", "fieldtype": "Int", "read_only": 1},
+  {"fieldname": "country_count", "fieldtype": "Int", "read_only": 1},
+  {"fieldname": "policy_exception", "fieldtype": "Check", "default": "0"},
+  {"fieldname": "exception_reason", "fieldtype": "Small Text", "depends_on": "eval:doc.policy_exception"},
+  {"fieldname": "comparison_snapshot", "fieldtype": "Long Text", "read_only": 1},
+  {"fieldname": "approved_by", "fieldtype": "Link", "options": "User", "read_only": 1},
+  {"fieldname": "approved_at", "fieldtype": "Datetime", "read_only": 1}
+ ],
+ "module": "Stabler",
+ "name": "Tender Sourcing Decision",
+ "permissions": [
+  {"create": 1, "delete": 0, "read": 1, "write": 1, "role": "Sales User"},
+  {"create": 1, "delete": 0, "read": 1, "write": 1, "role": "Sales Manager"},
+  {"create": 1, "delete": 1, "read": 1, "write": 1, "role": "System Manager"}
+ ],
+ "sort_field": "modified",
+ "sort_order": "DESC",
+ "track_changes": 1
+}

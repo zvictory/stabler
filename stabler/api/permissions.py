@@ -178,6 +178,10 @@ def tender_master_query(user=None):
 	return _company_condition(user, "Tender Master")
 
 
+def tender_sourcing_decision_query(user=None):
+	return _company_condition(user, "Tender Sourcing Decision")
+
+
 # ---------------------------------------------------------------------------
 # Gap #46 — owner / territory scoping for masters (Customer, Supplier)
 # ---------------------------------------------------------------------------
