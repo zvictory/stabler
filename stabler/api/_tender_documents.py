@@ -10,6 +10,9 @@ import json
 from typing import Any
 
 
+VALID_DOC_ROLES = ("customs", "logistics", "finance", "general")
+
+
 def parse_doc_requirements(raw: Any) -> list[dict[str, Any]]:
 	"""Parse and clean a raw document requirements payload or JSON string."""
 	if not raw:
@@ -36,6 +39,10 @@ def parse_doc_requirements(raw: Any) -> list[dict[str, Any]]:
 		scope = str(item.get("scope") or "lot").strip().lower()
 		if scope not in ("lot", "tender"):
 			scope = "lot"
+
+		role = str(item.get("role") or "general").strip().lower()
+		if role not in VALID_DOC_ROLES:
+			role = "general"
 
 		waiver_reason = item.get("waiver_reason")
 		waiver_reason_str = str(waiver_reason).strip() if waiver_reason else None
@@ -71,6 +78,7 @@ def parse_doc_requirements(raw: Any) -> list[dict[str, Any]]:
 				"label": label,
 				"required": required,
 				"scope": scope,
+				"role": role,
 				"done": is_done,
 				"unverified": unverified,
 				"waiver_reason": waiver_reason_str,
@@ -85,15 +93,21 @@ def parse_doc_requirements(raw: Any) -> list[dict[str, Any]]:
 	return cleaned
 
 
-def docs_summary(requirements: list[dict[str, Any]]) -> dict[str, Any]:
-	"""Compute documents summary metrics based on derived completion."""
-	total = len(requirements)
+def docs_summary(requirements: list[dict[str, Any]], role: str | None = None) -> dict[str, Any]:
+	"""Compute documents summary metrics based on derived completion, optionally filtered by role."""
+	if role is not None:
+		target_role = str(role).strip().lower()
+		target_reqs = [r for r in requirements if r.get("role") == target_role]
+	else:
+		target_reqs = requirements
+
+	total = len(target_reqs)
 	required = 0
 	done_required = 0
 	unverified_count = 0
 	missing = []
 
-	for r in requirements:
+	for r in target_reqs:
 		if r.get("unverified"):
 			unverified_count += 1
 
@@ -104,7 +118,7 @@ def docs_summary(requirements: list[dict[str, Any]]) -> dict[str, Any]:
 			else:
 				missing.append(r.get("label", ""))
 
-	readiness_pct = int(round((done_required / required * 100))) if required > 0 else 100
+	readiness_pct = round(done_required / required * 100) if required > 0 else 100
 
 	return {
 		"total": total,
@@ -114,3 +128,53 @@ def docs_summary(requirements: list[dict[str, Any]]) -> dict[str, Any]:
 		"missing": missing,
 		"readiness_pct": readiness_pct,
 	}
+
+
+def default_doc_requirements() -> list[dict[str, Any]]:
+	"""Standard document requirements seeded with explicit role assignments."""
+	raw = [
+		{
+			"key": "gtd",
+			"label": "ГТД / Gümrük beyannamesi",
+			"required": True,
+			"scope": "lot",
+			"role": "customs",
+		},
+		{
+			"key": "origin_cert",
+			"label": "Kelib chiqish sertifikati",
+			"required": False,
+			"scope": "lot",
+			"role": "customs",
+		},
+		{
+			"key": "cmr",
+			"label": "CMR / Transport nakladnoyasi",
+			"required": True,
+			"scope": "lot",
+			"role": "logistics",
+		},
+		{
+			"key": "packing_list",
+			"label": "Qadoqlash varaqasi",
+			"required": False,
+			"scope": "lot",
+			"role": "logistics",
+		},
+		{
+			"key": "invoice",
+			"label": "Invoys / Commercial Invoice",
+			"required": True,
+			"scope": "lot",
+			"role": "finance",
+		},
+		{
+			"key": "tech_spec",
+			"label": "Texnik spetsifikatsiya",
+			"required": True,
+			"scope": "lot",
+			"role": "general",
+		},
+		{"key": "price_offer", "label": "Narx taklifi", "required": True, "scope": "lot", "role": "general"},
+	]
+	return parse_doc_requirements(raw)

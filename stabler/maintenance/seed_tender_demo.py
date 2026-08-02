@@ -537,9 +537,7 @@ def _contracts(deal_by_lot: dict[str, str], company: str) -> int:
 			)
 		order.submit()
 		if billed_pct:
-			frappe.db.set_value(
-				"Sales Order", order.name, "per_billed", billed_pct, update_modified=False
-			)
+			frappe.db.set_value("Sales Order", order.name, "per_billed", billed_pct, update_modified=False)
 		made += 1
 	return made
 
@@ -571,15 +569,31 @@ def _intake(lot_no: str, buyer: str, stage: str, value: int, owner: str, assigne
 		"bid_deadline": add_days(nowdate(), DEADLINE_OFFSETS.get(lot_no, 21)),
 		"delivery_deadline": add_days(nowdate(), DELIVERY_OFFSETS.get(lot_no, 90)),
 		"documents": [
-			{"name": "Texnik spetsifikatsiya", "status": "ready"},
+			{"name": "Texnik spetsifikatsiya", "status": "ready", "role": "general"},
 			{
 				"name": "Kafolat xati",
 				"status": "ready" if stage in ("priced", "submitted", "won", "lost") else "pending",
+				"role": "general",
 			},
-			{"name": "Litsenziya nusxasi", "status": "ready" if stage != "seen" else "pending"},
 			{
-				"name": "Narx taklifi",
+				"name": "Litsenziya nusxasi / Сертификат",
+				"status": "ready" if stage != "seen" else "pending",
+				"role": "customs",
+			},
+			{
+				"name": "Narx taklifi / Инвойс",
 				"status": "ready" if stage in ("submitted", "won", "lost") else "pending",
+				"role": "finance",
+			},
+			{
+				"name": "ГТД / Gümrük beyannamesi",
+				"status": "ready" if stage in ("won", "done") else "pending",
+				"role": "customs",
+			},
+			{
+				"name": "CMR / Transport nakladnoyasi",
+				"status": "ready" if stage in ("won", "done") else "pending",
+				"role": "logistics",
 			},
 		],
 	}

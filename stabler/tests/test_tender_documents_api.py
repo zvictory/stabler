@@ -109,6 +109,79 @@ class TestTenderDocumentsRules(unittest.TestCase):
 		self.assertEqual(summary["missing"], ["Acceptance Act", "Commercial Invoice"])
 		self.assertEqual(summary["readiness_pct"], 50)
 
+	def test_role_parsing_and_defaulting(self):
+		raw = [
+			{"key": "gtd", "label": "GTD", "role": "customs"},
+			{"key": "cmr", "label": "CMR", "role": "logistics"},
+			{"key": "inv", "label": "Invoice", "role": "finance"},
+			{"key": "spec", "label": "Spec", "role": "general"},
+			{"key": "other", "label": "Other"},  # No role -> general
+			{"key": "bad", "label": "Bad", "role": "invalid_role"},  # Invalid -> general
+		]
+		reqs = parse_doc_requirements(raw)
+		self.assertEqual(reqs[0]["role"], "customs")
+		self.assertEqual(reqs[1]["role"], "logistics")
+		self.assertEqual(reqs[2]["role"], "finance")
+		self.assertEqual(reqs[3]["role"], "general")
+		self.assertEqual(reqs[4]["role"], "general")
+		self.assertEqual(reqs[5]["role"], "general")
+
+	def test_docs_summary_filtering_by_role(self):
+		raw = [
+			{
+				"key": "gtd",
+				"label": "GTD",
+				"required": True,
+				"role": "customs",
+				"files": [{"file_name": "gtd.pdf"}],
+			},
+			{
+				"key": "cert",
+				"label": "Certificate",
+				"required": True,
+				"role": "customs",
+			},  # missing customs doc
+			{"key": "cmr", "label": "CMR", "required": True, "role": "logistics"},  # missing logistics doc
+			{
+				"key": "spec",
+				"label": "Spec",
+				"required": True,
+				"role": "general",
+				"files": [{"file_name": "spec.pdf"}],
+			},
+		]
+		reqs = parse_doc_requirements(raw)
+
+		# All roles
+		all_summary = docs_summary(reqs)
+		self.assertEqual(all_summary["total"], 4)
+		self.assertEqual(all_summary["required"], 4)
+		self.assertEqual(all_summary["done_required"], 2)
+
+		# Customs role filter
+		customs_summary = docs_summary(reqs, role="customs")
+		self.assertEqual(customs_summary["total"], 2)
+		self.assertEqual(customs_summary["required"], 2)
+		self.assertEqual(customs_summary["done_required"], 1)
+		self.assertEqual(customs_summary["missing"], ["Certificate"])
+		self.assertEqual(customs_summary["readiness_pct"], 50)
+
+		# Logistics role filter
+		logistics_summary = docs_summary(reqs, role="logistics")
+		self.assertEqual(logistics_summary["total"], 1)
+		self.assertEqual(logistics_summary["required"], 1)
+		self.assertEqual(logistics_summary["done_required"], 0)
+		self.assertEqual(logistics_summary["missing"], ["CMR"])
+		self.assertEqual(logistics_summary["readiness_pct"], 0)
+
+	def test_standard_doc_requirements(self):
+		from stabler.api._tender_documents import default_doc_requirements
+
+		defaults = default_doc_requirements()
+		self.assertGreaterEqual(len(defaults), 4)
+		roles = {d["role"] for d in defaults}
+		self.assertTrue({"customs", "logistics", "finance", "general"}.issubset(roles))
+
 
 class TestTenderDocumentsApiSource(unittest.TestCase):
 	def test_endpoints_are_defined_and_gated(self):
