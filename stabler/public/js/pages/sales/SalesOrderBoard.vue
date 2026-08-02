@@ -12,7 +12,7 @@ import { useToast } from "../../composables/useToast.js";
 import { useConfirm } from "../../composables/useConfirm.js";
 import { filterTenderRows, tenderRouteFilters } from "../../composables/tenderBoardFilters.js";
 import EmptyState from "../../components/EmptyState.vue";
-import TenderNav from "../tender/TenderNav.vue";
+import TenderPage from "../tender/TenderPage.vue";
 
 const session = useSession();
 const { activeCompany, currency, user } = storeToRefs(session);
@@ -113,14 +113,12 @@ function openSo(name) {
 </script>
 
 <template>
-	<div class="container-fluid py-3">
-		<TenderNav />
-		<div class="d-flex align-items-center mb-3 gap-2">
-			<h2 class="mb-0">{{ t("Contract board") }}</h2>
-			<button type="button" class="btn btn-outline-secondary btn-sm ms-auto" @click="addStage">
+	<TenderPage :label="t('Tender')" :title="t('Contract board')">
+		<template #actions>
+			<button type="button" class="ds-btn" @click="addStage">
 				<i class="ti ti-plus me-1"></i>{{ t("Add stage") }}
 			</button>
-		</div>
+		</template>
 
 		<div v-if="loading" class="text-center py-5"><span class="spinner-border text-primary"></span></div>
 		<EmptyState
@@ -190,5 +188,5 @@ function openSo(name) {
 				</div>
 			</div>
 		</div>
-	</div>
+	</TenderPage>
 </template>

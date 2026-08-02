@@ -15,7 +15,7 @@ import { useEscapeBack } from "../../composables/useEscapeBack.js";
 import { activeTenderFilters, filterTenderRows, tenderRouteFilters } from "../../composables/tenderBoardFilters.js";
 import EmptyState from "../../components/EmptyState.vue";
 import SkeletonRows from "../../components/SkeletonRows.vue";
-import TenderNav from "./TenderNav.vue";
+import TenderPage from "./TenderPage.vue";
 
 const session = useSession();
 const { activeCompany, user } = storeToRefs(session);
@@ -60,10 +60,14 @@ function clearFilters() { router.replace({ query: {} }); }
 </script>
 
 <template>
-	<div class="container-xl py-3">
-		<!-- Çubuk sayfa başlığının ÜSTÜNDE — bkz. /tender/desk. -->
-		<TenderNav />
-		<div class="d-flex align-items-center mb-2 gap-2 flex-wrap"><h2 class="mb-0">{{ t("Customs queue") }}</h2><div v-if="filterSummary.length" class="ms-auto d-flex align-items-center gap-2"><span class="text-secondary small">{{ filterSummary.join(" · ") }}</span><button type="button" class="btn btn-sm btn-ghost-secondary" @click="clearFilters">{{ t("Clear filters") }}</button></div></div>
+	<TenderPage :label="t('Tender')" :title="t('Customs queue')">
+		<template v-if="filterSummary.length" #meta>
+			<span>{{ filterSummary.join(" · ") }}</span>
+		</template>
+		<template v-if="filterSummary.length" #actions>
+			<button type="button" class="ds-btn" @click="clearFilters">{{ t("Clear filters") }}</button>
+		</template>
+
 		<div class="card"><div class="card-body p-0">
 			<table class="table card-table">
 				<thead><tr>
@@ -87,5 +91,5 @@ function clearFilters() { router.replace({ query: {} }); }
 			</table>
 			<EmptyState v-if="!loading && !filteredRows.length" icon="ti-file-invoice" :title="t('No purchase orders match these filters.')" />
 		</div></div>
-	</div>
+	</TenderPage>
 </template>

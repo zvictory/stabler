@@ -90,4 +90,36 @@ for (const [name, file] of targets) {
 	}
 }
 
+// Second half of the contract: a tender ROUTE builds its shell from <TenderPage>,
+// it does not hand-roll one. Ten screens each wrote their own wrapper and the ten
+// drifted — four on the design layer, six on Bootstrap `container-xl py-3`, and two
+// of the four in a centred 1240px box with zero top padding, which pulled the bar
+// 16px above the content area (measured 2026-08-02: /tender/flow and /tender/crm
+// nav top = -16, /tender/desk = 0). Same bar, different place, every screen.
+//
+// Dashboard is exempt: it is the tender Overview entry, not a /tender/* screen, and
+// it draws its bar through the embedded OperationsDesk.
+for (const [name, file] of tenderRouteComponents()) {
+	const root = templateOf(file).replace("<template>", "").trimStart();
+	assert.ok(
+		root.startsWith("<TenderPage"),
+		`${name} must build its shell from <TenderPage> so every /tender/* screen has the same bar, header and padding — found: ${root.slice(0, 60)}`,
+	);
+}
+
+// Third half: what a page puts in `#actions` goes in bare, not inside its own row
+// container. The shell's `.ds-actions` already IS the row (flex + gap + 16px top).
+// Two screens shipped a wrapper that re-declared it — `.desk-actions` and
+// `.flow-controls`, both `margin-top: 16px` — so their action row sat 16px lower
+// than the other eight (measured 2026-08-02: desk/flow actions top 217, crm 201).
+// The bar was identical and the row underneath it still was not.
+for (const [name, file] of tenderRouteComponents()) {
+	const slot = templateOf(file).match(/#actions>\s*([\s\S]*?)<\/template>/);
+	if (!slot) continue;
+	assert.ok(
+		!slot[1].trimStart().startsWith("<div"),
+		`${name} must pass its actions to <TenderPage> bare — a wrapper <div> re-declares the row the shell already draws and pushes it out of line with the other screens`,
+	);
+}
+
 console.log(`ok — tender bar drawn once, above the heading, on ${targets.size} screens`);

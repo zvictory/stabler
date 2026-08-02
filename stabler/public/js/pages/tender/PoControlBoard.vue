@@ -18,7 +18,7 @@ import Typeahead from "../../components/Typeahead.vue";
 import EmptyState from "../../components/EmptyState.vue";
 import MoneyInput from "../../components/MoneyInput.vue";
 import BidPricing from "./BidPricing.vue";
-import TenderNav from "./TenderNav.vue";
+import TenderPage from "./TenderPage.vue";
 import TenderIntake from "./TenderIntake.vue";
 import TenderDocumentChain from "./TenderDocumentChain.vue";
 import TenderWorkspaceTabs from "./TenderWorkspaceTabs.vue";
@@ -285,11 +285,7 @@ watch(() => route.query.deal, (d) => { if (d && d !== deal.value) { deal.value =
 </script>
 
 <template>
-	<div class="container-xl py-3">
-		<TenderNav />
-		<div class="d-flex align-items-center mb-3 gap-2 flex-wrap">
-			<h2 class="mb-0">{{ t("Tender PO control") }}</h2>
-		</div>
+	<TenderPage :label="t('Tender')" :title="t('Tender PO control')">
 
 		<!-- Deal picker -->
 		<div class="card mb-3">
@@ -652,5 +648,5 @@ watch(() => route.query.deal, (d) => { if (d && d !== deal.value) { deal.value =
 				</div>
 			</div>
 		</div>
-	</div>
+	</TenderPage>
 </template>

@@ -9,7 +9,7 @@ import { useToast } from "../../composables/useToast.js";
 import { useSession } from "../../stores/session.js";
 import EmptyState from "../../components/EmptyState.vue";
 import SkeletonRows from "../../components/SkeletonRows.vue";
-import TenderNav from "./TenderNav.vue";
+import TenderPage from "./TenderPage.vue";
 
 const session = useSession();
 const { activeCompany, user, currency } = storeToRefs(session);
@@ -247,18 +247,13 @@ function riskLabel(risk) {
 </script>
 
 <template>
-	<div class="tender-crm-page stbl-ds">
-		<TenderNav />
+	<TenderPage :label="`${t('Tender')} · ${t('Deal pipeline')}`" :title="t('Tender CRM')">
+		<template #meta>
+			<span>{{ t("Every card is an ERP deal record") }}</span>
+			<span>{{ t("Columns are stages; drag a card to move it") }}</span>
+		</template>
 
-		<header class="ds-page-head">
-			<div class="ds-label">{{ t("Tender") }} · {{ t("Deal pipeline") }} · {{ activeCompany }}</div>
-			<h1>{{ t("Tender CRM") }}</h1>
-			<div class="ds-meta">
-				<span>{{ t("Every card is an ERP deal record") }}</span>
-				<span>{{ t("Columns are stages; drag a card to move it") }}</span>
-			</div>
-
-			<div class="crm-controls">
+		<template #actions>
 				<label class="ds-field crm-search">
 					<span class="ds-field-label">{{ t("Search") }}</span>
 					<input
@@ -279,8 +274,7 @@ function riskLabel(risk) {
 				<button type="button" class="ds-btn" :disabled="loading" @click="load">
 					{{ loading ? t("Loading…") : t("Refresh") }}
 				</button>
-			</div>
-		</header>
+		</template>
 
 		<!-- KPI şeridi · her biri aynı zamanda filtre.
 		     "Hat" filtrelenebilir bir alt küme değil, tümü demek — ona basmak
@@ -588,25 +582,11 @@ function riskLabel(risk) {
 				</footer>
 			</aside>
 		</template>
-	</div>
+	</TenderPage>
 </template>
 
 <style scoped>
 /* Yalnız yerleşim. Renk, kenar, tipografi katmandan (.ds-*) geliyor. */
-.tender-crm-page {
-	max-width: 1240px;
-	margin: 0 auto;
-	padding: 0 20px 48px;
-}
-
-.crm-controls {
-	display: flex;
-	gap: 10px;
-	align-items: flex-end;
-	margin-top: 16px;
-	flex-wrap: wrap;
-}
-
 .crm-search {
 	min-width: 300px;
 	flex: 1 1 300px;

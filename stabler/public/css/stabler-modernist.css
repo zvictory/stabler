@@ -197,6 +197,13 @@
 .stbl-ds .ds-page-head .ds-meta > span + span::before {
   content: "|"; color: var(--ds-ln2); margin-right: 10px;
 }
+/* Başlığın altındaki eylem satırı. Dört tender ekranı bunu dört ayrı sınıfla
+   (desk-actions / board-actions / crm-controls / flow-controls) 8-10px arayla
+   kendi eliyle kuruyordu; kabuk tek isim kullanınca ölçü de tek yerde kaldı. */
+.stbl-ds .ds-page-head .ds-actions {
+  display: flex; flex-wrap: wrap; align-items: flex-end;
+  gap: 10px; margin-top: 16px;
+}
 
 /* ── Modül üst navigasyonu ───────────────────────────────────────────────── */
 .stbl-ds .ds-modnav {

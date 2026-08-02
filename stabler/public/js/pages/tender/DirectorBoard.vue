@@ -19,7 +19,7 @@ import { useEscapeBack } from "../../composables/useEscapeBack.js";
 import { activeTenderFilters, filterTenderRows, tenderRouteFilters } from "../../composables/tenderBoardFilters.js";
 import SkeletonRows from "../../components/SkeletonRows.vue";
 import TenderFunnel from "./TenderFunnel.vue";
-import TenderNav from "./TenderNav.vue";
+import TenderPage from "./TenderPage.vue";
 
 const session = useSession();
 const { activeCompany, user } = storeToRefs(session);
@@ -127,25 +127,17 @@ function clearFilters() { router.replace({ query: {} }); }
 </script>
 
 <template>
-	<!-- class="stbl-ds" tasarım katmanını açan anahtar; taşınmamış ekranlar
-	     bu sınıfı taşımadığı için katmandan hiç etkilenmiyor. -->
-	<div class="director-board-page stbl-ds">
-		<TenderNav />
+	<TenderPage :label="t('Tender')" :title="t('Director board')">
+		<template #meta>
+			<span>{{ t("Every lot is counted in exactly one stage") }}</span>
+			<span>{{ t("Numbers are read from ERP records — the rule under each says what it counted") }}</span>
+			<span v-if="lastReadAt">{{ t("Last read") }} <span class="ds-mono">{{ lastReadAt }}</span></span>
+		</template>
 
-		<header class="ds-page-head">
-			<div class="ds-label">{{ t("Tender") }} · {{ activeCompany || "—" }}</div>
-			<h1>{{ t("Director board") }}</h1>
-			<div class="ds-meta">
-				<span>{{ t("Every lot is counted in exactly one stage") }}</span>
-				<span>{{ t("Numbers are read from ERP records — the rule under each says what it counted") }}</span>
-				<span v-if="lastReadAt">{{ t("Last read") }} <span class="ds-mono">{{ lastReadAt }}</span></span>
-			</div>
-
-			<div v-if="filterSummary.length" class="board-actions">
-				<span class="ds-chip" data-tone="soon">{{ filterSummary.join(" · ") }}</span>
-				<button type="button" class="ds-btn" @click="clearFilters">{{ t("Clear filters") }}</button>
-			</div>
-		</header>
+		<template v-if="filterSummary.length" #actions>
+			<span class="ds-chip" data-tone="soon">{{ filterSummary.join(" · ") }}</span>
+			<button type="button" class="ds-btn" @click="clearFilters">{{ t("Clear filters") }}</button>
+		</template>
 
 		<div class="ds-kpis" data-cols="3">
 			<div v-for="k in kpis" :key="k.key" class="ds-kpi" :data-sev="k.sev">
@@ -235,23 +227,11 @@ function clearFilters() { router.replace({ query: {} }); }
 				<span class="ds-mono">tender_lot · quotation · sales_order · purchase_order</span>
 			</div>
 		</section>
-	</div>
+	</TenderPage>
 </template>
 
 <style scoped>
 /* Yalnız yerleşim. Renk, tipografi, kenar ve boşluk katmandan geliyor. */
-.director-board-page {
-	padding: 1rem;
-}
-
-.board-actions {
-	display: flex;
-	align-items: center;
-	gap: 10px;
-	margin-top: 16px;
-	flex-wrap: wrap;
-}
-
 .board-warn {
 	margin: 14px 0 0;
 	padding: 12px 16px;

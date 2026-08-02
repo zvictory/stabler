@@ -21,7 +21,7 @@ import { t } from "../../composables/i18n.js";
 import { useToast } from "../../composables/useToast.js";
 import { useSession } from "../../stores/session.js";
 import SkeletonRows from "../../components/SkeletonRows.vue";
-import TenderNav from "./TenderNav.vue";
+import TenderPage from "./TenderPage.vue";
 
 const session = useSession();
 const { activeCompany } = storeToRefs(session);
@@ -116,22 +116,17 @@ const kpis = computed(() => {
 </script>
 
 <template>
-	<div class="tender-flow-page stbl-ds">
-		<TenderNav />
+	<TenderPage :label="`${t('Tender')} · ${t('Process view')}`" :title="t('Tender process flow')">
+		<template #meta>
+			<span>{{ t("Every number is read from an ERP record") }}</span>
+			<span>{{ t("A step is late when its average wait passes the threshold set for that step") }}</span>
+		</template>
 
-		<header class="ds-page-head">
-			<div class="ds-label">{{ t("Tender") }} · {{ t("Process view") }} · {{ activeCompany }}</div>
-			<h1>{{ t("Tender process flow") }}</h1>
-			<div class="ds-meta">
-				<span>{{ t("Every number is read from an ERP record") }}</span>
-				<span>{{ t("A step is late when its average wait passes the threshold set for that step") }}</span>
-			</div>
-			<div class="flow-controls">
-				<button type="button" class="ds-btn" :disabled="loading" @click="load">
-					{{ loading ? t("Loading…") : t("Refresh") }}
-				</button>
-			</div>
-		</header>
+		<template #actions>
+			<button type="button" class="ds-btn" :disabled="loading" @click="load">
+				{{ loading ? t("Loading…") : t("Refresh") }}
+			</button>
+		</template>
 
 		<div class="ds-kpis" data-cols="4">
 			<div v-for="k in kpis" :key="k.key" class="ds-kpi" :data-sev="k.sev">
@@ -205,20 +200,11 @@ const kpis = computed(() => {
 				<span class="ds-mono">crm_deal · custom_tender_stage_entered_at</span>
 			</div>
 		</section>
-	</div>
+	</TenderPage>
 </template>
 
 <style scoped>
 /* Yalnız yerleşim. Renk, kenar, tipografi katmandan. */
-.tender-flow-page {
-	max-width: 1240px;
-	margin: 0 auto;
-	padding: 0 20px 48px;
-}
-
-.flow-controls {
-	margin-top: 16px;
-}
 
 .flow-panel {
 	margin-top: 14px;

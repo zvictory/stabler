@@ -11,7 +11,7 @@ import { useToast } from "../../composables/useToast.js";
 import Typeahead from "../../components/Typeahead.vue";
 import EmptyState from "../../components/EmptyState.vue";
 import SkeletonRows from "../../components/SkeletonRows.vue";
-import TenderNav from "../tender/TenderNav.vue";
+import TenderPage from "../tender/TenderPage.vue";
 
 const session = useSession();
 const { activeCompany, user } = storeToRefs(session);
@@ -72,11 +72,7 @@ watch(() => route.query.deal, (d) => {
 </script>
 
 <template>
-	<div class="container-xl py-3">
-		<TenderNav />
-		<div class="d-flex align-items-center mb-3 gap-2 flex-wrap">
-			<h2 class="mb-0">{{ t("Sourcing comparison") }}</h2>
-		</div>
+	<TenderPage :label="t('Tender')" :title="t('Sourcing comparison')">
 
 		<!-- Deal picker -->
 		<div class="card mb-3">
@@ -153,5 +149,5 @@ watch(() => route.query.deal, (d) => {
 			</div>
 		</template>
 		<EmptyState v-else icon="ti-search" :title="t('Pick a tender deal to compare quotations.')" />
-	</div>
+	</TenderPage>
 </template>

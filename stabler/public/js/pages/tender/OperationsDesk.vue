@@ -1,41 +1,33 @@
 <template>
-	<!-- class="stbl-ds" tasarım katmanını AÇAN anahtar. Katmandaki her kural bu
-	     sarmalayıcıya scope'lu; sınıfı taşımayan ekranlar (Dashboard, POS, CRM)
-	     tek bir kural bile görmez. Göç böyle ekran ekran ilerliyor. -->
-	<div class="operations-desk-page stbl-ds">
-		<TenderNav />
-		<header class="ds-page-head">
-			<div class="ds-label">
-				{{ t("Operations desk") }} · {{ session.activeCompany || "—" }}
-			</div>
-			<h1>{{ t("What should I do today?") }}</h1>
-			<div class="ds-meta">
-				<span class="ds-mono">{{ formatDate(todayStr) }}</span>
-				<span>{{ weekdayLabel }}</span>
-				<span v-if="lastReadAt">
-					{{ t("Last read") }} <span class="ds-mono">{{ lastReadAt }}</span>
-				</span>
-				<span v-if="deskData?.view">{{ t(deskData.view) }}</span>
-			</div>
+	<!-- Kabuk (modül çubuğu + sayfa başlığı + `stbl-ds`) TenderPage'de; bu ekran
+	     tender kabuğunun ÖLÇÜSÜ olduğu için oradaki dolgu buradan geldi. -->
+	<TenderPage :label="t('Operations desk')" :title="t('What should I do today?')">
+		<template #meta>
+			<span class="ds-mono">{{ formatDate(todayStr) }}</span>
+			<span>{{ weekdayLabel }}</span>
+			<span v-if="lastReadAt">
+				{{ t("Last read") }} <span class="ds-mono">{{ lastReadAt }}</span>
+			</span>
+			<span v-if="deskData?.view">{{ t(deskData.view) }}</span>
+		</template>
 
-			<div class="desk-actions">
-				<select
-					v-if="deskData?.views && deskData.views.length > 1"
-					v-model="currentView"
-					class="ds-input"
-					style="width: auto"
-					:aria-label="t('Role view')"
-					@change="onViewChange"
-				>
-					<option v-for="v in deskData.views" :key="v.id" :value="v.id">
-						{{ t(v.label || v.id) }}
-					</option>
-				</select>
-				<button type="button" class="ds-btn" :disabled="loading" @click="fetchDesk">
-					{{ loading ? t("Loading…") : t("Refresh") }}
-				</button>
-			</div>
-		</header>
+		<template #actions>
+			<select
+				v-if="deskData?.views && deskData.views.length > 1"
+				v-model="currentView"
+				class="ds-input"
+				style="width: auto"
+				:aria-label="t('Role view')"
+				@change="onViewChange"
+			>
+				<option v-for="v in deskData.views" :key="v.id" :value="v.id">
+					{{ t(v.label || v.id) }}
+				</option>
+			</select>
+			<button type="button" class="ds-btn" :disabled="loading" @click="fetchDesk">
+				{{ loading ? t("Loading…") : t("Refresh") }}
+			</button>
+		</template>
 
 		<!-- Sayaç şeridi. Dördü de API'nin döndüğü sayaçlar — filtreleri de
 		     bunlar sürüyor, o yüzden görsel dil değişti ama HANGİ dört sayı
@@ -240,7 +232,7 @@
 				</section>
 			</div>
 		</div>
-	</div>
+	</TenderPage>
 </template>
 
 <script setup>
@@ -251,7 +243,7 @@ import { t } from "../../composables/i18n.js";
 import { call } from "../../api/client.js";
 import { formatDate, todayIso } from "../../composables/date.js";
 import SkeletonRows from "../../components/SkeletonRows.vue";
-import TenderNav from "./TenderNav.vue";
+import TenderPage from "./TenderPage.vue";
 
 const route = useRoute();
 const router = useRouter();
@@ -540,10 +532,6 @@ onMounted(() => {
 /* Buradaki her kural YERLEŞİM ya da bu sayfaya özgü ufak ayar.
  * Görsel dilin tamamı stabler-modernist.css'ten geliyor — renk, tipografi,
  * kenar, boşluk hiçbiri burada tanımlı değil. */
-.operations-desk-page {
-	padding: 1rem;
-}
-
 .desk-grid {
 	display: grid;
 	grid-template-columns: 1.62fr 1fr;
@@ -561,13 +549,6 @@ onMounted(() => {
 	.desk-grid {
 		grid-template-columns: 1fr;
 	}
-}
-
-.desk-actions {
-	display: flex;
-	align-items: center;
-	gap: 8px;
-	margin-top: 16px;
 }
 
 .desk-pad {
