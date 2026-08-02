@@ -311,10 +311,20 @@ def _load_api(
 			return doc.get(field) if field else doc
 		return None
 
+	def _fake_set_value(doctype, name, field, value=None):
+		if isinstance(field, dict):
+			for k, v in field.items():
+				_fake_set_value(doctype, name, k, v)
+			return
+		doc = fake.docs.get((doctype, name))
+		if doc is not None:
+			doc[field] = value
+
 	frappe.db = types.SimpleNamespace(
 		has_column=lambda _doctype, column: column not in missing_columns,
 		exists=lambda doctype, name=None: True,
 		get_value=_fake_get_value,
+		set_value=_fake_set_value,
 	)
 	frappe.get_cached_value = frappe.db.get_value
 	frappe.parse_json = lambda value: value
@@ -970,6 +980,43 @@ class TestGetSupplierQuotation(unittest.TestCase):
 		api = _load_api(self.fake, tender_allowed=False)
 		with self.assertRaises(PermissionError):
 			api.get_supplier_quotation("SQ-DRAFT", company="ACME")
+
+
+class TestUnassignedQuotationsAndLinking(unittest.TestCase):
+	def setUp(self):
+		self.fake = _FakeFrappe()
+		self.api = _load_api(self.fake)
+
+	def test_list_unassigned_returns_only_untagged_for_selected_company(self):
+		res = self.api.list_unassigned_quotations(company="ACME")
+		names = [r["name"] for r in res]
+		self.assertIn("SQ-UNTAGGED", names)
+		self.assertNotIn("SQ-DRAFT", names)
+		self.assertNotIn("SQ-OTHER-COMPANY", names)
+
+	def test_list_unassigned_never_returns_other_company(self):
+		api = _load_api(self.fake)
+		res = api.list_unassigned_quotations(company="ACME")
+		for r in res:
+			self.assertNotEqual(r.get("company"), "Other Co")
+
+	def test_attach_quotation_sets_deal_and_supports_submitted(self):
+		res = self.api.attach_quotation_to_deal("SQ-UNTAGGED", "LOT-A", company="ACME")
+		self.assertEqual(res["quotation"], "SQ-UNTAGGED")
+		self.assertEqual(res["deal"], "LOT-A")
+		doc = self.fake.docs[("Supplier Quotation", "SQ-UNTAGGED")]
+		self.assertEqual(doc.get("custom_crm_deal"), "LOT-A")
+
+	def test_detach_quotation_clears_deal(self):
+		res = self.api.detach_quotation_from_deal("SQ-DRAFT", company="ACME")
+		self.assertTrue(res["detached"])
+		doc = self.fake.docs[("Supplier Quotation", "SQ-DRAFT")]
+		self.assertFalse(doc.get("custom_crm_deal"))
+
+	def test_detach_refused_if_part_of_approved_sourcing_decision(self):
+		with self.assertRaises(ValueError) as ctx:
+			self.api.detach_quotation_from_deal("SQ-OTHER-LOT", company="ACME")
+		self.assertIn("approved sourcing decision", str(ctx.exception))
 
 
 if __name__ == "__main__":

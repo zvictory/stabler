@@ -697,3 +697,121 @@ def update_quotation_landed(quotation, charges, company=None):
 	frappe.db.set_value("Supplier Quotation", quotation, "custom_landed_charges", json_str)
 
 	return get_quotation_landed(quotation, company=selected_company)
+
+
+@frappe.whitelist()
+def list_unassigned_quotations(search=None, limit=20, company=None):
+	"""List Supplier Quotations for company that are not tagged to any deal."""
+	_require_tender(company)
+	selected_company = _assert_company_scope(company)
+	_require_tender_view("sourcing", selected_company)
+
+	if not _sq_link_ready():
+		return []
+
+	filters = {"company": selected_company, "docstatus": ["<", 2]}
+	rows = frappe.get_list(
+		"Supplier Quotation",
+		filters=filters,
+		fields=[
+			"name",
+			"supplier",
+			"currency",
+			"grand_total",
+			"base_grand_total",
+			"transaction_date",
+			"valid_till",
+			"docstatus",
+			_SQ_DEAL_FIELD,
+		],
+		order_by="transaction_date desc, name desc",
+		limit_page_length=0 if not limit else int(limit) * 2,
+	)
+
+	unassigned = []
+	search_q = str(search or "").strip().lower()
+	for r in rows:
+		deal = r.get(_SQ_DEAL_FIELD)
+		if deal:
+			continue
+		if not frappe.has_permission("Supplier Quotation", "read", doc=r.get("name")):
+			continue
+		supplier = r.get("supplier") or ""
+		supplier_name = frappe.db.get_value("Supplier", supplier, "supplier_name") or supplier
+		country = frappe.db.get_value("Supplier", supplier, "country") or ""
+		if search_q:
+			name_match = search_q in r["name"].lower()
+			sup_match = search_q in supplier.lower() or search_q in supplier_name.lower()
+			if not (name_match or sup_match):
+				continue
+		unassigned.append(
+			{
+				"name": r["name"],
+				"supplier": supplier,
+				"supplier_name": supplier_name,
+				"country": country,
+				"currency": r.get("currency") or "",
+				"grand_total": flt(r.get("grand_total")),
+				"base_grand_total": flt(r.get("base_grand_total")) or flt(r.get("grand_total")),
+				"transaction_date": str(r.get("transaction_date") or ""),
+				"valid_till": str(r.get("valid_till") or "") if r.get("valid_till") else None,
+				"docstatus": int(r.get("docstatus") or 0),
+			}
+		)
+		if limit and len(unassigned) >= int(limit):
+			break
+
+	return unassigned
+
+
+@frappe.whitelist()
+def attach_quotation_to_deal(quotation, deal, company=None):
+	"""Tag an unallocated Supplier Quotation to a tender lot."""
+	_require_tender(company)
+	selected_company = _assert_company_scope(company)
+	_require_tender_view("sourcing", selected_company)
+	_deal_scope(deal, selected_company, "write")
+
+	doc = frappe.get_doc("Supplier Quotation", quotation)
+	if doc.company != selected_company:
+		frappe.throw(_("Quotation does not belong to the selected company."), frappe.PermissionError)
+	if not frappe.has_permission("Supplier Quotation", "write", doc=doc):
+		frappe.throw(_("Not permitted."), frappe.PermissionError)
+	if int(doc.docstatus or 0) >= 2:
+		frappe.throw(_("Cannot attach a cancelled quotation."), frappe.ValidationError)
+
+	frappe.db.set_value("Supplier Quotation", quotation, _SQ_DEAL_FIELD, deal)
+	return {"quotation": quotation, "deal": deal}
+
+
+@frappe.whitelist()
+def detach_quotation_from_deal(quotation, company=None):
+	"""Detach a Supplier Quotation from its tender lot if not part of an approved decision."""
+	_require_tender(company)
+	selected_company = _assert_company_scope(company)
+	_require_tender_view("sourcing", selected_company)
+
+	doc = frappe.get_doc("Supplier Quotation", quotation)
+	if doc.company != selected_company:
+		frappe.throw(_("Quotation does not belong to the selected company."), frappe.PermissionError)
+	if not frappe.has_permission("Supplier Quotation", "write", doc=doc):
+		frappe.throw(_("Not permitted."), frappe.PermissionError)
+
+	deal = doc.get(_SQ_DEAL_FIELD) or ""
+	if deal:
+		approved_decisions = frappe.get_all(
+			_DECISION,
+			filters={"deal": deal, "company": selected_company, "status": "Approved"},
+			fields=["name", "selected_quotation", "cheapest_quotation"],
+		)
+		for dec in approved_decisions:
+			if dec.get("selected_quotation") == quotation or dec.get("cheapest_quotation") == quotation:
+				frappe.throw(
+					_(
+						"Cannot detach quotation '{0}': it is part of an approved sourcing decision for this tender."
+					).format(quotation),
+					frappe.ValidationError,
+				)
+
+	frappe.db.set_value("Supplier Quotation", quotation, _SQ_DEAL_FIELD, None)
+	return {"quotation": quotation, "detached": True}
