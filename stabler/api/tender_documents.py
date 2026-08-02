@@ -222,7 +222,7 @@ def waive_tender_document(
 @frappe.whitelist()
 def download_tender_document(deal: str, requirement_key: str, file_url: str, company: str | None = None):
 	"""Gated download endpoint enforcing company scope and requirement attachment validation."""
-	deal_doc, master_doc, selected_company = _get_deal_and_master(deal, company, "read")
+	_deal_doc, _master_doc, selected_company = _get_deal_and_master(deal, company, "read")
 
 	key = str(requirement_key or "").strip().lower().replace(" ", "_")
 

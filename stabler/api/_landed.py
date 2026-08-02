@@ -45,13 +45,15 @@ def parse_landed_charges(raw_charges) -> tuple[float, list[dict], bool]:
 		capitalized_amount = 0.0 if is_vat else amount
 		total += capitalized_amount
 
-		clean_charges.append({
-			"charge_type": charge_type or "General",
-			"description": str(c.get("description") or ""),
-			"amount": amount,
-			"is_recoverable_vat": is_vat,
-			"capitalized_amount": capitalized_amount,
-		})
+		clean_charges.append(
+			{
+				"charge_type": charge_type or "General",
+				"description": str(c.get("description") or ""),
+				"amount": amount,
+				"is_recoverable_vat": is_vat,
+				"capitalized_amount": capitalized_amount,
+			}
+		)
 
 	return round(total, 6), clean_charges, True
 
@@ -112,7 +114,9 @@ def rank_quotations_landed(quotations_list: list[dict]) -> dict:
 	ranked = []
 	for q in processed:
 		is_cheapest_price = (q.get("name") == min_price_quote.get("name")) if min_price_quote else False
-		is_cheapest_landed = (estimate_complete and min_landed_quote and q.get("name") == min_landed_quote.get("name"))
+		is_cheapest_landed = (
+			estimate_complete and min_landed_quote and q.get("name") == min_landed_quote.get("name")
+		)
 
 		price_delta = round(q["base_grand_total"] - min_price, 2)
 		price_pct = round((price_delta / min_price * 100.0), 2) if min_price > 0 else 0.0
@@ -125,14 +129,16 @@ def rank_quotations_landed(quotations_list: list[dict]) -> dict:
 			landed_pct = 0.0
 
 		q_copy = dict(q)
-		q_copy.update({
-			"is_cheapest_price": is_cheapest_price,
-			"is_cheapest_landed": is_cheapest_landed,
-			"price_delta": price_delta,
-			"price_pct": price_pct,
-			"landed_delta": landed_delta,
-			"landed_pct": landed_pct,
-		})
+		q_copy.update(
+			{
+				"is_cheapest_price": is_cheapest_price,
+				"is_cheapest_landed": is_cheapest_landed,
+				"price_delta": price_delta,
+				"price_pct": price_pct,
+				"landed_delta": landed_delta,
+				"landed_pct": landed_pct,
+			}
+		)
 		ranked.append(q_copy)
 
 	return {

@@ -2431,7 +2431,9 @@ def tender_quotations(deal: str) -> dict:
 	for r in rows:
 		# Preserve backward compatibility for legacy callers reading `cheapest`:
 		# if landed estimates are complete, cheapest means cheapest landed; otherwise sticker price.
-		r["cheapest"] = bool(r.get("is_cheapest_landed") if ranked_res["estimate_complete"] else r.get("is_cheapest_price"))
+		r["cheapest"] = bool(
+			r.get("is_cheapest_landed") if ranked_res["estimate_complete"] else r.get("is_cheapest_price")
+		)
 
 	countries = {r["country"] for r in rows if r["country"]}
 	return {
