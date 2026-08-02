@@ -425,7 +425,8 @@ watch(() => route.query.deal, (d) => { if (d && d !== deal.value) { deal.value =
 								<td class="fw-semibold">
 									{{ row.supplier_name }}
 									<span v-if="row.cheapest" class="badge bg-green text-white ms-1">{{ t("Cheapest (landed)") }}</span>
-									<span v-if="selectedVendor === row.supplier" class="badge bg-blue-lt text-blue ms-1">{{ t("Selected") }}</span>
+									<span v-if="row.winner" class="badge bg-blue text-white ms-1">{{ t("Award winner") }}</span>
+									<span v-else-if="selectedVendor === row.supplier" class="badge bg-blue-lt text-blue ms-1">{{ t("Selected") }}</span>
 								</td>
 								<td class="text-end font-monospace">{{ formatMoney(row.base_po_total, ccy, user.language) }}</td>
 								<td class="text-end font-monospace text-secondary">{{ row.charges_total ? "+" + formatMoney(row.charges_total, ccy, user.language) : "—" }}</td>

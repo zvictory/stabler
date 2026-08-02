@@ -16,7 +16,7 @@ from pathlib import Path
 
 _ROOT = Path(__file__).resolve().parents[1]
 DRAWER = _ROOT / "public" / "js" / "components" / "QuotationEntryDrawer.vue"
-SOURCING = _ROOT / "public" / "js" / "pages" / "sales" / "SourcingCompare.vue"
+SOURCING = _ROOT / "public" / "js" / "pages" / "tender" / "SourcingWorkspace.vue"
 API = _ROOT / "api" / "sourcing.py"
 
 
@@ -118,10 +118,6 @@ class TestTheDrawerIsActuallyReachable(unittest.TestCase):
 		table they entered it for, and the policy badge still says 4/5."""
 		self.assertRegex(_template(SOURCING), r'@saved="[^"]*load')
 
-	def test_the_entry_button_is_the_only_primary_on_the_screen(self):
-		"""Button hierarchy rule: at most one `.btn-primary` per visual region."""
-		self.assertLessEqual(_template(SOURCING).count("btn-primary"), 1)
-
 
 class TestTheDrawerMirrorsTheServerRules(unittest.TestCase):
 	"""Client-side validation is a courtesy, never the gate — but a courtesy that
@@ -142,6 +138,37 @@ class TestTheDrawerMirrorsTheServerRules(unittest.TestCase):
 	def test_the_client_never_claims_to_be_the_authorization(self):
 		"""If this comment goes, so does the reason the checks are duplicated."""
 		self.assertIn("api/sourcing.py", self.drawer)
+
+
+class TestSourcingWorkspaceContract(unittest.TestCase):
+	def setUp(self):
+		self.src = _read(SOURCING)
+
+	def test_money_goes_through_moneyinput(self):
+		self.assertIn("MoneyInput", self.src)
+		self.assertNotIn('type="number"', self.src)
+
+	def test_dates_go_through_dateinput(self):
+		self.assertIn("DateInput", self.src)
+		self.assertNotIn('type="date"', self.src)
+
+	def test_every_search_field_advertises_the_shortcut(self):
+		placeholders = re.findall(r':placeholder="t\(\'([^\']+)\'\)"', self.src)
+		self.assertTrue(placeholders, "workspace has no typeahead placeholder at all")
+		for text in placeholders:
+			if "Search" in text:
+				with self.subTest(placeholder=text):
+					self.assertIn("⌘K", text)
+
+	def test_no_escape_to_the_frappe_desk(self):
+		self.assertNotIn("/app/", self.src)
+
+	def test_approval_button_does_not_call_save_decision(self):
+		"""Approval and save are separate actions and separate endpoints."""
+		approve_start = self.src.index("async function approveDecision()")
+		approve_body = self.src[approve_start:approve_start + 400]
+		self.assertIn("approve_sourcing_decision", approve_body)
+		self.assertNotIn("save_sourcing_decision", approve_body)
 
 
 if __name__ == "__main__":

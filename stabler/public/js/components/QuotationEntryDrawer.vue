@@ -18,7 +18,7 @@
  * miktar sıfırdan büyük olmalı; para birimi zorunlu, çünkü karşılaştırma şirket
  * para birimine `base_grand_total` üzerinden çevirerek yapılıyor.
  */
-import { computed, ref } from "vue";
+import { computed, onMounted, ref } from "vue";
 import { storeToRefs } from "pinia";
 import { useSession } from "../stores/session.js";
 import { call } from "../api/client.js";
@@ -32,6 +32,7 @@ import Typeahead from "./Typeahead.vue";
 const props = defineProps({
 	deal: { type: String, required: true },
 	dealLabel: { type: String, default: "" },
+	quotationName: { type: String, default: "" },
 });
 const emit = defineEmits(["close", "saved"]);
 
@@ -57,6 +58,33 @@ function newForm() {
 function blankLine() {
 	return { item_code: "", itemLabel: "", qty: null, rate: null };
 }
+
+onMounted(async () => {
+	if (!props.quotationName) return;
+	try {
+		const res = await call("stabler.api.sourcing.get_supplier_quotation", {
+			name: props.quotationName,
+			company: activeCompany.value,
+		});
+		if (res) {
+			form.value.name = res.name;
+			form.value.supplier = res.supplier;
+			form.value.supplierLabel = res.supplier_name || res.supplier;
+			form.value.currency = res.currency || currency.value;
+			form.value.valid_till = res.valid_till || "";
+			if (res.items && res.items.length) {
+				form.value.items = res.items.map((i) => ({
+					item_code: i.item_code,
+					itemLabel: i.item_name || i.item_code,
+					qty: i.qty,
+					rate: i.rate,
+				}));
+			}
+		}
+	} catch (err) {
+		toast.error(err?.message || t("Could not load quotation details."));
+	}
+});
 
 /* Mevcut bir taslağı DÜZENLEMEK bu dilimde yok: sunucu tarafı destekliyor
  * (`save_supplier_quotation` bir `name` alırsa yerinde günceller ve satırları

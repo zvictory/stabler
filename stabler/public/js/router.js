@@ -39,7 +39,7 @@ import Quotations from "./pages/sales/Quotations.vue";
 import SalesOrders from "./pages/sales/SalesOrders.vue";
 import SalesOrderForm from "./pages/sales/SalesOrderForm.vue";
 import SalesOrderBoard from "./pages/sales/SalesOrderBoard.vue";
-import SourcingCompare from "./pages/sales/SourcingCompare.vue";
+import SourcingWorkspace from "./pages/tender/SourcingWorkspace.vue";
 import PoControlBoard from "./pages/tender/PoControlBoard.vue";
 import DeclarantQueue from "./pages/tender/DeclarantQueue.vue";
 import LogistBoard from "./pages/tender/LogistBoard.vue";
@@ -271,7 +271,7 @@ const routes = [
 	{ path: "/tender/flow", name: "tender-flow", component: TenderFlow, meta: { title: t("Tender process flow"), module: "tender" } },
 	{ path: "/tender/board", name: "tender-board", component: SalesOrderBoard, meta: { title: t("Contract board"), module: "tender" } },
 	{ path: "/tender/crm", name: "tender-crm", component: TenderCrm, meta: { title: t("Tender CRM"), module: "tender" } },
-	{ path: "/tender/sourcing", name: "tender-sourcing", component: SourcingCompare, meta: { title: t("Sourcing comparison"), module: "tender" } },
+	{ path: "/tender/sourcing", name: "tender-sourcing", component: SourcingWorkspace, meta: { title: t("Sourcing workspace"), module: "tender" } },
 	{ path: "/tender/po-control", name: "tender-po-control", component: PoControlBoard, meta: { title: t("Tender PO control"), module: "tender" } },
 	{ path: "/tender", redirect: "/tender/portfolio", meta: { module: "tender" } },
 	{ path: "/tender/director", redirect: "/tender/portfolio", meta: { module: "tender" } },

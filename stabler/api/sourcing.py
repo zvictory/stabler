@@ -205,6 +205,39 @@ def _quotation_for_edit(name: str, deal: str, selected_company: str):
 
 
 @frappe.whitelist()
+def get_supplier_quotation(name, company=None):
+	"""Read one Supplier Quotation with its lines for display or editing in the SPA."""
+	_require_tender(company)
+	selected_company = _assert_company_scope(company)
+	doc = frappe.get_doc("Supplier Quotation", name)
+	if doc.company != selected_company:
+		frappe.throw(_("Quotation does not belong to the selected company."), frappe.PermissionError)
+	if not frappe.has_permission("Supplier Quotation", ptype="read", doc=doc):
+		frappe.throw(_("Not permitted."), frappe.PermissionError)
+	supplier_name = frappe.db.get_value("Supplier", doc.supplier, "supplier_name") or doc.supplier
+	return {
+		"name": doc.name,
+		"deal": doc.get(_SQ_DEAL_FIELD) or "",
+		"supplier": doc.supplier,
+		"supplier_name": supplier_name,
+		"currency": doc.currency,
+		"valid_till": doc.valid_till or None,
+		"docstatus": int(doc.docstatus or 0),
+		"items": [
+			{
+				"item_code": d.get("item_code"),
+				"item_name": d.get("item_name") or d.get("item_code"),
+				"qty": flt(d.get("qty")),
+				"rate": flt(d.get("rate")),
+				"uom": d.get("uom") or "",
+				"description": d.get("description") or "",
+			}
+			for d in (doc.get("items") or [])
+		],
+	}
+
+
+@frappe.whitelist()
 def save_supplier_quotation(deal, supplier, currency, items, valid_till=None, name=None, company=None):
 	"""Create or update a DRAFT Supplier Quotation tagged to one tender lot.
 

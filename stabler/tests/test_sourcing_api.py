@@ -299,6 +299,11 @@ def _load_api(
 	frappe.db = types.SimpleNamespace(
 		has_column=lambda _doctype, column: column not in missing_columns,
 		exists=lambda doctype, name=None: True,
+		get_value=lambda doctype, name, field: (
+			fake.docs.get((doctype, name), {}).get(field)
+			if isinstance(fake.docs.get((doctype, name)), dict)
+			else None
+		),
 	)
 	frappe.parse_json = lambda value: value
 	frappe.whitelist = lambda *args, **_kwargs: (lambda fn: fn) if not args else args[0]
@@ -909,6 +914,30 @@ class TestReadingTheAward(unittest.TestCase):
 	def test_reading_is_gated_like_everything_else(self):
 		with self.assertRaises(PermissionError):
 			self.api.get_sourcing_decision("LOT-DENIED", company="ACME")
+
+
+class TestGetSupplierQuotation(unittest.TestCase):
+	def setUp(self):
+		self.fake = _FakeFrappe()
+		self.api = _load_api(self.fake)
+
+	def test_returns_quotation_details_with_lines(self):
+		res = self.api.get_supplier_quotation("SQ-DRAFT", company="ACME")
+		self.assertEqual(res["name"], "SQ-DRAFT")
+		self.assertEqual(res["deal"], "LOT-A")
+		self.assertEqual(res["supplier"], "SUP-A")
+		self.assertEqual(res["supplier_name"], "Alfa")
+		self.assertEqual(len(res["items"]), 1)
+		self.assertEqual(res["items"][0]["item_code"], "RAIL-01")
+
+	def test_rejects_quotation_of_another_company(self):
+		with self.assertRaises(PermissionError):
+			self.api.get_supplier_quotation("SQ-OTHER-COMPANY", company="ACME")
+
+	def test_gates_are_enforced(self):
+		api = _load_api(self.fake, tender_allowed=False)
+		with self.assertRaises(PermissionError):
+			api.get_supplier_quotation("SQ-DRAFT", company="ACME")
 
 
 if __name__ == "__main__":
