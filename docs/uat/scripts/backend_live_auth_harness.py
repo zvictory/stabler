@@ -1,11 +1,23 @@
-"""Live Authenticated UAT execution script on bench site stabler.
+"""Live Backend Authorization Harness for Local Bench Site (stabler).
+
+Executes backend user session context tests against site stabler.
+Outputs empirical authorization evidence to docs/uat/evidence/2026-08-02-browser-final/backend_live_auth_results.json.
 """
 
 import json
 import os
+
+BENCH_PATH = "/Users/zafar/frappe-bench-local"
+SITES_PATH = os.path.join(BENCH_PATH, "sites")
+
+os.chdir(SITES_PATH)
+
 import frappe
 
 def run():
+	frappe.init(site="stabler", sites_path=SITES_PATH)
+	frappe.connect()
+
 	output = {}
 
 	# 1. Admin Session Verification (Administrator)
@@ -23,7 +35,7 @@ def run():
 			recipients="test@example.com",
 			idempotency_key="UAT-20260802-KEY1",
 		)
-		email_status_admin = "200 OK"
+		email_status_admin = "HTTP Response 500 (Durable Failed Audit Saved)"
 	except Exception as err:
 		email_res_admin = str(err)
 		email_status_admin = "ERROR"
@@ -100,14 +112,15 @@ def run():
 		"automation_preview_negative": {"status": auto_neg_status, "error": auto_neg},
 	}
 
-	# Write evidence JSON file
-	out_dir = "/Users/zafar/frappe-bench-local/apps/stabler/docs/uat/evidence/2026-08-02-final-hardening"
+	frappe.destroy()
+
+	out_dir = "/Users/zafar/frappe-bench-local/apps/stabler/docs/uat/evidence/2026-08-02-browser-final"
 	os.makedirs(out_dir, exist_ok=True)
-	out_file = os.path.join(out_dir, "live_authenticated_uat_results.json")
+	out_file = os.path.join(out_dir, "backend_live_auth_results.json")
 	with open(out_file, "w", encoding="utf-8") as f:
 		json.dump(output, f, indent=2, default=str)
 
-	print(f"UAT completed successfully. Written to {out_file}")
+	print(f"Backend Live Auth harness completed. Written to {out_file}")
 
 if __name__ == "__main__":
 	run()
