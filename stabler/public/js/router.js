@@ -49,9 +49,6 @@ import OperationsDesk from "./pages/tender/OperationsDesk.vue";
 import TenderFlow from "./pages/tender/TenderFlow.vue";
 import TenderCrm from "./pages/tender/TenderCrm.vue";
 import TenderOverview from "./pages/tender/TenderOverview.vue";
-// GEÇİCİ: huni eski/yeni karşılaştırması. Karar verilince bu satır, rota,
-// FunnelCompare.vue ve TenderFunnelLegacy.vue birlikte silinir.
-import FunnelCompare from "./pages/tender/FunnelCompare.vue";
 import SalesInvoices from "./pages/sales/SalesInvoices.vue";
 import DeliveryNotes from "./pages/sales/DeliveryNotes.vue";
 import SalesInvoiceForm from "./pages/sales/SalesInvoiceForm.vue";
@@ -266,7 +263,6 @@ const routes = [
 	{ path: "/pos", name: "pos", component: POS, meta: { title: t("POS"), module: "sales" } },
 	{ path: "/tender/desk", name: "tender-desk", component: OperationsDesk, meta: { title: t("Operations desk"), module: "tender" } },
 	{ path: "/manufacturing/line", name: "manufacturing-line", component: ManufacturingOperatorBoard, meta: { title: t("Operator Kiosk") } },
-	{ path: "/tender/funnel-compare", name: "tender-funnel-compare", component: FunnelCompare, meta: { title: t("Funnel — old vs new"), module: "tender" } },
 	{ path: "/tender/overview", name: "tender-overview", component: TenderOverview, meta: { title: t("Where the pipeline stands"), module: "tender" } },
 	{ path: "/tender/flow", name: "tender-flow", component: TenderFlow, meta: { title: t("Tender process flow"), module: "tender" } },
 	{ path: "/tender/board", name: "tender-board", component: SalesOrderBoard, meta: { title: t("Contract board"), module: "tender" } },

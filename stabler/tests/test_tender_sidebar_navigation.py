@@ -97,7 +97,6 @@ class TestTheModuleBarCarriesEveryScreen(unittest.TestCase):
 		# Tedarikçiler, CRM Anlaşmalar). Çubuğa koymak dokuzuncu maddeyi
 		# eklerdi ve kullanıcı oraya bağlamsız gitmez.
 		"/tender/sourcing",
-		"/tender/funnel-compare",
 		"/tender/overview",
 	}
 

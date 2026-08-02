@@ -28,7 +28,7 @@ onMounted(() => session.ensureTenderViews());
 <template>
 	<nav class="stbl-ds tender-modnav">
 		<div class="ds-modnav">
-			<span class="ds-modnav-brand">{{ t("Tender") }}</span>
+			<router-link to="/dashboard" class="ds-modnav-brand text-decoration-none text-reset">{{ t("Tender") }}</router-link>
 
 			<router-link v-if="can('director')" to="/tender/portfolio" active-class="active">
 				{{ t("Director board") }}
@@ -36,7 +36,7 @@ onMounted(() => session.ensureTenderViews());
 
 			<!-- Panoya dönüş burada duruyor çünkü pano tender'ın da özeti:
 			     Operasyon Masası oraya gömülü. Konumu değil VARLIĞI garanti. -->
-			<router-link to="/dashboard" active-class="active">{{ t("Overview") }}</router-link>
+			<router-link to="/tender/overview" active-class="active">{{ t("Overview") }}</router-link>
 
 			<router-link v-if="session.tenderViews.length > 0" to="/tender/desk" active-class="active">
 				{{ t("Operations desk") }}
