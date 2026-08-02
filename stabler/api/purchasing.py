@@ -2373,21 +2373,25 @@ def tender_quotations(deal: str) -> dict:
 			"has_2_countries": False,
 		}
 
+	fields = [
+		"name",
+		"supplier",
+		"supplier_name",
+		"currency",
+		"grand_total",
+		"base_grand_total",
+		"valid_till",
+		"status",
+		"transaction_date",
+		"total_qty",
+	]
+	if frappe.db.has_column("Supplier Quotation", "custom_landed_charges"):
+		fields.append("custom_landed_charges")
+
 	sqs = frappe.get_all(
 		"Supplier Quotation",
 		filters={"custom_crm_deal": deal, "docstatus": ["<", 2]},
-		fields=[
-			"name",
-			"supplier",
-			"supplier_name",
-			"currency",
-			"grand_total",
-			"base_grand_total",
-			"valid_till",
-			"status",
-			"transaction_date",
-			"total_qty",
-		],
+		fields=fields,
 		order_by="base_grand_total asc",
 		limit_page_length=0,
 	)
@@ -2398,13 +2402,10 @@ def tender_quotations(deal: str) -> dict:
 		for s in frappe.get_all("Supplier", filters={"name": ["in", suppliers]}, fields=["name", "country"]):
 			country_map[s["name"]] = s.get("country") or ""
 
-	rows = []
-	cheapest_base = None
+	raw_rows = []
 	for s in sqs:
 		base_total = flt(s.get("base_grand_total")) or flt(s.get("grand_total"))
-		if base_total and (cheapest_base is None or base_total < cheapest_base):
-			cheapest_base = base_total
-		rows.append(
+		raw_rows.append(
 			{
 				"name": s["name"],
 				"supplier": s["supplier"],
@@ -2412,17 +2413,25 @@ def tender_quotations(deal: str) -> dict:
 				"country": country_map.get(s["supplier"], ""),
 				"currency": s.get("currency"),
 				"grand_total": flt(s.get("grand_total")),
+				"base_grand_total": base_total,
 				"base_total": base_total,
 				"valid_till": str(s.get("valid_till") or ""),
 				"status": s.get("status"),
 				"transaction_date": str(s.get("transaction_date") or ""),
 				"qty": flt(s.get("total_qty")),
+				"custom_landed_charges": s.get("custom_landed_charges"),
 			}
 		)
+
+	from stabler.api._landed import rank_quotations_landed
+
+	ranked_res = rank_quotations_landed(raw_rows)
+	rows = ranked_res["quotations"]
+
 	for r in rows:
-		r["cheapest"] = bool(
-			cheapest_base is not None and r["base_total"] == cheapest_base and r["base_total"] > 0
-		)
+		# Preserve backward compatibility for legacy callers reading `cheapest`:
+		# if landed estimates are complete, cheapest means cheapest landed; otherwise sticker price.
+		r["cheapest"] = bool(r.get("is_cheapest_landed") if ranked_res["estimate_complete"] else r.get("is_cheapest_price"))
 
 	countries = {r["country"] for r in rows if r["country"]}
 	return {
@@ -2432,6 +2441,10 @@ def tender_quotations(deal: str) -> dict:
 		"countries": len(countries),
 		"has_min_5": len(rows) >= 5,
 		"has_2_countries": len(countries) >= 2,
+		"cheapest_price_quote": ranked_res["cheapest_price_quote"],
+		"cheapest_landed_quote": ranked_res["cheapest_landed_quote"],
+		"estimate_complete": ranked_res["estimate_complete"],
+		"missing_estimates": ranked_res["missing_estimates"],
 	}
 
 
@@ -2530,7 +2543,12 @@ def list_supplier_quotations(supplier: str, company: str) -> list[dict]:
 
 @frappe.whitelist()
 def supplier_quotation_history(supplier, company=None):
-	"""Single-query supplier quotation history with derived award result (won/lost/open)."""
+	"""Supplier quotation history with derived award result (won/lost/open).
+
+	Uses `frappe.get_list` to enforce record-level user permissions on Supplier
+	Quotation, and fetches approved sourcing decisions in a separate batch query
+	to avoid row duplication when multiple decision records exist per deal.
+	"""
 	if not company:
 		frappe.throw(_("Company is required."), frappe.ValidationError)
 	selected_company = _assert_company_scope(company)
@@ -2541,57 +2559,51 @@ def supplier_quotation_history(supplier, company=None):
 	if not supplier_name:
 		return {"rows": [], "count": 0}
 
+	fields = [
+		"name",
+		"grand_total",
+		"base_grand_total",
+		"currency",
+		"status",
+		"valid_till",
+		"transaction_date",
+	]
 	has_deal = frappe.db.has_column("Supplier Quotation", "custom_crm_deal")
-	deal_col = "sq.custom_crm_deal" if has_deal else "NULL"
-	has_tsd = frappe.db.exists("DocType", "Tender Sourcing Decision")
+	if has_deal:
+		fields.append("custom_crm_deal")
 
-	if has_tsd and has_deal:
-		sql = """
-			SELECT
-				sq.name,
-				sq.custom_crm_deal AS deal,
-				sq.grand_total,
-				sq.base_grand_total,
-				sq.currency,
-				sq.status,
-				sq.valid_till,
-				sq.transaction_date,
-				CASE
-					WHEN tsd.name IS NOT NULL AND tsd.status = 'Approved' AND tsd.selected_quotation = sq.name THEN 'won'
-					WHEN tsd.name IS NOT NULL AND tsd.status = 'Approved' AND tsd.selected_quotation != sq.name THEN 'lost'
-					ELSE 'open'
-				END AS result
-			FROM `tabSupplier Quotation` sq
-			LEFT JOIN `tabTender Sourcing Decision` tsd
-				ON tsd.deal = sq.custom_crm_deal
-				AND tsd.company = sq.company
-				AND tsd.status = 'Approved'
-			WHERE sq.supplier = %(supplier)s
-				AND sq.company = %(company)s
-				AND sq.docstatus < 2
-			ORDER BY sq.transaction_date DESC, sq.name DESC
-		"""
-	else:
-		sql = f"""
-			SELECT
-				sq.name,
-				{deal_col} AS deal,
-				sq.grand_total,
-				sq.base_grand_total,
-				sq.currency,
-				sq.status,
-				sq.valid_till,
-				sq.transaction_date,
-				'open' AS result
-			FROM `tabSupplier Quotation` sq
-			WHERE sq.supplier = %(supplier)s
-				AND sq.company = %(company)s
-				AND sq.docstatus < 2
-			ORDER BY sq.transaction_date DESC, sq.name DESC
-		"""
+	sqs = frappe.get_list(
+		"Supplier Quotation",
+		filters={"supplier": supplier_name, "company": selected_company, "docstatus": ["<", 2]},
+		fields=fields,
+		order_by="transaction_date desc, name desc",
+		limit_page_length=500,
+	)
 
-	rows = frappe.db.sql(sql, {"supplier": supplier_name, "company": selected_company}, as_dict=True)
-	for r in rows:
-		r["grand_total"] = flt(r.get("grand_total"))
-		r["base_grand_total"] = flt(r.get("base_grand_total")) or r["grand_total"]
-	return {"rows": rows, "count": len(rows)}
+	deals = list({s["custom_crm_deal"] for s in sqs if s.get("custom_crm_deal")})
+	latest_decision = {}
+	if deals and frappe.db.exists("DocType", "Tender Sourcing Decision"):
+		tsds = frappe.get_list(
+			"Tender Sourcing Decision",
+			filters={"deal": ["in", deals], "company": selected_company, "status": "Approved"},
+			fields=["deal", "selected_quotation", "modified", "creation"],
+			order_by="modified desc, creation desc",
+			limit_page_length=500,
+		)
+		for tsd in tsds:
+			deal = tsd.get("deal")
+			if deal and deal not in latest_decision:
+				latest_decision[deal] = tsd.get("selected_quotation")
+
+	for s in sqs:
+		s["deal"] = s.get("custom_crm_deal")
+		s["grand_total"] = flt(s.get("grand_total"))
+		s["base_grand_total"] = flt(s.get("base_grand_total")) or s["grand_total"]
+		deal_id = s.get("deal")
+		if deal_id in latest_decision:
+			winner = latest_decision[deal_id]
+			s["result"] = "won" if winner == s["name"] else "lost"
+		else:
+			s["result"] = "open"
+
+	return {"rows": sqs, "count": len(sqs)}

@@ -525,11 +525,13 @@ def po_control_board(deal: str) -> dict:
 	today_d = getdate(today())
 	# Landed cost (base currency) = base_grand_total + planned charges. The
 	# vendor comparison ranks on landed, so "cheapest" means cheapest delivered.
-	landed_by_po = {
-		r.name: flt(r.base_grand_total)
-		+ sum(c["amount"] for c in _parse_landed(r.get("custom_landed_charges") if has_landed else None))
-		for r in rows
-	}
+	from stabler.api._landed import parse_landed_charges
+
+	landed_by_po = {}
+	for r in rows:
+		charges_raw = r.get("custom_landed_charges") if has_landed else None
+		charges_tot, _, _ = parse_landed_charges(charges_raw)
+		landed_by_po[r.name] = flt(r.base_grand_total) + charges_tot
 	min_landed = min((landed_by_po[r.name] for r in rows), default=0.0)
 	cards: list[dict] = []
 	total = 0.0
