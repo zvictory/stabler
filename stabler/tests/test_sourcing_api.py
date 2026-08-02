@@ -359,7 +359,9 @@ def _load_api(
 
 	utils = types.ModuleType("frappe.utils")
 	utils.flt = lambda value: float(value or 0)
+	utils.cint = lambda value, default=0: int(value or default)
 	utils.today = lambda: "2026-08-02"
+	utils.nowdate = lambda: "2026-08-02"
 	utils.getdate = lambda val=None: str(val) if val else "2026-08-02"
 
 	utils.now_datetime = lambda: datetime(2026, 8, 2, 10, 0, 0)
