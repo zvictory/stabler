@@ -134,10 +134,14 @@ def send_deal_email(
 		comm.custom_last_error = None
 
 	if hasattr(comm, "insert"):
+		dup_errs = (
+			getattr(frappe, "UniqueValidationError", type("UniqueValidationError", (Exception,), {})),
+			getattr(frappe, "DuplicateEntryError", type("DuplicateEntryError", (Exception,), {})),
+		)
 		try:
 			comm.insert()
-		except Exception:
-			# DB race handling for concurrent workers
+		except dup_errs:
+			# Catch ONLY duplicate key exceptions on insertion
 			existing_comm = frappe.get_list(
 				"Communication",
 				filters={"custom_idempotency_key": key, "company": company},
@@ -150,6 +154,7 @@ def send_deal_email(
 					"deal": deal,
 					"deduped": True,
 				}
+			raise
 
 	comm_name = getattr(comm, "name", f"COMM-{deal}")
 

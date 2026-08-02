@@ -81,12 +81,23 @@ def _process_automation_rule_action(
 		act.custom_last_error = None
 
 		if hasattr(act, "insert"):
+			dup_errs = (
+				getattr(frappe, "UniqueValidationError", type("UniqueValidationError", (Exception,), {})),
+				getattr(frappe, "DuplicateEntryError", type("DuplicateEntryError", (Exception,), {})),
+			)
 			try:
 				act.insert()
-			except Exception:
-				# DB concurrency race (DuplicateEntryError / UniqueValidationError)
-				# Concurrent worker created record first -> existing record takes precedence
-				pass
+			except dup_errs:
+				# DB concurrency race: catch ONLY duplicate key exceptions on insertion
+				existing = frappe.get_list(
+					"CRM Activity",
+					filters={"custom_idempotency_key": rule_key, "company": company},
+					fields=["name"],
+					limit_page_length=1,
+				)
+				if existing:
+					return False  # Existing record created in parallel worker takes precedence
+				raise
 
 	return True
 

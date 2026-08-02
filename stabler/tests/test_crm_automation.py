@@ -7,7 +7,6 @@ from __future__ import annotations
 
 import sys
 import unittest
-
 from stabler.tests.test_sourcing_api import _Doc, _FakeFrappe, _load_api
 
 
@@ -81,6 +80,28 @@ class TestCrmAutomation(unittest.TestCase):
 		# Second run with same company -> idempotent via DB record lookup
 		res2 = crm_automation.run_crm_automation_rules(company="ACME", dry_run=False)
 		self.assertEqual(res2["executed_rules"], 0)
+
+	def test_non_duplicate_insert_failure_fails_loud_and_does_not_increment_executed_count(self):
+		from stabler.api import crm_automation
+
+		original_new_doc = sys.modules["frappe"].new_doc
+
+		def _broken_new_doc(doctype):
+			doc = original_new_doc(doctype)
+
+			def _broken_insert():
+				raise self.frappe.ValidationError("Database Locked Error")
+
+			object.__setattr__(doc, "insert", _broken_insert)
+			return doc
+
+		sys.modules["frappe"].new_doc = _broken_new_doc
+
+		try:
+			with self.assertRaises(self.frappe.ValidationError):
+				crm_automation.run_crm_automation_rules(company="ACME", dry_run=False)
+		finally:
+			sys.modules["frappe"].new_doc = original_new_doc
 
 	def test_preview_crm_automation_rules_does_not_mutate_db(self):
 		from stabler.api import crm_automation

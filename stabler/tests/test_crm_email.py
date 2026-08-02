@@ -7,7 +7,6 @@ from __future__ import annotations
 
 import sys
 import unittest
-
 from stabler.tests.test_sourcing_api import _Doc, _FakeFrappe, _load_api
 
 
@@ -123,6 +122,42 @@ class TestCrmEmail(unittest.TestCase):
 				content="Cross-company email attempt.",
 				company="ACME",
 			)
+
+	def test_non_duplicate_insert_failure_fails_loud_and_does_not_send_email(self):
+		from stabler.api import crm_email
+
+		sent_emails = []
+
+		def _track_sendmail(**kwargs):
+			sent_emails.append(kwargs)
+
+		sys.modules["frappe"].sendmail = _track_sendmail
+
+		original_new_doc = sys.modules["frappe"].new_doc
+
+		def _broken_new_doc(doctype):
+			doc = original_new_doc(doctype)
+
+			def _broken_insert():
+				raise self.frappe.ValidationError("DB Disk Full Error")
+
+			object.__setattr__(doc, "insert", _broken_insert)
+			return doc
+
+		sys.modules["frappe"].new_doc = _broken_new_doc
+
+		try:
+			with self.assertRaises(self.frappe.ValidationError):
+				crm_email.send_deal_email(
+					deal="DEAL-100",
+					subject="Test Subject",
+					content="Test Content",
+					company="ACME",
+				)
+			# Assert sendmail was NEVER called due to fail-loud insert failure
+			self.assertEqual(len(sent_emails), 0)
+		finally:
+			sys.modules["frappe"].new_doc = original_new_doc
 
 	def test_triage_queue_filters_by_company_no_cross_company_leak(self):
 		from stabler.api import crm_email
