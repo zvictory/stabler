@@ -1,7 +1,7 @@
 <template>
 	<TenderPage :title="t('Document Center')">
 		<template #actions>
-			<TenderWorkspaceTabs active-tab="documents" :deal="deal" />
+			<TenderWorkspaceTabs active="documents" :deal="deal" />
 		</template>
 
 		<div v-if="deal" class="d-flex flex-column gap-3">
@@ -190,7 +190,7 @@ import { storeToRefs } from "pinia";
 import { useSession } from "../../stores/session";
 import { call } from "../../api/client";
 import { t } from "../../composables/i18n";
-import useToast from "../../composables/toast";
+import { useToast } from "../../composables/useToast.js";
 import EmptyState from "../../components/EmptyState.vue";
 import SkeletonRows from "../../components/SkeletonRows.vue";
 import TenderPage from "./TenderPage.vue";
