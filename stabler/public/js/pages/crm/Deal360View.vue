@@ -73,15 +73,15 @@ onMounted(() => {
 	<div class="deal-360 container-xl py-3">
 		<header class="d-flex justify-content-between align-items-center mb-3">
 			<div>
-				<router-link to="/tender/crm" class="btn btn-outline-secondary btn-sm me-2">
-					<i class="ti ti-arrow-left me-1"></i>{{ t("Back to CRM") }}
+				<router-link to="/crm/deals" class="btn btn-outline-secondary btn-sm me-2">
+					<i class="ti ti-arrow-left me-1"></i>{{ t("Back to Deals") }}
 				</router-link>
 				<h2 class="d-inline-block align-middle mb-0">
 					{{ deal?.organization || deal?.name || dealName }}
 				</h2>
 			</div>
 			<div class="d-flex align-items-center gap-2">
-				<span class="badge bg-primary-lt text-primary">{{ deal?.stage || "—" }}</span>
+				<span class="badge bg-primary-lt text-primary text-capitalize">{{ deal?.stage || "—" }}</span>
 			</div>
 		</header>
 

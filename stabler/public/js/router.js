@@ -137,6 +137,8 @@ import InstallmentCalendar from "./pages/installment/InstallmentCalendar.vue";
 import CrmHome from "./pages/crm/CrmHome.vue";
 import CrmLeads from "./pages/crm/Leads.vue";
 import CrmDeals from "./pages/crm/Deals.vue";
+import Deal360View from "./pages/crm/Deal360View.vue";
+import ManagerCockpit from "./pages/crm/ManagerCockpit.vue";
 import CrmReport from "./pages/crm/CrmReport.vue";
 import ServiceHome from "./pages/service/ServiceHome.vue";
 import ServiceTickets from "./pages/service/Tickets.vue";
@@ -466,6 +468,8 @@ const routes = [
 			{ path: "", redirect: "/crm/leads" },
 			{ path: "leads", name: "crm-leads", component: CrmLeads, meta: { title: t("Leads") } },
 			{ path: "deals", name: "crm-deals", component: CrmDeals, meta: { title: t("Deals") } },
+			{ path: "deals/:name", name: "crm-deal-360", component: Deal360View, meta: { title: t("Deal 360") } },
+			{ path: "cockpit", name: "crm-cockpit", component: ManagerCockpit, meta: { title: t("Manager Cockpit") } },
 			{ path: "report", name: "crm-report", component: CrmReport, meta: { title: t("CRM Report") } },
 		],
 	},
