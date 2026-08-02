@@ -586,3 +586,65 @@ def approve_sourcing_decision(name, company=None):
 		"approved_by": doc.approved_by,
 		"approved_at": doc.approved_at,
 	}
+
+
+@frappe.whitelist()
+def get_quotation_landed(quotation, company=None):
+	"""Read quotation landed charges breakdown and calculated landed total."""
+	_require_tender(company)
+	selected_company = _assert_company_scope(company)
+	doc = frappe.get_doc("Supplier Quotation", quotation)
+	if doc.company != selected_company:
+		frappe.throw(_("Quotation does not belong to the selected company."), frappe.PermissionError)
+	if not frappe.has_permission("Supplier Quotation", ptype="read", doc=doc):
+		frappe.throw(_("Not permitted."), frappe.PermissionError)
+
+	from stabler.api._landed import parse_landed_charges
+
+	raw_charges = doc.get("custom_landed_charges")
+	total_landed, clean_charges, has_estimate = parse_landed_charges(raw_charges)
+
+	base_grand_total = flt(doc.base_grand_total) or flt(doc.grand_total)
+
+	return {
+		"quotation": doc.name,
+		"supplier": doc.supplier,
+		"currency": doc.currency,
+		"grand_total": flt(doc.grand_total),
+		"base_grand_total": base_grand_total,
+		"landed_charges_total": total_landed,
+		"base_landed_total": flt(base_grand_total + total_landed),
+		"has_landed_estimate": has_estimate,
+		"charges": clean_charges,
+	}
+
+
+@frappe.whitelist()
+def update_quotation_landed(quotation, charges, company=None):
+	"""Save quotation landed charges breakdown on a Supplier Quotation."""
+	_require_tender(company)
+	selected_company = _assert_company_scope(company)
+	doc = frappe.get_doc("Supplier Quotation", quotation)
+	if doc.company != selected_company:
+		frappe.throw(_("Quotation does not belong to the selected company."), frappe.PermissionError)
+	_require_tender_view("sourcing", selected_company)
+	if not frappe.has_permission("Supplier Quotation", ptype="write", doc=doc):
+		frappe.throw(_("Not permitted."), frappe.PermissionError)
+
+	if isinstance(charges, str):
+		parsed = frappe.parse_json(charges)
+	else:
+		parsed = charges
+
+	if not isinstance(parsed, list):
+		frappe.throw(_("Charges must be a list of landed charges."), frappe.ValidationError)
+
+	from stabler.api._landed import parse_landed_charges
+
+	_, clean_charges, has_est = parse_landed_charges(parsed)
+	json_str = json.dumps(clean_charges, ensure_ascii=False) if (has_est and clean_charges) else None
+
+	frappe.db.set_value("Supplier Quotation", quotation, "custom_landed_charges", json_str)
+
+	return get_quotation_landed(quotation, company=selected_company)
+
