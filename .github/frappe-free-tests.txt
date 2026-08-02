@@ -62,6 +62,7 @@ stabler.tests.test_kassa_shadow_flow
 stabler.tests.test_kassa_shadow_store
 stabler.tests.test_kassa_smart
 stabler.tests.test_kts_amendment
+stabler.tests.test_landed_ranking
 stabler.tests.test_lcv_gtd_precedence
 stabler.tests.test_lcv_math
 stabler.tests.test_list_row_ordinals
