@@ -1,7 +1,6 @@
 <script setup>
-import { ref, computed, watch, onMounted, nextTick } from "vue";
+import { ref, computed, watch, onMounted } from "vue";
 import { storeToRefs } from "pinia";
-import { useRoute, useRouter } from "vue-router";
 import { useSession } from "../stores/session.js";
 import { dashboardApi } from "../api/dashboard.js";
 import { call } from "../api/client.js";
@@ -16,8 +15,6 @@ import ImportsDashboard from "./imports/ImportsDashboard.vue";
 
 const session = useSession();
 const { activeCompany, user, currency } = storeToRefs(session);
-const router = useRouter();
-const route = useRoute();
 
 const importsEnabled = computed(() => session.canAccessModule("imports"));
 
@@ -34,16 +31,11 @@ const trend = ref({ months: [], revenue: [], expense: [] });
 const activity = ref([]);
 const lowStock = ref([]);
 const error = ref(null);
-const tenderLoading = ref(true);
-const tenderError = ref(null);
-const retryButton = ref(null);
-const tenderDays = ref(Number(route.query.days) || 90);
-const tenderData = ref({
-	executive_kpi: null,
-	executive_currency: "",
-});
 
 const tenderEnabled = computed(() => session.canAccessModule("tender"));
+// Şirket seçilmemişken masa hiçbir şey çekmiyor (OperationsDesk.vue:270), boş bir
+// kabuk çizerdi — o durumda aşağıdaki "şirket seçin" ekranına düşüyoruz.
+const showDesk = computed(() => tenderEnabled.value && !!activeCompany.value);
 
 const money = (v, ccy) => formatMoney(v, ccy || currency.value, user.value.language);
 // Chart currency: dominant transaction currency once trend data loads, base currency until then.
@@ -88,55 +80,13 @@ async function loadFinancial() {
 	}
 }
 
-function localDate(date) {
-	const month = String(date.getMonth() + 1).padStart(2, "0");
-	const day = String(date.getDate()).padStart(2, "0");
-	return `${date.getFullYear()}-${month}-${day}`;
-}
-
-function tenderDates(days) {
-	const end = new Date();
-	const start = new Date(end);
-	start.setDate(end.getDate() - days + 1);
-	return {
-		from_date: localDate(start),
-		to_date: localDate(end),
-	};
-}
-
-async function loadTender() {
-	if (!activeCompany.value) {
-		tenderLoading.value = false;
-		return;
-	}
-	tenderLoading.value = true;
-	tenderError.value = null;
-	try {
-		const dateRange = tenderDates(tenderDays.value);
-		tenderData.value = await call("stabler.api.tender.tender_dashboard", {
-			company: activeCompany.value,
-			...dateRange,
-		});
-	} catch (e) {
-		tenderError.value =
-			e?.response?.data?.exception || e?.message || t("Tender dashboard could not be loaded.");
-	} finally {
-		tenderLoading.value = false;
-		if (tenderError.value) {
-			await nextTick();
-			retryButton.value?.focus();
-		}
-	}
-}
-
+/* Tender şirketinde bu sayfa `OperationsDesk`'in kendisi — finans panosu hiç
+ * çizilmiyor, dolayısıyla onun dört isteğini de atmıyoruz. Masa kendi verisini
+ * kendi çekiyor ve şirket değişiminde kendisi yeniliyor
+ * (OperationsDesk.vue:510, :526), bu yüzden buradan sürülmesi gerekmiyor. */
 async function load() {
-	if (tenderEnabled.value) return loadTender();
+	if (tenderEnabled.value) return;
 	return loadFinancial();
-}
-
-function setTenderDays() {
-	router.replace({ query: { ...route.query, days: tenderDays.value } });
-	loadTender();
 }
 
 onMounted(load);
@@ -208,48 +158,26 @@ const activityIcon = (type) => {
 </script>
 
 <template>
-	<div class="page-header d-print-none">
+	<!-- Tender şirketinde pano = masanın kendisi. Bootstrap `page-header` +
+	     `container-xl` kabuğu buraya giremez: `OperationsDesk` zaten tam bir
+	     `TenderPage` kabuğu taşıyor (çubuk + başlık + eylemler), üstüne bir
+	     kabuk daha sarmak iki başlık, iki Refresh ve `container-xl` yüzünden
+	     içeri kaçmış bir modül çubuğu üretiyordu. Ölçüldü 2026-08-02, Mikas. -->
+	<OperationsDesk v-if="showDesk" />
+
+	<div v-if="!showDesk" class="page-header d-print-none">
 		<div class="container-xl">
 			<div class="row g-2 align-items-center">
 				<div class="col">
 					<div class="page-pretitle">
-						{{
-							tenderEnabled
-								? t("Tender operations")
-								: importsEnabled
-									? t("Commerce & imports")
-									: t("Overview")
-						}}
+						{{ importsEnabled ? t("Commerce & imports") : t("Overview") }}
 					</div>
 					<h2 class="page-title">
-						{{
-							tenderEnabled
-								? t("Dashboard")
-								: importsEnabled
-									? t("Imports control center")
-									: t("Dashboard")
-						}}
+						{{ importsEnabled ? t("Imports control center") : t("Dashboard") }}
 					</h2>
 				</div>
 				<div class="col-auto d-flex align-items-end gap-2">
-					<label v-if="tenderEnabled" class="form-label small mb-0" for="tender-period">
-						<span class="visually-hidden">{{ t("Period") }}</span>
-						<select
-							id="tender-period"
-							v-model.number="tenderDays"
-							class="form-select form-select-sm"
-							@change="setTenderDays"
-						>
-							<option :value="30">{{ t("Last 30 days") }}</option>
-							<option :value="90">{{ t("Last 90 days") }}</option>
-							<option :value="180">{{ t("Last 180 days") }}</option>
-						</select>
-					</label>
-					<button
-						class="btn btn-outline-primary btn-sm"
-						@click="load"
-						:disabled="tenderEnabled ? tenderLoading : loading"
-					>
+					<button class="btn btn-outline-primary btn-sm" @click="load" :disabled="loading">
 						<i class="ti ti-refresh"></i>
 						{{ t("Refresh") }}
 					</button>
@@ -258,7 +186,7 @@ const activityIcon = (type) => {
 		</div>
 	</div>
 
-	<div class="page-body">
+	<div v-if="!showDesk" class="page-body">
 		<div class="container-xl">
 			<div
 				v-if="!tenderEnabled && !importsEnabled && error"
@@ -283,59 +211,7 @@ const activityIcon = (type) => {
 			/>
 
 			<template v-else>
-				<!-- Branch order is deliberate: when a company has BOTH tender and
-				     imports enabled, tender wins — load() already prefers
-				     loadTender() over loadFinancial(), so the template must agree
-				     or the page would render imports against tender-shaped data. -->
-				<template v-if="tenderEnabled">
-					<div v-if="tenderLoading" class="placeholder-glow">
-						<div class="row g-2 mb-3">
-							<div v-for="index in 6" :key="index" class="col-6 col-lg-2">
-								<div class="card">
-									<div class="card-body">
-										<span class="placeholder col-7 mb-3"></span
-										><span class="placeholder col-10"></span>
-									</div>
-								</div>
-							</div>
-						</div>
-						<div class="card">
-							<div class="card-body">
-								<span class="placeholder col-12" style="height: 260px"></span>
-							</div>
-						</div>
-					</div>
-
-					<div
-						v-else-if="tenderError"
-						class="card card-md border-danger"
-						role="alert"
-						aria-live="assertive"
-						aria-atomic="true"
-					>
-						<div class="card-body text-center py-5">
-							<i class="ti ti-alert-triangle text-danger" style="font-size: 2rem"></i>
-							<h3 class="mt-2">{{ t("Tender dashboard could not be loaded.") }}</h3>
-							<p class="text-secondary mb-3">{{ tenderError }}</p>
-							<button ref="retryButton" type="button" class="btn btn-primary" @click="loadTender">
-								<i class="ti ti-refresh me-1"></i>{{ t("Try again") }}
-							</button>
-						</div>
-					</div>
-
-					<!-- Çubuk BURADA yok, çünkü `OperationsDesk` kendi çubuğunu
-					     zaten taşıyor (OperationsDesk.vue:6) ve pano onu olduğu
-					     gibi gömüyor: ikisi birlikte çubuğu üst üste iki kez
-					     çiziyordu. Ölçüldü 2026-08-02, `#/dashboard`, Mikas.
-					     `<TenderNav overview />` üstelik yanıltıcıydı — bileşen
-					     `overview` diye bir prop tanımlamıyor, öznitelik `<nav>`'a
-					     düşüyordu, yani ikinci çubuk birincinin birebir aynısıydı. -->
-					<div v-else class="tender-dashboard">
-						<OperationsDesk />
-					</div>
-				</template>
-
-				<template v-else-if="importsEnabled">
+				<template v-if="importsEnabled">
 					<ImportsDashboard />
 				</template>
 

@@ -20,6 +20,7 @@ _PORTFOLIO_PREVIEW = os.path.join(_ROOT, "public", "js", "pages", "tender", "Ten
 _EXECUTIVE_KPIS = os.path.join(_ROOT, "public", "js", "pages", "tender", "TenderExecutiveKpis.vue")
 _FUNNEL = os.path.join(_ROOT, "public", "js", "pages", "tender", "TenderFunnel.vue")
 _CONTROL_TOWER = os.path.join(_ROOT, "public", "js", "pages", "tender", "TenderControlTower.vue")
+_OPERATIONS_DESK = os.path.join(_ROOT, "public", "js", "pages", "tender", "OperationsDesk.vue")
 _ROUTER = os.path.join(_ROOT, "public", "js", "router.js")
 _DELIVERY_NOTES = os.path.join(_ROOT, "public", "js", "pages", "sales", "DeliveryNotes.vue")
 
@@ -30,16 +31,45 @@ def _read(path: str) -> str:
 
 
 class TestTenderDashboardSpaContract(unittest.TestCase):
-	def test_dashboard_uses_capability_gate_and_aggregate_endpoint(self):
+	def test_dashboard_uses_capability_gate_and_delegates_to_the_desk(self):
+		"""On a tender company the dashboard IS the operations desk.
+
+		It used to wrap the desk in a Bootstrap `page-header` + `container-xl` while
+		the desk carried a complete `TenderPage` shell of its own: two headings, two
+		Refresh buttons, and a module bar inset by the container instead of running
+		full width (measured 2026-08-02, `#/dashboard`, Mikas).
+		"""
 		source = _read(_DASHBOARD)
 		self.assertIn('session.canAccessModule("tender")', source)
-		self.assertIn("stabler.api.tender.tender_dashboard", source)
-		self.assertIn('v-if="tenderEnabled"', source)
-		self.assertIn("v-else", source)
+		# The desk needs a company as much as the module: it fetches nothing without one
+		# (OperationsDesk.vue:270) and would draw an empty shell, so a company-less tender
+		# user falls through to the "pick a company" state below.
+		self.assertIn(
+			"const showDesk = computed(() => tenderEnabled.value && !!activeCompany.value);", source
+		)
+		self.assertIn('<OperationsDesk v-if="showDesk" />', source)
+		self.assertIn('v-if="!showDesk"', source)
+
+		desk_at = source.index("<OperationsDesk v-if=")
+		header_at = source.index('class="page-header')
+		self.assertLess(
+			desk_at,
+			header_at,
+			"the desk must render outside the Bootstrap page shell — nesting it back "
+			"inside `page-header`/`container-xl` restores the double header",
+		)
+
+		# The dashboard no longer fetches tender data itself. It called
+		# `stabler.api.tender.tender_dashboard` into a `tenderData` ref the template
+		# never read, so the only visible effect that request had was its failure
+		# path: an error card that hid a desk which had loaded perfectly well. The
+		# desk loads itself on mount and reloads on company change
+		# (OperationsDesk.vue:526 and :510).
+		self.assertNotIn("stabler.api.tender.tender_dashboard", source)
 
 	def test_company_disabled_tender_keeps_financial_fallback(self):
 		source = _read(_DASHBOARD)
-		self.assertIn("if (tenderEnabled.value) return loadTender();", source)
+		self.assertIn("if (tenderEnabled.value) return;", source)
 		self.assertIn("return loadFinancial();", source)
 
 	def test_dashboard_has_no_desk_links(self):
@@ -47,24 +77,27 @@ class TestTenderDashboardSpaContract(unittest.TestCase):
 		self.assertNotIn('"/app/', source)
 		self.assertNotIn("'/app/", source)
 
-	def test_dashboard_error_is_announced_and_focuses_retry(self):
+	def test_desk_announces_its_own_load_failure(self):
+		"""Announcing a failed tender load is the desk's job, not the dashboard's.
+
+		The dashboard used to own an `aria-live` error card with a focused "Try
+		again" — but it reported the failure of the aggregate request nothing
+		rendered, and while it showed, the desk was not drawn at all. The desk now
+		reports its own failure in place, and the financial fallback keeps its alert.
+		"""
+		desk = _read(_OPERATIONS_DESK)
+		self.assertIn('role="alert"', desk)
+		self.assertIn('t("Failed to load operations desk.")', desk)
+
 		source = _read(_DASHBOARD)
-		for text in (
-			'role="alert"',
-			'aria-live="assertive"',
-			'ref="retryButton"',
-			"await nextTick()",
-			"retryButton.value?.focus()",
-		):
-			self.assertIn(text, source)
+		self.assertIn('class="alert alert-danger"', source)
+		self.assertIn('role="alert"', source)
 
 	def test_tender_dashboard_composes_the_role_adaptive_control_tower(self):
-		source = _read(_DASHBOARD)
-
-		self.assertIn("executive_kpi", source)
-		self.assertIn("<OperationsDesk", source)
-		self.assertIn('t("Tender operations")', source)
-
+		# The two dashboard assertions that used to open this test (`executive_kpi`
+		# and the `t("Tender operations")` pretitle) belonged to the Bootstrap header
+		# and the discarded aggregate payload — both gone. What remains is a contract
+		# about the control-tower component itself.
 		control_tower = _read(_CONTROL_TOWER)
 		for component in ("TenderExecutiveKpis", "TenderTrendChart", "TenderExecutionFlow"):
 			self.assertIn(component, control_tower)
@@ -131,13 +164,19 @@ class TestTenderDashboardSpaContract(unittest.TestCase):
 		for legacy_state in ("acquisition = {}", "attention = {}", "execution = {}"):
 			self.assertNotIn(legacy_state, source)
 
-	def test_tender_dashboard_serializes_selected_dates_in_local_time(self):
-		source = _read(_DASHBOARD)
+	def test_tender_today_is_read_in_local_time(self):
+		"""Tashkent is UTC+5, so `toISOString()` dates the desk a day back all night.
 
-		self.assertIn("function localDate(date)", source)
-		self.assertNotIn("toISOString()", source)
-		for getter in ("getFullYear()", "getMonth() + 1", "getDate()"):
-			self.assertIn(getter, source)
+		The dashboard owned this contract while it built a from/to range for the
+		aggregate request. That range is gone with the period select, and the only
+		tender screen that still turns "now" into a date is the desk — which reaches
+		for the shared `todayIso()` helper rather than rolling its own.
+		"""
+		desk = _read(_OPERATIONS_DESK)
+
+		self.assertIn("todayIso", desk)
+		self.assertIn("const todayStr = todayIso();", desk)
+		self.assertNotIn("new Date().toISOString()", desk)
 
 	def test_dashboard_composes_executive_kpis_and_conversion_only_funnel(self):
 		kpis = _read(_EXECUTIVE_KPIS)
@@ -166,13 +205,17 @@ class TestTenderDashboardSpaContract(unittest.TestCase):
 		self.assertIn("days: props.days", funnel)
 		self.assertIn("watch([activeCompany, () => props.days], load);", funnel)
 
-	def test_dashboard_requests_the_selected_day_range(self):
+	def test_dashboard_offers_no_period_control_it_cannot_honour(self):
+		"""The Last 30/90/180 days select is gone, and must not come back alone.
+
+		It drove `?days=` and a `tender_dashboard` request whose payload the template
+		never rendered, so changing the period changed nothing on screen. If a period
+		filter is wanted again it belongs to whatever actually reads it — the desk —
+		not to a header the desk no longer has.
+		"""
 		source = _read(_DASHBOARD)
-		self.assertIn("const tenderDays = ref(Number(route.query.days) || 90);", source)
-		self.assertIn("function tenderDates(days)", source)
-		self.assertIn("const dateRange = tenderDates(tenderDays.value);", source)
-		self.assertIn("...dateRange", source)
-		self.assertIn("days: tenderDays.value", source)
+		self.assertNotIn("tenderDays", source)
+		self.assertNotIn('id="tender-period"', source)
 
 	def test_p1_components_preserve_visual_and_keyboard_accessibility(self):
 		trend_source = _read(_TREND_CHART)
