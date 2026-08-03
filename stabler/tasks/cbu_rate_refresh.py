@@ -28,17 +28,22 @@ import frappe
 _CBU_URL = "https://cbu.uz/uz/arkhiv-kursov-valyut/json/"
 _BASE_CURRENCY = "UZS"
 _TRACKED = ("USD", "EUR", "RUB", "CNY")
-_TIMEOUT = 15
+_TIMEOUT = 30
 
 
 def _fetch_cbu_payload() -> list[dict[str, Any]]:
 	req = Request(_CBU_URL, headers={"User-Agent": "stabler/1.0"})
-	with urlopen(req, timeout=_TIMEOUT) as resp:
-		raw = resp.read().decode("utf-8")
-	data = json.loads(raw)
-	if not isinstance(data, list):
-		raise ValueError(f"cbu.uz returned non-list payload: {type(data).__name__}")
-	return data
+	for attempt in range(3):
+		try:
+			with urlopen(req, timeout=_TIMEOUT) as resp:
+				raw = resp.read().decode("utf-8")
+			data = json.loads(raw)
+			if not isinstance(data, list):
+				raise ValueError(f"cbu.uz returned non-list payload: {type(data).__name__}")
+			return data
+		except Exception as e:
+			if attempt == 2:
+				raise e
 
 
 def _ensure_currency_exists(code: str) -> None:
