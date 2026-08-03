@@ -101,6 +101,22 @@ def _mutable_payload(data: str | dict, fields: frozenset[str]) -> dict:
 	return {field: payload[field] for field in fields if field in payload}
 
 
+def _resolve_crm_organization(value: str | None) -> str:
+	"""Resolve the SPA's free-text organization field to a CRM Organization link."""
+	organization_name = str(value or "").strip()
+	if not organization_name:
+		return ""
+	existing = frappe.db.exists("CRM Organization", {"organization_name": organization_name})
+	if existing:
+		return existing
+	if not frappe.has_permission("CRM Organization", "create"):
+		frappe.throw(_("Not permitted"), frappe.PermissionError)
+	organization = frappe.new_doc("CRM Organization")
+	organization.organization_name = organization_name
+	organization.insert()
+	return organization.name or organization_name
+
+
 def _crm_list(
 	doctype: str,
 	*,
@@ -360,6 +376,8 @@ def save_deal(data: str | dict, company=""):
 	requested_status = str(payload.get("status") or "").strip()
 	is_existing = bool(payload.get("name"))
 	updates = _mutable_payload(payload, _DEAL_MUTABLE_FIELDS)
+	if "organization" in updates:
+		updates["organization"] = _resolve_crm_organization(updates["organization"])
 	if is_existing and requested_status:
 		return _transition_deal(
 			payload["name"],

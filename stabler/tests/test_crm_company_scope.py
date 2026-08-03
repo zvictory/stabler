@@ -75,6 +75,16 @@ class _FakeDB:
 		self.require_locked_deal_reads = False
 
 	def exists(self, doctype, name):
+		if doctype == "CRM Organization" and isinstance(name, dict):
+			organization_name = name.get("organization_name")
+			return next(
+				(
+					doc.get("name") or doc.get("organization_name")
+					for doc in self.created
+					if doc.get("doctype") == doctype and doc.get("organization_name") == organization_name
+				),
+				None,
+			)
 		if doctype == "Company":
 			return name in {"Mikas", "Other"}
 		if doctype == "Customer":
@@ -463,6 +473,17 @@ class TestCrmCompanyScope(unittest.TestCase):
 		with self.assertRaisesRegex(Exception, "owner"):
 			self.crm.save_deal({"organization": "New Shop"}, "Mikas")
 
+	def test_new_deal_creates_missing_crm_organization_from_spa_text_input(self):
+		"""A first-time organization name entered in the SPA must be usable immediately."""
+		result = self.crm.save_deal({"organization": "UAT Mikas Rail Buyer"}, "Mikas")
+		organizations = [doc for doc in self.db.created if doc.get("doctype") == "CRM Organization"]
+
+		self.assertEqual(result["organization"], "UAT Mikas Rail Buyer")
+		self.assertEqual(
+			[doc.get("organization_name") for doc in organizations],
+			["UAT Mikas Rail Buyer"],
+		)
+
 	def test_document_hook_enforces_hygiene_outside_whitelisted_api(self):
 		"""Direct Frappe writes must not bypass the server-owned invariant."""
 		self.db.enforce_crm_next_action = True
@@ -567,6 +588,13 @@ class TestCrmCompanyScope(unittest.TestCase):
 		"""A concurrent same-stage move must save accompanying edits on the locked row."""
 		self.db.require_locked_deal_reads = True
 		self.db.status_on_lock = "Qualified"
+		self.db.created.append(
+			_Doc(
+				doctype="CRM Organization",
+				name="Current Locked Shop",
+				organization_name="Current Locked Shop",
+			)
+		)
 		self.crm.frappe.has_permission = lambda _doctype, _ptype, doc=None, **_kwargs: (
 			isinstance(doc, _Doc) and bool(doc.get("_locked"))
 		)
