@@ -185,6 +185,14 @@ def _get_list(db: _FakeDB, doctype: str, **kwargs):
 		return [db.docs[("CRM Lead", "LEAD-MIKAS")]] if filters.get("company") == "Mikas" else []
 	if doctype == "CRM Deal":
 		return [db.docs[("CRM Deal", "DEAL-MIKAS")]] if filters.get("company") == "Mikas" else []
+	if doctype == "Tender Master":
+		return [
+			doc
+			for (doc_type, _name), doc in db.docs.items()
+			if doc_type == doctype
+			and doc.get("company") == filters.get("company")
+			and doc.get("tender_number") == filters.get("tender_number")
+		]
 	if doctype == "Customer":
 		return [_Doc(name="CUST-MIKAS", creation="2026-07-01")]
 	if doctype == "Sales Invoice":
@@ -483,6 +491,25 @@ class TestCrmCompanyScope(unittest.TestCase):
 			[doc.get("organization_name") for doc in organizations],
 			["UAT Mikas Rail Buyer"],
 		)
+
+	def test_tender_number_links_new_deal_to_the_matching_parent_tender(self):
+		"""Tender fields entered in generic CRM must create a visible Tender CRM lot."""
+		self.db.docs[("Tender Master", "TND-UAT-1")] = _Doc(
+			name="TND-UAT-1",
+			company="Mikas",
+			tender_number="UAT-MIKAS-20260803-01",
+		)
+
+		result = self.crm.save_deal(
+			{
+				"organization": "UAT Mikas Rail Buyer",
+				"tender_no": "UAT-MIKAS-20260803-01",
+			},
+			"Mikas",
+		)
+
+		self.assertEqual(result["deal_type"], "Tender")
+		self.assertEqual(result["custom_parent_tender"], "TND-UAT-1")
 
 	def test_document_hook_enforces_hygiene_outside_whitelisted_api(self):
 		"""Direct Frappe writes must not bypass the server-owned invariant."""

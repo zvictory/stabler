@@ -117,6 +117,23 @@ def _resolve_crm_organization(value: str | None) -> str:
 	return organization.name or organization_name
 
 
+def _apply_tender_parent_link(updates: dict, company: str) -> None:
+	"""Classify tender-form deals and bind an unambiguous matching master."""
+	tender_no = str(updates.get("tender_no") or "").strip()
+	if not tender_no:
+		return
+	parents = frappe.get_list(
+		"Tender Master",
+		filters={"company": company, "tender_number": tender_no},
+		fields=["name"],
+		limit_page_length=2,
+	)
+	if len(parents) > 1:
+		frappe.throw(_("Multiple Parent Tenders match tender number {0}.").format(tender_no), ValueError)
+	updates["deal_type"] = "Tender"
+	updates["custom_parent_tender"] = parents[0]["name"] if parents else ""
+
+
 def _crm_list(
 	doctype: str,
 	*,
@@ -378,6 +395,7 @@ def save_deal(data: str | dict, company=""):
 	updates = _mutable_payload(payload, _DEAL_MUTABLE_FIELDS)
 	if "organization" in updates:
 		updates["organization"] = _resolve_crm_organization(updates["organization"])
+	_apply_tender_parent_link(updates, company)
 	if is_existing and requested_status:
 		return _transition_deal(
 			payload["name"],
