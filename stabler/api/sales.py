@@ -1922,6 +1922,19 @@ def _sii_cost_expr() -> str:
 VALID_CUSTOMER_TYPES = {"Individual", "Company", "Partnership"}
 
 
+def _default_customer_group() -> str:
+	configured = frappe.db.get_single_value("Selling Settings", "customer_group")
+	if configured and frappe.db.get_value("Customer Group", configured, "is_group") == 0:
+		return configured
+
+	leaf_group = frappe.db.get_value(
+		"Customer Group", {"is_group": 0}, "name", order_by="name asc"
+	)
+	if not leaf_group:
+		frappe.throw("Create a non-group Customer Group before adding customers.")
+	return leaf_group
+
+
 @frappe.whitelist()
 def create_customer(
 	customer_name: str,
@@ -1944,17 +1957,17 @@ def create_customer(
 	if frappe.db.exists("Customer", {"customer_name": customer_name}):
 		frappe.throw(f"Customer '{customer_name}' already exists.")
 
-	# Resolve defaults — fall back to Frappe's "All Customer Groups" / "All Territories"
-	# which are seeded by ERPNext on install.
+	# A configured default may point at the root group, which ERPNext refuses on
+	# Customer insert. Blank UI values must resolve to a transactional leaf.
 	if not customer_group:
-		customer_group = (
-			frappe.db.get_single_value("Selling Settings", "customer_group") or "All Customer Groups"
-		)
+		customer_group = _default_customer_group()
 	if not territory:
 		territory = frappe.db.get_single_value("Selling Settings", "territory") or "All Territories"
 
 	if not frappe.db.exists("Customer Group", customer_group):
 		frappe.throw(f"Unknown customer group: {customer_group}")
+	if frappe.db.get_value("Customer Group", customer_group, "is_group"):
+		frappe.throw("Customer group must be a non-group Customer Group.")
 	if not frappe.db.exists("Territory", territory):
 		frappe.throw(f"Unknown territory: {territory}")
 
