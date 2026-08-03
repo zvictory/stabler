@@ -2558,6 +2558,10 @@ def crm_board(company: str) -> dict:
 		cards.append(
 			{
 				"name": deal,
+				"custom_parent_tender": frappe.db.get_value(
+					"CRM Deal", deal, "custom_parent_tender"
+				)
+				or "",
 				"label": _deal_label(deal),
 				"organization": frappe.db.get_value("CRM Deal", deal, "organization") or "",
 				"lead_name": frappe.db.get_value("CRM Deal", deal, "lead_name") or "",

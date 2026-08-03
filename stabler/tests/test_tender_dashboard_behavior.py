@@ -135,6 +135,28 @@ def _load_tender(db: _FakeDB, roles: list[str], user: str = "source@example.com"
 
 
 class TestTenderDashboardBehaviour(unittest.TestCase):
+	def test_crm_board_cards_carry_parent_tender_for_master_drilldown_filter(self):
+		"""The parent drill-down must not filter every correctly linked lot away."""
+		db = _FakeDB({"DEAL-1": {}})
+		tender = _load_tender(db, ["Sales Manager"])
+		original_get_value = db.get_value
+		db.get_value = lambda doctype, name, field: (
+			"TND-1"
+			if doctype == "CRM Deal" and field == "custom_parent_tender"
+			else original_get_value(doctype, name, field)
+		)
+		tender.frappe.get_cached_value = lambda *_args, **_kwargs: "UZS"
+
+		with (
+			patch.object(tender, "_tender_deal_names", return_value={"DEAL-1"}),
+			patch.object(tender, "_read_intake", return_value={}),
+			patch.object(tender, "_deal_deadlines", return_value={"deadline": None, "risk": "good"}),
+			patch.object(tender, "_deal_label", return_value="UAT lot"),
+		):
+			result = tender.crm_board("Test Company")
+
+		self.assertEqual(result["cards"][0]["custom_parent_tender"], "TND-1")
+
 	def test_workspace_omits_finance_for_non_finance_role(self):
 		db = _FakeDB({"DEAL-1": {}})
 		tender = _load_tender(db, ["Stabler Declarant"])
