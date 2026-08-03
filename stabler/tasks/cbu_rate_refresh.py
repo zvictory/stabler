@@ -27,7 +27,7 @@ import frappe
 
 _CBU_URL = "https://cbu.uz/uz/arkhiv-kursov-valyut/json/"
 _BASE_CURRENCY = "UZS"
-_TRACKED = ("USD", "EUR", "RUB")
+_TRACKED = ("USD", "EUR", "RUB", "CNY")
 _TIMEOUT = 15
 
 
