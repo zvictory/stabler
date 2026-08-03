@@ -575,14 +575,50 @@ async function deleteDeal() {
 	}
 }
 
+const tenderMasters = ref([]);
+
+async function loadTenderMasters() {
+	if (!tenderOn.value || !activeCompany.value) return;
+	try {
+		const res = await call("stabler.api.tender_master.list_tender_masters", {
+			company: activeCompany.value,
+			page_length: 200,
+		});
+		tenderMasters.value = res?.records || [];
+	} catch (_) {
+		/* Non-fatal */
+	}
+}
+
+function onTenderSelect(val) {
+	form.value.tender_no = val;
+	if (!val) return;
+	const selected = tenderMasters.value.find((tm) => (tm.tender_number || tm.name) === val || tm.name === val);
+	if (selected) {
+		if (selected.customer || selected.buyer_name) {
+			form.value.organization = selected.buyer_name || selected.customer || form.value.organization;
+		}
+		if (selected.estimated_total || selected.lot_estimated_total) {
+			form.value.bid_value = selected.lot_estimated_total || selected.estimated_total || form.value.bid_value;
+		}
+		if (selected.submission_deadline || selected.bid_deadline) {
+			form.value.tender_deadline = selected.submission_deadline || selected.bid_deadline || form.value.tender_deadline;
+		}
+	}
+}
+
 // ---------------------------------------------------------------------------
 // Lifecycle
 // ---------------------------------------------------------------------------
 onMounted(() => {
 	loadMeta();
 	fetchDeals();
+	loadTenderMasters();
 });
-watch(activeCompany, fetchDeals);
+watch(activeCompany, () => {
+	fetchDeals();
+	loadTenderMasters();
+});
 </script>
 
 <template>
@@ -1108,7 +1144,16 @@ watch(activeCompany, fetchDeals);
 						<div class="col-12"><hr class="my-1" /><span class="text-secondary small"><i class="ti ti-gavel me-1"></i>{{ t("Tender") }}</span></div>
 						<div class="col-6">
 							<label class="form-label">{{ t("Tender No") }}</label>
-							<input v-model="form.tender_no" type="text" class="form-control" />
+							<select :value="form.tender_no" class="form-select" @change="onTenderSelect($event.target.value)">
+								<option value="">— {{ t("Select Tender No") }} —</option>
+								<option
+									v-for="tm in tenderMasters"
+									:key="tm.name"
+									:value="tm.tender_number || tm.name"
+								>
+									{{ tm.tender_number || tm.name }} — {{ tm.title }} ({{ tm.buyer_name || tm.customer || "" }})
+								</option>
+							</select>
 						</div>
 						<div class="col-6">
 							<label class="form-label">{{ t("Tender Deadline") }}</label>

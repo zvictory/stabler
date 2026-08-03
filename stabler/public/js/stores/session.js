@@ -53,7 +53,9 @@ export const useSession = defineStore("session", {
 				if (!companyOn) return false;
 				if (this.isAdmin) return true;
 				const userOn =
-					!state.allowedModules || state.allowedModules.includes(key);
+					!state.allowedModules ||
+					!state.allowedModules.length ||
+					state.allowedModules.includes(key);
 				return companyOn && userOn;
 			};
 		},
