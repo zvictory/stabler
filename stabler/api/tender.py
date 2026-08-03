@@ -1794,7 +1794,7 @@ def _tender_deal_names(company: str) -> set[str]:
 			):
 				if r.custom_crm_deal:
 					names.add(r.custom_crm_deal)
-	for fld in ("custom_tender_intake", "custom_bid_pricing"):
+	for fld in ("custom_tender_intake", "custom_bid_pricing", "custom_parent_tender"):
 		if frappe.db.has_column("CRM Deal", fld):
 			for r in frappe.get_list(
 				"CRM Deal",
@@ -1803,6 +1803,14 @@ def _tender_deal_names(company: str) -> set[str]:
 				limit_page_length=5000,
 			):
 				names.add(r.name)
+	if frappe.db.has_column("CRM Deal", "deal_type"):
+		for r in frappe.get_list(
+			"CRM Deal",
+			filters={"company": company, "deal_type": "Tender"},
+			fields=["name"],
+			limit_page_length=5000,
+		):
+			names.add(r.name)
 	return names
 
 
