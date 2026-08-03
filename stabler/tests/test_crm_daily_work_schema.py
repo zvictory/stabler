@@ -3,13 +3,26 @@
 from __future__ import annotations
 
 import json
+import importlib
 import os
 import unittest
+from unittest.mock import patch
 
 _ROOT = os.path.normpath(os.path.join(os.path.dirname(os.path.abspath(__file__)), ".."))
 
 
 class TestCrmDailyWorkSchema(unittest.TestCase):
+	def test_tender_deal_field_repair_patch_is_registered_and_replays_v27(self):
+		"""Sites where v27 ran before CRM existed must get a second schema pass."""
+		repair = "stabler.patches.v74_repair_tender_deal_fields"
+		with open(os.path.join(_ROOT, "patches.txt"), encoding="utf-8") as source:
+			self.assertIn(repair, source.read().split())
+
+		module = importlib.import_module(repair)
+		with patch.object(module, "create_tender_deal_fields") as create_fields:
+			module.execute()
+		create_fields.assert_called_once_with()
+
 	def test_patch_is_registered_and_declares_all_deal_fields(self):
 		with open(os.path.join(_ROOT, "patches.txt"), encoding="utf-8") as source:
 			self.assertIn("stabler.patches.v60_crm_daily_work", source.read())
