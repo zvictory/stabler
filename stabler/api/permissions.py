@@ -390,3 +390,52 @@ def apply_cost_mask(payload, user=None, cost_visible_roles=None):
 	"""
 	visible = _user_has_cost_visibility(user, cost_visible_roles or [])
 	return mask_fields(payload, visible)
+
+
+@frappe.whitelist()
+def sync_custom_docperm_for_masters():
+	"""Ensures tabCustom DocPerm for Customer & Supplier includes standard roles from tabDocPerm."""
+	for parent in ("Customer", "Supplier"):
+		docperms = frappe.db.sql(
+			"""
+			SELECT role, `read`, `write`, `create`, `delete`, `submit`, `cancel`, `amend`, `print`, `email`, `report`, `import`, `export`, `share`, `select`
+			FROM `tabDocPerm` WHERE parent = %s
+		""",
+			(parent,),
+			as_dict=True,
+		)
+		for p in docperms:
+			exists = frappe.db.sql(
+				"SELECT name FROM `tabCustom DocPerm` WHERE parent = %s AND role = %s",
+				(parent, p.role),
+			)
+			if not exists:
+				doc = frappe.get_doc({
+					"doctype": "Custom DocPerm",
+					"parent": parent,
+					"parenttype": "DocType",
+					"parentfield": "permissions",
+					"role": p.role,
+					"read": p.read,
+					"write": p.write,
+					"create": p.create,
+					"delete": p.delete,
+					"submit": p.submit,
+					"cancel": p.cancel,
+					"amend": p.amend,
+					"print": p.print,
+					"email": p.email,
+					"report": p.report,
+					"import": p.get("import", 0),
+					"export": p.export,
+					"share": p.share,
+					"select": p.select or p.read,
+				})
+				doc.insert(ignore_permissions=True)
+		frappe.db.sql(
+			"UPDATE `tabCustom DocPerm` SET `select` = 1 WHERE parent = %s AND `read` = 1",
+			(parent,),
+		)
+	frappe.db.commit()
+	frappe.clear_cache()
+	return {"status": "ok"}
