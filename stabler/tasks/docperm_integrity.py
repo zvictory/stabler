@@ -17,8 +17,16 @@ import frappe
 from stabler.api.permissions import detect_shadowed_doctypes
 
 
+# Every stabler site inherits HR/ERPNext-era custom permission rows (2012–2022)
+# that shadow HR Manager / HR User on ~15 doctypes. Measured 2026-08-04: 6 of the
+# 7 sites carry them. They are accepted history, not drift — alerting on them
+# nightly would bury a real incident. Only doctypes touched at/after this cutoff
+# are reported, and they keep being reported until they are actually fixed.
+BASELINE_CUTOFF = "2026-08-03 00:00:00"
+
+
 def nightly_scan() -> None:
-	findings = detect_shadowed_doctypes()
+	findings = detect_shadowed_doctypes(changed_after=BASELINE_CUTOFF)
 	if not findings:
 		return
 

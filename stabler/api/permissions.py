@@ -472,11 +472,30 @@ def _custom_docperm_doctypes() -> list[str]:
 	return frappe.db.sql_list("SELECT DISTINCT parent FROM `tabCustom DocPerm` ORDER BY parent")
 
 
-def detect_shadowed_doctypes() -> list[dict]:
+def _custom_docperm_newest_creation(doctype: str):
+	"""``creation`` of the most recently added Custom DocPerm row for *doctype*."""
+	return frappe.db.sql(
+		"SELECT MAX(creation) FROM `tabCustom DocPerm` WHERE parent = %s",
+		(doctype,),
+	)[0][0]
+
+
+def detect_shadowed_doctypes(changed_after=None) -> list[dict]:
 	"""Doctypes whose Custom DocPerm set shadows read/report from standard roles.
 
 	Pure read — never writes. Single source of truth shared by the repair patch,
 	the nightly drift scan and the regression test.
+
+	Parameters
+	----------
+	changed_after:
+		When set, only report doctypes with at least one Custom DocPerm row
+		created at/after this timestamp. Every stabler site inherits a baseline of
+		HR/ERPNext-era custom rows (2012–2022) that shadow HR Manager / HR User on
+		a dozen doctypes; those are accepted history, and alerting on them nightly
+		would bury a real incident in noise. A doctype touched after the cutoff
+		keeps being reported until it is actually fixed — the alert never goes
+		quiet on its own.
 
 	Returns one entry per affected doctype::
 
@@ -485,6 +504,10 @@ def detect_shadowed_doctypes() -> list[dict]:
 	"""
 	findings = []
 	for doctype in _custom_docperm_doctypes():
+		if changed_after:
+			newest = _custom_docperm_newest_creation(doctype)
+			if not newest or get_datetime(newest) < get_datetime(changed_after):
+				continue
 		custom_keys = _custom_docperm_keys(doctype)
 		missing = [
 			{

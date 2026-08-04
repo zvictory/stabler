@@ -54,13 +54,14 @@ _GL_ENTRY_STANDARD = [
 
 
 class TestDetectShadowedDoctypes(unittest.TestCase):
-	def _detect(self, standard, custom_keys):
+	def _detect(self, standard, custom_keys, newest=None, **kwargs):
 		with (
 			patch.object(perm, "_custom_docperm_doctypes", return_value=["GL Entry"]),
 			patch.object(perm, "_standard_docperms", return_value=standard),
 			patch.object(perm, "_custom_docperm_keys", return_value=set(custom_keys)),
+			patch.object(perm, "_custom_docperm_newest_creation", return_value=newest),
 		):
-			return perm.detect_shadowed_doctypes()
+			return perm.detect_shadowed_doctypes(**kwargs)
 
 	def test_single_shadowing_row_reports_the_roles_that_lost_access(self):
 		"""The incident shape: one custom row, three standard roles silently revoked."""
@@ -97,6 +98,39 @@ class TestDetectShadowedDoctypes(unittest.TestCase):
 		"""Only access-granting rows matter; a no-op standard row is not drift."""
 		standard = [_row("Guest", read=0, report=0, select=0)]
 		self.assertEqual(self._detect(standard, {("Someone", 0)}), [])
+
+	def test_changed_after_suppresses_the_inherited_baseline(self):
+		"""6 of 7 sites carry HR-era shadowing from 2012–2022.
+
+		Alerting on it every night would make the nightly scan pure noise and hide
+		the next real incident, so the scan filters by when the custom set was
+		last touched.
+		"""
+		findings = self._detect(
+			_GL_ENTRY_STANDARD,
+			{("HR Manager", 0)},
+			newest="2013-06-24 10:00:00",
+			changed_after="2026-08-03 00:00:00",
+		)
+		self.assertEqual(findings, [])
+
+	def test_changed_after_still_reports_a_recently_touched_doctype(self):
+		"""A row added inside the window is drift — and stays reported until fixed."""
+		findings = self._detect(
+			_GL_ENTRY_STANDARD,
+			{("Dokon POS", 0)},
+			newest="2026-08-04 15:30:38",
+			changed_after="2026-08-03 00:00:00",
+		)
+		self.assertEqual(len(findings), 1)
+		self.assertEqual(findings[0]["doctype"], "GL Entry")
+
+	def test_no_cutoff_reports_everything(self):
+		"""The admin-facing report endpoint asks explicitly — it gets the full picture."""
+		findings = self._detect(
+			_GL_ENTRY_STANDARD, {("HR Manager", 0)}, newest="2013-06-24 10:00:00"
+		)
+		self.assertEqual(len(findings), 1)
 
 
 class TestRepairShadowedDocperms(unittest.TestCase):
