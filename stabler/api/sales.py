@@ -361,20 +361,6 @@ def get_currency_exchange_rate(from_currency: str, to_currency: str, date: str |
 
 
 @frappe.whitelist()
-def debug_sales_perm():
-	user = frappe.session.user
-	roles = frappe.get_roles(user)
-	meta = frappe.get_meta("Customer")
-	role_perms = frappe.permissions.get_role_permissions(meta, user=user)
-	has_perm = frappe.has_permission("Customer", "read")
-	return {
-		"user": user,
-		"roles": roles,
-		"role_perms": role_perms,
-		"has_perm": has_perm,
-	}
-
-@frappe.whitelist()
 def list_customers_with_balances(
 	company: str,
 	search: str = "",
