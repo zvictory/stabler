@@ -77,3 +77,4 @@ stabler.patches.v71_communication_crm_fields
 stabler.patches.v72_crm_activity_automation_fields
 stabler.patches.v73_communication_retry_fields
 stabler.patches.v74_repair_tender_deal_fields
+stabler.patches.v75_repair_shadowed_docperms

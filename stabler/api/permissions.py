@@ -54,6 +54,7 @@ levels.
 from __future__ import annotations
 
 import frappe
+from frappe.utils import get_datetime
 
 from stabler.api._perm_rules import (
 	is_company_allowed,
@@ -392,50 +393,200 @@ def apply_cost_mask(payload, user=None, cost_visible_roles=None):
 	return mask_fields(payload, visible)
 
 
-@frappe.whitelist()
-def sync_custom_docperm_for_masters():
-	"""Ensures tabCustom DocPerm for Customer & Supplier includes standard roles from tabDocPerm."""
-	for parent in ("Customer", "Supplier"):
-		docperms = frappe.db.sql(
-			"""
-			SELECT role, `read`, `write`, `create`, `delete`, `submit`, `cancel`, `amend`, `print`, `email`, `report`, `import`, `export`, `share`, `select`
-			FROM `tabDocPerm` WHERE parent = %s
-		""",
-			(parent,),
-			as_dict=True,
-		)
-		for p in docperms:
-			exists = frappe.db.sql(
-				"SELECT name FROM `tabCustom DocPerm` WHERE parent = %s AND role = %s",
-				(parent, p.role),
+# ---------------------------------------------------------------------------
+# Custom DocPerm shadowing (incident 2026-08-03 / 2026-08-04)
+# ---------------------------------------------------------------------------
+#
+# Frappe semantics: as soon as ANY row exists in `tabCustom DocPerm` for a
+# doctype, that doctype's ENTIRE standard `tabDocPerm` set is ignored.
+# ``frappe.permissions.add_permission()`` handles this correctly — it calls
+# ``setup_custom_perms()``, which copies the full standard set first. Ad-hoc
+# scripts that INSERT rows directly skip that step and silently strip every
+# standard role of its permissions.
+#
+# That is what happened on mikas (2026-08-03, tender roles) and anjan
+# (2026-08-04, "Dokon POS" role): a single row per doctype shadowed the whole
+# standard set, so ordinary users lost `read` on Customer / Item and `report`
+# on GL Entry.
+#
+# The helpers below detect and repair that state. They only ever ADD missing
+# rows — never delete or downgrade — so a deliberate restriction can never be
+# widened by accident.
+
+# Row identity / metadata columns — everything else on the two tables is a
+# permission flag we want to copy verbatim.
+_PERM_META_COLUMNS = {
+	"name",
+	"owner",
+	"creation",
+	"modified",
+	"modified_by",
+	"docstatus",
+	"idx",
+	"parent",
+	"parenttype",
+	"parentfield",
+	"role",
+	"permlevel",
+	"_user_tags",
+	"_comments",
+	"_assign",
+	"_liked_by",
+}
+
+
+def _perm_flag_columns() -> list[str]:
+	"""Permission flag columns common to DocPerm and Custom DocPerm.
+
+	Derived from meta rather than hardcoded so a Frappe upgrade that adds or
+	drops a flag cannot break the repair with an unknown-column SQL error.
+	"""
+	shared = set(frappe.get_meta("DocPerm").get_valid_columns()) & set(
+		frappe.get_meta("Custom DocPerm").get_valid_columns()
+	)
+	return sorted(shared - _PERM_META_COLUMNS)
+
+
+def _standard_docperms(doctype: str) -> list[dict]:
+	"""App-shipped permission rows for *doctype*, ``permlevel`` included."""
+	cols = ", ".join(f"`{c}`" for c in ["role", "permlevel"] + _perm_flag_columns())
+	return frappe.db.sql(
+		f"SELECT {cols} FROM `tabDocPerm` WHERE parent = %s ORDER BY permlevel, role",  # noqa: S608
+		(doctype,),
+		as_dict=True,
+	)
+
+
+def _custom_docperm_keys(doctype: str) -> set:
+	"""``(role, permlevel)`` pairs already present in Custom DocPerm."""
+	rows = frappe.db.sql(
+		"SELECT role, permlevel FROM `tabCustom DocPerm` WHERE parent = %s",
+		(doctype,),
+		as_dict=True,
+	)
+	return {(r.role, int(r.permlevel or 0)) for r in rows}
+
+
+def _custom_docperm_doctypes() -> list[str]:
+	"""Every doctype that currently has at least one Custom DocPerm row."""
+	return frappe.db.sql_list("SELECT DISTINCT parent FROM `tabCustom DocPerm` ORDER BY parent")
+
+
+def detect_shadowed_doctypes() -> list[dict]:
+	"""Doctypes whose Custom DocPerm set shadows read/report from standard roles.
+
+	Pure read — never writes. Single source of truth shared by the repair patch,
+	the nightly drift scan and the regression test.
+
+	Returns one entry per affected doctype::
+
+	    {"doctype": "GL Entry",
+	     "missing": [{"role": "Auditor", "permlevel": 0, "read": 1, "report": 1}]}
+	"""
+	findings = []
+	for doctype in _custom_docperm_doctypes():
+		custom_keys = _custom_docperm_keys(doctype)
+		missing = [
+			{
+				"role": p.role,
+				"permlevel": int(p.permlevel or 0),
+				"read": p.get("read"),
+				"report": p.get("report"),
+			}
+			for p in _standard_docperms(doctype)
+			if (p.get("read") or p.get("report"))
+			and (p.role, int(p.permlevel or 0)) not in custom_keys
+		]
+		if missing:
+			findings.append({"doctype": doctype, "missing": missing})
+	return findings
+
+
+def repair_shadowed_docperms(doctypes=None, only_created_after=None) -> dict:
+	"""Re-insert the standard permission rows a Custom DocPerm set is shadowing.
+
+	Only ever ADDS the missing ``(role, permlevel)`` rows, copied verbatim from
+	``tabDocPerm``. Existing Custom DocPerm rows are never modified or deleted,
+	so this call cannot widen a deliberate restriction. Idempotent.
+
+	Parameters
+	----------
+	doctypes:
+		Restrict to these doctypes; ``None`` → every doctype carrying Custom
+		DocPerm rows.
+	only_created_after:
+		When set, a doctype is repaired only if **every** one of its existing
+		Custom DocPerm rows was created at/after this timestamp — i.e. its custom
+		set is entirely a product of the incident window. Older, deliberate
+		restrictions are skipped untouched.
+
+	Returns
+	-------
+	``{"repaired": {doctype: rows_added}, "skipped": [doctype, ...]}``
+	"""
+	logger = frappe.logger("stabler.permissions")
+	flag_columns = _perm_flag_columns()
+	repaired: dict[str, int] = {}
+	skipped: list[str] = []
+
+	for doctype in doctypes or _custom_docperm_doctypes():
+		if only_created_after:
+			oldest = frappe.db.sql(
+				"SELECT MIN(creation) FROM `tabCustom DocPerm` WHERE parent = %s",
+				(doctype,),
+			)[0][0]
+			if not oldest or get_datetime(oldest) < get_datetime(only_created_after):
+				skipped.append(doctype)
+				continue
+
+		custom_keys = _custom_docperm_keys(doctype)
+		added = 0
+		for p in _standard_docperms(doctype):
+			permlevel = int(p.permlevel or 0)
+			if (p.role, permlevel) in custom_keys:
+				continue
+			row = {
+				"doctype": "Custom DocPerm",
+				"parent": doctype,
+				"parenttype": "DocType",
+				"parentfield": "permissions",
+				"role": p.role,
+				"permlevel": permlevel,
+			}
+			row.update({c: p.get(c) for c in flag_columns})
+			frappe.get_doc(row).insert(ignore_permissions=True)
+			custom_keys.add((p.role, permlevel))
+			added += 1
+			logger.info(
+				f"restored Custom DocPerm: {doctype} / {p.role} / permlevel {permlevel}"
 			)
-			if not exists:
-				doc = frappe.get_doc({
-					"doctype": "Custom DocPerm",
-					"parent": parent,
-					"parenttype": "DocType",
-					"parentfield": "permissions",
-					"role": p.role,
-					"read": p.read,
-					"write": p.write,
-					"create": p.create,
-					"delete": p.delete,
-					"submit": p.submit,
-					"cancel": p.cancel,
-					"amend": p.amend,
-					"print": p.print,
-					"email": p.email,
-					"report": p.report,
-					"import": p.get("import", 0),
-					"export": p.export,
-					"share": p.share,
-					"select": p.select or p.read,
-				})
-				doc.insert(ignore_permissions=True)
-		frappe.db.sql(
-			"UPDATE `tabCustom DocPerm` SET `select` = 1 WHERE parent = %s AND `read` = 1",
-			(parent,),
-		)
-	frappe.db.commit()
-	frappe.clear_cache()
-	return {"status": "ok"}
+		if added:
+			repaired[doctype] = added
+
+	return {"repaired": repaired, "skipped": skipped}
+
+
+def _require_permission_admin() -> None:
+	"""Guard for permission-introspection endpoints.
+
+	Deliberately NOT ``_is_admin`` — that helper returns True for ``Guest``
+	(it is written for record scoping, where Guest never reaches it).
+	"""
+	user = frappe.session.user
+	if user == "Administrator":
+		return
+	if any(r in frappe.get_roles(user) for r in _ADMIN_ROLES):
+		return
+	frappe.throw(frappe._("Not permitted."), frappe.PermissionError)
+
+
+@frappe.whitelist()
+def docperm_shadow_report():
+	"""Admin-only, read-only permission-drift report.
+
+	Replaces the former ``sync_custom_docperm_for_masters`` endpoint, which was
+	whitelisted with no authorization at all and mutated the permission tables.
+	Repair now happens only via the migrate patch / scheduled task.
+	"""
+	_require_permission_admin()
+	return {"findings": detect_shadowed_doctypes()}

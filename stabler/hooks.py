@@ -73,6 +73,8 @@ scheduler_events = {
 		"stabler.tasks.roi_refresh.daily",
 		"stabler.service.schedule_engine.generate_rolling_schedule_rows",
 		"stabler.tasks.gl_integrity.nightly_scan",
+		# Detect Custom DocPerm rows that shadow a doctype's standard permissions.
+		"stabler.tasks.docperm_integrity.nightly_scan",
 		"stabler.api.backup.run_scheduled_backup",
 		"stabler.integrations.timepay.sync.nightly_sync",
 		"stabler.integrations.timepay.processor.nightly_process",
