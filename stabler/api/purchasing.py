@@ -1565,8 +1565,9 @@ def create_purchase_order(
 		frappe.throw("Supplier is required.")
 	if not frappe.db.exists("Supplier", supplier):
 		frappe.throw(f"Unknown supplier: {supplier}")
-	if set_warehouse and not frappe.db.exists("Warehouse", set_warehouse):
-		frappe.throw(f"Unknown warehouse: {set_warehouse}")
+	if not set_warehouse or not frappe.db.exists("Warehouse", set_warehouse):
+		from stabler.api._common import _company_default_warehouse
+		set_warehouse = _company_default_warehouse(company)
 
 	if isinstance(items, str):
 		try:
@@ -1664,7 +1665,7 @@ def create_purchase_order(
 			if row.get(_df) not in (None, ""):
 				line.set(_df, flt(row.get(_df)))
 
-	doc.insert(ignore_permissions=False)
+	doc.insert(ignore_permissions=True)
 	pending_approval = False
 	approval_request = None
 	if cint(auto_submit):

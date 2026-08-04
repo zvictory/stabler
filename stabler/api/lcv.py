@@ -252,9 +252,18 @@ def create_additional_lcv(document_type: str, document_name: str):
 			frappe.throw(_("No unconsumed landed-cost lines to voucher."))
 
 		# Promoted Stabler Settings field
-		expense_account = frappe.db.get_single_value("Stabler Settings", "landed_cost_expense_account")
+		expense_account = frappe.db.get_single_value("Stabler Settings", "landed_cost_expense_account") or frappe.db.get_single_value("Stabler Settings", "imports_lcv_expense_account")
 		if not expense_account:
-			expense_account = frappe.db.get_single_value("Stabler Settings", "imports_lcv_expense_account")
+			pr_company = frappe.db.get_value("Purchase Receipt", document_name, "company")
+			expense_account = frappe.db.get_value(
+				"Account",
+				{"company": pr_company, "account_type": "Expenses Included In Valuation", "is_group": 0},
+				"name",
+			) or frappe.db.get_value(
+				"Account",
+				{"company": pr_company, "root_type": "Expense", "is_group": 0},
+				"name",
+			)
 		if not expense_account:
 			frappe.throw(_("Please configure the Landed Cost Expense Account in Stabler Settings."))
 
@@ -274,6 +283,8 @@ def create_additional_lcv(document_type: str, document_name: str):
 			frappe.throw(_("Failed to build Landed Cost Voucher payload."))
 
 		lcv = frappe.get_doc(lcv_dict)
+		if hasattr(lcv, "get_items_from_purchase_receipts"):
+			lcv.get_items_from_purchase_receipts()
 		lcv.insert()
 
 		frappe.db.set_value("Purchase Receipt", document_name, "custom_landed_cost_vouchered", 1)

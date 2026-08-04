@@ -5,8 +5,9 @@ let nextId = 0;
 
 export function useToast() {
 	function addToast(message, type = "info", duration = 3000) {
+		const msgStr = typeof message === "string" ? message : (message?.message || String(message));
 		const id = nextId++;
-		const toast = { id, message, type };
+		const toast = { id, message: msgStr, type };
 		toasts.value.push(toast);
 
 		if (duration > 0) {

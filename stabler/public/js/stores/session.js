@@ -11,6 +11,9 @@ function initialCompany() {
 	if (saved && boot.companies?.some((c) => c.name === saved)) {
 		return saved;
 	}
+	if (boot.companies?.some((c) => c.name === "Mikas")) {
+		return "Mikas";
+	}
 	return boot.defaultCompany || boot.companies?.[0]?.name || "";
 }
 

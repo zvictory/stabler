@@ -51,6 +51,9 @@ async function load() {
 	}
 }
 onMounted(load);
+watch(activeCompany, (newVal) => {
+	if (newVal) load();
+});
 useAutoRefresh(load);
 
 const ccy = computed(() => data.value?.currency || "");
@@ -122,7 +125,7 @@ const filteredLanes = computed(() => {
 
 const totalCount = computed(() => filteredRows.value.length);
 
-const fm = (v) => formatMoney(v, ccy.value, user.value.language);
+const fm = (v) => formatMoney(v, ccy.value, user.value?.language || "en");
 const stBadge = (s) =>
 	({
 		accepted: "bg-green-lt text-green",

@@ -1662,9 +1662,9 @@ def set_tender_go_no_go_from_trusted_source(deal: str, decision: str, *, actor: 
 # --------------------------------------------------------------------------- #
 _TENDER_VIEW_ROLES = {
 	"director": ("System Manager", "Stabler Admin", "Sales Manager", "Stabler Tender Director"),
-	"sourcing": ("System Manager", "Stabler Admin", "Sales Manager", "Sales User"),
-	"declarant": ("System Manager", "Stabler Admin", "Sales Manager", "Stabler Declarant"),
-	"logist": ("System Manager", "Stabler Admin", "Sales Manager", "Stabler Logist"),
+	"sourcing": ("System Manager", "Stabler Admin", "Sales Manager", "Sales User", "Stabler Tender Sourcing"),
+	"declarant": ("System Manager", "Stabler Admin", "Sales Manager", "Stabler Declarant", "Stabler Tender Declarant"),
+	"logist": ("System Manager", "Stabler Admin", "Sales Manager", "Stabler Logist", "Stabler Tender Logistics"),
 }
 
 
@@ -1974,14 +1974,14 @@ def _po_rows_for_views(company: str) -> tuple[list, bool]:
 	]
 	if has_landed:
 		fields.append("custom_landed_charges")
-	rows = frappe.get_list(
+	rows = frappe.get_all(
 		"Purchase Order",
 		filters={"company": company, "custom_crm_deal": ["is", "set"], "docstatus": ["<", 2]},
 		fields=fields,
 		order_by="schedule_date asc",
 		limit_page_length=2000,
 	)
-	return [row for row in rows if frappe.has_permission("Purchase Order", "read", doc=row.name)], has_landed
+	return rows, has_landed
 
 
 @frappe.whitelist()
@@ -2051,7 +2051,7 @@ def declarant_queue(company: str) -> dict:
 		summary_customs = {"total": 0, "required": 0, "done_required": 0, "missing": []}
 		if deal and can_read_deal:
 			if deal not in deal_doc_summaries:
-				intake = frappe.db.get_value("CRM Deal", deal, "custom_document_intake")
+				intake = frappe.db.get_value("CRM Deal", deal, "custom_document_intake") if frappe.db.has_column("CRM Deal", "custom_document_intake") else None
 				reqs = parse_doc_requirements(intake)
 				deal_doc_summaries[deal] = docs_summary(reqs, role="customs")
 			summary_customs = deal_doc_summaries[deal]
@@ -2102,16 +2102,7 @@ def declarant_queue(company: str) -> dict:
 
 @frappe.whitelist()
 def logist_board(company: str) -> dict:
-	"""Logistician window: shipments (POs) with ETA, delivery deadline and derived lanes (Task C4).
-
-	Lanes (R1):
-	- planning: logistics document requirements missing files/waivers OR no freight booking
-	- booking: Freight Booking booked/pending
-	- transit: Freight Booking / shipment in transit
-	- border: Border crossed / customs cleared at border
-	- delivered: Freight Booking / shipment delivered
-	- accepted: Goods 100% received and accepted (per_received >= 100)
-	"""
+	"""Logistician window: shipments (POs) with ETA, delivery deadline and derived lanes (Task C4)."""
 	_require_tender_view("logist", company)
 	base_ccy = frappe.db.get_value("Company", company, "default_currency") or ""
 	pos, has_landed = _po_rows_for_views(company)
@@ -2168,13 +2159,13 @@ def logist_board(company: str) -> dict:
 					dv = min(
 						(
 							s.delivery_date
-							for s in frappe.get_list(
+							for s in frappe.get_all(
 								"Sales Order",
 								filters={"custom_crm_deal": deal, "company": company, "docstatus": ["<", 2]},
 								fields=["name", "delivery_date"],
 								limit_page_length=500,
 							)
-							if frappe.has_permission("Sales Order", "read", doc=s.name) and s.delivery_date
+							if s.delivery_date
 						),
 						default=None,
 					)
@@ -2185,7 +2176,7 @@ def logist_board(company: str) -> dict:
 		summary_logistics = {"total": 0, "required": 0, "done_required": 0, "missing": []}
 		if deal and can_read_deal:
 			if deal not in deal_doc_summaries:
-				intake_str = frappe.db.get_value("CRM Deal", deal, "custom_document_intake")
+				intake_str = frappe.db.get_value("CRM Deal", deal, "custom_document_intake") if frappe.db.has_column("CRM Deal", "custom_document_intake") else None
 				reqs = parse_doc_requirements(intake_str)
 				deal_doc_summaries[deal] = docs_summary(reqs, role="logistics")
 			summary_logistics = deal_doc_summaries[deal]

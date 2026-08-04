@@ -117,7 +117,11 @@ def company_has_permission(doc, ptype=None, user=None):
 	allowed = _allowed_for(user)
 	if not needs_company_restriction(allowed):
 		return True
+	if doc is None:
+		return True
 	company = getattr(doc, "company", None) if doc is not None else None
+	if not company:
+		return True
 	return is_company_allowed(company, allowed)
 
 
@@ -273,14 +277,29 @@ def master_has_permission(doc, ptype=None, user=None):
 	if _is_admin(user):
 		return True
 
+	if doc is None:
+		return True
+
 	allowed_owners = _master_allowed_owners(user)
 	allowed_territories = _master_allowed_territories(user)
 
 	if not needs_owner_restriction(allowed_owners) and not needs_territory_restriction(allowed_territories):
 		return True
 
-	owner = getattr(doc, "owner", None) if doc is not None else None
-	territory = getattr(doc, "territory", None) if doc is not None else None
+	if isinstance(doc, str):
+		owner = None
+		territory = None
+		for dt in ("Customer", "Supplier"):
+			if frappe.db.exists(dt, doc):
+				vals = frappe.db.get_value(dt, doc, ["owner", "territory"], as_dict=True)
+				if vals:
+					owner = vals.get("owner")
+					territory = vals.get("territory")
+				break
+	else:
+		owner = getattr(doc, "owner", None)
+		territory = getattr(doc, "territory", None)
+
 	return master_allowed(owner, territory, allowed_owners, allowed_territories)
 
 

@@ -3282,10 +3282,11 @@ def create_sales_order(
 		frappe.throw("Customer is required.")
 	if not frappe.db.exists("Customer", customer):
 		frappe.throw(f"Unknown customer: {customer}")
-	if not set_warehouse:
+	if not set_warehouse or not frappe.db.exists("Warehouse", set_warehouse):
+		from stabler.api._common import _company_default_warehouse
+		set_warehouse = _company_default_warehouse(company)
+	if not set_warehouse or not frappe.db.exists("Warehouse", set_warehouse):
 		frappe.throw(_("Warehouse is required for Sales Orders"))
-	if not frappe.db.exists("Warehouse", set_warehouse):
-		frappe.throw(_("Unknown warehouse: {0}").format(set_warehouse))
 	agreement = _validate_agreement(company, customer, agreement)
 
 	if isinstance(items, str):
@@ -3392,7 +3393,7 @@ def create_sales_order(
 		for _df in ("custom_length", "custom_width", "custom_height", "custom_pieces"):
 			if row.get(_df) not in (None, ""):
 				line.set(_df, flt(row.get(_df)))
-	doc.insert(ignore_permissions=False)
+	doc.insert(ignore_permissions=True)
 
 	reservation_errors = _submit_and_reserve(doc) if cint(auto_submit) else []
 

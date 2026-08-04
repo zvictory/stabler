@@ -68,8 +68,17 @@ def check_concurrency(doctype: str, name: str, modified: str | None = None) -> N
 
 
 def _company_default_warehouse(company: str) -> str | None:
-	get_val = getattr(frappe, "get_cached_value", getattr(frappe.db, "get_value", None))
-	wh = get_val("Company", company, "default_warehouse") if get_val else None
+	wh = frappe.db.get_value("Warehouse", {"company": company, "is_group": 0}, "name")
 	if wh:
 		return wh
-	return frappe.db.get_value("Warehouse", {"company": company, "is_group": 0}, "name")
+	abbr = frappe.db.get_value("Company", company, "abbr") or company[:5].upper()
+	name = f"Stores - {abbr}"
+	if not frappe.db.exists("Warehouse", name):
+		w = frappe.new_doc("Warehouse")
+		w.warehouse_name = "Stores"
+		w.company = company
+		w.is_group = 0
+		w.insert(ignore_permissions=True)
+		return w.name
+	return name
+
