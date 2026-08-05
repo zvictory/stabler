@@ -290,6 +290,17 @@ const earmarkOk = computed(() => {
 	return Math.abs(b + c - a) <= 0.5;
 });
 
+function syncEarmark() {
+	const total = itemsAgreedTotal.value || Number(form.value.agreed_total) || 0;
+	const docs = itemsDocsTotal.value || round2(total * ((Number(form.value.advance_pct) || 30) / 100));
+	form.value.agreed_total = total;
+	form.value.bank_agreed = docs;
+	form.value.cash_agreed = round2(total - docs);
+	bankTouched.value = false;
+	cashTouched.value = false;
+	toast.success(t("Prepayment bank & cash totals synced to items total."));
+}
+
 // ---- Fill items from a vendor category ----
 const fillModalOpen = ref(false);
 const fillCategoriesLoading = ref(false);
@@ -735,8 +746,11 @@ watch(activeCompany, loadPiGroups);
 						<MoneyInput v-model="form.cash_agreed" :currency="form.currency" :language="user.language" @focus="onCashInput" />
 					</div>
 					<div class="col-12">
-						<div v-if="!earmarkOk" class="alert alert-warning py-1 px-2 mb-0 small">
-							{{ t("Bank Agreed + Cash Agreed must equal Agreed Total.") }}
+						<div v-if="!earmarkOk" class="alert alert-warning py-1.5 px-3 mb-0 small d-flex align-items-center justify-content-between flex-wrap gap-2">
+							<span><i class="ti ti-alert-triangle me-1"></i>{{ t("Bank Agreed + Cash Agreed must equal Agreed Total.") }}</span>
+							<button type="button" class="btn btn-warning btn-sm py-0.5 px-2 font-monospace ms-auto" @click="syncEarmark">
+								<i class="ti ti-refresh me-1"></i>{{ t("Sync Prepayment Totals") }}
+							</button>
 						</div>
 					</div>
 					<div class="col-12">
@@ -845,6 +859,22 @@ watch(activeCompany, loadPiGroups);
 						</tr>
 					</tfoot>
 				</table>
+			</div>
+			<div class="card-footer d-flex align-items-center justify-content-between bg-light py-2 px-3 flex-wrap gap-2">
+				<div class="text-secondary small font-monospace d-flex align-items-center gap-3">
+					<span>{{ t("Agreed Total") }}: <strong class="text-blue">{{ fm(itemsAgreedTotal, form.currency) }}</strong></span>
+					<span>{{ t("Docs Total") }}: <strong class="text-green">{{ fm(itemsDocsTotal, form.currency) }}</strong></span>
+					<span>{{ t("Cash Difference") }}: <strong class="text-warning">{{ fm(itemsCashDiff, form.currency) }}</strong></span>
+				</div>
+				<div class="d-flex align-items-center gap-2">
+					<button v-if="!earmarkOk" type="button" class="btn btn-outline-warning btn-sm font-monospace" @click="syncEarmark">
+						<i class="ti ti-refresh me-1"></i>{{ t("Sync Totals") }}
+					</button>
+					<button type="button" class="btn btn-primary" :disabled="saving || loading || !earmarkOk" @click="saveProforma">
+						<span v-if="saving" class="spinner-border spinner-border-sm me-1"></span>
+						<i v-else class="ti ti-device-floppy me-1"></i>{{ isCreate ? t("Save Proforma") : t("Update & Save") }}
+					</button>
+				</div>
 			</div>
 		</div>
 
