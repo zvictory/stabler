@@ -1,0 +1,38 @@
+{
+  "timestamp": "2026-08-03T18:12:11.935Z",
+  "site": "https://mikas.erpstable.com",
+  "quotations": [
+    {
+      "name": "PUR-SQTN-2026-00126",
+      "supplier": "Tashkent Bearing Factory LLC",
+      "amount": 13500000
+    },
+    {
+      "name": "PUR-SQTN-2026-00127",
+      "supplier": "Ural Components CJSC",
+      "amount": 12960000
+    },
+    {
+      "name": "PUR-SQTN-2026-00128",
+      "supplier": "Samarkand Industrial Supply",
+      "amount": 14200000
+    },
+    {
+      "name": "PUR-SQTN-2026-00129",
+      "supplier": "SinoBearings Shanghai Ltd",
+      "amount": 14800000
+    },
+    {
+      "name": "PUR-SQTN-2026-00130",
+      "supplier": "Fergana Tech Trade",
+      "amount": 15000000
+    }
+  ],
+  "approval": {
+    "name": "TSD-2026-00001",
+    "deal": "CRM-DEAL-2026-00098",
+    "status": "Approved",
+    "approved_by": "director.mikas@erpstable.com",
+    "approved_at": "2026-08-03 23:12:48"
+  }
+}

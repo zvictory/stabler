@@ -1,0 +1,26 @@
+[
+  {
+    "name": "Level 1 Master Board",
+    "url": "https://mikas.erpstable.com/stabler#/tender/crm",
+    "visible": true,
+    "snippet": "Stabler\nDashboard\nOPERATIONS\nTender\nCompany\nMikas\nT\nTender Director Mikas\nMikas\nTender\nDirector board\nOverview\nOperations desk\nProcess flow\nContract board\nTender CRM\nTender CRM\nLevel 1: Tender Master oversight\nOne card per published tender — click to open child lots\nNew Tender\nTENDER MASTERS\n2\nactiv"
+  },
+  {
+    "name": "Level 2 Tender CRM Board",
+    "url": "https://mikas.erpstable.com/stabler#/tender/crm?tender=TND-2026-00037",
+    "visible": true,
+    "snippet": "Stabler\nDashboard\nOPERATIONS\nTender\nCompany\nMikas\nT\nTender Director Mikas\nMikas\nTender\nDirector board\nOverview\nOperations desk\nProcess flow\nContract board\nTender CRM\nTND-2026-00037\nTender CRM\nTender CRM / TND-2026-00037\nEvery card is an ERP deal record\nColumns are stages; drag a card to move it\nSEAR"
+  },
+  {
+    "name": "Tender Portfolio Board",
+    "url": "https://mikas.erpstable.com/stabler#/tender/portfolio",
+    "visible": false,
+    "snippet": "Stabler\nDashboard\nOPERATIONS\nTender\nCompany\nMikas\nT\nTender Director Mikas\nMikas\nTender\nDirector board\nOverview\nOperations desk\nProcess flow\nContract board\nTender CRM\nDirector board\nEvery lot is counted in exactly one stage\nNumbers are read from ERP records — the rule under each says what it counted\n"
+  },
+  {
+    "name": "CRM Deals Board",
+    "url": "https://mikas.erpstable.com/stabler#/tender/portfolio",
+    "visible": true,
+    "snippet": "Stabler\nDashboard\nOPERATIONS\nTender\nCompany\nMikas\nT\nTender Director Mikas\nMikas\nTender\nDirector board\nOverview\nOperations desk\nProcess flow\nContract board\nTender CRM\nDirector board\nEvery lot is counted in exactly one stage\nNumbers are read from ERP records — the rule under each says what it counted\n"
+  }
+]

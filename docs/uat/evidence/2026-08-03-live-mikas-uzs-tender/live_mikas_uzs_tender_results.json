@@ -1,0 +1,111 @@
+{
+  "results": {
+    "timestamp": "2026-08-03T13:40:19.244Z",
+    "site": "https://mikas.erpstable.com",
+    "run_id": "LIVE-MIKAS-UZS-20260803-01",
+    "currency": "UZS",
+    "steps": [
+      {
+        "id": "E2E-01-LOGIN",
+        "description": "Administrator Login via API",
+        "status": "PASS",
+        "details": "Status: 200"
+      },
+      {
+        "id": "E2E-01-SPA-HOME",
+        "description": "Stabler SPA Home Loaded",
+        "status": "PASS",
+        "details": "URL: https://mikas.erpstable.com/stabler#/tender/portfolio"
+      },
+      {
+        "id": "E2E-02-CUSTOMER-VIEW",
+        "description": "Customer Center Page Loaded",
+        "status": "PASS",
+        "details": ""
+      },
+      {
+        "id": "E2E-02-ITEM-VIEW",
+        "description": "Inventory Items Page Loaded",
+        "status": "PASS",
+        "details": ""
+      },
+      {
+        "id": "E2E-02-SUPPLIERS-VIEW",
+        "description": "Suppliers List Page Loaded",
+        "status": "PASS",
+        "details": ""
+      },
+      {
+        "id": "E2E-03-TENDER-CRM",
+        "description": "Tender CRM Board Loaded",
+        "status": "PASS",
+        "details": "URL: https://mikas.erpstable.com/stabler#/tender/crm"
+      },
+      {
+        "id": "E2E-03-MY-TENDERS",
+        "description": "My Tenders Workspace Loaded",
+        "status": "PASS",
+        "details": ""
+      },
+      {
+        "id": "E2E-04-PO-CONTROL",
+        "description": "PO Control & Intake Board Loaded",
+        "status": "PASS",
+        "details": ""
+      },
+      {
+        "id": "E2E-05-SOURCING",
+        "description": "Sourcing Workspace Loaded",
+        "status": "PASS",
+        "details": ""
+      },
+      {
+        "id": "E2E-06-PO-HANDOFF",
+        "description": "UI Award-to-PO Handoff Check",
+        "status": "BLOCKED",
+        "details": "No direct UI button for Award-to-PO creation on SPA without workaround script"
+      },
+      {
+        "id": "E2E-07-LOGISTICS",
+        "description": "Logistics Board Loaded",
+        "status": "PASS",
+        "details": ""
+      },
+      {
+        "id": "E2E-07-CUSTOMS",
+        "description": "Customs Queue Loaded",
+        "status": "PASS",
+        "details": ""
+      },
+      {
+        "id": "E2E-07-SALES-INVOICES",
+        "description": "Sales Invoices List Loaded",
+        "status": "PASS",
+        "details": ""
+      },
+      {
+        "id": "E2E-07-PURCHASE-INVOICES",
+        "description": "Purchase Invoices List Loaded",
+        "status": "PASS",
+        "details": ""
+      },
+      {
+        "id": "E2E-07-MONEY-HOME",
+        "description": "Money / Treasury Workspace Loaded",
+        "status": "PASS",
+        "details": ""
+      },
+      {
+        "id": "E2E-08-NETWORK",
+        "description": "Zero HTTP 500 Server Errors",
+        "status": "PASS",
+        "details": "Error count: 0"
+      }
+    ],
+    "passed_count": 15,
+    "failed_count": 0,
+    "blocked_count": 1
+  },
+  "consoleLogs": [],
+  "networkLogs": []
+}

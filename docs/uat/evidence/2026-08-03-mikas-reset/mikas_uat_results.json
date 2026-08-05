@@ -1,0 +1,66 @@
+{
+  "results": {
+    "timestamp": "2026-08-03T12:45:43.428Z",
+    "site": "https://mikas.erpstable.com",
+    "assertions": [
+      {
+        "id": "UAT-LOGIN-01",
+        "description": "Login API returns 200 OK",
+        "status": "PASS",
+        "details": "Status: 200"
+      },
+      {
+        "id": "UAT-NAV-01",
+        "description": "Portfolio SPA route loads clean",
+        "status": "PASS",
+        "details": "URL: https://mikas.erpstable.com/stabler#/tender/portfolio"
+      },
+      {
+        "id": "UAT-DESK-01",
+        "description": "Operations Desk renders empty state",
+        "status": "PASS",
+        "details": "Zero active items verified"
+      },
+      {
+        "id": "UAT-CRM-01",
+        "description": "Tender CRM Pipeline renders empty state",
+        "status": "PASS",
+        "details": "Zero deals verified"
+      },
+      {
+        "id": "UAT-SOURCING-01",
+        "description": "Sourcing Workspace renders clean state",
+        "status": "PASS",
+        "details": "No active sourcing lots verified"
+      },
+      {
+        "id": "UAT-DASHBOARD-01",
+        "description": "Main Dashboard redirects or renders clean",
+        "status": "PASS",
+        "details": "URL: https://mikas.erpstable.com/stabler#/tender/portfolio"
+      },
+      {
+        "id": "UAT-SALES-01",
+        "description": "Sales Customer Center renders clean transactions",
+        "status": "PASS",
+        "details": "Zero transaction balance verified"
+      },
+      {
+        "id": "UAT-PURCHASING-01",
+        "description": "Purchasing Invoices renders empty state",
+        "status": "PASS",
+        "details": "Zero purchase invoices verified"
+      },
+      {
+        "id": "UAT-NETWORK-01",
+        "description": "Zero HTTP 500 Server Errors",
+        "status": "PASS",
+        "details": "Error count: 0"
+      }
+    ],
+    "passed_count": 9,
+    "failed_count": 0
+  },
+  "consoleLogs": [],
+  "networkLogs": []
+}

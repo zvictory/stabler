@@ -51,8 +51,13 @@ say "1/7  Local build (bench build --app stabler)"
 ( cd "$LOCAL_BENCH" && bench build --app stabler )
 
 # 2) Backup prod app dir first (rollback point).
+#    Echo back the archive this run just wrote, by name -- not `ls *.tgz | tail -1`,
+#    which sorts alphabetically and so reported the stale
+#    stabler-app-tender-b2-full-2026-06-26 instead of today's file (seen 2026-08-01).
+#    A backup step that prints someone else's backup is worse than printing nothing:
+#    it names a rollback point that does not contain what you just replaced.
 say "2/7  Backup current prod app -> /root/stabler-app-<ts>.tgz"
-ssh "$PROD" "tar czf /root/stabler-app-\$(date +%F-%H%M).tgz -C $PROD_APPS stabler && ls -lh /root/stabler-app-*.tgz | tail -1"
+ssh "$PROD" "TS=\$(date +%F-%H%M) && tar czf /root/stabler-app-\$TS.tgz -C $PROD_APPS stabler && ls -lh /root/stabler-app-\$TS.tgz"
 
 # 3) rsync the COMMITTED tree -> prod (NO --delete). The exclude list lives ENTIRELY
 #    in .rsync-exclude -- no inline flags here. This script and deploy_full.sh

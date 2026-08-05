@@ -1,0 +1,129 @@
+{
+  "timestamp": "2026-08-03T13:11:16.600Z",
+  "run_id": "UAT-MIKAS-20260803-01",
+  "assertions": [
+    {
+      "id": "UAT-ROLE-LOGIN-DIRECTOR",
+      "description": "Role Login: director.mikas@erpstable.com",
+      "status": "PASS",
+      "details": "Status: 200"
+    },
+    {
+      "id": "UAT-ROLE-NAV-DIRECTOR",
+      "description": "SPA Auth-Transition Clean: director.mikas@erpstable.com",
+      "status": "PASS",
+      "details": "URL: https://mikas.erpstable.com/stabler#/dashboard"
+    },
+    {
+      "id": "UAT-ROLE-LOGIN-SOURCING",
+      "description": "Role Login: sourcing.mikas@erpstable.com",
+      "status": "PASS",
+      "details": "Status: 200"
+    },
+    {
+      "id": "UAT-ROLE-NAV-SOURCING",
+      "description": "SPA Auth-Transition Clean: sourcing.mikas@erpstable.com",
+      "status": "PASS",
+      "details": "URL: https://mikas.erpstable.com/stabler#/tender/portfolio"
+    },
+    {
+      "id": "UAT-ROLE-LOGIN-LOGISTICS",
+      "description": "Role Login: logistics.mikas@erpstable.com",
+      "status": "PASS",
+      "details": "Status: 200"
+    },
+    {
+      "id": "UAT-ROLE-NAV-LOGISTICS",
+      "description": "SPA Auth-Transition Clean: logistics.mikas@erpstable.com",
+      "status": "PASS",
+      "details": "URL: https://mikas.erpstable.com/stabler#/tender/portfolio"
+    },
+    {
+      "id": "UAT-ROLE-LOGIN-DECLARANT",
+      "description": "Role Login: declarant.mikas@erpstable.com",
+      "status": "PASS",
+      "details": "Status: 200"
+    },
+    {
+      "id": "UAT-ROLE-NAV-DECLARANT",
+      "description": "SPA Auth-Transition Clean: declarant.mikas@erpstable.com",
+      "status": "PASS",
+      "details": "URL: https://mikas.erpstable.com/stabler#/tender/portfolio"
+    },
+    {
+      "id": "UAT-ROLE-LOGIN-FINANCE",
+      "description": "Role Login: finance.mikas@erpstable.com",
+      "status": "PASS",
+      "details": "Status: 200"
+    },
+    {
+      "id": "UAT-ROLE-NAV-FINANCE",
+      "description": "SPA Auth-Transition Clean: finance.mikas@erpstable.com",
+      "status": "PASS",
+      "details": "URL: https://mikas.erpstable.com/stabler#/dashboard"
+    },
+    {
+      "id": "UAT-MASTER-CUST-01",
+      "description": "Customer Center loads for Sourcing User",
+      "status": "PASS",
+      "details": ""
+    },
+    {
+      "id": "UAT-MASTER-ITEM-01",
+      "description": "Items List loads for Sourcing User",
+      "status": "PASS",
+      "details": ""
+    },
+    {
+      "id": "UAT-MASTER-SUPP-01",
+      "description": "Suppliers List loads for Sourcing User",
+      "status": "PASS",
+      "details": ""
+    },
+    {
+      "id": "UAT-TENDER-CRM-01",
+      "description": "Tender CRM loads for Director",
+      "status": "PASS",
+      "details": "URL: https://mikas.erpstable.com/stabler#/dashboard"
+    },
+    {
+      "id": "UAT-MY-TENDERS-01",
+      "description": "My Tenders loads for Sourcing User",
+      "status": "PASS",
+      "details": "URL: https://mikas.erpstable.com/stabler#/tender/my-tenders"
+    },
+    {
+      "id": "UAT-SOURCING-VIEW-01",
+      "description": "Sourcing Workspace loads for Sourcing User",
+      "status": "PASS",
+      "details": ""
+    },
+    {
+      "id": "UAT-PO-HANDOFF-01",
+      "description": "UI Award-to-PO handoff check",
+      "status": "BLOCKED",
+      "details": "No direct SPA UI button for Award-to-PO creation without backend script workaround"
+    },
+    {
+      "id": "UAT-LOGISTICS-01",
+      "description": "Logistics Board loads for Logistics User",
+      "status": "PASS",
+      "details": ""
+    },
+    {
+      "id": "UAT-DECLARANT-01",
+      "description": "Customs Queue loads for Declarant User",
+      "status": "PASS",
+      "details": ""
+    },
+    {
+      "id": "UAT-FINANCE-01",
+      "description": "Purchase Invoices loads for Finance User",
+      "status": "PASS",
+      "details": ""
+    }
+  ],
+  "passed_count": 19,
+  "failed_count": 0,
+  "blocked_count": 1
+}
