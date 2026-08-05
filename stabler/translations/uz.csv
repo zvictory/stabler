@@ -5011,3 +5011,30 @@ Unknown item group: {0},Noma'lum tovar toifasi: {0}
 The top-level category cannot be deleted.,Yuqori darajadagi toifani o'chirib bo'lmaydi.
 Cannot delete {0}: it has {1} subcategories.,{0} ni o'chirib bo'lmaydi: unda {1} ta quyi toifa bor.
 Cannot delete {0}: {1} items still use it.,{0} ni o'chirib bo'lmaydi: uni hali ham {1} ta tovar ishlatmoqda.
+
+Transport expenses,Tashish xarajatlari
+Transport costs belong to third-party carriers. Expenses linked directly to a container are allocated directly; unassigned costs are distributed by weight.,Tashish xarajatlari uchinchi tomon tashuvchilariga tegishli. Konteynerga to'g'ridan-to'g'ri biriktirilganlari to'g'ridan-to'g'ri, qolganlari vazn bo'yicha taqsimlanadi.
+Total transport,Jami tashish
+Per container,Konteynerga
+Per kg,Kg uchun
+paid {pct}% · {outstanding} to pay,{pct}% to'langan · {outstanding} to'lanishi kerak
+By carriers,Tashuvchilar bo'yicha
+Service provider,Xizmat ko'rsatuvchi
+Docs,Hujjatlar
+Paid,To'langan
+Outstanding,To'lanishi kerak
+Expense documents,Xarajat hujjatlari
+Carrier / carrier invoice,Tashuvchi / tashuvchi hisob-faturasi
+System document,Tizimdagi hujjat
+Not posted,o'tkazilmagan
+direct link,to'g'ridan-to'g'ri biriktirish
+by weight,vazn bo'yicha
+equal,teng
+for whole invoice,butun hisob-fatura uchun
+Add expense,Xarajat qo'shish
+Open all expenses for this invoice →,Ushbu hisob-fatura bo'yicha barcha xarajatlarni ochish →
+"Landed cost with transport: {landed_per_kg} {currency}/kg ({goods_per_kg} + {per_kg})","Tashish bilan tan narxi: {landed_per_kg} {currency}/kg ({goods_per_kg} + {per_kg})"
+Other expenses,Boshqa xarajatlar
+No transport expenses yet.,Hozircha tashish xarajatlari yo'q
+Transport by container,Konteyner bo'yicha tashish
+cont.,kont.

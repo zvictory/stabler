@@ -5006,3 +5006,30 @@ Unknown item group: {0},Bilinmeyen ürün kategorisi: {0}
 The top-level category cannot be deleted.,Üst düzey kategori silinemez.
 Cannot delete {0}: it has {1} subcategories.,{0} silinemez: {1} alt kategorisi var.
 Cannot delete {0}: {1} items still use it.,{0} silinemez: hâlâ {1} ürün onu kullanıyor.
+
+Transport expenses,Taşıma giderleri
+Transport costs belong to third-party carriers. Expenses linked directly to a container are allocated directly; unassigned costs are distributed by weight.,Taşıma giderleri üçüncü taraf taşıyıcılara aittir. Konteynere doğrudan bağlı giderler doğrudan, diğerleri ağırlığa göre dağıtılır.
+Total transport,Toplam taşıma
+Per container,Konteyner başına
+Per kg,Kg başına
+paid {pct}% · {outstanding} to pay,%{pct} ödendi · {outstanding} ödenecek
+By carriers,Taşıyıcılara göre
+Service provider,Hizmet sağlayıcı
+Docs,Belgeler
+Paid,Ödendi
+Outstanding,Ödenecek
+Expense documents,Gider belgileri
+Carrier / carrier invoice,Taşıyıcı / taşıyıcı faturası
+System document,Sistemdeki belge
+Not posted,işlenmedi
+direct link,doğrudan bağlantı
+by weight,ağırlığa göre
+equal,eşit
+for whole invoice,tüm fatura için
+Add expense,Gider ekle
+Open all expenses for this invoice →,Bu faturanın tüm giderlerini aç →
+"Landed cost with transport: {landed_per_kg} {currency}/kg ({goods_per_kg} + {per_kg})","Taşıma dahil maliyet: {landed_per_kg} {currency}/kg ({goods_per_kg} + {per_kg})"
+Other expenses,Diğer giderler
+No transport expenses yet.,Henüz taşıma gideri yok.
+Transport by container,Konteyner taşıma gideri
+cont.,kont.

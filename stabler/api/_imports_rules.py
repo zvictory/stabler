@@ -1355,3 +1355,179 @@ def reconcile(pi_item_rows, ci_item_rows) -> dict:
 		"sub_cut": counts["sub_cut"],
 		"multi_pi_cis": sum(1 for pis in pis_per_ci.values() if len(pis) > 1),
 	}
+
+
+# ---------------------------------------------------------------------------
+# Transport Expense Allocation & Landed Cost Math
+# ---------------------------------------------------------------------------
+
+#: The transport chain categories.
+TRANSPORT_CATEGORIES: tuple[str, ...] = (
+	"Transport",
+	"Border Crossing",
+	"Handling",
+	"Storage",
+	"Insurance",
+)
+
+
+def calculate_ci_transport_costs(
+	raw_expenses: list[dict],
+	containers: list[dict],
+	ci_total_kg: float,
+	ci_agreed_total: float,
+	currency: str = "USD",
+) -> dict:
+	"""Calculate transport cost allocation across containers, vendor totals, and landed cost.
+
+	Pure math & classification, completely I/O free.
+
+	:param raw_expenses: list of Import Expense dicts
+	:param containers: list of dicts with {"name": str, "total_kg": float}
+	:param ci_total_kg: Commercial Invoice total_kg
+	:param ci_agreed_total: Commercial Invoice agreed_total
+	:param currency: Currency code (default "USD")
+	"""
+	num_containers = len(containers)
+	containers_total_kg = sum(float(c.get("total_kg") or 0.0) for c in containers)
+	by_container_map = {str(c.get("name")): 0.0 for c in containers if c.get("name")}
+
+	transport_rows = []
+	other_rows = []
+
+	for row in raw_expenses:
+		r = dict(row)
+		category = (r.get("category") or "").strip()
+		is_transport = category in TRANSPORT_CATEGORIES
+		r["is_transport"] = is_transport
+
+		if is_transport:
+			amt = float(r.get("amount") or 0.0)
+			cnt = r.get("container")
+			trk = r.get("truck")
+
+			if cnt:
+				r["allocation"] = "direct"
+				cnt_str = str(cnt)
+				if cnt_str in by_container_map:
+					by_container_map[cnt_str] += amt
+			elif trk:
+				r["allocation"] = "truck"
+			else:
+				if num_containers > 0:
+					if containers_total_kg > 0:
+						r["allocation"] = "weight"
+						for c in containers:
+							c_name = str(c.get("name"))
+							if c_name in by_container_map:
+								c_kg = float(c.get("total_kg") or 0.0)
+								by_container_map[c_name] += amt * (c_kg / containers_total_kg)
+					else:
+						r["allocation"] = "equal"
+						for c in containers:
+							c_name = str(c.get("name"))
+							if c_name in by_container_map:
+								by_container_map[c_name] += amt / num_containers
+				else:
+					r["allocation"] = "invoice"
+			transport_rows.append(r)
+		else:
+			r["allocation"] = "invoice"
+			other_rows.append(r)
+
+	other_total = sum(float(r.get("amount") or 0.0) for r in other_rows)
+	transport_total = sum(float(r.get("amount") or 0.0) for r in transport_rows)
+
+	paid_total: float | None = 0.0
+	for r in transport_rows:
+		bp, cp = r.get("bank_payment"), r.get("cash_payment")
+		if bp is None or cp is None:
+			paid_total = None
+			break
+		paid_total += float(bp or 0.0) + float(cp or 0.0)
+
+	outstanding_total = None if paid_total is None else transport_total - paid_total
+
+	vendor_groups: dict[str, dict] = {}
+	for r in transport_rows:
+		supp = (r.get("supplier") or "").strip() or "unspecified"
+		supp_name = (r.get("supplier_name") or supp).strip()
+		amt = float(r.get("amount") or 0.0)
+		inv_ref = (r.get("invoice_reference") or "").strip()
+
+		if supp not in vendor_groups:
+			vendor_groups[supp] = {
+				"supplier": supp,
+				"supplier_name": supp_name,
+				"invoices": set(),
+				"amount": 0.0,
+				"bank": 0.0,
+				"cash": 0.0,
+				"masked": False,
+			}
+
+		group = vendor_groups[supp]
+		if inv_ref:
+			group["invoices"].add(inv_ref)
+		else:
+			group["invoices"].add(str(r.get("name")))
+		group["amount"] += amt
+
+		bp, cp = r.get("bank_payment"), r.get("cash_payment")
+		if bp is None or cp is None:
+			group["masked"] = True
+		else:
+			group["bank"] += float(bp or 0.0)
+			group["cash"] += float(cp or 0.0)
+
+	by_vendor = []
+	for supp, g in vendor_groups.items():
+		amt = g["amount"]
+		if g["masked"]:
+			paid = None
+			outstanding = None
+		else:
+			paid = g["bank"] + g["cash"]
+			outstanding = amt - paid
+		by_vendor.append({
+			"supplier": g["supplier"],
+			"supplier_name": g["supplier_name"],
+			"docs": len(g["invoices"]),
+			"amount": round(amt, 2),
+			"paid": round(paid, 2) if paid is not None else None,
+			"outstanding": round(outstanding, 2) if outstanding is not None else None,
+		})
+
+	cargo_kg = float(ci_total_kg or 0.0)
+	per_container = transport_total / num_containers if num_containers > 0 else 0.0
+	per_kg = transport_total / cargo_kg if cargo_kg > 0 else 0.0
+	goods_per_kg = float(ci_agreed_total or 0.0) / cargo_kg if cargo_kg > 0 else 0.0
+	landed_per_kg = goods_per_kg + per_kg
+
+	by_container = [
+		{"container": k, "amount": round(v, 2)}
+		for k, v in by_container_map.items()
+	]
+
+	all_rows = transport_rows + other_rows
+
+	return {
+		"rows": all_rows,
+		"by_vendor": by_vendor,
+		"by_container": by_container,
+		"other_rows": other_rows,
+		"other_total": round(other_total, 2),
+		"totals": {
+			"transport": round(transport_total, 2),
+			"paid": round(paid_total, 2) if paid_total is not None else None,
+			"outstanding": round(outstanding_total, 2) if outstanding_total is not None else None,
+			"per_container": round(per_container, 2),
+			"per_kg": round(per_kg, 4),
+			"containers": num_containers,
+			"cargo_kg": round(cargo_kg, 2),
+			"goods_per_kg": round(goods_per_kg, 4),
+			"landed_per_kg": round(landed_per_kg, 4),
+		},
+		"currency": currency,
+	}
+

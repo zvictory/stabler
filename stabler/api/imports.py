@@ -2505,6 +2505,63 @@ def list_import_expenses(
 
 
 @frappe.whitelist()
+def ci_transport_costs(commercial_invoice: str) -> dict:
+	"""Transport cost allocation across containers, vendor totals, and landed cost for a CI."""
+	if not commercial_invoice or not frappe.db.exists("Commercial Invoice", commercial_invoice):
+		frappe.throw(_("Unknown Commercial Invoice: {0}").format(commercial_invoice))
+
+	ci_doc = frappe.get_doc("Commercial Invoice", commercial_invoice)
+	_assert_imports_access(ci_doc.company)
+	_assert_can_read("Commercial Invoice", commercial_invoice)
+
+	expenses = frappe.db.sql(
+		"""
+        SELECT ie.name, ie.commercial_invoice, ie.container, ie.truck, ie.category,
+               ie.expense_date, ie.supplier, s.supplier_name, ie.invoice_reference,
+               ie.description, ie.amount, ie.currency, ie.bank_payment, ie.cash_payment,
+               ie.status, ie.purchase_invoice
+        FROM `tabImport Expense` ie
+        LEFT JOIN `tabSupplier` s ON s.name = ie.supplier
+        WHERE ie.commercial_invoice = %(ci)s
+        ORDER BY ie.creation DESC, ie.name DESC
+        """,
+		{"ci": commercial_invoice},
+		as_dict=True,
+	)
+	for r in expenses:
+		r["expense_date"] = str(r["expense_date"]) if r.get("expense_date") else None
+		r["amount"] = flt(r.get("amount"))
+		if r.get("bank_payment") is not None:
+			r["bank_payment"] = flt(r["bank_payment"])
+		if r.get("cash_payment") is not None:
+			r["cash_payment"] = flt(r["cash_payment"])
+
+	rules.mask_named(expenses, rules.EXPENSE_MASK_FIELDS, _cost_visible())
+
+	containers = frappe.db.sql(
+		"""
+        SELECT c.name, c.total_kg
+        FROM `tabImport Container` c
+        WHERE c.commercial_invoice = %(ci)s
+        ORDER BY c.creation ASC
+        """,
+		{"ci": commercial_invoice},
+		as_dict=True,
+	)
+	for c in containers:
+		c["total_kg"] = flt(c.get("total_kg"))
+
+	return rules.calculate_ci_transport_costs(
+		raw_expenses=expenses,
+		containers=containers,
+		ci_total_kg=flt(ci_doc.total_kg),
+		ci_agreed_total=flt(ci_doc.agreed_total),
+		currency=ci_doc.currency or "USD",
+	)
+
+
+
+@frappe.whitelist()
 def get_import_expense(name: str):
 	"""Full Import Expense payload (bank/cash split masked per K3)."""
 	if not name or not frappe.db.exists("Import Expense", name):

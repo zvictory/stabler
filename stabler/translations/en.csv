@@ -5007,3 +5007,30 @@ Unknown item group: {0},Unknown item group: {0}
 The top-level category cannot be deleted.,The top-level category cannot be deleted.
 Cannot delete {0}: it has {1} subcategories.,Cannot delete {0}: it has {1} subcategories.
 Cannot delete {0}: {1} items still use it.,Cannot delete {0}: {1} items still use it.
+
+Transport expenses,Transport expenses
+Transport costs belong to third-party carriers. Expenses linked directly to a container are allocated directly; unassigned costs are distributed by weight.,Transport costs belong to third-party carriers. Expenses linked directly to a container are allocated directly; unassigned costs are distributed by weight.
+Total transport,Total transport
+Per container,Per container
+Per kg,Per kg
+paid {pct}% · {outstanding} to pay,paid {pct}% · {outstanding} to pay
+By carriers,By carriers
+Service provider,Service provider
+Docs,Docs
+Paid,Paid
+Outstanding,Outstanding
+Expense documents,Expense documents
+Carrier / carrier invoice,Carrier / carrier invoice
+System document,System document
+Not posted,not posted
+direct link,direct link
+by weight,by weight
+equal,equal
+for whole invoice,for whole invoice
+Add expense,Add expense
+Open all expenses for this invoice →,Open all expenses for this invoice →
+"Landed cost with transport: {landed_per_kg} {currency}/kg ({goods_per_kg} + {per_kg})","Landed cost with transport: {landed_per_kg} {currency}/kg ({goods_per_kg} + {per_kg})"
+Other expenses,Other expenses
+No transport expenses yet.,No transport expenses yet.
+Transport by container,Transport by container
+cont.,cont.

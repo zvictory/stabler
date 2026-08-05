@@ -5011,3 +5011,30 @@ Unknown item group: {0},Номаълум товар турғуни: {0}
 The top-level category cannot be deleted.,Юқори даражадаги турғунни ўчириб бўлмайди.
 Cannot delete {0}: it has {1} subcategories.,{0} ни ўчириб бўлмайди: унда {1} та қуйи турғун бор.
 Cannot delete {0}: {1} items still use it.,{0} ни ўчириб бўлмайди: уни ҳали ҳам {1} та товар ишлатмоқда.
+
+Transport expenses,Ташиш харажатлари
+Transport costs belong to third-party carriers. Expenses linked directly to a container are allocated directly; unassigned costs are distributed by weight.,Ташиш харажатлари учинчи томон ташувчиларига тегишли. Контейнерга тўғридан-тўғри бириктирилганлари тўғридан-тўғри, қолганлари вазн бўйича тақсимланади.
+Total transport,Жами ташиш
+Per container,Контейнерга
+Per kg,Кг учун
+paid {pct}% · {outstanding} to pay,{pct}% тўланган · {outstanding} тўланиши керак
+By carriers,Ташувчилар бўйича
+Service provider,Хизмат кўрсатувчи
+Docs,Ҳужжатлар
+Paid,Тўланган
+Outstanding,Тўланиши керак
+Expense documents,Харажат ҳужжатлари
+Carrier / carrier invoice,Ташувчи / ташувчи ҳисоб-фатураси
+System document,Тизимдаги ҳужжат
+Not posted,ўтказилмаган
+direct link,тўғридан-тўғри бириктириш
+by weight,вазн бўйича
+equal,тенг
+for whole invoice,бутун ҳисоб-фатура учун
+Add expense,Харажат қўшиш
+Open all expenses for this invoice →,Ушбу ҳисоб-фатура бўйича барча харажатларни очиш →
+"Landed cost with transport: {landed_per_kg} {currency}/kg ({goods_per_kg} + {per_kg})","Ташиш билан тан нархи: {landed_per_kg} {currency}/кг ({goods_per_kg} + {per_kg})"
+Other expenses,Бошқа харажатлар
+No transport expenses yet.,Ҳозирча ташиш харажатлари йўқ
+Transport by container,Контейнер бўйича ташиш
+cont.,конт.
