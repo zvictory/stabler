@@ -262,7 +262,7 @@ def _parse_landed(raw) -> list[dict]:
 		return []
 	try:
 		data = raw if isinstance(raw, list) else json.loads(raw)
-	except (ValueError, TypeError):
+	except ValueError, TypeError:
 		return []
 	out: list[dict] = []
 	for it in data if isinstance(data, list) else []:
@@ -650,7 +650,9 @@ def po_control_board(deal: str) -> dict:
 	lanes = []
 	for key, label in lanes_def:
 		lc = [c for c in cards if c["lane"] == key]
-		lanes.append({"key": key, "label": label, "count": len(lc), "total": sum(c["base_amount"] for c in lc)})
+		lanes.append(
+			{"key": key, "label": label, "count": len(lc), "total": sum(c["base_amount"] for c in lc)}
+		)
 
 	return {
 		"deal": deal,
@@ -901,9 +903,7 @@ def _linked_document_count(
 			"posting_date",
 		)
 	)
-	return sum(
-		1 for row in rows if _in_dashboard_period(row.get("posting_date"), start, end)
-	)
+	return sum(1 for row in rows if _in_dashboard_period(row.get("posting_date"), start, end))
 
 
 def _tender_finance_chain(
@@ -1081,7 +1081,7 @@ def _deal_kassa_actual(deal: str, company: str) -> tuple[list[dict], float]:
 def _num(v, d=0.0) -> float:
 	try:
 		return float(v)
-	except (TypeError, ValueError):
+	except TypeError, ValueError:
 		return d
 
 
@@ -1163,7 +1163,7 @@ def _bid_inputs(deal: str, company: str) -> tuple[dict, dict]:
 		if raw:
 			try:
 				stored = json.loads(raw) if not isinstance(raw, dict) else raw
-			except (ValueError, TypeError):
+			except ValueError, TypeError:
 				stored = {}
 	po_landed, po_count = _deal_landed(deal, company)
 	so_revenue, so_count = _deal_revenue(deal, company)
@@ -1305,7 +1305,7 @@ def save_deal_bid_pricing(deal: str, pricing) -> dict:
 		frappe.throw(_("Run migrate to enable bid pricing."))
 	try:
 		data = pricing if isinstance(pricing, dict) else json.loads(pricing)
-	except (ValueError, TypeError):
+	except ValueError, TypeError:
 		frappe.throw(_("Invalid pricing payload."))
 	# Keep only known keys; coerce cost lines.
 	clean = {
@@ -1497,7 +1497,7 @@ def _parse_intake(raw) -> dict:
 		return {}
 	try:
 		return raw if isinstance(raw, dict) else json.loads(raw)
-	except (ValueError, TypeError):
+	except ValueError, TypeError:
 		return {}
 
 
@@ -1628,7 +1628,7 @@ def save_deal_intake(deal: str, intake) -> dict:
 		frappe.throw(_("Run migrate to enable tender intake."))
 	try:
 		data = intake if isinstance(intake, dict) else json.loads(intake)
-	except (ValueError, TypeError):
+	except ValueError, TypeError:
 		frappe.throw(_("Invalid intake payload."))
 	clean = _clean_intake(data, _read_intake_for_update(deal))
 	frappe.db.set_value(
@@ -2204,9 +2204,7 @@ def tender_funnel(company: str, days: int = 90):
 		if not frappe.has_permission("CRM Deal", "read", doc=deal):
 			continue
 		intake = _read_intake(deal)
-		has_pricing = bool(
-			has_pricing_col and frappe.db.get_value("CRM Deal", deal, "custom_bid_pricing")
-		)
+		has_pricing = bool(has_pricing_col and frappe.db.get_value("CRM Deal", deal, "custom_bid_pricing"))
 		stage = _funnel.classify(
 			{
 				"go_no_go": intake.get("go_no_go"),
@@ -2223,7 +2221,7 @@ def tender_funnel(company: str, days: int = 90):
 			ref_date = frappe.db.get_value("CRM Deal", deal, "creation")
 		try:
 			in_window = getdate(ref_date) >= cutoff
-		except (TypeError, ValueError):
+		except TypeError, ValueError:
 			in_window = True
 		# Deadline urgency only matters (and only costs a computation) while open.
 		urgent = False
@@ -2238,18 +2236,20 @@ def tender_funnel(company: str, days: int = 90):
 		# number and its list can never disagree. Terminal stages only list
 		# in-window deals — exactly what the box counted.
 		if stage not in ("won", "lost") or in_window:
-			stage_rows.setdefault(stage, []).append({
-				"deal": deal,
-				"label": _deal_label(deal),
-				"lot_no": intake.get("lot_no") or "",
-				"buyer": intake.get("buyer") or "",
-				"bid_deadline": intake.get("bid_deadline") or "",
-				"delivery_deadline": intake.get("delivery_deadline") or "",
-				"sq_count": sq_counts.get(deal, 0),
-				"urgent": urgent,
-				"won_price": flt(intake.get("won_price")) or 0,
-				"result_at": str(intake.get("result_at") or "")[:10],
-			})
+			stage_rows.setdefault(stage, []).append(
+				{
+					"deal": deal,
+					"label": _deal_label(deal),
+					"lot_no": intake.get("lot_no") or "",
+					"buyer": intake.get("buyer") or "",
+					"bid_deadline": intake.get("bid_deadline") or "",
+					"delivery_deadline": intake.get("delivery_deadline") or "",
+					"sq_count": sq_counts.get(deal, 0),
+					"urgent": urgent,
+					"won_price": flt(intake.get("won_price")) or 0,
+					"result_at": str(intake.get("result_at") or "")[:10],
+				}
+			)
 
 	for lst in stage_rows.values():
 		lst.sort(key=lambda r: (not r["urgent"], r["bid_deadline"] or "9999-99-99"))
@@ -2264,20 +2264,30 @@ def tender_funnel(company: str, days: int = 90):
 		for r in frappe.get_all(
 			"Sales Order",
 			filters={"company": company, "custom_crm_deal": ["is", "set"], "docstatus": 1},
-			fields=["name", "custom_crm_deal", "custom_board_stage", "customer",
-				"rounded_total", "grand_total", "delivery_date", "currency"],
+			fields=[
+				"name",
+				"custom_crm_deal",
+				"custom_board_stage",
+				"customer",
+				"rounded_total",
+				"grand_total",
+				"delivery_date",
+				"currency",
+			],
 			limit_page_length=0,
 		):
 			so_stages.append(r.custom_board_stage)
-			so_rows.setdefault(_funnel.bucket_so(r.custom_board_stage), []).append({
-				"so": r.name,
-				"deal": r.custom_crm_deal,
-				"stage": r.custom_board_stage or "New",
-				"customer": r.customer,
-				"total": flt(r.rounded_total or r.grand_total),
-				"currency": r.currency or "",
-				"delivery_date": str(r.delivery_date) if r.delivery_date else "",
-			})
+			so_rows.setdefault(_funnel.bucket_so(r.custom_board_stage), []).append(
+				{
+					"so": r.name,
+					"deal": r.custom_crm_deal,
+					"stage": r.custom_board_stage or "New",
+					"customer": r.customer,
+					"total": flt(r.rounded_total or r.grand_total),
+					"currency": r.currency or "",
+					"delivery_date": str(r.delivery_date) if r.delivery_date else "",
+				}
+			)
 	out["so"] = _funnel.summarise_so(so_stages)
 	out["so_rows"] = so_rows
 	out["days"] = days
@@ -2304,7 +2314,7 @@ def _in_dashboard_period(value, start, end) -> bool:
 		return False
 	try:
 		day = getdate(value)
-	except (TypeError, ValueError):
+	except TypeError, ValueError:
 		return False
 	return start <= day <= end
 
@@ -2370,7 +2380,7 @@ def _intake_attention(deal: str, intake: dict, today_d) -> list[dict]:
 						"severity": "risk" if days_left < 0 else "warn",
 					}
 				)
-		except (TypeError, ValueError):
+		except TypeError, ValueError:
 			pass
 	missing = _docs_summary(intake)["missing"]
 	if intake.get("go_no_go") == "go" and missing:
@@ -2729,12 +2739,8 @@ def tender_dashboard(
 		start=start,
 		end=end,
 	)
-	execution["purchase_invoices"] = sum(
-		execution["invoice_status"]["purchase_invoices"].values()
-	)
-	execution["sales_invoices"] = sum(
-		execution["invoice_status"]["sales_invoices"].values()
-	)
+	execution["purchase_invoices"] = sum(execution["invoice_status"]["purchase_invoices"].values())
+	execution["sales_invoices"] = sum(execution["invoice_status"]["sales_invoices"].values())
 
 	attention.sort(key=lambda item: (0 if item["severity"] == "risk" else 1, item.get("days_left", 9999)))
 	out = {

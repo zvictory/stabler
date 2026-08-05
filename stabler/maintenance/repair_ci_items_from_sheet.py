@@ -87,7 +87,7 @@ def _norm_text(value) -> str:
 def _f(value) -> float:
 	try:
 		return float(str(value).replace("\xa0", "").replace(" ", "").replace(",", "."))
-	except (TypeError, ValueError):
+	except TypeError, ValueError:
 		return 0.0
 
 
@@ -297,7 +297,11 @@ def run(
 		}
 		if outside:
 			summary["skipped_supplier"].append(
-				{"ci_number": raw_number, "suppliers": sorted(outside), "mixed": len(outside) < len(suppliers)}
+				{
+					"ci_number": raw_number,
+					"suppliers": sorted(outside),
+					"mixed": len(outside) < len(suppliers),
+				}
 			)
 			continue
 		if not ci_name:
@@ -375,8 +379,17 @@ def run(
 			"Commercial Invoice Item",
 			filters={"parent": ci_name, "parenttype": "Commercial Invoice"},
 			fields=[
-				"name", "item", "category", "boxes", "box_weight_kg", "qty",
-				"rate", "docs_price", "amount", "docs_amount", "custom_proforma_invoice",
+				"name",
+				"item",
+				"category",
+				"boxes",
+				"box_weight_kg",
+				"qty",
+				"rate",
+				"docs_price",
+				"amount",
+				"docs_amount",
+				"custom_proforma_invoice",
 			],
 			order_by="idx asc",
 		)
@@ -426,7 +439,7 @@ def run(
 			doc.save()
 			frappe.db.commit()
 			summary["applied"].append(ci_name)
-		except Exception as exc:  # noqa: BLE001 — every failure is reported, none aborts the run
+		except Exception as exc:
 			frappe.db.rollback()
 			summary["failed"].append({"ci": ci_name, "error": str(exc)[:400]})
 
@@ -435,12 +448,8 @@ def run(
 	report_path = os.path.join(report_dir, f"ci_repair_report_{stamp}.json")
 	with open(backup_path, "w", encoding="utf-8") as fh:
 		json.dump(backup, fh, ensure_ascii=False, indent=1, default=str)
-	summary["unresolved_items"] = dict(
-		sorted(summary["unresolved_items"].items(), key=lambda kv: -kv[1])
-	)
-	summary["missing_pi_refs"] = dict(
-		sorted(summary["missing_pi_refs"].items(), key=lambda kv: -kv[1])
-	)
+	summary["unresolved_items"] = dict(sorted(summary["unresolved_items"].items(), key=lambda kv: -kv[1]))
+	summary["missing_pi_refs"] = dict(sorted(summary["missing_pi_refs"].items(), key=lambda kv: -kv[1]))
 	with open(report_path, "w", encoding="utf-8") as fh:
 		json.dump({"summary": summary, "details": details}, fh, ensure_ascii=False, indent=1, default=str)
 
@@ -502,7 +511,11 @@ def restore(backup_path: str, dry_run: int = 1):
 		for row in rows:
 			doc.append(
 				"items",
-				{k: v for k, v in row.items() if k not in ("name", "idx", "parent", "parenttype", "parentfield")},
+				{
+					k: v
+					for k, v in row.items()
+					if k not in ("name", "idx", "parent", "parenttype", "parentfield")
+				},
 			)
 		doc.flags.ignore_permissions = True
 		doc.save()
@@ -531,8 +544,15 @@ def verify(csv_path: str, company: str = "MSA", tolerance: float = 1.0, only_sup
 			continue
 		exp = expected.setdefault(
 			key,
-			{"ci_number": row.get("ci_number"), "lines": 0, "boxes": 0, "kg": 0.0,
-			 "agreed": 0.0, "docs": 0.0, "split": defaultdict(int)},
+			{
+				"ci_number": row.get("ci_number"),
+				"lines": 0,
+				"boxes": 0,
+				"kg": 0.0,
+				"agreed": 0.0,
+				"docs": 0.0,
+				"split": defaultdict(int),
+			},
 		)
 		# Mirror run()'s one-sided-price fallback exactly. Without this the
 		# checker disagrees with the writer on the handful of lines the book
@@ -551,12 +571,14 @@ def verify(csv_path: str, company: str = "MSA", tolerance: float = 1.0, only_sup
 		# the SAME category on the SAME invoice from TWO different proformas.
 		# Leave the PI out and a line booked against the wrong contract still
 		# passes — which is the error this whole repair is about.
-		exp["split"][(
-			pi_idx.get(_norm_ref(row.get("pi_ref"))) or f"?{(row.get('pi_ref') or '').strip()}",
-			_norm_text(row.get("category")),
-			cint(_f(row.get("boxes"))),
-			round(_f(row.get("qty_kg")), 2),
-		)] += 1
+		exp["split"][
+			(
+				pi_idx.get(_norm_ref(row.get("pi_ref"))) or f"?{(row.get('pi_ref') or '').strip()}",
+				_norm_text(row.get("category")),
+				cint(_f(row.get("boxes"))),
+				round(_f(row.get("qty_kg")), 2),
+			)
+		] += 1
 
 	ok, mismatched, missing = 0, [], []
 	for key, exp in sorted(expected.items()):
@@ -576,12 +598,14 @@ def verify(csv_path: str, company: str = "MSA", tolerance: float = 1.0, only_sup
 		)
 		actual_split = defaultdict(int)
 		for row in lines:
-			actual_split[(
-				row.pi or "(no PI)",
-				_norm_text(row.category),
-				cint(row.boxes),
-				round(flt(row.qty), 2),
-			)] += 1
+			actual_split[
+				(
+					row.pi or "(no PI)",
+					_norm_text(row.category),
+					cint(row.boxes),
+					round(flt(row.qty), 2),
+				)
+			] += 1
 
 		problems = []
 		if len(lines) != exp["lines"]:

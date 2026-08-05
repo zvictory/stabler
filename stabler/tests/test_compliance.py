@@ -26,18 +26,15 @@ class TestComplianceGLIntegrity(unittest.TestCase):
 		# D2 kuralı `acc.account_currency <> c.default_currency` üzerinden çalışır,
 		# dolayısıyla aradığımız şey "USD olmayan" değil, "şirketin tabanı olmayan"
 		# bir hesap (ör. UZS tabanlı şirkette USD kasası).
-		non_base_acc, non_base_currency = (
-			frappe.db.get_value(
-				"Account",
-				{
-					"company": self.company,
-					"account_currency": ["!=", self.base_currency],
-					"is_group": 0,
-				},
-				["name", "account_currency"],
-			)
-			or (None, None)
-		)
+		non_base_acc, non_base_currency = frappe.db.get_value(
+			"Account",
+			{
+				"company": self.company,
+				"account_currency": ["!=", self.base_currency],
+				"is_group": 0,
+			},
+			["name", "account_currency"],
+		) or (None, None)
 		if not non_base_acc:
 			self.skipTest("No non-base currency account found for testing")
 

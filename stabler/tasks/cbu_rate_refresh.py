@@ -107,7 +107,7 @@ def fetch_and_store() -> dict[str, Any]:
 			continue
 		try:
 			rate = float(row.get("Rate"))
-		except (TypeError, ValueError):
+		except TypeError, ValueError:
 			missing.append(code)
 			continue
 
@@ -154,7 +154,7 @@ def _fetch_cbu_for(on_date: datetime.date) -> dict[str, float]:
 		try:
 			if code in _TRACKED:
 				out[code] = float(row.get("Rate"))
-		except (TypeError, ValueError):
+		except TypeError, ValueError:
 			continue
 	return out
 

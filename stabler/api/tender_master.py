@@ -101,7 +101,7 @@ def _bid_at_risk(intake: dict, today_d) -> bool:
 		return False
 	try:
 		return getdate(deadline) < today_d
-	except (TypeError, ValueError):
+	except TypeError, ValueError:
 		return False
 
 

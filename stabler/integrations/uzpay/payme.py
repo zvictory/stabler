@@ -71,7 +71,7 @@ def _check_auth() -> None:
 		raise PaymeError(ERR_AUTH, "Insufficient privilege to perform this method.")
 	try:
 		decoded = base64.b64decode(header[6:]).decode("utf-8")
-	except (binascii.Error, UnicodeDecodeError):
+	except binascii.Error, UnicodeDecodeError:
 		raise PaymeError(ERR_AUTH, "Insufficient privilege to perform this method.")
 	_, _, password = decoded.partition(":")
 	if not password or not hmac.compare_digest(password, _merchant_key()):

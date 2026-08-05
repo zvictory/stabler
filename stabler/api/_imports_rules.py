@@ -337,7 +337,7 @@ def clamp_page_length(limit, default: int = 50, maximum: int = 200) -> int:
 	"""Normalise an SPA page-length arg into a safe 1..maximum int."""
 	try:
 		n = int(limit)
-	except (TypeError, ValueError):
+	except TypeError, ValueError:
 		return default
 	if n <= 0:
 		return default
@@ -404,7 +404,7 @@ def truck_receipt_filter_clauses(search=None, grn=None, docstatus=None):
 		try:
 			params["docstatus"] = int(docstatus)
 			clauses.append("r.docstatus = %(docstatus)s")
-		except (TypeError, ValueError):
+		except TypeError, ValueError:
 			pass
 	return clauses, params
 
@@ -1017,7 +1017,7 @@ def is_keyed(key) -> bool:
 def _num(value) -> float:
 	try:
 		out = float(value or 0)
-	except (TypeError, ValueError):
+	except TypeError, ValueError:
 		return 0.0
 	return out if math.isfinite(out) else 0.0
 
@@ -1481,7 +1481,7 @@ def calculate_ci_transport_costs(
 			group["cash"] += float(cp or 0.0)
 
 	by_vendor = []
-	for supp, g in vendor_groups.items():
+	for _supp, g in vendor_groups.items():
 		amt = g["amount"]
 		if g["masked"]:
 			paid = None
@@ -1489,14 +1489,16 @@ def calculate_ci_transport_costs(
 		else:
 			paid = g["bank"] + g["cash"]
 			outstanding = amt - paid
-		by_vendor.append({
-			"supplier": g["supplier"],
-			"supplier_name": g["supplier_name"],
-			"docs": len(g["invoices"]),
-			"amount": round(amt, 2),
-			"paid": round(paid, 2) if paid is not None else None,
-			"outstanding": round(outstanding, 2) if outstanding is not None else None,
-		})
+		by_vendor.append(
+			{
+				"supplier": g["supplier"],
+				"supplier_name": g["supplier_name"],
+				"docs": len(g["invoices"]),
+				"amount": round(amt, 2),
+				"paid": round(paid, 2) if paid is not None else None,
+				"outstanding": round(outstanding, 2) if outstanding is not None else None,
+			}
+		)
 
 	cargo_kg = float(ci_total_kg or 0.0)
 	per_container = transport_total / num_containers if num_containers > 0 else 0.0
@@ -1504,10 +1506,7 @@ def calculate_ci_transport_costs(
 	goods_per_kg = float(ci_agreed_total or 0.0) / cargo_kg if cargo_kg > 0 else 0.0
 	landed_per_kg = goods_per_kg + per_kg
 
-	by_container = [
-		{"container": k, "amount": round(v, 2)}
-		for k, v in by_container_map.items()
-	]
+	by_container = [{"container": k, "amount": round(v, 2)} for k, v in by_container_map.items()]
 
 	all_rows = transport_rows + other_rows
 
@@ -1530,4 +1529,3 @@ def calculate_ci_transport_costs(
 		},
 		"currency": currency,
 	}
-

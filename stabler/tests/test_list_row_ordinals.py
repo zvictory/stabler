@@ -44,9 +44,7 @@ class TestCommercialInvoiceOrdinal(unittest.TestCase):
 
 class TestResponsiveSkeletonOrdinal(unittest.TestCase):
 	def test_first_placeholder_cell_can_follow_the_hidden_ordinal_column(self):
-		source = (_ROOT / "public" / "js" / "components" / "SkeletonRows.vue").read_text(
-			encoding="utf-8"
-		)
+		source = (_ROOT / "public" / "js" / "components" / "SkeletonRows.vue").read_text(encoding="utf-8")
 		self.assertIn("hideFirstOnMobile", source)
 		self.assertIn("'d-none d-md-table-cell': hideFirstOnMobile && c === 1", source)
 

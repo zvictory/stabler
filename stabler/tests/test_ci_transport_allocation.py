@@ -1,6 +1,6 @@
 """Unit tests for CI transport expense allocation and landed cost calculation.
 
-    PYTHONPATH=$PWD python3 -m unittest stabler.tests.test_ci_transport_allocation -v
+PYTHONPATH=$PWD python3 -m unittest stabler.tests.test_ci_transport_allocation -v
 """
 
 from __future__ import annotations

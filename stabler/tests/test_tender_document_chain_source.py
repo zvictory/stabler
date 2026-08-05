@@ -46,7 +46,9 @@ class TestTenderDocumentChainSource(unittest.TestCase):
 		column the child table really has."""
 		self.assertIn("item_link_field: str | None = None", self.helper)
 		self.assertIn("column = item_link_field or link_field", self.helper)
-		self.assertRegex(self.helper, re.compile(r'filters=\{"parent": \["in", parent_names\], column:', re.S))
+		self.assertRegex(
+			self.helper, re.compile(r'filters=\{"parent": \["in", parent_names\], column:', re.S)
+		)
 		self.assertIn('fields=["parent", column]', self.helper)
 		self.assertIn("link.get(column)", self.helper)
 

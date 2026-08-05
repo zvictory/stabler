@@ -2560,7 +2560,6 @@ def ci_transport_costs(commercial_invoice: str) -> dict:
 	)
 
 
-
 @frappe.whitelist()
 def get_import_expense(name: str):
 	"""Full Import Expense payload (bank/cash split masked per K3)."""
@@ -4459,7 +4458,7 @@ def _attach_proforma_match_rollups(rows: list[dict]) -> None:
 				over += rem["over_boxes"]
 			else:
 				remaining += rem["remaining_boxes"]
-		for key, entry in shipped.items():
+		for _key, entry in shipped.items():
 			shipped_boxes += entry.get("boxes", 0)
 		# CI lines whose key is on no PI line: reported, never netted.
 		unattributable = sum(
@@ -6522,8 +6521,10 @@ def imports_flow(company: str):
 	ci_status_map = {
 		r.name: r.status
 		for r in frappe.get_all(
-			"Commercial Invoice", filters={"company": company},
-			fields=["name", "status"], limit_page_length=0,
+			"Commercial Invoice",
+			filters={"company": company},
+			fields=["name", "status"],
+			limit_page_length=0,
 		)
 	}
 	fleet: dict[str, list] = {}
@@ -6564,9 +6565,7 @@ def imports_flow(company: str):
 		if not has_required_flag:
 			for d in declarations:
 				d["required_for_departure"] = 1
-		verdict = departure_math.may_depart(
-			declarations, vet_valid=has_valid_vet_cert(ci_name)
-		)
+		verdict = departure_math.may_depart(declarations, vet_valid=has_valid_vet_cert(ci_name))
 		if not verdict["allowed"]:
 			gate["blocked"] += n
 
@@ -6651,7 +6650,9 @@ def _add_refs(refs: dict, doctype: str, rows) -> None:
 	for row in rows or []:
 		if row.get("name") and row["name"] not in seen:
 			seen.add(row["name"])
-			refs.setdefault(doctype, []).append({"name": row["name"], "docstatus": cint(row.get("docstatus"))})
+			refs.setdefault(doctype, []).append(
+				{"name": row["name"], "docstatus": cint(row.get("docstatus"))}
+			)
 
 
 def _ci_reference_rows(company: str, ci: str) -> dict:
@@ -6789,9 +6790,9 @@ def _cascade_modes(cascade: dict) -> dict:
 def _assert_cascade_allowed(plan: dict, cascade: int) -> None:
 	if plan["cascade"] and not cint(cascade):
 		frappe.throw(
-			_("{0} linked record(s) still hang off this document — confirm “delete linked records” first.").format(
-				_cascade_count(plan["cascade"])
-			)
+			_(
+				"{0} linked record(s) still hang off this document — confirm “delete linked records” first."
+			).format(_cascade_count(plan["cascade"]))
 		)
 
 
@@ -6921,6 +6922,8 @@ def unlink_proforma_from_ci(company: str, proforma: str, commercial_invoice: str
 		and frappe.db.has_column("Commercial Invoice", "custom_proforma_invoice")
 		and frappe.db.get_value("Commercial Invoice", target, "custom_proforma_invoice") == proforma
 	):
-		frappe.db.set_value("Commercial Invoice", target, "custom_proforma_invoice", None, update_modified=False)
+		frappe.db.set_value(
+			"Commercial Invoice", target, "custom_proforma_invoice", None, update_modified=False
+		)
 
 	return {"proforma": proforma, "status": pi.status, "commercial_invoice": None, "changed": True}

@@ -60,7 +60,7 @@ def human_size(num_bytes) -> str:
 	"""Bytes → human string (e.g. '12.3 MB'). Pure, locale-free."""
 	try:
 		n = float(num_bytes)
-	except (TypeError, ValueError):
+	except TypeError, ValueError:
 		return "—"
 	for unit in ("B", "KB", "MB", "GB", "TB"):
 		if abs(n) < 1024.0:
@@ -197,7 +197,7 @@ def prune_by_policy(
 				if yw not in seen_weeks:
 					seen_weeks[yw] = k
 				# Keep only the newest (first encountered in newest-first order).
-			except (ValueError, AttributeError):
+			except ValueError, AttributeError:
 				continue
 
 		# Take the keep_weekly most-recent ISO weeks.

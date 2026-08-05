@@ -127,7 +127,7 @@ def summarise(batches) -> dict:
 def _pos(v) -> float:
 	try:
 		f = float(v or 0)
-	except (TypeError, ValueError):
+	except TypeError, ValueError:
 		return 0.0
 	return f if f > 0 else 0.0
 

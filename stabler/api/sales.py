@@ -500,7 +500,6 @@ def list_customers_with_balances(
 	}
 
 
-
 @frappe.whitelist()
 def customer_children_balance_map(company: str):
 	"""{parent_name: cumulative children balance} for the whole company.
@@ -2122,6 +2121,7 @@ def create_sales_invoice(
 	# without considering the SO currency. Ensure debit_to matches the document currency.
 	if doc.customer and doc.currency:
 		from stabler.api._accounts import resolve_party_account
+
 		doc.debit_to = resolve_party_account("Customer", doc.customer, doc.company, doc.currency)
 
 	if isinstance(item_overrides, str):

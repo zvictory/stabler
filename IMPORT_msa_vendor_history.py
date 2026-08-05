@@ -83,28 +83,37 @@ TARGETS = {
 		"ostatok": 9_142_255.54 + 168_000.00,
 	},
 	"FAIR EXPORTS (INDIA) PVT. LTD.": {
-		"pi_total": 12_442_643.99, "paid_bank": 9_360_541.00,
-		"paid_cash": 0.0, "ostatok": 3_082_102.99,
+		"pi_total": 12_442_643.99,
+		"paid_bank": 9_360_541.00,
+		"paid_cash": 0.0,
+		"ostatok": 3_082_102.99,
 	},
 	"Mirha Exports Private limited": {
-		"pi_total": 16_563_686.80, "paid_bank": 13_859_075.88,
-		"paid_cash": 1_236_661.00, "ostatok": 1_467_949.92,
+		"pi_total": 16_563_686.80,
+		"paid_bank": 13_859_075.88,
+		"paid_cash": 1_236_661.00,
+		"ostatok": 1_467_949.92,
 	},
 	"IFF India Frozen Foods Private Limited": {
-		"pi_total": 2_430_400.00, "paid_bank": 1_944_320.00,
+		"pi_total": 2_430_400.00,
+		"paid_bank": 1_944_320.00,
 		"paid_cash": 486_296.70,  # itemized; sheet header says 486_079.70 (+217 drift)
 		"ostatok": 0.30,
 	},
 	"AL-SUPER FROZEN FOODS PVT. LTD": {
-		"pi_total": 11_037_600.00, "paid_bank": 8_338_400.00,
+		"pi_total": 11_037_600.00,
+		"paid_bank": 8_338_400.00,
 		# itemized bank is 63 988 BELOW the sheet header (8 402 388) and total
 		# 32 612 ABOVE header N — the workbook disagrees with itself; we import
 		# the itemized rows and compare() shows both.
-		"paid_cash": 197_680.00, "ostatok": 2_437_532.00,
+		"paid_cash": 197_680.00,
+		"ostatok": 2_437_532.00,
 	},
 	"AL-DUA": {
-		"pi_total": 1_264_230.00, "paid_bank": 242_000.00,
-		"paid_cash": 0.0, "ostatok": 1_022_230.00,
+		"pi_total": 1_264_230.00,
+		"paid_bank": 242_000.00,
+		"paid_cash": 0.0,
+		"ostatok": 1_022_230.00,
 	},
 }
 
@@ -132,13 +141,19 @@ def audit():
 	"""Read-only. Everything the write phases need decided, in one screen."""
 	frappe.set_user("Administrator")
 	rows = _rows()
-	print(f"CSV: {len(rows)} rows, {min(r['posting_date'] for r in rows)} → {max(r['posting_date'] for r in rows)}")
+	print(
+		f"CSV: {len(rows)} rows, {min(r['posting_date'] for r in rows)} → {max(r['posting_date'] for r in rows)}"
+	)
 
 	# fiscal years
 	fys = frappe.get_all("Fiscal Year", fields=["name", "year_start_date", "year_end_date", "disabled"])
-	print("\n— Fiscal Years:", [(f.name, str(f.year_start_date), str(f.year_end_date), f.disabled) for f in fys])
+	print(
+		"\n— Fiscal Years:", [(f.name, str(f.year_start_date), str(f.year_end_date), f.disabled) for f in fys]
+	)
 	for y in ("2025", "2026"):
-		if not any(str(f.year_start_date) <= f"{y}-06-01" <= str(f.year_end_date) and not f.disabled for f in fys):
+		if not any(
+			str(f.year_start_date) <= f"{y}-06-01" <= str(f.year_end_date) and not f.disabled for f in fys
+		):
 			print(f"  !! no open Fiscal Year covering {y} — ensure_fiscal_years() will create it")
 
 	# supplier candidates
@@ -258,7 +273,8 @@ def ensure_accounts(dry_run=1):
 		grp = frappe.get_all(
 			"Account",
 			filters={"company": COMPANY, "is_group": 1, "account_type": acc_type},
-			pluck="name", limit=1,
+			pluck="name",
+			limit=1,
 		)
 		return grp[0] if grp else None
 
@@ -302,8 +318,10 @@ def ensure_accounts(dry_run=1):
 		frappe.db.commit()
 	print("\nACCOUNTS =", ACCOUNTS)
 	print("BANK_OVERRIDES =", BANK_OVERRIDES)
-	print("Rule: paid_from = BANK_OVERRIDES[bank_label] or ACCOUNTS[channel]; "
-		"paid_to (payable) always comes from the CoA defaults via _apply_pay_accounts.")
+	print(
+		"Rule: paid_from = BANK_OVERRIDES[bank_label] or ACCOUNTS[channel]; "
+		"paid_to (payable) always comes from the CoA defaults via _apply_pay_accounts."
+	)
 
 
 # ---------------------------------------------------------------- PHASE B ----
@@ -400,7 +418,9 @@ def convert_cis(dry_run=1):
 					already += 1
 					continue
 				if not prev.get("reconciles_agreed"):
-					exceptions.append((c.name, "lines != agreed_total", prev.get("lines_total"), c.agreed_total))
+					exceptions.append(
+						(c.name, "lines != agreed_total", prev.get("lines_total"), c.agreed_total)
+					)
 					continue
 				if not c.ci_date:
 					exceptions.append((c.name, "no ci_date", None, None))

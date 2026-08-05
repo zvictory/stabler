@@ -37,7 +37,7 @@ def _d(v) -> Decimal:
 		return v
 	try:
 		return Decimal(str(v))
-	except (InvalidOperation, TypeError, ValueError):
+	except InvalidOperation, TypeError, ValueError:
 		return Decimal("0")
 
 

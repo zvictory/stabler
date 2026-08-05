@@ -152,10 +152,12 @@ def run(company: str, apply: int = 0, skip_org_prefix: str | None = None):
 		groups.setdefault(row["group_key"], []).append(row)
 
 	mode = "APPLY" if apply else "DRY-RUN"
-	print(f"[{mode}] {company}: {len(deals)} candidates — "
+	print(
+		f"[{mode}] {company}: {len(deals)} candidates — "
 		f"{len(plan)} to link across {len(groups)} parent tenders; "
 		f"skipped: {skipped_linked} already linked, {skipped_foreign} foreign-company, "
-		f"{skipped_prefix} by prefix.")
+		f"{skipped_prefix} by prefix."
+	)
 
 	created = linked = reused = 0
 	for group_key, rows in sorted(groups.items()):
@@ -202,9 +204,9 @@ def run(company: str, apply: int = 0, skip_org_prefix: str | None = None):
 
 	if apply:
 		frappe.db.commit()
-		_logger.info(
-			"link_tender_lots %s: created=%s reused=%s linked=%s", company, created, reused, linked
-		)
-	print(f"[{mode}] done — parents created: {created}, reused: {reused}, "
-		f"lots linked: {linked if apply else len(plan)}{'' if apply else ' (planned)'}")
+		_logger.info("link_tender_lots %s: created=%s reused=%s linked=%s", company, created, reused, linked)
+	print(
+		f"[{mode}] done — parents created: {created}, reused: {reused}, "
+		f"lots linked: {linked if apply else len(plan)}{'' if apply else ' (planned)'}"
+	)
 	return {"created": created, "reused": reused, "linked": linked, "planned": len(plan)}

@@ -189,7 +189,7 @@ def simulate_day(
 	if device_late_min not in (None, ""):
 		try:
 			dlm = int(device_late_min)
-		except (TypeError, ValueError):
+		except TypeError, ValueError:
 			dlm = None
 
 	return summarize_day(

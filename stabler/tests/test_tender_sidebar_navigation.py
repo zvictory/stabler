@@ -8,9 +8,7 @@ import unittest
 _HERE = os.path.dirname(os.path.abspath(__file__))
 _SIDEBAR = os.path.normpath(os.path.join(_HERE, "..", "public", "js", "components", "Sidebar.vue"))
 _ROUTER = os.path.normpath(os.path.join(_HERE, "..", "public", "js", "router.js"))
-_TENDER_NAV = os.path.normpath(
-	os.path.join(_HERE, "..", "public", "js", "pages", "tender", "TenderNav.vue")
-)
+_TENDER_NAV = os.path.normpath(os.path.join(_HERE, "..", "public", "js", "pages", "tender", "TenderNav.vue"))
 
 
 class TestTenderSidebarNavigation(unittest.TestCase):
