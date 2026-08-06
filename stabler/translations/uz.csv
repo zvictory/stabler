@@ -5489,7 +5489,7 @@ Customs charges,Bojxona xarajatlari
 Open PO,Buyurtmani ochish
 PO Control,Buyurtmalar nazorati
 Transport expenses,Tashish xarajatlari
-Transport costs belong to third-party carriers. Expenses linked directly to a container are allocated directly; unassigned costs are distributed by weight.,Tashish xarajatlari uchinchi tomon tashuvchilariga tegishli. Konteynerga to'g'ridan-to'g'ri biriktirilganlari to'g'ridan-to'g'ri, qolganlari vazn bo'yicha taqsimlanadi.
+"Transport costs belong to third-party carriers. Expenses linked directly to a container are allocated directly; unassigned costs are distributed by weight.","Tashish xarajatlari uchinchi tomon tashuvchilariga tegishli. Konteynerga to'g'ridan-to'g'ri biriktirilganlari to'g'ridan-to'g'ri, qolganlari vazn bo'yicha taqsimlanadi."
 Total transport,Jami tashish
 Per container,Konteynerga
 paid {pct}% · {outstanding} to pay,{pct}% to'langan · {outstanding} to'lanishi kerak

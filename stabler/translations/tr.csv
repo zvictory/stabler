@@ -5484,7 +5484,7 @@ Customs charges,Gümrük masrafları
 Open PO,Siparişi Aç
 PO Control,Sipariş Kontrolü
 Transport expenses,Taşıma giderleri
-Transport costs belong to third-party carriers. Expenses linked directly to a container are allocated directly; unassigned costs are distributed by weight.,Taşıma giderleri üçüncü taraf taşıyıcılara aittir. Konteynere doğrudan bağlı giderler doğrudan, diğerleri ağırlığa göre dağıtılır.
+"Transport costs belong to third-party carriers. Expenses linked directly to a container are allocated directly; unassigned costs are distributed by weight.","Taşıma giderleri üçüncü taraf taşıyıcılara aittir. Konteynere doğrudan bağlı giderler doğrudan, diğerleri ağırlığa göre dağıtılır."
 Total transport,Toplam taşıma
 Per container,Konteyner başına
 paid {pct}% · {outstanding} to pay,%{pct} ödendi · {outstanding} ödenecek

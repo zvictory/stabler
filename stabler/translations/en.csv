@@ -5525,7 +5525,7 @@ open PI →,open PI →
 Advance 70%,Advance 70%
 Telex / BL,Telex / BL
 Gate-in → ГТД,Gate-in → Customs Decl.
-Transport, expenses & supplier bills,Transport, expenses & supplier bills
+"Transport, expenses & supplier bills","Transport, expenses & supplier bills"
 Supplier bills,Supplier bills
 Expenses without bills,Expenses without bills
 All expenses are billed.,All expenses are billed.
@@ -5546,7 +5546,6 @@ Document status,Document status
 Vet Certificate,Vet Certificate
 Customs Declaration,Customs Declaration
 over-shipped,over-shipped
-
 Attach file,Attach file
 Could not attach document.,Could not attach document.
 Could not load documents.,Could not load documents.

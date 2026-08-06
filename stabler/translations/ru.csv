@@ -5495,7 +5495,7 @@ Customs charges,Таможенные расходы
 Open PO,Открыть PO
 PO Control,Контроль заказов
 Transport expenses,Транспортные расходы
-Transport costs belong to third-party carriers. Expenses linked directly to a container are allocated directly; unassigned costs are distributed by weight.,Расходы относятся к сторонним перевозчикам. Прямо привязанные к контейнеру распределяются напрямую, остальные — по весу.
+"Transport costs belong to third-party carriers. Expenses linked directly to a container are allocated directly; unassigned costs are distributed by weight.","Расходы относятся к сторонним перевозчикам. Прямо привязанные к контейнеру распределяются напрямую, остальные — по весу."
 Total transport,Всего транспорт
 Per container,На контейнер
 paid {pct}% · {outstanding} to pay,оплачено {pct}% · {outstanding} к оплате
@@ -5535,7 +5535,7 @@ Advance 70%,Аванс 70%
 Telex / BL,Телекс / BL
 Gate-in → ГТД,Gate-in → ГТД
 Supplier bills,Счета поставщиков
-Expenses without bills,Расходы, по которым счёта ещё нет
+"Expenses without bills","Расходы, по которым счёта ещё нет"
 All expenses are billed.,Все расходы уже со счетами.
 No supplier bills linked yet.,Счета поставщиков пока не привязаны.
 Reconciliation: expenses {exp} − bills {bills} = {unbilled} unbilled,Сверка: расходы {exp} − счета на логистику {bills} = {unbilled} без счёта
