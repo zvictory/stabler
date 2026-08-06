@@ -11,7 +11,7 @@
  * READ-ONLY PROJECTION (R3). Moving a card across lanes is driven by uploading actual
  * documents or creating a GTD declaration, never by dragging cards around.
  */
-import { computed, onMounted, ref } from "vue";
+import { computed, onMounted, ref, watch } from "vue";
 import { storeToRefs } from "pinia";
 import { useRoute, useRouter } from "vue-router";
 import { useSession } from "../../stores/session.js";

@@ -12,7 +12,7 @@
  * READ-ONLY PROJECTION (R3). Moving a card across lanes is driven by actual shipment updates,
  * container tracking, or goods receipts — never by dragging cards around.
  */
-import { computed, onMounted, ref } from "vue";
+import { computed, onMounted, ref, watch } from "vue";
 import { storeToRefs } from "pinia";
 import { useRoute, useRouter } from "vue-router";
 import { useSession } from "../../stores/session.js";
