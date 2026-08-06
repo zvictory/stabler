@@ -42,8 +42,11 @@ def parse_doc_requirements(raw: Any) -> list[dict[str, Any]]:
 	for item in parsed:
 		if not isinstance(item, dict):
 			continue
-		key = str(item.get("key") or item.get("label") or "").strip().lower().replace(" ", "_")
-		label = str(item.get("label") or item.get("key") or "").strip()
+		# `name` is the pre-document-center intake schema (`[{name, status}]`).
+		# Without this fallback every such row fails the `if not label` guard
+		# below and the whole checklist parses to zero requirements.
+		key = str(item.get("key") or item.get("label") or item.get("name") or "").strip().lower().replace(" ", "_")
+		label = str(item.get("label") or item.get("key") or item.get("name") or "").strip()
 		if not label:
 			continue
 		required = bool(item.get("required", True))
@@ -76,7 +79,11 @@ def parse_doc_requirements(raw: Any) -> list[dict[str, Any]]:
 		file_count = len(clean_files)
 		is_waived = bool(waiver_reason_str)
 		is_done = file_count > 0 or is_waived
-		legacy_done = bool(item.get("done", False))
+		# Legacy `status: ready` is the same kind of claim as a hand-set `done`:
+		# somebody ticked it off without attaching anything. It therefore feeds
+		# `unverified`, never `done` — otherwise the old flag would keep
+		# satisfying the ready-gate that K2/K3 deliberately took away from it.
+		legacy_done = bool(item.get("done", False)) or str(item.get("status") or "").strip().lower() == "ready"
 		unverified = legacy_done and not is_done
 		cleaned.append({
 			"key": key,

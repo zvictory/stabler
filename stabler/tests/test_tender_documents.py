@@ -120,6 +120,30 @@ class TestParseDocRequirements(unittest.TestCase):
 		self.assertFalse(res[0]["done"])  # derived done is False (no file/waiver)
 		self.assertTrue(res[0]["unverified"])  # but the legacy flag is surfaced
 
+	def test_legacy_name_status_rows_survive_parsing(self):
+		"""Pre-document-center intake rows are `[{name, status}]`.
+
+		Without the `name` fallback every one of them fails the `if not label`
+		guard, so an existing tender's whole checklist parses to zero
+		requirements and the document center silently shows nothing to do.
+		"""
+		from stabler.api._tender_documents import parse_doc_requirements
+
+		res = parse_doc_requirements([
+			{"name": "Texnik spetsifikatsiya", "status": "ready"},
+			{"name": "Narx taklifi", "status": "pending"},
+		])
+		self.assertEqual(len(res), 2)
+		self.assertEqual(res[0]["label"], "Texnik spetsifikatsiya")
+		self.assertEqual(res[0]["key"], "texnik_spetsifikatsiya")
+		# `ready` is a hand-tick with nothing attached — same standing as the
+		# legacy `done` flag, so it may surface as unverified but must never
+		# satisfy the ready-gate on its own.
+		self.assertFalse(res[0]["done"])
+		self.assertTrue(res[0]["unverified"])
+		self.assertFalse(res[1]["done"])
+		self.assertFalse(res[1]["unverified"])
+
 	def test_key_derived_from_label_and_slugged(self):
 		from stabler.api._tender_documents import parse_doc_requirements
 
@@ -186,7 +210,7 @@ class TestDefaultDocRequirements(unittest.TestCase):
 
 def _load_api(fake: _FakeFrappe):
 	"""Load tender_documents.py against a fake Frappe (no bench required)."""
-	for name in ("stabler.api.tender_documents",):
+	for name in ("stabler.api.tender_documents", "stabler.api.tender_master"):
 		sys.modules.pop(name, None)
 
 	frappe = types.ModuleType("frappe")
@@ -213,13 +237,14 @@ def _load_api(fake: _FakeFrappe):
 	import importlib
 	pure = importlib.import_module("stabler.api._tender_documents")
 
-	# permissions + tender expose the three scope helpers the API imports.
-	permissions = types.ModuleType("stabler.api.permissions")
-	permissions._assert_company_scope = lambda company=None: company or "ACME"
+	# tender_master exposes _assert_company_scope (the canonical str-returning
+	# wrapper); tender exposes the two role/module gates the API imports.
+	tender_master_mod = types.ModuleType("stabler.api.tender_master")
+	tender_master_mod._assert_company_scope = lambda company=None: company or "ACME"
 	tender_mod = types.ModuleType("stabler.api.tender")
 	tender_mod._require_tender = lambda _company=None: None
 	tender_mod._require_tender_view = lambda _view, _company: None
-	sys.modules["stabler.api.permissions"] = permissions
+	sys.modules["stabler.api.tender_master"] = tender_master_mod
 	sys.modules["stabler.api.tender"] = tender_mod
 	sys.modules["stabler.api._tender_documents"] = pure
 
