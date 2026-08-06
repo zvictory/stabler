@@ -2055,6 +2055,11 @@ def _po_rows_for_views(company: str) -> tuple[list, bool]:
 		order_by="schedule_date asc",
 		limit_page_length=2000,
 	)
+	# get_all ignores permissions by design, so the row-level check is ours to
+	# make — the way every other board in this file does it. Both callers
+	# (declarant_queue, logist_board) render supplier, amount and landed cost,
+	# so an unfiltered fetch showed a user every tender PO in the company.
+	rows = [row for row in rows if frappe.has_permission("Purchase Order", "read", doc=row.name)]
 	return rows, has_landed
 
 
