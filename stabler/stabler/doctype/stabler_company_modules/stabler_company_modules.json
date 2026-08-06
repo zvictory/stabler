@@ -23,7 +23,8 @@
   "enable_remittance",
   "enable_installment",
   "enable_imports",
-  "enable_agreements"
+  "enable_agreements",
+  "enable_valuation_guard"
  ],
  "fields": [
   {
@@ -163,6 +164,14 @@
    "fieldtype": "Check",
    "in_list_view": 1,
    "label": "Agreements"
+  },
+  {
+   "default": "0",
+   "description": "Blocks stock-valuation poisoning: mistyped purchase rates, incoming_rate entered in transaction currency, and manufacturing entries valued far above the bin. Thresholds live in Stabler Settings. OFF by default.",
+   "fieldname": "enable_valuation_guard",
+   "fieldtype": "Check",
+   "in_list_view": 1,
+   "label": "Valuation Guard"
   }
  ],
  "index_web_pages_for_search": 1,

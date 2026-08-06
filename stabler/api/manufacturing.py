@@ -11,6 +11,7 @@ from frappe.utils import flt, getdate, today
 from stabler.api._common import _assert_can_read, _assert_can_write, _require_company
 from stabler.api.approvals import _assert_company_scope
 from stabler.api.organization import _can_access_module
+from stabler.api.valuation_guard import assert_stock_entry_valuation_sane
 
 # ----- Role helpers ---------------------------------------------------------
 
@@ -579,6 +580,7 @@ def make_work_order_stock_entry(
 				item.t_warehouse = to_warehouse
 			item.allow_zero_valuation_rate = 1
 
+	assert_stock_entry_valuation_sane(se)
 	se.insert(ignore_permissions=False)
 	se.submit()
 

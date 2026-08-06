@@ -32,6 +32,7 @@ DEFAULT_MODULE_ENABLED = {
 	"installment": False,
 	"imports": False,
 	"agreements": False,
+	"valuation_guard": False,
 }
 
 

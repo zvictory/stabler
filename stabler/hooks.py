@@ -76,6 +76,8 @@ scheduler_events = {
 		# Seal the audit hash-chain nightly (gap #42 tamper-evidence).
 		"stabler.api.audit.seal_audit_log",
 		"stabler.tasks.eta_payment_alert.check_upcoming_deadlines",
+		# Watch the repost queue — both COGS poisonings survived on its silence.
+		"stabler.tasks.repost_queue_alert.check_repost_queue",
 	],
 	"weekly": [
 		# Two-tier backup retention pruning (gap #47).
@@ -108,6 +110,7 @@ doc_events = {
 		"validate": [
 			"stabler.api.period_close.enforce_on_validate",
 			"stabler.customer_hooks.check_sales_invoice_credit_limit",
+			"stabler.api.valuation_guard.check_incoming_rate_currency",
 		],
 		"before_submit": [
 			"stabler.api.sod_enforce.assert_no_sod_conflict",
@@ -136,6 +139,7 @@ doc_events = {
 		],
 		"validate": [
 			"stabler.api.period_close.enforce_on_validate",
+			"stabler.api.valuation_guard.check_purchase_invoice_rates",
 		],
 		"before_submit": [
 			"stabler.api.approvals.before_submit_gate",
@@ -174,6 +178,9 @@ doc_events = {
 			# Guard first — fail fast before diag/validation runs.
 			"stabler.api.desk_write_guard.assert_write_via_stabler",
 			"stabler.api._diag.on_txn_validate",
+		],
+		"validate": [
+			"stabler.api.valuation_guard.check_incoming_rate_currency",
 		],
 		"before_update_after_submit": [
 			"stabler.api.desk_write_guard.assert_write_via_stabler",

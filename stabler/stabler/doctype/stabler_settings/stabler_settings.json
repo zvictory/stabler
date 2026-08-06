@@ -64,7 +64,14 @@
   "enable_landed_cost",
   "landed_cost_expense_account",
   "customers_section",
-  "enable_parent_credit_check"
+  "enable_parent_credit_check",
+  "valuation_guard_section",
+  "valuation_guard_purchase_rate_multiple",
+  "valuation_guard_lookback_days",
+  "valuation_guard_incoming_rate_multiple",
+  "valuation_guard_mfg_valuation_multiple",
+  "repost_queue_alert_threshold",
+  "repost_queue_alert_age_days"
  ],
  "fields": [
   {
@@ -436,6 +443,54 @@
    "fieldname": "enable_parent_credit_check",
    "fieldtype": "Check",
    "label": "Enforce Parent-Chain Credit Limit"
+  },
+  {
+   "description": "Thresholds for the valuation guards. They only run for companies with 'Valuation Guard' enabled in the module table above.",
+   "fieldname": "valuation_guard_section",
+   "fieldtype": "Section Break",
+   "label": "Valuation Guards"
+  },
+  {
+   "default": "50",
+   "description": "A purchase rate above this multiple of the item's trailing average (or of the same item's rate elsewhere on the document) blocks the bill. Typically an amount typed into the rate field.",
+   "fieldname": "valuation_guard_purchase_rate_multiple",
+   "fieldtype": "Float",
+   "label": "Purchase rate: max multiple of baseline"
+  },
+  {
+   "default": "90",
+   "description": "How many days of submitted purchases form the baseline average. Items with no history in the window are never blocked.",
+   "fieldname": "valuation_guard_lookback_days",
+   "fieldtype": "Int",
+   "label": "Purchase rate: baseline window (days)"
+  },
+  {
+   "default": "100",
+   "description": "An incoming rate above this multiple of the row's company-currency rate blocks the document. A ratio equal to the exchange rate means the transaction-currency price was entered into a company-currency field.",
+   "fieldname": "valuation_guard_incoming_rate_multiple",
+   "fieldtype": "Float",
+   "label": "Incoming rate: max multiple of company-currency rate"
+  },
+  {
+   "default": "50",
+   "description": "A manufacturing stock entry row valued above this multiple of the warehouse bin's valuation rate is blocked. Bins not yet valued (rate 0) are skipped, not blocked.",
+   "fieldname": "valuation_guard_mfg_valuation_multiple",
+   "fieldtype": "Float",
+   "label": "Stock entry: max multiple of bin valuation"
+  },
+  {
+   "default": "100",
+   "description": "Daily alarm when more than this many Repost Item Valuation records sit queued.",
+   "fieldname": "repost_queue_alert_threshold",
+   "fieldtype": "Int",
+   "label": "Repost queue: alert above N queued"
+  },
+  {
+   "default": "7",
+   "description": "Daily alarm when the oldest queued repost is older than this many days.",
+   "fieldname": "repost_queue_alert_age_days",
+   "fieldtype": "Int",
+   "label": "Repost queue: alert above N days old"
   }
  ],
  "index_web_pages_for_search": 1,
