@@ -194,6 +194,21 @@ const listTruncated = computed(
 	() => totalCount.value > 0 && totalCount.value > customers.value.length
 );
 
+// Book-wide total for the server-side filter, unaffected by `limit`. Only shown
+// when the page IS capped: otherwise the footer above already IS the whole book,
+// and a second (drift-uncorrected) figure next to it would just look like a
+// rounding disagreement. Group/territory/overdue narrow the set client-side, so
+// the server figure would not match what is on screen — hide it for those too.
+const grandTotals = ref([]);
+const showGrandTotals = computed(
+	() =>
+		listTruncated.value &&
+		grandTotals.value.length > 0 &&
+		!onlyOverdue.value &&
+		!filterGroup.value &&
+		!filterTerritory.value
+);
+
 // --- Parent/child hierarchy (QuickBooks-style, single level) ----------------
 // Auto-detected from the API (has_hierarchy). Tree mode groups children under
 // their parent; parent rows show the CUMULATIVE (own + children) balance from a
@@ -471,6 +486,7 @@ async function loadCustomers() {
 		});
 		customers.value = res.rows || [];
 		totalCount.value = Number(res.total_count || 0);
+		grandTotals.value = res.grand_totals || [];
 		companyCurrency.value = res.company_currency || "";
 		hasHierarchy.value = !!res.has_hierarchy;
 		if (hasHierarchy.value) loadChildrenBalanceMap();
@@ -1013,6 +1029,21 @@ watch(activeCompany, () => {
 							</div>
 							<div v-if="!visibleTotals.length" class="text-secondary small">
 								{{ t("No outstanding balance.") }}
+							</div>
+							<div v-if="showGrandTotals" class="mt-2 pt-2 border-top">
+								<div class="text-secondary small fw-semibold mb-1">
+									{{ t("All customers") }} · {{ totalCount }}
+								</div>
+								<div
+									v-for="b in grandTotals"
+									:key="'gt-' + b.currency"
+									class="d-flex align-items-center justify-content-between gap-2"
+								>
+									<span class="badge bg-secondary-lt text-secondary">{{ b.currency }}</span>
+									<span class="font-monospace stbl-amount fw-bold text-body">
+										{{ formatMoney(b.amount, b.currency, user.language) }}
+									</span>
+								</div>
 							</div>
 						</div>
 					</div>

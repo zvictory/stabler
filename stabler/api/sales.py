@@ -389,6 +389,36 @@ def list_customers_with_balances(
 		params,
 	)[0][0]
 
+	# Book-wide balance for the SAME filter, ignoring `limit`. Without this the UI
+	# can only say "the total you see is a slice" — it can never show the real
+	# number. Measured on ANJAN: at limit=500 the visible footer was 8% of the book.
+	# Grouped per account currency because totals are never converted (CLAUDE.md).
+	# NOTE: this omits the Payment Entry drift correction applied per row below
+	# (~0.00001% on ANJAN). The UI only shows this figure when the list IS capped,
+	# so it never sits next to the drift-corrected footer for a direct comparison.
+	grand_totals = frappe.db.sql(
+		f"""
+		SELECT p.cur AS currency, SUM(p.bal_acc) AS amount
+		FROM (
+		  SELECT MAX(g.account_currency) AS cur,
+		         SUM(g.debit_in_account_currency - g.credit_in_account_currency) AS bal_acc
+		  FROM `tabGL Entry` g
+		  JOIN `tabCustomer` c ON c.name = g.party
+		  WHERE g.company = %(company)s
+		    AND g.party_type = 'Customer'
+		    AND g.is_cancelled = 0
+		    AND {where}
+		  GROUP BY g.party
+		) p
+		WHERE p.cur IS NOT NULL
+		GROUP BY p.cur
+		HAVING SUM(p.bal_acc) != 0
+		""",
+		params,
+		as_dict=True,
+	)
+	grand_totals = [{"currency": r["currency"], "amount": flt(r["amount"])} for r in (grand_totals or [])]
+
 	# 1. Fetch matching customer metadata first
 	customer_rows = frappe.db.sql(
 		f"""
@@ -421,6 +451,7 @@ def list_customers_with_balances(
 			"company_currency": company_currency,
 			"has_hierarchy": has_hierarchy,
 			"total_count": total_count,
+			"grand_totals": grand_totals,
 		}
 
 	parties = tuple(r["name"] for r in customer_rows)
@@ -535,6 +566,7 @@ def list_customers_with_balances(
 		"company_currency": company_currency,
 		"has_hierarchy": has_hierarchy,
 		"total_count": total_count,
+		"grand_totals": grand_totals,
 	}
 
 
