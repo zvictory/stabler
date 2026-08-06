@@ -445,12 +445,19 @@ def list_customers_with_balances(
 		has_parent_field and frappe.db.exists("Customer", {"custom_parent_customer": ["!=", ""]})
 	)
 
+	# Did `limit` actually bite? Decide here, BEFORE the Python-side
+	# only_with_balance / only_overdue filters thin the list out: `total_count`
+	# ignores those filters, so comparing it with the final row count would flag a
+	# filtered-but-complete list as truncated.
+	truncated = total_count > len(customer_rows)
+
 	if not customer_rows:
 		return {
 			"rows": [],
 			"company_currency": company_currency,
 			"has_hierarchy": has_hierarchy,
 			"total_count": total_count,
+			"truncated": truncated,
 			"grand_totals": grand_totals,
 		}
 
@@ -566,6 +573,7 @@ def list_customers_with_balances(
 		"company_currency": company_currency,
 		"has_hierarchy": has_hierarchy,
 		"total_count": total_count,
+		"truncated": truncated,
 		"grand_totals": grand_totals,
 	}
 

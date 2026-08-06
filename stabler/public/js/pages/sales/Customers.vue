@@ -189,10 +189,12 @@ const visibleTotals = computed(() => {
 
 // The server caps the page at `limit`. When it bites, the footer describes a
 // slice of the book — say so instead of silently under-reporting.
+// `truncated` comes from the server, decided before its only_with_balance /
+// only_overdue filters thin the page out. Deriving it here as
+// `totalCount > customers.length` would misread a filtered-but-complete list as
+// a capped one and raise the warning badge over a total that is actually right.
 const totalCount = ref(0);
-const listTruncated = computed(
-	() => totalCount.value > 0 && totalCount.value > customers.value.length
-);
+const listTruncated = ref(false);
 
 // Book-wide total for the server-side filter, unaffected by `limit`. Only shown
 // when the page IS capped: otherwise the footer above already IS the whole book,
@@ -486,6 +488,7 @@ async function loadCustomers() {
 		});
 		customers.value = res.rows || [];
 		totalCount.value = Number(res.total_count || 0);
+		listTruncated.value = !!res.truncated;
 		grandTotals.value = res.grand_totals || [];
 		companyCurrency.value = res.company_currency || "";
 		hasHierarchy.value = !!res.has_hierarchy;

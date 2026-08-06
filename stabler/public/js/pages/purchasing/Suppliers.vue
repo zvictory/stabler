@@ -159,8 +159,38 @@ function toggleSort(field) {
 	}
 }
 
-const totalPayable = computed(() =>
-	suppliers.value.reduce((sum, s) => sum + Number(s.balance_base || 0), 0)
+// Footer totals. The old one-liner summed `suppliers` (the raw API page) in
+// `balance_base` while the table renders `filteredSuppliers` in `balance_acc`,
+// so it broke twice: picking a group shrank the list but not the total, and on
+// ANJAN it silently converted 1 318 686 764,41 UZS into the USD figure — which
+// CLAUDE.md forbids ("Do not convert totals"). Group by currency instead.
+const visibleTotals = computed(() => {
+	const byCurrency = new Map();
+	for (const s of filteredSuppliers.value) {
+		const amount = Number(s.balance_acc ?? s.balance_base ?? 0);
+		if (!amount) continue;
+		const cur = s.account_currency || currency.value;
+		byCurrency.set(cur, (byCurrency.get(cur) || 0) + amount);
+	}
+	return [...byCurrency.entries()].map(([cur, amount]) => ({ currency: cur, amount }));
+});
+
+// The server caps the page at `limit`. When it bites, the footer describes a
+// slice of the book — say so instead of silently under-reporting.
+// `truncated` comes from the server, decided before its only_with_balance filter
+// thins the page out. Deriving it here as `totalCount > suppliers.length` would
+// misread a filtered-but-complete list as a capped one and raise the warning
+// badge over a total that is actually right.
+const totalCount = ref(0);
+const listTruncated = ref(false);
+
+// Book-wide total for the server-side filter, unaffected by `limit`. Only shown
+// when the page IS capped: otherwise the footer above already IS the whole book.
+// The group filter narrows the set client-side, so the server figure would not
+// match what is on screen — hide it for that too.
+const grandTotals = ref([]);
+const showGrandTotals = computed(
+	() => listTruncated.value && grandTotals.value.length > 0 && !filterGroup.value
 );
 
 const ledgerRows = computed(() => {
@@ -259,6 +289,9 @@ async function loadSuppliers() {
 		});
 		suppliers.value = res.rows || [];
 		companyCurrency.value = res.company_currency || "";
+		totalCount.value = Number(res.total_count || 0);
+		listTruncated.value = !!res.truncated;
+		grandTotals.value = res.grand_totals || [];
 		if (selected.value) {
 			const fresh = suppliers.value.find((s) => s.name === selected.value.name);
 			if (fresh) {
@@ -784,11 +817,43 @@ watch(activeCompany, () => {
 								</table>
 							</div>
 						</div>
-						<div v-if="filteredSuppliers.length" class="cust-list-footer p-3 border-top bg-light d-flex align-items-center justify-content-between">
-							<span class="text-secondary small fw-semibold">{{ t("Total payable") }}</span>
-							<span class="font-monospace fw-bold text-body">
-								{{ formatMoney(totalPayable, currency, user.language) }}
-							</span>
+						<div v-if="filteredSuppliers.length" class="cust-list-footer p-3 border-top bg-light">
+							<div class="d-flex align-items-center justify-content-between gap-2 mb-1">
+								<span class="text-secondary small fw-semibold">
+									{{ t("Total payable") }} · {{ filteredSuppliers.length }}
+								</span>
+								<span v-if="listTruncated" class="badge bg-orange-lt text-orange" :title="t('The server returned a capped page; this total covers the rows loaded, not the whole book.')">
+									<i class="ti ti-alert-triangle me-1"></i>{{ suppliers.length }} / {{ totalCount }}
+								</span>
+							</div>
+							<div
+								v-for="b in visibleTotals"
+								:key="b.currency"
+								class="d-flex align-items-center justify-content-between gap-2"
+							>
+								<span class="badge bg-secondary-lt text-secondary">{{ b.currency }}</span>
+								<span class="font-monospace stbl-amount fw-bold text-body">
+									{{ formatMoney(b.amount, b.currency, user.language) }}
+								</span>
+							</div>
+							<div v-if="!visibleTotals.length" class="text-secondary small">
+								{{ t("No outstanding balance.") }}
+							</div>
+							<div v-if="showGrandTotals" class="mt-2 pt-2 border-top">
+								<div class="text-secondary small fw-semibold mb-1">
+									{{ t("All suppliers") }} · {{ totalCount }}
+								</div>
+								<div
+									v-for="b in grandTotals"
+									:key="'gt-' + b.currency"
+									class="d-flex align-items-center justify-content-between gap-2"
+								>
+									<span class="badge bg-secondary-lt text-secondary">{{ b.currency }}</span>
+									<span class="font-monospace stbl-amount fw-bold text-body">
+										{{ formatMoney(b.amount, b.currency, user.language) }}
+									</span>
+								</div>
+							</div>
 						</div>
 					</div>
 
