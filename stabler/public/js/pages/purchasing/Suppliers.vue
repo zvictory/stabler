@@ -1,101 +1,36 @@
 <script setup>
-import { computed, onMounted, ref, watch } from "vue";
+import { computed, ref } from "vue";
 import { storeToRefs } from "pinia";
 import { useRouter } from "vue-router";
 import { useSession } from "../../stores/session.js";
 import { call } from "../../api/client.js";
 import { formatMoney } from "../../composables/money.js";
-import { formatDate, formatTime } from "../../composables/date.js";
+import { formatDate } from "../../composables/date.js";
 import { t } from "../../composables/i18n.js";
 import { useConfirm } from "../../composables/useConfirm.js";
 import { useToast } from "../../composables/useToast.js";
-
-const router = useRouter();
+import { getStatusBadgeClass } from "../../composables/status.js";
 import EmptyState from "../../components/EmptyState.vue";
-import DateInput from "../../components/DateInput.vue";
+import SkeletonRows from "../../components/SkeletonRows.vue";
 import Select from "../../components/Select.vue";
 import PartyPaymentModal from "../../components/PartyPaymentModal.vue";
-import BalanceChip from "../../components/BalanceChip.vue";
-import PartyAvatar from "../../components/PartyAvatar.vue";
-import ApexChart from "../../components/ApexChart.vue";
-import { getStatusBadgeClass } from "../../composables/status.js";
-import { useListViewState } from "../../composables/useListViewState.js";
-import { useEscapeBack } from "../../composables/useEscapeBack.js";
+import PartyCenter from "../../components/party/PartyCenter.vue";
+import PartyKpiStrip from "../../components/party/PartyKpiStrip.vue";
 
+const router = useRouter();
 const session = useSession();
 const { activeCompany, user } = storeToRefs(session);
 
 const { confirm } = useConfirm();
 const toast = useToast();
 
-const loading = ref(false);
-const error = ref("");
-const suppliers = ref([]);
-const companyCurrency = ref("");
-
-// Persistent list state: URL ↔ localStorage (URL = source of truth).
-const { search, onlyWithBalance, onlyOverdue, filterGroup, sortField, sortAsc, c: selectedName } = useListViewState(
-	"stabler.suppliers.listState",
-	{ search: "", filterGroup: "", onlyWithBalance: false, onlyOverdue: false, sortField: "name", sortAsc: true, c: "" }
-);
-
+const pc = ref(null);
 const selected = ref(null);
 const selectedDetail = ref(null);
-// Import position (open commitments + cash/bank paid split). Only populated when
-// the company has the imports module on; otherwise stays null and the card hides.
-const selectedExposure = ref(null);
-
-// ESC → deselect the open supplier first (clear the right pane), else go back.
-useEscapeBack(() => {
-	if (selected.value) {
-		selected.value = null;
-		selectedName.value = ""; // composable clears c from URL + localStorage
-		return true;
-	}
-	return false;
-}, "/purchasing");
-const recentInvoices = ref([]);
-const ledger = ref(null);
-const ledgerLoading = ref(false);
-const ledgerError = ref("");
-const ledgerFromDate = ref("");
-const ledgerToDate = ref("");
-const ledgerTypeFilter = ref("");
-const ledgerSearch = ref("");
-const ledgerSortAsc = ref(true);
-
-// Professional .xlsx of the open supplier's ledger (opening / movements / running
-// balance / closing) — re-runs server-side for the current supplier + date range.
-function exportLedgerXlsx() {
-	if (!selected.value?.name) return;
-	const qs = new URLSearchParams({
-		report_key: "supplier_ledger",
-		filters: JSON.stringify({
-			company: activeCompany.value,
-			supplier: selected.value.name,
-			from_date: ledgerFromDate.value || undefined,
-			to_date: ledgerToDate.value || undefined,
-		}),
-	});
-	window.open(`/api/method/stabler.api.export.export_report_xlsx?${qs.toString()}`, "_blank");
-}
-
 const partyPayOpen = ref(false);
-const currentTab = ref("ledger");
 
 const SUPPLIER_TYPES = ["Company", "Individual", "Partnership"];
-const createOpen = ref(false);
-const editMode = ref(false);
-const editingName = ref("");
-const submitting = ref(false);
-const submitError = ref("");
-const groupOptions = ref([]);
-const currencyOptions = ref([]);
-const priceListOptions = ref([]);
-const optionsLoaded = ref(false);
-
-const cockpitData = ref(null);
-const cockpitLoading = ref(false);
+const supplierTypeOptions = computed(() => SUPPLIER_TYPES.map((st) => ({ value: st, label: t(st) })));
 
 function blankSupplier() {
 	return {
@@ -110,273 +45,101 @@ function blankSupplier() {
 		default_price_list: "",
 	};
 }
-const form = ref(blankSupplier());
 
-const currency = computed(() => companyCurrency.value || session.currency);
+const centerApi = {
+	list: "stabler.api.purchasing.list_suppliers_with_balances",
+	detail: "stabler.api.purchasing.supplier_detail",
+	ledger: "stabler.api.purchasing.supplier_ledger",
+	orders: "stabler.api.purchasing.list_purchase_orders",
+	param: "supplier",
+	nameField: "supplier_name",
+	groupField: "supplier_group",
+	invoiceDoctype: "Purchase Invoice",
+	orderDoctype: "Purchase Order",
+	ledgerReportKey: "supplier_ledger",
+	// Payables: running balance = credit - debit (reversed vs. receivables).
+	ledgerSign: -1,
+};
 
-// Sorting & Filtering for Master List — provided by useListViewState above.
+const centerRoutes = {
+	back: "/purchasing",
+	vouchers: {
+		"Payment Entry": "/money/payments/:name",
+		"Purchase Invoice": "/purchasing/invoices/:name",
+		"Purchase Order": "/purchasing/orders/:name",
+		"Journal Entry": { path: "/money/journals", query: "open" },
+	},
+};
 
-const availableGroups = computed(() =>
-	[...new Set(suppliers.value.map((s) => s.supplier_group).filter(Boolean))].sort()
-);
-const groupFilterOptions = computed(() => [
-	{ value: "", label: t("All groups") },
-	...availableGroups.value.map((g) => ({ value: g, label: g })),
-]);
+const centerCockpit = computed(() => ({
+	method: "stabler.api.purchasing.payables_cockpit",
+	keys: { total: "total_payable", today: "payments_paid_today", trend: "trend_8_weeks", top: "top_creditors" },
+	labels: {
+		total: t("Total payable"),
+		today: t("Payments paid today"),
+		trend: t("Payable Trend (Last 8 Weeks)"),
+		trendSeries: t("Payables"),
+		top: t("Top 10 Creditors"),
+		empty: t("No creditors found."),
+	},
+}));
 
-const filteredSuppliers = computed(() => {
-	let list = suppliers.value;
+const centerLabels = computed(() => ({
+	title: t("Suppliers"),
+	searchPlaceholder: t("Search suppliers… ⌘K"),
+	groupLabel: t("Supplier group"),
+	allGroups: t("All groups"),
+	emptyTitle: t("No suppliers"),
+	emptySubtitle: t("Add your first supplier to start recording bills and purchases."),
+	emptyAction: t("Add supplier"),
+	grandTotalLabel: t("All suppliers"),
+	lifetimeLabel: t("Lifetime Purchases"),
+	noOrdersTitle: t("No orders yet"),
+	noOrdersSubtitle: t("No purchase orders have been registered for this supplier."),
+	loadError: t("Failed to load suppliers."),
+}));
 
-	if (search.value.trim()) {
-		const term = search.value.trim().toLowerCase();
-		list = list.filter(
-			(s) =>
-				(s.supplier_name || "").toLowerCase().includes(term) ||
-				(s.name || "").toLowerCase().includes(term)
-		);
-	}
-
-	if (filterGroup.value) list = list.filter((s) => s.supplier_group === filterGroup.value);
-
-	if (sortField.value === "name") {
-		list = [...list].sort((a, b) => {
-			const cmp = (a.supplier_name || "").localeCompare(b.supplier_name || "");
-			return sortAsc.value ? cmp : -cmp;
-		});
-	} else if (sortField.value === "balance") {
-		list = [...list].sort((a, b) => {
-			const av = Number(a.balance_acc ?? a.balance_base ?? 0);
-			const bv = Number(b.balance_acc ?? b.balance_base ?? 0);
-			return sortAsc.value ? av - bv : bv - av;
-		});
-	}
-	return list;
-});
-
-function toggleSort(field) {
-	if (sortField.value === field) {
-		sortAsc.value = !sortAsc.value;
-	} else {
-		sortField.value = field;
-		sortAsc.value = true;
-	}
-}
-
-// Footer totals. The old one-liner summed `suppliers` (the raw API page) in
-// `balance_base` while the table renders `filteredSuppliers` in `balance_acc`,
-// so it broke twice: picking a group shrank the list but not the total, and on
-// ANJAN it silently converted 1 318 686 764,41 UZS into the USD figure — which
-// CLAUDE.md forbids ("Do not convert totals"). Group by currency instead.
-const visibleTotals = computed(() => {
-	const byCurrency = new Map();
-	for (const s of filteredSuppliers.value) {
-		const amount = Number(s.balance_acc ?? s.balance_base ?? 0);
-		if (!amount) continue;
-		const cur = s.account_currency || currency.value;
-		byCurrency.set(cur, (byCurrency.get(cur) || 0) + amount);
-	}
-	return [...byCurrency.entries()].map(([cur, amount]) => ({ currency: cur, amount }));
-});
-
-// The server caps the page at `limit`. When it bites, the footer describes a
-// slice of the book — say so instead of silently under-reporting.
-// `truncated` comes from the server, decided before its only_with_balance filter
-// thins the page out. Deriving it here as `totalCount > suppliers.length` would
-// misread a filtered-but-complete list as a capped one and raise the warning
-// badge over a total that is actually right.
-const totalCount = ref(0);
-const listTruncated = ref(false);
-
-// Book-wide total for the server-side filter, unaffected by `limit`. Only shown
-// when the page IS capped: otherwise the footer above already IS the whole book.
-// The group filter narrows the set client-side and `only_overdue` is a Python-side
-// filter the grand-total query never sees, so the server figure would not match
-// what is on screen — hide it for those too.
-const grandTotals = ref([]);
-const showGrandTotals = computed(
-	() => listTruncated.value && grandTotals.value.length > 0 && !onlyOverdue.value && !filterGroup.value
+const extraTabs = computed(() =>
+	session.canAccessModule("tender")
+		? [{ key: "quotations", label: t("Quotations"), badge: suppQuotations.value.length }]
+		: [],
 );
 
-const ledgerRows = computed(() => {
-	const e = ledger.value?.entries || [];
-	let runBase = Number(ledger.value?.opening_base || 0);
-	let runAcc = Number(ledger.value?.opening_acc || 0);
-	return e.map((row, idx) => {
-		// Payables: credit increases amount we owe, debit reduces it
-		runBase += Number(row.credit || 0) - Number(row.debit || 0);
-		runAcc +=
-			Number(row.credit_in_account_currency || 0) -
-			Number(row.debit_in_account_currency || 0);
-		// _seq preserves backend chronological order for same-date tiebreak.
-		return { ...row, _seq: idx, running_base: runBase, running_acc: runAcc };
-	});
-});
-
-// What the row IS in business terms. A Purchase Invoice that came from a
-// Commercial Invoice is shown as the CI — the PInv is plumbing, not the deal.
-function sourceKind(e) {
-	if (e.source_doctype === "Commercial Invoice") return t("Commercial Invoice");
-	return e.voucher_type || "—";
-}
-
-const voucherTypes = computed(() => [
-	{ value: "", label: t("All vouchers") },
-	{ value: "Payment Entry", label: t("Payment") },
-	{ value: "Purchase Invoice", label: t("Invoice") },
-	{ value: "Journal Entry", label: t("Journal") },
-	{ value: "Return", label: t("Return") },
-]);
-
-const filteredLedgerRows = computed(() => {
-	let list = ledgerRows.value || [];
-
-	// Hide pure FX-revaluation rows — base-currency-only "Exchange Gain Or Loss"
-	// entries with ZERO account-currency movement. They never change the account-
-	// currency running balance, so here they're just empty "—/—" noise.
-	list = list.filter((r) =>
-		Math.abs(Number(r.debit_in_account_currency || 0)) > 0.005 ||
-		Math.abs(Number(r.credit_in_account_currency || 0)) > 0.005
+const paymentButtonTitle = computed(() => {
+	if (!selected.value) return "";
+	const who = selected.value.supplier_name || selected.value.name;
+	const amount = formatMoney(
+		selected.value.balance_acc ?? selected.value.balance_base ?? 0,
+		selected.value.account_currency || session.currency,
+		user.value.language,
 	);
-
-	if (ledgerTypeFilter.value) {
-		if (ledgerTypeFilter.value === "Invoice") {
-			list = list.filter(r => r.voucher_type === "Purchase Invoice");
-		} else if (ledgerTypeFilter.value === "Return") {
-			list = list.filter(r => 
-				r.voucher_type === "Purchase Invoice" && 
-				(Number(r.debit || 0) < 0 || Number(r.credit || 0) < 0 || String(r.remarks || "").toLowerCase().includes("return"))
-			);
-		} else {
-			list = list.filter(r => r.voucher_type === ledgerTypeFilter.value);
-		}
-	}
-	
-	if (ledgerSearch.value.trim()) {
-		const q = ledgerSearch.value.trim().toLowerCase();
-		list = list.filter(r => 
-			String(r.voucher_no || "").toLowerCase().includes(q) || 
-			String(r.remarks || "").toLowerCase().includes(q)
-		);
-	}
-	
-	list = [...list].sort((a, b) => {
-		const cmp = String(a.posting_date || "").localeCompare(String(b.posting_date || ""))
-			|| ((a._seq || 0) - (b._seq || 0)); // same-date tiebreak by chronological order
-		return ledgerSortAsc.value ? cmp : -cmp;
-	});
-	
-	return list;
+	return `${t("Payment")} — ${who} (${selected.value.name}) · ${amount}`;
 });
 
-const ledgerCurrencyMixed = computed(() => {
-	const rows = ledger.value?.entries || [];
-	if (!rows.length) return false;
-	const set = new Set(rows.map((r) => r.account_currency).filter(Boolean));
-	return set.size > 1;
-});
-
-const ledgerCurrency = computed(() => {
-	if (ledgerCurrencyMixed.value) return currency.value;
-	return selected.value?.account_currency || currency.value;
-});
-
-async function loadSuppliers() {
-	if (!activeCompany.value) return;
-	loading.value = true;
-	error.value = "";
-	try {
-		const res = await call("stabler.api.purchasing.list_suppliers_with_balances", {
-			company: activeCompany.value,
-			search: search.value || "",
-			only_with_balance: onlyWithBalance.value ? 1 : 0,
-			only_overdue: onlyOverdue.value ? 1 : 0,
-			limit: 500,
-		});
-		suppliers.value = res.rows || [];
-		companyCurrency.value = res.company_currency || "";
-		totalCount.value = Number(res.total_count || 0);
-		listTruncated.value = !!res.truncated;
-		grandTotals.value = res.grand_totals || [];
-		if (selected.value) {
-			const fresh = suppliers.value.find((s) => s.name === selected.value.name);
-			if (fresh) {
-				selected.value = fresh;
-			} else {
-				selected.value = null;
-				ledger.value = null;
-			}
-		}
-	} catch (err) {
-		error.value = err?.message || t("Failed to load suppliers.");
-	} finally {
-		loading.value = false;
+function onSelect(row) {
+	selected.value = row;
+	if (!row) {
+		selectedDetail.value = null;
+		selectedExposure.value = null;
+		suppQuotations.value = [];
+		return;
 	}
+	loadExposure(row.name);
+	loadSuppQuotations(row.name);
 }
 
-function defaultDateRange() {
-	const to = new Date();
-	const from = new Date();
-	from.setDate(from.getDate() - 365);
-	// LOCAL date (not toISOString → UTC shift, off-by-one in UTC+N zones).
-	const iso = (d) => `${d.getFullYear()}-${String(d.getMonth() + 1).padStart(2, "0")}-${String(d.getDate()).padStart(2, "0")}`;
-	return { from: iso(from), to: iso(to) };
+function onDetail(detail) {
+	selectedDetail.value = detail;
 }
 
-async function loadLedger(supplier) {
-	if (!supplier) return;
-	ledgerLoading.value = true;
-	ledgerError.value = "";
-	try {
-		const params = {
-			company: activeCompany.value,
-			supplier: supplier.name,
-			limit: 1000,
-		};
-		if (ledgerFromDate.value) params.from_date = ledgerFromDate.value;
-		if (ledgerToDate.value) params.to_date = ledgerToDate.value;
-		ledger.value = await call("stabler.api.purchasing.supplier_ledger", params);
-	} catch (err) {
-		ledger.value = null;
-		ledgerError.value = err?.message || t("Failed to load ledger.");
-	} finally {
-		ledgerLoading.value = false;
-	}
+function refreshAfterMoney() {
+	pc.value?.reload();
+	pc.value?.refreshSelected();
 }
 
-async function selectSupplier(s) {
-	selected.value = s;
-	selectedName.value = s.name; // composable syncs → URL + localStorage
-	suppOrders.value = [];
-	suppQuotations.value = [];
-	recentInvoices.value = [];
-	ledgerTypeFilter.value = "";
-	ledgerSearch.value = "";
-	ledgerSortAsc.value = true;
-
-	if (!ledgerFromDate.value && !ledgerToDate.value) {
-		const r = defaultDateRange();
-		ledgerFromDate.value = r.from;
-		ledgerToDate.value = r.to;
-	}
-	loadLedger(s);
-	loadSuppOrders(s);
-	loadSuppQuotations(s);
-
-	try {
-		const detail = await call("stabler.api.purchasing.supplier_detail", {
-			name: s.name,
-			company: activeCompany.value,
-		});
-		recentInvoices.value = detail.recent_invoices || [];
-		selectedDetail.value = detail;
-	} catch (err) {
-		console.error(err);
-	}
-
-	// Import exposure — separate, tenant-gated call. Silent no-op when the
-	// imports module is off (returns {enabled:false}) or on any error.
-	loadExposure(s.name);
-}
+// Import position (open commitments + cash/bank paid split). Only populated when
+// the company has the imports module on; otherwise stays null and the card hides.
+const selectedExposure = ref(null);
 
 // Load (or reload) the supplier's import position. Tenant-gated: a company with
 // the imports module off returns {enabled:false} and the panel stays hidden.
@@ -393,6 +156,38 @@ async function loadExposure(supplierName) {
 	}
 }
 
+const exposureKpiItems = computed(() => {
+	const s = selectedExposure.value?.summary;
+	if (!s) return [];
+	const cur = selected.value?.account_currency || session.currency;
+	const lang = user.value.language;
+	return [
+		{ key: "open", label: t("Open commitment"), text: formatMoney(s.open_commitment || 0, cur, lang) },
+		{
+			key: "cash",
+			label: t("Cash paid"),
+			text: formatMoney(s.cash_paid || 0, cur, lang),
+			note: s.cash_committed
+				? `${s.cash_pct_paid}% · ${t("Balance")}: ${formatMoney(s.cash_balance || 0, cur, lang)}`
+				: "",
+		},
+		{
+			key: "bank",
+			label: t("Bank paid"),
+			text: formatMoney(s.bank_paid || 0, cur, lang),
+			note: s.bank_committed
+				? `${s.bank_pct_paid}% · ${t("Balance")}: ${formatMoney(s.bank_balance || 0, cur, lang)}`
+				: "",
+		},
+		{
+			key: "total",
+			label: t("Total paid"),
+			text: formatMoney(s.total_paid || 0, cur, lang),
+			sev: s.reconciles_gl === false ? "crit" : "neutral",
+		},
+	];
+});
+
 // --- CI → Purchase Invoice conversion (WP-I6) ---------------------------------
 // A two-step, GL-safe flow: openConvert previews (dry_run=1, writes nothing);
 // confirmConvert creates the DRAFT Purchase Invoice (dry_run=0). Accounts posts
@@ -406,10 +201,11 @@ async function openConvert(ci) {
 	convertPreview.value = null;
 	convertBusy.value = true;
 	try {
-		convertPreview.value = await call(
-			"stabler.api.imports.convert_ci_to_purchase_invoice",
-			{ commercial_invoice: ci.name, company: activeCompany.value, dry_run: 1 },
-		);
+		convertPreview.value = await call("stabler.api.imports.convert_ci_to_purchase_invoice", {
+			commercial_invoice: ci.name,
+			company: activeCompany.value,
+			dry_run: 1,
+		});
 	} catch (err) {
 		toast.error(err?.message || t("Could not preview the conversion."));
 		convertTarget.value = null;
@@ -441,7 +237,7 @@ async function confirmConvert() {
 		closeConvert();
 		if (selected.value) {
 			loadExposure(selected.value.name);
-			loadSuppOrders(selected.value);
+			pc.value?.refreshSelected();
 		}
 	} catch (err) {
 		toast.error(err?.message || t("Could not create the Purchase Invoice."));
@@ -450,34 +246,15 @@ async function confirmConvert() {
 	}
 }
 
-const suppOrders = ref([]);
-const suppOrdersLoading = ref(false);
-
-async function loadSuppOrders(supplier) {
-	if (!supplier?.name || !activeCompany.value) return;
-	suppOrdersLoading.value = true;
-	try {
-		suppOrders.value = await call("stabler.api.purchasing.list_purchase_orders", {
-			company: activeCompany.value,
-			supplier: supplier.name,
-			limit: 20,
-		});
-	} catch {
-		suppOrders.value = [];
-	} finally {
-		suppOrdersLoading.value = false;
-	}
-}
-
 const suppQuotations = ref([]);
 const suppQuotationsLoading = ref(false);
 
-async function loadSuppQuotations(supplier) {
-	if (!supplier?.name || !activeCompany.value) return;
+async function loadSuppQuotations(supplierName) {
+	if (!supplierName || !activeCompany.value) return;
 	suppQuotationsLoading.value = true;
 	try {
 		const res = await call("stabler.api.purchasing.supplier_quotation_history", {
-			supplier: supplier.name,
+			supplier: supplierName,
 			company: activeCompany.value,
 		});
 		suppQuotations.value = res?.rows || [];
@@ -488,51 +265,21 @@ async function loadSuppQuotations(supplier) {
 	}
 }
 
-const voucherOpen = ref(false);
-const voucherLoading = ref(false);
-const voucherDetail = ref(null);
-const voucherError = ref("");
+const groupOptions = ref([]);
+const currencyOptions = ref([]);
+const priceListOptions = ref([]);
+const optionsLoaded = ref(false);
 
-async function openVoucher(entry) {
-	if (!entry?.voucher_no) return;
-	voucherOpen.value = true;
-	voucherLoading.value = true;
-	voucherDetail.value = null;
-	voucherError.value = "";
-	const type = entry.voucher_type;
-	const name = entry.voucher_no;
-	try {
-		let data;
-		if (type === "Purchase Invoice") {
-			data = await call("stabler.api.purchasing.purchase_invoice_detail", { name });
-		} else if (type === "Purchase Order") {
-			data = await call("stabler.api.purchasing.purchase_order_detail", { name });
-		} else if (type === "Payment Entry") {
-			data = await call("stabler.api.money.payment_entry_detail", { name });
-		} else if (type === "Journal Entry") {
-			data = await call("stabler.api.money.journal_entry_detail", { name });
-		} else {
-			data = { name };
-		}
-		voucherDetail.value = { _type: type, ...data };
-	} catch (err) {
-		voucherError.value = err?.message || t("Failed to load.");
-	} finally {
-		voucherLoading.value = false;
-	}
-}
+const createOpen = ref(false);
+const editMode = ref(false);
+const editingName = ref("");
+const submitting = ref(false);
+const deleting = ref(false);
+const submitError = ref("");
+const form = ref(blankSupplier());
 
-function closeVoucher() {
-	voucherOpen.value = false;
-	voucherDetail.value = null;
-	voucherError.value = "";
-}
-
-let searchTimer = null;
-function onSearchInput() {
-	clearTimeout(searchTimer);
-	searchTimer = setTimeout(loadSuppliers, 300);
-}
+const formTitle = computed(() => (editMode.value ? t("Edit supplier") : t("New supplier")));
+const canSubmit = computed(() => !!form.value.supplier_name.trim());
 
 async function loadCreateOptions() {
 	if (optionsLoaded.value) return;
@@ -561,7 +308,7 @@ function openCreate() {
 }
 
 function closeCreate() {
-	if (submitting.value) return;
+	if (submitting.value || deleting.value) return;
 	createOpen.value = false;
 }
 
@@ -584,37 +331,26 @@ async function submitCreate() {
 	if (!f.supplier_name.trim()) return (submitError.value = t("Supplier name is required."));
 	submitting.value = true;
 	try {
+		const payload = {
+			supplier_name: f.supplier_name.trim(),
+			supplier_type: f.supplier_type,
+			supplier_group: f.supplier_group || null,
+			country: f.country || null,
+			email_id: f.email_id || null,
+			mobile_no: f.mobile_no || null,
+			tax_id: f.tax_id || null,
+			default_price_list: f.default_price_list || null,
+			default_currency: f.default_currency || null,
+		};
 		if (editMode.value) {
-			await call("stabler.api.purchasing.update_supplier", {
-				name: editingName.value,
-				supplier_name: f.supplier_name.trim(),
-				supplier_type: f.supplier_type,
-				supplier_group: f.supplier_group || null,
-				country: f.country || null,
-				email_id: f.email_id || null,
-				mobile_no: f.mobile_no || null,
-				tax_id: f.tax_id || null,
-				default_price_list: f.default_price_list || null,
-				default_currency: f.default_currency || null,
-			});
+			await call("stabler.api.purchasing.update_supplier", { name: editingName.value, ...payload });
 		} else {
-			await call("stabler.api.purchasing.create_supplier", {
-				supplier_name: f.supplier_name.trim(),
-				supplier_type: f.supplier_type,
-				supplier_group: f.supplier_group || null,
-				country: f.country || null,
-				email_id: f.email_id || null,
-				mobile_no: f.mobile_no || null,
-				tax_id: f.tax_id || null,
-				default_price_list: f.default_price_list || null,
-				default_currency: f.default_currency || null,
-			});
+			await call("stabler.api.purchasing.create_supplier", payload);
 		}
 		createOpen.value = false;
-		await loadSuppliers();
+		await pc.value?.reload();
 		if (editMode.value && selected.value?.name === editingName.value) {
-			const updated = suppliers.value.find((s) => s.name === editingName.value);
-			if (updated) selected.value = updated;
+			pc.value?.selectByName(editingName.value);
 		}
 	} catch (err) {
 		submitError.value =
@@ -634,1160 +370,235 @@ async function deleteSupplier() {
 		danger: true,
 	});
 	if (!ok) return;
-	submitting.value = true;
+	deleting.value = true;
 	try {
 		await call("stabler.api.purchasing.delete_supplier", { name: editingName.value });
 		toast.success(t("Supplier deleted."));
 		createOpen.value = false;
 		if (selected.value?.name === editingName.value) {
 			selected.value = null;
-			ledger.value = null;
 		}
-		await loadSuppliers();
+		await pc.value?.reload();
 	} catch (err) {
 		submitError.value = err?.message || t("Failed to delete supplier.");
 	} finally {
-		submitting.value = false;
+		deleting.value = false;
 	}
 }
-
-async function loadCockpit() {
-	if (!activeCompany.value) return;
-	cockpitLoading.value = true;
-	try {
-		cockpitData.value = await call("stabler.api.purchasing.payables_cockpit", {
-			company: activeCompany.value,
-		});
-	} catch (err) {
-		console.error(err);
-	} finally {
-		cockpitLoading.value = false;
-	}
-}
-
-// Payables Trend Sparkline configuration
-const trendSeries = computed(() => [{
-	name: t("Payables"),
-	data: cockpitData.value?.trend_8_weeks || [],
-}]);
-
-const trendOptions = computed(() => ({
-	chart: {
-		sparkline: { enabled: true },
-	},
-	stroke: { curve: "smooth", width: 2 },
-	colors: ["#206bc4"],
-	tooltip: {
-		fixed: { enabled: false },
-		x: { show: false },
-		y: {
-			title: { formatter: () => t("Payables") + ": " }
-		},
-		marker: { show: false }
-	}
-}));
-
-watch(selected, (newVal) => {
-	if (!newVal) {
-		loadCockpit();
-	}
-});
-
-watch([ledgerFromDate, ledgerToDate], () => {
-	if (selected.value) {
-		loadLedger(selected.value);
-	}
-});
-
-onMounted(async () => {
-	await loadSuppliers();
-	loadCockpit();
-	// selectedName is hydrated from URL/localStorage by useListViewState before this runs.
-	if (selectedName.value) {
-		const match = suppliers.value.find((s) => s.name === selectedName.value);
-		if (match) selectSupplier(match);
-	}
-});
-
-watch(activeCompany, () => {
-	selected.value = null;
-	ledger.value = null;
-	selectedName.value = ""; // composable clears c from URL + localStorage
-	loadSuppliers();
-	loadCockpit();
-});
 </script>
 
 <template>
-	<div class="page-body customers-redesign p-0">
-		<div class="container-fluid p-0">
-			<div class="card cust-card cust-merged m-0 border-0 rounded-0 bg-transparent shadow-none">
-				<div class="row g-0 cust-merged-row">
-					<!-- Left side: supplier list -->
-					<div class="col-12 col-md-5 col-lg-4 cust-merged-list border-end bg-white">
-						<div class="cust-list-header d-flex flex-wrap align-items-center gap-2 px-3 py-2 border-bottom bg-light">
-							<div class="position-relative flex-fill">
-								<i class="ti ti-search position-absolute top-50 translate-middle-y text-secondary" style="left: 0.65rem"></i>
-								<input
-									v-model="search"
-									type="search"
-									class="form-control form-control-sm ps-5 pe-5"
-									:placeholder="t('Search supplier…')"
-									@input="onSearchInput"
-								/>
-								<kbd class="position-absolute top-50 translate-middle-y text-secondary font-monospace" style="right: 0.5rem; font-size: 0.68rem">⌘K</kbd>
-							</div>
-							<button type="button" class="btn btn-sm btn-primary" @click="openCreate">
-								<i class="ti ti-plus me-1"></i>{{ t("New") }}
-							</button>
-						</div>
-						<div class="p-2 border-bottom bg-light d-flex gap-2 flex-wrap align-items-center">
-							<Select
-								v-if="availableGroups.length"
-								v-model="filterGroup"
-								size="sm"
-								:options="groupFilterOptions"
-								style="max-width: 140px"
-							/>
-							<label class="form-check form-check-inline mb-0">
-								<input
-									v-model="onlyWithBalance"
-									type="checkbox"
-									class="form-check-input"
-									@change="loadSuppliers"
-								/>
-								<span class="form-check-label small">{{ t("Only with balance") }}</span>
-							</label>
-							<label class="form-check form-check-inline mb-0">
-								<input
-									v-model="onlyOverdue"
-									type="checkbox"
-									class="form-check-input"
-									@change="loadSuppliers"
-								/>
-								<span class="form-check-label small">{{ t("Overdue only") }}</span>
-							</label>
-						</div>
-						
-						<div class="cust-list-scroll" style="overflow-y: auto; height: calc(100vh - 12rem);">
-							<div v-if="loading" class="text-center py-5">
-								<div class="spinner-border text-primary"></div>
-							</div>
-							<div v-else-if="error" class="alert alert-danger m-2">{{ error }}</div>
-							<EmptyState
-								v-else-if="!filteredSuppliers.length"
-								icon="ti-truck-delivery"
-								accentIcon="ti-plus"
-								tone="orange"
-								:title="t('No suppliers')"
-								:subtitle="t('Add your first supplier to start recording bills and purchases.')"
-							>
-								<template #actions>
-									<button type="button" class="btn btn-primary btn-sm" @click="openCreate">
-										<i class="ti ti-plus me-1"></i>{{ t("Add supplier") }}
-									</button>
-								</template>
-							</EmptyState>
-							<div v-else class="table-responsive m-0">
-								<table class="table table-vcenter card-table table-hover table-no-stripe m-0">
-									<thead>
-										<tr>
-											<th class="cursor-pointer select-none py-2" @click="toggleSort('name')">
-												{{ t("Name") }}
-												<i v-if="sortField === 'name'" :class="sortAsc ? 'ti ti-arrow-up' : 'ti ti-arrow-down'"></i>
-											</th>
-											<th class="text-end cursor-pointer select-none py-2" @click="toggleSort('balance')">
-												{{ t("Balance") }}
-												<i v-if="sortField === 'balance'" :class="sortAsc ? 'ti ti-arrow-up' : 'ti ti-arrow-down'"></i>
-											</th>
-										</tr>
-									</thead>
-									<tbody>
-										<tr
-											v-for="s in filteredSuppliers"
-											:key="s.name"
-											:class="{ 'table-active': selected?.name === s.name }"
-											class="cursor-pointer"
-											@click="selectSupplier(s)"
-										>
-											<td>
-												<div class="d-flex align-items-center gap-2">
-													<PartyAvatar :name="s.supplier_name || s.name" size="sm" class="flex-shrink-0" />
-													<div class="text-truncate min-w-0" style="max-width: 170px;">
-														<div class="fw-semibold text-truncate text-body">{{ s.supplier_name }}</div>
-														<div class="small stbl-subtext font-monospace text-truncate">{{ s.name }}</div>
-													</div>
-												</div>
-											</td>
-											<td class="text-end font-monospace stbl-amount align-middle">
-												<div
-													:class="{
-														'text-red': Number(s.balance_acc ?? s.balance_base) > 0,
-														'text-green': Number(s.balance_acc ?? s.balance_base) < 0,
-														'text-secondary': !Number(s.balance_acc ?? s.balance_base),
-													}"
-												>
-													{{ formatMoney(
-														s.balance_acc ?? s.balance_base,
-														s.account_currency || currency,
-														user.language,
-													) }}
-												</div>
-											</td>
-										</tr>
-									</tbody>
-								</table>
-							</div>
-						</div>
-						<div v-if="filteredSuppliers.length" class="cust-list-footer p-3 border-top bg-light">
-							<div class="d-flex align-items-center justify-content-between gap-2 mb-1">
-								<span class="text-secondary small fw-semibold">
-									{{ t("Total payable") }} · {{ filteredSuppliers.length }}
-								</span>
-								<span v-if="listTruncated" class="badge bg-orange-lt text-orange" :title="t('The server returned a capped page; this total covers the rows loaded, not the whole book.')">
-									<i class="ti ti-alert-triangle me-1"></i>{{ suppliers.length }} / {{ totalCount }}
-								</span>
-							</div>
-							<div
-								v-for="b in visibleTotals"
-								:key="b.currency"
-								class="d-flex align-items-center justify-content-between gap-2"
-							>
-								<span class="badge bg-secondary-lt text-secondary">{{ b.currency }}</span>
-								<span class="font-monospace stbl-amount fw-bold text-body">
-									{{ formatMoney(b.amount, b.currency, user.language) }}
-								</span>
-							</div>
-							<div v-if="!visibleTotals.length" class="text-secondary small">
-								{{ t("No outstanding balance.") }}
-							</div>
-							<div v-if="showGrandTotals" class="mt-2 pt-2 border-top">
-								<div class="text-secondary small fw-semibold mb-1">
-									{{ t("All suppliers") }} · {{ totalCount }}
-								</div>
-								<div
-									v-for="b in grandTotals"
-									:key="'gt-' + b.currency"
-									class="d-flex align-items-center justify-content-between gap-2"
+	<PartyCenter
+		ref="pc"
+		party-type="Supplier"
+		:api="centerApi"
+		:labels="centerLabels"
+		:cockpit="centerCockpit"
+		state-key="stabler.suppliers.listState"
+		:routes="centerRoutes"
+		:extra-tabs="extraTabs"
+		:form-open="createOpen"
+		:form-mode="editMode ? 'edit' : 'create'"
+		:form-title="formTitle"
+		:submitting="submitting"
+		:deleting="deleting"
+		:submit-error="submitError"
+		:can-submit="canSubmit"
+		:can-delete="editMode"
+		@create="openCreate"
+		@select="onSelect"
+		@detail="onDetail"
+		@close-form="closeCreate"
+		@submit-form="submitCreate"
+		@delete-form="deleteSupplier"
+	>
+		<template #actions="{ selected: sel, balance, balanceCurrency, exportLedger }">
+			<button type="button" class="ds-btn" @click="openEdit(sel)">
+				<i class="ti ti-pencil"></i>{{ t("Edit") }}
+			</button>
+			<button type="button" class="ds-btn" :title="paymentButtonTitle" @click="partyPayOpen = true">
+				<i class="ti ti-cash"></i>{{ t("Payment") }}
+				<span class="font-monospace ms-1">{{ formatMoney(balance, balanceCurrency, user.language) }}</span>
+			</button>
+			<button
+				type="button"
+				class="ds-btn"
+				:title="t('Professional Excel export of this ledger')"
+				@click="exportLedger"
+			>
+				<i class="ti ti-file-spreadsheet"></i>{{ t("Statement") }}
+			</button>
+		</template>
+
+		<template #detail-banner="{ selected: sel }">
+			<!-- Import Exposure (only when the imports module is on for this company) -->
+			<section v-if="selectedExposure?.summary" class="ds-panel">
+				<div class="ds-panel-head">
+					<span class="ds-label">{{ t("Import Exposure") }}</span>
+					<span
+						v-if="!selectedExposure.summary.reconciles_gl"
+						class="ds-chip"
+						data-tone="crit"
+						:title="t('Cash + bank paid does not match the GL total')"
+					>{{ t("GL mismatch") }}</span>
+				</div>
+				<PartyKpiStrip :items="exposureKpiItems" :cols="4" :language="user.language" />
+			</section>
+
+			<!-- Open import commitments (CIs not yet invoiced) — WP-I6 -->
+			<section v-if="selectedExposure?.commitments?.length" class="ds-panel">
+				<div class="ds-panel-head">
+					<span class="ds-label">{{ t("Open commitments") }}</span>
+					<span class="ds-label">{{ selectedExposure.commitments.length }}</span>
+				</div>
+				<table class="ds-table">
+					<thead>
+						<tr>
+							<th>{{ t("Commercial Invoice") }}</th>
+							<th>{{ t("Status") }}</th>
+							<th class="ds-td-num">{{ t("Agreed total") }}</th>
+							<th></th>
+						</tr>
+					</thead>
+					<tbody>
+						<tr v-for="c in selectedExposure.commitments" :key="c.name">
+							<td>
+								<router-link
+									:to="{ name: 'imports-commercial-invoice', params: { name: c.name } }"
+									class="ds-mono"
 								>
-									<span class="badge bg-secondary-lt text-secondary">{{ b.currency }}</span>
-									<span class="font-monospace stbl-amount fw-bold text-body">
-										{{ formatMoney(b.amount, b.currency, user.language) }}
-									</span>
-								</div>
-							</div>
-						</div>
-					</div>
+									{{ c.ci_number || c.name }}
+								</router-link>
+							</td>
+							<td>
+								<span class="badge" :class="getStatusBadgeClass('Commercial Invoice', c.status)">{{ t(c.status) }}</span>
+							</td>
+							<td class="ds-td-num">
+								{{ formatMoney(c.agreed_total || 0, c.currency || sel.account_currency || session.currency, user.language) }}
+							</td>
+							<td class="ds-td-num">
+								<button type="button" class="ds-btn" :disabled="convertBusy" @click="openConvert(c)">
+									{{ t("Convert to Invoice") }}
+								</button>
+							</td>
+						</tr>
+					</tbody>
+				</table>
+			</section>
+		</template>
 
-					<!-- Right side: details / cockpit -->
-					<div class="col-12 col-md-7 col-lg-8 cust-merged-pane bg-light" style="min-height: calc(100vh - 6rem);">
-						<!-- Cockpit View -->
-						<div v-if="!selected" class="p-4 d-flex flex-column gap-4">
-							<div class="row g-3">
-								<div class="col-md-6">
-									<div class="card bg-white shadow-sm border-0">
-										<div class="card-body d-flex align-items-center gap-3">
-											<span class="bg-primary-lt text-primary avatar avatar-md rounded-2">
-												<i class="ti ti-currency-dollar fs-2"></i>
-											</span>
-											<div>
-												<div class="text-secondary small fw-semibold text-uppercase">{{ t("Total payable") }}</div>
-												<div class="h2 mb-0 font-monospace stbl-amount text-body fw-bold">
-													{{ formatMoney(cockpitData?.total_payable || 0, currency, user.language) }}
-												</div>
-											</div>
-										</div>
-									</div>
-								</div>
-								<div class="col-md-6">
-									<div class="card bg-white shadow-sm border-0">
-										<div class="card-body d-flex align-items-center gap-3">
-											<span class="bg-green-lt text-green avatar avatar-md rounded-2">
-												<i class="ti ti-cash-banknote fs-2"></i>
-											</span>
-											<div>
-												<div class="text-secondary small fw-semibold text-uppercase">{{ t("Payments paid today") }}</div>
-												<div class="h2 mb-0 font-monospace stbl-amount text-body fw-bold">
-													{{ formatMoney(cockpitData?.payments_paid_today || 0, currency, user.language) }}
-												</div>
-											</div>
-										</div>
-									</div>
-								</div>
-							</div>
+		<template #extra-tabs="{ tab }">
+			<template v-if="tab === 'quotations'">
+				<table v-if="suppQuotationsLoading" class="ds-table">
+					<SkeletonRows :rows="5" :cols="7" />
+				</table>
+				<EmptyState
+					v-else-if="!suppQuotations.length"
+					icon="ti-file-dollar"
+					:title="t('No quotations yet')"
+					:subtitle="t('No supplier quotations registered for this supplier.')"
+				/>
+				<table v-else class="ds-table">
+					<thead>
+						<tr>
+							<th>{{ t("Quotation #") }}</th>
+							<th>{{ t("Date") }}</th>
+							<th>{{ t("Tender / deal") }}</th>
+							<th class="ds-td-num">{{ t("Base total") }}</th>
+							<th>{{ t("Valid till") }}</th>
+							<th>{{ t("Status") }}</th>
+							<th>{{ t("Result") }}</th>
+						</tr>
+					</thead>
+					<tbody>
+						<tr
+							v-for="q in suppQuotations"
+							:key="q.name"
+							:style="{ cursor: q.deal || q.custom_crm_deal ? 'pointer' : 'default' }"
+							@click="q.deal || q.custom_crm_deal ? router.push({ path: '/tender/sourcing', query: { deal: q.deal || q.custom_crm_deal } }) : null"
+						>
+							<td><span class="ds-mono">{{ q.name }}</span></td>
+							<td>{{ q.transaction_date ? formatDate(q.transaction_date) : "—" }}</td>
+							<td>
+								<span v-if="q.deal || q.custom_crm_deal">
+									<i class="ti ti-target me-1 text-primary"></i>
+									{{ q.deal_label || q.deal || q.custom_crm_deal }}
+								</span>
+								<span v-else class="text-secondary">—</span>
+							</td>
+							<td class="ds-td-num">
+								{{ formatMoney(q.base_grand_total || q.grand_total, q.currency || session.currency, user.language) }}
+							</td>
+							<td>{{ q.valid_till ? formatDate(q.valid_till) : "—" }}</td>
+							<td>
+								<span class="badge" :class="getStatusBadgeClass('Supplier Quotation', q.status)">{{ t(q.status) }}</span>
+							</td>
+							<td>
+								<span v-if="q.result === 'won'" class="ds-chip" data-tone="ok">{{ t("Won") }}</span>
+								<span v-else-if="q.result === 'lost'" class="ds-chip">{{ t("Lost") }}</span>
+								<span v-else class="ds-chip" data-tone="soon">{{ t("Open") }}</span>
+							</td>
+						</tr>
+					</tbody>
+				</table>
+			</template>
+		</template>
 
-							<!-- Sparkline Trend -->
-							<div class="card bg-white shadow-sm border-0">
-								<div class="card-body">
-									<h4 class="card-title text-secondary mb-3">{{ t("Payable Trend (Last 8 Weeks)") }}</h4>
-									<div v-if="cockpitLoading" class="text-center py-4">
-										<div class="spinner-border text-primary spinner-border-sm"></div>
-									</div>
-									<div v-else-if="cockpitData?.trend_8_weeks?.length">
-										<ApexChart
-											type="line"
-											height="120"
-											:series="trendSeries"
-											:options="trendOptions"
-										/>
-									</div>
-								</div>
-							</div>
-
-							<!-- Top 10 Creditors -->
-							<div class="card bg-white shadow-sm border-0">
-								<div class="card-header py-2 border-bottom">
-									<h4 class="card-title text-secondary">{{ t("Top 10 Creditors") }}</h4>
-								</div>
-								<div class="list-group list-group-flush list-group-hoverable">
-									<div
-										v-for="d in cockpitData?.top_creditors"
-										:key="d.name"
-										class="list-group-item cursor-pointer py-2 px-3 border-bottom bg-transparent"
-										@click="selectSupplier(d)"
-									>
-										<div class="row align-items-center g-2">
-											<div class="col-auto">
-												<PartyAvatar :name="d.supplier_name || d.name" size="sm" />
-											</div>
-											<div class="col text-truncate">
-												<div class="text-body fw-semibold text-truncate">{{ d.supplier_name }}</div>
-												<div class="stbl-subtext small font-monospace text-truncate">{{ d.name }}</div>
-											</div>
-											<div class="col-auto font-monospace stbl-amount text-red fw-bold">
-												{{ formatMoney(d.balance, currency, user.language) }}
-											</div>
-										</div>
-									</div>
-									<div v-if="!cockpitData?.top_creditors?.length" class="text-center py-4 text-secondary">
-										{{ t("No creditors found.") }}
-									</div>
-								</div>
-							</div>
-						</div>
-
-						<!-- Selected Supplier View -->
-						<template v-else>
-							<!-- Detail Header -->
-							<div class="p-3 bg-white border-bottom shadow-sm d-flex align-items-center gap-3 flex-wrap">
-								<PartyAvatar :name="selected.supplier_name || selected.name" size="lg" class="rounded-3" />
-								<div class="min-w-0 flex-fill">
-									<h2 class="m-0 text-truncate text-body fw-bold">{{ selected.supplier_name }}</h2>
-									<div class="small stbl-subtext font-monospace">{{ selected.name }}</div>
-								</div>
-								<div class="d-flex gap-2">
-									<button type="button" class="btn btn-sm btn-outline-secondary" @click="openEdit(selected)">
-										<i class="ti ti-pencil me-1"></i>{{ t("Edit") }}
-									</button>
-									<button type="button" class="btn btn-sm btn-outline-secondary" @click="partyPayOpen = true">
-										<i class="ti ti-cash me-1"></i>{{ t("Payment") }}
-									</button>
-								</div>
-							</div>
-
-							<!-- KPI Strip -->
-							<div class="px-3 py-2 bg-light border-bottom">
-								<div class="row g-2">
-									<div class="col-md-3">
-										<div class="card border bg-white py-2 px-3 text-center shadow-none rounded-2">
-											<div class="text-secondary small text-uppercase fw-semibold mb-1">{{ t("Balance") }}</div>
-											<BalanceChip
-												:value="selected.balance_acc ?? selected.balance_base"
-												:currency="selected.account_currency || currency"
-												:language="user.language"
-												party-type="Supplier"
-												size="md"
-												class="w-100 justify-content-center"
-											/>
-										</div>
-									</div>
-									<div class="col-md-3">
-										<div class="card border bg-white py-2 px-3 text-center shadow-none rounded-2">
-											<div class="text-secondary small text-uppercase fw-semibold mb-1">{{ t("Overdue") }}</div>
-											<div class="h3 mb-0 font-monospace stbl-amount" :class="Number(selectedDetail?.overdue_amount || 0) > 0 ? 'text-red fw-bold' : 'text-body'">
-												{{ formatMoney(selectedDetail?.overdue_amount || 0, selected.account_currency || currency, user.language) }}
-											</div>
-										</div>
-									</div>
-									<div class="col-md-3">
-										<div class="card border bg-white py-2 px-3 text-center shadow-none rounded-2">
-											<div class="text-secondary small text-uppercase fw-semibold mb-1">{{ t("Lifetime Purchases") }}</div>
-											<div class="h3 mb-0 font-monospace stbl-amount text-body">
-												{{ formatMoney(selectedDetail?.lifetime_amount ?? selectedDetail?.lifetime_base ?? 0, selectedDetail?.lifetime_currency || currency, user.language) }}
-											</div>
-										</div>
-									</div>
-									<div class="col-md-3">
-										<div class="card border bg-white py-2 px-3 text-center shadow-none rounded-2">
-											<div class="text-secondary small text-uppercase fw-semibold mb-1">{{ t("Last Payment") }}</div>
-											<div class="h3 mb-0 text-body">
-												{{ selectedDetail?.last_payment_date ? formatDate(selectedDetail.last_payment_date) : "—" }}
-											</div>
-										</div>
-									</div>
-								</div>
-							</div>
-
-							<!-- Import Exposure (only when the imports module is on for this company) -->
-							<div v-if="selectedExposure" class="px-3 py-2 border-bottom">
-								<div class="d-flex align-items-center gap-2 mb-2">
-									<i class="ti ti-ship text-primary"></i>
-									<span class="small text-uppercase fw-semibold text-secondary">{{ t("Import Exposure") }}</span>
-									<span
-										v-if="selectedExposure.summary && !selectedExposure.summary.reconciles_gl"
-										class="badge bg-red-lt"
-										:title="t('Cash + bank paid does not match the GL total')"
-									>{{ t("GL mismatch") }}</span>
-								</div>
-								<div class="row g-2">
-									<div class="col-md-3">
-										<div class="card border bg-white py-2 px-3 text-center shadow-none rounded-2">
-											<div class="text-secondary small text-uppercase fw-semibold mb-1">{{ t("Open commitment") }}</div>
-											<div class="h4 mb-0 font-monospace stbl-amount text-body">
-												{{ formatMoney(selectedExposure.summary?.open_commitment || 0, selected.account_currency || currency, user.language) }}
-											</div>
-										</div>
-									</div>
-									<div class="col-md-3">
-										<div class="card border bg-white py-2 px-3 text-center shadow-none rounded-2">
-											<div class="text-secondary small text-uppercase fw-semibold mb-1">{{ t("Cash paid") }} <span v-if="selectedExposure.summary?.cash_committed" class="text-secondary">· {{ selectedExposure.summary.cash_pct_paid }}%</span></div>
-											<div class="h4 mb-0 font-monospace stbl-amount text-body">
-												{{ formatMoney(selectedExposure.summary?.cash_paid || 0, selected.account_currency || currency, user.language) }}
-											</div>
-											<div v-if="selectedExposure.summary?.cash_committed" class="progress mt-2" style="height: 5px">
-												<div class="progress-bar bg-teal" :style="{ width: Math.min(selectedExposure.summary.cash_pct_paid || 0, 100) + '%' }"></div>
-											</div>
-											<div v-if="selectedExposure.summary?.cash_committed" class="small text-secondary mt-1">
-												{{ t("Balance") }}: {{ formatMoney(selectedExposure.summary.cash_balance || 0, selected.account_currency || currency, user.language) }}
-											</div>
-										</div>
-									</div>
-									<div class="col-md-3">
-										<div class="card border bg-white py-2 px-3 text-center shadow-none rounded-2">
-											<div class="text-secondary small text-uppercase fw-semibold mb-1">{{ t("Bank paid") }} <span v-if="selectedExposure.summary?.bank_committed" class="text-secondary">· {{ selectedExposure.summary.bank_pct_paid }}%</span></div>
-											<div class="h4 mb-0 font-monospace stbl-amount text-body">
-												{{ formatMoney(selectedExposure.summary?.bank_paid || 0, selected.account_currency || currency, user.language) }}
-											</div>
-											<div v-if="selectedExposure.summary?.bank_committed" class="progress mt-2" style="height: 5px">
-												<div class="progress-bar bg-primary" :style="{ width: Math.min(selectedExposure.summary.bank_pct_paid || 0, 100) + '%' }"></div>
-											</div>
-											<div v-if="selectedExposure.summary?.bank_committed" class="small text-secondary mt-1">
-												{{ t("Balance") }}: {{ formatMoney(selectedExposure.summary.bank_balance || 0, selected.account_currency || currency, user.language) }}
-											</div>
-										</div>
-									</div>
-									<div class="col-md-3">
-										<div class="card border bg-white py-2 px-3 text-center shadow-none rounded-2">
-											<div class="text-secondary small text-uppercase fw-semibold mb-1">{{ t("Total paid") }}</div>
-											<div class="h4 mb-0 font-monospace stbl-amount text-body">
-												{{ formatMoney(selectedExposure.summary?.total_paid || 0, selected.account_currency || currency, user.language) }}
-											</div>
-										</div>
-									</div>
-								</div>
-							</div>
-
-							<!-- Open import commitments (CIs not yet invoiced) — WP-I6 -->
-							<div
-								v-if="selectedExposure && selectedExposure.commitments && selectedExposure.commitments.length"
-								class="px-3 py-2 border-bottom"
-							>
-								<div class="d-flex align-items-center gap-2 mb-2">
-									<i class="ti ti-file-invoice text-secondary"></i>
-									<span class="small text-uppercase fw-semibold text-secondary">{{ t("Open commitments") }}</span>
-								</div>
-								<table class="table table-sm align-middle mb-0">
-									<thead>
-										<tr>
-											<th>{{ t("Commercial Invoice") }}</th>
-											<th>{{ t("Status") }}</th>
-											<th class="text-end">{{ t("Agreed total") }}</th>
-											<th class="text-end"></th>
-										</tr>
-									</thead>
-									<tbody>
-										<tr v-for="c in selectedExposure.commitments" :key="c.name">
-											<td>
-												<router-link
-													:to="{ name: 'imports-commercial-invoice', params: { name: c.name } }"
-													class="text-reset text-decoration-none fw-medium"
-												>
-													{{ c.ci_number || c.name }}
-												</router-link>
-											</td>
-											<td>
-												<span class="badge" :class="getStatusBadgeClass('Commercial Invoice', c.status)">{{ c.status }}</span>
-											</td>
-											<td class="text-end font-monospace stbl-amount">
-												{{ formatMoney(c.agreed_total || 0, c.currency || selected.account_currency || currency, user.language) }}
-											</td>
-											<td class="text-end">
-												<button
-													type="button"
-													class="btn btn-sm btn-outline-primary"
-													:disabled="convertBusy"
-													@click="openConvert(c)"
-												>
-													<i class="ti ti-file-import me-1"></i>{{ t("Convert to Invoice") }}
-												</button>
-											</td>
-										</tr>
-									</tbody>
-								</table>
-							</div>
-
-							<!-- Tabs Header -->
-							<div class="bg-white border-bottom">
-								<ul class="nav nav-tabs border-0 px-3">
-									<li class="nav-item">
-										<a
-											href="#"
-											class="nav-link border-0 border-bottom-2 py-3"
-											:class="{ active: currentTab === 'ledger', 'border-primary': currentTab === 'ledger' }"
-											@click.prevent="currentTab = 'ledger'"
-										>
-											{{ t("Ledger") }}
-										</a>
-									</li>
-									<li class="nav-item">
-										<a
-											href="#"
-											class="nav-link border-0 border-bottom-2 py-3"
-											:class="{ active: currentTab === 'orders', 'border-primary': currentTab === 'orders' }"
-											@click.prevent="currentTab = 'orders'"
-										>
-											{{ t("Orders") }}
-											<span class="badge bg-secondary-subtle text-secondary ms-1">{{ suppOrders.length }}</span>
-										</a>
-									</li>
-									<li class="nav-item">
-										<a
-											href="#"
-											class="nav-link border-0 border-bottom-2 py-3"
-											:class="{ active: currentTab === 'invoices', 'border-primary': currentTab === 'invoices' }"
-											@click.prevent="currentTab = 'invoices'"
-										>
-											{{ t("Invoices") }}
-											<span class="badge bg-secondary-subtle text-secondary ms-1">{{ recentInvoices.length }}</span>
-										</a>
-									</li>
-									<li v-if="session.canAccessModule('tender')" class="nav-item">
-										<a
-											href="#"
-											class="nav-link border-0 border-bottom-2 py-3"
-											:class="{ active: currentTab === 'quotations', 'border-primary': currentTab === 'quotations' }"
-											@click.prevent="currentTab = 'quotations'"
-										>
-											{{ t("Quotations") }}
-											<span class="badge bg-secondary-subtle text-secondary ms-1">{{ suppQuotations.length }}</span>
-										</a>
-									</li>
-								</ul>
-							</div>
-
-							<!-- Tab Panes -->
-							<div class="cust-tab-content bg-white" style="overflow-y: auto; height: calc(100vh - 20rem);">
-								<!-- LEDGER TAB -->
-								<div v-if="currentTab === 'ledger'" class="d-flex flex-column h-100">
-									<!-- Ledger controls -->
-									<div class="p-3 border-bottom bg-light">
-										<div class="row g-2 align-items-center">
-											<div class="col-auto">
-												<Select v-model="ledgerTypeFilter" size="sm" :options="voucherTypes" style="width: 140px" />
-											</div>
-											<div class="col-auto">
-												<DateInput v-model="ledgerFromDate" size="sm" style="width: 110px" />
-											</div>
-											<div class="col-auto">
-												<DateInput v-model="ledgerToDate" size="sm" style="width: 110px" />
-											</div>
-											<div class="col">
-												<input v-model="ledgerSearch" type="search" class="form-control form-control-sm" :placeholder="t('Search voucher…')" />
-											</div>
-											<div class="col-auto">
-												<button
-													type="button"
-													class="btn btn-sm btn-ghost-secondary px-2"
-													@click="ledgerSortAsc = !ledgerSortAsc"
-													:title="t('Toggle date sort')"
-												>
-													<i class="ti fs-3" :class="ledgerSortAsc ? 'ti-arrow-narrow-up' : 'ti-arrow-narrow-down'"></i>
-												</button>
-											</div>
-											<div class="col-auto">
-												<button
-													type="button"
-													class="btn btn-sm btn-outline-secondary"
-													:disabled="!ledger?.entries?.length"
-													:title="t('Professional Excel export of this ledger')"
-													@click="exportLedgerXlsx"
-												>
-													<i class="ti ti-file-spreadsheet me-1"></i>{{ t("Excel") }}
-												</button>
-											</div>
-										</div>
-									</div>
-
-									<div class="flex-fill position-relative">
-										<div v-if="ledgerLoading" class="text-center py-5">
-											<div class="spinner-border text-primary"></div>
-										</div>
-										<div v-else-if="ledgerError" class="alert alert-danger m-3">{{ ledgerError }}</div>
-										<div v-else-if="!filteredLedgerRows.length" class="text-secondary text-center py-5">
-											{{ t("No transactions in this period.") }}
-										</div>
-										<template v-else>
-											<div v-if="ledgerCurrencyMixed" class="alert alert-warning m-3 small mb-2" role="alert">
-												<i class="ti ti-alert-triangle me-1"></i>
-												{{ t("Ledger spans multiple account currencies; amounts shown in base currency.") }}
-											</div>
-											<table class="table table-vcenter table-sm card-table m-0">
-												<thead class="sticky-top bg-white border-bottom">
-													<tr>
-														<th class="py-2">{{ t("Date") }}</th>
-														<th class="py-2">{{ t("Voucher") }}</th>
-														<th class="text-end py-2">{{ t("Debit") }}</th>
-														<th class="text-end py-2">{{ t("Credit") }}</th>
-														<th class="text-end py-2">{{ t("Balance") }} ({{ ledgerCurrency }})</th>
-													</tr>
-												</thead>
-												<tbody>
-													<!-- Opening Balance Row -->
-													<tr v-if="ledger" class="text-secondary bg-transparent">
-														<td colspan="4" class="text-end fst-italic py-2">{{ t("Opening balance") }}</td>
-														<td class="text-end font-monospace fst-italic py-2">
-															{{ formatMoney(
-																ledgerCurrencyMixed ? ledger.opening_base : ledger.opening_acc,
-																ledgerCurrency,
-																user.language,
-															) }}
-														</td>
-													</tr>
-													<tr v-for="e in filteredLedgerRows" :key="e.name">
-														<td class="text-nowrap small py-2">
-															<div>{{ formatDate(e.posting_date) }}</div>
-															<div v-if="e.creation && formatTime(e.creation)" class="text-secondary font-monospace" style="font-size: 0.72rem;">
-																{{ formatTime(e.creation) }}
-															</div>
-														</td>
-														<td class="py-2">
-															<div class="small text-secondary fw-semibold d-flex align-items-center gap-1">
-																<span>{{ sourceKind(e) }}</span>
-																<span v-if="e.channel" class="badge bg-secondary-lt" style="font-size: 0.62rem;">{{ t(e.channel) }}</span>
-															</div>
-															<!-- The document the business recognises (a Commercial Invoice for
-															     imports), opening its OWN form. The accounting voucher behind it
-															     stays one click away, in muted type. -->
-															<router-link
-																v-if="e.source_route"
-																:to="e.source_route"
-																class="font-monospace small text-primary fw-semibold text-decoration-none"
-															>
-																{{ e.source_label || e.voucher_no }}
-															</router-link>
-															<span v-else class="font-monospace small">{{ e.source_label || e.voucher_no || "—" }}</span>
-															<button
-																v-if="e.voucher_no && e.source_name !== e.voucher_no"
-																type="button"
-																class="btn btn-link p-0 ms-2 font-monospace text-secondary text-decoration-none"
-																style="font-size: 0.68rem;"
-																:title="t('Accounting voucher')"
-																@click="openVoucher(e)"
-															>
-																{{ e.voucher_no }}
-															</button>
-															<div class="small text-muted font-monospace mt-0.5 text-truncate" style="max-width:280px" :title="e.display_remark">{{ e.display_remark || "—" }}</div>
-														</td>
-														<td class="text-end font-monospace small py-2 align-middle">
-															<span v-if="Number(ledgerCurrencyMixed ? e.debit : e.debit_in_account_currency) > 0">
-																{{ formatMoney(
-																	ledgerCurrencyMixed ? e.debit : e.debit_in_account_currency,
-																	ledgerCurrencyMixed ? currency : (e.account_currency || ledgerCurrency),
-																	user.language,
-																) }}
-															</span>
-															<span v-else class="text-secondary">—</span>
-														</td>
-														<td class="text-end font-monospace small py-2 align-middle">
-															<span v-if="Number(ledgerCurrencyMixed ? e.credit : e.credit_in_account_currency) > 0">
-																{{ formatMoney(
-																	ledgerCurrencyMixed ? e.credit : e.credit_in_account_currency,
-																	ledgerCurrencyMixed ? currency : (e.account_currency || ledgerCurrency),
-																	user.language,
-																) }}
-															</span>
-															<span v-else class="text-secondary">—</span>
-														</td>
-														<td class="text-end font-monospace fw-semibold small py-2 align-middle">
-															{{ formatMoney(
-																ledgerCurrencyMixed ? e.running_base : e.running_acc,
-																ledgerCurrency,
-																user.language,
-															) }}
-														</td>
-													</tr>
-												</tbody>
-											</table>
-										</template>
-									</div>
-								</div>
-
-								<!-- ORDERS TAB -->
-								<div v-if="currentTab === 'orders'" class="p-3">
-									<div v-if="suppOrdersLoading" class="text-center py-5">
-										<div class="spinner-border text-primary"></div>
-									</div>
-									<EmptyState
-										v-else-if="!suppOrders.length"
-										icon="ti-clipboard-list"
-										tone="orange"
-										:title="t('No orders yet')"
-										:subtitle="t('No purchase orders have been registered for this supplier.')"
-										class="py-4 bg-transparent border-0"
-									/>
-									<div v-else class="table-responsive">
-										<table class="table table-vcenter table-hover card-table">
-											<thead>
-												<tr>
-													<th>{{ t("Order #") }}</th>
-													<th>{{ t("Date") }}</th>
-													<th class="text-end">{{ t("Total") }}</th>
-													<th>{{ t("Status") }}</th>
-												</tr>
-											</thead>
-											<tbody>
-												<tr
-													v-for="o in suppOrders"
-													:key="o.name"
-													class="cursor-pointer"
-													@click="openVoucher({ voucher_type: 'Purchase Order', voucher_no: o.name })"
-												>
-													<td class="font-monospace text-primary fw-semibold">{{ o.name }}</td>
-													<td>{{ formatDate(o.transaction_date) }}</td>
-													<td class="text-end font-monospace">
-														{{ formatMoney(o.grand_total, o.currency || currency, user.language) }}
-													</td>
-													<td>
-														<span class="badge" :class="getStatusBadgeClass('Purchase Order', o.status)">
-															{{ t(o.status) }}
-														</span>
-													</td>
-												</tr>
-											</tbody>
-										</table>
-									</div>
-								</div>
-
-								<!-- INVOICES TAB -->
-								<div v-if="currentTab === 'invoices'" class="p-3">
-									<div class="table-responsive">
-										<table class="table table-vcenter table-hover card-table">
-											<thead>
-												<tr>
-													<th>{{ t("Invoice #") }}</th>
-													<th>{{ t("Date") }}</th>
-													<th class="text-end">{{ t("Total") }}</th>
-													<th class="text-end">{{ t("Outstanding") }}</th>
-													<th>{{ t("Status") }}</th>
-												</tr>
-											</thead>
-											<tbody>
-												<tr
-													v-for="inv in recentInvoices"
-													:key="inv.name"
-													class="cursor-pointer"
-													@click="openVoucher({ voucher_type: 'Purchase Invoice', voucher_no: inv.name })"
-												>
-													<td class="font-monospace text-primary fw-semibold">{{ inv.name }}</td>
-													<td>{{ formatDate(inv.posting_date) }}</td>
-													<td class="text-end font-monospace stbl-amount">
-														{{ formatMoney(inv.grand_total, inv.currency || currency, user.language) }}
-													</td>
-													<td class="text-end font-monospace stbl-amount">
-														{{ formatMoney(inv.outstanding_amount, inv.currency || currency, user.language) }}
-													</td>
-													<td>
-														<span class="badge" :class="getStatusBadgeClass('Purchase Invoice', inv.status)">
-															{{ t(inv.status) }}
-														</span>
-													</td>
-												</tr>
-												<tr v-if="!recentInvoices.length">
-													<td colspan="5" class="text-center py-4 text-secondary">
-														{{ t("No invoices found.") }}
-													</td>
-												</tr>
-											</tbody>
-										</table>
-									</div>
-								</div>
-
-								<!-- QUOTATIONS TAB -->
-								<div v-if="currentTab === 'quotations' && session.canAccessModule('tender')" class="p-3">
-									<div v-if="suppQuotationsLoading" class="text-center py-5">
-										<div class="spinner-border text-primary"></div>
-									</div>
-									<EmptyState
-										v-else-if="!suppQuotations.length"
-										icon="ti-file-dollar"
-										:title="t('No quotations yet')"
-										:subtitle="t('No supplier quotations registered for this supplier.')"
-										class="py-4 bg-transparent border-0"
-									/>
-									<div v-else class="table-responsive">
-										<table class="table table-vcenter table-hover card-table m-0">
-											<thead>
-												<tr>
-													<th>{{ t("Quotation #") }}</th>
-													<th>{{ t("Date") }}</th>
-													<th>{{ t("Tender / deal") }}</th>
-													<th class="text-end">{{ t("Base total") }}</th>
-													<th>{{ t("Valid till") }}</th>
-													<th>{{ t("Status") }}</th>
-													<th>{{ t("Result") }}</th>
-												</tr>
-											</thead>
-											<tbody>
-												<tr
-													v-for="q in suppQuotations"
-													:key="q.name"
-													class="cursor-pointer"
-													@click="q.deal || q.custom_crm_deal ? router.push({ path: '/tender/sourcing', query: { deal: q.deal || q.custom_crm_deal } }) : null"
-												>
-													<td>
-														<span class="fw-semibold font-monospace">{{ q.name }}</span>
-													</td>
-													<td>{{ q.transaction_date ? formatDate(q.transaction_date) : "—" }}</td>
-													<td>
-														<span v-if="q.deal || q.custom_crm_deal" class="text-body fw-medium">
-															<i class="ti ti-target me-1 text-primary"></i>
-															{{ q.deal_label || q.deal || q.custom_crm_deal }}
-														</span>
-														<span v-else class="text-secondary">—</span>
-													</td>
-													<td class="text-end font-monospace">
-														{{ formatMoney(q.base_grand_total || q.grand_total, q.currency || currency, user.language) }}
-													</td>
-													<td>{{ q.valid_till ? formatDate(q.valid_till) : "—" }}</td>
-													<td>
-														<span class="badge bg-secondary-lt">{{ q.status }}</span>
-													</td>
-													<td>
-														<span v-if="q.result === 'won'" class="badge bg-green text-white"><i class="ti ti-trophy me-1"></i>{{ t("Won") }}</span>
-														<span v-else-if="q.result === 'lost'" class="badge bg-secondary-lt text-secondary">{{ t("Lost") }}</span>
-														<span v-else class="badge bg-blue-lt text-blue">{{ t("Open") }}</span>
-													</td>
-												</tr>
-											</tbody>
-										</table>
-									</div>
-								</div>
-							</div>
+		<template #form-fields>
+			<div class="row g-3">
+				<div class="col-12">
+					<label class="form-label">{{ t("Supplier name") }} <span class="text-danger">*</span></label>
+					<input v-model="form.supplier_name" type="text" class="form-control" autofocus />
+				</div>
+				<div class="col-md-6">
+					<label class="form-label">{{ t("Type") }}</label>
+					<Select v-model="form.supplier_type" :options="supplierTypeOptions" />
+				</div>
+				<div class="col-md-6">
+					<label class="form-label">{{ t("Tax ID") }}</label>
+					<input v-model="form.tax_id" type="text" class="form-control" />
+				</div>
+				<div class="col-md-6">
+					<label class="form-label">{{ t("Supplier group") }}</label>
+					<Select v-model="form.supplier_group" :options="groupOptions" value-key="name" label-key="name" :placeholder="t('— default —')" />
+				</div>
+				<div class="col-md-6">
+					<label class="form-label">{{ t("Country") }}</label>
+					<input v-model="form.country" type="text" class="form-control" />
+				</div>
+				<div class="col-md-6">
+					<label class="form-label">{{ t("Email") }}</label>
+					<input v-model="form.email_id" type="email" class="form-control" />
+				</div>
+				<div class="col-md-6">
+					<label class="form-label">{{ t("Mobile") }}</label>
+					<input v-model="form.mobile_no" type="tel" class="form-control" />
+				</div>
+				<div class="col-md-6">
+					<label class="form-label">{{ t("Default price list") }}</label>
+					<Select v-model="form.default_price_list" :options="priceListOptions" value-key="name" :placeholder="t('— global default —')">
+						<template #option="{ option: p }">
+							{{ p.name }}<span v-if="p.currency"> ({{ p.currency }})</span>
 						</template>
-					</div>
+						<template #selected="{ option: p }">
+							{{ p.name }}<span v-if="p.currency"> ({{ p.currency }})</span>
+						</template>
+					</Select>
+				</div>
+				<div class="col-md-6">
+					<label class="form-label">{{ t("Default currency") }}</label>
+					<Select v-model="form.default_currency" class="font-monospace" :options="currencyOptions" value-key="name" :placeholder="t('— company default —')">
+						<template #option="{ option: c }">
+							{{ c.name }}<template v-if="c.symbol"> ({{ c.symbol }})</template>
+						</template>
+						<template #selected="{ option: c }">
+							{{ c.name }}<template v-if="c.symbol"> ({{ c.symbol }})</template>
+						</template>
+					</Select>
 				</div>
 			</div>
-		</div>
-	</div>
-
-	<!-- Voucher Drawer -->
-	<template v-if="voucherOpen">
-		<div class="offcanvas-backdrop fade show" @click="closeVoucher"></div>
-		<div class="offcanvas offcanvas-end show" tabindex="-1" style="width: min(520px, 100vw)">
-			<div class="offcanvas-header border-bottom">
-				<h5 class="offcanvas-title">
-					<span v-if="voucherDetail">{{ t(voucherDetail._type) }}</span>
-					<span v-else>…</span>
-				</h5>
-				<button type="button" class="btn-close" @click="closeVoucher"></button>
-			</div>
-			<div class="offcanvas-body">
-				<div v-if="voucherLoading" class="text-center py-5">
-					<div class="spinner-border text-primary"></div>
-				</div>
-				<div v-else-if="voucherError" class="alert alert-danger">{{ voucherError }}</div>
-				<template v-else-if="voucherDetail">
-					<!-- Purchase Invoice detail -->
-					<template v-if="voucherDetail._type === 'Purchase Invoice'">
-						<div class="datagrid mb-3">
-							<div class="datagrid-item">
-								<div class="datagrid-title">{{ t("Invoice") }}</div>
-								<div class="datagrid-content font-monospace">{{ voucherDetail.name }}</div>
-							</div>
-							<div class="datagrid-item">
-								<div class="datagrid-title">{{ t("Date") }}</div>
-								<div class="datagrid-content">{{ formatDate(voucherDetail.posting_date) }}</div>
-							</div>
-							<div class="datagrid-item">
-								<div class="datagrid-title">{{ t("Status") }}</div>
-								<div class="datagrid-content">
-									<span class="badge" :class="getStatusBadgeClass('Purchase Invoice', voucherDetail.status)">
-										{{ t(voucherDetail.status) }}
-									</span>
-								</div>
-							</div>
-							<div class="datagrid-item">
-								<div class="datagrid-title">{{ t("Grand total") }}</div>
-								<div class="datagrid-content font-monospace">{{ formatMoney(voucherDetail.grand_total, voucherDetail.currency, user.language) }}</div>
-							</div>
-							<div class="datagrid-item">
-								<div class="datagrid-title">{{ t("Outstanding") }}</div>
-								<div class="datagrid-content font-monospace">{{ formatMoney(voucherDetail.outstanding_amount, voucherDetail.currency, user.language) }}</div>
-							</div>
-						</div>
-						<table v-if="voucherDetail.items?.length" class="table table-sm table-vcenter">
-							<thead>
-								<tr>
-									<th>{{ t("Item") }}</th>
-									<th class="text-end">{{ t("Qty") }}</th>
-									<th class="text-end">{{ t("Amount") }}</th>
-								</tr>
-							</thead>
-							<tbody>
-								<tr v-for="it in voucherDetail.items" :key="it.item_code">
-									<td>{{ it.item_name || it.item_code }}</td>
-									<td class="text-end font-monospace">{{ it.qty }}</td>
-									<td class="text-end font-monospace">{{ formatMoney(it.amount, voucherDetail.currency, user.language) }}</td>
-								</tr>
-							</tbody>
-						</table>
-					</template>
-
-					<!-- Purchase Order detail -->
-					<template v-else-if="voucherDetail._type === 'Purchase Order'">
-						<div class="datagrid mb-3">
-							<div class="datagrid-item">
-								<div class="datagrid-title">{{ t("Order") }}</div>
-								<div class="datagrid-content font-monospace">{{ voucherDetail.name }}</div>
-							</div>
-							<div class="datagrid-item">
-								<div class="datagrid-title">{{ t("Date") }}</div>
-								<div class="datagrid-content">{{ formatDate(voucherDetail.transaction_date) }}</div>
-							</div>
-							<div class="datagrid-item">
-								<div class="datagrid-title">{{ t("Status") }}</div>
-								<div class="datagrid-content">
-									<span class="badge" :class="getStatusBadgeClass('Purchase Order', voucherDetail.status)">
-										{{ t(voucherDetail.status) }}
-									</span>
-								</div>
-							</div>
-							<div class="datagrid-item">
-								<div class="datagrid-title">{{ t("Grand total") }}</div>
-								<div class="datagrid-content font-monospace">{{ formatMoney(voucherDetail.grand_total, voucherDetail.currency, user.language) }}</div>
-							</div>
-						</div>
-						<table v-if="voucherDetail.items?.length" class="table table-sm table-vcenter">
-							<thead>
-								<tr>
-									<th>{{ t("Item") }}</th>
-									<th class="text-end">{{ t("Qty") }}</th>
-									<th class="text-end">{{ t("Amount") }}</th>
-								</tr>
-							</thead>
-							<tbody>
-								<tr v-for="it in voucherDetail.items" :key="it.item_code">
-									<td>{{ it.item_name || it.item_code }}</td>
-									<td class="text-end font-monospace">{{ it.qty }}</td>
-									<td class="text-end font-monospace">{{ formatMoney(it.amount, voucherDetail.currency, user.language) }}</td>
-								</tr>
-							</tbody>
-						</table>
-					</template>
-
-					<!-- Payment Entry detail -->
-					<template v-else-if="voucherDetail._type === 'Payment Entry'">
-						<div class="datagrid mb-3">
-							<div class="datagrid-item">
-								<div class="datagrid-title">{{ t("Payment") }}</div>
-								<div class="datagrid-content font-monospace">{{ voucherDetail.name }}</div>
-							</div>
-							<div class="datagrid-item">
-								<div class="datagrid-title">{{ t("Date") }}</div>
-								<div class="datagrid-content">{{ formatDate(voucherDetail.posting_date) }}</div>
-							</div>
-							<div class="datagrid-item">
-								<div class="datagrid-title">{{ t("Type") }}</div>
-								<div class="datagrid-content">{{ t(voucherDetail.payment_type) }}</div>
-							</div>
-							<div class="datagrid-item">
-								<div class="datagrid-title">{{ t("Amount paid") }}</div>
-								<div class="datagrid-content font-monospace">{{ formatMoney(voucherDetail.paid_amount, voucherDetail.paid_from_account_currency, user.language) }}</div>
-							</div>
-							<div class="datagrid-item">
-								<div class="datagrid-title">{{ t("Mode") }}</div>
-								<div class="datagrid-content">{{ voucherDetail.mode_of_payment || "—" }}</div>
-							</div>
-							<div v-if="voucherDetail.reference_no" class="datagrid-item">
-								<div class="datagrid-title">{{ t("Reference") }}</div>
-								<div class="datagrid-content font-monospace">{{ voucherDetail.reference_no }}</div>
-							</div>
-						</div>
-						<div v-if="voucherDetail.references?.length">
-							<div class="small text-secondary text-uppercase mb-1">{{ t("Applied to") }}</div>
-							<table class="table table-sm table-vcenter">
-								<thead>
-									<tr>
-										<th>{{ t("Document") }}</th>
-										<th class="text-end">{{ t("Allocated") }}</th>
-									</tr>
-								</thead>
-								<tbody>
-									<tr v-for="ref in voucherDetail.references" :key="ref.reference_name">
-										<td class="font-monospace small">{{ ref.reference_name }}</td>
-										<td class="text-end font-monospace">{{ formatMoney(ref.allocated_amount, voucherDetail.paid_from_account_currency, user.language) }}</td>
-									</tr>
-								</tbody>
-							</table>
-						</div>
-					</template>
-
-					<!-- Journal Entry detail -->
-					<template v-else-if="voucherDetail._type === 'Journal Entry'">
-						<div class="datagrid mb-3">
-							<div class="datagrid-item">
-								<div class="datagrid-title">{{ t("Entry") }}</div>
-								<div class="datagrid-content font-monospace">{{ voucherDetail.name }}</div>
-							</div>
-							<div class="datagrid-item">
-								<div class="datagrid-title">{{ t("Date") }}</div>
-								<div class="datagrid-content">{{ formatDate(voucherDetail.posting_date) }}</div>
-							</div>
-							<div v-if="voucherDetail.user_remark" class="datagrid-item">
-								<div class="datagrid-title">{{ t("Remark") }}</div>
-								<div class="datagrid-content">{{ voucherDetail.user_remark }}</div>
-							</div>
-						</div>
-						<div v-if="voucherDetail.accounts?.length">
-							<div class="small text-secondary text-uppercase mb-1">{{ t("Accounts") }}</div>
-							<table class="table table-sm table-vcenter">
-								<thead>
-									<tr>
-										<th>{{ t("Account") }}</th>
-										<th class="text-end">{{ t("Debit") }}</th>
-										<th class="text-end">{{ t("Credit") }}</th>
-									</tr>
-								</thead>
-								<tbody>
-									<tr v-for="(ac, i) in voucherDetail.accounts" :key="i">
-										<td class="small">{{ ac.account_name || ac.account }}</td>
-										<td class="text-end font-monospace small">
-											<span v-if="Number(ac.debit) > 0">{{ formatMoney(ac.debit, ac.account_currency, user.language) }}</span>
-											<span v-else class="text-secondary">—</span>
-										</td>
-										<td class="text-end font-monospace small">
-											<span v-if="Number(ac.credit) > 0">{{ formatMoney(ac.credit, ac.account_currency, user.language) }}</span>
-											<span v-else class="text-secondary">—</span>
-										</td>
-									</tr>
-								</tbody>
-							</table>
-						</div>
-					</template>
-
-					<!-- Fallback -->
-					<template v-else>
-						<div class="font-monospace small">{{ voucherDetail.name }}</div>
-					</template>
-				</template>
-			</div>
-		</div>
-	</template>
-
-	<!-- Create/Edit Modal -->
-	<template v-if="createOpen">
-		<div class="modal-backdrop fade show" @click="closeCreate"></div>
-		<div class="modal fade show d-block" tabindex="-1" role="dialog">
-			<div class="modal-dialog modal-dialog-centered" role="document">
-				<div class="modal-content">
-					<div class="modal-header">
-						<h5 class="modal-title">{{ editMode ? t("Edit supplier") : t("New supplier") }}</h5>
-						<button type="button" class="btn-close" :aria-label="t('Close')" @click="closeCreate"></button>
-					</div>
-					<div class="modal-body">
-						<div v-if="submitError" class="alert alert-danger">{{ submitError }}</div>
-						<div class="row g-3">
-							<div class="col-12">
-								<label class="form-label">{{ t("Supplier name") }} <span class="text-danger">*</span></label>
-								<input v-model="form.supplier_name" type="text" class="form-control" autofocus />
-							</div>
-							<div class="col-md-6">
-								<label class="form-label">{{ t("Type") }}</label>
-								<Select v-model="form.supplier_type" :options="SUPPLIER_TYPES" />
-							</div>
-							<div class="col-md-6">
-								<label class="form-label">{{ t("Tax ID") }}</label>
-								<input v-model="form.tax_id" type="text" class="form-control" />
-							</div>
-							<div class="col-md-6">
-								<label class="form-label">{{ t("Supplier group") }}</label>
-								<Select v-model="form.supplier_group" :options="groupOptions" value-key="name" label-key="name" :placeholder="t('— default —')" />
-							</div>
-							<div class="col-md-6">
-								<label class="form-label">{{ t("Country") }}</label>
-								<input v-model="form.country" type="text" class="form-control" />
-							</div>
-							<div class="col-md-6">
-								<label class="form-label">{{ t("Email") }}</label>
-								<input v-model="form.email_id" type="email" class="form-control" />
-							</div>
-							<div class="col-md-6">
-								<label class="form-label">{{ t("Mobile") }}</label>
-								<input v-model="form.mobile_no" type="tel" class="form-control" />
-							</div>
-							<div class="col-md-6">
-								<label class="form-label">{{ t("Default price list") }}</label>
-								<Select v-model="form.default_price_list" :options="priceListOptions" value-key="name" :placeholder="t('— global default —')">
-									<template #option="{ option: p }">
-										{{ p.name }}<span v-if="p.currency"> ({{ p.currency }})</span>
-									</template>
-									<template #selected="{ option: p }">
-										{{ p.name }}<span v-if="p.currency"> ({{ p.currency }})</span>
-									</template>
-								</Select>
-							</div>
-							<div class="col-md-6">
-								<label class="form-label">{{ t("Default currency") }}</label>
-								<Select v-model="form.default_currency" class="font-monospace" :options="currencyOptions" value-key="name" :placeholder="t('— company default —')">
-									<template #option="{ option: c }">
-										{{ c.name }}<template v-if="c.symbol"> ({{ c.symbol }})</template>
-									</template>
-									<template #selected="{ option: c }">
-										{{ c.name }}<template v-if="c.symbol"> ({{ c.symbol }})</template>
-									</template>
-								</Select>
-							</div>
-						</div>
-					</div>
-					<div class="modal-footer">
-						<button type="button" class="btn btn-link link-secondary" @click="closeCreate" :disabled="submitting">
-							{{ t("Cancel") }}
-						</button>
-						<button
-							v-if="editMode"
-							type="button"
-							class="btn btn-outline-danger me-auto"
-							:disabled="submitting"
-							@click="deleteSupplier"
-						>
-							<i class="ti ti-trash me-1"></i>
-							{{ t("Delete") }}
-						</button>
-						<button
-							type="button"
-							class="btn btn-primary ms-auto"
-							:disabled="submitting || !form.supplier_name.trim()"
-							@click="submitCreate"
-						>
-							<span v-if="submitting" class="spinner-border spinner-border-sm me-2"></span>
-							<i v-else class="ti ti-device-floppy me-1"></i>
-							{{ t("Save") }}
-						</button>
-					</div>
-				</div>
-			</div>
-		</div>
-	</template>
+		</template>
+	</PartyCenter>
 
 	<!-- Payment Entry Modal -->
 	<PartyPaymentModal
@@ -1795,9 +606,10 @@ watch(activeCompany, () => {
 		:open="partyPayOpen"
 		party-type="Supplier"
 		:party="selected.name"
+		:party-name="selected.supplier_name"
 		:company="activeCompany"
 		@close="partyPayOpen = false"
-		@paid="partyPayOpen = false; loadLedger(selected); loadSuppOrders(selected); loadSuppliers(); selectSupplier(selected);"
+		@paid="partyPayOpen = false; refreshAfterMoney();"
 	/>
 
 	<!-- CI → Purchase Invoice convert (WP-I6): preview (dry-run), then confirm -->
@@ -1876,32 +688,3 @@ watch(activeCompany, () => {
 		</div>
 	</template>
 </template>
-
-<style scoped>
-.customers-redesign {
-	--cust-radius: 1rem;
-	--cust-radius-sm: 0.625rem;
-	--cust-border: #e6e7eb;
-	--cust-row-hover: #f4f6fa;
-	--cust-row-active: #eef4ff;
-	--cust-pane-bg: #fbfbfc;
-}
-
-.cust-merged-list {
-	display: flex;
-	flex-direction: column;
-}
-
-.cust-merged-pane {
-	display: flex;
-	flex-direction: column;
-}
-
-.cust-list-scroll {
-	overflow-y: auto;
-}
-
-.cust-list-footer {
-	margin-top: auto;
-}
-</style>
