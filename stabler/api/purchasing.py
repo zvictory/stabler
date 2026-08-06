@@ -1644,6 +1644,7 @@ def create_purchase_order(
 		frappe.throw(f"Unknown supplier: {supplier}")
 	if not set_warehouse or not frappe.db.exists("Warehouse", set_warehouse):
 		from stabler.api._common import _company_default_warehouse
+
 		set_warehouse = _company_default_warehouse(company)
 
 	if isinstance(items, str):

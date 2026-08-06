@@ -18,14 +18,17 @@ sys.path.insert(0, os.path.join(BENCH_PATH, "apps", "stabler"))
 import json
 import multiprocessing
 
+
 def worker_send_email(company, deal, idempotency_key, barrier, result_queue):
 	os.chdir(SITES_PATH)
 	import frappe
+
 	frappe.init(site="stabler", sites_path=SITES_PATH)
 	frappe.connect()
 	try:
 		frappe.set_user("Administrator")
 		from stabler.api import crm_email
+
 		barrier.wait()  # Synchronize workers to fire simultaneously
 		res = crm_email.send_deal_email(
 			deal=deal,
@@ -42,14 +45,17 @@ def worker_send_email(company, deal, idempotency_key, barrier, result_queue):
 	finally:
 		frappe.destroy()
 
+
 def worker_automation_rule(company, deal, rule_key, barrier, result_queue):
 	os.chdir(SITES_PATH)
 	import frappe
+
 	frappe.init(site="stabler", sites_path=SITES_PATH)
 	frappe.connect()
 	try:
 		frappe.set_user("Administrator")
 		from stabler.api import crm_automation
+
 		barrier.wait()
 		res = crm_automation._process_automation_rule_action(
 			company=company,
@@ -67,9 +73,11 @@ def worker_automation_rule(company, deal, rule_key, barrier, result_queue):
 	finally:
 		frappe.destroy()
 
+
 def run_concurrency_test():
 	os.chdir(SITES_PATH)
 	import frappe
+
 	frappe.init(site="stabler", sites_path=SITES_PATH)
 	frappe.connect()
 	frappe.set_user("Administrator")
@@ -104,8 +112,12 @@ def run_concurrency_test():
 	# 2. CRM Activity Concurrency Race
 	barrier_act = multiprocessing.Barrier(2)
 	q_act = multiprocessing.Queue()
-	p3 = multiprocessing.Process(target=worker_automation_rule, args=(comp, deal, key_act, barrier_act, q_act))
-	p4 = multiprocessing.Process(target=worker_automation_rule, args=(comp, deal, key_act, barrier_act, q_act))
+	p3 = multiprocessing.Process(
+		target=worker_automation_rule, args=(comp, deal, key_act, barrier_act, q_act)
+	)
+	p4 = multiprocessing.Process(
+		target=worker_automation_rule, args=(comp, deal, key_act, barrier_act, q_act)
+	)
 
 	p3.start()
 	p4.start()
@@ -154,6 +166,7 @@ def run_concurrency_test():
 		json.dump(summary, f, indent=2, default=str)
 
 	print(f"DB Concurrency harness finished. Results written to {out_file}")
+
 
 if __name__ == "__main__":
 	multiprocessing.set_start_method("fork")

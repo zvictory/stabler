@@ -1,7 +1,9 @@
 import frappe
+
 from stabler.api._common import _company_default_warehouse
-from stabler.api.purchasing import create_purchase_receipt_from_po, submit_purchase_receipt
 from stabler.api.lcv import create_additional_lcv
+from stabler.api.purchasing import create_purchase_receipt_from_po, submit_purchase_receipt
+
 
 def run():
 	po_name = "PUR-ORD-2026-00005"

@@ -594,6 +594,7 @@ LEDGER_SUMMARY_MASK_FIELDS: tuple[str, ...] = (
 
 def today_date():
 	from datetime import date
+
 	return date.today()
 
 
@@ -1741,7 +1742,9 @@ def calculate_ci_cost_overview(
 		"duties_estimated": duties_estimated,
 	}
 
-	acc_goods = round(sum(float(b.get("grand_total") or 0.0) for b in bills if b.get("category") == "product"), 2)
+	acc_goods = round(
+		sum(float(b.get("grand_total") or 0.0) for b in bills if b.get("category") == "product"), 2
+	)
 	acc_lcv = round(float(lcv_total or 0.0), 2)
 	acc_total = round(acc_goods + acc_lcv, 2)
 	acc_per_kg = per_kg(acc_total, cargo_kg)
@@ -1776,8 +1779,17 @@ def calculate_ci_cost_overview(
 	unbilled_transport_expenses = [e for e in transport_expenses if not e.get("purchase_invoice")]
 	unbilled_total = round(sum(float(e.get("amount") or 0.0) for e in unbilled_transport_expenses), 2)
 
-	any_masked = any(e.get("bank_payment") is None or e.get("cash_payment") is None for e in transport_expenses)
-	paid_total = round(sum((e.get("bank_payment") or 0.0) + (e.get("cash_payment") or 0.0) for e in transport_expenses), 2) if not any_masked else None
+	any_masked = any(
+		e.get("bank_payment") is None or e.get("cash_payment") is None for e in transport_expenses
+	)
+	paid_total = (
+		round(
+			sum((e.get("bank_payment") or 0.0) + (e.get("cash_payment") or 0.0) for e in transport_expenses),
+			2,
+		)
+		if not any_masked
+		else None
+	)
 	outstanding_total = round(op_trans - paid_total, 2) if paid_total is not None else None
 
 	totals = {

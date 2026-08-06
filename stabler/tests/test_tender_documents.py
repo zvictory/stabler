@@ -12,6 +12,7 @@ Covers the derived-completion rules that make the document center honest:
 - waiver requires a written justification;
 - the two-level merge (tender master + lot) tags scope correctly.
 """
+
 from __future__ import annotations
 
 import json
@@ -48,27 +49,57 @@ class _FakeFrappe:
 	def __init__(self):
 		self.docs = {
 			("Tender Master", "TND-1"): _Doc(
-				name="TND-1", company="ACME",
-				custom_tender_documents=json.dumps([
-					{"key": "master_cert", "label": "Tender cert", "required": True, "scope": "tender", "role": "general"},
-				]),
+				name="TND-1",
+				company="ACME",
+				custom_tender_documents=json.dumps(
+					[
+						{
+							"key": "master_cert",
+							"label": "Tender cert",
+							"required": True,
+							"scope": "tender",
+							"role": "general",
+						},
+					]
+				),
 			),
 			("CRM Deal", "LOT-1"): _Doc(
-				name="LOT-1", company="ACME", custom_parent_tender="TND-1",
-				custom_tender_intake=json.dumps({
-					"documents": [
-						{"key": "gtd", "label": "ГТД", "required": True, "scope": "lot", "role": "customs"},
-						{"key": "invoice", "label": "Invoys", "required": True, "scope": "lot", "role": "finance"},
-					],
-				}),
+				name="LOT-1",
+				company="ACME",
+				custom_parent_tender="TND-1",
+				custom_tender_intake=json.dumps(
+					{
+						"documents": [
+							{
+								"key": "gtd",
+								"label": "ГТД",
+								"required": True,
+								"scope": "lot",
+								"role": "customs",
+							},
+							{
+								"key": "invoice",
+								"label": "Invoys",
+								"required": True,
+								"scope": "lot",
+								"role": "finance",
+							},
+						],
+					}
+				),
 			),
 		}
 
 		# File rows the fake site owns; uploads are validated against these.
 		self.file_urls = {
-			"/private/files/gtd_2026.pdf", "/private/files/tnd_cert.pdf",
-			"/files/x.pdf", "/files/a.pdf", "/files/b.pdf",
-			"/files/only.pdf", "/files/inv.pdf", "/files/c.pdf",
+			"/private/files/gtd_2026.pdf",
+			"/private/files/tnd_cert.pdf",
+			"/files/x.pdf",
+			"/files/a.pdf",
+			"/files/b.pdf",
+			"/files/only.pdf",
+			"/files/inv.pdf",
+			"/files/c.pdf",
 		}
 
 	def exists(self, doctype, name):
@@ -93,10 +124,16 @@ class TestParseDocRequirements(unittest.TestCase):
 	def test_file_satisfies_requirement(self):
 		from stabler.api._tender_documents import parse_doc_requirements
 
-		res = parse_doc_requirements([
-			{"key": "gtd", "label": "ГТД", "required": True,
-			 "files": [{"file_name": "gtd.pdf", "file_url": "/files/gtd.pdf"}]},
-		])
+		res = parse_doc_requirements(
+			[
+				{
+					"key": "gtd",
+					"label": "ГТД",
+					"required": True,
+					"files": [{"file_name": "gtd.pdf", "file_url": "/files/gtd.pdf"}],
+				},
+			]
+		)
 		self.assertTrue(res[0]["done"])
 		self.assertFalse(res[0]["unverified"])
 		self.assertEqual(res[0]["file_count"], 1)
@@ -105,9 +142,17 @@ class TestParseDocRequirements(unittest.TestCase):
 	def test_waiver_satisfies_requirement(self):
 		from stabler.api._tender_documents import parse_doc_requirements
 
-		res = parse_doc_requirements([
-			{"key": "cert", "label": "Cert", "required": True, "waiver_reason": "alt doc", "waived_by": "u@x"},
-		])
+		res = parse_doc_requirements(
+			[
+				{
+					"key": "cert",
+					"label": "Cert",
+					"required": True,
+					"waiver_reason": "alt doc",
+					"waived_by": "u@x",
+				},
+			]
+		)
 		self.assertTrue(res[0]["done"])
 		self.assertFalse(res[0]["unverified"])
 		self.assertEqual(res[0]["waiver_reason"], "alt doc")
@@ -129,10 +174,12 @@ class TestParseDocRequirements(unittest.TestCase):
 		"""
 		from stabler.api._tender_documents import parse_doc_requirements
 
-		res = parse_doc_requirements([
-			{"name": "Texnik spetsifikatsiya", "status": "ready"},
-			{"name": "Narx taklifi", "status": "pending"},
-		])
+		res = parse_doc_requirements(
+			[
+				{"name": "Texnik spetsifikatsiya", "status": "ready"},
+				{"name": "Narx taklifi", "status": "pending"},
+			]
+		)
 		self.assertEqual(len(res), 2)
 		self.assertEqual(res[0]["label"], "Texnik spetsifikatsiya")
 		self.assertEqual(res[0]["key"], "texnik_spetsifikatsiya")
@@ -151,7 +198,7 @@ class TestParseDocRequirements(unittest.TestCase):
 		self.assertEqual(res[0]["key"], "packing_list")
 
 	def test_scope_and_role_defaults_and_clamping(self):
-		from stabler.api._tender_documents import parse_doc_requirements, VALID_DOC_ROLES
+		from stabler.api._tender_documents import VALID_DOC_ROLES, parse_doc_requirements
 
 		res = parse_doc_requirements([{"label": "X", "scope": "bogus", "role": "bogus"}])
 		self.assertEqual(res[0]["scope"], "lot")  # unknown scope → lot
@@ -186,10 +233,12 @@ class TestDocsSummary(unittest.TestCase):
 	def test_unverified_counted(self):
 		from stabler.api._tender_documents import docs_summary, parse_doc_requirements
 
-		reqs = parse_doc_requirements([
-			{"key": "a", "label": "A", "required": True, "done": True},  # unverified
-			{"key": "b", "label": "B", "required": True, "files": [{"file_url": "/x"}]},
-		])
+		reqs = parse_doc_requirements(
+			[
+				{"key": "a", "label": "A", "required": True, "done": True},  # unverified
+				{"key": "b", "label": "B", "required": True, "files": [{"file_url": "/x"}]},
+			]
+		)
 		summary = docs_summary(reqs)
 		self.assertEqual(summary["unverified"], 1)
 		self.assertEqual(summary["done_required"], 1)  # only b is truly done
@@ -201,7 +250,9 @@ class TestDefaultDocRequirements(unittest.TestCase):
 
 		reqs = default_doc_requirements()
 		keys = {r["key"] for r in reqs}
-		self.assertEqual(keys, {"gtd", "origin_cert", "cmr", "packing_list", "invoice", "tech_spec", "price_offer"})
+		self.assertEqual(
+			keys, {"gtd", "origin_cert", "cmr", "packing_list", "invoice", "tech_spec", "price_offer"}
+		)
 		roles = {r["role"] for r in reqs}
 		self.assertIn("customs", roles)
 		self.assertIn("logistics", roles)
@@ -225,7 +276,9 @@ def _load_api(fake: _FakeFrappe):
 	frappe.db = types.SimpleNamespace(exists=fake.exists)
 	frappe.has_permission = lambda _dt, ptype="read", doc=None: True
 	frappe.throw = lambda message, exception=ValueError: (_ for _ in ()).throw(exception(message))
-	frappe.whitelist = lambda *a, **kw: (a[0] if a and not callable(a[0]) else (lambda fn: fn)) if a else (lambda fn: fn)
+	frappe.whitelist = lambda *a, **kw: (
+		(a[0] if a and not callable(a[0]) else (lambda fn: fn)) if a else (lambda fn: fn)
+	)
 
 	utils = types.ModuleType("frappe.utils")
 	utils.now = lambda: "2026-08-06 10:00:00"
@@ -235,6 +288,7 @@ def _load_api(fake: _FakeFrappe):
 	# _tender_documents is pure Python — pre-load it so the API module imports it
 	# from sys.modules without re-triggering the package __init__ frappe path.
 	import importlib
+
 	pure = importlib.import_module("stabler.api._tender_documents")
 
 	# tender_master exposes _assert_company_scope (the canonical str-returning
@@ -266,8 +320,10 @@ class TestTenderDocumentsApi(unittest.TestCase):
 
 	def test_upload_to_lot_requirement_attaches_file_and_marks_done(self):
 		res = self.api.upload_tender_document(
-			deal="LOT-1", requirement_key="gtd",
-			file_name="gtd_2026.pdf", file_url="/private/files/gtd_2026.pdf",
+			deal="LOT-1",
+			requirement_key="gtd",
+			file_name="gtd_2026.pdf",
+			file_url="/private/files/gtd_2026.pdf",
 			company="ACME",
 		)
 		gtd = next(r for r in res["requirements"] if r["key"] == "gtd")
@@ -281,8 +337,10 @@ class TestTenderDocumentsApi(unittest.TestCase):
 
 	def test_upload_to_tender_master_requirement_persists_on_master(self):
 		res = self.api.upload_tender_document(
-			deal="LOT-1", requirement_key="master_cert",
-			file_name="tnd_cert.pdf", file_url="/private/files/tnd_cert.pdf",
+			deal="LOT-1",
+			requirement_key="master_cert",
+			file_name="tnd_cert.pdf",
+			file_url="/private/files/tnd_cert.pdf",
 			company="ACME",
 		)
 		mc = next(r for r in res["requirements"] if r["key"] == "master_cert")
@@ -293,15 +351,21 @@ class TestTenderDocumentsApi(unittest.TestCase):
 	def test_upload_unknown_requirement_raises(self):
 		with self.assertRaises(LookupError):
 			self.api.upload_tender_document(
-				deal="LOT-1", requirement_key="nope",
-				file_name="x.pdf", file_url="/files/x.pdf", company="ACME",
+				deal="LOT-1",
+				requirement_key="nope",
+				file_name="x.pdf",
+				file_url="/files/x.pdf",
+				company="ACME",
 			)
 
 	def test_upload_missing_file_fields_raises(self):
 		with self.assertRaises(ValueError):
 			self.api.upload_tender_document(
-				deal="LOT-1", requirement_key="gtd",
-				file_name="", file_url="", company="ACME",
+				deal="LOT-1",
+				requirement_key="gtd",
+				file_name="",
+				file_url="",
+				company="ACME",
 			)
 
 	def test_upload_rejects_non_local_file_url(self):
@@ -320,38 +384,61 @@ class TestTenderDocumentsApi(unittest.TestCase):
 		):
 			with self.subTest(file_url=bad), self.assertRaises(ValueError):
 				self.api.upload_tender_document(
-					deal="LOT-1", requirement_key="gtd",
-					file_name="x.pdf", file_url=bad, company="ACME",
+					deal="LOT-1",
+					requirement_key="gtd",
+					file_name="x.pdf",
+					file_url=bad,
+					company="ACME",
 				)
 
 	def test_upload_rejects_url_with_no_file_record(self):
 		with self.assertRaises(ValueError):
 			self.api.upload_tender_document(
-				deal="LOT-1", requirement_key="gtd",
-				file_name="ghost.pdf", file_url="/files/ghost.pdf", company="ACME",
+				deal="LOT-1",
+				requirement_key="gtd",
+				file_name="ghost.pdf",
+				file_url="/files/ghost.pdf",
+				company="ACME",
 			)
 
 	def test_download_refuses_legacy_external_url(self):
 		"""Rows written before the upload-side check must not redirect off-site."""
 		deal = self.fake.docs[("CRM Deal", "LOT-1")]
-		deal["custom_tender_intake"] = json.dumps({"documents": [
-			{"key": "gtd", "label": "ГТД", "required": True, "scope": "lot", "role": "customs",
-			 "files": [{"file_name": "x.pdf", "file_url": "https://evil.example/x.pdf"}]},
-		]})
+		deal["custom_tender_intake"] = json.dumps(
+			{
+				"documents": [
+					{
+						"key": "gtd",
+						"label": "ГТД",
+						"required": True,
+						"scope": "lot",
+						"role": "customs",
+						"files": [{"file_name": "x.pdf", "file_url": "https://evil.example/x.pdf"}],
+					},
+				]
+			}
+		)
 		with self.assertRaises(ValueError):
 			self.api.download_tender_document(
-				deal="LOT-1", requirement_key="gtd",
-				file_url="https://evil.example/x.pdf", company="ACME",
+				deal="LOT-1",
+				requirement_key="gtd",
+				file_url="https://evil.example/x.pdf",
+				company="ACME",
 			)
 
 	def test_download_redirects_to_local_file(self):
 		self.api.upload_tender_document(
-			deal="LOT-1", requirement_key="gtd",
-			file_name="gtd_2026.pdf", file_url="/private/files/gtd_2026.pdf", company="ACME",
+			deal="LOT-1",
+			requirement_key="gtd",
+			file_name="gtd_2026.pdf",
+			file_url="/private/files/gtd_2026.pdf",
+			company="ACME",
 		)
 		self.api.download_tender_document(
-			deal="LOT-1", requirement_key="gtd",
-			file_url="/private/files/gtd_2026.pdf", company="ACME",
+			deal="LOT-1",
+			requirement_key="gtd",
+			file_url="/private/files/gtd_2026.pdf",
+			company="ACME",
 		)
 		import frappe as fake_frappe
 
@@ -360,7 +447,10 @@ class TestTenderDocumentsApi(unittest.TestCase):
 
 	def test_waive_sets_reason_and_actor(self):
 		res = self.api.waive_tender_document(
-			deal="LOT-1", requirement_key="invoice", reason="Digital copy acceptable", company="ACME",
+			deal="LOT-1",
+			requirement_key="invoice",
+			reason="Digital copy acceptable",
+			company="ACME",
 		)
 		inv = next(r for r in res["requirements"] if r["key"] == "invoice")
 		self.assertTrue(inv["done"])
@@ -369,33 +459,55 @@ class TestTenderDocumentsApi(unittest.TestCase):
 
 	def test_waive_requires_reason(self):
 		with self.assertRaises(ValueError):
-			self.api.waive_tender_document(deal="LOT-1", requirement_key="invoice", reason="  ", company="ACME")
+			self.api.waive_tender_document(
+				deal="LOT-1", requirement_key="invoice", reason="  ", company="ACME"
+			)
 
 	def test_download_unknown_requirement_raises(self):
 		with self.assertRaises(LookupError):
-			self.api.download_tender_document(deal="LOT-1", requirement_key="nope", file_url="/files/x.pdf", company="ACME")
+			self.api.download_tender_document(
+				deal="LOT-1", requirement_key="nope", file_url="/files/x.pdf", company="ACME"
+			)
 
 	def test_remove_specific_file_keeps_others_and_stays_done(self):
 		# Seed two files on the gtd requirement, then remove just one.
-		self.api.upload_tender_document(deal="LOT-1", requirement_key="gtd", file_name="a.pdf", file_url="/files/a.pdf", company="ACME")
-		self.api.upload_tender_document(deal="LOT-1", requirement_key="gtd", file_name="b.pdf", file_url="/files/b.pdf", company="ACME")
-		res = self.api.remove_tender_document(deal="LOT-1", requirement_key="gtd", file_url="/files/a.pdf", company="ACME")
+		self.api.upload_tender_document(
+			deal="LOT-1", requirement_key="gtd", file_name="a.pdf", file_url="/files/a.pdf", company="ACME"
+		)
+		self.api.upload_tender_document(
+			deal="LOT-1", requirement_key="gtd", file_name="b.pdf", file_url="/files/b.pdf", company="ACME"
+		)
+		res = self.api.remove_tender_document(
+			deal="LOT-1", requirement_key="gtd", file_url="/files/a.pdf", company="ACME"
+		)
 		gtd = next(r for r in res["requirements"] if r["key"] == "gtd")
 		self.assertEqual(gtd["file_count"], 1)
 		self.assertEqual(gtd["latest_file"]["file_url"], "/files/b.pdf")
 		self.assertTrue(gtd["done"])  # still satisfied by the remaining file
 
 	def test_remove_last_file_reopens_requirement(self):
-		self.api.upload_tender_document(deal="LOT-1", requirement_key="gtd", file_name="only.pdf", file_url="/files/only.pdf", company="ACME")
-		res = self.api.remove_tender_document(deal="LOT-1", requirement_key="gtd", file_url="/files/only.pdf", company="ACME")
+		self.api.upload_tender_document(
+			deal="LOT-1",
+			requirement_key="gtd",
+			file_name="only.pdf",
+			file_url="/files/only.pdf",
+			company="ACME",
+		)
+		res = self.api.remove_tender_document(
+			deal="LOT-1", requirement_key="gtd", file_url="/files/only.pdf", company="ACME"
+		)
 		gtd = next(r for r in res["requirements"] if r["key"] == "gtd")
 		self.assertEqual(gtd["file_count"], 0)
 		self.assertFalse(gtd["done"])  # reopened — no satisfied-looking empty slot
 		self.assertFalse(gtd["unverified"])  # never silently re-stick the legacy flag
 
 	def test_remove_all_files_when_no_url_given(self):
-		self.api.upload_tender_document(deal="LOT-1", requirement_key="gtd", file_name="a.pdf", file_url="/files/a.pdf", company="ACME")
-		self.api.upload_tender_document(deal="LOT-1", requirement_key="gtd", file_name="b.pdf", file_url="/files/b.pdf", company="ACME")
+		self.api.upload_tender_document(
+			deal="LOT-1", requirement_key="gtd", file_name="a.pdf", file_url="/files/a.pdf", company="ACME"
+		)
+		self.api.upload_tender_document(
+			deal="LOT-1", requirement_key="gtd", file_name="b.pdf", file_url="/files/b.pdf", company="ACME"
+		)
 		res = self.api.remove_tender_document(deal="LOT-1", requirement_key="gtd", company="ACME")
 		gtd = next(r for r in res["requirements"] if r["key"] == "gtd")
 		self.assertEqual(gtd["file_count"], 0)
@@ -403,9 +515,19 @@ class TestTenderDocumentsApi(unittest.TestCase):
 
 	def test_remove_preserves_waiver_so_stays_done(self):
 		# Waive first, then attach + remove a file: the waiver should still satisfy.
-		self.api.waive_tender_document(deal="LOT-1", requirement_key="invoice", reason="digital ok", company="ACME")
-		self.api.upload_tender_document(deal="LOT-1", requirement_key="invoice", file_name="inv.pdf", file_url="/files/inv.pdf", company="ACME")
-		res = self.api.remove_tender_document(deal="LOT-1", requirement_key="invoice", file_url="/files/inv.pdf", company="ACME")
+		self.api.waive_tender_document(
+			deal="LOT-1", requirement_key="invoice", reason="digital ok", company="ACME"
+		)
+		self.api.upload_tender_document(
+			deal="LOT-1",
+			requirement_key="invoice",
+			file_name="inv.pdf",
+			file_url="/files/inv.pdf",
+			company="ACME",
+		)
+		res = self.api.remove_tender_document(
+			deal="LOT-1", requirement_key="invoice", file_url="/files/inv.pdf", company="ACME"
+		)
 		inv = next(r for r in res["requirements"] if r["key"] == "invoice")
 		self.assertEqual(inv["file_count"], 0)
 		self.assertTrue(inv["done"])  # waiver still satisfies it
@@ -426,8 +548,11 @@ class TestTenderDocumentsApi(unittest.TestCase):
 		"""
 		# master_cert is defined on the Tender Master; upload by that key must land there.
 		self.api.upload_tender_document(
-			deal="LOT-1", requirement_key="master_cert",
-			file_name="c.pdf", file_url="/files/c.pdf", company="ACME",
+			deal="LOT-1",
+			requirement_key="master_cert",
+			file_name="c.pdf",
+			file_url="/files/c.pdf",
+			company="ACME",
 		)
 		master = self.fake.docs[("Tender Master", "TND-1")]
 		deal = self.fake.docs[("CRM Deal", "LOT-1")]

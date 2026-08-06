@@ -92,7 +92,9 @@ class TestDetectShadowedDoctypes(unittest.TestCase):
 		findings = self._detect(standard, {("Sales User", 0)})
 
 		self.assertEqual(len(findings), 1)
-		self.assertEqual(findings[0]["missing"], [{"role": "Sales User", "permlevel": 1, "read": 1, "report": 0}])
+		self.assertEqual(
+			findings[0]["missing"], [{"role": "Sales User", "permlevel": 1, "read": 1, "report": 0}]
+		)
 
 	def test_roles_without_read_or_report_are_not_reported(self):
 		"""Only access-granting rows matter; a no-op standard row is not drift."""
@@ -127,9 +129,7 @@ class TestDetectShadowedDoctypes(unittest.TestCase):
 
 	def test_no_cutoff_reports_everything(self):
 		"""The admin-facing report endpoint asks explicitly — it gets the full picture."""
-		findings = self._detect(
-			_GL_ENTRY_STANDARD, {("HR Manager", 0)}, newest="2013-06-24 10:00:00"
-		)
+		findings = self._detect(_GL_ENTRY_STANDARD, {("HR Manager", 0)}, newest="2013-06-24 10:00:00")
 		self.assertEqual(len(findings), 1)
 
 
@@ -248,6 +248,4 @@ class TestShadowReportEndpoint(unittest.TestCase):
 			patch.object(frappe, "get_roles", return_value=["Stabler Admin"]),
 			patch.object(perm, "detect_shadowed_doctypes", return_value=[{"doctype": "GL Entry"}]),
 		):
-			self.assertEqual(
-				perm.docperm_shadow_report(), {"findings": [{"doctype": "GL Entry"}]}
-			)
+			self.assertEqual(perm.docperm_shadow_report(), {"findings": [{"doctype": "GL Entry"}]})

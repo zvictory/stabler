@@ -2,8 +2,9 @@
 
 import json
 import os
+
 import frappe
-from frappe.utils import flt, cint
+from frappe.utils import cint, flt
 
 SUPPLIER_MAP = {
 	"HMA AGRO INDUSTRIES LIMITED": "HMA AGRO INDUSTRIES LIMITED",
@@ -18,12 +19,13 @@ SUPPLIER_MAP = {
 def get_master_container_numbers():
 	json_file = "/tmp/master_978_containers.json"
 	if os.path.exists(json_file):
-		with open(json_file, "r", encoding="utf-8") as f:
+		with open(json_file, encoding="utf-8") as f:
 			data = json.load(f)
 			return [c["container_number"] for c in data if c.get("container_number")]
 
 	# Fallback inline reader
 	import openpyxl
+
 	excel_path = "/Users/zafar/Downloads/Оплаты заводам HMA, FAIR, MIRHA, IFF _ PI (1).xlsx"
 	wb = openpyxl.load_workbook(excel_path, data_only=True)
 	ws = wb["jas"]
@@ -37,7 +39,6 @@ def get_master_container_numbers():
 
 def run(dry_run=1):
 	dry_run = int(dry_run)
-	company = "MSA"
 
 	master_numbers = get_master_container_numbers()
 	master_set = set(master_numbers)
@@ -64,7 +65,9 @@ def run(dry_run=1):
 		frappe.db.commit()
 
 	# 2. Count remaining containers in DB
-	remaining_count = frappe.db.count("Import Container") if not dry_run else (len(all_db_containers) - deleted_count)
+	remaining_count = (
+		frappe.db.count("Import Container") if not dry_run else (len(all_db_containers) - deleted_count)
+	)
 
 	# 3. Ensure Freight Bookings are linked via Commercial Invoice or Container
 	if not dry_run:
@@ -88,9 +91,9 @@ def run(dry_run=1):
 
 	mode = "DRY-RUN" if dry_run else "APPLIED"
 
-	print(f"\n========================================================")
+	print("\n========================================================")
 	print(f"  CLEANUP & BIND 978 MASTER CONTAINERS ({mode})")
-	print(f"========================================================")
+	print("========================================================")
 	print(f"Total Master List Containers: {len(master_set)}")
 	print(f"Non-Master Containers Deleted: {deleted_count}")
 	print(f"Final Active Containers Count: {remaining_count}\n")

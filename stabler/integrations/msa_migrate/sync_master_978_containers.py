@@ -2,8 +2,9 @@
 
 import json
 import os
+
 import frappe
-from frappe.utils import flt, cint, today
+from frappe.utils import cint, flt, today
 
 SUPPLIER_MAP = {
 	"HMA AGRO INDUSTRIES LIMITED": "HMA AGRO INDUSTRIES LIMITED",
@@ -18,11 +19,12 @@ SUPPLIER_MAP = {
 def get_master_containers():
 	json_file = "/tmp/master_978_containers.json"
 	if os.path.exists(json_file):
-		with open(json_file, "r", encoding="utf-8") as f:
+		with open(json_file, encoding="utf-8") as f:
 			return json.load(f)
 
 	# Fallback inline reader
 	import openpyxl
+
 	excel_path = "/Users/zafar/Downloads/Оплаты заводам HMA, FAIR, MIRHA, IFF _ PI (1).xlsx"
 	wb = openpyxl.load_workbook(excel_path, data_only=True)
 	ws = wb["jas"]
@@ -41,14 +43,20 @@ def get_master_containers():
 		rate = ws.cell(row=r, column=15).value
 		amount = ws.cell(row=r, column=16).value
 
-		if contract == "None": contract = ""
-		if pi_no == "None": pi_no = ""
-		if ci_no == "None": ci_no = ""
-		if cnt_no == "None": cnt_no = ""
-		if supplier == "None": supplier = ""
-		if item_name == "None": item_name = ""
+		if contract == "None":
+			contract = ""
+		if pi_no == "None":
+			pi_no = ""
+		if ci_no == "None":
+			ci_no = ""
+		if cnt_no == "None":
+			cnt_no = ""
+		if supplier == "None":
+			supplier = ""
+		if item_name == "None":
+			item_name = ""
 
-		if ci_no and len(ci_no) > 7 and not "-" in ci_no[-7:]:
+		if ci_no and len(ci_no) > 7 and "-" not in ci_no[-7:]:
 			if ci_no[-6:].isdigit() and ci_no[-6:-2] == "2025" and ci_no[-2:] in ["26", "27"]:
 				ci_no = ci_no[:-6] + ci_no[-6:-2] + "-" + ci_no[-2:]
 
@@ -61,25 +69,35 @@ def get_master_containers():
 					"supplier": supplier,
 					"contract": contract,
 					"date": str(cdate)[:10] if cdate else "",
-					"items": []
+					"items": [],
 				}
-			try: b_qty = int(box_qty) if box_qty else 0
-			except: b_qty = 0
-			try: t_kg = float(total_kg) if total_kg else 0.0
-			except: t_kg = 0.0
-			try: r_rate = float(rate) if rate else 0.0
-			except: r_rate = 0.0
-			try: a_amt = float(amount) if amount else 0.0
-			except: a_amt = 0.0
+			try:
+				b_qty = int(box_qty) if box_qty else 0
+			except (TypeError, ValueError):
+				b_qty = 0
+			try:
+				t_kg = float(total_kg) if total_kg else 0.0
+			except (TypeError, ValueError):
+				t_kg = 0.0
+			try:
+				r_rate = float(rate) if rate else 0.0
+			except (TypeError, ValueError):
+				r_rate = 0.0
+			try:
+				a_amt = float(amount) if amount else 0.0
+			except (TypeError, ValueError):
+				a_amt = 0.0
 
 			if item_name or b_qty > 0 or t_kg > 0:
-				containers_map[cnt_no]["items"].append({
-					"item_name": item_name,
-					"box_qty": b_qty,
-					"total_kg": t_kg,
-					"rate": r_rate,
-					"amount": a_amt,
-				})
+				containers_map[cnt_no]["items"].append(
+					{
+						"item_name": item_name,
+						"box_qty": b_qty,
+						"total_kg": t_kg,
+						"rate": r_rate,
+						"amount": a_amt,
+					}
+				)
 	return list(containers_map.values())
 
 
@@ -93,14 +111,16 @@ def ensure_item_exists(item_name: str) -> str:
 	if found:
 		return found[0]["name"]
 	# Create missing Item
-	doc = frappe.get_doc({
-		"doctype": "Item",
-		"item_code": item_code,
-		"item_name": item_name,
-		"item_group": "Meat Products",
-		"stock_uom": "Kg",
-		"is_stock_item": 1,
-	})
+	doc = frappe.get_doc(
+		{
+			"doctype": "Item",
+			"item_code": item_code,
+			"item_name": item_name,
+			"item_group": "Meat Products",
+			"stock_uom": "Kg",
+			"is_stock_item": 1,
+		}
+	)
 	doc.insert(ignore_permissions=True)
 	return doc.name
 
@@ -117,7 +137,6 @@ def run(dry_run=1):
 	for c in containers:
 		cnt_no = c["container_number"]
 		ci_raw = c.get("commercial_invoice") or ""
-		pi_raw = c.get("proforma_invoice") or ""
 		supp_raw = c.get("supplier") or ""
 		items = c.get("items") or []
 
@@ -129,7 +148,9 @@ def run(dry_run=1):
 			if frappe.db.exists("Commercial Invoice", ci_raw):
 				ci_doc_name = ci_raw
 			else:
-				found_ci = frappe.get_all("Commercial Invoice", filters={"ci_number": ci_raw}, fields=["name"])
+				found_ci = frappe.get_all(
+					"Commercial Invoice", filters={"ci_number": ci_raw}, fields=["name"]
+				)
 				if found_ci:
 					ci_doc_name = found_ci[0]["name"]
 
@@ -145,14 +166,16 @@ def run(dry_run=1):
 		for it in items:
 			raw_iname = it.get("item_name") or "BUFFALO MEAT"
 			valid_icode = raw_iname if dry_run else ensure_item_exists(raw_iname)
-			item_rows.append({
-				"item_code": valid_icode,
-				"item_name": raw_iname,
-				"box_qty": cint(it.get("box_qty")),
-				"total_kg": flt(it.get("total_kg")),
-				"rate": flt(it.get("rate")),
-				"amount": flt(it.get("amount")),
-			})
+			item_rows.append(
+				{
+					"item_code": valid_icode,
+					"item_name": raw_iname,
+					"box_qty": cint(it.get("box_qty")),
+					"total_kg": flt(it.get("total_kg")),
+					"rate": flt(it.get("rate")),
+					"amount": flt(it.get("amount")),
+				}
+			)
 
 		if existing:
 			c_name = existing[0]["name"]
@@ -179,19 +202,23 @@ def run(dry_run=1):
 		else:
 			created_count += 1
 			if not dry_run:
-				doc = frappe.get_doc({
-					"doctype": "Import Container",
-					"container_number": cnt_no,
-					"company": company,
-					"supplier": supp_name if supp_name and frappe.db.exists("Supplier", supp_name) else None,
-					"commercial_invoice": ci_doc_name,
-					"status": "IN_TRANSIT",
-					"total_boxes": tot_boxes,
-					"total_kg": tot_kg,
-					"total_amount": tot_amt,
-					"currency": "USD",
-					"items": item_rows
-				})
+				doc = frappe.get_doc(
+					{
+						"doctype": "Import Container",
+						"container_number": cnt_no,
+						"company": company,
+						"supplier": supp_name
+						if supp_name and frappe.db.exists("Supplier", supp_name)
+						else None,
+						"commercial_invoice": ci_doc_name,
+						"status": "IN_TRANSIT",
+						"total_boxes": tot_boxes,
+						"total_kg": tot_kg,
+						"total_amount": tot_amt,
+						"currency": "USD",
+						"items": item_rows,
+					}
+				)
 				doc.flags.ignore_validate = True
 				doc.insert(ignore_permissions=True)
 
@@ -200,9 +227,9 @@ def run(dry_run=1):
 
 	mode = "DRY-RUN" if dry_run else "APPLIED"
 
-	print(f"\n========================================================")
+	print("\n========================================================")
 	print(f"  SYNC ALL 978 MASTER CONTAINERS ({mode})")
-	print(f"========================================================")
+	print("========================================================")
 	print(f"Total Master Containers: {len(containers)}")
 	print(f"Updated Containers: {updated_count}")
 	print(f"Created Containers: {created_count}\n")

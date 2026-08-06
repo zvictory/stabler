@@ -83,24 +83,22 @@ def run(dry_run=1):
 		if frappe.db.exists("Commercial Invoice", cin):
 			ci_doc_name = cin
 		else:
-			found_ci = frappe.get_all(
-				"Commercial Invoice",
-				filters={"ci_number": cin},
-				fields=["name"]
-			)
+			found_ci = frappe.get_all("Commercial Invoice", filters={"ci_number": cin}, fields=["name"])
 			if found_ci:
 				ci_doc_name = found_ci[0]["name"]
 
 		# Ensure Transporter Supplier exists with default_currency = USD
 		if not dry_run:
 			if not frappe.db.exists("Supplier", transporter):
-				supp = frappe.get_doc({
-					"doctype": "Supplier",
-					"supplier_name": transporter,
-					"supplier_group": "Services",
-					"supplier_type": "Company",
-					"default_currency": "USD",
-				})
+				supp = frappe.get_doc(
+					{
+						"doctype": "Supplier",
+						"supplier_name": transporter,
+						"supplier_group": "Services",
+						"supplier_type": "Company",
+						"default_currency": "USD",
+					}
+				)
 				supp.insert(ignore_permissions=True)
 			else:
 				frappe.db.set_value("Supplier", transporter, "default_currency", "USD", update_modified=False)
@@ -108,16 +106,20 @@ def run(dry_run=1):
 		# Ensure Container exists
 		container_doc_name = None
 		if container:
-			found_cont = frappe.get_all("Import Container", filters={"container_number": container}, fields=["name"])
+			found_cont = frappe.get_all(
+				"Import Container", filters={"container_number": container}, fields=["name"]
+			)
 			if found_cont:
 				container_doc_name = found_cont[0]["name"]
 			elif not dry_run:
-				c_doc = frappe.get_doc({
-					"doctype": "Import Container",
-					"container_number": container,
-					"commercial_invoice": ci_doc_name,
-					"status": "IN_TRANSIT",
-				})
+				c_doc = frappe.get_doc(
+					{
+						"doctype": "Import Container",
+						"container_number": container,
+						"commercial_invoice": ci_doc_name,
+						"status": "IN_TRANSIT",
+					}
+				)
 				c_doc.insert(ignore_permissions=True)
 				container_doc_name = c_doc.name
 
@@ -125,7 +127,7 @@ def run(dry_run=1):
 		existing = frappe.get_all(
 			"Freight Booking",
 			filters={"vehicle_number": vehicle} if vehicle else {"container": container_doc_name},
-			fields=["name"]
+			fields=["name"],
 		)
 
 		target_container = container_doc_name if container_doc_name else None
@@ -148,33 +150,35 @@ def run(dry_run=1):
 						"bank_payment": p_bank,
 						"route": notes,
 					},
-					update_modified=True
+					update_modified=True,
 				)
 		else:
 			created += 1
 			if not dry_run:
-				fb = frappe.get_doc({
-					"doctype": "Freight Booking",
-					"transporter": transporter,
-					"container": target_container,
-					"commercial_invoice": target_ci,
-					"vehicle_number": vehicle,
-					"amount": cost,
-					"cash_payment": p_cash,
-					"bank_payment": p_bank,
-					"currency": "USD",
-					"status": "In Transit",
-					"route": notes,
-				})
+				fb = frappe.get_doc(
+					{
+						"doctype": "Freight Booking",
+						"transporter": transporter,
+						"container": target_container,
+						"commercial_invoice": target_ci,
+						"vehicle_number": vehicle,
+						"amount": cost,
+						"cash_payment": p_cash,
+						"bank_payment": p_bank,
+						"currency": "USD",
+						"status": "In Transit",
+						"route": notes,
+					}
+				)
 				fb.insert(ignore_permissions=True)
 
 	if not dry_run:
 		frappe.db.commit()
 
 	mode = "DRY-RUN" if dry_run else "APPLIED"
-	print(f"\n========================================================")
+	print("\n========================================================")
 	print(f"  TRANSPORTER & LAND FREIGHT MIGRATION ({mode})")
-	print(f"========================================================")
+	print("========================================================")
 	print(f"Total rows processed: {len(TRANSPORTER_ROWS)}")
 	print(f"Created: {created} | Updated: {updated}\n")
 

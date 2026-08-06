@@ -843,9 +843,7 @@ class CIPackingGrnConcurrencyTest(FrappeTestCase):
 				"container_number": f"STALE-{frappe.generate_hash(length=6)}",
 			}
 		)
-		container.append(
-			"items", {"item_code": item, "box_qty": 15, "box_kg": 20, "total_kg": 300}
-		)
+		container.append("items", {"item_code": item, "box_qty": 15, "box_kg": 20, "total_kg": 300})
 		container.insert(ignore_permissions=True)
 		grn_name = packing_service.create_or_get_grn(ci, ignore_permissions=True)["name"]
 		frappe.db.commit()
@@ -901,9 +899,7 @@ class CIPackingGrnConcurrencyTest(FrappeTestCase):
 		freeze_thread = threading.Thread(target=freeze_with_stale_view, name="stale-freeze")
 		writer_thread = threading.Thread(target=add_empty_container, name="scope-writer")
 		try:
-			with patch.object(
-				packing_service, "lock_commercial_invoices", side_effect=delayed_ci_lock
-			):
+			with patch.object(packing_service, "lock_commercial_invoices", side_effect=delayed_ci_lock):
 				freeze_thread.start()
 				self.assertTrue(read_view_opened.wait(timeout=10))
 				writer_thread.start()
@@ -914,11 +910,7 @@ class CIPackingGrnConcurrencyTest(FrappeTestCase):
 				freeze_thread.join(timeout=10)
 				self.assertFalse(freeze_thread.is_alive())
 
-			self.assertFalse(
-				frappe.db.get_value(
-					"GRN Checklist", grn_name, "expected_snapshot_locked"
-				)
-			)
+			self.assertFalse(frappe.db.get_value("GRN Checklist", grn_name, "expected_snapshot_locked"))
 			self.assertEqual(len(freeze_errors), 1)
 			self.assertIsInstance(freeze_errors[0], frappe.ValidationError)
 			self.assertIn("try again", str(freeze_errors[0]).lower())

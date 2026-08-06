@@ -7,6 +7,7 @@ from __future__ import annotations
 
 import sys
 import unittest
+
 from stabler.tests.test_sourcing_api import _Doc, _FakeFrappe, _load_api
 
 

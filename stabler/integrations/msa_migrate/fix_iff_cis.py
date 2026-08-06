@@ -2,7 +2,9 @@
 
 import json
 import os
+
 import frappe
+
 
 def run(dry_run=1):
 	dry_run = int(dry_run)
@@ -15,7 +17,7 @@ def run(dry_run=1):
 	cis = frappe.get_all(
 		"Commercial Invoice",
 		filters={"supplier": ["like", "%IFF%"]},
-		fields=["name", "ci_number", "supplier", "agreed_total", "docs_total", "cash_difference"]
+		fields=["name", "ci_number", "supplier", "agreed_total", "docs_total", "cash_difference"],
 	)
 
 	updates = []
@@ -29,16 +31,18 @@ def run(dry_run=1):
 		dc_ref = float(ref.get("docs_total") or 0)
 		cd_ref = float(ref.get("cash_difference") or 0)
 
-		updates.append({
-			"name": ci.name,
-			"ci_number": cin,
-			"old_agreed": float(ci.agreed_total or 0),
-			"new_agreed": ag_ref,
-			"old_docs": float(ci.docs_total or 0),
-			"new_docs": dc_ref,
-			"old_diff": float(ci.cash_difference or 0),
-			"new_diff": cd_ref,
-		})
+		updates.append(
+			{
+				"name": ci.name,
+				"ci_number": cin,
+				"old_agreed": float(ci.agreed_total or 0),
+				"new_agreed": ag_ref,
+				"old_docs": float(ci.docs_total or 0),
+				"new_docs": dc_ref,
+				"old_diff": float(ci.cash_difference or 0),
+				"new_diff": cd_ref,
+			}
+		)
 
 		if not dry_run:
 			frappe.db.set_value(
@@ -49,13 +53,13 @@ def run(dry_run=1):
 					"docs_total": dc_ref,
 					"cash_difference": cd_ref,
 				},
-				update_modified=False
+				update_modified=False,
 			)
 
 			items = frappe.get_all(
 				"Commercial Invoice Item",
 				filters={"parent": ci.name},
-				fields=["name", "qty", "rate", "amount", "docs_price", "docs_amount"]
+				fields=["name", "qty", "rate", "amount", "docs_price", "docs_amount"],
 			)
 			if items:
 				total_qty = sum(float(it.get("qty") or 0) for it in items)
@@ -76,7 +80,7 @@ def run(dry_run=1):
 								"docs_price": it_dc_rate,
 								"docs_amount": it_dc_amt,
 							},
-							update_modified=False
+							update_modified=False,
 						)
 
 	if not dry_run:

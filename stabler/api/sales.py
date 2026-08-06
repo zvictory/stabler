@@ -2004,9 +2004,7 @@ def _default_customer_group() -> str:
 	if configured and frappe.db.get_value("Customer Group", configured, "is_group") == 0:
 		return configured
 
-	leaf_group = frappe.db.get_value(
-		"Customer Group", {"is_group": 0}, "name", order_by="name asc"
-	)
+	leaf_group = frappe.db.get_value("Customer Group", {"is_group": 0}, "name", order_by="name asc")
 	if not leaf_group:
 		frappe.throw("Create a non-group Customer Group before adding customers.")
 	return leaf_group
@@ -3360,6 +3358,7 @@ def create_sales_order(
 		frappe.throw(f"Unknown customer: {customer}")
 	if not set_warehouse or not frappe.db.exists("Warehouse", set_warehouse):
 		from stabler.api._common import _company_default_warehouse
+
 		set_warehouse = _company_default_warehouse(company)
 	if not set_warehouse or not frappe.db.exists("Warehouse", set_warehouse):
 		frappe.throw(_("Warehouse is required for Sales Orders"))

@@ -1401,9 +1401,7 @@ def _clean_intake(data: dict, prior: dict | None = None, audit_actor: str | None
 	# files / waiver facts are reconciled back from the prior payload and never
 	# trusted from the client. This keeps _clean_intake and the dedicated document
 	# endpoints (upload/waive) over the same single source of truth.
-	out["documents"] = _merge_client_documents(
-		data.get("documents") or [], prior.get("documents") or []
-	)[:40]
+	out["documents"] = _merge_client_documents(data.get("documents") or [], prior.get("documents") or [])[:40]
 	prior_ready = prior.get("go_no_go") == "go" and not any(
 		d.get("required") and not d.get("done") for d in (prior.get("documents") or [])
 	)
@@ -1727,8 +1725,20 @@ def set_tender_go_no_go_from_trusted_source(deal: str, decision: str, *, actor: 
 _TENDER_VIEW_ROLES = {
 	"director": ("System Manager", "Stabler Admin", "Sales Manager", "Stabler Tender Director"),
 	"sourcing": ("System Manager", "Stabler Admin", "Sales Manager", "Sales User", "Stabler Tender Sourcing"),
-	"declarant": ("System Manager", "Stabler Admin", "Sales Manager", "Stabler Declarant", "Stabler Tender Declarant"),
-	"logist": ("System Manager", "Stabler Admin", "Sales Manager", "Stabler Logist", "Stabler Tender Logistics"),
+	"declarant": (
+		"System Manager",
+		"Stabler Admin",
+		"Sales Manager",
+		"Stabler Declarant",
+		"Stabler Tender Declarant",
+	),
+	"logist": (
+		"System Manager",
+		"Stabler Admin",
+		"Sales Manager",
+		"Stabler Logist",
+		"Stabler Tender Logistics",
+	),
 }
 
 
@@ -2115,7 +2125,11 @@ def declarant_queue(company: str) -> dict:
 		summary_customs = {"total": 0, "required": 0, "done_required": 0, "missing": []}
 		if deal and can_read_deal:
 			if deal not in deal_doc_summaries:
-				intake = frappe.db.get_value("CRM Deal", deal, "custom_document_intake") if frappe.db.has_column("CRM Deal", "custom_document_intake") else None
+				intake = (
+					frappe.db.get_value("CRM Deal", deal, "custom_document_intake")
+					if frappe.db.has_column("CRM Deal", "custom_document_intake")
+					else None
+				)
 				reqs = parse_doc_requirements(intake)
 				deal_doc_summaries[deal] = docs_summary(reqs, role="customs")
 			summary_customs = deal_doc_summaries[deal]
@@ -2240,7 +2254,11 @@ def logist_board(company: str) -> dict:
 		summary_logistics = {"total": 0, "required": 0, "done_required": 0, "missing": []}
 		if deal and can_read_deal:
 			if deal not in deal_doc_summaries:
-				intake_str = frappe.db.get_value("CRM Deal", deal, "custom_document_intake") if frappe.db.has_column("CRM Deal", "custom_document_intake") else None
+				intake_str = (
+					frappe.db.get_value("CRM Deal", deal, "custom_document_intake")
+					if frappe.db.has_column("CRM Deal", "custom_document_intake")
+					else None
+				)
 				reqs = parse_doc_requirements(intake_str)
 				deal_doc_summaries[deal] = docs_summary(reqs, role="logistics")
 			summary_logistics = deal_doc_summaries[deal]
@@ -2621,10 +2639,7 @@ def crm_board(company: str) -> dict:
 		cards.append(
 			{
 				"name": deal,
-				"custom_parent_tender": frappe.db.get_value(
-					"CRM Deal", deal, "custom_parent_tender"
-				)
-				or "",
+				"custom_parent_tender": frappe.db.get_value("CRM Deal", deal, "custom_parent_tender") or "",
 				"label": _deal_label(deal),
 				"organization": frappe.db.get_value("CRM Deal", deal, "organization") or "",
 				"lead_name": frappe.db.get_value("CRM Deal", deal, "lead_name") or "",

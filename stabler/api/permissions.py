@@ -449,9 +449,9 @@ def _perm_flag_columns() -> list[str]:
 
 def _standard_docperms(doctype: str) -> list[dict]:
 	"""App-shipped permission rows for *doctype*, ``permlevel`` included."""
-	cols = ", ".join(f"`{c}`" for c in ["role", "permlevel"] + _perm_flag_columns())
+	cols = ", ".join(f"`{c}`" for c in ["role", "permlevel", *_perm_flag_columns()])
 	return frappe.db.sql(
-		f"SELECT {cols} FROM `tabDocPerm` WHERE parent = %s ORDER BY permlevel, role",  # noqa: S608
+		f"SELECT {cols} FROM `tabDocPerm` WHERE parent = %s ORDER BY permlevel, role",
 		(doctype,),
 		as_dict=True,
 	)
@@ -499,8 +499,7 @@ def detect_shadowed_doctypes(changed_after=None) -> list[dict]:
 
 	Returns one entry per affected doctype::
 
-	    {"doctype": "GL Entry",
-	     "missing": [{"role": "Auditor", "permlevel": 0, "read": 1, "report": 1}]}
+	    {"doctype": "GL Entry", "missing": [{"role": "Auditor", "permlevel": 0, "read": 1, "report": 1}]}
 	"""
 	findings = []
 	for doctype in _custom_docperm_doctypes():
@@ -517,8 +516,7 @@ def detect_shadowed_doctypes(changed_after=None) -> list[dict]:
 				"report": p.get("report"),
 			}
 			for p in _standard_docperms(doctype)
-			if (p.get("read") or p.get("report"))
-			and (p.role, int(p.permlevel or 0)) not in custom_keys
+			if (p.get("read") or p.get("report")) and (p.role, int(p.permlevel or 0)) not in custom_keys
 		]
 		if missing:
 			findings.append({"doctype": doctype, "missing": missing})
@@ -580,9 +578,7 @@ def repair_shadowed_docperms(doctypes=None, only_created_after=None) -> dict:
 			frappe.get_doc(row).insert(ignore_permissions=True)
 			custom_keys.add((p.role, permlevel))
 			added += 1
-			logger.info(
-				f"restored Custom DocPerm: {doctype} / {p.role} / permlevel {permlevel}"
-			)
+			logger.info(f"restored Custom DocPerm: {doctype} / {p.role} / permlevel {permlevel}")
 		if added:
 			repaired[doctype] = added
 

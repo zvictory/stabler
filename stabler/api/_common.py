@@ -81,4 +81,3 @@ def _company_default_warehouse(company: str) -> str | None:
 		w.insert(ignore_permissions=True)
 		return w.name
 	return name
-

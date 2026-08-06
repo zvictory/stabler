@@ -53,7 +53,9 @@ class CiCostOverviewIntegrationTest(FrappeTestCase):
 		cls.company = _first_company()
 		cls.supplier = _first_supplier()
 		cls.item = _first_item()
-		cls.currency = frappe.db.get_value("Company", cls.company, "default_currency") if cls.company else None
+		cls.currency = (
+			frappe.db.get_value("Company", cls.company, "default_currency") if cls.company else None
+		)
 
 	def setUp(self):
 		if not (self.company and self.supplier and self.item):
@@ -110,8 +112,14 @@ class CiCostOverviewIntegrationTest(FrappeTestCase):
 		).insert(ignore_permissions=True)
 		return cnt.name
 
-	def _new_bill(self, *, grand_total: float, ci: str | None = None, container: str | None = None,
-	              bill_no: str | None = None) -> str:
+	def _new_bill(
+		self,
+		*,
+		grand_total: float,
+		ci: str | None = None,
+		container: str | None = None,
+		bill_no: str | None = None,
+	) -> str:
 		"""A draft Purchase Invoice. ``docstatus < 2`` is all the endpoint asks for."""
 		payload = {
 			"doctype": "Purchase Invoice",
@@ -133,9 +141,17 @@ class CiCostOverviewIntegrationTest(FrappeTestCase):
 		except Exception as exc:  # accounting defaults vary per site
 			self.skipTest(f"Purchase Invoice fixture could not be built: {exc}")
 
-	def _new_expense(self, ci: str, *, amount: float, category: str = "Transport", bank_payment: float = 0.0,
-	                 cash_payment: float = 0.0, container: str | None = None,
-	                 purchase_invoice: str | None = None) -> str:
+	def _new_expense(
+		self,
+		ci: str,
+		*,
+		amount: float,
+		category: str = "Transport",
+		bank_payment: float = 0.0,
+		cash_payment: float = 0.0,
+		container: str | None = None,
+		purchase_invoice: str | None = None,
+	) -> str:
 		exp = frappe.get_doc(
 			{
 				"doctype": "Import Expense",

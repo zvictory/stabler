@@ -76,9 +76,13 @@ def run(dry_run=1):
 
 	if not dry_run:
 		# 1. Delete all existing Payment Entries & GL Entries for ALN
-		existing_pes = frappe.get_all("Payment Entry", filters={"party": transporter, "company": company}, fields=["name"])
+		existing_pes = frappe.get_all(
+			"Payment Entry", filters={"party": transporter, "company": company}, fields=["name"]
+		)
 		for pe in existing_pes:
-			frappe.db.sql("DELETE FROM `tabGL Entry` WHERE voucher_type='Payment Entry' AND voucher_no=%s", pe["name"])
+			frappe.db.sql(
+				"DELETE FROM `tabGL Entry` WHERE voucher_type='Payment Entry' AND voucher_no=%s", pe["name"]
+			)
 			frappe.db.sql("DELETE FROM `tabPayment Entry` WHERE name=%s", pe["name"])
 
 		frappe.db.commit()
@@ -96,64 +100,70 @@ def run(dry_run=1):
 		created_bank += 1
 		if not dry_run:
 			base_amt = amt * conversion_rate
-			pe = frappe.get_doc({
-				"doctype": "Payment Entry",
-				"company": company,
-				"payment_type": "Pay",
-				"party_type": "Supplier",
-				"party": transporter,
-				"paid_from": bank_account,
-				"paid_to": creditors_account,
-				"paid_amount": amt,
-				"received_amount": amt,
-				"base_paid_amount": base_amt,
-				"base_received_amount": base_amt,
-				"source_exchange_rate": conversion_rate,
-				"target_exchange_rate": conversion_rate,
-				"paid_from_account_currency": "USD",
-				"paid_to_account_currency": "USD",
-				"posting_date": pdate,
-				"mode_of_payment": "Bank Draft",
-				"remarks": remark_str,
-				"docstatus": 0,
-			})
+			pe = frappe.get_doc(
+				{
+					"doctype": "Payment Entry",
+					"company": company,
+					"payment_type": "Pay",
+					"party_type": "Supplier",
+					"party": transporter,
+					"paid_from": bank_account,
+					"paid_to": creditors_account,
+					"paid_amount": amt,
+					"received_amount": amt,
+					"base_paid_amount": base_amt,
+					"base_received_amount": base_amt,
+					"source_exchange_rate": conversion_rate,
+					"target_exchange_rate": conversion_rate,
+					"paid_from_account_currency": "USD",
+					"paid_to_account_currency": "USD",
+					"posting_date": pdate,
+					"mode_of_payment": "Bank Draft",
+					"remarks": remark_str,
+					"docstatus": 0,
+				}
+			)
 			pe.flags.ignore_validate = True
 			pe.insert(ignore_permissions=True)
 			pe_name = pe.name
 			frappe.db.set_value("Payment Entry", pe_name, "docstatus", 1, update_modified=False)
 
 			# Post GL Entries
-			frappe.get_doc({
-				"doctype": "GL Entry",
-				"company": company,
-				"posting_date": pdate,
-				"voucher_type": "Payment Entry",
-				"voucher_no": pe_name,
-				"account": bank_account,
-				"debit": 0.0,
-				"credit": base_amt,
-				"debit_in_account_currency": 0.0,
-				"credit_in_account_currency": amt,
-				"account_currency": "USD",
-				"is_cancelled": 0,
-			}).insert(ignore_permissions=True)
+			frappe.get_doc(
+				{
+					"doctype": "GL Entry",
+					"company": company,
+					"posting_date": pdate,
+					"voucher_type": "Payment Entry",
+					"voucher_no": pe_name,
+					"account": bank_account,
+					"debit": 0.0,
+					"credit": base_amt,
+					"debit_in_account_currency": 0.0,
+					"credit_in_account_currency": amt,
+					"account_currency": "USD",
+					"is_cancelled": 0,
+				}
+			).insert(ignore_permissions=True)
 
-			frappe.get_doc({
-				"doctype": "GL Entry",
-				"company": company,
-				"posting_date": pdate,
-				"voucher_type": "Payment Entry",
-				"voucher_no": pe_name,
-				"account": creditors_account,
-				"party_type": "Supplier",
-				"party": transporter,
-				"debit": base_amt,
-				"credit": 0.0,
-				"debit_in_account_currency": amt,
-				"credit_in_account_currency": 0.0,
-				"account_currency": "USD",
-				"is_cancelled": 0,
-			}).insert(ignore_permissions=True)
+			frappe.get_doc(
+				{
+					"doctype": "GL Entry",
+					"company": company,
+					"posting_date": pdate,
+					"voucher_type": "Payment Entry",
+					"voucher_no": pe_name,
+					"account": creditors_account,
+					"party_type": "Supplier",
+					"party": transporter,
+					"debit": base_amt,
+					"credit": 0.0,
+					"debit_in_account_currency": amt,
+					"credit_in_account_currency": 0.0,
+					"account_currency": "USD",
+					"is_cancelled": 0,
+				}
+			).insert(ignore_permissions=True)
 
 	# 3. Post EXACT 40 Cash Payments
 	for idx, c in enumerate(ALN_CASH_PAYMENTS, 1):
@@ -165,64 +175,70 @@ def run(dry_run=1):
 		created_cash += 1
 		if not dry_run:
 			base_amt = amt * conversion_rate
-			pe = frappe.get_doc({
-				"doctype": "Payment Entry",
-				"company": company,
-				"payment_type": "Pay",
-				"party_type": "Supplier",
-				"party": transporter,
-				"paid_from": cash_account,
-				"paid_to": creditors_account,
-				"paid_amount": amt,
-				"received_amount": amt,
-				"base_paid_amount": base_amt,
-				"base_received_amount": base_amt,
-				"source_exchange_rate": conversion_rate,
-				"target_exchange_rate": conversion_rate,
-				"paid_from_account_currency": "USD",
-				"paid_to_account_currency": "USD",
-				"posting_date": pdate,
-				"mode_of_payment": "Cash",
-				"remarks": remark_str,
-				"docstatus": 0,
-			})
+			pe = frappe.get_doc(
+				{
+					"doctype": "Payment Entry",
+					"company": company,
+					"payment_type": "Pay",
+					"party_type": "Supplier",
+					"party": transporter,
+					"paid_from": cash_account,
+					"paid_to": creditors_account,
+					"paid_amount": amt,
+					"received_amount": amt,
+					"base_paid_amount": base_amt,
+					"base_received_amount": base_amt,
+					"source_exchange_rate": conversion_rate,
+					"target_exchange_rate": conversion_rate,
+					"paid_from_account_currency": "USD",
+					"paid_to_account_currency": "USD",
+					"posting_date": pdate,
+					"mode_of_payment": "Cash",
+					"remarks": remark_str,
+					"docstatus": 0,
+				}
+			)
 			pe.flags.ignore_validate = True
 			pe.insert(ignore_permissions=True)
 			pe_name = pe.name
 			frappe.db.set_value("Payment Entry", pe_name, "docstatus", 1, update_modified=False)
 
 			# Post GL Entries
-			frappe.get_doc({
-				"doctype": "GL Entry",
-				"company": company,
-				"posting_date": pdate,
-				"voucher_type": "Payment Entry",
-				"voucher_no": pe_name,
-				"account": cash_account,
-				"debit": 0.0,
-				"credit": base_amt,
-				"debit_in_account_currency": 0.0,
-				"credit_in_account_currency": amt,
-				"account_currency": "USD",
-				"is_cancelled": 0,
-			}).insert(ignore_permissions=True)
+			frappe.get_doc(
+				{
+					"doctype": "GL Entry",
+					"company": company,
+					"posting_date": pdate,
+					"voucher_type": "Payment Entry",
+					"voucher_no": pe_name,
+					"account": cash_account,
+					"debit": 0.0,
+					"credit": base_amt,
+					"debit_in_account_currency": 0.0,
+					"credit_in_account_currency": amt,
+					"account_currency": "USD",
+					"is_cancelled": 0,
+				}
+			).insert(ignore_permissions=True)
 
-			frappe.get_doc({
-				"doctype": "GL Entry",
-				"company": company,
-				"posting_date": pdate,
-				"voucher_type": "Payment Entry",
-				"voucher_no": pe_name,
-				"account": creditors_account,
-				"party_type": "Supplier",
-				"party": transporter,
-				"debit": base_amt,
-				"credit": 0.0,
-				"debit_in_account_currency": amt,
-				"credit_in_account_currency": 0.0,
-				"account_currency": "USD",
-				"is_cancelled": 0,
-			}).insert(ignore_permissions=True)
+			frappe.get_doc(
+				{
+					"doctype": "GL Entry",
+					"company": company,
+					"posting_date": pdate,
+					"voucher_type": "Payment Entry",
+					"voucher_no": pe_name,
+					"account": creditors_account,
+					"party_type": "Supplier",
+					"party": transporter,
+					"debit": base_amt,
+					"credit": 0.0,
+					"debit_in_account_currency": amt,
+					"credit_in_account_currency": 0.0,
+					"account_currency": "USD",
+					"is_cancelled": 0,
+				}
+			).insert(ignore_permissions=True)
 
 	if not dry_run:
 		frappe.db.commit()
@@ -231,9 +247,9 @@ def run(dry_run=1):
 	tot_cash = sum(c["amount"] for c in ALN_CASH_PAYMENTS)
 	mode = "DRY-RUN" if dry_run else "APPLIED"
 
-	print(f"\n========================================================")
+	print("\n========================================================")
 	print(f"  CLEAN & REPOST ALN EXACT PAYMENTS ({mode})")
-	print(f"========================================================")
+	print("========================================================")
 	print(f"Total Bank Payments: {created_bank} (${tot_bank:,.2f})")
 	print(f"Total Cash Payments: {created_cash} (${tot_cash:,.2f})")
 	print(f"Grand Total ALN Payments: ${tot_bank + tot_cash:,.2f}\n")

@@ -1,13 +1,16 @@
 """Audit and report all Proforma Invoices on msa.erpstable.com vs the Google Sheet master reference."""
 
 import json
+
 import frappe
+
 from .pi_ref_backfill import PI_ROWS
+
 
 def run():
 	pis = frappe.get_all(
 		"Proforma Invoice",
-		fields=["name", "supplier", "supplier_pi_ref", "pi_date", "agreed_total", "docs_total", "status"]
+		fields=["name", "supplier", "supplier_pi_ref", "pi_date", "agreed_total", "docs_total", "status"],
 	)
 
 	ref_by_ref = {r["ref"]: r for r in PI_ROWS}
@@ -18,7 +21,7 @@ def run():
 		"total_ref": len(PI_ROWS),
 		"with_orig_ref": 0,
 		"missing_orig_ref": [],
-		"rows": []
+		"rows": [],
 	}
 
 	for pi in pis:
@@ -50,7 +53,9 @@ def run():
 	print(f"PIs missing original supplier_pi_ref: {len(report['missing_orig_ref'])}\n")
 
 	for row in report["rows"]:
-		ref_str = row["orig_ref"] if row["orig_ref"] else f"❌ MISSING (Suggest: {row['matched_ref'] or 'Unknown'})"
+		ref_str = (
+			row["orig_ref"] if row["orig_ref"] else f"❌ MISSING (Suggest: {row['matched_ref'] or 'Unknown'})"
+		)
 		print(
 			f"PI: {row['name']:15} | Supplier: {(row['supplier'] or ''):35} | Orig Ref: {ref_str:30} | Agreed: ${row['agreed_total']:12,.2f}"
 		)

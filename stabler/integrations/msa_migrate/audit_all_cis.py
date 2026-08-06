@@ -2,7 +2,9 @@
 
 import json
 import os
+
 import frappe
+
 
 def run():
 	module_path = os.path.join(os.path.dirname(__file__), "data", "msa_ci_rows.json")
@@ -13,7 +15,18 @@ def run():
 
 	cis = frappe.get_all(
 		"Commercial Invoice",
-		fields=["name", "ci_number", "supplier", "ci_date", "agreed_total", "docs_total", "cash_difference", "total_boxes", "total_kg", "status"]
+		fields=[
+			"name",
+			"ci_number",
+			"supplier",
+			"ci_date",
+			"agreed_total",
+			"docs_total",
+			"cash_difference",
+			"total_boxes",
+			"total_kg",
+			"status",
+		],
 	)
 
 	report = {
@@ -33,18 +46,20 @@ def run():
 		cd_db = float(ci.cash_difference or 0)
 
 		if not ref:
-			report["other_discrepancies"].append({
-				"name": ci.name,
-				"ci_number": cin,
-				"supplier": ci.supplier,
-				"issue": "NOT_IN_GOOGLE_SHEET_REF",
-				"ag_db": ag_db,
-				"ag_ref": 0,
-				"ag_diff": ag_db,
-				"dc_db": dc_db,
-				"dc_ref": 0,
-				"dc_diff": dc_db,
-			})
+			report["other_discrepancies"].append(
+				{
+					"name": ci.name,
+					"ci_number": cin,
+					"supplier": ci.supplier,
+					"issue": "NOT_IN_GOOGLE_SHEET_REF",
+					"ag_db": ag_db,
+					"ag_ref": 0,
+					"ag_diff": ag_db,
+					"dc_db": dc_db,
+					"dc_ref": 0,
+					"dc_diff": dc_db,
+				}
+			)
 			continue
 
 		ag_ref = float(ref.get("agreed_total") or 0)
@@ -52,7 +67,7 @@ def run():
 		cd_ref = float(ref.get("cash_difference") or 0)
 
 		is_iff = "IFF" in (ci.supplier or "").upper() or "IFF" in cin.upper()
-		has_discrepancy = (abs(ag_db - ag_ref) > 0.01 or abs(dc_db - dc_ref) > 0.01)
+		has_discrepancy = abs(ag_db - ag_ref) > 0.01 or abs(dc_db - dc_ref) > 0.01
 
 		item_info = {
 			"name": ci.name,
@@ -98,7 +113,7 @@ def run():
 		print(f"\n--- OTHER VENDORS DISCREPANCIES AUDIT ({len(report['other_discrepancies'])}) ---")
 		for o in report["other_discrepancies"][:30]:
 			print(
-				f"⚠️ DISCREPANCY | CI: {o['name']:15} ({o.get('ci_number'):18}) | Supplier: {str(o.get('supplier')):30} "
+				f"⚠️ DISCREPANCY | CI: {o['name']:15} ({o.get('ci_number'):18}) | Supplier: {o.get('supplier')!s:30} "
 				f"| DB Agreed: ${o.get('ag_db', 0):12,.2f} | Ref Agreed: ${o.get('ag_ref', 0):12,.2f} | Diff: ${o.get('ag_diff', 0):12,.2f}"
 			)
 		if len(report["other_discrepancies"]) > 30:

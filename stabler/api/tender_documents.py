@@ -11,6 +11,7 @@ design merges requirements defined at the Tender Master (parent tender) level
 with those carried on each lot (CRM Deal intake), giving one document center
 per lot with derived completion and optional written waivers.
 """
+
 from __future__ import annotations
 
 import json
@@ -38,7 +39,9 @@ def _get_deal_and_master(deal_name: str, company: str | None, ptype: str):
 	if not frappe.has_permission("CRM Deal", ptype=ptype, doc=deal_doc):
 		frappe.throw(_("Not permitted."), frappe.PermissionError)
 	master_doc = None
-	master_name = getattr(deal_doc, "custom_parent_tender", None) or getattr(deal_doc, "custom_tender_master", None)
+	master_name = getattr(deal_doc, "custom_parent_tender", None) or getattr(
+		deal_doc, "custom_tender_master", None
+	)
 	if master_name and frappe.db.exists("Tender Master", master_name):
 		master_doc = frappe.get_doc("Tender Master", master_name)
 	return deal_doc, master_doc, selected_company
@@ -91,7 +94,13 @@ def _assert_local_file_url(file_url: str) -> str:
 	response-header injection.
 	"""
 	url = str(file_url or "").strip()
-	if not url.startswith(("/files/", "/private/files/")) or "://" in url or ".." in url or "\r" in url or "\n" in url:
+	if (
+		not url.startswith(("/files/", "/private/files/"))
+		or "://" in url
+		or ".." in url
+		or "\r" in url
+		or "\n" in url
+	):
 		frappe.throw(
 			_("File URL must be a site file path starting with /files/ or /private/files/."),
 			frappe.ValidationError,
@@ -122,7 +131,11 @@ def _save_requirements(target_doc, fieldname: str, reqs: list, is_master_req: bo
 		target_doc.db_set(fieldname, json.dumps(reqs, ensure_ascii=False))
 	else:
 		raw = target_doc.get(fieldname)
-		intake = json.loads(raw) if (isinstance(raw, str) and raw.strip()) else (raw if isinstance(raw, dict) else {})
+		intake = (
+			json.loads(raw)
+			if (isinstance(raw, str) and raw.strip())
+			else (raw if isinstance(raw, dict) else {})
+		)
 		intake["documents"] = reqs
 		target_doc.db_set(fieldname, json.dumps(intake, ensure_ascii=False))
 
@@ -151,12 +164,14 @@ def upload_tender_document(
 		if r["key"] != key:
 			continue
 		found = True
-		r["files"].append({
-			"file_name": file_name,
-			"file_url": file_url,
-			"uploaded_by": frappe.session.user,
-			"uploaded_at": now(),
-		})
+		r["files"].append(
+			{
+				"file_name": file_name,
+				"file_url": file_url,
+				"uploaded_by": frappe.session.user,
+				"uploaded_at": now(),
+			}
+		)
 		r["done"] = True
 		r["unverified"] = False
 		# A file does not void a written waiver — they are independent satisfiers.
@@ -170,7 +185,9 @@ def upload_tender_document(
 
 def _intake_documents(raw):
 	"""Return the parsed ``documents`` list from a lot intake blob (str or dict)."""
-	intake = json.loads(raw) if (isinstance(raw, str) and raw.strip()) else (raw if isinstance(raw, dict) else {})
+	intake = (
+		json.loads(raw) if (isinstance(raw, str) and raw.strip()) else (raw if isinstance(raw, dict) else {})
+	)
 	return intake.get("documents") or []
 
 
@@ -267,7 +284,9 @@ def download_tender_document(
 	res = list_tender_documents(deal=deal, company=company)
 	matched_req = next((r for r in res["requirements"] if r["key"] == key), None)
 	if not matched_req:
-		frappe.throw(_("Requirement {0} not found for this tender.").format(requirement_key), frappe.DoesNotExistError)
+		frappe.throw(
+			_("Requirement {0} not found for this tender.").format(requirement_key), frappe.DoesNotExistError
+		)
 	matched_file = next((f for f in matched_req["files"] if f["file_url"] == file_url), None)
 	if not matched_file:
 		frappe.throw(

@@ -14,6 +14,7 @@ os.chdir(SITES_PATH)
 
 import frappe
 
+
 def run():
 	frappe.init(site="stabler", sites_path=SITES_PATH)
 	frappe.connect()
@@ -24,7 +25,7 @@ def run():
 	frappe.set_user("Administrator")
 	roles_admin = frappe.get_roles("Administrator")
 
-	from stabler.api import crm_analytics, sourcing, crm_email, crm_automation
+	from stabler.api import crm_analytics, crm_automation, crm_email, sourcing
 
 	try:
 		email_res_admin = crm_email.send_deal_email(
@@ -121,6 +122,7 @@ def run():
 		json.dump(output, f, indent=2, default=str)
 
 	print(f"Backend Live Auth harness completed. Written to {out_file}")
+
 
 if __name__ == "__main__":
 	run()

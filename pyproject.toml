@@ -23,6 +23,11 @@ packages = []
 
 [tool.ruff]
 line-length = 110
+# Silinmeyi bekleyen ayıklama alanı: burada duran her dosya ya kopya ya
+# emekli. Biçimlendirmek çöpe 3686 satırlık diff yazmak olurdu; `force-exclude`
+# olmadan `lint-changed` bu yolları ruff'a açıkça verdiği için dışlama tutmaz.
+extend-exclude = ["_to_delete"]
+force-exclude = true
 # DELIBERATELY one minor BELOW `requires-python`. At py314 the formatter emits
 # PEP 758 unparenthesized excepts -- `except (A, B):` becomes `except A, B:`.
 # 517facd ("ruff format the whole tree") did exactly that in 46 files and

@@ -2,8 +2,10 @@
 
 import json
 import os
+
 import frappe
 from frappe.utils import flt
+
 
 def run(dry_run=1):
 	dry_run = int(dry_run)
@@ -11,12 +13,17 @@ def run(dry_run=1):
 	with open(module_path, encoding="utf-8") as f:
 		ref_rows = json.load(f)
 
-	hma_ref_by_cin = {r.get("ci_number"): r for r in ref_rows if r.get("ci_number") and ("HMA" in (r.get("vendor") or "").upper() or "MH/" in (r.get("ci_number") or ""))}
+	hma_ref_by_cin = {
+		r.get("ci_number"): r
+		for r in ref_rows
+		if r.get("ci_number")
+		and ("HMA" in (r.get("vendor") or "").upper() or "MH/" in (r.get("ci_number") or ""))
+	}
 
 	cis = frappe.get_all(
 		"Commercial Invoice",
 		filters={"supplier": ["like", "%HMA%"]},
-		fields=["name", "ci_number", "supplier", "agreed_total", "docs_total", "cash_difference"]
+		fields=["name", "ci_number", "supplier", "agreed_total", "docs_total", "cash_difference"],
 	)
 
 	ci_updates = []
@@ -34,16 +41,18 @@ def run(dry_run=1):
 		dc_db = float(ci.docs_total or 0)
 
 		if abs(ag_db - ag_ref) > 0.01 or abs(dc_db - dc_ref) > 0.01:
-			ci_updates.append({
-				"name": ci.name,
-				"ci_number": cin,
-				"old_agreed": ag_db,
-				"new_agreed": ag_ref,
-				"old_docs": dc_db,
-				"new_docs": dc_ref,
-				"old_diff": float(ci.cash_difference or 0),
-				"new_diff": cd_ref,
-			})
+			ci_updates.append(
+				{
+					"name": ci.name,
+					"ci_number": cin,
+					"old_agreed": ag_db,
+					"new_agreed": ag_ref,
+					"old_docs": dc_db,
+					"new_docs": dc_ref,
+					"old_diff": float(ci.cash_difference or 0),
+					"new_diff": cd_ref,
+				}
+			)
 
 			if not dry_run:
 				# 1. Update Commercial Invoice Header
@@ -55,14 +64,14 @@ def run(dry_run=1):
 						"docs_total": dc_ref,
 						"cash_difference": cd_ref,
 					},
-					update_modified=False
+					update_modified=False,
 				)
 
 				# 2. Update Commercial Invoice Item rows if present
 				items = frappe.get_all(
 					"Commercial Invoice Item",
 					filters={"parent": ci.name},
-					fields=["name", "qty", "rate", "amount", "docs_price", "docs_amount"]
+					fields=["name", "qty", "rate", "amount", "docs_price", "docs_amount"],
 				)
 				if items:
 					total_qty = sum(flt(it.get("qty")) for it in items)
@@ -83,20 +92,22 @@ def run(dry_run=1):
 									"docs_price": it_dc_rate,
 									"docs_amount": it_dc_amt,
 								},
-								update_modified=False
+								update_modified=False,
 							)
 
 				# 3. Update linked Purchase Invoice and GL Entries if present
 				pinvs = frappe.get_all(
 					"Purchase Invoice",
 					filters={"supplier": ["like", "%HMA%"], "docstatus": 1},
-					fields=["name", "grand_total"]
+					fields=["name", "grand_total"],
 				)
 				# Check if any Purchase Invoice matches the old agreed_total or old docs_total
 				for pinv in pinvs:
 					p_tot = flt(pinv.grand_total)
 					if abs(p_tot - ag_db) <= 0.5 or abs(p_tot - dc_db) <= 0.5:
-						p_items = frappe.get_all("Purchase Invoice Item", filters={"parent": pinv.name}, fields=["name", "qty"])
+						p_items = frappe.get_all(
+							"Purchase Invoice Item", filters={"parent": pinv.name}, fields=["name", "qty"]
+						)
 						p_total_qty = sum(flt(pi_it.qty) for pi_it in p_items)
 						for pi_it in p_items:
 							p_qty = flt(pi_it.qty)
@@ -115,7 +126,7 @@ def run(dry_run=1):
 										"net_rate": p_rate,
 										"net_amount": p_amt,
 									},
-									update_modified=False
+									update_modified=False,
 								)
 
 						frappe.db.set_value(
@@ -132,14 +143,14 @@ def run(dry_run=1):
 								"base_rounded_total": ag_ref,
 								"outstanding_amount": ag_ref,
 							},
-							update_modified=False
+							update_modified=False,
 						)
 
 						# Update GL Entries for this Purchase Invoice
 						gl_entries = frappe.get_all(
 							"GL Entry",
 							filters={"voucher_type": "Purchase Invoice", "voucher_no": pinv.name},
-							fields=["name", "credit", "debit"]
+							fields=["name", "credit", "debit"],
 						)
 						for gle in gl_entries:
 							is_credit = flt(gle.credit) > 0
@@ -148,20 +159,24 @@ def run(dry_run=1):
 								gle.name,
 								{
 									"credit" if is_credit else "debit": ag_ref,
-									"credit_in_account_currency" if is_credit else "debit_in_account_currency": ag_ref,
+									"credit_in_account_currency"
+									if is_credit
+									else "debit_in_account_currency": ag_ref,
 									"debit" if is_credit else "credit": 0.0,
-									"debit_in_account_currency" if is_credit else "credit_in_account_currency": 0.0,
+									"debit_in_account_currency"
+									if is_credit
+									else "credit_in_account_currency": 0.0,
 								},
-								update_modified=False
+								update_modified=False,
 							)
 
 	if not dry_run:
 		frappe.db.commit()
 
 	mode = "DRY-RUN" if dry_run else "APPLIED"
-	print(f"\n========================================================")
+	print("\n========================================================")
 	print(f"  FIX HMA COMMERCIAL INVOICES & GL ENTRIES ({mode})")
-	print(f"========================================================")
+	print("========================================================")
 	print(f"Total HMA CIs updated: {len(ci_updates)}")
 	for u in ci_updates:
 		print(

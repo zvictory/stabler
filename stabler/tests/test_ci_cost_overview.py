@@ -108,7 +108,9 @@ class TestCiCostOverview(unittest.TestCase):
 		self.assertEqual(res["gap"]["per_kg"], per_kg(14000.0, 56000.0))
 
 		# Reconciliation identity check: transport == billed + unbilled
-		self.assertAlmostEqual(res["totals"]["transport"], res["totals"]["billed"] + res["totals"]["unbilled"], places=2)
+		self.assertAlmostEqual(
+			res["totals"]["transport"], res["totals"]["billed"] + res["totals"]["unbilled"], places=2
+		)
 		self.assertEqual(res["totals"]["billed"], 1000.0)
 		self.assertEqual(res["totals"]["unbilled"], 2000.0)
 

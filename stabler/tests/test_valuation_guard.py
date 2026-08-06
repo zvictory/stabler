@@ -201,7 +201,9 @@ class TestStockEntryValuationGuard(unittest.TestCase):
 		# A bin worth 0 is the first-run case that allow_zero_valuation_rate exists
 		# for (tests/test_manufacturing_kiosk.py). Blocking here would stop the
 		# shift; the guard has no baseline and must abstain.
-		se = _Doc(items=[_Row(item_code="NEW-FG", t_warehouse="FG - TC", valuation_rate=500.0, basic_rate=0.0)])
+		se = _Doc(
+			items=[_Row(item_code="NEW-FG", t_warehouse="FG - TC", valuation_rate=500.0, basic_rate=0.0)]
+		)
 		vg.assert_stock_entry_valuation_sane(se)
 		self.assertFalse(mock_throw.called)
 
@@ -210,7 +212,9 @@ class TestStockEntryValuationGuard(unittest.TestCase):
 	@patch("stabler.api.valuation_guard._setting", side_effect=_defaults)
 	@patch("stabler.api.valuation_guard.guard_enabled", return_value=True)
 	def test_normal_production_entry_passes(self, _gate, _set, _bin, mock_throw):
-		se = _Doc(items=[_Row(item_code="R099", s_warehouse="Stores - TC", valuation_rate=1.8, basic_rate=0.0)])
+		se = _Doc(
+			items=[_Row(item_code="R099", s_warehouse="Stores - TC", valuation_rate=1.8, basic_rate=0.0)]
+		)
 		vg.assert_stock_entry_valuation_sane(se)
 		self.assertFalse(mock_throw.called)
 

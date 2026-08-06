@@ -21,6 +21,16 @@ export default [
 			"stabler/public/js/vendor/**",
 			"stabler/public/dist/**",
 			"node_modules/**",
+
+			// Not SPA code, and not shipped -- `.rsync-exclude` withholds both
+			// from every deploy. docs/uat/scripts/** are Node + Playwright UAT
+			// harnesses: `require` and `console.log` are correct there, so the
+			// browser config below reads 253 of their normal lines as errors.
+			// _to_delete/** is the staging area for files on their way out and
+			// includes .eslint-baseline.vue, a fixture whose whole purpose is to
+			// contain violations.
+			"docs/**",
+			"_to_delete/**",
 		],
 	},
 

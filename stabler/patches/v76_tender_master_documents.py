@@ -8,6 +8,7 @@ parsed by ``stabler.api._tender_documents.parse_doc_requirements``. It is
 seeded with the standard import-tender document set on existing masters so the
 tender level is not empty on upgrade.
 """
+
 import json
 
 import frappe

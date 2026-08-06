@@ -8,6 +8,7 @@ normalizer is the single source of truth for the per-requirement shape used
 by both the lot intake (``CRM Deal.custom_tender_intake.documents``) and the
 tender-level requirements (``Tender Master.custom_tender_documents``).
 """
+
 from __future__ import annotations
 
 import json
@@ -45,7 +46,12 @@ def parse_doc_requirements(raw: Any) -> list[dict[str, Any]]:
 		# `name` is the pre-document-center intake schema (`[{name, status}]`).
 		# Without this fallback every such row fails the `if not label` guard
 		# below and the whole checklist parses to zero requirements.
-		key = str(item.get("key") or item.get("label") or item.get("name") or "").strip().lower().replace(" ", "_")
+		key = (
+			str(item.get("key") or item.get("label") or item.get("name") or "")
+			.strip()
+			.lower()
+			.replace(" ", "_")
+		)
 		label = str(item.get("label") or item.get("key") or item.get("name") or "").strip()
 		if not label:
 			continue
@@ -70,12 +76,14 @@ def parse_doc_requirements(raw: Any) -> list[dict[str, Any]]:
 				continue
 			if not (f.get("file_name") or f.get("file_url") or f.get("name")):
 				continue
-			clean_files.append({
-				"file_name": str(f.get("file_name") or f.get("name") or ""),
-				"file_url": str(f.get("file_url") or ""),
-				"uploaded_by": str(f.get("uploaded_by") or f.get("owner") or ""),
-				"uploaded_at": str(f.get("uploaded_at") or f.get("creation") or ""),
-			})
+			clean_files.append(
+				{
+					"file_name": str(f.get("file_name") or f.get("name") or ""),
+					"file_url": str(f.get("file_url") or ""),
+					"uploaded_by": str(f.get("uploaded_by") or f.get("owner") or ""),
+					"uploaded_at": str(f.get("uploaded_at") or f.get("creation") or ""),
+				}
+			)
 		file_count = len(clean_files)
 		is_waived = bool(waiver_reason_str)
 		is_done = file_count > 0 or is_waived
@@ -83,24 +91,28 @@ def parse_doc_requirements(raw: Any) -> list[dict[str, Any]]:
 		# somebody ticked it off without attaching anything. It therefore feeds
 		# `unverified`, never `done` — otherwise the old flag would keep
 		# satisfying the ready-gate that K2/K3 deliberately took away from it.
-		legacy_done = bool(item.get("done", False)) or str(item.get("status") or "").strip().lower() == "ready"
+		legacy_done = (
+			bool(item.get("done", False)) or str(item.get("status") or "").strip().lower() == "ready"
+		)
 		unverified = legacy_done and not is_done
-		cleaned.append({
-			"key": key,
-			"label": label,
-			"required": required,
-			"scope": scope,
-			"role": role,
-			"date": date,
-			"done": is_done,
-			"unverified": unverified,
-			"waiver_reason": waiver_reason_str,
-			"waived_by": waived_by,
-			"waived_at": waived_at,
-			"files": clean_files,
-			"file_count": file_count,
-			"latest_file": clean_files[-1] if clean_files else None,
-		})
+		cleaned.append(
+			{
+				"key": key,
+				"label": label,
+				"required": required,
+				"scope": scope,
+				"role": role,
+				"date": date,
+				"done": is_done,
+				"unverified": unverified,
+				"waiver_reason": waiver_reason_str,
+				"waived_by": waived_by,
+				"waived_at": waived_at,
+				"files": clean_files,
+				"file_count": file_count,
+				"latest_file": clean_files[-1] if clean_files else None,
+			}
+		)
 	return cleaned
 
 
@@ -139,12 +151,48 @@ def docs_summary(requirements: list[dict[str, Any]], role: str | None = None) ->
 def default_doc_requirements() -> list[dict[str, Any]]:
 	"""Standard document requirements seeded with explicit role assignments."""
 	raw = [
-		{"key": "gtd", "label": "ГТД / Gümrük beyannamesi", "required": True, "scope": "lot", "role": "customs"},
-		{"key": "origin_cert", "label": "Kelib chiqish sertifikati", "required": False, "scope": "lot", "role": "customs"},
-		{"key": "cmr", "label": "CMR / Transport nakladnoyasi", "required": True, "scope": "lot", "role": "logistics"},
-		{"key": "packing_list", "label": "Qadoqlash varaqasi", "required": False, "scope": "lot", "role": "logistics"},
-		{"key": "invoice", "label": "Invoys / Commercial Invoice", "required": True, "scope": "lot", "role": "finance"},
-		{"key": "tech_spec", "label": "Texnik spetsifikatsiya", "required": True, "scope": "lot", "role": "general"},
+		{
+			"key": "gtd",
+			"label": "ГТД / Gümrük beyannamesi",
+			"required": True,
+			"scope": "lot",
+			"role": "customs",
+		},
+		{
+			"key": "origin_cert",
+			"label": "Kelib chiqish sertifikati",
+			"required": False,
+			"scope": "lot",
+			"role": "customs",
+		},
+		{
+			"key": "cmr",
+			"label": "CMR / Transport nakladnoyasi",
+			"required": True,
+			"scope": "lot",
+			"role": "logistics",
+		},
+		{
+			"key": "packing_list",
+			"label": "Qadoqlash varaqasi",
+			"required": False,
+			"scope": "lot",
+			"role": "logistics",
+		},
+		{
+			"key": "invoice",
+			"label": "Invoys / Commercial Invoice",
+			"required": True,
+			"scope": "lot",
+			"role": "finance",
+		},
+		{
+			"key": "tech_spec",
+			"label": "Texnik spetsifikatsiya",
+			"required": True,
+			"scope": "lot",
+			"role": "general",
+		},
 		{"key": "price_offer", "label": "Narx taklifi", "required": True, "scope": "lot", "role": "general"},
 	]
 	return parse_doc_requirements(raw)

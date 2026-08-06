@@ -8,7 +8,6 @@ import { call } from "../../api/client.js";
 import { t } from "../../composables/i18n.js";
 import { formatDate } from "../../composables/date.js";
 import { formatMoney } from "../../composables/money.js";
-import { getStatusBadgeClass } from "../../composables/status.js";
 import { blockerText, cascadeRows, recordRoute } from "../../composables/deleteImpact.js";
 import { useToast } from "../../composables/useToast.js";
 import { useConfirm } from "../../composables/useConfirm.js";
@@ -42,16 +41,6 @@ const piTrackingFailed = ref(false);
 
 const transportData = ref(null);
 const loadingTransport = ref(false);
-
-const containerTransportMap = computed(() => {
-	const map = {};
-	if (transportData.value?.by_container) {
-		for (const item of transportData.value.by_container) {
-			map[item.container] = item.amount;
-		}
-	}
-	return map;
-});
 
 async function fetchTransportCosts() {
 	if (isCreate.value || !docName.value) {
@@ -93,14 +82,6 @@ const groupOptions = computed(() => [
 	...piGroups.value.map((g) => ({ value: g.name, label: g.title || g.name })),
 ]);
 const companyPOs = ref([]);
-const poOptions = computed(() => [
-	{ value: "", label: t("Select purchase order…") },
-	...companyPOs.value.map((p) => ({
-		value: p.name,
-		label: `${p.name} · ${p.supplier_name || p.supplier}`,
-	})),
-]);
-
 const costVisible = computed(() => {
 	if (!isCreate.value) return form.value.docs_total !== null;
 	return session.costVisible === true;
@@ -189,94 +170,11 @@ function rowDocsAmount(row) {
 // same contract line; comparing the raw text invents 40 phantom mismatches.
 const normKey = (v) => String(v ?? "").replace(/\s+/g, " ").trim().toUpperCase();
 const round4 = (n) => Math.round((Number(n) || 0) * 1e4) / 1e4;
-const QTY_TOLERANCE_KG = 0.5;
 
-function getTrackingRow(row) {
-	if (!form.value.pi_tracking) return null;
-	const pi = row.custom_proforma_invoice || form.value.custom_proforma_invoice || "";
-	if (!pi) return null;
-	const cat = normKey(row.category);
-	const exact = cat
-		? form.value.pi_tracking.find(
-				(tr) => tr.proforma_invoice === pi && normKey(tr.category) === cat
-			)
-		: null;
-	if (exact) return exact;
-	const ofPi = form.value.pi_tracking.filter((tr) => tr.proforma_invoice === pi);
-	return ofPi.length === 1 ? ofPi[0] : null;
-}
-
-function rowDiffs(row) {
-	const out = [];
-	const pi = row.custom_proforma_invoice || form.value.custom_proforma_invoice || "";
-	if (!pi) {
-		out.push({ code: "unattributable", level: "error", label: t("Not linked to any PI") });
-		return out;
-	}
-	const tr = getTrackingRow(row);
-	if (!tr) {
-		out.push(
-			normKey(row.category)
-				? { code: "unattributable", level: "error", label: t("Not on any PI line") }
-				: { code: "missing_category", level: "error", label: t("No category on the line") }
-		);
-	}
-
-	const match = (row.name && discrepancyRowMap.value[row.name]) ||
-		(row.idx && discrepancyRowMap.value[`idx_${row.idx}`]);
-	if (match && match.diffs) {
-		for (const d of match.diffs) {
-			out.push({
-				code: d.code,
-				level: d.level || "warn",
-				label: d.label ? t(d.label) : t("Price differs from contract"),
-			});
-		}
-	}
-
-	const boxes = Number(row.boxes) || 0;
-	const bw = Number(row.box_weight_kg) || 0;
-	const qty = Number(row.qty) || 0;
-	if (boxes && bw && qty && Math.abs(boxes * bw - qty) > QTY_TOLERANCE_KG) {
-		out.push({ code: "qty_arithmetic", level: "warn", label: t("Boxes × box weight ≠ quantity") });
-	}
-
-	const piItems = (tr?.items || []).map(normKey);
-	if (row.item && piItems.length && !piItems.includes(normKey(row.item))) {
-		out.push({ code: "sub_cut", level: "info", label: t("Sub-cut of the PI line") });
-	}
-
-	return out;
-}
-
-function rowDiffLevel(row) {
-	const diffs = rowDiffs(row);
-	for (const level of ["error", "warn", "info"]) {
-		if (diffs.some((d) => d.level === level)) return level;
-	}
-	return null;
-}
-function rowDiffTitle(row) {
-	return rowDiffs(row)
-		.map((d) => d.label)
-		.join("\n");
-}
-function rowPiTitle(row) {
-	const pi = row.custom_proforma_invoice || form.value.custom_proforma_invoice || "";
-	if (!pi) return t("Not linked to any PI");
-	return row.custom_proforma_invoice ? pi : `${pi} — ${t("Inherited from the invoice header")}`;
-}
-const nonCompliantCount = computed(
-	() => (form.value.items || []).filter((r) => ["error", "warn"].includes(rowDiffLevel(r))).length
-);
 
 const itemsAgreedTotal = computed(() => (form.value.items || []).reduce((s, r) => s + rowAmount(r), 0));
 const itemsDocsTotal = computed(() => (form.value.items || []).reduce((s, r) => s + rowDocsAmount(r), 0));
 const itemsCashDiff = computed(() => itemsAgreedTotal.value - itemsDocsTotal.value);
-const itemCategories = computed(() => [
-	...new Set((form.value.items || []).map((r) => r.category).filter(Boolean)),
-]);
-
 const costOverviewData = ref(null);
 const loadingCostOverview = ref(false);
 const discrepancyData = ref(null);
@@ -1798,8 +1696,8 @@ watch(activeCompany, loadRefData);
 								<td class="text-end font-monospace">{{ fm(b.grand_total, costOverviewData?.currency) }}</td>
 								<td class="text-end font-monospace text-danger">{{ fm(b.outstanding_amount, costOverviewData?.currency) }}</td>
 								<td>
-									<span v-if="b.overdue" class="badge bg-danger-lt text-danger">{{ t("overdue") }} {{ b.due_date }}</span>
-									<span v-else>{{ b.due_date || '—' }}</span>
+									<span v-if="b.overdue" class="badge bg-danger-lt text-danger">{{ t("overdue") }} {{ formatDate(b.due_date) }}</span>
+									<span v-else>{{ b.due_date ? formatDate(b.due_date) : '—' }}</span>
 								</td>
 							</tr>
 							<tr v-if="!costOverviewData?.bills?.length">

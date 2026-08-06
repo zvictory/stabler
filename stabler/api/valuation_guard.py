@@ -218,9 +218,7 @@ def check_incoming_rate_currency(doc, method=None) -> None:
 
 def _bin_valuation_rate(item_code: str, warehouse: str) -> float:
 	"""What this warehouse says the item is currently worth (0 = never valued)."""
-	return flt(
-		frappe.db.get_value("Bin", {"item_code": item_code, "warehouse": warehouse}, "valuation_rate")
-	)
+	return flt(frappe.db.get_value("Bin", {"item_code": item_code, "warehouse": warehouse}, "valuation_rate"))
 
 
 def assert_stock_entry_valuation_sane(se) -> None:

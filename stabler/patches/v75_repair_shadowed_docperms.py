@@ -35,7 +35,6 @@ def execute():
 	if repaired:
 		total = sum(repaired.values())
 		frappe.logger("stabler.permissions").info(
-			f"v75_repair_shadowed_docperms: restored {total} rows across {len(repaired)} "
-			f"doctypes: {repaired}"
+			f"v75_repair_shadowed_docperms: restored {total} rows across {len(repaired)} doctypes: {repaired}"
 		)
 		frappe.clear_cache()

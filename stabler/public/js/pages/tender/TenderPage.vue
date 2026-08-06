@@ -14,9 +14,7 @@
 // (stabler-modernist.css:900 "Bir form ekranını taşımak = kök elemana
 // class='stbl-ds' eklemek").
 import { computed } from "vue";
-import { storeToRefs } from "pinia";
 import { useRoute } from "vue-router";
-import { useSession } from "../../stores/session.js";
 import { buildTenderQuery } from "../../composables/useTenderContext.js";
 import TenderNav from "./TenderNav.vue";
 
@@ -26,7 +24,6 @@ defineProps({
 });
 
 const route = useRoute();
-const { activeCompany } = storeToRefs(useSession());
 
 const parentTender = computed(() => (route.query?.tender ? String(route.query.tender) : ""));
 const parentCrmQuery = computed(() =>

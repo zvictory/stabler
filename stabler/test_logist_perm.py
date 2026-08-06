@@ -1,5 +1,6 @@
 import frappe
 
+
 def run():
 	user = "logistics.mikas@erpstable.com"
 	frappe.set_user(user)

@@ -2,8 +2,8 @@
 
 from __future__ import annotations
 
-import json
 import importlib
+import json
 import os
 import unittest
 from unittest.mock import patch

@@ -110,9 +110,9 @@ def run(dry_run=1):
 		frappe.db.commit()
 
 	mode = "DRY-RUN" if dry_run else "APPLIED"
-	print(f"\n========================================================")
+	print("\n========================================================")
 	print(f"  RE-POST IFF PURCHASE INVOICES & GL ENTRIES ({mode})")
-	print(f"========================================================")
+	print("========================================================")
 	total_old = sum(r["old_total"] for r in report)
 	total_new = sum(r["new_total"] for r in report)
 	print(f"Total Old GL Creditors: ${total_old:,.2f}")

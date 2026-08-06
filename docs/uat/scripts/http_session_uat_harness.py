@@ -6,19 +6,20 @@ Outputs redacted network, URL, response status, role authorization, and DB evide
 docs/uat/evidence/2026-08-02-browser-final/http_session_uat_results.json.
 """
 
+import http.cookiejar
 import json
 import os
 import sys
 import urllib.parse
 import urllib.request
-import http.cookiejar
 
 BASE_URL = "http://localhost:8000"
+
 
 def load_secrets():
 	env_file = "/Users/zafar/frappe-bench-local/.uat_secrets.env"
 	if os.path.exists(env_file):
-		with open(env_file, "r") as f:
+		with open(env_file) as f:
 			for line in f:
 				line = line.strip()
 				if line and "=" in line:
@@ -30,8 +31,11 @@ def load_secrets():
 	admin_pass = os.environ.get("STABLER_UAT_ADMIN_PASS")
 
 	if not (mgr_pass and nonmgr_pass and admin_pass):
-		raise RuntimeError("Missing required UAT password environment variables (STABLER_UAT_MANAGER_PASS, etc.).")
+		raise RuntimeError(
+			"Missing required UAT password environment variables (STABLER_UAT_MANAGER_PASS, etc.)."
+		)
 	return mgr_pass, nonmgr_pass, admin_pass
+
 
 def make_http_request(url, data=None, headers=None, cookie_jar=None, method=None):
 	req = urllib.request.Request(url, data=data, headers=headers or {})
@@ -45,20 +49,36 @@ def make_http_request(url, data=None, headers=None, cookie_jar=None, method=None
 				parsed = json.loads(body)
 			except Exception:
 				parsed = body[:500]
-			return {"status": resp.status, "body": parsed, "headers": {k: "<redacted>" if k.lower() in ("set-cookie", "authorization") else v for k, v in resp.headers.items()}}
+			return {
+				"status": resp.status,
+				"body": parsed,
+				"headers": {
+					k: "<redacted>" if k.lower() in ("set-cookie", "authorization") else v
+					for k, v in resp.headers.items()
+				},
+			}
 	except urllib.error.HTTPError as err:
 		body = err.read().decode("utf-8")
 		try:
 			parsed = json.loads(body)
 		except Exception:
 			parsed = body[:500]
-		return {"status": err.code, "body": parsed, "headers": {k: "<redacted>" if k.lower() in ("set-cookie", "authorization") else v for k, v in err.headers.items()}}
+		return {
+			"status": err.code,
+			"body": parsed,
+			"headers": {
+				k: "<redacted>" if k.lower() in ("set-cookie", "authorization") else v
+				for k, v in err.headers.items()
+			},
+		}
+
 
 def login_http_session(usr, pwd):
 	cj = http.cookiejar.CookieJar()
 	data = urllib.parse.urlencode({"usr": usr, "pwd": pwd}).encode("utf-8")
 	res = make_http_request(f"{BASE_URL}/api/method/login", data=data, cookie_jar=cj)
 	return cj, res
+
 
 def run_http_session_uat():
 	mgr_pass, nonmgr_pass, admin_pass = load_secrets()
@@ -72,14 +92,16 @@ def run_http_session_uat():
 	cj_admin, login_res_admin = login_http_session("Administrator", admin_pass)
 
 	comm_key_id = "HTTP-UAT-KEY-99"
-	email_data_1 = urllib.parse.urlencode({
-		"deal": "CRM-DEAL-2026-00005",
-		"subject": "HTTP UAT Email Test",
-		"content": "Testing HTTP UAT transaction failure and retry",
-		"company": "Mikas",
-		"recipients": "test@example.com",
-		"idempotency_key": comm_key_id,
-	}).encode("utf-8")
+	email_data_1 = urllib.parse.urlencode(
+		{
+			"deal": "CRM-DEAL-2026-00005",
+			"subject": "HTTP UAT Email Test",
+			"content": "Testing HTTP UAT transaction failure and retry",
+			"company": "Mikas",
+			"recipients": "test@example.com",
+			"idempotency_key": comm_key_id,
+		}
+	).encode("utf-8")
 
 	email_admin_1 = make_http_request(
 		f"{BASE_URL}/api/method/stabler.api.crm_email.send_deal_email",
@@ -99,7 +121,10 @@ def run_http_session_uat():
 		"session_cookies": {"sid": "<redacted>"},
 		"http_calls": {
 			"email_send_attempt_1": {"status": email_admin_1["status"], "response": email_admin_1["body"]},
-			"email_send_attempt_2_retry": {"status": email_admin_2["status"], "response": email_admin_2["body"]},
+			"email_send_attempt_2_retry": {
+				"status": email_admin_2["status"],
+				"response": email_admin_2["body"],
+			},
 		},
 	}
 
@@ -169,6 +194,7 @@ def run_http_session_uat():
 	# -------------------------------------------------------------
 	os.chdir("/Users/zafar/frappe-bench-local/sites")
 	import frappe
+
 	frappe.init(site="stabler", sites_path="/Users/zafar/frappe-bench-local/sites")
 	frappe.connect()
 
@@ -184,7 +210,9 @@ def run_http_session_uat():
 		"idempotency_key": comm_key,
 		"records_found": len(comm_rows),
 		"rows": comm_rows,
-		"durable_failed_status_verified": len(comm_rows) == 1 and comm_rows[0]["custom_execution_status"] == "Failed" and comm_rows[0]["custom_attempts"] == 2,
+		"durable_failed_status_verified": len(comm_rows) == 1
+		and comm_rows[0]["custom_execution_status"] == "Failed"
+		and comm_rows[0]["custom_attempts"] == 2,
 	}
 
 	out_file = os.path.join(out_dir, "http_session_uat_results.json")
@@ -192,6 +220,7 @@ def run_http_session_uat():
 		json.dump(results, f, indent=2, default=str)
 
 	print(f"HTTP Session Authenticated UAT finished. Results written to {out_file}")
+
 
 if __name__ == "__main__":
 	run_http_session_uat()
