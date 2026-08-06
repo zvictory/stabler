@@ -1368,6 +1368,54 @@ _INTAKE_KEYS_NUM = (
 _PURCHASE_METHODS = ("auction", "shop", "selection", "tender")
 
 
+def _merge_client_documents(client_docs: list, prior_docs: list) -> list:
+	"""Reconcile client-edited checklist rows with server-owned file/waiver facts.
+
+	The intake editor may only touch the human-facing fields (label, required,
+	date, role). File attachments, waiver justifications, and the derived
+	``done``/``unverified`` flags are never trusted from the browser — they are
+	preserved from the prior payload, matched by ``key`` (falling back to label).
+	Rows present only in the client are added (clean, nothing satisfied); rows
+	present only in the prior payload are dropped unless the client still lists
+	them, so deleting a row in the editor removes it. Outputs the full document
+	requirement shape produced by ``parse_doc_requirements``.
+	"""
+	from stabler.api._tender_documents import parse_doc_requirements
+
+	prior_by_key = {}
+	for d in prior_docs or []:
+		if not isinstance(d, dict):
+			continue
+		k = str(d.get("key") or d.get("label") or "").strip().lower().replace(" ", "_")
+		if k:
+			prior_by_key[k] = d
+
+	merged: list = []
+	seen = set()
+	for d in client_docs or []:
+		if not isinstance(d, dict):
+			continue
+		if not str(d.get("label") or d.get("key") or "").strip():
+			continue
+		k = str(d.get("key") or d.get("label") or "").strip().lower().replace(" ", "_")
+		if k in seen:
+			continue
+		seen.add(k)
+		prior_row = prior_by_key.get(k, {})
+		# Client owns: label/required/date/role. Server owns: files/waiver/*.
+		row = dict(prior_row)  # files + waiver + derived flags carried over
+		row["key"] = k
+		row["label"] = str(d.get("label") or prior_row.get("label") or "").strip()[:140]
+		row["required"] = bool(d.get("required") if "required" in d else prior_row.get("required", True))
+		row["date"] = str(d.get("date") or prior_row.get("date") or "").strip()[:20]
+		if "role" in d:
+			row["role"] = str(d.get("role") or "").strip().lower()[:40]
+		merged.append(row)
+	# Re-normalize so derived done/unverified/scope/role/file_count/latest_file are
+	# always consistent with the reconciled payload (parse_doc_requirements is pure).
+	return parse_doc_requirements(merged)
+
+
 def _clean_intake(data: dict, prior: dict | None = None, audit_actor: str | None = None) -> dict:
 	"""Normalize client-editable intake fields and preserve server audit facts.
 
@@ -1411,17 +1459,15 @@ def _clean_intake(data: dict, prior: dict | None = None, audit_actor: str | None
 		("assigned_by", 140),
 	):
 		out[key] = str(prior.get(key) or "")[:limit]
-	# document checklist (ГТД, certificate, acceptance act, contract, invoice …)
-	out["documents"] = [
-		{
-			"label": str(d.get("label") or "").strip()[:140],
-			"required": 1 if d.get("required") else 0,
-			"done": 1 if d.get("done") else 0,
-			"date": str(d.get("date") or "").strip()[:20],
-		}
-		for d in (data.get("documents") or [])
-		if isinstance(d, dict) and str(d.get("label") or "").strip()
-	][:40]
+	# document requirements (ГТД, certificate, acceptance act, contract, invoice …).
+	# Normalized through the document-center parser so file attachments and waivers
+	# survive an intake edit: the browser can change label/required/date/role, but
+	# files / waiver facts are reconciled back from the prior payload and never
+	# trusted from the client. This keeps _clean_intake and the dedicated document
+	# endpoints (upload/waive) over the same single source of truth.
+	out["documents"] = _merge_client_documents(
+		data.get("documents") or [], prior.get("documents") or []
+	)[:40]
 	prior_ready = prior.get("go_no_go") == "go" and not any(
 		d.get("required") and not d.get("done") for d in (prior.get("documents") or [])
 	)
@@ -1476,13 +1522,20 @@ def _fx_summary(intake: dict) -> dict:
 
 
 def _docs_summary(intake: dict) -> dict:
-	docs = intake.get("documents") or []
-	req = [d for d in docs if d.get("required")]
+	"""Lot-level document readiness, using the document-center derived completion."""
+	from stabler.api._tender_documents import docs_summary, parse_doc_requirements
+
+	reqs = parse_doc_requirements(intake.get("documents") or [])
+	summary = docs_summary(reqs)
+	# Keep the legacy ``done_required``/``missing`` keys the intake header badge
+	# reads; ``unverified``/``readiness_pct`` are surfaced for the document UI.
 	return {
-		"total": len(docs),
-		"required": len(req),
-		"done_required": sum(1 for d in req if d.get("done")),
-		"missing": [d.get("label") for d in req if not d.get("done")],
+		"total": summary["total"],
+		"required": summary["required"],
+		"done_required": summary["done_required"],
+		"unverified": summary["unverified"],
+		"readiness_pct": summary["readiness_pct"],
+		"missing": summary["missing"],
 	}
 
 

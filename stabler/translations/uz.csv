@@ -5038,6 +5038,75 @@ Other expenses,Boshqa xarajatlar
 No transport expenses yet.,Hozircha tashish xarajatlari yo'q
 Transport by container,Konteyner bo'yicha tashish
 cont.,kont.
+Goods · agreed,Mahsulot · kelishilgan
+Logistics & duties,Logistika va bojxona
+Cost / kg,Tannarx / kg
+in accounting,hisobda
+gap,farq
+Unpaid,To'lanmagan
+supplier,yetkazib beruvchi
+carriers,tashuvchilar
+1 line: price below agreed,1 qator: narx shartnomadan past
+Against contract,Shartnomaga nisbatan
+Contracts for this shipment,Ushbu yuk shartnomalari
+summary — details in PI,xulosa — tafsilotlar PI da
+in this invoice,ushbu hisobda
+"over-shipped by key: -{count} boxes","kalit bo'yicha ortiqcha yuklash: -{count} quti"
+"remaining {count} boxes","qolgan {count} quti"
+open PI →,PI ni ochish →
+Advance 70%,Bo'nak 70%
+Telex / BL,Teleks / BL
+Gate-in → ГТД,Gate-in → Deklaratsiya
+Transport, expenses & supplier bills,Transport, xarajatlar va yetkazib beruvchi hisoblari
+Supplier bills,Yetkazib beruvchi hisoblari
+Expenses without bills,Hisobsiz xarajatlar
+All expenses are billed.,Barcha xarajatlar hisoblangan.
+No supplier bills linked yet.,Hali yetkazib beruvchi hisoblari bog'lanmagan.
+"Reconciliation: expenses {exp} − bills {bills} = {unbilled} unbilled","Taqoslash: xarajatlar {exp} − hisoblar {bills} = {unbilled} hisobsiz"
+Shipment Cost Breakdown,Partiya tannarxi taqsimoti
+Operational,Operatsion
+In Accounting,Hisobda
+Freight & Transport,Kira & Transport
+Port & Insurance,Port & Sug'urta
+Duties,Bojxona to'lovlari
+Total operational,Jami operatsion
+Billed goods,Hisoblangan mahsulot
+LCV (Landed Cost Vouchers),LCV (Tannarx taqsimoti)
+Total accounting,Jami hisobda
+"Gap {amount} · {per_kg} $/kg not allocated to inventory yet","Farq {amount} · {per_kg} $/kg hali zaxiraga taqsimlanmagan"
+Document status,Hujjatlar holati
+Vet Certificate,Vet sertifikati
+Customs Declaration,Bojxona deklaratsiyasi
+over-shipped,ortiqcha yuklangan
+
+Attach file,Fayl biriktirish
+Could not attach document.,Hujjatni biriktirib bo'lmadi.
+Could not load documents.,Hujjatlarni yuklab bo'lmadi.
+Could not remove document.,Hujjatni o'chirib bo'lmadi.
+Could not waive document.,Hujjatdan voz kechib bo'lmadi.
+Document removed.,Hujjat o'chirildi.
+Document requirements,Hujjat talablari
+Document waived.,Hujjatdan voz kechildi.
+File,Fayl
+General,Umumiy
+No document requirements yet. Add them in Tender details.,Hozircha hujjat talablari yo'q. Ularni Tender tafsilotlarida qo'shing.
+Req.,Majb.
+Tender documents,Tender hujjatlari
+Upload returned no file URL.,Yuklash fayl URL'ini qaytarmadi.
+Waiver reason is mandatory.,Voz kechish sababi majburiy.
+files,fayllar
+required,majburiy
+unverified,tasdiqlanmagan
+Attached,Biriktirilgan
+Download failed,Yuklab olish amalga oshmadi
+Marked done but no file,Faylsiz bajarilgan deb belgilangan
+Missing required,Majburiy hujjat yetishmayapti
+Remove file,Faylni o'chirish
+Shared across all lots of this tender,Ushbu tenderning barcha lotlari uchun umumiy
+Waive with reason…,Sabab bilan voz kechish…
+Waived,Voz kechildi
+Waived by,Voz kechgan
+remove,o'chirish
 Visible,Koʻrsatilgan
 Overdue only,Faqat muddati oʻtganlar
 Statement,Koʻchirma

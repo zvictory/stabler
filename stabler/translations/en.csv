@@ -5034,6 +5034,75 @@ Other expenses,Other expenses
 No transport expenses yet.,No transport expenses yet.
 Transport by container,Transport by container
 cont.,cont.
+Goods · agreed,Goods · agreed
+Logistics & duties,Logistics & duties
+Cost / kg,Cost / kg
+in accounting,in accounting
+gap,gap
+Unpaid,Unpaid
+supplier,supplier
+carriers,carriers
+1 line: price below agreed,1 line: price below agreed
+Against contract,Against contract
+Contracts for this shipment,Contracts for this shipment
+summary — details in PI,summary — details in PI
+in this invoice,in this invoice
+"over-shipped by key: -{count} boxes","over-shipped by key: -{count} boxes"
+"remaining {count} boxes","remaining {count} boxes"
+open PI →,open PI →
+Advance 70%,Advance 70%
+Telex / BL,Telex / BL
+Gate-in → ГТД,Gate-in → Customs Decl.
+Transport, expenses & supplier bills,Transport, expenses & supplier bills
+Supplier bills,Supplier bills
+Expenses without bills,Expenses without bills
+All expenses are billed.,All expenses are billed.
+No supplier bills linked yet.,No supplier bills linked yet.
+"Reconciliation: expenses {exp} − bills {bills} = {unbilled} unbilled","Reconciliation: expenses {exp} − bills {bills} = {unbilled} unbilled"
+Shipment Cost Breakdown,Shipment Cost Breakdown
+Operational,Operational
+In Accounting,In Accounting
+Freight & Transport,Freight & Transport
+Port & Insurance,Port & Insurance
+Duties,Duties
+Total operational,Total operational
+Billed goods,Billed goods
+LCV (Landed Cost Vouchers),LCV (Landed Cost Vouchers)
+Total accounting,Total accounting
+"Gap {amount} · {per_kg} $/kg not allocated to inventory yet","Gap {amount} · {per_kg} $/kg not allocated to inventory yet"
+Document status,Document status
+Vet Certificate,Vet Certificate
+Customs Declaration,Customs Declaration
+over-shipped,over-shipped
+
+Attach file,Attach file
+Could not attach document.,Could not attach document.
+Could not load documents.,Could not load documents.
+Could not remove document.,Could not remove document.
+Could not waive document.,Could not waive document.
+Document removed.,Document removed.
+Document requirements,Document requirements
+Document waived.,Document waived.
+File,File
+General,General
+No document requirements yet. Add them in Tender details.,No document requirements yet. Add them in Tender details.
+Req.,Req.
+Tender documents,Tender documents
+Upload returned no file URL.,Upload returned no file URL.
+Waiver reason is mandatory.,Waiver reason is mandatory.
+files,files
+required,required
+unverified,unverified
+Attached,Attached
+Download failed,Download failed
+Marked done but no file,Marked done but no file
+Missing required,Missing required
+Remove file,Remove file
+Shared across all lots of this tender,Shared across all lots of this tender
+Waive with reason…,Waive with reason…
+Waived,Waived
+Waived by,Waived by
+remove,remove
 Visible,Visible
 Overdue only,Overdue only
 Statement,Statement

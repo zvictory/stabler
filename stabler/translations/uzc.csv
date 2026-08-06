@@ -5038,6 +5038,75 @@ Other expenses,Бошқа харажатлар
 No transport expenses yet.,Ҳозирча ташиш харажатлари йўқ
 Transport by container,Контейнер бўйича ташиш
 cont.,конт.
+Goods · agreed,Маҳсулот · келишилган
+Logistics & duties,Логистика ва божхона
+Cost / kg,Таннарх / кг
+in accounting,ҳисобда
+gap,фарқ
+Unpaid,Тўланмаган
+supplier,етказиб берувчи
+carriers,ташувчилар
+1 line: price below agreed,1 қатор: нарх шартномадан паст
+Against contract,Шартномага нисбатан
+Contracts for this shipment,Ушбу юк шартномалари
+summary — details in PI,хулоса — тафсилотлар PI да
+in this invoice,ушбу ҳисобда
+"over-shipped by key: -{count} boxes","калит бўйича ортиқча юклаш: -{count} қути"
+"remaining {count} boxes","қолган {count} қути"
+open PI →,PI ни очиш →
+Advance 70%,Бўнак 70%
+Telex / BL,Телекс / BL
+Gate-in → ГТД,Gate-in → Декларация
+Transport, expenses & supplier bills,Транспорт, харажатлар ва етказиб берувчи ҳисоблари
+Supplier bills,Етказиб берувчи ҳисоблари
+Expenses without bills,Ҳисобсиз харажатлар
+All expenses are billed.,Барча харажатлар ҳисобланган.
+No supplier bills linked yet.,Ҳали етказиб берувчи ҳисоблари боғланмаган.
+"Reconciliation: expenses {exp} − bills {bills} = {unbilled} unbilled","Таққослаш: харажатлар {exp} − ҳисоблар {bills} = {unbilled} ҳисобсиз"
+Shipment Cost Breakdown,Партия таннархи тақсимоти
+Operational,Операцион
+In Accounting,Ҳисобда
+Freight & Transport,Кира & Транспорт
+Port & Insurance,Порт & Суғурта
+Duties,Божхона тўловлари
+Total operational,Жами операцион
+Billed goods,Ҳисобланган маҳсулот
+LCV (Landed Cost Vouchers),LCV (Таннарх тақсимоти)
+Total accounting,Жами ҳисобда
+"Gap {amount} · {per_kg} $/kg not allocated to inventory yet","Фарқ {amount} · {per_kg} $/кг ҳали захирага тақсимланмаган"
+Document status,Ҳужжатлар ҳолати
+Vet Certificate,Вет сертификати
+Customs Declaration,Божхона декларацияси
+over-shipped,ортиқча юкланган
+
+Attach file,Fayl biriktiriw
+Could not attach document.,Hujjattı biriktirip bolmadı.
+Could not load documents.,Hujjatlardı júklew bolmadı.
+Could not remove document.,Hujjattı alıp taslaw bolmadı.
+Could not waive document.,Hujjattan waz kechiw bolmadı.
+Document removed.,Hujjat alıp taslandı.
+Document requirements,Hujjat talapları
+Document waived.,Hujjattan waz kechildi.
+File,Fayl
+General,Umumiy
+No document requirements yet. Add them in Tender details.,Hárshe hujjat talapları joq. Olardı Tender tolıqlıqlarında qosıń.
+Req.,Májb.
+Tender documents,Tender hujjatları
+Upload returned no file URL.,Júklew fayl URL'ın qaytarmadı.
+Waiver reason is mandatory.,Waz kechiw sebebi májbúriy.
+files,fayllar
+required,májbúriy
+unverified,tastıqlanbaǵan
+Attached,Biriktirilgen
+Download failed,Júklew áwmelgi
+Marked done but no file,Faylsız orınlandı dep belgilengen
+Missing required,Májbúriy hújjet jetispeydi
+Remove file,Fayldı alıp taslaw
+Shared across all lots of this tender,Bul tenderdiń barlıq lotları ushın ulwmaq
+Waive with reason…,Sebep menen waz kechiw…
+Waived,Waz kechildi
+Waived by,Waz kechken
+remove,alıp taslaw
 Visible,Кўрсатилган
 Overdue only,Фақат муддати ўтганлар
 Statement,Кўчирма

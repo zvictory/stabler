@@ -5033,6 +5033,75 @@ Other expenses,Diğer giderler
 No transport expenses yet.,Henüz taşıma gideri yok.
 Transport by container,Konteyner taşıma gideri
 cont.,kont.
+Goods · agreed,Ürün · anlaşılan
+Logistics & duties,Lojistik ve gümrük
+Cost / kg,Maliyet / kg
+in accounting,muhasebede
+gap,fark
+Unpaid,Ödenmedi
+supplier,tedarikçi
+carriers,taşıyıcılar
+1 line: price below agreed,1 satır: fiyat sözleşmeden düşük
+Against contract,Sözleşmeye karşı
+Contracts for this shipment,Bu sevkiyatın sözleşmeleri
+summary — details in PI,özet — detaylar PI'de
+in this invoice,bu faturada
+"over-shipped by key: -{count} boxes","anahtar fazla yükleme: -{count} kutu"
+"remaining {count} boxes","kalan {count} kutu"
+open PI →,PI aç →
+Advance 70%,Avans %70
+Telex / BL,Teleks / BL
+Gate-in → ГТД,Gate-in → Beyanname
+Transport, expenses & supplier bills,Nakit, giderler ve tedarikçi faturaları
+Supplier bills,Tedarikçi faturaları
+Expenses without bills,Faturasız giderler
+All expenses are billed.,Tüm giderler faturalandırıldı.
+No supplier bills linked yet.,Henüz tedarikçi faturası bağlanmadı.
+"Reconciliation: expenses {exp} − bills {bills} = {unbilled} unbilled","Mutabakat: giderler {exp} − faturalar {bills} = {unbilled} faturasız"
+Shipment Cost Breakdown,Parti Maliyeti Dağılımı
+Operational,Operasyonel
+In Accounting,Muhasebede
+Freight & Transport,Navlun & Taşıma
+Port & Insurance,Liman & Sigorta
+Duties,Gümrük Vergileri
+Total operational,Toplam operasyonel
+Billed goods,Faturalanan ürün
+LCV (Landed Cost Vouchers),LCV (Maliyet Dağıtım Fişleri)
+Total accounting,Toplam muhasebe
+"Gap {amount} · {per_kg} $/kg not allocated to inventory yet","Fark {amount} · {per_kg} $/kg henüz stoğa dağıtılmadı"
+Document status,Belge durumu
+Vet Certificate,Veteriner Sertifikası
+Customs Declaration,Gümrük Beyannamesi
+over-shipped,fazla yüklendi
+
+Attach file,Dosya ekle
+Could not attach document.,Belge eklenemedi.
+Could not load documents.,Belgeler yüklenemedi.
+Could not remove document.,Belge kaldırılamadı.
+Could not waive document.,Belge feragat edilemedi.
+Document removed.,Belge kaldırıldı.
+Document requirements,Belge gereksinimleri
+Document waived.,Belge feragat edildi.
+File,Dosya
+General,Genel
+No document requirements yet. Add them in Tender details.,Henüz belge gereksinimi yok. İhale detaylarında ekleyin.
+Req.,Zor.
+Tender documents,İhale belgeleri
+Upload returned no file URL.,Yükleme dosya URL'si döndürmedi.
+Waiver reason is mandatory.,Feragat gerekçesi zorunludur.
+files,dosya
+required,zorunlu
+unverified,doğrulanmamış
+Attached,Ekli
+Download failed,İndirme başarısız
+Marked done but no file,Dosyasız bitti işaretli
+Missing required,Zorunlu eksik
+Remove file,Dosyayı kaldır
+Shared across all lots of this tender,Bu ihalenin tüm lotları için ortak
+Waive with reason…,Gerekçeyle feragat et…
+Waived,Feragat edildi
+Waived by,Feragat eden
+remove,kaldır
 Visible,Görünen
 Overdue only,Sadece vadesi geçenler
 Statement,Ekstre

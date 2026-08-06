@@ -64,3 +64,4 @@ stabler.patches.v58_ci_item_proforma_backfill
 stabler.patches.v59_crm_deal_company_default_fix
 stabler.patches.v60_crm_daily_work
 stabler.patches.v61_tender_master_link
+stabler.patches.v62_tender_master_documents

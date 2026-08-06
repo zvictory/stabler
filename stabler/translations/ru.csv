@@ -5044,6 +5044,75 @@ Other expenses,Прочие расходы
 No transport expenses yet.,Транспортных расходов пока нет
 Transport by container,Транспорт по контейнеру
 cont.,конт.
+Goods · agreed,Товар · согласовано
+Logistics & duties,Логистика и пошлины
+Cost / kg,Себестоимость / кг
+in accounting,в учёте
+gap,разрыв
+Unpaid,Не оплачено
+supplier,поставщик
+carriers,перевозчики
+1 line: price below agreed,1 строка: цена ниже договорной
+Against contract,Против договора
+Contracts for this shipment,По каким договорам идёт этот груз
+summary — details in PI,свод — детали в ПИ
+in this invoice,в этом инвойсе
+"over-shipped by key: -{count} boxes","перегруз по ключу: -{count} кор."
+"remaining {count} boxes","остаток {count} кор."
+open PI →,открыть ПИ →
+Advance 70%,Аванс 70%
+Telex / BL,Телекс / BL
+Gate-in → ГТД,Gate-in → ГТД
+Transport, expenses & supplier bills,Транспорт, расходы и счета поставщиков
+Supplier bills,Счета поставщиков
+Expenses without bills,Расходы, по которым счёта ещё нет
+All expenses are billed.,Все расходы уже со счетами.
+No supplier bills linked yet.,Счета поставщиков пока не привязаны.
+"Reconciliation: expenses {exp} − bills {bills} = {unbilled} unbilled","Сверка: расходы {exp} − счета на логистику {bills} = {unbilled} без счёта"
+Shipment Cost Breakdown,Себестоимость партии
+Operational,Операционно
+In Accounting,В учёте
+Freight & Transport,Фрахт + транспорт
+Port & Insurance,Порт + страховка
+Duties,Пошлины
+Total operational,Итого операционно
+Billed goods,Проведённый товар
+LCV (Landed Cost Vouchers),LCV (Landed Cost Vouchers)
+Total accounting,Итого в учёте
+"Gap {amount} · {per_kg} $/kg not allocated to inventory yet","Разрыв {amount} · {per_kg} $/кг ещё не разнесён на запасы"
+Document status,Документы
+Vet Certificate,Вет-сертификат
+Customs Declaration,ГТД
+over-shipped,перегруз
+
+Attach file,Прикрепить файл
+Could not attach document.,Не удалось прикрепить документ.
+Could not load documents.,Не удалось загрузить документы.
+Could not remove document.,Не удалось удалить документ.
+Could not waive document.,Не удалось освободить документ.
+Document removed.,Документ удалён.
+Document requirements,Требования к документам
+Document waived.,Документ освобождён.
+File,Файл
+General,Общее
+No document requirements yet. Add them in Tender details.,Пока нет требований к документам. Добавьте их в деталях тендера.
+Req.,Обяз.
+Tender documents,Документы тендера
+Upload returned no file URL.,Загрузка не вернула URL файла.
+Waiver reason is mandatory.,Указание причины освобождения обязательно.
+files,файлы
+required,обязательный
+unverified,не подтверждён
+Attached,Прикреплено
+Download failed,Ошибка загрузки
+Marked done but no file,"Отмечено готово, но без файла"
+Missing required,Не хватает обязательного
+Remove file,Удалить файл
+Shared across all lots of this tender,Общее для всех лотов тендера
+Waive with reason…,Освободить с причиной…
+Waived,Освобождено
+Waived by,Освободил
+remove,удалить
 Visible,Показано
 Overdue only,Только просроченные
 Statement,Выписка
