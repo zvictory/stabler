@@ -55,7 +55,7 @@ class _Doc(dict):
 		self[field] = value
 		return value
 
-	def insert(self):
+	def insert(self, **_kwargs):
 		self["inserted"] = True
 		self["name"] = self.get("name") or f"{self.get('doctype', 'DOC')[:3].upper()}-{id(self)}"
 		if hasattr(self, "_fake") and self._fake:
@@ -82,7 +82,11 @@ class _FakeFrappe:
 
 	def __init__(self):
 		self.docs = {
-			("Company", "ACME"): _Doc(name="ACME", default_warehouse="Stores - ACME"),
+			("Company", "ACME"): _Doc(name="ACME", abbr="ACME"),
+			# Warehouse resolution reads this table, NOT a Company field:
+			# ERPNext's Company doctype has no `default_warehouse`, so modelling
+			# one here would test a fiction.
+			("Warehouse", "Stores - ACME"): _Doc(name="Stores - ACME", company="ACME", is_group=0),
 			("Item", "RAIL-01"): _Doc(name="RAIL-01", is_stock_item=1, stock_uom="Nos"),
 			("Item", "SERVICE-01"): _Doc(name="SERVICE-01", is_stock_item=0, stock_uom="Nos"),
 			("CRM Deal", "LOT-A"): _Doc(name="LOT-A", company="ACME", deal_type="Tender"),
@@ -338,9 +342,22 @@ def _load_api(
 		if doc is not None:
 			doc[field] = value
 
+	def _fake_exists(doctype, name=None):
+		# Warehouses are the one doctype whose *absence* is load-bearing: the
+		# resolver provisions "Stores - <abbr>" when none exists, so a blanket
+		# True would make that branch untestable and silently green.
+		if doctype != "Warehouse":
+			return True
+		if isinstance(name, dict):
+			return any(
+				kind == "Warehouse" and all(doc.get(k) == v for k, v in name.items())
+				for (kind, _), doc in fake.docs.items()
+			)
+		return ("Warehouse", name) in fake.docs
+
 	frappe.db = types.SimpleNamespace(
 		has_column=lambda _doctype, column: column not in missing_columns,
-		exists=lambda doctype, name=None: True,
+		exists=_fake_exists,
 		get_value=_fake_get_value,
 		set_value=_fake_set_value,
 	)
@@ -533,14 +550,23 @@ class TestCreateRfq(unittest.TestCase):
 		doc = self.fake.created[-1]
 		self.assertEqual(doc["items"][0].get("warehouse"), "Stores - ACME")
 
-	def test_missing_company_default_warehouse_with_stock_item_throws_our_error(self):
-		self.fake.docs[("Company", "ACME")]["default_warehouse"] = None
-		with self.assertRaises(ValueError) as ctx:
-			self._create(items=[{"item_code": "RAIL-01", "qty": 5}])
-		self.assertIn("No default warehouse configured for ACME", str(ctx.exception))
+	def test_company_without_any_warehouse_gets_one_provisioned(self):
+		# A brand-new tenant has no Warehouse rows yet. Blocking the first RFQ
+		# on "go configure a warehouse" strands the user on a screen that
+		# cannot tell them where to go, so the resolver provisions Stores
+		# instead. Losing that means day-one onboarding dead-ends.
+		del self.fake.docs[("Warehouse", "Stores - ACME")]
+		self._create(items=[{"item_code": "RAIL-01", "qty": 5}])
+		provisioned = [d for d in self.fake.created if d.get("doctype") == "Warehouse"]
+		self.assertEqual(len(provisioned), 1)
+		self.assertEqual(provisioned[0].get("company"), "ACME")
+		self.assertEqual(provisioned[0].get("warehouse_name"), "Stores")
+		self.assertEqual(self.fake.created[-1]["items"][0].get("warehouse"), provisioned[0]["name"])
 
-	def test_missing_company_default_warehouse_with_service_item_succeeds(self):
-		self.fake.docs[("Company", "ACME")]["default_warehouse"] = None
+	def test_service_only_rfq_saves_without_a_configured_warehouse(self):
+		# A service line stores nothing, so warehouse configuration must never
+		# be what stands between the user and sending the request.
+		del self.fake.docs[("Warehouse", "Stores - ACME")]
 		res = self._create(items=[{"item_code": "SERVICE-01", "qty": 1}])
 		self.assertTrue(res.get("name"))
 
@@ -784,11 +810,16 @@ class TestSaveSupplierQuotation(unittest.TestCase):
 		self.assertIsNone(doc.get("set_warehouse"))
 		self.assertEqual(doc["items"][0].get("warehouse"), "Stores - ACME")
 
-	def test_missing_company_default_warehouse_throws_our_error(self):
-		self.fake.docs[("Company", "ACME")]["default_warehouse"] = None
-		with self.assertRaises(ValueError) as ctx:
-			self._save(items=[{"item_code": "RAIL-01", "qty": 1, "rate": 10}])
-		self.assertIn("No default warehouse configured for ACME", str(ctx.exception))
+	def test_quotation_for_company_without_any_warehouse_gets_one_provisioned(self):
+		# Same day-one guarantee as the RFQ side: a supplier's price must be
+		# recordable before anyone has set up a warehouse.
+		del self.fake.docs[("Warehouse", "Stores - ACME")]
+		res = self._save(items=[{"item_code": "RAIL-01", "qty": 1, "rate": 10}])
+		provisioned = [d for d in self.fake.created if d.get("doctype") == "Warehouse"]
+		self.assertEqual(len(provisioned), 1)
+		self.assertEqual(provisioned[0].get("company"), "ACME")
+		doc = next(d for d in self.fake.created if d.get("name") == res["name"])
+		self.assertEqual(doc["items"][0].get("warehouse"), provisioned[0]["name"])
 
 	def test_explicit_warehouse_overrides_company_default(self):
 		res = self._save(
