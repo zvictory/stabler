@@ -5044,3 +5044,8 @@ Other expenses,Прочие расходы
 No transport expenses yet.,Транспортных расходов пока нет
 Transport by container,Транспорт по контейнеру
 cont.,конт.
+Visible,Показано
+Overdue only,Только просроченные
+Statement,Выписка
+No outstanding balance.,Нет непогашенной задолженности.
+"The server returned a capped page; this total covers the rows loaded, not the whole book.","Сервер вернул ограниченную страницу; этот итог охватывает загруженные строки, а не всю книгу."

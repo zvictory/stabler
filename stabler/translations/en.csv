@@ -5034,3 +5034,8 @@ Other expenses,Other expenses
 No transport expenses yet.,No transport expenses yet.
 Transport by container,Transport by container
 cont.,cont.
+Visible,Visible
+Overdue only,Overdue only
+Statement,Statement
+No outstanding balance.,No outstanding balance.
+"The server returned a capped page; this total covers the rows loaded, not the whole book.","The server returned a capped page; this total covers the rows loaded, not the whole book."

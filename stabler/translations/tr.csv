@@ -5033,3 +5033,8 @@ Other expenses,Diğer giderler
 No transport expenses yet.,Henüz taşıma gideri yok.
 Transport by container,Konteyner taşıma gideri
 cont.,kont.
+Visible,Görünen
+Overdue only,Sadece vadesi geçenler
+Statement,Ekstre
+No outstanding balance.,Açık bakiye yok.
+"The server returned a capped page; this total covers the rows loaded, not the whole book.","Sunucu sınırlı bir sayfa döndürdü; bu toplam yüklenen satırları kapsıyor, kitabın tamamını değil."
