@@ -104,6 +104,43 @@
 
 ## Production / Deployment
 
+### The five gates (why work "disappears")
+Between a saved file and a running feature there are five gates, and **every one of
+them is opened by hand**:
+
+| # | Layer | Command that opens it |
+|---|-------|-----------------------|
+| 1 | Disk (working tree) | — |
+| 2 | Commit | `git add <path>` + `git commit` |
+| 3 | Branch merge | `git merge` |
+| 4 | Remote (GitLab/GitHub) | `git push` — gated by `make check` |
+| 5 | Prod | `rsync` + `bench build` (+ `migrate`) |
+
+**Gate 5 never reads gates 2–4.** Prod is not a git repo; `rsync` copies this
+laptop's *current disk*. Three consequences, all of which have actually happened:
+- Uncommitted work **can reach prod** and exist nowhere in git.
+- Work that is committed and merged **can be missing from prod** if nobody rsynced.
+- Deploys run without `--delete`, so a file that ever landed on prod **stays there
+  forever**, even after it is deleted locally.
+
+Standing discipline — `main` is the single source of truth, and prod is fed from
+`main`, never from a working tree:
+
+| Rule | What it prevents |
+|------|------------------|
+| Every agent works on its own branch, and **merges to `main` when the work is done** | gate 3 silently staying shut |
+| **Pushing is part of merging** — a merge that is not pushed means "the work does not exist" | gate 4 silently staying shut |
+| Deploy only from a clean tree (`git status --porcelain` empty for tracked files) | uncommitted work leaking to prod; prod files that exist in no commit |
+| Leave `git status --porcelain` empty at the end of the day | the 2026-08 case where two days of Customer Center work lived only as untracked files |
+| Keep `make check` green per commit, not per 172 commits | the lint backlog that blocked every push for months |
+
+One-glance status check:
+```
+git rev-parse main origin/main    # must match
+git status --porcelain            # must be empty
+git branch --no-merged main       # must be empty (bar deliberately open branches)
+```
+
 ### Prod site
 - **Primary prod = `anjan.erpstable.com`.** Stabler is actually installed on
   **7 sites** on the shared bench (`/home/frappe/frappe-bench`, ~22 tenants):
