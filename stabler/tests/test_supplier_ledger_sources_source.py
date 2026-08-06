@@ -16,7 +16,10 @@ import unittest
 _HERE = os.path.dirname(os.path.abspath(__file__))
 _ROOT = os.path.normpath(os.path.join(_HERE, ".."))
 API = os.path.join(_ROOT, "api", "purchasing.py")
-VUE = os.path.join(_ROOT, "public", "js", "pages", "purchasing", "Suppliers.vue")
+# Defter hücresi artık Suppliers.vue'da değil: müşteri ve tedarikçi ekranları
+# tek PartyCenter kabuğuna indi, hareket tablosu da bu paylaşılan bileşende.
+# Yani aşağıdaki güvenceler tek dosyada ama iki ekranı birden koruyor.
+VUE = os.path.join(_ROOT, "public", "js", "components", "party", "PartyTransactions.vue")
 ROUTER = os.path.join(_ROOT, "public", "js", "router.js")
 
 
@@ -111,7 +114,7 @@ class LedgerCellTest(unittest.TestCase):
 	def test_accounting_voucher_stays_reachable(self):
 		# The PInv id is plumbing, but it must never disappear — auditors ask
 		# for it. It stays as the muted secondary that opens the drawer.
-		self.assertIn('@click="openVoucher(e)"', self.vue)
+		self.assertIn("@click=\"emit('open-voucher', e)\"", self.vue)
 		self.assertIn("e.source_name !== e.voucher_no", self.vue)
 
 	def test_channel_chip_is_shown(self):

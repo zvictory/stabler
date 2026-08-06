@@ -26,9 +26,10 @@ SOURCES = {
 	"sales.py": ROOT / "api" / "sales.py",
 	"purchasing.py": ROOT / "api" / "purchasing.py",
 }
+# Kart tarafı iki ekranda ayrı ayrı yazılıydı; ikisi de PartyCenter kabuğuna
+# indi. Tek dosya, ama hâlâ hem müşteri hem tedarikçi kartını koruyor.
 SCREENS = {
-	"Customers.vue": ROOT / "public" / "js" / "pages" / "sales" / "Customers.vue",
-	"Suppliers.vue": ROOT / "public" / "js" / "pages" / "purchasing" / "Suppliers.vue",
+	"PartyCenter.vue": ROOT / "public" / "js" / "components" / "party" / "PartyCenter.vue",
 }
 
 # `lifetime_by_currency = ( frappe.db.sql( """ … """ …` — sorgunun gövdesi.
@@ -64,9 +65,15 @@ class TestLifetimeCurrencyContract(unittest.TestCase):
 		rakamını dolar diye gösterirdi — ölçüldü, canlıdaydı."""
 		for name, src in self.screen.items():
 			with self.subTest(name):
-				line = [ln for ln in src.splitlines() if "lifetime_amount" in ln]
-				self.assertEqual(len(line), 1, "Lifetime kartı tek satırda bekleniyordu")
-				self.assertIn("selectedDetail?.lifetime_currency || currency", line[0])
+				lines = src.splitlines()
+				at = [i for i, ln in enumerate(lines) if "lifetime_amount" in ln]
+				self.assertEqual(len(at), 1, "Lifetime kartı tek yerde bekleniyordu")
+				# formatMoney(tutar, para_birimi, dil) — para birimi tutarın bir
+				# altındaki argüman. Uçtan gelen `lifetime_currency` okunmalı ve
+				# yedek asla sabit bir kod ('USD') olmamalı.
+				currency_arg = lines[at[0] + 1]
+				self.assertIn("lifetime_currency", currency_arg)
+				self.assertNotRegex(currency_arg, r"""["'][A-Z]{3}["']""")
 
 
 if __name__ == "__main__":

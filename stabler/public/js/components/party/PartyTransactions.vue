@@ -339,6 +339,18 @@ function openVoucher(type, name) {
 										{{ e.source_label || e.voucher_no }}
 									</button>
 									<div v-else class="pc-dash">—</div>
+									<!-- Ustteki baglanti isletmenin tanidigi belgeyi acar (ithalatta CI).
+									     Arkasindaki muhasebe fisi denetci istedigi icin kaybolamaz: kimlik
+									     farkliysa ikinci, soluk bir dugme olarak yaninda durur. -->
+									<button
+										v-if="e.voucher_no && e.source_name !== e.voucher_no"
+										type="button"
+										class="pc-voucher-link pc-voucher-secondary"
+										:title="t('Accounting voucher')"
+										@click="emit('open-voucher', e)"
+									>
+										{{ e.voucher_no }}
+									</button>
 									<div class="pc-remark" :title="e.display_remark">{{ e.display_remark || "—" }}</div>
 								</td>
 								<td class="ds-td-num">
@@ -715,6 +727,12 @@ function openVoucher(type, name) {
 }
 .pc-voucher-link:hover {
 	text-decoration: underline;
+}
+.pc-voucher-secondary {
+	margin-left: 0.5rem;
+	font-size: 11px;
+	font-weight: 500;
+	color: var(--tblr-gray-600, #667382);
 }
 .pc-remark {
 	max-width: 280px;
