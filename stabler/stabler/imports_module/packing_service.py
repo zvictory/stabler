@@ -172,7 +172,7 @@ def create_or_get_grn(ci, *, ignore_permissions: bool) -> dict:
 	replace_grn_expected_rows(grn, summary["expected_items"])
 	try:
 		grn.insert(ignore_permissions=ignore_permissions)
-	except frappe.DuplicateEntryError, frappe.UniqueValidationError:
+	except (frappe.DuplicateEntryError, frappe.UniqueValidationError):
 		winner = frappe.db.get_value("GRN Checklist", {"commercial_invoice": ci.name, "company": ci.company})
 		if not winner:
 			raise

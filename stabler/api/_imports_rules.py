@@ -371,7 +371,7 @@ def clamp_page_length(limit, default: int = 50, maximum: int = 200) -> int:
 	"""Normalise an SPA page-length arg into a safe 1..maximum int."""
 	try:
 		n = int(limit)
-	except TypeError, ValueError:
+	except (TypeError, ValueError):
 		return default
 	if n <= 0:
 		return default
@@ -438,7 +438,7 @@ def truck_receipt_filter_clauses(search=None, grn=None, docstatus=None):
 		try:
 			params["docstatus"] = int(docstatus)
 			clauses.append("r.docstatus = %(docstatus)s")
-		except TypeError, ValueError:
+		except (TypeError, ValueError):
 			pass
 	return clauses, params
 
@@ -1056,7 +1056,7 @@ def is_keyed(key) -> bool:
 def _num(value) -> float:
 	try:
 		out = float(value or 0)
-	except TypeError, ValueError:
+	except (TypeError, ValueError):
 		return 0.0
 	return out if math.isfinite(out) else 0.0
 
