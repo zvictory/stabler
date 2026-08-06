@@ -132,10 +132,17 @@ class TestTenderDashboardContract(unittest.TestCase):
 		self.assertIn('out["finance"]', self.body)
 
 	def test_declarant_and_logist_have_tender_module_access(self):
+		# Deklarant ve lojistikçi tender modülünü göremezse kendi kuyrukları
+		# doğrudan URL'de bile açılmaz — rota koruması modül haritasını okur.
+		# Korunan şey iki rolün listede olması; listenin kaç satıra yayıldığı
+		# değil. Önceki hali tek satırlık biçimi çıpalıyordu ve liste büyüyünce
+		# erişim hâlâ doğruyken kırıldı.
 		roles = _read(_ORGANIZATION)
-		self.assertIn(
-			'"tender": ["Sales User", "Sales Manager", "Stabler Declarant", "Stabler Logist"]', roles
-		)
+		block = re.search(r'"tender": \[(.*?)\]', roles, re.S)
+		self.assertIsNotNone(block, "_MODULE_ROLES['tender'] bulunamadı")
+		for role in ("Stabler Declarant", "Stabler Logist"):
+			with self.subTest(role=role):
+				self.assertIn(f'"{role}"', block.group(1))
 
 
 class TestTenderBoardFilterPayloadContract(unittest.TestCase):

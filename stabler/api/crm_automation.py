@@ -212,6 +212,12 @@ def run_crm_automation_rules(company: str, dry_run: bool = False) -> dict:
 @frappe.whitelist()
 def preview_crm_automation_rules(company: str) -> dict:
 	"""Dry-run preview of CRM automation rules for a company."""
+	# The scope check also runs inside run_crm_automation_rules, but a guard that
+	# only exists one call deeper is invisible at the whitelisted boundary — both
+	# to a reader and to the tenant-isolation scanner. Whoever later gives this
+	# endpoint its own preview path would drop the company check without noticing.
+	# The call is idempotent, so stating it here costs nothing.
+	_require_crm_manager(company)
 	return run_crm_automation_rules(company=company, dry_run=True)
 
 
