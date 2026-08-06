@@ -14,6 +14,7 @@ import { t } from "../../composables/i18n.js";
 import { useToast } from "../../composables/useToast.js";
 import MoneyInput from "../../components/MoneyInput.vue";
 import DateInput from "../../components/DateInput.vue";
+import FileSlot from "../../components/files/FileSlot.vue";
 
 const props = defineProps({ deal: { type: String, required: true }, currency: { type: String, default: "" } });
 const session = useSession();
@@ -64,7 +65,20 @@ function apply(d) {
 		go_no_go: s.go_no_go || "", result: s.result || "", won_price: s.won_price || null,
 		purchase_method: s.purchase_method || "", notes: s.notes || "",
 		documents: (s.documents || []).map((x) => ({
-			label: x.label || "", required: x.required ? 1 : 0, done: x.done ? 1 : 0, date: x.date || "",
+			key: x.key || "",
+			label: x.label || "",
+			required: x.required ? 1 : 0,
+			done: x.done ? 1 : 0,
+			unverified: x.unverified ? 1 : 0,
+			date: x.date || "",
+			role: x.role || "general",
+			scope: x.scope || "lot",
+			files: Array.isArray(x.files) ? x.files : [],
+			file_count: x.file_count || 0,
+			latest_file: x.latest_file || null,
+			waiver_reason: x.waiver_reason || "",
+			waived_by: x.waived_by || "",
+			waived_at: x.waived_at || "",
 		})),
 		fx_currency: s.fx_currency || "", fx_amount: s.fx_amount || null,
 		fx_bid_rate: s.fx_bid_rate || null, fx_pay_rate: s.fx_pay_rate || null,
@@ -87,14 +101,111 @@ const fxCalc = computed(() => {
 const fxBadge = (s) => ({ good: "bg-green-lt text-green", warn: "bg-yellow-lt text-yellow", risk: "bg-red-lt text-red", open: "bg-blue-lt text-blue" }[s] || "bg-secondary-lt");
 const fxLabel = (s) => ({ good: t("FX favorable"), warn: t("FX risk"), risk: t("FX risk"), open: t("FX open") }[s] || "");
 
-// Standard import-tender document checklist (seed once).
-const STD_DOCS = ["Shartnoma", "Protokol", "Muvofiqlik sertifikati", "ГТД", "Qabul dalolatnomasi", "Hisob-faktura"];
+// Standard import-tender document requirements (seed once). Mirrors the backend
+// default_doc_requirements() — keys + role assignments drive the document center.
+const STD_DOCS = [
+	{ key: "gtd", label: "ГТД / Gümrük beyannamesi", required: 1, role: "customs" },
+	{ key: "origin_cert", label: "Kelib chiqish sertifikati", required: 0, role: "customs" },
+	{ key: "cmr", label: "CMR / Transport nakladnoyasi", required: 1, role: "logistics" },
+	{ key: "packing_list", label: "Qadoqlash varaqasi", required: 0, role: "logistics" },
+	{ key: "invoice", label: "Invoys / Commercial Invoice", required: 1, role: "finance" },
+	{ key: "tech_spec", label: "Texnik spetsifikatsiya", required: 1, role: "general" },
+	{ key: "price_offer", label: "Narx taklifi", required: 1, role: "general" },
+];
 function seedDocs() {
-	const have = new Set(intake.documents.map((d) => d.label));
-	for (const label of STD_DOCS) if (!have.has(label)) intake.documents.push({ label, required: 1, done: 0, date: "" });
+	const have = new Set(intake.documents.map((d) => d.key || d.label));
+	for (const d of STD_DOCS) {
+		if (!have.has(d.key)) intake.documents.push({ key: d.key, label: d.label, required: d.required, done: 0, date: "", role: d.role, scope: "lot", files: [], file_count: 0, latest_file: null, waiver_reason: "", waived_by: "", waived_at: "" });
+	}
 }
-function addDoc() { intake.documents.push({ label: "", required: 1, done: 0, date: "" }); }
+function addDoc() {
+	const n = 1 + intake.documents.length;
+	intake.documents.push({ key: `doc_${n}`, label: "", required: 1, done: 0, date: "", role: "general", scope: "lot", files: [], file_count: 0, latest_file: null, waiver_reason: "", waived_by: "", waived_at: "" });
+}
 function rmDoc(i) { intake.documents.splice(i, 1); }
+
+// Role label map for the document center badges/queues.
+const ROLE_LABEL = { customs: t("Customs"), logistics: t("Logistics"), finance: t("Finance"), general: t("General") };
+
+// Attach a file to a requirement via the dedicated upload endpoint (server-side
+// writes the File meta + sets done/unverified/waiver). No need to re-save intake.
+const docBusy = ref("");
+async function onAttachDoc(i, file) {
+	const d = intake.documents[i];
+	if (!d || !d.key) return;
+	docBusy.value = d.key;
+	try {
+		const res = await call("stabler.api.tender_documents.upload_tender_document", {
+			deal: props.deal, requirement_key: d.key, file_name: file.file_name, file_url: file.file_url,
+		});
+		applyDocResult(res);
+		toast.success(t("Document attached."));
+	} catch (e) {
+		toast.error(e?.message || t("Could not attach document."));
+	} finally {
+		docBusy.value = "";
+	}
+}
+async function onRemoveDoc(i) {
+	const d = intake.documents[i];
+	if (!d || !d.key || !d.latest_file) return;
+	// File facts are server-owned, so removal must go through the dedicated
+	// endpoint — saving intake would just re-merge the prior files back in.
+	docBusy.value = d.key;
+	try {
+		const res = await call("stabler.api.tender_documents.remove_tender_document", {
+			deal: props.deal, requirement_key: d.key, file_url: d.latest_file.file_url,
+		});
+		applyDocResult(res);
+		toast.success(t("Document removed."));
+	} catch (e) {
+		toast.error(e?.message || t("Could not remove document."));
+	} finally {
+		docBusy.value = "";
+	}
+}
+async function onWaiveDoc(i) {
+	const d = intake.documents[i];
+	if (!d || !d.key) return;
+	const reason = (d._waiverDraft || "").trim();
+	if (!reason) { toast.error(t("Waiver reason is mandatory.")); return; }
+	docBusy.value = d.key;
+	try {
+		const res = await call("stabler.api.tender_documents.waive_tender_document", {
+			deal: props.deal, requirement_key: d.key, reason,
+		});
+		applyDocResult(res);
+		d._waiverDraft = "";
+		toast.success(t("Document waived."));
+	} catch (e) {
+		toast.error(e?.message || t("Could not waive document."));
+	} finally {
+		docBusy.value = "";
+	}
+}
+// Refresh local documents[] + docs badge from a list_tender_documents response.
+function applyDocResult(res) {
+	if (!res || !Array.isArray(res.requirements)) return;
+	const byKey = new Map(res.requirements.map((r) => [r.key, r]));
+	for (const d of intake.documents) {
+		const srv = byKey.get(d.key);
+		if (!srv) continue;
+		d.files = srv.files || [];
+		d.file_count = srv.file_count || 0;
+		d.latest_file = srv.latest_file || null;
+		d.done = srv.done ? 1 : 0;
+		d.unverified = srv.unverified ? 1 : 0;
+		d.waiver_reason = srv.waiver_reason || "";
+		d.waived_by = srv.waived_by || "";
+		d.waived_at = srv.waived_at || "";
+	}
+	if (res.summary) docs.value = {
+		total: res.summary.total ?? docs.value.total,
+		required: res.summary.required ?? docs.value.required,
+		done_required: res.summary.done_required ?? docs.value.done_required,
+		missing: res.summary.missing ?? docs.value.missing,
+	};
+}
 
 async function load() {
 	if (!props.deal) return;
@@ -231,38 +342,77 @@ watch(() => props.deal, load, { immediate: true });
 
 				<!-- Document checklist -->
 				<div class="border-top mt-3 pt-2">
-					<div class="d-flex align-items-center mb-2">
-						<span class="small text-secondary fw-semibold">{{ t("Document checklist") }}</span>
+					<div class="d-flex align-items-center mb-2 flex-wrap gap-2">
+						<span class="small text-secondary fw-semibold">{{ t("Document requirements") }}</span>
+						<span v-if="docs.required" class="badge" :class="docs.done_required >= docs.required ? 'bg-green-lt text-green' : 'bg-yellow-lt text-yellow'">
+							<i class="ti ti-files me-1"></i>{{ docs.done_required }}/{{ docs.required }}
+						</span>
 						<button type="button" class="btn btn-ghost-secondary btn-sm ms-auto" @click="seedDocs"><i class="ti ti-list-check me-1"></i>{{ t("Standard set") }}</button>
 						<button type="button" class="btn btn-ghost-secondary btn-sm" @click="addDoc"><i class="ti ti-plus"></i></button>
 					</div>
-					<table v-if="intake.documents.length" class="table table-no-stripe table-sm align-middle mb-0">
-						<thead><tr>
-							<th>{{ t("Document") }}</th>
-							<th style="width:90px" class="text-center">{{ t("Required") }}</th>
-							<th style="width:110px" class="text-center">{{ t("Status") }}</th>
-							<th style="width:150px">{{ t("Date") }}</th>
-							<th style="width:36px"></th>
-						</tr></thead>
-						<tbody>
-							<tr v-for="(d, i) in intake.documents" :key="i">
-								<td><input v-model="d.label" type="text" class="form-control form-control-sm"></td>
-								<td class="text-center"><input v-model="d.required" type="checkbox" class="form-check-input" :true-value="1" :false-value="0"></td>
-								<td class="text-center">
-									<router-link
-										:to="`/tender/documents?deal=${deal}`"
-										class="badge text-decoration-none"
-										:class="d.done ? 'bg-green text-white' : d.unverified ? 'bg-warning-lt text-warning' : d.required ? 'bg-red-lt text-red' : 'bg-secondary-lt'"
-										:title="t('Manage document files in Document Center')"
-									>
-										{{ d.done ? t("Verified") : d.unverified ? t("Unverified") : d.required ? t("Missing") : t("Pending") }}
-									</router-link>
-								</td>
-								<td><DateInput v-model="d.date" size="sm" /></td>
-								<td class="text-center"><button type="button" class="btn btn-ghost-danger btn-icon btn-sm" @click="rmDoc(i)"><i class="ti ti-x"></i></button></td>
-							</tr>
-						</tbody>
-					</table>
+					<div v-if="intake.documents.length" class="table-responsive">
+						<table class="table table-no-stripe table-sm align-middle mb-0">
+							<thead><tr>
+								<th style="min-width:160px">{{ t("Document") }}</th>
+								<th style="width:80px" class="text-center">{{ t("Req.") }}</th>
+								<th style="width:110px" class="text-center">{{ t("Status") }}</th>
+								<th style="min-width:200px">{{ t("File") }}</th>
+								<th style="width:150px">{{ t("Date") }}</th>
+								<th style="width:36px"></th>
+							</tr></thead>
+							<tbody>
+								<tr v-for="(d, i) in intake.documents" :key="d.key || i">
+									<td>
+										<input v-model="d.label" type="text" class="form-control form-control-sm">
+										<div class="mt-1 d-flex align-items-center gap-1">
+											<span class="badge bg-secondary-lt text-secondary fs-slot-role">{{ ROLE_LABEL[d.role] || t("General") }}</span>
+										</div>
+									</td>
+									<td class="text-center"><input v-model="d.required" type="checkbox" class="form-check-input" :true-value="1" :false-value="0"></td>
+									<td class="text-center">
+										<!-- Rozet, tam sayfa belge merkezine köprüdür: satır içi FileSlot tek
+										     dosyayı halleder, çok dosyalı / waiver geçmişi orada yönetilir. -->
+										<router-link :to="`/tender/documents?deal=${deal}`" class="text-decoration-none" :title="t('Manage document files in Document Center')">
+											<span v-if="d.done" class="badge bg-green-lt text-green" :title="d.waiver_reason ? t('Waived') : t('Attached')">
+												<i class="ti" :class="d.waiver_reason ? 'ti-shield-check' : 'ti-check'"></i>
+											</span>
+											<span v-else-if="d.unverified" class="badge bg-yellow-lt text-yellow" :title="t('Marked done but no file')">
+												<i class="ti ti-alert-triangle"></i>
+											</span>
+											<span v-else-if="d.required" class="badge bg-red-lt text-red" :title="t('Missing required')">
+												<i class="ti ti-x"></i>
+											</span>
+											<span v-else class="badge bg-secondary-lt text-secondary">—</span>
+										</router-link>
+									</td>
+									<td>
+										<FileSlot
+											:attached-to="'CRM Deal'"
+											:attached-name="deal"
+											:existing="d.latest_file"
+											:disabled="!!docBusy"
+											compact
+											@uploaded="(f) => onAttachDoc(i, f)"
+											@remove="onRemoveDoc(i)"
+										/>
+										<div v-if="d.waiver_reason" class="small text-secondary mt-1 fst-italic" :title="t('Waived by') + ' ' + d.waived_by">
+											<i class="ti ti-shield-check me-1"></i>{{ d.waiver_reason }}
+										</div>
+										<!-- Inline waiver entry for required-but-missing documents -->
+										<div v-else-if="d.required && !d.done" class="input-group input-group-sm mt-1">
+											<input v-model="d._waiverDraft" type="text" class="form-control form-control-sm" :placeholder="t('Waive with reason…')" :disabled="!!docBusy">
+											<button type="button" class="btn btn-outline-warning btn-sm" :disabled="!!docBusy || docBusy === d.key" @click="onWaiveDoc(i)">
+												<span v-if="docBusy === d.key" class="spinner-border spinner-border-sm"></span>
+												<span v-else><i class="ti ti-shield-check"></i></span>
+											</button>
+										</div>
+									</td>
+									<td><DateInput v-model="d.date" size="sm" /></td>
+									<td class="text-center"><button type="button" class="btn btn-ghost-danger btn-icon btn-sm" :disabled="!!docBusy" @click="rmDoc(i)"><i class="ti ti-x"></i></button></td>
+								</tr>
+							</tbody>
+						</table>
+					</div>
 					<div v-else class="text-secondary small">{{ t("No documents yet — add the standard set (ГТД, certificate, acceptance act…).") }}</div>
 				</div>
 
@@ -286,4 +436,5 @@ watch(() => props.deal, load, { immediate: true });
 .dl-warn{border-color:#e8c98a;background:#fdf6e8}.dl-warn .dl-left{color:#bf7d0a}
 .dl-risk{border-color:#e6a6a2;background:#fbeeed}.dl-risk .dl-left{color:#d3453f}
 .dl-none{opacity:.7}.dl-none .dl-left{color:var(--stbl-text-secondary,#6a7690)}
+.fs-slot-role{font-size:10px;font-weight:600;text-transform:uppercase;letter-spacing:.02em}
 </style>

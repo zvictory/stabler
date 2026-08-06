@@ -21,6 +21,7 @@ import BidPricing from "./BidPricing.vue";
 import TenderPage from "./TenderPage.vue";
 import TenderIntake from "./TenderIntake.vue";
 import TenderDocumentChain from "./TenderDocumentChain.vue";
+import TenderDocumentsPanel from "./TenderDocumentsPanel.vue";
 import TenderWorkspaceTabs from "./TenderWorkspaceTabs.vue";
 
 const session = useSession();
@@ -112,7 +113,7 @@ const purchaseExecution = computed(() => workspace.value?.purchase_execution || 
 const salesExecution = computed(() => workspace.value?.sales_execution || { orders: [], deliveries: [], invoices: [] });
 const finance = computed(() => workspace.value?.finance || null);
 const financeCurrency = computed(() => finance.value?.currency || ccy.value);
-const allowedTabs = computed(() => finance.value ? ["overview", "vendor-po", "delivery", "finance"] : ["overview", "vendor-po", "delivery"]);
+const allowedTabs = computed(() => finance.value ? ["overview", "vendor-po", "delivery", "documents", "finance"] : ["overview", "vendor-po", "delivery", "documents"]);
 const activeWorkspaceTab = computed(() => {
 	const requested = String(route.query.tab || "overview");
 	return allowedTabs.value.includes(requested) ? requested : "overview";
@@ -448,6 +449,10 @@ watch(() => route.query.deal, (d) => { if (d && d !== deal.value) { deal.value =
 
 			<template v-else-if="activeWorkspaceTab === 'delivery'">
 				<TenderDocumentChain :purchase="purchaseExecution" :sales="salesExecution" :currency="ccy" />
+			</template>
+
+			<template v-else-if="activeWorkspaceTab === 'documents'">
+				<TenderDocumentsPanel :deal="deal" />
 			</template>
 
 			<template v-else-if="finance">

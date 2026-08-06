@@ -27,7 +27,8 @@
   "enable_direct_invoicing",
   "enable_dimensional_lines",
   "enable_sales_box_uom",
-  "enable_modern_sales_order"
+  "enable_modern_sales_order",
+  "enable_valuation_guard"
  ],
  "fields": [
   {
@@ -198,6 +199,14 @@
    "fieldtype": "Check",
    "in_list_view": 1,
    "label": "Modern Sales Order Form"
+  },
+  {
+   "default": "0",
+   "description": "Blocks stock-valuation poisoning: mistyped purchase rates, incoming_rate entered in transaction currency, and manufacturing entries valued far above the bin. Thresholds live in Stabler Settings. OFF by default.",
+   "fieldname": "enable_valuation_guard",
+   "fieldtype": "Check",
+   "in_list_view": 1,
+   "label": "Valuation Guard"
   }
  ],
  "index_web_pages_for_search": 1,

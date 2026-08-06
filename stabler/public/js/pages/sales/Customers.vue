@@ -38,9 +38,9 @@ const customers = ref([]);
 const companyCurrency = ref("");
 
 // Persistent list state: URL ↔ localStorage (URL = source of truth).
-const { search, onlyWithBalance, filterGroup, filterTerritory, sortField, sortAsc, c: selectedName } = useListViewState(
+const { search, onlyWithBalance, onlyOverdue, filterGroup, filterTerritory, sortField, sortAsc, c: selectedName } = useListViewState(
 	"stabler.customers.listState",
-	{ search: "", filterGroup: "", filterTerritory: "", onlyWithBalance: false, sortField: "name", sortAsc: true, c: "" }
+	{ search: "", filterGroup: "", filterTerritory: "", onlyWithBalance: false, onlyOverdue: false, sortField: "name", sortAsc: true, c: "" }
 );
 
 const selected = ref(null);
@@ -156,8 +156,58 @@ function toggleSort(field) {
 	}
 }
 
-const totalReceivable = computed(() =>
-	customers.value.reduce((sum, c) => sum + Number(c.balance_base || 0), 0)
+// Footer totals. Three rules this has to respect, and the old one-liner broke
+// all three:
+//   1. It summed `customers` (the raw API page) while the table renders
+//      `visibleRows`, so picking a group or territory shrank the list but left
+//      the total unchanged.
+//   2. It summed `balance_base` while the rows show `balance_acc`, so in a
+//      multi-currency tenant the column and the footer could never agree.
+//      CLAUDE.md forbids base-currency conversion, so we group by currency.
+//   3. Tree mode renders a parent row (cumulative) AND its children as separate
+//      rows; summing what is on screen would count children twice. We sum OWN
+//      balances only, and off the flat filtered set so expanding a parent does
+//      not move the total.
+const filteredCustomers = computed(() => {
+	let list = customers.value;
+	if (filterGroup.value) list = list.filter((c) => c.customer_group === filterGroup.value);
+	if (filterTerritory.value) list = list.filter((c) => c.territory === filterTerritory.value);
+	return list;
+});
+
+const visibleTotals = computed(() => {
+	const byCurrency = new Map();
+	for (const c of filteredCustomers.value) {
+		const amount = Number(c.balance_acc ?? c.balance_base ?? 0);
+		if (!amount) continue;
+		const cur = c.account_currency || currency.value;
+		byCurrency.set(cur, (byCurrency.get(cur) || 0) + amount);
+	}
+	return [...byCurrency.entries()].map(([cur, amount]) => ({ currency: cur, amount }));
+});
+
+// The server caps the page at `limit`. When it bites, the footer describes a
+// slice of the book — say so instead of silently under-reporting.
+// `truncated` comes from the server, decided before its only_with_balance /
+// only_overdue filters thin the page out. Deriving it here as
+// `totalCount > customers.length` would misread a filtered-but-complete list as
+// a capped one and raise the warning badge over a total that is actually right.
+const totalCount = ref(0);
+const listTruncated = ref(false);
+
+// Book-wide total for the server-side filter, unaffected by `limit`. Only shown
+// when the page IS capped: otherwise the footer above already IS the whole book,
+// and a second (drift-uncorrected) figure next to it would just look like a
+// rounding disagreement. Group/territory/overdue narrow the set client-side, so
+// the server figure would not match what is on screen — hide it for those too.
+const grandTotals = ref([]);
+const showGrandTotals = computed(
+	() =>
+		listTruncated.value &&
+		grandTotals.value.length > 0 &&
+		!onlyOverdue.value &&
+		!filterGroup.value &&
+		!filterTerritory.value
 );
 
 // --- Parent/child hierarchy (QuickBooks-style, single level) ----------------
@@ -315,6 +365,16 @@ const headerBalanceCurrency = computed(
 	() => selected.value?.account_currency || selectedDetail.value?.account_currency || currency.value
 );
 
+// Names the party and the amount so the click is never ambiguous. Parents keep
+// the bulk-split flow, so the wording differs there on purpose.
+const paymentButtonTitle = computed(() => {
+	if (!selected.value) return "";
+	const who = selected.value.customer_name || selected.value.name;
+	const amount = formatMoney(headerBalanceValue.value, headerBalanceCurrency.value, user.value.language);
+	if (selectedIsParent.value) return `${t("Split one payment across child locations")} — ${who}`;
+	return `${t("Payment")} — ${who} (${selected.value.name}) · ${amount}`;
+});
+
 function goToCustomerByName(name) {
 	const row = nameToCustomer.value[name];
 	if (row) selectCustomer(row);
@@ -422,9 +482,13 @@ async function loadCustomers() {
 			company: activeCompany.value,
 			search: search.value || "",
 			only_with_balance: onlyWithBalance.value ? 1 : 0,
+			only_overdue: onlyOverdue.value ? 1 : 0,
 			limit: 2500,
 		});
 		customers.value = res.rows || [];
+		totalCount.value = Number(res.total_count || 0);
+		listTruncated.value = !!res.truncated;
+		grandTotals.value = res.grand_totals || [];
 		companyCurrency.value = res.company_currency || "";
 		hasHierarchy.value = !!res.has_hierarchy;
 		if (hasHierarchy.value) loadChildrenBalanceMap();
@@ -816,11 +880,42 @@ watch(activeCompany, () => {
 								/>
 								<span class="form-check-label small">{{ t("Only with balance") }}</span>
 							</label>
+							<label class="form-check form-check-inline mb-0">
+								<input
+									v-model="onlyOverdue"
+									type="checkbox"
+									class="form-check-input"
+									@change="loadCustomers"
+								/>
+								<span class="form-check-label small">{{ t("Overdue only") }}</span>
+							</label>
 						</div>
 						
 						<div class="cust-list-scroll" style="overflow-y: auto; height: calc(100vh - 12rem);">
-							<div v-if="loading" class="text-center py-5">
-								<div class="spinner-border text-primary"></div>
+							<!-- Yukleme, gelecek icerigin seklinde: 2 kolonlu liste.
+							     SkeletonRows.vue koku <tbody> render ettigi icin yalnizca
+							     bir <table> icine takilabiliyor; burada yukleme aninda
+							     tablo yok (o v-else dalinda), o yuzden bilesenin ic
+							     deseni yerinde tekrar ediliyor. -->
+							<div v-if="loading" class="table-responsive m-0">
+								<table class="table table-vcenter card-table table-no-stripe m-0 placeholder-glow">
+									<tbody>
+										<tr v-for="n in 8" :key="n">
+											<td>
+												<div class="d-flex align-items-center gap-2">
+													<span class="placeholder rounded-2" style="width: 1.75rem; height: 1.75rem"></span>
+													<span class="flex-fill">
+														<span class="placeholder col-7 d-block py-1 rounded-1"></span>
+														<span class="placeholder col-4 d-block py-1 mt-1 rounded-1"></span>
+													</span>
+												</div>
+											</td>
+											<td class="text-end">
+												<span class="placeholder col-8 py-2 rounded-1"></span>
+											</td>
+										</tr>
+									</tbody>
+								</table>
 							</div>
 							<div v-else-if="error" class="alert alert-danger m-2">{{ error }}</div>
 							<EmptyState
@@ -902,11 +997,43 @@ watch(activeCompany, () => {
 								</table>
 							</div>
 						</div>
-						<div v-if="visibleRows.length" class="cust-list-footer p-3 border-top bg-light d-flex align-items-center justify-content-between">
-							<span class="text-secondary small fw-semibold">{{ t("Total receivable") }}</span>
-							<span class="font-monospace fw-bold text-body">
-								{{ formatMoney(totalReceivable, currency, user.language) }}
-							</span>
+						<div v-if="visibleRows.length" class="cust-list-footer p-3 border-top bg-light">
+							<div class="d-flex align-items-center justify-content-between gap-2 mb-1">
+								<span class="text-secondary small fw-semibold">
+									{{ t("Visible") }} · {{ filteredCustomers.length }}
+								</span>
+								<span v-if="listTruncated" class="badge bg-orange-lt text-orange" :title="t('The server returned a capped page; this total covers the rows loaded, not the whole book.')">
+									<i class="ti ti-alert-triangle me-1"></i>{{ customers.length }} / {{ totalCount }}
+								</span>
+							</div>
+							<div
+								v-for="b in visibleTotals"
+								:key="b.currency"
+								class="d-flex align-items-center justify-content-between gap-2"
+							>
+								<span class="badge bg-secondary-lt text-secondary">{{ b.currency }}</span>
+								<span class="font-monospace stbl-amount fw-bold text-body">
+									{{ formatMoney(b.amount, b.currency, user.language) }}
+								</span>
+							</div>
+							<div v-if="!visibleTotals.length" class="text-secondary small">
+								{{ t("No outstanding balance.") }}
+							</div>
+							<div v-if="showGrandTotals" class="mt-2 pt-2 border-top">
+								<div class="text-secondary small fw-semibold mb-1">
+									{{ t("All customers") }} · {{ totalCount }}
+								</div>
+								<div
+									v-for="b in grandTotals"
+									:key="'gt-' + b.currency"
+									class="d-flex align-items-center justify-content-between gap-2"
+								>
+									<span class="badge bg-secondary-lt text-secondary">{{ b.currency }}</span>
+									<span class="font-monospace stbl-amount fw-bold text-body">
+										{{ formatMoney(b.amount, b.currency, user.language) }}
+									</span>
+								</div>
+							</div>
 						</div>
 					</div>
 
@@ -926,6 +1053,10 @@ watch(activeCompany, () => {
 												<div class="h2 mb-0 font-monospace stbl-amount text-body fw-bold">
 													{{ formatMoney(cockpitData?.total_receivable || 0, currency, user.language) }}
 												</div>
+												<!-- Names the scope so this can never be read as the same number
+												     the list footer shows: that one is the filtered page, this is
+												     every customer in the ledger. -->
+												<div class="stbl-subtext small">{{ t("All customers") }}</div>
 											</div>
 										</div>
 									</div>
@@ -951,8 +1082,9 @@ watch(activeCompany, () => {
 							<div class="card bg-white shadow-sm border-0">
 								<div class="card-body">
 									<h4 class="card-title text-secondary mb-3">{{ t("Receivable Trend (Last 8 Weeks)") }}</h4>
-									<div v-if="cockpitLoading" class="text-center py-4">
-										<div class="spinner-border text-primary spinner-border-sm"></div>
+									<!-- Grafik alani kadar yer tutuyor; yuklenince sayfa zipl -->
+									<div v-if="cockpitLoading" class="placeholder-glow">
+										<span class="placeholder col-12 rounded-2 d-block" style="height: 120px"></span>
 									</div>
 									<div v-else-if="cockpitData?.trend_8_weeks?.length">
 										<ApexChart
@@ -1031,13 +1163,28 @@ watch(activeCompany, () => {
 									>
 										<i class="ti ti-arrows-shuffle me-1"></i>{{ t("Reallocate") }}
 									</button>
+									<!-- Paying the wrong customer is the expensive mistake on this
+									     screen, and the button used to say only "Payment". It now
+									     echoes the target and its balance in the tooltip, and the
+									     amount inline. Parent still opens the bulk-split dialog. -->
 									<button
 										type="button"
 										class="btn btn-sm btn-outline-secondary"
-										:title="selectedIsParent ? t('Split one payment across child locations') : ''"
+										:title="paymentButtonTitle"
 										@click="selectedIsParent ? (bulkPayOpen = true) : (partyPayOpen = true)"
 									>
 										<i class="ti ti-cash me-1"></i>{{ t("Payment") }}
+										<span class="font-monospace stbl-amount ms-1 text-secondary">
+											{{ formatMoney(headerBalanceValue, headerBalanceCurrency, user.language) }}
+										</span>
+									</button>
+									<button
+										type="button"
+										class="btn btn-sm btn-outline-secondary"
+										:title="t('Professional Excel export of this ledger')"
+										@click="exportLedgerXlsx"
+									>
+										<i class="ti ti-file-spreadsheet me-1"></i>{{ t("Statement") }}
 									</button>
 									<button
 										v-if="directInvoiceEnabled"
@@ -1272,8 +1419,18 @@ watch(activeCompany, () => {
 									</div>
 
 									<div class="flex-fill position-relative">
-										<div v-if="ledgerLoading" class="text-center py-5">
-											<div class="spinner-border text-primary"></div>
+										<div v-if="ledgerLoading" class="table-responsive">
+											<table class="table table-vcenter table-sm card-table m-0 placeholder-glow">
+												<tbody>
+													<tr v-for="n in 8" :key="n">
+														<td><span class="placeholder col-9 py-2 rounded-1"></span></td>
+														<td><span class="placeholder col-7 py-2 rounded-1"></span></td>
+														<td class="text-end"><span class="placeholder col-6 py-2 rounded-1"></span></td>
+														<td class="text-end"><span class="placeholder col-6 py-2 rounded-1"></span></td>
+														<td class="text-end"><span class="placeholder col-8 py-2 rounded-1"></span></td>
+													</tr>
+												</tbody>
+											</table>
 										</div>
 										<div v-else-if="ledgerError" class="alert alert-danger m-3">{{ ledgerError }}</div>
 										<div v-else-if="!filteredLedgerRows.length" class="text-secondary text-center py-5">
@@ -1372,8 +1529,17 @@ watch(activeCompany, () => {
 
 								<!-- ORDERS TAB -->
 								<div v-if="currentTab === 'orders'" class="p-3">
-									<div v-if="custOrdersLoading" class="text-center py-5">
-										<div class="spinner-border text-primary"></div>
+									<div v-if="custOrdersLoading" class="table-responsive">
+										<table class="table table-vcenter card-table m-0 placeholder-glow">
+											<tbody>
+												<tr v-for="n in 5" :key="n">
+													<td><span class="placeholder col-8 py-2 rounded-1"></span></td>
+													<td><span class="placeholder col-6 py-2 rounded-1"></span></td>
+													<td class="text-end"><span class="placeholder col-7 py-2 rounded-1"></span></td>
+													<td><span class="placeholder col-5 py-2 rounded-1"></span></td>
+												</tr>
+											</tbody>
+										</table>
 									</div>
 									<EmptyState
 										v-else-if="!custOrders.length"

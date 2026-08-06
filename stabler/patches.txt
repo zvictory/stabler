@@ -72,9 +72,9 @@ stabler.patches.v66_deal_tender_stage
 stabler.patches.v67_stage_event_axis
 stabler.patches.v68_rfq_tender_deal
 stabler.patches.v69_sq_landed_charges
-stabler.patches.v70_tender_master_documents
 stabler.patches.v71_communication_crm_fields
 stabler.patches.v72_crm_activity_automation_fields
 stabler.patches.v73_communication_retry_fields
 stabler.patches.v74_repair_tender_deal_fields
 stabler.patches.v75_repair_shadowed_docperms
+stabler.patches.v76_tender_master_documents

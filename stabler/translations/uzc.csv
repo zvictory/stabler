@@ -5419,75 +5419,75 @@ Manage document files in Document Center,Ҳужжатлар файлларини
 Justification / Reason,Асослаш / Сабаб
 Enter protocol / authorization reason…,Баённома рақами ёки сабабни киритинг…
 Pick a tender deal to view its document center.,Ҳужжатлар марказини кўриш учун тендер битимини танланг.
-"Level 1: Tender Master oversight","1-даража: Асосий тендерлар назорати"
-"One card per published tender — click to open child lots","Эълон қилинган ҳар бир тендер учун битта карта — лотларни очиш учун босинг"
-"New Tender","Янги тендер"
-"Tender Masters","Асосий тендерлар"
-"active parent tenders","фаол асосий тендерлар"
-"Total Lots","Жами лотлар"
-"child lots under tenders","тендерлардаги шўъба лотлар"
-"Pipeline Value","Воронка қиймати"
-"derived from child lots","лотлар бўйича ҳисобланган"
-"Unlinked Lots","Боғланмаган лотлар"
-"migration queue backlog","миграция навбатингиз"
-"Unlinked Lots Migration Queue ({0})","Боғланмаган лотлар миграция навбати ({0})"
-"Lots created without a parent tender link","Асосий тендерга боғланмасдан яратилган лотлар"
-"Lot Name","Лот номи"
-"Link to Tender","Тендерга боғлаш"
-"No tenders in this stage","Ушбу босқичда тендерлар йўқ"
-"Edit Tender Master","Асосий тендерни таҳрирлаш"
-"Create Tender Master","Асосий тендер яратиш"
-"Tender Title","Тендер номи"
-"e.g. UZEX Supply Tender 2026","масалан, UZEX етказиб бериш тендери 2026"
-"Tender / Lot No","Тендер / Лот №"
-"Source / Portal","Манба / Портал"
-"Publication Date","Чоп этилган сана"
-"Submission Deadline","Топшириш муддати"
-"Estimated Total Value","Тахминий умумий қиймат"
-"Unlinked lot {0} will be attached to this tender upon creation.","Боғланмаган лот {0} яратилаётганда ушбу тендерга бириктирилади."
-"Save Tender","Тендерни сақлаш"
-"Title is required","Сарлавҳа талаб қилинади"
-"Tender updated","Тендер янгиланди"
-"Tender created","Тендер яратилди"
-"Could not save tender","Тендерни сақлаб бўлмади"
-"Could not load tender board","Тендерлар панелини юклаб бўлмади"
-"Lot {0} linked to tender {1}","Лот {0} тендер {1} га боғланди"
-"Could not link lot","Лотни боғлаб бўлмади"
-"Unallocated quotations in Purchasing","Харидлардаги боғланмаган таклифлар"
-"Attach to this lot","Ушбу лотга бириктириш"
-"Quotation attached to lot.","Таклиф лотга бириктирилди."
-"Could not attach quotation.","Таклифни бириктириб бўлмади."
-"Quotation detached from lot.","Таклиф лотдан ажратилди."
-"Could not detach quotation.","Таклифни ажратиб бўлмади."
-"Cannot detach quotation '{0}': it is part of an approved sourcing decision for this tender.","'{0}' таклифини ажратиб бўлмайди: у ушбу тендер учун тасдиқланган таъминот қарорининг бир қисмидир."
-"Search supplier or quotation…","Етказиб берувчи ёки таклифни қидириш…"
-"Detach from this lot","Ушбу лотдан ажратиш"
-"No default warehouse configured for {0}. Set a default warehouse in Company settings.","{0} учун сукут бўйича омбор созланмаган. Компания созламаларида омборни белгиланг."
-"Search supplier or quotation… ⌘K","Етказиб берувчи ёки таклифни қидириш… ⌘K"
-"Valid till date cannot be before transaction date.","Амал қилиш муддати операция санасидан олдин бўлиши мумкин эмас."
-"Document Missing","Ҳужжат етишмаяпти"
-"Ready for GTD","Декларацияга тайёр"
-"Declared","Декларацияланган"
-"Under Inspection","Текширувда"
-"Released","Чиқарилган"
-"No active customs declarations or won lots in the pipeline.","Жараёнда фаол божхона декларациялари ёки ютилган лотлар йўқ."
-"When a tender deal is awarded or a purchase order is raised, customs requirements will appear here.","Тендер лоти ютилганда ёки харид буюртмаси яратилганда божхона талаблари шу ерда пайдо бўлади."
-"docs missing","ҳужжат етишмаяпти"
-"Doc Center","Ҳужжатлар маркази"
-"No items in this stage","Ушбу босқичда элементлар йўқ"
-"Lanes","Устунлар"
-"Table","Жадвал"
-"Planning","Режалаштириш"
-"Booking","Банд қилиш / Олиш"
-"In Transit","Йўлда"
-"Border Crossed","Чегара кесиб ўтилди"
-"Delivered","Етказиб берилди"
-"Accepted","Қабул қилинди"
-"No active shipments or won lots in the pipeline.","Жараёнда фаол жўнатмалар ёки ютилган лотлар йўқ."
-"When a tender deal is awarded or a purchase order is raised, shipment requirements will appear here.","Тендер лоти ютилганда ёки харид буюртмаси яратилганда жўнатма талаблари шу ерда пайдо бўлади."
-"Customs charges","Божхона харажатлари"
-"Open PO","Буюртмани очиш"
-"PO Control","Буюртмалар назорати"
+Level 1: Tender Master oversight,1-даража: Асосий тендерлар назорати
+One card per published tender — click to open child lots,Эълон қилинган ҳар бир тендер учун битта карта — лотларни очиш учун босинг
+New Tender,Янги тендер
+Tender Masters,Асосий тендерлар
+active parent tenders,фаол асосий тендерлар
+Total Lots,Жами лотлар
+child lots under tenders,тендерлардаги шўъба лотлар
+Pipeline Value,Воронка қиймати
+derived from child lots,лотлар бўйича ҳисобланган
+Unlinked Lots,Боғланмаган лотлар
+migration queue backlog,миграция навбатингиз
+Unlinked Lots Migration Queue ({0}),Боғланмаган лотлар миграция навбати ({0})
+Lots created without a parent tender link,Асосий тендерга боғланмасдан яратилган лотлар
+Lot Name,Лот номи
+Link to Tender,Тендерга боғлаш
+No tenders in this stage,Ушбу босқичда тендерлар йўқ
+Edit Tender Master,Асосий тендерни таҳрирлаш
+Create Tender Master,Асосий тендер яратиш
+Tender Title,Тендер номи
+e.g. UZEX Supply Tender 2026,"масалан, UZEX етказиб бериш тендери 2026"
+Tender / Lot No,Тендер / Лот №
+Source / Portal,Манба / Портал
+Publication Date,Чоп этилган сана
+Submission Deadline,Топшириш муддати
+Estimated Total Value,Тахминий умумий қиймат
+Unlinked lot {0} will be attached to this tender upon creation.,Боғланмаган лот {0} яратилаётганда ушбу тендерга бириктирилади.
+Save Tender,Тендерни сақлаш
+Title is required,Сарлавҳа талаб қилинади
+Tender updated,Тендер янгиланди
+Tender created,Тендер яратилди
+Could not save tender,Тендерни сақлаб бўлмади
+Could not load tender board,Тендерлар панелини юклаб бўлмади
+Lot {0} linked to tender {1},Лот {0} тендер {1} га боғланди
+Could not link lot,Лотни боғлаб бўлмади
+Unallocated quotations in Purchasing,Харидлардаги боғланмаган таклифлар
+Attach to this lot,Ушбу лотга бириктириш
+Quotation attached to lot.,Таклиф лотга бириктирилди.
+Could not attach quotation.,Таклифни бириктириб бўлмади.
+Quotation detached from lot.,Таклиф лотдан ажратилди.
+Could not detach quotation.,Таклифни ажратиб бўлмади.
+Cannot detach quotation '{0}': it is part of an approved sourcing decision for this tender.,'{0}' таклифини ажратиб бўлмайди: у ушбу тендер учун тасдиқланган таъминот қарорининг бир қисмидир.
+Search supplier or quotation…,Етказиб берувчи ёки таклифни қидириш…
+Detach from this lot,Ушбу лотдан ажратиш
+No default warehouse configured for {0}. Set a default warehouse in Company settings.,{0} учун сукут бўйича омбор созланмаган. Компания созламаларида омборни белгиланг.
+Search supplier or quotation… ⌘K,Етказиб берувчи ёки таклифни қидириш… ⌘K
+Valid till date cannot be before transaction date.,Амал қилиш муддати операция санасидан олдин бўлиши мумкин эмас.
+Document Missing,Ҳужжат етишмаяпти
+Ready for GTD,Декларацияга тайёр
+Declared,Декларацияланган
+Under Inspection,Текширувда
+Released,Чиқарилган
+No active customs declarations or won lots in the pipeline.,Жараёнда фаол божхона декларациялари ёки ютилган лотлар йўқ.
+"When a tender deal is awarded or a purchase order is raised, customs requirements will appear here.",Тендер лоти ютилганда ёки харид буюртмаси яратилганда божхона талаблари шу ерда пайдо бўлади.
+docs missing,ҳужжат етишмаяпти
+Doc Center,Ҳужжатлар маркази
+No items in this stage,Ушбу босқичда элементлар йўқ
+Lanes,Устунлар
+Table,Жадвал
+Planning,Режалаштириш
+Booking,Банд қилиш / Олиш
+In Transit,Йўлда
+Border Crossed,Чегара кесиб ўтилди
+Delivered,Етказиб берилди
+Accepted,Қабул қилинди
+No active shipments or won lots in the pipeline.,Жараёнда фаол жўнатмалар ёки ютилган лотлар йўқ.
+"When a tender deal is awarded or a purchase order is raised, shipment requirements will appear here.",Тендер лоти ютилганда ёки харид буюртмаси яратилганда жўнатма талаблари шу ерда пайдо бўлади.
+Customs charges,Божхона харажатлари
+Open PO,Буюртмани очиш
+PO Control,Буюртмалар назорати
 Transport expenses,Ташиш харажатлари
 Transport costs belong to third-party carriers. Expenses linked directly to a container are allocated directly; unassigned costs are distributed by weight.,Ташиш харажатлари учинчи томон ташувчиларига тегишли. Контейнерга тўғридан-тўғри бириктирилганлари тўғридан-тўғри, қолганлари вазн бўйича тақсимланади.
 Total transport,Жами ташиш
@@ -5510,3 +5510,73 @@ Other expenses,Бошқа харажатлар
 No transport expenses yet.,Ҳозирча ташиш харажатлари йўқ
 Transport by container,Контейнер бўйича ташиш
 cont.,конт.
+Goods · agreed,Маҳсулот · келишилган
+Logistics & duties,Логистика ва божхона
+Cost / kg,Таннарх / кг
+in accounting,ҳисобда
+gap,фарқ
+supplier,етказиб берувчи
+carriers,ташувчилар
+1 line: price below agreed,1 қатор: нарх шартномадан паст
+Against contract,Шартномага нисбатан
+Contracts for this shipment,Ушбу юк шартномалари
+summary — details in PI,хулоса — тафсилотлар PI да
+in this invoice,ушбу ҳисобда
+over-shipped by key: -{count} boxes,калит бўйича ортиқча юклаш: -{count} қути
+remaining {count} boxes,қолган {count} қути
+open PI →,PI ни очиш →
+Advance 70%,Бўнак 70%
+Telex / BL,Телекс / BL
+Gate-in → ГТД,Gate-in → Декларация
+Supplier bills,Етказиб берувчи ҳисоблари
+Expenses without bills,Ҳисобсиз харажатлар
+All expenses are billed.,Барча харажатлар ҳисобланган.
+No supplier bills linked yet.,Ҳали етказиб берувчи ҳисоблари боғланмаган.
+Reconciliation: expenses {exp} − bills {bills} = {unbilled} unbilled,Таққослаш: харажатлар {exp} − ҳисоблар {bills} = {unbilled} ҳисобсиз
+Shipment Cost Breakdown,Партия таннархи тақсимоти
+Operational,Операцион
+In Accounting,Ҳисобда
+Freight & Transport,Кира & Транспорт
+Port & Insurance,Порт & Суғурта
+Duties,Божхона тўловлари
+Total operational,Жами операцион
+Billed goods,Ҳисобланган маҳсулот
+LCV (Landed Cost Vouchers),LCV (Таннарх тақсимоти)
+Total accounting,Жами ҳисобда
+Gap {amount} · {per_kg} $/kg not allocated to inventory yet,Фарқ {amount} · {per_kg} $/кг ҳали захирага тақсимланмаган
+Document status,Ҳужжатлар ҳолати
+Vet Certificate,Вет сертификати
+over-shipped,ортиқча юкланган
+Attach file,Fayl biriktiriw
+Could not attach document.,Hujjattı biriktirip bolmadı.
+Could not load documents.,Hujjatlardı júklew bolmadı.
+Could not remove document.,Hujjattı alıp taslaw bolmadı.
+Could not waive document.,Hujjattan waz kechiw bolmadı.
+Document removed.,Hujjat alıp taslandı.
+Document requirements,Hujjat talapları
+Document waived.,Hujjattan waz kechildi.
+File,Fayl
+General,Umumiy
+No document requirements yet. Add them in Tender details.,Hárshe hujjat talapları joq. Olardı Tender tolıqlıqlarında qosıń.
+Req.,Májb.
+Tender documents,Tender hujjatları
+Upload returned no file URL.,Júklew fayl URL'ın qaytarmadı.
+Waiver reason is mandatory.,Waz kechiw sebebi májbúriy.
+files,fayllar
+required,májbúriy
+unverified,tastıqlanbaǵan
+Attached,Biriktirilgen
+Download failed,Júklew áwmelgi
+Marked done but no file,Faylsız orınlandı dep belgilengen
+Missing required,Májbúriy hújjet jetispeydi
+Remove file,Fayldı alıp taslaw
+Shared across all lots of this tender,Bul tenderdiń barlıq lotları ushın ulwmaq
+Waive with reason…,Sebep menen waz kechiw…
+Waived,Waz kechildi
+Waived by,Waz kechken
+remove,alıp taslaw
+Visible,Кўрсатилган
+Overdue only,Фақат муддати ўтганлар
+Statement,Кўчирма
+No outstanding balance.,Очиқ қарз йўқ.
+"The server returned a capped page; this total covers the rows loaded, not the whole book.","Сервер чекланган саҳифа қайтарди; бу жами юкланган қаторларни қамраб олади, бутун китобни эмас."

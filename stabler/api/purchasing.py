@@ -47,6 +47,7 @@ def list_suppliers_with_balances(
 	search: str = "",
 	limit: int = 200,
 	only_with_balance: int = 0,
+	only_overdue: int = 0,
 ):
 	"""Suppliers + live payables balance (base + account currency) aggregated
 	from GL Entry party rows against this company.
@@ -65,6 +66,42 @@ def list_suppliers_with_balances(
 		conds.append("(s.supplier_name LIKE %(q)s OR s.name LIKE %(q)s)")
 		params["q"] = f"%{search}%"
 	where = " AND ".join(conds)
+	# How many suppliers the filter actually matches, so the UI can admit when
+	# `limit` truncated the page instead of silently under-reporting the footer.
+	total_count = frappe.db.sql(
+		f"SELECT COUNT(*) FROM `tabSupplier` s WHERE {where}",
+		params,
+	)[0][0]
+
+	# Book-wide balance for the SAME filter, ignoring `limit`. Grouped per account
+	# currency because totals are never converted (CLAUDE.md). Payable sign is
+	# credit − debit, matching the row query below.
+	# NOTE: this omits the Payment Entry drift correction applied per row. The UI
+	# only shows this figure when the list IS capped, so it never sits next to the
+	# drift-corrected footer for a direct comparison.
+	grand_totals = frappe.db.sql(
+		f"""
+		SELECT p.cur AS currency, SUM(p.bal_acc) AS amount
+		FROM (
+		  SELECT MAX(g.account_currency) AS cur,
+		         SUM(g.credit_in_account_currency - g.debit_in_account_currency) AS bal_acc
+		  FROM `tabGL Entry` g
+		  JOIN `tabSupplier` s ON s.name = g.party
+		  WHERE g.company = %(company)s
+		    AND g.party_type = 'Supplier'
+		    AND g.is_cancelled = 0
+		    AND {where}
+		  GROUP BY g.party
+		) p
+		WHERE p.cur IS NOT NULL
+		GROUP BY p.cur
+		HAVING SUM(p.bal_acc) != 0
+		""",
+		params,
+		as_dict=True,
+	)
+	grand_totals = [{"currency": r["currency"], "amount": flt(r["amount"])} for r in (grand_totals or [])]
+
 	rows = frappe.db.sql(
 		f"""
 		SELECT
@@ -140,13 +177,53 @@ def list_suppliers_with_balances(
 	)
 	drift_map = {r["party"]: flt(r["drift"]) for r in drift_rows}
 
+	# Overdue AP per party — ONE batched query for the party set already on the page.
+	# outstanding_amount is in the invoice currency, so multiply by conversion_rate to
+	# get a comparable base-currency figure. Mirrors list_customers_with_balances.
+	overdue_map: dict = {}
+	parties = tuple(r["name"] for r in rows)
+	if parties:
+		overdue_rows = (
+			frappe.db.sql(
+				"""
+			SELECT supplier AS party,
+			       COALESCE(SUM(outstanding_amount * conversion_rate), 0) AS overdue_base
+			FROM `tabPurchase Invoice`
+			WHERE company = %(company)s
+			  AND supplier IN %(parties)s
+			  AND docstatus = 1
+			  AND due_date < %(today)s
+			  AND outstanding_amount > 0
+			GROUP BY supplier
+			""",
+				{"company": company, "parties": parties, "today": today()},
+				as_dict=True,
+			)
+			or []
+		)
+		overdue_map = {r["party"]: flt(r["overdue_base"]) for r in overdue_rows}
+
+	# Did `limit` actually bite? Decide here, BEFORE the Python-side filters below
+	# thin the list out: `total_count` ignores those filters, so comparing it with
+	# the final row count would flag a filtered-but-complete list as truncated.
+	truncated = total_count > len(rows)
+
 	for r in rows:
 		r["balance_base"] = flt(r["balance_base"])
 		r["balance_acc"] = flt(r["balance_acc"]) + drift_map.get(r["name"], 0.0)
 		r["company_currency"] = company_currency
+		r["overdue_base"] = overdue_map.get(r["name"], 0.0)
 	if cint(only_with_balance):
 		rows = [r for r in rows if flt(r["balance_base"]) != 0]
-	return {"rows": rows, "company_currency": company_currency}
+	if cint(only_overdue):
+		rows = [r for r in rows if flt(r.get("overdue_base")) > 0]
+	return {
+		"rows": rows,
+		"company_currency": company_currency,
+		"total_count": total_count,
+		"truncated": truncated,
+		"grand_totals": grand_totals,
+	}
 
 
 @frappe.whitelist()

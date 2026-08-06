@@ -5414,75 +5414,75 @@ Manage document files in Document Center,Belge dosyalarını Belge Merkezinde y�
 Justification / Reason,Gerekçe / Neden
 Enter protocol / authorization reason…,Protokol no veya yetki nedenini girin…
 Pick a tender deal to view its document center.,Belge merkezini görüntülemek için bir ihale fırsatı seçin.
-"Level 1: Tender Master oversight","Seviye 1: Ana İhale Denetimi"
-"One card per published tender — click to open child lots","Yayınlanan her ihale için bir kart — alt lotları açmak için tıklayın"
-"New Tender","Yeni İhale"
-"Tender Masters","Ana İhaleler"
-"active parent tenders","aktif ana ihaleler"
-"Total Lots","Toplam Lot"
-"child lots under tenders","ihaleler altındaki lotlar"
-"Pipeline Value","Pipeline Değeri"
-"derived from child lots","alt lotlardan türetilmiş"
-"Unlinked Lots","Bağlantısız Lotlar"
-"migration queue backlog","geçiş kuyruğu birikimi"
-"Unlinked Lots Migration Queue ({0})","Bağlantısız Lotlar Geçiş Kuyruğu ({0})"
-"Lots created without a parent tender link","Ana ihale bağlantısı olmadan oluşturulmuş lotlar"
-"Lot Name","Lot Adı"
-"Link to Tender","İhaleye Bağla"
-"No tenders in this stage","Bu aşamada ihale yok"
-"Edit Tender Master","Ana İhaleyi Düzenle"
-"Create Tender Master","Ana İhale Oluştur"
-"Tender Title","İhale Başlığı"
-"e.g. UZEX Supply Tender 2026","ör. UZEX Tedarik İhalesi 2026"
-"Tender / Lot No","İhale / Lot No"
-"Source / Portal","Kaynak / Portal"
-"Publication Date","Yayın Tarihi"
-"Submission Deadline","Son Teslim Tarihi"
-"Estimated Total Value","Tahmini Toplam Değer"
-"Unlinked lot {0} will be attached to this tender upon creation.","Bağlantısız lot {0} oluşturulduğunda bu ihaleye eklenecektir."
-"Save Tender","İhaleyi Kaydet"
-"Title is required","Başlık gereklidir"
-"Tender updated","İhale güncellendi"
-"Tender created","İhale oluşturuldu"
-"Could not save tender","İhale kaydedilemedi"
-"Could not load tender board","İhale panosu yüklenemedi"
-"Lot {0} linked to tender {1}","Lot {0}, {1} ihalesine bağlandı"
-"Could not link lot","Lot bağlanamadı"
-"Unallocated quotations in Purchasing","Satın Almada Bağlantısız Teklifler"
-"Attach to this lot","Bu Lota Bağla"
-"Quotation attached to lot.","Teklif lota bağlandı."
-"Could not attach quotation.","Teklif bağlanamadı."
-"Quotation detached from lot.","Teklifin lot bağlantısı kaldırıldı."
-"Could not detach quotation.","Teklifin lot bağlantısı kaldırılamadı."
-"Cannot detach quotation '{0}': it is part of an approved sourcing decision for this tender.","'{0}' teklifinin bağı kaldırılamaz: bu ihale için onaylanmış bir tedarik kararının parçasıdır."
-"Search supplier or quotation…","Tedarikçi veya teklif ara…"
-"Detach from this lot","Bu lottan bağını kaldır"
-"No default warehouse configured for {0}. Set a default warehouse in Company settings.","{0} için varsayılan depo yapılandırılmamış. Şirket ayarlarında varsayılan bir depo tanımlayın."
-"Search supplier or quotation… ⌘K","Tedarikçi veya teklif ara… ⌘K"
-"Valid till date cannot be before transaction date.","Geçerlilik tarihi işlem tarihinden önce olamaz."
-"Document Missing","Belge Eksik"
-"Ready for GTD","Beyana Hazır"
-"Declared","Beyan Edildi"
-"Under Inspection","Muayenede"
-"Released","Serbest"
-"No active customs declarations or won lots in the pipeline.","Süreçte aktif gümrük beyannamesi veya kazanılmış lot yok."
-"When a tender deal is awarded or a purchase order is raised, customs requirements will appear here.","İhale lotu kazanıldığında veya satın alma siparişi oluşturulduğunda gümrük gereksinimleri burada görünecektir."
-"docs missing","eksik belge"
-"Doc Center","Belge Merkezi"
-"No items in this stage","Bu aşamada öge yok"
-"Lanes","Kulvarlar"
-"Table","Tablo"
-"Planning","Planlama"
-"Booking","Alım / Rezervasyon"
-"In Transit","Transit"
-"Border Crossed","Sınır Geçildi"
-"Delivered","Teslim Edildi"
-"Accepted","Kabul Edildi"
-"No active shipments or won lots in the pipeline.","Süreçte aktif sevkiyat veya kazanılmış lot yok."
-"When a tender deal is awarded or a purchase order is raised, shipment requirements will appear here.","İhale lotu kazanıldığında veya satın alma siparişi oluşturulduğunda sevkiyat gereksinimleri burada görünecektir."
-"Customs charges","Gümrük masrafları"
-"Open PO","Siparişi Aç"
-"PO Control","Sipariş Kontrolü"
+Level 1: Tender Master oversight,Seviye 1: Ana İhale Denetimi
+One card per published tender — click to open child lots,Yayınlanan her ihale için bir kart — alt lotları açmak için tıklayın
+New Tender,Yeni İhale
+Tender Masters,Ana İhaleler
+active parent tenders,aktif ana ihaleler
+Total Lots,Toplam Lot
+child lots under tenders,ihaleler altındaki lotlar
+Pipeline Value,Pipeline Değeri
+derived from child lots,alt lotlardan türetilmiş
+Unlinked Lots,Bağlantısız Lotlar
+migration queue backlog,geçiş kuyruğu birikimi
+Unlinked Lots Migration Queue ({0}),Bağlantısız Lotlar Geçiş Kuyruğu ({0})
+Lots created without a parent tender link,Ana ihale bağlantısı olmadan oluşturulmuş lotlar
+Lot Name,Lot Adı
+Link to Tender,İhaleye Bağla
+No tenders in this stage,Bu aşamada ihale yok
+Edit Tender Master,Ana İhaleyi Düzenle
+Create Tender Master,Ana İhale Oluştur
+Tender Title,İhale Başlığı
+e.g. UZEX Supply Tender 2026,ör. UZEX Tedarik İhalesi 2026
+Tender / Lot No,İhale / Lot No
+Source / Portal,Kaynak / Portal
+Publication Date,Yayın Tarihi
+Submission Deadline,Son Teslim Tarihi
+Estimated Total Value,Tahmini Toplam Değer
+Unlinked lot {0} will be attached to this tender upon creation.,Bağlantısız lot {0} oluşturulduğunda bu ihaleye eklenecektir.
+Save Tender,İhaleyi Kaydet
+Title is required,Başlık gereklidir
+Tender updated,İhale güncellendi
+Tender created,İhale oluşturuldu
+Could not save tender,İhale kaydedilemedi
+Could not load tender board,İhale panosu yüklenemedi
+Lot {0} linked to tender {1},"Lot {0}, {1} ihalesine bağlandı"
+Could not link lot,Lot bağlanamadı
+Unallocated quotations in Purchasing,Satın Almada Bağlantısız Teklifler
+Attach to this lot,Bu Lota Bağla
+Quotation attached to lot.,Teklif lota bağlandı.
+Could not attach quotation.,Teklif bağlanamadı.
+Quotation detached from lot.,Teklifin lot bağlantısı kaldırıldı.
+Could not detach quotation.,Teklifin lot bağlantısı kaldırılamadı.
+Cannot detach quotation '{0}': it is part of an approved sourcing decision for this tender.,'{0}' teklifinin bağı kaldırılamaz: bu ihale için onaylanmış bir tedarik kararının parçasıdır.
+Search supplier or quotation…,Tedarikçi veya teklif ara…
+Detach from this lot,Bu lottan bağını kaldır
+No default warehouse configured for {0}. Set a default warehouse in Company settings.,{0} için varsayılan depo yapılandırılmamış. Şirket ayarlarında varsayılan bir depo tanımlayın.
+Search supplier or quotation… ⌘K,Tedarikçi veya teklif ara… ⌘K
+Valid till date cannot be before transaction date.,Geçerlilik tarihi işlem tarihinden önce olamaz.
+Document Missing,Belge Eksik
+Ready for GTD,Beyana Hazır
+Declared,Beyan Edildi
+Under Inspection,Muayenede
+Released,Serbest
+No active customs declarations or won lots in the pipeline.,Süreçte aktif gümrük beyannamesi veya kazanılmış lot yok.
+"When a tender deal is awarded or a purchase order is raised, customs requirements will appear here.",İhale lotu kazanıldığında veya satın alma siparişi oluşturulduğunda gümrük gereksinimleri burada görünecektir.
+docs missing,eksik belge
+Doc Center,Belge Merkezi
+No items in this stage,Bu aşamada öge yok
+Lanes,Kulvarlar
+Table,Tablo
+Planning,Planlama
+Booking,Alım / Rezervasyon
+In Transit,Transit
+Border Crossed,Sınır Geçildi
+Delivered,Teslim Edildi
+Accepted,Kabul Edildi
+No active shipments or won lots in the pipeline.,Süreçte aktif sevkiyat veya kazanılmış lot yok.
+"When a tender deal is awarded or a purchase order is raised, shipment requirements will appear here.",İhale lotu kazanıldığında veya satın alma siparişi oluşturulduğunda sevkiyat gereksinimleri burada görünecektir.
+Customs charges,Gümrük masrafları
+Open PO,Siparişi Aç
+PO Control,Sipariş Kontrolü
 Transport expenses,Taşıma giderleri
 Transport costs belong to third-party carriers. Expenses linked directly to a container are allocated directly; unassigned costs are distributed by weight.,Taşıma giderleri üçüncü taraf taşıyıcılara aittir. Konteynere doğrudan bağlı giderler doğrudan, diğerleri ağırlığa göre dağıtılır.
 Total transport,Toplam taşıma
@@ -5505,3 +5505,73 @@ Other expenses,Diğer giderler
 No transport expenses yet.,Henüz taşıma gideri yok.
 Transport by container,Konteyner taşıma gideri
 cont.,kont.
+Goods · agreed,Ürün · anlaşılan
+Logistics & duties,Lojistik ve gümrük
+Cost / kg,Maliyet / kg
+in accounting,muhasebede
+gap,fark
+supplier,tedarikçi
+carriers,taşıyıcılar
+1 line: price below agreed,1 satır: fiyat sözleşmeden düşük
+Against contract,Sözleşmeye karşı
+Contracts for this shipment,Bu sevkiyatın sözleşmeleri
+summary — details in PI,özet — detaylar PI'de
+in this invoice,bu faturada
+over-shipped by key: -{count} boxes,anahtar fazla yükleme: -{count} kutu
+remaining {count} boxes,kalan {count} kutu
+open PI →,PI aç →
+Advance 70%,Avans %70
+Telex / BL,Teleks / BL
+Gate-in → ГТД,Gate-in → Beyanname
+Supplier bills,Tedarikçi faturaları
+Expenses without bills,Faturasız giderler
+All expenses are billed.,Tüm giderler faturalandırıldı.
+No supplier bills linked yet.,Henüz tedarikçi faturası bağlanmadı.
+Reconciliation: expenses {exp} − bills {bills} = {unbilled} unbilled,Mutabakat: giderler {exp} − faturalar {bills} = {unbilled} faturasız
+Shipment Cost Breakdown,Parti Maliyeti Dağılımı
+Operational,Operasyonel
+In Accounting,Muhasebede
+Freight & Transport,Navlun & Taşıma
+Port & Insurance,Liman & Sigorta
+Duties,Gümrük Vergileri
+Total operational,Toplam operasyonel
+Billed goods,Faturalanan ürün
+LCV (Landed Cost Vouchers),LCV (Maliyet Dağıtım Fişleri)
+Total accounting,Toplam muhasebe
+Gap {amount} · {per_kg} $/kg not allocated to inventory yet,Fark {amount} · {per_kg} $/kg henüz stoğa dağıtılmadı
+Document status,Belge durumu
+Vet Certificate,Veteriner Sertifikası
+over-shipped,fazla yüklendi
+Attach file,Dosya ekle
+Could not attach document.,Belge eklenemedi.
+Could not load documents.,Belgeler yüklenemedi.
+Could not remove document.,Belge kaldırılamadı.
+Could not waive document.,Belge feragat edilemedi.
+Document removed.,Belge kaldırıldı.
+Document requirements,Belge gereksinimleri
+Document waived.,Belge feragat edildi.
+File,Dosya
+General,Genel
+No document requirements yet. Add them in Tender details.,Henüz belge gereksinimi yok. İhale detaylarında ekleyin.
+Req.,Zor.
+Tender documents,İhale belgeleri
+Upload returned no file URL.,Yükleme dosya URL'si döndürmedi.
+Waiver reason is mandatory.,Feragat gerekçesi zorunludur.
+files,dosya
+required,zorunlu
+unverified,doğrulanmamış
+Attached,Ekli
+Download failed,İndirme başarısız
+Marked done but no file,Dosyasız bitti işaretli
+Missing required,Zorunlu eksik
+Remove file,Dosyayı kaldır
+Shared across all lots of this tender,Bu ihalenin tüm lotları için ortak
+Waive with reason…,Gerekçeyle feragat et…
+Waived,Feragat edildi
+Waived by,Feragat eden
+remove,kaldır
+Visible,Görünen
+Overdue only,Sadece vadesi geçenler
+Statement,Ekstre
+No outstanding balance.,Açık bakiye yok.
+"The server returned a capped page; this total covers the rows loaded, not the whole book.","Sunucu sınırlı bir sayfa döndürdü; bu toplam yüklenen satırları kapsıyor, kitabın tamamını değil."

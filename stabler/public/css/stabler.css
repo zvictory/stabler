@@ -3,6 +3,10 @@
  * Phase 1 will swap CDN Tabler for a locally built SCSS bundle.
  */
 
+/* Tipografi katmani — Inter + JetBrains Mono, self-hosted.
+ * Ayrintili gerekce ve geri alma notu: stbl-typography.css basindaki blok. */
+@import url("./stbl-typography.css");
+
 :root {
 	--tblr-primary: #206bc4;
 	--tblr-primary-rgb: 32, 107, 196;

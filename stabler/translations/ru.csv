@@ -5425,75 +5425,75 @@ Manage document files in Document Center,Управление файлами д�
 Justification / Reason,Обоснование / Причина
 Enter protocol / authorization reason…,Введите номер протокола или причину…
 Pick a tender deal to view its document center.,Выберите тендерную сделку для просмотра ее центра документов.
-"Level 1: Tender Master oversight","Уровень 1: Обзор основных тендеров"
-"One card per published tender — click to open child lots","Одна карточка на опубликованный тендер — нажмите, чтобы открыть лоты"
-"New Tender","Новый тендер"
-"Tender Masters","Основные тендеры"
-"active parent tenders","активные родительские тендеры"
-"Total Lots","Всего лотов"
-"child lots under tenders","дочерние лоты в тендерах"
-"Pipeline Value","Стоимость воронки"
-"derived from child lots","рассчитано по лотам"
-"Unlinked Lots","Несвязанные лоты"
-"migration queue backlog","очередь миграции"
-"Unlinked Lots Migration Queue ({0})","Очередь миграции несвязанных лотов ({0})"
-"Lots created without a parent tender link","Лоты, созданные без связи с основным тендером"
-"Lot Name","Название лота"
-"Link to Tender","Связать с тендером"
-"No tenders in this stage","Нет тендеров на этом этапе"
-"Edit Tender Master","Редактировать основной тендер"
-"Create Tender Master","Создать основной тендер"
-"Tender Title","Название тендера"
-"e.g. UZEX Supply Tender 2026","например, Тендер UZEX 2026"
-"Tender / Lot No","№ тендера / лота"
-"Source / Portal","Источник / Портал"
-"Publication Date","Дата публикации"
-"Submission Deadline","Срок подачи"
-"Estimated Total Value","Оценочная стоимость"
-"Unlinked lot {0} will be attached to this tender upon creation.","Несвязанный лот {0} будет прикреплен к этому тендеру при создании."
-"Save Tender","Сохранить тендер"
-"Title is required","Укажите название"
-"Tender updated","Тендер обновлен"
-"Tender created","Тендер создан"
-"Could not save tender","Не удалось сохранить тендер"
-"Could not load tender board","Не удалось загрузить панель тендеров"
-"Lot {0} linked to tender {1}","Лот {0} связан с тендером {1}"
-"Could not link lot","Не удалось связать лот"
-"Unallocated quotations in Purchasing","Непривязанные предложения в Закупках"
-"Attach to this lot","Привязать к этому лоту"
-"Quotation attached to lot.","Предложение привязано к лоту."
-"Could not attach quotation.","Не удалось привязать предложение."
-"Quotation detached from lot.","Предложение отвязано от лота."
-"Could not detach quotation.","Не удалось отвязать предложение."
-"Cannot detach quotation '{0}': it is part of an approved sourcing decision for this tender.","Нельзя отвязать предложение '{0}': оно входит в утвержденное решение по поиску поставщиков для этого тендера."
-"Search supplier or quotation…","Поиск поставщика или предложения…"
-"Detach from this lot","Отвязать от этого лота"
-"No default warehouse configured for {0}. Set a default warehouse in Company settings.","Склад по умолчанию не настроен для {0}. Задайте склад по умолчанию в настройках компании."
-"Search supplier or quotation… ⌘K","Поиск поставщика или предложения… ⌘K"
-"Valid till date cannot be before transaction date.","Срок действия не может быть раньше даты операции."
-"Document Missing","Не хватает документов"
-"Ready for GTD","Готов к декларированию"
-"Declared","Задекларирован"
-"Under Inspection","На досмотре"
-"Released","Выпущен"
-"No active customs declarations or won lots in the pipeline.","В процессе нет активных таможенных деклараций или выигранных лотов."
-"When a tender deal is awarded or a purchase order is raised, customs requirements will appear here.","При присуждении тендерного лота или создании заказа на закупку здесь появятся таможенные требования."
-"docs missing","документов не хватает"
-"Doc Center","Центр документов"
-"No items in this stage","Нет элементов на этом этапе"
-"Lanes","Колонки"
-"Table","Таблица"
-"Planning","Планирование"
-"Booking","Бронирование / Забор"
-"In Transit","В пути"
-"Border Crossed","Пересекло границу"
-"Delivered","Доставлено"
-"Accepted","Принято"
-"No active shipments or won lots in the pipeline.","В процессе нет активных отгрузок или выигранных лотов."
-"When a tender deal is awarded or a purchase order is raised, shipment requirements will appear here.","При присуждении тендерного лота или создании заказа на закупку здесь появятся требования к отгрузке."
-"Customs charges","Таможенные расходы"
-"Open PO","Открыть PO"
-"PO Control","Контроль заказов"
+Level 1: Tender Master oversight,Уровень 1: Обзор основных тендеров
+One card per published tender — click to open child lots,"Одна карточка на опубликованный тендер — нажмите, чтобы открыть лоты"
+New Tender,Новый тендер
+Tender Masters,Основные тендеры
+active parent tenders,активные родительские тендеры
+Total Lots,Всего лотов
+child lots under tenders,дочерние лоты в тендерах
+Pipeline Value,Стоимость воронки
+derived from child lots,рассчитано по лотам
+Unlinked Lots,Несвязанные лоты
+migration queue backlog,очередь миграции
+Unlinked Lots Migration Queue ({0}),Очередь миграции несвязанных лотов ({0})
+Lots created without a parent tender link,"Лоты, созданные без связи с основным тендером"
+Lot Name,Название лота
+Link to Tender,Связать с тендером
+No tenders in this stage,Нет тендеров на этом этапе
+Edit Tender Master,Редактировать основной тендер
+Create Tender Master,Создать основной тендер
+Tender Title,Название тендера
+e.g. UZEX Supply Tender 2026,"например, Тендер UZEX 2026"
+Tender / Lot No,№ тендера / лота
+Source / Portal,Источник / Портал
+Publication Date,Дата публикации
+Submission Deadline,Срок подачи
+Estimated Total Value,Оценочная стоимость
+Unlinked lot {0} will be attached to this tender upon creation.,Несвязанный лот {0} будет прикреплен к этому тендеру при создании.
+Save Tender,Сохранить тендер
+Title is required,Укажите название
+Tender updated,Тендер обновлен
+Tender created,Тендер создан
+Could not save tender,Не удалось сохранить тендер
+Could not load tender board,Не удалось загрузить панель тендеров
+Lot {0} linked to tender {1},Лот {0} связан с тендером {1}
+Could not link lot,Не удалось связать лот
+Unallocated quotations in Purchasing,Непривязанные предложения в Закупках
+Attach to this lot,Привязать к этому лоту
+Quotation attached to lot.,Предложение привязано к лоту.
+Could not attach quotation.,Не удалось привязать предложение.
+Quotation detached from lot.,Предложение отвязано от лота.
+Could not detach quotation.,Не удалось отвязать предложение.
+Cannot detach quotation '{0}': it is part of an approved sourcing decision for this tender.,Нельзя отвязать предложение '{0}': оно входит в утвержденное решение по поиску поставщиков для этого тендера.
+Search supplier or quotation…,Поиск поставщика или предложения…
+Detach from this lot,Отвязать от этого лота
+No default warehouse configured for {0}. Set a default warehouse in Company settings.,Склад по умолчанию не настроен для {0}. Задайте склад по умолчанию в настройках компании.
+Search supplier or quotation… ⌘K,Поиск поставщика или предложения… ⌘K
+Valid till date cannot be before transaction date.,Срок действия не может быть раньше даты операции.
+Document Missing,Не хватает документов
+Ready for GTD,Готов к декларированию
+Declared,Задекларирован
+Under Inspection,На досмотре
+Released,Выпущен
+No active customs declarations or won lots in the pipeline.,В процессе нет активных таможенных деклараций или выигранных лотов.
+"When a tender deal is awarded or a purchase order is raised, customs requirements will appear here.",При присуждении тендерного лота или создании заказа на закупку здесь появятся таможенные требования.
+docs missing,документов не хватает
+Doc Center,Центр документов
+No items in this stage,Нет элементов на этом этапе
+Lanes,Колонки
+Table,Таблица
+Planning,Планирование
+Booking,Бронирование / Забор
+In Transit,В пути
+Border Crossed,Пересекло границу
+Delivered,Доставлено
+Accepted,Принято
+No active shipments or won lots in the pipeline.,В процессе нет активных отгрузок или выигранных лотов.
+"When a tender deal is awarded or a purchase order is raised, shipment requirements will appear here.",При присуждении тендерного лота или создании заказа на закупку здесь появятся требования к отгрузке.
+Customs charges,Таможенные расходы
+Open PO,Открыть PO
+PO Control,Контроль заказов
 Transport expenses,Транспортные расходы
 Transport costs belong to third-party carriers. Expenses linked directly to a container are allocated directly; unassigned costs are distributed by weight.,Расходы относятся к сторонним перевозчикам. Прямо привязанные к контейнеру распределяются напрямую, остальные — по весу.
 Total transport,Всего транспорт
@@ -5516,3 +5516,73 @@ Other expenses,Прочие расходы
 No transport expenses yet.,Транспортных расходов пока нет
 Transport by container,Транспорт по контейнеру
 cont.,конт.
+Goods · agreed,Товар · согласовано
+Logistics & duties,Логистика и пошлины
+Cost / kg,Себестоимость / кг
+in accounting,в учёте
+gap,разрыв
+supplier,поставщик
+carriers,перевозчики
+1 line: price below agreed,1 строка: цена ниже договорной
+Against contract,Против договора
+Contracts for this shipment,По каким договорам идёт этот груз
+summary — details in PI,свод — детали в ПИ
+in this invoice,в этом инвойсе
+over-shipped by key: -{count} boxes,перегруз по ключу: -{count} кор.
+remaining {count} boxes,остаток {count} кор.
+open PI →,открыть ПИ →
+Advance 70%,Аванс 70%
+Telex / BL,Телекс / BL
+Gate-in → ГТД,Gate-in → ГТД
+Supplier bills,Счета поставщиков
+Expenses without bills,Расходы, по которым счёта ещё нет
+All expenses are billed.,Все расходы уже со счетами.
+No supplier bills linked yet.,Счета поставщиков пока не привязаны.
+Reconciliation: expenses {exp} − bills {bills} = {unbilled} unbilled,Сверка: расходы {exp} − счета на логистику {bills} = {unbilled} без счёта
+Shipment Cost Breakdown,Себестоимость партии
+Operational,Операционно
+In Accounting,В учёте
+Freight & Transport,Фрахт + транспорт
+Port & Insurance,Порт + страховка
+Duties,Пошлины
+Total operational,Итого операционно
+Billed goods,Проведённый товар
+LCV (Landed Cost Vouchers),LCV (Landed Cost Vouchers)
+Total accounting,Итого в учёте
+Gap {amount} · {per_kg} $/kg not allocated to inventory yet,Разрыв {amount} · {per_kg} $/кг ещё не разнесён на запасы
+Document status,Документы
+Vet Certificate,Вет-сертификат
+over-shipped,перегруз
+Attach file,Прикрепить файл
+Could not attach document.,Не удалось прикрепить документ.
+Could not load documents.,Не удалось загрузить документы.
+Could not remove document.,Не удалось удалить документ.
+Could not waive document.,Не удалось освободить документ.
+Document removed.,Документ удалён.
+Document requirements,Требования к документам
+Document waived.,Документ освобождён.
+File,Файл
+General,Общее
+No document requirements yet. Add them in Tender details.,Пока нет требований к документам. Добавьте их в деталях тендера.
+Req.,Обяз.
+Tender documents,Документы тендера
+Upload returned no file URL.,Загрузка не вернула URL файла.
+Waiver reason is mandatory.,Указание причины освобождения обязательно.
+files,файлы
+required,обязательный
+unverified,не подтверждён
+Attached,Прикреплено
+Download failed,Ошибка загрузки
+Marked done but no file,"Отмечено готово, но без файла"
+Missing required,Не хватает обязательного
+Remove file,Удалить файл
+Shared across all lots of this tender,Общее для всех лотов тендера
+Waive with reason…,Освободить с причиной…
+Waived,Освобождено
+Waived by,Освободил
+remove,удалить
+Visible,Показано
+Overdue only,Только просроченные
+Statement,Выписка
+No outstanding balance.,Нет непогашенной задолженности.
+"The server returned a capped page; this total covers the rows loaded, not the whole book.","Сервер вернул ограниченную страницу; этот итог охватывает загруженные строки, а не всю книгу."

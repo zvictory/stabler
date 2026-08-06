@@ -366,6 +366,7 @@ def list_customers_with_balances(
 	search: str = "",
 	limit: int = 2500,
 	only_with_balance: int = 0,
+	only_overdue: int = 0,
 ):
 	"""Customers + live receivables balance (base + account currency)
 	aggregated from GL Entry party rows against this company.
@@ -390,6 +391,43 @@ def list_customers_with_balances(
 		conds.append("(c.customer_name LIKE %(s)s OR c.name LIKE %(s)s)")
 		params["s"] = f"%{search}%"
 	where = " AND ".join(conds)
+
+	# Total matching customers BEFORE the limit — lets the UI say "showing 500 of
+	# 1 240" instead of silently truncating the footer total.
+	total_count = frappe.db.sql(
+		f"""SELECT COUNT(*) FROM `tabCustomer` c WHERE {where}""",
+		params,
+	)[0][0]
+
+	# Book-wide balance for the SAME filter, ignoring `limit`. Without this the UI
+	# can only say "the total you see is a slice" — it can never show the real
+	# number. Measured on ANJAN: at limit=500 the visible footer was 8% of the book.
+	# Grouped per account currency because totals are never converted (CLAUDE.md).
+	# NOTE: this omits the Payment Entry drift correction applied per row below
+	# (~0.00001% on ANJAN). The UI only shows this figure when the list IS capped,
+	# so it never sits next to the drift-corrected footer for a direct comparison.
+	grand_totals = frappe.db.sql(
+		f"""
+		SELECT p.cur AS currency, SUM(p.bal_acc) AS amount
+		FROM (
+		  SELECT MAX(g.account_currency) AS cur,
+		         SUM(g.debit_in_account_currency - g.credit_in_account_currency) AS bal_acc
+		  FROM `tabGL Entry` g
+		  JOIN `tabCustomer` c ON c.name = g.party
+		  WHERE g.company = %(company)s
+		    AND g.party_type = 'Customer'
+		    AND g.is_cancelled = 0
+		    AND {where}
+		  GROUP BY g.party
+		) p
+		WHERE p.cur IS NOT NULL
+		GROUP BY p.cur
+		HAVING SUM(p.bal_acc) != 0
+		""",
+		params,
+		as_dict=True,
+	)
+	grand_totals = [{"currency": r["currency"], "amount": flt(r["amount"])} for r in (grand_totals or [])]
 
 	# 1. Fetch matching customer metadata first
 	customer_rows = frappe.db.sql(
@@ -417,11 +455,20 @@ def list_customers_with_balances(
 		has_parent_field and frappe.db.exists("Customer", {"custom_parent_customer": ["!=", ""]})
 	)
 
+	# Did `limit` actually bite? Decide here, BEFORE the Python-side
+	# only_with_balance / only_overdue filters thin the list out: `total_count`
+	# ignores those filters, so comparing it with the final row count would flag a
+	# filtered-but-complete list as truncated.
+	truncated = total_count > len(customer_rows)
+
 	if not customer_rows:
 		return {
 			"rows": [],
 			"company_currency": company_currency,
 			"has_hierarchy": has_hierarchy,
+			"total_count": total_count,
+			"truncated": truncated,
+			"grand_totals": grand_totals,
 		}
 
 	parties = tuple(r["name"] for r in customer_rows)
@@ -492,6 +539,31 @@ def list_customers_with_balances(
 	)
 	drift_map = {r["party"]: flt(r["drift"]) for r in drift_rows}
 
+	# Overdue AR per party — ONE batched query for the same party set the GL
+	# aggregation already uses. outstanding_amount is in the invoice currency, so
+	# multiply by conversion_rate to get a comparable base-currency figure.
+	overdue_map: dict = {}
+	if parties:
+		overdue_rows = (
+			frappe.db.sql(
+				"""
+			SELECT customer AS party,
+			       COALESCE(SUM(outstanding_amount * conversion_rate), 0) AS overdue_base
+			FROM `tabSales Invoice`
+			WHERE company = %(company)s
+			  AND customer IN %(parties)s
+			  AND docstatus = 1
+			  AND due_date < %(today)s
+			  AND outstanding_amount > 0
+			GROUP BY customer
+			""",
+				{"company": company, "parties": parties, "today": today()},
+				as_dict=True,
+			)
+			or []
+		)
+		overdue_map = {r["party"]: flt(r["overdue_base"]) for r in overdue_rows}
+
 	rows = []
 	for r in customer_rows:
 		g = gl_map.get(r["name"]) or {}
@@ -503,15 +575,21 @@ def list_customers_with_balances(
 		r["acc_currency_count"] = cint(g.get("currency_count") or 0)
 		r["company_currency"] = company_currency
 		r["parent_customer"] = r.get("parent_customer") or None
+		r["overdue_base"] = overdue_map.get(r["name"], 0.0)
 		rows.append(r)
 
 	if cint(only_with_balance):
 		rows = [r for r in rows if flt(r["balance_base"]) != 0]
+	if cint(only_overdue):
+		rows = [r for r in rows if flt(r.get("overdue_base")) > 0]
 
 	return {
 		"rows": rows,
 		"company_currency": company_currency,
 		"has_hierarchy": has_hierarchy,
+		"total_count": total_count,
+		"truncated": truncated,
+		"grand_totals": grand_totals,
 	}
 
 
@@ -1214,7 +1292,6 @@ def _fetch_party_ledger_rows(
 	return aggregated
 
 
-@frappe.whitelist()
 @frappe.whitelist()
 def customer_detail(name: str, company: str, include_children: bool | str = False):
 	_require_company(company)
@@ -2903,7 +2980,6 @@ def get_delivery_note(name: str, company: str):
 # ─────────────────────────── Sales Orders ───────────────────────────
 
 
-@frappe.whitelist()
 @frappe.whitelist()
 def list_sales_orders(
 	company: str,

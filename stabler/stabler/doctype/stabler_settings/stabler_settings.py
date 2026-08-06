@@ -51,6 +51,7 @@ DEFAULT_MODULE_ENABLED = {
 	# Varsayılan KAPALI: yedi kiracının hepsi tanıdık klasik formda kalır,
 	# yeni tasarımı isteyen kiracı bunu kendi açar. Bir izin değil, bir tercih.
 	"modern_sales_order": False,
+	"valuation_guard": False,
 }
 
 

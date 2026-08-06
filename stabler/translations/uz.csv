@@ -5419,75 +5419,75 @@ Manage document files in Document Center,Hujjatlar fayllarini Hujjatlar markazid
 Justification / Reason,Asoslash / Sabab
 Enter protocol / authorization reason…,Bayonnoma raqami yoki sababni kiriting…
 Pick a tender deal to view its document center.,Hujjatlar markazini koʻrish uchun tender bitimini tanlang.
-"Level 1: Tender Master oversight","1-daraja: Asosiy tenderlar nazorati"
-"One card per published tender — click to open child lots","Eʼlon qilingan har bir tender uchun bitta karta — lotlarni ochish uchun bosing"
-"New Tender","Yangi tender"
-"Tender Masters","Asosiy tenderlar"
-"active parent tenders","faol asosiy tenderlar"
-"Total Lots","Jami lotlar"
-"child lots under tenders","tenderlardagi shoʻba lotlar"
-"Pipeline Value","Voronka qiymati"
-"derived from child lots","lotlar boʻyicha hisoblangan"
-"Unlinked Lots","Bogʻlanmagan lotlar"
-"migration queue backlog","migratsiya navbatingiz"
-"Unlinked Lots Migration Queue ({0})","Bogʻlanmagan lotlar migratsiya navbati ({0})"
-"Lots created without a parent tender link","Asosiy tenderga bogʻlanmasdan yaratilgan lotlar"
-"Lot Name","Lot nomi"
-"Link to Tender","Tenderga bogʻlash"
-"No tenders in this stage","Ushbu bosqichda tenderlar yoʻq"
-"Edit Tender Master","Asosiy tenderni tahrirlash"
-"Create Tender Master","Asosiy tender yaratish"
-"Tender Title","Tender nomi"
-"e.g. UZEX Supply Tender 2026","masalan, UZEX yetkazib berish tenderi 2026"
-"Tender / Lot No","Tender / Lot №"
-"Source / Portal","Manba / Portal"
-"Publication Date","Chop etilgan sana"
-"Submission Deadline","Topshirish muddati"
-"Estimated Total Value","Taxminiy umumiy qiymat"
-"Unlinked lot {0} will be attached to this tender upon creation.","Bogʻlanmagan lot {0} yaratilayotganda ushbu tenderga biriktiriladi."
-"Save Tender","Tenderni saqlash"
-"Title is required","Sarlavha talab qilinadi"
-"Tender updated","Tender yangilandi"
-"Tender created","Tender yaratildi"
-"Could not save tender","Tenderni saqlab boʻlmadi"
-"Could not load tender board","Tenderlar panelini yuklab boʻlmadi"
-"Lot {0} linked to tender {1}","Lot {0} tender {1} ga bogʻlandi"
-"Could not link lot","Lotni bogʻlab boʻlmadi"
-"Unallocated quotations in Purchasing","Xaridlardagi bog'lanmagan takliflar"
-"Attach to this lot","Ushbu lotga biriktirish"
-"Quotation attached to lot.","Taklif lotga biriktirildi."
-"Could not attach quotation.","Taklifni biriktirib bo'lmadi."
-"Quotation detached from lot.","Taklif lotdan ajratildi."
-"Could not detach quotation.","Taklifni ajratib bo'lmadi."
-"Cannot detach quotation '{0}': it is part of an approved sourcing decision for this tender.","'{0}' taklifini ajratib bo'lmaydi: u ushbu tender uchun tasdiqlangan ta'minot qarorining bir qismidir."
-"Search supplier or quotation…","Yetkazib beruvchi yoki taklifni qidirish…"
-"Detach from this lot","Ushbu lotdan ajratish"
-"No default warehouse configured for {0}. Set a default warehouse in Company settings.","{0} uchun sukut bo'yicha ombor sozlanmagan. Kompaniya sozlamalarida omborni belgilang."
-"Search supplier or quotation… ⌘K","Yetkazib beruvchi yoki taklifni qidirish… ⌘K"
-"Valid till date cannot be before transaction date.","Amal qilish muddati operatsiya sanasidan oldin bo'lishi mumkin emas."
-"Document Missing","Hujjat yetishmayapti"
-"Ready for GTD","Deklaratsiyaga tayyor"
-"Declared","Deklaratsiyalangan"
-"Under Inspection","Tekshiruvda"
-"Released","Chiqarilgan"
-"No active customs declarations or won lots in the pipeline.","Jarayonda faol bojxona deklaratsiyalari yoki yutilgan lotlar yo'q."
-"When a tender deal is awarded or a purchase order is raised, customs requirements will appear here.","Tender loti yutilganda yoki xarid buyurtmasi yaratilganda bojxona talablari shu yerda paydo bo'ladi."
-"docs missing","hujjat yetishmayapti"
-"Doc Center","Hujjatlar markazi"
-"No items in this stage","Ushbu bosqichda elementlar yo'q"
-"Lanes","Ustunlar"
-"Table","Jadval"
-"Planning","Rejalashtirish"
-"Booking","Band qilish / Olish"
-"In Transit","Yo'lda"
-"Border Crossed","Chegara kesib o'tildi"
-"Delivered","Yetkazib berildi"
-"Accepted","Qabul qilindi"
-"No active shipments or won lots in the pipeline.","Jarayonda faol jo'natmalar yoki yutilgan lotlar yo'q."
-"When a tender deal is awarded or a purchase order is raised, shipment requirements will appear here.","Tender loti yutilganda yoki xarid buyurtmasi yaratilganda jo'natma talablari shu yerda paydo bo'ladi."
-"Customs charges","Bojxona xarajatlari"
-"Open PO","Buyurtmani ochish"
-"PO Control","Buyurtmalar nazorati"
+Level 1: Tender Master oversight,1-daraja: Asosiy tenderlar nazorati
+One card per published tender — click to open child lots,Eʼlon qilingan har bir tender uchun bitta karta — lotlarni ochish uchun bosing
+New Tender,Yangi tender
+Tender Masters,Asosiy tenderlar
+active parent tenders,faol asosiy tenderlar
+Total Lots,Jami lotlar
+child lots under tenders,tenderlardagi shoʻba lotlar
+Pipeline Value,Voronka qiymati
+derived from child lots,lotlar boʻyicha hisoblangan
+Unlinked Lots,Bogʻlanmagan lotlar
+migration queue backlog,migratsiya navbatingiz
+Unlinked Lots Migration Queue ({0}),Bogʻlanmagan lotlar migratsiya navbati ({0})
+Lots created without a parent tender link,Asosiy tenderga bogʻlanmasdan yaratilgan lotlar
+Lot Name,Lot nomi
+Link to Tender,Tenderga bogʻlash
+No tenders in this stage,Ushbu bosqichda tenderlar yoʻq
+Edit Tender Master,Asosiy tenderni tahrirlash
+Create Tender Master,Asosiy tender yaratish
+Tender Title,Tender nomi
+e.g. UZEX Supply Tender 2026,"masalan, UZEX yetkazib berish tenderi 2026"
+Tender / Lot No,Tender / Lot №
+Source / Portal,Manba / Portal
+Publication Date,Chop etilgan sana
+Submission Deadline,Topshirish muddati
+Estimated Total Value,Taxminiy umumiy qiymat
+Unlinked lot {0} will be attached to this tender upon creation.,Bogʻlanmagan lot {0} yaratilayotganda ushbu tenderga biriktiriladi.
+Save Tender,Tenderni saqlash
+Title is required,Sarlavha talab qilinadi
+Tender updated,Tender yangilandi
+Tender created,Tender yaratildi
+Could not save tender,Tenderni saqlab boʻlmadi
+Could not load tender board,Tenderlar panelini yuklab boʻlmadi
+Lot {0} linked to tender {1},Lot {0} tender {1} ga bogʻlandi
+Could not link lot,Lotni bogʻlab boʻlmadi
+Unallocated quotations in Purchasing,Xaridlardagi bog'lanmagan takliflar
+Attach to this lot,Ushbu lotga biriktirish
+Quotation attached to lot.,Taklif lotga biriktirildi.
+Could not attach quotation.,Taklifni biriktirib bo'lmadi.
+Quotation detached from lot.,Taklif lotdan ajratildi.
+Could not detach quotation.,Taklifni ajratib bo'lmadi.
+Cannot detach quotation '{0}': it is part of an approved sourcing decision for this tender.,'{0}' taklifini ajratib bo'lmaydi: u ushbu tender uchun tasdiqlangan ta'minot qarorining bir qismidir.
+Search supplier or quotation…,Yetkazib beruvchi yoki taklifni qidirish…
+Detach from this lot,Ushbu lotdan ajratish
+No default warehouse configured for {0}. Set a default warehouse in Company settings.,{0} uchun sukut bo'yicha ombor sozlanmagan. Kompaniya sozlamalarida omborni belgilang.
+Search supplier or quotation… ⌘K,Yetkazib beruvchi yoki taklifni qidirish… ⌘K
+Valid till date cannot be before transaction date.,Amal qilish muddati operatsiya sanasidan oldin bo'lishi mumkin emas.
+Document Missing,Hujjat yetishmayapti
+Ready for GTD,Deklaratsiyaga tayyor
+Declared,Deklaratsiyalangan
+Under Inspection,Tekshiruvda
+Released,Chiqarilgan
+No active customs declarations or won lots in the pipeline.,Jarayonda faol bojxona deklaratsiyalari yoki yutilgan lotlar yo'q.
+"When a tender deal is awarded or a purchase order is raised, customs requirements will appear here.",Tender loti yutilganda yoki xarid buyurtmasi yaratilganda bojxona talablari shu yerda paydo bo'ladi.
+docs missing,hujjat yetishmayapti
+Doc Center,Hujjatlar markazi
+No items in this stage,Ushbu bosqichda elementlar yo'q
+Lanes,Ustunlar
+Table,Jadval
+Planning,Rejalashtirish
+Booking,Band qilish / Olish
+In Transit,Yo'lda
+Border Crossed,Chegara kesib o'tildi
+Delivered,Yetkazib berildi
+Accepted,Qabul qilindi
+No active shipments or won lots in the pipeline.,Jarayonda faol jo'natmalar yoki yutilgan lotlar yo'q.
+"When a tender deal is awarded or a purchase order is raised, shipment requirements will appear here.",Tender loti yutilganda yoki xarid buyurtmasi yaratilganda jo'natma talablari shu yerda paydo bo'ladi.
+Customs charges,Bojxona xarajatlari
+Open PO,Buyurtmani ochish
+PO Control,Buyurtmalar nazorati
 Transport expenses,Tashish xarajatlari
 Transport costs belong to third-party carriers. Expenses linked directly to a container are allocated directly; unassigned costs are distributed by weight.,Tashish xarajatlari uchinchi tomon tashuvchilariga tegishli. Konteynerga to'g'ridan-to'g'ri biriktirilganlari to'g'ridan-to'g'ri, qolganlari vazn bo'yicha taqsimlanadi.
 Total transport,Jami tashish
@@ -5510,3 +5510,73 @@ Other expenses,Boshqa xarajatlar
 No transport expenses yet.,Hozircha tashish xarajatlari yo'q
 Transport by container,Konteyner bo'yicha tashish
 cont.,kont.
+Goods · agreed,Mahsulot · kelishilgan
+Logistics & duties,Logistika va bojxona
+Cost / kg,Tannarx / kg
+in accounting,hisobda
+gap,farq
+supplier,yetkazib beruvchi
+carriers,tashuvchilar
+1 line: price below agreed,1 qator: narx shartnomadan past
+Against contract,Shartnomaga nisbatan
+Contracts for this shipment,Ushbu yuk shartnomalari
+summary — details in PI,xulosa — tafsilotlar PI da
+in this invoice,ushbu hisobda
+over-shipped by key: -{count} boxes,kalit bo'yicha ortiqcha yuklash: -{count} quti
+remaining {count} boxes,qolgan {count} quti
+open PI →,PI ni ochish →
+Advance 70%,Bo'nak 70%
+Telex / BL,Teleks / BL
+Gate-in → ГТД,Gate-in → Deklaratsiya
+Supplier bills,Yetkazib beruvchi hisoblari
+Expenses without bills,Hisobsiz xarajatlar
+All expenses are billed.,Barcha xarajatlar hisoblangan.
+No supplier bills linked yet.,Hali yetkazib beruvchi hisoblari bog'lanmagan.
+Reconciliation: expenses {exp} − bills {bills} = {unbilled} unbilled,Taqoslash: xarajatlar {exp} − hisoblar {bills} = {unbilled} hisobsiz
+Shipment Cost Breakdown,Partiya tannarxi taqsimoti
+Operational,Operatsion
+In Accounting,Hisobda
+Freight & Transport,Kira & Transport
+Port & Insurance,Port & Sug'urta
+Duties,Bojxona to'lovlari
+Total operational,Jami operatsion
+Billed goods,Hisoblangan mahsulot
+LCV (Landed Cost Vouchers),LCV (Tannarx taqsimoti)
+Total accounting,Jami hisobda
+Gap {amount} · {per_kg} $/kg not allocated to inventory yet,Farq {amount} · {per_kg} $/kg hali zaxiraga taqsimlanmagan
+Document status,Hujjatlar holati
+Vet Certificate,Vet sertifikati
+over-shipped,ortiqcha yuklangan
+Attach file,Fayl biriktirish
+Could not attach document.,Hujjatni biriktirib bo'lmadi.
+Could not load documents.,Hujjatlarni yuklab bo'lmadi.
+Could not remove document.,Hujjatni o'chirib bo'lmadi.
+Could not waive document.,Hujjatdan voz kechib bo'lmadi.
+Document removed.,Hujjat o'chirildi.
+Document requirements,Hujjat talablari
+Document waived.,Hujjatdan voz kechildi.
+File,Fayl
+General,Umumiy
+No document requirements yet. Add them in Tender details.,Hozircha hujjat talablari yo'q. Ularni Tender tafsilotlarida qo'shing.
+Req.,Majb.
+Tender documents,Tender hujjatlari
+Upload returned no file URL.,Yuklash fayl URL'ini qaytarmadi.
+Waiver reason is mandatory.,Voz kechish sababi majburiy.
+files,fayllar
+required,majburiy
+unverified,tasdiqlanmagan
+Attached,Biriktirilgan
+Download failed,Yuklab olish amalga oshmadi
+Marked done but no file,Faylsiz bajarilgan deb belgilangan
+Missing required,Majburiy hujjat yetishmayapti
+Remove file,Faylni o'chirish
+Shared across all lots of this tender,Ushbu tenderning barcha lotlari uchun umumiy
+Waive with reason…,Sabab bilan voz kechish…
+Waived,Voz kechildi
+Waived by,Voz kechgan
+remove,o'chirish
+Visible,Koʻrsatilgan
+Overdue only,Faqat muddati oʻtganlar
+Statement,Koʻchirma
+No outstanding balance.,Ochiq qarz yoʻq.
+"The server returned a capped page; this total covers the rows loaded, not the whole book.","Server cheklangan sahifa qaytardi; bu jami yuklangan qatorlarni qamrab oladi, butun kitobni emas."
