@@ -47,6 +47,7 @@ def list_suppliers_with_balances(
 	search: str = "",
 	limit: int = 200,
 	only_with_balance: int = 0,
+	only_overdue: int = 0,
 ):
 	"""Suppliers + live payables balance (base + account currency) aggregated
 	from GL Entry party rows against this company.
@@ -176,6 +177,32 @@ def list_suppliers_with_balances(
 	)
 	drift_map = {r["party"]: flt(r["drift"]) for r in drift_rows}
 
+	# Overdue AP per party — ONE batched query for the party set already on the page.
+	# outstanding_amount is in the invoice currency, so multiply by conversion_rate to
+	# get a comparable base-currency figure. Mirrors list_customers_with_balances.
+	overdue_map: dict = {}
+	parties = tuple(r["name"] for r in rows)
+	if parties:
+		overdue_rows = (
+			frappe.db.sql(
+				"""
+			SELECT supplier AS party,
+			       COALESCE(SUM(outstanding_amount * conversion_rate), 0) AS overdue_base
+			FROM `tabPurchase Invoice`
+			WHERE company = %(company)s
+			  AND supplier IN %(parties)s
+			  AND docstatus = 1
+			  AND due_date < %(today)s
+			  AND outstanding_amount > 0
+			GROUP BY supplier
+			""",
+				{"company": company, "parties": parties, "today": today()},
+				as_dict=True,
+			)
+			or []
+		)
+		overdue_map = {r["party"]: flt(r["overdue_base"]) for r in overdue_rows}
+
 	# Did `limit` actually bite? Decide here, BEFORE the Python-side filters below
 	# thin the list out: `total_count` ignores those filters, so comparing it with
 	# the final row count would flag a filtered-but-complete list as truncated.
@@ -185,8 +212,11 @@ def list_suppliers_with_balances(
 		r["balance_base"] = flt(r["balance_base"])
 		r["balance_acc"] = flt(r["balance_acc"]) + drift_map.get(r["name"], 0.0)
 		r["company_currency"] = company_currency
+		r["overdue_base"] = overdue_map.get(r["name"], 0.0)
 	if cint(only_with_balance):
 		rows = [r for r in rows if flt(r["balance_base"]) != 0]
+	if cint(only_overdue):
+		rows = [r for r in rows if flt(r.get("overdue_base")) > 0]
 	return {
 		"rows": rows,
 		"company_currency": company_currency,

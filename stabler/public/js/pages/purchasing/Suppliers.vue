@@ -31,9 +31,9 @@ const suppliers = ref([]);
 const companyCurrency = ref("");
 
 // Persistent list state: URL ↔ localStorage (URL = source of truth).
-const { search, onlyWithBalance, filterGroup, sortField, sortAsc, c: selectedName } = useListViewState(
+const { search, onlyWithBalance, onlyOverdue, filterGroup, sortField, sortAsc, c: selectedName } = useListViewState(
 	"stabler.suppliers.listState",
-	{ search: "", filterGroup: "", onlyWithBalance: false, sortField: "name", sortAsc: true, c: "" }
+	{ search: "", filterGroup: "", onlyWithBalance: false, onlyOverdue: false, sortField: "name", sortAsc: true, c: "" }
 );
 
 const selected = ref(null);
@@ -186,11 +186,12 @@ const listTruncated = ref(false);
 
 // Book-wide total for the server-side filter, unaffected by `limit`. Only shown
 // when the page IS capped: otherwise the footer above already IS the whole book.
-// The group filter narrows the set client-side, so the server figure would not
-// match what is on screen — hide it for that too.
+// The group filter narrows the set client-side and `only_overdue` is a Python-side
+// filter the grand-total query never sees, so the server figure would not match
+// what is on screen — hide it for those too.
 const grandTotals = ref([]);
 const showGrandTotals = computed(
-	() => listTruncated.value && grandTotals.value.length > 0 && !filterGroup.value
+	() => listTruncated.value && grandTotals.value.length > 0 && !onlyOverdue.value && !filterGroup.value
 );
 
 const ledgerRows = computed(() => {
@@ -285,6 +286,7 @@ async function loadSuppliers() {
 			company: activeCompany.value,
 			search: search.value || "",
 			only_with_balance: onlyWithBalance.value ? 1 : 0,
+			only_overdue: onlyOverdue.value ? 1 : 0,
 			limit: 500,
 		});
 		suppliers.value = res.rows || [];
@@ -744,6 +746,15 @@ watch(activeCompany, () => {
 									@change="loadSuppliers"
 								/>
 								<span class="form-check-label small">{{ t("Only with balance") }}</span>
+							</label>
+							<label class="form-check form-check-inline mb-0">
+								<input
+									v-model="onlyOverdue"
+									type="checkbox"
+									class="form-check-input"
+									@change="loadSuppliers"
+								/>
+								<span class="form-check-label small">{{ t("Overdue only") }}</span>
 							</label>
 						</div>
 						
