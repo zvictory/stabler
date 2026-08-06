@@ -72,9 +72,22 @@ tests
 # Translation harvester caches (CLAUDE.md: never ship .tx_*.json)
 .tx_*.json
 
-# Archives + OS cruft
+# Archives + OS cruft. ._* is macOS AppleDouble: rsync from a Mac ships one
+# sidecar per file it touches. Measured 2026-08-06 against a git-blob-SHA
+# manifest of the prod tree -- ._CLAUDE.md, ._README.md and friends had already
+# accumulated there, none of them readable by anything on the server.
 *.tgz
 .DS_Store
+._*
+
+# Local-only scratch that reached prod the same way. `iskelet` is a design
+# skeleton dump, /stabler/logs holds the app's own local log files (prod writes
+# its own under sites/), and the .bak-* pairs are pre-edit copies left behind by
+# the i18n and skeleton passes.
+/iskelet
+/stabler/logs
+*.bak-i18n
+*.bak-skeleton
 
 # --- consolidated 2026-07-26 from the deploy scripts' inline flags ----------
 
