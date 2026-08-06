@@ -21,8 +21,8 @@ from frappe import _
 from frappe.utils import now
 
 from stabler.api._tender_documents import docs_summary, parse_doc_requirements
-from stabler.api.permissions import _assert_company_scope
 from stabler.api.tender import _require_tender, _require_tender_view
+from stabler.api.tender_master import _assert_company_scope
 
 
 def _get_deal_and_master(deal_name: str, company: str | None, ptype: str):
