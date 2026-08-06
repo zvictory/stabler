@@ -231,7 +231,7 @@ All promo plans,Tüm promosyon planları
 All sales invoices for this company are fully paid.,Bu şirkete ait tüm satış faturaları tam olarak ödenmiştir.
 All service people,Tüm teknisyenler
 All statuses,Tüm durumlar
-All suppliers,
+All suppliers,Tüm tedarikçiler
 All technicians,Tüm teknisyenler
 All territories,Tüm bölgeler
 All three accounts are required.,Üç hesabın tamamı gereklidir.
@@ -239,7 +239,7 @@ All time,
 All types,Tüm türler
 All variance,Tüm sapmalar
 All vendors,Tüm tedarikçiler
-All vouchers,
+All vouchers,Tüm belgeler
 All warehouses,Tüm depolar
 All {0} employee summaries are clean — no unresolved exceptions.,
 Allocate against,Karşılığında tahsis et
@@ -874,7 +874,7 @@ Customer ABC analysis,Müşteri ABC analizi
 Customer Balance Summary,Müşteri Bakiye Özeti
 Customer ID,Müşteri ID
 Customer credit,
-Customer deleted.,
+Customer deleted.,Müşteri silindi.
 Customer group,Müşteri grubu
 Customer invoices,
 Customer is required.,Müşteri zorunludur.
@@ -969,10 +969,10 @@ Define promotions that field users can apply during visits.,Saha kullanıcılar�
 Define routes so field users know which outlets to visit each day.,Saha kullanıcılarının her gün hangi satış noktalarını ziyaret edeceğini bilmesi için rotaları tanımlayın.
 Delayed,Gecikmiş
 Delete,Sil
-Delete Customer,
+Delete Customer,Müşteriyi sil
 Delete Draft Entry,
 Delete Draft Transfer,
-Delete Supplier,
+Delete Supplier,Tedarikçiyi sil
 Delete blocked,
 Delete customer,Müşteriyi sil
 Delete deal?,
@@ -1237,7 +1237,7 @@ Everything looks complete,Her şey tam görünüyor
 Exact,
 Exceeded (Annual),
 Exceeded (Monthly),
-Excel,
+Excel,Excel
 Excel (.xlsx),Excel (.xlsx)
 Excel — basic,Excel — temel
 Excel — professional,Excel — profesyonel
@@ -1745,7 +1745,7 @@ Inventory,Stok
 Inventory Aging,Stok yaşlandırma
 Invite user,Kullanıcı davet et
 Invoice,Fatura
-Invoice #,
+Invoice #,Fatura no
 Invoice Reference,Fatura Referansı
 Invoice not submitted yet.,
 Invoice number or customer…,
@@ -1796,7 +1796,7 @@ Jami summa,Jami summa
 Job Status,İş durumu
 Job Title,Unvan
 Joined,
-Journal,
+Journal,Yevmiye
 Journal Entries,Yevmiye Kayıtları
 Journal Entry,Yevmiye Kaydı
 Journal Entry is already submitted.,
@@ -1835,7 +1835,7 @@ Lane,Şerit
 Lanes,Şeritler
 Language,Dil
 Last Name,Soyad
-Last Payment,
+Last Payment,Son ödeme
 Last backup,Son yedek
 Last login,Son giriş
 Last month,
@@ -1861,7 +1861,7 @@ Leave blank to keep the existing token.,
 Leave request approved.,
 Leave request rejected.,
 Leave type,İzin türü
-Ledger,
+Ledger,Defter
 Ledger spans multiple account currencies; amounts shown in base currency.,Defter birden fazla hesap para birimini kapsamaktadır; tutarlar temel para biriminde gösterilmektedir.
 Ledger — all vouchers (reconciles to the balance),Defter — tüm belgeler (bakiye ile uyumlu)
 Left,Sol
@@ -1871,7 +1871,7 @@ Length,Boy
 Level {0},
 Level {0} approved — awaiting level {1}.,
 Level {0} cannot be approved yet — level {1} must be completed first.,
-Lifetime Purchases,
+Lifetime Purchases,Tüm zamanlar alımları
 Lifetime Sales,
 Lifetime sales,Toplam satış
 Light,
@@ -2001,7 +2001,7 @@ Modules,Modüller
 Mon,Pzt
 Monday,
 Money,Para
-Month,
+Month,Ay
 Month grid,Aylık ızgara
 Month is required in YYYY-MM format.,
 Month to date,
@@ -2198,7 +2198,7 @@ No cost lines yet.,Henüz maliyet satırı yok.
 "No cost lines, bills or advances are linked to this container.","Bu konteynere bağlı maliyet, fatura veya avans yok."
 No cost lines.,Maliyet kalemi yok.
 No coverage,Kapsam yok
-No creditors found.,
+No creditors found.,Alacaklı bulunamadı.
 No custom allowances. Click Add to create one.,
 No customers,Müşteri yok
 No customers match that name,Bu ada uyan müşteri bulunamadı
@@ -2244,7 +2244,7 @@ No import orders,
 No installments due this month.,Bu ay vadesi gelen taksit yok.
 No interest — fixed Murabaha markup. Sum equals total exactly.,Faiz yok — sabit Murabaha kâr payı. Toplam tam olarak genel toplamla eşittir.
 No invoices found,
-No invoices found.,
+No invoices found.,Fatura bulunamadı.
 No invoices in this range,Bu aralıkta fatura yok
 No items found,Ürün bulunamadı
 No items match,Eşleşen ürün yok
@@ -2275,7 +2275,7 @@ No new Version rows since the last seal.,
 No open exceptions,
 No open invoices for this customer group.,Bu müşteri grubu için açık fatura yok.
 No open reservations,Açık rezervasyon yok
-No orders yet,
+No orders yet,Henüz sipariş yok
 No orders.,Sipariş yok.
 No org chart yet,Henüz organizasyon şeması yok
 No outlets in this route yet.,Bu rotada henüz satış noktası yok.
@@ -2300,7 +2300,7 @@ No promo schemes yet,Henüz promosyon şeması yok
 No punches — employee will be marked absent.,
 "No purchase invoices are linked to an import container, invoice or truck yet.","İthalat konteynerine, faturaya veya kamyona bağlı satın alma faturası yok."
 No purchase invoices in this range,
-No purchase orders have been registered for this supplier.,
+No purchase orders have been registered for this supplier.,Bu tedarikçi için kayıtlı satın alma siparişi yok.
 No purchase orders in the customs queue.,Gümrük kuyruğunda sipariş yok.
 No purchase orders in this range,Bu aralıkta satın alma siparişi yok
 No purchase orders linked.,Bağlı satın alma siparişi yok.
@@ -2511,7 +2511,7 @@ Operator Kiosk,
 Optional,İsteğe bağlı
 Optional note (leave blank to skip):,
 Order,Sipariş
-Order #,
+Order #,Sipariş no
 Order Date,Sipariş Tarihi
 Order date,Sipariş tarihi
 Order number or supplier…,
@@ -2641,9 +2641,9 @@ Pay {0} employees?,{0} çalışana ödensin mi?
 "Pay-formula inputs: overtime rate, KPI pool share, and per-day transport by region band.","Maaş formülü girdileri: fazla mesai oranı, KPI havuz payı ve bölgeye göre günlük ulaşım."
 Payable,Borç
 Payable (AP),Borç Hesapları (AP)
-Payable Trend (Last 8 Weeks),
+Payable Trend (Last 8 Weeks),Borç eğilimi (son 8 hafta)
 Payable:,Borç:
-Payables,
+Payables,Borçlar
 Payee,Alacaklı
 Payload,Veri yükü
 Payload must be an object.,Veri yükü bir nesne olmalıdır.
@@ -2675,8 +2675,8 @@ Payment type,Ödeme türü
 Payments,Ödemeler
 Payments due,Vadesi gelen ödemeler
 Payments due ≤7 days,Ödemeler ≤7 gün
-Payments paid today,
-Payments received today,
+Payments paid today,Bugün ödenen tutarlar
+Payments received today,Bugün alınan ödemeler
 Payments saved — some are pending approval before they post.,Ödemeler kaydedildi — bazıları işlenmeden önce onay bekliyor.
 Payments you submit that need a second approver will show here.,İkinci bir onaylayıcı gereken gönderdiğiniz ödemeler burada görünür.
 Payout account,Ödeme hesabı
@@ -3558,7 +3558,7 @@ Supplier,Tedarikçi
 Supplier ABC analysis,Tedarikçi ABC analizi
 Supplier balance,Tedarikçi bakiyesi
 Supplier bill #,Tedarikçi fatura no
-Supplier deleted.,
+Supplier deleted.,Tedarikçi silindi.
 Supplier group,Tedarikçi grubu
 Supplier invoice,Tedarikçi faturası
 Supplier is required.,Tedarikçi zorunludur.
@@ -3719,12 +3719,12 @@ To deliver,Teslim edilecek
 To receive,Teslim bekliyor
 To warehouse,Hedef depo
 Today,Bugün
-Toggle date sort,
+Toggle date sort,Tarihe göre sıralamayı değiştir
 Token status,
 Too many failed attempts. Please try again in 5 minutes.,
 Too many rows (max 5000).,
 Tools,Araçlar
-Top 10 Creditors,
+Top 10 Creditors,İlk 10 alacaklı
 Top 10 Debtors,
 Total,Toplam
 Total (cost + markup),Toplam (maliyet + kâr payı)
@@ -3794,7 +3794,7 @@ Transport cost,Nakliye ücreti
 Transport cost is hidden for your role.,Nakliye maliyeti rolünüz için gizlidir.
 Transporter,Nakliyeci
 Tree view,Ağaç görünümü
-Trend,
+Trend,Eğilim
 Trigger Item,Tetikleyici Ürün
 Truck,Kamyon
 Truck & driver,Kamyon ve sürücü
@@ -5575,3 +5575,33 @@ Overdue only,Sadece vadesi geçenler
 Statement,Ekstre
 No outstanding balance.,Açık bakiye yok.
 "The server returned a capped page; this total covers the rows loaded, not the whole book.","Sunucu sınırlı bir sayfa döndürdü; bu toplam yüklenen satırları kapsıyor, kitabın tamamını değil."
+Activity,Hareket
+All records,Tüm kayıtlar
+Consolidated View,Konsolide görünüm
+Create your first customer to start invoicing.,Fatura kesmeye başlamak için ilk müşterinizi oluşturun.
+Include child transactions,Alt kayıtların hareketlerini dahil et
+Lifetime,Tüm zamanlar
+Monthly movement,Aylık hareket
+New Invoice,Yeni fatura
+No child records.,Alt kayıt yok.
+No contact details recorded.,Kayıtlı iletişim bilgisi yok.
+No outstanding balances.,Bakiyesi olan kayıt yok.
+No quotations found.,Teklif bulunamadı.
+No records,Kayıt yok
+Not due,Vadesi gelmemiş
+Not enough data to analyse yet.,Analiz için henüz yeterli veri yok.
+Nothing to show.,Gösterilecek bir şey yok.
+Open items by age,Açık kalemler vade yaşına göre
+Parent Only View,Yalnızca ana kayıtlar
+Party Center,Cari merkezi
+Payments today,Bugünkü ödemeler
+Receivables trend (8 weeks),Alacak eğilimi (8 hafta)
+Resize list panel,Liste panelini yeniden boyutlandır
+Search customers… ⌘K,Müşteri ara… ⌘K
+Search voucher… ⌘K,Belge ara… ⌘K
+Search… ⌘K,Ara… ⌘K
+Top 10,İlk 10
+Top debtors,En büyük borçlular
+Trend (last 8 weeks),Eğilim (son 8 hafta)
+Voucher type,Belge türü
+Search suppliers… ⌘K,Tedarikçi ara… ⌘K

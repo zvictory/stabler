@@ -235,7 +235,7 @@ All promo plans,Все промо-планы
 All sales invoices for this company are fully paid.,Все счёта-фактуры по продажам для этой компании полностью оплачены.
 All service people,Все исполнители
 All statuses,Все статусы
-All suppliers,
+All suppliers,Все поставщики
 All technicians,Все техники
 All territories,Все территории
 All three accounts are required.,Все три счёта обязательны.
@@ -243,7 +243,7 @@ All time,
 All types,Все типы
 All variance,Все отклонения
 All vendors,Все поставщики
-All vouchers,
+All vouchers,Все документы
 All warehouses,Все склады
 All {0} employee summaries are clean — no unresolved exceptions.,
 Allocate against,Распределить по
@@ -884,7 +884,7 @@ Customer ABC analysis,ABC-анализ клиентов
 Customer Balance Summary,Сводка балансов клиентов
 Customer ID,ID клиента
 Customer credit,
-Customer deleted.,
+Customer deleted.,Клиент удалён.
 Customer group,Группа клиентов
 Customer invoices,
 Customer is required.,Покупатель обязателен.
@@ -979,10 +979,10 @@ Define promotions that field users can apply during visits.,"Определит�
 Define routes so field users know which outlets to visit each day.,"Определите маршруты, чтобы полевые сотрудники знали, какие точки посещать каждый день."
 Delayed,Задержка
 Delete,Удалить
-Delete Customer,
+Delete Customer,Удалить клиента
 Delete Draft Entry,
 Delete Draft Transfer,
-Delete Supplier,
+Delete Supplier,Удалить поставщика
 Delete blocked,
 Delete customer,Удалить покупателя
 Delete deal?,
@@ -1250,7 +1250,7 @@ Everything looks complete,Всё заполнено
 Exact,
 Exceeded (Annual),
 Exceeded (Monthly),
-Excel,
+Excel,Excel
 Excel (.xlsx),Excel (.xlsx)
 Excel — basic,Excel — базовый
 Excel — professional,Excel — профессиональный
@@ -1809,7 +1809,7 @@ Jami summa,Итого сумма
 Job Status,Статус объекта
 Job Title,Должность
 Joined,
-Journal,
+Journal,Журнал
 Journal Entries,Журнальные записи
 Journal Entry,Запись в журнале
 Journal Entry is already submitted.,
@@ -1848,7 +1848,7 @@ Lane,Полоса
 Lanes,Полосы
 Language,Язык
 Last Name,Фамилия
-Last Payment,
+Last Payment,Последний платёж
 Last backup,Последняя копия
 Last login,Последний вход
 Last month,
@@ -1874,7 +1874,7 @@ Leave blank to keep the existing token.,
 Leave request approved.,
 Leave request rejected.,
 Leave type,Тип отпуска
-Ledger,
+Ledger,Обороты
 Ledger spans multiple account currencies; amounts shown in base currency.,Бухгалтерская книга охватывает несколько валют счёта; суммы показаны в базовой валюте.
 Ledger — all vouchers (reconciles to the balance),Книга — все документы (сходится с балансом)
 Left,Уволен
@@ -1884,7 +1884,7 @@ Length,Длина
 Level {0},
 Level {0} approved — awaiting level {1}.,
 Level {0} cannot be approved yet — level {1} must be completed first.,
-Lifetime Purchases,
+Lifetime Purchases,Закупки за всё время
 Lifetime Sales,
 Lifetime sales,Продажи за всё время
 Light,
@@ -2015,7 +2015,7 @@ Modules,Модули
 Mon,Пн
 Monday,
 Money,Деньги
-Month,
+Month,Месяц
 Month grid,Месячная сетка
 Month is required in YYYY-MM format.,
 Month to date,
@@ -2212,7 +2212,7 @@ No cost lines yet.,Пока нет статей затрат.
 "No cost lines, bills or advances are linked to this container.","К этому контейнеру не привязаны затраты, счета или авансы."
 No cost lines.,Нет строк затрат.
 No coverage,Без покрытия
-No creditors found.,
+No creditors found.,Кредиторы не найдены.
 No custom allowances. Click Add to create one.,
 No customers,Клиентов нет
 No customers match that name,Нет клиентов с таким названием
@@ -2258,7 +2258,7 @@ No import orders,
 No installments due this month.,Нет платежей в этом месяце.
 No interest — fixed Murabaha markup. Sum equals total exactly.,Без процентов — фиксированная наценка Мурабаха. Сумма точно равна итогу.
 No invoices found,
-No invoices found.,
+No invoices found.,Счета не найдены.
 No invoices in this range,Счетов в этом диапазоне нет
 No items found,Товары не найдены
 No items match,Товары не совпадают
@@ -2289,7 +2289,7 @@ No new Version rows since the last seal.,
 No open exceptions,
 No open invoices for this customer group.,Нет открытых счетов для этой группы клиентов.
 No open reservations,Нет открытых резерваций
-No orders yet,
+No orders yet,Заказов пока нет
 No orders.,Нет заказов.
 No org chart yet,Организационная диаграмма отсутствует
 No outlets in this route yet.,Торговых точек на этом маршруте нет.
@@ -2314,7 +2314,7 @@ No promo schemes yet,Промо-схем нет
 No punches — employee will be marked absent.,
 "No purchase invoices are linked to an import container, invoice or truck yet.","Нет счетов на закупку, привязанных к контейнеру, инвойсу или грузовику."
 No purchase invoices in this range,
-No purchase orders have been registered for this supplier.,
+No purchase orders have been registered for this supplier.,Для этого поставщика не зарегистрировано ни одного заказа на закупку.
 No purchase orders in the customs queue.,Нет заказов в очереди таможни.
 No purchase orders in this range,Заказов на закупку в этом диапазоне нет
 No purchase orders linked.,Заказы на закупку не связаны.
@@ -2526,7 +2526,7 @@ Operator Kiosk,
 Optional,Необязательно
 Optional note (leave blank to skip):,
 Order,
-Order #,
+Order #,Заказ №
 Order Date,Дата заказа
 Order date,Дата заказа
 Order number or supplier…,
@@ -2657,9 +2657,9 @@ Pay {0} employees?,Оплатить {0} сотрудникам?
 "Pay-formula inputs: overtime rate, KPI pool share, and per-day transport by region band.","Параметры формулы оплаты: ставка сверхурочных, доля KPI-пула и суточный транспорт по региону."
 Payable,К выплате
 Payable (AP),Кредиторская задолженность
-Payable Trend (Last 8 Weeks),
+Payable Trend (Last 8 Weeks),Динамика кредиторской задолженности (последние 8 недель)
 Payable:,К выплате:
-Payables,
+Payables,Кредиторская задолженность
 Payee,Получатель платежа
 Payload,Тело запроса
 Payload must be an object.,Полезная нагрузка должна быть объектом.
@@ -2691,8 +2691,8 @@ Payment type,Тип платежа
 Payments,Платежи
 Payments due,Предстоящие платежи
 Payments due ≤7 days,Платежи в течение 7 дней
-Payments paid today,
-Payments received today,
+Payments paid today,"Платежи, уплаченные сегодня"
+Payments received today,"Платежи, полученные сегодня"
 Payments saved — some are pending approval before they post.,Платежи сохранены — некоторые ожидают подтверждения перед проведением.
 Payments you submit that need a second approver will show here.,"Платежи, отправленные вами и требующие второго согласующего, появятся здесь."
 Payout account,Счёт выплаты
@@ -3577,7 +3577,7 @@ Supplier,Поставщик
 Supplier ABC analysis,ABC-анализ поставщиков
 Supplier balance,Баланс поставщика
 Supplier bill #,№ счёта поставщика
-Supplier deleted.,
+Supplier deleted.,Поставщик удалён.
 Supplier group,Группа поставщика
 Supplier invoice,Счёт поставщика
 Supplier is required.,Поставщик обязателен.
@@ -3739,12 +3739,12 @@ To deliver,К отгрузке
 To receive,К получению
 To warehouse,На склад
 Today,Сегодня
-Toggle date sort,
+Toggle date sort,Сортировка по дате
 Token status,
 Too many failed attempts. Please try again in 5 minutes.,
 Too many rows (max 5000).,
 Tools,Инструменты
-Top 10 Creditors,
+Top 10 Creditors,Топ-10 кредиторов
 Top 10 Debtors,
 Total,Итого
 Total (cost + markup),Итого (себестоимость + наценка)
@@ -3814,7 +3814,7 @@ Transport cost,Стоимость перевозки
 Transport cost is hidden for your role.,Стоимость перевозки скрыта для вашей роли.
 Transporter,Перевозчик
 Tree view,Дерево
-Trend,
+Trend,Динамика
 Trigger Item,Товар-триггер
 Truck,Грузовик
 Truck & driver,Грузовик и водитель
@@ -5586,3 +5586,33 @@ Overdue only,Только просроченные
 Statement,Выписка
 No outstanding balance.,Нет непогашенной задолженности.
 "The server returned a capped page; this total covers the rows loaded, not the whole book.","Сервер вернул ограниченную страницу; этот итог охватывает загруженные строки, а не всю книгу."
+Activity,Активность
+All records,Все записи
+Consolidated View,Сводный вид
+Create your first customer to start invoicing.,"Создайте первого клиента, чтобы начать выставлять счета."
+Include child transactions,Включая операции дочерних
+Lifetime,За всё время
+Monthly movement,Движение по месяцам
+New Invoice,Новый счёт
+No child records.,Нет дочерних записей.
+No contact details recorded.,Контактные данные не указаны.
+No outstanding balances.,Нет непогашенных задолженностей.
+No quotations found.,Предложения не найдены.
+No records,Нет записей
+Not due,Срок не наступил
+Not enough data to analyse yet.,Пока недостаточно данных для анализа.
+Nothing to show.,Нечего показать.
+Open items by age,Открытые позиции по срокам
+Parent Only View,Только головные
+Party Center,Центр контрагентов
+Payments today,Платежи за сегодня
+Receivables trend (8 weeks),Динамика дебиторской задолженности (8 недель)
+Resize list panel,Изменить ширину панели списка
+Search customers… ⌘K,Поиск клиентов… ⌘K
+Search voucher… ⌘K,Поиск документа… ⌘K
+Search… ⌘K,Поиск… ⌘K
+Top 10,Топ-10
+Top debtors,Крупнейшие должники
+Trend (last 8 weeks),Динамика (последние 8 недель)
+Voucher type,Тип документа
+Search suppliers… ⌘K,Поиск поставщиков… ⌘K

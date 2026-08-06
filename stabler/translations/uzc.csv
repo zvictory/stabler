@@ -232,7 +232,7 @@ All promo plans,Барча рекламалаш режалари
 All sales invoices for this company are fully paid.,Бу компания учун барча сотув ҳисоб-фактуралари то'лиқ тўланди.
 All service people,Барча техниклар
 All statuses,Барча ҳолатлар
-All suppliers,
+All suppliers,Барча етказиб берувчилар
 All technicians,Барча техниклар
 All territories,Барча ҳудудлар
 All three accounts are required.,Учта ҳисоб мажбурий.
@@ -240,7 +240,7 @@ All time,
 All types,Барча турлари
 All variance,Барча оғишлар
 All vendors,Барча етказиб берувчилар
-All vouchers,
+All vouchers,Барча ҳужжатлар
 All warehouses,Барча омборлар
 All {0} employee summaries are clean — no unresolved exceptions.,
 Allocate against,Қарши ажратиш
@@ -879,7 +879,7 @@ Customer ABC analysis,Мижозлар ABC таҳлили
 Customer Balance Summary,Мижозлар баланси хулосаси
 Customer ID,Мижоз ID
 Customer credit,
-Customer deleted.,
+Customer deleted.,Мижоз ўчирилди.
 Customer group,Харидиларнинг гуруҳи
 Customer invoices,
 Customer is required.,Харидор мажбурий.
@@ -974,10 +974,10 @@ Define promotions that field users can apply during visits.,Далалар сў�
 Define routes so field users know which outlets to visit each day.,Далалар ҳар кун қайси сотув ўринларига бориши керак эканлигини билишлари учун маршрутларни таъриф бер.
 Delayed,Кечиккан
 Delete,Ўчириш
-Delete Customer,
+Delete Customer,Мижозни ўчириш
 Delete Draft Entry,
 Delete Draft Transfer,
-Delete Supplier,
+Delete Supplier,Етказиб берувчини ўчириш
 Delete blocked,
 Delete customer,Харидини ўчириш
 Delete deal?,
@@ -1244,7 +1244,7 @@ Everything looks complete,Ҳаммаси тўлиқ
 Exact,
 Exceeded (Annual),
 Exceeded (Monthly),
-Excel,
+Excel,Excel
 Excel (.xlsx),Excel (.xlsx)
 Excel — basic,Excel — оддий
 Excel — professional,Excel — профессионал
@@ -1803,7 +1803,7 @@ Jami summa,Жами сумма
 Job Status,Обект ҳолати
 Job Title,Лавозим
 Joined,
-Journal,
+Journal,Журнал
 Journal Entries,Журнал ёзувлари
 Journal Entry,Журнал ёзуви
 Journal Entry is already submitted.,
@@ -1842,7 +1842,7 @@ Lane,Йўлак
 Lanes,Йўлаклар
 Language,Тил
 Last Name,Фамилия
-Last Payment,
+Last Payment,Охирги тўлов
 Last backup,Охирги захира
 Last login,Сўнги кириш
 Last month,
@@ -1868,7 +1868,7 @@ Leave blank to keep the existing token.,
 Leave request approved.,
 Leave request rejected.,
 Leave type,Таътил тури
-Ledger,
+Ledger,Айланмалар
 Ledger spans multiple account currencies; amounts shown in base currency.,Ҳисоб китоби бирнечта ҳисоб валютасига тўхтайди; сумалар асос валютасида кўрсатилади.
 Ledger — all vouchers (reconciles to the balance),Ledger — барча ҳужжатлар (балансга мос)
 Left,Ишдан кетган
@@ -1878,7 +1878,7 @@ Length,Бўй
 Level {0},
 Level {0} approved — awaiting level {1}.,
 Level {0} cannot be approved yet — level {1} must be completed first.,
-Lifetime Purchases,
+Lifetime Purchases,Бутун давр харидлари
 Lifetime Sales,
 Lifetime sales,Умумий савдо
 Light,
@@ -2009,7 +2009,7 @@ Modules,Модуллар
 Mon,Ду
 Monday,
 Money,Пул
-Month,
+Month,Ой
 Month grid,Ойлик жадвал
 Month is required in YYYY-MM format.,
 Month to date,
@@ -2206,7 +2206,7 @@ No cost lines yet.,Ҳозирча харажат қаторлари йўқ.
 "No cost lines, bills or advances are linked to this container.","Бу контейнерга харажатлар, ҳисоб-фактуралар ёки аванслар боғланмаган."
 No cost lines.,Харажат қаторлари йўқ.
 No coverage,Қамров йўқ
-No creditors found.,
+No creditors found.,Кредиторлар топилмади.
 No custom allowances. Click Add to create one.,
 No customers,Мижозлар йўқ
 No customers match that name,Шу номга мос мижозлар йўқ
@@ -2252,7 +2252,7 @@ No import orders,
 No installments due this month.,Бу ойда тўловлар йўқ.
 No interest — fixed Murabaha markup. Sum equals total exactly.,Фоизсиз — қатъий Муробаҳа устамаси. Йиғинди аниқ жами билан тенг.
 No invoices found,
-No invoices found.,
+No invoices found.,Ҳисоб-фактуралар топилмади.
 No invoices in this range,Бу диапазонда счётлар йўқ
 No items found,Товарлар топилмади
 No items match,Товарлар мос келмади
@@ -2283,7 +2283,7 @@ No new Version rows since the last seal.,
 No open exceptions,
 No open invoices for this customer group.,Бу мижозлар гуруҳи учун очиқ ҳисоб-фактуралар йўқ.
 No open reservations,Очиқ захиралар йўқ
-No orders yet,
+No orders yet,Ҳозирча буюртмалар йўқ
 No orders.,Буюртмалар йўқ.
 No org chart yet,Ҳалиғача ташкилий диаграмма йўқ
 No outlets in this route yet.,Бу маршрутда ҳалиғача сотув пунктлари йўқ.
@@ -2308,7 +2308,7 @@ No promo schemes yet,Ҳали рекламалаш схемалари йўқ
 No punches — employee will be marked absent.,
 "No purchase invoices are linked to an import container, invoice or truck yet.","Контейнер, invoys ёки юк машинасига боғланган харид ҳисоб-фактуралари йўқ."
 No purchase invoices in this range,
-No purchase orders have been registered for this supplier.,
+No purchase orders have been registered for this supplier.,Бу етказиб берувчи учун харид буюртмаси рўйхатдан ўтказилмаган.
 No purchase orders in the customs queue.,Божхона навбатида буюртма йўқ.
 No purchase orders in this range,Бу диапазонда сотиб олиш буюртмалари йўқ
 No purchase orders linked.,Боғланган харид буюртмалари йўқ.
@@ -2520,7 +2520,7 @@ Operator Kiosk,
 Optional,Ихтиёрий
 Optional note (leave blank to skip):,
 Order,
-Order #,
+Order #,Буюртма №
 Order Date,Буюртма санаси
 Order date,Буюртма санаси
 Order number or supplier…,
@@ -2651,9 +2651,9 @@ Pay {0} employees?,{0} ходимга тўлансинми?
 "Pay-formula inputs: overtime rate, KPI pool share, and per-day transport by region band.","Ойлик формуласи параметрлари: қўшимча иш ставкаси, KPI фонд улуши ва ҳудуд бўйича кунлик транспорт."
 Payable,Қўллаш
 Payable (AP),Кредиторлик қарзи
-Payable Trend (Last 8 Weeks),
+Payable Trend (Last 8 Weeks),Кредиторлик қарзи динамикаси (охирги 8 ҳафта)
 Payable:,Қўллаш:
-Payables,
+Payables,Кредиторлик қарзи
 Payee,Қўлланувчи
 Payload,Юк
 Payload must be an object.,Юк объект бўлиши керак.
@@ -2685,8 +2685,8 @@ Payment type,Тўлов турн
 Payments,Тўловлар
 Payments due,Муддати келган тўловлар
 Payments due ≤7 days,Тўловлар ≤7 кун
-Payments paid today,
-Payments received today,
+Payments paid today,Бугун тўланган тўловлар
+Payments received today,Бугун олинган тўловлар
 Payments saved — some are pending approval before they post.,Тўловлар сақланди — баъзилари ўтказишдан олдин тасдиқланишини кутмоқда.
 Payments you submit that need a second approver will show here.,"Сиз юборган, иккинчи тасдиқловчини талаб қиладиган тўловлар шу ерда кўринади."
 Payout account,Тўлов ҳисоби
@@ -3571,7 +3571,7 @@ Supplier,Таъминотчи
 Supplier ABC analysis,Етказиб берувчилар ABC таҳлили
 Supplier balance,Таъминотчи баланси
 Supplier bill #,Таъминотчи ҳисоб-фактураси №
-Supplier deleted.,
+Supplier deleted.,Етказиб берувчи ўчирилди.
 Supplier group,Таъминотчи гуруҳи
 Supplier invoice,Таъминотчи ҳисоб-фактураси
 Supplier is required.,Таъминотчи мажбурий.
@@ -3733,12 +3733,12 @@ To deliver,Етказишга
 To receive,Қабул кутилмоқда
 To warehouse,Гача омборга
 Today,Бугун
-Toggle date sort,
+Toggle date sort,Сана бўйича саралаш
 Token status,
 Too many failed attempts. Please try again in 5 minutes.,
 Too many rows (max 5000).,
 Tools,Воситалар
-Top 10 Creditors,
+Top 10 Creditors,Топ-10 кредитор
 Top 10 Debtors,
 Total,Жами
 Total (cost + markup),Жами (таннарх + устама)
@@ -3808,7 +3808,7 @@ Transport cost,Ташиш нархи
 Transport cost is hidden for your role.,Транспорт харажати сизнинг ролингиз учун яширилган.
 Transporter,Ташувчи
 Tree view,Дарахт кўриниши
-Trend,
+Trend,Динамика
 Trigger Item,Триггер товари
 Truck,Юк машинаси
 Truck & driver,Юк машинаси ва ҳайдовчи
@@ -5580,3 +5580,33 @@ Overdue only,Фақат муддати ўтганлар
 Statement,Кўчирма
 No outstanding balance.,Очиқ қарз йўқ.
 "The server returned a capped page; this total covers the rows loaded, not the whole book.","Сервер чекланган саҳифа қайтарди; бу жами юкланган қаторларни қамраб олади, бутун китобни эмас."
+Activity,Фаолият
+All records,Барча ёзувлар
+Consolidated View,Жамланган кўриниш
+Create your first customer to start invoicing.,Ҳисоб-фактура чиқаришни бошлаш учун биринчи мижозни яратинг.
+Include child transactions,Тобе контрагентлар операцияларини қўшиш
+Lifetime,Бутун давр
+Monthly movement,Ойлик ҳаракат
+New Invoice,Янги ҳисоб-фактура
+No child records.,Тобе ёзувлар йўқ.
+No contact details recorded.,Алоқа маълумотлари киритилмаган.
+No outstanding balances.,Тўланмаган қолдиқлар йўқ.
+No quotations found.,Таклифлар топилмади.
+No records,Ёзувлар йўқ
+Not due,Муддати келмаган
+Not enough data to analyse yet.,Таҳлил учун ҳозирча маълумот етарли эмас.
+Nothing to show.,Кўрсатиладиган нарса йўқ.
+Open items by age,Очиқ позициялар муддати бўйича
+Parent Only View,Фақат бош контрагентлар
+Party Center,Контрагентлар маркази
+Payments today,Бугунги тўловлар
+Receivables trend (8 weeks),Дебиторлик қарзи динамикаси (8 ҳафта)
+Resize list panel,Рўйхат панелининг кенглигини ўзгартириш
+Search customers… ⌘K,Мижозларни қидириш… ⌘K
+Search voucher… ⌘K,Ҳужжатни қидириш… ⌘K
+Search… ⌘K,Қидириш… ⌘K
+Top 10,Топ-10
+Top debtors,Энг катта қарздорлар
+Trend (last 8 weeks),Динамика (охирги 8 ҳафта)
+Voucher type,Ҳужжат тури
+Search suppliers… ⌘K,Етказиб берувчиларни қидириш… ⌘K
