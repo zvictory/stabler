@@ -630,6 +630,55 @@ class CIPackingGrnIntegrationTest(FrappeTestCase):
 		with self.assertRaisesRegex(frappe.ValidationError, "through GRN Checklist"):
 			new_row.insert(ignore_permissions=True)
 
+	def test_unlocked_existing_grn_rejects_all_snapshot_managed_changes(self):
+		"""An unlocked GRN is not an editable GRN.
+
+		Before the lock is armed the expected rows are still the derived packing-list
+		snapshot, and the LCV / variance report are measured against them. If a direct
+		save could rewrite them — or forge ``expected_snapshot_locked`` to 1 so a
+		hand-typed snapshot looked frozen — the frozen figure would no longer describe
+		what was actually shipped, and the freeze is one-way so nothing later corrects it.
+		"""
+		grn_name = imports.create_grn_for_ci(self.ci.name)["name"]
+		other_ci = self._new_ci()
+		other_item = frappe.db.get_value("Item", {"name": ["!=", self.item], "disabled": 0}, "name")
+		self.assertIsNotNone(other_item)
+		mutations = {
+			"company": lambda doc: setattr(doc, "company", self.other_company.name),
+			"commercial invoice": lambda doc: setattr(doc, "commercial_invoice", other_ci.name),
+			"forged lock": lambda doc: setattr(doc, "expected_snapshot_locked", 1),
+			"forged lock time": lambda doc: setattr(
+				doc, "expected_snapshot_locked_at", frappe.utils.now_datetime()
+			),
+			"expected item": lambda doc: setattr(doc.grn_items[0], "item_code", other_item),
+			"expected boxes": lambda doc: setattr(doc.grn_items[0], "expected_boxes", 99),
+			"expected box kg": lambda doc: setattr(doc.grn_items[0], "expected_box_kg", 99),
+			"expected total kg": lambda doc: setattr(doc.grn_items[0], "expected_total_kg", 99),
+			"add expected row": lambda doc: doc.append(
+				"grn_items", {"item_code": self.item, "expected_total_kg": 1}
+			),
+			"delete expected row": lambda doc: doc.remove(doc.grn_items[0]),
+		}
+		for index, (label, mutate) in enumerate(mutations.items()):
+			with self.subTest(change=label):
+				savepoint = f"unlocked_snapshot_{index}"
+				frappe.db.savepoint(savepoint)
+				try:
+					doc = frappe.get_doc("GRN Checklist", grn_name)
+					mutate(doc)
+					with self.assertRaisesRegex(frappe.ValidationError, "snapshot-managed fields"):
+						doc.save(ignore_permissions=True)
+				finally:
+					frappe.db.rollback(save_point=savepoint)
+
+		# A document-level flag is not the gate; only the request-level frappe flag set by
+		# packing_service.allow_expected_snapshot_update() is.
+		spoofed = frappe.get_doc("GRN Checklist", grn_name)
+		spoofed.flags.allow_expected_snapshot_update = True
+		spoofed.grn_items[0].expected_total_kg = 99
+		with self.assertRaisesRegex(frappe.ValidationError, "snapshot-managed fields"):
+			spoofed.save(ignore_permissions=True)
+
 	def test_locked_grn_allows_notes_and_receipt_recompute(self):
 		from stabler.stabler.imports_module import hooks
 
@@ -704,7 +753,10 @@ class CIPackingGrnIntegrationTest(FrappeTestCase):
 		grn_name = imports.create_grn_for_ci(self.ci.name)["name"]
 		grn = frappe.get_doc("GRN Checklist", grn_name)
 		grn.grn_items[0].expected_total_kg = 1
-		grn.save(ignore_permissions=True)
+		# Shrinking the expected snapshot is a snapshot-managed change, so it has to go
+		# through the same gate the receipt workflow uses.
+		with packing_service.allow_expected_snapshot_update():
+			grn.save(ignore_permissions=True)
 		receipt = self._new_receipt(grn_name, self._new_truck())
 		receipt.insert(ignore_permissions=True)
 		frappe.db.savepoint("before_failed_receipt")
@@ -753,6 +805,140 @@ class CIPackingGrnIntegrationTest(FrappeTestCase):
 
 
 class CIPackingGrnConcurrencyTest(FrappeTestCase):
+	def test_stale_rr_permission_view_retries_then_fresh_freeze_includes_new_container(self):
+		from stabler.stabler.imports_module import hooks
+
+		"""A container inserted mid-freeze must not be silently frozen out.
+
+		The freezing session opens its repeatable-read view, another session commits a new
+		container for the same CI, and only then does the freeze reach the lock. A record
+		lock on the names the first session read cannot see that row, so the snapshot would
+		freeze on an incomplete packing set — and the freeze is one-way. The range lock makes
+		the divergence visible: the freeze fails, stays unlocked, and a fresh read then sees
+		both containers.
+		"""
+
+		company = frappe.db.get_value("Company", {}, "name")
+		supplier = frappe.db.get_value("Supplier", {}, "name")
+		item = frappe.db.get_value("Item", {"disabled": 0}, "name")
+		if not all((company, supplier, item)):
+			self.skipTest("Company, Supplier and Item fixtures are required")
+
+		ci = frappe.new_doc("Commercial Invoice")
+		ci.update(
+			{
+				"company": company,
+				"supplier": supplier,
+				"ci_number": frappe.generate_hash(length=10),
+				"ci_date": frappe.utils.today(),
+			}
+		)
+		ci.append("items", {"item": item, "qty": 300, "boxes": 15, "box_weight_kg": 20})
+		ci.insert(ignore_permissions=True)
+		container = frappe.new_doc("Import Container")
+		container.update(
+			{
+				"company": company,
+				"commercial_invoice": ci.name,
+				"container_number": f"STALE-{frappe.generate_hash(length=6)}",
+			}
+		)
+		container.append(
+			"items", {"item_code": item, "box_qty": 15, "box_kg": 20, "total_kg": 300}
+		)
+		container.insert(ignore_permissions=True)
+		grn_name = packing_service.create_or_get_grn(ci, ignore_permissions=True)["name"]
+		frappe.db.commit()
+
+		site = frappe.local.site
+		read_view_opened = threading.Event()
+		allow_ci_lock = threading.Event()
+		freeze_errors: list[BaseException] = []
+		writer_errors: list[BaseException] = []
+		new_container_names: list[str] = []
+		original_lock = packing_service.lock_commercial_invoices
+
+		def delayed_ci_lock(names):
+			if threading.current_thread().name == "stale-freeze":
+				read_view_opened.set()
+				if not allow_ci_lock.wait(timeout=10):
+					raise AssertionError("Timed out waiting to acquire CI lock")
+			return original_lock(names)
+
+		def freeze_with_stale_view():
+			frappe.init(site)
+			frappe.connect()
+			try:
+				hooks._lock_grn_expected_snapshot(grn_name)
+				frappe.db.commit()
+			except BaseException as exc:
+				freeze_errors.append(exc)
+				frappe.db.rollback()
+			finally:
+				frappe.destroy()
+
+		def add_empty_container():
+			frappe.init(site)
+			frappe.connect()
+			try:
+				new_container = frappe.new_doc("Import Container")
+				new_container.update(
+					{
+						"company": company,
+						"commercial_invoice": ci.name,
+						"container_number": f"NEW-{frappe.generate_hash(length=6)}",
+					}
+				)
+				new_container.insert(ignore_permissions=True)
+				new_container_names.append(new_container.name)
+				frappe.db.commit()
+			except BaseException as exc:
+				writer_errors.append(exc)
+				frappe.db.rollback()
+			finally:
+				frappe.destroy()
+
+		freeze_thread = threading.Thread(target=freeze_with_stale_view, name="stale-freeze")
+		writer_thread = threading.Thread(target=add_empty_container, name="scope-writer")
+		try:
+			with patch.object(
+				packing_service, "lock_commercial_invoices", side_effect=delayed_ci_lock
+			):
+				freeze_thread.start()
+				self.assertTrue(read_view_opened.wait(timeout=10))
+				writer_thread.start()
+				writer_thread.join(timeout=10)
+				self.assertFalse(writer_thread.is_alive())
+				self.assertEqual(writer_errors, [])
+				allow_ci_lock.set()
+				freeze_thread.join(timeout=10)
+				self.assertFalse(freeze_thread.is_alive())
+
+			self.assertFalse(
+				frappe.db.get_value(
+					"GRN Checklist", grn_name, "expected_snapshot_locked"
+				)
+			)
+			self.assertEqual(len(freeze_errors), 1)
+			self.assertIsInstance(freeze_errors[0], frappe.ValidationError)
+			self.assertIn("try again", str(freeze_errors[0]).lower())
+			frappe.db.rollback()
+			fresh = packing_service.summary_for_ci(ci.name, company)
+			self.assertEqual(fresh["container_count"], 2)
+			self.assertEqual(fresh["status"], "Incomplete")
+		finally:
+			allow_ci_lock.set()
+			for thread in (freeze_thread, writer_thread):
+				if thread.ident is not None:
+					thread.join(timeout=10)
+			frappe.db.rollback()
+			frappe.delete_doc("GRN Checklist", grn_name, force=True, ignore_permissions=True)
+			for name in new_container_names:
+				frappe.delete_doc("Import Container", name, force=True, ignore_permissions=True)
+			frappe.delete_doc("Import Container", container.name, force=True, ignore_permissions=True)
+			frappe.delete_doc("Commercial Invoice", ci.name, force=True, ignore_permissions=True)
+			frappe.db.commit()
+
 	def test_reverse_order_container_lock_retries_without_deadlock_then_freezes_new_state(self):
 		from stabler.stabler.imports_module import hooks
 

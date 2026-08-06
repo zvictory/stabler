@@ -31,18 +31,37 @@ class GRNChecklist(Document):
 		self.update_totals()
 
 	def _validate_locked_snapshot(self) -> None:
+		"""Snapshot-managed fields may only change through the receipt workflow.
+
+		The guard used to arm itself only once ``expected_snapshot_locked`` was already
+		set, which left two holes: an unlocked-but-saved GRN's expected rows could be
+		rewritten by any direct save, and ``expected_snapshot_locked`` /
+		``expected_snapshot_locked_at`` could be forged 0 -> 1 so a snapshot that was
+		never derived from the packing lists looked frozen. Both matter because the
+		expected quantities are what the Landed Cost Voucher and the variance report are
+		measured against. Every legitimate writer (``hooks._lock_grn_expected_snapshot``,
+		``imports.refresh_grn_expected_quantities``) already runs inside
+		``packing_service.allow_expected_snapshot_update()``, so the guard is now
+		unconditional and the ``frappe.flags`` gate is the only way through.
+		"""
 		before = self.get_doc_before_save()
-		if not before or not cint(before.expected_snapshot_locked):
+		if not before:
 			return
 		if frappe.flags.get("in_grn_snapshot_update"):
 			return
 		if (
 			self.company != before.company
 			or self.commercial_invoice != before.commercial_invoice
-			or not cint(self.expected_snapshot_locked)
+			or cint(self.expected_snapshot_locked) != cint(before.expected_snapshot_locked)
+			or self.expected_snapshot_locked_at != before.expected_snapshot_locked_at
 			or self._expected_signature(self.grn_items) != self._expected_signature(before.grn_items)
 		):
-			frappe.throw(frappe._("The GRN identity and expected snapshot is locked after first receipt."))
+			frappe.throw(
+				frappe._(
+					"GRN snapshot is locked against direct edits; snapshot-managed fields "
+					"can only be changed by the receipt workflow."
+				)
+			)
 
 	@staticmethod
 	def _expected_signature(rows) -> tuple:

@@ -122,21 +122,32 @@ def summary_for_ci(commercial_invoice: str, company: str, *, for_update: bool = 
 
 
 def _lock_visible_containers(commercial_invoice: str, company: str, container_names: list[str]) -> list:
-	if not container_names:
-		return []
-	placeholders = ", ".join(["%s"] * len(container_names))
+	"""Lock the whole (commercial_invoice, company) range, not just the rows we read.
+
+	``name IN (…)`` only takes record locks on rows the caller already listed, so it is
+	phantom-blind: a container inserted after ``get_list()`` — by a concurrent session, or
+	simply invisible to our repeatable-read snapshot — is neither locked nor noticed. The
+	packing summary is then computed as if that container did not exist and the GRN
+	expected snapshot freezes short, permanently, because the freeze is one-way. Locking
+	on the predicate takes the gap locks too, and the set comparison below turns the
+	divergence into a retry instead of a silent short freeze.
+
+	The permission shortfall (rows exist that the caller may not read) is caught earlier
+	in ``summary_for_ci`` by the count check, so a mismatch here is always transient:
+	either ``SKIP LOCKED`` dropped a row another session holds, or the range read saw a
+	row our snapshot did not. Both are reported as contention.
+	"""
 	containers = frappe.db.sql(
-		f"""SELECT name, container_number
+		"""SELECT name, container_number
 		FROM `tabImport Container`
 		WHERE commercial_invoice = %s
 			AND company = %s
-			AND name IN ({placeholders})
 		ORDER BY creation ASC
 		FOR UPDATE SKIP LOCKED""",
-		(commercial_invoice, company, *container_names),
+		(commercial_invoice, company),
 		as_dict=True,
 	)
-	if len(containers) != len(container_names):
+	if {row.name for row in containers} != set(container_names):
 		frappe.throw(frappe._("Container packing is being changed by another user. Please try again."))
 	return containers
 
