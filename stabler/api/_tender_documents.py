@@ -116,6 +116,38 @@ def parse_doc_requirements(raw: Any) -> list[dict[str, Any]]:
 	return cleaned
 
 
+def apply_ready_audit(intake: dict[str, Any], requirements: list[dict[str, Any]], actor: str, stamp: str):
+	"""Keep the ready-gate audit in step with the document facts.
+
+	Readiness is "decision is go AND no required document is still missing",
+	but the dashboard does not read that condition — it reads ``ready_at`` /
+	``ready_by``, because a funnel needs the *date* the tender became ready,
+	not just that it is. Those two fields are therefore a transition record,
+	and something has to write them the moment the condition flips.
+
+	The intake editor did. The document center did not: upload/waive/remove
+	write files straight to the stored blob, so attaching the last required
+	file satisfied the gate while the audit stayed empty — the lot was ready
+	and still never appeared in the ready bucket — and detaching a file left a
+	stale audit behind that claimed it was.
+
+	``was_ready`` reads the audit, not the prior checklist, so a lot whose
+	transition was missed by that gap heals on the next write instead of
+	staying invisible forever.
+	"""
+	was_ready = bool(intake.get("ready_at") and intake.get("ready_by"))
+	is_ready = intake.get("go_no_go") == "go" and not any(
+		r.get("required") and not r.get("done") for r in requirements
+	)
+	if is_ready and not was_ready:
+		intake["ready_at"] = stamp
+		intake["ready_by"] = actor
+	elif not is_ready:
+		intake["ready_at"] = ""
+		intake["ready_by"] = ""
+	return intake
+
+
 def docs_summary(requirements: list[dict[str, Any]], role: str | None = None) -> dict[str, Any]:
 	"""Compute documents summary metrics based on derived completion, optionally filtered by role."""
 	if role is not None:

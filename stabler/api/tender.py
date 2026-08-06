@@ -1359,6 +1359,8 @@ def _clean_intake(data: dict, prior: dict | None = None, audit_actor: str | None
 	never read from ``data``.  Existing facts survive an unchanged decision;
 	changing a decision records a fresh server timestamp and actor instead.
 	"""
+	from stabler.api._tender_documents import apply_ready_audit
+
 	prior = prior or {}
 	out = {k: str(data.get(k) or "").strip()[:200] for k in _INTAKE_KEYS_STR}
 	for k in _INTAKE_KEYS_NUM:
@@ -1402,21 +1404,12 @@ def _clean_intake(data: dict, prior: dict | None = None, audit_actor: str | None
 	# trusted from the client. This keeps _clean_intake and the dedicated document
 	# endpoints (upload/waive) over the same single source of truth.
 	out["documents"] = _merge_client_documents(data.get("documents") or [], prior.get("documents") or [])[:40]
-	prior_ready = prior.get("go_no_go") == "go" and not any(
-		d.get("required") and not d.get("done") for d in (prior.get("documents") or [])
-	)
-	current_ready = out["go_no_go"] == "go" and not any(
-		d.get("required") and not d.get("done") for d in out["documents"]
-	)
-	if current_ready and prior_ready:
-		out["ready_at"] = str(prior.get("ready_at") or "")[:40]
-		out["ready_by"] = str(prior.get("ready_by") or "")[:140]
-	elif current_ready:
-		out["ready_at"] = now()
-		out["ready_by"] = actor
-	else:
-		out["ready_at"] = ""
-		out["ready_by"] = ""
+	# The transition rule is shared with the document endpoints, which also move
+	# a lot across the ready line (see apply_ready_audit). Carry the prior audit
+	# in first so an unchanged decision keeps its original timestamp.
+	out["ready_at"] = str(prior.get("ready_at") or "")[:40]
+	out["ready_by"] = str(prior.get("ready_by") or "")[:140]
+	apply_ready_audit(out, out["documents"], actor, now())
 	return out
 
 

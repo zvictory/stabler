@@ -746,6 +746,11 @@ class TestTenderDashboardBehaviour(unittest.TestCase):
 		self.assertEqual((august["identified"], august["go"], august["submitted"]), (0, 0, 0))
 
 	def test_ready_transition_occurs_when_required_documents_complete(self):
+		# An attachment is a server fact: it arrives through the document
+		# center, which writes it into the stored intake. The editor may not
+		# submit one — a browser that could would be able to declare itself
+		# ready. So the fixture is the deal as it stands right after that
+		# upload: the file is there, the transition audit is not yet.
 		db = _FakeDB(
 			{
 				"DEAL-READY": {
@@ -753,7 +758,14 @@ class TestTenderDashboardBehaviour(unittest.TestCase):
 					"go_no_go_at": "2026-06-04 10:00:00",
 					"go_no_go_by": "source@example.com",
 					"assigned_to": "source@example.com",
-					"documents": [{"label": "Bid security", "required": 1, "done": 0, "date": ""}],
+					"documents": [
+						{
+							"label": "Bid security",
+							"required": 1,
+							"date": "2026-07-22",
+							"files": [{"file_name": "bid_security.pdf"}],
+						}
+					],
 				},
 			}
 		)
@@ -763,14 +775,7 @@ class TestTenderDashboardBehaviour(unittest.TestCase):
 			"DEAL-READY",
 			{
 				"go_no_go": "go",
-				"documents": [
-					{
-						"label": "Bid security",
-						"required": 1,
-						"date": "2026-07-22",
-						"files": [{"file_name": "bid_security.pdf"}],
-					}
-				],
+				"documents": [{"label": "Bid security", "required": 1, "date": "2026-07-22"}],
 			},
 		)
 
@@ -784,51 +789,40 @@ class TestTenderDashboardBehaviour(unittest.TestCase):
 		self.assertEqual((july["go"], july["ready"]), (0, 1))
 
 	def test_ready_regression_clears_audit_and_recompletion_records_a_new_transition(self):
-		db = _FakeDB(
-			{
-				"DEAL-READY": {
-					"go_no_go": "go",
-					"go_no_go_at": "2026-06-04 10:00:00",
-					"ready_at": "2026-07-01 08:00:00",
-					"ready_by": "first@example.com",
-					"documents": [
-						{
-							"label": "Bid security",
-							"required": 1,
-							"date": "",
-							"files": [{"file_name": "bid_security.pdf"}],
-						}
-					],
-				},
-			}
-		)
-		tender = _load_tender(db, ["Sales User"], user="second@example.com")
+		# A lot regresses when the document center detaches the file, not when
+		# the editor stops listing it — the editor cannot take a file away any
+		# more than it can add one. Every writer of that fact goes through
+		# apply_ready_audit, so the rule is exercised where it lives.
+		#
+		# Both halves matter and only together: a stale ready_at would keep an
+		# incomplete lot counted as ready, and a re-completion that reused the
+		# old timestamp would file the second transition under the first one's
+		# month.
+		from stabler.api._tender_documents import apply_ready_audit
 
-		regressed = tender.save_deal_intake(
-			"DEAL-READY",
-			{
-				"go_no_go": "go",
-				"documents": [{"label": "Bid security", "required": 1, "done": 0, "date": ""}],
-			},
-		)
-		self.assertEqual((regressed["intake"]["ready_at"], regressed["intake"]["ready_by"]), ("", ""))
+		intake = {
+			"go_no_go": "go",
+			"go_no_go_at": "2026-06-04 10:00:00",
+			"ready_at": "2026-07-01 08:00:00",
+			"ready_by": "first@example.com",
+		}
 
-		recompleted = tender.save_deal_intake(
-			"DEAL-READY",
-			{
-				"go_no_go": "go",
-				"documents": [
-					{
-						"label": "Bid security",
-						"required": 1,
-						"date": "",
-						"files": [{"file_name": "bid_security.pdf"}],
-					}
-				],
-			},
+		apply_ready_audit(
+			intake,
+			[{"label": "Bid security", "required": True, "done": False}],
+			"second@example.com",
+			"2026-07-22 09:00:00",
 		)
-		self.assertEqual(recompleted["intake"]["ready_at"], "2026-07-22 09:00:00")
-		self.assertEqual(recompleted["intake"]["ready_by"], "second@example.com")
+		self.assertEqual((intake["ready_at"], intake["ready_by"]), ("", ""))
+
+		apply_ready_audit(
+			intake,
+			[{"label": "Bid security", "required": True, "done": True}],
+			"second@example.com",
+			"2026-07-22 09:00:00",
+		)
+		self.assertEqual(intake["ready_at"], "2026-07-22 09:00:00")
+		self.assertEqual(intake["ready_by"], "second@example.com")
 
 	def test_ready_filter_requires_complete_server_audit_evidence(self):
 		db = _FakeDB({"DEAL-READY": {}})

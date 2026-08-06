@@ -21,7 +21,7 @@ import frappe
 from frappe import _
 from frappe.utils import now
 
-from stabler.api._tender_documents import docs_summary, parse_doc_requirements
+from stabler.api._tender_documents import apply_ready_audit, docs_summary, parse_doc_requirements
 from stabler.api.tender import _require_tender, _require_tender_view
 from stabler.api.tender_master import _assert_company_scope
 
@@ -137,6 +137,11 @@ def _save_requirements(target_doc, fieldname: str, reqs: list, is_master_req: bo
 			else (raw if isinstance(raw, dict) else {})
 		)
 		intake["documents"] = reqs
+		# Attaching the last required file is a lifecycle transition, not just a
+		# file write: without this the lot satisfies the ready gate but carries
+		# no ready_at, so _has_ready_evidence reads it as not ready and it never
+		# reaches the acquisition funnel's ready bucket.
+		apply_ready_audit(intake, reqs, frappe.session.user, now())
 		target_doc.db_set(fieldname, json.dumps(intake, ensure_ascii=False))
 
 
