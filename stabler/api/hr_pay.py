@@ -95,7 +95,7 @@ def _duty_supplements(emp: dict) -> list:
 	"""Map the per-employee duty-supplement % onto the engine's list input."""
 	try:
 		pct = float(emp.get("duty_supplement_pct") or 0)
-	except (TypeError, ValueError):
+	except TypeError, ValueError:
 		pct = 0.0
 	return [{"pct": pct}] if pct else []
 
@@ -169,7 +169,7 @@ def set_kpi_performance(summary_name: str, pct) -> dict:
 	_assert_company_scope(company)  # tenant isolation: reject a foreign company arg
 	try:
 		value = float(pct)
-	except (TypeError, ValueError):
+	except TypeError, ValueError:
 		frappe.throw(_("KPI performance must be a number."))
 	if value < 0 or value > 100:
 		frappe.throw(_("KPI performance must be between 0 and 100."))
@@ -196,7 +196,7 @@ def set_advance_deduction(summary_name: str, amount) -> dict:
 	_assert_company_scope(company)  # tenant isolation: reject a foreign company arg
 	try:
 		value = flt(amount)
-	except (TypeError, ValueError):
+	except TypeError, ValueError:
 		frappe.throw(_("Advance deduction must be a number."))
 	if value < 0:
 		frappe.throw(_("Advance deduction cannot be negative."))

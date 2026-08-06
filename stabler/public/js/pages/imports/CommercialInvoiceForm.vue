@@ -40,6 +40,38 @@ const form = ref(blankForm());
 // must not treat an empty remaining list as "fully shipped".
 const piTrackingFailed = ref(false);
 
+const transportData = ref(null);
+const loadingTransport = ref(false);
+
+const containerTransportMap = computed(() => {
+	const map = {};
+	if (transportData.value?.by_container) {
+		for (const item of transportData.value.by_container) {
+			map[item.container] = item.amount;
+		}
+	}
+	return map;
+});
+
+async function fetchTransportCosts() {
+	if (isCreate.value || !docName.value) {
+		transportData.value = null;
+		return;
+	}
+	loadingTransport.value = true;
+	try {
+		const res = await call("stabler.api.imports.ci_transport_costs", {
+			commercial_invoice: docName.value,
+		});
+		transportData.value = res || null;
+	} catch (err) {
+		console.error("Failed to load transport costs", err);
+		transportData.value = null;
+	} finally {
+		loadingTransport.value = false;
+	}
+}
+
 // Fallback carton weight when a PI line carries no box_weight_kg.
 const DEFAULT_BOX_WEIGHT_KG = 20;
 
@@ -527,6 +559,7 @@ async function loadDoc() {
 		};
 		loadLineCategories();
 		await refreshPiTracking();
+		await fetchTransportCosts();
 	} catch (err) {
 		error.value = err?.message || t("Failed to load the commercial invoice.");
 	} finally {
@@ -1167,15 +1200,6 @@ watch(activeCompany, loadRefData);
 			</div>
 		</div>
 
-		<CiLogisticsOverview
-			v-if="!isCreate && form.name"
-			:commercial-invoice="form.name"
-			:packing-summary="form.packing_summary"
-			:grn="form.grn"
-			:loading="loading"
-			@reload="loadDoc"
-		/>
-
 		<!-- Top Metric Strip -->
 		<div class="row row-cards mb-3">
 			<div class="col-sm-6 col-lg-3">
@@ -1206,7 +1230,18 @@ watch(activeCompany, loadRefData);
 					</div>
 				</div>
 			</div>
-			<div class="col-sm-6 col-lg-3">
+			<div v-if="transportData && transportData.totals && transportData.totals.transport > 0" class="col-sm-6 col-lg-3">
+				<div class="card card-sm">
+					<div class="card-body">
+						<div class="font-weight-medium text-secondary small">{{ t("Transport expenses") }}</div>
+						<div class="h3 mb-0 font-monospace text-purple fw-bold">{{ fm(transportData.totals.transport, transportData.currency) }}</div>
+						<div class="text-secondary mt-1" style="font-size:0.75rem">
+							{{ fm(transportData.totals.per_container, transportData.currency) }} / {{ t("container") }} · {{ fm(transportData.totals.per_kg, transportData.currency) }} / kg
+						</div>
+					</div>
+				</div>
+			</div>
+			<div v-else class="col-sm-6 col-lg-3">
 				<div class="card card-sm">
 					<div class="card-body">
 						<div class="font-weight-medium text-secondary small">{{ t("Categories") }}</div>
@@ -1484,13 +1519,14 @@ watch(activeCompany, loadRefData);
 				<h3 class="card-title"><i class="ti ti-box me-2"></i>{{ t("Linked Containers") }}</h3>
 			</div>
 			<div class="table-responsive">
-				<table class="table table-vcenter table-hover">
+				<table class="table table-vcenter table-hover mb-0">
 					<thead>
 						<tr>
 							<th>{{ t("Container Number") }}</th>
 							<th>{{ t("Status") }}</th>
 							<th class="text-end">{{ t("Boxes") }}</th>
 							<th class="text-end">{{ t("Total Weight (kg)") }}</th>
+							<th class="text-end">{{ t("Transport by container") }}</th>
 						</tr>
 					</thead>
 					<tbody>
@@ -1499,9 +1535,291 @@ watch(activeCompany, loadRefData);
 							<td><span class="badge bg-secondary-lt">{{ cnt.status }}</span></td>
 							<td class="text-end font-monospace">{{ fn(cnt.total_boxes) }}</td>
 							<td class="text-end font-monospace fw-semibold">{{ fn(cnt.total_kg) }} kg</td>
+							<td class="text-end font-monospace text-azure fw-semibold">
+								{{ containerTransportMap[cnt.name] ? fm(containerTransportMap[cnt.name], form.currency) : "—" }}
+							</td>
 						</tr>
 					</tbody>
+					<tfoot v-if="transportData && transportData.totals">
+						<tr class="fw-bold">
+							<td colspan="4" class="text-end">{{ t("Totals") }}</td>
+							<td class="text-end font-monospace text-azure">{{ fm(transportData.totals.transport, transportData.currency) }}</td>
+						</tr>
+					</tfoot>
 				</table>
+			</div>
+		</div>
+
+		<!-- Transport Expenses Card -->
+		<div v-if="!isCreate" class="card mb-3">
+			<div class="card-header d-flex align-items-center justify-content-between">
+				<h3 class="card-title m-0">
+					<i class="ti ti-truck me-2 text-primary"></i>{{ t("Transport expenses") }}
+				</h3>
+				<div class="card-actions">
+					<button
+						type="button"
+						class="btn btn-outline-primary btn-sm fw-bold"
+						@click="router.push('/imports/expenses')"
+					>
+						<i class="ti ti-plus me-1"></i>{{ t("Add expense") }}
+					</button>
+				</div>
+			</div>
+
+			<!-- Skeleton Loading -->
+			<div v-if="loadingTransport" class="card-body">
+				<SkeletonRows :rows="3" />
+			</div>
+
+			<!-- Empty State -->
+			<div v-else-if="!transportData || !transportData.rows || !transportData.rows.length" class="card-body text-center py-4 text-secondary">
+				<i class="ti ti-truck-off fs-1 d-block mb-2 text-muted"></i>
+				<div>{{ t("No transport expenses yet.") }}</div>
+				<button type="button" class="btn btn-outline-primary btn-sm mt-3" @click="router.push('/imports/expenses')">
+					<i class="ti ti-plus me-1"></i>{{ t("Add expense") }}
+				</button>
+			</div>
+
+			<!-- Filled Card -->
+			<div v-else class="card-body">
+				<!-- Note line -->
+				<div class="text-secondary small mb-3">
+					<i class="ti ti-info-circle me-1"></i>{{ t("Transport costs belong to third-party carriers. Expenses linked directly to a container are allocated directly; unassigned costs are distributed by weight.") }}
+				</div>
+
+				<!-- 3 Summary Metrics -->
+				<div class="row row-cards mb-3">
+					<div class="col-sm-4">
+						<div class="card card-sm bg-light-subtle">
+							<div class="card-body">
+								<div class="font-weight-medium text-secondary small">{{ t("Total transport") }}</div>
+								<div class="h3 mb-0 font-monospace text-primary fw-bold">
+									{{ fm(transportData.totals.transport, transportData.currency) }}
+								</div>
+							</div>
+						</div>
+					</div>
+					<div class="col-sm-4">
+						<div class="card card-sm bg-light-subtle">
+							<div class="card-body">
+								<div class="font-weight-medium text-secondary small">{{ t("Per container") }}</div>
+								<div class="h3 mb-0 font-monospace text-azure fw-bold">
+									{{ fm(transportData.totals.per_container, transportData.currency) }}
+								</div>
+							</div>
+						</div>
+					</div>
+					<div class="col-sm-4">
+						<div class="card card-sm bg-light-subtle">
+							<div class="card-body">
+								<div class="font-weight-medium text-secondary small">{{ t("Per kg") }}</div>
+								<div class="h3 mb-0 font-monospace text-purple fw-bold">
+									{{ fm(transportData.totals.per_kg, transportData.currency) }}
+								</div>
+							</div>
+						</div>
+					</div>
+				</div>
+
+				<!-- Payment Progress Bar -->
+				<div class="mb-4">
+					<div class="d-flex justify-content-between align-items-center small text-secondary mb-1">
+						<span>{{ t("Payment progress") }}</span>
+						<span v-if="transportData.totals.paid === null" class="font-monospace fw-bold">•••</span>
+						<span v-else class="font-monospace">
+							{{ t("paid {pct}% · {outstanding} to pay", {
+								pct: transportData.totals.transport > 0 ? Math.min(100, Math.round(((transportData.totals.paid || 0) / transportData.totals.transport) * 100)) : 0,
+								outstanding: fm(transportData.totals.outstanding, transportData.currency)
+							}) }}
+						</span>
+					</div>
+					<div class="progress progress-sm">
+						<div
+							class="progress-bar bg-success"
+							:style="{
+								width: (transportData.totals.paid !== null && transportData.totals.transport > 0)
+									? Math.min(100, Math.round(((transportData.totals.paid || 0) / transportData.totals.transport) * 100)) + '%'
+									: '0%'
+							}"
+						></div>
+					</div>
+				</div>
+
+				<!-- Mini Table: By Carriers -->
+				<div v-if="transportData.by_vendor && transportData.by_vendor.length" class="mb-4">
+					<h4 class="card-title mb-2">{{ t("By carriers") }}</h4>
+					<div class="table-responsive">
+						<table class="table table-sm table-bordered align-middle">
+							<thead class="table-light">
+								<tr>
+									<th>{{ t("Service provider") }}</th>
+									<th class="text-center" style="width: 80px">{{ t("Docs") }}</th>
+									<th class="text-end" style="width: 140px">{{ t("Agreed Total") }}</th>
+									<th class="text-end" style="width: 140px">{{ t("Paid") }}</th>
+									<th class="text-end" style="width: 140px">{{ t("Outstanding") }}</th>
+								</tr>
+							</thead>
+							<tbody>
+								<tr v-for="v in transportData.by_vendor" :key="v.supplier">
+									<td class="fw-semibold">{{ v.supplier_name || v.supplier }}</td>
+									<td class="text-center font-monospace">{{ v.docs }}</td>
+									<td class="text-end font-monospace">{{ fm(v.amount, transportData.currency) }}</td>
+									<td class="text-end font-monospace text-success">
+										{{ v.paid !== null ? fm(v.paid, transportData.currency) : "•••" }}
+									</td>
+									<td class="text-end font-monospace" :class="(v.outstanding !== null && v.outstanding > 0) ? 'text-danger fw-bold' : ''">
+										{{ v.outstanding !== null ? fm(v.outstanding, transportData.currency) : "•••" }}
+									</td>
+								</tr>
+							</tbody>
+							<tfoot>
+								<tr class="fw-bold table-light">
+									<td>{{ t("Totals") }}</td>
+									<td class="text-center font-monospace">{{ transportData.by_vendor.reduce((acc, x) => acc + (x.docs || 0), 0) }}</td>
+									<td class="text-end font-monospace">{{ fm(transportData.totals.transport, transportData.currency) }}</td>
+									<td class="text-end font-monospace text-success">
+										{{ transportData.totals.paid !== null ? fm(transportData.totals.paid, transportData.currency) : "•••" }}
+									</td>
+									<td class="text-end font-monospace" :class="(transportData.totals.outstanding !== null && transportData.totals.outstanding > 0) ? 'text-danger' : ''">
+										{{ transportData.totals.outstanding !== null ? fm(transportData.totals.outstanding, transportData.currency) : "•••" }}
+									</td>
+								</tr>
+							</tfoot>
+						</table>
+					</div>
+				</div>
+
+				<!-- Table: Expense Documents -->
+				<div class="mb-3">
+					<h4 class="card-title mb-2">{{ t("Expense documents") }}</h4>
+					<div class="table-responsive">
+						<table class="table table-sm table-hover align-middle">
+							<thead>
+								<tr>
+									<th>{{ t("Vendor Category") }}</th>
+									<th>{{ t("Carrier / carrier invoice") }}</th>
+									<th>{{ t("System document") }}</th>
+									<th>{{ t("Container") }}</th>
+									<th class="text-end">{{ t("Agreed Total") }}</th>
+									<th class="text-end">{{ t("Paid") }}</th>
+									<th>{{ t("Status") }}</th>
+									<th style="width: 40px"></th>
+								</tr>
+							</thead>
+							<tbody>
+								<tr
+									v-for="exp in transportData.rows.filter(r => r.is_transport)"
+									:key="exp.name"
+									style="cursor: pointer"
+									@click="router.push('/imports/expenses')"
+								>
+									<td><span class="badge bg-blue-lt">{{ exp.category }}</span></td>
+									<td>
+										<div class="fw-semibold text-dark">{{ exp.supplier_name || exp.supplier }}</div>
+										<div class="small text-secondary font-monospace">
+											{{ exp.invoice_reference || "—" }} <span v-if="exp.expense_date">· {{ formatDate(exp.expense_date) }}</span>
+										</div>
+									</td>
+									<td>
+										<router-link
+											v-if="exp.purchase_invoice"
+											:to="'/purchasing/invoices/' + exp.purchase_invoice"
+											class="font-monospace fw-bold text-primary"
+											@click.stop
+										>
+											{{ exp.purchase_invoice }}
+										</router-link>
+										<span v-else class="badge bg-warning-lt">{{ t("Not posted") }}</span>
+										<div class="small text-secondary font-monospace">{{ exp.name }}</div>
+									</td>
+									<td>
+										<span v-if="exp.allocation === 'direct'">
+											<router-link :to="'/imports/containers/' + exp.container" class="font-monospace text-primary fw-bold" @click.stop>{{ exp.container }}</router-link>
+											<span class="badge bg-blue-lt ms-1">{{ t("direct link") }}</span>
+										</span>
+										<span v-else-if="exp.allocation === 'weight'">
+											<span class="font-monospace">{{ transportData.totals.containers }} {{ t("cont.") }}</span>
+											<span class="badge bg-secondary-lt ms-1">{{ t("by weight") }}</span>
+										</span>
+										<span v-else-if="exp.allocation === 'equal'">
+											<span class="font-monospace">{{ transportData.totals.containers }} {{ t("cont.") }}</span>
+											<span class="badge bg-secondary-lt ms-1">{{ t("equal") }}</span>
+										</span>
+										<span v-else-if="exp.allocation === 'truck'">
+											<router-link :to="'/imports/trucks/' + exp.truck" class="font-monospace text-primary fw-bold" @click.stop>{{ exp.truck }}</router-link>
+										</span>
+										<span v-else>
+											— <span class="badge bg-secondary-lt ms-1">{{ t("for whole invoice") }}</span>
+										</span>
+									</td>
+									<td class="text-end font-monospace fw-bold text-primary">{{ fm(exp.amount, transportData.currency) }}</td>
+									<td class="text-end font-monospace text-success">
+										{{ (exp.bank_payment !== null && exp.cash_payment !== null) ? fm((exp.bank_payment || 0) + (exp.cash_payment || 0), transportData.currency) : "•••" }}
+									</td>
+									<td><StatusBadge :status="exp.status" /></td>
+									<td class="text-end">
+										<i class="ti ti-chevron-right text-secondary"></i>
+									</td>
+								</tr>
+							</tbody>
+						</table>
+					</div>
+				</div>
+
+				<!-- Footer Action Strip -->
+				<div class="d-flex flex-wrap align-items-center justify-content-between gap-2 border-top pt-3 mt-3">
+					<div class="d-flex gap-2">
+						<button type="button" class="btn btn-outline-primary btn-sm" @click="router.push('/imports/expenses')">
+							<i class="ti ti-plus me-1"></i>{{ t("Add expense") }}
+						</button>
+						<button type="button" class="btn btn-ghost-secondary btn-sm" @click="router.push('/imports/expenses?commercial_invoice=' + form.name)">
+							{{ t("Open all expenses for this invoice →") }}
+						</button>
+					</div>
+					<div class="font-monospace small fw-bold text-secondary bg-light px-3 py-1 rounded">
+						{{ t("Landed cost with transport: {landed_per_kg} {currency}/kg ({goods_per_kg} + {per_kg})", {
+							landed_per_kg: fn(transportData.totals.landed_per_kg),
+							currency: transportData.currency || 'USD',
+							goods_per_kg: fn(transportData.totals.goods_per_kg),
+							per_kg: fn(transportData.totals.per_kg)
+						}) }}
+					</div>
+				</div>
+
+				<!-- Other Expenses Sub-table (Customs, Documentation, etc.) -->
+				<div v-if="transportData.other_rows && transportData.other_rows.length" class="mt-4 border-top pt-3">
+					<h4 class="card-title text-secondary mb-2"><i class="ti ti-receipt me-1"></i>{{ t("Other expenses") }}</h4>
+					<div class="table-responsive">
+						<table class="table table-sm text-secondary">
+							<thead>
+								<tr>
+									<th>{{ t("Vendor Category") }}</th>
+									<th>{{ t("Carrier / carrier invoice") }}</th>
+									<th>{{ t("System document") }}</th>
+									<th class="text-end">{{ t("Agreed Total") }}</th>
+									<th>{{ t("Status") }}</th>
+								</tr>
+							</thead>
+							<tbody>
+								<tr v-for="exp in transportData.other_rows" :key="exp.name">
+									<td><span class="badge bg-secondary-lt">{{ exp.category }}</span></td>
+									<td>{{ exp.supplier_name || exp.supplier }} <span v-if="exp.invoice_reference">({{ exp.invoice_reference }})</span></td>
+									<td>{{ exp.purchase_invoice || exp.name }}</td>
+									<td class="text-end font-monospace fw-semibold">{{ fm(exp.amount, transportData.currency) }}</td>
+									<td><StatusBadge :status="exp.status" /></td>
+								</tr>
+							</tbody>
+							<tfoot>
+								<tr class="fw-bold">
+									<td colspan="3" class="text-end">{{ t("Totals") }}</td>
+									<td class="text-end font-monospace">{{ fm(transportData.other_total, transportData.currency) }}</td>
+									<td></td>
+								</tr>
+							</tfoot>
+						</table>
+					</div>
+				</div>
 			</div>
 		</div>
 
@@ -1537,26 +1855,15 @@ watch(activeCompany, loadRefData);
 			</div>
 		</div>
 
-		<!-- PO links -->
-		<div class="card mb-3">
-			<div class="card-header">
-				<h3 class="card-title">{{ t("Linked purchase orders") }}</h3>
-				<div class="card-actions">
-					<button type="button" class="btn btn-outline-secondary btn-sm" @click="addPoLink">
-						<i class="ti ti-plus me-1"></i>{{ t("Add PO link") }}
-					</button>
-				</div>
-			</div>
-			<div class="card-body">
-				<div v-for="(link, i) in form.po_links" :key="i" class="d-flex gap-2 mb-2">
-					<Select v-model="link.purchase_order" :options="poOptions" style="flex: 1" :placeholder="t('Select purchase order…')" />
-					<button type="button" class="btn btn-ghost-danger btn-icon" @click="removePoLink(i)">
-						<i class="ti ti-trash"></i>
-					</button>
-				</div>
-				<div v-if="!form.po_links.length" class="text-secondary small">{{ t("No purchase orders linked.") }}</div>
-			</div>
-		</div>
+		<!-- Logistics Readiness overview sits at the bottom -->
+		<CiLogisticsOverview
+			v-if="!isCreate && form.name"
+			:commercial-invoice="form.name"
+			:packing-summary="form.packing_summary"
+			:grn="form.grn"
+			:loading="loading"
+			@reload="loadDoc"
+		/>
 
 		<!-- Destructive actions sit at the bottom, away from Save -->
 		<div v-if="!isCreate" class="card mb-3">

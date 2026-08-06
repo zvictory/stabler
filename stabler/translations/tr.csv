@@ -5483,3 +5483,25 @@ Pick a tender deal to view its document center.,Belge merkezini görüntülemek 
 "Customs charges","Gümrük masrafları"
 "Open PO","Siparişi Aç"
 "PO Control","Sipariş Kontrolü"
+Transport expenses,Taşıma giderleri
+Transport costs belong to third-party carriers. Expenses linked directly to a container are allocated directly; unassigned costs are distributed by weight.,Taşıma giderleri üçüncü taraf taşıyıcılara aittir. Konteynere doğrudan bağlı giderler doğrudan, diğerleri ağırlığa göre dağıtılır.
+Total transport,Toplam taşıma
+Per container,Konteyner başına
+paid {pct}% · {outstanding} to pay,%{pct} ödendi · {outstanding} ödenecek
+By carriers,Taşıyıcılara göre
+Service provider,Hizmet sağlayıcı
+Expense documents,Gider belgileri
+Carrier / carrier invoice,Taşıyıcı / taşıyıcı faturası
+System document,Sistemdeki belge
+Not posted,işlenmedi
+direct link,doğrudan bağlantı
+by weight,ağırlığa göre
+equal,eşit
+for whole invoice,tüm fatura için
+Add expense,Gider ekle
+Open all expenses for this invoice →,Bu faturanın tüm giderlerini aç →
+Landed cost with transport: {landed_per_kg} {currency}/kg ({goods_per_kg} + {per_kg}),Taşıma dahil maliyet: {landed_per_kg} {currency}/kg ({goods_per_kg} + {per_kg})
+Other expenses,Diğer giderler
+No transport expenses yet.,Henüz taşıma gideri yok.
+Transport by container,Konteyner taşıma gideri
+cont.,kont.

@@ -40,7 +40,7 @@ def fmt_money(value) -> str:
 	"""Whole-number amount with space thousands (e.g. 162 975 654)."""
 	try:
 		n = float(value or 0)
-	except (TypeError, ValueError):
+	except TypeError, ValueError:
 		return "—"
 	return f"{n:,.0f}".replace(",", " ")
 

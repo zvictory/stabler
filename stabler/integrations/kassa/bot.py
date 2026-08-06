@@ -191,7 +191,7 @@ def _load_state(chat_id) -> dict:
 		return {"step": _flow.STEP_MAIN, "kassa": None, "posting_date": None}
 	try:
 		state = json.loads(raw)
-	except (TypeError, ValueError):
+	except TypeError, ValueError:
 		return {"step": _flow.STEP_MAIN, "kassa": None, "posting_date": None}
 	if not isinstance(state, dict):
 		return {"step": _flow.STEP_MAIN, "kassa": None, "posting_date": None}

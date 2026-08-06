@@ -262,7 +262,7 @@ def _parse_landed(raw) -> list[dict]:
 		return []
 	try:
 		data = raw if isinstance(raw, list) else json.loads(raw)
-	except (ValueError, TypeError):
+	except ValueError, TypeError:
 		return []
 	out: list[dict] = []
 	for it in data if isinstance(data, list) else []:
@@ -1083,7 +1083,7 @@ def _deal_kassa_actual(deal: str, company: str) -> tuple[list[dict], float]:
 def _num(v, d=0.0) -> float:
 	try:
 		return float(v)
-	except (TypeError, ValueError):
+	except TypeError, ValueError:
 		return d
 
 
@@ -1099,7 +1099,7 @@ def _bid_inputs(deal: str, company: str) -> tuple[dict, dict]:
 		if raw:
 			try:
 				stored = json.loads(raw) if not isinstance(raw, dict) else raw
-			except (ValueError, TypeError):
+			except ValueError, TypeError:
 				stored = {}
 	po_landed, po_count = _deal_landed(deal, company)
 	so_revenue, so_count = _deal_revenue(deal, company)
@@ -1241,7 +1241,7 @@ def save_deal_bid_pricing(deal: str, pricing) -> dict:
 		frappe.throw(_("Run migrate to enable bid pricing."))
 	try:
 		data = pricing if isinstance(pricing, dict) else json.loads(pricing)
-	except (ValueError, TypeError):
+	except ValueError, TypeError:
 		frappe.throw(_("Invalid pricing payload."))
 	# Keep only known keys; coerce cost lines.
 	clean = {
@@ -1422,7 +1422,7 @@ def _parse_intake(raw) -> dict:
 		return {}
 	try:
 		return raw if isinstance(raw, dict) else json.loads(raw)
-	except (ValueError, TypeError):
+	except ValueError, TypeError:
 		return {}
 
 
@@ -1566,7 +1566,7 @@ def save_deal_intake(deal: str, intake) -> dict:
 		frappe.throw(_("Run migrate to enable tender intake."))
 	try:
 		data = intake if isinstance(intake, dict) else json.loads(intake)
-	except (ValueError, TypeError):
+	except ValueError, TypeError:
 		frappe.throw(_("Invalid intake payload."))
 	clean = _clean_intake(data, _read_intake_for_update(deal))
 	frappe.db.set_value(
@@ -2363,7 +2363,7 @@ def tender_funnel(company: str, days: int = 90):
 			ref_date = frappe.db.get_value("CRM Deal", deal, "creation")
 		try:
 			in_window = getdate(ref_date) >= cutoff
-		except (TypeError, ValueError):
+		except TypeError, ValueError:
 			in_window = True
 		# Deadline urgency only matters (and only costs a computation) while open.
 		urgent = False
@@ -2707,7 +2707,7 @@ def _in_dashboard_period(value, start, end) -> bool:
 		return False
 	try:
 		day = getdate(value)
-	except (TypeError, ValueError):
+	except TypeError, ValueError:
 		return False
 	return start <= day <= end
 
@@ -2773,7 +2773,7 @@ def _intake_attention(deal: str, intake: dict, today_d) -> list[dict]:
 						"severity": "risk" if days_left < 0 else "warn",
 					}
 				)
-		except (TypeError, ValueError):
+		except TypeError, ValueError:
 			pass
 	missing = _docs_summary(intake)["missing"]
 	if intake.get("go_no_go") == "go" and missing:

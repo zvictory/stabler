@@ -1,0 +1,359 @@
+<!DOCTYPE html>
+<html lang="ru">
+<head>
+<meta charset="utf-8">
+<title>CI формасы — предложение по компоновке</title>
+<style>
+:root{
+  --bg:#f6f8fb; --card:#fff; --ink:#1a2434; --muted:#6b7a90; --line:#e6ebf2;
+  --blue:#206bc4; --blue-lt:#eaf2fd; --green:#2fb344; --green-lt:#eafaee;
+  --orange:#f76707; --orange-lt:#fff1e6; --purple:#7048e8; --purple-lt:#f0ebfd;
+  --amber:#f59f00; --amber-lt:#fff8e6; --red:#d63939;
+}
+*{box-sizing:border-box}
+body{margin:0;background:var(--bg);color:var(--ink);
+  font:14px/1.45 -apple-system,BlinkMacSystemFont,"Segoe UI",Roboto,Helvetica,Arial,sans-serif}
+.wrap{max-width:1180px;margin:0 auto;padding:18px 18px 60px}
+.note{background:#111827;color:#e5e7eb;border-radius:10px;padding:14px 16px;margin-bottom:18px;font-size:13px}
+.note b{color:#fff}
+.note ol{margin:8px 0 0;padding-left:20px}
+.note li{margin:4px 0}
+.card{background:var(--card);border:1px solid var(--line);border-radius:10px;margin-bottom:14px;
+  box-shadow:0 1px 2px rgba(16,24,40,.04)}
+.card-h{display:flex;align-items:center;gap:10px;padding:11px 16px;border-bottom:1px solid var(--line)}
+.card-h h3{margin:0;font-size:14px;font-weight:600;letter-spacing:.01em}
+.card-b{padding:14px 16px}
+.step{width:22px;height:22px;border-radius:6px;background:var(--blue);color:#fff;font-size:12px;
+  display:flex;align-items:center;justify-content:center;font-weight:700;flex:none}
+.step.new{background:var(--green)}
+.step.moved{background:var(--amber)}
+.spacer{flex:1}
+.badge{display:inline-block;padding:2px 8px;border-radius:20px;font-size:11px;font-weight:600}
+.b-blue{background:var(--blue-lt);color:var(--blue)}
+.b-green{background:var(--green-lt);color:var(--green)}
+.b-amber{background:var(--amber-lt);color:#a37200}
+.b-grey{background:#eef1f5;color:var(--muted)}
+.b-purple{background:var(--purple-lt);color:var(--purple)}
+table{width:100%;border-collapse:collapse;font-size:13px}
+th{font-size:10.5px;text-transform:uppercase;letter-spacing:.04em;color:var(--muted);
+  font-weight:600;text-align:left;padding:8px 10px;border-bottom:1px solid var(--line);white-space:nowrap}
+td{padding:9px 10px;border-bottom:1px solid #f1f4f8;vertical-align:middle}
+tr:last-child td{border-bottom:0}
+.num{text-align:right;font-variant-numeric:tabular-nums;font-family:ui-monospace,SFMono-Regular,Menlo,monospace}
+.tf td{border-top:2px solid var(--line);font-weight:700;background:#fbfcfe}
+.a{color:var(--blue);text-decoration:none;font-weight:600}
+.a:hover{text-decoration:underline}
+.mut{color:var(--muted)}
+.sm{font-size:12px}
+.grid{display:grid;gap:10px}
+.g4{grid-template-columns:repeat(4,1fr)}
+.g3{grid-template-columns:repeat(3,1fr)}
+.tile{border:1px solid var(--line);border-radius:9px;padding:11px 13px;background:#fff}
+.tile .k{font-size:10.5px;text-transform:uppercase;letter-spacing:.04em;color:var(--muted);font-weight:600}
+.tile .v{font-size:19px;font-weight:700;font-family:ui-monospace,SFMono-Regular,Menlo,monospace;margin-top:3px}
+.hdr{display:flex;align-items:baseline;gap:12px;flex-wrap:wrap;margin:6px 0 16px}
+.hdr h1{margin:0;font-size:22px;font-weight:700;letter-spacing:-.01em}
+.kv{display:grid;grid-template-columns:repeat(4,1fr);gap:12px 20px}
+.kv .k{font-size:10.5px;text-transform:uppercase;letter-spacing:.04em;color:var(--muted);font-weight:600}
+.kv .v{font-weight:600;margin-top:2px}
+.o{background:var(--orange-lt)}.o2{color:var(--orange)}
+.bl{background:var(--blue-lt)}.bl2{color:var(--blue)}
+.gr{background:var(--green-lt)}.gr2{color:var(--green)}
+.pu{background:var(--purple-lt)}.pu2{color:var(--purple)}
+.legend{display:flex;gap:16px;font-size:12px;color:var(--muted);padding:2px 0 10px}
+.dot{display:inline-block;width:9px;height:9px;border-radius:3px;margin-right:5px;vertical-align:middle}
+.callout{border-left:3px solid var(--green);background:var(--green-lt);padding:9px 12px;border-radius:6px;
+  font-size:12.5px;margin-bottom:12px}
+.callout.amber{border-color:var(--amber);background:var(--amber-lt)}
+.bar{height:7px;background:#eef1f5;border-radius:20px;overflow:hidden;margin-top:6px}
+.bar i{display:block;height:100%;background:var(--green)}
+.sub{font-size:10.5px;text-transform:uppercase;letter-spacing:.05em;color:var(--muted);
+  font-weight:700;margin:2px 0 6px}
+table.mini td,table.mini th{padding:6px 10px}
+.foot{color:var(--muted);font-size:12px;text-align:center;padding-top:8px}
+</style>
+</head>
+<body>
+<div class="wrap">
+
+  <div class="note">
+    <b>Seni nasıl anladım — CI formu için 3 değişiklik</b>
+    <ol>
+      <li><b>Логистическая готовность aşağı indi.</b> Şu an durum çubuğunun hemen altında, şapkadan
+          <em>önce</em> duruyor. Önce şapka, sonra kalemler, sonra konteynerler; hazırlık paneli en alta.</li>
+      <li><b>Yeni kart: Транспортные расходы.</b> Konteyner listesinin hemen altında, aynı tablo diliyle —
+          toplam ne kadar transport gideri oluştuğu CI'ın üstünde de bir kutu olarak görünüyor.</li>
+      <li><b>Nakliyeci ayrı vendor olarak kalıyor</b> (doğru olan bu) — CI sadece <em>link</em> veriyor:
+          tedarikçi adı, gider belgesi ve varsa Purchase Invoice tıklanabilir.</li>
+    </ol>
+    Aşağısı mockup — veriler temsilidir, gerçek CI'dan alınmadı.
+  </div>
+
+  <div class="hdr">
+    <h1>MH/3054/2025-26</h1>
+    <span class="badge b-green">В ПУТИ</span>
+    <span class="mut sm">HMA AGRO INDUSTRIES LIMITED · CI-2026-03932</span>
+  </div>
+
+  <!-- ÜST ÖLÇÜ ŞERİDİ -->
+  <div class="grid g4" style="margin-bottom:14px">
+    <div class="tile"><div class="k">Согласованная сумма</div><div class="v bl2">351 400,00 $</div></div>
+    <div class="tile"><div class="k">Докум. сумма</div><div class="v gr2">289 800,00 $</div></div>
+    <div class="tile"><div class="k">Вес / коробки</div><div class="v">84 000 кг · 4 200</div></div>
+    <div class="tile" style="border-color:#f4c58a;background:#fffaf4">
+      <div class="k" style="color:#a35b00">Транспортные расходы <span class="badge b-green" style="font-size:9.5px">НОВОЕ</span></div>
+      <div class="v" style="color:#a35b00">20 070,00 $</div>
+      <div class="sm mut" style="margin-top:2px">6 690 $ / контейнер · 0,239 $ / кг</div>
+    </div>
+  </div>
+
+  <!-- 1 ŞAPKA -->
+  <div class="card">
+    <div class="card-h"><span class="step">1</span><h3>Шапка счёта</h3>
+      <span class="spacer"></span><span class="badge b-grey">без изменений</span></div>
+    <div class="card-b">
+      <div class="kv">
+        <div><div class="k">Поставщик</div><div class="v">HMA AGRO INDUSTRIES LIMITED</div></div>
+        <div><div class="k">№ инвойса</div><div class="v">MH/3054/2025-26</div></div>
+        <div><div class="k">Дата</div><div class="v">21.04.2025</div></div>
+        <div><div class="k">Валюта</div><div class="v">USD</div></div>
+        <div><div class="k">Инкотермс</div><div class="v">CIF · Tashkent</div></div>
+        <div><div class="k">Порт погрузки</div><div class="v">Nhava Sheva</div></div>
+        <div><div class="k">Порт выгрузки</div><div class="v">Bandar Abbas</div></div>
+        <div><div class="k">ETD / ETA</div><div class="v">28.04.2025 / 19.05.2025</div></div>
+      </div>
+    </div>
+  </div>
+
+  <!-- 2 KALEMLER -->
+  <div class="card">
+    <div class="card-h"><span class="step">2</span><h3>Товары</h3>
+      <span class="badge b-green">3 строки · всё сходится с ПИ</span>
+      <span class="spacer"></span><span class="badge b-grey">без изменений</span></div>
+    <div class="card-b" style="padding-bottom:4px">
+      <div class="legend">
+        <span><i class="dot" style="background:var(--orange)"></i>Физически</span>
+        <span><i class="dot" style="background:var(--blue)"></i>Согласовано</span>
+        <span><i class="dot" style="background:var(--green)"></i>Документы</span>
+      </div>
+    </div>
+    <table>
+      <thead><tr>
+        <th>Категория поставщика</th><th>Реф. ПИ</th><th>Код / наименование</th>
+        <th class="num o">Коробки</th><th class="num o">Вес кор.</th><th class="num o">Кол-во (кг)</th>
+        <th class="num bl">Согл. цена</th><th class="num gr">Докум. цена</th>
+        <th class="num bl">Согл. сумма</th><th class="num gr">Докум. сумма</th>
+      </tr></thead>
+      <tbody>
+        <tr>
+          <td><b>BUFFALO COMPENSATED_2</b></td>
+          <td><a class="a" href="#">HMA/PI/2229/2025-26</a></td>
+          <td>41 — TOPSIDE</td>
+          <td class="num o">1 400</td><td class="num o">20</td><td class="num o">28 000</td>
+          <td class="num bl2">4,35</td><td class="num gr2">3,45</td>
+          <td class="num bl2">121 800,00</td><td class="num gr2">96 600,00</td>
+        </tr>
+        <tr>
+          <td><b>BUFFALO COMPENSATED_2</b></td>
+          <td><a class="a" href="#">HMA/PI/2229/2025-26</a></td>
+          <td>44 — SILVER SIDE</td>
+          <td class="num o">1 400</td><td class="num o">20</td><td class="num o">28 000</td>
+          <td class="num bl2">4,80</td><td class="num gr2">3,45</td>
+          <td class="num bl2">134 400,00</td><td class="num gr2">96 600,00</td>
+        </tr>
+        <tr>
+          <td><b>HQ CUTS</b></td>
+          <td><a class="a" href="#">HMA/PI/2231/2025-26</a></td>
+          <td>15-17 — NECK</td>
+          <td class="num o">1 400</td><td class="num o">20</td><td class="num o">28 000</td>
+          <td class="num bl2">3,40</td><td class="num gr2">3,45</td>
+          <td class="num bl2">95 200,00</td><td class="num gr2">96 600,00</td>
+        </tr>
+        <tr class="tf">
+          <td colspan="3">Итого</td>
+          <td class="num">4 200</td><td class="num"></td><td class="num">84 000</td>
+          <td class="num"></td><td class="num"></td>
+          <td class="num bl2">351 400,00</td><td class="num gr2">289 800,00</td>
+        </tr>
+      </tbody>
+    </table>
+  </div>
+
+  <!-- 3 KONTEYNERLER -->
+  <div class="card">
+    <div class="card-h"><span class="step">3</span><h3>Связанные контейнеры</h3>
+      <span class="badge b-grey">3</span>
+      <span class="spacer"></span><span class="badge b-grey">без изменений</span></div>
+    <table>
+      <thead><tr><th>Номер контейнера</th><th>Статус</th><th class="num">Коробки</th><th class="num">Общий вес (кг)</th>
+        <th class="num">Транспорт по контейнеру</th></tr></thead>
+      <tbody>
+        <tr><td><a class="a" href="#">SEKU9408532</a></td><td><span class="badge b-grey">STUFFED</span></td>
+            <td class="num">1 400</td><td class="num">28 000</td><td class="num" style="color:#a35b00">6 690,00 $</td></tr>
+        <tr><td><a class="a" href="#">SEGU9401430</a></td><td><span class="badge b-grey">STUFFED</span></td>
+            <td class="num">1 400</td><td class="num">28 000</td><td class="num" style="color:#a35b00">6 690,00 $</td></tr>
+        <tr><td><a class="a" href="#">PCIU6066788</a></td><td><span class="badge b-grey">STUFFED</span></td>
+            <td class="num">1 400</td><td class="num">28 000</td><td class="num" style="color:#a35b00">6 690,00 $</td></tr>
+        <tr class="tf"><td colspan="2">Итого</td><td class="num">4 200</td><td class="num">84 000</td>
+            <td class="num" style="color:#a35b00">20 070,00 $</td></tr>
+      </tbody>
+    </table>
+  </div>
+
+  <!-- 4 YENİ: TRANSPORT GİDERLERİ -->
+  <div class="card" style="border-color:#f4c58a">
+    <div class="card-h" style="background:#fffaf4">
+      <span class="step new">4</span><h3>Транспортные расходы</h3>
+      <span class="badge b-green">НОВЫЙ БЛОК</span>
+      <span class="spacer"></span>
+      <span class="sm mut">Итого&nbsp;</span><b style="font-family:ui-monospace,monospace;color:#a35b00">20 070,00 $</b>
+    </div>
+    <div class="card-b" style="padding-bottom:0">
+      <div class="callout">
+        Расходы принадлежат <b>другому поставщику</b> (перевозчику) и остаются его документами —
+        здесь только ссылка: сам перевозчик, <b>его инвойс</b> и <b>документ в системе</b>
+        (Import Expense + проведённый Purchase Invoice). Счёт-фактура поставщика товара
+        с транспортом не смешивается.<br>
+        Расход, привязанный к конкретному контейнеру, считается напрямую; общий на весь рейс —
+        распределяется <b>по весу</b> и помечается как «по весу».
+      </div>
+      <div class="grid g3" style="margin-bottom:12px">
+        <div class="tile"><div class="k">Всего транспорт</div><div class="v" style="color:#a35b00">20 070,00 $</div></div>
+        <div class="tile"><div class="k">На контейнер</div><div class="v">6 690,00 $</div></div>
+        <div class="tile"><div class="k">На кг груза</div><div class="v">0,239 $</div>
+          <div class="bar"><i style="width:62%"></i></div>
+          <div class="sm mut" style="margin-top:4px">оплачено 62% · 7 620 $ к оплате</div></div>
+      </div>
+    </div>
+    <div class="card-b" style="padding-top:0;padding-bottom:6px">
+      <div class="sub">По перевозчикам</div>
+      <table class="mini">
+        <thead><tr><th>Поставщик услуги</th><th>ИНН / договор</th><th class="num">Док.</th>
+          <th class="num">Сумма</th><th class="num">Оплачено</th><th class="num">К оплате</th></tr></thead>
+        <tbody>
+          <tr><td><a class="a" href="#">SEA LINE SHIPPING LLC</a><div class="sm mut">морской фрахт</div></td>
+              <td class="mut sm">302145879 · SL/2025/44</td><td class="num">1</td>
+              <td class="num">8 400,00</td><td class="num gr2">8 400,00</td><td class="num mut">—</td></tr>
+          <tr><td><a class="a" href="#">DAVRON TRANS MCHJ</a><div class="sm mut">трансграничная перевозка</div></td>
+              <td class="mut sm">305882014 · DT-11/2025</td><td class="num">2</td>
+              <td class="num">9 300,00</td><td class="num gr2">2 100,00</td><td class="num" style="color:var(--red)">7 200,00</td></tr>
+          <tr><td><a class="a" href="#">BANDAR ABBAS PORT SRV</a><div class="sm mut">порт и THC</div></td>
+              <td class="mut sm">—</td><td class="num">1</td>
+              <td class="num">1 950,00</td><td class="num gr2">1 950,00</td><td class="num mut">—</td></tr>
+          <tr><td><a class="a" href="#">UZBEKINVEST</a><div class="sm mut">страхование груза</div></td>
+              <td class="mut sm">200938471 · INS-77</td><td class="num">1</td>
+              <td class="num">420,00</td><td class="num mut">—</td><td class="num" style="color:var(--red)">420,00</td></tr>
+          <tr class="tf"><td>4 поставщика</td><td></td><td class="num">5</td>
+              <td class="num">20 070,00</td><td class="num gr2">12 450,00</td>
+              <td class="num" style="color:var(--red)">7 620,00</td></tr>
+        </tbody>
+      </table>
+    </div>
+
+    <div class="card-b" style="padding-top:10px;padding-bottom:0"><div class="sub">Документы расходов</div></div>
+    <table>
+      <thead><tr>
+        <th>Категория</th><th>Перевозчик / инвойс перевозчика</th><th>Документ в системе</th>
+        <th>Контейнер</th><th class="num">Сумма</th><th>Оплата</th><th>Статус</th><th></th>
+      </tr></thead>
+      <tbody>
+        <tr><td><span class="badge b-purple">Transport</span><div class="sm mut">Морской фрахт</div></td>
+            <td><a class="a" href="#">SEA LINE SHIPPING LLC</a>
+                <div class="sm mut">инвойс <b>FRT-2025-0418</b> · 18.04.2025</div></td>
+            <td><a class="a" href="#">PINV-2025-01188</a><div class="sm mut">IE-2025-00341</div></td>
+            <td><span class="badge b-grey">3 конт.</span><div class="sm mut">по весу</div></td>
+            <td class="num">8 400,00</td><td class="sm">банк<div class="sm mut">8 400,00</div></td>
+            <td><span class="badge b-green">Paid</span></td>
+            <td><a class="a sm" href="#">открыть →</a></td></tr>
+
+        <tr><td><span class="badge b-purple">Transport</span><div class="sm mut">Трансграничная перевозка</div></td>
+            <td><a class="a" href="#">DAVRON TRANS MCHJ</a>
+                <div class="sm mut">инвойс <b>CMR-71204</b> · 06.05.2025</div></td>
+            <td><a class="a" href="#">PINV-2025-01206</a><div class="sm mut">IE-2025-00352</div></td>
+            <td><a class="a" href="#">SEKU9408532</a><div class="sm mut">прямая привязка</div></td>
+            <td class="num">6 200,00</td><td class="sm">банк + нал<div class="sm mut">2 100 / 4 100</div></td>
+            <td><span class="badge b-amber">Partial</span></td>
+            <td><a class="a sm" href="#">открыть →</a></td></tr>
+
+        <tr><td><span class="badge b-purple">Transport</span><div class="sm mut">Трансграничная перевозка</div></td>
+            <td><a class="a" href="#">DAVRON TRANS MCHJ</a>
+                <div class="sm mut">инвойс <b>CMR-71219</b> · 09.05.2025</div></td>
+            <td><span class="mut sm">не проведён</span><div class="sm mut">IE-2025-00357</div></td>
+            <td><a class="a" href="#">SEGU9401430</a><div class="sm mut">прямая привязка</div></td>
+            <td class="num">3 100,00</td><td class="sm">нал<div class="sm mut">—</div></td>
+            <td><span class="badge b-grey">Pending</span></td>
+            <td><a class="a sm" href="#">открыть →</a></td></tr>
+
+        <tr><td><span class="badge b-blue">Handling</span><div class="sm mut">Порт и THC (Иран)</div></td>
+            <td><a class="a" href="#">BANDAR ABBAS PORT SRV</a>
+                <div class="sm mut">инвойс <b>THC-9928</b> · 21.05.2025</div></td>
+            <td><a class="a" href="#">PINV-2025-01230</a><div class="sm mut">IE-2025-00361</div></td>
+            <td><span class="badge b-grey">3 конт.</span><div class="sm mut">по весу</div></td>
+            <td class="num">1 950,00</td><td class="sm">банк<div class="sm mut">1 950,00</div></td>
+            <td><span class="badge b-green">Paid</span></td>
+            <td><a class="a sm" href="#">открыть →</a></td></tr>
+
+        <tr><td><span class="badge b-blue">Insurance</span><div class="sm mut">Страхование груза</div></td>
+            <td><a class="a" href="#">UZBEKINVEST</a>
+                <div class="sm mut">полис <b>INS-2025-3311</b> · 27.04.2025</div></td>
+            <td><span class="mut sm">не проведён</span><div class="sm mut">IE-2025-00344</div></td>
+            <td><span class="mut">—</span><div class="sm mut">на весь инвойс</div></td>
+            <td class="num">420,00</td><td class="sm">банк<div class="sm mut">—</div></td>
+            <td><span class="badge b-grey">Pending</span></td>
+            <td><a class="a sm" href="#">открыть →</a></td></tr>
+
+        <tr class="tf"><td colspan="4">Итого транспортных расходов · 5 документов</td>
+            <td class="num">20 070,00</td><td class="sm">12 450 опл.</td><td colspan="2"></td></tr>
+      </tbody>
+    </table>
+    <div class="card-b" style="border-top:1px solid var(--line);display:flex;gap:8px;align-items:center">
+      <a class="a sm" href="#">+ Добавить расход</a>
+      <span class="mut sm">·</span>
+      <a class="a sm" href="#">Открыть все расходы по этому инвойсу →</a>
+      <span class="spacer"></span>
+      <span class="sm mut">Себестоимость с транспортом: <b style="color:var(--ink)">4,42 $/кг</b> (товар 4,18 + транспорт 0,239)</span>
+    </div>
+  </div>
+
+  <!-- 5 TIRLAR -->
+  <div class="card">
+    <div class="card-h"><span class="step">5</span><h3>Связанные фуры / наземный транспорт</h3>
+      <span class="spacer"></span><span class="badge b-grey">без изменений</span></div>
+    <table>
+      <thead><tr><th>Фура / номер</th><th>Перевозчик и водитель</th><th>Статус</th>
+        <th class="num">Коробки</th><th class="num">Вес (кг)</th></tr></thead>
+      <tbody>
+        <tr><td>01A234BC</td><td>DAVRON TRANS · Ш. Каримов</td><td><span class="badge b-grey">В ПУТИ</span></td>
+            <td class="num">1 400</td><td class="num">28 000</td></tr>
+      </tbody>
+    </table>
+  </div>
+
+  <!-- 6 LOJİSTİK HAZIRLIK — EN ALTA TAŞINDI -->
+  <div class="card" style="border-color:#f0c36d">
+    <div class="card-h" style="background:var(--amber-lt)">
+      <span class="step moved">6</span><h3>Логистическая готовность</h3>
+      <span class="badge b-amber">ПЕРЕМЕЩЕНО ВНИЗ</span>
+      <span class="spacer"></span><span class="sm mut">было: сразу под статусом, до шапки</span>
+    </div>
+    <div class="card-b">
+      <div class="callout amber">
+        Раньше этот блок открывался первым и отодвигал шапку и товары вниз. Теперь он там, где
+        нужен — после того, как видно <b>что</b> едет и <b>сколько</b> это стоит.
+      </div>
+      <div class="grid g4">
+        <div class="tile"><div class="k">Упаковочный лист</div><div class="v gr2">Готов</div>
+          <div class="sm mut">4 200 / 4 200 коробок</div></div>
+        <div class="tile"><div class="k">GRN</div><div class="v" style="color:var(--amber)">Частично</div>
+          <div class="sm mut">2 из 3 контейнеров</div></div>
+        <div class="tile"><div class="k">Таможенная декларация</div><div class="v mut">Не начата</div></div>
+        <div class="tile"><div class="k">Вет. сертификат</div><div class="v gr2">Есть</div>
+          <div class="sm mut">VET-2025-1187</div></div>
+      </div>
+    </div>
+  </div>
+
+  <div class="foot">Макет · данные условные · Stabler → Импорт → Коммерческий инвойс</div>
+</div>
+</body>
+</html>

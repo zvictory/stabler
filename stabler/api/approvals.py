@@ -103,7 +103,7 @@ def _config_for(doctype: str) -> dict:
 					import json
 
 					tiers = json.loads(raw)
-				except (ValueError, TypeError):
+				except ValueError, TypeError:
 					tiers = None
 	return {"enabled": enabled, "threshold": threshold, "tiers": tiers}
 

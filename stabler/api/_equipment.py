@@ -17,7 +17,7 @@ def _as_date(value):
 		return value
 	try:
 		return date.fromisoformat(str(value)[:10])
-	except (ValueError, TypeError):
+	except ValueError, TypeError:
 		return None
 
 

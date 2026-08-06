@@ -239,7 +239,7 @@ def list_corrections(
 
 	try:
 		limit = min(int(limit), 500)
-	except (TypeError, ValueError):
+	except TypeError, ValueError:
 		limit = 200
 
 	filters: dict = {}
@@ -420,7 +420,7 @@ def list_exceptions(
 
 	try:
 		limit = min(int(limit), 500)
-	except (TypeError, ValueError):
+	except TypeError, ValueError:
 		limit = 200
 
 	filters: dict = {}

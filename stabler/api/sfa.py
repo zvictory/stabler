@@ -88,7 +88,7 @@ def _haversine_m(lat1: float, lng1: float, lat2: float, lng2: float) -> float:
 def _to_float(value: Any, label: str) -> float:
 	try:
 		return float(value)
-	except (TypeError, ValueError):
+	except TypeError, ValueError:
 		frappe.throw(_("{0} must be a number").format(label))
 
 
@@ -972,7 +972,7 @@ def update_step(
 
 	try:
 		idx_i = int(step_idx)
-	except (TypeError, ValueError):
+	except TypeError, ValueError:
 		frappe.throw(_("step_idx must be an integer."))
 
 	steps = list(doc.steps or [])

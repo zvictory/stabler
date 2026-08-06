@@ -23,7 +23,7 @@ from __future__ import annotations
 def _amt(v) -> float:
 	try:
 		return float(v or 0)
-	except (TypeError, ValueError):
+	except TypeError, ValueError:
 		return 0.0
 
 

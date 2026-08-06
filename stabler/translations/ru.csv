@@ -5494,3 +5494,25 @@ Pick a tender deal to view its document center.,Выберите тендерн�
 "Customs charges","Таможенные расходы"
 "Open PO","Открыть PO"
 "PO Control","Контроль заказов"
+Transport expenses,Транспортные расходы
+Transport costs belong to third-party carriers. Expenses linked directly to a container are allocated directly; unassigned costs are distributed by weight.,Расходы относятся к сторонним перевозчикам. Прямо привязанные к контейнеру распределяются напрямую, остальные — по весу.
+Total transport,Всего транспорт
+Per container,На контейнер
+paid {pct}% · {outstanding} to pay,оплачено {pct}% · {outstanding} к оплате
+By carriers,По перевозчикам
+Service provider,Поставщик услуги
+Expense documents,Документы расходов
+Carrier / carrier invoice,Перевозчик / инвойс перевозчика
+System document,Документ в системе
+Not posted,не проведён
+direct link,прямая привязка
+by weight,по весу
+equal,поровну
+for whole invoice,на весь инвойс
+Add expense,Добавить расход
+Open all expenses for this invoice →,Открыть все расходы по этому инвойсу →
+Landed cost with transport: {landed_per_kg} {currency}/kg ({goods_per_kg} + {per_kg}),Себестоимость с транспортом: {landed_per_kg} {currency}/кг ({goods_per_kg} + {per_kg})
+Other expenses,Прочие расходы
+No transport expenses yet.,Транспортных расходов пока нет
+Transport by container,Транспорт по контейнеру
+cont.,конт.

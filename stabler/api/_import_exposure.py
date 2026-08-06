@@ -34,7 +34,7 @@ def classify_method(account_type: str | None) -> str:
 def _amt(v) -> float:
 	try:
 		return float(v or 0)
-	except (TypeError, ValueError):
+	except TypeError, ValueError:
 		return 0.0
 
 
