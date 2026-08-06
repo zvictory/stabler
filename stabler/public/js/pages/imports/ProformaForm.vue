@@ -834,9 +834,12 @@ watch(activeCompany, loadPiGroups);
 								</span>
 								<span v-else class="text-secondary">—</span>
 							</td>
-							<td class="text-end font-monospace text-nowrap bg-warning-lt">
+							<td class="text-end font-monospace text-nowrap" :class="getSummaryRow(row) && getSummaryRow(row).remaining_qty < 0 ? 'bg-danger-lt' : 'bg-warning-lt'">
 								<span v-if="getSummaryRow(row)">
-									<span class="fw-bold text-warning">{{ fn(getSummaryRow(row).remaining_qty) }}</span>
+									<span class="fw-bold" :class="getSummaryRow(row).remaining_qty < 0 ? 'text-danger' : 'text-warning'">
+										<span v-if="getSummaryRow(row).remaining_qty < 0" class="badge bg-danger-lt text-danger me-1" style="font-size:0.7rem">{{ t("over-shipped") }}</span>
+										{{ fn(getSummaryRow(row).remaining_qty) }}
+									</span>
 								</span>
 								<span v-else class="text-secondary">—</span>
 							</td>

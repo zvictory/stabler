@@ -2642,6 +2642,118 @@ def ci_transport_costs(commercial_invoice: str) -> dict:
 
 
 @frappe.whitelist()
+def ci_cost_overview(commercial_invoice: str) -> dict:
+	"""Single-source overview endpoint for Blocks 5 & 6 of CI Form v4."""
+	if not commercial_invoice or not frappe.db.exists("Commercial Invoice", commercial_invoice):
+		frappe.throw(_("Unknown Commercial Invoice: {0}").format(commercial_invoice))
+
+	ci_doc = frappe.get_doc("Commercial Invoice", commercial_invoice)
+	company = ci_doc.company
+	_assert_imports_access(company)
+	_assert_can_read("Commercial Invoice", commercial_invoice)
+	cost_visible = _cost_visible()
+
+	containers = frappe.db.sql(
+		"""
+        SELECT c.name, c.total_kg, c.total_boxes, c.status
+        FROM `tabImport Container` c
+        WHERE c.commercial_invoice = %(ci)s
+        ORDER BY c.creation ASC
+        """,
+		{"ci": commercial_invoice},
+		as_dict=True,
+	)
+	for c in containers:
+		c["total_kg"] = flt(c.get("total_kg"))
+		c["total_boxes"] = cint(c.get("total_boxes"))
+
+	container_names = [c["name"] for c in containers]
+	trucks = frappe.get_all("Import Truck", filters={"commercial_invoice": commercial_invoice}, pluck="name")
+
+	# Fetch expenses matching CI, container list, or truck list
+	where_clause = ["ie.commercial_invoice = %(ci)s"]
+	params: dict = {"ci": commercial_invoice, "company": company}
+
+	if container_names:
+		cnt_placeholders = [f"%(cnt_{i})s" for i in range(len(container_names))]
+		for i, name in enumerate(container_names):
+			params[f"cnt_{i}"] = name
+		where_clause.append(f"ie.container IN ({', '.join(cnt_placeholders)})")
+
+	if trucks:
+		trk_placeholders = [f"%(trk_{i})s" for i in range(len(trucks))]
+		for i, trk in enumerate(trucks):
+			params[f"trk_{i}"] = trk
+		where_clause.append(f"ie.truck IN ({', '.join(trk_placeholders)})")
+
+	expenses = frappe.db.sql(
+		f"""
+        SELECT ie.name, ie.commercial_invoice, ie.container, ie.truck, ie.category,
+               ie.expense_date, ie.supplier, s.supplier_name, ie.invoice_reference,
+               ie.description, ie.amount, ie.currency, ie.bank_payment, ie.cash_payment,
+               ie.status, ie.purchase_invoice
+        FROM `tabImport Expense` ie
+        LEFT JOIN `tabSupplier` s ON s.name = ie.supplier
+        WHERE ie.company = %(company)s AND ie.docstatus < 2 AND ({" OR ".join(where_clause)})
+        ORDER BY ie.creation DESC, ie.name DESC
+        """,
+		params,
+		as_dict=True,
+	)
+	for r in expenses:
+		r["expense_date"] = str(r["expense_date"]) if r.get("expense_date") else None
+		r["amount"] = flt(r.get("amount"))
+		if r.get("bank_payment") is not None:
+			r["bank_payment"] = flt(r["bank_payment"])
+		if r.get("cash_payment") is not None:
+			r["cash_payment"] = flt(r["cash_payment"])
+
+	today_d = rules.today_date()
+	ref_cols = _existing_pi_ref_columns()
+	bills = _related_import_bills(
+		company,
+		containers=container_names,
+		ci=commercial_invoice,
+		trucks=trucks,
+		ref_cols=ref_cols,
+		today_d=today_d,
+	)
+
+	lcvs = _ci_landed_cost_vouchers(commercial_invoice)
+	lcv_total = sum(flt(l.get("total") or 0.0) for l in lcvs if l.get("docstatus") == 1)
+
+	declarations = frappe.get_all(
+		"Customs Declaration",
+		filters={"commercial_invoice": commercial_invoice, "docstatus": ["<", 2]},
+		fields=["name", "total_duties", "declaration_date", "cleared_date", "status"],
+	)
+	customs_duties = sum(flt(d.get("total_duties") or 0.0) for d in declarations)
+	# "Released" is not a field on the doctype: a declaration counts as final
+	# once customs cleared it (cleared_date set). Anything short of that leaves
+	# the duty figure an estimate, and the UI says so.
+	duties_estimated = not declarations or any(not d.get("cleared_date") for d in declarations)
+
+	items_agreed_total = flt(ci_doc.agreed_total)
+	items_docs_total = flt(ci_doc.docs_total)
+	cargo_kg = flt(ci_doc.total_kg)
+
+	return rules.calculate_ci_cost_overview(
+		ci_name=commercial_invoice,
+		items_agreed_total=items_agreed_total,
+		items_docs_total=items_docs_total,
+		cargo_kg=cargo_kg,
+		containers=containers,
+		expenses=expenses,
+		bills=bills,
+		lcv_total=lcv_total,
+		customs_duties=customs_duties,
+		duties_estimated=duties_estimated,
+		currency=ci_doc.currency or "USD",
+		cost_visible=cost_visible,
+	)
+
+
+@frappe.whitelist()
 def get_import_expense(name: str):
 	"""Full Import Expense payload (bank/cash split masked per K3)."""
 	if not name or not frappe.db.exists("Import Expense", name):
@@ -2973,13 +3085,22 @@ def _enrich_bill_rows(rows, today_d) -> None:
 		r["supplier_name"] = r.get("supplier_name") or r.get("supplier")
 
 
-def _related_import_bills(company, *, container, ci, trucks, ref_cols, today_d):
-	"""Purchase Invoices referencing this container OR its CI OR its trucks (v46)."""
+def _related_import_bills(company, *, containers, ci, trucks, ref_cols, today_d):
+	"""Purchase Invoices referencing these containers OR their CI OR its trucks (v46).
+
+	``containers`` is a list: a commercial invoice carries several containers and
+	a bill raised against any one of them belongs to the invoice's cost picture.
+	"""
+	container_list = [c for c in ([containers] if isinstance(containers, str) else (containers or [])) if c]
 	match: list[str] = []
 	params: dict = {"company": company}
-	if "custom_import_container" in ref_cols and container:
-		match.append("pi.custom_import_container = %(container)s")
-		params["container"] = container
+	if "custom_import_container" in ref_cols and container_list:
+		placeholders = []
+		for idx, cnt in enumerate(container_list):
+			key = f"cnt{idx}"
+			params[key] = cnt
+			placeholders.append(f"%({key})s")
+		match.append(f"pi.custom_import_container IN ({', '.join(placeholders)})")
 	if "custom_commercial_invoice" in ref_cols and ci:
 		match.append("pi.custom_commercial_invoice = %(ci)s")
 		params["ci"] = ci
@@ -3103,7 +3224,7 @@ def container_cost_ledger(container: str):
 
 	trucks = frappe.get_all("Import Truck", filters={"commercial_invoice": ci}, pluck="name") if ci else []
 	bills = _related_import_bills(
-		company, container=container, ci=ci, trucks=trucks, ref_cols=ref_cols, today_d=today_d
+		company, containers=[container], ci=ci, trucks=trucks, ref_cols=ref_cols, today_d=today_d
 	)
 	advances = _container_advances(company, container, doc.get("advance_70_payment_entry"))
 	lcvs = _ci_landed_cost_vouchers(ci)
@@ -4874,8 +4995,8 @@ def get_pi_invoiced_summary(name: str) -> dict:
 		inv_b = inv_data["boxes"]
 		inv_q = inv_data["qty"]
 
-		rem_b = max(0, pi_b - inv_b)
-		rem_q = max(0.0, flt(pi_q - inv_q, 2))
+		rem_b = pi_b - inv_b
+		rem_q = flt(pi_q - inv_q, 2)
 		pct = flt((inv_q / pi_q) * 100, 1) if pi_q > 0 else (100.0 if inv_q > 0 else 0.0)
 
 		tot_ordered_kg += pi_q
