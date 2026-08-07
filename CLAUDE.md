@@ -66,10 +66,14 @@
 
   So: PI/PI-Groups/Vendor-Category = `imports` = **msa**. Tender boards/bid/landed +
   kassa bot = `tender`/`money` = **mikas**. These must be invisible where the module is off.
-- **Caveat — module defaults are opt-OUT today:** 14/17 `enable_*` fields default to `1`
-  in `Stabler Company Modules`, so a new company gets almost everything ON. Prefer
-  gating a new module OFF by default and enabling it per owner-tenant. Don't add a
-  **reqd** field to a doctype a non-owner tenant also carries.
+- **Module defaults are opt-IN (measured 2026-08-07):** `Stabler Company Modules` carries
+  **23** `enable_*` fields and only **4** default to `1` — `money`, `sales`, `purchasing`,
+  `inventory`. The other 19 (`tender`, `imports`, `crm`, `hr`, `manufacturing`, `service`,
+  `bpm`, …) are OFF for a new company and are enabled per owner-tenant. Keep it that way:
+  gate a new module OFF by default. Don't add a **reqd** field to a doctype a non-owner
+  tenant also carries.
+  *(This bullet used to claim "14/17 default to 1 … opt-OUT". That was stale; count it from
+  the doctype JSON, not from memory.)*
 - **Never branch on tenant name** (`if company == "mikas"`). Parametrize by module +
   company-setting (`Stabler Company Modules`), the way currency precision is read as
   metadata. Tenant variance lives in config/data, never in code constants.

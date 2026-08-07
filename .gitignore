@@ -65,3 +65,8 @@ agent-os/
 # Dolt database files (added by bd init)
 .dolt/
 *.db
+
+# Runtime log dir the app writes into, and a stray 0-byte scratch file. Neither
+# was ever tracked; both showed up in every `git status` as noise.
+stabler/logs/
+iskelet

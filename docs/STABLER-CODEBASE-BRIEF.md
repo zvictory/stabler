@@ -72,11 +72,11 @@ They take `company` + filters, validate, run parametrized SQL or `frappe.get_doc
 ```
 apps/stabler/
 ├─ stabler/
-│  ├─ api/                  # Python backend — one file per module (~13.7k LOC)
+│  ├─ api/                  # Python backend — one file per module (116 files, ~58k LOC)
 │  │   ├─ _common.py        # SHARED guards: _require_company, _assert_can_read, _validate_money_overrides
 │  │   ├─ _accounts.py      # resolve_party_account — per-currency AR/AP routing (multi-ccy integrity)
-│  │   ├─ sales.py (2565)   purchasing.py (1654)  money.py (1642)  sfa.py (879)
-│  │   ├─ service.py (787)  installment.py (681)  manufacturing.py (671)  inventory.py (581)
+│  │   ├─ imports.py (7363) sales.py (4132)  tender.py (3331)  money.py (2980)
+│  │   ├─ purchasing.py (2690)  reports.py (2460)  _imports_rules.py (1837)  inventory.py (1735)
 │  │   ├─ hr.py  compliance.py  marketing.py  dashboard.py  organization.py  admin.py
 │  │   ├─ remittance.py  pos.py  crm.py  bpm.py  search.py  marketing_equipment.py …
 │  ├─ public/
@@ -85,8 +85,8 @@ apps/stabler/
 │  │   │   ├─ router.js              # all routes, module-gated guard
 │  │   │   ├─ stores/session.js      # Pinia: user, companies, canAccessModule()
 │  │   │   ├─ composables/           # date.js i18n.js money.js status.js ledger.js modules.js
-│  │   │   ├─ components/            # 22 shared components (see §6)
-│  │   │   └─ pages/<module>/*.vue   # 106 page components, grouped by module
+│  │   │   ├─ components/            # 45 shared components (see §6)
+│  │   │   └─ pages/<module>/*.vue   # 227 page components, grouped by module
 │  │   ├─ css/stabler.css            # global overrides (striped tables, etc.)
 │  │   └─ dist/                      # built bundle (gitignored)
 │  ├─ translations/<lang>.csv        # en ru uz uzc tr — source strings + translations
@@ -119,12 +119,19 @@ tab shell, an `api/<module>.py`. Visibility = company-enabled AND user-role-allo
 | CRM | /crm | Leads, Deals (kanban) | crm.py |
 | Service | /service | Tickets (kanban), Calendar, Billing Queue (+ Equipment/Map planned) | service.py |
 | Processes (BPM) | /bpm | Process editor (vue-flow), node palette | bpm.py |
+| Imports | /imports | Import Orders, Proformas, PI Groups, Commercial Invoices, Containers, Vendor Category, HS/duty | imports.py, _imports_rules.py |
+| Tender | /tender | Operations Desk, Portfolio, Tender Masters/Lots, Bid pricing + landed cost, Document Center, role queues | tender.py |
 | Remittance | /remittance | Corridor transfers (3-leg JE) | remittance.py |
 | Installment | /installment | Murabaha contracts, calendar | installment.py |
 | Reports | /reports | cross-module report hub | (various) |
 | Admin | /admin | Companies, Users, Roles, Compliance (EHF/ARCA/Asl Belgisi/1C/FX) | admin.py, organization.py, compliance.py |
 
-106 page components, ~13.7k lines of Python API.
+**Measured 2026-08-07** (re-count from the tree, don't quote these from memory):
+684 tracked `.py` / 126 389 lines · 281 `.vue` / 91 085 lines · 116 api modules / ~58k LOC ·
+227 page components · 45 shared components · 190 test files · 247 routes (90 with `meta.module`).
+
+`Stabler Company Modules` carries **23** `enable_*` flags and only **4** default to `1`
+(`money`, `sales`, `purchasing`, `inventory`) — everything else is opt-in per tenant.
 
 ---
 
