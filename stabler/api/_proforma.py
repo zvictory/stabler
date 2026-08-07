@@ -4,6 +4,11 @@ The supersede flow: a Proforma Invoice (PI) that is still DRAFT or CONFIRMED can
 be superseded by a Commercial Invoice, moving it to SUPERSEDED_BY_CI. An already
 superseded or cancelled PI cannot be superseded again (idempotent / safe).
 
+The link is 1:1 but the shipping is not: one PI is routinely split over several
+containers, and each container is its own CI. The link therefore names the FIRST
+CI and stays there; every later container ships against the PI's remaining
+balance without re-superseding it (``accepts_another_ci``).
+
 Kept Frappe-free so the transition logic unit-tests without a bench; the Frappe
 layer (api.imports.link_proforma_to_ci) applies the bidirectional link + save.
 """
@@ -26,6 +31,17 @@ def can_supersede(pi_status: str | None) -> bool:
 def is_already_linked(pi_status: str | None, pi_commercial_invoice: str | None, target_ci: str) -> bool:
 	"""True when the PI is already superseded by exactly ``target_ci`` (re-link no-op)."""
 	return (pi_status or "").strip() == SUPERSEDED and (pi_commercial_invoice or "") == (target_ci or "")
+
+
+def accepts_another_ci(pi_status: str | None, has_open_balance: bool) -> bool:
+	"""True when an already-superseded PI may still feed a further CI.
+
+	The second container of a PI is a normal shipment, not a second supersession:
+	the PI keeps pointing at the first CI and the new one simply consumes part of
+	the remaining balance. Only an open balance earns the pass — a PI whose boxes
+	are all shipped, and a CANCELLED one, must still be reported to the user.
+	"""
+	return (pi_status or "").strip() == SUPERSEDED and bool(has_open_balance)
 
 
 # ---------------------------------------------------------------------------

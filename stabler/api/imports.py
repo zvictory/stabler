@@ -716,15 +716,33 @@ def _apply_ci_payload(doc, values: dict, items, company: str):
 	doc.agreed_total = agreed_total
 
 
+def _proforma_has_open_balance(proforma: str, supplier: str, company: str, exclude_ci: str) -> bool:
+	"""True when ``proforma`` still has boxes to ship, ignoring ``exclude_ci``.
+
+	Answered by the very function the Smart Fill picker reads — same (PI, category)
+	key, same exclusion — so the guard below can never refuse a shipment the picker
+	had just offered. ``exclude_ci`` is the CI being saved: it is already in the
+	database by the time this runs, and counting it would make the container that
+	consumes the last boxes look like it had none to take.
+	"""
+	res = get_vendor_available_pi_lines(
+		company=company,
+		supplier=supplier,
+		exclude_ci=exclude_ci,
+		selected_pis=[proforma],
+	)
+	return any(flt(line.get("remaining_boxes")) > 0 for line in res.get("lines") or [])
+
+
 def _link_proforma_if_set(doc, company: str) -> None:
 	"""Supersede the CI's Proforma Invoice when the payload named one.
 
 	Deliberately NOT wrapped in try/except. Every exception reachable from here
 	is a validation error the user must see: the PI belongs to another company
-	or supplier, or it is already superseded by a *different* CI. Swallowing it
-	saved the CI, silently skipped the PI link, and still reported success.
-	Letting it propagate rolls the request back, so the CI and its link land
-	together or neither does.
+	or supplier, or it is already superseded and has nothing left to ship.
+	Swallowing it saved the CI, silently skipped the PI link, and still reported
+	success. Letting it propagate rolls the request back, so the CI and its link
+	land together or neither does.
 
 	The early return keeps re-saves editable: `save_proforma` accepts a `status`
 	in its payload, so a linked PI can later be moved to CANCELLED. Without this
@@ -734,6 +752,18 @@ def _link_proforma_if_set(doc, company: str) -> None:
 	if not proforma or not frappe.db.exists("Proforma Invoice", proforma):
 		return
 	if frappe.db.get_value("Proforma Invoice", proforma, "commercial_invoice") == doc.name:
+		return
+	# One PI ships in several containers and each container is its own CI, so the
+	# second one must not try to claim a link the first one already holds. Refusing
+	# it is what threw "cannot be superseded from status SUPERSEDED_BY_CI" while
+	# the picker was still offering the PI's open boxes.
+	status = frappe.db.get_value("Proforma Invoice", proforma, "status")
+	# The balance only decides anything for an already-superseded PI; every other
+	# status is answered by can_supersede, so the query stays off the normal path.
+	open_balance = status == _proforma.SUPERSEDED and _proforma_has_open_balance(
+		proforma, doc.supplier, company, doc.name
+	)
+	if _proforma.accepts_another_ci(status, open_balance):
 		return
 	link_proforma_to_ci(proforma, doc.name, company)
 

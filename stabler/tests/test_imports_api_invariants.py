@@ -117,9 +117,9 @@ class TestProformaLinkFailsLoud(unittest.TestCase):
 	Both endpoints used to call link_proforma_to_ci inside a bare
 	`try: ... except Exception: pass`. Every failure reachable from there is a
 	validation error the user has to see -- the PI belongs to another company or
-	supplier, or it is already superseded by a *different* CI -- so the CI saved,
-	the link never happened, and the UI still reported success. The throw must
-	propagate so Frappe rolls the request back.
+	supplier, or it is already superseded with nothing left to ship -- so the CI
+	saved, the link never happened, and the UI still reported success. The throw
+	must propagate so Frappe rolls the request back.
 	"""
 
 	def setUp(self):
@@ -139,6 +139,25 @@ class TestProformaLinkFailsLoud(unittest.TestCase):
 		# a `status`, so a linked PI can later become CANCELLED; without the skip
 		# can_supersede() would reject every subsequent CI edit forever.
 		self.assertIn('frappe.db.get_value("Proforma Invoice", proforma, "commercial_invoice")', body)
+
+	def test_a_further_container_skips_the_link_instead_of_throwing(self):
+		# One PI ships in several CIs (HMA/PI/190/2026-27 carries three). The
+		# supersede link is 1:1 and names the first of them, so the second CI must
+		# skip it -- refusing was what threw 417 on a PI with 4 266 boxes still open.
+		body = _func_body(self.src, "_link_proforma_if_set")
+		self.assertIn("_proforma.accepts_another_ci(status, open_balance)", body)
+		self.assertIn("_proforma_has_open_balance(", body)
+
+	def test_the_balance_ignores_the_ci_being_saved(self):
+		# The CI is already inserted when the helper runs. Counting it would make
+		# the container that consumes the last boxes look like it had none to take,
+		# and the picker -- which passes the same exclude_ci -- had just offered them.
+		body = _func_body(self.src, "_proforma_has_open_balance")
+		self.assertIn("exclude_ci=exclude_ci", body)
+		self.assertIn("selected_pis=[proforma]", body)
+		# Same (PI, category) arithmetic as the picker, not a second match key.
+		self.assertIn("get_vendor_available_pi_lines(", body)
+		self.assertIn('flt(line.get("remaining_boxes")) > 0', body)
 
 
 if __name__ == "__main__":
