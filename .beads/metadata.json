@@ -1,0 +1,8 @@
+{
+  "database": "dolt",
+  "backend": "dolt",
+  "dolt_mode": "server",
+  "dolt_server_port": 3307,
+  "dolt_database": "stabler",
+  "project_id": "86b80970-2fd2-4d11-8ec7-69f35ec30cfa"
+}
