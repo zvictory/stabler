@@ -61,6 +61,13 @@ graphify-out
 .smoke
 scratch
 
+# Beads task tracker (Dolt working copy + hooks). Caught 2026-08-07 in a deploy
+# dry-run: it was about to ship .beads/dolt/.beads-credential-key and the git
+# hooks to all seven tenants, on a server that runs neither bd nor dolt. Prod
+# did not have the directory yet -- and without --delete, the first copy would
+# have been permanent.
+.beads
+
 # Local staging area for files on their way out: stale git lock files, tests
 # superseded by a rewrite, an eslint baseline. Caught 2026-07-31 in a deploy
 # dry-run, which was about to ship a leftover HEAD.lock to all seven tenants.
