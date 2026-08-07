@@ -159,3 +159,4 @@ stabler.tests.test_sourcing_api
 stabler.tests.test_sourcing_spa
 stabler.tests.test_tender_pipeline_strip
 stabler.tests.test_sourcing_decision
+stabler.tests.test_gl_party_index_matches_query

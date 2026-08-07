@@ -131,10 +131,21 @@ ssh ice-production 'for s in anjan dts horeca laminor mikas msa smartbox; do
 Dürüstlük kaydı — beklenti buydu, ölçüm başka söyledi.
 
 `list_customers_with_balances`'in iki ağır sorgusu (`gl_rows`, `drift_rows`) bu
-değişiklikten sonra da **~1,0 ve ~1,9 sn** sürüyor. Havuz artık %99,8 isabet
-ediyor, yani **disk I/O tamamen bitti** — kalan süre CPU'da geçiyor:
-`tabGL Entry`'de 103–178 bin index kaydını tarayıp `GROUP BY party` ile toplamak.
-Bunu buffer pool değil, **sorgu/index tasarımı** düzeltir → `stabler-a05`.
+değişiklikten sonra da yavaş kaldı. Havuz artık %99,8 isabet ediyor, yani **disk
+I/O tamamen bitti** — kalan süre CPU'da geçiyor: `tabGL Entry`'de 103–178 bin
+index kaydını tarayıp `GROUP BY party` ile toplamak. Bunu buffer pool değil,
+**sorgu/index tasarımı** düzeltir → `stabler-a05`.
+
+> **Rakam düzeltmesi (2026-08-07, aynı gün, sonraki ölçüm).** Burada bir ara
+> `gl_rows ~1,9 sn` / `drift_rows ~1,0 sn` yazıyordu. Bunlar restart'ın hemen
+> ardından, **havuz daha soğukken** alınmıştı. Havuz ısındıktan sonra aynı iki
+> sorgu (sorgu önbelleği KAPALI) **~292 ms** ve **~530 ms**; uç noktanın tamamı
+> ~1030 ms. Ders: bu dosyadaki her süre için **önbellek modu + soğuk/sıcak**
+> durumu birlikte yazılmalı, yoksa sayı bir sonraki okuyucuyu yanıltıyor.
+>
+> `stabler-a05` bu ölçümlerin üstüne iki bileşik index ekledi
+> (`stabler.patches.v77_gl_entry_party_indexes`): uç nokta ~1030 → **~730 ms**
+> (%29), index alanı 159 → 185 MB.
 
 Ölçülen ek ayrıntı: sorgudaki 1328 elemanlı `party IN (...)` listesi planı
 `party_type_party_index` yerine `party` index'ine kaydırıyor ve 178 543 satır

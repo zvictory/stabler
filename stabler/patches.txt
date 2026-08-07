@@ -78,3 +78,4 @@ stabler.patches.v73_communication_retry_fields
 stabler.patches.v74_repair_tender_deal_fields
 stabler.patches.v75_repair_shadowed_docperms
 stabler.patches.v76_tender_master_documents
+stabler.patches.v77_gl_entry_party_indexes
