@@ -3164,6 +3164,7 @@ Route name is required.,Требуется имя маршрута.
 Routes,Маршруты
 Row,Строка
 Row not found on this Stock Entry,Строка не найдена в этой записи товара
+Row proforma {0} does not belong to this supplier and company.,Проформа строки {0} не принадлежит этому поставщику и компании.
 Row {0}: a positive quantity (kg) is required.,
 Row {0}: item is required.,Строка {0}: требуется позиция.
 Row {0}: quantity {1} kg does not match boxes x box weight ({2} kg).,

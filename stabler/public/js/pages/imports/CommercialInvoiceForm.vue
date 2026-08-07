@@ -780,7 +780,9 @@ async function loadDoc() {
 			...blankForm(),
 			...d,
 			items: (d.items || []).map((it) => ({
-				custom_proforma_invoice: it.custom_proforma_invoice || d.custom_proforma_invoice || "",
+				// The row's own PI only. Falling back to the header here made every line
+			// look linked, and itemsPayload() then wrote that guess back on save.
+			custom_proforma_invoice: it.custom_proforma_invoice || "",
 				category: it.category || "",
 				item: it.item,
 				item_name: it.item,
@@ -1020,7 +1022,9 @@ function itemsPayload() {
 	return form.value.items
 		.filter((r) => r.item)
 		.map((r) => ({
-			custom_proforma_invoice: r.custom_proforma_invoice || form.value.custom_proforma_invoice || undefined,
+			// A row sends the PI it was actually allocated from, or nothing at all --
+			// an empty one means "the header answers for me" (COALESCE server-side).
+			custom_proforma_invoice: r.custom_proforma_invoice || undefined,
 			category: r.category || undefined,
 			item: r.item,
 			description: r.description || undefined,

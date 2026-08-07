@@ -160,5 +160,44 @@ class TestProformaLinkFailsLoud(unittest.TestCase):
 		self.assertIn('flt(line.get("remaining_boxes")) > 0', body)
 
 
+class TestRowLevelProformaIsPersisted(unittest.TestCase):
+	"""A CI row must record the PI its boxes were actually allocated from.
+
+	_shipped_pi (_imports_rules.py) and _ci_item_effective_pi_expr both read a
+	two-level link -- the row wins, the header answers for rows that carry none --
+	but the write path never assigned the row half, so it was always NULL.
+	Measured on prod (msa, 2026-08-07): all 4 items of CI-2026-04379 had no PI of
+	their own, which is why unlinking the header would have erased 4 134 shipped
+	boxes from the arithmetic with nothing to fall back on.
+	"""
+
+	def setUp(self):
+		self.src = _read("imports.py")
+
+	def test_the_item_loop_writes_the_row_link(self):
+		body = _func_body(self.src, "_apply_ci_payload")
+		self.assertIn('line.custom_proforma_invoice = row["custom_proforma_invoice"]', body)
+		# _clean_ci_items has carried the value all along; only the assignment was missing.
+		self.assertIn('"custom_proforma_invoice": row.get("custom_proforma_invoice") or None', self.src)
+
+	def test_a_row_pi_is_checked_against_this_ci_supplier(self):
+		# The header link is validated by link_proforma_to_ci. The row link wins over
+		# it in the same arithmetic and used to reach the DB completely unchecked.
+		self.assertIn(
+			"_assert_row_proformas(cleaned, doc.supplier, company)", _func_body(self.src, "_apply_ci_payload")
+		)
+		guard = _func_body(self.src, "_assert_row_proformas")
+		self.assertIn('"company": company, "supplier": supplier', guard)
+		self.assertIn("frappe.throw(", guard)
+
+	def test_the_reader_hands_back_the_row_link_alone(self):
+		# get_commercial_invoice used to coalesce the header into every row. The form
+		# posts those rows straight back, so an old CI opened and saved would have
+		# pinned all of its lines to whatever the header named that day.
+		body = _func_body(self.src, "get_commercial_invoice")
+		self.assertIn('"custom_proforma_invoice": it.get("custom_proforma_invoice"),', body)
+		self.assertNotIn('or doc.get("custom_proforma_invoice")', body)
+
+
 if __name__ == "__main__":
 	unittest.main()

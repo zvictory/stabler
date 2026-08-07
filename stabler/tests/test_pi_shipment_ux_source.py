@@ -759,5 +759,45 @@ class SmartFillShowsOnlyWhatIsLeftTest(unittest.TestCase):
 					self.assertRegex(csv_text, rf"(?m)^{re.escape(key)},\S")
 
 
+class RowProformaIsNotLaunderedFromTheHeaderTest(unittest.TestCase):
+	"""The form must not turn the header PI into a per-row fact.
+
+	Both ends of the round trip used to coalesce: the loader stamped the header
+	onto every row it read, and itemsPayload() sent that guess back. With the row
+	link now persisted (stabler-06o) that would pin every line of an old CI to
+	whatever the header named on the day it was next saved. An empty row means
+	"the header answers for me" -- a meaning only the server-side COALESCE holds.
+	"""
+
+	def setUp(self):
+		self.vue = read(os.path.join(PAGES, "CommercialInvoiceForm.vue"))
+
+	def test_the_loader_keeps_an_unlinked_row_unlinked(self):
+		self.assertIn('custom_proforma_invoice: it.custom_proforma_invoice || "",', self.vue)
+		self.assertNotIn("it.custom_proforma_invoice || d.custom_proforma_invoice", self.vue)
+
+	def test_the_save_payload_sends_the_rows_own_pi_or_nothing(self):
+		self.assertIn("custom_proforma_invoice: r.custom_proforma_invoice || undefined,", self.vue)
+		self.assertNotIn("r.custom_proforma_invoice || form.value.custom_proforma_invoice", self.vue)
+
+	def test_smart_fill_still_stamps_the_pi_it_allocated_from(self):
+		# The one place a row legitimately gets its own PI: the allocation that
+		# produced it. Without this the fix above would leave every row empty.
+		self.assertIn("custom_proforma_invoice: line.pi_name,", self.vue)
+
+	def test_the_row_pi_guard_speaks_all_five_languages(self):
+		# _assert_row_proformas throws a new backend string; C6 wants it translated.
+		pattern = r"(?m)^Row proforma \{0\} does not belong to this supplier and company\.,\S"
+		for lang in ("en", "ru", "uz", "uzc", "tr"):
+			with self.subTest(lang=lang):
+				self.assertRegex(read(os.path.join(_ROOT, "translations", f"{lang}.csv")), pattern)
+
+	def test_display_still_falls_back_so_a_blank_row_is_not_blank_on_screen(self):
+		# Storage stops coalescing; the screen must not. A row with no PI of its own
+		# is shown under the header's, which is exactly what the server computes.
+		self.assertIn("row.custom_proforma_invoice || form.custom_proforma_invoice", self.vue)
+		self.assertIn("row.custom_proforma_invoice || form.value.custom_proforma_invoice", self.vue)
+
+
 if __name__ == "__main__":
 	unittest.main()

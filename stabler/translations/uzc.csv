@@ -3158,6 +3158,7 @@ Route name is required.,Маршрут номи зарур.
 Routes,Маршрутлар
 Row,Қатор
 Row not found on this Stock Entry,Ёғу бу Қўйма жорийида топилмади
+Row proforma {0} does not belong to this supplier and company.,Қатор проформаси {0} ушбу таъминотчи ва компанияга тегишли эмас.
 Row {0}: a positive quantity (kg) is required.,
 Row {0}: item is required.,{0}-қатор: товар талаб қилинади.
 Row {0}: quantity {1} kg does not match boxes x box weight ({2} kg).,

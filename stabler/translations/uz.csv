@@ -3158,6 +3158,7 @@ Route name is required.,Yo'nalish nomi talab qilinadi.
 Routes,Yo'nalishlar
 Row,Qator
 Row not found on this Stock Entry,Ushbu Inventar kiritishida qator topilmadi
+Row proforma {0} does not belong to this supplier and company.,Qator proformasi {0} ushbu ta'minotchi va kompaniyaga tegishli emas.
 Row {0}: a positive quantity (kg) is required.,
 Row {0}: item is required.,{0}-qator: tovar talab qilinadi.
 Row {0}: quantity {1} kg does not match boxes x box weight ({2} kg).,

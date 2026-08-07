@@ -3146,6 +3146,7 @@ Route name is required.,Rota adı zorunludur.
 Routes,Rotalar
 Row,Satır
 Row not found on this Stock Entry,Bu Stok Girişinde satır bulunamadı
+Row proforma {0} does not belong to this supplier and company.,Satır proforması {0} bu tedarikçiye ve şirkete ait değil.
 Row {0}: a positive quantity (kg) is required.,
 Row {0}: item is required.,Satır {0}: ürün gereklidir.
 Row {0}: quantity {1} kg does not match boxes x box weight ({2} kg).,

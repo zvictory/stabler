@@ -3155,6 +3155,7 @@ Route name is required.,Route name is required.
 Routes,Routes
 Row,Row
 Row not found on this Stock Entry,Row not found on this Stock Entry
+Row proforma {0} does not belong to this supplier and company.,Row proforma {0} does not belong to this supplier and company.
 Row {0}: a positive quantity (kg) is required.,Row {0}: a positive quantity (kg) is required.
 Row {0}: item is required.,Row {0}: item is required.
 Row {0}: quantity {1} kg does not match boxes x box weight ({2} kg).,Row {0}: quantity {1} kg does not match boxes x box weight ({2} kg).

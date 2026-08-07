@@ -453,8 +453,10 @@ def get_commercial_invoice(name: str):
 		"items": [
 			{
 				"name": it.name,
-				"custom_proforma_invoice": it.get("custom_proforma_invoice")
-				or doc.get("custom_proforma_invoice"),
+				# The row's own link, never the header's: the form sends these back
+				# verbatim, so coalescing here would pin every line of an old CI to
+				# whatever the header names the next time it is saved.
+				"custom_proforma_invoice": it.get("custom_proforma_invoice"),
 				"category": it.category,
 				"item": it.item,
 				"description": it.description,
@@ -672,6 +674,21 @@ def _sync_po_links(ci_name: str, company: str, po_links):
 		).insert(ignore_permissions=True)
 
 
+def _assert_row_proformas(cleaned, supplier: str, company: str) -> None:
+	"""Every row-level PI must belong to this CI's supplier and company.
+
+	The header link is validated by ``link_proforma_to_ci``; the row link never
+	passed through it, yet it feeds the very same shipped/remaining arithmetic
+	(``_shipped_pi``) and wins over the header. An unchecked one would move a
+	container's boxes onto a stranger's contract.
+	"""
+	for proforma in sorted({(row.get("custom_proforma_invoice") or "") for row in cleaned} - {""}):
+		if not frappe.db.exists(
+			"Proforma Invoice", {"name": proforma, "company": company, "supplier": supplier}
+		):
+			frappe.throw(_("Row proforma {0} does not belong to this supplier and company.").format(proforma))
+
+
 def _apply_ci_payload(doc, values: dict, items, company: str):
 	for field in _CI_HEADER_FIELDS:
 		if field not in values:
@@ -690,12 +707,18 @@ def _apply_ci_payload(doc, values: dict, items, company: str):
 				doc.set(field, flt(values[field]))
 
 	cleaned = _clean_ci_items(items)
+	_assert_row_proformas(cleaned, doc.supplier, company)
 	doc.set("items", [])
 	total_boxes = 0
 	total_kg = 0.0
 	agreed_total = 0.0
 	for row in cleaned:
 		line = doc.append("items", {})
+		# The row link is half of the two-level attribution the rules layer reads
+		# (_shipped_pi / _ci_item_effective_pi_expr): the row wins, the header answers
+		# for rows that carry none. Dropping it here made every line of a container
+		# count against whichever PI the header happened to name.
+		line.custom_proforma_invoice = row["custom_proforma_invoice"]
 		line.category = row["category"]
 		line.item = row["item"]
 		line.description = row["description"]
