@@ -1895,6 +1895,7 @@ Line Operator Kiosk,
 Line details,
 Line-level (pre-tax) — item-filtered,На уровне строк (до налога) — с фильтром по товару
 Lines,Строки
+"Lines come from {count} proformas, so each line keeps its own PI reference.","Строки взяты из {count} проформ, поэтому каждая строка сохраняет свою ссылку на PI."
 Lines selected,Выбрано строк
 Link,Связать
 "Link an ERPNext employee to a TimePay (or other device) user ID. When a raw gate event arrives with this device user ID, it will be matched to this employee automatically.",

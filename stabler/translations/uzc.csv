@@ -1889,6 +1889,7 @@ Line Operator Kiosk,
 Line details,
 Line-level (pre-tax) — item-filtered,Қатор даражасида (солиқсиз) — маҳсулот бўйича фильтрланган
 Lines,Қаторлар
+"Lines come from {count} proformas, so each line keeps its own PI reference.","Қаторлар {count} та проформадан олинган, шунинг учун ҳар бир қатор ўз PI ҳаволасини сақлайди."
 Lines selected,Танланган қаторлар
 Link,Боғлаш
 "Link an ERPNext employee to a TimePay (or other device) user ID. When a raw gate event arrives with this device user ID, it will be matched to this employee automatically.",

@@ -799,5 +799,46 @@ class RowProformaIsNotLaunderedFromTheHeaderTest(unittest.TestCase):
 		self.assertIn("row.custom_proforma_invoice || form.value.custom_proforma_invoice", self.vue)
 
 
+class HeaderProformaComesFromTheAllocationTest(unittest.TestCase):
+	"""The CI header may only name a proforma the container actually shipped from.
+
+	applyMultiPiAllocation used to fall back to ``multiPiProformas[0]`` -- the
+	supplier's FULL open-PI list that feeds the step-1 checkboxes, not
+	``multiPiSelected``. So a CI could be stamped with whichever PI happened to
+	sort first, one the user never ticked and allocated nothing from, and that
+	header is what ``_shipped_pi`` reads for every row carrying no link of its own.
+	"""
+
+	def setUp(self):
+		self.vue = read(os.path.join(PAGES, "CommercialInvoiceForm.vue"))
+		start = self.vue.index("function applyMultiPiAllocation() {")
+		self.body = self.vue[start : self.vue.index("\n}", start) + 2]
+
+	def test_the_header_is_never_taken_from_the_unfiltered_open_list(self):
+		self.assertNotIn("multiPiProformas.value[0].name", self.vue)
+
+	def test_only_a_proforma_that_received_boxes_can_be_stamped(self):
+		# addedPis is filled inside the `boxes > 0` branch, so a ticked line that
+		# was allocated nothing cannot put its PI on the header either.
+		self.assertIn("addedPis.add(line.pi_name);", self.body)
+		self.assertIn("addedPis.size === 1", self.body)
+
+	def test_a_mixed_container_leaves_the_header_blank(self):
+		# No single proforma is the reference for all the rows, and each row now
+		# carries its own link -- _CI_UNLINKED_EXPR counts that CI as linked.
+		self.assertIn("form.value.custom_proforma_invoice = [...addedPis][0];", self.body)
+		self.assertIn("addedPis.size > 1", self.body)
+		self.assertIn("toast.info(", self.body)
+
+	def test_an_existing_header_is_still_left_alone(self):
+		self.assertIn("!form.value.custom_proforma_invoice && addedPis.size === 1", self.body)
+
+	def test_the_mixed_container_notice_speaks_all_five_languages(self):
+		pattern = r'(?m)^"Lines come from \{count\} proformas, so each line keeps its own PI reference\.","\S'
+		for lang in ("en", "ru", "uz", "uzc", "tr"):
+			with self.subTest(lang=lang):
+				self.assertRegex(read(os.path.join(_ROOT, "translations", f"{lang}.csv")), pattern)
+
+
 if __name__ == "__main__":
 	unittest.main()

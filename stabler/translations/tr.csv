@@ -1882,6 +1882,7 @@ Line Operator Kiosk,
 Line details,
 Line-level (pre-tax) — item-filtered,Satır düzeyinde (vergi öncesi) — ürüne göre filtrelenmiş
 Lines,Satırlar
+"Lines come from {count} proformas, so each line keeps its own PI reference.","Satırlar {count} proformadan geliyor, bu yüzden her satır kendi PI referansını korur."
 Lines selected,Seçilen satırlar
 Link,Bağla
 "Link an ERPNext employee to a TimePay (or other device) user ID. When a raw gate event arrives with this device user ID, it will be matched to this employee automatically.",

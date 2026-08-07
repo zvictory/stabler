@@ -732,6 +732,7 @@ const multiPiSummary = computed(() => {
 
 function applyMultiPiAllocation() {
 	let addedCount = 0;
+	const addedPis = new Set();
 	for (const row of multiPiSelectedLines.value) {
 		const { line, child } = row;
 		const { key, boxes, bw, qty } = multiPiLineTotals(row);
@@ -755,16 +756,32 @@ function applyMultiPiAllocation() {
 				docs_price: child.docs_price || line.docs_price,
 				_qtyManual: true,
 			});
+			addedPis.add(line.pi_name);
 			addedCount++;
 		}
 	}
 
-	if (!form.value.custom_proforma_invoice && multiPiProformas.value.length > 0) {
-		form.value.custom_proforma_invoice = multiPiProformas.value[0].name;
+	// The header answers only for rows that name no PI of their own, so it may be
+	// stamped only when the whole allocation came from a single proforma. It used
+	// to take multiPiProformas[0] -- the supplier's FULL open list, not what the
+	// user ticked -- so a container could be pinned to a proforma it shipped
+	// nothing from, and that one link attributed every box.
+	if (!form.value.custom_proforma_invoice && addedPis.size === 1) {
+		form.value.custom_proforma_invoice = [...addedPis][0];
 	}
 
 	multiPiModalOpen.value = false;
 	toast.success(t("Added {count} item lines from selected PIs.", { count: addedCount }));
+	// A mixed container leaves the header blank on purpose -- every row carries its
+	// own link, and no one proforma is the reference for all of them -- but the
+	// field used to fill itself, so say why it no longer does.
+	if (!form.value.custom_proforma_invoice && addedPis.size > 1) {
+		toast.info(
+			t("Lines come from {count} proformas, so each line keeps its own PI reference.", {
+				count: addedPis.size,
+			})
+		);
+	}
 }
 
 async function loadDoc() {
