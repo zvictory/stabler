@@ -279,6 +279,11 @@ prod-drift:
 	    -not -path '*/node_modules/*' -not -path '*/__pycache__/*' \
 	    -not -path 'stabler/public/dist/*'" \
 	  | sort > $$tmp/prod; \
+	if [ ! -s $$tmp/prod ]; then \
+	  echo "prod-drift: ABORT — prod listesi boş (ssh koptu mu?). Boş liste her"; \
+	  echo "  zaman 'temiz' görünür; bu bir sonuç değil, ölçüm hatasıdır."; \
+	  rm -rf $$tmp; exit 1; \
+	fi; \
 	extra=$$(comm -13 $$tmp/local $$tmp/prod); \
 	rm -rf $$tmp; \
 	if [ -n "$$extra" ]; then \
