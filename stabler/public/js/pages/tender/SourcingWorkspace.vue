@@ -338,6 +338,13 @@ async function createRfq() {
 const rows = computed(() => data.value?.rows || []);
 const baseCcy = computed(() => data.value?.base_currency || "");
 const cheapestRow = computed(() => rows.value.find((r) => r.cheapest));
+// K3: eksik tahmini olan teklifler isimle sayılır — jenerik uyarı yetmez.
+const missingEstimateNames = computed(() =>
+	(data.value?.missing_estimates || []).map((name) => {
+		const row = rows.value.find((r) => r.name === name);
+		return row?.supplier_name || name;
+	})
+);
 const selectedRow = computed(() =>
 	rows.value.find((r) => r.name === awardForm.value.selected_quotation)
 );
@@ -454,7 +461,11 @@ watch(
 				</div>
 
 				<div v-if="deal" class="ms-auto d-flex gap-2">
-					<button type="button" class="btn btn-outline-secondary btn-sm" @click="openCreateRfqModal">
+					<button
+						type="button"
+						class="btn btn-outline-secondary btn-sm"
+						@click="openCreateRfqModal"
+					>
 						<i class="ti ti-send me-1"></i>{{ t("Request for quotation") }}
 					</button>
 					<button type="button" class="btn btn-primary btn-sm" @click="openAddQuotation">
@@ -754,6 +765,9 @@ watch(
 								"Not all quotations have landed cost estimates. Landed ranking is paused until all bids carry estimates."
 							)
 						}}
+						<div v-if="missingEstimateNames.length" class="mt-1 fw-semibold">
+							<i class="ti ti-file-off me-1"></i>{{ missingEstimateNames.join(" · ") }}
+						</div>
 					</div>
 
 					<!-- Case 1: Award is APPROVED (Read-only) -->
