@@ -1,3 +1,5 @@
+import json
+
 import frappe
 from frappe.model.document import Document
 
@@ -123,6 +125,51 @@ def stage_sla_for(company: str) -> dict:
 		return dict(DEFAULT_STAGE_SLA_DAYS)
 
 	return {stage: int(getattr(row, f"sla_{stage}_days", 0) or 0) for stage in DEFAULT_STAGE_SLA_DAYS}
+
+
+def imports_supplier_groups_for(company: str) -> list[str]:
+	"""Bu şirketin ithalat tedarikçi gruplarını döndürür. Ayarlanmamışsa BOŞ liste.
+
+	`stage_sla_for` ile aynı şekil ve aynı sebeple: hangi grubun "et tedarikçisi",
+	hangisinin "nakliyeci" sayıldığı kiracıya göre değişir, o yüzden config'de
+	yaşar, kodda değil (bkz. docs/plans/2026-07-18-multitenant-governance.md).
+
+	Boş liste "kısıtlama yok" demektir — satır yoksa, alan boşsa ya da tablo
+	henüz senkronlanmamışsa hepsi aynı kapıya çıkar: çağıran hiçbir filtre
+	uygulamaz ve ekran bugünkü davranışında kalır. Sessizce boş bir listeye
+	düşmek burada güvenli olan taraf; ters yönde bir hata tedarikçi seçiciyi
+	boşaltırdı.
+
+	Alan çok satırlı metin: her satırda bir grup adı. JSON listesi de kabul
+	edilir (yönetici yapıştırdıysa çalışsın diye).
+	"""
+	if not company:
+		return []
+
+	raw = ""
+	try:
+		settings = frappe.get_single("Stabler Settings")
+		for candidate in settings.get("imports_settings") or []:
+			if candidate.company == company:
+				raw = (candidate.ci_supplier_groups or "").strip()
+				break
+	except Exception:
+		# Tablo henüz senkronlanmamış olabilir (yama öncesi migrate).
+		return []
+
+	if not raw:
+		return []
+
+	if raw.startswith("["):
+		try:
+			parsed = json.loads(raw)
+			if isinstance(parsed, list):
+				return [str(item).strip() for item in parsed if str(item).strip()]
+		except ValueError:
+			# Bozuk JSON: satır satır okumaya düş, yönetici öyle yazmış olabilir.
+			pass
+
+	return [line.strip() for line in raw.splitlines() if line.strip()]
 
 
 def module_map_for(company: str) -> dict:

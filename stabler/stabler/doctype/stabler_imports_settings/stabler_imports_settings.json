@@ -1,0 +1,43 @@
+{
+ "actions": [],
+ "creation": "2026-08-07 12:00:00.000000",
+ "doctype": "DocType",
+ "editable_grid": 1,
+ "engine": "InnoDB",
+ "field_order": [
+  "company",
+  "ci_supplier_groups"
+ ],
+ "fields": [
+  {
+   "columns": 2,
+   "fieldname": "company",
+   "fieldtype": "Link",
+   "in_list_view": 1,
+   "label": "Company",
+   "options": "Company",
+   "reqd": 1,
+   "unique": 1
+  },
+  {
+   "columns": 6,
+   "description": "Supplier groups the Commercial Invoice and Proforma supplier pickers may offer, one group name per line (a JSON list is also accepted). Blank means no restriction: those pickers then list every supplier, as they did before this setting existed. Only the CI and Proforma pickers read it — the freight, truck and expense pickers stay unrestricted, because they legitimately need transporters and customs brokers.",
+   "fieldname": "ci_supplier_groups",
+   "fieldtype": "Small Text",
+   "in_list_view": 1,
+   "label": "CI Supplier Groups"
+  }
+ ],
+ "index_web_pages_for_search": 1,
+ "istable": 1,
+ "links": [],
+ "modified": "2026-08-07 12:00:00.000000",
+ "modified_by": "Administrator",
+ "module": "Stabler",
+ "name": "Stabler Imports Settings",
+ "owner": "Administrator",
+ "permissions": [],
+ "sort_field": "creation",
+ "sort_order": "DESC",
+ "states": []
+}

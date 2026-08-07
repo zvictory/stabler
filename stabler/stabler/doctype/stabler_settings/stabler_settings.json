@@ -65,6 +65,7 @@
   "require_delivery_note",
   "enable_landed_cost",
   "landed_cost_expense_account",
+  "imports_settings",
   "customers_section",
   "enable_parent_credit_check",
   "valuation_guard_section",
@@ -445,6 +446,13 @@
    "fieldtype": "Link",
    "label": "Landed Cost Expense Account",
    "options": "Account"
+  },
+  {
+   "description": "Per-company imports settings. A company with no row here keeps the unrestricted behaviour everywhere.",
+   "fieldname": "imports_settings",
+   "fieldtype": "Table",
+   "label": "Imports Settings",
+   "options": "Stabler Imports Settings"
   },
   {
    "fieldname": "customers_section",
