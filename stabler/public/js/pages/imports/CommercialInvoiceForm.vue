@@ -494,6 +494,23 @@ function multiPiItemOptions(line) {
 	return out;
 }
 
+// Ceiling for the "Allocate boxes" input. `remaining_boxes` is signed and
+// goes negative on over-shipped lines — that is real data (C2) and must
+// keep rendering as-is everywhere else (the Remaining cell, the over-shipped
+// badge). This is the ONLY place that value gets floored at 0, because an
+// `<input max>` of a negative number is meaningless.
+const maxAllocatable = (line) => Math.max(0, line.remaining_boxes || 0);
+
+// Clamps a typed/pasted/spinner value into [0, maxAllocatable]. The `max`
+// attribute alone is not enforced by the browser for typed or pasted input,
+// so this runs on every @input.
+function setAllocation(line, raw) {
+	const key = multiPiKey(line);
+	const parsed = parseInt(raw, 10);
+	const n = Number.isNaN(parsed) ? 0 : parsed;
+	multiPiAllocations.value[key] = Math.min(Math.max(n, 0), maxAllocatable(line));
+}
+
 async function openMultiPiSmartFill() {
 	if (!form.value.supplier) {
 		toast.error(t("Please select a supplier first."));
@@ -530,7 +547,7 @@ function applyMultiPiAllocation() {
 	let addedCount = 0;
 	for (const line of multiPiLines.value) {
 		const key = multiPiKey(line);
-		const boxes = Math.max(0, parseInt(multiPiAllocations.value[key] || 0));
+		const boxes = Math.min(Math.max(0, parseInt(multiPiAllocations.value[key] || 0)), maxAllocatable(line));
 		if (boxes > 0) {
 			const bw = line.box_weight_kg || DEFAULT_BOX_WEIGHT_KG;
 			const qty = round2(boxes * bw);
@@ -2093,12 +2110,14 @@ watch(activeCompany, loadRefData);
 										</td>
 										<td class="text-end">
 											<input
-												v-model.number="multiPiAllocations[multiPiKey(line)]"
+												:value="multiPiAllocations[multiPiKey(line)]"
 												type="number"
 												min="0"
+												:max="maxAllocatable(line)"
 												step="1"
 												inputmode="decimal"
 												class="form-control form-control-sm text-end font-monospace"
+												@input="setAllocation(line, $event.target.value)"
 											>
 										</td>
 									</tr>
