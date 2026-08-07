@@ -695,5 +695,69 @@ class CiFormSingleFillPathTest(unittest.TestCase):
 		self.assertIn('t("Unlink proforma")', self.vue)
 
 
+class SmartFillShowsOnlyWhatIsLeftTest(unittest.TestCase):
+	"""Step 2 offers a contract line only while it still has boxes to give.
+
+	Four of PI-AUG-26's thirteen cuts were fully shipped and still rendered, at a
+	ceiling of 0: rows nothing could be typed into, that "Select All" counted
+	anyway — so the bar promised nine lines while Apply pushed five. They are
+	dropped at the one flattening point, which is also what feeds the plan, so a
+	closed row (which planned to 0 already) cannot change what an open one gets.
+	"""
+
+	def setUp(self):
+		self.vue = read(os.path.join(PAGES, "CommercialInvoiceForm.vue"))
+
+	def test_a_row_is_offered_only_when_both_of_its_ceilings_are_open(self):
+		self.assertIn(
+			"const multiPiRowIsOpen = (line, child) => poolRemaining(line) > 0 && rowContractRemaining(line, child) > 0;",
+			self.vue,
+		)
+		# Inside the single flattening point, so the plan, the summary bar, the
+		# select-all counters and Apply cannot disagree about what is on screen.
+		rows = self.vue[self.vue.index("const multiPiRows = computed(") :]
+		rows = rows[: rows.index("\n});") + 4]
+		self.assertIn("if (!multiPiRowIsOpen(line, child)) return;", rows)
+
+	def test_the_filter_never_reads_a_number_the_user_typed(self):
+		# maxAllocatable is what the rows ABOVE this one left in the pool. Filter
+		# on it and a row would disappear from the screen mid-keystroke.
+		self.assertNotIn("maxAllocatable", self.vue[self.vue.index("const multiPiRowIsOpen") :][:400])
+		self.assertNotIn("multiPiAllocations", self.vue[self.vue.index("const multiPiRowIsOpen") :][:400])
+
+	def test_the_indices_behind_the_dom_ids_stay_those_of_the_unfiltered_arrays(self):
+		# forEach still supplies lineIdx/childIdx, so hiding a row cannot make two
+		# surviving rows collide on one id.
+		rows = self.vue[self.vue.index("const multiPiRows = computed(") :]
+		rows = rows[: rows.index("\n});") + 4]
+		self.assertIn("multiPiLines.value.forEach((line, lineIdx)", rows)
+		self.assertIn("(line.contract_lines || []).forEach((child, childIdx)", rows)
+
+	def test_an_over_shipped_pool_still_shows_its_band(self):
+		# C2: a category that shipped past its contract has no boxes left either,
+		# but hiding that band would hide the breach, not the noise.
+		self.assertIn("poolRemaining(line) > 0 || line.over_shipped", self.vue)
+		self.assertIn('v-for="line in multiPiOpenLines"', self.vue)
+		self.assertIn("line.over_shipped", self.vue)
+
+	def test_the_hidden_rows_are_counted_out_loud(self):
+		# Silently dropping rows reads as "this is everything there is".
+		self.assertIn("const multiPiHiddenCount = computed(", self.vue)
+		self.assertIn('t("{count} fully shipped lines hidden", { count: multiPiHiddenCount })', self.vue)
+		# And an all-shipped result must not read like an empty one.
+		self.assertIn('t("Every line of the selected proformas is already fully shipped.")', self.vue)
+		self.assertIn('t("No open proforma lines for this supplier.")', self.vue)
+
+	def test_the_new_strings_land_in_all_five_languages(self):
+		for lang in ("en", "ru", "uz", "uzc", "tr"):
+			csv_text = read(os.path.join(_ROOT, "translations", f"{lang}.csv"))
+			for key in (
+				"{count} fully shipped lines hidden",
+				"Every line of the selected proformas is already fully shipped.",
+			):
+				with self.subTest(lang=lang, key=key):
+					self.assertRegex(csv_text, rf"(?m)^{re.escape(key)},\S")
+
+
 if __name__ == "__main__":
 	unittest.main()

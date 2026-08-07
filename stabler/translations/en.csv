@@ -5628,3 +5628,5 @@ Contract line,Contract line
 Shipped as this cut,Shipped as this cut
 Indicative only — shipments are tracked per category,Indicative only — shipments are tracked per category
 This category pool has no boxes left.,This category pool has no boxes left.
+{count} fully shipped lines hidden,{count} fully shipped lines hidden
+Every line of the selected proformas is already fully shipped.,Every line of the selected proformas is already fully shipped.

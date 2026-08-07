@@ -5635,3 +5635,5 @@ Contract line,Строка контракта
 Shipped as this cut,Отгружено как этот отруб
 Indicative only — shipments are tracked per category,Только справочно — отгрузки учитываются по категории
 This category pool has no boxes left.,В этой категории не осталось коробок.
+{count} fully shipped lines hidden,{count} полностью отгруженных строк скрыто
+Every line of the selected proformas is already fully shipped.,Все строки выбранных проформ уже полностью отгружены.

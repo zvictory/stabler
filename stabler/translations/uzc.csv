@@ -5629,3 +5629,5 @@ Contract line,Шартнома қатори
 Shipped as this cut,Шу кесим сифатида жўнатилган
 Indicative only — shipments are tracked per category,Фақат маълумот учун — жўнатмалар категория бўйича ҳисобланади
 This category pool has no boxes left.,Бу категорияда қути қолмаган.
+{count} fully shipped lines hidden,{count} та тўлиқ жўнатилган қатор яширилди
+Every line of the selected proformas is already fully shipped.,Танланган проформаларнинг барча қаторлари аллақачон тўлиқ жўнатилган.

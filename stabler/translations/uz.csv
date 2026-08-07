@@ -5629,3 +5629,5 @@ Contract line,Shartnoma qatori
 Shipped as this cut,Shu kesim sifatida jo'natilgan
 Indicative only — shipments are tracked per category,Faqat ma'lumot uchun — jo'natmalar kategoriya bo'yicha hisoblanadi
 This category pool has no boxes left.,Bu kategoriyada quti qolmagan.
+{count} fully shipped lines hidden,{count} ta to'liq jo'natilgan qator yashirildi
+Every line of the selected proformas is already fully shipped.,Tanlangan proformalarning barcha qatorlari allaqachon to'liq jo'natilgan.

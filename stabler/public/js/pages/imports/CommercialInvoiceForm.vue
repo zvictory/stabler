@@ -424,10 +424,15 @@ const multiPiRowKey = (line, child) => `${multiPiKey(line)}::${child.row}`;
 // The ONE place the group/line nesting is flattened. Everything downstream —
 // the plan, the summary, Apply, the select-all counters — reads this list, so
 // there is no second traversal that could disagree about what is on screen.
+// It is also where the "still shippable" filter lives, for the same reason: a
+// closed row planned to 0 boxes already, so dropping it here cannot change what
+// any other row gets, and no counter can end up promising a line Apply skips.
+// The indices stay those of the unfiltered arrays — they only feed DOM ids.
 const multiPiRows = computed(() => {
 	const out = [];
 	multiPiLines.value.forEach((line, lineIdx) => {
 		(line.contract_lines || []).forEach((child, childIdx) => {
+			if (!multiPiRowIsOpen(line, child)) return;
 			out.push({ line, child, key: multiPiRowKey(line, child), groupKey: multiPiKey(line), lineIdx, childIdx });
 		});
 	});
@@ -491,6 +496,26 @@ function rowShippedAsThisCut(line, child) {
 function rowContractRemaining(line, child) {
 	return Math.max(0, (Number(child.boxes) || 0) - rowShippedAsThisCut(line, child));
 }
+
+// Step 2 offers what can still be shipped, and nothing else. A row qualifies
+// only while both of its ceilings are open: the category pool must have boxes
+// left, and this contract line must not already be fully shipped as its own
+// cut. Both numbers come from the server response and never from what the user
+// is typing, so no row can vanish out from under a quantity being entered —
+// which rules out `maxAllocatable`, whose value depends on the rows above it.
+const multiPiRowIsOpen = (line, child) => poolRemaining(line) > 0 && rowContractRemaining(line, child) > 0;
+
+// Pools follow the same rule with one exception: an over-shipped category has
+// no boxes left either, but that is a discrepancy the user has to see (C2), not
+// noise to hide.
+const multiPiOpenLines = computed(() => multiPiLines.value.filter((line) => poolRemaining(line) > 0 || line.over_shipped));
+
+// A picker that silently drops rows reads as "this is everything there is".
+const multiPiHiddenCount = computed(() => {
+	let total = 0;
+	for (const line of multiPiLines.value) total += (line.contract_lines || []).length;
+	return total - multiPiRows.value.length;
+});
 
 // The groups exactly as the plan consumes them, in contract order.
 const multiPiGroups = computed(() => {
@@ -2181,7 +2206,12 @@ watch(
 					<!-- Step 2 — allocate boxes across the selected proformas' lines -->
 					<div v-else class="modal-body">
 						<div class="d-flex justify-content-between align-items-center mb-2">
-							<div class="fw-semibold">{{ t("Step 2: Allocate Line Items") }}</div>
+							<div class="fw-semibold">
+								{{ t("Step 2: Allocate Line Items") }}
+								<span v-if="multiPiHiddenCount" class="small fw-normal text-secondary ms-2">
+									{{ t("{count} fully shipped lines hidden", { count: multiPiHiddenCount }) }}
+								</span>
+							</div>
 							<div class="btn-list">
 								<button type="button" class="btn btn-sm btn-outline-secondary" :disabled="multiPiLoading || multiPiAllLinesSelected" @click="multiPiSelectAllLines(true)">
 									{{ t("Select All") }}
@@ -2216,8 +2246,8 @@ watch(
 						     guard enforces; the table below lists the contract lines the bundle was
 						     booked as, and they share this one balance. It sits above the table so
 						     the rows are nothing but the product lines the user picks from. -->
-						<div v-if="!multiPiLoading && multiPiLines.length" class="d-flex flex-column gap-1 mb-2">
-							<div v-for="line in multiPiLines" :key="multiPiKey(line)" class="border rounded px-2 py-1">
+						<div v-if="!multiPiLoading && multiPiOpenLines.length" class="d-flex flex-column gap-1 mb-2">
+							<div v-for="line in multiPiOpenLines" :key="multiPiKey(line)" class="border rounded px-2 py-1">
 								<div class="d-flex flex-wrap align-items-center gap-2">
 									<span class="badge bg-blue-lt font-monospace" style="font-size: 0.75rem">{{ line.pi_ref || line.pi_name }}</span>
 									<span class="fw-semibold">{{ line.category || "—" }}</span>
@@ -2278,8 +2308,13 @@ watch(
 							</thead>
 							<SkeletonRows v-if="multiPiLoading" :rows="6" :cols="8" />
 							<tbody v-else>
+								<!-- "Nothing came back" and "everything that came back is already
+								     shipped" are different answers, and only the second one tells the
+								     user their proformas are done rather than their filter is wrong. -->
 								<tr v-if="!multiPiRows.length">
-									<td colspan="8" class="text-secondary text-center py-3">{{ t("No open proforma lines for this supplier.") }}</td>
+									<td colspan="8" class="text-secondary text-center py-3">
+										{{ multiPiLines.length ? t("Every line of the selected proformas is already fully shipped.") : t("No open proforma lines for this supplier.") }}
+									</td>
 								</tr>
 								<!-- Index-based DOM id on purpose: a match key holds the PI name and the category
 								     verbatim, so an id built from it carried "::" and spaces — legal for <label for>
