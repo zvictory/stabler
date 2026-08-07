@@ -76,6 +76,11 @@ _to_delete
 # Test suite: CI runs it, prod does not
 tests
 
+# Screenshots left behind by the local GUI test runs. Caught 2026-08-07 in a
+# deploy dry-run: five PNGs on their way to all seven tenants, and without
+# --delete the first copy would have been permanent.
+gui-test-screenshots
+
 # Translation harvester caches (CLAUDE.md: never ship .tx_*.json)
 .tx_*.json
 
