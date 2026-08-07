@@ -15,6 +15,7 @@ import unittest
 _HERE = os.path.dirname(os.path.abspath(__file__))
 _ROOT = os.path.normpath(os.path.join(_HERE, ".."))
 API = os.path.join(_ROOT, "api", "imports.py")
+PURCHASING = os.path.join(_ROOT, "api", "purchasing.py")
 PAGES = os.path.join(_ROOT, "public", "js", "pages", "imports")
 
 
@@ -98,6 +99,57 @@ class PiScopedInfoTest(unittest.TestCase):
 		src = read(API)
 		b = body(src, "get_ci_pi_discrepancies")
 		self.assertIn('not (pi and level == "info")', b)
+
+
+class SupplierScopeTest(unittest.TestCase):
+	"""`list_suppliers` gained an optional imports supplier-group scope.
+
+	Twenty call sites share this one endpoint and only four of them ask for the
+	scope, so the no-argument path has to stay the query it has always been —
+	otherwise a config row on one tenant silently empties the transporter and
+	customs-broker pickers on every other screen. Source-text, not behavioural:
+	the module imports frappe at import time and the WHERE is built inline, so
+	there is nothing importable to exercise under `make test`.
+	"""
+
+	def setUp(self):
+		self.body = body(read(PURCHASING), "list_suppliers")
+
+	def test_list_suppliers_keeps_the_unfiltered_identity_path(self):
+		# The seed condition is still the bare one: without a scope the query
+		# filters exactly what it filtered before.
+		self.assertIn('conds = ["disabled = 0"]', self.body)
+		# Also pinned by test_master_read_permission.py against the source text.
+		self.assertIn('has_permission("Supplier", "read")', self.body)
+
+		lines = self.body.splitlines()
+		seed = next(i for i, ln in enumerate(lines) if 'conds = ["disabled = 0"]' in ln)
+		seed_indent = len(lines[seed]) - len(lines[seed].lstrip())
+		predicates = [i for i, ln in enumerate(lines) if "supplier_group IN" in ln]
+		self.assertTrue(predicates, "the supplier-group predicate is gone")
+		for i in predicates:
+			indent = len(lines[i]) - len(lines[i].lstrip())
+			# Deeper than the seed => it lives under a branch, not in the trunk.
+			self.assertGreater(indent, seed_indent, "the group predicate is in the trunk")
+			guard = [ln for ln in lines[seed:i] if ln.strip().startswith("if ")]
+			self.assertTrue(guard, "the group predicate is appended unconditionally")
+
+	def test_group_names_are_bound_never_interpolated(self):
+		# Group names come from a config row an admin types; they reach the
+		# query as a parameter or not at all.
+		self.assertIn("supplier_group IN %(", self.body)
+		self.assertNotIn("supplier_group IN ('", self.body)
+		self.assertNotIn('supplier_group IN ("', self.body)
+
+	def test_the_client_sends_a_scope_key_not_a_group_list(self):
+		# C3: a tenant's group names never travel to the browser. The argument
+		# is a key the server resolves against Stabler Settings.
+		self.assertIn("supplier_group_scope", self.body)
+		self.assertIn("imports_supplier_groups_for", self.body)
+
+	def test_an_unknown_scope_key_is_reported_not_swallowed(self):
+		# A typo'd key must read as a failure, not as "no filter, all good".
+		self.assertIn("frappe.log_error(", self.body)
 
 
 class PagesTest(unittest.TestCase):

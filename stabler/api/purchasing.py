@@ -12,11 +12,20 @@ from stabler.api import _import_exposure
 from stabler.api._common import _assert_can_read, _assert_can_write, _require_company, check_concurrency
 from stabler.api._money import money_epsilon
 from stabler.api.approvals import _assert_company_scope
-from stabler.stabler.doctype.stabler_settings.stabler_settings import module_map_for
+from stabler.stabler.doctype.stabler_settings.stabler_settings import (
+	imports_supplier_groups_for,
+	module_map_for,
+)
 
 
 @frappe.whitelist()
-def list_suppliers(company: str, search: str = "", limit: int = 100):
+def list_suppliers(company: str, search: str = "", limit: int = 100, supplier_group_scope: str | None = None):
+	"""Supplier picker feed. `supplier_group_scope` is optional and narrows the
+	list to the supplier groups a company configured for that scope.
+
+	Twenty screens share this endpoint and only the imports CI/Proforma pickers
+	pass a scope, so the no-scope call must stay exactly the query it has always
+	been — a config row on one tenant must not empty anybody else's picker."""
 	_require_company(company)
 	_assert_company_scope(company)  # tenant isolation: reject a foreign company arg
 	if not frappe.has_permission("Supplier", "read"):
@@ -26,6 +35,24 @@ def list_suppliers(company: str, search: str = "", limit: int = 100):
 	if search:
 		conds.append("(supplier_name LIKE %(s)s OR name LIKE %(s)s)")
 		params["s"] = f"%{search}%"
+	if supplier_group_scope:
+		# The client sends a scope KEY, never group names: which groups count as
+		# "meat suppliers" is per-tenant config, and the browser must neither
+		# learn it nor be able to tamper with it. Resolution happens here.
+		if supplier_group_scope == "imports":
+			groups = imports_supplier_groups_for(company)
+		else:
+			# A typo is a caller bug, not a request for "no restriction". Log it
+			# so it stays visible, then filter nothing so the picker still works.
+			frappe.log_error(
+				f"list_suppliers: unknown supplier_group_scope {supplier_group_scope!r}",
+				"stabler.purchasing",
+			)
+			groups = []
+		# Nothing configured => no predicate at all, i.e. today's behaviour.
+		if groups:
+			conds.append("supplier_group IN %(groups)s")
+			params["groups"] = groups
 	where = " AND ".join(conds)
 	return frappe.db.sql(
 		f"""
