@@ -105,7 +105,6 @@ const centerCockpit = computed(() => ({
 }));
 
 const centerLabels = computed(() => ({
-	title: t("Customers"),
 	searchPlaceholder: t("Search customers… ⌘K"),
 	groupLabel: t("Customer group"),
 	allGroups: t("All groups"),

@@ -741,11 +741,6 @@ defineExpose({
 
 <template>
 	<div class="stbl-ds pc-root">
-		<div class="ds-page-head pc-head">
-			<h1 class="pc-head-title">{{ props.labels.title || t("Party Center") }}</h1>
-			<div class="pc-head-meta">{{ totalCount || rows.length }}</div>
-		</div>
-
 		<div ref="gridRef" class="pc-grid" :class="{ 'pc-dragging': dragging }" :style="{ '--pc-left': leftRem + 'rem' }">
 			<PartyList
 				class="pc-pane-left"
@@ -893,6 +888,11 @@ defineExpose({
 								<span v-if="selectedIsParent" class="pc-parent-badge">{{ props.labels.parentLabel || t("Parent") }}</span>
 							</h2>
 							<div class="pc-detail-code">{{ selected.name }}</div>
+							<PartyIdentityCard
+								:detail="selectedDetail"
+								:fields="{ group: props.api.groupField, territory: props.api.territoryField }"
+								:labels="props.labels"
+							/>
 						</div>
 						<div class="pc-detail-actions">
 							<slot
@@ -928,13 +928,6 @@ defineExpose({
 							}}
 						</span>
 					</div>
-
-					<PartyIdentityCard
-						:detail="selectedDetail"
-						:fields="{ group: props.api.groupField, territory: props.api.territoryField }"
-						:labels="props.labels"
-						class="pc-identity"
-					/>
 
 					<PartyTransactions
 						ref="txRef"
@@ -1044,26 +1037,6 @@ defineExpose({
 	height: calc(100vh - 3.5rem);
 	background: #f6f8fb;
 }
-.pc-head {
-	display: flex;
-	align-items: baseline;
-	justify-content: space-between;
-	gap: 12px;
-	flex: 0 0 auto;
-}
-.pc-head-title {
-	margin: 0;
-	font-size: 20px;
-	font-weight: 700;
-	letter-spacing: -0.01em;
-	color: #1d273b;
-}
-.pc-head-meta {
-	font-family: var(--ds-mono, monospace);
-	font-size: 12px;
-	color: var(--tblr-gray-600, #667382);
-}
-
 .pc-grid {
 	display: grid;
 	grid-template-columns: var(--pc-left, 26rem) 7px minmax(0, 1fr);
@@ -1248,10 +1221,6 @@ defineExpose({
 .pc-include-state {
 	color: var(--tblr-gray-600, #667382);
 }
-.pc-identity {
-	margin: 12px 16px 0;
-}
-
 /* Mikro etiket — `.ds-label` çevrilmeyen teknik kimliklere ayrılmıştır;
    çevrili etiketler tipografiyi buradan alır, tonu AA'ya çekilir. */
 .pc-label {
