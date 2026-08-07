@@ -80,8 +80,16 @@ class TestSupplierExposureRaceGuard(unittest.TestCase):
 	def test_load_exposure_checks_the_ticket_after_the_await_in_both_branches(self):
 		body = self.load_exposure_src
 		await_pos = body.index("await call(")
-		try_check_pos = body.index("if (!isCurrent()) return;", await_pos)
-		self.assertGreater(try_check_pos, await_pos, "the try branch must check the ticket after the await")
+		write_pos = body.index("if (exp && exp.enabled) selectedExposure.value = exp;")
+		# Bound the search to the window between the await and the write. Searching
+		# from await_pos to the end of the body was vacuous: it also matched the
+		# catch branch's guard, so deleting the try-branch one -- or moving it below
+		# the write, which is the race itself -- kept this test green.
+		self.assertIn(
+			"if (!isCurrent()) return;",
+			body[await_pos:write_pos],
+			"the try branch must check the ticket between the await and the write to selectedExposure",
+		)
 		catch_pos = body.index("catch")
 		self.assertIn(
 			"if (!isCurrent()) return;",
