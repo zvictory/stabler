@@ -356,6 +356,7 @@ async function searchSuppliers(q) {
 		company: activeCompany.value,
 		search: q || "",
 		limit: 20,
+		supplier_group_scope: "imports",
 	});
 }
 function pickSupplier(item) {
