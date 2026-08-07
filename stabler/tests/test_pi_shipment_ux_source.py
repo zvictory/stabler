@@ -649,5 +649,51 @@ class SmartFillItemGranularityTest(unittest.TestCase):
 		self.assertNotIn("table-striped", self.vue)
 
 
+class CiFormSingleFillPathTest(unittest.TestCase):
+	"""The CI form offers exactly one way to fill items: Smart Fill from PIs.
+
+	Four competing paths used to exist (a second Smart Fill button in the header,
+	a reference-PI typeahead, "Pull from PI", "Fill from category") and three of
+	them wrote item rows without ever consulting the (PI, category) contract
+	guard Smart Fill respects. One door, one guard.
+	"""
+
+	def setUp(self):
+		self.vue = read(os.path.join(PAGES, "CommercialInvoiceForm.vue"))
+
+	def test_smart_fill_is_the_only_fill_button(self):
+		# The label appears twice: the Items toolbar button and the modal title.
+		self.assertEqual(self.vue.count('t("Smart Fill from PIs")'), 2)
+		for gone in (
+			't("Pull from PI")',
+			't("Fill from category")',
+			"openFillModal",
+			"applyFillCategory",
+			"fillModalOpen",
+		):
+			with self.subTest(removed=gone):
+				self.assertNotIn(gone, self.vue)
+
+	def test_the_pi_and_group_pickers_are_gone_but_the_fields_are_not(self):
+		# The inputs go; the stored fields stay. Smart Fill writes the proforma
+		# onto every item row and onto the header, and ci_effective_group_expr
+		# derives the group from those rows — so dropping the selector does not
+		# leave an invoice ungrouped.
+		self.assertNotIn('t("PI Group")', self.vue)
+		self.assertNotIn('t("Reference Proforma Invoice")', self.vue)
+		self.assertNotIn("searchProformas", self.vue)
+		self.assertNotIn("groupOptions", self.vue)
+		self.assertIn("import_pi_group: form.value.import_pi_group || undefined", self.vue)
+		self.assertIn("custom_proforma_invoice: form.value.custom_proforma_invoice || undefined", self.vue)
+
+	def test_the_deep_link_and_the_unlink_path_survive(self):
+		# loadProformaIntoCi still serves ?proforma=<PI>, and a wrong link is
+		# still undoable from the bottom of the page — removing the picker must
+		# not trap an invoice on a proforma it does not belong to.
+		self.assertIn("loadProformaIntoCi(String(route.query.proforma))", self.vue)
+		self.assertIn("function unlinkProforma()", self.vue)
+		self.assertIn('t("Unlink proforma")', self.vue)
+
+
 if __name__ == "__main__":
 	unittest.main()

@@ -75,13 +75,6 @@ const currencies = ref([]);
 const currencyOptions = computed(() =>
 	currencies.value.map((c) => ({ value: c.name, label: c.name }))
 );
-// Selecting a proforma copies its group down, but a CI raised without one had
-// no way to be grouped at all — hence the explicit selector.
-const piGroups = ref([]);
-const groupOptions = computed(() => [
-	{ value: "", label: t("No PI group") },
-	...piGroups.value.map((g) => ({ value: g.name, label: g.title || g.name })),
-]);
 const companyPOs = ref([]);
 const costVisible = computed(() => {
 	if (!isCreate.value) return form.value.docs_total !== null;
@@ -96,17 +89,6 @@ const lineCategories = ref([]);
 const categoryOptions = computed(() =>
 	lineCategories.value.map((c) => c.display_name || c.category_name).filter(Boolean)
 );
-
-// Fill from category modal state
-const fillModalOpen = ref(false);
-const fillCategories = ref([]);
-const fillCategory = ref("");
-const fillContainers = ref(1);
-const fillBoxWeight = ref(20);
-const fillAgreedPrice = ref(0);
-const fillDocsPrice = ref(0);
-const fillCategoriesLoading = ref(false);
-const fillApplying = ref(false);
 
 function blankForm() {
 	return {
@@ -408,64 +390,6 @@ function onBoxesOrWeightInput(row) {
 }
 function onQtyInput(row) {
 	row._qtyManual = true;
-}
-
-// Fill from category modal actions
-async function openFillModal() {
-	fillModalOpen.value = true;
-	fillCategoriesLoading.value = true;
-	try {
-		fillCategories.value = await call("stabler.api.imports.list_vendor_categories", {
-			company: activeCompany.value,
-			vendor: form.value.supplier || undefined,
-		});
-	} catch (_) {
-		fillCategories.value = [];
-	} finally {
-		fillCategoriesLoading.value = false;
-	}
-}
-function closeFillModal() {
-	fillModalOpen.value = false;
-}
-async function applyFillCategory() {
-	if (!fillCategory.value) return;
-	fillApplying.value = true;
-	try {
-		// `vendor_category_detail` already returns the category's item rows with
-		// boxes-per-container — the old call named an endpoint that never existed,
-		// so Apply threw every time.
-		const detail = await call("stabler.api.imports.vendor_category_detail", {
-			name: fillCategory.value,
-		});
-		const catItems = detail?.items || [];
-		const cnts = Number(fillContainers.value) || 1;
-		const bw = Number(fillBoxWeight.value) || 0;
-		const ap = Number(fillAgreedPrice.value) || 0;
-		const dp = Number(fillDocsPrice.value) || 0;
-		for (const ci of catItems) {
-			const boxes = (Number(ci.boxes_per_container) || 0) * cnts;
-			const qty = round2(boxes * bw);
-			form.value.items.push({
-				category: detail.display_name || detail.category_name || fillCategory.value,
-				item: ci.item_code,
-				description: ci.item_name || "",
-				boxes,
-				box_weight_kg: bw,
-				qty,
-				uom: ci.stock_uom || "Kg",
-				rate: ap,
-				docs_price: dp,
-			});
-		}
-		fillModalOpen.value = false;
-		toast.success(t("Added {count} items from category.", { count: catItems.length }));
-	} catch (err) {
-		// Leave the modal open — the user's picks survive a retry.
-		toast.error(err?.message || t("Could not load category items."));
-	} finally {
-		fillApplying.value = false;
-	}
 }
 
 // ---- Multi-PI Smart Fill Modal State ----
@@ -863,15 +787,6 @@ async function loadDoc() {
 	}
 }
 
-function searchProformas(q) {
-	return call("stabler.api.imports.list_proformas", {
-		company: activeCompany.value,
-		search: q || "",
-		supplier: form.value.supplier || undefined,
-		limit: 20,
-	});
-}
-
 async function refreshPiTracking() {
 	if (!activeCompany.value || !form.value.supplier) {
 		form.value.pi_tracking = [];
@@ -1042,13 +957,6 @@ async function loadRefData() {
 		});
 	} catch (_) {
 		companyPOs.value = [];
-	}
-	try {
-		piGroups.value = await call("stabler.api.imports.list_pi_groups", {
-			company: activeCompany.value,
-		});
-	} catch (_) {
-		piGroups.value = [];
 	}
 }
 
@@ -1563,19 +1471,8 @@ watch(
 
 		<!-- 1 Header Details -->
 		<div class="card mb-3">
-			<div class="card-header d-flex align-items-center justify-content-between">
-				<h3 class="card-title m-0">{{ t("Header Details") }}</h3>
-				<div class="card-actions">
-					<button
-						type="button"
-						class="btn btn-primary shadow-sm fw-bold px-3"
-						:disabled="!form.supplier"
-						:title="t('Smart Fill items and quantities from supplier Proforma Invoices')"
-						@click="openMultiPiSmartFill"
-					>
-						<i class="ti ti-wand me-1"></i>{{ t("Smart Fill from PIs") }}
-					</button>
-				</div>
+			<div class="card-header">
+				<h3 class="card-title">{{ t("Header Details") }}</h3>
 			</div>
 			<div class="card-body">
 				<div class="row g-3">
@@ -1592,29 +1489,6 @@ watch(
 						>
 							<div class="fw-semibold">{{ item.supplier_name || item.name }}</div>
 						</Typeahead>
-					</div>
-					<div class="col-md-6">
-						<label class="form-label d-flex align-items-center gap-1">
-							<span>{{ t("Reference Proforma Invoice") }}</span>
-							<span v-if="form.custom_proforma_invoice" class="badge bg-success-lt ms-auto font-monospace">{{ form.custom_proforma_invoice }}</span>
-						</label>
-						<Typeahead
-							v-slot="{ item }"
-							v-model="form.custom_proforma_invoice"
-							:search="searchProformas"
-							:display="form.custom_proforma_invoice"
-							:placeholder="t('Select Proforma Invoice to copy items…')"
-							open-on-focus
-							@pick="(pi) => loadProformaIntoCi(pi.name)"
-							@clear="() => { form.custom_proforma_invoice = ''; }"
-						>
-							<div class="fw-semibold small">{{ item.supplier_pi_ref || item.name }}</div>
-							<div class="text-secondary" style="font-size:0.75rem">{{ item.supplier_name || item.supplier }} · {{ item.agreed_total ? fm(item.agreed_total, item.currency) : "" }}</div>
-						</Typeahead>
-					</div>
-					<div class="col-md-3">
-						<label class="form-label">{{ t("PI Group") }}</label>
-						<Select v-model="form.import_pi_group" :options="groupOptions" />
 					</div>
 					<div class="col-md-3">
 						<label class="form-label required">{{ t("CI number") }}</label>
@@ -1711,18 +1585,6 @@ watch(
 						@click="openMultiPiSmartFill"
 					>
 						<i class="ti ti-wand me-1"></i>{{ t("Smart Fill from PIs") }}
-					</button>
-					<button
-						v-if="form.custom_proforma_invoice"
-						type="button"
-						class="btn btn-outline-info btn-sm"
-						:title="t('Reload all items from reference Proforma Invoice')"
-						@click="loadProformaIntoCi(form.custom_proforma_invoice)"
-					>
-						<i class="ti ti-refresh me-1"></i>{{ t("Pull from PI") }}
-					</button>
-					<button type="button" class="btn btn-outline-secondary btn-sm" @click="openFillModal">
-						<i class="ti ti-wand me-1"></i>{{ t("Fill from category") }}
 					</button>
 					<button type="button" class="btn btn-ghost-secondary btn-sm" @click="addItem">
 						<i class="ti ti-plus me-1"></i>{{ t("Add row") }}
@@ -2261,51 +2123,6 @@ watch(
 							@click="confirmDelete"
 						>
 							<span v-if="deleting" class="spinner-border spinner-border-sm me-1"></span>{{ t("Delete") }}
-						</button>
-					</div>
-				</div>
-			</div>
-		</div>
-
-		<!-- Fill items from vendor category -->
-		<div v-if="fillModalOpen" class="modal d-block" tabindex="-1" style="background: rgba(0,0,0,0.4)">
-			<div class="modal-dialog modal-dialog-centered">
-				<div class="modal-content">
-					<div class="modal-header">
-						<h5 class="modal-title">{{ t("Fill from category") }}</h5>
-						<button type="button" class="btn-close" @click="closeFillModal"></button>
-					</div>
-					<div class="modal-body">
-						<div class="row g-3">
-							<div class="col-12">
-								<label class="form-label small mb-1">{{ t("Category") }}</label>
-								<select v-model="fillCategory" class="form-select form-select-sm" :disabled="fillCategoriesLoading">
-									<option value="">—</option>
-									<option v-for="c in fillCategories" :key="c.name" :value="c.name">{{ c.display_name || c.category_name }}</option>
-								</select>
-							</div>
-							<div class="col-md-6">
-								<label class="form-label small mb-1">{{ t("Containers") }}</label>
-								<input v-model.number="fillContainers" type="number" min="1" step="1" class="form-control form-control-sm">
-							</div>
-							<div class="col-md-6">
-								<label class="form-label small mb-1">{{ t("Box weight (kg)") }}</label>
-								<input v-model.number="fillBoxWeight" type="number" min="0" step="0.01" class="form-control form-control-sm">
-							</div>
-							<div class="col-md-6">
-								<label class="form-label small mb-1">{{ t("Agreed price") }}</label>
-								<MoneyInput v-model="fillAgreedPrice" :currency="form.currency" :language="user.language" size="sm" />
-							</div>
-							<div class="col-md-6">
-								<label class="form-label small mb-1">{{ t("Docs price") }}</label>
-								<MoneyInput v-model="fillDocsPrice" :currency="form.currency" :language="user.language" size="sm" />
-							</div>
-						</div>
-					</div>
-					<div class="modal-footer">
-						<button type="button" class="btn btn-outline-secondary" @click="closeFillModal">{{ t("Cancel") }}</button>
-						<button type="button" class="btn btn-primary" :disabled="fillApplying || !fillCategory" @click="applyFillCategory">
-							<span v-if="fillApplying" class="spinner-border spinner-border-sm me-1"></span>{{ t("Apply") }}
 						</button>
 					</div>
 				</div>
