@@ -157,7 +157,6 @@ async function resolveSupplierName(code) {
 			company: activeCompany.value,
 			search: code,
 			limit: 5,
-			supplier_group_scope: "imports",
 		});
 		const match = (rows || []).find((s) => s.name === code);
 		return match ? match.supplier_name || match.name : code;
