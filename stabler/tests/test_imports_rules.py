@@ -9,11 +9,15 @@ the list filter-clause builders.
 from __future__ import annotations
 
 import datetime
+import os
 import unittest
 
 from stabler.api import _imports_rules as rules
 
 _D = datetime.date
+
+_APP_ROOT = os.path.dirname(os.path.dirname(os.path.abspath(__file__)))  # .../stabler
+_ALLOCATION_GUARD_PATH = os.path.join(_APP_ROOT, "stabler", "imports_module", "allocation_guard.py")
 
 
 class TestMaskNamed(unittest.TestCase):
@@ -1029,6 +1033,249 @@ class TestPiCiMatching(unittest.TestCase):
 				"sub_cut",
 			},
 		)
+
+
+class TestCiAllocationCap(unittest.TestCase):
+	"""R4 — a Commercial Invoice may not allocate past what the contract has left.
+
+	The SPA caps the picker, but the SPA is not a control: the REST API is open.
+	These pin the pure half of the server guarantee (``changed_allocation_keys`` /
+	``over_allocations``); the query that feeds them is pinned by
+	``TestAllocationGuardQuery`` below.
+	"""
+
+	def _fixture(self, contract_boxes=100, contract_qty=2000, shipped=()):
+		pi_rows = [_pi_line("PI-1", "BLADE", "12", contract_boxes, contract_qty)]
+		return (
+			rules.contract_index(pi_rows),
+			rules.shipped_index(list(shipped)),
+			rules.match_key("PI-1", "BLADE"),
+		)
+
+	def test_over_allocation_beyond_remaining_is_reported(self):
+		# 100 contracted, 60 already on another CI -> 40 left. 41 is a breach, 40 is not.
+		contract, shipped, key = self._fixture(shipped=[_ci_line("CI-1", "PI-1", "BLADE", "12", 60, 1200)])
+		self.assertEqual(rules.remaining_for(contract[key], shipped[key])["remaining_boxes"], 40)
+
+		draft = [_ci_line("CI-2", "PI-1", "BLADE", "12", 41, 820)]
+		breaches = rules.over_allocations(contract, shipped, draft, {key})
+		self.assertEqual(len(breaches), 1)
+		self.assertEqual(breaches[0]["key"], key)
+		self.assertEqual(breaches[0]["allocated_boxes"], 41)
+		self.assertEqual(breaches[0]["remaining_boxes"], 40)
+		self.assertEqual(breaches[0]["over_boxes"], 1)
+		self.assertEqual(breaches[0]["level"], "error", "severity comes from DIFF_LEVELS")
+
+		exact = [_ci_line("CI-2", "PI-1", "BLADE", "12", 40, 800)]
+		self.assertEqual(rules.over_allocations(contract, shipped, exact, {key}), [])
+
+	def test_boxes_and_kg_cap_independently(self):
+		# box_weight_kg is display only — a line may sit inside the box balance and
+		# still blow the kg balance, and either one is a breach.
+		contract, shipped, key = self._fixture(shipped=[_ci_line("CI-1", "PI-1", "BLADE", "12", 60, 1200)])
+		heavy = [_ci_line("CI-2", "PI-1", "BLADE", "12", 10, 900)]
+		breaches = rules.over_allocations(contract, shipped, heavy, {key})
+		self.assertEqual(len(breaches), 1)
+		self.assertEqual(breaches[0]["over_boxes"], 0.0, "boxes are within balance")
+		self.assertEqual(breaches[0]["over_qty"], 100)
+
+	def test_editing_a_ci_does_not_count_against_itself(self):
+		# CI-1 IS the document being saved, so the guard's shipped index excludes it.
+		own = [_ci_line("CI-1", "PI-1", "BLADE", "12", 60, 1200)]
+		contract, shipped_without_self, key = self._fixture()
+		self.assertEqual(rules.over_allocations(contract, shipped_without_self, own, {key}), [])
+
+		# Counting it against itself is the bug this excludes: 100 - 60 = 40 left,
+		# so its own 60 boxes would read as a 20-box overage on every edit.
+		shipped_with_self = rules.shipped_index(own)
+		self_cannibal = rules.over_allocations(contract, shipped_with_self, own, {key})
+		self.assertEqual(len(self_cannibal), 1)
+		self.assertEqual(self_cannibal[0]["over_boxes"], 20)
+
+	def test_cancelled_ci_does_not_consume_quantity(self):
+		# The guard's query filters `ci.status != 'Cancelled'` before indexing, so a
+		# cancelled invoice releases its boxes back to the contract.
+		all_rows = [
+			dict(_ci_line("CI-1", "PI-1", "BLADE", "12", 60, 1200), ci_status="Cancelled"),
+			dict(_ci_line("CI-2", "PI-1", "BLADE", "12", 10, 200), ci_status="IN_TRANSIT"),
+		]
+		contract, live_shipped, key = self._fixture(
+			shipped=[r for r in all_rows if r["ci_status"] != "Cancelled"]
+		)
+		self.assertEqual(rules.remaining_for(contract[key], live_shipped[key])["remaining_boxes"], 90)
+		self.assertEqual(
+			rules.over_allocations(
+				contract, live_shipped, [_ci_line("CI-3", "PI-1", "BLADE", "12", 90, 1800)], {key}
+			),
+			[],
+			"the cancelled 60 boxes must be available again",
+		)
+		self.assertEqual(
+			len(
+				rules.over_allocations(
+					contract, live_shipped, [_ci_line("CI-3", "PI-1", "BLADE", "12", 91, 1820)], {key}
+				)
+			),
+			1,
+		)
+		# Had the cancelled CI still counted, only 30 would be left and 90 would breach.
+		with_cancelled = rules.shipped_index(all_rows)
+		self.assertEqual(rules.remaining_for(contract[key], with_cancelled[key])["remaining_boxes"], 30)
+
+	def test_compensated_bundle_shows_true_remaining(self):
+		# C1 regression guard. One PI line (a compensated bundle) shipped earlier as
+		# sub-cuts. Keying on the item would find nothing and call the bundle 100%
+		# unshipped, so the cap would let a second CI ship the full 16 800 again.
+		pi_rows = [_pi_line("PI-1", "BUFFALO COMPENSATED", "CM60/40", 16800, 336000)]
+		prior = [
+			_ci_line("CI-1", "PI-1", "BUFFALO COMPENSATED", "41 TOPSIDE", 6000, 120000),
+			_ci_line("CI-1", "PI-1", "buffalo  compensated", "44 SILVER SIDE", 5800, 116000),
+		]
+		contract = rules.contract_index(pi_rows)
+		shipped = rules.shipped_index(prior)
+		key = rules.match_key("PI-1", "BUFFALO COMPENSATED")
+		rem = rules.remaining_for(contract[key], shipped[key])
+		self.assertNotEqual(rem["remaining_boxes"], 16800, "item-keying would report the bundle untouched")
+		self.assertEqual(rem["remaining_boxes"], 5000)
+
+		# A third sub-cut is capped at the bundle's real remainder, not at zero and
+		# not at the full contract.
+		over = [_ci_line("CI-2", "PI-1", "BUFFALO COMPENSATED", "45 RUMP STEAK", 5001, 100020)]
+		breaches = rules.over_allocations(contract, shipped, over, {key})
+		self.assertEqual(len(breaches), 1)
+		self.assertEqual(breaches[0]["over_boxes"], 1)
+		self.assertEqual(breaches[0]["label"], "BUFFALO COMPENSATED")
+		exact = [_ci_line("CI-2", "PI-1", "BUFFALO COMPENSATED", "45 RUMP STEAK", 5000, 100000)]
+		self.assertEqual(rules.over_allocations(contract, shipped, exact, {key}), [])
+
+	def test_over_shipped_key_returns_negative_remaining(self):
+		# HMA/PI/2677/202425 · TRIMING is 38 boxes over contract in the real book.
+		# max(0, ...) is forbidden: the breach report must carry the raw negative.
+		pi_rows = [_pi_line("PI-1", "TRIMING", "14", 4200, 84000)]
+		contract = rules.contract_index(pi_rows)
+		shipped = rules.shipped_index([_ci_line("CI-1", "PI-1", "TRIMING", "14", 4238, 84760)])
+		key = rules.match_key("PI-1", "TRIMING")
+		rem = rules.remaining_for(contract[key], shipped[key])
+		self.assertEqual(rem["remaining_boxes"], -38)
+		self.assertTrue(rem["over_shipped"])
+		self.assertEqual(rem["over_boxes"], 38)
+
+		breaches = rules.over_allocations(
+			contract, shipped, [_ci_line("CI-2", "PI-1", "TRIMING", "14", 1, 20)], {key}
+		)
+		self.assertEqual(len(breaches), 1)
+		self.assertEqual(breaches[0]["remaining_boxes"], -38, "unclamped in the breach report too")
+		self.assertEqual(breaches[0]["over_boxes"], 39, "1 claimed on top of a 38-box overage")
+
+	def test_unchanged_rows_produce_no_keys(self):
+		# The guarantee that set_ci_status and compute_customs_fee(apply=1) — which
+		# write a header field and never touch an item row — stay unblocked.
+		rows = [
+			_ci_line("CI-1", "PI-1", "BLADE", "12", 60, 1200),
+			_ci_line("CI-1", "PI-1", "HEAD MEAT", "13", 10, 200),
+		]
+		self.assertEqual(rules.changed_allocation_keys(rows, list(rows)), set())
+		self.assertEqual(
+			rules.changed_allocation_keys(rows, list(reversed(rows))),
+			set(),
+			"row order is not an allocation change",
+		)
+
+	def test_reducing_boxes_is_never_a_breach(self):
+		# A historic over-allocated CI must stay correctable downwards.
+		before = [_ci_line("CI-1", "PI-1", "TRIMING", "14", 4238, 84760)]
+		after = [_ci_line("CI-1", "PI-1", "TRIMING", "14", 4000, 80000)]
+		self.assertEqual(rules.changed_allocation_keys(before, after), set())
+		self.assertEqual(rules.changed_allocation_keys(before, []), set(), "deleting a row is not a claim")
+		# Moving boxes between keys flags only the key that grew.
+		moved = [_ci_line("CI-1", "PI-1", "BLADE", "12", 4238, 84760)]
+		self.assertEqual(rules.changed_allocation_keys(before, moved), {rules.match_key("PI-1", "BLADE")})
+
+	def test_historic_over_allocated_ci_saves_untouched(self):
+		# Cancelling or re-statusing one of the 21 over-shipped msa keys must still
+		# work: the item rows are identical, so no key is checked at all.
+		pi_rows = [_pi_line("PI-1", "TRIMING", "14", 4200, 84000)]
+		rows = [_ci_line("CI-1", "PI-1", "TRIMING", "14", 4238, 84760)]
+		contract = rules.contract_index(pi_rows)
+		shipped = rules.shipped_index([])  # CI-1 is the document being saved
+		keys = rules.changed_allocation_keys(rows, list(rows))
+		self.assertEqual(keys, set())
+		self.assertEqual(rules.over_allocations(contract, shipped, rows, keys), [])
+		# ...even though the key really is over-allocated when it IS inspected.
+		self.assertEqual(
+			len(rules.over_allocations(contract, shipped, rows, {rules.match_key("PI-1", "TRIMING")})), 1
+		)
+
+	def test_header_pi_fallback_attributes_the_row(self):
+		# ~2 127 msa CI rows carry the PI link only on the header. Ignoring the
+		# fallback would make them unattributable and the cap unenforceable.
+		row = {
+			"ci_name": "CI-2",
+			"custom_proforma_invoice": "",
+			"header_proforma_invoice": "PI-1",
+			"category": "BLADE",
+			"item": "12",
+			"boxes": 41,
+			"qty": 820,
+		}
+		key = rules.match_key("PI-1", "BLADE")
+		self.assertEqual(rules.changed_allocation_keys(None, [row]), {key})
+
+		contract, shipped, _ = self._fixture(shipped=[_ci_line("CI-1", "PI-1", "BLADE", "12", 60, 1200)])
+		breaches = rules.over_allocations(contract, shipped, [row], {key})
+		self.assertEqual(len(breaches), 1)
+		self.assertEqual(breaches[0]["over_boxes"], 1)
+
+		# A row with neither link carries no PI and cannot be keyed at all.
+		orphan = dict(row, header_proforma_invoice="")
+		self.assertEqual(rules.changed_allocation_keys(None, [orphan]), set())
+
+	def test_insert_counts_every_allocating_row(self):
+		rows = [
+			_ci_line("CI-2", "PI-1", "BLADE", "12", 41, 820),
+			_ci_line("CI-2", "PI-1", "HEAD MEAT", "13", 5, 100),
+			_ci_line("CI-2", "PI-1", "", "14", 5, 100),  # no category — not a key
+		]
+		self.assertEqual(
+			rules.changed_allocation_keys(None, rows),
+			{rules.match_key("PI-1", "BLADE"), rules.match_key("PI-1", "HEAD MEAT")},
+		)
+
+	def test_a_key_on_no_pi_is_not_an_over_allocation(self):
+		# "Not on any PI" is the `unattributable` defect diff_ci_line reports; there
+		# is no contract balance to cap against, so the guard must not throw on it.
+		contract, shipped, _ = self._fixture()
+		stray = [_ci_line("CI-2", "PI-1", "MYSTERY CUT", "99", 500, 10000)]
+		key = rules.match_key("PI-1", "MYSTERY CUT")
+		self.assertEqual(rules.over_allocations(contract, shipped, stray, {key}), [])
+
+
+class TestAllocationGuardQuery(unittest.TestCase):
+	"""Source-level pins on the guard's SQL — it imports frappe, so it cannot be
+	imported without a site (same ast/source pattern as
+	test_commercial_invoice_transitions.py).
+	"""
+
+	@classmethod
+	def setUpClass(cls):
+		with open(_ALLOCATION_GUARD_PATH, encoding="utf-8") as fh:
+			cls.source = fh.read()
+
+	def test_query_excludes_cancelled_invoices(self):
+		self.assertIn("ci.status != 'Cancelled'", self.source)
+
+	def test_query_excludes_the_document_being_saved(self):
+		self.assertIn("ci.name != %(self_name)s", self.source)
+
+	def test_pi_attribution_uses_the_shared_row_then_header_expression(self):
+		self.assertIn("_ci_item_effective_pi_expr", self.source)
+
+	def test_gate_matches_the_status_pipeline_gate(self):
+		self.assertIn("frappe.flags.in_msaerp_migration", self.source)
+		self.assertIn("_imports_active", self.source)
+
+	def test_no_clamp_on_the_remaining_balance(self):
+		self.assertNotIn("max(0", self.source)
 
 
 if __name__ == "__main__":

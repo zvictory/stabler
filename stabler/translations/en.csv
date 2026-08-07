@@ -5610,3 +5610,6 @@ Top debtors,Top debtors
 Trend (last 8 weeks),Trend (last 8 weeks)
 Voucher type,Voucher type
 Search suppliers… ⌘K,Search suppliers… ⌘K
+Over-allocated,Over-allocated
+These lines allocate more than the Proforma Invoice has left: {0},These lines allocate more than the Proforma Invoice has left: {0}
+"{0} · {1}: {2} boxes / {3} kg allocated, {4} boxes / {5} kg remaining","{0} · {1}: {2} boxes / {3} kg allocated, {4} boxes / {5} kg remaining"

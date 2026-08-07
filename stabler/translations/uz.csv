@@ -5611,3 +5611,6 @@ Top debtors,Eng katta qarzdorlar
 Trend (last 8 weeks),Dinamika (oxirgi 8 hafta)
 Voucher type,Hujjat turi
 Search suppliers… ⌘K,Yetkazib beruvchilarni qidirish… ⌘K
+Over-allocated,Ortiqcha ajratilgan
+These lines allocate more than the Proforma Invoice has left: {0},Bu qatorlar proforma-invoysda qolganidan koʻproq ajratmoqda: {0}
+"{0} · {1}: {2} boxes / {3} kg allocated, {4} boxes / {5} kg remaining","{0} · {1}: {2} quti / {3} kg ajratilgan, qoldiq {4} quti / {5} kg"

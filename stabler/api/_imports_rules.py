@@ -1216,6 +1216,102 @@ def remaining_for(contract, shipped) -> dict:
 	}
 
 
+def _allocation_by_key(ci_item_rows) -> dict[tuple[str, str], dict]:
+	"""How many boxes / kg a set of CI rows allocates, per match key.
+
+	Same keying and same drop rules as ``shipped_index`` (unkeyed rows carry no
+	product identity and are skipped), but it accumulates nothing else — this is
+	the "what does this document claim" side, not an index of the book.
+
+	``boxes`` and ``qty`` accumulate INDEPENDENTLY; ``box_weight_kg`` is display
+	only and never used to derive one from the other.
+	"""
+	out: dict[tuple[str, str], dict] = {}
+	for row in ci_item_rows or ():
+		key = match_key(_shipped_pi(row), row.get("category"))
+		if not is_keyed(key):
+			continue
+		entry = out.setdefault(key, {"boxes": 0.0, "qty": 0.0})
+		entry["boxes"] += _num(row.get("boxes"))
+		entry["qty"] += _num(row.get("qty"))
+	return out
+
+
+def changed_allocation_keys(before_items, after_items) -> set[tuple[str, str]]:
+	"""Match keys whose allocation this save CREATES or INCREASES.
+
+	A key that is untouched, removed or REDUCED is not returned — only a bigger
+	claim than the document already had can breach a remaining balance.
+
+	This diff is what keeps the guard off historic data. The msa book carries 21
+	keys / 25 959 boxes of real over-shipment; without it, every save that never
+	looks at an item row (a status change, a customs-fee recompute) would throw
+	on those documents and freeze them forever. It is also what lets an
+	over-allocated CI be corrected downwards.
+
+	``before_items`` is ``None``/empty on insert, so every allocating row of a new
+	document counts as changed. A row claiming neither boxes nor kg allocates
+	nothing and therefore never counts, on insert or otherwise.
+	"""
+	before = _allocation_by_key(before_items)
+	after = _allocation_by_key(after_items)
+	changed: set[tuple[str, str]] = set()
+	for key, now in after.items():
+		was = before.get(key) or {"boxes": 0.0, "qty": 0.0}
+		if _round4(now["boxes"]) > _round4(was["boxes"]) or _round4(now["qty"]) > _round4(was["qty"]):
+			changed.add(key)
+	return changed
+
+
+def over_allocations(contract_idx, shipped_idx, ci_lines, keys) -> list[dict]:
+	"""Keys among ``keys`` where ``ci_lines`` claim more than the contract has left.
+
+	``shipped_idx`` MUST exclude the document being saved, otherwise a CI
+	cannibalises its own allocation and every edit of it looks like a breach.
+
+	Invariant 1 holds here too: ``remaining_boxes`` / ``remaining_qty`` are
+	reported RAW and may be negative. There is no ``max(0, …)`` — on a key that is
+	already over-shipped, a fresh claim breaches by its own size plus the standing
+	overage, and the report says so. ``over_boxes`` / ``over_qty`` are overage
+	magnitudes and mirror ``remaining_for``'s field of the same name.
+
+	Only the keys passed in are inspected, so a caller can check exactly what this
+	save changed. A key with no contract line at all is skipped: there is no
+	balance to cap against, and that defect is ``unattributable``, which
+	``diff_ci_line`` already reports. ``level`` comes from ``DIFF_LEVELS``.
+	"""
+	allocation = _allocation_by_key(ci_lines)
+	out: list[dict] = []
+	for key in sorted(keys):
+		if not is_keyed(key):
+			continue
+		alloc = allocation.get(key)
+		contract = contract_idx.get(key)
+		if not alloc or contract is None:
+			continue
+		bal = remaining_for(contract, shipped_idx.get(key))
+		over_boxes = _round4(alloc["boxes"] - bal["remaining_boxes"])
+		over_qty = _round4(alloc["qty"] - bal["remaining_qty"])
+		if over_boxes <= 0 and over_qty <= 0:
+			continue
+		out.append(
+			{
+				"key": key,
+				"code": "over_allocated",
+				"level": "error",
+				"pi_name": contract.get("pi_name") or key[0],
+				"label": contract.get("label") or key[1],
+				"allocated_boxes": _round4(alloc["boxes"]),
+				"allocated_qty": _round4(alloc["qty"]),
+				"remaining_boxes": bal["remaining_boxes"],
+				"remaining_qty": bal["remaining_qty"],
+				"over_boxes": over_boxes if over_boxes > 0 else 0.0,
+				"over_qty": over_qty if over_qty > 0 else 0.0,
+			}
+		)
+	return out
+
+
 def diff_ci_line(ci_line, contract) -> list[dict]:
 	"""Compare one CI line against its contract key. Empty list = fully compliant.
 

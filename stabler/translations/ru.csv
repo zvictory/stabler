@@ -5617,3 +5617,6 @@ Top debtors,Крупнейшие должники
 Trend (last 8 weeks),Динамика (последние 8 недель)
 Voucher type,Тип документа
 Search suppliers… ⌘K,Поиск поставщиков… ⌘K
+Over-allocated,Превышение распределения
+These lines allocate more than the Proforma Invoice has left: {0},"Эти строки распределяют больше, чем осталось по проформе-инвойсу: {0}"
+"{0} · {1}: {2} boxes / {3} kg allocated, {4} boxes / {5} kg remaining","{0} · {1}: распределено {2} кор. / {3} кг, остаток {4} кор. / {5} кг"

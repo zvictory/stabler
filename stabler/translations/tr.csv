@@ -5606,3 +5606,6 @@ Top debtors,En büyük borçlular
 Trend (last 8 weeks),Eğilim (son 8 hafta)
 Voucher type,Belge türü
 Search suppliers… ⌘K,Tedarikçi ara… ⌘K
+Over-allocated,Fazla tahsis
+These lines allocate more than the Proforma Invoice has left: {0},Bu satırlar proforma faturada kalandan fazlasını tahsis ediyor: {0}
+"{0} · {1}: {2} boxes / {3} kg allocated, {4} boxes / {5} kg remaining","{0} · {1}: {2} kutu / {3} kg tahsis edildi, kalan {4} kutu / {5} kg"
