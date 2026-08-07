@@ -179,7 +179,24 @@ git branch --no-merged main       # must be empty (bar deliberately open branche
    optional: `rsync -n` without it prints nothing, so an empty dry-run reads as
    "clean" when it actually verified nothing (this cost us a bogus 2026-07-24
    verification).
-4. `bench build --app stabler` on prod.
+4. **Node deps, then** `bench build --app stabler` on prod.
+   `node_modules` is (correctly) in `.rsync-exclude`, so **no deploy step creates
+   it** — while `bench build` silently depends on it: esbuild resolves
+   `@vue-flow/*` out of `apps/stabler/node_modules`. Measured 2026-08-07: the
+   directory was simply gone and the build died on `ProcessEditor.vue`'s
+   `@vue-flow/controls` import. A newly added runtime dependency is the same trap
+   with a fuse — prod keeps building against the previous install. So install when
+   the tree is missing **or** when the manifests just shipped differ from the ones
+   it was built from (prod is not a git repo; the only comparison available is a
+   checksum stamp — `deploy_stabler.sh` keeps it at
+   `node_modules/.stabler-deps-md5` over `package.json` + `package-lock.json`):
+   ```
+   sudo -H -u frappe npm install --omit=dev --no-save --ignore-scripts --no-audit --no-fund
+   ```
+   `--ignore-scripts` is required, not tidy: `preinstall` is `npx only-allow npm`,
+   a network fetch mid-deploy. `--omit=dev` keeps eslint/prettier/vitest off prod.
+   `npm ci` is the command we actually want and is blocked until `package-lock.json`
+   is back in sync with `package.json` (`stabler-qee`).
 5. `bench --site anjan.erpstable.com migrate` (only if patches.txt / doctypes changed)
    — **run for ALL 7 sites, not just anjan.** `migrate` is per-site; rsync+restart
    are bench-wide, so a doctype/patch change reaches every site's code but only the

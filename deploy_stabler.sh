@@ -122,7 +122,41 @@ rsync -rltz --no-owner --no-group \
   "$EXPORT_DIR/" "$PROD:$PROD_APPS/stabler/"
 ssh "$PROD" "chown -R frappe:frappe $PROD_APPS/stabler"
 
-# 4) Build on prod, then drop the sourcemaps.
+# 4) Node deps, then build on prod, then drop the sourcemaps.
+#
+#    node_modules is excluded from the rsync (correctly -- it is build output),
+#    which means NO deploy step ever creates or refreshes it, while `bench build`
+#    silently depends on it: esbuild resolves @vue-flow/* out of
+#    apps/stabler/node_modules. Measured 2026-08-07: the directory was simply
+#    gone and the build died on ProcessEditor.vue's @vue-flow/controls import.
+#    A new runtime dependency in package.json is the same bomb with a fuse --
+#    prod would still be carrying the previous install.
+#
+#    So install when the tree is missing or when the manifests we just shipped no
+#    longer match the ones it was built from. The stamp is the manifests' own
+#    checksum because prod is not a git repo and has nothing else to compare
+#    against; package.json is hashed alongside the lock, since a dependency can
+#    land in it while package-lock.json stays stale (stabler-qee).
+#
+#    --ignore-scripts is a requirement, not tidiness: package.json's preinstall
+#    is `npx only-allow npm`, which would fetch a package off the network in the
+#    middle of a deploy. --omit=dev keeps eslint/prettier/vitest off prod; only
+#    the runtime deps are what esbuild resolves. `npm ci` is the right command
+#    here and is not usable yet -- package-lock.json is out of sync with
+#    package.json (stabler-qee) -- so switch to it when that lands.
+say "4/7  node deps on prod (only if missing or the manifests changed)"
+ssh "$PROD" "set -e
+  cd $PROD_APPS/stabler
+  STAMP=node_modules/.stabler-deps-md5
+  WANT=\$(cat package.json package-lock.json | md5sum | cut -d' ' -f1)
+  if [ ! -d node_modules ] || [ \"\$(cat \$STAMP 2>/dev/null)\" != \"\$WANT\" ]; then
+    echo '    node_modules missing or built from other manifests -> npm install'
+    sudo -H -u frappe npm install --omit=dev --no-save --ignore-scripts --no-audit --no-fund
+    echo \"\$WANT\" | sudo -H -u frappe tee \$STAMP >/dev/null
+  else
+    echo '    node_modules matches the shipped manifests -- nothing to install'
+  fi"
+
 #    Prod has developer_mode off, so `bench build` already runs esbuild in
 #    production mode (minified). It still emits a .js.map next to the bundle,
 #    and sites/assets is served publicly -- measured 2026-07-26: the 3.5M
