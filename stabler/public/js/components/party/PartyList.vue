@@ -15,7 +15,7 @@
  * `data-bs-toggle="dropdown"` menüsünün içinde. Gizli filtre sessiz kalmasın
  * diye tetikleyici buton aktif filtre sayısını rozetle gösterir ve vurgulanır.
  */
-import { computed } from "vue";
+import { computed, nextTick, onBeforeUnmount, onMounted, ref, watch } from "vue";
 import SkeletonRows from "../SkeletonRows.vue";
 import EmptyState from "../EmptyState.vue";
 import PartyAvatar from "../PartyAvatar.vue";
@@ -86,6 +86,80 @@ function clearFilters() {
 	if (props.onlyWithBalance) emit("update:onlyWithBalance", false);
 	if (props.onlyOverdue) emit("update:onlyOverdue", false);
 }
+
+/* --- Sanallaştırma ------------------------------------------------------
+ * Anjan'da bu liste 1328 satır dönüyor ve hepsi `<tr>` olarak basılıyordu.
+ * Artık yalnız görünür pencere basılıyor; üstteki ve alttaki birer boşluk
+ * satırı eksik yüksekliği kapatır, böylece kaydırma çubuğu 1328 satırlık
+ * uzunluğunu aynen korur. Sunucu sözleşmesi değişmiyor, `props.rows` tam
+ * kalıyor (arama/filtre/toplamlar hâlâ listenin tamamında çalışır).
+ */
+const VIRTUAL_MIN = 60; // bunun altında pencerelemenin maliyeti kazancından fazla
+const OVERSCAN = 8; // pencerenin dışında yedek satır: hızlı kaydırmada beyaz boşluk olmasın
+const ROW_H_FALLBACK = 58; // yalnız ilk ölçüme kadar; measureRow() gerçeğiyle değiştirir
+
+const scrollEl = ref(null);
+const bodyEl = ref(null);
+const scrollTop = ref(0);
+const viewportH = ref(0);
+const rowH = ref(ROW_H_FALLBACK);
+
+const win = computed(() => {
+	const count = props.rows.length;
+	if (count < VIRTUAL_MIN) return { start: 0, end: count, top: 0, bottom: 0 };
+
+	const h = rowH.value || ROW_H_FALLBACK;
+	const span = Math.ceil((viewportH.value || 600) / h) + OVERSCAN * 2;
+	// `start` en baştan kırpılıyor: satır sayısı bir filtreyle aniden düşünce
+	// eski `scrollTop` listenin dışını gösterir ve tarayıcı kendi düzeltmesini
+	// yapana kadar bir kare boş tablo basılırdı.
+	const maxStart = Math.max(0, count - span);
+	const start = Math.min(maxStart, Math.max(0, Math.floor(scrollTop.value / h) - OVERSCAN));
+	const end = Math.min(count, start + span);
+	return { start, end, top: start * h, bottom: (count - end) * h };
+});
+
+const visibleRows = computed(() => props.rows.slice(win.value.start, win.value.end));
+
+function onScroll() {
+	scrollTop.value = scrollEl.value?.scrollTop || 0;
+}
+
+// Kesirli yükseklik (`getBoundingClientRect`) bilerek: `offsetHeight`'ın
+// yuvarlaması 1328 satır boyunca birikip kaydırma konumunu kaydırır.
+function measureRow() {
+	const tr = bodyEl.value?.querySelector("tr.pc-row");
+	const h = tr?.getBoundingClientRect().height;
+	if (h > 0) rowH.value = h;
+}
+
+let ro = null;
+
+onMounted(() => {
+	viewportH.value = scrollEl.value?.clientHeight || 0;
+	if (window.ResizeObserver && scrollEl.value) {
+		// Panel genişliği sürüklenebilir ve pencere yeniden boyutlanabilir.
+		ro = new ResizeObserver(() => {
+			viewportH.value = scrollEl.value?.clientHeight || 0;
+		});
+		ro.observe(scrollEl.value);
+	}
+	nextTick(measureRow);
+});
+
+onBeforeUnmount(() => ro?.disconnect());
+
+watch(
+	() => props.rows.length,
+	() => {
+		nextTick(() => {
+			measureRow();
+			// Tarayıcının kırptığı `scrollTop`'u geri oku — konumu KENDİMİZ
+			// sıfırlamıyoruz, filtre sonrası kaydırma davranışı eskisi gibi kalsın.
+			if (scrollEl.value) scrollTop.value = scrollEl.value.scrollTop;
+		});
+	},
+);
 </script>
 
 <template>
@@ -176,7 +250,7 @@ function clearFilters() {
 			</button>
 		</div>
 
-		<div class="pc-list-scroll">
+		<div ref="scrollEl" class="pc-list-scroll" @scroll.passive="onScroll">
 			<table v-if="props.loading" class="ds-table pc-table">
 				<SkeletonRows :rows="8" :cols="2" />
 			</table>
@@ -208,9 +282,10 @@ function clearFilters() {
 						</th>
 					</tr>
 				</thead>
-				<tbody>
+				<tbody ref="bodyEl">
+					<tr v-if="win.top" class="pc-pad"><td colspan="2" :style="{ height: win.top + 'px' }"></td></tr>
 					<tr
-						v-for="row in props.rows"
+						v-for="row in visibleRows"
 						:key="row.key"
 						class="pc-row"
 						:class="{ 'pc-row-active': props.selectedName === row.name, 'pc-row-child': row.level === 1 }"
@@ -247,6 +322,7 @@ function clearFilters() {
 							</span>
 						</td>
 					</tr>
+					<tr v-if="win.bottom" class="pc-pad"><td colspan="2" :style="{ height: win.bottom + 'px' }"></td></tr>
 				</tbody>
 			</table>
 		</div>
@@ -422,6 +498,20 @@ function clearFilters() {
 	min-height: 0;
 	overflow-y: auto;
 	overflow-x: hidden;
+	/* Sanallaştırma boşluk satırlarının yüksekliği her kaydırmada değişiyor;
+	   tarayıcının kaydırma çıpalaması bunu "içerik kaydı" sanıp scrollTop'u
+	   geri iter → titreme. */
+	overflow-anchor: none;
+}
+/* Sanallaştırma boşluk satırları: kaydırma çubuğu tam uzunluğunu korusun diye
+   varlar, görünmemeleri gerek. `pointer-events` kapalı, aksi halde `.ds-table
+   tbody tr:hover` binlerce piksellik boş alanı boyar. */
+.pc-pad {
+	pointer-events: none;
+}
+.pc-pad td {
+	padding: 0;
+	border: 0;
 }
 .pc-table {
 	font-size: 13px;
