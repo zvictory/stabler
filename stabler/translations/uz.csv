@@ -379,6 +379,7 @@ BRV Used (UZS),Ishlatilgan BHM (UZS)
 BRV Value (UZS),BHM qiymati (UZS)
 BRV used,Ishlatilgan BHM
 Back,Ortga
+Back to PI selection,PI tanlashga qaytish
 Back to dashboard,Boshqaruvga qaytish
 Back to summary,
 Back up now,Hozir zaxiralash
@@ -1016,6 +1017,7 @@ Deposit,Tushum
 Deposit to,Gacha depozit qo'yish
 Describe the problem…,Muammoni tavsiflab bering…
 Description,Tavsifi
+Deselect All,Tanlovni bekor qilish
 Designation,Lavozim
 Desk access,Stol kirishi
 Destination Warehouse,Manzil ombori
@@ -1899,6 +1901,7 @@ Linked receipts,Bog'langan qabul hujjatlari
 Linked. {0} parked punches re-queued.,Bog'landi. {0} belgilash qayta navbatga qo'yildi.
 List rate,Ro'yxat narxi
 "Live receivable (all-time, all vouchers)","Joriy qarz (butun tarix, barcha hujjatlar)"
+Load Available Lines,Mavjud qatorlarni yuklash
 Loaded,Yuklandi
 Loading,Yuklanmoqda
 Loading / unloading,Yuklash / tushirish
@@ -2283,6 +2286,7 @@ No movements yet.,Hozircha harakatlar yo'q.
 No new Version rows since the last seal.,
 No open exceptions,
 No open invoices for this customer group.,Bu mijozlar guruhi uchun ochiq hisob-fakturalar yo‘q.
+No open proforma invoices for this supplier.,Bu yetkazib beruvchida ochiq proforma yo‘q.
 No open reservations,Ochiq zahiralar yo'q
 No orders yet,Hozircha buyurtmalar yo'q
 No orders.,Buyurtmalar yo'q.
@@ -2578,6 +2582,7 @@ P,Ku
 PENDING,Kutilmoqda
 PI & Exporter,PI va eksportyor
 PI In,PI kirim
+PI date,PI sanasi
 PI group,PI guruhi
 PI group created.,PI guruhi yaratildi.
 "PI number, vendor or group… ⌘K",
@@ -3327,6 +3332,7 @@ Segregation of duties: this role combination is not allowed ({0}). Disable 'Enfo
 Segregation of duties: you raised this correction request — it must be approved by someone else.,
 Segregation of duties: you raised this correction request — it must be reviewed by someone else.,
 Select,Tanlash
+Select All,Hammasini tanlash
 Select POS Profile,
 Select a POS Profile,
 Select a bank account.,Bank hisobini tanlang.
@@ -3502,6 +3508,8 @@ Status updated.,Holat yangilandi.
 Step,Qadam
 Step #{0} not found on this visit.,Qadam #{0} ushbu tashrif davomida topilmadi.
 Step #{0}: type is required.,Qadam #{0}: turi talab qilinadi.
+Step 1: Select Proforma Invoices,1-qadam: proformalarni tanlang
+Step 2: Allocate Line Items,2-qadam: qatorlarni taqsimlang
 Step fee (UZS),
 Step interval (min),
 Steps,Qadamlar

@@ -378,6 +378,7 @@ BRV Used (UZS),Kullanılan BRV (UZS)
 BRV Value (UZS),BRV Değeri (UZS)
 BRV used,Kullanılan BRV
 Back,Geri
+Back to PI selection,PI seçimine dön
 Back to summary,
 Back up now,Şimdi yedekle
 Back up with files,Dosyalarla yedekle
@@ -1011,6 +1012,7 @@ Deposit,Yatırma
 Deposit to,Yatırılacak hesap
 Describe the problem…,Sorunu açıklayın…
 Description,Açıklama
+Deselect All,Tümünü kaldır
 Designation,Unvan
 Desk access,Desk erişimi
 Destination Warehouse,Hedef Depo
@@ -1892,6 +1894,7 @@ Linked receipts,Bağlı mal kabulleri
 Linked. {0} parked punches re-queued.,Bağlandı. {0} bekleyen kayıt yeniden kuyruğa alındı.
 List rate,Liste fiyatı
 "Live receivable (all-time, all vouchers)","Güncel alacak (tüm zamanlar, tüm belgeler)"
+Load Available Lines,Uygun satırları yükle
 Loading,Yükleniyor
 Loading / unloading,Yükleme / boşaltma
 Loading FX account balances…,
@@ -2275,6 +2278,7 @@ No movements yet.,Henüz hareket yok.
 No new Version rows since the last seal.,
 No open exceptions,
 No open invoices for this customer group.,Bu müşteri grubu için açık fatura yok.
+No open proforma invoices for this supplier.,Bu tedarikçi için açık proforma fatura yok.
 No open reservations,Açık rezervasyon yok
 No orders yet,Henüz sipariş yok
 No orders.,Sipariş yok.
@@ -2569,6 +2573,7 @@ P,Bk
 PENDING,Beklemede
 PI & Exporter,PI ve İhracatçı
 PI In,PI giriş
+PI date,PI tarihi
 PI group,PI grubu
 PI group created.,PI grubu oluşturuldu.
 "PI number, vendor or group… ⌘K",
@@ -3315,6 +3320,7 @@ Segregation of duties: this role combination is not allowed ({0}). Disable 'Enfo
 Segregation of duties: you raised this correction request — it must be approved by someone else.,
 Segregation of duties: you raised this correction request — it must be reviewed by someone else.,
 Select,Seç
+Select All,Tümünü seç
 Select POS Profile,
 Select a POS Profile,
 Select a bank account.,Bir banka hesabı seçin.
@@ -3489,6 +3495,8 @@ Status updated.,Durum güncellendi.
 Step,Adım
 Step #{0} not found on this visit.,Bu ziyarette #{0} numaralı adım bulunamadı.
 Step #{0}: type is required.,#{0}. adım: tür zorunludur.
+Step 1: Select Proforma Invoices,Adım 1: Proforma faturaları seçin
+Step 2: Allocate Line Items,Adım 2: Satırları dağıtın
 Step fee (UZS),
 Step interval (min),
 Steps,Adımlar

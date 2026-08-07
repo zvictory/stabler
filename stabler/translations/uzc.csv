@@ -379,6 +379,7 @@ BRV Used (UZS),Ишлатилган БҲМ (UZS)
 BRV Value (UZS),БҲМ қиймати (UZS)
 BRV used,Ишлатилган БҲМ
 Back,Орқага
+Back to PI selection,ПИ танлашга қайтиш
 Back to dashboard,Бошқарувга қайтиш
 Back to summary,
 Back up now,Ҳозир захиралаш
@@ -1016,6 +1017,7 @@ Deposit,Тушум
 Deposit to,Ўрнатиш
 Describe the problem…,Масалани таъриф бер…
 Description,Таъриф
+Deselect All,Танловни бекор қилиш
 Designation,Лавозим
 Desk access,Стол орқали кириш
 Destination Warehouse,Манзил омбори
@@ -1899,6 +1901,7 @@ Linked receipts,Боғланган қабул ҳужжатлари
 Linked. {0} parked punches re-queued.,Боғланди. {0} белгилаш қайта навбатга қўйилди.
 List rate,Рўйхат нарх
 "Live receivable (all-time, all vouchers)","Жорий қарз (бутун тарих, барча ҳужжатлар)"
+Load Available Lines,Мавжуд қаторларни юклаш
 Loaded,Юклангани
 Loading,Юкланмоқда
 Loading / unloading,Юклаш / тушириш
@@ -2283,6 +2286,7 @@ No movements yet.,Ҳозирча ҳаракатлар йўқ.
 No new Version rows since the last seal.,
 No open exceptions,
 No open invoices for this customer group.,Бу мижозлар гуруҳи учун очиқ ҳисоб-фактуралар йўқ.
+No open proforma invoices for this supplier.,Бу етказиб берувчида очиқ проформа йўқ.
 No open reservations,Очиқ захиралар йўқ
 No orders yet,Ҳозирча буюртмалар йўқ
 No orders.,Буюртмалар йўқ.
@@ -2578,6 +2582,7 @@ P,Ку
 PENDING,Кутилмоқда
 PI & Exporter,PI ва экспортёр
 PI In,PI кирим
+PI date,ПИ санаси
 PI group,PI гуруҳи
 PI group created.,PI гуруҳи яратилди.
 "PI number, vendor or group… ⌘K",
@@ -3327,6 +3332,7 @@ Segregation of duties: this role combination is not allowed ({0}). Disable 'Enfo
 Segregation of duties: you raised this correction request — it must be approved by someone else.,
 Segregation of duties: you raised this correction request — it must be reviewed by someone else.,
 Select,Танлаш
+Select All,Ҳаммасини танлаш
 Select POS Profile,
 Select a POS Profile,
 Select a bank account.,Банк ҳисобини танланг.
@@ -3502,6 +3508,8 @@ Status updated.,Ҳолат янгиланди.
 Step,Қадам
 Step #{0} not found on this visit.,Қадам №{0} ушбу ташриф сўрида топилмади.
 Step #{0}: type is required.,Қадам №{0}: тури талаб қилинади.
+Step 1: Select Proforma Invoices,1-қадам: проформаларни танланг
+Step 2: Allocate Line Items,2-қадам: қаторларни тақсимланг
 Step fee (UZS),
 Step interval (min),
 Steps,Қадамлар

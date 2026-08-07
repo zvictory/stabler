@@ -383,6 +383,7 @@ BRV Used (UZS),Использованный БРВ (UZS)
 BRV Value (UZS),Значение БРВ (UZS)
 BRV used,Использованный БРВ
 Back,Назад
+Back to PI selection,Назад к выбору PI
 Back to dashboard,Вернуться на панель
 Back to summary,
 Back up now,Создать копию сейчас
@@ -1021,6 +1022,7 @@ Deposit,Поступление
 Deposit to,Внести на
 Describe the problem…,Опишите проблему…
 Description,Описание
+Deselect All,Снять выделение
 Designation,Должность
 Desk access,Доступ к Desk
 Destination Warehouse,Склад назначения
@@ -1905,6 +1907,7 @@ Linked receipts,Связанные приёмки
 Linked. {0} parked punches re-queued.,Связано. {0} отметок переобработано.
 List rate,Прейскурантная цена
 "Live receivable (all-time, all vouchers)","Текущая задолженность (за всё время, все документы)"
+Load Available Lines,Загрузить доступные строки
 Loaded,Загружено
 Loading,Загрузка
 Loading / unloading,Погрузка / разгрузка
@@ -2289,6 +2292,7 @@ No movements yet.,Движений пока нет.
 No new Version rows since the last seal.,
 No open exceptions,
 No open invoices for this customer group.,Нет открытых счетов для этой группы клиентов.
+No open proforma invoices for this supplier.,У этого поставщика нет открытых проформ.
 No open reservations,Нет открытых резерваций
 No orders yet,Заказов пока нет
 No orders.,Нет заказов.
@@ -2584,6 +2588,7 @@ P,Ож
 PENDING,Ожидает
 PI & Exporter,PI и экспортёр
 PI In,PI приход
+PI date,Дата PI
 PI group,Группа PI
 PI group created.,Группа PI создана.
 "PI number, vendor or group… ⌘K",
@@ -3333,6 +3338,7 @@ Segregation of duties: this role combination is not allowed ({0}). Disable 'Enfo
 Segregation of duties: you raised this correction request — it must be approved by someone else.,
 Segregation of duties: you raised this correction request — it must be reviewed by someone else.,
 Select,Выбрать
+Select All,Выбрать все
 Select POS Profile,
 Select a POS Profile,
 Select a bank account.,Выберите банковский счёт.
@@ -3508,6 +3514,8 @@ Status updated.,Статус обновлён.
 Step,Шаг
 Step #{0} not found on this visit.,Шаг #{0} не найден в этом визите.
 Step #{0}: type is required.,Шаг #{0}: тип обязателен.
+Step 1: Select Proforma Invoices,Шаг 1: выберите проформы
+Step 2: Allocate Line Items,Шаг 2: распределите строки
 Step fee (UZS),
 Step interval (min),
 Steps,Шаги

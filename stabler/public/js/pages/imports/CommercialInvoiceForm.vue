@@ -475,6 +475,10 @@ const multiPiLines = ref([]);
 const multiPiAllocations = ref({});
 // Which sub-cut to book a bundle line against, keyed like the allocations.
 const multiPiItems = ref({});
+// Step 1 = pick the proformas, step 2 = allocate their lines. The selection
+// survives "Back", so a user can widen or narrow it without starting over.
+const multiPiStep = ref(1);
+const multiPiSelected = ref([]);
 
 // The allocation key mirrors the backend match key: (proforma, category). It
 // used to include `item`, which is now empty on every compensated bundle — the
@@ -518,13 +522,17 @@ function setAllocation(line, ev) {
 	if (raw !== String(clamped)) ev.target.value = clamped;
 }
 
+// Step 1: just the supplier's open proformas. `include_lines: false` skips the
+// whole shipped-vs-contract arithmetic — nothing on this step renders it.
 async function openMultiPiSmartFill() {
 	if (!form.value.supplier) {
 		toast.error(t("Please select a supplier first."));
 		return;
 	}
 	multiPiModalOpen.value = true;
+	multiPiStep.value = 1;
 	multiPiLoading.value = true;
+	multiPiLines.value = [];
 	multiPiAllocations.value = {};
 	multiPiItems.value = {};
 	try {
@@ -532,8 +540,45 @@ async function openMultiPiSmartFill() {
 			company: activeCompany.value,
 			supplier: form.value.supplier,
 			exclude_ci: form.value.name || undefined,
+			include_lines: false,
 		});
 		multiPiProformas.value = res.proformas || [];
+		// Everything preselected: pressing Load straight away is the old
+		// one-step behaviour, and narrowing is an opt-in from there.
+		multiPiSelected.value = multiPiProformas.value.map((p) => p.name);
+	} catch (err) {
+		toast.error(err?.message || t("Could not fetch available PI lines."));
+	} finally {
+		multiPiLoading.value = false;
+	}
+}
+
+const multiPiAllSelected = computed(
+	() => multiPiProformas.value.length > 0 && multiPiSelected.value.length === multiPiProformas.value.length
+);
+
+function multiPiSelectAll(on) {
+	multiPiSelected.value = on ? multiPiProformas.value.map((p) => p.name) : [];
+}
+
+// Step 2. ONE request for the whole selection — the narrowing is server-side,
+// so this never fans out into a request per proforma.
+async function loadMultiPiLines() {
+	multiPiStep.value = 2;
+	multiPiLoading.value = true;
+	multiPiLines.value = [];
+	multiPiAllocations.value = {};
+	multiPiItems.value = {};
+	try {
+		const res = await call("stabler.api.imports.get_vendor_available_pi_lines", {
+			company: activeCompany.value,
+			supplier: form.value.supplier,
+			exclude_ci: form.value.name || undefined,
+			selected_pis: JSON.stringify(multiPiSelected.value),
+		});
+		// `proformas` stays the FULL open list even on a narrowed load — step 1's
+		// checkbox list is fed from here and must survive going Back.
+		multiPiProformas.value = res.proformas || multiPiProformas.value;
 		multiPiLines.value = res.lines || [];
 
 		for (const line of multiPiLines.value) {
@@ -1149,6 +1194,19 @@ watch(docName, async () => {
 	loadDrift();
 });
 watch(activeCompany, loadRefData);
+// A different supplier means different proformas: step 1's selection and step
+// 2's lines both belong to the old one, so neither may survive the switch.
+watch(
+	() => form.value.supplier,
+	() => {
+		multiPiStep.value = 1;
+		multiPiProformas.value = [];
+		multiPiSelected.value = [];
+		multiPiLines.value = [];
+		multiPiAllocations.value = {};
+		multiPiItems.value = {};
+	}
+);
 </script>
 
 <template>
@@ -2072,7 +2130,50 @@ watch(activeCompany, loadRefData);
 						<h5 class="modal-title"><i class="ti ti-wand me-2"></i>{{ t("Smart Fill from PIs") }}</h5>
 						<button type="button" class="btn-close" @click="multiPiModalOpen = false"></button>
 					</div>
-					<div class="modal-body">
+					<!-- Step 1 — which proformas to pull from -->
+					<div v-if="multiPiStep === 1" class="modal-body">
+						<div class="d-flex justify-content-between align-items-center mb-2">
+							<div class="fw-semibold">{{ t("Step 1: Select Proforma Invoices") }}</div>
+							<div class="btn-list">
+								<button type="button" class="btn btn-sm btn-outline-secondary" :disabled="multiPiLoading || multiPiAllSelected" @click="multiPiSelectAll(true)">
+									{{ t("Select All") }}
+								</button>
+								<button type="button" class="btn btn-sm btn-outline-secondary" :disabled="multiPiLoading || !multiPiSelected.length" @click="multiPiSelectAll(false)">
+									{{ t("Deselect All") }}
+								</button>
+							</div>
+						</div>
+						<table class="table table-sm table-vcenter align-middle mb-0">
+							<thead>
+								<tr>
+									<th style="width: 40px"></th>
+									<th style="min-width: 160px">{{ t("Ref PI") }}</th>
+									<th style="min-width: 120px">{{ t("PI date") }}</th>
+								</tr>
+							</thead>
+							<SkeletonRows v-if="multiPiLoading" :rows="5" :cols="3" />
+							<tbody v-else>
+								<tr v-if="!multiPiProformas.length">
+									<td colspan="3" class="text-secondary text-center py-3">{{ t("No open proforma invoices for this supplier.") }}</td>
+								</tr>
+								<tr v-for="pi in multiPiProformas" :key="pi.name">
+									<td>
+										<input :id="`multi-pi-${pi.name}`" v-model="multiPiSelected" type="checkbox" class="form-check-input m-0" :value="pi.name">
+									</td>
+									<td>
+										<label class="form-check-label mb-0" :for="`multi-pi-${pi.name}`">
+											<span class="badge bg-blue-lt font-monospace" style="font-size: 0.75rem">{{ pi.supplier_pi_ref || pi.name }}</span>
+										</label>
+									</td>
+									<td class="text-secondary">{{ pi.pi_date ? formatDate(pi.pi_date) : "—" }}</td>
+								</tr>
+							</tbody>
+						</table>
+					</div>
+
+					<!-- Step 2 — allocate boxes across the selected proformas' lines -->
+					<div v-else class="modal-body">
+						<div class="fw-semibold mb-2">{{ t("Step 2: Allocate Line Items") }}</div>
 						<table class="table table-sm table-vcenter align-middle mb-0">
 							<thead>
 								<tr>
@@ -2140,7 +2241,16 @@ watch(activeCompany, loadRefData);
 							</tbody>
 						</table>
 					</div>
-					<div class="modal-footer">
+					<div v-if="multiPiStep === 1" class="modal-footer">
+						<button type="button" class="btn btn-outline-secondary" @click="multiPiModalOpen = false">{{ t("Cancel") }}</button>
+						<button type="button" class="btn btn-primary" :disabled="multiPiLoading || !multiPiSelected.length" @click="loadMultiPiLines">
+							{{ t("Load Available Lines") }}
+						</button>
+					</div>
+					<div v-else class="modal-footer">
+						<button type="button" class="btn btn-ghost-secondary me-auto" :disabled="multiPiLoading" @click="multiPiStep = 1">
+							<i class="ti ti-arrow-left me-1"></i>{{ t("Back to PI selection") }}
+						</button>
 						<button type="button" class="btn btn-outline-secondary" @click="multiPiModalOpen = false">{{ t("Cancel") }}</button>
 						<button type="button" class="btn btn-primary" :disabled="multiPiLoading || !multiPiLines.length" @click="applyMultiPiAllocation">
 							{{ t("Apply") }}

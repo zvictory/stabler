@@ -378,6 +378,7 @@ BRV Used (UZS),BRV Used (UZS)
 BRV Value (UZS),BRV Value (UZS)
 BRV used,BRV used
 Back,Back
+Back to PI selection,Back to PI selection
 Back to summary,Back to summary
 Back up now,Back up now
 Back up with files,Back up with files
@@ -1014,6 +1015,7 @@ Deposit,Deposit
 Deposit to,Deposit to
 Describe the problem…,Describe the problem…
 Description,Description
+Deselect All,Deselect All
 Designation,Designation
 Desk access,Desk access
 Destination Warehouse,Destination Warehouse
@@ -1897,6 +1899,7 @@ Linked receipts,Linked receipts
 Linked. {0} parked punches re-queued.,Linked. {0} parked punches re-queued.
 List rate,List rate
 "Live receivable (all-time, all vouchers)","Live receivable (all-time, all vouchers)"
+Load Available Lines,Load Available Lines
 Loaded,Loaded
 Loading,Loading
 Loading / unloading,Loading / unloading
@@ -2281,6 +2284,7 @@ No movements yet.,No movements yet.
 No new Version rows since the last seal.,No new Version rows since the last seal.
 No open exceptions,No open exceptions
 No open invoices for this customer group.,No open invoices for this customer group.
+No open proforma invoices for this supplier.,No open proforma invoices for this supplier.
 No open reservations,No open reservations
 No orders yet,No orders yet
 No orders.,No orders.
@@ -2576,6 +2580,7 @@ P,P
 PENDING,PENDING
 PI & Exporter,PI & Exporter
 PI In,PI In
+PI date,PI date
 PI group,PI group
 PI group created.,PI group created.
 "PI number, vendor or group… ⌘K","PI number, vendor or group… ⌘K"
@@ -3324,6 +3329,7 @@ Segregation of duties: this role combination is not allowed ({0}). Disable 'Enfo
 Segregation of duties: you raised this correction request — it must be approved by someone else.,Segregation of duties: you raised this correction request — it must be approved by someone else.
 Segregation of duties: you raised this correction request — it must be reviewed by someone else.,Segregation of duties: you raised this correction request — it must be reviewed by someone else.
 Select,Select
+Select All,Select All
 Select POS Profile,Select POS Profile
 Select a POS Profile,Select a POS Profile
 Select a bank account.,Select a bank account.
@@ -3499,6 +3505,8 @@ Status updated.,Status updated.
 Step,Step
 Step #{0} not found on this visit.,Step #{0} not found on this visit.
 Step #{0}: type is required.,Step #{0}: type is required.
+Step 1: Select Proforma Invoices,Step 1: Select Proforma Invoices
+Step 2: Allocate Line Items,Step 2: Allocate Line Items
 Step fee (UZS),Step fee (UZS)
 Step interval (min),Step interval (min)
 Steps,Steps
