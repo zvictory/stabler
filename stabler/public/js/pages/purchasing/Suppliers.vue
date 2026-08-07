@@ -10,6 +10,7 @@ import { t } from "../../composables/i18n.js";
 import { useConfirm } from "../../composables/useConfirm.js";
 import { useToast } from "../../composables/useToast.js";
 import { getStatusBadgeClass } from "../../composables/status.js";
+import { useLatestRequest } from "../../composables/useLatestRequest.js";
 import EmptyState from "../../components/EmptyState.vue";
 import SkeletonRows from "../../components/SkeletonRows.vue";
 import Select from "../../components/Select.vue";
@@ -120,6 +121,7 @@ function onSelect(row) {
 	if (!row) {
 		selectedDetail.value = null;
 		selectedExposure.value = null;
+		exposureReq.invalidate();
 		suppQuotations.value = [];
 		return;
 	}
@@ -139,18 +141,24 @@ function refreshAfterMoney() {
 // Import position (open commitments + cash/bank paid split). Only populated when
 // the company has the imports module on; otherwise stays null and the card hides.
 const selectedExposure = ref(null);
+const exposureReq = useLatestRequest();
 
 // Load (or reload) the supplier's import position. Tenant-gated: a company with
 // the imports module off returns {enabled:false} and the panel stays hidden.
+// A ticket guards against an earlier supplier's response landing after a later
+// one — see useLatestRequest.js.
 async function loadExposure(supplierName) {
 	selectedExposure.value = null;
+	const isCurrent = exposureReq.take();
 	try {
 		const exp = await call("stabler.api.purchasing.supplier_import_exposure", {
 			supplier: supplierName,
 			company: activeCompany.value,
 		});
+		if (!isCurrent()) return;
 		if (exp && exp.enabled) selectedExposure.value = exp;
 	} catch {
+		if (!isCurrent()) return;
 		selectedExposure.value = null;
 	}
 }
