@@ -521,21 +521,45 @@ async function loadDetail(row) {
 	}
 }
 
-async function selectRow(row) {
+// Ekstre penceresi hem seçim hem ön-getirme yolunda AYNI SIRAYLA kurulmalı;
+// aksi halde `loadLedger` iki farklı tarih aralığıyla iki kez koşar.
+function ensureLedgerRange() {
+	if (ledgerFromDate.value || ledgerToDate.value) return;
+	const r = defaultDateRange();
+	ledgerFromDate.value = r.from;
+	ledgerToDate.value = r.to;
+}
+
+// Derin bağlantı (`?c=<ad>`) ön-getirmesi: dört yükleyicinin dördü de satır
+// nesnesinden yalnız `name` okuyor, dolayısıyla listenin dönmesi beklenmeden
+// çağrılabilirler — kritik yoldan tam bir ağ turu kalkar.
+function prefetchSelection(name) {
+	if (!name || !activeCompany.value) return;
+	const stub = { name };
+	ensureLedgerRange();
+	loadLedger(stub);
+	loadOrders(stub);
+	loadQuotes(stub);
+	loadDetail(stub);
+}
+
+// `fetch: false` → satırı yalnız seçili duruma bağla, ağ çağrılarını atla.
+// `prefetchSelection` verileri zaten istemişken, liste dönüp satır nesnesi
+// gerçeğiyle değiştirilirken aynı dört çağrının tekrarlanmaması için.
+async function selectRow(row, { fetch = true } = {}) {
 	if (!row) return;
 	selected.value = row;
 	selectedName.value = row.name; // composable → URL + localStorage
-	orders.value = [];
-	quotes.value = [];
-	recentInvoices.value = [];
-	txRef.value?.resetLedgerFilters?.();
-
-	if (!ledgerFromDate.value && !ledgerToDate.value) {
-		const r = defaultDateRange();
-		ledgerFromDate.value = r.from;
-		ledgerToDate.value = r.to;
+	if (fetch) {
+		orders.value = [];
+		quotes.value = [];
+		recentInvoices.value = [];
+		txRef.value?.resetLedgerFilters?.();
 	}
+
+	ensureLedgerRange();
 	emit("select", row);
+	if (!fetch) return;
 	loadLedger(row);
 	loadOrders(row);
 	loadQuotes(row);
@@ -715,13 +739,25 @@ const voucherTypeOptions = computed(() => [
 
 // --- Yaşam döngüsü ----------------------------------------------------------
 onMounted(async () => {
-	await loadList();
-	loadCockpit();
 	// selectedName, useListViewState tarafından URL/localStorage'dan bu koşmadan
 	// önce hidrasyona uğratılır — `?c=<ad>` derin bağlantısı böyle çalışır.
-	if (selectedName.value) {
-		const match = rows.value.find((r) => r.name === selectedName.value);
-		if (match) selectRow(match);
+	const deepLink = selectedName.value;
+	const listPromise = loadList(); // bilerek await edilmiyor
+
+	if (deepLink) {
+		prefetchSelection(deepLink);
+	} else {
+		// Kokpit yalnız hiçbir kayıt seçili DEĞİLKEN görünüyor; derin bağlantıda
+		// çağırmak boşa bir tur. Seçim kalkınca `watch(selected, …)` yüklüyor.
+		loadCockpit();
+	}
+
+	await listPromise;
+
+	if (deepLink) {
+		const match = rows.value.find((r) => r.name === deepLink);
+		if (match) selectRow(match, { fetch: false });
+		else loadCockpit(); // derin bağlantı tutmadı → kokpit görünür kalır
 	}
 });
 
