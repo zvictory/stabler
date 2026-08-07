@@ -2262,6 +2262,7 @@ watch(
 								</div>
 							</div>
 						</div>
+						<div class="table-responsive">
 						<table class="table table-sm table-vcenter align-middle mb-0">
 							<thead>
 								<tr>
@@ -2291,13 +2292,16 @@ watch(
 								<tr v-if="!multiPiLines.length">
 									<td colspan="8" class="text-secondary text-center py-3">{{ t("No open proforma lines for this supplier.") }}</td>
 								</tr>
-								<template v-for="line in multiPiLines" :key="multiPiKey(line)">
+								<!-- Index-based DOM id on purpose: a match key holds the PI name and the category
+								     verbatim, so an id built from it carried "::" and spaces — legal for <label for>
+								     but unaddressable by any CSS/querySelector id selector, which QA tooling needs. -->
+								<template v-for="(line, lineIdx) in multiPiLines" :key="multiPiKey(line)">
 									<tr>
 										<td>
-											<input :id="`multi-pi-line-${multiPiKey(line)}`" v-model="multiPiPickedKeys" type="checkbox" class="form-check-input m-0" :value="multiPiKey(line)">
+											<input :id="`multi-pi-line-${lineIdx}`" v-model="multiPiPickedKeys" type="checkbox" class="form-check-input m-0" :value="multiPiKey(line)">
 										</td>
 										<td>
-											<label class="form-check-label mb-0" :for="`multi-pi-line-${multiPiKey(line)}`">
+											<label class="form-check-label mb-0" :for="`multi-pi-line-${lineIdx}`">
 												<span class="badge bg-blue-lt font-monospace" style="font-size: 0.75rem">{{ line.pi_ref || line.pi_name }}</span>
 											</label>
 										</td>
@@ -2345,6 +2349,7 @@ watch(
 								</template>
 							</tbody>
 						</table>
+						</div>
 					</div>
 					<div v-if="multiPiStep === 1" class="modal-footer">
 						<button type="button" class="btn btn-outline-secondary" @click="multiPiModalOpen = false">{{ t("Cancel") }}</button>

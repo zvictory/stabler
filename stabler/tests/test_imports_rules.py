@@ -18,6 +18,9 @@ _D = datetime.date
 
 _APP_ROOT = os.path.dirname(os.path.dirname(os.path.abspath(__file__)))  # .../stabler
 _ALLOCATION_GUARD_PATH = os.path.join(_APP_ROOT, "stabler", "imports_module", "allocation_guard.py")
+_CI_CONTROLLER_PATH = os.path.join(
+	_APP_ROOT, "stabler", "doctype", "commercial_invoice", "commercial_invoice.py"
+)
 
 
 class TestMaskNamed(unittest.TestCase):
@@ -1276,6 +1279,38 @@ class TestAllocationGuardQuery(unittest.TestCase):
 
 	def test_no_clamp_on_the_remaining_balance(self):
 		self.assertNotIn("max(0", self.source)
+
+
+class TestAllocationGuardIsWiredIntoValidate(unittest.TestCase):
+	"""The guard is only a guarantee if ``validate`` reaches it.
+
+	The SPA creates invoices with ``doc.insert()``, so the call MUST sit above the
+	controller's ``is_new()`` early return. Move it below and every frappe-free
+	test here stays green while newly-created over-allocating invoices silently
+	stop being refused — which is the one case the guard exists for. Source-text,
+	because importing the controller needs a site.
+	"""
+
+	@classmethod
+	def setUpClass(cls):
+		with open(_CI_CONTROLLER_PATH, encoding="utf-8") as fh:
+			cls.source = fh.read()
+
+	def _line_of(self, needle: str) -> int:
+		for number, line in enumerate(self.source.splitlines(), start=1):
+			if needle in line:
+				return number
+		self.fail(f"{needle!r} not found in commercial_invoice.py")
+
+	def test_validate_calls_the_guard(self):
+		self.assertIn("assert_within_remaining(self)", self.source)
+
+	def test_the_guard_runs_before_the_is_new_early_return(self):
+		guard = self._line_of("assert_within_remaining(self)")
+		validate = self._line_of("def validate(self)")
+		is_new = self._line_of("if self.is_new():")
+		self.assertGreater(guard, validate, "the guard must live inside validate()")
+		self.assertLess(guard, is_new, "the guard must run before the is_new() early return")
 
 
 if __name__ == "__main__":
