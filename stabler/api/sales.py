@@ -399,6 +399,15 @@ def list_customers_with_balances(
 		params,
 	)[0][0]
 
+	# Did `limit` actually bite? `customer_rows` below is this same WHERE under
+	# `LIMIT`, so its length is always min(total_count, parsed_limit) — comparing
+	# against the limit is the identical test, and deciding it HERE is what lets
+	# the grand-total query below skip its work. Decided before the Python-side
+	# only_with_balance / only_overdue filters thin the list out: `total_count`
+	# ignores those filters, so comparing it with the final row count would flag a
+	# filtered-but-complete list as truncated.
+	truncated = total_count > parsed_limit
+
 	# Book-wide balance for the SAME filter, ignoring `limit`. Without this the UI
 	# can only say "the total you see is a slice" — it can never show the real
 	# number. Measured on ANJAN: at limit=500 the visible footer was 8% of the book.
@@ -406,28 +415,38 @@ def list_customers_with_balances(
 	# NOTE: this omits the Payment Entry drift correction applied per row below
 	# (~0.00001% on ANJAN). The UI only shows this figure when the list IS capped,
 	# so it never sits next to the drift-corrected footer for a direct comparison.
-	grand_totals = frappe.db.sql(
-		f"""
-		SELECT p.cur AS currency, SUM(p.bal_acc) AS amount
-		FROM (
-		  SELECT MAX(g.account_currency) AS cur,
-		         SUM(g.debit_in_account_currency - g.credit_in_account_currency) AS bal_acc
-		  FROM `tabGL Entry` g
-		  JOIN `tabCustomer` c ON c.name = g.party
-		  WHERE g.company = %(company)s
-		    AND g.party_type = 'Customer'
-		    AND g.is_cancelled = 0
-		    AND {where}
-		  GROUP BY g.party
-		) p
-		WHERE p.cur IS NOT NULL
-		GROUP BY p.cur
-		HAVING SUM(p.bal_acc) != 0
-		""",
-		params,
-		as_dict=True,
-	)
-	grand_totals = [{"currency": r["currency"], "amount": flt(r["amount"])} for r in (grand_totals or [])]
+	#
+	# Computed ONLY when the list is capped, because that is the only case the UI
+	# renders it (`PartyCenter.vue` `showGrandTotals` gates on `truncated`), and
+	# the query is a full `tabGL Entry` scan: measured on ANJAN prod 2026-08-07 it
+	# cost 0.9-2.1 s of the endpoint's 2.6-3.4 s to produce a figure nobody saw
+	# (1328 customers, limit 2500 — never capped there).
+	grand_totals: list = []
+	if truncated:
+		grand_total_rows = frappe.db.sql(
+			f"""
+			SELECT p.cur AS currency, SUM(p.bal_acc) AS amount
+			FROM (
+			  SELECT MAX(g.account_currency) AS cur,
+			         SUM(g.debit_in_account_currency - g.credit_in_account_currency) AS bal_acc
+			  FROM `tabGL Entry` g
+			  JOIN `tabCustomer` c ON c.name = g.party
+			  WHERE g.company = %(company)s
+			    AND g.party_type = 'Customer'
+			    AND g.is_cancelled = 0
+			    AND {where}
+			  GROUP BY g.party
+			) p
+			WHERE p.cur IS NOT NULL
+			GROUP BY p.cur
+			HAVING SUM(p.bal_acc) != 0
+			""",
+			params,
+			as_dict=True,
+		)
+		grand_totals = [
+			{"currency": r["currency"], "amount": flt(r["amount"])} for r in (grand_total_rows or [])
+		]
 
 	# 1. Fetch matching customer metadata first
 	customer_rows = frappe.db.sql(
@@ -454,12 +473,6 @@ def list_customers_with_balances(
 	has_hierarchy = bool(
 		has_parent_field and frappe.db.exists("Customer", {"custom_parent_customer": ["!=", ""]})
 	)
-
-	# Did `limit` actually bite? Decide here, BEFORE the Python-side
-	# only_with_balance / only_overdue filters thin the list out: `total_count`
-	# ignores those filters, so comparing it with the final row count would flag a
-	# filtered-but-complete list as truncated.
-	truncated = total_count > len(customer_rows)
 
 	if not customer_rows:
 		return {
