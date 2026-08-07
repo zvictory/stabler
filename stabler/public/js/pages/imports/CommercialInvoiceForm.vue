@@ -479,6 +479,10 @@ const multiPiItems = ref({});
 // survives "Back", so a user can widen or narrow it without starting over.
 const multiPiStep = ref(1);
 const multiPiSelected = ref([]);
+// Step 2's own selection: which LINES get pushed, held as multiPiKey values.
+// Deliberately not multiPiSelected — that one is step 1's list of PI names, and
+// sharing it would make each step wipe the other's picks.
+const multiPiPickedKeys = ref([]);
 
 // The allocation key mirrors the backend match key: (proforma, category). It
 // used to include `item`, which is now empty on every compensated bundle — the
@@ -522,6 +526,17 @@ function setAllocation(line, ev) {
 	if (raw !== String(clamped)) ev.target.value = clamped;
 }
 
+// The ONE per-line calculation behind step 2. Both the summary bar the user
+// reads and the Apply loop that pushes the rows call this — a second copy is
+// exactly how a screen ends up promising one total and delivering another.
+function multiPiLineTotals(line) {
+	const key = multiPiKey(line);
+	const boxes = Math.min(Math.max(0, parseInt(multiPiAllocations.value[key] || 0)), maxAllocatable(line));
+	const bw = line.box_weight_kg || DEFAULT_BOX_WEIGHT_KG;
+	const qty = round2(boxes * bw);
+	return { key, boxes, bw, qty, value: qty * (line.agreed_rate || 0) };
+}
+
 // Step 1: just the supplier's open proformas. `include_lines: false` skips the
 // whole shipped-vs-contract arithmetic — nothing on this step renders it.
 async function openMultiPiSmartFill() {
@@ -535,6 +550,7 @@ async function openMultiPiSmartFill() {
 	multiPiLines.value = [];
 	multiPiAllocations.value = {};
 	multiPiItems.value = {};
+	multiPiPickedKeys.value = [];
 	try {
 		const res = await call("stabler.api.imports.get_vendor_available_pi_lines", {
 			company: activeCompany.value,
@@ -569,6 +585,7 @@ async function loadMultiPiLines() {
 	multiPiLines.value = [];
 	multiPiAllocations.value = {};
 	multiPiItems.value = {};
+	multiPiPickedKeys.value = [];
 	try {
 		const res = await call("stabler.api.imports.get_vendor_available_pi_lines", {
 			company: activeCompany.value,
@@ -587,6 +604,9 @@ async function loadMultiPiLines() {
 			// so pre-filling more boxes would only deepen the breach.
 			multiPiAllocations.value[key] = line.remaining_boxes > 0 ? line.remaining_boxes : 0;
 			multiPiItems.value[key] = multiPiItemOptions(line)[0] || "";
+			// Everything checked, like step 1: pressing Apply straight away is the
+			// pre-selection behaviour, and narrowing is the opt-in.
+			multiPiPickedKeys.value.push(key);
 		}
 	} catch (err) {
 		toast.error(err?.message || t("Could not fetch available PI lines."));
@@ -595,14 +615,50 @@ async function loadMultiPiLines() {
 	}
 }
 
+// Only the checked lines exist as far as the summary bar and Apply are
+// concerned. Keyed by multiPiKey, never by array position — a reload reorders.
+const multiPiSelectedLines = computed(() =>
+	multiPiLines.value.filter((line) => multiPiPickedKeys.value.includes(multiPiKey(line)))
+);
+
+const multiPiAllLinesSelected = computed(
+	() => multiPiLines.value.length > 0 && multiPiPickedKeys.value.length === multiPiLines.value.length
+);
+
+// Drives the header checkbox's indeterminate state: some, but not all.
+const multiPiSomeLinesSelected = computed(
+	() => multiPiPickedKeys.value.length > 0 && !multiPiAllLinesSelected.value
+);
+
+// Toggling selection must never touch multiPiAllocations — a user who unchecks
+// a row and changes their mind gets their typed number back.
+function multiPiSelectAllLines(on) {
+	multiPiPickedKeys.value = on ? multiPiLines.value.map((line) => multiPiKey(line)) : [];
+}
+
+// What Apply is about to push, counted the same way Apply counts it: the
+// boxes > 0 gate applies here too, so the bar can never promise a line the
+// push then drops.
+const multiPiSummary = computed(() => {
+	const out = { lines: 0, boxes: 0, qty: 0, value: 0 };
+	for (const line of multiPiSelectedLines.value) {
+		const { boxes, qty, value } = multiPiLineTotals(line);
+		if (boxes <= 0) continue;
+		out.lines += 1;
+		out.boxes += boxes;
+		out.qty += qty;
+		out.value += value;
+	}
+	out.qty = round2(out.qty);
+	out.value = round2(out.value);
+	return out;
+});
+
 function applyMultiPiAllocation() {
 	let addedCount = 0;
-	for (const line of multiPiLines.value) {
-		const key = multiPiKey(line);
-		const boxes = Math.min(Math.max(0, parseInt(multiPiAllocations.value[key] || 0)), maxAllocatable(line));
+	for (const line of multiPiSelectedLines.value) {
+		const { key, boxes, bw, qty } = multiPiLineTotals(line);
 		if (boxes > 0) {
-			const bw = line.box_weight_kg || DEFAULT_BOX_WEIGHT_KG;
-			const qty = round2(boxes * bw);
 			form.value.items.push({
 				custom_proforma_invoice: line.pi_name,
 				category: line.category,
@@ -1205,6 +1261,7 @@ watch(
 		multiPiLines.value = [];
 		multiPiAllocations.value = {};
 		multiPiItems.value = {};
+		multiPiPickedKeys.value = [];
 	}
 );
 </script>
@@ -2173,10 +2230,53 @@ watch(
 
 					<!-- Step 2 — allocate boxes across the selected proformas' lines -->
 					<div v-else class="modal-body">
-						<div class="fw-semibold mb-2">{{ t("Step 2: Allocate Line Items") }}</div>
+						<div class="d-flex justify-content-between align-items-center mb-2">
+							<div class="fw-semibold">{{ t("Step 2: Allocate Line Items") }}</div>
+							<div class="btn-list">
+								<button type="button" class="btn btn-sm btn-outline-secondary" :disabled="multiPiLoading || multiPiAllLinesSelected" @click="multiPiSelectAllLines(true)">
+									{{ t("Select All") }}
+								</button>
+								<button type="button" class="btn btn-sm btn-outline-secondary" :disabled="multiPiLoading || !multiPiPickedKeys.length" @click="multiPiSelectAllLines(false)">
+									{{ t("Deselect All") }}
+								</button>
+							</div>
+						</div>
+						<!-- Exactly what Apply is about to push — same arithmetic, same gate. -->
+						<div class="card card-sm mb-2">
+							<div class="card-body py-2 d-flex flex-wrap align-items-center gap-3">
+								<div>
+									<span class="text-secondary small me-1">{{ t("Lines selected") }}:</span>
+									<span class="fw-semibold font-monospace">{{ multiPiSummary.lines }}</span>
+								</div>
+								<div>
+									<span class="text-secondary small me-1">{{ t("Total boxes") }}:</span>
+									<span class="fw-semibold font-monospace">{{ fn(multiPiSummary.boxes) }}</span>
+								</div>
+								<div>
+									<span class="text-secondary small me-1">{{ t("Total kg") }}:</span>
+									<span class="fw-semibold font-monospace">{{ fn(multiPiSummary.qty) }}</span>
+								</div>
+								<div class="ms-auto">
+									<span class="text-secondary small me-1">{{ t("Total agreed value") }}:</span>
+									<span class="fw-semibold font-monospace">{{ fm(multiPiSummary.value, form.currency) }}</span>
+								</div>
+							</div>
+						</div>
 						<table class="table table-sm table-vcenter align-middle mb-0">
 							<thead>
 								<tr>
+									<th style="width: 40px">
+										<input
+											type="checkbox"
+											class="form-check-input m-0"
+											:aria-label="t('Select All')"
+											:title="t('Select All')"
+											:checked="multiPiAllLinesSelected"
+											:indeterminate.prop="multiPiSomeLinesSelected"
+											:disabled="!multiPiLines.length"
+											@change="multiPiSelectAllLines($event.target.checked)"
+										>
+									</th>
 									<th style="min-width: 130px">{{ t("Ref PI") }}</th>
 									<th style="min-width: 180px">{{ t("PI product") }}</th>
 									<th style="min-width: 150px">{{ t("Product Code/Name") }}</th>
@@ -2186,15 +2286,20 @@ watch(
 									<th class="text-end" style="width: 130px">{{ t("Allocate boxes") }}</th>
 								</tr>
 							</thead>
-							<SkeletonRows v-if="multiPiLoading" :rows="6" :cols="7" />
+							<SkeletonRows v-if="multiPiLoading" :rows="6" :cols="8" />
 							<tbody v-else>
 								<tr v-if="!multiPiLines.length">
-									<td colspan="7" class="text-secondary text-center py-3">{{ t("No open proforma lines for this supplier.") }}</td>
+									<td colspan="8" class="text-secondary text-center py-3">{{ t("No open proforma lines for this supplier.") }}</td>
 								</tr>
 								<template v-for="line in multiPiLines" :key="multiPiKey(line)">
 									<tr>
 										<td>
-											<span class="badge bg-blue-lt font-monospace" style="font-size: 0.75rem">{{ line.pi_ref || line.pi_name }}</span>
+											<input :id="`multi-pi-line-${multiPiKey(line)}`" v-model="multiPiPickedKeys" type="checkbox" class="form-check-input m-0" :value="multiPiKey(line)">
+										</td>
+										<td>
+											<label class="form-check-label mb-0" :for="`multi-pi-line-${multiPiKey(line)}`">
+												<span class="badge bg-blue-lt font-monospace" style="font-size: 0.75rem">{{ line.pi_ref || line.pi_name }}</span>
+											</label>
 										</td>
 										<td>
 											<div class="fw-semibold">{{ line.category || "—" }}</div>
@@ -2230,7 +2335,7 @@ watch(
 										</td>
 									</tr>
 									<tr v-if="line.sub_cuts && line.sub_cuts.length">
-										<td colspan="7" class="py-1 bg-light">
+										<td colspan="8" class="py-1 bg-light">
 											<span class="small text-secondary me-2">{{ t("Already shipped as") }}:</span>
 											<span v-for="sc in line.sub_cuts" :key="sc.item" class="badge bg-secondary-lt me-1 font-monospace" style="font-size: 0.7rem">
 												{{ sc.item || "—" }} · {{ fn(sc.boxes) }}
@@ -2252,7 +2357,7 @@ watch(
 							<i class="ti ti-arrow-left me-1"></i>{{ t("Back to PI selection") }}
 						</button>
 						<button type="button" class="btn btn-outline-secondary" @click="multiPiModalOpen = false">{{ t("Cancel") }}</button>
-						<button type="button" class="btn btn-primary" :disabled="multiPiLoading || !multiPiLines.length" @click="applyMultiPiAllocation">
+						<button type="button" class="btn btn-primary" :disabled="multiPiLoading || !multiPiSummary.lines" @click="applyMultiPiAllocation">
 							{{ t("Apply") }}
 						</button>
 					</div>

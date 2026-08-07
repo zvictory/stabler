@@ -1882,6 +1882,7 @@ Line Operator Kiosk,
 Line details,
 Line-level (pre-tax) — item-filtered,Satır düzeyinde (vergi öncesi) — ürüne göre filtrelenmiş
 Lines,Satırlar
+Lines selected,Seçilen satırlar
 Link,Bağla
 "Link an ERPNext employee to a TimePay (or other device) user ID. When a raw gate event arrives with this device user ID, it will be matched to this employee automatically.",
 Link failed.,Bağlama başarısız.
@@ -3744,6 +3745,7 @@ Total Duties (UZS),Toplam Vergiler (UZS)
 Total Marked,
 Total Required,
 Total SKUs,Toplam SKU
+Total agreed value,Toplam anlaşılan tutar
 Total allocated,Toplam tahsis edilen
 Total allocated cannot exceed the payment amount.,"Toplam tahsis edilen tutar, ödeme tutarını aşamaz."
 Total boxes,Toplam kutu

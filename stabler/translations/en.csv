@@ -1887,6 +1887,7 @@ Line Operator Kiosk,Line Operator Kiosk
 Line details,Line details
 Line-level (pre-tax) — item-filtered,Line-level (pre-tax) — item-filtered
 Lines,Lines
+Lines selected,Lines selected
 Link,Link
 "Link an ERPNext employee to a TimePay (or other device) user ID. When a raw gate event arrives with this device user ID, it will be matched to this employee automatically.","Link an ERPNext employee to a TimePay (or other device) user ID. When a raw gate event arrives with this device user ID, it will be matched to this employee automatically."
 Link failed.,Link failed.
@@ -3754,6 +3755,7 @@ Total Duties (UZS),Total Duties (UZS)
 Total Marked,Total Marked
 Total Required,Total Required
 Total SKUs,Total SKUs
+Total agreed value,Total agreed value
 Total allocated,Total allocated
 Total allocated cannot exceed the payment amount.,Total allocated cannot exceed the payment amount.
 Total boxes,Total boxes

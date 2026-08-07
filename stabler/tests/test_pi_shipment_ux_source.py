@@ -307,5 +307,190 @@ class TwoStepSmartFillUiTest(unittest.TestCase):
 					self.assertIn(key, csv_text)
 
 
+class SmartFillLineSelectionTest(unittest.TestCase):
+	"""R3: step 2 is a SELECTION screen, not an auto-fill.
+
+	Apply must push the rows the user checked — not every row that happens to
+	carry a non-zero allocation — and the summary bar the user reads before
+	pressing it must be the same arithmetic Apply runs. A second, parallel
+	computation is the whole bug class here: the user reads one total and gets
+	another. Source-text, like the rest of this file: a .vue SFC has no unit
+	harness in this repo.
+	"""
+
+	def setUp(self):
+		self.vue = read(os.path.join(PAGES, "CommercialInvoiceForm.vue"))
+
+	def func(self, name):
+		m = re.search(rf"^(?:async )?function {name}\(", self.vue, re.M)
+		assert m, f"{name} not found"
+		tail = self.vue[m.start() :]
+		nxt = re.search(r"\n(?:async function |function |const |watch\()", tail[1:])
+		return tail[: nxt.start() + 1] if nxt else tail
+
+	def const(self, name):
+		m = re.search(rf"^const {name} = ", self.vue, re.M)
+		assert m, f"{name} not found"
+		tail = self.vue[m.start() :]
+		nxt = re.search(r"\n(?:async function |function |const |watch\()", tail[1:])
+		return tail[: nxt.start() + 1] if nxt else tail
+
+	def supplier_watcher(self):
+		m = re.search(r"watch\(\s*\(\) => form\.value\.supplier", self.vue)
+		assert m, "the supplier watcher is gone"
+		return self.vue[m.start() : self.vue.index("\n);", m.start())]
+
+	# --- the selection itself ------------------------------------------------
+
+	def test_apply_iterates_the_selection_not_every_available_line(self):
+		# The bug this replaces: Apply walked multiPiLines and pushed anything
+		# with boxes > 0, so "these three, not those seven" meant zeroing seven
+		# boxes by hand.
+		apply_ = self.func("applyMultiPiAllocation")
+		self.assertIn("multiPiSelectedLines.value", apply_)
+		self.assertNotIn("of multiPiLines.value", apply_)
+
+	def test_the_selection_is_keyed_by_the_line_identity_not_the_index(self):
+		# Array position is not stable across a reload; multiPiKey is.
+		selected = self.const("multiPiSelectedLines")
+		self.assertIn("multiPiKey(line)", selected)
+		self.assertNotIn("index", selected)
+
+	def test_step_two_does_not_overload_step_ones_selection_ref(self):
+		# multiPiSelected is step 1's list of PI names. Reusing it would make
+		# "Back" wipe the line picks, and Load wipe the PI picks.
+		self.assertIn("const multiPiPickedKeys = ref([])", self.vue)
+		self.assertNotIn("multiPiSelected.value.includes(multiPiKey", self.vue)
+
+	def test_a_checked_line_with_a_zero_allocation_is_still_never_pushed(self):
+		apply_ = self.func("applyMultiPiAllocation")
+		self.assertIn("if (boxes > 0)", apply_)
+
+	def test_unchecking_a_line_does_not_touch_its_typed_allocation(self):
+		# Allocations live in their own map; nothing in the select-all helpers
+		# or the checkbox path may delete out of multiPiAllocations.
+		toggle = self.func("multiPiSelectAllLines")
+		self.assertNotIn("multiPiAllocations", toggle)
+		self.assertNotIn("delete multiPiAllocations", self.vue)
+
+	# --- the summary bar -----------------------------------------------------
+
+	def test_the_summary_and_apply_share_exactly_one_computation(self):
+		# AC4: the totals the user reads must be the totals Apply pushes.
+		helper = self.func("multiPiLineTotals")
+		self.assertIn("* bw", helper)
+		self.assertIn("agreed_rate", helper)
+		self.assertIn("maxAllocatable(line)", helper)
+
+		apply_ = self.func("applyMultiPiAllocation")
+		summary = self.const("multiPiSummary")
+		for name, blk in (("apply", apply_), ("summary", summary)):
+			with self.subTest(block=name):
+				self.assertIn("multiPiLineTotals(", blk)
+				# No second copy of the arithmetic in either consumer. Apply still
+				# carries `rate: line.agreed_rate` — it is the MULTIPLICATION that
+				# may not be duplicated, not the field.
+				self.assertNotIn("* bw", blk)
+				self.assertNotRegex(blk, r"\*\s*\(?\s*line\.agreed_rate")
+				self.assertNotRegex(blk, r"line\.agreed_rate\s*\|\|\s*0\s*\)?\s*\*")
+
+	def test_the_summary_applies_the_same_boxes_gate_as_apply(self):
+		summary = self.const("multiPiSummary")
+		self.assertIn("boxes <= 0", summary)
+		self.assertIn("multiPiSelectedLines.value", summary)
+
+	def test_the_summary_reports_all_four_figures(self):
+		summary = self.const("multiPiSummary")
+		for figure in ("lines", "boxes", "qty", "value"):
+			with self.subTest(figure=figure):
+				self.assertIn(figure, summary)
+		for key in ("Lines selected", "Total boxes", "Total kg", "Total agreed value"):
+			with self.subTest(key=key):
+				self.assertIn(f't("{key}")', self.vue)
+
+	def test_the_value_total_renders_in_the_documents_own_currency(self):
+		# Project rule: transaction currency only, never a converted equivalent,
+		# and through the file's existing formatter — not a new one.
+		self.assertIn("fm(multiPiSummary.value, form.currency)", self.vue)
+		self.assertNotIn('MoneyInput v-model="multiPiSummary', self.vue)
+
+	# --- the controls --------------------------------------------------------
+
+	def test_the_header_checkbox_carries_an_indeterminate_binding(self):
+		self.assertIn("indeterminate.prop", self.vue)
+		some = self.const("multiPiSomeLinesSelected")
+		self.assertIn("multiPiPickedKeys.value.length", some)
+		self.assertIn("multiPiAllLinesSelected.value", some)
+
+	def test_step_two_has_its_own_select_all_pair(self):
+		self.assertIn("multiPiSelectAllLines(true)", self.vue)
+		self.assertIn("multiPiSelectAllLines(false)", self.vue)
+		# Step 1's helper is untouched and still bound to step 1's buttons.
+		self.assertIn("multiPiSelectAll(true)", self.vue)
+		self.assertIn("multiPiSelectAll(false)", self.vue)
+
+	def test_only_one_primary_button_per_footer(self):
+		# CLAUDE.md: one .btn-primary per visual region. The new controls are
+		# outline-secondary, so the count must not have moved.
+		self.assertEqual(self.vue.count('class="btn btn-primary" :disabled="multiPiLoading'), 2)
+
+	# --- lifecycle -----------------------------------------------------------
+
+	def test_the_line_selection_is_seeded_when_the_lines_arrive(self):
+		# Everything preselected: pressing Apply straight away reproduces the
+		# pre-R3 behaviour, and narrowing is the opt-in.
+		load = self.func("loadMultiPiLines")
+		self.assertIn("multiPiPickedKeys.value = []", load)
+		self.assertIn("multiPiPickedKeys.value.push(key)", load)
+
+	def test_the_line_selection_dies_with_the_supplier(self):
+		self.assertIn("multiPiPickedKeys.value = []", self.supplier_watcher())
+
+	# --- R4 regression pins (these passed before R3 too) ---------------------
+
+	def test_the_allocation_cap_survives(self):
+		self.assertIn("const maxAllocatable = (line) => Math.max(0, line.remaining_boxes || 0);", self.vue)
+		clamp = self.func("setAllocation")
+		self.assertIn("Math.min(Math.max(n, 0), maxAllocatable(line))", clamp)
+		# The controlled-input desync fix: a clamp onto the current value
+		# re-renders nothing, so the element itself gets written back.
+		self.assertIn("ev.target.value = clamped", clamp)
+		self.assertIn(':max="maxAllocatable(line)"', self.vue)
+		self.assertIn('@input="setAllocation(line, $event)"', self.vue)
+
+	def test_over_shipment_is_still_signed_everywhere_but_the_input_cap(self):
+		# C2: exactly one floor of 0 on remaining_boxes in the whole file.
+		self.assertEqual(self.vue.count("Math.max(0, line.remaining_boxes"), 1)
+		self.assertIn("line.over_shipped", self.vue)
+
+	def test_the_pushed_row_shape_is_unchanged(self):
+		apply_ = self.func("applyMultiPiAllocation")
+		for field in (
+			"custom_proforma_invoice: line.pi_name",
+			"category: line.category",
+			"item: multiPiItems.value[key]",
+			"boxes: boxes",
+			"box_weight_kg: bw",
+			"qty: qty",
+			'uom: "Kg"',
+			"rate: line.agreed_rate",
+			"docs_price: line.docs_price",
+			"_qtyManual: true",
+		):
+			with self.subTest(field=field):
+				self.assertIn(field, apply_)
+
+	def test_the_sub_cut_picker_and_shipped_badges_survive(self):
+		self.assertIn("multiPiItemOptions(line)", self.vue)
+		self.assertIn('t("Already shipped as")', self.vue)
+
+	def test_the_new_strings_land_in_all_five_languages(self):
+		for lang in ("en", "ru", "uz", "uzc", "tr"):
+			csv_text = read(os.path.join(_ROOT, "translations", f"{lang}.csv"))
+			for key in ("Lines selected", "Total agreed value", "Total boxes", "Total kg"):
+				with self.subTest(lang=lang, key=key):
+					self.assertRegex(csv_text, rf"(?m)^{re.escape(key)},")
+
+
 if __name__ == "__main__":
 	unittest.main()

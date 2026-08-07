@@ -1889,6 +1889,7 @@ Line Operator Kiosk,
 Line details,
 Line-level (pre-tax) — item-filtered,Qator darajasida (soliqsiz) — mahsulot bo'yicha filtrlangan
 Lines,Qatorlar
+Lines selected,Tanlangan qatorlar
 Link,Bog'lash
 "Link an ERPNext employee to a TimePay (or other device) user ID. When a raw gate event arrives with this device user ID, it will be matched to this employee automatically.",
 Link failed.,Bog'lash muvaffaqiyatsiz.
@@ -3758,6 +3759,7 @@ Total Duties (UZS),Jami bojlar (UZS)
 Total Marked,
 Total Required,
 Total SKUs,Jami SKU
+Total agreed value,Kelishilgan summa jami
 Total allocated,Jami taqsimlangan
 Total allocated cannot exceed the payment amount.,Taqsimlangan jami to'lov summasi osha olmaydi.
 Total boxes,Jami qutilar

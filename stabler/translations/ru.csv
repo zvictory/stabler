@@ -1895,6 +1895,7 @@ Line Operator Kiosk,
 Line details,
 Line-level (pre-tax) — item-filtered,На уровне строк (до налога) — с фильтром по товару
 Lines,Строки
+Lines selected,Выбрано строк
 Link,Связать
 "Link an ERPNext employee to a TimePay (or other device) user ID. When a raw gate event arrives with this device user ID, it will be matched to this employee automatically.",
 Link failed.,Не удалось связать.
@@ -3764,6 +3765,7 @@ Total Duties (UZS),Итого пошлины (UZS)
 Total Marked,
 Total Required,
 Total SKUs,Всего SKU
+Total agreed value,Итого согласованная сумма
 Total allocated,Всего распределено
 Total allocated cannot exceed the payment amount.,Сумма распределения не может превышать размер платежа.
 Total boxes,Всего коробок
