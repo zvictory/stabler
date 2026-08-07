@@ -78,6 +78,18 @@ class CIPackingGrnIntegrationTest(FrappeTestCase):
 
 	def tearDown(self):
 		frappe.db.rollback()
+		# setUp'taki Company.insert() ERPNext'in hesap planini kurar, o da commit
+		# eder -- yani FrappeTestCase'in rollback'i bu satiri geri alamaz. Acikca
+		# silinmezse her kosuda bir "Packing Test *" sirketi veritabaninda kalir.
+		# Stabler Settings satirini once silmek sart: sirket gidip satir kalirsa
+		# bir sonraki setUp'in settings.save()'i link dogrulamasindan patlar.
+		name = getattr(getattr(self, "other_company", None), "name", None)
+		if not name:
+			return
+		frappe.db.delete("Stabler Company Modules", {"parent": "Stabler Settings", "company": name})
+		if frappe.db.exists("Company", name):
+			frappe.delete_doc("Company", name, force=True, ignore_permissions=True)
+		frappe.db.commit()
 
 	def _new_truck(self, *, company=None, commercial_invoice=None):
 		truck = frappe.new_doc("Import Truck")
