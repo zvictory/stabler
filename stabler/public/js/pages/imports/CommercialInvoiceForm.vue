@@ -504,11 +504,18 @@ const maxAllocatable = (line) => Math.max(0, line.remaining_boxes || 0);
 // Clamps a typed/pasted/spinner value into [0, maxAllocatable]. The `max`
 // attribute alone is not enforced by the browser for typed or pasted input,
 // so this runs on every @input.
-function setAllocation(line, raw) {
+function setAllocation(line, ev) {
 	const key = multiPiKey(line);
+	const raw = ev.target.value;
 	const parsed = parseInt(raw, 10);
 	const n = Number.isNaN(parsed) ? 0 : parsed;
-	multiPiAllocations.value[key] = Math.min(Math.max(n, 0), maxAllocatable(line));
+	const clamped = Math.min(Math.max(n, 0), maxAllocatable(line));
+	multiPiAllocations.value[key] = clamped;
+	// The input is `:value`-bound, so when the clamp lands on the value the
+	// field already held, no state changes and Vue never re-renders — the box
+	// would keep showing what was typed while a different number gets applied.
+	// Push the clamped value back onto the element itself.
+	if (raw !== String(clamped)) ev.target.value = clamped;
 }
 
 async function openMultiPiSmartFill() {
@@ -2117,7 +2124,7 @@ watch(activeCompany, loadRefData);
 												step="1"
 												inputmode="decimal"
 												class="form-control form-control-sm text-end font-monospace"
-												@input="setAllocation(line, $event.target.value)"
+												@input="setAllocation(line, $event)"
 											>
 										</td>
 									</tr>
