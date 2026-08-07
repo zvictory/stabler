@@ -5061,7 +5061,13 @@ def _sub_cut_breakdown(shipped_entry) -> list[dict]:
 
 
 @frappe.whitelist()
-def get_vendor_available_pi_lines(company: str, supplier: str, exclude_ci: str | None = None) -> dict:
+def get_vendor_available_pi_lines(
+	company: str,
+	supplier: str,
+	exclude_ci: str | None = None,
+	selected_pis=None,
+	include_lines=True,
+) -> dict:
 	"""Open Proforma Invoices for a supplier with their unshipped balance.
 
 	The balance is keyed by ``(PI, category)`` — deliberately **not** by ``item``.
@@ -5076,6 +5082,13 @@ def get_vendor_available_pi_lines(company: str, supplier: str, exclude_ci: str |
 	may be **negative**: over-shipment is real (21 keys / 25 959 boxes) and is
 	reported through ``over_shipped``, never clamped away. See the invariants at
 	the bottom of ``_imports_rules``.
+
+	The Smart Fill modal is two-step and both steps read THIS one response, so:
+	``selected_pis`` scopes the **lines** only — ``proformas`` always carries the
+	supplier's full open list, or a narrowed load would blank step 1's picker.
+	``include_lines=False`` is step 1's cheap open: the PI list without the line
+	arithmetic. Both arguments are trailing and defaulted, so the two-argument
+	call sites are byte-for-byte the call they have always been.
 	"""
 	_assert_imports_access(company)
 	if not supplier:
@@ -5096,7 +5109,20 @@ def get_vendor_available_pi_lines(company: str, supplier: str, exclude_ci: str |
 	if not pis:
 		return {"proformas": [], "lines": []}
 
-	pi_names = [p.name for p in pis]
+	# Whitelisted arguments arrive as strings over HTTP: a JSON list for
+	# selected_pis, and "0"/"false" (both truthy strings!) for include_lines.
+	if isinstance(include_lines, str):
+		include_lines = include_lines.strip().lower() not in ("", "0", "false", "no", "none")
+	if not include_lines:
+		return {"proformas": pis, "lines": []}
+
+	selected = frappe.parse_json(selected_pis) if isinstance(selected_pis, str) else (selected_pis or [])
+	selected = {n for n in selected if n}
+
+	# The intersection, never the caller's raw list: an unknown name must not
+	# widen the query, and a selection that matches nothing means "no lines" —
+	# falling through to the full list would silently ignore step 1's choice.
+	pi_names = [p.name for p in pis if not selected or p.name in selected]
 	if not pi_names:
 		return {"proformas": pis, "lines": []}
 

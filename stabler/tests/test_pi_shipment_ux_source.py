@@ -175,5 +175,137 @@ class PagesTest(unittest.TestCase):
 		self.assertFalse(os.path.exists(os.path.join(PAGES, "ProformaCompare.vue")))
 
 
+class TwoStepSmartFillContractTest(unittest.TestCase):
+	"""`get_vendor_available_pi_lines` feeds a two-step modal from ONE response.
+
+	Step 1 (pick PIs) and step 2 (allocate lines) read the same payload, so the
+	shape is a contract, not an implementation detail: `proformas` is always the
+	supplier's FULL open list (narrowing it would blank the picker the moment a
+	narrowed load returns) and `lines` is the only thing `selected_pis` scopes.
+	Source-text, like the rest of this file: the module imports frappe at import
+	time, so there is nothing importable to exercise under `make test`.
+	"""
+
+	def setUp(self):
+		self.src = read(API)
+		self.body = body(self.src, "get_vendor_available_pi_lines")
+		self.signature = self.body[: self.body.index(") -> dict:") + 1]
+
+	def test_available_pi_lines_always_returns_both_keys(self):
+		# Step 1 renders `proformas`, step 2 renders `lines`. A branch that omits
+		# either key blanks one of the two steps with no error to show for it.
+		dict_returns = re.findall(r"\breturn \{.*?\}", self.body, re.S)
+		self.assertEqual(
+			len(dict_returns),
+			self.body.count("\treturn "),
+			"every return in this function must be a dict literal",
+		)
+		self.assertGreaterEqual(len(dict_returns), 3)
+		for ret in dict_returns:
+			with self.subTest(ret=ret[:60]):
+				self.assertIn('"proformas"', ret)
+				self.assertIn('"lines"', ret)
+
+	def test_remaining_boxes_is_never_clamped(self):
+		# Over-shipment is real data, reported through over_shipped/over_boxes.
+		self.assertNotIn("max(0", self.body)
+
+	def test_selected_pis_does_not_shadow_the_local(self):
+		# The function already binds a `pi_names` LOCAL that every SQL statement
+		# uses as a bound parameter. A parameter of that name would shadow it and
+		# silently scope the whole query to the caller's argument.
+		self.assertIn("selected_pis", self.signature)
+		self.assertNotIn("pi_names", self.signature)
+		self.assertIn("pi_names = [", self.body)
+		self.assertIn("%(pi_names)s", self.body)
+
+	def test_the_narrowing_is_server_side_and_cannot_fall_through(self):
+		# Whitelisted arguments arrive as strings over HTTP.
+		self.assertIn("frappe.parse_json(selected_pis)", self.body)
+		self.assertIn("isinstance(selected_pis, str)", self.body)
+		# The SQL scope is derived from the intersection, not from the raw list:
+		# an unknown name must not widen the query, and an empty intersection
+		# must return no lines rather than falling through to all of them.
+		narrowing = next(ln for ln in self.body.splitlines() if "pi_names = [" in ln)
+		self.assertIn("selected", narrowing)
+		after = self.body[self.body.index(narrowing) + len(narrowing) :]
+		guard = after[: after.index("\n\n")]
+		self.assertIn("if not pi_names:", guard)
+		self.assertIn('"lines": []', guard)
+
+	def test_include_lines_is_trailing_defaulted_and_short_circuits(self):
+		# Both new arguments are trailing and defaulted, so the two existing
+		# two-argument call sites keep behaving exactly as they do today.
+		self.assertLess(self.signature.index("selected_pis"), self.signature.index("include_lines"))
+		self.assertLess(self.signature.index("exclude_ci"), self.signature.index("selected_pis"))
+		self.assertRegex(self.signature, r"include_lines[^,)]*=\s*True")
+		# "0" is a non-empty string and therefore truthy — a bare `if not x`
+		# would treat include_lines=0 arriving over HTTP as "include them".
+		self.assertIn('"0"', self.body)
+		self.assertIn('"false"', self.body)
+
+
+class TwoStepSmartFillUiTest(unittest.TestCase):
+	def setUp(self):
+		self.vue = read(os.path.join(PAGES, "CommercialInvoiceForm.vue"))
+
+	def func(self, name):
+		m = re.search(rf"^(?:async )?function {name}\(", self.vue, re.M)
+		assert m, f"{name} not found"
+		tail = self.vue[m.start() :]
+		nxt = re.search(r"\n(?:async function |function |const |watch\()", tail[1:])
+		return tail[: nxt.start() + 1] if nxt else tail
+
+	def test_pi_tracking_never_asks_for_a_line_less_response(self):
+		# refreshPiTracking reads ONLY `lines`; passing include_lines=false here
+		# would silently empty the PI tracking table on the form.
+		tracking = self.func("refreshPiTracking")
+		self.assertIn("get_vendor_available_pi_lines", tracking)
+		self.assertNotIn("include_lines", tracking)
+		self.assertNotIn("selected_pis", tracking)
+
+	def test_load_issues_exactly_one_request_for_the_whole_selection(self):
+		# The narrowing is server-side. One press = one request, never one per PI.
+		load = self.func("loadMultiPiLines")
+		self.assertEqual(load.count('call("stabler.api.imports.get_vendor_available_pi_lines"'), 1)
+		self.assertNotIn("Promise.all", load)
+		self.assertIn("selected_pis", load)
+
+	def test_opening_the_modal_skips_the_line_work(self):
+		opener = self.func("openMultiPiSmartFill")
+		self.assertIn("include_lines: false", opener)
+
+	def test_both_steps_are_translated_and_skeletoned(self):
+		for key in (
+			"Step 1: Select Proforma Invoices",
+			"Step 2: Allocate Line Items",
+			"Load Available Lines",
+			"Back to PI selection",
+		):
+			with self.subTest(key=key):
+				self.assertIn(f't("{key}")', self.vue)
+		# Step 1 loads behind SkeletonRows too — never a bare spinner.
+		self.assertEqual(self.vue.count("<SkeletonRows"), 2)
+
+	def test_changing_the_supplier_resets_both_steps(self):
+		self.assertRegex(self.vue, r"watch\(\s*\(\) => form\.value\.supplier")
+
+	def test_new_strings_land_in_all_five_languages(self):
+		langs = ("en", "ru", "uz", "uzc", "tr")
+		keys = (
+			"Step 1: Select Proforma Invoices",
+			"Step 2: Allocate Line Items",
+			"Load Available Lines",
+			"Back to PI selection",
+			"Select All",
+			"Deselect All",
+		)
+		for lang in langs:
+			csv_text = read(os.path.join(_ROOT, "translations", f"{lang}.csv"))
+			for key in keys:
+				with self.subTest(lang=lang, key=key):
+					self.assertIn(key, csv_text)
+
+
 if __name__ == "__main__":
 	unittest.main()
