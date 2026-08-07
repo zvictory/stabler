@@ -87,7 +87,7 @@ def _norm_text(value) -> str:
 def _f(value) -> float:
 	try:
 		return float(str(value).replace("\xa0", "").replace(" ", "").replace(",", "."))
-	except TypeError, ValueError:
+	except (TypeError, ValueError):
 		return 0.0
 
 

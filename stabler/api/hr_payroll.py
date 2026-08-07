@@ -74,7 +74,7 @@ def _require_lock_role() -> None:
 def _parse_limit(raw, default: int = 200, cap: int = 500) -> int:
 	try:
 		return min(int(raw), cap)
-	except TypeError, ValueError:
+	except (TypeError, ValueError):
 		return default
 
 

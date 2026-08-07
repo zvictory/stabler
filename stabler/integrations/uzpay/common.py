@@ -46,7 +46,7 @@ def session_ttl_minutes() -> int:
 	val = frappe.db.get_single_value("Stabler Settings", "pos_session_ttl_minutes")
 	try:
 		return int(val) if val else 15
-	except TypeError, ValueError:
+	except (TypeError, ValueError):
 		return 15
 
 
@@ -152,7 +152,7 @@ def log_to_session(doc: "frappe.Document", label: str, payload: Any) -> None:
 	stamp = datetime.now().isoformat(timespec="seconds")
 	try:
 		body = json.dumps(payload, ensure_ascii=False, default=str)
-	except TypeError, ValueError:
+	except (TypeError, ValueError):
 		body = str(payload)
 	entry = f"# {stamp} {label}\n{body}\n"
 	doc.payload = (doc.payload or "") + entry
@@ -252,5 +252,5 @@ def raw_body() -> bytes:
 def json_body() -> dict[str, Any]:
 	try:
 		return json.loads(raw_body().decode("utf-8") or "{}")
-	except UnicodeDecodeError, json.JSONDecodeError:
+	except (UnicodeDecodeError, json.JSONDecodeError):
 		return {}

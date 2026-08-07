@@ -705,7 +705,7 @@ def map_feed(company: str, month: str | None = None, service_person: str | None 
 	if month:
 		try:
 			year, mon = (int(x) for x in str(month).split("-")[:2])
-		except ValueError, TypeError:
+		except (ValueError, TypeError):
 			frappe.throw(_("Invalid month: {0}").format(month))
 	else:
 		d = getdate(today())
@@ -1077,7 +1077,7 @@ def dashboard_summary(company: str, month: str | None = None):
 	if month:
 		try:
 			year, mon = (int(x) for x in str(month).split("-")[:2])
-		except ValueError, TypeError:
+		except (ValueError, TypeError):
 			frappe.throw(_("Invalid month: {0}").format(month))
 	else:
 		d = getdate(today())

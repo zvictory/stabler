@@ -66,7 +66,7 @@ def _item_rate(item_code: str) -> float:
 	rate = frappe.db.get_value("Item", item_code, "standard_rate")
 	try:
 		return float(rate or 0)
-	except TypeError, ValueError:
+	except (TypeError, ValueError):
 		return 0.0
 
 

@@ -61,7 +61,7 @@ def _check_auth() -> None:
 		raise UzumError(E_AUTH, "Unauthorized")
 	try:
 		decoded = base64.b64decode(header[6:]).decode("utf-8")
-	except binascii.Error, UnicodeDecodeError:
+	except (binascii.Error, UnicodeDecodeError):
 		raise UzumError(E_AUTH, "Unauthorized")
 	user, _, pwd = decoded.partition(":")
 	user_ok = hmac.compare_digest(user, C.require_conf("uzum_merchant_username"))

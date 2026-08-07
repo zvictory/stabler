@@ -184,7 +184,7 @@ def parse_allowance_config(json_val: Any) -> dict:
 	if isinstance(json_val, str):
 		try:
 			json_val = json.loads(json_val)
-		except json.JSONDecodeError, TypeError:
+		except (json.JSONDecodeError, TypeError):
 			return _empty
 
 	if not isinstance(json_val, dict):
@@ -261,12 +261,12 @@ def years_of_service(hire_date_iso: str | None, period: str) -> int:
 
 	try:
 		hire = date.fromisoformat(str(hire_date_iso)[:10])
-	except ValueError, TypeError:
+	except (ValueError, TypeError):
 		return 0
 
 	try:
 		period_year, period_month = (int(x) for x in period.split("-"))
-	except ValueError, AttributeError:
+	except (ValueError, AttributeError):
 		return 0
 
 	# Last day of period month (mirrors new Date(UTC(periodYear, periodMonth, 0)).getUTCDate())

@@ -64,7 +64,7 @@ def parse_hm(s):
 		return None
 	try:
 		h, m = int(parts[0]), int(parts[1])
-	except TypeError, ValueError:
+	except (TypeError, ValueError):
 		return None
 	return h * 60 + m
 
@@ -128,7 +128,7 @@ def compute_late_fee(late_min: int, policy: LateFeePolicy) -> float:
 	"""UZS late fee for one day. Mirrors totals.ts:computeLateFeeNumber."""
 	try:
 		late_min = int(late_min)
-	except TypeError, ValueError:
+	except (TypeError, ValueError):
 		return 0.0
 	if late_min <= policy.grace_min:
 		return 0.0
@@ -214,7 +214,7 @@ def _num(d, key, default):
 		return default
 	try:
 		return type(default)(v)
-	except TypeError, ValueError:
+	except (TypeError, ValueError):
 		return default
 
 

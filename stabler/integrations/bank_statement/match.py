@@ -38,7 +38,7 @@ LOW = "low"
 def _f(v) -> float:
 	try:
 		return float(v)
-	except TypeError, ValueError:
+	except (TypeError, ValueError):
 		return 0.0
 
 

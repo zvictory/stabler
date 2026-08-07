@@ -55,7 +55,7 @@ _CASCADE = frozenset(CASCADE_MODE)
 def _docstatus(row: dict) -> int:
 	try:
 		return int(row.get("docstatus") or 0)
-	except TypeError, ValueError:
+	except (TypeError, ValueError):
 		return 0
 
 

@@ -100,7 +100,7 @@ def _coerce(value, col_type: str):
 	if col_type in _NUMERIC_TYPES:
 		try:
 			return float(value)
-		except TypeError, ValueError:
+		except (TypeError, ValueError):
 			return value
 	if col_type == "date":
 		if isinstance(value, (datetime.date, datetime.datetime)):
@@ -244,7 +244,7 @@ def _row_get(row, key, idx):
 		return row.get(key)
 	try:
 		return row[idx]
-	except IndexError, TypeError:
+	except (IndexError, TypeError):
 		return None
 
 
@@ -299,7 +299,7 @@ def build_financial_statement_workbook(
 		if isinstance(row, dict):
 			try:
 				indent = int(row.get(indent_key) or 0)
-			except TypeError, ValueError:
+			except (TypeError, ValueError):
 				indent = 0
 		is_bold = bool(bold_predicate(row)) if bold_predicate else False
 		for c, col in enumerate(columns, start=1):

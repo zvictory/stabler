@@ -66,6 +66,6 @@ def within_tolerance(difference_amount, tolerance) -> bool:
 	try:
 		d = abs(float(difference_amount))
 		tol = float(tolerance)
-	except TypeError, ValueError:
+	except (TypeError, ValueError):
 		return False
 	return 0.0 < d <= tol + 1e-9

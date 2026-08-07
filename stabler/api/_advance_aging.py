@@ -47,7 +47,7 @@ def classify(age: int, warn_days: int = WARN_DAYS, breach_days: int = BREACH_DAY
 def _amt(v) -> float:
 	try:
 		return float(v or 0)
-	except TypeError, ValueError:
+	except (TypeError, ValueError):
 		return 0.0
 
 
