@@ -608,6 +608,9 @@ function setAllocation(row, ev) {
 	const n = Number.isNaN(parsed) ? 0 : parsed;
 	const clamped = Math.min(Math.max(n, 0), maxAllocatable(row));
 	multiPiAllocations.value[key] = clamped;
+	// Nothing is preselected any more, so a quantity typed into an unchecked row
+	// would plan to zero and Apply would skip it in silence. Typing IS the intent.
+	if (clamped > 0 && !multiPiPickedKeys.value.includes(key)) multiPiPickedKeys.value.push(key);
 	// The input is `:value`-bound, so when the clamp lands on the value the
 	// field already held, no state changes and Vue never re-renders — the box
 	// would keep showing what was typed while a different number gets applied.
@@ -690,18 +693,13 @@ async function loadMultiPiLines() {
 		multiPiLines.value = res.lines || [];
 
 		for (const line of multiPiLines.value) {
-			// Over-shipped keys leave a pool of 0 — the contract is already
-			// exceeded, so pre-filling more boxes would only deepen the breach.
-			let pool = poolRemaining(line);
 			for (const child of line.contract_lines || []) {
 				const key = multiPiRowKey(line, child);
-				const boxes = Math.min(rowContractRemaining(line, child), pool);
-				multiPiAllocations.value[key] = boxes;
-				pool -= boxes;
+				// Nothing is pre-allocated and nothing is pre-checked: the picker asks
+				// for a quantity, it does not propose one. "Select All" is the one-click
+				// way back to filling every line to its ceiling.
+				multiPiAllocations.value[key] = 0;
 				multiPiItems.value[key] = multiPiRowItemOptions(line, child)[0] || "";
-				// Everything checked, like step 1: pressing Apply straight away is the
-				// pre-selection behaviour, and narrowing is the opt-in.
-				multiPiPickedKeys.value.push(key);
 			}
 		}
 	} catch (err) {
@@ -738,14 +736,6 @@ const multiPiRowsByGroup = computed(() => {
 
 const multiPiGroupRows = (line) => multiPiRowsByGroup.value[multiPiKey(line)] || [];
 
-const multiPiGroupAllPicked = (line) => {
-	const rows = multiPiGroupRows(line);
-	return rows.length > 0 && rows.every((row) => multiPiPickedKeys.value.includes(row.key));
-};
-
-const multiPiGroupSomePicked = (line) =>
-	multiPiGroupRows(line).some((row) => multiPiPickedKeys.value.includes(row.key)) && !multiPiGroupAllPicked(line);
-
 // Unchecking never touches multiPiAllocations — a user who unchecks a row and
 // changes their mind gets their typed number back. CHECKING, though, has to
 // clamp: the freed boxes may have been spent on a sibling in the meantime, and
@@ -759,18 +749,18 @@ function multiPiToggleRow(row, on) {
 	multiPiAllocations.value[row.key] = Math.min(multiPiAllocations.value[row.key] || 0, maxAllocatable(row));
 }
 
-function multiPiToggleGroup(line, on) {
-	for (const row of multiPiRows.value) {
-		if (row.groupKey === multiPiKey(line)) multiPiToggleRow(row, on);
-	}
-}
-
 function multiPiSelectAllLines(on) {
 	if (!on) {
+		// Deselect drops the picks and nothing else — a typed quantity survives it.
 		multiPiPickedKeys.value = [];
 		return;
 	}
-	for (const row of multiPiRows.value) multiPiToggleRow(row, true);
+	// Order matters: rowCeiling gives each row what the rows ABOVE it left in
+	// the pool, so a sequential walk fills the group to exactly its pool.
+	for (const row of multiPiRows.value) {
+		if (!multiPiPickedKeys.value.includes(row.key)) multiPiPickedKeys.value.push(row.key);
+		multiPiAllocations.value[row.key] = maxAllocatable(row);
+	}
 }
 
 // What Apply is about to push, counted the same way Apply counts it: the
@@ -2405,6 +2395,45 @@ watch(
 								</div>
 							</div>
 						</div>
+						<!-- The (PI, category) pools, read-only. These are the numbers the server
+						     guard enforces; the table below lists the contract lines the bundle was
+						     booked as, and they share this one balance. It sits above the table so
+						     the rows are nothing but the product lines the user picks from. -->
+						<div v-if="!multiPiLoading && multiPiLines.length" class="d-flex flex-column gap-1 mb-2">
+							<div v-for="line in multiPiLines" :key="multiPiKey(line)" class="border rounded px-2 py-1">
+								<div class="d-flex flex-wrap align-items-center gap-2">
+									<span class="badge bg-blue-lt font-monospace" style="font-size: 0.75rem">{{ line.pi_ref || line.pi_name }}</span>
+									<span class="fw-semibold">{{ line.category || "—" }}</span>
+									<span v-if="line.description" class="small text-secondary">{{ line.description }}</span>
+									<span class="badge bg-secondary-lt">{{ t("{count} PI lines", { count: multiPiGroupRows(line).length }) }}</span>
+									<span class="small text-secondary ms-auto">
+										{{ t("Contract") }}: <span class="font-monospace text-body">{{ fn(line.contract_boxes) }}</span>
+									</span>
+									<span class="small text-secondary">
+										{{ t("Shipped") }}: <span class="font-monospace text-body">{{ fn(line.shipped_boxes) }}</span>
+										<span v-if="line.ci_count">/ {{ line.ci_count }} CI</span>
+									</span>
+									<span class="small text-secondary">
+										{{ t("Remaining") }}:
+										<span v-if="line.over_shipped" class="badge bg-red-lt" :title="t('Shipped more than the contract allows')">
+											−{{ fn(line.over_boxes) }} · {{ t("Over-shipped") }}
+										</span>
+										<span v-else class="font-monospace fw-semibold text-body">{{ fn(line.remaining_boxes) }}</span>
+									</span>
+									<span class="small text-secondary">
+										{{ t("Allocated") }}:
+										<span class="font-monospace text-body">{{ fn(multiPiGroupAllocated(line)) }} / {{ fn(poolRemaining(line)) }}</span>
+									</span>
+									<span v-if="!poolRemaining(line)" class="small text-secondary">{{ t("This category pool has no boxes left.") }}</span>
+								</div>
+								<div v-if="line.sub_cuts && line.sub_cuts.length" class="mt-1">
+									<span class="small text-secondary me-2">{{ t("Already shipped as") }}:</span>
+									<span v-for="sc in line.sub_cuts" :key="sc.item" class="badge bg-secondary-lt me-1 font-monospace" style="font-size: 0.7rem">
+										{{ sc.item || "—" }} · {{ fn(sc.boxes) }}
+									</span>
+								</div>
+							</div>
+						</div>
 						<div class="table-responsive">
 						<table class="table table-sm table-vcenter align-middle mb-0">
 							<thead>
@@ -2438,105 +2467,54 @@ watch(
 								<!-- Index-based DOM id on purpose: a match key holds the PI name and the category
 								     verbatim, so an id built from it carried "::" and spaces — legal for <label for>
 								     but unaddressable by any CSS/querySelector id selector, which QA tooling needs. -->
-								<template v-for="(line, lineIdx) in multiPiLines" :key="multiPiKey(line)">
-									<!-- Group header: the (PI, category) pool. These are the numbers the
-									     server guard enforces; the rows beneath are the contract lines the
-									     bundle was booked as, and they share this one balance. -->
-									<tr class="fw-semibold">
-										<td>
-											<input
-												:id="`multi-pi-line-${lineIdx}`"
-												type="checkbox"
-												class="form-check-input m-0"
-												:checked="multiPiGroupAllPicked(line)"
-												:indeterminate.prop="multiPiGroupSomePicked(line)"
-												:disabled="!multiPiGroupRows(line).length"
-												@change="multiPiToggleGroup(line, $event.target.checked)"
-											>
-										</td>
-										<td>
-											<label class="form-check-label mb-0" :for="`multi-pi-line-${lineIdx}`">
-												<span class="badge bg-blue-lt font-monospace" style="font-size: 0.75rem">{{ line.pi_ref || line.pi_name }}</span>
-											</label>
-										</td>
-										<td>
-											<div class="fw-semibold">{{ line.category || "—" }}</div>
-											<div v-if="line.description" class="small text-secondary">{{ line.description }}</div>
-										</td>
-										<td>
-											<span class="badge bg-secondary-lt">{{ t("{count} PI lines", { count: multiPiGroupRows(line).length }) }}</span>
-										</td>
-										<td class="text-end font-monospace">{{ fn(line.contract_boxes) }}</td>
-										<td class="text-end font-monospace">
-											{{ fn(line.shipped_boxes) }}
-											<span v-if="line.ci_count" class="text-secondary small">/ {{ line.ci_count }} CI</span>
-										</td>
-										<td class="text-end font-monospace">
-											<span v-if="line.over_shipped" class="badge bg-red-lt" :title="t('Shipped more than the contract allows')">
-												−{{ fn(line.over_boxes) }} · {{ t("Over-shipped") }}
-											</span>
-											<span v-else class="fw-semibold">{{ fn(line.remaining_boxes) }}</span>
-										</td>
-										<td class="text-end">
-											<div class="small text-secondary">{{ t("Allocated") }}</div>
-											<div class="font-monospace">{{ fn(multiPiGroupAllocated(line)) }} / {{ fn(poolRemaining(line)) }}</div>
-											<div v-if="!poolRemaining(line)" class="small text-secondary">{{ t("This category pool has no boxes left.") }}</div>
-										</td>
-									</tr>
-									<tr v-if="line.sub_cuts && line.sub_cuts.length">
-										<td colspan="8" class="py-1 bg-light">
-											<span class="small text-secondary me-2">{{ t("Already shipped as") }}:</span>
-											<span v-for="sc in line.sub_cuts" :key="sc.item" class="badge bg-secondary-lt me-1 font-monospace" style="font-size: 0.7rem">
-												{{ sc.item || "—" }} · {{ fn(sc.boxes) }}
-											</span>
-										</td>
-									</tr>
-									<tr v-for="(row, childIdx) in multiPiGroupRows(line)" :key="row.key">
-										<td>
-											<input
-												:id="`multi-pi-line-${lineIdx}-${childIdx}`"
-												type="checkbox"
-												class="form-check-input m-0"
-												:checked="multiPiPickedKeys.includes(row.key)"
-												@change="multiPiToggleRow(row, $event.target.checked)"
-											>
-										</td>
-										<td class="text-secondary small">
-											<label class="form-check-label mb-0" :for="`multi-pi-line-${lineIdx}-${childIdx}`">
-												└ {{ t("Contract line") }}
-											</label>
-										</td>
-										<td>
-											<div class="fw-semibold">{{ row.child.item || "—" }}</div>
-											<div v-if="row.child.description" class="small text-secondary">{{ row.child.description }}</div>
-										</td>
-										<td>
-											<select v-model="multiPiItems[row.key]" class="form-select form-select-sm">
-												<option v-for="code in multiPiRowItemOptions(line, row.child)" :key="code" :value="code">{{ code }}</option>
-											</select>
-										</td>
-										<td class="text-end font-monospace">{{ fn(row.child.boxes) }}</td>
-										<td
-											class="text-end font-monospace text-secondary"
-											:title="t('Shipped as this cut') + ' — ' + t('Indicative only — shipments are tracked per category')"
+								<tr v-for="row in multiPiRows" :key="row.key">
+									<td>
+										<input
+											:id="`multi-pi-line-${row.lineIdx}-${row.childIdx}`"
+											type="checkbox"
+											class="form-check-input m-0"
+											:checked="multiPiPickedKeys.includes(row.key)"
+											@change="multiPiToggleRow(row, $event.target.checked)"
 										>
-											{{ rowShippedAsThisCut(line, row.child) ? fn(rowShippedAsThisCut(line, row.child)) : "—" }}
-										</td>
-										<td class="text-end font-monospace">{{ fn(rowContractRemaining(line, row.child)) }}</td>
-										<td class="text-end">
-											<input
-												:value="multiPiAllocations[row.key]"
-												type="number"
-												min="0"
-												:max="maxAllocatable(row)"
-												step="1"
-												inputmode="decimal"
-												class="form-control form-control-sm text-end font-monospace"
-												@input="setAllocation(row, $event)"
-											>
-										</td>
-									</tr>
-								</template>
+									</td>
+									<td>
+										<!-- The PI badge lives on the row now that the group header is gone:
+										     on a multi-PI load there is nothing else saying which proforma
+										     this contract line belongs to. -->
+										<label class="form-check-label mb-0" :for="`multi-pi-line-${row.lineIdx}-${row.childIdx}`" :title="t('Contract line')">
+											<span class="badge bg-blue-lt font-monospace" style="font-size: 0.75rem">{{ row.line.pi_ref || row.line.pi_name }}</span>
+										</label>
+									</td>
+									<td>
+										<div class="fw-semibold">{{ row.child.item || "—" }}</div>
+										<div v-if="row.child.description" class="small text-secondary">{{ row.child.description }}</div>
+									</td>
+									<td>
+										<select v-model="multiPiItems[row.key]" class="form-select form-select-sm">
+											<option v-for="code in multiPiRowItemOptions(row.line, row.child)" :key="code" :value="code">{{ code }}</option>
+										</select>
+									</td>
+									<td class="text-end font-monospace">{{ fn(row.child.boxes) }}</td>
+									<td
+										class="text-end font-monospace text-secondary"
+										:title="t('Shipped as this cut') + ' — ' + t('Indicative only — shipments are tracked per category')"
+									>
+										{{ rowShippedAsThisCut(row.line, row.child) ? fn(rowShippedAsThisCut(row.line, row.child)) : "—" }}
+									</td>
+									<td class="text-end font-monospace">{{ fn(rowContractRemaining(row.line, row.child)) }}</td>
+									<td class="text-end">
+										<input
+											:value="multiPiAllocations[row.key]"
+											type="number"
+											min="0"
+											:max="maxAllocatable(row)"
+											step="1"
+											inputmode="decimal"
+											class="form-control form-control-sm text-end font-monospace"
+											@input="setAllocation(row, $event)"
+										>
+									</td>
+								</tr>
 							</tbody>
 						</table>
 						</div>

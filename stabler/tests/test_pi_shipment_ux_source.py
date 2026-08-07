@@ -378,10 +378,14 @@ class SmartFillLineSelectionTest(unittest.TestCase):
 		self.assertIn("if (boxes > 0)", apply_)
 
 	def test_unchecking_a_line_does_not_touch_its_typed_allocation(self):
-		# Allocations live in their own map; nothing in the select-all helpers
-		# or the checkbox path may delete out of multiPiAllocations.
+		# Allocations live in their own map. Select All fills them now (nothing is
+		# prefilled any more, so a pure selection would leave every total at 0 and
+		# Apply disabled) — but the OFF branch must still drop the picks and only
+		# the picks, so a user who unchecks and changes their mind gets the number
+		# they typed back.
 		toggle = self.func("multiPiSelectAllLines")
-		self.assertNotIn("multiPiAllocations", toggle)
+		off_branch = toggle.split("if (!on) {", 1)[1].split("}", 1)[0]
+		self.assertNotIn("multiPiAllocations", off_branch)
 		self.assertNotIn("delete multiPiAllocations", self.vue)
 
 	# --- the summary bar -----------------------------------------------------
@@ -449,12 +453,14 @@ class SmartFillLineSelectionTest(unittest.TestCase):
 
 	# --- lifecycle -----------------------------------------------------------
 
-	def test_the_line_selection_is_seeded_when_the_lines_arrive(self):
-		# Everything preselected: pressing Apply straight away reproduces the
-		# pre-R3 behaviour, and narrowing is the opt-in.
+	def test_nothing_is_preselected_or_prefilled_when_the_lines_arrive(self):
+		# The picker asks for a quantity, it does not propose one: pre-filling every
+		# cut to its ceiling wrote thirteen rows the user never asked for. So the
+		# lines arrive unchecked and at zero, and the user types what they want.
 		load = self.func("loadMultiPiLines")
 		self.assertIn("multiPiPickedKeys.value = []", load)
-		self.assertIn("multiPiPickedKeys.value.push(key)", load)
+		self.assertNotIn("multiPiPickedKeys.value.push(key)", load)
+		self.assertIn("multiPiAllocations.value[key] = 0", load)
 
 	def test_the_line_selection_dies_with_the_supplier(self):
 		self.assertIn("multiPiPickedKeys.value = []", self.supplier_watcher())
@@ -604,13 +610,39 @@ class SmartFillItemGranularityTest(unittest.TestCase):
 
 	# --- the surfaces that must not regress ----------------------------------
 
-	def test_the_dom_ids_stay_index_based_at_both_levels(self):
-		self.assertIn("`multi-pi-line-${lineIdx}`", self.vue)
-		self.assertIn("`multi-pi-line-${lineIdx}-${childIdx}`", self.vue)
+	def test_the_dom_ids_stay_index_based(self):
+		# The group/line pair survives the flattening: multiPiRows carries both
+		# indices, so the ids the QA tooling addresses are unchanged.
+		self.assertIn("`multi-pi-line-${row.lineIdx}-${row.childIdx}`", self.vue)
 		# A match key carries "::" and spaces — legal for <label for> but
 		# unaddressable by any id selector, which the QA tooling needs.
 		self.assertNotIn("`multi-pi-line-${multiPiKey", self.vue)
 		self.assertNotIn("`multi-pi-line-${row.key", self.vue)
+
+	def test_the_pool_is_a_band_above_the_table_not_a_row_in_it(self):
+		# The user asked to go straight to the product lines, but the pool figures
+		# are the ones the server guard enforces (and C2's over-shipment surface),
+		# so they move above the table read-only instead of being dropped.
+		self.assertNotIn('<tr class="fw-semibold">', self.vue)
+		self.assertNotIn("multiPiToggleGroup", self.vue)
+		for kept in ('t("Allocated")', "poolRemaining(line)", "line.over_shipped", 't("Already shipped as")'):
+			with self.subTest(band=kept):
+				self.assertIn(kept, self.vue)
+
+	def test_the_table_iterates_the_flat_row_list(self):
+		# One <tr> per contract line, straight off the single flattening point —
+		# no group wrapper, so no header row can creep back in.
+		self.assertIn('v-for="row in multiPiRows"', self.vue)
+		self.assertNotIn('v-for="(line, lineIdx) in multiPiLines"', self.vue)
+
+	def test_typing_a_quantity_selects_the_row_it_was_typed_into(self):
+		# Nothing is preselected any more, and buildAllocationPlan plans an
+		# unpicked row to 0 — so a number typed into an unchecked row would show
+		# on screen and be dropped by Apply in silence. Typing IS the intent.
+		clamp = self.vue[self.vue.index("function setAllocation") :]
+		clamp = clamp[: clamp.index("\n}\n") + 3]
+		self.assertIn("clamped > 0", clamp)
+		self.assertIn("multiPiPickedKeys.value.push(key)", clamp)
 
 	def test_the_split_did_not_add_a_third_skeleton_or_a_manual_stripe(self):
 		self.assertEqual(self.vue.count("<SkeletonRows"), 2)
