@@ -5619,3 +5619,8 @@ Search suppliers… ⌘K,Tedarikçi ara… ⌘K
 Over-allocated,Fazla tahsis
 These lines allocate more than the Proforma Invoice has left: {0},Bu satırlar proforma faturada kalandan fazlasını tahsis ediyor: {0}
 "{0} · {1}: {2} boxes / {3} kg allocated, {4} boxes / {5} kg remaining","{0} · {1}: {2} kutu / {3} kg tahsis edildi, kalan {4} kutu / {5} kg"
+{count} PI lines,{count} PI satırı
+Contract line,Sözleşme satırı
+Shipped as this cut,Bu kesim olarak sevk edilen
+Indicative only — shipments are tracked per category,Yalnızca bilgi amaçlı — sevkiyatlar kategori bazında izlenir
+This category pool has no boxes left.,Bu kategoride kalan kutu yok.

@@ -5630,3 +5630,8 @@ Search suppliers… ⌘K,Поиск поставщиков… ⌘K
 Over-allocated,Превышение распределения
 These lines allocate more than the Proforma Invoice has left: {0},"Эти строки распределяют больше, чем осталось по проформе-инвойсу: {0}"
 "{0} · {1}: {2} boxes / {3} kg allocated, {4} boxes / {5} kg remaining","{0} · {1}: распределено {2} кор. / {3} кг, остаток {4} кор. / {5} кг"
+{count} PI lines,{count} строк PI
+Contract line,Строка контракта
+Shipped as this cut,Отгружено как этот отруб
+Indicative only — shipments are tracked per category,Только справочно — отгрузки учитываются по категории
+This category pool has no boxes left.,В этой категории не осталось коробок.

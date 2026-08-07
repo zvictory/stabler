@@ -5623,3 +5623,8 @@ Search suppliers… ⌘K,Search suppliers… ⌘K
 Over-allocated,Over-allocated
 These lines allocate more than the Proforma Invoice has left: {0},These lines allocate more than the Proforma Invoice has left: {0}
 "{0} · {1}: {2} boxes / {3} kg allocated, {4} boxes / {5} kg remaining","{0} · {1}: {2} boxes / {3} kg allocated, {4} boxes / {5} kg remaining"
+{count} PI lines,{count} PI lines
+Contract line,Contract line
+Shipped as this cut,Shipped as this cut
+Indicative only — shipments are tracked per category,Indicative only — shipments are tracked per category
+This category pool has no boxes left.,This category pool has no boxes left.

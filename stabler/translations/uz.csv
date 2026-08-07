@@ -5624,3 +5624,8 @@ Search suppliers… ⌘K,Yetkazib beruvchilarni qidirish… ⌘K
 Over-allocated,Ortiqcha ajratilgan
 These lines allocate more than the Proforma Invoice has left: {0},Bu qatorlar proforma-invoysda qolganidan koʻproq ajratmoqda: {0}
 "{0} · {1}: {2} boxes / {3} kg allocated, {4} boxes / {5} kg remaining","{0} · {1}: {2} quti / {3} kg ajratilgan, qoldiq {4} quti / {5} kg"
+{count} PI lines,{count} ta PI qatori
+Contract line,Shartnoma qatori
+Shipped as this cut,Shu kesim sifatida jo'natilgan
+Indicative only — shipments are tracked per category,Faqat ma'lumot uchun — jo'natmalar kategoriya bo'yicha hisoblanadi
+This category pool has no boxes left.,Bu kategoriyada quti qolmagan.

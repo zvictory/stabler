@@ -5210,6 +5210,11 @@ def get_vendor_available_pi_lines(
 				"agreed_prices": sorted(entry["agreed_prices"]),
 				"docs_prices": sorted(entry["docs_prices"]),
 				"sub_cuts": _sub_cut_breakdown(ship),
+				# The bundle's own PI lines, so the picker can offer the thirteen
+				# cuts a compensated line was booked as. Presentation only: the
+				# balance above is still the whole category, which is what the
+				# server guard enforces.
+				"contract_lines": rules.contract_line_breakdown(entry),
 			}
 		)
 

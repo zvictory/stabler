@@ -1147,6 +1147,44 @@ def contract_index(pi_item_rows) -> dict[tuple[str, str], dict]:
 	return index
 
 
+def contract_line_breakdown(entry) -> list[dict]:
+	"""Split one ``contract_index`` entry back into its individual PI lines.
+
+	The match key stays ``(PI, category)`` — this is a *presentation* split, not a
+	second index. A compensated bundle books thirteen cuts under one category, and
+	the picker has to offer those thirteen; the balance the guard enforces is still
+	the category total above them.
+
+	Identity is the row's own ``name`` (the Proforma Invoice Item docname), never
+	``item``: one PI may book the same code twice at different rates, and merging
+	them would make two contract lines share one allocation box.
+
+	No ``max(0, …)`` anywhere and ``entry`` is never mutated — a zero or negative
+	``boxes`` in the source book travels through verbatim (invariant 1).
+	"""
+	out: list[dict] = []
+	for idx, ln in enumerate(entry.get("lines") or []):
+		out.append(
+			{
+				# Synthetic fallback only for rows that reached us without a docname
+				# (hand-built dicts in tests); still unique inside the bundle.
+				"row": str(ln.get("name") or "") or f"{entry['key'][0]}#{idx}",
+				# Verbatim — this round-trips into the CI row as a Link value.
+				"item": ln.get("item") or "",
+				"description": ln.get("description") or "",
+				"hs_code": ln.get("hs_code") or "",
+				"boxes": _num(ln.get("boxes")),
+				"qty": _num(ln.get("qty")),
+				# Per line, not per bundle: a mixed bundle may weigh its cuts
+				# differently, and the kg the CI books must follow the line.
+				"box_weight_kg": _round4(ln.get("box_weight_kg")),
+				"agreed_rate": _round4(ln.get("rate")),
+				"docs_price": _round4(ln.get("docs_price")),
+			}
+		)
+	return out
+
+
 def shipped_index(ci_item_rows) -> dict[tuple[str, str], dict]:
 	"""Index Commercial Invoice Item rows by the same match key.
 

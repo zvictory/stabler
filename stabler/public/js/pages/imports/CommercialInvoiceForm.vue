@@ -9,6 +9,7 @@ import { t } from "../../composables/i18n.js";
 import { formatDate } from "../../composables/date.js";
 import { formatMoney } from "../../composables/money.js";
 import { blockerText, cascadeRows, recordRoute } from "../../composables/deleteImpact.js";
+import { buildAllocationPlan, rowCeiling } from "../../composables/piAllocation.js";
 import { useToast } from "../../composables/useToast.js";
 import { useConfirm } from "../../composables/useConfirm.js";
 import { useEscapeBack } from "../../composables/useEscapeBack.js";
@@ -479,15 +480,35 @@ const multiPiItems = ref({});
 // survives "Back", so a user can widen or narrow it without starting over.
 const multiPiStep = ref(1);
 const multiPiSelected = ref([]);
-// Step 2's own selection: which LINES get pushed, held as multiPiKey values.
-// Deliberately not multiPiSelected — that one is step 1's list of PI names, and
-// sharing it would make each step wipe the other's picks.
+// Step 2's own selection: which contract LINES get pushed, held as
+// multiPiRowKey values. Deliberately not multiPiSelected — that one is step 1's
+// list of PI names, and sharing it would make each step wipe the other's picks.
 const multiPiPickedKeys = ref([]);
 
-// The allocation key mirrors the backend match key: (proforma, category). It
-// used to include `item`, which is now empty on every compensated bundle — the
-// whole modal would have collapsed onto one colliding key.
+// The GROUP key mirrors the backend match key: (proforma, category). It used to
+// include `item`, which is now empty on every compensated bundle — the whole
+// modal would have collapsed onto one colliding key. This is the level the
+// server guard enforces, so it stays exactly as it is.
 const multiPiKey = (line) => `${line.pi_name}::${normKey(line.category)}`;
+
+// One level down: a single PI line inside that group. A compensated bundle
+// books thirteen cuts under one category and the user picks among the cuts, so
+// allocations, item choices and checkboxes are all keyed here — never by array
+// position, which a reload reorders.
+const multiPiRowKey = (line, child) => `${multiPiKey(line)}::${child.row}`;
+
+// The ONE place the group/line nesting is flattened. Everything downstream —
+// the plan, the summary, Apply, the select-all counters — reads this list, so
+// there is no second traversal that could disagree about what is on screen.
+const multiPiRows = computed(() => {
+	const out = [];
+	multiPiLines.value.forEach((line, lineIdx) => {
+		(line.contract_lines || []).forEach((child, childIdx) => {
+			out.push({ line, child, key: multiPiRowKey(line, child), groupKey: multiPiKey(line), lineIdx, childIdx });
+		});
+	});
+	return out;
+});
 
 // Contract items first, then sub-cuts earlier invoices actually used — the
 // second group is where a bundle's real cuts live, since they are on no PI.
@@ -502,22 +523,90 @@ function multiPiItemOptions(line) {
 	return out;
 }
 
-// Ceiling for the "Allocate boxes" input. `remaining_boxes` is signed and
-// goes negative on over-shipped lines — that is real data (C2) and must
-// keep rendering as-is everywhere else (the Remaining cell, the over-shipped
-// badge). This is the ONLY place that value gets floored at 0, because an
-// `<input max>` of a negative number is meaningless.
-const maxAllocatable = (line) => Math.max(0, line.remaining_boxes || 0);
+// A contract line's own code first — it is what this row actually books — then
+// the bundle's other cuts, because a compensated line may legitimately ship as
+// a cut that is on no PI at all.
+function multiPiRowItemOptions(line, child) {
+	const seen = new Set();
+	const out = [];
+	for (const code of [child.item, ...multiPiItemOptions(line)]) {
+		if (!code || seen.has(code)) continue;
+		seen.add(code);
+		out.push(code);
+	}
+	return out;
+}
+
+// The category pool — the only ceiling the backend actually checks.
+// `remaining_boxes` is signed and goes negative on over-shipped lines: that is
+// real data (C2) and must keep rendering as-is everywhere else (the Remaining
+// cell, the over-shipped badge). This is the ONLY place that value gets floored
+// at 0, because a pool of "minus 300 boxes" cannot be shared out.
+const poolRemaining = (line) => Math.max(0, line.remaining_boxes || 0);
+
+// How many boxes of this bundle already shipped under this exact cut. Advisory
+// only: attributing a shipment to one contract line is the item-level matching
+// that finds 19.5% of live CI lines, so it may only ever NARROW a ceiling —
+// which can never produce a row set the server would refuse.
+function rowShippedAsThisCut(line, child) {
+	const code = normKey(child.item);
+	if (!code) return 0;
+	// If the bundle books this cut on more than one contract line there is no
+	// way to say which one a shipment belongs to, so claim none of it.
+	if ((line.contract_lines || []).filter((c) => normKey(c.item) === code).length !== 1) return 0;
+	let boxes = 0;
+	for (const cut of line.sub_cuts || []) {
+		if (normKey(cut.item) === code) boxes += Number(cut.boxes) || 0;
+	}
+	return boxes;
+}
+
+// Ceiling (a): what this contract line itself still has. Keyed off the contract
+// line's own `item`, never the `<select>` value — otherwise changing the
+// dropdown would silently re-clamp a number the user already typed.
+function rowContractRemaining(line, child) {
+	return Math.max(0, (Number(child.boxes) || 0) - rowShippedAsThisCut(line, child));
+}
+
+// The groups exactly as the plan consumes them, in contract order.
+const multiPiGroups = computed(() => {
+	const groups = new Map();
+	for (const row of multiPiRows.value) {
+		let group = groups.get(row.groupKey);
+		if (!group) {
+			group = { groupKey: row.groupKey, pool: poolRemaining(row.line), rows: [] };
+			groups.set(row.groupKey, group);
+		}
+		group.rows.push({
+			rowKey: row.key,
+			ownRemaining: rowContractRemaining(row.line, row.child),
+			requested: multiPiAllocations.value[row.key] || 0,
+			picked: multiPiPickedKeys.value.includes(row.key),
+		});
+	}
+	return groups;
+});
+
+// Single source of truth for "how many boxes does each row actually get".
+// The group header, the summary bar and the Apply loop all read this one plan,
+// which is what stops the screen promising one total and pushing another.
+const multiPiPlan = computed(() => buildAllocationPlan([...multiPiGroups.value.values()]));
+
+// The double cap: the row's own contract AND what the rows above it left in the
+// category pool. Exceeding either is a save the server guard refuses.
+const maxAllocatable = (row) => rowCeiling(multiPiGroups.value.get(row.groupKey), row.key);
+
+const multiPiGroupAllocated = (line) => multiPiPlan.value.byGroup[multiPiKey(line)]?.allocated || 0;
 
 // Clamps a typed/pasted/spinner value into [0, maxAllocatable]. The `max`
 // attribute alone is not enforced by the browser for typed or pasted input,
 // so this runs on every @input.
-function setAllocation(line, ev) {
-	const key = multiPiKey(line);
+function setAllocation(row, ev) {
+	const key = row.key;
 	const raw = ev.target.value;
 	const parsed = parseInt(raw, 10);
 	const n = Number.isNaN(parsed) ? 0 : parsed;
-	const clamped = Math.min(Math.max(n, 0), maxAllocatable(line));
+	const clamped = Math.min(Math.max(n, 0), maxAllocatable(row));
 	multiPiAllocations.value[key] = clamped;
 	// The input is `:value`-bound, so when the clamp lands on the value the
 	// field already held, no state changes and Vue never re-renders — the box
@@ -526,15 +615,17 @@ function setAllocation(line, ev) {
 	if (raw !== String(clamped)) ev.target.value = clamped;
 }
 
-// The ONE per-line calculation behind step 2. Both the summary bar the user
+// The ONE per-row calculation behind step 2. Both the summary bar the user
 // reads and the Apply loop that pushes the rows call this — a second copy is
 // exactly how a screen ends up promising one total and delivering another.
-function multiPiLineTotals(line) {
-	const key = multiPiKey(line);
-	const boxes = Math.min(Math.max(0, parseInt(multiPiAllocations.value[key] || 0)), maxAllocatable(line));
-	const bw = line.box_weight_kg || DEFAULT_BOX_WEIGHT_KG;
+function multiPiLineTotals(row) {
+	const boxes = multiPiPlan.value.byRow[row.key] || 0;
+	// Per contract line, not per bundle: a mixed bundle weighs its cuts
+	// differently, and the kg written to the CI must follow the line.
+	const bw = row.child.box_weight_kg || row.line.box_weight_kg || DEFAULT_BOX_WEIGHT_KG;
 	const qty = round2(boxes * bw);
-	return { key, boxes, bw, qty, value: qty * (line.agreed_rate || 0) };
+	const rate = row.child.agreed_rate || row.line.agreed_rate || 0;
+	return { key: row.key, boxes, bw, qty, value: qty * rate };
 }
 
 // Step 1: just the supplier's open proformas. `include_lines: false` skips the
@@ -599,14 +690,19 @@ async function loadMultiPiLines() {
 		multiPiLines.value = res.lines || [];
 
 		for (const line of multiPiLines.value) {
-			const key = multiPiKey(line);
-			// Over-shipped keys default to 0 — the contract is already exceeded,
-			// so pre-filling more boxes would only deepen the breach.
-			multiPiAllocations.value[key] = line.remaining_boxes > 0 ? line.remaining_boxes : 0;
-			multiPiItems.value[key] = multiPiItemOptions(line)[0] || "";
-			// Everything checked, like step 1: pressing Apply straight away is the
-			// pre-selection behaviour, and narrowing is the opt-in.
-			multiPiPickedKeys.value.push(key);
+			// Over-shipped keys leave a pool of 0 — the contract is already
+			// exceeded, so pre-filling more boxes would only deepen the breach.
+			let pool = poolRemaining(line);
+			for (const child of line.contract_lines || []) {
+				const key = multiPiRowKey(line, child);
+				const boxes = Math.min(rowContractRemaining(line, child), pool);
+				multiPiAllocations.value[key] = boxes;
+				pool -= boxes;
+				multiPiItems.value[key] = multiPiRowItemOptions(line, child)[0] || "";
+				// Everything checked, like step 1: pressing Apply straight away is the
+				// pre-selection behaviour, and narrowing is the opt-in.
+				multiPiPickedKeys.value.push(key);
+			}
 		}
 	} catch (err) {
 		toast.error(err?.message || t("Could not fetch available PI lines."));
@@ -615,14 +711,14 @@ async function loadMultiPiLines() {
 	}
 }
 
-// Only the checked lines exist as far as the summary bar and Apply are
-// concerned. Keyed by multiPiKey, never by array position — a reload reorders.
+// Only the checked contract lines exist as far as the summary bar and Apply are
+// concerned. Keyed by multiPiRowKey, never by array position — a reload reorders.
 const multiPiSelectedLines = computed(() =>
-	multiPiLines.value.filter((line) => multiPiPickedKeys.value.includes(multiPiKey(line)))
+	multiPiRows.value.filter((row) => multiPiPickedKeys.value.includes(row.key))
 );
 
 const multiPiAllLinesSelected = computed(
-	() => multiPiLines.value.length > 0 && multiPiPickedKeys.value.length === multiPiLines.value.length
+	() => multiPiRows.value.length > 0 && multiPiPickedKeys.value.length === multiPiRows.value.length
 );
 
 // Drives the header checkbox's indeterminate state: some, but not all.
@@ -630,10 +726,51 @@ const multiPiSomeLinesSelected = computed(
 	() => multiPiPickedKeys.value.length > 0 && !multiPiAllLinesSelected.value
 );
 
-// Toggling selection must never touch multiPiAllocations — a user who unchecks
-// a row and changes their mind gets their typed number back.
+// The rows the template renders under one group header, in contract order.
+const multiPiRowsByGroup = computed(() => {
+	const out = {};
+	for (const row of multiPiRows.value) {
+		if (!out[row.groupKey]) out[row.groupKey] = [];
+		out[row.groupKey].push(row);
+	}
+	return out;
+});
+
+const multiPiGroupRows = (line) => multiPiRowsByGroup.value[multiPiKey(line)] || [];
+
+const multiPiGroupAllPicked = (line) => {
+	const rows = multiPiGroupRows(line);
+	return rows.length > 0 && rows.every((row) => multiPiPickedKeys.value.includes(row.key));
+};
+
+const multiPiGroupSomePicked = (line) =>
+	multiPiGroupRows(line).some((row) => multiPiPickedKeys.value.includes(row.key)) && !multiPiGroupAllPicked(line);
+
+// Unchecking never touches multiPiAllocations — a user who unchecks a row and
+// changes their mind gets their typed number back. CHECKING, though, has to
+// clamp: the freed boxes may have been spent on a sibling in the meantime, and
+// the stored number would otherwise push the group past its pool.
+function multiPiToggleRow(row, on) {
+	if (!on) {
+		multiPiPickedKeys.value = multiPiPickedKeys.value.filter((key) => key !== row.key);
+		return;
+	}
+	if (!multiPiPickedKeys.value.includes(row.key)) multiPiPickedKeys.value.push(row.key);
+	multiPiAllocations.value[row.key] = Math.min(multiPiAllocations.value[row.key] || 0, maxAllocatable(row));
+}
+
+function multiPiToggleGroup(line, on) {
+	for (const row of multiPiRows.value) {
+		if (row.groupKey === multiPiKey(line)) multiPiToggleRow(row, on);
+	}
+}
+
 function multiPiSelectAllLines(on) {
-	multiPiPickedKeys.value = on ? multiPiLines.value.map((line) => multiPiKey(line)) : [];
+	if (!on) {
+		multiPiPickedKeys.value = [];
+		return;
+	}
+	for (const row of multiPiRows.value) multiPiToggleRow(row, true);
 }
 
 // What Apply is about to push, counted the same way Apply counts it: the
@@ -656,21 +793,27 @@ const multiPiSummary = computed(() => {
 
 function applyMultiPiAllocation() {
 	let addedCount = 0;
-	for (const line of multiPiSelectedLines.value) {
-		const { key, boxes, bw, qty } = multiPiLineTotals(line);
+	for (const row of multiPiSelectedLines.value) {
+		const { line, child } = row;
+		const { key, boxes, bw, qty } = multiPiLineTotals(row);
 		if (boxes > 0) {
 			form.value.items.push({
+				// The PI and the category are the GROUP's, written verbatim. That
+				// pair is the whole reason splitting one bundle into thirteen rows
+				// is invisible to the server guard: it sums CI rows by
+				// (PI, category) before comparing, so thirteen rows and one row
+				// with the same total are the same thing to it.
 				custom_proforma_invoice: line.pi_name,
 				category: line.category,
-				item: multiPiItems.value[key] || line.item || "",
-				description: line.description || "",
-				hs_code: line.hs_code || "",
+				item: multiPiItems.value[key] || child.item || line.item || "",
+				description: child.description || line.description || "",
+				hs_code: child.hs_code || line.hs_code || "",
 				boxes: boxes,
 				box_weight_kg: bw,
 				qty: qty,
 				uom: "Kg",
-				rate: line.agreed_rate,
-				docs_price: line.docs_price,
+				rate: child.agreed_rate || line.agreed_rate,
+				docs_price: child.docs_price || line.docs_price,
 				_qtyManual: true,
 			});
 			addedCount++;
@@ -2274,7 +2417,7 @@ watch(
 											:title="t('Select All')"
 											:checked="multiPiAllLinesSelected"
 											:indeterminate.prop="multiPiSomeLinesSelected"
-											:disabled="!multiPiLines.length"
+											:disabled="!multiPiRows.length"
 											@change="multiPiSelectAllLines($event.target.checked)"
 										>
 									</th>
@@ -2289,16 +2432,27 @@ watch(
 							</thead>
 							<SkeletonRows v-if="multiPiLoading" :rows="6" :cols="8" />
 							<tbody v-else>
-								<tr v-if="!multiPiLines.length">
+								<tr v-if="!multiPiRows.length">
 									<td colspan="8" class="text-secondary text-center py-3">{{ t("No open proforma lines for this supplier.") }}</td>
 								</tr>
 								<!-- Index-based DOM id on purpose: a match key holds the PI name and the category
 								     verbatim, so an id built from it carried "::" and spaces — legal for <label for>
 								     but unaddressable by any CSS/querySelector id selector, which QA tooling needs. -->
 								<template v-for="(line, lineIdx) in multiPiLines" :key="multiPiKey(line)">
-									<tr>
+									<!-- Group header: the (PI, category) pool. These are the numbers the
+									     server guard enforces; the rows beneath are the contract lines the
+									     bundle was booked as, and they share this one balance. -->
+									<tr class="fw-semibold">
 										<td>
-											<input :id="`multi-pi-line-${lineIdx}`" v-model="multiPiPickedKeys" type="checkbox" class="form-check-input m-0" :value="multiPiKey(line)">
+											<input
+												:id="`multi-pi-line-${lineIdx}`"
+												type="checkbox"
+												class="form-check-input m-0"
+												:checked="multiPiGroupAllPicked(line)"
+												:indeterminate.prop="multiPiGroupSomePicked(line)"
+												:disabled="!multiPiGroupRows(line).length"
+												@change="multiPiToggleGroup(line, $event.target.checked)"
+											>
 										</td>
 										<td>
 											<label class="form-check-label mb-0" :for="`multi-pi-line-${lineIdx}`">
@@ -2310,9 +2464,7 @@ watch(
 											<div v-if="line.description" class="small text-secondary">{{ line.description }}</div>
 										</td>
 										<td>
-											<select v-model="multiPiItems[multiPiKey(line)]" class="form-select form-select-sm">
-												<option v-for="code in multiPiItemOptions(line)" :key="code" :value="code">{{ code }}</option>
-											</select>
+											<span class="badge bg-secondary-lt">{{ t("{count} PI lines", { count: multiPiGroupRows(line).length }) }}</span>
 										</td>
 										<td class="text-end font-monospace">{{ fn(line.contract_boxes) }}</td>
 										<td class="text-end font-monospace">
@@ -2326,16 +2478,9 @@ watch(
 											<span v-else class="fw-semibold">{{ fn(line.remaining_boxes) }}</span>
 										</td>
 										<td class="text-end">
-											<input
-												:value="multiPiAllocations[multiPiKey(line)]"
-												type="number"
-												min="0"
-												:max="maxAllocatable(line)"
-												step="1"
-												inputmode="decimal"
-												class="form-control form-control-sm text-end font-monospace"
-												@input="setAllocation(line, $event)"
-											>
+											<div class="small text-secondary">{{ t("Allocated") }}</div>
+											<div class="font-monospace">{{ fn(multiPiGroupAllocated(line)) }} / {{ fn(poolRemaining(line)) }}</div>
+											<div v-if="!poolRemaining(line)" class="small text-secondary">{{ t("This category pool has no boxes left.") }}</div>
 										</td>
 									</tr>
 									<tr v-if="line.sub_cuts && line.sub_cuts.length">
@@ -2344,6 +2489,51 @@ watch(
 											<span v-for="sc in line.sub_cuts" :key="sc.item" class="badge bg-secondary-lt me-1 font-monospace" style="font-size: 0.7rem">
 												{{ sc.item || "—" }} · {{ fn(sc.boxes) }}
 											</span>
+										</td>
+									</tr>
+									<tr v-for="(row, childIdx) in multiPiGroupRows(line)" :key="row.key">
+										<td>
+											<input
+												:id="`multi-pi-line-${lineIdx}-${childIdx}`"
+												type="checkbox"
+												class="form-check-input m-0"
+												:checked="multiPiPickedKeys.includes(row.key)"
+												@change="multiPiToggleRow(row, $event.target.checked)"
+											>
+										</td>
+										<td class="text-secondary small">
+											<label class="form-check-label mb-0" :for="`multi-pi-line-${lineIdx}-${childIdx}`">
+												└ {{ t("Contract line") }}
+											</label>
+										</td>
+										<td>
+											<div class="fw-semibold">{{ row.child.item || "—" }}</div>
+											<div v-if="row.child.description" class="small text-secondary">{{ row.child.description }}</div>
+										</td>
+										<td>
+											<select v-model="multiPiItems[row.key]" class="form-select form-select-sm">
+												<option v-for="code in multiPiRowItemOptions(line, row.child)" :key="code" :value="code">{{ code }}</option>
+											</select>
+										</td>
+										<td class="text-end font-monospace">{{ fn(row.child.boxes) }}</td>
+										<td
+											class="text-end font-monospace text-secondary"
+											:title="t('Shipped as this cut') + ' — ' + t('Indicative only — shipments are tracked per category')"
+										>
+											{{ rowShippedAsThisCut(line, row.child) ? fn(rowShippedAsThisCut(line, row.child)) : "—" }}
+										</td>
+										<td class="text-end font-monospace">{{ fn(rowContractRemaining(line, row.child)) }}</td>
+										<td class="text-end">
+											<input
+												:value="multiPiAllocations[row.key]"
+												type="number"
+												min="0"
+												:max="maxAllocatable(row)"
+												step="1"
+												inputmode="decimal"
+												class="form-control form-control-sm text-end font-monospace"
+												@input="setAllocation(row, $event)"
+											>
 										</td>
 									</tr>
 								</template>

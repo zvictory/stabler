@@ -1038,6 +1038,135 @@ class TestPiCiMatching(unittest.TestCase):
 		)
 
 
+#: PI-AUG-26 as booked on msa: thirteen cuts, one category, 8 400 boxes /
+#: 168 000 kg. The Smart Fill picker used to show this as a single row because
+#: that is exactly what the (PI, category) key says it is.
+_PI_AUG_26 = [
+	("105/106 FOREQUARTER / FQ ROLL", 1494, 29880),
+	("15-17 NECK", 1200, 24000),
+	("31 TENDERLOIN", 216, 4320),
+	("41 TOPSIDE", 720, 14400),
+	("42 THICK FLANK / knuckle", 570, 11400),
+	("44 SILVER SIDE", 1020, 20400),
+	("45 RUMP STEAK", 480, 9600),
+	("46 STRIPLOIN", 330, 6600),
+	("60/60A SHIN SHANK", 420, 8400),
+	("63 CHUCK", 720, 14400),
+	("64 CHUCK TENDER", 150, 3000),
+	("65 BLADE", 870, 17400),
+	("67 CUBE ROLL", 210, 4200),
+]
+
+
+class TestContractLineBreakdown(unittest.TestCase):
+	"""The picker shows the cuts; the guard still counts the bundle.
+
+	``contract_line_breakdown`` exists so Smart Fill can offer a compensated
+	bundle's individual PI lines without introducing a second match key. Every
+	test here pins that the split is presentation-only: the key does not move,
+	the totals do not move, and nothing is clamped on the way through.
+	"""
+
+	def _bundle(self):
+		rows = [
+			_pi_line(
+				"PI-AUG-26",
+				"BUFFALO COMPENSATED_5",
+				item,
+				boxes,
+				qty,
+				name=f"pii-{idx}",
+				box_weight_kg=20,
+				rate=4.50,
+				docs_price=4.20,
+			)
+			for idx, (item, boxes, qty) in enumerate(_PI_AUG_26)
+		]
+		return rules.contract_index(rows)[rules.match_key("PI-AUG-26", "BUFFALO COMPENSATED_5")]
+
+	def test_split_sums_back_to_the_pool_the_guard_enforces(self):
+		# The invariant the group header and the Apply loop both stand on: if the
+		# thirteen rows did not add back up to 8 400 / 168 000, the picker would be
+		# offering boxes the server is going to refuse.
+		entry = self._bundle()
+		children = rules.contract_line_breakdown(entry)
+		self.assertEqual(len(children), 13)
+		self.assertEqual(sum(c["boxes"] for c in children), 8400)
+		self.assertEqual(sum(c["qty"] for c in children), 168000)
+		balance = rules.remaining_for(entry, None)
+		self.assertEqual(balance["contract_boxes"], 8400)
+		self.assertEqual(balance["contract_qty"], 168000)
+
+	def test_the_match_key_does_not_move(self):
+		# The whole point: thirteen offerable rows, still ONE key. Item-level
+		# keying matched 19.5% of live CI lines; category-level matched 98.3%.
+		rows = [
+			_pi_line("PI-AUG-26", "BUFFALO COMPENSATED_5", item, boxes, qty, name=f"pii-{idx}")
+			for idx, (item, boxes, qty) in enumerate(_PI_AUG_26)
+		]
+		index = rules.contract_index(rows)
+		self.assertEqual(len(index), 1)
+		self.assertEqual(len(rules.contract_line_breakdown(next(iter(index.values())))), 13)
+
+	def test_repeated_item_code_stays_two_rows(self):
+		# One PI may book the same cut twice at two prices (invariant 4). Merging
+		# on `item` would collapse them into one allocation box and silently lose
+		# a rate; identity is the child-row docname.
+		rows = [
+			_pi_line("PI-1", "BLADE", "12", 100, 2000, name="a", rate=4.50),
+			_pi_line("PI-1", "BLADE", "12", 40, 800, name="b", rate=4.80),
+		]
+		entry = rules.contract_index(rows)[rules.match_key("PI-1", "BLADE")]
+		children = rules.contract_line_breakdown(entry)
+		self.assertEqual([c["row"] for c in children], ["a", "b"])
+		self.assertEqual([c["agreed_rate"] for c in children], [4.50, 4.80])
+
+	def test_row_identity_is_present_and_unique(self):
+		# The UI keys its allocation store and its DOM ids off `row`. A blank or
+		# colliding id means two inputs writing over each other.
+		entry = self._bundle()
+		ids = [c["row"] for c in rules.contract_line_breakdown(entry)]
+		self.assertTrue(all(ids))
+		self.assertEqual(len(set(ids)), len(ids))
+		# Rows that arrive without a docname still get a unique id rather than "".
+		unnamed = rules.contract_index(
+			[
+				_pi_line("PI-1", "BLADE", "12", 10, 200),
+				_pi_line("PI-1", "BLADE", "13", 10, 200),
+			]
+		)[rules.match_key("PI-1", "BLADE")]
+		synthetic = [c["row"] for c in rules.contract_line_breakdown(unnamed)]
+		self.assertTrue(all(synthetic))
+		self.assertEqual(len(set(synthetic)), 2)
+
+	def test_nothing_is_clamped_and_the_entry_is_not_mutated(self):
+		# Invariant 1 reaches down to the child rows: a negative correction line in
+		# the source book must stay visible, not silently read as zero.
+		rows = [
+			_pi_line("PI-1", "BLADE", "12", 100, 2000, name="a"),
+			_pi_line("PI-1", "BLADE", "12", -30, -600, name="b"),
+		]
+		entry = rules.contract_index(rows)[rules.match_key("PI-1", "BLADE")]
+		before = dict(entry)
+		children = rules.contract_line_breakdown(entry)
+		self.assertEqual([c["boxes"] for c in children], [100, -30])
+		self.assertEqual([c["qty"] for c in children], [2000, -600])
+		self.assertEqual(entry, before)
+		self.assertEqual(len(entry["lines"]), 2)
+
+	def test_item_code_travels_verbatim(self):
+		# It is written back into the CI as a Link value; upper-casing it the way
+		# the match key does would point at a docname that does not exist.
+		entry = rules.contract_index([_pi_line("PI-1", "BLADE", "42 Thick Flank", 10, 200, name="a")])[
+			rules.match_key("PI-1", "BLADE")
+		]
+		self.assertEqual(rules.contract_line_breakdown(entry)[0]["item"], "42 Thick Flank")
+
+	def test_empty_bundle_is_an_empty_list(self):
+		self.assertEqual(rules.contract_line_breakdown({"key": ("PI-1", "BLADE"), "lines": []}), [])
+		self.assertEqual(rules.contract_line_breakdown({"key": ("PI-1", "BLADE")}), [])
+
+
 class TestCiAllocationCap(unittest.TestCase):
 	"""R4 — a Commercial Invoice may not allocate past what the contract has left.
 
