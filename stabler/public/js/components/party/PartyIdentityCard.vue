@@ -60,7 +60,7 @@ const rows = computed(() => {
 				:href="r.href"
 				class="pc-meta-item pc-link"
 				:class="{ 'pc-mono': r.mono }"
-				:title="r.label"
+				:title="`${r.label}: ${r.value}`"
 				:aria-label="r.label"
 			>
 				<i v-if="r.icon" :class="r.icon" aria-hidden="true"></i>{{ r.value }}
@@ -69,7 +69,7 @@ const rows = computed(() => {
 				v-else
 				class="pc-meta-item"
 				:class="{ 'pc-mono': r.mono }"
-				:title="r.label"
+				:title="`${r.label}: ${r.value}`"
 				:aria-label="r.label"
 			>
 				<i v-if="r.icon" :class="r.icon" aria-hidden="true"></i>{{ r.value }}
@@ -79,20 +79,28 @@ const rows = computed(() => {
 </template>
 
 <style scoped>
+/* Gerçekten TEK satır: kimlik sütunu eylem düğmelerinin yanında ~224 px'e
+   düşüyor, sarmaya izin verilince şerit üç satıra çıkıp başlığı 95 px'e
+   şişiriyordu. Taşan alanlar kırpılır; tam değer `title` ile okunur. */
 .pc-meta {
 	display: flex;
-	flex-wrap: wrap;
+	flex-wrap: nowrap;
 	align-items: center;
 	margin-top: 2px;
 	font-size: 12.5px;
 	color: var(--tblr-gray-600, #667382);
 	min-width: 0;
+	overflow: hidden;
+	white-space: nowrap;
 }
 .pc-meta-item {
 	display: inline-flex;
+	flex: 0 1 auto;
 	align-items: center;
 	gap: 4px;
-	overflow-wrap: anywhere;
+	min-width: 0;
+	overflow: hidden;
+	text-overflow: ellipsis;
 }
 /* Ayraç öğenin kendisine bağlı: şerit sarınca `·` ait olduğu değerle
    birlikte alt satıra iner, tek başına satır başına düşmez. */

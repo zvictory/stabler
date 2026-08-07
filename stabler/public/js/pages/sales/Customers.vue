@@ -351,8 +351,10 @@ async function deleteCustomer() {
 		@delete-form="deleteCustomer"
 	>
 		<template #actions="{ selected: sel, isParent, balance, balanceCurrency, exportLedger }">
-			<button type="button" class="ds-btn" @click="openEdit(sel)">
-				<i class="ti ti-pencil"></i>{{ t("Edit") }}
+			<!-- `pc-btn-txt`: başlık kaydırmada daralınca düşebilecek etiketler.
+			     Payment işaretlenmez — tutarı her zaman görünür kalmalı. -->
+			<button type="button" class="ds-btn" :title="t('Edit')" @click="openEdit(sel)">
+				<i class="ti ti-pencil"></i><span class="pc-btn-txt">{{ t("Edit") }}</span>
 			</button>
 			<button
 				v-if="canReallocate"
@@ -361,7 +363,7 @@ async function deleteCustomer() {
 				:title="t('Reallocate a legacy advance to child locations')"
 				@click="reallocateOpen = true"
 			>
-				<i class="ti ti-arrows-shuffle"></i>{{ t("Reallocate") }}
+				<i class="ti ti-arrows-shuffle"></i><span class="pc-btn-txt">{{ t("Reallocate") }}</span>
 			</button>
 			<!-- Paying the wrong customer is the expensive mistake on this screen,
 			     so the button echoes the target in the tooltip and the amount
@@ -384,7 +386,7 @@ async function deleteCustomer() {
 				:title="t('Professional Excel export of this ledger')"
 				@click="exportLedger"
 			>
-				<i class="ti ti-file-spreadsheet"></i>{{ t("Statement") }}
+				<i class="ti ti-file-spreadsheet"></i><span class="pc-btn-txt">{{ t("Statement") }}</span>
 			</button>
 			<button
 				v-if="directInvoiceEnabled"

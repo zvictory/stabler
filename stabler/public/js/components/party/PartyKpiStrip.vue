@@ -42,14 +42,30 @@ const props = defineProps({
 	border-left: 0;
 	border-right: 0;
 }
+/* Global `.ds-kpi` dashboard kartı ölçüsünde (min-height 104). Party Center'da
+   asıl iş ekstre; şerit üstten çaldığı her pikseli ekstre viewport'undan alıyor.
+   Etiket ile değer yan yana getirilerek hücre iki satırdan bire iner —
+   token'a dokunulmaz, override yalnızca bu bileşende geçerli. */
+.ds-kpi {
+	display: flex;
+	flex-wrap: wrap;
+	align-items: baseline;
+	gap: 0 8px;
+	min-height: auto;
+	padding: 7px 12px 8px;
+	border-top-width: 2px;
+}
 .pc-val {
-	margin-top: 10px;
-	font-size: 22px;
+	margin-top: 0;
+	font-size: 16px;
 }
 .pc-chip {
-	margin-top: 10px;
+	margin-top: 0;
 }
 .pc-note {
+	flex: 1 1 100%;
+	margin-top: 1px;
+	font-size: 11.5px;
 	color: var(--tblr-gray-600, #667382);
 }
 

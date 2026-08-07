@@ -412,8 +412,10 @@ async function deleteSupplier() {
 		@delete-form="deleteSupplier"
 	>
 		<template #actions="{ selected: sel, balance, balanceCurrency, exportLedger }">
-			<button type="button" class="ds-btn" @click="openEdit(sel)">
-				<i class="ti ti-pencil"></i>{{ t("Edit") }}
+			<!-- `pc-btn-txt`: başlık kaydırmada daralınca düşebilecek etiketler.
+			     Payment işaretlenmez — tutarı her zaman görünür kalmalı. -->
+			<button type="button" class="ds-btn" :title="t('Edit')" @click="openEdit(sel)">
+				<i class="ti ti-pencil"></i><span class="pc-btn-txt">{{ t("Edit") }}</span>
 			</button>
 			<button type="button" class="ds-btn" :title="paymentButtonTitle" @click="partyPayOpen = true">
 				<i class="ti ti-cash"></i>{{ t("Payment") }}
@@ -425,7 +427,7 @@ async function deleteSupplier() {
 				:title="t('Professional Excel export of this ledger')"
 				@click="exportLedger"
 			>
-				<i class="ti ti-file-spreadsheet"></i>{{ t("Statement") }}
+				<i class="ti ti-file-spreadsheet"></i><span class="pc-btn-txt">{{ t("Statement") }}</span>
 			</button>
 		</template>
 

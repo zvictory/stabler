@@ -425,6 +425,9 @@ const quotesLoading = ref(false);
 const includeChildren = ref(true);
 const currentTab = ref("ledger");
 const txRef = ref(null);
+// Ekstre kaydırılınca detay başlığı tek satıra çöker. Bayrağı PartyTransactions
+// üretir (kaydıran eleman orada); burada yalnızca sınıfa çevrilir.
+const headCondensed = ref(false);
 
 const selectedIsParent = computed(() => !!selectedDetail.value?.is_parent);
 const headerBalanceValue = computed(() => {
@@ -674,6 +677,15 @@ const kpiItems = computed(() => {
 	return items;
 });
 
+// Daralmış başlıkta KPI şeridi gizlenir. Gecikmiş tutar bu ekranın tek "risk"
+// göstergesi olduğu için orada kaybolmaz, başlığa mini rozet olarak taşınır.
+const overdueChip = computed(() => {
+	const d = selectedDetail.value;
+	const amt = Number(d?.overdue_amount || 0);
+	if (!(amt > 0)) return "";
+	return formatMoney(amt, d?.overdue_currency || selected.value?.account_currency || currency.value, language.value);
+});
+
 // --- Sekmeler ---------------------------------------------------------------
 const tabs = computed(() => {
 	const list = [];
@@ -798,7 +810,7 @@ defineExpose({
 				<span class="pc-splitter-grip"></span>
 			</div>
 
-			<div class="pc-pane-right">
+			<div class="pc-pane-right" :class="{ 'is-condensed': headCondensed }">
 				<!-- KOKPİT (seçim yokken) -->
 				<div v-if="!selected" class="pc-cockpit">
 					<div class="ds-kpis pc-cockpit-kpis" data-cols="2">
@@ -866,7 +878,7 @@ defineExpose({
 				<!-- SEÇİLİ KAYIT -->
 				<template v-else>
 					<div class="pc-detail-head">
-						<PartyAvatar :name="selected[NAME_FIELD] || selected.name" size="lg" />
+						<PartyAvatar :name="selected[NAME_FIELD] || selected.name" size="md" class="pc-detail-avatar" />
 						<div class="pc-detail-id">
 							<button
 								v-if="selectedDetail?.parent_customer || selectedDetail?.parent_supplier"
@@ -883,11 +895,15 @@ defineExpose({
 									selectedDetail.parent_supplier
 								}}
 							</button>
-							<h2 class="pc-detail-title">
-								{{ selected[NAME_FIELD] || selected.name }}
+							<!-- Kod başlıkla aynı satırda: kimlik öbeği üç satırdan ikiye iner. -->
+							<div class="pc-detail-line">
+								<h2 class="pc-detail-title">{{ selected[NAME_FIELD] || selected.name }}</h2>
+								<span class="pc-detail-code">{{ selected.name }}</span>
 								<span v-if="selectedIsParent" class="pc-parent-badge">{{ props.labels.parentLabel || t("Parent") }}</span>
-							</h2>
-							<div class="pc-detail-code">{{ selected.name }}</div>
+								<span v-if="overdueChip" class="pc-overdue-chip" :title="t('Overdue')">
+									<i class="ti ti-clock-exclamation"></i>{{ overdueChip }}
+								</span>
+							</div>
 							<PartyIdentityCard
 								:detail="selectedDetail"
 								:fields="{ group: props.api.groupField, territory: props.api.territoryField }"
@@ -932,6 +948,7 @@ defineExpose({
 					<PartyTransactions
 						ref="txRef"
 						v-model="currentTab"
+						@update:condensed="headCondensed = $event"
 						:tabs="tabs"
 						:ledger="ledger"
 						:ledger-loading="ledgerLoading"
@@ -1143,19 +1160,26 @@ defineExpose({
 .pc-detail-head {
 	display: flex;
 	align-items: center;
-	gap: 14px;
+	gap: 10px;
 	flex-wrap: wrap;
-	padding: 14px 16px;
+	padding: 8px 14px;
 	background: #fff;
 	border-bottom: 2px solid rgba(29, 39, 59, 0.32);
 }
 .pc-detail-id {
-	flex: 1 1 12rem;
+	/* 12rem taban butonları ikinci satıra itiyordu (48+14+738+14+606 > 832). */
+	flex: 1 1 8rem;
+	min-width: 0;
+}
+.pc-detail-line {
+	display: flex;
+	align-items: baseline;
+	gap: 8px;
 	min-width: 0;
 }
 .pc-detail-title {
 	margin: 0;
-	font-size: 20px;
+	font-size: 16px;
 	font-weight: 700;
 	color: #1d273b;
 	overflow: hidden;
@@ -1163,9 +1187,22 @@ defineExpose({
 	white-space: nowrap;
 }
 .pc-detail-code {
+	flex: 0 0 auto;
 	font-family: var(--ds-mono, monospace);
 	font-size: 11.5px;
 	color: var(--tblr-gray-600, #667382);
+}
+/* KPI şeridi daralınca gizlendiği için gecikme riski başlıkta kalır. */
+.pc-overdue-chip {
+	display: none;
+	flex: 0 0 auto;
+	align-items: center;
+	gap: 4px;
+	padding: 1px 6px;
+	font-size: 11.5px;
+	font-weight: 600;
+	color: var(--ds-crit-tx, #b32424);
+	background: #fdecec;
 }
 .pc-parent-link {
 	display: inline-flex;
@@ -1194,8 +1231,72 @@ defineExpose({
 .pc-detail-actions {
 	display: flex;
 	align-items: center;
-	gap: 8px;
+	gap: 6px;
 	flex-wrap: wrap;
+}
+/* Global `.ds-btn` 40 px. Sarmalayıcı sayfalar (`Customers.vue` / `Suppliers.vue`)
+   `#actions` slot'una düz `ds-btn` basıyor; ölçüyü token'a dokunmadan burada
+   küçültüyoruz — beş buton 832 px'lik panelde tek satıra ancak böyle sığıyor. */
+.pc-detail-actions :deep(.ds-btn) {
+	min-height: 34px;
+	padding: 6px 10px;
+	font-size: 13px;
+	gap: 5px;
+}
+
+/* --- Kaydırınca daralan başlık --------------------------------------------
+   Bayrak PartyTransactions'tan gelir (kaydıran eleman `.pc-pane`). DOM
+   değişmez, yalnız görünürlük/ölçü; böylece `#actions` slot'u tek yerde kalır
+   ve daralma sırasında hiçbir buton yeniden monte edilmez. */
+.pc-pane-right.is-condensed .pc-detail-head {
+	padding: 4px 14px;
+}
+.pc-pane-right.is-condensed .pc-detail-avatar {
+	--tblr-avatar-size: 1.75rem;
+	width: 1.75rem;
+	height: 1.75rem;
+	font-size: 11px;
+}
+.pc-pane-right.is-condensed .pc-detail-title {
+	font-size: 14px;
+}
+.pc-pane-right.is-condensed .pc-detail-code,
+.pc-pane-right.is-condensed .pc-parent-link,
+.pc-pane-right.is-condensed :deep(.pc-meta) {
+	display: none;
+}
+.pc-pane-right.is-condensed .pc-overdue-chip {
+	display: inline-flex;
+}
+.pc-pane-right.is-condensed :deep(.pc-kpis) {
+	max-height: 0;
+	opacity: 0;
+	overflow: hidden;
+	border-width: 0;
+}
+.pc-pane-right.is-condensed .pc-detail-actions :deep(.ds-btn) {
+	min-height: 30px;
+	padding: 5px 9px;
+}
+/* Sekonder butonlar ikon-only düşer. Sarmalayıcı sayfalar hangi metnin
+   düşebileceğini `pc-btn-txt` ile işaretler; Payment butonunun etiketi ve
+   satır içi tutarı işaretlenmez — yanlış tarafa ödeme bu ekranın pahalı
+   hatası, tutar her iki durumda da görünür kalır. */
+.pc-pane-right.is-condensed .pc-detail-actions :deep(.pc-btn-txt) {
+	display: none;
+}
+.pc-detail-head,
+:deep(.pc-kpis) {
+	transition:
+		max-height 0.16s ease,
+		opacity 0.12s ease,
+		padding 0.16s ease;
+}
+@media (prefers-reduced-motion: reduce) {
+	.pc-detail-head,
+	:deep(.pc-kpis) {
+		transition: none;
+	}
 }
 
 .pc-include {

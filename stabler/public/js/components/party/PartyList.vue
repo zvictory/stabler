@@ -9,7 +9,13 @@
  *
  * Bileşen tamamen sunumsaldır: satırlar PartyCenter tarafından zenginleştirilmiş
  * (`balance`, `balanceCurrency`, `tooltip`, `title`, `code` …) olarak gelir.
+ *
+ * Başlık TEK satır: arama + filtre açılır menüsü + görünüm/yeni. Grup, bölge ve
+ * iki toggle eskiden ikinci (çoğu zaman üçüncü) bir satır kaplıyordu; artık
+ * `data-bs-toggle="dropdown"` menüsünün içinde. Gizli filtre sessiz kalmasın
+ * diye tetikleyici buton aktif filtre sayısını rozetle gösterir ve vurgulanır.
  */
+import { computed } from "vue";
 import SkeletonRows from "../SkeletonRows.vue";
 import EmptyState from "../EmptyState.vue";
 import PartyAvatar from "../PartyAvatar.vue";
@@ -64,6 +70,22 @@ function balanceTone(v) {
 	if (Number(v) < 0) return "pc-neg";
 	return "pc-zero";
 }
+
+const activeFilterCount = computed(() => {
+	let n = 0;
+	if (props.filterGroup) n += 1;
+	if (props.filterTerritory) n += 1;
+	if (props.onlyWithBalance) n += 1;
+	if (props.onlyOverdue) n += 1;
+	return n;
+});
+
+function clearFilters() {
+	if (props.filterGroup) emit("update:filterGroup", "");
+	if (props.filterTerritory) emit("update:filterTerritory", "");
+	if (props.onlyWithBalance) emit("update:onlyWithBalance", false);
+	if (props.onlyOverdue) emit("update:onlyOverdue", false);
+}
 </script>
 
 <template>
@@ -79,57 +101,79 @@ function balanceTone(v) {
 					@input="emit('update:search', $event.target.value); emit('search-input')"
 				/>
 			</div>
+			<div class="dropdown pc-filter-dd">
+				<button
+					type="button"
+					class="ds-btn pc-btn-sm pc-filter-btn"
+					:class="{ 'pc-filter-on': activeFilterCount > 0 }"
+					data-bs-toggle="dropdown"
+					data-bs-auto-close="outside"
+					aria-expanded="false"
+					:title="t('Filters')"
+					:aria-label="t('Filters')"
+				>
+					<i class="ti ti-filter"></i>
+					<span class="pc-filter-txt">{{ t("Filters") }}</span>
+					<span v-if="activeFilterCount" class="pc-filter-count">{{ activeFilterCount }}</span>
+				</button>
+				<div class="dropdown-menu dropdown-menu-end pc-filter-menu">
+					<label v-if="props.groupOptions.length" class="pc-filter-row">
+						<span class="pc-label">{{ props.labels.groupLabel || t("Group") }}</span>
+						<select
+							class="ds-input pc-select"
+							:value="props.filterGroup"
+							@change="emit('update:filterGroup', $event.target.value)"
+						>
+							<option value="">{{ props.labels.allGroups || t("All groups") }}</option>
+							<option v-for="g in props.groupOptions" :key="g" :value="g">{{ g }}</option>
+						</select>
+					</label>
+					<label v-if="props.territoryOptions.length" class="pc-filter-row">
+						<span class="pc-label">{{ t("Territory") }}</span>
+						<select
+							class="ds-input pc-select"
+							:value="props.filterTerritory"
+							@change="emit('update:filterTerritory', $event.target.value)"
+						>
+							<option value="">{{ props.labels.allTerritories || t("All territories") }}</option>
+							<option v-for="tr in props.territoryOptions" :key="tr" :value="tr">{{ tr }}</option>
+						</select>
+					</label>
+					<div class="ds-seg pc-seg">
+						<button
+							type="button"
+							:aria-pressed="props.onlyWithBalance ? 'true' : 'false'"
+							@click="emit('update:onlyWithBalance', !props.onlyWithBalance)"
+						>
+							{{ t("Only with balance") }}
+						</button>
+						<button
+							type="button"
+							:aria-pressed="props.onlyOverdue ? 'true' : 'false'"
+							@click="emit('update:onlyOverdue', !props.onlyOverdue)"
+						>
+							{{ t("Overdue only") }}
+						</button>
+					</div>
+					<div class="pc-filter-foot">
+						<button type="button" class="pc-clear" :disabled="!activeFilterCount" @click="clearFilters">
+							{{ t("Clear") }}
+						</button>
+					</div>
+				</div>
+			</div>
 			<button
 				v-if="props.hierarchyEnabled"
 				type="button"
-				class="ds-btn pc-icon-btn"
+				class="ds-btn pc-btn-sm pc-icon-btn"
 				:title="props.treeMode ? t('Flat view') : t('Tree view')"
 				@click="emit('toggle-view')"
 			>
 				<i class="ti" :class="props.treeMode ? 'ti-list' : 'ti-sitemap'"></i>
 			</button>
-			<button type="button" class="ds-btn ds-btn--primary pc-new-btn" @click="emit('create')">
+			<button type="button" class="ds-btn ds-btn--primary pc-btn-sm pc-new-btn" :title="t('New')" @click="emit('create')">
 				<i class="ti ti-plus"></i><span class="pc-new-txt">{{ t("New") }}</span>
 			</button>
-		</div>
-
-		<div class="pc-filters">
-			<select
-				v-if="props.groupOptions.length"
-				class="ds-input pc-select"
-				:value="props.filterGroup"
-				:aria-label="props.labels.groupLabel || t('Group')"
-				@change="emit('update:filterGroup', $event.target.value)"
-			>
-				<option value="">{{ props.labels.allGroups || t("All groups") }}</option>
-				<option v-for="g in props.groupOptions" :key="g" :value="g">{{ g }}</option>
-			</select>
-			<select
-				v-if="props.territoryOptions.length"
-				class="ds-input pc-select"
-				:value="props.filterTerritory"
-				:aria-label="t('Territory')"
-				@change="emit('update:filterTerritory', $event.target.value)"
-			>
-				<option value="">{{ props.labels.allTerritories || t("All territories") }}</option>
-				<option v-for="tr in props.territoryOptions" :key="tr" :value="tr">{{ tr }}</option>
-			</select>
-			<div class="ds-seg pc-seg">
-				<button
-					type="button"
-					:aria-pressed="props.onlyWithBalance ? 'true' : 'false'"
-					@click="emit('update:onlyWithBalance', !props.onlyWithBalance)"
-				>
-					{{ t("Only with balance") }}
-				</button>
-				<button
-					type="button"
-					:aria-pressed="props.onlyOverdue ? 'true' : 'false'"
-					@click="emit('update:onlyOverdue', !props.onlyOverdue)"
-				>
-					{{ t("Overdue only") }}
-				</button>
-			</div>
 		</div>
 
 		<div class="pc-list-scroll">
@@ -244,62 +288,133 @@ function balanceTone(v) {
 	min-height: 0;
 	height: 100%;
 	background: #fff;
+	/* Panel genişliği kullanıcı tarafından sürüklenebilir (PartyCenter `leftRem`),
+	   bu yüzden başlık satırı viewport'a değil kendi genişliğine göre daralmalı. */
+	container-type: inline-size;
 }
 
 .pc-list-head {
 	display: flex;
 	align-items: center;
-	gap: 8px;
-	padding: 10px 12px;
+	gap: 6px;
+	padding: 7px 10px;
 	border-bottom: 1px solid #e3e5e8;
 }
 .pc-search {
 	position: relative;
-	flex: 1 1 auto;
+	flex: 1 1 6rem;
 	min-width: 0;
 }
 .pc-search-icon {
 	position: absolute;
-	left: 10px;
+	left: 9px;
 	top: 50%;
 	transform: translateY(-50%);
+	font-size: 14px;
 	color: var(--tblr-gray-600, #667382);
 	pointer-events: none;
 }
 .pc-search-input {
-	padding-left: 30px;
+	min-height: 34px;
+	padding: 5px 8px 5px 28px;
+	font-size: 13px;
+}
+/* Global `.ds-btn` 40 px'lik dokunma hedefi için tasarlandı; burada satır
+   yüksekliğini o belirliyor. Token'a dokunmadan yerel küçük boy. */
+.pc-btn-sm {
+	flex: 0 0 auto;
+	min-height: 34px;
+	padding: 5px 9px;
+	font-size: 13px;
+	gap: 5px;
 }
 .pc-icon-btn {
-	flex: 0 0 auto;
-	padding: 9px 11px;
+	padding: 5px 8px;
 }
 .pc-new-btn {
-	flex: 0 0 auto;
 	display: inline-flex;
 	align-items: center;
-	gap: 6px;
 }
 
-.pc-filters {
-	display: flex;
-	flex-wrap: wrap;
-	gap: 8px;
-	padding: 10px 12px;
-	border-bottom: 1px solid #e3e5e8;
-	background: #f6f8fb;
+.pc-filter-dd {
+	flex: 0 0 auto;
+}
+.pc-filter-btn {
+	display: inline-flex;
+	align-items: center;
+}
+/* Filtre gizlendiği için sessiz kalmasın: aktifken buton vurgulanır ve
+   kaç filtrenin açık olduğunu rozetle söyler. */
+.pc-filter-on {
+	border-color: #206bc4;
+	color: #206bc4;
+}
+.pc-filter-count {
+	display: inline-flex;
+	align-items: center;
+	justify-content: center;
+	min-width: 16px;
+	height: 16px;
+	padding: 0 4px;
+	background: #206bc4;
+	color: #fff;
+	font-size: 11px;
+	font-weight: 700;
+	line-height: 1;
+}
+.pc-filter-menu {
+	min-width: 15rem;
+	max-width: min(20rem, 92cqw);
+	padding: 10px;
+}
+.pc-filter-row {
+	display: block;
+	margin-bottom: 8px;
+}
+.pc-filter-row .pc-label {
+	display: block;
+	margin-bottom: 3px;
 }
 .pc-select {
-	flex: 1 1 8rem;
-	min-width: 0;
-	min-height: 36px;
-	padding: 6px 8px;
+	width: 100%;
+	min-height: 34px;
+	padding: 5px 8px;
 	font-size: 13px;
 }
 .pc-seg {
-	flex: 1 1 100%;
+	display: flex;
+	width: 100%;
 }
 .pc-seg button {
 	flex: 1 1 0;
+	min-height: 32px;
+	padding: 5px 8px;
+	font-size: 12.5px;
+}
+.pc-filter-foot {
+	display: flex;
+	justify-content: flex-end;
+	margin-top: 8px;
+}
+.pc-clear {
+	padding: 0;
+	border: 0;
+	background: transparent;
+	font-size: 12.5px;
+	color: #206bc4;
+	cursor: pointer;
+}
+.pc-clear:disabled {
+	color: var(--tblr-gray-500, #8a94a6);
+	cursor: default;
+}
+
+/* Dar panelde (MIN_REM = 18rem) satır sarmasın: metinler düşer, ikon kalır. */
+@container (max-width: 23rem) {
+	.pc-filter-txt,
+	.pc-new-txt {
+		display: none;
+	}
 }
 
 .pc-list-scroll {

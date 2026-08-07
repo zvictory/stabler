@@ -8,7 +8,7 @@
  * OLDUĞU GİBİ taşındı — Excel çıktısı ve ekrandaki bakiye kolonu birebir aynı
  * kalmalı. Yeniden yazılmadı.
  */
-import { computed, ref } from "vue";
+import { computed, ref, watch } from "vue";
 import DateInput from "../DateInput.vue";
 import EmptyState from "../EmptyState.vue";
 import SkeletonRows from "../SkeletonRows.vue";
@@ -52,7 +52,14 @@ const props = defineProps({
 	labels: { type: Object, default: () => ({}) },
 });
 
-const emit = defineEmits(["update:modelValue", "update:fromDate", "update:toDate", "open-voucher", "export"]);
+const emit = defineEmits([
+	"update:modelValue",
+	"update:fromDate",
+	"update:toDate",
+	"update:condensed",
+	"open-voucher",
+	"export",
+]);
 
 const ledgerTypeFilter = ref("");
 const ledgerSearch = ref("");
@@ -64,6 +71,59 @@ function resetLedgerFilters() {
 	ledgerSortAsc.value = false;
 }
 defineExpose({ resetLedgerFilters });
+
+/* Kaydırınca detay başlığını daraltma.
+ *
+ * Sayfadaki tek kaydıran eleman `.pc-pane`; başlık ise PartyCenter'da duruyor.
+ * Bağlantı tek bir bayrakla kurulur: burada eşik aşılınca `update:condensed`
+ * yayılır, PartyCenter `.pc-pane-right`'a `is-condensed` sınıfını basar.
+ *
+ * İki koruma şart:
+ *  - Histerezis (40 aç / 12 kapa): eşiğin tam üstünde titremeyi engeller.
+ *  - Geri besleme kilidi: başlık daralınca `.pc-pane` ~70 px büyür, içerik
+ *    kısaysa tarayıcı `scrollTop`'u kırpar → eşiğin altına düşer → tekrar
+ *    açılır → sonsuz döngü. Bu yüzden çok kısa ekstrede hiç daralmayız.
+ *
+ * Kilidin eşiği **tek değer olamaz**: kaydırma payı daralmış hâlde ölçülünce
+ * zaten ~70 px küçüktür. Tek eşikle (160) ölçüldüğünde 161–229 px payı olan
+ * ekstreler daralıp hemen kilide takılıyor ve başlık titriyordu (ölçüldü:
+ * pay 179 → aç/kapa/aç/kapa). Bu yüzden açılış eşiği geniş hâlin geometrisine
+ * (>160), kalış eşiği daralmış hâlinkine (>40) bakar; aradaki fark daralmayla
+ * kazanılan payı fazlasıyla karşılar.
+ */
+const paneEl = ref(null);
+const condensed = ref(false);
+
+const CONDENSE_MIN_OVERFLOW = 160; // geniş hâlde ölçülür
+const RELEASE_MIN_OVERFLOW = 40; // daralmış hâlde ölçülür
+
+function setCondensed(v) {
+	if (condensed.value === v) return;
+	condensed.value = v;
+	emit("update:condensed", v);
+}
+
+function onPaneScroll() {
+	const el = paneEl.value;
+	if (!el) return;
+	const overflow = el.scrollHeight - el.clientHeight;
+	if (overflow <= (condensed.value ? RELEASE_MIN_OVERFLOW : CONDENSE_MIN_OVERFLOW)) {
+		setCondensed(false);
+		return;
+	}
+	const y = el.scrollTop;
+	if (y > 40) setCondensed(true);
+	else if (y < 12) setCondensed(false);
+}
+
+// Yeni sekme / yeni kayıt her zaman tam başlıkla açılır.
+watch(
+	() => [props.modelValue, props.partyName],
+	() => {
+		setCondensed(false);
+		if (paneEl.value) paneEl.value.scrollTop = 0;
+	},
+);
 
 const ledgerRows = computed(() => {
 	const e = props.ledger?.entries || [];
@@ -229,7 +289,7 @@ function openVoucher(type, name) {
 			</button>
 		</div>
 
-		<div class="pc-pane">
+		<div ref="paneEl" class="pc-pane" @scroll.passive="onPaneScroll">
 			<!-- EKSTRE -->
 			<div v-if="props.modelValue === 'ledger'" class="pc-ledger">
 				<div class="pc-ledger-bar">
@@ -256,7 +316,7 @@ function openVoucher(type, name) {
 					/>
 					<button
 						type="button"
-						class="ds-btn pc-icon-btn"
+						class="ds-btn pc-btn-sm pc-icon-btn"
 						:title="t('Toggle date sort')"
 						@click="ledgerSortAsc = !ledgerSortAsc"
 					>
@@ -264,7 +324,7 @@ function openVoucher(type, name) {
 					</button>
 					<button
 						type="button"
-						class="ds-btn"
+						class="ds-btn pc-btn-sm"
 						:disabled="!props.ledger?.entries?.length"
 						:title="t('Professional Excel export of this ledger')"
 						@click="emit('export')"
@@ -600,8 +660,8 @@ function openVoucher(type, name) {
 	flex: 0 0 auto;
 }
 .pc-tab {
-	min-height: 44px;
-	padding: 10px 14px;
+	min-height: 36px;
+	padding: 7px 12px;
 	border: 0;
 	border-bottom: 3px solid transparent;
 	margin-bottom: -2px;
@@ -637,8 +697,8 @@ function openVoucher(type, name) {
 	display: flex;
 	flex-wrap: wrap;
 	align-items: center;
-	gap: 8px;
-	padding: 10px 12px;
+	gap: 6px;
+	padding: 6px 10px;
 	border-bottom: 1px solid #e3e5e8;
 	background: #f6f8fb;
 	position: sticky;
@@ -646,28 +706,46 @@ function openVoucher(type, name) {
 	z-index: 2;
 }
 .pc-select {
-	width: 10rem;
-	min-height: 36px;
-	padding: 6px 8px;
-	font-size: 13px;
+	width: 8.5rem;
+	min-height: 32px;
+	padding: 4px 7px;
+	font-size: 12.5px;
 }
 .pc-date {
-	width: 9rem;
+	width: 7.5rem;
+}
+/* DateInput kendi Bootstrap sarmalayıcısını getiriyor; çubuğun yüksekliğini
+   o belirlemesin diye alanı diğer kontrollerle aynı ölçüye çekiyoruz. */
+.pc-date :deep(.form-control) {
+	min-height: 32px;
+	height: 32px;
+	padding: 4px 7px;
+	font-size: 12.5px;
 }
 .pc-ledger-search {
-	flex: 1 1 10rem;
-	min-width: 8rem;
-	min-height: 36px;
-	padding: 6px 10px;
-	font-size: 13px;
+	flex: 1 1 8rem;
+	min-width: 6rem;
+	min-height: 32px;
+	padding: 4px 8px;
+	font-size: 12.5px;
+}
+/* Global `.ds-btn` 40 px; ekstre çubuğunda satır yüksekliğini o belirliyordu
+   ve dar panelde Excel butonu ikinci satıra sarıyordu. Yerel küçük boy. */
+.pc-btn-sm {
+	min-height: 32px;
+	padding: 4px 9px;
+	font-size: 12.5px;
+	gap: 5px;
 }
 .pc-icon-btn {
-	padding: 9px 11px;
+	padding: 4px 8px;
 }
 
+/* Çubuk 62 → 44 px indi; başlık satırı onun altına yapışmalı, yoksa
+   kaydırırken ilk ekstre satırı çubuğun arkasında kalıyor. */
 .pc-ledger-table thead th {
 	position: sticky;
-	top: 56px;
+	top: 44px;
 	z-index: 1;
 	background: #fff;
 }
