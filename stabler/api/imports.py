@@ -7771,12 +7771,12 @@ def clear_bill_import_refs(purchase_invoice: str) -> dict:
 	pulled into a Landed Cost Voucher, unlinking would leave a capitalized cost
 	whose source bill is no longer attributable to the import.
 
-	There is deliberately NO docstatus gate here, and the asymmetry with
-	``set_bill_import_refs`` (draft only) is the point: linking is the act that
-	creates an attribution, unlinking is the escape hatch that corrects a wrong
-	one. Gating this on draft would freeze a mis-attributed bill the moment it is
-	submitted, with no way out. The gate that actually protects money is the
-	voucher check below, which does not care about docstatus either.
+	There is deliberately NO docstatus gate here at all — not even the cancelled
+	refusal ``set_bill_import_refs`` carries. Linking is the act that creates an
+	attribution, unlinking is the escape hatch that corrects a wrong one, and an
+	escape hatch that can itself be locked is not one: a bill mis-attributed and
+	then cancelled must still be clearable. The gate that actually protects money
+	is the voucher check below, which does not care about docstatus either.
 	"""
 	if not purchase_invoice or not frappe.db.exists("Purchase Invoice", purchase_invoice):
 		frappe.throw(_("Unknown Purchase Invoice: {0}").format(purchase_invoice))
