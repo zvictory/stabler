@@ -452,60 +452,68 @@ async function deleteSupplier() {
 		</template>
 
 		<template #detail-banner="{ selected: sel }">
-			<!-- Import Exposure (only when the imports module is on for this company) -->
-			<section v-if="selectedExposure?.summary" class="ds-panel">
-				<div class="ds-panel-head">
-					<span class="ds-label">{{ t("Import Exposure") }}</span>
-					<span
-						v-if="!selectedExposure.summary.reconciles_gl"
-						class="ds-chip"
-						data-tone="crit"
-						:title="t('Cash + bank paid does not match the GL total')"
-					>{{ t("GL mismatch") }}</span>
-				</div>
-				<PartyKpiStrip :items="exposureKpiItems" :cols="4" :language="user.language" />
-			</section>
+			<!-- Single stable root. This slot used to be a wrapper-less multi-root
+			     fragment, which Vue re-mounted on every selection instead of patching:
+			     one dead "Import Exposure" strip stacked up per vendor switch, showing
+			     an earlier vendor's cash/bank figures on the selected vendor's card.
+			     display:contents keeps both sections direct flex children of
+			     .pc-pane-right, so the rendered layout is unchanged. -->
+			<div class="pc-banner-slot" style="display: contents">
+				<!-- Import Exposure (only when the imports module is on for this company) -->
+				<section v-if="selectedExposure?.summary" class="ds-panel">
+					<div class="ds-panel-head">
+						<span class="ds-label">{{ t("Import Exposure") }}</span>
+						<span
+							v-if="!selectedExposure.summary.reconciles_gl"
+							class="ds-chip"
+							data-tone="crit"
+							:title="t('Cash + bank paid does not match the GL total')"
+						>{{ t("GL mismatch") }}</span>
+					</div>
+					<PartyKpiStrip :items="exposureKpiItems" :cols="4" :language="user.language" />
+				</section>
 
-			<!-- Open import commitments (CIs not yet invoiced) — WP-I6 -->
-			<section v-if="selectedExposure?.commitments?.length" class="ds-panel">
-				<div class="ds-panel-head">
-					<span class="ds-label">{{ t("Open commitments") }}</span>
-					<span class="ds-label">{{ selectedExposure.commitments.length }}</span>
-				</div>
-				<table class="ds-table">
-					<thead>
-						<tr>
-							<th>{{ t("Commercial Invoice") }}</th>
-							<th>{{ t("Status") }}</th>
-							<th class="ds-td-num">{{ t("Agreed total") }}</th>
-							<th></th>
-						</tr>
-					</thead>
-					<tbody>
-						<tr v-for="c in selectedExposure.commitments" :key="c.name">
-							<td>
-								<router-link
-									:to="{ name: 'imports-commercial-invoice', params: { name: c.name } }"
-									class="ds-mono"
-								>
-									{{ c.ci_number || c.name }}
-								</router-link>
-							</td>
-							<td>
-								<span class="badge" :class="getStatusBadgeClass('Commercial Invoice', c.status)">{{ t(c.status) }}</span>
-							</td>
-							<td class="ds-td-num">
-								{{ formatMoney(c.agreed_total || 0, c.currency || sel.account_currency || session.currency, user.language) }}
-							</td>
-							<td class="ds-td-num">
-								<button type="button" class="ds-btn" :disabled="convertBusy" @click="openConvert(c)">
-									{{ t("Convert to Invoice") }}
-								</button>
-							</td>
-						</tr>
-					</tbody>
-				</table>
-			</section>
+				<!-- Open import commitments (CIs not yet invoiced) — WP-I6 -->
+				<section v-if="selectedExposure?.commitments?.length" class="ds-panel">
+					<div class="ds-panel-head">
+						<span class="ds-label">{{ t("Open commitments") }}</span>
+						<span class="ds-label">{{ selectedExposure.commitments.length }}</span>
+					</div>
+					<table class="ds-table">
+						<thead>
+							<tr>
+								<th>{{ t("Commercial Invoice") }}</th>
+								<th>{{ t("Status") }}</th>
+								<th class="ds-td-num">{{ t("Agreed total") }}</th>
+								<th></th>
+							</tr>
+						</thead>
+						<tbody>
+							<tr v-for="c in selectedExposure.commitments" :key="c.name">
+								<td>
+									<router-link
+										:to="{ name: 'imports-commercial-invoice', params: { name: c.name } }"
+										class="ds-mono"
+									>
+										{{ c.ci_number || c.name }}
+									</router-link>
+								</td>
+								<td>
+									<span class="badge" :class="getStatusBadgeClass('Commercial Invoice', c.status)">{{ t(c.status) }}</span>
+								</td>
+								<td class="ds-td-num">
+									{{ formatMoney(c.agreed_total || 0, c.currency || sel.account_currency || session.currency, user.language) }}
+								</td>
+								<td class="ds-td-num">
+									<button type="button" class="ds-btn" :disabled="convertBusy" @click="openConvert(c)">
+										{{ t("Convert to Invoice") }}
+									</button>
+								</td>
+							</tr>
+						</tbody>
+					</table>
+				</section>
+			</div>
 		</template>
 
 		<template #extra-tabs="{ tab }">
